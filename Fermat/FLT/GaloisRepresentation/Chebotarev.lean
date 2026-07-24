@@ -103,10 +103,20 @@ here. This file provides:
   Galois-image norm residues — itself now DERIVED, through the PROVEN
   ray-class assembly
   `exists_forall_abs_sum_card_absNorm_residue_sub_mul_le_rpow_of_ideal`,
-  from THREE sorried leaves: the per-narrow-ray-class Weber count
+  from the per-narrow-ray-class Weber count
   `exists_forall_abs_natCard_isNarrowRayEquiv_sub_mul_le_rpow`
-  (the geometry-of-numbers core, Lang VI §3), the narrow-ray-class
-  finiteness `exists_finset_forall_existsUnique_isNarrowRayEquiv`
+  (the geometry-of-numbers core, Lang VI §3 — itself now DERIVED,
+  through the proven equivalence-relation glue
+  `IsNarrowRayEquiv.symm`/`.trans` and the PROVEN per-class assembly
+  `exists_forall_exists_abs_natCard_isNarrowRayEquiv_sub_mul_le_rpow`,
+  from THREE sorried geometric/finiteness leaves: the narrow-ray-class
+  finiteness `exists_finset_forall_exists_mem_isNarrowRayEquiv`, the
+  unit-domain reduction
+  `exists_forall_natCard_isNarrowRayEquiv_eq_natCard_mem_idealLattice`
+  and the Lipschitz-boundary translated-lattice count
+  `exists_forall_abs_natCard_add_mem_smul_sub_mul_le_pow`, Lang VI §2
+  Thm 2), the narrow-ray-class finiteness
+  `exists_finset_forall_existsUnique_isNarrowRayEquiv`
   (a finite complete system of representatives, Lang VI §1 — the
   equal-fiber norm-residue fibering
   `exists_forall_sum_card_absNorm_residue_eq_sum_natCard_isNarrowRayEquiv`
@@ -136,9 +146,12 @@ here. This file provides:
   `integral_sum_dirichletCharacter_mul_card_cpow_neg_two_ne_zero`,
   the nonvanishing of the continued value at `1` by the classical
   zeta-factorization argument)); the L-function half thus rests on
-  exactly SIX sorried leaves — the two ray-class leaves and the
-  three Deuring leaves behind the Weber counting theorem
-  `exists_forall_abs_sum_card_absNorm_residue_sub_mul_le_rpow` and
+  exactly EIGHT sorried leaves — the three geometric/finiteness
+  leaves behind the per-narrow-ray-class Weber count (listed above),
+  the `existsUnique` finiteness leaf behind the fibering, the three
+  Deuring leaves behind the Frobenius realization, all under the
+  Weber counting theorem
+  `exists_forall_abs_sum_card_absNorm_residue_sub_mul_le_rpow`, and
   the arithmetic core
   `integral_sum_dirichletCharacter_mul_card_cpow_neg_two_ne_zero`;
   see their docstrings for the intended proofs and the exact state
@@ -187,6 +200,9 @@ import Mathlib.RingTheory.Ideal.GoingUp
 public import Mathlib.Analysis.SpecialFunctions.Pow.NNReal
 public import Mathlib.RingTheory.Ideal.Norm.AbsNorm
 public import Mathlib.NumberTheory.NumberField.DedekindZeta
+public import Mathlib.NumberTheory.NumberField.Discriminant.Basic
+public import Mathlib.RingTheory.ClassGroup.Basic
+import Mathlib.RingTheory.FractionalIdeal.Norm
 import Mathlib.NumberTheory.RamificationInertia.Basic
 import Mathlib.FieldTheory.Finite.Basic
 import Mathlib.RingTheory.PrincipalIdealDomain
@@ -2976,40 +2992,443 @@ def IsNarrowRayEquiv {F : Type*} [Field F] [NumberField F] (ℓ : ℕ)
     α - β ∈ Ideal.span {(ℓ : 𝓞 F)} ∧
     Ideal.span {α} * I = Ideal.span {β} * J
 
-/-- **Weber's theorem: ideal counting per narrow ray class, with
-power-saving error** (sorry leaf) — Lang, *Algebraic Number Theory*,
-ch. VI §3 Theorem 3: the number of nonzero integral ideals `I` of
-`𝓞 F` in the narrow ray class mod `ℓ` of `I₀` with `N(I) ≤ n` is
-`κ₀·n + O(n^r)` for some `r < 1`, where `κ₀` and the error constant
-`C` depend only on `F` and `ℓ`, NOT on the class of `I₀`.
+/-- **Symmetry of the narrow ray equivalence**: swap the two witnesses
+(`β - α = -(α - β)` stays in `ℓ𝓞 F`). -/
+theorem IsNarrowRayEquiv.symm {F : Type*} [Field F] [NumberField F] {ℓ : ℕ}
+    {I J : Ideal (𝓞 F)} (h : IsNarrowRayEquiv ℓ I J) : IsNarrowRayEquiv ℓ J I := by
+  obtain ⟨α, β, hα, hβ, hαc, hβc, hcong, heq⟩ := h
+  exact ⟨β, α, hβ, hα, hβc, hαc, by rw [← neg_sub α β]; exact neg_mem hcong, heq.symm⟩
 
-Intended proof (Weber; Lang VI §3): fix an auxiliary integral ideal
-`J` in the inverse narrow ray class of `I₀`, so that `I ↦ I·J` maps
-the counted ideals bijectively onto principal ideals `(γ) ⊆ J` with
-`γ` totally positive, `γ ≡ γ₀ mod ℓJ` for a fixed `γ₀` (determined by
-the class), and `0 < N(γ) ≤ n·N(J)`. Generators `γ` modulo the action
-of the totally positive units correspond to points of the TRANSLATED
-lattice `γ₀ + ℓJ` (under the Minkowski embedding) lying in the
-homogeneously expanding region `{x : N(x) ≤ t}` cut down to a
-fundamental domain of the unit action on the norm-one hypersurface;
-this domain is bounded and has `(d−1)`-Lipschitz-parametrizable
-boundary (`d = [F:ℚ]`), so the translated-lattice point count is
-`(vol/covol)·t + O(t^{(d−1)/d})` uniformly in the translate (Lang VI
-§2 Theorem 2 — the geometry-of-numbers core), whence the claim with
-`r = 1 − 1/d` for `d ≥ 2` (any `0 < r < 1` works for `d = 1`, where
-the count is elementary: positive integers `≡ a mod ℓ` up to `n`).
-Mathlib pin: `ZLattice.covolume.tendsto_card_le_div'` gives the
-error-free limit through `fundamentalCone`/`normLeOne` (measure-zero
-frontier only); no error-term lattice count and no Lipschitz boundary
-parametrization exist — those are the honest content of this leaf. -/
+/-- **Transitivity of the narrow ray equivalence**: multiply the two
+witness pairs. Total positivity, coprimality to `ℓ` and the congruence
+mod `ℓ𝓞 F` are all preserved by products (`αα' - ββ' = α(α' - β') +
+(α - β)β'`), and the two ideal equations compose by commutativity of
+ideal multiplication. -/
+theorem IsNarrowRayEquiv.trans {F : Type*} [Field F] [NumberField F] {ℓ : ℕ}
+    {I J J' : Ideal (𝓞 F)} (h₁ : IsNarrowRayEquiv ℓ I J)
+    (h₂ : IsNarrowRayEquiv ℓ J J') : IsNarrowRayEquiv ℓ I J' := by
+  obtain ⟨α, β, hα, hβ, hαc, hβc, hc, he⟩ := h₁
+  obtain ⟨α', β', hα', hβ', hαc', hβc', hc', he'⟩ := h₂
+  refine ⟨α * α', β * β', ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · intro φ; rw [map_mul, map_mul]; exact mul_pos (hα φ) (hα' φ)
+  · intro φ; rw [map_mul, map_mul]; exact mul_pos (hβ φ) (hβ' φ)
+  · rw [← Ideal.span_singleton_mul_span_singleton]; exact hαc.mul_left hαc'
+  · rw [← Ideal.span_singleton_mul_span_singleton]; exact hβc.mul_left hβc'
+  · have hkey : α * α' - β * β' = α * (α' - β') + (α - β) * β' := by ring
+    rw [hkey]
+    exact Ideal.add_mem _ (Ideal.mul_mem_left _ _ hc') (Ideal.mul_mem_right _ _ hc)
+  · calc Ideal.span {α * α'} * I
+        = Ideal.span {α'} * (Ideal.span {α} * I) := by
+          rw [← Ideal.span_singleton_mul_span_singleton]; ring
+      _ = Ideal.span {α'} * (Ideal.span {β} * J) := by rw [he]
+      _ = Ideal.span {β} * (Ideal.span {α'} * J) := by ring
+      _ = Ideal.span {β} * (Ideal.span {β'} * J') := by rw [he']
+      _ = Ideal.span {β * β'} * J' := by
+          rw [← Ideal.span_singleton_mul_span_singleton]; ring
+
+/-- **Finiteness of the narrow ray classes mod `ℓ`** (sorry leaf): a
+finite set of nonzero, coprime-to-`ℓ` representatives meets every
+narrow ray class of a nonzero coprime-to-`ℓ` ideal. This is the
+finiteness of the narrow ray class group of modulus `ℓ·𝔪∞` (Lang,
+*Algebraic Number Theory*, ch. VI §1; Neukirch ch. VI §1 Thm 1.7),
+stated without constructing the group.
+
+Intended proof: reduce along the exact sequence
+`(𝓞 F/ℓ)ˣ × (±1)^{r₁} → Cl_{ℓ𝔪∞}(F) → Cl(F) → 1`. The class group
+`Cl(F)` is finite (mathlib: `ClassGroup.finite` for a number field)
+and every ordinary ideal class contains an integral ideal coprime to
+`ℓ` (move any representative by a principal ideal avoiding the primes
+over `ℓ`, e.g. via `Ideal.exists_mul_add_mem_of_isCoprime`/CRT); fix
+such a representative `R_c` per class `c`. For a valid `I₀` in class
+`c` write `(x)·I₀ = (y)·R_c` with `x, y ∈ 𝓞 F` nonzero; after scaling
+both by a common element (CRT again) one may take `x, y` coprime to
+`ℓ`. The remaining data deciding the narrow ray class of `I₀` given
+`c` is the pair (residue of `x·y⁻¹` in `(𝓞 F/ℓ)ˣ`, sign vector of
+`x·y` at the real places) — finitely many possibilities; realize each
+occurring combination `(c, u, ε)` by one auxiliary ideal (adjust `R_c`
+by a principal ideal `(z)` with `z ≡ u⁻¹ mod ℓ` and prescribed signs,
+which exists by CRT plus weak approximation at the real places). The
+resulting finite family is `S`; `IsNarrowRayEquiv.symm`/`.trans` (and
+reflexivity via `α = β = 1 + ℓ`) justify that class data determines
+equivalence. -/
+theorem exists_finset_forall_exists_mem_isNarrowRayEquiv
+    (F : Type*) [Field F] [NumberField F] (ℓ : ℕ) (hℓ : ℓ.Prime) :
+    ∃ S : Finset (Ideal (𝓞 F)),
+      (∀ J ∈ S, J ≠ 0 ∧ IsCoprime J (Ideal.span {(ℓ : 𝓞 F)})) ∧
+      ∀ I₀ : Ideal (𝓞 F), I₀ ≠ 0 → IsCoprime I₀ (Ideal.span {(ℓ : 𝓞 F)}) →
+        ∃ J ∈ S, IsNarrowRayEquiv ℓ I₀ J := by
+  sorry
+
+/-- A bounded set whose topological boundary is covered by finitely
+many Lipschitz images of the unit cube of one dimension lower — the
+regularity condition of Lang, *Algebraic Number Theory*, ch. VI §2
+("`(d-1)`-Lipschitz parametrizable boundary"): there are finitely many
+maps `[0,1]^{d-1} → E` (`d = dim_ℝ E`), Lipschitz on the cube with a
+common constant, whose images cover `frontier X`. Such a set is
+volume-measurable up to null sets and its dilates `t • X` contain
+`vol(X)·t^d/covol(L) + O(t^{d-1})` points of any translate of any
+`ℤ`-lattice `L` — the content of
+`exists_forall_abs_natCard_add_mem_smul_sub_mul_le_pow`. -/
+def HasLipschitzBoundaryCover {E : Type*} [NormedAddCommGroup E]
+    [NormedSpace ℝ E] (X : Set E) : Prop :=
+  ∃ (m : ℕ) (f : Fin m → (Fin (Module.finrank ℝ E - 1) → ℝ) → E) (κ : NNReal),
+    (∀ i, LipschitzOnWith κ (f i) (Set.Icc 0 1)) ∧
+    frontier X ⊆ ⋃ i, f i '' Set.Icc 0 1
+
+open scoped Pointwise in
+open MeasureTheory in
+/-- **Translated-lattice point counting in Lipschitz-bounded dilated
+domains, with power-saving error** (sorry leaf) — Lang, *Algebraic
+Number Theory*, ch. VI §2 Theorem 2, uniform in the translate: for a
+`ℤ`-lattice `L` in a `d`-dimensional real vector space (`volume` an
+additive Haar measure) and a bounded measurable set `X` with
+Lipschitz-covered boundary, the number of points of the coset `v + L`
+in the dilate `t • X` is `vol(X)/covol(L) · t^d + O(t^{d-1})`, with an
+error constant independent of `v` and `t ≥ 1`.
+
+Intended proof (Lang VI §2; the classical Davenport/Lipschitz
+principle): fix a fundamental parallelotope `P` of a `ℤ`-basis of `L`
+(mathlib: `ZSpan.fundamentalDomain`, `ZLattice.covolume_eq_measure_fundamentalDomain`)
+and for each `x` in the coset count the cell `x + P`. Cells entirely
+inside `t • X` under-count, cells meeting `t • X` over-count, and both
+counts multiplied by `vol(P)` sandwich `vol(t • X) = t^d·vol(X)`
+(homogeneity of Haar measure under dilation,
+`Measure.addHaar_smul`); so the error is at most the number of cells
+meeting `frontier (t • X) = t • frontier X` (dilation is a
+homeomorphism). Cover `frontier X` by the `m` Lipschitz images: for
+`t ≥ 1` subdivide `[0,1]^{d-1}` into `⌈t⌉^{d-1}` subcubes of side
+`1/⌈t⌉`; the `t`-dilate of the image of each subcube has diameter
+`≤ t·κ·√(d-1)/⌈t⌉ ≤ κ·√(d-1)`, hence meets a number of cells bounded
+by a constant `c(P, κ, d)` independent of everything but `P, κ, d`
+(a diameter-`R` set meets at most `(R/ρ + 2)^d`-ish translates of `P`,
+`ρ` the inradius); total `≤ m·c·⌈t⌉^{d-1} ≤ m·c·(2t)^{d-1}`. The
+count in each dilated cell is translation-invariant, whence uniformity
+in `v`. Mathlib pin: only the error-free limit exists
+(`ZLattice.covolume.tendsto_card_le_div`); `BoxIntegral.unitPartition`
+(`Mathlib/Analysis/BoxIntegral/UnitPartition.lean`, used by that
+limit) provides the cell-counting skeleton to vendor. For `d = 1` the
+exponent `d - 1 = 0` (ℕ-subtraction) makes the error bound `C`, which
+is correct: `X` is then a bounded set with finite boundary, i.e. a
+finite union of intervals. -/
+theorem exists_forall_abs_natCard_add_mem_smul_sub_mul_le_pow
+    {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+    [FiniteDimensional ℝ E] [MeasureSpace E] [BorelSpace E] [Nontrivial E]
+    [Measure.IsAddHaarMeasure (volume : Measure E)]
+    (L : Submodule ℤ E) [DiscreteTopology L] [IsZLattice ℝ L]
+    {X : Set E} (hXb : Bornology.IsBounded X) (hXm : MeasurableSet X)
+    (hXl : HasLipschitzBoundaryCover X) :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ (v : E) (t : ℝ), 1 ≤ t →
+      |(Nat.card {x : L // v + (x : E) ∈ t • X} : ℝ) -
+          volume.real X / ZLattice.covolume L * t ^ Module.finrank ℝ E| ≤
+        C * t ^ (Module.finrank ℝ E - 1) := by
+  sorry
+
+open scoped nonZeroDivisors Classical in
+open NumberField MeasureTheory in
+/-- **Unit-domain reduction of the narrow-ray-class ideal count**
+(sorry leaf) — the arithmetic half of Lang, *Algebraic Number Theory*,
+ch. VI §3 Theorem 3: a single cone `𝒟` in the mixed space (independent
+of the class!) such that `𝒟₁ = 𝒟 ∩ {N ≤ 1}` is bounded, measurable,
+with Lipschitz-covered boundary, and for every valid class
+representative `I₀` there are an auxiliary ideal `J`, the lattice
+ideal `Jℓ = ℓ·J`, and a translate `γ₀ ∈ 𝓞 F` making the ideal count
+in the class of `I₀` EQUAL (exactly, for every `n`) to the number of
+points `x` of the ideal lattice of `Jℓ` with
+`γ₀ + x ∈ 𝒟 ∧ N(γ₀ + x) ≤ n·N(J)`.
+
+Intended construction. (i) *The cone*: let `U⁺_ℓ ≤ (𝓞 F)ˣ` be the
+subgroup of totally positive units `u ≡ 1 mod ℓ𝓞 F` (finite index in
+`(𝓞 F)ˣ`, so of full unit rank `r₁ + r₂ - 1`); `𝒟` is an EXACT
+fundamental domain, invariant under positive scaling, for the action
+of `U⁺_ℓ` by coordinatewise multiplication (via the mixed embedding)
+on the open cone `{x : all real coordinates > 0, N(x) ≠ 0}`: build it
+as in mathlib's `NumberField.mixedEmbedding.fundamentalCone` — pull
+back the half-open span-parallelotope of the logarithms of a
+fundamental system of generators of `U⁺_ℓ/torsion` under the `logMap`
+— and, when `U⁺_ℓ` has torsion (only possible for totally complex
+`F`, torsion = roots of unity `≡ 1 mod ℓ`, a cyclic group of some
+order `w`), cut by the angular sector `0 ≤ arg z₁ < 2π/w` in a fixed
+complex coordinate, which each torsion orbit of a nonzero-norm point
+meets exactly once. `𝒟₁` is bounded with Lipschitz boundary: in log
+coordinates the domain is a product of a bounded parallelotope with a
+norm interval and a sector; its boundary consists of finitely many
+smooth walls (parallelotope faces, the sector walls, and the `N = 1`
+hypersurface), each parametrized Lipschitz-ly on `[0,1]^{d-1}` after
+the exponential re-parametrization — Lang VI §3 proves exactly this.
+(ii) *The class data*: pick an integral `J` coprime to `ℓ` with `I₀·J`
+principal generated by a totally positive `δ ≡` a unit residue mod
+`ℓ`; more precisely choose `J` in the inverse narrow ray class so that
+`I₀·J = (γ₀)` with `γ₀` totally positive and coprime to `ℓ`, and set
+`Jℓ = ℓ·J`. (iii) *The bijection*, for each `n`: `I ↦` the unique
+generator `γ` of `I·J` with `γ ≡ γ₀ mod ℓJ`, `γ` totally positive,
+`embed γ ∈ 𝒟`. Existence/uniqueness: from
+`(α)I = (β)I₀` (`α, β` totally positive, coprime to `ℓ`,
+`α ≡ β mod ℓ`) one gets `γ := βγ₀/α ∈ 𝓞 F` with `(γ) = I·J ⊆ J`,
+`γ` totally positive, and `γ ≡ γ₀ mod ℓ𝓞 F ∩ J = ℓJ` (the last
+equality by coprimality of `J` and `ℓ`); two such generators differ by
+a unit in `U⁺_ℓ` (from `(u-1)I·J ⊆ ℓJ` and `I·J` coprime to `ℓ` — for
+the congruence — and total positivity for the sign condition), and `𝒟`
+selects exactly one point per `U⁺_ℓ`-orbit. Conversely a lattice point
+`γ₀ + x` (`x ∈ ℓJ` embedded) lying in `𝒟` is the embedding of a
+totally positive `γ ∈ γ₀ + ℓJ ⊆ J` with `N(γ) ≠ 0`, and
+`I := (γ)·J⁻¹` is integral, nonzero, and narrow-ray-equivalent to `I₀`
+with witnesses `(γ₀, γ)`; the norm bound matches because
+`N(I)·N(J) = |N_{F/ℚ}(γ)| = mixedEmbedding.norm (embed γ)`
+(`Ideal.absNorm_span_singleton`, `mixedEmbedding.norm_eq_norm`).
+Every ingredient is elementary ideal arithmetic except the fundamental
+domain construction, which mirrors `fundamentalCone` (mathlib) with
+the unit group replaced by `U⁺_ℓ` and the torsion sector made explicit. -/
+theorem exists_forall_natCard_isNarrowRayEquiv_eq_natCard_mem_idealLattice
+    (F : Type*) [Field F] [NumberField F] (ℓ : ℕ) (hℓ : ℓ.Prime) :
+    ∃ 𝒟 : Set (mixedEmbedding.mixedSpace F),
+      (∀ x ∈ 𝒟, ∀ r : ℝ, 0 < r → r • x ∈ 𝒟) ∧
+      Bornology.IsBounded (𝒟 ∩ {x | mixedEmbedding.norm x ≤ 1}) ∧
+      MeasurableSet (𝒟 ∩ {x | mixedEmbedding.norm x ≤ 1}) ∧
+      HasLipschitzBoundaryCover (𝒟 ∩ {x | mixedEmbedding.norm x ≤ 1}) ∧
+      ∀ I₀ : Ideal (𝓞 F), I₀ ≠ 0 → IsCoprime I₀ (Ideal.span {(ℓ : 𝓞 F)}) →
+        ∃ (J Jℓ : (Ideal (𝓞 F))⁰) (γ₀ : 𝓞 F),
+          (Jℓ : Ideal (𝓞 F)) = Ideal.span {(ℓ : 𝓞 F)} * (J : Ideal (𝓞 F)) ∧
+          ∀ n : ℕ,
+            Nat.card {I : Ideal (𝓞 F) // I ≠ 0 ∧ Ideal.absNorm I ≤ n ∧
+                IsNarrowRayEquiv ℓ I I₀} =
+            Nat.card {x : mixedEmbedding.idealLattice F (FractionalIdeal.mk0 F Jℓ) //
+                mixedEmbedding F (algebraMap (𝓞 F) F γ₀) +
+                  (x : mixedEmbedding.mixedSpace F) ∈ 𝒟 ∧
+                mixedEmbedding.norm (mixedEmbedding F (algebraMap (𝓞 F) F γ₀) +
+                  (x : mixedEmbedding.mixedSpace F)) ≤
+                  ((n * Ideal.absNorm (J : Ideal (𝓞 F)) : ℕ) : ℝ)} := by
+  sorry
+
+open scoped Pointwise in
+open NumberField MeasureTheory in
+/-- **Weber's per-class count, single-class form** — DERIVED: for
+each fixed nonzero coprime-to-`ℓ` ideal `I₀`, the number of nonzero
+integral ideals in the narrow ray class of `I₀` with norm `≤ n` is
+`κ₀·n + O_{I₀}(n^r)`, where the leading constant `κ₀` and the exponent
+`r = 1 - 1/(2d) < 1` (`d = [F:ℚ]`) are CLASS-INDEPENDENT — only the
+`O`-constant may depend on the class. This is Lang, *Algebraic Number
+Theory*, ch. VI §3 Theorem 3 for the single class; the uniformization
+over classes (taking the maximum of the finitely many per-class
+constants) happens in the consumer
+`exists_forall_abs_natCard_isNarrowRayEquiv_sub_mul_le_rpow`.
+
+Proof (Lang VI §3, via VI §2 Thm 2): the reduction leaf
+`exists_forall_natCard_isNarrowRayEquiv_eq_natCard_mem_idealLattice`
+identifies the count with the number of points of the translated ideal
+lattice `γ₀ + ℓJ` (under the mixed embedding) in the cone-truncated
+domain `{x ∈ 𝒟 : N(x) ≤ n·N(J)}`; the cone property turns the latter
+into the `(n·N(J))^{1/d}`-dilate of the bounded Lipschitz-bounded
+domain `𝒟₁ = 𝒟 ∩ {N ≤ 1}`, and the translated-lattice counting leaf
+`exists_forall_abs_natCard_add_mem_smul_sub_mul_le_pow` counts it as
+`vol(𝒟₁)/covol(ℓJ)·(n·N(J)) + O((n·N(J))^{1-1/d})`. Since
+`covol(ℓJ) = N(ℓJ)·covol(𝓞 F)` (mathlib: `covolume_idealLattice`),
+the factor `N(J)` cancels in the main term, leaving the
+class-independent `κ₀ = vol(𝒟₁)/(N(ℓ𝓞 F)·covol(𝓞 F))`; the error
+constant absorbs `N(J)^{1-1/d}`. This proof is exactly that assembly;
+the two cited lemmas are the remaining sorried leaves. -/
+theorem exists_forall_exists_abs_natCard_isNarrowRayEquiv_sub_mul_le_rpow
+    (F : Type*) [Field F] [NumberField F] (ℓ : ℕ) (hℓ : ℓ.Prime) :
+    ∃ κ₀ r : ℝ, 0 < r ∧ r < 1 ∧
+      ∀ I₀ : Ideal (𝓞 F), I₀ ≠ 0 → IsCoprime I₀ (Ideal.span {(ℓ : 𝓞 F)}) →
+        ∃ C : ℝ, 0 ≤ C ∧ ∀ n : ℕ,
+          |(Nat.card {I : Ideal (𝓞 F) // I ≠ 0 ∧ Ideal.absNorm I ≤ n ∧
+              IsNarrowRayEquiv ℓ I I₀} : ℝ) - κ₀ * n| ≤ C * (n : ℝ) ^ r := by
+  classical
+  obtain ⟨𝒟, hcone, hbdd, hmeas, hlip, hred⟩ :=
+    exists_forall_natCard_isNarrowRayEquiv_eq_natCard_mem_idealLattice F ℓ hℓ
+  have hd0 : 0 < Module.finrank ℚ F := Module.finrank_pos
+  have hdR : (0 : ℝ) < (Module.finrank ℚ F : ℝ) := Nat.cast_pos.mpr hd0
+  have hd1 : (1 : ℝ) ≤ (Module.finrank ℚ F : ℝ) := Nat.one_le_cast.mpr hd0
+  have hr0 : (0 : ℝ) < 1 - 1 / (2 * (Module.finrank ℚ F : ℝ)) := by
+    have h1 : 1 / (2 * (Module.finrank ℚ F : ℝ)) < 1 := by
+      rw [div_lt_one (by linarith)]
+      linarith
+    linarith
+  have hr1 : 1 - 1 / (2 * (Module.finrank ℚ F : ℝ)) < 1 := by
+    have h1 : 0 < 1 / (2 * (Module.finrank ℚ F : ℝ)) := by positivity
+    linarith
+  -- `d`-th-root/`d`-th-power inversion for the dilation parameter
+  have hpow : ∀ s : ℝ, 0 < s →
+      (s ^ (1 / (Module.finrank ℚ F : ℝ))) ^ Module.finrank ℚ F = s := by
+    intro s hs
+    rw [← Real.rpow_natCast (s ^ (1 / (Module.finrank ℚ F : ℝ))) (Module.finrank ℚ F),
+      ← Real.rpow_mul hs.le, one_div, inv_mul_cancel₀ hdR.ne', Real.rpow_one]
+  -- the cone cut at norm `≤ s` is the `s^(1/d)`-dilate of the cut at norm `≤ 1`
+  have hset : ∀ s : ℝ, 0 < s → ∀ y : mixedEmbedding.mixedSpace F,
+      (y ∈ 𝒟 ∧ mixedEmbedding.norm y ≤ s) ↔
+        y ∈ s ^ (1 / (Module.finrank ℚ F : ℝ)) •
+          (𝒟 ∩ {x | mixedEmbedding.norm x ≤ 1}) := by
+    intro s hs y
+    have ht : 0 < s ^ (1 / (Module.finrank ℚ F : ℝ)) := Real.rpow_pos_of_pos hs _
+    constructor
+    · rintro ⟨hy𝒟, hynorm⟩
+      refine Set.mem_smul_set.mpr ⟨(s ^ (1 / (Module.finrank ℚ F : ℝ)))⁻¹ • y,
+        ⟨hcone y hy𝒟 _ (inv_pos.mpr ht), ?_⟩, smul_inv_smul₀ ht.ne' y⟩
+      rw [Set.mem_setOf_eq, mixedEmbedding.norm_smul, abs_of_pos (inv_pos.mpr ht),
+        inv_pow, hpow s hs]
+      have h2 : s⁻¹ * mixedEmbedding.norm y ≤ s⁻¹ * s :=
+        mul_le_mul_of_nonneg_left hynorm (inv_nonneg.mpr hs.le)
+      rwa [inv_mul_cancel₀ hs.ne'] at h2
+    · intro hy
+      obtain ⟨z, hz, rfl⟩ := Set.mem_smul_set.mp hy
+      refine ⟨hcone z hz.1 _ ht, ?_⟩
+      rw [mixedEmbedding.norm_smul, abs_of_pos ht, hpow s hs]
+      have h2 : s * mixedEmbedding.norm z ≤ s * 1 :=
+        mul_le_mul_of_nonneg_left hz.2 hs.le
+      rwa [mul_one] at h2
+  refine ⟨volume.real (𝒟 ∩ {x | mixedEmbedding.norm x ≤ 1}) /
+      ((Ideal.absNorm (Ideal.span {(ℓ : 𝓞 F)}) : ℝ) *
+        ZLattice.covolume (mixedEmbedding.integerLattice F)),
+    1 - 1 / (2 * (Module.finrank ℚ F : ℝ)), hr0, hr1, ?_⟩
+  intro I₀ h0 hcop
+  obtain ⟨J, Jℓ, γ₀, hJℓ, hcnt⟩ := hred I₀ h0 hcop
+  obtain ⟨CL, hCL0, hCL⟩ := exists_forall_abs_natCard_add_mem_smul_sub_mul_le_pow
+    (mixedEmbedding.idealLattice F (FractionalIdeal.mk0 F Jℓ)) hbdd hmeas hlip
+  have hNJ0 : 0 < Ideal.absNorm (J : Ideal (𝓞 F)) :=
+    Ideal.absNorm_pos_of_nonZeroDivisors J
+  -- covolume of the lattice `ℓJ`: the auxiliary norm `N(J)` factors out
+  have hNJℓ : Ideal.absNorm (Jℓ : Ideal (𝓞 F)) =
+      Ideal.absNorm (Ideal.span {(ℓ : 𝓞 F)}) * Ideal.absNorm (J : Ideal (𝓞 F)) := by
+    rw [hJℓ, _root_.map_mul]
+  have hcov : ZLattice.covolume
+      (mixedEmbedding.idealLattice F (FractionalIdeal.mk0 F Jℓ)) =
+      ((Ideal.absNorm (Ideal.span {(ℓ : 𝓞 F)}) : ℝ) *
+          (Ideal.absNorm (J : Ideal (𝓞 F)) : ℝ)) *
+        ZLattice.covolume (mixedEmbedding.integerLattice F) := by
+    rw [mixedEmbedding.covolume_idealLattice, mixedEmbedding.covolume_integerLattice,
+      FractionalIdeal.coe_mk0, FractionalIdeal.coeIdeal_absNorm, hNJℓ]
+    push_cast
+    ring
+  refine ⟨CL * (Ideal.absNorm (J : Ideal (𝓞 F)) : ℝ) ^
+      (((Module.finrank ℚ F : ℝ) - 1) / (Module.finrank ℚ F : ℝ)),
+    mul_nonneg hCL0 (Real.rpow_nonneg (Nat.cast_nonneg _) _), ?_⟩
+  intro n
+  rcases Nat.eq_zero_or_pos n with hn | hn
+  · subst hn
+    haveI hempty : IsEmpty {I : Ideal (𝓞 F) // I ≠ 0 ∧ Ideal.absNorm I ≤ 0 ∧
+        IsNarrowRayEquiv ℓ I I₀} :=
+      ⟨fun I => I.2.1 (Ideal.absNorm_eq_zero_iff.mp (Nat.le_zero.mp I.2.2.1))⟩
+    rw [Nat.card_of_isEmpty, Nat.cast_zero, mul_zero, sub_zero, abs_zero,
+      Real.zero_rpow hr0.ne', mul_zero]
+  · have hn1 : (1 : ℝ) ≤ (n : ℝ) := Nat.one_le_cast.mpr hn
+    have hs0 : (0 : ℝ) < ((n * Ideal.absNorm (J : Ideal (𝓞 F)) : ℕ) : ℝ) :=
+      Nat.cast_pos.mpr (Nat.mul_pos hn hNJ0)
+    have hs1 : (1 : ℝ) ≤ ((n * Ideal.absNorm (J : Ideal (𝓞 F)) : ℕ) : ℝ) :=
+      Nat.one_le_cast.mpr (Nat.mul_pos hn hNJ0)
+    have hkey := hCL (mixedEmbedding F (algebraMap (𝓞 F) F γ₀))
+      (((n * Ideal.absNorm (J : Ideal (𝓞 F)) : ℕ) : ℝ) ^
+        (1 / (Module.finrank ℚ F : ℝ)))
+      (Real.one_le_rpow hs1 (by positivity))
+    rw [mixedEmbedding.finrank, hpow _ hs0, hcov] at hkey
+    -- the main term: `N(J)` cancels, leaving the class-independent `κ₀·n`
+    have hterm : volume.real (𝒟 ∩ {x | mixedEmbedding.norm x ≤ 1}) /
+        (((Ideal.absNorm (Ideal.span {(ℓ : 𝓞 F)}) : ℝ) *
+            (Ideal.absNorm (J : Ideal (𝓞 F)) : ℝ)) *
+          ZLattice.covolume (mixedEmbedding.integerLattice F)) *
+        ((n * Ideal.absNorm (J : Ideal (𝓞 F)) : ℕ) : ℝ) =
+        volume.real (𝒟 ∩ {x | mixedEmbedding.norm x ≤ 1}) /
+          ((Ideal.absNorm (Ideal.span {(ℓ : 𝓞 F)}) : ℝ) *
+            ZLattice.covolume (mixedEmbedding.integerLattice F)) * (n : ℝ) := by
+      rw [Nat.cast_mul]
+      field_simp [(Nat.cast_pos.mpr hNJ0 :
+        (0 : ℝ) < (Ideal.absNorm (J : Ideal (𝓞 F)) : ℝ)).ne']
+    rw [hterm] at hkey
+    -- the error term: `N(J)^{(d-1)/d}` is absorbed into the constant
+    have hbase : ((((n * Ideal.absNorm (J : Ideal (𝓞 F)) : ℕ) : ℝ) ^
+          (1 / (Module.finrank ℚ F : ℝ)))) ^ (Module.finrank ℚ F - 1) =
+        (n : ℝ) ^ (((Module.finrank ℚ F : ℝ) - 1) / (Module.finrank ℚ F : ℝ)) *
+          (Ideal.absNorm (J : Ideal (𝓞 F)) : ℝ) ^
+            (((Module.finrank ℚ F : ℝ) - 1) / (Module.finrank ℚ F : ℝ)) := by
+      rw [← Real.rpow_natCast ((((n * Ideal.absNorm (J : Ideal (𝓞 F)) : ℕ) : ℝ)) ^
+            (1 / (Module.finrank ℚ F : ℝ))) (Module.finrank ℚ F - 1),
+        ← Real.rpow_mul hs0.le, Nat.cast_sub hd0, Nat.cast_one, one_div,
+        inv_mul_eq_div, Nat.cast_mul,
+        Real.mul_rpow (Nat.cast_nonneg n) (Nat.cast_nonneg _)]
+    have hexp : (n : ℝ) ^ (((Module.finrank ℚ F : ℝ) - 1) / (Module.finrank ℚ F : ℝ)) ≤
+        (n : ℝ) ^ (1 - 1 / (2 * (Module.finrank ℚ F : ℝ))) := by
+      apply Real.rpow_le_rpow_of_exponent_le hn1
+      rw [sub_div, div_self hdR.ne']
+      have h3 : 1 / (2 * (Module.finrank ℚ F : ℝ)) ≤ 1 / (Module.finrank ℚ F : ℝ) := by
+        apply one_div_le_one_div_of_le hdR
+        linarith
+      linarith
+    have herr : CL * ((((n * Ideal.absNorm (J : Ideal (𝓞 F)) : ℕ) : ℝ) ^
+          (1 / (Module.finrank ℚ F : ℝ)))) ^ (Module.finrank ℚ F - 1) ≤
+        CL * (Ideal.absNorm (J : Ideal (𝓞 F)) : ℝ) ^
+            (((Module.finrank ℚ F : ℝ) - 1) / (Module.finrank ℚ F : ℝ)) *
+          (n : ℝ) ^ (1 - 1 / (2 * (Module.finrank ℚ F : ℝ))) := by
+      rw [hbase]
+      calc CL * ((n : ℝ) ^ (((Module.finrank ℚ F : ℝ) - 1) / (Module.finrank ℚ F : ℝ)) *
+            (Ideal.absNorm (J : Ideal (𝓞 F)) : ℝ) ^
+              (((Module.finrank ℚ F : ℝ) - 1) / (Module.finrank ℚ F : ℝ)))
+          = CL * (Ideal.absNorm (J : Ideal (𝓞 F)) : ℝ) ^
+              (((Module.finrank ℚ F : ℝ) - 1) / (Module.finrank ℚ F : ℝ)) *
+            (n : ℝ) ^ (((Module.finrank ℚ F : ℝ) - 1) / (Module.finrank ℚ F : ℝ)) := by
+            ring
+        _ ≤ CL * (Ideal.absNorm (J : Ideal (𝓞 F)) : ℝ) ^
+              (((Module.finrank ℚ F : ℝ) - 1) / (Module.finrank ℚ F : ℝ)) *
+            (n : ℝ) ^ (1 - 1 / (2 * (Module.finrank ℚ F : ℝ))) :=
+            mul_le_mul_of_nonneg_left hexp
+              (mul_nonneg hCL0 (Real.rpow_nonneg (Nat.cast_nonneg _) _))
+    rw [hcnt n, Nat.card_congr (Equiv.subtypeEquivRight fun x => hset _ hs0 _)]
+    exact hkey.trans herr
+
+/-- **Weber's theorem: ideal counting per narrow ray class, with
+power-saving error** — Lang, *Algebraic Number Theory*, ch. VI §3
+Theorem 3: the number of nonzero integral ideals `I` of `𝓞 F` in the
+narrow ray class mod `ℓ` of `I₀` with `N(I) ≤ n` is `κ₀·n + O(n^r)`
+for some `r < 1`, where `κ₀` and the error constant `C` depend only on
+`F` and `ℓ`, NOT on the class of `I₀`.
+
+Now DERIVED, no longer a leaf: the single-class statement with
+class-independent `κ₀, r` but class-dependent error constant is the
+sorried leaf
+`exists_forall_exists_abs_natCard_isNarrowRayEquiv_sub_mul_le_rpow`
+(see its docstring for the geometry-of-numbers route through the
+mixed-embedding lattice count); the uniform error constant is then the
+SUM of the finitely many per-representative constants over the finite
+system of narrow-ray-class representatives provided by the sorried
+finiteness leaf `exists_finset_forall_exists_mem_isNarrowRayEquiv` —
+the count only depends on the class of `I₀` by the proven
+`IsNarrowRayEquiv.symm`/`.trans`. -/
 theorem exists_forall_abs_natCard_isNarrowRayEquiv_sub_mul_le_rpow
     (F : Type*) [Field F] [NumberField F] (ℓ : ℕ) (hℓ : ℓ.Prime) :
     ∃ κ₀ r C : ℝ, 0 < r ∧ r < 1 ∧ 0 ≤ C ∧
       ∀ I₀ : Ideal (𝓞 F), I₀ ≠ 0 →
         IsCoprime I₀ (Ideal.span {(ℓ : 𝓞 F)}) → ∀ n : ℕ,
       |(Nat.card {I : Ideal (𝓞 F) // I ≠ 0 ∧ Ideal.absNorm I ≤ n ∧
-          IsNarrowRayEquiv ℓ I I₀} : ℝ) - κ₀ * n| ≤ C * (n : ℝ) ^ r :=
-  sorry
+          IsNarrowRayEquiv ℓ I I₀} : ℝ) - κ₀ * n| ≤ C * (n : ℝ) ^ r := by
+  classical
+  obtain ⟨κ₀, r, hr0, hr1, hper⟩ :=
+    exists_forall_exists_abs_natCard_isNarrowRayEquiv_sub_mul_le_rpow F ℓ hℓ
+  obtain ⟨S, hSval, hSrep⟩ := exists_finset_forall_exists_mem_isNarrowRayEquiv F ℓ hℓ
+  have key : ∀ J : Ideal (𝓞 F), ∃ CJ : ℝ, 0 ≤ CJ ∧
+      (J ≠ 0 → IsCoprime J (Ideal.span {(ℓ : 𝓞 F)}) → ∀ n : ℕ,
+        |(Nat.card {I : Ideal (𝓞 F) // I ≠ 0 ∧ Ideal.absNorm I ≤ n ∧
+            IsNarrowRayEquiv ℓ I J} : ℝ) - κ₀ * n| ≤ CJ * (n : ℝ) ^ r) := by
+    intro J
+    by_cases h0 : J ≠ 0
+    · by_cases hc : IsCoprime J (Ideal.span {(ℓ : 𝓞 F)})
+      · obtain ⟨CJ, hCJ0, hCJ⟩ := hper J h0 hc
+        exact ⟨CJ, hCJ0, fun _ _ => hCJ⟩
+      · exact ⟨0, le_refl 0, fun _ hc' => absurd hc' hc⟩
+    · exact ⟨0, le_refl 0, fun h0' => absurd h0' h0⟩
+  choose Cf hCf0 hCf using key
+  refine ⟨κ₀, r, ∑ J ∈ S, Cf J, hr0, hr1,
+    Finset.sum_nonneg fun J _ => hCf0 J, ?_⟩
+  intro I₀ h0 hcop n
+  obtain ⟨J, hJS, hIJ⟩ := hSrep I₀ h0 hcop
+  obtain ⟨hJ0, hJc⟩ := hSval J hJS
+  have hcount : Nat.card {I : Ideal (𝓞 F) // I ≠ 0 ∧ Ideal.absNorm I ≤ n ∧
+      IsNarrowRayEquiv ℓ I I₀} = Nat.card {I : Ideal (𝓞 F) // I ≠ 0 ∧
+      Ideal.absNorm I ≤ n ∧ IsNarrowRayEquiv ℓ I J} :=
+    Nat.card_congr (Equiv.subtypeEquivRight fun I =>
+      and_congr_right fun _ => and_congr_right fun _ =>
+        ⟨fun h => h.trans hIJ, fun h => h.trans hIJ.symm⟩)
+  rw [hcount]
+  refine (hCf J hJ0 hJc n).trans (mul_le_mul_of_nonneg_right
+    (Finset.single_le_sum (fun J _ => hCf0 J) hJS)
+    (Real.rpow_nonneg (Nat.cast_nonneg n) r))
 
 section NarrowRayEquivHelpers
 
