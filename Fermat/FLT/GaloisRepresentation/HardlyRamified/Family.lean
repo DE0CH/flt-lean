@@ -31,6 +31,10 @@ import Mathlib.NumberTheory.Padics.ProperSpace
 -- factorization: distinct `p`-power roots of unity differ by a `2`-adic unit,
 -- the arithmetic core of `cyclotomicCharacter_eq_one_of_mem_inertia_two`
 import Mathlib.RingTheory.Polynomial.Cyclotomic.Eval
+-- `IsLocalRing.isOpen_maximalIdeal_pow`: openness of the maximal-ideal powers
+-- of a compact Hausdorff Noetherian topological ring, the level filtration of
+-- the flat trace identity at `p` (same import as in Threeadic)
+import Mathlib.Topology.Algebra.Ring.Compact
 
 /-!
 # Hardly ramified representations in compatible families
@@ -1277,50 +1281,136 @@ theorem char_eq_one_of_mem_localInertiaGroup_two
       Polynomial.eval_C, Polynomial.eval_one, sub_self, mul_zero] at h
     rwa [mul_self_eq_zero, sub_eq_zero] at h
 
-/-- **The flat trace identity on inertia at `p`** (sorry node — the
-Raynaud/Fontaine content of the reducible branch, isolated 2026-07-24
-as the scalar core of `charpoly_eq_of_mem_localInertiaGroup_p` below,
-whose linear-algebra assembly is PROVEN): for a hardly ramified
-(flat-at-`p`, cyclotomic-determinant) `ρ` whose mapped characteristic
-polynomials split through the continuous multiplicative pair `χ₁, χ₂`
-(the reducibility input — needed: without it a supersingular
-`ρ|_{G_p}` is flat with irreducible inertia charpolys, and the
-conclusion is false), the two character values at (the image in `G_ℚ`
-of) a local inertia element `σ` at `p` sum to `1 + χ_cyc(σ̃)` in
-`ℚ̄_p`. Together with the determinant identity
-`χ₁(σ̃)·χ₂(σ̃) = χ_cyc(σ̃)` (proven in the consumer from `hρ.det`),
-this says the multiset `{χ₁(σ̃), χ₂(σ̃)}` is `{1, χ_cyc(σ̃)}` — the
-Raynaud dichotomy, in the swap-symmetric summed spelling that keeps
-the sub/quotient matching out of the statement (same convention as
-the global `char_add_char_eq_one_add_cyclotomicCharacter`). Intended
-proof (Serre, Duke 1987, §4.1; Raynaud, prolongements de schémas en
-groupes de type `(p,…,p)`):
+/-- **The per-level Raynaud trace congruence at `p`** (sorry node,
+isolated 2026-07-24 — the group-scheme content of
+`char_add_char_eq_one_add_cyclotomicCharacter_of_mem_localInertiaGroup_p`
+below, whose linear-algebra/topology/level-passage assembly is PROVEN;
+stated at the SAME package level as the connected–étale leaves
+`exists_connectedEtale_subgroup_of_hopf_package` in ModThree and the
+two Hopf-package Fontaine cores in Threeadic, so that the flat-cluster
+owner's eventual connected–étale/Raynaud machinery discharges the whole
+family): given an EXPLICIT finite flat Hopf algebra `G` over
+`𝒪ᵥ ≅ ℤ_p` with étale generic fibre whose geometric points are
+`Γ ℚ_pᵥ`-equivariantly identified with the space `(R ⧸ I) ⊗[R] V` of
+the congruence quotient `ρ.baseChange (R ⧸ I)` (the witness packaged
+by `GaloisRep.HasFlatProlongationAt`, extracted by the consumer from
+`hρ.isFlat` at the open ideal `I`), the trace of `ρ` at (the image in
+`G_ℚ` of) a local inertia element `σ` at `p` is congruent to
+`1 + χ_cyc(σ̃)` modulo `I`. Intended proof (Raynaud 1974, *Schémas en
+groupes de type `(p, …, p)`*; Serre, Duke 1987, §4.1; Fontaine; the
+Fontaine/Raynaud material in Cornell–Silverman–Stevens):
 
-* *Reducibility localizes.* By `hchar` the trace function of
-  `ρ ⊗ ℚ̄_p` is `χ₁ + χ₂`, a sum of continuous characters, so
-  (Brauer–Nesbitt) the semisimplification of `ρ ⊗ ℚ̄_p` restricted to
-  the decomposition group at `p` is `χ₁ ⊕ χ₂` — diagonal characters
-  valued in `ℚ̄_p`. Hence at every open ideal `I ⊆ R` the reduction
-  `(ρ mod I)|_{G_p}` has abelian semisimplification, excluding the
-  level-two (fundamental-characters-of-level-2) branch of Raynaud's
-  classification at every level.
-* *Raynaud at one level.* `hρ.isFlat.cond I` provides a finite flat
-  prolongation of `ρ.baseChange (R ⧸ I)` over `ℤ_p`; since `p` is odd
-  the absolute ramification index is `e = 1 < p - 1`, so Raynaud
-  applies: in the connected-étale sequence of the prolongation the
-  étale part carries trivial inertia action, and the connected part is
-  of multiplicative type (Cartier duality against the étale part,
-  using the cyclotomic determinant of `hρ.det`), with inertia acting
-  through `χ_cyc`; so the inertia trace of `ρ mod I` at `σ̃` is
-  `1 + χ_cyc(σ̃) mod I`.
-* *Level passage.* The trace of `ρ(σ̃)` commutes with the quotients
-  `R → R ⧸ I`; the open ideals contain a cofinal family of powers of
-  the maximal ideal (`R` carries the `ℤ_p`-module topology and is
-  module-finite local), and `⋂ₙ 𝔪ⁿ = 0` in the Noetherian local
-  domain `R`, so the level-wise identity assembles over `R` and lands
-  in the stated `ℚ̄_p` identity along `hRinj ∘ hZinj` (whose composite
-  with the structure map is the canonical `ℤ_[p] → ℚ̄_p` by
-  `algebraMap_comp_algebraMap_padicInt`). -/
+* *Brauer–Nesbitt localization.* By `hchar` the trace function of
+  `ρ ⊗ ℚ̄_p` is `χ₁ + χ₂`, a sum of continuous multiplicative
+  characters, so the semisimplification of `ρ ⊗ ℚ̄_p` restricted to
+  the decomposition group at `p` is `χ₁ ⊕ χ₂` — abelian. Hence the
+  reduction `(ρ mod I)|_{G_p}` — the geometric points of the generic
+  fibre of `Spec G` under `fG` — has abelian semisimplification too,
+  excluding the level-two (fundamental-characters-of-level-2,
+  supersingular) branch of Raynaud's classification: every
+  Jordan–Hölder factor of the generic fibre of `Spec G` is a
+  character.
+* *Raynaud dichotomy on the factors.* Each graded piece of the
+  connected–étale sequence of `Spec G` is a finite flat group scheme
+  over `ℤ_p` with absolute ramification `e = 1 < p − 1` (`p` odd via
+  `hpodd`, the same μ-type/étale-type dichotomy recorded in the
+  ModThree/Threeadic package leaves): the étale part carries trivial
+  inertia action (its points live over the maximal unramified
+  extension), and the connected part is of multiplicative type with
+  inertia acting through `χ_cyc` (Cartier duality against the étale
+  part, pinned by the cyclotomic determinant `hρ.det`); Raynaud's
+  `e < p − 1` rigidity forbids any other inertia character on a
+  one-dimensional factor.
+* *Trace bookkeeping.* The rank is `2` (`hv`), the two factors carry
+  the inertia characters `1` and `χ_cyc mod I` in some order, so the
+  trace of `(ρ mod I)(σ̃)` is `1 + χ_cyc(σ̃) mod I`; the trace
+  commutes with the base change `R → R ⧸ I`
+  (`LinearMap.trace_baseChange`), giving the stated `R`-level
+  congruence (`hZinj`/`hRinj` transfer the `ℚ̄_p`-level abelianness
+  down to `R` and back). -/
+theorem trace_sub_one_add_cyclotomicCharacter_mem_of_hopf_package
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hZinj : Function.Injective (algebraMap ℤ_[p] R))
+    (hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
+    (hρ : IsHardlyRamified hpodd hv ρ)
+    (χ₁ χ₂ : Field.absoluteGaloisGroup ℚ → AlgebraicClosure ℚ_[p])
+    (hcont₁ : Continuous χ₁) (hcont₂ : Continuous χ₂)
+    (hone₁ : χ₁ 1 = 1) (hone₂ : χ₂ 1 = 1)
+    (hmul₁ : ∀ g h, χ₁ (g * h) = χ₁ g * χ₁ h)
+    (hmul₂ : ∀ g h, χ₂ (g * h) = χ₂ g * χ₂ h)
+    (hchar : ∀ g, ((ρ g).charpoly).map (algebraMap R (AlgebraicClosure ℚ_[p])) =
+      (Polynomial.X - Polynomial.C (χ₁ g)) * (Polynomial.X - Polynomial.C (χ₂ g)))
+    (I : Ideal R) (hI : IsOpen (I : Set R))
+    (G : Type) [CommRing G]
+    [HopfAlgebra (HeightOneSpectrum.adicCompletionIntegers ℚ
+      hp.out.toHeightOneSpectrumRingOfIntegersRat) G]
+    [Module.Flat (HeightOneSpectrum.adicCompletionIntegers ℚ
+      hp.out.toHeightOneSpectrumRingOfIntegersRat) G]
+    [Module.Finite (HeightOneSpectrum.adicCompletionIntegers ℚ
+      hp.out.toHeightOneSpectrumRingOfIntegersRat) G]
+    [Algebra.Etale (HeightOneSpectrum.adicCompletion ℚ
+        hp.out.toHeightOneSpectrumRingOfIntegersRat)
+      ((HeightOneSpectrum.adicCompletion ℚ
+          hp.out.toHeightOneSpectrumRingOfIntegersRat) ⊗[
+        HeightOneSpectrum.adicCompletionIntegers ℚ
+          hp.out.toHeightOneSpectrumRingOfIntegersRat] G)]
+    (fG : Additive ((HeightOneSpectrum.adicCompletion ℚ
+          hp.out.toHeightOneSpectrumRingOfIntegersRat) ⊗[
+        HeightOneSpectrum.adicCompletionIntegers ℚ
+          hp.out.toHeightOneSpectrumRingOfIntegersRat] G →ₐ[
+        HeightOneSpectrum.adicCompletion ℚ
+          hp.out.toHeightOneSpectrumRingOfIntegersRat]
+        AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hp.out.toHeightOneSpectrumRingOfIntegersRat)) →+[
+        Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ
+          hp.out.toHeightOneSpectrumRingOfIntegersRat)]
+      (((ρ.baseChange (R ⧸ I)).toLocal
+        hp.out.toHeightOneSpectrumRingOfIntegersRat).Space))
+    (hfG : Function.Bijective fG)
+    (σ : Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ
+      hp.out.toHeightOneSpectrumRingOfIntegersRat))
+    (hσ : σ ∈ localInertiaGroup hp.out.toHeightOneSpectrumRingOfIntegersRat) :
+    LinearMap.trace R V (ρ (Field.absoluteGaloisGroup.map
+        (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+          hp.out.toHeightOneSpectrumRingOfIntegersRat)) σ)) -
+      (1 + algebraMap ℤ_[p] R
+        ((cyclotomicCharacter (AlgebraicClosure ℚ) p
+          ((Field.absoluteGaloisGroup.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+            hp.out.toHeightOneSpectrumRingOfIntegersRat)) σ).toRingEquiv) : ℤ_[p]ˣ) :
+          ℤ_[p])) ∈ I :=
+  sorry
+
+/-- **The flat trace identity on inertia at `p`** (PROVEN assembly,
+DECOMPOSED 2026-07-24 over the single sorried Hopf-package core
+`trace_sub_one_add_cyclotomicCharacter_mem_of_hopf_package` above —
+the Raynaud/Fontaine content of the reducible branch; the
+linear-algebra, topology and level-passage glue is proven here): for
+a hardly ramified (flat-at-`p`, cyclotomic-determinant) `ρ` whose
+mapped characteristic polynomials split through the continuous
+multiplicative pair `χ₁, χ₂` (the reducibility input — needed:
+without it a supersingular `ρ|_{G_p}` is flat with irreducible
+inertia charpolys, and the conclusion is false), the two character
+values at (the image in `G_ℚ` of) a local inertia element `σ` at `p`
+sum to `1 + χ_cyc(σ̃)` in `ℚ̄_p`. Together with the determinant
+identity `χ₁(σ̃)·χ₂(σ̃) = χ_cyc(σ̃)` (proven in the consumer from
+`hρ.det`), this says the multiset `{χ₁(σ̃), χ₂(σ̃)}` is
+`{1, χ_cyc(σ̃)}` — the Raynaud dichotomy, in the swap-symmetric
+summed spelling that keeps the sub/quotient matching out of the
+statement (same convention as the global
+`char_add_char_eq_one_add_cyclotomicCharacter`). Assembly: the
+character sum is the mapped trace (`coeff 1` of the split charpoly
+against `Matrix.trace_eq_neg_charpoly_coeff` at rank `2`); `R` is
+free over `ℤ_[p]` (torsion-free from `hZinj` over the PID), hence
+compact Hausdorff and Noetherian in its module topology, so the
+maximal-ideal powers `𝔪ᵏ` are OPEN
+(`IsLocalRing.isOpen_maximalIdeal_pow`) and `hρ.isFlat.cond` hands
+the finite flat Hopf package of `ρ.baseChange (R ⧸ 𝔪ᵏ)` to the core
+at every level `k`; the Krull intersection
+(`Ideal.iInf_pow_eq_bot_of_isLocalRing`, `R` local Noetherian)
+assembles the level-wise congruences into the `R`-level trace
+identity, which lands in the stated `ℚ̄_p` identity along
+`algebraMap_comp_algebraMap_padicInt`. -/
 theorem char_add_char_eq_one_add_cyclotomicCharacter_of_mem_localInertiaGroup_p
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
@@ -1345,8 +1435,90 @@ theorem char_add_char_eq_one_add_cyclotomicCharacter_of_mem_localInertiaGroup_p
         ((cyclotomicCharacter (AlgebraicClosure ℚ) p
           ((Field.absoluteGaloisGroup.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
             hp.out.toHeightOneSpectrumRingOfIntegersRat)) σ).toRingEquiv) : ℤ_[p]ˣ) :
-          ℤ_[p]) :=
-  sorry
+          ℤ_[p]) := by
+  classical
+  set g : Field.absoluteGaloisGroup ℚ :=
+    Field.absoluteGaloisGroup.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+      hp.out.toHeightOneSpectrumRingOfIntegersRat)) σ
+  set c : ℤ_[p] := ((cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv :
+    ℤ_[p]ˣ) : ℤ_[p])
+  -- the trace is minus the linear coefficient of the (degree-2) charpoly
+  have hfr : Module.finrank R V = 2 := Module.finrank_eq_of_rank_eq hv
+  have hcard : Fintype.card (Module.Free.ChooseBasisIndex R V) = 2 := by
+    rw [← Module.finrank_eq_card_chooseBasisIndex]
+    exact hfr
+  haveI : Nonempty (Module.Free.ChooseBasisIndex R V) :=
+    Fintype.card_pos_iff.mp (by rw [hcard]; norm_num)
+  have htrace : LinearMap.trace R V (ρ g) = -((ρ g).charpoly.coeff 1) := by
+    rw [LinearMap.trace_eq_matrix_trace R (Module.Free.chooseBasis R V),
+      Matrix.trace_eq_neg_charpoly_coeff, LinearMap.charpoly_toMatrix, hcard]
+  -- the character sum is the mapped trace: `coeff 1` of the split charpoly
+  have hsum_tr : χ₁ g + χ₂ g =
+      algebraMap R (AlgebraicClosure ℚ_[p]) (LinearMap.trace R V (ρ g)) := by
+    have h1 := congrArg
+      (fun P : Polynomial (AlgebraicClosure ℚ_[p]) => P.coeff 1) (hchar g)
+    simp only [Polynomial.coeff_map] at h1
+    have hexp : ((Polynomial.X - Polynomial.C (χ₁ g)) *
+        (Polynomial.X - Polynomial.C (χ₂ g))).coeff 1 = -(χ₁ g + χ₂ g) := by
+      have hprod2 : (Polynomial.X - Polynomial.C (χ₁ g)) *
+          (Polynomial.X - Polynomial.C (χ₂ g)) =
+          Polynomial.X ^ 2 - Polynomial.C (χ₁ g + χ₂ g) * Polynomial.X +
+          Polynomial.C (χ₁ g * χ₂ g) := by
+        rw [Polynomial.C_add, Polynomial.C_mul]
+        ring
+      rw [hprod2]
+      simp [Polynomial.coeff_X_pow]
+    rw [hexp] at h1
+    rw [htrace, map_neg, h1, neg_neg]
+  -- the coefficient ring is free over `ℤ_[p]` (torsion-free from `hZinj`),
+  -- Noetherian, compact Hausdorff — so the maximal-ideal powers are open
+  haveI : Module.IsTorsionFree ℤ_[p] R :=
+    Module.isTorsionFree_iff_algebraMap_injective.mpr hZinj
+  haveI : Module.Free ℤ_[p] R := Module.free_of_finite_type_torsion_free'
+  haveI : IsNoetherianRing R := IsNoetherianRing.of_finite ℤ_[p] R
+  let eR : R ≃ₗ[ℤ_[p]] (Module.Free.ChooseBasisIndex ℤ_[p] R → ℤ_[p]) :=
+    (Module.Free.chooseBasis ℤ_[p] R).equivFun
+  have hcontR₁ : Continuous eR :=
+    IsModuleTopology.continuous_of_linearMap eR.toLinearMap
+  have hcontR₂ : Continuous eR.symm :=
+    IsModuleTopology.continuous_of_linearMap eR.symm.toLinearMap
+  let homR : R ≃ₜ (Module.Free.ChooseBasisIndex ℤ_[p] R → ℤ_[p]) :=
+    { toEquiv := eR.toEquiv
+      continuous_toFun := hcontR₁
+      continuous_invFun := hcontR₂ }
+  haveI : CompactSpace R := homR.symm.compactSpace
+  haveI : T2Space R := homR.isEmbedding.t2Space
+  -- per-level Raynaud congruence through the flat prolongation
+  have hlev : ∀ k : ℕ, LinearMap.trace R V (ρ g) - (1 + algebraMap ℤ_[p] R c) ∈
+      IsLocalRing.maximalIdeal R ^ k := by
+    intro k
+    have hIopen : IsOpen ((IsLocalRing.maximalIdeal R ^ k : Ideal R) : Set R) :=
+      IsLocalRing.isOpen_maximalIdeal_pow R k
+    obtain ⟨G, i1, i2, i3, i4, i5, fG, hfG⟩ :=
+      hρ.isFlat.cond (IsLocalRing.maximalIdeal R ^ k) hIopen
+    letI := i1
+    letI := i2
+    letI := i3
+    letI := i4
+    letI := i5
+    exact trace_sub_one_add_cyclotomicCharacter_mem_of_hopf_package hpodd hv
+      hZinj hRinj hρ χ₁ χ₂ hcont₁ hcont₂ hone₁ hone₂ hmul₁ hmul₂ hchar
+      (IsLocalRing.maximalIdeal R ^ k) hIopen G fG hfG σ hσ
+  -- the Krull intersection assembles the levels over `R`
+  have htr_eq : LinearMap.trace R V (ρ g) = 1 + algebraMap ℤ_[p] R c := by
+    have hKrull : (⨅ i : ℕ, IsLocalRing.maximalIdeal R ^ i) = (⊥ : Ideal R) :=
+      Ideal.iInf_pow_eq_bot_of_isLocalRing (I := IsLocalRing.maximalIdeal R)
+        (Ideal.IsMaximal.ne_top inferInstance)
+    have hx : LinearMap.trace R V (ρ g) - (1 + algebraMap ℤ_[p] R c) ∈
+        (⨅ i : ℕ, IsLocalRing.maximalIdeal R ^ i) :=
+      (Submodule.mem_iInf _).mpr hlev
+    rw [hKrull, Submodule.mem_bot] at hx
+    exact sub_eq_zero.mp hx
+  -- conclude in `ℚ̄_p` along the (continuous) coefficient embedding
+  have hcomp : algebraMap R (AlgebraicClosure ℚ_[p]) (algebraMap ℤ_[p] R c) =
+      algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p]) c :=
+    RingHom.congr_fun algebraMap_comp_algebraMap_padicInt c
+  rw [hsum_tr, htr_eq, map_add, map_one, hcomp]
 
 /-- **The flat inertia charpoly at `p`** (PROVEN assembly, DECOMPOSED
 2026-07-24 over the single sorried scalar leaf
