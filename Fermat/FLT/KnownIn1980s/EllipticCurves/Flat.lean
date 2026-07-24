@@ -67,6 +67,10 @@ public import Mathlib.NumberTheory.RamificationInertia.Ramification
 -- and the `Gal(N/K)`-action on integral closures (`IsIntegralClosure.MulSemiringAction`)
 public import Mathlib.NumberTheory.RamificationInertia.Galois
 import Mathlib.FieldTheory.Galois.IsGaloisGroup
+-- compactness of `Gal(Kˢᵉᵖ/K)` (Krull topology) and discreteness of the
+-- evaluation action, for the compactness half of the inertia-lifting leaf
+import Mathlib.FieldTheory.Galois.Profinite
+import Fermat.FLT.Mathlib.FieldTheory.Galois.Infinite
 -- `Algebra.isUnramifiedAt_iff_map_eq` (fibrewise unramifiedness through the
 -- localization) and the residue-field separability transfer instances
 import Mathlib.RingTheory.Unramified.LocalRing
@@ -4416,6 +4420,119 @@ theorem card_stabilizer_eq_ramificationIdx_mul_inertiaDeg
 
 end PerfectnessFreeHilbert
 
+/-- **The center of a valuation subring on a finite-level integral closure**
+(sorry node, split from the inertia-lifting leaf 2026-07-24): for a
+subextension `M` of `Kˢᵉᵖ` (abstract tower `K ⊆ M ⊆ Kˢᵉᵖ`) and a valuation
+subring `𝒪` of `Kˢᵉᵖ` lying over `R`, the integral elements of `M` whose image
+is a nonunit of `𝒪` form a maximal ideal of `integralClosure R M`. The
+construction is the one PROVEN inline (for the normal closure) in
+`integralClosure_formallyUnramified_of_inertia_fixes_field`: an ideal because
+`𝒪.nonunits` absorbs multiplication by elements of `𝒪`, prime by
+multiplicativity of the valuation, lying over `𝔪` by the unit dichotomy in the
+DVR `R` (through `h𝒪`), hence maximal by integrality. -/
+theorem exists_isMaximal_center_integralClosure
+    (M : Type*) [Field M] [Algebra K M]
+    [Algebra R M] [IsScalarTower R K M]
+    [Algebra M Ksep] [IsScalarTower K M Ksep]
+    (𝒪 : ValuationSubring Ksep)
+    (h𝒪 : (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range) :
+    ∃ 𝔔 : Ideal (integralClosure R M), 𝔔.IsMaximal ∧
+      ∀ c : integralClosure R M,
+        (c ∈ 𝔔 ↔ algebraMap M Ksep (c : M) ∈ 𝒪.nonunits) := by
+  sorry
+
+/-- **Denominator representation at a finite level** (sorry node, split from
+the inertia-lifting leaf 2026-07-24): an element of a finite separable
+subextension `M` of `Kˢᵉᵖ` whose image lies in a valuation subring `𝒪` over
+`R` is a fraction of integral elements whose denominator avoids the center of
+`𝒪`. Intended proof: `𝒪.comap (algebraMap M Ksep)` is a valuation subring of
+`M` containing the localization of the Dedekind closure `C_M` at the maximal
+center `𝔔` (denominators outside `𝔔` have unit image in `𝒪`); this
+localization is a DVR with fraction field `M`, and a DVR is maximal among the
+proper subrings of its fraction field containing it, so the comap equals the
+localization and every element of it has the stated representation. -/
+theorem exists_num_den_integralClosure_of_mem_valuationSubring
+    (M : Type*) [Field M] [Algebra K M] [Module.Finite K M] [Algebra.IsSeparable K M]
+    [Algebra R M] [IsScalarTower R K M]
+    [Algebra M Ksep] [IsScalarTower K M Ksep]
+    (𝒪 : ValuationSubring Ksep)
+    (h𝒪 : (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range)
+    (𝔔 : Ideal (integralClosure R M))
+    (h𝔔 : ∀ c : integralClosure R M,
+      (c ∈ 𝔔 ↔ algebraMap M Ksep (c : M) ∈ 𝒪.nonunits))
+    (x : M) (hx : algebraMap M Ksep x ∈ 𝒪) :
+    ∃ a s : integralClosure R M, s ∉ 𝔔 ∧ (s : M) * x = (a : M) := by
+  sorry
+
+open scoped Pointwise in
+/-- **One-level inertial lifting** (sorry node, split from the inertia-lifting
+leaf 2026-07-24; the perfectness-free finite-level surjectivity): for finite
+towers `K ⊆ M ⊆ M'` with `M/K` normal and `M'/K` Galois, abstract integral
+closures `Cm`, `Cm'` (opaque carriers, as in
+`ramificationIdx_eq_one_and_isSeparable_of_inertia_fixes_algHom_aux`, to keep
+subalgebra scalar actions from clashing with the inclusion-twisted algebra
+structures), and compatible maximal ideals `𝔔' | 𝔔` (`h𝔔𝔔'`: comap along the
+closure map induced by the inclusion), every inertia element `σ` of `𝔔` lifts
+to an inertia element `σ'` of `𝔔'` restricting to `σ`. Intended proof (NO
+counting, hence no perfectness): (1) lift `σ` to `ρ ∈ Gal(M'/K)`
+(`AlgEquiv.restrictNormalHom_surjective`); (2) `ρ⁻¹ • 𝔔'` and `𝔔'` both lie
+over `𝔔` (`σ` stabilizes `𝔔`, being inertial), so some `ν ∈ Gal(M'/M)` moves
+one onto the other (`Algebra.IsInvariant.exists_smul_of_under_eq` over the
+base `Cm` — transitivity of `Gal(M'/M)` on the primes over `𝔔`, no counting);
+`ρ₁ := ρν` (suitably oriented) stabilizes `𝔔'` and still restricts to `σ`;
+(3) the residue automorphism of `ρ₁` on `κ(𝔔')` is trivial on `κ(𝔔)` (the
+inertia hypothesis on `σ`), i.e. it is a `κ(𝔔)`-algebra automorphism, and by
+surjectivity of the stabilizer of `𝔔'` in `Gal(M'/M)` onto the residue
+automorphism group over the base `Cm`
+(`Ideal.Quotient.stabilizerHom_surjective`, perfectness-free) some
+`μ ∈ Gal(M'/M)` stabilizing `𝔔'` has that same residue action; `σ' := ρ₁μ⁻¹`
+(suitably oriented) is then inertial at `𝔔'` and restricts to `σ`. -/
+theorem exists_inertial_algEquiv_lift
+    (M : Type*) [Field M] [Algebra K M] [FiniteDimensional K M] [Normal K M]
+    [Algebra.IsSeparable K M]
+    [Algebra R M] [IsScalarTower R K M]
+    (M' : Type*) [Field M'] [Algebra K M'] [FiniteDimensional K M'] [IsGalois K M']
+    [Algebra R M'] [IsScalarTower R K M']
+    [Algebra M M'] [IsScalarTower K M M']
+    (Cm : Type*) [CommRing Cm] [Algebra R Cm] [Algebra Cm M] [IsScalarTower R Cm M]
+    [IsIntegralClosure Cm R M]
+    (Cm' : Type*) [CommRing Cm'] [Algebra R Cm'] [Algebra Cm' M'] [IsScalarTower R Cm' M']
+    [IsIntegralClosure Cm' R M']
+    (𝔔 : Ideal Cm) [𝔔.IsMaximal]
+    (𝔔' : Ideal Cm') [𝔔'.IsMaximal]
+    (h𝔔𝔔' : 𝔔 = 𝔔'.comap (galRestrict' R Cm Cm' (IsScalarTower.toAlgHom K M M')))
+    (σ : M ≃ₐ[K] M)
+    (hσ : ∀ c : Cm, galRestrict R K M Cm σ c - c ∈ 𝔔) :
+    ∃ σ' : M' ≃ₐ[K] M',
+      (∀ c : Cm', galRestrict R K M' Cm' σ' c - c ∈ 𝔔') ∧
+      AlgEquiv.restrictNormalHom M σ' = σ := by
+  sorry
+
+/-- **From integral-level inertia bounds to the whole valuation ring** (sorry
+node, split from the inertia-lifting leaf 2026-07-24): if `τ ∈ Gal(Kˢᵉᵖ/K)`
+moves every `R`-integral element of `Kˢᵉᵖ` by a nonunit of `𝒪`, then it moves
+EVERY element of `𝒪` by a nonunit. Intended proof: `x ∈ 𝒪` lies in a finite
+Galois subextension `M` (adjoin + normal closure); by the denominator
+representation (`exists_num_den_integralClosure_of_mem_valuationSubring` at
+the center from `exists_isMaximal_center_integralClosure`) write `s·x = a`
+with `a`, `s` integral and `v(s) = 1`; then
+`τx - x = (s·(τa - a) - a·(τs - s)) / (s·τs)` where the numerator has value
+`< 1` (both differences do, `v(a) ≤ 1`, `v(s) = 1`) and the denominator has
+value `1` (`v(τs) = v(s·(1 + s⁻¹(τs - s))) = 1` by
+`Valuation.map_one_add_of_lt`), so `v(τx - x) < 1`. -/
+theorem smul_sub_mem_nonunits_of_forall_isIntegral
+    [Algebra R Ksep] [IsScalarTower R K Ksep]
+    (𝒪 : ValuationSubring Ksep)
+    (h𝒪 : (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range)
+    (τ : Ksep ≃ₐ[K] Ksep)
+    (hloc : ∀ x : Ksep, IsIntegral R x → τ x - x ∈ 𝒪.nonunits)
+    (x : Ksep) (hx : x ∈ 𝒪) :
+    τ x - x ∈ 𝒪.nonunits := by
+  sorry
+
+open scoped Pointwise in
+set_option maxHeartbeats 2000000 in
+set_option synthInstance.maxHeartbeats 400000 in
 /-- **Inertia lifting from a finite Galois level to the separable closure**
 (sorry node; the compactness step of the DVR-Galois core, isolated 2026-07-24):
 let `N/K` be finite Galois sitting inside `Kˢᵉᵖ` (abstract tower
@@ -4463,7 +4580,309 @@ theorem exists_inertiaSubgroup_restrictNormalHom_eq
       galRestrict R K N (integralClosure R N) σ c - c ∈ 𝔔) :
     ∃ τ : 𝒪.decompositionSubgroup K, τ ∈ 𝒪.inertiaSubgroup K ∧
       AlgEquiv.restrictNormalHom N (τ : Ksep ≃ₐ[K] Ksep) = σ := by
-  sorry
+  classical
+  -- ambient instances
+  letI : Algebra R Ksep := ((algebraMap K Ksep).comp (algebraMap R K)).toAlgebra
+  haveI : IsScalarTower R K Ksep := IsScalarTower.of_algebraMap_eq fun _ => rfl
+  haveI : IsScalarTower R N Ksep := IsScalarTower.of_algebraMap_eq fun r => by
+    rw [IsScalarTower.algebraMap_apply R K Ksep, IsScalarTower.algebraMap_apply R K N,
+      IsScalarTower.algebraMap_apply K N Ksep]
+  haveI : Algebra.IsSeparable K N := Algebra.isSeparable_tower_bot_of_isSeparable K N Ksep
+  have hNinj : Function.Injective (algebraMap N Ksep) := (algebraMap N Ksep).injective
+  -- `𝔔` is maximal: it is the center of `𝒪`
+  obtain ⟨𝔔₀, h𝔔₀max, h𝔔₀⟩ := exists_isMaximal_center_integralClosure R K Ksep N 𝒪 h𝒪
+  have h𝔔eq : 𝔔 = 𝔔₀ := by
+    ext c
+    rw [h𝔔 c, h𝔔₀ c]
+  haveI h𝔔max : 𝔔.IsMaximal := h𝔔eq ▸ h𝔔₀max
+  -- the image of `N` inside `Kˢᵉᵖ`
+  set N₀ : IntermediateField K Ksep := (IsScalarTower.toAlgHom K N Ksep).fieldRange
+    with hN₀def
+  let eN : N ≃ₐ[K] ↥N₀ := AlgEquiv.ofInjectiveField (IsScalarTower.toAlgHom K N Ksep)
+  haveI : FiniteDimensional K ↥N₀ := LinearEquiv.finiteDimensional eN.toLinearEquiv
+  haveI : Normal K ↥N₀ := Normal.of_algEquiv eN
+  haveI : Algebra.IsSeparable K ↥N₀ := Algebra.isSeparable_tower_bot_of_isSeparable K ↥N₀ Ksep
+  haveI : IsGalois K ↥N₀ := ⟨⟩
+  -- every element of `Kˢᵉᵖ` lies in a finite Galois level over `N₀`
+  have hexists : ∀ z : Ksep, ∃ E : IntermediateField K Ksep,
+      N₀ ≤ E ∧ z ∈ E ∧ FiniteDimensional K ↥E ∧ IsGalois K ↥E := by
+    intro z
+    haveI hadj : FiniteDimensional K ↥(IntermediateField.adjoin K {z}) :=
+      IntermediateField.adjoin.finiteDimensional (Algebra.IsIntegral.isIntegral z)
+    haveI hsupfd : FiniteDimensional K ↥(N₀ ⊔ IntermediateField.adjoin K {z}) :=
+      IntermediateField.finiteDimensional_sup _ _
+    haveI hfdx : FiniteDimensional K
+        ↥(IntermediateField.normalClosure K ↥(N₀ ⊔ IntermediateField.adjoin K {z}) Ksep) :=
+      normalClosure.is_finiteDimensional _ _ _
+    haveI hsepx : Algebra.IsSeparable K
+        ↥(IntermediateField.normalClosure K ↥(N₀ ⊔ IntermediateField.adjoin K {z}) Ksep) :=
+      Algebra.isSeparable_tower_bot_of_isSeparable K _ Ksep
+    refine ⟨IntermediateField.normalClosure K ↥(N₀ ⊔ IntermediateField.adjoin K {z}) Ksep,
+      ?_, ?_, hfdx, { }⟩
+    · exact le_sup_left.trans (IntermediateField.le_normalClosure _)
+    · exact (le_sup_right.trans (IntermediateField.le_normalClosure _))
+        (IntermediateField.mem_adjoin_simple_self _ _)
+  -- the directed system of closed constraint sets
+  let ι := {E : IntermediateField K Ksep //
+    N₀ ≤ E ∧ FiniteDimensional K ↥E ∧ IsGalois K ↥E}
+  haveI : Nonempty ι := ⟨⟨N₀, le_rfl, inferInstance, inferInstance⟩⟩
+  let D : ι → Set (Ksep ≃ₐ[K] Ksep) := fun E =>
+    {τ | ∀ y : N, τ (algebraMap N Ksep y) = algebraMap N Ksep (σ y)} ∩
+    {τ | ∀ x : Ksep, x ∈ E.1 → IsIntegral R x → τ x - x ∈ 𝒪.nonunits}
+  -- evaluation sets are clopen (the action on `Kˢᵉᵖ` is discretely continuous)
+  have hopen : ∀ (x y : Ksep), IsOpen {τ : Ksep ≃ₐ[K] Ksep | τ x = y} := fun x y =>
+    ContinuousSMulDiscrete.isOpen_smul_eq (Ksep ≃ₐ[K] Ksep) x y
+  have hclosed_eval : ∀ (x y : Ksep), IsClosed {τ : Ksep ≃ₐ[K] Ksep | τ x = y} := by
+    intro x y
+    constructor
+    have heq : {τ : Ksep ≃ₐ[K] Ksep | τ x = y}ᶜ =
+        ⋃ z ∈ ({y}ᶜ : Set Ksep), {τ : Ksep ≃ₐ[K] Ksep | τ x = z} := by
+      ext τ
+      simp only [Set.mem_compl_iff, Set.mem_setOf_eq, Set.mem_iUnion,
+        Set.mem_singleton_iff, exists_prop]
+      exact ⟨fun h => ⟨τ x, h, rfl⟩, fun ⟨z, hz, hτ⟩ => hτ ▸ hz⟩
+    rw [heq]
+    exact isOpen_biUnion fun z _ => hopen x z
+  have hclosed_mem : ∀ (x : Ksep) (S : Set Ksep),
+      IsClosed {τ : Ksep ≃ₐ[K] Ksep | τ x - x ∈ S} := by
+    intro x S
+    constructor
+    have heq : {τ : Ksep ≃ₐ[K] Ksep | τ x - x ∈ S}ᶜ =
+        ⋃ z ∈ {z : Ksep | z - x ∉ S}, {τ : Ksep ≃ₐ[K] Ksep | τ x = z} := by
+      ext τ
+      simp only [Set.mem_compl_iff, Set.mem_setOf_eq, Set.mem_iUnion, exists_prop]
+      exact ⟨fun h => ⟨τ x, h, rfl⟩, fun ⟨z, hz, hτ⟩ => by rw [hτ]; exact hz⟩
+    rw [heq]
+    exact isOpen_biUnion fun z _ => hopen x z
+  have hDclosed : ∀ i, IsClosed (D i) := by
+    rintro ⟨E, hle, hfd, hgal⟩
+    refine IsClosed.inter ?_ ?_
+    · have heq : {τ : Ksep ≃ₐ[K] Ksep |
+          ∀ y : N, τ (algebraMap N Ksep y) = algebraMap N Ksep (σ y)} =
+          ⋂ y : N, {τ : Ksep ≃ₐ[K] Ksep |
+            τ (algebraMap N Ksep y) = algebraMap N Ksep (σ y)} := by
+        ext τ
+        simp only [Set.mem_setOf_eq, Set.mem_iInter]
+      rw [heq]
+      exact isClosed_iInter fun y => hclosed_eval _ _
+    · have heq : {τ : Ksep ≃ₐ[K] Ksep |
+          ∀ x : Ksep, x ∈ E → IsIntegral R x → τ x - x ∈ 𝒪.nonunits} =
+          ⋂ x : Ksep, ⋂ (_ : x ∈ E), ⋂ (_ : IsIntegral R x),
+            {τ : Ksep ≃ₐ[K] Ksep | τ x - x ∈ (𝒪.nonunits : Set Ksep)} := by
+        ext τ
+        simp only [Set.mem_setOf_eq, Set.mem_iInter, SetLike.mem_coe]
+      rw [heq]
+      exact isClosed_iInter fun x => isClosed_iInter fun _ => isClosed_iInter fun _ =>
+        hclosed_mem x _
+  -- nonemptiness: the one-level inertial lifting
+  have hDnonempty : ∀ i, (D i).Nonempty := by
+    rintro ⟨E, hle, hfd, hgal⟩
+    haveI := hfd
+    haveI := hgal
+    -- level instance pack on `↥E`
+    letI : Algebra R ↥E := ((algebraMap K ↥E).comp (algebraMap R K)).toAlgebra
+    haveI : IsScalarTower R K ↥E := IsScalarTower.of_algebraMap_eq fun _ => rfl
+    haveI : IsScalarTower R ↥E Ksep := IsScalarTower.of_algebraMap_eq fun r =>
+      (IsScalarTower.algebraMap_apply K ↥E Ksep (algebraMap R K r) : _)
+    haveI : Algebra.IsSeparable K ↥E := Algebra.isSeparable_tower_bot_of_isSeparable K ↥E Ksep
+    -- the corestriction of `N` into `E`
+    have hsub : ∀ y : N, algebraMap N Ksep y ∈ E := fun y =>
+      hle (show algebraMap N Ksep y ∈ N₀ from ⟨y, rfl⟩)
+    let ν : N →ₐ[K] ↥E :=
+      { toFun := fun y => ⟨algebraMap N Ksep y, hsub y⟩
+        map_one' := Subtype.ext (map_one _)
+        map_mul' := fun a b => Subtype.ext (map_mul _ a b)
+        map_zero' := Subtype.ext (map_zero _)
+        map_add' := fun a b => Subtype.ext (map_add _ a b)
+        commutes' := fun k => Subtype.ext (by
+          show algebraMap N Ksep (algebraMap K N k) = algebraMap K Ksep k
+          rw [← IsScalarTower.algebraMap_apply]) }
+    letI : Algebra N ↥E := ν.toAlgebra
+    haveI : IsScalarTower K N ↥E := IsScalarTower.of_algebraMap_eq fun k => (ν.commutes k).symm
+    haveI : IsScalarTower N ↥E Ksep := IsScalarTower.of_algebraMap_eq fun y => rfl
+    haveI : IsScalarTower R N ↥E := IsScalarTower.of_algebraMap_eq fun r => by
+      apply Subtype.ext
+      show algebraMap K Ksep (algebraMap R K r) = algebraMap N Ksep (algebraMap R N r)
+      rw [← IsScalarTower.algebraMap_apply R K Ksep,
+        IsScalarTower.algebraMap_apply R N Ksep]
+    -- the center at level `E` and its compatibility with `𝔔`
+    obtain ⟨𝔔', h𝔔'max, h𝔔'char⟩ := exists_isMaximal_center_integralClosure R K Ksep ↥E 𝒪 h𝒪
+    haveI := h𝔔'max
+    have h𝔔𝔔' : 𝔔 = 𝔔'.comap (galRestrict' R (integralClosure R N) (integralClosure R ↥E)
+        (IsScalarTower.toAlgHom K N ↥E)) := by
+      ext c
+      rw [Ideal.mem_comap, h𝔔 c, h𝔔'char]
+      have h1 : ((galRestrict' R (integralClosure R N) (integralClosure R ↥E)
+          (IsScalarTower.toAlgHom K N ↥E) c : integralClosure R ↥E) : ↥E) =
+          IsScalarTower.toAlgHom K N ↥E ((c : N)) :=
+        algebraMap_galRestrict'_apply R (integralClosure R N) (integralClosure R ↥E)
+          (IsScalarTower.toAlgHom K N ↥E) c
+      rw [h1]
+      have h2 : algebraMap ↥E Ksep (IsScalarTower.toAlgHom K N ↥E ((c : N))) =
+          algebraMap N Ksep (c : N) :=
+        (IsScalarTower.algebraMap_apply N ↥E Ksep (c : N)).symm
+      rw [h2]
+    -- the one-level lift and its extension to `Kˢᵉᵖ`
+    obtain ⟨σ', hσ'inertial, hσ'res⟩ := exists_inertial_algEquiv_lift R K N ↥E
+      (integralClosure R N) (integralClosure R ↥E) 𝔔 𝔔' h𝔔𝔔' σ hσ
+    obtain ⟨τ, hτ⟩ := AlgEquiv.restrictNormalHom_surjective (K₁ := ↥E) Ksep σ'
+    refine ⟨τ, ?_, ?_⟩
+    · -- restriction to `N`
+      intro y
+      have h1 : algebraMap N Ksep y = algebraMap ↥E Ksep (algebraMap N ↥E y) :=
+        IsScalarTower.algebraMap_apply N ↥E Ksep y
+      have h2 : τ (algebraMap ↥E Ksep (algebraMap N ↥E y)) =
+          algebraMap ↥E Ksep (σ' (algebraMap N ↥E y)) := by
+        rw [← hτ]
+        exact (AlgEquiv.restrictNormal_commutes τ ↥E (algebraMap N ↥E y)).symm
+      have h3 : σ' (algebraMap N ↥E y) = algebraMap N ↥E (σ y) := by
+        rw [← hσ'res]
+        exact (AlgEquiv.restrictNormal_commutes σ' N y).symm
+      rw [h1, h2, h3, ← IsScalarTower.algebraMap_apply N ↥E Ksep]
+    · -- the inertial condition at level `E`
+      intro x hxE hxint
+      have hx₀int : IsIntegral R (⟨x, hxE⟩ : ↥E) := by
+        rw [← isIntegral_algebraMap_iff (algebraMap ↥E Ksep).injective]
+        exact hxint
+      set c : integralClosure R ↥E := ⟨⟨x, hxE⟩, hx₀int⟩ with hcdef
+      have h5 := hσ'inertial c
+      rw [h𝔔'char] at h5
+      have h7 : ((galRestrict R K ↥E (integralClosure R ↥E) σ' c :
+          integralClosure R ↥E) : ↥E) = σ' ⟨x, hxE⟩ :=
+        algebraMap_galRestrict_apply R σ' c
+      have h6 : algebraMap ↥E Ksep
+          ((galRestrict R K ↥E (integralClosure R ↥E) σ' c -
+            c : integralClosure R ↥E) : ↥E) = τ x - x := by
+        have h8 : ((galRestrict R K ↥E (integralClosure R ↥E) σ' c -
+            c : integralClosure R ↥E) : ↥E) =
+            σ' ⟨x, hxE⟩ - ⟨x, hxE⟩ := by
+          rw [← h7]
+          rfl
+        rw [h8, map_sub]
+        congr 1
+        rw [← hτ]
+        exact AlgEquiv.restrictNormal_commutes τ ↥E ⟨x, hxE⟩
+      rwa [h6] at h5
+  -- directedness by composita
+  have hDdirected : Directed (· ⊇ ·) D := by
+    rintro ⟨E₁, hle₁, hfd₁, hgal₁⟩ ⟨E₂, hle₂, hfd₂, hgal₂⟩
+    haveI := hfd₁
+    haveI := hgal₁
+    haveI := hfd₂
+    haveI := hgal₂
+    haveI : FiniteDimensional K ↥(E₁ ⊔ E₂) := IntermediateField.finiteDimensional_sup E₁ E₂
+    haveI : Algebra.IsSeparable K ↥(E₁ ⊔ E₂) :=
+      Algebra.isSeparable_tower_bot_of_isSeparable K _ Ksep
+    haveI : IsGalois K ↥(E₁ ⊔ E₂) := { }
+    refine ⟨⟨E₁ ⊔ E₂, hle₁.trans le_sup_left, inferInstance, inferInstance⟩, ?_, ?_⟩
+    · rintro τ ⟨h1, h2⟩
+      exact ⟨h1, fun x hx hint => h2 x ((le_sup_left : E₁ ≤ E₁ ⊔ E₂) hx) hint⟩
+    · rintro τ ⟨h1, h2⟩
+      exact ⟨h1, fun x hx hint => h2 x ((le_sup_right : E₂ ≤ E₁ ⊔ E₂) hx) hint⟩
+  -- intersect over the compact group
+  obtain ⟨τ, hτmem⟩ := IsCompact.nonempty_iInter_of_directed_nonempty_isCompact_isClosed
+    D hDdirected hDnonempty (fun i => (hDclosed i).isCompact) hDclosed
+  rw [Set.mem_iInter] at hτmem
+  have hres : ∀ y : N, τ (algebraMap N Ksep y) = algebraMap N Ksep (σ y) :=
+    (hτmem ⟨N₀, le_rfl, inferInstance, inferInstance⟩).1
+  have hloc : ∀ x : Ksep, IsIntegral R x → τ x - x ∈ 𝒪.nonunits := by
+    intro x hint
+    obtain ⟨E, hNE, hxE, hfd, hgal⟩ := hexists x
+    exact (hτmem ⟨E, hNE, hfd, hgal⟩).2 x hxE hint
+  -- the core stability estimates
+  have hcore : ∀ x : Ksep, x ∈ 𝒪 → τ x - x ∈ 𝒪.nonunits := fun x hx =>
+    smul_sub_mem_nonunits_of_forall_isIntegral R K Ksep 𝒪 h𝒪 τ hloc x hx
+  have hτO : ∀ z : Ksep, z ∈ 𝒪 → τ z ∈ 𝒪 := by
+    intro z hz
+    have h1 := hcore z hz
+    have h2 : τ z = z + (τ z - z) := by ring
+    rw [h2]
+    exact add_mem hz ((𝒪.valuation_le_one_iff _).mp
+      (le_of_lt (𝒪.mem_nonunits_iff.mp h1)))
+  have hτinvO : ∀ z : Ksep, z ∈ 𝒪 → τ.symm z ∈ 𝒪 := by
+    intro z hz
+    by_contra hy
+    have hzne : z ≠ 0 := by
+      rintro rfl
+      exact hy (by rw [map_zero]; exact zero_mem 𝒪)
+    have hyne : τ.symm z ≠ 0 := fun h0 => hzne (by
+      rw [← τ.apply_symm_apply z, h0, map_zero])
+    have hvy : 1 < 𝒪.valuation (τ.symm z) :=
+      not_le.mp fun hle => hy ((𝒪.valuation_le_one_iff _).mp hle)
+    have hprod : 𝒪.valuation (τ.symm z) * 𝒪.valuation (τ.symm z)⁻¹ = 1 := by
+      rw [← map_mul, mul_inv_cancel₀ hyne, map_one]
+    have hvinv : 𝒪.valuation (τ.symm z)⁻¹ < 1 := by
+      by_contra hge
+      have h1le : (1 : _) ≤ 𝒪.valuation (τ.symm z)⁻¹ := not_lt.mp hge
+      have h2le : 𝒪.valuation (τ.symm z) ≤
+          𝒪.valuation (τ.symm z) * 𝒪.valuation (τ.symm z)⁻¹ := by
+        conv_lhs => rw [← mul_one (𝒪.valuation (τ.symm z))]
+        exact mul_le_mul' le_rfl h1le
+      exact absurd hprod (lt_of_lt_of_le hvy h2le).ne'
+    have hymem : (τ.symm z)⁻¹ ∈ 𝒪 := (𝒪.valuation_le_one_iff _).mp hvinv.le
+    have hd := hcore _ hymem
+    have h3 : τ ((τ.symm z)⁻¹) = z⁻¹ := by rw [map_inv₀, τ.apply_symm_apply]
+    rw [h3] at hd
+    have h4 : 𝒪.valuation z⁻¹ < 1 := by
+      have h5 : (z⁻¹ : Ksep) = (τ.symm z)⁻¹ + (z⁻¹ - (τ.symm z)⁻¹) := by ring
+      calc 𝒪.valuation z⁻¹
+          = 𝒪.valuation ((τ.symm z)⁻¹ + (z⁻¹ - (τ.symm z)⁻¹)) := by rw [← h5]
+        _ ≤ max (𝒪.valuation (τ.symm z)⁻¹) (𝒪.valuation (z⁻¹ - (τ.symm z)⁻¹)) :=
+          Valuation.map_add _ _ _
+        _ < 1 := max_lt hvinv (𝒪.mem_nonunits_iff.mp hd)
+    have h6 : 𝒪.valuation z * 𝒪.valuation z⁻¹ = 1 := by
+      rw [← map_mul, mul_inv_cancel₀ hzne, map_one]
+    have h7 : 𝒪.valuation z * 𝒪.valuation z⁻¹ < 1 := by
+      have h8 : 𝒪.valuation z * 𝒪.valuation z⁻¹ ≤ 1 * 𝒪.valuation z⁻¹ :=
+        mul_le_mul' ((𝒪.valuation_le_one_iff _).mpr hz) le_rfl
+      rw [one_mul] at h8
+      exact lt_of_le_of_lt h8 h4
+    exact absurd h6 h7.ne
+  -- `τ` stabilizes `𝒪`
+  have hstabmem : τ ∈ 𝒪.decompositionSubgroup K := by
+    show τ • 𝒪 = 𝒪
+    refine SetLike.ext fun z => ?_
+    rw [ValuationSubring.mem_pointwise_smul_iff_inv_smul_mem]
+    constructor
+    · intro h
+      have h2 := hτO _ h
+      have h3 : τ ((τ⁻¹ : Ksep ≃ₐ[K] Ksep) • z) = z := by
+        show τ (τ.symm z) = z
+        exact τ.apply_symm_apply z
+      rwa [h3] at h2
+    · intro h
+      show τ.symm z ∈ 𝒪
+      exact hτinvO z h
+  refine ⟨⟨τ, hstabmem⟩, ?_, ?_⟩
+  · -- trivial induced action on the residue field of `𝒪`
+    show (⟨τ, hstabmem⟩ : 𝒪.decompositionSubgroup K) ∈ MonoidHom.ker
+      (MulSemiringAction.toRingAut (𝒪.decompositionSubgroup K)
+        (IsLocalRing.ResidueField 𝒪))
+    rw [MonoidHom.mem_ker]
+    refine RingEquiv.ext fun r => ?_
+    obtain ⟨y, rfl⟩ := IsLocalRing.residue_surjective (R := 𝒪) r
+    show (⟨τ, hstabmem⟩ : 𝒪.decompositionSubgroup K) • (IsLocalRing.residue 𝒪 y) =
+      IsLocalRing.residue 𝒪 y
+    rw [← IsLocalRing.ResidueField.residue_smul]
+    have hmem : (⟨τ, hstabmem⟩ : 𝒪.decompositionSubgroup K) • y - y ∈
+        IsLocalRing.maximalIdeal 𝒪 := by
+      refine ValuationSubring.coe_mem_nonunits_iff.mp ?_
+      have h2 : (((⟨τ, hstabmem⟩ : 𝒪.decompositionSubgroup K) • y - y : 𝒪) : Ksep) =
+          τ (y : Ksep) - (y : Ksep) := rfl
+      rw [h2]
+      exact hcore _ y.2
+    have h3 : IsLocalRing.residue 𝒪
+        ((⟨τ, hstabmem⟩ : 𝒪.decompositionSubgroup K) • y - y) = 0 :=
+      Ideal.Quotient.eq_zero_iff_mem.mpr hmem
+    rw [map_sub] at h3
+    exact sub_eq_zero.mp h3
+  · -- the restriction to `N` is `σ`
+    refine AlgEquiv.ext fun y => ?_
+    apply hNinj
+    have h1 : algebraMap N Ksep (AlgEquiv.restrictNormalHom N
+        ((⟨τ, hstabmem⟩ : 𝒪.decompositionSubgroup K) : Ksep ≃ₐ[K] Ksep) y) =
+        τ (algebraMap N Ksep y) := AlgEquiv.restrictNormal_commutes τ N y
+    rw [h1, hres y]
 
 open scoped Pointwise in
 set_option maxHeartbeats 1000000 in
