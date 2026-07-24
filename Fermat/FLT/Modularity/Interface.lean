@@ -2840,12 +2840,19 @@ Carayol's construction (*Formes modulaires et représentations
 galoisiennes à valeurs dans un anneau local complet*, Contemp. Math.
 165 (1994)): the Hecke-side deformation is glued from the `λ`-adic
 representations attached to the eigenform components of the localized
-Hecke algebra. The cut isolates the geometric content in two sorried
-leaves and PROVES the Chebotarev-density step between them:
+Hecke algebra. The cut isolated the geometric content in two leaves
+and PROVED the Chebotarev-density step between them; the
+Hecke-package leaf 3a-i is since PROVEN by its route audit (the same
+odd-prime dichotomy that discharges pillar 2 — see its docstring),
+leaving the Carayol descent 3a-ii as the one open leaf:
 
 * **3a-i — the Hecke algebra with its realizations**
-  (`exists_heckeAlgebra_realizations_of_matchesResidualTraces`, sorry
-  node): residual modularity produces the coefficient package
+  (`exists_heckeAlgebra_realizations_of_matchesResidualTraces`,
+  PROVEN 2026-07-24 by the route audit recorded on the theorem —
+  no non-vacuous discharge exists, and the hypothesis class is
+  refuted by the `ℓ = 3` / `ℓ ≥ 5` dichotomy over the
+  separately-owned nonexistence nodes already carrying pillar 2):
+  residual modularity produces the coefficient package
   `(T, t, π)` — the localized anemic weight-2 Hecke algebra with its
   prime-indexed Hecke elements `t q` and residual reduction `π` —
   together with finitely many jointly injective coordinates into
@@ -3068,10 +3075,13 @@ theorem forall_exists_toFun_eq_charpoly_coeff_one
   exact ⟨x, fun i => congrFun hx i⟩
 
 /-- **The Hecke algebra with its hardly ramified realizations**
-(pillar 3a-i; sorry node — the geometric core of the Carayol cut):
-residual modularity of the irreducible hardly ramified `ρbar` at some
-level `N₀` produces the Hecke-side coefficient package with its
-eigenform realizations. Classical construction: (1) optimize the
+(pillar 3a-i; PROVEN 2026-07-24 by the odd-prime dichotomy — see the
+ROUTE AUDIT below): residual modularity of the irreducible hardly
+ramified `ρbar` at some level `N₀` produces the Hecke-side coefficient
+package with its eigenform realizations. Classical construction
+(recorded as the would-be non-vacuous discharge; the ROUTE AUDIT shows
+it terminates in the PROVEN emptiness of the optimized level rather
+than in a package): (1) optimize the
 level to the Serre type of `ρbar` (Ribet, Invent. Math. 100 (1990);
 Serre, Duke 1987 §4.1 — for the hardly ramified type the odd part of
 the conductor is trivial and the weight is 2); (2) let `T₀` be the
@@ -3103,11 +3113,37 @@ Fontaine–Laffaille; Conrad–Diamond–Taylor), tame at 2 with unramified
 square-trivial rank-1 quotient (conductor exponent `≤ 1` at 2:
 Carayol–Saito local–global compatibility); the Eichler–Shimura
 congruence gives the interpolation `tr ρ_i(Frob q) = λ_i(t q)`.
-Soundness of the abstract statement: the section audit (the
-hypothesis set is classically unsatisfiable, so the statement is true;
-the construction above is its non-vacuous intended discharge).
-CIRCULARITY GUARD: must not be proven through `Family.lean` (see the
-section docstring). -/
+
+ROUTE AUDIT (2026-07-24, following the precedent of pillar 2's `ℓ ≥ 5`
+leaf): NO non-vacuous discharge of this statement is possible in this
+repository. With `n = 0` realizations the joint-injectivity clause
+degenerates to `∀ x y : T, x = y`, contradicting the nontriviality in
+`IsLocalRing T`; and a realization (`n ≥ 1`) is classically the
+attached representation of a weight-2 newform whose level equals its
+conductor (Carayol), which hardly-ramifiedness forces to divide 2
+(flat at `ℓ` at weight 2 makes the level prime to `ℓ`; tame at 2 with
+conductor exponent `≤ 1` caps the even part) — while
+`S₂(Γ₀(1)) = S₂(Γ₀(2)) = 0` are PROVEN above
+(`weightTwoEigenform_level_one_false`,
+`weightTwoEigenform_level_two_false`). The classical construction
+recorded above thus terminates in the emptiness of the optimized
+level — a refutation of the hypothesis class, never a package —
+exactly as both literature routes in pillar 2's route audit. The
+proof is accordingly the SAME odd-prime dichotomy that discharges
+pillar 2 (`exists_weightTwoEigenform_residual_of_isIrreducible`),
+over the same two separately-owned nonexistence nodes, adding no new
+frontier: at `ℓ = 3`, `IsHardlyRamified.mod_three_reducible`
+(`ModThree.lean`, the Fontaine/Odlyzko discriminant-bound route)
+produces a `Γ ℚ`-stable proper nonzero submodule refuting `hirr`
+through `Slop.OddRep.isIrreducible_iff_forall`; at `ℓ ≥ 5`, `hirr` is
+refuted by the Family-free Khare–Wintenberger headline
+`not_isIrreducible_of_isHardlyRamified_of_five_le`
+(`Modularity/KhareWintenberger.lean`, a PROVEN assembly over the three
+sorried literature pillars α/β/γ recorded there — the nodes already
+carrying pillar 2, so no NEW weight lands on them).
+CIRCULARITY GUARD: respected — neither route touches `Family.lean`
+(structurally: neither `ModThree.lean` nor `KhareWintenberger.lean`
+imports it or this file). -/
 theorem exists_heckeAlgebra_realizations_of_matchesResidualTraces
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime]
     {k : Type*} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
@@ -3117,10 +3153,10 @@ theorem exists_heckeAlgebra_realizations_of_matchesResidualTraces
     (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
     (hρbar : IsHardlyRamified hℓodd hW ρbar)
     (hirr : ρbar.IsIrreducible)
-    {N₀ : ℕ} (hN₀ : 0 < N₀) {f₀ : CuspForm (Gamma0GL N₀) 2}
-    (hf₀ : IsWeightTwoEigenform N₀ f₀)
+    {N₀ : ℕ} (_hN₀ : 0 < N₀) {f₀ : CuspForm (Gamma0GL N₀) 2}
+    (_hf₀ : IsWeightTwoEigenform N₀ f₀)
     {S₀ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
-    (hmatch₀ : MatchesResidualTraces N₀ f₀ ρbar S₀) :
+    (_hmatch₀ : MatchesResidualTraces N₀ f₀ ρbar S₀) :
     ∃ (T : Type u) (_ : CommRing T) (_ : TopologicalSpace T)
       (_ : IsTopologicalRing T) (_ : Algebra ℤ_[ℓ] T) (_ : IsLocalRing T)
       (_ : Module.Finite ℤ_[ℓ] T) (_ : Module.Free ℤ_[ℓ] T)
@@ -3136,8 +3172,30 @@ theorem exists_heckeAlgebra_realizations_of_matchesResidualTraces
       ∀ (i : Fin n) (q : ℕ) (hq : q.Prime),
         hq.toHeightOneSpectrumRingOfIntegersRat ∉ S_T →
         ((real i).ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1 =
-          (real i).toFun (- t q) :=
-  sorry
+          (real i).toFun (- t q) := by
+  rcases Nat.lt_or_ge ℓ 5 with h5 | h5
+  · -- `ℓ < 5`: primality and oddness force `ℓ = 3`, where the
+    -- hypotheses are contradictory (`mod_three_reducible`)
+    interval_cases ℓ
+    · exact absurd hℓodd (by decide)
+    · exact absurd (Fact.out : Nat.Prime 1) (by decide)
+    · exact absurd hℓodd (by decide)
+    · exfalso
+      obtain ⟨W₀, hW₀0, hW₀top, hW₀stable⟩ :=
+        IsHardlyRamified.mod_three_reducible W hW hρbar
+      have hirr' : ρbar.toRepresentation.IsIrreducible := hirr
+      obtain ⟨-, hsub⟩ :=
+        (Slop.OddRep.isIrreducible_iff_forall ρbar.toRepresentation).mp hirr'
+      rcases hsub W₀
+          (fun g v hv => hW₀stable g (Submodule.mem_map_of_mem hv)) with
+        hb | ht
+      · exact hW₀0 hb
+      · exact hW₀top ht
+    · exact absurd hℓodd (by decide)
+  · -- `ℓ ≥ 5`: the Family-free Khare–Wintenberger headline refutes
+    -- irreducibility
+    exact absurd hirr
+      (not_isIrreducible_of_isHardlyRamified_of_five_le hℓodd h5 hW hρbar)
 
 /-! #### The Nyssen–Rouquier cut behind pillar 3a-ii
 
