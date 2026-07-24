@@ -62,6 +62,11 @@ import Mathlib.RingTheory.Valuation.LocalSubring
 -- `Ideal.ramificationIdx'` and the Dedekind-domain characterization
 -- `ramificationIdx'_eq_one_iff`: the counting leaf of the same node
 public import Mathlib.NumberTheory.RamificationInertia.Ramification
+-- the perfectness-free Hilbert counting: `stabilizerQuotientInertiaEquiv`,
+-- the fundamental identity `g·e·f = |G|`, `IsGaloisGroup.of_isFractionRing`,
+-- and the `Gal(N/K)`-action on integral closures (`IsIntegralClosure.MulSemiringAction`)
+public import Mathlib.NumberTheory.RamificationInertia.Galois
+import Mathlib.FieldTheory.Galois.IsGaloisGroup
 -- `Algebra.isUnramifiedAt_iff_map_eq` (fibrewise unramifiedness through the
 -- localization) and the residue-field separability transfer instances
 import Mathlib.RingTheory.Unramified.LocalRing
@@ -4351,6 +4356,66 @@ theorem exists_valuationSubring_integralClosure_center
     rwa [show φ (algebraMap R L r) = algebraMap K Ksep (algebraMap R K r) from by
       rw [IsScalarTower.algebraMap_apply R K L, φ.commutes]] at h1
 
+section PerfectnessFreeHilbert
+
+open scoped Pointwise
+
+/-- **Hilbert's `|D| = |I| · |Aut(κ(Q)/κ(p))|`, perfectness-free** (PROVEN
+2026-07-24): for a finite group `G` acting on `C` with invariants `A` and a
+prime `Q` of `C` over `p`, the stabilizer of `Q` decomposes as the inertia
+group times the automorphism group of the residue extension. This is mathlib's
+`Ideal.Quotient.stabilizerQuotientInertiaEquiv` (valid for ARBITRARY residue
+fields — no perfectness, no finiteness) combined with Lagrange
+(`Subgroup.card_mul_index`). -/
+theorem card_stabilizer_eq_card_inertia_mul_card_aut
+    {A C : Type*} [CommRing A] [CommRing C] [Algebra A C]
+    (G : Type*) [Group G] [Finite G] [MulSemiringAction G C] [SMulCommClass G A C]
+    [Algebra.IsInvariant A C G]
+    (p : Ideal A) (Q : Ideal C) [Q.IsPrime] [Q.LiesOver p] :
+    Nat.card (MulAction.stabilizer G Q) =
+      Nat.card (Q.inertia G) * Nat.card ((C ⧸ Q) ≃ₐ[A ⧸ p] (C ⧸ Q)) := by
+  have hidx : (Q.inertia (MulAction.stabilizer G Q)).index =
+      Nat.card ((C ⧸ Q) ≃ₐ[A ⧸ p] (C ⧸ Q)) :=
+    Nat.card_congr (Ideal.Quotient.stabilizerQuotientInertiaEquiv G p Q).toEquiv
+  rw [← ((Q.inertia G).subgroupOf (MulAction.stabilizer G Q)).card_mul_index,
+    Nat.card_congr (Subgroup.subgroupOfEquivOfLe (Ideal.inertia_le_stabilizer Q)).toEquiv,
+    AddSubgroup.subgroupOf_inertia, hidx]
+
+/-- **Hilbert's `|D| = e · f`, perfectness-free** (PROVEN 2026-07-24): for a
+finite group `G` acting on the domain `C`, finite flat over the domain `A`,
+with invariants `A`, and a prime `Q` over `p`, the stabilizer of `Q` has
+cardinality `e(Q/p) · f(Q/p)`. Orbit–stabilizer against the fundamental
+identity `g·e·f = |G|` (`ncard_primesOver_mul_ramificationIdxIn_mul_inertiaDegIn`),
+cancelling the orbit count `g ≠ 0`. -/
+theorem card_stabilizer_eq_ramificationIdx_mul_inertiaDeg
+    {A C : Type*} [CommRing A] [IsDomain A] [CommRing C] [IsDomain C] [Algebra A C]
+    [Module.Finite A C] [Module.Flat A C]
+    (G : Type*) [Group G] [Finite G] [MulSemiringAction G C] [IsGaloisGroup G A C]
+    (p : Ideal A) [p.IsPrime] (Q : Ideal C) [Q.IsPrime] [Q.LiesOver p] :
+    Nat.card (MulAction.stabilizer G Q) = Q.ramificationIdx A * Q.inertiaDeg A := by
+  haveI : SMulCommClass G A C := IsGaloisGroup.commutes (G := G) (A := A) (B := C)
+  haveI : Algebra.IsInvariant A C G := IsGaloisGroup.isInvariant (G := G) (A := A) (B := C)
+  have h1 := Ideal.ncard_primesOver_mul_ramificationIdxIn_mul_inertiaDegIn p C G
+  rw [Ideal.ramificationIdxIn_eq_ramificationIdx p Q G,
+    Ideal.inertiaDegIn_eq_inertiaDeg p Q G] at h1
+  -- orbit–stabilizer: `g · |D| = |G|`
+  have horb : MulAction.orbit G Q = p.primesOver C :=
+    Algebra.IsInvariant.orbit_eq_primesOver A C G p Q
+  have h2 : Nat.card (MulAction.orbit G Q) * Nat.card (MulAction.stabilizer G Q) =
+      Nat.card G := by
+    simpa using Nat.card_congr (MulAction.orbitProdStabilizerEquivGroup G Q)
+  have h3 : (p.primesOver C).ncard = Nat.card (MulAction.orbit G Q) := by
+    rw [horb]
+    exact (Nat.card_coe_set_eq _).symm
+  rw [h3] at h1
+  have hg0 : Nat.card (MulAction.orbit G Q) ≠ 0 := by
+    intro h0
+    rw [h0, zero_mul] at h2
+    exact Nat.card_pos.ne' h2.symm
+  exact Nat.eq_of_mul_eq_mul_left (Nat.pos_of_ne_zero hg0) (h2.trans h1.symm)
+
+end PerfectnessFreeHilbert
+
 /-- **Inertia lifting from a finite Galois level to the separable closure**
 (sorry node; the compactness step of the DVR-Galois core, isolated 2026-07-24):
 let `N/K` be finite Galois sitting inside `Kˢᵉᵖ` (abstract tower
@@ -4400,7 +4465,10 @@ theorem exists_inertiaSubgroup_restrictNormalHom_eq
       AlgEquiv.restrictNormalHom N (τ : Ksep ≃ₐ[K] Ksep) = σ := by
   sorry
 
-/-- **The perfectness-free Hilbert counting core** (sorry node; the counting
+open scoped Pointwise in
+set_option maxHeartbeats 1000000 in
+set_option synthInstance.maxHeartbeats 400000 in
+/-- **The perfectness-free Hilbert counting core** (the counting
 core of the DVR-Galois chain, isolated 2026-07-24, valid over an arbitrary DVR
 base — NO perfectness or finiteness of the residue field of `R` is assumed, so
 mathlib's `Ideal.card_inertia_eq_ramificationIdxIn` is NOT applicable): let
@@ -4440,7 +4508,392 @@ into any field inject into embeddings into an algebraic closure,
 (`Field.finSepDegree_eq_finrank_iff`). The transport between `L` and
 `φ.fieldRange` is along `φ.fieldRangeAlgEquiv` and the induced isomorphism
 `galRestrict'` of integral closures, under which `𝔮` corresponds to the center
-of `𝔔` on `integralClosure R φ(L)` by `h𝔮`. -/
+of `𝔔` on `integralClosure R φ(L)` by `h𝔮`.
+
+This `_aux` form is stated over ABSTRACT integral closures `Bc`, `Cc` (the
+`IsIntegralClosure` interface) rather than mathlib's `integralClosure`
+subalgebras: opaque carrier types keep the `SetLike`-inherited scalar actions
+of subalgebras from clashing with the `φ`-twisted algebra structures the
+proof installs (`Algebra L N := φ.toAlgebra` and its towers). The public
+statement below instantiates `Bc := integralClosure R L`,
+`Cc := integralClosure R N`. -/
+theorem ramificationIdx_eq_one_and_isSeparable_of_inertia_fixes_algHom_aux
+    (L : Type u) [Field L] [Algebra K L]
+    [Module.Finite K L] [Algebra.IsSeparable K L]
+    [Algebra R L] [IsScalarTower R K L]
+    (N : Type*) [Field N] [Algebra K N] [FiniteDimensional K N] [IsGalois K N]
+    [Algebra R N] [IsScalarTower R K N]
+    (Bc : Type*) [CommRing Bc] [Algebra R Bc] [Algebra Bc L] [IsScalarTower R Bc L]
+    [IsIntegralClosure Bc R L]
+    (Cc : Type*) [CommRing Cc] [Algebra R Cc] [Algebra Cc N] [IsScalarTower R Cc N]
+    [IsIntegralClosure Cc R N]
+    (φ : L →ₐ[K] N)
+    (𝔔 : Ideal Cc) [𝔔.IsMaximal]
+    (hfixN : ∀ σ : N ≃ₐ[K] N,
+      (∀ c : Cc, galRestrict R K N Cc σ c - c ∈ 𝔔) →
+      ∀ x : L, σ (φ x) = φ x)
+    (𝔮 : Ideal Bc) [𝔮.IsMaximal]
+    [𝔮.LiesOver (IsLocalRing.maximalIdeal R)]
+    (h𝔮 : 𝔮 = 𝔔.comap (galRestrict' R Bc Cc φ)) :
+    Ideal.ramificationIdx' (IsLocalRing.maximalIdeal R) 𝔮 = 1 ∧
+      Algebra.IsSeparable (R ⧸ IsLocalRing.maximalIdeal R) (Bc ⧸ 𝔮) := by
+  classical
+  haveI : IsDomain Bc := (IsIntegralClosure.algebraMap_injective Bc R L).isDomain _
+  haveI : IsDomain Cc := (IsIntegralClosure.algebraMap_injective Cc R N).isDomain _
+  have h𝔪bot : IsLocalRing.maximalIdeal R ≠ ⊥ := IsDiscreteValuationRing.not_a_field R
+  -- === the tower `R ⊆ B ⊆ C` with `B → C` induced by `φ` ===
+  letI : Algebra L N := φ.toAlgebra
+  haveI : IsScalarTower K L N := IsScalarTower.of_algebraMap_eq fun x => (φ.commutes x).symm
+  haveI : IsScalarTower R L N := IsScalarTower.of_algebraMap_eq fun r => by
+    rw [IsScalarTower.algebraMap_apply R K N, IsScalarTower.algebraMap_apply R K L,
+      IsScalarTower.algebraMap_apply K L N]
+  haveI : FiniteDimensional L N := FiniteDimensional.right K L N
+  haveI : IsGalois L N := IsGalois.tower_top_of_isGalois K L N
+  letI : Algebra Bc N :=
+    ((algebraMap L N).comp (algebraMap Bc L)).toAlgebra
+  haveI : IsScalarTower Bc L N := IsScalarTower.of_algebraMap_eq' rfl
+  letI : Algebra Bc Cc :=
+    (galRestrict' R Bc Cc φ).toAlgebra
+  haveI : IsScalarTower R Bc Cc :=
+    IsScalarTower.of_algebraMap_eq'
+      ((galRestrict' R Bc Cc φ).comp_algebraMap).symm
+  haveI : IsScalarTower Bc Cc N :=
+    IsScalarTower.of_algebraMap_eq fun b =>
+      (algebraMap_galRestrict'_apply R Bc Cc φ b).symm
+  haveI : Algebra.IsIntegral R Bc :=
+    ⟨fun x => IsIntegralClosure.isIntegral R L x⟩
+  haveI : Algebra.IsIntegral R Cc :=
+    ⟨fun x => IsIntegralClosure.isIntegral R N x⟩
+  haveI : Algebra.IsIntegral Bc Cc :=
+    Algebra.IsIntegral.tower_top (R := R)
+  haveI : IsScalarTower R Bc N := IsScalarTower.of_algebraMap_eq fun r => by
+    rw [IsScalarTower.algebraMap_apply Bc L N,
+      ← IsScalarTower.algebraMap_apply R Bc L,
+      ← IsScalarTower.algebraMap_apply R L N]
+  -- `C` is the integral closure of `B` in `N`
+  haveI : IsIntegralClosure Cc Bc N := by
+    refine ⟨IsIntegralClosure.algebraMap_injective Cc R N,
+      fun {x} => ⟨fun hx => ?_, fun ⟨y, hy⟩ => ?_⟩⟩
+    · have hxR : IsIntegral R x := isIntegral_trans (R := R) x hx
+      exact IsIntegralClosure.isIntegral_iff.mp hxR
+    · have hyR : IsIntegral R (algebraMap Cc N y) :=
+        (IsIntegralClosure.isIntegral R N y).algebraMap
+      have hyB : IsIntegral Bc (algebraMap Cc N y) := hyR.tower_top
+      rwa [hy] at hyB
+  haveI : IsFractionRing Bc L :=
+    IsIntegralClosure.isFractionRing_of_finite_extension R K L _
+  haveI : IsFractionRing Cc N :=
+    IsIntegralClosure.isFractionRing_of_finite_extension R K N _
+  haveI : Module.Finite R Bc := IsIntegralClosure.finite R K L _
+  haveI : Module.Finite R Cc := IsIntegralClosure.finite R K N _
+  haveI : Module.Finite Bc Cc :=
+    Module.Finite.of_restrictScalars_finite R _ _
+  haveI : IsDedekindDomain Bc := IsIntegralClosure.isDedekindDomain R K L _
+  haveI : IsDedekindDomain Cc := IsIntegralClosure.isDedekindDomain R K N _
+  -- torsion-freeness and flatness of the two closure steps
+  have halgRB : Function.Injective (algebraMap R Bc) := by
+    have h1 : Function.Injective (algebraMap R L) := by
+      rw [IsScalarTower.algebraMap_eq R K L]
+      exact (algebraMap K L).injective.comp (IsFractionRing.injective R K)
+    intro a b hab
+    apply h1
+    rw [IsScalarTower.algebraMap_apply R Bc L, hab,
+      ← IsScalarTower.algebraMap_apply R Bc L]
+  haveI : Module.IsTorsionFree R Bc := by
+    rw [Module.isTorsionFree_iff_faithfulSMul]
+    exact (faithfulSMul_iff_algebraMap_injective R Bc).mpr halgRB
+  have hψinj : Function.Injective
+      (algebraMap Bc Cc) := by
+    have h2 : Function.Injective (algebraMap Bc N) := by
+      rw [IsScalarTower.algebraMap_eq Bc L N]
+      exact (algebraMap L N).injective.comp (IsFractionRing.injective Bc L)
+    intro a b hab
+    apply h2
+    rw [IsScalarTower.algebraMap_apply Bc Cc N, hab,
+      ← IsScalarTower.algebraMap_apply Bc Cc N]
+  haveI : Module.IsTorsionFree Bc Cc := by
+    rw [Module.isTorsionFree_iff_faithfulSMul]
+    exact (faithfulSMul_iff_algebraMap_injective _ _).mpr hψinj
+  haveI : Module.IsTorsionFree R Cc := by
+    rw [Module.isTorsionFree_iff_faithfulSMul]
+    refine (faithfulSMul_iff_algebraMap_injective R Cc).mpr ?_
+    intro a b hab
+    apply halgRB
+    apply hψinj
+    rwa [← IsScalarTower.algebraMap_apply R Bc Cc,
+      ← IsScalarTower.algebraMap_apply R Bc Cc]
+  haveI : Module.Free R Cc := Module.free_of_finite_type_torsion_free'
+  -- === lying-over structure of `𝔔` ===
+  haveI h𝔔𝔮 : 𝔔.LiesOver 𝔮 := ⟨h𝔮⟩
+  haveI h𝔔R : 𝔔.LiesOver (IsLocalRing.maximalIdeal R) :=
+    ⟨(IsLocalRing.eq_maximalIdeal
+      (Ideal.isMaximal_comap_of_isIntegral_of_isMaximal 𝔔)).symm⟩
+  -- === the two Galois actions on `C` ===
+  letI actK : MulSemiringAction (N ≃ₐ[K] N) Cc :=
+    IsIntegralClosure.MulSemiringAction R K N _
+  letI actL : MulSemiringAction (N ≃ₐ[L] N) Cc :=
+    IsIntegralClosure.MulSemiringAction Bc L N _
+  haveI hGGK : IsGaloisGroup (N ≃ₐ[K] N) R Cc :=
+    IsGaloisGroup.of_isFractionRing (N ≃ₐ[K] N) R Cc K N
+  haveI hGGL : IsGaloisGroup (N ≃ₐ[L] N) Bc Cc :=
+    IsGaloisGroup.of_isFractionRing (N ≃ₐ[L] N) Bc Cc L N
+  haveI : SMulCommClass (N ≃ₐ[K] N) R Cc :=
+    IsGaloisGroup.commutes (G := N ≃ₐ[K] N) (A := R) (B := Cc)
+  haveI : Algebra.IsInvariant R Cc (N ≃ₐ[K] N) :=
+    IsGaloisGroup.isInvariant (G := N ≃ₐ[K] N) (A := R) (B := Cc)
+  haveI : SMulCommClass (N ≃ₐ[L] N) Bc Cc :=
+    IsGaloisGroup.commutes (G := N ≃ₐ[L] N) (A := Bc)
+      (B := Cc)
+  haveI : Algebra.IsInvariant Bc Cc (N ≃ₐ[L] N) :=
+    IsGaloisGroup.isInvariant (G := N ≃ₐ[L] N) (A := Bc)
+      (B := Cc)
+  -- the smul of both actions is `galRestrict`
+  have hsmulK : ∀ (σ : N ≃ₐ[K] N) (c : Cc),
+      σ • c = galRestrict R K N Cc σ c := fun _ _ => rfl
+  have hsmulL : ∀ (σ : N ≃ₐ[L] N) (c : Cc),
+      σ • c = galRestrict Bc L N Cc σ c :=
+    fun _ _ => rfl
+  -- restriction of scalars does not change the action on `C`
+  have hact : ∀ (σ : N ≃ₐ[L] N) (c : Cc),
+      σ • c = (σ.restrictScalars K) • c := by
+    intro σ c
+    apply IsIntegralClosure.algebraMap_injective Cc R N
+    rw [hsmulL, hsmulK, algebraMap_galRestrict_apply, algebraMap_galRestrict_apply]
+    rfl
+  -- === the four counting identities ===
+  have hD : Nat.card (MulAction.stabilizer (N ≃ₐ[K] N) 𝔔) =
+      𝔔.ramificationIdx R * 𝔔.inertiaDeg R :=
+    card_stabilizer_eq_ramificationIdx_mul_inertiaDeg (N ≃ₐ[K] N)
+      (IsLocalRing.maximalIdeal R) 𝔔
+  have hD2 : Nat.card (MulAction.stabilizer (N ≃ₐ[L] N) 𝔔) =
+      𝔔.ramificationIdx Bc * 𝔔.inertiaDeg Bc :=
+    card_stabilizer_eq_ramificationIdx_mul_inertiaDeg (N ≃ₐ[L] N) 𝔮 𝔔
+  have hDI : Nat.card (MulAction.stabilizer (N ≃ₐ[K] N) 𝔔) =
+      Nat.card (𝔔.inertia (N ≃ₐ[K] N)) *
+        Nat.card ((Cc ⧸ 𝔔) ≃ₐ[R ⧸ IsLocalRing.maximalIdeal R]
+          (Cc ⧸ 𝔔)) :=
+    card_stabilizer_eq_card_inertia_mul_card_aut (N ≃ₐ[K] N)
+      (IsLocalRing.maximalIdeal R) 𝔔
+  have hDI2 : Nat.card (MulAction.stabilizer (N ≃ₐ[L] N) 𝔔) =
+      Nat.card (𝔔.inertia (N ≃ₐ[L] N)) *
+        Nat.card ((Cc ⧸ 𝔔) ≃ₐ[Bc ⧸ 𝔮]
+          (Cc ⧸ 𝔔)) :=
+    card_stabilizer_eq_card_inertia_mul_card_aut (N ≃ₐ[L] N) 𝔮 𝔔
+  -- === `|I₂| = |I|`: the inertia group already fixes `L`, by `hfixN` ===
+  have hIcard : Nat.card (𝔔.inertia (N ≃ₐ[L] N)) =
+      Nat.card (𝔔.inertia (N ≃ₐ[K] N)) := by
+    have hmem₁ : ∀ σ : N ≃ₐ[L] N, σ ∈ 𝔔.inertia (N ≃ₐ[L] N) →
+        σ.restrictScalars K ∈ 𝔔.inertia (N ≃ₐ[K] N) := by
+      intro σ hσ c
+      rw [← hact σ c]
+      exact hσ c
+    have hcomm : ∀ σ : N ≃ₐ[K] N, σ ∈ 𝔔.inertia (N ≃ₐ[K] N) →
+        ∀ x : L, σ (algebraMap L N x) = algebraMap L N x := by
+      intro σ hσ x
+      refine hfixN σ (fun c => ?_) x
+      have h1 := hσ c
+      rwa [hsmulK, Submodule.mem_toAddSubgroup] at h1
+    refine Nat.card_congr ⟨fun σ => ⟨(σ : N ≃ₐ[L] N).restrictScalars K, hmem₁ _ σ.2⟩,
+      fun σ => ⟨AlgEquiv.ofRingEquiv (f := ((σ : N ≃ₐ[K] N) : N ≃+* N))
+        (hcomm _ σ.2), ?_⟩, fun σ => Subtype.ext (AlgEquiv.ext fun x => rfl),
+      fun σ => Subtype.ext (AlgEquiv.ext fun x => rfl)⟩
+    intro c
+    have h1 : (AlgEquiv.ofRingEquiv (f := ((σ : N ≃ₐ[K] N) : N ≃+* N))
+        (hcomm _ σ.2) : N ≃ₐ[L] N) • c = (σ : N ≃ₐ[K] N) • c := by
+      rw [hact]
+      congr 1
+    rw [h1]
+    exact σ.2 c
+  -- === residue fields and the embedding bound ===
+  letI : Field (R ⧸ IsLocalRing.maximalIdeal R) := Ideal.Quotient.field _
+  letI : Field (Bc ⧸ 𝔮) := Ideal.Quotient.field _
+  letI : Field (Cc ⧸ 𝔔) := Ideal.Quotient.field _
+  -- the residue tower `κ(𝔪) → κ(𝔮) → κ(𝔔)`
+  haveI : IsScalarTower (R ⧸ IsLocalRing.maximalIdeal R) (Bc ⧸ 𝔮)
+      (Cc ⧸ 𝔔) := by
+    refine IsScalarTower.of_algebraMap_eq fun x => ?_
+    obtain ⟨r, rfl⟩ := Ideal.Quotient.mk_surjective x
+    show Ideal.Quotient.mk 𝔔 (algebraMap R Cc r) =
+      Ideal.Quotient.mk 𝔔 (algebraMap Bc Cc
+        (algebraMap R Bc r))
+    rw [← IsScalarTower.algebraMap_apply R Bc Cc]
+  -- module-finiteness of the residue extensions
+  haveI : Module.Finite R (Bc ⧸ 𝔮) :=
+    Module.Finite.of_surjective (Ideal.Quotient.mkₐ R 𝔮).toLinearMap
+      (Ideal.Quotient.mkₐ_surjective R 𝔮)
+  haveI : Module.Finite (R ⧸ IsLocalRing.maximalIdeal R) (Bc ⧸ 𝔮) :=
+    Module.Finite.of_restrictScalars_finite R _ _
+  haveI : Module.Finite R (Cc ⧸ 𝔔) :=
+    Module.Finite.of_surjective (Ideal.Quotient.mkₐ R 𝔔).toLinearMap
+      (Ideal.Quotient.mkₐ_surjective R 𝔔)
+  haveI : Module.Finite (R ⧸ IsLocalRing.maximalIdeal R) (Cc ⧸ 𝔔) :=
+    Module.Finite.of_restrictScalars_finite R _ _
+  haveI : Module.Finite (Bc ⧸ 𝔮) (Cc ⧸ 𝔔) :=
+    Module.Finite.of_restrictScalars_finite (R ⧸ IsLocalRing.maximalIdeal R) _ _
+  -- the subgroup of `κ(𝔪)`-automorphisms of `κ(𝔔)` fixing `κ(𝔮)` pointwise
+  set H₁ : Subgroup ((Cc ⧸ 𝔔) ≃ₐ[R ⧸ IsLocalRing.maximalIdeal R]
+      (Cc ⧸ 𝔔)) :=
+    { carrier := {σ | ∀ b : Bc ⧸ 𝔮,
+        σ (algebraMap (Bc ⧸ 𝔮) (Cc ⧸ 𝔔) b) =
+          algebraMap (Bc ⧸ 𝔮) (Cc ⧸ 𝔔) b}
+      mul_mem' := fun {σ τ} hσ hτ b => by
+        show σ (τ _) = _
+        rw [hτ b, hσ b]
+      one_mem' := fun b => rfl
+      inv_mem' := fun {σ} hσ b => by
+        show σ.symm _ = _
+        have h2 := congrArg σ.symm (hσ b)
+        rw [AlgEquiv.symm_apply_apply] at h2
+        exact h2.symm } with hH₁def
+  -- `κ(𝔮)`-automorphisms of `κ(𝔔)` are exactly `H₁`
+  have hH₁card : Nat.card ((Cc ⧸ 𝔔) ≃ₐ[Bc ⧸ 𝔮]
+      (Cc ⧸ 𝔔)) = Nat.card H₁ := by
+    refine Nat.card_congr ⟨fun σ => ⟨σ.restrictScalars (R ⧸ IsLocalRing.maximalIdeal R),
+      fun b => σ.commutes b⟩,
+      fun σ => AlgEquiv.ofRingEquiv (f := (((σ : (Cc ⧸ 𝔔) ≃ₐ[R ⧸ IsLocalRing.maximalIdeal R]
+        (Cc ⧸ 𝔔)) : (Cc ⧸ 𝔔) ≃+* (Cc ⧸ 𝔔)))) (fun x => σ.2 x),
+      fun σ => AlgEquiv.ext fun x => rfl, fun σ => Subtype.ext (AlgEquiv.ext fun x => rfl)⟩
+  -- the coset count of `H₁` is bounded by the embedding count
+  have hindexle : H₁.index ≤
+      Nat.card ((Bc ⧸ 𝔮) →ₐ[R ⧸ IsLocalRing.maximalIdeal R]
+        (Cc ⧸ 𝔔)) := by
+    have hlift : ∀ (σ τ : (Cc ⧸ 𝔔) ≃ₐ[R ⧸ IsLocalRing.maximalIdeal R]
+        (Cc ⧸ 𝔔)), (QuotientGroup.leftRel H₁) σ τ →
+        σ.toAlgHom.comp (IsScalarTower.toAlgHom _ (Bc ⧸ 𝔮) _) =
+          τ.toAlgHom.comp (IsScalarTower.toAlgHom _ (Bc ⧸ 𝔮) _) := by
+      intro σ τ hστ
+      rw [QuotientGroup.leftRel_apply] at hστ
+      refine AlgHom.ext fun b => ?_
+      have h1 := hστ b
+      have h2 : σ ((σ⁻¹ * τ) (algebraMap (Bc ⧸ 𝔮)
+          (Cc ⧸ 𝔔) b)) =
+          σ (algebraMap (Bc ⧸ 𝔮) (Cc ⧸ 𝔔) b) :=
+        congrArg σ h1
+      simpa using h2.symm
+    refine Nat.card_le_card_of_injective
+      (Quotient.lift (fun σ => σ.toAlgHom.comp
+        (IsScalarTower.toAlgHom _ (Bc ⧸ 𝔮) _)) hlift) ?_
+    rintro ⟨σ⟩ ⟨τ⟩ h
+    refine Quotient.sound (QuotientGroup.leftRel_apply.mpr ?_)
+    intro b
+    have h1 := congrArg (fun F => F b) h
+    simp only [AlgHom.coe_comp, Function.comp_apply] at h1
+    have h1' : σ (algebraMap (Bc ⧸ 𝔮) (Cc ⧸ 𝔔) b) =
+        τ (algebraMap (Bc ⧸ 𝔮) (Cc ⧸ 𝔔) b) := h1
+    show σ⁻¹ (τ (algebraMap (Bc ⧸ 𝔮) (Cc ⧸ 𝔔) b)) = algebraMap (Bc ⧸ 𝔮) (Cc ⧸ 𝔔) b
+    rw [← h1']
+    exact σ.symm_apply_apply _
+  -- Lagrange for `H₁` gives the automorphism bound
+  have hAutLe : Nat.card ((Cc ⧸ 𝔔) ≃ₐ[R ⧸ IsLocalRing.maximalIdeal R]
+      (Cc ⧸ 𝔔)) ≤
+      Nat.card ((Cc ⧸ 𝔔) ≃ₐ[Bc ⧸ 𝔮]
+        (Cc ⧸ 𝔔)) *
+      Nat.card ((Bc ⧸ 𝔮) →ₐ[R ⧸ IsLocalRing.maximalIdeal R]
+        (Cc ⧸ 𝔔)) := by
+    rw [← H₁.card_mul_index, hH₁card]
+    exact Nat.mul_le_mul_left _ hindexle
+  -- the embedding count is bounded by the separable degree
+  have hEmbLe : Nat.card ((Bc ⧸ 𝔮) →ₐ[R ⧸ IsLocalRing.maximalIdeal R]
+      (Cc ⧸ 𝔔)) ≤
+      Field.finSepDegree (R ⧸ IsLocalRing.maximalIdeal R) (Bc ⧸ 𝔮) := by
+    haveI : Algebra.IsAlgebraic (R ⧸ IsLocalRing.maximalIdeal R)
+        (Bc ⧸ 𝔮) :=
+      Algebra.IsAlgebraic.of_finite (R ⧸ IsLocalRing.maximalIdeal R) (Bc ⧸ 𝔮)
+    rw [Field.finSepDegree_eq_of_isAlgClosed (R ⧸ IsLocalRing.maximalIdeal R) (Bc ⧸ 𝔮)
+      (AlgebraicClosure (Cc ⧸ 𝔔))]
+    refine Nat.card_le_card_of_injective
+      (fun ψ₀ => (IsScalarTower.toAlgHom (R ⧸ IsLocalRing.maximalIdeal R)
+        (Cc ⧸ 𝔔) (AlgebraicClosure (Cc ⧸ 𝔔))).comp ψ₀)
+      (fun ψ₁ ψ₂ h => ?_)
+    refine AlgHom.ext fun b => ?_
+    have h1 := congrArg (fun F => F b) h
+    simp only [AlgHom.coe_comp, Function.comp_apply] at h1
+    exact (algebraMap (Cc ⧸ 𝔔)
+      (AlgebraicClosure (Cc ⧸ 𝔔))).injective h1
+  -- === the tower identities for `e` and `f` ===
+  have htowE : 𝔔.ramificationIdx R =
+      𝔮.ramificationIdx R * 𝔔.ramificationIdx Bc :=
+    Ideal.ramificationIdx_tower (R := R) 𝔮 𝔔
+  have htowF : 𝔔.inertiaDeg R =
+      𝔮.inertiaDeg R * 𝔔.inertiaDeg Bc :=
+    Ideal.inertiaDeg_tower (R := R) 𝔮 𝔔
+  -- === assemble the count: `e(𝔮/𝔪) · f(𝔮/𝔪) ≤ [κ(𝔮) : κ(𝔪)]_sep` ===
+  have hD2pos : 0 < Nat.card (MulAction.stabilizer (N ≃ₐ[L] N) 𝔔) := Nat.card_pos
+  have hchain : 𝔮.ramificationIdx R * 𝔮.inertiaDeg R *
+      Nat.card (MulAction.stabilizer (N ≃ₐ[L] N) 𝔔) ≤
+      Field.finSepDegree (R ⧸ IsLocalRing.maximalIdeal R) (Bc ⧸ 𝔮) *
+        Nat.card (MulAction.stabilizer (N ≃ₐ[L] N) 𝔔) := by
+    have h1 : 𝔮.ramificationIdx R * 𝔮.inertiaDeg R *
+        Nat.card (MulAction.stabilizer (N ≃ₐ[L] N) 𝔔) =
+        Nat.card (MulAction.stabilizer (N ≃ₐ[K] N) 𝔔) := by
+      rw [hD, hD2, htowE, htowF]
+      ring
+    have h2 : Nat.card (MulAction.stabilizer (N ≃ₐ[K] N) 𝔔) ≤
+        Field.finSepDegree (R ⧸ IsLocalRing.maximalIdeal R) (Bc ⧸ 𝔮) *
+          Nat.card (MulAction.stabilizer (N ≃ₐ[L] N) 𝔔) := by
+      calc Nat.card (MulAction.stabilizer (N ≃ₐ[K] N) 𝔔)
+          = Nat.card (𝔔.inertia (N ≃ₐ[K] N)) *
+            Nat.card ((Cc ⧸ 𝔔) ≃ₐ[R ⧸ IsLocalRing.maximalIdeal R]
+              (Cc ⧸ 𝔔)) := hDI
+        _ ≤ Nat.card (𝔔.inertia (N ≃ₐ[K] N)) *
+            (Nat.card ((Cc ⧸ 𝔔) ≃ₐ[Bc ⧸ 𝔮]
+              (Cc ⧸ 𝔔)) *
+             Nat.card ((Bc ⧸ 𝔮) →ₐ[R ⧸ IsLocalRing.maximalIdeal R]
+              (Cc ⧸ 𝔔))) := Nat.mul_le_mul_left _ hAutLe
+        _ = (Nat.card (𝔔.inertia (N ≃ₐ[L] N)) *
+            Nat.card ((Cc ⧸ 𝔔) ≃ₐ[Bc ⧸ 𝔮]
+              (Cc ⧸ 𝔔))) *
+            Nat.card ((Bc ⧸ 𝔮) →ₐ[R ⧸ IsLocalRing.maximalIdeal R]
+              (Cc ⧸ 𝔔)) := by rw [hIcard]; ring
+        _ = Nat.card (MulAction.stabilizer (N ≃ₐ[L] N) 𝔔) *
+            Nat.card ((Bc ⧸ 𝔮) →ₐ[R ⧸ IsLocalRing.maximalIdeal R]
+              (Cc ⧸ 𝔔)) := by rw [hDI2]
+        _ ≤ Nat.card (MulAction.stabilizer (N ≃ₐ[L] N) 𝔔) *
+            Field.finSepDegree (R ⧸ IsLocalRing.maximalIdeal R)
+              (Bc ⧸ 𝔮) := Nat.mul_le_mul_left _ hEmbLe
+        _ = Field.finSepDegree (R ⧸ IsLocalRing.maximalIdeal R)
+              (Bc ⧸ 𝔮) *
+            Nat.card (MulAction.stabilizer (N ≃ₐ[L] N) 𝔔) := Nat.mul_comm _ _
+    exact h1.le.trans h2
+  have hef : 𝔮.ramificationIdx R * 𝔮.inertiaDeg R ≤
+      Field.finSepDegree (R ⧸ IsLocalRing.maximalIdeal R) (Bc ⧸ 𝔮) :=
+    Nat.le_of_mul_le_mul_right hchain hD2pos
+  -- === conclude `e(𝔮/𝔪) = 1` and separability ===
+  have hf𝔮 : 𝔮.inertiaDeg R =
+      Module.finrank (R ⧸ IsLocalRing.maximalIdeal R) (Bc ⧸ 𝔮) :=
+    Ideal.inertiaDeg_eq_of_isMaximal (IsLocalRing.maximalIdeal R) 𝔮
+  have hsle : Field.finSepDegree (R ⧸ IsLocalRing.maximalIdeal R)
+      (Bc ⧸ 𝔮) ≤ 𝔮.inertiaDeg R := by
+    rw [hf𝔮]
+    exact Field.finSepDegree_le_finrank _ _
+  have hfpos : 0 < 𝔮.inertiaDeg R := by
+    rw [hf𝔮]
+    exact Module.finrank_pos
+  have hepos : 0 < 𝔮.ramificationIdx R := Ideal.ramificationIdx_pos 𝔮 R
+  have he1 : 𝔮.ramificationIdx R = 1 := by
+    have h1 : 𝔮.ramificationIdx R * 𝔮.inertiaDeg R ≤ 1 * 𝔮.inertiaDeg R := by
+      rw [one_mul]
+      exact hef.trans hsle
+    have h2 := Nat.le_of_mul_le_mul_right h1 hfpos
+    omega
+  have hseq : Field.finSepDegree (R ⧸ IsLocalRing.maximalIdeal R)
+      (Bc ⧸ 𝔮) =
+      Module.finrank (R ⧸ IsLocalRing.maximalIdeal R) (Bc ⧸ 𝔮) := by
+    rw [← hf𝔮]
+    refine le_antisymm hsle ?_
+    have h1 := hef
+    rwa [he1, one_mul] at h1
+  refine ⟨?_, ?_⟩
+  · rw [Ideal.ramificationIdx'_eq_ramificationIdx (IsLocalRing.maximalIdeal R) 𝔮 h𝔪bot]
+    exact he1
+  · exact (Field.finSepDegree_eq_finrank_iff (R ⧸ IsLocalRing.maximalIdeal R)
+      (Bc ⧸ 𝔮)).mp hseq
+
+/-- **The perfectness-free Hilbert counting core** at the concrete
+`integralClosure` subalgebras: the instantiation `Bc := integralClosure R L`,
+`Cc := integralClosure R N` of
+`ramificationIdx_eq_one_and_isSeparable_of_inertia_fixes_algHom_aux` (which
+carries the whole argument; see its docstring). -/
 theorem ramificationIdx_eq_one_and_isSeparable_of_inertia_fixes_algHom
     (L : Type u) [Field L] [Algebra K L]
     [Module.Finite K L] [Algebra.IsSeparable K L]
@@ -4459,8 +4912,9 @@ theorem ramificationIdx_eq_one_and_isSeparable_of_inertia_fixes_algHom
       (galRestrict' R (integralClosure R L) (integralClosure R N) φ)) :
     Ideal.ramificationIdx' (IsLocalRing.maximalIdeal R) 𝔮 = 1 ∧
       Algebra.IsSeparable (R ⧸ IsLocalRing.maximalIdeal R)
-        (integralClosure R L ⧸ 𝔮) := by
-  sorry
+        (integralClosure R L ⧸ 𝔮) :=
+  ramificationIdx_eq_one_and_isSeparable_of_inertia_fixes_algHom_aux R K L N
+    (integralClosure R L) (integralClosure R N) φ 𝔔 hfixN 𝔮 h𝔮
 
 /-- **Finite-level Hilbert theory: an inertia-fixed subextension is unramified
 at the center** (DECOMPOSED 2026-07-24 into the counting core
