@@ -6327,8 +6327,226 @@ in its original docstring):
 The circularity guard of the section applies to both halves: neither
 may be proven through `Family.lean` or `Reducible.lean`'s B5. -/
 
-/-- **Ribet's lattice walk** (Eisenstein pillar E2a; sorry node — the
-DVR lattice-combinatorics half of the Ribet cut behind pillar E2, with
+/-- **Irreducibility transfer along an equivariant identification**
+(PROVEN glue for the Ribet cut): if two Galois representations over a
+field `F` are intertwined by an `F`-linear equivalence of their
+spaces, irreducibility transfers from the target to the source.
+Elementary submodule chase through
+`Slop.OddRep.isIrreducible_iff_forall`: the image of a stable
+subspace under the equivariant equivalence is stable, and `⊥`/`⊤`
+pull back to `⊥`/`⊤` along the equivalence. -/
+lemma isIrreducible_of_equivariant {F : Type*} [Field F]
+    [TopologicalSpace F] {M : Type*} [AddCommGroup M] [Module F M]
+    {N : Type*} [AddCommGroup N] [Module F N]
+    {ρ₁ : GaloisRep ℚ F M} {ρ₂ : GaloisRep ℚ F N} (e : M ≃ₗ[F] N)
+    (he : ∀ g x, e (ρ₁ g x) = ρ₂ g (e x)) (h : ρ₂.IsIrreducible) :
+    ρ₁.IsIrreducible := by
+  classical
+  obtain ⟨hnt, hsub⟩ :=
+    (Slop.OddRep.isIrreducible_iff_forall ρ₂.toRepresentation).mp h
+  haveI : Nontrivial N := hnt
+  refine (Slop.OddRep.isIrreducible_iff_forall
+    ρ₁.toRepresentation).mpr ⟨e.toEquiv.nontrivial, fun W hW => ?_⟩
+  have hstab : ∀ g, ∀ v ∈ W.map (e : M →ₗ[F] N),
+      ρ₂.toRepresentation g v ∈ W.map (e : M →ₗ[F] N) := by
+    intro g v hv
+    obtain ⟨y, hy, rfl⟩ := Submodule.mem_map.mp hv
+    exact Submodule.mem_map.mpr ⟨ρ₁ g y, hW g y hy, he g y⟩
+  rcases hsub (W.map (e : M →ₗ[F] N)) hstab with hb | ht
+  · left
+    rw [eq_bot_iff]
+    intro x hx
+    have hmem : e x ∈ W.map (e : M →ₗ[F] N) :=
+      Submodule.mem_map.mpr ⟨x, hx, rfl⟩
+    rw [hb, Submodule.mem_bot] at hmem
+    exact (Submodule.mem_bot F).mpr (e.map_eq_zero_iff.mp hmem)
+  · right
+    rw [eq_top_iff]
+    intro x _
+    have hmem : e x ∈ W.map (e : M →ₗ[F] N) := by
+      rw [ht]
+      trivial
+    obtain ⟨y, hy, hyx⟩ := Submodule.mem_map.mp hmem
+    rwa [← e.injective hyx]
+
+include hpodd in
+/-- **Residual nontriviality of the mod-`p` cyclotomic character**
+(Ribet cut, arithmetic mini-leaf; sorry node): for an odd prime `p`
+and any finite field `kk'` receiving `ℤ_p`, some global Galois
+element has cyclotomic-character image `≠ 1` in `kk'`. Classical
+proof: any ring map `ℤ_p → kk'` kills `p` — its kernel is a NONZERO
+prime of the discrete valuation ring `ℤ_p` (zero kernel would inject
+the infinite `ℤ_p` into the finite `kk'`), hence the maximal ideal
+`(p)` — so the map factors through an embedding `𝔽_p ↪ kk'` of
+fields, and it suffices to produce `g` with `χ_cyc(g) ≢ 1 mod p`.
+The restriction `Gal(ℚ(ζ_p)/ℚ) ≃ (ℤ/p)ˣ` (irreducibility of the
+`p`-th cyclotomic polynomial; mathlib's `IsPrimitiveRoot.autToPow` /
+`IsCyclotomicExtension.Rat` machinery) is a group of order
+`p − 1 ≥ 2` for odd `p`; a nontrivial member lifts to an
+automorphism of `AlgebraicClosure ℚ` along the normal subextension
+(`AlgEquiv.liftNormal`), and `cyclotomicCharacter.toZModPow` at
+level `1` reads the mod-`p` value of the character off the lifted
+action on `μ_p`, giving the required `≠ 1`. Soundness (audit
+2026-07-24): the statement FAILS at `p = 2` (the mod-`2` cyclotomic
+character is trivial), so `hpodd` is load-bearing and consumed
+exactly once; the hypothesis set is inhabited (`kk' = 𝔽_p`). -/
+theorem exists_cyclotomicCharacter_residual_ne_one
+    {kk' : Type*} [Field kk'] [Finite kk'] [Algebra ℤ_[p] kk'] :
+    ∃ g : Field.absoluteGaloisGroup ℚ,
+      algebraMap ℤ_[p] kk'
+        (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv) ≠ 1 :=
+  sorry
+
+include hv in
+/-- **The valuation-ring lattice** (Ribet cut E2a-i; sorry node — the
+`𝒪_E`-frame of the generic representation): the coefficient ring `R`
+embeds in the valuation ring `O` of its fraction field, and `ρ`
+stabilizes an `O`-lattice in its generic fibre, presented on the
+standard frame `Fin 2 → O` with a `ℚ̄_p`-equivariant identification
+to `ρ ⊗ ℚ̄_p`. Classical construction: `E := Frac R` is a FINITE
+extension of `ℚ_p` — `R` is a module-finite `ℤ_p`-domain and `hZinj`
+keeps it of characteristic zero, so `E` is generated over `ℚ_p` by
+finitely many algebraic elements; `O := 𝒪_E` is the integral closure
+of `ℤ_p` in `E`, a complete discrete valuation ring, module-finite
+over `ℤ_p` (finiteness of the integral closure of a complete DVR in
+a finite separable extension), local, a domain, topologized by the
+compact `ℤ_p`-module topology, and it contains `ι(R)` because `R` is
+integral over `ℤ_p`; the given continuous map `R → ℚ̄_p` is
+injective (its kernel is a prime of the one-dimensional domain `R`
+meeting `ℤ_p` trivially by `hZinj`, hence zero by going-up for the
+integral `ℤ_p ⊆ R`), so it extends along `R ⊆ O ⊆ E` to a field
+embedding `E ↪ ℚ̄_p` whose restriction to `O` gives the injectivity
+and the two compatibility equations of the conclusion. The lattice:
+the `O`-span `M` of the image of `V` in `E ⊗_R V` is finitely
+generated (`R`-generators of `V` generate), torsion-free over the
+DVR `O` hence FREE, of rank `2` (it spans the `2`-dimensional
+`E`-space `E ⊗_R V`, by `hv`), and stable under every `ρ(g) ⊗ E`
+(each `ρ(g)` is `R`-linear and the span is `O`-linear); an `O`-basis
+of `M` presents the action as `ρO : GaloisRep ℚ O (Fin 2 → O)` —
+continuous because `ρ` is continuous and the module topology of
+`End_O(M)` is induced from `End_E(E ⊗ V)` — and base-changing the
+inclusion `M ⊆ E ⊗_R V` along `O → ℚ̄_p` gives the equivariant
+generic-fibre identification `e`. Soundness (audit 2026-07-24): the
+hypothesis set is inhabited (`R = ℤ_p`, `V = ℤ_p²`, `ρ` trivial) and
+the conclusion holds for every inhabitant by the construction above;
+no oddness, irreducibility or residual input is consumed.
+Circularity guard (inherited from the Ribet cut): must not route
+through `Family.lean` or `Reducible.lean`'s B5. -/
+theorem exists_valuationRing_stable_lattice
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hZinj : Function.Injective (algebraMap ℤ_[p] R)) :
+    ∃ (O : Type u) (_ : CommRing O) (_ : Algebra ℤ_[p] O)
+      (_ : IsDomain O) (_ : Module.Finite ℤ_[p] O)
+      (_ : TopologicalSpace O) (_ : IsTopologicalRing O)
+      (_ : IsLocalRing O) (_ : IsModuleTopology ℤ_[p] O)
+      (_ : IsDiscreteValuationRing O)
+      (_ : Algebra O (AlgebraicClosure ℚ_[p]))
+      (_ : ContinuousSMul O (AlgebraicClosure ℚ_[p]))
+      (ι : R →+* O)
+      (ρO : GaloisRep ℚ O (Fin 2 → O))
+      (e : ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O))
+        ≃ₗ[AlgebraicClosure ℚ_[p]] ((AlgebraicClosure ℚ_[p]) ⊗[R] V)),
+      Function.Injective (algebraMap O (AlgebraicClosure ℚ_[p])) ∧
+      (∀ x : ℤ_[p], ι (algebraMap ℤ_[p] R x) = algebraMap ℤ_[p] O x) ∧
+      (∀ r : R, algebraMap O (AlgebraicClosure ℚ_[p]) (ι r) =
+        algebraMap R (AlgebraicClosure ℚ_[p]) r) ∧
+      (∀ g x, e ((ρO.baseChange (AlgebraicClosure ℚ_[p])) g x) =
+        (ρ.baseChange (AlgebraicClosure ℚ_[p])) g (e x)) :=
+  sorry
+
+/-- **Ribet's walk across stable lattices** (Ribet cut E2a-ii; sorry
+node — Ribet's lemma in prescribed-order form over the valuation
+ring): a representation on the standard rank-2 frame over the
+complete discrete valuation ring `O` (complete because compact:
+module-finite over `ℤ_p` in the module topology) whose generic fibre
+is irreducible over `ℚ̄_p` and whose residual characteristic
+polynomials are `(X − 1)(X − ψ(g))` with `ψ ≠ 1` admits a
+commensurable stable lattice — presented again on `Fin 2 → O`, with
+a `ℚ̄_p`-equivariant generic identification `e'` to the original —
+whose reduction `ρE` is TRIANGULAR on the standard residual frame
+with TRIVIAL sub-character, quotient character `ψ`, and NO
+coboundary writing of the upper-right entry. Classical proof (Ribet,
+*A modular construction of unramified `p`-extensions of `ℚ(μ_p)`*,
+Invent. Math. 34 (1976), Prop. 2.1; Bellaïche–Chenevier, *Families
+of Galois representations and Selmer groups*, Astérisque 324 (2009),
+ch. 1, the lattice-walking form): the reduction of ANY stable
+lattice has semisimplification `1 ⊕ ψ` — 2-dimensional
+Brauer–Nesbitt from `htr`/`hdet`, which pin the residual
+characteristic polynomials, and the diagonal characters of a
+triangular reduction are then forced GLOBALLY onto `{1, ψ}` by
+multiplicativity since `ψ ≠ 1`; walking the tree of lattices between
+a lattice and its `ψ`-isotypic neighbour `L' ⊆ L ⊆ 𝔪⁻¹L'` realizes
+BOTH orderings of the two DISTINCT residual characters, and if every
+lattice with sub-character `1` had SPLIT reduction the splittings
+would glue into a `ρO`-stable line of the generic fibre (the
+inverse-limit argument inside Ribet's Prop. 2.1), contradicting
+`hirrO`; the reduction data (`ρE`, `er`) presents `ρO' ⊗ kk'` on the
+standard frame through the canonical `kk' ⊗_O O² ≃ kk'²`
+(`TensorProduct.piScalarRight`) and a residual basis adapted to the
+stable sub-line, continuous because `𝔪_O` is open (`hopen'`) and the
+residue quotient is identified by `hker'`/`hsurj'`. Nonsplitness is
+the coboundary criterion: an `a` with `cc = (ψ − 1)·a` marks the
+stable complement `e₁ + a·e₀`. Soundness (audit 2026-07-24): the
+hypothesis set is classically inhabited (stable lattices in the
+`5`-adic Tate module of `X₀(11)`: generically irreducible,
+residually `1 ⊕ ω`), and the conclusion holds for every inhabitant
+by the cited walk; hypothesis-honest — `hψ` (multiplicity-freeness)
+and `hirrO` are each load-bearing (a scalar-residual or
+split-generic situation admits only split reductions). Circularity
+guard (inherited): must not route through `Family.lean` or
+`Reducible.lean`'s B5. If the walk proves genuinely deep, the
+natural further cut is (a) the Brauer–Nesbitt character pinning of
+triangular reductions, (b) the walk proper (prescribed-order
+nonsplit lattice), (c) the frame/reduction presentation. -/
+theorem exists_ribet_walk_nonsplit_lattice
+    {O : Type u} [CommRing O] [Algebra ℤ_[p] O] [IsDomain O]
+    [Module.Finite ℤ_[p] O] [TopologicalSpace O] [IsTopologicalRing O]
+    [IsModuleTopology ℤ_[p] O] [IsDiscreteValuationRing O]
+    [Algebra O (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul O (AlgebraicClosure ℚ_[p])]
+    (hOinj : Function.Injective (algebraMap O (AlgebraicClosure ℚ_[p])))
+    {kk' : Type u} [Field kk'] [Finite kk'] [Algebra ℤ_[p] kk']
+    [TopologicalSpace kk'] [DiscreteTopology kk'] [IsTopologicalRing kk']
+    [Algebra O kk'] [ContinuousSMul O kk']
+    (hsurj' : Function.Surjective (algebraMap O kk'))
+    (hopen' : IsOpen ((IsLocalRing.maximalIdeal O : Ideal O) : Set O))
+    (hker' : RingHom.ker (algebraMap O kk') = IsLocalRing.maximalIdeal O)
+    {ρO : GaloisRep ℚ O (Fin 2 → O)}
+    (hirrO : (ρO.baseChange (AlgebraicClosure ℚ_[p])).IsIrreducible)
+    (ψ : Field.absoluteGaloisGroup ℚ →* kk') (hψ : ∃ g, ψ g ≠ 1)
+    (htr : ∀ g, algebraMap O kk'
+      (LinearMap.trace O (Fin 2 → O) (ρO g)) = 1 + ψ g)
+    (hdet : ∀ g, algebraMap O kk' (LinearMap.det (ρO g)) = ψ g) :
+    ∃ (ρO' : GaloisRep ℚ O (Fin 2 → O))
+      (e' : ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O))
+        ≃ₗ[AlgebraicClosure ℚ_[p]]
+          ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O)))
+      (ρE : GaloisRep ℚ kk' (Fin 2 → kk'))
+      (er : (kk' ⊗[O] (Fin 2 → O)) ≃ₗ[kk'] (Fin 2 → kk'))
+      (cc : Field.absoluteGaloisGroup ℚ → kk'),
+      (∀ g x, e' ((ρO'.baseChange (AlgebraicClosure ℚ_[p])) g x) =
+        (ρO.baseChange (AlgebraicClosure ℚ_[p])) g (e' x)) ∧
+      (∀ g x, er ((ρO'.baseChange kk') g x) = ρE g (er x)) ∧
+      (∀ g, LinearMap.toMatrix (Pi.basisFun kk' (Fin 2))
+        (Pi.basisFun kk' (Fin 2)) (ρE g) = !![1, cc g; 0, ψ g]) ∧
+      ¬ ∃ a : kk', ∀ g, cc g = (ψ g - 1) * a :=
+  sorry
+
+/-- **Ribet's lattice walk** (Eisenstein pillar E2a; PROVEN
+2026-07-24 as an assembly over the Ribet-cut leaves — the
+valuation-ring lattice `exists_valuationRing_stable_lattice`
+(E2a-i), Ribet's walk `exists_ribet_walk_nonsplit_lattice` (E2a-ii)
+and the residual cyclotomic nontriviality
+`exists_cyclotomicCharacter_residual_ne_one`; the residue package is
+the PROVEN pillar-1 `exists_residue_package_odd` applied to `O`
+verbatim, and the Brauer–Nesbitt bookkeeping — the residue-field
+embedding `kk ↪ kk'` through going-up for the integral `ι : R → O`,
+the trace/determinant transfer across the generic identification by
+`LinearMap.trace_baseChange`/`det_baseChange` and
+conjugation-invariance, the irreducibility transfer
+`isIrreducible_of_equivariant`, and the pinning of the walk's
+residual character to `ψ ≠ 1` from `det = ω` — is proven here, with
 prescribed order of the residual characters): a hardly ramified
 `p`-adic representation that is irreducible over `ℚ̄_p` but residually
 reducible — with the residual triangular data of pillar E1 — admits a
@@ -6416,8 +6634,231 @@ theorem exists_ribet_lattice_of_residually_reducible
       (∀ g x, er ((ρO.baseChange kk') g x) = ρE g (er x)) ∧
       (∀ g, LinearMap.toMatrix (Pi.basisFun kk' (Fin 2))
         (Pi.basisFun kk' (Fin 2)) (ρE g) = !![1, cc g; 0, χ g]) ∧
-      ¬ ∃ a : kk', ∀ g, cc g = (χ g - 1) * a :=
-  sorry
+      ¬ ∃ a : kk', ∀ g, cc g = (χ g - 1) * a := by
+  classical
+  -- E2a-i: the valuation ring `O` of `Frac R`, the first stable
+  -- lattice `ρO₀` and its generic identification `e₀`
+  obtain ⟨O, hCRO, hAZO, hDomO, hMFO, hTopO, hTRO, hLocO, hMTO, hDVRO,
+    hAQO, hCSQO, ι, ρO₀, e₀, hOinj, hιZ, hιQ, he₀⟩ :=
+    exists_valuationRing_stable_lattice (ρ := ρ) hv hZinj
+  letI := hCRO
+  letI := hAZO
+  letI := hDomO
+  letI := hMFO
+  letI := hTopO
+  letI := hTRO
+  letI := hLocO
+  letI := hMTO
+  letI := hDVRO
+  letI := hAQO
+  letI := hCSQO
+  -- the `ℤ_p`-compatibility of the two embeddings into `ℚ̄_p`
+  have hZOcompat : ∀ x : ℤ_[p],
+      algebraMap O (AlgebraicClosure ℚ_[p]) (algebraMap ℤ_[p] O x) =
+        algebraMap R (AlgebraicClosure ℚ_[p]) (algebraMap ℤ_[p] R x) := by
+    intro x
+    rw [← hιZ x, hιQ]
+  -- the residue package of `O` (pillar-1 machinery, applied verbatim)
+  obtain ⟨kk', hFk, hFink, hAZk, hTopk, hDisck, hTRk, hAOk, hCSOk,
+    hSTk, hsurj', hopen', hker', -⟩ :=
+    IsHardlyRamified.exists_residue_package_odd (p := p) (R := O)
+      (Fin 2 → O) (by simp)
+  letI := hFk
+  letI := hFink
+  letI := hAZk
+  letI := hTopk
+  letI := hDisck
+  letI := hTRk
+  letI := hAOk
+  letI := hCSOk
+  letI := hSTk
+  -- `ι : R → O` is an integral, local embedding of the coefficient
+  -- rings, so the residue fields embed compatibly
+  letI : Algebra R O := ι.toAlgebra
+  haveI : IsScalarTower ℤ_[p] R O :=
+    IsScalarTower.of_algebraMap_eq fun x => (hιZ x).symm
+  haveI : Algebra.IsIntegral ℤ_[p] O :=
+    Algebra.IsIntegral.of_finite ℤ_[p] O
+  haveI : Algebra.IsIntegral R O :=
+    ⟨fun x => IsIntegral.tower_top
+      (Algebra.IsIntegral.isIntegral (R := ℤ_[p]) x)⟩
+  have hkerkk : RingHom.ker (algebraMap R kk) =
+      IsLocalRing.maximalIdeal R :=
+    IsLocalRing.eq_maximalIdeal
+      (RingHom.ker_isMaximal_of_surjective _ hsurj)
+  have hmax : Ideal.comap (algebraMap R O)
+      (IsLocalRing.maximalIdeal O) = IsLocalRing.maximalIdeal R :=
+    IsLocalRing.eq_maximalIdeal
+      (Ideal.isMaximal_comap_of_isIntegral_of_isMaximal
+        (IsLocalRing.maximalIdeal O))
+  have hkerle : ∀ r ∈ RingHom.ker (algebraMap R kk),
+      ((algebraMap O kk').comp ι) r = 0 := by
+    intro r hr
+    rw [hkerkk, ← hmax, Ideal.mem_comap] at hr
+    rw [RingHom.comp_apply, ← RingHom.mem_ker, hker']
+    exact hr
+  let q : R ⧸ RingHom.ker (algebraMap R kk) ≃+* kk :=
+    RingHom.quotientKerEquivOfSurjective hsurj
+  let j : kk →+* kk' :=
+    (Ideal.Quotient.lift (RingHom.ker (algebraMap R kk))
+      ((algebraMap O kk').comp ι) hkerle).comp q.symm.toRingHom
+  have hj : ∀ r : R, j (algebraMap R kk r) = algebraMap O kk' (ι r) := by
+    intro r
+    have h1 : q.symm (algebraMap R kk r) =
+        Ideal.Quotient.mk (RingHom.ker (algebraMap R kk)) r := by
+      apply q.injective
+      rw [RingEquiv.apply_symm_apply]
+      exact
+        (RingHom.quotientKerEquivOfSurjective_apply_mk hsurj r).symm
+    have h2 : j (algebraMap R kk r) =
+        (Ideal.Quotient.lift (RingHom.ker (algebraMap R kk))
+          ((algebraMap O kk').comp ι) hkerle)
+          (q.symm (algebraMap R kk r)) := rfl
+    rw [h2, h1, Ideal.Quotient.lift_mk]
+    rfl
+  -- residual trace and determinant of `ρ` over `kk`, from the
+  -- triangular data
+  have hbcR : ∀ g : Field.absoluteGaloisGroup ℚ,
+      ((ρ.baseChange kk) g : Module.End kk (kk ⊗[R] V)) =
+        LinearMap.baseChange kk (ρ g) := fun _ => rfl
+  have htrkk : ∀ g, algebraMap R kk (LinearMap.trace R V (ρ g)) =
+      χsub g + χquo g := by
+    intro g
+    have h1 : LinearMap.trace kk (kk ⊗[R] V) ((ρ.baseChange kk) g) =
+        χsub g + χquo g := by
+      rw [LinearMap.trace_eq_matrix_trace kk b, htri₀ g,
+        Matrix.trace_fin_two_of]
+    rw [← h1, hbcR g, LinearMap.trace_baseChange]
+  have hdetkk : ∀ g, algebraMap R kk (LinearMap.det (ρ g)) =
+      χsub g * χquo g := by
+    intro g
+    have h1 : LinearMap.det ((ρ.baseChange kk) g) =
+        χsub g * χquo g := by
+      rw [← LinearMap.det_toMatrix b, htri₀ g, Matrix.det_fin_two_of]
+      ring
+    rw [← h1, hbcR g, LinearMap.det_baseChange]
+  -- trace and determinant of the lattice representation, through the
+  -- generic identification (conjugation-invariance over `ℚ̄_p`)
+  have hbcO : ∀ g : Field.absoluteGaloisGroup ℚ,
+      ((ρO₀.baseChange (AlgebraicClosure ℚ_[p])) g :
+        Module.End (AlgebraicClosure ℚ_[p])
+          ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O))) =
+        LinearMap.baseChange (AlgebraicClosure ℚ_[p]) (ρO₀ g) :=
+    fun _ => rfl
+  have hbcRQ : ∀ g : Field.absoluteGaloisGroup ℚ,
+      ((ρ.baseChange (AlgebraicClosure ℚ_[p])) g :
+        Module.End (AlgebraicClosure ℚ_[p])
+          ((AlgebraicClosure ℚ_[p]) ⊗[R] V)) =
+        LinearMap.baseChange (AlgebraicClosure ℚ_[p]) (ρ g) :=
+    fun _ => rfl
+  have hconj : ∀ g, e₀.conj
+      ((ρO₀.baseChange (AlgebraicClosure ℚ_[p])) g) =
+      (ρ.baseChange (AlgebraicClosure ℚ_[p])) g := by
+    intro g
+    refine LinearMap.ext fun y => ?_
+    rw [LinearEquiv.conj_apply]
+    simp only [LinearMap.comp_apply, LinearEquiv.coe_coe]
+    rw [he₀ g (e₀.symm y), LinearEquiv.apply_symm_apply]
+  have htrO : ∀ g, LinearMap.trace O (Fin 2 → O) (ρO₀ g) =
+      ι (LinearMap.trace R V (ρ g)) := by
+    intro g
+    apply hOinj
+    rw [hιQ]
+    have h1 : algebraMap O (AlgebraicClosure ℚ_[p])
+        (LinearMap.trace O (Fin 2 → O) (ρO₀ g)) =
+        LinearMap.trace (AlgebraicClosure ℚ_[p])
+          ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O))
+          ((ρO₀.baseChange (AlgebraicClosure ℚ_[p])) g) := by
+      rw [hbcO g, LinearMap.trace_baseChange]
+    have h2 : LinearMap.trace (AlgebraicClosure ℚ_[p])
+        ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O))
+        ((ρO₀.baseChange (AlgebraicClosure ℚ_[p])) g) =
+        LinearMap.trace (AlgebraicClosure ℚ_[p])
+          ((AlgebraicClosure ℚ_[p]) ⊗[R] V)
+          ((ρ.baseChange (AlgebraicClosure ℚ_[p])) g) := by
+      rw [← hconj g, LinearMap.trace_conj']
+    have h3 : LinearMap.trace (AlgebraicClosure ℚ_[p])
+        ((AlgebraicClosure ℚ_[p]) ⊗[R] V)
+        ((ρ.baseChange (AlgebraicClosure ℚ_[p])) g) =
+        algebraMap R (AlgebraicClosure ℚ_[p])
+          (LinearMap.trace R V (ρ g)) := by
+      rw [hbcRQ g, LinearMap.trace_baseChange]
+    rw [h1, h2, h3]
+  have hdetO : ∀ g, LinearMap.det (ρO₀ g) =
+      ι (LinearMap.det (ρ g)) := by
+    intro g
+    apply hOinj
+    rw [hιQ]
+    have h1 : algebraMap O (AlgebraicClosure ℚ_[p])
+        (LinearMap.det (ρO₀ g)) =
+        LinearMap.det
+          ((ρO₀.baseChange (AlgebraicClosure ℚ_[p])) g) := by
+      rw [hbcO g, LinearMap.det_baseChange]
+    have h2 : LinearMap.det
+        ((ρO₀.baseChange (AlgebraicClosure ℚ_[p])) g) =
+        LinearMap.det ((ρ.baseChange (AlgebraicClosure ℚ_[p])) g) := by
+      rw [← hconj g, LinearEquiv.conj_apply, LinearMap.comp_assoc,
+        LinearMap.det_conj]
+    have h3 : LinearMap.det ((ρ.baseChange (AlgebraicClosure ℚ_[p])) g) =
+        algebraMap R (AlgebraicClosure ℚ_[p])
+          (LinearMap.det (ρ g)) := by
+      rw [hbcRQ g, LinearMap.det_baseChange]
+    rw [h1, h2, h3]
+  -- the walk's residual character: the push of the nontrivial member
+  -- of `{χsub, χquo}` along the residue embedding
+  obtain ⟨ψ, hψsum, hψprod⟩ : ∃ ψ : Field.absoluteGaloisGroup ℚ →* kk',
+      (∀ g, j (χsub g) + j (χquo g) = 1 + ψ g) ∧
+      (∀ g, j (χsub g) * j (χquo g) = ψ g) := by
+    rcases hdisj with h1 | h1
+    · refine ⟨j.toMonoidHom.comp χquo, fun g => ?_, fun g => ?_⟩
+      · rw [h1 g, map_one, MonoidHom.comp_apply]
+        rfl
+      · rw [h1 g, map_one, one_mul, MonoidHom.comp_apply]
+        rfl
+    · refine ⟨j.toMonoidHom.comp χsub, fun g => ?_, fun g => ?_⟩
+      · rw [h1 g, map_one, add_comm (j (χsub g)) 1,
+          MonoidHom.comp_apply]
+        rfl
+      · rw [h1 g, map_one, mul_one, MonoidHom.comp_apply]
+        rfl
+  have htrψ : ∀ g, algebraMap O kk'
+      (LinearMap.trace O (Fin 2 → O) (ρO₀ g)) = 1 + ψ g := by
+    intro g
+    rw [htrO g, ← hj, htrkk g, map_add, hψsum g]
+  have hdetψ : ∀ g, algebraMap O kk' (LinearMap.det (ρO₀ g)) = ψ g := by
+    intro g
+    rw [hdetO g, ← hj, hdetkk g, map_mul, hψprod g]
+  -- `ψ ≠ 1`: its values are those of the residual cyclotomic
+  -- character (`det = ω`, and `p` is odd)
+  have hψcyc : ∀ g, ψ g = algebraMap ℤ_[p] kk'
+      (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv) := by
+    intro g
+    have hdρ : LinearMap.det (ρ g) = algebraMap ℤ_[p] R
+        (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv) := by
+      rw [← GaloisRep.det_apply]
+      exact hρ.det g
+    rw [← hdetψ g, hdetO g, hdρ, hιZ,
+      ← IsScalarTower.algebraMap_apply ℤ_[p] O kk']
+  have hψne : ∃ g, ψ g ≠ 1 := by
+    obtain ⟨g₀, hg₀⟩ :=
+      exists_cyclotomicCharacter_residual_ne_one hpodd (kk' := kk')
+    exact ⟨g₀, by rw [hψcyc g₀]; exact hg₀⟩
+  -- irreducibility of the lattice's generic fibre, across `e₀`
+  have hirrO : (ρO₀.baseChange (AlgebraicClosure ℚ_[p])).IsIrreducible :=
+    isIrreducible_of_equivariant e₀ he₀ hirr
+  -- E2a-ii: Ribet's walk produces the nonsplit prescribed-order
+  -- lattice
+  obtain ⟨ρO', e', ρE, er, cc, he', her, htri, hnonsplit⟩ :=
+    exists_ribet_walk_nonsplit_lattice hOinj hsurj' hopen' hker'
+      hirrO ψ hψne htrψ hdetψ
+  -- assemble, composing the generic identifications
+  refine ⟨O, hCRO, hAZO, hDomO, hMFO, hTopO, hTRO, hLocO, hMTO, hAQO,
+    hCSQO, ρO', e'.trans e₀, kk', hFk, hFink, hAZk, hTopk, hDisck,
+    hTRk, hAOk, hCSOk, hSTk, ρE, er, ψ, cc, hOinj, hZOcompat, ?_,
+    hsurj', hopen', hker', her, htri, hnonsplit⟩
+  intro g x
+  rw [LinearEquiv.trans_apply, he' g x, LinearEquiv.trans_apply,
+    he₀ g (e' x)]
 
 omit [IsDomain R] [Module.Finite ℤ_[p] R] [IsModuleTopology ℤ_[p] R] in
 /-- **Lattice determinant transfer** (Eisenstein pillar E2b′-det;
