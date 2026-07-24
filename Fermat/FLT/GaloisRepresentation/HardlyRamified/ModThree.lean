@@ -4215,11 +4215,180 @@ theorem smul_differentIdeal {F : Type*} [Field F] [NumberField F]
       differentIdeal ℤ (NumberField.RingOfIntegers F) :=
   smul_differentIdeal_eq σ
 
-/-- **The Fontaine bound at a prime over `3`, wild case** (sorry node,
-isolated 2026-07-24 as the genuinely deep Fontaine input of the
-distinguished-prime bound below, after its tame case was split off
-onto the PROVEN tame different bound
-`not_pow_ramificationIdx_dvd_differentIdeal`): given that the
+/-- **Eventual triviality of the lower-numbering ramification
+filtration** (PROVEN 2026-07-24 — the level-selection input for the
+Fontaine decomposition of the wild different bound below): for any
+proper ideal `Q` of `𝓞 K`, some level of the filtration
+`i ↦ inertia(Q^(i+1)) = {σ ∈ Gal(K/ℚ) | ∀ x ∈ 𝓞 K, σx − x ∈ Q^(i+1)}`
+(Serre's lower-numbering ramification group `G_i`, *Corps Locaux* IV
+§1, spelled with mathlib's `Ideal.inertia` applied to the power
+`Q^(i+1)`) is the trivial subgroup.  Proof: a nontrivial
+`σ ∈ Gal(K/ℚ)` moves some element of `K`, hence — writing it as a
+ratio of algebraic integers (`IsFractionRing.div_surjective`) — some
+algebraic integer `x`; the Krull intersection theorem
+(`Ideal.iInf_pow_eq_bot_of_isDomain`) in the Noetherian domain `𝓞 K`
+then yields a level `m` with `σ • x − x ∉ Q ^ (m + 1)`, excluding `σ`
+from level `m`; the sup of these finitely many levels over the finite
+group `Gal(K/ℚ)` bounds the whole filtration. -/
+theorem exists_pow_inertia_eq_bot
+    (K : IntermediateField ℚ (AlgebraicClosure ℚ)) [NumberField K]
+    (Q : Ideal (NumberField.RingOfIntegers K)) (hQtop : Q ≠ ⊤) :
+    ∃ n : ℕ, (Q ^ (n + 1)).inertia (K ≃ₐ[ℚ] K) = ⊥ := by
+  classical
+  have hKrull : (⨅ m : ℕ, Q ^ m) = ⊥ := Ideal.iInf_pow_eq_bot_of_isDomain Q hQtop
+  -- each nontrivial automorphism is excluded at some level
+  have hmove : ∀ σ : K ≃ₐ[ℚ] K, σ ≠ 1 →
+      ∃ m : ℕ, σ ∉ (Q ^ (m + 1)).inertia (K ≃ₐ[ℚ] K) := by
+    intro σ hσ
+    -- `σ` moves some algebraic integer
+    have hx : ∃ x : NumberField.RingOfIntegers K, σ • x ≠ x := by
+      by_contra hfix
+      push Not at hfix
+      apply hσ
+      refine AlgEquiv.ext fun y => ?_
+      obtain ⟨a, b, hb, rfl⟩ :=
+        IsFractionRing.div_surjective (A := NumberField.RingOfIntegers K) y
+      have ha : σ (algebraMap (NumberField.RingOfIntegers K) K a) =
+          algebraMap (NumberField.RingOfIntegers K) K a :=
+        congrArg (algebraMap (NumberField.RingOfIntegers K) K) (hfix a)
+      have hbfix : σ (algebraMap (NumberField.RingOfIntegers K) K b) =
+          algebraMap (NumberField.RingOfIntegers K) K b :=
+        congrArg (algebraMap (NumberField.RingOfIntegers K) K) (hfix b)
+      rw [AlgEquiv.one_apply, map_div₀, ha, hbfix]
+    obtain ⟨x, hxne⟩ := hx
+    have hz : σ • x - x ≠ 0 := sub_ne_zero.mpr hxne
+    have hout : ∃ m : ℕ, σ • x - x ∉ Q ^ m := by
+      by_contra hall
+      push Not at hall
+      refine hz ?_
+      have hmemi : σ • x - x ∈ (⨅ m : ℕ, Q ^ m) :=
+        (Submodule.mem_iInf _).mpr hall
+      rwa [hKrull, Ideal.mem_bot] at hmemi
+    obtain ⟨m, hm⟩ := hout
+    refine ⟨m, fun hmem' => hm ?_⟩
+    have h1 : σ • x - x ∈ Q ^ (m + 1) := by
+      have h2 := AddSubgroup.mem_inertia.mp hmem' x
+      rwa [Submodule.mem_toAddSubgroup] at h2
+    exact Ideal.pow_le_pow_right (Nat.le_succ m) h1
+  -- the sup of the exclusion levels over the finite group
+  choose f hf using hmove
+  set g : (K ≃ₐ[ℚ] K) → ℕ := fun σ => if h : σ = 1 then 0 else f σ h with hg
+  refine ⟨Finset.univ.sup g, ?_⟩
+  rw [Subgroup.eq_bot_iff_forall]
+  intro σ hσ
+  by_contra hσ1
+  have hgσ : f σ hσ1 ≤ Finset.univ.sup g := by
+    have h1 : g σ = f σ hσ1 := dif_neg hσ1
+    exact h1 ▸ Finset.le_sup (Finset.mem_univ σ)
+  have hle : Q ^ (Finset.univ.sup g + 1) ≤ Q ^ (f σ hσ1 + 1) :=
+    Ideal.pow_le_pow_right (Nat.add_le_add_right hgσ 1)
+  refine hf σ hσ1 (AddSubgroup.mem_inertia.mpr fun x => ?_)
+  have h2 := AddSubgroup.mem_inertia.mp hσ x
+  rw [Submodule.mem_toAddSubgroup] at h2 ⊢
+  exact hle h2
+
+/-- **The different-exponent bound through the lower ramification
+filtration** (sorry node, created 2026-07-24 — leaf (a) of the
+decomposition of the wild Fontaine bound below; Serre, *Corps Locaux*
+IV §1 Prop. 4 together with completion invariance of the different,
+*Corps Locaux* III §4 Prop. 10): if `Q^d` divides the different ideal
+`𝔡_{K/ℚ}` at a nonzero prime `Q` of the Galois number field `K/ℚ`,
+then `d ≤ Σ_{i<n} (#G_i − 1)`, where
+`G_i = inertia(Q^(i+1)) = {σ ∈ Gal(K/ℚ) | ∀ x ∈ 𝓞 K, σx − x ∈ Q^(i+1)}`
+is the `i`-th lower-numbering ramification group at `Q` and the level
+`n` already has `G_n = ⊥` (so the truncated sum is the full one).
+Intended proof: pass to the completion `K_Q/ℚ_p`; the global groups
+`G_i` coincide with the local ones (membership in `Q^(i+1)` is the
+valuation bound `v_Q(σx − x) ≥ i+1` since `𝓞 K` is Dedekind, and the
+congruences extend to the completed integer ring by density and
+continuity); the local extension of complete DVRs is monogenic,
+`𝒪_{K_Q} = ℤ_p[θ]` (*Corps Locaux* III §6 Prop. 12), so the local
+different is generated by `f'(θ)` (III §6 Cor. 2), whose valuation is
+exactly `Σ_{σ≠1} v_Q(θ − σθ) = Σ_{i≥0} (#G_i − 1)` (IV §1 Prop. 4 and
+Lemme 1); completion invariance of the different (III §4 Prop. 10)
+identifies this with the exponent of `Q` in the global `𝔡_{K/ℚ}`.
+Only the `≤` direction of Prop. 4's equality is stated, since only it
+is consumed by the Fontaine glue below. -/
+theorem le_sum_card_inertia_pow_of_pow_dvd_differentIdeal
+    (K : IntermediateField ℚ (AlgebraicClosure ℚ)) [NumberField K]
+    [IsGalois ℚ K]
+    (Q : Ideal (NumberField.RingOfIntegers K)) (hQ : Q.IsPrime)
+    (hQbot : Q ≠ ⊥)
+    (n : ℕ) (hn : (Q ^ (n + 1)).inertia (K ≃ₐ[ℚ] K) = ⊥)
+    (d : ℕ) (hd : Q ^ d ∣ differentIdeal ℤ (NumberField.RingOfIntegers K)) :
+    d ≤ ∑ i ∈ Finset.range n,
+      (Nat.card ((Q ^ (i + 1)).inertia (K ≃ₐ[ℚ] K)) - 1) :=
+  sorry
+
+/-- **Fontaine's ramification bound at `3` in lower-numbering form**
+(sorry node, created 2026-07-24 — leaf (b) of the decomposition of the
+wild Fontaine bound below, and the genuinely deep input: Fontaine, *Il
+n'y a pas de variété abélienne sur ℤ*, Invent. Math. 81 (1985),
+Thm. A/§3; Moon–Taguchi, *Refinement of Tate's discriminant bound and
+non-existence theorems for mod p Galois representations*, Doc. Math.
+Extra Vol. Kato (2003), §2): for the kernel field `K` of the mod-3
+hardly ramified representation `ρ` (i.e. `K.fixingSubgroup = u.ker`
+with `u` a matrix realization of the base change of `ρ`, so that `K`
+is cut out by `ρ` itself) and any prime `Q` of `𝓞 K` over `3`, the
+lower-numbering ramification filtration
+`G_i = inertia(Q^(i+1)) ≤ Gal(K/ℚ)` satisfies
+`2·Σ_{i<n} (#G_i − 1) + 2 ≤ 3·e(Q∣3)` at any level `n` with
+`G_n = ⊥`.  Intended content: by Galois conjugacy of the filtration
+(`σ G_i(Q) σ⁻¹ = G_i(σQ)`, and all primes over `3` are conjugate) it
+suffices to treat the distinguished prime induced by the chosen
+embedding `ι : ℚᵃˡᵍ → ℚ₃ᵃˡᵍ` (the construction of
+`exists_prime_over_not_mem_sq_of_le_fixingSubgroup`); there the
+completion of `K` at `Q` is `M := ℚ₃(ι K)`, the global filtration
+coincides with the local one of `M/ℚ₃` by density, and `M = ℚ₃(V)` is
+the field generated by the points of the finite flat group scheme
+`G/ℤ₃` killed by `3` prolonging the local representation (`hρ.isFlat`
+through `GaloisRep.HasFlatProlongationAt`, as unpacked in
+`exists_connectedEtale_subgroup_at_three`); Fontaine's theorem bounds
+the upper-numbering ramification of `M/ℚ₃` — trivial above
+`1 + 1/(3−1) = 3/2` in Fontaine's numbering — and the Herbrand
+transition (Serre IV §3) converts this to the lower-numbering bound
+`Σ_{i≥0}(#G_i − 1) ≤ (3/2)·e − 1`, i.e. the stated
+`2·Σ + 2 ≤ 3·e`.  Sharpness: the peu-ramifié kernel field
+`ℚ₃(ζ₃, u^{1/3})` has `e = 6` and `Σ = 8`, attaining equality.  The
+tame case is also covered (`Σ = e − 1` gives `2e ≤ 3e`), so the
+wildness witness `hwild` is strictly extra information, recorded
+because it is freely available to a prover of this leaf. -/
+theorem two_mul_sum_card_inertia_pow_add_two_le_of_flat_at_three {k : Type u}
+    [Finite k] [Field k]
+    [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (b : Module.Basis (Fin 2) (AlgebraicClosure k)
+      ((AlgebraicClosure k) ⊗[k] V))
+    (e : AlgebraicClosure k ≃+* Dickson.K 3)
+    (u : Γ ℚ →* GL (Fin 2) (Dickson.K 3))
+    (hu : ∀ g, ((u g : GL (Fin 2) (Dickson.K 3)) :
+      Matrix (Fin 2) (Fin 2) (Dickson.K 3)) =
+      (LinearMap.toMatrix b b ((Slop.OddRep.baseChange (AlgebraicClosure k)
+        (MonoidHomClass.toMonoidHom ρ)) g)).map e)
+    (K : IntermediateField ℚ (AlgebraicClosure ℚ)) [NumberField K]
+    [IsGalois ℚ K] (hfix : K.fixingSubgroup = u.ker)
+    (Q : Ideal (NumberField.RingOfIntegers K)) (hQ : Q.IsPrime)
+    (hmem : ((3 : ℕ) : NumberField.RingOfIntegers K) ∈ Q)
+    (hwild : (3 : ℕ) ∣ Ideal.ramificationIdx' (Ideal.span {((3 : ℕ) : ℤ)}) Q)
+    (n : ℕ) (hn : (Q ^ (n + 1)).inertia (K ≃ₐ[ℚ] K) = ⊥) :
+    2 * (∑ i ∈ Finset.range n,
+        (Nat.card ((Q ^ (i + 1)).inertia (K ≃ₐ[ℚ] K)) - 1)) + 2 ≤
+      3 * Ideal.ramificationIdx' (Ideal.span {((3 : ℕ) : ℤ)}) Q :=
+  sorry
+
+/-- **The Fontaine bound at a prime over `3`, wild case** (DECOMPOSED
+2026-07-24 into the two sorry nodes above — the ramification-filtration
+different bound `le_sum_card_inertia_pow_of_pow_dvd_differentIdeal`
+(Serre IV §1 Prop. 4, pure algebraic number theory) and Fontaine's
+filtration bound
+`two_mul_sum_card_inertia_pow_add_two_le_of_flat_at_three` (where the
+flatness input `hρ.isFlat` genuinely lives) — with the
+level-selection input `exists_pow_inertia_eq_bot` and the arithmetic
+glue PROVEN here: `2d ≤ 2·Σ ≤ 3e − 2 ≤ 3e`, the witness being the
+given prime `Q` itself): given that the
 ramification of `K` at `3` is wild — witnessed by `3 ∣ e(Q∣3)` at the
 prime `Q` (by conjugacy in the Galois extension `K/ℚ` every prime over
 `3` then has the same wildly divisible index, via
@@ -4286,8 +4455,22 @@ theorem exists_prime_over_three_differentIdeal_exponent_bound_of_wild {k : Type 
     ∃ (Q₀ : Ideal (NumberField.RingOfIntegers K)) (_ : Q₀.IsPrime)
       (_ : ((3 : ℕ) : NumberField.RingOfIntegers K) ∈ Q₀),
       ∀ d : ℕ, Q₀ ^ d ∣ differentIdeal ℤ (NumberField.RingOfIntegers K) →
-        2 * d ≤ 3 * Ideal.ramificationIdx' (Ideal.span {((3 : ℕ) : ℤ)}) Q₀ :=
-  sorry
+        2 * d ≤ 3 * Ideal.ramificationIdx' (Ideal.span {((3 : ℕ) : ℤ)}) Q₀ := by
+  classical
+  obtain ⟨n, hn⟩ := exists_pow_inertia_eq_bot K Q hQ.ne_top
+  refine ⟨Q, hQ, hmem, fun d hd => ?_⟩
+  have hQbot : Q ≠ ⊥ := by
+    intro h0
+    rw [h0, Ideal.mem_bot] at hmem
+    have h1 : ((3 : ℕ) : K) = 0 := by
+      have h2 := congrArg (algebraMap (NumberField.RingOfIntegers K) K) hmem
+      rwa [map_natCast, map_zero] at h2
+    norm_num at h1
+  have h1 := le_sum_card_inertia_pow_of_pow_dvd_differentIdeal K Q hQ hQbot
+    n hn d hd
+  have h2 := two_mul_sum_card_inertia_pow_add_two_le_of_flat_at_three
+    V hV hρ b e u hu K hfix Q hQ hmem hwild n hn
+  omega
 
 /-- **The Fontaine bound at a distinguished prime over `3`**
 (DECOMPOSED 2026-07-24 into the wild sorry node
