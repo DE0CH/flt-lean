@@ -2048,33 +2048,245 @@ theorem exists_weightTwoEigenform_trace_eq_of_matchesResidualTraces
     hΦ q hq fun h => hqS (Finset.mem_union_left _ h)]
   exact hpt q hq fun h => hqS (Finset.mem_union_right _ h)
 
+/-! ### The Eisenstein cut behind the residually reducible branch
+
+Pillar 4's `p ≥ 5` leaf DECOMPOSED (2026-07-24), following the audit
+below, into the LEVEL-2 EISENSTEIN CONTRADICTION (Mazur) — not into
+Skinner–Wiles patching machinery.
+
+AUDIT (2026-07-24, both directions):
+
+* *Reachability.* The leaf IS genuinely reachable with formally
+  unrefuted hypotheses: the dichotomy in
+  `exists_weightTwoEigenform_trace_eq_of_isIrreducible` performs
+  `by_cases` on residual irreducibility with NO information about
+  which branch obtains — pillar 1's residue field is abstract, and
+  `Family.lean`'s trace atoms invoke the chain on arbitrary hardly
+  ramified `p`-adic representations (compatible-family members) with
+  no residual data. Nor can `Reducible.lean`'s B5
+  (`not_isIrreducible_of_isHardlyRamified`, which makes every hardly
+  ramified residual representation at `ℓ ≥ 5` reducible) be invoked
+  to trivialize either branch: B5 is DOWNSTREAM of this file (its
+  proof runs through `Lift.lean` and `Family.lean`, which consume the
+  assemblies here), so any such route is circular. A
+  hypothesis-narrowing redesign (threading residual irreducibility of
+  the `Lift.lean` lift through the chain so the reducible branch is
+  never taken) would rewrite proven consumers' signatures across
+  three files and is rejected.
+
+* *Content.* The leaf's hypothesis set — hardly ramified `p`-adic
+  `ρ`, irreducible over `ℚ̄_p`, residually REDUCIBLE, `p ≥ 5` — is
+  classically EMPTY, and, unlike the residually irreducible branch
+  (where emptiness is the full Wiles chain), its emptiness has a
+  classical proof strictly shallower than Skinner–Wiles: Mazur's
+  level-2 Eisenstein argument. The residual Jordan–Hölder characters
+  are `1` and `ω = χ̄_cyc` (pillar E1 below); Ribet's lattice lemma
+  converts irreducibility over `ℚ̄_p` into a NONSPLIT hardly ramified
+  extension with trivial sub-character (pillar E2); and that
+  extension group vanishes at `p ≥ 5` (pillar E3 — Herbrand's theorem
+  at `B₂ = 1/6` plus the triviality of the conductor-2 ray; in
+  Hecke-algebra language, the index of the level-`N` Eisenstein ideal
+  is `num((N−1)/12)`, which is `1` at `N = 2`). Full Skinner–Wiles
+  (Publ. Math. IHÉS 89, 1999) or Pan (JAMS 35, 2022) is needed only
+  at general conductor; at conductor dividing `2` any honest
+  modularity conclusion is contradiction-shaped anyway
+  (`S₂(Γ₀(2)) = 0` is proven above) — the same boundary phenomenon
+  audited at pillar 5. The leaf is therefore discharged by
+  contradiction, exactly like its `p = 3` instance (3-adic
+  classification), with the depth living in the three sorried
+  Eisenstein pillars E1–E3.
+
+* *`p ≥ 5` is load-bearing:* pillar E3 is FALSE at `p = 3` — there
+  `ω^{−1} = ω`, and the Kummer class of `2` (the extension cut out by
+  `ℚ(μ₃, 2^{1/3})`: unramified outside `{2, 3}`, tame at `2` since
+  the degree `3` is odd, flat at `3`) is a nonsplit hardly ramified
+  inhabitant; it is the same class `ModThree.lean`'s classification
+  lives with. The `2`-ramified escape closes exactly when
+  `p ∤ 2² − 1 = 3`.
+
+CIRCULARITY GUARD (inherited, mandatory): E1–E3 must not be proven
+through `Family.lean` (it consumes this file's assemblies) nor
+through `Reducible.lean`'s B5 (downstream of this file through
+`Lift.lean` and `Family.lean`). -/
+
+/-- **Residual Eisenstein classification** (Eisenstein pillar E1;
+sorry node — the conductor-`2p` character pinning): a REDUCIBLE
+hardly ramified mod-`p` representation over a finite field `k` is
+triangular in a suitable basis with diagonal CHARACTERS, one of which
+— the sub-character or the quotient character — is TRIVIAL. Classical
+proof (the residual instance of the character analysis proven one
+level up in `Family.lean`, which the circularity guard forbids
+consuming): reducibility over the field `k` yields a stable line,
+hence a triangular basis with diagonal characters `χsub, χquo`; at
+`2` the hardly ramified quotient-line character is unramified and
+`det = χ̄_cyc` is unramified, so BOTH diagonal characters are
+unramified at `2` (the local Jordan–Hölder multiset at `2` is
+`{κ, δ}` with `δ` unramified and `κ·δ = det` unramified on inertia);
+a character of `Gal(ℚ̄/ℚ)` with values in `k^×` (order prime to `p`)
+unramified outside `p` factors through `Gal(ℚ(μ_p)/ℚ)` — the ray
+class group of `ℚ` of conductor `2p^k∞` is `(ℤ/2p^k)^× ≅ (ℤ/p^k)^×`
+(Kronecker–Weber; Neukirch, *Algebraic Number Theory*, VI §6–7), and
+the `p`-part dies in `k^×` — so each diagonal character is a power
+`ω^i` of the mod-`p` cyclotomic character; flatness at `p` restricts
+the inertia weights of the Jordan–Hölder characters of the generic
+fibre of a finite flat group scheme over `ℤ_p` (`e = 1 < p − 1`) to
+`{ω⁰, ω¹}` (Raynaud, *Schémas en groupes de type `(p, …, p)`*, Bull.
+Soc. Math. France 102 (1974), 3.3.2; Serre, Duke Math. J. 54 (1987),
+§2.4, 4.1), while `det = χ̄_cyc` forces `i + j ≡ 1 mod (p − 1)`;
+hence `{χsub, χquo} = {1, ω}` and in particular one of the two is
+trivial. Soundness (audit 2026-07-24): the hypothesis set is
+genuinely inhabited (`1 ⊕ χ̄_cyc` itself), and the conclusion holds
+for every inhabitant by the argument cited; `p ≥ 5` is NOT needed —
+oddness gives `e = 1 < p − 1`. -/
+theorem exists_residual_triangular_of_not_isIrreducible
+    {k : Type*} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type*} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hpodd hW ρbar)
+    (hred : ¬ ρbar.IsIrreducible) :
+    ∃ (b : Module.Basis (Fin 2) k W)
+      (χsub χquo : Field.absoluteGaloisGroup ℚ →* k)
+      (cc : Field.absoluteGaloisGroup ℚ → k),
+      (∀ g, LinearMap.toMatrix b b (ρbar g) = !![χsub g, cc g; 0, χquo g]) ∧
+      ((∀ g, χsub g = 1) ∨ (∀ g, χquo g = 1)) :=
+  sorry
+
+/-- **The Eisenstein lattice** (Eisenstein pillar E2; sorry node —
+Ribet's lemma with prescribed order, plus integral transfer of the
+hardly ramified conditions): a hardly ramified `p`-adic
+representation that is irreducible over `ℚ̄_p` but residually
+reducible — with the residual triangular data of pillar E1 — reduces,
+on a suitable stable lattice over the valuation ring of `Frac R`
+(finite over `ℚ_p` since `R` is a module-finite `ℤ_p`-domain), to a
+NONSPLIT hardly ramified extension with TRIVIAL sub-character: in
+matrix form `!![1, cc g; 0, χ g]` on the standard basis of `kk'²`,
+with no `a` satisfying `∀ g, cc g = (χ g − 1) a` (the coboundary
+criterion: such an `a` marks a stable complement `e₁ + a·e₀`).
+Classical construction: `E := Frac R` is a finite extension of `ℚ_p`;
+`ρ ⊗ E` is irreducible (irreducibility descends from `ℚ̄_p`); its
+residual semisimplification is `1 ⊕ ω` by the E1 data on the given
+reduction (independence of the reduction: Brauer–Nesbitt); the two
+characters are DISTINCT (`ω ≠ 1` for odd `p`), so Ribet's lemma in
+its prescribed-order form — Ribet, *A modular construction of
+unramified `p`-extensions of `ℚ(μ_p)`*, Invent. Math. 34 (1976),
+Prop. 2.1; Bellaïche–Chenevier, *Families of Galois representations
+and Selmer groups*, Astérisque 324 (2009), ch. 1: for an irreducible
+generic representation BOTH orderings are realized by suitable stable
+lattices — produces a stable `𝒪_E`-lattice whose reduction is
+nonsplit with sub-character `1`. The reduction is hardly ramified by
+the same residual-transfer arguments as pillar 1 (`Residual.lean`):
+determinant and outside-`2p` unramifiedness pass to any reduction;
+flatness at `p` passes to stable lattices and their reductions
+(scheme-theoretic closure — sub- and quotient objects of finite flat
+group schemes over `ℤ_p` are finite flat; Raynaud, loc. cit.; Tate in
+Cornell–Silverman–Stevens ch. V); the tame quotient line at `2`
+saturates inside the new lattice with the same unramified
+square-trivial character. Soundness (audit 2026-07-24): the
+hypothesis set is classically empty (section audit), but the cited
+derivation is hypothesis-honest — every step consumes exactly the
+listed hypotheses and none consumes the emptiness; `p ≥ 5` is not
+consumed (oddness gives `ω ≠ 1`), so it is not demanded. -/
+theorem exists_eisenstein_nonsplit_lattice_of_residually_reducible
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hZinj : Function.Injective (algebraMap ℤ_[p] R))
+    (hρ : IsHardlyRamified hpodd hv ρ)
+    (hirr : (ρ.baseChange (AlgebraicClosure ℚ_[p])).IsIrreducible)
+    {kk : Type u} [Field kk] [Finite kk] [Algebra ℤ_[p] kk]
+    [TopologicalSpace kk] [DiscreteTopology kk] [IsTopologicalRing kk]
+    [Algebra R kk] [ContinuousSMul R kk]
+    (hsurj : Function.Surjective (algebraMap R kk))
+    (b : Module.Basis (Fin 2) kk (kk ⊗[R] V))
+    (χsub χquo : Field.absoluteGaloisGroup ℚ →* kk)
+    (cc₀ : Field.absoluteGaloisGroup ℚ → kk)
+    (htri₀ : ∀ g, LinearMap.toMatrix b b ((ρ.baseChange kk) g) =
+      !![χsub g, cc₀ g; 0, χquo g])
+    (hdisj : (∀ g, χsub g = 1) ∨ (∀ g, χquo g = 1)) :
+    ∃ (kk' : Type u) (_ : Field kk') (_ : Finite kk')
+      (_ : Algebra ℤ_[p] kk') (_ : TopologicalSpace kk')
+      (_ : DiscreteTopology kk') (_ : IsTopologicalRing kk')
+      (ρE : GaloisRep ℚ kk' (Fin 2 → kk'))
+      (hrankE : Module.rank kk' (Fin 2 → kk') = 2)
+      (_ : IsHardlyRamified hpodd hrankE ρE)
+      (χ : Field.absoluteGaloisGroup ℚ →* kk')
+      (cc : Field.absoluteGaloisGroup ℚ → kk'),
+      (∀ g, LinearMap.toMatrix (Pi.basisFun kk' (Fin 2))
+          (Pi.basisFun kk' (Fin 2)) (ρE g) = !![1, cc g; 0, χ g]) ∧
+      ¬ ∃ a : kk', ∀ g, cc g = (χ g - 1) * a :=
+  sorry
+
+/-- **Level-2 Eisenstein vanishing** (Eisenstein pillar E3; sorry node
+— Mazur/Herbrand, the deep arithmetic input of the residually
+reducible branch): a hardly ramified mod-`p` extension with TRIVIAL
+sub-character SPLITS when `p ≥ 5` — some `a : kk'` writes the
+upper-right entry as the coboundary `cc g = (χ g − 1) a`. Classical
+proof: the extension class lives in `H¹(ℚ, ω^{−1})` (the determinant
+field of `IsHardlyRamified` pins the quotient character `χ` to
+`ω = χ̄_cyc`, and the twist `Hom(χ, 1)` is `ω^{−1}`), subject to:
+unramified outside `{2, p}` (the hardly ramified hypothesis); LOCALLY
+TRIVIAL at `p` — the flat model is an extension of the connected
+`μ_p` by the étale `ℤ/p` over `ℤ_p`, split by its own connected–étale
+sequence (Tate, in Cornell–Silverman–Stevens ch. V; equivalently
+`ω^{−1} = ω^{p−2}` has inertia weight `p − 2 ∉ {0, 1}` for `p ≥ 5`,
+outside Raynaud's flat range); and UNRAMIFIED at `2` — for
+`ℓ = 2 ≠ p` the ramified quotient of `H¹(ℚ_2, ω^{−1})` is controlled
+by `Frob₂`-equivariance on tame inertia, nonzero only when
+`ω²(Frob₂) = 1`, i.e. `p ∣ 2² − 1 = 3`, excluded by `hp5` (see the
+section audit for the genuine `p = 3` counterexample, the Kummer
+class of `2`). The surviving group is `Hom_{Gal}` out of the
+`ω^{−1}`-eigenspace of `Cl(ℚ(μ_p)) ⊗ 𝔽_p`, which VANISHES by
+Herbrand's theorem: `ω^{−1} = ω^{1−2}` and
+`p ∤ num(B₂) = num(1/6) = 1` (Herbrand 1932; Washington,
+*Introduction to Cyclotomic Fields*, Thm. 6.17; Ribet, Invent. Math.
+34 (1976) is the unused converse). Equivalently, in Hecke-algebra
+language: the index of the Eisenstein ideal at prime level `N` is
+`num((N−1)/12)` (Mazur, *Modular curves and the Eisenstein ideal*,
+Publ. Math. IHÉS 47 (1977)), which is `1` at `N = 2` — no Eisenstein
+congruence exists at conductor `2`, which is why the Skinner–Wiles
+congruence machinery has nothing to produce here and the residually
+reducible branch terminates in this vanishing instead. Soundness
+(audit 2026-07-24): the hypothesis set is inhabited (split extensions
+`1 ⊕ ω` in triangular form), the conclusion is true of every
+inhabitant by the vanishing just cited, and the statement is exactly
+`H¹_{hardly ramified}(ℚ, ω^{−1}) = 0` in matrix coordinates. -/
+theorem eisenstein_trivial_sub_extension_splits_of_five_le
+    (hp5 : 5 ≤ p)
+    {kk' : Type u} [Field kk'] [Finite kk'] [Algebra ℤ_[p] kk']
+    [TopologicalSpace kk'] [DiscreteTopology kk'] [IsTopologicalRing kk']
+    {ρE : GaloisRep ℚ kk' (Fin 2 → kk')}
+    (hrankE : Module.rank kk' (Fin 2 → kk') = 2)
+    (hρE : IsHardlyRamified hpodd hrankE ρE)
+    (χ : Field.absoluteGaloisGroup ℚ →* kk')
+    (cc : Field.absoluteGaloisGroup ℚ → kk')
+    (htri : ∀ g, LinearMap.toMatrix (Pi.basisFun kk' (Fin 2))
+      (Pi.basisFun kk' (Fin 2)) (ρE g) = !![1, cc g; 0, χ g]) :
+    ∃ a : kk', ∀ g, cc g = (χ g - 1) * a :=
+  sorry
+
 /-- **The residually reducible branch at `p ≥ 5`** (pillar 4 leaf;
-sorry node — the Skinner–Wiles shadow): a hardly ramified `p`-adic
-representation, `p ≥ 5`, that is irreducible over `ℚ̄_p` but whose
-residual representation is REDUCIBLE is still modular, in the same
-trace sense as pillar 3. Classically the residual semisimplification
-is `1 ⊕ χ̄_cyc` — its two characters are unramified outside `2p` with
-cyclotomic product, tame at `2`, flat-constrained at `p`, so
-Minkowski-style arguments pin them (compare the proven character
-analysis `char_add_char_eq_one_add_cyclotomicCharacter` in
-`Family.lean`, the same classification one level up) — which is
-exactly the Eisenstein-congruence situation of Skinner–Wiles,
-*Residually reducible representations and modular forms*, Publ. Math.
-IHÉS 89 (1999); the de Rham/Fontaine–Mazur formulation matching this
-statement is Pan, *The Fontaine–Mazur conjecture in the residually
-reducible case*, JAMS 35 (2022). The `p = 3` instance is NOT here: it
-is discharged (AUDIT 2026-07-24) by contradiction from the 3-adic
-classification — see the pillar-4 assembly below — so this leaf
-carries exactly the `p ≥ 5` Skinner–Wiles/Pan content (`hp5` is
-genuinely available to any future decomposition, e.g. for the
-Eisenstein-ideal congruence arguments, which need `p ∤ 6`
-corner-case-free room). -/
+PROVEN 2026-07-24 as an assembly over the Eisenstein cut E1–E3 above
+— see the section docstring for the full audit): a hardly ramified
+`p`-adic representation, `p ≥ 5`, irreducible over `ℚ̄_p` with
+REDUCIBLE residual representation is modular in the trace sense of
+pillar 3 — vacuously: the hypotheses are contradictory, and the
+contradiction is Mazur's level-2 Eisenstein argument. E1 pins the
+residual triangular characters to `{1, ω}`; E2 (Ribet's lemma)
+produces a nonsplit hardly ramified extension with trivial
+sub-character; E3 (Herbrand/Mazur) splits every such extension at
+`p ≥ 5`. This mirrors the `p = 3` discharge in the pillar-4 assembly
+below (3-adic classification), with the Skinner–Wiles/Pan citations
+of the former leaf docstring now localized in the E2/E3 pillars where
+their conductor-2 content actually lives (Skinner–Wiles, Publ. Math.
+IHÉS 89 (1999); Pan, JAMS 35 (2022); Mazur, Publ. Math. IHÉS 47
+(1977)). -/
 theorem exists_weightTwoEigenform_trace_eq_of_residually_reducible_of_five_le
     (hp5 : 5 ≤ p)
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
     (hZinj : Function.Injective (algebraMap ℤ_[p] R))
-    (hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
+    (_hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
     (hρ : IsHardlyRamified hpodd hv ρ)
     (hirr : (ρ.baseChange (AlgebraicClosure ℚ_[p])).IsIrreducible)
     {kk : Type u} [Field kk] [Finite kk] [Algebra ℤ_[p] kk]
@@ -2091,8 +2303,26 @@ theorem exists_weightTwoEigenform_trace_eq_of_residually_reducible_of_five_le
       ∀ (q : ℕ) (hq : q.Prime), hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
         ((ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map
             (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff 1 =
-          - ι (heckeCoeff N f q) :=
-  sorry
+          - ι (heckeCoeff N f q) := by
+  -- E1: the residual triangular characters, one of them trivial
+  obtain ⟨b, χsub, χquo, cc₀, htri₀, hdisj⟩ :=
+    exists_residual_triangular_of_not_isIrreducible hpodd hVbar hρbar hred
+  -- E2: Ribet's lemma — a nonsplit hardly ramified extension with
+  -- trivial sub-character
+  obtain ⟨kk', hF, hFin, hAlg, hTop, hDisc, hTR, ρE, hrankE, hρE, χ, cc,
+    htri, hnonsplit⟩ :=
+    exists_eisenstein_nonsplit_lattice_of_residually_reducible hpodd hv
+      hZinj hρ hirr hsurj b χsub χquo cc₀ htri₀ hdisj
+  letI := hF
+  letI := hFin
+  letI := hAlg
+  letI := hTop
+  letI := hDisc
+  letI := hTR
+  -- E3: at `p ≥ 5` every such extension splits — contradiction
+  exact (hnonsplit
+    (eisenstein_trivial_sub_extension_splits_of_five_le hpodd hp5 hrankE
+      hρE χ cc htri)).elim
 
 /-- **Level lowering to conductor level `M ∣ 2`** (the sorried heart of
 pillar 5 — the Carayol-conductor/Ribet content, isolated 2026-07-24):
