@@ -3249,6 +3249,186 @@ theorem LSeries_dirichletCharacter_mul_card_congr
       rw [hIk] at hσ
       exact h σ k hσ
 
+open Filter in
+/-- **Universal pole-order bound for twisted ideal `L`-series near
+`s = 1`**: on some right interval `(1, 1+δ]`, EVERY `χ mod ℓ`-twisted
+ideal Dirichlet series of `F` is bounded by `C/(s-1)`.  Termwise the
+twisted series is dominated by the untwisted one (`‖χ(k)‖ ≤ 1`), whose
+value at real `s > 1` is `‖ζ_F(s)‖`; the simple pole
+`(s-1)·ζ_F(s) → κ`
+(`NumberField.tendsto_sub_one_mul_dedekindZeta_nhdsGT`) gives the
+eventual bound with `C = ‖κ‖ + 1`. -/
+theorem exists_forall_norm_LSeries_dirichletCharacter_mul_card_le_div
+    (F : Type*) [Field F] [NumberField F] (ℓ : ℕ) :
+    ∃ δ C : ℝ, 0 < δ ∧ 0 ≤ C ∧ ∀ (χ : DirichletCharacter ℂ ℓ) (s : ℝ),
+      1 < s → s ≤ 1 + δ →
+      ‖LSeries (fun k => χ (k : ZMod ℓ) *
+        (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) (s : ℂ)‖ ≤
+        C / (s - 1) := by
+  classical
+  have hnorm := (NumberField.tendsto_sub_one_mul_dedekindZeta_nhdsGT F).norm
+  have hev := hnorm.eventually_le_const
+    (lt_add_one ‖((NumberField.dedekindZeta_residue F : ℝ) : ℂ)‖)
+  obtain ⟨u, hu, hIoc⟩ := mem_nhdsGT_iff_exists_Ioc_subset.mp hev
+  refine ⟨u - 1, ‖((NumberField.dedekindZeta_residue F : ℝ) : ℂ)‖ + 1,
+    by linarith [Set.mem_Ioi.mp hu], by positivity, ?_⟩
+  intro χ s hs1 hs2
+  have hbound := hIoc ⟨hs1, by linarith⟩
+  have hspos : (0 : ℝ) < s := by linarith
+  -- the untwisted real sum equals `‖ζ_F(s)‖`
+  have hζeq : NumberField.dedekindZeta F s =
+      ((∑' n : ℕ, (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = n} : ℝ) *
+        (n : ℝ) ^ (-s) : ℝ) : ℂ) := by
+    rw [show NumberField.dedekindZeta F s = ∑' n : ℕ, LSeries.term
+        (fun n => (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = n} : ℂ))
+        (s : ℂ) n from rfl,
+      tsum_congr (term_natCard_absNorm_eq F hspos), Complex.ofReal_tsum]
+  have hsumnn : (0 : ℝ) ≤ ∑' n : ℕ,
+      (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = n} : ℝ) * (n : ℝ) ^ (-s) :=
+    tsum_nonneg fun n => by positivity
+  have hζnorm : ‖NumberField.dedekindZeta F s‖ = ∑' n : ℕ,
+      (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = n} : ℝ) * (n : ℝ) ^ (-s) := by
+    rw [hζeq, Complex.norm_real, Real.norm_of_nonneg hsumnn]
+  -- the twisted series is dominated termwise by the untwisted sum
+  have htermnorm : ∀ n : ℕ, ‖LSeries.term (fun k => χ (k : ZMod ℓ) *
+      (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) (s : ℂ) n‖ ≤
+      (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = n} : ℝ) * (n : ℝ) ^ (-s) := by
+    intro n
+    rcases eq_or_ne n 0 with rfl | hn
+    · rw [LSeries.term_zero, norm_zero, Nat.cast_zero,
+        Real.zero_rpow (neg_ne_zero.mpr hspos.ne'), mul_zero]
+    · have hnpos : 0 < n := Nat.pos_of_ne_zero hn
+      have hden : (0 : ℝ) < (n : ℝ) ^ s :=
+        Real.rpow_pos_of_pos (by exact_mod_cast hnpos) s
+      rw [LSeries.term_of_ne_zero hn, norm_div, norm_mul, Complex.norm_natCast,
+        Complex.norm_natCast_cpow_of_pos hnpos, Complex.ofReal_re,
+        Real.rpow_neg (Nat.cast_nonneg n), ← div_eq_mul_inv]
+      gcongr
+      exact mul_le_of_le_one_left (Nat.cast_nonneg _)
+        (DirichletCharacter.norm_le_one χ _)
+  have hsum := summable_natCard_absNorm_mul_rpow_neg F hs1
+  have hnormsum : Summable (fun n : ℕ => ‖LSeries.term (fun k => χ (k : ZMod ℓ) *
+      (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) (s : ℂ) n‖) :=
+    Summable.of_nonneg_of_le (fun n => norm_nonneg _) htermnorm hsum
+  have hLle : ‖LSeries (fun k => χ (k : ZMod ℓ) *
+      (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) (s : ℂ)‖ ≤
+      ∑' n : ℕ, (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = n} : ℝ) *
+        (n : ℝ) ^ (-s) := by
+    rw [show LSeries (fun k => χ (k : ZMod ℓ) *
+        (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) (s : ℂ) =
+        ∑' n : ℕ, LSeries.term (fun k => χ (k : ZMod ℓ) *
+          (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) (s : ℂ) n
+        from rfl]
+    exact le_trans (norm_tsum_le_tsum_norm hnormsum)
+      (hnormsum.tsum_le_tsum htermnorm hsum)
+  -- conclude through the simple pole
+  have hfin : (s - 1) * ‖NumberField.dedekindZeta F s‖ ≤
+      ‖((NumberField.dedekindZeta_residue F : ℝ) : ℂ)‖ + 1 := by
+    simp only [Set.mem_setOf_eq] at hbound
+    rwa [show ((s : ℂ) - 1) = ((s - 1 : ℝ) : ℂ) by push_cast; ring, norm_mul,
+      Complex.norm_real,
+      Real.norm_of_nonneg (by linarith : (0 : ℝ) ≤ s - 1)] at hbound
+  have hs1' : (0 : ℝ) < s - 1 := by linarith
+  calc ‖LSeries (fun k => χ (k : ZMod ℓ) *
+        (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) (s : ℂ)‖
+      ≤ ∑' n : ℕ, (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = n} : ℝ) *
+        (n : ℝ) ^ (-s) := hLle
+    _ = ‖NumberField.dedekindZeta F s‖ := hζnorm.symm
+    _ ≤ (‖((NumberField.dedekindZeta_residue F : ℝ) : ℂ)‖ + 1) / (s - 1) := by
+        rw [le_div_iff₀ hs1']
+        linarith [hfin]
+
+/-- The `(ℓ-1)`-st power of every `ℂ`-valued Dirichlet character mod a
+prime `ℓ` is the trivial character (the unit group of `ZMod ℓ` has
+order `ℓ - 1`). -/
+theorem dirichletCharacter_pow_card_sub_one_eq_one {ℓ : ℕ} (hℓ : ℓ.Prime)
+    (χ : DirichletCharacter ℂ ℓ) : χ ^ (ℓ - 1) = 1 := by
+  haveI := Fact.mk hℓ
+  rw [← ZMod.card_units ℓ]
+  exact χ.pow_card_eq_one
+
+/-- Powers of a Dirichlet character mod a prime `ℓ` depend on the
+exponent only through its residue mod `ℓ - 1`. -/
+theorem dirichletCharacter_pow_mod {ℓ : ℕ} (hℓ : ℓ.Prime)
+    (χ : DirichletCharacter ℂ ℓ) (a : ℕ) : χ ^ a = χ ^ (a % (ℓ - 1)) := by
+  conv_lhs => rw [← Nat.div_add_mod a (ℓ - 1)]
+  rw [pow_add, pow_mul, dirichletCharacter_pow_card_sub_one_eq_one hℓ χ,
+    one_pow, one_mul]
+
+open Filter in
+/-- **Vanishing rate of the twisted `L`-series under vanishing of the
+continued value** (mean value inequality glue): if the continued value
+`∫_{t>1} A(⌊t⌋)·t^{-2} = 0`, then `‖L(s,χ)‖ ≤ C·(s-1)` on `(1, 2]`.
+From the continuation
+`tendsto_LSeries_nhdsGT_one_of_forall_norm_sum_le` (the `L`-series
+tends to the continued value — here `0` — as `s → 1⁺`), the uniform
+derivative bound `exists_forall_norm_LSeries_le_and_norm_deriv_le`,
+differentiability right of the abscissa (`LSeries_hasDerivAt`), and
+the mean value inequality on `[t, s]` followed by `t → 1⁺`. -/
+theorem exists_forall_norm_LSeries_le_mul_sub_one_of_integral_eq_zero
+    {F : Type*} [Field F] [NumberField F] {E : Type*} [Field E] [NumberField E]
+    [Algebra F E] {ℓ : ℕ} (hℓ : ℓ.Prime) [IsCyclotomicExtension {ℓ} F E]
+    {ζ : E} (hζ : IsPrimitiveRoot ζ ℓ) (χ : DirichletCharacter ℂ ℓ)
+    (hχ : ∃ (ρ : E ≃ₐ[F] E) (n : ℕ), ρ ζ = ζ ^ n ∧ χ (n : ZMod ℓ) ≠ 1)
+    (h0 : (∫ t in Set.Ioi (1 : ℝ),
+      (∑ k ∈ Finset.Icc 1 ⌊t⌋₊, χ (k : ZMod ℓ) *
+        (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) *
+      (t : ℂ) ^ (-(2 : ℂ))) = 0) :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ s : ℝ, 1 < s → s ≤ 2 →
+      ‖LSeries (fun k => χ (k : ZMod ℓ) *
+        (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) (s : ℂ)‖ ≤
+        (C * (s - 1)) := by
+  classical
+  set c : ℕ → ℂ := fun k => χ (k : ZMod ℓ) *
+    (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ) with hc
+  obtain ⟨r, C₁, hr0, hr1, hC₁, hbound⟩ :=
+    exists_forall_norm_sum_dirichletCharacter_mul_card_absNorm_le_rpow hℓ hζ χ hχ
+  have htend := tendsto_LSeries_nhdsGT_one_of_forall_norm_sum_le hr0 hr1 hC₁
+    hbound (fun t ht => lSeriesSummable_dirichletCharacter_mul_card F χ ht)
+  rw [h0] at htend
+  obtain ⟨C₂, hC₂⟩ := exists_forall_norm_LSeries_le_and_norm_deriv_le hℓ hζ χ hχ
+  have habs : LSeries.abscissaOfAbsConv c ≤ 1 :=
+    LSeries.abscissaOfAbsConv_le_of_forall_lt_LSeriesSummable
+      (fun y hy => lSeriesSummable_dirichletCharacter_mul_card F χ hy)
+  have hderiv : ∀ t : ℝ, 1 < t →
+      HasDerivAt (fun u : ℝ => LSeries c (u : ℂ))
+        (deriv (LSeries c) ((t : ℝ) : ℂ)) t := by
+    intro t ht
+    have h1 : LSeries.abscissaOfAbsConv c < (((t : ℝ) : ℂ)).re := by
+      refine lt_of_le_of_lt habs ?_
+      rw [Complex.ofReal_re]
+      exact_mod_cast ht
+    exact (LSeries_hasDerivAt h1).differentiableAt.hasDerivAt.comp_ofReal
+  refine ⟨max C₂ 0, le_max_right _ _, fun s hs1 hs2 => ?_⟩
+  have hMVT : ∀ t : ℝ, 1 < t → t ≤ s →
+      ‖LSeries c (s : ℂ) - LSeries c (t : ℂ)‖ ≤ max C₂ 0 * (s - t) := by
+    intro t ht hts
+    have hin : ∀ u ∈ Set.Icc t s, HasDerivWithinAt (fun u : ℝ => LSeries c (u : ℂ))
+        (deriv (LSeries c) ((u : ℝ) : ℂ)) (Set.Icc t s) u :=
+      fun u hu => (hderiv u (lt_of_lt_of_le ht hu.1)).hasDerivWithinAt
+    have hbnd : ∀ u ∈ Set.Icc t s, ‖deriv (LSeries c) ((u : ℝ) : ℂ)‖ ≤ max C₂ 0 :=
+      fun u hu => le_trans
+        ((hC₂ u (lt_of_lt_of_le ht hu.1) (le_trans hu.2 hs2)).2)
+        (le_max_left _ _)
+    have h3 := (convex_Icc t s).norm_image_sub_le_of_norm_hasDerivWithin_le
+      hin hbnd (Set.left_mem_Icc.mpr hts) (Set.right_mem_Icc.mpr hts)
+    rwa [Real.norm_eq_abs, abs_of_nonneg (by linarith : (0 : ℝ) ≤ s - t)] at h3
+  have h1 : Tendsto (fun t : ℝ => ‖LSeries c (s : ℂ) - LSeries c (t : ℂ)‖)
+      (nhdsWithin 1 (Set.Ioi 1)) (nhds ‖LSeries c (s : ℂ) - 0‖) :=
+    (Filter.Tendsto.sub tendsto_const_nhds htend).norm
+  have h2 : Tendsto (fun t : ℝ => max C₂ 0 * (s - t)) (nhdsWithin 1 (Set.Ioi 1))
+      (nhds (max C₂ 0 * (s - 1))) := by
+    have h4 : Tendsto (fun t : ℝ => max C₂ 0 * (s - t)) (nhds 1)
+        (nhds (max C₂ 0 * (s - 1))) :=
+      (tendsto_const_nhds.sub tendsto_id).const_mul _
+    exact h4.mono_left nhdsWithin_le_nhds
+  have hev2 : ∀ᶠ t : ℝ in nhdsWithin 1 (Set.Ioi 1),
+      ‖LSeries c (s : ℂ) - LSeries c (t : ℂ)‖ ≤ max C₂ 0 * (s - t) := by
+    filter_upwards [Ioo_mem_nhdsGT hs1] with t ht
+    exact hMVT t ht.1 ht.2.le
+  have hfin := le_of_tendsto_of_tendsto h1 h2 hev2
+  rwa [sub_zero] at hfin
+
 open IsDedekindDomain in
 /-- **Nonvanishing of the continued twisted `L`-value at `s = 1`**
 (sorry leaf) — the arithmetic core of `L(1, χ) ≠ 0`, isolated from all
