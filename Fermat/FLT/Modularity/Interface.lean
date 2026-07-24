@@ -625,10 +625,14 @@ two are PROVEN (2026-07-24) and one remains sorried:
   `exists_cuspForm_sturm_bound`/`cuspForm_finiteDimensional`), so the
   former leaf `exists_rational_qExpansion_basis` is now a proven
   assembly. `cuspForm_mem_span_rational` itself is now a PROVEN
-  Galois-descent assembly (2026-07-24) whose single remaining sorried
-  leaf is the arithmetic `Aut(ℂ)`-stability of the `q`-expansion image
-  (`exists_cuspForm_ringEquiv_conj`, Shimura's rationality theorem);
-  the field-theoretic fixed-field computation
+  Galois-descent assembly (2026-07-24); its `Aut(ℂ)`-stability input
+  (`exists_cuspForm_ringEquiv_conj`, Shimura's rationality theorem)
+  is since likewise PROVEN (2026-07-24) by coordinate transport over
+  the single remaining sorried leaf of this whole chain — the
+  integral-structure citation node
+  `exists_integral_qExpansion_spanning` (`S₂(Γ₀(N); ℤ) ⊗ ℂ =
+  S₂(Γ₀(N))`, the arithmetic-model interface); the field-theoretic
+  fixed-field computation
   (`exists_ratCast_eq_of_forall_ringEquiv_fixed`) is PROVEN.
 
 Everything else is proven:
@@ -1882,9 +1886,11 @@ A cusp form is therefore determined by finitely many coefficients and
 a spanning set of forms with rational `q`-expansions, the genuinely
 arithmetic-geometric fact (Shimura Thm 3.52) — is
 `cuspForm_mem_span_rational` below, now itself a PROVEN Galois-descent
-assembly (2026-07-24) whose single remaining sorried leaf is the
-`Aut(ℂ)`-stability of the `q`-expansion image
-(`exists_cuspForm_ringEquiv_conj`); the fixed-field computation
+assembly (2026-07-24); the `Aut(ℂ)`-stability of the `q`-expansion
+image (`exists_cuspForm_ringEquiv_conj`) is since likewise PROVEN
+(2026-07-24) over the single remaining sorried leaf, the
+integral-structure citation node
+`exists_integral_qExpansion_spanning`; the fixed-field computation
 (`exists_ratCast_eq_of_forall_ringEquiv_fixed`) is PROVEN. -/
 
 section SturmFiniteness
@@ -2003,29 +2009,92 @@ theorem cuspForm_finiteDimensional (N : ℕ) (hN : 0 < N) :
   refine hB f fun m hm => ?_
   simpa [LinearMap.pi_apply] using congrFun hf ⟨m, hm⟩
 
-/-- **`Aut(ℂ)`-stability of `S₂(Γ₀(N))` on `q`-expansions** (sorry
-node; THE residual arithmetic leaf of the rational-spanning node,
-isolated 2026-07-24 when `cuspForm_mem_span_rational` was reduced to
-it by the Galois-descent linear algebra below): for every field
-automorphism `σ` of `ℂ` (as a ring automorphism — no continuity) and
-every weight-2 level-`N` cusp form `f` there is a cusp form `f^σ`
-whose `q`-expansion is the coefficientwise `σ`-conjugate of that of
-`f`. This is Shimura's rationality theorem (*Introduction to the
+/-- **The integral structure of `S₂(Γ₀(N))`** (sorry node — the
+arithmetic-model citation interface, isolated 2026-07-24 as the
+sharpest satisfiable carrier of the former sorried leaf
+`exists_cuspForm_ringEquiv_conj`, which is now PROVEN from it by the
+coordinate-transport glue below): the weight-2 level-`N` cusp space
+is spanned over `ℂ` by finitely many cusp forms ALL of whose
+`q`-expansion coefficients are INTEGERS — equivalently,
+`S₂(Γ₀(N); ℤ) ⊗_ℤ ℂ = S₂(Γ₀(N))`. This is the standard `ℤ`-structure
+of the cusp space: the `ℚ`-form is Shimura's rationality theorem
+(*Introduction to the Arithmetic Theory of Automorphic Functions*,
+Theorem 3.52; Diamond–Shurman §6.5), and the integral refinement —
+full `ℤ`-rank plus bounded denominators — is classical (Diamond–Im,
+*Modular forms and modular curves*, §12.3; Darmon–Diamond–Taylor,
+*Fermat's Last Theorem*, §1.6). The classical proofs go through
+arithmetic geometry absent from this pin: either (i) the
+`q`-expansion principle (Katz, Deligne–Rapoport) on the integral
+model of the modular curve `X₀(N)/ℤ`, where cusp forms are global
+sections of a line bundle whose formal expansion at the cusp `∞` has
+`ℤ`-coefficients and cohomological flatness gives full rank; or
+(ii) the Eichler–Shimura isomorphism onto `H¹(X₀(N), ℂ)` carrying the
+Hecke-stable lattice `H¹(X₀(N), ℤ)`, transferred to `q`-expansions
+through the perfect duality `𝕋 × S₂ → ℤ`, `(T, f) ↦ a₁(Tf)`. Neither
+modular curves, their integral models, nor Eichler–Shimura exist on
+this pin, and the elementary substitutes fail structurally: Victor
+Miller's constructive echelon basis needs the level-1 generation of
+the graded ring by `E₄, E₆` (no analogue for `Γ₀(N)`), and the
+integral Hecke-duality route needs the Eichler–Selberg trace formula
+— both audited 2026-07-24 and found beyond leaf scope, hence the
+interface shape. Note the statement is sound for every `N ≥ 1`:
+spanning is claimed only over `ℂ` (no independence, no echelon
+normalization), and at genus-zero levels `n = 0` works. The in-file
+consumers of the sharper `ℤ`-form (vs the `ℚ`-form it implies through
+`cuspForm_mem_span_rational`): coefficientwise `Aut(ℂ)`-transport
+(`exists_cuspForm_ringEquiv_conj` below, since `σ` fixes `ℤ`
+pointwise), with the mod-`p` congruence pillars as anticipated future
+consumers. -/
+theorem exists_integral_qExpansion_spanning {N : ℕ} (hN : 0 < N) :
+    ∃ (n : ℕ) (g : Fin n → CuspForm (Gamma0GL N) 2),
+      (∀ f : CuspForm (Gamma0GL N) 2, ∃ c : Fin n → ℂ, f = ∑ i, c i • g i) ∧
+      (∀ i m, ∃ z : ℤ, qCoeff N (g i) m = (z : ℂ)) :=
+  sorry
+
+/-- **`Aut(ℂ)`-stability of `S₂(Γ₀(N))` on `q`-expansions** (PROVEN
+glue, 2026-07-24, over the integral-structure citation node
+`exists_integral_qExpansion_spanning`; formerly THE residual
+arithmetic sorried leaf of the rational-spanning node, isolated
+2026-07-24 when `cuspForm_mem_span_rational` was reduced to it by the
+Galois-descent linear algebra below): for every field automorphism
+`σ` of `ℂ` (as a ring automorphism — no continuity) and every
+weight-2 level-`N` cusp form `f` there is a cusp form `f^σ` whose
+`q`-expansion is the coefficientwise `σ`-conjugate of that of `f`.
+This is Shimura's rationality theorem (*Introduction to the
 Arithmetic Theory of Automorphic Functions*, Theorem 3.52 together
 with the `Aut(ℂ)`-action of §3.5; equivalently Diamond–Shurman §6.5,
 where the action `f ↦ f^σ` on `S₂(Γ₀(N))` is defined through the
-`ℚ`-structure): the classical proofs go through the `ℤ`-structure of
-`H₁(X₀(N), ℤ)` under the Eichler–Shimura isomorphism, or through the
-`q`-expansion principle on the modular curve over `ℚ`, neither of
-which exists on this pin. Note the equivalence with the rational-basis
-form of the theorem: given a rational basis, `σ` acts coordinatewise
-on the rational-coefficient span, and conversely (the direction proven
-here in `cuspForm_mem_span_rational`) stability under all `σ` descends
-the space to `ℚ`. -/
+`ℚ`-structure). Proof from the carrier — coordinate transport: write
+`f = ∑ cᵢ • gᵢ` in an integral spanning family and set
+`f^σ := ∑ σ(cᵢ) • gᵢ`; then coefficientwise
+`a_m(f^σ) = ∑ σ(cᵢ)·zᵢₘ = σ(∑ cᵢ·zᵢₘ) = σ(a_m(f))` because `σ` fixes
+the integer coefficients `zᵢₘ` (`map_intCast`). Note the equivalence
+with the rational-basis form of the theorem: given a rational basis,
+`σ` acts coordinatewise on the rational-coefficient span (the
+argument here), and conversely (the direction proven in
+`cuspForm_mem_span_rational`) stability under all `σ` descends the
+space to `ℚ`. -/
 theorem exists_cuspForm_ringEquiv_conj {N : ℕ} (hN : 0 < N)
     (σ : ℂ ≃+* ℂ) (f : CuspForm (Gamma0GL N) 2) :
-    ∃ g : CuspForm (Gamma0GL N) 2, ∀ m : ℕ, qCoeff N g m = σ (qCoeff N f m) :=
-  sorry
+    ∃ g : CuspForm (Gamma0GL N) 2, ∀ m : ℕ, qCoeff N g m = σ (qCoeff N f m) := by
+  classical
+  obtain ⟨n, g, hspan, hint⟩ := exists_integral_qExpansion_spanning hN
+  choose z hz using hint
+  obtain ⟨c, hc⟩ := hspan f
+  refine ⟨∑ i, σ (c i) • g i, fun m => ?_⟩
+  have hconj : qCoeff N (∑ i, σ (c i) • g i) m
+      = ∑ i, σ (c i) * qCoeff N (g i) m := by
+    have hs := map_sum (qCoeffL N m) (fun i => σ (c i) • g i) Finset.univ
+    simp only [map_smul, smul_eq_mul, qCoeffL_apply] at hs
+    exact hs
+  have horig : qCoeff N f m = ∑ i, c i * qCoeff N (g i) m := by
+    have hs := map_sum (qCoeffL N m) (fun i => c i • g i) Finset.univ
+    simp only [map_smul, smul_eq_mul, qCoeffL_apply] at hs
+    rw [hc]
+    exact hs
+  rw [hconj, horig, map_sum]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  rw [hz i m, map_mul, map_intCast]
 
 /-- **Extension of subfield automorphisms to `Aut(ℂ)`** (PROVEN,
 2026-07-24; the workhorse of the fixed-field computation below): every
@@ -2204,7 +2273,9 @@ theorem exists_ratCast_eq_of_forall_ringEquiv_fixed {x : ℂ}
   exact hyne (Subtype.ext h4)
 
 /-- **Rational spanning of `S₂(Γ₀(N))`** (PROVEN assembly, 2026-07-24,
-over the sorried arithmetic leaf `exists_cuspForm_ringEquiv_conj` and
+over `exists_cuspForm_ringEquiv_conj` — itself since PROVEN
+(2026-07-24) over the integral-structure citation node
+`exists_integral_qExpansion_spanning` — and
 the PROVEN field-theory lemma
 `exists_ratCast_eq_of_forall_ringEquiv_fixed`): every weight-2
 level-`N` cusp form is a `ℂ`-linear combination of cusp forms ALL of
@@ -2307,8 +2378,9 @@ end SturmFiniteness
 
 /-- **Rational basis of `S₂(Γ₀(N))`** (PROVEN assembly, 2026-07-24,
 over the rational-spanning assembly `cuspForm_mem_span_rational` —
-itself since PROVEN over the single remaining sorried leaf
-`exists_cuspForm_ringEquiv_conj` — and the PROVEN
+itself since PROVEN, through `exists_cuspForm_ringEquiv_conj`, over
+the single remaining sorried leaf
+`exists_integral_qExpansion_spanning` — and the PROVEN
 finite dimensionality `cuspForm_finiteDimensional`): the space of
 weight-2 level-`N` cusp forms has a finite `ℂ`-independent family of
 forms with RATIONAL `q`-expansion coefficients through which every
@@ -2369,9 +2441,10 @@ theorem coe_sum_smul {N n : ℕ} (c : Fin n → ℂ)
 §6.5, the finite input to Theorem 6.5.1; PROVEN assembly, 2026-07-24,
 over `exists_cuspForm_heckeTransform` and
 `qExpansion_heckeTransform_coeff` — both since PROVEN — and, through
-the now-proven assemblies `exists_rational_qExpansion_basis` and
-`cuspForm_mem_span_rational`, the one remaining sorried leaf
-`exists_cuspForm_ringEquiv_conj`): for a
+the now-proven assemblies `exists_rational_qExpansion_basis`,
+`cuspForm_mem_span_rational` and `exists_cuspForm_ringEquiv_conj`,
+the one remaining sorried leaf
+`exists_integral_qExpansion_spanning`): for a
 normalized weight-2
 level-`N` eigenform `f` there are a dimension `n`, a family of
 RATIONAL `n × n` matrices `T q`, and a common nonzero complex
