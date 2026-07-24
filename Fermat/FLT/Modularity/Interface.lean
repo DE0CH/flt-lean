@@ -7615,30 +7615,136 @@ theorem weightTwoNewform_not_dvd_level_of_isUnramifiedAt
     ¬ q ∣ M :=
   sorry
 
+/-- **Ribet irreducibility of the attached representation** (sorry
+node — Ribet, *Galois representations attached to eigenforms with
+Nebentypus*, Springer LNM 601 (1977), Thm. (2.3), in the weight-2
+trivial-nebentypus case): the Eichler–Shimura attachment of a
+weight-2 newform `g` of level `M ≥ 1` can be chosen IRREDUCIBLE —
+there is a continuous 2-dimensional `ℚ̄_p`-representation of `Γ ℚ`
+that is irreducible and matches the Hecke characteristic polynomials
+`X² − κ(a_q)·X + q` away from a finite set of places. Classical
+proof: the geometric attachment `ρ_{g,λ}` (the `κ`-eigencomponent of
+the Tate module of `J₀(M)` — the inhabitant behind
+`exists_galoisRep_charFrob_of_weightTwoNewform`'s package) is
+irreducible: were it reducible, its semisimplification would be
+`δ₁ ⊕ δ₂` with the `δᵢ` characters of `Γ ℚ` unramified outside `Mp`
+and `δ₁δ₂ = χ_cyc`, so each `δᵢ` is a finite-order character times an
+integer power of `χ_cyc` with the exponents summing to `1`; then
+`a_q = δ₁(Frob_q) + δ₂(Frob_q)` has absolute value `≍ 1 + q` at
+almost all primes, violating the Eichler–Shimura/Weil bound
+`|a_q| ≤ 2√q` of the cuspidal eigensystem.
+
+COORDINATION (2026-07-24): the natural permanent home of this fact is
+an irreducibility field on `EichlerShimuraPackage` (irreducibility of
+the eigenspace representation, D–S §9.5-adjacent), at which point
+this leaf becomes a proven corollary of the attachment assembly. It
+is founded HERE as a separate leaf because it is the shared rigidity
+prerequisite of all three per-place conductor leaves: each needs to
+pin an arbitrary charpoly-matched representation to the geometric one
+through the PROVEN rigidity `exists_linearEquiv_of_charFrob_eq`,
+whose characteristic-zero Brauer–Nesbitt engine consumes exactly one
+irreducible side. SOUNDNESS AUDIT (2026-07-24): non-vacuously
+satisfiable — the carrier's inhabitants are exactly the classical
+newforms (carrier audit above), each with its classical irreducible
+`ρ_{g,λ}`; the statement asserts existence only. -/
+theorem exists_irreducible_galoisRep_charFrob_of_weightTwoNewform
+    {M : ℕ} (hM : 0 < M) {g : CuspForm (Gamma0GL M) 2}
+    (hg : IsWeightTwoNewform M g)
+    (κ : heckeField M g →+* AlgebraicClosure ℚ_[p]) :
+    ∃ (τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+        (Fin 2 → AlgebraicClosure ℚ_[p]))
+      (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
+      τ.IsIrreducible ∧
+      ∀ (q : ℕ) (hq : q.Prime),
+        hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+        τ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat =
+          Polynomial.X ^ 2
+            - Polynomial.C (κ (heckeCoeff M g q)) * Polynomial.X
+            + Polynomial.C ((q : AlgebraicClosure ℚ_[p])) :=
+  sorry
+
 include hpodd in
-/-- **The conductor bound at `p`: flat implies `p ∤ M`** (sorry node —
-Saito, *Modular forms and `p`-adic Hodge theory*, Invent. Math. 129
-(1997), local–global compatibility at `p`, with the weight-2 flatness
-input from Raynaud/Fontaine): if the representation `τ` attached (in
-the charpoly-matching sense) to the weight-2 newform `g` of level `M`
-is equivalent, through `e`, to the base change of an integral
-representation `ρ` over the local pro-`p` coefficient ring `R` that is
-FLAT at `p` (`GaloisRep.IsFlatAt` — finite flat prolongations of all
-finite quotients), then `p ∤ M`. Classical proof: flatness makes
-`ρ|_{G_p}` the generic fiber of a `p`-divisible group, hence
-crystalline with Hodge–Tate weights in `{0, 1}` (Raynaud, Bull. SMF 102
-(1974); Fontaine); by rigidity `τ ≅ ρ_{g,λ} ⊗ ℚ̄_p` (Ribet
-irreducibility + Chebotarev/Brauer–Nesbitt as in the unramified leaf),
-so `ρ_{g,λ}` is crystalline at `p`; but for `p ∥ M` the local
-representation of a weight-2 newform at `p` is an unramified twist of
-Steinberg — semistable non-crystalline (Deligne–Rapoport/Langlands,
-Saito), and for `p² ∣ M` it is not even semistable. Hence `p ∤ M`.
-The oddness of `p` keeps the flatness-to-crystalline dictionary in
-its classical range (`e = 1 < p − 1`). SOUNDNESS AUDIT (2026-07-24):
+/-- **Saito's local–global compatibility at `p`, geometric form**
+(sorry node — the residual literature leaf of the at-`p` conductor
+cut: Saito, *Modular forms and `p`-adic Hodge theory*, Invent. Math.
+129 (1997) — the weight-2 `p ∥ M` Steinberg case being already
+Deligne–Rapoport/Langlands — combined with Raynaud, Bull. SMF 102
+(1974), and Fontaine for the flatness-to-crystalline dictionary): an
+IRREDUCIBLE representation `τ` matching the Hecke polynomials of the
+weight-2 newform `g` of level `M` away from a finite set, and
+equivalent through `e` to the base change of an integral
+representation `ρ` FLAT at `p`, forces `p ∤ M`. The rigidity
+identification is NO LONGER part of this leaf's citation burden: by
+the Ribet leaf `exists_irreducible_galoisRep_charFrob_of_weightTwoNewform`
+and the PROVEN rigidity `exists_linearEquiv_of_charFrob_eq`, `τ` is
+equivalent to the geometric `ρ_{g,λ}` — the `κ`-eigencomponent of
+`V_p(J₀(M))` — so the residual content is pure `p`-adic geometry:
+flatness of the integral model makes `ρ_{g,λ}|_{G_p}` the generic
+fiber of a `p`-divisible group over `ℤ_p` (the finite flat
+prolongations demanded by `IsFlatAt` at every finite level glue to a
+Barsotti–Tate group), hence crystalline with Hodge–Tate weights in
+`{0, 1}` (Raynaud/Fontaine; odd `p` keeps the dictionary in its
+classical range `e = 1 < p − 1`); but Saito's local–global
+compatibility identifies the Weil–Deligne parameter of
+`ρ_{g,λ}|_{G_p}` with the local automorphic parameter of `g` at `p`:
+for `p ∥ M` the latter is an unramified twist of Steinberg —
+semistable with NONZERO monodromy, never crystalline
+(Deligne–Rapoport/Langlands at weight 2) — and for `p² ∣ M` it is
+ramified principal series or supercuspidal, not even semistable.
+Hence `p ∣ M` is impossible. SOUNDNESS AUDIT (2026-07-24):
 non-vacuously satisfiable — any newform of level prime to `p` with
-its stable lattice over `R = 𝒪_λ` realizes all hypotheses — and every
-instance is covered by the cited theorems through the carrier
-audit. -/
+its stable lattice over `R = 𝒪_λ` realizes every hypothesis
+(irreducibility by Ribet); and every instance is an instance of the
+cited theorems through the carrier audit. -/
+theorem weightTwoNewform_not_dvd_level_p_of_isFlatAt_of_isIrreducible
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hflat : ρ.IsFlatAt
+      (Fact.out : p.Prime).toHeightOneSpectrumRingOfIntegersRat)
+    {M : ℕ} (hM : 0 < M) {g : CuspForm (Gamma0GL M) 2}
+    (hg : IsWeightTwoNewform M g)
+    (κ : heckeField M g →+* AlgebraicClosure ℚ_[p])
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    {S_τ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hτ : ∀ (r : ℕ) (hr : r.Prime),
+      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ →
+      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
+        Polynomial.X ^ 2
+          - Polynomial.C (κ (heckeCoeff M g r)) * Polynomial.X
+          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
+    (hirr : τ.IsIrreducible)
+    (e : (Fin 2 → AlgebraicClosure ℚ_[p]) ≃ₗ[AlgebraicClosure ℚ_[p]]
+      (AlgebraicClosure ℚ_[p] ⊗[R] V))
+    (he : ∀ (γ : Field.absoluteGaloisGroup ℚ)
+        (w : Fin 2 → AlgebraicClosure ℚ_[p]),
+      e (τ γ w) = ρ.baseChange (AlgebraicClosure ℚ_[p]) γ (e w)) :
+    ¬ p ∣ M :=
+  sorry
+
+include hpodd in
+/-- **The conductor bound at `p`: flat implies `p ∤ M`** (DECOMPOSED
+2026-07-24 into the Ribet/Saito cut above and now a PROVEN assembly):
+if the representation `τ` attached (in the charpoly-matching sense)
+to the weight-2 newform `g` of level `M` is equivalent, through `e`,
+to the base change of an integral representation `ρ` over the local
+pro-`p` coefficient ring `R` that is FLAT at `p`
+(`GaloisRep.IsFlatAt` — finite flat prolongations of all finite
+quotients), then `p ∤ M`. Assembly: the Ribet leaf
+`exists_irreducible_galoisRep_charFrob_of_weightTwoNewform` produces
+an IRREDUCIBLE representation `τg` with the same Hecke
+characteristic polynomials away from a finite set; the PROVEN
+rigidity `exists_linearEquiv_of_charFrob_eq` (Chebotarev +
+characteristic-zero Brauer–Nesbitt, consuming the irreducibility of
+`τg`) intertwines `τ` with `τg` through some `f`, so the flat
+integral model transports across `f.symm.trans e` to `τg`; the
+geometric Saito leaf
+`weightTwoNewform_not_dvd_level_p_of_isFlatAt_of_isIrreducible`
+(Raynaud flatness-to-crystalline + Saito local–global compatibility
+at `p`, its docstring) then gives `p ∤ M`. The rigidity citation of
+the pre-cut docstring is thereby discharged against PROVEN
+machinery; only Ribet 1977 and the `p`-adic geometry remain as
+sorried literature leaves. -/
 theorem weightTwoNewform_not_dvd_level_p_of_isFlatAt
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
@@ -7661,8 +7767,27 @@ theorem weightTwoNewform_not_dvd_level_p_of_isFlatAt
     (he : ∀ (γ : Field.absoluteGaloisGroup ℚ)
         (w : Fin 2 → AlgebraicClosure ℚ_[p]),
       e (τ γ w) = ρ.baseChange (AlgebraicClosure ℚ_[p]) γ (e w)) :
-    ¬ p ∣ M :=
-  sorry
+    ¬ p ∣ M := by
+  classical
+  obtain ⟨τg, Sg, hirrg, hτg⟩ :=
+    exists_irreducible_galoisRep_charFrob_of_weightTwoNewform hM hg κ
+  have hrank2 : Module.rank (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p]) = 2 := by
+    simp
+  -- rigidity: `τ ≅ τg` from charpoly agreement off `S_τ ∪ Sg`
+  obtain ⟨f, hf⟩ := exists_linearEquiv_of_charFrob_eq hrank2 hrank2
+    hirrg (S := S_τ ∪ Sg) (τ₁ := τ) fun q hq hqS => by
+      rw [hτ q hq fun h => hqS (Finset.mem_union_left _ h),
+        hτg q hq fun h => hqS (Finset.mem_union_right _ h)]
+  -- transport the flat integral model across `f.symm.trans e`
+  refine weightTwoNewform_not_dvd_level_p_of_isFlatAt_of_isIrreducible
+    hpodd hflat hM hg κ hτg hirrg (f.symm.trans e) fun γ w => ?_
+  have hfw : f.symm (τg γ w) = τ γ (f.symm w) := by
+    have hX : f (τ γ (f.symm w)) = τg γ w := by
+      rw [hf, LinearEquiv.apply_symm_apply]
+    rw [← hX, LinearEquiv.symm_apply_apply]
+  simp only [LinearEquiv.trans_apply]
+  rw [hfw, he]
 
 include hpodd in
 /-- **The conductor bound at `2`: a tame fixed line implies `4 ∤ M`**
