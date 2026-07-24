@@ -15060,33 +15060,36 @@ theorem quadratic_character_eq_one_ray_class_neg_three
     ∀ g : Γ ℚ, θ' g = 1 → ν g = 1 := by
   sorry
 
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
 /-- **`ℚ(√d)` is ramified at `2` for `d ∈ {-1, ±2, 3, ±6}`, in
-inertia-element form** (sorry node, isolated 2026-07-24 as the local
-witness leaf of the at-`2` dihedral-field elimination in
+inertia-element form** (PROVEN 2026-07-24 — the local witness leaf of
+the at-`2` dihedral-field elimination in
 `anti_invariant_quadratic_character_eq_one_ray_class` below): some
 element of the local inertia group at `2` moves the chosen square
-root `x` of `d`. Truth: none of `-1, 2, -2, 3, 6, -6` is a square of
-`ℚ₂` (the even ones have odd `2`-adic valuation; `-1 ≡ 7` and
-`3 ≡ 3 mod 8` are units outside `ℤ₂ˣ² = 1 + 8ℤ₂`), and none generates
-the unramified quadratic extension (whose unit generators are
-`≡ 1 mod squares` times a nonresidue LIFT `5 mod 8`; concretely
-`ℚ₂(√5)` is the unramified one and `d/5` is never a square either),
-so `ℚ₂(√d)/ℚ₂` is a RAMIFIED quadratic extension and its inertia is
-the full order-`2` Galois group, containing `√d ↦ -√d`. Intended
-proof route: (i) the image `y` of `x` in `ℚ̄ᵥ` (`v` the place `2`)
-satisfies `y² = d` and generates a ramified quadratic extension of
-`ℚᵥ` — for even `d` because `y` has valuation `1/2 ∉ ℤ`, for
-`d = -1, 3` by the mod-`8` square obstruction; (ii) an element of
-`localInertiaGroup` moving `y` exists: otherwise every inertia
-element fixes `y`, so `y` lies in the fixed field of the inertia,
-which is contained in the maximal unramified extension (residue-faith
-of the integral-closure congruence, the converse companion of the
-PROVEN `restrictNormalHom_mem_inertia_of_mem_localInertiaGroup_two`
-above: restrict to the finite Galois level `N = ℚᵥ(y)`, where the
-inertia subgroup has index `e·f/e = f = 1` — the extension being
-totally ramified — and use surjectivity of the level restriction on
-inertia, or directly the valuation argument that an inertia-fixed
-`y` would force the residue extension to have degree `2`).
+root `x` of `d`. Proof by contradiction through the PROVEN
+inertia-fixed-field node
+`maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup` (Neukirch
+II.9.11): if every inertia element fixed the image `y` of `x` in
+`ℚ̄₂ᵥ` (`lift_map` transports the hypothesis along the chosen
+embedding of the algebraic closures), the finite subextension
+`M = ℚ₂ᵥ(y)` would lie inside the fixed field of the local inertia,
+so `𝔪ᵥ = (2)` (`maximalIdeal_adicCompletionIntegers_eq_span`) would
+generate the maximal ideal `𝔪_M` of the integral closure
+`𝒪_M = IntegralClosure 𝒪ᵥ M`. That is absurd for every listed `d`
+by `2`-integer arithmetic in the DOMAIN `𝒪_M`, uniformly reducing to
+"an odd integer lies in `𝔪_M` alongside `2`, so `1 ∈ 𝔪_M`": for
+even `d = 2u` (`u ∈ {±1, ±3}` odd), `y² = 2u ∈ 𝔪_M` forces
+`y = 2z ∈ 𝔪_M` by primality, and cancelling one `2` (legal: `𝒪_M`
+is a domain of characteristic zero) from `4z² = 2u` puts the odd
+`u = 2z²` in `(2) = 𝔪_M`; for odd `d ≡ 3 mod 4` (`d = -1, 3`),
+`(y−1)² = (d+1) − 2y ∈ 𝔪_M` forces `y = 1 + 2t`, and cancelling one
+`2` from `d − 1 = 4(t + t²)` puts the odd `(d−1)/2` in `𝔪_M`. This
+is exactly the classical mod-`8`/valuation criterion: `d ≡ 1 mod 4`
+(in particular the unramified `d ≡ 5 mod 8`, e.g. `d = -3`) escapes
+because `(d−1)/2` is then even, and indeed `𝒪_M`-integrality of
+`t = (y−1)/2` fails to obstruct.
 References: Serre, Local Fields I §7, IV §1; Neukirch ANT II §7, §9. -/
 theorem exists_mem_localInertiaGroup_two_moving_sqrt
     (d : ℤ)
@@ -15096,7 +15099,353 @@ theorem exists_mem_localInertiaGroup_two_moving_sqrt
       Field.absoluteGaloisGroup.map (algebraMap ℚ
         (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
           Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ x ≠ x := by
-  sorry
+  classical
+  by_contra hcon
+  push Not at hcon
+  -- the image of `x` in the local algebraic closure
+  set y : AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) :=
+    AlgebraicClosure.map (algebraMap ℚ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) x with hydef
+  have hy2 : y ^ 2 = (d : AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) := by
+    rw [hydef, ← map_pow, hx, map_intCast]
+  -- every local inertia element fixes `y`
+  have hyfix : ∀ σ ∈ localInertiaGroup
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat, σ y = y := by
+    intro σ hσ
+    have h1 := Field.absoluteGaloisGroup.lift_map (algebraMap ℚ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ x
+    rw [hcon σ hσ, ← hydef] at h1
+    exact h1.symm
+  -- `y` is integral over the completion, so adjoining it is finite
+  have hyint : IsIntegral (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) y := by
+    refine ⟨Polynomial.X ^ 2 - Polynomial.C
+      (d : IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat),
+      Polynomial.monic_X_pow_sub_C _ (by norm_num), ?_⟩
+    rw [Polynomial.eval₂_sub, Polynomial.eval₂_pow, Polynomial.eval₂_X,
+      Polynomial.eval₂_C, map_intCast, hy2, sub_self]
+  have hymem : y ∈ IntermediateField.adjoin
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) {y} :=
+    IntermediateField.mem_adjoin_simple_self _ y
+  haveI hfdM : FiniteDimensional
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+      (IntermediateField.adjoin
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) {y}) :=
+    IntermediateField.adjoin.finiteDimensional hyint
+  -- the adjoined field lies in the fixed field of the local inertia
+  have hMle : IntermediateField.adjoin
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) {y} ≤
+      IntermediateField.fixedField (localInertiaGroup
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) := by
+    rw [IntermediateField.adjoin_le_iff]
+    intro z hz
+    rw [Set.mem_singleton_iff] at hz
+    subst hz
+    rw [SetLike.mem_coe, IntermediateField.mem_fixedField_iff]
+    exact hyfix
+  -- hence `𝔪ᵥ` generates the maximal ideal of the integral closure
+  have hideal := maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup
+    Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat
+    (IntermediateField.adjoin
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) {y}) hMle
+  -- `𝔪ᵥ = (2)`, so the finite-level maximal ideal is the span of `2`
+  have hMR : IsLocalRing.maximalIdeal (IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+      (IntermediateField.adjoin
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) {y})) =
+      Ideal.span {((2 : ℕ) : IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+        (IntermediateField.adjoin
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) {y}))} := by
+    rw [← hideal, maximalIdeal_adicCompletionIntegers_eq_span Nat.prime_two,
+      Ideal.map_span, Set.image_singleton, map_natCast]
+  have h2mem : (2 : IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+      (IntermediateField.adjoin
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) {y})) ∈
+      IsLocalRing.maximalIdeal (IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+        (IntermediateField.adjoin
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) {y})) := by
+    rw [hMR]
+    exact_mod_cast Ideal.mem_span_singleton_self ((2 : ℕ) : IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+      (IntermediateField.adjoin
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) {y}))
+  -- the ambient intermediate field has characteristic zero
+  haveI : CharZero (IntermediateField.adjoin
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) {y}) :=
+    charZero_of_injective_algebraMap (algebraMap
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+      (IntermediateField.adjoin
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) {y})).injective
+  -- the integral closure injects into the field
+  haveI : IsFractionRing (IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+      (IntermediateField.adjoin
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) {y}))
+      (IntermediateField.adjoin
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) {y}) :=
+    IsIntegralClosure.isFractionRing_of_finite_extension
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) _ _
+  have hinj : Function.Injective (algebraMap (IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+      (IntermediateField.adjoin
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) {y}))
+      (IntermediateField.adjoin
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) {y})) :=
+    IsFractionRing.injective _ _
+  have h2ne : (2 : IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+      (IntermediateField.adjoin
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) {y})) ≠ 0 := by
+    intro h0
+    have h1 := congrArg (algebraMap (IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+      (IntermediateField.adjoin
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) {y}))
+      (IntermediateField.adjoin
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) {y})) h0
+    rw [map_ofNat, map_zero] at h1
+    norm_num at h1
+  -- `y`, at the finite level, is integral over `𝒪ᵥ`
+  have hyM2 : (⟨y, hymem⟩ : IntermediateField.adjoin
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) {y}) ^ 2 =
+      (d : IntermediateField.adjoin
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) {y}) := by
+    apply Subtype.ext
+    push_cast
+    exact hy2
+  have hyMint : IsIntegral (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+      (⟨y, hymem⟩ : IntermediateField.adjoin
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) {y}) := by
+    refine ⟨Polynomial.X ^ 2 - Polynomial.C
+      (d : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat),
+      Polynomial.monic_X_pow_sub_C _ (by norm_num), ?_⟩
+    rw [Polynomial.eval₂_sub, Polynomial.eval₂_pow, Polynomial.eval₂_X,
+      Polynomial.eval₂_C, map_intCast, hyM2, sub_self]
+  obtain ⟨Y, hYval⟩ := (IsIntegralClosure.isIntegral_iff
+    (A := IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+      (IntermediateField.adjoin
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) {y}))).mp hyMint
+  have hY2 : Y ^ 2 = (d : IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+      (IntermediateField.adjoin
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) {y})) := by
+    apply hinj
+    rw [map_pow, map_intCast, hYval, hyM2]
+  -- no odd integer can lie in the maximal ideal alongside `2`
+  have hoddmem : ∀ j : ℤ, ((2 * j + 1 : ℤ) : IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+      (IntermediateField.adjoin
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) {y})) ∈
+      IsLocalRing.maximalIdeal (IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+        (IntermediateField.adjoin
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) {y})) → False := by
+    intro j hmem
+    have h1 : (1 : IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+        (IntermediateField.adjoin
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) {y})) ∈
+        IsLocalRing.maximalIdeal (IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+          (IntermediateField.adjoin
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) {y})) := by
+      have heq : (1 : IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+          (IntermediateField.adjoin
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) {y})) =
+          ((2 * j + 1 : ℤ) : IntegralClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+              Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+            (IntermediateField.adjoin
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) {y})) -
+          2 * (j : IntegralClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+              Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+            (IntermediateField.adjoin
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) {y})) := by
+        push_cast
+        ring
+      rw [heq]
+      exact Ideal.sub_mem _ hmem (Ideal.mul_mem_right _ _ h2mem)
+    exact (IsLocalRing.maximalIdeal.isMaximal _).ne_top
+      (Ideal.eq_top_of_isUnit_mem _ h1 isUnit_one)
+  -- even case: `d = 2·(odd)`
+  have hcase_even : ∀ j : ℤ, d = 2 * (2 * j + 1) → False := by
+    intro j hdu
+    have hYsqm : Y ^ 2 ∈ IsLocalRing.maximalIdeal (IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+        (IntermediateField.adjoin
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) {y})) := by
+      have hexp : Y ^ 2 = 2 * ((2 * j + 1 : ℤ) : IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+          (IntermediateField.adjoin
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) {y})) := by
+        rw [hY2, hdu]
+        push_cast
+        ring
+      rw [hexp]
+      exact Ideal.mul_mem_right _ _ h2mem
+    have hYm : Y ∈ IsLocalRing.maximalIdeal (IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+        (IntermediateField.adjoin
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) {y})) :=
+      (IsLocalRing.maximalIdeal.isMaximal _).isPrime.mem_of_pow_mem 2 hYsqm
+    rw [hMR, Ideal.mem_span_singleton] at hYm
+    obtain ⟨Z, hZ⟩ := hYm
+    have h4 : (2 : IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+        (IntermediateField.adjoin
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) {y})) *
+        (2 * Z ^ 2) = 2 * ((2 * j + 1 : ℤ) : IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+          (IntermediateField.adjoin
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) {y})) := by
+      have h5 := hY2
+      rw [hZ, hdu] at h5
+      push_cast at h5 ⊢
+      linear_combination h5
+    have hcancel := mul_left_cancel₀ h2ne h4
+    refine hoddmem j ?_
+    rw [← hcancel]
+    exact Ideal.mul_mem_right _ _ h2mem
+  -- odd case: `d = 2·(odd) + 1`, i.e. `d ≡ 3 mod 4`
+  have hcase_odd : ∀ j : ℤ, d = 2 * (2 * j + 1) + 1 → False := by
+    intro j hdw
+    have hsqm : (Y - 1) ^ 2 ∈ IsLocalRing.maximalIdeal (IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+        (IntermediateField.adjoin
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) {y})) := by
+      have hexp : (Y - 1) ^ 2 = 2 * (2 * (j : IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+          (IntermediateField.adjoin
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) {y})) + 2 - Y) := by
+        have h5 := hY2
+        rw [hdw] at h5
+        push_cast at h5 ⊢
+        linear_combination h5
+      rw [hexp]
+      exact Ideal.mul_mem_right _ _ h2mem
+    have hYm : Y - 1 ∈ IsLocalRing.maximalIdeal (IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+        (IntermediateField.adjoin
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) {y})) :=
+      (IsLocalRing.maximalIdeal.isMaximal _).isPrime.mem_of_pow_mem 2 hsqm
+    rw [hMR, Ideal.mem_span_singleton] at hYm
+    obtain ⟨T, hT⟩ := hYm
+    have h4 : (2 : IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+        (IntermediateField.adjoin
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) {y})) *
+        (2 * (T + T ^ 2)) = 2 * ((2 * j + 1 : ℤ) : IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+          (IntermediateField.adjoin
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) {y})) := by
+      have h5 := hY2
+      have hYeq : Y = 1 + ((2 : ℕ) : IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+          (IntermediateField.adjoin
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) {y})) * T := by
+        linear_combination hT
+      rw [hYeq, hdw] at h5
+      push_cast at h5 ⊢
+      linear_combination h5
+    have hcancel := mul_left_cancel₀ h2ne h4
+    refine hoddmem j ?_
+    rw [← hcancel]
+    exact Ideal.mul_mem_right _ _ h2mem
+  -- dispatch the six values of `d`
+  rcases hd with hd | hd | hd | hd | hd | hd
+  · exact hcase_odd (-1) (by omega)
+  · exact hcase_even 0 (by omega)
+  · exact hcase_even (-1) (by omega)
+  · exact hcase_odd 0 (by omega)
+  · exact hcase_even 1 (by omega)
+  · exact hcase_even (-2) (by omega)
 
 set_option maxHeartbeats 1000000 in
 /-- **Cube-triviality of `ρ` on the local inertia at `2`, at the
