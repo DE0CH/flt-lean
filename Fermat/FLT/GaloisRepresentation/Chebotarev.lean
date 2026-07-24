@@ -87,9 +87,20 @@ here. This file provides:
   `norm_LSeries_le_mul_div_of_forall_norm_sum_le` (integral
   representation), `exists_forall_norm_sum_log_mul_le_rpow` (Abel
   summation) and `sum_card_absNorm_isBigO` (linear coefficient
-  growth), from the single sorried counting core
+  growth), from the counting core
   `exists_forall_norm_sum_dirichletCharacter_mul_card_absNorm_le_rpow`,
-  the power-saving Weber–Landau Hecke count) and
+  the power-saving Weber–Landau Hecke count — itself now PROVEN by
+  character-summation glue (fibering over norm residues; residues
+  outside the Galois image are excluded by the proven
+  norm-residues-in-the-image lemma
+  `exists_algEquiv_map_zeta_eq_pow_of_not_dvd_absNorm`, via the
+  generalized Frobenius existence
+  `exists_algEquiv_map_zeta_eq_pow_natCard_of_not_dvd`; the main
+  terms cancel by nontriviality of `χ` on the image subgroup) from
+  the single sorried per-residue Weber counting leaf
+  `exists_forall_abs_sum_card_absNorm_residue_sub_mul_le_rpow`,
+  the `κ·n + O(n^r)` equidistribution of ideals over the
+  Galois-image norm residues) and
   `exists_forall_le_norm_LSeries_near_one` (`L` bounded away from `0`
   just right of `1`: the `L(1,χ) ≠ 0` half — now itself DERIVED,
   through the PROVEN dominated-convergence continuation
@@ -99,8 +110,12 @@ here. This file provides:
   `integral_sum_dirichletCharacter_mul_card_cpow_neg_two_ne_zero`,
   the nonvanishing of the continued value at `1` by the classical
   zeta-factorization argument)); the L-function half thus rests on
-  exactly TWO deep sorried cores; see their docstrings for the
-  intended proofs and the exact state of the mathlib pin.
+  exactly TWO deep sorried cores — the Weber counting leaf
+  `exists_forall_abs_sum_card_absNorm_residue_sub_mul_le_rpow` and
+  the arithmetic core
+  `integral_sum_dirichletCharacter_mul_card_cpow_neg_two_ne_zero`;
+  see their docstrings for the intended proofs and the exact state
+  of the mathlib pin.
 
 The remaining pieces of the decomposition (Brauer–Nesbitt for
 2-dimensional mod-`ℓ` representations, the mod-`ℓ` cyclotomic character as
@@ -2743,22 +2758,218 @@ theorem norm_LSeries_le_mul_div_of_forall_norm_sum_le {c : ℕ → ℂ} {r C : �
     mul_one_div]
 
 open IsDedekindDomain in
+/-- **Frobenius existence at primes away from `ℓ`, cyclotomic form** —
+the generalization of `exists_algEquiv_map_zeta_eq_pow_natCard` from
+prime residue cardinality to any residue cardinality prime to `ℓ`: for
+a cyclotomic extension `E = F(ζ_ℓ)` of a number field `F` (`ℓ` prime)
+and any finite place `P` of `F` with `ℓ ∤ #(𝓞 F / P)`, some
+`σ ∈ Gal(E/F)` acts on `ζ` by `ζ ↦ ζ ^ #(𝓞 F / P)`. Same proof as the
+degree-one version: at any prime `Q` of `𝓞 E` above `P` an arithmetic
+Frobenius exists (`IsArithFrobAt.exists_of_isInvariant`), and it acts
+on the `ℓ`-th root of unity `ζ` exactly by `ζ ↦ ζ ^ #(𝓞 F / P)`
+(`AlgHom.IsArithFrobAt.apply_of_pow_eq_one`), because `ℓ` is
+invertible modulo `Q` — here `ℓ ∤ #(𝓞 F / P)` with `ℓ` prime gives the
+coprimality directly, with no primality assumption on `#(𝓞 F / P)`. -/
+theorem exists_algEquiv_map_zeta_eq_pow_natCard_of_not_dvd
+    {F : Type*} [Field F] [NumberField F] {E : Type*} [Field E] [NumberField E]
+    [Algebra F E] {ℓ : ℕ} (hℓ : ℓ.Prime) [IsCyclotomicExtension {ℓ} F E]
+    {ζ : E} (hζ : IsPrimitiveRoot ζ ℓ) (P : HeightOneSpectrum (𝓞 F))
+    (hnd : ¬ ℓ ∣ Nat.card (𝓞 F ⧸ P.asIdeal)) :
+    ∃ σ : E ≃ₐ[F] E, σ ζ = ζ ^ Nat.card (𝓞 F ⧸ P.asIdeal) := by
+  classical
+  haveI : NeZero ℓ := ⟨hℓ.pos.ne'⟩
+  haveI : IsGalois F E := IsCyclotomicExtension.isGalois {ℓ} F E
+  haveI : FiniteDimensional F E := IsCyclotomicExtension.finiteDimensional {ℓ} F E
+  haveI : Module.Finite (𝓞 F) (𝓞 E) :=
+    Module.Finite.of_restrictScalars_finite ℤ (𝓞 F) (𝓞 E)
+  -- a prime of `𝓞 E` over `P`, with finite residue field
+  obtain ⟨⟨Q, hQp, hQo⟩⟩ := Ideal.nonempty_primesOver (S := 𝓞 E) P.asIdeal
+  haveI := hQp
+  haveI := hQo
+  have hQunder : Q.under (𝓞 F) = P.asIdeal := hQo.over.symm
+  have hQne : Q ≠ ⊥ := by
+    intro h
+    apply P.ne_bot
+    rw [hQo.over, h, Ideal.under_def]
+    exact Ideal.comap_bot_of_injective _
+      (FaithfulSMul.algebraMap_injective (𝓞 F) (𝓞 E))
+  haveI : Finite (𝓞 E ⧸ Q) := Ring.HasFiniteQuotients.finiteQuotient hQne
+  -- a Frobenius element at `Q` over `F`
+  obtain ⟨σQ, hσQ⟩ :=
+    IsArithFrobAt.exists_of_isInvariant (𝓞 F) (E ≃ₐ[F] E) Q
+  -- `ζ` as an algebraic integer
+  have hζint : IsIntegral ℤ ζ := by
+    refine IsIntegral.of_pow hℓ.pos ?_
+    rw [hζ.pow_eq_one]
+    exact isIntegral_one
+  set ζO : 𝓞 E := ⟨ζ, hζint⟩
+  -- `ℓ` is invertible modulo `Q`
+  have hℓQ : ((ℓ : ℕ) : 𝓞 E) ∉ Q := by
+    intro hmem
+    have h1 : ((ℓ : ℕ) : 𝓞 F) ∈ P.asIdeal := by
+      rw [← hQunder, Ideal.under_def, Ideal.mem_comap, map_natCast]
+      exact hmem
+    haveI : Finite (𝓞 F ⧸ P.asIdeal) :=
+      Ring.HasFiniteQuotients.finiteQuotient P.ne_bot
+    haveI := Fintype.ofFinite (𝓞 F ⧸ P.asIdeal)
+    have h2 : ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : 𝓞 F ⧸ P.asIdeal) = 0 := by
+      rw [Nat.card_eq_fintype_card]
+      exact Nat.cast_card_eq_zero _
+    have h3 : ((ℓ : ℕ) : 𝓞 F ⧸ P.asIdeal) = 0 := by
+      rw [← map_natCast (Ideal.Quotient.mk P.asIdeal),
+        Ideal.Quotient.eq_zero_iff_mem]
+      exact h1
+    have hco : IsCoprime (Nat.card (𝓞 F ⧸ P.asIdeal) : ℤ) (ℓ : ℤ) :=
+      Int.isCoprime_iff_gcd_eq_one.mpr
+        (by
+          rw [Int.gcd_natCast_natCast]
+          exact ((Nat.Prime.coprime_iff_not_dvd hℓ).mpr hnd).symm)
+    obtain ⟨u, v, huv⟩ := hco
+    have h4 : (1 : 𝓞 F ⧸ P.asIdeal) = 0 := by
+      calc (1 : 𝓞 F ⧸ P.asIdeal)
+          = ((u * (Nat.card (𝓞 F ⧸ P.asIdeal) : ℤ) + v * (ℓ : ℤ) : ℤ) :
+            𝓞 F ⧸ P.asIdeal) := by rw [huv, Int.cast_one]
+        _ = (u : 𝓞 F ⧸ P.asIdeal) *
+              ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : 𝓞 F ⧸ P.asIdeal) +
+            (v : 𝓞 F ⧸ P.asIdeal) * ((ℓ : ℕ) : 𝓞 F ⧸ P.asIdeal) := by
+            rw [Int.cast_add, Int.cast_mul, Int.cast_mul, Int.cast_natCast,
+              Int.cast_natCast]
+        _ = 0 := by rw [h2, h3, mul_zero, mul_zero, add_zero]
+    exact one_ne_zero h4
+  -- the Frobenius acts on `ζ` exactly by `ζ ↦ ζ ^ #(𝓞 F / P)`
+  have hζOpow : ζO ^ ℓ = 1 := by
+    apply NumberField.RingOfIntegers.ext
+    show algebraMap (𝓞 E) E (ζO ^ ℓ) = algebraMap (𝓞 E) E 1
+    rw [map_pow, map_one]
+    show ζ ^ ℓ = 1
+    exact hζ.pow_eq_one
+  have hσQζ : σQ • ζO = ζO ^ Nat.card (𝓞 F ⧸ P.asIdeal) := by
+    have h1 := hσQ.apply_of_pow_eq_one hζOpow hℓQ
+    rw [hQunder] at h1
+    exact h1
+  refine ⟨σQ, ?_⟩
+  have h2 : (algebraMap (𝓞 E) E) (σQ • ζO) =
+      (algebraMap (𝓞 E) E) (ζO ^ Nat.card (𝓞 F ⧸ P.asIdeal)) :=
+    congrArg _ hσQζ
+  rw [map_pow] at h2
+  have h3 : (algebraMap (𝓞 E) E) (σQ • ζO) = σQ ζ := rfl
+  have h4 : (algebraMap (𝓞 E) E) ζO = ζ := rfl
+  rw [h3, h4] at h2
+  exact h2
+
+open IsDedekindDomain in
+/-- **Norm residues of ideals prime to `ℓ` lie in the Galois image** —
+the multiplicative-closure step of the Hecke-cancellation glue: for a
+cyclotomic extension `E = F(ζ_ℓ)` (`ℓ` prime) and any ideal `I` of
+`𝓞 F` with `ℓ ∤ N(I)`, some `ρ ∈ Gal(E/F)` acts on `ζ` by `ζ ↦ ζ ^ m`
+with `m ≡ N(I) (mod ℓ)`. By induction on the prime factorization of
+`I` (`UniqueFactorizationMonoid.induction_on_prime`, over the ideal
+monoid of the Dedekind domain `𝓞 F`): the zero case is vacuous
+(`ℓ ∣ 0`), the unit case is the identity automorphism (`N(⊤) = 1`),
+and the prime-multiple case composes the Frobenius at the new prime
+(`exists_algEquiv_map_zeta_eq_pow_natCard_of_not_dvd`, applicable
+since `N` is multiplicative so `ℓ ∤ N(p·J)` passes to both factors)
+with the automorphism from the inductive hypothesis. -/
+theorem exists_algEquiv_map_zeta_eq_pow_of_not_dvd_absNorm
+    {F : Type*} [Field F] [NumberField F] {E : Type*} [Field E] [NumberField E]
+    [Algebra F E] {ℓ : ℕ} (hℓ : ℓ.Prime) [IsCyclotomicExtension {ℓ} F E]
+    {ζ : E} (hζ : IsPrimitiveRoot ζ ℓ) (I : Ideal (𝓞 F))
+    (hnd : ¬ ℓ ∣ Ideal.absNorm I) :
+    ∃ (ρ : E ≃ₐ[F] E) (m : ℕ), ρ ζ = ζ ^ m ∧
+      (m : ZMod ℓ) = (Ideal.absNorm I : ZMod ℓ) := by
+  classical
+  revert hnd
+  induction I using UniqueFactorizationMonoid.induction_on_prime with
+  | h₁ =>
+    intro hnd
+    exact absurd (by rw [Ideal.zero_eq_bot, Ideal.absNorm_bot]; exact dvd_zero ℓ
+      : ℓ ∣ Ideal.absNorm (0 : Ideal (𝓞 F))) hnd
+  | h₂ J hJ =>
+    intro _
+    have hJtop : Ideal.absNorm J = 1 := by
+      rw [Ideal.isUnit_iff.mp hJ, Ideal.absNorm_top]
+    exact ⟨1, 1, by rw [pow_one, AlgEquiv.one_apply],
+      by rw [hJtop, Nat.cast_one]⟩
+  | h₃ J p hJ hp ih =>
+    intro hnd
+    have hmul : Ideal.absNorm (p * J) = Ideal.absNorm p * Ideal.absNorm J :=
+      map_mul Ideal.absNorm p J
+    have hndp : ¬ ℓ ∣ Ideal.absNorm p := fun h => hnd (hmul ▸ h.mul_right _)
+    have hndJ : ¬ ℓ ∣ Ideal.absNorm J := fun h => hnd (hmul ▸ h.mul_left _)
+    obtain ⟨ρJ, m, hm, hmres⟩ := ih hndJ
+    set P : HeightOneSpectrum (𝓞 F) :=
+      ⟨p, Ideal.isPrime_of_prime hp, by rw [← Ideal.zero_eq_bot]; exact hp.ne_zero⟩
+      with hPdef
+    have hcard : Nat.card (𝓞 F ⧸ P.asIdeal) = Ideal.absNorm p := by
+      rw [Ideal.absNorm_apply, Submodule.cardQuot_apply]
+    obtain ⟨σ, hσ⟩ := exists_algEquiv_map_zeta_eq_pow_natCard_of_not_dvd hℓ hζ P
+      (by rw [hcard]; exact hndp)
+    refine ⟨σ * ρJ, Nat.card (𝓞 F ⧸ P.asIdeal) * m, ?_, ?_⟩
+    · rw [AlgEquiv.mul_apply, hm, map_pow, hσ, ← pow_mul]
+    · rw [Nat.cast_mul, hcard, hmres, hmul, Nat.cast_mul]
+
+open IsDedekindDomain in
+/-- **Weber's ideal-counting theorem with power-saving error, fibered
+over the norm residues in the Galois image** (sorry leaf) — THE deep
+geometry-of-numbers core of the analytic-continuation half, isolated:
+there are constants `κ ∈ ℝ`, `r < 1` and `C` such that for EVERY
+residue `a mod ℓ` realized by the Galois action on `ζ` (i.e. `a` in
+the image of `Gal(E/F) → (ℤ/ℓ)ˣ`, `ρ ↦ (n : ρζ = ζ^n)`), the count of
+nonzero ideals of `𝓞 F` with norm `≤ n` and norm residue `a` is
+`κ·n + O(n^r)` — with the SAME `κ` for every such `a`.
+
+Intended proof (Weber; Lang, *Algebraic Number Theory*, ch. VI §3
+Thm 3; Neukirch ch. VII): (i) per narrow-ray-class counting —
+`#{I ∈ 𝔠 : N(I) ≤ x} = κ₀·x + O(x^{1-1/d})`, `d = [F:ℚ]`, uniformly
+over classes `𝔠` of the narrow ray class group mod `ℓ𝓞_F`, by
+lattice-point counting in a homogeneously expanding fundamental
+domain with Lipschitz-parametrizable boundary; (ii) the norm residue
+`N(·) mod ℓ` is well defined on narrow ray classes mod `ℓ` (for
+`α ≡ 1 mod ℓ𝓞_F` totally positive, `N(α) ≡ 1 mod ℓ`), giving a group
+homomorphism onto the subgroup of realized norm residues, whose
+fibers all have the same number of ray classes — whence the uniform
+`κ`; (iii) the realized-norm-residue subgroup coincides with the
+image of `Gal(E/F)` — one inclusion is
+`exists_algEquiv_map_zeta_eq_pow_of_not_dvd_absNorm` (proven above),
+the other is Frobenius surjectivity, available from this file's
+`infinite_setOf_natCard_quotient_prime_and_map_zeta_eq_pow` (each
+`ρ`-class contains a prime, in fact infinitely many). The mathlib pin
+has the error-free leading term
+(`NumberField.Ideal.tendsto_norm_le_and_mk_eq_div_atTop`, over the
+plain class group) but neither ray classes nor any error term; the
+lattice-point count with Lipschitz-boundary error is the missing
+ingredient. -/
+theorem exists_forall_abs_sum_card_absNorm_residue_sub_mul_le_rpow
+    {F : Type*} [Field F] [NumberField F] {E : Type*} [Field E] [NumberField E]
+    [Algebra F E] {ℓ : ℕ} (hℓ : ℓ.Prime) [IsCyclotomicExtension {ℓ} F E]
+    {ζ : E} (hζ : IsPrimitiveRoot ζ ℓ) :
+    ∃ κ r C : ℝ, 0 < r ∧ r < 1 ∧ 0 ≤ C ∧ ∀ a : ZMod ℓ,
+      (∃ (ρ : E ≃ₐ[F] E) (m : ℕ), ρ ζ = ζ ^ m ∧ (m : ZMod ℓ) = a) → ∀ n : ℕ,
+      |(∑ k ∈ (Finset.Icc 1 n).filter (fun k : ℕ => (k : ZMod ℓ) = a),
+          (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℝ)) - κ * n| ≤
+        C * (n : ℝ) ^ r :=
+  sorry
+
+open IsDedekindDomain in
 /-- **Power-saving cancellation in the twisted Hecke coefficient sums**
-(sorry leaf) — THE deep counting input of the analytic-continuation
-half, isolated: for `χ mod ℓ` nontrivial on the image of `Gal(E/F)`
-(hypothesis `hχ`), the partial sums
-`∑_{k ≤ n} χ(k)·#{I : N(I) = k}` are bounded by `C·n^r` for some
-`r < 1`. This is the classical Weber–Landau ideal counting with error
-term: `#{I : N(I) ≤ x, [I] = 𝔠} = κ₀·x + O(x^{1-1/d})` uniformly over
-classes `𝔠` of the ray-type invariant `(class group, N mod ℓ)`, so the
-character sum telescopes to the error terms since `χ` averages to zero
-over the norm-residues hit by each fixed class — the nontriviality
-`hχ` on the image of `Gal(E/F)` (which is generated by the Frobenius
-norm-residues `N P mod ℓ`) is exactly what makes the main terms cancel.
-The mathlib pin has the leading term
-(`NumberField.Ideal.tendsto_norm_le_and_mk_eq_div_atTop`) but no error
-term; the lattice-point counting with Lipschitz-boundary error is the
-missing ingredient. -/
+— the counting input of the analytic-continuation half: for `χ mod ℓ`
+nontrivial on the image of `Gal(E/F)` (hypothesis `hχ`), the partial
+sums `∑_{k ≤ n} χ(k)·#{I : N(I) = k}` are bounded by `C·n^r` for some
+`r < 1`.
+
+DERIVED from the sorried Weber counting core
+`exists_forall_abs_sum_card_absNorm_residue_sub_mul_le_rpow` (per-
+residue ideal counting `κ·n + O(n^r)`, uniform over the Galois-image
+residues) by character-summation glue: fiber the sum over the norm
+residue `a = k mod ℓ` (`Finset.sum_fiberwise`); residues outside the
+Galois image contribute nothing — `χ(0) = 0` kills `a = 0`, and
+`exists_algEquiv_map_zeta_eq_pow_of_not_dvd_absNorm` (proven above)
+shows no ideal has a unit norm residue outside the image; on the
+image, the main terms `κ·n` cancel because `∑_a χ(a) = 0` over the
+image — it is a subgroup (closed under the composition of
+automorphisms) on which `χ` is nontrivial by `hχ`, so the classical
+translation trick applies — leaving at most `ℓ` error terms of size
+`C·n^r` each. -/
 theorem exists_forall_norm_sum_dirichletCharacter_mul_card_absNorm_le_rpow
     {F : Type*} [Field F] [NumberField F] {E : Type*} [Field E] [NumberField E]
     [Algebra F E] {ℓ : ℕ} (hℓ : ℓ.Prime) [IsCyclotomicExtension {ℓ} F E]
@@ -2767,8 +2978,166 @@ theorem exists_forall_norm_sum_dirichletCharacter_mul_card_absNorm_le_rpow
     ∃ r C : ℝ, 0 < r ∧ r < 1 ∧ 0 ≤ C ∧ ∀ n : ℕ,
       ‖∑ k ∈ Finset.Icc 1 n, χ (k : ZMod ℓ) *
         (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)‖ ≤
-        C * (n : ℝ) ^ r :=
-  sorry
+        C * (n : ℝ) ^ r := by
+  classical
+  haveI : NeZero ℓ := ⟨hℓ.pos.ne'⟩
+  haveI : Fact ℓ.Prime := ⟨hℓ⟩
+  obtain ⟨κ, r, C, hr0, hr1, hC, hcount⟩ :=
+    exists_forall_abs_sum_card_absNorm_residue_sub_mul_le_rpow (F := F) hℓ hζ
+  refine ⟨r, ℓ * C, hr0, hr1,
+    mul_nonneg (Nat.cast_nonneg ℓ) hC, fun n => ?_⟩
+  -- the set of norm residues realized by the Galois action on `ζ`
+  set S : Finset (ZMod ℓ) := Finset.univ.filter
+    (fun a => ∃ (ρ : E ≃ₐ[F] E) (m : ℕ), ρ ζ = ζ ^ m ∧ (m : ZMod ℓ) = a)
+    with hSdef
+  -- fiber the character sum over the norm residues
+  have hfiber : ∑ k ∈ Finset.Icc 1 n, χ (k : ZMod ℓ) *
+      (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ) =
+      ∑ a : ZMod ℓ,
+        ∑ k ∈ (Finset.Icc 1 n).filter (fun k : ℕ => (k : ZMod ℓ) = a),
+          χ (k : ZMod ℓ) *
+            (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ) :=
+    (Finset.sum_fiberwise _ _ _).symm
+  -- each fiber carries the constant character value `χ a`
+  have hconst : ∀ a : ZMod ℓ,
+      ∑ k ∈ (Finset.Icc 1 n).filter (fun k : ℕ => (k : ZMod ℓ) = a),
+        χ (k : ZMod ℓ) *
+          (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ) =
+      χ a * ((∑ k ∈ (Finset.Icc 1 n).filter (fun k : ℕ => (k : ZMod ℓ) = a),
+        (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℝ) : ℝ) : ℂ) := by
+    intro a
+    rw [Complex.ofReal_sum, Finset.mul_sum]
+    refine Finset.sum_congr rfl fun k hk => ?_
+    obtain ⟨-, hka⟩ := Finset.mem_filter.mp hk
+    rw [hka, Complex.ofReal_natCast]
+  -- residues outside the Galois image contribute nothing
+  have hoff : ∀ a : ZMod ℓ, a ∉ S →
+      χ a * ((∑ k ∈ (Finset.Icc 1 n).filter (fun k : ℕ => (k : ZMod ℓ) = a),
+        (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℝ) : ℝ) : ℂ) = 0 := by
+    intro a ha
+    by_cases hu : IsUnit a
+    · have hT : ∑ k ∈ (Finset.Icc 1 n).filter (fun k : ℕ => (k : ZMod ℓ) = a),
+          (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℝ) = 0 := by
+        refine Finset.sum_eq_zero fun k hk => ?_
+        obtain ⟨-, hka⟩ := Finset.mem_filter.mp hk
+        by_contra hcard
+        have hne : Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} ≠ 0 :=
+          fun h => hcard (by rw [h, Nat.cast_zero])
+        obtain ⟨⟨I, hI⟩⟩ := (Nat.card_ne_zero.mp hne).1
+        have hdvd : ¬ ℓ ∣ k := by
+          intro hdvd
+          rw [(ZMod.natCast_eq_zero_iff k ℓ).mpr hdvd] at hka
+          exact hu.ne_zero hka.symm
+        obtain ⟨ρ, m, hρ, hm⟩ :=
+          exists_algEquiv_map_zeta_eq_pow_of_not_dvd_absNorm hℓ hζ I
+            (by rw [hI]; exact hdvd)
+        exact ha (Finset.mem_filter.mpr ⟨Finset.mem_univ _,
+          ρ, m, hρ, by rw [hm, hI]; exact hka⟩)
+      rw [hT, Complex.ofReal_zero, mul_zero]
+    · rw [χ.map_nonunit hu, zero_mul]
+  -- the base residue supplied by `hχ`, and its unit status
+  obtain ⟨ρ₀, n₀, hρ₀, hχ₀⟩ := hχ
+  have hn₀S : ((n₀ : ℕ) : ZMod ℓ) ∈ S :=
+    Finset.mem_filter.mpr ⟨Finset.mem_univ _, ρ₀, n₀, hρ₀, rfl⟩
+  have hn₀unit : IsUnit ((n₀ : ℕ) : ZMod ℓ) := by
+    have hprim : IsPrimitiveRoot (ζ ^ n₀) ℓ := by
+      rw [← hρ₀]
+      exact hζ.map_of_injective ρ₀.injective
+    exact (ZMod.isUnit_iff_coprime n₀ ℓ).mpr
+      ((hζ.pow_iff_coprime hℓ.pos n₀).mp hprim)
+  have hn₀ne : ((n₀ : ℕ) : ZMod ℓ) ≠ 0 := hn₀unit.ne_zero
+  -- multiplication by the base residue permutes the Galois image
+  have himg : S.image (fun a => ((n₀ : ℕ) : ZMod ℓ) * a) = S := by
+    refine Finset.eq_of_subset_of_card_le ?_ ?_
+    · intro b hb
+      obtain ⟨a, haS, rfl⟩ := Finset.mem_image.mp hb
+      obtain ⟨-, ρ, m, hρ, hma⟩ := Finset.mem_filter.mp haS
+      refine Finset.mem_filter.mpr ⟨Finset.mem_univ _,
+        ρ₀ * ρ, n₀ * m, ?_, ?_⟩
+      · rw [AlgEquiv.mul_apply, hρ, map_pow, hρ₀, ← pow_mul]
+      · rw [Nat.cast_mul, hma]
+    · rw [Finset.card_image_of_injective _ (mul_right_injective₀ hn₀ne)]
+  -- the character sums to zero over the Galois image
+  have hSsum : ∑ a ∈ S, χ a = 0 := by
+    have h1 : χ ((n₀ : ℕ) : ZMod ℓ) * ∑ a ∈ S, χ a = ∑ a ∈ S, χ a := by
+      rw [Finset.mul_sum]
+      calc ∑ a ∈ S, χ ((n₀ : ℕ) : ZMod ℓ) * χ a
+          = ∑ a ∈ S, χ (((n₀ : ℕ) : ZMod ℓ) * a) :=
+            Finset.sum_congr rfl fun a _ => (map_mul χ _ _).symm
+        _ = ∑ b ∈ S.image (fun a => ((n₀ : ℕ) : ZMod ℓ) * a), χ b :=
+            (Finset.sum_image fun x _ y _ h =>
+              mul_right_injective₀ hn₀ne h).symm
+        _ = ∑ a ∈ S, χ a := by rw [himg]
+    have h2 : (χ ((n₀ : ℕ) : ZMod ℓ) - 1) * ∑ a ∈ S, χ a = 0 := by
+      rw [sub_mul, one_mul, h1, sub_self]
+    rcases mul_eq_zero.mp h2 with h | h
+    · exact absurd (by rwa [sub_eq_zero] at h) hχ₀
+    · exact h
+  -- assemble: only the error terms survive
+  have htotal : ∑ k ∈ Finset.Icc 1 n, χ (k : ZMod ℓ) *
+      (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ) =
+      ∑ a ∈ S, χ a *
+        (((∑ k ∈ (Finset.Icc 1 n).filter (fun k : ℕ => (k : ZMod ℓ) = a),
+          (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℝ)) - κ * n : ℝ) :
+          ℂ) := by
+    calc ∑ k ∈ Finset.Icc 1 n, χ (k : ZMod ℓ) *
+        (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)
+        = ∑ a : ZMod ℓ,
+            ∑ k ∈ (Finset.Icc 1 n).filter (fun k : ℕ => (k : ZMod ℓ) = a),
+              χ (k : ZMod ℓ) *
+                (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ) := hfiber
+      _ = ∑ a : ZMod ℓ, χ a *
+            ((∑ k ∈ (Finset.Icc 1 n).filter (fun k : ℕ => (k : ZMod ℓ) = a),
+              (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℝ) : ℝ) : ℂ) :=
+          Finset.sum_congr rfl fun a _ => hconst a
+      _ = ∑ a ∈ S, χ a *
+            ((∑ k ∈ (Finset.Icc 1 n).filter (fun k : ℕ => (k : ZMod ℓ) = a),
+              (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℝ) : ℝ) : ℂ) :=
+          (Finset.sum_subset (Finset.subset_univ S)
+            fun a _ ha => hoff a ha).symm
+      _ = ∑ a ∈ S, (χ a *
+            (((∑ k ∈ (Finset.Icc 1 n).filter (fun k : ℕ => (k : ZMod ℓ) = a),
+              (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℝ)) - κ * n :
+              ℝ) : ℂ) + χ a * ((κ * n : ℝ) : ℂ)) := by
+          refine Finset.sum_congr rfl fun a _ => ?_
+          rw [← mul_add, ← Complex.ofReal_add, sub_add_cancel]
+      _ = ∑ a ∈ S, χ a *
+            (((∑ k ∈ (Finset.Icc 1 n).filter (fun k : ℕ => (k : ZMod ℓ) = a),
+              (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℝ)) - κ * n :
+              ℝ) : ℂ) +
+          (∑ a ∈ S, χ a) * ((κ * n : ℝ) : ℂ) := by
+          rw [Finset.sum_add_distrib, Finset.sum_mul]
+      _ = _ := by rw [hSsum, zero_mul, add_zero]
+  -- bound the error terms
+  rw [htotal]
+  calc ‖∑ a ∈ S, χ a *
+      (((∑ k ∈ (Finset.Icc 1 n).filter (fun k : ℕ => (k : ZMod ℓ) = a),
+        (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℝ)) - κ * n : ℝ) :
+        ℂ)‖
+      ≤ ∑ a ∈ S, ‖χ a *
+        (((∑ k ∈ (Finset.Icc 1 n).filter (fun k : ℕ => (k : ZMod ℓ) = a),
+          (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℝ)) - κ * n : ℝ) :
+          ℂ)‖ := norm_sum_le _ _
+    _ ≤ ∑ _a ∈ S, C * (n : ℝ) ^ r := by
+        refine Finset.sum_le_sum fun a haS => ?_
+        obtain ⟨-, hex⟩ := Finset.mem_filter.mp haS
+        rw [norm_mul, Complex.norm_real, Real.norm_eq_abs]
+        calc ‖χ a‖ *
+            |(∑ k ∈ (Finset.Icc 1 n).filter (fun k : ℕ => (k : ZMod ℓ) = a),
+              (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℝ)) - κ * n|
+            ≤ 1 * (C * (n : ℝ) ^ r) :=
+              mul_le_mul (χ.norm_le_one a) (hcount a hex n)
+                (abs_nonneg _) zero_le_one
+          _ = C * (n : ℝ) ^ r := one_mul _
+    _ = S.card * (C * (n : ℝ) ^ r) := by
+        rw [Finset.sum_const, nsmul_eq_mul]
+    _ ≤ ℓ * (C * (n : ℝ) ^ r) := by
+        refine mul_le_mul_of_nonneg_right ?_
+          (mul_nonneg hC (Real.rpow_nonneg (Nat.cast_nonneg n) r))
+        have hcards := Finset.card_le_univ S
+        rw [ZMod.card] at hcards
+        exact_mod_cast hcards
+    _ = ℓ * C * (n : ℝ) ^ r := by ring
 
 open IsDedekindDomain in
 /-- **Uniform upper bounds for the twisted `L`-series and its derivative
