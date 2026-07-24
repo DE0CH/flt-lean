@@ -13073,10 +13073,568 @@ noncomputable def DedekindContinuation.poitouHorizontal {K : Type*} [Field K]
         poitouPhi (σ + T * Complex.I) *
           (deriv pkg.xi (σ + T * Complex.I) / pkg.xi (σ + T * Complex.I)))).re
 
+/-- **`Φ` is entire** (PROVEN 2026-07-23): the integrand
+`x ↦ (f(x)/cosh(x/2))·e^{(s−1/2)x}` of `poitouPhi` is supported in
+`[-6, 6]` and dominated there, locally uniformly in `s` — on the ball
+`‖s − s₀‖ < 1` by the integrable majorant
+`𝟙_{[-6,6]}·6·e^{6(‖s₀‖+2)}` — so differentiation under the integral
+sign (`hasDerivAt_integral_of_dominated_loc_of_deriv_le`) applies at
+every `s₀ ∈ ℂ`. -/
+theorem poitouPhi_differentiable : Differentiable ℂ poitouPhi := by
+  intro s₀
+  have hfcont : Continuous odlyzkoTestFn := by
+    rw [show odlyzkoTestFn = fun x : ℝ => max (1 - |x| / 6) 0 from rfl]
+    exact (continuous_const.sub (continuous_abs.div_const 6)).max continuous_const
+  have hfle : ∀ x : ℝ, 0 ≤ odlyzkoTestFn x ∧ odlyzkoTestFn x ≤ 1 := by
+    intro x
+    constructor
+    · rw [odlyzkoTestFn]; exact le_max_right _ _
+    · rw [odlyzkoTestFn]
+      exact max_le (by have := abs_nonneg x; linarith) zero_le_one
+  have hf0 : ∀ x : ℝ, 6 < |x| → odlyzkoTestFn x = 0 := by
+    intro x hx
+    rw [odlyzkoTestFn]
+    exact max_eq_right (by linarith)
+  have hFcont : Continuous (fun x : ℝ => odlyzkoTestFn x / Real.cosh (x / 2)) :=
+    hfcont.div (Real.continuous_cosh.comp (continuous_id.div_const 2))
+      fun x => (Real.cosh_pos _).ne'
+  have hFsupp : HasCompactSupport
+      (fun x : ℝ => odlyzkoTestFn x / Real.cosh (x / 2)) := by
+    refine HasCompactSupport.intro (isCompact_Icc (a := (-6 : ℝ)) (b := 6)) ?_
+    intro x hx
+    simp only [Set.mem_Icc, not_and_or, not_le] at hx
+    have h6 : 6 < |x| := by
+      rcases hx with h | h
+      · have := neg_abs_le x; linarith
+      · have := le_abs_self x; linarith
+    rw [hf0 x h6, zero_div]
+  set F : ℂ → ℝ → ℂ := fun s x =>
+    ((odlyzkoTestFn x / Real.cosh (x / 2) : ℝ) : ℂ) *
+      Complex.exp ((s - 1 / 2) * (x : ℂ))
+  set F' : ℂ → ℝ → ℂ := fun s x =>
+    ((odlyzkoTestFn x / Real.cosh (x / 2) : ℝ) : ℂ) *
+      ((x : ℂ) * Complex.exp ((s - 1 / 2) * (x : ℂ))) with hF'
+  have hFscont : ∀ s : ℂ, Continuous (F s) := fun s =>
+    (Complex.continuous_ofReal.comp hFcont).mul
+      (Complex.continuous_exp.comp (continuous_const.mul Complex.continuous_ofReal))
+  have hF_meas : ∀ᶠ s in nhds s₀,
+      MeasureTheory.AEStronglyMeasurable (F s) MeasureTheory.volume :=
+    Filter.Eventually.of_forall fun s => (hFscont s).aestronglyMeasurable
+  have hF_int : MeasureTheory.Integrable (F s₀) :=
+    (hFscont s₀).integrable_of_hasCompactSupport
+      ((hFsupp.comp_left (g := Complex.ofReal) Complex.ofReal_zero).mul_right)
+  have hF'_meas : MeasureTheory.AEStronglyMeasurable (F' s₀)
+      MeasureTheory.volume :=
+    ((Complex.continuous_ofReal.comp hFcont).mul
+      (Complex.continuous_ofReal.mul (Complex.continuous_exp.comp
+        (continuous_const.mul Complex.continuous_ofReal)))).aestronglyMeasurable
+  have h_bound : ∀ᵐ x : ℝ ∂MeasureTheory.volume, ∀ s ∈ Metric.ball s₀ 1,
+      ‖F' s x‖ ≤ Set.indicator (Set.Icc (-6 : ℝ) 6)
+        (fun _ => 6 * Real.exp (6 * (‖s₀‖ + 2))) x := by
+    refine Filter.Eventually.of_forall fun x => fun s hs => ?_
+    rw [hF']
+    simp only []
+    rw [norm_mul, norm_mul, Complex.norm_real, Real.norm_eq_abs,
+      Complex.norm_exp, Complex.norm_real, Real.norm_eq_abs]
+    rcases le_or_gt |x| 6 with hx | hx
+    · rw [Set.indicator_of_mem (Set.mem_Icc.mpr (abs_le.mp hx))]
+      have hquot : |odlyzkoTestFn x / Real.cosh (x / 2)| ≤ 1 := by
+        rw [abs_of_nonneg (div_nonneg (hfle x).1 (Real.cosh_pos (x := x / 2)).le)]
+        exact div_le_one_of_le₀
+          (le_trans (hfle x).2 (Real.one_le_cosh (x / 2))) (Real.cosh_pos _).le
+      have hre : ((s - 1 / 2) * (x : ℂ)).re = (s.re - 1 / 2) * x := by
+        have h12 : ((1 : ℂ) / 2) = ((1 / 2 : ℝ) : ℂ) := by push_cast; ring
+        simp [h12, Complex.mul_re, Complex.sub_re, Complex.ofReal_re,
+          Complex.ofReal_im]
+      rw [hre]
+      have hsre : |s.re - 1 / 2| ≤ ‖s₀‖ + 2 := by
+        have h1 : |s.re| ≤ ‖s‖ := Complex.abs_re_le_norm s
+        have h2 : ‖s‖ ≤ ‖s₀‖ + 1 := by
+          have := Metric.mem_ball.mp hs
+          have h3 : ‖s - s₀‖ < 1 := by rwa [← dist_eq_norm]
+          calc ‖s‖ = ‖s₀ + (s - s₀)‖ := by ring_nf
+            _ ≤ ‖s₀‖ + ‖s - s₀‖ := norm_add_le _ _
+            _ ≤ ‖s₀‖ + 1 := by linarith
+        have h4 : |s.re - 1 / 2| ≤ |s.re| + 1 / 2 := by
+          calc |s.re - 1 / 2| ≤ |s.re| + |(1 : ℝ) / 2| := abs_sub _ _
+            _ = |s.re| + 1 / 2 := by norm_num
+        linarith
+      have hexp : Real.exp ((s.re - 1 / 2) * x) ≤ Real.exp (6 * (‖s₀‖ + 2)) := by
+        refine Real.exp_le_exp.mpr (le_trans (le_abs_self _) ?_)
+        rw [abs_mul]
+        calc |s.re - 1 / 2| * |x| ≤ (‖s₀‖ + 2) * 6 :=
+              mul_le_mul hsre hx (abs_nonneg _) (by positivity)
+          _ = 6 * (‖s₀‖ + 2) := by ring
+      calc |odlyzkoTestFn x / Real.cosh (x / 2)| *
+            (|x| * Real.exp ((s.re - 1 / 2) * x)) ≤
+          1 * (6 * Real.exp (6 * (‖s₀‖ + 2))) := by
+            refine mul_le_mul hquot ?_ (by positivity) zero_le_one
+            exact mul_le_mul hx hexp (Real.exp_pos _).le (by norm_num)
+        _ = 6 * Real.exp (6 * (‖s₀‖ + 2)) := one_mul _
+    · rw [hf0 x hx, Set.indicator_of_notMem (by
+        simp only [Set.mem_Icc, not_and_or, not_le]
+        rcases lt_abs.mp hx with h | h
+        · exact Or.inr h
+        · exact Or.inl (by linarith))]
+      simp
+  have bound_int : MeasureTheory.Integrable
+      (Set.indicator (Set.Icc (-6 : ℝ) 6)
+        (fun _ => 6 * Real.exp (6 * (‖s₀‖ + 2)))) := by
+    rw [MeasureTheory.integrable_indicator_iff measurableSet_Icc]
+    exact MeasureTheory.integrableOn_const measure_Icc_lt_top.ne
+  have h_diff : ∀ᵐ x : ℝ ∂MeasureTheory.volume, ∀ s ∈ Metric.ball s₀ 1,
+      HasDerivAt (F · x) (F' s x) s := by
+    refine Filter.Eventually.of_forall fun x => fun s _ => ?_
+    have hlin : HasDerivAt (fun s : ℂ => (s - 1 / 2) * (x : ℂ)) (x : ℂ) s := by
+      simpa using ((hasDerivAt_id s).sub_const ((1 : ℂ) / 2)).mul_const (x : ℂ)
+    have hexp : HasDerivAt (fun s : ℂ => Complex.exp ((s - 1 / 2) * (x : ℂ)))
+        (Complex.exp ((s - 1 / 2) * (x : ℂ)) * (x : ℂ)) s :=
+      (Complex.hasDerivAt_exp ((s - 1 / 2) * (x : ℂ))).comp s hlin
+    have hD := hexp.const_mul
+      ((odlyzkoTestFn x / Real.cosh (x / 2) : ℝ) : ℂ)
+    have heq : ((odlyzkoTestFn x / Real.cosh (x / 2) : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * (x : ℂ)) * (x : ℂ)) = F' s x := by
+      rw [hF']
+      ring
+    exact heq ▸ hD
+  have main := hasDerivAt_integral_of_dominated_loc_of_deriv_le
+    (Metric.ball_mem_nhds s₀ one_pos) hF_meas hF_int hF'_meas h_bound
+    bound_int h_diff
+  exact main.2.differentiableAt
+
+/-- **Every zero of `ξ_K` carries positive `mult`, given a zero-free
+boundary line** (PROVEN 2026-07-24 — brick (a) of the residue-theorem
+stage of `DedekindContinuation.zero_sum_eq_poitouEdge_add_poitouHorizontal`):
+under the standing hypothesis `hbnd` (no zeros on `re = 1`), a point of
+`mult = 0` cannot be a zero of `ξ_K` — equivalently every zero lies in
+the OPEN critical strip, where `mult` is the (positive) vanishing
+order.  Case split on `re s`: `re s > 1` is Euler-product nonvanishing
+(`ne_zero_of_one_lt_re`); `re s = 1` is `hbnd`; `re s ≤ 0` mirrors
+through `funcEq` to `re (1 − s) ≥ 1`; and inside the strip `mult` IS
+`analyticOrderNatAt`, which vanishes at `s` only if `ξ_K s ≠ 0` — the
+order is finite because `ξ_K(2) ≠ 0` and `ℂ` is preconnected
+(`AnalyticOnNhd.analyticOrderAt_ne_top_of_isPreconnected`). -/
+theorem DedekindContinuation.xi_ne_zero_of_mult_eq_zero {K : Type*} [Field K]
+    [NumberField K] (pkg : DedekindContinuation K)
+    (hbnd : ∀ t : ℝ, pkg.xi (1 + t * Complex.I) ≠ 0)
+    {s : ℂ} (hm : pkg.mult s = 0) : pkg.xi s ≠ 0 := by
+  intro hxi0
+  rcases lt_trichotomy s.re 1 with hlt | heq | hgt
+  · by_cases hle : s.re ≤ 0
+    · -- mirror across the functional equation
+      have h1s : pkg.xi (1 - s) = 0 := by rw [pkg.funcEq s]; exact hxi0
+      rcases eq_or_lt_of_le hle with heq0 | hlt0
+      · have hform : (1 - s : ℂ) = 1 + (-s.im : ℝ) * Complex.I := by
+          apply Complex.ext
+          · simp [heq0]
+          · simp
+        exact hbnd (-s.im) (by rw [← hform]; exact h1s)
+      · exact pkg.ne_zero_of_one_lt_re (1 - s)
+          (by rw [Complex.sub_re, Complex.one_re]; linarith) h1s
+    · -- inside the strip: `mult = analyticOrderNatAt`
+      push Not at hle
+      have hordnat : analyticOrderNatAt pkg.xi s = 0 := by
+        simpa [DedekindContinuation.mult, hle, hlt] using hm
+      have hne_top : analyticOrderAt pkg.xi s ≠ ⊤ := by
+        have h0 : analyticOrderAt pkg.xi 2 ≠ ⊤ := by
+          rw [analyticOrderAt_eq_zero.mpr
+            (Or.inr (pkg.ne_zero_of_one_lt_re 2 (by norm_num)))]
+          simp
+        exact AnalyticOnNhd.analyticOrderAt_ne_top_of_isPreconnected
+          (fun w _ => pkg.differentiable.analyticAt w) isPreconnected_univ
+          (Set.mem_univ 2) (Set.mem_univ s) h0
+      have hord : analyticOrderAt pkg.xi s = 0 := by
+        rcases ENat.toNat_eq_zero.mp hordnat with h | h
+        · exact h
+        · exact absurd h hne_top
+      rcases analyticOrderAt_eq_zero.mp hord with hna | hne
+      · exact hna (pkg.differentiable.analyticAt s)
+      · exact hne hxi0
+  · have hform : s = 1 + (s.im : ℝ) * Complex.I := by
+      apply Complex.ext <;> simp [heq]
+    exact hbnd s.im (by rw [← hform]; exact hxi0)
+  · exact pkg.ne_zero_of_one_lt_re s hgt hxi0
+
+/-- **The derivative of the functional equation:
+`ξ'(1 − s) = −ξ'(s)`** (PROVEN 2026-07-24 — brick (b) of the folding
+step of `DedekindContinuation.zero_sum_eq_poitouEdge_add_poitouHorizontal`):
+differentiate `funcEq` with the chain rule `deriv_comp_const_sub`. -/
+theorem DedekindContinuation.deriv_xi_one_sub {K : Type*} [Field K]
+    [NumberField K] (pkg : DedekindContinuation K) (s : ℂ) :
+    deriv pkg.xi (1 - s) = -deriv pkg.xi s := by
+  have h3 : (fun z : ℂ => pkg.xi (1 - z)) = pkg.xi := funext pkg.funcEq
+  have h2 : deriv (fun z : ℂ => pkg.xi (1 - z)) s = -deriv pkg.xi (1 - s) :=
+    deriv_comp_const_sub pkg.xi 1 s
+  rw [h3] at h2
+  rw [h2, neg_neg]
+
+/-- **The functional-equation symmetry of the Poitou–Mellin transform:
+`Φ(1 − s) = Φ(s)`** (PROVEN 2026-07-24 — brick (c) of the folding step
+of `DedekindContinuation.zero_sum_eq_poitouEdge_add_poitouHorizontal`):
+substitute `x ↦ −x` in the defining integral
+(`MeasureTheory.integral_neg_eq_self`); the profile
+`f(x)/cosh(x/2)` is even and the kernel exponent transforms as
+`((1 − s) − 1/2)·x = (s − 1/2)·(−x)`. -/
+theorem poitouPhi_one_sub (s : ℂ) : poitouPhi (1 - s) = poitouPhi s := by
+  have hneg := MeasureTheory.integral_neg_eq_self
+    (fun x : ℝ => ((odlyzkoTestFn x / Real.cosh (x / 2) : ℝ) : ℂ) *
+      Complex.exp ((s - 1 / 2) * (x : ℂ))) MeasureTheory.volume
+  rw [poitouPhi, poitouPhi, ← hneg]
+  refine MeasureTheory.integral_congr_ae (Filter.Eventually.of_forall fun x => ?_)
+  have hcosh : Real.cosh (-x / 2) = Real.cosh (x / 2) := by
+    rw [neg_div, Real.cosh_neg]
+  have htest : odlyzkoTestFn (-x) = odlyzkoTestFn x := by
+    rw [odlyzkoTestFn, odlyzkoTestFn, abs_neg]
+  simp only [htest, hcosh]
+  congr 2
+  push_cast
+  ring
+
+set_option maxHeartbeats 1000000 in
+/-- **Dividing a finite zero set out of an entire function** (PROVEN
+2026-07-24 — the reusable divided-zeros brick of the residue-theorem
+stage of `DedekindContinuation.zero_sum_eq_poitouEdge_add_poitouHorizontal`,
+by the same iterated-`dslope` technique as the PROVEN counting core
+`sum_analyticOrderNatAt_le_of_frontier_norm_le`): an entire `f` with
+`f c ≠ 0` factors as
+`f(s) = Π_{ρ ∈ t} (s − ρ)^{ord_ρ f} · g(s)` with `g` entire and
+`g ρ ≠ 0` for every `ρ ∈ t`.  Induction on the total order mass
+`Σ_{ρ ∈ t} ord_ρ f`, peeling one linear factor per step by
+`sub_smul_dslope_of_zero` (with `Complex.differentiableOn_dslope` for
+entirety of the quotient and `analyticOrderAt_mul` /
+`analyticOrderAt_centeredMonomial` for the order bookkeeping); in the
+base case all orders vanish and — the order being finite by
+preconnectedness from `f c ≠ 0` — the function itself is zero-free on
+`t`. -/
+theorem exists_differentiable_factorization {f : ℂ → ℂ} {c : ℂ}
+    (hf : Differentiable ℂ f) (hfc : f c ≠ 0) (t : Finset ℂ) :
+    ∃ g : ℂ → ℂ, Differentiable ℂ g ∧ (∀ ρ ∈ t, g ρ ≠ 0) ∧
+      ∀ s : ℂ, f s = (∏ ρ ∈ t, (s - ρ) ^ analyticOrderNatAt f ρ) * g s := by
+  classical
+  suffices H : ∀ (n : ℕ) (f : ℂ → ℂ), Differentiable ℂ f → f c ≠ 0 →
+      (∑ ρ ∈ t, analyticOrderNatAt f ρ) = n →
+      ∃ g : ℂ → ℂ, Differentiable ℂ g ∧ (∀ ρ ∈ t, g ρ ≠ 0) ∧
+        ∀ s : ℂ, f s = (∏ ρ ∈ t, (s - ρ) ^ analyticOrderNatAt f ρ) * g s by
+    exact H _ f hf hfc rfl
+  intro n
+  induction n with
+  | zero =>
+    intro f hf hfc hn
+    have hord0 : ∀ ρ ∈ t, analyticOrderNatAt f ρ = 0 :=
+      fun ρ hρ => (Finset.sum_eq_zero_iff.mp hn) ρ hρ
+    refine ⟨f, hf, ?_, ?_⟩
+    · intro ρ hρ
+      have hne_top : analyticOrderAt f ρ ≠ ⊤ := by
+        have h0 : analyticOrderAt f c ≠ ⊤ := by
+          rw [analyticOrderAt_eq_zero.mpr (Or.inr hfc)]
+          simp
+        exact AnalyticOnNhd.analyticOrderAt_ne_top_of_isPreconnected
+          (fun w _ => hf.analyticAt w) isPreconnected_univ
+          (Set.mem_univ c) (Set.mem_univ ρ) h0
+      have hord : analyticOrderAt f ρ = 0 := by
+        rcases ENat.toNat_eq_zero.mp (hord0 ρ hρ) with h | h
+        · exact h
+        · exact absurd h hne_top
+      rcases analyticOrderAt_eq_zero.mp hord with hna | hne
+      · exact absurd (hf.analyticAt ρ) hna
+      · exact hne
+    · intro s
+      rw [Finset.prod_congr rfl fun ρ hρ => by rw [hord0 ρ hρ, pow_zero]]
+      rw [Finset.prod_const_one, one_mul]
+  | succ n ih =>
+    intro f hf hfc hn
+    obtain ⟨ρ₀, hρ₀t, hρ₀⟩ : ∃ ρ ∈ t, analyticOrderNatAt f ρ ≠ 0 :=
+      Finset.exists_ne_zero_of_sum_ne_zero (by omega)
+    have hfρ₀ : f ρ₀ = 0 := apply_eq_zero_of_analyticOrderNatAt_ne_zero hρ₀
+    have hg₁_diff : Differentiable ℂ (dslope f ρ₀) := by
+      rw [← differentiableOn_univ]
+      exact (Complex.differentiableOn_dslope Filter.univ_mem).mpr hf.differentiableOn
+    have hfactor : ∀ z : ℂ, f z = (z - ρ₀) * dslope f ρ₀ z := fun z => by
+      rw [← smul_eq_mul, sub_smul_dslope_of_zero hfρ₀]
+    have hg₁c : dslope f ρ₀ c ≠ 0 := fun h => hfc (by rw [hfactor c, h, mul_zero])
+    have hgan : ∀ z : ℂ, AnalyticAt ℂ (dslope f ρ₀) z :=
+      fun z => hg₁_diff.analyticAt z
+    have horder_split : ∀ σ : ℂ, analyticOrderAt f σ =
+        analyticOrderAt (fun w : ℂ => w - ρ₀) σ +
+          analyticOrderAt (dslope f ρ₀) σ := by
+      intro σ
+      have hfg : f = (fun w : ℂ => w - ρ₀) * dslope f ρ₀ := by
+        funext z
+        rw [Pi.mul_apply]
+        exact hfactor z
+      conv_lhs => rw [hfg]
+      exact analyticOrderAt_mul (f := fun w : ℂ => w - ρ₀)
+        (g := dslope f ρ₀) (by fun_prop) (hgan σ)
+    have hforder : analyticOrderAt f c ≠ ⊤ := by
+      rw [analyticOrderAt_eq_zero.mpr (Or.inr hfc)]
+      simp
+    have hgorder_ne_top : ∀ σ : ℂ, analyticOrderAt (dslope f ρ₀) σ ≠ ⊤ := by
+      intro σ h
+      have hσtop : analyticOrderAt f σ ≠ ⊤ :=
+        AnalyticOnNhd.analyticOrderAt_ne_top_of_isPreconnected
+          (fun w _ => hf.analyticAt w) isPreconnected_univ
+          (Set.mem_univ c) (Set.mem_univ σ) hforder
+      apply hσtop
+      rw [horder_split σ, h, add_top]
+    have hnat_ne : ∀ σ : ℂ, σ ≠ ρ₀ →
+        analyticOrderNatAt (dslope f ρ₀) σ = analyticOrderNatAt f σ := by
+      intro σ hσ
+      have h1 := horder_split σ
+      rw [(analyticOrderAt_eq_zero (𝕜 := ℂ) (f := fun w : ℂ => w - ρ₀)
+        (z₀ := σ)).mpr (Or.inr (sub_ne_zero.mpr hσ)), zero_add] at h1
+      simp [analyticOrderNatAt, h1]
+    have hnat_ρ₀ : analyticOrderNatAt f ρ₀ =
+        analyticOrderNatAt (dslope f ρ₀) ρ₀ + 1 := by
+      have h1 := horder_split ρ₀
+      have h2 : analyticOrderAt (fun w : ℂ => w - ρ₀) ρ₀ = 1 := by
+        simpa using analyticOrderAt_centeredMonomial (𝕜 := ℂ) (z₀ := ρ₀) (n := 1)
+      rw [h2] at h1
+      simp only [analyticOrderNatAt, h1]
+      rw [add_comm, ENat.toNat_add (hgorder_ne_top ρ₀) (by simp)]
+      simp
+    have hsum : (∑ ρ ∈ t, analyticOrderNatAt (dslope f ρ₀) ρ) = n := by
+      have h3 : ∑ σ ∈ t.erase ρ₀, analyticOrderNatAt f σ
+          = ∑ σ ∈ t.erase ρ₀, analyticOrderNatAt (dslope f ρ₀) σ :=
+        Finset.sum_congr rfl fun σ hσ =>
+          (hnat_ne σ (Finset.ne_of_mem_erase hσ)).symm
+      rw [← Finset.add_sum_erase t (analyticOrderNatAt f) hρ₀t, hnat_ρ₀, h3]
+        at hn
+      rw [← Finset.add_sum_erase t (analyticOrderNatAt (dslope f ρ₀)) hρ₀t]
+      omega
+    obtain ⟨g, hg_diff, hg_ne, hfacg⟩ := ih (dslope f ρ₀) hg₁_diff hg₁c hsum
+    refine ⟨g, hg_diff, hg_ne, fun s => ?_⟩
+    have herase : ∏ ρ ∈ t.erase ρ₀, (s - ρ) ^ analyticOrderNatAt (dslope f ρ₀) ρ
+        = ∏ ρ ∈ t.erase ρ₀, (s - ρ) ^ analyticOrderNatAt f ρ :=
+      Finset.prod_congr rfl fun ρ hρ => by
+        rw [hnat_ne ρ (Finset.ne_of_mem_erase hρ)]
+    rw [hfactor s, hfacg s,
+      ← Finset.mul_prod_erase t (fun ρ => (s - ρ) ^ analyticOrderNatAt f ρ) hρ₀t,
+      ← Finset.mul_prod_erase t
+        (fun ρ => (s - ρ) ^ analyticOrderNatAt (dslope f ρ₀) ρ) hρ₀t,
+      herase, hnat_ρ₀, pow_succ]
+    ring
+
+/-- **The logarithmic derivative of a divided factorization** (PROVEN
+2026-07-24 — the partial-fraction brick of the residue-theorem stage of
+`DedekindContinuation.zero_sum_eq_poitouEdge_add_poitouHorizontal`):
+from `ξ = Π_{ρ ∈ t} (· − ρ)^{m ρ} · g` one reads off, at any point off
+`t` where `g` does not vanish,
+`ξ'/ξ = Σ_{ρ ∈ t} m ρ/(s − ρ) + g'/g` — assembled from mathlib's
+`logDeriv_mul` / `logDeriv_prod` / `logDeriv_fun_pow` toolkit. -/
+theorem deriv_div_of_factorization {ξ g : ℂ → ℂ} (hg : Differentiable ℂ g)
+    {t : Finset ℂ} {m : ℂ → ℕ}
+    (hfac : ∀ z : ℂ, ξ z = (∏ ρ ∈ t, (z - ρ) ^ m ρ) * g z)
+    {s : ℂ} (hs : ∀ ρ ∈ t, s ≠ ρ) (hgs : g s ≠ 0) :
+    deriv ξ s / ξ s = (∑ ρ ∈ t, (m ρ : ℂ) / (s - ρ)) + deriv g s / g s := by
+  classical
+  have hP_ne : ∀ ρ ∈ t, ((s - ρ) ^ m ρ) ≠ 0 :=
+    fun ρ hρ => pow_ne_zero _ (sub_ne_zero.mpr (hs ρ hρ))
+  have hPd : ∀ ρ ∈ t, DifferentiableAt ℂ (fun z : ℂ => (z - ρ) ^ m ρ) s :=
+    fun ρ _ => (differentiableAt_id.sub_const ρ).pow _
+  have hξ_eq : ξ = fun z : ℂ => (∏ ρ ∈ t, (z - ρ) ^ m ρ) * g z := funext hfac
+  have h1 : logDeriv ξ s
+      = logDeriv (fun z : ℂ => (∏ ρ ∈ t, (z - ρ) ^ m ρ) * g z) s := by
+    rw [hξ_eq]
+  have h2 : logDeriv (fun z : ℂ => (∏ ρ ∈ t, (z - ρ) ^ m ρ) * g z) s
+      = logDeriv (fun z : ℂ => ∏ ρ ∈ t, (z - ρ) ^ m ρ) s + logDeriv g s :=
+    logDeriv_mul s (Finset.prod_ne_zero_iff.mpr hP_ne) hgs
+      (DifferentiableAt.fun_finsetProd hPd) (hg s)
+  have h3 : logDeriv (fun z : ℂ => ∏ ρ ∈ t, (z - ρ) ^ m ρ) s
+      = ∑ ρ ∈ t, logDeriv (fun z : ℂ => (z - ρ) ^ m ρ) s :=
+    logDeriv_prod hP_ne hPd
+  have h4 : ∀ ρ ∈ t, logDeriv (fun z : ℂ => (z - ρ) ^ m ρ) s
+      = (m ρ : ℂ) / (s - ρ) := by
+    intro ρ hρ
+    have h5 : logDeriv (fun z : ℂ => (z - ρ) ^ m ρ) s
+        = (m ρ : ℂ) * logDeriv (fun z : ℂ => z - ρ) s :=
+      logDeriv_fun_pow (differentiableAt_id.sub_const ρ) (m ρ)
+    rw [h5, logDeriv_apply]
+    rw [deriv_sub_const, deriv_id'']
+    rw [mul_one_div]
+  calc deriv ξ s / ξ s = logDeriv ξ s := (logDeriv_apply _ _).symm
+    _ = (∑ ρ ∈ t, (m ρ : ℂ) / (s - ρ)) + logDeriv g s := by
+        rw [h1, h2, h3, Finset.sum_congr rfl h4]
+    _ = (∑ ρ ∈ t, (m ρ : ℂ) / (s - ρ)) + deriv g s / g s := by
+        rw [logDeriv_apply]
+
+/-- **The rectangle boundary winds once around an interior point**
+(PROVEN 2026-07-24 — leaf (b₁ᵢ·w), the elementary residue of the
+residue-theorem stage of
+`DedekindContinuation.zero_sum_eq_poitouEdge_add_poitouHorizontal`):
+for `ρ` strictly inside the axis-parallel rectangle
+`[a, b] × [c, d]`, the counterclockwise boundary combination of
+`(s − ρ)⁻¹` — spelled in exactly the four-edge format of mathlib's
+`Complex.integral_boundary_rect_eq_zero_of_differentiableOn` — equals
+`2πi`.  Proof: every edge stays off the branch cut of a suitable
+logarithm, so each edge integral is an exact `log`-difference by the
+fundamental theorem of calculus (`Complex.hasDerivAt_log` on the slit
+plane, composed through the affine edge parametrization): the two
+horizontal edges have `im = h − ρ.im ≠ 0`, the right edge has
+`re = b − ρ.re > 0`, and the LEFT edge — which crosses the negative
+real axis — uses the reflected primitive `−i·log(−(s − ρ))`, whose
+slit is crossed by no left-edge point since `re = a − ρ.re < 0`.
+Summing, the six corner values at `b + ci − ρ`, `b + di − ρ` cancel
+and there remain the two branch flips
+`log(−z) − log(z) = ±πi` (`Complex.arg_neg_eq_arg_add_pi_of_im_neg` /
+`arg_sub_pi_of_im_pos`) at the corners `a + ci − ρ` (im < 0, giving
+`+πi`) and `a + di − ρ` (im > 0, giving another `+πi`): total `2πi`,
+the winding of the contour. -/
+theorem integral_boundary_rect_inv_sub_eq_two_pi_I {a b c d : ℝ} {ρ : ℂ}
+    (hra : a < ρ.re) (hrb : ρ.re < b) (hic : c < ρ.im) (hid : ρ.im < d) :
+    ((∫ x : ℝ in a..b, ((x : ℂ) + (c : ℂ) * Complex.I - ρ)⁻¹) -
+        ∫ x : ℝ in a..b, ((x : ℂ) + (d : ℂ) * Complex.I - ρ)⁻¹) +
+      Complex.I • (∫ y : ℝ in c..d, ((b : ℂ) + (y : ℂ) * Complex.I - ρ)⁻¹) -
+      Complex.I • (∫ y : ℝ in c..d, ((a : ℂ) + (y : ℂ) * Complex.I - ρ)⁻¹) =
+      2 * (Real.pi : ℂ) * Complex.I := by
+  -- imaginary/real parts of the affine edge points
+  have himx : ∀ (x h : ℝ), ((x : ℂ) + (h : ℂ) * Complex.I - ρ).im = h - ρ.im := by
+    intro x h; simp
+  have hrey : ∀ (e y : ℝ), ((e : ℂ) + (y : ℂ) * Complex.I - ρ).re = e - ρ.re := by
+    intro e y; simp
+  -- §1 horizontal edges: FTC with the principal `Complex.log`
+  have hhoriz : ∀ h : ℝ, h - ρ.im ≠ 0 →
+      (∫ x : ℝ in a..b, ((x : ℂ) + (h : ℂ) * Complex.I - ρ)⁻¹)
+        = Complex.log ((b : ℂ) + (h : ℂ) * Complex.I - ρ)
+          - Complex.log ((a : ℂ) + (h : ℂ) * Complex.I - ρ) := by
+    intro h hh
+    have hsp : ∀ x : ℝ, ((x : ℂ) + (h : ℂ) * Complex.I - ρ) ∈ Complex.slitPlane :=
+      fun x => Complex.mem_slitPlane_iff.mpr (Or.inr (by rw [himx x h]; exact hh))
+    have hint : IntervalIntegrable
+        (fun x : ℝ => ((x : ℂ) + (h : ℂ) * Complex.I - ρ)⁻¹)
+        MeasureTheory.volume a b := by
+      refine ContinuousOn.intervalIntegrable ?_
+      intro x _
+      exact ((by fun_prop :
+        ContinuousAt (fun x : ℝ => ((x : ℂ) + (h : ℂ) * Complex.I - ρ)) x).inv₀
+        (Complex.slitPlane_ne_zero (hsp x))).continuousWithinAt
+    refine intervalIntegral.integral_eq_sub_of_hasDerivAt
+      (f := fun t : ℝ => Complex.log ((t : ℂ) + (h : ℂ) * Complex.I - ρ))
+      (fun x _ => ?_) hint
+    have hinner : HasDerivAt
+        (fun z : ℂ => z + ((h : ℂ) * Complex.I - ρ)) 1 (x : ℂ) :=
+      (hasDerivAt_id ((x : ℂ))).add_const _
+    have hmem : ((x : ℂ) + ((h : ℂ) * Complex.I - ρ)) ∈ Complex.slitPlane := by
+      rw [← add_sub_assoc]
+      exact hsp x
+    have h1 := ((Complex.hasDerivAt_log hmem).comp ((x : ℂ)) hinner).comp_ofReal
+    simp only [add_sub_assoc]
+    simpa [Function.comp] using h1
+  -- §2 right vertical edge: antiderivative `-I·log`
+  have hvertR : (∫ y : ℝ in c..d, ((b : ℂ) + (y : ℂ) * Complex.I - ρ)⁻¹)
+      = -Complex.I * Complex.log ((b : ℂ) + (d : ℂ) * Complex.I - ρ)
+        - -Complex.I * Complex.log ((b : ℂ) + (c : ℂ) * Complex.I - ρ) := by
+    have hsp : ∀ y : ℝ, ((b : ℂ) + (y : ℂ) * Complex.I - ρ) ∈ Complex.slitPlane :=
+      fun y => Complex.mem_slitPlane_iff.mpr
+        (Or.inl (by rw [hrey b y]; linarith))
+    have hint : IntervalIntegrable
+        (fun y : ℝ => ((b : ℂ) + (y : ℂ) * Complex.I - ρ)⁻¹)
+        MeasureTheory.volume c d := by
+      refine ContinuousOn.intervalIntegrable ?_
+      intro y _
+      exact ((by fun_prop :
+        ContinuousAt (fun y : ℝ => ((b : ℂ) + (y : ℂ) * Complex.I - ρ)) y).inv₀
+        (Complex.slitPlane_ne_zero (hsp y))).continuousWithinAt
+    refine intervalIntegral.integral_eq_sub_of_hasDerivAt
+      (f := fun t : ℝ => -Complex.I *
+        Complex.log ((b : ℂ) + (t : ℂ) * Complex.I - ρ))
+      (fun y _ => ?_) hint
+    have hinner : HasDerivAt
+        (fun z : ℂ => (b : ℂ) + z * Complex.I - ρ) Complex.I (y : ℂ) := by
+      simpa using
+        (((hasDerivAt_id ((y : ℂ))).mul_const Complex.I).const_add
+          ((b : ℂ))).sub_const ρ
+    have h1 := ((((Complex.hasDerivAt_log (hsp y)).comp ((y : ℂ))
+      hinner).const_mul (-Complex.I))).comp_ofReal
+    have hval : -Complex.I * (((b : ℂ) + (y : ℂ) * Complex.I - ρ)⁻¹ * Complex.I)
+        = ((b : ℂ) + (y : ℂ) * Complex.I - ρ)⁻¹ := by
+      rw [show -Complex.I * (((b : ℂ) + (y : ℂ) * Complex.I - ρ)⁻¹ * Complex.I)
+          = -(Complex.I * Complex.I) * ((b : ℂ) + (y : ℂ) * Complex.I - ρ)⁻¹
+          from by ring, Complex.I_mul_I]
+      ring
+    rw [← hval]
+    simpa [Function.comp] using h1
+  -- §3 left vertical edge: antiderivative `-I·log∘neg`
+  have hvertL : (∫ y : ℝ in c..d, ((a : ℂ) + (y : ℂ) * Complex.I - ρ)⁻¹)
+      = -Complex.I * Complex.log (-((a : ℂ) + (d : ℂ) * Complex.I - ρ))
+        - -Complex.I * Complex.log (-((a : ℂ) + (c : ℂ) * Complex.I - ρ)) := by
+    have hsp : ∀ y : ℝ,
+        (-((a : ℂ) + (y : ℂ) * Complex.I - ρ)) ∈ Complex.slitPlane := by
+      intro y
+      refine Complex.mem_slitPlane_iff.mpr (Or.inl ?_)
+      rw [Complex.neg_re, hrey a y]
+      linarith
+    have hne : ∀ y : ℝ, ((a : ℂ) + (y : ℂ) * Complex.I - ρ) ≠ 0 := by
+      intro y h0
+      exact Complex.slitPlane_ne_zero (hsp y) (by rw [h0, neg_zero])
+    have hint : IntervalIntegrable
+        (fun y : ℝ => ((a : ℂ) + (y : ℂ) * Complex.I - ρ)⁻¹)
+        MeasureTheory.volume c d := by
+      refine ContinuousOn.intervalIntegrable ?_
+      intro y _
+      exact ((by fun_prop :
+        ContinuousAt (fun y : ℝ => ((a : ℂ) + (y : ℂ) * Complex.I - ρ)) y).inv₀
+        (hne y)).continuousWithinAt
+    refine intervalIntegral.integral_eq_sub_of_hasDerivAt
+      (f := fun t : ℝ => -Complex.I *
+        Complex.log (-((a : ℂ) + (t : ℂ) * Complex.I - ρ)))
+      (fun y _ => ?_) hint
+    have hinner0 : HasDerivAt
+        (fun z : ℂ => (a : ℂ) + z * Complex.I - ρ) Complex.I (y : ℂ) := by
+      simpa using
+        (((hasDerivAt_id ((y : ℂ))).mul_const Complex.I).const_add
+          ((a : ℂ))).sub_const ρ
+    have hinner : HasDerivAt
+        (fun z : ℂ => -((a : ℂ) + z * Complex.I - ρ)) (-Complex.I) (y : ℂ) :=
+      hinner0.neg
+    have h1 := ((((Complex.hasDerivAt_log (hsp y)).comp ((y : ℂ))
+      hinner).const_mul (-Complex.I))).comp_ofReal
+    have hval : -Complex.I * ((-((a : ℂ) + (y : ℂ) * Complex.I - ρ))⁻¹ *
+          -Complex.I)
+        = ((a : ℂ) + (y : ℂ) * Complex.I - ρ)⁻¹ := by
+      rw [inv_neg]
+      rw [show -Complex.I * (-((a : ℂ) + (y : ℂ) * Complex.I - ρ)⁻¹ *
+            -Complex.I)
+          = -(Complex.I * Complex.I) * ((a : ℂ) + (y : ℂ) * Complex.I - ρ)⁻¹
+          from by ring, Complex.I_mul_I]
+      ring
+    rw [← hval]
+    simpa [Function.comp] using h1
+  -- §4 the branch flips `log (-z) = log z ± πi`
+  have hflip_neg : ∀ z : ℂ, z.im < 0 →
+      Complex.log (-z) = Complex.log z + (Real.pi : ℂ) * Complex.I := by
+    intro z hz
+    apply Complex.ext
+    · rw [Complex.add_re, Complex.log_re, Complex.log_re, norm_neg]
+      simp
+    · rw [Complex.add_im, Complex.log_im, Complex.log_im,
+        Complex.arg_neg_eq_arg_add_pi_of_im_neg hz]
+      simp
+  have hflip_pos : ∀ z : ℂ, 0 < z.im →
+      Complex.log (-z) = Complex.log z - (Real.pi : ℂ) * Complex.I := by
+    intro z hz
+    apply Complex.ext
+    · rw [Complex.sub_re, Complex.log_re, Complex.log_re, norm_neg]
+      simp
+    · rw [Complex.sub_im, Complex.log_im, Complex.log_im,
+        Complex.arg_neg_eq_arg_sub_pi_of_im_pos hz]
+      simp
+  -- §5 assemble: corners at `re = b` cancel, the two flips give `2πi`
+  rw [hhoriz c (sub_neg.mpr hic).ne, hhoriz d (sub_pos.mpr hid).ne',
+    hvertR, hvertL,
+    hflip_pos _ (by rw [himx a d]; linarith),
+    hflip_neg _ (by rw [himx a c]; linarith)]
+  simp only [smul_eq_mul]
+  linear_combination (Complex.log ((b : ℂ) + (c : ℂ) * Complex.I - ρ)
+      - Complex.log ((a : ℂ) + (c : ℂ) * Complex.I - ρ)
+      - Complex.log ((b : ℂ) + (d : ℂ) * Complex.I - ρ)
+      + Complex.log ((a : ℂ) + (d : ℂ) * Complex.I - ρ)
+      - 2 * (Real.pi : ℂ) * Complex.I) * Complex.I_sq
+
+set_option maxHeartbeats 1000000 in
 /-- **Poitou's formula (1): the truncated zero sum equals the folded
 vertical edge plus the horizontal edges — an exact identity at
-ordinate-avoiding heights** (sorry node, stated 2026-07-24 — leaf
-(b₁ᵢ), the residue-theorem stage of the decomposition of
+ordinate-avoiding heights** (PROVEN 2026-07-24, in full — leaf (b₁ᵢ),
+the residue-theorem stage of the decomposition of
 `DedekindContinuation.zero_sum_sub_poitouEdge_tendsto_zero`; Poitou
 pp. 6-01–6-02, formula (1)).
 
@@ -13132,7 +13690,414 @@ theorem DedekindContinuation.zero_sum_eq_poitouEdge_add_poitouHorizontal
     (∑' ρ : {ρ : ℂ // pkg.mult ρ ≠ 0 ∧ |ρ.im| ≤ T},
       (pkg.mult ρ.1 : ℝ) * (poitouPhi ρ.1).re) =
       pkg.poitouEdge T + pkg.poitouHorizontal T := by
-  sorry
+  classical
+  -- §1 the zero window as a Finset
+  set Zs : Finset ℂ := (pkg.finite_truncation T).toFinset with hZs_def
+  have hmemZ : ∀ ρ : ℂ, ρ ∈ Zs ↔ pkg.mult ρ ≠ 0 ∧ |ρ.im| ≤ T := by
+    intro ρ
+    rw [hZs_def]
+    exact (pkg.finite_truncation T).mem_toFinset
+  -- §2 zeros lie strictly inside the rectangle
+  have hZ_in : ∀ ρ ∈ Zs, (0 < ρ.re ∧ ρ.re < 1) ∧ |ρ.im| < T := by
+    intro ρ hρ
+    obtain ⟨hm, him⟩ := (hmemZ ρ).mp hρ
+    exact ⟨pkg.mult_mem_strip hm, lt_of_le_of_ne him (hgood ρ hm)⟩
+  -- §3 the truncated tsum is the `Finset` sum
+  have htsum : (∑' ρ : {ρ : ℂ // pkg.mult ρ ≠ 0 ∧ |ρ.im| ≤ T},
+      (pkg.mult ρ.1 : ℝ) * (poitouPhi ρ.1).re)
+      = ∑ ρ ∈ Zs, (pkg.mult ρ : ℝ) * (poitouPhi ρ).re := by
+    rw [← Finset.tsum_subtype Zs (fun ρ => (pkg.mult ρ : ℝ) * (poitouPhi ρ).re)]
+    rw [← Equiv.tsum_eq (Equiv.subtypeEquivRight hmemZ)
+      (fun ρ : {ρ : ℂ // pkg.mult ρ ≠ 0 ∧ |ρ.im| ≤ T} =>
+        (pkg.mult ρ.1 : ℝ) * (poitouPhi ρ.1).re)]
+    exact tsum_congr fun a => by simp [Equiv.subtypeEquivRight]
+  -- §4 order equals mult on the window
+  have hordZ : ∀ ρ ∈ Zs, analyticOrderNatAt pkg.xi ρ = pkg.mult ρ := by
+    intro ρ hρ
+    have hstrip := ((hZ_in ρ hρ).1)
+    simp [DedekindContinuation.mult, hstrip.1, hstrip.2]
+  -- §5 the divided factorization `ξ = P·g`
+  obtain ⟨g, hg_diff, hg_neZ, hfac⟩ := exists_differentiable_factorization
+    pkg.differentiable (pkg.ne_zero_of_one_lt_re 2 (by norm_num)) Zs
+  have hfacm : ∀ s : ℂ, pkg.xi s = (∏ ρ ∈ Zs, (s - ρ) ^ pkg.mult ρ) * g s := by
+    intro s
+    rw [hfac s]
+    congr 1
+    exact Finset.prod_congr rfl fun ρ hρ => by rw [hordZ ρ hρ]
+  -- §6 `g` never vanishes on the band `|im| ≤ T`
+  have hg_ne : ∀ s : ℂ, |s.im| ≤ T → g s ≠ 0 := by
+    intro s hband
+    by_cases hxi : pkg.xi s = 0
+    · have hm : pkg.mult s ≠ 0 :=
+        fun h0 => (pkg.xi_ne_zero_of_mult_eq_zero hbnd h0) hxi
+      exact hg_neZ s ((hmemZ s).mpr ⟨hm, hband⟩)
+    · intro hg0
+      exact hxi (by rw [hfacm s, hg0, mul_zero])
+  -- §7 differentiability bricks
+  have hΦd : Differentiable ℂ poitouPhi := poitouPhi_differentiable
+  have hdsl : ∀ ρ : ℂ, Differentiable ℂ (dslope poitouPhi ρ) := by
+    intro ρ
+    rw [← differentiableOn_univ]
+    exact (Complex.differentiableOn_dslope Filter.univ_mem).mpr
+      hΦd.differentiableOn
+  have hg'd : Differentiable ℂ (deriv g) := by
+    rw [← differentiableOn_univ]
+    exact ((hg_diff.differentiableOn.analyticOnNhd isOpen_univ).deriv).differentiableOn
+  have hxi'd : Differentiable ℂ (deriv pkg.xi) := by
+    rw [← differentiableOn_univ]
+    exact ((pkg.differentiable.differentiableOn.analyticOnNhd
+      isOpen_univ).deriv).differentiableOn
+  -- §8 the corrected holomorphic integrand
+  set F : ℂ → ℂ := fun s => poitouPhi s * (deriv g s / g s) +
+    ∑ ρ ∈ Zs, (pkg.mult ρ : ℂ) * dslope poitouPhi ρ s with hF_def
+  have hFdiffAt : ∀ s : ℂ, g s ≠ 0 → DifferentiableAt ℂ F s := by
+    intro s hgs
+    rw [hF_def]
+    exact ((hΦd s).mul ((hg'd s).div (hg_diff s) hgs)).add
+      (DifferentiableAt.fun_sum fun ρ _ => ((hdsl ρ) s).const_mul _)
+  have hFdiffOn : DifferentiableOn ℂ F
+      (Set.uIcc (-(1/4) : ℝ) (5/4 : ℝ) ×ℂ Set.uIcc (-T : ℝ) (T : ℝ)) := by
+    intro s hs
+    have hsim : |s.im| ≤ T := by
+      have h2 := (Complex.mem_reProdIm.mp hs).2
+      rw [Set.uIcc_of_le (by linarith : (-T : ℝ) ≤ T)] at h2
+      exact abs_le.mpr ⟨h2.1, h2.2⟩
+    exact (hFdiffAt s (hg_ne s hsim)).differentiableWithinAt
+  -- §9 rectangle Cauchy theorem for `F`
+  have hrect : ((∫ x : ℝ in (-(1/4) : ℝ)..(5/4 : ℝ),
+        F ((x : ℂ) + ((-T : ℝ) : ℂ) * Complex.I))
+      - ∫ x : ℝ in (-(1/4) : ℝ)..(5/4 : ℝ),
+        F ((x : ℂ) + ((T : ℝ) : ℂ) * Complex.I))
+      + Complex.I • (∫ y : ℝ in (-T : ℝ)..(T : ℝ),
+        F (((5/4 : ℝ) : ℂ) + (y : ℂ) * Complex.I))
+      - Complex.I • (∫ y : ℝ in (-T : ℝ)..(T : ℝ),
+        F (((-(1/4) : ℝ) : ℂ) + (y : ℂ) * Complex.I)) = 0 :=
+    Complex.integral_boundary_rect_eq_zero_of_differentiableOn F
+      ⟨-(1/4), -T⟩ ⟨5/4, T⟩ hFdiffOn
+  -- §10 generic edge decomposition
+  have hedge : ∀ (φ : ℝ → ℂ) (u v : ℝ), Continuous φ →
+      (∀ x : ℝ, pkg.xi (φ x) ≠ 0) →
+      (∀ (x : ℝ) (ρ : ℂ), ρ ∈ Zs → φ x ≠ ρ) →
+      (∫ x in u..v, poitouPhi (φ x) * (deriv pkg.xi (φ x) / pkg.xi (φ x)))
+        = (∫ x in u..v, F (φ x))
+          + ∑ ρ ∈ Zs, (pkg.mult ρ : ℂ) * poitouPhi ρ *
+              ∫ x in u..v, (φ x - ρ)⁻¹ := by
+    intro φ u v hφc hφxi hφρ
+    have hgφ : ∀ x : ℝ, g (φ x) ≠ 0 := by
+      intro x hg0
+      exact hφxi x (by rw [hfacm (φ x), hg0, mul_zero])
+    have hpt : Set.EqOn
+        (fun x : ℝ => poitouPhi (φ x) * (deriv pkg.xi (φ x) / pkg.xi (φ x)))
+        (fun x : ℝ => F (φ x) +
+          ∑ ρ ∈ Zs, (pkg.mult ρ : ℂ) * poitouPhi ρ * (φ x - ρ)⁻¹)
+        (Set.uIcc u v) := by
+      intro x _
+      simp only [hF_def]
+      have hlog : deriv pkg.xi (φ x) / pkg.xi (φ x) =
+          (∑ ρ ∈ Zs, (pkg.mult ρ : ℂ) / (φ x - ρ)) +
+            deriv g (φ x) / g (φ x) :=
+        deriv_div_of_factorization hg_diff hfacm
+          (fun ρ hρ => hφρ x ρ hρ) (hgφ x)
+      rw [hlog, mul_add, Finset.mul_sum]
+      have hterm : ∀ ρ ∈ Zs,
+          poitouPhi (φ x) * ((pkg.mult ρ : ℂ) / (φ x - ρ)) =
+            (pkg.mult ρ : ℂ) * dslope poitouPhi ρ (φ x) +
+              (pkg.mult ρ : ℂ) * poitouPhi ρ * (φ x - ρ)⁻¹ := by
+        intro ρ hρ
+        rw [dslope_of_ne _ (hφρ x ρ hρ), slope_def_field]
+        simp only [div_eq_mul_inv]
+        ring
+      rw [Finset.sum_congr rfl hterm, Finset.sum_add_distrib]
+      ring
+    rw [intervalIntegral.integral_congr hpt]
+    have hFcont : ContinuousOn (fun x : ℝ => F (φ x)) (Set.uIcc u v) := by
+      intro x _
+      exact ((hFdiffAt (φ x) (hgφ x)).continuousAt.comp
+        hφc.continuousAt).continuousWithinAt
+    have hpoleC : ∀ ρ ∈ Zs, ContinuousOn
+        (fun x : ℝ => (pkg.mult ρ : ℂ) * poitouPhi ρ * (φ x - ρ)⁻¹)
+        (Set.uIcc u v) := by
+      intro ρ hρ x _
+      exact (continuousAt_const.mul ((hφc.continuousAt.sub
+        continuousAt_const).inv₀
+        (sub_ne_zero.mpr (hφρ x ρ hρ)))).continuousWithinAt
+    have hSc : ContinuousOn (fun x : ℝ =>
+        ∑ ρ ∈ Zs, (pkg.mult ρ : ℂ) * poitouPhi ρ * (φ x - ρ)⁻¹)
+        (Set.uIcc u v) :=
+      continuousOn_finsetSum Zs hpoleC
+    rw [intervalIntegral.integral_add hFcont.intervalIntegrable
+      hSc.intervalIntegrable]
+    rw [intervalIntegral.integral_finsetSum
+      (fun ρ hρ => (hpoleC ρ hρ).intervalIntegrable)]
+    congr 1
+    exact Finset.sum_congr rfl fun ρ _ =>
+      intervalIntegral.integral_const_mul _ _
+  -- §11 edge geometry
+  have him_bot : ∀ x : ℝ, ((x : ℂ) + ((-T : ℝ) : ℂ) * Complex.I).im = -T := by
+    intro x; simp
+  have him_top : ∀ x : ℝ, ((x : ℂ) + ((T : ℝ) : ℂ) * Complex.I).im = T := by
+    intro x; simp
+  have hre_right : ∀ y : ℝ, (((5/4 : ℝ) : ℂ) + (y : ℂ) * Complex.I).re = 5/4 := by
+    intro y; simp
+  have hre_left : ∀ y : ℝ,
+      (((-(1/4) : ℝ) : ℂ) + (y : ℂ) * Complex.I).re = -(1/4) := by
+    intro y; simp
+  have hxi_bot : ∀ x : ℝ,
+      pkg.xi ((x : ℂ) + ((-T : ℝ) : ℂ) * Complex.I) ≠ 0 := by
+    intro x
+    apply pkg.xi_ne_zero_of_mult_eq_zero hbnd
+    by_contra hm
+    exact hgood _ hm (by rw [him_bot x, abs_neg, abs_of_pos hT])
+  have hxi_top : ∀ x : ℝ,
+      pkg.xi ((x : ℂ) + ((T : ℝ) : ℂ) * Complex.I) ≠ 0 := by
+    intro x
+    apply pkg.xi_ne_zero_of_mult_eq_zero hbnd
+    by_contra hm
+    exact hgood _ hm (by rw [him_top x, abs_of_pos hT])
+  have hxi_right : ∀ y : ℝ,
+      pkg.xi (((5/4 : ℝ) : ℂ) + (y : ℂ) * Complex.I) ≠ 0 := by
+    intro y
+    exact pkg.ne_zero_of_one_lt_re _ (by rw [hre_right y]; norm_num)
+  have hxi_left : ∀ y : ℝ,
+      pkg.xi (((-(1/4) : ℝ) : ℂ) + (y : ℂ) * Complex.I) ≠ 0 := by
+    intro y
+    apply pkg.xi_ne_zero_of_mult_eq_zero hbnd
+    by_contra hm
+    have h := (pkg.mult_mem_strip hm).1
+    rw [hre_left y] at h
+    linarith
+  have hne_bot : ∀ (x : ℝ) (ρ : ℂ), ρ ∈ Zs →
+      (x : ℂ) + ((-T : ℝ) : ℂ) * Complex.I ≠ ρ := by
+    intro x ρ hρ heq
+    have h2 := (hZ_in ρ hρ).2
+    rw [← heq, him_bot x, abs_neg, abs_of_pos hT] at h2
+    exact lt_irrefl T h2
+  have hne_top : ∀ (x : ℝ) (ρ : ℂ), ρ ∈ Zs →
+      (x : ℂ) + ((T : ℝ) : ℂ) * Complex.I ≠ ρ := by
+    intro x ρ hρ heq
+    have h2 := (hZ_in ρ hρ).2
+    rw [← heq, him_top x, abs_of_pos hT] at h2
+    exact lt_irrefl T h2
+  have hne_right : ∀ (y : ℝ) (ρ : ℂ), ρ ∈ Zs →
+      ((5/4 : ℝ) : ℂ) + (y : ℂ) * Complex.I ≠ ρ := by
+    intro y ρ hρ heq
+    have h2 := (hZ_in ρ hρ).1.2
+    rw [← heq, hre_right y] at h2
+    norm_num at h2
+  have hne_left : ∀ (y : ℝ) (ρ : ℂ), ρ ∈ Zs →
+      ((-(1/4) : ℝ) : ℂ) + (y : ℂ) * Complex.I ≠ ρ := by
+    intro y ρ hρ heq
+    have h2 := (hZ_in ρ hρ).1.1
+    rw [← heq, hre_left y] at h2
+    norm_num at h2
+  -- §12 the four decomposed edges
+  have hEB : (∫ x in (-(1/4) : ℝ)..(5/4 : ℝ),
+        poitouPhi ((x : ℂ) + ((-T : ℝ) : ℂ) * Complex.I) *
+          (deriv pkg.xi ((x : ℂ) + ((-T : ℝ) : ℂ) * Complex.I) /
+            pkg.xi ((x : ℂ) + ((-T : ℝ) : ℂ) * Complex.I)))
+      = (∫ x in (-(1/4) : ℝ)..(5/4 : ℝ),
+          F ((x : ℂ) + ((-T : ℝ) : ℂ) * Complex.I))
+        + ∑ ρ ∈ Zs, (pkg.mult ρ : ℂ) * poitouPhi ρ *
+            ∫ x in (-(1/4) : ℝ)..(5/4 : ℝ),
+              ((x : ℂ) + ((-T : ℝ) : ℂ) * Complex.I - ρ)⁻¹ :=
+    hedge (fun x : ℝ => (x : ℂ) + ((-T : ℝ) : ℂ) * Complex.I)
+      (-(1/4)) (5/4) (by fun_prop) hxi_bot hne_bot
+  have hET : (∫ x in (-(1/4) : ℝ)..(5/4 : ℝ),
+        poitouPhi ((x : ℂ) + ((T : ℝ) : ℂ) * Complex.I) *
+          (deriv pkg.xi ((x : ℂ) + ((T : ℝ) : ℂ) * Complex.I) /
+            pkg.xi ((x : ℂ) + ((T : ℝ) : ℂ) * Complex.I)))
+      = (∫ x in (-(1/4) : ℝ)..(5/4 : ℝ),
+          F ((x : ℂ) + ((T : ℝ) : ℂ) * Complex.I))
+        + ∑ ρ ∈ Zs, (pkg.mult ρ : ℂ) * poitouPhi ρ *
+            ∫ x in (-(1/4) : ℝ)..(5/4 : ℝ),
+              ((x : ℂ) + ((T : ℝ) : ℂ) * Complex.I - ρ)⁻¹ :=
+    hedge (fun x : ℝ => (x : ℂ) + ((T : ℝ) : ℂ) * Complex.I)
+      (-(1/4)) (5/4) (by fun_prop) hxi_top hne_top
+  have hER : (∫ y in (-T : ℝ)..(T : ℝ),
+        poitouPhi (((5/4 : ℝ) : ℂ) + (y : ℂ) * Complex.I) *
+          (deriv pkg.xi (((5/4 : ℝ) : ℂ) + (y : ℂ) * Complex.I) /
+            pkg.xi (((5/4 : ℝ) : ℂ) + (y : ℂ) * Complex.I)))
+      = (∫ y in (-T : ℝ)..(T : ℝ),
+          F (((5/4 : ℝ) : ℂ) + (y : ℂ) * Complex.I))
+        + ∑ ρ ∈ Zs, (pkg.mult ρ : ℂ) * poitouPhi ρ *
+            ∫ y in (-T : ℝ)..(T : ℝ),
+              (((5/4 : ℝ) : ℂ) + (y : ℂ) * Complex.I - ρ)⁻¹ :=
+    hedge (fun y : ℝ => ((5/4 : ℝ) : ℂ) + (y : ℂ) * Complex.I)
+      (-T) T (by fun_prop) hxi_right hne_right
+  have hEL : (∫ y in (-T : ℝ)..(T : ℝ),
+        poitouPhi (((-(1/4) : ℝ) : ℂ) + (y : ℂ) * Complex.I) *
+          (deriv pkg.xi (((-(1/4) : ℝ) : ℂ) + (y : ℂ) * Complex.I) /
+            pkg.xi (((-(1/4) : ℝ) : ℂ) + (y : ℂ) * Complex.I)))
+      = (∫ y in (-T : ℝ)..(T : ℝ),
+          F (((-(1/4) : ℝ) : ℂ) + (y : ℂ) * Complex.I))
+        + ∑ ρ ∈ Zs, (pkg.mult ρ : ℂ) * poitouPhi ρ *
+            ∫ y in (-T : ℝ)..(T : ℝ),
+              (((-(1/4) : ℝ) : ℂ) + (y : ℂ) * Complex.I - ρ)⁻¹ :=
+    hedge (fun y : ℝ => ((-(1/4) : ℝ) : ℂ) + (y : ℂ) * Complex.I)
+      (-T) T (by fun_prop) hxi_left hne_left
+  -- §13 the pole contributions wind once around each zero
+  have hpoles : (∑ ρ ∈ Zs, (pkg.mult ρ : ℂ) * poitouPhi ρ *
+        ∫ x in (-(1/4) : ℝ)..(5/4 : ℝ),
+          ((x : ℂ) + ((-T : ℝ) : ℂ) * Complex.I - ρ)⁻¹)
+      - (∑ ρ ∈ Zs, (pkg.mult ρ : ℂ) * poitouPhi ρ *
+        ∫ x in (-(1/4) : ℝ)..(5/4 : ℝ),
+          ((x : ℂ) + ((T : ℝ) : ℂ) * Complex.I - ρ)⁻¹)
+      + Complex.I * (∑ ρ ∈ Zs, (pkg.mult ρ : ℂ) * poitouPhi ρ *
+        ∫ y in (-T : ℝ)..(T : ℝ),
+          (((5/4 : ℝ) : ℂ) + (y : ℂ) * Complex.I - ρ)⁻¹)
+      - Complex.I * (∑ ρ ∈ Zs, (pkg.mult ρ : ℂ) * poitouPhi ρ *
+        ∫ y in (-T : ℝ)..(T : ℝ),
+          (((-(1/4) : ℝ) : ℂ) + (y : ℂ) * Complex.I - ρ)⁻¹)
+      = 2 * (Real.pi : ℂ) * Complex.I *
+          ∑ ρ ∈ Zs, (pkg.mult ρ : ℂ) * poitouPhi ρ := by
+    simp only [Finset.mul_sum]
+    rw [← Finset.sum_sub_distrib, ← Finset.sum_add_distrib,
+      ← Finset.sum_sub_distrib]
+    refine Finset.sum_congr rfl fun ρ hρ => ?_
+    have hz := hZ_in ρ hρ
+    have habs := abs_lt.mp hz.2
+    have hw := integral_boundary_rect_inv_sub_eq_two_pi_I
+      (show -(1/4) < ρ.re by linarith [hz.1.1])
+      (show ρ.re < 5/4 by linarith [hz.1.2]) habs.1 habs.2
+    simp only [smul_eq_mul] at hw
+    linear_combination (pkg.mult ρ : ℂ) * poitouPhi ρ * hw
+  -- §14 the full contour identity
+  have hcontour : ((∫ x in (-(1/4) : ℝ)..(5/4 : ℝ),
+        poitouPhi ((x : ℂ) + ((-T : ℝ) : ℂ) * Complex.I) *
+          (deriv pkg.xi ((x : ℂ) + ((-T : ℝ) : ℂ) * Complex.I) /
+            pkg.xi ((x : ℂ) + ((-T : ℝ) : ℂ) * Complex.I)))
+      - ∫ x in (-(1/4) : ℝ)..(5/4 : ℝ),
+        poitouPhi ((x : ℂ) + ((T : ℝ) : ℂ) * Complex.I) *
+          (deriv pkg.xi ((x : ℂ) + ((T : ℝ) : ℂ) * Complex.I) /
+            pkg.xi ((x : ℂ) + ((T : ℝ) : ℂ) * Complex.I)))
+      + Complex.I • (∫ y in (-T : ℝ)..(T : ℝ),
+        poitouPhi (((5/4 : ℝ) : ℂ) + (y : ℂ) * Complex.I) *
+          (deriv pkg.xi (((5/4 : ℝ) : ℂ) + (y : ℂ) * Complex.I) /
+            pkg.xi (((5/4 : ℝ) : ℂ) + (y : ℂ) * Complex.I)))
+      - Complex.I • (∫ y in (-T : ℝ)..(T : ℝ),
+        poitouPhi (((-(1/4) : ℝ) : ℂ) + (y : ℂ) * Complex.I) *
+          (deriv pkg.xi (((-(1/4) : ℝ) : ℂ) + (y : ℂ) * Complex.I) /
+            pkg.xi (((-(1/4) : ℝ) : ℂ) + (y : ℂ) * Complex.I)))
+      = 2 * (Real.pi : ℂ) * Complex.I *
+          ∑ ρ ∈ Zs, (pkg.mult ρ : ℂ) * poitouPhi ρ := by
+    simp only [smul_eq_mul] at hrect ⊢
+    rw [hEB, hET, hER, hEL]
+    linear_combination hrect + hpoles
+  -- §15 fold the left edge onto the right edge
+  have hfold : (∫ y in (-T : ℝ)..(T : ℝ),
+        poitouPhi (((-(1/4) : ℝ) : ℂ) + (y : ℂ) * Complex.I) *
+          (deriv pkg.xi (((-(1/4) : ℝ) : ℂ) + (y : ℂ) * Complex.I) /
+            pkg.xi (((-(1/4) : ℝ) : ℂ) + (y : ℂ) * Complex.I)))
+      = - ∫ y in (-T : ℝ)..(T : ℝ),
+          poitouPhi (((5/4 : ℝ) : ℂ) + (y : ℂ) * Complex.I) *
+            (deriv pkg.xi (((5/4 : ℝ) : ℂ) + (y : ℂ) * Complex.I) /
+              pkg.xi (((5/4 : ℝ) : ℂ) + (y : ℂ) * Complex.I)) := by
+    have hpt2 : ∀ y : ℝ,
+        poitouPhi (((-(1/4) : ℝ) : ℂ) + (y : ℂ) * Complex.I) *
+          (deriv pkg.xi (((-(1/4) : ℝ) : ℂ) + (y : ℂ) * Complex.I) /
+            pkg.xi (((-(1/4) : ℝ) : ℂ) + (y : ℂ) * Complex.I))
+        = -(poitouPhi (((5/4 : ℝ) : ℂ) + ((-y : ℝ) : ℂ) * Complex.I) *
+            (deriv pkg.xi (((5/4 : ℝ) : ℂ) + ((-y : ℝ) : ℂ) * Complex.I) /
+              pkg.xi (((5/4 : ℝ) : ℂ) + ((-y : ℝ) : ℂ) * Complex.I))) := by
+      intro y
+      have hswap : (((5/4 : ℝ) : ℂ) + ((-y : ℝ) : ℂ) * Complex.I)
+          = 1 - (((-(1/4) : ℝ) : ℂ) + (y : ℂ) * Complex.I) := by
+        push_cast
+        ring
+      rw [hswap, poitouPhi_one_sub, pkg.funcEq, pkg.deriv_xi_one_sub]
+      ring
+    rw [intervalIntegral.integral_congr (fun y _ => hpt2 y)]
+    rw [intervalIntegral.integral_neg]
+    congr 1
+    have hcomp := intervalIntegral.integral_comp_neg (a := -T) (b := T)
+      (f := fun y : ℝ => poitouPhi (((5/4 : ℝ) : ℂ) + (y : ℂ) * Complex.I) *
+        (deriv pkg.xi (((5/4 : ℝ) : ℂ) + (y : ℂ) * Complex.I) /
+          pkg.xi (((5/4 : ℝ) : ℂ) + (y : ℂ) * Complex.I)))
+    simpa using hcomp
+  rw [hfold] at hcontour
+  -- §16 canonicalize the integrand forms
+  have hconvB : ∀ x : ℝ, (x : ℂ) + ((-T : ℝ) : ℂ) * Complex.I
+      = (x : ℂ) - (T : ℂ) * Complex.I := by
+    intro x
+    push_cast
+    ring
+  have hconv54 : ((5/4 : ℝ) : ℂ) = (5/4 : ℂ) := by norm_num
+  simp only [hconvB, hconv54] at hcontour
+  -- §17 reshape the goal and abbreviate
+  rw [htsum]
+  unfold DedekindContinuation.poitouEdge DedekindContinuation.poitouHorizontal
+  set S := ∑ ρ ∈ Zs, (pkg.mult ρ : ℂ) * poitouPhi ρ with hS_def
+  set B := ∫ x in (-(1/4) : ℝ)..(5/4 : ℝ),
+      poitouPhi ((x : ℂ) - (T : ℂ) * Complex.I) *
+        (deriv pkg.xi ((x : ℂ) - (T : ℂ) * Complex.I) /
+          pkg.xi ((x : ℂ) - (T : ℂ) * Complex.I)) with hB_def
+  set Tp := ∫ x in (-(1/4) : ℝ)..(5/4 : ℝ),
+      poitouPhi ((x : ℂ) + ((T : ℝ) : ℂ) * Complex.I) *
+        (deriv pkg.xi ((x : ℂ) + ((T : ℝ) : ℂ) * Complex.I) /
+          pkg.xi ((x : ℂ) + ((T : ℝ) : ℂ) * Complex.I)) with hTp_def
+  set R := ∫ y in (-T : ℝ)..(T : ℝ),
+      poitouPhi ((5/4 : ℂ) + (y : ℂ) * Complex.I) *
+        (deriv pkg.xi ((5/4 : ℂ) + (y : ℂ) * Complex.I) /
+          pkg.xi ((5/4 : ℂ) + (y : ℂ) * Complex.I)) with hR_def
+  -- §18 scalar identity
+  have hc2 : B - Tp + 2 * (Complex.I * R) = 2 * (Real.pi : ℂ) * Complex.I * S := by
+    have h := hcontour
+    simp only [smul_eq_mul] at h
+    linear_combination h
+  -- §19 imaginary part of the identity
+  have him : (B - Tp).im + 2 * R.re = 2 * Real.pi * S.re := by
+    have h := congrArg Complex.im hc2
+    simp only [Complex.add_im, Complex.sub_im, Complex.mul_im, Complex.mul_re,
+      Complex.I_re, Complex.I_im, Complex.ofReal_re, Complex.ofReal_im,
+      Complex.re_ofNat, Complex.im_ofNat, zero_mul, mul_zero, one_mul,
+      mul_one, add_zero, zero_add, sub_zero, zero_sub] at h
+    rw [Complex.sub_im]
+    linarith [h]
+  -- §20 real parts of the pieces
+  have hSre : S.re = ∑ ρ ∈ Zs, (pkg.mult ρ : ℝ) * (poitouPhi ρ).re := by
+    rw [hS_def, Complex.re_sum]
+    exact Finset.sum_congr rfl fun ρ _ => by simp [Complex.mul_re]
+  have hRint : IntervalIntegrable (fun t : ℝ =>
+      poitouPhi ((5/4 : ℂ) + (t : ℂ) * Complex.I) *
+        (deriv pkg.xi ((5/4 : ℂ) + (t : ℂ) * Complex.I) /
+          pkg.xi ((5/4 : ℂ) + (t : ℂ) * Complex.I)))
+      MeasureTheory.volume (-T) T := by
+    refine ContinuousOn.intervalIntegrable ?_
+    intro t _
+    have hre : ((5/4 : ℂ) + (t : ℂ) * Complex.I).re = 5/4 := by
+      rw [← hconv54]
+      simp
+    have hne : pkg.xi ((5/4 : ℂ) + (t : ℂ) * Complex.I) ≠ 0 :=
+      pkg.ne_zero_of_one_lt_re _ (by rw [hre]; norm_num)
+    have h1 : Continuous (fun t : ℝ => poitouPhi ((5/4 : ℂ) + (t : ℂ) * Complex.I)) :=
+      hΦd.continuous.comp (by fun_prop)
+    have h2 : Continuous (fun t : ℝ =>
+        deriv pkg.xi ((5/4 : ℂ) + (t : ℂ) * Complex.I)) :=
+      hxi'd.continuous.comp (by fun_prop)
+    have h3 : Continuous (fun t : ℝ => pkg.xi ((5/4 : ℂ) + (t : ℂ) * Complex.I)) :=
+      pkg.differentiable.continuous.comp (by fun_prop)
+    exact (h1.continuousAt.mul
+      ((h2.continuousAt).div (h3.continuousAt) hne)).continuousWithinAt
+  have hRre : (∫ t in (-T : ℝ)..(T : ℝ),
+      (poitouPhi ((5/4 : ℂ) + (t : ℂ) * Complex.I) *
+        (deriv pkg.xi ((5/4 : ℂ) + (t : ℂ) * Complex.I) /
+          pkg.xi ((5/4 : ℂ) + (t : ℂ) * Complex.I))).re) = R.re := by
+    have h := Complex.reCLM.intervalIntegral_comp_comm hRint
+    simpa [← hR_def] using h
+  have hinv : (2 * (Real.pi : ℂ) * Complex.I)⁻¹
+      = ((2 * Real.pi : ℝ) : ℂ)⁻¹ * (-Complex.I) := by
+    rw [mul_inv, Complex.inv_I]
+    push_cast
+    ring
+  have hHre : ((2 * (Real.pi : ℂ) * Complex.I)⁻¹ * (B - Tp)).re
+      = (2 * Real.pi)⁻¹ * (B - Tp).im := by
+    rw [hinv, ← Complex.ofReal_inv, mul_assoc, Complex.re_ofReal_mul]
+    congr 1
+    simp
+  -- §21 finale
+  rw [← hSre, hRre, hHre]
+  field_simp [Real.pi_ne_zero]
+  linarith [him]
 
 /-- **Good heights exist: a pigeonhole gap to the zero ordinates**
 (sorry node, stated 2026-07-24 — leaf (b₁ᵢᵢ) of the decomposition of
@@ -18697,135 +19662,6 @@ theorem dedekind_explicit_formula_fejer (K : Type*) [Field K] [NumberField K]
     pkg.finite_truncation,
     pkg.fejer_zero_sum_tendsto htc,
     by ring⟩
-
-/-- **`Φ` is entire** (PROVEN 2026-07-23): the integrand
-`x ↦ (f(x)/cosh(x/2))·e^{(s−1/2)x}` of `poitouPhi` is supported in
-`[-6, 6]` and dominated there, locally uniformly in `s` — on the ball
-`‖s − s₀‖ < 1` by the integrable majorant
-`𝟙_{[-6,6]}·6·e^{6(‖s₀‖+2)}` — so differentiation under the integral
-sign (`hasDerivAt_integral_of_dominated_loc_of_deriv_le`) applies at
-every `s₀ ∈ ℂ`. -/
-theorem poitouPhi_differentiable : Differentiable ℂ poitouPhi := by
-  intro s₀
-  have hfcont : Continuous odlyzkoTestFn := by
-    rw [show odlyzkoTestFn = fun x : ℝ => max (1 - |x| / 6) 0 from rfl]
-    exact (continuous_const.sub (continuous_abs.div_const 6)).max continuous_const
-  have hfle : ∀ x : ℝ, 0 ≤ odlyzkoTestFn x ∧ odlyzkoTestFn x ≤ 1 := by
-    intro x
-    constructor
-    · rw [odlyzkoTestFn]; exact le_max_right _ _
-    · rw [odlyzkoTestFn]
-      exact max_le (by have := abs_nonneg x; linarith) zero_le_one
-  have hf0 : ∀ x : ℝ, 6 < |x| → odlyzkoTestFn x = 0 := by
-    intro x hx
-    rw [odlyzkoTestFn]
-    exact max_eq_right (by linarith)
-  have hFcont : Continuous (fun x : ℝ => odlyzkoTestFn x / Real.cosh (x / 2)) :=
-    hfcont.div (Real.continuous_cosh.comp (continuous_id.div_const 2))
-      fun x => (Real.cosh_pos _).ne'
-  have hFsupp : HasCompactSupport
-      (fun x : ℝ => odlyzkoTestFn x / Real.cosh (x / 2)) := by
-    refine HasCompactSupport.intro (isCompact_Icc (a := (-6 : ℝ)) (b := 6)) ?_
-    intro x hx
-    simp only [Set.mem_Icc, not_and_or, not_le] at hx
-    have h6 : 6 < |x| := by
-      rcases hx with h | h
-      · have := neg_abs_le x; linarith
-      · have := le_abs_self x; linarith
-    rw [hf0 x h6, zero_div]
-  set F : ℂ → ℝ → ℂ := fun s x =>
-    ((odlyzkoTestFn x / Real.cosh (x / 2) : ℝ) : ℂ) *
-      Complex.exp ((s - 1 / 2) * (x : ℂ))
-  set F' : ℂ → ℝ → ℂ := fun s x =>
-    ((odlyzkoTestFn x / Real.cosh (x / 2) : ℝ) : ℂ) *
-      ((x : ℂ) * Complex.exp ((s - 1 / 2) * (x : ℂ))) with hF'
-  have hFscont : ∀ s : ℂ, Continuous (F s) := fun s =>
-    (Complex.continuous_ofReal.comp hFcont).mul
-      (Complex.continuous_exp.comp (continuous_const.mul Complex.continuous_ofReal))
-  have hF_meas : ∀ᶠ s in nhds s₀,
-      MeasureTheory.AEStronglyMeasurable (F s) MeasureTheory.volume :=
-    Filter.Eventually.of_forall fun s => (hFscont s).aestronglyMeasurable
-  have hF_int : MeasureTheory.Integrable (F s₀) :=
-    (hFscont s₀).integrable_of_hasCompactSupport
-      ((hFsupp.comp_left (g := Complex.ofReal) Complex.ofReal_zero).mul_right)
-  have hF'_meas : MeasureTheory.AEStronglyMeasurable (F' s₀)
-      MeasureTheory.volume :=
-    ((Complex.continuous_ofReal.comp hFcont).mul
-      (Complex.continuous_ofReal.mul (Complex.continuous_exp.comp
-        (continuous_const.mul Complex.continuous_ofReal)))).aestronglyMeasurable
-  have h_bound : ∀ᵐ x : ℝ ∂MeasureTheory.volume, ∀ s ∈ Metric.ball s₀ 1,
-      ‖F' s x‖ ≤ Set.indicator (Set.Icc (-6 : ℝ) 6)
-        (fun _ => 6 * Real.exp (6 * (‖s₀‖ + 2))) x := by
-    refine Filter.Eventually.of_forall fun x => fun s hs => ?_
-    rw [hF']
-    simp only []
-    rw [norm_mul, norm_mul, Complex.norm_real, Real.norm_eq_abs,
-      Complex.norm_exp, Complex.norm_real, Real.norm_eq_abs]
-    rcases le_or_gt |x| 6 with hx | hx
-    · rw [Set.indicator_of_mem (Set.mem_Icc.mpr (abs_le.mp hx))]
-      have hquot : |odlyzkoTestFn x / Real.cosh (x / 2)| ≤ 1 := by
-        rw [abs_of_nonneg (div_nonneg (hfle x).1 (Real.cosh_pos (x := x / 2)).le)]
-        exact div_le_one_of_le₀
-          (le_trans (hfle x).2 (Real.one_le_cosh (x / 2))) (Real.cosh_pos _).le
-      have hre : ((s - 1 / 2) * (x : ℂ)).re = (s.re - 1 / 2) * x := by
-        have h12 : ((1 : ℂ) / 2) = ((1 / 2 : ℝ) : ℂ) := by push_cast; ring
-        simp [h12, Complex.mul_re, Complex.sub_re, Complex.ofReal_re,
-          Complex.ofReal_im]
-      rw [hre]
-      have hsre : |s.re - 1 / 2| ≤ ‖s₀‖ + 2 := by
-        have h1 : |s.re| ≤ ‖s‖ := Complex.abs_re_le_norm s
-        have h2 : ‖s‖ ≤ ‖s₀‖ + 1 := by
-          have := Metric.mem_ball.mp hs
-          have h3 : ‖s - s₀‖ < 1 := by rwa [← dist_eq_norm]
-          calc ‖s‖ = ‖s₀ + (s - s₀)‖ := by ring_nf
-            _ ≤ ‖s₀‖ + ‖s - s₀‖ := norm_add_le _ _
-            _ ≤ ‖s₀‖ + 1 := by linarith
-        have h4 : |s.re - 1 / 2| ≤ |s.re| + 1 / 2 := by
-          calc |s.re - 1 / 2| ≤ |s.re| + |(1 : ℝ) / 2| := abs_sub _ _
-            _ = |s.re| + 1 / 2 := by norm_num
-        linarith
-      have hexp : Real.exp ((s.re - 1 / 2) * x) ≤ Real.exp (6 * (‖s₀‖ + 2)) := by
-        refine Real.exp_le_exp.mpr (le_trans (le_abs_self _) ?_)
-        rw [abs_mul]
-        calc |s.re - 1 / 2| * |x| ≤ (‖s₀‖ + 2) * 6 :=
-              mul_le_mul hsre hx (abs_nonneg _) (by positivity)
-          _ = 6 * (‖s₀‖ + 2) := by ring
-      calc |odlyzkoTestFn x / Real.cosh (x / 2)| *
-            (|x| * Real.exp ((s.re - 1 / 2) * x)) ≤
-          1 * (6 * Real.exp (6 * (‖s₀‖ + 2))) := by
-            refine mul_le_mul hquot ?_ (by positivity) zero_le_one
-            exact mul_le_mul hx hexp (Real.exp_pos _).le (by norm_num)
-        _ = 6 * Real.exp (6 * (‖s₀‖ + 2)) := one_mul _
-    · rw [hf0 x hx, Set.indicator_of_notMem (by
-        simp only [Set.mem_Icc, not_and_or, not_le]
-        rcases lt_abs.mp hx with h | h
-        · exact Or.inr h
-        · exact Or.inl (by linarith))]
-      simp
-  have bound_int : MeasureTheory.Integrable
-      (Set.indicator (Set.Icc (-6 : ℝ) 6)
-        (fun _ => 6 * Real.exp (6 * (‖s₀‖ + 2)))) := by
-    rw [MeasureTheory.integrable_indicator_iff measurableSet_Icc]
-    exact MeasureTheory.integrableOn_const measure_Icc_lt_top.ne
-  have h_diff : ∀ᵐ x : ℝ ∂MeasureTheory.volume, ∀ s ∈ Metric.ball s₀ 1,
-      HasDerivAt (F · x) (F' s x) s := by
-    refine Filter.Eventually.of_forall fun x => fun s _ => ?_
-    have hlin : HasDerivAt (fun s : ℂ => (s - 1 / 2) * (x : ℂ)) (x : ℂ) s := by
-      simpa using ((hasDerivAt_id s).sub_const ((1 : ℂ) / 2)).mul_const (x : ℂ)
-    have hexp : HasDerivAt (fun s : ℂ => Complex.exp ((s - 1 / 2) * (x : ℂ)))
-        (Complex.exp ((s - 1 / 2) * (x : ℂ)) * (x : ℂ)) s :=
-      (Complex.hasDerivAt_exp ((s - 1 / 2) * (x : ℂ))).comp s hlin
-    have hD := hexp.const_mul
-      ((odlyzkoTestFn x / Real.cosh (x / 2) : ℝ) : ℂ)
-    have heq : ((odlyzkoTestFn x / Real.cosh (x / 2) : ℝ) : ℂ) *
-        (Complex.exp ((s - 1 / 2) * (x : ℂ)) * (x : ℂ)) = F' s x := by
-      rw [hF']
-      ring
-    exact heq ▸ hD
-  have main := hasDerivAt_integral_of_dominated_loc_of_deriv_le
-    (Metric.ball_mem_nhds s₀ one_pos) hF_meas hF_int hF'_meas h_bound
-    bound_int h_diff
-  exact main.2.differentiableAt
 
 /-- **`Φ` is bounded on the closed critical strip** (PROVEN
 2026-07-23): for `0 ≤ Re z ≤ 1` the integrand of `poitouPhi` is
