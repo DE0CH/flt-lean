@@ -29,6 +29,10 @@ import Mathlib.Topology.Instances.Complex
 -- Tannery's theorem (dominated convergence for sums), used by the
 -- prime-edge assembly `poitouPrimeEdge_tendsto`.
 import Mathlib.Analysis.Normed.Group.Tannery
+-- Differentiability of `LSeries` past the abscissa of absolute
+-- convergence (`LSeries_hasDerivAt`, `LSeries.abscissaOfAbsConv`),
+-- used by `dedekindZeta_differentiableOn` of the Poitou edge split.
+import Mathlib.NumberTheory.LSeries.Deriv
 -- Dickson's classification of the finite subgroups of PGL₂(𝔽̄₃)
 -- (vendored PROVEN), consumed by `not_isAbsolutelyIrreducible`.
 public import Fermat.FLT.KnownIn1980s.PGL2.Defs
@@ -12383,83 +12387,6 @@ noncomputable def poitouPrimeEdge (K : Type*) [Field K] [NumberField K]
       (deriv (NumberField.dedekindZeta K) (5 / 4 + t * Complex.I) /
         NumberField.dedekindZeta K (5 / 4 + t * Complex.I))).re
 
-/-- **The integrand split: edge minus pole edge = discriminant +
-archimedean + prime edges** (sorry node, stated 2026-07-24 — leaf
-(b₂ᵢᵢ·0), the log-derivative bookkeeping stage of the decomposition
-of `DedekindContinuation.poitouEdge_sub_poleEdge_tendsto`; an exact
-identity for EVERY `T`, no limits).  Intended proof, pointwise on the
-edge `s = 5/4 + it` where `re s = 5/4 > 1`:
-
-1. `eq_of_one_lt_re` writes `ξ` on the OPEN half-plane `re > 1` as
-   the product `s(s−1)·|d|^{s/2}·Γ_ℝ-factor^{r₁}·Γ_ℂ-factor^{r₂}·ζ_K`,
-   and `htc` kills the real factor
-   (`NumberField.IsTotallyComplex.nrRealPlaces_eq_zero`, `pow_zero`).
-2. Openness (`isOpen_lt continuous_const Complex.continuous_re`) lets
-   `Filter.EventuallyEq.deriv_eq` transport `deriv pkg.xi` to the
-   derivative of the product; each factor is differentiable at `s` —
-   polynomials, the `cpow`s with nonzero constant base
-   (`|d| ≠ 0` by `NumberField.discr_ne_zero`, `2π ≠ 0`), `Γ(s)` for
-   `re s > 0`, and `ζ_K` by the pin's `LSeries_hasDerivAt` above the
-   abscissa of absolute convergence (`≤ 1` for the ideal-counting
-   coefficients via `summable_natCard_absNorm_mul_rpow_neg` from
-   `Chebotarev.lean`) — and nonvanishing at `s`: `s, s−1 ≠ 0`
-   (`re = 5/4`), `Complex.Gamma_ne_zero`, nonzero-base `cpow`s, and
-   `dedekindZeta_ne_zero_of_one_lt_re` (PROVEN above).  Iterated
-   `logDeriv_mul`/`logDeriv_pow` then split the logarithmic
-   derivative: `(ξ'/ξ)(s) = 1/s + 1/(s−1) + (log|d|)/2 +
-   r₂·(ψ(s) − log 2π) + (ζ_K'/ζ_K)(s)`, with `ψ = Complex.digamma`
-   (`Complex.digamma_def`, `logDeriv_apply`) and the elementary
-   log-derivatives `(c^s)'/c^s = log c` of constant-base `cpow`.
-3. Multiply by `Φ(s)`, take `Re`: pointwise in `t`, the
-   `DedekindContinuation.poitouEdge` integrand minus the
-   `poitouPoleEdge` integrand equals the sum of the three edge
-   integrands (`mul_add`, `Complex.add_re`).
-4. Integrate over `[−T, T]`: `intervalIntegral.integral_sub` and
-   `integral_add` need integrability of each piece, which follows
-   from continuity in `t` (`Continuous.intervalIntegrable`): `Φ`
-   along the edge by dominated parameter-continuity of `poitouPhi`
-   (compactly supported integrand — the same continuity brick the
-   sibling leaf `poitouPoleEdge_tendsto` needs; manufacture a shared
-   forward helper), `ψ` at zero-free points of the differentiable
-   `Γ`, `ζ_K'/ζ_K` since `deriv ζ_K` is again an `LSeries`
-   (`LSeries_deriv`) differentiable above the abscissa and the
-   denominator is nonvanishing and continuous; finally distribute
-   `π⁻¹` over the sum (`mul_add`). -/
-theorem DedekindContinuation.poitouEdge_sub_poleEdge_eq {K : Type*}
-    [Field K] [NumberField K] (pkg : DedekindContinuation K)
-    (htc : NumberField.IsTotallyComplex K) (T : ℝ) :
-    pkg.poitouEdge T - poitouPoleEdge T =
-      poitouConstEdge K T + poitouGammaEdge K T + poitouPrimeEdge K T := by
-  sorry
-
-/-- **Fourier inversion at the origin: the discriminant edge converges
-to `log |d_K|`** (sorry node, stated 2026-07-24 — leaf (b₂ᵢᵢ·1), the
-Fourier/test-function bookkeeping stage of the decomposition of
-`DedekindContinuation.poitouEdge_sub_poleEdge_tendsto`; Poitou
-p. 6-03, the constant term of Proposition 2).  Intended proof: with
-`G(x) = poitouF x · e^{3x/4}` — continuous, piecewise-`C¹`, supported
-in `[−6, 6]` — the edge value of `Φ` is a Fourier integral:
-`Φ(5/4 + it) = ∫ G(x)·e^{itx} dx` (unfold `poitouPhi`;
-`e^{(s−1/2)x} = e^{3x/4}·e^{itx}` at `s = 5/4 + it`), i.e. up to the
-`2π`-rescaling of the pin's normalization `e^{−2πi·x·ξ}` the inverse
-Fourier transform of `G`.  `G` is integrable (continuous with compact
-support) and its transform is `O(1/t²)` (two integrations by parts
-against the piecewise-affine `odlyzkoTestFn`, whose derivative has
-bounded variation), hence integrable, so
-`Continuous.fourierInv_fourier_eq` (the pin's
-`Mathlib.Analysis.Fourier.Inversion`) evaluated at `0` gives
-`(2π)⁻¹ ∫_ℝ Φ(5/4 + it) dt = G(0) = poitouF 0 = 1` (`cosh 0 = 1`,
-`odlyzkoTestFn 0 = 1`).  The symmetric truncations converge to the
-full integral (`MeasureTheory.intervalIntegral_tendsto_integral`
-with the integrability of `t ↦ (Φ(5/4+it)·c).re` from the same
-`O(1/t²)` decay), and the real constant `c = (log|d|)/2` commutes
-with `Re` and the integral, so
-`poitouConstEdge K T → π⁻¹·2π·1·(log|d|)/2 = log |d_K|`. -/
-theorem poitouConstEdge_tendsto (K : Type*) [Field K] [NumberField K] :
-    Filter.Tendsto (poitouConstEdge K) Filter.atTop
-      (nhds (Real.log |(NumberField.discr K : ℝ)|)) := by
-  sorry
-
 section PoitouGammaEdgeDigamma
 
 open MeasureTheory Filter Set Complex
@@ -14213,6 +14140,488 @@ theorem poitouPrimeEdge_tendsto (K : Type*) [Field K] [NumberField K] :
   exact hmain2
 
 end PoitouPrimeEdgeFourier
+
+section PoitouEdgeSplitArithmetic
+
+open MeasureTheory Filter Set Complex
+
+/-- **Continuity of the digamma function along the edge line
+`Re s = 5/4`** (PROVEN 2026-07-24, continuity brick of the
+integrand-split leaf `DedekindContinuation.poitouEdge_sub_poleEdge_eq`):
+`ψ = Γ'/Γ` (`Complex.digamma_def`), where `Γ` is differentiable on the
+open half-plane `re > 0` (`Complex.differentiableAt_Gamma` — the poles
+`0, −1, −2, …` all have nonpositive real part), hence analytic there,
+so `deriv Γ` is continuous (`AnalyticOnNhd.deriv`); the denominator is
+continuous and nonvanishing (`Complex.Gamma_ne_zero_of_re_pos`). -/
+theorem digamma_line_continuous :
+    Continuous fun t : ℝ => Complex.digamma (5 / 4 + t * Complex.I) := by
+  have hline : Continuous fun t : ℝ => (5 / 4 + t * Complex.I : ℂ) :=
+    continuous_const.add (Complex.continuous_ofReal.mul continuous_const)
+  have hre : ∀ t : ℝ, (5 / 4 + t * Complex.I : ℂ).re = 5 / 4 := by
+    intro t
+    simp [Complex.add_re, Complex.mul_re]
+  have hopen : IsOpen {z : ℂ | 0 < z.re} :=
+    isOpen_lt continuous_const Complex.continuous_re
+  have hdiff : DifferentiableOn ℂ Complex.Gamma {z : ℂ | 0 < z.re} := by
+    intro z hz
+    have hzre : (0:ℝ) < z.re := hz
+    refine (Complex.differentiableAt_Gamma z fun m => ?_).differentiableWithinAt
+    intro h
+    rw [h] at hzre
+    simp only [Complex.neg_re, Complex.natCast_re] at hzre
+    linarith [Nat.cast_nonneg (α := ℝ) m]
+  have hmem : ∀ t : ℝ, (5 / 4 + t * Complex.I : ℂ) ∈ {z : ℂ | 0 < z.re} := by
+    intro t
+    show (0:ℝ) < (5 / 4 + t * Complex.I : ℂ).re
+    rw [hre t]
+    norm_num
+  have hcont : Continuous fun t : ℝ =>
+      deriv Complex.Gamma (5 / 4 + t * Complex.I) /
+        Complex.Gamma (5 / 4 + t * Complex.I) := by
+    refine Continuous.div ?_ ?_ ?_
+    · exact ((hdiff.analyticOnNhd hopen).deriv.continuousOn).comp_continuous hline hmem
+    · exact (hdiff.continuousOn).comp_continuous hline hmem
+    · exact fun t => Complex.Gamma_ne_zero_of_re_pos (by rw [hre t]; norm_num)
+  refine hcont.congr fun t => ?_
+  rw [Complex.digamma_def, logDeriv_apply]
+
+/-- **The raw Dedekind zeta Dirichlet series is differentiable on the
+open half-plane of absolute convergence** (PROVEN 2026-07-24,
+differentiability brick of the integrand-split leaf
+`DedekindContinuation.poitouEdge_sub_poleEdge_eq`): the pin's
+`NumberField.dedekindZeta` is the `LSeries` of the ideal-counting
+coefficients, whose abscissa of absolute convergence is `≤ 1`
+(`LSeries.abscissaOfAbsConv_le_of_forall_lt_LSeriesSummable` against
+the PROVEN summability `lSeriesSummable_dirichletCharacter_mul_card`
+of `Chebotarev.lean`, specialized to the trivial character at level
+1), so `LSeries_hasDerivAt` differentiates it at every `re s > 1`. -/
+theorem dedekindZeta_differentiableOn (K : Type*) [Field K] [NumberField K] :
+    DifferentiableOn ℂ (NumberField.dedekindZeta K) {s : ℂ | 1 < s.re} := by
+  have habs : LSeries.abscissaOfAbsConv (fun n : ℕ =>
+      (Nat.card {I : Ideal (NumberField.RingOfIntegers K) //
+        Ideal.absNorm I = n} : ℂ)) ≤ (1 : ℝ) := by
+    refine LSeries.abscissaOfAbsConv_le_of_forall_lt_LSeriesSummable fun y hy => ?_
+    have h := lSeriesSummable_dirichletCharacter_mul_card K
+      (1 : DirichletCharacter ℂ 1) hy
+    have hcoeff : (fun k : ℕ => (1 : DirichletCharacter ℂ 1) (k : ZMod 1) *
+        (Nat.card {I : Ideal (NumberField.RingOfIntegers K) //
+          Ideal.absNorm I = k} : ℂ)) =
+        fun n : ℕ => (Nat.card {I : Ideal (NumberField.RingOfIntegers K) //
+          Ideal.absNorm I = n} : ℂ) := by
+      funext k
+      rw [MulChar.one_apply (isUnit_of_subsingleton _), one_mul]
+    rwa [hcoeff] at h
+  have hEq : NumberField.dedekindZeta K = LSeries (fun n : ℕ =>
+      (Nat.card {I : Ideal (NumberField.RingOfIntegers K) //
+        Ideal.absNorm I = n} : ℂ)) := rfl
+  rw [hEq]
+  intro s hs
+  have h1 : LSeries.abscissaOfAbsConv (fun n : ℕ =>
+      (Nat.card {I : Ideal (NumberField.RingOfIntegers K) //
+        Ideal.absNorm I = n} : ℂ)) < (s.re : EReal) :=
+    lt_of_le_of_lt habs (by exact_mod_cast (hs : 1 < s.re))
+  exact (LSeries_hasDerivAt h1).differentiableAt.differentiableWithinAt
+
+/-- **Continuity of `ζ_K'/ζ_K` along the edge line `Re s = 5/4`**
+(PROVEN 2026-07-24, continuity brick of the integrand-split leaf
+`DedekindContinuation.poitouEdge_sub_poleEdge_eq`): `ζ_K` is
+differentiable on the open half-plane `re > 1`
+(`dedekindZeta_differentiableOn`), hence analytic there, so its
+derivative is continuous (`AnalyticOnNhd.deriv`); the denominator is
+continuous and nonvanishing (`dedekindZeta_ne_zero_of_one_lt_re`). -/
+theorem dedekindZeta_logDeriv_line_continuous (K : Type*) [Field K]
+    [NumberField K] :
+    Continuous fun t : ℝ =>
+      deriv (NumberField.dedekindZeta K) (5 / 4 + t * Complex.I) /
+        NumberField.dedekindZeta K (5 / 4 + t * Complex.I) := by
+  have hline : Continuous fun t : ℝ => (5 / 4 + t * Complex.I : ℂ) :=
+    continuous_const.add (Complex.continuous_ofReal.mul continuous_const)
+  have hopen : IsOpen {z : ℂ | 1 < z.re} :=
+    isOpen_lt continuous_const Complex.continuous_re
+  have hmem : ∀ t : ℝ, (5 / 4 + t * Complex.I : ℂ) ∈ {z : ℂ | 1 < z.re} := by
+    intro t
+    show (1:ℝ) < (5 / 4 + t * Complex.I : ℂ).re
+    rw [show (5 / 4 + t * Complex.I : ℂ).re = 5 / 4 from by
+      simp [Complex.add_re, Complex.mul_re]]
+    norm_num
+  refine Continuous.div ?_ ?_ ?_
+  · exact (((dedekindZeta_differentiableOn K).analyticOnNhd
+      hopen).deriv.continuousOn).comp_continuous hline hmem
+  · exact ((dedekindZeta_differentiableOn K).continuousOn).comp_continuous
+      hline hmem
+  · exact fun t => dedekindZeta_ne_zero_of_one_lt_re K _ (hmem t)
+
+/-- **The log-derivative of the completed zeta splits into its factors
+on the half-plane of absolute convergence** (PROVEN 2026-07-24 — the
+analytic core of Poitou's Proposition 2, the pointwise stage of
+`DedekindContinuation.poitouEdge_sub_poleEdge_eq`):
+
+`(ξ'/ξ)(s) = 1/s + 1/(s−1) + (log|d|)/2 + r₂·(ψ(s) − log 2π) +
+(ζ_K'/ζ_K)(s)` for `re s > 1`, `ψ = Complex.digamma`.
+
+Proof: `xi_eq_dedekindGammaFactor` identifies `ξ` with the product
+`s(s−1)·|d|^{s/2}·Γ_ℝ-factor^{r₁}·Γ_ℂ-factor^{r₂}·ζ_K` on the OPEN
+half-plane `{1 < re}`; `htc` kills the `Γ_ℝ`-power
+(`NumberField.IsTotallyComplex.nrRealPlaces_eq_zero`, `pow_zero`);
+`Filter.EventuallyEq.deriv_eq` replaces `deriv pkg.xi s` by the
+derivative of the product.  Every factor is differentiable and
+nonvanishing at `s` (`s, s−1 ≠ 0` from `re s > 1`; constant-base
+`cpow`s of the nonzero bases `|d|`, `2π`
+(`NumberField.discr_ne_zero`, `Complex.cpow_ne_zero_iff`,
+`HasDerivAt.const_cpow`); `Γ` on `re > 0`
+(`Complex.differentiableAt_Gamma`, `Complex.Gamma_ne_zero_of_re_pos`);
+`ζ_K` by `dedekindZeta_differentiableOn` and
+`dedekindZeta_ne_zero_of_one_lt_re`), so iterated `logDeriv_mul` and
+`logDeriv_fun_pow` split the logarithmic derivative; the elementary
+log-derivatives are `(c^{z/2})'/c^{z/2} = (log c)/2`,
+`(c^{-z})'/c^{-z} = −log c` (`Complex.ofReal_log`) and
+`Γ'/Γ = ψ` (`Complex.digamma_def`). -/
+theorem DedekindContinuation.xi_logDeriv_eq {K : Type*} [Field K]
+    [NumberField K] (pkg : DedekindContinuation K)
+    (htc : NumberField.IsTotallyComplex K) {s : ℂ} (hs : 1 < s.re) :
+    deriv pkg.xi s / pkg.xi s =
+      (1 / s + 1 / (s - 1)) +
+        (Complex.ofReal (Real.log |(NumberField.discr K : ℝ)| / 2) +
+          ((NumberField.InfinitePlace.nrComplexPlaces K : ℂ) *
+            (Complex.digamma s - Complex.ofReal (Real.log (2 * Real.pi))) +
+            deriv (NumberField.dedekindZeta K) s /
+              NumberField.dedekindZeta K s)) := by
+  have hs0 : s ≠ 0 := by
+    intro h
+    rw [h] at hs
+    simp only [Complex.zero_re] at hs
+    linarith
+  have hs1 : s - 1 ≠ 0 := by
+    intro h
+    rw [sub_eq_zero] at h
+    rw [h] at hs
+    simp only [Complex.one_re] at hs
+    linarith
+  have hsre0 : (0:ℝ) < s.re := by linarith
+  have hd : (0:ℝ) < |(NumberField.discr K : ℝ)| :=
+    abs_pos.mpr (Int.cast_ne_zero.mpr (NumberField.discr_ne_zero K))
+  have hd0 : ((|(NumberField.discr K : ℝ)| : ℝ) : ℂ) ≠ 0 := by
+    exact_mod_cast hd.ne'
+  have h2pi : (0:ℝ) < 2 * Real.pi := by positivity
+  have h2pi0 : (((2 * Real.pi : ℝ)) : ℂ) ≠ 0 := by exact_mod_cast h2pi.ne'
+  have hgd : DifferentiableAt ℂ Complex.Gamma s := by
+    refine Complex.differentiableAt_Gamma s fun m => ?_
+    intro h
+    rw [h] at hsre0
+    simp only [Complex.neg_re, Complex.natCast_re] at hsre0
+    linarith [Nat.cast_nonneg (α := ℝ) m]
+  have hgne : Complex.Gamma s ≠ 0 := Complex.Gamma_ne_zero_of_re_pos hsre0
+  have hDdiff : DifferentiableAt ℂ
+      (fun z : ℂ => ((|(NumberField.discr K : ℝ)| : ℝ) : ℂ) ^ (z / 2)) s :=
+    ((differentiableAt_id.div_const 2).const_cpow (Or.inl hd0))
+  have hDne : ((|(NumberField.discr K : ℝ)| : ℝ) : ℂ) ^ (s / 2) ≠ 0 := by
+    rw [Complex.cpow_ne_zero_iff]
+    exact Or.inl hd0
+  have hcpdiff : DifferentiableAt ℂ
+      (fun z : ℂ => (((2 * Real.pi : ℝ)) : ℂ) ^ (-z)) s :=
+    (differentiableAt_id.neg.const_cpow (Or.inl h2pi0))
+  have hgcdiff : DifferentiableAt ℂ
+      (fun z : ℂ => (2 : ℂ) * (((2 * Real.pi : ℝ)) : ℂ) ^ (-z) *
+        Complex.Gamma z) s :=
+    ((differentiableAt_const _).mul hcpdiff).mul hgd
+  have hcpne : (((2 * Real.pi : ℝ)) : ℂ) ^ (-s) ≠ 0 := by
+    rw [Complex.cpow_ne_zero_iff]
+    exact Or.inl h2pi0
+  have hgcne : (2 : ℂ) * (((2 * Real.pi : ℝ)) : ℂ) ^ (-s) *
+      Complex.Gamma s ≠ 0 :=
+    mul_ne_zero (mul_ne_zero two_ne_zero hcpne) hgne
+  have hPdiff : DifferentiableAt ℂ (fun z : ℂ =>
+      ((2 : ℂ) * (((2 * Real.pi : ℝ)) : ℂ) ^ (-z) * Complex.Gamma z) ^
+        NumberField.InfinitePlace.nrComplexPlaces K) s :=
+    hgcdiff.pow _
+  have hPne : ((2 : ℂ) * (((2 * Real.pi : ℝ)) : ℂ) ^ (-s) *
+      Complex.Gamma s) ^ NumberField.InfinitePlace.nrComplexPlaces K ≠ 0 :=
+    pow_ne_zero _ hgcne
+  have hDPdiff : DifferentiableAt ℂ (fun z : ℂ =>
+      ((|(NumberField.discr K : ℝ)| : ℝ) : ℂ) ^ (z / 2) *
+      ((2 : ℂ) * (((2 * Real.pi : ℝ)) : ℂ) ^ (-z) * Complex.Gamma z) ^
+        NumberField.InfinitePlace.nrComplexPlaces K) s :=
+    hDdiff.mul hPdiff
+  have hDPne : ((|(NumberField.discr K : ℝ)| : ℝ) : ℂ) ^ (s / 2) *
+      ((2 : ℂ) * (((2 * Real.pi : ℝ)) : ℂ) ^ (-s) * Complex.Gamma s) ^
+        NumberField.InfinitePlace.nrComplexPlaces K ≠ 0 :=
+    mul_ne_zero hDne hPne
+  have hopen : IsOpen {z : ℂ | 1 < z.re} :=
+    isOpen_lt continuous_const Complex.continuous_re
+  have hzdiffs : DifferentiableAt ℂ (NumberField.dedekindZeta K) s :=
+    ((dedekindZeta_differentiableOn K) s hs).differentiableAt
+      (hopen.mem_nhds hs)
+  have hznes : NumberField.dedekindZeta K s ≠ 0 :=
+    dedekindZeta_ne_zero_of_one_lt_re K s hs
+  -- the totally complex product form of `ξ` on the half-plane
+  have hGF : ∀ z : ℂ, 1 < z.re → pkg.xi z = z * (z - 1) *
+      (((|(NumberField.discr K : ℝ)| : ℝ) : ℂ) ^ (z / 2) *
+        ((2 : ℂ) * (((2 * Real.pi : ℝ)) : ℂ) ^ (-z) * Complex.Gamma z) ^
+          NumberField.InfinitePlace.nrComplexPlaces K) *
+      NumberField.dedekindZeta K z := by
+    intro z hz
+    rw [pkg.xi_eq_dedekindGammaFactor hz]
+    simp only [dedekindGammaFactor]
+    haveI := htc
+    rw [NumberField.IsTotallyComplex.nrRealPlaces_eq_zero K, pow_zero, mul_one,
+      mul_assoc (z * (z - 1))]
+  -- transport `deriv pkg.xi` through the eventual equality
+  have hEv : pkg.xi =ᶠ[nhds s] fun z : ℂ => z * (z - 1) *
+      (((|(NumberField.discr K : ℝ)| : ℝ) : ℂ) ^ (z / 2) *
+        ((2 : ℂ) * (((2 * Real.pi : ℝ)) : ℂ) ^ (-z) * Complex.Gamma z) ^
+          NumberField.InfinitePlace.nrComplexPlaces K) *
+      NumberField.dedekindZeta K z :=
+    Filter.eventuallyEq_of_mem (hopen.mem_nhds hs) fun z hz => hGF z hz
+  have hderiv_eq : deriv pkg.xi s = deriv (fun z : ℂ => z * (z - 1) *
+      (((|(NumberField.discr K : ℝ)| : ℝ) : ℂ) ^ (z / 2) *
+        ((2 : ℂ) * (((2 * Real.pi : ℝ)) : ℂ) ^ (-z) * Complex.Gamma z) ^
+          NumberField.InfinitePlace.nrComplexPlaces K) *
+      NumberField.dedekindZeta K z) s :=
+    hEv.deriv_eq
+  have hxis : pkg.xi s = s * (s - 1) *
+      (((|(NumberField.discr K : ℝ)| : ℝ) : ℂ) ^ (s / 2) *
+        ((2 : ℂ) * (((2 * Real.pi : ℝ)) : ℂ) ^ (-s) * Complex.Gamma s) ^
+          NumberField.InfinitePlace.nrComplexPlaces K) *
+      NumberField.dedekindZeta K s :=
+    hGF s hs
+  rw [hderiv_eq, hxis, ← logDeriv_apply]
+  -- split the product with iterated `logDeriv_mul`
+  have hpoly_diff : DifferentiableAt ℂ (fun z : ℂ => z * (z - 1)) s :=
+    differentiableAt_id.mul (differentiableAt_id.sub_const 1)
+  have hpoly_ne : s * (s - 1) ≠ 0 := mul_ne_zero hs0 hs1
+  have l1 : logDeriv (fun z : ℂ => z * (z - 1) *
+      (((|(NumberField.discr K : ℝ)| : ℝ) : ℂ) ^ (z / 2) *
+        ((2 : ℂ) * (((2 * Real.pi : ℝ)) : ℂ) ^ (-z) * Complex.Gamma z) ^
+          NumberField.InfinitePlace.nrComplexPlaces K) *
+      NumberField.dedekindZeta K z) s =
+      logDeriv (fun z : ℂ => z * (z - 1) *
+        (((|(NumberField.discr K : ℝ)| : ℝ) : ℂ) ^ (z / 2) *
+          ((2 : ℂ) * (((2 * Real.pi : ℝ)) : ℂ) ^ (-z) * Complex.Gamma z) ^
+            NumberField.InfinitePlace.nrComplexPlaces K)) s +
+      logDeriv (NumberField.dedekindZeta K) s :=
+    logDeriv_mul s (mul_ne_zero hpoly_ne hDPne) hznes
+      (hpoly_diff.mul hDPdiff) hzdiffs
+  have l2 : logDeriv (fun z : ℂ => z * (z - 1) *
+      (((|(NumberField.discr K : ℝ)| : ℝ) : ℂ) ^ (z / 2) *
+        ((2 : ℂ) * (((2 * Real.pi : ℝ)) : ℂ) ^ (-z) * Complex.Gamma z) ^
+          NumberField.InfinitePlace.nrComplexPlaces K)) s =
+      logDeriv (fun z : ℂ => z * (z - 1)) s +
+      logDeriv (fun z : ℂ =>
+        ((|(NumberField.discr K : ℝ)| : ℝ) : ℂ) ^ (z / 2) *
+        ((2 : ℂ) * (((2 * Real.pi : ℝ)) : ℂ) ^ (-z) * Complex.Gamma z) ^
+          NumberField.InfinitePlace.nrComplexPlaces K) s :=
+    logDeriv_mul s hpoly_ne hDPne hpoly_diff hDPdiff
+  have l3 : logDeriv (fun z : ℂ => z * (z - 1)) s =
+      logDeriv (fun z : ℂ => z) s + logDeriv (fun z : ℂ => z - 1) s :=
+    logDeriv_mul s hs0 hs1 differentiableAt_id
+      (differentiableAt_id.sub_const 1)
+  have l4 : logDeriv (fun z : ℂ =>
+      ((|(NumberField.discr K : ℝ)| : ℝ) : ℂ) ^ (z / 2) *
+      ((2 : ℂ) * (((2 * Real.pi : ℝ)) : ℂ) ^ (-z) * Complex.Gamma z) ^
+        NumberField.InfinitePlace.nrComplexPlaces K) s =
+      logDeriv (fun z : ℂ =>
+        ((|(NumberField.discr K : ℝ)| : ℝ) : ℂ) ^ (z / 2)) s +
+      logDeriv (fun z : ℂ =>
+        ((2 : ℂ) * (((2 * Real.pi : ℝ)) : ℂ) ^ (-z) * Complex.Gamma z) ^
+          NumberField.InfinitePlace.nrComplexPlaces K) s :=
+    logDeriv_mul s hDne hPne hDdiff hPdiff
+  have l5 : logDeriv (fun z : ℂ =>
+      ((2 : ℂ) * (((2 * Real.pi : ℝ)) : ℂ) ^ (-z) * Complex.Gamma z) ^
+        NumberField.InfinitePlace.nrComplexPlaces K) s =
+      (NumberField.InfinitePlace.nrComplexPlaces K : ℂ) *
+        logDeriv (fun z : ℂ =>
+          (2 : ℂ) * (((2 * Real.pi : ℝ)) : ℂ) ^ (-z) * Complex.Gamma z) s :=
+    logDeriv_fun_pow hgcdiff _
+  have l6 : logDeriv (fun z : ℂ =>
+      (2 : ℂ) * (((2 * Real.pi : ℝ)) : ℂ) ^ (-z) * Complex.Gamma z) s =
+      Complex.digamma s - Complex.ofReal (Real.log (2 * Real.pi)) := by
+    have hstep : logDeriv (fun z : ℂ =>
+        (2 : ℂ) * (((2 * Real.pi : ℝ)) : ℂ) ^ (-z) * Complex.Gamma z) s =
+        logDeriv (fun z : ℂ => (2 : ℂ) * (((2 * Real.pi : ℝ)) : ℂ) ^ (-z)) s +
+        logDeriv Complex.Gamma s :=
+      logDeriv_mul s (mul_ne_zero two_ne_zero hcpne) hgne
+        ((differentiableAt_const _).mul hcpdiff) hgd
+    rw [hstep, logDeriv_const_mul s _ two_ne_zero]
+    have hneg : HasDerivAt (fun z : ℂ => -z) (-1 : ℂ) s := (hasDerivAt_id s).neg
+    have hcp := hneg.const_cpow (c := (((2 * Real.pi : ℝ)) : ℂ)) (Or.inl h2pi0)
+    have hld : logDeriv (fun z : ℂ => (((2 * Real.pi : ℝ)) : ℂ) ^ (-z)) s =
+        -Complex.ofReal (Real.log (2 * Real.pi)) := by
+      rw [logDeriv_apply, hcp.deriv, ← Complex.ofReal_log h2pi.le]
+      field_simp
+    rw [hld, ← Complex.digamma_def]
+    ring
+  have l7 : logDeriv (fun z : ℂ =>
+      ((|(NumberField.discr K : ℝ)| : ℝ) : ℂ) ^ (z / 2)) s =
+      Complex.ofReal (Real.log |(NumberField.discr K : ℝ)| / 2) := by
+    have h1 : HasDerivAt (fun z : ℂ => z / 2) (1 / 2 : ℂ) s := by
+      simpa using (hasDerivAt_id s).div_const 2
+    have hder := h1.const_cpow
+      (c := ((|(NumberField.discr K : ℝ)| : ℝ) : ℂ)) (Or.inl hd0)
+    rw [logDeriv_apply, hder.deriv, ← Complex.ofReal_log hd.le]
+    field_simp
+    push_cast
+    ring
+  have l8 : logDeriv (fun z : ℂ => z - 1) s = 1 / (s - 1) := by
+    rw [logDeriv_apply]
+    have h : deriv (fun z : ℂ => z - 1) s = 1 := by
+      simp
+    rw [h]
+  rw [l1, l2, l3, l4, l5, l6, l7, logDeriv_id', l8,
+    logDeriv_apply (NumberField.dedekindZeta K)]
+  ring
+
+/-- **The integrand split: edge minus pole edge = discriminant +
+archimedean + prime edges** (PROVEN 2026-07-24 — leaf (b₂ᵢᵢ·0), the
+log-derivative bookkeeping stage of the decomposition of
+`DedekindContinuation.poitouEdge_sub_poleEdge_tendsto`; an exact
+identity for EVERY `T`, no limits).  Pointwise on the edge
+`s = 5/4 + it`, where `re s = 5/4 > 1`, the identity
+`DedekindContinuation.xi_logDeriv_eq` splits the `ξ'/ξ` integrand into
+the pole pair plus the three arithmetic integrands (`mul_add`,
+`Complex.add_re`); every split integrand is interval-integrable by
+continuity (`poitouPhi_line_continuous`, the elementary pole pair,
+`digamma_line_continuous`, `dedekindZeta_logDeriv_line_continuous`,
+`Continuous.intervalIntegrable`), so
+`intervalIntegral.integral_congr`/`integral_add` split the edge
+integral, and `π⁻¹` distributes over the sum (`ring`). -/
+theorem DedekindContinuation.poitouEdge_sub_poleEdge_eq {K : Type*}
+    [Field K] [NumberField K] (pkg : DedekindContinuation K)
+    (htc : NumberField.IsTotallyComplex K) (T : ℝ) :
+    pkg.poitouEdge T - poitouPoleEdge T =
+      poitouConstEdge K T + poitouGammaEdge K T + poitouPrimeEdge K T := by
+  have hline : Continuous fun t : ℝ => (5 / 4 + t * Complex.I : ℂ) :=
+    continuous_const.add (Complex.continuous_ofReal.mul continuous_const)
+  have hre : ∀ t : ℝ, (5 / 4 + t * Complex.I : ℂ).re = 5 / 4 := by
+    intro t
+    simp [Complex.add_re, Complex.mul_re]
+  have hne0 : ∀ t : ℝ, (5 / 4 + t * Complex.I : ℂ) ≠ 0 := by
+    intro t h
+    have := congrArg Complex.re h
+    simp [Complex.add_re, Complex.mul_re] at this
+  have hne1 : ∀ t : ℝ, (5 / 4 + t * Complex.I - 1 : ℂ) ≠ 0 := by
+    intro t h
+    have := congrArg Complex.re h
+    simp [Complex.sub_re, Complex.add_re, Complex.mul_re] at this
+    norm_num at this
+  have hpole : Continuous fun t : ℝ =>
+      (1 / (5 / 4 + t * Complex.I) + 1 / (5 / 4 + t * Complex.I - 1) : ℂ) :=
+    (continuous_const.div hline hne0).add
+      (continuous_const.div (hline.sub continuous_const) hne1)
+  -- interval integrability of the four split integrands
+  have hi_pole : IntervalIntegrable (fun t : ℝ =>
+      (poitouPhi (5 / 4 + t * Complex.I) *
+        (1 / (5 / 4 + t * Complex.I) + 1 / (5 / 4 + t * Complex.I - 1))).re)
+      MeasureTheory.volume (-T) T :=
+    (Complex.continuous_re.comp
+      (poitouPhi_line_continuous.mul hpole)).intervalIntegrable _ _
+  have hi_const : IntervalIntegrable (fun t : ℝ =>
+      (poitouPhi (5 / 4 + t * Complex.I) *
+        Complex.ofReal (Real.log |(NumberField.discr K : ℝ)| / 2)).re)
+      MeasureTheory.volume (-T) T :=
+    (Complex.continuous_re.comp
+      (poitouPhi_line_continuous.mul continuous_const)).intervalIntegrable _ _
+  have hi_gamma : IntervalIntegrable (fun t : ℝ =>
+      (poitouPhi (5 / 4 + t * Complex.I) *
+        ((NumberField.InfinitePlace.nrComplexPlaces K : ℂ) *
+          (Complex.digamma (5 / 4 + t * Complex.I) -
+            Complex.ofReal (Real.log (2 * Real.pi))))).re)
+      MeasureTheory.volume (-T) T :=
+    (Complex.continuous_re.comp (poitouPhi_line_continuous.mul
+      (continuous_const.mul
+        (digamma_line_continuous.sub continuous_const)))).intervalIntegrable _ _
+  have hi_prime : IntervalIntegrable (fun t : ℝ =>
+      (poitouPhi (5 / 4 + t * Complex.I) *
+        (deriv (NumberField.dedekindZeta K) (5 / 4 + t * Complex.I) /
+          NumberField.dedekindZeta K (5 / 4 + t * Complex.I))).re)
+      MeasureTheory.volume (-T) T :=
+    (Complex.continuous_re.comp (poitouPhi_line_continuous.mul
+      (dedekindZeta_logDeriv_line_continuous K))).intervalIntegrable _ _
+  -- the pointwise split of the `ξ'/ξ` integrand
+  have hpt : ∀ t : ℝ,
+      (poitouPhi (5 / 4 + t * Complex.I) *
+        (deriv pkg.xi (5 / 4 + t * Complex.I) /
+          pkg.xi (5 / 4 + t * Complex.I))).re =
+      (poitouPhi (5 / 4 + t * Complex.I) *
+        (1 / (5 / 4 + t * Complex.I) + 1 / (5 / 4 + t * Complex.I - 1))).re +
+      ((poitouPhi (5 / 4 + t * Complex.I) *
+          Complex.ofReal (Real.log |(NumberField.discr K : ℝ)| / 2)).re +
+        ((poitouPhi (5 / 4 + t * Complex.I) *
+            ((NumberField.InfinitePlace.nrComplexPlaces K : ℂ) *
+              (Complex.digamma (5 / 4 + t * Complex.I) -
+                Complex.ofReal (Real.log (2 * Real.pi))))).re +
+          (poitouPhi (5 / 4 + t * Complex.I) *
+            (deriv (NumberField.dedekindZeta K) (5 / 4 + t * Complex.I) /
+              NumberField.dedekindZeta K (5 / 4 + t * Complex.I))).re)) := by
+    intro t
+    rw [pkg.xi_logDeriv_eq htc (by rw [hre t]; norm_num)]
+    simp only [mul_add, Complex.add_re]
+  -- split the edge integral
+  have e1 := intervalIntegral.integral_congr (μ := MeasureTheory.volume)
+    (a := -T) (b := T) fun x _ => hpt x
+  have e2 := intervalIntegral.integral_add hi_pole
+    (hi_const.add (hi_gamma.add hi_prime))
+  have e3 := intervalIntegral.integral_add hi_const (hi_gamma.add hi_prime)
+  have e4 := intervalIntegral.integral_add hi_gamma hi_prime
+  have hS := e1.trans e2
+  rw [e3, e4] at hS
+  simp only [DedekindContinuation.poitouEdge, poitouPoleEdge, poitouConstEdge,
+    poitouGammaEdge, poitouPrimeEdge]
+  rw [hS]
+  ring
+
+/-- **Fourier inversion at the origin: the discriminant edge converges
+to `log |d_K|`** (PROVEN 2026-07-24 — leaf (b₂ᵢᵢ·1), the
+Fourier/test-function bookkeeping stage of the decomposition of
+`DedekindContinuation.poitouEdge_sub_poleEdge_tendsto`; Poitou p. 6-03,
+the constant term of Proposition 2).  The real constant
+`c = (log|d|)/2` commutes with `Re` and the integral
+(`Complex.reCLM.integral_comp_comm`, `integral_mul_const`), the full
+line integral of `Φ` is `2π` by Fourier inversion at the origin
+(`integral_poitouPhi_line`, over the second-integration-by-parts
+integrability `poitouPhi_line_integrable`), and the symmetric
+truncations converge to the full integral
+(`MeasureTheory.intervalIntegral_tendsto_integral`), so
+`poitouConstEdge K T → π⁻¹·2π·(log|d|)/2 = log |d_K|`. -/
+theorem poitouConstEdge_tendsto (K : Type*) [Field K] [NumberField K] :
+    Filter.Tendsto (poitouConstEdge K) Filter.atTop
+      (nhds (Real.log |(NumberField.discr K : ℝ)|)) := by
+  have hmul := poitouPhi_line_integrable.mul_const
+    ((Real.log |(NumberField.discr K : ℝ)| / 2 : ℝ) : ℂ)
+  have hInt : Integrable fun t : ℝ =>
+      (poitouPhi (5 / 4 + t * Complex.I) *
+        ((Real.log |(NumberField.discr K : ℝ)| / 2 : ℝ) : ℂ)).re := by
+    have h := Complex.reCLM.integrable_comp hmul
+    simpa using h
+  have hval : (∫ t : ℝ, (poitouPhi (5 / 4 + t * Complex.I) *
+      ((Real.log |(NumberField.discr K : ℝ)| / 2 : ℝ) : ℂ)).re) =
+      2 * Real.pi * (Real.log |(NumberField.discr K : ℝ)| / 2) := by
+    have h := Complex.reCLM.integral_comp_comm hmul
+    simp only [Complex.reCLM_apply] at h
+    rw [integral_mul_const, integral_poitouPhi_line,
+      ← Complex.ofReal_mul] at h
+    rw [h, Complex.ofReal_re]
+  have hlim : Filter.Tendsto (fun T : ℝ => ∫ t in (-T)..T,
+      (poitouPhi (5 / 4 + t * Complex.I) *
+        ((Real.log |(NumberField.discr K : ℝ)| / 2 : ℝ) : ℂ)).re)
+      Filter.atTop
+      (nhds (2 * Real.pi * (Real.log |(NumberField.discr K : ℝ)| / 2))) := by
+    have h := intervalIntegral_tendsto_integral hInt
+      tendsto_neg_atTop_atBot tendsto_id
+    rwa [hval] at h
+  have hfin := hlim.const_mul Real.pi⁻¹
+  rw [show Real.pi⁻¹ *
+      (2 * Real.pi * (Real.log |(NumberField.discr K : ℝ)| / 2)) =
+      (Real.pi⁻¹ * Real.pi) * Real.log |(NumberField.discr K : ℝ)| from by
+    ring, inv_mul_cancel₀ Real.pi_ne_zero, one_mul] at hfin
+  have hEq : poitouConstEdge K = fun T : ℝ => Real.pi⁻¹ * ∫ t in (-T)..T,
+      (poitouPhi (5 / 4 + t * Complex.I) *
+        ((Real.log |(NumberField.discr K : ℝ)| / 2 : ℝ) : ℂ)).re := by
+    funext T
+    rw [poitouConstEdge]
+  rw [hEq]
+  exact hfin
+
+end PoitouEdgeSplitArithmetic
 
 /-- **Poitou's Propositions 2–3: the vertical edge minus its pole
 part converges to the arithmetic terms** (ASSEMBLED 2026-07-24 from
