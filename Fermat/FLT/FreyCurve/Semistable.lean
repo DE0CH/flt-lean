@@ -8335,6 +8335,141 @@ lemma latticeTensorSquareIncl_injective [IsDomain R] [IsPrincipalIdealRing R]
     ((TensorProduct.AlgebraTensorModule.distribBaseChange R K ↥H₀
       ↥H₀).injective (hminj h2))
 
+set_option synthInstance.maxHeartbeats 200000 in
+/-- The base-change unit `x ↦ 1 ⊗ x` of a flat `R`-module is injective. -/
+lemma latticeUnit_injective [IsDomain R] [IsFractionRing R K]
+    {M : Type} [AddCommGroup M] [Module R M] [Module.Flat R M] :
+    Function.Injective (fun x : M => (1 : K) ⊗ₜ[R] x) := by
+  intro x y hxy
+  have h1 : Function.Injective (LinearMap.rTensor M (Algebra.linearMap R K)) :=
+    Module.Flat.rTensor_preserves_injective_linearMap (Algebra.linearMap R K)
+      (fun a b hab => IsFractionRing.injective R K
+        (by simpa [Algebra.linearMap_apply] using hab))
+  have h2 : ∀ z : M, LinearMap.rTensor M (Algebra.linearMap R K)
+      ((TensorProduct.lid R M).symm z) = (1 : K) ⊗ₜ[R] z := by
+    intro z
+    rw [TensorProduct.lid_symm_apply, LinearMap.rTensor_tmul,
+      Algebra.linearMap_apply, map_one]
+  apply (TensorProduct.lid R M).symm.injective
+  apply h1
+  rw [h2, h2]
+  exact hxy
+
+set_option synthInstance.maxHeartbeats 200000 in
+set_option maxHeartbeats 1000000 in
+/-- The tensor-square comparison factors through the base change. -/
+lemma latticeTensorSquareIncl_factor (t : ↥H₀ ⊗[R] ↥H₀) :
+    latticeTensorSquareIncl R K Hg H₀ t =
+      TensorProduct.map (latticeBaseChange R K Hg H₀).toLinearMap
+        (latticeBaseChange R K Hg H₀).toLinearMap
+        ((TensorProduct.AlgebraTensorModule.distribBaseChange R K ↥H₀ ↥H₀)
+          ((1 : K) ⊗ₜ[R] t)) := by
+  induction t with
+  | zero => simp
+  | tmul a b =>
+      rw [TensorProduct.AlgebraTensorModule.distribBaseChange_tmul,
+        TensorProduct.map_tmul]
+      simp only [AlgHom.toLinearMap_apply]
+      rw [latticeTensorSquareIncl_tmul, latticeBaseChange_tmul,
+        latticeBaseChange_tmul, one_smul, one_smul]
+  | add u v hu hv =>
+      simp only [TensorProduct.tmul_add, map_add, hu, hv]
+
+/-- The canonical `R`-algebra map
+`H₀ ⊗[R] (H₀ ⊗[R] H₀) → Hg ⊗[K] (Hg ⊗[K] Hg)`, for the coassociativity
+transfer. -/
+noncomputable def latticeTensorCubeIncl :
+    (↥H₀ ⊗[R] (↥H₀ ⊗[R] ↥H₀)) →ₐ[R] (Hg ⊗[K] (Hg ⊗[K] Hg)) :=
+  Algebra.TensorProduct.lift
+    (((Algebra.TensorProduct.includeLeft (S := K)).restrictScalars R).comp H₀.val)
+    ((Algebra.TensorProduct.includeRight.restrictScalars R).comp
+      (latticeTensorSquareIncl R K Hg H₀))
+    (fun _ _ => Commute.all _ _)
+
+@[simp] lemma latticeTensorCubeIncl_tmul (a : ↥H₀) (t : ↥H₀ ⊗[R] ↥H₀) :
+    latticeTensorCubeIncl R K Hg H₀ (a ⊗ₜ[R] t) =
+      (a : Hg) ⊗ₜ[K] (latticeTensorSquareIncl R K Hg H₀ t) := by
+  simp [latticeTensorCubeIncl, Algebra.TensorProduct.lift_tmul,
+    Algebra.TensorProduct.tmul_mul_tmul]
+
+/-- The left-nested variant of the cube comparison,
+`(H₀ ⊗[R] H₀) ⊗[R] H₀ → (Hg ⊗[K] Hg) ⊗[K] Hg`. -/
+noncomputable def latticeTensorCubeInclLeft :
+    ((↥H₀ ⊗[R] ↥H₀) ⊗[R] ↥H₀) →ₐ[R] ((Hg ⊗[K] Hg) ⊗[K] Hg) :=
+  Algebra.TensorProduct.lift
+    (((Algebra.TensorProduct.includeLeft (S := K)).restrictScalars R).comp
+      (latticeTensorSquareIncl R K Hg H₀))
+    ((Algebra.TensorProduct.includeRight.restrictScalars R).comp H₀.val)
+    (fun _ _ => Commute.all _ _)
+
+@[simp] lemma latticeTensorCubeInclLeft_tmul (t : ↥H₀ ⊗[R] ↥H₀) (c : ↥H₀) :
+    latticeTensorCubeInclLeft R K Hg H₀ (t ⊗ₜ[R] c) =
+      (latticeTensorSquareIncl R K Hg H₀ t) ⊗ₜ[K] (c : Hg) := by
+  simp [latticeTensorCubeInclLeft, Algebra.TensorProduct.lift_tmul,
+    Algebra.TensorProduct.tmul_mul_tmul]
+
+set_option synthInstance.maxHeartbeats 200000 in
+set_option maxHeartbeats 1000000 in
+/-- The tensor-cube comparison of a finite order over a PID with fraction
+field `K` is injective, by the same factorization as the square. -/
+lemma latticeTensorCubeIncl_injective [IsDomain R] [IsPrincipalIdealRing R]
+    [IsFractionRing R K] (hfin : Module.Finite R ↥H₀) :
+    Function.Injective (latticeTensorCubeIncl R K Hg H₀) := by
+  haveI := latticeFree R K Hg H₀ hfin
+  set e := latticeBaseChange R K Hg H₀ with he
+  -- the base change of the square comparison
+  set w : (K ⊗[R] (↥H₀ ⊗[R] ↥H₀)) →ₗ[K] (Hg ⊗[K] Hg) :=
+    (TensorProduct.map e.toLinearMap e.toLinearMap).comp
+      (TensorProduct.AlgebraTensorModule.distribBaseChange R K ↥H₀
+        ↥H₀).toLinearMap with hw
+  have hwinj : Function.Injective w := by
+    have hminj : Function.Injective
+        (TensorProduct.map e.toLinearMap e.toLinearMap) :=
+      TensorProduct.map_injective_of_flat_flat e.toLinearMap e.toLinearMap
+        (latticeBaseChange_injective R K Hg H₀ hfin)
+        (latticeBaseChange_injective R K Hg H₀ hfin)
+    intro x y hxy
+    rw [hw] at hxy
+    simp only [LinearMap.comp_apply, LinearEquiv.coe_coe] at hxy
+    exact (TensorProduct.AlgebraTensorModule.distribBaseChange R K ↥H₀
+      ↥H₀).injective (hminj hxy)
+  -- against the unit, `w` restricts to the square comparison
+  have hw1 : ∀ s : ↥H₀ ⊗[R] ↥H₀,
+      w ((1 : K) ⊗ₜ[R] s) = latticeTensorSquareIncl R K Hg H₀ s := by
+    intro s
+    rw [hw]
+    simp only [LinearMap.comp_apply, LinearEquiv.coe_coe]
+    exact (latticeTensorSquareIncl_factor R K Hg H₀ s).symm
+  -- the cube comparison factors
+  have hfact : ∀ t : ↥H₀ ⊗[R] (↥H₀ ⊗[R] ↥H₀),
+      latticeTensorCubeIncl R K Hg H₀ t =
+      TensorProduct.map e.toLinearMap w
+        ((TensorProduct.AlgebraTensorModule.distribBaseChange R K ↥H₀
+          (↥H₀ ⊗[R] ↥H₀)) ((1 : K) ⊗ₜ[R] t)) := by
+    intro t
+    induction t with
+    | zero => simp
+    | tmul a s =>
+        rw [TensorProduct.AlgebraTensorModule.distribBaseChange_tmul,
+          TensorProduct.map_tmul, latticeTensorCubeIncl_tmul, hw1 s]
+        simp only [AlgHom.toLinearMap_apply]
+        rw [latticeBaseChange_tmul, one_smul]
+    | add u v hu hv => simp only [TensorProduct.tmul_add, map_add, hu, hv]
+  intro s t hst
+  have h2 : TensorProduct.map e.toLinearMap w
+      ((TensorProduct.AlgebraTensorModule.distribBaseChange R K ↥H₀
+        (↥H₀ ⊗[R] ↥H₀)) ((1 : K) ⊗ₜ[R] s)) =
+      TensorProduct.map e.toLinearMap w
+      ((TensorProduct.AlgebraTensorModule.distribBaseChange R K ↥H₀
+        (↥H₀ ⊗[R] ↥H₀)) ((1 : K) ⊗ₜ[R] t)) := by
+    rw [← hfact s, ← hfact t]; exact hst
+  have hminj2 : Function.Injective (TensorProduct.map e.toLinearMap w) :=
+    TensorProduct.map_injective_of_flat_flat e.toLinearMap w
+      (latticeBaseChange_injective R K Hg H₀ hfin) hwinj
+  exact latticeUnit_injective R K
+    ((TensorProduct.AlgebraTensorModule.distribBaseChange R K ↥H₀
+      (↥H₀ ⊗[R] ↥H₀)).injective (hminj2 h2))
+
 /-- The comultiplication of the order: the generic-fibre comultiplication
 corestricted along the (injective) tensor-square comparison, using the
 comultiplication-closure hypothesis on `H₀`. -/
@@ -8422,6 +8557,8 @@ noncomputable def latticeAntipode
       HopfAlgebra.antipode K (x : Hg) :=
   rfl
 
+set_option synthInstance.maxHeartbeats 400000 in
+set_option maxHeartbeats 1000000 in
 /-- **The Hopf order from a closed full lattice, abstract form**: an
 `R`-subalgebra `H₀` of a `K`-Hopf algebra `Hg` (`R` a PID with fraction field
 `K`) that is finite over `R`, full, and closed under comultiplication, counit
@@ -8453,25 +8590,182 @@ theorem exists_hopfOrder_of_latticeClosure_abstract [IsDomain R]
   have h_coassoc : (Algebra.TensorProduct.assoc R R R ↥H₀ ↥H₀ ↥H₀).toAlgHom.comp
       ((Algebra.TensorProduct.map Δ (AlgHom.id R ↥H₀)).comp Δ) =
       (Algebra.TensorProduct.map (AlgHom.id R ↥H₀) Δ).comp Δ := by
-    sorry
+    apply AlgHom.ext
+    intro x
+    apply latticeTensorCubeIncl_injective R K Hg H₀ hfin
+    -- the right-hand side intertwines with `lTensor comul`
+    have hA : ∀ t : ↥H₀ ⊗[R] ↥H₀,
+        latticeTensorCubeIncl R K Hg H₀
+          ((Algebra.TensorProduct.map (AlgHom.id R ↥H₀) Δ) t) =
+        LinearMap.lTensor Hg (Coalgebra.comul (R := K) (A := Hg))
+          (latticeTensorSquareIncl R K Hg H₀ t) := by
+      intro t
+      induction t with
+      | zero => simp
+      | tmul a b =>
+          rw [Algebra.TensorProduct.map_tmul]
+          simp only [AlgHom.coe_id, id_eq]
+          rw [latticeTensorCubeIncl_tmul, hΔdef,
+            latticeTensorSquareIncl_latticeComul R K Hg H₀ hfin hcomul b,
+            latticeTensorSquareIncl_tmul, LinearMap.lTensor_tmul]
+      | add u v hu hv => simp only [map_add, hu, hv]
+    -- the associator intertwines the two cube comparisons
+    have hB : ∀ s : (↥H₀ ⊗[R] ↥H₀) ⊗[R] ↥H₀,
+        latticeTensorCubeIncl R K Hg H₀
+          ((Algebra.TensorProduct.assoc R R R ↥H₀ ↥H₀ ↥H₀) s) =
+        (TensorProduct.assoc K Hg Hg Hg)
+          (latticeTensorCubeInclLeft R K Hg H₀ s) := by
+      intro s
+      induction s with
+      | zero => simp
+      | tmul t c =>
+          induction t with
+          | zero => simp [TensorProduct.zero_tmul]
+          | tmul a b =>
+              rw [Algebra.TensorProduct.assoc_tmul, latticeTensorCubeIncl_tmul,
+                latticeTensorSquareIncl_tmul, latticeTensorCubeInclLeft_tmul,
+                latticeTensorSquareIncl_tmul, TensorProduct.assoc_tmul]
+          | add p q hp hq =>
+              simp only [TensorProduct.add_tmul, map_add, hp, hq]
+      | add u v hu hv => simp only [map_add, hu, hv]
+    -- the left-hand side intertwines with `rTensor comul`
+    have hC : ∀ t : ↥H₀ ⊗[R] ↥H₀,
+        latticeTensorCubeInclLeft R K Hg H₀
+          ((Algebra.TensorProduct.map Δ (AlgHom.id R ↥H₀)) t) =
+        LinearMap.rTensor Hg (Coalgebra.comul (R := K) (A := Hg))
+          (latticeTensorSquareIncl R K Hg H₀ t) := by
+      intro t
+      induction t with
+      | zero => simp
+      | tmul a b =>
+          rw [Algebra.TensorProduct.map_tmul]
+          simp only [AlgHom.coe_id, id_eq]
+          rw [latticeTensorCubeInclLeft_tmul, hΔdef,
+            latticeTensorSquareIncl_latticeComul R K Hg H₀ hfin hcomul a,
+            latticeTensorSquareIncl_tmul, LinearMap.rTensor_tmul]
+      | add u v hu hv => simp only [map_add, hu, hv]
+    -- assemble along the coassociativity of the generic fibre
+    simp only [AlgHom.comp_apply, AlgEquiv.coe_toAlgHom]
+    rw [hB ((Algebra.TensorProduct.map Δ (AlgHom.id R ↥H₀)) (Δ x)), hC (Δ x),
+      hA (Δ x), hΔdef,
+      latticeTensorSquareIncl_latticeComul R K Hg H₀ hfin hcomul x]
+    exact Coalgebra.coassoc_apply (↑x : Hg)
   have h_rTensor : (Algebra.TensorProduct.map ε (AlgHom.id R ↥H₀)).comp Δ =
       (Algebra.TensorProduct.lid R ↥H₀).symm := by
-    sorry
+    apply AlgHom.ext
+    intro x
+    apply (Algebra.TensorProduct.lid R ↥H₀).injective
+    simp only [AlgEquiv.coe_toAlgHom, AlgEquiv.apply_symm_apply]
+    apply Subtype.val_injective
+    have key : ∀ t : ↥H₀ ⊗[R] ↥H₀,
+        (((Algebra.TensorProduct.lid R ↥H₀)
+          ((Algebra.TensorProduct.map ε (AlgHom.id R ↥H₀)) t) : ↥H₀) : Hg) =
+        (TensorProduct.lid K Hg)
+          ((Coalgebra.counit (R := K) (A := Hg)).rTensor Hg
+            (latticeTensorSquareIncl R K Hg H₀ t)) := by
+      intro t
+      induction t with
+      | zero => simp
+      | tmul a b =>
+          simp only [Algebra.TensorProduct.map_tmul, AlgHom.coe_id, id_eq,
+            Algebra.TensorProduct.lid_tmul, latticeTensorSquareIncl_tmul,
+            LinearMap.rTensor_tmul, TensorProduct.lid_tmul, SetLike.val_smul,
+            hεdef]
+          rw [← algebraMap_latticeCounit R K Hg H₀ hcounit a, algebraMap_smul]
+      | add u v hu hv => simp only [map_add, Subalgebra.coe_add, hu, hv]
+    rw [AlgHom.comp_apply, key (Δ x), hΔdef,
+      latticeTensorSquareIncl_latticeComul R K Hg H₀ hfin hcomul x,
+      Coalgebra.rTensor_counit_comul, TensorProduct.lid_tmul, one_smul]
   have h_lTensor : (Algebra.TensorProduct.map (AlgHom.id R ↥H₀) ε).comp Δ =
       (Algebra.TensorProduct.rid R R ↥H₀).symm := by
-    sorry
+    apply AlgHom.ext
+    intro x
+    apply (Algebra.TensorProduct.rid R R ↥H₀).injective
+    simp only [AlgEquiv.coe_toAlgHom, AlgEquiv.apply_symm_apply]
+    apply Subtype.val_injective
+    have key : ∀ t : ↥H₀ ⊗[R] ↥H₀,
+        (((Algebra.TensorProduct.rid R R ↥H₀)
+          ((Algebra.TensorProduct.map (AlgHom.id R ↥H₀) ε) t) : ↥H₀) : Hg) =
+        (TensorProduct.rid K Hg)
+          ((Coalgebra.counit (R := K) (A := Hg)).lTensor Hg
+            (latticeTensorSquareIncl R K Hg H₀ t)) := by
+      intro t
+      induction t with
+      | zero => simp
+      | tmul a b =>
+          simp only [Algebra.TensorProduct.map_tmul, AlgHom.coe_id, id_eq,
+            Algebra.TensorProduct.rid_tmul, latticeTensorSquareIncl_tmul,
+            LinearMap.lTensor_tmul, TensorProduct.rid_tmul, SetLike.val_smul,
+            hεdef]
+          rw [← algebraMap_latticeCounit R K Hg H₀ hcounit b, algebraMap_smul]
+      | add u v hu hv => simp only [map_add, Subalgebra.coe_add, hu, hv]
+    rw [AlgHom.comp_apply, key (Δ x), hΔdef,
+      latticeTensorSquareIncl_latticeComul R K Hg H₀ hfin hcomul x,
+      Coalgebra.lTensor_counit_comul, TensorProduct.rid_tmul, one_smul]
   letI instBi : Bialgebra R ↥H₀ := Bialgebra.ofAlgHom Δ ε h_coassoc h_rTensor h_lTensor
-  -- the antipode axioms (SORRY LEAVES)
+  -- the structure maps of the new instance are the corestricted ones
+  have hcomul_new : Bialgebra.comulAlgHom R ↥H₀ = Δ :=
+    AlgHom.toLinearMap_injective rfl
+  have hcounit_new : Bialgebra.counitAlgHom R ↥H₀ = ε :=
+    AlgHom.toLinearMap_injective rfl
+  -- the antipode axioms, inherited from the generic fibre
   have h_anti_r : ((Algebra.TensorProduct.lift (latticeAntipode R K Hg H₀ hantipode)
         (AlgHom.id R ↥H₀) fun _ _ => Commute.all _ _).comp
         (Bialgebra.comulAlgHom R ↥H₀)) =
       (Algebra.ofId R ↥H₀).comp (Bialgebra.counitAlgHom R ↥H₀) := by
-    sorry
+    rw [hcomul_new, hcounit_new]
+    apply AlgHom.ext
+    intro x
+    apply Subtype.val_injective
+    have key : ∀ t : ↥H₀ ⊗[R] ↥H₀,
+        (((Algebra.TensorProduct.lift (latticeAntipode R K Hg H₀ hantipode)
+          (AlgHom.id R ↥H₀) fun _ _ => Commute.all _ _) t : ↥H₀) : Hg) =
+        (LinearMap.mul' K Hg)
+          ((HopfAlgebra.antipode K (A := Hg)).rTensor Hg
+            (latticeTensorSquareIncl R K Hg H₀ t)) := by
+      intro t
+      induction t with
+      | zero => simp
+      | tmul a b =>
+          simp only [Algebra.TensorProduct.lift_tmul, AlgHom.coe_id, id_eq,
+            latticeTensorSquareIncl_tmul, LinearMap.rTensor_tmul,
+            LinearMap.mul'_apply, Subalgebra.coe_mul, latticeAntipode_coe]
+      | add u v hu hv => simp only [map_add, Subalgebra.coe_add, hu, hv]
+    simp only [AlgHom.comp_apply]
+    rw [key (Δ x), hΔdef,
+      latticeTensorSquareIncl_latticeComul R K Hg H₀ hfin hcomul x,
+      HopfAlgebra.mul_antipode_rTensor_comul_apply, Algebra.ofId_apply,
+      Subalgebra.coe_algebraMap, IsScalarTower.algebraMap_apply R K Hg, hεdef,
+      algebraMap_latticeCounit R K Hg H₀ hcounit x]
   have h_anti_l : ((Algebra.TensorProduct.lift (AlgHom.id R ↥H₀)
         (latticeAntipode R K Hg H₀ hantipode) fun _ _ => Commute.all _ _).comp
         (Bialgebra.comulAlgHom R ↥H₀)) =
       (Algebra.ofId R ↥H₀).comp (Bialgebra.counitAlgHom R ↥H₀) := by
-    sorry
+    rw [hcomul_new, hcounit_new]
+    apply AlgHom.ext
+    intro x
+    apply Subtype.val_injective
+    have key : ∀ t : ↥H₀ ⊗[R] ↥H₀,
+        (((Algebra.TensorProduct.lift (AlgHom.id R ↥H₀)
+          (latticeAntipode R K Hg H₀ hantipode) fun _ _ => Commute.all _ _) t :
+          ↥H₀) : Hg) =
+        (LinearMap.mul' K Hg)
+          ((HopfAlgebra.antipode K (A := Hg)).lTensor Hg
+            (latticeTensorSquareIncl R K Hg H₀ t)) := by
+      intro t
+      induction t with
+      | zero => simp
+      | tmul a b =>
+          simp only [Algebra.TensorProduct.lift_tmul, AlgHom.coe_id, id_eq,
+            latticeTensorSquareIncl_tmul, LinearMap.lTensor_tmul,
+            LinearMap.mul'_apply, Subalgebra.coe_mul, latticeAntipode_coe]
+      | add u v hu hv => simp only [map_add, Subalgebra.coe_add, hu, hv]
+    simp only [AlgHom.comp_apply]
+    rw [key (Δ x), hΔdef,
+      latticeTensorSquareIncl_latticeComul R K Hg H₀ hfin hcomul x,
+      HopfAlgebra.mul_antipode_lTensor_comul_apply, Algebra.ofId_apply,
+      Subalgebra.coe_algebraMap, IsScalarTower.algebraMap_apply R K Hg, hεdef,
+      algebraMap_latticeCounit R K Hg H₀ hcounit x]
   letI instHopf : HopfAlgebra R ↥H₀ :=
     HopfAlgebra.ofAlgHom (latticeAntipode R K Hg H₀ hantipode) h_anti_r h_anti_l
   -- the generic-fibre identification
@@ -8481,10 +8775,55 @@ theorem exists_hopfOrder_of_latticeClosure_abstract [IsDomain R]
   refine ⟨↥H₀, inferInstance, instHopf, hfin, hflat, ⟨?_⟩⟩
   refine BialgEquiv.ofAlgEquiv
     (AlgEquiv.ofBijective (latticeBaseChange R K Hg H₀) hbij) ?_ ?_
-  · -- counit compatibility (SORRY LEAF)
-    sorry
-  · -- comultiplication compatibility (SORRY LEAF)
-    sorry
+  · -- counit compatibility
+    apply AlgHom.ext
+    intro t
+    simp only [AlgHom.comp_apply, Bialgebra.counitAlgHom_apply]
+    induction t with
+    | zero => simp
+    | tmul q a =>
+        simp only [AlgEquiv.coe_toAlgHom, AlgEquiv.coe_ofBijective]
+        rw [latticeBaseChange_tmul, TensorProduct.counit_tmul, map_smul]
+        have hεa : Coalgebra.counit (R := R) (A := ↥H₀) a = ε a := rfl
+        rw [hεa, hεdef, CommSemiring.counit_apply,
+          ← algebraMap_smul K ((latticeCounit R K Hg H₀ hcounit) a) q,
+          algebraMap_latticeCounit R K Hg H₀ hcounit a, smul_eq_mul,
+          smul_eq_mul, mul_comm]
+    | add u v hu hv => simp only [map_add, hu, hv]
+  · -- comultiplication compatibility
+    apply AlgHom.ext
+    intro t
+    simp only [AlgHom.comp_apply, Bialgebra.comulAlgHom_apply]
+    have key : ∀ (q : K) (s : ↥H₀ ⊗[R] ↥H₀),
+        Algebra.TensorProduct.map
+          (AlgEquiv.ofBijective (latticeBaseChange R K Hg H₀) hbij :
+            (K ⊗[R] ↥H₀) →ₐ[K] Hg)
+          (AlgEquiv.ofBijective (latticeBaseChange R K Hg H₀) hbij :
+            (K ⊗[R] ↥H₀) →ₐ[K] Hg)
+          (TensorProduct.AlgebraTensorModule.tensorTensorTensorComm R K R K
+            K K ↥H₀ ↥H₀ ((1 ⊗ₜ[K] q) ⊗ₜ[R] s)) =
+        q • latticeTensorSquareIncl R K Hg H₀ s := by
+      intro q s
+      induction s with
+      | zero => simp
+      | tmul c d =>
+          rw [TensorProduct.AlgebraTensorModule.tensorTensorTensorComm_tmul,
+            Algebra.TensorProduct.map_tmul]
+          simp only [AlgEquiv.coe_toAlgHom, AlgEquiv.coe_ofBijective]
+          rw [latticeBaseChange_tmul, latticeBaseChange_tmul, one_smul,
+            latticeTensorSquareIncl_tmul, ← TensorProduct.tmul_smul]
+      | add u v hu hv =>
+          simp only [TensorProduct.tmul_add, map_add, hu, hv, smul_add]
+    induction t with
+    | zero => simp
+    | tmul q a =>
+        simp only [AlgEquiv.coe_toAlgHom, AlgEquiv.coe_ofBijective]
+        rw [latticeBaseChange_tmul, TensorProduct.comul_tmul, map_smul]
+        have hΔa : Coalgebra.comul (R := R) (A := ↥H₀) a = Δ a := rfl
+        rw [hΔa, CommSemiring.comul_apply, key q (Δ a), hΔdef,
+          latticeTensorSquareIncl_latticeComul R K Hg H₀ hfin hcomul a]
+    | add u v hu hv => simp only [map_add, hu, hv]
+
 
 end LatticeHopfOrder
 
