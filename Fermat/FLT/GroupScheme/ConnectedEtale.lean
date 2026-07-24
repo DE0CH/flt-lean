@@ -45,6 +45,17 @@ public import Mathlib.RingTheory.HopfAlgebra.Basic
 public import Mathlib.RingTheory.TensorProduct.Finite
 public import Mathlib.RingTheory.AdicCompletion.Topology
 public import Mathlib.Tactic.Module
+-- the Galois/points vocabulary of the shared Oort–Tate `μ`-type node
+-- below: `localInertiaGroup`, the vendored convolution monoid on the
+-- geometric points of a Hopf order, `cyclotomicCharacter`, `ℤ_[p]`
+public import Fermat.FLT.Deformations.RepresentationTheory.GaloisRep
+-- `HopfAlgebra.antipodeAlgHom` and the `WithConv` antipode lemmas,
+-- used in the STATEMENT-adjacent helpers of the Oort–Tate node
+public import Mathlib.RingTheory.HopfAlgebra.Convolution
+-- the convolution/points transport toolkit (`liftEquiv_symm_convMul`,
+-- `vendored_mul_eq_convMul`, `liftEquiv_symm_comp`), proof-body use
+-- only in the displacement-connectedness lemma
+import Fermat.FLT.Deformations.RepresentationTheory.FlatProlongation
 
 @[expose] public section
 
@@ -717,3 +728,338 @@ theorem Bialgebra.exists_connected_counit_idempotent
   exact (sub_eq_zero.mp hz0).symm
 
 end CounitIdempotent
+
+/-! ### The shared Oort–Tate `μ`-type node
+
+The ONE order-`p` group-scheme classification input of the project,
+stated in the neutral Hopf vocabulary of this file (no imports from
+any consumer): a point of the generic fibre of a finite flat Hopf
+order over `𝒪ᵥ ≅ ℤ_p` which is CONNECTED (value `1` on the connected
+counit idempotent), killed by `p`, and whose convolution-cyclic group
+is stable under local inertia, is moved by inertia to its
+`χ_cyc mod p` convolution power — the `μ`-type/Oort–Tate dichotomy at
+absolute ramification `e = 1`.
+
+Consumers (2026-07-24 audit):
+* `Modularity/Interface.lean`,
+  `residual_triangular_sub_character_inertia_dichotomy_of_flat`
+  (Eisenstein pillar E1b-i) — the triangular stable line is
+  prime-field–valued (`χsub = ω^i`), so its cyclic point group is
+  inertia-stable and the node applies verbatim;
+* `HardlyRamified/ModThree.lean`,
+  `inertiaFixed_connected_point_eq_one_at_three` — an inertia-FIXED
+  point has inertia-stable cyclic group with exponent `m = 1`; the
+  node then gives `φ = φ^n` for every `n ≡ χ_cyc(σ) mod 3`, and the
+  surjectivity of `ω` from inertia onto `(ℤ/3)^×` (a fundamental-
+  character input to be supplied by that owner) forces `φ = 1`;
+* `HardlyRamified/Family.lean`,
+  `connected_point_smul_eq_conv_pow_cyclotomicCharacter_of_hopf_package`
+  — the order-`p^k` statement follows by dévissage along a stable
+  filtration with cyclic-stable graded pieces (the `hchar`
+  two-character hypothesis provides the one-dimensionality of the
+  graded pieces); alternatively the proof of this node generalizes.
+-/
+
+namespace OortTate
+
+open WithConv
+
+/-- **The identity–antipode convolution cancels on the left**
+(PROVEN; the `ConnectedEtale`-local copy of the ModThree helper —
+this file is imported BY ModThree, so it cannot consume it):
+`id ⋆ S = 1` in the convolution monoid of a commutative Hopf algebra,
+reduced to the linear-level `LinearMap.id_mul_antipode`. -/
+theorem toConv_id_mul_antipodeAlgHom
+    {R A : Type*} [CommSemiring R] [CommSemiring A] [HopfAlgebra R A] :
+    toConv (AlgHom.id R A) * toConv (HopfAlgebra.antipodeAlgHom R A) =
+      (1 : WithConv (A →ₐ[R] A)) := by
+  apply WithConv.ofConv_injective
+  apply AlgHom.toLinearMap_injective
+  apply WithConv.toConv_injective
+  rw [AlgHom.toLinearMap_convMul, AlgHom.toLinearMap_convOne]
+  simp [LinearMap.id_mul_antipode]
+
+/-- **Convolution right-inverse of a Hopf-algebra point** (PROVEN;
+local copy, see `toConv_id_mul_antipodeAlgHom`): `χ ⋆ (χ ∘ S) = 1`
+for any point `χ : A →ₐ[R] C` of a commutative Hopf algebra with
+values in a commutative algebra — the postcomposition image of
+`id ⋆ S = 1` under `χ`, which distributes over convolution. -/
+theorem toConv_mul_comp_antipodeAlgHom
+    {R A C : Type*} [CommSemiring R] [CommSemiring A] [HopfAlgebra R A]
+    [CommSemiring C] [Algebra R C] (χ : A →ₐ[R] C) :
+    toConv χ * toConv (χ.comp (HopfAlgebra.antipodeAlgHom R A)) =
+      (1 : WithConv (A →ₐ[R] C)) := by
+  have h := AlgHom.comp_convMul_distrib χ (toConv (AlgHom.id R A))
+    (toConv (HopfAlgebra.antipodeAlgHom R A))
+  rw [toConv_id_mul_antipodeAlgHom] at h
+  have h1 : χ.comp ((1 : WithConv (A →ₐ[R] A)).ofConv) =
+      (1 : WithConv (A →ₐ[R] C)).ofConv := by
+    rw [AlgHom.convOne_def, AlgHom.convOne_def, WithConv.ofConv_toConv,
+      WithConv.ofConv_toConv, ← AlgHom.comp_assoc]
+    congr 1
+    refine AlgHom.ext fun r => ?_
+    simp [Algebra.ofId_apply]
+  rw [h1] at h
+  have h2 : χ.comp ((toConv (AlgHom.id R A)).ofConv) = χ := AlgHom.comp_id χ
+  rw [h2] at h
+  exact (WithConv.ofConv_injective h).symm
+
+section GenericPlace
+
+open TensorProduct
+
+variable (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+
+local notation "𝒪ᵍᵥ" => IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v
+local notation "ℚᵍᵥ" => IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v
+local notation "ℚᵍᵥᵃˡᵍ" => AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **Inertia congruence for convolution values** (PROVEN — the
+generic-place statement of the identical at-`3` and at-`p` lemmas of
+`ModThree.lean`/`Family.lean`, transplanted here so that the
+displacement-connectedness lemma below is consumable without touching
+any consumer file): for `σ` in the local inertia group at `v` and two
+`𝒪ᵥ`-points `χ, ψ` of a module-finite Hopf order `G` (whose values
+are automatically integral over `𝒪ᵥ`), the paired lift values of
+`(σ ∘ χ, ψ)` and of `(χ, ψ)` agree on every tensor modulo the maximal
+ideal of the integral closure of `𝒪ᵥ` in `ℚᵥᵃˡᵍ`: inertia moves
+integral values only within the maximal ideal (the DEFINING property
+of `localInertiaGroup`), and the difference on a pure tensor is an
+`𝔪`-multiple of an integral value. -/
+theorem lift_sub_lift_mem_of_localInertiaGroup
+    (G : Type) [CommRing G]
+    [HopfAlgebra 𝒪ᵍᵥ G] [Module.Finite 𝒪ᵍᵥ G]
+    (σ : Field.absoluteGaloisGroup ℚᵍᵥ)
+    (hσ : σ ∈ localInertiaGroup v)
+    (χ ψ : G →ₐ[𝒪ᵍᵥ] ℚᵍᵥᵃˡᵍ) (t : G ⊗[𝒪ᵍᵥ] G) :
+    Algebra.TensorProduct.lift ((σ.toAlgHom.restrictScalars 𝒪ᵍᵥ).comp χ) ψ
+        (fun _ _ => Commute.all _ _) t -
+      Algebra.TensorProduct.lift χ ψ (fun _ _ => Commute.all _ _) t ∈
+      Submodule.map (Algebra.linearMap (IntegralClosure 𝒪ᵍᵥ ℚᵍᵥᵃˡᵍ) ℚᵍᵥᵃˡᵍ)
+        (IsLocalRing.maximalIdeal (IntegralClosure 𝒪ᵍᵥ ℚᵍᵥᵃˡᵍ)) := by
+  haveI : Algebra.IsIntegral 𝒪ᵍᵥ G := Algebra.IsIntegral.of_finite 𝒪ᵍᵥ G
+  induction t using TensorProduct.induction_on with
+  | zero =>
+    simp only [map_zero, sub_self]
+    exact Submodule.zero_mem _
+  | add x y hx hy =>
+    rw [map_add, map_add, add_sub_add_comm]
+    exact Submodule.add_mem _ hx hy
+  | tmul a b =>
+    rw [Algebra.TensorProduct.lift_tmul, Algebra.TensorProduct.lift_tmul]
+    have ha : IsIntegral 𝒪ᵍᵥ (χ a) :=
+      (Algebra.IsIntegral.isIntegral (R := 𝒪ᵍᵥ) a).map χ
+    have hb : IsIntegral 𝒪ᵍᵥ (ψ b) :=
+      (Algebra.IsIntegral.isIntegral (R := 𝒪ᵍᵥ) b).map ψ
+    set xa : IntegralClosure 𝒪ᵍᵥ ℚᵍᵥᵃˡᵍ := ⟨χ a, ha⟩
+    set xb : IntegralClosure 𝒪ᵍᵥ ℚᵍᵥᵃˡᵍ := ⟨ψ b, hb⟩
+    have hin := AddSubgroup.mem_inertia.mp hσ xa
+    rw [Submodule.mem_toAddSubgroup] at hin
+    have hval : algebraMap (IntegralClosure 𝒪ᵍᵥ ℚᵍᵥᵃˡᵍ) ℚᵍᵥᵃˡᵍ
+        (σ • xa - xa) = σ (χ a) - χ a := by
+      rw [map_sub]
+      congr 1
+    have hkey : ((σ.toAlgHom.restrictScalars 𝒪ᵍᵥ).comp χ) a * ψ b -
+        χ a * ψ b =
+        xb • (algebraMap (IntegralClosure 𝒪ᵍᵥ ℚᵍᵥᵃˡᵍ) ℚᵍᵥᵃˡᵍ
+          (σ • xa - xa)) := by
+      rw [hval, Algebra.smul_def]
+      show σ (χ a) * ψ b - χ a * ψ b = ψ b * (σ (χ a) - χ a)
+      ring
+    rw [hkey]
+    exact Submodule.smul_mem _ _ (Submodule.mem_map_of_mem hin)
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **The inertia displacement of a point is connected** (PROVEN —
+the étale half of the connected–étale dichotomy, generic in the
+place; the proof is the displacement block of the PROVEN ModThree and
+Family assemblies, extracted): if `δ ⋆ φ = σ • φ` for a local inertia
+element `σ` — i.e. `δ` is the displacement `(σ∘φ) ⋆ φ⁻¹` — then `δ`
+takes the value `1` on any counit-one idempotent `e₀`: its value on
+`e₀` is an idempotent of the field `ℚᵥᵃˡᵍ` (hence `0` or `1`)
+congruent to the value `1` of `φ ⋆ φ⁻¹ = 1` modulo the maximal ideal
+of the integral closure (`lift_sub_lift_mem_of_localInertiaGroup` —
+inertia moves integral values only within `𝔪`), and `0 ≡ 1 mod 𝔪` is
+impossible. Conceptually: the étale quotient of the model has
+unramified points, so inertia displacements die in it and land in the
+connected component. -/
+theorem displacement_point_apply_idempotent_eq_one
+    (G : Type) [CommRing G]
+    [HopfAlgebra 𝒪ᵍᵥ G] [Module.Finite 𝒪ᵍᵥ G]
+    (e₀ : G) (he₀ : IsIdempotentElem e₀)
+    (hε₀ : Coalgebra.counit (R := 𝒪ᵍᵥ) e₀ = (1 : 𝒪ᵍᵥ))
+    (σ : Field.absoluteGaloisGroup ℚᵍᵥ)
+    (hσ : σ ∈ localInertiaGroup v)
+    (φ δ : ℚᵍᵥ ⊗[𝒪ᵍᵥ] G →ₐ[ℚᵍᵥ] ℚᵍᵥᵃˡᵍ)
+    (hδ : δ * φ = σ • φ) :
+    δ ((1 : ℚᵍᵥ) ⊗ₜ[𝒪ᵍᵥ] e₀) = 1 := by
+  classical
+  set χm : G →ₐ[𝒪ᵍᵥ] ℚᵍᵥᵃˡᵍ :=
+    (AlgHom.liftEquiv 𝒪ᵍᵥ ℚᵍᵥ G ℚᵍᵥᵃˡᵍ).symm φ with hχm
+  set δd : G →ₐ[𝒪ᵍᵥ] ℚᵍᵥᵃˡᵍ :=
+    (AlgHom.liftEquiv 𝒪ᵍᵥ ℚᵍᵥ G ℚᵍᵥᵃˡᵍ).symm δ with hδd
+  have hvale : δd e₀ = δ ((1 : ℚᵍᵥ) ⊗ₜ[𝒪ᵍᵥ] e₀) := by
+    rw [hδd, AlgHom.liftEquiv_symm_apply]
+  rw [← hvale]
+  -- transport `δ ⋆ φ = σ∘φ` to the `𝒪ᵥ`-points
+  have h3 := congrArg (AlgHom.liftEquiv 𝒪ᵍᵥ ℚᵍᵥ G ℚᵍᵥᵃˡᵍ).symm hδ
+  rw [vendored_mul_eq_convMul, liftEquiv_symm_convMul] at h3
+  rw [show σ • φ =
+      (σ.toAlgHom : ℚᵍᵥᵃˡᵍ →ₐ[ℚᵍᵥ] ℚᵍᵥᵃˡᵍ).comp φ from
+    AlgHom.ext fun _ => rfl, liftEquiv_symm_comp] at h3
+  rw [← hχm, ← hδd] at h3
+  have h4 : toConv δd * toConv χm =
+      toConv ((σ.toAlgHom.restrictScalars 𝒪ᵍᵥ).comp χm) := by
+    have h4a := congrArg WithConv.toConv h3
+    rwa [WithConv.toConv_ofConv] at h4a
+  -- cancel `χ` on the right through the antipode inverse
+  have h5 : toConv δd =
+      toConv ((σ.toAlgHom.restrictScalars 𝒪ᵍᵥ).comp χm) *
+        toConv (χm.comp (HopfAlgebra.antipodeAlgHom 𝒪ᵍᵥ G)) := by
+    rw [← h4, mul_assoc, toConv_mul_comp_antipodeAlgHom, mul_one]
+  have h6 : δd e₀ =
+      Algebra.TensorProduct.lift ((σ.toAlgHom.restrictScalars 𝒪ᵍᵥ).comp χm)
+        (χm.comp (HopfAlgebra.antipodeAlgHom 𝒪ᵍᵥ G))
+        (fun _ _ => Commute.all _ _) (Coalgebra.comul (R := 𝒪ᵍᵥ) e₀) := by
+    have h7 := congrArg WithConv.ofConv h5
+    rw [WithConv.ofConv_toConv] at h7
+    rw [h7]
+    exact AlgHom.convMul_apply _ _ e₀
+  -- the corresponding value of `χ ⋆ χ⁻¹ = 1` is `ε(e₀) = 1`
+  have h8 : Algebra.TensorProduct.lift χm
+      (χm.comp (HopfAlgebra.antipodeAlgHom 𝒪ᵍᵥ G))
+      (fun _ _ => Commute.all _ _) (Coalgebra.comul (R := 𝒪ᵍᵥ) e₀) = 1 := by
+    have h9 := AlgHom.convMul_apply (toConv χm)
+      (toConv (χm.comp (HopfAlgebra.antipodeAlgHom 𝒪ᵍᵥ G))) e₀
+    rw [toConv_mul_comp_antipodeAlgHom] at h9
+    rw [← h9]
+    show algebraMap 𝒪ᵍᵥ ℚᵍᵥᵃˡᵍ (Coalgebra.counit (R := 𝒪ᵍᵥ) e₀) = 1
+    rw [hε₀, map_one]
+  -- the inertia congruence: `δ(e₀) ≡ 1` modulo the maximal ideal
+  have h10 := lift_sub_lift_mem_of_localInertiaGroup v G σ hσ χm
+    (χm.comp (HopfAlgebra.antipodeAlgHom 𝒪ᵍᵥ G))
+    (Coalgebra.comul (R := 𝒪ᵍᵥ) e₀)
+  rw [h8, ← h6] at h10
+  -- the value is an idempotent of a field, hence `0` or `1`; the
+  -- congruence rules out `0`
+  have h11 : δd e₀ * δd e₀ = δd e₀ := by
+    rw [← map_mul, he₀.eq]
+  have h12 : δd e₀ * (δd e₀ - 1) = 0 := by
+    rw [mul_sub, h11, mul_one, sub_self]
+  rcases mul_eq_zero.mp h12 with h13 | h13
+  · exfalso
+    rw [h13, zero_sub] at h10
+    have h14 : (1 : ℚᵍᵥᵃˡᵍ) ∈
+        Submodule.map (Algebra.linearMap (IntegralClosure 𝒪ᵍᵥ ℚᵍᵥᵃˡᵍ) ℚᵍᵥᵃˡᵍ)
+          (IsLocalRing.maximalIdeal (IntegralClosure 𝒪ᵍᵥ ℚᵍᵥᵃˡᵍ)) := by
+      have h15 := Submodule.neg_mem _ h10
+      rwa [neg_neg] at h15
+    obtain ⟨m', hm', hm1⟩ := h14
+    have hm2 : m' = 1 := by
+      apply Subtype.ext
+      exact hm1
+    rw [hm2] at hm'
+    exact (IsLocalRing.maximalIdeal.isMaximal
+      (IntegralClosure 𝒪ᵍᵥ ℚᵍᵥᵃˡᵍ)).ne_top
+      (Ideal.eq_top_of_isUnit_mem _ hm' isUnit_one)
+  · exact sub_eq_zero.mp h13
+
+end GenericPlace
+
+section CyclotomicNode
+
+variable {p : ℕ} [hp : Fact p.Prime]
+
+local notation "𝒪ᵖᵍᵥ" => IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : p.Prime))
+local notation "ℚᵖᵍᵥ" => IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : p.Prime))
+local notation "ℚᵖᵍᵥᵃˡᵍ" => AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : p.Prime)))
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **The Oort–Tate `μ`-type node** (sorry node, 2026-07-24 — THE
+shared order-`p` group-scheme classification input of the tree; see
+the section docstring for the three consumers): a geometric point `φ`
+of the generic fibre of a finite flat Hopf order `G` over
+`𝒪ᵥ ≅ ℤ_p` (`p` ODD) which
+
+* lies in the CONNECTED component — value `1` on the connected counit
+  idempotent `e₀` (`hφe`, with `hprim₀`/`hcomul₀` the primitivity and
+  group-law-closure of the component),
+* is killed by `p` in the convolution group (`hord`), and
+* generates an inertia-STABLE cyclic subgroup — every local inertia
+  element moves `φ` to one of its convolution powers (`hstab`, the
+  ONE-DIMENSIONALITY input placing the tame character in level 1)
+
+is moved by any local inertia element `σ` to its `n`-th convolution
+power for EVERY `n ≡ χ_cyc(σ̃) mod p`.
+
+Intended proof (Oort–Tate, *Group schemes of prime order*, Ann. Sci.
+ÉNS 1970; Raynaud, *Schémas en groupes de type `(p, …, p)`*, Bull.
+SMF 102 (1974), 3.3.6/3.4.3; Serre, Duke Math. J. 54 (1987), §2.4,
+§2.8 prop. 8; Tate, "Finite flat group schemes", in
+Cornell–Silverman–Stevens): if `φ = 1` the statement is trivial
+(`σ • 1 = 1 = 1^n`); otherwise `φ` has exact convolution order `p`.
+Base-change the model to the completed maximal unramified extension
+`𝒪^nr = W(𝔽̄_p)` — still absolutely unramified, `e = 1`, with absolute
+Galois group the inertia subgroup. By `hstab` the cyclic subgroup
+`⟨φ⟩ ≅ ℤ/p` of the generic-fibre points is Galois-stable over
+`ℚ_p^nr`, so its schematic closure `C` is a finite flat closed
+subgroup scheme of the model over `𝒪^nr` of order `p`, killed by `p`
+(Tate–Raynaud closure). `hφe` and the group-law absorption `hcomul₀`
+place every power of `φ` in the connected component, so `C` lands in
+the local corner `Spec (G·e₀)` and is CONNECTED. At `e = 1 < p − 1`
+the Oort–Tate classification of order-`p` group schemes leaves
+exactly `ℤ/p` (étale — excluded by connectedness of the nontrivial
+`C`) and `μ_p` (multiplicative); on `μ_p`-points inertia acts by the
+mod-`p` cyclotomic character, i.e. raises the value at a group-like
+to the `χ_cyc mod p` power — reading the action off the points of `C`
+gives `σ • φ = φ^n` for any `n ≡ χ_cyc(σ̃) mod p`. The inertia-
+stability input is NOT redundant: for the `p`-torsion of a
+supersingular elliptic curve over `ℤ_p` (connected, killed by `p`,
+`e = 1`) tame inertia acts through the level-2 fundamental characters
+of `𝔽_{p²}^×`, which is not a power map and stabilizes no line — so
+the bare statement without `hstab` is FALSE, and any consumer must
+supply a one-dimensionality input. Soundness: the hypothesis set is
+inhabited (the points of `μ_p` over `ℤ_p` with `e₀` its connected
+counit idempotent satisfy all of them, as do those of `ℤ/p` with
+`φ = 1` — the only connected-component point of an étale-times-local
+factorization), and the conclusion holds for every inhabitant by the
+classification cited. The conclusion is well-posed across the
+residues `n mod p` since `φ^p = 1`. -/
+theorem connected_cyclic_point_smul_eq_conv_pow_cyclotomicCharacter
+    (hpodd : Odd p)
+    (G : Type) [CommRing G]
+    [HopfAlgebra 𝒪ᵖᵍᵥ G] [Module.Flat 𝒪ᵖᵍᵥ G] [Module.Finite 𝒪ᵖᵍᵥ G]
+    (e₀ : G) (he₀ : IsIdempotentElem e₀)
+    (hε₀ : Coalgebra.counit (R := 𝒪ᵖᵍᵥ) e₀ = (1 : 𝒪ᵖᵍᵥ))
+    (hprim₀ : ∀ x : G, IsIdempotentElem x → x * e₀ = 0 ∨ x * e₀ = e₀)
+    (hcomul₀ : Coalgebra.comul (R := 𝒪ᵖᵍᵥ) e₀ *
+      (e₀ ⊗ₜ[𝒪ᵖᵍᵥ] e₀) = e₀ ⊗ₜ[𝒪ᵖᵍᵥ] e₀)
+    (φ : ℚᵖᵍᵥ ⊗[𝒪ᵖᵍᵥ] G →ₐ[ℚᵖᵍᵥ] ℚᵖᵍᵥᵃˡᵍ)
+    (hφe : φ ((1 : ℚᵖᵍᵥ) ⊗ₜ[𝒪ᵖᵍᵥ] e₀) = 1)
+    (hord : φ ^ p = 1)
+    (hstab : ∀ τ ∈ localInertiaGroup
+        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+          (Fact.out : p.Prime)),
+      ∃ m : ℕ, τ • φ = φ ^ m)
+    (σ : Field.absoluteGaloisGroup ℚᵖᵍᵥ)
+    (hσ : σ ∈ localInertiaGroup
+      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+        (Fact.out : p.Prime)))
+    (n : ℕ)
+    (hn : ((cyclotomicCharacter (AlgebraicClosure ℚ) p
+        ((Field.absoluteGaloisGroup.map (algebraMap ℚ ℚᵖᵍᵥ)
+          σ).toRingEquiv) : ℤ_[p]ˣ) : ℤ_[p]) - (n : ℤ_[p]) ∈
+      Ideal.span {((p : ℕ) : ℤ_[p])}) :
+    σ • φ = φ ^ n :=
+  sorry
+
+end CyclotomicNode
+
+end OortTate
