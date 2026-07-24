@@ -8946,21 +8946,48 @@ lemma baseChange_coeffs_mem_centered (𝒪 : ValuationSubring Ksep)
     rw [ha]
     exact mem_centered_algebraMap R K Ksep 𝒪 hc _
 
-/-- **Some valuation subring of `Kˢᵉᵖ` is centered on `R`** (sorry node —
-glue for the Katz–Mazur kernel-functions leaf; the universe constraint of
-`exists_valuationSubring_integralClosure_center` blocks the trivial
-instantiation `L = K`, so this is proved directly). Intended proof:
-Chevalley's extension theorem (`LocalSubring.exists_le_valuationSubring`)
-applied to the image of the local ring `R` in `Kˢᵉᵖ` gives a valuation
-subring `𝒪` DOMINATING it; its trace on `K` is an overring of the DVR `R`
-whose maximal ideal survives (a uniformizer's image is a nonunit of `𝒪` by
-domination), so the trace is exactly `R.range`: an `s ∈ K ∖ R.range` has
+set_option linter.unusedSectionVars false in
+/-- **Some valuation subring of `Kˢᵉᵖ` is centered on `R`** (PROVEN —
+the universe constraint of `exists_valuationSubring_integralClosure_center`
+blocks the trivial instantiation `L = K`, so this is proved directly):
+Chevalley's extension theorem in the factored form
+`IsLocalRing.exists_factor_valuationRing` gives a valuation subring `𝒪`
+containing the image of `R` with the corestriction a LOCAL map; the trace
+on `K` is then exactly `R.range` by the valuation-ring dichotomy of the
+DVR `R` in its fraction field: an `s ∈ K ∖ R.range` has
 `s⁻¹ = algebraMap r₀` with `r₀` a nonunit, and `s ∈ 𝒪` would make the
-image of `r₀` a unit of `𝒪`. -/
+image of `r₀` a unit of `𝒪`, contradicting locality. -/
 lemma exists_centered_valuationSubring :
     ∃ 𝒪 : ValuationSubring Ksep,
       (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range := by
-  sorry
+  obtain ⟨𝒪, hmem, hloc⟩ :=
+    IsLocalRing.exists_factor_valuationRing (algebraMap R Ksep)
+  refine ⟨𝒪, ?_⟩
+  ext s
+  constructor
+  · intro hs
+    have hs' : algebraMap K Ksep s ∈ 𝒪 := hs
+    rcases eq_or_ne s 0 with rfl | hs0
+    · exact ⟨0, map_zero _⟩
+    rcases ValuationRing.isInteger_or_isInteger R s with ⟨r, hr⟩ | ⟨r₀, hr₀⟩
+    · exact ⟨r, hr⟩
+    by_cases hu : IsUnit r₀
+    · obtain ⟨u, rfl⟩ := hu
+      refine ⟨(u⁻¹ : Rˣ), ?_⟩
+      have h1 : algebraMap R K ((u⁻¹ : Rˣ) : R) = (algebraMap R K u)⁻¹ := by
+        refine eq_inv_of_mul_eq_one_left ?_
+        rw [← map_mul, Units.inv_mul, map_one]
+      rw [h1, hr₀, inv_inv]
+    · exfalso
+      refine hu (hloc.map_nonunit r₀ (IsUnit.of_mul_eq_one
+        (⟨algebraMap K Ksep s, hs'⟩ : 𝒪) (Subtype.ext ?_)))
+      show algebraMap R Ksep r₀ * algebraMap K Ksep s = 1
+      rw [IsScalarTower.algebraMap_apply R K Ksep, hr₀, ← map_mul,
+        inv_mul_cancel₀ hs0, map_one]
+  · rintro ⟨r, rfl⟩
+    show algebraMap K Ksep (algebraMap R K r) ∈ 𝒪
+    rw [← IsScalarTower.algebraMap_apply]
+    exact hmem r
 
 /-- An element of `Kˢᵉᵖ` integral over `R` lies in every centered valuation
 subring: push the monic witness into the (integrally closed) subring. -/
@@ -9073,29 +9100,176 @@ lemma WeierstrassCurve.val_ordinate_sq_of_abscissa_notMem
   rw [sq]
   exact hL.symm
 
-/-- **The centered-integrality bridge** (sorry node — stage-B endgame of the
-Katz–Mazur kernel-functions leaf): an element of `Kˢᵉᵖ` lying in EVERY
-valuation subring centered on `R` is integral over `R`. Intended proof: by
+set_option linter.unusedSectionVars false in
+set_option maxHeartbeats 1000000 in
+/-- **The centered-integrality bridge** (PROVEN): an element of `Kˢᵉᵖ`
+lying in EVERY valuation subring centered on `R` is integral over `R`. By
 `iInf_valuationSubring_superset` the intersection of all valuation subrings
-containing the image of `R` is the integral closure of (the subring closure
-of) that image, so it suffices to see that a valuation subring `V ⊇ im R`
-that is NOT centered contains everything anyway: its trace
-`V.comap (algebraMap K Ksep)` is an overring of the DVR `R` inside `K`,
-hence `R.range` (centered) or all of `K` (if some `s ∈ trace ∖ R.range`,
-then `s⁻¹` is a nonunit of `R`, so `π ∣ s⁻¹` for a uniformizer `π`, so
-`π⁻¹ = (s⁻¹/π)·s ∈ trace`, and every element of `K` is `r·π^{-j}`); in the
-latter case the valuation of `V` is trivial on `K`, hence trivial on the
-algebraic extension `Kˢᵉᵖ` (value groups of algebraic extensions embed in
-the divisible hull), i.e. `V = ⊤` — concretely, every `z ∈ Kˢᵉᵖ` is
-integral over `K ⊆ V` and valuation subrings are integrally closed.
-Finally descend integrality over the image subring to integrality over `R`
-along the surjection `R → im R` (lift the monic witness coefficientwise). -/
+containing the image of `R` is the integral closure of that image, so it
+suffices to see that a valuation subring `V ⊇ im R` that is NOT centered
+contains everything anyway: some `s ∈ trace ∖ R.range` has `s⁻¹` a nonunit
+numerator, an associate of `π^n` for a uniformizer `π`, forcing
+`v(π) = 1`; every denominator of `K` is then a `V`-unit, so `im K ⊆ V`,
+and `z` — separable, hence integral over `K` — lands in the integrally
+closed `V`. Finally integrality descends along the surjection `R → im R`
+by lifting the monic witness coefficientwise. -/
 theorem isIntegral_of_forall_mem_centered (z : Ksep)
     (hz : ∀ 𝒪 : ValuationSubring Ksep,
       (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range →
       z ∈ 𝒪) :
     _root_.IsIntegral R z := by
-  sorry
+  classical
+  obtain ⟨π, hπirr⟩ := IsDiscreteValuationRing.exists_irreducible R
+  -- `z` lies in EVERY valuation subring containing the image of `R`
+  have hall : ∀ V : ValuationSubring Ksep,
+      (∀ r : R, algebraMap R Ksep r ∈ V) → z ∈ V := by
+    intro V hV
+    by_cases hcen : (V.comap (algebraMap K Ksep)).toSubring =
+      (algebraMap R K).range
+    · exact hz V hcen
+    -- not centered: the trace strictly contains the image of `R`
+    have hsub : (algebraMap R K).range ≤
+        (V.comap (algebraMap K Ksep)).toSubring := by
+      rintro _ ⟨r, rfl⟩
+      show algebraMap K Ksep (algebraMap R K r) ∈ V
+      rw [← IsScalarTower.algebraMap_apply]
+      exact hV r
+    obtain ⟨s, hsV, hsR⟩ : ∃ s : K, algebraMap K Ksep s ∈ V ∧
+        s ∉ (algebraMap R K).range := by
+      by_contra hcon
+      push Not at hcon
+      exact hcen (le_antisymm (fun s hs => hcon s hs) hsub)
+    have hs0 : s ≠ 0 := fun h => hsR (h ▸ ⟨0, map_zero _⟩)
+    obtain ⟨r₀, hr₀⟩ : ∃ r₀ : R, algebraMap R K r₀ = s⁻¹ := by
+      rcases ValuationRing.isInteger_or_isInteger R s with ⟨r, hr⟩ | h
+      · exact absurd ⟨r, hr⟩ hsR
+      · exact h
+    have hr₀0 : r₀ ≠ 0 := by
+      intro h
+      rw [h, map_zero] at hr₀
+      exact hs0 (inv_eq_zero.mp hr₀.symm)
+    have hr₀u : ¬IsUnit r₀ := by
+      intro hu
+      obtain ⟨u, rfl⟩ := hu
+      refine hsR ⟨(u⁻¹ : Rˣ), ?_⟩
+      have h1 : algebraMap R K ((u⁻¹ : Rˣ) : R) = (algebraMap R K u)⁻¹ :=
+        eq_inv_of_mul_eq_one_left (by rw [← map_mul, Units.inv_mul, map_one])
+      rw [h1, hr₀, inv_inv]
+    -- elements of the value group: `≤ 1` factors of a product `1` are `1`
+    have hpair : ∀ x y : ValuationSubring.ValueGroup V, x ≤ 1 → y ≤ 1 →
+        x * y = 1 → x = 1 := by
+      intro x y hx hy hxy
+      rcases hx.lt_or_eq with hlt | h
+      · exact absurd hxy (ne_of_lt (lt_of_le_of_lt
+          (by calc x * y ≤ x * 1 := mul_le_mul_right hy x
+              _ = x := mul_one x) hlt))
+      · exact h
+    have hRle1 : ∀ r : R, V.valuation (algebraMap R Ksep r) ≤ 1 :=
+      fun r => (V.valuation_le_one_iff _).mpr (hV r)
+    -- images of units of `R` have valuation `1`
+    have hvu : ∀ w : Rˣ, V.valuation (algebraMap R Ksep (w : R)) = 1 := by
+      intro w
+      refine hpair _ (V.valuation (algebraMap R Ksep ((w⁻¹ : Rˣ) : R)))
+        (hRle1 _) (hRle1 _) ?_
+      rw [← map_mul, ← map_mul, ← Units.val_mul, mul_inv_cancel, Units.val_one,
+        map_one, map_one]
+    -- the image of the uniformizer has valuation `1`
+    obtain ⟨n, u, hnu⟩ : ∃ (n : ℕ) (u : Rˣ), r₀ * u = π ^ n :=
+      IsDiscreteValuationRing.associated_pow_irreducible hr₀0 hπirr
+    have hn0 : n ≠ 0 := by
+      intro h
+      rw [h, pow_zero] at hnu
+      exact hr₀u (IsUnit.of_mul_eq_one _ hnu)
+    have hvr₀ : V.valuation (algebraMap R Ksep r₀) = 1 := by
+      refine hpair _ (V.valuation (algebraMap K Ksep s)) (hRle1 _)
+        ((V.valuation_le_one_iff _).mpr hsV) ?_
+      rw [← map_mul, IsScalarTower.algebraMap_apply R K Ksep, ← map_mul,
+        hr₀, inv_mul_cancel₀ hs0, map_one, map_one]
+    have hvπn : V.valuation (algebraMap R Ksep π) ^ n = 1 := by
+      have h1 := congrArg (fun r => V.valuation (algebraMap R Ksep r)) hnu
+      simp only [map_mul, map_pow] at h1
+      rw [hvr₀, hvu u, one_mul] at h1
+      exact h1.symm
+    have hvπ : V.valuation (algebraMap R Ksep π) = 1 := by
+      rcases (hRle1 π).lt_or_eq with hlt | h
+      · exact absurd hvπn (by
+          have := pow_lt_one' hlt hn0
+          exact ne_of_lt this)
+      · exact h
+    -- every element of `K` maps into `V`
+    have hKV : ∀ w : K, algebraMap K Ksep w ∈ V := by
+      intro w
+      rw [← V.valuation_le_one_iff]
+      obtain ⟨x, y, hy, hxy⟩ := IsFractionRing.div_surjective (A := R) w
+      have hy0 : y ≠ 0 := nonZeroDivisors.ne_zero hy
+      have hyK : algebraMap R K y ≠ 0 := fun h =>
+        hy0 (IsFractionRing.injective R K (h.trans (map_zero _).symm))
+      have hAw : algebraMap K Ksep w * algebraMap R Ksep y =
+          algebraMap R Ksep x := by
+        rw [IsScalarTower.algebraMap_apply R K Ksep,
+          IsScalarTower.algebraMap_apply R K Ksep, ← map_mul, ← hxy,
+          div_mul_cancel₀ _ hyK]
+      have hvy : V.valuation (algebraMap R Ksep y) = 1 := by
+        obtain ⟨ny, uy, hyu⟩ :=
+          IsDiscreteValuationRing.associated_pow_irreducible hy0 hπirr
+        have h1 := congrArg (fun r => V.valuation (algebraMap R Ksep r)) hyu
+        simp only [map_mul, map_pow] at h1
+        rw [hvu uy, mul_one, hvπ, one_pow] at h1
+        exact h1
+      have h2 := congrArg (V.valuation) hAw
+      rw [map_mul, hvy, mul_one] at h2
+      rw [h2]
+      exact hRle1 x
+    -- `z` is integral over `K`, hence lies in the integrally closed `V`
+    haveI : Algebra.IsAlgebraic K Ksep := Algebra.IsSeparable.isAlgebraic K Ksep
+    have hzK : IsIntegral K z := (Algebra.IsAlgebraic.isAlgebraic z).isIntegral
+    obtain ⟨p, hp, hp0⟩ := hzK
+    set φ : K →+* V := (algebraMap K Ksep).codRestrict V.toSubring hKV with hφ
+    have h1 : _root_.IsIntegral (↥V) z := by
+      refine ⟨p.map φ, hp.map φ, ?_⟩
+      rw [Polynomial.eval₂_map]
+      have hcomp : (algebraMap ↥V Ksep).comp φ = algebraMap K Ksep := by
+        ext r
+        rfl
+      rw [hcomp]
+      exact hp0
+    obtain ⟨w, hw⟩ := IsIntegrallyClosed.isIntegral_iff.mp h1
+    rw [← hw]
+    exact w.2
+  -- membership in the intersection = the integral closure of the image
+  have hmem : z ∈ (integralClosure (Subring.closure
+      (Set.range (algebraMap R Ksep))) Ksep).toSubring := by
+    rw [← iInf_valuationSubring_superset, Subring.mem_iInf]
+    rintro ⟨V, hVs⟩
+    exact hall V fun r => hVs ⟨r, rfl⟩
+  have hclos : Subring.closure (Set.range (algebraMap R Ksep)) =
+      (algebraMap R Ksep).range := by
+    rw [← RingHom.coe_range, Subring.closure_eq]
+  rw [hclos] at hmem
+  -- descend integrality along the surjection `R → im R`
+  have hmem' : _root_.IsIntegral (↥(algebraMap R Ksep).range) z := hmem
+  obtain ⟨p, hpmon, hp0⟩ := hmem'
+  haveI : Nontrivial ↥(algebraMap R Ksep).range :=
+    ⟨⟨0, 1, fun hc => zero_ne_one (α := Ksep) (congrArg Subtype.val hc)⟩⟩
+  have hlift : p ∈ Polynomial.lifts (algebraMap R Ksep).rangeRestrict := by
+    rw [Polynomial.lifts_iff_coeff_lifts]
+    intro k
+    obtain ⟨r, hr⟩ := RingHom.mem_range.mp (p.coeff k).2
+    exact ⟨r, Subtype.ext hr⟩
+  obtain ⟨q, hq, -, hqmon⟩ :=
+    Polynomial.lifts_and_degree_eq_and_monic hlift hpmon
+  refine ⟨q, hqmon, ?_⟩
+  have hcomp : (algebraMap (↥(algebraMap R Ksep).range) Ksep).comp
+      (algebraMap R Ksep).rangeRestrict = algebraMap R Ksep := by
+    ext r
+    rfl
+  calc Polynomial.eval₂ (algebraMap R Ksep) z q
+      = Polynomial.eval₂ ((algebraMap (↥(algebraMap R Ksep).range) Ksep).comp
+          (algebraMap R Ksep).rangeRestrict) z q := by rw [hcomp]
+    _ = Polynomial.eval₂ (algebraMap (↥(algebraMap R Ksep).range) Ksep) z
+          (q.map (algebraMap R Ksep).rangeRestrict) :=
+        (Polynomial.eval₂_map _ _ _).symm
+    _ = 0 := by rw [hq]; exact hp0
 
 /-- **Integrality of the monomial-section values**: with an avoiding
 denominator `h` (monic, `deg ≥ 2`, unit values on integral torsion
