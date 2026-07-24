@@ -1281,53 +1281,141 @@ theorem char_eq_one_of_mem_localInertiaGroup_two
       Polynomial.eval_C, Polynomial.eval_one, sub_self, mul_zero] at h
     rwa [mul_self_eq_zero, sub_eq_zero] at h
 
-/-- **The per-level Raynaud trace congruence at `p`** (sorry node,
-isolated 2026-07-24 — the group-scheme content of
-`char_add_char_eq_one_add_cyclotomicCharacter_of_mem_localInertiaGroup_p`
-below, whose linear-algebra/topology/level-passage assembly is PROVEN;
-stated at the SAME package level as the connected–étale leaves
-`exists_connectedEtale_subgroup_of_hopf_package` in ModThree and the
-two Hopf-package Fontaine cores in Threeadic, so that the flat-cluster
-owner's eventual connected–étale/Raynaud machinery discharges the whole
-family): given an EXPLICIT finite flat Hopf algebra `G` over
-`𝒪ᵥ ≅ ℤ_p` with étale generic fibre whose geometric points are
-`Γ ℚ_pᵥ`-equivariantly identified with the space `(R ⧸ I) ⊗[R] V` of
-the congruence quotient `ρ.baseChange (R ⧸ I)` (the witness packaged
-by `GaloisRep.HasFlatProlongationAt`, extracted by the consumer from
-`hρ.isFlat` at the open ideal `I`), the trace of `ρ` at (the image in
-`G_ℚ` of) a local inertia element `σ` at `p` is congruent to
-`1 + χ_cyc(σ̃)` modulo `I`. Intended proof (Raynaud 1974, *Schémas en
-groupes de type `(p, …, p)`*; Serre, Duke 1987, §4.1; Fontaine; the
-Fontaine/Raynaud material in Cornell–Silverman–Stevens):
+/-- **The connected–étale cyclotomic subgroup of a Hopf package at
+`p`** (sorry node, isolated 2026-07-24 — the Raynaud/Fontaine
+group-scheme core of the per-level trace congruence
+`trace_sub_one_add_cyclotomicCharacter_mem_of_hopf_package` below,
+whose Cayley–Hamilton trace bookkeeping is PROVEN there; stated in the
+SAME package shape as the ModThree connected–étale leaf
+`exists_connectedEtale_subgroup_of_hopf_package` and the two Threeadic
+Hopf-package Fontaine cores, so that the flat-cluster owner's
+connected–étale/Raynaud machinery — the proven generic idempotent
+package `Bialgebra.exists_connected_counit_idempotent` and its
+consumers — discharges the whole family): given the explicit finite
+flat Hopf package for the congruence quotient `ρ.baseChange (R ⧸ I)`
+at `p`, the congruence space carries an additive subgroup `U` —
+intended: the image under `fG` of the geometric points of the
+connected component `G⁰ ⊆ Spec G` (the points valued `1` on the
+connected counit idempotent, exactly as in the PROVEN ModThree
+assembly) — such that for every `σ` in the local inertia at `p`:
 
-* *Brauer–Nesbitt localization.* By `hchar` the trace function of
-  `ρ ⊗ ℚ̄_p` is `χ₁ + χ₂`, a sum of continuous multiplicative
-  characters, so the semisimplification of `ρ ⊗ ℚ̄_p` restricted to
-  the decomposition group at `p` is `χ₁ ⊕ χ₂` — abelian. Hence the
-  reduction `(ρ mod I)|_{G_p}` — the geometric points of the generic
-  fibre of `Spec G` under `fG` — has abelian semisimplification too,
-  excluding the level-two (fundamental-characters-of-level-2,
-  supersingular) branch of Raynaud's classification: every
-  Jordan–Hölder factor of the generic fibre of `Spec G` is a
-  character.
-* *Raynaud dichotomy on the factors.* Each graded piece of the
-  connected–étale sequence of `Spec G` is a finite flat group scheme
-  over `ℤ_p` with absolute ramification `e = 1 < p − 1` (`p` odd via
-  `hpodd`, the same μ-type/étale-type dichotomy recorded in the
-  ModThree/Threeadic package leaves): the étale part carries trivial
-  inertia action (its points live over the maximal unramified
-  extension), and the connected part is of multiplicative type with
-  inertia acting through `χ_cyc` (Cartier duality against the étale
-  part, pinned by the cyclotomic determinant `hρ.det`); Raynaud's
-  `e < p − 1` rigidity forbids any other inertia character on a
-  one-dimensional factor.
-* *Trace bookkeeping.* The rank is `2` (`hv`), the two factors carry
-  the inertia characters `1` and `χ_cyc mod I` in some order, so the
-  trace of `(ρ mod I)(σ̃)` is `1 + χ_cyc(σ̃) mod I`; the trace
-  commutes with the base change `R → R ⧸ I`
-  (`LinearMap.trace_baseChange`), giving the stated `R`-level
-  congruence (`hZinj`/`hRinj` transfer the `ℚ̄_p`-level abelianness
-  down to `R` and back). -/
+* (i) every inertia displacement `ρ̄(σ̃)m − m` lies in `U`: the étale
+  quotient of the connected–étale sequence of `Spec G` is finite étale
+  over the henselian `ℤ_p`, so its points live over the maximal
+  unramified extension and inertia fixes them; by left-exactness of
+  points the displacement dies in the étale points and lands in the
+  connected points (in the points-of-Hopf-algebras spelling this is
+  the inertia-congruence/idempotent-dichotomy argument proven at `3`
+  in `exists_connectedEtale_subgroup_of_hopf_package`, generic over
+  the base once `lift_sub_lift_mem_of_localInertiaGroup_three` is
+  restated at `p`);
+* (ii) the inertia acts on `U` through the EXACT cyclotomic scalar
+  `χ_cyc(σ̃) mod I`. Intended proof (Raynaud 1974, *Schémas en groupes
+  de type `(p, …, p)`*; Serre, Duke 1987, §4.1; Fontaine; the
+  Fontaine/Raynaud material in Cornell–Silverman–Stevens): by `hchar`
+  the trace function of `ρ ⊗ ℚ̄_p` on the decomposition group at `p`
+  is the sum of the two continuous multiplicative characters
+  `χ₁ + χ₂`, so the semisimplification of the generic fibre of
+  `Spec G` is a sum of characters — the level-two (supersingular,
+  fundamental-characters-of-level-2) branch of Raynaud's
+  classification is excluded and every Jordan–Hölder factor of `G` is
+  one-dimensional; at absolute ramification `e = 1 < p − 1` (`hpodd`)
+  each connected one-dimensional factor is of multiplicative
+  (`μ`-)type, and `G⁰` itself is of multiplicative type (its Cartier
+  dual has étale Jordan–Hölder factors, and an extension of étale by
+  étale over the henselian `ℤ_p` is étale); the geometric points of a
+  multiplicative-type group, `U ≅ Hom(X, μ_{p^∞}(ℚ̄_p))` with `X` the
+  inertia-trivial étale character group, carry the inertia action
+  `u ↦ [χ_cyc(σ̃)] · u`, and the intrinsic `ℤ_p`-action on the finite
+  `p`-group `U` agrees with the action through
+  `algebraMap ℤ_[p] (R ⧸ I)` (finite abelian `p`-groups carry a
+  unique `ℤ_p`-module structure), giving the stated scalar identity —
+  pinned against `hρ.det` exactly as in the trace bookkeeping below. -/
+theorem exists_connectedEtale_cyclotomic_subgroup_of_hopf_package
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hZinj : Function.Injective (algebraMap ℤ_[p] R))
+    (hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
+    (hρ : IsHardlyRamified hpodd hv ρ)
+    (χ₁ χ₂ : Field.absoluteGaloisGroup ℚ → AlgebraicClosure ℚ_[p])
+    (hcont₁ : Continuous χ₁) (hcont₂ : Continuous χ₂)
+    (hone₁ : χ₁ 1 = 1) (hone₂ : χ₂ 1 = 1)
+    (hmul₁ : ∀ g h, χ₁ (g * h) = χ₁ g * χ₁ h)
+    (hmul₂ : ∀ g h, χ₂ (g * h) = χ₂ g * χ₂ h)
+    (hchar : ∀ g, ((ρ g).charpoly).map (algebraMap R (AlgebraicClosure ℚ_[p])) =
+      (Polynomial.X - Polynomial.C (χ₁ g)) * (Polynomial.X - Polynomial.C (χ₂ g)))
+    (I : Ideal R) (hI : IsOpen (I : Set R))
+    (G : Type) [CommRing G]
+    [HopfAlgebra (HeightOneSpectrum.adicCompletionIntegers ℚ
+      hp.out.toHeightOneSpectrumRingOfIntegersRat) G]
+    [Module.Flat (HeightOneSpectrum.adicCompletionIntegers ℚ
+      hp.out.toHeightOneSpectrumRingOfIntegersRat) G]
+    [Module.Finite (HeightOneSpectrum.adicCompletionIntegers ℚ
+      hp.out.toHeightOneSpectrumRingOfIntegersRat) G]
+    [Algebra.Etale (HeightOneSpectrum.adicCompletion ℚ
+        hp.out.toHeightOneSpectrumRingOfIntegersRat)
+      ((HeightOneSpectrum.adicCompletion ℚ
+          hp.out.toHeightOneSpectrumRingOfIntegersRat) ⊗[
+        HeightOneSpectrum.adicCompletionIntegers ℚ
+          hp.out.toHeightOneSpectrumRingOfIntegersRat] G)]
+    (fG : Additive ((HeightOneSpectrum.adicCompletion ℚ
+          hp.out.toHeightOneSpectrumRingOfIntegersRat) ⊗[
+        HeightOneSpectrum.adicCompletionIntegers ℚ
+          hp.out.toHeightOneSpectrumRingOfIntegersRat] G →ₐ[
+        HeightOneSpectrum.adicCompletion ℚ
+          hp.out.toHeightOneSpectrumRingOfIntegersRat]
+        AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hp.out.toHeightOneSpectrumRingOfIntegersRat)) →+[
+        Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ
+          hp.out.toHeightOneSpectrumRingOfIntegersRat)]
+      (((ρ.baseChange (R ⧸ I)).toLocal
+        hp.out.toHeightOneSpectrumRingOfIntegersRat).Space))
+    (hfG : Function.Bijective fG) :
+    ∃ U : AddSubgroup ((R ⧸ I) ⊗[R] V),
+      ∀ σ ∈ localInertiaGroup hp.out.toHeightOneSpectrumRingOfIntegersRat,
+        (∀ m : (R ⧸ I) ⊗[R] V,
+          (ρ.baseChange (R ⧸ I)) (Field.absoluteGaloisGroup.map
+            (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+              hp.out.toHeightOneSpectrumRingOfIntegersRat)) σ) m - m ∈ U) ∧
+        (∀ u ∈ U, (ρ.baseChange (R ⧸ I)) (Field.absoluteGaloisGroup.map
+            (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+              hp.out.toHeightOneSpectrumRingOfIntegersRat)) σ) u =
+          (algebraMap R (R ⧸ I) (algebraMap ℤ_[p] R
+            ((cyclotomicCharacter (AlgebraicClosure ℚ) p
+              ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+                (HeightOneSpectrum.adicCompletion ℚ
+                  hp.out.toHeightOneSpectrumRingOfIntegersRat)) σ).toRingEquiv) :
+              ℤ_[p]ˣ) : ℤ_[p]))) • u) :=
+  sorry
+
+/-- **The per-level Raynaud trace congruence at `p`** (PROVEN
+assembly, DECOMPOSED 2026-07-24 over the single sorried
+connected–étale leaf
+`exists_connectedEtale_cyclotomic_subgroup_of_hopf_package` above —
+the Raynaud/Fontaine group-scheme content; the Cayley–Hamilton trace
+bookkeeping is proven here): given the explicit finite flat Hopf
+package for the congruence quotient `ρ.baseChange (R ⧸ I)` at `p`
+(the witness packaged by `GaloisRep.HasFlatProlongationAt`, extracted
+by the consumer from `hρ.isFlat` at the open ideal `I`), the trace of
+`ρ` at (the image in `G_ℚ` of) a local inertia element `σ` at `p` is
+congruent to `1 + χ_cyc(σ̃)` modulo `I`. Assembly: write `Ā` for the
+action of `σ̃` on the congruence quotient `(R ⧸ I) ⊗[R] V` and `c̄`
+for `χ_cyc(σ̃) mod I`. The leaf provides the connected-part subgroup
+`U` with (i) every displacement `Ā m − m` in `U` and (ii) `Ā` acting
+on `U` by the scalar `c̄`; combining the two, `Ā` satisfies the
+quadratic `Ā² = (1 + c̄) • Ā − c̄ • 1` pointwise. Cayley–Hamilton for
+`Ā` (`LinearMap.aeval_self_charpoly`) with
+`charpoly Ā = X² − t̄·X + d̄` — from rank `2` (`hv`),
+`Matrix.charpoly_fin_two` along a reindexed `chooseBasis`, and
+`LinearMap.charpoly_baseChange` — gives `Ā² = t̄ • Ā − d̄ • 1` with
+`t̄, d̄` the mod-`I` images of the trace and determinant of `ρ(σ̃)`;
+the cyclotomic determinant `hρ.det` pins `d̄ = c̄`, so subtracting the
+two quadratics leaves `t̄ • Ā m = (1 + c̄) • Ā m` for every `m`. `Ā`
+is invertible (`ρ̄` is a monoid hom into the endomorphism monoid), so
+evaluating at the `Ā`-preimage of a base-changed basis vector
+(`Module.Basis.baseChange`) and reading off its coordinate gives
+`t̄ = 1 + c̄` in `R ⧸ I`, i.e. the stated congruence
+(`Ideal.Quotient.eq_zero_iff_mem`). -/
 theorem trace_sub_one_add_cyclotomicCharacter_mem_of_hopf_package
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
@@ -1378,8 +1466,104 @@ theorem trace_sub_one_add_cyclotomicCharacter_mem_of_hopf_package
         ((cyclotomicCharacter (AlgebraicClosure ℚ) p
           ((Field.absoluteGaloisGroup.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
             hp.out.toHeightOneSpectrumRingOfIntegersRat)) σ).toRingEquiv) : ℤ_[p]ˣ) :
-          ℤ_[p])) ∈ I :=
-  sorry
+          ℤ_[p])) ∈ I := by
+  classical
+  -- the connected–étale leaf: displacement subgroup with exact
+  -- cyclotomic scalar action, specialized at `σ`
+  obtain ⟨U, hU⟩ := exists_connectedEtale_cyclotomic_subgroup_of_hopf_package
+    hpodd hv hZinj hRinj hρ χ₁ χ₂ hcont₁ hcont₂ hone₁ hone₂ hmul₁ hmul₂ hchar
+    I hI G fG hfG
+  obtain ⟨hU1, hU2⟩ := hU σ hσ
+  set g : Field.absoluteGaloisGroup ℚ := Field.absoluteGaloisGroup.map
+    (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+      hp.out.toHeightOneSpectrumRingOfIntegersRat)) σ
+  set c : ℤ_[p] := ((cyclotomicCharacter (AlgebraicClosure ℚ) p
+    g.toRingEquiv : ℤ_[p]ˣ) : ℤ_[p]) with hc
+  set cS : R ⧸ I := algebraMap R (R ⧸ I) (algebraMap ℤ_[p] R c) with hcS
+  set A' : Module.End (R ⧸ I) ((R ⧸ I) ⊗[R] V) :=
+    (ρ.baseChange (R ⧸ I)) g with hA'
+  -- the cyclotomic determinant of `ρ(σ̃)` over `R`
+  have hdet : LinearMap.det (ρ g) = algebraMap ℤ_[p] R c := by
+    have h := hρ.det g
+    rw [GaloisRep.det_apply] at h
+    rw [h, hc]
+  -- the rank-2 characteristic polynomial over `R`
+  have hcard : Fintype.card (Module.Free.ChooseBasisIndex R V) = 2 := by
+    rw [← Module.finrank_eq_card_chooseBasisIndex]
+    exact Module.finrank_eq_of_rank_eq hv
+  let b : Module.Basis (Fin 2) R V :=
+    (Module.Free.chooseBasis R V).reindex (Fintype.equivFinOfCardEq hcard)
+  have hcharR : (ρ g).charpoly =
+      Polynomial.X ^ 2 -
+        Polynomial.C (LinearMap.trace R V (ρ g)) * Polynomial.X +
+        Polynomial.C (LinearMap.det (ρ g)) := by
+    rw [← LinearMap.charpoly_toMatrix (ρ g) b, Matrix.charpoly_fin_two,
+      ← LinearMap.trace_eq_matrix_trace R b, LinearMap.det_toMatrix]
+  -- the congruence-quotient action is the base-changed endomorphism
+  have hAeq : A' = (ρ g).baseChange (R ⧸ I) := by
+    refine LinearMap.ext fun m => ?_
+    induction m using TensorProduct.induction_on with
+    | zero => simp
+    | tmul r x =>
+      rw [hA']
+      simp only [GaloisRep.baseChange_tmul, LinearMap.baseChange_tmul]
+    | add x y hx hy => rw [map_add, map_add, hx, hy]
+  -- the base-changed basis certifies freeness and finiteness mod `I`
+  let bS : Module.Basis (Fin 2) (R ⧸ I) ((R ⧸ I) ⊗[R] V) :=
+    b.baseChange (R ⧸ I)
+  haveI : Module.Free (R ⧸ I) ((R ⧸ I) ⊗[R] V) := Module.Free.of_basis bS
+  haveI : Module.Finite (R ⧸ I) ((R ⧸ I) ⊗[R] V) := Module.Finite.of_basis bS
+  -- the mod-`I` characteristic polynomial, determinant pinned to `c̄`
+  have hcharS : LinearMap.charpoly A' =
+      Polynomial.X ^ 2 -
+        Polynomial.C (algebraMap R (R ⧸ I) (LinearMap.trace R V (ρ g))) *
+          Polynomial.X +
+        Polynomial.C cS := by
+    rw [hAeq, LinearMap.charpoly_baseChange, hcharR, hdet, hcS]
+    simp only [Polynomial.map_add, Polynomial.map_sub, Polynomial.map_mul,
+      Polynomial.map_pow, Polynomial.map_X, Polynomial.map_C]
+  -- Cayley–Hamilton for the mod-`I` action
+  have hCH := LinearMap.aeval_self_charpoly A'
+  rw [hcharS] at hCH
+  simp only [map_sub, map_add, map_mul, map_pow, Polynomial.aeval_X,
+    Polynomial.aeval_C] at hCH
+  -- the leaf's quadratic and Cayley–Hamilton force the trace scalar
+  -- to act as `1 + c̄` on the image of `Ā`
+  have e7 : ∀ m : (R ⧸ I) ⊗[R] V,
+      algebraMap R (R ⧸ I) (LinearMap.trace R V (ρ g)) • A' m =
+        A' m + cS • A' m := by
+    intro m
+    have h1 := hU2 _ (hU1 m)
+    rw [map_sub, smul_sub, sub_eq_iff_eq_add] at h1
+    have e1 := LinearMap.congr_fun hCH m
+    simp only [LinearMap.sub_apply, LinearMap.add_apply, Module.End.mul_apply,
+      Module.algebraMap_end_apply, LinearMap.zero_apply, pow_two] at e1
+    rw [sub_add, sub_eq_zero] at e1
+    have e6 : algebraMap R (R ⧸ I) (LinearMap.trace R V (ρ g)) • A' m -
+        cS • m = cS • A' m - cS • m + A' m := e1.symm.trans h1
+    calc algebraMap R (R ⧸ I) (LinearMap.trace R V (ρ g)) • A' m
+        = (algebraMap R (R ⧸ I) (LinearMap.trace R V (ρ g)) • A' m -
+            cS • m) + cS • m := by abel
+      _ = (cS • A' m - cS • m + A' m) + cS • m := by rw [e6]
+      _ = A' m + cS • A' m := by abel
+  -- `Ā` is invertible: evaluate at the preimage of a basis vector
+  have hAB : A' * (ρ.baseChange (R ⧸ I)) g⁻¹ = 1 := by
+    rw [hA', ← map_mul, mul_inv_cancel, map_one]
+  have hAm : A' ((ρ.baseChange (R ⧸ I)) g⁻¹ (bS 0)) = bS 0 := by
+    have h := LinearMap.congr_fun hAB (bS 0)
+    rwa [Module.End.mul_apply, Module.End.one_apply] at h
+  have e7' := e7 ((ρ.baseChange (R ⧸ I)) g⁻¹ (bS 0))
+  rw [hAm] at e7'
+  -- read off the coordinate: the mod-`I` trace is `1 + c̄`
+  have e8 : algebraMap R (R ⧸ I) (LinearMap.trace R V (ρ g)) = 1 + cS := by
+    have h := congrArg (fun y => bS.repr y 0) e7'
+    simpa using h
+  -- conclude the congruence over `R`
+  have hfin : algebraMap R (R ⧸ I)
+      (LinearMap.trace R V (ρ g) - (1 + algebraMap ℤ_[p] R c)) = 0 := by
+    rw [map_sub, map_add, map_one, ← hcS, e8, sub_self]
+  rw [Ideal.Quotient.algebraMap_eq] at hfin
+  exact Ideal.Quotient.eq_zero_iff_mem.mp hfin
 
 /-- **The flat trace identity on inertia at `p`** (PROVEN assembly,
 DECOMPOSED 2026-07-24 over the single sorried Hopf-package core
