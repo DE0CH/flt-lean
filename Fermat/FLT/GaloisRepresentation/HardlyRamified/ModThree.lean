@@ -23607,14 +23607,209 @@ theorem isNarrowRayEquiv_sq_top_of_quadratic_ray_class
     · rw [Ideal.span_singleton_one, Ideal.top_mul, Ideal.mul_top, hγ,
         Ideal.span_singleton_pow]
 
+set_option backward.isDefEq.respectTransparency false in
+/-- **An automorphism fixing a generating set pointwise fixes the
+generated subextension pointwise** (PROVEN 2026-07-24 — the fixed-field
+glue of the reciprocity bridge below, used twice: to transport the open
+kernel of `ν` from `Γ ℚ` to `Γ F`, and to realize a stabilizer element
+of `x` as an `F`-algebra automorphism): if `h ∈ Gal(E/K)` fixes every
+element of `S`, it fixes every element of `adjoin K S`. Proof: the
+fixators of `S` form a subgroup, so `⟨h⟩ ≤ Fix(S)`; hence
+`S ⊆ fixedField ⟨h⟩`, and `adjoin K S ≤ fixedField ⟨h⟩` by the adjoin
+adjunction. -/
+theorem algEquiv_apply_eq_self_of_forall_mem_adjoin_ray_class
+    {K E : Type*} [Field K] [Field E] [Algebra K E]
+    (S : Set E) (h : E ≃ₐ[K] E) (hfix : ∀ w ∈ S, h w = w)
+    {y : E} (hy : y ∈ IntermediateField.adjoin K S) : h y = y := by
+  let Sg : Subgroup (E ≃ₐ[K] E) :=
+    { carrier := {σ | ∀ w ∈ S, σ w = w}
+      one_mem' := fun _ _ => rfl
+      mul_mem' := by
+        intro a b ha hb w hw
+        show a (b w) = w
+        rw [show b w = w from hb w hw]
+        exact ha w hw
+      inv_mem' := by
+        intro a ha w hw
+        show a⁻¹ w = w
+        rw [AlgEquiv.aut_inv]
+        exact (AlgEquiv.symm_apply_eq a).mpr (show a w = w from ha w hw).symm }
+  have hzp : Subgroup.zpowers h ≤ Sg := Subgroup.zpowers_le.mpr hfix
+  have hSsub : S ⊆ ↑(IntermediateField.fixedField (Subgroup.zpowers h)) := by
+    intro w hw
+    show w ∈ IntermediateField.fixedField (Subgroup.zpowers h)
+    intro ρ
+    exact hzp ρ.2 w hw
+  have hle : IntermediateField.adjoin K S ≤
+      IntermediateField.fixedField (Subgroup.zpowers h) :=
+    IntermediateField.adjoin_le_iff.mpr hSsub
+  exact hle hy ⟨h, Subgroup.mem_zpowers h⟩
+
+set_option maxHeartbeats 1000000 in
+/-- **Local–global inertia functoriality along `ℚ ⊆ F` — the inertia
+half of the unramified-extension dictionary** (sorry node, created
+2026-07-24 as part of the route-(α) decomposition of
+`character_sq_eq_one_of_narrow_exponent_two_ray_class` below): for a
+number field `F ⊆ ℚ̄`, a finite place `w` of `F`, and an element `σ` of
+the local inertia group at `w`, the image of `σ` in `Γ ℚ` — through
+`Γ (F_w) → Γ F` (`Field.absoluteGaloisGroup.map` along `F → F_w`), the
+chosen `F`-identification `ψ : F̄ ≃ₐ[F] ℚ̄` of algebraic closures
+(`AlgEquiv.autCongr`), and restriction of scalars to `ℚ` — lies in a
+`Γ ℚ`-conjugate of the image of the local inertia group at some
+rational prime `q` (the prime below `w`). Intended proof: both sides
+are inertia conditions at places of `ℚ̄` over `q` — triviality mod the
+maximal ideal of the integral closure of the completed integers in the
+completed algebraic closure, which contracts along the integral-closure
+inclusions induced by a compatible embedding `ℚ_q^alg → F_w^alg`; and
+any two places of `ℚ̄` over `q` (equivalently, any two embeddings
+`ℚ̄ → ℚ_q^alg`) are `Γ ℚ`-conjugate, which produces `c` — the same
+contraction pattern as the PROVEN
+`exists_isArithFrobAt_restrictNormalHom_globalFrob` in
+`Chebotarev.lean`, run for inertia instead of Frobenius. -/
+theorem exists_conj_image_localInertiaGroup_rat_ray_class
+    (F : IntermediateField ℚ (AlgebraicClosure ℚ)) [NumberField F]
+    (ψ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure ℚ)
+    (w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F))
+    (σ : Γ (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w))
+    (hσ : σ ∈ localInertiaGroup w) :
+    ∃ (q : ℕ) (hq : q.Prime) (c : Γ ℚ)
+      (σ' : Γ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)),
+      σ' ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat ∧
+      AlgEquiv.restrictScalars ℚ (ψ.autCongr
+        (Field.absoluteGaloisGroup.map
+          (algebraMap F (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w)) σ)) =
+        c * Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) σ' * c⁻¹ := by
+  sorry
+
+set_option maxHeartbeats 1000000 in
+/-- **Artin reciprocity for the narrow Hilbert class field, in
+Frobenius-square form** (sorry node, created 2026-07-24 — THE remaining
+class-field-theoretic core of the route-(α) decomposition, now UNIFORM
+in the number field `F` and free of all `Γ ℚ`/`θ'` coding): a
+multiplicative character `χ` of `Γ F` (values in `𝔽̄₃`) that is trivial
+on an open subgroup `V` and everywhere unramified (`hunr`: trivial on
+every `Γ F`-conjugate of the image of the local inertia group at every
+finite place `w` of `F`) satisfies `χ(Frob_v)² = 1` at every finite
+place `v`, provided every nonzero ideal square of `𝓞 F` is narrowly
+principal (`hexp` — `Cl⁺(F)` has exponent dividing `2`, in the
+modulus-`1` `IsNarrowRayEquiv` vocabulary of `Chebotarev.lean`).
+Mathematical content (Neukirch VI §6–§7): `χ` cuts out a finite abelian
+extension `M/F` (fixed field of `ker χ`, open and normal), everywhere
+unramified by `hunr`; the Artin map sends `v ↦ Frob_v|_M`, extends
+multiplicatively to ideals, and kills totally-positive principal
+ideals, so `Frob_v² = Frob_{v²} = Frob_{(γ)} = 1` on `M`, with `γ ≫ 0`
+a totally positive generator of `v²` supplied by `hexp`. Intended
+formalization route: the Weber counting machinery of `Chebotarev.lean`
+(`exists_forall_abs_natCard_isNarrowRayEquiv_sub_mul_le_rpow`, the
+per-residue fibering, and the `exists_algEquiv_map_zeta_eq_pow_absNorm`
+Frobenius realizations) is being built exactly for the analytic proof
+of this reciprocity law; if the pin's vocabulary resists, the natural
+sharp sub-leaves are (i) Frobenius-at-ideals multiplicativity
+(`Frob_{IJ} = Frob_I · Frob_J` on the cut-out abelian extension) and
+(ii) the principal-ideal-trivial-Frobenius law for everywhere-
+unramified abelian extensions. -/
+theorem character_globalFrob_sq_eq_one_of_narrow_exponent_two_ray_class
+    (F : Type*) [Field F] [NumberField F]
+    (χ : Γ F → Dickson.K 3)
+    (hmul : ∀ a b : Γ F, χ (a * b) = χ a * χ b)
+    (V : Subgroup (Γ F)) (hVopen : IsOpen (V : Set (Γ F)))
+    (hVker : ∀ a ∈ V, χ a = 1)
+    (hunr : ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      ∀ c : Γ F, ∀ σ ∈ localInertiaGroup w,
+        χ (c * Field.absoluteGaloisGroup.map
+          (algebraMap F (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w)) σ * c⁻¹) = 1)
+    (hexp : ∀ I : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ →
+      IsNarrowRayEquiv 1 (I ^ 2) ⊤)
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F)) :
+    χ (globalFrob v) ^ 2 = 1 := by
+  sorry
+
+set_option maxHeartbeats 1000000 in
+/-- **Squares of characters trivial on all Frobenius conjugates are
+trivial — the PROVEN Chebotarev-density glue** (2026-07-24): for a
+multiplicative character `χ` of `Γ F` trivial on an open subgroup `V`,
+if `χ(Frob_v)² = 1` at every finite place `v` then `χ(σ)² = 1` for
+every `σ ∈ Γ F`. Proof: `Z = {a | χ(a)² = 1}` is a subgroup (values of
+`χ` on it are invertible), open since it contains `V`, hence closed;
+it contains every conjugate `c · Frob_v · c⁻¹` (the target `𝔽̄₃` is
+commutative, so conjugation-invariance is free); and the Frobenius
+conjugates are dense (`dense_conjClasses_globalFrob`, `S = ∅`), so
+`Z = Γ F`. -/
+theorem character_sq_eq_one_of_forall_globalFrob_sq_ray_class
+    (F : Type*) [Field F] [NumberField F]
+    (χ : Γ F → Dickson.K 3)
+    (hmul : ∀ a b : Γ F, χ (a * b) = χ a * χ b)
+    (V : Subgroup (Γ F)) (hVopen : IsOpen (V : Set (Γ F)))
+    (hVker : ∀ a ∈ V, χ a = 1)
+    (hfrob : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      χ (globalFrob v) ^ 2 = 1)
+    (σ : Γ F) : χ σ ^ 2 = 1 := by
+  classical
+  have hone : χ 1 = 1 := hVker 1 V.one_mem
+  set Z : Subgroup (Γ F) :=
+    { carrier := {a | χ a ^ 2 = 1}
+      one_mem' := by
+        show χ 1 ^ 2 = 1
+        rw [hone, one_pow]
+      mul_mem' := by
+        intro a b ha hb
+        show χ (a * b) ^ 2 = 1
+        rw [hmul, mul_pow, show χ a ^ 2 = 1 from ha,
+          show χ b ^ 2 = 1 from hb, one_mul]
+      inv_mem' := by
+        intro a ha
+        show χ a⁻¹ ^ 2 = 1
+        have h1 : (χ a * χ a⁻¹) ^ 2 = 1 := by
+          rw [← hmul, mul_inv_cancel, hone, one_pow]
+        rw [mul_pow, show χ a ^ 2 = 1 from ha, one_mul] at h1
+        exact h1 }
+  have hZopen : IsOpen (Z : Set (Γ F)) :=
+    Subgroup.isOpen_mono
+      (fun a ha => by
+        show χ a ^ 2 = 1
+        rw [hVker a ha, one_pow]) hVopen
+  have hZclosed : IsClosed (Z : Set (Γ F)) :=
+    Subgroup.isClosed_of_isOpen Z hZopen
+  have hDZ : {y : Γ F |
+      ∃ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+        v ∉ (∅ : Finset (IsDedekindDomain.HeightOneSpectrum
+          (NumberField.RingOfIntegers F))) ∧
+        ∃ c : Γ F, y = c * globalFrob v * c⁻¹} ⊆ (Z : Set (Γ F)) := by
+    rintro y ⟨v, -, c, rfl⟩
+    show χ (c * globalFrob v * c⁻¹) ^ 2 = 1
+    rw [hmul (c * globalFrob v) c⁻¹, hmul c (globalFrob v), mul_pow, mul_pow,
+      hfrob v, mul_one, ← mul_pow, ← hmul, mul_inv_cancel, hone, one_pow]
+  have hdense : Dense (Z : Set (Γ F)) :=
+    (dense_conjClasses_globalFrob (K := F) ∅).mono hDZ
+  have huniv : (Z : Set (Γ F)) = Set.univ := by
+    rw [← hZclosed.closure_eq]
+    exact hdense.closure_eq
+  have hmem : σ ∈ (Z : Set (Γ F)) := Set.eq_univ_iff_forall.mp huniv σ
+  exact hmem
+
 set_option maxHeartbeats 1000000 in
 /-- **Everywhere-unramified characters of `Γ_{ℚ(x)}` square to one
 when every ideal square of `𝓞_{ℚ(x)}` is narrowly principal — the pure
-reciprocity sub-leaf** (sorry node, created 2026-07-24 — the
+reciprocity sub-leaf** (DECOMPOSED 2026-07-24 — the whole `Γ ℚ ↔ Γ F`
+bridge is PROVEN here over the two sorried leaves above: the inertia
+transport `exists_conj_image_localInertiaGroup_rat_ray_class` and the
+uniform reciprocity core
+`character_globalFrob_sq_eq_one_of_narrow_exponent_two_ray_class`,
+assembled through the PROVEN density glue
+`character_sq_eq_one_of_forall_globalFrob_sq_ray_class` and fixed-field
+lemma `algEquiv_apply_eq_self_of_forall_mem_adjoin_ray_class`; the
+assembly chooses `ψ : F̄ ≃ₐ[F] ℚ̄`, conjugates `Γ F` into the
+stabilizer of `x` in `Γ ℚ`, transports the open kernel `U` through a
+finite generating set of its Krull-basis field `E`, and realizes every
+stabilizer element of `x` through the surjection; originally the
 class-field-theoretic core of the route-(α) decomposition of
 `odd_character_eq_one_of_unramified_everywhere_ray_class` below;
-mathlib has NO global class field theory at this pin, so this is THE
-gap, now isolated from all quadratic-field arithmetic): `ν` is a
+mathlib has NO global class field theory at this pin, so the remaining
+gap is the two leaves above, now isolated from all quadratic-field
+arithmetic): `ν` is a
 multiplicative character on `H = ker θ' = Γ_F`, `F = ℚ(x) ⊆ ℚ̄`
 (`hθ'x` — note NO quadraticity of `x` is assumed; the statement is
 uniform in the number field `F`), nonvanishing (`hνne0`), with open
@@ -23645,7 +23840,7 @@ theorem character_sq_eq_one_of_narrow_exponent_two_ray_class
     (ν : Γ ℚ → Dickson.K 3)
     (hνmul : ∀ g h : Γ ℚ, θ' g = 1 → θ' h = 1 →
       ν (g * h) = ν g * ν h)
-    (hνne0 : ∀ g : Γ ℚ, θ' g = 1 → ν g ≠ 0)
+    (_hνne0 : ∀ g : Γ ℚ, θ' g = 1 → ν g ≠ 0)
     (U : Subgroup (Γ ℚ)) (hUopen : IsOpen (U : Set (Γ ℚ)))
     (hUker : ∀ g ∈ U, θ' g = 1 ∧ ν g = 1)
     (hνunr : ∀ (q : ℕ) (hq : q.Prime), ∀ c : Γ ℚ,
@@ -23661,7 +23856,171 @@ theorem character_sq_eq_one_of_narrow_exponent_two_ray_class
         (IntermediateField.adjoin ℚ {x})), I ≠ ⊥ →
       IsNarrowRayEquiv 1 (I ^ 2) ⊤) :
     ∀ g : Γ ℚ, θ' g = 1 → ν g ^ 2 = 1 := by
-  sorry
+  classical
+  -- `ℚ̄` is an algebraic closure of `F = ℚ(x)`
+  haveI halgQ : Algebra.IsAlgebraic ℚ (AlgebraicClosure ℚ) :=
+    AlgebraicClosure.isAlgebraic ℚ
+  haveI halgF : Algebra.IsAlgebraic (IntermediateField.adjoin ℚ {x})
+      (AlgebraicClosure ℚ) :=
+    Algebra.IsAlgebraic.tower_top (K := ℚ) (IntermediateField.adjoin ℚ {x})
+  haveI : IsAlgClosure (IntermediateField.adjoin ℚ {x}) (AlgebraicClosure ℚ) :=
+    ⟨inferInstance, halgF⟩
+  -- the chosen `F`-identification of algebraic closures
+  set ψ : AlgebraicClosure (IntermediateField.adjoin ℚ {x})
+      ≃ₐ[IntermediateField.adjoin ℚ {x}] AlgebraicClosure ℚ :=
+    IsAlgClosure.equiv (IntermediateField.adjoin ℚ {x})
+      (AlgebraicClosure (IntermediateField.adjoin ℚ {x}))
+      (AlgebraicClosure ℚ) with hψdef
+  -- the conjugation embedding `e : Γ F →* Γ ℚ`
+  set e : Γ (IntermediateField.adjoin ℚ {x}) →* Γ ℚ :=
+    { toFun := fun τ => AlgEquiv.restrictScalars ℚ (ψ.autCongr τ)
+      map_one' := by ext z; simp
+      map_mul' := by intro a b; ext z; simp } with hedef
+  have heapply : ∀ τ : Γ (IntermediateField.adjoin ℚ {x}),
+      e τ = AlgEquiv.restrictScalars ℚ (ψ.autCongr τ) := fun τ => rfl
+  -- `e` lands in the stabilizer of `x`, i.e. the kernel of `θ'`
+  have hxmem : x ∈ IntermediateField.adjoin ℚ {x} :=
+    IntermediateField.mem_adjoin_simple_self ℚ x
+  have hex : ∀ τ : Γ (IntermediateField.adjoin ℚ {x}), (e τ) x = x := by
+    intro τ
+    show (ψ.autCongr τ) x = x
+    have h1 : (ψ.autCongr τ) x = ψ (τ (ψ.symm x)) := rfl
+    have h2 : ψ.symm x = algebraMap (IntermediateField.adjoin ℚ {x})
+        (AlgebraicClosure (IntermediateField.adjoin ℚ {x})) ⟨x, hxmem⟩ :=
+      ψ.symm.commutes ⟨x, hxmem⟩
+    have h3 : τ (algebraMap (IntermediateField.adjoin ℚ {x})
+        (AlgebraicClosure (IntermediateField.adjoin ℚ {x})) ⟨x, hxmem⟩) =
+        algebraMap (IntermediateField.adjoin ℚ {x})
+          (AlgebraicClosure (IntermediateField.adjoin ℚ {x})) ⟨x, hxmem⟩ :=
+      τ.commutes _
+    have h4 : ψ (algebraMap (IntermediateField.adjoin ℚ {x})
+        (AlgebraicClosure (IntermediateField.adjoin ℚ {x})) ⟨x, hxmem⟩) =
+        algebraMap (IntermediateField.adjoin ℚ {x})
+          (AlgebraicClosure ℚ) ⟨x, hxmem⟩ :=
+      ψ.commutes _
+    rw [h1, h2, h3, h4]
+    rfl
+  have heθ : ∀ τ : Γ (IntermediateField.adjoin ℚ {x}), θ' (e τ) = 1 :=
+    fun τ => (hθ'x (e τ)).mpr (hex τ)
+  -- `χ := ν ∘ e` is multiplicative
+  have hχmul : ∀ a b : Γ (IntermediateField.adjoin ℚ {x}),
+      ν (e (a * b)) = ν (e a) * ν (e b) := by
+    intro a b
+    rw [map_mul]
+    exact hνmul (e a) (e b) (heθ a) (heθ b)
+  -- the open kernel: a finite subextension `E` of `ℚ̄/ℚ` with
+  -- `Gal(ℚ̄/E) ⊆ U`, transported through `ψ` to a finite subextension
+  -- `W` of `F̄/F` with `Gal(F̄/W) ⊆ e⁻¹(U)`
+  have hUnhds : (U : Set (Γ ℚ)) ∈ nhds 1 := hUopen.mem_nhds U.one_mem
+  obtain ⟨E, hEfin, hEsub⟩ :=
+    (krullTopology_mem_nhds_one_iff ℚ (AlgebraicClosure ℚ) _).mp hUnhds
+  haveI := hEfin
+  obtain ⟨t, ht⟩ : ∃ t : Finset (AlgebraicClosure ℚ),
+      IntermediateField.adjoin ℚ (↑t : Set (AlgebraicClosure ℚ)) = E := by
+    obtain ⟨s, hs⟩ := E.fg_iff_finiteType.mpr
+      (inferInstanceAs (Algebra.FiniteType ℚ E))
+    exact ⟨s, (IntermediateField.eq_adjoin_of_eq_algebra_adjoin _ _ _ hs.symm).symm⟩
+  set W : IntermediateField (IntermediateField.adjoin ℚ {x})
+      (AlgebraicClosure (IntermediateField.adjoin ℚ {x})) :=
+    IntermediateField.adjoin (IntermediateField.adjoin ℚ {x})
+      ((fun z => ψ.symm z) '' (↑t : Set (AlgebraicClosure ℚ))) with hWdef
+  haveI hWfin : FiniteDimensional (IntermediateField.adjoin ℚ {x}) W := by
+    haveI : Finite ((fun z => ψ.symm z) '' (↑t : Set (AlgebraicClosure ℚ))) :=
+      (t.finite_toSet.image _).to_subtype
+    exact IntermediateField.finiteDimensional_adjoin
+      fun z _ => Algebra.IsIntegral.isIntegral z
+  have hVopen : IsOpen (W.fixingSubgroup :
+      Set (Γ (IntermediateField.adjoin ℚ {x}))) :=
+    IntermediateField.fixingSubgroup_isOpen W
+  have hVker : ∀ τ ∈ W.fixingSubgroup, ν (e τ) = 1 := by
+    intro τ hτ
+    -- `e τ` fixes each generator `z ∈ t` …
+    have hfixt : ∀ z ∈ (↑t : Set (AlgebraicClosure ℚ)), (e τ) z = z := by
+      intro z hz
+      have hzW : ψ.symm z ∈ W :=
+        IntermediateField.subset_adjoin _ _ ⟨z, hz, rfl⟩
+      have h1 : (e τ) z = ψ (τ (ψ.symm z)) := rfl
+      have h2 : τ (ψ.symm z) = ψ.symm z :=
+        ((IntermediateField.mem_fixingSubgroup_iff _ _).mp hτ) _ hzW
+      rw [h1, h2, AlgEquiv.apply_symm_apply]
+    -- … hence all of `E`, hence lies in `U`
+    have hmemE : e τ ∈ E.fixingSubgroup := by
+      refine (IntermediateField.mem_fixingSubgroup_iff _ _).mpr ?_
+      intro y hy
+      rw [← ht] at hy
+      exact algEquiv_apply_eq_self_of_forall_mem_adjoin_ray_class _ _ hfixt hy
+    exact (hUker _ (hEsub hmemE)).2
+  -- everywhere-unramifiedness of `χ` over `F`, from the inertia
+  -- transport leaf and `hνunr`
+  have hχunr : ∀ w : IsDedekindDomain.HeightOneSpectrum
+      (NumberField.RingOfIntegers (IntermediateField.adjoin ℚ {x})),
+      ∀ c : Γ (IntermediateField.adjoin ℚ {x}),
+      ∀ τ ∈ localInertiaGroup w,
+        ν (e (c * Field.absoluteGaloisGroup.map
+          (algebraMap (IntermediateField.adjoin ℚ {x})
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion
+              (IntermediateField.adjoin ℚ {x}) w)) τ * c⁻¹)) = 1 := by
+    intro w c τ hτ
+    obtain ⟨q, hq, c', τ', hτ', hconj⟩ :=
+      exists_conj_image_localInertiaGroup_rat_ray_class
+        (IntermediateField.adjoin ℚ {x}) ψ w τ hτ
+    set m : Γ (IntermediateField.adjoin ℚ {x}) :=
+      Field.absoluteGaloisGroup.map
+        (algebraMap (IntermediateField.adjoin ℚ {x})
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion
+            (IntermediateField.adjoin ℚ {x}) w)) τ with hmdef
+    set m' : Γ ℚ :=
+      Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)) τ' with hm'def
+    have hem : e m = c' * m' * c'⁻¹ := by
+      rw [heapply]
+      exact hconj
+    have hkey : e (c * m * c⁻¹) = (e c * c') * m' * (e c * c')⁻¹ := by
+      rw [map_mul, map_mul, map_inv, hem]
+      group
+    have hguard : θ' ((e c * c') * m' * (e c * c')⁻¹) = 1 := by
+      rw [← hkey]
+      exact heθ _
+    have hres := hνunr q hq (e c * c') τ' hτ' hguard
+    rw [hkey]
+    exact hres
+  -- the Frobenius squares die: the reciprocity leaf …
+  have hfrob : ∀ v : IsDedekindDomain.HeightOneSpectrum
+      (NumberField.RingOfIntegers (IntermediateField.adjoin ℚ {x})),
+      ν (e (globalFrob v)) ^ 2 = 1 := fun v =>
+    character_globalFrob_sq_eq_one_of_narrow_exponent_two_ray_class
+      (IntermediateField.adjoin ℚ {x}) (fun a => ν (e a)) hχmul
+      W.fixingSubgroup hVopen hVker hχunr hexp v
+  -- … and density propagates the kill to all of `Γ F`
+  have hsq : ∀ τ : Γ (IntermediateField.adjoin ℚ {x}),
+      ν (e τ) ^ 2 = 1 := fun τ =>
+    character_sq_eq_one_of_forall_globalFrob_sq_ray_class
+      (IntermediateField.adjoin ℚ {x}) (fun a => ν (e a)) hχmul
+      W.fixingSubgroup hVopen hVker hfrob τ
+  -- realize an arbitrary stabilizer element of `x` through `e`
+  intro g hg
+  have hgx : g x = x := (hθ'x g).mp hg
+  have hfixF : ∀ y : IntermediateField.adjoin ℚ {x},
+      g (algebraMap (IntermediateField.adjoin ℚ {x})
+        (AlgebraicClosure ℚ) y) =
+      algebraMap (IntermediateField.adjoin ℚ {x}) (AlgebraicClosure ℚ) y := by
+    intro y
+    have h2 : g (y : AlgebraicClosure ℚ) = (y : AlgebraicClosure ℚ) :=
+      algEquiv_apply_eq_self_of_forall_mem_adjoin_ray_class _ g
+        (fun w hw => by rw [Set.mem_singleton_iff.mp hw]; exact hgx) y.2
+    exact h2
+  set g' : AlgebraicClosure ℚ ≃ₐ[IntermediateField.adjoin ℚ {x}]
+      AlgebraicClosure ℚ :=
+    AlgEquiv.ofRingEquiv
+      (f := (g : AlgebraicClosure ℚ ≃+* AlgebraicClosure ℚ)) hfixF with hg'def
+  have hround : e (ψ.autCongr.symm g') = g := by
+    rw [heapply, MulEquiv.apply_symm_apply]
+    ext z
+    rfl
+  have hfin := hsq (ψ.autCongr.symm g')
+  rw [hround] at hfin
+  exact hfin
 
 set_option maxHeartbeats 1000000 in
 /-- **An odd-order character of `Γ_{ℚ(√d)}` unramified at EVERY
