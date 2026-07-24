@@ -4022,8 +4022,11 @@ leaf is now a PROVEN assembly over:
   `q` by `det ρ = χ_cyc` (through the Frobenius value of the
   cyclotomic character, `Chebotarev.lean`'s
   `cyclotomicCharacter_globalFrob`).
-* `exists_linearEquiv_of_charFrob_eq` — SORRY: trace rigidity,
-  Chebotarev density + Brauer–Nesbitt over `ℚ̄_p`.
+* `exists_linearEquiv_of_charFrob_eq` — PROVEN (2026-07-24): trace
+  rigidity, Chebotarev density + characteristic-zero Brauer–Nesbitt
+  over `ℚ̄_p` (density half `trace_eq_of_charFrob_eq`, module-theoretic
+  half `nonempty_linearEquiv_of_trace_eq` via mathlib's Jacobson
+  density theorem).
 * `weightTwoNewform_level_dvd_two_of_isHardlyRamified` — SORRY:
   Carayol's conductor theorem evaluated on the hardly ramified class
   (level of the newform = conductor of its attached representation,
@@ -4274,29 +4277,619 @@ theorem charFrob_map_coeff_zero_of_isHardlyRamified
   rw [hdet2, cyclotomicCharacter_globalFrob hq hqp]
   simp [map_natCast]
 
-/-- **Trace rigidity over `ℚ̄_p`** (sorry node — Chebotarev +
-Brauer–Nesbitt, the characteristic-zero analogue of the PROVEN
-mod-`ℓ` instance `not_isIrreducible_of_charpoly_eq` in
-`Chebotarev.lean`): two continuous 2-dimensional representations of
-`Γ ℚ` over `ℚ̄_p` with equal Frobenius characteristic polynomials
-away from a finite set of places, the second irreducible, are
-equivalent. Intended proof, along the route already assembled for
-`Lift.lean`'s `not_isIrreducible_of_charFrob_eq`: the locus
-`{γ | charpoly (τ₁ γ) = charpoly (τ₂ γ)}` is closed (the coefficient
-functions are polynomial in the matrix entries, hence continuous, and
-`ℚ̄_p` is Hausdorff), conjugation-invariant, and contains the global
-Frobenius classes off the finite set — dense by the Chebotarev
-density node `dense_conjClasses_globalFrob` — hence is everything.
-Brauer–Nesbitt in dimension 2 over a characteristic-0 field then
-forces equivalence: the semisimplification of `τ₁` has the
-characteristic polynomials of the irreducible 2-dimensional `τ₂`, so
-it is isomorphic to `τ₂` (equality of characters of semisimple
-modules; Curtis–Reiner §30, Serre *Abelian ℓ-adic representations*
-I §2.3), and a representation with irreducible full-dimensional
-semisimplification is itself irreducible and isomorphic to it. The
-conclusion is a bare equivariant linear isomorphism — no continuity
-clause, since the consumer (the Carayol leaf) transports only
-charpoly-visible and inertia-theoretic data across it. -/
+/-!
+#### Trace rigidity over `ℚ̄_p`: Chebotarev + characteristic-zero
+Brauer–Nesbitt (PROVEN, 2026-07-24)
+
+The rigidity leaf `exists_linearEquiv_of_charFrob_eq` is DERIVED here
+from two proven halves:
+
+* **Density half** (`trace_eq_of_charFrob_eq`): charpoly agreement at
+  the Frobenius elements off a finite set upgrades to TRACE agreement
+  at every group element — the agreement locus is closed (traces are
+  continuous on the module-topology endomorphism space, `ℚ̄_p` is
+  Hausdorff as a normed field) and contains the conjugates of the
+  global Frobenius elements, dense by `dense_conjClasses_globalFrob`.
+  Only the trace (linear coefficient) of the charpoly is consumed —
+  the determinant is not needed anywhere in the argument.
+
+* **Brauer–Nesbitt half** (`nonempty_linearEquiv_of_trace_eq` and its
+  Galois-level wrapper `exists_linearEquiv_of_trace_eq`): the abstract
+  characteristic-zero statement in dimension 2 — two 2-dimensional
+  modules over a `k`-algebra with equal trace functions, the second
+  simple, are isomorphic (Curtis–Reiner §30.16, hand-rolled at
+  dimension 2). The proof avoids semisimplification bookkeeping: a
+  nonzero `A`-hom `M₁ → M₂` is automatically bijective (simplicity of
+  `M₂` gives surjectivity, rank–nullity over `k` gives injectivity);
+  if no nonzero hom exists, mathlib's Jacobson density theorem
+  (`jacobson_density`) applied to the semisimple companion
+  (`M₁ × M₂` when `M₁` is simple, `(W × M₁/W) × M₂` for a stable
+  line `W` otherwise) produces a ring element acting as the identity
+  on `M₂` and as zero on the companion — its two traces are `2` and
+  `0` (square-zero endomorphisms are traceless), contradicting
+  `char k = 0`. Group-algebra bookkeeping (`MonoidAlgebra ℚ̄_p (Γ ℚ)`
+  acting through `Representation.asAlgebraHom`) turns the equivariance
+  statement into module language and back.
+-/
+
+/-- **Hom vanishing between simple modules of different dimensions**
+(PROVEN glue for the Brauer–Nesbitt half): an `A`-linear map between
+simple `A`-modules whose `k`-dimensions differ (`k` acting through
+central scalars of `A`) is zero — a nonzero one would be bijective by
+Schur (`LinearMap.bijective_or_eq_zero`), hence a `k`-linear dimension
+isomorphism. -/
+lemma linearMap_eq_zero_of_finrank_ne
+    {k : Type*} [Field k] {A : Type*} [Ring A] [Algebra k A]
+    {M N : Type*}
+    [AddCommGroup M] [Module k M] [Module A M] [IsScalarTower k A M]
+    [AddCommGroup N] [Module k N] [Module A N] [IsScalarTower k A N]
+    [IsSimpleModule A M] [IsSimpleModule A N]
+    (h : Module.finrank k M ≠ Module.finrank k N)
+    (f : M →ₗ[A] N) : f = 0 := by
+  rcases LinearMap.bijective_or_eq_zero f with hbij | h0
+  · exact absurd
+      (LinearEquiv.finrank_eq
+        ((LinearEquiv.ofBijective f hbij).restrictScalars k)) h
+  · exact h0
+
+/-- **Dimension-one modules are simple** (PROVEN glue): an `A`-module of
+`k`-dimension one (with the `k`-action factoring through `A`) is a
+simple `A`-module — every nonzero `A`-submodule contains a nonzero
+vector, whose `k`-span is already everything. -/
+lemma isSimpleModule_of_finrank_eq_one
+    {k : Type*} [Field k] {A : Type*} [Ring A] [Algebra k A]
+    {M : Type*}
+    [AddCommGroup M] [Module k M] [Module A M] [IsScalarTower k A M]
+    [Module.Finite k M]
+    (h : Module.finrank k M = 1) : IsSimpleModule A M := by
+  haveI : Nontrivial M := by
+    rw [← Module.finrank_pos_iff (R := k)]
+    omega
+  haveI : Nontrivial (Submodule A M) := ⟨⊥, ⊤, fun hbt => by
+    obtain ⟨x, hx⟩ := exists_ne (0 : M)
+    have hxbot : x ∈ (⊥ : Submodule A M) := by rw [hbt]; trivial
+    exact hx (by simpa using hxbot)⟩
+  refine IsSimpleModule.mk (toIsSimpleOrder := ⟨fun P => ?_⟩)
+  by_cases hP : P = ⊥
+  · exact Or.inl hP
+  refine Or.inr ?_
+  obtain ⟨x, hxP, hx0⟩ := (Submodule.ne_bot_iff P).mp hP
+  have hspan : Submodule.span k {x} = ⊤ := by
+    apply Submodule.eq_top_of_finrank_eq
+    rw [finrank_span_singleton hx0, h]
+  rw [Submodule.eq_top_iff']
+  intro y
+  have hy : y ∈ Submodule.span k {x} := hspan ▸ Submodule.mem_top
+  obtain ⟨c, rfl⟩ := Submodule.mem_span_singleton.mp hy
+  exact P.smul_of_tower_mem c hxP
+
+/-- **Binary products of semisimple modules are semisimple** (PROVEN
+glue; mathlib's finite-product instance is stated for `Π`-types only):
+`P × Q` is the sup of the ranges of `inl` and `inr`, each isomorphic to
+a semisimple factor. -/
+lemma isSemisimpleModule_prod'
+    {A : Type*} [Ring A]
+    {P Q : Type*}
+    [AddCommGroup P] [Module A P] [AddCommGroup Q] [Module A Q]
+    [IsSemisimpleModule A P] [IsSemisimpleModule A Q] :
+    IsSemisimpleModule A (P × Q) := by
+  refine isSemisimpleModule_of_isSemisimpleModule_submodule' (ι := Bool)
+    (p := fun b => bif b then LinearMap.range (LinearMap.inl A P Q)
+      else LinearMap.range (LinearMap.inr A P Q)) ?_ ?_
+  · rintro (_ | _)
+    · exact .congr (LinearEquiv.ofInjective _ LinearMap.inr_injective).symm
+    · exact .congr (LinearEquiv.ofInjective _ LinearMap.inl_injective).symm
+  · rw [iSup_bool_eq]
+    exact LinearMap.sup_range_inl_inr
+
+/-- **Jacobson-density projection extraction** (PROVEN — the density
+core of the characteristic-zero Brauer–Nesbitt argument): given a
+semisimple `A`-module `P` and a simple `A`-module `M`, both
+finite-dimensional over central scalars `k`, with no nonzero `A`-homs
+between `P` and `M` in either direction, some ring element acts as the
+identity on `M` and as zero on `P`. The projection of `P × M` onto `M`
+commutes with every `A`-endomorphism (hom vanishing kills the
+off-diagonal blocks), so mathlib's Jacobson density theorem
+(`jacobson_density`, `P × M` is semisimple) realizes it by a ring
+element on a finite `k`-spanning set, hence — both sides being
+`k`-linear — everywhere. -/
+lemma exists_smul_id_and_smul_zero
+    {k : Type*} [Field k] {A : Type*} [Ring A] [Algebra k A]
+    {P M : Type*}
+    [AddCommGroup P] [Module k P] [Module A P] [IsScalarTower k A P]
+    [Module.Finite k P]
+    [AddCommGroup M] [Module k M] [Module A M] [IsScalarTower k A M]
+    [Module.Finite k M]
+    [IsSemisimpleModule A P] [IsSimpleModule A M]
+    (hPM : ∀ f : P →ₗ[A] M, f = 0) (hMP : ∀ f : M →ₗ[A] P, f = 0) :
+    ∃ r : A, (∀ m : M, r • m = m) ∧ (∀ x : P, r • x = 0) := by
+  classical
+  haveI hNss : IsSemisimpleModule A (P × M) := isSemisimpleModule_prod' (A := A)
+  set π : (P × M) →ₗ[A] (P × M) :=
+    (LinearMap.inr A P M).comp (LinearMap.snd A P M) with hπ
+  have hcomm : ∀ φ : Module.End A (P × M), π ∘ₗ φ = φ ∘ₗ π := by
+    intro φ
+    have hb : (LinearMap.fst A P M) ∘ₗ φ ∘ₗ (LinearMap.inr A P M) = 0 :=
+      hMP _
+    have hc : (LinearMap.snd A P M) ∘ₗ φ ∘ₗ (LinearMap.inl A P M) = 0 :=
+      hPM _
+    refine LinearMap.ext fun x => ?_
+    simp only [LinearMap.comp_apply]
+    have hxsplit : x = (x.1, (0 : M)) + ((0 : P), x.2) := by
+      simp
+    have hb' : (φ ((0 : P), x.2)).1 = 0 := by
+      simpa using LinearMap.ext_iff.mp hb x.2
+    have hc' : (φ (x.1, (0 : M))).2 = 0 := by
+      simpa using LinearMap.ext_iff.mp hc x.1
+    have hL : π (φ x) = ((0 : P), (φ x).2) := by simp [hπ]
+    have hsnd : (φ x).2 = (φ ((0 : P), x.2)).2 := by
+      conv_lhs => rw [hxsplit]
+      rw [map_add]
+      simp [hc']
+    rw [hL, hsnd]
+    have hR : φ (π x) = φ ((0 : P), x.2) := by simp [hπ]
+    rw [hR]
+    exact Prod.ext (by rw [hb']) rfl
+  let f : Module.End (Module.End A (P × M)) (P × M) :=
+    { toFun := π
+      map_add' := map_add π
+      map_smul' := fun φ x => by
+        simpa [Module.End.smul_def] using LinearMap.ext_iff.mp (hcomm φ) x }
+  obtain ⟨s, hs⟩ := Module.Finite.fg_top (R := k) (M := P × M)
+  obtain ⟨r, hr⟩ := jacobson_density (R := A) (M := P × M) f s
+  have hall : ∀ n : P × M, π n = r • n := by
+    intro n
+    have hn : n ∈ Submodule.span k (s : Set (P × M)) := by
+      rw [hs]; trivial
+    induction hn using Submodule.span_induction with
+    | mem m hm => exact hr m hm
+    | zero => simp
+    | add u v _ _ hu hv => rw [map_add, hu, hv, smul_add]
+    | smul c u _ hu => rw [LinearMap.map_smul_of_tower, hu, smul_comm]
+  refine ⟨r, fun m => ?_, fun x => ?_⟩
+  · have h0 := hall ((0 : P), m)
+    have : ((0 : P), m) = (r • (0 : P), r • m) := by
+      simpa [hπ] using h0
+    simpa using (Prod.ext_iff.mp this).2.symm
+  · have h0 := hall (x, (0 : M))
+    have : ((0 : P), (0 : M)) = (r • x, r • (0 : M)) := by
+      simpa [hπ] using h0
+    simpa using (Prod.ext_iff.mp this).1.symm
+
+/-- **Characteristic-zero Brauer–Nesbitt, dimension 2** (PROVEN — the
+abstract module-theoretic core of the rigidity leaf; Curtis–Reiner
+§30.16 hand-rolled at dimension 2): two 2-dimensional modules over a
+`k`-algebra `A` (`k` a field of characteristic zero acting through
+central scalars) with equal trace functions, the second simple, are
+isomorphic as `A`-modules. Any nonzero `A`-hom `M → N` is bijective
+(simplicity of `N` + rank–nullity over `k`); if none exists, the
+Jacobson-density projector element has trace `2` on `N` and trace `0`
+on `M` — zero either because it annihilates the simple `M`, or because
+a stable line `W ≤ M` makes its action square-zero — contradicting the
+trace equality in characteristic zero. -/
+theorem nonempty_linearEquiv_of_trace_eq
+    {k : Type*} [Field k] [CharZero k]
+    {A : Type*} [Ring A] [Algebra k A]
+    {M N : Type*}
+    [AddCommGroup M] [Module k M] [Module A M] [IsScalarTower k A M]
+    [Module.Finite k M]
+    [AddCommGroup N] [Module k N] [Module A N] [IsScalarTower k A N]
+    [Module.Finite k N]
+    [IsSimpleModule A N]
+    (hM : Module.finrank k M = 2) (hN : Module.finrank k N = 2)
+    (htr : ∀ a : A,
+      LinearMap.trace k M (Module.toModuleEnd k (S := A) M a) =
+      LinearMap.trace k N (Module.toModuleEnd k (S := A) N a)) :
+    Nonempty (M ≃ₗ[A] N) := by
+  classical
+  haveI : Nontrivial M := by
+    rw [← Module.finrank_pos_iff (R := k)]; omega
+  haveI : Nontrivial N := by
+    rw [← Module.finrank_pos_iff (R := k)]; omega
+  -- Any nonzero `A`-linear map `M →ₗ[A] N` is bijective.
+  have key : ∀ f : M →ₗ[A] N, f ≠ 0 → Function.Bijective f := by
+    intro f hf
+    have hsurj : Function.Surjective f := by
+      have hrange : LinearMap.range f = ⊤ := by
+        rcases eq_bot_or_eq_top (LinearMap.range f) with h | h
+        · exact absurd (LinearMap.range_eq_bot.mp h) hf
+        · exact h
+      exact LinearMap.range_eq_top.mp hrange
+    have hinj : Function.Injective f := by
+      have hres : Function.Surjective (f.restrictScalars k) := hsurj
+      have h1 : Module.finrank k (LinearMap.range (f.restrictScalars k)) = 2 := by
+        rw [LinearMap.range_eq_top.mpr hres, finrank_top, hN]
+      have h2 := LinearMap.finrank_range_add_finrank_ker (f.restrictScalars k)
+      rw [hM, h1] at h2
+      have hker : LinearMap.ker (f.restrictScalars k) = ⊥ := by
+        rw [← Submodule.finrank_eq_zero (R := k)]
+        omega
+      have hinj' : Function.Injective (f.restrictScalars k) :=
+        LinearMap.ker_eq_bot.mp hker
+      exact hinj'
+    exact ⟨hinj, hsurj⟩
+  by_cases hex : ∃ f : M →ₗ[A] N, f ≠ 0
+  · obtain ⟨f, hf⟩ := hex
+    exact ⟨LinearEquiv.ofBijective f (key f hf)⟩
+  push Not at hex
+  exfalso
+  by_cases hsimp : IsSimpleModule A M
+  · -- both simple, no homs in either direction: density + trace clash
+    haveI := hsimp
+    have hMP : ∀ g : N →ₗ[A] M, g = 0 := by
+      intro g
+      rcases LinearMap.bijective_or_eq_zero g with hbij | h0
+      · exfalso
+        set e := LinearEquiv.ofBijective g hbij
+        have hzero := hex (e.symm : M ≃ₗ[A] N).toLinearMap
+        obtain ⟨x, hx⟩ := exists_ne (0 : M)
+        apply hx
+        calc x = e (e.symm x) := (e.apply_symm_apply x).symm
+        _ = e 0 := by rw [show e.symm x = 0 from LinearMap.ext_iff.mp hzero x]
+        _ = 0 := map_zero _
+      · exact h0
+    obtain ⟨r, hrN, hrM⟩ :=
+      exists_smul_id_and_smul_zero (k := k) (P := M) (M := N) hex hMP
+    have h0 : Module.toModuleEnd k (S := A) M r = 0 :=
+      LinearMap.ext fun x => hrM x
+    have h1 : Module.toModuleEnd k (S := A) N r = LinearMap.id :=
+      LinearMap.ext fun x => hrN x
+    have htr' := htr r
+    rw [h0, h1, map_zero, LinearMap.trace_id, hN] at htr'
+    exact two_ne_zero htr'.symm
+  · -- `M` non-simple: a stable line makes the action of the projector
+    -- element square-zero on `M`, clashing with trace `2` on `N`.
+    haveI : Nontrivial (Submodule A M) := ⟨⊥, ⊤, fun hbt => by
+      obtain ⟨x, hx⟩ := exists_ne (0 : M)
+      have hxbot : x ∈ (⊥ : Submodule A M) := by rw [hbt]; trivial
+      exact hx (by simpa using hxbot)⟩
+    obtain ⟨W, hWbot, hWtop⟩ : ∃ W : Submodule A M, W ≠ ⊥ ∧ W ≠ ⊤ := by
+      by_contra hall
+      push Not at hall
+      exact hsimp
+        (IsSimpleModule.mk
+          (toIsSimpleOrder := ⟨fun P => or_iff_not_imp_left.mpr (hall P)⟩))
+    -- the `A`-submodule `W` and its `k`-scalar restriction have the same
+    -- carrier: the identity is a `k`-linear equivalence between them
+    have eW : (W.restrictScalars k) ≃ₗ[k] W :=
+      { toFun := fun x => ⟨x.1, x.2⟩
+        invFun := fun x => ⟨x.1, x.2⟩
+        map_add' := fun _ _ => rfl
+        map_smul' := fun _ _ => rfl
+        left_inv := fun _ => rfl
+        right_inv := fun _ => rfl }
+    -- dimensions of the line and the quotient line
+    have hWr : Module.finrank k (W.restrictScalars k) = 1 := by
+      have hne_top : W.restrictScalars k ≠ ⊤ := fun h => hWtop (by
+        rw [Submodule.eq_top_iff']
+        intro x
+        have hx : x ∈ W.restrictScalars k := by rw [h]; trivial
+        exact hx)
+      have hlt : Module.finrank k (W.restrictScalars k) < 2 :=
+        hM ▸ Submodule.finrank_lt hne_top
+      have hne_bot : W.restrictScalars k ≠ ⊥ := fun h => hWbot (by
+        rw [Submodule.eq_bot_iff]
+        intro x hx
+        have hx' : x ∈ W.restrictScalars k := hx
+        rw [h] at hx'
+        simpa using hx')
+      have hpos : 0 < Module.finrank k (W.restrictScalars k) := by
+        rw [Module.finrank_pos_iff]
+        exact Submodule.nontrivial_iff_ne_bot.mpr hne_bot
+      exact Nat.le_antisymm (Nat.lt_succ_iff.mp hlt) hpos
+    have hWfin : Module.finrank k W = 1 := by
+      rw [← hWr]
+      exact (LinearEquiv.finrank_eq eW).symm
+    have hQfin : Module.finrank k (M ⧸ W) = 1 := by
+      have hq := (LinearEquiv.finrank_eq
+        ((Submodule.Quotient.restrictScalarsEquiv k W))).symm
+      have hadd := Submodule.finrank_quotient_add_finrank
+        (W.restrictScalars k)
+      rw [hM, hWr] at hadd
+      rw [hq]
+      omega
+    haveI : Module.Finite k W := Module.Finite.equiv eW
+    haveI : Module.Finite k (M ⧸ W) :=
+      Module.Finite.equiv (Submodule.Quotient.restrictScalarsEquiv k W)
+    haveI : IsSimpleModule A W :=
+      isSimpleModule_of_finrank_eq_one (A := A) hWfin
+    haveI : IsSimpleModule A (M ⧸ W) :=
+      isSimpleModule_of_finrank_eq_one (A := A) hQfin
+    -- no homs between `W × (M ⧸ W)` and `N` in either direction
+    have hPM : ∀ f : (W × (M ⧸ W)) →ₗ[A] N, f = 0 := by
+      intro f
+      have h1 : f ∘ₗ (LinearMap.inl A W (M ⧸ W)) = 0 :=
+        linearMap_eq_zero_of_finrank_ne (by rw [hWfin, hN]; omega) _
+      have h2 : f ∘ₗ (LinearMap.inr A W (M ⧸ W)) = 0 :=
+        linearMap_eq_zero_of_finrank_ne (by rw [hQfin, hN]; omega) _
+      rw [← LinearMap.coprod_comp_inl_inr f, h1, h2]
+      refine LinearMap.ext fun x => ?_
+      simp
+    have hMP : ∀ f : N →ₗ[A] (W × (M ⧸ W)), f = 0 := by
+      intro f
+      have h1 : (LinearMap.fst A W (M ⧸ W)) ∘ₗ f = 0 :=
+        linearMap_eq_zero_of_finrank_ne (by rw [hWfin, hN]; omega) _
+      have h2 : (LinearMap.snd A W (M ⧸ W)) ∘ₗ f = 0 :=
+        linearMap_eq_zero_of_finrank_ne (by rw [hQfin, hN]; omega) _
+      refine LinearMap.ext fun x => ?_
+      refine Prod.ext ?_ ?_
+      · simpa using LinearMap.ext_iff.mp h1 x
+      · simpa using LinearMap.ext_iff.mp h2 x
+    haveI : IsSemisimpleModule A (W × (M ⧸ W)) :=
+      isSemisimpleModule_prod' (A := A)
+    obtain ⟨r, hrN, hrP⟩ :=
+      exists_smul_id_and_smul_zero (k := k) (P := W × (M ⧸ W)) (M := N)
+        hPM hMP
+    -- the action of `r` on `M` is square-zero …
+    have hrW : ∀ w : M, w ∈ W → r • w = 0 := by
+      intro w hw
+      have h0 := hrP (⟨w, hw⟩, (0 : M ⧸ W))
+      have h1 : r • (⟨w, hw⟩ : W) = 0 := (Prod.ext_iff.mp h0).1
+      simpa using congrArg (Subtype.val) h1
+    have hrQ : ∀ x : M, r • x ∈ W := by
+      intro x
+      have h0 := hrP ((0 : W), Submodule.Quotient.mk x)
+      have h1 : r • (Submodule.Quotient.mk x : M ⧸ W) = 0 :=
+        (Prod.ext_iff.mp h0).2
+      rw [← Submodule.Quotient.mk_smul, Submodule.Quotient.mk_eq_zero] at h1
+      exact h1
+    have hnil : IsNilpotent (Module.toModuleEnd k (S := A) M r) := by
+      refine ⟨2, ?_⟩
+      rw [pow_two]
+      refine LinearMap.ext fun x => ?_
+      exact hrW _ (hrQ x)
+    -- … so its trace is zero, while the trace on `N` is `2 ≠ 0`.
+    have hzero : LinearMap.trace k M (Module.toModuleEnd k (S := A) M r) = 0 :=
+      (LinearMap.isNilpotent_trace_of_isNilpotent hnil).eq_zero
+    have h1 : Module.toModuleEnd k (S := A) N r = LinearMap.id :=
+      LinearMap.ext fun x => hrN x
+    have htr' := htr r
+    rw [hzero, h1, LinearMap.trace_id, hN] at htr'
+    exact two_ne_zero htr'.symm
+
+/-- **Conjugation invariance of the trace of a Galois representation**
+(PROVEN glue): `tr τ(g·x·g⁻¹) = tr τ(x)`, by multiplicativity of `τ`
+and `tr(ab) = tr(ba)`. -/
+lemma trace_conj_eq {A : Type*} [CommRing A] [TopologicalSpace A]
+    {V : Type*} [AddCommGroup V] [Module A V]
+    (τ : GaloisRep ℚ A V) (g x : Field.absoluteGaloisGroup ℚ) :
+    LinearMap.trace A V (τ (g * x * g⁻¹)) = LinearMap.trace A V (τ x) := by
+  have e1 : τ (g * x * g⁻¹) = τ g * τ x * τ g⁻¹ := by
+    rw [map_mul, map_mul]
+  have hca : τ g⁻¹ * τ g = 1 := by
+    rw [← map_mul, inv_mul_cancel, map_one]
+  rw [e1, LinearMap.trace_mul_comm, ← mul_assoc, hca, one_mul]
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Trace agreement everywhere from Frobenius charpoly agreement off
+a finite set** (PROVEN — the Chebotarev-density half of the rigidity
+leaf): if two continuous 2-dimensional `ℚ̄_p`-representations of `Γ ℚ`
+have equal Frobenius characteristic polynomials away from a finite set
+of places, their traces agree at EVERY group element. The agreement
+locus is closed — the trace is a continuous function on the
+module-topology endomorphism space (`IsModuleTopology
+.continuous_of_linearMap`) and `ℚ̄_p` is Hausdorff as a normed field —
+conjugation-invariant (`trace_conj_eq`), and contains the global
+Frobenius classes off the finite set, dense by the Chebotarev density
+node `dense_conjClasses_globalFrob`. -/
+theorem trace_eq_of_charFrob_eq
+    {V₁ : Type*} [AddCommGroup V₁] [Module (AlgebraicClosure ℚ_[p]) V₁]
+    [Module.Finite (AlgebraicClosure ℚ_[p]) V₁]
+    [Module.Free (AlgebraicClosure ℚ_[p]) V₁]
+    {V₂ : Type*} [AddCommGroup V₂] [Module (AlgebraicClosure ℚ_[p]) V₂]
+    [Module.Finite (AlgebraicClosure ℚ_[p]) V₂]
+    [Module.Free (AlgebraicClosure ℚ_[p]) V₂]
+    (hfr₁ : Module.finrank (AlgebraicClosure ℚ_[p]) V₁ = 2)
+    (hfr₂ : Module.finrank (AlgebraicClosure ℚ_[p]) V₂ = 2)
+    {τ₁ : GaloisRep ℚ (AlgebraicClosure ℚ_[p]) V₁}
+    {τ₂ : GaloisRep ℚ (AlgebraicClosure ℚ_[p]) V₂}
+    {S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (h : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+      τ₁.charFrob hq.toHeightOneSpectrumRingOfIntegersRat =
+        τ₂.charFrob hq.toHeightOneSpectrumRingOfIntegersRat) :
+    ∀ γ : Field.absoluteGaloisGroup ℚ,
+      LinearMap.trace (AlgebraicClosure ℚ_[p]) V₁ (τ₁ γ) =
+        LinearMap.trace (AlgebraicClosure ℚ_[p]) V₂ (τ₂ γ) := by
+  classical
+  -- trace agreement at the global Frobenius elements off `S`
+  have hFrob : ∀ v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ),
+      v ∉ S →
+      LinearMap.trace (AlgebraicClosure ℚ_[p]) V₁ (τ₁ (globalFrob v)) =
+        LinearMap.trace (AlgebraicClosure ℚ_[p]) V₂ (τ₂ (globalFrob v)) := by
+    intro v hv
+    obtain ⟨q, hq, rfl⟩ := exists_prime_toHeightOneSpectrum v
+    have hpoly := h q hq hv
+    rw [GaloisRep.charFrob_eq_charpoly_globalFrob,
+      GaloisRep.charFrob_eq_charpoly_globalFrob,
+      charpoly_eq_quadratic_of_finrank_two hfr₁,
+      charpoly_eq_quadratic_of_finrank_two hfr₂] at hpoly
+    have hc := congrArg (fun P => Polynomial.coeff P 1) hpoly
+    simp only [coeff_one_quadratic] at hc
+    exact neg_inj.mp hc
+  -- the agreement locus is closed …
+  letI : TopologicalSpace (Module.End (AlgebraicClosure ℚ_[p]) V₁) :=
+    moduleTopology (AlgebraicClosure ℚ_[p]) _
+  letI : TopologicalSpace (Module.End (AlgebraicClosure ℚ_[p]) V₂) :=
+    moduleTopology (AlgebraicClosure ℚ_[p]) _
+  haveI : IsModuleTopology (AlgebraicClosure ℚ_[p])
+    (Module.End (AlgebraicClosure ℚ_[p]) V₁) := ⟨rfl⟩
+  haveI : IsModuleTopology (AlgebraicClosure ℚ_[p])
+    (Module.End (AlgebraicClosure ℚ_[p]) V₂) := ⟨rfl⟩
+  have hc₁ : Continuous fun γ : Field.absoluteGaloisGroup ℚ =>
+      LinearMap.trace (AlgebraicClosure ℚ_[p]) V₁ (τ₁ γ) :=
+    (IsModuleTopology.continuous_of_linearMap
+      (LinearMap.trace (AlgebraicClosure ℚ_[p]) V₁)).comp
+      (ContinuousMonoidHom.continuous_toFun τ₁)
+  have hc₂ : Continuous fun γ : Field.absoluteGaloisGroup ℚ =>
+      LinearMap.trace (AlgebraicClosure ℚ_[p]) V₂ (τ₂ γ) :=
+    (IsModuleTopology.continuous_of_linearMap
+      (LinearMap.trace (AlgebraicClosure ℚ_[p]) V₂)).comp
+      (ContinuousMonoidHom.continuous_toFun τ₂)
+  have hclosed : IsClosed {γ : Field.absoluteGaloisGroup ℚ |
+      LinearMap.trace (AlgebraicClosure ℚ_[p]) V₁ (τ₁ γ) =
+        LinearMap.trace (AlgebraicClosure ℚ_[p]) V₂ (τ₂ γ)} :=
+    isClosed_eq hc₁ hc₂
+  -- … and contains the dense set of Frobenius conjugates
+  have hsub : {x : Field.absoluteGaloisGroup ℚ |
+      ∃ v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ), v ∉ S ∧
+        ∃ g, x = g * globalFrob v * g⁻¹} ⊆
+      {γ : Field.absoluteGaloisGroup ℚ |
+        LinearMap.trace (AlgebraicClosure ℚ_[p]) V₁ (τ₁ γ) =
+          LinearMap.trace (AlgebraicClosure ℚ_[p]) V₂ (τ₂ γ)} := by
+    rintro x ⟨v, hv, g, rfl⟩
+    simp only [Set.mem_setOf_eq]
+    exact (trace_conj_eq τ₁ g (globalFrob v)).trans
+      ((hFrob v hv).trans (trace_conj_eq τ₂ g (globalFrob v)).symm)
+  intro γ
+  have hγ : γ ∈ closure {x : Field.absoluteGaloisGroup ℚ |
+      ∃ v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ), v ∉ S ∧
+        ∃ g, x = g * globalFrob v * g⁻¹} := by
+    rw [(dense_conjClasses_globalFrob (K := ℚ) S).closure_eq]
+    trivial
+  exact closure_minimal hsub hclosed hγ
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Char-0 Brauer–Nesbitt at the Galois level** (PROVEN): two
+2-dimensional `ℚ̄_p`-representations of `Γ ℚ` with equal traces
+everywhere, the second irreducible, are equivariantly linearly
+equivalent. Derived from the abstract module-theoretic core
+`nonempty_linearEquiv_of_trace_eq` by viewing both spaces as modules
+over the group algebra `(ℚ̄_p)[Γ ℚ]` through
+`Representation.asAlgebraHom`; irreducibility transfers to simplicity
+via `Representation.irreducible_iff_isSimpleModule_asModule`, and the
+trace hypothesis extends `ℚ̄_p`-linearly from group elements to the
+whole group algebra. -/
+theorem exists_linearEquiv_of_trace_eq
+    {V₁ : Type*} [AddCommGroup V₁] [Module (AlgebraicClosure ℚ_[p]) V₁]
+    [Module.Finite (AlgebraicClosure ℚ_[p]) V₁]
+    {V₂ : Type*} [AddCommGroup V₂] [Module (AlgebraicClosure ℚ_[p]) V₂]
+    [Module.Finite (AlgebraicClosure ℚ_[p]) V₂]
+    (hfr₁ : Module.finrank (AlgebraicClosure ℚ_[p]) V₁ = 2)
+    (hfr₂ : Module.finrank (AlgebraicClosure ℚ_[p]) V₂ = 2)
+    {τ₁ : GaloisRep ℚ (AlgebraicClosure ℚ_[p]) V₁}
+    {τ₂ : GaloisRep ℚ (AlgebraicClosure ℚ_[p]) V₂}
+    (hirr : τ₂.IsIrreducible)
+    (htr : ∀ γ : Field.absoluteGaloisGroup ℚ,
+      LinearMap.trace (AlgebraicClosure ℚ_[p]) V₁ (τ₁ γ) =
+        LinearMap.trace (AlgebraicClosure ℚ_[p]) V₂ (τ₂ γ)) :
+    ∃ e : V₁ ≃ₗ[AlgebraicClosure ℚ_[p]] V₂,
+      ∀ (γ : Field.absoluteGaloisGroup ℚ) (w : V₁),
+        e (τ₁ γ w) = τ₂ γ (e w) := by
+  classical
+  letI : Module (MonoidAlgebra (AlgebraicClosure ℚ_[p])
+      (Field.absoluteGaloisGroup ℚ)) V₁ :=
+    Module.compHom V₁
+      (Representation.asAlgebraHom τ₁.toRepresentation).toRingHom
+  letI : Module (MonoidAlgebra (AlgebraicClosure ℚ_[p])
+      (Field.absoluteGaloisGroup ℚ)) V₂ :=
+    Module.compHom V₂
+      (Representation.asAlgebraHom τ₂.toRepresentation).toRingHom
+  -- the group-algebra actions unfold to `asAlgebraHom` application
+  have hsmul₁ : ∀ (x : MonoidAlgebra (AlgebraicClosure ℚ_[p])
+      (Field.absoluteGaloisGroup ℚ)) (v : V₁),
+      x • v = Representation.asAlgebraHom τ₁.toRepresentation x v :=
+    fun _ _ => rfl
+  have hsmul₂ : ∀ (x : MonoidAlgebra (AlgebraicClosure ℚ_[p])
+      (Field.absoluteGaloisGroup ℚ)) (v : V₂),
+      x • v = Representation.asAlgebraHom τ₂.toRepresentation x v :=
+    fun _ _ => rfl
+  haveI : IsScalarTower (AlgebraicClosure ℚ_[p])
+      (MonoidAlgebra (AlgebraicClosure ℚ_[p])
+        (Field.absoluteGaloisGroup ℚ)) V₁ := ⟨fun c x v => by
+    rw [hsmul₁, hsmul₁, map_smul]
+    rfl⟩
+  haveI : IsScalarTower (AlgebraicClosure ℚ_[p])
+      (MonoidAlgebra (AlgebraicClosure ℚ_[p])
+        (Field.absoluteGaloisGroup ℚ)) V₂ := ⟨fun c x v => by
+    rw [hsmul₂, hsmul₂, map_smul]
+    rfl⟩
+  -- irreducibility transfers to simplicity of the group-algebra module
+  haveI hAs : IsSimpleModule (MonoidAlgebra (AlgebraicClosure ℚ_[p])
+      (Field.absoluteGaloisGroup ℚ)) τ₂.toRepresentation.asModule :=
+    (Representation.irreducible_iff_isSimpleModule_asModule _).mp hirr
+  haveI hsimple : IsSimpleModule (MonoidAlgebra (AlgebraicClosure ℚ_[p])
+      (Field.absoluteGaloisGroup ℚ)) V₂ :=
+    IsSimpleModule.congr
+      ({ toFun := id, invFun := id, map_add' := fun _ _ => rfl,
+         map_smul' := fun _ _ => rfl, left_inv := fun _ => rfl,
+         right_inv := fun _ => rfl } :
+        V₂ ≃ₗ[MonoidAlgebra (AlgebraicClosure ℚ_[p])
+          (Field.absoluteGaloisGroup ℚ)] τ₂.toRepresentation.asModule)
+  -- trace agreement extends linearly over the group algebra
+  have htrA : ∀ x : MonoidAlgebra (AlgebraicClosure ℚ_[p])
+      (Field.absoluteGaloisGroup ℚ),
+      LinearMap.trace (AlgebraicClosure ℚ_[p]) V₁
+          (Representation.asAlgebraHom τ₁.toRepresentation x) =
+        LinearMap.trace (AlgebraicClosure ℚ_[p]) V₂
+          (Representation.asAlgebraHom τ₂.toRepresentation x) := by
+    intro x
+    induction x using MonoidAlgebra.induction_linear with
+    | zero => simp
+    | add a b ha hb => rw [map_add, map_add, map_add, map_add, ha, hb]
+    | single g a =>
+      rw [Representation.asAlgebraHom_single,
+        Representation.asAlgebraHom_single, map_smul, map_smul]
+      exact congrArg _ (htr g)
+  have htrEnd : ∀ x : MonoidAlgebra (AlgebraicClosure ℚ_[p])
+      (Field.absoluteGaloisGroup ℚ),
+      LinearMap.trace (AlgebraicClosure ℚ_[p]) V₁
+          (Module.toModuleEnd (AlgebraicClosure ℚ_[p])
+            (S := MonoidAlgebra (AlgebraicClosure ℚ_[p])
+              (Field.absoluteGaloisGroup ℚ)) V₁ x) =
+        LinearMap.trace (AlgebraicClosure ℚ_[p]) V₂
+          (Module.toModuleEnd (AlgebraicClosure ℚ_[p])
+            (S := MonoidAlgebra (AlgebraicClosure ℚ_[p])
+              (Field.absoluteGaloisGroup ℚ)) V₂ x) := by
+    intro x
+    have hE₁ : Module.toModuleEnd (AlgebraicClosure ℚ_[p])
+        (S := MonoidAlgebra (AlgebraicClosure ℚ_[p])
+          (Field.absoluteGaloisGroup ℚ)) V₁ x =
+        Representation.asAlgebraHom τ₁.toRepresentation x :=
+      LinearMap.ext fun v => hsmul₁ x v
+    have hE₂ : Module.toModuleEnd (AlgebraicClosure ℚ_[p])
+        (S := MonoidAlgebra (AlgebraicClosure ℚ_[p])
+          (Field.absoluteGaloisGroup ℚ)) V₂ x =
+        Representation.asAlgebraHom τ₂.toRepresentation x :=
+      LinearMap.ext fun v => hsmul₂ x v
+    rw [hE₁, hE₂]
+    exact htrA x
+  -- the abstract char-0 Brauer–Nesbitt core
+  obtain ⟨eA⟩ := nonempty_linearEquiv_of_trace_eq
+    (k := AlgebraicClosure ℚ_[p])
+    (A := MonoidAlgebra (AlgebraicClosure ℚ_[p])
+      (Field.absoluteGaloisGroup ℚ)) hfr₁ hfr₂ htrEnd
+  refine ⟨eA.restrictScalars (AlgebraicClosure ℚ_[p]), fun γ w => ?_⟩
+  have h₁ : τ₁ γ w =
+      (MonoidAlgebra.of (AlgebraicClosure ℚ_[p])
+        (Field.absoluteGaloisGroup ℚ) γ) • w := by
+    rw [hsmul₁, Representation.asAlgebraHom_of]
+    rfl
+  have h₂ : τ₂ γ (eA w) =
+      (MonoidAlgebra.of (AlgebraicClosure ℚ_[p])
+        (Field.absoluteGaloisGroup ℚ) γ) • (eA w) := by
+    rw [hsmul₂, Representation.asAlgebraHom_of]
+    rfl
+  show eA (τ₁ γ w) = τ₂ γ (eA w)
+  rw [h₁, h₂]
+  exact map_smul eA _ w
+
+/-- **Trace rigidity over `ℚ̄_p`** (PROVEN — Chebotarev +
+characteristic-zero Brauer–Nesbitt, the char-0 analogue of the mod-`ℓ`
+instance `not_isIrreducible_of_charpoly_eq` in `Chebotarev.lean`): two
+continuous 2-dimensional representations of `Γ ℚ` over `ℚ̄_p` with
+equal Frobenius characteristic polynomials away from a finite set of
+places, the second irreducible, are equivalent. DERIVED from the
+density half `trace_eq_of_charFrob_eq` (the trace-agreement locus is
+closed and contains the dense Frobenius conjugates, so the traces
+agree everywhere — only the linear coefficient of the charpoly is
+consumed) and the Brauer–Nesbitt half `exists_linearEquiv_of_trace_eq`
+(group-algebra modules with equal traces, the second simple, are
+isomorphic; Curtis–Reiner §30.16 hand-rolled at dimension 2 via
+mathlib's Jacobson density theorem). The conclusion is a bare
+equivariant linear isomorphism — no continuity clause, since the
+consumer (the Carayol leaf) transports only charpoly-visible and
+inertia-theoretic data across it. -/
 theorem exists_linearEquiv_of_charFrob_eq
     {V₁ : Type*} [AddCommGroup V₁] [Module (AlgebraicClosure ℚ_[p]) V₁]
     [Module.Finite (AlgebraicClosure ℚ_[p]) V₁]
@@ -4316,8 +4909,13 @@ theorem exists_linearEquiv_of_charFrob_eq
         τ₂.charFrob hq.toHeightOneSpectrumRingOfIntegersRat) :
     ∃ e : V₁ ≃ₗ[AlgebraicClosure ℚ_[p]] V₂,
       ∀ (γ : Field.absoluteGaloisGroup ℚ) (w : V₁),
-        e (τ₁ γ w) = τ₂ γ (e w) :=
-  sorry
+        e (τ₁ γ w) = τ₂ γ (e w) := by
+  have hfr₁ : Module.finrank (AlgebraicClosure ℚ_[p]) V₁ = 2 :=
+    Module.finrank_eq_of_rank_eq (by exact_mod_cast hrank₁)
+  have hfr₂ : Module.finrank (AlgebraicClosure ℚ_[p]) V₂ = 2 :=
+    Module.finrank_eq_of_rank_eq (by exact_mod_cast hrank₂)
+  exact exists_linearEquiv_of_trace_eq hfr₁ hfr₂ hirr
+    (trace_eq_of_charFrob_eq hfr₁ hfr₂ h)
 
 /-- **Carayol's conductor bound on the hardly ramified class** (sorry
 node — the conductor comparison isolated; Carayol, *Sur les
@@ -4415,7 +5013,8 @@ the classical route verbatim:
    sorry leaf): `g` has an attached 2-dimensional
    `ℚ̄_p`-representation `τ` with the Hecke characteristic
    polynomials at good primes (Eichler–Shimura).
-3. *Rigidity* (`exists_linearEquiv_of_charFrob_eq`, sorry leaf):
+3. *Rigidity* (`exists_linearEquiv_of_charFrob_eq`, PROVEN
+   2026-07-24 — Chebotarev + char-0 Brauer–Nesbitt):
    `τ ≅ ρ ⊗ ℚ̄_p` — their Frobenius characteristic polynomials agree
    away from a finite set, because the trace matching `hmatch`
    upgrades to full charpoly matching through the determinant
