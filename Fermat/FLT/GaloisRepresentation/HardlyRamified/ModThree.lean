@@ -10397,11 +10397,165 @@ theorem cyclotomicCharacter_algebraMap_eq_one_of_inertia_ne_two_three
   ring
 
 set_option maxHeartbeats 1000000 in
+/-- **The eighth power of a prime-to-`3`-order character of
+`Γ_{ℚ(√d)}` dies on every conjugated inertia element at `3` — the
+conductor-descent leaf at the residual prime** (sorry node, created
+2026-07-24 — leaf (a) of the decomposition of
+`odd_order_character_eq_one_ray_class` below): a function `ν` that is
+a nonvanishing multiplicative character on `H = ker θ' = Γ_{ℚ(√d)}`
+(`hνmul`, `hνne0`) with OPEN kernel (`hUopen`, `hUker`) and pointwise
+orders coprime to `3` (only the `¬ 3 ∣ n` clause of `hνodd` is
+genuinely consumed; the full packet is passed for uniformity with the
+consumer) satisfies `ν(τ)⁸ = 1` for every `Γ ℚ`-conjugate
+`τ = c·σ̃·c⁻¹ ∈ H` of a local inertia image `σ̃` at `3`.
+
+Intended content (Serre, *Corps Locaux* IV §2; Serre, Duke 1987
+§5.3): the local inertia `I ≤ Γ ℚ₃ᵥ` is an extension of the procyclic
+prime-to-`3` tame quotient by the pro-`3` wild inertia, and any
+Frobenius lift conjugates the tame quotient by cubing. The at-`3`
+engine is ALREADY in this file: the finite-level leaf
+`exists_finite_level_tame_generator_three` below produces, at any
+finite Galois level `N/ℚ₃ᵥ`, a tame generator `t̄` of the level-`N`
+inertia with `3`-power-order errors and a Frobenius `φ` with
+`φt̄φ⁻¹·(t̄³)⁻¹` of `3`-power order, and
+`exists_mem_localInertiaGroup_restrictNormalHom_eq` /
+`restrictNormalHom_mem_inertia_of_mem_localInertiaGroup_three` move
+between the profinite inertia and level `N`. The PROVEN assembly
+`exists_localInertia_three_generator` below runs exactly this
+argument — but for a GLOBAL character `χ : Γ ℚ →* A`, which is why
+this leaf is not literally an instance of it: here `ν` is a character
+of the index-`2` subgroup `H` only. The adaptations: (1) choose the
+level `N` inside `Emb⁻¹(core)` for an open NORMAL (normal core of
+`U`, open since `U` has finite index in the compact `Γ ℚ`) subgroup
+on which `ν` is trivial — normality makes the kernel bound survive
+the conjugation by the arbitrary `c`; (2) instead of factoring `ν`
+through level `N` (impossible: `ν` is not a homomorphism on `Γ ℚ`),
+compute upstairs: `σ = t^m·w` with the error `w` satisfying
+`w^{3^j} ∈ ker(restrict_N) ≤ Emb⁻¹(core)`, so
+`ν((c·Emb w·c⁻¹)^{3^j}) = 1` and the prime-to-`3` orders kill
+`ν(c·Emb w·c⁻¹)`; (3) for the tame part use the SQUARE `Φ²` of a
+profinite Frobenius lift `Φ`: `θ'(Φ²) = θ'(Φ)² = 1` always (values in
+`ZMod 2`), so `Φ²`-conjugation is by an `H`-element, under which `ν`
+is invariant (abelian values, `hνmul`), while
+`Φ²·τ·Φ⁻² ≡ τ⁹ (mod wild·ker)` forces `ν(τ)⁹ = ν(τ)`, i.e.
+`ν(τ)⁸ = 1` — uniformly over the seven `d`, with no case split on the
+splitting behaviour of `3` in `ℚ(√d)` (the sharp exponent is
+`3^f − 1 ∈ {2, 8}`, but `2 ∣ 8` makes `8` uniform); the conjugator
+`c` transports the entire local structure (`c·I·c⁻¹` is the inertia
+of the transported place, `H`-membership is preserved since `θ'` is a
+global homomorphism into an abelian group), so no new hypothesis is
+needed for it. -/
+theorem character_pow_eight_localInertia_three_eq_one_ray_class
+    (θ' : Γ ℚ →* Multiplicative (ZMod 2))
+    (d : ℤ)
+    (hd : d = -1 ∨ d = 2 ∨ d = -2 ∨ d = 3 ∨ d = -3 ∨ d = 6 ∨ d = -6)
+    (x : AlgebraicClosure ℚ) (hx : x ^ 2 = (d : AlgebraicClosure ℚ))
+    (hθ'x : ∀ g : Γ ℚ, θ' g = 1 ↔ g x = x)
+    (ν : Γ ℚ → Dickson.K 3)
+    (hνmul : ∀ g h : Γ ℚ, θ' g = 1 → θ' h = 1 →
+      ν (g * h) = ν g * ν h)
+    (hνne0 : ∀ g : Γ ℚ, θ' g = 1 → ν g ≠ 0)
+    (U : Subgroup (Γ ℚ)) (hUopen : IsOpen (U : Set (Γ ℚ)))
+    (hUker : ∀ g ∈ U, θ' g = 1 ∧ ν g = 1)
+    (hνodd : ∀ g : Γ ℚ, θ' g = 1 →
+      ∃ n : ℕ, 0 < n ∧ Odd n ∧ ¬ (3 ∣ n) ∧ ν g ^ n = 1) :
+    ∀ c : Γ ℚ,
+      ∀ σ ∈ localInertiaGroup
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat,
+        θ' (c * Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ * c⁻¹) = 1 →
+        ν (c * Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ * c⁻¹) ^ 8
+          = 1 := by
+  sorry
+
+set_option maxHeartbeats 1000000 in
+/-- **An odd-order character of `Γ_{ℚ(√d)}` unramified at EVERY
+finite place is trivial — the narrow-class reciprocity leaf over the
+seven quadratic fields** (sorry node, created 2026-07-24 — leaf (b)
+of the decomposition of `odd_order_character_eq_one_ray_class` below,
+and the genuinely class-field-theoretic input): with the data of leaf
+(a), but with the unramifiedness hypothesis `hνunr` now available at
+EVERY rational prime `q` — `3` included — the character `ν` is
+identically `1` on `H = ker θ' = Γ_{ℚ(√d)}`.
+
+Intended content (Serre, Duke 1987 §5.3–5.4; Neukirch ANT VI §6–§7):
+`ν` is a finite-order character of `Γ_F`, `F = ℚ(√d)` (open kernel by
+`hUopen`/`hUker`; pointwise finite odd order by `hνodd`), trivial on
+every `Γ ℚ`-conjugate of the local inertia image at every rational
+prime, i.e. unramified at every finite place of `F`. By Artin
+reciprocity it therefore factors through
+`Gal(H⁺(F)/F) ≅ Cl⁺(F)` — the narrow Hilbert class field and narrow
+class group; reciprocity is THE gap, since mathlib has no global
+class field theory at this pin. Per-field arithmetic:
+`h⁺ = 1, 1, 1, 2, 1, 2, 2` for `d = −1, 2, −2, 3, −3, 6, −6` (the
+ordinary class numbers are `1` except `h(ℚ(√−6)) = 2`,
+Minkowski-bound computations as in
+`Mathlib.NumberTheory.ClassNumber.*`; among the real fields the
+fundamental unit `1 + √2` of norm `−1` keeps `h⁺ = h` for `d = 2`,
+while `2 + √3` and `5 + 2√6` of norm `+1` double it for
+`d = 3, 6`), so `Cl⁺(F)` is an elementary abelian `2`-group in all
+seven cases and the odd-order `ν` dies. Two viable routes for the
+resolver: (α) split off `∀ g, θ' g = 1 → ν g ^ 2 = 1` as the pure
+reciprocity sub-leaf (exponent of `Cl⁺` divides `2`) and glue by
+`gcd(odd, 2) = 1`, building the reciprocity statement on the
+narrow-ray vocabulary under construction in
+`Fermat/FLT/GaloisRepresentation/Chebotarev.lean` (`IsNarrowRayEquiv`,
+`exists_finset_forall_existsUnique_isNarrowRayEquiv`); or (β) the
+discriminant-bound route needing NO reciprocity: the fixed field of
+`ker(ν|_H)` is a cyclic extension `M/F` of odd degree `m` coprime to
+`3` (the image of `ν` is a finite subgroup of `𝔽̄₃ˣ` generated by
+elements of odd order), unramified at every finite place by the
+inertia hypothesis and at the infinite places automatically
+(`2 ∤ m`), so its root discriminant equals
+`rd(F) = √|d_F| ≤ √24 < 4.9`; Minkowski's bound
+`rd ≥ (π/4)·(n^n/n!)^{2/n} → (π/4)e² ≈ 5.80` rules out all
+sufficiently large degrees `n = 2m` over `ℚ` (`n ≥ 36` suffices for
+`√24`), and the finitely many small `m` fall to sharper Odlyzko-type
+explicit-formula bounds — exactly the regime of the
+`poitou_explicit_formula_bound` analytic cluster already under
+construction in this file. -/
+theorem odd_character_eq_one_of_unramified_everywhere_ray_class
+    (θ' : Γ ℚ →* Multiplicative (ZMod 2))
+    (d : ℤ)
+    (hd : d = -1 ∨ d = 2 ∨ d = -2 ∨ d = 3 ∨ d = -3 ∨ d = 6 ∨ d = -6)
+    (x : AlgebraicClosure ℚ) (hx : x ^ 2 = (d : AlgebraicClosure ℚ))
+    (hθ'x : ∀ g : Γ ℚ, θ' g = 1 ↔ g x = x)
+    (ν : Γ ℚ → Dickson.K 3)
+    (hνmul : ∀ g h : Γ ℚ, θ' g = 1 → θ' h = 1 →
+      ν (g * h) = ν g * ν h)
+    (hνne0 : ∀ g : Γ ℚ, θ' g = 1 → ν g ≠ 0)
+    (U : Subgroup (Γ ℚ)) (hUopen : IsOpen (U : Set (Γ ℚ)))
+    (hUker : ∀ g ∈ U, θ' g = 1 ∧ ν g = 1)
+    (hνodd : ∀ g : Γ ℚ, θ' g = 1 →
+      ∃ n : ℕ, 0 < n ∧ Odd n ∧ ¬ (3 ∣ n) ∧ ν g ^ n = 1)
+    (hνunr : ∀ (q : ℕ) (hq : q.Prime), ∀ c : Γ ℚ,
+      ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+        θ' (c * Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) σ * c⁻¹) = 1 →
+        ν (c * Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) σ * c⁻¹) = 1) :
+    ∀ g : Γ ℚ, θ' g = 1 → ν g = 1 := by
+  sorry
+
+set_option maxHeartbeats 1000000 in
 /-- **An odd-order character of `Γ_{ℚ(√d)}` unramified outside `3` is
-trivial — the representation-free odd ray-class core** (sorry node,
-isolated 2026-07-24 from
-`anti_equivariant_ratio_character_eq_one_ray_class` below, whose
-odd/2-power splitting layer is now PROVEN glue there): a function
+trivial — the representation-free odd ray-class core** (DECOMPOSED
+2026-07-24 into the two sorry nodes above — the conductor-descent
+leaf at `3` `character_pow_eight_localInertia_three_eq_one_ray_class`
+(wild inertia is pro-`3`, the tame quotient Frobenius-conjugates by
+cubing, so a prime-to-`3`-order character has eighth power `1` on the
+inertia at `3`) and the narrow-class reciprocity leaf
+`odd_character_eq_one_of_unramified_everywhere_ray_class` (the seven
+narrow class groups `h⁺ = 1, 1, 1, 2, 1, 2, 2` are elementary
+`2`-groups, killing odd characters) — with the assembly PROVEN here:
+at `q = 3` the eighth-power kill of leaf (a) combines with the odd
+pointwise order through `orderOf ∣ gcd(8, n) = 1`, extending `hνunr`
+to every prime, and leaf (b) concludes): a function
 `ν : Γ ℚ → 𝔽̄₃` that is a nonvanishing multiplicative character on
 `H = ker θ' = Γ_{ℚ(√d)}` (`hνmul`, `hνne0`), trivial on an OPEN
 subgroup `U ≤ H` (`hUopen`, `hUker` — so `ν` factors through a finite
@@ -10409,31 +10563,9 @@ abelian extension of `ℚ(√d)`), of ODD pointwise order coprime to `3`
 (`hνodd`), and trivial on EVERY `Γ ℚ`-conjugate of the local inertia
 image at every prime `q ≠ 3` that lies in `H` (`hνunr` — i.e. `ν` is
 unramified at every place of `ℚ(√d)` not above `3`), is identically
-`1` on `H`. No Galois representation appears: this leaf is pure
+`1` on `H`. No Galois representation appears: this node is pure
 class field theory over the seven quadratic fields, and NO
-anti-equivariance is needed for the odd part.
-
-Intended content (Serre, Duke 1987 §5.3–5.4; Neukirch ANT VI §6).
-(i) An odd character of order coprime to `3` is automatically
-unramified ABOVE `3` as well: the wild inertia at a place `𝔭 ∣ 3` of
-`F = ℚ(√d)` is pro-`3` (killed since the order is coprime to `3`),
-and the tame quotient the character sees is cyclic of order
-`3^f − 1 ∈ {2, 8}` (`f ≤ 2`), a `2`-group — killed since the order is
-odd. So `ν` is a character of the NARROW class group of `F`.
-(ii) Per-field arithmetic: the narrow class numbers of the seven
-fields `ℚ(√-1), ℚ(√2), ℚ(√-2), ℚ(√3), ℚ(√-3), ℚ(√6), ℚ(√-6)` are
-`1, 1, 1, 2, 1, 2, 2` — all `2`-groups — so every odd character is
-trivial. The residual reciprocity input, at its sharpest: `F` has no
-abelian extension of odd degree `> 1` unramified at all finite and
-infinite places (one statement per field; the class-number-one cases
-`d = -1, 2, -2, -3` need only "unramified odd-degree abelian ⇒
-trivial" over a field with `h⁺ = 1`, and `d = 3, 6, -6` in addition
-that the `2`-part `h⁺ = 2` carries no odd quotient). Mathlib has the
-class-number computations (`Mathlib.NumberTheory.ClassNumber.*`) and
-unit groups (`Mathlib.NumberTheory.NumberField.Units.*`); the
-unramified-abelian-bounded-by-class-group step is the genuine gap —
-resolving this node means decomposing it further into those per-field
-statements. -/
+anti-equivariance is needed for the odd part. -/
 theorem odd_order_character_eq_one_ray_class
     (θ' : Γ ℚ →* Multiplicative (ZMod 2))
     (d : ℤ)
@@ -10457,7 +10589,25 @@ theorem odd_order_character_eq_one_ray_class
           (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
             hq.toHeightOneSpectrumRingOfIntegersRat)) σ * c⁻¹) = 1) :
     ∀ g : Γ ℚ, θ' g = 1 → ν g = 1 := by
-  sorry
+  refine odd_character_eq_one_of_unramified_everywhere_ray_class θ' d hd
+    x hx hθ'x ν hνmul hνne0 U hUopen hUker hνodd ?_
+  intro q hq c σ hσ hθ
+  by_cases hq3 : q = 3
+  · subst hq3
+    have h8 := character_pow_eight_localInertia_three_eq_one_ray_class θ' d hd
+      x hx hθ'x ν hνmul hνne0 U hUopen hUker hνodd c σ hσ hθ
+    obtain ⟨n, hn0, hnodd, hn3, hgn⟩ := hνodd _ hθ
+    have hdgcd := Nat.dvd_gcd (orderOf_dvd_of_pow_eq_one h8)
+      (orderOf_dvd_of_pow_eq_one hgn)
+    have hco : Nat.gcd 8 n = 1 := by
+      have h2n : Nat.Coprime 2 n :=
+        (Nat.prime_two.coprime_iff_not_dvd).mpr (by
+          rw [Nat.odd_iff] at hnodd
+          omega)
+      exact Nat.Coprime.pow_left 3 h2n
+    rw [hco, Nat.dvd_one] at hdgcd
+    exact orderOf_eq_one_iff.mp hdgcd
+  · exact hνunr q hq hq3 c σ hσ hθ
 
 set_option maxHeartbeats 1000000 in
 /-- **An anti-invariant QUADRATIC character of `Γ_{ℚ(√d)}` unramified
