@@ -475,6 +475,58 @@ days once the rest exists. Overall this is the critical-path kernel of the
 whole μ-node; recommend giving `hglobal` its own named module/subtree
 immediately (progress-entries item), and NOT blocking legs 1,2,3,5,6 on it.
 
+**STATUS UPDATE (2026-07-24, third pass): `hres` is PROVEN as a
+skeleton over THREE named top-level sorry nodes; the in-proof sorry is
+gone.** The decomposition (all statements compile; the μ-file's only
+remaining sorry is `weilDescent_translation_fixed_of_all_one`):
+
+* **L4-4 substrate (PROVEN, `WeilPairingDescent.lean`)**: the
+  tautological point generalized from the universal curve to ANY
+  `W : Affine F` over its own function field `K = Frac(F[W])` —
+  `tautX`/`tautY`/`tautPoint` (`taut_equation`, `taut_nonsingular`
+  from `hΔ : W.Δ ≠ 0` + injectivity of `algebraMap F K`), the
+  evaluation bridge `taut_evalEval_mk` (ringHom-ext pattern of
+  `TautologicalPoint.lean`), the evaluation hom `pointEval` at any
+  `K`-point of `W⁄K` (`AdjoinRoot.lift` against
+  `eval₂_eval₂RingHom_apply` + `Affine.map_polynomial`), the
+  translation pullback `translationEval hΔ κ := pointEval (taut ⊕ κ)`
+  (group law on `(W⁄K).Point` via the new classical
+  `instDecEqFunctionField`; `Point.map (W' := W) (Algebra.ofId F K)`
+  pushes `κ` to `K`), its field extension
+  `translationHom := IsFractionRing.lift`, and `verticalClass`
+  (`X − x_κ`, `1` at `O`).
+* **`translationEval_injective` (SORRY, `WeilPairingDescent.lean`)**:
+  injectivity of evaluation at `taut ⊕ κ` — the composition-law leaf
+  (evaluate the image at `taut ⊖ κ`, recover the canonical embedding
+  via `(taut ⊕ κ) ⊖ κ = taut` and `taut_evalEval_mk`; the
+  `TautMultiplication` pattern at `W` itself). Underlies the
+  `translationHom` DEFINITION (the lift needs injectivity), hence sits
+  under BOTH other nodes.
+* **`weilDescent_translation_fixed_of_all_one` (SORRY,
+  `WeilPairing.lean`, L4-7/8/9b)**: `hall`/`huniq` force
+  `τ̂_κ g = g` for `g = a/∏ verticals` — χ constant (translation
+  invariance of `div g` by reindexing), μ_p-valued via
+  `f_P∘[p] = c·g^p` (L4-7), bridge lemma (Silverman Ex. 3.16(c))
+  identifies `χ(κ)^{±1}` with admissible Weil values, `hall` + `huniq`
+  make them `1`.
+* **`exists_span_pointIdeal_of_translation_fixed` (SORRY,
+  `WeilPairingDescent.lean`, L4-5/6, pairing-free and stated for a
+  GENERAL elliptic `E` over any field)**: `g` fixed by all `τ̂_κ` ⟹
+  `g ∈ Fix(E[p]) = [p]^*K` (Artin `p²` + `Φ_p − x·ΨSq_p` degree count)
+  ⟹ `g = h∘[p]` ⟹ `div h = (x) − (O)` ⟹ `span {h} = pointIdeal x`.
+* The `hres` glue (PROVEN, in-proof): `hΔ` from `isUnit_Δ` of the
+  doubly-mapped curve, `haspan'` respelling via `rw [← hDdef]`, T1 ⟶
+  T2, then the `ClassGroup.mk` extraction
+  (`mk_eq_one_of_coe_ideal (coe_pointIdeal' …)` + `mk_pointIdeal'` +
+  `toMul_eq_one`).
+
+NOTE for successors: `⁄` in `WeilPairing.lean` parses as
+`WeierstrassCurve.baseChange` (only `WeierstrassCurve` is open — no
+`.Point` projection; write `.toAffine.Point`), while in
+`WeilPairingDescent.lean` (which also opens `WeierstrassCurve.Affine`)
+it parses as the `Affine.baseChange` abbrev — same constant after
+unfolding, so cross-file application unifies definitionally.
+
 **STATUS UPDATE (2026-07-24): L4-1..3 PROVEN and assembled; the residual
 leaf is `hres` inside `weilValueProp_all_one_torsion_trivial`.** The
 `hclass` skeleton now compiles with a single sorry:

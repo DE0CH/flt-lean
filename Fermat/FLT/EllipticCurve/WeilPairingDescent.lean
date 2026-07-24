@@ -26,17 +26,35 @@ Silverman III.8.1(c) auxiliary function `g` with
 `div g = Σ_{κ ∈ E[p]} (T'⊕κ) − (κ)` (up to the vertical fibers
 `∏ XClass x_κ`), i.e. `g = [p]^* f_P`-material for the `g = h∘[p]`
 descent.
+
+* L4-4 substrate (2026-07-24): the **tautological point** of `W` over
+  its own function field `K = Frac(F[W])` (`tautX`/`tautY`/`tautPoint`,
+  with `taut_evalEval_mk` the evaluation bridge — all PROVEN following
+  the `TautologicalPoint.lean` pattern, generalized from the universal
+  curve to any Weierstrass curve over a field); the **evaluation
+  homomorphism** `pointEval : F[W] →+* K` at any `K`-point of the
+  base-changed curve; the **translation pullback**
+  `translationEval κ := pointEval (taut ⊕ κ)` realizing `h ↦ h∘τ_κ`,
+  and its fraction-field extension `translationHom κ : K →+* K`
+  (through the sorried leaf `translationEval_injective`).
+
+* `exists_span_pointIdeal_of_translation_fixed` (L4-5/6, sorry node):
+  the **fixed-field descent** — if the auxiliary function `g` of the
+  descent is fixed by every `p`-torsion translation, it descends
+  through `Fix(E[p]) = [p]^*K` to `g = h∘[p]`, forcing the point ideal
+  of the original point to be principal.
 -/
 module
 
 public import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
+public import Fermat.FLT.EllipticCurve.Torsion
 
 @[expose] public section
 
 namespace WeilPairing
 
 open WeierstrassCurve WeierstrassCurve.Affine
-open scoped nonZeroDivisors
+open scoped nonZeroDivisors Polynomial.Bivariate
 
 variable {F : Type*} [Field F] [DecidableEq F] {W : WeierstrassCurve.Affine F}
 
@@ -123,5 +141,213 @@ theorem exists_span_eq_prod_pointIdeal (D : Multiset W.Point)
   obtain ⟨a, ha0, haspan⟩ :=
     (ClassGroup.mk_eq_one_of_coe_ideal (coe_prod_pointIdeal' D)).mp hmk
   exact ⟨a, ha0, haspan.symm⟩
+
+/-! ## L4-4: the tautological-point substrate for the translation action
+
+The translation pullback `h ↦ h∘τ_κ` on the function field
+`K = Frac(F[W])` is realized as evaluation at the point `taut ⊕ κ` of
+the base-changed curve `W ⁄ K`, where `taut = (X̄, Ȳ)` is the
+tautological point (the images of the coordinates in `K`).  This
+instantiates the `TautologicalPoint.lean` pattern (there developed for
+the universal curve) at an arbitrary Weierstrass curve over a field —
+HLEG-NOTES.md §4(B), stage L4-4. -/
+
+omit [DecidableEq F] in
+open Polynomial in
+/-- Elements of the base field embed in the coordinate ring as the
+classes of constant polynomials. -/
+lemma algebraMap_coordinateRing_apply (c : F) :
+    algebraMap F W.CoordinateRing c =
+      CoordinateRing.mk W (Polynomial.C (Polynomial.C c)) := by
+  rw [IsScalarTower.algebraMap_apply F F[X] W.CoordinateRing,
+    AdjoinRoot.algebraMap_eq]
+  rfl
+
+/-- The function field of a Weierstrass curve carries a (classical)
+decidable equality — needed for the group law on the points of the
+base-changed curve `W ⁄ Frac(F[W])`. -/
+noncomputable instance instDecEqFunctionField : DecidableEq W.FunctionField :=
+  Classical.decEq _
+
+variable (W)
+
+/-- The tautological `x`-coordinate of `W` in its own function field:
+the image of `X`. -/
+noncomputable def tautX : W.FunctionField :=
+  algebraMap W.CoordinateRing W.FunctionField
+    (CoordinateRing.mk W (Polynomial.C Polynomial.X))
+
+/-- The tautological `y`-coordinate of `W` in its own function field:
+the image of `Y`. -/
+noncomputable def tautY : W.FunctionField :=
+  algebraMap W.CoordinateRing W.FunctionField (CoordinateRing.mk W Polynomial.X)
+
+omit [DecidableEq F] in
+open Polynomial in
+/-- **Evaluation at the tautological point is the quotient map**: for a
+bivariate polynomial over `F`, mapping the coefficients into the
+function field and evaluating at `(tautX, tautY)` agrees with reducing
+modulo the Weierstrass polynomial and embedding into the function
+field. -/
+theorem taut_evalEval_mk (g : F[X][Y]) :
+    (g.map (mapRingHom (algebraMap F W.FunctionField))).evalEval
+        (tautX W) (tautY W) =
+      algebraMap W.CoordinateRing W.FunctionField (CoordinateRing.mk W g) := by
+  have hhom : (Polynomial.evalEvalRingHom (tautX W) (tautY W)).comp
+      (mapRingHom (mapRingHom (algebraMap F W.FunctionField))) =
+      (algebraMap W.CoordinateRing W.FunctionField).comp
+        ((CoordinateRing.mk W : F[X][Y] →+* W.CoordinateRing)) := by
+    apply Polynomial.ringHom_ext'
+    · apply Polynomial.ringHom_ext'
+      · apply RingHom.ext
+        intro c
+        simp only [RingHom.coe_comp, Function.comp_apply, coe_mapRingHom,
+          Polynomial.map_C, coe_evalRingHom, eval_C]
+        rw [IsScalarTower.algebraMap_apply F W.CoordinateRing W.FunctionField]
+        exact congrArg (algebraMap W.CoordinateRing W.FunctionField)
+          (algebraMap_coordinateRing_apply c)
+      · simp only [RingHom.coe_comp, Function.comp_apply, coe_mapRingHom,
+          Polynomial.map_C, Polynomial.map_X, coe_evalRingHom, eval_C, eval_X]
+        rfl
+    · simp only [RingHom.coe_comp, Function.comp_apply, coe_mapRingHom,
+        Polynomial.map_X, coe_evalRingHom, eval_C, eval_X]
+      rfl
+  exact DFunLike.congr_fun hhom g
+
+omit [DecidableEq F] in
+open Polynomial in
+/-- The tautological point satisfies the Weierstrass equation of the
+base-changed curve. -/
+theorem taut_equation :
+    (W⁄W.FunctionField).toAffine.Equation (tautX W) (tautY W) := by
+  show ((W⁄W.FunctionField).toAffine.polynomial).evalEval (tautX W) (tautY W) = 0
+  have hpoly : (W⁄W.FunctionField).toAffine.polynomial =
+      W.polynomial.map (mapRingHom (algebraMap F W.FunctionField)) :=
+    WeierstrassCurve.Affine.map_polynomial ..
+  rw [hpoly, taut_evalEval_mk, AdjoinRoot.mk_self, map_zero]
+
+omit [DecidableEq F] in
+/-- **The tautological point is nonsingular** (when the curve has
+nonzero discriminant). -/
+theorem taut_nonsingular (hΔ : W.Δ ≠ 0) :
+    (W⁄W.FunctionField).toAffine.Nonsingular (tautX W) (tautY W) := by
+  refine (WeierstrassCurve.Affine.equation_iff_nonsingular_of_Δ_ne_zero ?_).mp
+    (taut_equation W)
+  show (W⁄W.FunctionField).toAffine.Δ ≠ 0
+  rw [show (W⁄W.FunctionField).toAffine.Δ =
+    algebraMap F W.FunctionField W.Δ from WeierstrassCurve.map_Δ ..]
+  exact fun hc => hΔ ((algebraMap F W.FunctionField).injective (by rwa [map_zero]))
+
+/-- The tautological point of `W` on the base-changed curve
+`W ⁄ Frac(F[W])`, as a group-law point. -/
+noncomputable def tautPoint (hΔ : W.Δ ≠ 0) : (W⁄W.FunctionField).Point :=
+  .some (tautX W) (tautY W) (taut_nonsingular W hΔ)
+
+open Polynomial in
+/-- **The evaluation homomorphism** of the coordinate ring at a
+function-field point of the base-changed curve: `F[W] →+* K` sending
+`X ↦ u`, `Y ↦ v`.  Applied at `taut ⊕ κ` this realizes the translation
+pullback `h ↦ h∘τ_κ` (`translationEval`). -/
+noncomputable def pointEval {u v : W.FunctionField}
+    (h : (W⁄W.FunctionField).toAffine.Equation u v) :
+    W.CoordinateRing →+* W.FunctionField :=
+  AdjoinRoot.lift (eval₂RingHom (algebraMap F W.FunctionField) u) v <| by
+    rw [Polynomial.eval₂_eval₂RingHom_apply,
+      ← WeierstrassCurve.Affine.map_polynomial]
+    exact h
+
+/-- **The translation pullback** `h ↦ h∘τ_κ` on the coordinate ring:
+evaluation at the point `taut ⊕ κ` of the base-changed curve.  (The
+`O`-branch of the match is junk — `taut ⊕ κ` is affine for every
+`F`-point `κ` since the tautological coordinates are not constants —
+kept total for definitional convenience.) -/
+noncomputable def translationEval (hΔ : W.Δ ≠ 0) (κ : W.Point) :
+    W.CoordinateRing →+* W.FunctionField :=
+  match tautPoint W hΔ +
+      Point.map (W' := W) (Algebra.ofId F W.FunctionField) κ with
+  | .zero => algebraMap W.CoordinateRing W.FunctionField
+  | .some _ _ h => pointEval W h.left
+
+/-- **Injectivity of the translation pullback** (sorry node — L4-4 of
+the nondegeneracy descent, HLEG-NOTES.md §4(B)): evaluation of the
+coordinate ring at `taut ⊕ κ` is injective.  Route (per the staged
+plan): composing with the translation by `⊖κ` — i.e. evaluating the
+image at `taut ⊖ κ` — recovers evaluation at
+`(taut ⊕ κ) ⊖ κ = taut`, which is the canonical embedding
+`F[W] ↪ K` (`AdjoinRoot`-induction against `taut_evalEval_mk`); no
+transcendence argument is needed.  The composition identity is the
+taut-multiplication content of `TautMultiplication.lean` transported
+to `W` over its own function field. -/
+theorem translationEval_injective (hΔ : W.Δ ≠ 0) (κ : W.Point) :
+    Function.Injective (translationEval W hΔ κ) := by
+  sorry
+
+/-- **The translation automorphism of the function field**: the
+fraction-field extension of the translation pullback
+`translationEval κ`.  This is the substrate of the translation
+character `χ(κ) = (g∘τ_κ)/g` of the descent (L4-8). -/
+noncomputable def translationHom (hΔ : W.Δ ≠ 0) (κ : W.Point) :
+    W.FunctionField →+* W.FunctionField :=
+  IsFractionRing.lift (translationEval_injective W hΔ κ)
+
+/-- The vertical-line coordinate function of a point: `X − x` at an
+affine point `(x, y)` (whose affine divisor is `(P) + (⊖P)`), and `1`
+at `O`.  The product `∏_{κ ∈ E[p]} vertical κ` is the denominator
+turning the zero-sum Miller generator of
+`Σ_{κ} (T'⊕κ) + (⊖κ)` into the descent function `g` with
+`div g = Σ_{κ} (T'⊕κ) − (κ)`. -/
+noncomputable def verticalClass : W.Point → W.CoordinateRing
+  | .zero => 1
+  | .some x _ _ => CoordinateRing.XClass W x
+
+section FixedDescent
+
+variable {k : Type*} [Field k] [DecidableEq k] (E : WeierstrassCurve k)
+  [E.IsElliptic]
+
+/-- **The fixed-field descent** (sorry node — L4-5/6 of the
+nondegeneracy descent, HLEG-NOTES.md §4(B); Silverman AEC III.8.1(c)):
+let `x` be a `p`-torsion point, `T'` a `p`-division point of it, and
+`a` a Miller generator of the zero-sum divisor multiset
+`Σ_{κ ∈ E[p]} (T'⊕κ) + (⊖κ)`; write
+`g := a / ∏_{κ ∈ E[p]} vertical κ`, so
+`div g = Σ_{κ ∈ E[p]} (T'⊕κ) − (κ) = [p]^*((x) − (O))`.  If `g` is
+fixed by every `p`-torsion translation, then `g` lies in the fixed
+field of the translation action, which equals `[p]^*K` — the
+translation automorphisms are a faithful `E[p]`-action fixing the
+constants, so `[K : Fix(E[p])] = p²` by Artin, while `[K : [p]^*K] ≤ p²`
+since `tautX` is a root of `Φ_p − ([p]^*x)·ΨSq_p` — hence `g = h∘[p]`
+for some `h ∈ K`; comparing divisors through the injectivity of `[p]^*`
+forces `div h = (x) − (O)`, i.e. `h` is integral and generates the
+point ideal of `x`. -/
+theorem exists_span_pointIdeal_of_translation_fixed
+    (hΔ : (E⁄k).Δ ≠ 0) (p : ℕ) [Fact p.Prime] (hp : (p : k) ≠ 0)
+    [Fintype (E.nTorsion p)]
+    (x : E.nTorsion p) (T' : (E⁄k).Point)
+    (hT2 : ((p : ℕ) : ℤ) • T' = x.val)
+    (a : (E⁄k).toAffine.CoordinateRing) (ha0 : a ≠ 0)
+    (haspan : Ideal.span {a} =
+      (((Finset.univ.val.map fun κ : E.nTorsion p => T' + κ.val) +
+        (Finset.univ.val.map fun κ : E.nTorsion p => -κ.val)).map
+          (pointIdeal (E⁄k).toAffine)).prod)
+    (hfix : ∀ κ : E.nTorsion p,
+      translationHom (E⁄k).toAffine hΔ κ.val
+          (algebraMap (E⁄k).toAffine.CoordinateRing
+              (E⁄k).toAffine.FunctionField a /
+            algebraMap (E⁄k).toAffine.CoordinateRing
+              (E⁄k).toAffine.FunctionField
+              (Finset.univ.val.map fun κ' : E.nTorsion p =>
+                verticalClass (E⁄k).toAffine κ'.val).prod) =
+        algebraMap (E⁄k).toAffine.CoordinateRing
+            (E⁄k).toAffine.FunctionField a /
+          algebraMap (E⁄k).toAffine.CoordinateRing
+            (E⁄k).toAffine.FunctionField
+            (Finset.univ.val.map fun κ' : E.nTorsion p =>
+              verticalClass (E⁄k).toAffine κ'.val).prod) :
+    ∃ h : (E⁄k).toAffine.CoordinateRing, h ≠ 0 ∧
+      Ideal.span {h} = pointIdeal (E⁄k).toAffine x.val := by
+  sorry
+
+end FixedDescent
 
 end WeilPairing

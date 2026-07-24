@@ -4202,6 +4202,97 @@ theorem weilValueProp_self_of_two (q : ℕ) [Fact q.Prime]
       hxRS hxRPS hxQRnS hxQRnPS
       aP aQ haP haQ hA heq)
 
+/-- **Hall-forced triviality of the translation character** (sorry
+node — stages L4-7/8/9b of the nondegeneracy descent, HLEG-NOTES.md
+§4(B)): let `x` be a `p`-torsion point with `p`-division point `T'`,
+`a` a Miller generator of the zero-sum divisor multiset
+`Σ_{κ ∈ E[p]} (T'⊕κ) + (⊖κ)`, and
+`g := a / ∏_{κ ∈ E[p]} vertical κ` the descent function with
+`div g = Σ_{κ ∈ E[p]} (T'⊕κ) − (κ) = [p]^*((x) − (O))`.  Then the
+translation character `χ(κ) := (g∘τ_κ)/g` is a CONSTANT (its divisor
+vanishes: `div g` is `E[p]`-translation invariant by reindexing —
+L4-8), the pullback factorization `f_x∘[p] = c·g^p` (L4-7) makes it
+`μ_p`-valued and a homomorphism, and the discrete bridge lemma
+(Silverman Ex. 3.16(c)) identifies `χ(κ)^{±1}` with an admissible Weil
+value for the pair `(κ, x)`; `hall` provides the admissible value `1`
+for every pair and `huniq` the uniqueness of admissible values, so
+`χ ≡ 1`, i.e. `g` is fixed by every `p`-torsion translation.  The
+conclusion feeds `exists_span_pointIdeal_of_translation_fixed`
+(`WeilPairingDescent.lean`, L4-5/6) inside
+`weilValueProp_all_one_torsion_trivial`'s `hres`. -/
+theorem weilDescent_translation_fixed_of_all_one (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic]
+    (p : ℕ) [Fact p.Prime] (hqp : q ≠ p)
+    (huniq : ∀ (v w : (Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).nTorsion p)
+      (z₁ z₂ : (AlgebraicClosure (ZMod q))ˣ),
+      weilValueProp q Wbar p v w z₁ → weilValueProp q Wbar p v w z₂ →
+      z₁ = z₂)
+    (hall : ∀ v w : (Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).nTorsion p,
+      weilValueProp q Wbar p v w 1)
+    [Fintype ((Wbar.map (algebraMap (ZMod q)
+      (AlgebraicClosure (ZMod q)))).nTorsion p)]
+    (hΔ : ((Wbar.map (algebraMap (ZMod q)
+      (AlgebraicClosure (ZMod q))))⁄(AlgebraicClosure (ZMod q))).Δ ≠ 0)
+    (x : (Wbar.map (algebraMap (ZMod q)
+      (AlgebraicClosure (ZMod q)))).nTorsion p)
+    (T' : ((Wbar.map (algebraMap (ZMod q)
+      (AlgebraicClosure (ZMod q))))⁄(AlgebraicClosure (ZMod q))).toAffine.Point)
+    (hT2 : ((p : ℕ) : ℤ) • T' = x.val)
+    (a : ((Wbar.map (algebraMap (ZMod q)
+      (AlgebraicClosure (ZMod q))))⁄(AlgebraicClosure
+        (ZMod q))).toAffine.CoordinateRing)
+    (ha0 : a ≠ 0)
+    (haspan : Ideal.span {a} =
+      (((Finset.univ.val.map fun κ : (Wbar.map (algebraMap (ZMod q)
+          (AlgebraicClosure (ZMod q)))).nTorsion p => T' + κ.val) +
+        (Finset.univ.val.map fun κ : (Wbar.map (algebraMap (ZMod q)
+          (AlgebraicClosure (ZMod q)))).nTorsion p => -κ.val)).map
+          (pointIdeal ((Wbar.map (algebraMap (ZMod q)
+            (AlgebraicClosure (ZMod q))))⁄(AlgebraicClosure
+              (ZMod q))).toAffine)).prod) :
+    ∀ κ : (Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).nTorsion p,
+      translationHom ((Wbar.map (algebraMap (ZMod q)
+          (AlgebraicClosure (ZMod q))))⁄(AlgebraicClosure
+            (ZMod q))).toAffine hΔ κ.val
+          (algebraMap ((Wbar.map (algebraMap (ZMod q)
+              (AlgebraicClosure (ZMod q))))⁄(AlgebraicClosure
+                (ZMod q))).toAffine.CoordinateRing
+              ((Wbar.map (algebraMap (ZMod q)
+                (AlgebraicClosure (ZMod q))))⁄(AlgebraicClosure
+                  (ZMod q))).toAffine.FunctionField a /
+            algebraMap ((Wbar.map (algebraMap (ZMod q)
+              (AlgebraicClosure (ZMod q))))⁄(AlgebraicClosure
+                (ZMod q))).toAffine.CoordinateRing
+              ((Wbar.map (algebraMap (ZMod q)
+                (AlgebraicClosure (ZMod q))))⁄(AlgebraicClosure
+                  (ZMod q))).toAffine.FunctionField
+              (Finset.univ.val.map fun κ' : (Wbar.map (algebraMap (ZMod q)
+                (AlgebraicClosure (ZMod q)))).nTorsion p =>
+                verticalClass ((Wbar.map (algebraMap (ZMod q)
+                  (AlgebraicClosure (ZMod q))))⁄(AlgebraicClosure
+                    (ZMod q))).toAffine κ'.val).prod) =
+        algebraMap ((Wbar.map (algebraMap (ZMod q)
+            (AlgebraicClosure (ZMod q))))⁄(AlgebraicClosure
+              (ZMod q))).toAffine.CoordinateRing
+            ((Wbar.map (algebraMap (ZMod q)
+              (AlgebraicClosure (ZMod q))))⁄(AlgebraicClosure
+                (ZMod q))).toAffine.FunctionField a /
+          algebraMap ((Wbar.map (algebraMap (ZMod q)
+            (AlgebraicClosure (ZMod q))))⁄(AlgebraicClosure
+              (ZMod q))).toAffine.CoordinateRing
+            ((Wbar.map (algebraMap (ZMod q)
+              (AlgebraicClosure (ZMod q))))⁄(AlgebraicClosure
+                (ZMod q))).toAffine.FunctionField
+            (Finset.univ.val.map fun κ' : (Wbar.map (algebraMap (ZMod q)
+              (AlgebraicClosure (ZMod q)))).nTorsion p =>
+              verticalClass ((Wbar.map (algebraMap (ZMod q)
+                (AlgebraicClosure (ZMod q))))⁄(AlgebraicClosure
+                  (ZMod q))).toAffine κ'.val).prod := by
+  sorry
+
 /-- **Nondegeneracy descent core** (sorry node — Silverman AEC
 III.8.1(c), the `g = h∘[p]` descent; staged plan L4-1..9 on record in
 HLEG-NOTES.md §4(B)): if `1` is an admissible Miller value for every
@@ -4222,14 +4313,20 @@ forcing `div h = (P⊕S) − (S)` and hence — `toClass` injectivity —
 (Silverman Ex. 3.16(c)) evaluates an admissible setup for `(κ₀, ·)`
 to `χ(κ₀)^{±1} ≠ 1`, contradicting `hall` through `huniq`
 (instantiated in the μ-theorem with its in-proof `huniqval`).
-STAGING STATUS (2026-07-24): L4-1 (`T'` via
+STAGING STATUS (2026-07-24, second pass): L4-1 (`T'` via
 `TorsionCard.smul_surjective`), L4-2 (the `p²`-enumeration of `E[p]`),
 and L4-3 (the Miller generator of the zero-sum divisor multiset
 `Σ_{κ ∈ E[p]} (T'⊕κ) + (⊖κ)`, through
 `WeilPairing.exists_span_eq_prod_pointIdeal` in
-`WeilPairingDescent.lean`) are PROVEN and assembled in the proof
-skeleton below; the single remaining sorry is the in-proof leaf
-`hres` — the L4-4..9 descent core consuming the generator. -/
+`WeilPairingDescent.lean`) are PROVEN and assembled; the former
+in-proof leaf `hres` is now itself a PROVEN skeleton consuming two
+named top-level sorry nodes — `weilDescent_translation_fixed_of_all_one`
+(above: L4-7/8/9b, `hall` kills the translation character) and
+`exists_span_pointIdeal_of_translation_fixed`
+(`WeilPairingDescent.lean`: L4-5/6, the fixed-field descent to a
+principal point ideal) — plus the L4-4 τ-substrate leaf
+`translationEval_injective` (`WeilPairingDescent.lean`) underlying the
+statements of both. -/
 theorem weilValueProp_all_one_torsion_trivial (q : ℕ) [Fact q.Prime]
     (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic]
     (p : ℕ) [Fact p.Prime] (hqp : q ≠ p)
@@ -4298,27 +4395,66 @@ theorem weilValueProp_all_one_torsion_trivial (q : ℕ) [Fact q.Prime]
       have hx0 : ((p : ℕ) : ℤ) • x.val = 0 :=
         (Submodule.mem_torsionBy_iff _ _).mp x.property
       rw [hT2, hx0]
-    -- L4-4..9 (residual sorry): the `g = h∘[p]` descent on the Miller
-    -- generator of `D`.  Given ANY nonzero `a` with
-    -- `span {a} = ∏_{κ} I_{T'⊕κ} · I_{⊖κ}`, the function
-    -- `g := a / ∏_{κ ≠ O} XClass x_κ` has divisor
-    -- `Σ_κ (T'⊕κ) − (κ) = [p]^*((P) − (O))`; the translation character
-    -- `χ(κ) = (g∘τ_κ)/g : E[p] → μ_p` (L4-8, via the τ/[p]-substrate
-    -- L4-4..6 instantiating the tautological-point machinery at `Wb`
-    -- over its own function field, and the pullback factorization
-    -- `f_P∘[p] = c·g^p`, L4-7) is either trivial — then `g` descends
-    -- through `Fix(E[p]) = [p]^*K` to `g = h∘[p]` with
-    -- `div h = (P⊕S) − (S)`, so the point ideal is principal and the
-    -- class vanishes (L4-9, first branch) — or `χ(κ₀) ≠ 1` for some
-    -- `κ₀`, and the discrete bridge lemma (Silverman Ex. 3.16(c))
-    -- exhibits an admissible Weil value `χ(κ₀)^{±1} ≠ 1` for the pair
-    -- `(κ₀, x)`, contradicting `hall` through `huniq` (L4-9, second
-    -- branch), so anything follows.  See HLEG-NOTES.md §4(B).
+    -- L4-4..9: the `g = h∘[p]` descent on the Miller generator of `D`,
+    -- assembled from two named top-level sorry nodes.  Given ANY
+    -- nonzero `a` with `span {a} = ∏_{κ} I_{T'⊕κ} · I_{⊖κ}`, the
+    -- function `g := a / ∏_{κ} vertical κ` has divisor
+    -- `Σ_κ (T'⊕κ) − (κ) = [p]^*((P) − (O))`.  `hall`/`huniq` force the
+    -- translation character `χ(κ) = (g∘τ_κ)/g` to be trivial
+    -- (`weilDescent_translation_fixed_of_all_one` — L4-7/8/9b: χ is
+    -- constant, μ_p-valued through `f_P∘[p] = c·g^p`, and the bridge
+    -- lemma identifies it with admissible Weil values, all `1` by
+    -- `hall` through `huniq`); the fixed `g` then descends through
+    -- `Fix(E[p]) = [p]^*K` to `g = h∘[p]`, making the point ideal of
+    -- the representative principal
+    -- (`exists_span_pointIdeal_of_translation_fixed`,
+    -- `WeilPairingDescent.lean` — L4-5/6); the class vanishes by the
+    -- `ClassGroup.mk` extraction.  See HLEG-NOTES.md §4(B).
     have hres : ∀ a : (Wbar.map (algebraMap (ZMod q)
         (AlgebraicClosure (ZMod q)))).toAffine.CoordinateRing, a ≠ 0 →
         Ideal.span {a} = (D.map (pointIdeal _)).prod →
         WeierstrassCurve.Affine.Point.toClass x.val = 0 := by
-      sorry
+      intro a ha0 haspan
+      -- the base-changed curve is elliptic, hence has nonzero
+      -- discriminant
+      have hΔ : ((Wbar.map (algebraMap (ZMod q)
+          (AlgebraicClosure (ZMod q))))⁄(AlgebraicClosure (ZMod q))).Δ ≠ 0 :=
+        isUnit_iff_ne_zero.mp (((Wbar.map (algebraMap (ZMod q)
+          (AlgebraicClosure (ZMod q)))).map (algebraMap
+            (AlgebraicClosure (ZMod q))
+            (AlgebraicClosure (ZMod q)))).isUnit_Δ)
+      -- the span datum in the explicit (`set`-free) spelling of the
+      -- descent nodes
+      have haspan' : Ideal.span {a} =
+          (((Finset.univ.val.map fun κ : (Wbar.map (algebraMap (ZMod q)
+              (AlgebraicClosure (ZMod q)))).nTorsion p => T' + κ.val) +
+            (Finset.univ.val.map fun κ : (Wbar.map (algebraMap (ZMod q)
+              (AlgebraicClosure (ZMod q)))).nTorsion p => -κ.val)).map
+              (pointIdeal ((Wbar.map (algebraMap (ZMod q)
+                (AlgebraicClosure (ZMod q))))⁄(AlgebraicClosure
+                  (ZMod q))).toAffine)).prod := by
+        rw [← hDdef]
+        exact haspan
+      -- L4-7/8/9b: `hall` forces the translation character of `g` to
+      -- be trivial
+      have hfix := weilDescent_translation_fixed_of_all_one q Wbar p hqp
+        huniq hall hΔ x T' hT2 a ha0 haspan'
+      -- L4-5/6: the fixed function descends through `[p]^*K`; the
+      -- point ideal of the representative is principal
+      obtain ⟨h, hh0, hhspan⟩ := exists_span_pointIdeal_of_translation_fixed
+        (Wbar.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))) hΔ p
+        hp0 x T' hT2 a ha0 haspan' hfix
+      -- class-group extraction: a principal point ideal has trivial
+      -- class
+      have hmk1 : ClassGroup.mk ((Wbar.map (algebraMap (ZMod q)
+          (AlgebraicClosure (ZMod q))))⁄(AlgebraicClosure
+            (ZMod q))).toAffine.FunctionField
+          (pointIdeal' ((Wbar.map (algebraMap (ZMod q)
+            (AlgebraicClosure (ZMod q))))⁄(AlgebraicClosure
+              (ZMod q))).toAffine x.val) = 1 :=
+        (ClassGroup.mk_eq_one_of_coe_ideal (coe_pointIdeal' x.val)).mpr
+          ⟨h, hh0, hhspan.symm⟩
+      exact toMul_eq_one.mp ((mk_pointIdeal' x.val).symm.trans hmk1)
     -- L4-3: the Miller generator of the zero-sum divisor multiset
     obtain ⟨g, hg0, hgspan⟩ := exists_span_eq_prod_pointIdeal D hsum
     exact hres g hg0 hgspan
