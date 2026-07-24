@@ -7993,39 +7993,109 @@ theorem eisenstein_trivial_sub_extension_locally_split_at_p
         (χ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[p]) g) - 1) * a :=
   sorry
 
-/-- **Tame local splitting at `2`** (Eisenstein pillar E3b; sorry node
-— the at-2 unit analysis; `hp5` is load-bearing HERE): a hardly
+/-- **The uniform decomposition-group bridge at `2`** (sorry node — the
+full-group strengthening of the PROVEN inertia bridge
+`IsHardlyRamified.localInertia_two_eq_map_padic` of `ModThree.lean`):
+the images in `Γℚ` of the two local absolute Galois groups at `2` — of
+`ℚ_[2]` (mathlib's `Padic`) and of the adic completion of `ℚ` at the
+place `prime_two` (the spelling in which the whole
+inertia/tame/Frobenius machinery of `ModThree.lean` is developed) —
+are conjugate subgroups, by ONE UNIFORM conjugator `c`. Intended
+proof, extracted from the (per-element) inertia bridge: the continuous
+`ℚ`-algebra isomorphism `E : adicCompletion ℚ v₂ ≃A[ℚ] ℚ_[2]`
+(`Rat.HeightOneSpectrum.adicCompletion.padicEquiv`, normalized through
+the `Padic`-instance cast) induces an isomorphism of algebraic
+closures, hence a group isomorphism `Γ ℚ_[2] ≃ Γ (v₂-completion)`
+`g ↦ σ_g`; the two composite embeddings `ℚᵃˡᵍ → (completions)ᵃˡᵍ`
+differ by a single automorphism `c ∈ Γ ℚ` (`IsAlgClosed.lift` plus
+uniqueness of algebraic-closure embeddings up to automorphism), and
+that `c` conjugates `map (algebraMap ℚ ℚ_[2]) g` onto
+`map (algebraMap ℚ Kv₂) σ_g` for EVERY `g` simultaneously — the
+per-element proof of `localInertia_two_eq_map_padic` already
+constructs exactly this data before adding valuation bookkeeping; this
+statement drops the inertia clauses, keeps the uniformity. Soundness:
+decomposition groups at places over a fixed rational place are
+conjugate in the global group — standard (Neukirch, *Algebraic Number
+Theory*, II §9). -/
+theorem exists_uniform_conj_decomposition_two_padic :
+    ∃ c : Field.absoluteGaloisGroup ℚ, ∀ g : Field.absoluteGaloisGroup ℚ_[2],
+      ∃ σ : Field.absoluteGaloisGroup
+        (HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat),
+        Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) g =
+          c * Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (HeightOneSpectrum.adicCompletion ℚ
+              Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ * c⁻¹ :=
+  sorry
+
+/-- **Tame local splitting at the place `2`, adic-completion spelling**
+(Eisenstein pillar E3b core; sorry node — the at-2 unit analysis in
+the spelling of `ModThree.lean`'s tame machinery; `hp5` is
+load-bearing HERE): a hardly ramified mod-`p` extension with TRIVIAL
+sub-character, `p ≥ 5`, splits on the image of the local Galois group
+`Γ Kv₂` of the adic completion of `ℚ` at the place `prime_two`.
+Classical proof, in two strokes. (i) *Killing inertia*: `χ` is pinned
+to `ω = χ̄_cyc` by the determinant of `htri` against `hρE.det`, and
+`ω` is unramified at `2`, so on the image of `localInertiaGroup v₂`
+the function `cc` is a plain homomorphism into `(kk', +)`, killed by
+wild (pro-2) inertia (char `kk' = p` is odd), hence factoring through
+the tame quotient, on which a Frobenius lift acts by `t ↦ t²`
+(`exists_finite_level_tame_frobenius_generator_two`, ModThree.lean,
+PROVEN); the conjugation identity `cc(σnσ⁻¹) = χ(σ)⁻¹·cc(n)` for tame
+`n` gives `2·cc(n) = χ(F)⁻¹·cc(n)` with `χ(F) = ω(Frob₂) = 2`, so
+`(2 − 2⁻¹)·cc(n) = 0` and `3/2 ≠ 0` in characteristic `p` exactly when
+`p ∤ 3` — excluded by `hp5`. (ii) *Killing the unramified part*:
+`a := cc(F)` corrects `cc` (well-formed: `χ(F) − 1 = 2 − 1 = 1`) to a
+continuous cocycle vanishing on inertia and on the arithmetic
+Frobenius `adicArithFrob v₂`, hence on the open subgroup they
+generate — all of `Γ Kv₂`, the unramified quotient being procyclic on
+Frobenius. Serre, Duke Math. J. 54 (1987), §4.1 runs this at-2
+computation; the hypothesis set is inhabited (split triangulars) and
+the route is hypothesis-honest: `hp5` enters at the tame escape
+`p ∤ 3` and nowhere else. -/
+theorem eisenstein_trivial_sub_extension_locally_split_at_place_two_of_five_le
+    (hp5 : 5 ≤ p)
+    {kk' : Type u} [Field kk'] [Finite kk'] [Algebra ℤ_[p] kk']
+    [TopologicalSpace kk'] [DiscreteTopology kk'] [IsTopologicalRing kk']
+    {ρE : GaloisRep ℚ kk' (Fin 2 → kk')}
+    (hrankE : Module.rank kk' (Fin 2 → kk') = 2)
+    (hρE : IsHardlyRamified hpodd hrankE ρE)
+    (χ : Field.absoluteGaloisGroup ℚ →* kk')
+    (cc : Field.absoluteGaloisGroup ℚ → kk')
+    (htri : ∀ g, LinearMap.toMatrix (Pi.basisFun kk' (Fin 2))
+      (Pi.basisFun kk' (Fin 2)) (ρE g) = !![1, cc g; 0, χ g]) :
+    ∃ a : kk', ∀ σ : Field.absoluteGaloisGroup
+      (HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat),
+      cc (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ) =
+        (χ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ) - 1) * a :=
+  sorry
+
+/-- **Tame local splitting at `2`** (Eisenstein pillar E3b; PROVEN
+2026-07-24 as an assembly over the adic-completion-spelled core
+`eisenstein_trivial_sub_extension_locally_split_at_place_two_of_five_le`
+(where the tame Frobenius analysis lives, in the spelling of
+`ModThree.lean`'s PROVEN machinery) and the uniform
+decomposition-group bridge
+`exists_uniform_conj_decomposition_two_padic`; the assembly is pure
+cocycle algebra: the χ-twisted cocycle identity
+`cc(gh) = cc(h) + cc(g)·χ(h)` from `htri`, its conjugation consequence
+`cc(cyc⁻¹) = χ(c)⁻¹·(cc(y) + cc(c)·(χ(y) − 1))`, and
+conjugation-invariance `χ(cyc⁻¹) = χ(y)` transport the place-`2`
+coboundary `a` to the `ℚ_[2]`-spelled coboundary
+`a' = χ(c)⁻¹·(a + cc(c))`): a hardly
 ramified mod-`p` extension with TRIVIAL sub-character, `p ≥ 5`, splits
-locally at `2`. Classical proof, in two strokes. (i) *Killing
-inertia*: `χ` is pinned to `ω = χ̄_cyc` by the determinant of `htri`
-against `hρE.det`, and `ω` is unramified at `2`, so on (the image of)
-the inertia subgroup `I_2` the function `cc` is a plain homomorphism
-into `(kk', +)` — a pro-`p` target, killed by wild (pro-2) inertia,
-hence factoring through the tame quotient, on which a Frobenius lift
-`F` acts by `t ↦ t²`; the conjugation identity
-`cc(σ n σ⁻¹) = χ(σ)⁻¹ · cc(n)` for `n ∈ ker χ` (pure cocycle algebra
-from `htri`) applied to tame `n` gives `2 · cc(n) = χ(F)⁻¹ · cc(n)`
-with `χ(F) = ω(Frob₂) = 2`, so `(2 − 2⁻¹) · cc(n) = 0` and
-`2 − 2⁻¹ = 3/2 ≠ 0` in characteristic `p` exactly when
-`p ∤ 2² − 1 = 3` — excluded by `hp5`. This is the tame escape that the
-section audit's `p = 3` Kummer-of-2 counterexample rides
-(`v_2(2) = 1 ≢ 0 mod 3`: tamely ramified at `2`). (ii) *Killing the
-unramified part*: `a := cc(F)/(χ(F) − 1)` is well-formed since
-`χ(F) − 1 = 2 − 1 = 1 ≠ 0` (more generally `p ∤ 2 − 1` always kills
-`H¹_ur(ℚ_2, ω^{−1})`), and correcting `cc` by its coboundary yields a
-continuous cocycle vanishing on `I_2` and on `F`, hence on the closed
-subgroup they topologically generate — all of `G_2`, the unramified
-quotient being procyclic on `Frob₂` (the finite-level tame generator
-machinery of `ModThree.lean`,
-`exists_finite_level_tame_frobenius_generator_two` and
-`localInertia_two_eq_map_padic`, is the intended formal route; Serre,
-Duke Math. J. 54 (1987), §4.1 runs this at-2 computation). Soundness
-(audit 2026-07-24): the hypothesis set is inhabited (split
-triangulars), the conclusion holds for every inhabitant — for `p ≥ 5`
-in fact `H¹(ℚ_2, ω^{−1}) = 0` outright (local Euler characteristic
-plus `h⁰ = h² = 0` from `p ∤ 2 − 1` and `p ∤ 2² − 1`) — and the route
-is hypothesis-honest: `hp5` is consumed at the tame escape `p ∤ 3` and
-nowhere else. -/
+locally at `2`: some `a' : kk'` writes the upper-right entry as a
+coboundary on the whole image of `Γ ℚ_[2]`. (The classical two-stroke
+at-2 unit analysis — tame Frobenius weights killing inertia through
+`p ∤ 2² − 1 = 3`, then `p ∤ 2 − 1` killing the unramified part — lives
+in the place-spelled core leaf above; the `p = 3` Kummer-of-2
+counterexample of the section audit rides exactly the tame escape,
+`v_2(2) = 1 ≢ 0 mod 3`.) -/
 theorem eisenstein_trivial_sub_extension_locally_split_at_two_of_five_le
     (hp5 : 5 ≤ p)
     {kk' : Type u} [Field kk'] [Finite kk'] [Algebra ℤ_[p] kk']
@@ -8039,8 +8109,53 @@ theorem eisenstein_trivial_sub_extension_locally_split_at_two_of_five_le
       (Pi.basisFun kk' (Fin 2)) (ρE g) = !![1, cc g; 0, χ g]) :
     ∃ a : kk', ∀ g : Field.absoluteGaloisGroup ℚ_[2],
       cc (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) g) =
-        (χ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) g) - 1) * a :=
-  sorry
+        (χ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) g) - 1) * a := by
+  -- the χ-twisted cocycle identity, from multiplicativity of `ρE`
+  -- through the triangular form
+  have hcoc : ∀ g h, cc (g * h) = cc h + cc g * χ h := by
+    intro g h
+    have h1 : LinearMap.toMatrix (Pi.basisFun kk' (Fin 2))
+        (Pi.basisFun kk' (Fin 2)) (ρE (g * h)) =
+        !![1, cc g; 0, χ g] * !![1, cc h; 0, χ h] := by
+      rw [map_mul, LinearMap.toMatrix_mul, htri g, htri h]
+    rw [htri (g * h), Matrix.mul_fin_two] at h1
+    simpa using congrFun (congrFun h1 0) 1
+  -- `cc` vanishes at the identity
+  have hcc1 : cc 1 = 0 := by
+    have h := hcoc 1 1
+    rw [mul_one, map_one, mul_one] at h
+    linear_combination -h
+  -- `χ` inverts multiplicatively
+  have hunit : ∀ d : Field.absoluteGaloisGroup ℚ, χ d * χ d⁻¹ = 1 := by
+    intro d
+    rw [← map_mul, mul_inv_cancel, map_one]
+  -- the conjugation identity for the cocycle
+  have hconj : ∀ d y : Field.absoluteGaloisGroup ℚ,
+      cc (d * y * d⁻¹) = χ d⁻¹ * (cc y + cc d * (χ y - 1)) := by
+    intro d y
+    have h1 := hcoc d (y * d⁻¹)
+    rw [← mul_assoc] at h1
+    have h2 := hcoc y d⁻¹
+    have h3 := hcoc d d⁻¹
+    rw [mul_inv_cancel, hcc1] at h3
+    rw [h1, h2, map_mul]
+    linear_combination -h3
+  -- conjugation-invariance of the character
+  have hχconj : ∀ d y : Field.absoluteGaloisGroup ℚ,
+      χ (d * y * d⁻¹) = χ y := by
+    intro d y
+    rw [map_mul, map_mul]
+    linear_combination χ y * hunit d
+  -- the place-spelled coboundary and the uniform conjugator
+  obtain ⟨c, hc⟩ := exists_uniform_conj_decomposition_two_padic
+  obtain ⟨a, ha⟩ :=
+    eisenstein_trivial_sub_extension_locally_split_at_place_two_of_five_le
+      hpodd hp5 hrankE hρE χ cc htri
+  -- transport of the coboundary constant along the conjugator
+  refine ⟨χ c⁻¹ * (a + cc c), fun g => ?_⟩
+  obtain ⟨σ, hσ⟩ := hc g
+  rw [hσ, hconj, hχconj, ha σ]
+  ring
 
 /-- **Kernel vanishing — Herbrand at `B₂`** (Eisenstein pillar E3c;
 sorry node — the class-field-theory pillar, the deep arithmetic input
