@@ -143,6 +143,10 @@ public import Mathlib.NumberTheory.LSeries.AbstractFuncEq
 -- `differentiableAt_conj_conj_iff` (Schwarz reflection), consumed by
 -- the PROVEN glue of `dedekindContinuation_exists` (proof-only).
 import Mathlib.Analysis.SpecialFunctions.Gamma.Beta
+-- Two-sided `harmonic`↔`log` bounds, consumed by the discrete
+-- sum-vs-log estimates of the `GammaSeq` modulus telescope in
+-- `dedekindXiFactor_window_ratio` (proof-only).
+import Mathlib.NumberTheory.Harmonic.Bounds
 import Mathlib.Analysis.Calculus.Deriv.Star
 -- `ClassGroup` with its `Fintype` instance and `ClassGroup.mk0`,
 -- appearing in the STATEMENT of the per-class Hecke leaf
@@ -8297,8 +8301,827 @@ theorem DedekindContinuation.xi_window_le_xiFactor {K : Type*} [Field K]
       ‖pkg.xi z‖ ≤ C * T ^ B * ‖dedekindXiFactor K z‖ := by
   sorry
 
+/-- Square-comparison to comparison for nonnegative reals: from
+`a² ≤ K²·b²` with `K, b ≥ 0` conclude `a ≤ K·b` (PROVEN 2026-07-24 —
+glue for the squared-modulus product estimates of the `GammaSeq`
+telescope below, which compare `‖·‖²`-products to avoid square
+roots). -/
+theorem le_mul_of_sq_le_sq (a b K : ℝ) (hK : 0 ≤ K) (hb : 0 ≤ b)
+    (h : a ^ 2 ≤ K ^ 2 * b ^ 2) : a ≤ K * b := by
+  nlinarith [mul_nonneg hK hb, sq_nonneg (a - K * b), sq_nonneg (a + K * b)]
+
+/-- **Integral-free tail bound `Σ_{j<n} (j² + y²)⁻¹ ≤ 4/y`** (PROVEN
+2026-07-24) — the discrete analogue of `∫ (t² + y²)⁻¹ dt = π/(2y)`,
+proven with no integrals: the `⌈y⌉₊ + 1` head terms are each `≤ y⁻²`
+and total `≤ 3/y`, while the tail telescopes through
+`j⁻² ≤ (j−1)⁻¹ − j⁻¹`.  This is the summability constant that makes
+the vertical `GammaSeq` telescope of
+`norm_Gamma_le_exp_mul_norm_Gamma_of_im_le` uniform in the height. -/
+theorem sum_inv_sq_add_sq_le (y : ℝ) (hy : 1 ≤ y) (n : ℕ) :
+    ∑ j ∈ Finset.range n, 1 / ((j : ℝ) ^ 2 + y ^ 2) ≤ 4 / y := by
+  have hy0 : (0 : ℝ) < y := lt_of_lt_of_le one_pos hy
+  have h1y : (0 : ℝ) < 1 / y := by positivity
+  have hhead : ∀ m : ℕ, (m : ℝ) ≤ (⌈y⌉₊ : ℝ) + 1 →
+      ∑ j ∈ Finset.range m, 1 / ((j : ℝ) ^ 2 + y ^ 2) ≤ 3 / y := by
+    intro m hm
+    have h1 : ∑ j ∈ Finset.range m, 1 / ((j : ℝ) ^ 2 + y ^ 2) ≤
+        ∑ _j ∈ Finset.range m, 1 / y ^ 2 :=
+      Finset.sum_le_sum fun j _ =>
+        one_div_le_one_div_of_le (by positivity) (by nlinarith [sq_nonneg (j : ℝ)])
+    have h2 : ∑ _j ∈ Finset.range m, 1 / y ^ 2 = (m : ℝ) / y ^ 2 := by
+      rw [Finset.sum_const, Finset.card_range, nsmul_eq_mul]
+      ring
+    have hceil : (⌈y⌉₊ : ℝ) < y + 1 := Nat.ceil_lt_add_one hy0.le
+    have h3 : (m : ℝ) / y ^ 2 ≤ 3 / y := by
+      rw [div_le_div_iff₀ (by positivity) hy0]
+      nlinarith
+    rw [h2] at h1
+    linarith
+  by_cases hn : n ≤ ⌈y⌉₊ + 1
+  · have h := hhead n (by exact_mod_cast hn)
+    have heq : (4 : ℝ) / y = 3 / y + 1 / y := by ring
+    linarith
+  · have hn2 : ⌈y⌉₊ + 1 < n := not_le.mp hn
+    have hsplit : ∑ j ∈ Finset.range n, 1 / ((j : ℝ) ^ 2 + y ^ 2) =
+        (∑ j ∈ Finset.range (⌈y⌉₊ + 1), 1 / ((j : ℝ) ^ 2 + y ^ 2)) +
+        ∑ j ∈ Finset.Ico (⌈y⌉₊ + 1) n, 1 / ((j : ℝ) ^ 2 + y ^ 2) := by
+      rw [Finset.range_eq_Ico, ← Finset.sum_Ico_consecutive _ (Nat.zero_le _) hn2.le,
+        ← Finset.range_eq_Ico]
+    have htail : ∑ j ∈ Finset.Ico (⌈y⌉₊ + 1) n, 1 / ((j : ℝ) ^ 2 + y ^ 2) ≤ 1 / y := by
+      have hstep : ∀ j ∈ Finset.Ico (⌈y⌉₊ + 1) n, 1 / ((j : ℝ) ^ 2 + y ^ 2) ≤
+          1 / ((j : ℝ) - 1) - 1 / (j : ℝ) := by
+        intro j hj
+        obtain ⟨hj1, _⟩ := Finset.mem_Ico.mp hj
+        have hN1 : 1 ≤ ⌈y⌉₊ := Nat.one_le_ceil_iff.mpr hy0
+        have hj2 : (2 : ℝ) ≤ (j : ℝ) := by
+          have h2j : 2 ≤ j := by omega
+          exact_mod_cast h2j
+        rw [div_sub_div _ _ (by linarith : (j : ℝ) - 1 ≠ 0) (by linarith : (j : ℝ) ≠ 0)]
+        have hnum : 1 * (j : ℝ) - ((j : ℝ) - 1) * 1 = 1 := by ring
+        rw [hnum]
+        exact one_div_le_one_div_of_le (by nlinarith) (by nlinarith [sq_nonneg y])
+      calc ∑ j ∈ Finset.Ico (⌈y⌉₊ + 1) n, 1 / ((j : ℝ) ^ 2 + y ^ 2)
+          ≤ ∑ j ∈ Finset.Ico (⌈y⌉₊ + 1) n, (1 / ((j : ℝ) - 1) - 1 / (j : ℝ)) :=
+            Finset.sum_le_sum hstep
+        _ = ∑ i ∈ Finset.range (n - (⌈y⌉₊ + 1)),
+              ((fun t : ℕ => 1 / ((⌈y⌉₊ : ℝ) + t)) i -
+               (fun t : ℕ => 1 / ((⌈y⌉₊ : ℝ) + t)) (i + 1)) := by
+            rw [Finset.sum_Ico_eq_sum_range]
+            refine Finset.sum_congr rfl fun i _ => ?_
+            push_cast
+            ring_nf
+        _ = 1 / ((⌈y⌉₊ : ℝ) + ((0 : ℕ) : ℝ)) -
+            1 / ((⌈y⌉₊ : ℝ) + ((n - (⌈y⌉₊ + 1) : ℕ) : ℝ)) := Finset.sum_range_sub' _ _
+        _ ≤ 1 / ((⌈y⌉₊ : ℝ) + ((0 : ℕ) : ℝ)) := by
+            have h0 : (0 : ℝ) ≤ 1 / ((⌈y⌉₊ : ℝ) + ((n - (⌈y⌉₊ + 1) : ℕ) : ℝ)) := by
+              positivity
+            linarith
+        _ ≤ 1 / y := by
+            push_cast
+            rw [add_zero]
+            exact one_div_le_one_div_of_le hy0 (Nat.le_ceil y)
+    have hheadv := hhead (⌈y⌉₊ + 1) (by push_cast; linarith)
+    rw [hsplit]
+    have heq : (4 : ℝ) / y = 3 / y + 1 / y := by ring
+    linarith
+
+/-- **Harmonic minorant `Σ_{j≤n} (j+1)/((j+2)² + y²) ≥ log n − log y − 8`**
+(PROVEN 2026-07-24, for `n ≥ ⌈y⌉₊ + 3`) — the integral-free discrete
+version of `∫ t dt/(t² + y²) = log n − log y + O(1)`: restrict to
+`j + 2 > y`, minorize `(j+2)/((j+2)² + y²) ≥ (j+2)⁻¹ − y²(j+2)⁻³`
+(clearing denominators leaves `−y⁴ ≤ 0`), and use mathlib's two-sided
+`harmonic`↔`log` bounds plus a telescoping cubic tail
+(`m⁻³ ≤ ((m−1)⁻² − m⁻²)/2`, summing to `y²/(2⌈y⌉₊²) ≤ 1/2`); the
+`−Σ ((j+2)² + y²)⁻¹ ≥ −4` correction is `sum_inv_sq_add_sq_le`.  This
+is the coefficient-one `log n` growth that cancels the `n^{x−x'}`
+prefactor in the horizontal Γ-modulus comparison
+`norm_Gamma_horizontal_ratio`. -/
+theorem log_sub_log_sub_eight_le_sum (y : ℝ) (hy : 1 ≤ y) (n : ℕ)
+    (hn : ⌈y⌉₊ + 3 ≤ n) :
+    Real.log n - Real.log y - 8 ≤
+      ∑ j ∈ Finset.range (n + 1), ((j : ℝ) + 1) / (((j : ℝ) + 2) ^ 2 + y ^ 2) := by
+  have hy0 : (0 : ℝ) < y := lt_of_lt_of_le one_pos hy
+  have hM1 : 1 ≤ ⌈y⌉₊ := Nat.one_le_ceil_iff.mpr hy0
+  have hM1R : (1 : ℝ) ≤ (⌈y⌉₊ : ℝ) := by exact_mod_cast hM1
+  have hMy : y ≤ (⌈y⌉₊ : ℝ) := Nat.le_ceil y
+  set j₀ := ⌈y⌉₊ - 1 with hj₀def
+  have hj₀M : j₀ + 1 = ⌈y⌉₊ := by omega
+  have hharm : ∀ m : ℕ, ((harmonic m : ℚ) : ℝ) = ∑ i ∈ Finset.range m, 1 / ((i : ℝ) + 1) := by
+    intro m
+    rw [harmonic]
+    push_cast
+    exact Finset.sum_congr rfl fun i _ => by rw [one_div]
+  have hS1eq : ∑ j ∈ Finset.Ico j₀ (n + 1), 1 / ((j : ℝ) + 2) =
+      ((harmonic (n + 2) : ℚ) : ℝ) - ((harmonic ⌈y⌉₊ : ℚ) : ℝ) := by
+    have hsplit : ((harmonic (n + 2) : ℚ) : ℝ) =
+        ((harmonic ⌈y⌉₊ : ℚ) : ℝ) + ∑ i ∈ Finset.Ico ⌈y⌉₊ (n + 2), 1 / ((i : ℝ) + 1) := by
+      rw [hharm, hharm, Finset.range_eq_Ico, Finset.range_eq_Ico,
+        ← Finset.sum_Ico_consecutive _ (Nat.zero_le ⌈y⌉₊) (by omega : ⌈y⌉₊ ≤ n + 2)]
+    rw [hsplit]
+    have hre : ∑ i ∈ Finset.Ico ⌈y⌉₊ (n + 2), 1 / ((i : ℝ) + 1) =
+        ∑ j ∈ Finset.Ico j₀ (n + 1), 1 / ((j : ℝ) + 2) := by
+      rw [Finset.sum_Ico_eq_sum_range, Finset.sum_Ico_eq_sum_range]
+      have hlen : n + 2 - ⌈y⌉₊ = n + 1 - j₀ := by omega
+      rw [hlen]
+      refine Finset.sum_congr rfl fun t _ => ?_
+      have hidx : (⌈y⌉₊ + t : ℕ) = (j₀ + t : ℕ) + 1 := by omega
+      rw [hidx]
+      push_cast
+      ring
+    rw [hre]
+    ring
+  have hS1 : Real.log n - 1 - Real.log 2 - Real.log y ≤
+      ∑ j ∈ Finset.Ico j₀ (n + 1), 1 / ((j : ℝ) + 2) := by
+    rw [hS1eq]
+    have hlow := log_add_one_le_harmonic (n + 2)
+    have hup := harmonic_le_one_add_log ⌈y⌉₊
+    have hlogn : Real.log (n : ℝ) ≤ Real.log ((n + 2 + 1 : ℕ) : ℝ) := by
+      apply Real.log_le_log (Nat.cast_pos.mpr (by omega : 0 < n))
+      exact_mod_cast Nat.le_add_right n 3
+    have hlogM : Real.log ((⌈y⌉₊ : ℕ) : ℝ) ≤ Real.log 2 + Real.log y := by
+      rw [← Real.log_mul (by norm_num) hy0.ne']
+      exact Real.log_le_log (by exact_mod_cast hM1) (by
+        have := Nat.ceil_lt_add_one hy0.le
+        linarith)
+    linarith
+  have hS2 : ∑ j ∈ Finset.Ico j₀ (n + 1), y ^ 2 / ((j : ℝ) + 2) ^ 3 ≤ 1 / 2 := by
+    have hstep : ∀ j ∈ Finset.Ico j₀ (n + 1), y ^ 2 / ((j : ℝ) + 2) ^ 3 ≤
+        y ^ 2 / 2 * (1 / ((j : ℝ) + 1) ^ 2 - 1 / ((j : ℝ) + 2) ^ 2) := by
+      intro j _
+      have h1 : (0 : ℝ) < (j : ℝ) + 1 := by positivity
+      have h2 : (0 : ℝ) < (j : ℝ) + 2 := by positivity
+      have hexp : y ^ 2 / 2 * (1 / ((j : ℝ) + 1) ^ 2 - 1 / ((j : ℝ) + 2) ^ 2) -
+          y ^ 2 / ((j : ℝ) + 2) ^ 3 =
+          y ^ 2 * (3 * ((j : ℝ) + 2) - 2) / (2 * ((j : ℝ) + 1) ^ 2 * ((j : ℝ) + 2) ^ 3) := by
+        field_simp
+        ring
+      have hpos : (0 : ℝ) ≤ y ^ 2 * (3 * ((j : ℝ) + 2) - 2) /
+          (2 * ((j : ℝ) + 1) ^ 2 * ((j : ℝ) + 2) ^ 3) := by
+        apply div_nonneg _ (by positivity)
+        have hj0 : (0 : ℝ) ≤ (j : ℝ) := Nat.cast_nonneg j
+        nlinarith [sq_nonneg y]
+      linarith
+    calc ∑ j ∈ Finset.Ico j₀ (n + 1), y ^ 2 / ((j : ℝ) + 2) ^ 3
+        ≤ ∑ j ∈ Finset.Ico j₀ (n + 1),
+            y ^ 2 / 2 * (1 / ((j : ℝ) + 1) ^ 2 - 1 / ((j : ℝ) + 2) ^ 2) :=
+          Finset.sum_le_sum hstep
+      _ = y ^ 2 / 2 * ∑ j ∈ Finset.Ico j₀ (n + 1),
+            (1 / ((j : ℝ) + 1) ^ 2 - 1 / ((j : ℝ) + 2) ^ 2) := by
+          rw [Finset.mul_sum]
+      _ ≤ y ^ 2 / 2 * (1 / ((⌈y⌉₊ : ℝ)) ^ 2) := by
+          apply mul_le_mul_of_nonneg_left _ (by positivity)
+          have htel : ∑ j ∈ Finset.Ico j₀ (n + 1),
+              (1 / ((j : ℝ) + 1) ^ 2 - 1 / ((j : ℝ) + 2) ^ 2) =
+              ∑ i ∈ Finset.range (n + 1 - j₀),
+                ((fun t : ℕ => 1 / ((j₀ : ℝ) + t + 1) ^ 2) i -
+                 (fun t : ℕ => 1 / ((j₀ : ℝ) + t + 1) ^ 2) (i + 1)) := by
+            rw [Finset.sum_Ico_eq_sum_range]
+            refine Finset.sum_congr rfl fun t _ => ?_
+            push_cast
+            ring_nf
+          rw [htel, Finset.sum_range_sub']
+          have hM0 : ((⌈y⌉₊ : ℝ)) = (j₀ : ℝ) + ((0 : ℕ) : ℝ) + 1 := by
+            rw [← hj₀M]; push_cast; ring
+          rw [← hM0]
+          have h0 : (0 : ℝ) ≤ 1 / ((j₀ : ℝ) + ((n + 1 - j₀ : ℕ) : ℝ) + 1) ^ 2 := by
+            positivity
+          linarith
+      _ ≤ ((⌈y⌉₊ : ℝ) ^ 2) / 2 * (1 / ((⌈y⌉₊ : ℝ)) ^ 2) := by
+          have hyM2 : y ^ 2 ≤ (⌈y⌉₊ : ℝ) ^ 2 := by nlinarith
+          have h0 : (0 : ℝ) ≤ 1 / ((⌈y⌉₊ : ℝ)) ^ 2 := by positivity
+          exact mul_le_mul_of_nonneg_right (by linarith) h0
+      _ = 1 / 2 := by
+          have hMne : ((⌈y⌉₊ : ℝ)) ≠ 0 := by linarith
+          field_simp
+  have hS3 : ∑ j ∈ Finset.Ico j₀ (n + 1), 1 / (((j : ℝ) + 2) ^ 2 + y ^ 2) ≤ 4 := by
+    have h1 : ∑ j ∈ Finset.Ico j₀ (n + 1), 1 / (((j : ℝ) + 2) ^ 2 + y ^ 2) ≤
+        ∑ j ∈ Finset.range (n + 1), 1 / (((j : ℝ) + 2) ^ 2 + y ^ 2) := by
+      apply Finset.sum_le_sum_of_subset_of_nonneg
+      · rw [Finset.range_eq_Ico]; exact Finset.Ico_subset_Ico (Nat.zero_le _) le_rfl
+      · intro j _ _; positivity
+    have h2 : ∑ j ∈ Finset.range (n + 1), 1 / (((j : ℝ) + 2) ^ 2 + y ^ 2) ≤
+        ∑ j ∈ Finset.range (n + 1), 1 / ((j : ℝ) ^ 2 + y ^ 2) := by
+      refine Finset.sum_le_sum fun j _ => ?_
+      exact one_div_le_one_div_of_le (by positivity)
+        (by nlinarith [(Nat.cast_nonneg j : (0 : ℝ) ≤ (j : ℝ))])
+    have h3 := sum_inv_sq_add_sq_le y hy (n + 1)
+    have h4 : 4 / y ≤ 4 := by
+      rw [div_le_iff₀ hy0]; nlinarith
+    linarith
+  have hterm : ∀ j ∈ Finset.Ico j₀ (n + 1),
+      1 / ((j : ℝ) + 2) - y ^ 2 / ((j : ℝ) + 2) ^ 3 - 1 / (((j : ℝ) + 2) ^ 2 + y ^ 2) ≤
+      ((j : ℝ) + 1) / (((j : ℝ) + 2) ^ 2 + y ^ 2) := by
+    intro j _
+    have hu : (0 : ℝ) < (j : ℝ) + 2 := by positivity
+    have hD : (0 : ℝ) < ((j : ℝ) + 2) ^ 2 + y ^ 2 := by positivity
+    have hexp : ((j : ℝ) + 1) / (((j : ℝ) + 2) ^ 2 + y ^ 2) -
+        (1 / ((j : ℝ) + 2) - y ^ 2 / ((j : ℝ) + 2) ^ 3 - 1 / (((j : ℝ) + 2) ^ 2 + y ^ 2)) =
+        y ^ 4 / (((j : ℝ) + 2) ^ 3 * (((j : ℝ) + 2) ^ 2 + y ^ 2)) := by
+      field_simp
+      ring
+    have hpos : (0 : ℝ) ≤ y ^ 4 / (((j : ℝ) + 2) ^ 3 * (((j : ℝ) + 2) ^ 2 + y ^ 2)) := by
+      positivity
+    linarith
+  have hsum : ∑ j ∈ Finset.Ico j₀ (n + 1),
+      (1 / ((j : ℝ) + 2) - y ^ 2 / ((j : ℝ) + 2) ^ 3 - 1 / (((j : ℝ) + 2) ^ 2 + y ^ 2)) ≤
+      ∑ j ∈ Finset.Ico j₀ (n + 1), ((j : ℝ) + 1) / (((j : ℝ) + 2) ^ 2 + y ^ 2) :=
+    Finset.sum_le_sum hterm
+  rw [Finset.sum_sub_distrib, Finset.sum_sub_distrib] at hsum
+  have hrestrict : ∑ j ∈ Finset.Ico j₀ (n + 1), ((j : ℝ) + 1) / (((j : ℝ) + 2) ^ 2 + y ^ 2) ≤
+      ∑ j ∈ Finset.range (n + 1), ((j : ℝ) + 1) / (((j : ℝ) + 2) ^ 2 + y ^ 2) := by
+    apply Finset.sum_le_sum_of_subset_of_nonneg
+    · rw [Finset.range_eq_Ico]; exact Finset.Ico_subset_Ico (Nat.zero_le _) le_rfl
+    · intro j _ _; positivity
+  have hlog2 : Real.log 2 ≤ 1 := by
+    have := Real.log_le_sub_one_of_pos (by norm_num : (0 : ℝ) < 2)
+    linarith
+  linarith
+
+/-- **Iterated Γ-recurrence** (PROVEN 2026-07-24):
+`Γ(s + k) = (s)(s+1)⋯(s+k−1)·Γ(s)` for `s` off the real axis —
+`Complex.Gamma_add_one` iterated `k` times, the vertical-shift engine
+of `exists_norm_Gamma_window_ratio` (each linear factor has modulus
+`≥ |im s|`, so up-shifts only grow the modulus, while down-shifts cost
+at most `(‖s‖ + k)^k`). -/
+theorem Gamma_add_nat_of_im_ne_zero (s : ℂ) (hs : s.im ≠ 0) (k : ℕ) :
+    Complex.Gamma (s + k) = (∏ j ∈ Finset.range k, (s + j)) * Complex.Gamma s := by
+  induction k with
+  | zero => simp
+  | succ k ih =>
+    have hne : s + (k : ℂ) ≠ 0 := fun h => hs (by
+      have := congrArg Complex.im h
+      simpa using this)
+    have hcast : s + ((k + 1 : ℕ) : ℂ) = (s + k) + 1 := by push_cast; ring
+    rw [hcast, Complex.Gamma_add_one _ hne, ih, Finset.prod_range_succ]
+    ring
+
+/-- **The `GammaSeq` modulus-ratio transfer** (PROVEN 2026-07-24 — the
+reusable Stirling-free workhorse): a Γ-modulus comparison
+`‖Γ(x+iy)‖ ≤ L·‖Γ(x'+iy')‖` follows from the corresponding eventual
+comparison of the SQUARED `GammaSeq` linear-factor products
+`n^{2x}·Π_j ((x'+j)² + y'²) ≤ L²·n^{2x'}·Π_j ((x+j)² + y²)` — in
+`GammaSeq s n = n^s·n!/Π(s+j)` the `n!` parts cancel and
+`|n^s| = n^{re s}`, so the modulus ratio is controlled by the products
+of `|s+j|² = (x+j)² + im²`; conclude along
+`Complex.GammaSeq_tendsto_Gamma` with `le_of_tendsto_of_tendsto`.
+Consumers (`norm_Gamma_le_norm_Gamma_of_im_le`,
+`norm_Gamma_le_exp_mul_norm_Gamma_of_im_le`,
+`norm_Gamma_horizontal_ratio`) thereby reduce to elementary real
+estimates on quadratic products. -/
+theorem norm_Gamma_le_mul_of_prod_sq_le (x y x' y' L : ℝ) (hy : y ≠ 0) (hy' : y' ≠ 0)
+    (hL : 0 ≤ L)
+    (h : ∀ᶠ n : ℕ in Filter.atTop,
+      ((n : ℝ) ^ x) ^ 2 * ∏ j ∈ Finset.range (n + 1), ((x' + (j : ℝ)) ^ 2 + y' ^ 2) ≤
+      L ^ 2 * (((n : ℝ) ^ x') ^ 2 * ∏ j ∈ Finset.range (n + 1), ((x + (j : ℝ)) ^ 2 + y ^ 2))) :
+    ‖Complex.Gamma ((x : ℂ) + y * Complex.I)‖ ≤
+      L * ‖Complex.Gamma ((x' : ℂ) + y' * Complex.I)‖ := by
+  have hnorm : ∀ (a b : ℝ) (n : ℕ), 0 < n →
+      ‖Complex.GammaSeq ((a : ℂ) + b * Complex.I) n‖ =
+      (n : ℝ) ^ a * (n.factorial : ℝ) /
+        ∏ j ∈ Finset.range (n + 1), Real.sqrt ((a + (j : ℝ)) ^ 2 + b ^ 2) := by
+    intro a b n hn
+    have hprodeq : ∏ j ∈ Finset.range (n + 1), ‖(a : ℂ) + b * Complex.I + (j : ℂ)‖ =
+        ∏ j ∈ Finset.range (n + 1), Real.sqrt ((a + (j : ℝ)) ^ 2 + b ^ 2) :=
+      Finset.prod_congr rfl fun j _ => by
+        have hj : (a : ℂ) + b * Complex.I + (j : ℂ) =
+            ((a + (j : ℝ) : ℝ) : ℂ) + (b : ℝ) * Complex.I := by
+          push_cast; ring
+        rw [hj, Complex.norm_add_mul_I]
+    have hre : ((a : ℂ) + b * Complex.I).re = a := by simp
+    rw [Complex.GammaSeq, norm_div, norm_mul, Complex.norm_natCast_cpow_of_pos hn, hre,
+      Complex.norm_natCast, norm_prod, hprodeq]
+  have hProdPos : ∀ (a b : ℝ), b ≠ 0 → ∀ n : ℕ,
+      (0 : ℝ) < ∏ j ∈ Finset.range (n + 1), Real.sqrt ((a + (j : ℝ)) ^ 2 + b ^ 2) := by
+    intro a b hb n
+    apply Finset.prod_pos
+    intro j _
+    apply Real.sqrt_pos.mpr
+    have hb2 : (0 : ℝ) < b ^ 2 := by positivity
+    nlinarith [sq_nonneg (a + (j : ℝ))]
+  have hProdSq : ∀ (a b : ℝ) (n : ℕ),
+      (∏ j ∈ Finset.range (n + 1), Real.sqrt ((a + (j : ℝ)) ^ 2 + b ^ 2)) ^ 2 =
+      ∏ j ∈ Finset.range (n + 1), ((a + (j : ℝ)) ^ 2 + b ^ 2) := by
+    intro a b n
+    rw [← Finset.prod_pow]
+    exact Finset.prod_congr rfl fun j _ => Real.sq_sqrt (by positivity)
+  apply le_of_tendsto_of_tendsto
+    (Complex.GammaSeq_tendsto_Gamma ((x : ℂ) + y * Complex.I)).norm
+    ((Complex.GammaSeq_tendsto_Gamma ((x' : ℂ) + y' * Complex.I)).norm.const_mul L)
+  filter_upwards [h, Filter.eventually_gt_atTop 0] with n hle hn
+  rw [hnorm x y n hn, hnorm x' y' n hn, ← mul_div_assoc,
+    div_le_div_iff₀ (hProdPos x y hy n) (hProdPos x' y' hy' n)]
+  apply le_mul_of_sq_le_sq _ _ _ (by positivity) (hProdPos x y hy n).le
+  calc ((n : ℝ) ^ x * (n.factorial : ℝ) *
+        ∏ j ∈ Finset.range (n + 1), Real.sqrt ((x' + (j : ℝ)) ^ 2 + y' ^ 2)) ^ 2
+      = ((n.factorial : ℝ)) ^ 2 * (((n : ℝ) ^ x) ^ 2 *
+          ∏ j ∈ Finset.range (n + 1), ((x' + (j : ℝ)) ^ 2 + y' ^ 2)) := by
+        rw [← hProdSq x' y' n]; ring
+    _ ≤ ((n.factorial : ℝ)) ^ 2 * (L ^ 2 * (((n : ℝ) ^ x') ^ 2 *
+          ∏ j ∈ Finset.range (n + 1), ((x + (j : ℝ)) ^ 2 + y ^ 2))) :=
+        mul_le_mul_of_nonneg_left hle (by positivity)
+    _ = (L * ((n : ℝ) ^ x' * (n.factorial : ℝ))) ^ 2 *
+        (∏ j ∈ Finset.range (n + 1), Real.sqrt ((x + (j : ℝ)) ^ 2 + y ^ 2)) ^ 2 := by
+        rw [hProdSq x y n]; ring
+
+/-- **`|Γ|` decreases along vertical lines** (PROVEN 2026-07-24): for
+`x > 0` and `0 < y ≤ Y`, `‖Γ(x + iY)‖ ≤ ‖Γ(x + iy)‖` — every
+`GammaSeq` linear factor `|x + j + i·|` grows with the height, so the
+`GammaSeq` modulus shrinks; the free direction of the vertical move in
+`exists_norm_Gamma_window_ratio`. -/
+theorem norm_Gamma_le_norm_Gamma_of_im_le (x y Y : ℝ) (hx : 0 < x) (hy : 0 < y)
+    (hyY : y ≤ Y) :
+    ‖Complex.Gamma ((x : ℂ) + Y * Complex.I)‖ ≤
+      ‖Complex.Gamma ((x : ℂ) + y * Complex.I)‖ := by
+  have hY0 : (0 : ℝ) < Y := lt_of_lt_of_le hy hyY
+  have h := norm_Gamma_le_mul_of_prod_sq_le x Y x y 1 hY0.ne' hy.ne' zero_le_one ?_
+  · simpa using h
+  · filter_upwards with n
+    rw [one_pow, one_mul]
+    apply mul_le_mul_of_nonneg_left _ (by positivity)
+    refine Finset.prod_le_prod (fun j _ => by positivity) fun j _ => ?_
+    nlinarith [hy.le]
+
+/-- **Vertical Γ-modulus telescope** (PROVEN 2026-07-24): going DOWN
+from height `y' ≥ Y ≥ 1` to height `Y` at fixed `re = x > 0` costs at
+most `exp(2(y'² − Y²)/Y)` — per `GammaSeq` factor
+`(x+j)² + y'² ≤ e^{(y'²−Y²)/(j²+Y²)}·((x+j)² + Y²)` via `1+t ≤ eᵗ`,
+and the exponents sum to `≤ 4(y'² − Y²)/Y` by
+`sum_inv_sq_add_sq_le`.  For window geometry (`y' − Y ≤ 6`,
+`Y ≥ 1`) the exponent is bounded by the absolute constant `96`. -/
+theorem norm_Gamma_le_exp_mul_norm_Gamma_of_im_le (x Y y' : ℝ) (hx : 0 < x)
+    (hY : 1 ≤ Y) (h : Y ≤ y') :
+    ‖Complex.Gamma ((x : ℂ) + Y * Complex.I)‖ ≤
+      Real.exp (2 * (y' ^ 2 - Y ^ 2) / Y) * ‖Complex.Gamma ((x : ℂ) + y' * Complex.I)‖ := by
+  have hY0 : (0 : ℝ) < Y := lt_of_lt_of_le one_pos hY
+  have hy'0 : (0 : ℝ) < y' := lt_of_lt_of_le hY0 h
+  have hΔ : (0 : ℝ) ≤ y' ^ 2 - Y ^ 2 := by nlinarith
+  apply norm_Gamma_le_mul_of_prod_sq_le x Y x y' _ hY0.ne' hy'0.ne' (Real.exp_nonneg _)
+  filter_upwards with n
+  have hper : ∀ j ∈ Finset.range (n + 1),
+      (x + (j : ℝ)) ^ 2 + y' ^ 2 ≤
+      Real.exp ((y' ^ 2 - Y ^ 2) / ((j : ℝ) ^ 2 + Y ^ 2)) * ((x + (j : ℝ)) ^ 2 + Y ^ 2) := by
+    intro j _
+    have hE : (0 : ℝ) < (j : ℝ) ^ 2 + Y ^ 2 := by positivity
+    have hD : (0 : ℝ) < (x + (j : ℝ)) ^ 2 + Y ^ 2 := by positivity
+    have hED : (j : ℝ) ^ 2 + Y ^ 2 ≤ (x + (j : ℝ)) ^ 2 + Y ^ 2 := by
+      nlinarith [(Nat.cast_nonneg j : (0 : ℝ) ≤ (j : ℝ)), hx.le]
+    have h2 : y' ^ 2 - Y ^ 2 ≤
+        ((x + (j : ℝ)) ^ 2 + Y ^ 2) * ((y' ^ 2 - Y ^ 2) / ((j : ℝ) ^ 2 + Y ^ 2)) := by
+      calc y' ^ 2 - Y ^ 2
+          = ((j : ℝ) ^ 2 + Y ^ 2) * ((y' ^ 2 - Y ^ 2) / ((j : ℝ) ^ 2 + Y ^ 2)) := by
+            field_simp
+        _ ≤ ((x + (j : ℝ)) ^ 2 + Y ^ 2) * ((y' ^ 2 - Y ^ 2) / ((j : ℝ) ^ 2 + Y ^ 2)) :=
+            mul_le_mul_of_nonneg_right hED (div_nonneg hΔ hE.le)
+    have h3 := Real.add_one_le_exp ((y' ^ 2 - Y ^ 2) / ((j : ℝ) ^ 2 + Y ^ 2))
+    nlinarith [mul_le_mul_of_nonneg_left h3 hD.le]
+  calc ((n : ℝ) ^ x) ^ 2 * ∏ j ∈ Finset.range (n + 1), ((x + (j : ℝ)) ^ 2 + y' ^ 2)
+      ≤ ((n : ℝ) ^ x) ^ 2 * ∏ j ∈ Finset.range (n + 1),
+          (Real.exp ((y' ^ 2 - Y ^ 2) / ((j : ℝ) ^ 2 + Y ^ 2)) *
+            ((x + (j : ℝ)) ^ 2 + Y ^ 2)) := by
+        apply mul_le_mul_of_nonneg_left _ (by positivity)
+        exact Finset.prod_le_prod (fun j _ => by positivity) hper
+    _ = Real.exp (∑ j ∈ Finset.range (n + 1), (y' ^ 2 - Y ^ 2) / ((j : ℝ) ^ 2 + Y ^ 2)) *
+        (((n : ℝ) ^ x) ^ 2 * ∏ j ∈ Finset.range (n + 1), ((x + (j : ℝ)) ^ 2 + Y ^ 2)) := by
+        rw [Finset.prod_mul_distrib, Real.exp_sum]; ring
+    _ ≤ Real.exp (2 * (y' ^ 2 - Y ^ 2) / Y) ^ 2 *
+        (((n : ℝ) ^ x) ^ 2 * ∏ j ∈ Finset.range (n + 1), ((x + (j : ℝ)) ^ 2 + Y ^ 2)) := by
+        apply mul_le_mul_of_nonneg_right _ (by positivity)
+        have hsq : Real.exp (2 * (y' ^ 2 - Y ^ 2) / Y) ^ 2 =
+            Real.exp (4 * (y' ^ 2 - Y ^ 2) / Y) := by
+          rw [sq, ← Real.exp_add]; ring_nf
+        rw [hsq, Real.exp_le_exp]
+        have heq : ∑ j ∈ Finset.range (n + 1), (y' ^ 2 - Y ^ 2) / ((j : ℝ) ^ 2 + Y ^ 2) =
+            (y' ^ 2 - Y ^ 2) * ∑ j ∈ Finset.range (n + 1), 1 / ((j : ℝ) ^ 2 + Y ^ 2) := by
+          rw [Finset.mul_sum]
+          exact Finset.sum_congr rfl fun j _ => by rw [mul_one_div]
+        rw [heq]
+        have hsum := sum_inv_sq_add_sq_le Y hY (n + 1)
+        calc (y' ^ 2 - Y ^ 2) * ∑ j ∈ Finset.range (n + 1), 1 / ((j : ℝ) ^ 2 + Y ^ 2)
+            ≤ (y' ^ 2 - Y ^ 2) * (4 / Y) := mul_le_mul_of_nonneg_left hsum hΔ
+          _ = 4 * (y' ^ 2 - Y ^ 2) / Y := by ring
+
+/-- **Horizontal Γ-modulus comparison at equal height** (PROVEN
+2026-07-24): for `x, x' ∈ [1,2]` and `y ≥ 1`,
+`‖Γ(x + iy)‖ ≤ e⁸·y·‖Γ(x' + iy)‖` — the Stirling-free substitute for
+`|Γ(x+iy)| ≍ y^{x−1/2}e^{−πy/2}`.  In the `GammaSeq` ratio the
+`n^{x−x'}` prefactor is beaten by the linear-factor products: for
+`x ≤ x'` the per-factor growth exponents sum to
+`≤ 2(x'−x)·log n + 8` (harmonic bound), and for `x > x'` the
+per-factor decay `1 − u ≤ e^{−u}` exponents sum to
+`≥ 2(x−x')·(log n − log y − 8)` (`log_sub_log_sub_eight_le_sum`),
+leaving exactly the `y^{x−x'} ≤ y` growth of the true asymptotic. -/
+theorem norm_Gamma_horizontal_ratio (x x' y : ℝ) (hx1 : 1 ≤ x) (hx2 : x ≤ 2)
+    (hx1' : 1 ≤ x') (hx2' : x' ≤ 2) (hy : 1 ≤ y) :
+    ‖Complex.Gamma ((x : ℂ) + y * Complex.I)‖ ≤
+      Real.exp 8 * y * ‖Complex.Gamma ((x' : ℂ) + y * Complex.I)‖ := by
+  have hy0 : (0 : ℝ) < y := lt_of_lt_of_le one_pos hy
+  have hlogy : 0 ≤ Real.log y := Real.log_nonneg hy
+  have hlog2 : Real.log 2 ≤ 1 := by
+    have := Real.log_le_sub_one_of_pos (by norm_num : (0 : ℝ) < 2)
+    linarith
+  have h4y : 4 / y ≤ 4 := by rw [div_le_iff₀ hy0]; nlinarith
+  have h4y0 : 0 ≤ 4 / y := by positivity
+  apply norm_Gamma_le_mul_of_prod_sq_le x y x' y _ hy0.ne' hy0.ne' (by positivity)
+  filter_upwards [Filter.eventually_ge_atTop (⌈y⌉₊ + 3)] with n hn
+  have hnn : 1 ≤ n := by
+    have := Nat.one_le_ceil_iff.mpr hy0
+    omega
+  have hn1 : (1 : ℝ) ≤ (n : ℝ) := by exact_mod_cast hnn
+  have hn0 : (0 : ℝ) < (n : ℝ) := lt_of_lt_of_le one_pos hn1
+  have hlogn : 0 ≤ Real.log n := Real.log_nonneg hn1
+  have hrpow : ∀ u : ℝ, ((n : ℝ) ^ u) ^ 2 = Real.exp (2 * u * Real.log n) := by
+    intro u
+    rw [Real.rpow_def_of_pos hn0, sq, ← Real.exp_add]
+    ring_nf
+  have hLsq : (Real.exp 8 * y) ^ 2 = Real.exp (16 + 2 * Real.log y) := by
+    have h1 : Real.exp 8 ^ 2 = Real.exp 16 := by rw [sq, ← Real.exp_add]; norm_num
+    have h2 : Real.exp (2 * Real.log y) = y ^ 2 := by
+      have h' : Real.exp (2 * Real.log y) = Real.exp (Real.log y) ^ 2 := by
+        rw [sq, ← Real.exp_add]; ring_nf
+      rw [h', Real.exp_log hy0]
+    rw [mul_pow, h1, Real.exp_add, h2]
+  have hharm2 : ∑ j ∈ Finset.range (n + 1), 1 / ((j : ℝ) + 1) ≤
+      1 + Real.log 2 + Real.log n := by
+    have h1 : ((harmonic (n + 1) : ℚ) : ℝ) =
+        ∑ i ∈ Finset.range (n + 1), 1 / ((i : ℝ) + 1) := by
+      rw [harmonic]
+      push_cast
+      exact Finset.sum_congr rfl fun i _ => by rw [one_div]
+    have h2 := harmonic_le_one_add_log (n + 1)
+    have h3 : Real.log ((n + 1 : ℕ) : ℝ) ≤ Real.log 2 + Real.log n := by
+      rw [← Real.log_mul (by norm_num) hn0.ne']
+      apply Real.log_le_log (by positivity)
+      push_cast
+      linarith
+    rw [h1] at h2
+    linarith
+  rcases le_total x x' with hxx | hxx
+  · -- `x ≤ x'` : the ratio is bounded by an absolute constant
+    have hxx0 : (0 : ℝ) ≤ x' - x := by linarith
+    have hxx1 : x' - x ≤ 1 := by linarith
+    set t : ℕ → ℝ := fun j =>
+      (x' - x) * (2 * (x + (j : ℝ)) + 1) / ((x + (j : ℝ)) ^ 2 + y ^ 2) with ht
+    have hper : ∀ j ∈ Finset.range (n + 1),
+        (x' + (j : ℝ)) ^ 2 + y ^ 2 ≤ Real.exp (t j) * ((x + (j : ℝ)) ^ 2 + y ^ 2) := by
+      intro j _
+      have hj0 : (0 : ℝ) ≤ (j : ℝ) := Nat.cast_nonneg j
+      have hD : (0 : ℝ) < (x + (j : ℝ)) ^ 2 + y ^ 2 := by positivity
+      have hDt : ((x + (j : ℝ)) ^ 2 + y ^ 2) * t j =
+          (x' - x) * (2 * (x + (j : ℝ)) + 1) := by
+        rw [ht]; field_simp
+      have hq2 : (x' - x) * (x + x' + 2 * (j : ℝ)) ≤
+          (x' - x) * (2 * (x + (j : ℝ)) + 1) :=
+        mul_le_mul_of_nonneg_left (by linarith) hxx0
+      have h4 := mul_le_mul_of_nonneg_left (Real.add_one_le_exp (t j)) hD.le
+      have hq : (x' + (j : ℝ)) ^ 2 + y ^ 2 =
+          ((x + (j : ℝ)) ^ 2 + y ^ 2) + (x' - x) * (x + x' + 2 * (j : ℝ)) := by ring
+      rw [hq]
+      linarith [hq2, hDt, h4]
+    have hsumt : ∑ j ∈ Finset.range (n + 1), t j ≤ 2 * (x' - x) * Real.log n + 8 := by
+      have hper2 : ∀ j ∈ Finset.range (n + 1), t j ≤
+          (x' - x) * (2 * (1 / ((j : ℝ) + 1)) + 1 / ((j : ℝ) ^ 2 + y ^ 2)) := by
+        intro j _
+        have hj0 : (0 : ℝ) ≤ (j : ℝ) := Nat.cast_nonneg j
+        have hD : (0 : ℝ) < (x + (j : ℝ)) ^ 2 + y ^ 2 := by positivity
+        have hj1 : (0 : ℝ) < (j : ℝ) + 1 := by linarith
+        have hE : (0 : ℝ) < (j : ℝ) ^ 2 + y ^ 2 := by positivity
+        have e0 : t j = (x' - x) *
+            (2 * ((x + (j : ℝ)) / ((x + (j : ℝ)) ^ 2 + y ^ 2)) +
+             1 / ((x + (j : ℝ)) ^ 2 + y ^ 2)) := by
+          rw [ht]; ring
+        have e1 : (x + (j : ℝ)) / ((x + (j : ℝ)) ^ 2 + y ^ 2) ≤ 1 / ((j : ℝ) + 1) := by
+          rw [div_le_div_iff₀ hD hj1]
+          nlinarith [sq_nonneg y]
+        have e2 : (1 : ℝ) / ((x + (j : ℝ)) ^ 2 + y ^ 2) ≤ 1 / ((j : ℝ) ^ 2 + y ^ 2) :=
+          one_div_le_one_div_of_le hE (by nlinarith)
+        rw [e0]
+        apply mul_le_mul_of_nonneg_left _ hxx0
+        have := mul_le_mul_of_nonneg_left e1 (by norm_num : (0 : ℝ) ≤ 2)
+        linarith
+      have hsum2 : ∑ j ∈ Finset.range (n + 1),
+          (x' - x) * (2 * (1 / ((j : ℝ) + 1)) + 1 / ((j : ℝ) ^ 2 + y ^ 2)) ≤
+          (x' - x) * (2 * (1 + Real.log 2 + Real.log n) + 4 / y) := by
+        rw [← Finset.mul_sum]
+        apply mul_le_mul_of_nonneg_left _ hxx0
+        have hs1 : ∑ j ∈ Finset.range (n + 1),
+            (2 * (1 / ((j : ℝ) + 1)) + 1 / ((j : ℝ) ^ 2 + y ^ 2)) =
+            2 * (∑ j ∈ Finset.range (n + 1), 1 / ((j : ℝ) + 1)) +
+            ∑ j ∈ Finset.range (n + 1), 1 / ((j : ℝ) ^ 2 + y ^ 2) := by
+          rw [Finset.sum_add_distrib, Finset.mul_sum]
+        rw [hs1]
+        have := sum_inv_sq_add_sq_le y hy (n + 1)
+        linarith [hharm2]
+      have t1 : (x' - x) * (2 + 2 * Real.log 2) ≤ 4 := by
+        have hc0 : (0 : ℝ) ≤ 2 + 2 * Real.log 2 := by
+          have := Real.log_nonneg (by norm_num : (1 : ℝ) ≤ 2)
+          linarith
+        have := mul_le_mul hxx1 (by linarith : 2 + 2 * Real.log 2 ≤ 4) hc0 zero_le_one
+        linarith
+      have t2 : (x' - x) * (4 / y) ≤ 4 := by
+        have := mul_le_mul hxx1 h4y h4y0 zero_le_one
+        linarith
+      have hexpand : (x' - x) * (2 * (1 + Real.log 2 + Real.log n) + 4 / y) =
+          2 * (x' - x) * Real.log n +
+          ((x' - x) * (2 + 2 * Real.log 2) + (x' - x) * (4 / y)) := by ring
+      calc ∑ j ∈ Finset.range (n + 1), t j
+          ≤ (x' - x) * (2 * (1 + Real.log 2 + Real.log n) + 4 / y) :=
+            le_trans (Finset.sum_le_sum hper2) hsum2
+        _ ≤ 2 * (x' - x) * Real.log n + 8 := by
+            rw [hexpand]; linarith
+    have key : ∏ j ∈ Finset.range (n + 1), ((x' + (j : ℝ)) ^ 2 + y ^ 2) ≤
+        Real.exp (∑ j ∈ Finset.range (n + 1), t j) *
+        ∏ j ∈ Finset.range (n + 1), ((x + (j : ℝ)) ^ 2 + y ^ 2) := by
+      rw [Real.exp_sum, ← Finset.prod_mul_distrib]
+      exact Finset.prod_le_prod (fun j _ => by positivity) hper
+    calc ((n : ℝ) ^ x) ^ 2 * ∏ j ∈ Finset.range (n + 1), ((x' + (j : ℝ)) ^ 2 + y ^ 2)
+        ≤ ((n : ℝ) ^ x) ^ 2 * (Real.exp (∑ j ∈ Finset.range (n + 1), t j) *
+            ∏ j ∈ Finset.range (n + 1), ((x + (j : ℝ)) ^ 2 + y ^ 2)) :=
+          mul_le_mul_of_nonneg_left key (by positivity)
+      _ = (Real.exp (2 * x * Real.log n) * Real.exp (∑ j ∈ Finset.range (n + 1), t j)) *
+            ∏ j ∈ Finset.range (n + 1), ((x + (j : ℝ)) ^ 2 + y ^ 2) := by
+          rw [hrpow x]; ring
+      _ ≤ (Real.exp (16 + 2 * Real.log y) * Real.exp (2 * x' * Real.log n)) *
+            ∏ j ∈ Finset.range (n + 1), ((x + (j : ℝ)) ^ 2 + y ^ 2) := by
+          apply mul_le_mul_of_nonneg_right _ (Finset.prod_nonneg fun j _ => by positivity)
+          rw [← Real.exp_add, ← Real.exp_add, Real.exp_le_exp]
+          linarith [hsumt, hlogy]
+      _ = (Real.exp 8 * y) ^ 2 * (((n : ℝ) ^ x') ^ 2 *
+            ∏ j ∈ Finset.range (n + 1), ((x + (j : ℝ)) ^ 2 + y ^ 2)) := by
+          rw [hLsq, hrpow x']; ring
+  · -- `x' ≤ x` : costs a single factor `y`
+    have hxx0 : (0 : ℝ) ≤ x - x' := by linarith
+    have hxx1 : x - x' ≤ 1 := by linarith
+    set v : ℕ → ℝ := fun j =>
+      (x - x') * 2 * ((j : ℝ) + 1) / (((j : ℝ) + 2) ^ 2 + y ^ 2) with hv
+    have hper : ∀ j ∈ Finset.range (n + 1),
+        (x' + (j : ℝ)) ^ 2 + y ^ 2 ≤ Real.exp (-v j) * ((x + (j : ℝ)) ^ 2 + y ^ 2) := by
+      intro j _
+      have hj0 : (0 : ℝ) ≤ (j : ℝ) := Nat.cast_nonneg j
+      have hD : (0 : ℝ) < (x + (j : ℝ)) ^ 2 + y ^ 2 := by positivity
+      have hE : (0 : ℝ) < ((j : ℝ) + 2) ^ 2 + y ^ 2 := by positivity
+      have hvval : (((j : ℝ) + 2) ^ 2 + y ^ 2) * v j =
+          (x - x') * 2 * ((j : ℝ) + 1) := by
+        rw [hv]; field_simp
+      have hv0 : 0 ≤ v j := by
+        rw [hv]
+        apply div_nonneg _ hE.le
+        nlinarith
+      have hDE : (x + (j : ℝ)) ^ 2 + y ^ 2 ≤ ((j : ℝ) + 2) ^ 2 + y ^ 2 := by nlinarith
+      have hDv : ((x + (j : ℝ)) ^ 2 + y ^ 2) * v j ≤ (x - x') * 2 * ((j : ℝ) + 1) := by
+        rw [← hvval]
+        exact mul_le_mul_of_nonneg_right hDE hv0
+      have hgap : (x - x') * (2 * ((j : ℝ) + 1)) ≤
+          (x - x') * (x + x' + 2 * (j : ℝ)) :=
+        mul_le_mul_of_nonneg_left (by linarith) hxx0
+      have h3 := mul_le_mul_of_nonneg_left (Real.add_one_le_exp (-v j)) hD.le
+      have hq : (x' + (j : ℝ)) ^ 2 + y ^ 2 =
+          ((x + (j : ℝ)) ^ 2 + y ^ 2) - (x - x') * (x + x' + 2 * (j : ℝ)) := by ring
+      rw [hq]
+      linarith [hDv, hgap, h3]
+    have hsumv : 2 * (x - x') * (Real.log n - Real.log y - 8) ≤
+        ∑ j ∈ Finset.range (n + 1), v j := by
+      have heq : ∑ j ∈ Finset.range (n + 1), v j =
+          2 * (x - x') * ∑ j ∈ Finset.range (n + 1),
+            ((j : ℝ) + 1) / (((j : ℝ) + 2) ^ 2 + y ^ 2) := by
+        rw [Finset.mul_sum]
+        refine Finset.sum_congr rfl fun j _ => ?_
+        rw [hv]
+        ring
+      rw [heq]
+      apply mul_le_mul_of_nonneg_left (log_sub_log_sub_eight_le_sum y hy n hn)
+      linarith
+    have key : ∏ j ∈ Finset.range (n + 1), ((x' + (j : ℝ)) ^ 2 + y ^ 2) ≤
+        Real.exp (-∑ j ∈ Finset.range (n + 1), v j) *
+        ∏ j ∈ Finset.range (n + 1), ((x + (j : ℝ)) ^ 2 + y ^ 2) := by
+      have hneg : -∑ j ∈ Finset.range (n + 1), v j =
+          ∑ j ∈ Finset.range (n + 1), -v j := by
+        rw [Finset.sum_neg_distrib]
+      rw [hneg, Real.exp_sum, ← Finset.prod_mul_distrib]
+      exact Finset.prod_le_prod (fun j _ => by positivity) hper
+    have hd1 : (x - x') * Real.log y ≤ 1 * Real.log y :=
+      mul_le_mul_of_nonneg_right hxx1 hlogy
+    calc ((n : ℝ) ^ x) ^ 2 * ∏ j ∈ Finset.range (n + 1), ((x' + (j : ℝ)) ^ 2 + y ^ 2)
+        ≤ ((n : ℝ) ^ x) ^ 2 * (Real.exp (-∑ j ∈ Finset.range (n + 1), v j) *
+            ∏ j ∈ Finset.range (n + 1), ((x + (j : ℝ)) ^ 2 + y ^ 2)) :=
+          mul_le_mul_of_nonneg_left key (by positivity)
+      _ = (Real.exp (2 * x * Real.log n) *
+            Real.exp (-∑ j ∈ Finset.range (n + 1), v j)) *
+            ∏ j ∈ Finset.range (n + 1), ((x + (j : ℝ)) ^ 2 + y ^ 2) := by
+          rw [hrpow x]; ring
+      _ ≤ (Real.exp (16 + 2 * Real.log y) * Real.exp (2 * x' * Real.log n)) *
+            ∏ j ∈ Finset.range (n + 1), ((x + (j : ℝ)) ^ 2 + y ^ 2) := by
+          apply mul_le_mul_of_nonneg_right _ (Finset.prod_nonneg fun j _ => by positivity)
+          rw [← Real.exp_add, ← Real.exp_add, Real.exp_le_exp]
+          linarith [hsumv, hd1]
+      _ = (Real.exp 8 * y) ^ 2 * (((n : ℝ) ^ x') ^ 2 *
+            ∏ j ∈ Finset.range (n + 1), ((x + (j : ℝ)) ^ 2 + y ^ 2)) := by
+          rw [hLsq, hrpow x']; ring
+
+/-- **The reusable Γ-modulus window ratio** (PROVEN 2026-07-24 — the
+generic Stirling-free node): there is one constant `C` with
+`‖Γ(w)‖ ≤ C·(im w')⁸·‖Γ(w')‖` whenever `re w' ∈ [1,2]`,
+`im w, im w' ≥ 1`, and `w` is within `6` of `w'` in both coordinates.
+Chain: (1) `Gamma_add_nat_of_im_ne_zero` shifts `re w` into `[1,2)` —
+up-shifts are free (each `|w+j| ≥ im w ≥ 1`), down-shifts cost
+`≤ (16·im w')⁷`; (2) the vertical move to height `im w'` costs `≤ e⁹⁶`
+(`norm_Gamma_le_norm_Gamma_of_im_le` going up,
+`norm_Gamma_le_exp_mul_norm_Gamma_of_im_le` going down); (3) the
+horizontal move to `re w'` costs `≤ e⁸·im w'`
+(`norm_Gamma_horizontal_ratio`). -/
+theorem exists_norm_Gamma_window_ratio :
+    ∃ C : ℝ, 0 < C ∧ ∀ w w' : ℂ, 1 ≤ w'.re → w'.re ≤ 2 → 1 ≤ w.im →
+      1 ≤ w'.im → |w.re - w'.re| ≤ 6 → |w.im - w'.im| ≤ 6 →
+      ‖Complex.Gamma w‖ ≤ C * w'.im ^ 8 * ‖Complex.Gamma w'‖ := by
+  refine ⟨16 ^ 7 * Real.exp 104, by positivity, ?_⟩
+  intro w w' hre1 hre2 hY1 hy'1 hre him
+  obtain ⟨hre_l, hre_u⟩ := abs_le.mp hre
+  obtain ⟨him_l, him_u⟩ := abs_le.mp him
+  have hy'0 : (0 : ℝ) < w'.im := lt_of_lt_of_le one_pos hy'1
+  have hY0 : (0 : ℝ) < w.im := lt_of_lt_of_le one_pos hY1
+  have hXu : w.re ≤ 8 := by linarith
+  have h16 : (1 : ℝ) ≤ 16 * w'.im := by linarith
+  set x₀ : ℝ := w.re - (⌊w.re⌋ : ℝ) + 1 with hx₀def
+  have hx₀1 : 1 ≤ x₀ := by
+    have := Int.floor_le w.re
+    rw [hx₀def]
+    linarith
+  have hx₀2 : x₀ < 2 := by
+    have := Int.lt_floor_add_one w.re
+    rw [hx₀def]
+    linarith
+  have hx₀0 : (0 : ℝ) < x₀ := by linarith
+  -- Step 1: recurrence shift into `re ∈ [1,2)`
+  have hstep1 : ‖Complex.Gamma w‖ ≤
+      (16 * w'.im) ^ 7 * ‖Complex.Gamma ((x₀ : ℂ) + (w.im : ℝ) * Complex.I)‖ := by
+    by_cases hcase : w.re < 2
+    · -- up-shift, free
+      have hfl : ⌊w.re⌋ ≤ 1 := by
+        have h2' : ⌊w.re⌋ < 2 := Int.floor_lt.mpr (by exact_mod_cast hcase)
+        omega
+      set k : ℕ := (1 - ⌊w.re⌋).toNat
+      have hkval : (k : ℤ) = 1 - ⌊w.re⌋ := Int.toNat_of_nonneg (by omega)
+      have hkR : (k : ℝ) = 1 - (⌊w.re⌋ : ℝ) := by exact_mod_cast hkval
+      have hGadd := Gamma_add_nat_of_im_ne_zero w hY0.ne' k
+      have hx₀k : x₀ = w.re + (k : ℝ) := by rw [hx₀def, hkR]; ring
+      have hwk : w + (k : ℂ) = (x₀ : ℂ) + (w.im : ℝ) * Complex.I := by
+        rw [hx₀k]
+        push_cast
+        conv_lhs => rw [← Complex.re_add_im w]
+        ring
+      have hprod1 : (1 : ℝ) ≤ ∏ j ∈ Finset.range k, ‖w + (j : ℂ)‖ := by
+        have hb : ∀ j ∈ Finset.range k, (1 : ℝ) ≤ ‖w + (j : ℂ)‖ := by
+          intro j _
+          have h1 : |(w + (j : ℂ)).im| ≤ ‖w + (j : ℂ)‖ := Complex.abs_im_le_norm _
+          have h2 : (w + (j : ℂ)).im = w.im := by simp
+          rw [h2] at h1
+          calc (1 : ℝ) ≤ w.im := hY1
+            _ ≤ |w.im| := le_abs_self _
+            _ ≤ ‖w + (j : ℂ)‖ := h1
+        have := Finset.prod_le_prod (s := Finset.range k) (f := fun _ => (1 : ℝ))
+          (g := fun j : ℕ => ‖w + (j : ℂ)‖) (fun i _ => zero_le_one) hb
+        simpa using this
+      have hnormeq : ‖Complex.Gamma (w + (k : ℂ))‖ =
+          (∏ j ∈ Finset.range k, ‖w + (j : ℂ)‖) * ‖Complex.Gamma w‖ := by
+        rw [hGadd, norm_mul, norm_prod]
+      have h1 : ‖Complex.Gamma w‖ ≤ ‖Complex.Gamma (w + (k : ℂ))‖ := by
+        rw [hnormeq]
+        exact le_mul_of_one_le_left (norm_nonneg _) hprod1
+      rw [hwk] at h1
+      calc ‖Complex.Gamma w‖ ≤ ‖Complex.Gamma ((x₀ : ℂ) + (w.im : ℝ) * Complex.I)‖ := h1
+        _ ≤ (16 * w'.im) ^ 7 * ‖Complex.Gamma ((x₀ : ℂ) + (w.im : ℝ) * Complex.I)‖ :=
+          le_mul_of_one_le_left (norm_nonneg _) (one_le_pow₀ h16)
+    · -- down-shift, costs `(16·im w')⁷`
+      have hcase' : 2 ≤ w.re := not_lt.mp hcase
+      have hfl2 : 2 ≤ ⌊w.re⌋ := Int.le_floor.mpr (by exact_mod_cast hcase')
+      have hfl8 : ⌊w.re⌋ ≤ 8 := by
+        have h8 : ⌊w.re⌋ ≤ ⌊(8 : ℝ)⌋ := Int.floor_le_floor hXu
+        simpa using h8
+      set k : ℕ := (⌊w.re⌋ - 1).toNat
+      have hkval : (k : ℤ) = ⌊w.re⌋ - 1 := Int.toNat_of_nonneg (by omega)
+      have hkR : (k : ℝ) = (⌊w.re⌋ : ℝ) - 1 := by exact_mod_cast hkval
+      have hk7 : k ≤ 7 := by omega
+      set s : ℂ := w - (k : ℂ) with hs
+      have hsim : s.im = w.im := by simp [hs]
+      have hGadd := Gamma_add_nat_of_im_ne_zero s (by rw [hsim]; exact hY0.ne') k
+      have hsw : s + (k : ℂ) = w := by rw [hs]; ring
+      have hx₀k : x₀ = w.re - (k : ℝ) := by rw [hx₀def, hkR]; ring
+      have hseq : s = (x₀ : ℂ) + (w.im : ℝ) * Complex.I := by
+        rw [hs, hx₀k]
+        push_cast
+        conv_lhs => rw [← Complex.re_add_im w]
+        ring
+      have hsre : s.re = x₀ := by rw [hseq]; simp
+      have hbound : ∀ j ∈ Finset.range k, ‖s + (j : ℂ)‖ ≤ 16 * w'.im := by
+        intro j hj
+        have hj7 : (j : ℝ) ≤ 7 := by
+          have hjk : j < k := Finset.mem_range.mp hj
+          have hjkR : (j : ℝ) < (k : ℝ) := by exact_mod_cast hjk
+          have hk7R : (k : ℝ) ≤ 7 := by exact_mod_cast hk7
+          linarith
+        have hsnorm : ‖s‖ ≤ |s.re| + |s.im| := by
+          calc ‖s‖ = ‖(s.re : ℂ) + (s.im : ℝ) * Complex.I‖ := by rw [Complex.re_add_im]
+            _ ≤ ‖(s.re : ℂ)‖ + ‖(s.im : ℂ) * Complex.I‖ := norm_add_le _ _
+            _ = |s.re| + |s.im| := by
+                rw [norm_mul, Complex.norm_I, mul_one, Complex.norm_real,
+                  Complex.norm_real, Real.norm_eq_abs, Real.norm_eq_abs]
+        have habs_re : |s.re| ≤ 2 := by
+          rw [hsre, abs_le]; constructor <;> linarith
+        have habs_im : |s.im| ≤ w'.im + 6 := by
+          rw [hsim, abs_le]; constructor <;> linarith
+        calc ‖s + (j : ℂ)‖ ≤ ‖s‖ + ‖(j : ℂ)‖ := norm_add_le _ _
+          _ = ‖s‖ + (j : ℝ) := by rw [Complex.norm_natCast]
+          _ ≤ (|s.re| + |s.im|) + 7 := by linarith [hsnorm]
+          _ ≤ (2 + (w'.im + 6)) + 7 := by linarith
+          _ ≤ 16 * w'.im := by linarith
+      have hprodle : ∏ j ∈ Finset.range k, ‖s + (j : ℂ)‖ ≤ (16 * w'.im) ^ 7 := by
+        calc ∏ j ∈ Finset.range k, ‖s + (j : ℂ)‖ ≤
+            ∏ _j ∈ Finset.range k, (16 * w'.im) :=
+              Finset.prod_le_prod (fun j _ => norm_nonneg _) hbound
+          _ = (16 * w'.im) ^ k := by rw [Finset.prod_const, Finset.card_range]
+          _ ≤ (16 * w'.im) ^ 7 := pow_le_pow_right₀ h16 hk7
+      have hnormeq : ‖Complex.Gamma w‖ =
+          (∏ j ∈ Finset.range k, ‖s + (j : ℂ)‖) * ‖Complex.Gamma s‖ := by
+        rw [← hsw, hGadd, norm_mul, norm_prod]
+      calc ‖Complex.Gamma w‖
+          = (∏ j ∈ Finset.range k, ‖s + (j : ℂ)‖) * ‖Complex.Gamma s‖ := hnormeq
+        _ ≤ (16 * w'.im) ^ 7 * ‖Complex.Gamma s‖ :=
+            mul_le_mul_of_nonneg_right hprodle (norm_nonneg _)
+        _ = (16 * w'.im) ^ 7 * ‖Complex.Gamma ((x₀ : ℂ) + (w.im : ℝ) * Complex.I)‖ := by
+            rw [hseq]
+  -- Step 2: vertical move to height `im w'`
+  have hstep2 : ‖Complex.Gamma ((x₀ : ℂ) + (w.im : ℝ) * Complex.I)‖ ≤
+      Real.exp 96 * ‖Complex.Gamma ((x₀ : ℂ) + (w'.im : ℝ) * Complex.I)‖ := by
+    rcases le_total w'.im w.im with hc | hc
+    · have h1 := norm_Gamma_le_norm_Gamma_of_im_le x₀ w'.im w.im hx₀0 hy'0 hc
+      calc ‖Complex.Gamma ((x₀ : ℂ) + (w.im : ℝ) * Complex.I)‖ ≤
+          ‖Complex.Gamma ((x₀ : ℂ) + (w'.im : ℝ) * Complex.I)‖ := h1
+        _ ≤ Real.exp 96 * ‖Complex.Gamma ((x₀ : ℂ) + (w'.im : ℝ) * Complex.I)‖ :=
+          le_mul_of_one_le_left (norm_nonneg _) (Real.one_le_exp (by norm_num))
+    · have h2 := norm_Gamma_le_exp_mul_norm_Gamma_of_im_le x₀ w.im w'.im hx₀0 hY1 hc
+      have hexp : 2 * (w'.im ^ 2 - w.im ^ 2) / w.im ≤ 96 := by
+        rw [div_le_iff₀ hY0]
+        have hsq := mul_self_le_mul_self hy'0.le (show w'.im ≤ w.im + 6 by linarith)
+        nlinarith [hY1]
+      calc ‖Complex.Gamma ((x₀ : ℂ) + (w.im : ℝ) * Complex.I)‖ ≤
+          Real.exp (2 * (w'.im ^ 2 - w.im ^ 2) / w.im) *
+            ‖Complex.Gamma ((x₀ : ℂ) + (w'.im : ℝ) * Complex.I)‖ := h2
+        _ ≤ Real.exp 96 * ‖Complex.Gamma ((x₀ : ℂ) + (w'.im : ℝ) * Complex.I)‖ :=
+          mul_le_mul_of_nonneg_right (Real.exp_le_exp.mpr hexp) (norm_nonneg _)
+  -- Step 3: horizontal move to `re w'`
+  have hstep3 : ‖Complex.Gamma ((x₀ : ℂ) + (w'.im : ℝ) * Complex.I)‖ ≤
+      Real.exp 8 * w'.im * ‖Complex.Gamma w'‖ := by
+    have h3 := norm_Gamma_horizontal_ratio x₀ w'.re w'.im hx₀1 hx₀2.le hre1 hre2 hy'1
+    rwa [Complex.re_add_im] at h3
+  have hcomb : ‖Complex.Gamma w‖ ≤
+      (16 * w'.im) ^ 7 * (Real.exp 96 * (Real.exp 8 * w'.im * ‖Complex.Gamma w'‖)) := by
+    calc ‖Complex.Gamma w‖ ≤
+        (16 * w'.im) ^ 7 * ‖Complex.Gamma ((x₀ : ℂ) + (w.im : ℝ) * Complex.I)‖ := hstep1
+      _ ≤ (16 * w'.im) ^ 7 *
+          (Real.exp 96 * ‖Complex.Gamma ((x₀ : ℂ) + (w'.im : ℝ) * Complex.I)‖) :=
+        mul_le_mul_of_nonneg_left hstep2 (by positivity)
+      _ ≤ (16 * w'.im) ^ 7 * (Real.exp 96 * (Real.exp 8 * w'.im * ‖Complex.Gamma w'‖)) := by
+        apply mul_le_mul_of_nonneg_left _ (by positivity)
+        exact mul_le_mul_of_nonneg_left hstep3 (Real.exp_nonneg _)
+  have hfinal : (16 * w'.im) ^ 7 * (Real.exp 96 * (Real.exp 8 * w'.im * ‖Complex.Gamma w'‖)) =
+      16 ^ 7 * Real.exp 104 * w'.im ^ 8 * ‖Complex.Gamma w'‖ := by
+    have hee : Real.exp 96 * Real.exp 8 = Real.exp 104 := by
+      rw [← Real.exp_add]; norm_num
+    rw [mul_pow, ← hee]
+    ring
+  rw [hfinal] at hcomb
+  exact hcomb
+
+/-- **Pure-arithmetic assembly of the five factor bounds of
+`dedekindXiFactor_window_ratio`** (PROVEN 2026-07-24): with the window
+atoms `a•` and centre atoms `b•` abstracted as nonnegative reals, the
+per-factor bounds multiply into the final `C·T^B` shape.  Keeping this
+step generic makes the `gcongr`/`ring` work cheap — applied to the
+literal norm atoms the elaborator times out. -/
+theorem xiFactor_window_assembly (r₁ r₂ : ℕ)
+    (a1 a2 a3 a4 a5 a6 a7 a8 b1 b2 b3 b4 b5 b7 b8 A P Q C₀ T : ℝ)
+    (ha2 : 0 ≤ a2) (ha3 : 0 ≤ a3) (ha4 : 0 ≤ a4) (ha5 : 0 ≤ a5)
+    (ha6 : 0 ≤ a6) (ha7 : 0 ≤ a7) (ha8 : 0 ≤ a8)
+    (hb1 : 0 ≤ b1) (hb2 : 0 ≤ b2) (hb3 : 0 ≤ b3) (hb4 : 0 ≤ b4) (hb5 : 0 ≤ b5)
+    (hb7 : 0 ≤ b7)
+    (hA : 0 ≤ A) (hP : 0 ≤ P) (hQ : 0 ≤ Q) (hC₀ : 0 ≤ C₀)
+    (g1 : a1 ≤ 2 * b1) (g2 : a2 ≤ 2 * b2) (g3 : a3 ≤ A * b3)
+    (g4 : a4 ≤ P * b4) (g5 : a5 ≤ C₀ * T ^ 8 * b5)
+    (g6 : a7 ≤ Q * b7) (g7 : a8 ≤ C₀ * T ^ 8 * b8) :
+    a1 * a2 * a3 * (a4 * a5) ^ r₁ * (a6 * a7 * a8) ^ r₂ ≤
+      4 * A * (P * C₀) ^ r₁ * (Q * C₀) ^ r₂ * T ^ (8 * r₁ + 8 * r₂) *
+        (b1 * b2 * b3 * (b4 * b5) ^ r₁ * (a6 * b7 * b8) ^ r₂) := by
+  calc a1 * a2 * a3 * (a4 * a5) ^ r₁ * (a6 * a7 * a8) ^ r₂
+      ≤ (2 * b1) * (2 * b2) * (A * b3) *
+        ((P * b4) * (C₀ * T ^ 8 * b5)) ^ r₁ *
+        (a6 * (Q * b7) * (C₀ * T ^ 8 * b8)) ^ r₂ := by
+        gcongr
+    _ = 4 * A * (P * C₀) ^ r₁ * (Q * C₀) ^ r₂ * T ^ (8 * r₁ + 8 * r₂) *
+        (b1 * b2 * b3 * (b4 * b5) ^ r₁ * (a6 * b7 * b8) ^ r₂) := by
+        rw [pow_add, pow_mul, pow_mul]
+        ring
+
 /-- **Γ-ratio bound for the elementary factor across the window
-circle** (sorry node, stated 2026-07-24 — leaf (ii) of the
+circle** (PROVEN 2026-07-24 — leaf (ii) of the
 decomposition of `DedekindContinuation.xi_window_ratio_bound`): on
 the circle `‖z − c‖ = 6`, `c = 2 + iT`, `T ≥ 8`, the elementary
 factor satisfies `‖E(z)‖ ≤ C·T^B·‖E(c)‖`.  Both sides carry the same
@@ -8332,7 +9155,135 @@ theorem dedekindXiFactor_window_ratio (K : Type*) [Field K]
       ‖z - (2 + (T : ℂ) * Complex.I)‖ = 6 →
       ‖dedekindXiFactor K z‖ ≤
         C * T ^ B * ‖dedekindXiFactor K (2 + (T : ℂ) * Complex.I)‖ := by
-  sorry
+  obtain ⟨C₀, hC₀, hG⟩ := exists_norm_Gamma_window_ratio
+  have hA0 : (0 : ℝ) < |(NumberField.discr K : ℝ)| :=
+    abs_pos.mpr (Int.cast_ne_zero.mpr (NumberField.discr_ne_zero K))
+  have hA1 : (1 : ℝ) ≤ |(NumberField.discr K : ℝ)| := by
+    rw [← Int.cast_abs]
+    exact_mod_cast Int.one_le_abs (NumberField.discr_ne_zero K)
+  have hπ1 : (1 : ℝ) ≤ Real.pi := by linarith [Real.pi_gt_three]
+  have hπ0 : (0 : ℝ) < Real.pi := Real.pi_pos
+  have h2π0 : (0 : ℝ) < 2 * Real.pi := by linarith
+  have h2π1 : (1 : ℝ) ≤ 2 * Real.pi := by linarith
+  refine ⟨4 * |(NumberField.discr K : ℝ)| ^ 3 *
+      (Real.pi ^ 3 * C₀) ^ NumberField.InfinitePlace.nrRealPlaces K *
+      ((2 * Real.pi) ^ 6 * C₀) ^ NumberField.InfinitePlace.nrComplexPlaces K,
+    by positivity,
+    8 * NumberField.InfinitePlace.nrRealPlaces K +
+      8 * NumberField.InfinitePlace.nrComplexPlaces K, ?_⟩
+  intro T hT z hz
+  set c : ℂ := 2 + (T : ℂ) * Complex.I with hc
+  have hT0 : (0 : ℝ) < T := by linarith
+  have hcre : c.re = 2 := by rw [hc]; simp
+  have hcim : c.im = T := by rw [hc]; simp
+  have hzre : |z.re - 2| ≤ 6 := by
+    have h := Complex.abs_re_le_norm (z - c)
+    rw [hz, Complex.sub_re, hcre] at h
+    exact h
+  have hzim : |z.im - T| ≤ 6 := by
+    have h := Complex.abs_im_le_norm (z - c)
+    rw [hz, Complex.sub_im, hcim] at h
+    exact h
+  obtain ⟨hzre_l, hzre_u⟩ := abs_le.mp hzre
+  obtain ⟨hzim_l, hzim_u⟩ := abs_le.mp hzim
+  have hzim2 : 2 ≤ z.im := by linarith
+  have hdre : ∀ w : ℂ, (w / 2).re = w.re / 2 := fun w => by
+    rw [show (2 : ℂ) = ((2 : ℝ) : ℂ) by norm_num, Complex.div_ofReal_re]
+  have hdim : ∀ w : ℂ, (w / 2).im = w.im / 2 := fun w => by
+    rw [show (2 : ℂ) = ((2 : ℝ) : ℂ) by norm_num, Complex.div_ofReal_im]
+  have hcnorm : T ≤ ‖c‖ := by
+    have h := Complex.abs_im_le_norm c
+    rw [hcim] at h
+    exact (le_abs_self T).trans h
+  have hc1norm : T ≤ ‖c - 1‖ := by
+    have h := Complex.abs_im_le_norm (c - 1)
+    have him : (c - 1).im = T := by rw [Complex.sub_im, hcim]; simp
+    rw [him] at h
+    exact (le_abs_self T).trans h
+  have g1 : ‖z‖ ≤ 2 * ‖c‖ := by
+    have h := norm_add_le c (z - c)
+    rw [hz] at h
+    have he : c + (z - c) = z := by ring
+    rw [he] at h
+    linarith
+  have g2 : ‖z - 1‖ ≤ 2 * ‖c - 1‖ := by
+    have h := norm_add_le (c - 1) (z - c)
+    rw [hz] at h
+    have he : (c - 1) + (z - c) = z - 1 := by ring
+    rw [he] at h
+    linarith
+  have g3 : ‖Complex.ofReal |(NumberField.discr K : ℝ)| ^ (z / 2)‖ ≤
+      |(NumberField.discr K : ℝ)| ^ 3 *
+        ‖Complex.ofReal |(NumberField.discr K : ℝ)| ^ (c / 2)‖ := by
+    rw [Complex.norm_cpow_eq_rpow_re_of_pos hA0, Complex.norm_cpow_eq_rpow_re_of_pos hA0]
+    have hc2 : (c / 2).re = 1 := by rw [hdre, hcre]; norm_num
+    have hz2 : (z / 2).re ≤ 4 := by rw [hdre]; linarith
+    calc |(NumberField.discr K : ℝ)| ^ (z / 2).re
+        ≤ |(NumberField.discr K : ℝ)| ^ (4 : ℝ) :=
+          Real.rpow_le_rpow_of_exponent_le hA1 hz2
+      _ = |(NumberField.discr K : ℝ)| ^ 3 *
+          |(NumberField.discr K : ℝ)| ^ (c / 2).re := by
+          rw [hc2, Real.rpow_one,
+            show (4 : ℝ) = ((3 : ℕ) : ℝ) + 1 by norm_num,
+            Real.rpow_add hA0, Real.rpow_natCast, Real.rpow_one]
+  have g4 : ‖(Real.pi : ℂ) ^ (-z / 2)‖ ≤ Real.pi ^ 3 * ‖(Real.pi : ℂ) ^ (-c / 2)‖ := by
+    rw [Complex.norm_cpow_eq_rpow_re_of_pos hπ0, Complex.norm_cpow_eq_rpow_re_of_pos hπ0]
+    have hcr : (-c / 2).re = -1 := by rw [hdre, Complex.neg_re, hcre]; norm_num
+    have hzr : (-z / 2).re ≤ 2 := by rw [hdre, Complex.neg_re]; linarith
+    calc Real.pi ^ (-z / 2).re ≤ Real.pi ^ (2 : ℝ) :=
+          Real.rpow_le_rpow_of_exponent_le hπ1 hzr
+      _ = Real.pi ^ 3 * Real.pi ^ (-c / 2).re := by
+          rw [hcr, show (2 : ℝ) = ((3 : ℕ) : ℝ) + (-1) by norm_num,
+            Real.rpow_add hπ0, Real.rpow_natCast]
+  have g5 : ‖Complex.Gamma (z / 2)‖ ≤ C₀ * T ^ 8 * ‖Complex.Gamma (c / 2)‖ := by
+    have hcond5 : |(z / 2).re - (c / 2).re| ≤ 6 := by
+      rw [hdre, hdre, hcre, abs_le]
+      constructor <;> linarith
+    have hcond6 : |(z / 2).im - (c / 2).im| ≤ 6 := by
+      rw [hdim, hdim, hcim, abs_le]
+      constructor <;> linarith
+    have h := hG (z / 2) (c / 2) (by rw [hdre, hcre]; norm_num)
+      (by rw [hdre, hcre]; norm_num) (by rw [hdim]; linarith)
+      (by rw [hdim, hcim]; linarith) hcond5 hcond6
+    have hcim2 : (c / 2).im = T / 2 := by rw [hdim, hcim]
+    rw [hcim2] at h
+    calc ‖Complex.Gamma (z / 2)‖ ≤ C₀ * (T / 2) ^ 8 * ‖Complex.Gamma (c / 2)‖ := h
+      _ ≤ C₀ * T ^ 8 * ‖Complex.Gamma (c / 2)‖ := by
+          apply mul_le_mul_of_nonneg_right _ (norm_nonneg _)
+          apply mul_le_mul_of_nonneg_left _ hC₀.le
+          exact pow_le_pow_left₀ (by positivity) (by linarith) 8
+  have g6 : ‖((2 * Real.pi : ℝ) : ℂ) ^ (-z)‖ ≤
+      (2 * Real.pi) ^ 6 * ‖((2 * Real.pi : ℝ) : ℂ) ^ (-c)‖ := by
+    rw [Complex.norm_cpow_eq_rpow_re_of_pos h2π0, Complex.norm_cpow_eq_rpow_re_of_pos h2π0]
+    have hcr : (-c).re = -2 := by rw [Complex.neg_re, hcre]
+    have hzr : (-z).re ≤ 4 := by rw [Complex.neg_re]; linarith
+    calc (2 * Real.pi) ^ (-z).re ≤ (2 * Real.pi) ^ (4 : ℝ) :=
+          Real.rpow_le_rpow_of_exponent_le h2π1 hzr
+      _ = (2 * Real.pi) ^ 6 * (2 * Real.pi) ^ (-c).re := by
+          rw [hcr, show (4 : ℝ) = ((6 : ℕ) : ℝ) + (-2) by norm_num,
+            Real.rpow_add h2π0, Real.rpow_natCast]
+  have g7 : ‖Complex.Gamma z‖ ≤ C₀ * T ^ 8 * ‖Complex.Gamma c‖ := by
+    have h := hG z c (by rw [hcre]; norm_num) (by rw [hcre])
+      (by linarith) (by rw [hcim]; linarith)
+      (by rw [hcre, abs_le]; constructor <;> linarith)
+      (by rw [hcim, abs_le]; constructor <;> linarith)
+    rwa [hcim] at h
+  simp only [dedekindXiFactor, norm_mul, norm_pow]
+  exact xiFactor_window_assembly
+    (NumberField.InfinitePlace.nrRealPlaces K) (NumberField.InfinitePlace.nrComplexPlaces K)
+    ‖z‖ ‖z - 1‖ ‖Complex.ofReal |(NumberField.discr K : ℝ)| ^ (z / 2)‖
+    ‖(Real.pi : ℂ) ^ (-z / 2)‖ ‖Complex.Gamma (z / 2)‖ ‖(2 : ℂ)‖
+    ‖((2 * Real.pi : ℝ) : ℂ) ^ (-z)‖ ‖Complex.Gamma z‖
+    ‖c‖ ‖c - 1‖ ‖Complex.ofReal |(NumberField.discr K : ℝ)| ^ (c / 2)‖
+    ‖(Real.pi : ℂ) ^ (-c / 2)‖ ‖Complex.Gamma (c / 2)‖
+    ‖((2 * Real.pi : ℝ) : ℂ) ^ (-c)‖ ‖Complex.Gamma c‖
+    (|(NumberField.discr K : ℝ)| ^ 3) (Real.pi ^ 3) ((2 * Real.pi) ^ 6) C₀ T
+    (norm_nonneg _) (norm_nonneg _) (norm_nonneg _) (norm_nonneg _) (norm_nonneg _)
+    (norm_nonneg _) (norm_nonneg _)
+    (norm_nonneg _) (norm_nonneg _) (norm_nonneg _) (norm_nonneg _) (norm_nonneg _)
+    (norm_nonneg _)
+    (by positivity) (by positivity) (by positivity) hC₀.le
+    g1 g2 g3 g4 g5 g6 g7
 
 /-- **Window ratio bound at bounded heights `2 ≤ T ≤ 8`** (PROVEN
 2026-07-24 — the compactness regime of the decomposition of
