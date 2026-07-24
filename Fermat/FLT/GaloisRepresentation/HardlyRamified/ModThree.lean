@@ -5722,59 +5722,378 @@ theorem DedekindContinuation.zero_count_window {K : Type*} [Field K]
       ∑ ρ ∈ s, (pkg.mult ρ : ℝ) ≤ C * Real.log T := by
   sorry
 
+/-- **The folded vertical-edge functional of Poitou's contour**
+(definition, 2026-07-24 — introduced in the decomposition of
+`DedekindContinuation.weil_explicit_formula_F`): the value at
+truncation height `T` of BOTH vertical edges of the rectangle
+`[−1/4, 5/4] × [−T, T]`, folded onto the right edge `re s = 5/4`,
+
+`E(T) = π⁻¹ · ∫_{−T}^{T} Re[Φ(5/4 + it) · (ξ'/ξ)(5/4 + it)] dt`.
+
+Why this is the whole contour up to vanishing edges: the functional
+equation `funcEq` gives `(ξ'/ξ)(1 − s) = −(ξ'/ξ)(s)` and evenness of
+`F` gives `Φ(1 − s) = Φ(s)`, so under `s ↦ 1 − s` (which maps the
+left edge `re s = −1/4` onto the right edge reversed) the integrand
+`Φ·ξ'/ξ` is odd-symmetric and the left edge contributes exactly the
+same as the right; `conj_symm` makes the folded value real, whence
+the `Re` inside.  The normalization `π⁻¹ = 2·(2π)⁻¹` carries the
+factor `2` of the fold and the `i` of `ds = i·dt` against the
+`(2πi)⁻¹` of the residue theorem.  Consumed by the two limit leaves
+`DedekindContinuation.zero_sum_sub_poitouEdge_tendsto_zero` (the
+truncated zero sum equals `E(T)` up to vanishing horizontal edges)
+and `DedekindContinuation.poitouEdge_tendsto` (the `T → ∞`
+evaluation of `E(T)` by Poitou's Propositions 2–3). -/
+noncomputable def DedekindContinuation.poitouEdge {K : Type*} [Field K]
+    [NumberField K] (pkg : DedekindContinuation K) (T : ℝ) : ℝ :=
+  Real.pi⁻¹ * ∫ t in (-T)..T,
+    (poitouPhi (5 / 4 + t * Complex.I) *
+      (deriv pkg.xi (5 / 4 + t * Complex.I) /
+        pkg.xi (5 / 4 + t * Complex.I))).re
+
+/-- **`ξ_K(1) ≠ 0`: the class-number-formula residue** (sorry node,
+stated 2026-07-24 — preliminary leaf (b₀ᵢ) of the decomposition of
+`DedekindContinuation.weil_explicit_formula_F`; Poitou p. 6-01
+"Préliminaires", the `t = 0` boundary case).  Intended proof:
+`ξ(1) = lim_{σ→1⁺} σ(σ−1)·|d|^{σ/2}·Γ_ℝ(σ)^{r₁}·Γ_ℂ(σ)^{r₂}·ζ_K(σ)`
+along real `σ ↓ 1`, by continuity of `xi` (from `differentiable`)
+and `eq_of_one_lt_re`; the pin's Dirichlet class number formula
+`NumberField.tendsto_sub_one_mul_dedekindZeta_nhdsGT` with
+`NumberField.dedekindZeta_residue_pos` makes
+`(σ−1)·ζ_K(σ) → residue ≠ 0` while every remaining factor tends to
+a nonzero limit (`σ → 1`, `|d|^{1/2} ≠ 0` by `discr ≠ 0`,
+`Γ(1/2), Γ(1) ≠ 0`), so `ξ(1)` is a product of nonzero reals.  Note
+`funcEq` at `s = 1` gives `ξ(0) = ξ(1)`, so this leaf also rules
+out a zero at `0`. -/
+theorem DedekindContinuation.xi_one_ne_zero {K : Type*} [Field K]
+    [NumberField K] (pkg : DedekindContinuation K) :
+    pkg.xi 1 ≠ 0 := by
+  sorry
+
+/-- **`ξ_K(1 + it) ≠ 0` for `t ≠ 0`: de la Vallée Poussin** (sorry
+node, stated 2026-07-24 — preliminary leaf (b₀ᵢᵢ) of the
+decomposition of `DedekindContinuation.weil_explicit_formula_F`;
+Poitou p. 6-01 "Préliminaires", the `t ≠ 0` boundary case).
+Intended proof: through `eq_of_one_lt_re` and continuity the claim
+reduces to `ζ_K(1 + it) ≠ 0` (the elementary factors
+`s(s−1)·|d|^{s/2}·Γ-powers` are nonzero at `1 + it`); if
+`ζ_K(1 + it) = 0`, the Mertens `3-4-1` inequality
+`ζ_K(σ)³·|ζ_K(σ + it)|⁴·|ζ_K(σ + 2it)| ≥ 1` for `σ > 1` (from
+`3 + 4cos θ + cos 2θ = 2(1 + cos θ)² ≥ 0` applied to the Dirichlet
+series of `log ζ_K`, whose coefficients `Λ_K(𝔞)/log N𝔞 ≥ 0` are
+nonnegative — Euler product over `IsDedekindDomain.HeightOneSpectrum`
+through the pin's `EulerProduct` machinery; mathlib proves the
+`K = ℚ` case as `riemannZeta_ne_zero_of_one_le_re` via
+`norm_dirichlet_char_mul_L...`-style bounds in
+`Mathlib.NumberTheory.LSeries.Nonvanishing`, whose
+`LFunction`-of-a-character skeleton is the pattern to imitate)
+contradicts the simple pole of `ζ_K` at `1` as `σ → 1⁺`: a zero of
+order `≥ 1` at `1 + it` makes the `4`-th power vanish to order `4`,
+beating the order-`3` pole of `ζ_K(σ)³`. -/
+theorem DedekindContinuation.xi_ne_zero_of_re_eq_one_of_im_ne_zero {K : Type*}
+    [Field K] [NumberField K] (pkg : DedekindContinuation K)
+    (t : ℝ) (ht : t ≠ 0) :
+    pkg.xi (1 + t * Complex.I) ≠ 0 := by
+  sorry
+
+/-- **Nonvanishing of `ξ_K` on the closed boundary line `re s = 1`**
+(ASSEMBLED 2026-07-24 by case split from the residue leaf
+`DedekindContinuation.xi_one_ne_zero` (`t = 0`) and the de la Vallée
+Poussin leaf
+`DedekindContinuation.xi_ne_zero_of_re_eq_one_of_im_ne_zero`
+(`t ≠ 0`); Poitou p. 6-01 "Préliminaires").
+
+Consumed by `DedekindContinuation.weil_explicit_formula_F`, which
+injects it into the `hbnd` hypothesis of
+`DedekindContinuation.zero_sum_sub_poitouEdge_tendsto_zero`: it
+guarantees (with `ne_zero_of_one_lt_re` and its `funcEq`/`conj_symm`
+mirrors) that every zero of `ξ` inside the contour rectangle lies in
+the OPEN strip `0 < re ρ < 1`, i.e. is counted by `mult`, and that
+`0` and `1` are not zeros. -/
+theorem DedekindContinuation.xi_ne_zero_of_re_eq_one {K : Type*} [Field K]
+    [NumberField K] (pkg : DedekindContinuation K) (t : ℝ) :
+    pkg.xi (1 + t * Complex.I) ≠ 0 := by
+  rcases eq_or_ne t 0 with rfl | ht
+  · simpa using pkg.xi_one_ne_zero
+  · exact pkg.xi_ne_zero_of_re_eq_one_of_im_ne_zero t ht
+
+/-- **Poitou's formula (1) with vanishing horizontal edges: the
+truncated zero sum equals the folded vertical edge in the limit**
+(sorry node, stated 2026-07-24 — leaf (b₁), the residue-theorem
+stage of the decomposition of
+`DedekindContinuation.weil_explicit_formula_F`; Poitou pp. 6-01–6-02,
+formula (1) and Proposition 1.  The window count is
+dependency-injected as `hcount` and the boundary nonvanishing as
+`hbnd` so that the leaves `DedekindContinuation.zero_count_window`
+and `DedekindContinuation.xi_ne_zero_of_re_eq_one` stay in the
+used-constant cone while this proof is open).
+
+Intended proof, verified against the page scans
+`~/flt-sources/poitou-page-0*.png`:
+
+1. *Residue theorem at a fixed good height.*  For `T'` avoiding all
+   zero ordinates, on `R = [−1/4, 5/4] × [−T', T']`:
+   `(2πi)⁻¹ ∮_∂R Φ·ξ'/ξ = Σ_{ρ ∈ R} mult(ρ)·Φ(ρ)`.  Mathlib has no
+   residue theorem, but the pin's rectangle Cauchy theorem
+   `Complex.integral_boundary_rect_eq_zero_of_differentiableOn`
+   applies to `s ↦ Φ(s)·(ξ'/ξ)(s) − Σ_{ρ ∈ R} mult(ρ)·Φ(ρ)/(s − ρ)`
+   after the finitely many zeros (`finite_truncation`) are divided
+   out by the local factorization `ξ = (· − ρ)^{mult ρ} • g`,
+   `g ρ ≠ 0`, of `Mathlib.Analysis.Analytic.IsolatedZeros`/`Order`
+   (this difference extends differentiably across each `ρ`), plus
+   the elementary rectangle integral
+   `∮_∂R ds/(s − ρ) = 2πi` for `ρ` interior (computable by the same
+   Cauchy theorem against a concentric circle, or directly).  `hbnd`
+   with `ne_zero_of_one_lt_re`, `funcEq` and `conj_symm` puts every
+   zero in the open strip, so the residue sum is exactly the `mult`
+   sum and `0, 1` contribute nothing (`ξ(0) = ξ(1) ≠ 0` — note
+   `funcEq` at `s = 1` gives `ξ(0) = ξ(1)`, and `hbnd 0` gives
+   `ξ(1) ≠ 0`).
+2. *Folding.*  `funcEq` differentiates to
+   `(ξ'/ξ)(1 − s) = −(ξ'/ξ)(s)` off the zeros, and `Φ(1 − s) = Φ(s)`
+   (substitute `x ↦ −x` in `poitouPhi`, `F` even), so the left edge
+   equals the right edge and `(2πi)⁻¹ ∮ = π⁻¹ ∫_{−T'}^{T'} Re[…] dt
+   + horizontal edges` — realness of the folded edge by `conj_symm`.
+   This is `DedekindContinuation.poitouEdge T'`.
+3. *Proposition 1: horizontal edges vanish through good heights.*
+   `hcount` gives `≤ C·log T` zeros with ordinate in `[T, T+1]`, so
+   some height `T' ∈ [T, T+1]` has distance `≥ (2C·log T)⁻¹` to
+   every zero ordinate.  On the disc `|s − (1/2 + iT')| ≤ 6`, the
+   pin's `Complex.borelCaratheodory` (present:
+   `Mathlib.Analysis.Complex.BorelCaratheodory`) applied to
+   `log(ξ/((s−ρ₁)^{m₁}⋯))` — equivalently the standard partial
+   fraction bound manufactured from `growth`, `hcount` and the
+   Schwarz-type estimates of that file — yields
+   `|(ξ'/ξ)(σ + iT')| = O(log² T)` uniformly for
+   `σ ∈ [−1/4, 5/4]`, while `‖Φ(σ + iT')‖ = O(1/T'²)` uniformly on
+   the strip (two integrations by parts in `poitouPhi` against the
+   compactly supported `F` with `F'` of bounded variation).  The
+   horizontal edges are `O(log² T/T²) → 0`.
+4. *Bridging from good heights to all heights.*  For
+   `T ≤ S < T + 2` the zero sum changes by
+   `O(log T)·sup_{|imρ|≥T}‖Φ(ρ)‖ = O(log T/T²)` (by `hcount` and
+   step 3's decay of `Φ` on the strip), and `poitouEdge` changes by
+   `∫_{T}^{S} O(log t/t²) dt → 0` (on `re s = 5/4` the series
+   `(ξ'/ξ)` is `O(1)` by `eq_of_one_lt_re`-side estimates, or crudely
+   `O(log t)` again), so the difference tends to `0` along ALL
+   `T → ∞`, as stated. -/
+theorem DedekindContinuation.zero_sum_sub_poitouEdge_tendsto_zero {K : Type*}
+    [Field K] [NumberField K] (pkg : DedekindContinuation K)
+    (hcount : ∃ C : ℝ, 0 < C ∧ ∀ T : ℝ, 2 ≤ T → ∀ s : Finset ℂ,
+      (∀ ρ ∈ s, |(|ρ.im| - T)| ≤ 1) →
+      ∑ ρ ∈ s, (pkg.mult ρ : ℝ) ≤ C * Real.log T)
+    (hbnd : ∀ t : ℝ, pkg.xi (1 + t * Complex.I) ≠ 0) :
+    Filter.Tendsto (fun T : ℝ =>
+        (∑' ρ : {ρ : ℂ // pkg.mult ρ ≠ 0 ∧ |ρ.im| ≤ T},
+          (pkg.mult ρ.1 : ℝ) * (poitouPhi ρ.1).re) - pkg.poitouEdge T)
+      Filter.atTop (nhds 0) := by
+  sorry
+
+/-- **The pole-pair edge functional** (definition, 2026-07-24 —
+introduced in the decomposition of
+`DedekindContinuation.poitouEdge_tendsto`): the analogue of
+`DedekindContinuation.poitouEdge` with the elementary pole pair
+`h(s) = 1/s + 1/(s−1)` — the log-derivative of the normalizing
+factor `s(s−1)` of `ξ` — in place of `ξ'/ξ`.  `h` has the same odd
+symmetry `h(1 − s) = −h(s)` under the functional-equation
+substitution as `ξ'/ξ` itself, which is why the same folded
+right-edge form captures its whole rectangle contour.  Note
+`(5/4 + it).re = 5/4`, so neither denominator vanishes on the
+line. -/
+noncomputable def poitouPoleEdge (T : ℝ) : ℝ :=
+  Real.pi⁻¹ * ∫ t in (-T)..T,
+    (poitouPhi (5 / 4 + t * Complex.I) *
+      (1 / (5 / 4 + t * Complex.I) + 1 / (5 / 4 + t * Complex.I - 1))).re
+
+/-- **The pole part of the vertical edge gives `Φ(0) + Φ(1)`**
+(sorry node, stated 2026-07-24 — leaf (b₂ᵢ) of the decomposition of
+`DedekindContinuation.poitouEdge_tendsto`; the mirrored
+residue-theorem computation, no `pkg` involved).  Intended proof:
+`Φ·h` (with `h(s) = 1/s + 1/(s−1)`) is differentiable on the
+rectangle `[−1/4, 5/4] × [−T, T]` minus the two interior points
+`0, 1`; `Φ = poitouPhi` is entire — its differentiability is proved
+from `intervalIntegral`/parameter-differentiation exactly as in
+`poitouPhi_differentiable` (which lives later in this file, so a
+local continuity brick must be manufactured or that proof reused
+by a forward-placed helper).  The pin's rectangle Cauchy theorem
+`Complex.integral_boundary_rect_eq_zero_of_differentiableOn` applied
+to `s ↦ Φ(s)·h(s) − Φ(0)/s − Φ(1)/(s−1)` (a difference that extends
+differentiably across `0` and `1`) together with the elementary
+rectangle integrals `∮ ds/(s−ρ) = 2πi` for the two interior poles
+gives `(2πi)⁻¹∮ Φ·h = Φ(0) + Φ(1)` for every `T ≥ 2`.  The
+`h(1−s) = −h(s)` odd symmetry with `Φ(1−s) = Φ(s)` (substitute
+`x ↦ −x` in `poitouPhi`; `odlyzkoTestFn` is even) folds the left
+edge onto the right as in `DedekindContinuation.poitouEdge`, and
+realness (`Φ(s̄) = conj Φ(s)`, `h(s̄) = conj h(s)`) gives the `Re`
+form; the horizontal edges are
+`O(sup_{σ∈[−1/4,5/4]} ‖Φ(σ ± iT)‖) · O(1/T) = O(1/T³) → 0` (two
+integrations by parts in `poitouPhi` against the compactly
+supported `F` with `F'` of bounded variation give the `1/T²`
+strip decay of `Φ`). -/
+theorem poitouPoleEdge_tendsto :
+    Filter.Tendsto poitouPoleEdge Filter.atTop
+      (nhds ((poitouPhi 0).re + (poitouPhi 1).re)) := by
+  sorry
+
+/-- **Poitou's Propositions 2–3: the vertical edge minus its pole
+part converges to the arithmetic terms** (sorry node, stated
+2026-07-24 — leaf (b₂ᵢᵢ), the edge-evaluation core of the
+decomposition of `DedekindContinuation.poitouEdge_tendsto`; Poitou
+pp. 6-02–6-06, Propositions 2–3 with Lemmes 1–2).  The whole edge
+lies in the absolute-convergence half-plane `re s = 5/4 > 1`, so
+`eq_of_one_lt_re` applies along it and `ξ ≠ 0` there by
+`ne_zero_of_one_lt_re`; subtracting `poitouPoleEdge` removes exactly
+the log-derivative `1/s + 1/(s−1)` of the normalizing factor
+`s(s−1)`, so (after the `intervalIntegral.integral_sub`
+rearrangement, integrands continuous on compacts) the difference is
+the folded edge of `Φ·Z_K'/Z_K` with
+`(Z_K'/Z_K)(s) = (log|d|)/2 + r₂·(Γ_ℂ'/Γ_ℂ)(s) + (ζ_K'/ζ_K)(s)`
+(log-derivative of the product of `eq_of_one_lt_re`; `r₁ = 0` by
+`htc`).  Term by term:
+
+1. *Constant part `(log|d|)/2` gives `log|d|` by Fourier
+   inversion.*  `Φ(5/4 + it) = ∫ F(x)e^{3x/4}·e^{itx} dx` is the
+   conjugate Fourier transform of the continuous, piecewise-`C¹`,
+   compactly supported `G(x) = F(x)e^{3x/4}` at `t`; it is `O(1/t²)`
+   (integration by parts twice, `F'` of bounded variation), so
+   Fourier inversion at `0` (`MeasureTheory.Integrable` version in
+   the pin's `Mathlib.Analysis.Fourier.Inversion`) gives
+   `(2π)⁻¹ ∫_ℝ Φ(5/4 + it) dt = G(0) = F(0) = 1`; multiply by
+   `2·(log|d|)/2`.
+2. *Prime part: `ζ_K'/ζ_K` gives the prime sum.*  On the line,
+   `−(ζ_K'/ζ_K)(s) = Σ_{𝔭, m≥1} (log N𝔭)·N𝔭^{−ms}` (log-derivative
+   of the Euler product over `IsDedekindDomain.HeightOneSpectrum`,
+   absolutely convergent; the pin has
+   `NumberField.dedekindZeta_eulerProduct`-shaped input through the
+   `EulerProduct` machinery).  Termwise, the same Fourier inversion
+   as step 1 at the shifted point `x = m·log N𝔭` gives
+   `(2π)⁻¹ ∫_ℝ Φ(5/4+it)·(log N𝔭)·N𝔭^{−m(5/4+it)} dt
+   = (log N𝔭/N𝔭^{m/2})·F(m log N𝔭)`; summing (dominated
+   convergence against the absolutely convergent
+   `Σ log N𝔭·N𝔭^{−5m/4}`) yields
+   `−2·Σ_{𝔭,m≥1} (log N𝔭/N𝔭^{m/2})·F(m·log N𝔭)`, i.e. the stated
+   sum in its `m : ℕ` (`m+1`) indexing.
+3. *Archimedean part: `r₂·Γ_ℂ'/Γ_ℂ` gives
+   `−n(γ + log 8π) + n·∫₀^∞ (1−F)/(2 sinh(x/2))`.*  Poitou's
+   Lemmes 1–2 and formula (5), p. 6-05: `(Γ_ℂ'/Γ_ℂ)(s) =
+   −log 2π + ψ(s)` with the digamma integral representation
+   `ψ(s) = −γ + ∫₀^∞ (e^{−x} − e^{−sx})/(1 − e^{−x}) dx` (pin:
+   digamma material is thin — manufacture from
+   `Real.eulerMascheroniConstant` limits and the `1/(s+k)` partial
+   fractions of `Complex.Gamma_seq`); pairing against
+   `π⁻¹∫ Re[Φ(5/4+it)·…] dt` and Fourier inversion turns each
+   `e^{−sx}` kernel into an evaluation of `F`, and the bookkeeping
+   of Lemme 2 assembles exactly
+   `n·(−γ − log 8π + ∫₀^∞ (1 − F(x))/(2 sinh(x/2)) dx)` for
+   `n = 2r₂` (`htc`: `r₁ = 0`, `n = 2r₂` via
+   `NumberField.InfinitePlace.card_eq_nrRealPlaces_add_two_mul_nrComplexPlaces`).
+
+Each of steps 1–3 is a candidate further leaf; the split into the
+three integrals is limit arithmetic over
+`intervalIntegral.integral_add` given termwise integrability (all
+integrands continuous in `t` on compacts: `differentiable` with
+`Differentiable.deriv`, `ne_zero_of_one_lt_re` on the line, and the
+parameter-integral continuity of `poitouPhi`). -/
+theorem DedekindContinuation.poitouEdge_sub_poleEdge_tendsto {K : Type*}
+    [Field K] [NumberField K] (pkg : DedekindContinuation K)
+    (htc : NumberField.IsTotallyComplex K) :
+    Filter.Tendsto (fun T : ℝ => pkg.poitouEdge T - poitouPoleEdge T)
+      Filter.atTop
+      (nhds (Real.log |(NumberField.discr K : ℝ)| -
+        (Module.finrank ℚ K : ℝ) *
+          (Real.eulerMascheroniConstant + Real.log (8 * Real.pi)) +
+        (Module.finrank ℚ K : ℝ) *
+          (∫ x in Set.Ioi (0 : ℝ), (1 - poitouF x) / (2 * Real.sinh (x / 2))) -
+        2 * ∑' (P : {P : Ideal (NumberField.RingOfIntegers K) //
+              P.IsPrime ∧ P ≠ ⊥}) (m : ℕ),
+          Real.log (Ideal.absNorm P.1) /
+              (Ideal.absNorm P.1 : ℝ) ^ (((m : ℝ) + 1) / 2) *
+            poitouF (((m : ℝ) + 1) * Real.log (Ideal.absNorm P.1)))) := by
+  sorry
+
+/-- **Poitou's Propositions 2–3: evaluation of the folded vertical
+edge** (ASSEMBLED 2026-07-24 from the pole-part leaf
+`poitouPoleEdge_tendsto` and the arithmetic-part leaf
+`DedekindContinuation.poitouEdge_sub_poleEdge_tendsto` by the
+telescoping identity `E(T) = (E(T) − P(T)) + P(T)`; Poitou
+pp. 6-02–6-06).  The `T → ∞` limit of the folded vertical edge
+`DedekindContinuation.poitouEdge` is the full arithmetic right-hand
+side of formula (6) except the zero sum: `log|d_K|`, the
+archimedean `−n(γ + log 8π) + n∫₀^∞ (1−F)/(2 sinh(x/2))`, the pole
+term `Φ(0) + Φ(1)`, and the prime sum. -/
+theorem DedekindContinuation.poitouEdge_tendsto {K : Type*} [Field K]
+    [NumberField K] (pkg : DedekindContinuation K)
+    (htc : NumberField.IsTotallyComplex K) :
+    Filter.Tendsto pkg.poitouEdge Filter.atTop
+      (nhds (Real.log |(NumberField.discr K : ℝ)| -
+        (Module.finrank ℚ K : ℝ) *
+          (Real.eulerMascheroniConstant + Real.log (8 * Real.pi)) +
+        (Module.finrank ℚ K : ℝ) *
+          (∫ x in Set.Ioi (0 : ℝ), (1 - poitouF x) / (2 * Real.sinh (x / 2))) +
+        ((poitouPhi 0).re + (poitouPhi 1).re) -
+        2 * ∑' (P : {P : Ideal (NumberField.RingOfIntegers K) //
+              P.IsPrime ∧ P ≠ ⊥}) (m : ℕ),
+          Real.log (Ideal.absNorm P.1) /
+              (Ideal.absNorm P.1 : ℝ) ^ (((m : ℝ) + 1) / 2) *
+            poitouF (((m : ℝ) + 1) * Real.log (Ideal.absNorm P.1)))) := by
+  have hB := pkg.poitouEdge_sub_poleEdge_tendsto htc
+  have hsum := hB.add poitouPoleEdge_tendsto
+  have hkey : Real.log |(NumberField.discr K : ℝ)| -
+        (Module.finrank ℚ K : ℝ) *
+          (Real.eulerMascheroniConstant + Real.log (8 * Real.pi)) +
+        (Module.finrank ℚ K : ℝ) *
+          (∫ x in Set.Ioi (0 : ℝ), (1 - poitouF x) / (2 * Real.sinh (x / 2))) +
+        ((poitouPhi 0).re + (poitouPhi 1).re) -
+        2 * ∑' (P : {P : Ideal (NumberField.RingOfIntegers K) //
+              P.IsPrime ∧ P ≠ ⊥}) (m : ℕ),
+          Real.log (Ideal.absNorm P.1) /
+              (Ideal.absNorm P.1 : ℝ) ^ (((m : ℝ) + 1) / 2) *
+            poitouF (((m : ℝ) + 1) * Real.log (Ideal.absNorm P.1)) =
+      (Real.log |(NumberField.discr K : ℝ)| -
+        (Module.finrank ℚ K : ℝ) *
+          (Real.eulerMascheroniConstant + Real.log (8 * Real.pi)) +
+        (Module.finrank ℚ K : ℝ) *
+          (∫ x in Set.Ioi (0 : ℝ), (1 - poitouF x) / (2 * Real.sinh (x / 2))) -
+        2 * ∑' (P : {P : Ideal (NumberField.RingOfIntegers K) //
+              P.IsPrime ∧ P ≠ ⊥}) (m : ℕ),
+          Real.log (Ideal.absNorm P.1) /
+              (Ideal.absNorm P.1 : ℝ) ^ (((m : ℝ) + 1) / 2) *
+            poitouF (((m : ℝ) + 1) * Real.log (Ideal.absNorm P.1))) +
+      ((poitouPhi 0).re + (poitouPhi 1).re) := by ring
+  rw [hkey]
+  exact hsum.congr fun T => by ring
+
 /-- **Poitou's contour argument in raw `F`-form: the zero sum
-converges to formula (6)** (sorry node, stated 2026-07-24 — leaf (b),
-the contour-integral core of the decomposition of
-`DedekindContinuation.fejer_zero_sum_tendsto`; the window-count
-input is dependency-injected as `hcount` so that the counting leaf
-`DedekindContinuation.zero_count_window` stays in the used-constant
-cone while this proof is open).  For totally complex `K` the
-symmetric truncations of the zero sum converge to the third form of
-Poitou's formula (6) (p. 6-07) at `F = poitouF`, `r₁ = 0`,
-`F(0) = 1`, BEFORE the Fejér specialization arithmetic:
+converges to formula (6)** (ASSEMBLED 2026-07-24 from the three
+contour-stage leaves; originally the contour-integral core of the
+decomposition of `DedekindContinuation.fejer_zero_sum_tendsto`; the
+window-count input is dependency-injected as `hcount` so that the
+counting leaf `DedekindContinuation.zero_count_window` stays in the
+used-constant cone while the stage leaves are open).  For totally
+complex `K` the symmetric truncations of the zero sum converge to
+the third form of Poitou's formula (6) (p. 6-07) at `F = poitouF`,
+`r₁ = 0`, `F(0) = 1`, BEFORE the Fejér specialization arithmetic:
 
 `Σ_{|im ρ|≤T} mult(ρ)·Re Φ(ρ) → log|d_K| − n(γ + log 8π)
    + n∫₀^∞ (1−F)/(2 sinh(x/2)) + (Φ(0) + Φ(1))
    − 2 Σ_{𝔭,m≥1} (log N𝔭/N𝔭^{m/2})·F(m·log N𝔭)`.
 
-Intended proof (G. Poitou, *Sur les petits discriminants*, Sém.
-Delange–Pisot–Poitou 18 (1976/77), exp. 6, pp. 6-01–6-07, following
-the plan verified against the page scans
-`~/flt-sources/poitou-page-0*.png`):
+Proof structure (G. Poitou, *Sur les petits discriminants*, Sém.
+Delange–Pisot–Poitou 18 (1976/77), exp. 6, pp. 6-01–6-07): writing
+`S(T)` for the truncated zero sum and
+`E(T) = DedekindContinuation.poitouEdge pkg T` for the folded
+vertical-edge functional, the identity `S(T) = (S(T) − E(T)) + E(T)`
+splits the limit between
 
-1. *Preliminaries.*  From `eq_of_one_lt_re` and the pin's
-   `NumberField.tendsto_sub_one_mul_dedekindZeta_nhdsGT` (with
-   `NumberField.dedekindZeta_residue_ne_zero`), derive `ξ(1) ≠ 0`,
-   hence `ξ(0) ≠ 0` by `funcEq`; so the residues of `Z_K'/Z_K` at
-   `0, 1` are exactly `−1`, producing `Φ(0) + Φ(1)`.  Derive the
-   boundary nonvanishing `ξ(1 + it) ≠ 0` (de la Vallée Poussin's
-   `3-4-1` argument on `ζ_K` through `eq_of_one_lt_re`), so `mult`
-   counts ALL zeros inside the contour except `0, 1`.
-2. *Formula (1), p. 6-01.*  For `T` avoiding zero ordinates, the
-   residue theorem on `[−1/4, 5/4] × [−T, T]` for
-   `s ↦ Φ(s)·Z_K'/Z_K(s)` gives
-   `Σ_{|im ρ|<T} mult(ρ)·Φ(ρ) − Φ(0) − Φ(1) = (2πi)^{−1}·∮`, with
-   `Φ = poitouPhi` entire (`poitouPhi_differentiable`) and
-   `Φ(σ+it) = O(1/t²)` uniformly on the strip (two integrations by
-   parts against the compactly supported bounded-variation `F`).
-3. *Proposition 1, p. 6-02.*  The horizontal edges vanish as
-   `T → ∞` through Landau-good heights: `hcount` picks, in each
-   `[T, T+1]`, a height at distance `≥ 1/(C' log T)` from every zero
-   ordinate; Borel–Carathéodory partial fractions (from `growth` and
-   `hcount` — no Hadamard product needed) bound `ξ'/ξ = O(log² T)`
-   there, and `‖Φ‖ = O(1/T²)` kills the edge.
-4. *Propositions 2–3, pp. 6-02–6-06 (Lemmes 1–2).*  The vertical
-   edge at `re s = 5/4` unfolds by `eq_of_one_lt_re` into the
-   `log|d_K|` term, the Dirichlet-series/Euler-product prime term
-   `−2Σ_{𝔭,m}(log N𝔭/N𝔭^{m/2})·F(m log N𝔭)`, and the `Γ_ℂ'/Γ_ℂ`
-   digamma integrals; the edge at `re s = −1/4` mirrors it by
-   `funcEq`.  The digamma integrals reduce through Poitou's formula
-   (5) and the Fourier bookkeeping of Lemmes 1–2 to
-   `−n(γ + log 8π) + n∫₀^∞ (1−F)/(2 sinh(x/2))` (`r₁ = 0` via
-   `htc`).
-5. *Realness.*  `conj_symm` pairs `ρ ↔ ρ̄` with equal
-   multiplicities, so each truncated sum is real and the complex
-   limit descends to the stated `Re Φ` form. -/
+* `DedekindContinuation.zero_sum_sub_poitouEdge_tendsto_zero`
+  (formula (1) + Proposition 1: residue theorem on the rectangle,
+  functional-equation folding, horizontal edges vanish via `hcount`
+  and Borel–Carathéodory) — consuming the boundary nonvanishing leaf
+  `DedekindContinuation.xi_ne_zero_of_re_eq_one` through `hbnd`; and
+* `DedekindContinuation.poitouEdge_tendsto` (Propositions 2–3 with
+  Lemmes 1–2: pole part, Fourier inversion, Euler product, digamma).
+
+Realness (Poitou's step 5, `conj_symm` pairing `ρ ↔ ρ̄`) is built
+into the `Re`-form of the statement and of `poitouEdge`. -/
 theorem DedekindContinuation.weil_explicit_formula_F {K : Type*} [Field K]
     [NumberField K] (pkg : DedekindContinuation K)
     (htc : NumberField.IsTotallyComplex K)
@@ -5796,7 +6115,12 @@ theorem DedekindContinuation.weil_explicit_formula_F {K : Type*} [Field K]
           Real.log (Ideal.absNorm P.1) /
               (Ideal.absNorm P.1 : ℝ) ^ (((m : ℝ) + 1) / 2) *
             poitouF (((m : ℝ) + 1) * Real.log (Ideal.absNorm P.1)))) := by
-  sorry
+  have hdiff := pkg.zero_sum_sub_poitouEdge_tendsto_zero hcount
+    pkg.xi_ne_zero_of_re_eq_one
+  have hedge := pkg.poitouEdge_tendsto htc
+  have hsum := hdiff.add hedge
+  rw [zero_add] at hsum
+  exact hsum.congr fun T => by ring
 
 /-- **Fejér specialization, archimedean part: `Φ(0) + Φ(1) = 4∫₀^∞ f`**
 (PROVEN 2026-07-24 — leaf (c₁) of the decomposition of
