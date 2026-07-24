@@ -3752,28 +3752,150 @@ theorem exists_involution_cyclotomicCharacter_neg_one
     | inv a _ ha => rw [map_inv₀, ha]
 
 /-- **The adapted basis of an odd involution over a local ring**
-(sorry node — pure linear algebra, the normalization core of the
-aligned matrix form): over a commutative local ring `O` in which `2`
-is a unit, an involution `J` of `Fin 2 → O` with determinant `−1`
-admits a basis of eigenvectors with eigenvalues `1` and `−1`.
-Intended proof: `p := (1 + J)/2` and `1 − p = (1 − J)/2` are
-complementary idempotent endomorphisms (direct computation from
-`J² = 1`), so `Fin 2 → O = range p ⊕ range (1 − p)` with both
-summands finitely generated projective — hence FREE over the local
-`O` (`Module.free_of_flat_of_isLocalRing`) — of ranks summing to `2`
-(rank additivity; `O` commutative has the strong rank condition); in
-an adapted basis `J` is diagonal with `1`s and `−1`s, so
-`det J = (−1)^(rank of the minus part) = −1`, which for total rank
-`2` with `−1 ≠ 1` (`2 ∈ Oˣ`, `O` nontrivial) forces ranks `(1, 1)`;
-the two generators are the sought eigenvectors. Sound:
-unconditionally true. -/
+(PROVEN — pure linear algebra, the normalization core of the aligned
+matrix form): over a commutative local ring `O` in which `2` is a
+unit, an involution `J` of `Fin 2 → O` with determinant `−1` admits a
+basis of eigenvectors with eigenvalues `1` and `−1`. Proof (fully
+constructive — no projective-module machinery): write `A` for the
+matrix of `J`, with entries `a, b, c, d`; `A² = 1` and
+`det A = −1` give the entry relations, from which the trace
+`t = a + d` satisfies `t² = 0`; hence `2 + t = (a+1) + (d+1)` is a
+unit (unit plus nilpotent), and `O` local makes `a + 1` or `d + 1` a
+unit. The columns of `A + 1` are `+1`-eigenvectors and the columns
+of `A − 1` are `−1`-eigenvectors (`A(A ± 1) = ±(A ± 1)`); pairing
+the column of `A + 1` with unit diagonal corner against the OTHER
+column of `A − 1` gives a matrix `P` with
+`det P = (t − 2)(a + 1)` resp. `2(d + 1) − t` — a unit times a unit,
+resp. a unit plus a nilpotent — so `P`'s columns form the sought
+eigenbasis (`Matrix.toLinearEquiv`). -/
 theorem exists_basis_involution_diag {O : Type u} [CommRing O]
     [IsLocalRing O] (h2 : IsUnit (2 : O))
     {J : Module.End O (Fin 2 → O)} (hJ2 : J * J = 1)
     (hdet : LinearMap.det J = -1) :
     ∃ b : Module.Basis (Fin 2) O (Fin 2 → O),
-      J (b 0) = b 0 ∧ J (b 1) = - b 1 :=
-  sorry
+      J (b 0) = b 0 ∧ J (b 1) = - b 1 := by
+  classical
+  -- the matrix of `J` and its relations
+  obtain ⟨A, hA⟩ : ∃ A : Matrix (Fin 2) (Fin 2) O,
+      A = LinearMap.toMatrixAlgEquiv' J := ⟨_, rfl⟩
+  have hJv : ∀ v, J v = A.mulVec v := by
+    intro v
+    conv_lhs => rw [← Matrix.toLinAlgEquiv'_toMatrixAlgEquiv' J]
+    rw [← hA, Matrix.toLinAlgEquiv'_apply]
+  have hA2 : A * A = 1 := by rw [hA, ← map_mul, hJ2, map_one]
+  have hAdet : A.det = -1 := by
+    have hAM : LinearMap.toMatrixAlgEquiv' J = LinearMap.toMatrix' J := by
+      simp [LinearMap.toMatrixAlgEquiv']
+    rw [hA, hAM, LinearMap.det_toMatrix']
+    exact hdet
+  -- the entry relations of `A² = 1` and `det A = −1`
+  have e1 : A 0 0 * A 0 0 + A 0 1 * A 1 0 = 1 := by
+    have h : (A * A) 0 0 = (1 : Matrix (Fin 2) (Fin 2) O) 0 0 := by rw [hA2]
+    simpa [Matrix.mul_apply, Fin.sum_univ_two, Matrix.one_apply] using h
+  have e2 : A 0 0 * A 0 1 + A 0 1 * A 1 1 = 0 := by
+    have h : (A * A) 0 1 = (1 : Matrix (Fin 2) (Fin 2) O) 0 1 := by rw [hA2]
+    simpa [Matrix.mul_apply, Fin.sum_univ_two, Matrix.one_apply] using h
+  have e3 : A 1 0 * A 0 0 + A 1 1 * A 1 0 = 0 := by
+    have h : (A * A) 1 0 = (1 : Matrix (Fin 2) (Fin 2) O) 1 0 := by rw [hA2]
+    simpa [Matrix.mul_apply, Fin.sum_univ_two, Matrix.one_apply] using h
+  have e4 : A 1 0 * A 0 1 + A 1 1 * A 1 1 = 1 := by
+    have h : (A * A) 1 1 = (1 : Matrix (Fin 2) (Fin 2) O) 1 1 := by rw [hA2]
+    simpa [Matrix.mul_apply, Fin.sum_univ_two, Matrix.one_apply] using h
+  have e5 : A 0 0 * A 1 1 - A 0 1 * A 1 0 = -1 := by
+    rw [← Matrix.det_fin_two]
+    exact hAdet
+  -- the trace is nilpotent
+  have hnil : IsNilpotent (A 0 0 + A 1 1) :=
+    ⟨2, by linear_combination e1 + e4 + 2 * e5⟩
+  -- one of the diagonal corners of `A + 1` is a unit
+  have hsum : IsUnit ((A 0 0 + 1) + (A 1 1 + 1)) := by
+    have h : (A 0 0 + 1) + (A 1 1 + 1) = (2 : O) + (A 0 0 + A 1 1) := by
+      ring
+    rw [h]
+    exact hnil.isUnit_add_left_of_commute h2 (Commute.all _ _)
+  rcases IsLocalRing.isUnit_or_isUnit_of_isUnit_add hsum with hu | hu
+  · -- `a + 1` is a unit: pair column `0` of `A + 1` with column `1`
+    -- of `A − 1`
+    obtain ⟨P, hP⟩ : ∃ P : Matrix (Fin 2) (Fin 2) O,
+        P = !![A 0 0 + 1, A 0 1; A 1 0, A 1 1 - 1] := ⟨_, rfl⟩
+    have hPdet : IsUnit P.det := by
+      have hm2 : IsUnit ((A 0 0 + A 1 1) - (2 : O)) := by
+        have h : (A 0 0 + A 1 1) - (2 : O) =
+            (-(2 : O)) + (A 0 0 + A 1 1) := by ring
+        rw [h]
+        exact hnil.isUnit_add_left_of_commute h2.neg (Commute.all _ _)
+      have hcalc : P.det = ((A 0 0 + A 1 1) - 2) * (A 0 0 + 1) := by
+        rw [hP, Matrix.det_fin_two_of]
+        linear_combination - e1
+      rw [hcalc]
+      exact hm2.mul hu
+    refine ⟨(Pi.basisFun O (Fin 2)).map
+      (Matrix.toLinearEquiv (Pi.basisFun O (Fin 2)) P hPdet), ?_, ?_⟩
+    · rw [Module.Basis.map_apply, Matrix.toLinearEquiv_apply, hJv,
+        Matrix.toLin_eq_toLin']
+      funext j
+      fin_cases j
+      · simp only [Matrix.toLin'_apply, Matrix.mulVec, dotProduct,
+          Fin.sum_univ_two, Pi.basisFun_apply, Pi.single_apply, hP]
+        simp
+        linear_combination e1
+      · simp only [Matrix.toLin'_apply, Matrix.mulVec, dotProduct,
+          Fin.sum_univ_two, Pi.basisFun_apply, Pi.single_apply, hP]
+        simp
+        linear_combination e3
+    · rw [Module.Basis.map_apply, Matrix.toLinearEquiv_apply, hJv,
+        Matrix.toLin_eq_toLin']
+      funext j
+      fin_cases j
+      · simp only [Matrix.toLin'_apply, Matrix.mulVec, dotProduct,
+          Fin.sum_univ_two, Pi.basisFun_apply, Pi.single_apply, hP,
+          Pi.neg_apply]
+        simp
+        linear_combination e2
+      · simp only [Matrix.toLin'_apply, Matrix.mulVec, dotProduct,
+          Fin.sum_univ_two, Pi.basisFun_apply, Pi.single_apply, hP,
+          Pi.neg_apply]
+        simp
+        linear_combination e4
+  · -- `d + 1` is a unit: pair column `1` of `A + 1` with column `0`
+    -- of `A − 1`
+    obtain ⟨P, hP⟩ : ∃ P : Matrix (Fin 2) (Fin 2) O,
+        P = !![A 0 1, A 0 0 - 1; A 1 1 + 1, A 1 0] := ⟨_, rfl⟩
+    have hPdet : IsUnit P.det := by
+      have hcalc : P.det =
+          (2 : O) * (A 1 1 + 1) + (-(A 0 0 + A 1 1)) := by
+        rw [hP, Matrix.det_fin_two_of]
+        linear_combination - e5
+      rw [hcalc]
+      exact hnil.neg.isUnit_add_left_of_commute (h2.mul hu) (Commute.all _ _)
+    refine ⟨(Pi.basisFun O (Fin 2)).map
+      (Matrix.toLinearEquiv (Pi.basisFun O (Fin 2)) P hPdet), ?_, ?_⟩
+    · rw [Module.Basis.map_apply, Matrix.toLinearEquiv_apply, hJv,
+        Matrix.toLin_eq_toLin']
+      funext j
+      fin_cases j
+      · simp only [Matrix.toLin'_apply, Matrix.mulVec, dotProduct,
+          Fin.sum_univ_two, Pi.basisFun_apply, Pi.single_apply, hP]
+        simp
+        linear_combination e2
+      · simp only [Matrix.toLin'_apply, Matrix.mulVec, dotProduct,
+          Fin.sum_univ_two, Pi.basisFun_apply, Pi.single_apply, hP]
+        simp
+        linear_combination e4
+    · rw [Module.Basis.map_apply, Matrix.toLinearEquiv_apply, hJv,
+        Matrix.toLin_eq_toLin']
+      funext j
+      fin_cases j
+      · simp only [Matrix.toLin'_apply, Matrix.mulVec, dotProduct,
+          Fin.sum_univ_two, Pi.basisFun_apply, Pi.single_apply, hP,
+          Pi.neg_apply]
+        simp
+        linear_combination e1
+      · simp only [Matrix.toLin'_apply, Matrix.mulVec, dotProduct,
+          Fin.sum_univ_two, Pi.basisFun_apply, Pi.single_apply, hP,
+          Pi.neg_apply]
+        simp
+        linear_combination e3
 
 /-- **The aligned matrix form of one realization** (PROVEN — the
 normalization step of the corner-system cut, a glue over the adapted
