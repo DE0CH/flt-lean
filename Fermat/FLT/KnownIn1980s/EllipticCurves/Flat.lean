@@ -8834,6 +8834,945 @@ theorem subalgebra_eq_top_of_algHom_separating
   rw [← hid x]
   exact (s x).2
 
+section TorsionKernelFunctions
+
+/-! ### The Katz–Mazur kernel monomial sections (2026-07-24)
+
+Support for `exists_torsion_kernel_function_generators` below: the concrete
+generator family.  For a monic `h ∈ R[X]` of degree `d ≥ 2` avoiding the
+torsion abscissas mod every centered valuation subring, the functions
+`P ↦ x(P)^a y(P)^b / h(x(P))` (weights `2a + 3b ≤ 2d`, `b ≤ 1`, limit value
+`0`-or-`1` at the origin) are the monomial sections of the affine chart
+`U = 𝓔 ∖ V(h ∘ x)` restricted to the kernel `𝓔[m]`. -/
+
+variable [Algebra R Ksep] [IsScalarTower R K Ksep]
+
+/-- The monomial section `P ↦ x(P)^a y(P)^b / h(x(P))` of the chart avoiding
+`V(h ∘ x)`, as a bare function on the points of the base change; at the
+origin it takes its limit value: `1` if the weight `2a + 3b` attains
+`2·deg h` (the section is a unit at infinity), `0` if it falls strictly
+below. -/
+noncomputable def WeierstrassCurve.torsionKernelFun (h : Polynomial R) (a b : ℕ) :
+    (E⁄Ksep).Point → Ksep
+  | .zero => if 2 * a + 3 * b = 2 * h.natDegree then 1 else 0
+  | .some x y _ => x ^ a * y ^ b / Polynomial.aeval x h
+
+set_option linter.unusedSectionVars false in -- rfl-lemma; keep the section signature
+lemma WeierstrassCurve.torsionKernelFun_zero (h : Polynomial R) (a b : ℕ) :
+    WeierstrassCurve.torsionKernelFun R K E Ksep h a b .zero =
+      if 2 * a + 3 * b = 2 * h.natDegree then 1 else 0 :=
+  rfl
+
+set_option linter.unusedSectionVars false in -- rfl-lemma; keep the section signature
+lemma WeierstrassCurve.torsionKernelFun_some (h : Polynomial R) (a b : ℕ)
+    {x y : Ksep} (hns : (E⁄Ksep).toAffine.Nonsingular x y) :
+    WeierstrassCurve.torsionKernelFun R K E Ksep h a b (.some x y hns) =
+      x ^ a * y ^ b / Polynomial.aeval x h :=
+  rfl
+
+/-- **Galois equivariance of the monomial sections**: the coordinates are
+Galois-natural and `h` has coefficients in `R`, so the section commutes with
+the Galois action. -/
+lemma WeierstrassCurve.torsionKernelFun_map (h : Polynomial R) (a b : ℕ)
+    (σ : Ksep ≃ₐ[K] Ksep) (P : (E⁄Ksep).Point) :
+    WeierstrassCurve.torsionKernelFun R K E Ksep h a b
+        (Affine.Point.map σ.toAlgHom P) =
+      σ (WeierstrassCurve.torsionKernelFun R K E Ksep h a b P) := by
+  cases P with
+  | zero =>
+    show (if 2 * a + 3 * b = 2 * h.natDegree then (1 : Ksep) else 0) =
+      σ (if 2 * a + 3 * b = 2 * h.natDegree then 1 else 0)
+    split_ifs <;> simp
+  | some x y hns =>
+    rw [Affine.Point.map_some, WeierstrassCurve.torsionKernelFun_some,
+      WeierstrassCurve.torsionKernelFun_some, map_div₀, map_mul, map_pow,
+      map_pow]
+    congr 1
+    simpa using Polynomial.aeval_algHom_apply
+      (σ.toAlgHom.restrictScalars R) x h
+
+set_option linter.unusedSectionVars false in
+/-- A valuation subring of `Kˢᵉᵖ` centered on `R` contains the image of `R`. -/
+lemma mem_centered_algebraMap (𝒪 : ValuationSubring Ksep)
+    (hc : (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range)
+    (r : R) : algebraMap R Ksep r ∈ 𝒪 := by
+  have h1 : algebraMap R K r ∈ (𝒪.comap (algebraMap K Ksep)).toSubring := by
+    rw [hc]
+    exact ⟨r, rfl⟩
+  have h2 : algebraMap K Ksep (algebraMap R K r) ∈ 𝒪 := h1
+  rwa [← IsScalarTower.algebraMap_apply] at h2
+
+set_option linter.unusedSectionVars false in
+/-- The coefficients of the base-changed good-reduction model lie in every
+centered valuation subring: they come from the integral model over `R`. -/
+lemma baseChange_coeffs_mem_centered (𝒪 : ValuationSubring Ksep)
+    (hc : (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range) :
+    (E⁄Ksep).a₁ ∈ 𝒪 ∧ (E⁄Ksep).a₂ ∈ 𝒪 ∧ (E⁄Ksep).a₃ ∈ 𝒪 ∧
+      (E⁄Ksep).a₄ ∈ 𝒪 ∧ (E⁄Ksep).a₆ ∈ 𝒪 := by
+  refine ⟨?_, ?_, ?_, ?_, ?_⟩
+  · have ha : (E⁄Ksep).a₁ =
+        algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₁ := by
+      rw [IsScalarTower.algebraMap_apply R K Ksep,
+        WeierstrassCurve.integralModel_a₁_eq]
+      simp [WeierstrassCurve.baseChange]
+    rw [ha]
+    exact mem_centered_algebraMap R K Ksep 𝒪 hc _
+  · have ha : (E⁄Ksep).a₂ =
+        algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₂ := by
+      rw [IsScalarTower.algebraMap_apply R K Ksep,
+        WeierstrassCurve.integralModel_a₂_eq]
+      simp [WeierstrassCurve.baseChange]
+    rw [ha]
+    exact mem_centered_algebraMap R K Ksep 𝒪 hc _
+  · have ha : (E⁄Ksep).a₃ =
+        algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₃ := by
+      rw [IsScalarTower.algebraMap_apply R K Ksep,
+        WeierstrassCurve.integralModel_a₃_eq]
+      simp [WeierstrassCurve.baseChange]
+    rw [ha]
+    exact mem_centered_algebraMap R K Ksep 𝒪 hc _
+  · have ha : (E⁄Ksep).a₄ =
+        algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₄ := by
+      rw [IsScalarTower.algebraMap_apply R K Ksep,
+        WeierstrassCurve.integralModel_a₄_eq]
+      simp [WeierstrassCurve.baseChange]
+    rw [ha]
+    exact mem_centered_algebraMap R K Ksep 𝒪 hc _
+  · have ha : (E⁄Ksep).a₆ =
+        algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₆ := by
+      rw [IsScalarTower.algebraMap_apply R K Ksep,
+        WeierstrassCurve.integralModel_a₆_eq]
+      simp [WeierstrassCurve.baseChange]
+    rw [ha]
+    exact mem_centered_algebraMap R K Ksep 𝒪 hc _
+
+set_option linter.unusedSectionVars false in
+/-- **Some valuation subring of `Kˢᵉᵖ` is centered on `R`** (PROVEN —
+the universe constraint of `exists_valuationSubring_integralClosure_center`
+blocks the trivial instantiation `L = K`, so this is proved directly):
+Chevalley's extension theorem in the factored form
+`IsLocalRing.exists_factor_valuationRing` gives a valuation subring `𝒪`
+containing the image of `R` with the corestriction a LOCAL map; the trace
+on `K` is then exactly `R.range` by the valuation-ring dichotomy of the
+DVR `R` in its fraction field: an `s ∈ K ∖ R.range` has
+`s⁻¹ = algebraMap r₀` with `r₀` a nonunit, and `s ∈ 𝒪` would make the
+image of `r₀` a unit of `𝒪`, contradicting locality. -/
+lemma exists_centered_valuationSubring :
+    ∃ 𝒪 : ValuationSubring Ksep,
+      (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range := by
+  obtain ⟨𝒪, hmem, hloc⟩ :=
+    IsLocalRing.exists_factor_valuationRing (algebraMap R Ksep)
+  refine ⟨𝒪, ?_⟩
+  ext s
+  constructor
+  · intro hs
+    have hs' : algebraMap K Ksep s ∈ 𝒪 := hs
+    rcases eq_or_ne s 0 with rfl | hs0
+    · exact ⟨0, map_zero _⟩
+    rcases ValuationRing.isInteger_or_isInteger R s with ⟨r, hr⟩ | ⟨r₀, hr₀⟩
+    · exact ⟨r, hr⟩
+    by_cases hu : IsUnit r₀
+    · obtain ⟨u, rfl⟩ := hu
+      refine ⟨(u⁻¹ : Rˣ), ?_⟩
+      have h1 : algebraMap R K ((u⁻¹ : Rˣ) : R) = (algebraMap R K u)⁻¹ := by
+        refine eq_inv_of_mul_eq_one_left ?_
+        rw [← map_mul, Units.inv_mul, map_one]
+      rw [h1, hr₀, inv_inv]
+    · exfalso
+      refine hu (hloc.map_nonunit r₀ (IsUnit.of_mul_eq_one
+        (⟨algebraMap K Ksep s, hs'⟩ : 𝒪) (Subtype.ext ?_)))
+      show algebraMap R Ksep r₀ * algebraMap K Ksep s = 1
+      rw [IsScalarTower.algebraMap_apply R K Ksep, hr₀, ← map_mul,
+        inv_mul_cancel₀ hs0, map_one]
+  · rintro ⟨r, rfl⟩
+    show algebraMap K Ksep (algebraMap R K r) ∈ 𝒪
+    rw [← IsScalarTower.algebraMap_apply]
+    exact hmem r
+
+/-- An element of `Kˢᵉᵖ` integral over `R` lies in every centered valuation
+subring: push the monic witness into the (integrally closed) subring. -/
+lemma mem_centered_of_isIntegral (𝒪 : ValuationSubring Ksep)
+    (hc : (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range)
+    {z : Ksep} (hz : _root_.IsIntegral R z) : z ∈ 𝒪 := by
+  obtain ⟨p, hp, hp0⟩ := hz
+  set φ : R →+* 𝒪 := (algebraMap R Ksep).codRestrict 𝒪.toSubring
+    (fun r => mem_centered_algebraMap R K Ksep 𝒪 hc r) with hφ
+  have h1 : _root_.IsIntegral (↥𝒪) z := by
+    refine ⟨p.map φ, hp.map φ, ?_⟩
+    rw [Polynomial.eval₂_map]
+    have hcomp : (algebraMap ↥𝒪 Ksep).comp φ = algebraMap R Ksep := by
+      ext r
+      rfl
+    rw [hcomp]
+    exact hp0
+  obtain ⟨w, hw⟩ := IsIntegrallyClosed.isIntegral_iff.mp h1
+  rw [← hw]
+  exact w.2
+
+set_option linter.unusedSectionVars false in
+/-- **Monic dominance at a non-integral point**: for monic `h ∈ R[X]` and
+`x ∉ 𝒪`, the valuation of `h(x)` is exactly `v(x)^deg h` — the leading term
+strictly dominates every `R`-integral lower term. -/
+lemma val_aeval_monic_of_notMem (𝒪 : ValuationSubring Ksep)
+    (hR : ∀ r : R, algebraMap R Ksep r ∈ 𝒪) (h : Polynomial R)
+    (hmon : h.Monic) {x : Ksep} (hx : x ∉ 𝒪) :
+    𝒪.valuation (Polynomial.aeval x h) = 𝒪.valuation x ^ h.natDegree := by
+  rw [← 𝒪.valuation_le_one_iff, not_le] at hx
+  have hx0 : (𝒪.valuation x : _) ≠ 0 := (zero_lt_one.trans hx).ne'
+  have hexp : Polynomial.aeval x h =
+      x ^ h.natDegree + ∑ i ∈ Finset.range h.natDegree,
+        algebraMap R Ksep (h.coeff i) * x ^ i := by
+    rw [Polynomial.aeval_def, Polynomial.eval₂_eq_sum_range,
+      Finset.sum_range_succ, hmon.coeff_natDegree, map_one, one_mul, add_comm]
+  have hlt : 𝒪.valuation (∑ i ∈ Finset.range h.natDegree,
+      algebraMap R Ksep (h.coeff i) * x ^ i) < 𝒪.valuation (x ^ h.natDegree) := by
+    rw [map_pow]
+    refine Valuation.map_sum_lt _ (pow_ne_zero _ hx0) fun i hi => ?_
+    rw [map_mul]
+    calc 𝒪.valuation (algebraMap R Ksep (h.coeff i)) * 𝒪.valuation (x ^ i)
+        ≤ 1 * 𝒪.valuation (x ^ i) :=
+          mul_le_mul_left ((𝒪.valuation_le_one_iff _).mpr (hR _)) _
+      _ = 𝒪.valuation x ^ i := by rw [one_mul, map_pow]
+      _ < 𝒪.valuation x ^ h.natDegree :=
+          pow_lt_pow_right₀ hx (Finset.mem_range.mp hi)
+  rw [hexp, 𝒪.valuation.map_add_eq_of_lt_left hlt, map_pow]
+
+/-- **The exact ordinate valuation**: on the base-changed good-reduction
+model, an affine point with non-integral abscissa satisfies
+`v(y)² = v(x)³` exactly — the Weierstrass equation equates the two dominant
+terms. Sharpening of `val_abscissa_lt_val_ordinate` used for the weighted
+integrality `2a + 3b ≤ 2d` of the monomial sections. -/
+lemma WeierstrassCurve.val_ordinate_sq_of_abscissa_notMem
+    (𝒪 : ValuationSubring Ksep)
+    (hc : (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range)
+    {x y : Ksep} (hE : (E⁄Ksep).toAffine.Equation x y) (hx : x ∉ 𝒪) :
+    𝒪.valuation y ^ 2 = 𝒪.valuation x ^ 3 := by
+  obtain ⟨ha₁, ha₂, ha₃, ha₄, ha₆⟩ := baseChange_coeffs_mem_centered R K E Ksep 𝒪 hc
+  have hvxy : 𝒪.valuation x < 𝒪.valuation y :=
+    WeierstrassCurve.val_abscissa_lt_val_ordinate 𝒪 (E⁄Ksep) ha₁ ha₂ ha₃ ha₄ ha₆
+      hE hx
+  rw [← 𝒪.valuation_le_one_iff, not_le] at hx
+  have hE' := (WeierstrassCurve.Affine.equation_iff x y).mp hE
+  -- the `x`-side has valuation exactly `v(x)³`
+  have hR3 : 𝒪.valuation (x ^ 3 + (E⁄Ksep).a₂ * x ^ 2 + (E⁄Ksep).a₄ * x +
+      (E⁄Ksep).a₆) = 𝒪.valuation x ^ 3 := by
+    rw [show x ^ 3 + (E⁄Ksep).a₂ * x ^ 2 + (E⁄Ksep).a₄ * x + (E⁄Ksep).a₆
+        = x ^ 3 + ((E⁄Ksep).a₂ * x ^ 2 + ((E⁄Ksep).a₄ * x + (E⁄Ksep).a₆))
+        from by ring]
+    have h2 : 𝒪.valuation ((E⁄Ksep).a₂ * x ^ 2 + ((E⁄Ksep).a₄ * x +
+        (E⁄Ksep).a₆)) < 𝒪.valuation (x ^ 3) := by
+      rw [map_pow]
+      refine 𝒪.valuation.map_add_lt ?_ (𝒪.valuation.map_add_lt ?_ ?_)
+      · rw [map_mul, map_pow]
+        calc 𝒪.valuation (E⁄Ksep).a₂ * 𝒪.valuation x ^ 2
+            ≤ 1 * 𝒪.valuation x ^ 2 :=
+              mul_le_mul_left ((𝒪.valuation_le_one_iff _).mpr ha₂) _
+        _ = 𝒪.valuation x ^ 2 := one_mul _
+        _ < 𝒪.valuation x ^ 3 := pow_lt_pow_right₀ hx (by omega)
+      · rw [map_mul]
+        calc 𝒪.valuation (E⁄Ksep).a₄ * 𝒪.valuation x
+            ≤ 1 * 𝒪.valuation x :=
+              mul_le_mul_left ((𝒪.valuation_le_one_iff _).mpr ha₄) _
+        _ = 𝒪.valuation x ^ 1 := by rw [one_mul, pow_one]
+        _ < 𝒪.valuation x ^ 3 := pow_lt_pow_right₀ hx (by omega)
+      · calc 𝒪.valuation (E⁄Ksep).a₆ ≤ 1 :=
+          (𝒪.valuation_le_one_iff _).mpr ha₆
+        _ = 𝒪.valuation x ^ 0 := (pow_zero _).symm
+        _ < 𝒪.valuation x ^ 3 := pow_lt_pow_right₀ hx (by omega)
+    rw [𝒪.valuation.map_add_eq_of_lt_left h2, map_pow]
+  -- the `y`-side has valuation exactly `v(y)²`
+  have hyadd : 𝒪.valuation (y + ((E⁄Ksep).a₁ * x + (E⁄Ksep).a₃)) =
+      𝒪.valuation y := by
+    refine 𝒪.valuation.map_add_eq_of_lt_left (lt_of_le_of_lt ?_ hvxy)
+    refine Valuation.map_add_le _ ?_ ?_
+    · rw [map_mul]
+      calc 𝒪.valuation (E⁄Ksep).a₁ * 𝒪.valuation x ≤ 1 * 𝒪.valuation x :=
+        mul_le_mul_left ((𝒪.valuation_le_one_iff _).mpr ha₁) _
+      _ = 𝒪.valuation x := one_mul _
+    · calc 𝒪.valuation (E⁄Ksep).a₃ ≤ 1 := (𝒪.valuation_le_one_iff _).mpr ha₃
+      _ ≤ 𝒪.valuation x := hx.le
+  have hL : 𝒪.valuation (y ^ 2 + (E⁄Ksep).a₁ * x * y + (E⁄Ksep).a₃ * y) =
+      𝒪.valuation y * 𝒪.valuation y := by
+    rw [show y ^ 2 + (E⁄Ksep).a₁ * x * y + (E⁄Ksep).a₃ * y =
+      y * (y + ((E⁄Ksep).a₁ * x + (E⁄Ksep).a₃)) from by ring, map_mul, hyadd]
+  rw [hE'] at hL
+  rw [hR3] at hL
+  rw [sq]
+  exact hL.symm
+
+set_option linter.unusedSectionVars false in
+set_option maxHeartbeats 1000000 in
+/-- **The centered-integrality bridge** (PROVEN): an element of `Kˢᵉᵖ`
+lying in EVERY valuation subring centered on `R` is integral over `R`. By
+`iInf_valuationSubring_superset` the intersection of all valuation subrings
+containing the image of `R` is the integral closure of that image, so it
+suffices to see that a valuation subring `V ⊇ im R` that is NOT centered
+contains everything anyway: some `s ∈ trace ∖ R.range` has `s⁻¹` a nonunit
+numerator, an associate of `π^n` for a uniformizer `π`, forcing
+`v(π) = 1`; every denominator of `K` is then a `V`-unit, so `im K ⊆ V`,
+and `z` — separable, hence integral over `K` — lands in the integrally
+closed `V`. Finally integrality descends along the surjection `R → im R`
+by lifting the monic witness coefficientwise. -/
+theorem isIntegral_of_forall_mem_centered (z : Ksep)
+    (hz : ∀ 𝒪 : ValuationSubring Ksep,
+      (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range →
+      z ∈ 𝒪) :
+    _root_.IsIntegral R z := by
+  classical
+  obtain ⟨π, hπirr⟩ := IsDiscreteValuationRing.exists_irreducible R
+  -- `z` lies in EVERY valuation subring containing the image of `R`
+  have hall : ∀ V : ValuationSubring Ksep,
+      (∀ r : R, algebraMap R Ksep r ∈ V) → z ∈ V := by
+    intro V hV
+    by_cases hcen : (V.comap (algebraMap K Ksep)).toSubring =
+      (algebraMap R K).range
+    · exact hz V hcen
+    -- not centered: the trace strictly contains the image of `R`
+    have hsub : (algebraMap R K).range ≤
+        (V.comap (algebraMap K Ksep)).toSubring := by
+      rintro _ ⟨r, rfl⟩
+      show algebraMap K Ksep (algebraMap R K r) ∈ V
+      rw [← IsScalarTower.algebraMap_apply]
+      exact hV r
+    obtain ⟨s, hsV, hsR⟩ : ∃ s : K, algebraMap K Ksep s ∈ V ∧
+        s ∉ (algebraMap R K).range := by
+      by_contra hcon
+      push Not at hcon
+      exact hcen (le_antisymm (fun s hs => hcon s hs) hsub)
+    have hs0 : s ≠ 0 := fun h => hsR (h ▸ ⟨0, map_zero _⟩)
+    obtain ⟨r₀, hr₀⟩ : ∃ r₀ : R, algebraMap R K r₀ = s⁻¹ := by
+      rcases ValuationRing.isInteger_or_isInteger R s with ⟨r, hr⟩ | h
+      · exact absurd ⟨r, hr⟩ hsR
+      · exact h
+    have hr₀0 : r₀ ≠ 0 := by
+      intro h
+      rw [h, map_zero] at hr₀
+      exact hs0 (inv_eq_zero.mp hr₀.symm)
+    have hr₀u : ¬IsUnit r₀ := by
+      intro hu
+      obtain ⟨u, rfl⟩ := hu
+      refine hsR ⟨(u⁻¹ : Rˣ), ?_⟩
+      have h1 : algebraMap R K ((u⁻¹ : Rˣ) : R) = (algebraMap R K u)⁻¹ :=
+        eq_inv_of_mul_eq_one_left (by rw [← map_mul, Units.inv_mul, map_one])
+      rw [h1, hr₀, inv_inv]
+    -- elements of the value group: `≤ 1` factors of a product `1` are `1`
+    have hpair : ∀ x y : ValuationSubring.ValueGroup V, x ≤ 1 → y ≤ 1 →
+        x * y = 1 → x = 1 := by
+      intro x y hx hy hxy
+      rcases hx.lt_or_eq with hlt | h
+      · exact absurd hxy (ne_of_lt (lt_of_le_of_lt
+          (by calc x * y ≤ x * 1 := mul_le_mul_right hy x
+              _ = x := mul_one x) hlt))
+      · exact h
+    have hRle1 : ∀ r : R, V.valuation (algebraMap R Ksep r) ≤ 1 :=
+      fun r => (V.valuation_le_one_iff _).mpr (hV r)
+    -- images of units of `R` have valuation `1`
+    have hvu : ∀ w : Rˣ, V.valuation (algebraMap R Ksep (w : R)) = 1 := by
+      intro w
+      refine hpair _ (V.valuation (algebraMap R Ksep ((w⁻¹ : Rˣ) : R)))
+        (hRle1 _) (hRle1 _) ?_
+      rw [← map_mul, ← map_mul, ← Units.val_mul, mul_inv_cancel, Units.val_one,
+        map_one, map_one]
+    -- the image of the uniformizer has valuation `1`
+    obtain ⟨n, u, hnu⟩ : ∃ (n : ℕ) (u : Rˣ), r₀ * u = π ^ n :=
+      IsDiscreteValuationRing.associated_pow_irreducible hr₀0 hπirr
+    have hn0 : n ≠ 0 := by
+      intro h
+      rw [h, pow_zero] at hnu
+      exact hr₀u (IsUnit.of_mul_eq_one _ hnu)
+    have hvr₀ : V.valuation (algebraMap R Ksep r₀) = 1 := by
+      refine hpair _ (V.valuation (algebraMap K Ksep s)) (hRle1 _)
+        ((V.valuation_le_one_iff _).mpr hsV) ?_
+      rw [← map_mul, IsScalarTower.algebraMap_apply R K Ksep, ← map_mul,
+        hr₀, inv_mul_cancel₀ hs0, map_one, map_one]
+    have hvπn : V.valuation (algebraMap R Ksep π) ^ n = 1 := by
+      have h1 := congrArg (fun r => V.valuation (algebraMap R Ksep r)) hnu
+      simp only [map_mul, map_pow] at h1
+      rw [hvr₀, hvu u, one_mul] at h1
+      exact h1.symm
+    have hvπ : V.valuation (algebraMap R Ksep π) = 1 := by
+      rcases (hRle1 π).lt_or_eq with hlt | h
+      · exact absurd hvπn (by
+          have := pow_lt_one' hlt hn0
+          exact ne_of_lt this)
+      · exact h
+    -- every element of `K` maps into `V`
+    have hKV : ∀ w : K, algebraMap K Ksep w ∈ V := by
+      intro w
+      rw [← V.valuation_le_one_iff]
+      obtain ⟨x, y, hy, hxy⟩ := IsFractionRing.div_surjective (A := R) w
+      have hy0 : y ≠ 0 := nonZeroDivisors.ne_zero hy
+      have hyK : algebraMap R K y ≠ 0 := fun h =>
+        hy0 (IsFractionRing.injective R K (h.trans (map_zero _).symm))
+      have hAw : algebraMap K Ksep w * algebraMap R Ksep y =
+          algebraMap R Ksep x := by
+        rw [IsScalarTower.algebraMap_apply R K Ksep,
+          IsScalarTower.algebraMap_apply R K Ksep, ← map_mul, ← hxy,
+          div_mul_cancel₀ _ hyK]
+      have hvy : V.valuation (algebraMap R Ksep y) = 1 := by
+        obtain ⟨ny, uy, hyu⟩ :=
+          IsDiscreteValuationRing.associated_pow_irreducible hy0 hπirr
+        have h1 := congrArg (fun r => V.valuation (algebraMap R Ksep r)) hyu
+        simp only [map_mul, map_pow] at h1
+        rw [hvu uy, mul_one, hvπ, one_pow] at h1
+        exact h1
+      have h2 := congrArg (V.valuation) hAw
+      rw [map_mul, hvy, mul_one] at h2
+      rw [h2]
+      exact hRle1 x
+    -- `z` is integral over `K`, hence lies in the integrally closed `V`
+    haveI : Algebra.IsAlgebraic K Ksep := Algebra.IsSeparable.isAlgebraic K Ksep
+    have hzK : IsIntegral K z := (Algebra.IsAlgebraic.isAlgebraic z).isIntegral
+    obtain ⟨p, hp, hp0⟩ := hzK
+    set φ : K →+* V := (algebraMap K Ksep).codRestrict V.toSubring hKV with hφ
+    have h1 : _root_.IsIntegral (↥V) z := by
+      refine ⟨p.map φ, hp.map φ, ?_⟩
+      rw [Polynomial.eval₂_map]
+      have hcomp : (algebraMap ↥V Ksep).comp φ = algebraMap K Ksep := by
+        ext r
+        rfl
+      rw [hcomp]
+      exact hp0
+    obtain ⟨w, hw⟩ := IsIntegrallyClosed.isIntegral_iff.mp h1
+    rw [← hw]
+    exact w.2
+  -- membership in the intersection = the integral closure of the image
+  have hmem : z ∈ (integralClosure (Subring.closure
+      (Set.range (algebraMap R Ksep))) Ksep).toSubring := by
+    rw [← iInf_valuationSubring_superset, Subring.mem_iInf]
+    rintro ⟨V, hVs⟩
+    exact hall V fun r => hVs ⟨r, rfl⟩
+  have hclos : Subring.closure (Set.range (algebraMap R Ksep)) =
+      (algebraMap R Ksep).range := by
+    rw [← RingHom.coe_range, Subring.closure_eq]
+  rw [hclos] at hmem
+  -- descend integrality along the surjection `R → im R`
+  have hmem' : _root_.IsIntegral (↥(algebraMap R Ksep).range) z := hmem
+  obtain ⟨p, hpmon, hp0⟩ := hmem'
+  haveI : Nontrivial ↥(algebraMap R Ksep).range :=
+    ⟨⟨0, 1, fun hc => zero_ne_one (α := Ksep) (congrArg Subtype.val hc)⟩⟩
+  have hlift : p ∈ Polynomial.lifts (algebraMap R Ksep).rangeRestrict := by
+    rw [Polynomial.lifts_iff_coeff_lifts]
+    intro k
+    obtain ⟨r, hr⟩ := RingHom.mem_range.mp (p.coeff k).2
+    exact ⟨r, Subtype.ext hr⟩
+  obtain ⟨q, hq, -, hqmon⟩ :=
+    Polynomial.lifts_and_degree_eq_and_monic hlift hpmon
+  refine ⟨q, hqmon, ?_⟩
+  have hcomp : (algebraMap (↥(algebraMap R Ksep).range) Ksep).comp
+      (algebraMap R Ksep).rangeRestrict = algebraMap R Ksep := by
+    ext r
+    rfl
+  calc Polynomial.eval₂ (algebraMap R Ksep) z q
+      = Polynomial.eval₂ ((algebraMap (↥(algebraMap R Ksep).range) Ksep).comp
+          (algebraMap R Ksep).rangeRestrict) z q := by rw [hcomp]
+    _ = Polynomial.eval₂ (algebraMap (↥(algebraMap R Ksep).range) Ksep) z
+          (q.map (algebraMap R Ksep).rangeRestrict) :=
+        (Polynomial.eval₂_map _ _ _).symm
+    _ = 0 := by rw [hq]; exact hp0
+
+/-- **Integrality of the monomial-section values**: with an avoiding
+denominator `h` (monic, `deg ≥ 2`, unit values on integral torsion
+abscissas) and weight `2a + 3b ≤ 2·deg h`, every value of the monomial
+section on the `m`-torsion is integral over `R` — on an integral abscissa
+the ordinate is integral and `h(x)` is a unit; on a non-integral abscissa
+`v(y)² = v(x)³` makes the weight condition exactly the required
+domination. -/
+lemma WeierstrassCurve.torsionKernelFun_isIntegral
+    (m : ℕ) (h : Polynomial R) (hmon : h.Monic)
+    (hunit : ∀ 𝒪 : ValuationSubring Ksep,
+      (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range →
+      ∀ (x y : Ksep) (hns : (E⁄Ksep).toAffine.Nonsingular x y),
+        (m : ℤ) • (Affine.Point.some x y hns : (E⁄Ksep).Point) = 0 →
+        x ∈ 𝒪 → 𝒪.valuation (Polynomial.aeval x h) = 1)
+    (a b : ℕ) (hw : 2 * a + 3 * b ≤ 2 * h.natDegree)
+    (P : (E⁄Ksep).Point) (hP : (m : ℤ) • P = 0) :
+    _root_.IsIntegral R (WeierstrassCurve.torsionKernelFun R K E Ksep h a b P) := by
+  cases P with
+  | zero =>
+    rw [WeierstrassCurve.torsionKernelFun_zero]
+    split_ifs
+    · exact isIntegral_one
+    · exact isIntegral_zero
+  | some x y hns =>
+    rw [WeierstrassCurve.torsionKernelFun_some]
+    refine isIntegral_of_forall_mem_centered R K Ksep _ fun 𝒪 hc => ?_
+    by_cases hx : x ∈ 𝒪
+    · -- integral abscissa: integral ordinate, unit denominator
+      obtain ⟨ha₁, ha₂, ha₃, ha₄, ha₆⟩ :=
+        baseChange_coeffs_mem_centered R K E Ksep 𝒪 hc
+      have hy : y ∈ 𝒪 := WeierstrassCurve.ordinate_mem_of_abscissa_mem 𝒪
+        (E⁄Ksep) ha₁ ha₂ ha₃ ha₄ ha₆ hns.1 hx
+      have hu := hunit 𝒪 hc x y hns hP hx
+      rw [← 𝒪.valuation_le_one_iff, map_div₀, hu, div_one, map_mul, map_pow,
+        map_pow]
+      exact mul_le_one' (pow_le_one' ((𝒪.valuation_le_one_iff _).mpr hx) a)
+        (pow_le_one' ((𝒪.valuation_le_one_iff _).mpr hy) b)
+    · -- non-integral abscissa: the weighted domination
+      have hy2 := WeierstrassCurve.val_ordinate_sq_of_abscissa_notMem R K E Ksep
+        𝒪 hc hns.1 hx
+      have hh := val_aeval_monic_of_notMem R Ksep 𝒪
+        (mem_centered_algebraMap R K Ksep 𝒪 hc) h hmon hx
+      have hvx : 1 < 𝒪.valuation x := by
+        rwa [← 𝒪.valuation_le_one_iff, not_le] at hx
+      have hxne : 𝒪.valuation x ≠ 0 := (zero_lt_one.trans hvx).ne'
+      rw [← 𝒪.valuation_le_one_iff, map_div₀, hh, map_mul, map_pow, map_pow,
+        div_le_one₀ (zero_lt_iff.mpr (pow_ne_zero _ hxne))]
+      have hsq : (𝒪.valuation x ^ a * 𝒪.valuation y ^ b) ^ 2 ≤
+          (𝒪.valuation x ^ h.natDegree) ^ 2 := by
+        rw [mul_pow, pow_right_comm (𝒪.valuation y) b 2, hy2, ← pow_mul,
+          ← pow_mul, ← pow_mul, ← pow_add]
+        exact pow_le_pow_right₀ hvx.le (by omega)
+      by_contra hlt
+      rw [not_le] at hlt
+      have hwpos : (0 : _) < 𝒪.valuation x ^ h.natDegree :=
+        zero_lt_iff.mpr (pow_ne_zero _ hxne)
+      have hstrict : (𝒪.valuation x ^ h.natDegree) ^ 2 <
+          (𝒪.valuation x ^ a * 𝒪.valuation y ^ b) ^ 2 := by
+        rw [sq, sq]
+        exact mul_lt_mul_of_lt_of_le_of_pos_of_nonneg hlt hlt.le hwpos zero_le
+      exact absurd hsq (not_le.mpr hstrict)
+
+set_option linter.unusedSectionVars false in
+/-- **Nonvanishing of the avoiding denominator on the torsion**: `h(x(P))`
+is nonzero at every affine `m`-torsion point — a root of the monic `h`
+would be integral over `R`, hence inside some centered valuation subring,
+where `h` takes unit values on integral torsion abscissas. -/
+lemma WeierstrassCurve.torsionKernel_aeval_ne_zero
+    (m : ℕ) (h : Polynomial R) (hmon : h.Monic)
+    (hunit : ∀ 𝒪 : ValuationSubring Ksep,
+      (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range →
+      ∀ (x y : Ksep) (hns : (E⁄Ksep).toAffine.Nonsingular x y),
+        (m : ℤ) • (Affine.Point.some x y hns : (E⁄Ksep).Point) = 0 →
+        x ∈ 𝒪 → 𝒪.valuation (Polynomial.aeval x h) = 1)
+    {x y : Ksep} (hns : (E⁄Ksep).toAffine.Nonsingular x y)
+    (hP : (m : ℤ) • (Affine.Point.some x y hns : (E⁄Ksep).Point) = 0) :
+    Polynomial.aeval x h ≠ 0 := by
+  intro h0
+  have hxint : _root_.IsIntegral R x := ⟨h, hmon, by
+    rwa [Polynomial.aeval_def] at h0⟩
+  obtain ⟨𝒪, hc⟩ := exists_centered_valuationSubring R K Ksep
+  have hx : x ∈ 𝒪 := mem_centered_of_isIntegral R K Ksep 𝒪 hc hxint
+  have hu := hunit 𝒪 hc x y hns hP hx
+  rw [h0, map_zero] at hu
+  exact zero_ne_one hu
+
+set_option linter.unusedSectionVars false in
+/-- The base-changed `a₁` comes from the integral model over `R`. -/
+lemma baseChange_a₁_integralModel :
+    (E⁄Ksep).a₁ = algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₁ := by
+  rw [IsScalarTower.algebraMap_apply R K Ksep,
+    WeierstrassCurve.integralModel_a₁_eq]
+  simp [WeierstrassCurve.baseChange]
+
+set_option linter.unusedSectionVars false in
+/-- The base-changed `a₃` comes from the integral model over `R`. -/
+lemma baseChange_a₃_integralModel :
+    (E⁄Ksep).a₃ = algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₃ := by
+  rw [IsScalarTower.algebraMap_apply R K Ksep,
+    WeierstrassCurve.integralModel_a₃_eq]
+  simp [WeierstrassCurve.baseChange]
+
+set_option linter.unusedSectionVars false in
+/-- The even (`b = 0`) monomial sections are invariant under negation:
+negation fixes the abscissa. -/
+lemma WeierstrassCurve.torsionKernelFun_neg_even (h : Polynomial R) (a : ℕ)
+    (P : (E⁄Ksep).Point) :
+    WeierstrassCurve.torsionKernelFun R K E Ksep h a 0 (-P) =
+      WeierstrassCurve.torsionKernelFun R K E Ksep h a 0 P := by
+  cases P with
+  | zero => rfl
+  | some x y hns =>
+    rw [Affine.Point.neg_some, WeierstrassCurve.torsionKernelFun_some,
+      WeierstrassCurve.torsionKernelFun_some, pow_zero, pow_zero]
+
+set_option linter.unusedSectionVars false in
+/-- The odd (`b = 1`) monomial sections transform under negation by the
+`R`-integral combination coming from `y(-P) = -y(P) - a₁x(P) - a₃`; the
+weight bound keeps every origin value at `0` on both sides. -/
+lemma WeierstrassCurve.torsionKernelFun_neg_odd (m : ℕ) (h : Polynomial R)
+    (hmon : h.Monic)
+    (hunit : ∀ 𝒪 : ValuationSubring Ksep,
+      (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range →
+      ∀ (x y : Ksep) (hns : (E⁄Ksep).toAffine.Nonsingular x y),
+        (m : ℤ) • (Affine.Point.some x y hns : (E⁄Ksep).Point) = 0 →
+        x ∈ 𝒪 → 𝒪.valuation (Polynomial.aeval x h) = 1)
+    (a : ℕ) (hw : 2 * a + 3 ≤ 2 * h.natDegree)
+    (P : (E⁄Ksep).Point) (hP : (m : ℤ) • P = 0) :
+    WeierstrassCurve.torsionKernelFun R K E Ksep h a 1 (-P) =
+      -(WeierstrassCurve.torsionKernelFun R K E Ksep h a 1 P)
+      - algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₁ *
+          WeierstrassCurve.torsionKernelFun R K E Ksep h (a + 1) 0 P
+      - algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₃ *
+          WeierstrassCurve.torsionKernelFun R K E Ksep h a 0 P := by
+  cases P with
+  | zero =>
+    show (if 2 * a + 3 * 1 = 2 * h.natDegree then (1 : Ksep) else 0) =
+      -(if 2 * a + 3 * 1 = 2 * h.natDegree then (1 : Ksep) else 0)
+      - algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₁ *
+          (if 2 * (a + 1) + 3 * 0 = 2 * h.natDegree then (1 : Ksep) else 0)
+      - algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₃ *
+          (if 2 * a + 3 * 0 = 2 * h.natDegree then (1 : Ksep) else 0)
+    rw [if_neg (by omega), if_neg (by omega), if_neg (by omega)]
+    ring
+  | some x y hns =>
+    have hne := WeierstrassCurve.torsionKernel_aeval_ne_zero R K E Ksep m h hmon
+      hunit hns hP
+    rw [Affine.Point.neg_some, WeierstrassCurve.torsionKernelFun_some,
+      WeierstrassCurve.torsionKernelFun_some,
+      WeierstrassCurve.torsionKernelFun_some,
+      WeierstrassCurve.torsionKernelFun_some]
+    rw [show (E⁄Ksep).negY x y = -y - (E⁄Ksep).a₁ * x - (E⁄Ksep).a₃ from rfl,
+      baseChange_a₁_integralModel R K E Ksep, baseChange_a₃_integralModel R K E Ksep]
+    field_simp
+    ring
+
+set_option linter.unusedSectionVars false in
+/-- **Separation**: the monomial sections separate the `m`-torsion points —
+`1/h(x)` splits the origin (value `0`) from the affine points (nonzero
+value), and `x/h(x)`, `y/h(x)` then separate distinct affine points. -/
+lemma WeierstrassCurve.torsionKernelFun_separates (m : ℕ) (h : Polynomial R)
+    (hmon : h.Monic) (hdeg : 2 ≤ h.natDegree)
+    (hunit : ∀ 𝒪 : ValuationSubring Ksep,
+      (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range →
+      ∀ (x y : Ksep) (hns : (E⁄Ksep).toAffine.Nonsingular x y),
+        (m : ℤ) • (Affine.Point.some x y hns : (E⁄Ksep).Point) = 0 →
+        x ∈ 𝒪 → 𝒪.valuation (Polynomial.aeval x h) = 1)
+    {P Q : (E⁄Ksep).Point} (hPm : (m : ℤ) • P = 0) (hQm : (m : ℤ) • Q = 0)
+    (heq : ∀ a b : ℕ, a ≤ h.natDegree → b ≤ 1 → 2 * a + 3 * b ≤ 2 * h.natDegree →
+      WeierstrassCurve.torsionKernelFun R K E Ksep h a b P =
+        WeierstrassCurve.torsionKernelFun R K E Ksep h a b Q) :
+    P = Q := by
+  have h00 := heq 0 0 (by omega) (by omega) (by omega)
+  cases P with
+  | zero =>
+    cases Q with
+    | zero => rfl
+    | some x y hns =>
+      exfalso
+      have hne := WeierstrassCurve.torsionKernel_aeval_ne_zero R K E Ksep m h
+        hmon hunit hns hQm
+      rw [WeierstrassCurve.torsionKernelFun_zero,
+        WeierstrassCurve.torsionKernelFun_some, if_neg (by omega), pow_zero,
+        pow_zero, one_mul, one_div] at h00
+      exact hne (inv_eq_zero.mp h00.symm)
+  | some x₁ y₁ hns₁ =>
+    have hne₁ := WeierstrassCurve.torsionKernel_aeval_ne_zero R K E Ksep m h
+      hmon hunit hns₁ hPm
+    cases Q with
+    | zero =>
+      exfalso
+      rw [WeierstrassCurve.torsionKernelFun_zero,
+        WeierstrassCurve.torsionKernelFun_some, if_neg (by omega), pow_zero,
+        pow_zero, one_mul, one_div] at h00
+      exact hne₁ (inv_eq_zero.mp h00)
+    | some x₂ y₂ hns₂ =>
+      have hne₂ := WeierstrassCurve.torsionKernel_aeval_ne_zero R K E Ksep m h
+        hmon hunit hns₂ hQm
+      have h10 := heq 1 0 (by omega) (by omega) (by omega)
+      have h01 := heq 0 1 (by omega) (by omega) (by omega)
+      rw [WeierstrassCurve.torsionKernelFun_some,
+        WeierstrassCurve.torsionKernelFun_some] at h00
+      rw [WeierstrassCurve.torsionKernelFun_some,
+        WeierstrassCurve.torsionKernelFun_some] at h10
+      rw [WeierstrassCurve.torsionKernelFun_some,
+        WeierstrassCurve.torsionKernelFun_some] at h01
+      simp only [pow_zero, pow_one, one_mul, mul_one] at h00 h10 h01
+      have hu : Polynomial.aeval x₂ h = Polynomial.aeval x₁ h := by
+        rw [div_eq_div_iff hne₁ hne₂, one_mul, one_mul] at h00
+        exact h00
+      rw [hu] at h10 h01
+      have hx : x₁ = x₂ := by
+        rw [div_eq_div_iff hne₁ hne₁] at h10
+        exact mul_right_cancel₀ hne₁ h10
+      have hy : y₁ = y₂ := by
+        rw [div_eq_div_iff hne₁ hne₁] at h01
+        exact mul_right_cancel₀ hne₁ h01
+      subst hx
+      subst hy
+      rfl
+
+set_option backward.isDefEq.respectTransparency false in
+set_option linter.unusedSectionVars false in
+/-- **Torsion abscissas are division-polynomial roots over the integral
+model**: for an affine `m`-torsion point of the base change, the integral
+model's `ΨSq m` vanishes at the abscissa. -/
+lemma WeierstrassCurve.torsion_abscissa_psiSq_eq_zero (m : ℕ)
+    (hm : (m : K) ≠ 0) {x y : Ksep}
+    (hns : (E⁄Ksep).toAffine.Nonsingular x y)
+    (hP : (m : ℤ) • (Affine.Point.some x y hns : (E⁄Ksep).Point) = 0) :
+    Polynomial.aeval x ((WeierstrassCurve.integralModel R E).ΨSq (m : ℤ)) = 0 := by
+  have hm0 : m ≠ 0 := fun h => hm (by rw [h, Nat.cast_zero])
+  have hmZ : (m : ℤ) ≠ 0 := by exact_mod_cast hm0
+  have h1 : ((E⁄Ksep).ΨSq (m : ℤ)).eval x = 0 :=
+    (TorsionCard.smul_some_eq_zero_iff (E.map (algebraMap K Ksep)) hmZ hns).mp hP
+  have h2 : (E⁄Ksep) =
+      (WeierstrassCurve.integralModel R E).map (algebraMap R Ksep) := by
+    conv_lhs => rw [← WeierstrassCurve.baseChange_integralModel_eq R E]
+    simp only [WeierstrassCurve.baseChange]
+    rw [WeierstrassCurve.map_map, ← IsScalarTower.algebraMap_eq]
+  rw [h2, WeierstrassCurve.map_ΨSq, Polynomial.eval_map,
+    ← Polynomial.aeval_def] at h1
+  exact h1
+
+set_option linter.unusedSectionVars false in
+/-- **The reduced division polynomial is nonzero**: good reduction makes
+the reduced curve elliptic, so `Φ m` and `ΨSq m` are coprime over the
+residue field; were `ΨSq m` zero, the positive-degree `Φ m` would be a
+unit. -/
+lemma WeierstrassCurve.reduction_psiSq_ne_zero (m : ℕ) (hm : (m : K) ≠ 0) :
+    ((WeierstrassCurve.integralModel R E).ΨSq (m : ℤ)).map
+      (IsLocalRing.residue R) ≠ 0 := by
+  have hm0 : m ≠ 0 := fun h => hm (by rw [h, Nat.cast_zero])
+  have hmZ : (m : ℤ) ≠ 0 := by exact_mod_cast hm0
+  haveI hell : (E.reduction R).IsElliptic :=
+    (WeierstrassCurve.hasGoodReduction_iff_isElliptic_reduction R).mp
+      inferInstance
+  have hΔ : IsUnit (E.reduction R).Δ := (E.reduction R).isElliptic_iff.mp hell
+  have hcop := WeierstrassCurve.isCoprime_Φ_ΨSq (E.reduction R) hmZ hΔ
+  intro h0
+  have hred : (E.reduction R).ΨSq (m : ℤ) =
+      ((WeierstrassCurve.integralModel R E).ΨSq (m : ℤ)).map
+        (IsLocalRing.residue R) := by
+    rw [show E.reduction R = (WeierstrassCurve.integralModel R E).map
+      (IsLocalRing.residue R) from rfl, WeierstrassCurve.map_ΨSq]
+  rw [← hred] at h0
+  rw [h0] at hcop
+  have hunit := (isCoprime_zero_right).mp hcop
+  refine Polynomial.not_isUnit_of_natDegree_pos _ ?_ hunit
+  rw [WeierstrassCurve.natDegree_Φ, Int.natAbs_natCast]
+  exact pow_pos (Nat.pos_of_ne_zero hm0) 2
+
+set_option linter.unusedSectionVars false in
+/-- **Maximal-ideal elements have small image**: a centered valuation
+subring sees the maximal ideal of `R` inside its own — a unit image would
+push the inverse through the trace into `R`. -/
+lemma val_algebraMap_lt_one_of_mem_maximalIdeal (𝒪 : ValuationSubring Ksep)
+    (hcen : (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range)
+    {c : R} (hmem : c ∈ IsLocalRing.maximalIdeal R) :
+    𝒪.valuation (algebraMap R Ksep c) < 1 := by
+  rcases eq_or_ne c 0 with rfl | hc0
+  · rw [map_zero, map_zero]
+    exact zero_lt_one
+  rcases lt_or_eq_of_le ((𝒪.valuation_le_one_iff _).mpr
+    (mem_centered_algebraMap R K Ksep 𝒪 hcen c)) with hlt | heq
+  · exact hlt
+  exfalso
+  have hKc0 : algebraMap R K c ≠ 0 := fun h =>
+    hc0 (IsFractionRing.injective R K (h.trans (map_zero _).symm))
+  have hinv1 : 𝒪.valuation (algebraMap K Ksep (algebraMap R K c)⁻¹) = 1 := by
+    rw [map_inv₀, map_inv₀, ← IsScalarTower.algebraMap_apply, heq, inv_one]
+  have hmem𝒪 : (algebraMap R K c)⁻¹ ∈
+      (𝒪.comap (algebraMap K Ksep)).toSubring := by
+    show algebraMap K Ksep (algebraMap R K c)⁻¹ ∈ 𝒪
+    rw [← 𝒪.valuation_le_one_iff, hinv1]
+  rw [hcen] at hmem𝒪
+  obtain ⟨r, hr⟩ := hmem𝒪
+  have hrc : r * c = 1 := by
+    apply IsFractionRing.injective R K
+    rw [map_mul, map_one, hr, inv_mul_cancel₀ hKc0]
+  exact mem_nonunits_iff.mp ((IsLocalRing.mem_maximalIdeal c).mp hmem)
+    (IsUnit.of_mul_eq_one r (by rw [mul_comm]; exact hrc))
+
+set_option linter.unusedSectionVars false in
+/-- Evaluation of an `R`-polynomial at a point of `𝒪` stays in `𝒪`. -/
+lemma aeval_mem_of_mem (𝒪 : ValuationSubring Ksep)
+    (hR : ∀ r : R, algebraMap R Ksep r ∈ 𝒪) (p : Polynomial R) {x : Ksep}
+    (hx : x ∈ 𝒪) : Polynomial.aeval x p ∈ 𝒪 := by
+  rw [Polynomial.aeval_def, Polynomial.eval₂_eq_sum_range]
+  exact sum_mem fun i _ => mul_mem (hR _) (pow_mem hx i)
+
+set_option linter.unusedSectionVars false in
+/-- A polynomial with maximal-ideal coefficients evaluates below `1` at
+any integral point of a centered valuation subring. -/
+lemma val_aeval_lt_one_of_coeff_mem (𝒪 : ValuationSubring Ksep)
+    (hcen : (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range)
+    (p : Polynomial R) (hp : ∀ i, p.coeff i ∈ IsLocalRing.maximalIdeal R)
+    {x : Ksep} (hx : x ∈ 𝒪) :
+    𝒪.valuation (Polynomial.aeval x p) < 1 := by
+  rw [Polynomial.aeval_def, Polynomial.eval₂_eq_sum_range]
+  refine Valuation.map_sum_lt _ one_ne_zero fun i _ => ?_
+  rw [map_mul]
+  calc 𝒪.valuation (algebraMap R Ksep (p.coeff i)) * 𝒪.valuation (x ^ i)
+      ≤ 𝒪.valuation (algebraMap R Ksep (p.coeff i)) * 1 :=
+        mul_le_mul_right ((𝒪.valuation_le_one_iff _).mpr (pow_mem hx i)) _
+    _ = 𝒪.valuation (algebraMap R Ksep (p.coeff i)) := mul_one _
+    _ < 1 := val_algebraMap_lt_one_of_mem_maximalIdeal R K Ksep 𝒪 hcen (hp i)
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
+/-- **The avoiding denominator** (PROVEN — stage A of the Katz–Mazur
+kernel-functions leaf): a monic `h ∈ R[X]` of degree `≥ 2` such that
+`h(x(P))` is a `𝒪`-unit for every centered valuation subring `𝒪` and
+every affine `m`-torsion point with abscissa in `𝒪`. Construction: an
+affine torsion abscissa is a root of the integral model's `ΨSq m`
+(`torsion_abscissa_psiSq_eq_zero`), whose reduction `Ψ̄` over the residue
+field is nonzero by good reduction (`reduction_psiSq_ne_zero`); take `h`
+to be a monic lift of `Ψ̄·L⁻¹·X² + 1` (`L` the leading coefficient of
+`Ψ̄`). Then `h = 1 + A·Ψ + C` over `R` with `C ≡ 0` mod the maximal
+ideal — an explicit Bézout certificate: at a torsion abscissa the `Ψ`-term
+vanishes and the `C`-term has valuation `< 1`, so `v(h(x)) = v(1 + small)
+= 1`. No case split on the residue field is needed. -/
+theorem WeierstrassCurve.exists_torsion_avoiding_denominator
+    (m : ℕ) (hm : (m : K) ≠ 0) :
+    ∃ h : Polynomial R, h.Monic ∧ 2 ≤ h.natDegree ∧
+      ∀ 𝒪 : ValuationSubring Ksep,
+        (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range →
+        ∀ (x y : Ksep) (hns : (E⁄Ksep).toAffine.Nonsingular x y),
+          (m : ℤ) • (Affine.Point.some x y hns : (E⁄Ksep).Point) = 0 →
+          x ∈ 𝒪 → 𝒪.valuation (Polynomial.aeval x h) = 1 := by
+  classical
+  set Ψ : Polynomial R := (WeierstrassCurve.integralModel R E).ΨSq (m : ℤ)
+    with hΨdef
+  have hΨbar : Ψ.map (IsLocalRing.residue R) ≠ 0 :=
+    WeierstrassCurve.reduction_psiSq_ne_zero R K E m hm
+  set L := (Ψ.map (IsLocalRing.residue R)).leadingCoeff with hLdef
+  set Ψt := Ψ.map (IsLocalRing.residue R) * Polynomial.C L⁻¹ with hΨtdef
+  have hΨtmon : Ψt.Monic := Polynomial.monic_mul_leadingCoeff_inv hΨbar
+  set hbar := Ψt * Polynomial.X ^ 2 + 1 with hhbardef
+  have hltdeg : (1 : Polynomial (IsLocalRing.ResidueField R)).degree <
+      (Ψt * Polynomial.X ^ 2).degree := by
+    rw [Polynomial.degree_one, Polynomial.degree_mul, Polynomial.degree_X_pow,
+      Polynomial.degree_eq_natDegree hΨtmon.ne_zero]
+    exact_mod_cast (by omega : 0 < Ψt.natDegree + 2)
+  have hmonbar : hbar.Monic := (hΨtmon.mul (Polynomial.monic_X_pow 2)).add_of_left hltdeg
+  have hdegbar : hbar.natDegree = Ψt.natDegree + 2 := by
+    rw [hhbardef]
+    rw [Polynomial.natDegree_eq_of_degree_eq
+      (Polynomial.degree_add_eq_left_of_degree_lt hltdeg),
+      Polynomial.natDegree_mul hΨtmon.ne_zero
+        (pow_ne_zero 2 Polynomial.X_ne_zero),
+      Polynomial.natDegree_X_pow]
+  have hlifts : hbar ∈ Polynomial.lifts (IsLocalRing.residue R) :=
+    (Polynomial.lifts_iff_coeff_lifts hbar).mpr fun k =>
+      IsLocalRing.residue_surjective (hbar.coeff k)
+  obtain ⟨h, hmap, hdeq, hmon⟩ :=
+    Polynomial.lifts_and_degree_eq_and_monic hlifts hmonbar
+  refine ⟨h, hmon, ?_, ?_⟩
+  · rw [Polynomial.natDegree_eq_of_degree_eq hdeq, hdegbar]
+    omega
+  intro 𝒪 hcen x y hns hP hx
+  -- the lifted Bézout certificate `h = 1 + A·Ψ + C`, `C ≡ 0 mod 𝔪`
+  obtain ⟨A, hA⟩ := Polynomial.map_surjective (IsLocalRing.residue R)
+    IsLocalRing.residue_surjective (Polynomial.C L⁻¹ * Polynomial.X ^ 2)
+  set Cdef : Polynomial R := h - A * Ψ - 1 with hCdefdef
+  have hCdefmap : Cdef.map (IsLocalRing.residue R) = 0 := by
+    rw [hCdefdef, Polynomial.map_sub, Polynomial.map_sub, Polynomial.map_mul,
+      Polynomial.map_one, hmap, hA, hhbardef, hΨtdef]
+    ring
+  have hCdefcoeff : ∀ i, Cdef.coeff i ∈ IsLocalRing.maximalIdeal R := by
+    intro i
+    have h1 := congrArg (fun q => Polynomial.coeff q i) hCdefmap
+    simp only [Polynomial.coeff_map, Polynomial.coeff_zero] at h1
+    exact (IsLocalRing.residue_eq_zero_iff _).mp h1
+  have hΨx : Polynomial.aeval x Ψ = 0 :=
+    WeierstrassCurve.torsion_abscissa_psiSq_eq_zero R K E Ksep m hm hns hP
+  have heval : Polynomial.aeval x h = 1 + Polynomial.aeval x Cdef := by
+    have hid : h = 1 + A * Ψ + Cdef := by
+      rw [hCdefdef]
+      ring
+    rw [hid, map_add, map_add, map_one, map_mul, hΨx, mul_zero, add_zero]
+  have hlt := val_aeval_lt_one_of_coeff_mem R K Ksep 𝒪 hcen Cdef hCdefcoeff hx
+  calc 𝒪.valuation (Polynomial.aeval x h)
+      = 𝒪.valuation (1 + Polynomial.aeval x Cdef) := by rw [heval]
+    _ = 𝒪.valuation 1 := 𝒪.valuation.map_add_eq_of_lt_left
+        (by rw [Valuation.map_one]; exact hlt)
+    _ = 1 := Valuation.map_one _
+
+/-- The Katz–Mazur generator family: all monomial sections of weight
+`2a + 3b ≤ 2·deg h` with `b ≤ 1`, restricted to the `m`-torsion subgroup. -/
+noncomputable def WeierstrassCurve.torsionKernelGens (m : ℕ) (h : Polynomial R) :
+    Finset ((AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep) := by
+  classical
+  exact (((Finset.range (h.natDegree + 1)) ×ˢ Finset.range 2).filter
+    (fun ab => 2 * ab.1 + 3 * ab.2 ≤ 2 * h.natDegree)).image
+    (fun ab P => WeierstrassCurve.torsionKernelFun R K E Ksep h ab.1 ab.2 ↑P)
+
+set_option linter.unusedSectionVars false in
+/-- Membership in the Katz–Mazur generator family, unfolded. -/
+lemma WeierstrassCurve.mem_torsionKernelGens (m : ℕ) (h : Polynomial R)
+    (u : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep) :
+    u ∈ WeierstrassCurve.torsionKernelGens R K E Ksep m h ↔
+      ∃ a b : ℕ, a ≤ h.natDegree ∧ b ≤ 1 ∧ 2 * a + 3 * b ≤ 2 * h.natDegree ∧
+        u = fun P : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ) =>
+          WeierstrassCurve.torsionKernelFun R K E Ksep h a b ↑P := by
+  classical
+  unfold WeierstrassCurve.torsionKernelGens
+  rw [Finset.mem_image]
+  constructor
+  · rintro ⟨ab, hab, rfl⟩
+    rw [Finset.mem_filter, Finset.mem_product, Finset.mem_range,
+      Finset.mem_range] at hab
+    exact ⟨ab.1, ab.2, by omega, by omega, hab.2, rfl⟩
+  · rintro ⟨a, b, ha, hb, hw, rfl⟩
+    refine ⟨(a, b), ?_, rfl⟩
+    rw [Finset.mem_filter, Finset.mem_product, Finset.mem_range,
+      Finset.mem_range]
+    exact ⟨⟨by omega, by omega⟩, hw⟩
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Addition-law closure of the monomial sections** (sorry node — THE
+Katz–Mazur core, stage E of the kernel-functions leaf; everything else in
+the family is proven): the pullback of a monomial section along the group
+addition lies in the `R`-span of the product two-variable functions of the
+`R`-subalgebra generated by the family. Intended proof (Katz–Mazur 2.3.1
+made pointwise; plan sharpened 2026-07-24): `M := span R {a(P)·b(Q)}` is
+closed under multiplication, so a PARTITION-OF-UNITY argument applies —
+find `u₁ + … + u_k = 1` on `V × V` with `uᵢ ∈ M` such that each `uᵢ`
+kills the denominators of one branch of the addition law
+(`(x(P) − x(Q))²` for the chord case, `ψ₂²` for the tangent case,
+`h(x)`-units elsewhere), making `uᵢ·(g ∘ add)` a polynomial in the
+sections of the two factors. WHERE THE PARTITION COMES FROM: `M` is a
+SUBRING of `Fun(V × V, Kˢᵉᵖ)` that is module-FINITE over `R` — each
+element has finitely many values, all integral over `R`
+(`torsionKernelFun_isIntegral`), so it satisfies the monic
+`∏_{PQ} (T − φ(PQ))` whose coefficients are integral, making the f.g.
+algebra `M` integral, hence finite, over `R`; therefore `f₁, …, f_k ∈ M`
+generate the unit ideal of `M` iff they have no common zero on the
+special fibre `Specmax (M / 𝔪M)` (all maximal ideals of a finite algebra
+over the local `R` lie over `𝔪`), and `Σ cᵢ fᵢ = 1` with `cᵢ ∈ M` is
+exactly the required partition after multiplying by `g ∘ add`-denominator
+killers. The branch functions: `d := ((x/h)(P)(1/h)(Q) − (1/h)(P)(x/h)(Q))²`
+for the chord branch (value `(x(P)−x(Q))²/(h·h)²`), the `ψ₂`-square
+analogue for doubling (`eval_Ψ₂Sq_eq_sq`), and `1/h`-factors detecting the
+origin rows; their common-zero-freeness on the special fibre is the
+division-polynomial arithmetic: affine `m`-torsion abscissas are roots of
+`ΨSq m` (`smul_some_eq_zero_iff`, `torsion_abscissa_psiSq_eq_zero`), the
+Bézout identity `F·Φ m + G·ΨSq m = 1` (`isCoprime_Φ_ΨSq`, unit
+discriminant from good reduction) and the multiplied-out addition
+formulas (`add_some_coords`, `cross_two`, `two_point_trace_identity`,
+`eq_or_add_eq_zero_of_X_eq`) supply the numerators. No indicator
+idempotents are available (for `μ_p` over `ℤ_p` the origin idempotent is
+NOT integral), so the partition must come from these global identities.
+DECOMPOSE when attacked: (E0) the mul-closure of `M` and the trivial
+`F = Σ uᵢ·F` reduction; (E1) module-finiteness of `M` over `R`; (E2) the
+unit-ideal criterion over the special fibre; (E3) per-branch
+denominator-killing identities; (E4) assembly per generator. -/
+theorem WeierstrassCurve.torsionKernelFun_add_mem_span
+    (m : ℕ) (hm : (m : K) ≠ 0) (h : Polynomial R) (hmon : h.Monic)
+    (hdeg : 2 ≤ h.natDegree)
+    (hunit : ∀ 𝒪 : ValuationSubring Ksep,
+      (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range →
+      ∀ (x y : Ksep) (hns : (E⁄Ksep).toAffine.Nonsingular x y),
+        (m : ℤ) • (Affine.Point.some x y hns : (E⁄Ksep).Point) = 0 →
+        x ∈ 𝒪 → 𝒪.valuation (Polynomial.aeval x h) = 1)
+    (a b : ℕ) (hb : b ≤ 1) (hw : 2 * a + 3 * b ≤ 2 * h.natDegree) :
+    (fun PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+        (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) =>
+      WeierstrassCurve.torsionKernelFun R K E Ksep h a b ↑(PQ.1 + PQ.2)) ∈
+    Submodule.span R {t : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+        (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep |
+      ∃ a' ∈ Algebra.adjoin R
+        ((WeierstrassCurve.torsionKernelGens R K E Ksep m h : Set
+          ((AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep))),
+      ∃ b' ∈ Algebra.adjoin R
+        ((WeierstrassCurve.torsionKernelGens R K E Ksep m h : Set
+          ((AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep))),
+        (fun PQ => a' PQ.1 * b' PQ.2) = t} := by
+  sorry
+
+end TorsionKernelFunctions
+
 set_option backward.isDefEq.respectTransparency false in
 /-- **The Katz–Mazur kernel functions** (sorry node; the pointwise curve core
 of the Katz–Mazur order cut, freed 2026-07-24 of ALL Hopf-algebra content by
@@ -8915,7 +9854,93 @@ theorem WeierstrassCurve.exists_torsion_kernel_function_generators
           ∃ b ∈ Algebra.adjoin R
             ((gens₀ : Set ((AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep))),
             (fun PQ => a PQ.1 * b PQ.2) = t}) := by
-  sorry
+  classical
+  obtain ⟨h, hmon, hdeg, hunit⟩ :=
+    WeierstrassCurve.exists_torsion_avoiding_denominator R K E Ksep m hm
+  refine ⟨WeierstrassCurve.torsionKernelGens R K E Ksep m h, ?_, ?_, ?_, ?_, ?_⟩
+  · -- Galois equivariance
+    intro u hu σ P Q hPQ
+    obtain ⟨a, b, ha, hb, hw, rfl⟩ :=
+      (WeierstrassCurve.mem_torsionKernelGens R K E Ksep m h u).mp hu
+    show WeierstrassCurve.torsionKernelFun R K E Ksep h a b ↑Q =
+      σ (WeierstrassCurve.torsionKernelFun R K E Ksep h a b ↑P)
+    rw [hPQ]
+    exact WeierstrassCurve.torsionKernelFun_map R K E Ksep h a b σ ↑P
+  · -- integrality of values
+    intro u hu P
+    obtain ⟨a, b, ha, hb, hw, rfl⟩ :=
+      (WeierstrassCurve.mem_torsionKernelGens R K E Ksep m h u).mp hu
+    exact WeierstrassCurve.torsionKernelFun_isIntegral R K E Ksep m h hmon hunit
+      a b hw ↑P ((Submodule.mem_torsionBy_iff _ _).mp P.2)
+  · -- separation
+    intro P Q hPQ
+    refine Subtype.ext (WeierstrassCurve.torsionKernelFun_separates R K E Ksep m
+      h hmon hdeg hunit ((Submodule.mem_torsionBy_iff _ _).mp P.2)
+      ((Submodule.mem_torsionBy_iff _ _).mp Q.2) fun a b ha hb hw => ?_)
+    exact hPQ (fun P' => WeierstrassCurve.torsionKernelFun R K E Ksep h a b ↑P')
+      ((WeierstrassCurve.mem_torsionKernelGens R K E Ksep m h _).mpr
+        ⟨a, b, ha, hb, hw, rfl⟩)
+  · -- negation closure
+    intro u hu
+    obtain ⟨a, b, ha, hb, hw, rfl⟩ :=
+      (WeierstrassCurve.mem_torsionKernelGens R K E Ksep m h u).mp hu
+    rcases Nat.le_one_iff_eq_zero_or_eq_one.mp hb with rfl | rfl
+    · -- even sections are negation-invariant
+      have hfun : (fun P : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ) =>
+          WeierstrassCurve.torsionKernelFun R K E Ksep h a 0 ↑(-P)) =
+          fun P : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ) =>
+            WeierstrassCurve.torsionKernelFun R K E Ksep h a 0 ↑P := by
+        funext P
+        rw [show ((-P : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) :
+            (E⁄Ksep).Point) = -(P : (E⁄Ksep).Point) from rfl,
+          WeierstrassCurve.torsionKernelFun_neg_even]
+      show (fun P : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ) =>
+        WeierstrassCurve.torsionKernelFun R K E Ksep h a 0 ↑(-P)) ∈ _
+      rw [hfun]
+      exact Algebra.subset_adjoin
+        ((WeierstrassCurve.mem_torsionKernelGens R K E Ksep m h _).mpr
+          ⟨a, 0, ha, by omega, by omega, rfl⟩)
+    · -- odd sections: the `R`-integral negation combination
+      have hkey : (fun P : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ) =>
+          WeierstrassCurve.torsionKernelFun R K E Ksep h a 1 ↑(-P)) =
+          -(fun P : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ) =>
+              WeierstrassCurve.torsionKernelFun R K E Ksep h a 1 ↑P)
+          - algebraMap R ((AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep)
+              (WeierstrassCurve.integralModel R E).a₁ *
+            (fun P : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ) =>
+              WeierstrassCurve.torsionKernelFun R K E Ksep h (a + 1) 0 ↑P)
+          - algebraMap R ((AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep)
+              (WeierstrassCurve.integralModel R E).a₃ *
+            (fun P : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ) =>
+              WeierstrassCurve.torsionKernelFun R K E Ksep h a 0 ↑P) := by
+        funext P
+        show WeierstrassCurve.torsionKernelFun R K E Ksep h a 1
+          ((-P : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) :
+            (E⁄Ksep).Point) = _
+        rw [show ((-P : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) :
+            (E⁄Ksep).Point) = -(P : (E⁄Ksep).Point) from rfl,
+          WeierstrassCurve.torsionKernelFun_neg_odd R K E Ksep m h hmon hunit a
+            (by omega) (P : (E⁄Ksep).Point)
+            ((Submodule.mem_torsionBy_iff _ _).mp P.2)]
+        simp only [Pi.sub_apply, Pi.neg_apply, Pi.mul_apply, Pi.algebraMap_apply]
+      show (fun P : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ) =>
+        WeierstrassCurve.torsionKernelFun R K E Ksep h a 1 ↑(-P)) ∈ _
+      rw [hkey]
+      refine sub_mem (sub_mem (neg_mem (Algebra.subset_adjoin
+        ((WeierstrassCurve.mem_torsionKernelGens R K E Ksep m h _).mpr
+          ⟨a, 1, ha, by omega, hw, rfl⟩)))
+        (mul_mem (Subalgebra.algebraMap_mem _ _) (Algebra.subset_adjoin
+          ((WeierstrassCurve.mem_torsionKernelGens R K E Ksep m h _).mpr
+            ⟨a + 1, 0, by omega, by omega, by omega, rfl⟩))))
+        (mul_mem (Subalgebra.algebraMap_mem _ _) (Algebra.subset_adjoin
+          ((WeierstrassCurve.mem_torsionKernelGens R K E Ksep m h _).mpr
+            ⟨a, 0, by omega, by omega, by omega, rfl⟩)))
+  · -- addition-law closure
+    intro u hu
+    obtain ⟨a, b, ha, hb, hw, rfl⟩ :=
+      (WeierstrassCurve.mem_torsionKernelGens R K E Ksep m h u).mp hu
+    exact WeierstrassCurve.torsionKernelFun_add_mem_span R K E Ksep m hm h hmon
+      hdeg hunit a b hb hw
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **The Katz–Mazur generators** (DECOMPOSED 2026-07-24 into the pointwise
