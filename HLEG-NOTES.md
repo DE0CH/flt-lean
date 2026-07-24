@@ -263,21 +263,39 @@ Decomposition advice: write hleg3 as the odd/2 case split now, close the odd
 branch, and leave `p = 2` as a named sorried sub-have
 (`have hleg3_two : p = 2 → ∀ x, e x x = 1`), consumed by the split.
 
-**STATUS UPDATE (2026-07-23).** The `p = 2` case is now the top-level
-sorry node `weilValueProp_self_of_two` (WeilPairing.lean, right after
-`end FrobeniusTransport`): any admissible value `z` of a self-pair at
-`p = 2` is `1`, with uniqueness `huniq` passed as a hypothesis (the
-μ-theorem instantiates it with `huniqval`), so the prover may either
-consume the given witness (c-i) or build its own setup (c-ii). The
-skeleton is in place down to a single sorried leaf: after the (c-i)
-line-square assembly (witness destructured, 2-torsion relation, both
-`aP·XClass x_P = c·ℓ²` factorizations through the extracted
-`MillerEngine` lemmas `coordRing_isUnit_constant` /
-`coordRing_line_span` / `coordRing_evalEval_XClass`, evaluation at the
-four points, cancellation of the `x• − x_P` factors), the residual
-sorry is `hkey` — ONE polynomial identity in the twelve configuration
-scalars (see below), to be closed from the five curve equations, the
-2-torsion relation, and the two collinearity systems.
+**STATUS UPDATE (2026-07-24): the `p = 2` case is PROVEN.**
+`weilValueProp_self_of_two` (WeilPairing.lean, after
+`end FrobeniusTransport`) is sorry-free: the (c-i) line-square route
+went through in full. Structure: witness destructured; 2-torsion
+relation; `aP·XClass x_P = c·ℓ²` factorizations through the extracted
+`MillerEngine` lemmas (`coordRing_isUnit_constant`,
+`coordRing_line_span`, `coordRing_evalEval_XClass`); evaluation at the
+four points; and the residual polynomial identity `hkey` CLOSED via
+the new module `WeilPairingTwoLine.lean`:
+
+* `two_line_reciprocity` — the 8-line-value reciprocity core (hkey
+  divided by the four norm factorizations; all x-difference monomials
+  cancel pairwise, sign +1). Proven by a machine-generated 123KB
+  `linear_combination` certificate: Singular `lift` over the
+  substituted configuration ring (eliminations: `x_P, y_PS, y_P,
+  y_QR, a₆, a₃` — all exact polynomial substitutions), lifted back to
+  the eleven hypothesis generators by exact sequential polynomial
+  division, and re-verified symbolically (sympy `expand == 0`).
+* `line_norm_cubic` — `ℓ(T)·ℓ(⊖T) = −(x_T−x_B)(x_T−x_U)(x_T−x_P)`,
+  small per-branch certificates (chord: localized at `x_U − x_B`;
+  tangent: via the tangent-slope relation — plain ideal membership
+  FAILS without the slope data, as the phantom-tangent locus breaks
+  the factorization).
+* `norm_reciprocity_assembly` — atom-level assembly; keeps the heavy
+  `ring` normalization out of WeilPairing.lean (the inlined version
+  stack-overflowed the LSP file worker even though the CLI accepted
+  it).
+
+The μ-theorem's `htwo` is therefore closed (modulo the in-proof
+`huniqval`/`hDD`, which it instantiates). Certificate-generation
+scripts from this session: scratchpad `lift8.py`, `liftnorm.py`,
+`gen_lean8.py` (Singular + sympy pipeline; the pattern is reusable for
+any future configuration identity).
 
 **The (c-i) identity is CAS-VERIFIED (chord AND tangent branches).**
 With `⊖P = P`, `aP·X_{xP} = c₁ℓ₁²` (ℓ₁ through `PS, ⊖S`, third point
