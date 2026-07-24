@@ -3365,6 +3365,1416 @@ theorem tendsto_LSeries_nhdsGT_one_of_forall_norm_sum_le {c : ℕ → ℂ} {r C 
   rw [Complex.ofReal_one, one_mul] at hmul
   exact hmul.congr' heq
 
+/-!
+### Nonvanishing of `L(1, χ)`: the zeta-factorization pole argument
+
+The arithmetic core
+`integral_sum_dirichletCharacter_mul_card_cpow_neg_two_ne_zero` is
+proven by contradiction through the product `∏_{j < ℓ-1} L(s, χ^j)` of
+the twisted ideal `L`-series of ALL powers of `χ`:
+
+* **lower bound** (no vanishing hypothesis): `log ∏_j L(s, χ^j)` is a
+  sum over the finite places `P` of `F` whose per-place real part is
+  `-(M/f)·log(1 - N P^{-f s}) ≥ 0` (`M = ℓ - 1`, `f` the order of
+  `χ(N P)` — by the root-of-unity factorization
+  `∏_{j<M} (1 - a^j x) = (1 - x^f)^{M/f}`), and is `≥ M·N P^{-s}` at
+  places with `N P ≡ 1 (mod ℓ)`; so the product dominates
+  `exp(M · ∑_{N P ≡ 1 (ℓ)} N P^{-s})`.  The congruence-class prime sum
+  in turn dominates `1/[E:ℚ]` times the degree-one prime sum of `E`:
+  each degree-one place `Q` of `E` away from `ℓ` pulls back to
+  `P = Q ∩ 𝓞 F` with the SAME residue cardinality
+  (`natCard_quotient_under_eq_of_natCard_prime`), the congruence
+  `N Q ≡ 1 (mod ℓ)` holds because `ζ` reduces to a primitive `ℓ`-th
+  root of unity in `𝓞 E ⧸ Q`, and the fibers of `Q ↦ P` have at most
+  `[𝓞 E : ℤ]` elements (distinct primes of norm `q` have product
+  dividing `(q)`, of norm `q^[𝓞 E : ℤ]`); the degree-one prime sum of
+  `E` diverges as `s → 1⁺`
+  (`exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_ne E ℓ`).
+* **upper bound** (from the assumed vanishing): were the continued
+  value `L(1, χ) = 0`, every factor would be controlled on a right
+  neighbourhood of `1`: factors with `χ^j` TRIVIAL on the image of
+  `Gal(E/F)` have the same `L`-series as the trivial character
+  (`LSeries_dirichletCharacter_mul_card_congr`, through
+  `exists_algEquiv_map_zeta_eq_pow_absNorm`: every achieved norm is a
+  Galois norm-residue), bounded by `C/(s-1)` through the simple pole
+  of `ζ_F`; factors with `χ^j` in the coset `χ·(trivial on the image)`
+  have the same `L`-series as `χ` itself, bounded by `C'·(s-1)` by the
+  vanishing continuation and the uniform derivative bound (mean value
+  inequality); the two exponent classes are cosets of ONE subgroup of
+  `ZMod (ℓ-1)`, hence have EQUAL cardinality, so the `(s-1)`-powers
+  cancel exactly; all remaining factors are uniformly bounded by the
+  continuation half `exists_forall_norm_LSeries_le_and_norm_deriv_le`.
+
+`exp(divergent) ≤ bounded` is the contradiction. -/
+
+open IsDedekindDomain in
+/-- **Arithmetic Frobenius on `ζ` at an arbitrary place away from `ℓ`**
+— the generalization of `exists_algEquiv_map_zeta_eq_pow_natCard` from
+degree-one places to ALL finite places `P` of `F` with `ℓ ∤ #(𝓞 F/P)`:
+some `σ ∈ Gal(E/F)` acts on `ζ` by `ζ ↦ ζ ^ #(𝓞 F / P)`.  Same proof:
+at any prime `Q` of `𝓞 E` above `P` an arithmetic Frobenius exists
+(`IsArithFrobAt.exists_of_isInvariant`), and it acts on the `ℓ`-th
+root of unity `ζ` exactly by `ζ ↦ ζ ^ #(𝓞 F / P)`
+(`AlgHom.IsArithFrobAt.apply_of_pow_eq_one`), because `ℓ` is
+invertible modulo `Q` (this is where `ℓ ∤ #(𝓞 F / P)` enters). -/
+theorem exists_algEquiv_map_zeta_eq_pow_natCard_of_not_dvd
+    {F : Type*} [Field F] [NumberField F] {E : Type*} [Field E] [NumberField E]
+    [Algebra F E] {ℓ : ℕ} (hℓ : ℓ.Prime) [IsCyclotomicExtension {ℓ} F E]
+    {ζ : E} (hζ : IsPrimitiveRoot ζ ℓ) (P : HeightOneSpectrum (𝓞 F))
+    (hnd : ¬ ℓ ∣ Nat.card (𝓞 F ⧸ P.asIdeal)) :
+    ∃ σ : E ≃ₐ[F] E, σ ζ = ζ ^ Nat.card (𝓞 F ⧸ P.asIdeal) := by
+  classical
+  haveI : NeZero ℓ := ⟨hℓ.pos.ne'⟩
+  haveI : IsGalois F E := IsCyclotomicExtension.isGalois {ℓ} F E
+  haveI : FiniteDimensional F E := IsCyclotomicExtension.finiteDimensional {ℓ} F E
+  haveI : Module.Finite (𝓞 F) (𝓞 E) :=
+    Module.Finite.of_restrictScalars_finite ℤ (𝓞 F) (𝓞 E)
+  -- a prime of `𝓞 E` over `P`, with finite residue field
+  obtain ⟨⟨Q, hQp, hQo⟩⟩ := Ideal.nonempty_primesOver (S := 𝓞 E) P.asIdeal
+  haveI := hQp
+  haveI := hQo
+  have hQunder : Q.under (𝓞 F) = P.asIdeal := hQo.over.symm
+  have hQne : Q ≠ ⊥ := by
+    intro h
+    apply P.ne_bot
+    rw [hQo.over, h, Ideal.under_def]
+    exact Ideal.comap_bot_of_injective _
+      (FaithfulSMul.algebraMap_injective (𝓞 F) (𝓞 E))
+  haveI : Finite (𝓞 E ⧸ Q) := Ring.HasFiniteQuotients.finiteQuotient hQne
+  -- a Frobenius element at `Q` over `F`
+  obtain ⟨σQ, hσQ⟩ :=
+    IsArithFrobAt.exists_of_isInvariant (𝓞 F) (E ≃ₐ[F] E) Q
+  -- `ζ` as an algebraic integer
+  have hζint : IsIntegral ℤ ζ := by
+    refine IsIntegral.of_pow hℓ.pos ?_
+    rw [hζ.pow_eq_one]
+    exact isIntegral_one
+  set ζO : 𝓞 E := ⟨ζ, hζint⟩
+  -- `ℓ` is invertible modulo `Q`
+  have hℓQ : ((ℓ : ℕ) : 𝓞 E) ∉ Q := by
+    intro hmem
+    have h1 : ((ℓ : ℕ) : 𝓞 F) ∈ P.asIdeal := by
+      rw [← hQunder, Ideal.under_def, Ideal.mem_comap, map_natCast]
+      exact hmem
+    haveI : Finite (𝓞 F ⧸ P.asIdeal) := by
+      refine Nat.finite_of_card_ne_zero ?_
+      have h := two_le_natCard_quotient P
+      omega
+    haveI := Fintype.ofFinite (𝓞 F ⧸ P.asIdeal)
+    have h2 : ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : 𝓞 F ⧸ P.asIdeal) = 0 := by
+      rw [Nat.card_eq_fintype_card]
+      exact Nat.cast_card_eq_zero _
+    have h3 : ((ℓ : ℕ) : 𝓞 F ⧸ P.asIdeal) = 0 := by
+      rw [← map_natCast (Ideal.Quotient.mk P.asIdeal),
+        Ideal.Quotient.eq_zero_iff_mem]
+      exact h1
+    have hco : IsCoprime (Nat.card (𝓞 F ⧸ P.asIdeal) : ℤ) (ℓ : ℤ) :=
+      Int.isCoprime_iff_gcd_eq_one.mpr
+        (by
+          rw [Int.gcd_natCast_natCast]
+          exact Nat.Coprime.symm ((Nat.Prime.coprime_iff_not_dvd hℓ).mpr hnd))
+    obtain ⟨u, v, huv⟩ := hco
+    have h4 : (1 : 𝓞 F ⧸ P.asIdeal) = 0 := by
+      calc (1 : 𝓞 F ⧸ P.asIdeal)
+          = ((u * (Nat.card (𝓞 F ⧸ P.asIdeal) : ℤ) + v * (ℓ : ℤ) : ℤ) :
+            𝓞 F ⧸ P.asIdeal) := by rw [huv, Int.cast_one]
+        _ = (u : 𝓞 F ⧸ P.asIdeal) *
+              ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : 𝓞 F ⧸ P.asIdeal) +
+            (v : 𝓞 F ⧸ P.asIdeal) * ((ℓ : ℕ) : 𝓞 F ⧸ P.asIdeal) := by
+            rw [Int.cast_add, Int.cast_mul, Int.cast_mul, Int.cast_natCast,
+              Int.cast_natCast]
+        _ = 0 := by rw [h2, h3, mul_zero, mul_zero, add_zero]
+    exact one_ne_zero h4
+  -- the Frobenius acts on `ζ` exactly by `ζ ↦ ζ ^ #(𝓞 F / P)`
+  have hζOpow : ζO ^ ℓ = 1 := by
+    apply NumberField.RingOfIntegers.ext
+    show algebraMap (𝓞 E) E (ζO ^ ℓ) = algebraMap (𝓞 E) E 1
+    rw [map_pow, map_one]
+    show ζ ^ ℓ = 1
+    exact hζ.pow_eq_one
+  have hσQζ : σQ • ζO = ζO ^ Nat.card (𝓞 F ⧸ P.asIdeal) := by
+    have h1 := hσQ.apply_of_pow_eq_one hζOpow hℓQ
+    rw [hQunder] at h1
+    exact h1
+  refine ⟨σQ, ?_⟩
+  have h2 : (algebraMap (𝓞 E) E) (σQ • ζO) =
+      (algebraMap (𝓞 E) E) (ζO ^ Nat.card (𝓞 F ⧸ P.asIdeal)) :=
+    congrArg _ hσQζ
+  rw [map_pow] at h2
+  have h3 : (algebraMap (𝓞 E) E) (σQ • ζO) = σQ ζ := rfl
+  have h4 : (algebraMap (𝓞 E) E) ζO = ζ := rfl
+  rw [h3, h4] at h2
+  exact h2
+
+open IsDedekindDomain in
+/-- **Every achieved ideal norm away from `ℓ` is a Galois
+norm-residue**: for a nonzero ideal `I` of `𝓞 F` with `ℓ ∤ N(I)`, some
+`σ ∈ Gal(E/F)` acts on `ζ` by `ζ ↦ ζ ^ N(I)`.  By strong induction on
+the norm along the Dedekind factorization: split off a maximal divisor
+`M ∣ I`, apply the per-place Frobenius lemma
+`exists_algEquiv_map_zeta_eq_pow_natCard_of_not_dvd` to `M` and the
+inductive hypothesis to `I/M`, and compose the two automorphisms
+(`(σ₁σ₂)ζ = ζ^{N(M)·N(I/M)} = ζ^{N(I)}` by multiplicativity of the
+absolute norm). -/
+theorem exists_algEquiv_map_zeta_eq_pow_absNorm
+    {F : Type*} [Field F] [NumberField F] {E : Type*} [Field E] [NumberField E]
+    [Algebra F E] {ℓ : ℕ} (hℓ : ℓ.Prime) [IsCyclotomicExtension {ℓ} F E]
+    {ζ : E} (hζ : IsPrimitiveRoot ζ ℓ) (I : Ideal (𝓞 F)) (hI : I ≠ ⊥)
+    (hnd : ¬ ℓ ∣ Ideal.absNorm I) :
+    ∃ σ : E ≃ₐ[F] E, σ ζ = ζ ^ Ideal.absNorm I := by
+  classical
+  suffices H : ∀ n : ℕ, ∀ I : Ideal (𝓞 F), Ideal.absNorm I = n → I ≠ ⊥ →
+      ¬ ℓ ∣ Ideal.absNorm I → ∃ σ : E ≃ₐ[F] E, σ ζ = ζ ^ Ideal.absNorm I from
+    H (Ideal.absNorm I) I rfl hI hnd
+  intro n
+  induction n using Nat.strong_induction_on with
+  | _ n ih =>
+    intro I hIn hIbot hInd
+    rcases eq_or_ne I ⊤ with rfl | htop
+    · refine ⟨1, ?_⟩
+      rw [← Ideal.one_eq_top, map_one, pow_one]
+      rfl
+    · -- split off a maximal divisor
+      obtain ⟨M, hMmax, hIM⟩ := Ideal.exists_le_maximal I htop
+      have hMne : M ≠ ⊥ := by
+        rintro rfl
+        exact hIbot (le_bot_iff.mp hIM)
+      obtain ⟨J, rfl⟩ := (Ideal.dvd_iff_le).mpr hIM
+      have hJne : J ≠ ⊥ := by
+        rintro rfl
+        rw [Ideal.mul_bot] at hIbot
+        exact hIbot rfl
+      have hnMJ : Ideal.absNorm (M * J) =
+          Ideal.absNorm M * Ideal.absNorm J := map_mul _ _ _
+      have hM0 : Ideal.absNorm M ≠ 0 := fun h =>
+        hMne (Ideal.absNorm_eq_zero_iff.mp h)
+      have hM1 : Ideal.absNorm M ≠ 1 := fun h =>
+        hMmax.ne_top (Ideal.absNorm_eq_one_iff.mp h)
+      have hJ0 : Ideal.absNorm J ≠ 0 := fun h =>
+        hJne (Ideal.absNorm_eq_zero_iff.mp h)
+      have hJlt : Ideal.absNorm J < n := by
+        rw [← hIn, hnMJ]
+        have hJpos : 0 < Ideal.absNorm J := Nat.pos_of_ne_zero hJ0
+        have h3 : 1 * Ideal.absNorm J < Ideal.absNorm M * Ideal.absNorm J :=
+          mul_lt_mul_of_pos_right (by omega) hJpos
+        omega
+      have hndM : ¬ ℓ ∣ Ideal.absNorm M := fun h =>
+        hInd (hnMJ ▸ h.mul_right _)
+      have hndJ : ¬ ℓ ∣ Ideal.absNorm J := fun h =>
+        hInd (hnMJ ▸ h.mul_left _)
+      haveI := hMmax.isPrime
+      set P : HeightOneSpectrum (𝓞 F) := ⟨M, hMmax.isPrime, hMne⟩ with hP
+      have hcardM : Nat.card (𝓞 F ⧸ P.asIdeal) = Ideal.absNorm M := by
+        rw [Ideal.absNorm_apply, Submodule.cardQuot_apply]
+      obtain ⟨σ₁, hσ₁⟩ :=
+        exists_algEquiv_map_zeta_eq_pow_natCard_of_not_dvd hℓ hζ P
+          (by rw [hcardM]; exact hndM)
+      obtain ⟨σ₂, hσ₂⟩ := ih (Ideal.absNorm J) hJlt J rfl hJne hndJ
+      refine ⟨σ₁ * σ₂, ?_⟩
+      have hcomp : (σ₁ * σ₂) ζ = σ₁ (σ₂ ζ) := rfl
+      rw [hcomp, hσ₂, map_pow, hσ₁, hcardM, ← pow_mul, hnMJ]
+
+open IsDedekindDomain in
+/-- **Congruence of twisted ideal `L`-series for characters agreeing on
+the Galois norm-residues**: if `χ₁` and `χ₂` agree at every exponent
+`n` through which `Gal(E/F)` acts on `ζ`, then the `χ₁`- and
+`χ₂`-twisted ideal Dirichlet series of `F` are equal at every point.
+Every `k ≥ 1` with a nonzero ideal count and `ℓ ∤ k` is a Galois
+norm-residue (`exists_algEquiv_map_zeta_eq_pow_absNorm`); at `ℓ ∣ k`
+both characters vanish, and at zero count both coefficients vanish. -/
+theorem LSeries_dirichletCharacter_mul_card_congr
+    {F : Type*} [Field F] [NumberField F] {E : Type*} [Field E] [NumberField E]
+    [Algebra F E] {ℓ : ℕ} (hℓ : ℓ.Prime) [IsCyclotomicExtension {ℓ} F E]
+    {ζ : E} (hζ : IsPrimitiveRoot ζ ℓ) (χ₁ χ₂ : DirichletCharacter ℂ ℓ)
+    (h : ∀ (ρ : E ≃ₐ[F] E) (n : ℕ), ρ ζ = ζ ^ n →
+      χ₁ (n : ZMod ℓ) = χ₂ (n : ZMod ℓ)) (s : ℂ) :
+    LSeries (fun k => χ₁ (k : ZMod ℓ) *
+        (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) s =
+      LSeries (fun k => χ₂ (k : ZMod ℓ) *
+        (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) s := by
+  classical
+  refine LSeries_congr (fun {k} hk => ?_) s
+  rcases Nat.eq_zero_or_pos (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k})
+    with hc | hc
+  · rw [hc, Nat.cast_zero, mul_zero, mul_zero]
+  · congr 1
+    by_cases hdvd : ℓ ∣ k
+    · have h0 : ((k : ℕ) : ZMod ℓ) = 0 := (ZMod.natCast_eq_zero_iff k ℓ).mpr hdvd
+      haveI : NeZero ℓ := ⟨hℓ.pos.ne'⟩
+      have hnu : ¬ IsUnit ((k : ℕ) : ZMod ℓ) := by
+        rw [h0]
+        haveI := Fact.mk hℓ
+        exact not_isUnit_zero
+      rw [MulChar.map_nonunit χ₁ hnu, MulChar.map_nonunit χ₂ hnu]
+    · haveI : Nonempty {I : Ideal (𝓞 F) // Ideal.absNorm I = k} :=
+        (Nat.card_pos_iff.mp hc).1
+      obtain ⟨I, hIk⟩ := ‹Nonempty {I : Ideal (𝓞 F) // Ideal.absNorm I = k}›.some
+      have hIne : I ≠ ⊥ := by
+        rintro rfl
+        rw [Ideal.absNorm_bot] at hIk
+        exact hk hIk.symm
+      obtain ⟨σ, hσ⟩ := exists_algEquiv_map_zeta_eq_pow_absNorm hℓ hζ I hIne
+        (by rw [hIk]; exact hdvd)
+      rw [hIk] at hσ
+      exact h σ k hσ
+
+open Filter in
+/-- **Universal pole-order bound for twisted ideal `L`-series near
+`s = 1`**: on some right interval `(1, 1+δ]`, EVERY `χ mod ℓ`-twisted
+ideal Dirichlet series of `F` is bounded by `C/(s-1)`.  Termwise the
+twisted series is dominated by the untwisted one (`‖χ(k)‖ ≤ 1`), whose
+value at real `s > 1` is `‖ζ_F(s)‖`; the simple pole
+`(s-1)·ζ_F(s) → κ`
+(`NumberField.tendsto_sub_one_mul_dedekindZeta_nhdsGT`) gives the
+eventual bound with `C = ‖κ‖ + 1`. -/
+theorem exists_forall_norm_LSeries_dirichletCharacter_mul_card_le_div
+    (F : Type*) [Field F] [NumberField F] (ℓ : ℕ) :
+    ∃ δ C : ℝ, 0 < δ ∧ 0 ≤ C ∧ ∀ (χ : DirichletCharacter ℂ ℓ) (s : ℝ),
+      1 < s → s ≤ 1 + δ →
+      ‖LSeries (fun k => χ (k : ZMod ℓ) *
+        (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) (s : ℂ)‖ ≤
+        C / (s - 1) := by
+  classical
+  have hnorm := (NumberField.tendsto_sub_one_mul_dedekindZeta_nhdsGT F).norm
+  have hev := hnorm.eventually_le_const
+    (lt_add_one ‖((NumberField.dedekindZeta_residue F : ℝ) : ℂ)‖)
+  obtain ⟨u, hu, hIoc⟩ := mem_nhdsGT_iff_exists_Ioc_subset.mp hev
+  refine ⟨u - 1, ‖((NumberField.dedekindZeta_residue F : ℝ) : ℂ)‖ + 1,
+    by linarith [Set.mem_Ioi.mp hu], by positivity, ?_⟩
+  intro χ s hs1 hs2
+  have hbound := hIoc ⟨hs1, by linarith⟩
+  have hspos : (0 : ℝ) < s := by linarith
+  -- the untwisted real sum equals `‖ζ_F(s)‖`
+  have hζeq : NumberField.dedekindZeta F s =
+      ((∑' n : ℕ, (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = n} : ℝ) *
+        (n : ℝ) ^ (-s) : ℝ) : ℂ) := by
+    rw [show NumberField.dedekindZeta F s = ∑' n : ℕ, LSeries.term
+        (fun n => (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = n} : ℂ))
+        (s : ℂ) n from rfl,
+      tsum_congr (term_natCard_absNorm_eq F hspos), Complex.ofReal_tsum]
+  have hsumnn : (0 : ℝ) ≤ ∑' n : ℕ,
+      (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = n} : ℝ) * (n : ℝ) ^ (-s) :=
+    tsum_nonneg fun n => by positivity
+  have hζnorm : ‖NumberField.dedekindZeta F s‖ = ∑' n : ℕ,
+      (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = n} : ℝ) * (n : ℝ) ^ (-s) := by
+    rw [hζeq, Complex.norm_real, Real.norm_of_nonneg hsumnn]
+  -- the twisted series is dominated termwise by the untwisted sum
+  have htermnorm : ∀ n : ℕ, ‖LSeries.term (fun k => χ (k : ZMod ℓ) *
+      (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) (s : ℂ) n‖ ≤
+      (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = n} : ℝ) * (n : ℝ) ^ (-s) := by
+    intro n
+    rcases eq_or_ne n 0 with rfl | hn
+    · rw [LSeries.term_zero, norm_zero, Nat.cast_zero,
+        Real.zero_rpow (neg_ne_zero.mpr hspos.ne'), mul_zero]
+    · have hnpos : 0 < n := Nat.pos_of_ne_zero hn
+      have hden : (0 : ℝ) < (n : ℝ) ^ s :=
+        Real.rpow_pos_of_pos (by exact_mod_cast hnpos) s
+      rw [LSeries.term_of_ne_zero hn, norm_div, norm_mul, Complex.norm_natCast,
+        Complex.norm_natCast_cpow_of_pos hnpos, Complex.ofReal_re,
+        Real.rpow_neg (Nat.cast_nonneg n), ← div_eq_mul_inv]
+      gcongr
+      exact mul_le_of_le_one_left (Nat.cast_nonneg _)
+        (DirichletCharacter.norm_le_one χ _)
+  have hsum := summable_natCard_absNorm_mul_rpow_neg F hs1
+  have hnormsum : Summable (fun n : ℕ => ‖LSeries.term (fun k => χ (k : ZMod ℓ) *
+      (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) (s : ℂ) n‖) :=
+    Summable.of_nonneg_of_le (fun n => norm_nonneg _) htermnorm hsum
+  have hLle : ‖LSeries (fun k => χ (k : ZMod ℓ) *
+      (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) (s : ℂ)‖ ≤
+      ∑' n : ℕ, (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = n} : ℝ) *
+        (n : ℝ) ^ (-s) := by
+    rw [show LSeries (fun k => χ (k : ZMod ℓ) *
+        (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) (s : ℂ) =
+        ∑' n : ℕ, LSeries.term (fun k => χ (k : ZMod ℓ) *
+          (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) (s : ℂ) n
+        from rfl]
+    exact le_trans (norm_tsum_le_tsum_norm hnormsum)
+      (hnormsum.tsum_le_tsum htermnorm hsum)
+  -- conclude through the simple pole
+  have hfin : (s - 1) * ‖NumberField.dedekindZeta F s‖ ≤
+      ‖((NumberField.dedekindZeta_residue F : ℝ) : ℂ)‖ + 1 := by
+    simp only [Set.mem_setOf_eq] at hbound
+    rwa [show ((s : ℂ) - 1) = ((s - 1 : ℝ) : ℂ) by push_cast; ring, norm_mul,
+      Complex.norm_real,
+      Real.norm_of_nonneg (by linarith : (0 : ℝ) ≤ s - 1)] at hbound
+  have hs1' : (0 : ℝ) < s - 1 := by linarith
+  calc ‖LSeries (fun k => χ (k : ZMod ℓ) *
+        (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) (s : ℂ)‖
+      ≤ ∑' n : ℕ, (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = n} : ℝ) *
+        (n : ℝ) ^ (-s) := hLle
+    _ = ‖NumberField.dedekindZeta F s‖ := hζnorm.symm
+    _ ≤ (‖((NumberField.dedekindZeta_residue F : ℝ) : ℂ)‖ + 1) / (s - 1) := by
+        rw [le_div_iff₀ hs1']
+        linarith [hfin]
+
+/-- The `(ℓ-1)`-st power of every `ℂ`-valued Dirichlet character mod a
+prime `ℓ` is the trivial character (the unit group of `ZMod ℓ` has
+order `ℓ - 1`). -/
+theorem dirichletCharacter_pow_card_sub_one_eq_one {ℓ : ℕ} (hℓ : ℓ.Prime)
+    (χ : DirichletCharacter ℂ ℓ) : χ ^ (ℓ - 1) = 1 := by
+  haveI := Fact.mk hℓ
+  rw [← ZMod.card_units ℓ]
+  exact χ.pow_card_eq_one
+
+/-- Powers of a Dirichlet character mod a prime `ℓ` depend on the
+exponent only through its residue mod `ℓ - 1`. -/
+theorem dirichletCharacter_pow_mod {ℓ : ℕ} (hℓ : ℓ.Prime)
+    (χ : DirichletCharacter ℂ ℓ) (a : ℕ) : χ ^ a = χ ^ (a % (ℓ - 1)) := by
+  conv_lhs => rw [← Nat.div_add_mod a (ℓ - 1)]
+  rw [pow_add, pow_mul, dirichletCharacter_pow_card_sub_one_eq_one hℓ χ,
+    one_pow, one_mul]
+
+open Filter in
+/-- **Vanishing rate of the twisted `L`-series under vanishing of the
+continued value** (mean value inequality glue): if the continued value
+`∫_{t>1} A(⌊t⌋)·t^{-2} = 0`, then `‖L(s,χ)‖ ≤ C·(s-1)` on `(1, 2]`.
+From the continuation
+`tendsto_LSeries_nhdsGT_one_of_forall_norm_sum_le` (the `L`-series
+tends to the continued value — here `0` — as `s → 1⁺`), the uniform
+derivative bound `exists_forall_norm_LSeries_le_and_norm_deriv_le`,
+differentiability right of the abscissa (`LSeries_hasDerivAt`), and
+the mean value inequality on `[t, s]` followed by `t → 1⁺`. -/
+theorem exists_forall_norm_LSeries_le_mul_sub_one_of_integral_eq_zero
+    {F : Type*} [Field F] [NumberField F] {E : Type*} [Field E] [NumberField E]
+    [Algebra F E] {ℓ : ℕ} (hℓ : ℓ.Prime) [IsCyclotomicExtension {ℓ} F E]
+    {ζ : E} (hζ : IsPrimitiveRoot ζ ℓ) (χ : DirichletCharacter ℂ ℓ)
+    (hχ : ∃ (ρ : E ≃ₐ[F] E) (n : ℕ), ρ ζ = ζ ^ n ∧ χ (n : ZMod ℓ) ≠ 1)
+    (h0 : (∫ t in Set.Ioi (1 : ℝ),
+      (∑ k ∈ Finset.Icc 1 ⌊t⌋₊, χ (k : ZMod ℓ) *
+        (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) *
+      (t : ℂ) ^ (-(2 : ℂ))) = 0) :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ s : ℝ, 1 < s → s ≤ 2 →
+      ‖LSeries (fun k => χ (k : ZMod ℓ) *
+        (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) (s : ℂ)‖ ≤
+        (C * (s - 1)) := by
+  classical
+  set c : ℕ → ℂ := fun k => χ (k : ZMod ℓ) *
+    (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ) with hc
+  obtain ⟨r, C₁, hr0, hr1, hC₁, hbound⟩ :=
+    exists_forall_norm_sum_dirichletCharacter_mul_card_absNorm_le_rpow hℓ hζ χ hχ
+  have htend := tendsto_LSeries_nhdsGT_one_of_forall_norm_sum_le hr0 hr1 hC₁
+    hbound (fun t ht => lSeriesSummable_dirichletCharacter_mul_card F χ ht)
+  rw [h0] at htend
+  obtain ⟨C₂, hC₂⟩ := exists_forall_norm_LSeries_le_and_norm_deriv_le hℓ hζ χ hχ
+  have habs : LSeries.abscissaOfAbsConv c ≤ 1 :=
+    LSeries.abscissaOfAbsConv_le_of_forall_lt_LSeriesSummable
+      (fun y hy => lSeriesSummable_dirichletCharacter_mul_card F χ hy)
+  have hderiv : ∀ t : ℝ, 1 < t →
+      HasDerivAt (fun u : ℝ => LSeries c (u : ℂ))
+        (deriv (LSeries c) ((t : ℝ) : ℂ)) t := by
+    intro t ht
+    have h1 : LSeries.abscissaOfAbsConv c < (((t : ℝ) : ℂ)).re := by
+      refine lt_of_le_of_lt habs ?_
+      rw [Complex.ofReal_re]
+      exact_mod_cast ht
+    exact (LSeries_hasDerivAt h1).differentiableAt.hasDerivAt.comp_ofReal
+  refine ⟨max C₂ 0, le_max_right _ _, fun s hs1 hs2 => ?_⟩
+  have hMVT : ∀ t : ℝ, 1 < t → t ≤ s →
+      ‖LSeries c (s : ℂ) - LSeries c (t : ℂ)‖ ≤ max C₂ 0 * (s - t) := by
+    intro t ht hts
+    have hin : ∀ u ∈ Set.Icc t s, HasDerivWithinAt (fun u : ℝ => LSeries c (u : ℂ))
+        (deriv (LSeries c) ((u : ℝ) : ℂ)) (Set.Icc t s) u :=
+      fun u hu => (hderiv u (lt_of_lt_of_le ht hu.1)).hasDerivWithinAt
+    have hbnd : ∀ u ∈ Set.Icc t s, ‖deriv (LSeries c) ((u : ℝ) : ℂ)‖ ≤ max C₂ 0 :=
+      fun u hu => le_trans
+        ((hC₂ u (lt_of_lt_of_le ht hu.1) (le_trans hu.2 hs2)).2)
+        (le_max_left _ _)
+    have h3 := (convex_Icc t s).norm_image_sub_le_of_norm_hasDerivWithin_le
+      hin hbnd (Set.left_mem_Icc.mpr hts) (Set.right_mem_Icc.mpr hts)
+    rwa [Real.norm_eq_abs, abs_of_nonneg (by linarith : (0 : ℝ) ≤ s - t)] at h3
+  have h1 : Tendsto (fun t : ℝ => ‖LSeries c (s : ℂ) - LSeries c (t : ℂ)‖)
+      (nhdsWithin 1 (Set.Ioi 1)) (nhds ‖LSeries c (s : ℂ) - 0‖) :=
+    (Filter.Tendsto.sub tendsto_const_nhds htend).norm
+  have h2 : Tendsto (fun t : ℝ => max C₂ 0 * (s - t)) (nhdsWithin 1 (Set.Ioi 1))
+      (nhds (max C₂ 0 * (s - 1))) := by
+    have h4 : Tendsto (fun t : ℝ => max C₂ 0 * (s - t)) (nhds 1)
+        (nhds (max C₂ 0 * (s - 1))) :=
+      (tendsto_const_nhds.sub tendsto_id).const_mul _
+    exact h4.mono_left nhdsWithin_le_nhds
+  have hev2 : ∀ᶠ t : ℝ in nhdsWithin 1 (Set.Ioi 1),
+      ‖LSeries c (s : ℂ) - LSeries c (t : ℂ)‖ ≤ max C₂ 0 * (s - t) := by
+    filter_upwards [Ioo_mem_nhdsGT hs1] with t ht
+    exact hMVT t ht.1 ht.2.le
+  have hfin := le_of_tendsto_of_tendsto h1 h2 hev2
+  rwa [sub_zero] at hfin
+
+/-- **Root-of-unity factorization of the character-averaged Euler
+factor**: for `a ∈ ℂ` with `a ^ M = 1` (`M > 0`) and any `x`,
+`∏_{j<M} (1 - a^j·x) = (1 - x^f)^{M/f}` where `f` is the order of `a`.
+Via `∏_{r<f} (y - a^r) = y^f - 1` (the `f`-th roots of unity are
+exactly the powers of `a`, `Polynomial.X_pow_sub_one_eq_prod`)
+evaluated at `y = x⁻¹`, and `f`-periodicity of `j ↦ a^j`. -/
+theorem prod_range_one_sub_pow_mul {M : ℕ} (hM : 0 < M) {a : ℂ} (ha : a ^ M = 1)
+    (x : ℂ) :
+    ∏ j ∈ Finset.range M, (1 - a ^ j * x) =
+      (1 - x ^ orderOf a) ^ (M / orderOf a) := by
+  classical
+  have hfin : IsOfFinOrder a := isOfFinOrder_iff_pow_eq_one.mpr ⟨M, hM, ha⟩
+  have hfpos : 0 < orderOf a := hfin.orderOf_pos
+  have hprim : IsPrimitiveRoot a (orderOf a) := IsPrimitiveRoot.orderOf a
+  have hdvd : orderOf a ∣ M := orderOf_dvd_of_pow_eq_one ha
+  -- the `f`-th roots of unity are exactly the powers of `a`
+  have himg : (Finset.range (orderOf a)).image (a ^ ·) =
+      Polynomial.nthRootsFinset (orderOf a) (1 : ℂ) := by
+    refine Finset.eq_of_subset_of_card_le ?_ ?_
+    · intro μ hμ
+      obtain ⟨r, _, rfl⟩ := Finset.mem_image.mp hμ
+      refine (Polynomial.mem_nthRootsFinset hfpos 1).mpr ?_
+      rw [← pow_mul, mul_comm, pow_mul, pow_orderOf_eq_one, one_pow]
+    · rw [hprim.card_nthRootsFinset,
+        Finset.card_image_of_injOn hprim.injOn_pow, Finset.card_range]
+  have hroots : ∀ y : ℂ, ∏ r ∈ Finset.range (orderOf a), (y - a ^ r) =
+      y ^ orderOf a - 1 := by
+    intro y
+    calc ∏ r ∈ Finset.range (orderOf a), (y - a ^ r)
+        = ∏ μ ∈ (Finset.range (orderOf a)).image (a ^ ·), (y - μ) :=
+          (Finset.prod_image fun i hi j hj hij =>
+            hprim.injOn_pow (Finset.mem_coe.mpr hi) (Finset.mem_coe.mpr hj)
+              hij).symm
+      _ = ∏ μ ∈ Polynomial.nthRootsFinset (orderOf a) (1 : ℂ), (y - μ) := by
+          rw [himg]
+      _ = Polynomial.eval y (∏ μ ∈ Polynomial.nthRootsFinset (orderOf a) (1 : ℂ),
+            (Polynomial.X - Polynomial.C μ)) := by
+          rw [Polynomial.eval_prod]
+          exact Finset.prod_congr rfl fun μ _ => by
+            rw [Polynomial.eval_sub, Polynomial.eval_X, Polynomial.eval_C]
+      _ = Polynomial.eval y (Polynomial.X ^ orderOf a - 1) := by
+          rw [← Polynomial.X_pow_sub_one_eq_prod hfpos hprim]
+      _ = y ^ orderOf a - 1 := by
+          rw [Polynomial.eval_sub, Polynomial.eval_pow, Polynomial.eval_X,
+            Polynomial.eval_one]
+  -- one period of the product
+  have hblock : ∏ r ∈ Finset.range (orderOf a), (1 - a ^ r * x) =
+      1 - x ^ orderOf a := by
+    rcases eq_or_ne x 0 with rfl | hx
+    · simp [zero_pow hfpos.ne']
+    · have h1 := hroots x⁻¹
+      have h2 : ∏ r ∈ Finset.range (orderOf a), (1 - a ^ r * x) =
+          ∏ r ∈ Finset.range (orderOf a), (x * (x⁻¹ - a ^ r)) := by
+        refine Finset.prod_congr rfl fun r _ => ?_
+        rw [mul_sub, mul_inv_cancel₀ hx, mul_comm x (a ^ r)]
+      have hxf : x ^ orderOf a ≠ 0 := pow_ne_zero _ hx
+      rw [h2, Finset.prod_mul_distrib, Finset.prod_const, Finset.card_range, h1,
+        inv_pow, mul_sub, mul_inv_cancel₀ hxf, mul_one]
+  -- periodicity glue
+  have hper : ∀ m : ℕ, ∏ j ∈ Finset.range (orderOf a * m), (1 - a ^ j * x) =
+      (1 - x ^ orderOf a) ^ m := by
+    intro m
+    induction m with
+    | zero => simp
+    | succ k ihk =>
+        rw [Nat.mul_succ, Finset.prod_range_add, ihk, pow_succ]
+        congr 1
+        rw [← hblock]
+        refine Finset.prod_congr rfl fun r _ => ?_
+        rw [pow_add, pow_mul, pow_orderOf_eq_one, one_pow, one_mul]
+  obtain ⟨m, rfl⟩ := hdvd
+  rw [Nat.mul_div_cancel_left m hfpos]
+  exact hper m
+
+/-- **Per-place positivity of the character-power averaged
+log-factor**: for `u ∈ ZMod ℓ` and `0 < x ≤ 1/2`, the real part of
+`∑_{j<ℓ-1} -log(1 - χ^j(u)·x)` is nonnegative, and is at least
+`(ℓ-1)·x` when `u = 1`.  For a unit `u` the sum is
+`-(M/f)·log(1 - x^f) ≥ 0` (`f` the order of `χ(u)`, via
+`prod_range_one_sub_pow_mul` and `Re log = log ‖·‖`); for a nonunit
+`u` every factor is `-log 1 = 0`. -/
+theorem re_sum_range_neg_log_one_sub_nonneg {ℓ : ℕ} (hℓ : ℓ.Prime)
+    (χ : DirichletCharacter ℂ ℓ) (u : ZMod ℓ) {x : ℝ} (hx0 : 0 < x)
+    (hx2 : x ≤ 1 / 2) :
+    0 ≤ (∑ j ∈ Finset.range (ℓ - 1),
+        -Complex.log (1 - (χ ^ j) u * (x : ℂ))).re ∧
+      (u = 1 → ((ℓ - 1 : ℕ) : ℝ) * x ≤
+        (∑ j ∈ Finset.range (ℓ - 1),
+          -Complex.log (1 - (χ ^ j) u * (x : ℂ))).re) := by
+  classical
+  haveI : NeZero ℓ := ⟨hℓ.pos.ne'⟩
+  have hM1 : 0 < ℓ - 1 := by have := hℓ.two_le; omega
+  by_cases hu : IsUnit u
+  · -- unit case: closed form via the factorization
+    have hb : ∀ j : ℕ, (χ ^ j) u = χ u ^ j := by
+      intro j
+      conv_lhs => rw [← hu.unit_spec]
+      rw [MulChar.pow_apply_coe]
+      rw [hu.unit_spec]
+    have haM : χ u ^ (ℓ - 1) = 1 := by
+      rw [← hb, dirichletCharacter_pow_card_sub_one_eq_one hℓ χ,
+        MulChar.one_apply hu]
+    have hfin : IsOfFinOrder (χ u) :=
+      isOfFinOrder_iff_pow_eq_one.mpr ⟨_, hM1, haM⟩
+    have hfpos : 0 < orderOf (χ u) := hfin.orderOf_pos
+    -- `x ^ f` stays in `(0, 1)`
+    have hxf1 : x ^ orderOf (χ u) ≤ x := by
+      calc x ^ orderOf (χ u) ≤ x ^ 1 :=
+            pow_le_pow_of_le_one hx0.le (by linarith) hfpos
+        _ = x := pow_one x
+    have hxfpos : 0 < x ^ orderOf (χ u) := pow_pos hx0 _
+    -- each factor is away from zero
+    have hne : ∀ j : ℕ, (1 : ℂ) - χ u ^ j * (x : ℂ) ≠ 0 := by
+      intro j hzero
+      have h1 : χ u ^ j * (x : ℂ) = 1 := (sub_eq_zero.mp hzero).symm
+      have h2 : ‖χ u ^ j * (x : ℂ)‖ = 1 := by rw [h1, norm_one]
+      have h3 : ‖χ u ^ j * (x : ℂ)‖ ≤ 1 / 2 := by
+        rw [norm_mul, norm_pow, Complex.norm_real,
+          Real.norm_of_nonneg hx0.le]
+        calc ‖χ u‖ ^ j * x ≤ 1 ^ j * x := by
+              gcongr
+              exact DirichletCharacter.norm_le_one χ u
+          _ = x := by rw [one_pow, one_mul]
+          _ ≤ 1 / 2 := hx2
+      rw [h2] at h3
+      linarith
+    -- the real part of the sum is `-log` of the norm of the product
+    have hre : (∑ j ∈ Finset.range (ℓ - 1),
+        -Complex.log (1 - (χ ^ j) u * (x : ℂ))).re =
+        -Real.log ‖∏ j ∈ Finset.range (ℓ - 1), (1 - χ u ^ j * (x : ℂ))‖ := by
+      calc (∑ j ∈ Finset.range (ℓ - 1),
+            -Complex.log (1 - (χ ^ j) u * (x : ℂ))).re
+          = ∑ j ∈ Finset.range (ℓ - 1),
+              (-Complex.log (1 - (χ ^ j) u * (x : ℂ))).re :=
+            Complex.re_sum _ _
+        _ = ∑ j ∈ Finset.range (ℓ - 1),
+              -Real.log ‖1 - χ u ^ j * (x : ℂ)‖ := by
+            refine Finset.sum_congr rfl fun j _ => ?_
+            rw [Complex.neg_re, Complex.log_re, hb j]
+        _ = -∑ j ∈ Finset.range (ℓ - 1),
+              Real.log ‖1 - χ u ^ j * (x : ℂ)‖ := by
+            rw [Finset.sum_neg_distrib]
+        _ = -Real.log (∏ j ∈ Finset.range (ℓ - 1),
+              ‖1 - χ u ^ j * (x : ℂ)‖) := by
+            rw [Real.log_prod (fun j _ => norm_ne_zero_iff.mpr (hne j))]
+        _ = -Real.log ‖∏ j ∈ Finset.range (ℓ - 1),
+              (1 - χ u ^ j * (x : ℂ))‖ := by rw [norm_prod]
+    have hnormval : ‖∏ j ∈ Finset.range (ℓ - 1), (1 - χ u ^ j * (x : ℂ))‖ =
+        (1 - x ^ orderOf (χ u)) ^ ((ℓ - 1) / orderOf (χ u)) := by
+      rw [prod_range_one_sub_pow_mul hM1 haM (x : ℂ),
+        show ((1 : ℂ) - (x : ℂ) ^ orderOf (χ u)) =
+          ((1 - x ^ orderOf (χ u) : ℝ) : ℂ) by push_cast; ring,
+        norm_pow, Complex.norm_real,
+        Real.norm_of_nonneg (by linarith : (0 : ℝ) ≤ 1 - x ^ orderOf (χ u))]
+    constructor
+    · rw [hre, hnormval]
+      have hlogle : Real.log ((1 - x ^ orderOf (χ u)) ^
+          ((ℓ - 1) / orderOf (χ u))) ≤ 0 := by
+        refine Real.log_nonpos (pow_nonneg (by linarith) _) ?_
+        exact pow_le_one₀ (by linarith) (by linarith)
+      linarith
+    · intro hu1
+      have hf1 : orderOf (χ u) = 1 := by rw [hu1, map_one, orderOf_one]
+      rw [hre, hnormval, hf1, pow_one, Nat.div_one, Real.log_pow]
+      have hlog : Real.log (1 - x) ≤ -x := by
+        have h4 := Real.log_le_sub_one_of_pos (by linarith : (0 : ℝ) < 1 - x)
+        linarith
+      have h5 := mul_le_mul_of_nonneg_left hlog
+        (Nat.cast_nonneg (ℓ - 1) : (0 : ℝ) ≤ ((ℓ - 1 : ℕ) : ℝ))
+      nlinarith
+  · -- nonunit: every term vanishes
+    have hzero : ∀ j ∈ Finset.range (ℓ - 1),
+        -Complex.log (1 - (χ ^ j) u * (x : ℂ)) = 0 := by
+      intro j _
+      rw [MulChar.map_nonunit (χ ^ j) hu, zero_mul, sub_zero, Complex.log_one,
+        neg_zero]
+    rw [Finset.sum_congr rfl hzero, Finset.sum_const, smul_zero]
+    exact ⟨le_refl _, fun hu1 => absurd isUnit_one (hu1 ▸ hu)⟩
+
+open IsDedekindDomain in
+/-- **Character-power averaged lower bound for the prime log-sums**:
+for real `s > 1`, `(ℓ-1)` times the congruence-class prime sum
+`∑_{N P ≡ 1 (mod ℓ)} N P^{-s}` (over degree-one places of `F`) is
+dominated by the real part of `∑_{j<ℓ-1} 𝒮_{χ^j}(s)`, the sum of the
+prime log-sums of ALL powers of `χ`.  Per place the real part is
+nonnegative, and at the congruence-class places it is
+`≥ (ℓ-1)·N P^{-s}` (`re_sum_range_neg_log_one_sub_nonneg`). -/
+theorem mul_tsum_rpow_neg_le_sum_re_tsum_neg_log
+    (F : Type*) [Field F] [NumberField F] {ℓ : ℕ} (hℓ : ℓ.Prime)
+    (χ : DirichletCharacter ℂ ℓ) {s : ℝ} (hs : 1 < s) :
+    ((ℓ - 1 : ℕ) : ℝ) * ∑' P : {P : HeightOneSpectrum (𝓞 F) //
+        (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+        ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) = 1},
+      (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ) ^ (-s) ≤
+    ∑ j ∈ Finset.range (ℓ - 1),
+      (∑' P : HeightOneSpectrum (𝓞 F),
+        -Complex.log (1 - (χ ^ j) ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+          (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)))).re := by
+  classical
+  have hNpos : ∀ P : HeightOneSpectrum (𝓞 F),
+      (0 : ℝ) < (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) := by
+    intro P
+    have h := two_le_natCard_quotient P
+    exact_mod_cast (by omega : 0 < Nat.card (𝓞 F ⧸ P.asIdeal))
+  have hxpos : ∀ P : HeightOneSpectrum (𝓞 F),
+      (0 : ℝ) < (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-s) :=
+    fun P => Real.rpow_pos_of_pos (hNpos P) _
+  have hxhalf : ∀ P : HeightOneSpectrum (𝓞 F),
+      (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-s) ≤ 1 / 2 := by
+    intro P
+    have h2N : (2 : ℝ) ≤ (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) := by
+      exact_mod_cast two_le_natCard_quotient P
+    calc (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-s)
+        ≤ (2 : ℝ) ^ (-s) :=
+          Real.rpow_le_rpow_of_nonpos two_pos h2N (by linarith)
+      _ ≤ (2 : ℝ) ^ (-1 : ℝ) :=
+          (Real.rpow_le_rpow_left_iff one_lt_two).mpr (by linarith)
+      _ = 1 / 2 := by rw [Real.rpow_neg_one]; norm_num
+  have hcpow : ∀ P : HeightOneSpectrum (𝓞 F),
+      (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)) =
+        (((Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-s) : ℝ) : ℂ) := by
+    intro P
+    rw [show ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ℂ) =
+        (((Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ)) : ℂ) by push_cast; ring,
+      show (-(s : ℂ)) = ((-s : ℝ) : ℂ) by push_cast; ring,
+      ← Complex.ofReal_cpow (hNpos P).le]
+  -- norm bound for the log terms, uniform in the power `j`
+  have hlogb : ∀ (j : ℕ) (P : HeightOneSpectrum (𝓞 F)),
+      ‖-Complex.log (1 - (χ ^ j) ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+        (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)))‖ ≤
+        3 / 2 * (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-s) := by
+    intro j P
+    have hzb : ‖(χ ^ j) ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+        (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ))‖ ≤
+        (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-s) := by
+      rw [hcpow P, norm_mul, Complex.norm_real,
+        Real.norm_of_nonneg (hxpos P).le]
+      exact mul_le_of_le_one_left (hxpos P).le
+        (DirichletCharacter.norm_le_one (χ ^ j) _)
+    have h6 : ‖-((χ ^ j) ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+        (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)))‖ ≤ 1 / 2 := by
+      rw [norm_neg]
+      exact le_trans hzb (hxhalf P)
+    rw [norm_neg]
+    calc ‖Complex.log (1 - (χ ^ j) ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+          (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)))‖
+        = ‖Complex.log (1 + -((χ ^ j) ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+            (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ))))‖ := by
+          rw [sub_eq_add_neg]
+      _ ≤ 3 / 2 * ‖-((χ ^ j) ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+            (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)))‖ :=
+          Complex.norm_log_one_add_half_le_self h6
+      _ = 3 / 2 * ‖(χ ^ j) ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+            (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ))‖ := by rw [norm_neg]
+      _ ≤ 3 / 2 * (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-s) :=
+          mul_le_mul_of_nonneg_left hzb (by norm_num)
+  have hsum_s : Summable (fun P : HeightOneSpectrum (𝓞 F) =>
+      (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-s)) :=
+    summable_rpow_neg_natCard_quotient hs
+  have hlogsum : ∀ j : ℕ, Summable (fun P : HeightOneSpectrum (𝓞 F) =>
+      -Complex.log (1 - (χ ^ j) ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+        (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)))) := fun j =>
+    Summable.of_norm (Summable.of_nonneg_of_le (fun P => norm_nonneg _)
+      (hlogb j) (hsum_s.mul_left _))
+  have hsumsum : Summable (fun P : HeightOneSpectrum (𝓞 F) =>
+      ∑ j ∈ Finset.range (ℓ - 1),
+        -Complex.log (1 - (χ ^ j) ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+          (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)))) :=
+    (hasSum_sum fun j _ => (hlogsum j).hasSum).summable
+  -- swap the finite and infinite sums, take real parts inside
+  have hswap : ∑ j ∈ Finset.range (ℓ - 1),
+      (∑' P : HeightOneSpectrum (𝓞 F),
+        -Complex.log (1 - (χ ^ j) ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+          (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)))).re =
+      ∑' P : HeightOneSpectrum (𝓞 F),
+        (∑ j ∈ Finset.range (ℓ - 1),
+          -Complex.log (1 - (χ ^ j) ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+            (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)))).re := by
+    rw [← Complex.re_sum, ← Summable.tsum_finsetSum (fun j _ => hlogsum j),
+      Complex.re_tsum hsumsum]
+  -- per-place bounds
+  have hkey : ∀ P : HeightOneSpectrum (𝓞 F),
+      0 ≤ (∑ j ∈ Finset.range (ℓ - 1),
+          -Complex.log (1 - (χ ^ j) ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+            (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)))).re ∧
+        (((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) = 1 →
+          ((ℓ - 1 : ℕ) : ℝ) * (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-s) ≤
+          (∑ j ∈ Finset.range (ℓ - 1),
+            -Complex.log (1 - (χ ^ j) ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+              (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)))).re) := by
+    intro P
+    have h := re_sum_range_neg_log_one_sub_nonneg hℓ χ
+      ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) (hxpos P) (hxhalf P)
+    rw [show ((((Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-s) : ℝ)) : ℂ) =
+        (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)) from (hcpow P).symm] at h
+    exact h
+  -- real-part family: nonnegative, dominated, summable
+  have hrle : ∀ P : HeightOneSpectrum (𝓞 F),
+      (∑ j ∈ Finset.range (ℓ - 1),
+        -Complex.log (1 - (χ ^ j) ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+          (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)))).re ≤
+        ((ℓ - 1 : ℕ) : ℝ) * (3 / 2 * (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-s)) := by
+    intro P
+    refine le_trans (le_trans (le_abs_self _) (Complex.abs_re_le_norm _)) ?_
+    refine le_trans (norm_sum_le _ _) ?_
+    calc ∑ j ∈ Finset.range (ℓ - 1),
+          ‖-Complex.log (1 - (χ ^ j) ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+            (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)))‖
+        ≤ ∑ _j ∈ Finset.range (ℓ - 1),
+            3 / 2 * (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-s) :=
+          Finset.sum_le_sum fun j _ => hlogb j P
+      _ = ((ℓ - 1 : ℕ) : ℝ) *
+            (3 / 2 * (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-s)) := by
+          rw [Finset.sum_const, Finset.card_range, nsmul_eq_mul]
+  have hrsum : Summable (fun P : HeightOneSpectrum (𝓞 F) =>
+      (∑ j ∈ Finset.range (ℓ - 1),
+        -Complex.log (1 - (χ ^ j) ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+          (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)))).re) :=
+    Summable.of_nonneg_of_le (fun P => (hkey P).1) hrle
+      (((hsum_s.mul_left _).mul_left _))
+  rw [hswap]
+  -- restrict to the congruence-class places and use the per-place bound
+  calc ((ℓ - 1 : ℕ) : ℝ) * ∑' P : {P : HeightOneSpectrum (𝓞 F) //
+          (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+          ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) = 1},
+        (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ) ^ (-s)
+      = ∑' P : {P : HeightOneSpectrum (𝓞 F) //
+          (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+          ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) = 1},
+        ((ℓ - 1 : ℕ) : ℝ) *
+          (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ) ^ (-s) :=
+        (tsum_mul_left).symm
+    _ ≤ ∑' P : {P : HeightOneSpectrum (𝓞 F) //
+          (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+          ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) = 1},
+        (∑ j ∈ Finset.range (ℓ - 1),
+          -Complex.log (1 - (χ ^ j) ((Nat.card (𝓞 F ⧸
+              (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℕ) : ZMod ℓ) *
+            (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℂ) ^
+              (-(s : ℂ)))).re :=
+        ((hsum_s.mul_left _).subtype _).tsum_le_tsum
+          (fun P => (hkey P.1).2 P.2.2) (hrsum.subtype _)
+    _ ≤ ∑' P : HeightOneSpectrum (𝓞 F),
+        (∑ j ∈ Finset.range (ℓ - 1),
+          -Complex.log (1 - (χ ^ j) ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+            (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)))).re :=
+        Summable.tsum_subtype_le _ _ (fun P => (hkey P).1) hrsum
+
+open IsDedekindDomain in
+/-- **Degree-one places of a field with an `ℓ`-th root of unity lie
+over split primes**: if `E` contains a primitive `ℓ`-th root of unity
+(`ℓ` prime) and `Q` is a finite place of `E` of prime residue
+cardinality `q ≠ ℓ`, then `q ≡ 1 (mod ℓ)`.  The reduction of `ζ`
+mod `Q` is a nontrivial `ℓ`-th root of unity of the residue field
+(nontrivial because `∑_{i<ℓ} ζ^i = 0` would otherwise reduce to
+`ℓ = 0` in characteristic `q ≠ ℓ`), so its exact order `ℓ` divides
+`q - 1`, the order of the unit group. -/
+theorem natCast_natCard_quotient_eq_one_of_prime
+    {E : Type*} [Field E] [NumberField E] {ℓ : ℕ} (hℓ : ℓ.Prime)
+    {ζ : E} (hζ : IsPrimitiveRoot ζ ℓ) (Q : HeightOneSpectrum (𝓞 E))
+    (hq : (Nat.card (𝓞 E ⧸ Q.asIdeal)).Prime)
+    (hne : Nat.card (𝓞 E ⧸ Q.asIdeal) ≠ ℓ) :
+    ((Nat.card (𝓞 E ⧸ Q.asIdeal) : ℕ) : ZMod ℓ) = 1 := by
+  classical
+  haveI hQfin : Finite (𝓞 E ⧸ Q.asIdeal) := Nat.finite_of_card_ne_zero hq.ne_zero
+  haveI := Fintype.ofFinite (𝓞 E ⧸ Q.asIdeal)
+  letI : Field (𝓞 E ⧸ Q.asIdeal) := Ideal.Quotient.field Q.asIdeal
+  -- `ζ` as an algebraic integer, and its reduction mod `Q`
+  have hζint : IsIntegral ℤ ζ := by
+    refine IsIntegral.of_pow hℓ.pos ?_
+    rw [hζ.pow_eq_one]
+    exact isIntegral_one
+  set ζO : 𝓞 E := ⟨ζ, hζint⟩ with hζO
+  set ζbar : 𝓞 E ⧸ Q.asIdeal := Ideal.Quotient.mk Q.asIdeal ζO with hζbar
+  have hζOpow : ζO ^ ℓ = 1 := by
+    apply NumberField.RingOfIntegers.ext
+    show algebraMap (𝓞 E) E (ζO ^ ℓ) = algebraMap (𝓞 E) E 1
+    rw [map_pow, map_one]
+    show ζ ^ ℓ = 1
+    exact hζ.pow_eq_one
+  have hζpow : ζbar ^ ℓ = 1 := by rw [hζbar, ← map_pow, hζOpow, map_one]
+  -- the residue characteristic kills `q`
+  have hqzero : ((Nat.card (𝓞 E ⧸ Q.asIdeal) : ℕ) : 𝓞 E ⧸ Q.asIdeal) = 0 := by
+    rw [Nat.card_eq_fintype_card]
+    exact Nat.cast_card_eq_zero _
+  -- `ζbar ≠ 1`: else the geometric sum `ℓ` would vanish mod `Q`
+  have hζne1 : ζbar ≠ 1 := by
+    intro h1
+    have hgeom : ∑ i ∈ Finset.range ℓ, ζ ^ i = 0 :=
+      hζ.geom_sum_eq_zero hℓ.one_lt
+    have hgeomO : ∑ i ∈ Finset.range ℓ, ζO ^ i = 0 := by
+      apply NumberField.RingOfIntegers.ext
+      show algebraMap (𝓞 E) E (∑ i ∈ Finset.range ℓ, ζO ^ i) =
+        algebraMap (𝓞 E) E 0
+      rw [map_zero, map_sum]
+      calc ∑ i ∈ Finset.range ℓ, algebraMap (𝓞 E) E (ζO ^ i)
+          = ∑ i ∈ Finset.range ℓ, ζ ^ i :=
+            Finset.sum_congr rfl fun i _ => by rw [map_pow]; rfl
+        _ = 0 := hgeom
+    have hsum0 : ∑ i ∈ Finset.range ℓ, ζbar ^ i = 0 := by
+      rw [hζbar]
+      calc ∑ i ∈ Finset.range ℓ, (Ideal.Quotient.mk Q.asIdeal ζO) ^ i
+          = Ideal.Quotient.mk Q.asIdeal (∑ i ∈ Finset.range ℓ, ζO ^ i) := by
+            rw [map_sum]
+            exact Finset.sum_congr rfl fun i _ => by rw [map_pow]
+        _ = 0 := by rw [hgeomO, map_zero]
+    rw [h1] at hsum0
+    simp only [one_pow, Finset.sum_const, Finset.card_range, nsmul_eq_mul,
+      mul_one] at hsum0
+    -- Bezout: `ℓ` and `q` both vanish in the quotient, yet are coprime
+    have hco : IsCoprime (ℓ : ℤ) ((Nat.card (𝓞 E ⧸ Q.asIdeal) : ℕ) : ℤ) :=
+      Int.isCoprime_iff_gcd_eq_one.mpr
+        (by
+          rw [Int.gcd_natCast_natCast]
+          exact (Nat.coprime_primes hℓ hq).mpr fun h => hne h.symm)
+    obtain ⟨u, v, huv⟩ := hco
+    have h4 : (1 : 𝓞 E ⧸ Q.asIdeal) = 0 := by
+      calc (1 : 𝓞 E ⧸ Q.asIdeal)
+          = ((u * (ℓ : ℤ) + v * ((Nat.card (𝓞 E ⧸ Q.asIdeal) : ℕ) : ℤ) : ℤ) :
+              𝓞 E ⧸ Q.asIdeal) := by rw [huv, Int.cast_one]
+        _ = (u : 𝓞 E ⧸ Q.asIdeal) * ((ℓ : ℕ) : 𝓞 E ⧸ Q.asIdeal) +
+            (v : 𝓞 E ⧸ Q.asIdeal) *
+              ((Nat.card (𝓞 E ⧸ Q.asIdeal) : ℕ) : 𝓞 E ⧸ Q.asIdeal) := by
+            push_cast
+            ring
+        _ = 0 := by rw [hsum0, hqzero, mul_zero, mul_zero, add_zero]
+    exact one_ne_zero h4
+  -- exact order `ℓ`, dividing the order of the unit group
+  have horder : orderOf ζbar = ℓ := by
+    have hdvd : orderOf ζbar ∣ ℓ := orderOf_dvd_of_pow_eq_one hζpow
+    rcases hℓ.eq_one_or_self_of_dvd _ hdvd with h1 | h1
+    · exact absurd (orderOf_eq_one_iff.mp h1) hζne1
+    · exact h1
+  have hζbar_ne : ζbar ≠ 0 := by
+    intro h0
+    rw [h0, zero_pow hℓ.pos.ne'] at hζpow
+    exact zero_ne_one hζpow
+  have hpow1 : ζbar ^ (Nat.card (𝓞 E ⧸ Q.asIdeal) - 1) = 1 := by
+    rw [Nat.card_eq_fintype_card]
+    exact FiniteField.pow_card_sub_one_eq_one ζbar hζbar_ne
+  have hdvd1 : ℓ ∣ Nat.card (𝓞 E ⧸ Q.asIdeal) - 1 := by
+    rw [← horder]
+    exact orderOf_dvd_of_pow_eq_one hpow1
+  have hq2 : 2 ≤ Nat.card (𝓞 E ⧸ Q.asIdeal) := hq.two_le
+  calc ((Nat.card (𝓞 E ⧸ Q.asIdeal) : ℕ) : ZMod ℓ)
+      = (((Nat.card (𝓞 E ⧸ Q.asIdeal) - 1) + 1 : ℕ) : ZMod ℓ) := by
+        congr 1
+        omega
+    _ = ((Nat.card (𝓞 E ⧸ Q.asIdeal) - 1 : ℕ) : ZMod ℓ) + 1 := by
+        push_cast
+        ring
+    _ = 0 + 1 := by rw [(ZMod.natCast_eq_zero_iff _ _).mpr hdvd1]
+    _ = 1 := zero_add 1
+
+open IsDedekindDomain in
+/-- **Uniform fiber bound for places over a rational prime**: a number
+field `E` has at most `[𝓞 E : ℤ]` finite places of residue cardinality
+a given prime `q`.  Each such place contains `q`, so the product of
+the (distinct, prime) ideals of the fiber divides `(q)`; taking
+absolute norms gives `q ^ #fiber ∣ q ^ [𝓞 E : ℤ]`
+(`Ideal.absNorm_span_singleton` with `Algebra.norm_algebraMap`). -/
+theorem natCard_setOf_natCard_quotient_eq_le
+    (E : Type*) [Field E] [NumberField E] {q : ℕ} (hq : q.Prime) :
+    Nat.card {Q : HeightOneSpectrum (𝓞 E) //
+      Nat.card (𝓞 E ⧸ Q.asIdeal) = q} ≤ Module.finrank ℤ (𝓞 E) := by
+  classical
+  haveI hfinset : Finite {Q : HeightOneSpectrum (𝓞 E) //
+      Nat.card (𝓞 E ⧸ Q.asIdeal) = q} :=
+    (finite_setOf_natCard_quotient_eq E q).to_subtype
+  haveI := Fintype.ofFinite {Q : HeightOneSpectrum (𝓞 E) //
+      Nat.card (𝓞 E ⧸ Q.asIdeal) = q}
+  have hinj : Function.Injective (fun Q : {Q : HeightOneSpectrum (𝓞 E) //
+      Nat.card (𝓞 E ⧸ Q.asIdeal) = q} =>
+      (Q : HeightOneSpectrum (𝓞 E)).asIdeal) := by
+    intro Q₁ Q₂ h
+    exact Subtype.ext (HeightOneSpectrum.ext h)
+  set T : Finset (Ideal (𝓞 E)) := Finset.univ.image
+    (fun Q : {Q : HeightOneSpectrum (𝓞 E) //
+      Nat.card (𝓞 E ⧸ Q.asIdeal) = q} =>
+      (Q : HeightOneSpectrum (𝓞 E)).asIdeal) with hT
+  have hTcard : T.card = Nat.card {Q : HeightOneSpectrum (𝓞 E) //
+      Nat.card (𝓞 E ⧸ Q.asIdeal) = q} := by
+    rw [hT, Finset.card_image_of_injective _ hinj, Finset.card_univ,
+      Nat.card_eq_fintype_card]
+  -- each member divides `(q)`
+  have hqmem : ∀ Q : {Q : HeightOneSpectrum (𝓞 E) //
+      Nat.card (𝓞 E ⧸ Q.asIdeal) = q},
+      (Q : HeightOneSpectrum (𝓞 E)).asIdeal ∣
+        Ideal.span {((q : ℕ) : 𝓞 E)} := by
+    intro Q
+    rw [Ideal.dvd_iff_le, Ideal.span_le]
+    intro y hy
+    rw [Set.mem_singleton_iff.mp hy]
+    haveI : Finite (𝓞 E ⧸ (Q : HeightOneSpectrum (𝓞 E)).asIdeal) := by
+      refine Nat.finite_of_card_ne_zero ?_
+      rw [Q.2]
+      exact hq.ne_zero
+    haveI := Fintype.ofFinite (𝓞 E ⧸ (Q : HeightOneSpectrum (𝓞 E)).asIdeal)
+    have h0 : ((Nat.card (𝓞 E ⧸ (Q : HeightOneSpectrum (𝓞 E)).asIdeal) : ℕ) :
+        𝓞 E ⧸ (Q : HeightOneSpectrum (𝓞 E)).asIdeal) = 0 := by
+      rw [Nat.card_eq_fintype_card]
+      exact Nat.cast_card_eq_zero _
+    rw [Q.2, ← map_natCast (Ideal.Quotient.mk
+      (Q : HeightOneSpectrum (𝓞 E)).asIdeal),
+      Ideal.Quotient.eq_zero_iff_mem] at h0
+    exact h0
+  -- the product of the fiber divides `(q)`
+  have hproddvd : ∏ P ∈ T, P ∣ Ideal.span {((q : ℕ) : 𝓞 E)} := by
+    refine Finset.prod_primes_dvd _ ?_ ?_
+    · intro P hP
+      obtain ⟨Q, _, rfl⟩ := Finset.mem_image.mp hP
+      exact Ideal.prime_of_isPrime (Q : HeightOneSpectrum (𝓞 E)).ne_bot
+        (Q : HeightOneSpectrum (𝓞 E)).isPrime
+    · intro P hP
+      obtain ⟨Q, _, rfl⟩ := Finset.mem_image.mp hP
+      exact hqmem Q
+  -- take absolute norms
+  have hnormprod : Ideal.absNorm (∏ P ∈ T, P) = q ^ T.card := by
+    rw [map_prod, Finset.prod_congr rfl (fun P hP => ?_), Finset.prod_const]
+    obtain ⟨Q, _, rfl⟩ := Finset.mem_image.mp hP
+    rw [Ideal.absNorm_apply, Submodule.cardQuot_apply]
+    exact Q.2
+  have hnormspan : Ideal.absNorm (Ideal.span {((q : ℕ) : 𝓞 E)}) =
+      q ^ Module.finrank ℤ (𝓞 E) := by
+    rw [Ideal.absNorm_span_singleton,
+      show ((q : ℕ) : 𝓞 E) = algebraMap ℤ (𝓞 E) ((q : ℕ) : ℤ) from
+        (map_natCast (algebraMap ℤ (𝓞 E)) q).symm,
+      Algebra.norm_algebraMap, Int.natAbs_pow, Int.natAbs_natCast]
+  have hdvdnorm : q ^ T.card ∣ q ^ Module.finrank ℤ (𝓞 E) := by
+    rw [← hnormprod, ← hnormspan]
+    obtain ⟨K, hK⟩ := hproddvd
+    rw [hK, map_mul]
+    exact dvd_mul_right _ _
+  rw [← hTcard]
+  exact (Nat.pow_dvd_pow_iff_le_right hq.one_lt).mp hdvdnorm
+
+open IsDedekindDomain in
+/-- **Pullback comparison of degree-one prime sums**: the degree-one
+prime sum of `E ⊇ F(ζ_ℓ)` away from `ℓ` is at most `[𝓞 E : ℤ]` times
+the congruence-class prime sum `∑_{N P ≡ 1 (mod ℓ)} N P^{-s}` of `F`.
+Each degree-one place `Q` of `E` pulls back to `P = Q ∩ 𝓞 F` with the
+same residue cardinality
+(`natCard_quotient_under_eq_of_natCard_prime`), which is
+`≡ 1 (mod ℓ)` (`natCast_natCard_quotient_eq_one_of_prime`); the fibers
+of `Q ↦ P` embed into the places of `E` of one fixed prime residue
+cardinality, so have at most `[𝓞 E : ℤ]` elements
+(`natCard_setOf_natCard_quotient_eq_le`). -/
+theorem tsum_rpow_neg_natCard_quotient_prime_and_ne_le_finrank_mul_tsum
+    {F : Type*} [Field F] [NumberField F] {E : Type*} [Field E] [NumberField E]
+    [Algebra F E] {ℓ : ℕ} (hℓ : ℓ.Prime) {ζ : E} (hζ : IsPrimitiveRoot ζ ℓ)
+    (s : ℝ) :
+    (∑' Q : {Q : HeightOneSpectrum (𝓞 E) //
+        (Nat.card (𝓞 E ⧸ Q.asIdeal)).Prime ∧ Nat.card (𝓞 E ⧸ Q.asIdeal) ≠ ℓ},
+      (Nat.card (𝓞 E ⧸ (Q : HeightOneSpectrum (𝓞 E)).asIdeal) : ℝ≥0∞) ^ (-s)) ≤
+    (Module.finrank ℤ (𝓞 E) : ℝ≥0∞) *
+      ∑' P : {P : HeightOneSpectrum (𝓞 F) //
+        (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+        ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) = 1},
+      (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^ (-s) := by
+  classical
+  -- residue cardinality is preserved under pullback
+  have hcard : ∀ Q : HeightOneSpectrum (𝓞 E),
+      (Nat.card (𝓞 E ⧸ Q.asIdeal)).Prime →
+      Nat.card (𝓞 F ⧸ Q.asIdeal.under (𝓞 F)) = Nat.card (𝓞 E ⧸ Q.asIdeal) := by
+    intro Q hq
+    haveI := Q.isPrime
+    exact natCard_quotient_under_eq_of_natCard_prime (A := 𝓞 F) Q.asIdeal hq
+  have hPrime : ∀ Q : HeightOneSpectrum (𝓞 E),
+      (Q.asIdeal.under (𝓞 F)).IsPrime := by
+    intro Q
+    haveI := Q.isPrime
+    exact Ideal.IsPrime.under (𝓞 F) Q.asIdeal
+  have hne_bot : ∀ Q : HeightOneSpectrum (𝓞 E),
+      (Nat.card (𝓞 E ⧸ Q.asIdeal)).Prime → Q.asIdeal.under (𝓞 F) ≠ ⊥ := by
+    intro Q hq hbot
+    haveI := Q.isPrime
+    haveI hfin : Finite (𝓞 F ⧸ Q.asIdeal.under (𝓞 F)) := by
+      refine Nat.finite_of_card_ne_zero ?_
+      rw [hcard Q hq]
+      exact hq.ne_zero
+    have hinj : Function.Injective
+        (Ideal.Quotient.mk (Q.asIdeal.under (𝓞 F))) := by
+      rw [RingHom.injective_iff_ker_eq_bot, Ideal.mk_ker]
+      exact hbot
+    haveI : Finite (𝓞 F) := Finite.of_injective _ hinj
+    exact not_finite (𝓞 F)
+  -- the pullback map on the index subtypes
+  set Φ : {Q : HeightOneSpectrum (𝓞 E) //
+      (Nat.card (𝓞 E ⧸ Q.asIdeal)).Prime ∧ Nat.card (𝓞 E ⧸ Q.asIdeal) ≠ ℓ} →
+      {P : HeightOneSpectrum (𝓞 F) //
+        (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+        ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) = 1} :=
+    fun Q => ⟨⟨(Q : HeightOneSpectrum (𝓞 E)).asIdeal.under (𝓞 F),
+      hPrime (Q : HeightOneSpectrum (𝓞 E)),
+      hne_bot (Q : HeightOneSpectrum (𝓞 E)) Q.2.1⟩,
+      by
+        constructor
+        · rw [hcard (Q : HeightOneSpectrum (𝓞 E)) Q.2.1]
+          exact Q.2.1
+        · rw [hcard (Q : HeightOneSpectrum (𝓞 E)) Q.2.1]
+          exact natCast_natCard_quotient_eq_one_of_prime hℓ hζ
+            (Q : HeightOneSpectrum (𝓞 E)) Q.2.1 Q.2.2⟩ with hΦdef
+  have hNeq : ∀ Q : {Q : HeightOneSpectrum (𝓞 E) //
+      (Nat.card (𝓞 E ⧸ Q.asIdeal)).Prime ∧ Nat.card (𝓞 E ⧸ Q.asIdeal) ≠ ℓ},
+      Nat.card (𝓞 F ⧸ ((Φ Q : {P : HeightOneSpectrum (𝓞 F) //
+        (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+        ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) = 1}) :
+          HeightOneSpectrum (𝓞 F)).asIdeal) =
+      Nat.card (𝓞 E ⧸ (Q : HeightOneSpectrum (𝓞 E)).asIdeal) := by
+    intro Q
+    rw [hΦdef]
+    exact hcard (Q : HeightOneSpectrum (𝓞 E)) Q.2.1
+  -- fiber bound
+  have hfib : ∀ p : {P : HeightOneSpectrum (𝓞 F) //
+      (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+      ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) = 1},
+      Nat.card ↥(Φ ⁻¹' {p}) ≤ Module.finrank ℤ (𝓞 E) := by
+    intro p
+    haveI hfin2 : Finite {Q : HeightOneSpectrum (𝓞 E) //
+        Nat.card (𝓞 E ⧸ Q.asIdeal) =
+          Nat.card (𝓞 F ⧸ (p : HeightOneSpectrum (𝓞 F)).asIdeal)} :=
+      (finite_setOf_natCard_quotient_eq E _).to_subtype
+    have hmap : ∀ Qf : ↥(Φ ⁻¹' {p}),
+        Nat.card (𝓞 E ⧸ ((Qf : {Q : HeightOneSpectrum (𝓞 E) //
+          (Nat.card (𝓞 E ⧸ Q.asIdeal)).Prime ∧
+          Nat.card (𝓞 E ⧸ Q.asIdeal) ≠ ℓ}) :
+            HeightOneSpectrum (𝓞 E)).asIdeal) =
+        Nat.card (𝓞 F ⧸ (p : HeightOneSpectrum (𝓞 F)).asIdeal) := by
+      intro Qf
+      have h1 : Φ Qf.1 = p := Qf.2
+      have h2 := hNeq Qf.1
+      rw [h1] at h2
+      exact h2.symm
+    refine le_trans (Nat.card_le_card_of_injective
+      (fun Qf : ↥(Φ ⁻¹' {p}) =>
+        (⟨((Qf : {Q : HeightOneSpectrum (𝓞 E) //
+          (Nat.card (𝓞 E ⧸ Q.asIdeal)).Prime ∧
+          Nat.card (𝓞 E ⧸ Q.asIdeal) ≠ ℓ}) : HeightOneSpectrum (𝓞 E)),
+          hmap Qf⟩ : {Q : HeightOneSpectrum (𝓞 E) //
+            Nat.card (𝓞 E ⧸ Q.asIdeal) =
+              Nat.card (𝓞 F ⧸ (p : HeightOneSpectrum (𝓞 F)).asIdeal)}))
+      ?_) (natCard_setOf_natCard_quotient_eq_le E p.2.1)
+    intro Qf₁ Qf₂ h
+    simp only [Subtype.mk.injEq] at h
+    exact Subtype.ext (Subtype.ext h)
+  -- fiberwise decomposition of the `E`-side sum
+  calc ∑' Q : {Q : HeightOneSpectrum (𝓞 E) //
+        (Nat.card (𝓞 E ⧸ Q.asIdeal)).Prime ∧ Nat.card (𝓞 E ⧸ Q.asIdeal) ≠ ℓ},
+      (Nat.card (𝓞 E ⧸ (Q : HeightOneSpectrum (𝓞 E)).asIdeal) : ℝ≥0∞) ^ (-s)
+      = ∑' Q : {Q : HeightOneSpectrum (𝓞 E) //
+          (Nat.card (𝓞 E ⧸ Q.asIdeal)).Prime ∧
+          Nat.card (𝓞 E ⧸ Q.asIdeal) ≠ ℓ},
+        (Nat.card (𝓞 F ⧸ ((Φ Q : {P : HeightOneSpectrum (𝓞 F) //
+          (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+          ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) = 1}) :
+            HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^ (-s) :=
+        tsum_congr fun Q => by rw [hNeq Q]
+    _ = ∑' p : {P : HeightOneSpectrum (𝓞 F) //
+          (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+          ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) = 1},
+        ∑' Qf : ↥(Φ ⁻¹' {p}),
+          (Nat.card (𝓞 F ⧸ ((Φ (Qf : {Q : HeightOneSpectrum (𝓞 E) //
+            (Nat.card (𝓞 E ⧸ Q.asIdeal)).Prime ∧
+            Nat.card (𝓞 E ⧸ Q.asIdeal) ≠ ℓ}) :
+              {P : HeightOneSpectrum (𝓞 F) //
+                (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+                ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) = 1}) :
+              HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^ (-s) :=
+        (ENNReal.tsum_fiberwise _ Φ).symm
+    _ ≤ ∑' p : {P : HeightOneSpectrum (𝓞 F) //
+          (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+          ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) = 1},
+        (Module.finrank ℤ (𝓞 E) : ℝ≥0∞) *
+          (Nat.card (𝓞 F ⧸ (p : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^
+            (-s) := by
+        refine ENNReal.tsum_le_tsum fun p => ?_
+        calc ∑' Qf : ↥(Φ ⁻¹' {p}),
+              (Nat.card (𝓞 F ⧸ ((Φ (Qf : {Q : HeightOneSpectrum (𝓞 E) //
+                (Nat.card (𝓞 E ⧸ Q.asIdeal)).Prime ∧
+                Nat.card (𝓞 E ⧸ Q.asIdeal) ≠ ℓ}) :
+                  {P : HeightOneSpectrum (𝓞 F) //
+                    (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+                    ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) = 1}) :
+                  HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^ (-s)
+            = ∑' _Qf : ↥(Φ ⁻¹' {p}),
+              (Nat.card (𝓞 F ⧸ (p : HeightOneSpectrum (𝓞 F)).asIdeal) :
+                ℝ≥0∞) ^ (-s) :=
+              tsum_congr fun Qf => by
+                rw [show Φ Qf.1 = p from Qf.2]
+          _ = ENat.card ↥(Φ ⁻¹' {p}) *
+              (Nat.card (𝓞 F ⧸ (p : HeightOneSpectrum (𝓞 F)).asIdeal) :
+                ℝ≥0∞) ^ (-s) := ENNReal.tsum_const _
+          _ ≤ (Module.finrank ℤ (𝓞 E) : ℝ≥0∞) *
+              (Nat.card (𝓞 F ⧸ (p : HeightOneSpectrum (𝓞 F)).asIdeal) :
+                ℝ≥0∞) ^ (-s) := by
+              gcongr
+              haveI hfibfin : Finite ↥(Φ ⁻¹' {p}) := by
+                haveI : Finite {Q : HeightOneSpectrum (𝓞 E) //
+                    Nat.card (𝓞 E ⧸ Q.asIdeal) =
+                      Nat.card (𝓞 F ⧸ (p : HeightOneSpectrum (𝓞 F)).asIdeal)} :=
+                  (finite_setOf_natCard_quotient_eq E _).to_subtype
+                refine Finite.of_injective (fun Qf : ↥(Φ ⁻¹' {p}) =>
+                  (⟨((Qf : {Q : HeightOneSpectrum (𝓞 E) //
+                    (Nat.card (𝓞 E ⧸ Q.asIdeal)).Prime ∧
+                    Nat.card (𝓞 E ⧸ Q.asIdeal) ≠ ℓ}) :
+                      HeightOneSpectrum (𝓞 E)),
+                    by
+                      have h1 : Φ Qf.1 = p := Qf.2
+                      have h2 := hNeq Qf.1
+                      rw [h1] at h2
+                      exact h2.symm⟩ :
+                    {Q : HeightOneSpectrum (𝓞 E) //
+                      Nat.card (𝓞 E ⧸ Q.asIdeal) =
+                        Nat.card (𝓞 F ⧸
+                          (p : HeightOneSpectrum (𝓞 F)).asIdeal)})) ?_
+                intro Qf₁ Qf₂ h
+                simp only [Subtype.mk.injEq] at h
+                exact Subtype.ext (Subtype.ext h)
+              rw [ENat.card_eq_coe_natCard]
+              exact_mod_cast hfib p
+    _ = (Module.finrank ℤ (𝓞 E) : ℝ≥0∞) *
+        ∑' P : {P : HeightOneSpectrum (𝓞 F) //
+          (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+          ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) = 1},
+        (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^
+          (-s) := ENNReal.tsum_mul_left
+
+open IsDedekindDomain in
+/-- **Divergence of the congruence-class prime sum of `F` at `1⁺`**:
+the sum `∑_{N P ≡ 1 (mod ℓ)} N P^{-s}` over degree-one places of `F`
+in the split class exceeds any `C ≠ ⊤` for some `s > 1`.  DERIVED:
+the degree-one prime sum of `E ⊇ F(ζ_ℓ)` away from `ℓ` diverges
+(`exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_ne E ℓ`, through
+the pole of `ζ_E`), and is at most `[𝓞 E : ℤ]` times the split-class
+sum of `F`
+(`tsum_rpow_neg_natCard_quotient_prime_and_ne_le_finrank_mul_tsum`). -/
+theorem exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_one
+    {F : Type*} [Field F] [NumberField F] {E : Type*} [Field E] [NumberField E]
+    [Algebra F E] {ℓ : ℕ} (hℓ : ℓ.Prime) {ζ : E} (hζ : IsPrimitiveRoot ζ ℓ)
+    (C : ℝ≥0∞) (hC : C ≠ ⊤) :
+    ∃ s : ℝ, 1 < s ∧ C < ∑' P : {P : HeightOneSpectrum (𝓞 F) //
+        (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+        ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) = 1},
+      (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^ (-s) := by
+  obtain ⟨s, hs1, hsgt⟩ :=
+    exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_ne E ℓ
+      ((Module.finrank ℤ (𝓞 E) : ℝ≥0∞) * C)
+      (ENNReal.mul_ne_top (ENNReal.natCast_ne_top _) hC)
+  refine ⟨s, hs1, ?_⟩
+  by_contra hcon
+  rw [not_lt] at hcon
+  refine absurd hsgt (not_lt.mpr ?_)
+  refine (tsum_rpow_neg_natCard_quotient_prime_and_ne_le_finrank_mul_tsum
+    (F := F) hℓ hζ s).trans ?_
+  gcongr
+
+open IsDedekindDomain in
+/-- **Coset-cancelled upper bound for the sum of prime log-sums under
+the assumed vanishing** (sorry leaf) — the upper-bound half of the
+zeta-factorization argument: if the continued value of `L(s, χ)` at
+`s = 1` vanishes, then `∑_{j<ℓ-1} Re 𝒮_{χ^j}(s)`, which is
+`log ∏_j ‖L(s, χ^j)‖` by the Euler identity
+`exp_tsum_neg_log_one_sub_dirichletCharacter_mul_cpow_neg_eq_LSeries`,
+is bounded above on a right neighbourhood `(1, 1 + η]` of `1`.
+Intended proof (see the section docstring): factors with `χ^j` trivial
+on the norm-residue image share the trivial character's `L`-series
+(`LSeries_dirichletCharacter_mul_card_congr`), each
+`≤ C/(s-1)` (`exists_forall_norm_LSeries_dirichletCharacter_mul_card_le_div`);
+factors in the coset of `χ` share `χ`'s `L`-series, each `≤ C'·(s-1)`
+(`exists_forall_norm_LSeries_le_mul_sub_one_of_integral_eq_zero`,
+consuming the vanishing `h0`); the exponent translation `j ↦ j + 1`
+mod `ℓ - 1` (`dirichletCharacter_pow_mod`) matches the two classes
+bijectively, so the `log(s-1)` contributions cancel exactly; all
+remaining factors are uniformly bounded through
+`exists_forall_norm_LSeries_le_and_norm_deriv_le`. -/
+theorem exists_forall_sum_re_tsum_neg_log_le_of_integral_eq_zero
+    {F : Type*} [Field F] [NumberField F] {E : Type*} [Field E] [NumberField E]
+    [Algebra F E] {ℓ : ℕ} (hℓ : ℓ.Prime) [IsCyclotomicExtension {ℓ} F E]
+    {ζ : E} (hζ : IsPrimitiveRoot ζ ℓ) (χ : DirichletCharacter ℂ ℓ)
+    (hχ : ∃ (ρ : E ≃ₐ[F] E) (n : ℕ), ρ ζ = ζ ^ n ∧ χ (n : ZMod ℓ) ≠ 1)
+    (h0 : (∫ t in Set.Ioi (1 : ℝ),
+      (∑ k ∈ Finset.Icc 1 ⌊t⌋₊, χ (k : ZMod ℓ) *
+        (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) *
+      (t : ℂ) ^ (-(2 : ℂ))) = 0) :
+    ∃ K η : ℝ, 0 < η ∧ ∀ s : ℝ, 1 < s → s ≤ 1 + η →
+      ∑ j ∈ Finset.range (ℓ - 1),
+        (∑' P : HeightOneSpectrum (𝓞 F),
+          -Complex.log (1 - (χ ^ j) ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+            (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)))).re ≤ K := by
+  classical
+  obtain ⟨δ, C₁, hδ0, hC₁0, hC₁⟩ :=
+    exists_forall_norm_LSeries_dirichletCharacter_mul_card_le_div F ℓ
+  obtain ⟨C₂, hC₂0, hC₂⟩ :=
+    exists_forall_norm_LSeries_le_mul_sub_one_of_integral_eq_zero hℓ hζ χ hχ h0
+  -- the trivial-on-image and `χ`-coset exponent classes
+  set T : Finset ℕ := (Finset.range (ℓ - 1)).filter (fun j =>
+    ∀ (ρ : E ≃ₐ[F] E) (n : ℕ), ρ ζ = ζ ^ n →
+      (χ ^ j) ((n : ℕ) : ZMod ℓ) = 1) with hTdef
+  set U : Finset ℕ := (Finset.range (ℓ - 1)).filter (fun j =>
+    ∀ (ρ : E ≃ₐ[F] E) (n : ℕ), ρ ζ = ζ ^ n →
+      (χ ^ j) ((n : ℕ) : ZMod ℓ) = χ ((n : ℕ) : ZMod ℓ)) with hUdef
+  -- outside `T` the power character is nontrivial on the image
+  have hRne : ∀ j ∈ Finset.range (ℓ - 1) \ (T ∪ U),
+      ∃ (ρ : E ≃ₐ[F] E) (n : ℕ), ρ ζ = ζ ^ n ∧
+        (χ ^ j) ((n : ℕ) : ZMod ℓ) ≠ 1 := by
+    intro j hj
+    rw [Finset.mem_sdiff, Finset.mem_union] at hj
+    obtain ⟨hjr, hjnot⟩ := hj
+    have hnp : ¬ ∀ (ρ : E ≃ₐ[F] E) (n : ℕ), ρ ζ = ζ ^ n →
+        (χ ^ j) ((n : ℕ) : ZMod ℓ) = 1 := by
+      intro hp
+      exact hjnot (Or.inl (by rw [hTdef, Finset.mem_filter]; exact ⟨hjr, hp⟩))
+    push Not at hnp
+    exact hnp
+  -- uniform bounds for the nontrivial factors outside the two classes
+  have hRex : ∀ j ∈ Finset.range (ℓ - 1) \ (T ∪ U), ∃ C : ℝ,
+      ∀ s : ℝ, 1 < s → s ≤ 2 →
+      ‖LSeries (fun k => (χ ^ j) (k : ZMod ℓ) *
+        (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) (s : ℂ)‖ ≤ C := by
+    intro j hj
+    obtain ⟨C, hC⟩ :=
+      exists_forall_norm_LSeries_le_and_norm_deriv_le hℓ hζ (χ ^ j) (hRne j hj)
+    exact ⟨C, fun s h1 h2 => (hC s h1 h2).1⟩
+  choose! C₃ hC₃ using hRex
+  -- the exponent translation `j ↦ (j+1) % (ℓ-1)` injects `T` into `U`
+  have hl1 : 0 < ℓ - 1 := by
+    have h2 := hℓ.two_le
+    omega
+  have hmaps : ∀ j ∈ T, (j + 1) % (ℓ - 1) ∈ U := by
+    intro j hj
+    rw [hTdef, Finset.mem_filter] at hj
+    obtain ⟨hjr, hjp⟩ := hj
+    rw [hUdef, Finset.mem_filter]
+    refine ⟨Finset.mem_range.mpr (Nat.mod_lt _ hl1), fun ρ n hρn => ?_⟩
+    rw [← dirichletCharacter_pow_mod hℓ χ (j + 1), pow_succ, MulChar.mul_apply,
+      hjp ρ n hρn, one_mul]
+  have hinj : Set.InjOn (fun j => (j + 1) % (ℓ - 1)) ↑T := by
+    intro j₁ h₁ j₂ h₂ heq
+    have hb₁ : j₁ < ℓ - 1 := Finset.mem_range.mp
+      (Finset.mem_filter.mp (Finset.mem_coe.mp h₁)).1
+    have hb₂ : j₂ < ℓ - 1 := Finset.mem_range.mp
+      (Finset.mem_filter.mp (Finset.mem_coe.mp h₂)).1
+    simp only at heq
+    rcases Nat.lt_or_ge (j₁ + 1) (ℓ - 1) with hc₁ | hc₁ <;>
+      rcases Nat.lt_or_ge (j₂ + 1) (ℓ - 1) with hc₂ | hc₂
+    · rw [Nat.mod_eq_of_lt hc₁, Nat.mod_eq_of_lt hc₂] at heq
+      omega
+    · have he₂ : j₂ + 1 = ℓ - 1 := by omega
+      rw [Nat.mod_eq_of_lt hc₁, he₂, Nat.mod_self] at heq
+      omega
+    · have he₁ : j₁ + 1 = ℓ - 1 := by omega
+      rw [Nat.mod_eq_of_lt hc₂, he₁, Nat.mod_self] at heq
+      omega
+    · omega
+  have hcard : T.card ≤ U.card :=
+    Finset.card_le_card_of_injOn _ hmaps hinj
+  -- the two classes are disjoint: `χ` is nontrivial on the image
+  have hdisj : Disjoint T U := by
+    rw [Finset.disjoint_left]
+    intro j hjT hjU
+    obtain ⟨ρ, n, hρn, hne⟩ := hχ
+    rw [hTdef, Finset.mem_filter] at hjT
+    rw [hUdef, Finset.mem_filter] at hjU
+    have h1 := hjT.2 ρ n hρn
+    have h2 := hjU.2 ρ n hρn
+    exact hne (by rw [← h2, h1])
+  have hsub : T ∪ U ⊆ Finset.range (ℓ - 1) := by
+    rw [hTdef, hUdef]
+    exact Finset.union_subset (Finset.filter_subset _ _) (Finset.filter_subset _ _)
+  -- the window and the constant
+  refine ⟨(T.card : ℝ) * Real.log (max C₁ 1) +
+      (U.card : ℝ) * Real.log (max C₂ 1) +
+      ∑ j ∈ Finset.range (ℓ - 1) \ (T ∪ U), Real.log (max (C₃ j) 1),
+    min δ 1, lt_min hδ0 one_pos, fun s hs1 hsη => ?_⟩
+  have hsδ : s ≤ 1 + δ := hsη.trans (by
+    have := min_le_left δ 1
+    linarith)
+  have hs2 : s ≤ 2 := hsη.trans (by
+    have := min_le_right δ 1
+    linarith)
+  have hs10 : (0 : ℝ) < s - 1 := by linarith
+  have hlog_nonpos : Real.log (s - 1) ≤ 0 :=
+    Real.log_nonpos (by linarith) (by linarith)
+  have hC₁pos : (0 : ℝ) < max C₁ 1 := lt_of_lt_of_le one_pos (le_max_right _ _)
+  have hC₂pos : (0 : ℝ) < max C₂ 1 := lt_of_lt_of_le one_pos (le_max_right _ _)
+  -- each log-sum real part is the log of the `L`-value's norm
+  have hRe : ∀ j : ℕ,
+      (∑' P : HeightOneSpectrum (𝓞 F),
+        -Complex.log (1 - (χ ^ j) ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+          (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)))).re =
+      Real.log ‖LSeries (fun k => (χ ^ j) (k : ZMod ℓ) *
+        (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) (s : ℂ)‖ ∧
+      0 < ‖LSeries (fun k => (χ ^ j) (k : ZMod ℓ) *
+        (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) (s : ℂ)‖ := by
+    intro j
+    have hexp := exp_tsum_neg_log_one_sub_dirichletCharacter_mul_cpow_neg_eq_LSeries
+      F (χ ^ j) (w := (s : ℂ)) (by rw [Complex.ofReal_re]; exact hs1)
+    have hnorm : ‖LSeries (fun k => (χ ^ j) (k : ZMod ℓ) *
+        (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) (s : ℂ)‖ =
+        Real.exp ((∑' P : HeightOneSpectrum (𝓞 F),
+          -Complex.log (1 - (χ ^ j) ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+            (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)))).re) := by
+      rw [← hexp, Complex.norm_exp]
+    exact ⟨by rw [hnorm, Real.log_exp], hnorm ▸ Real.exp_pos _⟩
+  -- per-class termwise bounds
+  have hT_le : ∀ j ∈ T,
+      (∑' P : HeightOneSpectrum (𝓞 F),
+        -Complex.log (1 - (χ ^ j) ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+          (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)))).re ≤
+      Real.log (max C₁ 1) - Real.log (s - 1) := by
+    intro j _
+    rw [(hRe j).1]
+    have hb : ‖LSeries (fun k => (χ ^ j) (k : ZMod ℓ) *
+        (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) (s : ℂ)‖ ≤
+        max C₁ 1 / (s - 1) := by
+      refine (hC₁ (χ ^ j) s hs1 hsδ).trans ?_
+      gcongr
+      exact le_max_left _ _
+    refine (Real.log_le_log (hRe j).2 hb).trans_eq ?_
+    rw [Real.log_div (ne_of_gt hC₁pos) (ne_of_gt hs10)]
+  have hU_le : ∀ j ∈ U,
+      (∑' P : HeightOneSpectrum (𝓞 F),
+        -Complex.log (1 - (χ ^ j) ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+          (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)))).re ≤
+      Real.log (max C₂ 1) + Real.log (s - 1) := by
+    intro j hj
+    rw [(hRe j).1]
+    have hpred := (Finset.mem_filter.mp (hUdef ▸ hj)).2
+    have hcongr := LSeries_dirichletCharacter_mul_card_congr hℓ hζ (χ ^ j) χ
+      hpred (s : ℂ)
+    have hb : ‖LSeries (fun k => (χ ^ j) (k : ZMod ℓ) *
+        (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) (s : ℂ)‖ ≤
+        max C₂ 1 * (s - 1) := by
+      rw [hcongr]
+      refine (hC₂ s hs1 hs2).trans ?_
+      gcongr
+      exact le_max_left _ _
+    refine (Real.log_le_log (hRe j).2 hb).trans_eq ?_
+    rw [Real.log_mul (ne_of_gt hC₂pos) (ne_of_gt hs10)]
+  have hR_le : ∀ j ∈ Finset.range (ℓ - 1) \ (T ∪ U),
+      (∑' P : HeightOneSpectrum (𝓞 F),
+        -Complex.log (1 - (χ ^ j) ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+          (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)))).re ≤
+      Real.log (max (C₃ j) 1) := by
+    intro j hj
+    rw [(hRe j).1]
+    exact Real.log_le_log (hRe j).2
+      (((hC₃ j hj) s hs1 hs2).trans (le_max_left _ _))
+  -- split the sum over the partition and assemble
+  rw [← Finset.sum_sdiff hsub, Finset.sum_union hdisj]
+  have hTsum : ∑ j ∈ T,
+      (∑' P : HeightOneSpectrum (𝓞 F),
+        -Complex.log (1 - (χ ^ j) ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+          (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)))).re ≤
+      (T.card : ℝ) * Real.log (max C₁ 1) - (T.card : ℝ) * Real.log (s - 1) := by
+    refine (Finset.sum_le_sum hT_le).trans_eq ?_
+    rw [Finset.sum_const, nsmul_eq_mul]
+    ring
+  have hUsum : ∑ j ∈ U,
+      (∑' P : HeightOneSpectrum (𝓞 F),
+        -Complex.log (1 - (χ ^ j) ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+          (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)))).re ≤
+      (U.card : ℝ) * Real.log (max C₂ 1) + (U.card : ℝ) * Real.log (s - 1) := by
+    refine (Finset.sum_le_sum hU_le).trans_eq ?_
+    rw [Finset.sum_const, nsmul_eq_mul]
+    ring
+  have hRsum : ∑ j ∈ Finset.range (ℓ - 1) \ (T ∪ U),
+      (∑' P : HeightOneSpectrum (𝓞 F),
+        -Complex.log (1 - (χ ^ j) ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+          (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)))).re ≤
+      ∑ j ∈ Finset.range (ℓ - 1) \ (T ∪ U), Real.log (max (C₃ j) 1) :=
+    Finset.sum_le_sum hR_le
+  have hUx : (U.card : ℝ) * Real.log (s - 1) ≤
+      (T.card : ℝ) * Real.log (s - 1) :=
+    mul_le_mul_of_nonpos_right (Nat.cast_le.mpr hcard) hlog_nonpos
+  linarith
+
 open IsDedekindDomain in
 /-- **Nonvanishing of the continued twisted `L`-value at `s = 1`**
 (sorry leaf) — the arithmetic core of `L(1, χ) ≠ 0`, isolated from all
@@ -3389,8 +4799,93 @@ theorem integral_sum_dirichletCharacter_mul_card_cpow_neg_two_ne_zero
     (∫ t in Set.Ioi (1 : ℝ),
       (∑ k ∈ Finset.Icc 1 ⌊t⌋₊, χ (k : ZMod ℓ) *
         (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) *
-      (t : ℂ) ^ (-(2 : ℂ))) ≠ 0 :=
-  sorry
+      (t : ℂ) ^ (-(2 : ℂ))) ≠ 0 := by
+  intro h0
+  -- upper-bound half: the log-sum total is bounded on a right window of `1`
+  obtain ⟨K, η, hη, hK⟩ :=
+    exists_forall_sum_re_tsum_neg_log_le_of_integral_eq_zero hℓ hζ χ hχ h0
+  have hlpos : (0 : ℝ) < ((ℓ - 1 : ℕ) : ℝ) := by
+    have h2 := hℓ.two_le
+    exact_mod_cast (by omega : 0 < ℓ - 1)
+  -- α-side: the split-class real prime sum is bounded on the window
+  have hsplit_le : ∀ s : ℝ, 1 < s → s ≤ 1 + η →
+      (∑' P : {P : HeightOneSpectrum (𝓞 F) //
+          (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+          ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) = 1},
+        (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ) ^ (-s)) ≤
+      K / ((ℓ - 1 : ℕ) : ℝ) := by
+    intro s hs1 hs2
+    refine (le_div_iff₀ hlpos).mpr ?_
+    rw [mul_comm]
+    exact (mul_tsum_rpow_neg_le_sum_re_tsum_neg_log F hℓ χ hs1).trans
+      (hK s hs1 hs2)
+  -- β-side: the split-class sum exceeds that bound at some `s₀ > 1`
+  obtain ⟨s₀, hs₀1, hs₀gt⟩ :=
+    exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_one (F := F) hℓ hζ
+      (ENNReal.ofReal (max (K / ((ℓ - 1 : ℕ) : ℝ)) 0)) ENNReal.ofReal_ne_top
+  set s : ℝ := min s₀ (1 + η) with hsdef
+  have hs1 : 1 < s := lt_min hs₀1 (by linarith)
+  have hs2 : s ≤ 1 + η := min_le_right _ _
+  have hss₀ : s ≤ s₀ := by rw [hsdef]; exact min_le_left _ _
+  -- shrinking the exponent only enlarges the `ℝ≥0∞`-sum
+  have hmono : (∑' P : {P : HeightOneSpectrum (𝓞 F) //
+        (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+        ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) = 1},
+      (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^ (-s₀)) ≤
+      ∑' P : {P : HeightOneSpectrum (𝓞 F) //
+        (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+        ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) = 1},
+      (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^ (-s) := by
+    refine ENNReal.tsum_le_tsum fun P => ?_
+    refine ENNReal.rpow_le_rpow_of_exponent_le ?_ (neg_le_neg hss₀)
+    have h2 := two_le_natCard_quotient (P : HeightOneSpectrum (𝓞 F))
+    exact_mod_cast
+      (by omega : 1 ≤ Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal))
+  -- `ℝ≥0∞` → `ℝ` conversion at the admissible exponent `s`
+  have hofReal : (∑' P : {P : HeightOneSpectrum (𝓞 F) //
+        (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+        ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) = 1},
+      (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^ (-s)) =
+      ENNReal.ofReal (∑' P : {P : HeightOneSpectrum (𝓞 F) //
+        (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+        ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) = 1},
+      (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ) ^ (-s)) := by
+    rw [ENNReal.ofReal_tsum_of_nonneg
+      (fun P => Real.rpow_nonneg (Nat.cast_nonneg _) _)
+      ((summable_rpow_neg_natCard_quotient hs1).subtype _)]
+    refine tsum_congr fun P => ?_
+    have hNpos : (0 : ℝ) <
+        (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ) := by
+      have h2 := two_le_natCard_quotient (P : HeightOneSpectrum (𝓞 F))
+      exact_mod_cast
+        (by omega : 0 < Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal))
+    rw [← ENNReal.ofReal_rpow_of_pos hNpos, ENNReal.ofReal_natCast]
+  -- assemble the contradiction
+  have hlt : max (K / ((ℓ - 1 : ℕ) : ℝ)) 0 <
+      ∑' P : {P : HeightOneSpectrum (𝓞 F) //
+        (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+        ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) = 1},
+      (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ) ^ (-s) := by
+    refine (ENNReal.ofReal_lt_ofReal_iff_of_nonneg (le_max_right _ _)).mp ?_
+    calc ENNReal.ofReal (max (K / ((ℓ - 1 : ℕ) : ℝ)) 0)
+        < ∑' P : {P : HeightOneSpectrum (𝓞 F) //
+            (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+            ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) = 1},
+          (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^
+            (-s₀) := hs₀gt
+      _ ≤ ∑' P : {P : HeightOneSpectrum (𝓞 F) //
+            (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+            ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) = 1},
+          (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^
+            (-s) := hmono
+      _ = ENNReal.ofReal (∑' P : {P : HeightOneSpectrum (𝓞 F) //
+            (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+            ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) = 1},
+          (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ) ^ (-s)) :=
+          hofReal
+  have hle := (hsplit_le s hs1 hs2).trans
+    (le_max_left (K / ((ℓ - 1 : ℕ) : ℝ)) 0)
+  exact absurd hlt (not_lt.mpr hle)
 
 open IsDedekindDomain in
 /-- **The twisted `L`-series is bounded away from `0` just right of
