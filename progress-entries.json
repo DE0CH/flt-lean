@@ -117,8 +117,7 @@
   "name": "WeierstrassCurve.torsion_unipotent_of_multiplicative_reduction",
   "module": "Fermat.FLT.FreyCurve.Semistable",
   "text": "`WeierstrassCurve.torsion_unipotent_of_multiplicative_reduction` (`FreyCurve/Semistable.lean`, stated 2026-07-17) \u2014 pointwise Tate unipotence: multiplicative reduction at `q \u2260 p` (`q = 2` allowed, no `p \u2223 v(j)`) makes every inertia element at a valuation subring over `\u2124_(q)` act with `\u03c3(\u03c3P) \u2212 \u03c3P \u2212 \u03c3P + P = 0` on the `p`-torsion (to be closed against the Tate-uniformization leaves)",
-  "fullname": "WeierstrassCurve.torsion_unipotent_of_multiplicative_reduction",
-  "wip": false
+  "fullname": "WeierstrassCurve.torsion_unipotent_of_multiplicative_reduction"
  },
  {
   "name": "FreyPackage.subquotient_character_unramified_at_p",
@@ -130,8 +129,7 @@
   "name": "FreyPackage.exists_quotient_curve_point",
   "module": "Fermat.FLT.FreyCurve.MazurTorsion",
   "text": "`FreyPackage.exists_quotient_curve_point` (stated 2026-07-17) \u2014 the V\u00e9lu quotient leaf: a stable line with trivial quotient action produces `E'/\u211a` with full rational 2-torsion and a rational `p`-point (quotient by the rational subgroup; quantified over Weierstrass models)",
-  "fullname": "FreyPackage.exists_quotient_curve_point",
-  "wip": false
+  "fullname": "FreyPackage.exists_quotient_curve_point"
  },
  {
   "name": "WeierstrassCurve.exists_point_eq_baseChange_of_fixed",
@@ -503,8 +501,7 @@
   "name": "exists_frobenius_conj_mem_coset",
   "module": "Fermat.FLT.GaloisRepresentation.Chebotarev",
   "text": "`exists_frobenius_conj_mem_coset` \u2014 Chebotarev, finite level: for every finite subextension `E` of `K\u0304/K` and every `\u03c3`, the coset `\u03c3\u00b7Gal(K\u0304/E)` contains a conjugate of a `globalFrob v` with `v \u2209 S` (existence form of Chebotarev for the Galois closure of `E/K`)",
-  "fullname": "GaloisRepresentation.exists_frobenius_conj_mem_coset",
-  "wip": false
+  "fullname": "GaloisRepresentation.exists_frobenius_conj_mem_coset"
  },
  {
   "name": "not_isIrreducible_of_charpoly_eq",
@@ -1182,15 +1179,13 @@
   "name": "exists_valuativeRel_sepClosure",
   "fullname": "exists_valuativeRel_sepClosure",
   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateSepClosure",
-  "wip": false,
   "text": "valuative structure of the separable closure (PROVEN 2026-07-20, same iteration as stated): letI the uniform/rank-one-Valued/NontriviallyNormedField structure on k (the LocalField.Basic recipe), then the integral closure of \ud835\udcaa[k] in \u03a9 is a ValuationSubring by the spectral-norm dichotomy (vendored isIntegral_of_spectralNorm_le_one + spectralNorm_inv from Deformations/AbsoluteGaloisGroup); ValuativeRel.ofValuation of its valuation; the ValuativeExtension compatibility reduces by the divisibility form (div_le_one\u2080 + valuation_le_one_iff) to \u201cbase-field element integral over \ud835\udcaa[k] iff in \ud835\udcaa[k]\u201d \u2014 IsIntegrallyClosed.isIntegral_iff for the DVR."
  },
  {
   "name": "isNonarchimedeanLocalField_intermediate",
   "fullname": "isNonarchimedeanLocalField_intermediate",
   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.TateSepClosure",
-  "text": "finite subextensions of \u03a9 are nonarchimedean local fields (DERIVED 2026-07-20): topology := the canonical valuative topology (ValuativeRel.topologicalSpace), which is valuative by mathlib\u2019s ValuativeRel.isValuativeTopology; nontriviality transports from k through the proven valuative extension (valuation_surjective + Compatible.vle_iff_le); local compactness delegated to the remaining leaf locallyCompactSpace_intermediate.",
-  "wip": false
+  "text": "finite subextensions of \u03a9 are nonarchimedean local fields (DERIVED 2026-07-20): topology := the canonical valuative topology (ValuativeRel.topologicalSpace), which is valuative by mathlib\u2019s ValuativeRel.isValuativeTopology; nontriviality transports from k through the proven valuative extension (valuation_surjective + Compatible.vle_iff_le); local compactness delegated to the remaining leaf locallyCompactSpace_intermediate."
  },
  {
   "name": "locallyCompactSpace_intermediate",
@@ -1202,7 +1197,6 @@
   "name": "WeilPairing.exists_weilPairing_mu",
   "fullname": "WeilPairing.exists_weilPairing_mu",
   "module": "Fermat.FLT.EllipticCurve.WeilPairing",
-  "wip": true,
   "text": "the mu_p-valued Weil pairing over F_q (single sorry 2026-07-21: N1 COMPLETE): IsDedekindDomain(CoordinateRing) of the base-changed curve is FULLY PROVEN via Krull-Akizuki -- FaithfulSMul, FiniteDimensional (conjugate-norm span), IsSeparable (Bezout certificate / char-2 unit-derivative with Delta-vanishing), IsIntegralClosure (normality: minpoly coefficient descent, degree dichotomy, reduced-fraction descent against the squarefree b2-cubic with disc = 16 Delta in odd characteristic; in characteristic two the tau0 = tc A collapse, w = sc A integrality, and the Taylor/singular-point contradiction at the root of A -- both affine partials vanish, contradicting equation_iff_nonsingular). IN-PROOF ALSO PROVEN (2026-07-21): hCunits (units of the coordinate ring are the nonzero constants, via degree_norm_smul_basis) and hgen (p-torsion points have principal p-th ideal-class powers -- the Miller-generator existence, via toClass + ClassGroup.mk_eq_one_iff). ALSO PROVEN: hpoints (points outside any finite abscissa set) and hgen2 (two-point Miller generators for translated divisors); point evaluation is mathlib's AdjoinRoot.evalEval. PROVEN reciprocity ingredients: hrecP1 (P^1 Weil reciprocity: double-product swap with the (-1)^(mn) sign, via hcard/hevalprod root-product machinery); hline (line ideal identity (l) = I_P I_Q I_{-(P+Q)} from mathlib's XYIdeal_mul_XYIdeal + XYIdeal_neg_mul by Dedekind cancellation; the vertical identity is mathlib's XYIdeal_neg_mul itself); hcubtrans + hlinerec (line-line reciprocity core: shared-intersection-point Vieta, the two fiber cubics agree at the common abscissa). Also PROVEN: hnormeval (norm-evaluation compatibility (N f)(x0) = f(x0,y0) f(x0,negY) via norm_smul_basis + the Weierstrass equation) and hXYmax (point ideals are maximal, via quotientXYIdealEquiv). hfactor COMPLETE (principal spans factor as point-divisor multisets via normalizedFactors + hmax), hker COMPLETE (kernel of point evaluation = the point ideal), hXYinj COMPLETE (point-ideal injectivity). hoffdiv COMPLETE (nonvanishing off the divisor). hNle + hnormpt COMPLETE: relNorm of a point ideal IS the vertical span (X - x_P) (conjugate-product pinning; PerfectField route unavailable in char q). NEXT: span{N f} = relNorm(span f) = prod of verticals over div f (relNorm_singleton + map_multiset_prod over hfactor), so N f = unit * prod (X - P.1) -- then vertical reciprocity: f(fiber c) = (N f)(c) (hnormeval) vs vertical(div f) = prod (P.1 - c) via hrecP1/evaluation of the product form. Formerly recorded as: NEXT brick: spanNorm of a point ideal is the vertical span (X - x_P) (check Ideal.spanNorm_singleton / spanNorm_mul API), giving N f = unit * prod (X - P.1) over the divisor -- the bridge between hnormeval fiber-products and hrecP1 root-products for the vertical-vs-anything reciprocity case. GENERATOR RECIPROCITY COMPLETE: hrecfib (vertical fiber-quotient form, via hnormeval'/hspanprod/hNconst) and hrecline (line-line divisor form, via hNline/hevline/hevvert/hondiv/habs + the hlinerec core). hgenfac COMPLETE (the class-group descent / Miller factorization, with hdvdspan). Generator divisor witnesses COMPLETE (hfiber, hvertdiv, hlinediv). Signed generator-pair table COMPLETE (hggll unconditional line-line incl. parallel/identical; hgglv line-vertical; hggvv vertical-vertical, adopted from the accidental parallel session; hrecfib). hlinediv' explicit line divisor; hvw vertical-vs-word assembly PROVEN. hlw PROVEN (line-vs-word, sign (-1)^lines). hww PROVEN (word-vs-word, sign (-1)^(|L1| x |L2|), 2026-07-21 first-attempt green: prod_map_prod_map swap per part, hlw per line of L1 / hvw per vertical of V1, sign collected by map_const'/prod_replicate, closed by pow_mul + ring; binder-capture avoided by fresh outer binder ab and beta-reduced ab.1/ab.2 instantiations per the parent session's warning). DIVISOR-DICTIONARY BRICKS PROVEN (2026-07-21): hdivuniq (equal products of point ideals force equal point multisets: prime picking via IsPrime.multiset_prod_map_le, maximality, hXYinj, Dedekind cancellation), hvertdiv' (explicit vertical divisor at the canonical yfib fiber = XYIdeal_neg_mul), hworddiv (span of a line/vertical word = product of point ideals over its explicit hww-shaped divisor, by induction through hlinediv'/hvertdiv'). hgenfac STRENGTHENED with the F-rationality invariant (2026-07-21, PROVEN): for any subfield F containing the divisor coordinates, the Miller words have line parameters, intercepts, and vertical parameters in F, AND every line-cubic root lies in F (the new line's divisor is the explicit three-point multiset {P, Q, -(P+Q)} via hline + hlelt + habs, so its roots are the three F-rational abscissas; slope/addX/addY memberships by the subfield arsenal hnatF/hZF/haF/hnegYF/hslopeF/haddXF/haddYF). Consumers choose test abscissas OUTSIDE F via hpoints (F finite in applications), killing all collision/nonvanishing obligations. Pairing generators in junk-free form: b_P := (XClass x_S)^p with div = p(S)+p(-S), a_P := gamma*b_P with div = p(P+S)+p(-S) (integrality by fractional-ideal arithmetic), so all supports explicit. hwordeval PROVEN (evaluation of a line/vertical word at a curve point = the value product, via map_multiset_prod + hevline/hevvert). hlineptE + hworddivE + hbaldiv PROVEN (2026-07-21): line-cubic roots are curve-point abscissas; every hww-shaped word divisor satisfies the curve equation; and the BALANCED DIVISOR BOOKKEEPING -- the hgenfac identity forces D + div(d-word) = div(n-word) as point multisets (span multiplicativity, span_singleton_mul_left_unit for the C u factor, hworddiv on both words, uniqueness hdivuniq). hevconst + hevid PROVEN (evaluation of the embedded constant via evalEval_mk/evalEval_C; the pointwise evaluation form of the hgenfac identity: f(T) * dword(T) = u * nword(T) at every curve point T). GLUE WRITTEN AND COMPILING (2026-07-21, per Deyao's glue-first policy): the full assembly of the pairing now typechecks end-to-end -- IsWeilValue v w z spells the Miller cross-ratio characterization (degenerate cases z=1; affine case: finite subfields F <= F', translate S with data in F' and abscissa outside F, translate R with abscissa outside F', Miller elements aP with div = p(P+S)+p(-S) and bP = XClass(xS)^p, same for Q with R, and the division-free 8-evaluation equation for z = [fP(Q+R)/fP(R)]*[fQ(S)/fQ(P+S)]); e := unique choice from hvalue; exact <e, legs> closes the theorem. hexval CONSTRUCTION GLUE COMPILING (2026-07-21): the full generic-setup existence proof is written -- degenerate cases; affine representatives with retyped nonsingularity (base-change defeq bridge); F from hsubfin over the P,Q data; S via hpoints off F; P+S affine (rcases with hPSne); F' from hsubfin over F + S,PS data + the four bad-R abscissas xOf(-Q + T) over the xS/xPS fibers (so xR nonmembership kills the collision cases); R via hpoints off F'; Miller numerators from hmill2 (statement: XYIdeal1^p * XYIdeal2^p principal when the points sum to p-torsion); value z := Units.mk0 (B/A) with the defining equation by div_mul_cancel0; representative matching by hPP/hQQ + subst. hexval ALL BUT ONE RESOLVED (2026-07-21): hsubfin (adjoin + finiteDimensional_adjoin + Module.finite_of_finite), hfib2 (Vieta/linear_combination on the fiber quadratic), hPSne/hQRne, hPStor/hQRtor, memberships, hPP/hQQ, hxQRne (the bad-point argument: hfib2 + hptfun point transport + hxRof via neg_add_cancel_left + definitional finset matching), hA/hB (replicate divisors hDP/hDQ, four hoffdiv instances, vertical evaluations via map_pow + hevvert, mul_ne_zero assembly), and hmill2 reduced to hgen2 via the negated translate (neg_some + negY_negY + sub_eq_add_neg). hexval FULLY PROVEN (2026-07-21, zero sorries in the existence half): hmill2 completed via the units formulation -- XYIdeal' lands in (FractionalIdeal)units, hgen2's principality gives the spanSingleton witness (coeToSubmodule_injective + beta_reduce), the vertical identity coerces through XYIdeal'_eq/coeIdeal_mul/XYIdeal_neg_mul, the unit-group rearrangement u1^p u2^p = J^p (u2n u2)^p by mul_pow + inv_mul_cancel, the calc chain lands on spanSingleton (t g^p), and the generator descends by mem_coeIdeal + coeIdeal_injective. huniqval GLUE COMPILING (2026-07-21): degenerate case and the full cancellation algebra proven (both setups destructured, z1 = z2 via Units.ext + mul_right_cancel0 on A1*A2 through a calc chain using the two defining equations); the single remaining sorry is hcross -- the cross-setup reciprocity B1*A2 = B2*A1 for two admissible Miller setups of the same (P,Q), to be proven by Weil reciprocity through the hgenfac words of the four Miller numerators (hbaldiv bookkeeping, hevid evaluation identities, hww swaps, F-avoidance nonvanishing). hcross PROVEN (2026-07-21, third-setup comparison): G := hsubfin over both setups' F' carriers; hsetup3 G produces the generic third setup; two hrecgen instances give B_i*A_3 = B_3*A_i; mul_right_cancel0 against A3*B3 with a linear_combination (coefficients A_2*B_3 and -A_1*B_3) closes it. NEW NAMED CORES (sorried, stated in full): hsetup3 (avoidance-parametrized Miller setup: for any finite subfield G containing the torsion representatives' data, a full setup whose four divisor abscissas avoid G, with both evaluation products nonzero -- proof = the hexval construction with G folded into the avoidance finsets) and hrecgen (GENERIC-PAIR RECIPROCITY, the Weil reciprocity core: a full admissible setup over F <= F' against a second Miller quadruple whose four divisor abscissas avoid F', cross-multiplied equality of the 16 evaluations; proof plan: hgenfac words of the four Miller numerators over F' (divisor coordinates all in F'), hbaldiv bookkeeping, hevid pointwise identities, hww word-word swaps, nonvanishing from the avoidances since all word roots lie in F'). hsetup3 PROVEN (2026-07-21, first pass): the hexval construction parametrized by the avoid-subfield G -- base field F := hsubfin over G's carrier; S chosen off F and off the G-fiber bad-S images (Finset.image over G.toFinset of xOf(-P + fiber point)); x(P+S) avoids G by the transport argument (hxSof via neg_add_cancel_left + hptfun + definitional image membership); F' additionally folds the four xS/xPS-fiber bad-R points and the G-fiber bad-R images; x(Q+R) avoids G and {xS, xPS} likewise; torsion, hmill2 numerators, replicate divisors, four hoffdiv nonvanishings, and both products nonzero, exactly as in hexval. HRECGEN REFINED PLAN (2026-07-21): change one translate at a time (R-step then S-step). For the R-step, the comparison function tau has EXPLICIT divisor (QR1)+(R3)+(-R1)+(-QR3) [points summing to zero, so the 4-fold point-ideal product is principal -- new brick hmill0: n points summing to zero give a principal product, by the toClass homomorphism + the hmill2 units/ClassGroup extraction; NO junk divisor], with denominator the two verticals XClass(xR1)*XClass(xQR3) [explicit divisor]. The z-ratio telescopes: the f_Q-difference contributes [tau(PS1)/tau(S1)]^p directly, and f_P(div tau) = tau(div f_P) = the same p-th power by the function-vs-tau Weil reciprocity -- f_P = aP1/XS1^p has ALL divisor data in F1' (no R-data!), so factor its pair into hgenfac words over F1' (roots in F1') and evaluate at tau's divisor points whose abscissas xQR1, xR1, xR3, xQR3 all avoid F1'; tau's evaluations at PS1, S1 are nonzero since those abscissas lie in F1'. The word-level computation uses hbaldiv + hevid + hww + hwordeval. S-step mirrors with the roles of the S-translates. hrecgen TELESCOPING SKELETON COMPILING (2026-07-21): the hybrid setup (S1, R3) reuses aP1 and aQ3 unchanged; hstepR (move R1 -> R3, S1 fixed) and hstepS (move S1 -> S3, R3 fixed) are stated as the two cross-multiplied 16-evaluation identities; hAh/hBh state the hybrid products' nonvanishing; the chain closes by mul_right_cancel0 + linear_combination with coefficients B3-product * Bh and B1-product * Bh. hAh/hBh PROVEN. HSTEP ARCHITECTURE (2026-07-21, the decisive design): the KEY SOUNDNESS INSIGHT is that the FULL-DIVISOR 4-function reciprocity (hstar) is unconditionally true -- for f1,f2,g1,g2 with point-divisor factorizations and |Df1|=|Df2|, |Dg1|=|Dg2|: prod_{Dg1}f1 * prod_{Dg2}f2 * prod_{Df2}g1 * prod_{Df1}g2 = prod_{Dg2}f1 * prod_{Dg1}f2 * prod_{Df1}g1 * prod_{Df2}g2. Any support collision zeroes BOTH sides symmetrically (P in Dfi cap Dgj kills the (fi,Dgj)-factor on one side and the (gj,Dfi)-factor on the other), so NO avoidance hypotheses are needed; the proof is by hgenfac-word factorization of all four functions, hevid pointwise products, hbaldiv bookkeeping in the multiplicative form e_{divWN}(W) = e_D(W) * e_{divWD}(W), hww word-word swaps, with u-powers cancelling by balance and hww signs cancelling by parity. The un-powered (mu_p-free) content flows through the multiplicity-ONE comparison element t from hmill0 (zero-sum four-point principality: D_t = (Q+R1)+(-R1)+(R3)+(-(Q+R3)) sums to zero). hstepR then: (1) hmill0 gives t; (2) hcompQ: aQ1 * XClass(xQR3)^p * XClass(xR3)^p = C c * aQ3 * t^p (span equality + hCunits); (3) the hstar instance f1:=aP1, f2:=XClass(xS1)^p, g1:=t, g2:=XClass(xR1)*XClass(xQR3); (4) strip the sigma-companion common factors (aP1 at -R1/-QR3, t at -S1, verticals) using the avoidance nonvanishing available in hstepR's context, and combine with hcompQ evaluated at S1 and PS1. hstepS mirrors. htex PROVEN (the zero-sum four-point principality: neg_some + abel for the sum, toClass additivity, ClassGroup.mk_eq_one_iff, hextract-style descent with no inverses) and hcomp PROVEN (span computation through span_singleton_pow/XYIdeal_neg_mul + ring, then Associated via span_singleton_eq_span_singleton and hCunits for the constant). hfin PROVEN (2026-07-21): the complete R-step stripping -- explicit divisors for aP1 and t, six sigma-companion nonvanishings (hoffdiv + the new xQR1-avoidance conjunct), normalization by simp only [map_pow, map_mul, mul_pow, hevvert, hevconst] (CRUCIAL: mul_pow splits every product-power since ring cannot merge sum-based power atoms under a symbolic exponent), the strip hXY by mul_right_cancel0 against the sigma-product + one-shot linear_combination hstarinst, and the final telescoping linear_combination with hdS/hdP (the pointwise hcomp images) and hXY. hstarinst WORD-DATA GLUE COMPILING: aP1's Miller words obtained from the F-rational hgenfac over F' (2p-card replicate divisor, memberships from the predicate + negY closure), t's words over hsubfin of its eight coordinates, and both hbaldiv divisor bookkeepings established; the single remaining sorry inside hstarinst is hgrand -- the assembly: evaluate the two word identities (hevid) over the eight sigma-closed points, convert word-divisor evaluation products through the hbaldiv multiset identities (multiplicative, division-free), swap word-vs-word products with hww (including the vertical words XS1^p and XR1*XQR3 directly), and cancel the balanced u-powers and paired hww signs. HGRAND REDUCTION DERIVED (the complete roadmap): multiply both sides by the four d-word value products (WdV over D_t and Dg2, MdV^p over the S-pair and PS-pair); the hevid product instances (A1/A2 for aP1 over the four t-points and four vertical-points, B1/B2 for t over the two sigma-pairs) eliminate the ring-element evaluations with BALANCED constant powers uf^4 and ut^2p on both sides; the goal becomes the pure word identity (star-w): WnV[D_t]*WdV[Dg2]*(MnV[Sp])^p*(MdV[Pp])^p*(vS1V[Dg2])^p*(vRQV[Pp])^p = WdV[D_t]*WnV[Dg2]*(MdV[Sp])^p*(MnV[Pp])^p*(vS1V[D_t])^p*(vRQV[Sp])^p. Every multiset there is a word divisor: D_t converts through hbalt (phi[D_t]*phi[div Md-word] = phi[div Mn-word], multiplicative and division-free), the p-th-power pair products ARE phi[D_P] = phi[div Ln-word]/phi[div Ld-word] through hbalP, and Dg2/Sp are the canonical fiber divisors of the vertical words {xR1,xQR3} and {xS1} after the hfib2 pair identification (vertical values only see abscissas; line values need the multiset identification {(c,y),(c,negY y)} = canonical pair). The final stitch is hww instances (signs 1 against the vertical words since |L|=0; the (Ln/Ld)x(Mn/Md) signs pair up on both sides) combined in one linear_combination. hgrand steps 1-2-4 IN PLACE: hfibpair proven; the nine pointwise hevid instances (aP1 at QR1/-R1/R3/-QR3/R1/QR3, t at S1/-S1/PS1) and thirteen hww instances (the four (Ln/Ld)x(Mn/Md) swaps and the vertical-word swaps against {xS1} and {xR1,xQR3}, including the vertical-vertical one) are bound in context. step 3 DONE as inferred-type bindings: hcvt/hcvP are phi-parametrized congrArg product images of hbalt/hbalP (no giant restatements; normalize with map_add/prod_add/map_replicate/prod_replicate/mul_pow at use time). STITCH ANALYSIS (decisive): the chain must at the end cancel word-value factors, so their nonvanishing is REQUIRED; word-divisor points of the F'-words are F'-ABSCISSA points (line points fully F'-rational; vertical points have F'-abscissae), so ALL aP1-word collisions with the evaluation points die once xQR1 is NOT in F' -- amendment (alpha): add xQR notin F' to IsWeilValue; it is constructible in hexval by folding the finitely many bad R over the F'-fibers (R = -Q + fiber point of an F'-abscissa) into the R-avoidance finset, exactly the existing badxs pattern with a Finset.image over F'.toFinset -- and then all four div-t abscissas lie outside F', so t is nonzero at every F'-abscissa point as well. The remaining (beta) obstruction is the t-word side (t's own hgenfac words over Ht can collide with the S1/PS1 evaluation points); the candidate resolutions are (i) eliminate t-evals through word-vs-t swaps instead of t-words (needs the line-vs-explicit-divisor reciprocity hlinet, unconditional form pending) or (ii) prove the sigma-paired norm-level identity via hrecfib/hNconst and recover singles -- rejected: it loses the anti-symmetric mu_p-content (companions differ per side). amendment (alpha) DONE. BETA RESOLVED -- THE EXPLICIT t-FACTORIZATION: the four points of div t pair as chord(QR1, -R1) with third point -Q and chord(R3, -(Q+R3)) with third point Q, so t * XClass(xQ) = C c * l1 * l2 (hlfac; span computation via ht + two hline instances + XYIdeal_neg_mul at xQ + hCunits, exactly the hcomp pattern) with the chords' slopes/intercepts EXPLICIT. No hgenfac for t at all: drop Mn/Md/Wn'/Wd'/hbalt/het and the M-flavored hww instances; t's evaluations eliminate pointwise through hlfac (t(T)*(x_T - xQ) = c*l1V(T)*l2V(T)), and the swaps are hlw/hvw/hww against the explicit two-line-one-vertical word. Collision control: aP1-word roots lie in F' and all t-word divisor abscissas except xQ (namely xQR1, xR1, xR3, xQR3) avoid F' by (alpha); the +-Q points appear with the SAME multiset {Q,-Q} on both sides of hlfac (div l1 + div l2 contains -Q and Q; div vertical-xQ = {Q,-Q}), so aP1-word values at +-Q cancel symmetrically and never need nonvanishing. Two small new inequalities, derivable in place: xS1 <> xQ (xQ in F, xS1 notin F) and xPS1 <> xQ (else PS1 = +-Q makes S1 = -P + (+-Q) whose abscissa is F-rational by the addition-formula closure haddXF/hslopeF, contradicting xS1 notin F). UPGRADE (gamma, implemented): the chords are paired as (Q+R1,R3) and (-R1,-(Q+R3)) so their third points are -M and M with M = Q+R1+R3 \u2014 and M's abscissa is kept OUT of F' by hypothesis (new hrecgen binders xM yM hM hMc hxMF', plus the mirror xM' etc. for the future hstepS chord P+S1+S3), discharged in hcross by enlarging the avoided subfield G with generators xQR1,yQR1,xQR2,yQR2 and the yfib-images of F1',F2' (transport: xM in F' would put xR3 resp. xS3 in G via the addition-formula closure haddXF/hslopeF/hnegYF \u2014 contradiction with hsetup3's avoidance). CONSEQUENCE: every divisor point of t's explicit word (QR1, -R1, R3, -QR3, M, -M) has non-F' abscissa, so NO collision with the aP1-word (roots in F') anywhere \u2014 the stitch is fully cancellation-safe with no symmetric-zero caveats. DONE: hlfac (t*(X-xM) = c*lA*lB, fully proven), htword (word format), hbalt (divisor balance), het1-3 (pointwise at S1/-S1/PS1), hcvt, all inside hgrand; hcross discharges all four M-binder groups. STITCH CHAIN PROVEN THROUGH: hstitch -> hscalar (hevvert scalarization) -> hword0 (t-elimination via heL/heR from het1-3, junk (x-xM) powers cancelled, hZ1/hZ2 nonzero by xM notin F') -> hword1 (aP1-elimination: mul_right_cancel0 over hDne = the six word-denominator values, proven nonzero via hrootmem + hRtF/hVnF + avoidances; eight-term linear_combination over heP1-6). SINGLE REMAINING SORRY of the chain: hword2 = the fully word-level reciprocity (uf-normalized numerator word values both sides, complementary denominator extras), to be closed by the projection cycle, worked out as follows. (i) For PHI := the aP1-word value functions (PHIN(T) = (Ln.map lam_T).prod * (Vn.map vert_T).prod, PHID likewise with Ld/Vd), hcvt PHI reads: PHI over the four Dt points times PHI over the two xM-fiber points = PHI over can(Lnt) \u2014 because Lnt is the two-chord multiset, its bind IS can(chordA) + can(chordB). (ii) hww Ln Lnt Vn 0 gives prod over can(Lnt) of PHIN = prod over can(Ln)+fib(Vn) of (LamA*LamB), sign (-1)^(2|Ln|) = 1 (EVEN \u2014 no sign bookkeeping); hww Ln 0 Vn {xM} gives prod over fib(xM) of PHIN = prod over can(Ln)+fib(Vn) of (x - xM); mirrors with Ld/Vd. (iii) hcvP at LamA, LamB, (x - xM) converts prod over can(Ln)+fib(Vn) minus can(Ld)+fib(Vd) into the explicit DP-point values LamA(PS1)^p LamA(-S1)^p etc \u2014 exactly the T1/T2 and Z1/Z2 factors already present in hword2's rest-groups. (iv) The junk to cancel at the end: PHIN/PHID at the two xM-fiber points \u2014 nonzero exactly as in hDne since the fiber abscissa xM avoids F' (use hfibpair to identify the canonical fiber pair with the actual sigma-pair). (v) The V1/V2/W1/W2 explicit mismatches reconcile through the same projections at the vertical value functions (x - xS1), (x - xR1), (x - xQR3) via the already-bound hwv3/4/7/8/9 instances. Execute as: bind the four hww instances + six hcvP projections + hcvt at PHIN/PHID/(x-xM), normalize DP-multiset products by map_add/prod_add/map_replicate/prod_replicate and the Lnt/Dt literals by the cons simp set, state the residual as one linear_combination (pre-split product-powers), cancel the M-fiber junk by mul_right_cancel0. Historical: hstitch was the sigma-completed Weil reciprocity equation itself, provable by: convert XClass-evals to scalars (hevvert+map_pow), eliminate aP1-evals by heP1-6 and t-evals by het1-3, project hbalP by hcvP at the t-word value functions (LambdaA, LambdaB, x-xM) and hbalt by hcvt at the aP1-word value functions, swap with hww instances (Ln/Ld/Vn/Vd vs the explicit two-line word and {xM}), and close with mul_right_cancel0 over the junk product (all factors nonzero by the avoidances). REMAINING inside hgrand: ONLY step 5, the stitch -- normalize the goal and all bound ingredients (nine hevid points, thirteen hww instances, hcvt/hcvP at the value functions of (Ln,Vn)/(Ld,Vd)/(Mn,Wn')/(Md,Wd')/{xS1}/{xR1,xQR3}, hfibpair identifications) with the canonical multiset-unfolding simp set, then combine via calc/linear_combination; prune unused hww instances after. REMAINING: hgrand (in hstepR/hstarinst), then hstepS mirrors the whole R-step, and hleg1-hleg6. REMAINING SORRIES in the mu-node: hrecgen and hleg1-hleg6 (bilinearity x2, alternation, nondegeneracy, p-th powers, Frobenius naturality). Superseded: FRONTIER (7 named sorried steps) description. Superseded: NEXT: line-vs-word (hlw, sign (-1)^lines) then word-vs-word (hww), then the balanced reciprocity for functions via hgenfac and the pairing. Remaining assembly: the balanced cross-product reciprocity for arbitrary disjoint pairs from the generator cases, then the pairing and its six legs. Superseded plan text: REMAINING for reciprocity: the class-group descent hgenfac (every function with point-divisor factorization equals a constant times a quotient of products of line/vertical elements, by strong induction on divisor size through hline + XYIdeal_neg_mul + toClass-nontriviality) and the multiplicative assembly of the balanced cross-product reciprocity; then the pairing definition (ratio over hgen2 generators at hpoints-generic translates) and its six legs. Older per-brick log follows: NEXT: divisor evaluation f(D) := prod of evalEval over D; nonvanishing off the divisor; the reciprocity statement f(div g) = g(div f) for disjoint supports, by induction via line/vertical factorization (hline + XYIdeal_neg_mul) reducing to the proven cores hlinerec (line-line) and hnormeval + hrecP1 (vertical cases); then the pairing and its six legs. hmax COMPLETE (with hresfin + hkill): every maximal ideal of the coordinate ring IS a point ideal XYIdeal x0 (C y0) at a curve point -- the divisor language is available. Also PROVEN: hlinfac (every maximal ideal contains a vertical X - c: the lying-over leg of hmax, via the norm-membership trick and prime factor-picking). NEXT: hmax -- every maximal ideal of the coordinate ring is a point ideal (route: M cap k[x] contains X - c via the norm-membership trick f*sigma-f = algebraMap(N f) from coe_norm_smul_basis with N f nonzero by degree_norm_smul_basis; residue field is spanned over k by the images of the basis {1, y} since X - c dies, so it is finite over k, hence = k by IsAlgClosed.algebraMap_bijective_of_isIntegral; then the coordinate images x0, y0 give XClass/YClass in M, the Weierstrass polynomial Taylor-decomposes to give the equation, and hXYmax + IsMaximal.eq_of_le forces M = XYIdeal x0 (C y0)). Then: divisor factorization of principal ideals into point primes, line/vertical factorization of functions with O-free principal divisors, reciprocity assembly from hlinerec/hnormeval/hrecP1, then the pairing definition and its six legs. REMAINING (the single sorry): the evaluation-ratio pairing e(P,Q) = f_P(D_Q)/f_Q(D_P) with disjoint affine supports (D_P = (P+S)-(S), D_Q = (Q+R)-(R)); scalar-invariance is automatic in the ratios; well-definedness/bilinearity via Weil reciprocity (norm-pushforward to P^1 or direct); alternation, nondegeneracy, Frobenius naturality. Formerly listed route e(P,Q) = f_P(D_Q)/f_Q(D_P), bilinearity/alternation/nondegeneracy via Weil reciprocity on HeightOneSpectrum divisors plus the infinite place, Frobenius naturality from functoriality of the whole construction. \u2014 MODULE SPLIT (2026-07-22, this machine compiles the mega-lc block in ~98s): the R-step telescoping monster hstepR is EXTRACTED VERBATIM as the standalone `WeilPairing.stepR` (WeilPairingStepR.lean, engine facts as hypothesis-parameters, field-generic: quantified over an arbitrary subfield F' with exactly the used membership facts, NO finiteness) and the two-level reciprocity `hrecgen` as `WeilPairing.recgen` (WeilPairingRecgen.lean, imports StepR; contains the hstepS sorry). The prune fallout (htrRN/htrQN/htrRD/htrQD + their maxRecDepth simp, deleted 6acdb95) is RESTORED and re-verified inside stepR. hstepS PLAN (\u03c3-mirror, verified at the statement level: atoms of \u03c3(stepR) = atoms of hstepS with sides swapped): instantiate stepR at a second field G'' with (R\u2083,QR\u2083-coords \u2208 G''; xS\u2081,xPS\u2081,xS\u2082,xPS\u2082,xS\u2083,xPS\u2083,x(M'\u2081),x(M'\u2082) \u2209 G''), close by linear_combination; the G''-existence discharges by DEGREE ARITHMETIC in the subfield lattice of \ud835\udd3d\u0304_q (finite subfields totally ordered; K(n) := frob\u207f-fixed subfield; promises against the FIXED field K(2f\u2080), f\u2080 = deg \ud835\udd3d_q(P,Q-coords); prime \u2113 > all fixed degrees; R\u2083-family chosen with x \u2208 K(\u2113)\u2216K(1) so G'' \u2286 K(2\u2113f\u2080) and each promised element stays out via gcd(d,\u2113)=1) \u2014 requires widening the S-side avoid-sets to K(2f\u2080)-closures and strengthening hsetup3 (extra avoid-finset input Aout with K(2f\u2080)-promises + G''-conclusion)."
  },
  {
@@ -1215,14 +1209,12 @@
   "name": "WeilPairing.stepR",
   "fullname": "WeilPairing.stepR",
   "module": "Fermat.FLT.EllipticCurve.WeilPairingStepR",
-  "wip": false,
   "text": "`WeilPairing.stepR` (PROVEN 2026-07-22, extracted verbatim from exists_weilPairing_mu at the module split): the R-side telescoping step of the Weil-pairing reciprocity, field-generic over an arbitrary subfield with exactly the used membership facts (no finiteness) \u2014 both hstepR and (\u03c3-mirrored at a second field G'') hstepS of recgen are instances."
  },
  {
   "name": "WeilPairing.recgen",
   "fullname": "WeilPairing.recgen",
   "module": "Fermat.FLT.EllipticCurve.WeilPairingRecgen",
-  "wip": false,
   "text": "`WeilPairing.recgen` (PROVEN 2026-07-22): the two-level reciprocity comparison extracted from exists_weilPairing_mu; hstepR and hstepS both close via stepR (hstepS = \u03c3-mirror instance at the G'' binders, linear_combination -hinst); consumed by the \u03bc-theorem through the G''-existence obtain."
  },
  {
@@ -1289,7 +1281,6 @@
   "name": "WeierstrassCurve.kernel_add_abscissa_notMem",
   "fullname": "WeierstrassCurve.kernel_add_abscissa_notMem",
   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.Flat",
-  "wip": false,
   "text": "`WeierstrassCurve.kernel_add_abscissa_notMem` \u2014 kernel of reduction closed under addition (formal-group valuation estimate; Silverman AEC VII.2.1-2 shape) \u2014 leaf of the proven NOS d\u00e9vissage (2026-07-22)",
   "parent": "WeierstrassCurve.torsion_inertia_fixes_of_prime_pow_isUnit"
  },
@@ -1297,7 +1288,6 @@
   "name": "WeierstrassCurve.kernel_sub_abscissa_notMem_of_residue_eq",
   "fullname": "WeierstrassCurve.kernel_sub_abscissa_notMem_of_residue_eq",
   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.Flat",
-  "wip": false,
   "text": "`WeierstrassCurve.kernel_sub_abscissa_notMem_of_residue_eq` \u2014 congruent distinct integral points differ by a kernel element (chord-slope/duplication estimate; \u0394-unit B\u00e9zout for the ordinate-flip case) \u2014 leaf of the proven NOS d\u00e9vissage (2026-07-22)",
   "parent": "WeierstrassCurve.torsion_inertia_fixes_of_prime_pow_isUnit"
  },
@@ -1305,7 +1295,6 @@
   "name": "WeierstrassCurve.exists_torsion_etale_package_over_fractionField",
   "fullname": "WeierstrassCurve.exists_torsion_etale_package_over_fractionField",
   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.Flat",
-  "wip": false,
   "text": "`WeierstrassCurve.exists_torsion_etale_package_over_fractionField` \u2014 finite \u00e9tale K-Hopf package of the m-torsion via the Grothendieck Galois correspondence (universe-honest); shared shape with Semistable's exists_galoisModulePackage_of_finiteQuotient \u2014 align later (2026-07-22)",
   "parent": "WeierstrassCurve.torsion_flat_of_inertia_fixes"
  },
@@ -1334,7 +1323,6 @@
   "name": "exists_equivariant_defect_coboundary",
   "fullname": "GaloisRepresentation.IsHardlyRamified.exists_equivariant_defect_coboundary",
   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic",
-  "wip": false,
   "text": "`exists_equivariant_defect_coboundary` (stated 2026-07-22, sole surviving leaf of the proven two-level Threeadic lifting chain): the defect 1-cocycle valued in Hom(V\u0304, \ud835\udd2a\u207f\u207a\u00b9/\ud835\udd2a\u207f\u207a\u00b2) is a coboundary \u2014 its class lies in the (flat-at-3, tame-at-2, unramified-elsewhere) Selmer group, which vanishes by class number 1 of \u211a/\u211a(\u03b6\u2083) plus unit computations (route in the docstring).",
   "parent": "GaloisRepresentation.IsHardlyRamified.exists_global_triangular_of_residual_trivial_quotient"
  },
@@ -1342,7 +1330,6 @@
   "name": "mazur_point_order",
   "fullname": "WeierstrassCurve.mazur_point_order",
   "module": "Fermat.FLT.FreyCurve.MazurTorsion",
-  "wip": true,
   "text": "`WeierstrassCurve.mazur_point_order` \u2014 order of a rational torsion point lies in {1..10,12} (Mazur 1977 Thm 8 / 1978) \u2014 kept as one faithful leaf; the Kubert per-X\u2081(N) split would multiply modular-curve leaves without reducing depth (2026-07-22)",
   "parent": "WeierstrassCurve.mazur_classification"
  },
@@ -1350,7 +1337,6 @@
   "name": "not_full_four_torsion_rat",
   "fullname": "WeierstrassCurve.not_full_four_torsion_rat",
   "module": "Fermat.FLT.FreyCurve.MazurTorsion",
-  "wip": false,
   "text": "`WeierstrassCurve.not_full_four_torsion_rat` \u2014 no rational (\u2124/4)\u00b2 level structure; minimal content \u03bc\u2084 \u2284 \u211a \u2014 docstring records the level-4 Weil-pairing route and the elementary 2-torsion-abscissae square-product route (2026-07-22)",
   "parent": "WeierstrassCurve.mazur_classification"
  },
@@ -1358,7 +1344,6 @@
   "name": "not_two_ten_torsion",
   "fullname": "WeierstrassCurve.not_two_ten_torsion",
   "module": "Fermat.FLT.FreyCurve.MazurTorsion",
-  "wip": true,
   "text": "`WeierstrassCurve.not_two_ten_torsion` \u2014 X\u2081(2,10) exclusion (modular-curve-theoretic; Mazur 1978)",
   "parent": "WeierstrassCurve.mazur_classification"
  },
@@ -1366,7 +1351,6 @@
   "name": "not_two_twelve_torsion",
   "fullname": "WeierstrassCurve.not_two_twelve_torsion",
   "module": "Fermat.FLT.FreyCurve.MazurTorsion",
-  "wip": true,
   "text": "`WeierstrassCurve.not_two_twelve_torsion` \u2014 X\u2081(2,12) exclusion (modular-curve-theoretic; Mazur 1978)",
   "parent": "WeierstrassCurve.mazur_classification"
  },
@@ -1374,7 +1358,6 @@
   "name": "exists_etale_line_of_multiplicative_self",
   "fullname": "WeierstrassCurve.exists_etale_line_of_multiplicative_self",
   "module": "Fermat.FLT.FreyCurve.MazurTorsion",
-  "wip": false,
   "text": "`FreyPackage.exists_etale_line_of_multiplicative_self` \u2014 Tate/connected-\u00e9tale line at multiplicative self-reduction (leaf of the proven flat/ordinary linear-algebra assembly)",
   "parent": "FreyPackage.subquotient_character_unramified_at_p"
  },
@@ -1382,7 +1365,6 @@
   "name": "exists_etale_line_of_good_of_stable_line",
   "fullname": "WeierstrassCurve.exists_etale_line_of_good_of_stable_line",
   "module": "Fermat.FLT.FreyCurve.MazurTorsion",
-  "wip": false,
   "text": "`FreyPackage.exists_etale_line_of_good_of_stable_line` \u2014 connected-\u00e9tale line at good reduction with stable line (leaf of the proven flat/ordinary linear-algebra assembly)",
   "parent": "FreyPackage.subquotient_character_unramified_at_p"
  },
@@ -1390,7 +1372,6 @@
   "name": "infinite_setOf_isArithFrobAt_zpowers",
   "fullname": "GaloisRepresentation.infinite_setOf_isArithFrobAt_zpowers",
   "module": "Fermat.FLT.GaloisRepresentation.Chebotarev",
-  "wip": false,
   "text": "`infinite_setOf_isArithFrobAt_zpowers` (stated 2026-07-22, the analytic cyclic core after the PROVEN Deuring reduction): for number fields E/F with Gal(E/F) = \u27e8\u03c4\u27e9, infinitely many degree-one places of F carry a prime with IsArithFrobAt \u03c4. Dirichlet-AP structurally insufficient (docstring records the reduction analysis); the classical route is the Dedekind-zeta pole / Hecke L-function nonvanishing, or Chebotarev's field-crossing with zero-density of higher-degree places.",
   "parent": "GaloisRepresentation.infinite_setOf_isArithFrobAt"
  },
@@ -1433,7 +1414,6 @@
   "name": "exists_hardlyRamified_number_field_of_card",
   "fullname": "GaloisRepresentation.IsHardlyRamified.exists_hardlyRamified_number_field_of_card",
   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
-  "wip": false,
   "text": "`exists_hardlyRamified_number_field_of_card` \u2014 field cut by ker \u03c1: totally complex, degree = |image| \u2265 48, |d_K|\u2076 \u2264 314928^[K:\u211a] (Fontaine at 3, tame at 2) \u2014 strictly smaller successor of the proven 48-bound glue (2026-07-22)",
   "parent": "GaloisRepresentation.IsHardlyRamified.exists_hardlyRamified_number_field"
  },
@@ -1441,7 +1421,6 @@
   "name": "odlyzko_bound_totallyComplex",
   "fullname": "GaloisRepresentation.IsHardlyRamified.odlyzko_bound_totallyComplex",
   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
-  "wip": true,
   "text": "`odlyzko_bound_totallyComplex` \u2014 the analytic leaf in exact numeric form: 314928^n < |d_K|\u2076 for totally complex n \u2265 48 (Minkowski provably insufficient; Odlyzko-type explicit formula needed)",
   "parent": "GaloisRepresentation.IsHardlyRamified.exists_hardlyRamified_number_field_of_card"
  },
@@ -1449,7 +1428,6 @@
   "name": "quotCharacter_eq_cyclotomic_on_inertia_three_of_ramified",
   "fullname": "GaloisRepresentation.IsHardlyRamified.quotCharacter_eq_cyclotomic_on_inertia_three_of_ramified",
   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
-  "wip": false,
   "text": "`quotCharacter_eq_cyclotomic_on_inertia_three_of_ramified` \u2014 Oort\u2013Tate/Raynaud at 3: the quotient character on inertia at 3 in the ramified case",
   "parent": "GaloisRepresentation.IsHardlyRamified.exists_line_with_unramified_quotCharacter_at_three"
  },
@@ -1457,7 +1435,6 @@
   "name": "exists_line_with_quotCharacter_eq_subCharacter",
   "fullname": "GaloisRepresentation.IsHardlyRamified.exists_line_with_quotCharacter_eq_subCharacter",
   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
-  "wip": false,
   "text": "`exists_line_with_quotCharacter_eq_subCharacter` \u2014 the Serre swap / peu-ramifi\u00e9 Selmer vanishing line",
   "parent": "GaloisRepresentation.IsHardlyRamified.exists_line_with_unramified_quotCharacter_at_three"
  },
@@ -1465,7 +1442,6 @@
   "name": "torsion_inertia_fixes_of_prime_pow_isUnit",
   "fullname": "WeierstrassCurve.torsion_inertia_fixes_of_prime_pow_isUnit",
   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.Flat",
-  "wip": false,
   "text": "`torsion_inertia_fixes_of_prime_pow_isUnit` \u2014 PROVEN 2026-07-22 (flat-2): prime-power NOS core \u2014 k=1 odd via torsion_unramified_of_good_reduction, k\u22652/p=2 via d\u00e9vissage; consumes the two kernel coordinate leaves",
   "parent": "WeierstrassCurve.torsion_flat_of_good_reduction_of_isUnit"
  },
@@ -1473,7 +1449,6 @@
   "name": "torsion_flat_of_inertia_fixes",
   "fullname": "WeierstrassCurve.torsion_flat_of_inertia_fixes",
   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.Flat",
-  "wip": false,
   "text": "`torsion_flat_of_inertia_fixes` \u2014 PROVEN assembly 2026-07-22 (flat-2): unramified \u27f9 flat over the \u00e9tale K-package + prolongation leaves",
   "parent": "WeierstrassCurve.torsion_flat_of_good_reduction_of_isUnit"
  },
@@ -1481,7 +1456,6 @@
   "name": "exists_hardlyRamified_number_field",
   "fullname": "GaloisRepresentation.IsHardlyRamified.exists_hardlyRamified_number_field",
   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
-  "wip": false,
   "text": "`exists_hardlyRamified_number_field` \u2014 PROVEN glue 2026-07-22 (serre-2) over the proven 48-bound card_matrixRange_ge_of_exceptional and the field-cut leaf",
   "parent": "GaloisRepresentation.IsHardlyRamified.serre_elimination_arith"
  },
@@ -1489,7 +1463,6 @@
   "name": "infinite_setOf_isArithFrobAt",
   "fullname": "GaloisRepresentation.infinite_setOf_isArithFrobAt",
   "module": "Fermat.FLT.GaloisRepresentation.Chebotarev",
-  "wip": false,
   "text": "`infinite_setOf_isArithFrobAt` \u2014 PROVEN 2026-07-22 (chebotarev-2, Deuring reduction); consumes the cyclic analytic core leaf",
   "parent": "GaloisRepresentation.exists_globalFrob_restrictNormalHom_conj"
  },
@@ -1497,7 +1470,6 @@
   "name": "exists_etale_line_of_split_multiplicative_self",
   "fullname": "WeierstrassCurve.exists_etale_line_of_split_multiplicative_self",
   "module": "Fermat.FLT.FreyCurve.MazurTorsion",
-  "wip": false,
   "text": "`exists_etale_line_of_split_multiplicative_self` \u2014 split-multiplicative \u00e9tale line: pure Kummer at the exists_tateEquivSepClosure interface (\u03c3(u)/u \u2208 \u03bc_p for the whole local Galois group; only the \u03bc_p-line rank-1 fact + global transport remain) \u2014 2026-07-22",
   "parent": "WeierstrassCurve.exists_etale_line_of_multiplicative_self"
  },
@@ -1505,7 +1477,6 @@
   "name": "exists_etale_line_of_nonsplit_multiplicative_self",
   "fullname": "WeierstrassCurve.exists_etale_line_of_nonsplit_multiplicative_self",
   "module": "Fermat.FLT.FreyCurve.MazurTorsion",
-  "wip": false,
   "text": "`exists_etale_line_of_nonsplit_multiplicative_self` \u2014 nonsplit case: unramified quadratic-twist descent via exists_quadraticTwist_hasSplitMultiplicativeReduction \u2014 2026-07-22",
   "parent": "WeierstrassCurve.exists_etale_line_of_multiplicative_self"
  },
@@ -1513,7 +1484,6 @@
   "name": "exists_etale_line_or_no_stable_line_of_good",
   "fullname": "WeierstrassCurve.exists_etale_line_or_no_stable_line_of_good",
   "module": "Fermat.FLT.FreyCurve.MazurTorsion",
-  "wip": false,
   "text": "`exists_etale_line_or_no_stable_line_of_good` \u2014 ordinary/supersingular dichotomy with the stable line factored out (Serre 1972 Prop 12 shape) \u2014 2026-07-22",
   "parent": "WeierstrassCurve.exists_etale_line_of_good_of_stable_line"
  },
@@ -1521,7 +1491,6 @@
   "name": "exists_omega_cocycle_coboundary",
   "fullname": "GaloisRepresentation.IsHardlyRamified.exists_omega_cocycle_coboundary",
   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic",
-  "wip": false,
   "text": "`exists_omega_cocycle_coboundary` \u2014 an a-twisted 1-cocycle mod \ud835\udd2a\u207f\u207a\u00b2 arising as the w\u2080-defect is a twisted coboundary one level deeper \u2014 H\u00b9(\u211a, \u03c9 \u2297 \ud835\udd2a\u207f\u207a\u00b9/\ud835\udd2a\u207f\u207a\u00b2) with Serre's local conditions vanishes (\u211a(\u03b6\u2083) class number 1 + units, Serre Duke \u00a75.4) \u2014 2026-07-22",
   "parent": "GaloisRepresentation.IsHardlyRamified.exists_equivariant_defect_coboundary"
  },
@@ -1529,7 +1498,6 @@
   "name": "trivial_component_hom_vanishes",
   "fullname": "GaloisRepresentation.IsHardlyRamified.trivial_component_hom_vanishes",
   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic",
-  "wip": false,
   "text": "`trivial_component_hom_vanishes` \u2014 the corrected trivial component (approximate hom \u0393\u211a \u2192 \ud835\udd2a\u207f\u207a\u00b9/\ud835\udd2a\u207f\u207a\u00b2) vanishes: everywhere-unramified from hardly-ramifiedness, then Minkowski (NumberField.abs_discr_gt_two on the pin; missing bridge = absolute-Galois inertia/discriminant infrastructure) \u2014 2026-07-22",
   "parent": "GaloisRepresentation.IsHardlyRamified.exists_equivariant_defect_coboundary"
  },
@@ -1537,7 +1505,6 @@
   "name": "exists_isWeaklyUniversal_isTraceGenerated",
   "fullname": "GaloisRepresentation.exists_isWeaklyUniversal_isTraceGenerated",
   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
-  "wip": false,
   "text": "`exists_isWeaklyUniversal_isTraceGenerated` \u2014 Mazur/Ramakrishna representability + Carayol trace generation for the constructed weak universal datum (reference FLT project's own representability node is sorry \u2014 ecosystem frontier) \u2014 2026-07-22",
   "parent": "exists_universal_hardlyRamifiedDeformation"
  },
@@ -1545,7 +1512,6 @@
   "name": "moduleFinite_of_isWeaklyUniversal_isTraceGenerated",
   "fullname": "GaloisRepresentation.moduleFinite_of_isWeaklyUniversal_isTraceGenerated",
   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
-  "wip": true,
   "text": "`moduleFinite_of_isWeaklyUniversal_isTraceGenerated` \u2014 module-finiteness of the constructed universal ring (potential modularity / TWK / Khare\u2013Wintenberger input) \u2014 2026-07-22",
   "parent": "moduleFinite_of_isUniversal"
  },
@@ -1553,7 +1519,6 @@
   "name": "exists_isPrime_lt_maximalIdeal_of_isWeaklyUniversal_isTraceGenerated",
   "fullname": "GaloisRepresentation.exists_isPrime_lt_maximalIdeal_of_isWeaklyUniversal_isTraceGenerated",
   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
-  "wip": false,
   "text": "`exists_isPrime_lt_maximalIdeal_of_isWeaklyUniversal_isTraceGenerated` \u2014 Krull dimension \u2265 1 of the constructed universal ring (B\u00f6ckle presentation bound g\u2212r \u2265 1) \u2014 2026-07-22",
   "parent": "algebraMap_injective_of_isUniversal"
  },
@@ -1575,7 +1540,6 @@
   "name": "exists_finiteQuotient_galoisModule_etale_package",
   "fullname": "exists_finiteQuotient_galoisModule_etale_package",
   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.Flat",
-  "wip": false,
   "text": "`exists_finiteQuotient_galoisModule_etale_package` \u2014 the curve-independent Grothendieck Galois correspondence for a finite abelian group with finite-Galois-quotient action (Small.{u} formulation); statement deliberately aligned with Semistable's exists_galoisModulePackage_of_finiteQuotient so one proof serves both (docstring records the deltas) \u2014 2026-07-23",
   "parent": "WeierstrassCurve.exists_torsion_etale_package_over_fractionField"
  },
@@ -1590,7 +1554,6 @@
   "name": "exists_isWeaklyUniversal",
   "fullname": "GaloisRepresentation.exists_isWeaklyUniversal",
   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
-  "wip": true,
   "text": "`exists_isWeaklyUniversal` \u2014 Mazur/Schlessinger representability (de Smit\u2013Lenstra presentation; Chebotarev\u2013Brauer\u2013Nesbitt reduction-matching recorded) \u2014 2026-07-23",
   "parent": "GaloisRepresentation.exists_isWeaklyUniversal_isTraceGenerated"
  },
@@ -1598,7 +1561,6 @@
   "name": "exists_isWeaklyUniversal_isTraceGenerated_of_isWeaklyUniversal",
   "fullname": "GaloisRepresentation.exists_isWeaklyUniversal_isTraceGenerated_of_isWeaklyUniversal",
   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
-  "wip": true,
   "text": "`exists_isWeaklyUniversal_isTraceGenerated_of_isWeaklyUniversal` \u2014 Carayol trace-descent to the closed trace subalgebra, weak universality preserved \u2014 2026-07-23",
   "parent": "GaloisRepresentation.exists_isWeaklyUniversal_isTraceGenerated"
  },
@@ -1606,7 +1568,6 @@
   "name": "exists_mvPowerSeries_presentation_of_isWeaklyUniversal_isTraceGenerated",
   "fullname": "GaloisRepresentation.exists_mvPowerSeries_presentation_of_isWeaklyUniversal_isTraceGenerated",
   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
-  "wip": true,
   "text": "`exists_mvPowerSeries_presentation_of_isWeaklyUniversal_isTraceGenerated` \u2014 B\u00f6ckle presentation \u2124_\u2113[[x\u2081..x_g]]/(f\u2081..f_r), r < g \u2014 the sole Galois-cohomological input of the proven Krull assembly \u2014 2026-07-23",
   "parent": "GaloisRepresentation.exists_isPrime_lt_maximalIdeal_of_isWeaklyUniversal_isTraceGenerated"
  },
@@ -1614,7 +1575,6 @@
   "name": "nonempty_ringEquiv_mvPowerSeries_powerSeries",
   "fullname": "GaloisRepresentation.nonempty_ringEquiv_mvPowerSeries_powerSeries",
   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
-  "wip": true,
   "text": "`nonempty_ringEquiv_mvPowerSeries_powerSeries` \u2014 MvPowerSeries (Fin (n+1)) R \u2243+* PowerSeries (MvPowerSeries (Fin n) R) \u2014 coefficient reindexing along (Fin (n+1) \u2192\u2080 \u2115) \u2243 \u2115 \u00d7 (Fin n \u2192\u2080 \u2115); subst route proven impossible \u2014 2026-07-23",
   "parent": "GaloisRepresentation.exists_isPrime_lt_maximalIdeal_of_isWeaklyUniversal_isTraceGenerated"
  },
@@ -1636,7 +1596,6 @@
   "name": "exists_conj_fixingSubgroup_of_not_isTotallyComplex",
   "fullname": "GaloisRepresentation.IsHardlyRamified.exists_conj_fixingSubgroup_of_not_isTotallyComplex",
   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
-  "wip": false,
   "text": "`exists_conj_fixingSubgroup_of_not_isTotallyComplex` \u2014 \u03c1-free embedding plumbing: a real place yields a conjugation fixing the kernel field with \u03c7\u2083 = \u22121 (repo's absoluteGaloisGroup.map arbitrary-embedding caveat documented) \u2014 2026-07-23",
   "parent": "GaloisRepresentation.IsHardlyRamified.exists_hardlyRamified_number_field_of_card"
  },
@@ -1644,7 +1603,6 @@
   "name": "discr_bound_of_kernel_field",
   "fullname": "GaloisRepresentation.IsHardlyRamified.discr_bound_of_kernel_field",
   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
-  "wip": true,
   "text": "`discr_bound_of_kernel_field` \u2014 Fontaine-at-3/tame-at-2 discriminant bound of the kernel field (conductor-discriminant vocabulary absent from mathlib) \u2014 2026-07-23",
   "parent": "GaloisRepresentation.IsHardlyRamified.exists_hardlyRamified_number_field_of_card"
  },
@@ -1652,7 +1610,6 @@
   "name": "exists_sqrt_of_quadratic_character_unramified_outside_two_three",
   "fullname": "GaloisRepresentation.IsHardlyRamified.exists_sqrt_of_quadratic_character_unramified_outside_two_three",
   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
-  "wip": false,
   "text": "`exists_sqrt_of_quadratic_character_unramified_outside_two_three` \u2014 quadratic fields ramified only in {2,3}: the character cuts \u211a(\u221ad), d \u2208 {\u22121,\u00b12,\u00b13,\u00b16} \u2014 self-contained number theory \u2014 2026-07-23",
   "parent": "GaloisRepresentation.IsHardlyRamified.serre_elimination_dihedral_arith"
  },
@@ -1660,7 +1617,6 @@
   "name": "serre_elimination_dihedral_ray_class",
   "fullname": "GaloisRepresentation.IsHardlyRamified.serre_elimination_dihedral_ray_class",
   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
-  "wip": true,
   "text": "`serre_elimination_dihedral_ray_class` \u2014 per-field induced-character/ray-class core over d \u2208 {\u22121,\u00b12,\u00b13,\u00b16} (no ray class groups on the pin) \u2014 2026-07-23",
   "parent": "GaloisRepresentation.IsHardlyRamified.serre_elimination_dihedral_arith"
  },
@@ -1668,7 +1624,6 @@
   "name": "quotCharacter_inertia_three_dichotomy",
   "fullname": "GaloisRepresentation.IsHardlyRamified.quotCharacter_inertia_three_dichotomy",
   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
-  "wip": true,
   "text": "`quotCharacter_inertia_three_dichotomy` \u2014 Oort\u2013Tate for order-3 group schemes over \u2124\u2083: \u03c7 on inertia trivial or cyclotomic \u2014 2026-07-23",
   "parent": "GaloisRepresentation.IsHardlyRamified.quotCharacter_eq_cyclotomic_on_inertia_three_of_ramified"
  },
@@ -1676,7 +1631,6 @@
   "name": "exists_splitting_scalar_of_quot_ramified",
   "fullname": "GaloisRepresentation.IsHardlyRamified.exists_splitting_scalar_of_quot_ramified",
   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
-  "wip": true,
   "text": "`exists_splitting_scalar_of_quot_ramified` \u2014 peu-ramifi\u00e9 cocycle vanishing: the extension cocycle is a coboundary c g = t\u00b7(\u03c7 g \u2212 \u03c8 g) (H\u00b9 Selmer vanishing, Serre Duke \u00a75.4) \u2014 2026-07-23",
   "parent": "GaloisRepresentation.IsHardlyRamified.exists_line_with_quotCharacter_eq_subCharacter"
  },
@@ -1684,7 +1638,6 @@
   "name": "exists_etale_line_of_good_of_inertia_stable_line",
   "fullname": "WeierstrassCurve.exists_etale_line_of_good_of_inertia_stable_line",
   "module": "Fermat.FLT.FreyCurve.MazurTorsion",
-  "wip": true,
   "text": "`exists_etale_line_of_good_of_inertia_stable_line` \u2014 good reduction at odd p + inertia-stable line \u27f9 \u00e9tale line (supersingular excluded via Serre 1972 Prop 12 level-2 fundamental characters; ordinary gives the connected-\u00e9tale line; needs tame-fundamental-character theory at residue characteristic p \u2014 nothing in the repo reaches q = p) \u2014 2026-07-23",
   "parent": "WeierstrassCurve.exists_etale_line_or_no_stable_line_of_good"
  },
@@ -1692,7 +1645,6 @@
   "name": "exists_hardlyRamified_integral_realizations",
   "fullname": "GaloisRepresentation.IsHardlyRamified.exists_hardlyRamified_integral_realizations",
   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Family",
-  "wip": true,
   "text": "`exists_hardlyRamified_integral_realizations` \u2014 integral hardly-ramified realizations at odd \u2113 \u2014 the sole automorphy content of the proven realization assembly (statement inverted per the soundness audit: the leaf produces the integral model; weight-2 eigensystem vocabulary unstatable on the pin, obstruction recorded) \u2014 2026-07-23",
   "parent": "exists_realizations_of_eigensystem"
  },
@@ -1700,7 +1652,6 @@
   "name": "exists_realizations_at_two",
   "fullname": "GaloisRepresentation.IsHardlyRamified.exists_realizations_at_two",
   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Family",
-  "wip": true,
   "text": "`exists_realizations_at_two` \u2014 bare 2-adic member matching the shared Pv (no hardly-ramified model demanded at \u2113=2) \u2014 2026-07-23",
   "parent": "exists_realizations_of_eigensystem"
  },
@@ -1708,7 +1659,6 @@
   "name": "exists_finiteDimensional_trace_field",
   "fullname": "GaloisRepresentation.IsHardlyRamified.exists_finiteDimensional_trace_field",
   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Family",
-  "wip": true,
   "text": "`exists_finiteDimensional_trace_field` \u2014 the Hecke-field finiteness core confined to the trace coefficient (\u211a_p-confinement now hypotheses; genuinely non-formal \u2014 automorphy enters here; deferred to the automorphy campaign) \u2014 2026-07-23",
   "parent": "exists_finiteDimensional_coeff_field"
  },
@@ -1716,7 +1666,6 @@
   "name": "residual_twist_eq_cyclotomicCharacterModL",
   "fullname": "GaloisRepresentation.IsHardlyRamified.residual_twist_eq_cyclotomicCharacterModL",
   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic",
-  "wip": true,
   "text": "`residual_twist_eq_cyclotomicCharacterModL` \u2014 \u0101 = \u03c9 via the determinant identification \u2014 2026-07-23",
   "parent": "GaloisRepresentation.IsHardlyRamified.exists_omega_cocycle_coboundary"
  },
@@ -1732,7 +1681,6 @@
   "name": "inertia_eq_bot_of_forall_localInertia_restrictNormalHom",
   "fullname": "GaloisRepresentation.IsHardlyRamified.inertia_eq_bot_of_forall_localInertia_restrictNormalHom",
   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic",
-  "wip": true,
   "text": "`inertia_eq_bot_of_forall_localInertia_restrictNormalHom` \u2014 local inertia surjects onto finite-level inertia \u2014 2026-07-23",
   "parent": "GaloisRepresentation.IsHardlyRamified.trivial_component_hom_vanishes"
  },
@@ -1740,7 +1688,6 @@
   "name": "hom_vanishes_on_localInertia_at_two",
   "fullname": "GaloisRepresentation.IsHardlyRamified.hom_vanishes_on_localInertia_at_two",
   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic",
-  "wip": true,
   "text": "`hom_vanishes_on_localInertia_at_two` \u2014 3-torsion homs kill inertia at 2 (local Kronecker\u2013Weber / tame conjugation; \u03c1-free) \u2014 2026-07-23",
   "parent": "GaloisRepresentation.IsHardlyRamified.trivial_component_hom_vanishes"
  },
@@ -1756,7 +1703,6 @@
   "name": "exists_quotient_isogeny",
   "fullname": "WeierstrassCurve.exists_quotient_isogeny",
   "module": "Fermat.FLT.FreyCurve.MazurTorsion",
-  "wip": true,
   "text": "`exists_quotient_isogeny` \u2014 the curve-independent V\u00e9lu core (V\u00e9lu 1971 / AEC III.4.12): finite Galois-stable subgroup \u27f9 quotient elliptic curve + equivariant hom with the prescribed kernel; no isogeny material on the pin or in the reference project; successor task = a V\u00e9lu/isogeny mini-theory feeding this one statement (fake-decomposition warning recorded) \u2014 2026-07-23",
   "parent": "WeierstrassCurve.exists_quotient_curve_point"
  },
@@ -1764,7 +1710,6 @@
   "name": "exists_hopfAlgebra_galoisEquivariantAlgebra",
   "fullname": "exists_hopfAlgebra_galoisEquivariantAlgebra",
   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.Flat",
-  "wip": true,
   "text": "`exists_hopfAlgebra_galoisEquivariantAlgebra` \u2014 the surviving Hopf/descent stratum of the proven Grothendieck-correspondence assembly: Type-u carrier with HopfAlgebra structure equivalent to the equivariant algebra, convolution = evaluation-at-sum (comultiplication via the descent identification HK \u2297 HK \u2245 equivariant(A \u00d7 A \u2192 L); existential bundling avoids the WithConv instance diamond \u2014 design note in docstring) \u2014 2026-07-23",
   "parent": "exists_finiteQuotient_galoisModule_etale_package"
  },
@@ -1772,70 +1717,459 @@
   "fullname": "WeierstrassCurve.exists_torsion_etale_package_of_eqChar",
   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.Flat",
   "name": "exists_torsion_etale_package_of_eqChar",
-  "text": "torsion \u00e9tale package in equal characteristic",
-  "wip": true
+  "text": "torsion \u00e9tale package in equal characteristic"
  },
  {
   "fullname": "WeierstrassCurve.kernel_prime_pow_torsion_of_eqChar",
   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.Flat",
   "name": "kernel_prime_pow_torsion_of_eqChar",
-  "text": "prime-power torsion kernel in equal characteristic",
-  "wip": true
+  "text": "prime-power torsion kernel in equal characteristic"
  },
  {
   "fullname": "WeierstrassCurve.exists_finite_flat_hopf_form_of_good_reduction_prime_pow",
   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.Flat",
   "name": "exists_finite_flat_hopf_form_of_good_reduction_prime_pow",
-  "text": "finite flat Hopf form under good reduction at prime powers",
-  "wip": true
+  "text": "finite flat Hopf form under good reduction at prime powers"
  },
  {
   "fullname": "exists_finite_etale_algebra_form_of_inertia_fixes",
   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.Flat",
   "name": "exists_finite_etale_algebra_form_of_inertia_fixes",
-  "text": "finite \u00e9tale algebra form when inertia fixes the points",
-  "wip": true
+  "text": "finite \u00e9tale algebra form when inertia fixes the points"
  },
  {
   "fullname": "exists_finite_flat_hopf_form_of_etale_algebra_form",
   "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.Flat",
   "name": "exists_finite_flat_hopf_form_of_etale_algebra_form",
-  "text": "finite flat Hopf form from the \u00e9tale algebra form",
-  "wip": true
+  "text": "finite flat Hopf form from the \u00e9tale algebra form"
  },
  {
   "fullname": "WeierstrassCurve.torsionFlatPackage_localization_of_packages",
   "module": "Fermat.FLT.FreyCurve.Semistable",
   "name": "torsionFlatPackage_localization_of_packages",
-  "text": "torsion flat package glued from localizations",
-  "wip": true
+  "text": "torsion flat package glued from localizations"
  },
  {
   "fullname": "exists_galoisModulePackage_of_finiteQuotient",
   "module": "Fermat.FLT.FreyCurve.Semistable",
   "name": "exists_galoisModulePackage_of_finiteQuotient",
-  "text": "Galois module package from the finite quotient",
-  "wip": true
+  "text": "Galois module package from the finite quotient"
  },
  {
   "fullname": "WeierstrassCurve.torsionFlatPackage_of_nonsplit_adic",
   "module": "Fermat.FLT.FreyCurve.Semistable",
   "name": "torsionFlatPackage_of_nonsplit_adic",
-  "text": "torsion flat package in the nonsplit adic case",
-  "wip": true
+  "text": "torsion flat package in the nonsplit adic case"
  },
  {
   "fullname": "GaloisRepresentation.exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_ne",
   "module": "Fermat.FLT.GaloisRepresentation.Chebotarev",
   "name": "exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_ne",
-  "text": "divergence of the degree-one prime sum away from \u2113 (Dedekind zeta at s\u21921\u207a)",
-  "wip": true
+  "text": "divergence of the degree-one prime sum away from \u2113 (Dedekind zeta at s\u21921\u207a)"
  },
  {
   "fullname": "GaloisRepresentation.tsum_rpow_neg_natCard_quotient_prime_and_ne_le_mul_tsum_add",
   "module": "Fermat.FLT.GaloisRepresentation.Chebotarev",
   "name": "tsum_rpow_neg_natCard_quotient_prime_and_ne_le_mul_tsum_add",
-  "text": "prime sum bounded by \u2113\u00b7(congruence-class sum) + O(1) via character orthogonality",
+  "text": "prime sum bounded by \u2113\u00b7(congruence-class sum) + O(1) via character orthogonality"
+ },
+ {
+  "fullname": "GaloisRepresentation.tsum_finset_prod_le_tsum_pow_div_factorial",
+  "module": "Fermat.FLT.GaloisRepresentation.Chebotarev",
+  "name": "tsum_finset_prod_le_tsum_pow_div_factorial",
+  "text": "`tsum_finset_prod_le_tsum_pow_div_factorial` (census 2026-07-24) \u2014 Exponential bound for sums of products over finite subsets (sorry leaf): for any family `x : \u03b9 \u2192 \u211d\u22650\u221e`, `\u2211_{T : Finset \u03b9} \u220f_{i \u2208 T} x i \u2264 \u2211_k (\u2211 x)^k / k!`.",
+  "wip": true
+ },
+ {
+  "fullname": "GaloisRepresentation.exists_forall_le_norm_LSeries_and_norm_deriv_LSeries_le",
+  "module": "Fermat.FLT.GaloisRepresentation.Chebotarev",
+  "name": "exists_forall_le_norm_LSeries_and_norm_deriv_LSeries_le",
+  "text": "`exists_forall_le_norm_LSeries_and_norm_deriv_LSeries_le` (census 2026-07-24) \u2014 Good behaviour of the twisted `L`-series on `[1, 2]` (sorry leaf) \u2014 the analytic-continuation-plus-nonvanishing core, now separated from all Euler-product and prime-sum bookkeeping: for a cyclotomic extension `E = F(\u03b6_\u2113)` (`\u2113` prime) and a Dirichlet character `\u03c7 mod \u2113` (values in `\u2102`) nontrivial on the image of `Gal...",
+  "wip": true
+ },
+ {
+  "fullname": "GaloisRepresentation.exists_forall_norm_tsum_dirichletCharacter_mul_rpow_neg_le",
+  "module": "Fermat.FLT.GaloisRepresentation.Chebotarev",
+  "name": "exists_forall_norm_tsum_dirichletCharacter_mul_rpow_neg_le",
+  "text": "`exists_forall_norm_tsum_dirichletCharacter_mul_rpow_neg_le` (census 2026-07-24) \u2014 Boundedness near `s = 1` of the nontrivial Dirichlet character sums over degree-one primes (sorry node) \u2014 the `L(1, \u03c7) \u2260 0` core of the Chebotarev/Dirichlet argument, now stripped of ALL bookkeeping: for a cyclotomic extension `E = F(\u03b6_\u2113)` (`\u2113` prime) and a Dirichlet character `\u03c7 mod \u2113` (with values in `\u2102`) that is...",
+  "wip": true
+ },
+ {
+  "fullname": "GaloisRepresentation.tsum_rpow_neg_absNorm_le_mul_tsum_finset_prod",
+  "module": "Fermat.FLT.GaloisRepresentation.Chebotarev",
+  "name": "tsum_rpow_neg_absNorm_le_mul_tsum_finset_prod",
+  "text": "`tsum_rpow_neg_absNorm_le_mul_tsum_finset_prod` (census 2026-07-24) \u2014 Square-times-squarefree decomposition (sorry leaf): every nonzero ideal `I` of `\ud835\udcde F` factors as `I = J ^ 2 * \u220f_{P \u2208 T} P.asIdeal` with `J \u2260 \u22a5` and `T` a finite set of finite places (halve each exponent in the prime factorization; `T` collects the odd exponents), and `I` is recoverable from `(J, T)`, so `I \u21a6 (J, T)`...",
+  "wip": true
+ },
+ {
+  "fullname": "GaloisRepresentation.exp_tsum_neg_log_one_sub_dirichletCharacter_mul_cpow_neg_eq_LSeries",
+  "module": "Fermat.FLT.GaloisRepresentation.Chebotarev",
+  "name": "exp_tsum_neg_log_one_sub_dirichletCharacter_mul_cpow_neg_eq_LSeries",
+  "text": "`exp_tsum_neg_log_one_sub_dirichletCharacter_mul_cpow_neg_eq_LSeries` (census 2026-07-24) \u2014 Euler product for the `\u03c7`-twisted Dedekind zeta function, in exponential form (sorry leaf): for a number field `F`, a Dirichlet character `\u03c7 mod \u2113` with values in `\u2102`, and complex `w` with `1 < re w`, the exponential of the prime log-sum `\u2211_P -log(1 - \u03c7(N P) \u00b7 N P ^ (-w))` over ALL finite places of `F` equals the `L...",
+  "wip": true
+ },
+ {
+  "fullname": "WeilPairing.weilValueProp_all_one_torsion_trivial",
+  "module": "Fermat.FLT.EllipticCurve.WeilPairing",
+  "name": "weilValueProp_all_one_torsion_trivial",
+  "text": "`weilValueProp_all_one_torsion_trivial` (census 2026-07-24) \u2014 Nondegeneracy descent core (sorry node \u2014 Silverman AEC III.8.1(c), the `g = h\u2218[p]` descent; staged plan L4-1..9 on record in HLEG-NOTES.md \u00a74(B)): if `1` is an admissible Miller value for every pair of `p`-torsion points, then the whole `p`-torsion group is trivial.",
+  "wip": true
+ },
+ {
+  "fullname": "WeilPairing.weilValueProp_self_of_two",
+  "module": "Fermat.FLT.EllipticCurve.WeilPairing",
+  "name": "weilValueProp_self_of_two",
+  "text": "`weilValueProp_self_of_two` (census 2026-07-24) \u2014 `p = 2` alternation core (sorry node \u2014 Silverman AEC III.8.1(b) in the residual case `p = 2`, where skew-symmetry `z\u00b2 = 1` says nothing): every admissible Miller value of a self-pair of `2`-torsion points is `1`.",
+  "wip": true
+ },
+ {
+  "fullname": "exists_finite_etale_algebra_form_of_inertia_fixes_field",
+  "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.Flat",
+  "name": "exists_finite_etale_algebra_form_of_inertia_fixes_field",
+  "text": "`exists_finite_etale_algebra_form_of_inertia_fixes_field` (census 2026-07-24) \u2014 Unramified finite separable field extensions have finite \u00e9tale `R`-forms (sorry node; the single-factor core of the Galois half of the curve-free Hopf-form leaf, isolated 2026-07-23 \u2014 the product assembly is proven in `exists_finite_etale_algebra_form_of_inertia_fixes`): a finite separable field extension `L/K`, all...",
+  "wip": true
+ },
+ {
+  "fullname": "WeierstrassCurve.exists_bialgEquiv_of_torsion_points_equiv",
+  "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.Flat",
+  "name": "exists_bialgEquiv_of_torsion_points_equiv",
+  "text": "`exists_bialgEquiv_of_torsion_points_equiv` (census 2026-07-24) \u2014 Grothendieck full faithfulness for torsion points (sorry node; the COMPARISON half of the Katz\u2013Mazur leaf, curve-generic in content): two finite \u00e9tale Hopf `K`-algebras whose `K\u02e2\u1d49\u1d56`-point groups are `Gal(K\u02e2\u1d49\u1d56/K)`-equivariantly isomorphic to the same `m`-torsion Galois module are isomorphic as Hopf algebras.",
+  "wip": true
+ },
+ {
+  "fullname": "WeierstrassCurve.exists_torsion_flat_model_of_good_reduction_prime_pow",
+  "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.Flat",
+  "name": "exists_torsion_flat_model_of_good_reduction_prime_pow",
+  "text": "`exists_torsion_flat_model_of_good_reduction_prime_pow` (census 2026-07-24) \u2014 The Katz\u2013Mazur flat model, mixed characteristic (sorry node; the EXISTENCE half of the Katz\u2013Mazur leaf \u2014 the flat-package statement with no reference algebra to compare against): when the prime `p` is not invertible in `R` but nonzero in `K`, SOME finite flat Hopf `R`-algebra has \u00e9tale generic fibre whose `K\u02e2\u1d49\u1d56`-poi...",
+  "wip": true
+ },
+ {
+  "fullname": "exists_finite_flat_hopf_form_integralClosure",
+  "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.Flat",
+  "name": "exists_finite_flat_hopf_form_integralClosure",
+  "text": "`exists_finite_flat_hopf_form_integralClosure` (census 2026-07-24) \u2014 The integral closure in an \u00e9tale-formed Hopf algebra is a Hopf order (sorry node; the HOPF half of the Hopf-upgrade leaf): if the integral closure `H\u2080 := integralClosure R HK` of `R` in the finite \u00e9tale Hopf `K`-algebra `HK` is a finite \u00e9tale `R`-algebra form, then `HK` admits a finite flat Hopf `R`-form (namely `H\u2080...",
+  "wip": true
+ },
+ {
+  "fullname": "exists_hopfAlgebra_galoisHopfCarrier",
+  "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.Flat",
+  "name": "exists_hopfAlgebra_galoisHopfCarrier",
+  "text": "`exists_hopfAlgebra_galoisHopfCarrier` (census 2026-07-24) \u2014 The Hopf-algebra package on the canonical-universe carrier (sorry node; the comultiplication half of the package, freed 2026-07-23 of all universe bookkeeping \u2014 the `Type u` realization is now the separate transport leaf `exists_hopfAlgebra_small_copy`, assembled in `exists_hopfAlgebra_galoisEquivariantAlgebra`): th...",
+  "wip": true
+ },
+ {
+  "fullname": "exists_hopfAlgebra_small_copy",
+  "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.Flat",
+  "name": "exists_hopfAlgebra_small_copy",
+  "text": "`exists_hopfAlgebra_small_copy` (census 2026-07-24) \u2014 Hopf algebras have Hopf-algebra copies in every admissible universe (sorry node; pure transfer of structure, curve-free and Galois-free \u2014 the universe half of the equivariant-functions package): a Hopf algebra `B` over `K\u2081` that is `v`-small as a type admits a `Type v` copy: a commutative ring `C` in `Type v` with a...",
+  "wip": true
+ },
+ {
+  "fullname": "integralClosure_finite_etale_form_of_etale_algebra_form",
+  "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.Flat",
+  "name": "integralClosure_finite_etale_form_of_etale_algebra_form",
+  "text": "`integralClosure_finite_etale_form_of_etale_algebra_form` (census 2026-07-24) \u2014 \u00c9tale algebra forms are the integral closure (sorry node; the CANONICITY half of the Hopf-upgrade leaf \u2014 pure commutative algebra over the DVR `R`, no Hopf structure): if the finite \u00e9tale `K`-algebra `HK` admits a finite \u00e9tale `R`-algebra form `H\u2080`, then the integral closure of `R` in `HK` is itself a finite \u00e9tale `...",
+  "wip": true
+ },
+ {
+  "fullname": "WeierstrassCurve.kernel_prime_torsion_of_eqChar",
+  "module": "Fermat.FLT.KnownIn1980s.EllipticCurves.Flat",
+  "name": "kernel_prime_torsion_of_eqChar",
+  "text": "`kernel_prime_torsion_of_eqChar` (census 2026-07-24) \u2014 The kernel of reduction has no `p`-torsion in equal characteristic `p` (sorry node; the prime-order core of the equal-characteristic N\u00e9ron\u2013Ogg\u2013Shafarevich, to which the prime-power case `kernel_prime_pow_torsion_of_eqChar` reduces by the kernel-multiples closure `kernel_nsmul_abscissa_notMem`): when `p` vanishes in...",
+  "wip": true
+ },
+ {
+  "fullname": "galDescPointT_conv",
+  "module": "Fermat.FLT.FreyCurve.Semistable",
+  "name": "galDescPointT_conv",
+  "text": "`galDescPointT_conv` (census 2026-07-24) \u2014 Evaluation turns addition into convolution (sorry node \u2014 the convolution of `ev_a` and `ev_b` is evaluation of the pulled-back addition at `(a, b)`, i.e.",
+  "wip": true
+ },
+ {
+  "fullname": "galDescComul_rTensor_counit",
+  "module": "Fermat.FLT.FreyCurve.Semistable",
+  "name": "galDescComul_rTensor_counit",
+  "text": "`galDescComul_rTensor_counit` (census 2026-07-24) \u2014 Left counit axiom for the twisted comultiplication (sorry node \u2014 evaluation of the first tensor factor at `0` collapses the pullback along addition to the identity).",
+  "wip": true
+ },
+ {
+  "fullname": "galDesc_mul_antipode_rTensor_comul",
+  "module": "Fermat.FLT.FreyCurve.Semistable",
+  "name": "galDesc_mul_antipode_rTensor_comul",
+  "text": "`galDesc_mul_antipode_rTensor_comul` (census 2026-07-24) \u2014 Left antipode axiom (sorry node \u2014 after the tensor comparison, `m \u2218 (S \u2297 id) \u2218 \u0394` is pullback along `a \u21a6 (-a) + a = 0`, the unit of the convolution).",
+  "wip": true
+ },
+ {
+  "fullname": "galDescComul_lTensor_counit",
+  "module": "Fermat.FLT.FreyCurve.Semistable",
+  "name": "galDescComul_lTensor_counit",
+  "text": "`galDescComul_lTensor_counit` (census 2026-07-24) \u2014 Right counit axiom for the twisted comultiplication (sorry node \u2014 symmetric to the left axiom).",
+  "wip": true
+ },
+ {
+  "fullname": "exists_hopfOrder_of_adic_bialgEquiv",
+  "module": "Fermat.FLT.FreyCurve.Semistable",
+  "name": "exists_hopfOrder_of_adic_bialgEquiv",
+  "text": "`exists_hopfOrder_of_adic_bialgEquiv` (census 2026-07-24) \u2014 The lattice intersection (sorry node \u2014 the INTEGRAL half of the lattice gluing, curve-free): given a finite-dimensional `\u211a`-Hopf algebra `Hg` with \u00e9tale generic fibre, a finite flat Hopf algebra `H_loc` over the completed integers `\ud835\udcaa = \u2124_p\u02c6`, and a `\u211a_p\u02c6`-BIALGEBRA isomorphism `\u03c8` of their base changes, the lattice...",
+  "wip": true
+ },
+ {
+  "fullname": "WeierstrassCurve.torsionFlatPackage_of_quadraticCharacter_twist",
+  "module": "Fermat.FLT.FreyCurve.Semistable",
+  "name": "torsionFlatPackage_of_quadraticCharacter_twist",
+  "text": "`torsionFlatPackage_of_quadraticCharacter_twist` (census 2026-07-24) \u2014 Unramified quadratic descent of the Hopf model (sorry node \u2014 the DESCENT core of the nonsplit case, isolated so that the twist point-equivalence transport is PROVEN glue): given a finite flat `\ud835\udcaa`-Hopf algebra `H` with \u00e9tale generic fibre whose `\u03a9\u0302`-points are identified with the `p`-torsion of `X` EQUIVARIANTLY UP T...",
+  "wip": true
+ },
+ {
+  "fullname": "WeierstrassCurve.exists_adic_bialgEquiv_of_torsion_packages",
+  "module": "Fermat.FLT.FreyCurve.Semistable",
+  "name": "exists_adic_bialgEquiv_of_torsion_packages",
+  "text": "`exists_adic_bialgEquiv_of_torsion_packages` (census 2026-07-24) \u2014 The adic \u00e9tale/Galois-sets comparison (sorry node \u2014 the GENERIC-FIBRE comparison half of the lattice gluing): the two \u00e9tale `\u211a_p\u02c6`-bialgebras `\u211a_p\u02c6 \u2297_\u211a Hg` and `\u211a_p\u02c6 \u2297_\ud835\udcaa H_loc` are isomorphic as `\u211a_p\u02c6`-BIALGEBRAS.",
+  "wip": true
+ },
+ {
+  "fullname": "galDesc_mul_antipode_lTensor_comul",
+  "module": "Fermat.FLT.FreyCurve.Semistable",
+  "name": "galDesc_mul_antipode_lTensor_comul",
+  "text": "`galDesc_mul_antipode_lTensor_comul` (census 2026-07-24) \u2014 Right antipode axiom (sorry node \u2014 symmetric to the left axiom).",
+  "wip": true
+ },
+ {
+  "fullname": "galDescComul_coassoc",
+  "module": "Fermat.FLT.FreyCurve.Semistable",
+  "name": "galDescComul_coassoc",
+  "text": "`galDescComul_coassoc` (census 2026-07-24) \u2014 Coassociativity of the twisted comultiplication (sorry node \u2014 after composing with the injective tensor comparison into functions on `A \u00d7 A \u00d7 A`, both sides are pullback along `(a,b,c) \u21a6 a+b+c`).",
+  "wip": true
+ },
+ {
+  "fullname": "WeierstrassCurve.not_two_torsion_and_five_point",
+  "module": "Fermat.FLT.FreyCurve.MazurTorsion",
+  "name": "not_two_torsion_and_five_point",
+  "text": "`not_two_torsion_and_five_point` (census 2026-07-24) \u2014 No full rational `2`-torsion together with a rational point of order `5` (sorry node \u2014 the `X_1(2,10)` content in its literature form): no elliptic curve over `\u211a` has an injective `(\u2124/2)\u00b2 \u2192+ E(\u211a)` and a rational point of order `5` simultaneously.",
+  "wip": true
+ },
+ {
+  "fullname": "WeierstrassCurve.exists_localTorsionQuotient_of_good_ordinary",
+  "module": "Fermat.FLT.FreyCurve.MazurTorsion",
+  "name": "exists_localTorsionQuotient_of_good_ordinary",
+  "text": "`exists_localTorsionQuotient_of_good_ordinary` (census 2026-07-24) \u2014 The local connected-\u00e9tale torsion quotient at a good ORDINARY prime (sorry node \u2014 the surviving local content of the ordinary case, cut 2026-07-23 at the same seam as the PROVEN multiplicative quotients `exists_localTorsionQuotient_of_split` / `_of_nonsplit`): for an elliptic curve over `\u211a` with good ordinary reduct...",
+  "wip": true
+ },
+ {
+  "fullname": "WeierstrassCurve.exists_quotient_isogeny_of_odd_prime_card",
+  "module": "Fermat.FLT.FreyCurve.MazurTorsion",
+  "name": "exists_quotient_isogeny_of_odd_prime_card",
+  "text": "`exists_quotient_isogeny_of_odd_prime_card` (census 2026-07-24) \u2014 The odd-prime-order quotient-isogeny leaf \u2014 V\u00e9lu's construction (sorry node, sharpened 2026-07-23 from the general prime-order statement by splitting off the rational `2`-isogeny case): for a Galois-stable cyclic subgroup `C` of ODD prime order `\u2113` in the geometric points of an elliptic curve `E/\u211a` there are an elli...",
+  "wip": true
+ },
+ {
+  "fullname": "WeierstrassCurve.not_local_inertia_eigenvector_of_good_of_supersingular",
+  "module": "Fermat.FLT.FreyCurve.MazurTorsion",
+  "name": "not_local_inertia_eigenvector_of_good_of_supersingular",
+  "text": "`not_local_inertia_eigenvector_of_good_of_supersingular` (census 2026-07-24) \u2014 No local inertia eigenvector at a good SUPERSINGULAR prime (sorry node \u2014 the local fundamental-character content, cut 2026-07-23 at the same local seam as the multiplicative and ordinary quotients): for an elliptic curve over `\u211a` with good supersingular reduction at an odd prime `p` (supersingularity stated as the t...",
+  "wip": true
+ },
+ {
+  "fullname": "WeierstrassCurve.no_composite_torsion_order",
+  "module": "Fermat.FLT.FreyCurve.MazurTorsion",
+  "name": "no_composite_torsion_order",
+  "text": "`no_composite_torsion_order` (census 2026-07-24) \u2014 No rational torsion point of the critical composite orders (sorry node): no elliptic curve over `\u211a` has a rational point of order `n` for `n \u2208 {14, 15, 16, 18, 20, 21, 24, 25, 27, 35, 49}` \u2014 the composite values that are minimal outside Mazur's list `{1, \u2026, 10, 12}` (every proper divisor is in the list) and have all...",
+  "wip": true
+ },
+ {
+  "fullname": "WeierstrassCurve.not_two_four_torsion_and_three_point",
+  "module": "Fermat.FLT.FreyCurve.MazurTorsion",
+  "name": "not_two_four_torsion_and_three_point",
+  "text": "`not_two_four_torsion_and_three_point` (census 2026-07-24) \u2014 No rational `\u2124/2 \u00d7 \u2124/4` together with a rational point of order `3` (sorry node \u2014 the `X_1(2,12)` content in its literature form): no elliptic curve over `\u211a` has an injective `\u2124/2 \u00d7 \u2124/4 \u2192+ E(\u211a)` and a rational point of order `3` simultaneously.",
+  "wip": true
+ },
+ {
+  "fullname": "WeierstrassCurve.no_prime_torsion_ge_eleven",
+  "module": "Fermat.FLT.FreyCurve.MazurTorsion",
+  "name": "no_prime_torsion_ge_eleven",
+  "text": "`no_prime_torsion_ge_eleven` (census 2026-07-24) \u2014 Mazur: no rational torsion point of prime order `\u2265 11` (sorry node): no elliptic curve over `\u211a` has a rational point of order `\u2113` for a prime `\u2113 \u2265 11`.",
+  "wip": true
+ },
+ {
+  "fullname": "WeierstrassCurve.exists_quotient_isogeny_of_rational_two_torsion",
+  "module": "Fermat.FLT.FreyCurve.MazurTorsion",
+  "name": "exists_quotient_isogeny_of_rational_two_torsion",
+  "text": "`exists_quotient_isogeny_of_rational_two_torsion` (census 2026-07-24) \u2014 The rational two-torsion quotient isogeny \u2014 the classical `2`-isogeny (sorry node, cut out of `exists_quotient_isogeny_of_prime_card` 2026-07-23): for a RATIONAL `2`-torsion point `T \u2260 0` of an elliptic curve `E/\u211a` there are an elliptic curve `E'/\u211a` (the quotient `E/\u27e8T\u27e9`) and a Galois-equivariant group homomorphism...",
+  "wip": true
+ },
+ {
+  "fullname": "GaloisRepresentation.IsHardlyRamified.exists_isAlgebraic_trace_coeff_of_isIrreducible",
+  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Family",
+  "name": "exists_isAlgebraic_trace_coeff_of_isIrreducible",
+  "text": "`exists_isAlgebraic_trace_coeff_of_isIrreducible` (census 2026-07-24) \u2014 Algebraicity shadow on the irreducible branch (sorry node): away from a finite set of places, the TRACE coefficient (`coeff 1`) of the mapped Frobenius characteristic polynomials of a hardly ramified `p`-adic representation whose base extension to `\u211a\u0304_p` IS irreducible is algebraic over `\u211a`.",
+  "wip": true
+ },
+ {
+  "fullname": "GaloisRepresentation.IsHardlyRamified.exists_linearIndependent_trace_card_le_of_isIrreducible",
+  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Family",
+  "name": "exists_linearIndependent_trace_card_le_of_isIrreducible",
+  "text": "`exists_linearIndependent_trace_card_le_of_isIrreducible` (census 2026-07-24) \u2014 Bounded-independence shadow on the irreducible branch (sorry node): away from a finite set of places there is a uniform bound `d` such that every `\u211a`-linearly independent finite batch of TRACE coefficients of the mapped Frobenius characteristic polynomials has at most `d` elements.",
+  "wip": true
+ },
+ {
+  "fullname": "GaloisRepresentation.IsHardlyRamified.exists_rat_trace_coeff_of_not_isIrreducible",
+  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Family",
+  "name": "exists_rat_trace_coeff_of_not_isIrreducible",
+  "text": "`exists_rat_trace_coeff_of_not_isIrreducible` (census 2026-07-24) \u2014 Rational traces on the reducible branch (sorry node): away from a finite set of places, the TRACE coefficient (`coeff 1`) of the mapped Frobenius characteristic polynomials of a hardly ramified `p`-adic representation whose base extension to `\u211a\u0304_p` is NOT irreducible is a RATIONAL number.",
+  "wip": true
+ },
+ {
+  "fullname": "GaloisRepresentation.IsHardlyRamified.exists_hardlyRamified_ringOfIntegers_realizations",
+  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Family",
+  "name": "exists_hardlyRamified_ringOfIntegers_realizations",
+  "text": "`exists_hardlyRamified_ringOfIntegers_realizations` (census 2026-07-24) \u2014 Automorphy core over concrete rings of integers, odd residue characteristics (sorry node): the eigensystem `(E, S, Pv)` attached to a hardly ramified `p`-adic representation is realized *integrally* at every odd prime `\u2113` and embedding `\u03c6 : E \u2192+* \u211a\u0304_\u2113`, with the coefficient ring CONCRETE: there are a finite extensio...",
+  "wip": true
+ },
+ {
+  "fullname": "GaloisRepresentation.IsHardlyRamified.exists_realization_at_two_generated",
+  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Family",
+  "name": "exists_realization_at_two_generated",
+  "text": "`exists_realization_at_two_generated` (census 2026-07-24) \u2014 Automorphy atom at the even prime, generated coefficients (sorry node): given a finite-dimensional coefficient subfield `K \u2286 \u211a\u0304_\u2082` which is EXACTLY the subfield generated over `\u211a_2` by the image of the eigensystem's number field under `\u03c6\u2080 : E \u2192+* K` (the hypothesis `hgen`), the eigensystem `(E, S, Pv)` is realized o...",
+  "wip": true
+ },
+ {
+  "fullname": "GaloisRepresentation.IsHardlyRamified.exists_realization_package_of_concrete",
+  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Family",
+  "name": "exists_realization_package_of_concrete",
+  "text": "`exists_realization_package_of_concrete` (census 2026-07-24) \u2014 Universe/abstraction transport of a concrete realization (sorry node, purely formal \u2014 no arithmetic content): a hardly ramified representation `\u03c4\u2080` over a coefficient ring `A\u2080` in `Type 0` carrying the full coefficient-ring package (module-finite local topological `\u2124_\u2113`-algebra with the module topology, embedded in...",
+  "wip": true
+ },
+ {
+  "fullname": "GaloisRepresentation.IsHardlyRamified.poitou_explicit_formula_bound",
+  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
+  "name": "poitou_explicit_formula_bound",
+  "text": "`poitou_explicit_formula_bound` (census 2026-07-24) \u2014 Poitou's unconditional explicit-formula inequality at the Fej\u00e9r test function (sorry node \u2014 THE analytic input of the Serre/Tate elimination, stated 2026-07-23): for a totally complex number field `K` of degree `n`,",
+  "wip": true
+ },
+ {
+  "fullname": "GaloisRepresentation.IsHardlyRamified.exists_finite_level_inertia_swap_three",
+  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
+  "name": "exists_finite_level_inertia_swap_three",
+  "text": "`exists_finite_level_inertia_swap_three` (census 2026-07-24) \u2014 The ramified quadratic extension `\u211a\u2083\u1d65(\u03b6\u2083)` at finite level (sorry node, isolated 2026-07-23 \u2014 the finite-level content of the ramification witness below; everything profinite is already assembled on top of it): there are a finite Galois subextension `N` of the algebraic closure of the `3`-adic completion, a primitiv...",
+  "wip": true
+ },
+ {
+  "fullname": "GaloisRepresentation.IsHardlyRamified.exists_klein_pivot_of_noncommuting_kernel",
+  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
+  "name": "exists_klein_pivot_of_noncommuting_kernel",
+  "text": "`exists_klein_pivot_of_noncommuting_kernel` (census 2026-07-24) \u2014 The Klein-four pivot (sorry node, isolated 2026-07-23 \u2014 the group/matrix-theoretic core of the dihedral dichotomy, needing no Galois-theoretic context): let `u : G \u2192 GL\u2082(F)` (`F` algebraically closed, `2 \u2260 0`) be a representation whose composition with the projection `\u03c0` to `PGL\u2082(F)` is abelian on the kernel of a su...",
+  "wip": true
+ },
+ {
+  "fullname": "GaloisRepresentation.IsHardlyRamified.not_pow_ramificationIdx_dvd_differentIdeal",
+  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
+  "name": "not_pow_ramificationIdx_dvd_differentIdeal",
+  "text": "`not_pow_ramificationIdx_dvd_differentIdeal` (census 2026-07-24) \u2014 The tame different bound (sorry node, isolated 2026-07-23 from the tame-at-`2` exponent leaf below; Serre, *Corps Locaux* III \u00a76 Prop.",
+  "wip": true
+ },
+ {
+  "fullname": "GaloisRepresentation.IsHardlyRamified.discr_factorization_le_of_forall_differentIdeal_pow_dvd",
+  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
+  "name": "discr_factorization_le_of_forall_differentIdeal_pow_dvd",
+  "text": "`discr_factorization_le_of_forall_differentIdeal_pow_dvd` (census 2026-07-24) \u2014 The discriminant exponent from per-prime different-exponent bounds (sorry node, isolated 2026-07-23 from the two discriminant exponent leaves below): for a number field `K`, a rational prime `p` and weights `a, b`, if every prime `Q` of `\ud835\udcde K` over `p` satisfies `a\u00b7d_Q \u2264 b\u00b7e_Q` for its different exponent `d_Q` \u2014 stat...",
+  "wip": true
+ },
+ {
+  "fullname": "GaloisRepresentation.IsHardlyRamified.exists_localInertia_three_generator",
+  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
+  "name": "exists_localInertia_three_generator",
+  "text": "`exists_localInertia_three_generator` (census 2026-07-24) \u2014 The tame generator of the inertia image at `3` (sorry node, isolated 2026-07-23 \u2014 the SINGLE local-structure input to both `quotCharacter_inertia_three_sq_one` and `quotCharacter_inertia_three_dichotomy_of_sq_one`, whose assemblies are proven): for a character `\u03c7` of `\u0393 \u211a` with open kernel, valued in a commutative g...",
+  "wip": true
+ },
+ {
+  "fullname": "GaloisRepresentation.IsHardlyRamified.integral_one_sub_odlyzkoTestFn_div_sinh_le",
+  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
+  "name": "integral_one_sub_odlyzkoTestFn_div_sinh_le",
+  "text": "`integral_one_sub_odlyzkoTestFn_div_sinh_le` (census 2026-07-24) \u2014 Numeric bound on the archimedean integral of the Fej\u00e9r\u2013Poitou decomposition (sorry node, elementary real analysis, stated 2026-07-23): `\u222b\u2080^\u221e (1 \u2212 odlyzkoTestFn x)/sinh x dx \u2264 5/8`.",
+  "wip": true
+ },
+ {
+  "fullname": "GaloisRepresentation.IsHardlyRamified.cocycle_eq_zero_on_agreement_of_local_at_three",
+  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
+  "name": "cocycle_eq_zero_on_agreement_of_local_at_three",
+  "text": "`cocycle_eq_zero_on_agreement_of_local_at_three` (census 2026-07-24) \u2014 The cocycle vanishes on the character-agreement locus (sorry node \u2014 the class-field-theory content of the global Selmer vanishing, isolated 2026-07-23): the extension cocycle `c` of a mod-3 hardly ramified representation, coboundary on the inertia at `3` (`hs`), vanishes at every `g` where the two characters agree,...",
+  "wip": true
+ },
+ {
+  "fullname": "GaloisRepresentation.IsHardlyRamified.kernel_field_inertia_card_at_two_dvd_three",
+  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
+  "name": "kernel_field_inertia_card_at_two_dvd_three",
+  "text": "`kernel_field_inertia_card_at_two_dvd_three` (census 2026-07-24) \u2014 The inertia order at `2` divides `3` (sorry node, isolated 2026-07-23 from the tame-at-`2` exponent leaf below \u2014 its representation-theoretic core): the ideal-inertia subgroup in `Gal(K/\u211a)` of any prime `Q` of `\ud835\udcde K` above `2` has order dividing `3`.",
+  "wip": true
+ },
+ {
+  "fullname": "GaloisRepresentation.IsHardlyRamified.exists_inertia_eigenvector_complement_at_three",
+  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
+  "name": "exists_inertia_eigenvector_complement_at_three",
+  "text": "`exists_inertia_eigenvector_complement_at_three` (census 2026-07-24) \u2014 The second inertia-stable line at `3` (sorry node \u2014 the finite-flat/connected\u2013\u00e9tale content of the local splitting, isolated 2026-07-23): a mod-3 hardly ramified representation whose stable line `W\u2080` has quotient character `\u03c7` RAMIFIED at `3` admits a vector `v' \u2209 W\u2080` on which the inertia at `3` acts through `\u03c7`.",
+  "wip": true
+ },
+ {
+  "fullname": "GaloisRepresentation.IsHardlyRamified.serre_elimination_dihedral_ray_class_of_eigenvector",
+  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
+  "name": "serre_elimination_dihedral_ray_class_of_eigenvector",
+  "text": "`serre_elimination_dihedral_ray_class_of_eigenvector` (census 2026-07-24) \u2014 The Serre/Tate elimination, dihedral ray-class computation with an explicit eigenvector (sorry node \u2014 the per-field class-field-theoretic core of the dihedral case, restated 2026-07-23 with the stable-line datum as an explicit HYPOTHESIS so that the statement is sound in the Klein-four sub-case; the character `\u03b8'` h...",
+  "wip": true
+ },
+ {
+  "fullname": "GaloisRepresentation.IsHardlyRamified.kernel_field_differentIdeal_exponent_at_three",
+  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
+  "name": "kernel_field_differentIdeal_exponent_at_three",
+  "text": "`kernel_field_differentIdeal_exponent_at_three` (census 2026-07-24) \u2014 The Fontaine different bound at `3` (sorry node, isolated 2026-07-23 from the Fontaine-at-`3` exponent leaf below \u2014 its full arithmetic core, per prime): the different exponent `d_Q` of any prime `Q` of `\ud835\udcde K` above `3` in the kernel field of a mod-3 hardly ramified representation satisfies `2\u00b7d_Q \u2264 3\u00b7e(Q\u22233)`.",
+  "wip": true
+ },
+ {
+  "fullname": "GaloisRepresentation.IsHardlyRamified.threeTorsion_monoidHom_vanishes_on_localInertia_at_two",
+  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic",
+  "name": "threeTorsion_monoidHom_vanishes_on_localInertia_at_two",
+  "text": "`threeTorsion_monoidHom_vanishes_on_localInertia_at_two` (census 2026-07-24) \u2014 Exponent-3 characters of `\u0393 \u211a` die on inertia at `2` (sorry node \u2014 the tame stratum, group form): a homomorphism `\u03c6` from `\u0393 \u211a` to an abelian group of exponent `3` with open kernel kills the image of the local inertia at `2`.",
+  "wip": true
+ },
+ {
+  "fullname": "GaloisRepresentation.exists_minimal_mvPowerSeries_presentation",
+  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
+  "name": "exists_minimal_mvPowerSeries_presentation",
+  "text": "`exists_minimal_mvPowerSeries_presentation` (census 2026-07-24) \u2014 Minimal-presentation leaf (sorry node, pure commutative algebra \u2014 no arithmetic content; the structure-theoretic half of the presentation stratum): every Noetherian local `\u2124_\u2113`-algebra which is maximal-adically complete and separated and has residue characteristic `\u2113` (it maps to `\u2124/\u2113\u2124`) admits a *minimal* presentat...",
+  "wip": true
+ },
+ {
+  "fullname": "GaloisRepresentation.exists_isTraceGenerated_ringHom",
+  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
+  "name": "exists_isTraceGenerated_ringHom",
+  "text": "`exists_isTraceGenerated_ringHom` (census 2026-07-24) \u2014 Carayol subring-descent leaf (sorry node \u2014 the genuine content of the trace-descent stratum): every hardly ramified deformation `D` of an irreducible hardly ramified `\u03c1bar` (`\u2113 \u2265 5`) admits a *trace-generated* deformation `D'` mapping compatibly INTO it.",
+  "wip": true
+ },
+ {
+  "fullname": "GaloisRepresentation.exists_conj_of_charFrob_eq",
+  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
+  "name": "exists_conj_of_charFrob_eq",
+  "text": "`exists_conj_of_charFrob_eq` (census 2026-07-24) \u2014 Chebotarev\u2013Brauer\u2013Nesbitt conjugacy leaf (sorry node \u2014 the identification half of the Mazur representability stratum): a continuous mod-`\u2113` representation `\u03c4` of `Gal(\u211a\u0304/\u211a)` on a 2-dimensional space whose Frobenius characteristic polynomials at all primes `q \u2209 {2, \u2113}` agree with those of an *irreducible* `\u03c1bar` is c...",
+  "wip": true
+ },
+ {
+  "fullname": "GaloisRepresentation.exists_relations_lt_of_minimal_mvPowerSeries_presentation",
+  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
+  "name": "exists_relations_lt_of_minimal_mvPowerSeries_presentation",
+  "text": "`exists_relations_lt_of_minimal_mvPowerSeries_presentation` (census 2026-07-24) \u2014 B\u00f6ckle relation-bound leaf (sorry node \u2014 the arithmetic core of the presentation stratum): for EVERY minimal presentation `\u03c6 : \u2124_\u2113[[x\u2081,\u2026,x_g]] \u21a0 D.R` of the weakly universal, trace-generated hardly ramified deformation ring (minimal: `ker \u03c6 \u2286 \ud835\udd2a\u00b2 + (\u2113)`, so that `g` is the mod-`\u2113` tangent dimension `dim H\u00b9_{HR}(G_{\u211a,...",
+  "wip": true
+ },
+ {
+  "fullname": "GaloisRepresentation.exists_isWeaklyUniversalOnIdentified",
+  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
+  "name": "exists_isWeaklyUniversalOnIdentified",
+  "text": "`exists_isWeaklyUniversalOnIdentified` (census 2026-07-24) \u2014 Strict Mazur representability leaf (sorry node \u2014 the representability half of the Mazur stratum): the hardly ramified deformation problem of an irreducible hardly ramified `\u03c1bar` (`\u2113 \u2265 5`) admits a deformation `D` that maps compatibly to every *residually identified* deformation `D'` \u2014 every `D'` equipped with a con...",
+  "wip": true
+ },
+ {
+  "fullname": "GaloisRepresentation.finite_quotient_span_of_isWeaklyUniversal_isTraceGenerated",
+  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift",
+  "name": "finite_quotient_span_of_isWeaklyUniversal_isTraceGenerated",
+  "text": "`finite_quotient_span_of_isWeaklyUniversal_isTraceGenerated` (census 2026-07-24) \u2014 Mod-`\u2113` finiteness leaf (sorry node \u2014 the arithmetic core of the finiteness stratum, restated modulo `\u2113`): the weakly universal, trace-generated hardly ramified deformation ring \u2014 i.e.",
   "wip": true
  }
 ]

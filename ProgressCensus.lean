@@ -147,7 +147,7 @@ import Fermat.FLT.Slop.RepresentationTheory.OddAbsIrredSlop
 import Fermat.PrimeFive
 import Fermat.SorryGate
 def censusInputPath : System.FilePath := "progress-census-input.json"
--- census-input fingerprint: 1914611510c281a3742b386ad0e86664b6847ddc
+-- census-input fingerprint: 3dc283862240ecdb5ecf1eb5668de57ee8871fbf
 -- END GENERATED IMPORTS
 
 open Lean
