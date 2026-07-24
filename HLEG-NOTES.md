@@ -475,6 +475,95 @@ days once the rest exists. Overall this is the critical-path kernel of the
 whole μ-node; recommend giving `hglobal` its own named module/subtree
 immediately (progress-entries item), and NOT blocking legs 1,2,3,5,6 on it.
 
+**STATUS UPDATE (2026-07-24): L4-1..3 PROVEN and assembled; the residual
+leaf is `hres` inside `weilValueProp_all_one_torsion_trivial`.** The
+`hclass` skeleton now compiles with a single sorry:
+
+* L4-1: `T'` with `(p:ℤ)•T' = x.val` via `TorsionCard.smul_surjective`
+  (`(p : 𝔽̄_q) ≠ 0` from `CharP.cast_ne_zero_of_ne_of_prime` + the
+  `CharP` transport along `ZMod q → 𝔽̄_q`).
+* L4-2: `Fintype (nTorsion p)` from `TorsionCard.card_torsionBy = p²`;
+  the divisor multiset is
+  `D := univ.map (κ ↦ T' + κ.val) + univ.map (κ ↦ −κ.val)`, and
+  `D.sum = 0` WITHOUT needing `Σκ = 0`: the two `Σ κ.val` terms cancel
+  against each other, leaving `p²•T' = p•(p•T') = p•x.val = 0`.
+* L4-3: NEW MODULE `WeilPairingDescent.lean` —
+  `WeilPairing.exists_span_eq_prod_pointIdeal`: any `Multiset W.Point`
+  with group-law sum `0` has principal `pointIdeal`-product with
+  nonzero generator (`pointIdeal := XYIdeal` at affine points, `⊤` at
+  `O`).  Proof is pure class-group algebra (no Dedekind hypothesis, no
+  pair-peeling induction): `ClassGroup.mk (∏ pointIdeal' Pᵢ)` equals
+  `toMul (Σ toClass Pᵢ) = toMul (toClass ΣPᵢ) = 1`, and
+  `ClassGroup.mk_eq_one_of_coe_ideal` extracts an integral nonzero
+  generator directly.  Reusable for every future zero-sum divisor
+  (Miller words, L4-7 comparisons).
+* The residual sorry `hres` (in-proof, fully stated):
+  `∀ a ≠ 0, span {a} = (D.map (pointIdeal _)).prod → toClass x.val = 0`
+  — the L4-4..9 core, with `hall`/`huniq` in scope.  NOTE the honest
+  interface analysis: a hall-free disjunctive form (`principal ∨
+  ∃ nontrivial admissible value`) would force rebuilding the `hexval`
+  setup-existence machinery at top level; keeping `hall` in scope lets
+  the `χ(κ₀) ≠ 1` branch read its admissible setups out of `hall`'s
+  own witnesses.  Next actionable stages for `hres`: L4-4 (taut-point
+  instantiation of `τ_κ` at `Wb` over `K = Frac(CoordinateRing)`,
+  following `TautologicalPoint.lean`) and L4-7's span-level pullback
+  factorization; both should live in `WeilPairingDescent.lean` as
+  hypothesis-parametrized lemmas (StepR pattern) to keep iteration off
+  the 13k-line main file.
+
+**STATUS UPDATE (2026-07-24): L4-1..3 PROVEN and assembled; the sorry
+moved DOWN to the in-proof leaf `hres`.** The `hclass` skeleton of
+`weilValueProp_all_one_torsion_trivial` now constructs, sorry-free:
+
+* **L4-1** — `T'` with `(p:ℤ)•T' = x.val` via
+  `TorsionCard.smul_surjective` (CharP transport + 
+  `CharP.cast_ne_zero_of_ne_of_prime` for `(p : 𝔽̄_q) ≠ 0`);
+* **L4-2** — `Finite`/`Fintype` on the torsion from
+  `TorsionCard.card_torsionBy` (`p² ≠ 0`);
+* the zero-sum divisor multiset
+  `D := Σ_{κ ∈ E[p]} (T'⊕κ) + (⊖κ)` with `D.sum = 0` — NO `Σκ = 0`
+  input needed: the `Σκ.val` contributions of the two halves cancel,
+  leaving `p²•T' = p•x.val = 0`;
+* **L4-3** — the Miller generator `g ≠ 0` with
+  `span {g} = (D.map (pointIdeal _)).prod`, via the NEW module
+  `WeilPairingDescent.lean` (`WeilPairing.pointIdeal`,
+  `pointIdeal'`, `coe_pointIdeal'`, `mk_pointIdeal'`,
+  `coe_prod_pointIdeal'`, `mk_prod_pointIdeal'`,
+  `exists_span_eq_prod_pointIdeal` — all PROVEN, Dedekind-free: pure
+  `ClassGroup.mk` algebra + `ClassGroup.mk_eq_one_of_coe_ideal`
+  extraction; multiset zero-sum principality for ARBITRARY multisets,
+  reusable for every future zero-sum-divisor construction).
+
+The single remaining sorry of the μ-node is the in-proof leaf **`hres`**
+(WeilPairing.lean, inside `hclass`): `∀ a ≠ 0, span {a} =
+(D.map (pointIdeal _)).prod → toClass x.val = 0` — the L4-4..9 core.
+Notes for its owner:
+
+* The engine lemmas continue to live top-level in the `MillerEngine`
+  section; extend that section as `hres` consumes new facts.
+* `nTorsion` requires `DecidableEq 𝔽̄_q` — provided globally by
+  `WeilPairing.instDecEqAlgClosureZMod` (WeilPairingStepR.lean),
+  re-exported up the import chain; standalone `lean_run_code`
+  experiments must re-declare it (and generic-`F` material needs a
+  `[DecidableEq F]` variable — mathlib's `Point` group law now demands
+  it).
+* L4-4 starting brick: the evaluation `F`-algebra hom
+  `R = F[W] → K` at any `K`-point of `W.baseChange K`
+  (`AdjoinRoot.lift` against the mapped curve polynomial); `τ_κ^*` is
+  its instance at `κ ⊕ taut`, with injectivity via composing with
+  `τ_{⊖κ}^*` and the group law `(taut ⊖ κ) ⊕ κ = taut` rather than any
+  transcendence argument.
+* VERIFICATION TOOLING (this worktree): the report-mcp `diagnostics`
+  wrapper has a hard 180 s deadline — a full elaboration of
+  WeilPairing.lean (~30 min) can NEVER fit; polling re-`didOpen`s and
+  spawns fresh from-scratch workers each call.  Use the
+  `PipeLsp`-reuse pattern (scratch `wait_diags.py`: import
+  `report-mcp.py`, call `lsp.diagnostics(path, timeout=10800)` in a
+  background shell) — one long-deadline `waitForDiagnostics` against
+  the resident server.  `lake` CLI is permission-banned; the report-mcp
+  `build` tool dies at 1800 s of client-side idle (its aborted child is
+  killed with it).
+
 **STATUS UPDATE (2026-07-23).** The reduction (A) is fully in place and
 sorry-free inside the μ-theorem (`hleg4` = `pairing_trivial_of_radical`
 + the rank-2 computation + `hglobal`); `hglobal` itself is discharged
