@@ -139,9 +139,14 @@ here. This file provides:
   this file's downstream infinitude theorem — that would be circular,
   see its docstring — and instead now itself PROVEN by Deuring's
   trick, `eq_top_of_forall_exists_mem_map_zeta_eq_pow_natCard`, from
-  three shallower sorried leaves: the complete-splitting comparison
-  `finrank_fixedField_mul_tsum_rpow_neg_le_tsum_fixedField` and the
-  two Mertens zeta-pole bounds
+  three shallower leaves: the complete-splitting comparison
+  `finrank_fixedField_mul_tsum_rpow_neg_le_tsum_fixedField` (now
+  itself fully PROVEN: contraction fibering mirroring the pullback
+  comparison, with the per-prime fiber count
+  `finrank_le_natCard_setOf_under_eq_of_map_zeta_eq_pow` — complete
+  splitting via the arithmetic Frobenius pinned by its action on `ζ`,
+  trivial inertia away from `ℓ`, and the fundamental identity) and the
+  two still-sorried Mertens zeta-pole bounds
   `exists_forall_tsum_rpow_neg_natCard_quotient_prime_and_ne_le_log_add`
   and
   `exists_forall_log_le_tsum_rpow_neg_natCard_quotient_prime_and_ne_add`))
@@ -155,10 +160,10 @@ here. This file provides:
   `integral_sum_dirichletCharacter_mul_card_cpow_neg_two_ne_zero`,
   the nonvanishing of the continued value at `1` by the classical
   zeta-factorization argument)); the L-function half thus rests on
-  exactly EIGHT sorried leaves — the three geometric/finiteness
+  exactly SEVEN sorried leaves — the three geometric/finiteness
   leaves behind the per-narrow-ray-class Weber count (listed above),
-  the `existsUnique` finiteness leaf behind the fibering, the three
-  Deuring leaves behind the Frobenius realization, all under the
+  the `existsUnique` finiteness leaf behind the fibering, the two
+  Mertens leaves behind the Frobenius realization, all under the
   Weber counting theorem
   `exists_forall_abs_sum_card_absNorm_residue_sub_mul_le_rpow`, and
   the arithmetic core
@@ -4901,34 +4906,537 @@ theorem exists_forall_log_le_tsum_rpow_neg_natCard_quotient_prime_and_ne_add
   sorry
 
 open IsDedekindDomain in
-/-- **Complete splitting in the fixed field of a Frobenius-closed
-subgroup** (sorry leaf) — the algebraic half of Deuring's trick: if
-every degree-one prime `P` of `F` away from `ℓ` has a Frobenius inside
-`H' ≤ Gal(E/F)` (some `σ ∈ H'` with `σ ζ = ζ ^ N(P)`), then each such
-`P` splits completely in the fixed field `M = E^{H'}`, so the
-degree-one prime sum of `M` dominates `[M : F]` times that of `F`.
+/-- `ℓ` is invertible modulo any prime `R` of `𝓞 E` lying over a place
+`P` of `F` whose residue cardinality is not divisible by `ℓ` — the
+`ℓ ∉ Q` block of `exists_algEquiv_map_zeta_eq_pow_natCard_of_not_dvd`,
+extracted for reuse at a *given* prime `R` over `P`. -/
+lemma natCast_notMem_of_liesOver_of_not_dvd
+    {F : Type*} [Field F] [NumberField F] {E : Type*} [Field E] [NumberField E]
+    [Algebra F E] {ℓ : ℕ} (hℓ : ℓ.Prime)
+    (P : HeightOneSpectrum (𝓞 F)) (hnd : ¬ ℓ ∣ Nat.card (𝓞 F ⧸ P.asIdeal))
+    (R : Ideal (𝓞 E)) [R.LiesOver P.asIdeal] :
+    ((ℓ : ℕ) : 𝓞 E) ∉ R := by
+  intro hmem
+  have hRunder : R.under (𝓞 F) = P.asIdeal := (Ideal.over_def R P.asIdeal).symm
+  have h1 : ((ℓ : ℕ) : 𝓞 F) ∈ P.asIdeal := by
+    rw [← hRunder, Ideal.under_def, Ideal.mem_comap, map_natCast]
+    exact hmem
+  haveI : Finite (𝓞 F ⧸ P.asIdeal) :=
+    Ring.HasFiniteQuotients.finiteQuotient P.ne_bot
+  haveI := Fintype.ofFinite (𝓞 F ⧸ P.asIdeal)
+  have h2 : ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : 𝓞 F ⧸ P.asIdeal) = 0 := by
+    rw [Nat.card_eq_fintype_card]
+    exact Nat.cast_card_eq_zero _
+  have h3 : ((ℓ : ℕ) : 𝓞 F ⧸ P.asIdeal) = 0 := by
+    rw [← map_natCast (Ideal.Quotient.mk P.asIdeal),
+      Ideal.Quotient.eq_zero_iff_mem]
+    exact h1
+  have hco : IsCoprime (Nat.card (𝓞 F ⧸ P.asIdeal) : ℤ) (ℓ : ℤ) :=
+    Int.isCoprime_iff_gcd_eq_one.mpr
+      (by
+        rw [Int.gcd_natCast_natCast]
+        exact ((Nat.Prime.coprime_iff_not_dvd hℓ).mpr hnd).symm)
+  obtain ⟨u, v, huv⟩ := hco
+  have h4 : (1 : 𝓞 F ⧸ P.asIdeal) = 0 := by
+    calc (1 : 𝓞 F ⧸ P.asIdeal)
+        = ((u * (Nat.card (𝓞 F ⧸ P.asIdeal) : ℤ) + v * (ℓ : ℤ) : ℤ) :
+          𝓞 F ⧸ P.asIdeal) := by rw [huv, Int.cast_one]
+      _ = (u : 𝓞 F ⧸ P.asIdeal) *
+            ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : 𝓞 F ⧸ P.asIdeal) +
+          (v : 𝓞 F ⧸ P.asIdeal) * ((ℓ : ℕ) : 𝓞 F ⧸ P.asIdeal) := by
+          rw [Int.cast_add, Int.cast_mul, Int.cast_mul, Int.cast_natCast,
+            Int.cast_natCast]
+      _ = 0 := by rw [h2, h3, mul_zero, mul_zero, add_zero]
+  exact one_ne_zero h4
 
-Intended proof: `E/F` is Galois (`IsCyclotomicExtension.isGalois`) and
-`σ ↦ (n : σ ζ = ζ ^ n)` is injective on `Gal(E/F)` because `E = F(ζ)`
-(adjoin-generation, as in `adjoin_inf_adjoin_eq_bot_of_isPrimitiveRoot`
-above, or `IsPrimitiveRoot.autToPow`), so the hypothesis pins the
-honest Frobenius class at every prime `Q` of `E` over `P` inside `H'`:
-`P ∤ ℓ` is unramified in `E` (the relevant ramification/different
-theory, `Mathlib.NumberTheory.RamificationInertia.Unramified` and
-`...RamificationInertia.Galois`, is already imported), its
-decomposition group at `Q` is generated by the arithmetic Frobenius
-(`IsArithFrobAt`, as in
-`exists_algEquiv_map_zeta_eq_pow_natCard_of_not_dvd`), and the latter
-lies in `H'` by injectivity. Hence for `M = E^{H'}`: every prime of `M`
-over `P` has ramification index and residue degree `1` over `F`, so by
-`Ideal.sum_ramification_inertia` there are exactly `[M : F]` of them,
-each of residue cardinality `#(𝓞 F / P)` — prime and `≠ ℓ`, so each
-lies in the index of the right-hand sum. Summing: a place of `M`
-determines `P` as its contraction, so the fibers over distinct `P` are
-disjoint and the right-hand `ℝ≥0∞`-sum dominates the fibered sum
-`∑_P [M : F] · N(P)^{-s}` — the mirror image of the proven pullback
-bookkeeping in
-`tsum_rpow_neg_natCard_quotient_prime_and_ne_le_finrank_mul_tsum`. -/
+/-- **`Gal(E/F)` acts faithfully on the generator `ζ` of the cyclotomic
+extension `E = F(ζ_ℓ)`**: two automorphisms agreeing on a primitive
+`ℓ`-th root of unity agree everywhere, because `ζ` generates `E` over
+`F` (`IsCyclotomicExtension.adjoin_primitive_root_eq_top`). -/
+theorem algEquiv_eq_of_map_zeta_eq
+    {F : Type*} [Field F] {E : Type*} [Field E] [Algebra F E] {ℓ : ℕ}
+    (hℓ : ℓ.Prime) [IsCyclotomicExtension {ℓ} F E]
+    {ζ : E} (hζ : IsPrimitiveRoot ζ ℓ) {σ τ : E ≃ₐ[F] E} (h : σ ζ = τ ζ) :
+    σ = τ := by
+  haveI : NeZero ℓ := ⟨hℓ.pos.ne'⟩
+  have hadj : Algebra.adjoin F ({ζ} : Set E) = ⊤ :=
+    IsCyclotomicExtension.adjoin_primitive_root_eq_top hζ
+  refine AlgEquiv.ext fun x => ?_
+  have hx : x ∈ Algebra.adjoin F ({ζ} : Set E) := hadj ▸ Algebra.mem_top
+  induction hx using Algebra.adjoin_induction with
+  | mem y hy => rw [Set.mem_singleton_iff.mp hy]; exact h
+  | algebraMap r => rw [AlgEquiv.commutes, AlgEquiv.commutes]
+  | add a b _ _ hia hib => rw [map_add, map_add, hia, hib]
+  | mul a b _ _ hia hib => rw [map_mul, map_mul, hia, hib]
+
+/-- **Powers of a primitive `ℓ`-th root of unity stay distinct modulo a
+prime not containing `ℓ`**: if `R` is a prime ideal of a domain `A`
+with `ℓ ∉ R` and `z` is a primitive `ℓ`-th root of unity in `A`, then
+`z ^ a ≢ 1 (mod R)` for `0 < a < ℓ`. Geometric-sum argument: with
+`w = z ^ a ≠ 1` one has `∑_{i<ℓ} w ^ i = 0` in the domain `A` (from
+`(∑ w ^ i)(w - 1) = w ^ ℓ - 1 = 0`), yet if `w ≡ 1 (mod R)` every
+summand is `≡ 1`, so `ℓ ∈ R` — contradiction. -/
+lemma pow_sub_one_notMem_of_isPrimitiveRoot
+    {A : Type*} [CommRing A] [IsDomain A] {ℓ : ℕ}
+    {z : A} (hz : IsPrimitiveRoot z ℓ)
+    {R : Ideal A} (hℓR : ((ℓ : ℕ) : A) ∉ R)
+    {a : ℕ} (ha : a ≠ 0) (haℓ : a < ℓ) :
+    z ^ a - 1 ∉ R := by
+  intro hmem
+  have hw1 : z ^ a ≠ 1 := hz.pow_ne_one_of_pos_of_lt ha haℓ
+  have hwℓ : (z ^ a) ^ ℓ = 1 := by
+    rw [← pow_mul, mul_comm, pow_mul, hz.pow_eq_one, one_pow]
+  have hgeom : (∑ i ∈ Finset.range ℓ, (z ^ a) ^ i) * (z ^ a - 1) = 0 := by
+    rw [geom_sum_mul, hwℓ, sub_self]
+  have hsum : (∑ i ∈ Finset.range ℓ, (z ^ a) ^ i) = 0 :=
+    (mul_eq_zero.mp hgeom).resolve_right (sub_ne_zero.mpr hw1)
+  have hterm : ∀ i : ℕ, (z ^ a) ^ i - 1 ∈ R := by
+    intro i
+    obtain ⟨c, hc⟩ : (z ^ a - 1) ∣ ((z ^ a) ^ i - 1) := by
+      simpa using sub_dvd_pow_sub_pow (z ^ a) 1 i
+    rw [hc]
+    exact Ideal.mul_mem_right _ _ hmem
+  have hℓmem : ((ℓ : ℕ) : A) ∈ R := by
+    have h1 : (∑ i ∈ Finset.range ℓ, (z ^ a) ^ i) - ((ℓ : ℕ) : A) ∈ R := by
+      have h2 : (∑ i ∈ Finset.range ℓ, (z ^ a) ^ i) - ((ℓ : ℕ) : A)
+          = ∑ i ∈ Finset.range ℓ, ((z ^ a) ^ i - 1) := by
+        rw [Finset.sum_sub_distrib, Finset.sum_const, Finset.card_range,
+          nsmul_eq_mul, mul_one]
+      rw [h2]
+      exact Ideal.sum_mem _ fun i _ => hterm i
+    have h3 := R.neg_mem h1
+    rw [neg_sub, hsum, sub_zero] at h3
+    exact h3
+  exact hℓR hℓmem
+
+open IsDedekindDomain in
+/-- **Arithmetic Frobenius with prescribed action on `ζ` at a *given*
+prime**: the variant of `exists_algEquiv_map_zeta_eq_pow_natCard_of_not_dvd`
+producing, at any prime `R` of `𝓞 E` above `P`, an automorphism that is
+an arithmetic Frobenius at `R` *and* acts on `ζ` by
+`ζ ↦ ζ ^ #(𝓞 F / P)`. Same proof, minus the choice of the prime. -/
+theorem exists_isArithFrobAt_and_map_zeta_eq_pow_natCard
+    {F : Type*} [Field F] [NumberField F] {E : Type*} [Field E] [NumberField E]
+    [Algebra F E] {ℓ : ℕ} (hℓ : ℓ.Prime) [IsCyclotomicExtension {ℓ} F E]
+    {ζ : E} (hζ : IsPrimitiveRoot ζ ℓ) (P : HeightOneSpectrum (𝓞 F))
+    (hnd : ¬ ℓ ∣ Nat.card (𝓞 F ⧸ P.asIdeal))
+    (R : Ideal (𝓞 E)) [R.IsPrime] [R.LiesOver P.asIdeal] :
+    ∃ σ : E ≃ₐ[F] E, IsArithFrobAt (𝓞 F) σ R ∧
+      σ ζ = ζ ^ Nat.card (𝓞 F ⧸ P.asIdeal) := by
+  classical
+  haveI : NeZero ℓ := ⟨hℓ.pos.ne'⟩
+  haveI : IsGalois F E := IsCyclotomicExtension.isGalois {ℓ} F E
+  haveI : FiniteDimensional F E := IsCyclotomicExtension.finiteDimensional {ℓ} F E
+  haveI : Module.Finite (𝓞 F) (𝓞 E) :=
+    Module.Finite.of_restrictScalars_finite ℤ (𝓞 F) (𝓞 E)
+  have hRunder : R.under (𝓞 F) = P.asIdeal := (Ideal.over_def R P.asIdeal).symm
+  have hRne : R ≠ ⊥ := by
+    intro h
+    apply P.ne_bot
+    rw [← hRunder, h, Ideal.under_def]
+    exact Ideal.comap_bot_of_injective _
+      (FaithfulSMul.algebraMap_injective (𝓞 F) (𝓞 E))
+  haveI : Finite (𝓞 E ⧸ R) := Ring.HasFiniteQuotients.finiteQuotient hRne
+  obtain ⟨σR, hσR⟩ := IsArithFrobAt.exists_of_isInvariant (𝓞 F) (E ≃ₐ[F] E) R
+  have hζint : IsIntegral ℤ ζ := by
+    refine IsIntegral.of_pow hℓ.pos ?_
+    rw [hζ.pow_eq_one]
+    exact isIntegral_one
+  set ζO : 𝓞 E := ⟨ζ, hζint⟩ with hζOdef
+  have hℓR : ((ℓ : ℕ) : 𝓞 E) ∉ R :=
+    natCast_notMem_of_liesOver_of_not_dvd hℓ P hnd R
+  have hζOpow : ζO ^ ℓ = 1 := by
+    apply NumberField.RingOfIntegers.ext
+    show algebraMap (𝓞 E) E (ζO ^ ℓ) = algebraMap (𝓞 E) E 1
+    rw [map_pow, map_one]
+    show ζ ^ ℓ = 1
+    exact hζ.pow_eq_one
+  have hσRζ : σR • ζO = ζO ^ Nat.card (𝓞 F ⧸ P.asIdeal) := by
+    have h1 := hσR.apply_of_pow_eq_one hζOpow hℓR
+    rw [hRunder] at h1
+    exact h1
+  refine ⟨σR, hσR, ?_⟩
+  have h2 : (algebraMap (𝓞 E) E) (σR • ζO) =
+      (algebraMap (𝓞 E) E) (ζO ^ Nat.card (𝓞 F ⧸ P.asIdeal)) :=
+    congrArg _ hσRζ
+  rw [map_pow] at h2
+  have h3 : (algebraMap (𝓞 E) E) (σR • ζO) = σR ζ := rfl
+  have h4 : (algebraMap (𝓞 E) E) ζO = ζ := rfl
+  rw [h3, h4] at h2
+  exact h2
+
+open IsDedekindDomain in
+/-- **Primes away from `ℓ` are unramified in the `ℓ`-th cyclotomic
+extension — inertia form**: for `E = F(ζ_ℓ)` (`ℓ` prime) and a prime
+`R` of `𝓞 E` lying over a place `P` of `F` with `ℓ ∤ #(𝓞 F / P)`, the
+inertia subgroup of `R` in `Gal(E/F)` is trivial. An inertia element
+`τ` satisfies `τ ζ ≡ ζ (mod R)` while `τ ζ = ζ ^ i` for some `i < ℓ`;
+since the powers of `ζ` stay distinct modulo `R`
+(`pow_sub_one_notMem_of_isPrimitiveRoot`, using `ℓ ∉ R`), this forces
+`τ ζ = ζ`, and faithfulness on `ζ` (`algEquiv_eq_of_map_zeta_eq`) gives
+`τ = 1`. -/
+theorem inertia_eq_bot_of_not_dvd_natCard
+    {F : Type*} [Field F] [NumberField F] {E : Type*} [Field E] [NumberField E]
+    [Algebra F E] {ℓ : ℕ} (hℓ : ℓ.Prime) [IsCyclotomicExtension {ℓ} F E]
+    {ζ : E} (hζ : IsPrimitiveRoot ζ ℓ) (P : HeightOneSpectrum (𝓞 F))
+    (hnd : ¬ ℓ ∣ Nat.card (𝓞 F ⧸ P.asIdeal))
+    (R : Ideal (𝓞 E)) [R.IsPrime] [R.LiesOver P.asIdeal] :
+    R.inertia (E ≃ₐ[F] E) = ⊥ := by
+  classical
+  haveI : NeZero ℓ := ⟨hℓ.pos.ne'⟩
+  have hℓR : ((ℓ : ℕ) : 𝓞 E) ∉ R :=
+    natCast_notMem_of_liesOver_of_not_dvd hℓ P hnd R
+  have hζint : IsIntegral ℤ ζ := by
+    refine IsIntegral.of_pow hℓ.pos ?_
+    rw [hζ.pow_eq_one]
+    exact isIntegral_one
+  set ζO : 𝓞 E := ⟨ζ, hζint⟩ with hζOdef
+  have hζO : IsPrimitiveRoot ζO ℓ :=
+    IsPrimitiveRoot.of_map_of_injective (f := algebraMap (𝓞 E) E) hζ
+      (IsFractionRing.injective (𝓞 E) E)
+  rw [eq_bot_iff]
+  intro τ hτ
+  have hτ' : ∀ x : 𝓞 E, τ • x - x ∈ R := by
+    intro x
+    have h := AddSubgroup.mem_inertia.mp hτ x
+    rwa [Submodule.mem_toAddSubgroup] at h
+  -- `τ ζ` is an `ℓ`-th root of unity, hence a power of `ζ`
+  have hτpow : (τ ζ) ^ ℓ = 1 := by
+    rw [← map_pow, hζ.pow_eq_one, map_one]
+  obtain ⟨i, hiℓ, hi⟩ := hζ.eq_pow_of_pow_eq_one hτpow
+  -- `i ≠ 0`: otherwise `τ ζ = 1`, i.e. `ζ = 1`
+  have hi0 : i ≠ 0 := by
+    intro h0
+    rw [h0, pow_zero] at hi
+    have h1 : τ (1 : E) = τ ζ := by rw [map_one]; exact hi
+    exact hζ.ne_one hℓ.one_lt (τ.injective h1).symm
+  -- transfer `τ ζ = ζ ^ i` to the ring of integers
+  have hτζO : τ • ζO = ζO ^ i := by
+    apply NumberField.RingOfIntegers.ext
+    show algebraMap (𝓞 E) E (τ • ζO) = algebraMap (𝓞 E) E (ζO ^ i)
+    rw [map_pow]
+    show τ ζ = ζ ^ i
+    exact hi.symm
+  have hpowmem : ζO ^ i - ζO ∈ R := by
+    have h := hτ' ζO
+    rwa [hτζO] at h
+  -- factor out the unit `ζ`
+  have hisucc : i - 1 + 1 = i := Nat.succ_pred_eq_of_pos (Nat.pos_of_ne_zero hi0)
+  have hfac : ζO ^ i - ζO = ζO * (ζO ^ (i - 1) - 1) := by
+    rw [mul_sub, mul_one, ← pow_succ', hisucc]
+  have hζOunit : IsUnit ζO := hζO.isUnit hℓ.pos.ne'
+  have hζOnotmem : ζO ∉ R := fun hm =>
+    (Ideal.IsPrime.ne_top ‹R.IsPrime›) (Ideal.eq_top_of_isUnit_mem R hm hζOunit)
+  have hprod : ζO * (ζO ^ (i - 1) - 1) ∈ R := by
+    rw [← hfac]
+    exact hpowmem
+  have hsub : ζO ^ (i - 1) - 1 ∈ R :=
+    (Ideal.IsPrime.mem_or_mem ‹R.IsPrime› hprod).resolve_left hζOnotmem
+  -- distinct powers force `i = 1`, i.e. `τ ζ = ζ`
+  have hi1 : i = 1 := by
+    by_contra hne1
+    exact pow_sub_one_notMem_of_isPrimitiveRoot hζO hℓR
+      (by omega) (by omega) hsub
+  have hτζ : τ ζ = (1 : E ≃ₐ[F] E) ζ := by
+    rw [AlgEquiv.one_apply, ← hi, hi1, pow_one]
+  rw [Subgroup.mem_bot]
+  exact algEquiv_eq_of_map_zeta_eq hℓ hζ hτζ
+
+open IsDedekindDomain in
+/-- **Complete-splitting count at a Frobenius-pinned degree-one prime,
+abstract-tower form**: for a tower `F ⊆ M ⊆ E` of number fields with
+`E = F(ζ_ℓ)` and a degree-one prime `P` of `F` away from `ℓ`, if some
+`σ' ∈ Gal(E/F)` fixing `M` pointwise acts on `ζ` by `ζ ↦ ζ ^ N(P)`,
+then `P` splits completely in `M`: there are at least `[M : F]` places
+of `M` over `P`, each with residue cardinality `N(P)`. Proof: at any
+prime `R` of `𝓞 E` above a prime `Q` of `𝓞 M` above `P`, the
+arithmetic Frobenius with `ζ ↦ ζ ^ N(P)`
+(`exists_isArithFrobAt_and_map_zeta_eq_pow_natCard`) coincides with
+`σ'` by faithfulness on `ζ` (`algEquiv_eq_of_map_zeta_eq`), so it
+fixes `𝓞 M`; hence the image of `𝓞 M ⧸ Q` in `𝓞 E ⧸ R` consists of
+roots of `X ^ N(P) - X`, giving `#(𝓞 M ⧸ Q) = N(P)` and inertia
+degree `1` (`Ideal.cardQuot_pow_inertiaDeg`); the inertia group of `R`
+is trivial (`inertia_eq_bot_of_not_dvd_natCard`), so `e(R/P) = 1`
+(`Ideal.card_inertia_eq_ramificationIdxIn`) and `e(Q/P) = 1`
+(`Ideal.ramificationIdx_tower`); the fundamental identity
+`Ideal.sum_ramification_inertia` then counts exactly `[M : F]` primes
+over `P`. -/
+theorem finrank_le_natCard_setOf_under_eq_of_map_zeta_eq_pow
+    {F : Type*} [Field F] [NumberField F] {M : Type*} [Field M] [NumberField M]
+    {E : Type*} [Field E] [NumberField E] [Algebra F M] [Algebra M E]
+    [Algebra F E] [IsScalarTower F M E] {ℓ : ℕ} (hℓ : ℓ.Prime)
+    [IsCyclotomicExtension {ℓ} F E] {ζ : E} (hζ : IsPrimitiveRoot ζ ℓ)
+    (P : HeightOneSpectrum (𝓞 F)) (hp : (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime)
+    (hne : Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ) (σ' : E ≃ₐ[F] E)
+    (hσ'ζ : σ' ζ = ζ ^ Nat.card (𝓞 F ⧸ P.asIdeal))
+    (hσ'fix : ∀ x : M, σ' (algebraMap M E x) = algebraMap M E x) :
+    Module.finrank F M ≤
+      Nat.card {Q : HeightOneSpectrum (𝓞 M) //
+        Q.asIdeal.under (𝓞 F) = P.asIdeal ∧
+        Nat.card (𝓞 M ⧸ Q.asIdeal) = Nat.card (𝓞 F ⧸ P.asIdeal)} := by
+  classical
+  haveI : NeZero ℓ := ⟨hℓ.pos.ne'⟩
+  haveI : IsGalois F E := IsCyclotomicExtension.isGalois {ℓ} F E
+  haveI : FiniteDimensional F E := IsCyclotomicExtension.finiteDimensional {ℓ} F E
+  haveI : Module.Finite (𝓞 F) (𝓞 M) :=
+    Module.Finite.of_restrictScalars_finite ℤ (𝓞 F) (𝓞 M)
+  haveI : Module.Finite (𝓞 F) (𝓞 E) :=
+    Module.Finite.of_restrictScalars_finite ℤ (𝓞 F) (𝓞 E)
+  haveI hPmax : P.asIdeal.IsMaximal := Ideal.IsPrime.isMaximal P.isPrime P.ne_bot
+  have hnd : ¬ ℓ ∣ Nat.card (𝓞 F ⧸ P.asIdeal) := fun hdvd =>
+    hne ((Nat.prime_dvd_prime_iff_eq hℓ hp).mp hdvd).symm
+  -- per-prime complete-splitting data at each prime `Q` of `M` over `P`
+  have hkey : ∀ Q : Ideal (𝓞 M), Q.IsPrime → Q.LiesOver P.asIdeal →
+      Nat.card (𝓞 M ⧸ Q) = Nat.card (𝓞 F ⧸ P.asIdeal) ∧
+      Q.ramificationIdx (𝓞 F) = 1 ∧ Q.inertiaDeg (𝓞 F) = 1 := by
+    intro Q hQp hQl
+    haveI := hQp
+    haveI := hQl
+    have hQne : Q ≠ ⊥ := by
+      intro h
+      apply P.ne_bot
+      rw [Ideal.over_def Q P.asIdeal, h, Ideal.under_def]
+      exact Ideal.comap_bot_of_injective _
+        (FaithfulSMul.algebraMap_injective (𝓞 F) (𝓞 M))
+    haveI hQfin : Finite (𝓞 M ⧸ Q) := Ring.HasFiniteQuotients.finiteQuotient hQne
+    obtain ⟨⟨R, hRp, hRo⟩⟩ := Ideal.nonempty_primesOver (S := 𝓞 E) Q
+    haveI := hRp
+    haveI := hRo
+    haveI : R.LiesOver P.asIdeal := Ideal.LiesOver.trans R Q P.asIdeal
+    have hRne : R ≠ ⊥ := by
+      intro h
+      apply hQne
+      rw [Ideal.over_def R Q, h, Ideal.under_def]
+      exact Ideal.comap_bot_of_injective _
+        (FaithfulSMul.algebraMap_injective (𝓞 M) (𝓞 E))
+    haveI hRfin : Finite (𝓞 E ⧸ R) := Ring.HasFiniteQuotients.finiteQuotient hRne
+    -- the arithmetic Frobenius at `R` is the given `σ'`
+    obtain ⟨σR, hσRfrob, hσRζ⟩ :=
+      exists_isArithFrobAt_and_map_zeta_eq_pow_natCard hℓ hζ P hnd R
+    have hσeq : σR = σ' := algEquiv_eq_of_map_zeta_eq hℓ hζ (hσRζ.trans hσ'ζ.symm)
+    -- (1) residue cardinality is preserved: the image of `𝓞 M ⧸ Q` in
+    -- `𝓞 E ⧸ R` consists of roots of `X ^ N(P) - X`
+    have hfixR : ∀ x : 𝓞 M,
+        algebraMap (𝓞 M) (𝓞 E) x ^ Nat.card (𝓞 F ⧸ P.asIdeal) -
+          algebraMap (𝓞 M) (𝓞 E) x ∈ R := by
+      intro x
+      have h1 := hσRfrob (algebraMap (𝓞 M) (𝓞 E) x)
+      rw [show R.under (𝓞 F) = P.asIdeal from (Ideal.over_def R P.asIdeal).symm]
+        at h1
+      have h2 : σR • algebraMap (𝓞 M) (𝓞 E) x = algebraMap (𝓞 M) (𝓞 E) x := by
+        apply NumberField.RingOfIntegers.ext
+        have h3 : algebraMap (𝓞 E) E (algebraMap (𝓞 M) (𝓞 E) x) =
+            algebraMap M E (algebraMap (𝓞 M) M x) := by
+          rw [← IsScalarTower.algebraMap_apply (𝓞 M) (𝓞 E) E,
+            ← IsScalarTower.algebraMap_apply (𝓞 M) M E]
+        show σR (algebraMap (𝓞 E) E (algebraMap (𝓞 M) (𝓞 E) x)) =
+          algebraMap (𝓞 E) E (algebraMap (𝓞 M) (𝓞 E) x)
+        rw [h3, hσeq]
+        exact hσ'fix _
+      have h4 : algebraMap (𝓞 M) (𝓞 E) x -
+          algebraMap (𝓞 M) (𝓞 E) x ^ Nat.card (𝓞 F ⧸ P.asIdeal) ∈ R := by
+        nth_rewrite 1 [← h2]
+        exact h1
+      have h5 := R.neg_mem h4
+      rwa [neg_sub] at h5
+    have hcardQ : Nat.card (𝓞 M ⧸ Q) = Nat.card (𝓞 F ⧸ P.asIdeal) := by
+      set g : (𝓞 M ⧸ Q) →+* (𝓞 E ⧸ R) :=
+        Ideal.quotientMap R (algebraMap (𝓞 M) (𝓞 E)) (Ideal.over_def R Q).le
+        with hgdef
+      have hginj : Function.Injective g :=
+        Ideal.quotientMap_injective' (Ideal.over_def R Q).ge
+      have hroot : ∀ w : 𝓞 M ⧸ Q, g w ^ Nat.card (𝓞 F ⧸ P.asIdeal) - g w = 0 := by
+        intro w
+        obtain ⟨x, rfl⟩ := Ideal.Quotient.mk_surjective w
+        rw [hgdef, Ideal.quotientMap_mk, ← map_pow, ← map_sub,
+          Ideal.Quotient.eq_zero_iff_mem]
+        exact hfixR x
+      -- upper bound via the roots of `X ^ N - X` in the domain `𝓞 E ⧸ R`
+      have hupper : Nat.card (𝓞 M ⧸ Q) ≤ Nat.card (𝓞 F ⧸ P.asIdeal) := by
+        set poly : Polynomial (𝓞 E ⧸ R) :=
+          Polynomial.X ^ Nat.card (𝓞 F ⧸ P.asIdeal) - Polynomial.X with hpolydef
+        have hdeg : poly.natDegree = Nat.card (𝓞 F ⧸ P.asIdeal) := by
+          rw [hpolydef]
+          rw [Polynomial.natDegree_sub_eq_left_of_natDegree_lt (by
+            rw [Polynomial.natDegree_X_pow, Polynomial.natDegree_X]
+            have := hp.two_le
+            omega), Polynomial.natDegree_X_pow]
+        have hpolyne : poly ≠ 0 := by
+          intro h
+          rw [h, Polynomial.natDegree_zero] at hdeg
+          have := hp.two_le
+          omega
+        have hmem : ∀ w : 𝓞 M ⧸ Q, g w ∈ poly.roots.toFinset := by
+          intro w
+          rw [Multiset.mem_toFinset, Polynomial.mem_roots hpolyne]
+          show poly.IsRoot (g w)
+          rw [hpolydef]
+          simp only [Polynomial.IsRoot.def, Polynomial.eval_sub,
+            Polynomial.eval_pow, Polynomial.eval_X]
+          exact hroot w
+        calc Nat.card (𝓞 M ⧸ Q)
+            ≤ Nat.card {z : 𝓞 E ⧸ R // z ∈ poly.roots.toFinset} := by
+              refine Nat.card_le_card_of_injective (fun w => ⟨g w, hmem w⟩) ?_
+              intro w₁ w₂ h
+              simp only [Subtype.mk.injEq] at h
+              exact hginj h
+          _ = poly.roots.toFinset.card := Nat.card_eq_finsetCard _
+          _ ≤ Multiset.card poly.roots := Multiset.toFinset_card_le _
+          _ ≤ poly.natDegree := poly.card_roots'
+          _ = Nat.card (𝓞 F ⧸ P.asIdeal) := hdeg
+      have hlower : Nat.card (𝓞 F ⧸ P.asIdeal) ≤ Nat.card (𝓞 M ⧸ Q) :=
+        Nat.card_le_card_of_injective
+          (Ideal.quotientMap Q (algebraMap (𝓞 F) (𝓞 M))
+            (Ideal.over_def Q P.asIdeal).le)
+          (Ideal.quotientMap_injective' (Ideal.over_def Q P.asIdeal).ge)
+      exact le_antisymm hupper hlower
+    -- (2) inertia degree `1` from the residue-cardinality equality
+    have hf : Q.inertiaDeg (𝓞 F) = 1 := by
+      haveI hQmax : Q.IsMaximal := Ideal.IsPrime.isMaximal hQp hQne
+      have h := Ideal.cardQuot_pow_inertiaDeg P.asIdeal Q
+      rw [Submodule.cardQuot_apply, Submodule.cardQuot_apply, hcardQ] at h
+      have h2 : Nat.card (𝓞 F ⧸ P.asIdeal) ^ Q.inertiaDeg (𝓞 F) =
+          Nat.card (𝓞 F ⧸ P.asIdeal) ^ 1 := by
+        rw [pow_one]
+        exact h
+      exact Nat.pow_right_injective hp.two_le h2
+    -- (3) ramification index `1` from triviality of inertia at `R`
+    have he : Q.ramificationIdx (𝓞 F) = 1 := by
+      have hbotR : R.inertia (E ≃ₐ[F] E) = ⊥ :=
+        inertia_eq_bot_of_not_dvd_natCard hℓ hζ P hnd R
+      have hcard1 : Nat.card (R.inertia (E ≃ₐ[F] E)) = 1 := by
+        rw [hbotR]
+        simp
+      have hIdxIn := Ideal.card_inertia_eq_ramificationIdxIn
+        (G := E ≃ₐ[F] E) P.asIdeal R
+      rw [hcard1] at hIdxIn
+      have hRidx : R.ramificationIdx (𝓞 F) = 1 := by
+        rw [← Ideal.ramificationIdxIn_eq_ramificationIdx P.asIdeal R (E ≃ₐ[F] E)]
+        exact hIdxIn.symm
+      have htower := Ideal.ramificationIdx_tower (R := 𝓞 F) Q R
+      rw [hRidx] at htower
+      exact Nat.dvd_one.mp ⟨R.ramificationIdx (𝓞 M), htower⟩
+    exact ⟨hcardQ, he, hf⟩
+  -- the fundamental identity counts exactly `[M : F]` primes over `P`
+  have hsum := Ideal.sum_ramification_inertia (𝓞 M) F M P.ne_bot
+  have hone : ∀ Q ∈ IsDedekindDomain.primesOverFinset P.asIdeal (𝓞 M),
+      Ideal.ramificationIdx' P.asIdeal Q * Ideal.inertiaDeg' P.asIdeal Q = 1 := by
+    intro Q hQmem
+    have hQmem' := (IsDedekindDomain.mem_primesOverFinset_iff P.ne_bot _).mp hQmem
+    haveI hQp : Q.IsPrime := hQmem'.1
+    haveI hQl : Q.LiesOver P.asIdeal := hQmem'.2
+    obtain ⟨hcardQ, he, hf⟩ := hkey Q hQp hQl
+    have hQne : Q ≠ ⊥ := by
+      intro h
+      apply P.ne_bot
+      rw [Ideal.over_def Q P.asIdeal, h, Ideal.under_def]
+      exact Ideal.comap_bot_of_injective _
+        (FaithfulSMul.algebraMap_injective (𝓞 F) (𝓞 M))
+    haveI hQmax : Q.IsMaximal := Ideal.IsPrime.isMaximal hQp hQne
+    rw [Ideal.ramificationIdx'_eq_ramificationIdx P.asIdeal Q P.ne_bot,
+      Ideal.inertiaDeg'_eq_inertiaDeg P.asIdeal Q, he, hf]
+  have hcount : (IsDedekindDomain.primesOverFinset P.asIdeal (𝓞 M)).card =
+      Module.finrank F M := by
+    rw [← hsum, Finset.card_eq_sum_ones]
+    exact (Finset.sum_congr rfl hone).symm
+  -- each counted prime is a member of the displayed subtype
+  have hprop : ∀ Q : Ideal (𝓞 M),
+      Q ∈ IsDedekindDomain.primesOverFinset P.asIdeal (𝓞 M) →
+      Q.IsPrime ∧ Q ≠ ⊥ ∧ Q.under (𝓞 F) = P.asIdeal ∧
+      Nat.card (𝓞 M ⧸ Q) = Nat.card (𝓞 F ⧸ P.asIdeal) := by
+    intro Q hQmem
+    have hQmem' := (IsDedekindDomain.mem_primesOverFinset_iff P.ne_bot _).mp hQmem
+    haveI hQp : Q.IsPrime := hQmem'.1
+    haveI hQl : Q.LiesOver P.asIdeal := hQmem'.2
+    have hQne : Q ≠ ⊥ := by
+      intro h
+      apply P.ne_bot
+      rw [Ideal.over_def Q P.asIdeal, h, Ideal.under_def]
+      exact Ideal.comap_bot_of_injective _
+        (FaithfulSMul.algebraMap_injective (𝓞 F) (𝓞 M))
+    exact ⟨hQp, hQne, (Ideal.over_def Q P.asIdeal).symm, (hkey Q hQp hQl).1⟩
+  haveI hfinsub : Finite {Q : HeightOneSpectrum (𝓞 M) //
+      Q.asIdeal.under (𝓞 F) = P.asIdeal ∧
+      Nat.card (𝓞 M ⧸ Q.asIdeal) = Nat.card (𝓞 F ⧸ P.asIdeal)} := by
+    haveI : Finite {Q : HeightOneSpectrum (𝓞 M) //
+        Nat.card (𝓞 M ⧸ Q.asIdeal) = Nat.card (𝓞 F ⧸ P.asIdeal)} :=
+      (finite_setOf_natCard_quotient_eq M _).to_subtype
+    refine Finite.of_injective (fun Q => (⟨(Q : HeightOneSpectrum (𝓞 M)), Q.2.2⟩ :
+      {Q : HeightOneSpectrum (𝓞 M) //
+        Nat.card (𝓞 M ⧸ Q.asIdeal) = Nat.card (𝓞 F ⧸ P.asIdeal)})) ?_
+    intro Q₁ Q₂ h
+    simp only [Subtype.mk.injEq] at h
+    exact Subtype.ext h
+  have hcard_le : (IsDedekindDomain.primesOverFinset P.asIdeal (𝓞 M)).card ≤
+      Nat.card {Q : HeightOneSpectrum (𝓞 M) //
+        Q.asIdeal.under (𝓞 F) = P.asIdeal ∧
+        Nat.card (𝓞 M ⧸ Q.asIdeal) = Nat.card (𝓞 F ⧸ P.asIdeal)} := by
+    rw [← Nat.card_eq_finsetCard]
+    refine Nat.card_le_card_of_injective (fun Q =>
+      ⟨⟨(Q : Ideal (𝓞 M)), (hprop (Q : Ideal (𝓞 M)) Q.2).1,
+        (hprop (Q : Ideal (𝓞 M)) Q.2).2.1⟩,
+        (hprop (Q : Ideal (𝓞 M)) Q.2).2.2.1,
+        (hprop (Q : Ideal (𝓞 M)) Q.2).2.2.2⟩) ?_
+    intro Q₁ Q₂ h
+    have h1 : (Q₁ : Ideal (𝓞 M)) = (Q₂ : Ideal (𝓞 M)) :=
+      congrArg (fun x : {Q : HeightOneSpectrum (𝓞 M) //
+        Q.asIdeal.under (𝓞 F) = P.asIdeal ∧
+        Nat.card (𝓞 M ⧸ Q.asIdeal) = Nat.card (𝓞 F ⧸ P.asIdeal)} =>
+        (x : HeightOneSpectrum (𝓞 M)).asIdeal) h
+    exact Subtype.ext h1
+  have hfinal := hcard_le
+  rw [hcount] at hfinal
+  exact hfinal
+
+open IsDedekindDomain in
+/-- **Complete-splitting count at a Frobenius-pinned degree-one prime,
+fixed-field form** — the per-prime core of the splitting comparison
+`finrank_fixedField_mul_tsum_rpow_neg_le_tsum_fixedField`: if a
+degree-one prime `P` of `F` away from `ℓ` has a Frobenius inside
+`H' ≤ Gal(E/F)` (`σ ζ = ζ ^ N(P)` for some `σ ∈ H'`), then `P` splits
+completely in `M = E^{H'}`: there are at least `[M : F]` places of `M`
+lying over `P` with residue cardinality exactly `N(P)`. PROVEN: the
+abstract-tower form `finrank_le_natCard_setOf_under_eq_of_map_zeta_eq_pow`
+applied to `M = E^{H'}`, whose elements `σ ∈ H'` fixes pointwise by
+definition of the fixed field (`IntermediateField.mem_fixedField_iff`). -/
+theorem finrank_fixedField_le_natCard_setOf_under_eq_of_map_zeta_eq_pow
+    {F : Type*} [Field F] [NumberField F] {E : Type*} [Field E] [NumberField E]
+    [Algebra F E] {ℓ : ℕ} (hℓ : ℓ.Prime) [IsCyclotomicExtension {ℓ} F E]
+    {ζ : E} (hζ : IsPrimitiveRoot ζ ℓ) (H' : Subgroup (E ≃ₐ[F] E))
+    [NumberField ↥(IntermediateField.fixedField H')]
+    (P : HeightOneSpectrum (𝓞 F)) (hp : (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime)
+    (hne : Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ)
+    (hσ : ∃ σ ∈ H', σ ζ = ζ ^ Nat.card (𝓞 F ⧸ P.asIdeal)) :
+    Module.finrank F ↥(IntermediateField.fixedField H') ≤
+      Nat.card {Q : HeightOneSpectrum (𝓞 ↥(IntermediateField.fixedField H')) //
+        Q.asIdeal.under (𝓞 F) = P.asIdeal ∧
+        Nat.card (𝓞 ↥(IntermediateField.fixedField H') ⧸ Q.asIdeal) =
+          Nat.card (𝓞 F ⧸ P.asIdeal)} := by
+  obtain ⟨σ', hσ'H, hσ'ζ⟩ := hσ
+  refine finrank_le_natCard_setOf_under_eq_of_map_zeta_eq_pow hℓ hζ P hp hne σ'
+    hσ'ζ ?_
+  intro x
+  have hx := (IntermediateField.mem_fixedField_iff H' (x : E)).mp x.2
+  have h1 : algebraMap ↥(IntermediateField.fixedField H') E x = (x : E) := rfl
+  rw [h1]
+  exact hx σ' hσ'H
+
+open IsDedekindDomain in
+/-- **Complete splitting in the fixed field of a Frobenius-closed
+subgroup** — the algebraic half of Deuring's trick: if every degree-one
+prime `P` of `F` away from `ℓ` has a Frobenius inside `H' ≤ Gal(E/F)`
+(some `σ ∈ H'` with `σ ζ = ζ ^ N(P)`), then each such `P` splits
+completely in the fixed field `M = E^{H'}`, so the degree-one prime sum
+of `M` dominates `[M : F]` times that of `F`. PROVEN: a place of `M`
+determines `P` as its contraction with the same residue cardinality
+(`natCard_quotient_under_eq_of_natCard_prime`), so the fibers of the
+contraction over distinct `P` are disjoint and the right-hand
+`ℝ≥0∞`-sum equals the fibered sum (`ENNReal.tsum_fiberwise`) — the
+mirror image of the proven pullback bookkeeping in
+`tsum_rpow_neg_natCard_quotient_prime_and_ne_le_finrank_mul_tsum`; each
+fiber has at least `[M : F]` members of the correct residue cardinality
+by the per-prime complete-splitting count
+`finrank_fixedField_le_natCard_setOf_under_eq_of_map_zeta_eq_pow`. -/
 theorem finrank_fixedField_mul_tsum_rpow_neg_le_tsum_fixedField
     {F : Type*} [Field F] [NumberField F] {E : Type*} [Field E] [NumberField E]
     [Algebra F E] {ℓ : ℕ} (hℓ : ℓ.Prime) [IsCyclotomicExtension {ℓ} F E]
@@ -4947,8 +5455,189 @@ theorem finrank_fixedField_mul_tsum_rpow_neg_le_tsum_fixedField
           Nat.card (𝓞 ↥(IntermediateField.fixedField H') ⧸ Q.asIdeal) ≠ ℓ},
         (Nat.card (𝓞 ↥(IntermediateField.fixedField H') ⧸
           (Q : HeightOneSpectrum
+            (𝓞 ↥(IntermediateField.fixedField H'))).asIdeal) : ℝ≥0∞) ^ (-s) := by
+  classical
+  -- residue cardinality is preserved under contraction to `F`
+  have hcard : ∀ Q : HeightOneSpectrum (𝓞 ↥(IntermediateField.fixedField H')),
+      (Nat.card (𝓞 ↥(IntermediateField.fixedField H') ⧸ Q.asIdeal)).Prime →
+      Nat.card (𝓞 F ⧸ Q.asIdeal.under (𝓞 F)) =
+        Nat.card (𝓞 ↥(IntermediateField.fixedField H') ⧸ Q.asIdeal) := by
+    intro Q hq
+    haveI := Q.isPrime
+    exact natCard_quotient_under_eq_of_natCard_prime (A := 𝓞 F) Q.asIdeal hq
+  have hPrime : ∀ Q : HeightOneSpectrum (𝓞 ↥(IntermediateField.fixedField H')),
+      (Q.asIdeal.under (𝓞 F)).IsPrime := by
+    intro Q
+    haveI := Q.isPrime
+    exact Ideal.IsPrime.under (𝓞 F) Q.asIdeal
+  have hne_bot : ∀ Q : HeightOneSpectrum (𝓞 ↥(IntermediateField.fixedField H')),
+      (Nat.card (𝓞 ↥(IntermediateField.fixedField H') ⧸ Q.asIdeal)).Prime →
+      Q.asIdeal.under (𝓞 F) ≠ ⊥ := by
+    intro Q hq hbot
+    haveI := Q.isPrime
+    haveI hfin : Finite (𝓞 F ⧸ Q.asIdeal.under (𝓞 F)) := by
+      refine Nat.finite_of_card_ne_zero ?_
+      rw [hcard Q hq]
+      exact hq.ne_zero
+    have hinj : Function.Injective
+        (Ideal.Quotient.mk (Q.asIdeal.under (𝓞 F))) := by
+      rw [RingHom.injective_iff_ker_eq_bot, Ideal.mk_ker]
+      exact hbot
+    haveI : Finite (𝓞 F) := Finite.of_injective _ hinj
+    exact not_finite (𝓞 F)
+  -- the contraction map on the index subtypes
+  set Ψ : {Q : HeightOneSpectrum (𝓞 ↥(IntermediateField.fixedField H')) //
+      (Nat.card (𝓞 ↥(IntermediateField.fixedField H') ⧸ Q.asIdeal)).Prime ∧
+      Nat.card (𝓞 ↥(IntermediateField.fixedField H') ⧸ Q.asIdeal) ≠ ℓ} →
+      {P : HeightOneSpectrum (𝓞 F) //
+        (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ} :=
+    fun Q => ⟨⟨(Q : HeightOneSpectrum
+        (𝓞 ↥(IntermediateField.fixedField H'))).asIdeal.under (𝓞 F),
+      hPrime (Q : HeightOneSpectrum (𝓞 ↥(IntermediateField.fixedField H'))),
+      hne_bot (Q : HeightOneSpectrum
+        (𝓞 ↥(IntermediateField.fixedField H'))) Q.2.1⟩,
+      by
+        constructor
+        · rw [hcard (Q : HeightOneSpectrum
+            (𝓞 ↥(IntermediateField.fixedField H'))) Q.2.1]
+          exact Q.2.1
+        · rw [hcard (Q : HeightOneSpectrum
+            (𝓞 ↥(IntermediateField.fixedField H'))) Q.2.1]
+          exact Q.2.2⟩ with hΨdef
+  have hNeq : ∀ Q : {Q : HeightOneSpectrum
+      (𝓞 ↥(IntermediateField.fixedField H')) //
+      (Nat.card (𝓞 ↥(IntermediateField.fixedField H') ⧸ Q.asIdeal)).Prime ∧
+      Nat.card (𝓞 ↥(IntermediateField.fixedField H') ⧸ Q.asIdeal) ≠ ℓ},
+      Nat.card (𝓞 F ⧸ ((Ψ Q : {P : HeightOneSpectrum (𝓞 F) //
+        (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+        Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ}) :
+          HeightOneSpectrum (𝓞 F)).asIdeal) =
+      Nat.card (𝓞 ↥(IntermediateField.fixedField H') ⧸
+        (Q : HeightOneSpectrum (𝓞 ↥(IntermediateField.fixedField H'))).asIdeal) := by
+    intro Q
+    rw [hΨdef]
+    exact hcard (Q : HeightOneSpectrum
+      (𝓞 ↥(IntermediateField.fixedField H'))) Q.2.1
+  -- fiber lower bound: complete splitting puts `[M : F]` places in each fiber
+  have hfib : ∀ p : {P : HeightOneSpectrum (𝓞 F) //
+      (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ},
+      (Module.finrank F ↥(IntermediateField.fixedField H') : ℝ≥0∞) ≤
+        (ENat.card ↥(Ψ ⁻¹' {p}) : ℝ≥0∞) := by
+    intro p
+    have hcount := finrank_fixedField_le_natCard_setOf_under_eq_of_map_zeta_eq_pow
+      hℓ hζ H' (p : HeightOneSpectrum (𝓞 F)) p.2.1 p.2.2
+      (hfrob (p : HeightOneSpectrum (𝓞 F)) p.2.1 p.2.2)
+    -- the counted subtype injects into the fiber
+    have hmem : ∀ Q : {Q : HeightOneSpectrum
+        (𝓞 ↥(IntermediateField.fixedField H')) //
+        Q.asIdeal.under (𝓞 F) = (p : HeightOneSpectrum (𝓞 F)).asIdeal ∧
+        Nat.card (𝓞 ↥(IntermediateField.fixedField H') ⧸ Q.asIdeal) =
+          Nat.card (𝓞 F ⧸ (p : HeightOneSpectrum (𝓞 F)).asIdeal)},
+        (Nat.card (𝓞 ↥(IntermediateField.fixedField H') ⧸
+          (Q : HeightOneSpectrum
+            (𝓞 ↥(IntermediateField.fixedField H'))).asIdeal)).Prime ∧
+        Nat.card (𝓞 ↥(IntermediateField.fixedField H') ⧸
+          (Q : HeightOneSpectrum
+            (𝓞 ↥(IntermediateField.fixedField H'))).asIdeal) ≠ ℓ := by
+      intro Q
+      constructor
+      · rw [Q.2.2]
+        exact p.2.1
+      · rw [Q.2.2]
+        exact p.2.2
+    set ι : {Q : HeightOneSpectrum (𝓞 ↥(IntermediateField.fixedField H')) //
+        Q.asIdeal.under (𝓞 F) = (p : HeightOneSpectrum (𝓞 F)).asIdeal ∧
+        Nat.card (𝓞 ↥(IntermediateField.fixedField H') ⧸ Q.asIdeal) =
+          Nat.card (𝓞 F ⧸ (p : HeightOneSpectrum (𝓞 F)).asIdeal)} →
+        ↥(Ψ ⁻¹' {p}) :=
+      fun Q => ⟨⟨(Q : HeightOneSpectrum
+          (𝓞 ↥(IntermediateField.fixedField H'))), hmem Q⟩,
+        by
+          show Ψ ⟨(Q : HeightOneSpectrum
+            (𝓞 ↥(IntermediateField.fixedField H'))), hmem Q⟩ = p
+          rw [hΨdef]
+          exact Subtype.ext (IsDedekindDomain.HeightOneSpectrum.ext Q.2.1)⟩
+      with hιdef
+    have hιinj : Function.Injective ι := by
+      intro Q₁ Q₂ h
+      rw [hιdef] at h
+      simp only [Subtype.mk.injEq] at h
+      exact Subtype.ext h
+    rcases finite_or_infinite ↥(Ψ ⁻¹' {p}) with hfin | hinf
+    · haveI := hfin
+      haveI : Finite {Q : HeightOneSpectrum
+          (𝓞 ↥(IntermediateField.fixedField H')) //
+          Q.asIdeal.under (𝓞 F) = (p : HeightOneSpectrum (𝓞 F)).asIdeal ∧
+          Nat.card (𝓞 ↥(IntermediateField.fixedField H') ⧸ Q.asIdeal) =
+            Nat.card (𝓞 F ⧸ (p : HeightOneSpectrum (𝓞 F)).asIdeal)} :=
+        Finite.of_injective ι hιinj
+      have h1 := Nat.card_le_card_of_injective ι hιinj
+      have h2 : Module.finrank F ↥(IntermediateField.fixedField H') ≤
+          Nat.card ↥(Ψ ⁻¹' {p}) := le_trans hcount h1
+      rw [ENat.card_eq_coe_natCard]
+      exact_mod_cast h2
+    · haveI := hinf
+      rw [ENat.card_eq_top_of_infinite]
+      simp only [ENat.toENNReal_top]
+      exact le_top
+  -- fiberwise decomposition of the `M`-side sum
+  calc (Module.finrank F ↥(IntermediateField.fixedField H') : ℝ≥0∞) *
+      (∑' P : {P : HeightOneSpectrum (𝓞 F) //
+          (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ},
+        (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^ (-s))
+      = ∑' p : {P : HeightOneSpectrum (𝓞 F) //
+          (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ},
+        (Module.finrank F ↥(IntermediateField.fixedField H') : ℝ≥0∞) *
+          (Nat.card (𝓞 F ⧸ (p : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^
+            (-s) := ENNReal.tsum_mul_left.symm
+    _ ≤ ∑' p : {P : HeightOneSpectrum (𝓞 F) //
+          (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ},
+        (ENat.card ↥(Ψ ⁻¹' {p}) : ℝ≥0∞) *
+          (Nat.card (𝓞 F ⧸ (p : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^
+            (-s) :=
+        ENNReal.tsum_le_tsum fun p => mul_le_mul' (hfib p) le_rfl
+    _ = ∑' p : {P : HeightOneSpectrum (𝓞 F) //
+          (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ},
+        ∑' _Qf : ↥(Ψ ⁻¹' {p}),
+          (Nat.card (𝓞 F ⧸ (p : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^
+            (-s) :=
+        tsum_congr fun p => (ENNReal.tsum_const _).symm
+    _ = ∑' p : {P : HeightOneSpectrum (𝓞 F) //
+          (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ},
+        ∑' Qf : ↥(Ψ ⁻¹' {p}),
+          (Nat.card (𝓞 F ⧸ ((Ψ (Qf : {Q : HeightOneSpectrum
+            (𝓞 ↥(IntermediateField.fixedField H')) //
+            (Nat.card (𝓞 ↥(IntermediateField.fixedField H') ⧸
+              Q.asIdeal)).Prime ∧
+            Nat.card (𝓞 ↥(IntermediateField.fixedField H') ⧸
+              Q.asIdeal) ≠ ℓ}) :
+              {P : HeightOneSpectrum (𝓞 F) //
+                (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+                Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ}) :
+              HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^ (-s) :=
+        tsum_congr fun p => tsum_congr fun Qf => by
+          rw [show Ψ Qf.1 = p from Qf.2]
+    _ = ∑' Q : {Q : HeightOneSpectrum
+          (𝓞 ↥(IntermediateField.fixedField H')) //
+          (Nat.card (𝓞 ↥(IntermediateField.fixedField H') ⧸ Q.asIdeal)).Prime ∧
+          Nat.card (𝓞 ↥(IntermediateField.fixedField H') ⧸ Q.asIdeal) ≠ ℓ},
+        (Nat.card (𝓞 F ⧸ ((Ψ Q : {P : HeightOneSpectrum (𝓞 F) //
+          (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+          Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ}) :
+            HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^ (-s) :=
+        ENNReal.tsum_fiberwise (fun Q => (Nat.card (𝓞 F ⧸
+          ((Ψ Q : {P : HeightOneSpectrum (𝓞 F) //
+            (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+            Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ}) :
+            HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^ (-s)) Ψ
+    _ = ∑' Q : {Q : HeightOneSpectrum
+          (𝓞 ↥(IntermediateField.fixedField H')) //
+          (Nat.card (𝓞 ↥(IntermediateField.fixedField H') ⧸ Q.asIdeal)).Prime ∧
+          Nat.card (𝓞 ↥(IntermediateField.fixedField H') ⧸ Q.asIdeal) ≠ ℓ},
+        (Nat.card (𝓞 ↥(IntermediateField.fixedField H') ⧸
+          (Q : HeightOneSpectrum
             (𝓞 ↥(IntermediateField.fixedField H'))).asIdeal) : ℝ≥0∞) ^ (-s) :=
-  sorry
+        tsum_congr fun Q => by rw [hNeq Q]
 
 open IsDedekindDomain in
 /-- **Deuring's trick: a subgroup of `Gal(F(ζ_ℓ)/F)` containing a
