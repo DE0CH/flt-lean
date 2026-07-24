@@ -112,7 +112,15 @@ here. This file provides:
   `exists_ideal_not_dvd_absNorm_and_residue_eq_of_map_zeta_eq_pow`
   (Galois-image residues are ideal norm residues; NOT derivable from
   this file's downstream infinitude theorem — that would be circular,
-  see its docstring)) and
+  see its docstring — and instead now itself PROVEN by Deuring's
+  trick, `eq_top_of_forall_exists_mem_map_zeta_eq_pow_natCard`, from
+  three shallower sorried leaves: the complete-splitting comparison
+  `finrank_fixedField_mul_tsum_rpow_neg_le_tsum_fixedField` and the
+  two Mertens zeta-pole bounds
+  `exists_forall_tsum_rpow_neg_natCard_quotient_prime_and_ne_le_log_add`
+  and
+  `exists_forall_log_le_tsum_rpow_neg_natCard_quotient_prime_and_ne_add`))
+  and
   `exists_forall_le_norm_LSeries_near_one` (`L` bounded away from `0`
   just right of `1`: the `L(1,χ) ≠ 0` half — now itself DERIVED,
   through the PROVEN dominated-convergence continuation
@@ -122,8 +130,8 @@ here. This file provides:
   `integral_sum_dirichletCharacter_mul_card_cpow_neg_two_ne_zero`,
   the nonvanishing of the continued value at `1` by the classical
   zeta-factorization argument)); the L-function half thus rests on
-  exactly FOUR sorried leaves — the three ray-class/realization
-  leaves behind the Weber counting theorem
+  exactly SIX sorried leaves — the two ray-class leaves and the
+  three Deuring leaves behind the Weber counting theorem
   `exists_forall_abs_sum_card_absNorm_residue_sub_mul_le_rpow` and
   the arithmetic core
   `integral_sum_dirichletCharacter_mul_card_cpow_neg_two_ne_zero`;
@@ -3066,8 +3074,223 @@ theorem exists_forall_abs_sum_card_absNorm_residue_sub_mul_le_rpow_of_ideal
       hclass I₀ (hRmem I₀ hI₀).1 (hRmem I₀ hI₀).2 n).trans_eq ?_)
   rw [Finset.sum_const, hRcard, nsmul_eq_mul, mul_assoc]
 
+open IsDedekindDomain in
+/-- **Upper Mertens bound for the degree-one prime sum** (sorry leaf) —
+the zeta-pole half of Deuring's trick, upper direction: for any number
+field `K` and modulus `ℓ` there is a finite `B` with
+`∑ #(𝓞 K / P) ^ (-s) ≤ log (1/(s-1)) + B` on `1 < s ≤ 2`, the sum over
+the finite places of prime residue cardinality `≠ ℓ`.
+
+Intended proof, from this file's Euler-product machinery: the prime sum
+is termwise at most `∑_P -log(1 - N P^{-s}) = log Z_K(s)` (via
+`x ≤ -log(1-x)`; the `ℝ≥0∞`-valued ideal sum factors over primes by
+the square-times-squarefree bound
+`tsum_rpow_neg_absNorm_le_mul_tsum_finset_prod` and its exact Euler
+companions `tsum_rpow_neg_absNorm_eq`/`norm_dedekindZeta_le`), and the
+pole bound `Z_K(s) ≤ c/(s-1)` on a right neighbourhood of `1` follows
+from mathlib's `NumberField.tendsto_sub_one_mul_dedekindZeta_nhdsGT`;
+away from `1` — on `[1 + η, 2]` — the prime sum is monotone in `s`,
+hence bounded by its (finite) value at `1 + η`
+(`tsum_rpow_neg_natCard_quotient_prime_and_ne_ne_top`), while the log
+term is nonnegative there. -/
+theorem exists_forall_tsum_rpow_neg_natCard_quotient_prime_and_ne_le_log_add
+    (K : Type*) [Field K] [NumberField K] (ℓ : ℕ) :
+    ∃ B : ℝ≥0∞, B ≠ ⊤ ∧ ∀ s : ℝ, 1 < s → s ≤ 2 →
+      (∑' P : {P : HeightOneSpectrum (𝓞 K) //
+          (Nat.card (𝓞 K ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 K ⧸ P.asIdeal) ≠ ℓ},
+        (Nat.card (𝓞 K ⧸ (P : HeightOneSpectrum (𝓞 K)).asIdeal) : ℝ≥0∞) ^ (-s)) ≤
+      ENNReal.ofReal (Real.log ((s - 1)⁻¹)) + B :=
+  sorry
+
+open IsDedekindDomain in
+/-- **Lower Mertens bound for the degree-one prime sum** (sorry leaf) —
+the zeta-pole half of Deuring's trick, lower direction:
+`log (1/(s-1)) ≤ ∑ #(𝓞 K / P) ^ (-s) + B` on `1 < s ≤ 2` for some
+finite `B`, the sum over the finite places of prime residue cardinality
+`≠ ℓ`. This is the quantitative form of the proven divergence statement
+`exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_ne` and follows
+from the same estimates.
+
+Intended proof: the pole gives `κ/2 · (s-1)⁻¹ ≤ Z_K(s)` near `1`
+(`NumberField.tendsto_sub_one_mul_dedekindZeta_nhdsGT` with
+`NumberField.dedekindZeta_residue_pos`, transferred to the
+`ℝ≥0∞`-valued ideal sum by `tsum_rpow_neg_absNorm_eq`), so
+`log (1/(s-1)) ≤ log Z_K(s) + O(1)` there, while away from `1` the log
+term is bounded outright and the right-hand side is nonnegative. And
+`log Z_K(s) = ∑_P -log(1 - N P^{-s})` exceeds the full prime sum by a
+bounded amount (`-log(1-x) ≤ x + 2x²` for `x ≤ 1/2`, and the square
+terms are uniformly summable for `s > 1`), while the places omitted
+from the displayed index — composite residue cardinality, or
+cardinality exactly `ℓ` — contribute a bounded tail, exactly as in the
+`htail` block of the divergence proof
+(`tsum_not_prime_natCard_rpow_neg_one_ne_top`,
+`finite_setOf_natCard_quotient_eq`). -/
+theorem exists_forall_log_le_tsum_rpow_neg_natCard_quotient_prime_and_ne_add
+    (K : Type*) [Field K] [NumberField K] (ℓ : ℕ) :
+    ∃ B : ℝ≥0∞, B ≠ ⊤ ∧ ∀ s : ℝ, 1 < s → s ≤ 2 →
+      ENNReal.ofReal (Real.log ((s - 1)⁻¹)) ≤
+      (∑' P : {P : HeightOneSpectrum (𝓞 K) //
+          (Nat.card (𝓞 K ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 K ⧸ P.asIdeal) ≠ ℓ},
+        (Nat.card (𝓞 K ⧸ (P : HeightOneSpectrum (𝓞 K)).asIdeal) : ℝ≥0∞) ^ (-s)) + B :=
+  sorry
+
+open IsDedekindDomain in
+/-- **Complete splitting in the fixed field of a Frobenius-closed
+subgroup** (sorry leaf) — the algebraic half of Deuring's trick: if
+every degree-one prime `P` of `F` away from `ℓ` has a Frobenius inside
+`H' ≤ Gal(E/F)` (some `σ ∈ H'` with `σ ζ = ζ ^ N(P)`), then each such
+`P` splits completely in the fixed field `M = E^{H'}`, so the
+degree-one prime sum of `M` dominates `[M : F]` times that of `F`.
+
+Intended proof: `E/F` is Galois (`IsCyclotomicExtension.isGalois`) and
+`σ ↦ (n : σ ζ = ζ ^ n)` is injective on `Gal(E/F)` because `E = F(ζ)`
+(adjoin-generation, as in `adjoin_inf_adjoin_eq_bot_of_isPrimitiveRoot`
+above, or `IsPrimitiveRoot.autToPow`), so the hypothesis pins the
+honest Frobenius class at every prime `Q` of `E` over `P` inside `H'`:
+`P ∤ ℓ` is unramified in `E` (the relevant ramification/different
+theory, `Mathlib.NumberTheory.RamificationInertia.Unramified` and
+`...RamificationInertia.Galois`, is already imported), its
+decomposition group at `Q` is generated by the arithmetic Frobenius
+(`IsArithFrobAt`, as in
+`exists_algEquiv_map_zeta_eq_pow_natCard_of_not_dvd`), and the latter
+lies in `H'` by injectivity. Hence for `M = E^{H'}`: every prime of `M`
+over `P` has ramification index and residue degree `1` over `F`, so by
+`Ideal.sum_ramification_inertia` there are exactly `[M : F]` of them,
+each of residue cardinality `#(𝓞 F / P)` — prime and `≠ ℓ`, so each
+lies in the index of the right-hand sum. Summing: a place of `M`
+determines `P` as its contraction, so the fibers over distinct `P` are
+disjoint and the right-hand `ℝ≥0∞`-sum dominates the fibered sum
+`∑_P [M : F] · N(P)^{-s}` — the mirror image of the proven pullback
+bookkeeping in
+`tsum_rpow_neg_natCard_quotient_prime_and_ne_le_finrank_mul_tsum`. -/
+theorem finrank_fixedField_mul_tsum_rpow_neg_le_tsum_fixedField
+    {F : Type*} [Field F] [NumberField F] {E : Type*} [Field E] [NumberField E]
+    [Algebra F E] {ℓ : ℕ} (hℓ : ℓ.Prime) [IsCyclotomicExtension {ℓ} F E]
+    {ζ : E} (hζ : IsPrimitiveRoot ζ ℓ) (H' : Subgroup (E ≃ₐ[F] E))
+    [NumberField ↥(IntermediateField.fixedField H')]
+    (hfrob : ∀ P : HeightOneSpectrum (𝓞 F), (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime →
+      Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ →
+      ∃ σ ∈ H', σ ζ = ζ ^ Nat.card (𝓞 F ⧸ P.asIdeal))
+    (s : ℝ) :
+    (Module.finrank F ↥(IntermediateField.fixedField H') : ℝ≥0∞) *
+      (∑' P : {P : HeightOneSpectrum (𝓞 F) //
+          (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ},
+        (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^ (-s)) ≤
+      ∑' Q : {Q : HeightOneSpectrum (𝓞 ↥(IntermediateField.fixedField H')) //
+          (Nat.card (𝓞 ↥(IntermediateField.fixedField H') ⧸ Q.asIdeal)).Prime ∧
+          Nat.card (𝓞 ↥(IntermediateField.fixedField H') ⧸ Q.asIdeal) ≠ ℓ},
+        (Nat.card (𝓞 ↥(IntermediateField.fixedField H') ⧸
+          (Q : HeightOneSpectrum
+            (𝓞 ↥(IntermediateField.fixedField H'))).asIdeal) : ℝ≥0∞) ^ (-s) :=
+  sorry
+
+open IsDedekindDomain in
+/-- **Deuring's trick: a subgroup of `Gal(F(ζ_ℓ)/F)` containing a
+Frobenius for every degree-one prime away from `ℓ` is everything** —
+the sharply-stated "an extension in which almost all primes split
+completely is trivial" core (Neukirch ch. VII §13 Cor. 13.10, Lang
+ch. VIII §4), transported through the Galois correspondence. PROVEN
+from the three sorried Deuring leaves above: were `H' < ⊤`, its fixed
+field `M = E^{H'}` would be an extension of `F` of degree `≥ 2`
+(`IntermediateField.fixingSubgroup_fixedField`) in which every
+degree-one prime of `F` away from `ℓ` splits completely, giving
+`2·A_F(s) ≤ [M:F]·A_F(s) ≤ A_M(s)` for the degree-one prime sums
+(`finrank_fixedField_mul_tsum_rpow_neg_le_tsum_fixedField`); the two
+Mertens bounds
+(`exists_forall_tsum_rpow_neg_natCard_quotient_prime_and_ne_le_log_add`
+at `M`,
+`exists_forall_log_le_tsum_rpow_neg_natCard_quotient_prime_and_ne_add`
+at `F`) chain this to `A_F(s) + A_F(s) ≤ A_F(s) + B` on `(1, 2]` with
+`B` finite, i.e. `A_F(s) ≤ B` after cancelling the finite `A_F(s)`
+(`tsum_rpow_neg_natCard_quotient_prime_and_ne_ne_top`) — contradicting
+the divergence of the base sum
+(`exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_ne`, transferred
+from its witness `s₀` to `min s₀ 2` by monotonicity in the
+exponent). -/
+theorem eq_top_of_forall_exists_mem_map_zeta_eq_pow_natCard
+    {F : Type*} [Field F] [NumberField F] {E : Type*} [Field E] [NumberField E]
+    [Algebra F E] {ℓ : ℕ} (hℓ : ℓ.Prime) [IsCyclotomicExtension {ℓ} F E]
+    {ζ : E} (hζ : IsPrimitiveRoot ζ ℓ) (H' : Subgroup (E ≃ₐ[F] E))
+    (hfrob : ∀ P : HeightOneSpectrum (𝓞 F), (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime →
+      Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ →
+      ∃ σ ∈ H', σ ζ = ζ ^ Nat.card (𝓞 F ⧸ P.asIdeal)) :
+    H' = ⊤ := by
+  classical
+  haveI : NeZero ℓ := ⟨hℓ.pos.ne'⟩
+  haveI : FiniteDimensional F E := IsCyclotomicExtension.finiteDimensional {ℓ} F E
+  by_contra hne
+  haveI : NumberField ↥(IntermediateField.fixedField H') :=
+    NumberField.of_intermediateField _
+  -- the fixed field is a nontrivial extension of `F`
+  have hbot : IntermediateField.fixedField H' ≠ ⊥ := by
+    intro h
+    apply hne
+    rw [← IntermediateField.fixingSubgroup_fixedField H', h]
+    ext σ
+    simp only [Subgroup.mem_top, iff_true]
+    rw [IntermediateField.mem_fixingSubgroup_iff]
+    intro x hx
+    obtain ⟨y, rfl⟩ := IntermediateField.mem_bot.mp hx
+    exact σ.commutes y
+  have hd2 : 2 ≤ Module.finrank F ↥(IntermediateField.fixedField H') := by
+    have hpos : 0 < Module.finrank F ↥(IntermediateField.fixedField H') :=
+      Module.finrank_pos
+    have hne1 : Module.finrank F ↥(IntermediateField.fixedField H') ≠ 1 :=
+      fun h => hbot (IntermediateField.finrank_eq_one_iff.mp h)
+    omega
+  -- the two Mertens bounds and the divergence of the base sum
+  obtain ⟨B₁, hB₁top, hB₁⟩ :=
+    exists_forall_tsum_rpow_neg_natCard_quotient_prime_and_ne_le_log_add
+      ↥(IntermediateField.fixedField H') ℓ
+  obtain ⟨B₂, hB₂top, hB₂⟩ :=
+    exists_forall_log_le_tsum_rpow_neg_natCard_quotient_prime_and_ne_add F ℓ
+  obtain ⟨s₀, hs₀, hgt₀⟩ :=
+    exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_ne F ℓ (B₁ + B₂)
+      (ENNReal.add_ne_top.mpr ⟨hB₁top, hB₂top⟩)
+  have hs1 : 1 < min s₀ 2 := lt_min hs₀ one_lt_two
+  -- the divergence transfers from `s₀` to `min s₀ 2`: the terms only grow
+  have hgt : B₁ + B₂ < ∑' P : {P : HeightOneSpectrum (𝓞 F) //
+      (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ},
+      (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^
+        (-min s₀ 2) := by
+    refine hgt₀.trans_le (ENNReal.tsum_le_tsum fun P => ?_)
+    refine ENNReal.rpow_le_rpow_of_exponent_le ?_ (neg_le_neg (min_le_left _ _))
+    have h2 := two_le_natCard_quotient (P : HeightOneSpectrum (𝓞 F))
+    exact_mod_cast le_trans one_le_two h2
+  -- splitting comparison + Mertens chain: `2·A_F ≤ A_F + (B₁ + B₂)`
+  have hstep1 : (2 : ℝ≥0∞) *
+      (∑' P : {P : HeightOneSpectrum (𝓞 F) //
+          (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ},
+        (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^
+          (-min s₀ 2)) ≤
+      (Module.finrank F ↥(IntermediateField.fixedField H') : ℝ≥0∞) *
+      (∑' P : {P : HeightOneSpectrum (𝓞 F) //
+          (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ},
+        (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^
+          (-min s₀ 2)) :=
+    mul_le_mul' (by exact_mod_cast hd2) le_rfl
+  have hstep2 := finrank_fixedField_mul_tsum_rpow_neg_le_tsum_fixedField hℓ hζ H'
+    hfrob (min s₀ 2)
+  have hstep3 := hB₁ (min s₀ 2) hs1 (min_le_right _ _)
+  have hstep4 := hB₂ (min s₀ 2) hs1 (min_le_right _ _)
+  have hchain : (2 : ℝ≥0∞) *
+      (∑' P : {P : HeightOneSpectrum (𝓞 F) //
+          (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ},
+        (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^
+          (-min s₀ 2)) ≤
+      (∑' P : {P : HeightOneSpectrum (𝓞 F) //
+          (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ},
+        (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^
+          (-min s₀ 2)) + (B₁ + B₂) := by
+    refine (((hstep1.trans hstep2).trans hstep3).trans
+      (add_le_add hstep4 le_rfl)).trans_eq ?_
+    rw [add_assoc, add_comm B₂ B₁]
+  rw [two_mul] at hchain
+  exact absurd hgt (not_lt.mpr ((ENNReal.add_le_add_iff_left
+    (tsum_rpow_neg_natCard_quotient_prime_and_ne_ne_top F ℓ hs1)).mp hchain))
+
 /-- **Frobenius residue realization: Galois-image residues are ideal
-norm residues** (sorry leaf) — the converse of the proven
+norm residues** — the converse of the proven
 `exists_algEquiv_map_zeta_eq_pow_of_not_dvd_absNorm`: every residue
 `m mod ℓ` realized by the Galois action on `ζ` (`ρ ζ = ζ ^ m` for some
 `ρ ∈ Gal(E/F)`) is the norm residue of an integral ideal of `𝓞 F`
@@ -3086,33 +3309,93 @@ circular (and is impossible order-wise in this file). The original
 plan recorded in the docstring of the counting leaf overlooked this;
 hence the separate, strictly shallower leaf here.
 
-Non-circular intended proof (Deuring's trick; Neukirch ch. VII §13
+Now DERIVED, no longer a leaf (Deuring's trick; Neukirch ch. VII §13
 Cor. 13.10 "an extension in which almost all primes split completely
-is trivial"; Lang ch. VIII §4): the norm residues of prime-to-`ℓ`
-ideals form a submonoid, hence (finite) subgroup, `H` of `(ℤ/ℓ)ˣ`,
-contained in the Galois image `G ≅ Gal(E/F)` by
-`exists_algEquiv_map_zeta_eq_pow_of_not_dvd_absNorm`. If `H < G`, the
-fixed field `M = E^H` is a subextension with `[M : F] > 1` in which
-every prime of `F` away from `ℓ` splits completely (its Frobenius
-`N(P) mod ℓ` lies in `H`). Comparing degree-one prime sums as
-`s → 1⁺`: complete splitting gives `[M:F] · ∑_{P of F} N(P)^{-s} ≤
-∑_{Q of M} N(Q)^{-s} + O(1)`, the sum over `M` is at most
-`log(1/(s-1)) + O(1)` (upper Mertens bound through `ζ_M`, from the
-Euler product as in this file's `norm_dedekindZeta_le` machinery),
-while the sum over `F` is at least `log(1/(s-1)) - O(1)` (lower
-Mertens through `ζ_F`, the quantitative form of the Dedekind-zeta
-half `exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_ne` proved
-from the same Euler-product estimates) — forcing `[M : F] ≤ 1`,
-a contradiction. Everything cited lives strictly ABOVE the L-function
-chain: no circularity. -/
+is trivial"; Lang ch. VIII §4): the norm residues of ideals prime to
+`ℓ` form a subgroup `H` of `(ℤ/ℓ)ˣ` (multiplicativity of `absNorm`
+for products and closure under inversion by Fermat: `u⁻¹ = u^{ℓ-2}`
+realized by `I^{ℓ-2}`), and its pullback `H'` along
+`IsPrimitiveRoot.autToPow` — the subgroup of `Gal(E/F)` acting on `ζ`
+with ideal-realized exponent residue — contains a Frobenius for every
+degree-one prime of `F` away from `ℓ`
+(`exists_algEquiv_map_zeta_eq_pow_natCard_of_not_dvd`, with
+`I := P.asIdeal`). By the Deuring core
+`eq_top_of_forall_exists_mem_map_zeta_eq_pow_natCard` (proven above
+from the three sorried Deuring leaves — the complete-splitting
+comparison and the two Mertens bounds — everything strictly ABOVE the
+L-function chain: no circularity), `H' = ⊤`, so `ρ ∈ H'` and its
+exponent residue `m mod ℓ` is realized by an ideal. -/
 theorem exists_ideal_not_dvd_absNorm_and_residue_eq_of_map_zeta_eq_pow
     {F : Type*} [Field F] [NumberField F] {E : Type*} [Field E] [NumberField E]
     [Algebra F E] {ℓ : ℕ} (hℓ : ℓ.Prime) [IsCyclotomicExtension {ℓ} F E]
     {ζ : E} (hζ : IsPrimitiveRoot ζ ℓ) (ρ : E ≃ₐ[F] E) (m : ℕ)
     (hρ : ρ ζ = ζ ^ m) :
     ∃ I : Ideal (𝓞 F), ¬ ℓ ∣ Ideal.absNorm I ∧
-      (Ideal.absNorm I : ZMod ℓ) = (m : ZMod ℓ) :=
-  sorry
+      (Ideal.absNorm I : ZMod ℓ) = (m : ZMod ℓ) := by
+  classical
+  haveI : NeZero ℓ := ⟨hℓ.pos.ne'⟩
+  -- reading any action on `ζ` in `ZMod ℓ` through `autToPow`
+  have hford : IsOfFinOrder ζ :=
+    isOfFinOrder_iff_pow_eq_one.mpr ⟨ℓ, hℓ.pos, hζ.pow_eq_one⟩
+  have hcond : ∀ (σ : E ≃ₐ[F] E) (k : ℕ), σ ζ = ζ ^ k →
+      ((hζ.autToPow F σ : (ZMod ℓ)ˣ) : ZMod ℓ) = (k : ZMod ℓ) := by
+    intro σ k h
+    have h1 : ζ ^ ((hζ.autToPow F σ : (ZMod ℓ)ˣ) : ZMod ℓ).val = ζ ^ k := by
+      rw [hζ.autToPow_spec F σ, h]
+    have h2 := hford.pow_eq_pow_iff_modEq.mp h1
+    rw [← hζ.eq_orderOf] at h2
+    have h3 := (ZMod.natCast_eq_natCast_iff _ _ _).mpr h2
+    rwa [ZMod.natCast_val, ZMod.cast_id] at h3
+  -- the subgroup of `(ZMod ℓ)ˣ` of norm residues of ideals prime to `ℓ`
+  set H : Subgroup (ZMod ℓ)ˣ :=
+    { carrier := {u : (ZMod ℓ)ˣ | ∃ I : Ideal (𝓞 F), ¬ ℓ ∣ Ideal.absNorm I ∧
+        (u : ZMod ℓ) = ((Ideal.absNorm I : ℕ) : ZMod ℓ)}
+      one_mem' := ⟨⊤, by
+        rw [Ideal.absNorm_top]
+        exact fun h => hℓ.ne_one (Nat.dvd_one.mp h), by
+        rw [Ideal.absNorm_top, Nat.cast_one, Units.val_one]⟩
+      mul_mem' := by
+        rintro u v ⟨I, hI, hu⟩ ⟨J, hJ, hv⟩
+        refine ⟨I * J, ?_, ?_⟩
+        · rw [map_mul]
+          intro h
+          rcases (Nat.Prime.dvd_mul hℓ).mp h with h' | h'
+          · exact hI h'
+          · exact hJ h'
+        · rw [Units.val_mul, hu, hv, map_mul, Nat.cast_mul]
+      inv_mem' := by
+        rintro u ⟨I, hI, hu⟩
+        have h2 : 2 ≤ ℓ := hℓ.two_le
+        have hu1 : u ^ (ℓ - 1) = 1 := by
+          have h := ZMod.pow_totient u
+          rwa [Nat.totient_prime hℓ] at h
+        have huinv : u⁻¹ = u ^ (ℓ - 2) := by
+          refine inv_eq_of_mul_eq_one_right ?_
+          rw [← pow_succ', show ℓ - 2 + 1 = ℓ - 1 by omega]
+          exact hu1
+        refine ⟨I ^ (ℓ - 2), ?_, ?_⟩
+        · rw [map_pow]
+          exact fun h => hI (hℓ.dvd_of_dvd_pow h)
+        · rw [huinv, Units.val_pow_eq_pow_val, hu, map_pow, Nat.cast_pow] }
+  have hHmem : ∀ u : (ZMod ℓ)ˣ, u ∈ H ↔ ∃ I : Ideal (𝓞 F),
+      ¬ ℓ ∣ Ideal.absNorm I ∧ (u : ZMod ℓ) = ((Ideal.absNorm I : ℕ) : ZMod ℓ) :=
+    fun u => Iff.rfl
+  -- Frobenius closure: the Deuring core applies to the pulled-back subgroup
+  have htop : Subgroup.comap (hζ.autToPow F) H = ⊤ := by
+    refine eq_top_of_forall_exists_mem_map_zeta_eq_pow_natCard hℓ hζ _ ?_
+    intro P hp hne
+    have hnd : ¬ ℓ ∣ Nat.card (𝓞 F ⧸ P.asIdeal) := fun hdvd =>
+      hne ((Nat.prime_dvd_prime_iff_eq hℓ hp).mp hdvd).symm
+    obtain ⟨σ, hσ⟩ := exists_algEquiv_map_zeta_eq_pow_natCard_of_not_dvd hℓ hζ P hnd
+    refine ⟨σ, Subgroup.mem_comap.mpr ((hHmem _).mpr ⟨P.asIdeal, ?_, ?_⟩), hσ⟩
+    · rw [Ideal.absNorm_apply, Submodule.cardQuot_apply]
+      exact hnd
+    · rw [hcond σ _ hσ, Ideal.absNorm_apply, Submodule.cardQuot_apply]
+  -- extract the realizing ideal for `ρ`
+  obtain ⟨I, hnd, hres⟩ :=
+    (hHmem _).mp (Subgroup.mem_comap.mp (htop.ge (Subgroup.mem_top ρ)))
+  refine ⟨I, hnd, ?_⟩
+  rw [← hres, hcond ρ m hρ]
 
 open IsDedekindDomain in
 /-- **Weber's ideal-counting theorem with power-saving error, fibered
