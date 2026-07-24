@@ -189,6 +189,11 @@ import Mathlib.Analysis.SpecialFunctions.Log.Summable
 import Mathlib.Analysis.Complex.LocallyUniformLimit
 import Mathlib.Analysis.Complex.RealDeriv
 import Mathlib.Analysis.Calculus.MeanValue
+public import Mathlib.NumberTheory.NumberField.ClassNumber
+public import Mathlib.NumberTheory.NumberField.Norm
+public import Mathlib.NumberTheory.NumberField.InfinitePlace.Embeddings
+public import Mathlib.LinearAlgebra.FreeModule.IdealQuotient
+public import Mathlib.RingTheory.Norm.Basic
 
 @[expose] public section
 
@@ -2983,7 +2988,524 @@ theorem exists_forall_abs_natCard_isNarrowRayEquiv_sub_mul_le_rpow
           IsNarrowRayEquiv ℓ I I₀} : ℝ) - κ₀ * n| ≤ C * (n : ℝ) ^ r :=
   sorry
 
-/-- **Ray-class fibering of the norm-residue count** (sorry leaf):
+/-! #### Narrow ray classes mod `ℓ`: finite-group bookkeeping
+
+Support for the fibering lemma
+`exists_forall_sum_card_absNorm_residue_eq_sum_natCard_isNarrowRayEquiv`:
+`IsNarrowRayEquiv ℓ` is an equivalence relation, compatible with (and
+cancellable in) ideal multiplication; the norm residue mod `ℓ` is
+constant on classes; a uniform power of every class is trivial; the
+class quotient is finite. -/
+
+/-- `IsNarrowRayEquiv ℓ` is reflexive: take `α = β = 1`. -/
+theorem isNarrowRayEquiv_refl {F : Type*} [Field F] [NumberField F] (ℓ : ℕ)
+    (I : Ideal (𝓞 F)) : IsNarrowRayEquiv ℓ I I :=
+  ⟨1, 1, fun φ => by simp, fun φ => by simp,
+    by rw [Ideal.span_singleton_one, ← Ideal.one_eq_top]; exact isCoprime_one_left,
+    by rw [Ideal.span_singleton_one, ← Ideal.one_eq_top]; exact isCoprime_one_left,
+    by simp, rfl⟩
+
+/-- `IsNarrowRayEquiv ℓ` is symmetric: swap the witnesses. -/
+theorem IsNarrowRayEquiv.symm {F : Type*} [Field F] [NumberField F] {ℓ : ℕ}
+    {I J : Ideal (𝓞 F)} (h : IsNarrowRayEquiv ℓ I J) : IsNarrowRayEquiv ℓ J I := by
+  obtain ⟨α, β, hα, hβ, hcα, hcβ, hcong, heq⟩ := h
+  refine ⟨β, α, hβ, hα, hcβ, hcα, ?_, heq.symm⟩
+  rw [show β - α = -(α - β) from (neg_sub _ _).symm]
+  exact neg_mem hcong
+
+/-- `IsNarrowRayEquiv ℓ` is transitive: multiply the witnesses (total
+positivity, coprimality to `ℓ` and congruence mod `ℓ` are all closed
+under products). -/
+theorem IsNarrowRayEquiv.trans {F : Type*} [Field F] [NumberField F] {ℓ : ℕ}
+    {I J K : Ideal (𝓞 F)} (h₁ : IsNarrowRayEquiv ℓ I J) (h₂ : IsNarrowRayEquiv ℓ J K) :
+    IsNarrowRayEquiv ℓ I K := by
+  obtain ⟨α, β, hα, hβ, hcα, hcβ, hcong, heq⟩ := h₁
+  obtain ⟨α', β', hα', hβ', hcα', hcβ', hcong', heq'⟩ := h₂
+  refine ⟨α * α', β * β', ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · intro φ; rw [map_mul, map_mul]; exact mul_pos (hα φ) (hα' φ)
+  · intro φ; rw [map_mul, map_mul]; exact mul_pos (hβ φ) (hβ' φ)
+  · rw [← Ideal.span_singleton_mul_span_singleton]; exact hcα.mul_left hcα'
+  · rw [← Ideal.span_singleton_mul_span_singleton]; exact hcβ.mul_left hcβ'
+  · rw [show α * α' - β * β' = α * (α' - β') + β' * (α - β) by ring]
+    exact Ideal.add_mem _ (Ideal.mul_mem_left _ _ hcong') (Ideal.mul_mem_left _ _ hcong)
+  · have e1 : Ideal.span {α * α'} * I = Ideal.span {α'} * (Ideal.span {α} * I) := by
+      rw [← Ideal.span_singleton_mul_span_singleton]; ring
+    have e2 : Ideal.span {α'} * (Ideal.span {β} * J) =
+        Ideal.span {β} * (Ideal.span {α'} * J) := by ring
+    have e3 : Ideal.span {β} * (Ideal.span {β'} * K) = Ideal.span {β * β'} * K := by
+      rw [← Ideal.span_singleton_mul_span_singleton]; ring
+    rw [e1, heq, e2, heq', e3]
+
+/-- `IsNarrowRayEquiv ℓ` is compatible with ideal multiplication. -/
+theorem IsNarrowRayEquiv.mul_mul {F : Type*} [Field F] [NumberField F] {ℓ : ℕ}
+    {I I' J J' : Ideal (𝓞 F)} (h₁ : IsNarrowRayEquiv ℓ I I')
+    (h₂ : IsNarrowRayEquiv ℓ J J') : IsNarrowRayEquiv ℓ (I * J) (I' * J') := by
+  obtain ⟨α, β, hα, hβ, hcα, hcβ, hcong, heq⟩ := h₁
+  obtain ⟨α', β', hα', hβ', hcα', hcβ', hcong', heq'⟩ := h₂
+  refine ⟨α * α', β * β', ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · intro φ; rw [map_mul, map_mul]; exact mul_pos (hα φ) (hα' φ)
+  · intro φ; rw [map_mul, map_mul]; exact mul_pos (hβ φ) (hβ' φ)
+  · rw [← Ideal.span_singleton_mul_span_singleton]; exact hcα.mul_left hcα'
+  · rw [← Ideal.span_singleton_mul_span_singleton]; exact hcβ.mul_left hcβ'
+  · rw [show α * α' - β * β' = α * (α' - β') + β' * (α - β) by ring]
+    exact Ideal.add_mem _ (Ideal.mul_mem_left _ _ hcong') (Ideal.mul_mem_left _ _ hcong)
+  · have e1 : Ideal.span {α * α'} * (I * J) =
+        (Ideal.span {α} * I) * (Ideal.span {α'} * J) := by
+      rw [← Ideal.span_singleton_mul_span_singleton]; ring
+    have e2 : (Ideal.span {β} * I') * (Ideal.span {β'} * J') =
+        Ideal.span {β * β'} * (I' * J') := by
+      rw [← Ideal.span_singleton_mul_span_singleton]; ring
+    rw [e1, heq, heq', e2]
+
+/-- `IsNarrowRayEquiv ℓ` can be cancelled along multiplication by a fixed
+nonzero ideal (the ideal monoid of a Dedekind domain is cancellative). -/
+theorem IsNarrowRayEquiv.of_mul_right_cancel {F : Type*} [Field F] [NumberField F] {ℓ : ℕ}
+    {I J K : Ideal (𝓞 F)} (hK : K ≠ 0)
+    (h : IsNarrowRayEquiv ℓ (I * K) (J * K)) : IsNarrowRayEquiv ℓ I J := by
+  obtain ⟨α, β, hα, hβ, hcα, hcβ, hcong, heq⟩ := h
+  rw [← mul_assoc, ← mul_assoc] at heq
+  exact ⟨α, β, hα, hβ, hcα, hcβ, hcong, mul_right_cancel₀ hK heq⟩
+
+/-- Coprimality to `ℓ` transfers along `IsNarrowRayEquiv ℓ`. -/
+theorem IsNarrowRayEquiv.isCoprime_left {F : Type*} [Field F] [NumberField F] {ℓ : ℕ}
+    {I J : Ideal (𝓞 F)} (h : IsNarrowRayEquiv ℓ I J)
+    (hJ : IsCoprime J (Ideal.span {(ℓ : 𝓞 F)})) :
+    IsCoprime I (Ideal.span {(ℓ : 𝓞 F)}) := by
+  obtain ⟨α, β, -, -, -, hcβ, -, heq⟩ := h
+  have h1 : IsCoprime (Ideal.span {β} * J) (Ideal.span {(ℓ : 𝓞 F)}) := hcβ.mul_left hJ
+  rw [← heq] at h1
+  exact h1.of_mul_left_right
+
+/-- An element of `𝓞 F` generating an ideal coprime to `ℓ𝓞 F` (`ℓ` a
+prime number) is nonzero: otherwise `ℓ` would be a unit of `𝓞 F`,
+contradicting that its `ℤ`-norm is `ℓ ^ [F : ℚ]`. -/
+theorem ne_zero_of_isCoprime_span_singleton {F : Type*} [Field F] [NumberField F] {ℓ : ℕ}
+    (hℓ : ℓ.Prime) {α : 𝓞 F}
+    (hc : IsCoprime (Ideal.span {α}) (Ideal.span {(ℓ : 𝓞 F)})) : α ≠ 0 := by
+  rintro rfl
+  obtain ⟨a, ha, b, hb, hab⟩ := Ideal.isCoprime_iff_exists.mp hc
+  rw [show Ideal.span {(0 : 𝓞 F)} = ⊥ from Ideal.span_singleton_eq_bot.mpr rfl] at ha
+  rw [Ideal.mem_bot.mp ha, zero_add] at hab
+  rw [hab] at hb
+  have hunit : IsUnit ((ℓ : ℕ) : 𝓞 F) :=
+    Ideal.span_singleton_eq_top.mp ((Ideal.eq_top_iff_one _).mpr hb)
+  have hnorm := hunit.map (Algebra.norm ℤ (S := 𝓞 F))
+  rw [show ((ℓ : ℕ) : 𝓞 F) = algebraMap ℤ (𝓞 F) ((ℓ : ℕ) : ℤ) from
+    (map_natCast (algebraMap ℤ (𝓞 F)) ℓ).symm, Algebra.norm_algebraMap] at hnorm
+  have hrank : Module.finrank ℤ (𝓞 F) ≠ 0 := by
+    rw [NumberField.RingOfIntegers.rank]
+    exact Module.finrank_pos.ne'
+  exact (Nat.prime_iff_prime_int.mp hℓ).not_unit ((isUnit_pow_iff hrank).mp hnorm)
+
+open NumberField in
+/-- A nonzero totally positive element of `𝓞 F` has positive `ℤ`-norm:
+the norm is the product of the complex-embedding images, the real
+embeddings contribute positive factors by hypothesis, and the strictly
+complex embeddings pair off under conjugation into factors `‖φ x‖²`. -/
+theorem norm_int_pos_of_totally_positive {F : Type*} [Field F] [NumberField F] (x : 𝓞 F)
+    (hx : x ≠ 0) (hpos : ∀ φ : F →+* ℝ, 0 < φ (algebraMap (𝓞 F) F x)) :
+    0 < Algebra.norm ℤ x := by
+  classical
+  set y := algebraMap (𝓞 F) F x with hy_def
+  have hy : y ≠ 0 := by simpa [hy_def] using hx
+  suffices hQ : 0 < Algebra.norm ℚ y by
+    have hco := Algebra.coe_norm_int x
+    rw [← hco] at hQ
+    exact_mod_cast hQ
+  have hprod : ((Algebra.norm ℚ y : ℚ) : ℂ) = ∏ φ : F →+* ℂ, φ y := by
+    have h1 : (algebraMap ℚ ℂ) ((Algebra.norm ℚ) y) = ∏ σ : F →ₐ[ℚ] ℂ, σ y :=
+      Algebra.norm_eq_prod_embeddings ℚ ℂ y
+    rw [eq_ratCast (algebraMap ℚ ℂ)] at h1
+    rw [h1]
+    exact (Fintype.prod_equiv RingHom.equivRatAlgHom _ _ (fun φ => rfl)).symm
+  set Sr := Finset.univ.filter (fun φ : F →+* ℂ => ComplexEmbedding.IsReal φ) with hSr_def
+  set Sc := Finset.univ.filter (fun φ : F →+* ℂ => ¬ ComplexEmbedding.IsReal φ) with hSc_def
+  have hsplit : ∏ φ : F →+* ℂ, φ y = (∏ φ ∈ Sr, φ y) * ∏ φ ∈ Sc, φ y :=
+    (Finset.prod_filter_mul_prod_filter_not Finset.univ _ _).symm
+  set A : ℝ := ∏ φ ∈ Sr.attach,
+    ((Finset.mem_filter.mp φ.2).2 : ComplexEmbedding.IsReal φ.1).embedding y with hA_def
+  have hA : 0 < A := Finset.prod_pos (fun i _ => hpos _)
+  have hSrA : ∏ φ ∈ Sr, φ y = (A : ℂ) := by
+    rw [← Finset.prod_attach Sr (fun φ => φ y), hA_def, Complex.ofReal_prod]
+    exact Finset.prod_congr rfl (fun φ _ =>
+      ((Finset.mem_filter.mp φ.2).2.coe_embedding_apply y).symm)
+  have hφy : ∀ φ : F →+* ℂ, φ y ≠ 0 := fun φ => by
+    simpa using fun h => hy (φ.injective (by simpa using h))
+  set B : ℝ := ∏ φ ∈ Sc, ‖φ y‖ with hB_def
+  have hB : 0 < B := Finset.prod_pos (fun φ _ => norm_pos_iff.mpr (hφy φ))
+  have hinv : ∏ φ ∈ Sc, (φ y * ((‖φ y‖ : ℝ) : ℂ)⁻¹) = 1 := by
+    refine Finset.prod_involution (fun φ _ => ComplexEmbedding.conjugate φ) ?_ ?_ ?_ ?_
+    · intro φ hφ
+      have hn2 : ‖(starRingEnd ℂ) (φ y)‖ = ‖φ y‖ := RCLike.norm_conj _
+      show φ y * ((‖φ y‖ : ℝ) : ℂ)⁻¹ *
+        ((starRingEnd ℂ) (φ y) * ((‖(starRingEnd ℂ) (φ y)‖ : ℝ) : ℂ)⁻¹) = 1
+      rw [hn2]
+      have hne' : ((‖φ y‖ : ℝ) : ℂ) ≠ 0 := by
+        exact_mod_cast (norm_pos_iff.mpr (hφy φ)).ne'
+      field_simp
+      rw [Complex.mul_conj, Complex.normSq_eq_norm_sq]
+      push_cast
+      ring
+    · intro φ hφ _ heq
+      exact (Finset.mem_filter.mp hφ).2 heq
+    · intro φ hφ
+      rw [hSc_def, Finset.mem_filter]
+      exact ⟨Finset.mem_univ _, fun hreal =>
+        (Finset.mem_filter.mp hφ).2 (ComplexEmbedding.isReal_conjugate_iff.mp hreal)⟩
+    · intro φ hφ
+      exact star_star φ
+  have hScB : ∏ φ ∈ Sc, φ y = (B : ℂ) := by
+    have hexp : ∏ φ ∈ Sc, (φ y * ((‖φ y‖ : ℝ) : ℂ)⁻¹) =
+        (∏ φ ∈ Sc, φ y) * (∏ φ ∈ Sc, ((‖φ y‖ : ℝ) : ℂ))⁻¹ := by
+      rw [Finset.prod_mul_distrib, Finset.prod_inv_distrib]
+    have hBne : (∏ φ ∈ Sc, ((‖φ y‖ : ℝ) : ℂ)) ≠ 0 :=
+      Finset.prod_ne_zero_iff.mpr (fun φ _ => by
+        exact_mod_cast (norm_pos_iff.mpr (hφy φ)).ne')
+    rw [hexp] at hinv
+    have hdiv := (div_eq_one_iff_eq hBne).mp (by
+      rw [div_eq_mul_inv]; exact hinv)
+    rw [hdiv, hB_def, Complex.ofReal_prod]
+  have hz : ((Algebra.norm ℚ y : ℚ) : ℂ) = ((A * B : ℝ) : ℂ) := by
+    rw [hprod, hsplit, hSrA, hScB, Complex.ofReal_mul]
+  have hR : ((Algebra.norm ℚ y : ℚ) : ℝ) = A * B := by
+    rw [← Complex.ofReal_ratCast] at hz
+    exact_mod_cast hz
+  have hfin : (0 : ℝ) < ((Algebra.norm ℚ y : ℚ) : ℝ) := hR ▸ mul_pos hA hB
+  exact_mod_cast hfin
+
+open NumberField in
+/-- The `ℤ`-norm mod `ℓ` depends only on the argument mod `ℓ𝓞 F`: the
+norm is the determinant of left multiplication on a `ℤ`-basis, and
+congruent arguments have entrywise congruent matrices. -/
+theorem natCast_norm_int_eq_of_sub_mem {F : Type*} [Field F] [NumberField F] (ℓ : ℕ)
+    (α β : 𝓞 F) (h : α - β ∈ Ideal.span {(ℓ : 𝓞 F)}) :
+    ((Algebra.norm ℤ α : ℤ) : ZMod ℓ) = ((Algebra.norm ℤ β : ℤ) : ZMod ℓ) := by
+  classical
+  obtain ⟨γ, hγ⟩ := Ideal.mem_span_singleton'.mp h
+  set b := RingOfIntegers.basis F with hb_def
+  rw [Algebra.norm_eq_matrix_det b, Algebra.norm_eq_matrix_det b]
+  have hmap : (Int.castRingHom (ZMod ℓ)).mapMatrix ((Algebra.leftMulMatrix b) α) =
+      (Int.castRingHom (ZMod ℓ)).mapMatrix ((Algebra.leftMulMatrix b) β) := by
+    rw [← sub_eq_zero, ← map_sub, ← map_sub]
+    have hsm : α - β = (ℓ : ℤ) • γ := by
+      rw [← hγ, zsmul_eq_mul]
+      push_cast
+      ring
+    rw [hsm, map_smul]
+    ext i j
+    simp only [RingHom.mapMatrix_apply, Matrix.map_apply, Matrix.smul_apply, smul_eq_mul,
+      Matrix.zero_apply]
+    rw [map_mul, map_natCast, ZMod.natCast_self, zero_mul]
+  have hdet := congrArg Matrix.det hmap
+  rw [← RingHom.map_det, ← RingHom.map_det] at hdet
+  exact hdet
+
+/-- An ideal coprime to `ℓ𝓞 F` has absolute norm prime to `ℓ`: else, by
+Cauchy's theorem, `𝓞 F ⧸ I` has an element of additive order `ℓ`, which
+dies against the coprimality decomposition `1 = a + dℓ`. -/
+theorem not_dvd_absNorm_of_isCoprime {F : Type*} [Field F] [NumberField F] {ℓ : ℕ}
+    (hℓ : ℓ.Prime) (I : Ideal (𝓞 F)) (hI : I ≠ ⊥)
+    (hco : IsCoprime I (Ideal.span {(ℓ : 𝓞 F)})) : ¬ ℓ ∣ Ideal.absNorm I := by
+  intro hdvd
+  haveI : Fact ℓ.Prime := ⟨hℓ⟩
+  haveI := Ideal.finiteQuotientOfFreeOfNeBot I hI
+  haveI : Fintype ((𝓞 F) ⧸ I) := Fintype.ofFinite _
+  have hcard : Ideal.absNorm I = Fintype.card ((𝓞 F) ⧸ I) := by
+    rw [Ideal.absNorm_apply, Submodule.cardQuot_apply, Nat.card_eq_fintype_card]
+  rw [hcard] at hdvd
+  obtain ⟨x, hx⟩ := exists_prime_addOrderOf_dvd_card (G := (𝓞 F) ⧸ I) ℓ hdvd
+  have hxne : x ≠ 0 := by
+    intro h0
+    rw [h0, addOrderOf_zero] at hx
+    exact hℓ.one_lt.ne' hx.symm
+  obtain ⟨a, ha, c, hc, hac⟩ := Ideal.isCoprime_iff_exists.mp hco
+  obtain ⟨d, hd⟩ := Ideal.mem_span_singleton'.mp hc
+  have hℓx : (ℓ : ℕ) • x = 0 := by
+    rw [← hx]; exact addOrderOf_nsmul_eq_zero x
+  have hmk : (Ideal.Quotient.mk I) a = 0 := Ideal.Quotient.eq_zero_iff_mem.mpr ha
+  have hx1 : x = (Ideal.Quotient.mk I) (a + c) * x := by
+    rw [hac, map_one, one_mul]
+  have hkey : x = (Ideal.Quotient.mk I) d * ((ℓ : (𝓞 F) ⧸ I) * x) := by
+    conv_lhs => rw [hx1]
+    rw [map_add, hmk, zero_add, ← hd, map_mul, map_natCast, mul_assoc]
+  rw [show ((ℓ : (𝓞 F) ⧸ I) * x) = (ℓ : ℕ) • x from (nsmul_eq_mul ℓ x).symm, hℓx,
+    mul_zero] at hkey
+  exact hxne hkey
+
+/-- Conversely, an ideal whose absolute norm is prime to `ℓ` is coprime
+to `ℓ𝓞 F`, by Bézout in `ℤ` pushed through `ℤ → 𝓞 F` against
+`absNorm I ∈ I`. -/
+theorem isCoprime_of_not_dvd_absNorm {F : Type*} [Field F] [NumberField F] {ℓ : ℕ}
+    (hℓ : ℓ.Prime) (I : Ideal (𝓞 F)) (hnd : ¬ ℓ ∣ Ideal.absNorm I) :
+    IsCoprime I (Ideal.span {(ℓ : 𝓞 F)}) := by
+  rw [Ideal.isCoprime_iff_exists]
+  have hcop : Nat.Coprime (Ideal.absNorm I) ℓ := ((hℓ.coprime_iff_not_dvd).mpr hnd).symm
+  have hint : IsCoprime ((Ideal.absNorm I : ℤ)) ((ℓ : ℕ) : ℤ) := by
+    rw [Int.isCoprime_iff_gcd_eq_one]
+    simpa [Int.gcd_natCast_natCast] using hcop
+  obtain ⟨u, v, huv⟩ := hint.map (Int.castRingHom (𝓞 F))
+  refine ⟨u * (Ideal.absNorm I : 𝓞 F), Ideal.mul_mem_left _ _ (Ideal.absNorm_mem I),
+    v * (ℓ : 𝓞 F), ?_, ?_⟩
+  · exact Ideal.mul_mem_left _ _ (Ideal.mem_span_singleton_self _)
+  · simpa using huv
+
+/-- **Norm-residue constancy on narrow ray classes**: equivalent ideals
+have the same `absNorm` residue mod `ℓ`. The witnesses' norms are
+positive (total positivity), congruent mod `ℓ` (determinant congruence)
+and prime to `ℓ` (coprimality), so they cancel in `ZMod ℓ`. -/
+theorem IsNarrowRayEquiv.natCast_absNorm_eq {F : Type*} [Field F] [NumberField F]
+    {ℓ : ℕ} (hℓ : ℓ.Prime) {I J : Ideal (𝓞 F)} (h : IsNarrowRayEquiv ℓ I J) :
+    ((Ideal.absNorm I : ℕ) : ZMod ℓ) = ((Ideal.absNorm J : ℕ) : ZMod ℓ) := by
+  haveI : Fact ℓ.Prime := ⟨hℓ⟩
+  haveI : NeZero ℓ := ⟨hℓ.ne_zero⟩
+  obtain ⟨α, β, hα, hβ, hcα, hcβ, hcong, heq⟩ := h
+  have hαne : α ≠ 0 := ne_zero_of_isCoprime_span_singleton hℓ hcα
+  have hβne : β ≠ 0 := ne_zero_of_isCoprime_span_singleton hℓ hcβ
+  have hNα : 0 < Algebra.norm ℤ α := norm_int_pos_of_totally_positive α hαne hα
+  have hNβ : 0 < Algebra.norm ℤ β := norm_int_pos_of_totally_positive β hβne hβ
+  have hprod : Ideal.absNorm (Ideal.span {α}) * Ideal.absNorm I =
+      Ideal.absNorm (Ideal.span {β}) * Ideal.absNorm J := by
+    rw [← map_mul Ideal.absNorm, ← map_mul Ideal.absNorm, heq]
+  have hcastα : ((Ideal.absNorm (Ideal.span {α}) : ℕ) : ZMod ℓ) =
+      ((Algebra.norm ℤ α : ℤ) : ZMod ℓ) := by
+    rw [Ideal.absNorm_span_singleton, ← Int.cast_natCast, Int.natAbs_of_nonneg hNα.le]
+  have hcastβ : ((Ideal.absNorm (Ideal.span {β}) : ℕ) : ZMod ℓ) =
+      ((Algebra.norm ℤ β : ℤ) : ZMod ℓ) := by
+    rw [Ideal.absNorm_span_singleton, ← Int.cast_natCast, Int.natAbs_of_nonneg hNβ.le]
+  have hν : ((Ideal.absNorm (Ideal.span {α}) : ℕ) : ZMod ℓ) =
+      ((Ideal.absNorm (Ideal.span {β}) : ℕ) : ZMod ℓ) := by
+    rw [hcastα, hcastβ]
+    exact natCast_norm_int_eq_of_sub_mem ℓ α β hcong
+  have hν0 : ((Ideal.absNorm (Ideal.span {α}) : ℕ) : ZMod ℓ) ≠ 0 := by
+    rw [Ne, ZMod.natCast_eq_zero_iff]
+    exact not_dvd_absNorm_of_isCoprime hℓ _
+      (by rw [Ne, Ideal.span_singleton_eq_bot]; exact hαne) hcα
+  apply mul_left_cancel₀ hν0
+  calc ((Ideal.absNorm (Ideal.span {α}) : ℕ) : ZMod ℓ) * ((Ideal.absNorm I : ℕ) : ZMod ℓ)
+      = ((Ideal.absNorm (Ideal.span {α}) * Ideal.absNorm I : ℕ) : ZMod ℓ) := by
+        push_cast; ring
+    _ = ((Ideal.absNorm (Ideal.span {β}) * Ideal.absNorm J : ℕ) : ZMod ℓ) := by rw [hprod]
+    _ = ((Ideal.absNorm (Ideal.span {β}) : ℕ) : ZMod ℓ) *
+          ((Ideal.absNorm J : ℕ) : ZMod ℓ) := by push_cast; ring
+    _ = ((Ideal.absNorm (Ideal.span {α}) : ℕ) : ZMod ℓ) *
+          ((Ideal.absNorm J : ℕ) : ZMod ℓ) := by rw [hν]
+
+/-- The unit ideal is a valid basepoint: nonzero and coprime to `ℓ𝓞 F`. -/
+theorem top_ne_zero_and_isCoprime (F : Type*) [Field F] [NumberField F] (ℓ : ℕ) :
+    (⊤ : Ideal (𝓞 F)) ≠ 0 ∧
+      IsCoprime (⊤ : Ideal (𝓞 F)) (Ideal.span {(ℓ : 𝓞 F)}) := by
+  constructor
+  · intro h0
+    have h1 : (1 : 𝓞 F) ∈ (⊤ : Ideal (𝓞 F)) := Submodule.mem_top
+    rw [h0, Ideal.zero_eq_bot] at h1
+    exact one_ne_zero (Ideal.mem_bot.mp h1)
+  · rw [← Ideal.one_eq_top]
+    exact isCoprime_one_left
+
+/-- **Uniform exponent killing every narrow ray class**: with
+`e = h·2u` (`h` the class number, `u = #(𝓞 F ⧸ ℓ)ˣ`), every nonzero
+coprime-to-`ℓ` ideal satisfies `I^e ∼ ⊤`, and `I^e` is principal with
+nonzero generator. Indeed `I^h = (x)` with `x` coprime to `ℓ`, and
+`x^{2u}` is totally positive (even power) and `≡ 1 mod ℓ𝓞 F` (Euler). -/
+theorem exists_pow_isNarrowRayEquiv_top (F : Type*) [Field F] [NumberField F]
+    {ℓ : ℕ} (hℓ : ℓ.Prime) :
+    ∃ e : ℕ, 0 < e ∧ ∀ I : Ideal (𝓞 F), I ≠ 0 →
+      IsCoprime I (Ideal.span {(ℓ : 𝓞 F)}) →
+      IsNarrowRayEquiv ℓ (I ^ e) ⊤ ∧ ∃ x : 𝓞 F, x ≠ 0 ∧ I ^ e = Ideal.span {x} := by
+  classical
+  haveI : Fact ℓ.Prime := ⟨hℓ⟩
+  have hspan_ne : Ideal.span {(ℓ : 𝓞 F)} ≠ ⊥ := by
+    rw [Ne, Ideal.span_singleton_eq_bot]
+    exact Nat.cast_ne_zero.mpr hℓ.ne_zero
+  haveI : Finite ((𝓞 F) ⧸ Ideal.span {(ℓ : 𝓞 F)}) :=
+    Ideal.finiteQuotientOfFreeOfNeBot _ hspan_ne
+  set h := Nat.card (ClassGroup (𝓞 F)) with hh_def
+  set u := Nat.card (((𝓞 F) ⧸ Ideal.span {(ℓ : 𝓞 F)})ˣ) with hu_def
+  have hh_pos : 0 < h := Nat.card_pos
+  have hu_pos : 0 < u := Nat.card_pos
+  refine ⟨h * (2 * u), mul_pos hh_pos (mul_pos zero_lt_two hu_pos), ?_⟩
+  intro I hI0 hIco
+  have hmem : I ∈ nonZeroDivisors (Ideal (𝓞 F)) := mem_nonZeroDivisors_of_ne_zero hI0
+  have hmemh : I ^ h ∈ nonZeroDivisors (Ideal (𝓞 F)) :=
+    mem_nonZeroDivisors_of_ne_zero (pow_ne_zero _ hI0)
+  have hsub : (⟨I ^ h, hmemh⟩ : ↥(nonZeroDivisors (Ideal (𝓞 F)))) = ⟨I, hmem⟩ ^ h :=
+    Subtype.ext (by simp)
+  have hprin : Submodule.IsPrincipal (I ^ h) := by
+    rw [← ClassGroup.mk0_eq_one_iff hmemh, hsub, map_pow, hh_def]
+    exact pow_card_eq_one'
+  obtain ⟨x, hx⟩ := hprin.principal
+  have hxeq : I ^ h = Ideal.span {x} := hx
+  have hxne : x ≠ 0 := by
+    intro h0
+    apply pow_ne_zero h hI0
+    rw [hxeq, h0, Ideal.zero_eq_bot]
+    exact Ideal.span_singleton_eq_bot.mpr rfl
+  have hxco : IsCoprime (Ideal.span {x}) (Ideal.span {(ℓ : 𝓞 F)}) := by
+    rw [← hxeq]; exact hIco.pow_left
+  have hxunit : IsUnit ((Ideal.Quotient.mk (Ideal.span {(ℓ : 𝓞 F)})) x) := by
+    obtain ⟨a, ha, b, hb, hab⟩ := Ideal.isCoprime_iff_exists.mp hxco
+    obtain ⟨c, hc⟩ := Ideal.mem_span_singleton'.mp ha
+    refine IsUnit.of_mul_eq_one ((Ideal.Quotient.mk _) c) ?_
+    rw [← map_mul, mul_comm x c, hc, show a = 1 - b from eq_sub_of_add_eq hab, map_sub,
+      map_one, Ideal.Quotient.eq_zero_iff_mem.mpr hb, sub_zero]
+  obtain ⟨v, hv⟩ := hxunit
+  have hvu : v ^ u = 1 := by rw [hu_def]; exact pow_card_eq_one'
+  have hxu : (Ideal.Quotient.mk (Ideal.span {(ℓ : 𝓞 F)})) (x ^ u) = 1 := by
+    rw [map_pow, ← hv, ← Units.val_pow_eq_pow_val, hvu, Units.val_one]
+  have hcong : x ^ (2 * u) - 1 ∈ Ideal.span {(ℓ : 𝓞 F)} := by
+    refine (Ideal.Quotient.eq).mp ?_
+    rw [map_one, show 2 * u = u + u from two_mul u, pow_add, map_mul, hxu, one_mul]
+  have hIe : I ^ (h * (2 * u)) = Ideal.span {x ^ (2 * u)} := by
+    rw [pow_mul, hxeq, Ideal.span_singleton_pow]
+  refine ⟨⟨1, x ^ (2 * u), ?_, ?_, ?_, ?_, ?_, ?_⟩,
+    x ^ (2 * u), pow_ne_zero _ hxne, hIe⟩
+  · intro φ; simp
+  · intro φ
+    have hne : φ (algebraMap (𝓞 F) F x) ≠ 0 := fun hzero =>
+      (by simpa using hxne : algebraMap (𝓞 F) F x ≠ 0) (φ.injective (by rw [hzero, map_zero]))
+    rw [map_pow, map_pow, pow_mul]
+    have h2 : 0 < φ (algebraMap (𝓞 F) F x) ^ 2 := by
+      rw [sq]; exact mul_self_pos.mpr hne
+    exact pow_pos h2 u
+  · rw [Ideal.span_singleton_one, ← Ideal.one_eq_top]; exact isCoprime_one_left
+  · rw [← Ideal.span_singleton_pow]; exact hxco.pow_left
+  · rw [show (1 : 𝓞 F) - x ^ (2 * u) = -(x ^ (2 * u) - 1) from (neg_sub _ _).symm]
+    exact neg_mem hcong
+  · rw [Ideal.span_singleton_one, ← Ideal.one_eq_top, one_mul, mul_one]
+    exact hIe
+
+/-- The setoid of nonzero coprime-to-`ℓ` integral ideals of `𝓞 F` under
+narrow ray equivalence mod `ℓ`; its (finite) quotient is the narrow ray
+class group mod `ℓ𝔪∞` as a bare set. -/
+def narrowRaySetoid (F : Type*) [Field F] [NumberField F] (ℓ : ℕ) :
+    Setoid {I : Ideal (𝓞 F) // I ≠ 0 ∧ IsCoprime I (Ideal.span {(ℓ : 𝓞 F)})} where
+  r I J := IsNarrowRayEquiv ℓ I.1 J.1
+  iseqv := ⟨fun I => isNarrowRayEquiv_refl ℓ I.1, fun h => h.symm, fun h₁ h₂ => h₁.trans h₂⟩
+
+/-- **Finiteness of the narrow ray class quotient mod `ℓ`.** The
+invariant `I ↦ (mk0 I, z mod ℓ, signs of z)` — where `z` generates the
+principal ideal `I·J^{e-1}` for a fixed representative `J` of the class
+group fiber of `I` — is injective on classes into
+`ClassGroup × 𝓞 F ⧸ ℓ × signs`, a finite target. -/
+theorem finite_quotient_narrowRaySetoid (F : Type*) [Field F] [NumberField F]
+    {ℓ : ℕ} (hℓ : ℓ.Prime) : Finite (Quotient (narrowRaySetoid F ℓ)) := by
+  classical
+  obtain ⟨e, he0, hepow⟩ := exists_pow_isNarrowRayEquiv_top F hℓ
+  have hspan_ne : Ideal.span {(ℓ : 𝓞 F)} ≠ ⊥ := by
+    rw [Ne, Ideal.span_singleton_eq_bot]
+    exact Nat.cast_ne_zero.mpr hℓ.ne_zero
+  haveI : Finite ((𝓞 F) ⧸ Ideal.span {(ℓ : 𝓞 F)}) :=
+    Ideal.finiteQuotientOfFreeOfNeBot _ hspan_ne
+  have hq_mem : ∀ I : {I : Ideal (𝓞 F) // I ≠ 0 ∧ IsCoprime I (Ideal.span {(ℓ : 𝓞 F)})},
+      I.1 ∈ nonZeroDivisors (Ideal (𝓞 F)) := fun I => mem_nonZeroDivisors_of_ne_zero I.2.1
+  set q : {I : Ideal (𝓞 F) // I ≠ 0 ∧ IsCoprime I (Ideal.span {(ℓ : 𝓞 F)})} →
+      ClassGroup (𝓞 F) := fun I => ClassGroup.mk0 ⟨I.1, hq_mem I⟩ with hq_def
+  have hq_mk : ∀ I, q I = ClassGroup.mk0 ⟨I.1, hq_mem I⟩ := fun I => by rw [hq_def]
+  have hqe : ∀ I, q I ^ e = 1 := by
+    intro I
+    obtain ⟨-, x, hx0, hx⟩ := hepow I.1 I.2.1 I.2.2
+    have hmemh : I.1 ^ e ∈ nonZeroDivisors (Ideal (𝓞 F)) :=
+      mem_nonZeroDivisors_of_ne_zero (pow_ne_zero _ I.2.1)
+    have hsub : (⟨I.1 ^ e, hmemh⟩ : ↥(nonZeroDivisors (Ideal (𝓞 F)))) =
+        ⟨I.1, hq_mem I⟩ ^ e := Subtype.ext (by simp)
+    have h1 : ClassGroup.mk0 ⟨I.1 ^ e, hmemh⟩ = 1 := by
+      rw [ClassGroup.mk0_eq_one_iff]
+      exact ⟨⟨x, hx⟩⟩
+    calc q I ^ e = ClassGroup.mk0 (⟨I.1, hq_mem I⟩ ^ e) := by rw [map_pow, hq_mk I]
+      _ = ClassGroup.mk0 ⟨I.1 ^ e, hmemh⟩ := by rw [hsub]
+      _ = 1 := h1
+  set rep : ClassGroup (𝓞 F) →
+      {I : Ideal (𝓞 F) // I ≠ 0 ∧ IsCoprime I (Ideal.span {(ℓ : 𝓞 F)})} := fun c =>
+    if hc : ∃ I : {I : Ideal (𝓞 F) // I ≠ 0 ∧ IsCoprime I (Ideal.span {(ℓ : 𝓞 F)})}, q I = c
+    then hc.choose else ⟨⊤, top_ne_zero_and_isCoprime F ℓ⟩ with hrep_def
+  have hrep_q : ∀ I, q (rep (q I)) = q I := by
+    intro I
+    have hc : ∃ J : {I : Ideal (𝓞 F) // I ≠ 0 ∧ IsCoprime I (Ideal.span {(ℓ : 𝓞 F)})},
+        q J = q I := ⟨I, rfl⟩
+    rw [hrep_def]
+    simp only [dif_pos hc]
+    exact hc.choose_spec
+  have hKgen : ∀ I : {I : Ideal (𝓞 F) // I ≠ 0 ∧ IsCoprime I (Ideal.span {(ℓ : 𝓞 F)})},
+      ∃ z : 𝓞 F, z ≠ 0 ∧ IsCoprime (Ideal.span {z}) (Ideal.span {(ℓ : 𝓞 F)}) ∧
+        I.1 * (rep (q I)).1 ^ (e - 1) = Ideal.span {z} := by
+    intro I
+    have hK0 : I.1 * (rep (q I)).1 ^ (e - 1) ≠ 0 :=
+      mul_ne_zero I.2.1 (pow_ne_zero _ (rep (q I)).2.1)
+    have hKmem : I.1 * (rep (q I)).1 ^ (e - 1) ∈ nonZeroDivisors (Ideal (𝓞 F)) :=
+      mem_nonZeroDivisors_of_ne_zero hK0
+    have hsub : (⟨I.1 * (rep (q I)).1 ^ (e - 1), hKmem⟩ :
+        ↥(nonZeroDivisors (Ideal (𝓞 F)))) =
+        ⟨I.1, hq_mem I⟩ * ⟨(rep (q I)).1, hq_mem (rep (q I))⟩ ^ (e - 1) :=
+      Subtype.ext (by simp)
+    have hone : ClassGroup.mk0 ⟨I.1 * (rep (q I)).1 ^ (e - 1), hKmem⟩ = 1 := by
+      rw [hsub, map_mul, map_pow, ← hq_mk I, ← hq_mk (rep (q I)), hrep_q I, ← pow_succ',
+        show e - 1 + 1 = e from by omega]
+      exact hqe I
+    have hprin : Submodule.IsPrincipal (I.1 * (rep (q I)).1 ^ (e - 1)) :=
+      (ClassGroup.mk0_eq_one_iff hKmem).mp hone
+    obtain ⟨z, hz⟩ := hprin.principal
+    have hz' : I.1 * (rep (q I)).1 ^ (e - 1) = Ideal.span {z} := hz
+    have hzne : z ≠ 0 := by
+      intro h0
+      exact hK0 (by rw [hz', h0, Ideal.zero_eq_bot]; exact Ideal.span_singleton_eq_bot.mpr rfl)
+    have hzco : IsCoprime (Ideal.span {z}) (Ideal.span {(ℓ : 𝓞 F)}) := by
+      rw [← hz']
+      exact I.2.2.mul_left ((rep (q I)).2.2.pow_left)
+    exact ⟨z, hzne, hzco, hz'⟩
+  choose z hz0 hzco hzeq using hKgen
+  refine Finite.of_injective (fun Q : Quotient (narrowRaySetoid F ℓ) =>
+    ((q Q.out, (Ideal.Quotient.mk (Ideal.span {(ℓ : 𝓞 F)})) (z Q.out),
+      fun φ : F →+* ℝ => 0 < φ (algebraMap (𝓞 F) F (z Q.out))) :
+      ClassGroup (𝓞 F) × ((𝓞 F) ⧸ Ideal.span {(ℓ : 𝓞 F)}) × ((F →+* ℝ) → Prop))) ?_
+  intro Q Q' hQQ'
+  have h1 : q Q.out = q Q'.out := congrArg Prod.fst hQQ'
+  have h2 : (Ideal.Quotient.mk (Ideal.span {(ℓ : 𝓞 F)})) (z Q.out) =
+      (Ideal.Quotient.mk (Ideal.span {(ℓ : 𝓞 F)})) (z Q'.out) :=
+    congrArg (Prod.fst ∘ Prod.snd) hQQ'
+  have h3 : (fun φ : F →+* ℝ => 0 < φ (algebraMap (𝓞 F) F (z Q.out))) =
+      (fun φ : F →+* ℝ => 0 < φ (algebraMap (𝓞 F) F (z Q'.out))) :=
+    congrArg (Prod.snd ∘ Prod.snd) hQQ'
+  have heq3 : Ideal.span {z Q'.out} * Q.out.1 = Ideal.span {z Q.out} * Q'.out.1 := by
+    have t1 : Ideal.span {z Q'.out} * (Q.out.1 * (rep (q Q.out)).1 ^ (e - 1)) =
+        Ideal.span {z Q.out} * (Q'.out.1 * (rep (q Q'.out)).1 ^ (e - 1)) := by
+      rw [hzeq, hzeq]; ring
+    rw [h1, ← mul_assoc, ← mul_assoc] at t1
+    exact mul_right_cancel₀ (pow_ne_zero _ (rep (q Q'.out)).2.1) t1
+  have hzI_ne : algebraMap (𝓞 F) F (z Q.out) ≠ 0 := by simpa using hz0 Q.out
+  have hzI'_ne : algebraMap (𝓞 F) F (z Q'.out) ≠ 0 := by simpa using hz0 Q'.out
+  have hφI : ∀ φ : F →+* ℝ, φ (algebraMap (𝓞 F) F (z Q.out)) ≠ 0 := fun φ hzero =>
+    hzI_ne (φ.injective (by rw [hzero, map_zero]))
+  have hφI' : ∀ φ : F →+* ℝ, φ (algebraMap (𝓞 F) F (z Q'.out)) ≠ 0 := fun φ hzero =>
+    hzI'_ne (φ.injective (by rw [hzero, map_zero]))
+  have hrel : IsNarrowRayEquiv ℓ Q.out.1 Q'.out.1 := by
+    refine ⟨z Q'.out * z Q'.out, z Q'.out * z Q.out, ?_, ?_, ?_, ?_, ?_, ?_⟩
+    · intro φ
+      rw [map_mul, map_mul]
+      exact mul_self_pos.mpr (hφI' φ)
+    · intro φ
+      rw [map_mul, map_mul]
+      rcases lt_or_gt_of_ne (hφI' φ) with hneg | hpos
+      · have hnI : ¬ (0 < φ (algebraMap (𝓞 F) F (z Q.out))) := fun hp =>
+          absurd ((iff_of_eq (congrFun h3 φ)).mp hp) (not_lt.mpr hneg.le)
+        exact mul_pos_of_neg_of_neg hneg ((lt_or_gt_of_ne (hφI φ)).resolve_right hnI)
+      · exact mul_pos hpos ((iff_of_eq (congrFun h3 φ)).mpr hpos)
+    · rw [← Ideal.span_singleton_mul_span_singleton]
+      exact (hzco Q'.out).mul_left (hzco Q'.out)
+    · rw [← Ideal.span_singleton_mul_span_singleton]
+      exact (hzco Q'.out).mul_left (hzco Q.out)
+    · have hmem : z Q'.out - z Q.out ∈ Ideal.span {(ℓ : 𝓞 F)} := by
+        have hneg := neg_mem ((Ideal.Quotient.eq).mp h2)
+        rwa [neg_sub] at hneg
+      rw [show z Q'.out * z Q'.out - z Q'.out * z Q.out =
+        z Q'.out * (z Q'.out - z Q.out) by ring]
+      exact Ideal.mul_mem_left _ _ hmem
+    · rw [← Ideal.span_singleton_mul_span_singleton, ← Ideal.span_singleton_mul_span_singleton,
+        mul_assoc, mul_assoc, heq3]
+  calc Q = Quotient.mk _ Q.out := (Quotient.out_eq Q).symm
+    _ = Quotient.mk _ Q'.out := Quotient.sound hrel
+    _ = Q' := Quotient.out_eq Q'
+
+/-- **Ray-class fibering of the norm-residue count** (PROVEN):
 there is one fiber size `f ≥ 1` such that every residue `a mod ℓ`
 realized as `N(I) mod ℓ` by an ideal with `ℓ ∤ N(I)` is realized by
 exactly `f` narrow ray classes mod `ℓ`, and the ideals of norm
@@ -3020,8 +3542,232 @@ theorem exists_forall_sum_card_absNorm_residue_eq_sum_natCard_isNarrowRayEquiv
           ∑ k ∈ (Finset.Icc 1 n).filter (fun k : ℕ => (k : ZMod ℓ) = a),
             (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℝ) =
           ∑ I₀ ∈ R, (Nat.card {I : Ideal (𝓞 F) // I ≠ 0 ∧
-            Ideal.absNorm I ≤ n ∧ IsNarrowRayEquiv ℓ I I₀} : ℝ) :=
-  sorry
+            Ideal.absNorm I ≤ n ∧ IsNarrowRayEquiv ℓ I I₀} : ℝ) := by
+  classical
+  haveI : Fact ℓ.Prime := ⟨hℓ⟩
+  haveI : NeZero ℓ := ⟨hℓ.ne_zero⟩
+  haveI hfinQ : Finite (Quotient (narrowRaySetoid F ℓ)) :=
+    finite_quotient_narrowRaySetoid F hℓ
+  obtain ⟨e, he0, hepow⟩ := exists_pow_isNarrowRayEquiv_top F hℓ
+  -- the norm-residue map on the quotient
+  set res : Quotient (narrowRaySetoid F ℓ) → ZMod ℓ :=
+    Quotient.lift
+      (fun I : {I : Ideal (𝓞 F) // I ≠ 0 ∧ IsCoprime I (Ideal.span {(ℓ : 𝓞 F)})} =>
+        ((Ideal.absNorm I.1 : ℕ) : ZMod ℓ))
+      (fun _ _ hIJ => IsNarrowRayEquiv.natCast_absNorm_eq hℓ hIJ) with hres_def
+  have hres_mk : ∀ I, res (Quotient.mk (narrowRaySetoid F ℓ) I) =
+      ((Ideal.absNorm I.1 : ℕ) : ZMod ℓ) := by
+    intro I; rw [hres_def]; exact Quotient.lift_mk _ _ _
+  -- multiplication by a fixed class is injective and shifts the residue
+  have hle : ∀ (C : {I : Ideal (𝓞 F) // I ≠ 0 ∧ IsCoprime I (Ideal.span {(ℓ : 𝓞 F)})})
+      (b b' : ZMod ℓ), b * ((Ideal.absNorm C.1 : ℕ) : ZMod ℓ) = b' →
+      Nat.card {Q : Quotient (narrowRaySetoid F ℓ) // res Q = b} ≤
+      Nat.card {Q : Quotient (narrowRaySetoid F ℓ) // res Q = b'} := by
+    intro C b b' hbb'
+    set μ : Quotient (narrowRaySetoid F ℓ) → Quotient (narrowRaySetoid F ℓ) :=
+      Quotient.lift
+        (fun I : {I : Ideal (𝓞 F) // I ≠ 0 ∧ IsCoprime I (Ideal.span {(ℓ : 𝓞 F)})} =>
+          Quotient.mk (narrowRaySetoid F ℓ)
+            ⟨I.1 * C.1, mul_ne_zero I.2.1 C.2.1, I.2.2.mul_left C.2.2⟩)
+        (fun _ _ hIJ => Quotient.sound
+          (IsNarrowRayEquiv.mul_mul hIJ (isNarrowRayEquiv_refl ℓ C.1))) with hμ_def
+    have hμ_mk : ∀ I, μ (Quotient.mk (narrowRaySetoid F ℓ) I) =
+        Quotient.mk (narrowRaySetoid F ℓ)
+          ⟨I.1 * C.1, mul_ne_zero I.2.1 C.2.1, I.2.2.mul_left C.2.2⟩ := by
+      intro I; rw [hμ_def]; exact Quotient.lift_mk _ _ _
+    have hμ_res : ∀ Q, res (μ Q) = res Q * ((Ideal.absNorm C.1 : ℕ) : ZMod ℓ) := by
+      intro Q
+      refine Quotient.inductionOn Q ?_
+      intro I
+      rw [hμ_mk, hres_mk, hres_mk, ← Nat.cast_mul, ← map_mul Ideal.absNorm]
+    have hμ_inj : Function.Injective μ := by
+      intro Q Q'
+      refine Quotient.inductionOn₂ Q Q' ?_
+      intro I I' hQQ'
+      rw [hμ_mk, hμ_mk] at hQQ'
+      exact Quotient.sound
+        (IsNarrowRayEquiv.of_mul_right_cancel C.2.1 (Quotient.exact hQQ'))
+    exact Nat.card_le_card_of_injective
+      (fun Q => ⟨μ Q.1, by rw [hμ_res, Q.2, hbb']⟩)
+      (fun Q Q' hQQ' => Subtype.ext (hμ_inj (congrArg Subtype.val hQQ')))
+  -- all realized residues have the same class count
+  have hcard_eq : ∀ (B : {I : Ideal (𝓞 F) // I ≠ 0 ∧ IsCoprime I (Ideal.span {(ℓ : 𝓞 F)})})
+      (a : ZMod ℓ), ((Ideal.absNorm B.1 : ℕ) : ZMod ℓ) = a →
+      Nat.card {Q : Quotient (narrowRaySetoid F ℓ) // res Q = a} =
+      Nat.card {Q : Quotient (narrowRaySetoid F ℓ) // res Q = 1} := by
+    intro B a hBa
+    have hae : a ^ e = 1 := by
+      have hres_pow := IsNarrowRayEquiv.natCast_absNorm_eq hℓ (hepow B.1 B.2.1 B.2.2).1
+      rw [map_pow Ideal.absNorm, Ideal.absNorm_top, Nat.cast_pow, Nat.cast_one,
+        hBa] at hres_pow
+      exact hres_pow
+    refine le_antisymm ?_ ?_
+    · refine hle ⟨B.1 ^ (e - 1), pow_ne_zero _ B.2.1, B.2.2.pow_left⟩ a 1 ?_
+      show a * ((Ideal.absNorm (B.1 ^ (e - 1)) : ℕ) : ZMod ℓ) = 1
+      rw [map_pow Ideal.absNorm, Nat.cast_pow, hBa, ← pow_succ',
+        show e - 1 + 1 = e from by omega]
+      exact hae
+    · refine hle B 1 a ?_
+      rw [one_mul, hBa]
+  refine ⟨Nat.card {Q : Quotient (narrowRaySetoid F ℓ) // res Q = 1}, ?_, ?_⟩
+  · haveI : Nonempty {Q : Quotient (narrowRaySetoid F ℓ) // res Q = 1} :=
+      ⟨⟨Quotient.mk (narrowRaySetoid F ℓ) ⟨⊤, top_ne_zero_and_isCoprime F ℓ⟩, by
+        rw [hres_mk, Ideal.absNorm_top, Nat.cast_one]⟩⟩
+    exact Nat.card_pos
+  · intro a ha
+    obtain ⟨B0, hB0nd, hB0res⟩ := ha
+    have ha0 : a ≠ 0 := by
+      rintro rfl
+      exact hB0nd ((ZMod.natCast_eq_zero_iff _ _).mp hB0res)
+    have hB0good : B0 ≠ 0 ∧ IsCoprime B0 (Ideal.span {(ℓ : 𝓞 F)}) := by
+      refine ⟨?_, isCoprime_of_not_dvd_absNorm hℓ B0 hB0nd⟩
+      rintro rfl
+      exact hB0nd (by rw [Ideal.zero_eq_bot, Ideal.absNorm_eq_zero_iff.mpr rfl]; exact dvd_zero ℓ)
+    -- the representative finset
+    haveI : Fintype {Q : Quotient (narrowRaySetoid F ℓ) // res Q = a} := Fintype.ofFinite _
+    set R : Finset (Ideal (𝓞 F)) := Finset.univ.image
+      (fun Q : {Q : Quotient (narrowRaySetoid F ℓ) // res Q = a} => (Q.1.out).1) with hR_def
+    have hR_inj : Function.Injective
+        (fun Q : {Q : Quotient (narrowRaySetoid F ℓ) // res Q = a} => (Q.1.out).1) := by
+      intro Q Q' h
+      apply Subtype.ext
+      have h2 : Q.1.out = Q'.1.out := Subtype.ext h
+      calc Q.1 = Quotient.mk (narrowRaySetoid F ℓ) Q.1.out := (Quotient.out_eq _).symm
+        _ = Quotient.mk (narrowRaySetoid F ℓ) Q'.1.out := by rw [h2]
+        _ = Q'.1 := Quotient.out_eq _
+    have hR_card : R.card = Nat.card {Q : Quotient (narrowRaySetoid F ℓ) // res Q = a} := by
+      rw [hR_def, Finset.card_image_of_injective _ hR_inj, Finset.card_univ,
+        Nat.card_eq_fintype_card]
+    have hR_good : ∀ I₀ ∈ R, I₀ ≠ 0 ∧ IsCoprime I₀ (Ideal.span {(ℓ : 𝓞 F)}) := by
+      intro I₀ hI₀
+      rw [hR_def] at hI₀
+      obtain ⟨Q, -, rfl⟩ := Finset.mem_image.mp hI₀
+      exact Q.1.out.2
+    refine ⟨R, by rw [hR_card]; exact hcard_eq ⟨B0, hB0good⟩ a hB0res, hR_good, ?_⟩
+    intro n
+    set Kn := (Finset.Icc 1 n).filter (fun k : ℕ => (k : ZMod ℓ) = a) with hKn_def
+    -- the master finset of counted ideals
+    have hU0fin : {I : Ideal (𝓞 F) | I ≠ 0 ∧ Ideal.absNorm I ≤ n ∧
+        ((Ideal.absNorm I : ℕ) : ZMod ℓ) = a}.Finite := by
+      refine Set.Finite.subset (Set.Finite.biUnion (Set.finite_Icc 1 n)
+        (fun k _ => Ideal.finite_setOf_absNorm_eq k)) ?_
+      rintro I ⟨hI0, hIn, -⟩
+      exact Set.mem_biUnion (Set.mem_Icc.mpr ⟨Nat.one_le_iff_ne_zero.mpr
+        (fun h0 => hI0 (by rw [Ideal.zero_eq_bot]; exact Ideal.absNorm_eq_zero_iff.mp h0)),
+        hIn⟩) rfl
+    set U : Finset (Ideal (𝓞 F)) := hU0fin.toFinset with hU_def
+    have hU_mem : ∀ I : Ideal (𝓞 F), I ∈ U ↔
+        (I ≠ 0 ∧ Ideal.absNorm I ≤ n ∧ ((Ideal.absNorm I : ℕ) : ZMod ℓ) = a) := fun I => by
+      rw [hU_def, Set.Finite.mem_toFinset, Set.mem_setOf_eq]
+    -- fibering the count over the norm values
+    have hA : U.card = ∑ k ∈ Kn, Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} := by
+      have hmapsA : Set.MapsTo (fun I : Ideal (𝓞 F) => Ideal.absNorm I) ↑U ↑Kn := by
+        intro I hI
+        have hIU := (hU_mem I).mp (Finset.mem_coe.mp hI)
+        refine Finset.mem_coe.mpr ?_
+        rw [hKn_def, Finset.mem_filter, Finset.mem_Icc]
+        exact ⟨⟨Nat.one_le_iff_ne_zero.mpr (fun h0 => hIU.1
+          (by rw [Ideal.zero_eq_bot]; exact Ideal.absNorm_eq_zero_iff.mp h0)), hIU.2.1⟩,
+          hIU.2.2⟩
+      rw [Finset.card_eq_sum_card_fiberwise hmapsA]
+      refine Finset.sum_congr rfl fun k hk => ?_
+      rw [hKn_def, Finset.mem_filter, Finset.mem_Icc] at hk
+      obtain ⟨⟨hk1, hkn⟩, hkres⟩ := hk
+      have hsetk : {I : Ideal (𝓞 F) | Ideal.absNorm I = k} =
+          ↑({I ∈ U | Ideal.absNorm I = k}) := by
+        ext I
+        constructor
+        · intro hIk
+          have hIk' : Ideal.absNorm I = k := hIk
+          refine Finset.mem_coe.mpr (Finset.mem_filter.mpr ⟨(hU_mem I).mpr ⟨?_, ?_, ?_⟩, hIk'⟩)
+          · intro h0
+            have hzero : Ideal.absNorm I = 0 :=
+              Ideal.absNorm_eq_zero_iff.mpr (by rw [← Ideal.zero_eq_bot, h0])
+            omega
+          · rw [hIk']; exact hkn
+          · rw [hIk']; exact hkres
+        · intro hIf
+          exact (Finset.mem_filter.mp (Finset.mem_coe.mp hIf)).2
+      calc ({I ∈ U | Ideal.absNorm I = k}).card
+          = ({I : Ideal (𝓞 F) | Ideal.absNorm I = k}).ncard := by
+            rw [hsetk, Set.ncard_coe_finset]
+        _ = Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} :=
+            (Nat.card_coe_set_eq _).symm
+    -- fibering the count over the ray classes
+    set g : Ideal (𝓞 F) → Ideal (𝓞 F) := fun I =>
+      if h : I ≠ 0 ∧ IsCoprime I (Ideal.span {(ℓ : 𝓞 F)}) then
+        ((Quotient.mk (narrowRaySetoid F ℓ) ⟨I, h⟩).out).1 else ⊥ with hg_def
+    have hg_val : ∀ (I : Ideal (𝓞 F)) (h : I ≠ 0 ∧ IsCoprime I (Ideal.span {(ℓ : 𝓞 F)})),
+        g I = ((Quotient.mk (narrowRaySetoid F ℓ) ⟨I, h⟩).out).1 := by
+      intro I h
+      rw [hg_def]
+      exact dif_pos h
+    have hB : U.card = ∑ I₀ ∈ R, Nat.card {I : Ideal (𝓞 F) // I ≠ 0 ∧
+        Ideal.absNorm I ≤ n ∧ IsNarrowRayEquiv ℓ I I₀} := by
+      have hmapsB : Set.MapsTo g ↑U ↑R := by
+        intro I hI
+        obtain ⟨hI0, hIn, hIres⟩ := (hU_mem I).mp (Finset.mem_coe.mp hI)
+        have hInd : ¬ ℓ ∣ Ideal.absNorm I := fun hdvd =>
+          ha0 (by rw [← hIres]; exact (ZMod.natCast_eq_zero_iff _ _).mpr hdvd)
+        have hIco : IsCoprime I (Ideal.span {(ℓ : 𝓞 F)}) :=
+          isCoprime_of_not_dvd_absNorm hℓ I hInd
+        have hresQ : res (Quotient.mk (narrowRaySetoid F ℓ) ⟨I, hI0, hIco⟩) = a := by
+          rw [hres_mk]; exact hIres
+        refine Finset.mem_coe.mpr ?_
+        rw [hR_def]
+        exact Finset.mem_image.mpr
+          ⟨⟨Quotient.mk (narrowRaySetoid F ℓ) ⟨I, hI0, hIco⟩, hresQ⟩,
+            Finset.mem_univ _, (hg_val I ⟨hI0, hIco⟩).symm⟩
+      rw [Finset.card_eq_sum_card_fiberwise hmapsB]
+      refine Finset.sum_congr rfl fun I₀ hI₀ => ?_
+      rw [hR_def] at hI₀
+      obtain ⟨Q, -, hQI₀⟩ := Finset.mem_image.mp hI₀
+      have hsetI₀ : {I : Ideal (𝓞 F) | I ≠ 0 ∧ Ideal.absNorm I ≤ n ∧
+          IsNarrowRayEquiv ℓ I I₀} = ↑({I ∈ U | g I = I₀}) := by
+        ext I
+        constructor
+        · rintro ⟨hI0, hIn, hIrel⟩
+          have hIco : IsCoprime I (Ideal.span {(ℓ : 𝓞 F)}) :=
+            IsNarrowRayEquiv.isCoprime_left hIrel (hQI₀ ▸ Q.1.out.2.2)
+          have hI₀res : ((Ideal.absNorm I₀ : ℕ) : ZMod ℓ) = a := by
+            have h3 : res Q.1 = a := Q.2
+            rw [← Quotient.out_eq Q.1, hres_mk, hQI₀] at h3
+            exact h3
+          have hIres : ((Ideal.absNorm I : ℕ) : ZMod ℓ) = a := by
+            rw [IsNarrowRayEquiv.natCast_absNorm_eq hℓ hIrel, hI₀res]
+          refine Finset.mem_coe.mpr
+            (Finset.mem_filter.mpr ⟨(hU_mem I).mpr ⟨hI0, hIn, hIres⟩, ?_⟩)
+          rw [hg_val I ⟨hI0, hIco⟩]
+          have hmk_eq : Quotient.mk (narrowRaySetoid F ℓ) ⟨I, hI0, hIco⟩ = Q.1 := by
+            conv_rhs => rw [← Quotient.out_eq Q.1]
+            exact Quotient.sound
+              (show IsNarrowRayEquiv ℓ I Q.1.out.1 from hQI₀.symm ▸ hIrel)
+          rw [hmk_eq, hQI₀]
+        · intro hIf
+          obtain ⟨hIU, hgI⟩ := Finset.mem_filter.mp (Finset.mem_coe.mp hIf)
+          obtain ⟨hI0, hIn, hIres⟩ := (hU_mem I).mp hIU
+          have hInd : ¬ ℓ ∣ Ideal.absNorm I := fun hdvd =>
+            ha0 (by rw [← hIres]; exact (ZMod.natCast_eq_zero_iff _ _).mpr hdvd)
+          have hIco : IsCoprime I (Ideal.span {(ℓ : 𝓞 F)}) :=
+            isCoprime_of_not_dvd_absNorm hℓ I hInd
+          refine ⟨hI0, hIn, ?_⟩
+          rw [hg_val I ⟨hI0, hIco⟩] at hgI
+          have hrel0 := Quotient.exact (s := narrowRaySetoid F ℓ)
+            (Quotient.out_eq (Quotient.mk (narrowRaySetoid F ℓ) ⟨I, hI0, hIco⟩)).symm
+          have hrel : IsNarrowRayEquiv ℓ I
+              (((Quotient.mk (narrowRaySetoid F ℓ) ⟨I, hI0, hIco⟩).out).1) := hrel0
+          rw [hgI] at hrel
+          exact hrel
+      calc ({I ∈ U | g I = I₀}).card
+          = ({I : Ideal (𝓞 F) | I ≠ 0 ∧ Ideal.absNorm I ≤ n ∧
+              IsNarrowRayEquiv ℓ I I₀}).ncard := by
+            rw [hsetI₀, Set.ncard_coe_finset]
+        _ = Nat.card {I : Ideal (𝓞 F) // I ≠ 0 ∧ Ideal.absNorm I ≤ n ∧
+              IsNarrowRayEquiv ℓ I I₀} := (Nat.card_coe_set_eq _).symm
+    have hkey : (∑ k ∈ Kn, Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k}) =
+        ∑ I₀ ∈ R, Nat.card {I : Ideal (𝓞 F) // I ≠ 0 ∧ Ideal.absNorm I ≤ n ∧
+          IsNarrowRayEquiv ℓ I I₀} := hA.symm.trans hB
+    exact_mod_cast hkey
 
 /-- **Weber's fibered ideal counting, ideal-residue form**: the count
 of nonzero ideals of `𝓞 F` with norm in `[1, n]` and norm residue
