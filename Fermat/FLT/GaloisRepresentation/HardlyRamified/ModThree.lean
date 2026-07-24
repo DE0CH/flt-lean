@@ -8977,29 +8977,24 @@ theorem exists_pow_eq_one_not_three_dvd_of_ne_zero
 
 set_option maxHeartbeats 1000000 in
 /-- **The quadratic character `θ'` is unramified away from `2` and `3`**
-(sorry node, isolated 2026-07-24 as a local leaf of the dihedral
-ray-class reduction): the character `θ'` cutting out the quadratic
+(PROVEN 2026-07-24 — the residue-separation argument, run through the
+integral-closure inertia congruence exactly as in the proven
+`cyclotomicCharacterModL_eq_one_of_mem_localInertiaGroup` of
+`Threeadic.lean`): the character `θ'` cutting out the quadratic
 field `ℚ(√d)` with `d ∈ {-1, ±2, ±3, ±6}` (via `hθ'x`: `θ' g = 1` iff
 `g` fixes the chosen square root `x` of `d`) is trivial on the image
-in `Γ ℚ` of the local inertia at any prime `q ∉ {2, 3}`.
-
-Intended proof (the residue-separation argument, exactly the pattern
-of the PROVEN `hfix2` step inside
-`cyclotomicCharacter_algebraMap_eq_one_of_inertia_two`, transposed
-from `ℚ_[2]`/`Z2bar` to the adic completion at `q` and its
-`localValuationSubring`): every prime divisor of `d` lies in `{2, 3}`,
-so `q ∤ 2d`; the image `y` of `x` under
-`AlgebraicClosure.map (algebraMap ℚ Kᵥ)` satisfies `y ^ 2 = d` with
-`|d|ᵥ = 1`, hence `|y|ᵥ = 1` and `y` lies in the valuation subring
-whose maximal ideal defines `localInertiaGroup`; an inertia element
-`σ` sends `y` to a root of `T² - d`, i.e. `σ y ∈ {y, -y}`, while
-fixing residues mod the maximal ideal; the difference
-`y - (-y) = 2 y` has valuation `1` (`q ≠ 2` makes `2` a unit), so the
-two roots have distinct residues, forcing `σ y = y`; the commuting
-square for `Field.absoluteGaloisGroup.map` (as used at `2` in this
-file) transports the fixed point to `g x = x` in `ℚᵃˡᵍ`, and `hθ'x`
-concludes. Reference: Neukirch, ANT I §8 (inertia acts trivially on
-residues), II §7. -/
+in `Γ ℚ` of the local inertia at any prime `q ∉ {2, 3}`. Content:
+every prime divisor of `d` lies in `{2, 3}`, so `d ∣ 6` is a unit of
+the integral closure of `𝒪ᵥ` at `q ∉ {2, 3}`
+(`isUnit_natCast_adicCompletionIntegers`); the image `y = ι x` under
+`AlgebraicClosure.map (algebraMap ℚ Kᵥ)` satisfies `y² = d`, so `y`
+is an integral UNIT; an inertia element `σ` sends `y` to a root of
+`T² - d`, i.e. `σ y ∈ {y, -y}`, while fixing residues mod the maximal
+ideal; `σ y = -y` would put `σ y - y = -2y` — a unit, since `2` is a
+unit at `q ≠ 2` — in the maximal ideal, absurd; so `σ y = y`, the
+commuting square `Field.absoluteGaloisGroup.lift_map` transports the
+fixed point to `g x = x` in `ℚᵃˡᵍ`, and `hθ'x` concludes. Reference:
+Neukirch, ANT I §8 (inertia acts trivially on residues), II §7. -/
 theorem theta'_eq_one_of_mem_localInertiaGroup_of_ne_two_three
     (θ' : Γ ℚ →* Multiplicative (ZMod 2))
     (d : ℤ)
@@ -9011,36 +9006,202 @@ theorem theta'_eq_one_of_mem_localInertiaGroup_of_ne_two_three
       θ' (Field.absoluteGaloisGroup.map (algebraMap ℚ
         (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
           hq.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1 := by
-  sorry
+  classical
+  set v := hq.toHeightOneSpectrumRingOfIntegersRat
+  set f : ℚ →+* IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v :=
+    algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)
+  set ι : AlgebraicClosure ℚ →+* AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) :=
+    AlgebraicClosure.map f
+  intro σ hσ
+  -- the chosen square root of `d` maps to a square root of `d` downstairs
+  have hy2 : (ι x) ^ 2 = ((d : ℤ) : AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) := by
+    rw [← map_pow, hx, map_intCast]
+  -- the inertia element fixes `ι x`
+  have hfixv : σ (ι x) = ι x := by
+    have hσy2 : σ (ι x) ^ 2 = (ι x) ^ 2 := by
+      rw [← map_pow, hy2, map_intCast]
+    have hfac : (σ (ι x) - ι x) * (σ (ι x) + ι x) = 0 := by
+      linear_combination hσy2
+    rcases mul_eq_zero.mp hfac with h | h
+    · exact sub_eq_zero.mp h
+    · -- `σ (ι x) = -(ι x)` is impossible: `2 · ι x` is a unit of the
+      -- integral closure, yet the inertia congruence puts it in the
+      -- maximal ideal
+      exfalso
+      have hσy : σ (ι x) = -(ι x) := by linear_combination h
+      haveI hVR : ValuationRing (IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+          (AlgebraicClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) :=
+        valuationRing_integralClosure v
+      haveI hLoc : IsLocalRing (IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+          (AlgebraicClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) :=
+        inferInstance
+      -- `ι x` is integral over `𝒪ᵥ`: a root of `T² - d`
+      have hint : IsIntegral
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+          (ι x) := by
+        refine ⟨Polynomial.X ^ 2 - Polynomial.C
+          ((d : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)),
+          Polynomial.monic_X_pow_sub_C _ (by norm_num), ?_⟩
+        rw [Polynomial.eval₂_sub, Polynomial.eval₂_X_pow, Polynomial.eval₂_C,
+          map_intCast, hy2, sub_self]
+      set z : IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+          (AlgebraicClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) :=
+        ⟨ι x, hint⟩
+      set j := algebraMap (IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+          (AlgebraicClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)))
+        (AlgebraicClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))
+      have hjinj : Function.Injective j := fun a b h => Subtype.ext h
+      have hjz : j z = ι x := rfl
+      -- `2` and `3` are units of the integral closure since `q ∉ {2, 3}`
+      have h2u : IsUnit (((2 : ℕ)) : IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+          (AlgebraicClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) := by
+        have h1 := isUnit_natCast_adicCompletionIntegers Nat.prime_two hq
+          (Ne.symm hq2)
+        have h2 := h1.map (algebraMap
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+          (IntegralClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+            (AlgebraicClosure
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))))
+        rwa [map_natCast] at h2
+      have h3u : IsUnit (((3 : ℕ)) : IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+          (AlgebraicClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) := by
+        have h1 := isUnit_natCast_adicCompletionIntegers Nat.prime_three hq
+          (Ne.symm hq3)
+        have h2 := h1.map (algebraMap
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+          (IntegralClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+            (AlgebraicClosure
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))))
+        rwa [map_natCast] at h2
+      -- `d ∣ 6`, so `d` is a unit of the integral closure
+      have h6u : IsUnit (((6 : ℤ)) : IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+          (AlgebraicClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) := by
+        have h6 : (((6 : ℤ)) : IntegralClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+            (AlgebraicClosure
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) =
+            (((2 : ℕ)) : IntegralClosure
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+              (AlgebraicClosure
+                (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) *
+            (((3 : ℕ)) : IntegralClosure
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+              (AlgebraicClosure
+                (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) := by
+          push_cast
+          ring
+        rw [h6]
+        exact h2u.mul h3u
+      have hdu : IsUnit ((d : ℤ) : IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+          (AlgebraicClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) := by
+        have hdvd6 : d ∣ 6 := by
+          rcases hd with rfl | rfl | rfl | rfl | rfl | rfl | rfl
+          exacts [⟨-6, by norm_num⟩, ⟨3, by norm_num⟩, ⟨-3, by norm_num⟩,
+            ⟨2, by norm_num⟩, ⟨-2, by norm_num⟩, ⟨1, by norm_num⟩,
+            ⟨-1, by norm_num⟩]
+        obtain ⟨c, hc⟩ := hdvd6
+        refine isUnit_of_dvd_unit ⟨((c : ℤ) : IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+          (AlgebraicClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))), ?_⟩ h6u
+        rw [← Int.cast_mul, ← hc]
+      -- `z = ι x` is a unit: its square is the unit `d`
+      have hzz : z * z = ((d : ℤ) : IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+          (AlgebraicClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) := by
+        apply hjinj
+        rw [map_mul, hjz, map_intCast]
+        rw [← hy2]
+        ring
+      have hzu : IsUnit z := by
+        have h' := hdu
+        rw [← hzz] at h'
+        exact isUnit_of_mul_isUnit_left h'
+      -- the inertia congruence puts the unit `2 · z` in the maximal ideal
+      have hsmul : σ • z = -z := by
+        apply hjinj
+        have h1 : j (σ • z) = σ (ι x) := by
+          show (σ • z).1 = σ (ι x)
+          rw [IntegralClosure.coe_smul]
+          rfl
+        rw [h1, hσy, map_neg, hjz]
+      have hmem : σ • z - z ∈ IsLocalRing.maximalIdeal (IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+          (AlgebraicClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) :=
+        (AddSubgroup.mem_inertia.mp hσ) z
+      have h2z : (((2 : ℕ)) : IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+          (AlgebraicClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) * z =
+          -(σ • z - z) := by
+        rw [hsmul]
+        push_cast
+        ring
+      have hmem2 : (((2 : ℕ)) : IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+          (AlgebraicClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) * z ∈
+          IsLocalRing.maximalIdeal (IntegralClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+            (AlgebraicClosure
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) := by
+        rw [h2z]
+        exact neg_mem hmem
+      exact (mem_nonunits_iff.mp ((IsLocalRing.mem_maximalIdeal _).mp hmem2))
+        (h2u.mul hzu)
+  -- transport the fixed point to `ℚᵃˡᵍ` and conclude via `hθ'x`
+  refine (hθ'x _).mpr ?_
+  apply ι.injective
+  have hL : ι (Field.absoluteGaloisGroup.map f σ x) = σ (ι x) :=
+    Field.absoluteGaloisGroup.lift_map f σ x
+  rw [hL]
+  exact hfixv
 
 set_option maxHeartbeats 1000000 in
 /-- **The mod-3 cyclotomic character is unramified away from `2` and
-`3`** (sorry node, isolated 2026-07-24 as a local leaf of the dihedral
-ray-class reduction): the composite of the 3-adic cyclotomic character
-with `algebraMap ℤ_[3] k` (`k` finite of characteristic `3`, so only
-the level-one information survives) is trivial on the image of the
-local inertia at any prime `q ∉ {2, 3}`.
-
-Intended proof: the direct generalization of the PROVEN
-`cyclotomicCharacter_algebraMap_eq_one_of_inertia_two` above, working
-directly over the adic completion at `q` (no analogue of the
-`ℚ_[2]`-bridge `localInertia_two_eq_map_padic` is needed if the
-argument is run at the completion itself, with
-`localValuationSubring` in place of `Z2bar`): the cube roots of unity
-in `(Kᵥ)ᵃˡᵍ` are units with pairwise differences of valuation `1`
-(`|ζ₃ - ζ₃'| = |√-3| = 1` since `3` is a unit at `q ≠ 3`), so they
-have distinct residues and every inertia element fixes them; by the
-`lift_map` commuting square its image in `Γ ℚ` fixes the cube roots
-of unity of `ℚᵃˡᵍ`, making the cyclotomic character trivial at level
-one, which is all `algebraMap ℤ_[3] k` sees. (The `q = 2` case of
-this statement is already available through
-`localInertia_two_eq_map_padic` +
-`cyclotomicCharacter_algebraMap_eq_one_of_inertia_two`; this leaf
-only needs `q ∉ {2, 3}`, though the same proof would cover `q = 2`.)
--/
+`3`** (PROVEN 2026-07-24 — the integral-closure inertia congruence,
+run directly over the adic completion at `q`, no `ℚ_[q]` bridge): the
+composite of the 3-adic cyclotomic character with `algebraMap ℤ_[3] k`
+(`k` finite of characteristic `3`, so only the level-one information
+survives) is trivial on the image of the local inertia at any prime
+`q ∉ {2, 3}`. Content (mirroring the proven
+`cyclotomicCharacterModL_eq_one_of_mem_localInertiaGroup` of
+`Threeadic.lean`): an inertia element `σ` permutes the cube roots of
+unity in `(Kᵥ)ᵃˡᵍ`, and `σ (ι ζ) = (ι ζ)²` would put
+`(ι ζ)² - ι ζ = ι ζ · (ι ζ - 1)` in the maximal ideal with `ι ζ` a
+unit, hence `1 - ι ζ ∈ 𝔪`; but `(1 - ζ)(1 - ζ²) = 3` is a unit at
+`q ≠ 3` (`isUnit_natCast_adicCompletionIntegers`) — contradiction.
+So `σ` fixes `ι ζ`, by the `lift_map` commuting square its image in
+`Γ ℚ` fixes `ζ`, making the cyclotomic character trivial at level
+one (`cyclotomicCharacter.spec`), which is all `algebraMap ℤ_[3] k`
+sees (as in `cyclotomicCharacter_algebraMap_eq_one_of_inertia_two`
+above). -/
 theorem cyclotomicCharacter_algebraMap_eq_one_of_inertia_ne_two_three
     {k : Type u} [Finite k] [Field k] [Algebra ℤ_[3] k]
-    (q : ℕ) (hq : q.Prime) (hq2 : q ≠ 2) (hq3 : q ≠ 3)
+    (q : ℕ) (hq : q.Prime) (_hq2 : q ≠ 2) (hq3 : q ≠ 3)
     {σ : Γ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
       hq.toHeightOneSpectrumRingOfIntegersRat)}
     (hσ : σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat) :
@@ -9050,7 +9211,201 @@ theorem cyclotomicCharacter_algebraMap_eq_one_of_inertia_ne_two_three
           (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
             hq.toHeightOneSpectrumRingOfIntegersRat)) σ).toRingEquiv) :
         ℤ_[3]ˣ) : ℤ_[3]) = 1 := by
-  sorry
+  haveI h3 : Fact (Nat.Prime 3) := ⟨Nat.prime_three⟩
+  classical
+  revert σ hσ
+  set v := hq.toHeightOneSpectrumRingOfIntegersRat
+  set f : ℚ →+* IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v :=
+    algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)
+  set ι : AlgebraicClosure ℚ →+* AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) :=
+    AlgebraicClosure.map f
+  intro σ hσ
+  -- a primitive cube root of unity in `ℚᵃˡᵍ` and its image downstairs
+  obtain ⟨ζ, hζ⟩ := HasEnoughRootsOfUnity.exists_primitiveRoot
+    (AlgebraicClosure ℚ) 3
+  have hη : IsPrimitiveRoot (ι ζ) 3 := hζ.map_of_injective ι.injective
+  -- the inertia element fixes `ζ`
+  have hfix : Field.absoluteGaloisGroup.map f σ ζ = ζ := by
+    have hmapζ3 : (Field.absoluteGaloisGroup.map f σ ζ) ^ 3 = 1 := by
+      rw [← map_pow, hζ.pow_eq_one, map_one]
+    obtain ⟨i, hi3, hiζ⟩ := hζ.eq_pow_of_pow_eq_one hmapζ3
+    interval_cases i
+    · -- `map f σ ζ = 1` would force `ζ = 1`
+      rw [pow_zero] at hiζ
+      exact absurd ((Field.absoluteGaloisGroup.map f σ).injective
+        (by rw [map_one, ← hiζ])) (hζ.ne_one (by norm_num))
+    · rw [pow_one] at hiζ
+      exact hiζ.symm
+    · -- `map f σ ζ = ζ²`: `σ` moves `ι ζ` to its square, which the
+      -- inertia congruence forbids since `(1 - ζ)(1 - ζ²) = 3` is a
+      -- `v`-adic unit for `q ≠ 3`
+      exfalso
+      haveI hVR : ValuationRing (IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+          (AlgebraicClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) :=
+        valuationRing_integralClosure v
+      haveI hLoc : IsLocalRing (IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+          (AlgebraicClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) :=
+        inferInstance
+      have hση : σ (ι ζ) = ι ζ * ι ζ := by
+        have hL : ι (Field.absoluteGaloisGroup.map f σ ζ) = σ (ι ζ) :=
+          Field.absoluteGaloisGroup.lift_map f σ ζ
+        rw [← hiζ] at hL
+        rw [← hL, pow_two, map_mul]
+      -- move into the integral closure of `𝒪ᵥ`
+      have hint : IsIntegral
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+          (ι ζ) := by
+        refine ⟨Polynomial.X ^ 3 - Polynomial.C 1,
+          Polynomial.monic_X_pow_sub_C 1 (by norm_num), ?_⟩
+        simp [hη.pow_eq_one]
+      set x : IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+          (AlgebraicClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) :=
+        ⟨ι ζ, hint⟩
+      set j := algebraMap (IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+          (AlgebraicClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)))
+        (AlgebraicClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))
+      have hjinj : Function.Injective j := fun a b h => Subtype.ext h
+      have hjx : j x = ι ζ := rfl
+      -- `x` is a unit: `x³ = 1`
+      have hx3 : x * x * x = 1 := by
+        apply hjinj
+        rw [map_mul, map_mul, map_one, hjx]
+        linear_combination hη.pow_eq_one
+      have hxunit : IsUnit x :=
+        IsUnit.of_mul_eq_one (x * x) (by rw [← mul_assoc]; exact hx3)
+      -- the inertia congruence: `x·(x - 1) = σ • x - x ∈ 𝔪`
+      have hfac : x * (x - 1) ∈ IsLocalRing.maximalIdeal
+          (IntegralClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+            (AlgebraicClosure
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) := by
+        have h2 : σ • x - x ∈ IsLocalRing.maximalIdeal
+            (IntegralClosure
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+              (AlgebraicClosure
+                (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) :=
+          (AddSubgroup.mem_inertia.mp hσ) x
+        have hsmul : σ • x = x * x := by
+          apply hjinj
+          have h1 : j (σ • x) = σ (ι ζ) := by
+            show (σ • x).1 = σ (ι ζ)
+            rw [IntegralClosure.coe_smul]
+            rfl
+          rw [h1, hση, map_mul, hjx]
+        rw [hsmul] at h2
+        have hring : x * x - x = x * (x - 1) := by ring
+        rwa [hring] at h2
+      -- primality peels off the unit factor
+      have hx1 : x - 1 ∈ IsLocalRing.maximalIdeal
+          (IntegralClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+            (AlgebraicClosure
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) := by
+        rcases (IsLocalRing.maximalIdeal.isMaximal _).isPrime.mem_or_mem
+          hfac with h | h
+        · exact absurd hxunit
+            (mem_nonunits_iff.mp ((IsLocalRing.mem_maximalIdeal x).mp h))
+        · exact h
+      -- `3 = (1 - x)(1 - x²)` lands in `𝔪` …
+      have h3eq : (((3 : ℕ)) : IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+          (AlgebraicClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)))
+          = (1 - x) * (1 - x * x) := by
+        apply hjinj
+        rw [map_natCast, map_mul, map_sub, map_sub, map_one, map_mul, hjx]
+        have hsum : 1 + ι ζ + ι ζ * ι ζ = 0 := by
+          have h := hη.geom_sum_eq_zero (by norm_num)
+          rw [Finset.sum_range_succ, Finset.sum_range_succ,
+            Finset.sum_range_succ, Finset.sum_range_zero] at h
+          rw [pow_zero, pow_one] at h
+          linear_combination h
+        have hcube : (ι ζ) ^ 3 = 1 := hη.pow_eq_one
+        push_cast
+        linear_combination hsum - hcube
+      have h3mem : (((3 : ℕ)) : IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+          (AlgebraicClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) ∈
+          IsLocalRing.maximalIdeal _ := by
+        rw [h3eq]
+        refine Ideal.mul_mem_right _ _ ?_
+        have hneg : (1 : IntegralClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+            (AlgebraicClosure
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)))
+            - x = -(x - 1) := by ring
+        rw [hneg]
+        exact neg_mem hx1
+      -- … but `3` is a unit of `𝒪ᵥ` for `q ≠ 3`
+      have h3unit : IsUnit (((3 : ℕ)) : IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+          (AlgebraicClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) := by
+        have h1 := isUnit_natCast_adicCompletionIntegers
+          Nat.prime_three hq (Ne.symm hq3)
+        have h2 := h1.map (algebraMap
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+          (IntegralClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+            (AlgebraicClosure
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))))
+        rwa [map_natCast] at h2
+      exact (mem_nonunits_iff.mp
+        ((IsLocalRing.mem_maximalIdeal _).mp h3mem)) h3unit
+  -- level one of the cyclotomic character is `1`
+  have hlevel : (PadicInt.toZModPow 1)
+      ((cyclotomicCharacter (AlgebraicClosure ℚ) 3
+        ((Field.absoluteGaloisGroup.map f σ).toRingEquiv) : ℤ_[3]ˣ) :
+        ℤ_[3]) = 1 := by
+    have hspec := cyclotomicCharacter.spec 3 (n := 1)
+      (Field.absoluteGaloisGroup.map f σ).toRingEquiv ζ
+      (by rw [pow_one]; exact hζ.pow_eq_one)
+    have hζspec : ζ = ζ ^ ((PadicInt.toZModPow 1)
+        ((cyclotomicCharacter (AlgebraicClosure ℚ) 3
+          ((Field.absoluteGaloisGroup.map f σ).toRingEquiv) : ℤ_[3]ˣ) :
+          ℤ_[3])).val := by
+      rw [← hspec]
+      exact hfix.symm
+    have hval_lt : ((PadicInt.toZModPow 1)
+        ((cyclotomicCharacter (AlgebraicClosure ℚ) 3
+          ((Field.absoluteGaloisGroup.map f σ).toRingEquiv) : ℤ_[3]ˣ) :
+          ℤ_[3])).val < 3 ^ 1 :=
+      ZMod.val_lt _
+    have h1 := hζ.pow_inj (by norm_num : (1 : ℕ) < 3 ^ 1)
+      (by exact_mod_cast hval_lt) (by rw [pow_one]; exact hζspec)
+    have h2 : ((PadicInt.toZModPow 1)
+        ((cyclotomicCharacter (AlgebraicClosure ℚ) 3
+          ((Field.absoluteGaloisGroup.map f σ).toRingEquiv) : ℤ_[3]ˣ) :
+          ℤ_[3])).val = 1 := h1.symm
+    have h3v : ((1 : ZMod (3 ^ 1))).val = 1 := rfl
+    exact ZMod.val_injective _ (h2.trans h3v.symm)
+  -- `algebraMap ℤ_[3] k` sees only level one (`k` has characteristic 3)
+  haveI hchark : CharP k 3 := charP_three_of_finite_padicIntThree_algebra
+  have hker : ((cyclotomicCharacter (AlgebraicClosure ℚ) 3
+      ((Field.absoluteGaloisGroup.map f σ).toRingEquiv) : ℤ_[3]ˣ) :
+      ℤ_[3]) - 1 ∈
+      RingHom.ker (PadicInt.toZModPow (p := 3) 1) := by
+    rw [RingHom.mem_ker, map_sub, hlevel, map_one, sub_self]
+  rw [PadicInt.ker_toZModPow] at hker
+  obtain ⟨t, ht⟩ := Ideal.mem_span_singleton'.mp hker
+  have hcyc : ((cyclotomicCharacter (AlgebraicClosure ℚ) 3
+      ((Field.absoluteGaloisGroup.map f σ).toRingEquiv) : ℤ_[3]ˣ) :
+      ℤ_[3]) = 1 + t * ((3 : ℕ) : ℤ_[3]) ^ 1 := by
+    linear_combination -ht
+  rw [hcyc, map_add, map_one, map_mul, map_pow, map_natCast]
+  rw [show ((3 : ℕ) : k) = 0 from CharP.cast_eq_zero k 3]
+  ring
 
 set_option maxHeartbeats 1000000 in
 /-- **An anti-equivariant, almost-everywhere-unramified, prime-to-3
