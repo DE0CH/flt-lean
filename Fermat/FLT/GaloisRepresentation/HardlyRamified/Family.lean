@@ -1277,18 +1277,24 @@ theorem char_eq_one_of_mem_localInertiaGroup_two
       Polynomial.eval_C, Polynomial.eval_one, sub_self, mul_zero] at h
     rwa [mul_self_eq_zero, sub_eq_zero] at h
 
-/-- **The flat inertia charpoly at `p`** (sorry node — the
-Raynaud/Fontaine input of the reducible branch, isolated at a single
-inertia element): for a hardly ramified (flat-at-`p`,
-cyclotomic-determinant) `ρ` whose mapped characteristic polynomials
-split through the continuous multiplicative pair `χ₁, χ₂` (the
-reducibility input — needed: without it a supersingular `ρ|_{G_p}`
-is flat with irreducible inertia charpolys, and the conclusion is
-false), the characteristic polynomial of `ρ` at (the image in `G_ℚ`
-of) a local inertia element `σ` at `p` is `(X - χ_cyc(σ))(X - 1)`
-over `R` — the exact `p`-place analogue of the tame-at-two leaf
-`charpoly_eq_of_mem_inertia_two`. Intended proof (Serre, Duke 1987,
-§4.1; Raynaud, prolongements de schémas en groupes de type `(p,…,p)`):
+/-- **The flat trace identity on inertia at `p`** (sorry node — the
+Raynaud/Fontaine content of the reducible branch, isolated 2026-07-24
+as the scalar core of `charpoly_eq_of_mem_localInertiaGroup_p` below,
+whose linear-algebra assembly is PROVEN): for a hardly ramified
+(flat-at-`p`, cyclotomic-determinant) `ρ` whose mapped characteristic
+polynomials split through the continuous multiplicative pair `χ₁, χ₂`
+(the reducibility input — needed: without it a supersingular
+`ρ|_{G_p}` is flat with irreducible inertia charpolys, and the
+conclusion is false), the two character values at (the image in `G_ℚ`
+of) a local inertia element `σ` at `p` sum to `1 + χ_cyc(σ̃)` in
+`ℚ̄_p`. Together with the determinant identity
+`χ₁(σ̃)·χ₂(σ̃) = χ_cyc(σ̃)` (proven in the consumer from `hρ.det`),
+this says the multiset `{χ₁(σ̃), χ₂(σ̃)}` is `{1, χ_cyc(σ̃)}` — the
+Raynaud dichotomy, in the swap-symmetric summed spelling that keeps
+the sub/quotient matching out of the statement (same convention as
+the global `char_add_char_eq_one_add_cyclotomicCharacter`). Intended
+proof (Serre, Duke 1987, §4.1; Raynaud, prolongements de schémas en
+groupes de type `(p,…,p)`):
 
 * *Reducibility localizes.* By `hchar` the trace function of
   `ρ ⊗ ℚ̄_p` is `χ₁ + χ₂`, a sum of continuous characters, so
@@ -1305,17 +1311,63 @@ over `R` — the exact `p`-place analogue of the tame-at-two leaf
   étale part carries trivial inertia action, and the connected part is
   of multiplicative type (Cartier duality against the étale part,
   using the cyclotomic determinant of `hρ.det`), with inertia acting
-  through `χ_cyc`; so the inertia charpoly of `ρ mod I` at `σ̃` is
-  `(X - χ_cyc(σ̃))(X - 1) mod I`.
-* *Level passage.* Charpoly coefficients commute with the quotients
+  through `χ_cyc`; so the inertia trace of `ρ mod I` at `σ̃` is
+  `1 + χ_cyc(σ̃) mod I`.
+* *Level passage.* The trace of `ρ(σ̃)` commutes with the quotients
   `R → R ⧸ I`; the open ideals contain a cofinal family of powers of
   the maximal ideal (`R` carries the `ℤ_p`-module topology and is
   module-finite local), and `⋂ₙ 𝔪ⁿ = 0` in the Noetherian local
-  domain `R`, so the level-wise identity assembles to the stated
-  identity over `R`. Alternatively a prover may verify the identity
-  after the injective base change along `hRinj ∘ hZinj` into `ℚ̄_p`
-  (injective ring maps are injective on polynomial coefficients),
-  where it reads `(X - χ₁(σ̃))(X - χ₂(σ̃)) = (X - χ_cyc(σ̃))(X - 1)`. -/
+  domain `R`, so the level-wise identity assembles over `R` and lands
+  in the stated `ℚ̄_p` identity along `hRinj ∘ hZinj` (whose composite
+  with the structure map is the canonical `ℤ_[p] → ℚ̄_p` by
+  `algebraMap_comp_algebraMap_padicInt`). -/
+theorem char_add_char_eq_one_add_cyclotomicCharacter_of_mem_localInertiaGroup_p
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hZinj : Function.Injective (algebraMap ℤ_[p] R))
+    (hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
+    (hρ : IsHardlyRamified hpodd hv ρ)
+    (χ₁ χ₂ : Field.absoluteGaloisGroup ℚ → AlgebraicClosure ℚ_[p])
+    (hcont₁ : Continuous χ₁) (hcont₂ : Continuous χ₂)
+    (hone₁ : χ₁ 1 = 1) (hone₂ : χ₂ 1 = 1)
+    (hmul₁ : ∀ g h, χ₁ (g * h) = χ₁ g * χ₁ h)
+    (hmul₂ : ∀ g h, χ₂ (g * h) = χ₂ g * χ₂ h)
+    (hchar : ∀ g, ((ρ g).charpoly).map (algebraMap R (AlgebraicClosure ℚ_[p])) =
+      (Polynomial.X - Polynomial.C (χ₁ g)) * (Polynomial.X - Polynomial.C (χ₂ g)))
+    (σ : Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ
+      hp.out.toHeightOneSpectrumRingOfIntegersRat))
+    (hσ : σ ∈ localInertiaGroup hp.out.toHeightOneSpectrumRingOfIntegersRat) :
+    χ₁ (Field.absoluteGaloisGroup.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+      hp.out.toHeightOneSpectrumRingOfIntegersRat)) σ) +
+    χ₂ (Field.absoluteGaloisGroup.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+      hp.out.toHeightOneSpectrumRingOfIntegersRat)) σ) =
+      1 + algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p])
+        ((cyclotomicCharacter (AlgebraicClosure ℚ) p
+          ((Field.absoluteGaloisGroup.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+            hp.out.toHeightOneSpectrumRingOfIntegersRat)) σ).toRingEquiv) : ℤ_[p]ˣ) :
+          ℤ_[p]) :=
+  sorry
+
+/-- **The flat inertia charpoly at `p`** (PROVEN assembly, DECOMPOSED
+2026-07-24 over the single sorried scalar leaf
+`char_add_char_eq_one_add_cyclotomicCharacter_of_mem_localInertiaGroup_p`
+above): for a hardly ramified (flat-at-`p`, cyclotomic-determinant)
+`ρ` whose mapped characteristic polynomials split through the
+continuous pair `χ₁, χ₂`, the characteristic polynomial of `ρ` at
+(the image in `G_ℚ` of) a local inertia element `σ` at `p` is
+`(X - χ_cyc(σ))(X - 1)` over `R` — the exact `p`-place analogue of
+the tame-at-two leaf `charpoly_eq_of_mem_inertia_two`. Assembly (pure
+linear algebra, all proven): the product `χ₁(g)·χ₂(g)` is the mapped
+cyclotomic determinant at EVERY `g` (`coeff 0` of the split charpoly
+against `hρ.det` — the same computation as `hprod` in the global
+`char_add_char_eq_one_add_cyclotomicCharacter`); the leaf pins the
+sum `χ₁(σ̃) + χ₂(σ̃)` to `1 + χ_cyc(σ̃)`; a monic quadratic is
+determined by its trace/determinant coefficient pair, so the mapped
+charpoly is `(X - χ_cyc(σ̃))(X - 1)` over `ℚ̄_p`; and the identity
+descends to `R` along the injective coefficient embedding
+(`Polynomial.map_injective` on `hRinj`, with
+`algebraMap_comp_algebraMap_padicInt` matching the two spellings of
+the cyclotomic constant). -/
 theorem charpoly_eq_of_mem_localInertiaGroup_p
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
@@ -1339,8 +1391,60 @@ theorem charpoly_eq_of_mem_localInertiaGroup_p
           ((Field.absoluteGaloisGroup.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
             hp.out.toHeightOneSpectrumRingOfIntegersRat)) σ).toRingEquiv) : ℤ_[p]ˣ) :
           ℤ_[p]))) *
-      (Polynomial.X - Polynomial.C 1) :=
-  sorry
+      (Polynomial.X - Polynomial.C 1) := by
+  classical
+  set g : Field.absoluteGaloisGroup ℚ :=
+    Field.absoluteGaloisGroup.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+      hp.out.toHeightOneSpectrumRingOfIntegersRat)) σ with hgdef
+  set c : ℤ_[p] := ((cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv :
+    ℤ_[p]ˣ) : ℤ_[p]) with hcdef
+  have hfr : Module.finrank R V = 2 := Module.finrank_eq_of_rank_eq hv
+  -- the product identity: `coeff 0` of the split mapped charpoly against
+  -- the cyclotomic-determinant clause (valid at every `g`)
+  have hprod : χ₁ g * χ₂ g = algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p]) c := by
+    have hdet0 : (ρ g).charpoly.coeff 0 = ρ.det g := by
+      rw [GaloisRep.det_apply, LinearMap.det_eq_sign_charpoly_coeff, hfr]
+      norm_num
+    have h0 : (((ρ g).charpoly).map (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff 0 =
+        ((Polynomial.X - Polynomial.C (χ₁ g)) *
+          (Polynomial.X - Polynomial.C (χ₂ g))).coeff 0 :=
+      congrArg (fun P : Polynomial (AlgebraicClosure ℚ_[p]) => P.coeff 0) (hchar g)
+    rw [Polynomial.coeff_map, hdet0, hρ.det g, Polynomial.mul_coeff_zero] at h0
+    simp only [Polynomial.coeff_sub, Polynomial.coeff_X_zero, Polynomial.coeff_C_zero,
+      zero_sub, neg_mul_neg] at h0
+    rw [← h0]
+    exact RingHom.congr_fun algebraMap_comp_algebraMap_padicInt _
+  -- the sum identity on inertia: the Raynaud sub-leaf
+  have hsum := char_add_char_eq_one_add_cyclotomicCharacter_of_mem_localInertiaGroup_p
+    hpodd hv hZinj hRinj hρ χ₁ χ₂ hcont₁ hcont₂ hone₁ hone₂ hmul₁ hmul₂ hchar σ hσ
+  rw [← hgdef, ← hcdef] at hsum
+  -- a monic quadratic is determined by its trace/determinant pair
+  have hQQ : (Polynomial.X - Polynomial.C (χ₁ g)) * (Polynomial.X - Polynomial.C (χ₂ g)) =
+      (Polynomial.X - Polynomial.C (algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p]) c)) *
+      (Polynomial.X - Polynomial.C 1) := by
+    have hexp₁ : (Polynomial.X - Polynomial.C (χ₁ g)) *
+        (Polynomial.X - Polynomial.C (χ₂ g)) =
+        Polynomial.X ^ 2 - Polynomial.C (χ₁ g + χ₂ g) * Polynomial.X +
+        Polynomial.C (χ₁ g * χ₂ g) := by
+      rw [Polynomial.C_add, Polynomial.C_mul]
+      ring
+    have hexp₂ : (Polynomial.X -
+        Polynomial.C (algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p]) c)) *
+        (Polynomial.X - Polynomial.C 1) =
+        Polynomial.X ^ 2 -
+        Polynomial.C (1 + algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p]) c) * Polynomial.X +
+        Polynomial.C (algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p]) c) := by
+      rw [Polynomial.C_add, Polynomial.C_1]
+      ring
+    rw [hexp₁, hexp₂, hsum, hprod]
+  -- descend along the injective coefficient embedding
+  have hcomp : algebraMap R (AlgebraicClosure ℚ_[p]) (algebraMap ℤ_[p] R c) =
+      algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p]) c :=
+    RingHom.congr_fun algebraMap_comp_algebraMap_padicInt c
+  refine Polynomial.map_injective _ hRinj ?_
+  rw [hchar g, hQQ]
+  simp only [Polynomial.map_mul, Polynomial.map_sub, Polynomial.map_X, Polynomial.map_C,
+    Polynomial.map_one, map_one, hcomp]
 
 /-- **The flat dichotomy on inertia at `p`** (PROVEN assembly,
 DECOMPOSED 2026-07-23 over the single sorried leaf
@@ -1567,8 +1671,11 @@ node per stage:
   `μ_{p^∞}` is unramified at `2`) and `charpoly_eq_of_mem_inertia_two`
   (linear algebra: the tame triangular factorization);
 * at `p`: flatness of `ρ` at `p` forces (Raynaud/Fontaine on the
-  finite levels) one of `χ₁, χ₂` to die on inertia at `p` — sorry
-  leaf `char_eq_one_on_localInertiaGroup_p_or`;
+  finite levels) one of `χ₁, χ₂` to die on inertia at `p` — PROVEN
+  assembly `char_eq_one_on_localInertiaGroup_p_or` over the proven
+  flat charpoly `charpoly_eq_of_mem_localInertiaGroup_p`, whose sole
+  remaining sorried input is the Raynaud trace leaf
+  `char_add_char_eq_one_add_cyclotomicCharacter_of_mem_localInertiaGroup_p`;
 * Minkowski: `ℚ` has no nontrivial extension unramified everywhere,
   so the member of the pair with everywhere-dead inertia is trivial —
   sorry leaf `char_eq_one_of_forall_mem_localInertiaGroup` — and the
@@ -1680,14 +1787,13 @@ and proven linear algebra:
    infrastructure, built here).
 2. `char_add_char_eq_one_add_cyclotomicCharacter` (PROVEN assembly,
    further DECOMPOSED 2026-07-23) — the Eisenstein core: for such a
-   pair, `χ₁ + χ₂ = 1 + χ_cyc` pointwise, assembled over two proven
-   route stages (inertia away from `{2, p}`; inertia at `2` via the
-   ModThree inertia bridge) and four sorried leaves
-   (`cyclotomicCharacter_eq_one_of_mem_inertia_two`,
-   `charpoly_eq_of_mem_inertia_two`,
-   `char_eq_one_on_localInertiaGroup_p_or`,
-   `char_eq_one_of_forall_mem_localInertiaGroup`; see its docstring
-   for the full route).
+   pair, `χ₁ + χ₂ = 1 + χ_cyc` pointwise, assembled over now-PROVEN
+   route stages (inertia away from `{2, p}`; inertia at `2`;
+   `char_eq_one_on_localInertiaGroup_p_or` at `p`; the Minkowski
+   finish `char_eq_one_of_forall_mem_localInertiaGroup`), whose
+   single surviving sorried input is the Raynaud trace leaf
+   `char_add_char_eq_one_add_cyclotomicCharacter_of_mem_localInertiaGroup_p`
+   (see its docstring for the full route).
 3. The assembly (below): at the place of a prime `q ≠ p`, the trace
    coefficient of the split quadratic is `-(χ₁ + χ₂)` at the
    arithmetic Frobenius, which by 2. and the PROVEN
