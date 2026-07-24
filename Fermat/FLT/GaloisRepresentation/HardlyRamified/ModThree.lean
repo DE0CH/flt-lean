@@ -10952,48 +10952,481 @@ theorem exists_twisted_coboundary_scalar_of_agreement_vanishing
   rw [h6]
   exact mul_left_cancel₀ hNne h8
 
-/-- **The agreement additive character is killed by ray-class
-arithmetic** (sorry node, isolated 2026-07-24 — the class-field-theory
-core of the global Selmer vanishing, restated from
-`agreement_cocycle_eq_zero_ray_class` below with the whole cocycle
-layer hoisted into an abstract additive character: in the
-application `b = c/χ`, and the untwisting bookkeeping is PROVEN glue
-there): an additive character `b` of the agreement subgroup
-`H = {g | ψ g = χ g} = ker(ψχ⁻¹) = Γ_F` (`hbadd`), trivial on the
-open subgroup `ker ρ` (`hker` — so `b` and the agreement locus factor
-through the FINITE quotient by `ker ρ`), `ψχ⁻¹`-equivariantly
-conjugated (`hconj`), vanishing on the inertia of every prime
-`q ∉ {2, 3}` (`hunr`) and on the agreement part of the inertia at `3`
-(`h3z`), vanishes identically on `H`.
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
+/-- **Quotient characters of stable lines are killed by the `ℚ_[2]`
+inertia** (DERIVED 2026-07-18 — the tame dichotomy; RELOCATED
+2026-07-24 ahead of the agreement ray-class decomposition below, a
+pure move, statement and proof unchanged): for any stable
+line `W` of a mod-3 hardly ramified representation with quotient
+character `χ₂`, the inertia at `2` (phrased over `ℚ_[2]`, matching
+`isTameAtTwo`) lies in the kernel of `χ₂` composed with the local
+inclusion. Either `W` maps into the kernel of the tame quotient `π₂` —
+then `χ₂` agrees with the unramified `δ` on inertia — or `π₂` is
+nonzero on `W` — then the sub-character agrees with `δ`, so it is
+trivial on inertia, and `χ₂ = det/χ₁` is trivial there too since the
+determinant is the mod-3 cyclotomic character, unramified at `2`. -/
+theorem quotCharacter_inertia_two_ker
+    {k : Type u} [Finite k] [Field k] [Algebra ℤ_[3] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (W : Submodule k V) (χ₂ : Γ ℚ →* kˣ)
+    (hWfr : Module.finrank k W = 1)
+    (hWstable : ∀ g v, v ∈ W → ρ g v ∈ W)
+    (hχ₂ : ∀ g v, W.mkQ (ρ g v) = (χ₂ g : k) • W.mkQ v) :
+    AddSubgroup.inertia
+      ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
+      (Γ ℚ_[2]) ≤
+      (χ₂.comp (Field.absoluteGaloisGroup.map
+        (algebraMap ℚ ℚ_[2])).toMonoidHom).ker := by
+  classical
+  intro σ hσ
+  rw [MonoidHom.mem_ker, MonoidHom.comp_apply]
+  set g' : Γ ℚ := Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) σ
+    with hg'
+  obtain ⟨π₂, hπsurj, δ, hδ⟩ := hρ.isTameAtTwo
+  -- `δ` is trivial on inertia
+  have hδσ : δ σ = 1 := by
+    have h := (hδ σ 0).2.1 hσ
+    rwa [GaloisRep.ker, MonoidHom.mem_ker] at h
+  -- the tame relation at `σ`, rewritten through the global action
+  have hrel : ∀ v : V, π₂ (ρ g' v) = π₂ v := by
+    intro v
+    have h := (hδ σ v).1
+    rw [GaloisRep.map_apply, ← hg'] at h
+    rw [h, hδσ, Module.End.one_apply]
+  -- the goal, at the level of `k`
+  suffices hval : (χ₂ g' : k) = 1 by
+    apply Units.ext
+    simpa using hval
+  by_cases hcase : W ≤ LinearMap.ker π₂
+  · -- `π₂` factors through the quotient, so `χ₂` scales `π₂`
+    obtain ⟨v₀, hv₀⟩ := hπsurj 1
+    have hfac : ∀ v : V, π₂ v =
+        (W.liftQ π₂ hcase) (W.mkQ v) := by
+      intro v
+      rw [Submodule.mkQ_apply, Submodule.liftQ_apply]
+    have h1 : π₂ (ρ g' v₀) = (χ₂ g' : k) * π₂ v₀ := by
+      rw [hfac, hχ₂ g' v₀, map_smul, smul_eq_mul, ← hfac]
+    rw [hrel v₀, hv₀, mul_one] at h1
+    exact h1.symm
+  · -- `π₂` is nonzero on `W`: the sub-character is trivial on inertia
+    obtain ⟨w₀, hw₀W, hw₀ne⟩ : ∃ w ∈ W, π₂ w ≠ 0 := by
+      by_contra hnone
+      push Not at hnone
+      exact hcase fun w hw => LinearMap.mem_ker.mpr (hnone w hw)
+    obtain ⟨χ₁, hχ₁⟩ := exists_subCharacter ρ W hWfr hWstable
+    have hχ₁σ : (χ₁ g' : k) = 1 := by
+      have h1 : π₂ (ρ g' w₀) = (χ₁ g' : k) * π₂ w₀ := by
+        rw [hχ₁ g' w₀ hw₀W, map_smul, smul_eq_mul]
+      rw [hrel w₀] at h1
+      have h2 : ((χ₁ g' : k) - 1) * π₂ w₀ = 0 := by
+        rw [sub_mul, one_mul, ← h1, sub_self]
+      rcases mul_eq_zero.mp h2 with h' | h'
+      · linear_combination h'
+      · exact absurd h' hw₀ne
+    -- the determinant is `χ₁ · χ₂` and also the cyclotomic character
+    have hfr : Module.finrank k V = 2 :=
+      Module.finrank_eq_of_rank_eq (by exact_mod_cast hV)
+    have hQ1 : Module.finrank k (V ⧸ W) = 1 := by
+      have h := Submodule.finrank_quotient_add_finrank W
+      omega
+    have hdet := det_eq_subCharacter_mul_quotCharacter ρ W hWfr hQ1
+      hWstable χ₁ χ₂ hχ₁ hχ₂ g'
+    have hcyc := hρ.det g'
+    rw [GaloisRep.det_apply] at hcyc
+    rw [hcyc] at hdet
+    have hone := cyclotomicCharacter_algebraMap_eq_one_of_inertia_two
+      (k := k) hσ
+    rw [← hg'] at hone
+    rw [hone, hχ₁σ, one_mul] at hdet
+    exact hdet.symm
 
-Intended content (Serre, Duke 1987, §5.4, mod-3 analogue): `b` is an
-additive character `H → (k, +)` with `char k = 3`, so it cuts out an
-abelian `3`-elementary extension `M/F`, Galois over `ℚ` by the
-equivariance `hconj`. Identification of `F`: `χ` is unramified at `2`
-(the tame dichotomy `quotCharacter_inertia_two_ker` applied to the
-stable line `W₀` — PROVEN but stated LATER in this file, so reprove
-or move it when resolving this node), hence so is `ψ = det/χ` since
-the determinant is cyclotomic (`hρ.det` +
-`cyclotomicCharacter_algebraMap_eq_one_of_inertia_two`, same remark);
-both are unramified outside `{2, 3}` (`hunr`); and at `3` the
-quotient character `χ` is RAMIFIED (`h3`) with `χ = ω` on inertia
-while `ψ` is unramified there, so `η = ψχ⁻¹` is a character ramified
-only at `3` whose inertia image has order dividing `2`. Since `ℚ`
-admits no unramified extension (Minkowski,
-`minkowski_character_trivial`), either `η = 1` and `F = ℚ`, or
-`F = ℚ(√-3)`, the quadratic field of conductor `3`. The extension
-`M/F` is unramified outside `2` (`hunr` + `h3z` with the
-`hconj`-conjugates covering all primes over `3`), split at the primes
-over `3`, and automatically TAME at `2`: its degree is a `3`-power
-while the residue characteristic is `2`, so the conductor exponent at
-each prime over `2` is at most `1`. The ray-class arithmetic kills
-`M`: for `F = ℚ` the ray class field of conductor `2^k∞` is the
-`2`-power-degree cyclotomic tower, with no `3`-part; for
-`F = ℚ(√-3)` — class number `1`, `2` inert — the ray class group of
-conductor `(2)` is `(𝒪/2)ˣ/⟨image of 𝒪ˣ⟩ = 𝔽₄ˣ/⟨ζ₆ mod 2⟩ = 1`.
-Hence `M = F` and `b` vanishes on `H`. References: Serre, Duke Math.
-J. 54 (1987) §5.4; Tate's 1974 letter to Serre (Œuvres III);
-Neukirch, ANT VI §6. -/
+set_option backward.isDefEq.respectTransparency false in
+/-- **Quotient characters of stable lines are unramified at `2`**
+(DERIVED 2026-07-18 from the `ℚ_[2]` dichotomy and the inertia
+bridge; RELOCATED 2026-07-24 ahead of the agreement ray-class
+decomposition below, a pure move, statement and proof unchanged): for
+any stable line `W` of a mod-3 hardly ramified
+representation with quotient character `χ₂`, the local inertia at the
+place `prime_two` lies in the kernel of `χ₂`. -/
+theorem quotCharacter_unramified_at_two
+    {k : Type u} [Finite k] [Field k] [Algebra ℤ_[3] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (W : Submodule k V) (χ₂ : Γ ℚ →* kˣ)
+    (hWfr : Module.finrank k W = 1)
+    (hWstable : ∀ g v, v ∈ W → ρ g v ∈ W)
+    (hχ₂ : ∀ g v, W.mkQ (ρ g v) = (χ₂ g : k) • W.mkQ v) :
+    localInertiaGroup Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat ≤
+      (χ₂.comp (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom).ker := by
+  intro σ hσ
+  obtain ⟨τ, hτ, c, heq⟩ := localInertia_two_eq_map_padic hσ
+  have h := quotCharacter_inertia_two_ker V hV hρ W χ₂ hWfr hWstable hχ₂ hτ
+  rw [MonoidHom.mem_ker, MonoidHom.comp_apply] at h ⊢
+  show χ₂ ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+    (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))) σ) = 1
+  rw [heq]
+  -- characters are conjugation-invariant
+  rw [map_mul, map_mul, map_inv]
+  rw [show χ₂ ((Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2])) τ) = 1
+    from h]
+  group
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
+/-- **Sub-characters of stable lines are unramified at `2`** (PROVEN
+2026-07-24 — the `ψ`-side companion of
+`quotCharacter_unramified_at_two`, glue for the agreement ray-class
+decomposition below): the eigenvalue character `ψ` of a stable line
+of a mod-3 hardly ramified representation is killed by the local
+inertia at `2`. On a `ℚ_[2]`-inertia element the determinant is the
+mod-3 cyclotomic character (`hρ.det`), trivial there
+(`cyclotomicCharacter_algebraMap_eq_one_of_inertia_two`), and the
+quotient character is trivial by the tame dichotomy
+(`quotCharacter_inertia_two_ker`), so `ψ = det/χ` is trivial there
+too (`det_eq_subCharacter_mul_quotCharacter`); the inertia bridge
+`localInertia_two_eq_map_padic` and conjugation-invariance of the
+abelian-valued `ψ` transport this to the place `prime_two`. -/
+theorem subCharacter_unramified_at_two
+    {k : Type u} [Finite k] [Field k] [Algebra ℤ_[3] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (W : Submodule k V) (hWfr : Module.finrank k W = 1)
+    (hWstable : ∀ g v, v ∈ W → ρ g v ∈ W)
+    (ψ : Γ ℚ →* kˣ) (hψ : ∀ g, ∀ v ∈ W, ρ g v = (ψ g : k) • v)
+    (χ : Γ ℚ →* kˣ)
+    (hχ : ∀ g v, W.mkQ (ρ g v) = (χ g : k) • W.mkQ v) :
+    localInertiaGroup Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat ≤
+      (ψ.comp (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom).ker := by
+  intro σ hσ
+  obtain ⟨τ, hτ, c, heq⟩ := localInertia_two_eq_map_padic hσ
+  -- `ψ` is trivial on the `ℚ_[2]`-inertia element `τ`
+  have hτ1 : ψ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) τ) = 1 := by
+    have hχτ := quotCharacter_inertia_two_ker V hV hρ W χ hWfr hWstable hχ hτ
+    rw [MonoidHom.mem_ker, MonoidHom.comp_apply] at hχτ
+    have hχval :
+        (χ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) τ) : k) = 1 := by
+      rw [show χ ((Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2])) τ) = 1
+        from hχτ, Units.val_one]
+    have hQ1 : Module.finrank k (V ⧸ W) = 1 := by
+      have hfr : Module.finrank k V = 2 :=
+        Module.finrank_eq_of_rank_eq (by exact_mod_cast hV)
+      have h := Submodule.finrank_quotient_add_finrank W
+      omega
+    have hdet := det_eq_subCharacter_mul_quotCharacter ρ W hWfr hQ1
+      hWstable ψ χ hψ hχ
+      (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) τ)
+    have hcyc := hρ.det (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) τ)
+    rw [GaloisRep.det_apply] at hcyc
+    rw [hcyc] at hdet
+    have hone := cyclotomicCharacter_algebraMap_eq_one_of_inertia_two
+      (k := k) hτ
+    rw [hone, hχval, mul_one] at hdet
+    apply Units.ext
+    rw [Units.val_one]
+    exact hdet.symm
+  rw [MonoidHom.mem_ker, MonoidHom.comp_apply]
+  show ψ ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+    (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))) σ) = 1
+  rw [heq, map_mul, map_mul, map_inv,
+    show ψ ((Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2])) τ) = 1
+      from hτ1]
+  group
+
+/-- **Finite-level tame ramification at `2`, with the Frobenius
+conjugation clause** (sorry node, isolated 2026-07-24 — the genuine
+local-structure core of the abelian at-`2` unramifiedness assembly
+`localInertia_two_eq_one_of_no_two_torsion` below; the at-`2` twin of
+`exists_finite_level_tame_generator_three` and the Frobenius-carrying
+strengthening of `exists_finite_level_tame_generator_two` above;
+Serre, *Corps Locaux* IV §1–2): for every finite Galois subextension
+`N` of the algebraic closure of `ℚ₂ᵥ` there is a finite-level inertia
+element `t` such that (a) every finite-level inertia element agrees
+with a power of `t` up to an element of `2`-power order — the wild
+inertia `P` is the (normal) `2`-Sylow of the inertia `I`, the tame
+quotient `I/P` is CYCLIC (it embeds into the multiplicative group of
+the residue field of `N` via `σ ↦ σ(π)/π` for a uniformizer `π`), `t`
+is any preimage of a generator, and the error `(tᵐ)⁻¹σ` lies in `P` —
+and (b) some automorphism `φ` of `N` (any Frobenius lift) conjugates
+`t` into `t²` up to an element of `2`-power order: the tame character
+is Frobenius-semilinear, `φtφ⁻¹ ≡ t^q (mod P)` with
+`q = |𝒪ᵥ/𝔪ᵥ| = |𝔽₂| = 2`. -/
+theorem exists_finite_level_tame_frobenius_generator_two
+    (N : IntermediateField
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)))
+    [FiniteDimensional (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) N]
+    [IsGalois (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) N] :
+    ∃ t ∈ (IsLocalRing.maximalIdeal (IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) N)).inertia
+        (N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat] N),
+      (∀ σ ∈ (IsLocalRing.maximalIdeal (IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) N)).inertia
+          (N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat] N),
+        ∃ m j : ℕ, ((t ^ m)⁻¹ * σ) ^ 2 ^ j = 1) ∧
+      (∃ φ : N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat] N,
+        ∃ j : ℕ, (φ * t * φ⁻¹ * (t ^ 2)⁻¹) ^ 2 ^ j = 1) := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **Commutative-valued characters without `2`-torsion are
+unramified at `2`** (DECOMPOSED 2026-07-24 into the finite-level
+Frobenius-tame leaf `exists_finite_level_tame_frobenius_generator_two`
+above; the profinite assembly is PROVEN, mirroring
+`exists_localInertia_three_generator`): a homomorphism of `Γ ℚ` with
+open kernel into a commutative group without `2`-torsion kills the
+image of the whole local inertia at `2`. Assembly: the composite with
+`Γ ℚ₂ᵥ → Γ ℚ` factors through a finite Galois level `N`
+(`krullTopology_mem_nhds_one_iff_of_normal` +
+`MonoidHom.liftOfSurjective` over
+`AlgEquiv.restrictNormalHom_surjective`); the finite-level leaf hands
+a tame generator `t̄` and a Frobenius `φ` with `φt̄φ⁻¹ ≡ t̄²` modulo
+`2`-power-order errors; in the abelian `2`-torsion-free target the
+errors die and conjugation is trivial, so `f t̄ = (f t̄)²`, i.e.
+`f t̄ = 1`; every finite-level inertia element is `t̄^m` times a
+`2`-power-order error, so its image is `1`, and
+`restrictNormalHom_mem_inertia_of_mem_localInertiaGroup_two` maps the
+full local inertia into the finite level. This is the profinite form
+of "abelian extensions of `ℚ₂` are unramified at the tame level":
+the tame relation `φτφ⁻¹ = τ^q` abelianizes to `τ^{q-1} = τ^{2-1} =
+τ = 1`. -/
+theorem localInertia_two_eq_one_of_no_two_torsion {A : Type*} [CommGroup A]
+    (h2 : ∀ a : A, a ^ 2 = 1 → a = 1)
+    (u : Γ ℚ →* A) (hopen : IsOpen (u.ker : Set (Γ ℚ))) :
+    ∀ σ ∈ localInertiaGroup Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat,
+      u (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1 := by
+  classical
+  set v := Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat
+  set Emb := Field.absoluteGaloisGroup.map (algebraMap ℚ
+    (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))
+  -- `2`-power-order elements die in the `2`-torsion-free target
+  have h2pow : ∀ (a : A) (j : ℕ), a ^ 2 ^ j = 1 → a = 1 := by
+    intro a j
+    induction j with
+    | zero => intro h; simpa using h
+    | succ n ih =>
+      intro h
+      apply ih
+      apply h2
+      rw [← pow_mul, ← pow_succ]
+      exact h
+  -- the open kernel of the composite contains a finite Galois level
+  have hopen' : IsOpen (((u.comp Emb.toMonoidHom).ker :
+      Subgroup (Γ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) :
+      Set (Γ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) := by
+    have hpre : (((u.comp Emb.toMonoidHom).ker :
+        Subgroup (Γ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) :
+        Set (Γ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) =
+        Emb ⁻¹' (u.ker : Set (Γ ℚ)) := rfl
+    rw [hpre]
+    exact hopen.preimage Emb.continuous
+  have hnhds : (((u.comp Emb.toMonoidHom).ker :
+      Subgroup (Γ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) :
+      Set (Γ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) ∈
+      nhds (1 : Γ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) :=
+    hopen'.mem_nhds (one_mem _)
+  obtain ⟨N, hfdN, hnormN, hle⟩ :=
+    (krullTopology_mem_nhds_one_iff_of_normal
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))
+      _).mp hnhds
+  haveI := hfdN
+  haveI := hnormN
+  haveI : Algebra.IsSeparable
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) N :=
+    Algebra.IsAlgebraic.isSeparable_of_perfectField
+  haveI : IsGalois (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) N := ⟨⟩
+  -- the composite factors through the finite Galois group
+  have hsurj : Function.Surjective (AlgEquiv.restrictNormalHom N :
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)
+        ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v]
+      AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) →*
+      (N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v] N)) :=
+    AlgEquiv.restrictNormalHom_surjective _
+  have hkerle : (AlgEquiv.restrictNormalHom (F :=
+      IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) N).ker ≤
+      (u.comp Emb.toMonoidHom).ker := by
+    rw [IntermediateField.restrictNormalHom_ker]
+    intro g hg
+    exact hle hg
+  set f : (N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v] N) →* A :=
+    (AlgEquiv.restrictNormalHom N).liftOfSurjective hsurj
+      ⟨u.comp Emb.toMonoidHom, hkerle⟩
+  have hf : ∀ σ, f (AlgEquiv.restrictNormalHom N σ) = u (Emb σ) := fun σ =>
+    MonoidHom.liftOfRightInverse_comp_apply _ _ _ _ σ
+  -- the finite-level tame generator dies: Frobenius conjugation is
+  -- trivial in the abelian target, so `f t̄ = (f t̄)²`
+  obtain ⟨tbar, htbarI, htbargen, φ, j0, hφ⟩ :=
+    exists_finite_level_tame_frobenius_generator_two N
+  have hft : f tbar = 1 := by
+    have h1 : f (φ * tbar * φ⁻¹ * (tbar ^ 2)⁻¹) = 1 :=
+      h2pow _ j0 (by rw [← map_pow, hφ, map_one])
+    rw [map_mul, map_mul, map_mul, map_inv, map_inv, map_pow] at h1
+    have hconj : f φ * f tbar * (f φ)⁻¹ = f tbar := by
+      rw [mul_comm (f φ) (f tbar), mul_assoc, mul_inv_cancel, mul_one]
+    rw [hconj] at h1
+    have h2' : f tbar = f tbar ^ 2 := mul_inv_eq_one.mp h1
+    have h3' : f tbar * (f tbar)⁻¹ = f tbar ^ 2 * (f tbar)⁻¹ :=
+      congrArg (fun x => x * (f tbar)⁻¹) h2'
+    rw [mul_inv_cancel, pow_two, mul_assoc, mul_inv_cancel, mul_one] at h3'
+    exact h3'.symm
+  -- every inertia element maps to a power of `f t̄ = 1`
+  intro σ hσ
+  obtain ⟨m, j, hmj⟩ := htbargen (AlgEquiv.restrictNormalHom N σ)
+    (restrictNormalHom_mem_inertia_of_mem_localInertiaGroup_two N σ hσ)
+  have h1 : f ((tbar ^ m)⁻¹ * AlgEquiv.restrictNormalHom N σ) = 1 :=
+    h2pow _ j (by rw [← map_pow, hmj, map_one])
+  rw [map_mul, map_inv, map_pow] at h1
+  calc u (Emb σ) = f (AlgEquiv.restrictNormalHom N σ) := (hf σ).symm
+    _ = (f tbar) ^ m := (inv_mul_eq_one.mp h1).symm
+    _ = 1 := by rw [hft, one_pow]
+
+set_option maxHeartbeats 1000000 in
+/-- **The `ℚ(√-3)`-agreement additive character dies by the
+`(2)`-ray-class computation** (sorry node, isolated 2026-07-24 — the
+residual class-field-theory core of
+`agreement_additive_character_eq_zero_ray_class` below, fully
+abstracted from the representation: there `η` is `ψχ⁻¹`, its kernel
+carrier is `Γ_F`, `U` is `ker ρ`, and `b` is the additive character):
+let `η` be a quadratic character of `Γ ℚ` valued in `{1, -1} ⊆ kˣ`
+(`hη2`, `char k = 3`), RAMIFIED at `3` (`hη3`) and unramified at
+every other prime (`hηunr`), and let `b : Γ ℚ → k` be additive on
+`H = {g | η g = 1}` (`hbadd`), vanishing on an open normal subgroup
+`U ≤ H` (`hUker`), vanishing on the `H`-part of the inertia at every
+prime `q ≠ 2` (`hbunr`), and `η`-equivariant under conjugation
+(`hbconj`). Then `b` vanishes on `H`.
+
+Intended content (Serre, Duke 1987, §5.4, mod-3 analogue; Tate's 1974
+letter to Serre, Œuvres III; Neukirch, ANT VI §6). The quadratic `η`
+with open kernel (`hUker` + `hUopen`), ramified exactly at `3`, cuts
+out `F = ℚ(√-3)`, THE quadratic field ramified only at `3`
+(discriminant `-3`; `ℚ(√3)` has discriminant `12`, ramified also at
+`2`), so `H = ker η = Γ_F`. `b` restricted to `H` is a homomorphism
+into `(k, +)` vanishing on the open subgroup `U ∩ ker b`, cutting out
+a finite abelian `3`-elementary extension `M/F`; by `hbconj` its
+kernel is normal in `Γ ℚ`, so `M/ℚ` is Galois with
+`Gal(M/ℚ) = A ⋊ C₂`, `A = Gal(M/F)` elementary `3`-abelian and the
+nontrivial coset acting by inversion (`hbconj` with `(η g : k) = -1`).
+`M/F` is unramified outside the prime over `2`: at `q ∉ {2, 3}` this
+is `hbunr` with `hηunr`; over `3` the inertia of `Γ ℚ` meets `H` in
+its agreement part, killed by `hbunr` at `q = 3`, and the
+`hbconj`-conjugates cover both members of each conjugacy class of
+primes of `F` over a rational prime. `M/F` is automatically TAME over
+`2`: `[M : F]` is a `3`-power while the residue characteristic is
+`2`, so the wild (pro-`2`) inertia dies in `A` and each conductor
+exponent over `2` is at most `1`. Ray-class arithmetic over
+`F = ℚ(√-3)` — class number `1`, `2` INERT (`X² + X + 1` is
+irreducible mod `2`), `𝒪_F = ℤ[ζ₆]` — kills `M`: `F` has no real
+places, so the ray class group of conductor `(2)` sits in
+`(𝒪/2)ˣ / im 𝒪ˣ ↠ Cl_{(2)}(F) → Cl(F) = 1`, and
+`(𝒪/2)ˣ = 𝔽₄ˣ` of order `3` is generated by the image of the
+order-`6` unit `ζ₆`, so `Cl_{(2)}(F) = 1` and `M = F`, i.e. `b = 0`
+on `H`. Mathlib has no ray class field theory: resolving this node
+means either building the conductor-`(2)` ray-class bound for the
+concrete field `ℚ(√-3)` (= `CyclotomicField 6 ℚ`; its class number
+`1` and unit group `⟨ζ₆⟩` are within reach of
+`Mathlib.NumberTheory.ClassNumber` and cyclotomic-unit machinery), or
+decomposing further along Serre's route: the anti-invariance
+`b(σhσ⁻¹) = -b(h)` for `σ ∉ H` against the Frobenius-tame relation at
+the inert prime `2` (residue field `𝔽₄`, tame inertia exponent
+dividing `|𝔽₄ˣ| = 3`). -/
+theorem quadratic_agreement_additive_character_eq_zero_ray_class
+    {k : Type u} [Finite k] [Field k] [Algebra ℤ_[3] k]
+    (η : Γ ℚ →* kˣ)
+    (hη2 : ∀ g : Γ ℚ, η g = 1 ∨ (η g : k) = -1)
+    (hη3 : ¬ (localInertiaGroup
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat ≤
+        (η.comp (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom).ker))
+    (hηunr : ∀ (q : ℕ) (hq : q.Prime), q ≠ 3 →
+      ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+        η (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1)
+    (b : Γ ℚ → k)
+    (hbadd : ∀ g h : Γ ℚ, η g = 1 → η h = 1 → b (g * h) = b g + b h)
+    (U : Subgroup (Γ ℚ)) (hUopen : IsOpen (U : Set (Γ ℚ)))
+    (hUnormal : U.Normal)
+    (hUker : ∀ g ∈ U, η g = 1 ∧ b g = 0)
+    (hbunr : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 →
+      ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+        η (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1 →
+        b (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) σ) = 0)
+    (hbconj : ∀ g h : Γ ℚ, η h = 1 →
+      b (g * h * g⁻¹) = (η g : k) * b h) :
+    ∀ g : Γ ℚ, η g = 1 → b g = 0 := by
+  sorry
+
+set_option maxHeartbeats 1000000 in
+/-- **The agreement additive character is killed by ray-class
+arithmetic** (DECOMPOSED 2026-07-24 — the `F`-identification glue is
+PROVEN here; the residual sorry nodes are the finite-level tame leaf
+`exists_finite_level_tame_frobenius_generator_two` (consumed through
+the proven at-`2` abelian assembly
+`localInertia_two_eq_one_of_no_two_torsion`) and the `ℚ(√-3)`
+ray-class core
+`quadratic_agreement_additive_character_eq_zero_ray_class`, both
+above): an additive character `b` of the agreement subgroup
+`H = {g | ψ g = χ g} = ker(ψχ⁻¹) = Γ_F` (`hbadd`), trivial on the
+open subgroup `ker ρ` (`hker`), `ψχ⁻¹`-equivariantly conjugated
+(`hconj`), vanishing on the inertia of every prime `q ∉ {2, 3}`
+(`hunr`) and on the agreement part of the inertia at `3` (`h3z`),
+vanishes identically on `H`.
+
+Proven glue (Serre, Duke 1987, §5.4, mod-3 analogue): `χ` is
+unramified at `2` (`quotCharacter_unramified_at_two`), hence so is
+`ψ = det/χ` (`subCharacter_unramified_at_two`), so the ratio
+`η = ψχ⁻¹` is unramified at every prime `q ≠ 3` (`hunr` elsewhere).
+Its inertia image at `3` is generated by a single element `ε` with
+`ε² = 1` (`exists_localInertia_three_generator`, using that `kˣ` has
+no `3`-torsion in characteristic `3`), and Minkowski applied to `η`
+composed with the quotient `kˣ → kˣ/⟨ε⟩`
+(`minkowski_character_trivial`) confines the WHOLE image of `η` to
+`⟨ε⟩ = {1, ε}`, so `η` is quadratic. If `ε = 1` then `η = 1`: the
+agreement locus is everything, `b` is a global additive character of
+`Γ ℚ` packaged as `Γ ℚ →* Multiplicative k`, unramified outside `2`
+(`hunr`, `h3z`) and at `2` by the abelian tame relation
+(`localInertia_two_eq_one_of_no_two_torsion` — `Multiplicative k` has
+no `2`-torsion in characteristic `3`), and Minkowski kills it. If
+`ε ≠ 1` then `ε = -1` (the only nontrivial square root of `1` in a
+field), `η` is a quadratic character ramified exactly at `3` — the
+character of `F = ℚ(√-3)` — and the ray-class sorry node finishes on
+the transported hypotheses. (The ramification hypothesis `h3` on `χ`
+is not needed for this route: the `ε`-dichotomy replaces it.) -/
 theorem agreement_additive_character_eq_zero_ray_class
     {k : Type u} [Finite k] [Field k] [Algebra ℤ_[3] k]
     [TopologicalSpace k] [DiscreteTopology k]
@@ -11006,7 +11439,7 @@ theorem agreement_additive_character_eq_zero_ray_class
     (ψ : Γ ℚ →* kˣ) (hψ : ∀ g, ∀ v ∈ W₀, ρ g v = (ψ g : k) • v)
     (χ : Γ ℚ →* kˣ)
     (hχ : ∀ g v, W₀.mkQ (ρ g v) = (χ g : k) • W₀.mkQ v)
-    (h3 : ¬ (localInertiaGroup
+    (_h3 : ¬ (localInertiaGroup
           Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat ≤
         (χ.comp (Field.absoluteGaloisGroup.map (algebraMap ℚ
           (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
@@ -11041,7 +11474,241 @@ theorem agreement_additive_character_eq_zero_ray_class
     (hconj : ∀ g h : Γ ℚ, (ψ h : k) = (χ h : k) →
       (χ g : k) * b (g * h * g⁻¹) = (ψ g : k) * b h) :
     ∀ g : Γ ℚ, (ψ g : k) = (χ g : k) → b g = 0 := by
-  sorry
+  classical
+  haveI hfinV : Finite V := Module.finite_of_finite k
+  have h3k : (3 : k) = 0 := three_eq_zero_of_finite_padicIntThree_algebra
+  -- the untwisting character `η = ψ/χ` and its agreement kernel
+  set η : Γ ℚ →* kˣ := ψ / χ with hηdef
+  have hηval : ∀ g : Γ ℚ, ((η g : kˣ) : k) = (ψ g : k) * ((χ g : k))⁻¹ := by
+    intro g
+    rw [hηdef]
+    simp [div_eq_mul_inv]
+  have hχne : ∀ g : Γ ℚ, ((χ g : k)) ≠ 0 := fun g => Units.ne_zero (χ g)
+  have hagree : ∀ g : Γ ℚ, η g = 1 ↔ (ψ g : k) = (χ g : k) := by
+    intro g
+    constructor
+    · intro h
+      have h2 : ψ g / χ g = 1 := h
+      exact congrArg Units.val (div_eq_one.mp h2)
+    · intro h
+      show ψ g / χ g = 1
+      rw [Units.ext h, div_self']
+  -- the open normal kernel subgroup of `ρ`
+  let Kρ : Subgroup (Γ ℚ) :=
+    { carrier := {g | ρ g = 1}
+      one_mem' := map_one ρ
+      mul_mem' := by
+        intro a b ha hb
+        show ρ (a * b) = 1
+        rw [map_mul, ha, hb, mul_one]
+      inv_mem' := by
+        intro a ha
+        show ρ a⁻¹ = 1
+        have h1 : ρ a⁻¹ * ρ a = 1 := by
+          rw [← map_mul, inv_mul_cancel, map_one]
+        rwa [ha, mul_one] at h1 }
+  have hKρ_open : IsOpen (Kρ : Set (Γ ℚ)) :=
+    isOpen_setOf_galoisRep_eq_one ρ hfinV
+  have hKρ_normal : Kρ.Normal := by
+    refine ⟨fun n hn g => ?_⟩
+    show ρ (g * n * g⁻¹) = 1
+    have hn' : ρ n = 1 := hn
+    rw [map_mul, map_mul, hn', mul_one, ← map_mul, mul_inv_cancel, map_one]
+  have hηKρ : ∀ g ∈ Kρ, η g = 1 := by
+    intro g hg
+    obtain ⟨hψ1, hχ1, -⟩ := hker g hg
+    exact (hagree g).mpr (by rw [hψ1, hχ1])
+  have hηopen : IsOpen (η.ker : Set (Γ ℚ)) :=
+    Subgroup.isOpen_mono
+      (fun g hg => MonoidHom.mem_ker.mpr (hηKρ g hg)) hKρ_open
+  -- `ψ` and `χ` are unramified at `2`, so `η` is unramified outside `3`
+  have hχ2 := quotCharacter_unramified_at_two V hV hρ W₀ χ hW₀fr hstable hχ
+  have hψ2 := subCharacter_unramified_at_two V hV hρ W₀ hW₀fr hstable ψ hψ χ hχ
+  have hηunr : ∀ (q : ℕ) (hq : q.Prime), q ≠ 3 →
+      ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+        η (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1 := by
+    intro q hq hq3 σ hσ
+    by_cases hq2 : q = 2
+    · subst hq2
+      have hχ1 := hχ2 hσ
+      have hψ1 := hψ2 hσ
+      rw [MonoidHom.mem_ker] at hχ1 hψ1
+      have hψu : ψ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1 := hψ1
+      have hχu : χ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1 := hχ1
+      exact (hagree _).mpr (by rw [hψu, hχu])
+    · obtain ⟨hψ1, hχ1, -⟩ := hunr q hq hq2 hq3 σ hσ
+      exact (hagree _).mpr (by rw [hψ1, hχ1])
+  -- the procyclic inertia image at `3`: a generator `ε` with `ε² = 1`
+  obtain ⟨t, htmem, hsq, hgen⟩ := exists_localInertia_three_generator
+    (fun a ha => units_eq_one_of_pow_three_eq_one h3k a ha) η hηopen
+  set ε : kˣ := η (Field.absoluteGaloisGroup.map (algebraMap ℚ
+    (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) t)
+  -- Minkowski on the quotient by `⟨ε⟩` confines the image of `η`
+  have hS : ∀ g : Γ ℚ, η g ∈ Subgroup.zpowers ε := by
+    set π : kˣ →* kˣ ⧸ Subgroup.zpowers ε :=
+      QuotientGroup.mk' (Subgroup.zpowers ε)
+    have hπε : π ε = 1 := (QuotientGroup.eq_one_iff ε).mpr
+      (Subgroup.mem_zpowers ε)
+    have hle : Kρ ≤ (π.comp η).ker := by
+      intro g' hg'
+      rw [MonoidHom.mem_ker, MonoidHom.comp_apply, hηKρ g' hg', map_one]
+    have hopen' : IsOpen (((π.comp η).ker : Subgroup (Γ ℚ)) : Set (Γ ℚ)) :=
+      Subgroup.isOpen_mono hle hKρ_open
+    have hunram : ∀ (q : ℕ) (hq : q.Prime),
+        localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat ≤
+          ((π.comp η).comp (Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom).ker := by
+      intro q hq σ hσ
+      rw [MonoidHom.mem_ker]
+      show π (η ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))) σ)) = 1
+      by_cases hq3 : q = 3
+      · subst hq3
+        obtain ⟨m, hm⟩ := hgen σ hσ
+        have hm' : η ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat))) σ) = ε ^ m := hm
+        rw [hm', map_pow, hπε, one_pow]
+      · rw [hηunr q hq hq3 σ hσ, map_one]
+    have htriv := minkowski_character_trivial (π.comp η) hopen' hunram
+    intro g
+    have hg1 : π (η g) = 1 := by
+      have h : (π.comp η) g = 1 := by rw [htriv]; rfl
+      rwa [MonoidHom.comp_apply] at h
+    exact (QuotientGroup.eq_one_iff (η g)).mp hg1
+  by_cases hε1 : ε = 1
+  · -- `ε = 1`: `η = 1` globally, `b` is a global additive character
+    have hη1 : ∀ g : Γ ℚ, η g = 1 := by
+      intro g
+      obtain ⟨m, hm⟩ := Subgroup.mem_zpowers_iff.mp (hS g)
+      rw [← hm, hε1, one_zpow]
+    set B : Γ ℚ →* Multiplicative k :=
+      MonoidHom.mk' (fun g => Multiplicative.ofAdd (b g))
+        (fun g h => by
+          rw [show b (g * h) = b g + b h from
+            hbadd g h ((hagree g).mp (hη1 g)) ((hagree h).mp (hη1 h))]
+          rfl)
+    have hBKρ : Kρ ≤ B.ker := by
+      intro g hg
+      rw [MonoidHom.mem_ker]
+      show Multiplicative.ofAdd (b g) = 1
+      rw [(hker g hg).2.2]
+      rfl
+    have hBopen : IsOpen (B.ker : Set (Γ ℚ)) :=
+      Subgroup.isOpen_mono hBKρ hKρ_open
+    have hB2tf : ∀ a : Multiplicative k, a ^ 2 = 1 → a = 1 := by
+      intro a ha
+      rw [pow_two] at ha
+      have hx : a.toAdd + a.toAdd = 0 := by
+        have h := congrArg Multiplicative.toAdd ha
+        rwa [toAdd_mul, toAdd_one] at h
+      have hx3 : a.toAdd + a.toAdd + a.toAdd = 0 := by
+        calc a.toAdd + a.toAdd + a.toAdd = (3 : k) * a.toAdd := by ring
+          _ = 0 := by rw [h3k, zero_mul]
+      have hx0 : a.toAdd = 0 := by linear_combination hx3 - hx
+      have h1 : Multiplicative.ofAdd a.toAdd = Multiplicative.ofAdd 0 :=
+        congrArg Multiplicative.ofAdd hx0
+      simpa using h1
+    have hB2 := localInertia_two_eq_one_of_no_two_torsion hB2tf B hBopen
+    have hBunram : ∀ (q : ℕ) (hq : q.Prime),
+        localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat ≤
+          (B.comp (Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom).ker := by
+      intro q hq σ hσ
+      rw [MonoidHom.mem_ker]
+      by_cases hq2 : q = 2
+      · subst hq2
+        exact hB2 σ hσ
+      · by_cases hq3 : q = 3
+        · subst hq3
+          have hb0 : b (Field.absoluteGaloisGroup.map (algebraMap ℚ
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat)) σ) = 0 :=
+            h3z σ hσ ((hagree _).mp (hη1 _))
+          show Multiplicative.ofAdd (b ((Field.absoluteGaloisGroup.map
+            (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat))) σ)) = 1
+          rw [hb0]
+          rfl
+        · have hb0 := (hunr q hq hq2 hq3 σ hσ).2.2
+          show Multiplicative.ofAdd (b ((Field.absoluteGaloisGroup.map
+            (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat))) σ)) = 1
+          rw [hb0]
+          rfl
+    have hBtriv := minkowski_character_trivial B hBopen hBunram
+    intro g _
+    have h : B g = 1 := by rw [hBtriv]; rfl
+    have h' : Multiplicative.ofAdd (b g) = Multiplicative.ofAdd 0 := h
+    exact Multiplicative.ofAdd.injective h'
+  · -- `ε = -1`: `η` is the quadratic character of `ℚ(√-3)`;
+    -- the ray-class sorry node finishes
+    have hη2 : ∀ g : Γ ℚ, η g = 1 ∨ (η g : k) = -1 := by
+      intro g
+      obtain ⟨m, hm⟩ := Subgroup.mem_zpowers_iff.mp (hS g)
+      have hsq2 : (η g) ^ 2 = 1 := by
+        rw [← hm]
+        calc (ε ^ m) ^ 2 = (ε ^ 2) ^ m := by
+              rw [← zpow_natCast (ε ^ m) 2, ← zpow_mul, mul_comm,
+                zpow_mul, zpow_natCast]
+          _ = 1 := by rw [hsq, one_zpow]
+      have hval : ((η g : kˣ) : k) ^ 2 = 1 := by
+        rw [← Units.val_pow_eq_pow_val, hsq2, Units.val_one]
+      have hfac : (((η g : kˣ) : k) - 1) * (((η g : kˣ) : k) + 1) = 0 := by
+        linear_combination hval
+      rcases mul_eq_zero.mp hfac with h | h
+      · left
+        exact Units.ext (by rw [Units.val_one]; linear_combination h)
+      · right
+        linear_combination h
+    have hη3 : ¬ (localInertiaGroup
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat ≤
+        (η.comp (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom).ker) := by
+      intro hle
+      apply hε1
+      have h := hle htmem
+      rw [MonoidHom.mem_ker] at h
+      exact h
+    have hbadd' : ∀ g h : Γ ℚ, η g = 1 → η h = 1 → b (g * h) = b g + b h :=
+      fun g h hg hh => hbadd g h ((hagree g).mp hg) ((hagree h).mp hh)
+    have hUker : ∀ g ∈ Kρ, η g = 1 ∧ b g = 0 :=
+      fun g hg => ⟨hηKρ g hg, (hker g hg).2.2⟩
+    have hbunr' : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 →
+        ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+          η (Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1 →
+          b (Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat)) σ) = 0 := by
+      intro q hq hq2 σ hσ hησ
+      by_cases hq3 : q = 3
+      · subst hq3
+        exact h3z σ hσ ((hagree _).mp hησ)
+      · exact (hunr q hq hq2 hq3 σ hσ).2.2
+    have hbconj' : ∀ g h : Γ ℚ, η h = 1 →
+        b (g * h * g⁻¹) = (η g : k) * b h := by
+      intro g h hh
+      have hc := hconj g h ((hagree h).mp hh)
+      rw [hηval g]
+      field_simp
+      linear_combination hc
+    have hzero := quadratic_agreement_additive_character_eq_zero_ray_class
+      η hη2 hη3 hηunr b hbadd' Kρ hKρ_open hKρ_normal hUker hbunr' hbconj'
+    intro g hg
+    exact hzero g ((hagree g).mpr hg)
 
 /-- **The agreement homomorphism is killed by ray-class arithmetic**
 (DECOMPOSED 2026-07-24 into the additive-character sorry node
@@ -11655,132 +12322,6 @@ theorem exists_line_with_unramified_quotCharacter_at_three
       subCharacter_unramified_at_three_of_quot_ramified V hV hρ W₀ hW₀fr
         hstable ψ hψ χ hχ h3⟩
 
-
-set_option backward.isDefEq.respectTransparency false in
-set_option maxHeartbeats 1000000 in
-/-- **Quotient characters of stable lines are killed by the `ℚ_[2]`
-inertia** (DERIVED 2026-07-18 — the tame dichotomy): for any stable
-line `W` of a mod-3 hardly ramified representation with quotient
-character `χ₂`, the inertia at `2` (phrased over `ℚ_[2]`, matching
-`isTameAtTwo`) lies in the kernel of `χ₂` composed with the local
-inclusion. Either `W` maps into the kernel of the tame quotient `π₂` —
-then `χ₂` agrees with the unramified `δ` on inertia — or `π₂` is
-nonzero on `W` — then the sub-character agrees with `δ`, so it is
-trivial on inertia, and `χ₂ = det/χ₁` is trivial there too since the
-determinant is the mod-3 cyclotomic character, unramified at `2`. -/
-theorem quotCharacter_inertia_two_ker
-    {k : Type u} [Finite k] [Field k] [Algebra ℤ_[3] k]
-    [TopologicalSpace k] [DiscreteTopology k]
-    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
-    [Module.Free k V]
-    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
-    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
-    (W : Submodule k V) (χ₂ : Γ ℚ →* kˣ)
-    (hWfr : Module.finrank k W = 1)
-    (hWstable : ∀ g v, v ∈ W → ρ g v ∈ W)
-    (hχ₂ : ∀ g v, W.mkQ (ρ g v) = (χ₂ g : k) • W.mkQ v) :
-    AddSubgroup.inertia
-      ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
-      (Γ ℚ_[2]) ≤
-      (χ₂.comp (Field.absoluteGaloisGroup.map
-        (algebraMap ℚ ℚ_[2])).toMonoidHom).ker := by
-  classical
-  intro σ hσ
-  rw [MonoidHom.mem_ker, MonoidHom.comp_apply]
-  set g' : Γ ℚ := Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) σ
-    with hg'
-  obtain ⟨π₂, hπsurj, δ, hδ⟩ := hρ.isTameAtTwo
-  -- `δ` is trivial on inertia
-  have hδσ : δ σ = 1 := by
-    have h := (hδ σ 0).2.1 hσ
-    rwa [GaloisRep.ker, MonoidHom.mem_ker] at h
-  -- the tame relation at `σ`, rewritten through the global action
-  have hrel : ∀ v : V, π₂ (ρ g' v) = π₂ v := by
-    intro v
-    have h := (hδ σ v).1
-    rw [GaloisRep.map_apply, ← hg'] at h
-    rw [h, hδσ, Module.End.one_apply]
-  -- the goal, at the level of `k`
-  suffices hval : (χ₂ g' : k) = 1 by
-    apply Units.ext
-    simpa using hval
-  by_cases hcase : W ≤ LinearMap.ker π₂
-  · -- `π₂` factors through the quotient, so `χ₂` scales `π₂`
-    obtain ⟨v₀, hv₀⟩ := hπsurj 1
-    have hfac : ∀ v : V, π₂ v =
-        (W.liftQ π₂ hcase) (W.mkQ v) := by
-      intro v
-      rw [Submodule.mkQ_apply, Submodule.liftQ_apply]
-    have h1 : π₂ (ρ g' v₀) = (χ₂ g' : k) * π₂ v₀ := by
-      rw [hfac, hχ₂ g' v₀, map_smul, smul_eq_mul, ← hfac]
-    rw [hrel v₀, hv₀, mul_one] at h1
-    exact h1.symm
-  · -- `π₂` is nonzero on `W`: the sub-character is trivial on inertia
-    obtain ⟨w₀, hw₀W, hw₀ne⟩ : ∃ w ∈ W, π₂ w ≠ 0 := by
-      by_contra hnone
-      push Not at hnone
-      exact hcase fun w hw => LinearMap.mem_ker.mpr (hnone w hw)
-    obtain ⟨χ₁, hχ₁⟩ := exists_subCharacter ρ W hWfr hWstable
-    have hχ₁σ : (χ₁ g' : k) = 1 := by
-      have h1 : π₂ (ρ g' w₀) = (χ₁ g' : k) * π₂ w₀ := by
-        rw [hχ₁ g' w₀ hw₀W, map_smul, smul_eq_mul]
-      rw [hrel w₀] at h1
-      have h2 : ((χ₁ g' : k) - 1) * π₂ w₀ = 0 := by
-        rw [sub_mul, one_mul, ← h1, sub_self]
-      rcases mul_eq_zero.mp h2 with h' | h'
-      · linear_combination h'
-      · exact absurd h' hw₀ne
-    -- the determinant is `χ₁ · χ₂` and also the cyclotomic character
-    have hfr : Module.finrank k V = 2 :=
-      Module.finrank_eq_of_rank_eq (by exact_mod_cast hV)
-    have hQ1 : Module.finrank k (V ⧸ W) = 1 := by
-      have h := Submodule.finrank_quotient_add_finrank W
-      omega
-    have hdet := det_eq_subCharacter_mul_quotCharacter ρ W hWfr hQ1
-      hWstable χ₁ χ₂ hχ₁ hχ₂ g'
-    have hcyc := hρ.det g'
-    rw [GaloisRep.det_apply] at hcyc
-    rw [hcyc] at hdet
-    have hone := cyclotomicCharacter_algebraMap_eq_one_of_inertia_two
-      (k := k) hσ
-    rw [← hg'] at hone
-    rw [hone, hχ₁σ, one_mul] at hdet
-    exact hdet.symm
-
-set_option backward.isDefEq.respectTransparency false in
-/-- **Quotient characters of stable lines are unramified at `2`**
-(DERIVED 2026-07-18 from the `ℚ_[2]` dichotomy and the inertia
-bridge): for any stable line `W` of a mod-3 hardly ramified
-representation with quotient character `χ₂`, the local inertia at the
-place `prime_two` lies in the kernel of `χ₂`. -/
-theorem quotCharacter_unramified_at_two
-    {k : Type u} [Finite k] [Field k] [Algebra ℤ_[3] k]
-    [TopologicalSpace k] [DiscreteTopology k]
-    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
-    [Module.Free k V]
-    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
-    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
-    (W : Submodule k V) (χ₂ : Γ ℚ →* kˣ)
-    (hWfr : Module.finrank k W = 1)
-    (hWstable : ∀ g v, v ∈ W → ρ g v ∈ W)
-    (hχ₂ : ∀ g v, W.mkQ (ρ g v) = (χ₂ g : k) • W.mkQ v) :
-    localInertiaGroup Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat ≤
-      (χ₂.comp (Field.absoluteGaloisGroup.map (algebraMap ℚ
-        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom).ker := by
-  intro σ hσ
-  obtain ⟨τ, hτ, c, heq⟩ := localInertia_two_eq_map_padic hσ
-  have h := quotCharacter_inertia_two_ker V hV hρ W χ₂ hWfr hWstable hχ₂ hτ
-  rw [MonoidHom.mem_ker, MonoidHom.comp_apply] at h ⊢
-  show χ₂ ((Field.absoluteGaloisGroup.map (algebraMap ℚ
-    (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))) σ) = 1
-  rw [heq]
-  -- characters are conjugation-invariant
-  rw [map_mul, map_mul, map_inv]
-  rw [show χ₂ ((Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2])) τ) = 1
-    from h]
-  group
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **The stable line with locally-unramified quotient character at
