@@ -21063,6 +21063,359 @@ theorem exists_kummer_element_of_quadratic_character_ray_class
       · norm_num at h4
       · exact sub_ne_zero_of_ne (Ne.symm hg₀t) h4
 
+/-- **Integers prime to `q` are units of the completed integer ring
+`ℤ_qˆ`** (PROVEN 2026-07-24 — cast-arithmetic helper for the
+unramifiedness bridge `map_localInertiaGroup_fixes_sqrt_neg_three`
+below): if `q ∤ r`, then `r` is a unit of
+`𝒪ᵥ = adicCompletionIntegers ℚ v_q`. A non-unit of the local ring
+`𝒪ᵥ` lies in `𝔪ᵥ = (q)`
+(`maximalIdeal_adicCompletionIntegers_eq_span`), so `r = q·s`; the
+Bézout identity `1 = q·a + r·b` (`Nat.gcd_eq_gcd_ab`, `gcd = 1` since
+`q` is prime and `q ∤ r`) then makes `q` itself a unit, forcing
+`𝔪ᵥ = ⊤`. -/
+theorem isUnit_intCast_adicCompletionIntegers_of_not_dvd
+    {q : ℕ} (hq : q.Prime) (r : ℤ) (hr : ¬ ((q : ℤ) ∣ r)) :
+    IsUnit ((r : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)) := by
+  by_contra hnu
+  have hmem : ((r : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)) ∈
+      IsLocalRing.maximalIdeal
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat) := by
+    rw [IsLocalRing.mem_maximalIdeal, mem_nonunits_iff]
+    exact hnu
+  rw [maximalIdeal_adicCompletionIntegers_eq_span hq,
+    Ideal.mem_span_singleton] at hmem
+  obtain ⟨s, hs⟩ := hmem
+  -- Bézout: `1 = q·a + r·b` over `ℤ`
+  have hcop : Nat.gcd q r.natAbs = 1 :=
+    (Nat.Prime.coprime_iff_not_dvd hq).mpr fun hdvd =>
+      hr (Int.dvd_natAbs.mp (Int.natCast_dvd_natCast.mpr hdvd))
+  have hbez := Nat.gcd_eq_gcd_ab q r.natAbs
+  rw [hcop] at hbez
+  have hbez' : (1 : ℤ) = q * Nat.gcdA q r.natAbs +
+      (r.natAbs : ℤ) * Nat.gcdB q r.natAbs := by exact_mod_cast hbez
+  obtain ⟨b, hZ⟩ : ∃ b : ℤ, (1 : ℤ) = q * Nat.gcdA q r.natAbs + r * b := by
+    rcases Int.natAbs_eq r with habs | habs
+    · refine ⟨Nat.gcdB q r.natAbs, ?_⟩
+      rw [← habs] at hbez'
+      exact hbez'
+    · refine ⟨-Nat.gcdB q r.natAbs, ?_⟩
+      have habs' : ((r.natAbs : ℤ)) = -r := by omega
+      rw [habs'] at hbez'
+      linear_combination hbez'
+  have hO := congrArg (fun t : ℤ =>
+    (t : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)) hZ
+  push_cast at hO
+  rw [hs] at hO
+  have hqu : IsUnit ((q : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)) :=
+    IsUnit.of_mul_eq_one
+      ((Nat.gcdA q r.natAbs : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat) + s * b) (by linear_combination hO.symm)
+  have hqmem : ((q : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)) ∈
+      IsLocalRing.maximalIdeal
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat) := by
+    rw [maximalIdeal_adicCompletionIntegers_eq_span hq]
+    exact Ideal.mem_span_singleton_self _
+  exact (IsLocalRing.maximalIdeal.isMaximal _).ne_top
+    (Ideal.eq_top_of_isUnit_mem _ hqmem hqu)
+
+set_option maxHeartbeats 1000000 in
+/-- **Local inertia away from `3` fixes `√-3`** (PROVEN 2026-07-24 —
+the positive-direction unramifiedness bridge: `ℚ(√-3)/ℚ` is
+unramified at every prime `q ≠ 3`, stated on inertia elements; the
+generic-`q` complement of the ramified-field witness
+`exists_mem_localInertiaGroup_two_moving_sqrt` below): for every
+prime `q ≠ 3` and every `σ` in the local inertia group at `q`, the
+transported global element fixes any square root `x` of `-3`.
+Proof: if instead `σ̃ x = -x`, pass to the local closure `ℚ̄_qᵥ` and
+apply the inertia-membership condition (trivial action modulo the
+maximal ideal `𝔪` of the integral closure of `𝒪ᵥ`) to the INTEGRAL
+element `ω = (x̂-1)/2` (a root of `X² + X + 1`, so integral even at
+`q = 2` — this choice makes the argument uniform in `q`): the
+difference `σω - ω = -x̂` lands in `𝔪`, hence so does its square
+`x̂² = -3`; but `-3` is a unit of `𝒪ᵥ` for every `q ≠ 3`
+(`isUnit_intCast_adicCompletionIntegers_of_not_dvd`), forcing
+`𝔪 = ⊤`. References: Serre, Local Fields I §7; Neukirch ANT II §7. -/
+theorem map_localInertiaGroup_fixes_sqrt_neg_three
+    {q : ℕ} (hq : q.Prime) (hq3 : q ≠ 3)
+    (x : AlgebraicClosure ℚ) (hx : x ^ 2 = ((-3 : ℤ) : AlgebraicClosure ℚ))
+    (σ : Γ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat))
+    (hσ : σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat) :
+    Field.absoluteGaloisGroup.map (algebraMap ℚ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)) σ x = x := by
+  classical
+  set τ : Γ ℚ := Field.absoluteGaloisGroup.map (algebraMap ℚ
+    (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)) σ with hτdef
+  have hτsq : τ x ^ 2 = ((-3 : ℤ) : AlgebraicClosure ℚ) := by
+    rw [← map_pow, hx, map_intCast]
+  have hfac : (τ x - x) * (τ x + x) = 0 := by
+    linear_combination hτsq - hx
+  rcases mul_eq_zero.mp hfac with h | h
+  · exact sub_eq_zero.mp h
+  have hτx : τ x = -x := by linear_combination h
+  exfalso
+  -- transport to the local algebraic closure
+  have hlift := Field.absoluteGaloisGroup.lift_map (algebraMap ℚ
+    (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)) σ x
+  set xh : AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat) :=
+    AlgebraicClosure.map (algebraMap ℚ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)) x with hxhdef
+  have hσxh : σ xh = -xh := by
+    rw [hxhdef, ← hlift, hτx, map_neg]
+  have hxh2 : xh ^ 2 = ((-3 : ℤ) : AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)) := by
+    rw [hxhdef, ← map_pow, hx, map_intCast]
+  -- characteristic zero of the local closure
+  haveI hcz0 : CharZero (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat) :=
+    charZero_of_injective_algebraMap (algebraMap ℚ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)).injective
+  haveI hcz : CharZero (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)) :=
+    charZero_of_injective_algebraMap (algebraMap
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat))).injective
+  -- the integral element `ω = (x̂ - 1)/2`
+  set wo : AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat) := (xh - 1) / 2 with hwodef
+  have h2ne : (2 : AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)) ≠ 0 := two_ne_zero
+  have hwo2 : wo * 2 = xh - 1 := by
+    rw [hwodef, div_mul_cancel₀ _ h2ne]
+  have hworel : wo ^ 2 + wo + 1 = 0 := by
+    have hxh2' : xh ^ 2 = -3 := by rw [hxh2]; push_cast; ring
+    have h4 : (4 : AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)) * (wo ^ 2 + wo + 1) = 0 := by
+      have hexp : (4 : AlgebraicClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) * (wo ^ 2 + wo + 1) =
+          (wo * 2) ^ 2 + (wo * 2) * 2 + 4 := by ring
+      rw [hexp, hwo2]
+      linear_combination hxh2'
+    rcases mul_eq_zero.mp h4 with h' | h'
+    · exact absurd h' (by norm_num)
+    · exact h'
+  have hwoint : IsIntegral (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat) wo := by
+    refine ⟨Polynomial.X ^ 2 + Polynomial.X + 1, by monicity!, ?_⟩
+    rw [Polynomial.eval₂_add, Polynomial.eval₂_add, Polynomial.eval₂_pow,
+      Polynomial.eval₂_X, Polynomial.eval₂_one]
+    exact hworel
+  set W : IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)) := ⟨wo, hwoint⟩ with hWdef
+  -- the inertia condition on `ω`
+  have hWm := (AddSubgroup.mem_inertia.mp hσ) W
+  rw [Submodule.mem_toAddSubgroup] at hWm
+  -- the difference is `-x̂`, so its square is `-3`
+  have hσwo : σ wo - wo = -xh := by
+    rw [hwodef, map_div₀, map_sub, map_one, map_ofNat, hσxh]
+    field_simp
+    ring
+  have hcoe : ((σ • W - W : IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)))).1 = -xh := by
+    rw [show ((σ • W - W : IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)
+        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)))).1 = (σ • W).1 - W.1 from rfl,
+      IntegralClosure.coe_smul]
+    exact hσwo
+  have hsq : (σ • W - W) * (σ • W - W) =
+      algebraMap (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)
+        (IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)
+          (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)))
+        ((-3 : ℤ) : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat) := by
+    apply Subtype.ext
+    have hval : ((σ • W - W) * (σ • W - W) : IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)
+        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))).1 =
+        (σ • W - W).1 * (σ • W - W).1 := rfl
+    rw [hval, hcoe]
+    have hrhs : (algebraMap (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)
+        (IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)
+          (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)))
+        ((-3 : ℤ) : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)).1 =
+        ((-3 : ℤ) : AlgebraicClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) := by
+      have h1 : (algebraMap (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)
+          (IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)
+            (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat)))
+          ((-3 : ℤ) : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)).1 =
+          algebraMap (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)
+            (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat))
+            ((-3 : ℤ) : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat) := rfl
+      rw [h1, map_intCast]
+    rw [hrhs]
+    linear_combination hxh2
+  -- `-3` lands in the maximal ideal …
+  have hmem3 : algebraMap (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)
+      (IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)
+        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)))
+      ((-3 : ℤ) : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat) ∈
+      IsLocalRing.maximalIdeal
+        (IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)
+          (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat))) := by
+    rw [← hsq]
+    exact Ideal.mul_mem_left _ _ hWm
+  -- … but it is a unit there, since `q ≠ 3`
+  have hnd : ¬ ((q : ℤ) ∣ (-3 : ℤ)) := by
+    rw [Int.dvd_neg]
+    intro hdvd
+    have h3 : q ∣ 3 := by exact_mod_cast hdvd
+    exact hq3 ((Nat.prime_dvd_prime_iff_eq hq Nat.prime_three).mp h3)
+  have hunit : IsUnit ((-3 : ℤ) : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat) :=
+    isUnit_intCast_adicCompletionIntegers_of_not_dvd hq (-3) hnd
+  exact (IsLocalRing.maximalIdeal.isMaximal _).ne_top
+    (Ideal.eq_top_of_isUnit_mem _ hmem3
+      (hunit.map (algebraMap (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)
+        (IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)
+          (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat))))))
+
+/-- **Minkowski's discriminant bound at degree `4`** (PROVEN
+2026-07-24 — the quartic arithmetic core of the `ℚ(√-3)` Kummer
+ray-class leaf below, the degree-`4` sibling of the proven
+`minkowski_sextic_discr_bound`): a quartic number field has
+`|d_K| > 27 = 3³`. Mathlib's geometry-of-numbers bound
+`NumberField.abs_discr_ge'` at `n = 4` against the worst signature
+(`2r₂ ≤ 4`, `4/π > 1`) reads
+`|d_K| ≥ 4⁸/((4/π)⁴·(4!)²) > 65536·81/(256·576) = 36 > 27`, already
+with the crude `π > 3`. Note `27` is exactly the tame bound
+`3^{n(1-1/n)}` at `n = 4` for a quartic field unramified outside `3`:
+no such field exists. -/
+theorem minkowski_quartic_discr_bound (K : Type*) [Field K] [NumberField K]
+    (h4 : Module.finrank ℚ K = 4) :
+    (27 : ℤ) < |NumberField.discr K| := by
+  have h := NumberField.abs_discr_ge' K
+  rw [h4] at h
+  have hpi4 : (1 : ℝ) ≤ 4 / Real.pi := by
+    rw [le_div_iff₀ Real.pi_pos]
+    linarith [Real.pi_le_four]
+  have hr2 : 2 * NumberField.InfinitePlace.nrComplexPlaces K ≤ 4 := by
+    have := NumberField.InfinitePlace.card_add_two_mul_card_eq_rank K
+    omega
+  have hmono : (4 / Real.pi) ^ (2 * NumberField.InfinitePlace.nrComplexPlaces K) ≤
+      (4 / Real.pi) ^ (4 : ℕ) :=
+    pow_le_pow_right₀ hpi4 hr2
+  have hfact : ((4 : ℕ).factorial : ℝ) = 24 := by norm_num [Nat.factorial]
+  have key : (27 : ℝ) < ((4 : ℕ) : ℝ) ^ (2 * 4) /
+      ((4 / Real.pi) ^ (2 * NumberField.InfinitePlace.nrComplexPlaces K) *
+        ((4 : ℕ).factorial : ℝ) ^ 2) := by
+    rw [hfact]
+    have h2 : ((4 : ℕ) : ℝ) ^ (2 * 4) = 65536 := by norm_num
+    rw [h2, lt_div_iff₀ (by positivity)]
+    have hb : (4 / Real.pi) ^ (2 * NumberField.InfinitePlace.nrComplexPlaces K) ≤
+        (4 / 3) ^ (4 : ℕ) := by
+      refine hmono.trans ?_
+      gcongr
+      linarith [Real.pi_gt_three]
+    calc (27 : ℝ) *
+          ((4 / Real.pi) ^ (2 * NumberField.InfinitePlace.nrComplexPlaces K) * 24 ^ 2)
+        ≤ 27 * ((4 / 3) ^ (4 : ℕ) * 24 ^ 2) := by gcongr
+      _ < 65536 := by norm_num
+  have hlt : (27 : ℝ) < |(NumberField.discr K : ℝ)| := by
+    calc (27 : ℝ) < _ := key
+      _ ≤ _ := h
+      _ = |(NumberField.discr K : ℝ)| := by push_cast; ring
+  exact_mod_cast hlt
+
+/-- **Minkowski's discriminant bound at degree `8`** (PROVEN
+2026-07-24 — the octic arithmetic core of the `ℚ(√-3)` Kummer
+ray-class leaf below, needed when the quartic Kummer field
+`ℚ(√-3, y)` is not itself Galois and its degree-`8` closure is used
+instead): an octic number field has `|d_K| > 2187 = 3⁷`. Mathlib's
+geometry-of-numbers bound `NumberField.abs_discr_ge'` at `n = 8`
+against the worst signature (`2r₂ ≤ 8`, `4/π > 1`) reads
+`|d_K| ≥ 8¹⁶/((4/π)⁸·(8!)²) > 8¹⁶·3⁸/(4⁸·40320²) ≈ 17330 > 2187`,
+already with the crude `π > 3`. Note `2187` is exactly the tame
+bound `3^{n(1-1/n)}` at `n = 8` for an octic field unramified outside
+`3`: no such field exists. -/
+theorem minkowski_octic_discr_bound (K : Type*) [Field K] [NumberField K]
+    (h8 : Module.finrank ℚ K = 8) :
+    (2187 : ℤ) < |NumberField.discr K| := by
+  have h := NumberField.abs_discr_ge' K
+  rw [h8] at h
+  have hpi4 : (1 : ℝ) ≤ 4 / Real.pi := by
+    rw [le_div_iff₀ Real.pi_pos]
+    linarith [Real.pi_le_four]
+  have hr2 : 2 * NumberField.InfinitePlace.nrComplexPlaces K ≤ 8 := by
+    have := NumberField.InfinitePlace.card_add_two_mul_card_eq_rank K
+    omega
+  have hmono : (4 / Real.pi) ^ (2 * NumberField.InfinitePlace.nrComplexPlaces K) ≤
+      (4 / Real.pi) ^ (8 : ℕ) :=
+    pow_le_pow_right₀ hpi4 hr2
+  have hfact : ((8 : ℕ).factorial : ℝ) = 40320 := by norm_num [Nat.factorial]
+  have key : (2187 : ℝ) < ((8 : ℕ) : ℝ) ^ (2 * 8) /
+      ((4 / Real.pi) ^ (2 * NumberField.InfinitePlace.nrComplexPlaces K) *
+        ((8 : ℕ).factorial : ℝ) ^ 2) := by
+    rw [hfact]
+    have h2 : ((8 : ℕ) : ℝ) ^ (2 * 8) = 281474976710656 := by norm_num
+    rw [h2, lt_div_iff₀ (by positivity)]
+    have hb : (4 / Real.pi) ^ (2 * NumberField.InfinitePlace.nrComplexPlaces K) ≤
+        (4 / 3) ^ (8 : ℕ) := by
+      refine hmono.trans ?_
+      gcongr
+      linarith [Real.pi_gt_three]
+    calc (2187 : ℝ) *
+          ((4 / Real.pi) ^ (2 * NumberField.InfinitePlace.nrComplexPlaces K) * 40320 ^ 2)
+        ≤ 2187 * ((4 / 3) ^ (8 : ℕ) * 40320 ^ 2) := by gcongr
+      _ < 281474976710656 := by norm_num
+  have hlt : (2187 : ℝ) < |(NumberField.discr K : ℝ)| := by
+    calc (2187 : ℝ) < _ := key
+      _ ≤ _ := h
+      _ = |(NumberField.discr K : ℝ)| := by push_cast; ring
+  exact_mod_cast hlt
+
+set_option maxHeartbeats 1600000 in
 /-- **A square root over `ℚ(√-3)` unramified outside `3` is rational
 over `ℚ(√-3)` — the `d = -3` ray-class-triviality leaf** (sorry node,
 created 2026-07-24 as leaf (ii) of the decomposition of
@@ -21133,7 +21486,555 @@ theorem kummer_element_fixed_of_unramified_outside_three_neg_three
           (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
             hq.toHeightOneSpectrumRingOfIntegersRat)) σ * c⁻¹) y = y) :
     ∀ g : Γ ℚ, θ' g = 1 → g y = y := by
-  sorry
+  classical
+  by_contra hcon
+  push Not at hcon
+  obtain ⟨g₀, hg₀H, hg₀y⟩ := hcon
+  -- application bookkeeping in `Γ ℚ`
+  have hone : ∀ t : AlgebraicClosure ℚ, (1 : Γ ℚ) t = t := fun _ => rfl
+  have hmulapp : ∀ (a b : Γ ℚ) (t : AlgebraicClosure ℚ), (a * b) t = a (b t) :=
+    fun _ _ _ => rfl
+  have hinvapp : ∀ (c : Γ ℚ) (t : AlgebraicClosure ℚ), c (c⁻¹ t) = t := by
+    intro c t
+    have h := hmulapp c c⁻¹ t
+    rw [mul_inv_cancel] at h
+    exact h.symm.trans (hone t)
+  have hinvapp2 : ∀ (c : Γ ℚ) (t : AlgebraicClosure ℚ), c⁻¹ (c t) = t := by
+    intro c t
+    have h := hmulapp c⁻¹ c t
+    rw [inv_mul_cancel] at h
+    exact h.symm.trans (hone t)
+  -- nonvanishing of the two roots
+  have hx0 : x ≠ 0 := by
+    intro h0
+    rw [h0] at hx
+    have h1 : ((-3 : ℤ) : AlgebraicClosure ℚ) = 0 := by rw [← hx]; ring
+    push_cast at h1
+    have h2 : (3 : AlgebraicClosure ℚ) = 0 := by linear_combination -h1
+    norm_num at h2
+  have hy0 : y ≠ 0 := by
+    intro h0
+    apply hg₀y
+    rw [h0, map_zero]
+  have hneg_ne : ∀ t : AlgebraicClosure ℚ, t ≠ 0 → ¬(-t = t) := by
+    intro t ht h
+    apply ht
+    have h2 : (2 : AlgebraicClosure ℚ) * t = 0 := by linear_combination -h
+    rcases mul_eq_zero.mp h2 with h' | h'
+    · norm_num at h'
+    · exact h'
+  -- sign dichotomies for conjugates of `x` and `y`
+  have hxsign : ∀ c : Γ ℚ, c x = x ∨ c x = -x := by
+    intro c
+    have h2 : (c x) ^ 2 = x ^ 2 := by rw [← map_pow, hx, map_intCast]
+    have hfac : (c x - x) * (c x + x) = 0 := by linear_combination h2
+    rcases mul_eq_zero.mp hfac with h | h
+    · exact Or.inl (sub_eq_zero.mp h)
+    · exact Or.inr (by linear_combination h)
+  have hsign : ∀ g : Γ ℚ, θ' g = 1 → g y = y ∨ g y = -y := by
+    intro g hg
+    have h2 : (g y) ^ 2 = y ^ 2 := by rw [← map_pow]; exact hy2 g hg
+    have hfac : (g y - y) * (g y + y) = 0 := by linear_combination h2
+    rcases mul_eq_zero.mp hfac with h | h
+    · exact Or.inl (sub_eq_zero.mp h)
+    · exact Or.inr (by linear_combination h)
+  have hg₀yneg : g₀ y = -y := (hsign g₀ hg₀H).resolve_left hg₀y
+  -- the Galois package on `ℚ̄/ℚ`
+  haveI halgQ : Algebra.IsAlgebraic ℚ (AlgebraicClosure ℚ) :=
+    AlgebraicClosure.isAlgebraic ℚ
+  haveI hacQ : IsAlgClosure ℚ (AlgebraicClosure ℚ) := ⟨inferInstance, halgQ⟩
+  haveI hnormQ : Normal ℚ (AlgebraicClosure ℚ) :=
+    IsAlgClosure.normal ℚ (AlgebraicClosure ℚ)
+  haveI hsepQ : Algebra.IsSeparable ℚ (AlgebraicClosure ℚ) :=
+    Algebra.IsAlgebraic.isSeparable_of_perfectField
+  haveI hgalQ : IsGalois ℚ (AlgebraicClosure ℚ) := ⟨⟩
+  -- an automorphism moving `x` (i.e. `√-3 ∉ ℚ`)
+  obtain ⟨c₀, hc₀x⟩ : ∃ c : Γ ℚ, c x = -x := by
+    by_contra hall
+    push Not at hall
+    have hfix : ∀ c : Γ ℚ, c x = x := fun c => (hxsign c).resolve_right (hall c)
+    have hbot : x ∈ (⊥ : IntermediateField ℚ (AlgebraicClosure ℚ)) :=
+      (InfiniteGalois.mem_bot_iff_fixed x).mpr hfix
+    obtain ⟨r, hr⟩ := IntermediateField.mem_bot.mp hbot
+    have hr2 : r ^ 2 = -3 := by
+      apply (algebraMap ℚ (AlgebraicClosure ℚ)).injective
+      rw [map_pow, hr, hx, map_neg, map_ofNat]
+      push_cast
+      ring
+    nlinarith [sq_nonneg r, hr2]
+  have hc₀invx : c₀⁻¹ x = -x := by
+    have h := congrArg (⇑c₀⁻¹) hc₀x
+    rw [hinvapp2, map_neg] at h
+    linear_combination h
+  have hθc₀ : θ' c₀ ≠ 1 := by
+    intro h1
+    have h2 := (hθ'x c₀).mp h1
+    rw [hc₀x] at h2
+    exact hneg_ne x hx0 h2
+  -- the second square root `y₁ = c₀ y` (a root of the conjugate of `y²`)
+  set y₁ : AlgebraicClosure ℚ := c₀ y with hy₁def
+  have hy₁0 : y₁ ≠ 0 := by
+    intro h0
+    apply hy0
+    have h := congrArg (⇑c₀⁻¹) h0
+    rw [hy₁def, hinvapp2, map_zero] at h
+    exact h
+  -- classification of the conjugates of `y` and `y₁`
+  have hyc : ∀ c : Γ ℚ, c y = y ∨ c y = -y ∨ c y = y₁ ∨ c y = -y₁ := by
+    intro c
+    rcases hxsign c with hcx | hcx
+    · rcases hsign c ((hθ'x c).mpr hcx) with h | h
+      · exact Or.inl h
+      · exact Or.inr (Or.inl h)
+    · have hθ1 : θ' (c₀⁻¹ * c) = 1 := by
+        apply (hθ'x _).mpr
+        show c₀⁻¹ (c x) = x
+        rw [hcx, map_neg, hc₀invx, neg_neg]
+      have h3 : c₀⁻¹ (c (y ^ 2)) = y ^ 2 := hy2 _ hθ1
+      have h4 := congrArg (⇑c₀) h3
+      rw [hinvapp] at h4
+      have h5 : (c y) ^ 2 = y₁ ^ 2 := by
+        rw [← map_pow, h4, map_pow, ← hy₁def]
+      have hfac2 : (c y - y₁) * (c y + y₁) = 0 := by linear_combination h5
+      rcases mul_eq_zero.mp hfac2 with h | h
+      · exact Or.inr (Or.inr (Or.inl (sub_eq_zero.mp h)))
+      · exact Or.inr (Or.inr (Or.inr (by linear_combination h)))
+  have hy₁sq : ∀ g : Γ ℚ, g x = x → g y₁ = y₁ ∨ g y₁ = -y₁ := by
+    intro g hgx
+    have hθ1 : θ' (c₀⁻¹ * g * c₀) = 1 := by
+      apply (hθ'x _).mpr
+      show c₀⁻¹ (g (c₀ x)) = x
+      rw [hc₀x, map_neg, hgx, map_neg, hc₀invx, neg_neg]
+    have h3 : c₀⁻¹ (g (c₀ (y ^ 2))) = y ^ 2 := hy2 _ hθ1
+    have h4 := congrArg (⇑c₀) h3
+    rw [hinvapp] at h4
+    have h6 : y₁ ^ 2 = c₀ (y ^ 2) := by rw [hy₁def, map_pow]
+    have h5 : (g y₁) ^ 2 = y₁ ^ 2 := by
+      rw [← map_pow, h6, h4]
+    have hfac2 : (g y₁ - y₁) * (g y₁ + y₁) = 0 := by linear_combination h5
+    rcases mul_eq_zero.mp hfac2 with h | h
+    · exact Or.inl (sub_eq_zero.mp h)
+    · exact Or.inr (by linear_combination h)
+  have hy₁c : ∀ c : Γ ℚ, c y₁ = y ∨ c y₁ = -y ∨ c y₁ = y₁ ∨ c y₁ = -y₁ := by
+    intro c
+    have h : c y₁ = (c * c₀) y := by rw [hy₁def]; exact (hmulapp c c₀ y).symm
+    rw [h]
+    exact hyc (c * c₀)
+  -- the quartic-or-octic Kummer field `L = ℚ(x, y, y₁)`
+  set L : IntermediateField ℚ (AlgebraicClosure ℚ) :=
+    IntermediateField.adjoin ℚ {x, y, y₁} with hLdef
+  have hxL : x ∈ L := IntermediateField.subset_adjoin ℚ _ (by simp)
+  have hyL : y ∈ L := IntermediateField.subset_adjoin ℚ _ (by simp)
+  have hy₁L : y₁ ∈ L := IntermediateField.subset_adjoin ℚ _ (by simp)
+  -- its fixing subgroup, as an explicit subgroup of `Γ ℚ`
+  set KL : Subgroup (Γ ℚ) :=
+    { carrier := {g : Γ ℚ | g x = x ∧ g y = y ∧ g y₁ = y₁}
+      one_mem' := ⟨hone x, ⟨hone y, hone y₁⟩⟩
+      mul_mem' := fun {a b} ha hb =>
+        ⟨by rw [hmulapp, hb.1, ha.1], by rw [hmulapp, hb.2.1, ha.2.1],
+          by rw [hmulapp, hb.2.2, ha.2.2]⟩
+      inv_mem' := fun {a} ha =>
+        ⟨(congrArg (⇑a⁻¹) ha.1).symm.trans (hinvapp2 a x),
+          (congrArg (⇑a⁻¹) ha.2.1).symm.trans (hinvapp2 a y),
+          (congrArg (⇑a⁻¹) ha.2.2).symm.trans (hinvapp2 a y₁)⟩ } with hKLdef
+  have hmemKL : ∀ g : Γ ℚ, g ∈ KL ↔ (g x = x ∧ g y = y ∧ g y₁ = y₁) :=
+    fun _ => Iff.rfl
+  have hfixKL : L.fixingSubgroup = KL := by
+    apply le_antisymm
+    · intro g hg
+      have h := (IntermediateField.mem_fixingSubgroup_iff L g).mp hg
+      exact (hmemKL g).mpr ⟨h x hxL, h y hyL, h y₁ hy₁L⟩
+    · intro g hg
+      obtain ⟨hgx, hgy, hgy₁⟩ := (hmemKL g).mp hg
+      refine (IntermediateField.mem_fixingSubgroup_iff L g).mpr ?_
+      intro t ht
+      rw [hLdef] at ht
+      induction ht using IntermediateField.adjoin_induction with
+      | mem u hu =>
+        simp only [Set.mem_insert_iff, Set.mem_singleton_iff] at hu
+        rcases hu with rfl | rfl | rfl
+        · exact hgx
+        · exact hgy
+        · exact hgy₁
+      | algebraMap r => exact g.commutes r
+      | add a b _ _ ha hb => rw [map_add, ha, hb]
+      | inv a _ ha => rw [map_inv₀, ha]
+      | mul a b _ _ ha hb => rw [map_mul, ha, hb]
+  -- normality of the fixing subgroup (the generator set is Galois-stable)
+  haveI hKLnormal : KL.Normal := by
+    constructor
+    intro g hg c
+    obtain ⟨hgx, hgy, hgy₁⟩ := (hmemKL g).mp hg
+    refine (hmemKL _).mpr ⟨?_, ?_, ?_⟩
+    · have h1 : g (c⁻¹ x) = c⁻¹ x := by
+        rcases hxsign c⁻¹ with h | h <;> rw [h]
+        · exact hgx
+        · rw [map_neg, hgx]
+      show c (g (c⁻¹ x)) = x
+      rw [h1, hinvapp]
+    · have h1 : g (c⁻¹ y) = c⁻¹ y := by
+        rcases hyc c⁻¹ with h | h | h | h <;> rw [h]
+        · exact hgy
+        · rw [map_neg, hgy]
+        · exact hgy₁
+        · rw [map_neg, hgy₁]
+      show c (g (c⁻¹ y)) = y
+      rw [h1, hinvapp]
+    · have h1 : g (c⁻¹ y₁) = c⁻¹ y₁ := by
+        rcases hy₁c c⁻¹ with h | h | h | h <;> rw [h]
+        · exact hgy
+        · rw [map_neg, hgy]
+        · exact hgy₁
+        · rw [map_neg, hgy₁]
+      show c (g (c⁻¹ y₁)) = y₁
+      rw [h1, hinvapp]
+  -- the index chain `[Γ : Γ_L] = [Γ : H]·[H : Kc]·[Kc : Γ_L] ∈ {4, 8}`
+  have hind2 : θ'.ker.index = 2 := by
+    rw [Subgroup.index_ker]
+    have hdvd : Nat.card θ'.range ∣ 2 := by
+      have h := Subgroup.card_subgroup_dvd_card θ'.range
+      simpa [Nat.card_eq_fintype_card] using h
+    have hnt : Nontrivial θ'.range := by
+      rw [Subgroup.nontrivial_iff_exists_ne_one]
+      exact ⟨θ' c₀, ⟨c₀, rfl⟩, hθc₀⟩
+    have h2le : 1 < Nat.card θ'.range :=
+      Finite.one_lt_card_iff_nontrivial.mpr hnt
+    rcases Nat.prime_two.eq_one_or_self_of_dvd _ hdvd with h | h
+    · omega
+    · exact h
+  set Kc : Subgroup (Γ ℚ) :=
+    { carrier := {g : Γ ℚ | g x = x ∧ g y = y}
+      one_mem' := ⟨hone x, hone y⟩
+      mul_mem' := fun {a b} ha hb =>
+        ⟨by rw [hmulapp, hb.1, ha.1], by rw [hmulapp, hb.2, ha.2]⟩
+      inv_mem' := fun {a} ha =>
+        ⟨(congrArg (⇑a⁻¹) ha.1).symm.trans (hinvapp2 a x),
+          (congrArg (⇑a⁻¹) ha.2).symm.trans (hinvapp2 a y)⟩ } with hKcdef
+  have hmemKc : ∀ g : Γ ℚ, g ∈ Kc ↔ (g x = x ∧ g y = y) := fun g => Iff.rfl
+  have hKcH : Kc ≤ θ'.ker := fun g hg =>
+    MonoidHom.mem_ker.mpr ((hθ'x g).mpr ((hmemKc g).mp hg).1)
+  have hg₀ker : g₀ ∈ θ'.ker := MonoidHom.mem_ker.mpr hg₀H
+  have hrel1 : Kc.relIndex θ'.ker = 2 := by
+    show (Kc.subgroupOf θ'.ker).index = 2
+    rw [Subgroup.index_eq_two_iff]
+    refine ⟨⟨g₀, hg₀ker⟩, fun b => ?_⟩
+    have hbθ : θ' (b : Γ ℚ) = 1 := MonoidHom.mem_ker.mp b.2
+    have hbx : (b : Γ ℚ) x = x := (hθ'x _).mp hbθ
+    have hcoe : ((b * ⟨g₀, hg₀ker⟩ : θ'.ker) : Γ ℚ) = (b : Γ ℚ) * g₀ := rfl
+    rcases hsign (b : Γ ℚ) hbθ with hby | hby
+    · refine Or.inr ⟨?_, ?_⟩
+      · rw [Subgroup.mem_subgroupOf, hmemKc]
+        exact ⟨hbx, hby⟩
+      · rw [Subgroup.mem_subgroupOf, hmemKc]
+        rintro ⟨-, hy'⟩
+        rw [hcoe, hmulapp, hg₀yneg, map_neg, hby] at hy'
+        exact hneg_ne y hy0 hy'
+    · refine Or.inl ⟨?_, ?_⟩
+      · rw [Subgroup.mem_subgroupOf, hmemKc]
+        constructor
+        · rw [hcoe, hmulapp, (hθ'x g₀).mp hg₀H]
+          exact hbx
+        · rw [hcoe, hmulapp, hg₀yneg, map_neg, hby, neg_neg]
+      · rw [Subgroup.mem_subgroupOf, hmemKc]
+        rintro ⟨-, hy'⟩
+        rw [hby] at hy'
+        exact hneg_ne y hy0 hy'
+  have hKcindex : Kc.index = 4 := by
+    have h := Subgroup.relIndex_mul_index hKcH
+    rw [hrel1, hind2] at h
+    omega
+  have hKLleKc : KL ≤ Kc := fun g hg =>
+    (hmemKc g).mpr ⟨((hmemKL g).mp hg).1, ((hmemKL g).mp hg).2.1⟩
+  have hn4or8 : KL.index = 4 ∨ KL.index = 8 := by
+    by_cases hall : ∀ g : Γ ℚ, g ∈ Kc → g y₁ = y₁
+    · left
+      have heq : KL = Kc :=
+        le_antisymm hKLleKc (fun g hg =>
+          (hmemKL g).mpr ⟨((hmemKc g).mp hg).1, ((hmemKc g).mp hg).2,
+            hall g hg⟩)
+      rw [heq]
+      exact hKcindex
+    · right
+      push Not at hall
+      obtain ⟨g₂, hg₂Kc, hg₂y₁⟩ := hall
+      have hg₂x : g₂ x = x := ((hmemKc g₂).mp hg₂Kc).1
+      have hg₂y : g₂ y = y := ((hmemKc g₂).mp hg₂Kc).2
+      have hg₂neg : g₂ y₁ = -y₁ := (hy₁sq g₂ hg₂x).resolve_left hg₂y₁
+      have hrel2 : KL.relIndex Kc = 2 := by
+        show (KL.subgroupOf Kc).index = 2
+        rw [Subgroup.index_eq_two_iff]
+        refine ⟨⟨g₂, hg₂Kc⟩, fun b => ?_⟩
+        have hbx : (b : Γ ℚ) x = x := ((hmemKc _).mp b.2).1
+        have hby : (b : Γ ℚ) y = y := ((hmemKc _).mp b.2).2
+        have hcoe : ((b * ⟨g₂, hg₂Kc⟩ : Kc) : Γ ℚ) = (b : Γ ℚ) * g₂ := rfl
+        rcases hy₁sq (b : Γ ℚ) hbx with hb1 | hb1
+        · refine Or.inr ⟨?_, ?_⟩
+          · rw [Subgroup.mem_subgroupOf]
+            exact (hmemKL _).mpr ⟨hbx, hby, hb1⟩
+          · rw [Subgroup.mem_subgroupOf]
+            intro hmem
+            have hy' := ((hmemKL _).mp hmem).2.2
+            rw [hcoe, hmulapp, hg₂neg, map_neg, hb1] at hy'
+            exact hneg_ne y₁ hy₁0 hy'
+        · refine Or.inl ⟨?_, ?_⟩
+          · rw [Subgroup.mem_subgroupOf]
+            refine (hmemKL _).mpr ⟨?_, ?_, ?_⟩
+            · rw [hcoe, hmulapp, hg₂x]
+              exact hbx
+            · rw [hcoe, hmulapp, hg₂y]
+              exact hby
+            · rw [hcoe, hmulapp, hg₂neg, map_neg, hb1, neg_neg]
+          · rw [Subgroup.mem_subgroupOf]
+            intro hmem
+            have hy' := ((hmemKL _).mp hmem).2.2
+            rw [hb1] at hy'
+            exact hneg_ne y₁ hy₁0 hy'
+      have h := Subgroup.relIndex_mul_index hKLleKc
+      rw [hrel2, hKcindex] at h
+      omega
+  -- the finite Galois number field `L` and its degree
+  have hKLclosed : IsClosed (KL : Set (Γ ℚ)) := by
+    rw [← hfixKL]
+    exact InfiniteGalois.fixingSubgroup_isClosed L
+  haveI hfd : FiniteDimensional ℚ L := by
+    rw [hLdef]
+    exact IntermediateField.finiteDimensional_adjoin
+      fun t _ => (halgQ.isAlgebraic t).isIntegral
+  haveI : NumberField L := ⟨⟩
+  haveI hgalL : IsGalois ℚ L := (InfiniteGalois.normal_iff_isGalois L).mp
+    (by rw [hfixKL]; exact hKLnormal)
+  have hLfix : IntermediateField.fixedField (E := AlgebraicClosure ℚ) KL = L := by
+    rw [← hfixKL]
+    exact InfiniteGalois.fixedField_fixingSubgroup L
+  have hcardQ : Nat.card ((Γ ℚ) ⧸ KL) = Module.finrank ℚ L := by
+    have e1 := InfiniteGalois.normalAutEquivQuotient
+      (⟨KL, hKLclosed⟩ : ClosedSubgroup (Γ ℚ))
+    have hcard1 : Nat.card (L ≃ₐ[ℚ] L) = Module.finrank ℚ L :=
+      IsGalois.card_aut_eq_finrank ℚ L
+    have hc2 : Nat.card ((Γ ℚ) ⧸ KL) =
+        Nat.card ((IntermediateField.fixedField (E := AlgebraicClosure ℚ)
+          KL) ≃ₐ[ℚ]
+          (IntermediateField.fixedField (E := AlgebraicClosure ℚ) KL)) :=
+      Nat.card_congr e1.toEquiv
+    have hc3 := congrArg (fun (X : IntermediateField ℚ (AlgebraicClosure ℚ)) =>
+      Nat.card (X ≃ₐ[ℚ] X)) hLfix
+    exact hc2.trans (hc3.trans hcard1)
+  have hindQ : Nat.card ((Γ ℚ) ⧸ KL) = KL.index :=
+    (Subgroup.index_eq_card _).symm
+  have hrank : Module.finrank ℚ L = 4 ∨ Module.finrank ℚ L = 8 := by
+    rw [← hcardQ, hindQ]
+    exact hn4or8
+  -- the quotient homomorphism and the inertia images
+  set w : (Γ ℚ) →* (Γ ℚ) ⧸ KL := QuotientGroup.mk' KL with hwdef
+  have hfixw : L.fixingSubgroup = w.ker := by
+    rw [hwdef, QuotientGroup.ker_mk']
+    exact hfixKL
+  -- every inertia element away from `3` fixes all three generators
+  have hinKL : ∀ (q : ℕ) (hq : q.Prime), q ≠ 3 →
+      ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+      (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))) σ ∈ KL := by
+    intro q hq hq3 σ hσ
+    have hMx : (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))) σ x = x :=
+      map_localInertiaGroup_fixes_sqrt_neg_three hq hq3 x hx σ hσ
+    have hθM : θ' ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))) σ) = 1 :=
+      (hθ'x _).mpr hMx
+    have hMy : (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))) σ y = y := by
+      have h1 := hyunr q hq hq3 1 σ hσ
+      rw [one_mul, inv_one, mul_one] at h1
+      exact h1 hθM
+    have hMy₁ : (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))) σ y₁ = y₁ := by
+      have h1 := hyunr q hq hq3 c₀⁻¹ σ hσ
+      rw [inv_inv] at h1
+      have hθc : θ' (c₀⁻¹ * (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat))) σ * c₀) = 1 := by
+        apply (hθ'x _).mpr
+        show c₀⁻¹ ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat))) σ (c₀ x)) = x
+        rw [hc₀x, map_neg, hMx, map_neg, hc₀invx, neg_neg]
+      have h3 : c₀⁻¹ ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat))) σ (c₀ y)) = y := h1 hθc
+      have h4 := congrArg (⇑c₀) h3
+      rw [hinvapp] at h4
+      rw [← hy₁def] at h4
+      exact h4
+    exact (hmemKL _).mpr ⟨hMx, hMy, hMy₁⟩
+  -- `q ∤ d_L` for every prime `q ≠ 3`
+  haveI := IsIntegralClosure.isIntegral_algebra ℤ
+    (A := NumberField.RingOfIntegers L) L
+  have hno : ∀ (q : ℕ) (hq : q.Prime), q ≠ 3 →
+      ¬ ((q : ℤ) ∣ NumberField.discr L) := by
+    intro q hq hq3
+    have hle : Subgroup.map (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom
+        (localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat)
+        ≤ L.fixingSubgroup := by
+      rw [hfixKL]
+      rintro g ⟨σ, hσ, rfl⟩
+      exact hinKL q hq hq3 σ hσ
+    have hqZ : Prime ((q : ℤ)) := Nat.prime_iff_prime_int.mp hq
+    rw [NumberField.not_dvd_discr_iff_forall_mem L
+      (NumberField.RingOfIntegers L) hqZ]
+    intro P hP hmem
+    haveI := hP
+    exact isUnramifiedAt_of_inertia_le_fixingSubgroup L hq hle P
+      (by exact_mod_cast hmem)
+  -- the image of the inertia at `3` has order dividing `8`
+  haveI hfinQ : Finite ((Γ ℚ) ⧸ KL) := by
+    apply Nat.finite_of_card_ne_zero
+    rw [hindQ]
+    rcases hn4or8 with h | h <;> omega
+  have hcard3 : Nat.card (Subgroup.map w
+      (Subgroup.map (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom
+        (localInertiaGroup Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat))) ∣
+      8 := by
+    have h := Subgroup.card_subgroup_dvd_card (Subgroup.map w
+      (Subgroup.map (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom
+        (localInertiaGroup Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)))
+    refine h.trans ?_
+    rw [hindQ]
+    rcases hn4or8 with h' | h'
+    · rw [h']
+      norm_num
+    · rw [h']
+  -- the `IsGaloisGroup` instance pack for the ideal-inertia dictionary
+  haveI : IsGaloisGroup (L ≃ₐ[ℚ] L) ℤ (NumberField.RingOfIntegers L) := by
+    refine ⟨inferInstance, inferInstance, ?_⟩
+    constructor
+    intro z hz
+    have hfixg : ∀ g : L ≃ₐ[ℚ] L, g (z : L) = (z : L) := fun g =>
+      congrArg (algebraMap (NumberField.RingOfIntegers L) L) (hz g)
+    have hbot : (z : L) ∈ (⊥ : IntermediateField ℚ L) :=
+      (IsGalois.mem_bot_iff_fixed _).mpr hfixg
+    obtain ⟨p, hp⟩ := IntermediateField.mem_bot.mp hbot
+    have hpint : IsIntegral ℤ p := by
+      rw [← isIntegral_algebraMap_iff (B := L)
+        (algebraMap ℚ L).injective, hp]
+      exact z.2
+    obtain ⟨m, hm⟩ := IsIntegrallyClosed.isIntegral_iff.mp hpint
+    refine ⟨m, NumberField.RingOfIntegers.ext ?_⟩
+    show algebraMap (NumberField.RingOfIntegers L) L
+      (algebraMap ℤ (NumberField.RingOfIntegers L) m) = (z : L)
+    rw [← hp, ← hm,
+      ← IsScalarTower.algebraMap_apply ℤ (NumberField.RingOfIntegers L) L,
+      ← IsScalarTower.algebraMap_apply ℤ ℚ L]
+  -- the tame discriminant exponent at `3`: `8·v₃(d_L) ≤ 7·[L:ℚ]`
+  have h3exp : 8 * (NumberField.discr L).natAbs.factorization 3 ≤
+      7 * Module.finrank ℚ L := by
+    refine discr_factorization_le_of_forall_differentIdeal_pow_dvd L 3
+      Nat.prime_three 8 7 ?_
+    intro Q hQprime hQmem d hd
+    haveI := hQprime
+    have hqZ : Prime (((3 : ℕ) : ℤ)) := Nat.prime_iff_prime_int.mp Nat.prime_three
+    have hne : (Ideal.span {((3 : ℕ) : ℤ)} : Ideal ℤ) ≠ ⊥ := by
+      simp only [Ne, Ideal.span_singleton_eq_bot]
+      norm_num
+    haveI hsp : (Ideal.span {((3 : ℕ) : ℤ)} : Ideal ℤ).IsPrime :=
+      (Ideal.span_singleton_prime (by norm_num)).mpr hqZ
+    haveI hlies : Q.LiesOver (Ideal.span {((3 : ℕ) : ℤ)}) :=
+      (Ideal.liesOver_span_iff hQprime.ne_top hqZ).mpr (by exact_mod_cast hQmem)
+    haveI hfinq : Finite (ℤ ⧸ (Ideal.span {((3 : ℕ) : ℤ)} : Ideal ℤ)) :=
+      Ring.HasFiniteQuotients.finiteQuotient hne
+    haveI hmaxZ : (Ideal.span {((3 : ℕ) : ℤ)} : Ideal ℤ).IsMaximal :=
+      hsp.isMaximal_of_ne_bot hne
+    have hsurjZ : Function.Surjective
+        (algebraMap (ℤ ⧸ (Ideal.span {((3 : ℕ) : ℤ)} : Ideal ℤ))
+          ((Ideal.span {((3 : ℕ) : ℤ)} : Ideal ℤ).ResidueField)) :=
+      IsFractionRing.surjective_iff_isField.mpr
+        ((Ideal.Quotient.maximal_ideal_iff_isField_quotient _).mp hmaxZ)
+    haveI : Finite ((Ideal.span {((3 : ℕ) : ℤ)} : Ideal ℤ).ResidueField) :=
+      Finite.of_surjective _ hsurjZ
+    have hcard := Ideal.card_inertia_eq_ramificationIdxIn
+      (G := (L ≃ₐ[ℚ] L)) (Ideal.span {((3 : ℕ) : ℤ)}) Q
+    have hIdvd : Nat.card (Q.inertia (L ≃ₐ[ℚ] L)) ∣ 8 :=
+      inertia_card_dvd_of_card_map_localInertiaGroup_dvd L w hfixw
+        Nat.prime_three Q hQprime hQmem 8 hcard3
+    have he8 : Ideal.ramificationIdx' (Ideal.span {((3 : ℕ) : ℤ)}) Q ∣ 8 := by
+      rw [Ideal.ramificationIdx'_eq_ramificationIdx
+          (Ideal.span {((3 : ℕ) : ℤ)}) Q hne,
+        ← Ideal.ramificationIdxIn_eq_ramificationIdx
+          (Ideal.span {((3 : ℕ) : ℤ)}) Q (L ≃ₐ[ℚ] L), ← hcard]
+      exact hIdvd
+    have htame : ¬ ((3 : ℕ) ∣ Ideal.ramificationIdx'
+        (Ideal.span {((3 : ℕ) : ℤ)}) Q) := by
+      intro h3
+      have h38 : (3 : ℕ) ∣ 8 := h3.trans he8
+      norm_num at h38
+    have hnot := not_pow_ramificationIdx_dvd_differentIdeal L 3 Nat.prime_three
+      Q hQprime hQmem htame
+    have hdlt : d < Ideal.ramificationIdx' (Ideal.span {((3 : ℕ) : ℤ)}) Q := by
+      by_contra hge
+      push Not at hge
+      exact hnot ((pow_dvd_pow Q hge).trans hd)
+    have hele : Ideal.ramificationIdx' (Ideal.span {((3 : ℕ) : ℤ)}) Q ≤ 8 :=
+      Nat.le_of_dvd (by norm_num) he8
+    omega
+  -- assemble `|d_L| ≤ 3^{[L:ℚ]-1}` and contradict Minkowski
+  have hD0 : NumberField.discr L ≠ 0 := NumberField.discr_ne_zero L
+  have hN0 : (NumberField.discr L).natAbs ≠ 0 := Int.natAbs_ne_zero.mpr hD0
+  have hfacQ : ∀ p : ℕ, p.Prime → p ∣ (NumberField.discr L).natAbs → p = 3 := by
+    intro p hp hpN
+    by_contra hne'
+    refine hno p hp hne' ?_
+    have h1 : (((NumberField.discr L).natAbs : ℤ)) ∣ NumberField.discr L := by
+      rw [Int.natCast_natAbs]
+      exact (abs_dvd _ _).mpr dvd_rfl
+    exact dvd_trans (Int.natCast_dvd_natCast.mpr hpN) h1
+  have hsupp : (NumberField.discr L).natAbs.factorization.support ⊆
+      ({3} : Finset ℕ) := by
+    intro p hp
+    rw [Nat.support_factorization] at hp
+    simp [hfacQ p (Nat.prime_of_mem_primeFactors hp)
+      (Nat.dvd_of_mem_primeFactors hp)]
+  have hNeq : (NumberField.discr L).natAbs =
+      3 ^ (NumberField.discr L).natAbs.factorization 3 := by
+    conv_lhs => rw [← Nat.prod_factorization_pow_eq_self hN0]
+    rw [Finsupp.prod_of_support_subset _ hsupp (· ^ ·)
+      (fun i _ => pow_zero i), Finset.prod_singleton]
+  have habs : |NumberField.discr L| = (((NumberField.discr L).natAbs : ℤ)) :=
+    (Int.natCast_natAbs _).symm
+  rcases hrank with hr | hr
+  · -- quartic case: `|d_L| ≤ 27 < 36`
+    rw [hr] at h3exp
+    have hkey : (NumberField.discr L).natAbs ≤ 27 := by
+      calc (NumberField.discr L).natAbs
+          = 3 ^ (NumberField.discr L).natAbs.factorization 3 := hNeq
+        _ ≤ 3 ^ 3 := Nat.pow_le_pow_right (by norm_num) (by omega)
+        _ = 27 := by norm_num
+    have hmink := minkowski_quartic_discr_bound L hr
+    rw [habs] at hmink
+    have hcontra : (27 : ℤ) < 27 :=
+      lt_of_lt_of_le hmink (by exact_mod_cast hkey)
+    exact absurd hcontra (lt_irrefl _)
+  · -- octic case: `|d_L| ≤ 2187 < 17330`
+    rw [hr] at h3exp
+    have hkey : (NumberField.discr L).natAbs ≤ 2187 := by
+      calc (NumberField.discr L).natAbs
+          = 3 ^ (NumberField.discr L).natAbs.factorization 3 := hNeq
+        _ ≤ 3 ^ 7 := Nat.pow_le_pow_right (by norm_num) (by omega)
+        _ = 2187 := by norm_num
+    have hmink := minkowski_octic_discr_bound L hr
+    rw [habs] at hmink
+    have hcontra : (2187 : ℤ) < 2187 :=
+      lt_of_lt_of_le hmink (by exact_mod_cast hkey)
+    exact absurd hcontra (lt_irrefl _)
 
 /-- **A quadratic character of `Γ_{ℚ(√-3)}` unramified outside `3` is
 trivial — the `d = -3` narrow-ray-class core** (DECOMPOSED 2026-07-24
