@@ -4723,8 +4723,8 @@ theorem exists_num_den_integralClosure_of_mem_valuationSubring
   exact absurd hvx hvlt.ne
 
 open scoped Pointwise in
-/-- **One-level inertial lifting** (sorry node, split from the inertia-lifting
-leaf 2026-07-24; the perfectness-free finite-level surjectivity): for finite
+/-- **One-level inertial lifting** (PROVEN 2026-07-24, split from the
+inertia-lifting leaf; the perfectness-free finite-level surjectivity): for finite
 towers `K ⊆ M ⊆ M'` with `M/K` normal and `M'/K` Galois, abstract integral
 closures `Cm`, `Cm'` (opaque carriers, as in
 `ramificationIdx_eq_one_and_isSeparable_of_inertia_fixes_algHom_aux`, to keep
@@ -4764,10 +4764,241 @@ theorem exists_inertial_algEquiv_lift
     ∃ σ' : M' ≃ₐ[K] M',
       (∀ c : Cm', galRestrict R K M' Cm' σ' c - c ∈ 𝔔') ∧
       AlgEquiv.restrictNormalHom M σ' = σ := by
-  sorry
+  classical
+  haveI : IsDomain Cm := (IsIntegralClosure.algebraMap_injective Cm R M).isDomain _
+  haveI : IsDomain Cm' := (IsIntegralClosure.algebraMap_injective Cm' R M').isDomain _
+  haveI : FiniteDimensional M M' := FiniteDimensional.right K M M'
+  haveI : IsGalois M M' := IsGalois.tower_top_of_isGalois K M M'
+  -- the tower `R ⊆ Cm ⊆ Cm'` along the closure map of the inclusion
+  letI : Algebra Cm M' := ((algebraMap M M').comp (algebraMap Cm M)).toAlgebra
+  haveI : IsScalarTower Cm M M' := IsScalarTower.of_algebraMap_eq' rfl
+  letI : Algebra Cm Cm' :=
+    (galRestrict' R Cm Cm' (IsScalarTower.toAlgHom K M M')).toAlgebra
+  haveI : IsScalarTower R Cm Cm' := IsScalarTower.of_algebraMap_eq'
+    ((galRestrict' R Cm Cm' (IsScalarTower.toAlgHom K M M')).comp_algebraMap).symm
+  haveI : IsScalarTower Cm Cm' M' := IsScalarTower.of_algebraMap_eq fun c =>
+    (algebraMap_galRestrict'_apply R Cm Cm' (IsScalarTower.toAlgHom K M M') c).symm
+  haveI : Algebra.IsIntegral R Cm := ⟨fun c => IsIntegralClosure.isIntegral R M c⟩
+  haveI : Algebra.IsIntegral R Cm' := ⟨fun c => IsIntegralClosure.isIntegral R M' c⟩
+  haveI : Algebra.IsIntegral Cm Cm' := Algebra.IsIntegral.tower_top (R := R)
+  haveI : IsScalarTower R Cm M' := IsScalarTower.of_algebraMap_eq fun r => by
+    rw [IsScalarTower.algebraMap_apply R K M', IsScalarTower.algebraMap_apply K M M',
+      IsScalarTower.algebraMap_apply Cm M M', ← IsScalarTower.algebraMap_apply R K M,
+      ← IsScalarTower.algebraMap_apply R Cm M]
+  haveI : IsIntegralClosure Cm' Cm M' := by
+    refine ⟨IsIntegralClosure.algebraMap_injective Cm' R M',
+      fun {x} => ⟨fun hx => ?_, fun ⟨y, hy⟩ => ?_⟩⟩
+    · have hxR : IsIntegral R x := isIntegral_trans (R := R) x hx
+      exact IsIntegralClosure.isIntegral_iff.mp hxR
+    · have hyR : IsIntegral R (algebraMap Cm' M' y) :=
+        (IsIntegralClosure.isIntegral R M' y).algebraMap
+      have hyB : IsIntegral Cm (algebraMap Cm' M' y) := hyR.tower_top
+      rwa [hy] at hyB
+  haveI : IsFractionRing Cm M :=
+    IsIntegralClosure.isFractionRing_of_finite_extension R K M Cm
+  haveI : IsFractionRing Cm' M' :=
+    IsIntegralClosure.isFractionRing_of_finite_extension R K M' Cm'
+  haveI : IsDedekindDomain Cm := IsIntegralClosure.isDedekindDomain R K M Cm
+  -- the two Galois actions on `Cm'`
+  letI actK' : MulSemiringAction (M' ≃ₐ[K] M') Cm' :=
+    IsIntegralClosure.MulSemiringAction R K M' Cm'
+  letI actM : MulSemiringAction (M' ≃ₐ[M] M') Cm' :=
+    IsIntegralClosure.MulSemiringAction Cm M M' Cm'
+  haveI hGGK' : IsGaloisGroup (M' ≃ₐ[K] M') R Cm' :=
+    IsGaloisGroup.of_isFractionRing (M' ≃ₐ[K] M') R Cm' K M'
+  haveI hGGM : IsGaloisGroup (M' ≃ₐ[M] M') Cm Cm' :=
+    IsGaloisGroup.of_isFractionRing (M' ≃ₐ[M] M') Cm Cm' M M'
+  haveI : SMulCommClass (M' ≃ₐ[K] M') R Cm' :=
+    IsGaloisGroup.commutes (G := M' ≃ₐ[K] M') (A := R) (B := Cm')
+  haveI : SMulCommClass (M' ≃ₐ[M] M') Cm Cm' :=
+    IsGaloisGroup.commutes (G := M' ≃ₐ[M] M') (A := Cm) (B := Cm')
+  haveI : Algebra.IsInvariant Cm Cm' (M' ≃ₐ[M] M') :=
+    IsGaloisGroup.isInvariant (G := M' ≃ₐ[M] M') (A := Cm) (B := Cm')
+  haveI h𝔔'prime : 𝔔'.IsPrime := (inferInstance : 𝔔'.IsMaximal).isPrime
+  haveI h𝔔'over : 𝔔'.LiesOver 𝔔 := ⟨h𝔔𝔔'⟩
+  -- smul unfolding and action compatibility
+  have hsmulK' : ∀ (χ : M' ≃ₐ[K] M') (c : Cm'),
+      χ • c = galRestrict R K M' Cm' χ c := fun _ _ => rfl
+  have hact : ∀ (θ : M' ≃ₐ[M] M') (c : Cm'), θ • c = (θ.restrictScalars K) • c := by
+    intro θ c
+    apply IsIntegralClosure.algebraMap_injective Cm' R M'
+    have h1 : algebraMap Cm' M' (θ • c) = θ (algebraMap Cm' M' c) :=
+      algebraMap_galRestrict_apply Cm θ c
+    have h2 : algebraMap Cm' M' ((θ.restrictScalars K) • c) =
+        (θ.restrictScalars K) (algebraMap Cm' M' c) :=
+      algebraMap_galRestrict_apply R (θ.restrictScalars K) c
+    rw [h1, h2]
+    rfl
+  -- membership transport along the closure map
+  have hcomapmem : ∀ c : Cm, algebraMap Cm Cm' c ∈ 𝔔' ↔ c ∈ 𝔔 := by
+    intro c
+    constructor
+    · intro h
+      rw [h𝔔𝔔']
+      exact Ideal.mem_comap.mpr h
+    · intro h
+      rw [h𝔔𝔔'] at h
+      exact Ideal.mem_comap.mp h
+  -- the commuting square: restriction along the closure map
+  have hsquare : ∀ (χ : M' ≃ₐ[K] M') (c : Cm),
+      galRestrict R K M' Cm' χ (algebraMap Cm Cm' c) =
+      algebraMap Cm Cm' (galRestrict R K M Cm (AlgEquiv.restrictNormalHom M χ) c) := by
+    intro χ c
+    apply IsIntegralClosure.algebraMap_injective Cm' R M'
+    have h1 : algebraMap Cm' M' (galRestrict R K M' Cm' χ (algebraMap Cm Cm' c)) =
+        χ (algebraMap M M' (algebraMap Cm M c)) := by
+      rw [algebraMap_galRestrict_apply, ← IsScalarTower.algebraMap_apply Cm Cm' M',
+        IsScalarTower.algebraMap_apply Cm M M']
+    have h2 : algebraMap Cm' M' (algebraMap Cm Cm' (galRestrict R K M Cm
+        (AlgEquiv.restrictNormalHom M χ) c)) =
+        algebraMap M M' ((AlgEquiv.restrictNormalHom M χ) (algebraMap Cm M c)) := by
+      rw [← IsScalarTower.algebraMap_apply Cm Cm' M',
+        IsScalarTower.algebraMap_apply Cm M M', algebraMap_galRestrict_apply]
+    rw [h1, h2]
+    exact (AlgEquiv.restrictNormal_commutes χ M (algebraMap Cm M c)).symm
+  -- `σ` stabilizes `𝔔`
+  have hσQ : ∀ c : Cm, galRestrict R K M Cm σ c ∈ 𝔔 ↔ c ∈ 𝔔 := by
+    intro c
+    have h1 := hσ c
+    constructor
+    · intro h
+      have h2 : c = galRestrict R K M Cm σ c - (galRestrict R K M Cm σ c - c) := by ring
+      rw [h2]
+      exact Ideal.sub_mem _ h h1
+    · intro h
+      have h2 : galRestrict R K M Cm σ c = c + (galRestrict R K M Cm σ c - c) := by ring
+      rw [h2]
+      exact Ideal.add_mem _ h h1
+  -- (1) lift `σ` to `Gal(M'/K)`
+  obtain ⟨ρ, hρ⟩ := AlgEquiv.restrictNormalHom_surjective (K₁ := M) M' σ
+  -- (2) correct the prime: `ρ⁻¹ • 𝔔'` and `𝔔'` lie over `𝔔`
+  have hunder : (ρ⁻¹ • 𝔔' : Ideal Cm').comap (algebraMap Cm Cm') = 𝔔 := by
+    ext c
+    rw [Ideal.mem_comap, Ideal.mem_inv_pointwise_smul_iff]
+    have h1 : ρ • (algebraMap Cm Cm' c) =
+        algebraMap Cm Cm' (galRestrict R K M Cm σ c) := by
+      rw [hsmulK']
+      have h2 := hsquare ρ c
+      rw [hρ] at h2
+      exact h2
+    rw [h1, hcomapmem]
+    exact hσQ c
+  have hunder' : (𝔔' : Ideal Cm').comap (algebraMap Cm Cm') = 𝔔 := by
+    ext c
+    rw [Ideal.mem_comap]
+    exact hcomapmem c
+  obtain ⟨ν, hν⟩ := Algebra.IsInvariant.exists_smul_of_under_eq Cm Cm' (M' ≃ₐ[M] M')
+    (ρ⁻¹ • 𝔔') 𝔔' (hunder.trans hunder'.symm)
+  -- convert the correction to the `K`-level action
+  have hsmul_ideal : ∀ (θ : M' ≃ₐ[M] M') (I : Ideal Cm'),
+      (θ • I : Ideal Cm') = (θ.restrictScalars K) • I := by
+    intro θ I
+    ext c'
+    rw [Ideal.mem_pointwise_smul_iff_inv_smul_mem, Ideal.mem_pointwise_smul_iff_inv_smul_mem]
+    have h1 : (θ.restrictScalars K)⁻¹ • c' = θ⁻¹ • c' := by
+      have h2 : (θ.restrictScalars K)⁻¹ = (θ⁻¹).restrictScalars K := rfl
+      rw [h2]
+      exact (hact θ⁻¹ c').symm
+    rw [h1]
+  set ρ₁ : M' ≃ₐ[K] M' := ρ * (ν.restrictScalars K)⁻¹ with hρ₁def
+  have hρ₁stab : ρ₁ • 𝔔' = 𝔔' := by
+    have h1 : 𝔔' = ((ν.restrictScalars K) * ρ⁻¹) • 𝔔' := by
+      rw [mul_smul, ← hsmul_ideal]
+      exact hν
+    have h2 : ρ₁ * ((ν.restrictScalars K) * ρ⁻¹) = 1 := by
+      rw [hρ₁def]
+      group
+    conv_lhs => rw [h1]
+    rw [← mul_smul, h2, one_smul]
+  -- restriction of `M`-linear corrections is the identity
+  have hMres : ∀ θ : M' ≃ₐ[M] M',
+      AlgEquiv.restrictNormalHom M (θ.restrictScalars K) = 1 := by
+    intro θ
+    refine AlgEquiv.ext fun m => ?_
+    apply (algebraMap M M').injective
+    have h0 : algebraMap M M'
+        ((AlgEquiv.restrictNormalHom M (θ.restrictScalars K)) m) =
+        (θ.restrictScalars K) (algebraMap M M' m) :=
+      AlgEquiv.restrictNormal_commutes (θ.restrictScalars K) M m
+    rw [h0]
+    exact θ.commutes m
+  have hρ₁res : AlgEquiv.restrictNormalHom M ρ₁ = σ := by
+    have h1 : AlgEquiv.restrictNormalHom M ((ν.restrictScalars K)⁻¹) = 1 := by
+      rw [show ((ν.restrictScalars K)⁻¹ : M' ≃ₐ[K] M') =
+        (ν⁻¹).restrictScalars K from rfl]
+      exact hMres ν⁻¹
+    rw [hρ₁def, map_mul, hρ, h1, mul_one]
+  -- (3) correct the residue action over the base `Cm`
+  have hstabρ₁ : ρ₁ ∈ MulAction.stabilizer (M' ≃ₐ[K] M') 𝔔' := hρ₁stab
+  have hreskappa : ∀ c : Cm, ρ₁ • (algebraMap Cm Cm' c) - algebraMap Cm Cm' c ∈ 𝔔' := by
+    intro c
+    have h1 : ρ₁ • (algebraMap Cm Cm' c) =
+        algebraMap Cm Cm' (galRestrict R K M Cm σ c) := by
+      rw [hsmulK']
+      have h2 := hsquare ρ₁ c
+      rw [hρ₁res] at h2
+      exact h2
+    rw [h1, ← map_sub]
+    exact (hcomapmem _).mpr (hσ c)
+  -- the residue automorphism of `ρ₁`, as a `Cm⧸𝔔`-algebra automorphism
+  haveI : (𝔔'.under R).IsPrime := Ideal.IsPrime.under R 𝔔'
+  haveI : 𝔔'.LiesOver (𝔔'.under R) := ⟨rfl⟩
+  set rbarR : (Cm' ⧸ 𝔔') ≃ₐ[R ⧸ 𝔔'.under R] (Cm' ⧸ 𝔔') :=
+    Ideal.Quotient.stabilizerHom 𝔔' (𝔔'.under R) (M' ≃ₐ[K] M') ⟨ρ₁, hstabρ₁⟩
+    with hrbarRdef
+  have hrbar_comm : ∀ y : Cm ⧸ 𝔔,
+      rbarR (algebraMap (Cm ⧸ 𝔔) (Cm' ⧸ 𝔔') y) =
+      algebraMap (Cm ⧸ 𝔔) (Cm' ⧸ 𝔔') y := by
+    intro y
+    obtain ⟨c, rfl⟩ := Ideal.Quotient.mk_surjective y
+    show rbarR (Ideal.Quotient.mk 𝔔' (algebraMap Cm Cm' c)) =
+      Ideal.Quotient.mk 𝔔' (algebraMap Cm Cm' c)
+    rw [hrbarRdef, Ideal.Quotient.stabilizerHom_apply]
+    rw [Ideal.Quotient.mk_eq_mk_iff_sub_mem]
+    exact hreskappa c
+  set rbar : (Cm' ⧸ 𝔔') ≃ₐ[Cm ⧸ 𝔔] (Cm' ⧸ 𝔔') :=
+    AlgEquiv.ofRingEquiv (f := (rbarR : (Cm' ⧸ 𝔔') ≃+* (Cm' ⧸ 𝔔'))) hrbar_comm
+    with hrbardef
+  obtain ⟨μ, hμ⟩ := Ideal.Quotient.stabilizerHom_surjective (M' ≃ₐ[M] M') 𝔔 𝔔' rbar
+  -- (4) the inertial lift
+  refine ⟨ρ₁ * (((μ : M' ≃ₐ[M] M').restrictScalars K))⁻¹, ?_, ?_⟩
+  · intro c'
+    have h1 : galRestrict R K M' Cm' (ρ₁ * (((μ : M' ≃ₐ[M] M').restrictScalars K))⁻¹) c' =
+        ρ₁ • (((μ : M' ≃ₐ[M] M')⁻¹ : M' ≃ₐ[M] M') • c') := by
+      rw [← hsmulK', mul_smul]
+      congr 1
+    have h2 : rbarR (Ideal.Quotient.mk 𝔔' (((μ : M' ≃ₐ[M] M')⁻¹ : M' ≃ₐ[M] M') • c')) =
+        Ideal.Quotient.mk 𝔔' (ρ₁ • (((μ : M' ≃ₐ[M] M')⁻¹ : M' ≃ₐ[M] M') • c')) :=
+      Ideal.Quotient.stabilizerHom_apply _ _ _ _ _
+    have h3 : (Ideal.Quotient.stabilizerHom 𝔔' 𝔔 (M' ≃ₐ[M] M') μ⁻¹)
+        (Ideal.Quotient.mk 𝔔' c') =
+        Ideal.Quotient.mk 𝔔' (((μ : M' ≃ₐ[M] M')⁻¹ : M' ≃ₐ[M] M') • c') :=
+      Ideal.Quotient.stabilizerHom_apply _ _ _ _ _
+    have h4 : Ideal.Quotient.mk 𝔔' (galRestrict R K M' Cm'
+        (ρ₁ * (((μ : M' ≃ₐ[M] M').restrictScalars K))⁻¹) c') =
+        Ideal.Quotient.mk 𝔔' c' := by
+      calc Ideal.Quotient.mk 𝔔' (galRestrict R K M' Cm'
+              (ρ₁ * (((μ : M' ≃ₐ[M] M').restrictScalars K))⁻¹) c')
+          = Ideal.Quotient.mk 𝔔'
+              (ρ₁ • (((μ : M' ≃ₐ[M] M')⁻¹ : M' ≃ₐ[M] M') • c')) := by rw [h1]
+        _ = rbarR (Ideal.Quotient.mk 𝔔'
+              (((μ : M' ≃ₐ[M] M')⁻¹ : M' ≃ₐ[M] M') • c')) := h2.symm
+        _ = rbarR ((Ideal.Quotient.stabilizerHom 𝔔' 𝔔 (M' ≃ₐ[M] M') μ⁻¹)
+              (Ideal.Quotient.mk 𝔔' c')) := by rw [h3]
+        _ = Ideal.Quotient.mk 𝔔' c' := by
+              rw [map_inv, hμ]
+              exact rbar.apply_symm_apply _
+    exact (Ideal.Quotient.mk_eq_mk_iff_sub_mem _ _).mp h4
+  · have h1 : AlgEquiv.restrictNormalHom M
+        ((((μ : M' ≃ₐ[M] M').restrictScalars K))⁻¹) = 1 := by
+      rw [show ((((μ : M' ≃ₐ[M] M').restrictScalars K))⁻¹ : M' ≃ₐ[K] M') =
+        ((μ : M' ≃ₐ[M] M')⁻¹).restrictScalars K from rfl]
+      exact hMres ((μ : M' ≃ₐ[M] M')⁻¹)
+    rw [map_mul, hρ₁res, h1, mul_one]
 
-/-- **From integral-level inertia bounds to the whole valuation ring** (sorry
-node, split from the inertia-lifting leaf 2026-07-24): if `τ ∈ Gal(Kˢᵉᵖ/K)`
+omit [DecidableEq Ksep] in
+/-- **From integral-level inertia bounds to the whole valuation ring** (PROVEN
+2026-07-24, split from the inertia-lifting leaf): if `τ ∈ Gal(Kˢᵉᵖ/K)`
 moves every `R`-integral element of `Kˢᵉᵖ` by a nonunit of `𝒪`, then it moves
 EVERY element of `𝒪` by a nonunit. Intended proof: `x ∈ 𝒪` lies in a finite
 Galois subextension `M` (adjoin + normal closure); by the denominator
@@ -4874,8 +5105,9 @@ theorem smul_sub_mem_nonunits_of_forall_isIntegral
 open scoped Pointwise in
 set_option maxHeartbeats 2000000 in
 set_option synthInstance.maxHeartbeats 400000 in
+omit [DecidableEq Ksep] in
 /-- **Inertia lifting from a finite Galois level to the separable closure**
-(sorry node; the compactness step of the DVR-Galois core, isolated 2026-07-24):
+(PROVEN 2026-07-24; the compactness step of the DVR-Galois core):
 let `N/K` be finite Galois sitting inside `Kˢᵉᵖ` (abstract tower
 `K ⊆ N ⊆ Kˢᵉᵖ`), `𝒪` a valuation subring of `Kˢᵉᵖ` lying over `R`, and `𝔔` the
 center of `𝒪` on `integralClosure R N` (characterized by `h𝔔`). Every inertia
@@ -5745,6 +5977,7 @@ theorem isUnramifiedAt_of_inertia_fixes_algHom
   exact (Algebra.isUnramifiedAt_iff_map_eq R (IsLocalRing.maximalIdeal R) 𝔮).mpr
     ⟨hsepκ, (Ideal.IsDedekindDomain.ramificationIdx'_eq_one_iff h𝔮0 hle).mp he⟩
 
+omit [DecidableEq Ksep] in
 /-- **Unramifiedness of the integral closure under inertia-fixed embeddings**
 (DECOMPOSED 2026-07-24 into the inertia-lifting leaf
 `exists_inertiaSubgroup_restrictNormalHom_eq` and the finite-level counting
@@ -6010,6 +6243,7 @@ theorem integralClosure_formallyUnramified_of_inertia_fixes_field
   exact isUnramifiedAt_of_inertia_fixes_algHom R K L (IntermediateField.normalClosure K L Ksep) φ'
     𝔔 hfixN q.asIdeal h𝔮
 
+omit [DecidableEq Ksep] in
 /-- **Étaleness of the integral closure under inertia-fixed embeddings**
 (DECOMPOSED 2026-07-24 into the ramification-theoretic core
 `integralClosure_formallyUnramified_of_inertia_fixes_field`; the assembly
@@ -6050,6 +6284,7 @@ theorem integralClosure_etale_of_inertia_fixes_field
     L hfix
   exact Algebra.Etale.of_formallyUnramified_of_flat
 
+omit [DecidableEq Ksep] in
 /-- **Unramified finite separable field extensions have finite étale `R`-forms**
 (DECOMPOSED 2026-07-23 into the étaleness core
 `integralClosure_etale_of_inertia_fixes_field`; the finiteness of the integral
@@ -6098,6 +6333,7 @@ theorem exists_finite_etale_algebra_form_of_inertia_fixes_field
   exact ⟨integralClosure R L, inferInstance, inferInstance, hfin, het,
     ⟨AlgEquiv.ofBijective (integralClosureMul R K L) hbij⟩⟩
 
+omit [DecidableEq Ksep] in
 /-- **Unramified finite étale `K`-algebras have finite étale `R`-forms**
 (DECOMPOSED 2026-07-23 into the single-field-extension leaf
 `exists_finite_etale_algebra_form_of_inertia_fixes_field`; the assembly below
@@ -7118,6 +7354,7 @@ theorem exists_finite_flat_hopf_form_of_etale_algebra_form
     integralClosure_finite_etale_form_of_etale_algebra_form R K HK H₀ e
   exact exists_finite_flat_hopf_form_integralClosure R K HK hfin het heq
 
+omit [DecidableEq Ksep] in
 /-- **Unramified finite étale Hopf algebras prolong over a DVR** (DECOMPOSED
 2026-07-23 into the Galois-half leaf
 `exists_finite_etale_algebra_form_of_inertia_fixes` and the commutative-algebra
