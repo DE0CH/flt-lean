@@ -1942,7 +1942,7 @@ theorem isUnit_aeval_cofactor
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
-set_option maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
 /-- **Completion invariance of the different ideal, divisibility
 direction** (Serre, *Corps Locaux* III §4 Prop. 10; general-`q` engine
 behind `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd` of
@@ -1988,7 +1988,118 @@ theorem maximalIdeal_pow_dvd_local_differentIdeal_of_dense
       differentIdeal ℤ (RingOfIntegers K)) :
     IsLocalRing.maximalIdeal (IntegralClosure Ov M) ^ d ∣
       differentIdeal Ov (IntegralClosure Ov M) := by
-  sorry
+  classical
+  set Q₀ : Ideal (RingOfIntegers K) :=
+    Ideal.comap φ (IsLocalRing.maximalIdeal (IntegralClosure Ov M)) with hQ₀def
+  -- `φ` as a `ℤ`-algebra homomorphism (all ring maps out of `ℤ` agree)
+  let φℤ : RingOfIntegers K →ₐ[ℤ] IntegralClosure Ov M :=
+    { toRingHom := φ
+      commutes' := fun n => by
+        rw [RingHom.eq_intCast' (algebraMap ℤ (RingOfIntegers K)),
+          RingHom.eq_intCast' (algebraMap ℤ (IntegralClosure Ov M))]
+        exact map_intCast φ n }
+  have hφaeval : ∀ (p : Polynomial ℤ),
+      φ (Polynomial.aeval θ p) = Polynomial.aeval (φ θ) p := fun p =>
+    (Polynomial.aeval_algHom_apply φℤ θ p).symm
+  -- transporting `ℤ`-polynomial evaluations to `𝒪_q`-polynomial evaluations
+  have hmapaeval : ∀ (p : Polynomial ℤ),
+      Polynomial.aeval (φ θ) (p.map (Int.castRingHom Ov)) =
+      Polynomial.aeval (φ θ) p := by
+    intro p
+    rw [Polynomial.aeval_def, Polynomial.eval₂_map, Polynomial.aeval_def,
+      Subsingleton.elim ((algebraMap Ov (IntegralClosure Ov M)).comp
+        (Int.castRingHom Ov)) (algebraMap ℤ (IntegralClosure Ov M))]
+  -- STEP 1: the derivative value of the global minimal polynomial lies in `Q₀^d`
+  have hdvdspan : differentIdeal ℤ (RingOfIntegers K) ∣
+      Ideal.span {Polynomial.aeval θ
+        (Polynomial.derivative (minpoly ℤ θ))} :=
+    ⟨conductor ℤ θ, by
+      rw [mul_comm]
+      exact (conductor_mul_differentIdeal ℤ ℚ K θ hθtop).symm⟩
+  have hFdmem : Polynomial.aeval θ (Polynomial.derivative (minpoly ℤ θ)) ∈
+      Q₀ ^ d := by
+    have h1 : Q₀ ^ d ∣ Ideal.span {Polynomial.aeval θ
+        (Polynomial.derivative (minpoly ℤ θ))} := hd.trans hdvdspan
+    have h2 := Ideal.le_of_dvd h1
+    exact (Ideal.dvd_iff_le.mp h1) (Ideal.mem_span_singleton_self _)
+  -- STEP 2: push into `𝒪_M`
+  have hmapQ : Ideal.map φ (Q₀ ^ d) ≤
+      IsLocalRing.maximalIdeal (IntegralClosure Ov M) ^ d := by
+    rw [Ideal.map_pow]
+    exact Ideal.pow_right_mono Ideal.map_comap_le d
+  have hFdM : Polynomial.aeval (φ θ)
+      (Polynomial.derivative (minpoly ℤ θ)) ∈
+      IsLocalRing.maximalIdeal (IntegralClosure Ov M) ^ d := by
+    rw [← hφaeval]
+    exact hmapQ (Ideal.mem_map_of_mem φ hFdmem)
+  -- STEP 3: factor `F = g·h` over `𝒪_q`
+  have hxint : IsIntegral Ov (φ θ) := IsIntegralClosure.isIntegral Ov M (φ θ)
+  have hFroot : Polynomial.aeval (φ θ)
+      ((minpoly ℤ θ).map (Int.castRingHom Ov)) = 0 := by
+    rw [hmapaeval, ← hφaeval, minpoly.aeval, map_zero]
+  obtain ⟨hcof, hFgh⟩ : minpoly Ov (φ θ) ∣
+      (minpoly ℤ θ).map (Int.castRingHom Ov) :=
+    minpoly.isIntegrallyClosed_dvd hxint hFroot
+  -- STEP 4: the derivative identity at `φθ`
+  have hgroot : Polynomial.aeval (φ θ) (minpoly Ov (φ θ)) = 0 :=
+    minpoly.aeval Ov (φ θ)
+  have hderiv : Polynomial.aeval (φ θ)
+      (Polynomial.derivative (minpoly ℤ θ)) =
+      Polynomial.aeval (φ θ)
+        (Polynomial.derivative (minpoly Ov (φ θ))) *
+        Polynomial.aeval (φ θ) hcof := by
+    have h1 : Polynomial.derivative
+        ((minpoly ℤ θ).map (Int.castRingHom Ov)) =
+        Polynomial.derivative (minpoly Ov (φ θ)) * hcof +
+          minpoly Ov (φ θ) * Polynomial.derivative hcof := by
+      rw [hFgh, Polynomial.derivative_mul]
+    have h2 : Polynomial.derivative
+        ((minpoly ℤ θ).map (Int.castRingHom Ov)) =
+        (Polynomial.derivative (minpoly ℤ θ)).map (Int.castRingHom Ov) :=
+      Polynomial.derivative_map _ _
+    have h3 := congrArg (Polynomial.aeval (φ θ)) h1
+    rw [h2, hmapaeval, map_add, map_mul, map_mul, hgroot, zero_mul,
+      add_zero] at h3
+    exact h3
+  -- STEP 5: strip the unit cofactor
+  have hunit : IsUnit (Polynomial.aeval (φ θ) hcof) :=
+    isUnit_aeval_cofactor hq K M hMgen φ hφ hθtop hθmem hθQ hFgh
+  obtain ⟨u, hu⟩ := hunit
+  have hgdmem : Polynomial.aeval (φ θ)
+      (Polynomial.derivative (minpoly Ov (φ θ))) ∈
+      IsLocalRing.maximalIdeal (IntegralClosure Ov M) ^ d := by
+    have h1 : Polynomial.aeval (φ θ)
+        (Polynomial.derivative (minpoly Ov (φ θ))) =
+        (Polynomial.aeval (φ θ)
+          (Polynomial.derivative (minpoly ℤ θ))) * ((u⁻¹ : _) : _) := by
+      rw [hderiv, ← hu]
+      rw [mul_assoc, Units.mul_inv, mul_one]
+    rw [h1]
+    exact Ideal.mul_mem_right _ _ hFdM
+  -- STEP 6: the local different is the principal ideal on that value
+  have hdensloc : ∀ (y : IntegralClosure Ov M) (j : ℕ),
+      ∃ hpoly : Polynomial ℤ, y - Polynomial.aeval (φ θ) hpoly ∈
+        IsLocalRing.maximalIdeal (IntegralClosure Ov M) ^ j := by
+    intro y j
+    obtain ⟨z, hz⟩ := exists_sub_mem_pow_maximalIdeal hq K M hMgen φ hφ y j
+    obtain ⟨hpoly, hhpoly⟩ := hθdens j z
+    refine ⟨hpoly, ?_⟩
+    have hmapj : Ideal.map φ (Q₀ ^ j) ≤
+        IsLocalRing.maximalIdeal (IntegralClosure Ov M) ^ j := by
+      rw [Ideal.map_pow]
+      exact Ideal.pow_right_mono Ideal.map_comap_le j
+    have h1 : φ z - Polynomial.aeval (φ θ) hpoly ∈
+        IsLocalRing.maximalIdeal (IntegralClosure Ov M) ^ j := by
+      rw [← hφaeval, ← map_sub]
+      exact hmapj (Ideal.mem_map_of_mem φ hhpoly)
+    have h2 : y - Polynomial.aeval (φ θ) hpoly =
+        (y - φ z) + (φ z - Polynomial.aeval (φ θ) hpoly) := by ring
+    rw [h2]
+    exact Submodule.add_mem _ hz h1
+  have hdiffeq := differentIdeal_eq_span_of_dense hq M (φ θ)
+    (adjoin_algebraMap_eq_top_of_adjoin_eq_top hq K M hMgen φ hφ hθtop) hdensloc
+  rw [hdiffeq, Ideal.dvd_iff_le, Ideal.span_le, Set.singleton_subset_iff]
+  exact hgdmem
 
 end Counting
 
