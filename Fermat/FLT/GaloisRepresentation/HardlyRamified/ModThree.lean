@@ -15113,10 +15113,131 @@ theorem localInertia_two_eq_one_of_no_two_torsion {A : Type*} [CommGroup A]
     _ = (f tbar) ^ m := (inv_mul_eq_one.mp h1).symm
     _ = 1 := by rw [hft, one_pow]
 
+/-- **Minkowski's discriminant bound at degree `6`** (PROVEN
+2026-07-24 — the concrete arithmetic core of the `ℚ(√-3)` ray-class
+elimination below): a sextic number field has `|d_K| > 432 = 2⁴·3³`.
+This is mathlib's geometry-of-numbers bound
+`NumberField.abs_discr_ge'` — `|d_K| ≥ n^{2n}/((4/π)^{2r₂}·(n!)²)`
+— evaluated at `n = 6` against the WORST signature (totally complex,
+`2r₂ ≤ 6`, and `4/π > 1`), where it reads
+`|d_K| ≥ 6¹²·π⁶/(4⁶·720²) = 985.3…`, already with the crude `π > 3`:
+`6¹²·3⁶ = 1586874322944 > 432·4⁶·720² = 917294284800`. Note `432` is
+exactly the tame bound `2^{n(1-1/3)}·3^{n(1-1/2)}` at `n = 6` — the
+largest discriminant a sextic field unramified outside `{2, 3}`,
+tame of `e ∣ 3` at `2` and `e ∣ 2` at `3`, could have — so this
+lemma says NO such field exists; it replaces the conductor-`(2)`
+ray-class computation `Cl_{(2)}(ℚ(√-3)) = 1` (which mathlib cannot
+state) by a pure discriminant comparison. -/
+theorem minkowski_sextic_discr_bound (K : Type*) [Field K] [NumberField K]
+    (h6 : Module.finrank ℚ K = 6) :
+    (432 : ℤ) < |NumberField.discr K| := by
+  have h := NumberField.abs_discr_ge' K
+  rw [h6] at h
+  have hpi4 : (1 : ℝ) ≤ 4 / Real.pi := by
+    rw [le_div_iff₀ Real.pi_pos]
+    linarith [Real.pi_le_four]
+  have hr2 : 2 * NumberField.InfinitePlace.nrComplexPlaces K ≤ 6 := by
+    have := NumberField.InfinitePlace.card_add_two_mul_card_eq_rank K
+    omega
+  have hmono : (4 / Real.pi) ^ (2 * NumberField.InfinitePlace.nrComplexPlaces K) ≤
+      (4 / Real.pi) ^ (6 : ℕ) :=
+    pow_le_pow_right₀ hpi4 hr2
+  have hfact : ((6 : ℕ).factorial : ℝ) = 720 := by norm_num [Nat.factorial]
+  have key : (432 : ℝ) < ((6 : ℕ) : ℝ) ^ (2 * 6) /
+      ((4 / Real.pi) ^ (2 * NumberField.InfinitePlace.nrComplexPlaces K) *
+        ((6 : ℕ).factorial : ℝ) ^ 2) := by
+    rw [hfact]
+    have h2 : ((6 : ℕ) : ℝ) ^ (2 * 6) = 2176782336 := by norm_num
+    rw [h2, lt_div_iff₀ (by positivity)]
+    have hb : (4 / Real.pi) ^ (2 * NumberField.InfinitePlace.nrComplexPlaces K) ≤
+        (4 / 3) ^ (6 : ℕ) := by
+      refine hmono.trans ?_
+      gcongr
+      linarith [Real.pi_gt_three]
+    calc (432 : ℝ) *
+          ((4 / Real.pi) ^ (2 * NumberField.InfinitePlace.nrComplexPlaces K) * 720 ^ 2)
+        ≤ 432 * ((4 / 3) ^ (6 : ℕ) * 720 ^ 2) := by gcongr
+      _ < 2176782336 := by norm_num
+  have hlt : (432 : ℝ) < |(NumberField.discr K : ℝ)| := by
+    calc (432 : ℝ) < _ := key
+      _ ≤ _ := h
+      _ = |(NumberField.discr K : ℝ)| := by push_cast; ring
+  exact_mod_cast hlt
+
+/-- **Lagrange–Cauchy exponent bound, order-`6` ambient, exponent
+`3`** (PROVEN 2026-07-24 — group-theoretic glue for the sextic
+elimination): a subgroup of a group of order `6` all of whose
+elements are cubes of the identity has order dividing `3`. Lagrange
+gives `#X ∣ 6`; if `2 ∣ #X` Cauchy produces an element of order `2`,
+which the exponent-`3` hypothesis forces to be trivial — so `#X` is
+an odd divisor of `6`. -/
+theorem card_dvd_three_of_card_six_of_cube_eq_one {Q : Type*} [Group Q]
+    (hQ : Nat.card Q = 6) (X : Subgroup Q)
+    (hexp : ∀ x : Q, x ∈ X → x ^ 3 = 1) : Nat.card X ∣ 3 := by
+  haveI : Finite Q := Nat.finite_of_card_ne_zero (by omega)
+  have hdvd : Nat.card X ∣ 6 := hQ ▸ Subgroup.card_subgroup_dvd_card X
+  have h2 : ¬ (2 ∣ Nat.card X) := by
+    intro h2
+    haveI : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
+    have := Fintype.ofFinite X
+    rw [Nat.card_eq_fintype_card] at h2
+    obtain ⟨y, hy⟩ := exists_prime_orderOf_dvd_card (G := X) 2 h2
+    have hy3 : y ^ 3 = 1 := by
+      have h := hexp y.1 y.2
+      ext
+      push_cast
+      exact h
+    have hy2 : y ^ 2 = 1 := by
+      rw [← hy]
+      exact pow_orderOf_eq_one y
+    have hy1 : y = 1 := by
+      have hh : y ^ 3 = y ^ 2 * y := by rw [pow_succ]
+      rw [hy3, hy2, one_mul] at hh
+      exact hh.symm
+    rw [hy1] at hy
+    simp at hy
+  have hpos : 0 < Nat.card X := Nat.card_pos
+  have hle : Nat.card X ≤ 6 := Nat.le_of_dvd (by norm_num) hdvd
+  interval_cases h : (Nat.card X) <;> revert hdvd h2 <;> decide
+
+/-- **Lagrange–Cauchy exponent bound, order-`6` ambient, exponent
+`2`** (PROVEN 2026-07-24 — the mirror of
+`card_dvd_three_of_card_six_of_cube_eq_one`): a subgroup of a group
+of order `6` all of whose elements square to the identity has order
+dividing `2`. -/
+theorem card_dvd_two_of_card_six_of_sq_eq_one {Q : Type*} [Group Q]
+    (hQ : Nat.card Q = 6) (X : Subgroup Q)
+    (hexp : ∀ x : Q, x ∈ X → x ^ 2 = 1) : Nat.card X ∣ 2 := by
+  haveI : Finite Q := Nat.finite_of_card_ne_zero (by omega)
+  have hdvd : Nat.card X ∣ 6 := hQ ▸ Subgroup.card_subgroup_dvd_card X
+  have h3 : ¬ (3 ∣ Nat.card X) := by
+    intro h3
+    haveI : Fact (Nat.Prime 3) := ⟨Nat.prime_three⟩
+    have := Fintype.ofFinite X
+    rw [Nat.card_eq_fintype_card] at h3
+    obtain ⟨y, hy⟩ := exists_prime_orderOf_dvd_card (G := X) 3 h3
+    have hy2 : y ^ 2 = 1 := by
+      have h := hexp y.1 y.2
+      ext
+      push_cast
+      exact h
+    have hy3 : y ^ 3 = 1 := by
+      rw [← hy]
+      exact pow_orderOf_eq_one y
+    have hy1 : y = 1 := by
+      have hh : y ^ 3 = y ^ 2 * y := by rw [pow_succ]
+      rw [hy3, hy2, one_mul] at hh
+      exact hh.symm
+    rw [hy1] at hy
+    simp at hy
+  have hpos : 0 < Nat.card X := Nat.card_pos
+  have hle : Nat.card X ≤ 6 := Nat.le_of_dvd (by norm_num) hdvd
+  interval_cases h : (Nat.card X) <;> revert hdvd h3 <;> decide
+
 set_option maxHeartbeats 1000000 in
-/-- **The `ℚ(√-3)`-agreement additive character dies by the
-`(2)`-ray-class computation** (sorry node, isolated 2026-07-24 — the
-residual class-field-theory core of
+/-- **The `ℚ(√-3)`-agreement additive character dies by the sextic
+Minkowski bound** (PROVEN 2026-07-24 — the residual
+class-field-theory core of
 `agreement_additive_character_eq_zero_ray_class` below, fully
 abstracted from the representation: there `η` is `ψχ⁻¹`, its kernel
 carrier is `Γ_F`, `U` is `ker ρ`, and `b` is the additive character):
@@ -15128,40 +15249,41 @@ every other prime (`hηunr`), and let `b : Γ ℚ → k` be additive on
 prime `q ≠ 2` (`hbunr`), and `η`-equivariant under conjugation
 (`hbconj`). Then `b` vanishes on `H`.
 
-Intended content (Serre, Duke 1987, §5.4, mod-3 analogue; Tate's 1974
-letter to Serre, Œuvres III; Neukirch, ANT VI §6). The quadratic `η`
-with open kernel (`hUker` + `hUopen`), ramified exactly at `3`, cuts
-out `F = ℚ(√-3)`, THE quadratic field ramified only at `3`
-(discriminant `-3`; `ℚ(√3)` has discriminant `12`, ramified also at
-`2`), so `H = ker η = Γ_F`. `b` restricted to `H` is a homomorphism
-into `(k, +)` vanishing on the open subgroup `U ∩ ker b`, cutting out
-a finite abelian `3`-elementary extension `M/F`; by `hbconj` its
-kernel is normal in `Γ ℚ`, so `M/ℚ` is Galois with
-`Gal(M/ℚ) = A ⋊ C₂`, `A = Gal(M/F)` elementary `3`-abelian and the
-nontrivial coset acting by inversion (`hbconj` with `(η g : k) = -1`).
-`M/F` is unramified outside the prime over `2`: at `q ∉ {2, 3}` this
-is `hbunr` with `hηunr`; over `3` the inertia of `Γ ℚ` meets `H` in
-its agreement part, killed by `hbunr` at `q = 3`, and the
-`hbconj`-conjugates cover both members of each conjugacy class of
-primes of `F` over a rational prime. `M/F` is automatically TAME over
-`2`: `[M : F]` is a `3`-power while the residue characteristic is
-`2`, so the wild (pro-`2`) inertia dies in `A` and each conductor
-exponent over `2` is at most `1`. Ray-class arithmetic over
-`F = ℚ(√-3)` — class number `1`, `2` INERT (`X² + X + 1` is
-irreducible mod `2`), `𝒪_F = ℤ[ζ₆]` — kills `M`: `F` has no real
-places, so the ray class group of conductor `(2)` sits in
-`(𝒪/2)ˣ / im 𝒪ˣ ↠ Cl_{(2)}(F) → Cl(F) = 1`, and
-`(𝒪/2)ˣ = 𝔽₄ˣ` of order `3` is generated by the image of the
-order-`6` unit `ζ₆`, so `Cl_{(2)}(F) = 1` and `M = F`, i.e. `b = 0`
-on `H`. Mathlib has no ray class field theory: resolving this node
-means either building the conductor-`(2)` ray-class bound for the
-concrete field `ℚ(√-3)` (= `CyclotomicField 6 ℚ`; its class number
-`1` and unit group `⟨ζ₆⟩` are within reach of
-`Mathlib.NumberTheory.ClassNumber` and cyclotomic-unit machinery), or
-decomposing further along Serre's route: the anti-invariance
-`b(σhσ⁻¹) = -b(h)` for `σ ∉ H` against the Frobenius-tame relation at
-the inert prime `2` (residue field `𝔽₄`, tame inertia exponent
-dividing `|𝔽₄ˣ| = 3`). -/
+Proven route (Serre, Duke 1987, §5.4, mod-3 analogue, with the
+conductor-`(2)` ray-class computation `Cl_{(2)}(ℚ(√-3)) = 1` — which
+mathlib cannot even state — replaced by a pure discriminant
+comparison at degree `6`; the intended CFT content is recorded in the
+docstring of `minkowski_sextic_discr_bound` above). Suppose
+`b g₀ ≠ 0` for some `g₀ ∈ H`. An `𝔽₃`-linear functional `λ` on `k`
+(`Module.forall_dual_apply_eq_zero_iff` over `ZMod 3`, using
+`char k = 3`) detects `b g₀`, and
+`Kc = {η = 1} ∩ {λ∘b = 0}` is an open (it contains `U`) normal (by
+`hbconj`: conjugation scales `b` by `±1`, and `λ` is odd) subgroup of
+index EXACTLY `6`: index `2` for `ker η` (the value group is
+`{1, -1}`, `hη3` forcing `-1` to occur), times relative index `3`
+(the `Multiplicative (ZMod 3)`-character `λ∘b` of `ker η` is
+surjective since `λ (b g₀) ≠ 0`). The infinite Galois correspondence
+cuts out the sextic Galois number field `L = (ℚᵃˡᵍ)^{Kc}` with
+`Gal(L/ℚ) = Γℚ/Kc` of order `6` — the `S₃`-closure `F(∛·)` of Serre's
+argument. Ramification of `L`: at `q ∉ {2, 3}` the inertia dies in
+`Kc` (`hηunr` + `hbunr`), so `q ∤ d_L`; at `2` the inertia image
+lands in the exponent-`3` part (`hηunr` at `2`, and `b(τ³) = 3·b(τ)
+= 0` in characteristic `3`), so `e ∣ 3` by Lagrange–Cauchy
+(`card_dvd_three_of_card_six_of_cube_eq_one`), tame, different
+exponent `≤ 2`, giving `3·v₂(d_L) ≤ 2·[L:ℚ]` = `v₂ ≤ 4`; at `3`
+every inertia image element squares into `Kc` — the agreement part
+dies by `hbunr`, and for `η(τ) = -1` the `hbconj`-relation
+`b(τ²) = b(τ·τ²·τ⁻¹) = -b(τ²)` kills `b(τ²)` since `2 ≠ 0` — so
+`e ∣ 2` (`card_dvd_two_of_card_six_of_sq_eq_one`), tame, and
+`2·v₃(d_L) ≤ [L:ℚ]` = `v₃ ≤ 3`. Hence `|d_L| ≤ 2⁴·3³ = 432`,
+contradicting Minkowski's bound `|d_L| > 432` for sextic fields
+(`minkowski_sextic_discr_bound`). The discriminant chain is the
+proven per-prime machinery already used by the kernel-field bounds:
+`discr_factorization_le_of_forall_differentIdeal_pow_dvd`,
+`not_pow_ramificationIdx_dvd_differentIdeal`,
+`inertia_card_dvd_of_card_map_localInertiaGroup_dvd`, and
+`isUnramifiedAt_of_inertia_le_fixingSubgroup` with
+`NumberField.not_dvd_discr_iff_forall_mem`. -/
 theorem quadratic_agreement_additive_character_eq_zero_ray_class
     {k : Type u} [Finite k] [Field k] [Algebra ℤ_[3] k]
     (η : Γ ℚ →* kˣ)
@@ -15179,7 +15301,7 @@ theorem quadratic_agreement_additive_character_eq_zero_ray_class
     (b : Γ ℚ → k)
     (hbadd : ∀ g h : Γ ℚ, η g = 1 → η h = 1 → b (g * h) = b g + b h)
     (U : Subgroup (Γ ℚ)) (hUopen : IsOpen (U : Set (Γ ℚ)))
-    (hUnormal : U.Normal)
+    (_hUnormal : U.Normal)
     (hUker : ∀ g ∈ U, η g = 1 ∧ b g = 0)
     (hbunr : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 →
       ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
@@ -15192,7 +15314,445 @@ theorem quadratic_agreement_additive_character_eq_zero_ray_class
     (hbconj : ∀ g h : Γ ℚ, η h = 1 →
       b (g * h * g⁻¹) = (η g : k) * b h) :
     ∀ g : Γ ℚ, η g = 1 → b g = 0 := by
-  sorry
+  classical
+  intro g₀ hg₀
+  by_contra hb₀
+  -- characteristic-3 arithmetic in `k`
+  haveI hchar : CharP k 3 := charP_three_of_finite_padicIntThree_algebra
+  have h3k : (3 : k) = 0 := three_eq_zero_of_finite_padicIntThree_algebra
+  have h2ne : (2 : k) ≠ 0 := by
+    intro h
+    have h1 : (1 : k) = 0 := by linear_combination h3k - h
+    exact one_ne_zero h1
+  have hb1 : b 1 = 0 := by
+    have h := hbadd 1 1 (map_one η) (map_one η)
+    rw [one_mul] at h
+    linear_combination -h
+  -- an `𝔽₃`-linear functional detecting `b g₀`
+  letI : Algebra (ZMod 3) k := ZMod.algebra k 3
+  obtain ⟨lam, hlam⟩ : ∃ lam : k →ₗ[ZMod 3] ZMod 3, lam (b g₀) ≠ 0 := by
+    by_contra hall
+    push Not at hall
+    exact hb₀ ((Module.forall_dual_apply_eq_zero_iff (ZMod 3) (b g₀)).mp hall)
+  -- the open normal subgroup `Kc = {η = 1} ∩ {λ∘b = 0}` of index 6
+  set Kc : Subgroup (Γ ℚ) := {
+    carrier := {g | η g = 1 ∧ lam (b g) = 0}
+    one_mem' := ⟨map_one η, by rw [hb1, map_zero]⟩
+    mul_mem' := by
+      rintro x y ⟨hx1, hx2⟩ ⟨hy1, hy2⟩
+      refine ⟨by rw [map_mul, hx1, hy1, mul_one], ?_⟩
+      rw [hbadd x y hx1 hy1, map_add, hx2, hy2, add_zero]
+    inv_mem' := by
+      rintro x ⟨hx1, hx2⟩
+      have hxinv : η x⁻¹ = 1 := by rw [map_inv, hx1, inv_one]
+      refine ⟨hxinv, ?_⟩
+      have h := hbadd x x⁻¹ hx1 hxinv
+      rw [mul_inv_cancel, hb1] at h
+      have hbx : b x⁻¹ = - b x := by linear_combination -h
+      rw [hbx, map_neg, hx2, neg_zero] }
+  have hmemKc : ∀ g : Γ ℚ, η g = 1 → b g = 0 → g ∈ Kc :=
+    fun g h1 h2 => ⟨h1, by rw [h2, map_zero]⟩
+  have hKcH : Kc ≤ η.ker := fun g hg => MonoidHom.mem_ker.mpr hg.1
+  haveI hKcnormal : Kc.Normal := by
+    constructor
+    rintro x ⟨hx1, hx2⟩ g
+    refine ⟨?_, ?_⟩
+    · rw [map_mul, map_mul, hx1, mul_one, map_inv, mul_inv_cancel]
+    · rw [hbconj g x hx1]
+      rcases hη2 g with h | h
+      · rw [h, Units.val_one, one_mul, hx2]
+      · rw [h, neg_one_mul, map_neg, hx2, neg_zero]
+  have hUle : U ≤ Kc := fun g hg =>
+    ⟨(hUker g hg).1, by rw [(hUker g hg).2, map_zero]⟩
+  have hKcopen : IsOpen (Kc : Set (Γ ℚ)) := Subgroup.isOpen_mono hUle hUopen
+  have hKcclosed : IsClosed (Kc : Set (Γ ℚ)) :=
+    Subgroup.isClosed_of_isOpen Kc hKcopen
+  -- `η` takes the value `-1` (it is ramified at `3`)
+  have hneg : ∃ g : Γ ℚ, ((η g : kˣ) : k) = -1 := by
+    by_contra hnone
+    push Not at hnone
+    apply hη3
+    intro σ hσ
+    rw [MonoidHom.mem_ker]
+    rcases hη2 ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat))) σ) with h | h
+    · exact h
+    · exact absurd h (hnone _)
+  obtain ⟨gneg, hgneg⟩ := hneg
+  -- `[Γ ℚ : ker η] = 2`
+  have hone_ne_neg : (1 : kˣ) ≠ -1 := by
+    intro h
+    have h1 : ((1 : kˣ) : k) = ((-1 : kˣ) : k) := congrArg Units.val h
+    rw [Units.val_one, Units.val_neg, Units.val_one] at h1
+    exact h2ne (by linear_combination h1)
+  have hrange : (η.range : Set kˣ) = {1, (-1 : kˣ)} := by
+    ext x
+    constructor
+    · rintro ⟨g, rfl⟩
+      rcases hη2 g with h | h
+      · exact Or.inl h
+      · exact Or.inr (Units.ext (by rw [h, Units.val_neg, Units.val_one]))
+    · rintro (rfl | rfl)
+      · exact ⟨1, map_one η⟩
+      · exact ⟨gneg, Units.ext (by rw [hgneg, Units.val_neg, Units.val_one])⟩
+  have hind2 : η.ker.index = 2 := by
+    rw [Subgroup.index_ker]
+    have hc : Nat.card η.range = ((η.range : Set kˣ)).ncard :=
+      Nat.card_coe_set_eq _
+    rw [hc, hrange, Set.ncard_pair hone_ne_neg]
+  -- `[ker η : Kc] = 3` via the additive character `λ∘b`
+  set ch : η.ker →* Multiplicative (ZMod 3) := {
+    toFun := fun g => Multiplicative.ofAdd (lam (b g.1))
+    map_one' := by
+      show Multiplicative.ofAdd (lam (b (1 : Γ ℚ))) = 1
+      rw [hb1, map_zero, ofAdd_zero]
+    map_mul' := by
+      rintro ⟨x, hx⟩ ⟨y, hy⟩
+      show Multiplicative.ofAdd (lam (b (x * y))) = _
+      rw [hbadd x y (MonoidHom.mem_ker.mp hx) (MonoidHom.mem_ker.mp hy), map_add,
+        ofAdd_add] } with hchdef
+  have hkerch : ch.ker = Kc.subgroupOf η.ker := by
+    ext g
+    rw [MonoidHom.mem_ker, Subgroup.mem_subgroupOf]
+    constructor
+    · intro h
+      have h0 : lam (b g.1) = 0 := by
+        rwa [hchdef, MonoidHom.coe_mk, OneHom.coe_mk, ofAdd_eq_one] at h
+      exact ⟨MonoidHom.mem_ker.mp g.2, h0⟩
+    · rintro ⟨h1, h2⟩
+      show Multiplicative.ofAdd (lam (b g.1)) = 1
+      rw [h2, ofAdd_zero]
+  have hchg₀ : ch ⟨g₀, MonoidHom.mem_ker.mpr hg₀⟩ ≠ 1 := by
+    show Multiplicative.ofAdd (lam (b g₀)) ≠ 1
+    rw [Ne, ofAdd_eq_one]
+    exact hlam
+  have hcardch : Nat.card ch.range = 3 := by
+    have hdvd : Nat.card ch.range ∣ 3 := by
+      have h := Subgroup.card_subgroup_dvd_card ch.range
+      simpa [Nat.card_eq_fintype_card] using h
+    have hnt : Nontrivial ch.range := by
+      rw [Subgroup.nontrivial_iff_exists_ne_one]
+      exact ⟨ch ⟨g₀, MonoidHom.mem_ker.mpr hg₀⟩, ⟨_, rfl⟩, hchg₀⟩
+    have h2le : 1 < Nat.card ch.range := Finite.one_lt_card_iff_nontrivial.mpr hnt
+    rcases Nat.prime_three.eq_one_or_self_of_dvd _ hdvd with h | h
+    · omega
+    · exact h
+  have hrel3 : Kc.relIndex η.ker = 3 := by
+    show (Kc.subgroupOf η.ker).index = 3
+    rw [← hkerch, Subgroup.index_ker, hcardch]
+  have hind6 : Kc.index = 6 := by
+    have h := Subgroup.relIndex_mul_index hKcH
+    rw [hrel3, hind2] at h
+    omega
+  have hcardQ6 : Nat.card ((Γ ℚ) ⧸ Kc) = 6 := by
+    rw [← Subgroup.index_eq_card]
+    exact hind6
+  -- the sextic number field `L` cut out by `Kc`
+  haveI halgQ : Algebra.IsAlgebraic ℚ (AlgebraicClosure ℚ) :=
+    AlgebraicClosure.isAlgebraic ℚ
+  haveI hacQ : IsAlgClosure ℚ (AlgebraicClosure ℚ) :=
+    ⟨inferInstance, halgQ⟩
+  haveI hnormQ : Normal ℚ (AlgebraicClosure ℚ) :=
+    IsAlgClosure.normal ℚ (AlgebraicClosure ℚ)
+  haveI hsepQ : Algebra.IsSeparable ℚ (AlgebraicClosure ℚ) :=
+    Algebra.IsAlgebraic.isSeparable_of_perfectField
+  haveI hgalQ : IsGalois ℚ (AlgebraicClosure ℚ) := ⟨⟩
+  set L : IntermediateField ℚ (AlgebraicClosure ℚ) :=
+    IntermediateField.fixedField (E := AlgebraicClosure ℚ) Kc
+  have hfixL : L.fixingSubgroup = Kc :=
+    InfiniteGalois.fixingSubgroup_fixedField ⟨Kc, hKcclosed⟩
+  haveI hfd : FiniteDimensional ℚ L :=
+    (InfiniteGalois.isOpen_iff_finite L).mp (by rw [hfixL]; exact hKcopen)
+  haveI hgalL : IsGalois ℚ L := (InfiniteGalois.normal_iff_isGalois L).mp
+    (by rw [hfixL]; exact hKcnormal)
+  haveI : NumberField L := ⟨⟩
+  have hrankL : Module.finrank ℚ L = 6 := by
+    have e1 : (Γ ℚ) ⧸ Kc ≃* ((IntermediateField.fixedField
+        ((⟨Kc, hKcclosed⟩ : ClosedSubgroup (Γ ℚ)) : Subgroup (Γ ℚ))) ≃ₐ[ℚ]
+          (IntermediateField.fixedField
+            ((⟨Kc, hKcclosed⟩ : ClosedSubgroup (Γ ℚ)) : Subgroup (Γ ℚ)))) :=
+      InfiniteGalois.normalAutEquivQuotient ⟨Kc, hKcclosed⟩
+    have hcard1 : Nat.card (L ≃ₐ[ℚ] L) = Module.finrank ℚ L :=
+      IsGalois.card_aut_eq_finrank ℚ L
+    rw [← hcard1]
+    exact ((Nat.card_congr e1.toEquiv).symm.trans hcardQ6 : _)
+  -- the quotient map onto the sextic Galois group
+  set w : Γ ℚ →* (Γ ℚ) ⧸ Kc := QuotientGroup.mk' Kc with hwdef
+  have hkerw : w.ker = Kc := by
+    rw [hwdef]
+    exact QuotientGroup.ker_mk' Kc
+  have hfixw : L.fixingSubgroup = w.ker := by
+    rw [hkerw]
+    exact hfixL
+  have hwone : ∀ g : Γ ℚ, g ∈ Kc → w g = 1 := by
+    intro g hg
+    rw [← MonoidHom.mem_ker, hkerw]
+    exact hg
+  -- inertia at `q ∉ {2, 3}` dies in `Kc`
+  have hinKc : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ 3 →
+      ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+      (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))) σ ∈ Kc := by
+    intro q hq hq2 hq3 σ hσ
+    have h1 := hηunr q hq hq3 σ hσ
+    have h2 := hbunr q hq hq2 σ hσ h1
+    exact hmemKc _ h1 h2
+  -- `q ∤ d_L` for `q ∉ {2, 3}`
+  have hno : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ 3 →
+      ¬ ((q : ℤ) ∣ NumberField.discr L) := by
+    intro q hq hq2 hq3
+    have hle : Subgroup.map (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom
+        (localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat)
+        ≤ L.fixingSubgroup := by
+      rintro g ⟨σ, hσ, rfl⟩
+      rw [hfixL]
+      exact hinKc q hq hq2 hq3 σ hσ
+    have hqZ : Prime ((q : ℤ)) := Nat.prime_iff_prime_int.mp hq
+    haveI := IsIntegralClosure.isIntegral_algebra ℤ
+      (A := NumberField.RingOfIntegers L) L
+    rw [NumberField.not_dvd_discr_iff_forall_mem L
+      (NumberField.RingOfIntegers L) hqZ]
+    intro P hP hmem
+    haveI := hP
+    exact isUnramifiedAt_of_inertia_le_fixingSubgroup L hq hle P
+      (by exact_mod_cast hmem)
+  -- the image of the inertia at `2` has exponent 3 in the sextic group
+  have hcard2 : Nat.card (Subgroup.map w
+      (Subgroup.map (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom
+        (localInertiaGroup Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))) ∣
+      3 := by
+    refine card_dvd_three_of_card_six_of_cube_eq_one hcardQ6 _ ?_
+    intro x hx
+    obtain ⟨g1, hg1, rfl⟩ := Subgroup.mem_map.mp hx
+    obtain ⟨σ, hσ, rfl⟩ := Subgroup.mem_map.mp hg1
+    set τ : Γ ℚ := (Field.absoluteGaloisGroup.map (algebraMap ℚ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom σ
+    have hητ : η τ = 1 := hηunr 2 Nat.prime_two (by norm_num) σ hσ
+    have hητ2 : η (τ * τ) = 1 := by rw [map_mul, hητ, mul_one]
+    have hητ3 : η (τ * τ * τ) = 1 := by rw [map_mul, hητ2, hητ, mul_one]
+    have hbτ3 : b (τ * τ * τ) = 0 := by
+      rw [hbadd _ _ hητ2 hητ, hbadd _ _ hητ hητ]
+      have h : b τ + b τ + b τ = 3 * b τ := by ring
+      rw [h, h3k, zero_mul]
+    have hmem3 : τ ^ 3 ∈ Kc := by
+      have hpow : τ ^ 3 = τ * τ * τ := by
+        rw [pow_succ, pow_succ, pow_one]
+      rw [hpow]
+      exact hmemKc _ hητ3 hbτ3
+    rw [← map_pow]
+    exact hwone _ hmem3
+  -- the image of the inertia at `3` has exponent 2 in the sextic group
+  have hcard3 : Nat.card (Subgroup.map w
+      (Subgroup.map (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom
+        (localInertiaGroup Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat))) ∣
+      2 := by
+    refine card_dvd_two_of_card_six_of_sq_eq_one hcardQ6 _ ?_
+    intro x hx
+    obtain ⟨g1, hg1, rfl⟩ := Subgroup.mem_map.mp hx
+    obtain ⟨σ, hσ, rfl⟩ := Subgroup.mem_map.mp hg1
+    set τ : Γ ℚ := (Field.absoluteGaloisGroup.map (algebraMap ℚ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom σ
+    rcases hη2 τ with h | h
+    · -- agreement part of the inertia at `3`: killed by `hbunr`
+      have hb0 : b τ = 0 := hbunr 3 Nat.prime_three (by norm_num) σ hσ h
+      have hmem2 : τ ^ 2 ∈ Kc := pow_mem (hmemKc _ h hb0) 2
+      rw [← map_pow]
+      exact hwone _ hmem2
+    · -- anti-diagonal part: its square dies by `η`-equivariance
+      have hηu : η τ = (-1 : kˣ) :=
+        Units.ext (by rw [h, Units.val_neg, Units.val_one])
+      have hητ2 : η (τ * τ) = 1 := by
+        rw [map_mul, hηu, neg_mul_neg, one_mul]
+      have hbτ2 : b (τ * τ) = 0 := by
+        have hc := hbconj τ (τ * τ) hητ2
+        have hcomm : τ * (τ * τ) * τ⁻¹ = τ * τ := by group
+        rw [hcomm, h] at hc
+        have h2' : (2 : k) * b (τ * τ) = 0 := by linear_combination hc
+        rcases mul_eq_zero.mp h2' with h' | h'
+        · exact absurd h' h2ne
+        · exact h'
+      have hmem2 : τ ^ 2 ∈ Kc := by
+        have hpow : τ ^ 2 = τ * τ := by rw [pow_two]
+        rw [hpow]
+        exact hmemKc _ hητ2 hbτ2
+      rw [← map_pow]
+      exact hwone _ hmem2
+  -- the `IsGaloisGroup` instance pack for the ideal-inertia dictionary
+  haveI := IsIntegralClosure.isIntegral_algebra ℤ
+    (A := NumberField.RingOfIntegers L) L
+  haveI : IsGaloisGroup (L ≃ₐ[ℚ] L) ℤ (NumberField.RingOfIntegers L) := by
+    refine ⟨inferInstance, inferInstance, ?_⟩
+    constructor
+    intro x hx
+    have hfixg : ∀ g : L ≃ₐ[ℚ] L, g (x : L) = (x : L) := fun g =>
+      congrArg (algebraMap (NumberField.RingOfIntegers L) L) (hx g)
+    have hbot : (x : L) ∈ (⊥ : IntermediateField ℚ L) :=
+      (IsGalois.mem_bot_iff_fixed _).mpr hfixg
+    obtain ⟨q, hq⟩ := IntermediateField.mem_bot.mp hbot
+    have hqint : IsIntegral ℤ q := by
+      rw [← isIntegral_algebraMap_iff (B := L)
+        (algebraMap ℚ L).injective, hq]
+      exact x.2
+    obtain ⟨m, hm⟩ := IsIntegrallyClosed.isIntegral_iff.mp hqint
+    refine ⟨m, NumberField.RingOfIntegers.ext ?_⟩
+    show algebraMap (NumberField.RingOfIntegers L) L
+      (algebraMap ℤ (NumberField.RingOfIntegers L) m) = (x : L)
+    rw [← hq, ← hm,
+      ← IsScalarTower.algebraMap_apply ℤ (NumberField.RingOfIntegers L) L,
+      ← IsScalarTower.algebraMap_apply ℤ ℚ L]
+  -- the tame discriminant exponent at `2`: `3·v₂(d_L) ≤ 2·[L:ℚ]`
+  have h2exp : 3 * (NumberField.discr L).natAbs.factorization 2 ≤
+      2 * Module.finrank ℚ L := by
+    refine discr_factorization_le_of_forall_differentIdeal_pow_dvd L 2
+      Nat.prime_two 3 2 ?_
+    intro Q hQprime hQmem d hd
+    haveI := hQprime
+    have hqZ : Prime (((2 : ℕ) : ℤ)) := Nat.prime_iff_prime_int.mp Nat.prime_two
+    have hne : (Ideal.span {((2 : ℕ) : ℤ)} : Ideal ℤ) ≠ ⊥ := by
+      simp only [Ne, Ideal.span_singleton_eq_bot]
+      norm_num
+    haveI hsp : (Ideal.span {((2 : ℕ) : ℤ)} : Ideal ℤ).IsPrime :=
+      (Ideal.span_singleton_prime (by norm_num)).mpr hqZ
+    haveI hlies : Q.LiesOver (Ideal.span {((2 : ℕ) : ℤ)}) :=
+      (Ideal.liesOver_span_iff hQprime.ne_top hqZ).mpr (by exact_mod_cast hQmem)
+    haveI hfinq : Finite (ℤ ⧸ (Ideal.span {((2 : ℕ) : ℤ)} : Ideal ℤ)) :=
+      Ring.HasFiniteQuotients.finiteQuotient hne
+    haveI hmaxZ : (Ideal.span {((2 : ℕ) : ℤ)} : Ideal ℤ).IsMaximal :=
+      hsp.isMaximal_of_ne_bot hne
+    have hsurjZ : Function.Surjective
+        (algebraMap (ℤ ⧸ (Ideal.span {((2 : ℕ) : ℤ)} : Ideal ℤ))
+          ((Ideal.span {((2 : ℕ) : ℤ)} : Ideal ℤ).ResidueField)) :=
+      IsFractionRing.surjective_iff_isField.mpr
+        ((Ideal.Quotient.maximal_ideal_iff_isField_quotient _).mp hmaxZ)
+    haveI : Finite ((Ideal.span {((2 : ℕ) : ℤ)} : Ideal ℤ).ResidueField) :=
+      Finite.of_surjective _ hsurjZ
+    have hcard := Ideal.card_inertia_eq_ramificationIdxIn
+      (G := (L ≃ₐ[ℚ] L)) (Ideal.span {((2 : ℕ) : ℤ)}) Q
+    have hIdvd : Nat.card (Q.inertia (L ≃ₐ[ℚ] L)) ∣ 3 :=
+      inertia_card_dvd_of_card_map_localInertiaGroup_dvd L w hfixw
+        Nat.prime_two Q hQprime hQmem 3 hcard2
+    have he3 : Ideal.ramificationIdx' (Ideal.span {((2 : ℕ) : ℤ)}) Q ∣ 3 := by
+      rw [Ideal.ramificationIdx'_eq_ramificationIdx
+          (Ideal.span {((2 : ℕ) : ℤ)}) Q hne,
+        ← Ideal.ramificationIdxIn_eq_ramificationIdx
+          (Ideal.span {((2 : ℕ) : ℤ)}) Q (L ≃ₐ[ℚ] L), ← hcard]
+      exact hIdvd
+    have htame : ¬ ((2 : ℕ) ∣ Ideal.ramificationIdx'
+        (Ideal.span {((2 : ℕ) : ℤ)}) Q) := by
+      intro h2
+      have h23 : (2 : ℕ) ∣ 3 := h2.trans he3
+      norm_num at h23
+    have hnot := not_pow_ramificationIdx_dvd_differentIdeal L 2 Nat.prime_two
+      Q hQprime hQmem htame
+    have hdlt : d < Ideal.ramificationIdx' (Ideal.span {((2 : ℕ) : ℤ)}) Q := by
+      by_contra hge
+      push Not at hge
+      exact hnot ((pow_dvd_pow Q hge).trans hd)
+    have hele : Ideal.ramificationIdx' (Ideal.span {((2 : ℕ) : ℤ)}) Q ≤ 3 :=
+      Nat.le_of_dvd (by norm_num) he3
+    omega
+  -- the tame discriminant exponent at `3`: `2·v₃(d_L) ≤ 1·[L:ℚ]`
+  have h3exp : 2 * (NumberField.discr L).natAbs.factorization 3 ≤
+      1 * Module.finrank ℚ L := by
+    refine discr_factorization_le_of_forall_differentIdeal_pow_dvd L 3
+      Nat.prime_three 2 1 ?_
+    intro Q hQprime hQmem d hd
+    haveI := hQprime
+    have hqZ : Prime (((3 : ℕ) : ℤ)) := Nat.prime_iff_prime_int.mp Nat.prime_three
+    have hne : (Ideal.span {((3 : ℕ) : ℤ)} : Ideal ℤ) ≠ ⊥ := by
+      simp only [Ne, Ideal.span_singleton_eq_bot]
+      norm_num
+    haveI hsp : (Ideal.span {((3 : ℕ) : ℤ)} : Ideal ℤ).IsPrime :=
+      (Ideal.span_singleton_prime (by norm_num)).mpr hqZ
+    haveI hlies : Q.LiesOver (Ideal.span {((3 : ℕ) : ℤ)}) :=
+      (Ideal.liesOver_span_iff hQprime.ne_top hqZ).mpr (by exact_mod_cast hQmem)
+    haveI hfinq : Finite (ℤ ⧸ (Ideal.span {((3 : ℕ) : ℤ)} : Ideal ℤ)) :=
+      Ring.HasFiniteQuotients.finiteQuotient hne
+    haveI hmaxZ : (Ideal.span {((3 : ℕ) : ℤ)} : Ideal ℤ).IsMaximal :=
+      hsp.isMaximal_of_ne_bot hne
+    have hsurjZ : Function.Surjective
+        (algebraMap (ℤ ⧸ (Ideal.span {((3 : ℕ) : ℤ)} : Ideal ℤ))
+          ((Ideal.span {((3 : ℕ) : ℤ)} : Ideal ℤ).ResidueField)) :=
+      IsFractionRing.surjective_iff_isField.mpr
+        ((Ideal.Quotient.maximal_ideal_iff_isField_quotient _).mp hmaxZ)
+    haveI : Finite ((Ideal.span {((3 : ℕ) : ℤ)} : Ideal ℤ).ResidueField) :=
+      Finite.of_surjective _ hsurjZ
+    have hcard := Ideal.card_inertia_eq_ramificationIdxIn
+      (G := (L ≃ₐ[ℚ] L)) (Ideal.span {((3 : ℕ) : ℤ)}) Q
+    have hIdvd : Nat.card (Q.inertia (L ≃ₐ[ℚ] L)) ∣ 2 :=
+      inertia_card_dvd_of_card_map_localInertiaGroup_dvd L w hfixw
+        Nat.prime_three Q hQprime hQmem 2 hcard3
+    have he2 : Ideal.ramificationIdx' (Ideal.span {((3 : ℕ) : ℤ)}) Q ∣ 2 := by
+      rw [Ideal.ramificationIdx'_eq_ramificationIdx
+          (Ideal.span {((3 : ℕ) : ℤ)}) Q hne,
+        ← Ideal.ramificationIdxIn_eq_ramificationIdx
+          (Ideal.span {((3 : ℕ) : ℤ)}) Q (L ≃ₐ[ℚ] L), ← hcard]
+      exact hIdvd
+    have htame : ¬ ((3 : ℕ) ∣ Ideal.ramificationIdx'
+        (Ideal.span {((3 : ℕ) : ℤ)}) Q) := by
+      intro h3
+      have h32 : (3 : ℕ) ∣ 2 := h3.trans he2
+      norm_num at h32
+    have hnot := not_pow_ramificationIdx_dvd_differentIdeal L 3 Nat.prime_three
+      Q hQprime hQmem htame
+    have hdlt : d < Ideal.ramificationIdx' (Ideal.span {((3 : ℕ) : ℤ)}) Q := by
+      by_contra hge
+      push Not at hge
+      exact hnot ((pow_dvd_pow Q hge).trans hd)
+    have hele : Ideal.ramificationIdx' (Ideal.span {((3 : ℕ) : ℤ)}) Q ≤ 2 :=
+      Nat.le_of_dvd (by norm_num) he2
+    omega
+  -- assemble `|d_L| ≤ 2⁴·3³ = 432` and contradict Minkowski
+  have hD0 : NumberField.discr L ≠ 0 := NumberField.discr_ne_zero L
+  have hN0 : (NumberField.discr L).natAbs ≠ 0 := Int.natAbs_ne_zero.mpr hD0
+  have hfacQ : ∀ q : ℕ, q.Prime → q ∣ (NumberField.discr L).natAbs →
+      q = 2 ∨ q = 3 := by
+    intro q hq hqN
+    by_contra hne'
+    push Not at hne'
+    refine hno q hq hne'.1 hne'.2 ?_
+    have h1 : (((NumberField.discr L).natAbs : ℤ)) ∣ NumberField.discr L := by
+      rw [Int.natCast_natAbs]
+      exact (abs_dvd _ _).mpr dvd_rfl
+    exact dvd_trans (Int.natCast_dvd_natCast.mpr hqN) h1
+  have hsupp : (NumberField.discr L).natAbs.factorization.support ⊆
+      ({2, 3} : Finset ℕ) := by
+    intro q hq
+    rw [Nat.support_factorization] at hq
+    rcases hfacQ q (Nat.prime_of_mem_primeFactors hq)
+      (Nat.dvd_of_mem_primeFactors hq) with h | h <;> simp [h]
+  have hNeq : (NumberField.discr L).natAbs =
+      2 ^ (NumberField.discr L).natAbs.factorization 2 *
+        3 ^ (NumberField.discr L).natAbs.factorization 3 := by
+    conv_lhs => rw [← Nat.prod_factorization_pow_eq_self hN0]
+    rw [Finsupp.prod_of_support_subset _ hsupp (· ^ ·)
+      (fun i _ => pow_zero i), Finset.prod_pair (by norm_num : (2 : ℕ) ≠ 3)]
+  rw [hrankL] at h2exp h3exp
+  have hkey : (NumberField.discr L).natAbs ≤ 432 := by
+    calc (NumberField.discr L).natAbs
+        = 2 ^ (NumberField.discr L).natAbs.factorization 2 *
+          3 ^ (NumberField.discr L).natAbs.factorization 3 := hNeq
+      _ ≤ 2 ^ 4 * 3 ^ 3 :=
+          Nat.mul_le_mul (Nat.pow_le_pow_right (by norm_num) (by omega))
+            (Nat.pow_le_pow_right (by norm_num) (by omega))
+      _ = 432 := by norm_num
+  have hmink := minkowski_sextic_discr_bound L hrankL
+  have habs : |NumberField.discr L| = (((NumberField.discr L).natAbs : ℤ)) :=
+    (Int.natCast_natAbs _).symm
+  rw [habs] at hmink
+  have hcontra : (432 : ℤ) < 432 :=
+    lt_of_lt_of_le hmink (by exact_mod_cast hkey)
+  exact absurd hcontra (lt_irrefl _)
 
 set_option maxHeartbeats 1000000 in
 /-- **The agreement additive character is killed by ray-class
