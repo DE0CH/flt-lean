@@ -57,15 +57,19 @@ proven from `Lift.lean`'s `exists_hardlyRamifiedLift` (B6a),
 `mem_isCompatible`, whose proof consumes the modularity interface — the
 very assemblies that consume the leaf this module discharges. Importing
 `Lift.lean` here would therefore close the dependency cycle that the
-interface's CIRCULARITY GUARD forbids. The three sorried pillars below
+interface's CIRCULARITY GUARD forbids. The three pillars below (α
+PROVEN 2026-07-24 by the proof-sharing refactor; β and γ sorried)
 are consequently FAMILY-FREE restatements, and their docstrings record,
 pillar by pillar, which in-tree twin they mirror and which discharge
 routes are sound:
 
 * pillar α (`exists_hardlyRamified_lift_residual_of_five_le`) mirrors
-  `Lift.lean`'s B6a and may eventually SHARE its proof by a bookkeeping
-  refactor (moving the deformation development out of `Lift.lean`'s
-  `Family.lean` import);
+  `Lift.lean`'s B6a and — since the 2026-07-24 proof-sharing refactor —
+  IS PROVEN by delegation to the shared Family-free module
+  `HardlyRamified/Deformation.lean` (the deformation development moved
+  out of `Lift.lean` and generalized over the coefficient field `k`;
+  both this pillar and B6a now consume the same
+  `exists_hardlyRamified_lift_of_five_le`);
 * pillar β (`exists_threeadic_compatible_member_of_five_le`) mirrors
   B6b + the 3-adic specialization, but its in-tree twin's proof
   (through `Family.lean`) is UNSOUND here — its only sound discharge is
@@ -95,7 +99,12 @@ public import Mathlib.NumberTheory.NumberField.Basic
 public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 -- proof-only imports: the PROVEN 3-adic classification (Family-free —
 -- see the module docstring for why `Lift.lean`/`Family.lean` must NOT
--- be imported) and the matrix-charpoly bridges
+-- be imported), the shared Family-free deformation development (the
+-- 2026-07-24 pillar-α proof-sharing refactor: it discharges pillar α
+-- via `exists_hardlyRamified_lift_of_five_le`, and `Lift.lean`'s B6a
+-- consumes the SAME development at `k = ZMod ℓ`), and the
+-- matrix-charpoly bridges
+import Fermat.FLT.GaloisRepresentation.HardlyRamified.Deformation
 import Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic
 import Mathlib.LinearAlgebra.Charpoly.ToMatrix
 import Mathlib.LinearAlgebra.Matrix.Charpoly.Coeff
@@ -145,18 +154,21 @@ hypothesis set (an irreducible hardly ramified mod-`ℓ` representation,
 the statement is also vacuously sound; no honest weakening of the
 conclusion can make the hypotheses satisfiable.
 
-IN-TREE TWIN: `exists_hardlyRamifiedLift` (`Lift.lean`, stated over
-`ZMod ℓ`), already decomposed there into deformation-theoretic leaves
-(Mazur representability, Carayol subring descent, mod-`ℓ` finiteness,
-minimal presentations). That module imports `Family.lean` and is
-therefore un-importable here (cycle); its lifting development does not
-mathematically depend on the family machinery, so a future bookkeeping
-refactor splitting it into a Family-free module can discharge this
-pillar by delegation (generalizing `ZMod ℓ` to the finite coefficient
-field `k`, which its deformation theory already handles classically).
-Until then the two statements are deliberately kept in sync.
-CIRCULARITY GUARD: must not be proven through `Family.lean`,
-`Lift.lean`, or `Modularity/Interface.lean`. -/
+DISCHARGED (2026-07-24) BY THE ANTICIPATED PROOF-SHARING REFACTOR: the
+deformation development formerly inlined in `Lift.lean` was audited
+(it consumes nothing from `Family.lean`), extracted into the
+Family-free module `HardlyRamified/Deformation.lean`, and generalized
+from `ZMod ℓ` to the finite coefficient field `k`; this pillar is now
+the verbatim application of its terminal theorem
+`exists_hardlyRamified_lift_of_five_le`, and `Lift.lean`'s
+`exists_hardlyRamifiedLift` (the in-tree twin, B6a) is the
+instantiation of the SAME theorem at `k = ZMod ℓ` — one development,
+two consumers, no cycle. The remaining depth lives in the shared
+sorried leaves of `Deformation.lean` (Mazur representability, Carayol
+subring descent, Chebotarev–Brauer–Nesbitt conjugacy, mod-`ℓ`
+finiteness, minimal `W(k)`-presentations, Böckle relation bound).
+CIRCULARITY GUARD (still binding on those leaves): must not be proven
+through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
 theorem exists_hardlyRamified_lift_residual_of_five_le
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
@@ -177,7 +189,7 @@ theorem exists_hardlyRamified_lift_residual_of_five_le
       ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
         (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
           ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat :=
-  sorry
+  exists_hardlyRamified_lift_of_five_le hℓodd hW hℓ5 hρbar hirr
 
 /-- **Pillar β — the compatible system and its `3`-adic member** (sorry
 node — the potential-modularity content, and the genuine depth of the
