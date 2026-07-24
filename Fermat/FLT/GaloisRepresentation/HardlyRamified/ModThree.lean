@@ -5849,66 +5849,341 @@ admissibility conditions (i)–(iii) of Proposition 5 of G. Poitou,
 (1976/77), exp. 6, p. 6-08, because `f = odlyzkoTestFn` does. -/
 noncomputable def poitouF (x : ℝ) : ℝ := odlyzkoTestFn x / Real.cosh (x / 2)
 
+/-- **The schoolbook divided-zeros counting inequality** (PROVEN
+2026-07-24, the Jensen-free counting core of
+`DedekindContinuation.zero_count_window`): if an entire `f : ℂ → ℂ`
+satisfies `f c ≠ 0`, is bounded by `M` on the circle `‖z − c‖ = R`,
+and `t` is a finite set of points of the closed disc `‖z − c‖ ≤ r`
+(`0 < r < R`) whose total `analyticOrderNatAt` is at least `k`, then
+`((R − r)/r)^k · ‖f c‖ ≤ M` — so the multiplicity-weighted zero count
+of the small disc is at most `log(M/‖f c‖)/log((R − r)/r)`.  The
+mathlib pin has no analytic Jensen formula and no Hadamard
+factorization, so the count is manufactured from the
+Cauchy/max-modulus toolkit.  Proof: induction on `k`, dividing off one
+zero per step by `dslope`: if `f ρ = 0` then
+`f = (· − ρ) * dslope f ρ` EXACTLY (`sub_smul_dslope_of_zero`) with
+`dslope f ρ` again entire (the removable-singularity lemma
+`Complex.differentiableOn_dslope`), the division dropping
+`analyticOrderNatAt` at `ρ` by one (`analyticOrderAt_mul` against the
+order-`1` linear factor) and fixing it elsewhere; each divided linear
+factor is `≥ R − r` on the circle and `≤ r` at the centre, and the
+base case `k = 0` is the maximum-modulus principle
+`Complex.norm_le_of_forall_mem_frontier_norm_le`. -/
+theorem sum_analyticOrderNatAt_le_of_frontier_norm_le
+    {f : ℂ → ℂ} {c : ℂ} {r R M : ℝ} {t : Finset ℂ} {k : ℕ}
+    (hf : Differentiable ℂ f) (hr : 0 < r) (hrR : r < R) (hfc : f c ≠ 0)
+    (hM : ∀ z : ℂ, ‖z - c‖ = R → ‖f z‖ ≤ M)
+    (ht : ∀ ρ ∈ t, ‖ρ - c‖ ≤ r)
+    (hk : k ≤ ∑ ρ ∈ t, analyticOrderNatAt f ρ) :
+    ((R - r) / r) ^ k * ‖f c‖ ≤ M := by
+  induction k generalizing f M with
+  | zero =>
+    have hb : ∀ z ∈ frontier (Metric.ball c R), ‖f z‖ ≤ M := by
+      intro z hz
+      rw [frontier_ball c (by linarith : (0 : ℝ) < R).ne'] at hz
+      exact hM z (by rwa [Metric.mem_sphere, dist_eq_norm] at hz)
+    simpa using Complex.norm_le_of_forall_mem_frontier_norm_le
+      Metric.isBounded_ball hf.diffContOnCl hb
+      (subset_closure (Metric.mem_ball_self (by linarith : (0 : ℝ) < R)))
+  | succ k ih =>
+    have hRr : (0 : ℝ) < R - r := by linarith
+    obtain ⟨ρ, hρt, hρ⟩ : ∃ ρ ∈ t, analyticOrderNatAt f ρ ≠ 0 :=
+      Finset.exists_ne_zero_of_sum_ne_zero (by omega)
+    have hfρ : f ρ = 0 := apply_eq_zero_of_analyticOrderNatAt_ne_zero hρ
+    set g : ℂ → ℂ := dslope f ρ with hg_def
+    have hg_diff : Differentiable ℂ g := by
+      rw [hg_def, ← differentiableOn_univ]
+      exact (Complex.differentiableOn_dslope Filter.univ_mem).mpr hf.differentiableOn
+    have hfactor : ∀ z : ℂ, f z = (z - ρ) * g z := fun z => by
+      rw [hg_def, ← smul_eq_mul, sub_smul_dslope_of_zero hfρ]
+    have hgc_ne : g c ≠ 0 := fun h => hfc (by rw [hfactor c, h, mul_zero])
+    have hMg : ∀ z : ℂ, ‖z - c‖ = R → ‖g z‖ ≤ M / (R - r) := by
+      intro z hz
+      have hzρ : R - r ≤ ‖z - ρ‖ := by
+        have h1 : ‖z - c‖ - ‖ρ - c‖ ≤ ‖z - c - (ρ - c)‖ := norm_sub_norm_le _ _
+        rw [sub_sub_sub_cancel_right, hz] at h1
+        have h2 := ht ρ hρt
+        linarith
+      rw [le_div_iff₀ hRr]
+      calc ‖g z‖ * (R - r) ≤ ‖g z‖ * ‖z - ρ‖ :=
+            mul_le_mul_of_nonneg_left hzρ (norm_nonneg _)
+        _ = ‖f z‖ := by rw [hfactor z, norm_mul, mul_comm]
+        _ ≤ M := hM z hz
+    -- order bookkeeping: dividing by the linear factor drops the order
+    -- at `ρ` by exactly one and leaves all other orders unchanged
+    have hfan : ∀ z : ℂ, AnalyticAt ℂ f z := fun z => hf.analyticAt z
+    have hgan : ∀ z : ℂ, AnalyticAt ℂ g z := fun z => hg_diff.analyticAt z
+    have hforder : ∀ z : ℂ, analyticOrderAt f z ≠ ⊤ := by
+      intro z
+      have h0 : analyticOrderAt f c ≠ ⊤ := by
+        rw [analyticOrderAt_eq_zero.mpr (Or.inr hfc)]
+        simp
+      exact AnalyticOnNhd.analyticOrderAt_ne_top_of_isPreconnected
+        (fun w _ => hfan w) isPreconnected_univ (Set.mem_univ c) (Set.mem_univ z) h0
+    have horder_split : ∀ σ : ℂ, analyticOrderAt f σ =
+        analyticOrderAt (fun w : ℂ => w - ρ) σ + analyticOrderAt g σ := by
+      intro σ
+      have hfg : f = (fun w : ℂ => w - ρ) * g := by
+        funext z
+        rw [Pi.mul_apply]
+        exact hfactor z
+      rw [hfg]
+      exact analyticOrderAt_mul (by fun_prop) (hgan σ)
+    have hgorder_ne_top : ∀ σ : ℂ, analyticOrderAt g σ ≠ ⊤ := by
+      intro σ h
+      apply hforder σ
+      rw [horder_split σ, h, add_top]
+    have hnat_ne : ∀ σ : ℂ, σ ≠ ρ →
+        analyticOrderNatAt g σ = analyticOrderNatAt f σ := by
+      intro σ hσ
+      have h1 := horder_split σ
+      rw [(analyticOrderAt_eq_zero (𝕜 := ℂ) (f := fun w : ℂ => w - ρ)
+          (z₀ := σ)).mpr (Or.inr (sub_ne_zero.mpr hσ)), zero_add] at h1
+      simp [analyticOrderNatAt, h1]
+    have hnat_ρ : analyticOrderNatAt f ρ = analyticOrderNatAt g ρ + 1 := by
+      have h1 := horder_split ρ
+      have h2 : analyticOrderAt (fun w : ℂ => w - ρ) ρ = 1 := by
+        simpa using analyticOrderAt_centeredMonomial (𝕜 := ℂ) (z₀ := ρ) (n := 1)
+      rw [h2] at h1
+      simp only [analyticOrderNatAt, h1]
+      rw [add_comm, ENat.toNat_add (hgorder_ne_top ρ) (by simp)]
+      simp
+    have hsum_g : k ≤ ∑ σ ∈ t, analyticOrderNatAt g σ := by
+      have h1 := (Finset.add_sum_erase t (analyticOrderNatAt f) hρt).symm
+      have h2 := (Finset.add_sum_erase t (analyticOrderNatAt g) hρt).symm
+      have h3 : ∑ σ ∈ t.erase ρ, analyticOrderNatAt f σ
+          = ∑ σ ∈ t.erase ρ, analyticOrderNatAt g σ :=
+        Finset.sum_congr rfl fun σ hσ => (hnat_ne σ (Finset.ne_of_mem_erase hσ)).symm
+      omega
+    have hIH := ih hg_diff hgc_ne hMg hsum_g
+    have hcρ : ‖c - ρ‖ ≤ r := by rw [norm_sub_rev]; exact ht ρ hρt
+    have hq_pos : (0 : ℝ) < (R - r) / r := div_pos hRr hr
+    have hr0 : r ≠ 0 := ne_of_gt hr
+    calc ((R - r) / r) ^ (k + 1) * ‖f c‖
+        = ((R - r) / r) ^ (k + 1) * (‖c - ρ‖ * ‖g c‖) := by
+          rw [hfactor c, norm_mul]
+      _ ≤ ((R - r) / r) ^ (k + 1) * (r * ‖g c‖) := by
+          have h4 := mul_le_mul_of_nonneg_right hcρ (norm_nonneg (g c))
+          exact mul_le_mul_of_nonneg_left h4 (pow_nonneg (le_of_lt hq_pos) _)
+      _ = (R - r) * (((R - r) / r) ^ k * ‖g c‖) := by
+          rw [pow_succ]
+          have hqr : (R - r) / r * r = R - r := div_mul_cancel₀ _ hr0
+          calc ((R - r) / r) ^ k * ((R - r) / r) * (r * ‖g c‖)
+              = (R - r) / r * r * (((R - r) / r) ^ k * ‖g c‖) := by ring
+            _ = (R - r) * (((R - r) / r) ^ k * ‖g c‖) := by rw [hqr]
+      _ ≤ (R - r) * (M / (R - r)) := mul_le_mul_of_nonneg_left hIH (le_of_lt hRr)
+      _ = M := by rw [mul_comm, div_mul_cancel₀ M hRr.ne']
+
+/-- **Polynomial max/centre ratio for `ξ_K` on the window disc at
+height `T`** (sorry node, stated 2026-07-24 — the analytic leaf of the
+decomposition of `DedekindContinuation.zero_count_window`): there is a
+natural `A ≥ 1` with `‖ξ_K(z)‖ ≤ T^A·‖ξ_K(2 + iT)‖` for every `T ≥ 2`
+and every `z` on the circle of radius `6` around the centre
+`c = 2 + iT`.  This is the convexity estimate that makes Landau's
+window count `O(log T)`: numerator and denominator carry the same
+exponential Γ-decay in `T`, so the RATIO is polynomial even though
+`ξ_K` itself is exponentially small at height `T`.  (Only the upper
+window is stated; the `−T` window follows by `conj_symm`.)
+
+Intended proof (steps 3–4 of the recorded Landau route, E. Landau,
+*Algebraische Zahlen*, p. 122, quoted by Poitou p. 6-02):
+
+* *Upper bound on the disc.*  Write `ξ = E·ζ_K` on `re s > 1` via
+  `eq_of_one_lt_re`, with `E` the entire elementary factor
+  `s(s−1)·|d|^{s/2}·Γ_ℝ(s)^{r₁}·Γ_ℂ(s)^{r₂}` (nonvanishing off
+  `[0,1]`); the identity theorem extends the factorization to the
+  disc, which stays in `re s ∈ [−4, 8]`, `im s ∈ [T − 6, T + 6]`,
+  hence off the real axis.  There `|ζ_K(s)| = O(T^{A₁})` by
+  Phragmén–Lindelöf (`PhragmenLindelof.vertical_strip`, already
+  imported) between the trivial Dirichlet-series bound
+  `|ζ_K| ≤ ζ(2)^n` on `re s = 8` and the reflected bound on
+  `re s = −4` obtained from `funcEq` and Γ-ratio estimates; the
+  `growth` field supplies the a-priori hypothesis of
+  Phragmén–Lindelöf.
+* *Γ-ratio across the disc.*  `|E(z)|/|E(c)| = T^{O(1)}` for
+  `‖z − c‖ = 6` by the recurrence `Γ(s+1) = s·Γ(s)` (shifting both
+  arguments into a fixed closed substrip at height `≥ T − 6`)
+  together with boundedness of `Γ` and `1/Γ` there — only ratio
+  bounds at bounded horizontal offset are needed, not Stirling.
+* *Lower bound at the centre.*  `‖ξ(c)‖ ≥ |E(c)|·|ζ_K(2 + iT)|` and
+  `|ζ_K(2 + iT)|⁻¹ = ∏_𝔭 |1 − N𝔭^{−(2+iT)}| ≤ ∏_𝔭 (1 + N𝔭^{−2})
+  ≤ ζ_K(2) < ∞` from the Euler factorization of the Dedekind zeta
+  through `eq_of_one_lt_re` at `re = 2`.
+
+Combining the three bounds gives the stated single natural exponent
+`A`. -/
+theorem DedekindContinuation.xi_window_ratio_bound {K : Type*} [Field K]
+    [NumberField K] (pkg : DedekindContinuation K) :
+    ∃ A : ℕ, 0 < A ∧ ∀ T : ℝ, 2 ≤ T → ∀ z : ℂ,
+      ‖z - (2 + (T : ℂ) * Complex.I)‖ = 6 →
+      ‖pkg.xi z‖ ≤ T ^ A * ‖pkg.xi (2 + (T : ℂ) * Complex.I)‖ := by
+  sorry
+
 /-- **Landau's window count: `O(log T)` zeros of `ξ_K` at height `T`,
-with multiplicity** (sorry node, stated 2026-07-24 — leaf (a) of the
-decomposition of `DedekindContinuation.fejer_zero_sum_tendsto`): there
-is a constant `C > 0` such that for every `T ≥ 2`, every finite set of
-points whose ordinates lie within `1` of `±T` carries total `mult` at
-most `C·log T`.  (Points of `mult = 0` contribute nothing, so no
-zero-set membership hypothesis is needed; the set-of-zeros form
-follows by summing over `finite_truncation` truncations.)  This is
+with multiplicity** (DECOMPOSED 2026-07-24, counting core PROVEN —
+leaf (a) of the decomposition of
+`DedekindContinuation.fejer_zero_sum_tendsto`): there is a constant
+`C > 0` such that for every `T ≥ 2`, every finite set of points whose
+ordinates lie within `1` of `±T` carries total `mult` at most
+`C·log T`.  (Points of `mult = 0` contribute nothing, so no zero-set
+membership hypothesis is needed; the set-of-zeros form follows by
+summing over `finite_truncation` truncations.)  This is
 `N(T+1) − N(T) = O(log T)` of E. Landau, *Algebraische Zahlen*,
 p. 122, quoted by Poitou p. 6-02; the contour leaf
 `DedekindContinuation.weil_explicit_formula_F` consumes it through its
 `hcount` hypothesis (horizontal edges through zero-free heights,
 Borel–Carathéodory partial fractions for `ξ'/ξ`).
 
-Intended proof — the Jensen route.  AUDIT (2026-07-24): the mathlib
-pin has NO complex-analytic Jensen formula and NO Hadamard
-factorization (`Mathlib.Analysis.Convex.Jensen` is the unrelated
-convex-combination inequality), so the counting inequality must be
-manufactured from the Cauchy/max-modulus toolkit
-(`Complex.norm_le_of_forall_mem_frontier_norm_le` in
-`Mathlib.Analysis.Complex.AbsMax`, and the local factorization
-`ξ = (· − ρ)^m • g`, `g ρ ≠ 0`, of
-`Mathlib.Analysis.Analytic.IsolatedZeros`/`Order`):
-
-1. *Reduction to the window at `+T`.*  `conj_symm` gives
-   `ξ ∘ conj = conj ∘ ξ`, and conjugation transports the local
-   factorization at `ρ` to `ρ̄`, so `analyticOrderNatAt`, hence
-   `mult`, is conjugation-invariant.
-2. *Divided-zeros (schoolbook Jensen) inequality.*  Let `c = 2 + iT`,
-   `r = 5/2`, `R = 6`; the disc `‖s − c‖ ≤ r` contains every strip
-   point with `|im s − T| ≤ 1` (distance `≤ √5 < 5/2`).  With
-   `ρ₁, …, ρ_k` the zeros of `ξ` in `‖s − c‖ ≤ r` listed with
-   multiplicity (finite by `finite_truncation`), iterate the local
-   factorization to write `ξ(s) = ∏ᵢ (s − ρᵢ) · g(s)` with `g` entire
-   and zero-free on the closed disc of radius `r`.  Max-modulus for
-   `g` on `‖s − c‖ ≤ R` plus `|s − ρᵢ| ≥ R − r` on the boundary and
-   `|c − ρᵢ| ≤ r` at the centre give
-   `k·log((R − r)/r) ≤ log (max_{‖s−c‖=R} ‖ξ‖ / ‖ξ(c)‖)`.
-3. *Upper bound on the disc.*  Write `ξ = E·ζ_K` via
-   `eq_of_one_lt_re` and the identity theorem, `E` the elementary
-   factor `s(s−1)·|d|^{s/2}·Γ_ℝ^{r₁}·Γ_ℂ^{r₂}`.  On the rectangle
-   `−4 ≤ re s ≤ 8`, `|im s| ∈ [T − 6, T + 6]`: `|ζ_K| = O(T^A)` by
-   Phragmén–Lindelöf (`PhragmenLindelof.vertical_strip`, already
-   imported) between the trivial Dirichlet-series bound
-   `|ζ_K| ≤ ζ(2)^n` on `re s = 8` and the reflected bound on
-   `re s = −4` obtained from `funcEq` and Γ-ratio estimates; and
-   `|E(s)|/|E(c)| = T^{O(1)}` on the disc by the recurrence
-   `Γ(z+1) = z·Γ(z)` (reducing the shift to a bounded strip) plus
-   boundedness of `Γ` on closed substrips away from its poles.  The
-   `growth` field supplies the Phragmén–Lindelöf a-priori hypothesis.
-4. *Lower bound at the centre.*  `‖ξ(c)‖ ≥ |E(c)|·1/ζ_K(2)`: from the
-   Euler factorization of the Dedekind zeta,
-   `|ζ_K(2 + iT)|⁻¹ = ∏ |1 − N𝔭^{−(2+iT)}| ≤ ∏ (1 + N𝔭^{−2}) ≤
-   ζ_K(2) < ∞`.  Combining 2–4: `k ≤ C·log T`. -/
+PROOF (realized here): let `c = 2 + iT`, `r = 5/2`, `R = 6`.  Every
+strip point with `|im s − T| ≤ 1` lies in the disc `‖s − c‖ ≤ r`
+(distance `≤ √5 < 5/2`), and every strip point with
+`|im s + T| ≤ 1` in the disc around `c̄ = 2 − iT`; `mult` equals
+`analyticOrderNatAt` on the strip (`mult_mem_strip`).  The Jensen-free
+counting core `sum_analyticOrderNatAt_le_of_frontier_norm_le`
+(divided-zeros factorization by `dslope` + maximum modulus) turns the
+boundary/centre ratio bound of the remaining analytic leaf
+`DedekindContinuation.xi_window_ratio_bound` — `‖ξ‖ ≤ T^A·‖ξ(c)‖` on
+`‖z − c‖ = 6` — into `(7/5)^k·‖ξ(c)‖ ≤ T^A·‖ξ(c)‖` for the window
+count `k` at `+T`; `ξ(c) ≠ 0` by `ne_zero_of_one_lt_re`, and taking
+`Real.log` gives `k ≤ A·log T/log(7/5)`.  The `−T` window is
+transported to `+T` by `conj_symm` (an isometry on the circle and on
+the centre value), so `C = 2A/log(7/5)` works. -/
 theorem DedekindContinuation.zero_count_window {K : Type*} [Field K]
     [NumberField K] (pkg : DedekindContinuation K) :
     ∃ C : ℝ, 0 < C ∧ ∀ T : ℝ, 2 ≤ T → ∀ s : Finset ℂ,
       (∀ ρ ∈ s, |(|ρ.im| - T)| ≤ 1) →
       ∑ ρ ∈ s, (pkg.mult ρ : ℝ) ≤ C * Real.log T := by
-  sorry
+  classical
+  obtain ⟨A, hApos, hA⟩ := pkg.xi_window_ratio_bound
+  have hlog75 : (0 : ℝ) < Real.log (7 / 5) := Real.log_pos (by norm_num)
+  have hAr : (0 : ℝ) < A := by exact_mod_cast hApos
+  refine ⟨2 * (A : ℝ) / Real.log (7 / 5), div_pos (by linarith) hlog75, ?_⟩
+  intro T hT s hs
+  have hlogT : (0 : ℝ) < Real.log T := Real.log_pos (by linarith)
+  have hAP := hA T hT
+  -- the two disc centres at heights `±T`
+  set cP : ℂ := 2 + (T : ℂ) * Complex.I with hcP_def
+  set cM : ℂ := 2 - (T : ℂ) * Complex.I with hcM_def
+  have hreP : cP.re = 2 := by simp [hcP_def]
+  have himP : cP.im = T := by simp [hcP_def]
+  have hreM : cM.re = 2 := by simp [hcM_def]
+  have himM : cM.im = -T := by simp [hcM_def]
+  have hxiP : pkg.xi cP ≠ 0 := pkg.ne_zero_of_one_lt_re _ (by rw [hreP]; norm_num)
+  have hxiM : pkg.xi cM ≠ 0 := pkg.ne_zero_of_one_lt_re _ (by rw [hreM]; norm_num)
+  have hconj : (starRingEnd ℂ) cP = cM := by
+    simp [hcP_def, hcM_def, Complex.ext_iff]
+  have hconj' : (starRingEnd ℂ) cM = cP := by
+    simp [hcP_def, hcM_def, Complex.ext_iff]
+  have hnorm_c : ‖pkg.xi cM‖ = ‖pkg.xi cP‖ := by
+    rw [← hconj, pkg.conj_symm, RCLike.norm_conj]
+  -- the ratio bound on the mirror disc, by Schwarz reflection
+  have hAM : ∀ z : ℂ, ‖z - cM‖ = 6 → ‖pkg.xi z‖ ≤ T ^ A * ‖pkg.xi cM‖ := by
+    intro z hz
+    have h1 : ‖(starRingEnd ℂ) z - cP‖ = 6 := by
+      rw [← hconj', ← map_sub, RCLike.norm_conj]
+      exact hz
+    have h2 := hAP _ h1
+    rw [pkg.conj_symm z, RCLike.norm_conj] at h2
+    rw [hnorm_c]
+    exact h2
+  -- the per-disc count from the Jensen-free counting core
+  have key : ∀ c : ℂ, pkg.xi c ≠ 0 →
+      (∀ z : ℂ, ‖z - c‖ = 6 → ‖pkg.xi z‖ ≤ T ^ A * ‖pkg.xi c‖) →
+      ∀ u : Finset ℂ, (∀ ρ ∈ u, ‖ρ - c‖ ≤ 5 / 2) →
+      ∑ ρ ∈ u, (analyticOrderNatAt pkg.xi ρ : ℝ)
+        ≤ (A : ℝ) * Real.log T / Real.log (7 / 5) := by
+    intro c hc hMb u hu
+    have hcount := sum_analyticOrderNatAt_le_of_frontier_norm_le
+      pkg.differentiable (by norm_num : (0 : ℝ) < 5 / 2)
+      (by norm_num : (5 : ℝ) / 2 < 6) hc hMb hu le_rfl
+    have h75 : ((6 : ℝ) - 5 / 2) / (5 / 2) = 7 / 5 := by norm_num
+    rw [h75] at hcount
+    have hxin : (0 : ℝ) < ‖pkg.xi c‖ := norm_pos_iff.mpr hc
+    have hk75 : ((7 : ℝ) / 5) ^ (∑ ρ ∈ u, analyticOrderNatAt pkg.xi ρ) ≤ T ^ A :=
+      le_of_mul_le_mul_right hcount hxin
+    have hlogk := Real.log_le_log (by positivity) hk75
+    rw [Real.log_pow, Real.log_pow] at hlogk
+    rw [le_div_iff₀ hlog75]
+    push_cast at hlogk ⊢
+    exact hlogk
+  -- points within `1` of `±T` and of positive multiplicity lie in the discs
+  have hdist : ∀ c ρ : ℂ, c.re = 2 → 0 < ρ.re → ρ.re < 1 →
+      |ρ.im - c.im| ≤ 1 → ‖ρ - c‖ ≤ 5 / 2 := by
+    intro c ρ hcre hre0 hre1 him
+    have habs := abs_le.mp him
+    have hsq : ‖ρ - c‖ ^ 2 ≤ (5 / 2 : ℝ) ^ 2 := by
+      rw [Complex.sq_norm, Complex.normSq_apply, Complex.sub_re, Complex.sub_im, hcre]
+      nlinarith [habs.1, habs.2]
+    nlinarith [hsq, norm_nonneg (ρ - c)]
+  have hmult_eq : ∀ ρ : ℂ, pkg.mult ρ ≠ 0 →
+      pkg.mult ρ = analyticOrderNatAt pkg.xi ρ := by
+    intro ρ h
+    have hst := pkg.mult_mem_strip h
+    simp only [DedekindContinuation.mult]
+    rw [if_pos hst]
+  -- restrict to points of nonzero multiplicity and split by hemisphere
+  set sf := s.filter (fun ρ => pkg.mult ρ ≠ 0) with hsf_def
+  have hstep1 : ∑ ρ ∈ sf, (pkg.mult ρ : ℝ) = ∑ ρ ∈ s, (pkg.mult ρ : ℝ) := by
+    rw [hsf_def]
+    exact Finset.sum_filter_of_ne fun ρ _ hρ h => hρ (by rw [h]; norm_num)
+  have hsplit := Finset.sum_filter_add_sum_filter_not sf (fun ρ => 0 ≤ ρ.im)
+      (fun ρ => (pkg.mult ρ : ℝ))
+  have hup : ∑ ρ ∈ sf.filter (fun ρ => 0 ≤ ρ.im), (pkg.mult ρ : ℝ)
+      ≤ (A : ℝ) * Real.log T / Real.log (7 / 5) := by
+    have hmem : ∀ ρ ∈ sf.filter (fun ρ => 0 ≤ ρ.im), ‖ρ - cP‖ ≤ 5 / 2 := by
+      intro ρ hρ
+      rw [Finset.mem_filter] at hρ
+      obtain ⟨hρsf, hρim⟩ := hρ
+      rw [hsf_def, Finset.mem_filter] at hρsf
+      obtain ⟨hρs, hρm⟩ := hρsf
+      obtain ⟨h0, h1⟩ := pkg.mult_mem_strip hρm
+      refine hdist cP ρ hreP h0 h1 ?_
+      rw [himP]
+      have h2 := hs ρ hρs
+      rwa [abs_of_nonneg hρim] at h2
+    calc ∑ ρ ∈ sf.filter (fun ρ => 0 ≤ ρ.im), (pkg.mult ρ : ℝ)
+        = ∑ ρ ∈ sf.filter (fun ρ => 0 ≤ ρ.im),
+            (analyticOrderNatAt pkg.xi ρ : ℝ) := by
+          refine Finset.sum_congr rfl fun ρ hρ => ?_
+          rw [Finset.mem_filter] at hρ
+          have hρm : pkg.mult ρ ≠ 0 := by
+            have h3 := hρ.1
+            rw [hsf_def, Finset.mem_filter] at h3
+            exact h3.2
+          rw [hmult_eq ρ hρm]
+      _ ≤ (A : ℝ) * Real.log T / Real.log (7 / 5) := key cP hxiP hAP _ hmem
+  have hlow : ∑ ρ ∈ sf.filter (fun ρ => ¬0 ≤ ρ.im), (pkg.mult ρ : ℝ)
+      ≤ (A : ℝ) * Real.log T / Real.log (7 / 5) := by
+    have hmem : ∀ ρ ∈ sf.filter (fun ρ => ¬0 ≤ ρ.im), ‖ρ - cM‖ ≤ 5 / 2 := by
+      intro ρ hρ
+      rw [Finset.mem_filter] at hρ
+      obtain ⟨hρsf, hρim⟩ := hρ
+      rw [hsf_def, Finset.mem_filter] at hρsf
+      obtain ⟨hρs, hρm⟩ := hρsf
+      obtain ⟨h0, h1⟩ := pkg.mult_mem_strip hρm
+      refine hdist cM ρ hreM h0 h1 ?_
+      rw [himM]
+      have h2 := hs ρ hρs
+      rw [abs_of_neg (not_le.mp hρim)] at h2
+      rw [show ρ.im - -T = -(-ρ.im - T) by ring, abs_neg]
+      exact h2
+    calc ∑ ρ ∈ sf.filter (fun ρ => ¬0 ≤ ρ.im), (pkg.mult ρ : ℝ)
+        = ∑ ρ ∈ sf.filter (fun ρ => ¬0 ≤ ρ.im),
+            (analyticOrderNatAt pkg.xi ρ : ℝ) := by
+          refine Finset.sum_congr rfl fun ρ hρ => ?_
+          rw [Finset.mem_filter] at hρ
+          have hρm : pkg.mult ρ ≠ 0 := by
+            have h3 := hρ.1
+            rw [hsf_def, Finset.mem_filter] at h3
+            exact h3.2
+          rw [hmult_eq ρ hρm]
+      _ ≤ (A : ℝ) * Real.log T / Real.log (7 / 5) := key cM hxiM hAM _ hmem
+  rw [← hstep1, ← hsplit]
+  have hlog75' : Real.log (7 / 5) ≠ 0 := ne_of_gt hlog75
+  have hC : 2 * ((A : ℝ) * Real.log T / Real.log (7 / 5))
+      = 2 * (A : ℝ) / Real.log (7 / 5) * Real.log T := by
+    field_simp
+  linarith [hup, hlow, hC]
 
 /-- **The folded vertical-edge functional of Poitou's contour**
 (definition, 2026-07-24 — introduced in the decomposition of
