@@ -4901,6 +4901,48 @@ theorem exists_forall_log_le_tsum_rpow_neg_natCard_quotient_prime_and_ne_add
   sorry
 
 open IsDedekindDomain in
+/-- **Complete-splitting count at a Frobenius-pinned degree-one prime**
+(sorry leaf) — the per-prime core of the splitting comparison
+`finrank_fixedField_mul_tsum_rpow_neg_le_tsum_fixedField`: if a
+degree-one prime `P` of `F` away from `ℓ` has a Frobenius inside
+`H' ≤ Gal(E/F)` (`σ ζ = ζ ^ N(P)` for some `σ ∈ H'`), then `P` splits
+completely in `M = E^{H'}`: there are at least `[M : F]` places of `M`
+lying over `P` with residue cardinality exactly `N(P)`.
+
+Intended proof: pick a prime `R` of `𝓞 E` over each place `Q` of `M`
+over `P`. The arithmetic Frobenius at `R` over `F` acts on `ζ` by
+`ζ ↦ ζ ^ N(P)` (`IsArithFrobAt.exists_of_isInvariant` +
+`AlgHom.IsArithFrobAt.apply_of_pow_eq_one`), hence EQUALS the given
+`σ ∈ H'` because `Gal(E/F)` acts faithfully on `ζ` (`E = F(ζ)`,
+`IsCyclotomicExtension.adjoin_primitive_root_eq_top`); being in `H'` it
+fixes `M` pointwise, so every element of the image of `𝓞 M ⧸ Q` in
+`𝓞 E ⧸ R` satisfies `y ^ N(P) = y`, forcing
+`#(𝓞 M ⧸ Q) = N(P)` (roots of `X ^ N(P) - X` number at most `N(P)` in
+the field `𝓞 E ⧸ R`), i.e. inertia degree `1`
+(`Ideal.cardQuot_pow_inertiaDeg`); and the inertia group of `R` in
+`Gal(E/F)` is trivial because an inertia element fixes `ζ` mod `R`
+while the powers of `ζ` stay distinct mod `R` (`ℓ` is invertible mod
+`R`, geometric-sum argument), so `e(R/P) = 1`
+(`Ideal.card_inertia_eq_ramificationIdxIn`) and a fortiori `e(Q/P) = 1`
+(`Ideal.ramificationIdx_tower`). By the fundamental identity
+`Ideal.sum_ramification_inertia` over `𝓞 F → 𝓞 M` the number of such
+`Q` is then exactly `[M : F]`. -/
+theorem finrank_fixedField_le_natCard_setOf_under_eq_of_map_zeta_eq_pow
+    {F : Type*} [Field F] [NumberField F] {E : Type*} [Field E] [NumberField E]
+    [Algebra F E] {ℓ : ℕ} (hℓ : ℓ.Prime) [IsCyclotomicExtension {ℓ} F E]
+    {ζ : E} (hζ : IsPrimitiveRoot ζ ℓ) (H' : Subgroup (E ≃ₐ[F] E))
+    [NumberField ↥(IntermediateField.fixedField H')]
+    (P : HeightOneSpectrum (𝓞 F)) (hp : (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime)
+    (hne : Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ)
+    (hσ : ∃ σ ∈ H', σ ζ = ζ ^ Nat.card (𝓞 F ⧸ P.asIdeal)) :
+    Module.finrank F ↥(IntermediateField.fixedField H') ≤
+      Nat.card {Q : HeightOneSpectrum (𝓞 ↥(IntermediateField.fixedField H')) //
+        Q.asIdeal.under (𝓞 F) = P.asIdeal ∧
+        Nat.card (𝓞 ↥(IntermediateField.fixedField H') ⧸ Q.asIdeal) =
+          Nat.card (𝓞 F ⧸ P.asIdeal)} :=
+  sorry
+
+open IsDedekindDomain in
 /-- **Complete splitting in the fixed field of a Frobenius-closed
 subgroup** (sorry leaf) — the algebraic half of Deuring's trick: if
 every degree-one prime `P` of `F` away from `ℓ` has a Frobenius inside
@@ -4947,8 +4989,189 @@ theorem finrank_fixedField_mul_tsum_rpow_neg_le_tsum_fixedField
           Nat.card (𝓞 ↥(IntermediateField.fixedField H') ⧸ Q.asIdeal) ≠ ℓ},
         (Nat.card (𝓞 ↥(IntermediateField.fixedField H') ⧸
           (Q : HeightOneSpectrum
+            (𝓞 ↥(IntermediateField.fixedField H'))).asIdeal) : ℝ≥0∞) ^ (-s) := by
+  classical
+  -- residue cardinality is preserved under contraction to `F`
+  have hcard : ∀ Q : HeightOneSpectrum (𝓞 ↥(IntermediateField.fixedField H')),
+      (Nat.card (𝓞 ↥(IntermediateField.fixedField H') ⧸ Q.asIdeal)).Prime →
+      Nat.card (𝓞 F ⧸ Q.asIdeal.under (𝓞 F)) =
+        Nat.card (𝓞 ↥(IntermediateField.fixedField H') ⧸ Q.asIdeal) := by
+    intro Q hq
+    haveI := Q.isPrime
+    exact natCard_quotient_under_eq_of_natCard_prime (A := 𝓞 F) Q.asIdeal hq
+  have hPrime : ∀ Q : HeightOneSpectrum (𝓞 ↥(IntermediateField.fixedField H')),
+      (Q.asIdeal.under (𝓞 F)).IsPrime := by
+    intro Q
+    haveI := Q.isPrime
+    exact Ideal.IsPrime.under (𝓞 F) Q.asIdeal
+  have hne_bot : ∀ Q : HeightOneSpectrum (𝓞 ↥(IntermediateField.fixedField H')),
+      (Nat.card (𝓞 ↥(IntermediateField.fixedField H') ⧸ Q.asIdeal)).Prime →
+      Q.asIdeal.under (𝓞 F) ≠ ⊥ := by
+    intro Q hq hbot
+    haveI := Q.isPrime
+    haveI hfin : Finite (𝓞 F ⧸ Q.asIdeal.under (𝓞 F)) := by
+      refine Nat.finite_of_card_ne_zero ?_
+      rw [hcard Q hq]
+      exact hq.ne_zero
+    have hinj : Function.Injective
+        (Ideal.Quotient.mk (Q.asIdeal.under (𝓞 F))) := by
+      rw [RingHom.injective_iff_ker_eq_bot, Ideal.mk_ker]
+      exact hbot
+    haveI : Finite (𝓞 F) := Finite.of_injective _ hinj
+    exact not_finite (𝓞 F)
+  -- the contraction map on the index subtypes
+  set Ψ : {Q : HeightOneSpectrum (𝓞 ↥(IntermediateField.fixedField H')) //
+      (Nat.card (𝓞 ↥(IntermediateField.fixedField H') ⧸ Q.asIdeal)).Prime ∧
+      Nat.card (𝓞 ↥(IntermediateField.fixedField H') ⧸ Q.asIdeal) ≠ ℓ} →
+      {P : HeightOneSpectrum (𝓞 F) //
+        (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ} :=
+    fun Q => ⟨⟨(Q : HeightOneSpectrum
+        (𝓞 ↥(IntermediateField.fixedField H'))).asIdeal.under (𝓞 F),
+      hPrime (Q : HeightOneSpectrum (𝓞 ↥(IntermediateField.fixedField H'))),
+      hne_bot (Q : HeightOneSpectrum
+        (𝓞 ↥(IntermediateField.fixedField H'))) Q.2.1⟩,
+      by
+        constructor
+        · rw [hcard (Q : HeightOneSpectrum
+            (𝓞 ↥(IntermediateField.fixedField H'))) Q.2.1]
+          exact Q.2.1
+        · rw [hcard (Q : HeightOneSpectrum
+            (𝓞 ↥(IntermediateField.fixedField H'))) Q.2.1]
+          exact Q.2.2⟩ with hΨdef
+  have hNeq : ∀ Q : {Q : HeightOneSpectrum
+      (𝓞 ↥(IntermediateField.fixedField H')) //
+      (Nat.card (𝓞 ↥(IntermediateField.fixedField H') ⧸ Q.asIdeal)).Prime ∧
+      Nat.card (𝓞 ↥(IntermediateField.fixedField H') ⧸ Q.asIdeal) ≠ ℓ},
+      Nat.card (𝓞 F ⧸ ((Ψ Q : {P : HeightOneSpectrum (𝓞 F) //
+        (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+        Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ}) :
+          HeightOneSpectrum (𝓞 F)).asIdeal) =
+      Nat.card (𝓞 ↥(IntermediateField.fixedField H') ⧸
+        (Q : HeightOneSpectrum (𝓞 ↥(IntermediateField.fixedField H'))).asIdeal) := by
+    intro Q
+    rw [hΨdef]
+    exact hcard (Q : HeightOneSpectrum
+      (𝓞 ↥(IntermediateField.fixedField H'))) Q.2.1
+  -- fiber lower bound: complete splitting puts `[M : F]` places in each fiber
+  have hfib : ∀ p : {P : HeightOneSpectrum (𝓞 F) //
+      (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ},
+      (Module.finrank F ↥(IntermediateField.fixedField H') : ℝ≥0∞) ≤
+        (ENat.card ↥(Ψ ⁻¹' {p}) : ℝ≥0∞) := by
+    intro p
+    have hcount := finrank_fixedField_le_natCard_setOf_under_eq_of_map_zeta_eq_pow
+      hℓ hζ H' (p : HeightOneSpectrum (𝓞 F)) p.2.1 p.2.2
+      (hfrob (p : HeightOneSpectrum (𝓞 F)) p.2.1 p.2.2)
+    -- the counted subtype injects into the fiber
+    have hmem : ∀ Q : {Q : HeightOneSpectrum
+        (𝓞 ↥(IntermediateField.fixedField H')) //
+        Q.asIdeal.under (𝓞 F) = (p : HeightOneSpectrum (𝓞 F)).asIdeal ∧
+        Nat.card (𝓞 ↥(IntermediateField.fixedField H') ⧸ Q.asIdeal) =
+          Nat.card (𝓞 F ⧸ (p : HeightOneSpectrum (𝓞 F)).asIdeal)},
+        (Nat.card (𝓞 ↥(IntermediateField.fixedField H') ⧸
+          (Q : HeightOneSpectrum
+            (𝓞 ↥(IntermediateField.fixedField H'))).asIdeal)).Prime ∧
+        Nat.card (𝓞 ↥(IntermediateField.fixedField H') ⧸
+          (Q : HeightOneSpectrum
+            (𝓞 ↥(IntermediateField.fixedField H'))).asIdeal) ≠ ℓ := by
+      intro Q
+      constructor
+      · rw [Q.2.2]
+        exact p.2.1
+      · rw [Q.2.2]
+        exact p.2.2
+    set ι : {Q : HeightOneSpectrum (𝓞 ↥(IntermediateField.fixedField H')) //
+        Q.asIdeal.under (𝓞 F) = (p : HeightOneSpectrum (𝓞 F)).asIdeal ∧
+        Nat.card (𝓞 ↥(IntermediateField.fixedField H') ⧸ Q.asIdeal) =
+          Nat.card (𝓞 F ⧸ (p : HeightOneSpectrum (𝓞 F)).asIdeal)} →
+        ↥(Ψ ⁻¹' {p}) :=
+      fun Q => ⟨⟨(Q : HeightOneSpectrum
+          (𝓞 ↥(IntermediateField.fixedField H'))), hmem Q⟩,
+        by
+          show Ψ ⟨(Q : HeightOneSpectrum
+            (𝓞 ↥(IntermediateField.fixedField H'))), hmem Q⟩ = p
+          rw [hΨdef]
+          exact Subtype.ext (IsDedekindDomain.HeightOneSpectrum.ext Q.2.1)⟩
+      with hιdef
+    have hιinj : Function.Injective ι := by
+      intro Q₁ Q₂ h
+      rw [hιdef] at h
+      simp only [Subtype.mk.injEq] at h
+      exact Subtype.ext h
+    rcases finite_or_infinite ↥(Ψ ⁻¹' {p}) with hfin | hinf
+    · haveI := hfin
+      haveI : Finite {Q : HeightOneSpectrum
+          (𝓞 ↥(IntermediateField.fixedField H')) //
+          Q.asIdeal.under (𝓞 F) = (p : HeightOneSpectrum (𝓞 F)).asIdeal ∧
+          Nat.card (𝓞 ↥(IntermediateField.fixedField H') ⧸ Q.asIdeal) =
+            Nat.card (𝓞 F ⧸ (p : HeightOneSpectrum (𝓞 F)).asIdeal)} :=
+        Finite.of_injective ι hιinj
+      have h1 := Nat.card_le_card_of_injective ι hιinj
+      have h2 : Module.finrank F ↥(IntermediateField.fixedField H') ≤
+          Nat.card ↥(Ψ ⁻¹' {p}) := le_trans hcount h1
+      rw [ENat.card_eq_coe_natCard]
+      exact_mod_cast h2
+    · haveI := hinf
+      rw [ENat.card_eq_top_of_infinite]
+      simp only [ENat.toENNReal_top]
+      exact le_top
+  -- fiberwise decomposition of the `M`-side sum
+  calc (Module.finrank F ↥(IntermediateField.fixedField H') : ℝ≥0∞) *
+      (∑' P : {P : HeightOneSpectrum (𝓞 F) //
+          (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ},
+        (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^ (-s))
+      = ∑' p : {P : HeightOneSpectrum (𝓞 F) //
+          (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ},
+        (Module.finrank F ↥(IntermediateField.fixedField H') : ℝ≥0∞) *
+          (Nat.card (𝓞 F ⧸ (p : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^
+            (-s) := ENNReal.tsum_mul_left.symm
+    _ ≤ ∑' p : {P : HeightOneSpectrum (𝓞 F) //
+          (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ},
+        (ENat.card ↥(Ψ ⁻¹' {p}) : ℝ≥0∞) *
+          (Nat.card (𝓞 F ⧸ (p : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^
+            (-s) :=
+        ENNReal.tsum_le_tsum fun p => mul_le_mul' (hfib p) le_rfl
+    _ = ∑' p : {P : HeightOneSpectrum (𝓞 F) //
+          (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ},
+        ∑' _Qf : ↥(Ψ ⁻¹' {p}),
+          (Nat.card (𝓞 F ⧸ (p : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^
+            (-s) :=
+        tsum_congr fun p => (ENNReal.tsum_const _).symm
+    _ = ∑' p : {P : HeightOneSpectrum (𝓞 F) //
+          (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ},
+        ∑' Qf : ↥(Ψ ⁻¹' {p}),
+          (Nat.card (𝓞 F ⧸ ((Ψ (Qf : {Q : HeightOneSpectrum
+            (𝓞 ↥(IntermediateField.fixedField H')) //
+            (Nat.card (𝓞 ↥(IntermediateField.fixedField H') ⧸
+              Q.asIdeal)).Prime ∧
+            Nat.card (𝓞 ↥(IntermediateField.fixedField H') ⧸
+              Q.asIdeal) ≠ ℓ}) :
+              {P : HeightOneSpectrum (𝓞 F) //
+                (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+                Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ}) :
+              HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^ (-s) :=
+        tsum_congr fun p => tsum_congr fun Qf => by
+          rw [show Ψ Qf.1 = p from Qf.2]
+    _ = ∑' Q : {Q : HeightOneSpectrum
+          (𝓞 ↥(IntermediateField.fixedField H')) //
+          (Nat.card (𝓞 ↥(IntermediateField.fixedField H') ⧸ Q.asIdeal)).Prime ∧
+          Nat.card (𝓞 ↥(IntermediateField.fixedField H') ⧸ Q.asIdeal) ≠ ℓ},
+        (Nat.card (𝓞 F ⧸ ((Ψ Q : {P : HeightOneSpectrum (𝓞 F) //
+          (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+          Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ}) :
+            HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^ (-s) :=
+        ENNReal.tsum_fiberwise (fun Q => (Nat.card (𝓞 F ⧸
+          ((Ψ Q : {P : HeightOneSpectrum (𝓞 F) //
+            (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+            Nat.card (𝓞 F ⧸ P.asIdeal) ≠ ℓ}) :
+            HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^ (-s)) Ψ
+    _ = ∑' Q : {Q : HeightOneSpectrum
+          (𝓞 ↥(IntermediateField.fixedField H')) //
+          (Nat.card (𝓞 ↥(IntermediateField.fixedField H') ⧸ Q.asIdeal)).Prime ∧
+          Nat.card (𝓞 ↥(IntermediateField.fixedField H') ⧸ Q.asIdeal) ≠ ℓ},
+        (Nat.card (𝓞 ↥(IntermediateField.fixedField H') ⧸
+          (Q : HeightOneSpectrum
             (𝓞 ↥(IntermediateField.fixedField H'))).asIdeal) : ℝ≥0∞) ^ (-s) :=
-  sorry
+        tsum_congr fun Q => by rw [hNeq Q]
 
 open IsDedekindDomain in
 /-- **Deuring's trick: a subgroup of `Gal(F(ζ_ℓ)/F)` containing a
