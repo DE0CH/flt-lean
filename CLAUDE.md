@@ -131,6 +131,18 @@ vendorable sorry-free material before proving anything from scratch.
 Previously downloaded sources stayed in the dissertation repo — see
 `SOURCES.md` for the list.
 
+**CAS tooling (Deyao-approved, installed 2026-07-24): `gp` (PARI/GP,
+via brew) and `Singular` (system) are on PATH.** Doctrine:
+*untrusted searchers, never provers* — use them to FIND witnesses and
+certificates (class numbers, principal-ideal generators, unit groups,
+discriminants, Gröbner cofactor certificates for polynomial-ideal
+memberships), then VERIFY the concrete witness in Lean
+(`norm_num`/`decide`/`ring`/`linear_combination`). External output is
+never itself a proof; the kernel remains the only authority. Also use
+them to sanity-check a leaf's STATEMENT numerically before dispatching
+a proof effort at it. Include an availability note in task prompts
+for leaves in these classes.
+
 ## Continuous work loop: never stop while the frontier is nonempty
 
 Two mechanisms keep the formalization going continuously; use both,
