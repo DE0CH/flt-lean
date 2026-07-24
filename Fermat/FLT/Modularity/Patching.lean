@@ -173,6 +173,10 @@ import Fermat.FLT.GaloisRepresentation.Chebotarev
 -- `globalFrob`, `dense_conjClasses_globalFrob`,
 -- `exists_prime_toHeightOneSpectrum`, `charFrob_eq_charpoly_globalFrob`:
 -- the Chebotarev/continuity step of the Carayol generation proof
+import Fermat.FLT.GaloisRepresentation.BrauerNesbittConjugacy
+-- proof-only: the SHARED Chebotarev–Brauer–Nesbitt conjugacy node
+-- discharging `exists_conj_of_charFrob_eq_away` below (same node also
+-- discharges `HardlyRamified/Deformation.lean`'s `{2, ℓ}` twin)
 import Mathlib.LinearAlgebra.Trace
 -- `LinearMap.trace`: the continuous linear functional behind `coeff 1`
 import Mathlib.LinearAlgebra.Matrix.Charpoly.Coeff
@@ -655,13 +659,17 @@ def IsWeaklyUniversalOnIdentifiedDeformation.{s, t, uK, uW, uR}
               hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
             (D.ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1
 
-/-- **Chebotarev–Brauer–Nesbitt conjugacy leaf** (sorry node — the
-identification half of the Mazur representability pillar): a
+/-- **Chebotarev–Brauer–Nesbitt conjugacy leaf** (PROVEN 2026-07-24 —
+the identification half of the Mazur representability pillar): a
 continuous representation `τ` of `Gal(ℚ̄/ℚ)` on a 2-dimensional space
 over a finite discrete field `k` whose Frobenius characteristic
 polynomials agree with those of an *irreducible* 2-dimensional `ρbar`
 at all primes outside a finite exceptional set `S` is conjugate to
-`ρbar`.
+`ρbar`. DERIVED verbatim from the SHARED conjugacy node
+`GaloisRepresentation.exists_conj_of_charFrob_eq_away`
+(`BrauerNesbittConjugacy.lean`) — the single node that also discharges
+`HardlyRamified/Deformation.lean`'s `{2, ℓ}` twin
+`exists_conj_of_charFrob_eq`, resolving the dedupe deferred below.
 
 Mathematical content: by Chebotarev density the Frobenius conjugacy
 classes at the places outside ANY finite set are dense in the Galois
@@ -706,7 +714,8 @@ theorem exists_conj_of_charFrob_eq_away.{uK, uW, uW'}
       τ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat =
         ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat) :
     ∃ e : W' ≃ₗ[k] W, τ.conj e = ρbar :=
-  sorry
+  _root_.GaloisRepresentation.exists_conj_of_charFrob_eq_away
+    hW hirr hW' τ S hcf
 
 /-!
 ## Conjugation and reframing transport (PROVEN)
