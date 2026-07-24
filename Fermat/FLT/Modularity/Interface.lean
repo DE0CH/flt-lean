@@ -9924,13 +9924,15 @@ leaf is now a PROVEN assembly over:
   leaf (unlike the level-`∣ 2` attachment statements, which are
   discharged by the proven emptiness of their carriers). DECOMPOSED
   2026-07-24 into the Eichler–Shimura cut (see its own section
-  docstring below), twice: the attachment is a PROVEN assembly over
-  `nonempty_eichlerShimuraPackage`, itself now a PROVEN assembly over
-  the single sorried inhabitation leaf
-  `nonempty_modularJacobianPackage` — the `g`-independent
-  modular-Jacobian interface carrier (Tate module, Eichler–Shimura
+  docstring below), three times: the attachment is a PROVEN assembly
+  over `nonempty_eichlerShimuraPackage`, itself a PROVEN assembly
+  over `nonempty_modularJacobianPackage`, itself now a PROVEN
+  assembly (annihilator-idempotent engine, pure finite-dimensional
+  commutative algebra) over the single sorried inhabitation leaf
+  `nonempty_modularHomologyPackage` — the `g`-independent
+  modular-homology interface carrier (Tate module, Eichler–Shimura
   congruence, rank-2 freeness over the Hecke algebra, twisted Weil
-  pairing, étale newform idempotent).
+  pairing, eigensystem occurrence, strong multiplicity one).
 * `charFrob_baseChange` and
   `charFrob_map_coeff_zero_of_isHardlyRamified` and
   `eq_quadratic_of_monic_natDegree_two` — PROVEN bookkeeping that
@@ -10170,9 +10172,25 @@ everything from those facts to the attachment statement is PROVEN:
   Weil pairing (`pair_*`), Hecke commutativity, and the étale
   newform idempotent (`eigen_idempotent`, quantified over `(g, κ)`
   inside the structure).
-* `nonempty_modularJacobianPackage` — SORRY: the residual geometric
-  leaf, inhabitation of the second-level carrier (see its docstring
+* `ModularHomologyPackage` — the third-level carrier (2026-07-24):
+  identical except that `eigen_idempotent` is replaced by the two
+  primitive spectral facts `eigensystem_occurs` (a nonzero joint
+  eigenvector exists) and `eigensystem_semisimple` (generalized
+  eigenvectors are honest ones — strong multiplicity one).
+* `exists_isIdempotentElem_sub_mem_span_of_isNilpotent`,
+  `exists_idempotent_heckeSubalgebra_fixing` — PROVEN pure algebra:
+  the Newton idempotent iteration, and the annihilator-idempotent
+  engine (powers of `Ann_A(v)` stabilize in the finite-dimensional
+  commutative algebra `A`, the Cayley–Hamilton determinant trick
+  produces an almost-idempotent, the iteration corrects it).
+* `nonempty_modularHomologyPackage` — SORRY: the residual geometric
+  leaf, inhabitation of the third-level carrier (see its docstring
   for the classical construction and citations, field by field).
+* `nonempty_modularJacobianPackage` — now a PROVEN assembly: the
+  engine's idempotent fixes the occurring eigenvector (hence is
+  nonzero), its image lands in the generalized eigenspace by the
+  nilpotency clause, and strong multiplicity one upgrades this to
+  the exact eigen-relation `hecke q * e = κ(a_q) • e`.
 * `nonempty_eichlerShimuraPackage` — now a PROVEN assembly: the
   joint `κ(a(g))`-eigenspace equals the image `e·Vp` of the newform
   idempotent (scalar-action induction on the eigenvector
@@ -10423,6 +10441,215 @@ theorem pair_comm_of_mem_heckeSubalgebra {t : ℕ → Module.End F V₀}
         _ = pair x ((ψ * φ) y) := rfl
         _ = pair x ((φ * ψ) y) := by rw [hφψ]
 
+/-- **Idempotent approximation in a commutative ring** (the classical
+Newton iteration `y ↦ 3y² − 2y³`, run to nilpotent precision): any
+element whose idempotency defect `y² − y` is nilpotent differs from an
+honest idempotent by a multiple of the defect. Each iteration step
+squares the defect (`y'² − y' = (y² − y)²·(4y² − 4y − 3)`), so
+induction on the nilpotency exponent terminates. Pure commutative
+algebra; the annihilator-idempotent engine below applies it to the
+almost-idempotent produced by the Cayley–Hamilton determinant trick
+inside a finite-dimensional commutative operator algebra. -/
+theorem exists_isIdempotentElem_sub_mem_span_of_isNilpotent
+    {R : Type*} [CommRing R] {y : R} (h : IsNilpotent (y * y - y)) :
+    ∃ e : R, e * e = e ∧ e - y ∈ Ideal.span {y * y - y} := by
+  obtain ⟨n, hn⟩ := h
+  induction n generalizing y with
+  | zero =>
+    have h1 : (1 : R) = 0 := by simpa using hn
+    have hall : ∀ x : R, x = 0 := fun x => by
+      rw [← mul_one x, h1, mul_zero]
+    refine ⟨y, ?_, ?_⟩
+    · rw [hall (y * y), hall y]
+    · rw [sub_self]; exact Ideal.zero_mem _
+  | succ n ih =>
+    rcases n with _ | n
+    · have h0 : y * y - y = 0 := by simpa using hn
+      exact ⟨y, sub_eq_zero.mp h0,
+        by rw [sub_self]; exact Ideal.zero_mem _⟩
+    · set y' := 3 * y ^ 2 - 2 * y ^ 3 with hy'
+      have hb : y' * y' - y' =
+          (y * y - y) ^ 2 * (4 * y ^ 2 - 4 * y - 3) := by
+        rw [hy']; ring
+      have hpow : (y' * y' - y') ^ (n + 1) = 0 := by
+        rw [hb, mul_pow, ← pow_mul]
+        have h2 : 2 * (n + 1) = (n + 1 + 1) + n := by ring
+        rw [h2, pow_add, hn, zero_mul, zero_mul]
+      obtain ⟨e, hee, hspan⟩ := ih hpow
+      refine ⟨e, hee, ?_⟩
+      have h1 : e - y' ∈ Ideal.span {y * y - y} := by
+        refine Ideal.span_singleton_le_span_singleton.mpr ?_ hspan
+        exact ⟨(y * y - y) * (4 * y ^ 2 - 4 * y - 3), by rw [hb]; ring⟩
+      have h2 : y' - y ∈ Ideal.span {y * y - y} :=
+        Ideal.mem_span_singleton'.mpr ⟨1 - 2 * y, by rw [hy']; ring⟩
+      have h3 : e - y = (e - y') + (y' - y) := by ring
+      rw [h3]
+      exact Ideal.add_mem _ h1 h2
+
+/-- **The annihilator idempotent of a vector in a finite-dimensional
+commutative Hecke subalgebra** — the pure-algebra engine behind the
+étale newform idempotent of the modular-Jacobian package: for any
+vector `v`, the Hecke subalgebra of a pairwise-commuting operator
+family on a finite-dimensional space contains an idempotent `e`
+FIXING `v` such that every member of the subalgebra annihilating `v`
+becomes NILPOTENT after multiplication by `e`. Classically `e` is the
+unit of the local factor of the Artinian algebra
+`A = heckeSubalgebra t` supporting the character `a·v = χ(a)·v`; the
+proof is quotient-free: the powers of the annihilator ideal
+`m = Ann_A(v)` stabilize (their `F`-dimensions are an antitone
+sequence of naturals), the Cayley–Hamilton determinant trick
+(`Submodule.exists_sub_one_mem_and_smul_eq_zero_of_fg_of_le_smul`
+applied to `m·m^k = m^k`) produces an almost-idempotent `y ≡ 1 mod m`
+with `y·m^k = 0`, and the Newton iteration
+(`exists_isIdempotentElem_sub_mem_span_of_isNilpotent`) corrects it
+to an honest idempotent within `span {y² − y} ⊆ m`, preserving both
+the fixing of `v` and the nilpotency of `m·e` (for `a ∈ m`, `(a·y)^k`
+ends in `y·a^k = 0`). -/
+theorem exists_idempotent_heckeSubalgebra_fixing
+    [Module.Finite F V₀] {t : ℕ → Module.End F V₀}
+    (hcomm : ∀ m n : ℕ, t m * t n = t n * t m) (v : V₀) :
+    ∃ e ∈ heckeSubalgebra t, e * e = e ∧ e v = v ∧
+      ∀ a ∈ heckeSubalgebra t, a v = 0 → IsNilpotent (a * e) := by
+  classical
+  letI : CommRing ↥(heckeSubalgebra t) :=
+    { (inferInstance : Ring ↥(heckeSubalgebra t)) with
+      mul_comm := fun a b =>
+        Subtype.ext (heckeSubalgebra_mul_comm hcomm a.1 a.2 b.1 b.2) }
+  haveI : IsNoetherian ↥(heckeSubalgebra t) ↥(heckeSubalgebra t) :=
+    isNoetherian_of_tower F inferInstance
+  -- the annihilator ideal of `v` inside the Hecke subalgebra
+  let m : Ideal ↥(heckeSubalgebra t) :=
+    { carrier := {a : ↥(heckeSubalgebra t) |
+        (a : Module.End F V₀) v = 0}
+      add_mem' := fun {a b} ha hb => by
+        simp only [Set.mem_setOf_eq] at ha hb ⊢
+        rw [AddMemClass.coe_add, LinearMap.add_apply, ha, hb, add_zero]
+      zero_mem' := by
+        simp only [Set.mem_setOf_eq, ZeroMemClass.coe_zero,
+          LinearMap.zero_apply]
+      smul_mem' := fun c a ha => by
+        simp only [Set.mem_setOf_eq] at ha ⊢
+        rw [smul_eq_mul, MulMemClass.coe_mul, Module.End.mul_apply, ha,
+          map_zero] }
+  -- the powers of `m` are decreasing …
+  have hpowle : ∀ n : ℕ,
+      (m ^ (n + 1) : Ideal ↥(heckeSubalgebra t)) ≤ m ^ n := fun n => by
+    rw [pow_succ']
+    exact Ideal.mul_le_left
+  -- … so their `F`-dimensions stabilize
+  have hex : ∃ n : ℕ,
+      Module.finrank F
+          ((m ^ (n + 1) : Ideal ↥(heckeSubalgebra t)).restrictScalars F) =
+        Module.finrank F
+          ((m ^ n : Ideal ↥(heckeSubalgebra t)).restrictScalars F) := by
+    by_contra hne
+    push Not at hne
+    have hlt : ∀ n : ℕ,
+        Module.finrank F
+            ((m ^ (n + 1) :
+              Ideal ↥(heckeSubalgebra t)).restrictScalars F) <
+          Module.finrank F
+            ((m ^ n : Ideal ↥(heckeSubalgebra t)).restrictScalars F) :=
+      fun n => lt_of_le_of_ne
+        (Submodule.finrank_mono fun x hx => hpowle n hx) (hne n)
+    have hsum : ∀ n : ℕ,
+        Module.finrank F
+            ((m ^ n : Ideal ↥(heckeSubalgebra t)).restrictScalars F) +
+              n ≤
+          Module.finrank F
+            ((m ^ 0 : Ideal ↥(heckeSubalgebra t)).restrictScalars F) := by
+      intro n
+      induction n with
+      | zero => simp
+      | succ n ih =>
+        have := hlt n
+        omega
+    have := hsum
+      (Module.finrank F
+        ((m ^ 0 : Ideal ↥(heckeSubalgebra t)).restrictScalars F) + 1)
+    omega
+  obtain ⟨k₀, hk₀⟩ := hex
+  have hstep : (m ^ (k₀ + 1) : Ideal ↥(heckeSubalgebra t)) = m ^ k₀ := by
+    have h1 : (m ^ (k₀ + 1) :
+        Ideal ↥(heckeSubalgebra t)).restrictScalars F =
+        (m ^ k₀ : Ideal ↥(heckeSubalgebra t)).restrictScalars F :=
+      Submodule.eq_of_le_of_finrank_eq (fun x hx => hpowle k₀ hx) hk₀
+    exact Submodule.restrictScalars_injective F _ _ h1
+  have hk : (m ^ (k₀ + 1 + 1) : Ideal ↥(heckeSubalgebra t)) =
+      m ^ (k₀ + 1) := by
+    calc (m ^ (k₀ + 1 + 1) : Ideal ↥(heckeSubalgebra t))
+        = m ^ (k₀ + 1) * m := pow_succ m (k₀ + 1)
+      _ = m ^ k₀ * m := by rw [hstep]
+      _ = m ^ (k₀ + 1) := (pow_succ m k₀).symm
+  -- Cayley–Hamilton determinant trick on `N := m ^ (k₀ + 1)`
+  obtain ⟨y, hy1, hy0⟩ :=
+    Submodule.exists_sub_one_mem_and_smul_eq_zero_of_fg_of_le_smul m
+      (m ^ (k₀ + 1) : Ideal ↥(heckeSubalgebra t))
+      (IsNoetherian.noetherian _)
+      (by rw [Ideal.smul_eq_mul, ← pow_succ']; exact hk.ge)
+  -- the idempotency defect of `y` is nilpotent
+  have hdef : ((y * y - y : ↥(heckeSubalgebra t)) ^ (k₀ + 1)) = 0 := by
+    have h1 : (y - 1) ^ (k₀ + 1) ∈
+        (m ^ (k₀ + 1) : Ideal ↥(heckeSubalgebra t)) :=
+      Ideal.pow_mem_pow hy1 _
+    have h2 : y * (y - 1) ^ (k₀ + 1) = 0 := by
+      have h3 := hy0 _ h1
+      rwa [smul_eq_mul] at h3
+    have hb : (y * y - y : ↥(heckeSubalgebra t)) = y * (y - 1) := by
+      ring
+    rw [hb, mul_pow, pow_succ, mul_assoc, h2, mul_zero]
+  obtain ⟨e, hee, hspan⟩ :=
+    exists_isIdempotentElem_sub_mem_span_of_isNilpotent ⟨k₀ + 1, hdef⟩
+  obtain ⟨c, hc⟩ := Ideal.mem_span_singleton'.mp hspan
+  -- `y` fixes `v`, hence so do the defect-corrections
+  have hyv : ((y : ↥(heckeSubalgebra t)) : Module.End F V₀) v = v := by
+    have h1 : ((y - 1 : ↥(heckeSubalgebra t)) : Module.End F V₀) v =
+        0 := hy1
+    rw [AddSubgroupClass.coe_sub, LinearMap.sub_apply,
+      OneMemClass.coe_one, Module.End.one_apply, sub_eq_zero] at h1
+    exact h1
+  have hzv : ((y * y - y : ↥(heckeSubalgebra t)) : Module.End F V₀) v =
+      0 := by
+    rw [AddSubgroupClass.coe_sub, LinearMap.sub_apply,
+      MulMemClass.coe_mul, Module.End.mul_apply, hyv, hyv, sub_self]
+  have hev : ((e : ↥(heckeSubalgebra t)) : Module.End F V₀) v = v := by
+    have h1 : ((e - y : ↥(heckeSubalgebra t)) : Module.End F V₀) v =
+        0 := by
+      rw [← hc, MulMemClass.coe_mul, Module.End.mul_apply, hzv,
+        map_zero]
+    rw [AddSubgroupClass.coe_sub, LinearMap.sub_apply, sub_eq_zero]
+      at h1
+    rw [h1, hyv]
+  refine ⟨(e : Module.End F V₀), e.2, ?_, hev, ?_⟩
+  · have h1 := congrArg (Subtype.val
+      (p := fun x => x ∈ heckeSubalgebra t)) hee
+    simpa using h1
+  · intro a haA hav
+    have ham : (⟨a, haA⟩ : ↥(heckeSubalgebra t)) ∈ m := hav
+    set a' : ↥(heckeSubalgebra t) := ⟨a, haA⟩ with ha'
+    have h1 : IsNilpotent (a' * y) := by
+      refine ⟨k₀ + 1, ?_⟩
+      have h2 : y * a' ^ (k₀ + 1) = 0 := by
+        have h3 := hy0 _ (Ideal.pow_mem_pow ham (k₀ + 1))
+        rwa [smul_eq_mul] at h3
+      calc (a' * y) ^ (k₀ + 1)
+          = y ^ k₀ * (y * a' ^ (k₀ + 1)) := by ring
+        _ = 0 := by rw [h2, mul_zero]
+    have h2 : IsNilpotent (a' * (e - y)) := by
+      refine ⟨k₀ + 1, ?_⟩
+      have hb2 : a' * (e - y) = (a' * c) * (y * y - y) := by
+        rw [← hc]; ring
+      rw [hb2, mul_pow, hdef, mul_zero]
+    have h3 : IsNilpotent (a' * e) := by
+      have h4 : a' * e = a' * y + a' * (e - y) := by ring
+      rw [h4]
+      exact (Commute.all _ _).isNilpotent_add h1 h2
+    obtain ⟨n, hn⟩ := h3
+    refine ⟨n, ?_⟩
+    have h5 := congrArg (Subtype.val
+      (p := fun x => x ∈ heckeSubalgebra t)) hn
+    simpa using h5
+
 end HeckeSubalgebra
 
 /-- **The Eichler–Shimura package of a weight-2 newform** `g` at the
@@ -10520,9 +10747,12 @@ From these, `nonempty_eichlerShimuraPackage` below derives the
 eigenspace facts: the joint eigenspace equals `e·Vp`, which by
 freeness is the 2-dimensional span of `e basis₁, e basis₂`, and the
 twisted Weil pairing restricts to a symplectic form on it, forcing
-`det Frob_q = q`. The citations for each field are in the docstring
-of the inhabitation leaf `nonempty_modularJacobianPackage`, the only
-sorried node of this cut. -/
+`det Frob_q = q`. Since the 2026-07-24 third decomposition the
+inhabitation of THIS carrier is itself a PROVEN assembly over
+`ModularHomologyPackage` below; the citations for each field are in
+the docstring of the inhabitation leaf
+`nonempty_modularHomologyPackage`, the only sorried node of this
+cut. -/
 structure ModularJacobianPackage (M : ℕ) where
   /-- The Galois module: intended `V_p(J₀(M)) ⊗ ℚ̄_p`. -/
   Vp : Type
@@ -10607,11 +10837,142 @@ structure ModularJacobianPackage (M : ℕ) where
 attribute [instance] ModularJacobianPackage.addCommGroup
   ModularJacobianPackage.module ModularJacobianPackage.moduleFinite
 
-/-- **Inhabitation of the modular-Jacobian package** (sorry node — THE
+/-- **The modular-homology package at level `M`** — the third-level,
+`g`-INDEPENDENT carrier one level below `ModularJacobianPackage`
+(2026-07-24 third decomposition). The intended inhabitant is the same
+rational `p`-adic Tate module `Vp = V_p(J₀(M)) ⊗ ℚ̄_p` of the modular
+Jacobian — equivalently, through the comparison isomorphism
+`V_p(J₀(M)) ≅ H₁(X₀(M); ℚ) ⊗ ℚ_p`, the singular homology of the
+modular curve with its Hecke and Galois structure, which is where the
+classical verifications of the spectral fields actually happen. The
+carrier differs from `ModularJacobianPackage` in exactly one place:
+the ÉTALE NEWFORM IDEMPOTENT field `eigen_idempotent` — a composite
+assertion mixing spectral occurrence, multiplicity one and Artinian
+ring theory — is replaced by the two PRIMITIVE spectral facts from
+which it is PROVEN by pure finite-dimensional commutative algebra
+(the annihilator-idempotent engine
+`exists_idempotent_heckeSubalgebra_fixing` together with the Newton
+iteration `exists_isIdempotentElem_sub_mem_span_of_isNilpotent`):
+
+* `eigensystem_occurs` — the eigensystem of a level-`M` newform
+  OCCURS in `Vp`: a nonzero joint eigenvector exists;
+* `eigensystem_semisimple` — STRONG MULTIPLICITY ONE at the newform
+  eigensystem: every joint generalized eigenvector of the Hecke
+  family is an honest eigenvector (equivalently, the
+  newform-supporting local factor of the Artinian Hecke algebra
+  `𝕋 ⊗ ℚ̄_p` is reduced, i.e. étale).
+
+Both are facts about the one intended inhabitant, quantified over
+`(g, κ)` INSIDE the structure exactly as `eigen_idempotent` was — for
+abstract carriers they would be false. All other fields are verbatim
+those of `ModularJacobianPackage`; the classical citations, field by
+field, are in the docstring of the inhabitation leaf
+`nonempty_modularHomologyPackage`, the only sorried node of this
+cut. -/
+structure ModularHomologyPackage (M : ℕ) where
+  /-- The Galois module: intended `V_p(J₀(M)) ⊗ ℚ̄_p`. -/
+  Vp : Type
+  [addCommGroup : AddCommGroup Vp]
+  [module : Module (AlgebraicClosure ℚ_[p]) Vp]
+  [moduleFinite : Module.Finite (AlgebraicClosure ℚ_[p]) Vp]
+  /-- The continuous Galois action on the Tate module. -/
+  τJ : GaloisRep ℚ (AlgebraicClosure ℚ_[p]) Vp
+  /-- The Hecke operators, base-changed to `ℚ̄_p`. -/
+  hecke : ℕ → Module.End (AlgebraicClosure ℚ_[p]) Vp
+  /-- The exceptional set (intended: the places over `Mp`). -/
+  S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+  /-- Hecke correspondences are defined over `ℚ`, so they commute
+  with the whole Galois action. -/
+  hecke_comm : ∀ (m : ℕ) (γ : Field.absoluteGaloisGroup ℚ),
+    hecke m * τJ γ = τJ γ * hecke m
+  /-- The Hecke operators commute with each other. -/
+  hecke_mul_comm : ∀ m n : ℕ, hecke m * hecke n = hecke n * hecke m
+  /-- The Eichler–Shimura congruence relation at good primes:
+  `Frob_q² − T_q·Frob_q + q = 0` on the Tate module. -/
+  congruence : ∀ (q : ℕ) (hq : q.Prime),
+    hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+    τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) ^ 2
+      - hecke q *
+        τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+      + (q : AlgebraicClosure ℚ_[p]) • 1 = 0
+  /-- First member of a Hecke-algebra basis of the Tate module. -/
+  basis₁ : Vp
+  /-- Second member of a Hecke-algebra basis of the Tate module. -/
+  basis₂ : Vp
+  /-- Freeness, existence half: every vector has Hecke-algebra
+  coordinates in the basis. -/
+  span_free : ∀ x : Vp, ∃ a ∈ heckeSubalgebra hecke,
+    ∃ b ∈ heckeSubalgebra hecke, x = a basis₁ + b basis₂
+  /-- Freeness, uniqueness half: the coordinates are unique (stated
+  at zero). -/
+  indep_free : ∀ a ∈ heckeSubalgebra hecke, ∀ b ∈ heckeSubalgebra hecke,
+    a basis₁ + b basis₂ = 0 → a = 0 ∧ b = 0
+  /-- The Atkin–Lehner-twisted Weil pairing on the Tate module. -/
+  pair : Vp →ₗ[AlgebraicClosure ℚ_[p]]
+    Vp →ₗ[AlgebraicClosure ℚ_[p]] AlgebraicClosure ℚ_[p]
+  /-- The pairing is alternating. -/
+  pair_self : ∀ x : Vp, pair x x = 0
+  /-- The pairing is nondegenerate. -/
+  pair_nondeg : ∀ x : Vp, (∀ y : Vp, pair x y = 0) → x = 0
+  /-- The Hecke operators are self-adjoint for the twisted pairing. -/
+  pair_hecke : ∀ (q : ℕ), q.Prime → ∀ x y : Vp,
+    pair (hecke q x) y = pair x (hecke q y)
+  /-- Galois Frobenii off `S` scale the pairing by the cyclotomic
+  multiplier `q`. -/
+  pair_frob : ∀ (q : ℕ) (hq : q.Prime),
+    hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+    ∀ x y : Vp,
+      pair (τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) x)
+          (τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) y) =
+        (q : AlgebraicClosure ℚ_[p]) * pair x y
+  /-- **Occurrence of the newform eigensystem** (the Eichler–Shimura
+  isomorphism): for every level-`M` newform and `p`-adic embedding of
+  its Hecke field, the Tate module contains a nonzero joint
+  eigenvector for the embedded eigensystem. Quantified over `(g, κ)`
+  INSIDE the structure — a fact about the one intended inhabitant,
+  not about arbitrary carriers. -/
+  eigensystem_occurs : ∀ (g : CuspForm (Gamma0GL M) 2),
+    IsWeightTwoNewform M g →
+    ∀ (κ : heckeField M g →+* AlgebraicClosure ℚ_[p]),
+      ∃ v ∈ heckeEigenspace hecke (fun m => κ (heckeCoeff M g m)),
+        v ≠ 0
+  /-- **Strong multiplicity one, module-theoretic form**: at the
+  embedded eigensystem of a level-`M` newform, every joint
+  GENERALIZED eigenvector of the Hecke family is an honest
+  eigenvector — the newform-supporting local factor of the Artinian
+  Hecke algebra is étale. Quantified over `(g, κ)` INSIDE the
+  structure, like `eigensystem_occurs`. -/
+  eigensystem_semisimple : ∀ (g : CuspForm (Gamma0GL M) 2),
+    IsWeightTwoNewform M g →
+    ∀ (κ : heckeField M g →+* AlgebraicClosure ℚ_[p]),
+    ∀ x : Vp, (∀ q : ℕ, q.Prime → ∃ n : ℕ,
+        ((hecke q - κ (heckeCoeff M g q) • 1) ^ n) x = 0) →
+      x ∈ heckeEigenspace hecke (fun m => κ (heckeCoeff M g m))
+  /-- Ribet irreducibility (Ribet 1977, Springer LNM 601, Thm. (2.3)):
+  for every level-`M` newform and `p`-adic embedding of its Hecke
+  field, the Galois action admits no proper nonzero stable subspace
+  inside the `κ`-eigenspace. Like the two spectral fields above this
+  is quantified over `(g, κ)` INSIDE the structure — it is a fact
+  about the one intended inhabitant (through the Weil bound
+  `|a_q| ≤ 2√q` of the genuine newform), not about arbitrary abstract
+  carriers, so it must not be a standalone lemma quantifying over
+  packages. -/
+  irred_eigenspace : ∀ (g : CuspForm (Gamma0GL M) 2),
+    IsWeightTwoNewform M g →
+    ∀ (κ : heckeField M g →+* AlgebraicClosure ℚ_[p]),
+    ∀ U : Submodule (AlgebraicClosure ℚ_[p]) Vp,
+      U ≤ heckeEigenspace hecke (fun m => κ (heckeCoeff M g m)) →
+      (∀ γ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ U, τJ γ x ∈ U) →
+      U = ⊥ ∨ U = heckeEigenspace hecke (fun m => κ (heckeCoeff M g m))
+
+attribute [instance] ModularHomologyPackage.addCommGroup
+  ModularHomologyPackage.module ModularHomologyPackage.moduleFinite
+
+/-- **Inhabitation of the modular-homology package** (sorry node — THE
 residual geometric leaf of the Eichler–Shimura cut after the
-2026-07-24 second decomposition, and the only place where the modular
-Jacobian itself is consumed): for every level `M ≥ 1` the carrier
-`ModularJacobianPackage M` is inhabited.
+2026-07-24 third decomposition, and the only place where the modular
+curve and its Jacobian are consumed): for every level `M ≥ 1` the
+carrier `ModularHomologyPackage M` is inhabited.
 
 Classical construction, field by field (Diamond–Shurman ch. 6, 8, 9):
 take `Vp := V_p(J₀(M)) ⊗_{ℚ_p} ℚ̄_p`, the rational `p`-adic Tate
@@ -10655,15 +11016,30 @@ module of the modular Jacobian `J₀(M) = Jac X₀(M)`, with
   equivariance of the Weil pairing with cyclotomic multiplier plus
   ℚ-rationality of `w_M` give `pair_frob`, with
   `χ_cyc(Frob_q) = q`;
-* `eigen_idempotent` — STRONG MULTIPLICITY ONE (D–S Theorem 5.8.2
-  with §5.8, and Prop. 5.8.5 for the `U_q`-eigenvalues at `q ∣ M`):
-  the full prime eigensystem `{a_q(g)}` of a NEWFORM `g` of level
-  exactly `M` occurs in `S₂(Γ₀(M))` precisely on the line `ℂ·g`, so
-  the corresponding component of the Artinian ring `𝕋 ⊗ ℚ̄_p` (its
-  localization at the kernel of `T_q ↦ κ(a_q(g))`) is `ℚ̄_p` itself
-  — étale — and its unit idempotent `e` is a nonzero element of the
-  Hecke algebra with `T_q e = κ(a_q(g)) e` for every prime `q`. This
-  is where the `IsWeightTwoNewform` hypothesis is consumed.
+* `eigensystem_occurs` — the EICHLER–SHIMURA ISOMORPHISM (D–S §6.2,
+  `H₁(X₀(M); ℤ) ⊗ ℂ ≅ S₂(Γ₀(M)) ⊕ S₂(Γ₀(M))⁻`,
+  Hecke-equivariantly) together with the comparison
+  `V_p(J₀(M)) ≅ H₁(X₀(M); ℚ) ⊗ ℚ_p`: the newform `g` is a joint
+  eigenvector of the full Hecke algebra in `S₂(Γ₀(M))` (D–S
+  Theorem 5.8.2 with Prop. 5.8.5 for the `U_q`-eigenvalues at
+  `q ∣ M`), its eigensystem generates the Hecke field `K_g`, and over
+  the algebraically closed `ℚ̄_p` the `𝕋 ⊗ ℚ̄_p`-module `Vp` splits
+  into eigensystem components indexed by the embeddings of the
+  coefficient fields — in particular the `κ`-embedded eigensystem of
+  `g` supports a nonzero joint eigenvector;
+* `eigensystem_semisimple` — STRONG MULTIPLICITY ONE (D–S
+  Theorem 5.8.2 with §5.8, and Prop. 5.8.5): the full prime
+  eigensystem `{a_q(g)}` of a NEWFORM `g` of level exactly `M` occurs
+  in `S₂(Γ₀(M))` precisely on the line `ℂ·g`, and the corresponding
+  local factor of the Artinian ring `𝕋 ⊗ ℚ̄_p` (its localization at
+  the kernel of `T_q ↦ κ(a_q(g))`) is `ℚ̄_p` itself — étale, with no
+  nilpotents (the `U_q`-nonsemisimplicity of `𝕋` is supported
+  entirely on OLDFORM components; on the newform component every
+  operator acts as the scalar `κ(a_q(g))`). Hence the joint
+  generalized eigenspace of the system in `Vp` — the localization
+  component, by prime generation of `𝕋` — coincides with the honest
+  joint eigenspace. This is where the `IsWeightTwoNewform` hypothesis
+  is consumed;
 * `irred_eigenspace` — RIBET IRREDUCIBILITY (Ribet, *Galois
   representations attached to eigenforms with Nebentypus*, Springer
   LNM 601 (1977), Thm. (2.3), weight-2 trivial-nebentypus case; also
@@ -10684,16 +11060,130 @@ module of the modular Jacobian `J₀(M) = Jac X₀(M)`, with
   5.9.1 via Ramanujan–Petersson, or directly the Riemann hypothesis
   for the reduced `X₀(M)` at good `q`).
 
+DECOMPOSITION POINTERS (2026-07-24): `eigensystem_occurs` is the
+natural next cut point — an explicit Eichler–Shimura comparison
+interface against this file's PROVEN `S₂(Γ₀(M))` Hecke theory
+(`heckeTransform`, finite-dimensionality, Sturm) would reduce it to
+the eigenform property of `IsWeightTwoNewform`, at the cost of an
+`ℂ → ℚ̄_p` coefficient-transport layer. The Galois fields
+(`τJ`/`congruence`/`pair_frob`) and the freeness fields require
+genuine modular-curve geometry absent from the pin.
+
 SOUNDNESS (2026-07-24): the statement quantifies over nothing but the
 level, and the intended inhabitant witnesses every field, including
-the internally `(g, κ)`-quantified idempotent field, for exactly the
+the internally `(g, κ)`-quantified spectral fields, for exactly the
 inhabitants of `IsWeightTwoNewform` — the classical newforms (the
 carrier's audit above). The `pair_frob` multiplier is stated only at
 the good Frobenii, which is all the determinant derivation consumes
 and all that Chebotarev-style soundness requires. -/
-theorem nonempty_modularJacobianPackage {M : ℕ} (hM : 0 < M) :
-    Nonempty (ModularJacobianPackage (p := p) M) :=
+theorem nonempty_modularHomologyPackage {M : ℕ} (hM : 0 < M) :
+    Nonempty (ModularHomologyPackage (p := p) M) :=
   sorry
+
+/-- **Inhabitation of the modular-Jacobian package** (DECOMPOSED
+2026-07-24 into the modular-homology cut above and now a PROVEN
+assembly over the single sorried inhabitation leaf
+`nonempty_modularHomologyPackage`): for every level `M ≥ 1` the
+carrier `ModularJacobianPackage M` is inhabited.
+
+Assembly (pure finite-dimensional commutative algebra, no geometry):
+every field except the étale newform idempotent passes through
+verbatim from the modular-homology package. For `eigen_idempotent`,
+given a newform `(g, κ)`:
+
+* `eigensystem_occurs` provides a nonzero joint eigenvector `v`;
+* the annihilator-idempotent engine
+  `exists_idempotent_heckeSubalgebra_fixing` (Artinian stabilization
+  of the powers of `m = Ann_A(v)` inside the finite-dimensional
+  commutative algebra `A = heckeSubalgebra hecke`, the Cayley–
+  Hamilton determinant trick, and the Newton idempotent iteration)
+  yields an idempotent `e ∈ A` with `e v = v` — hence `e ≠ 0` — such
+  that every member of `A` annihilating `v` is nilpotent after
+  multiplication by `e`;
+* applied to `hecke q − κ(a_q)·1 ∈ m`, nilpotency of
+  `(hecke q − κ(a_q))·e` places the whole image `e·Vp` inside the
+  joint GENERALIZED eigenspace of the eigensystem (commutativity
+  rearranges `((hecke q − κ(a_q))·e)ⁿ⁺¹ = (hecke q − κ(a_q))ⁿ⁺¹·e`);
+* `eigensystem_semisimple` (strong multiplicity one) upgrades
+  generalized eigenvectors to honest ones, so
+  `(hecke q − κ(a_q)·1) ∘ e = 0` as an endomorphism — exactly
+  `hecke q * e = κ(a_q) • e`.
+
+SOUNDNESS: unchanged — the classical citations live one level down,
+in `nonempty_modularHomologyPackage`. -/
+theorem nonempty_modularJacobianPackage {M : ℕ} (hM : 0 < M) :
+    Nonempty (ModularJacobianPackage (p := p) M) := by
+  classical
+  obtain ⟨H⟩ := nonempty_modularHomologyPackage (p := p) hM
+  have heigen : ∀ (g : CuspForm (Gamma0GL M) 2),
+      IsWeightTwoNewform M g →
+      ∀ (κ : heckeField M g →+* AlgebraicClosure ℚ_[p]),
+        ∃ e ∈ heckeSubalgebra H.hecke, e * e = e ∧ e ≠ 0 ∧
+          ∀ (q : ℕ), q.Prime →
+            H.hecke q * e = κ (heckeCoeff M g q) • e := by
+    intro g hg κ
+    obtain ⟨v, hvEig, hvNe⟩ := H.eigensystem_occurs g hg κ
+    obtain ⟨e, heA, hee, hev, hnil⟩ :=
+      exists_idempotent_heckeSubalgebra_fixing H.hecke_mul_comm v
+    have hvq : ∀ q : ℕ, q.Prime →
+        H.hecke q v = κ (heckeCoeff M g q) • v :=
+      mem_heckeEigenspace_iff.mp hvEig
+    -- the image of `e` consists of generalized eigenvectors, hence
+    -- by strong multiplicity one of honest eigenvectors
+    have hgen : ∀ x : H.Vp, e x ∈ heckeEigenspace H.hecke
+        (fun m => κ (heckeCoeff M g m)) := by
+      intro x
+      apply H.eigensystem_semisimple g hg κ
+      intro q hq
+      have hamem : H.hecke q - κ (heckeCoeff M g q) • 1 ∈
+          heckeSubalgebra H.hecke :=
+        sub_mem (hecke_mem_heckeSubalgebra hq)
+          (Subalgebra.smul_mem _ (one_mem _) _)
+      have hav : (H.hecke q - κ (heckeCoeff M g q) • 1) v = 0 := by
+        rw [LinearMap.sub_apply, LinearMap.smul_apply,
+          Module.End.one_apply, hvq q hq, sub_self]
+      obtain ⟨n, hn⟩ := hnil _ hamem hav
+      refine ⟨n + 1, ?_⟩
+      have h6 : ((H.hecke q - κ (heckeCoeff M g q) • 1) * e) ^
+          (n + 1) = 0 := by
+        rw [pow_succ, hn, zero_mul]
+      have h7 : (H.hecke q - κ (heckeCoeff M g q) • 1) ^ (n + 1) * e =
+          0 := by
+        have hcm : Commute (H.hecke q - κ (heckeCoeff M g q) • 1) e :=
+          heckeSubalgebra_mul_comm H.hecke_mul_comm _ hamem e heA
+        rwa [hcm.mul_pow, IsIdempotentElem.pow_succ_eq n hee] at h6
+      calc ((H.hecke q - κ (heckeCoeff M g q) • 1) ^ (n + 1)) (e x)
+          = (((H.hecke q - κ (heckeCoeff M g q) • 1) ^ (n + 1)) * e)
+              x := rfl
+        _ = 0 := by rw [h7, LinearMap.zero_apply]
+    refine ⟨e, heA, hee, ?_, ?_⟩
+    · intro h0
+      rw [h0, LinearMap.zero_apply] at hev
+      exact hvNe hev.symm
+    · intro q hq
+      refine LinearMap.ext fun x => ?_
+      have h8 := mem_heckeEigenspace_iff.mp (hgen x) q hq
+      rw [Module.End.mul_apply, LinearMap.smul_apply]
+      exact h8
+  exact ⟨{
+    Vp := H.Vp
+    τJ := H.τJ
+    hecke := H.hecke
+    S := H.S
+    hecke_comm := H.hecke_comm
+    hecke_mul_comm := H.hecke_mul_comm
+    congruence := H.congruence
+    basis₁ := H.basis₁
+    basis₂ := H.basis₂
+    span_free := H.span_free
+    indep_free := H.indep_free
+    pair := H.pair
+    pair_self := H.pair_self
+    pair_nondeg := H.pair_nondeg
+    pair_hecke := H.pair_hecke
+    pair_frob := H.pair_frob
+    eigen_idempotent := heigen
+    irred_eigenspace := H.irred_eigenspace }⟩
 
 /-- **Inhabitation of the Eichler–Shimura package** (DECOMPOSED
 2026-07-24 into the modular-Jacobian cut above and now a PROVEN
