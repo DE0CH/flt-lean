@@ -7950,8 +7950,188 @@ theorem exists_eisenstein_nonsplit_lattice_of_residually_reducible
       hZOcompat e he hsurj' hopen' hker' er her hrankE,
     χ, cc, htri, hnonsplit⟩
 
-/-- **Flat local splitting at `p`** (Eisenstein pillar E3a; sorry node
-— the connected–étale splitting of the flat model): a hardly ramified
+set_option backward.isDefEq.respectTransparency false in
+/-- **Conjugation stability of the local inertia group** (PROVEN —
+plumbing for the Eisenstein E3a assembly below): the local inertia
+group at a finite place of `ℚ` is stable under conjugation by the
+whole local absolute Galois group (normality, in explicit conjugation
+form). Content: the Galois action on the integral closure of `𝒪ᵥ` in
+`ℚᵥᵃˡᵍ` is by ring automorphisms of a local ring, which preserve the
+maximal ideal (units pull back to units along the inverse
+automorphism), so the inertia congruence `σ • x − x ∈ 𝔪` transports
+along the substitution `x ↦ g⁻¹ • x`. -/
+theorem conj_mem_localInertiaGroup
+    {v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)}
+    (g : Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ v))
+    {σ : Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ v)}
+    (hσ : σ ∈ localInertiaGroup v) :
+    g * σ * g⁻¹ ∈ localInertiaGroup v := by
+  -- the Galois action preserves the maximal ideal of the integral closure
+  have hmax : ∀ (τ : Field.absoluteGaloisGroup
+      (HeightOneSpectrum.adicCompletion ℚ v))
+      (m : IntegralClosure (HeightOneSpectrum.adicCompletionIntegers ℚ v)
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))),
+      m ∈ IsLocalRing.maximalIdeal
+        (IntegralClosure (HeightOneSpectrum.adicCompletionIntegers ℚ v)
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))) →
+      τ • m ∈ IsLocalRing.maximalIdeal
+        (IntegralClosure (HeightOneSpectrum.adicCompletionIntegers ℚ v)
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))) := by
+    intro τ m hm
+    rw [IsLocalRing.mem_maximalIdeal, mem_nonunits_iff] at hm ⊢
+    intro hu
+    apply hm
+    have h1 : IsUnit (τ⁻¹ • τ • m) :=
+      hu.map (MulSemiringAction.toRingHom _ _ τ⁻¹)
+    rwa [← mul_smul, inv_mul_cancel, one_smul] at h1
+  intro x
+  have hy := hσ (g⁻¹ • x)
+  have e1 : (g * σ * g⁻¹) • x = g • (σ • (g⁻¹ • x)) := by
+    rw [mul_smul, mul_smul]
+  have e2 : g • (g⁻¹ • x) = x := by
+    rw [← mul_smul, mul_inv_cancel, one_smul]
+  have hkey : (g * σ * g⁻¹) • x - x = g • (σ • (g⁻¹ • x) - g⁻¹ • x) := by
+    rw [smul_sub, e1, e2]
+  show (g * σ * g⁻¹) • x - x ∈ IsLocalRing.maximalIdeal
+    (IntegralClosure (HeightOneSpectrum.adicCompletionIntegers ℚ v)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v)))
+  rw [hkey]
+  exact hmax g _ hy
+
+include hpodd in
+/-- **The inertia-coinvariant/fixed-point complement of a flat
+representation at `p`** (Eisenstein pillar E3a-i; sorry node — the
+Raynaud/connected–étale core of the flat local splitting, in the exact
+output shape of ModThree's PROVEN Hopf-package assembly
+`exists_connectedEtale_subgroup_of_hopf_package`, generalized from
+`ℤ₃` to `ℤ_p` for odd `p` and phrased directly against
+`GaloisRep.IsFlatAt`): the space of a mod-`p` representation that is
+flat at `p` carries an additive subgroup `U` — classically the
+geometric points of the connected part `G⁰` of the finite flat
+prolongation — such that (i) every displacement `ρ(σ)w − w` by local
+inertia at `p` lies in `U`, and (ii) `U` contains no nonzero
+inertia-fixed vector. Intended proof (Raynaud, Bull. SMF 102 (1974),
+3.3.3; Tate, "Finite flat group schemes", Cornell–Silverman–Stevens
+ch. V; Mazur, Publ. Math. IHÉS 47 (1977), ch. I; the at-`3` template
+is `ModThree.lean`, whose assembly over the henselian idempotent leaf
+and the Raynaud fixed-point leaf is PROVEN): `hflat.cond ⊥` at the
+open ideal `⊥` of the discrete field `kk'` hands an explicit finite
+flat Hopf order `G` over `𝒪ᵥ ≅ ℤ_p` whose generic-fibre geometric
+points are `Γ ℚ_p`-equivariantly identified with `W` (transport
+`kk' ⧸ ⊥ ≅ kk'` along `HasFlatProlongationAt.of_equiv`, exactly as in
+the E1b-i docstring); `U` is the value-`1` locus of the connected
+counit idempotent `e₀` of `G` (an additive subgroup by the
+comultiplication absorption `Δe₀·(e₀ ⊗ e₀) = e₀ ⊗ e₀`, as in
+ModThree's proven plumbing). For (i): the étale quotient `G/G⁰` is
+finite étale over the henselian local `ℤ_p`, its points are defined
+over `ℚ_p^nr` and inertia fixes them, so inertia displacements die in
+the étale points and land in the connected-part locus. For (ii): `G⁰`
+is killed by `p` (its generic fibre is, `W` being a char-`p` space,
+and `𝒪(G⁰)` is `ℤ_p`-free), and the schematic closures of a
+local-Galois composition series filter `G⁰` by finite flat closed
+subgroups with CONNECTED simple graded pieces; a nonzero inertia-fixed
+vector would make some graded piece unramified, hence étale by
+Raynaud's criterion at `e = 1 ≤ p − 2` — contradicting connectedness.
+At order `p` this is the Oort–Tate dichotomy over `ℤ_p`: only
+`ℤ/p`-forms (étale) and `μ_p`-forms (connected, inertia acting through
+the mod-`p` cyclotomic character, whose `p`-th roots of unity generate
+a RAMIFIED extension for odd `p`) occur. SHARED CORE (audit
+2026-07-24): the same Oort–Tate-at-`ℤ_p` content as the E1b-i leaf
+`residual_triangular_sub_character_inertia_dichotomy_of_flat`, the
+Family leaf
+`connected_point_smul_eq_cyclotomicCharacter_smul_of_hopf_package`,
+and the ModThree leaf `inertiaFixed_connected_point_eq_one_at_three`;
+one classification leaf in the ConnectedEtale Hopf vocabulary would
+feed all of them. Soundness (audit 2026-07-24): the hypothesis set is
+inhabited (any split `1 ⊕ ω` hardly ramified representation is flat at
+`p`), the conclusion holds for every inhabitant by the cited route;
+`hpodd` IS demanded — at `p = 2` the connected `μ₂` has the unramified
+point `−1`, breaking clause (ii) —, consumed at `e = 1 ≤ p − 2`;
+`p ≥ 5` is NOT demanded. CIRCULARITY GUARD (inherited from the
+Eisenstein pillars): must not be proven through `Family.lean` or
+`Reducible.lean`'s B5. -/
+theorem exists_inertia_connectedEtale_complement_of_isFlatAt
+    {kk' : Type u} [Field kk'] [Finite kk'] [Algebra ℤ_[p] kk']
+    [TopologicalSpace kk'] [DiscreteTopology kk'] [IsTopologicalRing kk']
+    {W : Type*} [AddCommGroup W] [Module kk' W] [Module.Finite kk' W]
+    [Module.Free kk' W]
+    (ρ : GaloisRep ℚ kk' W)
+    (hflat : ρ.IsFlatAt (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+      (Fact.out : p.Prime))) :
+    ∃ U : AddSubgroup W,
+      (∀ σ ∈ localInertiaGroup
+          (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+            (Fact.out : p.Prime)), ∀ w : W,
+        ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (HeightOneSpectrum.adicCompletion ℚ
+              (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+                (Fact.out : p.Prime)))) σ) w - w ∈ U) ∧
+      (∀ u ∈ U, (∀ σ ∈ localInertiaGroup
+          (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+            (Fact.out : p.Prime)),
+        ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (HeightOneSpectrum.adicCompletion ℚ
+              (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+                (Fact.out : p.Prime)))) σ) u = u) → u = 0) :=
+  sorry
+
+/-- **The fixed conjugator between the `ℚ_[p]`-side and adic-side
+decomposition groups at `p`** (Eisenstein pillar E3a-ii; sorry node —
+completion bookkeeping, the at-`p` analogue of the PROVEN at-`2`
+inertia bridge `localInertia_two_eq_map_padic` of `ModThree.lean`,
+strengthened from per-element conjugators on inertia to a SINGLE
+conjugator for the whole decomposition group — which is what the
+non-conjugation-invariant cocycle transport of the E3a assembly below
+requires): the images inside `Γ ℚ` of the two local absolute Galois
+groups at `p` — `Γ ℚ_[p]` through `algebraMap ℚ ℚ_[p]`, and
+`Γ (adicCompletion ℚ v_p)` through the completion embedding — are
+conjugate by one fixed `c ∈ Γ ℚ`, elementwise onto. Intended proof
+(the at-`2` template, plus the two-embeddings rigidity): the
+continuous `ℚ`-algebra isomorphism `adicCompletion ℚ v_p ≃ ℚ_[p]`
+(`Rat.HeightOneSpectrum.adicCompletion.padicEquiv`, cast along
+`natGenerator_toHeightOneSpectrum`) lifts to an isomorphism `Φ̄` of
+the algebraic closures; `Φ̄ ∘ j_p` and `j_v` are then two embeddings
+of `ℚᵃˡᵍ` into `(adicCompletion ℚ v_p)ᵃˡᵍ` over `ℚ`, hence differ by
+a FIXED automorphism `c ∈ Γ ℚ` (`j_v ∘ c = Φ̄ ∘ j_p`, by
+`IntermediateField.exists_algHom`-style extension and bijectivity of
+endomorphisms of `ℚᵃˡᵍ`); for `g : Γ ℚ_[p]` the transported element
+`h := Φ̄⁻¹ ∘ g ∘ Φ̄ ∈ Γ (adicCompletion ℚ v_p)` then satisfies
+`map g = c · map h · c⁻¹` by uniqueness of restrictions along the
+injective `j_v`. Soundness (audit 2026-07-24): true for EVERY prime
+`p` (no oddness consumed) — the two completions are isomorphic
+topological fields and restriction images of isomorphic local groups
+along embeddings differing by `c` are conjugate by that same `c`;
+the statement quantifies the conjugator OUTSIDE the element, exactly
+what the classical "well-defined up to conjugation" slogan provides
+for a single place. -/
+theorem exists_conjugator_padicGalois_eq_adic_at_p :
+    ∃ c : Field.absoluteGaloisGroup ℚ,
+      ∀ g : Field.absoluteGaloisGroup ℚ_[p],
+        ∃ h : Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ
+          (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+            (Fact.out : p.Prime))),
+          Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[p]) g =
+            c * Field.absoluteGaloisGroup.map (algebraMap ℚ
+              (HeightOneSpectrum.adicCompletion ℚ
+                (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+                  (Fact.out : p.Prime)))) h * c⁻¹ :=
+  sorry
+
+/-- **Flat local splitting at `p`** (Eisenstein pillar E3a; PROVEN
+2026-07-24 as an assembly over the E3a-i/E3a-ii cut above — the
+connected–étale/Raynaud content is the sorried complement leaf
+`exists_inertia_connectedEtale_complement_of_isFlatAt`, the
+completion bookkeeping is the sorried fixed-conjugator bridge
+`exists_conjugator_padicGalois_eq_adic_at_p`, the tame-exactness
+input is the E1b-ii leaf
+`sub_one_dvd_of_cyclotomicCharacter_residue_inertia_pow_eq_one` at
+`i = 1`; everything else — the determinant pinning `χ = ω`, the
+cocycle algebra of the triangular form, the passage from the additive
+complement to a `kk'`-linear coboundary witness by AVERAGING over the
+finite prime-to-`p` image group `χ(I_p)`, the inflation step from
+inertia to the full decomposition group via normality of inertia and
+`χ(I_p) ≠ 1`, and the conjugation transport to the `ℚ_[p]` spelling —
+is proven here): a hardly ramified
 mod-`p` extension with TRIVIAL sub-character splits LOCALLY AT `p`:
 some `a : kk'` writes the upper-right entry as a coboundary on the
 whole image of the decomposition group at `p`. Classical proof:
@@ -7990,8 +8170,284 @@ theorem eisenstein_trivial_sub_extension_locally_split_at_p
       (Pi.basisFun kk' (Fin 2)) (ρE g) = !![1, cc g; 0, χ g]) :
     ∃ a : kk', ∀ g : Field.absoluteGaloisGroup ℚ_[p],
       cc (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[p]) g) =
-        (χ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[p]) g) - 1) * a :=
-  sorry
+        (χ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[p]) g) - 1) * a := by
+  classical
+  -- E3a-i: the connected–étale complement of the fixed line
+  obtain ⟨U, hUdisp, hUfix⟩ :=
+    exists_inertia_connectedEtale_complement_of_isFlatAt hpodd ρE hρE.isFlat
+  -- E3a-ii: the fixed conjugator onto the `ℚ_[p]` decomposition group
+  obtain ⟨c, hc⟩ := exists_conjugator_padicGalois_eq_adic_at_p (p := p)
+  set Φ := Field.absoluteGaloisGroup.map (algebraMap ℚ
+    (HeightOneSpectrum.adicCompletion ℚ
+      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+        (Fact.out : p.Prime)))) with hΦdef
+  set II := localInertiaGroup
+    (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+      (Fact.out : p.Prime)) with hIIdef
+  -- cocycle algebra of the triangular form
+  have hcc_mul : ∀ g h : Field.absoluteGaloisGroup ℚ,
+      cc (g * h) = cc h + cc g * χ h := by
+    intro g h
+    have hm : (!![1, cc (g * h); 0, χ (g * h)] : Matrix (Fin 2) (Fin 2) kk') =
+        !![1, cc g; 0, χ g] * !![1, cc h; 0, χ h] := by
+      rw [← htri, ← htri, ← htri, ← LinearMap.toMatrix_mul, ← map_mul]
+    rw [Matrix.mul_fin_two] at hm
+    have h01 : cc (g * h) = 1 * cc h + cc g * χ h := by
+      have h02 := congrArg (fun M : Matrix (Fin 2) (Fin 2) kk' => M 0 1) hm
+      simpa using h02
+    simpa using h01
+  have hχ0 : ∀ g : Field.absoluteGaloisGroup ℚ, χ g ≠ 0 := by
+    intro g hg
+    have h1 : χ g * χ g⁻¹ = 1 := by
+      rw [← map_mul, mul_inv_cancel, map_one]
+    rw [hg, zero_mul] at h1
+    exact zero_ne_one h1
+  have hcc1 : cc 1 = 0 := by
+    have h1 := hcc_mul 1 1
+    rw [mul_one, map_one, mul_one] at h1
+    exact self_eq_add_right.mp h1
+  -- determinant pinning: the quotient character is `ω`
+  have hχdet : ∀ g : Field.absoluteGaloisGroup ℚ,
+      χ g = algebraMap ℤ_[p] kk'
+        (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv) := by
+    intro g
+    have hd := hρE.det g
+    rw [GaloisRep.det_apply] at hd
+    rw [← hd, ← LinearMap.det_toMatrix (Pi.basisFun kk' (Fin 2)), htri g,
+      Matrix.det_fin_two_of]
+    ring
+  -- the quotient character is ramified at `p` (E1b-ii at exponent 1)
+  have hram : ∃ σ, σ ∈ II ∧ χ (Φ σ) ≠ 1 := by
+    by_contra hno
+    push_neg at hno
+    have h1 : ∀ σ ∈ II,
+        (algebraMap ℤ_[p] kk' (cyclotomicCharacter (AlgebraicClosure ℚ) p
+          ((Φ σ).toRingEquiv))) ^ 1 = 1 := by
+      intro σ hσ
+      rw [pow_one, ← hχdet (Φ σ)]
+      exact hno σ hσ
+    have h2 := sub_one_dvd_of_cyclotomicCharacter_residue_inertia_pow_eq_one
+      (k := kk') 1 h1
+    have h3 := Nat.le_of_dvd one_pos h2
+    have h4 := hp.out.two_le
+    have h5 := Nat.odd_iff.mp hpodd
+    omega
+  -- entries of the standard-frame action
+  have hentry : ∀ (g : Field.absoluteGaloisGroup ℚ) (i j : Fin 2),
+      ρE g (Pi.single j (1 : kk')) i = !![1, cc g; 0, χ g] i j := by
+    intro g i j
+    have h1 : LinearMap.toMatrix (Pi.basisFun kk' (Fin 2))
+        (Pi.basisFun kk' (Fin 2)) (ρE g) i j = !![1, cc g; 0, χ g] i j := by
+      rw [htri g]
+    rw [LinearMap.toMatrix_apply] at h1
+    simpa using h1
+  have hb0 : ∀ g : Field.absoluteGaloisGroup ℚ,
+      ρE g (Pi.single (0 : Fin 2) (1 : kk')) = Pi.single 0 1 := by
+    intro g
+    funext i
+    fin_cases i
+    · simpa using hentry g 0 0
+    · simpa using hentry g 1 0
+  have hb1 : ∀ g : Field.absoluteGaloisGroup ℚ,
+      ρE g (Pi.single (1 : Fin 2) (1 : kk')) =
+        cc g • Pi.single (0 : Fin 2) (1 : kk') +
+          χ g • Pi.single (1 : Fin 2) (1 : kk') := by
+    intro g
+    funext i
+    fin_cases i
+    · simpa using hentry g 0 1
+    · simpa using hentry g 1 1
+  -- the fixed line meets the complement trivially
+  have hUL : ∀ x : kk', x • Pi.single (0 : Fin 2) (1 : kk') ∈ U → x = 0 := by
+    intro x hx
+    have h0 := hUfix _ hx (fun σ _ => by rw [map_smul, hb0 (Φ σ)])
+    have h1 := congrFun h0 0
+    simpa using h1
+  -- `cc` vanishes on the `χ`-kernel of inertia
+  have hker0 : ∀ σ, σ ∈ II → χ (Φ σ) = 1 → cc (Φ σ) = 0 := by
+    intro σ hσ hχ1
+    have hd := hUdisp σ hσ (Pi.single (1 : Fin 2) (1 : kk'))
+    rw [hb1 (Φ σ), hχ1, one_smul] at hd
+    have hd' : cc (Φ σ) • Pi.single (0 : Fin 2) (1 : kk') ∈ U := by
+      simpa using hd
+    exact hUL _ hd'
+  -- `cc` on inertia factors through `χ`
+  have hfac : ∀ σ τ, σ ∈ II → τ ∈ II → χ (Φ σ) = χ (Φ τ) →
+      cc (Φ σ) = cc (Φ τ) := by
+    intro σ τ hσ hτ he
+    have hmem : σ * τ⁻¹ ∈ II := mul_mem hσ (inv_mem hτ)
+    have hχinv : χ (Φ τ) * χ (Φ τ⁻¹) = 1 := by
+      rw [← map_mul, ← map_mul, mul_inv_cancel, map_one, map_one]
+    have hχ1 : χ (Φ (σ * τ⁻¹)) = 1 := by
+      rw [map_mul, map_mul, he]
+      exact hχinv
+    have h3 := hker0 _ hmem hχ1
+    have h5 : Φ σ = Φ (σ * τ⁻¹) * Φ τ := by
+      rw [← map_mul, inv_mul_cancel_right]
+    rw [h5, hcc_mul, h3, zero_mul, add_zero]
+  -- the finite image group of `χ` on inertia, inside `kk'ˣ`
+  set ψ : ↥II →* kk'ˣ :=
+    ((χ.comp Φ.toMonoidHom).comp II.subtype).toHomUnits with hψdef
+  have hψval : ∀ s : ↥II, ((ψ s : kk'ˣ) : kk') = χ (Φ s.1) :=
+    fun s => MonoidHom.coe_toHomUnits _ _
+  set Cu : Subgroup kk'ˣ := ψ.range with hCudef
+  haveI : Fintype ↥Cu := Fintype.ofFinite _
+  set N : ℕ := Nat.card ↥Cu with hNdef
+  have hNne : ((N : ℕ) : kk') ≠ 0 := by
+    haveI hchar : CharP kk' p :=
+      (CharP.charP_iff_prime_eq_zero hp.out).mpr
+        prime_eq_zero_of_finite_padicInt_algebra
+    haveI := Fintype.ofFinite kk'
+    obtain ⟨n, -, hcard⟩ := FiniteField.card kk' p
+    intro h0
+    have hpd : p ∣ N := (CharP.cast_eq_zero_iff kk' p N).mp h0
+    have hdvd1 : N ∣ Nat.card kk'ˣ := Subgroup.card_subgroup_dvd_card Cu
+    have hcardu : Nat.card kk'ˣ = Nat.card kk' - 1 := Nat.card_units kk'
+    have hcardk : Nat.card kk' = p ^ (n : ℕ) := by
+      rw [Nat.card_eq_fintype_card, hcard]
+    have hd1 : p ∣ p ^ (n : ℕ) - 1 := by
+      refine dvd_trans hpd ?_
+      rw [← hcardk, ← hcardu]
+      exact hdvd1
+    have hd2 : p ∣ p ^ (n : ℕ) := dvd_pow_self p n.2.ne'
+    have hpow1 : 1 ≤ p ^ (n : ℕ) := Nat.one_le_pow _ _ hp.out.pos
+    have hd3 : p ∣ 1 := by
+      have h6 := Nat.dvd_sub' hd2 hd1
+      rwa [Nat.sub_sub_self hpow1] at h6
+    exact absurd (Nat.dvd_one.mp hd3) hp.out.one_lt.ne'
+  -- the choice-based value of `cc` through `χ` on inertia
+  set Gf : kk' → kk' := fun u =>
+    if h : ∃ σ, σ ∈ II ∧ χ (Φ σ) = u then cc (Φ h.choose) else 0 with hGfdef
+  have hGspec : ∀ σ, σ ∈ II → Gf (χ (Φ σ)) = cc (Φ σ) := by
+    intro σ hσ
+    have hex : ∃ τ, τ ∈ II ∧ χ (Φ τ) = χ (Φ σ) := ⟨σ, hσ, rfl⟩
+    simp only [hGfdef]
+    rw [dif_pos hex]
+    exact hfac _ _ hex.choose_spec.1 hσ hex.choose_spec.2
+  -- the averaged coboundary witness
+  set A : kk' := ∑ w : ↥Cu, (((w : kk'ˣ) : kk'))⁻¹ * Gf ((w : kk'ˣ) : kk')
+    with hAdef
+  -- one inertia step of the average
+  have hstep : ∀ σ, σ ∈ II → χ (Φ σ) * A = A + cc (Φ σ) * (N : kk') := by
+    intro σ hσ
+    have hcmem : ψ ⟨σ, hσ⟩ ∈ Cu := ⟨⟨σ, hσ⟩, rfl⟩
+    set cE : ↥Cu := ⟨ψ ⟨σ, hσ⟩, hcmem⟩ with hcEdef
+    have hcEval : ((cE : kk'ˣ) : kk') = χ (Φ σ) := hψval ⟨σ, hσ⟩
+    have hterm : ∀ w : ↥Cu,
+        ((((cE * w : ↥Cu) : kk'ˣ) : kk'))⁻¹ *
+            Gf (((cE * w : ↥Cu) : kk'ˣ) : kk') =
+          (χ (Φ σ))⁻¹ * ((((w : kk'ˣ) : kk'))⁻¹ * Gf ((w : kk'ˣ) : kk')) +
+            (χ (Φ σ))⁻¹ * cc (Φ σ) := by
+      intro w
+      obtain ⟨τ, hτeq⟩ := w.2
+      have hτval : ((w : kk'ˣ) : kk') = χ (Φ τ.1) := by
+        rw [← hτeq]
+        exact hψval τ
+      have hmul0 : ((cE * w : ↥Cu) : kk'ˣ) = (cE : kk'ˣ) * (w : kk'ˣ) := rfl
+      have hmulval : (((cE * w : ↥Cu) : kk'ˣ) : kk') =
+          χ (Φ σ) * χ (Φ τ.1) := by
+        rw [hmul0, Units.val_mul, hcEval, hτval]
+      have hmm : σ * τ.1 ∈ II := mul_mem hσ τ.2
+      have hGmul : Gf (χ (Φ σ) * χ (Φ τ.1)) =
+          Gf (χ (Φ τ.1)) + cc (Φ σ) * χ (Φ τ.1) := by
+        have h1 : χ (Φ σ) * χ (Φ τ.1) = χ (Φ (σ * τ.1)) := by
+          rw [map_mul, map_mul]
+        rw [h1, hGspec _ hmm, hGspec _ τ.2]
+        have h2 : Φ (σ * τ.1) = Φ σ * Φ τ.1 := map_mul _ _ _
+        rw [h2, hcc_mul]
+      rw [hmulval, hτval, hGmul, hGspec _ τ.2]
+      have hσne : χ (Φ σ) ≠ 0 := hχ0 _
+      have hτne : χ (Φ τ.1) ≠ 0 := hχ0 _
+      field_simp
+      ring
+    have hre := Equiv.sum_comp (Equiv.mulLeft cE)
+      (fun w : ↥Cu => (((w : kk'ˣ) : kk'))⁻¹ * Gf ((w : kk'ˣ) : kk'))
+    simp only [Equiv.coe_mulLeft] at hre
+    have hsum1 : A = ∑ w : ↥Cu,
+        ((χ (Φ σ))⁻¹ * ((((w : kk'ˣ) : kk'))⁻¹ * Gf ((w : kk'ˣ) : kk')) +
+          (χ (Φ σ))⁻¹ * cc (Φ σ)) := by
+      conv_lhs => rw [hAdef]
+      rw [← hre]
+      exact Finset.sum_congr rfl (fun w _ => hterm w)
+    rw [Finset.sum_add_distrib, ← Finset.mul_sum, ← hAdef, Finset.sum_const,
+      Finset.card_univ, nsmul_eq_mul] at hsum1
+    have hcardN : ((Fintype.card ↥Cu : ℕ) : kk') = ((N : ℕ) : kk') := by
+      rw [hNdef, Nat.card_eq_fintype_card]
+    rw [hcardN] at hsum1
+    have hne := hχ0 (Φ σ)
+    calc χ (Φ σ) * A = χ (Φ σ) * ((χ (Φ σ))⁻¹ * A +
+        (N : kk') * ((χ (Φ σ))⁻¹ * cc (Φ σ))) := by rw [← hsum1]
+      _ = (χ (Φ σ) * (χ (Φ σ))⁻¹) * A +
+          (N : kk') * ((χ (Φ σ) * (χ (Φ σ))⁻¹) * cc (Φ σ)) := by ring
+      _ = A + cc (Φ σ) * (N : kk') := by rw [mul_inv_cancel₀ hne]; ring
+  -- the inertia-level coboundary witness
+  set a0 : kk' := A * (((N : ℕ) : kk'))⁻¹ with ha0def
+  have hIsplit : ∀ σ, σ ∈ II → cc (Φ σ) = (χ (Φ σ) - 1) * a0 := by
+    intro σ hσ
+    have h1 := hstep σ hσ
+    have h2 : cc (Φ σ) * (N : kk') = (χ (Φ σ) - 1) * A := by
+      linear_combination -h1
+    have hN1 : ((N : ℕ) : kk') * (((N : ℕ) : kk'))⁻¹ = 1 :=
+      mul_inv_cancel₀ hNne
+    calc cc (Φ σ) = cc (Φ σ) * (((N : ℕ) : kk') * (((N : ℕ) : kk'))⁻¹) := by
+          rw [hN1, mul_one]
+      _ = cc (Φ σ) * ((N : ℕ) : kk') * (((N : ℕ) : kk'))⁻¹ := by ring
+      _ = (χ (Φ σ) - 1) * A * (((N : ℕ) : kk'))⁻¹ := by rw [h2]
+      _ = (χ (Φ σ) - 1) * a0 := by rw [ha0def]; ring
+  -- inflation from inertia to the full adic decomposition group
+  obtain ⟨σ₀, hσ₀I, hσ₀χ⟩ := hram
+  have hDsplit : ∀ g : Field.absoluteGaloisGroup
+      (HeightOneSpectrum.adicCompletion ℚ
+        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+          (Fact.out : p.Prime))),
+      cc (Φ g) = (χ (Φ g) - 1) * a0 := by
+    intro g
+    have hconj : g * σ₀ * g⁻¹ ∈ II := conj_mem_localInertiaGroup g hσ₀I
+    have h1 : cc (Φ (g * σ₀)) = cc (Φ σ₀) + cc (Φ g) * χ (Φ σ₀) := by
+      rw [map_mul, hcc_mul]
+    have h2 : cc (Φ (g * σ₀)) = cc (Φ g) + cc (Φ (g * σ₀ * g⁻¹)) * χ (Φ g) := by
+      have h5 : Φ (g * σ₀) = Φ (g * σ₀ * g⁻¹) * Φ g := by
+        rw [← map_mul, inv_mul_cancel_right]
+      rw [h5, hcc_mul]
+    have h3 := hIsplit σ₀ hσ₀I
+    have h4 := hIsplit _ hconj
+    have hχconj : χ (Φ (g * σ₀ * g⁻¹)) = χ (Φ σ₀) := by
+      have h5 : χ (Φ g) * χ (Φ g⁻¹) = 1 := by
+        rw [← map_mul, ← map_mul, mul_inv_cancel, map_one, map_one]
+      have h6 : χ (Φ (g * σ₀ * g⁻¹)) =
+          χ (Φ g) * χ (Φ σ₀) * χ (Φ g⁻¹) := by
+        rw [map_mul, map_mul, map_mul, map_mul]
+      rw [h6]
+      linear_combination χ (Φ σ₀) * h5
+    have hne : χ (Φ σ₀) - 1 ≠ 0 := sub_ne_zero.mpr hσ₀χ
+    have hkey : (χ (Φ σ₀) - 1) * (cc (Φ g) - (χ (Φ g) - 1) * a0) = 0 := by
+      rw [h4, hχconj] at h2
+      rw [h3] at h1
+      linear_combination h1 - h2
+    rcases mul_eq_zero.mp hkey with h | h
+    · exact absurd h hne
+    · exact sub_eq_zero.mp h
+  -- transport along the fixed conjugator to the `ℚ_[p]` spelling
+  have hχcinv : χ c * χ c⁻¹ = 1 := by
+    rw [← map_mul, mul_inv_cancel, map_one]
+  have hccinv : cc c⁻¹ = -(cc c * χ c⁻¹) := by
+    have h6 := hcc_mul c c⁻¹
+    rw [mul_inv_cancel, hcc1] at h6
+    exact eq_neg_of_add_eq_zero_left h6.symm
+  have h7 : χ c⁻¹ = (χ c)⁻¹ := eq_inv_of_mul_eq_one_right hχcinv
+  refine ⟨(a0 + cc c) * (χ c)⁻¹, ?_⟩
+  intro g
+  obtain ⟨h, hgh⟩ := hc g
+  rw [hgh]
+  have hy := hDsplit h
+  have e1 : cc (c * Φ h * c⁻¹) =
+      cc c⁻¹ + (cc (Φ h) + cc c * χ (Φ h)) * χ c⁻¹ := by
+    rw [hcc_mul (c * Φ h) c⁻¹, hcc_mul c (Φ h)]
+  have e2 : χ (c * Φ h * c⁻¹) = χ (Φ h) * (χ c * χ c⁻¹) := by
+    rw [map_mul, map_mul]
+    ring
+  rw [e1, e2, hχcinv, mul_one, hy, hccinv, h7]
+  ring
 
 /-- **Tame local splitting at `2`** (Eisenstein pillar E3b; sorry node
 — the at-2 unit analysis; `hp5` is load-bearing HERE): a hardly
