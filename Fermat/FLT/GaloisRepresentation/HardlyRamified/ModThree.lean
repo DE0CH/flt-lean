@@ -14,6 +14,11 @@ public import Fermat.FLT.FreyCurve.MazurTorsion
 -- (`inertia_card_dvd_of_card_map_localInertiaGroup_dvd`), consumed by
 -- `inertia_card_dvd_of_map_localInertiaGroup_card_dvd`.
 import Fermat.FLT.FreyCurve.InertiaCardTransport
+-- The PROVEN connected–étale counit-idempotent package (minimal
+-- counit-one idempotent, primitivity dichotomy, comultiplication
+-- absorption, and adic completeness of `adicCompletionIntegers`),
+-- consumed by `exists_connected_counit_idempotent_at_three`.
+import Fermat.FLT.GroupScheme.ConnectedEtale
 -- Irreducible ↔ absolutely irreducible given a 1-dimensional fixed space
 -- (complex conjugation), used by the derivation of `mod_three_reducible`.
 public import Fermat.FLT.KnownIn1980s.RepresentationTheory.OddAbsIrred
@@ -11832,7 +11837,11 @@ theorem exists_connected_counit_idempotent_at_three
       Coalgebra.counit (R := 𝒪₃ᵥ) e₀ = (1 : 𝒪₃ᵥ) ∧
       (∀ x : G, IsIdempotentElem x → x * e₀ = 0 ∨ x * e₀ = e₀) ∧
       Coalgebra.comul (R := 𝒪₃ᵥ) e₀ * (e₀ ⊗ₜ[𝒪₃ᵥ] e₀) = e₀ ⊗ₜ[𝒪₃ᵥ] e₀ := by
-  sorry
+  obtain ⟨e₀, he₀, hε₀, hmin, habs⟩ :=
+    Bialgebra.exists_connected_counit_idempotent (A := 𝒪₃ᵥ) (G := G)
+  refine ⟨e₀, he₀, hε₀,
+    fun x hx => mul_eq_zero_or_mul_eq_of_minimal he₀ hε₀ hmin x hx, ?_⟩
+  rwa [Bialgebra.comulAlgHom_apply] at habs
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
