@@ -113,6 +113,14 @@ import Mathlib.RingTheory.Algebraic.Integral
 public import Mathlib.NumberTheory.NumberField.DedekindZeta
 public import Mathlib.Analysis.SpecialFunctions.Gamma.Basic
 public import Mathlib.Analysis.SpecialFunctions.Pow.Complex
+-- The `ℤ`-lattice covolume (`ZLattice.covolume`, with the canonical
+-- Lebesgue volume of a finite-dimensional real inner product space)
+-- and the bilinear-form dual lattice
+-- (`LinearMap.BilinForm.dualSubmodule` at `innerₗ`), appearing in the
+-- STATEMENT of the n-dimensional Poisson-summation leaf
+-- `zlattice_theta_transform` of the Hecke continuation (hence public).
+public import Mathlib.Algebra.Module.ZLattice.Covolume
+public import Mathlib.LinearAlgebra.BilinearForm.DualLattice
 -- `Complex.Gamma_ne_zero_of_re_pos` (nonvanishing of the archimedean
 -- Euler factors) and the antiholomorphic-composition lemma
 -- `differentiableAt_conj_conj_iff` (Schwarz reflection), consumed by
@@ -4976,10 +4984,175 @@ theorem dedekindDualClass_involutive (K : Type*) [Field K] [NumberField K] :
   unfold dedekindDualClass
   rw [mul_inv_rev, inv_inv, mul_comm C, mul_inv_cancel_left]
 
-/-- **Hecke's theorem, per-ideal-class theta–Mellin core** (sorry
-node, stated 2026-07-24 — THE deep analytic leaf of the decomposition
-of `dedekindContinuation_exists`): every ideal class `C` of `K` has an
-entire `s(s−1)`-normalized completed partial zeta `Z C` — on
+/-- **`n`-dimensional `ℤ`-lattice Poisson summation — the theta
+transformation law** (sorry node, stated 2026-07-24 — THE genuinely
+new analytic mathematics of the Dedekind continuation, the gap named
+in the decomposition of `completedClassZeta_exists`): for a full-rank
+`ℤ`-lattice `L` in a finite-dimensional real inner product space `E`
+(carrying its canonical Lebesgue measure,
+`measureSpaceOfInnerProductSpace`) and every `t > 0`,
+
+`θ_L(1/t) = covol(L)⁻¹ · t^{n/2} · θ_{L∨}(t)`,
+
+where `θ_M(u) := Σ_{v ∈ M} exp(−π·u·‖v‖²)`, `n = dim_ℝ E`, and
+`L∨ = {x | ∀ v ∈ L, ⟪x, v⟫ ∈ ℤ}` is the dual lattice
+(`LinearMap.BilinForm.dualSubmodule (innerₗ E) L`).  This is Poisson
+summation `Σ_{v ∈ L} f(v) = covol(L)⁻¹ · Σ_{w ∈ L∨} f̂(w)` at the
+Gaussian `f = exp(−π‖·‖²/t)` — Neukirch, *Algebraic Number Theory*,
+VII (3.6) at the scalar modulus; the anisotropic law Neukirch actually
+integrates over the unit domain follows from this scalar statement
+applied to diagonally rescaled lattices (see
+`heckeClassZeta_of_zlattice_theta`).  Note the statement is also true
+(trivially, `1 = 1`) for `E = 0`, so no nontriviality hypothesis is
+needed.
+
+The pin's Poisson summation is one-dimensional only
+(`Real.tsum_eq_tsum_fourier` and its `_of_rpow_decay` variants in
+`Mathlib.Analysis.Fourier.PoissonSummation`), while Gaussian
+self-duality is known in every dimension
+(`fourierIntegral_gaussian_innerProductSpace`).  Intended proof:
+
+1. *The case `ℤⁿ ⊂ EuclideanSpace ℝ (Fin n)`*: the Gaussian splits as
+   a product over coordinates (`EuclideanSpace.norm_eq`); the `tsum`
+   over `ℤⁿ` of the product factorizes into `n` one-dimensional
+   `tsum`s (`tsum_prod'`/`Summable.tsum_finsetProd`-style, with the
+   evident summability), and each factor transforms by the
+   one-dimensional Jacobi identity — mathlib's `jacobiTheta₂`
+   functional equation
+   (`Mathlib.NumberTheory.ModularForms.JacobiTheta.TwoVariable`) at
+   `z = 0`, or directly the pin's one-dimensional Poisson summation at
+   the Gaussian.  Here `covol = 1` and `(ℤⁿ)∨ = ℤⁿ`
+   (`LinearMap.BilinForm.dualSubmodule_span_of_basis` at the standard
+   basis, which is orthonormal hence self-dual).
+2. *General `L`*: choose a `ℤ`-basis `b` of `L`
+   (`Module.Free.chooseBasis`; free of rank `n` by the `ZLattice`
+   theory, `ZLattice.module_free`/`ZLattice.rank`); by
+   `IsZLattice.span_top` the map `(c : ℝⁿ) ↦ Σ cᵢ·bᵢ` is a linear
+   equivalence `T : ℝⁿ ≃ₗ[ℝ] E` carrying `ℤⁿ` onto `L`.  Run case 1
+   against the composed Gaussian `exp (−π·t⁻¹·‖T ·‖²)`: the Fourier
+   transform under a linear substitution picks up the transpose
+   inverse in the argument and the determinant factor
+   (`MeasureTheory.integral_comp_linearEquiv` /
+   `Measure.addHaar_linearMap`); the determinant is exactly
+   `ZLattice.covolume L` (`ZLattice.covolume_eq_det`), and the image
+   of `ℤⁿ` under the transpose inverse is exactly `L∨`, the
+   `ℤ`-span of the `⟪·,·⟫`-dual basis of `b`
+   (`LinearMap.BilinForm.dualSubmodule_span_of_basis`). -/
+theorem zlattice_theta_transform
+    {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+    [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E]
+    (L : Submodule ℤ E) [DiscreteTopology L] [IsZLattice ℝ L]
+    (t : ℝ) (ht : 0 < t) :
+    ∑' v : L, Real.exp (-Real.pi * t⁻¹ * ‖(v : E)‖ ^ 2) =
+      (ZLattice.covolume L)⁻¹ * t ^ ((Module.finrank ℝ E : ℝ) / 2) *
+        ∑' w : LinearMap.BilinForm.dualSubmodule (innerₗ E) L,
+          Real.exp (-Real.pi * t * ‖(w : E)‖ ^ 2) := by
+  sorry
+
+/-- **Hecke's per-ideal-class theta–Mellin machine, conditioned on
+lattice Poisson summation** (sorry node, stated 2026-07-24 — the
+second leaf of the decomposition of `completedClassZeta_exists`; its
+sole hypothesis `hθ` is verbatim the Poisson leaf
+`zlattice_theta_transform`, so proving THIS theorem is exactly the
+Neukirch VII §§3–5 unit-domain/Mellin work sitting on top of that
+transformation law, and its conclusion is verbatim
+`completedClassZeta_exists`).
+
+Intended proof (J. Neukirch, *Algebraic Number Theory*, VII §§3–5, in
+the architecture mathlib itself uses for `riemannZeta` and the Hurwitz
+zetas — `WeakFEPair`/`StrongFEPair` of
+`Mathlib.NumberTheory.LSeries.AbstractFuncEq`, instantiated exactly as
+`Mathlib.NumberTheory.LSeries.HurwitzZetaEven` does):
+
+1. *Ideal lattices and their duals* (Neukirch VII §3).  Choose an
+   integral ideal `𝔞 ∈ C⁻¹`; the nonzero integral ideals in `C`
+   biject with the `𝒪_K^×`-orbits of nonzero elements of `𝔞`
+   (`𝔟 ↦ 𝔟𝔞 = (a)`, `N𝔟 = |N_{K/ℚ}(a)|/N𝔞`).  Realize `𝔞` as a
+   `ZLattice` in the mixed space `K_ℝ = ℝ^{r₁} × ℂ^{r₂}`
+   (`NumberField.mixedEmbedding`,
+   `Mathlib.NumberTheory.NumberField.CanonicalEmbedding.*`), carried
+   to `EuclideanSpace ℝ (Fin n)` by a linear isometry (for the
+   Hermitian norm `‖x‖² = Σ_real x_w² + 2·Σ_complex |z_w|²`, which is
+   `Σ_τ |τ(a)|²` over all `n` embeddings) so that `hθ` applies —
+   `hθ` quantifies over `E : Type`, and the transfer to a universe-0
+   model is exactly what the isometry provides.  With respect to this
+   inner product the dual lattice of `𝔞` is the coordinatewise
+   complex conjugate of the trace-dual ideal lattice, and the
+   trace-dual of `𝔞` is `(𝔞𝔡_K)⁻¹` (`differentIdeal`,
+   `FractionalIdeal.dual`, `Submodule.traceDual`,
+   `Mathlib.RingTheory.DedekindDomain.Different`); conjugation at the
+   complex coordinates is a further isometry fixing all the theta
+   sums, so the dual theta is the theta of `(𝔞𝔡_K)⁻¹` — whence the
+   class shift `C ↦ [𝔡]C⁻¹` (`dedekindDualClass`).  The covolume of
+   the ideal lattice is `2^{-r₂}·√|d_K|·N𝔞` up to the normalization
+   of the volume (`NumberField.mixedEmbedding.volume_fundamentalDomain`
+   -style covolume computations, `NumberField.discr`), which is where
+   `|d_K|^{s/2}` enters.
+2. *Anisotropic thetas from `hθ`* (Neukirch VII (3.6)).  The theta
+   Neukirch integrates is `θ(𝔞, y) = Σ_{a ∈ 𝔞} exp(−π·Σ_w y_w·|a_w|²)`
+   with independent scalings `y_w > 0`: this is the SCALAR theta of
+   the diagonally rescaled lattice `D_{√y}·𝔞` (again a `ZLattice`,
+   with covolume `(Π y_w^{d_w/2})·covol 𝔞` and dual lattice
+   `D_{√y}⁻¹·𝔞∨`), so the anisotropic transformation law is `hθ`
+   applied to `D_{√y}·𝔞` at `t = 1`.
+3. *Unit-domain reduction and Mellin transform* (Neukirch VII §5,
+   (5.5)–(5.8)): integrating the theta minus its constant term over a
+   fundamental domain of `𝒪_K^×/μ(K)` acting on the norm-one
+   hypersurface of `K_ℝ^×` (Dirichlet's unit theorem,
+   `NumberField.Units.*`) turns the completed partial zeta into a
+   Mellin transform of a function `g_C(t)` with
+   `g_C(1/t) = t^{1/2}·g_{C'}(t)` up to the constant terms;
+   instantiate `WeakFEPair` with these `g_C`, `g_{C'}` — its API
+   (`WeakFEPair.Λ`, `WeakFEPair.differentiable_Λ₀`,
+   `WeakFEPair.functional_equation`, as consumed by
+   `HurwitzZetaEven`) yields the continuation, the entirety of
+   `s(s−1)·Z C s`, and the functional equation
+   `Z C (1−s) = Z ([𝔡]C⁻¹) s`.
+4. *`re s > 1` formula and summability*: unfold the Mellin integral on
+   the convergence half-plane (Neukirch VII §4's evaluation of the
+   archimedean factors `Γ_ℝ(s) = π^{−s/2}·Γ(s/2)`,
+   `Γ_ℂ(s) = 2·(2π)^{−s}·Γ(s)`); the `LSeriesSummable` conjunct
+   follows from the same estimates, or directly from the pin's
+   per-class ideal-counting asymptotics
+   (`Ideal.tendsto_norm_le_and_mk_eq_div_atTop`) through
+   `LSeriesSummable_of_sum_norm_bigO`.
+5. *Growth* (S. Lang, *Algebraic Number Theory*, XIII §5): on
+   `re s ≥ 2` termwise bounds (`‖L(a_C, s)‖ ≤ L(a_C, 2)`,
+   `‖Γ(s)‖ ≤ Γ(re s)`, `Γ(x) ≤ exp(x·log x)` for large real `x`); on
+   `re s ≤ −1` reflect through the functional equation; on the strip
+   `−1 ≤ re s ≤ 2` the Mellin representation bounds `‖Z C s‖` by
+   `‖s(s−1)‖·(c₀ + ∫_1^∞ θ̃(t)·(t^{re s/2} + t^{(1−re s)/2}) dt/t)`,
+   polynomial on the strip — or Phragmén–Lindelöf
+   (`PhragmenLindelof.horizontal_strip`, already imported; the PROVEN
+   Poitou strip-positivity section of this file has the technique in
+   Lean). -/
+theorem heckeClassZeta_of_zlattice_theta (K : Type*) [Field K] [NumberField K]
+    (hθ : ∀ (E : Type) [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+      [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E]
+      (L : Submodule ℤ E) [DiscreteTopology L] [IsZLattice ℝ L]
+      (t : ℝ), 0 < t →
+      ∑' v : L, Real.exp (-Real.pi * t⁻¹ * ‖(v : E)‖ ^ 2) =
+        (ZLattice.covolume L)⁻¹ * t ^ ((Module.finrank ℝ E : ℝ) / 2) *
+          ∑' w : LinearMap.BilinForm.dualSubmodule (innerₗ E) L,
+            Real.exp (-Real.pi * t * ‖(w : E)‖ ^ 2)) :
+    ∃ Z : ClassGroup (NumberField.RingOfIntegers K) → ℂ → ℂ,
+      (∀ C, Differentiable ℂ (Z C)) ∧
+      (∀ C, ∀ s : ℂ, 1 < s.re →
+        LSeriesSummable (fun n => (classIdealCount K C n : ℂ)) s ∧
+        Z C s = s * (s - 1) * Complex.ofReal |(NumberField.discr K : ℝ)| ^ (s / 2) *
+          ((Real.pi : ℂ) ^ (-s / 2) * Complex.Gamma (s / 2)) ^
+            NumberField.InfinitePlace.nrRealPlaces K *
+          ((2 : ℂ) * ((2 * Real.pi : ℝ) : ℂ) ^ (-s) * Complex.Gamma s) ^
+            NumberField.InfinitePlace.nrComplexPlaces K *
+          LSeries (fun n => (classIdealCount K C n : ℂ)) s) ∧
+      (∀ C, ∀ s : ℂ, Z C (1 - s) = Z (dedekindDualClass K C) s) ∧
+      (∀ C, ∃ B : ℝ, 0 < B ∧ ∀ s : ℂ, 2 ≤ ‖s‖ →
+        ‖Z C s‖ ≤ Real.exp (B * ‖s‖ * Real.log ‖s‖)) := by
+  sorry
+
+/-- **Hecke's theorem, per-ideal-class theta–Mellin core**
+(DECOMPOSED 2026-07-24, assembly PROVEN): every ideal class `C` of `K`
+has an entire `s(s−1)`-normalized completed partial zeta `Z C` — on
 `re s > 1` equal to `s(s−1)·|d_K|^{s/2}·Γ_ℝ(s)^{r₁}·Γ_ℂ(s)^{r₂}`
 times the (absolutely convergent, whence the bundled
 `LSeriesSummable`) partial Dirichlet series of the class
@@ -4987,9 +5160,17 @@ times the (absolutely convergent, whence the bundled
 `Z C (1−s) = Z ([𝔡]C⁻¹) s` (`dedekindDualClass`) and an order-one
 growth bound off the disc `‖s‖ < 2`.
 
-Intended proof (J. Neukirch, *Algebraic Number Theory*, VII §3–§5, in
-the shape mathlib itself uses to continue `riemannZeta` and the
-Hurwitz zetas):
+The decomposition cuts the Neukirch VII §§3–5 route at its Poisson
+core: the conclusion is verbatim that of
+`heckeClassZeta_of_zlattice_theta` (the ideal-lattice, unit-domain and
+`WeakFEPair`/Mellin machinery, sorried above), whose sole hypothesis
+is verbatim the `n`-dimensional `ZLattice` Poisson-summation theta law
+`zlattice_theta_transform` (sorried above, the pin's genuine gap) —
+the assembly here plugs the one into the other, making the analytic
+route and its two remaining frontiers mechanically explicit.
+
+Historical intended-proof sketch (now distributed over the two
+leaves' docstrings):
 
 1. *Theta series of the class* (Neukirch VII §3).  Choose an integral
    ideal `𝔞 ∈ C⁻¹`; the integral ideals in `C` biject with the
@@ -5060,7 +5241,9 @@ theorem completedClassZeta_exists (K : Type*) [Field K] [NumberField K] :
       (∀ C, ∀ s : ℂ, Z C (1 - s) = Z (dedekindDualClass K C) s) ∧
       (∀ C, ∃ B : ℝ, 0 < B ∧ ∀ s : ℂ, 2 ≤ ‖s‖ →
         ‖Z C s‖ ≤ Real.exp (B * ‖s‖ * Real.log ‖s‖)) := by
-  sorry
+  refine heckeClassZeta_of_zlattice_theta K ?_
+  intro E _ _ _ _ _ L _ _ t ht
+  exact zlattice_theta_transform L t ht
 
 open scoped nonZeroDivisors in
 /-- **Partition of the ideal count over the class group** (PROVEN
