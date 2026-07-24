@@ -3589,10 +3589,10 @@ dimension 2:
   `IsHardlyRamified.exists_conj_cyclotomicCharacter_three`
   (`ModThree.lean`), by the same argument.
 * **the adapted basis of an odd involution**
-  (`exists_basis_involution_diag`, sorry node): pure linear algebra
-  over a local ring with `2` a unit — an involution of `Fin 2 → O`
-  with determinant `−1` has an eigenbasis with eigenvalues `1, −1`.
-  Unconditionally true.
+  (`exists_basis_involution_diag`, PROVEN 2026-07-24, fully
+  constructive): pure linear algebra over a local ring with `2` a
+  unit — an involution of `Fin 2 → O` with determinant `−1` has an
+  eigenbasis with eigenvalues `1, −1`.
 * **the aligned matrix form of one realization**
   (`exists_matrixHom_charpoly_realization`, PROVEN 2026-07-24 as a
   glue over the adapted basis leaf): each realization, conjugated so
