@@ -10483,53 +10483,453 @@ theorem WeierstrassCurve.torsionPairChordKiller_valuation_eq_one
   simp
 
 set_option backward.isDefEq.respectTransparency false in
-/-- **The chord kill identity** (sorry node — stage E3a of the Katz–Mazur
-branch family): the chord killer multiplies every pullback `g_{a,b} ∘ add`
-of a monomial section along the group addition back into the span `M`.
+set_option linter.unusedSectionVars false in
+/-- **The secant addition formula with the plain ordinate** (companion of
+`TorsionCard.add_some_coords`, division- and `2`-free): for two affine
+points with distinct abscissas the sum is affine, with the multiplied
+secant identity for `x₃` and the NEGATED-SLOPE identity for `y₃` itself
+(no factor `2`, valid in every characteristic). -/
+lemma WeierstrassCurve.add_some_ordinate {x₁ y₁ x₂ y₂ : Ksep}
+    (h₁ : (E⁄Ksep).toAffine.Nonsingular x₁ y₁)
+    (h₂ : (E⁄Ksep).toAffine.Nonsingular x₂ y₂) (hx : x₁ ≠ x₂) :
+    ∃ (x₃ y₃ : Ksep) (h₃ : (E⁄Ksep).toAffine.Nonsingular x₃ y₃),
+      (Affine.Point.some x₁ y₁ h₁ : (E⁄Ksep).Point) +
+          Affine.Point.some x₂ y₂ h₂ = Affine.Point.some x₃ y₃ h₃ ∧
+      x₃ * (x₁ - x₂) ^ 2 = (y₁ - y₂) ^ 2 +
+        (E⁄Ksep).a₁ * (y₁ - y₂) * (x₁ - x₂) -
+        ((E⁄Ksep).a₂ + x₁ + x₂) * (x₁ - x₂) ^ 2 ∧
+      y₃ * (x₁ - x₂) = -((y₁ - y₂) * (x₃ - x₁)) -
+        (y₁ + (E⁄Ksep).a₁ * x₃ + (E⁄Ksep).a₃) * (x₁ - x₂) := by
+  classical
+  have hxy : ¬(x₁ = x₂ ∧ y₁ = (E⁄Ksep).toAffine.negY x₂ y₂) := fun hc => hx hc.1
+  have hd : x₁ - x₂ ≠ 0 := sub_ne_zero.mpr hx
+  have hslope : (E⁄Ksep).toAffine.slope x₁ x₂ y₁ y₂ = (y₁ - y₂) / (x₁ - x₂) := by
+    rw [Affine.slope, if_neg hx]
+  have hS : (E⁄Ksep).toAffine.slope x₁ x₂ y₁ y₂ * (x₁ - x₂) = y₁ - y₂ := by
+    rw [hslope, div_mul_cancel₀ _ hd]
+  refine ⟨_, _, Affine.nonsingular_add h₁ h₂ hxy,
+    Affine.Point.add_some hxy, ?_, ?_⟩
+  · rw [Affine.addX]
+    linear_combination ((E⁄Ksep).toAffine.slope x₁ x₂ y₁ y₂ * (x₁ - x₂) +
+      (y₁ - y₂) + (E⁄Ksep).a₁ * (x₁ - x₂)) * hS
+  · rw [Affine.addY, Affine.negY, Affine.negAddY]
+    linear_combination (x₁ - (E⁄Ksep).toAffine.addX x₁ x₂
+      ((E⁄Ksep).toAffine.slope x₁ x₂ y₁ y₂)) * hS
 
-PROOF PLAN (worked out 2026-07-24; a GLOBAL function identity on the
-`m`-torsion square, to be established by the four-way case split
-origin×any / any×origin / affine×affine with `x₁ = x₂` / with `x₁ ≠ x₂`):
+set_option linter.unusedSectionVars false in
+/-- The value of the ordinate chord section `ν` on an affine pair. -/
+lemma WeierstrassCurve.torsionPairNu_apply_some (m : ℕ) (h : Polynomial R)
+    (PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)))
+    (x₁ y₁ x₂ y₂ : Ksep)
+    (hns₁ : (E⁄Ksep).toAffine.Nonsingular x₁ y₁)
+    (hns₂ : (E⁄Ksep).toAffine.Nonsingular x₂ y₂)
+    (hP : (PQ.1 : (E⁄Ksep).Point) = Affine.Point.some x₁ y₁ hns₁)
+    (hQ : (PQ.2 : (E⁄Ksep).Point) = Affine.Point.some x₂ y₂ hns₂)
+    (h₁0 : Polynomial.aeval x₁ h ≠ 0) (h₂0 : Polynomial.aeval x₂ h ≠ 0) :
+    WeierstrassCurve.torsionPairNu R K E Ksep m h PQ =
+      (y₁ - y₂) / (Polynomial.aeval x₁ h * Polynomial.aeval x₂ h) := by
+  unfold WeierstrassCurve.torsionPairNu
+  rw [hP, hQ, WeierstrassCurve.torsionKernelFun_some,
+    WeierstrassCurve.torsionKernelFun_some, WeierstrassCurve.torsionKernelFun_some,
+    WeierstrassCurve.torsionKernelFun_some]
+  simp only [pow_one, pow_zero, mul_one, one_mul]
+  field_simp
 
-* On affine pairs with `x₁ ≠ x₂` the value of the product is
-  `h(x₃)·δ̄^{2d} · x₃^a y₃^b/h(x₃) = N^a·M₃^b·(x₁−x₂)^{2d−2a−3b}/(h₁h₂)^{2d}`,
-  where `N = x₃(x₁−x₂)²` is the multiplied secant numerator
-  (`TorsionCard.add_some_coords`) and
-  `M₃ = y₃(x₁−x₂)³ = −(y₁−y₂)·N + x₁(y₁−y₂)(x₁−x₂)² − y₁(x₁−x₂)³
-   − a₁·N·(x₁−x₂) − a₃(x₁−x₂)³` (the negated-slope form of the secant
-  ordinate; eliminate `x₃` by `N`).  Every bivariate monomial of the
-  expansion has per-side weight ≤ `6 + 9 + 2(2d − 2) ≤ 4d²`, so after
-  reduction of `y`-powers ≥ 2 by the curve equation
-  (`y² = x³ + a₂x² + a₄x + a₆ − a₁xy − a₃y`) the whole expression is an
-  `R`-combination of split products `(x^i y^j / h^{2d}) ⊗ (x^k y^l / h^{2d})`
-  of members of the section subalgebra — build the general lemma
-  "`2i + 3j ≤ 2d·k` implies the monomial section with denominator `h^k`
-  lies in the adjoin" by strong induction on `j` (curve-equation reduction)
-  and multiplicative splitting for `k > 1`.
-* On origin rows/columns both sides vanish: `δ` and `ν` vanish there, hence
-  so does the killer (the `i = d` top term is `n̂^d`, and `n̂` vanishes);
-  on the right the per-side weight of every split factor is `< 4d²`, so its
-  origin value is `0`.
-* On affine pairs with `x₁ = x₂` exactly: `Q = ±P`
-  (`TorsionCard.eq_or_add_eq_zero_of_X_eq`).  For `Q = −P` the killer value
-  is `((y₁−y₂)/(h₁h₂))^{2d} = ψ₂(P)^{2d}/(h₁h₂)^{2d}` and `P + Q = 0`, so
-  the left side is the weight-indicator `2a+3b = 2d` (forcing `b = 0` by
-  parity) times that unit — matching the right side, whose only surviving
-  monomials are those with `(x₁−x₂)`-exponent `0`.  For `Q = P` with
-  `2P ≠ 0` both sides vanish (`y₁ = y₂` and `δ = ν = 0`).
+set_option linter.unusedSectionVars false in
+/-- **The chord ordinate section `m̂`**: the split-product avatar of the
+multiplied secant ordinate `y₃·(x₁−x₂)³/(h(x₁)h(x₂))³`, built from the
+chord atoms with the uniform denominator `(h₁h₂)³`:
+`m̂ = −ν·n̂ + σ·ν·δ − τ·q·δ − a₁·n̂·δ − a₃·δ³` with
+`σ = (x²/h)⊗(1/h) − (x/h)⊗(x/h)` (value `x₁(x₁−x₂)/(h₁h₂)`),
+`τ = (y/h)⊗(1/h)` (value `y₁/(h₁h₂)`) and
+`q = (x²/h)⊗(1/h) − 2(x/h)⊗(x/h) + (1/h)⊗(x²/h)` (value
+`(x₁−x₂)²/(h₁h₂)`). -/
+noncomputable def WeierstrassCurve.torsionPairChordOrd (m : ℕ) (h : Polynomial R) :
+    (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep := fun PQ =>
+  -(WeierstrassCurve.torsionPairNu R K E Ksep m h PQ *
+      WeierstrassCurve.torsionPairChordNum R K E Ksep m h PQ) +
+    (WeierstrassCurve.torsionKernelFun R K E Ksep h 2 0 ↑PQ.1 *
+        WeierstrassCurve.torsionKernelFun R K E Ksep h 0 0 ↑PQ.2 -
+      WeierstrassCurve.torsionKernelFun R K E Ksep h 1 0 ↑PQ.1 *
+        WeierstrassCurve.torsionKernelFun R K E Ksep h 1 0 ↑PQ.2) *
+      (WeierstrassCurve.torsionPairNu R K E Ksep m h PQ *
+        WeierstrassCurve.torsionPairDelta R K E Ksep m h PQ) -
+    WeierstrassCurve.torsionKernelFun R K E Ksep h 0 1 ↑PQ.1 *
+      WeierstrassCurve.torsionKernelFun R K E Ksep h 0 0 ↑PQ.2 *
+      ((WeierstrassCurve.torsionKernelFun R K E Ksep h 2 0 ↑PQ.1 *
+          WeierstrassCurve.torsionKernelFun R K E Ksep h 0 0 ↑PQ.2 -
+        WeierstrassCurve.torsionKernelFun R K E Ksep h 1 0 ↑PQ.1 *
+          WeierstrassCurve.torsionKernelFun R K E Ksep h 1 0 ↑PQ.2 -
+        WeierstrassCurve.torsionKernelFun R K E Ksep h 1 0 ↑PQ.1 *
+          WeierstrassCurve.torsionKernelFun R K E Ksep h 1 0 ↑PQ.2 +
+        WeierstrassCurve.torsionKernelFun R K E Ksep h 0 0 ↑PQ.1 *
+          WeierstrassCurve.torsionKernelFun R K E Ksep h 2 0 ↑PQ.2) *
+        WeierstrassCurve.torsionPairDelta R K E Ksep m h PQ) -
+    algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₁ *
+      (WeierstrassCurve.torsionPairChordNum R K E Ksep m h PQ *
+        WeierstrassCurve.torsionPairDelta R K E Ksep m h PQ) -
+    algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₃ *
+      WeierstrassCurve.torsionPairDelta R K E Ksep m h PQ ^ 3
 
-The identity is division-free after multiplying through by `(h₁h₂)^{2d}`;
-certificates are `linear_combination` over the two curve equations and the
-secant identities, per weight `(a, b)` uniformly via the recursion above. -/
+set_option linter.unusedSectionVars false in
+/-- The value of the chord ordinate section on an affine pair with the
+secant coordinates `x₃, y₃`: `y₃·((x₁−x₂)/(h(x₁)h(x₂)))³`. -/
+lemma WeierstrassCurve.torsionPairChordOrd_apply_some (m : ℕ) (h : Polynomial R)
+    (PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)))
+    (x₁ y₁ x₂ y₂ : Ksep)
+    (hns₁ : (E⁄Ksep).toAffine.Nonsingular x₁ y₁)
+    (hns₂ : (E⁄Ksep).toAffine.Nonsingular x₂ y₂)
+    (hP : (PQ.1 : (E⁄Ksep).Point) = Affine.Point.some x₁ y₁ hns₁)
+    (hQ : (PQ.2 : (E⁄Ksep).Point) = Affine.Point.some x₂ y₂ hns₂)
+    (h₁0 : Polynomial.aeval x₁ h ≠ 0) (h₂0 : Polynomial.aeval x₂ h ≠ 0)
+    (x₃ y₃ : Ksep)
+    (hX₃ : x₃ * (x₁ - x₂) ^ 2 = (y₁ - y₂) ^ 2 +
+      (E⁄Ksep).a₁ * (y₁ - y₂) * (x₁ - x₂) -
+      ((E⁄Ksep).a₂ + x₁ + x₂) * (x₁ - x₂) ^ 2)
+    (hY₃ : y₃ * (x₁ - x₂) = -((y₁ - y₂) * (x₃ - x₁)) -
+      (y₁ + (E⁄Ksep).a₁ * x₃ + (E⁄Ksep).a₃) * (x₁ - x₂)) :
+    WeierstrassCurve.torsionPairChordOrd R K E Ksep m h PQ =
+      y₃ * ((x₁ - x₂) / (Polynomial.aeval x₁ h * Polynomial.aeval x₂ h)) ^ 3 := by
+  have hδ := WeierstrassCurve.torsionPairDelta_apply_some R K E Ksep m h PQ
+    x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ h₁0 h₂0
+  have hν := WeierstrassCurve.torsionPairNu_apply_some R K E Ksep m h PQ
+    x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ h₁0 h₂0
+  have hn := WeierstrassCurve.torsionPairChordNum_apply_some R K E Ksep m h PQ
+    x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ h₁0 h₂0
+  have hM : y₃ * (x₁ - x₂) ^ 3 =
+      -((y₁ - y₂) * ((y₁ - y₂) ^ 2 + (E⁄Ksep).a₁ * (y₁ - y₂) * (x₁ - x₂) -
+        ((E⁄Ksep).a₂ + x₁ + x₂) * (x₁ - x₂) ^ 2)) +
+      x₁ * (y₁ - y₂) * (x₁ - x₂) ^ 2 - y₁ * (x₁ - x₂) ^ 3 -
+      (E⁄Ksep).a₁ * ((y₁ - y₂) ^ 2 + (E⁄Ksep).a₁ * (y₁ - y₂) * (x₁ - x₂) -
+        ((E⁄Ksep).a₂ + x₁ + x₂) * (x₁ - x₂) ^ 2) * (x₁ - x₂) -
+      (E⁄Ksep).a₃ * (x₁ - x₂) ^ 3 := by
+    linear_combination ((x₁ - x₂) ^ 2) * hY₃ +
+      (-(y₁ - y₂) - (E⁄Ksep).a₁ * (x₁ - x₂)) * hX₃
+  unfold WeierstrassCurve.torsionPairChordOrd
+  rw [hP, hQ]
+  simp only [WeierstrassCurve.torsionKernelFun_some, pow_one, pow_zero, mul_one,
+    one_mul]
+  rw [hν, hδ, hn, ← baseChange_a₁_integralModel R K E Ksep,
+    ← baseChange_a₃_integralModel R K E Ksep]
+  conv_rhs => rw [div_pow, ← mul_div_assoc, hM]
+  field_simp
+  ring
+
+set_option backward.isDefEq.respectTransparency false in
+set_option linter.unusedSectionVars false in
+/-- **The chord atom sections lie in the span `M`**: the chord section `δ`,
+the chord numerator `n̂` and the chord ordinate `m̂` are `R`-combinations of
+split products of monomial sections. -/
+theorem WeierstrassCurve.torsionPairChord_sections_mem_span
+    (m : ℕ) (h : Polynomial R) (hdeg : 2 ≤ h.natDegree) :
+    WeierstrassCurve.torsionPairDelta R K E Ksep m h ∈
+      WeierstrassCurve.torsionPairSpan R K E Ksep m h ∧
+    WeierstrassCurve.torsionPairChordNum R K E Ksep m h ∈
+      WeierstrassCurve.torsionPairSpan R K E Ksep m h ∧
+    WeierstrassCurve.torsionPairChordOrd R K E Ksep m h ∈
+      WeierstrassCurve.torsionPairSpan R K E Ksep m h := by
+  classical
+  unfold WeierstrassCurve.torsionPairSpan
+  simp only [mem_span_prod_sections_iff_mem_adjoin]
+  have hgen : ∀ a b : ℕ, a ≤ h.natDegree → b ≤ 1 →
+      2 * a + 3 * b ≤ 2 * h.natDegree →
+      (fun P : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ) =>
+          WeierstrassCurve.torsionKernelFun R K E Ksep h a b ↑P) ∈
+        Algebra.adjoin R ((WeierstrassCurve.torsionKernelGens R K E Ksep m h : Set
+          ((AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep))) :=
+    fun a b ha hb hw => Algebra.subset_adjoin
+      ((WeierstrassCurve.mem_torsionKernelGens R K E Ksep m h _).mpr
+        ⟨a, b, ha, hb, hw, rfl⟩)
+  have he := hgen 0 0 (by omega) (by omega) (by omega)
+  have hξ := hgen 1 0 (by omega) (by omega) (by omega)
+  have hη := hgen 0 1 (by omega) (by omega) (by omega)
+  have hγ := hgen 2 0 (by omega) (by omega) (by omega)
+  have hpair : ∀ f g : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep,
+      f ∈ Algebra.adjoin R ((WeierstrassCurve.torsionKernelGens R K E Ksep m h : Set
+        ((AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep))) →
+      g ∈ Algebra.adjoin R ((WeierstrassCurve.torsionKernelGens R K E Ksep m h : Set
+        ((AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep))) →
+      (fun PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+          (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) => f PQ.1 * g PQ.2) ∈
+        Algebra.adjoin R {t : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+            (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep |
+          ∃ a' ∈ Algebra.adjoin R
+            ((WeierstrassCurve.torsionKernelGens R K E Ksep m h : Set
+              ((AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep))),
+          ∃ b' ∈ Algebra.adjoin R
+            ((WeierstrassCurve.torsionKernelGens R K E Ksep m h : Set
+              ((AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep))),
+            (fun PQ => a' PQ.1 * b' PQ.2) = t} :=
+    fun f g hf hg => Algebra.subset_adjoin ⟨f, hf, g, hg, rfl⟩
+  have hδ := sub_mem (hpair _ _ hξ he) (hpair _ _ he hξ)
+  have hν := sub_mem (hpair _ _ hη he) (hpair _ _ he hη)
+  have hcub := add_mem (sub_mem (sub_mem (hpair _ _ (mul_mem hξ hγ) (pow_mem he 2))
+    (hpair _ _ (pow_mem hξ 2) (mul_mem hξ he)))
+    (hpair _ _ (mul_mem hξ he) (pow_mem hξ 2)))
+    (hpair _ _ (pow_mem he 2) (mul_mem hξ hγ))
+  have hnum : WeierstrassCurve.torsionPairChordNum R K E Ksep m h ∈
+      Algebra.adjoin R {t : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+          (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep |
+        ∃ a' ∈ Algebra.adjoin R
+          ((WeierstrassCurve.torsionKernelGens R K E Ksep m h : Set
+            ((AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep))),
+        ∃ b' ∈ Algebra.adjoin R
+          ((WeierstrassCurve.torsionKernelGens R K E Ksep m h : Set
+            ((AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep))),
+          (fun PQ => a' PQ.1 * b' PQ.2) = t} :=
+    sub_mem (sub_mem (add_mem (pow_mem hν 2)
+      (mul_mem (Subalgebra.algebraMap_mem _ _) (mul_mem hν hδ)))
+      (mul_mem (Subalgebra.algebraMap_mem _ _) (pow_mem hδ 2))) hcub
+  refine ⟨hδ, hnum, ?_⟩
+  have hσ := sub_mem (hpair _ _ hγ he) (hpair _ _ hξ hξ)
+  have hτ := hpair _ _ hη he
+  have hq := add_mem (sub_mem (sub_mem (hpair _ _ hγ he) (hpair _ _ hξ hξ))
+    (hpair _ _ hξ hξ)) (hpair _ _ he hγ)
+  exact sub_mem (sub_mem (sub_mem (add_mem (neg_mem (mul_mem hν hnum))
+    (mul_mem hσ (mul_mem hν hδ))) (mul_mem hτ (mul_mem hq hδ)))
+    (mul_mem (Subalgebra.algebraMap_mem _ _) (mul_mem hnum hδ)))
+    (mul_mem (Subalgebra.algebraMap_mem _ _) (pow_mem hδ 3))
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
+/-- **The chord kill identity** (PROVEN 2026-07-24 — stage E3a of the
+Katz–Mazur branch family): the chord killer multiplies every pullback
+`g_{a,b} ∘ add` of a monomial section along the group addition back into
+the span `M`.  The engine is the GLOBAL function identity
+`κ·(g_{a,b}∘add) = n̂^a · m̂^b · δ^{2d−2a−3b}` on the `m`-torsion square —
+the right side manifestly in `M` (`torsionPairChord_sections_mem_span`) —
+established by the four-way case split:
+
+* origin rows/columns: `δ`, `ν`, the cubic tail, hence `n̂` and the killer
+  all vanish, and on the right some factor carries a positive exponent;
+* affine collision `x₁ = x₂`: the killer collapses to the monic top term
+  `n̂^d`; for `y₁ = y₂` also `n̂ = 0`, and for `y₁ = −y₂ − a₁x₂ − a₃` the
+  sum is `0`, the section becomes the weight indicator `2a+3b = 2d`
+  (forcing `b = 0`, `a = d` by parity), and both sides equal `n̂^d`;
+* the generic secant `x₁ ≠ x₂`: with `x₃, y₃` from `add_some_ordinate`,
+  the values are `h(x₃)·f^{2d}·(x₃^a y₃^b/h(x₃))` against
+  `(x₃f²)^a·(y₃f³)^b·f^{2d−2a−3b}` for the unit chord fraction
+  `f = (x₁−x₂)/(h₁h₂)` — equal by exponent bookkeeping, with `h(x₃) ≠ 0`
+  from `torsionKernel_aeval_ne_zero`. -/
 theorem WeierstrassCurve.torsionPairChordKiller_mul_add_mem
     (m : ℕ) (h : Polynomial R) (hmon : h.Monic) (hdeg : 2 ≤ h.natDegree)
+    (hunit : ∀ 𝒪 : ValuationSubring Ksep,
+      (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range →
+      ∀ (x y : Ksep) (hns : (E⁄Ksep).toAffine.Nonsingular x y),
+        (m : ℤ) • (Affine.Point.some x y hns : (E⁄Ksep).Point) = 0 →
+        x ∈ 𝒪 → 𝒪.valuation (Polynomial.aeval x h) = 1)
     (a b : ℕ) (hb : b ≤ 1) (hw : 2 * a + 3 * b ≤ 2 * h.natDegree) :
     WeierstrassCurve.torsionPairChordKiller R K E Ksep m h *
       (fun PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
           (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) =>
         WeierstrassCurve.torsionKernelFun R K E Ksep h a b ↑(PQ.1 + PQ.2)) ∈
       WeierstrassCurve.torsionPairSpan R K E Ksep m h := by
-  sorry
+  classical
+  have hz10 : WeierstrassCurve.torsionKernelFun R K E Ksep h 1 0
+      Affine.Point.zero = 0 := by
+    rw [WeierstrassCurve.torsionKernelFun_zero]
+    exact if_neg (by omega)
+  have hz00 : WeierstrassCurve.torsionKernelFun R K E Ksep h 0 0
+      Affine.Point.zero = 0 := by
+    rw [WeierstrassCurve.torsionKernelFun_zero]
+    exact if_neg (by omega)
+  have hz01 : WeierstrassCurve.torsionKernelFun R K E Ksep h 0 1
+      Affine.Point.zero = 0 := by
+    rw [WeierstrassCurve.torsionKernelFun_zero]
+    exact if_neg (by omega)
+  have hid : WeierstrassCurve.torsionPairChordKiller R K E Ksep m h *
+      (fun PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+          (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) =>
+        WeierstrassCurve.torsionKernelFun R K E Ksep h a b ↑(PQ.1 + PQ.2)) =
+      WeierstrassCurve.torsionPairChordNum R K E Ksep m h ^ a *
+        WeierstrassCurve.torsionPairChordOrd R K E Ksep m h ^ b *
+        WeierstrassCurve.torsionPairDelta R K E Ksep m h ^
+          (2 * h.natDegree - 2 * a - 3 * b) := by
+    funext PQ
+    simp only [Pi.mul_apply, Pi.pow_apply]
+    cases hc1 : ((PQ.1 : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) :
+        (E⁄Ksep).Point) with
+    | zero =>
+      -- the whole first row: every chord atom vanishes
+      have hδ0 : WeierstrassCurve.torsionPairDelta R K E Ksep m h PQ = 0 := by
+        unfold WeierstrassCurve.torsionPairDelta
+        rw [hc1, hz10, hz00]
+        ring
+      have hν0 : WeierstrassCurve.torsionPairNu R K E Ksep m h PQ = 0 := by
+        unfold WeierstrassCurve.torsionPairNu
+        rw [hc1, hz01, hz00]
+        ring
+      have hcub0 : WeierstrassCurve.torsionPairCubic R K E Ksep m h PQ = 0 := by
+        unfold WeierstrassCurve.torsionPairCubic
+        rw [hc1, hz10, hz00]
+        ring
+      have hn0 : WeierstrassCurve.torsionPairChordNum R K E Ksep m h PQ = 0 := by
+        unfold WeierstrassCurve.torsionPairChordNum
+        rw [hν0, hδ0, hcub0]
+        ring
+      have hκ0 : WeierstrassCurve.torsionPairChordKiller R K E Ksep m h PQ = 0 := by
+        simp only [WeierstrassCurve.torsionPairChordKiller]
+        refine Finset.sum_eq_zero fun i _ => ?_
+        rcases Nat.eq_zero_or_pos i with rfl | hipos
+        · rw [hδ0, zero_pow (by omega : 2 * (h.natDegree - 0) ≠ 0), mul_zero]
+        · rw [hn0, zero_pow (by omega : i ≠ 0), mul_zero, zero_mul]
+      rw [hκ0, zero_mul]
+      rcases Nat.eq_zero_or_pos a with rfl | hapos
+      · rw [hδ0, zero_pow (by omega : 2 * h.natDegree - 2 * 0 - 3 * b ≠ 0),
+          mul_zero]
+      · rw [hn0, zero_pow (by omega : a ≠ 0), zero_mul, zero_mul]
+    | some x₁ y₁ hns₁ =>
+      cases hc2 : ((PQ.2 : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) :
+          (E⁄Ksep).Point) with
+      | zero =>
+        -- the whole second column: every chord atom vanishes
+        have hδ0 : WeierstrassCurve.torsionPairDelta R K E Ksep m h PQ = 0 := by
+          unfold WeierstrassCurve.torsionPairDelta
+          rw [hc2, hz10, hz00]
+          ring
+        have hν0 : WeierstrassCurve.torsionPairNu R K E Ksep m h PQ = 0 := by
+          unfold WeierstrassCurve.torsionPairNu
+          rw [hc2, hz01, hz00]
+          ring
+        have hcub0 : WeierstrassCurve.torsionPairCubic R K E Ksep m h PQ = 0 := by
+          unfold WeierstrassCurve.torsionPairCubic
+          rw [hc2, hz10, hz00]
+          ring
+        have hn0 : WeierstrassCurve.torsionPairChordNum R K E Ksep m h PQ = 0 := by
+          unfold WeierstrassCurve.torsionPairChordNum
+          rw [hν0, hδ0, hcub0]
+          ring
+        have hκ0 : WeierstrassCurve.torsionPairChordKiller R K E Ksep m h PQ = 0 := by
+          simp only [WeierstrassCurve.torsionPairChordKiller]
+          refine Finset.sum_eq_zero fun i _ => ?_
+          rcases Nat.eq_zero_or_pos i with rfl | hipos
+          · rw [hδ0, zero_pow (by omega : 2 * (h.natDegree - 0) ≠ 0), mul_zero]
+          · rw [hn0, zero_pow (by omega : i ≠ 0), mul_zero, zero_mul]
+        rw [hκ0, zero_mul]
+        rcases Nat.eq_zero_or_pos a with rfl | hapos
+        · rw [hδ0, zero_pow (by omega : 2 * h.natDegree - 2 * 0 - 3 * b ≠ 0),
+            mul_zero]
+        · rw [hn0, zero_pow (by omega : a ≠ 0), zero_mul, zero_mul]
+      | some x₂ y₂ hns₂ =>
+        have htor₁ : (m : ℤ) •
+            (Affine.Point.some x₁ y₁ hns₁ : (E⁄Ksep).Point) = 0 := by
+          rw [← hc1]
+          exact (Submodule.mem_torsionBy_iff _ _).mp PQ.1.2
+        have htor₂ : (m : ℤ) •
+            (Affine.Point.some x₂ y₂ hns₂ : (E⁄Ksep).Point) = 0 := by
+          rw [← hc2]
+          exact (Submodule.mem_torsionBy_iff _ _).mp PQ.2.2
+        have h₁0 : Polynomial.aeval x₁ h ≠ 0 :=
+          WeierstrassCurve.torsionKernel_aeval_ne_zero R K E Ksep m h hmon hunit
+            hns₁ htor₁
+        have h₂0 : Polynomial.aeval x₂ h ≠ 0 :=
+          WeierstrassCurve.torsionKernel_aeval_ne_zero R K E Ksep m h hmon hunit
+            hns₂ htor₂
+        by_cases hxx : x₁ = x₂
+        · -- the collision column `x₁ = x₂`
+          subst hxx
+          have hδ0 : WeierstrassCurve.torsionPairDelta R K E Ksep m h PQ = 0 := by
+            rw [WeierstrassCurve.torsionPairDelta_apply_some R K E Ksep m h PQ
+              x₁ y₁ x₁ y₂ hns₁ hns₂ hc1 hc2 h₁0 h₂0, sub_self, zero_div]
+          have hκd : WeierstrassCurve.torsionPairChordKiller R K E Ksep m h PQ =
+              WeierstrassCurve.torsionPairChordNum R K E Ksep m h PQ ^
+                h.natDegree := by
+            simp only [WeierstrassCurve.torsionPairChordKiller]
+            rw [Finset.sum_eq_single_of_mem h.natDegree
+              (Finset.self_mem_range_succ _) (fun i hi hne => ?_)]
+            · rw [hmon.coeff_natDegree, map_one, one_mul, Nat.sub_self,
+                mul_zero, pow_zero, mul_one]
+            · have hilt : i < h.natDegree := by
+                have := Finset.mem_range.mp hi
+                omega
+              rw [hδ0, zero_pow (by omega : 2 * (h.natDegree - i) ≠ 0), mul_zero]
+          rcases Affine.Y_eq_of_X_eq hns₁.1 hns₂.1 rfl with hyy | hyy
+          · -- equal points: everything vanishes
+            have hn0 : WeierstrassCurve.torsionPairChordNum R K E Ksep m h
+                PQ = 0 := by
+              rw [WeierstrassCurve.torsionPairChordNum_apply_some R K E Ksep m h
+                PQ x₁ y₁ x₁ y₂ hns₁ hns₂ hc1 hc2 h₁0 h₂0, hyy]
+              simp [sub_self]
+            rw [hκd, hn0, zero_pow (by omega : h.natDegree ≠ 0), zero_mul]
+            rcases Nat.eq_zero_or_pos a with rfl | hapos
+            · rw [hδ0, zero_pow (by omega : 2 * h.natDegree - 2 * 0 - 3 * b ≠ 0),
+                mul_zero]
+            · rw [zero_pow (by omega : a ≠ 0), zero_mul, zero_mul]
+          · -- opposite points: the sum is the origin
+            have hsum0 : (Affine.Point.some x₁ y₁ hns₁ : (E⁄Ksep).Point) +
+                Affine.Point.some x₁ y₂ hns₂ = 0 :=
+              Affine.Point.add_of_Y_eq rfl hyy
+            have hcoe : ((PQ.1 + PQ.2 :
+                AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) :
+                (E⁄Ksep).Point) = Affine.Point.zero := by
+              rw [show ((PQ.1 + PQ.2 :
+                  AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) :
+                  (E⁄Ksep).Point) =
+                (PQ.1 : (E⁄Ksep).Point) + (PQ.2 : (E⁄Ksep).Point) from rfl,
+                hc1, hc2, hsum0]
+              rfl
+            rw [hcoe, WeierstrassCurve.torsionKernelFun_zero, hκd]
+            by_cases hwt : 2 * a + 3 * b = 2 * h.natDegree
+            · have hb0 : b = 0 := by omega
+              have had : a = h.natDegree := by omega
+              subst hb0
+              subst had
+              rw [if_pos hwt, mul_one, pow_zero, mul_one,
+                show 2 * h.natDegree - 2 * h.natDegree - 3 * 0 = 0 from by omega,
+                pow_zero, mul_one]
+            · rw [if_neg hwt, mul_zero, hδ0,
+                zero_pow (by omega : 2 * h.natDegree - 2 * a - 3 * b ≠ 0),
+                mul_zero]
+        · -- the generic secant `x₁ ≠ x₂`
+          obtain ⟨x₃, y₃, hns₃, hadd, hX₃, hY₃⟩ :=
+            WeierstrassCurve.add_some_ordinate (K := K) (E := E) (Ksep := Ksep)
+              hns₁ hns₂ hxx
+          have hcoe : ((PQ.1 + PQ.2 :
+              AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) :
+              (E⁄Ksep).Point) = Affine.Point.some x₃ y₃ hns₃ := by
+            rw [show ((PQ.1 + PQ.2 :
+                AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) :
+                (E⁄Ksep).Point) =
+              (PQ.1 : (E⁄Ksep).Point) + (PQ.2 : (E⁄Ksep).Point) from rfl,
+              hc1, hc2]
+            exact hadd
+          have htor₃ : (m : ℤ) •
+              (Affine.Point.some x₃ y₃ hns₃ : (E⁄Ksep).Point) = 0 := by
+            rw [← hcoe]
+            exact (Submodule.mem_torsionBy_iff _ _).mp (PQ.1 + PQ.2).2
+          have h₃0 : Polynomial.aeval x₃ h ≠ 0 :=
+            WeierstrassCurve.torsionKernel_aeval_ne_zero R K E Ksep m h hmon
+              hunit hns₃ htor₃
+          have hκv := WeierstrassCurve.torsionPairChordKiller_apply_some
+            R K E Ksep m h PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hc1 hc2 h₁0 h₂0 x₃ hX₃
+          have hδv := WeierstrassCurve.torsionPairDelta_apply_some
+            R K E Ksep m h PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hc1 hc2 h₁0 h₂0
+          have hnv : WeierstrassCurve.torsionPairChordNum R K E Ksep m h PQ =
+              x₃ * ((x₁ - x₂) /
+                (Polynomial.aeval x₁ h * Polynomial.aeval x₂ h)) ^ 2 := by
+            rw [WeierstrassCurve.torsionPairChordNum_apply_some R K E Ksep m h
+              PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hc1 hc2 h₁0 h₂0, ← hX₃, div_pow,
+              mul_div_assoc]
+          have hmv := WeierstrassCurve.torsionPairChordOrd_apply_some
+            R K E Ksep m h PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hc1 hc2 h₁0 h₂0 x₃ y₃
+            hX₃ hY₃
+          rw [hcoe, WeierstrassCurve.torsionKernelFun_some, hκv, hδv, hnv, hmv]
+          set f := (x₁ - x₂) / (Polynomial.aeval x₁ h * Polynomial.aeval x₂ h)
+            with hf
+          set c := 2 * h.natDegree - 2 * a - 3 * b with hcdef
+          have hc2d : 2 * h.natDegree = 2 * a + 3 * b + c := by omega
+          rw [hc2d, pow_add, pow_add, mul_pow x₃ (f ^ 2), mul_pow y₃ (f ^ 3),
+            ← pow_mul, ← pow_mul]
+          field_simp
+  rw [hid]
+  obtain ⟨hδm, hnm, hmm⟩ :=
+    WeierstrassCurve.torsionPairChord_sections_mem_span R K E Ksep m h hdeg
+  unfold WeierstrassCurve.torsionPairSpan at hδm hnm hmm ⊢
+  rw [mem_span_prod_sections_iff_mem_adjoin] at hδm hnm hmm ⊢
+  exact mul_mem (mul_mem (pow_mem hnm a) (pow_mem hmm b)) (pow_mem hδm _)
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **The formal-locus killer** (sorry node — stage E3c-ff of the Katz–Mazur
@@ -10940,7 +11340,7 @@ theorem WeierstrassCurve.exists_torsionKernel_branch_family
     · exact hfaK a b hb hw
     · exact hafK a b hb hw
     · exact WeierstrassCurve.torsionPairChordKiller_mul_add_mem R K E Ksep m h
-        hmon hdeg a b hb hw
+        hmon hdeg hunit a b hb hw
     · exact htanK a b hb hw
     · exact hhazK a b hb hw
     · omega
