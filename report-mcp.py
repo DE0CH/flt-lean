@@ -46,6 +46,9 @@ class PipeLsp:
         self.diags = {}
         self.doc_versions = {}
         self.initialized = False
+        # identity of the server SESSION we last talked to, as the
+        # (inode, mtime_ns) of state.json — see _ensure_initialized
+        self.session_stat = None
 
     def _connect(self):
         if self.wfd is not None:
@@ -120,6 +123,13 @@ class PipeLsp:
                     raise RuntimeError(f"report server: {method}: {msg['error']}")
                 return msg.get("result")
 
+    def _session_marker(self):
+        try:
+            st = os.stat(self.state_file)
+            return (st.st_ino, st.st_mtime_ns)
+        except FileNotFoundError:
+            return None
+
     def _ensure_initialized(self, timeout):
         """Handshake is per SERVER SESSION, not per client process: the
         unit's ExecStartPre clears .report-server/state.json on every
@@ -127,25 +137,50 @@ class PipeLsp:
         process, another report-mcp.py instance, or progress-tree.py)
         already sent `initialize` — sending it twice errors ("No request
         handler found for 'initialize'"), lake serve accepts it once.
-        Must be called with self.lock_file already held."""
-        if self.initialized:
-            return
-        if os.path.exists(self.state_file):
-            self.initialized = True
-            return
-        self._request(
-            "initialize",
-            {
-                "processId": os.getpid(),
-                "rootUri": "file://" + self.project_path,
-                "capabilities": {},
-                "trace": "off",
-            },
-            timeout,
-        )
-        self._notify("initialized", {})
-        with open(self.state_file, "w", encoding="utf-8") as fh:
-            json.dump({"report_mcp_initialized": True}, fh)
+
+        The session identity is the (inode, mtime) of state.json, NOT a
+        flag in this process: a long-running client that cached
+        `initialized`/`doc_versions` across a server restart would send
+        `didChange`/`waitForDiagnostics` for documents the fresh session
+        never saw — the watchdog kills the server on the first such
+        message and systemd crash-loops it (observed 2026-07-24 after
+        the disk-quota restart). Whenever the marker is missing or
+        differs from the one we last saw, ALL per-session client state
+        is stale and must be reset. Must be called with self.lock_file
+        already held (the check-then-initialize below is serialized by
+        that lock across client processes)."""
+        marker = self._session_marker()
+        if marker is None or marker != self.session_stat:
+            self.initialized = False
+            self.doc_versions.clear()
+            self.diags.clear()
+            # the fifo fds may point at the dead server's pipes
+            # ("response pipe EOF") — reopen against the new session
+            if self.wfd is not None:
+                for fd in (self.wfd, self.rfd):
+                    try:
+                        os.close(fd)
+                    except OSError:
+                        pass
+                self.wfd = None
+                self.rfd = None
+                self.buf = b""
+            self._connect()
+        if marker is None:
+            self._request(
+                "initialize",
+                {
+                    "processId": os.getpid(),
+                    "rootUri": "file://" + self.project_path,
+                    "capabilities": {},
+                    "trace": "off",
+                },
+                timeout,
+            )
+            self._notify("initialized", {})
+            with open(self.state_file, "w", encoding="utf-8") as fh:
+                json.dump({"report_mcp_initialized": True}, fh)
+        self.session_stat = self._session_marker()
         self.initialized = True
 
     def diagnostics(self, abs_path, timeout=180):
