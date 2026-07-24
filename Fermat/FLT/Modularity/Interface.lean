@@ -149,6 +149,25 @@ import Mathlib.RingTheory.Algebraic.Integral
 import Mathlib.LinearAlgebra.LinearIndependent.BaseChange
 import Mathlib.LinearAlgebra.LinearIndependent.Lemmas
 import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
+-- Dual-space machinery for the rational-spanning descent
+-- (`cuspForm_mem_span_rational`): the Sturm coefficient functionals
+-- span the dual, a dual basis is extracted, and `Aut(ℂ)`-stability
+-- forces its coordinates into the fixed field `ℚ`.
+import Mathlib.LinearAlgebra.Dual.Basis
+import Mathlib.LinearAlgebra.Dual.Lemmas
+-- Field theory for the fixed-field computation
+-- (`exists_ratCast_eq_of_forall_ringEquiv_fixed`): transcendence
+-- bases, extension of subfield automorphisms through
+-- `IsAlgClosure.equivOfEquiv`, the relative algebraic closure
+-- `ℚ̄ ⊆ ℂ`, and conjugate-root embeddings.
+import Mathlib.Algebra.MvPolynomial.Equiv
+import Mathlib.RingTheory.AlgebraicIndependent.Transcendental
+import Mathlib.RingTheory.AlgebraicIndependent.TranscendenceBasis
+import Mathlib.FieldTheory.IsAlgClosed.Basic
+import Mathlib.FieldTheory.AlgebraicClosure
+import Mathlib.FieldTheory.Extension
+import Mathlib.FieldTheory.Separable
+import Mathlib.Analysis.Complex.Polynomial.Basic
 -- Finite commutative algebra for the pillar-3c point factorization
 -- (proof-body use only, consumed by the proven assembly of
 -- `exists_weightTwoEigenform_of_heckeDeformation_point`): the kernel
@@ -600,7 +619,12 @@ two are PROVEN (2026-07-24) and one remains sorried:
   the general-level Sturm bound are PROVEN (2026-07-24,
   `exists_cuspForm_sturm_bound`/`cuspForm_finiteDimensional`), so the
   former leaf `exists_rational_qExpansion_basis` is now a proven
-  assembly.
+  assembly. `cuspForm_mem_span_rational` itself is now a PROVEN
+  Galois-descent assembly (2026-07-24) whose single remaining sorried
+  leaf is the arithmetic `Aut(ℂ)`-stability of the `q`-expansion image
+  (`exists_cuspForm_ringEquiv_conj`, Shimura's rationality theorem);
+  the field-theoretic fixed-field computation
+  (`exists_ratCast_eq_of_forall_ringEquiv_fixed`) is PROVEN.
 
 Everything else is proven:
 
@@ -1851,8 +1875,12 @@ the level-1 Sturm threshold `weight/12` and dies, hence so does `f`.
 A cusp form is therefore determined by finitely many coefficients and
 `S₂(Γ₀(N))` embeds into `Fin B → ℂ`. (ii) The RATIONAL STRUCTURE —
 a spanning set of forms with rational `q`-expansions, the genuinely
-arithmetic-geometric fact (Shimura Thm 3.52) — is isolated as the
-single remaining sorried leaf `cuspForm_mem_span_rational` below. -/
+arithmetic-geometric fact (Shimura Thm 3.52) — is
+`cuspForm_mem_span_rational` below, now itself a PROVEN Galois-descent
+assembly (2026-07-24) whose single remaining sorried leaf is the
+`Aut(ℂ)`-stability of the `q`-expansion image
+(`exists_cuspForm_ringEquiv_conj`); the fixed-field computation
+(`exists_ratCast_eq_of_forall_ringEquiv_fixed`) is PROVEN. -/
 
 section SturmFiniteness
 
@@ -1970,30 +1998,312 @@ theorem cuspForm_finiteDimensional (N : ℕ) (hN : 0 < N) :
   refine hB f fun m hm => ?_
   simpa [LinearMap.pi_apply] using congrFun hf ⟨m, hm⟩
 
-/-- **Rational spanning of `S₂(Γ₀(N))`** (sorry node; THE residual
-geometric leaf of the rational-basis node, isolated 2026-07-24 after
-finite dimensionality was proven): every weight-2 level-`N` cusp form
-is a `ℂ`-linear combination of cusp forms ALL of whose `q`-expansion
-coefficients are rational. This is the arithmetic core of Shimura,
-*Introduction to the Arithmetic Theory of Automorphic Functions*,
-Theorem 3.52 (`S₂(Γ₀(N))` has a basis with integer — a fortiori
-rational — coefficients; equivalently Diamond–Shurman §6.5): the
-classical proofs go through the `ℤ`-structure of `H₁(X₀(N), ℤ)` under
-the Eichler–Shimura isomorphism, or through the `q`-expansion
-principle on the modular curve over `ℚ`, neither of which exists on
-this pin. Combined with `cuspForm_finiteDimensional`, any maximal
-independent subfamily of the rational-coefficient forms is a basis,
-which is how `exists_rational_qExpansion_basis` consumes it. -/
+/-- **`Aut(ℂ)`-stability of `S₂(Γ₀(N))` on `q`-expansions** (sorry
+node; THE residual arithmetic leaf of the rational-spanning node,
+isolated 2026-07-24 when `cuspForm_mem_span_rational` was reduced to
+it by the Galois-descent linear algebra below): for every field
+automorphism `σ` of `ℂ` (as a ring automorphism — no continuity) and
+every weight-2 level-`N` cusp form `f` there is a cusp form `f^σ`
+whose `q`-expansion is the coefficientwise `σ`-conjugate of that of
+`f`. This is Shimura's rationality theorem (*Introduction to the
+Arithmetic Theory of Automorphic Functions*, Theorem 3.52 together
+with the `Aut(ℂ)`-action of §3.5; equivalently Diamond–Shurman §6.5,
+where the action `f ↦ f^σ` on `S₂(Γ₀(N))` is defined through the
+`ℚ`-structure): the classical proofs go through the `ℤ`-structure of
+`H₁(X₀(N), ℤ)` under the Eichler–Shimura isomorphism, or through the
+`q`-expansion principle on the modular curve over `ℚ`, neither of
+which exists on this pin. Note the equivalence with the rational-basis
+form of the theorem: given a rational basis, `σ` acts coordinatewise
+on the rational-coefficient span, and conversely (the direction proven
+here in `cuspForm_mem_span_rational`) stability under all `σ` descends
+the space to `ℚ`. -/
+theorem exists_cuspForm_ringEquiv_conj {N : ℕ} (hN : 0 < N)
+    (σ : ℂ ≃+* ℂ) (f : CuspForm (Gamma0GL N) 2) :
+    ∃ g : CuspForm (Gamma0GL N) 2, ∀ m : ℕ, qCoeff N g m = σ (qCoeff N f m) :=
+  sorry
+
+/-- **Extension of subfield automorphisms to `Aut(ℂ)`** (PROVEN,
+2026-07-24; the workhorse of the fixed-field computation below): every
+ring automorphism `τ` of an intermediate field `K` of `ℂ/ℚ` extends to
+a ring automorphism of `ℂ`. Proof: choose a transcendence basis `t` of
+`ℂ` over `K` (`exists_isTranscendenceBasis`); `τ` acts coefficientwise
+on `MvPolynomial t K ≃ adjoin K t` (`MvPolynomial.mapEquiv` conjugated
+through `AlgebraicIndependent.aevalEquiv`), and `ℂ` is an algebraic
+closure of `adjoin K t` (`IsTranscendenceBasis.isAlgebraic` plus
+`Complex.isAlgClosed`), so `IsAlgClosure.equivOfEquiv` transports the
+automorphism to all of `ℂ` compatibly with the inclusion of the
+constants. -/
+theorem exists_complex_ringEquiv_extension (K : IntermediateField ℚ ℂ)
+    (τ : ↥K ≃+* ↥K) :
+    ∃ σ : ℂ ≃+* ℂ, ∀ a : ↥K, σ (a : ℂ) = ((τ a : ↥K) : ℂ) := by
+  classical
+  obtain ⟨t, ht⟩ := exists_isTranscendenceBasis ↥K ℂ
+  haveI halgC : Algebra.IsAlgebraic
+      ↥(Algebra.adjoin ↥K (Set.range (Subtype.val : t → ℂ))) ℂ :=
+    ht.isAlgebraic
+  let ε : MvPolynomial t ↥K ≃ₐ[↥K]
+      ↥(Algebra.adjoin ↥K (Set.range (Subtype.val : t → ℂ))) :=
+    ht.1.aevalEquiv
+  let μ : MvPolynomial t ↥K ≃+* MvPolynomial t ↥K := MvPolynomial.mapEquiv t τ
+  let e := (ε.symm.toRingEquiv.trans μ).trans ε.toRingEquiv
+  haveI : IsAlgClosure ↥(Algebra.adjoin ↥K (Set.range (Subtype.val : t → ℂ))) ℂ :=
+    ⟨Complex.isAlgClosed, halgC⟩
+  refine ⟨IsAlgClosure.equivOfEquiv ℂ ℂ e, fun a => ?_⟩
+  have key : ∀ p : MvPolynomial t ↥K,
+      algebraMap ↥(Algebra.adjoin ↥K (Set.range (Subtype.val : t → ℂ))) ℂ (ε p)
+        = MvPolynomial.aeval (Subtype.val : t → ℂ) p :=
+    ht.1.algebraMap_aevalEquiv
+  have hconst : (a : ℂ) = algebraMap _ ℂ (ε (MvPolynomial.C a)) := by
+    rw [key, MvPolynomial.aeval_C]
+    rfl
+  rw [hconst, IsAlgClosure.equivOfEquiv_algebraMap]
+  have h1 : ε.symm.toRingEquiv (ε (MvPolynomial.C a)) = MvPolynomial.C a :=
+    ε.symm_apply_apply (MvPolynomial.C a)
+  have h2 : μ (MvPolynomial.C a) = MvPolynomial.C (τ a) := MvPolynomial.map_C _ a
+  have he : e (ε (MvPolynomial.C a)) = ε (MvPolynomial.C (τ a)) := by
+    show ε.toRingEquiv (μ (ε.symm.toRingEquiv (ε (MvPolynomial.C a)))) = _
+    rw [h1, h2]
+    rfl
+  rw [he, key, MvPolynomial.aeval_C]
+  rfl
+
+/-- **The fixed field of `Aut(ℂ)` is `ℚ`** (PROVEN, 2026-07-24; the
+field-theoretic half of the rational-spanning descent): a complex
+number fixed by every ring automorphism of `ℂ` is rational. Proof:
+(i) if `x` is transcendental over `ℚ`, extend `{x}` to a
+transcendence basis `t` (`exists_isTranscendenceBasis_superset`); the
+variable shift `X_x ↦ X_x + 1` is an automorphism of
+`MvPolynomial t ℚ ≃ adjoin ℚ t` (`AlgebraicIndependent.aevalEquiv`),
+and `ℂ` is an algebraic closure of `adjoin ℚ t`
+(`IsTranscendenceBasis.isAlgebraic`), so `IsAlgClosure.equivOfEquiv`
+extends it to `σ ∈ Aut(ℂ)` with `σ x = x + 1 ≠ x`. (ii) If `x` is
+algebraic but irrational, its minimal polynomial has a second root
+`y ≠ x` in the relative algebraic closure `ℚ̄ = algebraicClosure ℚ ℂ`
+(separability, char 0); an embedding `ℚ⟮x⟯ →ₐ[ℚ] ℚ̄` sending `x ↦ y`
+(`IntermediateField.algHomAdjoinIntegralEquiv`) extends to an
+endomorphism of `ℚ̄` (`IntermediateField.exists_algHom_of_splits`),
+bijective since `ℚ̄/ℚ` is algebraic
+(`Algebra.IsAlgebraic.algHom_bijective`), and the resulting
+automorphism of `ℚ̄` extends to `Aut(ℂ)` by
+`exists_complex_ringEquiv_extension`, giving `σ ∈ Aut(ℂ)` with
+`σ x = y ≠ x`. -/
+theorem exists_ratCast_eq_of_forall_ringEquiv_fixed {x : ℂ}
+    (hx : ∀ σ : ℂ ≃+* ℂ, σ x = x) : ∃ r : ℚ, x = (r : ℂ) := by
+  classical
+  -- Step 1: `x` is algebraic over `ℚ` — otherwise a shift of a
+  -- transcendence basis through `{x}` yields `σ` with `σ x = x + 1`.
+  have halg : IsAlgebraic ℚ x := by
+    by_contra htr
+    have hind : AlgebraicIndepOn ℚ id {x} :=
+      (algebraicIndependent_singleton_iff (⟨x, rfl⟩ : ({x} : Set ℂ))).mpr htr
+    obtain ⟨t, hxt, ht⟩ := exists_isTranscendenceBasis_superset hind
+    haveI halgC : Algebra.IsAlgebraic
+        ↥(Algebra.adjoin ℚ (Set.range (Subtype.val : t → ℂ))) ℂ :=
+      ht.isAlgebraic
+    set R := Algebra.adjoin ℚ (Set.range (Subtype.val : t → ℂ))
+    let ε : MvPolynomial t ℚ ≃ₐ[ℚ] ↥R := ht.1.aevalEquiv
+    let i₀ : t := ⟨x, hxt rfl⟩
+    let sh : MvPolynomial t ℚ ≃ₐ[ℚ] MvPolynomial t ℚ := by
+      refine AlgEquiv.ofAlgHom
+        (MvPolynomial.aeval fun i => MvPolynomial.X i + if i = i₀ then 1 else 0)
+        (MvPolynomial.aeval fun i => MvPolynomial.X i - if i = i₀ then 1 else 0)
+        ?_ ?_
+      · refine MvPolynomial.algHom_ext fun i => ?_
+        rw [AlgHom.comp_apply, MvPolynomial.aeval_X, map_sub, MvPolynomial.aeval_X,
+          AlgHom.id_apply]
+        by_cases h : i = i₀ <;> simp [h]
+      · refine MvPolynomial.algHom_ext fun i => ?_
+        rw [AlgHom.comp_apply, MvPolynomial.aeval_X, map_add, MvPolynomial.aeval_X,
+          AlgHom.id_apply]
+        by_cases h : i = i₀ <;> simp [h]
+    let e : ↥R ≃+* ↥R := (ε.symm.trans (sh.trans ε)).toRingEquiv
+    haveI : IsAlgClosure ↥R ℂ := ⟨Complex.isAlgClosed, halgC⟩
+    let σ : ℂ ≃+* ℂ := IsAlgClosure.equivOfEquiv ℂ ℂ e
+    have key : ∀ p : MvPolynomial t ℚ,
+        algebraMap ↥R ℂ (ε p) = MvPolynomial.aeval (Subtype.val : t → ℂ) p :=
+      ht.1.algebraMap_aevalEquiv
+    have h1 : σ x = x + 1 := by
+      have hxeq : algebraMap ↥R ℂ (ε (MvPolynomial.X i₀)) = x := by
+        rw [key, MvPolynomial.aeval_X]
+      have h2 := IsAlgClosure.equivOfEquiv_algebraMap ℂ ℂ e (ε (MvPolynomial.X i₀))
+      have h3 : e (ε (MvPolynomial.X i₀)) = ε (MvPolynomial.X i₀ + 1) := by
+        show (ε.symm.trans (sh.trans ε)) (ε (MvPolynomial.X i₀)) = _
+        rw [AlgEquiv.trans_apply, AlgEquiv.trans_apply, AlgEquiv.symm_apply_apply]
+        congr 1
+        show MvPolynomial.aeval _ (MvPolynomial.X i₀) = _
+        rw [MvPolynomial.aeval_X]
+        simp
+      rw [hxeq] at h2
+      rw [h2, h3, key, map_add, MvPolynomial.aeval_X, map_one]
+    have hcontra := hx σ
+    rw [h1] at hcontra
+    simp at hcontra
+  -- Step 2: an irrational algebraic `x` is conjugated to a second
+  -- root of its minimal polynomial by an automorphism of `ℚ̄ ⊆ ℂ`,
+  -- extended to `Aut(ℂ)`.
+  by_contra hirr
+  haveI : Algebra.IsAlgebraic ℚ ↥(algebraicClosure ℚ ℂ) :=
+    algebraicClosure.isAlgebraic ℚ ℂ
+  haveI : IsAlgClosed ↥(algebraicClosure ℚ ℂ) :=
+    (algebraicClosure.isAlgClosure ℚ ℂ).isAlgClosed
+  set xb : ↥(algebraicClosure ℚ ℂ) := ⟨x, mem_algebraicClosure_iff.mpr halg⟩
+  have hint : IsIntegral ℚ xb := (Algebra.IsAlgebraic.isAlgebraic xb).isIntegral
+  have hdeg : 1 < (minpoly ℚ xb).natDegree := by
+    rcases Nat.lt_or_ge 1 (minpoly ℚ xb).natDegree with h | h
+    · exact h
+    · exfalso
+      have hpos : 0 < (minpoly ℚ xb).natDegree := minpoly.natDegree_pos hint
+      have h1 : (minpoly ℚ xb).natDegree = 1 := le_antisymm h hpos
+      have hd1 : (minpoly ℚ xb).degree = 1 := by
+        rw [Polynomial.degree_eq_natDegree (minpoly.ne_zero hint), h1]
+        rfl
+      obtain ⟨r, hr⟩ := minpoly.degree_eq_one_iff.mp hd1
+      refine hirr ⟨r, ?_⟩
+      have h2 : (xb : ℂ) = ((algebraMap ℚ ↥(algebraicClosure ℚ ℂ) r :
+          ↥(algebraicClosure ℚ ℂ)) : ℂ) := by rw [hr]
+      simpa using h2
+  have hcard : Fintype.card ((minpoly ℚ xb).rootSet ↥(algebraicClosure ℚ ℂ))
+      = (minpoly ℚ xb).natDegree :=
+    Polynomial.card_rootSet_eq_natDegree (K := ↥(algebraicClosure ℚ ℂ))
+      (minpoly.irreducible hint).separable (IsAlgClosed.splits _)
+  have hxbmem : xb ∈ (minpoly ℚ xb).rootSet ↥(algebraicClosure ℚ ℂ) :=
+    Polynomial.mem_rootSet.mpr ⟨minpoly.ne_zero hint, minpoly.aeval ℚ xb⟩
+  obtain ⟨⟨y, hy⟩, hyne⟩ := Fintype.exists_ne_of_one_lt_card
+    (by rw [hcard]; exact hdeg)
+    (⟨xb, hxbmem⟩ : ((minpoly ℚ xb).rootSet ↥(algebraicClosure ℚ ℂ)))
+  have hy' : y ∈ (minpoly ℚ xb).aroots ↥(algebraicClosure ℚ ℂ) := by
+    obtain ⟨hne, hev⟩ := Polynomial.mem_rootSet.mp hy
+    exact Polynomial.mem_aroots.mpr ⟨hne, hev⟩
+  let ψ₀ : ↥(IntermediateField.adjoin ℚ {xb}) →ₐ[ℚ] ↥(algebraicClosure ℚ ℂ) :=
+    (IntermediateField.algHomAdjoinIntegralEquiv ℚ hint).symm ⟨y, hy'⟩
+  obtain ⟨φ, hφ⟩ := IntermediateField.exists_algHom_of_splits
+    (fun s => ⟨(Algebra.IsAlgebraic.isAlgebraic s).isIntegral, IsAlgClosed.splits _⟩) ψ₀
+  have hbij : Function.Bijective φ := Algebra.IsAlgebraic.algHom_bijective φ
+  have hval : φ xb = y := by
+    have h1 : φ ((IntermediateField.adjoin ℚ {xb}).val
+        (IntermediateField.AdjoinSimple.gen ℚ xb)) =
+        ψ₀ (IntermediateField.AdjoinSimple.gen ℚ xb) := by
+      rw [← hφ]; rfl
+    have h2 : ψ₀ (IntermediateField.AdjoinSimple.gen ℚ xb) = y :=
+      IntermediateField.algHomAdjoinIntegralEquiv_symm_apply_gen ℚ hint ⟨y, hy'⟩
+    rw [h2] at h1
+    simpa using h1
+  obtain ⟨σ, hσ⟩ := exists_complex_ringEquiv_extension (algebraicClosure ℚ ℂ)
+    (RingEquiv.ofBijective φ.toRingHom hbij)
+  have h3 : ((φ xb : ↥(algebraicClosure ℚ ℂ)) : ℂ) = (xb : ℂ) := by
+    have h1 := hσ xb
+    have h2 : σ (xb : ℂ) = (xb : ℂ) := hx σ
+    exact h1.symm.trans h2
+  have h4 : φ xb = xb := Subtype.ext h3
+  rw [hval] at h4
+  exact hyne (Subtype.ext h4)
+
+/-- **Rational spanning of `S₂(Γ₀(N))`** (PROVEN assembly, 2026-07-24,
+over the sorried arithmetic leaf `exists_cuspForm_ringEquiv_conj` and
+the PROVEN field-theory lemma
+`exists_ratCast_eq_of_forall_ringEquiv_fixed`): every weight-2
+level-`N` cusp form is a `ℂ`-linear combination of cusp forms ALL of
+whose `q`-expansion coefficients are rational (Shimura Theorem 3.52 /
+Diamond–Shurman §6.5). Proof — Galois descent through the Sturm
+coordinates: (i) by the Sturm bound the coefficient functionals
+`qCoeffL N m`, `m < B`, have trivial joint kernel, hence span the full
+dual of the finite-dimensional space `S₂(Γ₀(N))`
+(`Subspace.finrank_add_finrank_dualCoannihilator_eq`); (ii) extract a
+dual-space basis `ψ` from this spanning family
+(`exists_linearIndependent`) and take its predual basis
+`E = ψ* ∘ evalEquiv⁻¹` of `S₂(Γ₀(N))`, characterized by
+`ψⱼ (E k) = δⱼₖ`; (iii) for any `σ ∈ Aut(ℂ)` the `σ`-conjugate of
+`E k` (the arithmetic leaf) has the same `ψ`-coordinates `σ(δⱼₖ) =
+δⱼₖ`, hence EQUALS `E k` — so every `q`-coefficient of `E k` is fixed
+by all of `Aut(ℂ)` and is rational by the field-theory leaf; (iv) the
+basis `E` therefore lies in the rational-coefficient set and spans.
+Combined with `cuspForm_finiteDimensional`, any maximal independent
+subfamily of the rational-coefficient forms is a basis, which is how
+`exists_rational_qExpansion_basis` consumes it. -/
 theorem cuspForm_mem_span_rational {N : ℕ} (hN : 0 < N)
     (f : CuspForm (Gamma0GL N) 2) :
     f ∈ Submodule.span ℂ
-      {g : CuspForm (Gamma0GL N) 2 | ∀ m : ℕ, ∃ r : ℚ, qCoeff N g m = (r : ℂ)} :=
-  sorry
+      {g : CuspForm (Gamma0GL N) 2 | ∀ m : ℕ, ∃ r : ℚ, qCoeff N g m = (r : ℂ)} := by
+  classical
+  haveI := cuspForm_finiteDimensional N hN
+  obtain ⟨B, hB⟩ := exists_cuspForm_sturm_bound N hN
+  -- (i) the first `B` coefficient functionals span the full dual space
+  have hspan : Submodule.span ℂ
+      (Set.range fun i : Fin B => qCoeffL N (i : ℕ)) = ⊤ := by
+    have hco : (Submodule.span ℂ
+        (Set.range fun i : Fin B => qCoeffL N (i : ℕ))).dualCoannihilator = ⊥ := by
+      rw [eq_bot_iff]
+      intro v hv
+      rw [Submodule.mem_dualCoannihilator] at hv
+      have hv0 : v = 0 := hB v fun m hm => by
+        simpa using hv (qCoeffL N m) (Submodule.subset_span ⟨⟨m, hm⟩, rfl⟩)
+      simp [hv0]
+    have hrank := Subspace.finrank_add_finrank_dualCoannihilator_eq
+      (Submodule.span ℂ (Set.range fun i : Fin B => qCoeffL N (i : ℕ)))
+    rw [hco, finrank_bot, add_zero] at hrank
+    exact Submodule.eq_top_of_finrank_eq (by rw [hrank, Subspace.dual_finrank_eq])
+  -- (ii) a dual basis `ψ` from the spanning family, and its predual `E`
+  obtain ⟨b, hbsub, hbspan, hbind⟩ :=
+    exists_linearIndependent ℂ (Set.range fun i : Fin B => qCoeffL N (i : ℕ))
+  rw [hspan] at hbspan
+  have hbfin : b.Finite := hbind.setFinite
+  letI := hbfin.fintype
+  let ψ : Module.Basis b ℂ (Module.Dual ℂ (CuspForm (Gamma0GL N) 2)) :=
+    Module.Basis.mk hbind (le_of_eq (by rw [Subtype.range_coe]; exact hbspan.symm))
+  let E : Module.Basis b ℂ (CuspForm (Gamma0GL N) 2) :=
+    ψ.dualBasis.map (Module.evalEquiv ℂ (CuspForm (Gamma0GL N) 2)).symm
+  have hEval : ∀ (j k : b),
+      (j : Module.Dual ℂ (CuspForm (Gamma0GL N) 2)) (E k) = if j = k then 1 else 0 := by
+    intro j k
+    have h2 : ψ j = (j : Module.Dual ℂ (CuspForm (Gamma0GL N) 2)) :=
+      Module.Basis.mk_apply _ _ j
+    have h1 : (ψ j) (E k) = ψ.dualBasis k (ψ j) := by
+      show (ψ j) ((ψ.dualBasis.map
+        (Module.evalEquiv ℂ (CuspForm (Gamma0GL N) 2)).symm) k) = _
+      rw [Module.Basis.map_apply]
+      exact Module.apply_evalEquiv_symm_apply ℂ _ (ψ j) (ψ.dualBasis k)
+    rw [← h2, h1, Module.Basis.dualBasis_apply_self]
+  have hSep : ∀ u w : CuspForm (Gamma0GL N) 2,
+      (∀ j : b, (j : Module.Dual ℂ (CuspForm (Gamma0GL N) 2)) u =
+        (j : Module.Dual ℂ (CuspForm (Gamma0GL N) 2)) w) → u = w := by
+    intro u w h
+    have h3 : Module.evalEquiv ℂ (CuspForm (Gamma0GL N) 2) u =
+        Module.evalEquiv ℂ (CuspForm (Gamma0GL N) 2) w := by
+      refine ψ.ext fun i => ?_
+      rw [Module.evalEquiv_apply, Module.Dual.eval_apply,
+        Module.evalEquiv_apply, Module.Dual.eval_apply, Module.Basis.mk_apply]
+      exact h i
+    exact (Module.evalEquiv ℂ (CuspForm (Gamma0GL N) 2)).injective h3
+  -- (iii) every coefficient of every `E k` is `Aut(ℂ)`-fixed, hence rational
+  have hrat : ∀ k : b, ∀ m : ℕ, ∃ r : ℚ, qCoeff N (E k) m = (r : ℂ) := by
+    intro k m
+    refine exists_ratCast_eq_of_forall_ringEquiv_fixed fun σ => ?_
+    obtain ⟨g, hg⟩ := exists_cuspForm_ringEquiv_conj hN σ (E k)
+    have hgE : g = E k := by
+      refine hSep g (E k) fun j => ?_
+      obtain ⟨i, hi⟩ := hbsub j.2
+      have h1 : (j : Module.Dual ℂ (CuspForm (Gamma0GL N) 2)) g =
+          σ ((j : Module.Dual ℂ (CuspForm (Gamma0GL N) 2)) (E k)) := by
+        rw [← hi]; exact hg i
+      rw [h1, hEval j k]
+      split_ifs <;> simp
+    rw [← hg m, hgE]
+  -- (iv) the basis `E` lies in the rational-coefficient set and spans
+  have hsub : Set.range (fun k : b => E k) ⊆
+      {g : CuspForm (Gamma0GL N) 2 | ∀ m : ℕ, ∃ r : ℚ, qCoeff N g m = (r : ℂ)} := by
+    rintro _ ⟨k, rfl⟩
+    exact hrat k
+  have hle := Submodule.span_mono (R := ℂ) hsub
+  have hEtop : Submodule.span ℂ (Set.range fun k : b => E k) = ⊤ := E.span_eq
+  rw [hEtop] at hle
+  exact hle Submodule.mem_top
 
 end SturmFiniteness
 
 /-- **Rational basis of `S₂(Γ₀(N))`** (PROVEN assembly, 2026-07-24,
-over the sorried leaf `cuspForm_mem_span_rational` and the PROVEN
+over the rational-spanning assembly `cuspForm_mem_span_rational` —
+itself since PROVEN over the single remaining sorried leaf
+`exists_cuspForm_ringEquiv_conj` — and the PROVEN
 finite dimensionality `cuspForm_finiteDimensional`): the space of
 weight-2 level-`N` cusp forms has a finite `ℂ`-independent family of
 forms with RATIONAL `q`-expansion coefficients through which every
@@ -2054,8 +2364,9 @@ theorem coe_sum_smul {N n : ℕ} (c : Fin n → ℂ)
 §6.5, the finite input to Theorem 6.5.1; PROVEN assembly, 2026-07-24,
 over `exists_cuspForm_heckeTransform` and
 `qExpansion_heckeTransform_coeff` — both since PROVEN — and, through
-the now-proven assembly `exists_rational_qExpansion_basis`, the one
-remaining sorried leaf `cuspForm_mem_span_rational`): for a
+the now-proven assemblies `exists_rational_qExpansion_basis` and
+`cuspForm_mem_span_rational`, the one remaining sorried leaf
+`exists_cuspForm_ringEquiv_conj`): for a
 normalized weight-2
 level-`N` eigenform `f` there are a dimension `n`, a family of
 RATIONAL `n × n` matrices `T q`, and a common nonzero complex
