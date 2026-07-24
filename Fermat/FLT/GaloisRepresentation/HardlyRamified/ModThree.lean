@@ -9793,13 +9793,151 @@ theorem cyclotomicCharacter_algebraMap_eq_one_of_inertia_ne_two_three
   ring
 
 set_option maxHeartbeats 1000000 in
+/-- **An odd-order character of `Γ_{ℚ(√d)}` unramified outside `3` is
+trivial — the representation-free odd ray-class core** (sorry node,
+isolated 2026-07-24 from
+`anti_equivariant_ratio_character_eq_one_ray_class` below, whose
+odd/2-power splitting layer is now PROVEN glue there): a function
+`ν : Γ ℚ → 𝔽̄₃` that is a nonvanishing multiplicative character on
+`H = ker θ' = Γ_{ℚ(√d)}` (`hνmul`, `hνne0`), trivial on an OPEN
+subgroup `U ≤ H` (`hUopen`, `hUker` — so `ν` factors through a finite
+abelian extension of `ℚ(√d)`), of ODD pointwise order coprime to `3`
+(`hνodd`), and trivial on EVERY `Γ ℚ`-conjugate of the local inertia
+image at every prime `q ≠ 3` that lies in `H` (`hνunr` — i.e. `ν` is
+unramified at every place of `ℚ(√d)` not above `3`), is identically
+`1` on `H`. No Galois representation appears: this leaf is pure
+class field theory over the seven quadratic fields, and NO
+anti-equivariance is needed for the odd part.
+
+Intended content (Serre, Duke 1987 §5.3–5.4; Neukirch ANT VI §6).
+(i) An odd character of order coprime to `3` is automatically
+unramified ABOVE `3` as well: the wild inertia at a place `𝔭 ∣ 3` of
+`F = ℚ(√d)` is pro-`3` (killed since the order is coprime to `3`),
+and the tame quotient the character sees is cyclic of order
+`3^f − 1 ∈ {2, 8}` (`f ≤ 2`), a `2`-group — killed since the order is
+odd. So `ν` is a character of the NARROW class group of `F`.
+(ii) Per-field arithmetic: the narrow class numbers of the seven
+fields `ℚ(√-1), ℚ(√2), ℚ(√-2), ℚ(√3), ℚ(√-3), ℚ(√6), ℚ(√-6)` are
+`1, 1, 1, 2, 1, 2, 2` — all `2`-groups — so every odd character is
+trivial. The residual reciprocity input, at its sharpest: `F` has no
+abelian extension of odd degree `> 1` unramified at all finite and
+infinite places (one statement per field; the class-number-one cases
+`d = -1, 2, -2, -3` need only "unramified odd-degree abelian ⇒
+trivial" over a field with `h⁺ = 1`, and `d = 3, 6, -6` in addition
+that the `2`-part `h⁺ = 2` carries no odd quotient). Mathlib has the
+class-number computations (`Mathlib.NumberTheory.ClassNumber.*`) and
+unit groups (`Mathlib.NumberTheory.NumberField.Units.*`); the
+unramified-abelian-bounded-by-class-group step is the genuine gap —
+resolving this node means decomposing it further into those per-field
+statements. -/
+theorem odd_order_character_eq_one_ray_class
+    (θ' : Γ ℚ →* Multiplicative (ZMod 2))
+    (d : ℤ)
+    (hd : d = -1 ∨ d = 2 ∨ d = -2 ∨ d = 3 ∨ d = -3 ∨ d = 6 ∨ d = -6)
+    (x : AlgebraicClosure ℚ) (hx : x ^ 2 = (d : AlgebraicClosure ℚ))
+    (hθ'x : ∀ g : Γ ℚ, θ' g = 1 ↔ g x = x)
+    (ν : Γ ℚ → Dickson.K 3)
+    (hνmul : ∀ g h : Γ ℚ, θ' g = 1 → θ' h = 1 →
+      ν (g * h) = ν g * ν h)
+    (hνne0 : ∀ g : Γ ℚ, θ' g = 1 → ν g ≠ 0)
+    (U : Subgroup (Γ ℚ)) (hUopen : IsOpen (U : Set (Γ ℚ)))
+    (hUker : ∀ g ∈ U, θ' g = 1 ∧ ν g = 1)
+    (hνodd : ∀ g : Γ ℚ, θ' g = 1 →
+      ∃ n : ℕ, 0 < n ∧ Odd n ∧ ¬ (3 ∣ n) ∧ ν g ^ n = 1)
+    (hνunr : ∀ (q : ℕ) (hq : q.Prime), q ≠ 3 → ∀ c : Γ ℚ,
+      ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+        θ' (c * Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) σ * c⁻¹) = 1 →
+        ν (c * Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) σ * c⁻¹) = 1) :
+    ∀ g : Γ ℚ, θ' g = 1 → ν g = 1 := by
+  sorry
+
+set_option maxHeartbeats 1000000 in
+/-- **An anti-invariant QUADRATIC character of `Γ_{ℚ(√d)}` unramified
+outside `3` and factoring through a hardly ramified representation is
+trivial — the `2`-part of the dihedral elimination, where the Raynaud
+flatness input lives** (sorry node, isolated 2026-07-24 from
+`anti_equivariant_ratio_character_eq_one_ray_class` below, whose
+odd/2-power splitting and descent layer is now PROVEN glue there):
+with all the data of the parent node, but with `ν` of pointwise order
+dividing `2` (`hνsq`), the conclusion `ν = 1` on `H = ker θ'`. For a
+quadratic `ν` the anti-equivariance `hνanti` is EQUIVALENT to
+invariance (`ν⁻¹ = ν`), so `ν` cuts a quadratic extension `M/ℚ(√d)`
+with `M/ℚ` Galois of degree `4` (group `C₄` or `V₄`), unramified
+outside `3` over `F = ℚ(√d)` (`hνunr`, at all conjugates) but
+possibly TAMELY RAMIFIED at the places above `3` — the narrow ray
+class groups mod `𝔪 = ∏_{𝔭∣3} 𝔭` of all seven fields except
+`ℚ(√-3)` have order exactly `2`, so unlike the odd leaf this
+statement is FALSE without the representation input: e.g. for
+`d = -1` the quadratic character of `Γ_{ℚ(i)}` cutting
+`ℚ(ζ₁₂)/ℚ(i)` satisfies every abstract hypothesis. What must rule it
+out is `hνker` + `hρ`: `ν` factors through the splitting field of the
+hardly ramified `ρ` (flat at `3` by `hρ.isFlat`), and Raynaud's
+classification of the finite flat group schemes over the completions
+of `F` above `3` (`e ≤ 2 = 3 − 1`) constrains the tame inertia at `3`
+of that splitting field: on tame inertia the eigencharacters of
+`ρ|_{I_𝔭}` are level-`≤ 2` fundamental characters with exponents
+bounded by `e`, and (Serre's computation, Duke 1987 §5.4, mod-3
+analogue of Tate's 2-adic letter) any INVARIANT ratio of them that is
+ramified at `𝔭 ∣ 3` has order `4` on inertia, never `2` — so a
+quadratic invariant `ν` is unramified above `3` too, hence a
+character of the NARROW class group; the narrow class groups
+`1, 1, 1, 2, 1, 2, 2` of the seven fields are generated by classes of
+RAMIFIED primes (genus theory), on which the invariant `ν` vanishes
+by the same flatness bound, forcing `ν = 1`. CAUTION for the
+resolver: if the fundamental-character computation turns out to need
+the determinant relation `χ₀·χ₀^{σ₀} = cyclotomic` (available in the
+consumer `dihedral_eigenvalue_character_symmetric_ray_class` as
+`hχprod` but NOT threaded through the parent node), the fix is to
+re-decompose upstream — add the hypothesis to the parent and to this
+leaf — not to weaken this statement. References: Serre, Duke Math. J.
+54 (1987) §5.3–5.4; Tate, letter to Serre (1974), Œuvres III;
+Raynaud, "Schémas en groupes de type (p, …, p)", Bull. SMF 102
+(1974). -/
+theorem anti_invariant_quadratic_character_eq_one_ray_class {k : Type u}
+    [Finite k] [Field k]
+    [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (θ' : Γ ℚ →* Multiplicative (ZMod 2))
+    (htriv' : ∀ g : Γ ℚ, ρ g = 1 → θ' g = 1)
+    (d : ℤ)
+    (hd : d = -1 ∨ d = 2 ∨ d = -2 ∨ d = 3 ∨ d = -3 ∨ d = 6 ∨ d = -6)
+    (x : AlgebraicClosure ℚ) (hx : x ^ 2 = (d : AlgebraicClosure ℚ))
+    (hθ'x : ∀ g : Γ ℚ, θ' g = 1 ↔ g x = x)
+    (σ₀ : Γ ℚ) (hσ₀ : θ' σ₀ ≠ 1)
+    (ν : Γ ℚ → Dickson.K 3)
+    (hνmul : ∀ g h : Γ ℚ, θ' g = 1 → θ' h = 1 →
+      ν (g * h) = ν g * ν h)
+    (hνne0 : ∀ g : Γ ℚ, θ' g = 1 → ν g ≠ 0)
+    (hνanti : ∀ g : Γ ℚ, θ' g = 1 → ν (σ₀⁻¹ * g * σ₀) = (ν g)⁻¹)
+    (hνker : ∀ g : Γ ℚ, ρ g = 1 → ν g = 1)
+    (hνsq : ∀ g : Γ ℚ, θ' g = 1 → ν g ^ 2 = 1)
+    (hνunr : ∀ (q : ℕ) (hq : q.Prime), q ≠ 3 → ∀ c : Γ ℚ,
+      ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+        θ' (c * Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) σ * c⁻¹) = 1 →
+        ν (c * Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) σ * c⁻¹) = 1) :
+    ∀ g : Γ ℚ, θ' g = 1 → ν g = 1 := by
+  sorry
+
+set_option maxHeartbeats 1000000 in
 /-- **An anti-equivariant, almost-everywhere-unramified, prime-to-3
 ratio character of `Γ_{ℚ(√d)}` is trivial — the per-quadratic-field
-ray-class core** (sorry node, isolated 2026-07-24 from
+ray-class core** (isolated 2026-07-24 from
 `dihedral_eigenvalue_character_symmetric_ray_class` below, whose whole
 character-bookkeeping layer — multiplicativity, anti-equivariance,
 kernel- and inertia-triviality, prime-to-3 order of the ratio
-`ν = χ₀/χ₀^{σ₀}` — is now PROVEN glue there): a function
+`ν = χ₀/χ₀^{σ₀}` — is now PROVEN glue there; DECOMPOSED 2026-07-24,
+see the proof outline at the end of this docstring): a function
 `ν : Γ ℚ → 𝔽̄₃` that is a nonvanishing multiplicative character on
 `H = ker θ' = Γ_{ℚ(√d)}` (`hνmul`, `hνne0`), anti-equivariant under
 the `σ₀`-conjugation (`hνanti`: `ν(σ₀⁻¹gσ₀) = ν(g)⁻¹` on `H`),
@@ -9832,12 +9970,25 @@ arithmetic for the seven fields `ℚ(√-1), ℚ(√±2), ℚ(√±3), ℚ(√±
 (class numbers `1, 1, 1, 1, 1, 1, 2`): the groups `(𝓞_F/3)ˣ` modulo
 global units are generated by Galois-fixed and ramified classes, and
 every anti-invariant character of order prime to `3` of the resulting
-ray class group is trivial. Mathlib has no global class field theory:
-resolving this node means DECOMPOSING it further into per-field
-Kummer/genus-theory statements (unit groups and class numbers of the
-seven fields are within reach of `Mathlib.NumberTheory.ClassNumber.*`
-and `Mathlib.NumberTheory.NumberField.Units.*`), with the reciprocity
-input isolated to its sharpest possible form. -/
+ray class group is trivial.
+
+DECOMPOSITION (2026-07-24, all glue PROVEN below, following Serre's
+odd/2-power split): (a) step (i) above — triviality of `ν` on every
+`Γ ℚ`-conjugate of the inertia images (`H`-conjugation invariance
+for conjugators in `H`; `hνanti` through the coset decomposition
+`c = (c·σ₀⁻¹)·σ₀` otherwise) — is proven here directly; (b) a
+UNIFORM exponent `N` prime to `3` with `ν^N = 1` on `H` is extracted
+by pushing `ρ` into the finite unit group of `End k V`
+(`pow_card_eq_one'`) and stripping the `3`-part against the pointwise
+prime-to-`3` orders (`hνord`); (c) writing `N = 2^A·m` with `m` odd,
+the power `ν^{2^A}` has odd order coprime to `3` and its triviality
+is the representation-free leaf
+`odd_order_character_eq_one_ray_class` above; (d) what remains of `ν`
+is of pointwise `2`-power order `≤ 2^A`, and descends to triviality
+by induction: each top quadratic layer `ν^{2^B}` is killed by the
+leaf `anti_invariant_quadratic_character_eq_one_ray_class` above —
+the sole node still carrying the representation (`hρ`, Raynaud
+flatness at `3`) input. -/
 theorem anti_equivariant_ratio_character_eq_one_ray_class {k : Type u}
     [Finite k] [Field k]
     [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
@@ -9866,7 +10017,198 @@ theorem anti_equivariant_ratio_character_eq_one_ray_class {k : Type u}
           (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
             hq.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1) :
     ∀ g : Γ ℚ, θ' g = 1 → ν g = 1 := by
-  sorry
+  classical
+  -- (0) `H = ker θ'` is stable under products and inverses
+  have hHinv : ∀ g : Γ ℚ, θ' g = 1 → θ' g⁻¹ = 1 := by
+    intro g hg
+    rw [map_inv, hg, inv_one]
+  have hHmul : ∀ g h : Γ ℚ, θ' g = 1 → θ' h = 1 → θ' (g * h) = 1 := by
+    intro g h hg hh
+    rw [map_mul, hg, hh, mul_one]
+  -- (1) `ν` is a character of `H`: unit value at `1`, inverses,
+  -- `H`-conjugation invariance, multiplicativity on powers
+  have hνone : ν 1 = 1 := by
+    have h := hνmul 1 1 (map_one θ') (map_one θ')
+    rw [mul_one] at h
+    have hne := hνne0 1 (map_one θ')
+    field_simp at h
+    exact h.symm
+  have hνinv : ∀ g : Γ ℚ, θ' g = 1 → ν g⁻¹ = (ν g)⁻¹ := by
+    intro g hg
+    have h := hνmul g⁻¹ g (hHinv g hg) hg
+    rw [inv_mul_cancel, hνone] at h
+    exact eq_inv_of_mul_eq_one_left h.symm
+  have hνHconj : ∀ g h : Γ ℚ, θ' g = 1 → θ' h = 1 →
+      ν (h⁻¹ * g * h) = ν g := by
+    intro g h hg hh
+    rw [hνmul (h⁻¹ * g) h (hHmul _ _ (hHinv h hh) hg) hh,
+      hνmul h⁻¹ g (hHinv h hh) hg, hνinv h hh]
+    field_simp [hνne0 h hh]
+  have hνpow : ∀ g : Γ ℚ, θ' g = 1 → ∀ n : ℕ, ν (g ^ n) = ν g ^ n := by
+    intro g hg n
+    induction n with
+    | zero => simpa using hνone
+    | succ n ih =>
+      have hgn : θ' (g ^ n) = 1 := by rw [map_pow, hg, one_pow]
+      rw [pow_succ, pow_succ, hνmul _ _ hgn hg, ih]
+  -- (2) `ν` is trivial on every `Γ ℚ`-conjugate of the inertia images
+  -- at `q ≠ 3` that lands in `H`: conjugation by `H` preserves `ν`,
+  -- and conjugation by the nontrivial coset inverts it (`hνanti`)
+  have hνunr' : ∀ (q : ℕ) (hq : q.Prime), q ≠ 3 → ∀ c : Γ ℚ,
+      ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+        θ' (c * Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) σ * c⁻¹) = 1 →
+        ν (c * Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) σ * c⁻¹) = 1 := by
+    intro q hq hq3 c σ hσ hθc
+    set gσ : Γ ℚ := Field.absoluteGaloisGroup.map (algebraMap ℚ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)) σ
+    have habel : θ' (c * gσ * c⁻¹) = θ' gσ := by
+      rw [map_mul, map_mul, map_inv, mul_comm (θ' c) (θ' gσ), mul_assoc,
+        mul_inv_cancel, mul_one]
+    have hθg : θ' gσ = 1 := habel.symm.trans hθc
+    have hν1 : ν gσ = 1 := hνunr q hq hq3 σ hσ
+    by_cases hc : θ' c = 1
+    · have h := hνHconj gσ c⁻¹ hθg (hHinv c hc)
+      rw [inv_inv] at h
+      rw [h]
+      exact hν1
+    · -- `c ∉ H`: split `c = (c·σ₀⁻¹)·σ₀` with `c·σ₀⁻¹ ∈ H`
+      have hkey : ∀ a b : Multiplicative (ZMod 2),
+          a ≠ 1 → b ≠ 1 → a * b⁻¹ = 1 := by decide
+      have hh : θ' (c * σ₀⁻¹) = 1 := by
+        rw [map_mul, map_inv]
+        exact hkey _ _ hc hσ₀
+      have hj : θ' (σ₀ * gσ * σ₀⁻¹) = 1 := by
+        rw [map_mul, map_mul, map_inv, mul_comm (θ' σ₀) (θ' gσ), mul_assoc,
+          mul_inv_cancel, mul_one]
+        exact hθg
+      have hanti' := hνanti (σ₀ * gσ * σ₀⁻¹) hj
+      rw [show σ₀⁻¹ * (σ₀ * gσ * σ₀⁻¹) * σ₀ = gσ by group] at hanti'
+      have hν2 : ν (σ₀ * gσ * σ₀⁻¹) = 1 := by
+        rw [hν1] at hanti'
+        exact inv_eq_one.mp hanti'.symm
+      have h := hνHconj (σ₀ * gσ * σ₀⁻¹) (c * σ₀⁻¹)⁻¹ hj (hHinv _ hh)
+      rw [inv_inv, show c * σ₀⁻¹ * (σ₀ * gσ * σ₀⁻¹) * (c * σ₀⁻¹)⁻¹ =
+        c * gσ * c⁻¹ by group] at h
+      rw [h]
+      exact hν2
+  -- (3) a UNIFORM exponent for `ν` on `H`, prime to `3`: push `ρ`
+  -- into the finite unit group of `End k V` (`pow_card_eq_one'`) and
+  -- strip the `3`-part against the pointwise prime-to-`3` orders
+  haveI hfinV : Finite V := Module.finite_of_finite k
+  haveI : Finite (Module.End k V) :=
+    Finite.of_injective (fun f => (f : V → V)) DFunLike.coe_injective
+  haveI : Finite (Module.End k V)ˣ :=
+    Finite.of_injective (fun u => (u : Module.End k V))
+      (fun _ _ h => Units.ext h)
+  set c₀ : ℕ := Nat.card (Module.End k V)ˣ
+  have hc₀0 : c₀ ≠ 0 := Nat.card_pos.ne'
+  have hρpow : ∀ g : Γ ℚ, ρ (g ^ c₀) = 1 := by
+    intro g
+    have h1 : (MonoidHomClass.toMonoidHom ρ).toHomUnits (g ^ c₀) = 1 := by
+      rw [map_pow]
+      exact pow_card_eq_one'
+    have h2 := congrArg Units.val h1
+    simpa using h2
+  have hexpc : ∀ g : Γ ℚ, θ' g = 1 → ν g ^ c₀ = 1 := by
+    intro g hg
+    rw [← hνpow g hg c₀]
+    exact hνker _ (hρpow g)
+  have hNexp : ∀ g : Γ ℚ, θ' g = 1 → ν g ^ (ordCompl[3] c₀) = 1 := by
+    intro g hg
+    obtain ⟨n, _hn0, hn3, hgn⟩ := hνord g hg
+    have hd1 : orderOf (ν g) ∣ c₀ := orderOf_dvd_of_pow_eq_one (hexpc g hg)
+    have hd2 : orderOf (ν g) ∣ n := orderOf_dvd_of_pow_eq_one hgn
+    have h3o : ¬ 3 ∣ orderOf (ν g) := fun h => hn3 (h.trans hd2)
+    have hco : Nat.Coprime (orderOf (ν g)) (3 ^ (Nat.factorization c₀ 3)) :=
+      Nat.Coprime.pow_right _
+        (Nat.coprime_comm.mp ((Nat.Prime.coprime_iff_not_dvd
+          Nat.prime_three).mpr h3o))
+    have hdvd : orderOf (ν g) ∣
+        3 ^ (Nat.factorization c₀ 3) * ordCompl[3] c₀ := by
+      rw [Nat.ordProj_mul_ordCompl_eq_self]
+      exact hd1
+    exact orderOf_dvd_iff_pow_eq_one.mp (hco.dvd_of_dvd_mul_left hdvd)
+  set N : ℕ := ordCompl[3] c₀
+  have hN0 : N ≠ 0 := (Nat.ordCompl_pos 3 hc₀0).ne'
+  have hN3 : ¬ 3 ∣ N := Nat.not_dvd_ordCompl Nat.prime_three hc₀0
+  -- (4) split `N = 2^A · m` with `m` odd and coprime to `3`
+  set A : ℕ := Nat.factorization N 2
+  set m : ℕ := ordCompl[2] N
+  have hNm : 2 ^ A * m = N := Nat.ordProj_mul_ordCompl_eq_self N 2
+  have hm0 : 0 < m := Nat.ordCompl_pos 2 hN0
+  have hm2 : ¬ 2 ∣ m := Nat.not_dvd_ordCompl Nat.prime_two hN0
+  have hmodd : Odd m := Nat.odd_iff.mpr (by omega)
+  have hm3 : ¬ 3 ∣ m := fun h => hN3 (h.trans (Nat.ordCompl_dvd N 2))
+  -- (5) the kernel of `ρ` as an OPEN subgroup (the leaf's `U`)
+  set Kρ : Subgroup (Γ ℚ) :=
+    { carrier := {g : Γ ℚ | ρ g = 1}
+      one_mem' := map_one ρ
+      mul_mem' := fun {a b} ha hb => by
+        have ha' : ρ a = 1 := ha
+        have hb' : ρ b = 1 := hb
+        show ρ (a * b) = 1
+        rw [map_mul, ha', hb', mul_one]
+      inv_mem' := fun {a} ha => by
+        have ha' : ρ a = 1 := ha
+        show ρ a⁻¹ = 1
+        have h1 : ρ a⁻¹ * ρ a = 1 := by
+          rw [← map_mul, inv_mul_cancel, map_one]
+        rw [ha', mul_one] at h1
+        exact h1 }
+  have hKopen : IsOpen (Kρ : Set (Γ ℚ)) :=
+    isOpen_setOf_galoisRep_eq_one ρ hfinV
+  -- (6) the odd part dies in the representation-free ray-class leaf
+  have hstep1 : ∀ g : Γ ℚ, θ' g = 1 → ν g ^ 2 ^ A = 1 := by
+    intro g hg
+    refine odd_order_character_eq_one_ray_class θ' d hd x hx hθ'x
+      (fun g' => ν g' ^ 2 ^ A) ?_ ?_ Kρ hKopen ?_ ?_ ?_ g hg
+    · intro g' h' hg' hh'
+      rw [hνmul g' h' hg' hh', mul_pow]
+    · intro g' hg'
+      exact pow_ne_zero _ (hνne0 g' hg')
+    · intro g' hg'K
+      have hρ1 : ρ g' = 1 := hg'K
+      exact ⟨htriv' g' hρ1, by rw [hνker g' hρ1, one_pow]⟩
+    · intro g' hg'
+      exact ⟨m, hm0, hmodd, hm3, by rw [← pow_mul, hNm]; exact hNexp g' hg'⟩
+    · intro q hq hq3 c σ hσ hθ
+      rw [hνunr' q hq hq3 c σ hσ hθ, one_pow]
+  -- (7) the remaining `2`-power part descends through the quadratic
+  -- leaf, one top layer at a time
+  have hkey : ∀ B : ℕ, (∀ g : Γ ℚ, θ' g = 1 → ν g ^ 2 ^ B = 1) →
+      ∀ g : Γ ℚ, θ' g = 1 → ν g = 1 := by
+    intro B
+    induction B with
+    | zero =>
+      intro hB g hg
+      simpa using hB g hg
+    | succ B ih =>
+      intro hB
+      have hquad : ∀ g : Γ ℚ, θ' g = 1 → ν g ^ 2 ^ B = 1 := by
+        intro g hg
+        refine anti_invariant_quadratic_character_eq_one_ray_class V hV hρ θ'
+          htriv' d hd x hx hθ'x σ₀ hσ₀ (fun g' => ν g' ^ 2 ^ B)
+          ?_ ?_ ?_ ?_ ?_ ?_ g hg
+        · intro g' h' hg' hh'
+          rw [hνmul g' h' hg' hh', mul_pow]
+        · intro g' hg'
+          exact pow_ne_zero _ (hνne0 g' hg')
+        · intro g' hg'
+          rw [hνanti g' hg', inv_pow]
+        · intro g' hρ1
+          rw [hνker g' hρ1, one_pow]
+        · intro g' hg'
+          rw [← pow_mul, ← pow_succ]
+          exact hB g' hg'
+        · intro q hq hq3 c σ hσ hθ
+          rw [hνunr' q hq hq3 c σ hσ hθ, one_pow]
+      exact ih hquad
+  exact hkey A hstep1
 
 set_option maxHeartbeats 1000000 in
 /-- **The induced eigenvalue character is conjugation-symmetric — the
