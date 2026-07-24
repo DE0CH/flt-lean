@@ -108,7 +108,12 @@ it is split off as separate sorried leaves
    residually irreducible case), the Skinner–Wiles residually
    reducible branch, and level optimization to `Γ₀(2)`
    (Carayol/Ribet). Both former sorries are now proven assemblies
-   over those pillars.
+   over those pillars. Pillar 3 (modularity lifting) was further
+   decomposed (2026-07-24) into the Taylor–Wiles cut — the Hecke-side
+   hardly ramified deformation 3a, the patching statement `R = 𝕋` 3b,
+   and the modular-points leaf 3c (see the section "The Taylor–Wiles
+   cut behind the modularity-lifting pillar") — and is itself now a
+   proven assembly.
 5. **Eisenstein branch** (`*_of_not_isIrreducible` in `Family.lean`):
    from the proven reducibility analysis
    (`exists_char_charpoly_map_eq_of_not_isIrreducible`) and the
@@ -724,7 +729,10 @@ Skinner–Wiles, Khare–Wintenberger, Carayol/Ribet):
 3. `exists_weightTwoEigenform_trace_eq_of_matchesResidualTraces` —
    MODULARITY LIFTING (the R = T shadow): a hardly ramified `p`-adic
    lift of an irreducible, residually modular representation is
-   modular.
+   modular. DECOMPOSED (2026-07-24) into the Taylor–Wiles cut —
+   pillars 3a (Hecke-side deformation), 3b (patching, `R = 𝕋`), 3c
+   (modular points); see the dedicated section below — and now itself
+   a PROVEN assembly.
 4. `exists_weightTwoEigenform_trace_eq_of_residually_reducible` — the
    RESIDUALLY REDUCIBLE branch (the Skinner–Wiles shadow).
 5. `exists_weightTwoEigenform_level_two_of_trace_eq` — LEVEL
@@ -855,8 +863,235 @@ theorem exists_weightTwoEigenform_residual_of_isIrreducible
       MatchesResidualTraces N f ρbar S :=
   sorry
 
-/-- **Modularity lifting** (pillar 3; sorry node — the R = T shadow,
-residually irreducible case): a hardly ramified `p`-adic
+/-! ### The Taylor–Wiles cut behind the modularity-lifting pillar
+
+Pillar 3 (`exists_weightTwoEigenform_trace_eq_of_matchesResidualTraces`
+below) DECOMPOSED, 2026-07-24, following the actual architecture of
+the Wiles/Taylor–Wiles proof with the flat refinements of
+Conrad–Diamond–Taylor and Kisin. The classical argument runs through
+ONE auxiliary object — the localized Hecke algebra `𝕋_𝔪` with its
+Galois representation — and splits into three statements, each stated
+against the project's deformation vocabulary (`GaloisRep`,
+`IsHardlyRamified`, `charFrob`, base change — from
+`Fermat/FLT/Deformations/RepresentationTheory/` and
+`HardlyRamified/Defs.lean`) and the interface's eigenform carrier:
+
+* **3a — the Hecke-side deformation**
+  (`exists_hardlyRamified_heckeDeformation_of_matchesResidualTraces`):
+  residual modularity converts into a Galois-side package: a
+  coefficient ring `T` of the exact shape this file's `R` has
+  (module-finite local `ℤ_ℓ`-algebra with its module topology) that is
+  moreover `ℤ_ℓ`-FREE — the finite-flatness of the classical `𝕋_𝔪`,
+  which also excludes the degenerate torsion instantiations such as
+  `T = k` itself — carrying a hardly ramified rank-2 representation
+  `ρT` on `Fin 2 → T` that reduces trace-by-trace to `ρbar` through a
+  surjection `π : T →+* k`.
+* **3b — patching, `R = 𝕋`**
+  (`exists_ringHom_charFrob_eq_of_heckeDeformation`): every hardly
+  ramified `p`-adic lift `ρ` of `ρbar` factors through the Hecke-side
+  deformation on Frobenius traces, via a ring homomorphism
+  `Φ : T →+* R`.
+* **3c — modular points**
+  (`exists_weightTwoEigenform_of_heckeDeformation_point`): every
+  `ℚ̄_ℓ`-point of the Hecke-side deformation carries the trace system
+  of `ρT` to the coefficient system of a weight-2 eigenform.
+
+The assembly (now pillar 3's proof) is: 3a on the residual data, 3b
+against `ρ`, then 3c evaluated at the point
+`(algebraMap R ℚ̄_p).comp Φ`.
+
+Soundness of the abstract quantification (audit 2026-07-24): in 3b and
+3c the package `(T, ρT, π)` ranges over ALL Hecke-side hardly ramified
+deformations, not only the genuine localized Hecke algebra for which
+the literature proves the statements. Both remain classically true
+under the section audit above (their hypothesis sets include an
+irreducible hardly ramified residual representation, which the
+classical chain 2→3/4→5 shows to be unsatisfiable), and their intended
+discharge instantiates the package produced by 3a, for which 3b is
+verbatim Taylor–Wiles(–Kisin) `R = 𝕋` and 3c is the Deligne–Serre
+eigensystem decomposition of `𝕋_𝔪 ⊗ ℚ̄_ℓ`.
+
+CIRCULARITY GUARD (inherited from pillar 3, mandatory): none of 3a–3c
+may be proven through `Family.lean`'s compatible-family machinery —
+`Family.lean` imports this file and consumes the assemblies below, so
+any such route is circular (and is structurally an import cycle). -/
+
+/-- **The Hecke-side deformation** (pillar 3a; sorry node — Carayol's
+Hecke-algebra-valued Galois representation): an irreducible hardly
+ramified mod-`ℓ` representation that arises from a weight-2 eigenform
+of some level `N₀ ≥ 1` (in the `MatchesResidualTraces` sense) arises
+from a whole Hecke-side hardly ramified DEFORMATION: a local
+`ℤ_ℓ`-algebra `T`, module-finite and FREE over `ℤ_ℓ` (the classical
+`𝕋_𝔪` is finite flat over `ℤ_ℓ`, acting faithfully on the
+`𝔪`-localized integral homology of the modular curve; the freeness
+component is what excludes degenerate torsion packages such as
+`T = k`), with its module topology, together with a hardly ramified
+representation `ρT` on `Fin 2 → T` reducing trace-by-trace to `ρbar`
+through a surjective `π : T →+* k` away from a finite exceptional set.
+Classical construction: optimize the level to the Serre type (Ribet,
+*On modular representations of `Gal(ℚ̄/ℚ)` arising from modular
+forms*, Invent. Math. 100 (1990); Serre, Duke 1987 §4.1 — for the
+hardly ramified type the odd part of the Serre conductor is trivial
+and the weight is 2), let `T = 𝕋_𝔪` be the weight-2 Hecke algebra at
+the optimized level localized at the maximal ideal cut out by `ρbar`'s
+eigensystem through `f₀` (non-Eisenstein because `ρbar` is
+irreducible), and let `ρT` be Carayol's `𝕋_𝔪`-valued representation
+(Carayol, *Formes modulaires et représentations galoisiennes à valeurs
+dans un anneau local complet*, Contemp. Math. 165 (1994) — glued from
+the eigenform representations by Chebotarev density plus residual
+irreducibility). Hardly-ramifiedness of `ρT`: determinant cyclotomic
+(weight 2, trivial nebentypus), unramified outside `2ℓ`, flat at `ℓ`
+(weight 2 and level prime to `ℓ`: Fontaine–Laffaille theory;
+Conrad–Diamond–Taylor for the general flat bookkeeping), tame at `2`
+with unramified square-trivial rank-1 quotient (conductor exponent
+`≤ 1` at `2`: Carayol–Saito local–global compatibility).
+CIRCULARITY GUARD: must not be proven through `Family.lean` (see the
+section docstring). -/
+theorem exists_hardlyRamified_heckeDeformation_of_matchesResidualTraces
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime]
+    {k : Type*} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type*} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    {N₀ : ℕ} (hN₀ : 0 < N₀) {f₀ : CuspForm (Gamma0GL N₀) 2}
+    (hf₀ : IsWeightTwoEigenform N₀ f₀)
+    {S₀ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hmatch₀ : MatchesResidualTraces N₀ f₀ ρbar S₀) :
+    ∃ (T : Type u) (_ : CommRing T) (_ : TopologicalSpace T)
+      (_ : IsTopologicalRing T) (_ : Algebra ℤ_[ℓ] T) (_ : IsLocalRing T)
+      (_ : Module.Finite ℤ_[ℓ] T) (_ : Module.Free ℤ_[ℓ] T)
+      (_ : IsModuleTopology ℤ_[ℓ] T)
+      (ρT : GaloisRep ℚ T (Fin 2 → T))
+      (hrankT : Module.rank T (Fin 2 → T) = 2)
+      (_ : IsHardlyRamified hℓodd hrankT ρT)
+      (π : T →+* k) (_ : Function.Surjective π)
+      (S_T : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
+      ∀ (q : ℕ) (hq : q.Prime), hq.toHeightOneSpectrumRingOfIntegersRat ∉ S_T →
+        π ((ρT.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
+          (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1 :=
+  sorry
+
+/-- **Patching: `R = 𝕋`** (pillar 3b; sorry node — the Taylor–Wiles
+theorem specialized to the hardly ramified deformation problem): a
+hardly ramified `p`-adic representation `ρ` over `R` whose residual
+representation `ρ.baseChange kk` is irreducible and underlies a
+Hecke-side hardly ramified deformation `(T, ρT, π)` factors through
+that deformation on Frobenius traces: some ring homomorphism
+`Φ : T →+* R` carries the trace system of `ρT` to that of `ρ` away
+from a finite exceptional set (as everywhere in this file, the
+`charFrob` linear coefficient — the trace up to sign — is the carried
+quantity). Classically: the hardly ramified conditions are exactly a
+deformation problem for `ρ.baseChange kk` over complete Noetherian
+local `ℤ_p`-algebras with residue field `kk` — determinant cyclotomic,
+unramified outside `2p`, flat at `p` (the `GaloisRep.IsFlatAt`
+flat-prolongation condition of `Deformations/RepresentationTheory/`),
+tame square-trivial at `2` — representable by a universal ring
+`R_univ` (Mazur; residual irreducibility removes the framing); the
+trace-generation property of the Hecke deformation gives a surjection
+`R_univ ↠ T` (Carayol), which Taylor–Wiles patching — with the flat
+condition at `p` handled after Conrad–Diamond–Taylor and Kisin
+(*Moduli of finite flat group schemes, and modularity*, Ann. of Math.
+170 (2009)) — proves to be an isomorphism; and `ρ` itself, a typed
+deformation over the complete Noetherian local ring `R` (module-finite
+local `ℤ_p`-algebra with residue field `kk` through `hsurj`), is
+classified by a map `R_univ → R`, whose composite with `T ≅ R_univ`
+is `Φ`. Literature: Wiles, *Modular elliptic curves and Fermat's Last
+Theorem*, Ann. of Math. 141 (1995), ch. 2–3; Taylor–Wiles,
+*Ring-theoretic properties of certain Hecke algebras*, ibid.; Diamond,
+*The Taylor–Wiles construction and multiplicity one*, Invent. Math.
+128 (1997). Abstract-quantification caveat: see the section docstring
+— for a packet smaller than the full `𝕋_𝔪` the factorization is not
+the literature statement; the leaf remains sound by the section audit,
+and its intended discharge is at the full packet of pillar 3a.
+CIRCULARITY GUARD: must not be proven through `Family.lean`. -/
+theorem exists_ringHom_charFrob_eq_of_heckeDeformation
+    (hρ : IsHardlyRamified hpodd hv ρ)
+    {kk : Type u} [Field kk] [Finite kk] [Algebra ℤ_[p] kk]
+    [TopologicalSpace kk] [DiscreteTopology kk] [IsTopologicalRing kk]
+    [Algebra R kk] [ContinuousSMul R kk]
+    (hsurj : Function.Surjective (algebraMap R kk))
+    (hVbar : Module.rank kk (kk ⊗[R] V) = 2)
+    (hρbar : IsHardlyRamified hpodd hVbar (ρ.baseChange kk))
+    (hirrbar : (ρ.baseChange kk).IsIrreducible)
+    {T : Type u} [CommRing T] [TopologicalSpace T] [IsTopologicalRing T]
+    [Algebra ℤ_[p] T] [IsLocalRing T] [Module.Finite ℤ_[p] T]
+    [Module.Free ℤ_[p] T] [IsModuleTopology ℤ_[p] T]
+    {ρT : GaloisRep ℚ T (Fin 2 → T)}
+    (hrankT : Module.rank T (Fin 2 → T) = 2)
+    (hρT : IsHardlyRamified hpodd hrankT ρT)
+    {π : T →+* kk} (hπ : Function.Surjective π)
+    {S_T : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hred : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S_T →
+      π ((ρT.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
+        ((ρ.baseChange kk).charFrob
+          hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) :
+    ∃ (Φ : T →+* R)
+      (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
+      ∀ (q : ℕ) (hq : q.Prime), hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+        (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1 =
+          Φ ((ρT.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) :=
+  sorry
+
+/-- **Modular points of the Hecke-side deformation** (pillar 3c; sorry
+node — the Deligne–Serre eigensystem decomposition): every
+`ℚ̄_ℓ`-valued point `lam` of a Hecke-side hardly ramified deformation
+`(T, ρT, π)` of an irreducible hardly ramified `ρbar` carries the
+Frobenius-trace system of `ρT` to the coefficient system of a
+normalized weight-2 eigenform under an embedding of its Hecke field
+(sign convention as everywhere in this file: the `charFrob` linear
+coefficient is `−a_q`). For the intended instantiation `T = 𝕋_𝔪`
+(pillar 3a) this is finite commutative algebra plus the modular
+interpretation: `𝕋_𝔪 ⊗ ℚ̄_ℓ` is a finite product of copies of `ℚ̄_ℓ`
+(`𝕋_𝔪` is reduced and finite free over `ℤ_ℓ`), so `lam` is projection
+to one factor, i.e. the eigensystem of a normalized eigenform `f` of
+the optimized level — its full-Hecke eigenvector property is the
+coefficient characterization `IsWeightTwoEigenform` (Diamond–Shurman
+Prop. 5.8.5), `ι` is the induced embedding of `heckeField N f`, and
+`lam ∘ (tr ∘ ρT ∘ Frob) = ι ∘ a_•(f)` off the exceptional set is the
+defining compatibility of Carayol's representation. For an abstract
+package the statement is covered by the section audit; the
+non-vacuous route is Kisin's Fontaine–Mazur theorem (*The
+Fontaine–Mazur conjecture for `GL₂`*, JAMS 22 (2009)): `lam ∘ ρT` is
+a geometric, odd, residually irreducible rank-2 representation of
+`Γ ℚ`. CIRCULARITY GUARD: must not be proven through `Family.lean`. -/
+theorem exists_weightTwoEigenform_of_heckeDeformation_point
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime]
+    {k : Type*} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type*} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    {T : Type u} [CommRing T] [TopologicalSpace T] [IsTopologicalRing T]
+    [Algebra ℤ_[ℓ] T] [IsLocalRing T] [Module.Finite ℤ_[ℓ] T]
+    [Module.Free ℤ_[ℓ] T] [IsModuleTopology ℤ_[ℓ] T]
+    {ρT : GaloisRep ℚ T (Fin 2 → T)}
+    (hrankT : Module.rank T (Fin 2 → T) = 2)
+    (hρT : IsHardlyRamified hℓodd hrankT ρT)
+    {π : T →+* k} (hπ : Function.Surjective π)
+    {S_T : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hred : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S_T →
+      π ((ρT.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
+        (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
+    (lam : T →+* AlgebraicClosure ℚ_[ℓ]) :
+    ∃ (N : ℕ) (_ : 0 < N) (f : CuspForm (Gamma0GL N) 2)
+      (_ : IsWeightTwoEigenform N f)
+      (ι : heckeField N f →+* AlgebraicClosure ℚ_[ℓ])
+      (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
+      ∀ (q : ℕ) (hq : q.Prime), hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+        lam ((ρT.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
+          - ι (heckeCoeff N f q) :=
+  sorry
+
+/-- **Modularity lifting** (pillar 3; DECOMPOSED 2026-07-24 — now a
+PROVEN assembly over the Taylor–Wiles cut of the section above; the
+R = T shadow, residually irreducible case): a hardly ramified `p`-adic
 representation whose residual representation is irreducible and
 modular (in the `MatchesResidualTraces` sense) is itself modular: its
 Frobenius traces arise, away from a finite set of places, from a
@@ -873,17 +1108,20 @@ Diamond's refinements for the flat deformation condition at `p`; in
 the "geometric odd irreducible 2-dimensional `p`-adic representations
 of `Γ ℚ` are modular" formulation this is the relevant case of the
 Fontaine–Mazur conjecture (Kisin, *The Fontaine–Mazur conjecture for
-GL₂*, JAMS 22 (2009); Pan for the `p = 3` corners). A future
-decomposition should align the deformation-problem bookkeeping with
+GL₂*, JAMS 22 (2009); Pan for the `p = 3` corners). The decomposition
+aligns the deformation-problem bookkeeping with
 `Fermat/FLT/Deformations/` (`GaloisRep`, `IsFlatAt`/flat
-prolongations); the residual hardly-ramifiedness and the surjectivity
-of the residue map are carried so that the Taylor–Wiles hypotheses can
-be quoted verbatim. -/
+prolongations) as planned: the proof runs pillar 3a on the residual
+data, pillar 3b against `ρ` itself, and evaluates pillar 3c at the
+`ℚ̄_p`-point `(algebraMap R ℚ̄_p).comp Φ` of the Hecke-side
+deformation; the residual hardly-ramifiedness and the surjectivity of
+the residue map are consumed by 3a/3b exactly as the Taylor–Wiles
+hypotheses. -/
 theorem exists_weightTwoEigenform_trace_eq_of_matchesResidualTraces
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
-    (hZinj : Function.Injective (algebraMap ℤ_[p] R))
-    (hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
+    (_hZinj : Function.Injective (algebraMap ℤ_[p] R))
+    (_hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
     (hρ : IsHardlyRamified hpodd hv ρ)
     {kk : Type u} [Field kk] [Finite kk] [Algebra ℤ_[p] kk]
     [TopologicalSpace kk] [DiscreteTopology kk] [IsTopologicalRing kk]
@@ -903,8 +1141,37 @@ theorem exists_weightTwoEigenform_trace_eq_of_matchesResidualTraces
       ∀ (q : ℕ) (hq : q.Prime), hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
         ((ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map
             (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff 1 =
-          - ι (heckeCoeff N f q) :=
-  sorry
+          - ι (heckeCoeff N f q) := by
+  classical
+  -- pillar 3a: the Hecke-side hardly ramified deformation of the
+  -- residual representation
+  obtain ⟨T, iCR, iTop, iTR, iAlg, iLoc, iFin, iFree, iMT, ρT, hrankT, hρT,
+    π, hπ, S_T, hredT⟩ :=
+    exists_hardlyRamified_heckeDeformation_of_matchesResidualTraces hpodd
+      hVbar hρbar hirrbar hN₀ hf₀ hmatch₀
+  letI := iCR
+  letI := iTop
+  letI := iTR
+  letI := iAlg
+  letI := iLoc
+  letI := iFin
+  letI := iFree
+  letI := iMT
+  -- pillar 3b: patching — `ρ` factors through the Hecke-side
+  -- deformation on Frobenius traces
+  obtain ⟨Φ, SΦ, hΦ⟩ :=
+    exists_ringHom_charFrob_eq_of_heckeDeformation hpodd hv hρ hsurj hVbar
+      hρbar hirrbar hrankT hρT hπ hredT
+  -- pillar 3c: the resulting `ℚ̄_p`-point of the deformation is an
+  -- eigenform system
+  obtain ⟨N, hN, f, hf, ι, Sf, hpt⟩ :=
+    exists_weightTwoEigenform_of_heckeDeformation_point hpodd hVbar hρbar
+      hirrbar hrankT hρT hπ hredT
+      ((algebraMap R (AlgebraicClosure ℚ_[p])).comp Φ)
+  refine ⟨N, hN, f, hf, ι, SΦ ∪ Sf, fun q hq hqS => ?_⟩
+  rw [Polynomial.coeff_map,
+    hΦ q hq fun h => hqS (Finset.mem_union_left _ h)]
+  exact hpt q hq fun h => hqS (Finset.mem_union_right _ h)
 
 /-- **The residually reducible branch** (pillar 4; sorry node — the
 Skinner–Wiles shadow): a hardly ramified `p`-adic representation that
