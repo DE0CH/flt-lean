@@ -3619,26 +3619,133 @@ Soundness audit: inherited unchanged from the section docstring.
 CIRCULARITY GUARD: as everywhere in pillar 3, none of the leaves may
 be proven through `Family.lean`. -/
 
-/-- **The oddness input of the corner-system cut** (sorry node): the
-absolute Galois group of `ℚ` contains an involution on which the
-`ℓ`-adic cyclotomic character evaluates to `−1` — a "complex
-conjugation". Intended proof (the PROVEN `ℓ = 3` instance is
-`IsHardlyRamified.exists_conj_cyclotomicCharacter_three` in
-`ModThree.lean`, whose argument generalizes verbatim to every odd
-`ℓ`): `ℝᵃˡᵍ ≃ₐ[ℝ] ℂ` makes `Γ ℝ` the two-element group; the image
-`c` in `Γ ℚ` of its nontrivial element `σ` is an involution, so
-`χ_ℓ(c)² = 1`, i.e. `χ_ℓ(c) = ±1` in the domain `ℤ_ℓ`; and
-`χ_ℓ(c) = 1` would make `c` fix a primitive `ℓ`-th root of unity
-`ζ`, hence make `σ` fix `ι ζ ∉ ℝ` (`ℓ` odd: the only real roots of
-unity are `±1`, of order `≤ 2 < ℓ`) — but `ℝ(ι ζ) = ℝᵃˡᵍ` in degree
-`2`, so `σ` would be the identity. Sound: an unconditional classical
-fact, independent of the 3a-ii hypothesis package. -/
+/-- **The oddness input of the corner-system cut** (PROVEN — the
+general-`ℓ` form of `ModThree.lean`'s
+`IsHardlyRamified.exists_conj_cyclotomicCharacter_three`, whose
+argument generalizes verbatim): the absolute Galois group of `ℚ`
+contains an involution on which the `ℓ`-adic cyclotomic character
+evaluates to `−1` — a "complex conjugation". Proof: `ℝᵃˡᵍ ≃ₐ[ℝ] ℂ`
+makes `Γ ℝ` the two-element group; the image `c` in `Γ ℚ` of its
+nontrivial element `σ` is an involution, so `χ_ℓ(c)² = 1`, i.e.
+`χ_ℓ(c) = ±1` in the domain `ℤ_ℓ`; and `χ_ℓ(c) = 1` would make `c`
+fix a primitive `ℓ`-th root of unity `ζ`, hence make `σ` fix
+`ι ζ ∉ ℝ` (`ℓ` odd: `r ↦ r^ℓ` is strictly monotone on `ℝ`, so
+`r^ℓ = 1` forces `r = 1`) — but `ℝ(ι ζ) = ℝᵃˡᵍ` in degree `2`, so
+`σ` would be the identity. -/
 theorem exists_involution_cyclotomicCharacter_neg_one
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓodd : Odd ℓ) :
     ∃ c : Field.absoluteGaloisGroup ℚ, c * c = 1 ∧
       ((cyclotomicCharacter (AlgebraicClosure ℚ) ℓ c.toRingEquiv :
-        ℤ_[ℓ]ˣ) : ℤ_[ℓ]) = -1 :=
-  sorry
+        ℤ_[ℓ]ˣ) : ℤ_[ℓ]) = -1 := by
+  classical
+  haveI hNZ : NeZero ((ℓ : ℚ)) :=
+    ⟨by exact_mod_cast (Fact.out : ℓ.Prime).ne_zero⟩
+  -- `ℝᵃˡᵍ ≃ₐ[ℝ] ℂ`, hence `Γ ℝ` has exactly two elements
+  haveI : IsAlgClosed ℂ := Complex.isAlgClosed
+  haveI : IsAlgClosure ℝ ℂ := ⟨inferInstance, Algebra.IsAlgebraic.of_finite ℝ ℂ⟩
+  let e : AlgebraicClosure ℝ ≃ₐ[ℝ] ℂ :=
+    IsAlgClosure.equiv ℝ (AlgebraicClosure ℝ) ℂ
+  haveI : FiniteDimensional ℝ (AlgebraicClosure ℝ) :=
+    Module.Finite.equiv e.symm.toLinearEquiv
+  have hfr : Module.finrank ℝ (AlgebraicClosure ℝ) = 2 := by
+    rw [e.toLinearEquiv.finrank_eq]
+    exact Complex.finrank_real_complex
+  haveI : IsGalois ℝ (AlgebraicClosure ℝ) := ⟨⟩
+  have hcard : Nat.card (Field.absoluteGaloisGroup ℝ) = 2 :=
+    (IsGalois.card_aut_eq_finrank ℝ (AlgebraicClosure ℝ)).trans hfr
+  -- the nontrivial element of `Γ ℝ`
+  haveI : Finite (Field.absoluteGaloisGroup ℝ) :=
+    Nat.finite_of_card_ne_zero (by omega)
+  haveI : Nontrivial (Field.absoluteGaloisGroup ℝ) :=
+    Finite.one_lt_card_iff_nontrivial.mp (by omega)
+  obtain ⟨σ, hσ⟩ := exists_ne (1 : Field.absoluteGaloisGroup ℝ)
+  have hσ2 : σ * σ = 1 := by
+    have h : σ ^ Nat.card (Field.absoluteGaloisGroup ℝ) = 1 := pow_card_eq_one'
+    rwa [hcard, pow_two] at h
+  -- its image in `Γ ℚ` is the sought involution
+  refine ⟨Field.absoluteGaloisGroup.map (algebraMap ℚ ℝ) σ, ?_, ?_⟩
+  · rw [← map_mul, hσ2, map_one]
+  · set c : Field.absoluteGaloisGroup ℚ :=
+      Field.absoluteGaloisGroup.map (algebraMap ℚ ℝ) σ
+    set x : ℤ_[ℓ] :=
+      ((cyclotomicCharacter (AlgebraicClosure ℚ) ℓ c.toRingEquiv :
+        ℤ_[ℓ]ˣ) : ℤ_[ℓ])
+    -- `x² = 1`, so `x = ±1` in the domain `ℤ_[ℓ]`
+    have hsq : x * x = 1 := by
+      have hmul : (c * c).toRingEquiv = c.toRingEquiv * c.toRingEquiv := rfl
+      have hone : ((1 : Field.absoluteGaloisGroup ℚ).toRingEquiv) = 1 := rfl
+      have h := congrArg (fun g => ((cyclotomicCharacter
+        (AlgebraicClosure ℚ) ℓ g : ℤ_[ℓ]ˣ) : ℤ_[ℓ]))
+        (hmul.symm.trans (by rw [← map_mul, hσ2, map_one, hone] : _ = _))
+      simpa [map_mul] using h
+    rcases mul_self_eq_one_iff.mp hsq with hx1 | hxm1
+    swap
+    · exact hxm1
+    -- rule out `x = 1`: `c` would fix a primitive `ℓ`-th root of unity
+    exfalso
+    obtain ⟨ζ, hζ⟩ := HasEnoughRootsOfUnity.exists_primitiveRoot
+      (AlgebraicClosure ℚ) ℓ
+    -- `c ζ = ζ ^ (x mod ℓ) = ζ`
+    have hfix : c.toRingEquiv ζ = ζ := by
+      have hspec := cyclotomicCharacter.spec ℓ (n := 1) c.toRingEquiv ζ
+        (by rw [pow_one]; exact hζ.pow_eq_one)
+      rw [hspec, show (cyclotomicCharacter (AlgebraicClosure ℚ) ℓ
+        c.toRingEquiv).val = x from rfl, hx1, map_one]
+      haveI : Fact (1 < ℓ ^ 1) := ⟨by simpa using (Fact.out : ℓ.Prime).one_lt⟩
+      rw [ZMod.val_one, pow_one]
+    -- transport along the embedding `ι : ℚᵃˡᵍ → ℝᵃˡᵍ`
+    have hσz : σ (AlgebraicClosure.map (algebraMap ℚ ℝ) ζ) =
+        AlgebraicClosure.map (algebraMap ℚ ℝ) ζ := by
+      rw [← Field.absoluteGaloisGroup.lift_map (algebraMap ℚ ℝ) σ ζ]
+      exact congrArg _ hfix
+    set z : AlgebraicClosure ℝ := AlgebraicClosure.map (algebraMap ℚ ℝ) ζ
+    -- `z` is a primitive `ℓ`-th root of unity, hence not real
+    have hzprim : IsPrimitiveRoot z ℓ :=
+      hζ.map_of_injective (AlgebraicClosure.map (algebraMap ℚ ℝ)).injective
+    have hznotbot : z ∉ (⊥ : IntermediateField ℝ (AlgebraicClosure ℝ)) := by
+      intro hmem
+      obtain ⟨r, hr⟩ := IntermediateField.mem_bot.mp hmem
+      -- `rℓ = 1` in `ℝ` forces `r = 1` (`ℓ` odd), forcing `z = 1`
+      have hrℓ : r ^ ℓ = 1 := by
+        have h := hzprim.pow_eq_one
+        rw [← hr] at h
+        exact (algebraMap ℝ (AlgebraicClosure ℝ)).injective
+          (by rw [map_pow, map_one]; exact h)
+      have hr1 : r = 1 := hℓodd.strictMono_pow.injective (by simpa using hrℓ)
+      exact hzprim.ne_one (Fact.out : ℓ.Prime).one_lt
+        (by rw [← hr, hr1, map_one])
+    -- `ℝ(z) = ℝᵃˡᵍ` in degree `2`
+    have htop : IntermediateField.adjoin ℝ {z} = ⊤ := by
+      rw [← IntermediateField.finrank_eq_one_iff_eq_top]
+      have hmul : Module.finrank ℝ (IntermediateField.adjoin ℝ {z}) *
+          Module.finrank (IntermediateField.adjoin ℝ {z})
+            (AlgebraicClosure ℝ) = 2 := by
+        rw [Module.finrank_mul_finrank]
+        exact hfr
+      have hne1 : Module.finrank ℝ (IntermediateField.adjoin ℝ {z}) ≠ 1 := by
+        rw [Ne, IntermediateField.finrank_eq_one_iff]
+        intro hbot
+        exact hznotbot (hbot ▸ IntermediateField.mem_adjoin_simple_self ℝ z)
+      have hdvd : Module.finrank ℝ (IntermediateField.adjoin ℝ {z}) ∣ 2 :=
+        ⟨_, hmul.symm⟩
+      rcases (Nat.dvd_prime Nat.prime_two).mp hdvd with h1 | h2
+      · exact absurd h1 hne1
+      · rw [h2] at hmul
+        omega
+    -- `σ` fixes `ℝ` and `z`, hence everything — contradicting `σ ≠ 1`
+    refine hσ (AlgEquiv.ext fun w => ?_)
+    have hw : w ∈ IntermediateField.adjoin ℝ {z} :=
+      htop ▸ IntermediateField.mem_top
+    show σ w = w
+    induction hw using IntermediateField.adjoin_induction with
+    | mem u hu =>
+      rw [Set.mem_singleton_iff] at hu
+      rw [hu]
+      exact hσz
+    | algebraMap r => exact σ.commutes r
+    | add a b _ _ ha hb => rw [map_add, ha, hb]
+    | mul a b _ _ ha hb => rw [map_mul, ha, hb]
+    | inv a _ ha => rw [map_inv₀, ha]
 
 /-- **The aligned matrix form of one realization** (sorry node — the
 normalization step of the corner-system cut): over the local
