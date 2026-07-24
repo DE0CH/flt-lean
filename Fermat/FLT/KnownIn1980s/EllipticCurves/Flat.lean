@@ -3775,10 +3775,65 @@ theorem WeierstrassCurve.exists_hopf_order_of_good_reduction
         Submodule.span R {z : HK ⊗[K] HK | ∃ a ∈ H₀, ∃ b ∈ H₀, a ⊗ₜ[K] b = z}) :=
   sorry
 
-set_option backward.isDefEq.respectTransparency false in
+set_option linter.unusedSectionVars false in -- deliberate: `omit` of the unused section
+-- instances measurably slows the consuming theorem's elaboration; keep the passing signature
+/-- Coalgebra counit axiom (`lTensor` side) for a corestricted comultiplication,
+stated against ABSTRACT corestricted maps `comul₀`/`counit₀`/`j2`: inline in the
+structure literal of `exists_flat_hopf_form_of_free_hopf_order` the same proof
+elaborates in a context where these are `let`-bound to large corestriction
+composites (`codRestrict`/`ofInjective` towers), and the rewrite path of this
+particular axiom forces those `let`s to unfold, making elaboration diverge
+(hours; observed 2026-07-23/24). Against opaque hypotheses every defeq step
+stays small. Consumed by `exists_flat_hopf_form_of_free_hopf_order` only. -/
+theorem corestrict_lTensor_counit_comp_comul
+    (HK : Type u) [CommRing HK] [HopfAlgebra K HK]
+    [Algebra R HK] [IsScalarTower R K HK]
+    (H₀ : Subalgebra R HK)
+    (comul₀ : H₀ →ₗ[R] H₀ ⊗[R] H₀) (counit₀ : H₀ →ₗ[R] R)
+    (j2 : H₀ ⊗[R] H₀ →ₗ[R] HK ⊗[K] HK)
+    (hj2tmul : ∀ x y : H₀, j2 (x ⊗ₜ[R] y) = (x : HK) ⊗ₜ[K] (y : HK))
+    (hj2comul₀ : ∀ x : H₀, j2 (comul₀ x) = Coalgebra.comul (R := K) (x : HK))
+    (hcounit₀K : ∀ x : H₀,
+      algebraMap R K (counit₀ x) = Coalgebra.counit (R := K) (x : HK)) :
+    counit₀.lTensor H₀ ∘ₗ comul₀ = (TensorProduct.mk R H₀ R).flip 1 := by
+  apply LinearMap.ext
+  intro x
+  apply (TensorProduct.rid R H₀).injective
+  apply Subtype.coe_injective
+  have haux : ∀ t : H₀ ⊗[R] H₀,
+      (((TensorProduct.rid R H₀) ((counit₀.lTensor H₀) t)) : HK) =
+      (TensorProduct.rid K HK)
+        (((Coalgebra.counit (R := K)).lTensor HK) (j2 t)) := by
+    intro t
+    induction t using TensorProduct.induction_on with
+    | zero => simp only [map_zero, ZeroMemClass.coe_zero]
+    | add u v hu hv => simp only [map_add, AddMemClass.coe_add, hu, hv]
+    | tmul a c =>
+      rw [hj2tmul, LinearMap.lTensor_tmul, LinearMap.lTensor_tmul,
+        TensorProduct.rid_tmul, TensorProduct.rid_tmul]
+      show ((counit₀ c • a : H₀) : HK) =
+        Coalgebra.counit (R := K) (c : HK) • (a : HK)
+      rw [← hcounit₀K c]
+      show counit₀ c • (a : HK) = algebraMap R K (counit₀ c) • (a : HK)
+      rw [algebraMap_smul]
+  have h1 := haux (comul₀ x)
+  rw [hj2comul₀ x] at h1
+  have h2 := LinearMap.congr_fun
+    (Coalgebra.lTensor_counit_comp_comul (R := K) (A := HK)) (x : HK)
+  rw [LinearMap.comp_apply] at h2
+  rw [h2] at h1
+  show (((TensorProduct.rid R H₀) ((counit₀.lTensor H₀) (comul₀ x))) : HK) =
+    (((TensorProduct.rid R H₀) (((TensorProduct.mk R H₀ R).flip 1) x)) : HK)
+  rw [h1]
+  show (TensorProduct.rid K HK) ((x : HK) ⊗ₜ[K] (1 : K)) =
+    (((TensorProduct.rid R H₀) (x ⊗ₜ[R] (1 : R))) : HK)
+  rw [TensorProduct.rid_tmul, TensorProduct.rid_tmul, one_smul]
+  show (x : HK) = (((1 : R) • x : H₀) : HK)
+  rw [one_smul]
+
 set_option maxHeartbeats 400000 in
 set_option synthInstance.maxHeartbeats 100000 in
-/-- **The Hopf corestriction core** (sorry node; the deepest layer of the
+/-- **The Hopf corestriction core** (PROVEN 2026-07-24; the deepest layer of the
 curve-free structure half of the Katz–Mazur decomposition — pure
 transport-of-structure over the DVR `R`): a FREE finite Hopf order whose
 base-change map is bijective is a flat Hopf form. Given that the base-change
@@ -4077,44 +4132,9 @@ theorem exists_flat_hopf_form_of_free_hopf_order
         rw [TensorProduct.lid_tmul, TensorProduct.lid_tmul, one_smul]
         show (x : HK) = (((1 : R) • x : H₀) : HK)
         rw [one_smul]
-      lTensor_counit_comp_comul := by
-        apply LinearMap.ext
-        intro x
-        apply (TensorProduct.rid R H₀).injective
-        apply Subtype.coe_injective
-        have haux' : ((Subalgebra.toSubmodule H₀).subtype ∘ₗ
-            (TensorProduct.rid R H₀).toLinearMap ∘ₗ (counit₀.lTensor H₀)) =
-            (LinearMap.restrictScalars R ((TensorProduct.rid K HK).toLinearMap ∘ₗ
-              ((Coalgebra.counit (R := K)).lTensor HK)) ∘ₗ j2) := by
-          apply TensorProduct.ext'
-          intro a c
-          show (((TensorProduct.rid R H₀) ((counit₀.lTensor H₀) (a ⊗ₜ[R] c))) : HK) =
-            (TensorProduct.rid K HK) (((Coalgebra.counit (R := K)).lTensor HK)
-              (j2 (a ⊗ₜ[R] c)))
-          rw [hj2tmul, LinearMap.lTensor_tmul, LinearMap.lTensor_tmul,
-            TensorProduct.rid_tmul, TensorProduct.rid_tmul]
-          show ((counit₀ c • a : H₀) : HK) =
-            Coalgebra.counit (R := K) (c : HK) • (a : HK)
-          rw [← hcounit₀K c]
-          show counit₀ c • (a : HK) = algebraMap R K (counit₀ c) • (a : HK)
-          rw [algebraMap_smul]
-        have h1 := LinearMap.congr_fun haux' (comul₀ x)
-        simp only [LinearMap.comp_apply, LinearMap.coe_restrictScalars,
-          LinearEquiv.coe_coe, Submodule.coe_subtype] at h1
-        rw [hj2comul₀ x] at h1
-        have h2 := LinearMap.congr_fun
-          (Coalgebra.lTensor_counit_comp_comul (R := K) (A := HK)) (x : HK)
-        rw [LinearMap.comp_apply] at h2
-        rw [h2] at h1
-        have h4 : (TensorProduct.rid K HK)
-            (((TensorProduct.mk K HK K).flip 1) (x : HK)) = (x : HK) := by
-          rw [show ((TensorProduct.mk K HK K).flip 1) (x : HK) =
-            (x : HK) ⊗ₜ[K] (1 : K) from rfl, TensorProduct.rid_tmul, one_smul]
-        have h3 : (((TensorProduct.rid R H₀)
-            (((TensorProduct.mk R H₀ R).flip 1) x)) : HK) = (x : HK) := by
-          rw [show ((TensorProduct.mk R H₀ R).flip 1) x = x ⊗ₜ[R] (1 : R) from rfl,
-            TensorProduct.rid_tmul, one_smul]
-        exact h1.trans (h4.trans h3.symm) }
+      lTensor_counit_comp_comul :=
+        corestrict_lTensor_counit_comp_comul R K HK H₀ comul₀ counit₀ j2
+          hj2tmul hj2comul₀ hcounit₀K }
   letI instBi : Bialgebra R H₀ := Bialgebra.mk' R H₀
     (by
       apply IsFractionRing.injective R K
