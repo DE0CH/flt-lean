@@ -4845,65 +4845,632 @@ theorem exists_forall_abs_sum_card_absNorm_residue_sub_mul_le_rpow_of_ideal
       hclass I₀ (hRmem I₀ hI₀).1 (hRmem I₀ hI₀).2 n).trans_eq ?_)
   rw [Finset.sum_const, hRcard, nsmul_eq_mul, mul_assoc]
 
+/-- **Elementary logarithm window on `(0, 1/2]`**: `x ≤ -log(1-x) ≤ x + 2x²`.
+The lower half is `log y ≤ y - 1` at `y = 1 - x`; the upper half is the
+same inequality at `y = (1-x)⁻¹` combined with `(1-x)⁻¹ ≤ 1 + x + 2x²`
+for `x ≤ 1/2`. Shared termwise brick of the two Mertens bounds. -/
+theorem le_neg_log_one_sub_and_neg_log_one_sub_le {x : ℝ}
+    (hx : x ∈ Set.Ioc (0 : ℝ) (1 / 2)) :
+    x ≤ -Real.log (1 - x) ∧ -Real.log (1 - x) ≤ x + 2 * x ^ 2 := by
+  obtain ⟨hx0, hx2⟩ := hx
+  have h1x : 0 < 1 - x := by linarith
+  constructor
+  · have h1 := Real.log_le_sub_one_of_pos h1x
+    linarith
+  · have hinv : 0 < (1 - x)⁻¹ := inv_pos.mpr h1x
+    have h2 := Real.log_le_sub_one_of_pos hinv
+    rw [Real.log_inv] at h2
+    have h3 : (1 - x)⁻¹ ≤ 1 + x + 2 * x ^ 2 := by
+      rw [inv_eq_one_div, div_le_iff₀ h1x]
+      nlinarith [mul_nonneg (sq_nonneg x) (by linarith : (0 : ℝ) ≤ 1 - 2 * x)]
+    linarith
+
 open IsDedekindDomain in
-/-- **Upper Mertens bound for the degree-one prime sum** (sorry leaf) —
-the zeta-pole half of Deuring's trick, upper direction: for any number
+/-- The place term `#(𝓞 K / P)^{-s}` lies in `(0, 1/2]` for `s ≥ 1`:
+the residue cardinality is at least `2` and the exponent is at most
+`-1`. -/
+theorem rpow_neg_natCard_quotient_mem_Ioc {K : Type*} [Field K] [NumberField K]
+    (P : HeightOneSpectrum (𝓞 K)) {s : ℝ} (hs : 1 ≤ s) :
+    (Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ) ^ (-s) ∈ Set.Ioc (0 : ℝ) (1 / 2) := by
+  have h2 : (2 : ℝ) ≤ (Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ) := by
+    exact_mod_cast two_le_natCard_quotient P
+  refine ⟨Real.rpow_pos_of_pos (by linarith) _, ?_⟩
+  calc (Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ) ^ (-s)
+      ≤ (2 : ℝ) ^ (-s) := Real.rpow_le_rpow_of_nonpos two_pos h2 (by linarith)
+    _ ≤ (2 : ℝ) ^ (-1 : ℝ) :=
+        (Real.rpow_le_rpow_left_iff one_lt_two).mpr (by linarith)
+    _ = 1 / 2 := by rw [Real.rpow_neg_one]; norm_num
+
+open IsDedekindDomain in
+/-- Termwise upper log bound for the Euler factor at a finite place:
+`-log(1 - #(𝓞K/P)^{-s}) ≤ #(𝓞K/P)^{-s} + 2·#(𝓞K/P)^{-2}` for `s > 1` —
+the square term of `le_neg_log_one_sub_and_neg_log_one_sub_le` pushed
+down monotonically to the fixed exponent `2`. -/
+theorem neg_log_one_sub_rpow_neg_natCard_quotient_le {K : Type*} [Field K]
+    [NumberField K] (P : HeightOneSpectrum (𝓞 K)) {s : ℝ} (hs : 1 < s) :
+    -Real.log (1 - (Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ) ^ (-s)) ≤
+      (Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ) ^ (-s) +
+        2 * (Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ) ^ (-(2 : ℝ)) := by
+  have h1 := (le_neg_log_one_sub_and_neg_log_one_sub_le
+    (rpow_neg_natCard_quotient_mem_Ioc P hs.le)).2
+  have h2 : (2 : ℝ) ≤ (Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ) := by
+    exact_mod_cast two_le_natCard_quotient P
+  have hsq : ((Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ) ^ (-s)) ^ 2 ≤
+      (Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ) ^ (-(2 : ℝ)) := by
+    have he : ((Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ) ^ (-s)) ^ (2 : ℕ) =
+        (Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ) ^ (-s * 2) := by
+      rw [← Real.rpow_natCast ((Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ) ^ (-s)) 2,
+        ← Real.rpow_mul
+          (by linarith : (0 : ℝ) ≤ (Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ))]
+      norm_num
+    rw [he]
+    exact Real.rpow_le_rpow_of_exponent_le (by linarith) (by linarith)
+  linarith
+
+open IsDedekindDomain in
+/-- Summability of the log Euler factors `P ↦ -log(1 - #(𝓞K/P)^{-s})`
+for `s > 1`, by squeezing between `0` and the summable comparison
+family `#(𝓞K/P)^{-s} + 2·#(𝓞K/P)^{-2}`. -/
+theorem summable_neg_log_one_sub_rpow_neg_natCard_quotient
+    (K : Type*) [Field K] [NumberField K] {s : ℝ} (hs : 1 < s) :
+    Summable (fun P : HeightOneSpectrum (𝓞 K) =>
+      -Real.log (1 - (Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ) ^ (-s))) := by
+  refine Summable.of_nonneg_of_le (fun P => ?_)
+    (fun P => neg_log_one_sub_rpow_neg_natCard_quotient_le P hs)
+    ((summable_rpow_neg_natCard_quotient hs).add
+      ((summable_rpow_neg_natCard_quotient
+        (one_lt_two : (1 : ℝ) < 2)).mul_left 2))
+  obtain ⟨hx0, hx2⟩ := rpow_neg_natCard_quotient_mem_Ioc P hs.le
+  have h1 := Real.log_nonpos
+    (by linarith : (0 : ℝ) ≤ 1 - (Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ) ^ (-s))
+    (by linarith : 1 - (Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ) ^ (-s) ≤ 1)
+  linarith
+
+open IsDedekindDomain in
+/-- The Dedekind zeta value at real `s > 1` is the real coefficient
+Dirichlet series `∑ₙ #{I : N(I) = n}·n^{-s}`, embedded in `ℂ`
+(`term_natCard_absNorm_eq` summed through `Complex.ofReal_tsum`). -/
+theorem dedekindZeta_eq_ofReal_tsum (K : Type*) [Field K] [NumberField K]
+    {s : ℝ} (hs : 1 < s) :
+    NumberField.dedekindZeta K (s : ℂ) =
+      ((∑' n : ℕ, (Nat.card {I : Ideal (𝓞 K) // Ideal.absNorm I = n} : ℝ) *
+        (n : ℝ) ^ (-s) : ℝ) : ℂ) := by
+  rw [show NumberField.dedekindZeta K (s : ℂ) = ∑' n : ℕ, LSeries.term
+      (fun n => (Nat.card {I : Ideal (𝓞 K) // Ideal.absNorm I = n} : ℂ))
+      (s : ℂ) n from rfl, Complex.ofReal_tsum]
+  exact tsum_congr fun n =>
+    term_natCard_absNorm_eq K (by linarith : (0 : ℝ) < s) n
+
+open IsDedekindDomain in
+/-- **Euler exp-identity for the Dedekind zeta function at real
+`s > 1`**: the exponential of the real prime log-sum
+`∑_P -log(1 - #(𝓞K/P)^{-s})` equals the real coefficient Dirichlet
+series of `ζ_K`. This is the trivial-character (`ℓ = 1`) instance of
+`exp_tsum_neg_log_one_sub_dirichletCharacter_mul_cpow_neg_eq_LSeries`,
+descended from `ℂ` to `ℝ` along `Complex.ofReal` (every factor is a
+positive real). -/
+theorem exp_tsum_neg_log_one_sub_rpow_neg_natCard_quotient
+    (K : Type*) [Field K] [NumberField K] {s : ℝ} (hs : 1 < s) :
+    Real.exp (∑' P : HeightOneSpectrum (𝓞 K),
+        -Real.log (1 - (Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ) ^ (-s))) =
+      ∑' n : ℕ, (Nat.card {I : Ideal (𝓞 K) // Ideal.absNorm I = n} : ℝ) *
+        (n : ℝ) ^ (-s) := by
+  have hs' : 1 < ((s : ℂ)).re := by rwa [Complex.ofReal_re]
+  have hχ : ∀ a : ZMod 1, (1 : DirichletCharacter ℂ 1) a = 1 := fun a => by
+    rw [Subsingleton.elim a 1, map_one]
+  have hkey := exp_tsum_neg_log_one_sub_dirichletCharacter_mul_cpow_neg_eq_LSeries
+    K (1 : DirichletCharacter ℂ 1) hs'
+  simp only [hχ, one_mul] at hkey
+  -- each complex log factor is the embedded real log factor
+  have hterm : ∀ P : HeightOneSpectrum (𝓞 K),
+      -Complex.log (1 - (Nat.card (𝓞 K ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ))) =
+      ((-Real.log (1 - (Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ) ^ (-s)) : ℝ) : ℂ) := by
+    intro P
+    obtain ⟨hx0, hx2⟩ := rpow_neg_natCard_quotient_mem_Ioc P hs.le
+    have hcpow : (Nat.card (𝓞 K ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)) =
+        (((Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ) ^ (-s) : ℝ) : ℂ) := by
+      rw [Complex.ofReal_cpow (Nat.cast_nonneg _) (-s)]
+      push_cast
+      rfl
+    rw [hcpow,
+      show (1 : ℂ) - (((Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ) ^ (-s) : ℝ) : ℂ) =
+        (((1 - (Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ) ^ (-s)) : ℝ) : ℂ) by
+          push_cast; ring,
+      ← Complex.ofReal_log (by linarith : (0 : ℝ) ≤
+        1 - (Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ) ^ (-s)),
+      ← Complex.ofReal_neg]
+  rw [tsum_congr hterm, ← Complex.ofReal_tsum, ← Complex.ofReal_exp] at hkey
+  have hzeta : LSeries (fun k : ℕ =>
+      (Nat.card {I : Ideal (𝓞 K) // Ideal.absNorm I = k} : ℂ)) (s : ℂ) =
+      ((∑' n : ℕ, (Nat.card {I : Ideal (𝓞 K) // Ideal.absNorm I = n} : ℝ) *
+        (n : ℝ) ^ (-s) : ℝ) : ℂ) :=
+    dedekindZeta_eq_ofReal_tsum K hs
+  rw [hzeta] at hkey
+  exact_mod_cast hkey
+
+open IsDedekindDomain in
+/-- **Two-sided pole window for the real Dedekind zeta series**: there
+is an `η > 0` such that on `(1, 1+η]` the product `(s-1)·ζ_K(s)` (real
+coefficient series) stays inside `(κ/2, 2κ)`, `κ` the residue — the
+quantitative form of mathlib's
+`NumberField.tendsto_sub_one_mul_dedekindZeta_nhdsGT`. -/
+theorem exists_forall_sub_one_mul_tsum_mem_Ioo (K : Type*) [Field K]
+    [NumberField K] :
+    ∃ η : ℝ, 0 < η ∧ ∀ s : ℝ, 1 < s → s ≤ 1 + η →
+      (s - 1) * (∑' n : ℕ,
+        (Nat.card {I : Ideal (𝓞 K) // Ideal.absNorm I = n} : ℝ) *
+          (n : ℝ) ^ (-s)) ∈
+      Set.Ioo (NumberField.dedekindZeta_residue K / 2)
+        (2 * NumberField.dedekindZeta_residue K) := by
+  have hκpos := NumberField.dedekindZeta_residue_pos K
+  have h1 := NumberField.tendsto_sub_one_mul_dedekindZeta_nhdsGT K
+  have h2 : Filter.Tendsto (fun s : ℝ =>
+      (((s : ℂ) - 1) * NumberField.dedekindZeta K s).re)
+      (nhdsWithin 1 (Set.Ioi 1))
+      (nhds ((NumberField.dedekindZeta_residue K : ℂ)).re) :=
+    (Complex.continuous_re.tendsto _).comp h1
+  rw [Complex.ofReal_re] at h2
+  have h3 : Filter.Tendsto (fun s : ℝ => (s - 1) *
+      ∑' n : ℕ, (Nat.card {I : Ideal (𝓞 K) // Ideal.absNorm I = n} : ℝ) *
+        (n : ℝ) ^ (-s))
+      (nhdsWithin 1 (Set.Ioi 1)) (nhds (NumberField.dedekindZeta_residue K)) := by
+    refine Filter.Tendsto.congr' ?_ h2
+    filter_upwards [self_mem_nhdsWithin] with t ht
+    have ht1 : (1 : ℝ) < t := ht
+    rw [dedekindZeta_eq_ofReal_tsum K ht1,
+      show ((t : ℂ) - 1) = ((t - 1 : ℝ) : ℂ) by push_cast; ring,
+      ← Complex.ofReal_mul, Complex.ofReal_re]
+  have hmem : Set.Ioo (NumberField.dedekindZeta_residue K / 2)
+      (2 * NumberField.dedekindZeta_residue K) ∈
+      nhds (NumberField.dedekindZeta_residue K) :=
+    Ioo_mem_nhds (by linarith) (by linarith)
+  obtain ⟨ε, hε, hsub⟩ := Metric.mem_nhdsWithin_iff.mp (h3 hmem)
+  refine ⟨min (ε / 2) 1, by positivity, fun s hs1 hs2 => ?_⟩
+  refine hsub ⟨Metric.mem_ball.mpr ?_, hs1⟩
+  rw [Real.dist_eq, abs_of_pos (by linarith : (0 : ℝ) < s - 1)]
+  have h4 : min (ε / 2) 1 ≤ ε / 2 := min_le_left _ _
+  linarith
+
+open IsDedekindDomain in
+/-- `ℝ≥0∞`/`ℝ` transfer for the degree-one prime sub-sum at `s > 1`:
+the `ℝ≥0∞`-valued sum is `ofReal` of the (summable) real sum. -/
+theorem tsum_rpow_neg_natCard_quotient_prime_and_ne_eq_ofReal
+    (K : Type*) [Field K] [NumberField K] (ℓ : ℕ) {s : ℝ} (hs : 1 < s) :
+    (∑' P : {P : HeightOneSpectrum (𝓞 K) //
+        (Nat.card (𝓞 K ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 K ⧸ P.asIdeal) ≠ ℓ},
+      (Nat.card (𝓞 K ⧸ (P : HeightOneSpectrum (𝓞 K)).asIdeal) : ℝ≥0∞) ^ (-s)) =
+      ENNReal.ofReal (∑' P : {P : HeightOneSpectrum (𝓞 K) //
+        (Nat.card (𝓞 K ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 K ⧸ P.asIdeal) ≠ ℓ},
+      (Nat.card (𝓞 K ⧸ (P : HeightOneSpectrum (𝓞 K)).asIdeal) : ℝ) ^ (-s)) := by
+  have hsummS : Summable (fun P : {P : HeightOneSpectrum (𝓞 K) //
+      (Nat.card (𝓞 K ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 K ⧸ P.asIdeal) ≠ ℓ} =>
+      (Nat.card (𝓞 K ⧸ (P : HeightOneSpectrum (𝓞 K)).asIdeal) : ℝ) ^ (-s)) :=
+    (summable_rpow_neg_natCard_quotient hs).subtype _
+  rw [ENNReal.ofReal_tsum_of_nonneg
+    (fun P => Real.rpow_nonneg (Nat.cast_nonneg _) _) hsummS]
+  refine tsum_congr fun P => ?_
+  have hpos : (0 : ℝ) <
+      (Nat.card (𝓞 K ⧸ (P : HeightOneSpectrum (𝓞 K)).asIdeal) : ℝ) := by
+    have h2 : (2 : ℝ) ≤
+        (Nat.card (𝓞 K ⧸ (P : HeightOneSpectrum (𝓞 K)).asIdeal) : ℝ) := by
+      exact_mod_cast two_le_natCard_quotient (P : HeightOneSpectrum (𝓞 K))
+    linarith
+  rw [← ENNReal.ofReal_rpow_of_pos hpos, ENNReal.ofReal_natCast]
+
+open IsDedekindDomain in
+/-- `ℝ≥0∞`/`ℝ` transfer for the full place sum at `s > 1`. -/
+theorem tsum_rpow_neg_natCard_quotient_eq_ofReal
+    (K : Type*) [Field K] [NumberField K] {s : ℝ} (hs : 1 < s) :
+    (∑' P : HeightOneSpectrum (𝓞 K),
+      (Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ≥0∞) ^ (-s)) =
+      ENNReal.ofReal (∑' P : HeightOneSpectrum (𝓞 K),
+        (Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ) ^ (-s)) := by
+  rw [ENNReal.ofReal_tsum_of_nonneg
+    (fun P => Real.rpow_nonneg (Nat.cast_nonneg _) _)
+    (summable_rpow_neg_natCard_quotient hs)]
+  refine tsum_congr fun P => ?_
+  have hpos : (0 : ℝ) < (Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ) := by
+    have h2 : (2 : ℝ) ≤ (Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ) := by
+      exact_mod_cast two_le_natCard_quotient P
+    linarith
+  rw [← ENNReal.ofReal_rpow_of_pos hpos, ENNReal.ofReal_natCast]
+
+open IsDedekindDomain in
+/-- The full place sum exceeds the degree-one-away-from-`ℓ` sub-sum by
+a bounded tail, uniformly on `s > 1` — the `htail` bookkeeping of
+`exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_ne`, packaged: the
+complement places are either of composite residue cardinality (tail
+summable at exponent `1`, `tsum_not_prime_natCard_rpow_neg_one_ne_top`)
+or of residue cardinality exactly `ℓ` (finitely many, each term at most
+`1`, `finite_setOf_natCard_quotient_eq`). -/
+theorem exists_forall_tsum_rpow_neg_natCard_quotient_le_add
+    (K : Type*) [Field K] [NumberField K] (ℓ : ℕ) :
+    ∃ T : ℝ≥0∞, T ≠ ⊤ ∧ ∀ s : ℝ, 1 < s →
+      (∑' P : HeightOneSpectrum (𝓞 K),
+        (Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ≥0∞) ^ (-s)) ≤
+      (∑' P : {P : HeightOneSpectrum (𝓞 K) //
+          (Nat.card (𝓞 K ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 K ⧸ P.asIdeal) ≠ ℓ},
+        (Nat.card (𝓞 K ⧸ (P : HeightOneSpectrum (𝓞 K)).asIdeal) : ℝ≥0∞) ^ (-s)) +
+        T := by
+  classical
+  have hone : ∀ P : HeightOneSpectrum (𝓞 K),
+      1 ≤ (Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ≥0∞) := by
+    intro P
+    have h2 := two_le_natCard_quotient P
+    exact_mod_cast le_trans (by norm_num : (1 : ℕ) ≤ 2) h2
+  have hfinℓ := finite_setOf_natCard_quotient_eq K ℓ
+  haveI : Finite ↥{P : HeightOneSpectrum (𝓞 K) |
+      Nat.card (𝓞 K ⧸ P.asIdeal) = ℓ} := hfinℓ.to_subtype
+  haveI := Fintype.ofFinite ↥{P : HeightOneSpectrum (𝓞 K) |
+      Nat.card (𝓞 K ⧸ P.asIdeal) = ℓ}
+  refine ⟨(∑' P : {P : HeightOneSpectrum (𝓞 K) //
+        ¬ (Nat.card (𝓞 K ⧸ P.asIdeal)).Prime},
+      (Nat.card (𝓞 K ⧸ (P : HeightOneSpectrum (𝓞 K)).asIdeal) : ℝ≥0∞) ^
+        (-(1 : ℝ))) +
+      (Nat.card ↥{P : HeightOneSpectrum (𝓞 K) |
+        Nat.card (𝓞 K ⧸ P.asIdeal) = ℓ} : ℝ≥0∞),
+    ENNReal.add_ne_top.mpr ⟨tsum_not_prime_natCard_rpow_neg_one_ne_top K,
+      ENNReal.natCast_ne_top _⟩, fun s hs => ?_⟩
+  rw [← ENNReal.summable.tsum_add_tsum_compl
+    (s := {P : HeightOneSpectrum (𝓞 K) |
+      (Nat.card (𝓞 K ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 K ⧸ P.asIdeal) ≠ ℓ})
+    ENNReal.summable]
+  refine add_le_add le_rfl ?_
+  refine le_trans (ENNReal.tsum_mono_subtype
+    (fun P : HeightOneSpectrum (𝓞 K) =>
+      (Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ≥0∞) ^ (-s))
+    (t := {P : HeightOneSpectrum (𝓞 K) |
+        ¬ (Nat.card (𝓞 K ⧸ P.asIdeal)).Prime} ∪
+      {P : HeightOneSpectrum (𝓞 K) | Nat.card (𝓞 K ⧸ P.asIdeal) = ℓ}) ?_) ?_
+  · intro P hP
+    simp only [Set.mem_compl_iff, Set.mem_setOf_eq, not_and, not_not] at hP
+    by_cases hp : (Nat.card (𝓞 K ⧸ P.asIdeal)).Prime
+    · exact Or.inr (hP hp)
+    · exact Or.inl hp
+  refine le_trans (ENNReal.tsum_union_le
+    (fun P : HeightOneSpectrum (𝓞 K) =>
+      (Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ≥0∞) ^ (-s)) _ _) (add_le_add ?_ ?_)
+  · exact ENNReal.tsum_le_tsum fun P =>
+      ENNReal.rpow_le_rpow_of_exponent_le (hone _) (by linarith)
+  · calc ∑' P : {P : HeightOneSpectrum (𝓞 K) |
+          Nat.card (𝓞 K ⧸ P.asIdeal) = ℓ},
+        (Nat.card (𝓞 K ⧸ (P : HeightOneSpectrum (𝓞 K)).asIdeal) : ℝ≥0∞) ^ (-s)
+        = ∑ P : ↥{P : HeightOneSpectrum (𝓞 K) |
+            Nat.card (𝓞 K ⧸ P.asIdeal) = ℓ},
+          (Nat.card (𝓞 K ⧸ (P : HeightOneSpectrum (𝓞 K)).asIdeal) : ℝ≥0∞) ^
+            (-s) := tsum_fintype _
+      _ ≤ ∑ _P : ↥{P : HeightOneSpectrum (𝓞 K) |
+            Nat.card (𝓞 K ⧸ P.asIdeal) = ℓ}, (1 : ℝ≥0∞) :=
+          Finset.sum_le_sum fun P _ =>
+            ENNReal.rpow_le_one_of_one_le_of_neg (hone _) (by linarith)
+      _ = _ := by
+          rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul, mul_one,
+            Nat.card_eq_fintype_card]
+
+open IsDedekindDomain in
+/-- **Upper Mertens bound for the degree-one prime sum** — the
+zeta-pole half of Deuring's trick, upper direction: for any number
 field `K` and modulus `ℓ` there is a finite `B` with
 `∑ #(𝓞 K / P) ^ (-s) ≤ log (1/(s-1)) + B` on `1 < s ≤ 2`, the sum over
 the finite places of prime residue cardinality `≠ ℓ`.
 
-Intended proof, from this file's Euler-product machinery: the prime sum
-is termwise at most `∑_P -log(1 - N P^{-s}) = log Z_K(s)` (via
-`x ≤ -log(1-x)`; the `ℝ≥0∞`-valued ideal sum factors over primes by
-the square-times-squarefree bound
-`tsum_rpow_neg_absNorm_le_mul_tsum_finset_prod` and its exact Euler
-companions `tsum_rpow_neg_absNorm_eq`/`norm_dedekindZeta_le`), and the
-pole bound `Z_K(s) ≤ c/(s-1)` on a right neighbourhood of `1` follows
-from mathlib's `NumberField.tendsto_sub_one_mul_dedekindZeta_nhdsGT`;
-away from `1` — on `[1 + η, 2]` — the prime sum is monotone in `s`,
-hence bounded by its (finite) value at `1 + η`
-(`tsum_rpow_neg_natCard_quotient_prime_and_ne_ne_top`), while the log
-term is nonnegative there. -/
+PROVEN from the Euler exp-identity
+`exp_tsum_neg_log_one_sub_rpow_neg_natCard_quotient` and the pole
+window `exists_forall_sub_one_mul_tsum_mem_Ioo`: near the pole — on
+`(1, 1+η]` — the sub-sum is at most the full prime sum, termwise at
+most the log-sum `log ζ_K(s)` (via `x ≤ -log(1-x)`,
+`le_neg_log_one_sub_and_neg_log_one_sub_le`), and
+`ζ_K(s) ≤ 2κ·(s-1)⁻¹` bounds the log-sum by
+`log(2κ) + log((s-1)⁻¹)`; away from the pole — on `(1+η, 2]` — the
+prime sum is monotone in `s`, hence bounded by its finite value at
+`1 + η`, while the log term is nonnegative there. -/
 theorem exists_forall_tsum_rpow_neg_natCard_quotient_prime_and_ne_le_log_add
     (K : Type*) [Field K] [NumberField K] (ℓ : ℕ) :
     ∃ B : ℝ≥0∞, B ≠ ⊤ ∧ ∀ s : ℝ, 1 < s → s ≤ 2 →
       (∑' P : {P : HeightOneSpectrum (𝓞 K) //
           (Nat.card (𝓞 K ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 K ⧸ P.asIdeal) ≠ ℓ},
         (Nat.card (𝓞 K ⧸ (P : HeightOneSpectrum (𝓞 K)).asIdeal) : ℝ≥0∞) ^ (-s)) ≤
-      ENNReal.ofReal (Real.log ((s - 1)⁻¹)) + B :=
-  sorry
+      ENNReal.ofReal (Real.log ((s - 1)⁻¹)) + B := by
+  classical
+  obtain ⟨η, hη0, hwin⟩ := exists_forall_sub_one_mul_tsum_mem_Ioo K
+  have hκpos : 0 < NumberField.dedekindZeta_residue K :=
+    NumberField.dedekindZeta_residue_pos K
+  have hMnn : 0 ≤ ∑' P : HeightOneSpectrum (𝓞 K),
+      (Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ) ^ (-(1 + η)) :=
+    tsum_nonneg fun P => Real.rpow_nonneg (Nat.cast_nonneg _) _
+  refine ⟨ENNReal.ofReal
+      (max (Real.log (2 * NumberField.dedekindZeta_residue K)) 0 +
+        ∑' P : HeightOneSpectrum (𝓞 K),
+          (Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ) ^ (-(1 + η))),
+    ENNReal.ofReal_ne_top, fun s hs1 hs2 => ?_⟩
+  -- the real-valued sub-sum is dominated by the real full place sum
+  have hsuble : (∑' P : {P : HeightOneSpectrum (𝓞 K) //
+      (Nat.card (𝓞 K ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 K ⧸ P.asIdeal) ≠ ℓ},
+      (Nat.card (𝓞 K ⧸ (P : HeightOneSpectrum (𝓞 K)).asIdeal) : ℝ) ^ (-s)) ≤
+      ∑' P : HeightOneSpectrum (𝓞 K),
+        (Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ) ^ (-s) :=
+    Summable.tsum_subtype_le
+      (fun P : HeightOneSpectrum (𝓞 K) =>
+        (Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ) ^ (-s))
+      {P : HeightOneSpectrum (𝓞 K) |
+        (Nat.card (𝓞 K ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 K ⧸ P.asIdeal) ≠ ℓ}
+      (fun P => Real.rpow_nonneg (Nat.cast_nonneg _) _)
+      (summable_rpow_neg_natCard_quotient hs1)
+  -- the real-valued Mertens bound, split at `1 + η`
+  have hreal : (∑' P : {P : HeightOneSpectrum (𝓞 K) //
+      (Nat.card (𝓞 K ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 K ⧸ P.asIdeal) ≠ ℓ},
+      (Nat.card (𝓞 K ⧸ (P : HeightOneSpectrum (𝓞 K)).asIdeal) : ℝ) ^ (-s)) ≤
+      Real.log ((s - 1)⁻¹) +
+      (max (Real.log (2 * NumberField.dedekindZeta_residue K)) 0 +
+        ∑' P : HeightOneSpectrum (𝓞 K),
+          (Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ) ^ (-(1 + η))) := by
+    by_cases hcase : s ≤ 1 + η
+    · -- near-pole regime: through the log of the zeta series
+      have hPiL : (∑' P : HeightOneSpectrum (𝓞 K),
+          (Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ) ^ (-s)) ≤
+          ∑' P : HeightOneSpectrum (𝓞 K),
+            -Real.log (1 - (Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ) ^ (-s)) :=
+        (summable_rpow_neg_natCard_quotient hs1).tsum_le_tsum
+          (fun P => (le_neg_log_one_sub_and_neg_log_one_sub_le
+            (rpow_neg_natCard_quotient_mem_Ioc P hs1.le)).1)
+          (summable_neg_log_one_sub_rpow_neg_natCard_quotient K hs1)
+      have hexp := exp_tsum_neg_log_one_sub_rpow_neg_natCard_quotient K hs1
+      have hZpos : 0 < ∑' n : ℕ,
+          (Nat.card {I : Ideal (𝓞 K) // Ideal.absNorm I = n} : ℝ) *
+            (n : ℝ) ^ (-s) := by
+        rw [← hexp]; exact Real.exp_pos _
+      have hs1p : (0 : ℝ) < s - 1 := by linarith
+      have hinv : (0 : ℝ) < (s - 1)⁻¹ := inv_pos.mpr hs1p
+      have hZle : (∑' n : ℕ,
+          (Nat.card {I : Ideal (𝓞 K) // Ideal.absNorm I = n} : ℝ) *
+            (n : ℝ) ^ (-s)) ≤
+          2 * NumberField.dedekindZeta_residue K * (s - 1)⁻¹ := by
+        have hone : (s - 1) * (s - 1)⁻¹ = 1 := mul_inv_cancel₀ hs1p.ne'
+        calc (∑' n : ℕ,
+              (Nat.card {I : Ideal (𝓞 K) // Ideal.absNorm I = n} : ℝ) *
+                (n : ℝ) ^ (-s))
+            = ((s - 1) * ∑' n : ℕ,
+                (Nat.card {I : Ideal (𝓞 K) // Ideal.absNorm I = n} : ℝ) *
+                  (n : ℝ) ^ (-s)) * (s - 1)⁻¹ := by
+              rw [mul_comm (s - 1), mul_assoc, hone, mul_one]
+          _ ≤ 2 * NumberField.dedekindZeta_residue K * (s - 1)⁻¹ :=
+              mul_le_mul_of_nonneg_right (hwin s hs1 hcase).2.le hinv.le
+      have hlogZ : Real.log (∑' n : ℕ,
+          (Nat.card {I : Ideal (𝓞 K) // Ideal.absNorm I = n} : ℝ) *
+            (n : ℝ) ^ (-s)) ≤
+          Real.log (2 * NumberField.dedekindZeta_residue K) +
+            Real.log ((s - 1)⁻¹) := by
+        refine (Real.log_le_log hZpos hZle).trans ?_
+        rw [Real.log_mul (mul_pos two_pos hκpos).ne' (inv_ne_zero hs1p.ne')]
+      have hLeq : (∑' P : HeightOneSpectrum (𝓞 K),
+          -Real.log (1 - (Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ) ^ (-s))) =
+          Real.log (∑' n : ℕ,
+            (Nat.card {I : Ideal (𝓞 K) // Ideal.absNorm I = n} : ℝ) *
+              (n : ℝ) ^ (-s)) := by
+        rw [← hexp, Real.log_exp]
+      have hmax := le_max_left
+        (Real.log (2 * NumberField.dedekindZeta_residue K)) (0 : ℝ)
+      linarith [hLeq.le, hLeq.ge]
+    · -- away from the pole: monotone comparison at `1 + η`
+      have hcase' : 1 + η < s := not_le.mp hcase
+      have hPiM : (∑' P : HeightOneSpectrum (𝓞 K),
+          (Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ) ^ (-s)) ≤
+          ∑' P : HeightOneSpectrum (𝓞 K),
+            (Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ) ^ (-(1 + η)) :=
+        (summable_rpow_neg_natCard_quotient hs1).tsum_le_tsum
+          (fun P => by
+            have h2 : (2 : ℝ) ≤ (Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ) := by
+              exact_mod_cast two_le_natCard_quotient P
+            exact Real.rpow_le_rpow_of_exponent_le (by linarith) (by linarith))
+          (summable_rpow_neg_natCard_quotient (by linarith : (1 : ℝ) < 1 + η))
+      have hlognn : 0 ≤ Real.log ((s - 1)⁻¹) := by
+        rw [Real.log_inv]
+        have h1 := Real.log_nonpos (by linarith : (0 : ℝ) ≤ s - 1)
+          (by linarith : s - 1 ≤ 1)
+        linarith
+      have hmax := le_max_right
+        (Real.log (2 * NumberField.dedekindZeta_residue K)) (0 : ℝ)
+      linarith
+  calc (∑' P : {P : HeightOneSpectrum (𝓞 K) //
+        (Nat.card (𝓞 K ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 K ⧸ P.asIdeal) ≠ ℓ},
+      (Nat.card (𝓞 K ⧸ (P : HeightOneSpectrum (𝓞 K)).asIdeal) : ℝ≥0∞) ^ (-s))
+      = ENNReal.ofReal (∑' P : {P : HeightOneSpectrum (𝓞 K) //
+          (Nat.card (𝓞 K ⧸ P.asIdeal)).Prime ∧
+            Nat.card (𝓞 K ⧸ P.asIdeal) ≠ ℓ},
+        (Nat.card (𝓞 K ⧸ (P : HeightOneSpectrum (𝓞 K)).asIdeal) : ℝ) ^ (-s)) :=
+        tsum_rpow_neg_natCard_quotient_prime_and_ne_eq_ofReal K ℓ hs1
+    _ ≤ ENNReal.ofReal (Real.log ((s - 1)⁻¹) +
+          (max (Real.log (2 * NumberField.dedekindZeta_residue K)) 0 +
+            ∑' P : HeightOneSpectrum (𝓞 K),
+              (Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ) ^ (-(1 + η)))) :=
+        ENNReal.ofReal_le_ofReal hreal
+    _ ≤ ENNReal.ofReal (Real.log ((s - 1)⁻¹)) +
+        ENNReal.ofReal
+          (max (Real.log (2 * NumberField.dedekindZeta_residue K)) 0 +
+            ∑' P : HeightOneSpectrum (𝓞 K),
+              (Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ) ^ (-(1 + η))) :=
+        ENNReal.ofReal_add_le
 
 open IsDedekindDomain in
-/-- **Lower Mertens bound for the degree-one prime sum** (sorry leaf) —
-the zeta-pole half of Deuring's trick, lower direction:
+/-- **Lower Mertens bound for the degree-one prime sum** — the
+zeta-pole half of Deuring's trick, lower direction:
 `log (1/(s-1)) ≤ ∑ #(𝓞 K / P) ^ (-s) + B` on `1 < s ≤ 2` for some
 finite `B`, the sum over the finite places of prime residue cardinality
-`≠ ℓ`. This is the quantitative form of the proven divergence statement
-`exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_ne` and follows
-from the same estimates.
+`≠ ℓ`. The quantitative form of the proven divergence statement
+`exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_ne`.
 
-Intended proof: the pole gives `κ/2 · (s-1)⁻¹ ≤ Z_K(s)` near `1`
-(`NumberField.tendsto_sub_one_mul_dedekindZeta_nhdsGT` with
-`NumberField.dedekindZeta_residue_pos`, transferred to the
-`ℝ≥0∞`-valued ideal sum by `tsum_rpow_neg_absNorm_eq`), so
-`log (1/(s-1)) ≤ log Z_K(s) + O(1)` there, while away from `1` the log
-term is bounded outright and the right-hand side is nonnegative. And
-`log Z_K(s) = ∑_P -log(1 - N P^{-s})` exceeds the full prime sum by a
-bounded amount (`-log(1-x) ≤ x + 2x²` for `x ≤ 1/2`, and the square
-terms are uniformly summable for `s > 1`), while the places omitted
-from the displayed index — composite residue cardinality, or
-cardinality exactly `ℓ` — contribute a bounded tail, exactly as in the
-`htail` block of the divergence proof
-(`tsum_not_prime_natCard_rpow_neg_one_ne_top`,
-`finite_setOf_natCard_quotient_eq`). -/
+PROVEN: near the pole — on `(1, 1+η]` — the window
+`exists_forall_sub_one_mul_tsum_mem_Ioo` gives
+`(s-1)⁻¹ ≤ (2/κ)·ζ_K(s)`, so `log((s-1)⁻¹) ≤ log(2/κ) + log ζ_K(s)`;
+the Euler exp-identity turns `log ζ_K(s)` into the prime log-sum, which
+exceeds the full prime sum by at most the uniformly bounded square tail
+`2·∑_P #(𝓞K/P)^{-2}` (`neg_log_one_sub_rpow_neg_natCard_quotient_le`);
+and the full prime sum exceeds the displayed sub-sum by the bounded
+tail of `exists_forall_tsum_rpow_neg_natCard_quotient_le_add`. Away
+from the pole — on `(1+η, 2]` — the log term is bounded outright by
+`log(η⁻¹)` and the right-hand side is nonnegative. -/
 theorem exists_forall_log_le_tsum_rpow_neg_natCard_quotient_prime_and_ne_add
     (K : Type*) [Field K] [NumberField K] (ℓ : ℕ) :
     ∃ B : ℝ≥0∞, B ≠ ⊤ ∧ ∀ s : ℝ, 1 < s → s ≤ 2 →
       ENNReal.ofReal (Real.log ((s - 1)⁻¹)) ≤
       (∑' P : {P : HeightOneSpectrum (𝓞 K) //
           (Nat.card (𝓞 K ⧸ P.asIdeal)).Prime ∧ Nat.card (𝓞 K ⧸ P.asIdeal) ≠ ℓ},
-        (Nat.card (𝓞 K ⧸ (P : HeightOneSpectrum (𝓞 K)).asIdeal) : ℝ≥0∞) ^ (-s)) + B :=
-  sorry
+        (Nat.card (𝓞 K ⧸ (P : HeightOneSpectrum (𝓞 K)).asIdeal) : ℝ≥0∞) ^ (-s)) + B := by
+  classical
+  obtain ⟨η, hη0, hwin⟩ := exists_forall_sub_one_mul_tsum_mem_Ioo K
+  obtain ⟨T, hTtop, hT⟩ := exists_forall_tsum_rpow_neg_natCard_quotient_le_add K ℓ
+  have hκpos : 0 < NumberField.dedekindZeta_residue K :=
+    NumberField.dedekindZeta_residue_pos K
+  refine ⟨T + ENNReal.ofReal
+      (max (Real.log (2 / NumberField.dedekindZeta_residue K)) 0 +
+        2 * ∑' P : HeightOneSpectrum (𝓞 K),
+          (Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ) ^ (-(2 : ℝ))) +
+      ENNReal.ofReal (max (Real.log η⁻¹) 0),
+    ENNReal.add_ne_top.mpr
+      ⟨ENNReal.add_ne_top.mpr ⟨hTtop, ENNReal.ofReal_ne_top⟩,
+        ENNReal.ofReal_ne_top⟩,
+    fun s hs1 hs2 => ?_⟩
+  by_cases hcase : s ≤ 1 + η
+  · -- near-pole regime
+    have hexp := exp_tsum_neg_log_one_sub_rpow_neg_natCard_quotient K hs1
+    have hZpos : 0 < ∑' n : ℕ,
+        (Nat.card {I : Ideal (𝓞 K) // Ideal.absNorm I = n} : ℝ) *
+          (n : ℝ) ^ (-s) := by
+      rw [← hexp]; exact Real.exp_pos _
+    have hs1p : (0 : ℝ) < s - 1 := by linarith
+    -- `(s-1)⁻¹ ≤ (2/κ)·ζ_K(s)` from the lower window
+    have hinvle : (s - 1)⁻¹ ≤
+        2 / NumberField.dedekindZeta_residue K * ∑' n : ℕ,
+          (Nat.card {I : Ideal (𝓞 K) // Ideal.absNorm I = n} : ℝ) *
+            (n : ℝ) ^ (-s) := by
+      rw [inv_eq_one_div, div_le_iff₀ hs1p]
+      have h2 : 2 / NumberField.dedekindZeta_residue K *
+          (NumberField.dedekindZeta_residue K / 2) = 1 := by
+        field_simp
+      calc (1 : ℝ)
+          = 2 / NumberField.dedekindZeta_residue K *
+              (NumberField.dedekindZeta_residue K / 2) := h2.symm
+        _ ≤ 2 / NumberField.dedekindZeta_residue K *
+              ((s - 1) * ∑' n : ℕ,
+                (Nat.card {I : Ideal (𝓞 K) // Ideal.absNorm I = n} : ℝ) *
+                  (n : ℝ) ^ (-s)) :=
+            mul_le_mul_of_nonneg_left (hwin s hs1 hcase).1.le
+              (div_pos two_pos hκpos).le
+        _ = 2 / NumberField.dedekindZeta_residue K *
+              (∑' n : ℕ,
+                (Nat.card {I : Ideal (𝓞 K) // Ideal.absNorm I = n} : ℝ) *
+                  (n : ℝ) ^ (-s)) * (s - 1) := by ring
+    -- hence `log((s-1)⁻¹) ≤ log(2/κ) + L(s)`, `L` the prime log-sum
+    have hlog1 : Real.log ((s - 1)⁻¹) ≤
+        Real.log (2 / NumberField.dedekindZeta_residue K) +
+          ∑' P : HeightOneSpectrum (𝓞 K),
+            -Real.log (1 - (Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ) ^ (-s)) := by
+      have h3 := Real.log_le_log (inv_pos.mpr hs1p) hinvle
+      rw [Real.log_mul (div_pos two_pos hκpos).ne' hZpos.ne'] at h3
+      have h4 : Real.log (∑' n : ℕ,
+          (Nat.card {I : Ideal (𝓞 K) // Ideal.absNorm I = n} : ℝ) *
+            (n : ℝ) ^ (-s)) =
+          ∑' P : HeightOneSpectrum (𝓞 K),
+            -Real.log (1 - (Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ) ^ (-s)) := by
+        rw [← hexp, Real.log_exp]
+      rw [h4] at h3
+      exact h3
+    -- the log-sum exceeds the prime sum by the bounded square tail
+    have hlog2 : (∑' P : HeightOneSpectrum (𝓞 K),
+        -Real.log (1 - (Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ) ^ (-s))) ≤
+        (∑' P : HeightOneSpectrum (𝓞 K),
+          (Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ) ^ (-s)) +
+          2 * ∑' P : HeightOneSpectrum (𝓞 K),
+            (Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ) ^ (-(2 : ℝ)) := by
+      refine le_trans
+        ((summable_neg_log_one_sub_rpow_neg_natCard_quotient K hs1).tsum_le_tsum
+          (fun P => neg_log_one_sub_rpow_neg_natCard_quotient_le P hs1)
+          ((summable_rpow_neg_natCard_quotient hs1).add
+            ((summable_rpow_neg_natCard_quotient
+              (one_lt_two : (1 : ℝ) < 2)).mul_left 2))) ?_
+      rw [(summable_rpow_neg_natCard_quotient hs1).tsum_add
+        ((summable_rpow_neg_natCard_quotient
+          (one_lt_two : (1 : ℝ) < 2)).mul_left 2), tsum_mul_left]
+    have hmax1 := le_max_left
+      (Real.log (2 / NumberField.dedekindZeta_residue K)) (0 : ℝ)
+    calc ENNReal.ofReal (Real.log ((s - 1)⁻¹))
+        ≤ ENNReal.ofReal ((∑' P : HeightOneSpectrum (𝓞 K),
+            (Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ) ^ (-s)) +
+            (max (Real.log (2 / NumberField.dedekindZeta_residue K)) 0 +
+              2 * ∑' P : HeightOneSpectrum (𝓞 K),
+                (Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ) ^ (-(2 : ℝ)))) :=
+          ENNReal.ofReal_le_ofReal (by linarith)
+      _ ≤ ENNReal.ofReal (∑' P : HeightOneSpectrum (𝓞 K),
+            (Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ) ^ (-s)) +
+          ENNReal.ofReal
+            (max (Real.log (2 / NumberField.dedekindZeta_residue K)) 0 +
+              2 * ∑' P : HeightOneSpectrum (𝓞 K),
+                (Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ) ^ (-(2 : ℝ))) :=
+          ENNReal.ofReal_add_le
+      _ = (∑' P : HeightOneSpectrum (𝓞 K),
+            (Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ≥0∞) ^ (-s)) +
+          ENNReal.ofReal
+            (max (Real.log (2 / NumberField.dedekindZeta_residue K)) 0 +
+              2 * ∑' P : HeightOneSpectrum (𝓞 K),
+                (Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ) ^ (-(2 : ℝ))) := by
+          rw [tsum_rpow_neg_natCard_quotient_eq_ofReal K hs1]
+      _ ≤ ((∑' P : {P : HeightOneSpectrum (𝓞 K) //
+            (Nat.card (𝓞 K ⧸ P.asIdeal)).Prime ∧
+              Nat.card (𝓞 K ⧸ P.asIdeal) ≠ ℓ},
+            (Nat.card (𝓞 K ⧸
+              (P : HeightOneSpectrum (𝓞 K)).asIdeal) : ℝ≥0∞) ^ (-s)) + T) +
+          ENNReal.ofReal
+            (max (Real.log (2 / NumberField.dedekindZeta_residue K)) 0 +
+              2 * ∑' P : HeightOneSpectrum (𝓞 K),
+                (Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ) ^ (-(2 : ℝ))) :=
+          add_le_add (hT s hs1) le_rfl
+      _ = (∑' P : {P : HeightOneSpectrum (𝓞 K) //
+            (Nat.card (𝓞 K ⧸ P.asIdeal)).Prime ∧
+              Nat.card (𝓞 K ⧸ P.asIdeal) ≠ ℓ},
+            (Nat.card (𝓞 K ⧸
+              (P : HeightOneSpectrum (𝓞 K)).asIdeal) : ℝ≥0∞) ^ (-s)) +
+          (T + ENNReal.ofReal
+            (max (Real.log (2 / NumberField.dedekindZeta_residue K)) 0 +
+              2 * ∑' P : HeightOneSpectrum (𝓞 K),
+                (Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ) ^ (-(2 : ℝ)))) := by
+          rw [add_assoc]
+      _ ≤ (∑' P : {P : HeightOneSpectrum (𝓞 K) //
+            (Nat.card (𝓞 K ⧸ P.asIdeal)).Prime ∧
+              Nat.card (𝓞 K ⧸ P.asIdeal) ≠ ℓ},
+            (Nat.card (𝓞 K ⧸
+              (P : HeightOneSpectrum (𝓞 K)).asIdeal) : ℝ≥0∞) ^ (-s)) +
+          (T + ENNReal.ofReal
+            (max (Real.log (2 / NumberField.dedekindZeta_residue K)) 0 +
+              2 * ∑' P : HeightOneSpectrum (𝓞 K),
+                (Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ) ^ (-(2 : ℝ))) +
+            ENNReal.ofReal (max (Real.log η⁻¹) 0)) :=
+          add_le_add le_rfl le_self_add
+  · -- away from the pole: the log term is bounded outright
+    have hcase' : 1 + η < s := not_le.mp hcase
+    have hlog3 : Real.log ((s - 1)⁻¹) ≤ max (Real.log η⁻¹) 0 := by
+      have h1 : Real.log ((s - 1)⁻¹) ≤ Real.log η⁻¹ := by
+        rw [Real.log_inv, Real.log_inv]
+        have h2 := Real.log_le_log hη0 (by linarith : η ≤ s - 1)
+        linarith
+      exact h1.trans (le_max_left _ _)
+    calc ENNReal.ofReal (Real.log ((s - 1)⁻¹))
+        ≤ ENNReal.ofReal (max (Real.log η⁻¹) 0) :=
+          ENNReal.ofReal_le_ofReal hlog3
+      _ ≤ T + ENNReal.ofReal
+            (max (Real.log (2 / NumberField.dedekindZeta_residue K)) 0 +
+              2 * ∑' P : HeightOneSpectrum (𝓞 K),
+                (Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ) ^ (-(2 : ℝ))) +
+          ENNReal.ofReal (max (Real.log η⁻¹) 0) := le_add_self
+      _ ≤ (∑' P : {P : HeightOneSpectrum (𝓞 K) //
+            (Nat.card (𝓞 K ⧸ P.asIdeal)).Prime ∧
+              Nat.card (𝓞 K ⧸ P.asIdeal) ≠ ℓ},
+            (Nat.card (𝓞 K ⧸
+              (P : HeightOneSpectrum (𝓞 K)).asIdeal) : ℝ≥0∞) ^ (-s)) +
+          (T + ENNReal.ofReal
+            (max (Real.log (2 / NumberField.dedekindZeta_residue K)) 0 +
+              2 * ∑' P : HeightOneSpectrum (𝓞 K),
+                (Nat.card (𝓞 K ⧸ P.asIdeal) : ℝ) ^ (-(2 : ℝ))) +
+            ENNReal.ofReal (max (Real.log η⁻¹) 0)) := le_add_self
 
 open IsDedekindDomain in
 /-- `ℓ` is invertible modulo any prime `R` of `𝓞 E` lying over a place
