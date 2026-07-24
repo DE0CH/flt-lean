@@ -238,6 +238,7 @@ import Mathlib.RingTheory.Norm.Transitivity
 import Mathlib.RingTheory.Norm.Defs
 import Mathlib.RingTheory.DedekindDomain.Ideal.Basic
 import Mathlib.Data.Set.Card
+import Mathlib.Data.Set.Card.Arithmetic
 import Mathlib.RingTheory.Coprime.Lemmas
 import Mathlib.Data.Complex.BigOperators
 import Mathlib.LinearAlgebra.Basis.Defs
@@ -3335,36 +3336,527 @@ def HasLipschitzBoundaryCover {E : Type*} [NormedAddCommGroup E]
 
 open scoped Pointwise in
 open MeasureTheory in
+set_option maxHeartbeats 800000 in
+/-- **The packing bound: cells meeting a set of bounded diameter**
+(PROVEN) — the pigeonhole step of Lang, *Algebraic Number Theory*, VI §2
+Theorem 2: for a fixed `ℤ`-basis `b` of the lattice `L` with fundamental
+parallelotope `P = ZSpan.fundamentalDomain (b.ofZLatticeBasis ℝ)`, there
+is a bound `c = c(L, b, R)` such that EVERY set `S ⊆ E` of `ediam ≤ R`
+meets at most `c` of the lattice cells `x +ᵥ P`, `x ∈ L` — and the set
+of such cells is finite. Uniformity in the position of `S` is the point:
+`c = ⌈vol(closedBall 0 (2δ + R)) / covol L⌉₊` with `P ⊆ closedBall 0 δ`,
+by translation invariance of the Haar volume; qualifying `x` lie in
+`closedBall s₀ (δ + R) ∩ L` (finite, `ZSpan.setFinite_inter`), their
+cells are pairwise a.e.-disjoint of volume `covol L > 0` inside
+`closedBall s₀ (2δ + R)`, and `measure_biUnion_finset₀` turns that into
+the counting bound. -/
+theorem exists_forall_natCard_inter_vadd_fundamentalDomain_le
+    {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+    [FiniteDimensional ℝ E] [MeasureSpace E] [BorelSpace E]
+    [Measure.IsAddHaarMeasure (volume : Measure E)]
+    (L : Submodule ℤ E) [DiscreteTopology L] [IsZLattice ℝ L]
+    {ι : Type*} [Fintype ι] (b : Module.Basis ι ℤ L) (R : NNReal) :
+    ∃ c : ℕ, ∀ S : Set E, Metric.ediam S ≤ (R : ENNReal) →
+      {x : L | (((x : E) +ᵥ ZSpan.fundamentalDomain (b.ofZLatticeBasis ℝ)) ∩
+        S).Nonempty}.Finite ∧
+      Nat.card {x : L // (((x : E) +ᵥ ZSpan.fundamentalDomain (b.ofZLatticeBasis ℝ)) ∩
+        S).Nonempty} ≤ c := by
+  classical
+  set P := ZSpan.fundamentalDomain (b.ofZLatticeBasis ℝ) with hPdef
+  obtain ⟨δ, hδ0, hδ⟩ :=
+    (ZSpan.fundamentalDomain_isBounded (b.ofZLatticeBasis ℝ)).subset_closedBall_lt 0 0
+  have hfd := ZLattice.isAddFundamentalDomain b volume
+  have hPmeas : MeasurableSet P := ZSpan.fundamentalDomain_measurableSet _
+  have hcovP : ZLattice.covolume L = volume.real P :=
+    ZLattice.covolume_eq_measure_fundamentalDomain L volume hfd
+  have hcov0 : 0 < ZLattice.covolume L := ZLattice.covolume_pos L volume
+  refine ⟨⌈volume.real (Metric.closedBall (0 : E) (2 * δ + R)) /
+    ZLattice.covolume L⌉₊, ?_⟩
+  intro S hSd
+  rcases Set.eq_empty_or_nonempty S with rfl | ⟨s₀, hs₀⟩
+  · constructor
+    · simp
+    · simp
+  have hdistS : ∀ y ∈ S, dist y s₀ ≤ R := by
+    intro y hy
+    have h2 : edist y s₀ ≤ (R : ENNReal) :=
+      (Metric.edist_le_ediam_of_mem hy hs₀).trans hSd
+    exact_mod_cast edist_le_coe.mp h2
+  have hUball : ∀ x : L, (((x : E) +ᵥ P) ∩ S).Nonempty →
+      (x : E) ∈ Metric.closedBall s₀ (δ + R) := by
+    rintro x ⟨y, hyc, hyS⟩
+    obtain ⟨p, hp, rfl⟩ := Set.mem_vadd_set.mp hyc
+    have hpn : ‖p‖ ≤ δ := by
+      simpa [dist_zero_right] using hδ hp
+    have h1 : dist ((x : E) +ᵥ p) (x : E) = ‖p‖ := by
+      simp [vadd_eq_add, dist_eq_norm]
+    have h2 : dist ((x : E) +ᵥ p) s₀ ≤ R := hdistS _ hyS
+    have h3 := dist_triangle (x : E) ((x : E) +ᵥ p) s₀
+    rw [dist_comm (x : E) ((x : E) +ᵥ p)] at h3
+    simp only [Metric.mem_closedBall]
+    linarith
+  have hcell : ∀ x : L, (((x : E) +ᵥ P) ∩ S).Nonempty →
+      (x : E) +ᵥ P ⊆ Metric.closedBall s₀ (2 * δ + R) := by
+    intro x hx z hz
+    have hxb := hUball x hx
+    obtain ⟨q, hq, rfl⟩ := Set.mem_vadd_set.mp hz
+    have hqn : ‖q‖ ≤ δ := by
+      simpa [dist_zero_right] using hδ hq
+    have h1 : dist ((x : E) +ᵥ q) (x : E) = ‖q‖ := by
+      simp [vadd_eq_add, dist_eq_norm]
+    have h2 : dist (x : E) s₀ ≤ δ + R := hxb
+    have h3 := dist_triangle ((x : E) +ᵥ q) (x : E) s₀
+    simp only [Metric.mem_closedBall]
+    linarith
+  have hL := b.ofZLatticeBasis_span ℝ
+  have hball_fin : ((Metric.closedBall s₀ (δ + R) : Set E) ∩ (L : Set E)).Finite := by
+    have h := ZSpan.setFinite_inter (b.ofZLatticeBasis ℝ)
+      (Metric.isBounded_closedBall (x := s₀) (r := δ + R))
+    rwa [hL] at h
+  have hUfin : {x : L | (((x : E) +ᵥ P) ∩ S).Nonempty}.Finite := by
+    have hsub : {x : L | (((x : E) +ᵥ P) ∩ S).Nonempty} ⊆
+        (fun x : L => (x : E)) ⁻¹' (Metric.closedBall s₀ (δ + R) ∩ (L : Set E)) := by
+      intro x hx
+      exact ⟨hUball x hx, x.2⟩
+    exact (hball_fin.preimage Subtype.val_injective.injOn).subset hsub
+  refine ⟨hUfin, ?_⟩
+  set Ufin := hUfin.toFinset with hUdef
+  have hsum : (Ufin.card : ENNReal) * volume P ≤
+      volume (Metric.closedBall s₀ (2 * δ + R)) := by
+    have hdisjoint : (↑Ufin : Set L).Pairwise
+        (fun x y : L => MeasureTheory.AEDisjoint volume ((x : E) +ᵥ P) ((y : E) +ᵥ P)) :=
+      fun x _ y _ hxy => hfd.aedisjoint hxy
+    have hmeas : ∀ x ∈ Ufin, MeasureTheory.NullMeasurableSet ((x : E) +ᵥ P) volume :=
+      fun x _ => (hPmeas.const_vadd (x : E)).nullMeasurableSet
+    have hunion := MeasureTheory.measure_biUnion_finset₀ hdisjoint hmeas
+    have hsubU : (⋃ x ∈ Ufin, (x : E) +ᵥ P) ⊆ Metric.closedBall s₀ (2 * δ + R) := by
+      intro z hz
+      rw [Set.mem_iUnion₂] at hz
+      obtain ⟨x, hxU, hzx⟩ := hz
+      exact hcell x (hUfin.mem_toFinset.mp hxU) hzx
+    calc (Ufin.card : ENNReal) * volume P
+        = ∑ _x ∈ Ufin, volume P := by
+          rw [Finset.sum_const, nsmul_eq_mul]
+      _ = ∑ x ∈ Ufin, volume ((x : E) +ᵥ P) := by
+          exact Finset.sum_congr rfl fun x _ => (measure_vadd volume (x : E) P).symm
+      _ = volume (⋃ x ∈ Ufin, (x : E) +ᵥ P) := hunion.symm
+      _ ≤ volume (Metric.closedBall s₀ (2 * δ + R)) := measure_mono hsubU
+  have hballfin : volume (Metric.closedBall (0 : E) (2 * δ + R)) ≠ ⊤ :=
+    (Metric.isBounded_closedBall.measure_lt_top).ne
+  have hreal : (Ufin.card : ℝ) * volume.real P ≤
+      volume.real (Metric.closedBall (0 : E) (2 * δ + R)) := by
+    rw [Measure.addHaar_closedBall_center] at hsum
+    have h := ENNReal.toReal_mono hballfin hsum
+    rwa [ENNReal.toReal_mul, ENNReal.toReal_natCast] at h
+  have hfinal : (Ufin.card : ℝ) ≤
+      volume.real (Metric.closedBall (0 : E) (2 * δ + R)) / ZLattice.covolume L := by
+    rw [le_div_iff₀ hcov0, hcovP]
+    exact hreal
+  have hle : Ufin.card ≤ ⌈volume.real (Metric.closedBall (0 : E) (2 * δ + R)) /
+      ZLattice.covolume L⌉₊ := by
+    exact_mod_cast hfinal.trans (Nat.le_ceil _)
+  have hcards : Nat.card {x : L // (((x : E) +ᵥ P) ∩ S).Nonempty} = Ufin.card := by
+    rw [hUdef, ← Set.ncard_eq_toFinset_card _ hUfin]
+    rfl
+  rw [hcards]
+  exact hle
+
+/-- **Subdivision of the unit cube into `n^ν` subcubes of side `1/n`**
+(PROVEN) — the elementary combinatorial step behind the Lipschitz
+parametrization count of Lang VI §2: the unit cube `[0,1]^ν` is covered
+by the `n^ν` closed subcubes `[g/n, (g+1)/n]`, `g : ν → Fin n`; the
+subcube containing `x` is found coordinatewise as `g j = min ⌊x j·n⌋ (n-1)`
+(the `min` handles the right endpoint `x j = 1`). -/
+theorem Icc_pi_subset_iUnion_Icc_div
+    {ν : Type*} [Fintype ν] {n : ℕ} (hn : 0 < n) :
+    Set.Icc (0 : ν → ℝ) 1 ⊆ ⋃ g : ν → Fin n,
+      Set.Icc (fun j => (g j : ℝ) / n) (fun j => ((g j : ℝ) + 1) / n) := by
+  intro x hx
+  have hnR : (0 : ℝ) < n := Nat.cast_pos.mpr hn
+  refine Set.mem_iUnion.mpr ⟨fun j => ⟨min ⌊x j * n⌋₊ (n - 1),
+    lt_of_le_of_lt (min_le_right _ _) (Nat.sub_lt hn one_pos)⟩, ?_, ?_⟩
+  · intro j
+    simp only
+    rw [div_le_iff₀ hnR]
+    have hx0 : (0 : ℝ) ≤ x j := by simpa using hx.1 j
+    have h0 : (0 : ℝ) ≤ x j * n := mul_nonneg hx0 hnR.le
+    calc ((min ⌊x j * n⌋₊ (n - 1) : ℕ) : ℝ) ≤ (⌊x j * n⌋₊ : ℝ) := by
+          exact_mod_cast min_le_left _ _
+      _ ≤ x j * n := Nat.floor_le h0
+  · intro j
+    simp only
+    rw [le_div_iff₀ hnR]
+    rcases le_or_gt ⌊x j * n⌋₊ (n - 1) with h | h
+    · rw [min_eq_left h]
+      exact (Nat.lt_floor_add_one (x j * n)).le
+    · rw [min_eq_right h.le]
+      have hcast : ((n - 1 : ℕ) : ℝ) + 1 = n := by
+        rw [Nat.cast_sub hn]
+        ring
+      have hx1 : x j ≤ 1 := by simpa using hx.2 j
+      calc x j * n ≤ 1 * n := by nlinarith
+        _ = ((n - 1 : ℕ) : ℝ) + 1 := by rw [one_mul, hcast]
+
+open scoped Pointwise in
+open MeasureTheory in
+set_option maxHeartbeats 800000 in
+/-- **Cell count along a dilated Lipschitz-parametrized family** (PROVEN
+2026-07-24 over the packing bound
+`exists_forall_natCard_inter_vadd_fundamentalDomain_le` and the cube
+subdivision `Icc_pi_subset_iUnion_Icc_div`: subdivide `[0,1]^{d-1}` into
+`⌈t⌉₊^{d-1}` subcubes of side `1/⌈t⌉₊`; each translated `t`-dilated
+Lipschitz image of a subcube has `ediam ≤ t·κ/⌈t⌉₊ ≤ κ`, so it meets at
+most `c` cells by packing; sum over the `m·⌈t⌉₊^{d-1}` pieces and use
+`⌈t⌉₊ ≤ 2t`) — the boundary-cell estimate of Lang, *Algebraic Number
+Theory*,
+VI §2 Theorem 2: fix a `ℤ`-basis `b` of the lattice `L`, with fundamental
+parallelotope `P = ZSpan.fundamentalDomain (b.ofZLatticeBasis ℝ)`, and
+finitely many maps `f i : [0,1]^{d-1} → E` Lipschitz on the cube with a
+common constant `κ`. Then there is a `C` such that for every translate
+`w`, every dilation factor `t ≥ 1` and every subset `S` of
+`w +ᵥ t • ⋃ i, f i '' [0,1]^{d-1}`, at most `C·t^{d-1}` of the lattice
+cells `x + P`, `x ∈ L`, meet `S`.
+
+The constant is `C = m·c·2^{d-1}` with `c` the packing bound for
+diameter-`κ` sets. -/
+theorem exists_forall_natCard_inter_vadd_smul_lipschitz_le_pow
+    {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+    [FiniteDimensional ℝ E] [MeasureSpace E] [BorelSpace E]
+    [Measure.IsAddHaarMeasure (volume : Measure E)]
+    (L : Submodule ℤ E) [DiscreteTopology L] [IsZLattice ℝ L]
+    {ι : Type*} [Fintype ι] (b : Module.Basis ι ℤ L)
+    {m : ℕ} {κ : NNReal} {f : Fin m → (Fin (Module.finrank ℝ E - 1) → ℝ) → E}
+    (hf : ∀ i, LipschitzOnWith κ (f i) (Set.Icc 0 1)) :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ (w : E) (t : ℝ), 1 ≤ t → ∀ S : Set E,
+      S ⊆ w +ᵥ t • ⋃ i, f i '' Set.Icc 0 1 →
+      (Nat.card {x : L // (((x : E) +ᵥ
+          ZSpan.fundamentalDomain (b.ofZLatticeBasis ℝ)) ∩ S).Nonempty} : ℝ) ≤
+        C * t ^ (Module.finrank ℝ E - 1) := by
+  classical
+  obtain ⟨c, hc⟩ := exists_forall_natCard_inter_vadd_fundamentalDomain_le L b κ
+  refine ⟨((m : ℝ) * c) * 2 ^ (Module.finrank ℝ E - 1), by positivity, ?_⟩
+  intro w t ht S hS
+  have ht0 : (0 : ℝ) ≤ t := zero_le_one.trans ht
+  set n := ⌈t⌉₊ with hndef
+  have hn0 : 0 < n := Nat.ceil_pos.mpr (lt_of_lt_of_le one_pos ht)
+  have hnR : (0 : ℝ) < n := Nat.cast_pos.mpr hn0
+  set Q : (Fin (Module.finrank ℝ E - 1) → Fin n) →
+      Set (Fin (Module.finrank ℝ E - 1) → ℝ) :=
+    fun g => Set.Icc (fun j => (g j : ℝ) / n) (fun j => ((g j : ℝ) + 1) / n)
+  set T : Fin m → (Fin (Module.finrank ℝ E - 1) → Fin n) → Set E := fun i g =>
+    w +ᵥ t • (f i '' (Q g ∩ Set.Icc 0 1)) with hT
+  have hcube : Set.Icc (0 : Fin (Module.finrank ℝ E - 1) → ℝ) 1 =
+      ⋃ g, (Q g ∩ Set.Icc 0 1) := by
+    rw [← Set.iUnion_inter]
+    exact (Set.inter_eq_right.mpr (Icc_pi_subset_iUnion_Icc_div hn0)).symm
+  have hScov : S ⊆ ⋃ i, ⋃ g, T i g := by
+    refine hS.trans ?_
+    rw [Set.smul_set_iUnion, Set.vadd_set_iUnion]
+    refine Set.iUnion_mono fun i => ?_
+    rw [hcube, Set.image_iUnion, Set.smul_set_iUnion, Set.vadd_set_iUnion]
+  have hQd : ∀ g, Metric.ediam (Q g ∩ Set.Icc 0 1) ≤ ENNReal.ofReal (1 / n) := by
+    intro g
+    refine Metric.ediam_le fun u hu v hv => ?_
+    rw [edist_pi_le_iff]
+    intro j
+    rw [edist_dist, Real.dist_eq]
+    refine ENNReal.ofReal_le_ofReal ?_
+    have hu1 : (g j : ℝ) / n ≤ u j := hu.1.1 j
+    have hu2 : u j ≤ ((g j : ℝ) + 1) / n := hu.1.2 j
+    have hv1 : (g j : ℝ) / n ≤ v j := hv.1.1 j
+    have hv2 : v j ≤ ((g j : ℝ) + 1) / n := hv.1.2 j
+    have hsplit : ((g j : ℝ) + 1) / n = (g j : ℝ) / n + 1 / n := by ring
+    rw [abs_sub_le_iff]
+    constructor <;> linarith
+  have hnorm : (‖t‖₊ : ENNReal) = ENNReal.ofReal t := by
+    rw [← Real.enorm_eq_ofReal ht0]; rfl
+  have hTd : ∀ i g, Metric.ediam (T i g) ≤ (κ : ENNReal) := by
+    intro i g
+    have h1 : Metric.ediam (f i '' (Q g ∩ Set.Icc 0 1)) ≤
+        (κ : ENNReal) * ENNReal.ofReal (1 / n) := by
+      refine Metric.ediam_le ?_
+      rintro y1 ⟨x1, hx1, rfl⟩ y2 ⟨x2, hx2, rfl⟩
+      refine le_trans (hf i hx1.2 hx2.2) ?_
+      gcongr
+      exact (Metric.edist_le_ediam_of_mem hx1 hx2).trans (hQd g)
+    have h2 : Metric.ediam (T i g) ≤
+        ENNReal.ofReal t * ((κ : ENNReal) * ENNReal.ofReal (1 / n)) := by
+      have hle := ediam_smul_le t (f i '' (Q g ∩ Set.Icc 0 1))
+      rw [ENNReal.smul_def, smul_eq_mul, hnorm] at hle
+      simp only [hT]
+      rw [ediam_vadd]
+      refine hle.trans ?_
+      gcongr
+    refine h2.trans ?_
+    rw [mul_comm (κ : ENNReal) (ENNReal.ofReal (1 / n)), ← mul_assoc,
+      ← ENNReal.ofReal_mul ht0]
+    calc ENNReal.ofReal (t * (1 / n)) * (κ : ENNReal) ≤ 1 * (κ : ENNReal) := by
+          gcongr
+          rw [ENNReal.ofReal_le_one, mul_one_div, div_le_one hnR]
+          exact Nat.le_ceil t
+      _ = (κ : ENNReal) := one_mul _
+  have hUfin : ∀ i g, {x : L | (((x : E) +ᵥ
+      ZSpan.fundamentalDomain (b.ofZLatticeBasis ℝ)) ∩ T i g).Nonempty}.Finite ∧
+      Nat.card {x : L // (((x : E) +ᵥ
+      ZSpan.fundamentalDomain (b.ofZLatticeBasis ℝ)) ∩ T i g).Nonempty} ≤ c :=
+    fun i g => hc (T i g) (hTd i g)
+  have hsub2 : {x : L | (((x : E) +ᵥ
+      ZSpan.fundamentalDomain (b.ofZLatticeBasis ℝ)) ∩ S).Nonempty} ⊆
+      ⋃ p : Fin m × (Fin (Module.finrank ℝ E - 1) → Fin n), {x : L | (((x : E) +ᵥ
+      ZSpan.fundamentalDomain (b.ofZLatticeBasis ℝ)) ∩ T p.1 p.2).Nonempty} := by
+    rintro x ⟨y, hyc, hyS⟩
+    have hy := hScov hyS
+    rw [Set.mem_iUnion] at hy
+    obtain ⟨i, hi⟩ := hy
+    rw [Set.mem_iUnion] at hi
+    obtain ⟨g, hg⟩ := hi
+    exact Set.mem_iUnion.mpr ⟨(i, g), ⟨y, hyc, hg⟩⟩
+  have hfinU : (⋃ p : Fin m × (Fin (Module.finrank ℝ E - 1) → Fin n),
+      {x : L | (((x : E) +ᵥ
+      ZSpan.fundamentalDomain (b.ofZLatticeBasis ℝ)) ∩ T p.1 p.2).Nonempty}).Finite :=
+    Set.finite_iUnion fun p => (hUfin p.1 p.2).1
+  have hcard : Nat.card {x : L // (((x : E) +ᵥ
+      ZSpan.fundamentalDomain (b.ofZLatticeBasis ℝ)) ∩ S).Nonempty} ≤
+      m * (n ^ (Module.finrank ℝ E - 1) * c) := by
+    have hstep : {x : L | (((x : E) +ᵥ
+        ZSpan.fundamentalDomain (b.ofZLatticeBasis ℝ)) ∩ S).Nonempty}.ncard ≤
+        m * (n ^ (Module.finrank ℝ E - 1) * c) := by
+      calc {x : L | (((x : E) +ᵥ
+          ZSpan.fundamentalDomain (b.ofZLatticeBasis ℝ)) ∩ S).Nonempty}.ncard
+          ≤ (⋃ p : Fin m × (Fin (Module.finrank ℝ E - 1) → Fin n),
+            {x : L | (((x : E) +ᵥ
+            ZSpan.fundamentalDomain (b.ofZLatticeBasis ℝ)) ∩
+            T p.1 p.2).Nonempty}).ncard := Set.ncard_le_ncard hsub2 hfinU
+        _ ≤ ∑ p : Fin m × (Fin (Module.finrank ℝ E - 1) → Fin n),
+            {x : L | (((x : E) +ᵥ
+            ZSpan.fundamentalDomain (b.ofZLatticeBasis ℝ)) ∩
+            T p.1 p.2).Nonempty}.ncard := Set.ncard_iUnion_le_of_fintype _
+        _ ≤ ∑ _p : Fin m × (Fin (Module.finrank ℝ E - 1) → Fin n), c :=
+            Finset.sum_le_sum fun p _ => (hUfin p.1 p.2).2
+        _ = (Fintype.card (Fin m × (Fin (Module.finrank ℝ E - 1) → Fin n))) * c := by
+            rw [Finset.sum_const, smul_eq_mul, Finset.card_univ]
+        _ = m * (n ^ (Module.finrank ℝ E - 1) * c) := by
+            simp only [Fintype.card_prod, Fintype.card_fun, Fintype.card_fin]
+            ring
+    exact hstep
+  have hn2t : (n : ℝ) ≤ 2 * t := by
+    have h := Nat.ceil_lt_add_one ht0
+    rw [hndef]
+    linarith
+  calc (Nat.card {x : L // (((x : E) +ᵥ
+      ZSpan.fundamentalDomain (b.ofZLatticeBasis ℝ)) ∩ S).Nonempty} : ℝ)
+      ≤ (m : ℝ) * ((n : ℝ) ^ (Module.finrank ℝ E - 1) * c) := by exact_mod_cast hcard
+    _ ≤ (m : ℝ) * ((2 * t) ^ (Module.finrank ℝ E - 1) * c) := by gcongr
+    _ = ((m : ℝ) * c) * 2 ^ (Module.finrank ℝ E - 1) *
+        t ^ (Module.finrank ℝ E - 1) := by
+        rw [mul_pow]; ring
+
+open scoped Pointwise in
+open MeasureTheory in
+set_option maxHeartbeats 1000000 in
+/-- **The Davenport sandwich: lattice-point count against volume, error
+located at the boundary cells** (PROVEN) — the core inequality of
+Lang, *Algebraic Number Theory*, VI §2 Theorem 2, for a single body: with
+`P = ZSpan.fundamentalDomain (b.ofZLatticeBasis ℝ)` the fundamental
+parallelotope of the `ℤ`-basis `b` of `L`, the count of lattice points
+in a bounded `A` differs from `vol A / vol P` by at most the number of
+cells `x + P` (`x ∈ L`) meeting `frontier A`. Both the count and the
+volume ratio are sandwiched between `N_in = #{x : x +ᵥ P ⊆ A}` and
+`N_meet = #{x : (x +ᵥ P) ∩ A ≠ ∅}` (`0 ∈ P` for the count; the tiling
+`IsAddFundamentalDomain.measure_eq_tsum'` and a.e.-disjointness for the
+volume; finiteness through the packing bound
+`exists_forall_natCard_inter_vadd_fundamentalDomain_le`), and
+`N_meet ≤ N_in + N_bd` because a convex — hence preconnected — cell
+meeting both `A` and `Aᶜ` must meet `frontier A`: otherwise
+`interior A` and `(closure A)ᶜ` are disjoint open sets covering it,
+against `IsPreconnected`. The measurability of `A` is not needed
+(`measure_eq_tsum'` and `measure_mono` hold for arbitrary sets); the
+binder is kept for interface stability. -/
+theorem abs_natCard_sub_measureReal_div_le_natCard_inter_frontier
+    {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+    [FiniteDimensional ℝ E] [MeasureSpace E] [BorelSpace E]
+    [Measure.IsAddHaarMeasure (volume : Measure E)]
+    {L : Submodule ℤ E} [DiscreteTopology L] [IsZLattice ℝ L]
+    {ι : Type*} [Fintype ι] (b : Module.Basis ι ℤ L)
+    {A : Set E} (hAb : Bornology.IsBounded A) (_hAm : MeasurableSet A) :
+    |(Nat.card {x : L // (x : E) ∈ A} : ℝ) -
+        volume.real A /
+          volume.real (ZSpan.fundamentalDomain (b.ofZLatticeBasis ℝ))| ≤
+      (Nat.card {x : L // (((x : E) +ᵥ
+          ZSpan.fundamentalDomain (b.ofZLatticeBasis ℝ)) ∩
+          frontier A).Nonempty} : ℝ) := by
+  classical
+  set P := ZSpan.fundamentalDomain (b.ofZLatticeBasis ℝ) with hPdef
+  have hfd := ZLattice.isAddFundamentalDomain b volume
+  haveI : MeasurableVAdd (↥L) E := (inferInstance : MeasurableVAdd L.toAddSubgroup E)
+  haveI : VAddInvariantMeasure (↥L) E volume :=
+    (inferInstance : VAddInvariantMeasure L.toAddSubgroup E volume)
+  have hPmeas : MeasurableSet P := ZSpan.fundamentalDomain_measurableSet _
+  have hPb := ZSpan.fundamentalDomain_isBounded (b.ofZLatticeBasis ℝ)
+  have hPfin : volume P ≠ ⊤ := hPb.measure_lt_top.ne
+  have hP0 : 0 < volume.real P := by
+    have h1 := ZLattice.covolume_pos L volume
+    rwa [ZLattice.covolume_eq_measure_fundamentalDomain L volume hfd] at h1
+  have h0P : (0 : E) ∈ P := by
+    rw [hPdef]
+    intro i
+    simp
+  have hPconv : Convex ℝ P := by
+    rw [hPdef]
+    intro u hu v hv a c ha hc hac i
+    have h := (convex_Ico (0 : ℝ) 1) (hu i) (hv i) ha hc hac
+    simpa [map_add, map_smul] using h
+  obtain ⟨c₁, hc₁⟩ :=
+    exists_forall_natCard_inter_vadd_fundamentalDomain_le L b (Metric.ediam A).toNNReal
+  have hmeet_fin : {x : L | (((x : E) +ᵥ P) ∩ A).Nonempty}.Finite :=
+    (hc₁ A (ENNReal.coe_toNNReal hAb.ediam_ne_top).ge).1
+  obtain ⟨c₂, hc₂⟩ :=
+    exists_forall_natCard_inter_vadd_fundamentalDomain_le L b
+      (Metric.ediam (frontier A)).toNNReal
+  have hfrb : Bornology.IsBounded (frontier A) :=
+    hAb.closure.subset frontier_subset_closure
+  have hbd_fin : {x : L | (((x : E) +ᵥ P) ∩ frontier A).Nonempty}.Finite :=
+    (hc₂ (frontier A) (ENNReal.coe_toNNReal hfrb.ediam_ne_top).ge).1
+  have h0cell : ∀ x : L, (x : E) ∈ (x : E) +ᵥ P :=
+    fun x => Set.mem_vadd_set.mpr ⟨0, h0P, by simp⟩
+  have hsub_in : {x : L | (x : E) +ᵥ P ⊆ A} ⊆ {x : L | (x : E) ∈ A} :=
+    fun x hx => hx (h0cell x)
+  have hsub_N : {x : L | (x : E) ∈ A} ⊆ {x : L | (((x : E) +ᵥ P) ∩ A).Nonempty} :=
+    fun x hx => ⟨(x : E), h0cell x, hx⟩
+  have hN_fin := hmeet_fin.subset hsub_N
+  have hin_fin := hN_fin.subset hsub_in
+  have hdicho : {x : L | (((x : E) +ᵥ P) ∩ A).Nonempty} ⊆
+      {x : L | (x : E) +ᵥ P ⊆ A} ∪
+      {x : L | (((x : E) +ᵥ P) ∩ frontier A).Nonempty} := by
+    rintro x ⟨y, hyc, hyA⟩
+    by_cases hcase : (x : E) +ᵥ P ⊆ A
+    · exact Or.inl hcase
+    right
+    by_contra hbd
+    obtain ⟨z, hzc, hzA⟩ := Set.not_subset.mp hcase
+    have hconn : IsPreconnected ((x : E) +ᵥ P) := (hPconv.vadd _).isPreconnected
+    have hcover : (x : E) +ᵥ P ⊆ interior A ∪ (closure A)ᶜ := by
+      intro z' hz'
+      by_cases hcl : z' ∈ closure A
+      · left
+        by_contra hi
+        exact hbd ⟨z', hz', hcl, hi⟩
+      · exact Or.inr hcl
+    have hne1 : (((x : E) +ᵥ P) ∩ interior A).Nonempty := by
+      refine ⟨y, hyc, ?_⟩
+      by_contra hi
+      exact hbd ⟨y, hyc, subset_closure hyA, hi⟩
+    have hne2 : (((x : E) +ᵥ P) ∩ (closure A)ᶜ).Nonempty := by
+      refine ⟨z, hzc, fun hcl => ?_⟩
+      exact hbd ⟨z, hzc, hcl, fun hi => hzA (interior_subset hi)⟩
+    obtain ⟨w', hw'c, hw'i, hw'n⟩ :=
+      hconn (interior A) (closure A)ᶜ isOpen_interior
+        isClosed_closure.isOpen_compl hcover hne1 hne2
+    exact hw'n (subset_closure (interior_subset hw'i))
+  have hlow : (hin_fin.toFinset.card : ENNReal) * volume P ≤ volume A := by
+    have hdisjoint : (↑hin_fin.toFinset : Set L).Pairwise
+        (fun x y : L => MeasureTheory.AEDisjoint volume
+          ((x : E) +ᵥ P) ((y : E) +ᵥ P)) :=
+      fun x _ y _ hxy => hfd.aedisjoint hxy
+    have hmeas : ∀ x ∈ hin_fin.toFinset,
+        MeasureTheory.NullMeasurableSet ((x : E) +ᵥ P) volume :=
+      fun x _ => (hPmeas.const_vadd (x : E)).nullMeasurableSet
+    have hunion := MeasureTheory.measure_biUnion_finset₀ hdisjoint hmeas
+    have hsubA : (⋃ x ∈ hin_fin.toFinset, (x : E) +ᵥ P) ⊆ A := by
+      intro z hz
+      rw [Set.mem_iUnion₂] at hz
+      obtain ⟨x, hxU, hzx⟩ := hz
+      exact (hin_fin.mem_toFinset.mp hxU) hzx
+    calc (hin_fin.toFinset.card : ENNReal) * volume P
+        = ∑ _x ∈ hin_fin.toFinset, volume P := by
+          rw [Finset.sum_const, nsmul_eq_mul]
+      _ = ∑ x ∈ hin_fin.toFinset, volume ((x : E) +ᵥ P) :=
+          Finset.sum_congr rfl fun x _ => (measure_vadd volume (x : E) P).symm
+      _ = volume (⋃ x ∈ hin_fin.toFinset, (x : E) +ᵥ P) := hunion.symm
+      _ ≤ volume A := measure_mono hsubA
+  have hup : volume A ≤ (hmeet_fin.toFinset.card : ENNReal) * volume P := by
+    calc volume A = ∑' g : L, volume (A ∩ (g +ᵥ P)) := hfd.measure_eq_tsum' A
+      _ = ∑ g ∈ hmeet_fin.toFinset, volume (A ∩ (g +ᵥ P)) := by
+          refine tsum_eq_sum ?_
+          intro g hg
+          rw [Set.Finite.mem_toFinset] at hg
+          have h1 : ¬(A ∩ (g +ᵥ P)).Nonempty := fun h =>
+            hg ⟨h.choose, h.choose_spec.2, h.choose_spec.1⟩
+          rw [Set.not_nonempty_iff_eq_empty] at h1
+          rw [h1, measure_empty]
+      _ ≤ ∑ g ∈ hmeet_fin.toFinset, volume P :=
+          Finset.sum_le_sum fun g _ =>
+            (measure_mono Set.inter_subset_right).trans (measure_vadd volume g P).le
+      _ = (hmeet_fin.toFinset.card : ENNReal) * volume P := by
+          rw [Finset.sum_const, nsmul_eq_mul]
+  have hAfin : volume A ≠ ⊤ := hAb.measure_lt_top.ne
+  have hlowR : (hin_fin.toFinset.card : ℝ) * volume.real P ≤ volume.real A := by
+    have h := ENNReal.toReal_mono hAfin hlow
+    rwa [ENNReal.toReal_mul, ENNReal.toReal_natCast] at h
+  have hupR : volume.real A ≤ (hmeet_fin.toFinset.card : ℝ) * volume.real P := by
+    have h := ENNReal.toReal_mono
+      (ENNReal.mul_ne_top (ENNReal.natCast_ne_top _) hPfin) hup
+    rwa [ENNReal.toReal_mul, ENNReal.toReal_natCast] at h
+  have hlow2 : (hin_fin.toFinset.card : ℝ) ≤ volume.real A / volume.real P := by
+    rw [le_div_iff₀ hP0]; exact hlowR
+  have hup2 : volume.real A / volume.real P ≤ (hmeet_fin.toFinset.card : ℝ) := by
+    rw [div_le_iff₀ hP0]; exact hupR
+  have hcard_in_N : hin_fin.toFinset.card ≤ hN_fin.toFinset.card :=
+    Finset.card_le_card (Set.Finite.toFinset_subset_toFinset.mpr hsub_in)
+  have hcard_N_meet : hN_fin.toFinset.card ≤ hmeet_fin.toFinset.card :=
+    Finset.card_le_card (Set.Finite.toFinset_subset_toFinset.mpr hsub_N)
+  have hcard_meet : hmeet_fin.toFinset.card ≤ hin_fin.toFinset.card +
+      Nat.card {x : L // (((x : E) +ᵥ P) ∩ frontier A).Nonempty} := by
+    have h1 : {x : L | (((x : E) +ᵥ P) ∩ A).Nonempty}.ncard ≤
+        ({x : L | (x : E) +ᵥ P ⊆ A} ∪
+         {x : L | (((x : E) +ᵥ P) ∩ frontier A).Nonempty}).ncard :=
+      Set.ncard_le_ncard hdicho (hin_fin.union hbd_fin)
+    have h2 := Set.ncard_union_le {x : L | (x : E) +ᵥ P ⊆ A}
+      {x : L | (((x : E) +ᵥ P) ∩ frontier A).Nonempty}
+    rw [Set.ncard_eq_toFinset_card _ hmeet_fin] at h1
+    rw [Set.ncard_eq_toFinset_card _ hin_fin] at h2
+    have h3 : {x : L | (((x : E) +ᵥ P) ∩ frontier A).Nonempty}.ncard =
+        Nat.card {x : L // (((x : E) +ᵥ P) ∩ frontier A).Nonempty} := rfl
+    rw [h3] at h2
+    omega
+  have hNn : Nat.card {x : L // (x : E) ∈ A} = hN_fin.toFinset.card := by
+    rw [← Set.ncard_eq_toFinset_card _ hN_fin]
+    rfl
+  have c1 : (hin_fin.toFinset.card : ℝ) ≤ (hN_fin.toFinset.card : ℝ) :=
+    Nat.cast_le.mpr hcard_in_N
+  have c2 : (hN_fin.toFinset.card : ℝ) ≤ (hmeet_fin.toFinset.card : ℝ) :=
+    Nat.cast_le.mpr hcard_N_meet
+  have c3 : (hmeet_fin.toFinset.card : ℝ) ≤ (hin_fin.toFinset.card : ℝ) +
+      (Nat.card {x : L // (((x : E) +ᵥ P) ∩ frontier A).Nonempty} : ℝ) := by
+    exact_mod_cast hcard_meet
+  rw [hNn, abs_sub_le_iff]
+  constructor <;> linarith
+
+open scoped Pointwise in
+open MeasureTheory in
+set_option maxHeartbeats 400000 in
 /-- **Translated-lattice point counting in Lipschitz-bounded dilated
-domains, with power-saving error** (sorry leaf) — Lang, *Algebraic
-Number Theory*, ch. VI §2 Theorem 2, uniform in the translate: for a
+domains, with power-saving error** (DECOMPOSED 2026-07-24 into the two
+sorry leaves above — the Davenport sandwich
+`abs_natCard_sub_measureReal_div_le_natCard_inter_frontier` (count vs
+volume, error at the boundary cells) and the Lipschitz boundary-cell
+estimate `exists_forall_natCard_inter_vadd_smul_lipschitz_le_pow`
+(`O(t^{d-1})` cells meet the dilated Lipschitz cover) — with the
+assembly PROVEN here: translate by `-v` to turn the coset count into a
+plain lattice-point count in `A = -v +ᵥ t • X` (uniformity in `v` is
+exactly translation invariance of the Haar measure and of the frontier),
+identify `vol A / vol P = vol X / covol L · t^d` by `measure_vadd`,
+`Measure.addHaar_smul_of_nonneg` and
+`ZLattice.covolume_eq_measure_fundamentalDomain`, identify
+`frontier A = -v +ᵥ t • frontier X` since translation and nonzero
+dilation are homeomorphisms, and chain the two leaves over the cover
+`frontier X ⊆ ⋃ i, f i '' [0,1]^{d-1}`) — Lang, *Algebraic Number
+Theory*, ch. VI §2 Theorem 2, uniform in the translate: for a
 `ℤ`-lattice `L` in a `d`-dimensional real vector space (`volume` an
 additive Haar measure) and a bounded measurable set `X` with
 Lipschitz-covered boundary, the number of points of the coset `v + L`
 in the dilate `t • X` is `vol(X)/covol(L) · t^d + O(t^{d-1})`, with an
-error constant independent of `v` and `t ≥ 1`.
-
-Intended proof (Lang VI §2; the classical Davenport/Lipschitz
-principle): fix a fundamental parallelotope `P` of a `ℤ`-basis of `L`
-(mathlib: `ZSpan.fundamentalDomain`, `ZLattice.covolume_eq_measure_fundamentalDomain`)
-and for each `x` in the coset count the cell `x + P`. Cells entirely
-inside `t • X` under-count, cells meeting `t • X` over-count, and both
-counts multiplied by `vol(P)` sandwich `vol(t • X) = t^d·vol(X)`
-(homogeneity of Haar measure under dilation,
-`Measure.addHaar_smul`); so the error is at most the number of cells
-meeting `frontier (t • X) = t • frontier X` (dilation is a
-homeomorphism). Cover `frontier X` by the `m` Lipschitz images: for
-`t ≥ 1` subdivide `[0,1]^{d-1}` into `⌈t⌉^{d-1}` subcubes of side
-`1/⌈t⌉`; the `t`-dilate of the image of each subcube has diameter
-`≤ t·κ·√(d-1)/⌈t⌉ ≤ κ·√(d-1)`, hence meets a number of cells bounded
-by a constant `c(P, κ, d)` independent of everything but `P, κ, d`
-(a diameter-`R` set meets at most `(R/ρ + 2)^d`-ish translates of `P`,
-`ρ` the inradius); total `≤ m·c·⌈t⌉^{d-1} ≤ m·c·(2t)^{d-1}`. The
-count in each dilated cell is translation-invariant, whence uniformity
-in `v`. Mathlib pin: only the error-free limit exists
-(`ZLattice.covolume.tendsto_card_le_div`); `BoxIntegral.unitPartition`
-(`Mathlib/Analysis/BoxIntegral/UnitPartition.lean`, used by that
-limit) provides the cell-counting skeleton to vendor. For `d = 1` the
+error constant independent of `v` and `t ≥ 1`. For `d = 1` the
 exponent `d - 1 = 0` (ℕ-subtraction) makes the error bound `C`, which
 is correct: `X` is then a bounded set with finite boundary, i.e. a
 finite union of intervals. -/
@@ -3379,7 +3871,49 @@ theorem exists_forall_abs_natCard_add_mem_smul_sub_mul_le_pow
       |(Nat.card {x : L // v + (x : E) ∈ t • X} : ℝ) -
           volume.real X / ZLattice.covolume L * t ^ Module.finrank ℝ E| ≤
         C * t ^ (Module.finrank ℝ E - 1) := by
-  sorry
+  classical
+  obtain ⟨m, f, κ, hf, hfX⟩ := hXl
+  let b := Module.Free.chooseBasis ℤ L
+  obtain ⟨C, hC0, hCb⟩ :=
+    exists_forall_natCard_inter_vadd_smul_lipschitz_le_pow L b hf
+  refine ⟨C, hC0, ?_⟩
+  intro v t ht
+  have ht0 : (0 : ℝ) ≤ t := zero_le_one.trans ht
+  have htne : t ≠ 0 := (one_pos.trans_le ht).ne'
+  set A : Set E := -v +ᵥ t • X with hAdef
+  have hAb : Bornology.IsBounded A := (hXb.smul₀ t).vadd _
+  have hAm : MeasurableSet A := (hXm.const_smul₀ t).const_vadd _
+  have hcount : Nat.card {x : L // v + (x : E) ∈ t • X} =
+      Nat.card {x : L // (x : E) ∈ A} :=
+    Nat.card_congr <| Equiv.subtypeEquivRight fun x => by
+      rw [hAdef, Set.mem_vadd_set_iff_neg_vadd_mem, neg_neg, vadd_eq_add]
+  have hcovP : ZLattice.covolume L = volume.real
+      (ZSpan.fundamentalDomain (b.ofZLatticeBasis ℝ)) :=
+    ZLattice.covolume_eq_measure_fundamentalDomain L volume
+      (ZLattice.isAddFundamentalDomain b volume)
+  have hvol : volume.real A / volume.real
+        (ZSpan.fundamentalDomain (b.ofZLatticeBasis ℝ)) =
+      volume.real X / ZLattice.covolume L * t ^ Module.finrank ℝ E := by
+    have h1 : volume A = ENNReal.ofReal (t ^ Module.finrank ℝ E) * volume X := by
+      rw [hAdef, measure_vadd, Measure.addHaar_smul_of_nonneg volume ht0]
+    rw [measureReal_def, h1, ENNReal.toReal_mul,
+      ENNReal.toReal_ofReal (by positivity), hcovP, ← measureReal_def]
+    ring
+  have hfr : frontier A = -v +ᵥ t • frontier X := by
+    have h1 : frontier (t • X) = t • frontier X := by
+      simpa only [Homeomorph.smulOfNeZero_apply, Set.image_smul] using
+        ((Homeomorph.smulOfNeZero t htne).image_frontier X).symm
+    have h2 : frontier A = -v +ᵥ frontier (t • X) := by
+      simpa only [Homeomorph.coe_addLeft, ← vadd_eq_add, Set.image_vadd] using
+        ((Homeomorph.addLeft (-v)).image_frontier (t • X)).symm
+    rw [h2, h1]
+  have hsub : frontier A ⊆ -v +ᵥ t • ⋃ i, f i '' Set.Icc 0 1 := by
+    rw [hfr]
+    exact Set.vadd_set_mono (Set.smul_set_mono hfX)
+  have hmid := abs_natCard_sub_measureReal_div_le_natCard_inter_frontier b hAb hAm
+  rw [hvol] at hmid
+  rw [hcount]
+  exact hmid.trans (hCb (-v) t ht (frontier A) hsub)
 
 open NumberField in
 /-- Bridge between total positivity phrased over the real embeddings
