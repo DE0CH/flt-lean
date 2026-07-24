@@ -5406,10 +5406,12 @@ theorem completedDedekindZeta_exists (K : Type*) [Field K] [NumberField K] :
           nlinarith [hkey]
 
 /-- **Euler-product nonvanishing of the Dedekind zeta Dirichlet series
-on the open half-plane of absolute convergence** (sorry node, stated
-2026-07-24 — the second, much shallower leaf of the decomposition of
+on the open half-plane of absolute convergence** (PROVEN 2026-07-24 —
+the second, much shallower leaf of the decomposition of
 `dedekindContinuation_exists`; unlike `completedDedekindZeta_exists`
-it mentions no continued object, only the pin's raw Dirichlet series).
+it mentions no continued object, only the pin's raw Dirichlet series;
+proved by route (a) below, specializing the project's own ideal-monoid
+Euler product from `Chebotarev.lean` to the trivial character).
 For `re s > 1` the series `ζ_K(s) = Σ_𝔞 N𝔞^{−s}` factors as the
 absolutely convergent Euler product `Π_𝔭 (1 − N𝔭^{−s})^{−1}` over the
 nonzero prime ideals of `𝒪_K` (Neukirch VII (5.2)): unique
@@ -5434,7 +5436,24 @@ Möbius-inverse route mathlib uses for
 `ζ_K(s) ≠ 0`. -/
 theorem dedekindZeta_ne_zero_of_one_lt_re (K : Type*) [Field K] [NumberField K]
     (s : ℂ) (hs : 1 < s.re) : NumberField.dedekindZeta K s ≠ 0 := by
-  sorry
+  -- Route (a), via the project's own Euler-product machinery
+  -- (`Fermat.FLT.GaloisRepresentation.Chebotarev`, already a transitive
+  -- public import through `MazurTorsion`): specializing the exp-log form
+  -- `exp_tsum_neg_log_one_sub_dirichletCharacter_mul_cpow_neg_eq_LSeries`
+  -- to the trivial character at level 1 exhibits `ζ_K(s)` as a value of
+  -- `Complex.exp`, which never vanishes.
+  have h := exp_tsum_neg_log_one_sub_dirichletCharacter_mul_cpow_neg_eq_LSeries
+    K (1 : DirichletCharacter ℂ 1) hs
+  have hcoeff : (fun k : ℕ => (1 : DirichletCharacter ℂ 1) (k : ZMod 1) *
+      (Nat.card {I : Ideal (NumberField.RingOfIntegers K) //
+        Ideal.absNorm I = k} : ℂ)) =
+      fun n : ℕ => (Nat.card {I : Ideal (NumberField.RingOfIntegers K) //
+        Ideal.absNorm I = n} : ℂ) := by
+    funext k
+    rw [MulChar.one_apply (isUnit_of_subsingleton _), one_mul]
+  unfold NumberField.dedekindZeta
+  rw [← hcoeff, ← h]
+  exact Complex.exp_ne_zero _
 
 /-- **Conjugation of a complex power with nonnegative real base**
 (PROVEN 2026-07-24, helper for the Schwarz-reflection glue of
