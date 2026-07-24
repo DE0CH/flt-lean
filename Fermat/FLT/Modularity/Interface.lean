@@ -3528,7 +3528,10 @@ uniqueness, which splits into its three nontrivial clauses:
 * **3a-ii-β — unramifiedness descent**
   (`isUnramifiedAt_of_isRealizationCompatible`, sorry node).
 * **3a-ii-γ — flatness descent**
-  (`isFlatAt_of_isRealizationCompatible`, sorry node).
+  (`isFlatAt_of_isRealizationCompatible`, DECOMPOSED 2026-07-24 into
+  a PROVEN assembly over the Raynaud-closure leaf
+  `hasFlatProlongationAt_of_pi_embedding` and the finite-level
+  embedding leaf `exists_pi_embedding_of_isRealizationCompatible`).
 * **3a-ii-δ — tameness-at-2 descent**
   (`isTameAtTwo_of_isRealizationCompatible`, sorry node).
 * **PROVEN — the assembly** (now pillar 3a-ii's proof body): the rank
@@ -3682,23 +3685,143 @@ theorem isUnramifiedAt_of_isRealizationCompatible
       ρT.IsUnramifiedAt hp.toHeightOneSpectrumRingOfIntegersRat :=
   sorry
 
-/-- **Flatness descent** (pillar 3a-ii-γ; sorry node — Raynaud's
-closure properties of finite flat prolongations): the descended
-representation is flat at `ℓ`. Intended proof: for an open ideal
-`I ≤ T`, the finite `Γ ℚ_ℓ`-module `(Fin 2 → T)/I` embeds
-`Γ`-equivariantly into a finite product `∏ᵢ (Fin 2 → Oᵢ)/Jᵢ` of
-quotients of the realization lattices: the `toFun i`-base-changes of
-`ρT` are conjugate to the `ρᵢ` (Théorème 1, as in 3a-ii-β), the joint
-coordinate map is injective (`hinj`), and by linear compactness `I`
-contains the preimage of a suitable open `∏ᵢ Jᵢ`. Each
-`(Fin 2 → Oᵢ)/Jᵢ` has a finite flat prolongation (the `isFlat` field
-of the realizations), finite flat group schemes over `ℤ_ℓ` are closed
-under finite products, and — `ℓ` odd, absolute ramification `e = 1 <
-ℓ − 1` — Raynaud's theorem provides the finite flat prolongation of
-the generic-fiber subobject (schematic closure) realizing
-`(Fin 2 → T)/I`, and transports it back along the quotient towers to
-the given open `I`. Sound as stated by the section audit. CIRCULARITY
-GUARD: must not be proven through `Family.lean` (see the section
+/-- **Raynaud closure for flat prolongations** (sorry node — Raynaud,
+*Schémas en groupes de type `(p, …, p)`*, Bull. SMF 102 (1974); Tate,
+*Finite flat group schemes*, in Cornell–Silverman–Stevens — the
+classical closure of finite flat group schemes over a DVR under
+finite products and under Galois-stable subobjects of the generic
+fibre): if the local space of a Galois representation at `v` embeds
+`Γ Kᵥ`-equivariantly into a finite product of spaces each of which
+has a flat prolongation at `v`, then it has a flat prolongation at
+`v`. Intended proof: (1) *products* — the tensor product
+`G := G₀ ⊗[𝒪ᵥ] ⋯ ⊗[𝒪ᵥ] G_{n−1}` of the witness Hopf algebras is a
+finite flat `𝒪ᵥ`-Hopf algebra whose generic fibre is étale with
+geometric points `∏ᵢ points(Gᵢ)` (the universal property of the
+tensor product identifies `AlgHom`s out of it with tuples of
+`AlgHom`s, convolution-compatibly), so the product of the given
+identifications realizes `∏ᵢ Mᵢ` as the points of `G`; (2)
+*subobjects* — the image `ι(M)` is a `Γ Kᵥ`-stable subgroup of those
+points, hence by the étale–Galois correspondence over the
+characteristic-zero `Kᵥ` the group of points of a quotient Hopf
+algebra `H` of `Kᵥ ⊗[𝒪ᵥ] G`; (3) *schematic closure* — the image of
+`G` in `H` is an `𝒪ᵥ`-Hopf algebra, finite and torsion-free over the
+DVR `𝒪ᵥ` hence finite FLAT, with generic fibre `H` (the schematic
+closure of the corresponding closed subgroup scheme, Raynaud 1974 —
+EXISTENCE over a DVR needs no `e < p − 1` bound, which enters
+Raynaud's theory only for uniqueness/full-faithfulness); its
+geometric points are `ι(M) ≅ M`, `Γ Kᵥ`-equivariantly through
+`ι⁻¹`. Sound as stated: unconditionally TRUE — this leaf carries no
+hypothesis package (at `n = 0` injectivity forces `M` subsingleton
+and `hasFlatProlongationAt_of_subsingleton_at` already discharges
+it). -/
+theorem GaloisRep.hasFlatProlongationAt_of_pi_embedding
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    {A : Type*} [CommRing A] [TopologicalSpace A]
+    {M : Type*} [AddCommGroup M] [Module A M]
+    (ρ : GaloisRep ℚ A M)
+    {n : ℕ} {A' : Fin n → Type*} [∀ i, CommRing (A' i)]
+    [∀ i, TopologicalSpace (A' i)]
+    {M' : Fin n → Type*} [∀ i, AddCommGroup (M' i)]
+    [∀ i, Module (A' i) (M' i)]
+    (ρ' : ∀ i, GaloisRep ℚ (A' i) (M' i))
+    (hflat : ∀ i, (ρ' i).HasFlatProlongationAt v)
+    (ι : (ρ.toLocal v).Space →+ ∀ i, ((ρ' i).toLocal v).Space)
+    (hιinj : Function.Injective ι)
+    (hιequiv : ∀ (g : Field.absoluteGaloisGroup
+        (HeightOneSpectrum.adicCompletion ℚ v))
+      (x : (ρ.toLocal v).Space), ι (g • x) = g • ι x) :
+    ρ.HasFlatProlongationAt v :=
+  sorry
+
+/-- **The finite-level lattice embedding** (sorry node — Carayol
+Théorème 1 + linear compactness, the level-by-level half of the
+flatness descent 3a-ii-γ): every open-ideal level of the descended
+lattice embeds `Γ ℚ_ℓ`-equivariantly into a finite product of
+open-ideal levels of the realization lattices. Intended proof: by
+Théorème 1 (uniqueness over the local `Oᵢ` at the residually
+absolutely irreducible `ρbar`, exactly as in 3a-ii-β) the
+`toFun i`-base change of `ρT` is conjugate to `ρᵢ`, so composing the
+coordinate maps `Fin 2 → T → Fin 2 → Oᵢ` with the conjugating frames
+gives a `Γ ℚ`-equivariant — hence, restricting along
+`Γ ℚ_ℓ → Γ ℚ`, `Γ ℚ_ℓ`-equivariant — additive map
+`(Fin 2 → T) → ∏ᵢ (Fin 2 → Oᵢ)` that is injective by joint
+injectivity `hinj`; `T` and the `Oᵢ` are module-finite over `ℤ_ℓ`,
+so every open ideal has finite index and the ideals
+`⋂ᵢ (toFun i)⁻¹(Jᵢ)` over open `Jᵢ ≤ Oᵢ` form a filtered family of
+open ideals of `T` with trivial intersection (joint injectivity
+again); linear compactness of the finite-level quotient `T ⧸ I` then
+yields `Jᵢ` with `⋂ᵢ (toFun i)⁻¹(Jᵢ) ≤ I`, and the induced map on
+base-changed levels
+`(T ⧸ I) ⊗ (Fin 2 → T) → ∏ᵢ (Oᵢ ⧸ Jᵢ) ⊗ (Fin 2 → Oᵢ)` is injective
+and equivariant. Sound as stated by the section audit (the leaf
+carries the whole hypothesis package of 3a-ii, in particular the
+irreducible hardly ramified `ρbar`, so it remains classically true
+vacuously; the non-vacuous intended discharge is the construction
+above). CIRCULARITY GUARD: must not be proven through `Family.lean`
+(see the section docstring). -/
+theorem exists_pi_embedding_of_isRealizationCompatible
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime]
+    {k : Type*} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type*} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    {T : Type u} [CommRing T] [TopologicalSpace T] [IsTopologicalRing T]
+    [Algebra ℤ_[ℓ] T] [IsLocalRing T] [Module.Finite ℤ_[ℓ] T]
+    [Module.Free ℤ_[ℓ] T] [IsModuleTopology ℤ_[ℓ] T]
+    {t : ℕ → T} {π : T →+* k} (hπ : Function.Surjective π)
+    {S_T : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hred : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S_T →
+      π (t q) =
+        - (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
+    {n : ℕ} (real : Fin n → HardlyRamifiedRealization ℓ hℓodd T)
+    (hinj : ∀ x y : T, (∀ i, (real i).toFun x = (real i).toFun y) → x = y)
+    (htr : ∀ (i : Fin n) (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S_T →
+      ((real i).ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1 =
+        (real i).toFun (- t q))
+    {ρT : GaloisRep ℚ T (Fin 2 → T)}
+    (hcomp : IsRealizationCompatible real ρT)
+    (I : Ideal T) (hI : IsOpen (I : Set T)) :
+    ∃ (J : ∀ i : Fin n, Ideal (real i).O)
+      (_ : ∀ i, IsOpen ((J i : Set (real i).O)))
+      (ι : ((ρT.baseChange (T ⧸ I)).toLocal
+          (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+            (Fact.out : ℓ.Prime))).Space →+
+        ∀ i, (((real i).ρ.baseChange ((real i).O ⧸ J i)).toLocal
+          (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+            (Fact.out : ℓ.Prime))).Space),
+      Function.Injective ι ∧
+      ∀ (g : Field.absoluteGaloisGroup
+          (HeightOneSpectrum.adicCompletion ℚ
+            (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+              (Fact.out : ℓ.Prime))))
+        (x : ((ρT.baseChange (T ⧸ I)).toLocal
+          (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+            (Fact.out : ℓ.Prime))).Space),
+        ι (g • x) = g • ι x :=
+  sorry
+
+/-- **Flatness descent** (pillar 3a-ii-γ; DECOMPOSED 2026-07-24 into
+a PROVEN assembly over the two leaves above — Raynaud's closure
+properties of finite flat prolongations): the descended
+representation is flat at `ℓ`. Proof: for an open ideal `I ≤ T`, the
+finite-level embedding leaf
+`exists_pi_embedding_of_isRealizationCompatible` (Théorème 1 + joint
+injectivity + linear compactness) embeds the level
+`(T ⧸ I) ⊗ (Fin 2 → T)` `Γ ℚ_ℓ`-equivariantly into a finite product
+`∏ᵢ (Oᵢ ⧸ Jᵢ) ⊗ (Fin 2 → Oᵢ)` of open levels of the realization
+lattices; each factor has a flat prolongation by the `isFlat` clause
+of the realization's hardly-ramifiedness (`IsFlatAt.cond` at the open
+`Jᵢ`); and the Raynaud-closure leaf
+`hasFlatProlongationAt_of_pi_embedding` (finite flat group schemes
+over the DVR `ℤ_ℓ` are closed under finite products and Galois-stable
+generic-fibre subobjects) hands the prolongation of the embedded
+level back. Sound as stated by the section audit. CIRCULARITY GUARD:
+must not be proven through `Family.lean` (see the section
 docstring). -/
 theorem isFlatAt_of_isRealizationCompatible
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime]
@@ -3727,8 +3850,17 @@ theorem isFlatAt_of_isRealizationCompatible
     {ρT : GaloisRep ℚ T (Fin 2 → T)}
     (hcomp : IsRealizationCompatible real ρT) :
     ρT.IsFlatAt
-      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : ℓ.Prime)) :=
-  sorry
+      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : ℓ.Prime)) := by
+  constructor
+  intro I hI
+  obtain ⟨J, hJopen, ι, hιinj, hιequiv⟩ :=
+    exists_pi_embedding_of_isRealizationCompatible hℓodd hW hρbar hirr hπ
+      hred real hinj htr hcomp I hI
+  exact GaloisRep.hasFlatProlongationAt_of_pi_embedding _
+    (ρT.baseChange (T ⧸ I))
+    (fun i => (real i).ρ.baseChange ((real i).O ⧸ J i))
+    (fun i => ((real i).isHardlyRamified.isFlat).cond (J i) (hJopen i))
+    ι hιinj hιequiv
 
 /-- **Tameness-at-2 descent** (pillar 3a-ii-δ; sorry node —
 Carayol–Saito local–global compatibility, descended along Théorème 1):
