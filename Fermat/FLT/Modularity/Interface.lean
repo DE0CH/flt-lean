@@ -4108,9 +4108,214 @@ theorem exists_residual_triangular_of_not_isIrreducible
       ((∀ g, χsub g = 1) ∨ (∀ g, χquo g = 1)) :=
   sorry
 
-/-- **The Eisenstein lattice** (Eisenstein pillar E2; sorry node —
-Ribet's lemma with prescribed order, plus integral transfer of the
-hardly ramified conditions): a hardly ramified `p`-adic
+/-! #### The Ribet cut behind pillar E2 (2026-07-24)
+
+Pillar E2 below carries two classically independent pieces of work,
+and is now a PROVEN assembly over their separation (the split recorded
+in its original docstring):
+
+* **E2a — the DVR lattice combinatorics** (Ribet's lemma with
+  prescribed order): produce, from the irreducible-generic /
+  reducible-residual situation, a NEW coefficient ring `O` (a
+  module-finite local topological `ℤ_p`-domain — the valuation ring of
+  the `p`-adic field `Frac R`, carried with exactly the typeclass
+  bundle of `R` so that the pillar-1 residual machinery of
+  `Residual.lean` applies to it verbatim), a lattice representation
+  `ρO` on the standard rank-2 frame, its generic-fibre identification
+  with `ρ` over `ℚ̄_p`, a residue package `O ↠ kk'`, and the reduction
+  `ρE` in nonsplit triangular form with TRIVIAL sub-character. This is
+  self-contained lattice-walking over a DVR plus Brauer–Nesbitt
+  bookkeeping; no hardly-ramifiedness is asserted anywhere in its
+  conclusion.
+
+* **E2b — the per-field hardly-ramifiedness transfer**: from
+  `IsHardlyRamified ρ` and the E2a linkage alone, conclude
+  `IsHardlyRamified ρE`. Determinant and outside-`2p` unramifiedness
+  descend through the generic equivariance and the injectivity
+  `O ↪ ℚ̄_p`; flatness at `p` passes to the stable lattice by
+  scheme-theoretic closure (sub- and quotient objects of finite flat
+  group schemes over `ℤ_p` are finite flat — Raynaud) and then to the
+  reduction by the pillar-1 transfer; the tame quotient line at `2`
+  saturates in the new lattice with the same unramified square-trivial
+  character; the frame identification `er` is crossed by conjugation.
+
+The circularity guard of the section applies to both halves: neither
+may be proven through `Family.lean` or `Reducible.lean`'s B5. -/
+
+/-- **Ribet's lattice walk** (Eisenstein pillar E2a; sorry node — the
+DVR lattice-combinatorics half of the Ribet cut behind pillar E2, with
+prescribed order of the residual characters): a hardly ramified
+`p`-adic representation that is irreducible over `ℚ̄_p` but residually
+reducible — with the residual triangular data of pillar E1 — admits a
+stable lattice over the valuation ring `O` of `Frac R` whose reduction
+is a NONSPLIT triangular representation with TRIVIAL sub-character on
+the standard frame. Classical construction: `E := Frac R` is a finite
+extension of `ℚ_p` (`R` is a module-finite `ℤ_p`-domain and `hZinj`
+keeps it of characteristic zero), and its valuation ring `O` is a
+complete DVR, module-finite over `ℤ_p`, local, compact in its module
+topology — exactly the typeclass bundle carried by `R`, which is why
+the conclusion re-exports it wholesale; the given map `R → ℚ̄_p` is
+injective (its kernel is a prime of the one-dimensional domain `R`
+meeting `ℤ_p` trivially, hence zero by integrality), extends to
+`E ↪ ℚ̄_p`, and restricts to `O ↪ ℚ̄_p` compatibly with the
+`ℤ_p`-structures (the compatibility equation in the conclusion);
+`ρ ⊗ E` is irreducible (irreducibility descends from `ℚ̄_p` along
+`hirr`) and stabilizes an `O`-lattice (continuity + compactness of the
+image), so after a frame choice there is `ρO` on `Fin 2 → O` with a
+`ℚ̄_p`-equivariant generic identification `e` to `ρ ⊗ ℚ̄_p`. The
+residual semisimplification of any such lattice is `χsub ⊕ χquo`
+pushed along the residue extension `kk → kk'` (Brauer–Nesbitt: both
+reductions share the traces of `ρ`), and the two characters are
+DISTINCT — their product is the mod-`p` cyclotomic character `ω` by
+the determinant field of `hρ`, and one of them is trivial by `hdisj`,
+while `ω ≠ 1` because `p` is odd — so Ribet's lemma in its
+prescribed-order form (Ribet, *A modular construction of unramified
+`p`-extensions of `ℚ(μ_p)`*, Invent. Math. 34 (1976), Prop. 2.1;
+Bellaïche–Chenevier, *Families of Galois representations and Selmer
+groups*, Astérisque 324 (2009), ch. 1: for a residually multiplicity-
+free representation that is generically irreducible BOTH orderings of
+the residual characters are realized by suitable stable lattices, with
+nonsplit reduction) produces the lattice whose reduction `ρE` has
+sub-character `1`, quotient character `χ` (the image of the nontrivial
+member of `{χsub, χquo}`), and no coboundary writing of the upper-right
+entry. The residue package (`hsurj'`/`hopen'`/`hker'`) is the
+general-`p` residue package of `Residual.lean` applied to `O`.
+Soundness (audit 2026-07-24): the hypothesis set is classically empty
+(section audit), but every step above consumes exactly the listed
+hypotheses and none consumes the emptiness; `p ≥ 5` is not consumed
+(oddness gives `ω ≠ 1`). Circularity guard: must not route through
+`Family.lean` or `Reducible.lean`'s B5. -/
+theorem exists_ribet_lattice_of_residually_reducible
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hZinj : Function.Injective (algebraMap ℤ_[p] R))
+    (hρ : IsHardlyRamified hpodd hv ρ)
+    (hirr : (ρ.baseChange (AlgebraicClosure ℚ_[p])).IsIrreducible)
+    {kk : Type u} [Field kk] [Finite kk] [Algebra ℤ_[p] kk]
+    [TopologicalSpace kk] [DiscreteTopology kk] [IsTopologicalRing kk]
+    [Algebra R kk] [ContinuousSMul R kk]
+    (hsurj : Function.Surjective (algebraMap R kk))
+    (b : Module.Basis (Fin 2) kk (kk ⊗[R] V))
+    (χsub χquo : Field.absoluteGaloisGroup ℚ →* kk)
+    (cc₀ : Field.absoluteGaloisGroup ℚ → kk)
+    (htri₀ : ∀ g, LinearMap.toMatrix b b ((ρ.baseChange kk) g) =
+      !![χsub g, cc₀ g; 0, χquo g])
+    (hdisj : (∀ g, χsub g = 1) ∨ (∀ g, χquo g = 1)) :
+    ∃ (O : Type u) (_ : CommRing O) (_ : Algebra ℤ_[p] O)
+      (_ : IsDomain O) (_ : Module.Finite ℤ_[p] O)
+      (_ : TopologicalSpace O) (_ : IsTopologicalRing O)
+      (_ : IsLocalRing O) (_ : IsModuleTopology ℤ_[p] O)
+      (_ : Algebra O (AlgebraicClosure ℚ_[p]))
+      (_ : ContinuousSMul O (AlgebraicClosure ℚ_[p]))
+      (ρO : GaloisRep ℚ O (Fin 2 → O))
+      (e : ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O))
+        ≃ₗ[AlgebraicClosure ℚ_[p]] ((AlgebraicClosure ℚ_[p]) ⊗[R] V))
+      (kk' : Type u) (_ : Field kk') (_ : Finite kk')
+      (_ : Algebra ℤ_[p] kk') (_ : TopologicalSpace kk')
+      (_ : DiscreteTopology kk') (_ : IsTopologicalRing kk')
+      (_ : Algebra O kk') (_ : ContinuousSMul O kk')
+      (_ : IsScalarTower ℤ_[p] O kk')
+      (ρE : GaloisRep ℚ kk' (Fin 2 → kk'))
+      (er : (kk' ⊗[O] (Fin 2 → O)) ≃ₗ[kk'] (Fin 2 → kk'))
+      (χ : Field.absoluteGaloisGroup ℚ →* kk')
+      (cc : Field.absoluteGaloisGroup ℚ → kk'),
+      Function.Injective (algebraMap O (AlgebraicClosure ℚ_[p])) ∧
+      (∀ x : ℤ_[p],
+        algebraMap O (AlgebraicClosure ℚ_[p]) (algebraMap ℤ_[p] O x) =
+          algebraMap R (AlgebraicClosure ℚ_[p]) (algebraMap ℤ_[p] R x)) ∧
+      (∀ g x, e ((ρO.baseChange (AlgebraicClosure ℚ_[p])) g x) =
+        (ρ.baseChange (AlgebraicClosure ℚ_[p])) g (e x)) ∧
+      Function.Surjective (algebraMap O kk') ∧
+      IsOpen ((IsLocalRing.maximalIdeal O : Ideal O) : Set O) ∧
+      RingHom.ker (algebraMap O kk') = IsLocalRing.maximalIdeal O ∧
+      (∀ g x, er ((ρO.baseChange kk') g x) = ρE g (er x)) ∧
+      (∀ g, LinearMap.toMatrix (Pi.basisFun kk' (Fin 2))
+        (Pi.basisFun kk' (Fin 2)) (ρE g) = !![1, cc g; 0, χ g]) ∧
+      ¬ ∃ a : kk', ∀ g, cc g = (χ g - 1) * a :=
+  sorry
+
+/-- **Integral hardly-ramifiedness transfer** (Eisenstein pillar E2b;
+sorry node — the per-field transfer half of the Ribet cut behind
+pillar E2): the reduction `ρE` of a stable lattice `ρO` of a hardly
+ramified `p`-adic representation `ρ` is itself hardly ramified — with
+no irreducibility or residual-shape input consumed. The linkage data
+is exactly what E2a produces: the generic-fibre equivariance `e` over
+`ℚ̄_p`, the injectivity `O ↪ ℚ̄_p` and its `ℤ_p`-compatibility, the
+residue package `O ↠ kk'` (surjective, open maximal-ideal kernel),
+and the frame identification `er` intertwining `ρO ⊗ kk'` with `ρE`.
+Classical proof, field by field: DETERMINANT — `det (ρO g)` maps
+under the injection `O ↪ ℚ̄_p` to `det (ρ ⊗ ℚ̄_p) g` (conjugation by
+`e` preserves determinants), which is the image of the cyclotomic
+determinant of `hρ` by the compatibility equation, so
+`det ∘ ρO` is cyclotomic over `O` and reduces to the cyclotomic
+determinant over `kk'`; UNRAMIFIEDNESS outside `2p` — inertia acts
+trivially on the generic fibre through `e`, and a finite free module
+over the domain `O` injects into its `ℚ̄_p`-fibre, so `ρO` is
+unramified and so is its base change (`IsUnramifiedAt` is stable
+under base change); FLATNESS at `p` — for every open ideal `I ⊆ O`
+the finite quotient `(Fin 2 → O) ⊗ O/I` is a subquotient of a finite
+level of the original flat tower (a lattice commensurable with the
+base-changed one), and sub- and quotient objects of finite flat group
+schemes over `ℤ_p` are finite flat (scheme-theoretic closure:
+Raynaud, *Schémas en groupes de type `(p, …, p)`*, Bull. Soc. Math.
+France 102 (1974); Tate, in Cornell–Silverman–Stevens ch. V), giving
+`ρO.IsFlatAt p`, which passes to the residual reduction by the
+pillar-1 transfer `isFlatAt_baseChange_residue_at`; TAMENESS at `2` —
+the rank-1 unramified square-trivial quotient `π : V ↠ R, δ` of `hρ`
+saturates inside the new lattice to a rank-1 quotient of `Fin 2 → O`
+on which the `G_2`-action is by the SAME character `δ` read through
+`O` (its values on the generic fibre are `δ ⊗ E`, integral and
+square-trivial), and reduces by the pillar-1 transfer
+`isTameAtTwo_baseChange_residue_res`; finally all four fields cross
+the frame identification `er` by conjugation (determinants are
+conj-invariant, kernels are preserved, flat prolongations transport
+along equivariant equivalences — `HasFlatProlongationAt.of_equiv` —
+and the tame projection composes with `er.symm`). Soundness (audit
+2026-07-24): the hypothesis set is classically INHABITED (take
+`O = R = ℤ_p`, `ρO` a frame of `ρ`, `ρE` its reduction — no
+irreducibility is assumed), and the conclusion holds for every
+inhabitant by the cited transfers; hypothesis-honest: no step
+consumes `p ≥ 5`, irreducibility, or any residual triangular shape.
+Circularity guard: must not route through `Family.lean` or
+`Reducible.lean`'s B5. -/
+theorem isHardlyRamified_reduction_of_ribet_lattice
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hρ : IsHardlyRamified hpodd hv ρ)
+    {O : Type u} [CommRing O] [Algebra ℤ_[p] O] [IsDomain O]
+    [Module.Finite ℤ_[p] O] [TopologicalSpace O] [IsTopologicalRing O]
+    [IsLocalRing O] [IsModuleTopology ℤ_[p] O]
+    [Algebra O (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul O (AlgebraicClosure ℚ_[p])]
+    (hOinj : Function.Injective (algebraMap O (AlgebraicClosure ℚ_[p])))
+    (hZOcompat : ∀ x : ℤ_[p],
+      algebraMap O (AlgebraicClosure ℚ_[p]) (algebraMap ℤ_[p] O x) =
+        algebraMap R (AlgebraicClosure ℚ_[p]) (algebraMap ℤ_[p] R x))
+    {ρO : GaloisRep ℚ O (Fin 2 → O)}
+    (e : ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O))
+      ≃ₗ[AlgebraicClosure ℚ_[p]] ((AlgebraicClosure ℚ_[p]) ⊗[R] V))
+    (he : ∀ g x, e ((ρO.baseChange (AlgebraicClosure ℚ_[p])) g x) =
+      (ρ.baseChange (AlgebraicClosure ℚ_[p])) g (e x))
+    {kk' : Type u} [Field kk'] [Finite kk'] [Algebra ℤ_[p] kk']
+    [TopologicalSpace kk'] [DiscreteTopology kk'] [IsTopologicalRing kk']
+    [Algebra O kk'] [ContinuousSMul O kk'] [IsScalarTower ℤ_[p] O kk']
+    (hsurj' : Function.Surjective (algebraMap O kk'))
+    (hopen' : IsOpen ((IsLocalRing.maximalIdeal O : Ideal O) : Set O))
+    (hker' : RingHom.ker (algebraMap O kk') = IsLocalRing.maximalIdeal O)
+    {ρE : GaloisRep ℚ kk' (Fin 2 → kk')}
+    (er : (kk' ⊗[O] (Fin 2 → O)) ≃ₗ[kk'] (Fin 2 → kk'))
+    (her : ∀ g x, er ((ρO.baseChange kk') g x) = ρE g (er x))
+    (hrankE : Module.rank kk' (Fin 2 → kk') = 2) :
+    IsHardlyRamified hpodd hrankE ρE :=
+  sorry
+
+/-- **The Eisenstein lattice** (Eisenstein pillar E2; PROVEN
+2026-07-24 as an assembly over the Ribet cut E2a/E2b above — E2a
+supplies the lattice representation `ρO`, its generic-fibre
+identification with `ρ`, the residue package and the nonsplit
+triangular reduction `ρE`; E2b transfers the four hardly ramified
+fields onto `ρE`; the assembly only proves the rank of the standard
+frame and reshuffles the data): a hardly ramified `p`-adic
 representation that is irreducible over `ℚ̄_p` but residually
 reducible — with the residual triangular data of pillar E1 — reduces,
 on a suitable stable lattice over the valuation ring of `Frac R`
@@ -4169,8 +4374,41 @@ theorem exists_eisenstein_nonsplit_lattice_of_residually_reducible
       (cc : Field.absoluteGaloisGroup ℚ → kk'),
       (∀ g, LinearMap.toMatrix (Pi.basisFun kk' (Fin 2))
           (Pi.basisFun kk' (Fin 2)) (ρE g) = !![1, cc g; 0, χ g]) ∧
-      ¬ ∃ a : kk', ∀ g, cc g = (χ g - 1) * a :=
-  sorry
+      ¬ ∃ a : kk', ∀ g, cc g = (χ g - 1) * a := by
+  -- E2a: the Ribet lattice, its generic-fibre linkage and the nonsplit
+  -- triangular reduction on the standard frame
+  obtain ⟨O, hCRO, hAZO, hDomO, hMFO, hTopO, hTRO, hLocO, hMTO, hAQO,
+    hCSQO, ρO, e, kk', hFk, hFink, hAZk, hTopk, hDisck, hTRk, hAOk,
+    hCSOk, hSTk, ρE, er, χ, cc, hOinj, hZOcompat, he, hsurj', hopen',
+    hker', her, htri, hnonsplit⟩ :=
+    exists_ribet_lattice_of_residually_reducible hpodd hv hZinj hρ hirr
+      hsurj b χsub χquo cc₀ htri₀ hdisj
+  letI := hCRO
+  letI := hAZO
+  letI := hDomO
+  letI := hMFO
+  letI := hTopO
+  letI := hTRO
+  letI := hLocO
+  letI := hMTO
+  letI := hAQO
+  letI := hCSQO
+  letI := hFk
+  letI := hFink
+  letI := hAZk
+  letI := hTopk
+  letI := hDisck
+  letI := hTRk
+  letI := hAOk
+  letI := hCSOk
+  letI := hSTk
+  -- the rank of the standard frame over the residue field
+  have hrankE : Module.rank kk' (Fin 2 → kk') = 2 := by simp
+  -- E2b: the hardly ramified fields transfer onto the reduction
+  exact ⟨kk', hFk, hFink, hAZk, hTopk, hDisck, hTRk, ρE, hrankE,
+    isHardlyRamified_reduction_of_ribet_lattice hpodd hv hρ hOinj
+      hZOcompat e he hsurj' hopen' hker' er her hrankE,
+    χ, cc, htri, hnonsplit⟩
 
 /-- **Level-2 Eisenstein vanishing** (Eisenstein pillar E3; sorry node
 — Mazur/Herbrand, the deep arithmetic input of the residually
