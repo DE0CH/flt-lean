@@ -8834,6 +8834,65 @@ theorem subalgebra_eq_top_of_algHom_separating
   rw [← hid x]
   exact (s x).2
 
+section TorsionKernelFunctions
+
+/-! ### The Katz–Mazur kernel monomial sections (2026-07-24)
+
+Support for `exists_torsion_kernel_function_generators` below: the concrete
+generator family.  For a monic `h ∈ R[X]` of degree `d ≥ 2` avoiding the
+torsion abscissas mod every centered valuation subring, the functions
+`P ↦ x(P)^a y(P)^b / h(x(P))` (weights `2a + 3b ≤ 2d`, `b ≤ 1`, limit value
+`0`-or-`1` at the origin) are the monomial sections of the affine chart
+`U = 𝓔 ∖ V(h ∘ x)` restricted to the kernel `𝓔[m]`. -/
+
+variable [Algebra R Ksep] [IsScalarTower R K Ksep]
+
+/-- The monomial section `P ↦ x(P)^a y(P)^b / h(x(P))` of the chart avoiding
+`V(h ∘ x)`, as a bare function on the points of the base change; at the
+origin it takes its limit value: `1` if the weight `2a + 3b` attains
+`2·deg h` (the section is a unit at infinity), `0` if it falls strictly
+below. -/
+noncomputable def WeierstrassCurve.torsionKernelFun (h : Polynomial R) (a b : ℕ) :
+    (E⁄Ksep).Point → Ksep
+  | .zero => if 2 * a + 3 * b = 2 * h.natDegree then 1 else 0
+  | .some x y _ => x ^ a * y ^ b / Polynomial.aeval x h
+
+set_option linter.unusedSectionVars false in -- rfl-lemma; keep the section signature
+lemma WeierstrassCurve.torsionKernelFun_zero (h : Polynomial R) (a b : ℕ) :
+    WeierstrassCurve.torsionKernelFun R K E Ksep h a b .zero =
+      if 2 * a + 3 * b = 2 * h.natDegree then 1 else 0 :=
+  rfl
+
+set_option linter.unusedSectionVars false in -- rfl-lemma; keep the section signature
+lemma WeierstrassCurve.torsionKernelFun_some (h : Polynomial R) (a b : ℕ)
+    {x y : Ksep} (hns : (E⁄Ksep).toAffine.Nonsingular x y) :
+    WeierstrassCurve.torsionKernelFun R K E Ksep h a b (.some x y hns) =
+      x ^ a * y ^ b / Polynomial.aeval x h :=
+  rfl
+
+/-- **Galois equivariance of the monomial sections**: the coordinates are
+Galois-natural and `h` has coefficients in `R`, so the section commutes with
+the Galois action. -/
+lemma WeierstrassCurve.torsionKernelFun_map (h : Polynomial R) (a b : ℕ)
+    (σ : Ksep ≃ₐ[K] Ksep) (P : (E⁄Ksep).Point) :
+    WeierstrassCurve.torsionKernelFun R K E Ksep h a b
+        (Affine.Point.map σ.toAlgHom P) =
+      σ (WeierstrassCurve.torsionKernelFun R K E Ksep h a b P) := by
+  cases P with
+  | zero =>
+    show (if 2 * a + 3 * b = 2 * h.natDegree then (1 : Ksep) else 0) =
+      σ (if 2 * a + 3 * b = 2 * h.natDegree then 1 else 0)
+    split_ifs <;> simp
+  | some x y hns =>
+    rw [Affine.Point.map_some, WeierstrassCurve.torsionKernelFun_some,
+      WeierstrassCurve.torsionKernelFun_some, map_div₀, map_mul, map_pow,
+      map_pow]
+    congr 1
+    simpa using Polynomial.aeval_algHom_apply
+      (σ.toAlgHom.restrictScalars R) x h
+
+end TorsionKernelFunctions
+
 set_option backward.isDefEq.respectTransparency false in
 /-- **The Katz–Mazur kernel functions** (sorry node; the pointwise curve core
 of the Katz–Mazur order cut, freed 2026-07-24 of ALL Hopf-algebra content by
