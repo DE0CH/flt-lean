@@ -14870,52 +14870,242 @@ theorem character_pow_eight_localInertia_three_eq_one_ray_class
         hwdead.2, mul_one, hνpow _ hθt2]
     rw [hντ, ← pow_mul, mul_comm r 8, pow_mul, hνt28, one_pow]
 
+set_option maxHeartbeats 400000 in
+/-- **Class number one for the six quadratic fields `ℚ(√d)`,
+`d = −1, 2, −2, 3, −3, 6`** (sorry node, created 2026-07-24 — the
+first per-field arithmetic sub-leaf of the route-(α) decomposition of
+`odd_character_eq_one_of_unramified_everywhere_ray_class` below): the
+ring of integers of `F = ℚ(x) ⊆ ℚ̄` with `x² = d` is a principal
+ideal ring for the six `d` with `h(ℚ(√d)) = 1` (the seventh field
+`ℚ(√−6)` has `h = 2` and is covered by
+`sq_isPrincipal_ringOfIntegers_neg_six_ray_class` next). Intended
+content (Neukirch I §6, Minkowski bounds): the bound `(2/π)·√|d_F|`
+for the imaginary fields (`d_F = −4, −8, −3`) and `(1/2)·√d_F` for
+the real fields (`d_F = 8, 12, 24`) is `< 2` in five of the six cases
+(`≈ 1.27, 1.80, 1.10, 1.41, 1.73`), so the class group is generated
+by ideals of norm `1` and is trivial; for `d = 6` the bound is
+`√6 ≈ 2.45`, and the unique ideal of norm `2` — the ramified prime
+`𝔭₂` over `2` — is principal: `𝔭₂ = (2 + √6)`, of absolute norm
+`|4 − 6| = 2`. Mechanisms available at the pin: the
+`ClassGroup.fintypeOfAdmissibleOfFinite` norm-bound machinery of
+`Mathlib.NumberTheory.ClassNumber.Finite` (every class contains an
+ideal of norm at most the admissible-absolute-value bound), or
+transport of the Euclidean/PID structure of `ℤ[i]` (`GaussianInt`)
+and `Zsqrtd`-style sibling developments along a ring isomorphism
+`ℤ[√d] ≃+* 𝓞 F` for the `d ≡ 2, 3 (mod 4)` cases, with `d = −3`
+(Eisenstein integers, `𝓞 = ℤ[ζ₃]`) reachable through the cyclotomic
+ring: audit the pin's `IsCyclotomicExtension.Rat` PID instances. -/
+theorem isPrincipalIdealRing_ringOfIntegers_quadratic_ray_class
+    (d : ℤ)
+    (hd : d = -1 ∨ d = 2 ∨ d = -2 ∨ d = 3 ∨ d = -3 ∨ d = 6)
+    (x : AlgebraicClosure ℚ) (hx : x ^ 2 = (d : AlgebraicClosure ℚ))
+    [NumberField (IntermediateField.adjoin ℚ {x})] :
+    IsPrincipalIdealRing
+      (NumberField.RingOfIntegers (IntermediateField.adjoin ℚ {x})) := by
+  sorry
+
+set_option maxHeartbeats 400000 in
+/-- **The square of every ideal of `𝓞_{ℚ(√−6)}` is principal** (sorry
+node, created 2026-07-24 — the second per-field arithmetic sub-leaf of
+the route-(α) decomposition of
+`odd_character_eq_one_of_unramified_everywhere_ray_class` below):
+`ℚ(√−6)` has class number `2` — Minkowski bound `(2/π)·√24 ≈ 3.12`;
+the ramified primes `𝔭₂ = (2, √−6)` and `𝔭₃ = (3, √−6)` are
+nonprincipal because `a² + 6b² ∈ {2, 3}` has no integer solutions,
+and they are equivalent via `𝔭₂·𝔭₃ = (√−6)` — so
+`Cl(ℚ(√−6)) ≅ ℤ/2` and every ideal square is principal
+(`𝔭₂² = (2)`, `𝔭₃² = (3)`). Only the exponent-`2` consequence is
+stated, which is what the narrow-class glue below consumes. -/
+theorem sq_isPrincipal_ringOfIntegers_neg_six_ray_class
+    (d : ℤ) (hd : d = -6)
+    (x : AlgebraicClosure ℚ) (hx : x ^ 2 = (d : AlgebraicClosure ℚ))
+    [NumberField (IntermediateField.adjoin ℚ {x})]
+    (I : Ideal (NumberField.RingOfIntegers
+      (IntermediateField.adjoin ℚ {x}))) :
+    (I ^ 2).IsPrincipal := by
+  sorry
+
+set_option maxHeartbeats 400000 in
+/-- **Narrow-class exponent two for the seven quadratic fields — every
+nonzero ideal square is narrowly principal** (PROVEN glue, 2026-07-24,
+over the two per-field class-number sorry leaves
+`isPrincipalIdealRing_ringOfIntegers_quadratic_ray_class` and
+`sq_isPrincipal_ringOfIntegers_neg_six_ray_class` above): for each of
+the seven `d` and `F = ℚ(x) ⊆ ℚ̄` with `x² = d`, the square of every
+nonzero ideal of `𝓞 F` is trivial for the modulus-`1` narrow ray
+equivalence of `Chebotarev.lean` (`IsNarrowRayEquiv 1 (I²) ⊤`:
+`(α)·I² = (β)` with `α, β` totally positive — precisely narrow
+Hilbert equivalence, since coprimality and congruence mod `1` are
+vacuous). This is the `h⁺`-table `1, 1, 1, 2, 1, 2, 2` in the
+exponent form the reciprocity leaf consumes. Assembly: for the six
+class-number-one fields `I = (γ)` is principal, so `I² = (γ²)` with
+`γ²` totally positive FOR FREE (`φ(γ)² > 0` at every real embedding
+`φ` — the reason `h⁺ = 2h` for `d = 3, 6` never obstructs squares);
+for `d = −6` the field admits no real embedding at all (`φ(x)² = −6`
+is absurd in `ℝ`), total positivity is vacuous, and `I² = (γ)`
+principal from the class-group-`ℤ/2` leaf suffices. -/
+theorem isNarrowRayEquiv_sq_top_of_quadratic_ray_class
+    (d : ℤ)
+    (hd : d = -1 ∨ d = 2 ∨ d = -2 ∨ d = 3 ∨ d = -3 ∨ d = 6 ∨ d = -6)
+    (x : AlgebraicClosure ℚ) (hx : x ^ 2 = (d : AlgebraicClosure ℚ))
+    [NumberField (IntermediateField.adjoin ℚ {x})]
+    (I : Ideal (NumberField.RingOfIntegers
+      (IntermediateField.adjoin ℚ {x})))
+    (hI : I ≠ ⊥) :
+    IsNarrowRayEquiv 1 (I ^ 2) ⊤ := by
+  by_cases h6 : d = -6
+  · -- `ℚ(√−6)` is imaginary: no real embeddings, so total positivity
+    -- is vacuous and square-principality suffices
+    have hempty : ∀ φ : (IntermediateField.adjoin ℚ {x}) →+* ℝ, False := by
+      intro φ
+      have hmem : x ∈ IntermediateField.adjoin ℚ {x} :=
+        IntermediateField.mem_adjoin_simple_self ℚ x
+      have hy2 : (⟨x, hmem⟩ : IntermediateField.adjoin ℚ {x}) ^ 2 =
+          (d : IntermediateField.adjoin ℚ {x}) := by
+        apply Subtype.ext
+        push_cast
+        exact hx
+      have hsq : (φ ⟨x, hmem⟩) ^ 2 = (d : ℝ) := by
+        rw [← map_pow, hy2, map_intCast]
+      have h0 := sq_nonneg (φ ⟨x, hmem⟩)
+      rw [hsq, h6] at h0
+      norm_num at h0
+    obtain ⟨γ, hγ⟩ :=
+      (sq_isPrincipal_ringOfIntegers_neg_six_ray_class d h6 x hx I).principal
+    refine ⟨1, γ, fun φ => (hempty φ).elim, fun φ => (hempty φ).elim,
+      ?_, ?_, ?_, ?_⟩
+    · rw [Nat.cast_one, Ideal.span_singleton_one, ← Ideal.one_eq_top]
+      exact isCoprime_one_right
+    · rw [Nat.cast_one, Ideal.span_singleton_one, ← Ideal.one_eq_top]
+      exact isCoprime_one_right
+    · rw [Nat.cast_one, Ideal.span_singleton_one]
+      exact Submodule.mem_top
+    · rw [Ideal.span_singleton_one, Ideal.top_mul, Ideal.mul_top]
+      rw [Ideal.submodule_span_eq] at hγ
+      exact hγ
+  · -- the six class-number-one fields: `I = (γ)`, and `γ²` is totally
+    -- positive at every real embedding
+    have hd6 : d = -1 ∨ d = 2 ∨ d = -2 ∨ d = 3 ∨ d = -3 ∨ d = 6 := by
+      rcases hd with h | h | h | h | h | h | h <;> tauto
+    have hPIR := isPrincipalIdealRing_ringOfIntegers_quadratic_ray_class
+      d hd6 x hx
+    obtain ⟨γ, hγ⟩ := (hPIR.principal I).principal
+    rw [Ideal.submodule_span_eq] at hγ
+    have hγ0 : γ ≠ 0 := by
+      intro h0
+      exact hI (by rw [hγ, h0]; exact Ideal.span_singleton_eq_bot.mpr rfl)
+    refine ⟨1, γ ^ 2, ?_, ?_, ?_, ?_, ?_, ?_⟩
+    · intro φ
+      rw [map_one, map_one]
+      exact one_pos
+    · intro φ
+      have hcoe : algebraMap (NumberField.RingOfIntegers
+          (IntermediateField.adjoin ℚ {x}))
+          (IntermediateField.adjoin ℚ {x}) γ ≠ 0 :=
+        NumberField.RingOfIntegers.coe_ne_zero_iff.mpr hγ0
+      have hne : φ (algebraMap (NumberField.RingOfIntegers
+          (IntermediateField.adjoin ℚ {x}))
+          (IntermediateField.adjoin ℚ {x}) γ) ≠ 0 := fun h =>
+        hcoe (φ.injective (by rw [h, map_zero]))
+      rw [map_pow, map_pow]
+      exact pow_two_pos_of_ne_zero hne
+    · rw [Nat.cast_one, Ideal.span_singleton_one, ← Ideal.one_eq_top]
+      exact isCoprime_one_right
+    · rw [Nat.cast_one, Ideal.span_singleton_one, ← Ideal.one_eq_top]
+      exact isCoprime_one_right
+    · rw [Nat.cast_one, Ideal.span_singleton_one]
+      exact Submodule.mem_top
+    · rw [Ideal.span_singleton_one, Ideal.top_mul, Ideal.mul_top, hγ,
+        Ideal.span_singleton_pow]
+
+set_option maxHeartbeats 1000000 in
+/-- **Everywhere-unramified characters of `Γ_{ℚ(x)}` square to one
+when every ideal square of `𝓞_{ℚ(x)}` is narrowly principal — the pure
+reciprocity sub-leaf** (sorry node, created 2026-07-24 — the
+class-field-theoretic core of the route-(α) decomposition of
+`odd_character_eq_one_of_unramified_everywhere_ray_class` below;
+mathlib has NO global class field theory at this pin, so this is THE
+gap, now isolated from all quadratic-field arithmetic): `ν` is a
+multiplicative character on `H = ker θ' = Γ_F`, `F = ℚ(x) ⊆ ℚ̄`
+(`hθ'x` — note NO quadraticity of `x` is assumed; the statement is
+uniform in the number field `F`), nonvanishing (`hνne0`), with open
+kernel (`hUopen`/`hUker`), and trivial on every `Γ ℚ`-conjugate of
+the local inertia image at EVERY rational prime (`hνunr` — so `ν` is
+unramified at every finite place of `F`). By Artin reciprocity for
+the narrow Hilbert class field `H⁺(F)/F` (Neukirch VI §6–§7; Serre,
+Duke 1987 §5.3), `ν` factors through `Gal(H⁺(F)/F) ≅ Cl⁺(F)`, and
+`hexp` — every nonzero ideal square is narrowly principal, i.e.
+`Cl⁺(F)` has exponent dividing `2`, stated on the modulus-`1`
+instance of the `Chebotarev.lean` narrow-ray vocabulary
+(`IsNarrowRayEquiv`) — forces `ν² = 1` on `H`. Suggested
+formalization route: realize a given `g ∈ H` modulo the open normal
+subgroup `ker(ν|_H)` as a Frobenius at a degree-one prime `𝔭` of `F`
+unramified in the finite abelian extension cut out by `ν`
+(Chebotarev density over `F` — the counting machinery under active
+construction in `Chebotarev.lean`,
+`exists_finset_forall_existsUnique_isNarrowRayEquiv` and the Weber
+per-class counts, is being built exactly for this), then evaluate
+`ν(g)² = ν(Frob_𝔭)² = ν(Frob applied to 𝔭²)` against the narrow
+principality of `𝔭²` from `hexp`; the residual reciprocity input
+proper is that a totally-positive-principal ideal has trivial
+Frobenius in an everywhere-unramified abelian extension. -/
+theorem character_sq_eq_one_of_narrow_exponent_two_ray_class
+    (θ' : Γ ℚ →* Multiplicative (ZMod 2))
+    (x : AlgebraicClosure ℚ)
+    (hθ'x : ∀ g : Γ ℚ, θ' g = 1 ↔ g x = x)
+    (ν : Γ ℚ → Dickson.K 3)
+    (hνmul : ∀ g h : Γ ℚ, θ' g = 1 → θ' h = 1 →
+      ν (g * h) = ν g * ν h)
+    (hνne0 : ∀ g : Γ ℚ, θ' g = 1 → ν g ≠ 0)
+    (U : Subgroup (Γ ℚ)) (hUopen : IsOpen (U : Set (Γ ℚ)))
+    (hUker : ∀ g ∈ U, θ' g = 1 ∧ ν g = 1)
+    (hνunr : ∀ (q : ℕ) (hq : q.Prime), ∀ c : Γ ℚ,
+      ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+        θ' (c * Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) σ * c⁻¹) = 1 →
+        ν (c * Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) σ * c⁻¹) = 1)
+    [NumberField (IntermediateField.adjoin ℚ {x})]
+    (hexp : ∀ I : Ideal (NumberField.RingOfIntegers
+        (IntermediateField.adjoin ℚ {x})), I ≠ ⊥ →
+      IsNarrowRayEquiv 1 (I ^ 2) ⊤) :
+    ∀ g : Γ ℚ, θ' g = 1 → ν g ^ 2 = 1 := by
+  sorry
+
 set_option maxHeartbeats 1000000 in
 /-- **An odd-order character of `Γ_{ℚ(√d)}` unramified at EVERY
-finite place is trivial — the narrow-class reciprocity leaf over the
-seven quadratic fields** (sorry node, created 2026-07-24 — leaf (b)
-of the decomposition of `odd_order_character_eq_one_ray_class` below,
-and the genuinely class-field-theoretic input): with the data of leaf
-(a), but with the unramifiedness hypothesis `hνunr` now available at
-EVERY rational prime `q` — `3` included — the character `ν` is
-identically `1` on `H = ker θ' = Γ_{ℚ(√d)}`.
-
-Intended content (Serre, Duke 1987 §5.3–5.4; Neukirch ANT VI §6–§7):
-`ν` is a finite-order character of `Γ_F`, `F = ℚ(√d)` (open kernel by
-`hUopen`/`hUker`; pointwise finite odd order by `hνodd`), trivial on
-every `Γ ℚ`-conjugate of the local inertia image at every rational
-prime, i.e. unramified at every finite place of `F`. By Artin
-reciprocity it therefore factors through
-`Gal(H⁺(F)/F) ≅ Cl⁺(F)` — the narrow Hilbert class field and narrow
-class group; reciprocity is THE gap, since mathlib has no global
-class field theory at this pin. Per-field arithmetic:
-`h⁺ = 1, 1, 1, 2, 1, 2, 2` for `d = −1, 2, −2, 3, −3, 6, −6` (the
-ordinary class numbers are `1` except `h(ℚ(√−6)) = 2`,
-Minkowski-bound computations as in
-`Mathlib.NumberTheory.ClassNumber.*`; among the real fields the
-fundamental unit `1 + √2` of norm `−1` keeps `h⁺ = h` for `d = 2`,
-while `2 + √3` and `5 + 2√6` of norm `+1` double it for
-`d = 3, 6`), so `Cl⁺(F)` is an elementary abelian `2`-group in all
-seven cases and the odd-order `ν` dies. Two viable routes for the
-resolver: (α) split off `∀ g, θ' g = 1 → ν g ^ 2 = 1` as the pure
-reciprocity sub-leaf (exponent of `Cl⁺` divides `2`) and glue by
-`gcd(odd, 2) = 1`, building the reciprocity statement on the
-narrow-ray vocabulary under construction in
-`Fermat/FLT/GaloisRepresentation/Chebotarev.lean` (`IsNarrowRayEquiv`,
-`exists_finset_forall_existsUnique_isNarrowRayEquiv`); or (β) the
-discriminant-bound route needing NO reciprocity: the fixed field of
-`ker(ν|_H)` is a cyclic extension `M/F` of odd degree `m` coprime to
-`3` (the image of `ν` is a finite subgroup of `𝔽̄₃ˣ` generated by
-elements of odd order), unramified at every finite place by the
-inertia hypothesis and at the infinite places automatically
-(`2 ∤ m`), so its root discriminant equals
-`rd(F) = √|d_F| ≤ √24 < 4.9`; Minkowski's bound
-`rd ≥ (π/4)·(n^n/n!)^{2/n} → (π/4)e² ≈ 5.80` rules out all
-sufficiently large degrees `n = 2m` over `ℚ` (`n ≥ 36` suffices for
-`√24`), and the finitely many small `m` fall to sharper Odlyzko-type
-explicit-formula bounds — exactly the regime of the
-`poitou_explicit_formula_bound` analytic cluster already under
-construction in this file. -/
+finite place is trivial — the narrow-class leaf over the seven
+quadratic fields** (DECOMPOSED 2026-07-24 along route (α) into the
+three nodes above — the pure-reciprocity sorry leaf
+`character_sq_eq_one_of_narrow_exponent_two_ray_class` (Artin
+reciprocity for the narrow Hilbert class field, THE
+class-field-theoretic gap) over the PROVEN narrow-exponent-two glue
+`isNarrowRayEquiv_sq_top_of_quadratic_ray_class` (the `h⁺`-table
+`1, 1, 1, 2, 1, 2, 2` in exponent form) over the two per-field
+class-number sorry leaves
+`isPrincipalIdealRing_ringOfIntegers_quadratic_ray_class` (`h = 1`
+for `d = −1, 2, −2, 3, −3, 6`) and
+`sq_isPrincipal_ringOfIntegers_neg_six_ray_class`
+(`Cl(ℚ(√−6)) ≅ ℤ/2`) — with the assembly PROVEN here: `ℚ(x)` is a
+number field since `x² = d` is integral, the reciprocity leaf gives
+`ν(g)² = 1`, the odd pointwise order of `hνodd` gives `ν(g)ⁿ = 1`
+with `n` odd, and `orderOf (ν g) ∣ gcd(2, n) = 1` concludes — leaf
+(b) of the decomposition of `odd_order_character_eq_one_ray_class`
+below): with the data of leaf (a), but with the unramifiedness
+hypothesis `hνunr` now available at EVERY rational prime `q` — `3`
+included — the character `ν` is identically `1` on
+`H = ker θ' = Γ_{ℚ(√d)}` (Serre, Duke 1987 §5.3–5.4; Neukirch ANT VI
+§6–§7: `ν` factors through `Gal(H⁺(F)/F) ≅ Cl⁺(F)`, an elementary
+abelian `2`-group for all seven `d` — among the real fields the
+fundamental unit `1 + √2` of norm `−1` keeps `h⁺ = h = 1` for
+`d = 2`, while `2 + √3` and `5 + 2√6` of norm `+1` double it to
+`h⁺ = 2` for `d = 3, 6` — so the odd-order `ν` dies). The discarded
+route (β) — root-discriminant bounds, Minkowski for degree `≥ 36`
+plus the `poitou_explicit_formula_bound` Odlyzko cluster below for
+the small degrees, needing NO reciprocity — remains recorded in git
+history at this node's creation commit. -/
 theorem odd_character_eq_one_of_unramified_everywhere_ray_class
     (θ' : Γ ℚ →* Multiplicative (ZMod 2))
     (d : ℤ)
@@ -14939,7 +15129,32 @@ theorem odd_character_eq_one_of_unramified_everywhere_ray_class
           (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
             hq.toHeightOneSpectrumRingOfIntegersRat)) σ * c⁻¹) = 1) :
     ∀ g : Γ ℚ, θ' g = 1 → ν g = 1 := by
-  sorry
+  -- `ℚ(x)` is a number field: `x` is a root of the monic `X² − d`
+  have hxint : IsIntegral ℚ x := by
+    refine ⟨Polynomial.X ^ 2 - Polynomial.C ((d : ℚ)),
+      Polynomial.monic_X_pow_sub_C _ (by norm_num), ?_⟩
+    rw [Polynomial.eval₂_sub, Polynomial.eval₂_X_pow, Polynomial.eval₂_C,
+      map_intCast, hx, sub_self]
+  haveI : FiniteDimensional ℚ (IntermediateField.adjoin ℚ {x}) :=
+    IntermediateField.adjoin.finiteDimensional hxint
+  haveI : NumberField (IntermediateField.adjoin ℚ {x}) := ⟨⟩
+  intro g hg
+  -- the square kill from the reciprocity leaf over the `h⁺`-table glue
+  have h2 : ν g ^ 2 = 1 :=
+    character_sq_eq_one_of_narrow_exponent_two_ray_class θ' x hθ'x ν
+      hνmul hνne0 U hUopen hUker hνunr
+      (fun I hI => isNarrowRayEquiv_sq_top_of_quadratic_ray_class
+        d hd x hx I hI) g hg
+  -- the odd pointwise order, and `gcd(2, odd) = 1`
+  obtain ⟨n, -, hnodd, -, hgn⟩ := hνodd g hg
+  have hdgcd := Nat.dvd_gcd (orderOf_dvd_of_pow_eq_one h2)
+    (orderOf_dvd_of_pow_eq_one hgn)
+  have hco : Nat.gcd 2 n = 1 :=
+    (Nat.prime_two.coprime_iff_not_dvd).mpr (by
+      rw [Nat.odd_iff] at hnodd
+      omega)
+  rw [hco, Nat.dvd_one] at hdgcd
+  exact orderOf_eq_one_iff.mp hdgcd
 
 set_option maxHeartbeats 1000000 in
 /-- **An odd-order character of `Γ_{ℚ(√d)}` unramified outside `3` is
