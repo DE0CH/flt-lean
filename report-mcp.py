@@ -97,20 +97,43 @@ class PipeLsp:
             raise RuntimeError("report server response pipe EOF")
         self.buf += chunk
 
+    def _resync(self, deadline):
+        """Drop stream garbage up to the next header marker. A client
+        killed mid-call (session fork/limit kill) can leave a partial
+        response frame in resp.fifo; the next reader would otherwise
+        parse from mid-frame and wedge every later call. Responses with
+        foreign request ids are already tolerated by _request's loop —
+        this handles the byte-level half."""
+        marker = b"Content-Length:"
+        idx = self.buf.find(marker, 1)
+        if idx == -1:
+            self.buf = self.buf[-(len(marker) - 1):] if self.buf else b""
+            self._fill(deadline)
+        else:
+            self.buf = self.buf[idx:]
+
     def _read_msg(self, deadline):
-        while b"\r\n\r\n" not in self.buf:
-            self._fill(deadline)
-        head, _, self.buf = self.buf.partition(b"\r\n\r\n")
-        length = None
-        for line in head.decode("ascii", "replace").split("\r\n"):
-            if line.lower().startswith("content-length:"):
-                length = int(line.split(":", 1)[1].strip())
-        if length is None:
-            raise RuntimeError(f"malformed LSP header from report server: {head!r}")
-        while len(self.buf) < length:
-            self._fill(deadline)
-        body, self.buf = self.buf[:length], self.buf[length:]
-        return json.loads(body)
+        while True:
+            while b"\r\n\r\n" not in self.buf:
+                self._fill(deadline)
+            head, _, rest = self.buf.partition(b"\r\n\r\n")
+            length = None
+            for line in head.decode("ascii", "replace").split("\r\n"):
+                if line.lower().startswith("content-length:"):
+                    length = int(line.split(":", 1)[1].strip())
+            if length is None:
+                self._resync(deadline)
+                continue
+            self.buf = rest
+            while len(self.buf) < length:
+                self._fill(deadline)
+            body, self.buf = self.buf[:length], self.buf[length:]
+            try:
+                return json.loads(body)
+            except ValueError:
+                # length lied (mid-body desync) — recover the same way
+                self.buf = body + self.buf
+                self._resync(deadline)
 
     def _request(self, method, params, timeout):
         self.req_seq += 1
