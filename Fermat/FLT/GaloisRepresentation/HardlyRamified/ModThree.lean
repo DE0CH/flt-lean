@@ -9037,9 +9037,1328 @@ theorem dedekindZeta_norm_lower_of_re_eq_two (K : Type*) [Field K]
   rw [← hcoeff, ← h, Complex.norm_exp, Real.exp_le_exp]
   exact hre
 
+/-- **Norm growth of `Γ` under an integral shift** (PROVEN 2026-07-24
+— for the decomposition of
+`DedekindContinuation.xi_window_le_xiFactor`): iterating the
+recurrence `Γ(w+1) = w·Γ(w)` (`Complex.Gamma_add_one`; the shifted
+arguments stay off the poles because `im ≠ 0` keeps them nonzero)
+gives `‖Γ(w + n)‖ ≤ (1 + ‖w‖ + n)^n·‖Γ(w)‖` — the exact-identity form
+of "an integral `re`-shift of `Γ` costs only polynomially", the
+engine of the reflection ratio
+`dedekindXiFactor_reflection_ratio`. -/
+theorem norm_Gamma_add_natCast_le (w : ℂ) (hw : w.im ≠ 0) (n : ℕ) :
+    ‖Complex.Gamma (w + n)‖ ≤ (1 + ‖w‖ + n) ^ n * ‖Complex.Gamma w‖ := by
+  induction n with
+  | zero => simp
+  | succ n ih =>
+    have hwn : w + (n : ℂ) ≠ 0 := by
+      intro h
+      have := congrArg Complex.im h
+      simp at this
+      exact hw this
+    have hstep : Complex.Gamma (w + ((n : ℕ) + 1 : ℕ)) =
+        (w + n) * Complex.Gamma (w + n) := by
+      rw [show ((w + ((n : ℕ) + 1 : ℕ) : ℂ)) = (w + n) + 1 by push_cast; ring]
+      exact Complex.Gamma_add_one _ hwn
+    have hb : (0:ℝ) ≤ 1 + ‖w‖ + n := by positivity
+    have hb' : (1 + ‖w‖ + (n:ℝ)) ≤ 1 + ‖w‖ + (n + 1 : ℕ) := by push_cast; linarith
+    rw [hstep, norm_mul]
+    calc ‖w + (n:ℂ)‖ * ‖Complex.Gamma (w + n)‖
+        ≤ (1 + ‖w‖ + ((n:ℕ) + 1 : ℕ)) * ((1 + ‖w‖ + n) ^ n * ‖Complex.Gamma w‖) := by
+          apply mul_le_mul _ ih (norm_nonneg _) (by positivity)
+          calc ‖w + (n:ℂ)‖ ≤ ‖w‖ + ‖(n:ℂ)‖ := norm_add_le _ _
+            _ = ‖w‖ + n := by simp
+            _ ≤ 1 + ‖w‖ + ((n:ℕ) + 1 : ℕ) := by push_cast; linarith
+      _ ≤ (1 + ‖w‖ + ((n:ℕ) + 1 : ℕ)) *
+            ((1 + ‖w‖ + ((n:ℕ)+1:ℕ)) ^ n * ‖Complex.Gamma w‖) := by
+          apply mul_le_mul_of_nonneg_left _ (by positivity)
+          apply mul_le_mul_of_nonneg_right (pow_le_pow_left₀ hb hb' n) (norm_nonneg _)
+      _ = (1 + ‖w‖ + ((n:ℕ)+1:ℕ)) ^ (n+1) * ‖Complex.Gamma w‖ := by ring
+
+/-- **Differentiability of the elementary factor off the real axis**
+(PROVEN 2026-07-24 — for the decomposition of
+`DedekindContinuation.xi_window_le_xiFactor`): at `im z ≠ 0` every
+factor of `dedekindXiFactor` is differentiable — the polynomial
+prefactor is entire, the constant-base complex powers have nonzero
+bases (`|d_K| ≥ 1`, `π`, `2π`), and `Γ(z/2)`, `Γ(z)` avoid the poles
+at the nonpositive integers because those are real
+(`Complex.differentiableAt_Gamma`). -/
+theorem dedekindXiFactor_differentiableAt (K : Type*) [Field K]
+    [NumberField K] {z : ℂ} (hz : z.im ≠ 0) :
+    DifferentiableAt ℂ (dedekindXiFactor K) z := by
+  have hpole : ∀ w : ℂ, w.im ≠ 0 → ∀ m : ℕ, w ≠ -(m : ℂ) := by
+    intro w hw m h
+    apply hw
+    rw [h]
+    simp
+  have hz2 : (z / 2).im ≠ 0 := by
+    rw [show (z/2).im = z.im/2 by simp]
+    exact div_ne_zero hz two_ne_zero
+  have hA : (0:ℝ) < |(NumberField.discr K : ℝ)| :=
+    abs_pos.mpr (by exact_mod_cast NumberField.discr_ne_zero K)
+  have hA0 : Complex.ofReal |(NumberField.discr K : ℝ)| ≠ 0 := by
+    simpa using hA.ne'
+  have hπ0 : ((Real.pi : ℝ) : ℂ) ≠ 0 := by
+    simp
+  have h2π0 : (((2 * Real.pi : ℝ)) : ℂ) ≠ 0 := by
+    simp
+  unfold dedekindXiFactor
+  apply DifferentiableAt.mul
+  apply DifferentiableAt.mul
+  apply DifferentiableAt.mul
+  · fun_prop
+  · exact (differentiableAt_id.div_const 2).const_cpow (Or.inl hA0)
+  · apply DifferentiableAt.pow
+    apply DifferentiableAt.mul
+    · exact (differentiableAt_id.neg.div_const 2).const_cpow (Or.inl hπ0)
+    · exact (Complex.differentiableAt_Gamma _ (hpole _ hz2)).comp z
+        (differentiableAt_id.div_const 2)
+  · apply DifferentiableAt.pow
+    apply DifferentiableAt.mul
+    · exact ((differentiableAt_id.neg).const_cpow (Or.inl h2π0)).const_mul 2
+    · exact Complex.differentiableAt_Gamma _ (hpole _ hz)
+
+/-- **Nonvanishing of the elementary factor off the real axis**
+(PROVEN 2026-07-24 — for the decomposition of
+`DedekindContinuation.xi_window_le_xiFactor`): at `im z ≠ 0` no factor
+of `dedekindXiFactor` vanishes — `z`, `z − 1` are nonreal hence
+nonzero, complex powers of nonzero bases are nonzero
+(`Complex.cpow_ne_zero_iff`), and mathlib's `Complex.Gamma` vanishes
+only at the nonpositive integers (`Complex.Gamma_ne_zero`), which are
+real.  This is what makes `ξ_K/E` on `im > 0` the honest analytically
+continued Dedekind zeta. -/
+theorem dedekindXiFactor_ne_zero (K : Type*) [Field K]
+    [NumberField K] {z : ℂ} (hz : z.im ≠ 0) :
+    dedekindXiFactor K z ≠ 0 := by
+  have hpole : ∀ w : ℂ, w.im ≠ 0 → ∀ m : ℕ, w ≠ -(m : ℂ) := by
+    intro w hw m h
+    apply hw
+    rw [h]
+    simp
+  have hz2 : (z / 2).im ≠ 0 := by
+    rw [show (z/2).im = z.im/2 by simp]
+    exact div_ne_zero hz two_ne_zero
+  have hz0 : z ≠ 0 := fun h => hz (by rw [h]; simp)
+  have hz1 : z - 1 ≠ 0 := sub_ne_zero.mpr (fun h => hz (by rw [h]; simp))
+  have hA : (0:ℝ) < |(NumberField.discr K : ℝ)| :=
+    abs_pos.mpr (by exact_mod_cast NumberField.discr_ne_zero K)
+  have hA0 : Complex.ofReal |(NumberField.discr K : ℝ)| ≠ 0 := by
+    simpa using hA.ne'
+  have hπ0 : ((Real.pi : ℝ) : ℂ) ≠ 0 := by
+    simp
+  have h2π0 : (((2 * Real.pi : ℝ)) : ℂ) ≠ 0 := by
+    simp
+  unfold dedekindXiFactor
+  apply mul_ne_zero
+  apply mul_ne_zero
+  apply mul_ne_zero
+  · exact mul_ne_zero hz0 hz1
+  · exact Complex.cpow_ne_zero_iff.mpr (Or.inl hA0)
+  · exact pow_ne_zero _ (mul_ne_zero
+      (Complex.cpow_ne_zero_iff.mpr (Or.inl hπ0))
+      (Complex.Gamma_ne_zero (hpole _ hz2)))
+  · exact pow_ne_zero _ (mul_ne_zero (mul_ne_zero two_ne_zero
+      (Complex.cpow_ne_zero_iff.mpr (Or.inl h2π0)))
+      (Complex.Gamma_ne_zero (hpole _ hz)))
+
+open IsDedekindDomain in
+/-- **Uniform Euler-product upper bound for `ζ_K` on the half-plane
+`re s ≥ 2`** (PROVEN 2026-07-24 — for the decomposition of
+`DedekindContinuation.xi_window_le_xiFactor`; the mirror image of
+`dedekindZeta_norm_lower_of_re_eq_two`): there is an `M > 0` with
+`‖ζ_K(s)‖ ≤ M` for EVERY `s` with `re s ≥ 2`.  Same exp-log Euler
+product as the lower bound — `ζ_K(s) = exp(Σ_𝔭 −log(1 − N𝔭^{−s}))`,
+`‖ζ_K(s)‖ = exp(re Σ) ≤ exp(‖Σ‖) ≤ exp((3/2)·Σ_𝔭 N𝔭^{−2})` — with the
+per-place norms now bounded via `N𝔭^{−re s} ≤ N𝔭^{−2}`
+(`Real.rpow_le_rpow_of_exponent_le`).  Supplies the boundary constants
+of the Phragmén–Lindelöf strip at `re = 8` and (through the
+functional equation) at the mirror line `re = 11/2`. -/
+theorem dedekindZeta_norm_upper_of_two_le_re (K : Type*) [Field K]
+    [NumberField K] :
+    ∃ M : ℝ, 0 < M ∧ ∀ s : ℂ, 2 ≤ s.re →
+      ‖NumberField.dedekindZeta K s‖ ≤ M := by
+  classical
+  have hsum2 : Summable
+      (fun P : HeightOneSpectrum (NumberField.RingOfIntegers K) =>
+        (Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℝ) ^
+          (-(2 : ℝ))) :=
+    summable_rpow_neg_natCard_quotient (by norm_num)
+  refine ⟨Real.exp (3 / 2 *
+      ∑' P : HeightOneSpectrum (NumberField.RingOfIntegers K),
+        (Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℝ) ^
+          (-(2 : ℝ))), Real.exp_pos _, ?_⟩
+  intro s hs
+  have hs2 : 1 < s.re := by linarith
+  have h := exp_tsum_neg_log_one_sub_dirichletCharacter_mul_cpow_neg_eq_LSeries
+    K (1 : DirichletCharacter ℂ 1) hs2
+  have hcoeff : (fun k : ℕ => (1 : DirichletCharacter ℂ 1) (k : ZMod 1) *
+      (Nat.card {I : Ideal (NumberField.RingOfIntegers K) //
+        Ideal.absNorm I = k} : ℂ)) =
+      fun n : ℕ => (Nat.card {I : Ideal (NumberField.RingOfIntegers K) //
+        Ideal.absNorm I = n} : ℂ) := by
+    funext k
+    rw [MulChar.one_apply (isUnit_of_subsingleton _), one_mul]
+  -- per-place factor norm bound at `re s ≥ 2`
+  have hzb : ∀ P : HeightOneSpectrum (NumberField.RingOfIntegers K),
+      ‖(1 : DirichletCharacter ℂ 1)
+          ((Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℕ) :
+            ZMod 1) *
+        (Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℂ) ^ (-s)‖ ≤
+        (Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℝ) ^
+          (-(2 : ℝ)) := by
+    intro P
+    have hNpos : 0 < Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) := by
+      have h2 := two_le_natCard_quotient P
+      omega
+    have hN1 : (1:ℝ) ≤
+        (Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℝ) := by
+      have h2 := two_le_natCard_quotient P
+      have : (2:ℝ) ≤ (Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℝ) := by
+        exact_mod_cast h2
+      linarith
+    rw [norm_mul, Complex.norm_natCast_cpow_of_pos hNpos, Complex.neg_re]
+    calc ‖(1 : DirichletCharacter ℂ 1)
+          ((Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℕ) :
+            ZMod 1)‖ *
+          (Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℝ) ^ (-s.re)
+        ≤ 1 * (Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℝ) ^
+            (-s.re) :=
+          mul_le_mul_of_nonneg_right (DirichletCharacter.norm_le_one _ _)
+            (Real.rpow_nonneg (Nat.cast_nonneg _) _)
+      _ = (Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℝ) ^
+            (-s.re) := one_mul _
+      _ ≤ (Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℝ) ^
+            (-(2:ℝ)) :=
+          Real.rpow_le_rpow_of_exponent_le hN1 (by linarith)
+  -- the factors are in the disc of radius `1/2` where `log` is tame
+  have hhalf : ∀ P : HeightOneSpectrum (NumberField.RingOfIntegers K),
+      ‖-((1 : DirichletCharacter ℂ 1)
+          ((Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℕ) :
+            ZMod 1) *
+        (Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℂ) ^ (-s))‖ ≤
+        1 / 2 := by
+    intro P
+    rw [norm_neg]
+    refine (hzb P).trans ?_
+    have h2N : (2 : ℝ) ≤
+        (Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℝ) := by
+      exact_mod_cast two_le_natCard_quotient P
+    calc (Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℝ) ^
+          (-(2 : ℝ))
+        ≤ (2 : ℝ) ^ (-(2 : ℝ)) :=
+          Real.rpow_le_rpow_of_nonpos two_pos h2N (by norm_num)
+      _ ≤ (2 : ℝ) ^ (-1 : ℝ) :=
+          (Real.rpow_le_rpow_left_iff one_lt_two).mpr (by norm_num)
+      _ = 1 / 2 := by rw [Real.rpow_neg_one]; norm_num
+  -- per-place log bound
+  have hlogb : ∀ P : HeightOneSpectrum (NumberField.RingOfIntegers K),
+      ‖-Complex.log (1 - (1 : DirichletCharacter ℂ 1)
+          ((Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℕ) :
+            ZMod 1) *
+        (Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℂ) ^ (-s))‖ ≤
+        3 / 2 * (Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℝ) ^
+          (-(2 : ℝ)) := by
+    intro P
+    rw [norm_neg, sub_eq_add_neg]
+    calc ‖Complex.log (1 + -((1 : DirichletCharacter ℂ 1)
+            ((Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℕ) :
+              ZMod 1) *
+          (Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℂ) ^
+            (-s)))‖
+        ≤ 3 / 2 * ‖-((1 : DirichletCharacter ℂ 1)
+            ((Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℕ) :
+              ZMod 1) *
+          (Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℂ) ^
+            (-s))‖ :=
+          Complex.norm_log_one_add_half_le_self (hhalf P)
+      _ = 3 / 2 * ‖(1 : DirichletCharacter ℂ 1)
+            ((Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℕ) :
+              ZMod 1) *
+          (Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℂ) ^
+            (-s)‖ := by rw [norm_neg]
+      _ ≤ 3 / 2 * (Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℝ) ^
+            (-(2 : ℝ)) :=
+          mul_le_mul_of_nonneg_left (hzb P) (by norm_num)
+  -- the log sum is absolutely bounded by `(3/2)·Σ_𝔭 N𝔭^{−2}`
+  have hnorm_summable : Summable
+      (fun P : HeightOneSpectrum (NumberField.RingOfIntegers K) =>
+        ‖-Complex.log (1 - (1 : DirichletCharacter ℂ 1)
+            ((Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℕ) :
+              ZMod 1) *
+          (Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℂ) ^
+            (-s))‖) :=
+    Summable.of_nonneg_of_le (fun P => norm_nonneg _) hlogb
+      (hsum2.mul_left (3 / 2))
+  have hS : ‖∑' P : HeightOneSpectrum (NumberField.RingOfIntegers K),
+      -Complex.log (1 - (1 : DirichletCharacter ℂ 1)
+          ((Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℕ) :
+            ZMod 1) *
+        (Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℂ) ^ (-s))‖ ≤
+      3 / 2 * ∑' P : HeightOneSpectrum (NumberField.RingOfIntegers K),
+        (Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℝ) ^
+          (-(2 : ℝ)) := by
+    refine (norm_tsum_le_tsum_norm hnorm_summable).trans ?_
+    rw [← tsum_mul_left]
+    exact Summable.tsum_le_tsum hlogb hnorm_summable (hsum2.mul_left _)
+  have hre_up : (∑' P : HeightOneSpectrum (NumberField.RingOfIntegers K),
+      -Complex.log (1 - (1 : DirichletCharacter ℂ 1)
+          ((Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℕ) :
+            ZMod 1) *
+        (Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℂ) ^
+          (-s))).re ≤
+      3 / 2 * ∑' P : HeightOneSpectrum (NumberField.RingOfIntegers K),
+        (Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℝ) ^
+          (-(2 : ℝ)) :=
+    (abs_le.mp ((Complex.abs_re_le_norm _).trans hS)).2
+  unfold NumberField.dedekindZeta
+  rw [← hcoeff, ← h, Complex.norm_exp, Real.exp_le_exp]
+  exact hre_up
+
+/-- **Reflection ratio for the elementary-factor shape across the
+strip `[−9/2, 8]`** (PROVEN 2026-07-24 — the exact-recurrence engine
+of `dedekindXiFactor_reflection_ratio`, stated over an abstract base
+`A ≥ 1` and abstract multiplicities so the whole estimate is
+elementary): for `z` on the line `re = −9/2` with `im z ≥ 1`, the
+elementary-factor expression at the MIRROR point `z + 10` (the image
+of `1 − z̄` under the functional-equation reflection; `re = 11/2`) is
+bounded by `C·(1 + im z)^B` times the expression at `z` itself.  The
+LEFT EDGE `−9/2` is chosen exactly so that both Γ-argument shifts are
+INTEGERS — `Γ(z + 10)` is `10` recurrence steps from `Γ(z)` and
+`Γ((z+10)/2) = Γ(z/2 + 5)` is `5` steps from `Γ(z/2)`
+(`norm_Gamma_add_natCast_le`) — so NO Stirling-type estimate is
+needed: the `cpow` factors change by exact positive-real constants
+(`Complex.norm_cpow_eq_rpow_re_of_pos` + `Real.rpow_add`), the
+polynomial prefactor and the recurrence products are bounded by
+powers of `(1 + im z)`, and the denominators `‖z‖, ‖z − 1‖ ≥ 1` since
+`|re| ≥ 9/2`.  Witnesses: `C = 64·A⁵·(9⁵/π⁵)^{r₁}·(16¹⁰/(2π)¹⁰)^{r₂}`,
+`B = 2 + 5r₁ + 10r₂`. -/
+theorem xiFactor_shape_reflection_ratio (A : ℝ) (hA1 : 1 ≤ A) (r₁ r₂ : ℕ) :
+    ∃ C : ℝ, 0 < C ∧ ∃ B : ℕ, ∀ z : ℂ, z.re = -(9/2 : ℝ) → 1 ≤ z.im →
+      ‖(z + 10) * (z + 10 - 1) * Complex.ofReal A ^ ((z + 10) / 2) *
+          ((Real.pi : ℂ) ^ (-(z + 10) / 2) * Complex.Gamma ((z + 10) / 2)) ^ r₁ *
+          ((2 : ℂ) * ((2 * Real.pi : ℝ) : ℂ) ^ (-(z + 10)) *
+            Complex.Gamma (z + 10)) ^ r₂‖ ≤
+        C * (1 + z.im) ^ B *
+          ‖z * (z - 1) * Complex.ofReal A ^ (z / 2) *
+            ((Real.pi : ℂ) ^ (-z / 2) * Complex.Gamma (z / 2)) ^ r₁ *
+            ((2 : ℂ) * ((2 * Real.pi : ℝ) : ℂ) ^ (-z) *
+              Complex.Gamma z) ^ r₂‖ := by
+  have hA0 : (0:ℝ) < A := lt_of_lt_of_le one_pos hA1
+  have hπ : (0:ℝ) < Real.pi := Real.pi_pos
+  have h2π : (0:ℝ) < 2*Real.pi := by positivity
+  refine ⟨64 * A^(5:ℕ) * ((9:ℝ)^5 / Real.pi^5) ^ r₁ *
+    ((16:ℝ)^10 / (2*Real.pi)^10) ^ r₂,
+    by positivity, 2 + 5*r₁ + 10*r₂, ?_⟩
+  intro z hre him
+  have ht0 : (0:ℝ) < z.im := lt_of_lt_of_le one_pos him
+  have hs0 : (0:ℝ) < 1 + z.im := by linarith
+  have h1t : (0:ℝ) ≤ 1 + z.im := hs0.le
+  have h1t5 : (0:ℝ) ≤ (1+z.im)^5 := pow_nonneg h1t 5
+  have h1t10 : (0:ℝ) ≤ (1+z.im)^10 := pow_nonneg h1t 10
+  -- basic norm facts
+  have habsre : |z.re| = 9/2 := by
+    rw [hre, abs_neg, abs_of_nonneg (by norm_num : (0:ℝ) ≤ 9/2)]
+  have hzup : ‖z‖ ≤ 9/2 + z.im := by
+    refine (Complex.norm_le_abs_re_add_abs_im z).trans ?_
+    rw [habsre, abs_of_pos ht0]
+  have hzlow : (1:ℝ) ≤ ‖z‖ := by
+    have := Complex.abs_re_le_norm z
+    rw [habsre] at this; linarith
+  have hz1low : (1:ℝ) ≤ ‖z - 1‖ := by
+    have h1 := Complex.abs_re_le_norm (z - 1)
+    have h2 : (z-1).re = -(11/2) := by simp [hre]; norm_num
+    rw [h2, abs_neg, abs_of_nonneg (by norm_num : (0:ℝ) ≤ 11/2)] at h1
+    linarith
+  have hulow : ‖z + 10‖ ≤ 8 * (1 + z.im) * ‖z‖ := by
+    have h1 : ‖z + 10‖ ≤ ‖z‖ + 10 := by
+      calc ‖z + 10‖ ≤ ‖z‖ + ‖(10:ℂ)‖ := norm_add_le _ _
+        _ = ‖z‖ + 10 := by simp
+    have h2 : ‖z + 10‖ ≤ 8 * (1 + z.im) := by linarith [hzup]
+    calc ‖z + 10‖ ≤ 8 * (1 + z.im) := h2
+      _ ≤ 8 * (1 + z.im) * ‖z‖ :=
+          le_mul_of_one_le_right (mul_nonneg (by norm_num) h1t) hzlow
+  have hu1low : ‖z + 9‖ ≤ 8 * (1 + z.im) * ‖z - 1‖ := by
+    have h1 : ‖z + 9‖ ≤ ‖z‖ + 9 := by
+      calc ‖z + 9‖ ≤ ‖z‖ + ‖(9:ℂ)‖ := norm_add_le _ _
+        _ = ‖z‖ + 9 := by simp
+    calc ‖z + 9‖ ≤ 8 * (1 + z.im) := by linarith [hzup]
+      _ ≤ 8 * (1 + z.im) * ‖z - 1‖ :=
+          le_mul_of_one_le_right (mul_nonneg (by norm_num) h1t) hz1low
+  -- cpow norm equalities
+  have hcpA : ‖Complex.ofReal A ^ ((z+10)/2)‖ =
+      A^(5:ℕ) * ‖Complex.ofReal A ^ (z/2)‖ := by
+    rw [Complex.norm_cpow_eq_rpow_re_of_pos hA0,
+      Complex.norm_cpow_eq_rpow_re_of_pos hA0,
+      ← Real.rpow_natCast A 5, ← Real.rpow_add hA0]
+    congr 1
+    have h1 : ((z+10)/2).re = 5 + (z/2).re := by simp; ring
+    rw [h1]; norm_num
+  have hcpπ : ‖(Real.pi:ℂ) ^ (-(z+10)/2)‖ =
+      (Real.pi^(5:ℕ))⁻¹ * ‖(Real.pi:ℂ) ^ (-z/2)‖ := by
+    rw [Complex.norm_cpow_eq_rpow_re_of_pos hπ,
+      Complex.norm_cpow_eq_rpow_re_of_pos hπ,
+      ← Real.rpow_natCast Real.pi 5, ← Real.rpow_neg hπ.le, ← Real.rpow_add hπ]
+    congr 1
+    have h1 : (-(z+10)/2).re = -5 + (-z/2).re := by simp; ring
+    rw [h1]; norm_num
+  have hcp2π : ‖((2*Real.pi:ℝ):ℂ) ^ (-(z+10))‖ =
+      ((2*Real.pi)^(10:ℕ))⁻¹ * ‖((2*Real.pi:ℝ):ℂ) ^ (-z)‖ := by
+    rw [Complex.norm_cpow_eq_rpow_re_of_pos h2π,
+      Complex.norm_cpow_eq_rpow_re_of_pos h2π,
+      ← Real.rpow_natCast (2*Real.pi) 10, ← Real.rpow_neg h2π.le,
+      ← Real.rpow_add h2π]
+    congr 1
+    have h1 : (-(z+10)).re = -10 + (-z).re := by simp
+    rw [h1]; norm_num
+  -- Gamma recurrence bounds
+  have hz2im : (z/2).im ≠ 0 := by
+    rw [show (z/2).im = z.im/2 by simp]
+    exact (div_pos ht0 two_pos).ne'
+  have hG1 : ‖Complex.Gamma ((z+10)/2)‖ ≤
+      9^5 * (1 + z.im)^5 * ‖Complex.Gamma (z/2)‖ := by
+    rw [show (z+10)/2 = z/2 + ((5:ℕ):ℂ) by push_cast; ring]
+    refine (norm_Gamma_add_natCast_le (z/2) hz2im 5).trans ?_
+    have hn2 : ‖z/2‖ ≤ (9/2 + z.im)/2 := by
+      rw [show z/2 = z/(2:ℂ) from rfl, norm_div]
+      simp only [Complex.norm_ofNat]
+      linarith [hzup]
+    have hb : 1 + ‖z/2‖ + ((5:ℕ):ℝ) ≤ 9 * (1 + z.im) := by
+      push_cast
+      linarith [hn2]
+    calc (1 + ‖z/2‖ + (5:ℕ))^5 * ‖Complex.Gamma (z/2)‖
+        ≤ (9*(1+z.im))^5 * ‖Complex.Gamma (z/2)‖ :=
+          mul_le_mul_of_nonneg_right (pow_le_pow_left₀ (by positivity) hb 5)
+            (norm_nonneg _)
+      _ = 9^5 * (1+z.im)^5 * ‖Complex.Gamma (z/2)‖ := by rw [mul_pow]
+  have hG2 : ‖Complex.Gamma (z+10)‖ ≤
+      16^10 * (1 + z.im)^10 * ‖Complex.Gamma z‖ := by
+    rw [show (z+10 : ℂ) = z + ((10:ℕ):ℂ) by push_cast; ring]
+    refine (norm_Gamma_add_natCast_le z ht0.ne' 10).trans ?_
+    have hb : 1 + ‖z‖ + ((10:ℕ):ℝ) ≤ 16 * (1 + z.im) := by
+      push_cast
+      linarith [hzup]
+    calc (1 + ‖z‖ + (10:ℕ))^10 * ‖Complex.Gamma z‖
+        ≤ (16*(1+z.im))^10 * ‖Complex.Gamma z‖ :=
+          mul_le_mul_of_nonneg_right (pow_le_pow_left₀ (by positivity) hb 10)
+            (norm_nonneg _)
+      _ = 16^10 * (1+z.im)^10 * ‖Complex.Gamma z‖ := by rw [mul_pow]
+  -- nonnegativity bookkeeping
+  have hnn1 : (0:ℝ) ≤ 8 * (1 + z.im) * ‖z‖ :=
+    mul_nonneg (mul_nonneg (by norm_num) h1t) (norm_nonneg _)
+  have hnn2 : (0:ℝ) ≤ 8 * (1 + z.im) * ‖z - 1‖ :=
+    mul_nonneg (mul_nonneg (by norm_num) h1t) (norm_nonneg _)
+  have hnnA : (0:ℝ) ≤ A^(5:ℕ) * ‖Complex.ofReal A ^ (z/2)‖ :=
+    mul_nonneg (pow_nonneg hA0.le 5) (norm_nonneg _)
+  have hY1nn : (0:ℝ) ≤ (Real.pi^(5:ℕ))⁻¹ * ‖(Real.pi:ℂ) ^ (-z/2)‖ *
+      (9^5 * (1 + z.im)^5 * ‖Complex.Gamma (z/2)‖) :=
+    mul_nonneg (mul_nonneg (by positivity) (norm_nonneg _))
+      (mul_nonneg (mul_nonneg (by norm_num) h1t5) (norm_nonneg _))
+  have hfirst : ‖z + 10‖ * ‖z + 9‖ * (A^(5:ℕ) * ‖Complex.ofReal A ^ (z/2)‖) ≤
+      (8 * (1 + z.im) * ‖z‖) * (8 * (1 + z.im) * ‖z - 1‖) *
+        (A^(5:ℕ) * ‖Complex.ofReal A ^ (z/2)‖) :=
+    mul_le_mul_of_nonneg_right
+      (mul_le_mul hulow hu1low (norm_nonneg _) hnn1) hnnA
+  have hfirstnn : (0:ℝ) ≤ (8 * (1 + z.im) * ‖z‖) * (8 * (1 + z.im) * ‖z - 1‖) *
+      (A^(5:ℕ) * ‖Complex.ofReal A ^ (z/2)‖) :=
+    mul_nonneg (mul_nonneg hnn1 hnn2) hnnA
+  have hpow1 : ((Real.pi^(5:ℕ))⁻¹ * ‖(Real.pi:ℂ) ^ (-z/2)‖ *
+        ‖Complex.Gamma ((z+10)/2)‖) ^ r₁ ≤
+      ((Real.pi^(5:ℕ))⁻¹ * ‖(Real.pi:ℂ) ^ (-z/2)‖ *
+        (9^5 * (1 + z.im)^5 * ‖Complex.Gamma (z/2)‖)) ^ r₁ :=
+    pow_le_pow_left₀ (by positivity)
+      (mul_le_mul_of_nonneg_left hG1 (by positivity)) r₁
+  have hpow2 : (2 * (((2*Real.pi)^(10:ℕ))⁻¹ * ‖((2*Real.pi:ℝ):ℂ) ^ (-z)‖) *
+        ‖Complex.Gamma (z+10)‖) ^ r₂ ≤
+      (2 * (((2*Real.pi)^(10:ℕ))⁻¹ * ‖((2*Real.pi:ℝ):ℂ) ^ (-z)‖) *
+        (16^10 * (1 + z.im)^10 * ‖Complex.Gamma z‖)) ^ r₂ :=
+    pow_le_pow_left₀ (by positivity)
+      (mul_le_mul_of_nonneg_left hG2 (by positivity)) r₂
+  -- expand and assemble
+  rw [show z + 10 - 1 = z + 9 by ring]
+  simp only [norm_mul, norm_pow, Complex.norm_ofNat]
+  rw [hcpA, hcpπ, hcp2π]
+  calc ‖z + 10‖ * ‖z + 9‖ * (A ^ (5:ℕ) * ‖Complex.ofReal A ^ (z/2)‖) *
+        ((Real.pi^(5:ℕ))⁻¹ * ‖(Real.pi:ℂ) ^ (-z/2)‖ *
+          ‖Complex.Gamma ((z+10)/2)‖) ^ r₁ *
+        (2 * (((2*Real.pi)^(10:ℕ))⁻¹ * ‖((2*Real.pi:ℝ):ℂ) ^ (-z)‖) *
+          ‖Complex.Gamma (z+10)‖) ^ r₂
+      ≤ ((8 * (1 + z.im) * ‖z‖) * (8 * (1 + z.im) * ‖z - 1‖) *
+          (A ^ (5:ℕ) * ‖Complex.ofReal A ^ (z/2)‖)) *
+        ((Real.pi^(5:ℕ))⁻¹ * ‖(Real.pi:ℂ) ^ (-z/2)‖ *
+          (9^5 * (1 + z.im)^5 * ‖Complex.Gamma (z/2)‖)) ^ r₁ *
+        (2 * (((2*Real.pi)^(10:ℕ))⁻¹ * ‖((2*Real.pi:ℝ):ℂ) ^ (-z)‖) *
+          (16^10 * (1 + z.im)^10 * ‖Complex.Gamma z‖)) ^ r₂ := by
+        exact mul_le_mul
+          (mul_le_mul hfirst hpow1 (pow_nonneg (by positivity) _)
+            (mul_nonneg (mul_nonneg hnn1 hnn2) hnnA))
+          hpow2 (pow_nonneg (by positivity) _)
+          (mul_nonneg hfirstnn (pow_nonneg hY1nn _))
+    _ = (64 * A^(5:ℕ) * ((9:ℝ)^5 / Real.pi^5) ^ r₁ *
+          ((16:ℝ)^10 / (2*Real.pi)^10) ^ r₂) *
+          (1 + z.im) ^ (2 + 5*r₁ + 10*r₂) *
+        (‖z‖ * ‖z - 1‖ * ‖Complex.ofReal A ^ (z/2)‖ *
+          (‖(Real.pi:ℂ) ^ (-z/2)‖ * ‖Complex.Gamma (z/2)‖) ^ r₁ *
+          (2 * ‖((2*Real.pi:ℝ):ℂ) ^ (-z)‖ * ‖Complex.Gamma z‖) ^ r₂) := by
+        simp only [mul_pow, div_pow, inv_pow, pow_add, pow_mul]
+        ring
+
+/-- **Γ-ratio bound for the elementary factor across the
+functional-equation reflection** (PROVEN 2026-07-24 — the `re = −9/2`
+boundary input of the Phragmén–Lindelöf strip argument for
+`DedekindContinuation.xi_window_le_xiFactor`): for `z` on the line
+`re = −9/2` at height `≥ 1`, `‖E(z + 10)‖ ≤ C·(1 + im z)^B·‖E(z)‖`,
+where `z + 10 = 1 − z̄` is the conjugate-reflected point the
+functional equation `ξ(z) = ξ(1−z)` (plus `conj_symm`) transports the
+left boundary to.  Instance of `xiFactor_shape_reflection_ratio` at
+`A = |d_K| ≥ 1` (`NumberField.discr_ne_zero`), `r₁ = r₁(K)`,
+`r₂ = r₂(K)` — the choice `−9/2` makes both Γ-shifts integral, so the
+ratio is a finite product of recurrence factors, no Stirling
+needed. -/
+theorem dedekindXiFactor_reflection_ratio (K : Type*) [Field K]
+    [NumberField K] :
+    ∃ C : ℝ, 0 < C ∧ ∃ B : ℕ, ∀ z : ℂ, z.re = -(9/2 : ℝ) → 1 ≤ z.im →
+      ‖dedekindXiFactor K (z + 10)‖ ≤
+        C * (1 + z.im) ^ B * ‖dedekindXiFactor K z‖ := by
+  have hA1 : (1:ℝ) ≤ |(NumberField.discr K : ℝ)| := by
+    rw [show |(NumberField.discr K : ℝ)| = ((|NumberField.discr K| : ℤ) : ℝ) by
+      push_cast; ring]
+    exact_mod_cast Int.one_le_abs (NumberField.discr_ne_zero K)
+  obtain ⟨C, hC, B, h⟩ := xiFactor_shape_reflection_ratio
+    (|(NumberField.discr K : ℝ)|) hA1
+    (NumberField.InfinitePlace.nrRealPlaces K)
+    (NumberField.InfinitePlace.nrComplexPlaces K)
+  refine ⟨C, hC, B, ?_⟩
+  intro z hre him
+  unfold dedekindXiFactor
+  exact h z hre him
+
+/-- **The complex `Γ` is dominated by the real `Γ` of its real part**
+(PROVEN 2026-07-24 — for the elementary-factor lower bound
+`dedekindXiFactor_norm_lower_strip`): for `re w > 0`,
+`‖Γ(w)‖ ≤ Γ(re w)` — the integral representations
+`Complex.Gamma_eq_integral` / `Real.Gamma_eq_integral` have literally
+the same integrand in norm (`‖e^{−x}·x^{w−1}‖ = e^{−x}·x^{re w − 1}`
+for `x > 0`), so this is `norm_integral_le_integral_norm`. -/
+theorem norm_Gamma_le_Gamma_re (w : ℂ) (hw : 0 < w.re) :
+    ‖Complex.Gamma w‖ ≤ Real.Gamma w.re := by
+  rw [Complex.Gamma_eq_integral hw, Real.Gamma_eq_integral hw]
+  refine (MeasureTheory.norm_integral_le_integral_norm _).trans_eq ?_
+  refine MeasureTheory.setIntegral_congr_fun measurableSet_Ioi (fun x hx => ?_)
+  rw [norm_mul, Complex.norm_real, Real.norm_eq_abs, abs_of_pos (Real.exp_pos _),
+    Complex.norm_cpow_eq_rpow_re_of_pos hx, Complex.sub_re, Complex.one_re]
+
+/-- **`Γ` grows by at most `2^n` under an upward integral shift, off
+the real axis** (PROVEN 2026-07-24 — for
+`dedekindXiFactor_norm_lower_strip`): if `|im w| ≥ 1/2` then
+`‖Γ(w)‖ ≤ 2^n·‖Γ(w + n)‖`, because each recurrence factor in
+`Γ(w+n) = (w+n−1)⋯w·Γ(w)` has modulus `≥ |im w| ≥ 1/2`.  This is how
+the reflected factor `Γ(1−w)` is pushed into the half-plane
+`re ≥ 1` where `norm_Gamma_le_Gamma_re` applies. -/
+theorem norm_Gamma_le_two_pow_mul (w : ℂ) (hw : 1/2 ≤ |w.im|) (n : ℕ) :
+    ‖Complex.Gamma w‖ ≤ 2^n * ‖Complex.Gamma (w + n)‖ := by
+  induction n with
+  | zero => simp
+  | succ n ih =>
+    have him : (w + (n:ℂ)).im = w.im := by simp
+    have hnorm : 1/2 ≤ ‖w + (n:ℂ)‖ := by
+      refine hw.trans ?_
+      rw [← him]
+      exact Complex.abs_im_le_norm _
+    have hwn : w + (n:ℂ) ≠ 0 := by
+      intro h
+      rw [h] at him
+      simp at him
+      rw [← him] at hw
+      norm_num at hw
+    have hstep : Complex.Gamma (w + ((n : ℕ) + 1 : ℕ)) =
+        (w + n) * Complex.Gamma (w + n) := by
+      rw [show ((w + ((n : ℕ) + 1 : ℕ) : ℂ)) = (w + n) + 1 by push_cast; ring]
+      exact Complex.Gamma_add_one _ hwn
+    calc ‖Complex.Gamma w‖ ≤ 2^n * ‖Complex.Gamma (w+n)‖ := ih
+      _ ≤ 2^n * (2 * ‖Complex.Gamma (w + ((n:ℕ)+1:ℕ))‖) := by
+          apply mul_le_mul_of_nonneg_left _ (by positivity)
+          rw [hstep, norm_mul]
+          calc ‖Complex.Gamma (w+n)‖ = 2 * ((1/2) * ‖Complex.Gamma (w+n)‖) := by
+                ring
+            _ ≤ 2 * (‖w + (n:ℂ)‖ * ‖Complex.Gamma (w+n)‖) := by
+                apply mul_le_mul_of_nonneg_left _ (by norm_num)
+                exact mul_le_mul_of_nonneg_right hnorm (norm_nonneg _)
+      _ = 2^((n:ℕ)+1) * ‖Complex.Gamma (w + ((n:ℕ)+1:ℕ))‖ := by ring
+
+/-- **Elementary exponential bound for the complex sine in the upper
+half-plane** (PROVEN 2026-07-24 — for
+`dedekindXiFactor_norm_lower_strip`): for `im u ≥ 0`,
+`‖sin u‖ ≤ e^{im u}` — from the definition
+`sin u = (e^{−iu} − e^{iu})·i/2` and `‖e^{±iu}‖ = e^{±im u}`. -/
+theorem norm_sin_le_exp (u : ℂ) (hu : 0 ≤ u.im) :
+    ‖Complex.sin u‖ ≤ Real.exp u.im := by
+  rw [Complex.sin]
+  rw [norm_div, norm_mul, Complex.norm_I, mul_one]
+  have h1 : ‖Complex.exp (-u * Complex.I) - Complex.exp (u * Complex.I)‖ ≤
+      Real.exp u.im + Real.exp (-u.im) := by
+    refine (norm_sub_le _ _).trans ?_
+    have h2 : ‖Complex.exp (-u * Complex.I)‖ = Real.exp u.im := by
+      rw [Complex.norm_exp]
+      congr 1
+      rw [show -u * Complex.I = -(u * Complex.I) by ring, Complex.neg_re,
+        Complex.mul_I_re]
+      ring
+    have h3 : ‖Complex.exp (u * Complex.I)‖ = Real.exp (-u.im) := by
+      rw [Complex.norm_exp]
+      congr 1
+      rw [Complex.mul_I_re]
+    rw [h2, h3]
+  have h4 : Real.exp (-u.im) ≤ Real.exp u.im := Real.exp_le_exp.mpr (by linarith)
+  have h5 : ‖(2:ℂ)‖ = (2:ℝ) := by simp
+  rw [h5]
+  calc ‖Complex.exp (-u * Complex.I) - Complex.exp (u * Complex.I)‖ / 2
+      ≤ (Real.exp u.im + Real.exp (-u.im)) / 2 := by linarith
+    _ ≤ Real.exp u.im := by linarith
+
+/-- **Uniform exponential lower bound for `Γ` on the extended strip**
+(PROVEN 2026-07-24 — the Γ-engine of
+`dedekindXiFactor_norm_lower_strip`): there is `c > 0` with
+`‖Γ(w)‖ ≥ c·e^{−π·im w}` for every `w` with `−9/2 ≤ re w ≤ 8`,
+`im w ≥ 1/2` — wide enough to serve both `Γ(z)` and `Γ(z/2)` for `z`
+on the Phragmén–Lindelöf strip.  Route: Euler's reflection
+`Γ(w)·Γ(1−w)·sin(πw) = π` (`Complex.Gamma_mul_Gamma_one_sub`; the
+sine is nonzero because `im ≠ 0`), with `‖sin(πw)‖ ≤ e^{π·im w}`
+(`norm_sin_le_exp`) and
+`‖Γ(1−w)‖ ≤ 2⁸·‖Γ(9−w)‖ ≤ 2⁸·Γ(9−re w) ≤ 2⁸·sup_{[1,27/2]} Γ`
+(`norm_Gamma_le_two_pow_mul`, `norm_Gamma_le_Gamma_re`, and the
+extreme value theorem for the continuous `Real.Gamma` on the compact
+`[1, 27/2]`). -/
+theorem exists_norm_Gamma_lower :
+    ∃ c : ℝ, 0 < c ∧ ∀ w : ℂ, -(9/2 : ℝ) ≤ w.re → w.re ≤ 8 → 1/2 ≤ w.im →
+      c * Real.exp (-Real.pi * w.im) ≤ ‖Complex.Gamma w‖ := by
+  have hΓcont : ContinuousOn Real.Gamma (Set.Icc (1:ℝ) (27/2)) := by
+    intro x hx
+    refine (Real.differentiableAt_Gamma ?_).continuousAt.continuousWithinAt
+    intro m
+    have h1 := hx.1
+    have hm : (0:ℝ) ≤ m := Nat.cast_nonneg m
+    intro h
+    rw [h] at h1
+    linarith
+  obtain ⟨x₀, hx₀mem, hx₀⟩ :=
+    (isCompact_Icc (a := (1:ℝ)) (b := 27/2)).exists_isMaxOn
+      ⟨1, Set.mem_Icc.mpr ⟨le_refl _, by norm_num⟩⟩ hΓcont
+  have hG0 : 0 < Real.Gamma x₀ := Real.Gamma_pos_of_pos (by linarith [hx₀mem.1])
+  refine ⟨Real.pi / (2^8 * Real.Gamma x₀), by positivity, ?_⟩
+  intro w h1 h2 h3
+  have him0 : (0:ℝ) < w.im := by linarith
+  have hsin_ne : Complex.sin (Real.pi * w) ≠ 0 := by
+    rw [Ne, Complex.sin_eq_zero_iff]
+    rintro ⟨k, hk⟩
+    have him' : Real.pi * w.im = 0 := by
+      have h5 := congrArg Complex.im hk
+      simpa using h5
+    rcases mul_eq_zero.mp him' with h6 | h6
+    · exact Real.pi_ne_zero h6
+    · rw [h6] at him0; norm_num at him0
+  have hkey : ‖Complex.Gamma w‖ * (‖Complex.Gamma (1 - w)‖ *
+      ‖Complex.sin (Real.pi * w)‖) = Real.pi := by
+    have h := Complex.Gamma_mul_Gamma_one_sub w
+    have h2' : Complex.Gamma w * Complex.Gamma (1 - w) *
+        Complex.sin (Real.pi * w) = (Real.pi : ℂ) := by
+      rw [h]
+      exact div_mul_cancel₀ _ hsin_ne
+    have h3' := congrArg norm h2'
+    rw [norm_mul, norm_mul, Complex.norm_real, Real.norm_eq_abs,
+      abs_of_pos Real.pi_pos] at h3'
+    rw [← mul_assoc]
+    exact h3'
+  have hG1w : ‖Complex.Gamma (1 - w)‖ ≤ 2^8 * Real.Gamma x₀ := by
+    have himw : |(1 - w).im| = w.im := by
+      rw [Complex.sub_im, Complex.one_im]
+      rw [abs_of_nonpos (by linarith)]
+      ring
+    have hshift := norm_Gamma_le_two_pow_mul (1 - w) (by rw [himw]; exact h3) 8
+    refine hshift.trans ?_
+    apply mul_le_mul_of_nonneg_left _ (by positivity)
+    have hre9 : ((1 - w) + ((8:ℕ):ℂ)).re = 9 - w.re := by
+      push_cast
+      simp
+      ring
+    refine (norm_Gamma_le_Gamma_re _ (by rw [hre9]; linarith)).trans ?_
+    rw [hre9]
+    exact isMaxOn_iff.mp hx₀ (9 - w.re)
+      (Set.mem_Icc.mpr ⟨by linarith, by linarith⟩)
+  have hsinb : ‖Complex.sin (Real.pi * w)‖ ≤ Real.exp (Real.pi * w.im) := by
+    have h4 := norm_sin_le_exp ((Real.pi : ℂ) * w)
+      (by rw [Complex.im_ofReal_mul]; positivity)
+    rwa [Complex.im_ofReal_mul] at h4
+  have hprod_le : ‖Complex.Gamma (1 - w)‖ * ‖Complex.sin (Real.pi * w)‖ ≤
+      2^8 * Real.Gamma x₀ * Real.exp (Real.pi * w.im) :=
+    mul_le_mul hG1w hsinb (norm_nonneg _) (by positivity)
+  have hπle : Real.pi ≤ ‖Complex.Gamma w‖ *
+      (2^8 * Real.Gamma x₀ * Real.exp (Real.pi * w.im)) := by
+    calc Real.pi = ‖Complex.Gamma w‖ * (‖Complex.Gamma (1 - w)‖ *
+          ‖Complex.sin (Real.pi * w)‖) := hkey.symm
+      _ ≤ ‖Complex.Gamma w‖ *
+          (2^8 * Real.Gamma x₀ * Real.exp (Real.pi * w.im)) :=
+          mul_le_mul_of_nonneg_left hprod_le (norm_nonneg _)
+  rw [div_mul_eq_mul_div,
+    div_le_iff₀ (by positivity : (0:ℝ) < 2^8 * Real.Gamma x₀)]
+  have hstep := mul_le_mul_of_nonneg_right hπle
+    (Real.exp_nonneg (-Real.pi * w.im))
+  have hexp1 : Real.exp (Real.pi * w.im) * Real.exp (-Real.pi * w.im) = 1 := by
+    rw [← Real.exp_add, show Real.pi * w.im + -Real.pi * w.im = 0 by ring,
+      Real.exp_zero]
+  have hcancel : ‖Complex.Gamma w‖ *
+      (2^8 * Real.Gamma x₀ * Real.exp (Real.pi * w.im)) *
+      Real.exp (-Real.pi * w.im) =
+      ‖Complex.Gamma w‖ * (2^8 * Real.Gamma x₀) := by
+    calc ‖Complex.Gamma w‖ *
+        (2^8 * Real.Gamma x₀ * Real.exp (Real.pi * w.im)) *
+        Real.exp (-Real.pi * w.im)
+        = ‖Complex.Gamma w‖ * (2^8 * Real.Gamma x₀) *
+          (Real.exp (Real.pi * w.im) * Real.exp (-Real.pi * w.im)) := by ring
+      _ = ‖Complex.Gamma w‖ * (2^8 * Real.Gamma x₀) * 1 := by rw [hexp1]
+      _ = ‖Complex.Gamma w‖ * (2^8 * Real.Gamma x₀) := mul_one _
+  linarith [hstep, hcancel.le, hcancel.ge]
+
+/-- **Exponential-quadratic lower bound for the elementary-factor
+shape** (PROVEN 2026-07-24 — abstract-base form of
+`dedekindXiFactor_norm_lower_strip`, over any `A ≥ 1` and
+multiplicities `r₁, r₂`): on the strip `−9/2 ≤ re z ≤ 8`, `im z ≥ 1`
+the elementary-factor expression is `≥ exp(−κ(1 + im z)²)`.
+Factorwise: `‖z‖, ‖z−1‖ ≥ im z ≥ 1`; the constant-base powers are
+`≥ A^{−9/4}`, `π^{−4}`, `(2π)^{−8}` (`re` is confined to the strip);
+both Γ-factors are `≥ c·e^{−π·im z}` by `exists_norm_Gamma_lower`
+(applied at `z` and `z/2`).  The product is `c₀·e^{−π(r₁+r₂)·im z}`,
+and `κ := π(r₁+r₂) + |log c₀| + 1` makes `e^{−κ(1+t)²}` smaller since
+`(1+t)² ≥ 1 + t`. -/
+theorem xiFactor_shape_norm_lower (A : ℝ) (hA1 : 1 ≤ A) (r₁ r₂ : ℕ) :
+    ∃ κ : ℝ, 0 < κ ∧ ∀ z : ℂ, -(9/2 : ℝ) ≤ z.re → z.re ≤ 8 → 1 ≤ z.im →
+      Real.exp (-κ * (1 + z.im)^2) ≤
+        ‖z * (z - 1) * Complex.ofReal A ^ (z / 2) *
+          ((Real.pi : ℂ) ^ (-z / 2) * Complex.Gamma (z / 2)) ^ r₁ *
+          ((2 : ℂ) * ((2 * Real.pi : ℝ) : ℂ) ^ (-z) *
+            Complex.Gamma z) ^ r₂‖ := by
+  obtain ⟨c, hc, hΓ⟩ := exists_norm_Gamma_lower
+  have hA0 : (0:ℝ) < A := lt_of_lt_of_le one_pos hA1
+  have hπ1 : (1:ℝ) ≤ Real.pi := by linarith [Real.pi_gt_three]
+  have hπ0 : (0:ℝ) < Real.pi := by linarith
+  have h2π1 : (1:ℝ) ≤ 2*Real.pi := by linarith
+  have h2π0 : (0:ℝ) < 2*Real.pi := by linarith
+  set c₀ : ℝ := A ^ (-(9/4) : ℝ) * (Real.pi ^ (-(4:ℝ)) * c) ^ r₁ *
+    (2 * (2*Real.pi) ^ (-(8:ℝ)) * c) ^ r₂ with hc₀def
+  have hc₀ : 0 < c₀ := by
+    rw [hc₀def]
+    exact mul_pos (mul_pos (Real.rpow_pos_of_pos hA0 _)
+      (pow_pos (mul_pos (Real.rpow_pos_of_pos hπ0 _) hc) _))
+      (pow_pos (mul_pos (mul_pos two_pos (Real.rpow_pos_of_pos h2π0 _)) hc) _)
+  refine ⟨Real.pi * ((r₁:ℝ) + r₂) + |Real.log c₀| + 1, by positivity, ?_⟩
+  intro z h1 h2 h3
+  have ht0 : (0:ℝ) < z.im := by linarith
+  have hz1 : (1:ℝ) ≤ ‖z‖ := by
+    have h4 := Complex.abs_im_le_norm z
+    rw [abs_of_pos ht0] at h4; linarith
+  have hz2 : (1:ℝ) ≤ ‖z - 1‖ := by
+    have h4 := Complex.abs_im_le_norm (z - 1)
+    have h5 : (z - 1).im = z.im := by simp
+    rw [h5, abs_of_pos ht0] at h4; linarith
+  have hcpA : A ^ (-(9/4) : ℝ) ≤ ‖Complex.ofReal A ^ (z/2)‖ := by
+    rw [Complex.norm_cpow_eq_rpow_re_of_pos hA0]
+    apply Real.rpow_le_rpow_of_exponent_le hA1
+    rw [show (z/2).re = z.re/2 by simp]
+    linarith
+  have hcpπ : Real.pi ^ (-(4:ℝ)) ≤ ‖(Real.pi:ℂ) ^ (-z/2)‖ := by
+    rw [Complex.norm_cpow_eq_rpow_re_of_pos hπ0]
+    apply Real.rpow_le_rpow_of_exponent_le hπ1
+    rw [show (-z/2).re = -z.re/2 by simp]
+    linarith
+  have hcp2π : (2*Real.pi) ^ (-(8:ℝ)) ≤ ‖((2*Real.pi:ℝ):ℂ) ^ (-z)‖ := by
+    rw [Complex.norm_cpow_eq_rpow_re_of_pos h2π0]
+    apply Real.rpow_le_rpow_of_exponent_le h2π1
+    rw [show (-z).re = -z.re by simp]
+    linarith
+  have hΓ2 : c * Real.exp (-Real.pi * z.im) ≤ ‖Complex.Gamma (z/2)‖ := by
+    have hre : (z/2).re = z.re/2 := by simp
+    have him : (z/2).im = z.im/2 := by simp
+    have h6 := hΓ (z/2) (by rw [hre]; linarith) (by rw [hre]; linarith)
+      (by rw [him]; linarith)
+    refine le_trans ?_ h6
+    rw [him]
+    apply mul_le_mul_of_nonneg_left _ hc.le
+    apply Real.exp_le_exp.mpr
+    nlinarith [hπ0, ht0]
+  have hΓ1 : c * Real.exp (-Real.pi * z.im) ≤ ‖Complex.Gamma z‖ :=
+    hΓ z h1 h2 (by linarith)
+  have hP1 : (0:ℝ) ≤ Real.pi ^ (-(4:ℝ)) * (c * Real.exp (-Real.pi * z.im)) :=
+    mul_nonneg (Real.rpow_nonneg hπ0.le _) (mul_nonneg hc.le (Real.exp_nonneg _))
+  have hP2 : (0:ℝ) ≤ 2 * (2*Real.pi) ^ (-(8:ℝ)) *
+      (c * Real.exp (-Real.pi * z.im)) :=
+    mul_nonneg (mul_nonneg (by norm_num) (Real.rpow_nonneg h2π0.le _))
+      (mul_nonneg hc.le (Real.exp_nonneg _))
+  have hQ1 : (0:ℝ) ≤ ‖(Real.pi:ℂ) ^ (-z/2)‖ * ‖Complex.Gamma (z/2)‖ :=
+    mul_nonneg (norm_nonneg _) (norm_nonneg _)
+  have hlow : Real.exp (-(Real.pi * ((r₁:ℝ) + r₂) + |Real.log c₀| + 1) *
+      (1 + z.im)^2) ≤ c₀ * Real.exp (-(Real.pi * ((r₁:ℝ) + r₂)) * z.im) := by
+    have hgoal : -(Real.pi * ((r₁:ℝ) + r₂) + |Real.log c₀| + 1) *
+        (1 + z.im)^2 ≤
+        Real.log c₀ + -(Real.pi * ((r₁:ℝ) + r₂)) * z.im := by
+      have hsq : (0:ℝ) ≤ (1 + z.im)^2 - (1 + z.im) := by nlinarith
+      have habs : -|Real.log c₀| ≤ Real.log c₀ := neg_abs_le _
+      have ha0 : (0:ℝ) ≤ Real.pi * ((r₁:ℝ) + r₂) := by positivity
+      nlinarith [mul_nonneg (by positivity : (0:ℝ) ≤ Real.pi * ((r₁:ℝ) + r₂) +
+          |Real.log c₀| + 1) hsq,
+        mul_nonneg (by positivity : (0:ℝ) ≤ |Real.log c₀| + 1) ht0.le, ha0]
+    calc Real.exp (-(Real.pi * ((r₁:ℝ) + r₂) + |Real.log c₀| + 1) *
+        (1 + z.im)^2)
+        ≤ Real.exp (Real.log c₀ + -(Real.pi * ((r₁:ℝ) + r₂)) * z.im) :=
+          Real.exp_le_exp.mpr hgoal
+      _ = c₀ * Real.exp (-(Real.pi * ((r₁:ℝ) + r₂)) * z.im) := by
+          rw [Real.exp_add, Real.exp_log hc₀]
+  refine le_trans hlow ?_
+  simp only [norm_mul, norm_pow, Complex.norm_ofNat]
+  calc c₀ * Real.exp (-(Real.pi * ((r₁:ℝ) + r₂)) * z.im)
+      = A ^ (-(9/4) : ℝ) *
+        (Real.pi ^ (-(4:ℝ)) * (c * Real.exp (-Real.pi * z.im))) ^ r₁ *
+        (2 * (2*Real.pi) ^ (-(8:ℝ)) * (c * Real.exp (-Real.pi * z.im))) ^ r₂ := by
+        rw [hc₀def, show -(Real.pi * ((r₁:ℝ) + r₂)) * z.im =
+          ((r₁ + r₂ : ℕ):ℝ) * (-Real.pi * z.im) by push_cast; ring,
+          Real.exp_nat_mul, pow_add]
+        ring
+    _ ≤ ‖Complex.ofReal A ^ (z/2)‖ *
+        (‖(Real.pi:ℂ) ^ (-z/2)‖ * ‖Complex.Gamma (z/2)‖) ^ r₁ *
+        (2 * ‖((2*Real.pi:ℝ):ℂ) ^ (-z)‖ * ‖Complex.Gamma z‖) ^ r₂ := by
+        apply mul_le_mul
+        · apply mul_le_mul hcpA
+            (pow_le_pow_left₀ hP1 (mul_le_mul hcpπ hΓ2
+              (mul_nonneg hc.le (Real.exp_nonneg _)) (norm_nonneg _)) r₁)
+            (pow_nonneg hP1 _) (norm_nonneg _)
+        · apply pow_le_pow_left₀ hP2
+          apply mul_le_mul _ hΓ1 (mul_nonneg hc.le (Real.exp_nonneg _))
+            (mul_nonneg (by norm_num) (norm_nonneg _))
+          exact mul_le_mul_of_nonneg_left hcp2π (by norm_num)
+        · exact pow_nonneg hP2 _
+        · exact mul_nonneg (norm_nonneg _) (pow_nonneg hQ1 _)
+    _ ≤ ‖z‖ * ‖z - 1‖ * ‖Complex.ofReal A ^ (z/2)‖ *
+        (‖(Real.pi:ℂ) ^ (-z/2)‖ * ‖Complex.Gamma (z/2)‖) ^ r₁ *
+        (2 * ‖((2*Real.pi:ℝ):ℂ) ^ (-z)‖ * ‖Complex.Gamma z‖) ^ r₂ := by
+        have h12 : (1:ℝ) ≤ ‖z‖ * ‖z - 1‖ :=
+          one_le_mul_of_one_le_of_one_le hz1 hz2
+        have hXnn : (0:ℝ) ≤ ‖Complex.ofReal A ^ (z/2)‖ *
+            (‖(Real.pi:ℂ) ^ (-z/2)‖ * ‖Complex.Gamma (z/2)‖) ^ r₁ *
+            (2 * ‖((2*Real.pi:ℝ):ℂ) ^ (-z)‖ * ‖Complex.Gamma z‖) ^ r₂ :=
+          mul_nonneg (mul_nonneg (norm_nonneg _) (pow_nonneg hQ1 _))
+            (pow_nonneg (mul_nonneg (mul_nonneg (by norm_num) (norm_nonneg _))
+              (norm_nonneg _)) _)
+        calc ‖Complex.ofReal A ^ (z/2)‖ *
+            (‖(Real.pi:ℂ) ^ (-z/2)‖ * ‖Complex.Gamma (z/2)‖) ^ r₁ *
+            (2 * ‖((2*Real.pi:ℝ):ℂ) ^ (-z)‖ * ‖Complex.Gamma z‖) ^ r₂
+            ≤ (‖z‖ * ‖z - 1‖) * (‖Complex.ofReal A ^ (z/2)‖ *
+              (‖(Real.pi:ℂ) ^ (-z/2)‖ * ‖Complex.Gamma (z/2)‖) ^ r₁ *
+              (2 * ‖((2*Real.pi:ℝ):ℂ) ^ (-z)‖ * ‖Complex.Gamma z‖) ^ r₂) :=
+              le_mul_of_one_le_left hXnn h12
+          _ = ‖z‖ * ‖z - 1‖ * ‖Complex.ofReal A ^ (z/2)‖ *
+              (‖(Real.pi:ℂ) ^ (-z/2)‖ * ‖Complex.Gamma (z/2)‖) ^ r₁ *
+              (2 * ‖((2*Real.pi:ℝ):ℂ) ^ (-z)‖ * ‖Complex.Gamma z‖) ^ r₂ := by
+              ring
+
+/-- **Exponential-quadratic lower bound for the elementary factor on
+the Phragmén–Lindelöf strip** (PROVEN 2026-07-24 — the final analytic
+leaf of the decomposition of
+`DedekindContinuation.xi_window_le_xiFactor`): on the strip
+`−9/2 ≤ re z ≤ 8`, `im z ≥ 1`, the elementary factor satisfies
+`‖E(z)‖ ≥ exp(−κ·(1 + im z)²)`.  This is FAR weaker than the truth
+(Stirling gives `‖E‖ ≍ poly·e^{−c·im}`), but it is all the a-priori
+input `phragmenLindelof_half_strip` needs for the quotient `ξ_K/E`.
+Instance of `xiFactor_shape_norm_lower` at `A = |d_K| ≥ 1`
+(`NumberField.discr_ne_zero`), whose Γ-engine is Euler's reflection
+formula plus the integral bound `norm_Gamma_le_Gamma_re` — no
+Stirling needed at this precision. -/
+theorem dedekindXiFactor_norm_lower_strip (K : Type*) [Field K]
+    [NumberField K] :
+    ∃ κ : ℝ, 0 < κ ∧ ∀ z : ℂ, -(9/2 : ℝ) ≤ z.re → z.re ≤ 8 → 1 ≤ z.im →
+      Real.exp (-κ * (1 + z.im) ^ 2) ≤ ‖dedekindXiFactor K z‖ := by
+  have hA1 : (1:ℝ) ≤ |(NumberField.discr K : ℝ)| := by
+    rw [show |(NumberField.discr K : ℝ)| = ((|NumberField.discr K| : ℤ) : ℝ) by
+      push_cast; ring]
+    exact_mod_cast Int.one_le_abs (NumberField.discr_ne_zero K)
+  obtain ⟨κ, hκ, h⟩ := xiFactor_shape_norm_lower
+    (|(NumberField.discr K : ℝ)|) hA1
+    (NumberField.InfinitePlace.nrRealPlaces K)
+    (NumberField.InfinitePlace.nrComplexPlaces K)
+  refine ⟨κ, hκ, ?_⟩
+  intro z h1 h2 h3
+  unfold dedekindXiFactor
+  exact h z h1 h2 h3
+
+/-- **Phragmén–Lindelöf for the half-strip `[−9/2, 8] × [1, ∞)`**
+(PROVEN 2026-07-24 — the convexity engine of
+`DedekindContinuation.xi_window_le_xiFactor`; mathlib's
+`PhragmenLindelof.vertical_strip` handles only FULL vertical strips,
+and `ξ_K/E` lives on a half-strip because `E` degenerates on the real
+axis, so this is proved from scratch): a function `f`,
+`DiffContOnCl` on the open half-strip, bounded by `C` on all three
+boundary pieces (both vertical rays and the bottom segment `im = 1`)
+and a priori by `exp(K(1 + im)²)` inside, is bounded by `C`
+throughout.  Proof: the classical cubic-multiplier truncation.  For
+`ε > 0` multiply by `m_ε(s) = exp(−iεs³)`, whose modulus
+`exp(ε(3·re²·im − im³))` decays like `e^{−ε·im³}` up the strip —
+faster than the `e^{K·im²}` a-priori growth — while on the boundary
+`3·re²·im − im³ ≤ 192·im − im³ ≤ 1024` (max at `im = 8`; the cubic
+identity `im³ − 192·im + 1024 = (im − 8)²(im + 16)`).  On truncated
+rectangles `[−9/2, 8] × [1, h]` the maximum principle
+(`Complex.norm_le_of_forall_mem_frontier_norm_le`, frontier computed
+by `Complex.frontier_reProdIm`) bounds `f·m_ε` by
+`C·e^{1024ε} + exp(K(1+h)² + ε(192h − h³))`; the second term dies as
+`h → ∞` (the exponent is eventually `≤ −h`), so `‖f·m_ε‖ ≤ C·e^{1024ε}`
+on the whole half-strip, and `ε → 0⁺` recovers `‖f‖ ≤ C` pointwise
+(`ge_of_tendsto`). -/
+theorem phragmenLindelof_half_strip {f : ℂ → ℂ} {C K : ℝ}
+    (hd : DiffContOnCl ℂ f {z : ℂ | z.re ∈ Set.Ioo (-(9/2 : ℝ)) 8 ∧ 1 < z.im})
+    (hB : ∀ z : ℂ, -(9/2 : ℝ) ≤ z.re → z.re ≤ 8 → 1 ≤ z.im →
+      ‖f z‖ ≤ Real.exp (K * (1 + z.im) ^ 2))
+    (hleft : ∀ z : ℂ, z.re = -(9/2 : ℝ) → 1 ≤ z.im → ‖f z‖ ≤ C)
+    (hright : ∀ z : ℂ, z.re = 8 → 1 ≤ z.im → ‖f z‖ ≤ C)
+    (hbot : ∀ z : ℂ, -(9/2 : ℝ) ≤ z.re → z.re ≤ 8 → z.im = 1 → ‖f z‖ ≤ C) :
+    ∀ z : ℂ, -(9/2 : ℝ) ≤ z.re → z.re ≤ 8 → 1 ≤ z.im → ‖f z‖ ≤ C := by
+  have hC0 : 0 ≤ C :=
+    le_trans (norm_nonneg (f Complex.I))
+      (hbot Complex.I (by norm_num [Complex.I_re]) (by norm_num [Complex.I_re])
+        (by simp))
+  intro z hre1 hre2 him
+  have key : ∀ ε : ℝ, 0 < ε → ‖f z‖ ≤ C * Real.exp (ε * (1024 + z.im^3)) := by
+    intro ε hε
+    set m : ℂ → ℂ := fun w => Complex.exp (-Complex.I * (ε:ℂ) * w^3) with hmdef
+    have hm_norm : ∀ w : ℂ, ‖m w‖ = Real.exp (ε * (3*w.re^2*w.im - w.im^3)) := by
+      intro w
+      rw [hmdef]
+      simp only []
+      rw [Complex.norm_exp]
+      congr 1
+      have h1 : -Complex.I * (ε:ℂ) * w^3 = (ε:ℂ) * -(Complex.I * w^3) := by ring
+      rw [h1, Complex.re_ofReal_mul, Complex.neg_re, Complex.I_mul_re,
+        show (w^3).im = 3*w.re^2*w.im - w.im^3 by
+          simp [pow_succ, Complex.mul_im, Complex.mul_re]; ring]
+      ring
+    have hm_diff : Differentiable ℂ m := by
+      apply Differentiable.cexp
+      fun_prop
+    have hCcase : ∀ w : ℂ, ‖f w‖ ≤ C → w.re^2 ≤ 64 → 0 ≤ w.im →
+        ‖f w‖ * Real.exp (ε * (3*w.re^2*w.im - w.im^3)) ≤
+          C * Real.exp (1024*ε) := by
+      intro w hfC hσ ht
+      apply mul_le_mul hfC _ (Real.exp_nonneg _) hC0
+      apply Real.exp_le_exp.mpr
+      have h1 : 3*w.re^2*w.im ≤ 192*w.im := by nlinarith
+      have h2 : 192*w.im - w.im^3 ≤ 1024 := by
+        nlinarith [mul_nonneg (sq_nonneg (w.im-8)) (by linarith : (0:ℝ) ≤ w.im + 16)]
+      have h3 : 3*w.re^2*w.im - w.im^3 ≤ 1024 := by linarith
+      calc ε * (3*w.re^2*w.im - w.im^3) ≤ ε * 1024 :=
+            mul_le_mul_of_nonneg_left h3 hε.le
+        _ = 1024 * ε := by ring
+    have hrect : ∀ h : ℝ, max 2 z.im ≤ h →
+        ‖f z * m z‖ ≤ C * Real.exp (1024*ε) +
+          Real.exp (K * (1+h)^2 + ε * (192*h - h^3)) := by
+      intro h hh
+      have hh2 : (2:ℝ) ≤ h := le_trans (le_max_left _ _) hh
+      have hhz : z.im ≤ h := le_trans (le_max_right _ _) hh
+      set R : Set ℂ := Set.Ioo (-(9/2 : ℝ)) 8 ×ℂ Set.Ioo 1 h with hRdef
+      have hR_bounded : Bornology.IsBounded R := by
+        apply (Metric.isBounded_closedBall (x := (0:ℂ)) (r := 9 + h)).subset
+        intro w hw
+        rw [mem_closedBall_zero_iff]
+        rw [hRdef, Complex.mem_reProdIm] at hw
+        obtain ⟨hw1, hw2⟩ := hw
+        have ha : |w.re| ≤ 9 := abs_le.mpr ⟨by linarith [hw1.1], by linarith [hw1.2]⟩
+        have hb : |w.im| ≤ h := abs_le.mpr ⟨by linarith [hw2.1], hw2.2.le⟩
+        calc ‖w‖ ≤ |w.re| + |w.im| := Complex.norm_le_abs_re_add_abs_im w
+          _ ≤ 9 + h := add_le_add ha hb
+      have hRsub : R ⊆ {w : ℂ | w.re ∈ Set.Ioo (-(9/2 : ℝ)) 8 ∧ 1 < w.im} := by
+        intro w hw
+        rw [hRdef, Complex.mem_reProdIm] at hw
+        exact ⟨hw.1, hw.2.1⟩
+      have hfR : DiffContOnCl ℂ f R := hd.mono hRsub
+      have hg : DiffContOnCl ℂ (fun w => f w * m w) R := by
+        constructor
+        · exact fun w hw => (hfR.differentiableOn w hw).mul
+            (hm_diff w).differentiableWithinAt
+        · exact fun w hw => (hfR.continuousOn w hw).mul
+            (hm_diff.continuous.continuousAt).continuousWithinAt
+      have hfront : ∀ w ∈ frontier R, ‖f w * m w‖ ≤
+          C * Real.exp (1024*ε) + Real.exp (K * (1+h)^2 + ε * (192*h - h^3)) := by
+        intro w hw
+        rw [hRdef, Complex.frontier_reProdIm,
+          closure_Ioo (by norm_num : (-(9/2:ℝ)) ≠ 8),
+          frontier_Ioo (by linarith : (1:ℝ) < h),
+          frontier_Ioo (by norm_num : (-(9/2:ℝ)) < 8),
+          closure_Ioo (by linarith : (1:ℝ) ≠ h)] at hw
+        rw [norm_mul, hm_norm w]
+        rcases hw with hw | hw
+        · rw [Complex.mem_reProdIm] at hw
+          obtain ⟨hwre, hwim⟩ := hw
+          have hσ : w.re^2 ≤ 64 := by
+            nlinarith [hwre.1, hwre.2, sq_nonneg (w.re - 8), sq_nonneg (w.re + 9/2)]
+          rcases hwim with him1 | himh
+          · refine le_trans (hCcase w (hbot w hwre.1 hwre.2 him1) hσ
+              (by rw [him1]; norm_num)) ?_
+            exact le_add_of_nonneg_right (Real.exp_nonneg _)
+          · rw [Set.mem_singleton_iff] at himh
+            have hfw : ‖f w‖ ≤ Real.exp (K * (1+h)^2) := by
+              have := hB w hwre.1 hwre.2 (by rw [himh]; linarith)
+              rwa [himh] at this
+            have hmw : Real.exp (ε * (3*w.re^2*w.im - w.im^3)) ≤
+                Real.exp (ε * (192*h - h^3)) := by
+              apply Real.exp_le_exp.mpr
+              apply mul_le_mul_of_nonneg_left _ hε.le
+              rw [himh]
+              nlinarith [hσ, hh2]
+            refine le_trans ?_ (le_add_of_nonneg_left
+              (mul_nonneg hC0 (Real.exp_nonneg _)))
+            calc ‖f w‖ * Real.exp (ε * (3*w.re^2*w.im - w.im^3))
+                ≤ Real.exp (K * (1+h)^2) * Real.exp (ε * (192*h - h^3)) :=
+                  mul_le_mul hfw hmw (Real.exp_nonneg _) (Real.exp_nonneg _)
+              _ = Real.exp (K * (1+h)^2 + ε * (192*h - h^3)) :=
+                  (Real.exp_add _ _).symm
+        · rw [Complex.mem_reProdIm] at hw
+          obtain ⟨hwre, hwim⟩ := hw
+          have him0 : (0:ℝ) ≤ w.im := by linarith [hwim.1]
+          have hfC : ‖f w‖ ≤ C := by
+            rcases hwre with h9 | h8
+            · exact hleft w h9 hwim.1
+            · rw [Set.mem_singleton_iff] at h8
+              exact hright w h8 hwim.1
+          have hσ : w.re^2 ≤ 64 := by
+            rcases hwre with h9 | h8
+            · rw [h9]; norm_num
+            · rw [Set.mem_singleton_iff] at h8; rw [h8]; norm_num
+          refine le_trans (hCcase w hfC hσ him0) ?_
+          exact le_add_of_nonneg_right (Real.exp_nonneg _)
+      have hzclos : z ∈ closure R := by
+        rw [hRdef, Complex.closure_reProdIm,
+          closure_Ioo (by norm_num : (-(9/2:ℝ)) ≠ 8),
+          closure_Ioo (by linarith : (1:ℝ) ≠ h), Complex.mem_reProdIm]
+        exact ⟨⟨hre1, hre2⟩, ⟨him, hhz⟩⟩
+      exact Complex.norm_le_of_forall_mem_frontier_norm_le hR_bounded hg
+        hfront hzclos
+    have hcubic : Filter.Tendsto (fun h : ℝ => K * (1+h)^2 + ε * (192*h - h^3))
+        Filter.atTop Filter.atBot := by
+      refine Filter.tendsto_atBot_mono' Filter.atTop ?_
+        Filter.tendsto_neg_atTop_atBot
+      rw [Filter.EventuallyLE, Filter.eventually_atTop]
+      refine ⟨max 1 ((4 * |K| + 192*ε + 1)/ε), fun h hh => ?_⟩
+      have hh1 : (1:ℝ) ≤ h := le_trans (le_max_left _ _) hh
+      have hh2 : (4 * |K| + 192*ε + 1)/ε ≤ h := le_trans (le_max_right _ _) hh
+      have h3 : 4 * |K| + 192*ε + 1 ≤ ε*h := by
+        rw [div_le_iff₀ hε] at hh2; linarith
+      have hKb : K*(1+h)^2 ≤ 4 * |K| * h^2 := by
+        calc K*(1+h)^2 ≤ |K| * (1+h)^2 :=
+              mul_le_mul_of_nonneg_right (le_abs_self K) (sq_nonneg _)
+          _ ≤ |K| * (4*h^2) := by
+              apply mul_le_mul_of_nonneg_left _ (abs_nonneg K)
+              nlinarith [sq_nonneg (h-1)]
+          _ = 4 * |K| * h^2 := by ring
+      have hA := mul_le_mul_of_nonneg_right h3 (sq_nonneg h)
+      have hD : (0:ℝ) ≤ 192*ε*h*(h-1) :=
+        mul_nonneg (mul_nonneg (by linarith) (by linarith)) (by linarith)
+      have hE : (0:ℝ) ≤ h*(h-1) := mul_nonneg (by linarith) (by linarith)
+      nlinarith [hA, hKb, hD, hE]
+    have hlim : Filter.Tendsto (fun h : ℝ => C * Real.exp (1024*ε) +
+        Real.exp (K * (1+h)^2 + ε * (192*h - h^3))) Filter.atTop
+        (nhds (C * Real.exp (1024*ε) + 0)) :=
+      Filter.Tendsto.add tendsto_const_nhds (Real.tendsto_exp_atBot.comp hcubic)
+    have hev : ∀ᶠ h in Filter.atTop, ‖f z * m z‖ ≤ C * Real.exp (1024*ε) +
+        Real.exp (K * (1+h)^2 + ε * (192*h - h^3)) :=
+      Filter.eventually_atTop.mpr ⟨max 2 z.im, hrect⟩
+    have hgz : ‖f z * m z‖ ≤ C * Real.exp (1024*ε) := by
+      have := ge_of_tendsto hlim hev
+      rwa [add_zero] at this
+    have hmz_pos : (0:ℝ) < ‖m z‖ := by rw [hm_norm z]; exact Real.exp_pos _
+    have hfz : ‖f z‖ = ‖f z * m z‖ / ‖m z‖ := by
+      rw [norm_mul, mul_div_assoc, div_self hmz_pos.ne', mul_one]
+    rw [hfz, div_le_iff₀ hmz_pos]
+    calc ‖f z * m z‖ ≤ C * Real.exp (1024*ε) := hgz
+      _ ≤ C * Real.exp (ε * (1024 + z.im^3)) * ‖m z‖ := by
+          rw [hm_norm z, mul_assoc, ← Real.exp_add]
+          apply mul_le_mul_of_nonneg_left _ hC0
+          apply Real.exp_le_exp.mpr
+          have h0 : 0 ≤ ε * (3*z.re^2*z.im) :=
+            mul_nonneg hε.le (mul_nonneg (mul_nonneg (by norm_num) (sq_nonneg _))
+              (by linarith))
+          nlinarith [h0]
+  have hcont : Continuous fun ε : ℝ => C * Real.exp (ε * (1024 + z.im^3)) := by
+    fun_prop
+  have htend : Filter.Tendsto (fun ε : ℝ => C * Real.exp (ε * (1024 + z.im^3)))
+      (nhdsWithin 0 (Set.Ioi 0)) (nhds C) := by
+    have h1 : Filter.Tendsto (fun ε : ℝ => C * Real.exp (ε * (1024 + z.im^3)))
+        (nhdsWithin 0 (Set.Ioi 0)) (nhds (C * Real.exp (0 * (1024 + z.im^3)))) :=
+      (hcont.tendsto 0).mono_left nhdsWithin_le_nhds
+    rwa [zero_mul, Real.exp_zero, mul_one] at h1
+  exact ge_of_tendsto htend (eventually_nhdsWithin_of_forall (fun ε hε => key ε hε))
+
+/-- **Polynomial strip bound for `ξ_K` against its elementary factor**
+(DECOMPOSED 2026-07-24, assembly PROVEN — the half-strip realization
+of Landau's convexity estimate, feeding
+`DedekindContinuation.xi_window_le_xiFactor`): on the half-strip
+`−9/2 ≤ re z ≤ 8`, `im z ≥ 1`, `‖ξ_K(z)‖ ≤ C·(1 + im z)^B·‖E(z)‖`.
+
+ASSEMBLY (proven here): apply `phragmenLindelof_half_strip` to
+`g = ξ/(E·(z+6)^B)`, where `B` is the reflection-ratio exponent and
+the polynomial `(z+6)^B` — zero-free on `im > 0`, with
+`(1 + im)/2 ≤ ‖z+6‖ ≤ 14(1+im)` on the strip — flattens the
+polynomially growing boundary data to constants:
+
+* `re = 8`: `g = ζ_K/(z+6)^B` by `xi_eq_xiFactor_mul_dedekindZeta`,
+  bounded by the Euler-product constant of
+  `dedekindZeta_norm_upper_of_two_le_re`;
+* `re = −9/2`: `‖ξ(z)‖ = ‖ξ(z+10)‖` by `funcEq` + `conj_symm`
+  (`1 − z̄ = z + 10` on this line), then
+  `‖E(z+10)‖ ≤ C_R(1+im)^B‖E(z)‖` by
+  `dedekindXiFactor_reflection_ratio` and `‖ζ_K(z+10)‖ ≤ M` at
+  `re = 11/2`;
+* `im = 1`: continuity of `g` on the compact bottom segment (extreme
+  value theorem; `E ≠ 0` there by `dedekindXiFactor_ne_zero`);
+* a-priori: the `growth` field (plus compactness on `‖z‖ ≤ 2`) gives
+  `‖ξ‖ ≤ exp(K′(1+im)²)`, and the PROVEN leaf
+  `dedekindXiFactor_norm_lower_strip` bounds `‖1/E‖`, so
+  `‖g‖ ≤ exp((K′+κ)(1+im)²)` — inside the half-strip PL tolerance. -/
+theorem DedekindContinuation.xi_strip_le_xiFactor {K : Type*} [Field K]
+    [NumberField K] (pkg : DedekindContinuation K) :
+    ∃ C : ℝ, 0 < C ∧ ∃ B : ℕ, ∀ z : ℂ, -(9/2 : ℝ) ≤ z.re → z.re ≤ 8 →
+      1 ≤ z.im → ‖pkg.xi z‖ ≤ C * (1 + z.im) ^ B * ‖dedekindXiFactor K z‖ := by
+  obtain ⟨M, hM, hMz⟩ := dedekindZeta_norm_upper_of_two_le_re K
+  obtain ⟨CR, hCR, BR, hRfl⟩ := dedekindXiFactor_reflection_ratio K
+  obtain ⟨κ, hκ, hEl⟩ := dedekindXiFactor_norm_lower_strip K
+  obtain ⟨Cg, hCg, hXg⟩ := pkg.growth
+  have hxicont : Continuous pkg.xi := pkg.differentiable.continuous
+  obtain ⟨w₂, -, hw₂⟩ := (isCompact_closedBall (0:ℂ) 2).exists_isMaxOn
+    ⟨0, Metric.mem_closedBall_self (by norm_num)⟩ hxicont.norm.continuousOn
+  set g : ℂ → ℂ := fun w => pkg.xi w / (dedekindXiFactor K w * (w + 6) ^ BR)
+    with hgdef
+  have hEd : ∀ w : ℂ, 0 < w.im → DifferentiableAt ℂ (dedekindXiFactor K) w :=
+    fun w hw => dedekindXiFactor_differentiableAt K hw.ne'
+  have hEn : ∀ w : ℂ, 0 < w.im → dedekindXiFactor K w ≠ 0 :=
+    fun w hw => dedekindXiFactor_ne_zero K hw.ne'
+  have hw6 : ∀ w : ℂ, 0 < w.im → w + 6 ≠ 0 := by
+    intro w hw h
+    have h6 : w.im = 0 := by
+      have := congrArg Complex.im h
+      simpa using this
+    exact hw.ne' h6
+  have hgdiff : ∀ w : ℂ, 0 < w.im → DifferentiableAt ℂ g w := by
+    intro w hw
+    rw [hgdef]
+    exact (pkg.differentiable.differentiableAt).div
+      ((hEd w hw).mul ((differentiableAt_id.add_const _).pow BR))
+      (mul_ne_zero (hEn w hw) (pow_ne_zero _ (hw6 w hw)))
+  -- bottom segment maximum
+  have hsegim : ∀ w ∈ (fun x : ℝ => (x : ℂ) + Complex.I) ''
+      Set.Icc (-(9/2 : ℝ)) 8,
+      w.im = 1 ∧ -(9/2 : ℝ) ≤ w.re ∧ w.re ≤ 8 := by
+    intro w hw
+    obtain ⟨x, hx, rfl⟩ := hw
+    exact ⟨by simp, by simpa using hx.1, by simpa using hx.2⟩
+  obtain ⟨w₁, -, hw₁max⟩ :=
+    ((isCompact_Icc (a := -(9/2 : ℝ)) (b := 8)).image (by fun_prop :
+        Continuous fun x : ℝ => (x : ℂ) + Complex.I)).exists_isMaxOn
+      ⟨((0:ℝ):ℂ) + Complex.I,
+        ⟨(0:ℝ), Set.mem_Icc.mpr ⟨by norm_num, by norm_num⟩, rfl⟩⟩
+      (fun w hw => ((hgdiff w (by rw [(hsegim w hw).1]; norm_num)).continuousAt.norm).continuousWithinAt)
+  -- right edge
+  have hgright : ∀ w : ℂ, w.re = 8 → 1 ≤ w.im → ‖g w‖ ≤ M := by
+    intro w hre him
+    have hw0 : (0:ℝ) < w.im := by linarith
+    have hxiw : pkg.xi w = dedekindXiFactor K w * NumberField.dedekindZeta K w :=
+      pkg.xi_eq_xiFactor_mul_dedekindZeta w (by rw [hre]; norm_num)
+    have h6 : (1:ℝ) ≤ ‖w + 6‖ := by
+      have h1 := Complex.abs_re_le_norm (w + 6)
+      have h2 : (w + 6).re = 14 := by rw [Complex.add_re, hre]; norm_num
+      rw [h2] at h1
+      calc (1:ℝ) ≤ |(14:ℝ)| := by norm_num
+        _ ≤ ‖w+6‖ := h1
+    show ‖pkg.xi w / (dedekindXiFactor K w * (w + 6) ^ BR)‖ ≤ M
+    rw [hxiw, mul_div_mul_left _ _ (hEn w hw0), norm_div, norm_pow]
+    calc ‖NumberField.dedekindZeta K w‖ / ‖w + 6‖ ^ BR
+        ≤ ‖NumberField.dedekindZeta K w‖ :=
+          div_le_self (norm_nonneg _) (one_le_pow₀ h6)
+      _ ≤ M := hMz w (by rw [hre]; norm_num)
+  -- left edge
+  have hgleft : ∀ w : ℂ, w.re = -(9/2:ℝ) → 1 ≤ w.im →
+      ‖g w‖ ≤ M * CR * 2 ^ BR := by
+    intro w hre him
+    have hw0 : (0:ℝ) < w.im := by linarith
+    have hconjw : 1 - (starRingEnd ℂ) w = w + 10 := by
+      apply Complex.ext
+      · simp [hre]; norm_num
+      · simp
+    have hxi_eqn : ‖pkg.xi w‖ = ‖pkg.xi (w + 10)‖ := by
+      calc ‖pkg.xi w‖ = ‖pkg.xi (1 - w)‖ := by rw [pkg.funcEq w]
+        _ = ‖pkg.xi ((starRingEnd ℂ) (1 - (starRingEnd ℂ) w))‖ := by
+            rw [map_sub, map_one, Complex.conj_conj]
+        _ = ‖(starRingEnd ℂ) (pkg.xi (1 - (starRingEnd ℂ) w))‖ := by
+            rw [pkg.conj_symm]
+        _ = ‖pkg.xi (1 - (starRingEnd ℂ) w)‖ := Complex.norm_conj _
+        _ = ‖pkg.xi (w + 10)‖ := by rw [hconjw]
+    have h10re : (w + 10).re = 11/2 := by
+      rw [Complex.add_re, hre]; norm_num
+    have hxi10 : pkg.xi (w+10) =
+        dedekindXiFactor K (w+10) * NumberField.dedekindZeta K (w+10) :=
+      pkg.xi_eq_xiFactor_mul_dedekindZeta _ (by rw [h10re]; norm_num)
+    have hζ10 : ‖NumberField.dedekindZeta K (w+10)‖ ≤ M :=
+      hMz _ (by rw [h10re]; norm_num)
+    have hE10 : ‖dedekindXiFactor K (w+10)‖ ≤
+        CR * (1 + w.im)^BR * ‖dedekindXiFactor K w‖ := hRfl w hre him
+    have hnum : ‖pkg.xi w‖ ≤ M * CR * (1 + w.im)^BR *
+        ‖dedekindXiFactor K w‖ := by
+      rw [hxi_eqn, hxi10, norm_mul]
+      calc ‖dedekindXiFactor K (w+10)‖ * ‖NumberField.dedekindZeta K (w+10)‖
+          ≤ (CR * (1 + w.im)^BR * ‖dedekindXiFactor K w‖) * M :=
+            mul_le_mul hE10 hζ10 (norm_nonneg _)
+              (mul_nonneg (mul_nonneg hCR.le (pow_nonneg (by linarith) _))
+                (norm_nonneg _))
+        _ = M * CR * (1 + w.im)^BR * ‖dedekindXiFactor K w‖ := by ring
+    have h6low : (1 + w.im) / 2 ≤ ‖w + 6‖ := by
+      have h1 := Complex.abs_im_le_norm (w + 6)
+      have h2 : (w + 6).im = w.im := by simp
+      rw [h2, abs_of_pos hw0] at h1
+      linarith
+    have h6pos : (0:ℝ) < ‖w + 6‖ := lt_of_lt_of_le (by linarith) h6low
+    show ‖pkg.xi w / (dedekindXiFactor K w * (w + 6) ^ BR)‖ ≤ M * CR * 2 ^ BR
+    rw [norm_div, norm_mul, norm_pow, div_le_iff₀
+      (mul_pos (norm_pos_iff.mpr (hEn w hw0)) (pow_pos h6pos _))]
+    calc ‖pkg.xi w‖ ≤ M * CR * (1 + w.im)^BR * ‖dedekindXiFactor K w‖ := hnum
+      _ ≤ M * CR * (2 * ‖w+6‖)^BR * ‖dedekindXiFactor K w‖ := by
+          apply mul_le_mul_of_nonneg_right _ (norm_nonneg _)
+          apply mul_le_mul_of_nonneg_left _ (mul_nonneg hM.le hCR.le)
+          exact pow_le_pow_left₀ (by linarith) (by linarith) _
+      _ = M * CR * 2 ^ BR * (‖dedekindXiFactor K w‖ * ‖w+6‖^BR) := by
+          rw [mul_pow]; ring
+  -- bottom edge
+  have hgbot : ∀ w : ℂ, -(9/2:ℝ) ≤ w.re → w.re ≤ 8 → w.im = 1 →
+      ‖g w‖ ≤ ‖g w₁‖ := by
+    intro w h1 h2 h3
+    apply isMaxOn_iff.mp hw₁max
+    refine ⟨w.re, Set.mem_Icc.mpr ⟨h1, h2⟩, ?_⟩
+    apply Complex.ext
+    · simp
+    · simp [h3]
+  -- a-priori growth of `ξ` on the strip
+  have hxig : ∀ w : ℂ, -(9/2:ℝ) ≤ w.re → w.re ≤ 8 → 1 ≤ w.im →
+      ‖pkg.xi w‖ ≤
+        Real.exp ((64*Cg + Real.log (‖pkg.xi w₂‖ + 1)) * (1 + w.im)^2) := by
+    intro w h1 h2 h3
+    have hsq1 : (1:ℝ) ≤ (1 + w.im)^2 := one_le_pow₀ (by linarith)
+    have hlogM : (0:ℝ) ≤ Real.log (‖pkg.xi w₂‖ + 1) :=
+      Real.log_nonneg (by linarith [norm_nonneg (pkg.xi w₂)])
+    rcases le_or_gt 2 ‖w‖ with hw2 | hw2
+    · refine (hXg w hw2).trans (Real.exp_le_exp.mpr ?_)
+      have hwup : ‖w‖ ≤ 8 * (1 + w.im) := by
+        have h4 := Complex.norm_le_abs_re_add_abs_im w
+        have h5 : |w.re| ≤ 8 := abs_le.mpr ⟨by linarith, h2⟩
+        have h6 : |w.im| = w.im := abs_of_pos (by linarith)
+        linarith
+      have hlogw : Real.log ‖w‖ ≤ ‖w‖ :=
+        (Real.log_le_sub_one_of_pos (by linarith)).trans (by linarith)
+      have hw0 : (0:ℝ) ≤ ‖w‖ := norm_nonneg _
+      calc Cg * ‖w‖ * Real.log ‖w‖ ≤ Cg * ‖w‖ * ‖w‖ :=
+            mul_le_mul_of_nonneg_left hlogw (mul_nonneg hCg.le hw0)
+        _ ≤ Cg * (8*(1+w.im)) * (8*(1+w.im)) := by
+            apply mul_le_mul (mul_le_mul_of_nonneg_left hwup hCg.le) hwup hw0
+              (mul_nonneg hCg.le (by linarith))
+        _ = 64*Cg * (1+w.im)^2 := by ring
+        _ ≤ (64*Cg + Real.log (‖pkg.xi w₂‖ + 1)) * (1+w.im)^2 := by
+            apply mul_le_mul_of_nonneg_right _ (by positivity)
+            linarith
+    · have hball : w ∈ Metric.closedBall (0:ℂ) 2 := by
+        rw [Metric.mem_closedBall, dist_zero_right]
+        exact hw2.le
+      calc ‖pkg.xi w‖ ≤ ‖pkg.xi w₂‖ := isMaxOn_iff.mp hw₂ w hball
+        _ ≤ Real.exp (Real.log (‖pkg.xi w₂‖ + 1)) := by
+            rw [Real.exp_log (by linarith [norm_nonneg (pkg.xi w₂)])]
+            linarith
+        _ ≤ Real.exp ((64*Cg + Real.log (‖pkg.xi w₂‖ + 1)) * (1+w.im)^2) := by
+            apply Real.exp_le_exp.mpr
+            have hK0 : (0:ℝ) ≤ 64*Cg + Real.log (‖pkg.xi w₂‖ + 1) := by
+              have h64 : (0:ℝ) ≤ 64*Cg := by linarith
+              linarith
+            nlinarith [mul_le_mul_of_nonneg_left hsq1 hK0]
+  -- a-priori growth of `g` on the strip
+  have hgB : ∀ w : ℂ, -(9/2:ℝ) ≤ w.re → w.re ≤ 8 → 1 ≤ w.im →
+      ‖g w‖ ≤ Real.exp ((64*Cg + Real.log (‖pkg.xi w₂‖ + 1) + κ) *
+        (1 + w.im)^2) := by
+    intro w h1 h2 h3
+    have hw0 : (0:ℝ) < w.im := by linarith
+    have h6 : (1:ℝ) ≤ ‖w + 6‖ := by
+      have ha := Complex.abs_im_le_norm (w + 6)
+      have hb : (w + 6).im = w.im := by simp
+      rw [hb, abs_of_pos hw0] at ha
+      linarith
+    have hden : Real.exp (-κ * (1 + w.im)^2) ≤
+        ‖dedekindXiFactor K w‖ * ‖w + 6‖ ^ BR := by
+      calc Real.exp (-κ * (1 + w.im)^2) = Real.exp (-κ * (1 + w.im)^2) * 1 :=
+            (mul_one _).symm
+        _ ≤ ‖dedekindXiFactor K w‖ * ‖w + 6‖ ^ BR :=
+            mul_le_mul (hEl w h1 h2 h3) (one_le_pow₀ h6) zero_le_one
+              (norm_nonneg _)
+    show ‖pkg.xi w / (dedekindXiFactor K w * (w + 6) ^ BR)‖ ≤ _
+    rw [norm_div, norm_mul, norm_pow]
+    calc ‖pkg.xi w‖ / (‖dedekindXiFactor K w‖ * ‖w + 6‖ ^ BR)
+        ≤ Real.exp ((64*Cg + Real.log (‖pkg.xi w₂‖ + 1)) * (1 + w.im)^2) /
+            Real.exp (-κ * (1 + w.im)^2) :=
+          div_le_div₀ (Real.exp_nonneg _) (hxig w h1 h2 h3) (Real.exp_pos _) hden
+      _ = Real.exp ((64*Cg + Real.log (‖pkg.xi w₂‖ + 1) + κ) * (1 + w.im)^2) := by
+          rw [← Real.exp_sub]
+          congr 1
+          ring
+  -- differentiability up to the closure of the half-strip
+  have hgd : DiffContOnCl ℂ g
+      {w : ℂ | w.re ∈ Set.Ioo (-(9/2 : ℝ)) 8 ∧ 1 < w.im} := by
+    have hdiff : DifferentiableOn ℂ g {w : ℂ | 0 < w.im} :=
+      fun w hw => (hgdiff w hw).differentiableWithinAt
+    constructor
+    · exact hdiff.mono (fun w hw => lt_trans zero_lt_one hw.2)
+    · have hcl : closure {w : ℂ | w.re ∈ Set.Ioo (-(9/2 : ℝ)) 8 ∧ 1 < w.im} ⊆
+          {w : ℂ | 0 < w.im} := by
+        have h1 : closure {w : ℂ | w.re ∈ Set.Ioo (-(9/2 : ℝ)) 8 ∧ 1 < w.im} ⊆
+            {w : ℂ | 1 ≤ w.im} :=
+          closure_minimal (fun w hw => le_of_lt hw.2)
+            (isClosed_le continuous_const Complex.continuous_im)
+        exact fun w hw => lt_of_lt_of_le zero_lt_one
+          (show (1:ℝ) ≤ w.im from h1 hw)
+      exact (hdiff.continuousOn).mono hcl
+  set C₀ : ℝ := max (max M (M * CR * 2 ^ BR)) ‖g w₁‖ with hC₀def
+  have hPL := phragmenLindelof_half_strip (f := g) (C := C₀)
+    (K := 64*Cg + Real.log (‖pkg.xi w₂‖ + 1) + κ) hgd hgB
+    (fun w hre him => le_trans (hgleft w hre him)
+      (le_trans (le_max_right M _) (le_max_left _ _)))
+    (fun w hre him => le_trans (hgright w hre him)
+      (le_trans (le_max_left M _) (le_max_left _ _)))
+    (fun w h1 h2 h3 => le_trans (hgbot w h1 h2 h3) (le_max_right _ _))
+  have hC₀pos : 0 < C₀ :=
+    lt_of_lt_of_le hM (le_trans (le_max_left M _) (le_max_left _ _))
+  refine ⟨C₀ * 14 ^ BR, mul_pos hC₀pos (by positivity), BR, ?_⟩
+  intro w h1 h2 h3
+  have hw0 : (0:ℝ) < w.im := by linarith
+  have hfac : pkg.xi w = g w * (dedekindXiFactor K w * (w + 6) ^ BR) := by
+    have hgw : g w = pkg.xi w / (dedekindXiFactor K w * (w + 6) ^ BR) := rfl
+    rw [hgw, div_mul_cancel₀ _
+      (mul_ne_zero (hEn w hw0) (pow_ne_zero _ (hw6 w hw0)))]
+  rw [hfac, norm_mul, norm_mul, norm_pow]
+  have h6up : ‖w + 6‖ ≤ 14 * (1 + w.im) := by
+    have ha := Complex.norm_le_abs_re_add_abs_im (w + 6)
+    have hbre : (w+6).re = w.re + 6 := by simp
+    have hbim : (w+6).im = w.im := by simp
+    have hc : |(w+6).re| ≤ 14 := by
+      rw [hbre]; exact abs_le.mpr ⟨by linarith, by linarith⟩
+    have hd2 : |(w+6).im| = w.im := by rw [hbim]; exact abs_of_pos hw0
+    linarith
+  calc ‖g w‖ * (‖dedekindXiFactor K w‖ * ‖w + 6‖ ^ BR)
+      ≤ C₀ * (‖dedekindXiFactor K w‖ * (14 * (1 + w.im)) ^ BR) := by
+        apply mul_le_mul (hPL w h1 h2 h3) _
+          (mul_nonneg (norm_nonneg _) (pow_nonneg (norm_nonneg _) _)) hC₀pos.le
+        exact mul_le_mul_of_nonneg_left
+          (pow_le_pow_left₀ (norm_nonneg _) h6up _) (norm_nonneg _)
+    _ = C₀ * 14 ^ BR * (1 + w.im) ^ BR * ‖dedekindXiFactor K w‖ := by
+        rw [mul_pow]; ring
+
 /-- **Phragmén–Lindelöf window bound: `ξ_K` against its elementary
-factor on the window circle** (sorry node, stated 2026-07-24 — leaf
-(i) of the decomposition of
+factor on the window circle** (DECOMPOSED 2026-07-24, assembly PROVEN
+over the strip bound — leaf (i) of the decomposition of
 `DedekindContinuation.xi_window_ratio_bound`): there are `C > 0` and
 `B : ℕ` with `‖ξ_K(z)‖ ≤ C·T^B·‖E(z)‖` on the circle
 `‖z − (2 + iT)‖ = 6` for all `T ≥ 8`, `E = dedekindXiFactor K`.
@@ -9048,46 +10367,53 @@ says the analytically continued Dedekind zeta `ξ_K/E` grows
 polynomially on the window — the convexity step of Landau's zero
 count (E. Landau, *Algebraische Zahlen*, p. 122; Poitou p. 6-02).
 
-Intended proof: `q := ξ_K/E` is differentiable on `im s > 0`
-(quotient rule; `E ≠ 0` off the real axis) and agrees with `ζ_K` on
-`re s > 1` (`xi_eq_xiFactor_mul_dedekindZeta`).  Boundary bounds for
-the strip `−4 ≤ re s ≤ 8`, `im s ≥ 1`:
-
-* on `re s = 8`: `|q| = |ζ_K| ≤ Σ_𝔞 N𝔞^{−8} = ζ_K(8) < ∞` (absolute
-  convergence of the Dirichlet series);
-* on `re s = −4`: `q(−4 + it) = q(5 − it)·E(5 − it)/E(−4 + it)` by
-  `funcEq`, `|q(5 − it)| ≤ ζ_K(5)`, and the same-height ratio
-  `|E(5 − it)/E(−4 + it)| = O(|t|^B)` by iterating
-  `Complex.Gamma_add_one` (shifting `re` into `[1, 2)` costs
-  linear factors polynomially bounded above and below at height
-  `≥ 1`) together with the reflection formula
-  `Complex.Gamma_mul_Gamma_one_sub` (trading `Γ` at `re ≤ 0` for
-  `1/(Γ(1 − s)·sin πs)`, with `sinh(π|t|) ≤ |sin πs| ≤ e^{π|t|}` and
-  `|Γ(u + iv)| ≤ Γ(u)` for `u > 0` from the integral
-  representation);
-* a-priori growth: `|q| ≤ exp(C‖s‖ log ‖s‖)·|E|⁻¹` from the `growth`
-  field, and `|E(s)|⁻¹ ≤ exp(C′(1 + |im s|))` on the strip by the
-  same reflection/recurrence estimates
-  (`|Γ(s)| ≥ π e^{−π|im s|}/Γ(1 − re s)`-style) — far below the
-  `exp(B′·exp(c|im s|))`, `c < π/12`, tolerance of
-  `PhragmenLindelof.vertical_strip`.
-
-For the half-strip (mathlib's PL variants use full vertical lines):
-either reflect `q` across `im = 1` by Schwarz symmetry —
-`s ↦ conj (q (conj s + 2·I))` glues with `q` along `im = 1` via
-`pkg.conj_symm` and the factorwise conjugation identities
-(`Complex.Gamma_conj`, `conj_ofReal_cpow`) — or run the classical
-auxiliary-multiplier proof of half-strip Phragmén–Lindelöf on
-rectangles with the maximum principle
-(`Complex.norm_le_of_forall_mem_frontier_norm_le`).  Every window
-circle point has `im ≥ 2 > 1`, `re ∈ [−4, 8]`, and `|im| ≤ T + 6 ≤
-2T`, so the strip bound `O((1 + |im|)^B)` specializes to `C·T^B`. -/
+REALIZED ROUTE (this proof is pure circle geometry over
+`DedekindContinuation.xi_strip_le_xiFactor`): every window point has
+`re ∈ [−4, 8] ⊂ [−9/2, 8]` and `im ∈ [T−6, T+6]`, so `im ≥ 2 ≥ 1`
+and `1 + im ≤ T + 7 ≤ 2T`; the strip bound
+`‖ξ‖ ≤ C(1 + im)^B‖E‖` therefore specializes to `C·2^B·T^B·‖E‖`.
+The analytic content lives in the strip theorem: half-strip
+Phragmén–Lindelöf with a cubic multiplier
+(`phragmenLindelof_half_strip`), Euler-product boundary constants
+(`dedekindZeta_norm_upper_of_two_le_re`), the functional-equation
+reflection with EXACT integral Γ-shifts
+(`dedekindXiFactor_reflection_ratio`; the strip's left edge `−9/2`
+mirrors to `11/2`, distance `10`), the elementary lower bound
+`dedekindXiFactor_norm_lower_strip` (Euler reflection + the
+Γ-integral bound), and the `growth` interface field — every input is
+PROVEN. -/
 theorem DedekindContinuation.xi_window_le_xiFactor {K : Type*} [Field K]
     [NumberField K] (pkg : DedekindContinuation K) :
     ∃ C : ℝ, 0 < C ∧ ∃ B : ℕ, ∀ T : ℝ, 8 ≤ T → ∀ z : ℂ,
       ‖z - (2 + (T : ℂ) * Complex.I)‖ = 6 →
       ‖pkg.xi z‖ ≤ C * T ^ B * ‖dedekindXiFactor K z‖ := by
-  sorry
+  obtain ⟨C, hC, B, hstrip⟩ := pkg.xi_strip_le_xiFactor
+  refine ⟨C * 2 ^ B, mul_pos hC (by positivity), B, ?_⟩
+  intro T hT z hz
+  have hre : |z.re - 2| ≤ 6 := by
+    have h1 := Complex.abs_re_le_norm (z - (2 + (T:ℂ) * Complex.I))
+    have h2 : (z - (2 + (T:ℂ) * Complex.I)).re = z.re - 2 := by simp
+    rw [h2, hz] at h1
+    exact h1
+  have him : |z.im - T| ≤ 6 := by
+    have h1 := Complex.abs_im_le_norm (z - (2 + (T:ℂ) * Complex.I))
+    have h2 : (z - (2 + (T:ℂ) * Complex.I)).im = z.im - T := by simp
+    rw [h2, hz] at h1
+    exact h1
+  obtain ⟨hre1, hre2⟩ := abs_le.mp hre
+  obtain ⟨him1, him2⟩ := abs_le.mp him
+  have h1 : -(9/2:ℝ) ≤ z.re := by linarith
+  have h2 : z.re ≤ 8 := by linarith
+  have h3 : (1:ℝ) ≤ z.im := by linarith
+  have h4 : 1 + z.im ≤ 2 * T := by linarith
+  calc ‖pkg.xi z‖ ≤ C * (1 + z.im) ^ B * ‖dedekindXiFactor K z‖ :=
+        hstrip z h1 h2 h3
+    _ ≤ C * (2*T) ^ B * ‖dedekindXiFactor K z‖ := by
+        apply mul_le_mul_of_nonneg_right _ (norm_nonneg _)
+        exact mul_le_mul_of_nonneg_left
+          (pow_le_pow_left₀ (by linarith) h4 _) hC.le
+    _ = C * 2 ^ B * T ^ B * ‖dedekindXiFactor K z‖ := by
+        rw [mul_pow]; ring
 
 /-- Square-comparison to comparison for nonnegative reals: from
 `a² ≤ K²·b²` with `K, b ≥ 0` conclude `a ≤ K·b` (PROVEN 2026-07-24 —
