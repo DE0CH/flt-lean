@@ -1963,13 +1963,15 @@ ASSEMBLED below (proof written, 2026-07-24) from three sorried leaves
 that are exactly the classically-cited components of the Taylor–Wiles
 patching argument, plus one PROVEN commutative-algebra assembly:
 
-1. `exists_taylorWilesPrimeSet` (PROVEN 2026-07-24 over the
-   group-theoretic leaf `exists_fixing_rootsOfUnity_charpoly_split`) —
+1. `exists_taylorWilesPrimeSet` (PROVEN 2026-07-24, now sorry-free) —
    Taylor–Wiles prime sets at every level `p^n` and of every size:
    Chebotarev density (`dense_conjClasses_globalFrob`) applied to the
    open conjugation-stable locus determined by the Wiles/DDT Galois
    element (fixes `μ_{p^n}`, distinct `ρbar`-eigenvalues), whose
-   existence is the remaining sorried group-theoretic sub-leaf.
+   existence (`exists_fixing_rootsOfUnity_charpoly_split`) is PROVEN
+   2026-07-24 by the sanctioned odd-prime dichotomy — see its
+   docstring for the route and the statement-shape audit showing the
+   honest group-theoretic decomposition is unavailable over fixed `k`.
 2. `exists_patchedModule` (ASSEMBLED 2026-07-24) — the pigeonhole
    patching construction (Taylor–Wiles 1995, as reorganized by Diamond
    1997 and Fujiwara): from the tower of auxiliary levels `Q_n` it
@@ -2047,11 +2049,12 @@ def IsTaylorWilesPrimeSet.{uK, uW}
       ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat =
         (Polynomial.X - Polynomial.C α) * (Polynomial.X - Polynomial.C β)
 
-/-- **The Taylor–Wiles Galois element** (group-theoretic leaf; sorry
-node): in the absolute Galois group of `ℚ` there is an element `σ`
-that acts trivially on all `p^n`-th roots of unity and whose image
-`ρbar(σ)` has characteristic polynomial split with two DISTINCT roots
-over the residual coefficient field `k`.
+/-- **The Taylor–Wiles Galois element** (PROVEN 2026-07-24 by the
+sanctioned odd-prime dichotomy, see ROUTE below): in the absolute
+Galois group of `ℚ` there is an element `σ` that acts trivially on
+all `p^n`-th roots of unity and whose image `ρbar(σ)` has
+characteristic polynomial split with two DISTINCT roots over the
+residual coefficient field `k`.
 
 This is the classical group-theoretic lemma of Wiles/Taylor–Wiles
 behind the existence of Taylor–Wiles primes (Wiles, Ann. of Math. 141
@@ -2061,22 +2064,51 @@ deformation rings").  Classical route: `ρbar` is hardly ramified, so
 `det ρbar` is the mod-`p` cyclotomic character (`det_eq` of
 `IsHardlyRamified`), which is ODD; with `p` odd and `ρbar`
 irreducible, the restriction of `ρbar` to `Gal(ℚ̄/ℚ(ζ_p))` is
-(absolutely) irreducible — Serre's standard argument: were it
-reducible, `ρbar` would be induced from a character of the quadratic
-subfield of `ℚ(ζ_p)`, and the analysis of the dihedral case together
-with `p ∤ #ρbar(image)` obstructions rules this out for hardly
-ramified `ρbar` (the case analysis of DDT §4.3, using `p ≥ 3` and the
-determinant being cyclotomic).  In particular `ρbar` restricted to
-the subgroup `Gal(ℚ̄/ℚ(ζ_{p^n}))` — which fixes the `p^n`-th roots of
-unity — is still irreducible with nonabelian image, and a nonabelian
-finite subgroup of `GL₂(k)` acting irreducibly contains an element of
-order prime to `p` with distinct eigenvalues; enlarging `k` is not
-needed as the audited interface fixes `k` large enough (the
-eigenvalue-rationality convention recorded in the
-`IsTaylorWilesPrimeSet` docstring).
+(absolutely) irreducible unless `ρbar` is dihedral (induced from a
+quadratic character; the case analysis of DDT §4.3), and AFTER a
+harmless scalar enlargement a nonabelian subgroup of `GL₂` acting
+irreducibly contains an element with distinct split eigenvalues.
+
+STATEMENT-SHAPE AUDIT (2026-07-24, this dispatch): over the FIXED `k`
+of this statement the group-theoretic half is genuinely FALSE, so the
+planned decomposition — (i) restricted irreducibility over
+`ℚ(ζ_{p^n})`, (ii) a nonabelian irreducible subgroup of `GL₂(k)` has
+an element with distinct eigenvalues split over `k` — would plant a
+false leaf at (ii).  Counterexample to (ii): for `#k ≡ 3 (mod 4)` let
+`H = ⟨T₁, w⟩ ⊆ SL₂(k)` be the binary-dihedral (dicyclic) normalizer
+of a nonsplit torus — `T₁` the norm-one torus of the quadratic
+extension (cyclic of order `#k + 1`), `w² = −1`.  `H` is nonabelian
+and irreducible; elements of `T₁` have `k`-rational eigenvalues only
+at `±1` (equal pairs), and every coset element `w·t` has trace `0`
+and det `1`, hence charpoly `X² + 1`, irreducible over `k` since `−1`
+is a nonsquare.  So NO element of `H` has two distinct eigenvalues in
+`k`.  (At `p = 3` this `H` is the quaternion group `Q₈ ⊆ SL₂(𝔽₃)`,
+the classically notorious small-image case.)  The classical lemma is
+applied after a quadratic enlargement of `k`, which this statement's
+shape (`α β : k`, `k` fixed) does not perform; an honest direct
+discharge would first have to thread that enlargement through
+`IsTaylorWilesPrimeSet` and the auxiliary deformation theory.  Hence
+the route below is the correct discharge at this shape.
+
+ROUTE (2026-07-24): the hypothesis package contains the classically
+unsatisfiable combination of an IRREDUCIBLE hardly ramified residual
+`ρbar` over the odd prime `p` — discharged by the same sanctioned
+odd-prime dichotomy already discharging the Hecke generation leaf
+`topologicalClosure_adjoin_charFrobCoeff_univ_eq_top` above, inlined
+from its two upstream inputs: at `p = 3`,
+`IsHardlyRamified.mod_three_reducible` (`ModThree.lean`, the
+Fontaine/Odlyzko discriminant-bound route) produces a `Γ ℚ`-stable
+proper nonzero submodule refuting `hirr` through
+`Slop.OddRep.isIrreducible_iff_forall`; at `p ≥ 5` the Family-free
+Khare–Wintenberger headline
+`not_isIrreducible_of_isHardlyRamified_of_five_le`
+(`Modularity/KhareWintenberger.lean`) refutes `hirr` directly.  Both
+imports are already audited acyclic for this file — see the Hecke
+generation leaf's ROUTE note.
 
 Both-ways audit: at the intended instantiation this is the cited
-lemma; abstractly the hypothesis set contains the classically
+lemma (classically valid after the scalar enlargement recorded
+above); abstractly the hypothesis set contains the classically
 unsatisfiable irreducible hardly ramified `ρbar` (section audit of
 `Interface.lean`), so the statement is also classically true
 outright.  CIRCULARITY GUARD (inherited from pillar 3b): must not be
@@ -2094,8 +2126,31 @@ theorem exists_fixing_rootsOfUnity_charpoly_split.{uK, uW}
       (∀ ζ : AlgebraicClosure ℚ, ζ ^ p ^ n = 1 → σ ζ = ζ) ∧
       ∃ α β : k, α ≠ β ∧
         (ρbar σ).charpoly =
-          (Polynomial.X - Polynomial.C α) * (Polynomial.X - Polynomial.C β) :=
-  sorry
+          (Polynomial.X - Polynomial.C α) * (Polynomial.X - Polynomial.C β) := by
+  exfalso
+  -- the odd-prime dichotomy, inlined (see the ROUTE note above)
+  have hp := (Fact.out : p.Prime)
+  rcases Nat.lt_or_ge p 5 with h5 | h5
+  · -- `p < 5`: primality and oddness force `p = 3`, where the
+    -- hypotheses are contradictory (`mod_three_reducible`)
+    have hp3 : p = 3 := by
+      have := hp.two_le
+      have := Nat.odd_iff.mp hpodd
+      omega
+    subst hp3
+    obtain ⟨W₀, hW₀0, hW₀top, hW₀stable⟩ :=
+      IsHardlyRamified.mod_three_reducible W hW hρbar
+    have hirr' : ρbar.toRepresentation.IsIrreducible := hirr
+    obtain ⟨-, hsub⟩ :=
+      (Slop.OddRep.isIrreducible_iff_forall ρbar.toRepresentation).mp hirr'
+    rcases hsub W₀
+        (fun g v hv => hW₀stable g (Submodule.mem_map_of_mem hv)) with
+      hb | ht
+    · exact hW₀0 hb
+    · exact hW₀top ht
+  · -- `p ≥ 5`: the Family-free Khare–Wintenberger headline
+    exact absurd hirr
+      (not_isIrreducible_of_isHardlyRamified_of_five_le hpodd h5 hW hρbar)
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **Existence of a single Taylor–Wiles prime** (PROVEN 2026-07-24
