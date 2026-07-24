@@ -8602,38 +8602,203 @@ theorem comulAlgHom_comp_antipodeAlgHom_of_commPoints
           (HopfAlgebra.antipodeAlgHom R H))
           ((Bialgebra.comulAlgHom R H) h)) := hSSjj _
 
+/-- The generic quadratic order `R[X]/(X² − tX + n)` attached to a
+trace `t` and a norm `n`: the abstract incarnation of the ring of
+integers `R[θL]` of an unramified quadratic extension, presented so
+that its rank-2 freeness (`AdjoinRoot.powerBasis'` against the monic
+quadratic) and its conjugation (`quadraticOrderConj` below) are
+available without reference to any ambient field. -/
+abbrev quadraticOrder (R : Type) [CommRing R] (t n : R) : Type :=
+  AdjoinRoot (Polynomial.X ^ 2 - Polynomial.C t * Polynomial.X +
+    Polynomial.C n : Polynomial R)
+
+/-- The conjugation involution of the generic quadratic order
+`R[X]/(X² − tX + n)`: the `R`-algebra automorphism sending the root
+`r` to the "other root" `t − r` (indeed
+`(t−r)² − t(t−r) + n = r² − tr + n = 0`); it is its own inverse
+because `t − (t − r) = r`. -/
+noncomputable def quadraticOrderConj (R : Type) [CommRing R] (t n : R) :
+    quadraticOrder R t n ≃ₐ[R] quadraticOrder R t n :=
+  let φ : quadraticOrder R t n →ₐ[R] quadraticOrder R t n :=
+    AdjoinRoot.liftAlgHom _ (Algebra.ofId R (quadraticOrder R t n))
+      (algebraMap R (quadraticOrder R t n) t - AdjoinRoot.root _) (by
+        have hroot : Polynomial.aeval (AdjoinRoot.root
+            (Polynomial.X ^ 2 - Polynomial.C t * Polynomial.X +
+              Polynomial.C n : Polynomial R))
+            (Polynomial.X ^ 2 - Polynomial.C t * Polynomial.X +
+              Polynomial.C n : Polynomial R) = 0 := by
+          rw [AdjoinRoot.aeval_eq, AdjoinRoot.mk_self]
+        rw [show (((Algebra.ofId R (quadraticOrder R t n)) :
+            R →ₐ[R] quadraticOrder R t n) : R →+* quadraticOrder R t n) =
+          algebraMap R (quadraticOrder R t n) from rfl,
+          ← Polynomial.aeval_def]
+        simp only [map_add, map_sub, map_mul, map_pow, Polynomial.aeval_X,
+          Polynomial.aeval_C] at hroot ⊢
+        linear_combination hroot)
+  AlgEquiv.ofAlgHom φ φ
+    (by
+      apply AdjoinRoot.algHom_ext
+      rw [AlgHom.comp_apply, AdjoinRoot.liftAlgHom_root, map_sub,
+        AlgHom.commutes, AdjoinRoot.liftAlgHom_root, AlgHom.coe_id, id_eq]
+      ring)
+    (by
+      apply AdjoinRoot.algHom_ext
+      rw [AlgHom.comp_apply, AdjoinRoot.liftAlgHom_root, map_sub,
+        AlgHom.commutes, AdjoinRoot.liftAlgHom_root, AlgHom.coe_id, id_eq]
+      ring)
+
 open TensorProduct in
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
-/-- **The fixed-points descent core** (sorry node — the pure
-semilinear-algebra stage of the fixed-points quadratic descent: all
-number theory and all Hopf-axiom inputs enter as HYPOTHESES): given a
-finite flat `R`-Hopf algebra `H` with étale generic fibre and
-commutative `Ω`-points, an explicit quadratic order witness — the
-nontrivial automorphism `τ` of `L/K` with `τ θL = t − θL`,
-`θL · τ θL = n` for `t, n ∈ R` with `t² − 4n` a UNIT of `R` — an
-antipode involution witness `hS2` and the swap-free
-antipode–comultiplication commutation `hScomul`, produce the `χ`-twist
-of `H`: a finite flat `R`-Hopf algebra `H'` with étale generic fibre
-whose `Ω`-point convolution group is identified with that of `H` UP TO
-the quadratic character `χ` of `L/K`. Intended construction (the
-fixed-points descent): the order `R_L = R[θL] = R ⊕ R·θL` is `R`-free
-of rank 2 (`{1, θL}` independent because `θL ∉ K`, from `hθtop`) and
-`τ`-stable (`hτθ`); on the base change `R_L ⊗[R] H` the map
-`ι = τ ⊗ S` is an `R`-algebra involution (`hS2`) compatible with the
-`R_L`-costructure (`hScomul`); the element `δ = 2·θL − t` satisfies
-`τ δ = −δ` and `δ² = t² − 4n`, a unit (`hdisc`), so together with
-`IsUnit 2` (`h2`) the averaging idempotent `(1 + ι)/2` splits
-`R_L ⊗[R] H` as `H' ⊕ δ·H'` with `H' = (R_L ⊗[R] H)^ι`: the fixed
-points are an `R`-algebra direct summand, finite (submodule of a
-finite module over the Noetherian `R`) and flat (torsion-free over the
-DVR `R`), and the splitting identifies `R_L ⊗[R] H' ≅ R_L ⊗[R] H`
-compatibly with the costructures, making `H'` a Hopf order whose
-generic fibre is the `L/K`-form of `K ⊗ H` twisted by `χ`; its
-`Ω`-points are the `Ω`-points of `R_L ⊗[R] H` on which the twisted
-conjugation acts through `χ`, giving `θ` and the two character
-clauses. -/
+/-- **The fixed-point Hopf order** (sorry node — the INTEGRAL stage of
+the fixed-points quadratic descent, entirely field-free: no `K`, no
+`Ω`, no étaleness): over a DVR `R` with `2` a unit, given a finite
+flat commutative `R`-Hopf algebra `H` whose antipode is an involution
+(`hS2`) commuting with the comultiplication without the swap
+(`hScomul`), and a monic quadratic `X² − tX + n` with UNIT
+discriminant, there is a finite flat `R`-Hopf algebra `H'` whose base
+change to the quadratic order `R_L = R[X]/(X² − tX + n)` is identified
+with `R_L ⊗ H` as an `R_L`-BIALGEBRA, by an identification `e` that
+intertwines the conjugation-twisted maps: `e ∘ (τ ⊗ id) = (τ ⊗ S) ∘ e`
+— i.e. `H'` is the twisted form of `H` split by `R_L`, with descent
+cocycle `τ ⊗ S`. Intended construction: `ι := τ ⊗ S` is an `R`-algebra
+involution of `A := R_L ⊗ H` (`hS2`); `H' := A^ι` is the fixed-point
+subalgebra; the element `δ := 2·root − t` satisfies `τ δ = −δ` and
+`δ² = t² − 4n`, a unit (`hdisc`), so with `2` a unit (`h2`) every
+`a ∈ A` splits as `a = a⁺ + δ·(δ⁻¹a⁻)` with `a± := (a ± ιa)/2`,
+`a⁺, δa⁻ ∈ H'` — hence multiplication `R_L ⊗[R] H' → A` is an
+`R_L`-algebra isomorphism `e⁻¹` (injectivity: the two eigenspaces of
+`ι` meet trivially since `2` is a unit), `H'` is finite (submodule of
+a finite module over the Noetherian `R`) and flat (finite
+torsion-free over the DVR), and the costructure of `H'` is the
+corestriction of that of `A` along `e` — landing in the fixed points
+of `ι ⊗ ι`, which the splitting identifies with `H' ⊗[R] H'`
+(`hScomul` makes `ι` a coalgebra map, so the corestriction satisfies
+the Hopf axioms transported from `A`); `e` is then a bialgebra
+identification by construction and the `τ ⊗ id` / `τ ⊗ S` intertwining
+is the definition of `ι`. -/
+theorem exists_fixedPointHopfOrder_of_descentData
+    (R : Type) [CommRing R] [IsDomain R] [IsDiscreteValuationRing R]
+    (h2 : IsUnit (2 : R)) (t n : R) (hdisc : IsUnit (t * t - 4 * n))
+    (H : Type) [CommRing H] [HopfAlgebra R H] [Module.Finite R H]
+    [Module.Flat R H]
+    (hS2 : (HopfAlgebra.antipodeAlgHom R H).comp
+      (HopfAlgebra.antipodeAlgHom R H) = AlgHom.id R H)
+    (hScomul : (Bialgebra.comulAlgHom R H).comp
+      (HopfAlgebra.antipodeAlgHom R H) =
+      (Algebra.TensorProduct.map (HopfAlgebra.antipodeAlgHom R H)
+        (HopfAlgebra.antipodeAlgHom R H)).comp
+        (Bialgebra.comulAlgHom R H)) :
+    ∃ (H' : Type) (_ : CommRing H') (_ : HopfAlgebra R H')
+      (_ : Module.Finite R H') (_ : Module.Flat R H')
+      (e : (quadraticOrder R t n ⊗[R] H') ≃ₐc[quadraticOrder R t n]
+        (quadraticOrder R t n ⊗[R] H)),
+      ∀ x : quadraticOrder R t n ⊗[R] H',
+        e (Algebra.TensorProduct.map
+          (quadraticOrderConj R t n : quadraticOrder R t n →ₐ[R]
+            quadraticOrder R t n) (AlgHom.id R H') x) =
+        Algebra.TensorProduct.map
+          (quadraticOrderConj R t n : quadraticOrder R t n →ₐ[R]
+            quadraticOrder R t n) (HopfAlgebra.antipodeAlgHom R H)
+          (e x) := by
+  sorry
+
+open TensorProduct in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **Twisted points of the fixed-point order** (sorry node — the
+GENERIC-FIBRE stage of the fixed-points quadratic descent): given the
+integral fixed-point identification `e` of
+`exists_fixedPointHopfOrder_of_descentData` — an `R_L`-bialgebra
+identification `R_L ⊗ H' ≅ R_L ⊗ H` intertwining `τ ⊗ id` with
+`τ ⊗ S` — together with the arithmetic dictionary between the abstract
+quadratic order and the concrete quadratic extension `L/K` (`θL`
+generates `L`, `τ θL = t − θL`, `θL·τθL = n`), the generic fibre
+`K ⊗ H'` is étale and its `Ω`-point convolution group is identified
+with that of `K ⊗ H` UP TO the quadratic character `χ` of `L/K`.
+Intended proof: `K ⊗ R_L ≅ K[X]/(X² − tX + n) ≅ L` (the quadratic is
+the minimal polynomial of the generator `θL`, irreducible since
+`θL ∉ K`); base-changing `e` along it identifies `L ⊗[K] (K ⊗ H')`
+with `L ⊗[K] (K ⊗ H)` as `L`-bialgebras, so `K ⊗ H'` is étale over
+`K` because it becomes étale over the finite separable `L` (reduced
+descends along the injection, and finite reduced over a
+characteristic-zero field is étale); an `Ω`-point `φ` of `K ⊗ H'`
+extends uniquely to an `L`-point of the base change along the
+embedding `L → Ω` picked by `θL ↦ θΩ`, transports through `e` and
+restricts to an `Ω`-point `θ φ` of `K ⊗ H` — a convolution
+isomorphism since `e` is a bialgebra map; a Galois `σ` with `χ(σ) = 1`
+fixes the chosen embedding and commutes with the transport (clause 1),
+while `χ(σ) = −1` swaps the two embeddings of `L`, which the
+intertwining `e ∘ (τ ⊗ id) = (τ ⊗ S) ∘ e` converts into
+postcomposition with the ANTIPODE — the convolution inverse:
+`θ(σ ∘ φ) + σ(θ φ) = 0` (clause 2). -/
+theorem exists_twistedPointsEquiv_of_fixedPointOrder
+    (R : Type) [CommRing R] [IsDomain R] [IsDiscreteValuationRing R]
+    (K : Type) [Field K] [CharZero K] [Algebra R K] [IsFractionRing R K]
+    (Ω : Type) [Field Ω] [Algebra K Ω] [IsAlgClosure K Ω]
+    (L : Type) [Field L] [Algebra K L]
+    [Algebra.IsQuadraticExtension K L] [Algebra.IsSeparable K L]
+    [Algebra L Ω] [IsScalarTower K L Ω]
+    (θL : L) (hθtop : Algebra.adjoin K ({θL} : Set L) = ⊤)
+    (t n : R) (τ : L ≃ₐ[K] L) (hτ1 : τ ≠ 1)
+    (hτθ : τ θL = algebraMap K L (algebraMap R K t) - θL)
+    (hθn : θL * τ θL = algebraMap K L (algebraMap R K n))
+    (H : Type) [CommRing H] [HopfAlgebra R H] [Module.Finite R H]
+    [Module.Flat R H] [Algebra.Etale K (K ⊗[R] H)]
+    (H' : Type) [CommRing H'] [HopfAlgebra R H'] [Module.Finite R H']
+    [Module.Flat R H']
+    (e : (quadraticOrder R t n ⊗[R] H') ≃ₐc[quadraticOrder R t n]
+      (quadraticOrder R t n ⊗[R] H))
+    (he : ∀ x : quadraticOrder R t n ⊗[R] H',
+      e (Algebra.TensorProduct.map
+        (quadraticOrderConj R t n : quadraticOrder R t n →ₐ[R]
+          quadraticOrder R t n) (AlgHom.id R H') x) =
+      Algebra.TensorProduct.map
+        (quadraticOrderConj R t n : quadraticOrder R t n →ₐ[R]
+          quadraticOrder R t n) (HopfAlgebra.antipodeAlgHom R H)
+        (e x)) :
+    ∃ (_ : Algebra.Etale K (K ⊗[R] H'))
+      (θ : Additive (WithConv ((K ⊗[R] H') →ₐ[K] Ω)) ≃+
+        Additive (WithConv ((K ⊗[R] H) →ₐ[K] Ω))),
+      ∀ (σ : Ω ≃ₐ[K] Ω) (φ : (K ⊗[R] H') →ₐ[K] Ω),
+        (quadraticCharacter K L Ω σ = 1 →
+          θ (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) =
+            Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp
+              (WithConv.ofConv (Additive.toMul
+                (θ (Additive.ofMul (WithConv.toConv φ)))))))) ∧
+        (quadraticCharacter K L Ω σ = -1 →
+          θ (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) +
+            Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp
+              (WithConv.ofConv (Additive.toMul
+                (θ (Additive.ofMul (WithConv.toConv φ))))))) = 0) := by
+  sorry
+
+open TensorProduct in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **The fixed-points descent core** (DECOMPOSED 2026-07-24 — the
+integral fixed-point Hopf order with its equivariant base-change
+identification is the sorried leaf
+`exists_fixedPointHopfOrder_of_descentData`, entirely field-free; the
+étale generic fibre and the `χ`-twisted points equivalence extracted
+from that identification are the sorried leaf
+`exists_twistedPointsEquiv_of_fixedPointOrder`; PROVEN here is the
+glue chaining them): given a finite flat `R`-Hopf algebra `H`, an
+explicit quadratic order witness — the nontrivial automorphism `τ` of
+`L/K` with `τ θL = t − θL`, `θL · τ θL = n` for `t, n ∈ R` with
+`t² − 4n` a UNIT of `R` — an antipode involution witness `hS2` and the
+swap-free antipode–comultiplication commutation `hScomul`, produce the
+`χ`-twist of `H`: a finite flat `R`-Hopf algebra `H'` with étale
+generic fibre whose `Ω`-point convolution group is identified with
+that of `H` UP TO the quadratic character `χ` of `L/K`. The abstract
+quadratic order `R[X]/(X² − tX + n)` (`quadraticOrder`) with its
+conjugation (`quadraticOrderConj`) is the integral splitting ring: the
+first leaf builds `H'` as the fixed points of `τ ⊗ S` on the base
+change, the second computes its points against the dictionary
+`R[X]/(X² − tX + n) ⊗ K ≅ L` given by the witness relations. -/
 theorem exists_twistedHopfModel_of_descentData
     (R : Type) [CommRing R] [IsDomain R] [IsDiscreteValuationRing R]
     (K : Type) [Field K] [CharZero K] [Algebra R K] [IsFractionRing R K]
@@ -8649,8 +8814,6 @@ theorem exists_twistedHopfModel_of_descentData
     (hdisc : IsUnit (t * t - 4 * n))
     (H : Type) [CommRing H] [HopfAlgebra R H] [Module.Finite R H]
     [Module.Flat R H] [Algebra.Etale K (K ⊗[R] H)]
-    (hcomm : ∀ x y : Additive (WithConv ((K ⊗[R] H) →ₐ[K] Ω)),
-      x + y = y + x)
     (hS2 : (HopfAlgebra.antipodeAlgHom R H).comp
       (HopfAlgebra.antipodeAlgHom R H) = AlgHom.id R H)
     (hScomul : (Bialgebra.comulAlgHom R H).comp
@@ -8674,7 +8837,16 @@ theorem exists_twistedHopfModel_of_descentData
             Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp
               (WithConv.ofConv (Additive.toMul
                 (θ (Additive.ofMul (WithConv.toConv φ))))))) = 0) := by
-  sorry
+  obtain ⟨H', cH', hopfH', finH', flatH', e, he⟩ :=
+    exists_fixedPointHopfOrder_of_descentData R h2 t n hdisc H hS2 hScomul
+  letI := cH'
+  letI := hopfH'
+  letI := finH'
+  letI := flatH'
+  obtain ⟨etH', θ, hθ⟩ :=
+    exists_twistedPointsEquiv_of_fixedPointOrder R K Ω L θL hθtop t n τ hτ1
+      hτθ hθn H H' e he
+  exact ⟨H', cH', hopfH', finH', flatH', etH', θ, hθ⟩
 
 open TensorProduct in
 set_option backward.isDefEq.respectTransparency false in
@@ -8746,7 +8918,7 @@ theorem exists_twistedHopfModel_of_quadraticWitness
   obtain ⟨t, n, τ, hτ1, hτθ, hθn, hdisc⟩ :=
     exists_quadraticOrderWitness R K L θL Q hQm hθtop hθQ hQsep
   exact exists_twistedHopfModel_of_descentData R K Ω h2 L θL hθtop t n τ hτ1
-    hτθ hθn hdisc H hcomm
+    hτθ hθn hdisc H
     (antipodeAlgHom_comp_antipodeAlgHom R H)
     (comulAlgHom_comp_antipodeAlgHom_of_commPoints R K Ω H hcomm)
 
