@@ -95,6 +95,13 @@ public import Mathlib.FieldTheory.Galois.Basic
 import Mathlib.FieldTheory.Galois.NormalBasis
 import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
 import Mathlib.RingTheory.TensorProduct.Finite
+-- the structure theorem for finite étale algebras over a field
+-- (product of finite separable extensions), consumed by the
+-- reconstruction leaves `etale_points_separate` etc.
+import Mathlib.RingTheory.Etale.Field
+-- the infinite Galois correspondence (`fixedField_fixingSubgroup`),
+-- consumed by `exists_eval_of_equivariant_function`
+import Mathlib.FieldTheory.Galois.Infinite
 
 @[expose] public section
 
@@ -7916,7 +7923,26 @@ theorem etale_points_separate
     (A : Type) [CommRing A] [Algebra K A] [Module.Finite K A]
     [Algebra.Etale K A]
     (x : A) (hx : ∀ φ : A →ₐ[K] Ω, φ x = 0) : x = 0 := by
-  sorry
+  classical
+  haveI : IsAlgClosed Ω := IsAlgClosure.isAlgClosed K
+  -- the structure theorem: a finite product of finite separable extensions
+  obtain ⟨I, hIfin, Ai, hAiField, hAiAlg, e, hAi⟩ :=
+    (Algebra.Etale.iff_exists_algEquiv_prod (K := K) (A := A)).mp inferInstance
+  -- every component of `e x` is killed by an embedding into `Ω`
+  have hzero : ∀ i, e x i = 0 := by
+    intro i
+    haveI : Module.Finite K (Ai i) := (hAi i).1
+    haveI : Algebra.IsAlgebraic K (Ai i) := Algebra.IsAlgebraic.of_finite K (Ai i)
+    have hx' := hx ((IsAlgClosed.lift (M := Ω) (R := K) (S := Ai i)).comp
+      ((Pi.evalAlgHom K Ai i).comp e.toAlgHom))
+    have h0 : (IsAlgClosed.lift (M := Ω) (R := K) (S := Ai i)) (e x i) = 0 := hx'
+    have hinj : Function.Injective
+        (IsAlgClosed.lift (M := Ω) (R := K) (S := Ai i)) :=
+      RingHom.injective ((IsAlgClosed.lift (M := Ω) (R := K)
+        (S := Ai i)) : Ai i →+* Ω)
+    exact hinj (by rw [h0, map_zero])
+  have hex := congrArg e.symm (funext hzero : e x = 0)
+  rwa [AlgEquiv.symm_apply_apply, map_zero] at hex
 
 open TensorProduct in
 set_option backward.isDefEq.respectTransparency false in
@@ -7943,7 +7969,23 @@ theorem etale_tensor_points_separate
     (hz : ∀ φ ψ : A →ₐ[K] Ω,
       Algebra.TensorProduct.lift φ ψ (fun _ _ => Commute.all _ _) z = 0) :
     z = 0 := by
-  sorry
+  classical
+  -- the tensor square is finite étale over `K` (base change + transitivity)
+  haveI : Algebra.Etale K (A ⊗[K] A) := Algebra.Etale.comp K A (A ⊗[K] A)
+  haveI : Module.Finite K (A ⊗[K] A) := Module.Finite.tensorProduct K A A
+  -- every point of the tensor square is a pair of points
+  refine etale_points_separate K Ω (A ⊗[K] A) z ?_
+  intro χ
+  have hχ : χ = Algebra.TensorProduct.lift
+      (χ.comp (Algebra.TensorProduct.includeLeft (R := K) (S := K)))
+      (χ.comp (Algebra.TensorProduct.includeRight (R := K) (A := A) (B := A)))
+      (fun _ _ => Commute.all _ _) := by
+    apply Algebra.TensorProduct.ext
+    · rw [Algebra.TensorProduct.lift_comp_includeLeft]
+    · rw [Algebra.TensorProduct.lift_comp_includeRight]
+      rfl
+  rw [hχ]
+  exact hz _ _
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
