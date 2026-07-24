@@ -7390,6 +7390,202 @@ theorem induced_character_unramified_at_two {k : Type u}
     linear_combination hsing - hd2 + χ₀ g' * htrN
   exact sub_eq_zero.mp (pow_eq_zero_iff two_ne_zero |>.mp hq)
 
+/-- **Units of `𝔽̄₃` have finite order prime to `3`** (PROVEN
+2026-07-24 — the tameness input of the dihedral ray-class reduction):
+every nonzero element of `Dickson.K 3 = 𝔽̄₃ = ⋃ₙ 𝔽_{3ⁿ}` satisfies
+`x ^ n = 1` for some positive `n` not divisible by `3`. Content: `x`
+is integral over `𝔽₃`, so `𝔽₃⟮x⟯` is a finite field of cardinality
+`3 ^ m` with `m ≥ 1`, and `x ^ (3 ^ m - 1) = 1` with
+`3 ∤ 3 ^ m - 1`. Consequence downstream: any character with values
+in `𝔽̄₃ˣ` kills every pro-3 group — in particular the wild inertia
+at `3` — so such characters are automatically tame at `3`. -/
+theorem exists_pow_eq_one_not_three_dvd_of_ne_zero
+    (x : Dickson.K 3) (hx : x ≠ 0) :
+    ∃ n : ℕ, 0 < n ∧ ¬ (3 ∣ n) ∧ x ^ n = 1 := by
+  classical
+  have hint : IsIntegral (ZMod 3) x :=
+    Algebra.IsIntegral.isIntegral (R := ZMod 3) x
+  set F : IntermediateField (ZMod 3) (AlgebraicClosure (ZMod 3)) :=
+    IntermediateField.adjoin (ZMod 3) {x} with hF
+  haveI : FiniteDimensional (ZMod 3) F :=
+    IntermediateField.adjoin.finiteDimensional hint
+  haveI : Finite F := Module.finite_of_finite (ZMod 3)
+  haveI : Fintype F := Fintype.ofFinite F
+  set y : F := ⟨x, IntermediateField.mem_adjoin_simple_self _ x⟩ with hy
+  have hyne : y ≠ 0 := by
+    intro h
+    exact hx (congrArg Subtype.val h)
+  have hcard : Fintype.card F = 3 ^ (Module.finrank (ZMod 3) F) := by
+    have := Module.card_eq_pow_finrank (K := ZMod 3) (V := F)
+    simpa using this
+  have hpow : y ^ (Fintype.card F - 1) = 1 :=
+    FiniteField.pow_card_sub_one_eq_one y hyne
+  have h2 : 1 < Fintype.card F := Fintype.one_lt_card
+  have hge : 1 ≤ 3 ^ (Module.finrank (ZMod 3) F) :=
+    Nat.one_le_pow _ _ (by norm_num)
+  have hmpos : 0 < Module.finrank (ZMod 3) F := Module.finrank_pos
+  refine ⟨Fintype.card F - 1, by omega, ?_, ?_⟩
+  · intro hdvd
+    rw [hcard] at hdvd
+    have h3 : (3 : ℕ) ∣ 3 ^ (Module.finrank (ZMod 3) F) :=
+      dvd_pow_self 3 hmpos.ne'
+    omega
+  · have := congrArg (Subtype.val) hpow
+    simpa using this
+
+set_option maxHeartbeats 1000000 in
+/-- **The quadratic character `θ'` is unramified away from `2` and `3`**
+(sorry node, isolated 2026-07-24 as a local leaf of the dihedral
+ray-class reduction): the character `θ'` cutting out the quadratic
+field `ℚ(√d)` with `d ∈ {-1, ±2, ±3, ±6}` (via `hθ'x`: `θ' g = 1` iff
+`g` fixes the chosen square root `x` of `d`) is trivial on the image
+in `Γ ℚ` of the local inertia at any prime `q ∉ {2, 3}`.
+
+Intended proof (the residue-separation argument, exactly the pattern
+of the PROVEN `hfix2` step inside
+`cyclotomicCharacter_algebraMap_eq_one_of_inertia_two`, transposed
+from `ℚ_[2]`/`Z2bar` to the adic completion at `q` and its
+`localValuationSubring`): every prime divisor of `d` lies in `{2, 3}`,
+so `q ∤ 2d`; the image `y` of `x` under
+`AlgebraicClosure.map (algebraMap ℚ Kᵥ)` satisfies `y ^ 2 = d` with
+`|d|ᵥ = 1`, hence `|y|ᵥ = 1` and `y` lies in the valuation subring
+whose maximal ideal defines `localInertiaGroup`; an inertia element
+`σ` sends `y` to a root of `T² - d`, i.e. `σ y ∈ {y, -y}`, while
+fixing residues mod the maximal ideal; the difference
+`y - (-y) = 2 y` has valuation `1` (`q ≠ 2` makes `2` a unit), so the
+two roots have distinct residues, forcing `σ y = y`; the commuting
+square for `Field.absoluteGaloisGroup.map` (as used at `2` in this
+file) transports the fixed point to `g x = x` in `ℚᵃˡᵍ`, and `hθ'x`
+concludes. Reference: Neukirch, ANT I §8 (inertia acts trivially on
+residues), II §7. -/
+theorem theta'_eq_one_of_mem_localInertiaGroup_of_ne_two_three
+    (θ' : Γ ℚ →* Multiplicative (ZMod 2))
+    (d : ℤ)
+    (hd : d = -1 ∨ d = 2 ∨ d = -2 ∨ d = 3 ∨ d = -3 ∨ d = 6 ∨ d = -6)
+    (x : AlgebraicClosure ℚ) (hx : x ^ 2 = (d : AlgebraicClosure ℚ))
+    (hθ'x : ∀ g : Γ ℚ, θ' g = 1 ↔ g x = x)
+    (q : ℕ) (hq : q.Prime) (hq2 : q ≠ 2) (hq3 : q ≠ 3) :
+    ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+      θ' (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1 := by
+  sorry
+
+set_option maxHeartbeats 1000000 in
+/-- **The mod-3 cyclotomic character is unramified away from `2` and
+`3`** (sorry node, isolated 2026-07-24 as a local leaf of the dihedral
+ray-class reduction): the composite of the 3-adic cyclotomic character
+with `algebraMap ℤ_[3] k` (`k` finite of characteristic `3`, so only
+the level-one information survives) is trivial on the image of the
+local inertia at any prime `q ∉ {2, 3}`.
+
+Intended proof: the direct generalization of the PROVEN
+`cyclotomicCharacter_algebraMap_eq_one_of_inertia_two` above, working
+directly over the adic completion at `q` (no analogue of the
+`ℚ_[2]`-bridge `localInertia_two_eq_map_padic` is needed if the
+argument is run at the completion itself, with
+`localValuationSubring` in place of `Z2bar`): the cube roots of unity
+in `(Kᵥ)ᵃˡᵍ` are units with pairwise differences of valuation `1`
+(`|ζ₃ - ζ₃'| = |√-3| = 1` since `3` is a unit at `q ≠ 3`), so they
+have distinct residues and every inertia element fixes them; by the
+`lift_map` commuting square its image in `Γ ℚ` fixes the cube roots
+of unity of `ℚᵃˡᵍ`, making the cyclotomic character trivial at level
+one, which is all `algebraMap ℤ_[3] k` sees. (The `q = 2` case of
+this statement is already available through
+`localInertia_two_eq_map_padic` +
+`cyclotomicCharacter_algebraMap_eq_one_of_inertia_two`; this leaf
+only needs `q ∉ {2, 3}`, though the same proof would cover `q = 2`.)
+-/
+theorem cyclotomicCharacter_algebraMap_eq_one_of_inertia_ne_two_three
+    {k : Type u} [Finite k] [Field k] [Algebra ℤ_[3] k]
+    (q : ℕ) (hq : q.Prime) (hq2 : q ≠ 2) (hq3 : q ≠ 3)
+    {σ : Γ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)}
+    (hσ : σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat) :
+    algebraMap ℤ_[3] k
+      ((cyclotomicCharacter (AlgebraicClosure ℚ) 3
+        ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) σ).toRingEquiv) :
+        ℤ_[3]ˣ) : ℤ_[3]) = 1 := by
+  sorry
+
+set_option maxHeartbeats 1000000 in
+/-- **An anti-equivariant, almost-everywhere-unramified, prime-to-3
+ratio character of `Γ_{ℚ(√d)}` is trivial — the per-quadratic-field
+ray-class core** (sorry node, isolated 2026-07-24 from
+`dihedral_eigenvalue_character_symmetric_ray_class` below, whose whole
+character-bookkeeping layer — multiplicativity, anti-equivariance,
+kernel- and inertia-triviality, prime-to-3 order of the ratio
+`ν = χ₀/χ₀^{σ₀}` — is now PROVEN glue there): a function
+`ν : Γ ℚ → 𝔽̄₃` that is a nonvanishing multiplicative character on
+`H = ker θ' = Γ_{ℚ(√d)}` (`hνmul`, `hνne0`), anti-equivariant under
+the `σ₀`-conjugation (`hνanti`: `ν(σ₀⁻¹gσ₀) = ν(g)⁻¹` on `H`),
+trivial on `ker ρ` (`hνker`, with `ker ρ ≤ H` by `htriv'` — so `ν`
+has OPEN kernel, `ρ` being continuous into the discrete `k`), of
+finite order prime to `3` pointwise (`hνord`), and trivial on the
+image of the local inertia at EVERY prime `q ≠ 3` (`hνunr`, at the
+fixed embeddings), is identically `1` on `H`.
+
+Intended content (Serre, Duke 1987 §5.3–5.4; Tate's 1974 letter to
+Serre, Œuvres III; Neukirch ANT VI §6 — the genuine class-field-theory
+gap). (i) Conjugate inertia: every inertia subgroup of `H` over a
+rational `q ≠ 3` is `c·I·c⁻¹` for the fixed `I` and some `c ∈ Γ ℚ`;
+for `c ∈ H` the `H`-conjugation invariance of `ν` (from `hνmul`,
+abelian values) preserves triviality, and for `c ∉ H` write
+`c = h·σ₀` and use `hνanti` — so `ν` is unramified at every place of
+`ℚ(√d)` not above `3`. (ii) `ν` factors through `Gal(M/F)`,
+`F = ℚ(√d)`, `M/F` finite abelian (open kernel), unramified outside
+`3` by (i), tame at `3` (`hνord` kills the pro-3 wild inertia), with
+tame conductor `𝔪 = ∏_{𝔭 ∣ 3} 𝔭`; moreover Raynaud's flatness bound
+(`hρ` is hardly ramified, so flat at `3`, and `ν` factors through the
+splitting field of `ρ` by `hνker`) controls the ramification above
+`3`. (iii) By class field theory `ν` is a character of the ray class
+group `Cl_𝔪(F)` (with archimedean modulus in the real cases
+`d = 2, 3, 6`), on which the nontrivial element of `Gal(F/ℚ)` acts by
+inversion (`hνanti`); the ray classes of the ramified primes (above
+`3`, and above `2` for even `d` or `d ≡ 3 mod 4` adjustments) are
+Galois-fixed, so `ν` is at most `2`-torsion there. (iv) Per-field
+arithmetic for the seven fields `ℚ(√-1), ℚ(√±2), ℚ(√±3), ℚ(√±6)`
+(class numbers `1, 1, 1, 1, 1, 1, 2`): the groups `(𝓞_F/3)ˣ` modulo
+global units are generated by Galois-fixed and ramified classes, and
+every anti-invariant character of order prime to `3` of the resulting
+ray class group is trivial. Mathlib has no global class field theory:
+resolving this node means DECOMPOSING it further into per-field
+Kummer/genus-theory statements (unit groups and class numbers of the
+seven fields are within reach of `Mathlib.NumberTheory.ClassNumber.*`
+and `Mathlib.NumberTheory.NumberField.Units.*`), with the reciprocity
+input isolated to its sharpest possible form. -/
+theorem anti_equivariant_ratio_character_eq_one_ray_class {k : Type u}
+    [Finite k] [Field k]
+    [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (θ' : Γ ℚ →* Multiplicative (ZMod 2))
+    (htriv' : ∀ g : Γ ℚ, ρ g = 1 → θ' g = 1)
+    (d : ℤ)
+    (hd : d = -1 ∨ d = 2 ∨ d = -2 ∨ d = 3 ∨ d = -3 ∨ d = 6 ∨ d = -6)
+    (x : AlgebraicClosure ℚ) (hx : x ^ 2 = (d : AlgebraicClosure ℚ))
+    (hθ'x : ∀ g : Γ ℚ, θ' g = 1 ↔ g x = x)
+    (σ₀ : Γ ℚ) (hσ₀ : θ' σ₀ ≠ 1)
+    (ν : Γ ℚ → Dickson.K 3)
+    (hνmul : ∀ g h : Γ ℚ, θ' g = 1 → θ' h = 1 →
+      ν (g * h) = ν g * ν h)
+    (hνne0 : ∀ g : Γ ℚ, θ' g = 1 → ν g ≠ 0)
+    (hνanti : ∀ g : Γ ℚ, θ' g = 1 → ν (σ₀⁻¹ * g * σ₀) = (ν g)⁻¹)
+    (hνker : ∀ g : Γ ℚ, ρ g = 1 → ν g = 1)
+    (hνord : ∀ g : Γ ℚ, θ' g = 1 →
+      ∃ n : ℕ, 0 < n ∧ ¬ (3 ∣ n) ∧ ν g ^ n = 1)
+    (hνunr : ∀ (q : ℕ) (hq : q.Prime), q ≠ 3 →
+      ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+        ν (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1) :
+    ∀ g : Γ ℚ, θ' g = 1 → ν g = 1 := by
+  sorry
+
 set_option maxHeartbeats 1000000 in
 /-- **The induced eigenvalue character is conjugation-symmetric — the
 per-quadratic-field ray-class computation** (sorry node, isolated
@@ -7472,7 +7668,140 @@ theorem dihedral_eigenvalue_character_symmetric_ray_class {k : Type u}
         (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
           Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1) :
     ∀ g : Γ ℚ, θ' g = 1 → χ₀ g = χ₀ (σ₀⁻¹ * g * σ₀) := by
-  sorry
+  classical
+  -- (0) `H = ker θ'` is stable under products, inverses and
+  -- `σ₀`-conjugation (the target `Multiplicative (ZMod 2)` is abelian)
+  have hHconj : ∀ g : Γ ℚ, θ' g = 1 → θ' (σ₀⁻¹ * g * σ₀) = 1 := by
+    intro g hg
+    rw [map_mul, map_mul, hg, mul_one, map_inv, inv_mul_cancel]
+  have hHinv : ∀ g : Γ ℚ, θ' g = 1 → θ' g⁻¹ = 1 := by
+    intro g hg
+    rw [map_inv, hg, inv_one]
+  have hHmul : ∀ g h : Γ ℚ, θ' g = 1 → θ' h = 1 → θ' (g * h) = 1 := by
+    intro g h hg hh
+    rw [map_mul, hg, hh, mul_one]
+  -- (1) `χ₀` is a character of `H`: unit value at `1`, inverses, and
+  -- `H`-conjugation invariance (the values commute in the field)
+  have hχone : χ₀ 1 = 1 := by
+    have h := hχmul 1 1 (map_one θ') (map_one θ')
+    rw [mul_one] at h
+    have hne := hχne0 1 (map_one θ')
+    field_simp at h
+    exact h.symm
+  have hχinv : ∀ g : Γ ℚ, θ' g = 1 → χ₀ g⁻¹ = (χ₀ g)⁻¹ := by
+    intro g hg
+    have h := hχmul g⁻¹ g (hHinv g hg) hg
+    rw [inv_mul_cancel, hχone] at h
+    exact eq_inv_of_mul_eq_one_left h.symm
+  have hχHconj : ∀ g h : Γ ℚ, θ' g = 1 → θ' h = 1 →
+      χ₀ (h⁻¹ * g * h) = χ₀ g := by
+    intro g h hg hh
+    rw [hχmul (h⁻¹ * g) h (hHmul _ _ (hHinv h hh) hg) hh,
+      hχmul h⁻¹ g (hHinv h hh) hg, hχinv h hh]
+    field_simp [hχne0 h hh]
+  -- `σ₀² ∈ H`: squares are trivial in `Multiplicative (ZMod 2)`
+  have hσ₀sq : θ' (σ₀ * σ₀) = 1 := by
+    rw [map_mul]
+    exact (by decide : ∀ a : Multiplicative (ZMod 2), a * a = 1) _
+  -- (2) the ratio character `ν = χ₀ / χ₀^{σ₀}`: multiplicative,
+  -- nonvanishing, and ANTI-equivariant under `σ₀`-conjugation
+  set ν : Γ ℚ → Dickson.K 3 :=
+    fun g => χ₀ g * (χ₀ (σ₀⁻¹ * g * σ₀))⁻¹ with hνdef
+  have hνmul : ∀ g h : Γ ℚ, θ' g = 1 → θ' h = 1 →
+      ν (g * h) = ν g * ν h := by
+    intro g h hg hh
+    have hexp : σ₀⁻¹ * (g * h) * σ₀ =
+        (σ₀⁻¹ * g * σ₀) * (σ₀⁻¹ * h * σ₀) := by group
+    rw [hνdef]
+    simp only
+    rw [hχmul g h hg hh, hexp,
+      hχmul _ _ (hHconj g hg) (hHconj h hh), mul_inv]
+    ring
+  have hνne0 : ∀ g : Γ ℚ, θ' g = 1 → ν g ≠ 0 := by
+    intro g hg
+    exact mul_ne_zero (hχne0 g hg) (inv_ne_zero (hχne0 _ (hHconj g hg)))
+  have hνanti : ∀ g : Γ ℚ, θ' g = 1 → ν (σ₀⁻¹ * g * σ₀) = (ν g)⁻¹ := by
+    intro g hg
+    have hexp : σ₀⁻¹ * (σ₀⁻¹ * g * σ₀) * σ₀ =
+        (σ₀ * σ₀)⁻¹ * g * (σ₀ * σ₀) := by group
+    rw [hνdef]
+    simp only
+    rw [hexp, hχHconj g (σ₀ * σ₀) hg hσ₀sq, mul_inv, inv_inv]
+    ring
+  -- (3) `ν` is trivial on the normal subgroup `ker ρ`
+  have hνker : ∀ g : Γ ℚ, ρ g = 1 → ν g = 1 := by
+    intro g hg
+    have hconjker : ρ (σ₀⁻¹ * g * σ₀) = 1 := by
+      rw [map_mul, map_mul, hg, mul_one, ← map_mul, inv_mul_cancel, map_one]
+    rw [hνdef]
+    simp only
+    rw [hχker g hg, hχker _ hconjker, inv_one, mul_one]
+  -- (4) the values of `ν` lie in `𝔽̄₃ˣ`, hence have order prime to `3`
+  have hνord : ∀ g : Γ ℚ, θ' g = 1 →
+      ∃ n : ℕ, 0 < n ∧ ¬ (3 ∣ n) ∧ ν g ^ n = 1 := fun g hg =>
+    exists_pow_eq_one_not_three_dvd_of_ne_zero _ (hνne0 g hg)
+  -- (5) `ν` is unramified at every prime `q ≠ 3`: `θ'` and `χ₀` vanish
+  -- on the inertia image (`h2unr` at `2`; the local leaves away from
+  -- `2`), and the conjugate factor `χ₀^{σ₀}` is handled by the product
+  -- formula `hχprod` plus triviality of the mod-3 cyclotomic character
+  -- on the inertia at `q ≠ 3`
+  have hνunr : ∀ (q : ℕ) (hq : q.Prime), q ≠ 3 →
+      ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+        ν (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1 := by
+    intro q hq hq3 σ hσ
+    set gσ : Γ ℚ := Field.absoluteGaloisGroup.map (algebraMap ℚ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)) σ
+    have hθ1 : θ' gσ = 1 := by
+      by_cases hq2 : q = 2
+      · subst hq2
+        exact (h2unr σ hσ).1
+      · exact theta'_eq_one_of_mem_localInertiaGroup_of_ne_two_three θ' d hd
+          x hx hθ'x q hq hq2 hq3 σ hσ
+    have hχ1 : χ₀ gσ = 1 := by
+      by_cases hq2 : q = 2
+      · subst hq2
+        exact (h2unr σ hσ).2
+      · exact hχunr q hq hq2 hq3 σ hσ
+    have hcyc : algebraMap ℤ_[3] k
+        ((cyclotomicCharacter (AlgebraicClosure ℚ) 3 gσ.toRingEquiv :
+          ℤ_[3]ˣ) : ℤ_[3]) = 1 := by
+      by_cases hq2 : q = 2
+      · subst hq2
+        obtain ⟨τ, hτ, c, heq⟩ := localInertia_two_eq_map_padic hσ
+        set m : Γ ℚ := Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) τ
+        have heq' : gσ = c * m * c⁻¹ := heq
+        have hconj : cyclotomicCharacter (AlgebraicClosure ℚ) 3
+            gσ.toRingEquiv =
+            cyclotomicCharacter (AlgebraicClosure ℚ) 3 m.toRingEquiv := by
+          rw [heq',
+            show (c * m * c⁻¹).toRingEquiv =
+              c.toRingEquiv * m.toRingEquiv * (c.toRingEquiv)⁻¹ from rfl,
+            map_mul, map_mul, map_inv,
+            mul_comm (cyclotomicCharacter (AlgebraicClosure ℚ) 3
+              c.toRingEquiv),
+            mul_assoc, mul_inv_cancel, mul_one]
+        rw [hconj]
+        exact cyclotomicCharacter_algebraMap_eq_one_of_inertia_two (k := k) hτ
+      · exact cyclotomicCharacter_algebraMap_eq_one_of_inertia_ne_two_three
+          q hq hq2 hq3 hσ
+    have hprod := hχprod gσ hθ1
+    rw [RingHom.comp_apply, RingHom.comp_apply, hcyc, map_one, map_one,
+      hχ1, one_mul] at hprod
+    rw [hνdef]
+    simp only
+    rw [hχ1, hprod, inv_one, mul_one]
+  -- (6) the ray-class leaf: `ν = 1` on `H`, i.e. `χ₀ = χ₀^{σ₀}`
+  intro g hg
+  have h1 := anti_equivariant_ratio_character_eq_one_ray_class V hV hρ θ'
+    htriv' d hd x hx hθ'x σ₀ hσ₀ ν hνmul hνne0 hνanti hνker hνord hνunr g hg
+  rw [hνdef] at h1
+  simp only at h1
+  have hne := hχne0 _ (hHconj g hg)
+  field_simp [hne] at h1
+  exact h1
 
 set_option maxHeartbeats 1000000 in
 /-- **The dihedral ray-class computation given unramifiedness at `2`**
