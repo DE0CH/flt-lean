@@ -2996,6 +2996,259 @@ theorem tendsto_LSeries_nhdsGT_one_of_forall_norm_sum_le {c : ℕ → ℂ} {r C 
   rw [Complex.ofReal_one, one_mul] at hmul
   exact hmul.congr' heq
 
+/-!
+### Nonvanishing of `L(1, χ)`: the zeta-factorization pole argument
+
+The arithmetic core
+`integral_sum_dirichletCharacter_mul_card_cpow_neg_two_ne_zero` is
+proven by contradiction through the product `∏_{j < ℓ-1} L(s, χ^j)` of
+the twisted ideal `L`-series of ALL powers of `χ`:
+
+* **lower bound** (no vanishing hypothesis): `log ∏_j L(s, χ^j)` is a
+  sum over the finite places `P` of `F` whose per-place real part is
+  `-(M/f)·log(1 - N P^{-f s}) ≥ 0` (`M = ℓ - 1`, `f` the order of
+  `χ(N P)` — by the root-of-unity factorization
+  `∏_{j<M} (1 - a^j x) = (1 - x^f)^{M/f}`), and is `≥ M·N P^{-s}` at
+  places with `N P ≡ 1 (mod ℓ)`; so the product dominates
+  `exp(M · ∑_{N P ≡ 1 (ℓ)} N P^{-s})`.  The congruence-class prime sum
+  in turn dominates `1/[E:ℚ]` times the degree-one prime sum of `E`:
+  each degree-one place `Q` of `E` away from `ℓ` pulls back to
+  `P = Q ∩ 𝓞 F` with the SAME residue cardinality
+  (`natCard_quotient_under_eq_of_natCard_prime`), the congruence
+  `N Q ≡ 1 (mod ℓ)` holds because `ζ` reduces to a primitive `ℓ`-th
+  root of unity in `𝓞 E ⧸ Q`, and the fibers of `Q ↦ P` have at most
+  `[𝓞 E : ℤ]` elements (distinct primes of norm `q` have product
+  dividing `(q)`, of norm `q^[𝓞 E : ℤ]`); the degree-one prime sum of
+  `E` diverges as `s → 1⁺`
+  (`exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_ne E ℓ`).
+* **upper bound** (from the assumed vanishing): were the continued
+  value `L(1, χ) = 0`, every factor would be controlled on a right
+  neighbourhood of `1`: factors with `χ^j` TRIVIAL on the image of
+  `Gal(E/F)` have the same `L`-series as the trivial character
+  (`LSeries_dirichletCharacter_mul_card_congr`, through
+  `exists_algEquiv_map_zeta_eq_pow_absNorm`: every achieved norm is a
+  Galois norm-residue), bounded by `C/(s-1)` through the simple pole
+  of `ζ_F`; factors with `χ^j` in the coset `χ·(trivial on the image)`
+  have the same `L`-series as `χ` itself, bounded by `C'·(s-1)` by the
+  vanishing continuation and the uniform derivative bound (mean value
+  inequality); the two exponent classes are cosets of ONE subgroup of
+  `ZMod (ℓ-1)`, hence have EQUAL cardinality, so the `(s-1)`-powers
+  cancel exactly; all remaining factors are uniformly bounded by the
+  continuation half `exists_forall_norm_LSeries_le_and_norm_deriv_le`.
+
+`exp(divergent) ≤ bounded` is the contradiction. -/
+
+open IsDedekindDomain in
+/-- **Arithmetic Frobenius on `ζ` at an arbitrary place away from `ℓ`**
+— the generalization of `exists_algEquiv_map_zeta_eq_pow_natCard` from
+degree-one places to ALL finite places `P` of `F` with `ℓ ∤ #(𝓞 F/P)`:
+some `σ ∈ Gal(E/F)` acts on `ζ` by `ζ ↦ ζ ^ #(𝓞 F / P)`.  Same proof:
+at any prime `Q` of `𝓞 E` above `P` an arithmetic Frobenius exists
+(`IsArithFrobAt.exists_of_isInvariant`), and it acts on the `ℓ`-th
+root of unity `ζ` exactly by `ζ ↦ ζ ^ #(𝓞 F / P)`
+(`AlgHom.IsArithFrobAt.apply_of_pow_eq_one`), because `ℓ` is
+invertible modulo `Q` (this is where `ℓ ∤ #(𝓞 F / P)` enters). -/
+theorem exists_algEquiv_map_zeta_eq_pow_natCard_of_not_dvd
+    {F : Type*} [Field F] [NumberField F] {E : Type*} [Field E] [NumberField E]
+    [Algebra F E] {ℓ : ℕ} (hℓ : ℓ.Prime) [IsCyclotomicExtension {ℓ} F E]
+    {ζ : E} (hζ : IsPrimitiveRoot ζ ℓ) (P : HeightOneSpectrum (𝓞 F))
+    (hnd : ¬ ℓ ∣ Nat.card (𝓞 F ⧸ P.asIdeal)) :
+    ∃ σ : E ≃ₐ[F] E, σ ζ = ζ ^ Nat.card (𝓞 F ⧸ P.asIdeal) := by
+  classical
+  haveI : NeZero ℓ := ⟨hℓ.pos.ne'⟩
+  haveI : IsGalois F E := IsCyclotomicExtension.isGalois {ℓ} F E
+  haveI : FiniteDimensional F E := IsCyclotomicExtension.finiteDimensional {ℓ} F E
+  haveI : Module.Finite (𝓞 F) (𝓞 E) :=
+    Module.Finite.of_restrictScalars_finite ℤ (𝓞 F) (𝓞 E)
+  -- a prime of `𝓞 E` over `P`, with finite residue field
+  obtain ⟨⟨Q, hQp, hQo⟩⟩ := Ideal.nonempty_primesOver (S := 𝓞 E) P.asIdeal
+  haveI := hQp
+  haveI := hQo
+  have hQunder : Q.under (𝓞 F) = P.asIdeal := hQo.over.symm
+  have hQne : Q ≠ ⊥ := by
+    intro h
+    apply P.ne_bot
+    rw [hQo.over, h, Ideal.under_def]
+    exact Ideal.comap_bot_of_injective _
+      (FaithfulSMul.algebraMap_injective (𝓞 F) (𝓞 E))
+  haveI : Finite (𝓞 E ⧸ Q) := Ring.HasFiniteQuotients.finiteQuotient hQne
+  -- a Frobenius element at `Q` over `F`
+  obtain ⟨σQ, hσQ⟩ :=
+    IsArithFrobAt.exists_of_isInvariant (𝓞 F) (E ≃ₐ[F] E) Q
+  -- `ζ` as an algebraic integer
+  have hζint : IsIntegral ℤ ζ := by
+    refine IsIntegral.of_pow hℓ.pos ?_
+    rw [hζ.pow_eq_one]
+    exact isIntegral_one
+  set ζO : 𝓞 E := ⟨ζ, hζint⟩
+  -- `ℓ` is invertible modulo `Q`
+  have hℓQ : ((ℓ : ℕ) : 𝓞 E) ∉ Q := by
+    intro hmem
+    have h1 : ((ℓ : ℕ) : 𝓞 F) ∈ P.asIdeal := by
+      rw [← hQunder, Ideal.under_def, Ideal.mem_comap, map_natCast]
+      exact hmem
+    haveI : Finite (𝓞 F ⧸ P.asIdeal) := by
+      refine Nat.finite_of_card_ne_zero ?_
+      have h := two_le_natCard_quotient P
+      omega
+    haveI := Fintype.ofFinite (𝓞 F ⧸ P.asIdeal)
+    have h2 : ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : 𝓞 F ⧸ P.asIdeal) = 0 := by
+      rw [Nat.card_eq_fintype_card]
+      exact Nat.cast_card_eq_zero _
+    have h3 : ((ℓ : ℕ) : 𝓞 F ⧸ P.asIdeal) = 0 := by
+      rw [← map_natCast (Ideal.Quotient.mk P.asIdeal),
+        Ideal.Quotient.eq_zero_iff_mem]
+      exact h1
+    have hco : IsCoprime (Nat.card (𝓞 F ⧸ P.asIdeal) : ℤ) (ℓ : ℤ) :=
+      Int.isCoprime_iff_gcd_eq_one.mpr
+        (by
+          rw [Int.gcd_natCast_natCast]
+          exact Nat.Coprime.symm ((Nat.Prime.coprime_iff_not_dvd hℓ).mpr hnd))
+    obtain ⟨u, v, huv⟩ := hco
+    have h4 : (1 : 𝓞 F ⧸ P.asIdeal) = 0 := by
+      calc (1 : 𝓞 F ⧸ P.asIdeal)
+          = ((u * (Nat.card (𝓞 F ⧸ P.asIdeal) : ℤ) + v * (ℓ : ℤ) : ℤ) :
+            𝓞 F ⧸ P.asIdeal) := by rw [huv, Int.cast_one]
+        _ = (u : 𝓞 F ⧸ P.asIdeal) *
+              ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : 𝓞 F ⧸ P.asIdeal) +
+            (v : 𝓞 F ⧸ P.asIdeal) * ((ℓ : ℕ) : 𝓞 F ⧸ P.asIdeal) := by
+            rw [Int.cast_add, Int.cast_mul, Int.cast_mul, Int.cast_natCast,
+              Int.cast_natCast]
+        _ = 0 := by rw [h2, h3, mul_zero, mul_zero, add_zero]
+    exact one_ne_zero h4
+  -- the Frobenius acts on `ζ` exactly by `ζ ↦ ζ ^ #(𝓞 F / P)`
+  have hζOpow : ζO ^ ℓ = 1 := by
+    apply NumberField.RingOfIntegers.ext
+    show algebraMap (𝓞 E) E (ζO ^ ℓ) = algebraMap (𝓞 E) E 1
+    rw [map_pow, map_one]
+    show ζ ^ ℓ = 1
+    exact hζ.pow_eq_one
+  have hσQζ : σQ • ζO = ζO ^ Nat.card (𝓞 F ⧸ P.asIdeal) := by
+    have h1 := hσQ.apply_of_pow_eq_one hζOpow hℓQ
+    rw [hQunder] at h1
+    exact h1
+  refine ⟨σQ, ?_⟩
+  have h2 : (algebraMap (𝓞 E) E) (σQ • ζO) =
+      (algebraMap (𝓞 E) E) (ζO ^ Nat.card (𝓞 F ⧸ P.asIdeal)) :=
+    congrArg _ hσQζ
+  rw [map_pow] at h2
+  have h3 : (algebraMap (𝓞 E) E) (σQ • ζO) = σQ ζ := rfl
+  have h4 : (algebraMap (𝓞 E) E) ζO = ζ := rfl
+  rw [h3, h4] at h2
+  exact h2
+
+open IsDedekindDomain in
+/-- **Every achieved ideal norm away from `ℓ` is a Galois
+norm-residue**: for a nonzero ideal `I` of `𝓞 F` with `ℓ ∤ N(I)`, some
+`σ ∈ Gal(E/F)` acts on `ζ` by `ζ ↦ ζ ^ N(I)`.  By strong induction on
+the norm along the Dedekind factorization: split off a maximal divisor
+`M ∣ I`, apply the per-place Frobenius lemma
+`exists_algEquiv_map_zeta_eq_pow_natCard_of_not_dvd` to `M` and the
+inductive hypothesis to `I/M`, and compose the two automorphisms
+(`(σ₁σ₂)ζ = ζ^{N(M)·N(I/M)} = ζ^{N(I)}` by multiplicativity of the
+absolute norm). -/
+theorem exists_algEquiv_map_zeta_eq_pow_absNorm
+    {F : Type*} [Field F] [NumberField F] {E : Type*} [Field E] [NumberField E]
+    [Algebra F E] {ℓ : ℕ} (hℓ : ℓ.Prime) [IsCyclotomicExtension {ℓ} F E]
+    {ζ : E} (hζ : IsPrimitiveRoot ζ ℓ) (I : Ideal (𝓞 F)) (hI : I ≠ ⊥)
+    (hnd : ¬ ℓ ∣ Ideal.absNorm I) :
+    ∃ σ : E ≃ₐ[F] E, σ ζ = ζ ^ Ideal.absNorm I := by
+  classical
+  suffices H : ∀ n : ℕ, ∀ I : Ideal (𝓞 F), Ideal.absNorm I = n → I ≠ ⊥ →
+      ¬ ℓ ∣ Ideal.absNorm I → ∃ σ : E ≃ₐ[F] E, σ ζ = ζ ^ Ideal.absNorm I from
+    H (Ideal.absNorm I) I rfl hI hnd
+  intro n
+  induction n using Nat.strong_induction_on with
+  | _ n ih =>
+    intro I hIn hIbot hInd
+    rcases eq_or_ne I ⊤ with rfl | htop
+    · refine ⟨1, ?_⟩
+      rw [← Ideal.one_eq_top, map_one, pow_one]
+      rfl
+    · -- split off a maximal divisor
+      obtain ⟨M, hMmax, hIM⟩ := Ideal.exists_le_maximal I htop
+      have hMne : M ≠ ⊥ := by
+        rintro rfl
+        exact hIbot (le_bot_iff.mp hIM)
+      obtain ⟨J, rfl⟩ := (Ideal.dvd_iff_le).mpr hIM
+      have hJne : J ≠ ⊥ := by
+        rintro rfl
+        rw [Ideal.mul_bot] at hIbot
+        exact hIbot rfl
+      have hnMJ : Ideal.absNorm (M * J) =
+          Ideal.absNorm M * Ideal.absNorm J := map_mul _ _ _
+      have hM0 : Ideal.absNorm M ≠ 0 := fun h =>
+        hMne (Ideal.absNorm_eq_zero_iff.mp h)
+      have hM1 : Ideal.absNorm M ≠ 1 := fun h =>
+        hMmax.ne_top (Ideal.absNorm_eq_one_iff.mp h)
+      have hJ0 : Ideal.absNorm J ≠ 0 := fun h =>
+        hJne (Ideal.absNorm_eq_zero_iff.mp h)
+      have hJlt : Ideal.absNorm J < n := by
+        rw [← hIn, hnMJ]
+        have hJpos : 0 < Ideal.absNorm J := Nat.pos_of_ne_zero hJ0
+        have h3 : 1 * Ideal.absNorm J < Ideal.absNorm M * Ideal.absNorm J :=
+          mul_lt_mul_of_pos_right (by omega) hJpos
+        omega
+      have hndM : ¬ ℓ ∣ Ideal.absNorm M := fun h =>
+        hInd (hnMJ ▸ h.mul_right _)
+      have hndJ : ¬ ℓ ∣ Ideal.absNorm J := fun h =>
+        hInd (hnMJ ▸ h.mul_left _)
+      haveI := hMmax.isPrime
+      set P : HeightOneSpectrum (𝓞 F) := ⟨M, hMmax.isPrime, hMne⟩ with hP
+      have hcardM : Nat.card (𝓞 F ⧸ P.asIdeal) = Ideal.absNorm M := by
+        rw [Ideal.absNorm_apply, Submodule.cardQuot_apply]
+      obtain ⟨σ₁, hσ₁⟩ :=
+        exists_algEquiv_map_zeta_eq_pow_natCard_of_not_dvd hℓ hζ P
+          (by rw [hcardM]; exact hndM)
+      obtain ⟨σ₂, hσ₂⟩ := ih (Ideal.absNorm J) hJlt J rfl hJne hndJ
+      refine ⟨σ₁ * σ₂, ?_⟩
+      have hcomp : (σ₁ * σ₂) ζ = σ₁ (σ₂ ζ) := rfl
+      rw [hcomp, hσ₂, map_pow, hσ₁, hcardM, ← pow_mul, hnMJ]
+
+open IsDedekindDomain in
+/-- **Congruence of twisted ideal `L`-series for characters agreeing on
+the Galois norm-residues**: if `χ₁` and `χ₂` agree at every exponent
+`n` through which `Gal(E/F)` acts on `ζ`, then the `χ₁`- and
+`χ₂`-twisted ideal Dirichlet series of `F` are equal at every point.
+Every `k ≥ 1` with a nonzero ideal count and `ℓ ∤ k` is a Galois
+norm-residue (`exists_algEquiv_map_zeta_eq_pow_absNorm`); at `ℓ ∣ k`
+both characters vanish, and at zero count both coefficients vanish. -/
+theorem LSeries_dirichletCharacter_mul_card_congr
+    {F : Type*} [Field F] [NumberField F] {E : Type*} [Field E] [NumberField E]
+    [Algebra F E] {ℓ : ℕ} (hℓ : ℓ.Prime) [IsCyclotomicExtension {ℓ} F E]
+    {ζ : E} (hζ : IsPrimitiveRoot ζ ℓ) (χ₁ χ₂ : DirichletCharacter ℂ ℓ)
+    (h : ∀ (ρ : E ≃ₐ[F] E) (n : ℕ), ρ ζ = ζ ^ n →
+      χ₁ (n : ZMod ℓ) = χ₂ (n : ZMod ℓ)) (s : ℂ) :
+    LSeries (fun k => χ₁ (k : ZMod ℓ) *
+        (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) s =
+      LSeries (fun k => χ₂ (k : ZMod ℓ) *
+        (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) s := by
+  classical
+  refine LSeries_congr (fun {k} hk => ?_) s
+  rcases Nat.eq_zero_or_pos (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k})
+    with hc | hc
+  · rw [hc, Nat.cast_zero, mul_zero, mul_zero]
+  · congr 1
+    by_cases hdvd : ℓ ∣ k
+    · have h0 : ((k : ℕ) : ZMod ℓ) = 0 := (ZMod.natCast_eq_zero_iff k ℓ).mpr hdvd
+      haveI : NeZero ℓ := ⟨hℓ.pos.ne'⟩
+      have hnu : ¬ IsUnit ((k : ℕ) : ZMod ℓ) := by
+        rw [h0]
+        haveI := Fact.mk hℓ
+        exact not_isUnit_zero
+      rw [MulChar.map_nonunit χ₁ hnu, MulChar.map_nonunit χ₂ hnu]
+    · haveI : Nonempty {I : Ideal (𝓞 F) // Ideal.absNorm I = k} :=
+        (Nat.card_pos_iff.mp hc).1
+      obtain ⟨I, hIk⟩ := ‹Nonempty {I : Ideal (𝓞 F) // Ideal.absNorm I = k}›.some
+      have hIne : I ≠ ⊥ := by
+        rintro rfl
+        rw [Ideal.absNorm_bot] at hIk
+        exact hk hIk.symm
+      obtain ⟨σ, hσ⟩ := exists_algEquiv_map_zeta_eq_pow_absNorm hℓ hζ I hIne
+        (by rw [hIk]; exact hdvd)
+      rw [hIk] at hσ
+      exact h σ k hσ
+
 open IsDedekindDomain in
 /-- **Nonvanishing of the continued twisted `L`-value at `s = 1`**
 (sorry leaf) — the arithmetic core of `L(1, χ) ≠ 0`, isolated from all
