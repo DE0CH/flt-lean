@@ -113,9 +113,13 @@ def split_base(task):
     newer main invalidates them; the hook advances to the pinned commit
     instead. Returns (base_or_None, prompt_without_the_header)."""
     lines = task.split("\n")
-    if lines and lines[0].startswith(BASE_PREFIX):
-        return lines[0][len(BASE_PREFIX):].strip(), "\n".join(lines[1:]).lstrip("\n")
-    return None, task
+    if not lines or not lines[0].startswith(BASE_PREFIX):
+        raise RuntimeError(
+            f"queued task has no leading `{BASE_PREFIX} <sha>` line. Every "
+            "task must pin the commit it was written against; an unpinned "
+            "task would be dispatched against an arbitrary tree. Fix the "
+            f"queue entry by hand.\nTask head: {task[:200]!r}")
+    return lines[0][len(BASE_PREFIX):].strip(), "\n".join(lines[1:]).lstrip("\n")
 
 
 def allocate_worktree(pool_fh, target="main"):
@@ -151,15 +155,27 @@ def allocate_worktree(pool_fh, target="main"):
             "but is NOT an ancestor of main (diverged/unmerged commits) "
             "-- integration was likely skipped for this branch")
 
-    # A pinned base that the branch already contains needs no advance (the
-    # branch was ff'd past it by an earlier claim); otherwise ff to it.
     rev = git(["rev-parse", "--verify", f"{target}^{{commit}}"], worktree_path)
     if rev.returncode != 0:
         raise RuntimeError(
             f"task pins base {target}, which does not resolve in "
             f"{worktree_path}: {rev.stderr}")
-    already = git(["merge-base", "--is-ancestor", target, "HEAD"], worktree_path)
-    if already.returncode != 0:
+    # A free worktree must be strictly BEHIND the pin: it was last advanced
+    # to some main, its work was merged, and the pin is a commit of main.
+    # A branch that already contains the pin means the pool/queue state is
+    # not what it should be -- crash and let the orchestrator investigate
+    # rather than silently dispatching against the wrong tree.
+    head_sha = git(["rev-parse", "HEAD"], worktree_path).stdout.strip()
+    target_sha = rev.stdout.strip()
+    if head_sha != target_sha:
+        if git(["merge-base", "--is-ancestor", target, "HEAD"],
+               worktree_path).returncode == 0:
+            raise RuntimeError(
+                f"worktree {free_name} is STRICTLY AHEAD of the pinned base "
+                f"{target[:12]} (HEAD {head_sha[:12]}) -- it already "
+                "contains the commit this task was written against, so the "
+                "task cannot be dispatched against the tree its line "
+                "references assume; the queue pin or the pool state is wrong")
         ff = git(["merge", "--ff-only", target], worktree_path)
         if ff.returncode != 0:
             raise RuntimeError(
