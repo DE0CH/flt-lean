@@ -47,6 +47,7 @@ QUEUE_FILE = "/home/chend/.flt-task-queue"
 PLACEHOLDER = "{{FLT_WORKTREE}}"
 SENTINEL = "{{FLT_QUEUE_POP}}"
 DELIMITER = "=== TASK ==="
+BASE_PREFIX = "#base:"
 HOME = "/home/chend"
 # Second pool batch (Deyao, 2026-07-24): the home volume filled up (a
 # worktree costs ~5.4G, 4.6G of it mathlib oleans), so flt-lean-14..26
@@ -105,10 +106,23 @@ def write_queue(tasks):
             fh.write(t + "\n")
 
 
-def allocate_worktree(pool_fh):
+def split_base(task):
+    """A queued task may pin the commit it was WRITTEN AGAINST with a
+    leading `#base: <sha>` line (Deyao, 2026-07-24). Task prompts cite
+    exact declaration line numbers, so advancing the worktree to a much
+    newer main invalidates them; the hook advances to the pinned commit
+    instead. Returns (base_or_None, prompt_without_the_header)."""
+    lines = task.split("\n")
+    if lines and lines[0].startswith(BASE_PREFIX):
+        return lines[0][len(BASE_PREFIX):].strip(), "\n".join(lines[1:]).lstrip("\n")
+    return None, task
+
+
+def allocate_worktree(pool_fh, target="main"):
     """Under the caller's pool-file lock: find a free worktree, verify
-    clean+ancestor, ff to main, mark claimed. Returns its path, or None
-    if the pool is exhausted. Hard-raises on unexpected state."""
+    clean+ancestor, advance it to `target` (the task's pinned base commit,
+    or main), mark claimed. Returns its path, or None if the pool is
+    exhausted. Hard-raises on unexpected state."""
     entries = [line.split() for line in pool_fh.read().splitlines() if line.strip()]
     free_name = next((n for n, status in entries if status == "free"), None)
     if free_name is None:
@@ -137,10 +151,20 @@ def allocate_worktree(pool_fh):
             "but is NOT an ancestor of main (diverged/unmerged commits) "
             "-- integration was likely skipped for this branch")
 
-    ff = git(["merge", "--ff-only", "main"], worktree_path)
-    if ff.returncode != 0:
+    # A pinned base that the branch already contains needs no advance (the
+    # branch was ff'd past it by an earlier claim); otherwise ff to it.
+    rev = git(["rev-parse", "--verify", f"{target}^{{commit}}"], worktree_path)
+    if rev.returncode != 0:
         raise RuntimeError(
-            f"ff-only advance of {free_name} to main failed: {ff.stderr}")
+            f"task pins base {target}, which does not resolve in "
+            f"{worktree_path}: {rev.stderr}")
+    already = git(["merge-base", "--is-ancestor", target, "HEAD"], worktree_path)
+    if already.returncode != 0:
+        ff = git(["merge", "--ff-only", target], worktree_path)
+        if ff.returncode != 0:
+            raise RuntimeError(
+                f"ff-only advance of {free_name} to {target} failed: "
+                f"{ff.stderr}")
 
     new_lines = [
         f"{n} claimed" if n == free_name else f"{n} {status}"
@@ -163,7 +187,13 @@ def main():
     queue = read_queue()
 
     def auto_queue(reason):
-        queue.append(prompt)
+        # Stamp the commit this task was written against, so the eventual
+        # pop advances the worktree to THAT tree, not to a newer main.
+        head = git(["rev-parse", "main"], HOME + "/flt-lean")
+        stamped = prompt
+        if head.returncode == 0 and not prompt.startswith(BASE_PREFIX):
+            stamped = f"{BASE_PREFIX} {head.stdout.strip()}\n{prompt}"
+        queue.append(stamped)
         write_queue(queue)
         deny(f"{reason} — this task has been QUEUED (position "
              f"{len(queue)} in {QUEUE_FILE}). Dispatch the queue head "
@@ -185,16 +215,17 @@ def main():
         if not queue:
             deny(f"the task queue ({QUEUE_FILE}) is empty — nothing to pop; "
                  f"dispatch directly with {PLACEHOLDER} in the prompt.")
+        base, task_body = split_base(queue[0])
         with open(POOL_FILE, "r+") as f:
             fcntl.flock(f, fcntl.LOCK_EX)
-            worktree_path = allocate_worktree(f)
+            worktree_path = allocate_worktree(f, base or "main")
             if worktree_path is None:
                 deny("no free worktree available — the queued task stays in "
                      f"{QUEUE_FILE}; retry the {SENTINEL} dispatch after "
                      "freeing a worktree (merge + hand-edit the pool file).")
-            task = queue.pop(0)
+            queue.pop(0)
             write_queue(queue)
-        tool_input["prompt"] = task.replace(PLACEHOLDER, worktree_path)
+        tool_input["prompt"] = task_body.replace(PLACEHOLDER, worktree_path)
         emit({
             "hookSpecificOutput": {
                 "hookEventName": "PreToolUse",

@@ -23,8 +23,20 @@ PROMPT = (
     "free-floating check + progress-entries.json/PROGRESS.md "
     "regeneration cycle), remember to dispatch/queue a NEW bookkeeping "
     "task -- appended to the END of ~/.flt-task-queue like every other "
-    "task. If this was NOT an integration into main (e.g. a --ff-only "
-    "worktree advance, or some unrelated merge), ignore this reminder."
+    "task; (3) REVIEW THE QUEUE against what this merge just changed "
+    "(Deyao, 2026-07-24): the merged report is new information, so walk "
+    "~/.flt-task-queue and UPDATE any task whose target moved, was "
+    "renamed, was restated, or whose recorded line numbers/plan are now "
+    "stale, and DELETE any task the merge made obsolete (target already "
+    "proven, leaf withdrawn, decomposition superseded). Each queued task "
+    "carries a leading `#base: <sha>` line pinning the commit it was "
+    "written against -- the pop hook advances the worktree to THAT commit "
+    "instead of main, so line references stay valid. **If you edit a "
+    "task, you must also advance its `#base:` to the current main "
+    "commit** (`git rev-parse main`), since the edit is written against "
+    "the new tree. Leave untouched tasks pinned where they are. If this "
+    "was NOT an integration into main (e.g. a --ff-only worktree advance, "
+    "or some unrelated merge), ignore this reminder."
 )
 
 
