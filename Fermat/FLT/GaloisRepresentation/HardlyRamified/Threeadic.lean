@@ -43,6 +43,12 @@ import Mathlib.NumberTheory.RamificationInertia.Unramified
 import Fermat.FLT.DedekindDomain.ResidueCardinality
 -- `natCard_residue_quotient_toHeightOneSpectrum`, identifying the
 -- Frobenius exponent at `2` with `q = 2` in the tame stratum
+import Mathlib.Algebra.Module.ZMod
+-- `AddCommGroup.zmodModule`, the `ZMod 3`-structure on the graded piece
+-- `𝔪ⁿ⁺¹ ⧸ 𝔪ⁿ⁺²` in the Kummer-core reduction
+import Mathlib.LinearAlgebra.Dual.Lemmas
+-- `Module.forall_dual_apply_eq_zero_iff`, separating points of the
+-- graded piece by `ZMod 3`-functionals in the Kummer-core reduction
 
 /-!
 # 3-adic hardly ramified representations
@@ -1402,28 +1408,115 @@ theorem omega_defect_vanishes_on_localInertia_at_three
       - f w₀ ∈ IsLocalRing.maximalIdeal R ^ (n + 2) := by
   sorry
 
-/-- **The global Kummer core over `ℚ(ζ₃)`** (sorry node — Serre's unit
-computation, Duke 1987, §5.4, `sources/serre1987duke.txt`): an
-approximate homomorphism `d` on the cyclotomic kernel `ker ω ≤ Γ ℚ`
+/-- **The global Kummer core over `ℚ(ζ₃)`, character form** (sorry node
+— Serre's unit computation, Duke 1987, §5.4; the `ZMod 3`-valued heart
+of `cyclotomicKernel_defect_vanishes_of_local_conditions`, which
+reduces to this statement by separating the points of `𝔪ⁿ⁺¹ ⧸ 𝔪ⁿ⁺²`
+with `ZMod 3`-functionals): a `ZMod 3`-valued character of the
+cyclotomic kernel `ker ω ≤ Γ ℚ` — an honest homomorphism on the
+kernel, `ω`-ANTI-equivariant under conjugation from outside the
+kernel, killed by an open normal subgroup `U` of `Γ ℚ`, killed by the
+local inertia at every prime `p ∉ {2, 3}`, and killed by the kernel
+part of the local inertia at `3` — vanishes on the whole kernel. NO
+condition at `2` is imposed, and none is needed.
+
+Mathematical route (Kummer form). Modulo the open normal kernel the
+character cuts out an abelian exponent-`3` extension `N/F` of
+`F = ℚ(ζ₃)`, Galois over `ℚ` (anti-equivariance makes
+`S = {g | ω g = 1 ∧ χ g = 0}` normal in all of `Γ ℚ`), unramified
+outside `{2, 3}` (`hunr`) and with trivial inertia at `λ = 1 - ζ₃`
+(`hthree`: the inertia elements over `3` fixing `ζ₃` are exactly the
+`λ`-inertia of `Γ_F`). Kummer theory over `F` (class number `1`, units
+`±ζ₃^k`) puts the radical of `N/F` inside `⟨[ζ₃], [λ], [2]⟩ ≤
+F^×/(F^×)³`. SIGN AUDIT (2026-07-24, correcting the eigenspace
+bookkeeping previously recorded on the parent node, which had the two
+eigenspaces swapped): the Kummer pairing `ψ_a(g) = g(∛a)/∛a`
+satisfies `χ_{τ(a)}(g) = -χ_a(τ⁻¹ g τ)` — the outer `τ` inverts `μ₃`
+— so an `ω`-ANTI-equivariant character has `τ`-FIXED radical
+(consistency checks: `Gal(ℚ(ζ₃, ∛2)/ℚ) ≅ S₃`, where transpositions
+invert the `A₃`-characters, i.e. `χ_[2]` is anti-equivariant, and
+`[2]` is `τ`-fixed; whereas `[ζ₃]`, cutting out the cyclotomic field
+`ℚ(ζ₉)`, has conjugation-INVARIANT character and `τ[ζ₃] = -[ζ₃]`).
+With `τ[ζ₃] = -[ζ₃]`, `τ[λ] = [λ] + 2[ζ₃]`, `τ[2] = [2]`, the
+`τ`-fixed subgroup of `⟨[ζ₃], [λ], [2]⟩` is `⟨[ζ₃·λ], [2]⟩`, and the
+`λ`-inertia condition kills both generators: `v_λ(ζ₃λ) = 1 ≢ 0 mod 3`
+is (tame) ramification at `λ`, and `F(∛2)/F` is wildly `λ`-ramified
+(`x³ - 2` is Eisenstein at `3` after `x ↦ x - 1`, so `ℚ₃(∛2)/ℚ₃` is
+totally ramified and `e_λ(F(∛2)/F) = 3`). Hence the radical is
+trivial, `N = F`, and `χ` dies on the kernel — with no appeal to any
+condition at `2`.
+
+Recommended formalization route (CFT-free, maximally reusing the
+PROVEN Minkowski machinery below — see
+`monoidHom_eq_one_of_forall_localInertia` and its strata): let
+`S := {g | ω g = 1 ∧ χ g = 0}`, an open normal subgroup of `Γ ℚ`
+(open since it contains `U ⊓ ker ω` and `ker ω` — the fixing subgroup
+of `ℚ(ζ₃)` — is open; normal via the homomorphism property inside the
+kernel and the anti-equivariance outside). Its fixed field `L` is
+finite Galois over `ℚ` of degree dividing `6` (`Γ ℚ ⧸ S ↪ S₃`).
+Inertia of `L/ℚ`: trivial at `p ∉ {2, 3}` (`hunr` plus normality of
+`S`); at `3` it meets `Gal(L/F)` trivially (`hthree`), so it has
+order `≤ 2` — tame at `3`, different exponent `≤ 1`, discriminant
+contribution `≤ 3³`; at `2` it lies inside `Gal(L/F)` (the mod-3
+cyclotomic character kills `localInertiaGroup` at `p ≠ 3` — a small
+separate leaf, `ℚ(ζ₃)/ℚ` being unramified at `2`), so it is cyclic of
+order dividing `3` — tame at `2`, different exponent `≤ 2`,
+discriminant contribution `≤ 2⁴`. Total: `|disc L| ≤ 3³·2⁴ = 432`,
+contradicting the sharp Hermite–Minkowski bound `√|d| ≥
+(n^n/n!)·(π/4)^{r₂}`, i.e. `|d| ≥ 985` for `n = 6`, `r₂ = 3`. (The
+pin's ready-made `NumberField.abs_discr_ge`, with constant
+`(4/9)·(3π/4)^n ≈ 76` at `n = 6`, is NOT sufficient — derive the
+`r₂`-sensitive bound from
+`NumberField.exists_ne_zero_mem_ringOfIntegers_of_norm_le` exactly as
+in that lemma's own proof.) -/
+theorem cyclotomicKernel_threeTorsion_character_vanishes
+    (χ : Γ ℚ → ZMod 3)
+    (hhom : ∀ g h : Γ ℚ, cyclotomicCharacterModL 3 g = 1 →
+      cyclotomicCharacterModL 3 h = 1 → χ (g * h) = χ g + χ h)
+    (hconj : ∀ τ g : Γ ℚ, cyclotomicCharacterModL 3 τ ≠ 1 →
+      cyclotomicCharacterModL 3 g = 1 → χ (τ * g * τ⁻¹) = -χ g)
+    (U : Subgroup (Γ ℚ)) (hUopen : IsOpen (U : Set (Γ ℚ)))
+    (hUnormal : U.Normal)
+    (hUχ : ∀ u ∈ U, χ u = 0)
+    (hunr : ∀ (p : ℕ) (hp : p.Prime), p ≠ 2 → p ≠ 3 →
+      ∀ σ : Γ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat),
+        σ ∈ localInertiaGroup hp.toHeightOneSpectrumRingOfIntegersRat →
+        χ (Field.absoluteGaloisGroup.map
+          (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hp.toHeightOneSpectrumRingOfIntegersRat)) σ) = 0)
+    (hthree : ∀ σ : Γ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat),
+      σ ∈ localInertiaGroup
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat →
+      cyclotomicCharacterModL 3 (Field.absoluteGaloisGroup.map
+        (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1 →
+      χ (Field.absoluteGaloisGroup.map
+        (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ) = 0)
+    (g : Γ ℚ) (hg : cyclotomicCharacterModL 3 g = 1) :
+    χ g = 0 := by
+  sorry
+
+/-- **The global Kummer core over `ℚ(ζ₃)`** (DERIVED 2026-07-24 from
+the character form `cyclotomicKernel_threeTorsion_character_vanishes`):
+an approximate homomorphism `d` on the cyclotomic kernel `ker ω ≤ Γ ℚ`
 valued in `𝔪ⁿ⁺¹` — a homomorphism modulo `𝔪ⁿ⁺²` on the kernel,
 `ω`-ANTI-equivariant under conjugation from outside the kernel
 (`hdconj`: conjugating by `τ` with `ω τ = -1` negates `d` mod `𝔪ⁿ⁺²`),
 killed by an open normal subgroup, killed by the local inertia at every
 prime `p ∉ {2, 3}`, and killed by the cyclotomic-kernel part of the
-local inertia at `3` — vanishes modulo `𝔪ⁿ⁺²` on the whole kernel.
-Route: modulo `𝔪ⁿ⁺²` the map is a continuous character of
-`Γ_{ℚ(ζ₃)}` into a `3`-elementary target (`3 ∈ 𝔪`), cutting out an
-abelian exponent-`3` extension `N/ℚ(ζ₃)` unramified outside the places
-over `2` and `3` and unramified over `3`; Kummer theory over
-`ℚ(ζ₃)` (class number `1`) puts its radical in the group generated by
-the units `±ζ₃`, `λ = 1 - ζ₃` and `2` modulo cubes; the
-anti-equivariance forces the radical into the `ω`-eigenspace of
-`Gal(ℚ(ζ₃)/ℚ)`, which the classes of `2` (τ-fixed) and `λ`
-(`τλ ≡ λ·unit` with `[τλ] = [λ] + 2[ζ₃] ≠ -[λ]` unless `[λ] = 0`)
-do not meet — only `[ζ₃]` survives; and `ℚ(ζ₃, ∛ζ₃) = ℚ(ζ₉)` is
-ramified at `3`, excluded by the unramified-over-`3` condition. Hence
-`N = ℚ(ζ₃)` and `d` dies on the kernel. NO local condition at `2` is
-required: the eigenspace argument kills the `2`-radical globally. -/
+local inertia at `3` — vanishes modulo `𝔪ⁿ⁺²` on the whole kernel. NO
+local condition at `2` is required. Reduction: the graded piece
+`𝔪ⁿ⁺¹ ⧸ 𝔪ⁿ⁺²` is a `ZMod 3`-vector space (`3 ∈ 𝔪`,
+`three_mem_maximalIdeal`); for every `ZMod 3`-functional `φ` on it the
+composite `g ↦ φ [d g]` satisfies the hypotheses of the character form
+verbatim, hence vanishes on the kernel; functionals separate points
+(`Module.forall_dual_apply_eq_zero_iff`), so `[d g] = 0`, i.e.
+`d g ∈ 𝔪ⁿ⁺²`. The arithmetic content — Serre's unit computation, with
+the corrected (2026-07-24) eigenspace bookkeeping — is recorded on the
+character form. -/
 theorem cyclotomicKernel_defect_vanishes_of_local_conditions
     {R : Type u} [CommRing R]
     [Algebra ℤ_[3] R] [Module.Finite ℤ_[3] R]
@@ -1461,7 +1554,78 @@ theorem cyclotomicKernel_defect_vanishes_of_local_conditions
         IsLocalRing.maximalIdeal R ^ (n + 2))
     (g : Γ ℚ) (hg : cyclotomicCharacterModL 3 g = 1) :
     d g ∈ IsLocalRing.maximalIdeal R ^ (n + 2) := by
-  sorry
+  classical
+  -- the graded piece `𝔪ⁿ⁺¹ ⧸ 𝔪ⁿ⁺²`
+  set M : Submodule R R := (IsLocalRing.maximalIdeal R ^ (n + 1) : Ideal R)
+  set N : Submodule R ↥M := Submodule.comap M.subtype
+    (IsLocalRing.maximalIdeal R ^ (n + 2) : Ideal R)
+  have hmemN : ∀ x : ↥M, x ∈ N ↔
+      (x : R) ∈ IsLocalRing.maximalIdeal R ^ (n + 2) := fun _ => Iff.rfl
+  -- `3` kills the quotient (`3 ∈ 𝔪`), making it a `ZMod 3`-vector space
+  have htor : ∀ x : ↥M ⧸ N, (3 : ℕ) • x = 0 := by
+    intro x
+    obtain ⟨y, rfl⟩ := Submodule.Quotient.mk_surjective N x
+    have hmem : y + y + y ∈ N := by
+      rw [hmemN]
+      have h1 : ((y + y + y : ↥M) : R) = (3 : R) * (y : R) := by
+        push_cast
+        ring
+      rw [h1]
+      have hy : (y : R) ∈ IsLocalRing.maximalIdeal R ^ (n + 1) := y.2
+      have h2 := Ideal.mul_mem_mul three_mem_maximalIdeal hy
+      rw [← pow_succ'] at h2
+      exact h2
+    have h3 : (3 : ℕ) • (Submodule.Quotient.mk y : ↥M ⧸ N)
+        = Submodule.Quotient.mk (y + y + y) := by
+      rw [Submodule.Quotient.mk_add, Submodule.Quotient.mk_add]
+      abel
+    rw [h3, Submodule.Quotient.mk_eq_zero]
+    exact hmem
+  letI : Module (ZMod 3) (↥M ⧸ N) := AddCommGroup.zmodModule htor
+  -- vanishing of the class in `N` from `𝔪ⁿ⁺²`-membership
+  have hmk0 : ∀ g' : Γ ℚ, d g' ∈ IsLocalRing.maximalIdeal R ^ (n + 2) →
+      (Submodule.Quotient.mk ⟨d g', hd1 g'⟩ : ↥M ⧸ N) = 0 := by
+    intro g' hgm
+    rw [Submodule.Quotient.mk_eq_zero, hmemN]
+    exact hgm
+  -- every `ZMod 3`-functional kills the class of `d g` …
+  have hdual : ∀ φ : Module.Dual (ZMod 3) (↥M ⧸ N),
+      φ (Submodule.Quotient.mk ⟨d g, hd1 g⟩) = 0 := by
+    intro φ
+    refine cyclotomicKernel_threeTorsion_character_vanishes
+      (fun g' => φ (Submodule.Quotient.mk ⟨d g', hd1 g'⟩)) ?_ ?_ U hUopen
+      hUnormal ?_ ?_ ?_ g hg
+    · -- homomorphism on the kernel
+      intro g' h hg' hh
+      have h1 : (Submodule.Quotient.mk ⟨d (g' * h), hd1 (g' * h)⟩ : ↥M ⧸ N)
+          = Submodule.Quotient.mk ⟨d g', hd1 g'⟩
+            + Submodule.Quotient.mk ⟨d h, hd1 h⟩ := by
+        rw [← Submodule.Quotient.mk_add, Submodule.Quotient.eq, hmemN]
+        exact hdhom g' h hg' hh
+      simp only [h1, map_add]
+    · -- anti-equivariance under outside conjugation
+      intro τ g' hτ hg'
+      have h1 : (Submodule.Quotient.mk
+            ⟨d (τ * g' * τ⁻¹), hd1 (τ * g' * τ⁻¹)⟩ : ↥M ⧸ N)
+          = -Submodule.Quotient.mk ⟨d g', hd1 g'⟩ := by
+        rw [← Submodule.Quotient.mk_neg, Submodule.Quotient.eq,
+          sub_neg_eq_add, hmemN]
+        exact hdconj τ g' hτ hg'
+      simp only [h1, map_neg]
+    · -- killed by the open normal subgroup
+      intro u hu
+      rw [hmk0 u (hUd u hu), map_zero]
+    · -- killed by inertia outside `{2, 3}`
+      intro p hp hp2 hp3 σ hσ
+      rw [hmk0 _ (hunr p hp hp2 hp3 σ hσ), map_zero]
+    · -- killed by the kernel part of inertia at `3`
+      intro σ hσ hσω
+      rw [hmk0 _ (hthree σ hσ hσω), map_zero]
+  -- … and functionals separate points
+  have hzero := (Module.forall_dual_apply_eq_zero_iff (ZMod 3)
+    (Submodule.Quotient.mk (p := N) ⟨d g, hd1 g⟩)).mp hdual
+  rw [Submodule.Quotient.mk_eq_zero, hmemN] at hzero
+  exact hzero
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **The ω-defect dies on the cyclotomic kernel** (DERIVED 2026-07-23
