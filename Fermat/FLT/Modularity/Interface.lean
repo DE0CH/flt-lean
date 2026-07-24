@@ -3524,8 +3524,16 @@ uniqueness, which splits into its three nontrivial clauses:
   `toFun i` at EVERY group element — exactly the interface Théorème 1
   consumes.
 * **3a-ii-α — the construction**
-  (`exists_galoisRep_isRealizationCompatible`, sorry node): the
-  Carayol/Nyssen–Rouquier core, producing the compatible `ρT`.
+  (`exists_galoisRep_isRealizationCompatible`, DECOMPOSED
+  2026-07-24 — now a PROVEN assembly over the corner-system cut
+  recorded after `IsRealizationCompatible`): the
+  Carayol/Nyssen–Rouquier core, producing the compatible `ρT` from
+  three new leaves — the general-`ℓ` involution
+  (`exists_involution_cyclotomicCharacter_neg_one`), the aligned
+  matrix form of one realization
+  (`exists_matrixHom_charpoly_realization`), and the polarization
+  unit (`exists_isUnit_polarization`) — through the PROVEN corner
+  system (`exists_matrixCoefficients_of_realizations`).
 * **3a-ii-β — unramifiedness descent**
   (`isUnramifiedAt_of_isRealizationCompatible`, PROVEN 2026-07-24 by
   the shared odd-prime dichotomy, see its ROUTE note).
@@ -3618,8 +3626,779 @@ def IsRealizationCompatible {ℓ : ℕ} [Fact ℓ.Prime] {hℓodd : Odd ℓ}
         ((real i).ρ g).charpoly.coeff 1 ∧
       (real i).toFun (LinearMap.det (ρT g)) = LinearMap.det ((real i).ρ g)
 
+/-! ##### The corner-system cut behind 3a-ii-α (DECOMPOSED 2026-07-24)
+
+The construction leaf 3a-ii-α is decomposed along the classical
+dimension-2 matrix-coefficient argument for Carayol's Théorème 2
+(Carayol 1994; Nyssen 1996; Rouquier 1996) — the pin carries no
+pseudocharacter material, so the construction is hand-rolled at
+dimension 2:
+
+* **the oddness input**
+  (`exists_involution_cyclotomicCharacter_neg_one`, PROVEN
+  2026-07-24): the absolute Galois group of `ℚ` contains an
+  involution on which the `ℓ`-adic cyclotomic character evaluates to
+  `−1` — the general-`ℓ` form of the `ℓ = 3` instance
+  `IsHardlyRamified.exists_conj_cyclotomicCharacter_three`
+  (`ModThree.lean`), by the same argument.
+* **the adapted basis of an odd involution**
+  (`exists_basis_involution_diag`, PROVEN 2026-07-24, fully
+  constructive): pure linear algebra over a local ring with `2` a
+  unit — an involution of `Fin 2 → O` with determinant `−1` has an
+  eigenbasis with eigenvalues `1, −1`.
+* **the aligned matrix form of one realization**
+  (`exists_matrixHom_charpoly_realization`, PROVEN 2026-07-24 as a
+  glue over the adapted basis leaf): each realization, conjugated so
+  the involution acts by `diag(1, −1)`, is an honest matrix-valued
+  monoid homomorphism with the same characteristic polynomials.
+* **the polarization unit** (`exists_isUnit_polarization`, sorry
+  node): some off-diagonal polarization value of the glued trace
+  system is a unit of the local `T` — the only step consuming
+  residual irreducibility; it keeps the full hypothesis package of
+  3a-ii.
+* **PROVEN — the corner system**
+  (`exists_matrixCoefficients_of_realizations`): over the three
+  leaves, the glued trace system splits into four continuous corner
+  functions `Γ ℚ → T` obeying the `2×2` multiplication law and
+  matching the realizations' traces and determinants through every
+  coordinate. The diagonal corners are `(t(g) ± t(c₀g))/2` for the
+  glued trace `t = −τ` (`2 ∈ Tˣ`: `ℓ` odd), the off-diagonal corners
+  are polarizations normalized by the unit, and every identity is
+  proven coordinatewise through joint injectivity `hinj`.
+* **PROVEN — the assembly** (now 3a-ii-α's proof body): the corner
+  functions assemble through `Matrix.toLin'` into a continuous
+  representation on `Fin 2 → T` (continuity via the standard-basis
+  matrix decomposition in the module topology of the endomorphism
+  algebra), and the compatibility clauses are the `2×2`
+  trace/determinant computations.
+
+Soundness audit: inherited unchanged from the section docstring.
+CIRCULARITY GUARD: as everywhere in pillar 3, none of the leaves may
+be proven through `Family.lean`. -/
+
+/-- **The oddness input of the corner-system cut** (PROVEN — the
+general-`ℓ` form of `ModThree.lean`'s
+`IsHardlyRamified.exists_conj_cyclotomicCharacter_three`, whose
+argument generalizes verbatim): the absolute Galois group of `ℚ`
+contains an involution on which the `ℓ`-adic cyclotomic character
+evaluates to `−1` — a "complex conjugation". Proof: `ℝᵃˡᵍ ≃ₐ[ℝ] ℂ`
+makes `Γ ℝ` the two-element group; the image `c` in `Γ ℚ` of its
+nontrivial element `σ` is an involution, so `χ_ℓ(c)² = 1`, i.e.
+`χ_ℓ(c) = ±1` in the domain `ℤ_ℓ`; and `χ_ℓ(c) = 1` would make `c`
+fix a primitive `ℓ`-th root of unity `ζ`, hence make `σ` fix
+`ι ζ ∉ ℝ` (`ℓ` odd: `r ↦ r^ℓ` is strictly monotone on `ℝ`, so
+`r^ℓ = 1` forces `r = 1`) — but `ℝ(ι ζ) = ℝᵃˡᵍ` in degree `2`, so
+`σ` would be the identity. -/
+theorem exists_involution_cyclotomicCharacter_neg_one
+    (ℓ : ℕ) [Fact ℓ.Prime] (hℓodd : Odd ℓ) :
+    ∃ c : Field.absoluteGaloisGroup ℚ, c * c = 1 ∧
+      ((cyclotomicCharacter (AlgebraicClosure ℚ) ℓ c.toRingEquiv :
+        ℤ_[ℓ]ˣ) : ℤ_[ℓ]) = -1 := by
+  classical
+  haveI hNZ : NeZero ((ℓ : ℚ)) :=
+    ⟨by exact_mod_cast (Fact.out : ℓ.Prime).ne_zero⟩
+  -- `ℝᵃˡᵍ ≃ₐ[ℝ] ℂ`, hence `Γ ℝ` has exactly two elements
+  haveI : IsAlgClosed ℂ := Complex.isAlgClosed
+  haveI : IsAlgClosure ℝ ℂ := ⟨inferInstance, Algebra.IsAlgebraic.of_finite ℝ ℂ⟩
+  let e : AlgebraicClosure ℝ ≃ₐ[ℝ] ℂ :=
+    IsAlgClosure.equiv ℝ (AlgebraicClosure ℝ) ℂ
+  haveI : FiniteDimensional ℝ (AlgebraicClosure ℝ) :=
+    Module.Finite.equiv e.symm.toLinearEquiv
+  have hfr : Module.finrank ℝ (AlgebraicClosure ℝ) = 2 := by
+    rw [e.toLinearEquiv.finrank_eq]
+    exact Complex.finrank_real_complex
+  haveI : IsGalois ℝ (AlgebraicClosure ℝ) := ⟨⟩
+  have hcard : Nat.card (Field.absoluteGaloisGroup ℝ) = 2 :=
+    (IsGalois.card_aut_eq_finrank ℝ (AlgebraicClosure ℝ)).trans hfr
+  -- the nontrivial element of `Γ ℝ`
+  haveI : Finite (Field.absoluteGaloisGroup ℝ) :=
+    Nat.finite_of_card_ne_zero (by omega)
+  haveI : Nontrivial (Field.absoluteGaloisGroup ℝ) :=
+    Finite.one_lt_card_iff_nontrivial.mp (by omega)
+  obtain ⟨σ, hσ⟩ := exists_ne (1 : Field.absoluteGaloisGroup ℝ)
+  have hσ2 : σ * σ = 1 := by
+    have h : σ ^ Nat.card (Field.absoluteGaloisGroup ℝ) = 1 := pow_card_eq_one'
+    rwa [hcard, pow_two] at h
+  -- its image in `Γ ℚ` is the sought involution
+  refine ⟨Field.absoluteGaloisGroup.map (algebraMap ℚ ℝ) σ, ?_, ?_⟩
+  · rw [← map_mul, hσ2, map_one]
+  · set c : Field.absoluteGaloisGroup ℚ :=
+      Field.absoluteGaloisGroup.map (algebraMap ℚ ℝ) σ
+    set x : ℤ_[ℓ] :=
+      ((cyclotomicCharacter (AlgebraicClosure ℚ) ℓ c.toRingEquiv :
+        ℤ_[ℓ]ˣ) : ℤ_[ℓ])
+    -- `x² = 1`, so `x = ±1` in the domain `ℤ_[ℓ]`
+    have hsq : x * x = 1 := by
+      have hmul : (c * c).toRingEquiv = c.toRingEquiv * c.toRingEquiv := rfl
+      have hone : ((1 : Field.absoluteGaloisGroup ℚ).toRingEquiv) = 1 := rfl
+      have h := congrArg (fun g => ((cyclotomicCharacter
+        (AlgebraicClosure ℚ) ℓ g : ℤ_[ℓ]ˣ) : ℤ_[ℓ]))
+        (hmul.symm.trans (by rw [← map_mul, hσ2, map_one, hone] : _ = _))
+      simpa [map_mul] using h
+    rcases mul_self_eq_one_iff.mp hsq with hx1 | hxm1
+    swap
+    · exact hxm1
+    -- rule out `x = 1`: `c` would fix a primitive `ℓ`-th root of unity
+    exfalso
+    obtain ⟨ζ, hζ⟩ := HasEnoughRootsOfUnity.exists_primitiveRoot
+      (AlgebraicClosure ℚ) ℓ
+    -- `c ζ = ζ ^ (x mod ℓ) = ζ`
+    have hfix : c.toRingEquiv ζ = ζ := by
+      have hspec := cyclotomicCharacter.spec ℓ (n := 1) c.toRingEquiv ζ
+        (by rw [pow_one]; exact hζ.pow_eq_one)
+      rw [hspec, show (cyclotomicCharacter (AlgebraicClosure ℚ) ℓ
+        c.toRingEquiv).val = x from rfl, hx1, map_one]
+      haveI : Fact (1 < ℓ ^ 1) := ⟨by simpa using (Fact.out : ℓ.Prime).one_lt⟩
+      rw [ZMod.val_one, pow_one]
+    -- transport along the embedding `ι : ℚᵃˡᵍ → ℝᵃˡᵍ`
+    have hσz : σ (AlgebraicClosure.map (algebraMap ℚ ℝ) ζ) =
+        AlgebraicClosure.map (algebraMap ℚ ℝ) ζ := by
+      rw [← Field.absoluteGaloisGroup.lift_map (algebraMap ℚ ℝ) σ ζ]
+      exact congrArg _ hfix
+    set z : AlgebraicClosure ℝ := AlgebraicClosure.map (algebraMap ℚ ℝ) ζ
+    -- `z` is a primitive `ℓ`-th root of unity, hence not real
+    have hzprim : IsPrimitiveRoot z ℓ :=
+      hζ.map_of_injective (AlgebraicClosure.map (algebraMap ℚ ℝ)).injective
+    have hznotbot : z ∉ (⊥ : IntermediateField ℝ (AlgebraicClosure ℝ)) := by
+      intro hmem
+      obtain ⟨r, hr⟩ := IntermediateField.mem_bot.mp hmem
+      -- `rℓ = 1` in `ℝ` forces `r = 1` (`ℓ` odd), forcing `z = 1`
+      have hrℓ : r ^ ℓ = 1 := by
+        have h := hzprim.pow_eq_one
+        rw [← hr] at h
+        exact (algebraMap ℝ (AlgebraicClosure ℝ)).injective
+          (by rw [map_pow, map_one]; exact h)
+      have hr1 : r = 1 := hℓodd.strictMono_pow.injective (by simpa using hrℓ)
+      exact hzprim.ne_one (Fact.out : ℓ.Prime).one_lt
+        (by rw [← hr, hr1, map_one])
+    -- `ℝ(z) = ℝᵃˡᵍ` in degree `2`
+    have htop : IntermediateField.adjoin ℝ {z} = ⊤ := by
+      rw [← IntermediateField.finrank_eq_one_iff_eq_top]
+      have hmul : Module.finrank ℝ (IntermediateField.adjoin ℝ {z}) *
+          Module.finrank (IntermediateField.adjoin ℝ {z})
+            (AlgebraicClosure ℝ) = 2 := by
+        rw [Module.finrank_mul_finrank]
+        exact hfr
+      have hne1 : Module.finrank ℝ (IntermediateField.adjoin ℝ {z}) ≠ 1 := by
+        rw [Ne, IntermediateField.finrank_eq_one_iff]
+        intro hbot
+        exact hznotbot (hbot ▸ IntermediateField.mem_adjoin_simple_self ℝ z)
+      have hdvd : Module.finrank ℝ (IntermediateField.adjoin ℝ {z}) ∣ 2 :=
+        ⟨_, hmul.symm⟩
+      rcases (Nat.dvd_prime Nat.prime_two).mp hdvd with h1 | h2
+      · exact absurd h1 hne1
+      · rw [h2] at hmul
+        omega
+    -- `σ` fixes `ℝ` and `z`, hence everything — contradicting `σ ≠ 1`
+    refine hσ (AlgEquiv.ext fun w => ?_)
+    have hw : w ∈ IntermediateField.adjoin ℝ {z} :=
+      htop ▸ IntermediateField.mem_top
+    show σ w = w
+    induction hw using IntermediateField.adjoin_induction with
+    | mem u hu =>
+      rw [Set.mem_singleton_iff] at hu
+      rw [hu]
+      exact hσz
+    | algebraMap r => exact σ.commutes r
+    | add a b _ _ ha hb => rw [map_add, ha, hb]
+    | mul a b _ _ ha hb => rw [map_mul, ha, hb]
+    | inv a _ ha => rw [map_inv₀, ha]
+
+/-- **The adapted basis of an odd involution over a local ring**
+(PROVEN — pure linear algebra, the normalization core of the aligned
+matrix form): over a commutative local ring `O` in which `2` is a
+unit, an involution `J` of `Fin 2 → O` with determinant `−1` admits a
+basis of eigenvectors with eigenvalues `1` and `−1`. Proof (fully
+constructive — no projective-module machinery): write `A` for the
+matrix of `J`, with entries `a, b, c, d`; `A² = 1` and
+`det A = −1` give the entry relations, from which the trace
+`t = a + d` satisfies `t² = 0`; hence `2 + t = (a+1) + (d+1)` is a
+unit (unit plus nilpotent), and `O` local makes `a + 1` or `d + 1` a
+unit. The columns of `A + 1` are `+1`-eigenvectors and the columns
+of `A − 1` are `−1`-eigenvectors (`A(A ± 1) = ±(A ± 1)`); pairing
+the column of `A + 1` with unit diagonal corner against the OTHER
+column of `A − 1` gives a matrix `P` with
+`det P = (t − 2)(a + 1)` resp. `2(d + 1) − t` — a unit times a unit,
+resp. a unit plus a nilpotent — so `P`'s columns form the sought
+eigenbasis (`Matrix.toLinearEquiv`). -/
+theorem exists_basis_involution_diag {O : Type u} [CommRing O]
+    [IsLocalRing O] (h2 : IsUnit (2 : O))
+    {J : Module.End O (Fin 2 → O)} (hJ2 : J * J = 1)
+    (hdet : LinearMap.det J = -1) :
+    ∃ b : Module.Basis (Fin 2) O (Fin 2 → O),
+      J (b 0) = b 0 ∧ J (b 1) = - b 1 := by
+  classical
+  -- the matrix of `J` and its relations
+  obtain ⟨A, hA⟩ : ∃ A : Matrix (Fin 2) (Fin 2) O,
+      A = LinearMap.toMatrixAlgEquiv' J := ⟨_, rfl⟩
+  have hJv : ∀ v, J v = A.mulVec v := by
+    intro v
+    conv_lhs => rw [← Matrix.toLinAlgEquiv'_toMatrixAlgEquiv' J]
+    rw [← hA, Matrix.toLinAlgEquiv'_apply]
+  have hA2 : A * A = 1 := by rw [hA, ← map_mul, hJ2, map_one]
+  have hAdet : A.det = -1 := by
+    have hAM : LinearMap.toMatrixAlgEquiv' J = LinearMap.toMatrix' J := by
+      simp [LinearMap.toMatrixAlgEquiv']
+    rw [hA, hAM, LinearMap.det_toMatrix']
+    exact hdet
+  -- the entry relations of `A² = 1` and `det A = −1`
+  have e1 : A 0 0 * A 0 0 + A 0 1 * A 1 0 = 1 := by
+    have h : (A * A) 0 0 = (1 : Matrix (Fin 2) (Fin 2) O) 0 0 := by rw [hA2]
+    simpa [Matrix.mul_apply, Fin.sum_univ_two, Matrix.one_apply] using h
+  have e2 : A 0 0 * A 0 1 + A 0 1 * A 1 1 = 0 := by
+    have h : (A * A) 0 1 = (1 : Matrix (Fin 2) (Fin 2) O) 0 1 := by rw [hA2]
+    simpa [Matrix.mul_apply, Fin.sum_univ_two, Matrix.one_apply] using h
+  have e3 : A 1 0 * A 0 0 + A 1 1 * A 1 0 = 0 := by
+    have h : (A * A) 1 0 = (1 : Matrix (Fin 2) (Fin 2) O) 1 0 := by rw [hA2]
+    simpa [Matrix.mul_apply, Fin.sum_univ_two, Matrix.one_apply] using h
+  have e4 : A 1 0 * A 0 1 + A 1 1 * A 1 1 = 1 := by
+    have h : (A * A) 1 1 = (1 : Matrix (Fin 2) (Fin 2) O) 1 1 := by rw [hA2]
+    simpa [Matrix.mul_apply, Fin.sum_univ_two, Matrix.one_apply] using h
+  have e5 : A 0 0 * A 1 1 - A 0 1 * A 1 0 = -1 := by
+    rw [← Matrix.det_fin_two]
+    exact hAdet
+  -- the trace is nilpotent
+  have hnil : IsNilpotent (A 0 0 + A 1 1) :=
+    ⟨2, by linear_combination e1 + e4 + 2 * e5⟩
+  -- one of the diagonal corners of `A + 1` is a unit
+  have hsum : IsUnit ((A 0 0 + 1) + (A 1 1 + 1)) := by
+    have h : (A 0 0 + 1) + (A 1 1 + 1) = (2 : O) + (A 0 0 + A 1 1) := by
+      ring
+    rw [h]
+    exact hnil.isUnit_add_left_of_commute h2 (Commute.all _ _)
+  rcases IsLocalRing.isUnit_or_isUnit_of_isUnit_add hsum with hu | hu
+  · -- `a + 1` is a unit: pair column `0` of `A + 1` with column `1`
+    -- of `A − 1`
+    obtain ⟨P, hP⟩ : ∃ P : Matrix (Fin 2) (Fin 2) O,
+        P = !![A 0 0 + 1, A 0 1; A 1 0, A 1 1 - 1] := ⟨_, rfl⟩
+    have hPdet : IsUnit P.det := by
+      have hm2 : IsUnit ((A 0 0 + A 1 1) - (2 : O)) := by
+        have h : (A 0 0 + A 1 1) - (2 : O) =
+            (-(2 : O)) + (A 0 0 + A 1 1) := by ring
+        rw [h]
+        exact hnil.isUnit_add_left_of_commute h2.neg (Commute.all _ _)
+      have hcalc : P.det = ((A 0 0 + A 1 1) - 2) * (A 0 0 + 1) := by
+        rw [hP, Matrix.det_fin_two_of]
+        linear_combination - e1
+      rw [hcalc]
+      exact hm2.mul hu
+    refine ⟨(Pi.basisFun O (Fin 2)).map
+      (Matrix.toLinearEquiv (Pi.basisFun O (Fin 2)) P hPdet), ?_, ?_⟩
+    · rw [Module.Basis.map_apply, Matrix.toLinearEquiv_apply, hJv,
+        Matrix.toLin_eq_toLin']
+      funext j
+      fin_cases j
+      · simp only [Matrix.toLin'_apply, Matrix.mulVec, dotProduct,
+          Fin.sum_univ_two, Pi.basisFun_apply, Pi.single_apply, hP]
+        simp
+        linear_combination e1
+      · simp only [Matrix.toLin'_apply, Matrix.mulVec, dotProduct,
+          Fin.sum_univ_two, Pi.basisFun_apply, Pi.single_apply, hP]
+        simp
+        linear_combination e3
+    · rw [Module.Basis.map_apply, Matrix.toLinearEquiv_apply, hJv,
+        Matrix.toLin_eq_toLin']
+      funext j
+      fin_cases j
+      · simp only [Matrix.toLin'_apply, Matrix.mulVec, dotProduct,
+          Fin.sum_univ_two, Pi.basisFun_apply, Pi.single_apply, hP,
+          Pi.neg_apply]
+        simp
+        linear_combination e2
+      · simp only [Matrix.toLin'_apply, Matrix.mulVec, dotProduct,
+          Fin.sum_univ_two, Pi.basisFun_apply, Pi.single_apply, hP,
+          Pi.neg_apply]
+        simp
+        linear_combination e4
+  · -- `d + 1` is a unit: pair column `1` of `A + 1` with column `0`
+    -- of `A − 1`
+    obtain ⟨P, hP⟩ : ∃ P : Matrix (Fin 2) (Fin 2) O,
+        P = !![A 0 1, A 0 0 - 1; A 1 1 + 1, A 1 0] := ⟨_, rfl⟩
+    have hPdet : IsUnit P.det := by
+      have hcalc : P.det =
+          (2 : O) * (A 1 1 + 1) + (-(A 0 0 + A 1 1)) := by
+        rw [hP, Matrix.det_fin_two_of]
+        linear_combination - e5
+      rw [hcalc]
+      exact hnil.neg.isUnit_add_left_of_commute (h2.mul hu) (Commute.all _ _)
+    refine ⟨(Pi.basisFun O (Fin 2)).map
+      (Matrix.toLinearEquiv (Pi.basisFun O (Fin 2)) P hPdet), ?_, ?_⟩
+    · rw [Module.Basis.map_apply, Matrix.toLinearEquiv_apply, hJv,
+        Matrix.toLin_eq_toLin']
+      funext j
+      fin_cases j
+      · simp only [Matrix.toLin'_apply, Matrix.mulVec, dotProduct,
+          Fin.sum_univ_two, Pi.basisFun_apply, Pi.single_apply, hP]
+        simp
+        linear_combination e2
+      · simp only [Matrix.toLin'_apply, Matrix.mulVec, dotProduct,
+          Fin.sum_univ_two, Pi.basisFun_apply, Pi.single_apply, hP]
+        simp
+        linear_combination e4
+    · rw [Module.Basis.map_apply, Matrix.toLinearEquiv_apply, hJv,
+        Matrix.toLin_eq_toLin']
+      funext j
+      fin_cases j
+      · simp only [Matrix.toLin'_apply, Matrix.mulVec, dotProduct,
+          Fin.sum_univ_two, Pi.basisFun_apply, Pi.single_apply, hP,
+          Pi.neg_apply]
+        simp
+        linear_combination e1
+      · simp only [Matrix.toLin'_apply, Matrix.mulVec, dotProduct,
+          Fin.sum_univ_two, Pi.basisFun_apply, Pi.single_apply, hP,
+          Pi.neg_apply]
+        simp
+        linear_combination e3
+
+/-- **The aligned matrix form of one realization** (PROVEN — the
+normalization step of the corner-system cut, a glue over the adapted
+basis leaf above): over the local coefficient ring `O` of a hardly
+ramified realization, the realized representation is conjugate to a
+matrix-valued monoid homomorphism sending the involution `c₀` to
+`diag(1, −1)`. Proof: `J := ρ(c₀)` satisfies `J² = 1` (from
+`c₀² = 1`) and `det J = −1` (the cyclotomic-determinant clause of
+hardly-ramifiedness at `c₀` plus the value `hχ`); `2` is a unit of
+the `ℤ_ℓ`-algebra `O` (`ℓ` odd); the adapted basis leaf produces the
+`J`-eigenbasis, and the matrix of `ρ` in it
+(`LinearMap.toMatrixAlgEquiv`) is the sought homomorphism;
+characteristic polynomials are unchanged because
+`LinearMap.charpoly` is basis-free (`LinearMap.charpoly_toMatrix`).
+CIRCULARITY GUARD: must not be proven through `Family.lean` (see the
+section docstring). -/
+theorem exists_matrixHom_charpoly_realization
+    {ℓ : ℕ} [Fact ℓ.Prime] {hℓodd : Odd ℓ}
+    {T : Type u} [CommRing T] [Algebra ℤ_[ℓ] T]
+    (r : HardlyRamifiedRealization ℓ hℓodd T)
+    {c₀ : Field.absoluteGaloisGroup ℚ} (hc₀ : c₀ * c₀ = 1)
+    (hχ : ((cyclotomicCharacter (AlgebraicClosure ℚ) ℓ c₀.toRingEquiv :
+      ℤ_[ℓ]ˣ) : ℤ_[ℓ]) = -1) :
+    ∃ M : Field.absoluteGaloisGroup ℚ →* Matrix (Fin 2) (Fin 2) r.O,
+      M c₀ = !![1, 0; 0, -1] ∧
+      ∀ g, (r.ρ g).charpoly = (M g).charpoly := by
+  classical
+  -- `2` is a unit of the coefficient ring
+  have h2Z : IsUnit (2 : ℤ_[ℓ]) := by
+    rw [PadicInt.isUnit_iff]
+    refine le_antisymm (PadicInt.norm_le_one _) (not_lt.mp fun hlt => ?_)
+    rw [show ((2 : ℤ_[ℓ])) = ((2 : ℤ) : ℤ_[ℓ]) by norm_cast,
+      PadicInt.norm_int_lt_one_iff_dvd] at hlt
+    have hdvd : ℓ ∣ 2 := by exact_mod_cast hlt
+    rw [(Nat.prime_dvd_prime_iff_eq (Fact.out) Nat.prime_two).mp hdvd]
+      at hℓodd
+    exact (by decide : ¬ Odd 2) hℓodd
+  have h2O : IsUnit (2 : r.O) := by
+    have h := h2Z.map (algebraMap ℤ_[ℓ] r.O)
+    rwa [map_ofNat] at h
+  -- the involution `J = ρ(c₀)`: square one, determinant `−1`
+  have hJ2 : r.ρ c₀ * r.ρ c₀ = 1 := by rw [← map_mul, hc₀, map_one]
+  have hJdet : LinearMap.det (r.ρ c₀) = -1 := by
+    have h := r.isHardlyRamified.det c₀
+    rw [GaloisRep.det_apply, hχ] at h
+    rw [h, map_neg, map_one]
+  obtain ⟨b, hb0, hb1⟩ := exists_basis_involution_diag h2O hJ2 hJdet
+  refine ⟨{ toFun := fun g => LinearMap.toMatrixAlgEquiv b (r.ρ g)
+            map_one' := by rw [map_one, map_one]
+            map_mul' := fun g h => by rw [map_mul, map_mul] }, ?_, ?_⟩
+  · -- the involution is `diag(1, −1)` in the adapted basis
+    show LinearMap.toMatrixAlgEquiv b (r.ρ c₀) = !![1, 0; 0, -1]
+    ext i j
+    fin_cases i <;> fin_cases j <;>
+      simp [LinearMap.toMatrixAlgEquiv_apply, hb0, hb1]
+  · -- characteristic polynomials are basis-free
+    intro g
+    have hMA : LinearMap.toMatrixAlgEquiv b (r.ρ g) =
+        LinearMap.toMatrix b b (r.ρ g) := by
+      simp [LinearMap.toMatrixAlgEquiv, AlgEquiv.ofLinearEquiv_apply]
+    show (r.ρ g).charpoly = (LinearMap.toMatrixAlgEquiv b (r.ρ g)).charpoly
+    rw [hMA, LinearMap.charpoly_toMatrix]
+
+/-- **The polarization unit** (sorry node — the residual
+irreducibility step of the corner-system cut): some off-diagonal
+polarization value of the glued trace system is a UNIT of the local
+ring `T`. Here `τ` is the glued function with
+`toFun i (τ g) = (charpoly ρᵢ(g)).coeff 1 = −tr ρᵢ(g)` in every
+coordinate, `c₀` the involution, and `A` the upper-left corner
+function, pinned by `2·A(g) = −τ(g) − τ(c₀g)` (`2 ∈ Tˣ` since `ℓ` is
+odd, so this determines `A`). Intended proof: were every
+polarization `A(gh) − A(g)A(h)` a non-unit, i.e. in `𝔪_T` (`T`
+local), the reductions `π ∘ A` and `π ∘ D` (where
+`2·D(g) = −τ(g) + τ(c₀g)`) would be multiplicative `k`-valued
+characters summing to `π ∘ (−τ)`; by `hred`/`htr` at the Frobenii
+off `S_T`, Chebotarev density (`dense_conjClasses_globalFrob`) and
+continuity (of `τ` through the closed joint coordinate embedding of
+the compact `T`, and of the reduction to the finite discrete `k` —
+`𝔪_T` is open), `π ∘ (−τ)` is the trace of `ρbar` EVERYWHERE, so
+`tr ρbar` is a sum of two characters; linear independence of
+characters then produces a `ρbar`-stable line, i.e. a proper nonzero
+invariant submodule refuting `hirr` through
+`Slop.OddRep.isIrreducible_iff_forall`. Sound as stated by the
+section audit (the hypothesis package includes the irreducible
+hardly ramified `ρbar`). CIRCULARITY GUARD: must not be proven
+through `Family.lean` (see the section docstring). -/
+theorem exists_isUnit_polarization
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime]
+    {k : Type*} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type*} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    {T : Type u} [CommRing T] [TopologicalSpace T] [IsTopologicalRing T]
+    [Algebra ℤ_[ℓ] T] [IsLocalRing T] [Module.Finite ℤ_[ℓ] T]
+    [Module.Free ℤ_[ℓ] T] [IsModuleTopology ℤ_[ℓ] T]
+    {t : ℕ → T} {π : T →+* k} (hπ : Function.Surjective π)
+    {S_T : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hred : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S_T →
+      π (t q) =
+        - (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
+    {n : ℕ} (real : Fin n → HardlyRamifiedRealization ℓ hℓodd T)
+    (hinj : ∀ x y : T, (∀ i, (real i).toFun x = (real i).toFun y) → x = y)
+    (htr : ∀ (i : Fin n) (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S_T →
+      ((real i).ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1 =
+        (real i).toFun (- t q))
+    {τ : Field.absoluteGaloisGroup ℚ → T}
+    (hτ : ∀ g (i : Fin n), (real i).toFun (τ g) =
+      ((real i).ρ g).charpoly.coeff 1)
+    {c₀ : Field.absoluteGaloisGroup ℚ} (hc₀ : c₀ * c₀ = 1)
+    (hχ : ((cyclotomicCharacter (AlgebraicClosure ℚ) ℓ c₀.toRingEquiv :
+      ℤ_[ℓ]ˣ) : ℤ_[ℓ]) = -1)
+    {A : Field.absoluteGaloisGroup ℚ → T}
+    (hA : ∀ g, 2 * A g = - τ g - τ (c₀ * g)) :
+    ∃ g₀ h₀ : Field.absoluteGaloisGroup ℚ,
+      IsUnit (A (g₀ * h₀) - A g₀ * A h₀) :=
+  sorry
+
+set_option maxHeartbeats 1000000 in
+/-- **The corner system** (PROVEN — the algebraic core of the
+corner-system cut): over the three leaves above, the glued trace
+system of the realizations splits into four continuous corner
+functions `a, b, c, d : Γ ℚ → T` obeying the `2×2` multiplication
+law, normalized at `1`, whose diagonal sum and `2×2` determinant
+match the realizations' traces and determinants through every
+coordinate. Construction: `τ` is the glued
+`charpoly.coeff 1`-function (choice from `hglue`, unique by `hinj`);
+`a, d := (−τ(g) ∓ τ(c₀g))/2` (`2 ∈ Tˣ`: `ℓ` odd, `T` a
+`ℤ_ℓ`-algebra); the polarization `x(g,h) := a(gh) − a(g)a(h)` has
+`toFun i (x(g,h)) = bᵢ(g)cᵢ(h)` in the aligned matrix coordinates,
+so `b(g) := x(g,h₀)·u⁻¹` and `c(h) := x(g₀,h)` for the polarization
+unit `u = x(g₀,h₀)`; every identity is verified coordinatewise
+through `hinj`, and continuity descends from continuity of `τ`
+(through the closed embedding of the compact `T` under the joint
+coordinate map — the same compactness argument as the Chebotarev
+gluing above). CIRCULARITY GUARD: must not be proven through
+`Family.lean` (see the section docstring). -/
+theorem exists_matrixCoefficients_of_realizations
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime]
+    {k : Type*} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type*} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    {T : Type u} [CommRing T] [TopologicalSpace T] [IsTopologicalRing T]
+    [Algebra ℤ_[ℓ] T] [IsLocalRing T] [Module.Finite ℤ_[ℓ] T]
+    [Module.Free ℤ_[ℓ] T] [IsModuleTopology ℤ_[ℓ] T]
+    {t : ℕ → T} {π : T →+* k} (hπ : Function.Surjective π)
+    {S_T : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hred : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S_T →
+      π (t q) =
+        - (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
+    {n : ℕ} (real : Fin n → HardlyRamifiedRealization ℓ hℓodd T)
+    (hinj : ∀ x y : T, (∀ i, (real i).toFun x = (real i).toFun y) → x = y)
+    (htr : ∀ (i : Fin n) (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S_T →
+      ((real i).ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1 =
+        (real i).toFun (- t q))
+    (hglue : ∀ g : Field.absoluteGaloisGroup ℚ, ∃ x : T,
+      ∀ i, (real i).toFun x = ((real i).ρ g).charpoly.coeff 1) :
+    ∃ a b c d : Field.absoluteGaloisGroup ℚ → T,
+      (Continuous a ∧ Continuous b ∧ Continuous c ∧ Continuous d) ∧
+      (a 1 = 1 ∧ b 1 = 0 ∧ c 1 = 0 ∧ d 1 = 1) ∧
+      (∀ g h, a (g * h) = a g * a h + b g * c h) ∧
+      (∀ g h, b (g * h) = a g * b h + b g * d h) ∧
+      (∀ g h, c (g * h) = c g * a h + d g * c h) ∧
+      (∀ g h, d (g * h) = c g * b h + d g * d h) ∧
+      (∀ (i : Fin n) g, (real i).toFun (a g + d g) =
+        - ((real i).ρ g).charpoly.coeff 1) ∧
+      (∀ (i : Fin n) g, (real i).toFun (a g * d g - b g * c g) =
+        LinearMap.det ((real i).ρ g)) := by
+  classical
+  -- the glued `coeff 1` function
+  choose τ hτ using hglue
+  -- the involution and the aligned matrix forms
+  obtain ⟨c₀, hc₀, hχ⟩ := exists_involution_cyclotomicCharacter_neg_one ℓ hℓodd
+  choose Mmat hMc₀ hMchar using fun i : Fin n =>
+    exists_matrixHom_charpoly_realization (real i) hc₀ hχ
+  -- coordinatewise trace/determinant/alignment facts
+  have hcoeff : ∀ (i : Fin n) g, ((real i).ρ g).charpoly.coeff 1 =
+      -(Mmat i g 0 0 + Mmat i g 1 1) := by
+    intro i g
+    have h1 := Matrix.trace_eq_neg_charpoly_coeff (Mmat i g)
+    rw [Matrix.trace_fin_two] at h1
+    norm_num at h1
+    rw [hMchar i g]
+    linear_combination h1
+  have hdetM : ∀ (i : Fin n) g, LinearMap.det ((real i).ρ g) =
+      Mmat i g 0 0 * Mmat i g 1 1 - Mmat i g 0 1 * Mmat i g 1 0 := by
+    intro i g
+    rw [LinearMap.det_eq_sign_charpoly_coeff, hMchar i g, ← Matrix.det_fin_two,
+      Matrix.det_eq_sign_charpoly_coeff, Module.finrank_fin_fun,
+      Fintype.card_fin]
+  have halign : ∀ (i : Fin n) g, ((real i).ρ (c₀ * g)).charpoly.coeff 1 =
+      -(Mmat i g 0 0 - Mmat i g 1 1) := by
+    intro i g
+    have hM : Mmat i (c₀ * g) = !![1, 0; 0, -1] * Mmat i g := by
+      rw [map_mul, hMc₀ i]
+    have htr2 : Matrix.trace (Mmat i (c₀ * g)) =
+        Mmat i g 0 0 - Mmat i g 1 1 := by
+      rw [hM, Matrix.trace_fin_two]
+      simp [Matrix.mul_apply, Fin.sum_univ_two, sub_eq_add_neg]
+    have h1 := Matrix.trace_eq_neg_charpoly_coeff (Mmat i (c₀ * g))
+    rw [htr2, Fintype.card_fin, show (2 : ℕ) - 1 = 1 from rfl] at h1
+    rw [hMchar i (c₀ * g)]
+    linear_combination h1
+  -- `2` is a unit
+  have h2Z : IsUnit (2 : ℤ_[ℓ]) := by
+    rw [PadicInt.isUnit_iff]
+    refine le_antisymm (PadicInt.norm_le_one _) (not_lt.mp fun hlt => ?_)
+    rw [show ((2 : ℤ_[ℓ])) = ((2 : ℤ) : ℤ_[ℓ]) by norm_cast,
+      PadicInt.norm_int_lt_one_iff_dvd] at hlt
+    have hdvd : ℓ ∣ 2 := by exact_mod_cast hlt
+    rw [(Nat.prime_dvd_prime_iff_eq (Fact.out) Nat.prime_two).mp hdvd]
+      at hℓodd
+    exact (by decide : ¬ Odd 2) hℓodd
+  have h2T : IsUnit (2 : T) := by
+    have h := h2Z.map (algebraMap ℤ_[ℓ] T)
+    rwa [map_ofNat] at h
+  have hhalf : (2 : T) * (↑h2T.unit⁻¹ : T) = 1 := h2T.mul_val_inv
+  -- the diagonal corner functions (bound OPAQUELY, so that generic
+  -- `map_*` rewrites cannot unfold them)
+  obtain ⟨fA, hfA⟩ : ∃ f : Field.absoluteGaloisGroup ℚ → T,
+      f = fun g => (- τ g - τ (c₀ * g)) * (↑h2T.unit⁻¹ : T) := ⟨_, rfl⟩
+  obtain ⟨fD, hfD⟩ : ∃ f : Field.absoluteGaloisGroup ℚ → T,
+      f = fun g => (- τ g + τ (c₀ * g)) * (↑h2T.unit⁻¹ : T) := ⟨_, rfl⟩
+  have hA2 : ∀ g, 2 * fA g = - τ g - τ (c₀ * g) := by
+    intro g
+    simp only [hfA]
+    rw [show (2 : T) * ((- τ g - τ (c₀ * g)) * (↑h2T.unit⁻¹ : T)) =
+      (- τ g - τ (c₀ * g)) * ((2 : T) * (↑h2T.unit⁻¹ : T)) by ring,
+      hhalf, mul_one]
+  have hD2 : ∀ g, 2 * fD g = - τ g + τ (c₀ * g) := by
+    intro g
+    simp only [hfD]
+    rw [show (2 : T) * ((- τ g + τ (c₀ * g)) * (↑h2T.unit⁻¹ : T)) =
+      (- τ g + τ (c₀ * g)) * ((2 : T) * (↑h2T.unit⁻¹ : T)) by ring,
+      hhalf, mul_one]
+  -- coordinate identifications of the diagonal corners
+  have haiA : ∀ (i : Fin n) g, (real i).toFun (fA g) = Mmat i g 0 0 := by
+    intro i g
+    have h2O : IsUnit (2 : (real i).O) := by
+      have h := h2Z.map (algebraMap ℤ_[ℓ] (real i).O)
+      rwa [map_ofNat] at h
+    refine h2O.mul_left_cancel ?_
+    have h1 := congrArg (real i).toFun (hA2 g)
+    rw [map_mul, map_ofNat, map_sub, map_neg, hτ g i, hτ (c₀ * g) i] at h1
+    rw [h1, hcoeff i g, halign i g]
+    ring
+  have haiD : ∀ (i : Fin n) g, (real i).toFun (fD g) = Mmat i g 1 1 := by
+    intro i g
+    have h2O : IsUnit (2 : (real i).O) := by
+      have h := h2Z.map (algebraMap ℤ_[ℓ] (real i).O)
+      rwa [map_ofNat] at h
+    refine h2O.mul_left_cancel ?_
+    have h1 := congrArg (real i).toFun (hD2 g)
+    rw [map_mul, map_ofNat, map_add, map_neg, hτ g i, hτ (c₀ * g) i] at h1
+    rw [h1, hcoeff i g, halign i g]
+    ring
+  -- the polarization and its coordinates
+  obtain ⟨fX, hfX⟩ : ∃ f : Field.absoluteGaloisGroup ℚ →
+      Field.absoluteGaloisGroup ℚ → T,
+      f = fun g h => fA (g * h) - fA g * fA h := ⟨_, rfl⟩
+  have hXi : ∀ (i : Fin n) g h, (real i).toFun (fX g h) =
+      Mmat i g 0 1 * Mmat i h 1 0 := by
+    intro i g h
+    simp only [hfX]
+    rw [map_sub, map_mul, haiA i (g * h), haiA i g, haiA i h,
+      map_mul (Mmat i) g h]
+    simp only [Matrix.mul_apply, Fin.sum_univ_two]
+    ring
+  -- the polarization unit
+  obtain ⟨g₀, h₀, hu⟩ := exists_isUnit_polarization hℓodd hW hρbar hirr hπ
+    hred real hinj htr hτ hc₀ hχ hA2
+  have huspec : (↑hu.unit : T) = fX g₀ h₀ := by
+    simp only [hfX]
+    exact hu.unit_spec
+  -- the off-diagonal corner functions
+  obtain ⟨fB, hfB⟩ : ∃ f : Field.absoluteGaloisGroup ℚ → T,
+      f = fun g => fX g h₀ * (↑hu.unit⁻¹ : T) := ⟨_, rfl⟩
+  obtain ⟨fC, hfC⟩ : ∃ f : Field.absoluteGaloisGroup ℚ → T,
+      f = fun g => fX g₀ g := ⟨_, rfl⟩
+  -- polarization symmetry and the product identification
+  have hpol : ∀ g h, fX g h₀ * fX g₀ h = fX g h * fX g₀ h₀ := by
+    intro g h
+    refine hinj _ _ fun i => ?_
+    rw [map_mul, map_mul, hXi i g h₀, hXi i g₀ h, hXi i g h, hXi i g₀ h₀]
+    ring
+  have hbc : ∀ g h, fB g * fC h = fX g h := by
+    intro g h
+    simp only [hfB, hfC]
+    calc fX g h₀ * (↑hu.unit⁻¹ : T) * fX g₀ h
+        = fX g h₀ * fX g₀ h * (↑hu.unit⁻¹ : T) := by ring
+      _ = fX g h * fX g₀ h₀ * (↑hu.unit⁻¹ : T) := by rw [hpol]
+      _ = fX g h * ((↑hu.unit : T) * (↑hu.unit⁻¹ : T)) := by
+          rw [huspec]; ring
+      _ = fX g h := by rw [Units.mul_inv, mul_one]
+  -- the four multiplication laws
+  have hlawA : ∀ g h, fA (g * h) = fA g * fA h + fB g * fC h := by
+    intro g h
+    rw [hbc g h]
+    simp only [hfX]
+    ring
+  have hXlawB : ∀ g h, fX (g * h) h₀ = fA g * fX h h₀ + fX g h₀ * fD h := by
+    intro g h
+    refine hinj _ _ fun i => ?_
+    rw [map_add, map_mul, map_mul, hXi i (g * h) h₀, hXi i h h₀,
+      hXi i g h₀, haiA i g, haiD i h, map_mul (Mmat i) g h]
+    simp only [Matrix.mul_apply, Fin.sum_univ_two]
+    ring
+  have hlawB : ∀ g h, fB (g * h) = fA g * fB h + fB g * fD h := by
+    intro g h
+    simp only [hfB]
+    rw [show fA g * (fX h h₀ * (↑hu.unit⁻¹ : T)) +
+      fX g h₀ * (↑hu.unit⁻¹ : T) * fD h =
+      (fA g * fX h h₀ + fX g h₀ * fD h) * (↑hu.unit⁻¹ : T) by ring,
+      ← hXlawB]
+  have hlawC : ∀ g h, fC (g * h) = fC g * fA h + fD g * fC h := by
+    intro g h
+    simp only [hfC]
+    refine hinj _ _ fun i => ?_
+    rw [map_add, map_mul, map_mul, hXi i g₀ (g * h), hXi i g₀ h,
+      hXi i g₀ g, haiA i h, haiD i g, map_mul (Mmat i) g h]
+    simp only [Matrix.mul_apply, Fin.sum_univ_two]
+    ring
+  have hXlawD : ∀ g h, (↑hu.unit : T) * fD (g * h) =
+      fX g₀ g * fX h h₀ + (↑hu.unit : T) * (fD g * fD h) := by
+    intro g h
+    rw [huspec]
+    refine hinj _ _ fun i => ?_
+    rw [map_add, map_mul, map_mul, map_mul, map_mul, hXi i g₀ h₀,
+      hXi i g₀ g, hXi i h h₀, haiD i (g * h), haiD i g, haiD i h,
+      map_mul (Mmat i) g h]
+    simp only [Matrix.mul_apply, Fin.sum_univ_two]
+    ring
+  have hlawD : ∀ g h, fD (g * h) = fC g * fB h + fD g * fD h := by
+    intro g h
+    have h2 : fD (g * h) = (↑hu.unit⁻¹ : T) * ((↑hu.unit : T) * fD (g * h)) := by
+      rw [← mul_assoc, Units.inv_mul, one_mul]
+    rw [h2, hXlawD g h, mul_add, ← mul_assoc (↑hu.unit⁻¹ : T)
+      (↑hu.unit : T) (fD g * fD h), Units.inv_mul, one_mul]
+    simp only [hfB, hfC]
+    ring
+  -- normalization at `1`
+  have hA1 : fA 1 = 1 := by
+    refine hinj _ _ fun i => ?_
+    rw [haiA i 1, map_one (Mmat i), map_one ((real i).toFun)]
+    simp
+  have hD1 : fD 1 = 1 := by
+    refine hinj _ _ fun i => ?_
+    rw [haiD i 1, map_one (Mmat i), map_one ((real i).toFun)]
+    simp
+  have hB1 : fB 1 = 0 := by
+    simp only [hfB, hfX]
+    rw [one_mul, hA1]
+    ring
+  have hC1 : fC 1 = 0 := by
+    simp only [hfC, hfX]
+    rw [mul_one, hA1]
+    ring
+  -- the trace and determinant compatibilities
+  have hADsum : ∀ g, fA g + fD g = - τ g := by
+    intro g
+    simp only [hfA, hfD]
+    rw [show (- τ g - τ (c₀ * g)) * (↑h2T.unit⁻¹ : T) +
+      (- τ g + τ (c₀ * g)) * (↑h2T.unit⁻¹ : T) =
+      - τ g * ((2 : T) * (↑h2T.unit⁻¹ : T)) by ring, hhalf, mul_one]
+  have htrc : ∀ (i : Fin n) g, (real i).toFun (fA g + fD g) =
+      - ((real i).ρ g).charpoly.coeff 1 := by
+    intro i g
+    rw [hADsum g, map_neg, hτ g i]
+  have hdetc : ∀ (i : Fin n) g, (real i).toFun (fA g * fD g - fB g * fC g) =
+      LinearMap.det ((real i).ρ g) := by
+    intro i g
+    rw [hbc g g, map_sub, map_mul, haiA i g, haiD i g, hXi i g g,
+      hdetM i g]
+  -- continuity of the glued function, through the closed joint embedding
+  have hcτ : Continuous τ := by
+    haveI : CompactSpace T := by
+      let bT := Module.Free.chooseBasis ℤ_[ℓ] T
+      have hc1 : Continuous bT.equivFun :=
+        IsModuleTopology.continuous_of_linearMap bT.equivFun.toLinearMap
+      have hc2 : Continuous bT.equivFun.symm :=
+        IsModuleTopology.continuous_of_linearMap bT.equivFun.symm.toLinearMap
+      exact (Homeomorph.mk bT.equivFun.toEquiv hc1 hc2).symm.compactSpace
+    have hΦcont : Continuous fun (x : T) (i : Fin n) => (real i).toFun x := by
+      rw [continuous_pi_iff]
+      intro i
+      haveI := IsModuleTopology.toContinuousAdd ℤ_[ℓ] (real i).O
+      exact IsModuleTopology.continuous_of_linearMap
+        ((real i).toFun).toLinearMap
+    have hΦinj : Function.Injective
+        fun (x : T) (i : Fin n) => (real i).toFun x :=
+      fun x y hxy => hinj x y fun i => congrFun hxy i
+    have hemb := hΦcont.isClosedEmbedding hΦinj
+    rw [hemb.toIsEmbedding.toIsInducing.continuous_iff]
+    have heq : ((fun (x : T) (i : Fin n) => (real i).toFun x) ∘ τ) =
+        fun g (i : Fin n) => ((real i).ρ g).charpoly.coeff 1 := by
+      funext g i
+      exact hτ g i
+    rw [heq, continuous_pi_iff]
+    intro i
+    letI := moduleTopology (real i).O
+      (Module.End (real i).O (Fin 2 → (real i).O))
+    haveI : IsModuleTopology (real i).O
+        (Module.End (real i).O (Fin 2 → (real i).O)) := ⟨rfl⟩
+    have hρc : Continuous fun g : Field.absoluteGaloisGroup ℚ =>
+        (real i).ρ g := ContinuousMonoidHom.continuous_toFun ((real i).ρ)
+    have htrcc : Continuous fun φ : Module.End (real i).O
+        (Fin 2 → (real i).O) =>
+        LinearMap.trace (real i).O (Fin 2 → (real i).O) φ :=
+      IsModuleTopology.continuous_of_linearMap _
+    have hcoeffeq : (fun g : Field.absoluteGaloisGroup ℚ =>
+        ((real i).ρ g).charpoly.coeff 1) =
+        fun g => - LinearMap.trace (real i).O (Fin 2 → (real i).O)
+          ((real i).ρ g) := by
+      funext g
+      exact charpoly_coeff_one_eq_neg_trace _
+    rw [hcoeffeq]
+    exact (htrcc.comp hρc).neg
+  -- continuity of the corner functions
+  have hcA : Continuous fA := by
+    simp only [hfA]
+    exact (hcτ.neg.sub (hcτ.comp (continuous_const_mul c₀))).mul
+      continuous_const
+  have hcD : Continuous fD := by
+    simp only [hfD]
+    exact (hcτ.neg.add (hcτ.comp (continuous_const_mul c₀))).mul
+      continuous_const
+  have hcB : Continuous fB := by
+    simp only [hfB, hfX]
+    exact (((hcA.comp (continuous_mul_const h₀)).sub
+      (hcA.mul continuous_const)).mul continuous_const)
+  have hcC : Continuous fC := by
+    simp only [hfC, hfX]
+    exact ((hcA.comp (continuous_const_mul g₀)).sub
+      (continuous_const.mul hcA))
+  exact ⟨fA, fB, fC, fD, ⟨hcA, hcB, hcC, hcD⟩, ⟨hA1, hB1, hC1, hD1⟩,
+    hlawA, hlawB, hlawC, hlawD, htrc, hdetc⟩
+
 /-- **The Carayol/Nyssen–Rouquier construction** (pillar 3a-ii-α;
-sorry node — Carayol, *Formes modulaires et représentations
+DECOMPOSED 2026-07-24 — now a PROVEN assembly over the corner-system
+cut above — Carayol, *Formes modulaires et représentations
 galoisiennes à valeurs dans un anneau local complet*, Contemp. Math.
 165 (1994), Théorème 2; Nyssen, Math. Ann. 306 (1996) 257–283;
 Rouquier, J. Algebra 180 (1996) 571–586): the glued trace system over
@@ -3687,8 +4466,74 @@ theorem exists_galoisRep_isRealizationCompatible
         (real i).toFun (- t q))
     (hglue : ∀ g : Field.absoluteGaloisGroup ℚ, ∃ x : T,
       ∀ i, (real i).toFun x = ((real i).ρ g).charpoly.coeff 1) :
-    ∃ ρT : GaloisRep ℚ T (Fin 2 → T), IsRealizationCompatible real ρT :=
-  sorry
+    ∃ ρT : GaloisRep ℚ T (Fin 2 → T), IsRealizationCompatible real ρT := by
+  classical
+  obtain ⟨fA, fB, fC, fD, ⟨hcA, hcB, hcC, hcD⟩, ⟨hA1, hB1, hC1, hD1⟩,
+    hlawA, hlawB, hlawC, hlawD, htrc, hdetc⟩ :=
+    exists_matrixCoefficients_of_realizations hℓodd hW hρbar hirr hπ hred
+      real hinj htr hglue
+  -- the matrix-valued monoid homomorphism
+  set Mf : Field.absoluteGaloisGroup ℚ → Matrix (Fin 2) (Fin 2) T :=
+    fun g => !![fA g, fB g; fC g, fD g] with hMf
+  have hMone : Mf 1 = 1 := by
+    simp only [hMf]
+    ext i j
+    fin_cases i <;> fin_cases j <;>
+      simp [hA1, hB1, hC1, hD1]
+  have hMmul : ∀ g h, Mf (g * h) = Mf g * Mf h := by
+    intro g h
+    simp only [hMf]
+    ext i j
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.mul_apply, Fin.sum_univ_two, hlawA g h, hlawB g h,
+        hlawC g h, hlawD g h]
+  -- the standard-basis decomposition, for continuity
+  have hMdecomp : ∀ g, Mf g =
+      fA g • !![1, 0; 0, 0] + fB g • !![0, 1; 0, 0] +
+        fC g • !![0, 0; 1, 0] + fD g • !![0, 0; 0, 1] := by
+    intro g
+    simp only [hMf]
+    ext i j
+    fin_cases i <;> fin_cases j <;> simp
+  letI := moduleTopology T (Module.End T (Fin 2 → T))
+  haveI : ContinuousAdd (Module.End T (Fin 2 → T)) :=
+    ModuleTopology.continuousAdd T _
+  haveI : ContinuousSMul T (Module.End T (Fin 2 → T)) :=
+    ModuleTopology.continuousSMul T _
+  let ρT : GaloisRep ℚ T (Fin 2 → T) :=
+    { toFun := fun g => Matrix.toLin' (Mf g)
+      map_one' := by rw [hMone, Matrix.toLin'_one]; rfl
+      map_mul' := fun g h => by rw [hMmul g h, Matrix.toLin'_mul]; rfl
+      continuous_toFun := by
+        simp only [hMdecomp, map_add, map_smul]
+        exact (((hcA.smul continuous_const).add
+          (hcB.smul continuous_const)).add
+          (hcC.smul continuous_const)).add (hcD.smul continuous_const) }
+  have hρTapp : ∀ g, ρT g = Matrix.toLin' (Mf g) := fun g => rfl
+  refine ⟨ρT, fun g i => ⟨?_, ?_⟩⟩
+  · -- the `charpoly.coeff 1` clause
+    have hchar : (ρT g).charpoly = (Mf g).charpoly := by
+      calc (ρT g).charpoly
+          = (LinearMap.toMatrix (Pi.basisFun T (Fin 2))
+            (Pi.basisFun T (Fin 2)) (ρT g)).charpoly :=
+            (LinearMap.charpoly_toMatrix _ _).symm
+        _ = (Mf g).charpoly := by
+            rw [hρTapp g, LinearMap.toMatrix_eq_toMatrix',
+              LinearMap.toMatrix'_toLin']
+    have h3 : Matrix.trace (Mf g) = fA g + fD g := by
+      simp only [hMf]
+      exact Matrix.trace_fin_two_of _ _ _ _
+    have h2 : (Mf g).charpoly.coeff 1 = -(fA g + fD g) := by
+      have h1 := Matrix.trace_eq_neg_charpoly_coeff (Mf g)
+      norm_num at h1
+      rw [← h3]
+      linear_combination h1
+    rw [hchar, h2, map_neg, htrc i g, neg_neg]
+  · -- the determinant clause
+    have h4 : (Mf g).det = fA g * fD g - fB g * fC g := by
+      simp only [hMf]
+      exact Matrix.det_fin_two_of _ _ _ _
+    rw [hρTapp g, LinearMap.det_toLin', h4, hdetc i g]
 
 /-- **Unramifiedness descent** (pillar 3a-ii-β; PROVEN 2026-07-24 —
 Carayol Théorème 1): the descended representation is unramified
