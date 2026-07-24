@@ -9492,24 +9492,127 @@ lemma WeierstrassCurve.torsionKernelFun_separates (m : ℕ) (h : Polynomial R)
       subst hy
       rfl
 
-/-- **The avoiding denominator** (sorry node — stage A of the Katz–Mazur
+set_option backward.isDefEq.respectTransparency false in
+set_option linter.unusedSectionVars false in
+/-- **Torsion abscissas are division-polynomial roots over the integral
+model**: for an affine `m`-torsion point of the base change, the integral
+model's `ΨSq m` vanishes at the abscissa. -/
+lemma WeierstrassCurve.torsion_abscissa_psiSq_eq_zero (m : ℕ)
+    (hm : (m : K) ≠ 0) {x y : Ksep}
+    (hns : (E⁄Ksep).toAffine.Nonsingular x y)
+    (hP : (m : ℤ) • (Affine.Point.some x y hns : (E⁄Ksep).Point) = 0) :
+    Polynomial.aeval x ((WeierstrassCurve.integralModel R E).ΨSq (m : ℤ)) = 0 := by
+  have hm0 : m ≠ 0 := fun h => hm (by rw [h, Nat.cast_zero])
+  have hmZ : (m : ℤ) ≠ 0 := by exact_mod_cast hm0
+  have h1 : ((E⁄Ksep).ΨSq (m : ℤ)).eval x = 0 :=
+    (TorsionCard.smul_some_eq_zero_iff (E.map (algebraMap K Ksep)) hmZ hns).mp hP
+  have h2 : (E⁄Ksep) =
+      (WeierstrassCurve.integralModel R E).map (algebraMap R Ksep) := by
+    conv_lhs => rw [← WeierstrassCurve.baseChange_integralModel_eq R E]
+    simp only [WeierstrassCurve.baseChange]
+    rw [WeierstrassCurve.map_map, ← IsScalarTower.algebraMap_eq]
+  rw [h2, WeierstrassCurve.map_ΨSq, Polynomial.eval_map,
+    ← Polynomial.aeval_def] at h1
+  exact h1
+
+set_option linter.unusedSectionVars false in
+/-- **The reduced division polynomial is nonzero**: good reduction makes
+the reduced curve elliptic, so `Φ m` and `ΨSq m` are coprime over the
+residue field; were `ΨSq m` zero, the positive-degree `Φ m` would be a
+unit. -/
+lemma WeierstrassCurve.reduction_psiSq_ne_zero (m : ℕ) (hm : (m : K) ≠ 0) :
+    ((WeierstrassCurve.integralModel R E).ΨSq (m : ℤ)).map
+      (IsLocalRing.residue R) ≠ 0 := by
+  have hm0 : m ≠ 0 := fun h => hm (by rw [h, Nat.cast_zero])
+  have hmZ : (m : ℤ) ≠ 0 := by exact_mod_cast hm0
+  haveI hell : (E.reduction R).IsElliptic :=
+    (WeierstrassCurve.hasGoodReduction_iff_isElliptic_reduction R).mp
+      inferInstance
+  have hΔ : IsUnit (E.reduction R).Δ := (E.reduction R).isElliptic_iff.mp hell
+  have hcop := WeierstrassCurve.isCoprime_Φ_ΨSq (E.reduction R) hmZ hΔ
+  intro h0
+  have hred : (E.reduction R).ΨSq (m : ℤ) =
+      ((WeierstrassCurve.integralModel R E).ΨSq (m : ℤ)).map
+        (IsLocalRing.residue R) := by
+    rw [show E.reduction R = (WeierstrassCurve.integralModel R E).map
+      (IsLocalRing.residue R) from rfl, WeierstrassCurve.map_ΨSq]
+  rw [← hred] at h0
+  rw [h0] at hcop
+  have hunit := (isCoprime_zero_right).mp hcop
+  refine Polynomial.not_isUnit_of_natDegree_pos _ ?_ hunit
+  rw [WeierstrassCurve.natDegree_Φ, Int.natAbs_natCast]
+  exact pow_pos (Nat.pos_of_ne_zero hm0) 2
+
+set_option linter.unusedSectionVars false in
+/-- **Maximal-ideal elements have small image**: a centered valuation
+subring sees the maximal ideal of `R` inside its own — a unit image would
+push the inverse through the trace into `R`. -/
+lemma val_algebraMap_lt_one_of_mem_maximalIdeal (𝒪 : ValuationSubring Ksep)
+    (hcen : (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range)
+    {c : R} (hmem : c ∈ IsLocalRing.maximalIdeal R) :
+    𝒪.valuation (algebraMap R Ksep c) < 1 := by
+  rcases eq_or_ne c 0 with rfl | hc0
+  · rw [map_zero, map_zero]
+    exact zero_lt_one
+  rcases lt_or_eq_of_le ((𝒪.valuation_le_one_iff _).mpr
+    (mem_centered_algebraMap R K Ksep 𝒪 hcen c)) with hlt | heq
+  · exact hlt
+  exfalso
+  have hKc0 : algebraMap R K c ≠ 0 := fun h =>
+    hc0 (IsFractionRing.injective R K (h.trans (map_zero _).symm))
+  have hinv1 : 𝒪.valuation (algebraMap K Ksep (algebraMap R K c)⁻¹) = 1 := by
+    rw [map_inv₀, map_inv₀, ← IsScalarTower.algebraMap_apply, heq, inv_one]
+  have hmem𝒪 : (algebraMap R K c)⁻¹ ∈
+      (𝒪.comap (algebraMap K Ksep)).toSubring := by
+    show algebraMap K Ksep (algebraMap R K c)⁻¹ ∈ 𝒪
+    rw [← 𝒪.valuation_le_one_iff, hinv1]
+  rw [hcen] at hmem𝒪
+  obtain ⟨r, hr⟩ := hmem𝒪
+  have hrc : r * c = 1 := by
+    apply IsFractionRing.injective R K
+    rw [map_mul, map_one, hr, inv_mul_cancel₀ hKc0]
+  exact mem_nonunits_iff.mp ((IsLocalRing.mem_maximalIdeal c).mp hmem)
+    (IsUnit.of_mul_eq_one r (by rw [mul_comm]; exact hrc))
+
+set_option linter.unusedSectionVars false in
+/-- Evaluation of an `R`-polynomial at a point of `𝒪` stays in `𝒪`. -/
+lemma aeval_mem_of_mem (𝒪 : ValuationSubring Ksep)
+    (hR : ∀ r : R, algebraMap R Ksep r ∈ 𝒪) (p : Polynomial R) {x : Ksep}
+    (hx : x ∈ 𝒪) : Polynomial.aeval x p ∈ 𝒪 := by
+  rw [Polynomial.aeval_def, Polynomial.eval₂_eq_sum_range]
+  exact sum_mem fun i _ => mul_mem (hR _) (pow_mem hx i)
+
+set_option linter.unusedSectionVars false in
+/-- A polynomial with maximal-ideal coefficients evaluates below `1` at
+any integral point of a centered valuation subring. -/
+lemma val_aeval_lt_one_of_coeff_mem (𝒪 : ValuationSubring Ksep)
+    (hcen : (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range)
+    (p : Polynomial R) (hp : ∀ i, p.coeff i ∈ IsLocalRing.maximalIdeal R)
+    {x : Ksep} (hx : x ∈ 𝒪) :
+    𝒪.valuation (Polynomial.aeval x p) < 1 := by
+  rw [Polynomial.aeval_def, Polynomial.eval₂_eq_sum_range]
+  refine Valuation.map_sum_lt _ one_ne_zero fun i _ => ?_
+  rw [map_mul]
+  calc 𝒪.valuation (algebraMap R Ksep (p.coeff i)) * 𝒪.valuation (x ^ i)
+      ≤ 𝒪.valuation (algebraMap R Ksep (p.coeff i)) * 1 :=
+        mul_le_mul_right ((𝒪.valuation_le_one_iff _).mpr (pow_mem hx i)) _
+    _ = 𝒪.valuation (algebraMap R Ksep (p.coeff i)) := mul_one _
+    _ < 1 := val_algebraMap_lt_one_of_mem_maximalIdeal R K Ksep 𝒪 hcen (hp i)
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
+/-- **The avoiding denominator** (PROVEN — stage A of the Katz–Mazur
 kernel-functions leaf): a monic `h ∈ R[X]` of degree `≥ 2` such that
-`h(x(P))` is a unit of every centered valuation subring for every affine
-`m`-torsion point `P` with integral abscissa. Intended construction: an
-affine `m`-torsion abscissa is a root of `ΨSq m` (`smul_some_eq_zero_iff`),
-a polynomial with `R`-integral coefficients whose reduction over the
-residue field `κ` of `R` is the division polynomial of the reduced curve —
-NONZERO because good reduction makes the reduction elliptic — so the
-residue of an integral torsion abscissa in the residue field of any
-centered `𝒪` is algebraic over `κ` of degree `≤ N := natDegree (ΨSq m)`,
-uniformly in `𝒪` and `P`. If `κ` is finite of order `q`, take
-`h := X^(q^e) − X + 1` with `e := lcm (1 .. N)` (an element `α` of any
-`𝔽_{q^j}` with `j ∣ e` has `α^(q^e) = α`, so `h(α) = 1 ≠ 0`); if `κ` is
-infinite, take `h := (X − c)²` with `c ∈ R` lifting an element of `κ`
-avoiding the finitely many `κ`-rational roots of the reduced `ΨSq m` (a
-residue outside `κ` differs from `c̄` automatically). In both cases the
-reduction of `h` does not vanish at the residue of the abscissa, i.e.
-`h(x(P))` is a unit of `𝒪`. -/
+`h(x(P))` is a `𝒪`-unit for every centered valuation subring `𝒪` and
+every affine `m`-torsion point with abscissa in `𝒪`. Construction: an
+affine torsion abscissa is a root of the integral model's `ΨSq m`
+(`torsion_abscissa_psiSq_eq_zero`), whose reduction `Ψ̄` over the residue
+field is nonzero by good reduction (`reduction_psiSq_ne_zero`); take `h`
+to be a monic lift of `Ψ̄·L⁻¹·X² + 1` (`L` the leading coefficient of
+`Ψ̄`). Then `h = 1 + A·Ψ + C` over `R` with `C ≡ 0` mod the maximal
+ideal — an explicit Bézout certificate: at a torsion abscissa the `Ψ`-term
+vanishes and the `C`-term has valuation `< 1`, so `v(h(x)) = v(1 + small)
+= 1`. No case split on the residue field is needed. -/
 theorem WeierstrassCurve.exists_torsion_avoiding_denominator
     (m : ℕ) (hm : (m : K) ≠ 0) :
     ∃ h : Polynomial R, h.Monic ∧ 2 ≤ h.natDegree ∧
@@ -9518,7 +9621,63 @@ theorem WeierstrassCurve.exists_torsion_avoiding_denominator
         ∀ (x y : Ksep) (hns : (E⁄Ksep).toAffine.Nonsingular x y),
           (m : ℤ) • (Affine.Point.some x y hns : (E⁄Ksep).Point) = 0 →
           x ∈ 𝒪 → 𝒪.valuation (Polynomial.aeval x h) = 1 := by
-  sorry
+  classical
+  set Ψ : Polynomial R := (WeierstrassCurve.integralModel R E).ΨSq (m : ℤ)
+    with hΨdef
+  have hΨbar : Ψ.map (IsLocalRing.residue R) ≠ 0 :=
+    WeierstrassCurve.reduction_psiSq_ne_zero R K E m hm
+  set L := (Ψ.map (IsLocalRing.residue R)).leadingCoeff with hLdef
+  set Ψt := Ψ.map (IsLocalRing.residue R) * Polynomial.C L⁻¹ with hΨtdef
+  have hΨtmon : Ψt.Monic := Polynomial.monic_mul_leadingCoeff_inv hΨbar
+  set hbar := Ψt * Polynomial.X ^ 2 + 1 with hhbardef
+  have hltdeg : (1 : Polynomial (IsLocalRing.ResidueField R)).degree <
+      (Ψt * Polynomial.X ^ 2).degree := by
+    rw [Polynomial.degree_one, Polynomial.degree_mul, Polynomial.degree_X_pow,
+      Polynomial.degree_eq_natDegree hΨtmon.ne_zero]
+    exact_mod_cast (by omega : 0 < Ψt.natDegree + 2)
+  have hmonbar : hbar.Monic := (hΨtmon.mul (Polynomial.monic_X_pow 2)).add_of_left hltdeg
+  have hdegbar : hbar.natDegree = Ψt.natDegree + 2 := by
+    rw [hhbardef]
+    rw [Polynomial.natDegree_eq_of_degree_eq
+      (Polynomial.degree_add_eq_left_of_degree_lt hltdeg),
+      Polynomial.natDegree_mul hΨtmon.ne_zero
+        (pow_ne_zero 2 Polynomial.X_ne_zero),
+      Polynomial.natDegree_X_pow]
+  have hlifts : hbar ∈ Polynomial.lifts (IsLocalRing.residue R) :=
+    (Polynomial.lifts_iff_coeff_lifts hbar).mpr fun k =>
+      IsLocalRing.residue_surjective (hbar.coeff k)
+  obtain ⟨h, hmap, hdeq, hmon⟩ :=
+    Polynomial.lifts_and_degree_eq_and_monic hlifts hmonbar
+  refine ⟨h, hmon, ?_, ?_⟩
+  · rw [Polynomial.natDegree_eq_of_degree_eq hdeq, hdegbar]
+    omega
+  intro 𝒪 hcen x y hns hP hx
+  -- the lifted Bézout certificate `h = 1 + A·Ψ + C`, `C ≡ 0 mod 𝔪`
+  obtain ⟨A, hA⟩ := Polynomial.map_surjective (IsLocalRing.residue R)
+    IsLocalRing.residue_surjective (Polynomial.C L⁻¹ * Polynomial.X ^ 2)
+  set Cdef : Polynomial R := h - A * Ψ - 1 with hCdefdef
+  have hCdefmap : Cdef.map (IsLocalRing.residue R) = 0 := by
+    rw [hCdefdef, Polynomial.map_sub, Polynomial.map_sub, Polynomial.map_mul,
+      Polynomial.map_one, hmap, hA, hhbardef, hΨtdef]
+    ring
+  have hCdefcoeff : ∀ i, Cdef.coeff i ∈ IsLocalRing.maximalIdeal R := by
+    intro i
+    have h1 := congrArg (fun q => Polynomial.coeff q i) hCdefmap
+    simp only [Polynomial.coeff_map, Polynomial.coeff_zero] at h1
+    exact (IsLocalRing.residue_eq_zero_iff _).mp h1
+  have hΨx : Polynomial.aeval x Ψ = 0 :=
+    WeierstrassCurve.torsion_abscissa_psiSq_eq_zero R K E Ksep m hm hns hP
+  have heval : Polynomial.aeval x h = 1 + Polynomial.aeval x Cdef := by
+    have hid : h = 1 + A * Ψ + Cdef := by
+      rw [hCdefdef]
+      ring
+    rw [hid, map_add, map_add, map_one, map_mul, hΨx, mul_zero, add_zero]
+  have hlt := val_aeval_lt_one_of_coeff_mem R K Ksep 𝒪 hcen Cdef hCdefcoeff hx
+  calc 𝒪.valuation (Polynomial.aeval x h)
+      = 𝒪.valuation (1 + Polynomial.aeval x Cdef) := by rw [heval]
+    _ = 𝒪.valuation 1 := 𝒪.valuation.map_add_eq_of_lt_left
+        (by rw [Valuation.map_one]; exact hlt)
+    _ = 1 := Valuation.map_one _
 
 /-- The Katz–Mazur generator family: all monomial sections of weight
 `2a + 3b ≤ 2·deg h` with `b ≤ 1`, restricted to the `m`-torsion subgroup. -/
