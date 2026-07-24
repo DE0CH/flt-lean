@@ -44,6 +44,7 @@ public import Mathlib.RingTheory.Bialgebra.Convolution
 public import Mathlib.RingTheory.HopfAlgebra.Basic
 public import Mathlib.RingTheory.TensorProduct.Finite
 public import Mathlib.RingTheory.AdicCompletion.Topology
+public import Mathlib.Tactic.Module
 
 @[expose] public section
 
@@ -399,16 +400,42 @@ theorem Bialgebra.counit_comulAlgHom_apply (g : G) :
           simp [smul_eq_mul]
     _ = Coalgebra.counit (R := A) g := by rw [hmirror]
 
+omit [IsDomain A] in
+/-- A pure tensor with right factor in `𝔪G` lies in `𝔪(G⊗G)`. -/
+theorem tmul_mem_map_of_right_mem [IsLocalRing A] (x : G) {m : G}
+    (hm : m ∈ (maximalIdeal A).map (algebraMap A G)) :
+    x ⊗ₜ[A] m ∈ (maximalIdeal A).map (algebraMap A (G ⊗[A] G)) := by
+  rw [← Submodule.restrictScalars_mem A, ← Ideal.smul_top_eq_map] at hm ⊢
+  refine Submodule.smul_induction_on hm (fun a ha n _ => ?_)
+    (fun u v hu hv => ?_)
+  · rw [TensorProduct.tmul_smul]
+    exact Submodule.smul_mem_smul ha Submodule.mem_top
+  · rw [TensorProduct.tmul_add]
+    exact Submodule.add_mem _ hu hv
+
+omit [IsDomain A] in
+/-- A pure tensor with left factor in `𝔪G` lies in `𝔪(G⊗G)`. -/
+theorem tmul_mem_map_of_left_mem [IsLocalRing A] (x : G) {m : G}
+    (hm : m ∈ (maximalIdeal A).map (algebraMap A G)) :
+    m ⊗ₜ[A] x ∈ (maximalIdeal A).map (algebraMap A (G ⊗[A] G)) := by
+  rw [← Submodule.restrictScalars_mem A, ← Ideal.smul_top_eq_map] at hm ⊢
+  refine Submodule.smul_induction_on hm (fun a ha n _ => ?_)
+    (fun u v hu hv => ?_)
+  · rw [← TensorProduct.smul_tmul']
+    exact Submodule.smul_mem_smul ha Submodule.mem_top
+  · rw [TensorProduct.add_tmul]
+    exact Submodule.add_mem _ hu hv
+
 /-- **Tensor primitivity** (Tate; "connected × connected is
 connected"): over a complete Noetherian local domain, the tensor
 square `e₀ ⊗ e₀` of a minimal counit-one idempotent is itself a
-minimal counit-one idempotent of `G ⊗[A] G`. Residue-theoretically:
-the corner `(G/𝔪G)·ē₀` is local artinian with residue field `𝓀(A)`
-(the counit splits the residue extension), the tensor product over
-`𝓀(A)` of two such algebras is again local with the same residue
-field, and a counit-one idempotent below `ē₀ ⊗ ē₀` must reduce to the
-identity of that local corner; henselian lifting and minimality
-upstairs then force equality. -/
+minimal counit-one idempotent of `G ⊗[A] G`. The defect
+`d = e₀⊗e₀ − w` is an idempotent below `e₀ ⊗ e₀` with counit `0`;
+splitting each corner tensor factor as
+`u·e₀ = ε(u·e₀)·e₀ + (nilpotent mod 𝔪G)` (corner nilpotency in `G`)
+shows `d` is a sum of nilpotents modulo `𝔪(G⊗G)` once the scalar part
+`∑ ε⊗ε = ε(d) = 0` cancels; an idempotent that is nilpotent mod
+`𝔪(G⊗G)` lies in `𝔪(G⊗G) ⊆ Jacobson(G⊗G)`, hence vanishes. -/
 theorem Bialgebra.tmul_minimal_counit_idempotent
     [IsNoetherianRing A] [IsLocalRing A]
     [IsAdicComplete (maximalIdeal A) A] [Module.Finite A G]
@@ -418,7 +445,190 @@ theorem Bialgebra.tmul_minimal_counit_idempotent
       Coalgebra.counit (R := A) y = (1 : A) → y = e₀) :
     ∀ w : G ⊗[A] G, IsIdempotentElem w → w * (e₀ ⊗ₜ[A] e₀) = w →
       Coalgebra.counit (R := A) w = (1 : A) → w = e₀ ⊗ₜ[A] e₀ := by
-  sorry
+  intro w hw hwb hεw
+  set b : G ⊗[A] G := e₀ ⊗ₜ[A] e₀ with hb_def
+  have hb : IsIdempotentElem b := by
+    show b * b = b
+    rw [hb_def, Algebra.TensorProduct.tmul_mul_tmul, he₀.eq]
+  -- the defect idempotent `d = b − w`, a counit-zero corner idempotent
+  set d : G ⊗[A] G := b - w with hd_def
+  have hd : IsIdempotentElem d := by
+    show d * d = d
+    rw [hd_def]
+    have hexp : (b - w) * (b - w) = b * b - (w * b + (w * b - w * w)) := by
+      ring
+    rw [hexp, hb.eq, hwb, hw.eq]
+    ring
+  have hεd : Coalgebra.counit (R := A) d = 0 := by
+    have hεb : Coalgebra.counit (R := A) b = 1 := by
+      rw [hb_def]
+      simp [hε₀]
+    rw [hd_def, map_sub, hεw, hεb, sub_self]
+  have hdb : d * b = d := by
+    rw [hd_def]
+    have hexp : (b - w) * b = b * b - w * b := by ring
+    rw [hexp, hb.eq, hwb]
+  -- reduction mod `𝔪(G⊗G)`, as an algebra map
+  set MT : Ideal (G ⊗[A] G) :=
+    (maximalIdeal A).map (algebraMap A (G ⊗[A] G)) with hMT_def
+  set πₐ : G ⊗[A] G →ₐ[A] (G ⊗[A] G) ⧸ MT :=
+    Ideal.Quotient.mkₐ A MT with hπₐ_def
+  -- corner elements of `G` with counit zero give nilpotent reductions
+  have hcorner_left : ∀ g : G, g * e₀ = g →
+      Coalgebra.counit (R := A) g = 0 → ∀ y : G,
+      IsNilpotent (πₐ (g ⊗ₜ[A] y)) := by
+    intro g hge hεg y
+    obtain ⟨k, hk⟩ := exists_pow_mem_of_counit_mem_maximalIdeal
+      he₀ hε₀ hmin hge (by rw [hεg]; exact zero_mem _)
+    refine ⟨k + 1, ?_⟩
+    rw [← map_pow, Algebra.TensorProduct.tmul_pow]
+    have hmem : g ^ (k + 1) ∈ (maximalIdeal A).map (algebraMap A G) := by
+      rw [pow_succ]
+      exact Ideal.mul_mem_right _ _ hk
+    rw [hπₐ_def, Ideal.Quotient.mkₐ_eq_mk]
+    exact Ideal.Quotient.eq_zero_iff_mem.mpr
+      (tmul_mem_map_of_left_mem _ hmem)
+  have hcorner_right : ∀ g : G, g * e₀ = g →
+      Coalgebra.counit (R := A) g = 0 → ∀ y : G,
+      IsNilpotent (πₐ (y ⊗ₜ[A] g)) := by
+    intro g hge hεg y
+    obtain ⟨k, hk⟩ := exists_pow_mem_of_counit_mem_maximalIdeal
+      he₀ hε₀ hmin hge (by rw [hεg]; exact zero_mem _)
+    refine ⟨k + 1, ?_⟩
+    rw [← map_pow, Algebra.TensorProduct.tmul_pow]
+    have hmem : g ^ (k + 1) ∈ (maximalIdeal A).map (algebraMap A G) := by
+      rw [pow_succ]
+      exact Ideal.mul_mem_right _ _ hk
+    rw [hπₐ_def, Ideal.Quotient.mkₐ_eq_mk]
+    exact Ideal.Quotient.eq_zero_iff_mem.mpr
+      (tmul_mem_map_of_right_mem _ hmem)
+  -- write `d` as a finite sum of corner tensors
+  obtain ⟨S, hS⟩ := _root_.TensorProduct.exists_finset d
+  have hdS : d = ∑ p ∈ S, (p.1 * e₀) ⊗ₜ[A] (p.2 * e₀) := by
+    calc d = d * b := hdb.symm
+      _ = (∑ p ∈ S, p.1 ⊗ₜ[A] p.2) * b := by rw [← hS]
+      _ = ∑ p ∈ S, (p.1 * e₀) ⊗ₜ[A] (p.2 * e₀) := by
+          rw [Finset.sum_mul]
+          refine Finset.sum_congr rfl fun p _ => ?_
+          rw [hb_def, Algebra.TensorProduct.tmul_mul_tmul]
+  -- the ε-split of each corner factor
+  set α : G × G → A := fun p => Coalgebra.counit (R := A) (p.1 * e₀)
+    with hα_def
+  set β : G × G → A := fun p => Coalgebra.counit (R := A) (p.2 * e₀)
+    with hβ_def
+  set n : G × G → G := fun p => p.1 * e₀ - α p • e₀ with hn_def
+  set m : G × G → G := fun p => p.2 * e₀ - β p • e₀ with hm_def
+  have hsplit1 : ∀ p : G × G, p.1 * e₀ = α p • e₀ + n p := by
+    intro p
+    rw [hn_def]
+    ring_nf
+  have hsplit2 : ∀ p : G × G, p.2 * e₀ = β p • e₀ + m p := by
+    intro p
+    rw [hm_def]
+    ring_nf
+  have hncorner : ∀ p : G × G, n p * e₀ = n p := by
+    intro p
+    rw [hn_def]
+    show (p.1 * e₀ - α p • e₀) * e₀ = p.1 * e₀ - α p • e₀
+    rw [sub_mul, mul_assoc, he₀.eq, smul_mul_assoc, he₀.eq]
+  have hmcorner : ∀ p : G × G, m p * e₀ = m p := by
+    intro p
+    rw [hm_def]
+    show (p.2 * e₀ - β p • e₀) * e₀ = p.2 * e₀ - β p • e₀
+    rw [sub_mul, mul_assoc, he₀.eq, smul_mul_assoc, he₀.eq]
+  have hnε : ∀ p : G × G, Coalgebra.counit (R := A) (n p) = 0 := by
+    intro p
+    rw [hn_def]
+    show Coalgebra.counit (R := A) (p.1 * e₀ - α p • e₀) = 0
+    rw [map_sub, map_smul, hε₀, smul_eq_mul, mul_one, hα_def, sub_self]
+  have hmε : ∀ p : G × G, Coalgebra.counit (R := A) (m p) = 0 := by
+    intro p
+    rw [hm_def]
+    show Coalgebra.counit (R := A) (p.2 * e₀ - β p • e₀) = 0
+    rw [map_sub, map_smul, hε₀, smul_eq_mul, mul_one, hβ_def, sub_self]
+  -- the total scalar weight is the counit of `d`, which vanishes
+  have hsum0 : ∑ p ∈ S, α p * β p = 0 := by
+    have h1 := congrArg (Coalgebra.counit (R := A)) hdS
+    rw [hεd, map_sum] at h1
+    have h2 : ∀ p ∈ S, Coalgebra.counit (R := A)
+        ((p.1 * e₀) ⊗ₜ[A] (p.2 * e₀)) = α p * β p := by
+      intro p _
+      rw [hα_def, hβ_def]
+      simp [mul_comm]
+    rw [Finset.sum_congr rfl h2] at h1
+    exact h1.symm
+  -- the bilinear expansion of each summand
+  have hexpand : ∀ p : G × G,
+      (p.1 * e₀) ⊗ₜ[A] (p.2 * e₀) = (α p * β p) • b +
+        (α p • (e₀ ⊗ₜ[A] m p) + β p • (n p ⊗ₜ[A] e₀) +
+          n p ⊗ₜ[A] m p) := by
+    intro p
+    rw [hsplit1 p, hsplit2 p, hb_def]
+    simp only [_root_.TensorProduct.tmul_add,
+      _root_.TensorProduct.add_tmul, _root_.TensorProduct.tmul_smul,
+      ← _root_.TensorProduct.smul_tmul']
+    module
+  -- the reduction of `d` is a sum of nilpotents
+  have hnil : IsNilpotent (πₐ d) := by
+    have hπd : πₐ d = ∑ p ∈ S,
+        (α p • πₐ (e₀ ⊗ₜ[A] m p) + β p • πₐ (n p ⊗ₜ[A] e₀) +
+          πₐ (n p ⊗ₜ[A] m p)) := by
+      calc πₐ d = ∑ p ∈ S, πₐ ((p.1 * e₀) ⊗ₜ[A] (p.2 * e₀)) := by
+            rw [hdS, map_sum]
+        _ = ∑ p ∈ S, ((α p * β p) • πₐ b +
+              (α p • πₐ (e₀ ⊗ₜ[A] m p) + β p • πₐ (n p ⊗ₜ[A] e₀) +
+                πₐ (n p ⊗ₜ[A] m p))) := by
+            refine Finset.sum_congr rfl fun p _ => ?_
+            rw [hexpand p]
+            simp
+        _ = (∑ p ∈ S, α p * β p) • πₐ b + ∑ p ∈ S,
+              (α p • πₐ (e₀ ⊗ₜ[A] m p) + β p • πₐ (n p ⊗ₜ[A] e₀) +
+                πₐ (n p ⊗ₜ[A] m p)) := by
+            rw [Finset.sum_add_distrib, Finset.sum_smul]
+        _ = ∑ p ∈ S,
+              (α p • πₐ (e₀ ⊗ₜ[A] m p) + β p • πₐ (n p ⊗ₜ[A] e₀) +
+                πₐ (n p ⊗ₜ[A] m p)) := by
+            rw [hsum0, zero_smul, zero_add]
+    rw [hπd]
+    refine isNilpotent_sum fun p _ => ?_
+    have h1 : IsNilpotent (α p • πₐ (e₀ ⊗ₜ[A] m p)) :=
+      (hcorner_right (m p) (hmcorner p) (hmε p) e₀).smul (α p)
+    have h2 : IsNilpotent (β p • πₐ (n p ⊗ₜ[A] e₀)) :=
+      (hcorner_left (n p) (hncorner p) (hnε p) e₀).smul (β p)
+    have h3 : IsNilpotent (πₐ (n p ⊗ₜ[A] m p)) :=
+      hcorner_left (n p) (hncorner p) (hnε p) (m p)
+    exact Commute.isNilpotent_add (Commute.all _ _)
+      (Commute.isNilpotent_add (Commute.all _ _) h1 h2) h3
+  -- a nilpotent idempotent reduction vanishes, so `d ∈ 𝔪(G⊗G)`
+  have hdmem : d ∈ MT := by
+    obtain ⟨K, hK⟩ := hnil
+    have hπd0 : πₐ d = 0 := by
+      rcases K with - | k
+      · have h1 : (1 : (G ⊗[A] G) ⧸ MT) = 0 := by simpa using hK
+        calc πₐ d = πₐ d * 1 := (mul_one _).symm
+          _ = πₐ d * 0 := by rw [h1]
+          _ = 0 := mul_zero _
+      · have hidem : IsIdempotentElem (πₐ d) := by
+          show πₐ d * πₐ d = πₐ d
+          rw [← map_mul, hd.eq]
+        rw [← hidem.pow_succ_eq k]
+        exact hK
+    rw [hπₐ_def, Ideal.Quotient.mkₐ_eq_mk] at hπd0
+    exact Ideal.Quotient.eq_zero_iff_mem.mp hπd0
+  -- `𝔪(G⊗G)` sits inside the Jacobson radical, killing the idempotent
+  have hjac : MT ≤ Ideal.jacobson (⊥ : Ideal (G ⊗[A] G)) := by
+    refine le_sInf ?_
+    rintro J ⟨-, hJmax⟩
+    haveI := hJmax
+    have hcomax : (J.comap (algebraMap A (G ⊗[A] G))).IsMaximal :=
+      Ideal.isMaximal_comap_of_isIntegral_of_isMaximal J
+    rw [hMT_def, Ideal.map_le_iff_le_comap,
+      IsLocalRing.eq_maximalIdeal hcomax]
+  have hd0 : d = 0 := hd.eq_zero_of_mem_jacobson_bot (hjac hdmem)
+  rw [hd_def] at hd0
+  have := sub_eq_zero.mp hd0
+  rw [hb_def] at this
+  exact this.symm
 
 /-- **The connected counit idempotent of a finite bialgebra** over a
 complete Noetherian local domain: a primitive idempotent `e₀` with
