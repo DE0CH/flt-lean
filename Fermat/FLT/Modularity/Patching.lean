@@ -1146,28 +1146,79 @@ theorem finite_setOf_isHardlyRamified.{uA} {p : ℕ} (hpodd : Odd p)
       IsHardlyRamified hpodd (rank_finTwoFun A) ρ}.Finite :=
   sorry
 
-/-- **Schlessinger–Ramakrishna–CDT core leaf** (sorry node — the
-deformation-theoretic core of the FOUNDER cut of strict Mazur
-representability): GIVEN the finiteness of the dual-number tangent
-space (Schlessinger's H3, supplied by the restricted-ramification
-finiteness leaf through the proven glue of the pillar assembly), the
-hardly ramified deformation problem of an irreducible hardly ramified
-`ρbar` admits a Mazur-category package `(Runiv, ρuniv, πuniv)` —
-complete Noetherian local topological `ℤ_p`-algebra with the `𝔪`-adic
-topology, hardly ramified universal representation on the standard
-frame, surjective reduction matching linear `charFrob` coefficients
-off a finite set — that factors every residually identified
-STANDARD-FRAMED test deformation (module universe = coefficient
-universe; the reframing transport
-`isWeaklyUniversalOnIdentifiedDeformation_of_reframe` upgrades this to
-every module universe).
+/-- **Weak universality on identified FINITE tests** — the
+Artinian-level restriction of `IsWeaklyUniversalOnIdentifiedDeformation`
+(the LEVEL cut of the strict Mazur core leaf, 2026-07-24): the package
+`(Runiv, ρuniv, πuniv)` factors every standard-framed residually
+identified test deformation whose coefficient ring is FINITE as a type
+— classically an Artinian local `ℤ_p`-algebra with residue field `k`,
+exactly the objects of Schlessinger's category on which the
+deformation functor is defined pointwise.  Two deliberate STRENGTHENED
+clauses relative to the module-finite predicate, both of which the
+classical classifying map satisfies and both of which the pro-finite
+limit upgrade `isWeaklyUniversalOnIdentifiedDeformation_of_finiteTests`
+consumes essentially: the trace clause holds at EVERY prime with no
+exceptional set (the classifying map carries `ρuniv` to a conjugate of
+the test representation, and `charFrob` evaluates both at the same
+fixed global Galois element `adicArithFrob v`, so the polynomials
+match identically — an exceptional set varying with the Artinian level
+would break the inverse-limit trace argument), and the test category
+is standard-framed (module universe = coefficient universe; the
+reframing transport collapses the general case). -/
+def IsWeaklyUniversalOnIdentifiedFiniteTests.{s, uK, uW, uR}
+    {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [TopologicalSpace k]
+    [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (ρbar : GaloisRep ℚ k W)
+    {Runiv : Type uR} [CommRing Runiv] [TopologicalSpace Runiv]
+    [IsTopologicalRing Runiv] [IsLocalRing Runiv] [Algebra ℤ_[p] Runiv]
+    (ρuniv : GaloisRep ℚ Runiv (Fin 2 → Runiv)) (πuniv : Runiv →+* k) :
+    Prop :=
+  ∀ D : HardlyRamifiedFiniteDeformation.{s, s, uK, uW} hpodd ρbar,
+    Finite D.A →
+    D.IsResidualIdentified →
+    letI := D.commRing
+    letI := D.topologicalSpace
+    letI := D.isTopologicalRing
+    letI := D.isLocalRing
+    letI := D.algebra
+    letI := D.addCommGroup
+    letI := D.module
+    letI := D.moduleFiniteVd
+    letI := D.moduleFreeVd
+    ∃ ψ : Runiv →+* D.A,
+      ψ.comp (algebraMap ℤ_[p] Runiv) = algebraMap ℤ_[p] D.A ∧
+      D.π.comp ψ = πuniv ∧
+      ∀ (q : ℕ) (hq : q.Prime),
+        ψ ((ρuniv.charFrob
+            hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
+          (D.ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1
+
+/-- **Schlessinger–Ramakrishna–CDT finite-level leaf** (sorry node —
+the Artinian-level stratum of the strict Mazur core, after the LEVEL
+cut of 2026-07-24): GIVEN the finiteness of the dual-number tangent
+space (Schlessinger's H3), the hardly ramified deformation problem of
+an irreducible hardly ramified `ρbar` admits a Mazur-category package
+`(Runiv, ρuniv, πuniv)` — complete Noetherian local topological
+`ℤ_p`-algebra with the `𝔪`-adic topology, hardly ramified universal
+representation on the standard frame, surjective reduction matching
+linear `charFrob` coefficients off a finite set — that factors every
+residually identified standard-framed test deformation with FINITE
+coefficient ring (`IsWeaklyUniversalOnIdentifiedFiniteTests`; the
+pro-finite upgrade `isWeaklyUniversalOnIdentifiedDeformation_of_finiteTests`
+extends the factorization to the full module-finite test category, so
+this leaf carries no limit stratum: its test objects are the finite
+discrete coefficient rings on which the lifting functor is finite
+combinatorics).
 
 Classical construction, stratum by stratum: (1) the framed hardly
-ramified lifting functor on Artinian local `ℤ_p`-algebras with residue
-field `k` satisfies Schlessinger's H1 and H2 (limits of lifts along
-small surjections glue — fibre products of coefficient rings carry
-fibre products of representations); its tangent space is the
-dual-number lift set of `IsDualNumberTangentLift`, FINITE by the
+ramified lifting functor on FINITE (Artinian) local `ℤ_p`-algebras
+with residue field `k` satisfies Schlessinger's H1 and H2 (limits of
+lifts along small surjections glue — fibre products of coefficient
+rings carry fibre products of representations); its tangent space is
+the dual-number lift set of `IsDualNumberTangentLift`, FINITE by the
 hypothesis `hfin`, which is H3; `ρbar` is odd (cyclotomic determinant,
 odd `p`), and an odd irreducible 2-dimensional representation over a
 finite field of odd characteristic is absolutely irreducible, so
@@ -1189,14 +1240,142 @@ tangent space (finite by `hfin`), hence Noetherian, local,
 representation is hardly ramified because each condition is, in the
 `IsFlatAt`/inertia-kernel/quotient-character spelling, a limit of its
 Artinian-quotient instances.  (4) A residually identified test
-deformation over a module-finite local `ℤ_p`-algebra `A` is a
-legitimate Mazur test object (complete Noetherian local with the
-`𝔪`-adic topology — the module docstring's audit), so its
-identification-conjugated representation has a classifying map
-`ψ : Runiv →+* A`; `ℤ_p`-compatibility and reduction compatibility are
-strictness of the classifying map, and the trace clause is
-conjugation-invariance of `charFrob` (residual irreducibility kills
-the framing ambiguity on traces).
+deformation over a FINITE local `ℤ_p`-algebra `A` is an object of
+Schlessinger's category outright (Artinian local with nilpotent
+maximal ideal, discrete), so its identification-conjugated
+representation has a classifying map `ψ : Runiv →+* A`;
+`ℤ_p`-compatibility and reduction compatibility are strictness of the
+classifying map, and the everywhere-trace clause is
+conjugation-invariance of `charFrob` (`charFrob_conj`) applied to the
+conjugacy `ψ ∘ ρuniv ≅ D.ρ` (residual irreducibility kills the
+framing ambiguity).
+
+Both-ways audit: for the genuine hardly ramified problem this is the
+cited Mazur/Ramakrishna/CDT representability restricted to finite
+test objects — WEAKER than the classical statement, which factors the
+whole complete-Noetherian category; abstractly the hypothesis set
+contains an irreducible hardly ramified `ρbar`, which the section
+audit of `Interface.lean` shows to be classically unsatisfiable, so
+the statement is also classically true outright.  CIRCULARITY GUARD
+(inherited): must not be proven through `Family.lean` or anything
+downstream of it (`Lift.lean` included). -/
+theorem exists_weaklyUniversalOnIdentified_framed_finiteTests.{s, uK, uW}
+    {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hpodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (hfin : {ρε : GaloisRep ℚ (DualNumber k) (Fin 2 → DualNumber k) |
+      IsDualNumberTangentLift hpodd ρbar ρε}.Finite) :
+    ∃ (Runiv : Type s) (_ : CommRing Runiv) (_ : TopologicalSpace Runiv)
+      (_ : IsTopologicalRing Runiv) (_ : IsLocalRing Runiv)
+      (_ : Algebra ℤ_[p] Runiv) (_ : IsNoetherianRing Runiv)
+      (_ : IsAdic (IsLocalRing.maximalIdeal Runiv))
+      (_ : IsAdicComplete (IsLocalRing.maximalIdeal Runiv) Runiv)
+      (ρuniv : GaloisRep ℚ Runiv (Fin 2 → Runiv))
+      (hranku : Module.rank Runiv (Fin 2 → Runiv) = 2)
+      (_ : IsHardlyRamified hpodd hranku ρuniv)
+      (πuniv : Runiv →+* k) (_ : Function.Surjective πuniv)
+      (Suniv : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
+      (∀ (q : ℕ) (hq : q.Prime),
+        hq.toHeightOneSpectrumRingOfIntegersRat ∉ Suniv →
+        πuniv ((ρuniv.charFrob
+            hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
+          (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) ∧
+      IsWeaklyUniversalOnIdentifiedFiniteTests.{s, uK, uW, s} hpodd ρbar
+        ρuniv πuniv :=
+  sorry
+
+/-- **Pro-finite limit upgrade leaf** (sorry node — the limit stratum
+of the strict Mazur core, after the LEVEL cut of 2026-07-24): a
+Noetherian package that factors every residually identified
+standard-framed test deformation with FINITE coefficient ring factors
+every one with module-finite coefficient ring.  This is the
+"continuity of the deformation functor" half of the classical
+representability proof (Mazur §1.2; Schlessinger's functors are
+extended from Artinian test rings to complete local ones by passage to
+the limit), isolated from the Artinian-level combinatorics.
+
+Classical proof, stratum by stratum: a module-finite local
+`ℤ_p`-algebra `A = D.A` is Noetherian with finite residue field
+`A/𝔪 ≅ k` (the kernel of the surjective `D.π` onto the field `k` is a
+maximal ideal, hence THE maximal ideal), so each quotient `A/𝔪ⁿ` is a
+FINITE local `ℤ_p`-algebra (its filtration steps `𝔪ⁱ/𝔪ⁱ⁺¹` are
+finite-dimensional `k`-spaces), and `A ≅ lim A/𝔪ⁿ` (`A` is `𝔪`-adically
+complete and separated: `IsAdicComplete.of_finite_module` over the
+complete `ℤ_p`, Krull intersection for separatedness).  (1) QUOTIENT
+TOWER: base-changing `D` along `A →+* A/𝔪ⁿ` yields residually
+identified test deformations `Dₙ` with finite coefficient rings — the
+hardly ramified conditions push forward along surjective base change,
+and the residual identification composes with the canonical
+isomorphism `k ⊗[A] (A/𝔪ⁿ ⊗[A/𝔪ⁿ] –) ≅ k ⊗[A] –`.  (2) FINITENESS OF
+CLASSIFYING SETS: for each `n` let `Xₙ` be the set of
+`ψₙ : Runiv →+* A/𝔪ⁿ` satisfying the three clauses at level `n`; each
+is nonempty (the finite-tests hypothesis applied to `Dₙ`) and FINITE:
+any such `ψₙ` is local (`Dₙ.π ∘ ψₙ = πuniv` forces
+`ψₙ(𝔪_R) ⊆ ker Dₙ.π = 𝔪_{A/𝔪ⁿ}`), and `𝔪_{A/𝔪ⁿ}` is nilpotent, so
+`ψₙ` factors through `Runiv/𝔪_Runiv^c` — a FINITE ring (Noetherian
+local with finite residue field `k` via the surjective `πuniv`) — and
+a finite ring has finitely many maps anywhere with fixed factoring
+data.  (3) KÖNIG: the `Xₙ` with the postcomposition transition maps
+`Xₙ₊₁ → Xₙ` form an inverse system of nonempty finite sets (each
+clause is preserved by postcomposition — the trace clause because it
+holds at EVERY prime, uniformly in `n`), so its limit is nonempty
+(`nonempty_sections_of_finite_inverse_system`); a compatible system
+`(ψₙ)` assembles to `ψ : Runiv →+* A` by `𝔪`-adic completeness of `A`.
+(4) CLAUSE PASSAGE TO THE LIMIT: the `ℤ_p`-clause, reduction clause
+and trace clause for `ψ` hold modulo `𝔪ⁿ` for every `n`, hence hold
+in `A` by Krull separatedness (`⋂ₙ 𝔪ⁿ = 0`); the exceptional set of
+the conclusion's trace clause is `∅`.
+
+Both-ways audit: the statement is a plain pro-finite extension
+principle quantified over abstract packages, with no arithmetic
+content — classically true outright as stated (the Noetherian and
+surjectivity hypotheses are exactly what steps (2)–(4) consume).
+CIRCULARITY GUARD (inherited): must not be proven through
+`Family.lean` or anything downstream of it (`Lift.lean` included). -/
+theorem isWeaklyUniversalOnIdentifiedDeformation_of_finiteTests.{s, uK, uW, uR}
+    {p : ℕ} {hpodd : Odd p} [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [TopologicalSpace k]
+    [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] {ρbar : GaloisRep ℚ k W}
+    {Runiv : Type uR} [CommRing Runiv] [TopologicalSpace Runiv]
+    [IsTopologicalRing Runiv] [IsLocalRing Runiv] [Algebra ℤ_[p] Runiv]
+    [IsNoetherianRing Runiv]
+    {ρuniv : GaloisRep ℚ Runiv (Fin 2 → Runiv)} {πuniv : Runiv →+* k}
+    (hπsurj : Function.Surjective πuniv)
+    (h : IsWeaklyUniversalOnIdentifiedFiniteTests.{s, uK, uW, uR} hpodd ρbar
+      ρuniv πuniv) :
+    IsWeaklyUniversalOnIdentifiedDeformation.{s, s, uK, uW, uR} hpodd ρbar
+      ρuniv πuniv :=
+  sorry
+
+/-- **Schlessinger–Ramakrishna–CDT core leaf** (DECOMPOSED 2026-07-24,
+LEVEL cut — the assembly below is PROVEN over the finite-level leaf
+`exists_weaklyUniversalOnIdentified_framed_finiteTests` (Schlessinger
+H1/H2/H4, Schur via oddness, Ramakrishna's flat condition at `p`,
+CDT's tame condition at `2`, de Smit–Lenstra presentation — tested
+against FINITE coefficient rings only) and the pro-finite limit
+upgrade leaf `isWeaklyUniversalOnIdentifiedDeformation_of_finiteTests`
+(quotient tower, König finiteness of classifying sets, `𝔪`-adic
+assembly)): GIVEN the finiteness of the dual-number tangent space
+(Schlessinger's H3, supplied by the restricted-ramification finiteness
+leaf through the proven glue of the pillar assembly), the hardly
+ramified deformation problem of an irreducible hardly ramified `ρbar`
+admits a Mazur-category package `(Runiv, ρuniv, πuniv)` — complete
+Noetherian local topological `ℤ_p`-algebra with the `𝔪`-adic topology,
+hardly ramified universal representation on the standard frame,
+surjective reduction matching linear `charFrob` coefficients off a
+finite set — that factors every residually identified STANDARD-FRAMED
+test deformation (module universe = coefficient universe; the
+reframing transport
+`isWeaklyUniversalOnIdentifiedDeformation_of_reframe` upgrades this to
+every module universe).  See the two leaves' docstrings for the full
+classical construction, stratum by stratum.
 
 Both-ways audit: for the genuine hardly ramified problem this is the
 cited Mazur/Ramakrishna/CDT representability; abstractly the
@@ -1232,8 +1411,20 @@ theorem exists_weaklyUniversalOnIdentified_framed_of_finite_tangent.{s, uK, uW}
             hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
           (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) ∧
       IsWeaklyUniversalOnIdentifiedDeformation.{s, s, uK, uW, s} hpodd ρbar
-        ρuniv πuniv :=
-  sorry
+        ρuniv πuniv := by
+  obtain ⟨Runiv, iCR, iTS, iTR, iLR, iAlg, iNoeth, hadic, hcomplete, ρuniv,
+    hranku, hHR, πuniv, hπsurj, Suniv, hred, hws⟩ :=
+    exists_weaklyUniversalOnIdentified_framed_finiteTests.{s, uK, uW}
+      hpodd hW hρbar hirr hfin
+  letI := iCR
+  letI := iTS
+  letI := iTR
+  letI := iLR
+  letI := iAlg
+  letI := iNoeth
+  exact ⟨Runiv, iCR, iTS, iTR, iLR, iAlg, iNoeth, hadic, hcomplete, ρuniv,
+    hranku, hHR, πuniv, hπsurj, Suniv, hred,
+    isWeaklyUniversalOnIdentifiedDeformation_of_finiteTests hπsurj hws⟩
 
 /-- **Strict Mazur representability** (the representability half of
 the Mazur pillar; DECOMPOSED 2026-07-24, FOUNDER cut — the assembly
