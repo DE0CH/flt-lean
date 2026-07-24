@@ -262,6 +262,25 @@ noncomputable def enumVertical {ι : Type*} [Fintype ι]
     (W : WeierstrassCurve.Affine F) (val : ι → W.Point) : W.CoordinateRing :=
   (Finset.univ.val.map fun i => pointXClass W (val i)).prod
 
+omit [DecidableEq F] in
+/-- No vertical coordinate function vanishes: `pointXClass` is `1` at
+`O` and the nonzero `XClass` at an affine point. -/
+lemma pointXClass_ne_zero (W : WeierstrassCurve.Affine F) (P : W.Point) :
+    pointXClass W P ≠ 0 := by
+  cases P with
+  | zero => exact one_ne_zero
+  | some x y h => exact CoordinateRing.XClass_ne_zero x
+
+omit [DecidableEq F] in
+/-- The vertical enumeration product is nonzero (the coordinate ring
+is a domain and no `pointXClass` factor vanishes). -/
+lemma enumVertical_ne_zero {ι : Type*} [Fintype ι]
+    (W : WeierstrassCurve.Affine F) (val : ι → W.Point) :
+    enumVertical W val ≠ 0 := by
+  refine Multiset.prod_ne_zero fun h0 => ?_
+  obtain ⟨i, -, hi⟩ := Multiset.mem_map.mp h0
+  exact pointXClass_ne_zero W (val i) hi
+
 variable {p : ℕ} [Fact p.Prime] [IsAlgClosed F]
 
 /-- **L4-8 (sorry node): the translation character of the Miller
@@ -309,8 +328,116 @@ theorem exists_translationChar {ι : Type*} [Fintype ι] {val : ι → W.Point}
           pointEval (constHom W) hκ.left (enumVertical W val) := by
   sorry
 
-/-- **L4-9, first branch (sorry node): trivial translation character
-forces a trivial class.**  If the translation character of the Miller
+/-- **L4-5/6 (sorry node): the fixed field of the translation action
+is the `[p]^*`-pullback subfield — descent of a translation-invariant
+ratio.**  Let `val : ι → W.Point` enumerate the `p`-torsion subgroup
+(`card ι = p²`) and let `g₁, g₂` be nonzero coordinate-ring elements
+whose ratio `g = g₁/g₂ ∈ K = Frac F[W]` is invariant under every
+translation `τ_κ`, `κ ∈ E[p]` — stated multiplied out at the generic
+translate: `τ(g₁)·g₂ = g₁·τ(g₂)` in `K`, where `τ = τ_{κ}^*` is
+`pointEval` at the affine coordinates of `κ ⊕ taut` (every such
+translate IS affine: a constant point can never be the negative of the
+tautological point, whose `x`-coordinate `tautX` is no constant since
+`X − C x₀` is a nonzero element of the coordinate ring).  Then `g`
+descends through the fixed field: `g = h ∘ [p]` for some `h ∈ K`.
+
+Proof plan (HLEG-NOTES.md §4(B), stages L4-5/6): each `τ_κ^*` extends
+to a field automorphism `σ_κ` of `K` fixing the constants
+(injectivity of `pointEval` at a generic translate via composition
+with `τ_{⊖κ}^*` and the group law `(taut ⊖ κ) ⊕ κ = taut`; surjective
+since `σ_κ ∘ σ_{⊖κ} = id`); `κ ↦ σ_κ` is a faithful action of the
+order-`p²` group `E[p]` on `K` (faithfulness: `σ_κ` fixes `tautX` iff
+the translate `κ ⊕ taut` has the same `x`-coordinate iff `κ = O`,
+using `hval_inj`), so by Artin's theorem `[K : Fix E[p]] = p²`.  The
+pullback subfield `[p]^*K` — the range of `pointEval` at `p • taut`
+extended to `K` — lies inside `Fix E[p]` (from `[p]∘τ_κ = [p]`, i.e.
+`p•(κ ⊕ taut) = p•taut` by `hval_tor`), and `[K : [p]^*K] ≤ p²` since
+`tautX` is a root of the degree-`p²` polynomial `Φ_p − ([p]^*x)·Ψ_p²`
+over `[p]^*K` (division-polynomial pullback of a vertical, separable
+as `(p : F) ≠ 0`) and `tautY` is quadratic over `[p]^*K(tautX)` while
+the `y`-halving `[2]`-bookkeeping keeps the total at `p²`.  Hence
+`Fix E[p] = [p]^*K ∋ g`.  The conclusion is stated multiplied out:
+`p • taut` is affine with coordinates `(xp, yp)`, `pointEval` there
+realizes `h ↦ h∘[p]`, and `g₁·[p]^*(c) = g₂·[p]^*(b)` for `h = b/c`
+with `[p]^*(c) ≠ 0` (evaluation at the generic point `p • taut` kills
+no nonzero element — `[p]` is surjective on points).  See
+HLEG-NOTES.md §4(B), stages L4-5/6. -/
+theorem exists_pullback_of_translation_fixed {ι : Type*} [Fintype ι]
+    {val : ι → W.Point}
+    (hΔ : W.Δ ≠ 0) (hp : (p : F) ≠ 0)
+    (hval_inj : Function.Injective val)
+    (hval_tor : ∀ i, (p : ℤ) • val i = 0)
+    (hval_surj : ∀ Q : W.Point, (p : ℤ) • Q = 0 → ∃ i, val i = Q)
+    (hcard : Fintype.card ι = p ^ 2)
+    {g₁ g₂ : W.CoordinateRing} (hg₁ : g₁ ≠ 0) (hg₂ : g₂ ≠ 0)
+    (hfix : ∀ (i₀ : ι) (xκ yκ : W.FunctionField)
+      (hκ : (curveK W).Nonsingular xκ yκ),
+      constPoint W (val i₀) + tautPoint W hΔ =
+        WeierstrassCurve.Affine.Point.some xκ yκ hκ →
+      pointEval (constHom W) hκ.left g₁ *
+          algebraMap W.CoordinateRing W.FunctionField g₂ =
+        algebraMap W.CoordinateRing W.FunctionField g₁ *
+          pointEval (constHom W) hκ.left g₂) :
+    ∃ (xp yp : W.FunctionField) (hpn : (curveK W).Nonsingular xp yp),
+      (p : ℤ) • tautPoint W hΔ =
+        WeierstrassCurve.Affine.Point.some xp yp hpn ∧
+      ∃ b c : W.CoordinateRing, b ≠ 0 ∧ c ≠ 0 ∧
+        pointEval (constHom W) hpn.left c ≠ 0 ∧
+        algebraMap W.CoordinateRing W.FunctionField g₁ *
+            pointEval (constHom W) hpn.left c =
+          algebraMap W.CoordinateRing W.FunctionField g₂ *
+            pointEval (constHom W) hpn.left b := by
+  sorry
+
+/-- **L4-9 divisor comparison (sorry node): a `[p]^*`-descended Miller
+generator forces a trivial class.**  Let `a` be the Miller generator
+(`span {a} = ∏ pointIdeal (T'⊕κᵢ) · pointIdeal (⊖κᵢ)`, so
+`g := a/∏(X − x_κ)` has divisor `Σ_κ (T'⊕κ) − (κ) = [p]^*((P) − (O))`
+for `p•T' = P`), and suppose `g = h∘[p]` for `h = b/c ∈ K` — stated
+multiplied out at the affine coordinates `(xp, yp)` of the generic
+point `p • taut`, where `pointEval` realizes `h ↦ h∘[p]`:
+`ā·[p]^*(c) = v̄·[p]^*(b)` with `v = enumVertical` and `[p]^*(c) ≠ 0`.
+Then `toClass P = 0`.
+
+Proof plan (HLEG-NOTES.md §4(B), stages L4-7/9): the `[p]`-pullback of
+divisors is injective and `[p]^*((P) − (O)) = div g = [p]^*(div h)`,
+so `div h = (P) − (O)` — concretely, the `[p]`-pullback of a vertical
+`X − x₀` is the explicit polynomial `Φ_p − x₀·Ψ_p²` whose root multiset
+is the `p²`-fiber with multiplicity one (separability from
+`(p : F) ≠ 0`, `separable_preΨ'` machinery), so comparing the span
+`hspan` against the pullback of the span-encoding of `div h` fiber by
+fiber (torsion enumeration `hval_*`, `p•T' = P`, `p•P = 0`) forces
+`span-level (b)·I_P-data = (c)`-data with multiplicity one; hence the
+unit fractional ideal `pointIdeal' P` is principal (`spanSingleton` of
+the descended function) and `toClass P = mk (pointIdeal' P) = 0` by
+`mk_pointIdeal'`.  (For `P = O` the conclusion is `toClass 0 = 0`.)
+See HLEG-NOTES.md §4(B), stages L4-7/9. -/
+theorem toClass_eq_zero_of_pullback {ι : Type*} [Fintype ι]
+    {val : ι → W.Point}
+    (hΔ : W.Δ ≠ 0) (hp : (p : F) ≠ 0)
+    (hval_inj : Function.Injective val)
+    (hval_tor : ∀ i, (p : ℤ) • val i = 0)
+    (hval_surj : ∀ Q : W.Point, (p : ℤ) • Q = 0 → ∃ i, val i = Q)
+    (hcard : Fintype.card ι = p ^ 2)
+    {P T' : W.Point} (hT : (p : ℤ) • T' = P) (hPtor : (p : ℤ) • P = 0)
+    {a : W.CoordinateRing} (ha : a ≠ 0)
+    (hspan : Ideal.span {a} =
+      ((((Finset.univ.val.map fun i => T' + val i) +
+        Finset.univ.val.map fun i => -val i)).map (pointIdeal W)).prod)
+    {xp yp : W.FunctionField} {hpn : (curveK W).Nonsingular xp yp}
+    (hptaut : (p : ℤ) • tautPoint W hΔ =
+      WeierstrassCurve.Affine.Point.some xp yp hpn)
+    {b c : W.CoordinateRing} (hb : b ≠ 0) (hc : c ≠ 0)
+    (hcnz : pointEval (constHom W) hpn.left c ≠ 0)
+    (heq : algebraMap W.CoordinateRing W.FunctionField a *
+        pointEval (constHom W) hpn.left c =
+      algebraMap W.CoordinateRing W.FunctionField (enumVertical W val) *
+        pointEval (constHom W) hpn.left b) :
+    WeierstrassCurve.Affine.Point.toClass P = 0 := by
+  sorry
+
+/-- **L4-9, first branch (PROVEN glue over the two stage nodes):
+trivial translation character forces a trivial class.**  If the translation character of the Miller
 generator is identically `1` — i.e. `g = a/∏(X − x_κ)` satisfies
 `τ_{κ}^*(g) = g` for every `p`-torsion `κ` — then `g` lies in the
 fixed field of the translation action of `E[p]` on `K`; by the Galois
@@ -344,7 +471,11 @@ theorem toClass_eq_zero_of_translationChar_trivial {ι : Type*} [Fintype ι]
         algebraMap W.CoordinateRing W.FunctionField a *
           pointEval (constHom W) hκ.left (enumVertical W val)) :
     WeierstrassCurve.Affine.Point.toClass P = 0 := by
-  sorry
+  obtain ⟨xp, yp, hpn, hptaut, b, c, hb, hc, hcnz, heq⟩ :=
+    exists_pullback_of_translation_fixed hΔ hp hval_inj hval_tor hval_surj
+      hcard ha (enumVertical_ne_zero W val) htriv
+  exact toClass_eq_zero_of_pullback hΔ hp hval_inj hval_tor hval_surj hcard
+    hT hPtor ha hspan hptaut hb hc hcnz heq
 
 /-- **The L4-9 dichotomy** (proven glue over the two stage nodes): the
 Miller generator of the `[p]^*`-divisor multiset either witnesses a
