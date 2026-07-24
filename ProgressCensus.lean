@@ -129,6 +129,7 @@ import Fermat.FLT.Mathlib.Topology.Algebra.ContinuousSMulDiscrete
 import Fermat.FLT.Mathlib.Topology.Algebra.Group.Basic
 import Fermat.FLT.Mathlib.Topology.Algebra.IsUniformGroup.Basic
 import Fermat.FLT.Mathlib.Topology.Algebra.ValuativeRel.ValuativeTopology
+import Fermat.FLT.Modularity.Interface
 import Fermat.FLT.NumberField.Completion.Finite
 import Fermat.FLT.Slop.NumberTheory.TsumDivisorsAntidiagonal
 import Fermat.FLT.Slop.PGL2.FiniteSubgroups.CyclicPartition
@@ -147,7 +148,7 @@ import Fermat.FLT.Slop.RepresentationTheory.OddAbsIrredSlop
 import Fermat.PrimeFive
 import Fermat.SorryGate
 def censusInputPath : System.FilePath := "progress-census-input.json"
--- census-input fingerprint: 1914611510c281a3742b386ad0e86664b6847ddc
+-- census-input fingerprint: ad10e257c79d54dea8a83b12eaaf3384493d922b
 -- END GENERATED IMPORTS
 
 open Lean
