@@ -3216,8 +3216,13 @@ structure TaylorWilesLevel.{a, b, c, s, uR} (p : ℕ) [Fact p.Prime]
   /-- Action compatibility through `ψ`. -/
   projM_smul : ∀ (x : R) (m : M),
     projM (x • m) = ψ (toRuniv x) • projM m
-  /-- The kernel of the bottom control map is exactly `𝔫·M`. -/
-  projM_eq_zero_iff : ∀ m : M, projM m = 0 ↔
+  /-- **The bottom control theorem**: the kernel of the bottom control
+  map is contained in `𝔫·M`.  Only this direction is asserted — the
+  reverse inclusion is forced by `diamond_smul`, `projM_smul` and
+  `ker_toRuniv`, and is proven in the transposition
+  `exists_taylorWilesSystem` below, which assembles the two into the
+  system's `projM_eq_zero_iff`. -/
+  projM_eq_zero : ∀ m : M, projM m = 0 →
     m ∈ (taylorWilesAug p q • ⊤ :
       Submodule (MvPowerSeries (Fin q) ℤ_[p]) M)
 
@@ -3292,7 +3297,9 @@ classical ingredients, each a natural sub-leaf of this node:
    `finiteM`, `finrankM`).
 5. **Level control at the bottom** (Ihara/level-raising): the
    `𝔫`-quotient of the auxiliary Hecke module is the bottom Hecke
-   module `M₀` (`projM`, `projM_surjective`, `projM_eq_zero_iff`),
+   module `M₀` (`projM`, `projM_surjective`, `projM_eq_zero` — only
+   the nontrivial inclusion of the control theorem, the reverse one
+   being proven in the transposition below),
    with the `R`-action descending to the `T`-action through
    `ψ ∘ toRuniv` (`projM_smul`) — where the pillar's `ψ` enters,
    pinned to the Hecke-side classifying map by the weak-universality
@@ -3415,7 +3422,11 @@ certificate: the tower records Diamond's Thm. 2.1 in its native form
 (`M n` finite free of rank `d` over `Λ/𝔟_n`), and
 `nonempty_linearEquiv_fin_of_free_over_quotient` turns that into the
 `Λ`-linear equivalence `M n ≃ (Λ/𝔟_n)^d` demanded by the system's
-`freeM` field.
+`freeM` field, and (iv) supplying the easy inclusion of the bottom
+control identification: `𝔫·M n ⊆ ker projM n` follows from
+`diamond_smul`, `projM_smul` and `ker_toRuniv` by induction over the
+elements of `𝔫·M n` (`Submodule.smul_induction_on`), so the tower
+leaf asserts only the control theorem `ker projM n ⊆ 𝔫·M n`.
 
 Both-ways audit: at the intended instantiation this is the cited
 tower; abstractly the hypothesis set contains the classically
@@ -3478,8 +3489,11 @@ theorem exists_taylorWilesSystem.{s, t, uK, uW, uR}
     ψ hψalg hψπ hψ (exists_taylorWilesPrimeSet_card_eq ρbar p hTW)
   letI := tw.addCommGroupM0
   letI := tw.moduleM0
+  letI iR : ∀ n, CommRing (tw.level n).R := fun n => (tw.level n).commRingR
   letI iAG : ∀ n, AddCommGroup (tw.level n).M :=
     fun n => (tw.level n).addCommGroupM
+  letI iRM : ∀ n, Module (tw.level n).R (tw.level n).M :=
+    fun n => (tw.level n).moduleRM
   letI iCoeff : ∀ n,
       Module (MvPowerSeries (Fin tw.q) ℤ_[p]) (tw.level n).M :=
     fun n => (tw.level n).moduleCoeffM
@@ -3506,6 +3520,23 @@ theorem exists_taylorWilesSystem.{s, t, uK, uW, uR}
       (Fin tw.d → MvPowerSeries (Fin tw.q) ℤ_[p] ⧸ (tw.level n).bIdeal)) :=
     fun n => nonempty_linearEquiv_fin_of_free_over_quotient
       (tw.level n).bIdeal tw.d (tw.level n).finrankM
+  -- the easy inclusion of the bottom control identification: `𝔫` acts
+  -- through `diamond`, and `diamond`'s image of `𝔫` dies in `Runiv`
+  have hzero : ∀ (n : ℕ) (m : (tw.level n).M),
+      m ∈ (taylorWilesAug p tw.q • ⊤ :
+        Submodule (MvPowerSeries (Fin tw.q) ℤ_[p]) (tw.level n).M) →
+      (tw.level n).projM m = 0 := by
+    intro n m hm
+    refine Submodule.smul_induction_on hm ?_ ?_
+    · intro r hr y _
+      have hker : (tw.level n).diamond r ∈
+          RingHom.ker (tw.level n).toRuniv := by
+        rw [(tw.level n).ker_toRuniv]; exact Ideal.mem_map_of_mem _ hr
+      rw [RingHom.mem_ker] at hker
+      rw [(tw.level n).diamond_smul, (tw.level n).projM_smul, hker,
+        map_zero, zero_smul]
+    · intro a b ha hb
+      rw [map_add, ha, hb, add_zero]
   exact ⟨{ q := tw.q
            d := tw.d
            R := fun n => (tw.level n).R
@@ -3531,7 +3562,8 @@ theorem exists_taylorWilesSystem.{s, t, uK, uW, uR}
            projM := fun n => (tw.level n).projM
            projM_surjective := fun n => (tw.level n).projM_surjective
            projM_smul := fun n => (tw.level n).projM_smul
-           projM_eq_zero_iff := fun n => (tw.level n).projM_eq_zero_iff }⟩
+           projM_eq_zero_iff := fun n m =>
+             ⟨(tw.level n).projM_eq_zero m, hzero n m⟩ }⟩
 
 /-- **The patching extraction** (patching leaf 2b; sorry node — the
 pure commutative-algebra half, the pigeonhole/inverse-limit heart): a
