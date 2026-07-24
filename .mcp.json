@@ -27,7 +27,8 @@
         "report-mcp.py",
         "--socket-dir",
         "/home/chend/flt-lean/.report-server"
-      ]
+      ],
+      "timeout": 7200000
     },
     "report-flt-lean-1": {
       "command": ".venv/bin/python",
@@ -35,7 +36,8 @@
         "report-mcp.py",
         "--socket-dir",
         "/home/chend/flt-lean-1/.report-server"
-      ]
+      ],
+      "timeout": 7200000
     },
     "report-flt-lean-2": {
       "command": ".venv/bin/python",
@@ -43,7 +45,8 @@
         "report-mcp.py",
         "--socket-dir",
         "/home/chend/flt-lean-2/.report-server"
-      ]
+      ],
+      "timeout": 7200000
     },
     "report-flt-lean-3": {
       "command": ".venv/bin/python",
@@ -51,7 +54,8 @@
         "report-mcp.py",
         "--socket-dir",
         "/home/chend/flt-lean-3/.report-server"
-      ]
+      ],
+      "timeout": 7200000
     },
     "report-flt-lean-4": {
       "command": ".venv/bin/python",
@@ -59,7 +63,8 @@
         "report-mcp.py",
         "--socket-dir",
         "/home/chend/flt-lean-4/.report-server"
-      ]
+      ],
+      "timeout": 7200000
     },
     "report-flt-lean-5": {
       "command": ".venv/bin/python",
@@ -67,7 +72,8 @@
         "report-mcp.py",
         "--socket-dir",
         "/home/chend/flt-lean-5/.report-server"
-      ]
+      ],
+      "timeout": 7200000
     },
     "report-flt-lean-6": {
       "command": ".venv/bin/python",
@@ -75,7 +81,8 @@
         "report-mcp.py",
         "--socket-dir",
         "/home/chend/flt-lean-6/.report-server"
-      ]
+      ],
+      "timeout": 7200000
     },
     "report-flt-lean-7": {
       "command": ".venv/bin/python",
@@ -83,7 +90,8 @@
         "report-mcp.py",
         "--socket-dir",
         "/home/chend/flt-lean-7/.report-server"
-      ]
+      ],
+      "timeout": 7200000
     },
     "report-flt-lean-8": {
       "command": ".venv/bin/python",
@@ -91,7 +99,8 @@
         "report-mcp.py",
         "--socket-dir",
         "/home/chend/flt-lean-8/.report-server"
-      ]
+      ],
+      "timeout": 7200000
     },
     "report-flt-lean-9": {
       "command": ".venv/bin/python",
@@ -99,7 +108,8 @@
         "report-mcp.py",
         "--socket-dir",
         "/home/chend/flt-lean-9/.report-server"
-      ]
+      ],
+      "timeout": 7200000
     },
     "report-flt-lean-10": {
       "command": ".venv/bin/python",
@@ -107,7 +117,8 @@
         "report-mcp.py",
         "--socket-dir",
         "/home/chend/flt-lean-10/.report-server"
-      ]
+      ],
+      "timeout": 7200000
     },
     "report-flt-lean-11": {
       "command": ".venv/bin/python",
@@ -115,7 +126,8 @@
         "report-mcp.py",
         "--socket-dir",
         "/home/chend/flt-lean-11/.report-server"
-      ]
+      ],
+      "timeout": 7200000
     },
     "report-flt-lean-12": {
       "command": ".venv/bin/python",
@@ -123,7 +135,8 @@
         "report-mcp.py",
         "--socket-dir",
         "/home/chend/flt-lean-12/.report-server"
-      ]
+      ],
+      "timeout": 7200000
     },
     "report-flt-lean-13": {
       "command": ".venv/bin/python",
@@ -131,7 +144,8 @@
         "report-mcp.py",
         "--socket-dir",
         "/home/chend/flt-lean-13/.report-server"
-      ]
+      ],
+      "timeout": 7200000
     }
   }
 }
