@@ -125,8 +125,14 @@ public import Mathlib.NumberTheory.ModularForms.Basic
 public import Mathlib.NumberTheory.ModularForms.CongruenceSubgroups
 public import Mathlib.NumberTheory.ModularForms.QExpansion
 public import Mathlib.NumberTheory.ModularForms.NormTrace
+public import Mathlib.Data.Matrix.Mul
 import Mathlib.NumberTheory.ModularForms.LevelOne.DimensionFormula
 import Mathlib.Topology.Algebra.IntermediateField
+import Mathlib.Data.Matrix.Basic
+import Mathlib.Data.Nat.Factorization.Induction
+import Mathlib.FieldTheory.IntermediateField.Adjoin.Algebra
+import Mathlib.RingTheory.IntegralClosure.Algebra.Basic
+import Mathlib.RingTheory.Algebraic.Integral
 
 @[expose] public section
 
@@ -397,21 +403,255 @@ theorem weightTwoEigenform_level_two_false (f : CuspForm (Gamma0GL 2) 2)
 
 end LevelTwoEmptiness
 
-/-- **Hecke field finiteness** (sorry node; Diamond–Shurman §6.5,
-Theorem 6.5.1): the coefficients of a normalized weight-2 eigenform of
-level `N ≥ 1` generate a finite extension of `ℚ` inside `ℂ`. The
-classical proof: the Hecke algebra acts on the integral homology
-lattice `H₁(X₀(N), ℤ)` (rank `2·dim S₂`), so each `aₙ` — an eigenvalue
-of an integral matrix — is an algebraic integer of bounded degree, and
-the whole system lies in a single number field (the eigensystem is a
-`ℚ̄`-point of the finite `ℚ`-algebra `𝕋_ℚ`). The level positivity
-hypothesis keeps the statement inside the classical theory (`Γ₀(0)` is
-not a finite-index subgroup and its "cusp forms" are not the classical
-space); the consumers only ever instantiate `N ≥ 1`. -/
+/-! ### Hecke field finiteness: the single-finite-structure argument
+
+DECOMPOSITION PLAN item 2, executed (2026-07-24) up to one sorried
+leaf. `heckeField_finiteDimensional` below is Diamond–Shurman
+Theorem 6.5.1: the coefficients of a normalized weight-2 eigenform
+generate a number field. The classical proof pivots on ONE finite
+object: the Hecke operators act by integer matrices on the homology
+lattice `H₁(X₀(N), ℤ)` (rank `2·dim S₂(Γ₀(N))`), and the eigenform's
+coefficient system is the eigenvalue system of that action on a common
+eigenvector (the `f`-isotypic period vector). On this pin none of the
+ingredients exist — no Hecke operators on `CuspForm`, no modular
+curve, no homology, and not even finite-dimensionality of
+`CuspForm (Gamma0GL N) 2` (audited 2026-07-24: only the level-1 space
+carries a `FiniteDimensional` instance, from the level-1 dimension
+formula; `~/cs/FLT`'s Hecke material is quaternionic-automorphic, not
+connected to the pin's analytic cusp forms) — so exactly that finite
+object is isolated as the sorried leaf
+`exists_heckeMatrix_eigenvector`. Everything else is proven:
+
+* `exists_finiteDimensional_subalgebra_of_matrix_eigenvector` — the
+  linear-algebra core: the simultaneous eigenvalues, on one common
+  eigenvector, of any family of matrices with RATIONAL entries all lie
+  in a single finite-dimensional `ℚ`-subalgebra of `ℂ` (the image of
+  the generated matrix algebra under the eigenvalue character). This
+  is the "single finite structure" argument: each `a_q` being
+  individually algebraic would NOT bound `ℚ({a_q : q prime})`.
+* `qCoeff_zero` and `qCoeff_mem_of_forall_prime_mem` — the eigenform
+  recursions push membership in any `ℚ`-subalgebra from the prime
+  coefficients to ALL coefficients: `a₀ = 0` (cusp vanishing),
+  `a₁ = 1`, prime powers by the two Hecke recursions, composites by
+  multiplicativity. This is the designated consumer of the four
+  `IsWeightTwoEigenform` accessor fields.
+* `heckeField_finiteDimensional` — assembly: the coefficient range
+  lies in the finite-dimensional subalgebra, hence consists of
+  elements integral over `ℚ`, so `heckeField N f` coincides with the
+  algebra adjoin and inherits finite-dimensionality.
+-/
+
+section HeckeFieldFiniteness
+
+open scoped Matrix
+
+/-- `1` is a strict period of `Γ₀(N)` in its `GL₂(ℝ)` incarnation: the
+translation matrix `[1, 1; 0, 1]` lies in `Γ₀(N)` for every `N`. This
+is what makes `qCoeff` (the width-1 `q`-expansion coefficient) the
+classical Fourier coefficient, and it feeds the cusp-vanishing
+computation `qCoeff_zero` below. -/
+theorem one_mem_strictPeriods_Gamma0GL (N : ℕ) :
+    (1 : ℝ) ∈ (Gamma0GL N).strictPeriods := by
+  show (1 : ℝ) ∈
+    (↑(CongruenceSubgroup.Gamma0 N) : Subgroup (GL (Fin 2) ℝ)).strictPeriods
+  rw [CongruenceSubgroup.strictPeriods_Gamma0]
+  exact AddSubgroup.mem_zmultiples 1
+
+/-- `a₀(f) = 0` for a weight-2 level-`N` cusp form: the constant term
+of the `q`-expansion is the value at the cusp `i∞`, which vanishes for
+a cusp form. Needed because `heckeField` adjoins ALL coefficients,
+including the zeroth. -/
+theorem qCoeff_zero (N : ℕ) (f : CuspForm (Gamma0GL N) 2) :
+    qCoeff N f 0 = 0 :=
+  CuspFormClass.qExpansion_coeff_zero (Γ := Gamma0GL N) (k := 2) f
+    one_pos (one_mem_strictPeriods_Gamma0GL N)
+
+/-- **Integral Hecke structure of an eigenform** (sorry node;
+Diamond–Shurman §6.5, the geometric input to Theorem 6.5.1): for a
+normalized weight-2 level-`N` eigenform `f` there are a dimension `n`,
+a family of RATIONAL `n × n` matrices `T q` (only the values at prime
+indices matter), and a common nonzero complex eigenvector `v` with
+`T q ⬝ v = a_q(f) • v` for every prime `q`. Classical instantiation:
+`n = 2g` with `g = dim S₂(Γ₀(N))` the genus of `X₀(N)`, `T q` the
+matrix of the Hecke operator `T_q` (resp. `U_q` for `q ∣ N`) acting on
+`H₁(X₀(N), ℚ)` in an integral basis — the Hecke correspondences are
+defined over `ℤ` on homology (Diamond–Shurman Proposition 6.5.1 proves
+exactly this lattice stability) — and `v` the period vector of `f`:
+the coordinates of the `f`-component under the Eichler–Shimura
+isomorphism `H₁(X₀(N), ℤ) ⊗ ℂ ≅ S₂ ⊕ S̄₂`, on which `T_q` acts by
+`a_q(f)` (Prop 5.8.5 makes the coefficient relations of
+`IsWeightTwoEigenform` equivalent to full-Hecke eigenvector-ness);
+`v ≠ 0` because `f ≠ 0`, having `a₁ = 1`. An alternative analytic
+route avoiding homology: `S₂(Γ₀(N))` is finite-dimensional with a
+basis of integral `q`-expansions stable under the (yet to be
+constructed, DECOMPOSITION PLAN item 1) Hecke action, and `v` the
+coordinate vector of `f` itself. Neither Hecke operators, nor
+`X₀(N)`, nor finite-dimensionality of `CuspForm (Gamma0GL N) 2`
+exists on this pin (audited 2026-07-24), which makes this the
+irreducible geometric leaf of the Hecke-field-finiteness node. -/
+theorem exists_heckeMatrix_eigenvector {N : ℕ} (hN : 0 < N)
+    {f : CuspForm (Gamma0GL N) 2} (hf : IsWeightTwoEigenform N f) :
+    ∃ (n : ℕ) (T : ℕ → Matrix (Fin n) (Fin n) ℚ) (v : Fin n → ℂ),
+      v ≠ 0 ∧ ∀ q : ℕ, q.Prime →
+        (T q).map (algebraMap ℚ ℂ) *ᵥ v = qCoeff N f q • v :=
+  sorry
+
+/-- **The single-finite-structure argument** (pure linear algebra):
+if a family of matrices with RATIONAL entries has a common nonzero
+eigenvector `v` (over `ℂ`) with eigenvalue system `a`, then all the
+`a i` lie in a single finite-dimensional `ℚ`-subalgebra of `ℂ` —
+namely the image, under the eigenvalue character `x ↦ (x ⬝ v)ᵢ / vᵢ`,
+of the `ℚ`-algebra the family generates, which embeds in the
+`n²`-dimensional algebra of rational matrices. Individually each
+`a i` is merely algebraic of degree `≤ n`; it is the SINGLE generated
+algebra that bounds the field they generate jointly. -/
+theorem exists_finiteDimensional_subalgebra_of_matrix_eigenvector
+    {n : ℕ} {ι : Type*} (T : ι → Matrix (Fin n) (Fin n) ℚ)
+    {v : Fin n → ℂ} (a : ι → ℂ) (hv : v ≠ 0)
+    (hT : ∀ i, (T i).map (algebraMap ℚ ℂ) *ᵥ v = a i • v) :
+    ∃ B : Subalgebra ℚ ℂ, FiniteDimensional ℚ B ∧ ∀ i, a i ∈ B := by
+  classical
+  obtain ⟨i₀, hi₀⟩ : ∃ i, v i ≠ 0 := Function.ne_iff.mp hv
+  -- the ℚ-algebra of complex matrices generated by the family
+  set A : Subalgebra ℚ (Matrix (Fin n) (Fin n) ℂ) :=
+    Algebra.adjoin ℚ (Set.range fun i => (T i).map (algebraMap ℚ ℂ)) with hA
+  -- the eigenvalue subalgebra: all eigenvalues on `v` of elements of `A`
+  refine ⟨{ carrier := {c : ℂ | ∃ x ∈ A, x *ᵥ v = c • v}
+            one_mem' := ⟨1, one_mem A, by rw [Matrix.one_mulVec, one_smul]⟩
+            mul_mem' := by
+              intro c d hc hd
+              obtain ⟨x, hxA, hx⟩ := hc
+              obtain ⟨y, hyA, hy⟩ := hd
+              refine ⟨x * y, mul_mem hxA hyA, ?_⟩
+              rw [← Matrix.mulVec_mulVec, hy, Matrix.mulVec_smul, hx,
+                smul_smul, mul_comm d c]
+            zero_mem' := ⟨0, zero_mem A, by rw [Matrix.zero_mulVec, zero_smul]⟩
+            add_mem' := by
+              intro c d hc hd
+              obtain ⟨x, hxA, hx⟩ := hc
+              obtain ⟨y, hyA, hy⟩ := hd
+              exact ⟨x + y, add_mem hxA hyA, by
+                rw [Matrix.add_mulVec, hx, hy, add_smul]⟩
+            algebraMap_mem' := fun r =>
+              ⟨algebraMap ℚ _ r, algebraMap_mem A r, by
+                rw [Algebra.algebraMap_eq_smul_one, Matrix.smul_mulVec,
+                  Matrix.one_mulVec, algebraMap_smul]⟩ }, ?_, ?_⟩
+  · -- finite-dimensionality, through the rational matrix algebra
+    -- `A` lies in the range of the entrywise algebra embedding
+    -- `Matrix ℚ →ₐ Matrix ℂ`, whose domain is finite-dimensional
+    have hrange : A ≤ ((Algebra.ofId ℚ ℂ).mapMatrix (m := Fin n)).range := by
+      rw [hA]
+      apply Algebra.adjoin_le
+      rintro x ⟨i, rfl⟩
+      refine ⟨T i, ?_⟩
+      ext j k
+      simp [AlgHom.mapMatrix_apply, Matrix.map_apply]
+    have hAle : Subalgebra.toSubmodule A ≤ LinearMap.range
+        ((Algebra.ofId ℚ ℂ).mapMatrix (m := Fin n)).toLinearMap := by
+      intro x hx
+      obtain ⟨y, hy⟩ := hrange hx
+      exact ⟨y, hy⟩
+    haveI hAfd : FiniteDimensional ℚ (Subalgebra.toSubmodule A) :=
+      Submodule.finiteDimensional_of_le hAle
+    -- push finiteness through the eigenvalue functional
+    let L : Matrix (Fin n) (Fin n) ℂ →ₗ[ℚ] ℂ :=
+      { toFun := fun x => (v i₀)⁻¹ * (x *ᵥ v) i₀
+        map_add' := fun x y => by
+          simp only [Matrix.add_mulVec, Pi.add_apply, mul_add]
+        map_smul' := fun r x => by
+          simp only [Matrix.smul_mulVec, Pi.smul_apply, RingHom.id_apply,
+            mul_smul_comm] }
+    refine FiniteDimensional.of_subalgebra_toSubmodule
+      (Submodule.finiteDimensional_of_le
+        (?_ : _ ≤ (Subalgebra.toSubmodule A).map L))
+    intro c hc
+    obtain ⟨x, hxA, hx⟩ := hc
+    refine ⟨x, hxA, ?_⟩
+    show (v i₀)⁻¹ * (x *ᵥ v) i₀ = c
+    rw [hx, Pi.smul_apply, smul_eq_mul, mul_comm c (v i₀),
+      inv_mul_cancel_left₀ hi₀]
+  · -- membership of the eigenvalues
+    refine fun i => ⟨(T i).map (algebraMap ℚ ℂ), ?_, hT i⟩
+    rw [hA]
+    exact Algebra.subset_adjoin ⟨i, rfl⟩
+
+/-- **Coefficient closure**: for a normalized eigenform, membership of
+the PRIME coefficients in a `ℚ`-subalgebra of `ℂ` propagates to all
+coefficients — `a₀ = 0` by cusp vanishing (`qCoeff_zero`), `a₁ = 1` by
+normalization, prime powers by the two Hecke recursions (good and bad
+primes), and composites by multiplicativity. This is the designated
+consumer of the four `IsWeightTwoEigenform` accessor fields. -/
+theorem qCoeff_mem_of_forall_prime_mem {N : ℕ}
+    {f : CuspForm (Gamma0GL N) 2} (hf : IsWeightTwoEigenform N f)
+    {B : Subalgebra ℚ ℂ} (hB : ∀ q : ℕ, q.Prime → qCoeff N f q ∈ B) :
+    ∀ m : ℕ, qCoeff N f m ∈ B := by
+  intro m
+  induction m using Nat.recOnPosPrimePosCoprime with
+  | prime_pow p k hp hk =>
+    clear hk
+    by_cases hdvd : p ∣ N
+    · induction k with
+      | zero => rw [pow_zero, hf.qCoeff_one]; exact one_mem B
+      | succ r ih =>
+        rw [hf.qCoeff_prime_pow_of_dvd p hp hdvd r]
+        exact mul_mem (hB p hp) ih
+    · induction k using Nat.twoStepInduction with
+      | zero => rw [pow_zero, hf.qCoeff_one]; exact one_mem B
+      | one => rw [pow_one]; exact hB p hp
+      | more r ih ih' =>
+        rw [hf.qCoeff_prime_pow_of_not_dvd p hp hdvd r]
+        exact sub_mem (mul_mem (hB p hp) ih') (mul_mem (natCast_mem B p) ih)
+  | zero => rw [qCoeff_zero]; exact zero_mem B
+  | one => rw [hf.qCoeff_one]; exact one_mem B
+  | coprime a b ha hb hab iha ihb =>
+    rw [hf.qCoeff_mul_coprime a b hab]
+    exact mul_mem iha ihb
+
+/-- **Hecke field finiteness** (Diamond–Shurman §6.5, Theorem 6.5.1):
+the coefficients of a normalized weight-2 eigenform of level `N ≥ 1`
+generate a finite extension of `ℚ` inside `ℂ`. Proven by assembling
+the pieces above: the sorried leaf `exists_heckeMatrix_eigenvector`
+provides the finite rational structure with the prime coefficients as
+simultaneous eigenvalues; the eigenvalue character lands them in one
+finite-dimensional `ℚ`-subalgebra `B ⊆ ℂ`
+(`exists_finiteDimensional_subalgebra_of_matrix_eigenvector`); the
+eigenform recursions push all coefficients into `B`
+(`qCoeff_mem_of_forall_prime_mem`); finally every element of `B` is
+integral over `ℚ`, so `heckeField N f` — the intermediate field
+adjoin — coincides with the algebra adjoin inside `B` and is
+finite-dimensional. The level positivity hypothesis keeps the
+statement inside the classical theory (`Γ₀(0)` is not a finite-index
+subgroup and its "cusp forms" are not the classical space); the
+consumers only ever instantiate `N ≥ 1`. -/
 theorem heckeField_finiteDimensional {N : ℕ} (hN : 0 < N)
     {f : CuspForm (Gamma0GL N) 2} (hf : IsWeightTwoEigenform N f) :
-    FiniteDimensional ℚ (heckeField N f) :=
-  sorry
+    FiniteDimensional ℚ (heckeField N f) := by
+  obtain ⟨n, T, v, hv, hT⟩ := exists_heckeMatrix_eigenvector hN hf
+  obtain ⟨B, hBfin, hBmem⟩ :=
+    exists_finiteDimensional_subalgebra_of_matrix_eigenvector
+      (fun q : {q : ℕ // q.Prime} => T q)
+      (fun q : {q : ℕ // q.Prime} => qCoeff N f q) hv
+      (fun q => hT q q.2)
+  have hall : ∀ m : ℕ, qCoeff N f m ∈ B :=
+    qCoeff_mem_of_forall_prime_mem hf fun q hq => hBmem ⟨q, hq⟩
+  have halg : ∀ x ∈ Set.range (qCoeff N f), IsAlgebraic ℚ x := by
+    rintro x ⟨m, rfl⟩
+    haveI := hBfin
+    exact ((IsIntegral.of_finite ℚ
+      (⟨qCoeff N f m, hall m⟩ : B)).map B.val).isAlgebraic
+  have hto : (heckeField N f).toSubalgebra
+      = Algebra.adjoin ℚ (Set.range (qCoeff N f)) :=
+    IntermediateField.adjoin_toSubalgebra_of_isAlgebraic halg
+  have hle : Subalgebra.toSubmodule (heckeField N f).toSubalgebra
+      ≤ Subalgebra.toSubmodule B := by
+    rw [hto]
+    exact Subalgebra.toSubmodule.monotone
+      (Algebra.adjoin_le (by rintro x ⟨m, rfl⟩; exact hall m))
+  haveI := hBfin
+  exact FiniteDimensional.of_subalgebra_toSubmodule
+    (Submodule.finiteDimensional_of_le hle)
+
+end HeckeFieldFiniteness
 
 /-- **Attachment at the even prime, from a level-2 eigenform** (PROVEN
 via the dimension-formula route: `S₂(Γ₀(2)) = 0`, so the eigenform
