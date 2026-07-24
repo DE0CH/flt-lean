@@ -4313,8 +4313,10 @@ AUDIT (2026-07-24, both directions):
   (`S₂(Γ₀(2)) = 0` is proven above) — the same boundary phenomenon
   audited at pillar 5. The leaf is therefore discharged by
   contradiction, exactly like its `p = 3` instance (3-adic
-  classification), with the depth living in the three sorried
-  Eisenstein pillars E1–E3.
+  classification), with the depth living in the sorried Eisenstein
+  pillars — E1's two arithmetic pinning leaves (E1a ray-class, E1b
+  Raynaud flat weight; E1's triangular shape and assembly are PROVEN,
+  2026-07-24) plus E2 and E3.
 
 * *`p ≥ 5` is load-bearing:* pillar E3 is FALSE at `p = 3` — there
   `ω^{−1} = ω`, and the Kummer class of `2` (the extension cut out by
@@ -4329,35 +4331,297 @@ through `Family.lean` (it consumes this file's assemblies) nor
 through `Reducible.lean`'s B5 (downstream of this file through
 `Lift.lean` and `Family.lean`). -/
 
+/-- **The residual triangular shape** (Eisenstein pillar E1, shape
+half; PROVEN 2026-07-24 — pure linear algebra, no arithmetic input):
+a rank-2 representation over a field `k` that is NOT irreducible has
+a one-dimensional stable subspace (any proper nonzero invariant
+subspace of a two-dimensional space has dimension `1`), and extending
+a spanning vector of that line to a basis triangularizes the action;
+the diagonal entries are multiplicative — hence CHARACTERS — because
+coordinates in a basis are unique. Follows the proven
+Step-B/eigenvalue pattern of
+`exists_global_triangular_of_residual_trivial_quotient`
+(`Threeadic.lean`), simplified from the local ring `R` to the field
+`k`. -/
+theorem exists_residual_triangular_shape_of_not_isIrreducible
+    {k : Type*} [Field k] [TopologicalSpace k]
+    {W : Type*} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hred : ¬ ρbar.IsIrreducible) :
+    ∃ (b : Module.Basis (Fin 2) k W)
+      (χsub χquo : Field.absoluteGaloisGroup ℚ →* k)
+      (cc : Field.absoluteGaloisGroup ℚ → k),
+      ∀ g, LinearMap.toMatrix b b (ρbar g) = !![χsub g, cc g; 0, χquo g] := by
+  classical
+  have hfinrank : Module.finrank k W = 2 :=
+    Module.finrank_eq_of_rank_eq (by rw [hW]; norm_num)
+  haveI : Nontrivial W := Module.nontrivial_of_finrank_pos (R := k) (by omega)
+  -- a proper nonzero stable subspace, from reducibility
+  obtain ⟨N, hNstab, hNbot, hNtop⟩ :
+      ∃ N : Submodule k W,
+        (∀ (g : Field.absoluteGaloisGroup ℚ), ∀ v ∈ N, ρbar g v ∈ N) ∧
+        N ≠ ⊥ ∧ N ≠ ⊤ := by
+    by_contra hcon
+    push Not at hcon
+    refine hred ((Slop.OddRep.isIrreducible_iff_forall
+      ρbar.toRepresentation).mpr ⟨inferInstance, fun N hstab => ?_⟩)
+    by_cases hbot : N = ⊥
+    · exact Or.inl hbot
+    · exact Or.inr (hcon N (fun g v hv => hstab g v hv) hbot)
+  -- the stable subspace is a line
+  have hNrank : Module.finrank k N = 1 := by
+    have hle : Module.finrank k N ≤ Module.finrank k W := Submodule.finrank_le N
+    have hpos : Module.finrank k N ≠ 0 := fun h0 =>
+      hNbot (Submodule.finrank_eq_zero.mp h0)
+    have hne2 : Module.finrank k N ≠ 2 := fun h2 =>
+      hNtop (Submodule.eq_top_of_finrank_eq (by rw [h2, hfinrank]))
+    omega
+  let bN : Module.Basis (Fin 1) k N := Module.finBasisOfFinrankEq k N hNrank
+  have hNspan : N = Submodule.span k {(bN 0 : W)} := by
+    calc N = Submodule.map N.subtype ⊤ := (Submodule.map_subtype_top N).symm
+      _ = Submodule.map N.subtype (Submodule.span k (Set.range ⇑bN)) := by
+          rw [Module.Basis.span_eq]
+      _ = Submodule.span k (⇑N.subtype '' Set.range ⇑bN) :=
+          (Submodule.span_image _).symm
+      _ = Submodule.span k {(bN 0 : W)} := by
+          rw [Set.range_unique, Set.image_singleton]
+          rfl
+  -- a complementary vector, giving an adapted basis via `mkFinCons`
+  obtain ⟨e₁, -, he₁⟩ := SetLike.exists_of_lt (lt_top_iff_ne_top.mpr hNtop)
+  have hli : ∀ c : k, ∀ x ∈ N, c • e₁ + x = 0 → c = 0 := by
+    intro c x hx hcx
+    by_contra hc
+    refine he₁ ?_
+    have hmem : c • e₁ ∈ N := by
+      have hce : c • e₁ = -x := by rw [eq_neg_iff_add_eq_zero]; exact hcx
+      rw [hce]
+      exact N.neg_mem hx
+    have he : e₁ = c⁻¹ • (c • e₁) := by
+      rw [smul_smul, inv_mul_cancel₀ hc, one_smul]
+    rw [he]
+    exact N.smul_mem _ hmem
+  have hquot : Module.finrank k (W ⧸ N) = 1 := by
+    have hq := Submodule.finrank_quotient_add_finrank N
+    omega
+  have hsp : ∀ z : W, ∃ c : k, z + c • e₁ ∈ N := by
+    intro z
+    have hq1 : N.mkQ e₁ ≠ 0 := by
+      simpa [Submodule.Quotient.mk_eq_zero] using he₁
+    have hspan : Submodule.span k {N.mkQ e₁} = ⊤ := by
+      apply Submodule.eq_top_of_finrank_eq
+      rw [finrank_span_singleton hq1, hquot]
+    have hz : N.mkQ z ∈ Submodule.span k {N.mkQ e₁} := by
+      rw [hspan]; exact Submodule.mem_top
+    obtain ⟨d, hd⟩ := Submodule.mem_span_singleton.mp hz
+    refine ⟨-d, ?_⟩
+    have h0 : N.mkQ (z + (-d) • e₁) = 0 := by
+      rw [map_add, map_smul, ← hd, ← add_smul, add_neg_cancel, zero_smul]
+    rw [← Submodule.Quotient.mk_eq_zero, ← Submodule.mkQ_apply]
+    exact h0
+  let b' : Module.Basis (Fin 2) k W := Module.Basis.mkFinCons e₁ bN hli hsp
+  have hb'1 : b' 1 = (bN 0 : W) := by
+    have h1 := congrFun (Module.Basis.coe_mkFinCons e₁ bN hli hsp) (Fin.succ 0)
+    rw [Fin.cons_succ] at h1
+    exact h1
+  let b : Module.Basis (Fin 2) k W := b'.reindex (Equiv.swap 0 1)
+  have hb0 : b 0 = (bN 0 : W) := by
+    rw [Module.Basis.reindex_apply, Equiv.symm_swap, Equiv.swap_apply_left]
+    exact hb'1
+  have hb0mem : b 0 ∈ N := by rw [hb0]; exact (bN 0).2
+  -- coordinates in the basis are unique
+  have hrepr0 : ∀ x y : k, b.repr (x • b 0 + y • b 1) 0 = x := by
+    intro x y
+    simp [Module.Basis.repr_self]
+  have hrepr1 : ∀ x y : k, b.repr (x • b 0 + y • b 1) 1 = y := by
+    intro x y
+    simp [Module.Basis.repr_self]
+  have huniq : ∀ x y x' y' : k,
+      x • b 0 + y • b 1 = x' • b 0 + y' • b 1 → x = x' ∧ y = y' := by
+    intro x y x' y' hxy
+    constructor
+    · have h0 := congrArg (fun v => b.repr v 0) hxy
+      simpa [hrepr0] using h0
+    · have h1 := congrArg (fun v => b.repr v 1) hxy
+      simpa [hrepr1] using h1
+  have hcoeff : ∀ r r' : k, r • b 0 = r' • b 0 → r = r' := by
+    intro r r' h
+    have h0 := congrArg (fun v => b.repr v 0) h
+    simpa using h0
+  -- the stable line gives the eigenvalue system on `b 0`
+  have hstab : ∀ g : Field.absoluteGaloisGroup ℚ,
+      ∃ r : k, ρbar g (b 0) = r • b 0 := by
+    intro g
+    have hmem : ρbar g (b 0) ∈ N := hNstab g _ hb0mem
+    rw [hNspan, ← hb0] at hmem
+    obtain ⟨r, hr⟩ := Submodule.mem_span_singleton.mp hmem
+    exact ⟨r, hr.symm⟩
+  choose χ₀ hχ₀ using hstab
+  -- the second-column coefficients
+  have hexp : ∀ g : Field.absoluteGaloisGroup ℚ,
+      ∃ c d : k, ρbar g (b 1) = c • b 0 + d • b 1 := by
+    intro g
+    refine ⟨b.repr (ρbar g (b 1)) 0, b.repr (ρbar g (b 1)) 1, ?_⟩
+    have h := b.sum_repr (ρbar g (b 1))
+    rw [Fin.sum_univ_two] at h
+    exact h.symm
+  choose cc χ₁ hcd using hexp
+  -- multiplicativity of both diagonal coefficient systems
+  have hχ₀mul : ∀ g h : Field.absoluteGaloisGroup ℚ,
+      χ₀ (g * h) = χ₀ g * χ₀ h := by
+    intro g h
+    apply hcoeff
+    calc χ₀ (g * h) • b 0 = ρbar (g * h) (b 0) := (hχ₀ (g * h)).symm
+      _ = ρbar g (ρbar h (b 0)) := by rw [map_mul]; rfl
+      _ = ρbar g (χ₀ h • b 0) := by rw [hχ₀ h]
+      _ = χ₀ h • ρbar g (b 0) := map_smul _ _ _
+      _ = χ₀ h • (χ₀ g • b 0) := by rw [hχ₀ g]
+      _ = (χ₀ g * χ₀ h) • b 0 := by rw [smul_smul, mul_comm]
+  have hχ₀one : χ₀ 1 = 1 := by
+    apply hcoeff
+    rw [← hχ₀ 1, map_one, one_smul]
+    rfl
+  have hχ₁mul : ∀ g h : Field.absoluteGaloisGroup ℚ,
+      χ₁ (g * h) = χ₁ g * χ₁ h := by
+    intro g h
+    have hgh' : ρbar (g * h) (b 1) =
+        (cc h * χ₀ g + χ₁ h * cc g) • b 0 + (χ₁ g * χ₁ h) • b 1 := by
+      calc ρbar (g * h) (b 1) = ρbar g (ρbar h (b 1)) := by rw [map_mul]; rfl
+        _ = ρbar g (cc h • b 0 + χ₁ h • b 1) := by rw [hcd h]
+        _ = cc h • ρbar g (b 0) + χ₁ h • ρbar g (b 1) := by
+            rw [map_add, map_smul, map_smul]
+        _ = cc h • (χ₀ g • b 0) + χ₁ h • (cc g • b 0 + χ₁ g • b 1) := by
+            rw [hχ₀ g, hcd g]
+        _ = (cc h * χ₀ g + χ₁ h * cc g) • b 0 + (χ₁ g * χ₁ h) • b 1 := by
+            module
+    exact (huniq _ _ _ _ ((hcd (g * h)).symm.trans hgh')).2
+  have hχ₁one : χ₁ 1 = 1 := by
+    have h1 : ρbar (1 : Field.absoluteGaloisGroup ℚ) (b 1) = b 1 := by
+      rw [map_one]; rfl
+    have h2 : b 1 = (0 : k) • b 0 + (1 : k) • b 1 := by
+      rw [zero_smul, one_smul, zero_add]
+    exact (huniq _ _ _ _ ((hcd 1).symm.trans (h1.trans h2))).2
+  refine ⟨b, ⟨⟨χ₀, hχ₀one⟩, hχ₀mul⟩, ⟨⟨χ₁, hχ₁one⟩, hχ₁mul⟩, cc, fun g => ?_⟩
+  ext i j
+  rw [LinearMap.toMatrix_apply]
+  fin_cases i <;> fin_cases j <;>
+    simp [hχ₀ g, hcd g, Module.Basis.repr_self]
+
+/-- **Conductor-`2p` ray-class pinning of the sub-character**
+(Eisenstein pillar E1a; sorry node — the Kronecker–Weber input of the
+residual Eisenstein classification): the sub-character of a
+triangular hardly ramified mod-`p` representation is a POWER of the
+mod-`p` cyclotomic character `ω` (the image of the `p`-adic
+cyclotomic character under `ℤ_p → k`, which factors through
+`𝔽_p ⊆ k` because the kernel of any ring homomorphism from `ℤ_p` to
+the finite field `k` is the nonzero prime `(p)`). Classical proof:
+`χsub` is continuous (a matrix entry of the continuous `ρbar`) of
+finite order prime to `p` (values in `k^×`); it is unramified outside
+`{2, p}` because `ρbar` is (`IsHardlyRamified.isUnramified`: inertia
+outside `2p` lies in `ker ρbar`, so it fixes the stable line
+pointwise); it is unramified at `2` because the local Jordan–Hölder
+multiset of `ρbar|_{G_2}` is `{κ, δ}` with `δ` unramified
+(`IsHardlyRamified.isTameAtTwo`) and `κ·δ = det ρbar = ω` unramified
+at `2`, while the semisimplification of the triangular `ρbar|_{G_2}`
+is `χsub|_2 ⊕ χquo|_2` (uniqueness of Jordan–Hölder factors /
+Brauer–Nesbitt), so `{χsub|_2, χquo|_2} = {κ, δ}` consists of
+unramified characters; and a continuous character of `Gal(ℚ̄/ℚ)`
+unramified outside `p` factors through `Gal(ℚ(μ_{p^∞})/ℚ) ≅ ℤ_p^×` —
+the ray class group of `ℚ` of conductor `2p^k∞` is
+`(ℤ/2p^k)^× ≅ (ℤ/p^k)^×` (Kronecker–Weber; Neukirch, *Algebraic
+Number Theory*, VI §6–7) — where its prime-to-`p` order kills the
+pro-`p` factor `1 + pℤ_p`, so it factors through
+`Gal(ℚ(μ_p)/ℚ) ≅ (ℤ/p)^×`, whose group of characters with values in
+`k^×` is generated by `ω`. Soundness (audit 2026-07-24): the
+hypothesis set is inhabited (`1 ⊕ ω` in triangular form) and the
+conclusion holds for every inhabitant by the argument cited; `p ≥ 5`
+is not consumed. CIRCULARITY GUARD (inherited from the section
+audit): must not be proven through `Family.lean` or
+`Reducible.lean`'s B5. -/
+theorem residual_triangular_sub_character_eq_pow_cyclotomic
+    {k : Type*} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type*} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hpodd hW ρbar)
+    (b : Module.Basis (Fin 2) k W)
+    (χsub χquo : Field.absoluteGaloisGroup ℚ →* k)
+    (cc : Field.absoluteGaloisGroup ℚ → k)
+    (htri : ∀ g, LinearMap.toMatrix b b (ρbar g) =
+      !![χsub g, cc g; 0, χquo g]) :
+    ∃ i : ℕ, ∀ g, χsub g =
+      (algebraMap ℤ_[p] k
+        (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv)) ^ i :=
+  sorry
+
+/-- **Raynaud flat-weight pinning of the sub-character** (Eisenstein
+pillar E1b; sorry node — the finite-flat input of the residual
+Eisenstein classification): a power `ω^i` of the mod-`p` cyclotomic
+character occurring as the sub-character of a (flat at `p`)
+triangular hardly ramified representation has inertia weight `0` or
+`1` — i.e. equals `1` or `ω` GLOBALLY (only the residue of `i` mod
+`p − 1` matters, since `ω` takes values in `𝔽_p^× ⊆ k^×`). Classical
+proof: flatness (`IsHardlyRamified.isFlat`) makes `ρbar|_{G_p}` the
+generic fibre of a finite flat group scheme over `ℤ_p` killed by `p`;
+sub- and quotient objects of such group schemes are finite flat
+(scheme-theoretic closure; Tate in Cornell–Silverman–Stevens ch. V),
+so the stable line is itself the generic fibre of a finite flat
+character scheme, and for `e = 1 < p − 1` its Jordan–Hölder character
+restricted to inertia is `ω^0` or `ω^1` (Raynaud, *Schémas en groupes
+de type `(p, …, p)`*, Bull. Soc. Math. France 102 (1974), 3.3.2;
+Serre, Duke Math. J. 54 (1987), §2.4); `ω` restricted to inertia at
+`p` is the level-1 fundamental character, of EXACT order `p − 1` on
+tame inertia (Serre, loc. cit., §1.3, 1.7), so
+`ω^i|_{I_p} ∈ {1, ω|_{I_p}}` forces `i ≡ 0` or `1 mod (p − 1)`,
+i.e. `χsub = 1` or `χsub = ω` globally. Soundness (audit 2026-07-24):
+the hypothesis set is inhabited (`1 ⊕ ω` in triangular form realizes
+`χsub = ω^0`; the opposite lattice ordering realizes `χsub = ω^1`),
+the conclusion holds for every inhabitant by the restriction cited,
+and `p ≥ 5` is not consumed (`Odd p` gives `p − 1 ≥ 2`). CIRCULARITY
+GUARD (inherited): must not be proven through `Family.lean` or
+`Reducible.lean`'s B5. -/
+theorem residual_triangular_sub_character_pinned_of_eq_pow
+    {k : Type*} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type*} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hpodd hW ρbar)
+    (b : Module.Basis (Fin 2) k W)
+    (χsub χquo : Field.absoluteGaloisGroup ℚ →* k)
+    (cc : Field.absoluteGaloisGroup ℚ → k)
+    (htri : ∀ g, LinearMap.toMatrix b b (ρbar g) =
+      !![χsub g, cc g; 0, χquo g])
+    (i : ℕ)
+    (hpow : ∀ g, χsub g =
+      (algebraMap ℤ_[p] k
+        (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv)) ^ i) :
+    (∀ g, χsub g = 1) ∨
+      (∀ g, χsub g = algebraMap ℤ_[p] k
+        (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv)) :=
+  sorry
+
 /-- **Residual Eisenstein classification** (Eisenstein pillar E1;
-sorry node — the conductor-`2p` character pinning): a REDUCIBLE
-hardly ramified mod-`p` representation over a finite field `k` is
-triangular in a suitable basis with diagonal CHARACTERS, one of which
-— the sub-character or the quotient character — is TRIVIAL. Classical
-proof (the residual instance of the character analysis proven one
-level up in `Family.lean`, which the circularity guard forbids
-consuming): reducibility over the field `k` yields a stable line,
-hence a triangular basis with diagonal characters `χsub, χquo`; at
-`2` the hardly ramified quotient-line character is unramified and
-`det = χ̄_cyc` is unramified, so BOTH diagonal characters are
-unramified at `2` (the local Jordan–Hölder multiset at `2` is
-`{κ, δ}` with `δ` unramified and `κ·δ = det` unramified on inertia);
-a character of `Gal(ℚ̄/ℚ)` with values in `k^×` (order prime to `p`)
-unramified outside `p` factors through `Gal(ℚ(μ_p)/ℚ)` — the ray
-class group of `ℚ` of conductor `2p^k∞` is `(ℤ/2p^k)^× ≅ (ℤ/p^k)^×`
-(Kronecker–Weber; Neukirch, *Algebraic Number Theory*, VI §6–7), and
-the `p`-part dies in `k^×` — so each diagonal character is a power
-`ω^i` of the mod-`p` cyclotomic character; flatness at `p` restricts
-the inertia weights of the Jordan–Hölder characters of the generic
-fibre of a finite flat group scheme over `ℤ_p` (`e = 1 < p − 1`) to
-`{ω⁰, ω¹}` (Raynaud, *Schémas en groupes de type `(p, …, p)`*, Bull.
-Soc. Math. France 102 (1974), 3.3.2; Serre, Duke Math. J. 54 (1987),
-§2.4, 4.1), while `det = χ̄_cyc` forces `i + j ≡ 1 mod (p − 1)`;
-hence `{χsub, χquo} = {1, ω}` and in particular one of the two is
-trivial. Soundness (audit 2026-07-24): the hypothesis set is
-genuinely inhabited (`1 ⊕ χ̄_cyc` itself), and the conclusion holds
-for every inhabitant by the argument cited; `p ≥ 5` is NOT needed —
-oddness gives `e = 1 < p − 1`. -/
+PROVEN 2026-07-24 as an assembly over the E1a/E1b cut — the
+triangular SHAPE is the proven linear-algebra lemma
+`exists_residual_triangular_shape_of_not_isIrreducible` above, the
+arithmetic CHARACTER PINNING is the two sorried leaves E1a
+(`residual_triangular_sub_character_eq_pow_cyclotomic`, the
+conductor-`2p` ray-class input) and E1b
+(`residual_triangular_sub_character_pinned_of_eq_pow`, the Raynaud
+flat-weight input), and the final dichotomy is the determinant
+cancellation proven here): a REDUCIBLE hardly ramified mod-`p`
+representation over a finite field `k` is triangular in a suitable
+basis with diagonal CHARACTERS, one of which — the sub-character or
+the quotient character — is TRIVIAL. The assembly: the shape lemma
+triangularizes with diagonal characters `χsub, χquo`; E1a and E1b pin
+`χsub ∈ {1, ω}`; if `χsub = 1` the left disjunct holds, and if
+`χsub = ω` then the determinant condition `χsub · χquo = det = ω`
+(`IsHardlyRamified.det` read through the triangular matrix) cancels
+the unit `ω g` to force `χquo = 1`. Soundness (audit 2026-07-24,
+inherited): the hypothesis set is genuinely inhabited (`1 ⊕ χ̄_cyc`
+itself), and `p ≥ 5` is NOT needed — oddness gives
+`e = 1 < p − 1`. -/
 theorem exists_residual_triangular_of_not_isIrreducible
     {k : Type*} [Field k] [Finite k] [Algebra ℤ_[p] k]
     [TopologicalSpace k] [DiscreteTopology k]
@@ -4370,8 +4634,37 @@ theorem exists_residual_triangular_of_not_isIrreducible
       (χsub χquo : Field.absoluteGaloisGroup ℚ →* k)
       (cc : Field.absoluteGaloisGroup ℚ → k),
       (∀ g, LinearMap.toMatrix b b (ρbar g) = !![χsub g, cc g; 0, χquo g]) ∧
-      ((∀ g, χsub g = 1) ∨ (∀ g, χquo g = 1)) :=
-  sorry
+      ((∀ g, χsub g = 1) ∨ (∀ g, χquo g = 1)) := by
+  classical
+  -- the triangular shape: pure linear algebra over the field `k`
+  obtain ⟨b, χsub, χquo, cc, htri⟩ :=
+    exists_residual_triangular_shape_of_not_isIrreducible hW hred
+  refine ⟨b, χsub, χquo, cc, htri, ?_⟩
+  -- E1a: the sub-character is a power of the mod-`p` cyclotomic character
+  obtain ⟨i, hpow⟩ :=
+    residual_triangular_sub_character_eq_pow_cyclotomic hpodd hW hρbar b
+      χsub χquo cc htri
+  -- E1b: flatness pins the power to weight `0` or `1`
+  rcases residual_triangular_sub_character_pinned_of_eq_pow hpodd hW hρbar b
+      χsub χquo cc htri i hpow with h1 | hω
+  · exact Or.inl h1
+  · -- weight `1`: the determinant condition forces the quotient
+    -- character to be trivial
+    refine Or.inr fun g => ?_
+    have hdetg : χsub g * χquo g =
+        algebraMap ℤ_[p] k
+          (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv) := by
+      have h1 : ρbar.det g = χsub g * χquo g := by
+        rw [GaloisRep.det_apply, ← LinearMap.det_toMatrix b, htri g]
+        simp [Matrix.det_fin_two]
+      rw [← h1, hρbar.det g]
+    rw [hω g] at hdetg
+    have hne : algebraMap ℤ_[p] k
+        (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv) ≠ (0 : k) :=
+      IsUnit.ne_zero
+        (IsUnit.map (algebraMap ℤ_[p] k)
+          (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv).isUnit)
+    exact mul_left_cancel₀ hne (hdetg.trans (mul_one _).symm)
 
 /-- **The Eisenstein lattice** (Eisenstein pillar E2; sorry node —
 Ribet's lemma with prescribed order, plus integral transfer of the
