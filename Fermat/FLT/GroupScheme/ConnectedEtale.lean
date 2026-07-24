@@ -971,6 +971,52 @@ theorem displacement_point_apply_idempotent_eq_one
 
 end GenericPlace
 
+/-! ### Exponent arithmetic for the `μ`-type node
+
+Three elementary monoid facts consumed by the Oort–Tate node below:
+an element killed by `q` only sees its exponent mod `q`, a `q`-th
+root of unity `≠ 1` with `q` prime is primitive, and a primitive
+`q`-th root of unity separates exponents mod `q`. Together they turn
+the identity `σ ζ = ζ^m = ζ^n` at a `μ_p`-coordinate into the
+congruence `m ≡ n mod p` and back into `φ^m = φ^n`. -/
+
+/-- **Powers of an element killed by `q` depend only on the exponent
+mod `q`** (PROVEN): `x ^ q = 1` and `a ≡ b [MOD q]` give
+`x ^ a = x ^ b`. -/
+theorem pow_eq_pow_of_natModEq {M : Type*} [Monoid M] {x : M} {q : ℕ}
+    (hx : x ^ q = 1) {a b : ℕ} (hab : a ≡ b [MOD q]) :
+    x ^ a = x ^ b := by
+  have hmod : ∀ c : ℕ, x ^ c = x ^ (c % q) := by
+    intro c
+    conv_lhs => rw [← Nat.div_add_mod c q]
+    rw [pow_add, pow_mul, hx, one_pow, one_mul]
+  rw [hmod a, hmod b]
+  exact congrArg (fun e : ℕ => x ^ e) hab
+
+/-- **A nontrivial `q`-th root of unity is primitive for `q` prime**
+(PROVEN): the order divides the prime `q` and is not `1`. -/
+theorem isPrimitiveRoot_of_prime_pow_eq_one {M : Type*} [CommMonoid M]
+    {q : ℕ} (hq : q.Prime) {x : M} (hx : x ^ q = 1) (hx1 : x ≠ 1) :
+    IsPrimitiveRoot x q := by
+  rcases hq.eq_one_or_self_of_dvd _ (orderOf_dvd_of_pow_eq_one hx) with
+    h | h
+  · exact absurd (orderOf_eq_one_iff.mp h) hx1
+  · exact h ▸ IsPrimitiveRoot.orderOf x
+
+/-- **A primitive `q`-th root of unity separates exponents mod `q`**
+(PROVEN): reduce both exponents mod `q` and apply
+`IsPrimitiveRoot.pow_inj`. -/
+theorem natModEq_of_pow_eq_pow {M : Type*} [CommMonoid M] {q : ℕ}
+    [NeZero q] {ζ : M} (hζ : IsPrimitiveRoot ζ q) {a b : ℕ}
+    (hab : ζ ^ a = ζ ^ b) : a ≡ b [MOD q] := by
+  have hq : 0 < q := Nat.pos_of_ne_zero (NeZero.ne q)
+  have ha : ζ ^ (a % q) = ζ ^ a :=
+    pow_eq_pow_of_natModEq hζ.pow_eq_one (Nat.mod_modEq a q)
+  have hb : ζ ^ (b % q) = ζ ^ b :=
+    pow_eq_pow_of_natModEq hζ.pow_eq_one (Nat.mod_modEq b q)
+  exact hζ.pow_inj (Nat.mod_lt _ hq) (Nat.mod_lt _ hq)
+    (by rw [ha, hb, hab])
+
 section CyclotomicNode
 
 variable {p : ℕ} [hp : Fact p.Prime]
@@ -982,9 +1028,173 @@ local notation "ℚᵖᵍᵥᵃˡᵍ" => AlgebraicClosure (IsDedekindDomain.Heig
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
-/-- **The Oort–Tate `μ`-type node** (sorry node, 2026-07-24 — THE
-shared order-`p` group-scheme classification input of the tree; see
-the section docstring for the three consumers): a geometric point `φ`
+/-- **The root-of-unity bridge** (PROVEN 2026-07-24): the `p`-adic
+cyclotomic character computes the action of the LOCAL absolute Galois
+group of `ℚᵥ` on the `p`-th roots of unity of `ℚᵥᵃˡᵍ` — for every
+`σ ∈ G_{ℚᵥ}`, every `ζ ∈ ℚᵥᵃˡᵍ` with `ζ^p = 1` and every natural `n`
+congruent to `χ_cyc(σ̃) mod p`, one has `σ ζ = ζ^n`.
+
+Proof (the local analogue of the PROVEN endgame of
+`cyclotomicCharacter_eq_one_of_mem_inertia_two` in `Family.lean`,
+REPROVED here so that this neutral file imports no consumer): fix a
+primitive `p`-th root of unity `μ` of the ABSTRACT closure `ℚᵃˡᵍ`
+(`HasEnoughRootsOfUnity`); its image under the structure map
+`ℚᵃˡᵍ → ℚᵥᵃˡᵍ` is primitive as well (injectivity of a field map), so
+the given `ζ` is one of its powers `μ^i` — the `p`-th roots of unity
+of `ℚᵥᵃˡᵍ` all descend. `Field.absoluteGaloisGroup.lift_map`
+transports `σ` to the descended element `σ̃`, on which
+`cyclotomicCharacter.spec` at level `1` evaluates the action as the
+`(χ_cyc(σ̃) mod p)`-th power; `PadicInt.ker_toZModPow` turns the
+hypothesis `χ_cyc(σ̃) − n ∈ (p)` into the congruence of exponents, and
+`pow_eq_pow_of_natModEq` replaces the exponent by `n`. -/
+theorem galois_apply_pow_eq_pow_of_cyclotomicCharacter
+    (σ : Field.absoluteGaloisGroup ℚᵖᵍᵥ)
+    (n : ℕ)
+    (hn : ((cyclotomicCharacter (AlgebraicClosure ℚ) p
+        ((Field.absoluteGaloisGroup.map (algebraMap ℚ ℚᵖᵍᵥ)
+          σ).toRingEquiv) : ℤ_[p]ˣ) : ℤ_[p]) - (n : ℤ_[p]) ∈
+      Ideal.span {((p : ℕ) : ℤ_[p])})
+    (ζ : ℚᵖᵍᵥᵃˡᵍ) (hζ : ζ ^ p = 1) :
+    σ ζ = ζ ^ n := by
+  classical
+  haveI : NeZero p := ⟨hp.out.ne_zero⟩
+  -- every `p`-th root of unity of `ℚᵥᵃˡᵍ` descends to `ℚᵃˡᵍ`
+  obtain ⟨μ, hμ⟩ :=
+    HasEnoughRootsOfUnity.exists_primitiveRoot (AlgebraicClosure ℚ) p
+  have hFinj : Function.Injective
+      (AlgebraicClosure.map (algebraMap ℚ ℚᵖᵍᵥ)) :=
+    (AlgebraicClosure.map (algebraMap ℚ ℚᵖᵍᵥ)).injective
+  have hFμ : IsPrimitiveRoot
+      (AlgebraicClosure.map (algebraMap ℚ ℚᵖᵍᵥ) μ) p :=
+    hμ.map_of_injective hFinj
+  obtain ⟨i, -, hi⟩ := hFμ.eq_pow_of_pow_eq_one hζ
+  have hzp : (μ ^ i) ^ p = 1 := by
+    rw [← pow_mul, mul_comm, pow_mul, hμ.pow_eq_one, one_pow]
+  have hFz : AlgebraicClosure.map (algebraMap ℚ ℚᵖᵍᵥ) (μ ^ i) = ζ := by
+    rw [map_pow]
+    exact hi
+  -- the cyclotomic character evaluates the descended action
+  have hspec := cyclotomicCharacter.spec (L := AlgebraicClosure ℚ) p
+    (n := 1) ((Field.absoluteGaloisGroup.map (algebraMap ℚ ℚᵖᵍᵥ)
+      σ).toRingEquiv) (μ ^ i) (by rwa [pow_one])
+  -- the hypothesis is exactly the mod-`p` value of the character
+  have hcast : PadicInt.toZModPow 1
+      ((cyclotomicCharacter (AlgebraicClosure ℚ) p
+        ((Field.absoluteGaloisGroup.map (algebraMap ℚ ℚᵖᵍᵥ)
+          σ).toRingEquiv) : ℤ_[p]ˣ) : ℤ_[p]) =
+      ((n : ℕ) : ZMod (p ^ 1)) := by
+    have hmem : (((cyclotomicCharacter (AlgebraicClosure ℚ) p
+        ((Field.absoluteGaloisGroup.map (algebraMap ℚ ℚᵖᵍᵥ)
+          σ).toRingEquiv) : ℤ_[p]ˣ) : ℤ_[p]) - (n : ℤ_[p])) ∈
+        RingHom.ker (PadicInt.toZModPow 1 : ℤ_[p] →+* ZMod (p ^ 1)) := by
+      rw [PadicInt.ker_toZModPow, pow_one]
+      exact hn
+    have h0 := RingHom.mem_ker.mp hmem
+    rw [map_sub, sub_eq_zero, map_natCast] at h0
+    exact h0
+  have hmod : (PadicInt.toZModPow 1
+      ((cyclotomicCharacter (AlgebraicClosure ℚ) p
+        ((Field.absoluteGaloisGroup.map (algebraMap ℚ ℚᵖᵍᵥ)
+          σ).toRingEquiv) : ℤ_[p]ˣ) : ℤ_[p])).val ≡ n [MOD p] := by
+    have h1 : (((PadicInt.toZModPow 1
+        ((cyclotomicCharacter (AlgebraicClosure ℚ) p
+          ((Field.absoluteGaloisGroup.map (algebraMap ℚ ℚᵖᵍᵥ)
+            σ).toRingEquiv) : ℤ_[p]ˣ) : ℤ_[p])).val : ℕ) :
+        ZMod (p ^ 1)) = ((n : ℕ) : ZMod (p ^ 1)) := by
+      rw [ZMod.natCast_val, ZMod.cast_id, hcast]
+    have h2 := (ZMod.natCast_eq_natCast_iff _ _ _).mp h1
+    exact Nat.ModEq.of_dvd (dvd_pow_self p one_ne_zero) h2
+  have hspec' : (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚᵖᵍᵥ) σ)
+      (μ ^ i) = (μ ^ i) ^ n := by
+    rw [show (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚᵖᵍᵥ) σ)
+        (μ ^ i) =
+        ((Field.absoluteGaloisGroup.map (algebraMap ℚ ℚᵖᵍᵥ)
+          σ).toRingEquiv) (μ ^ i) from rfl, hspec]
+    exact pow_eq_pow_of_natModEq hzp hmod
+  calc σ ζ
+      = AlgebraicClosure.map (algebraMap ℚ ℚᵖᵍᵥ)
+        ((Field.absoluteGaloisGroup.map (algebraMap ℚ ℚᵖᵍᵥ) σ)
+          (μ ^ i)) := by
+        rw [Field.absoluteGaloisGroup.lift_map, hFz]
+    _ = AlgebraicClosure.map (algebraMap ℚ ℚᵖᵍᵥ) ((μ ^ i) ^ n) := by
+        rw [hspec']
+    _ = ζ ^ n := by rw [map_pow, hFz]
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **The Oort–Tate `μ_p`-coordinate** (sorry node, 2026-07-24 — the
+CLASSIFICATION half of the shared `μ`-type node below, isolated as its
+only remaining input): under the hypotheses of
+`connected_cyclic_point_smul_eq_conv_pow_cyclotomicCharacter` and with
+`φ ≠ 1`, the Hopf order `G` carries an element `x` on which `φ` takes
+a NONTRIVIAL `p`-th root of unity as value, and on which the whole
+convolution-cyclic group `⟨φ⟩` is read off by the corresponding power:
+`(φ^k)(1 ⊗ x) = (φ(1 ⊗ x))^k` for every `k`. In other words `x` is a
+`μ_p`-coordinate: it pulls the group `⟨φ⟩ ≅ ℤ/p` of geometric points
+back to the group `μ_p ⊆ ℚᵥᵃˡᵍ` compatibly with the group laws.
+
+Intended proof (Oort–Tate, *Group schemes of prime order*, Ann. Sci.
+ÉNS 1970; Raynaud, *Schémas en groupes de type `(p, …, p)`*, Bull.
+SMF 102 (1974), 3.3.6/3.4.3; Tate, "Finite flat group schemes", in
+Cornell–Silverman–Stevens): `φ ≠ 1` and `hord` give `φ` exact
+convolution order `p`, so `hstab` makes the cyclic subgroup
+`⟨φ⟩ ≅ ℤ/p` of generic-fibre points stable under local inertia, hence
+Galois-stable over the completed maximal unramified extension
+`ℚ_p^nr` whose absolute Galois group IS the inertia group. Its
+schematic closure `C` in the model is then a finite flat closed
+subgroup scheme of order `p` killed by `p` over `𝒪^nr = W(𝔽̄_p)`, which
+is absolutely unramified (`e = 1 < p − 1`, `p` odd by `hpodd`). `hφe`
+together with the group-law absorption `hcomul₀` and the primitivity
+`hprim₀` of the connected counit idempotent place every convolution
+power of `φ` in the connected component, so `C` lands in the local
+corner `Spec (G·e₀)` and is CONNECTED; the Oort–Tate classification at
+`e = 1` then leaves only `C ≅ μ_p` (the étale option `ℤ/p` is excluded
+by connectedness of the nontrivial `C`). The coordinate ring of `μ_p`
+is `𝒪^nr[T]/(T^p − 1)` with `ΔT = T ⊗ T`, and a preimage `x ∈ G` of
+`T` under `G → 𝒪_C` has all three properties: `φ(1 ⊗ x)` is the value
+of `φ` at the group-like `T`, hence a `p`-th root of unity, nontrivial
+because `φ ≠ 1` generates `C`; and the convolution powers of `φ` all
+factor through `𝒪_C`, where `ΔT = T ⊗ T` turns convolution into
+multiplication of values, giving `(φ^k)(1 ⊗ x) = (φ(1 ⊗ x))^k`.
+Soundness: the hypothesis set is inhabited (the nontrivial points of
+`μ_p` over `ℤ_p`, with `e₀` its connected counit idempotent and
+`x = T`), and the conclusion holds for every inhabitant by the
+classification cited; `hstab` is NOT redundant — for the `p`-torsion
+of a supersingular elliptic curve over `ℤ_p` tame inertia acts through
+the level-`2` fundamental characters, no line is stable, and no such
+coordinate exists. -/
+theorem exists_muType_coordinate
+    (hpodd : Odd p)
+    (G : Type) [CommRing G]
+    [HopfAlgebra 𝒪ᵖᵍᵥ G] [Module.Flat 𝒪ᵖᵍᵥ G] [Module.Finite 𝒪ᵖᵍᵥ G]
+    (e₀ : G) (he₀ : IsIdempotentElem e₀)
+    (hε₀ : Coalgebra.counit (R := 𝒪ᵖᵍᵥ) e₀ = (1 : 𝒪ᵖᵍᵥ))
+    (hprim₀ : ∀ x : G, IsIdempotentElem x → x * e₀ = 0 ∨ x * e₀ = e₀)
+    (hcomul₀ : Coalgebra.comul (R := 𝒪ᵖᵍᵥ) e₀ *
+      (e₀ ⊗ₜ[𝒪ᵖᵍᵥ] e₀) = e₀ ⊗ₜ[𝒪ᵖᵍᵥ] e₀)
+    (φ : ℚᵖᵍᵥ ⊗[𝒪ᵖᵍᵥ] G →ₐ[ℚᵖᵍᵥ] ℚᵖᵍᵥᵃˡᵍ)
+    (hφe : φ ((1 : ℚᵖᵍᵥ) ⊗ₜ[𝒪ᵖᵍᵥ] e₀) = 1)
+    (hord : φ ^ p = 1)
+    (hstab : ∀ τ ∈ localInertiaGroup
+        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+          (Fact.out : p.Prime)),
+      ∃ m : ℕ, τ • φ = φ ^ m)
+    (hφ1 : φ ≠ 1) :
+    ∃ x : G,
+      (φ ((1 : ℚᵖᵍᵥ) ⊗ₜ[𝒪ᵖᵍᵥ] x)) ^ p = 1 ∧
+      φ ((1 : ℚᵖᵍᵥ) ⊗ₜ[𝒪ᵖᵍᵥ] x) ≠ 1 ∧
+      ∀ k : ℕ, (φ ^ k) ((1 : ℚᵖᵍᵥ) ⊗ₜ[𝒪ᵖᵍᵥ] x) =
+        (φ ((1 : ℚᵖᵍᵥ) ⊗ₜ[𝒪ᵖᵍᵥ] x)) ^ k :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **The Oort–Tate `μ`-type node** (PROVEN 2026-07-24 over the single
+classification leaf `exists_muType_coordinate` — THE shared order-`p`
+group-scheme input of the tree; see the section docstring for the
+three consumers): a geometric point `φ`
 of the generic fibre of a finite flat Hopf order `G` over
 `𝒪ᵥ ≅ ℤ_p` (`p` ODD) which
 
@@ -999,39 +1209,29 @@ of the generic fibre of a finite flat Hopf order `G` over
 is moved by any local inertia element `σ` to its `n`-th convolution
 power for EVERY `n ≡ χ_cyc(σ̃) mod p`.
 
-Intended proof (Oort–Tate, *Group schemes of prime order*, Ann. Sci.
-ÉNS 1970; Raynaud, *Schémas en groupes de type `(p, …, p)`*, Bull.
-SMF 102 (1974), 3.3.6/3.4.3; Serre, Duke Math. J. 54 (1987), §2.4,
-§2.8 prop. 8; Tate, "Finite flat group schemes", in
+Proof (Oort–Tate, *Group schemes of prime order*, Ann. Sci. ÉNS 1970;
+Raynaud, *Schémas en groupes de type `(p, …, p)`*, Bull. SMF 102
+(1974), 3.3.6/3.4.3; Serre, Duke Math. J. 54 (1987), §2.4, §2.8
+prop. 8; Tate, "Finite flat group schemes", in
 Cornell–Silverman–Stevens): if `φ = 1` the statement is trivial
-(`σ • 1 = 1 = 1^n`); otherwise `φ` has exact convolution order `p`.
-Base-change the model to the completed maximal unramified extension
-`𝒪^nr = W(𝔽̄_p)` — still absolutely unramified, `e = 1`, with absolute
-Galois group the inertia subgroup. By `hstab` the cyclic subgroup
-`⟨φ⟩ ≅ ℤ/p` of the generic-fibre points is Galois-stable over
-`ℚ_p^nr`, so its schematic closure `C` is a finite flat closed
-subgroup scheme of the model over `𝒪^nr` of order `p`, killed by `p`
-(Tate–Raynaud closure). `hφe` and the group-law absorption `hcomul₀`
-place every power of `φ` in the connected component, so `C` lands in
-the local corner `Spec (G·e₀)` and is CONNECTED. At `e = 1 < p − 1`
-the Oort–Tate classification of order-`p` group schemes leaves
-exactly `ℤ/p` (étale — excluded by connectedness of the nontrivial
-`C`) and `μ_p` (multiplicative); on `μ_p`-points inertia acts by the
-mod-`p` cyclotomic character, i.e. raises the value at a group-like
-to the `χ_cyc mod p` power — reading the action off the points of `C`
-gives `σ • φ = φ^n` for any `n ≡ χ_cyc(σ̃) mod p`. The inertia-
+(`σ • 1 = 1 = 1^n`, by `MulDistribMulAction`); otherwise `φ` has
+exact convolution order `p` and the CLASSIFICATION leaf
+`exists_muType_coordinate` — the `μ_p`-ness of the schematic closure
+of `⟨φ⟩`, the only remaining input — supplies a coordinate `x ∈ G` on
+which `φ` takes a nontrivial `p`-th root of unity `ζ` as value and on
+which convolution powers become powers of `ζ`. Evaluating the
+stability relation `σ • φ = φ^m` of `hstab` at `x` gives `σ ζ = ζ^m`,
+while the root-of-unity bridge
+`galois_apply_pow_eq_pow_of_cyclotomicCharacter` gives `σ ζ = ζ^n`;
+`ζ` is a primitive `p`-th root of unity, so `m ≡ n mod p`, and
+`φ^p = 1` turns that congruence back into `φ^m = φ^n`. The inertia-
 stability input is NOT redundant: for the `p`-torsion of a
 supersingular elliptic curve over `ℤ_p` (connected, killed by `p`,
 `e = 1`) tame inertia acts through the level-2 fundamental characters
 of `𝔽_{p²}^×`, which is not a power map and stabilizes no line — so
 the bare statement without `hstab` is FALSE, and any consumer must
-supply a one-dimensionality input. Soundness: the hypothesis set is
-inhabited (the points of `μ_p` over `ℤ_p` with `e₀` its connected
-counit idempotent satisfy all of them, as do those of `ℤ/p` with
-`φ = 1` — the only connected-component point of an étale-times-local
-factorization), and the conclusion holds for every inhabitant by the
-classification cited. The conclusion is well-posed across the
-residues `n mod p` since `φ^p = 1`. -/
+supply a one-dimensionality input. The conclusion is well-posed
+across the residues `n mod p` since `φ^p = 1`. -/
 theorem connected_cyclic_point_smul_eq_conv_pow_cyclotomicCharacter
     (hpodd : Odd p)
     (G : Type) [CommRing G]
@@ -1057,8 +1257,34 @@ theorem connected_cyclic_point_smul_eq_conv_pow_cyclotomicCharacter
         ((Field.absoluteGaloisGroup.map (algebraMap ℚ ℚᵖᵍᵥ)
           σ).toRingEquiv) : ℤ_[p]ˣ) : ℤ_[p]) - (n : ℤ_[p]) ∈
       Ideal.span {((p : ℕ) : ℤ_[p])}) :
-    σ • φ = φ ^ n :=
-  sorry
+    σ • φ = φ ^ n := by
+  classical
+  haveI : NeZero p := ⟨hp.out.ne_zero⟩
+  by_cases hφ1 : φ = 1
+  · rw [hφ1, smul_one, one_pow]
+  · obtain ⟨m, hm⟩ := hstab σ hσ
+    obtain ⟨x, hxp, hx1, hxpow⟩ :=
+      exists_muType_coordinate hpodd G e₀ he₀ hε₀ hprim₀ hcomul₀ φ hφe
+        hord hstab hφ1
+    -- the coordinate value is a primitive `p`-th root of unity
+    have hprimζ : IsPrimitiveRoot (φ ((1 : ℚᵖᵍᵥ) ⊗ₜ[𝒪ᵖᵍᵥ] x)) p :=
+      isPrimitiveRoot_of_prime_pow_eq_one hp.out hxp hx1
+    -- the inertia-stability relation, read at the coordinate
+    have hval : σ (φ ((1 : ℚᵖᵍᵥ) ⊗ₜ[𝒪ᵖᵍᵥ] x)) =
+        (φ ((1 : ℚᵖᵍᵥ) ⊗ₜ[𝒪ᵖᵍᵥ] x)) ^ m := by
+      have h := congrArg
+        (fun ψ : ℚᵖᵍᵥ ⊗[𝒪ᵖᵍᵥ] G →ₐ[ℚᵖᵍᵥ] ℚᵖᵍᵥᵃˡᵍ =>
+          ψ ((1 : ℚᵖᵍᵥ) ⊗ₜ[𝒪ᵖᵍᵥ] x)) hm
+      rw [hxpow m] at h
+      exact h
+    -- and the same value through the cyclotomic character
+    have hbridge : σ (φ ((1 : ℚᵖᵍᵥ) ⊗ₜ[𝒪ᵖᵍᵥ] x)) =
+        (φ ((1 : ℚᵖᵍᵥ) ⊗ₜ[𝒪ᵖᵍᵥ] x)) ^ n :=
+      galois_apply_pow_eq_pow_of_cyclotomicCharacter σ n hn _ hxp
+    have hmn : m ≡ n [MOD p] :=
+      natModEq_of_pow_eq_pow hprimζ (hval.symm.trans hbridge)
+    rw [hm]
+    exact pow_eq_pow_of_natModEq hord hmn
 
 end CyclotomicNode
 
