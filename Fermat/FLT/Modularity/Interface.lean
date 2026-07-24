@@ -4209,29 +4209,6 @@ theorem exists_galoisRep_charFrob_of_weightTwoNewform
             + Polynomial.C ((q : AlgebraicClosure ℚ_[p])) :=
   sorry
 
-omit [IsDomain R] [IsTopologicalRing R] [IsLocalRing R] in
-/-- `charFrob` commutes with coefficient base change (PROVEN glue):
-the Frobenius characteristic polynomial of `ρ.baseChange B` is the
-image of that of `ρ` — mathlib's `LinearMap.charpoly_baseChange`
-transported through the definitional equality
-`(ρ.baseChange B) σ = (ρ σ).baseChange B`. This connects the trace
-hypothesis of the conductor leaf (stated via `.map`) to statements
-about the representation `ρ.baseChange ℚ̄_p` itself, as consumed by
-the rigidity leaf. -/
-theorem charFrob_baseChange {B : Type*} [CommRing B] [TopologicalSpace B]
-    [IsTopologicalRing B] [Algebra R B] [ContinuousSMul R B]
-    (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
-    (ρ.baseChange B).charFrob v = (ρ.charFrob v).map (algebraMap R B) := by
-  show ((ρ.baseChange B).toLocal v
-      (Field.AbsoluteGaloisGroup.adicArithFrob v)).charpoly =
-    ((ρ.toLocal v (Field.AbsoluteGaloisGroup.adicArithFrob v)).charpoly).map
-      (algebraMap R B)
-  rw [show (ρ.baseChange B).toLocal v
-        (Field.AbsoluteGaloisGroup.adicArithFrob v) =
-      LinearMap.baseChange B (ρ.toLocal v
-        (Field.AbsoluteGaloisGroup.adicArithFrob v)) from rfl,
-    LinearMap.charpoly_baseChange]
-
 /-- Quadratic decomposition of a monic degree-2 polynomial (PROVEN
 glue): `P = X² + P₁·X + P₀`. Applied to the mapped Frobenius
 characteristic polynomials to turn the coefficientwise information of

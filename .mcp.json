@@ -6,7 +6,10 @@
         "lean-lsp-mcp",
         "--lean-project-path",
         "."
-      ]
+      ],
+      "env": {
+        "LEAN_LSP_MAX_OPEN_FILES": "64"
+      }
     },
     "annas-mcp": {
       "command": ".venv/bin/python",

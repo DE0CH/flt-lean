@@ -8171,31 +8171,1085 @@ theorem exists_bialgEquiv_of_equivariant_pointsEquiv
     exact sub_eq_zero.mp h0
   exact ⟨BialgEquiv.ofAlgEquiv eAlg hcounit hcomul⟩
 
+/-- **The antipode of a commutative Hopf algebra is an involution**
+(PROVEN 2026-07-24 — support for the fixed-points quadratic descent
+below): for a commutative Hopf algebra `H` over a commutative ring
+`R`, `S ∘ S = id`. In the convolution group of algebra endomorphisms
+of `H` (mathlib's `AlgHom.convGroup`, available because the source is
+a commutative Hopf algebra and the target `H` is a commutative
+bialgebra), the inverse of `S` is BY DEFINITION `S ∘ S`
+(precomposition with the antipode), while `AlgHom.antipode_id_cancel`
+exhibits the identity as that same inverse; equating the two and
+stripping the `WithConv` synonym gives the claim. -/
+theorem antipodeAlgHom_comp_antipodeAlgHom
+    (R : Type) [CommRing R] (H : Type) [CommRing H] [HopfAlgebra R H] :
+    (HopfAlgebra.antipodeAlgHom R H).comp (HopfAlgebra.antipodeAlgHom R H) =
+      AlgHom.id R H := by
+  have hSS : (WithConv.toConv (HopfAlgebra.antipodeAlgHom R H))⁻¹ =
+      WithConv.toConv ((HopfAlgebra.antipodeAlgHom R H).comp
+        (HopfAlgebra.antipodeAlgHom R H)) := rfl
+  have hid : (WithConv.toConv (HopfAlgebra.antipodeAlgHom R H))⁻¹ =
+      WithConv.toConv (AlgHom.id R H) :=
+    inv_eq_of_mul_eq_one_right AlgHom.antipode_id_cancel
+  exact WithConv.toConv_injective (hSS.symm.trans hid)
+
+/-- **The quadratic order witness** (PROVEN 2026-07-24 — the
+number-theoretic input of the fixed-points quadratic descent,
+Hopf-free): over a DVR `R` with fraction field `K`, a generator `θL`
+of a separable quadratic extension `L/K` rooting a monic
+`R`-polynomial `Q` whose residue is separable has trace `t` and norm
+`n` IN `R` with UNIT discriminant `t² − 4n`, and the nontrivial
+automorphism `τ` of `L/K` sends `θL` to `t − θL`. Content: `θL` is
+integral over `R` (it roots the monic `Q`), so its trace and norm —
+`θL + τ θL` and `θL · τ θL` by the quadratic trace/norm formulas — are
+integral elements of `K`, hence lie in the integrally closed `R`
+(`IsIntegrallyClosed.isIntegral_iff`); the `K`-minimal polynomial of
+`θL` is quadratic (`θL ∉ K` since it generates the quadratic `L`), so
+it must be the trace/norm quadratic `X² − tX + n`, and by Gauss
+descent (`minpoly.isIntegrallyClosed_eq_field_fractions`) the same
+identification holds for `minpoly R θL`, which divides `Q`
+(`minpoly.isIntegrallyClosed_dvd`); its residue divides the separable
+residue of `Q`, hence is a separable quadratic, whose discriminant
+`t̄² − 4n̄` is nonzero (`Polynomial.separable_quadratic_iff`) — so
+`t² − 4n` has nonzero residue and is a unit of the local ring `R`
+(`IsLocalRing.residue_ne_zero_iff_isUnit`). -/
+theorem exists_quadraticOrderWitness
+    (R : Type) [CommRing R] [IsDomain R] [IsDiscreteValuationRing R]
+    (K : Type) [Field K] [Algebra R K] [IsFractionRing R K]
+    (L : Type) [Field L] [Algebra K L]
+    [Algebra.IsQuadraticExtension K L] [Algebra.IsSeparable K L]
+    (θL : L) (Q : Polynomial R) (hQm : Q.Monic)
+    (hθtop : Algebra.adjoin K ({θL} : Set L) = ⊤)
+    (hθQ : Polynomial.aeval θL (Q.map (algebraMap R K)) = 0)
+    (hQsep : (Q.map (IsLocalRing.residue R)).Separable) :
+    ∃ (t n : R) (τ : L ≃ₐ[K] L), τ ≠ 1 ∧
+      τ θL = algebraMap K L (algebraMap R K t) - θL ∧
+      θL * τ θL = algebraMap K L (algebraMap R K n) ∧
+      IsUnit (t * t - 4 * n) := by
+  classical
+  letI : Algebra R L := ((algebraMap K L).comp (algebraMap R K)).toAlgebra
+  haveI : IsScalarTower R K L := IsScalarTower.of_algebraMap_eq fun r => rfl
+  haveI : FaithfulSMul R K := (faithfulSMul_iff_algebraMap_injective R K).mpr
+    (IsFractionRing.injective R K)
+  haveI : Module.IsTorsionFree R L :=
+    Module.IsTorsionFree.trans_faithfulSMul R K L
+  -- θL is integral over R (it roots the monic `Q`)
+  have hQθ : Polynomial.aeval θL Q = 0 := by
+    rw [← Polynomial.aeval_map_algebraMap K]
+    exact hθQ
+  have hint : IsIntegral R θL := ⟨Q, hQm, by rwa [Polynomial.aeval_def] at hQθ⟩
+  -- the nontrivial automorphism
+  obtain ⟨τ, hτ1⟩ := Algebra.IsQuadraticExtension.exists_algEquiv_ne_one K L
+  -- τ θL is integral over R as well (it roots the same monic polynomial)
+  have hτQθ : Polynomial.aeval (τ θL) Q = 0 := by
+    have h2 := Polynomial.aeval_algHom_apply (τ : L →ₐ[K] L) θL
+      (Q.map (algebraMap R K))
+    rw [hθQ, map_zero] at h2
+    rw [← Polynomial.aeval_map_algebraMap K]
+    exact h2
+  have hτint : IsIntegral R (τ θL) :=
+    ⟨Q, hQm, by rwa [Polynomial.aeval_def] at hτQθ⟩
+  -- trace and norm relations via the nontrivial automorphism
+  have htr : algebraMap K L (Algebra.trace K L θL) = θL + τ θL :=
+    Algebra.IsQuadraticExtension.algebraMap_trace_eq_add K L hτ1 θL
+  have hnm : algebraMap K L (Algebra.norm K θL) = θL * τ θL :=
+    Algebra.IsQuadraticExtension.algebraMap_norm_eq_mul K L hτ1 θL
+  -- trace and norm are integral over R, hence lie in R
+  have hLinj : Function.Injective (algebraMap K L) := (algebraMap K L).injective
+  have htr_int : IsIntegral R (Algebra.trace K L θL) := by
+    rw [← isIntegral_algebraMap_iff hLinj, htr]
+    exact hint.add hτint
+  have hnm_int : IsIntegral R (Algebra.norm K θL) := by
+    rw [← isIntegral_algebraMap_iff hLinj, hnm]
+    exact hint.mul hτint
+  obtain ⟨t, ht⟩ := IsIntegrallyClosed.isIntegral_iff.mp htr_int
+  obtain ⟨n, hn⟩ := IsIntegrallyClosed.isIntegral_iff.mp hnm_int
+  refine ⟨t, n, τ, hτ1, ?_, ?_, ?_⟩
+  · rw [ht, htr]
+    exact (add_sub_cancel_left θL (τ θL)).symm
+  · rw [hn, hnm]
+  · -- the discriminant clause
+    have hRinj : Function.Injective (algebraMap R K) :=
+      IsFractionRing.injective R K
+    have hpdvd : minpoly R θL ∣ Q := minpoly.isIntegrallyClosed_dvd hint hQθ
+    have hpsep : ((minpoly R θL).map (IsLocalRing.residue R)).Separable :=
+      hQsep.of_dvd (Polynomial.map_dvd _ hpdvd)
+    have hKint : IsIntegral K θL := hint.tower_top
+    have hfrac : minpoly K θL = (minpoly R θL).map (algebraMap R K) :=
+      minpoly.isIntegrallyClosed_eq_field_fractions K L hint
+    -- θL lies outside K, so its K-minimal polynomial is quadratic
+    have hθK : θL ∉ (algebraMap K L).range := by
+      rintro ⟨c, rfl⟩
+      have hbot : Algebra.adjoin K ({algebraMap K L c} : Set L) ≤ ⊥ := by
+        rw [Algebra.adjoin_le_iff]
+        intro x hx
+        rw [Set.mem_singleton_iff] at hx
+        subst hx
+        rw [SetLike.mem_coe, Algebra.mem_bot]
+        exact ⟨c, rfl⟩
+      rw [hθtop, top_le_iff] at hbot
+      have h1 := Subalgebra.bot_eq_top_iff_finrank_eq_one.mp hbot
+      rw [Algebra.IsQuadraticExtension.finrank_eq_two K L] at h1
+      exact absurd h1 (by norm_num)
+    have hdeg2 : (minpoly K θL).natDegree = 2 := by
+      have hle : (minpoly K θL).natDegree ≤ 2 := by
+        rw [← Algebra.IsQuadraticExtension.finrank_eq_two K L]
+        exact minpoly.natDegree_le θL
+      have hge : 2 ≤ (minpoly K θL).natDegree :=
+        (minpoly.two_le_natDegree_iff hKint).mpr hθK
+      omega
+    -- identify the K-minimal polynomial with the trace/norm quadratic
+    have hg : minpoly K θL = Polynomial.X ^ 2 -
+        Polynomial.C (algebraMap R K t) * Polynomial.X +
+        Polynomial.C (algebraMap R K n) := by
+      have hgθ : Polynomial.aeval θL (Polynomial.X ^ 2 -
+          Polynomial.C (algebraMap R K t) * Polynomial.X +
+          Polynomial.C (algebraMap R K n)) = 0 := by
+        simp only [map_add, map_sub, map_mul, map_pow, Polynomial.aeval_X,
+          Polynomial.aeval_C]
+        rw [ht, hn, htr, hnm]
+        ring
+      refine (Polynomial.eq_of_monic_of_dvd_of_natDegree_le
+        (minpoly.monic hKint) (GaloisRepresentation.monic_quadratic _ _)
+        (minpoly.dvd K θL hgθ) ?_).symm
+      rw [GaloisRepresentation.natDegree_quadratic, hdeg2]
+    -- descend the identification to R
+    have hpoly : minpoly R θL = Polynomial.X ^ 2 -
+        Polynomial.C t * Polynomial.X + Polynomial.C n := by
+      apply Polynomial.map_injective (algebraMap R K) hRinj
+      rw [← hfrac, hg]
+      simp only [Polynomial.map_add, Polynomial.map_sub, Polynomial.map_mul,
+        Polynomial.map_pow, Polynomial.map_X, Polynomial.map_C]
+    -- the residue quadratic is separable, so its discriminant is nonzero
+    rw [hpoly] at hpsep
+    simp only [Polynomial.map_add, Polynomial.map_sub, Polynomial.map_mul,
+      Polynomial.map_pow, Polynomial.map_X, Polynomial.map_C] at hpsep
+    have hform : (Polynomial.X ^ 2 -
+        Polynomial.C (IsLocalRing.residue R t) * Polynomial.X +
+        Polynomial.C (IsLocalRing.residue R n)) =
+        Polynomial.C (1 : IsLocalRing.ResidueField R) * Polynomial.X ^ 2 +
+        Polynomial.C (-(IsLocalRing.residue R t)) * Polynomial.X +
+        Polynomial.C (IsLocalRing.residue R n) := by
+      rw [Polynomial.C_1, one_mul, map_neg]
+      ring
+    rw [hform] at hpsep
+    have hd0 := (Polynomial.separable_quadratic_iff one_ne_zero).mp hpsep
+    have hres : IsLocalRing.residue R (t * t - 4 * n) =
+        (-(IsLocalRing.residue R t)) ^ 2 - 4 * 1 * IsLocalRing.residue R n := by
+      simp only [map_sub, map_mul, map_ofNat]
+      ring
+    refine (IsLocalRing.residue_ne_zero_iff_isUnit _).mp ?_
+    rw [hres]
+    exact hd0
+
 open TensorProduct in
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
-/-- **The `χ`-twisted finite flat Hopf model, abstract form** (sorry
-node — the fixed-points quadratic descent, the integral core of the
-quadratic-twist construction, stated over an abstract DVR `R` with
-fraction field `K` so the construction is free of the completed
-arithmetic): given a finite flat `R`-Hopf algebra `H` with étale
-generic fibre and COMMUTATIVE `Ω`-points, a quadratic separable
-extension `L/K` whose unramifiedness is witnessed by a generator `θL`
-rooting a monic `R`-polynomial `Q` with separable residue, and `2` a
-unit in `R`, there is a finite flat `R`-Hopf algebra `H'` — the
-`χ`-twist of `H` — with étale generic fibre, whose `Ω`-point
-convolution group is identified with that of `H` by an equivalence `θ`
-intertwining the postcomposition Galois actions UP TO the quadratic
-character `χ` of `L/K`. Content (the fixed-points construction): the
-order `R_L = R[θL] ⊆ L` is `R`-free of rank `2` (`θL` is integral by
-`hQm`/`hθQ` and spans by `hθtop`) and stable under the conjugation `τ`
-of `L/K` (the trace of `θL` is integral because the DVR `R` is
-integrally closed); commutative points force the étale generic fibre
-to be cocommutative, so the antipode `S` is a Hopf involution and
-`ι = τ ⊗ S` is a costructure-compatible involution of the base change
-`R_L ⊗[R] H`; since `2` is a unit the averaging idempotent
-`(1 + ι)/2` splits `R_L ⊗[R] H`, so the fixed points
+/-- **Antipode–comultiplication commutation from commutative points**
+(PROVEN 2026-07-24 — the cocommutativity input of the fixed-points
+quadratic descent): for a finite flat Hopf algebra `H` over the DVR
+`R` whose generic fibre `K ⊗ H` is étale with COMMUTATIVE `Ω`-point
+convolution, the antipode commutes with the comultiplication WITHOUT
+the tensor swap: `Δ ∘ S = (S ⊗ S) ∘ Δ`. Content: on `K ⊗ H` étale
+points separate pairs (`etale_tensor_points_separate`); against a pair
+of points `(φ, ψ)` the left side evaluates to `(φ ⋆ ψ) ∘ S` — the
+convolution inverse of `φ ⋆ ψ`
+(`toConv_comp_antipodeAlgHom_mul_cancel`) — and the right side to
+`(φ ∘ S) ⋆ (ψ ∘ S)`, which is ALSO a convolution inverse of `φ ⋆ ψ`
+because the points convolution is commutative (`hcomm`); left and
+right inverses in a monoid coincide. The identity then descends to `H`
+along the tensor-square comparison `H ⊗[R] H → (K⊗H) ⊗[K] (K⊗H)` —
+injective as the composite of the flat base-change unit
+(`Module.Flat.rTensor_preserves_injective_linearMap`) with the
+`distribBaseChange` equivalence — using that the inclusion `h ↦ 1 ⊗ h`
+intertwines the antipodes (`TensorProduct.antipode_def` with the
+identity antipode of `K`) and the comultiplications
+(`Bialgebra.TensorProduct.comulAlgHom_def`, whose
+`tensorTensorTensorComm` sends `(1 ⊗ 1) ⊗ Δh` exactly to the
+comparison of `Δh`). -/
+theorem comulAlgHom_comp_antipodeAlgHom_of_commPoints
+    (R : Type) [CommRing R] [IsDomain R] [IsDiscreteValuationRing R]
+    (K : Type) [Field K] [CharZero K] [Algebra R K] [IsFractionRing R K]
+    (Ω : Type) [Field Ω] [Algebra K Ω] [IsAlgClosure K Ω]
+    (H : Type) [CommRing H] [HopfAlgebra R H] [Module.Finite R H]
+    [Module.Flat R H] [Algebra.Etale K (K ⊗[R] H)]
+    (hcomm : ∀ x y : Additive (WithConv ((K ⊗[R] H) →ₐ[K] Ω)),
+      x + y = y + x) :
+    (Bialgebra.comulAlgHom R H).comp (HopfAlgebra.antipodeAlgHom R H) =
+      (Algebra.TensorProduct.map (HopfAlgebra.antipodeAlgHom R H)
+        (HopfAlgebra.antipodeAlgHom R H)).comp
+        (Bialgebra.comulAlgHom R H) := by
+  classical
+  -- Step 1: the identity over the generic fibre `C = K ⊗ H`, via points
+  have hK : (Bialgebra.comulAlgHom K (K ⊗[R] H)).comp
+      (HopfAlgebra.antipodeAlgHom K (K ⊗[R] H)) =
+      (Algebra.TensorProduct.map (HopfAlgebra.antipodeAlgHom K (K ⊗[R] H))
+        (HopfAlgebra.antipodeAlgHom K (K ⊗[R] H))).comp
+        (Bialgebra.comulAlgHom K (K ⊗[R] H)) := by
+    apply AlgHom.ext
+    intro c
+    rw [AlgHom.comp_apply, AlgHom.comp_apply]
+    have hpair : ∀ φ ψ : (K ⊗[R] H) →ₐ[K] Ω,
+        Algebra.TensorProduct.lift φ ψ (fun _ _ => Commute.all _ _)
+          ((Bialgebra.comulAlgHom K (K ⊗[R] H))
+            ((HopfAlgebra.antipodeAlgHom K (K ⊗[R] H)) c) -
+          (Algebra.TensorProduct.map (HopfAlgebra.antipodeAlgHom K (K ⊗[R] H))
+            (HopfAlgebra.antipodeAlgHom K (K ⊗[R] H)))
+            ((Bialgebra.comulAlgHom K (K ⊗[R] H)) c)) = 0 := by
+      intro φ ψ
+      rw [map_sub]
+      -- the left side is antipode precomposition on the product point
+      have hL : Algebra.TensorProduct.lift φ ψ (fun _ _ => Commute.all _ _)
+          ((Bialgebra.comulAlgHom K (K ⊗[R] H))
+            ((HopfAlgebra.antipodeAlgHom K (K ⊗[R] H)) c)) =
+          WithConv.toConv ((WithConv.toConv φ * WithConv.toConv ψ).ofConv.comp
+            (HopfAlgebra.antipodeAlgHom K (K ⊗[R] H))) c := by
+        rw [show (WithConv.toConv ((WithConv.toConv φ *
+            WithConv.toConv ψ).ofConv.comp
+            (HopfAlgebra.antipodeAlgHom K (K ⊗[R] H))) c : Ω) =
+            (WithConv.toConv φ * WithConv.toConv ψ)
+              ((HopfAlgebra.antipodeAlgHom K (K ⊗[R] H)) c) from rfl]
+        rw [AlgHom.convMul_apply]
+        rfl
+      -- the right side is the product of the precomposed points
+      have hR : Algebra.TensorProduct.lift φ ψ (fun _ _ => Commute.all _ _)
+          ((Algebra.TensorProduct.map
+            (HopfAlgebra.antipodeAlgHom K (K ⊗[R] H))
+            (HopfAlgebra.antipodeAlgHom K (K ⊗[R] H)))
+            ((Bialgebra.comulAlgHom K (K ⊗[R] H)) c)) =
+          (WithConv.toConv (φ.comp (HopfAlgebra.antipodeAlgHom K (K ⊗[R] H))) *
+            WithConv.toConv (ψ.comp
+              (HopfAlgebra.antipodeAlgHom K (K ⊗[R] H)))) c := by
+        rw [AlgHom.convMul_apply]
+        have hmap : ∀ z : (K ⊗[R] H) ⊗[K] (K ⊗[R] H),
+            Algebra.TensorProduct.lift φ ψ (fun _ _ => Commute.all _ _)
+              ((Algebra.TensorProduct.map
+                (HopfAlgebra.antipodeAlgHom K (K ⊗[R] H))
+                (HopfAlgebra.antipodeAlgHom K (K ⊗[R] H))) z) =
+            Algebra.TensorProduct.lift
+              (φ.comp (HopfAlgebra.antipodeAlgHom K (K ⊗[R] H)))
+              (ψ.comp (HopfAlgebra.antipodeAlgHom K (K ⊗[R] H)))
+              (fun _ _ => Commute.all _ _) z := by
+          intro z
+          induction z with
+          | zero => simp
+          | tmul a b =>
+            rw [Algebra.TensorProduct.map_tmul,
+              Algebra.TensorProduct.lift_tmul, Algebra.TensorProduct.lift_tmul]
+            rfl
+          | add x y hx hy => rw [map_add, map_add, map_add, hx, hy]
+        rw [hmap]
+        rfl
+      rw [hL, hR]
+      -- both are THE inverse of `φ ⋆ ψ` in the commutative points monoid
+      have hcomm' : ∀ x y : WithConv ((K ⊗[R] H) →ₐ[K] Ω), x * y = y * x :=
+        fun x y => hcomm x y
+      have ha : WithConv.toConv ((WithConv.toConv φ *
+          WithConv.toConv ψ).ofConv.comp
+          (HopfAlgebra.antipodeAlgHom K (K ⊗[R] H))) *
+          (WithConv.toConv φ * WithConv.toConv ψ) = 1 :=
+        toConv_comp_antipodeAlgHom_mul_cancel K Ω (K ⊗[R] H) _
+      have hb : (WithConv.toConv (φ.comp
+          (HopfAlgebra.antipodeAlgHom K (K ⊗[R] H))) *
+          WithConv.toConv (ψ.comp
+            (HopfAlgebra.antipodeAlgHom K (K ⊗[R] H)))) *
+          (WithConv.toConv φ * WithConv.toConv ψ) = 1 := by
+        have hφ : WithConv.toConv (φ.comp
+            (HopfAlgebra.antipodeAlgHom K (K ⊗[R] H))) *
+            WithConv.toConv φ = 1 :=
+          toConv_comp_antipodeAlgHom_mul_cancel K Ω (K ⊗[R] H)
+            (WithConv.toConv φ)
+        have hψ : WithConv.toConv (ψ.comp
+            (HopfAlgebra.antipodeAlgHom K (K ⊗[R] H))) *
+            WithConv.toConv ψ = 1 :=
+          toConv_comp_antipodeAlgHom_mul_cancel K Ω (K ⊗[R] H)
+            (WithConv.toConv ψ)
+        calc (WithConv.toConv (φ.comp
+              (HopfAlgebra.antipodeAlgHom K (K ⊗[R] H))) *
+            WithConv.toConv (ψ.comp
+              (HopfAlgebra.antipodeAlgHom K (K ⊗[R] H)))) *
+            (WithConv.toConv φ * WithConv.toConv ψ)
+            = (WithConv.toConv (φ.comp
+                (HopfAlgebra.antipodeAlgHom K (K ⊗[R] H))) *
+              WithConv.toConv φ) *
+              (WithConv.toConv (ψ.comp
+                (HopfAlgebra.antipodeAlgHom K (K ⊗[R] H))) *
+              WithConv.toConv ψ) := by
+              rw [mul_assoc, mul_assoc]
+              congr 1
+              rw [← mul_assoc, ← mul_assoc]
+              congr 1
+              exact hcomm' _ _
+          _ = 1 := by rw [hφ, hψ, one_mul]
+      have hab : WithConv.toConv ((WithConv.toConv φ *
+          WithConv.toConv ψ).ofConv.comp
+          (HopfAlgebra.antipodeAlgHom K (K ⊗[R] H))) =
+          WithConv.toConv (φ.comp
+            (HopfAlgebra.antipodeAlgHom K (K ⊗[R] H))) *
+          WithConv.toConv (ψ.comp
+            (HopfAlgebra.antipodeAlgHom K (K ⊗[R] H))) := by
+        have hright : (WithConv.toConv φ * WithConv.toConv ψ) *
+            WithConv.toConv ((WithConv.toConv φ *
+              WithConv.toConv ψ).ofConv.comp
+              (HopfAlgebra.antipodeAlgHom K (K ⊗[R] H))) = 1 := by
+          rw [hcomm']
+          exact ha
+        exact (left_inv_eq_right_inv hb hright).symm
+      rw [hab]
+      exact sub_self _
+    have hz := etale_tensor_points_separate K Ω (K ⊗[R] H)
+      ((Bialgebra.comulAlgHom K (K ⊗[R] H))
+        ((HopfAlgebra.antipodeAlgHom K (K ⊗[R] H)) c) -
+      (Algebra.TensorProduct.map (HopfAlgebra.antipodeAlgHom K (K ⊗[R] H))
+        (HopfAlgebra.antipodeAlgHom K (K ⊗[R] H)))
+        ((Bialgebra.comulAlgHom K (K ⊗[R] H)) c)) hpair
+    exact sub_eq_zero.mp hz
+  -- Step 2: descend along the injective tensor-square comparison
+  apply AlgHom.ext
+  intro h
+  rw [AlgHom.comp_apply, AlgHom.comp_apply]
+  set u : (H ⊗[R] H) →ₗ[R] K ⊗[R] (H ⊗[R] H) :=
+    (LinearMap.rTensor (H ⊗[R] H) (Algebra.linearMap R K)).comp
+      (TensorProduct.lid R (H ⊗[R] H)).symm.toLinearMap with hu
+  have huinj : Function.Injective u := by
+    have h1 : Function.Injective
+        (LinearMap.rTensor (H ⊗[R] H) (Algebra.linearMap R K)) :=
+      Module.Flat.rTensor_preserves_injective_linearMap (Algebra.linearMap R K)
+        (fun a b hab => IsFractionRing.injective R K
+          (by simpa [Algebra.linearMap_apply] using hab))
+    intro x y hxy
+    rw [hu] at hxy
+    simp only [LinearMap.comp_apply, LinearEquiv.coe_coe] at hxy
+    exact (TensorProduct.lid R (H ⊗[R] H)).symm.injective (h1 hxy)
+  set d := TensorProduct.AlgebraTensorModule.distribBaseChange R K H H with hd
+  set jj : (H ⊗[R] H) →ₗ[R] (K ⊗[R] H) ⊗[K] (K ⊗[R] H) :=
+    (d.toLinearMap.restrictScalars R) ∘ₗ u with hjj
+  have hjjinj : Function.Injective jj := by
+    intro x y hxy
+    apply huinj
+    apply d.injective
+    simpa [hjj] using hxy
+  have hjjtmul : ∀ a b : H, jj (a ⊗ₜ[R] b) =
+      ((1 : K) ⊗ₜ[R] a) ⊗ₜ[K] ((1 : K) ⊗ₜ[R] b) := by
+    intro a b
+    simp only [hjj, hu, hd, LinearMap.comp_apply, LinearEquiv.coe_coe,
+      LinearMap.coe_restrictScalars, TensorProduct.lid_symm_apply,
+      LinearMap.rTensor_tmul, Algebra.linearMap_apply, map_one]
+    rfl
+  -- antipode compatibility of the inclusion `h ↦ 1 ⊗ h`
+  have hSj : ∀ a : H,
+      (HopfAlgebra.antipodeAlgHom K (K ⊗[R] H)) ((1 : K) ⊗ₜ[R] a) =
+      (1 : K) ⊗ₜ[R] (HopfAlgebra.antipodeAlgHom R H a) := by
+    intro a
+    show HopfAlgebra.antipode K ((1 : K) ⊗ₜ[R] a) =
+      (1 : K) ⊗ₜ[R] HopfAlgebra.antipode R a
+    rw [TensorProduct.antipode_def]
+    rw [show (TensorProduct.AlgebraTensorModule.map
+      (HopfAlgebra.antipode K (A := K)) (HopfAlgebra.antipode R (A := H)))
+      ((1 : K) ⊗ₜ[R] a) = (HopfAlgebra.antipode K (1 : K)) ⊗ₜ[R]
+        (HopfAlgebra.antipode R a) from rfl]
+    rw [HopfAlgebra.antipode_one]
+  -- comultiplication compatibility of the inclusion
+  have hΔjj : ∀ z : H ⊗[R] H,
+      (Algebra.TensorProduct.tensorTensorTensorComm R K R K K K H H).toAlgHom
+        (((1 : K) ⊗ₜ[K] (1 : K)) ⊗ₜ[R] z) = jj z := by
+    intro z
+    induction z with
+    | zero => simp
+    | tmul a b =>
+      rw [hjjtmul]
+      exact Algebra.TensorProduct.tensorTensorTensorComm_tmul _ _ _ _
+    | add x y hx hy =>
+      rw [TensorProduct.tmul_add, map_add, hx, hy, map_add]
+  have hΔj : ∀ a : H,
+      (Bialgebra.comulAlgHom K (K ⊗[R] H)) ((1 : K) ⊗ₜ[R] a) =
+      jj ((Bialgebra.comulAlgHom R H) a) := by
+    intro a
+    rw [Bialgebra.TensorProduct.comulAlgHom_def, AlgHom.comp_apply,
+      Algebra.TensorProduct.map_tmul, map_one]
+    rw [show ((1 : K ⊗[K] K)) = (1 : K) ⊗ₜ[K] (1 : K) from rfl]
+    exact hΔjj _
+  -- tensor-square antipode compatibility
+  have hSSjj : ∀ z : H ⊗[R] H,
+      (Algebra.TensorProduct.map (HopfAlgebra.antipodeAlgHom K (K ⊗[R] H))
+        (HopfAlgebra.antipodeAlgHom K (K ⊗[R] H))) (jj z) =
+      jj ((Algebra.TensorProduct.map (HopfAlgebra.antipodeAlgHom R H)
+        (HopfAlgebra.antipodeAlgHom R H)) z) := by
+    intro z
+    induction z with
+    | zero => simp
+    | tmul a b =>
+      rw [hjjtmul, Algebra.TensorProduct.map_tmul, hSj, hSj,
+        Algebra.TensorProduct.map_tmul, hjjtmul]
+    | add x y hx hy => simp only [map_add, hx, hy]
+  -- assemble
+  apply hjjinj
+  calc jj ((Bialgebra.comulAlgHom R H) ((HopfAlgebra.antipodeAlgHom R H) h))
+      = (Bialgebra.comulAlgHom K (K ⊗[R] H))
+          ((1 : K) ⊗ₜ[R] ((HopfAlgebra.antipodeAlgHom R H) h)) := (hΔj _).symm
+    _ = (Bialgebra.comulAlgHom K (K ⊗[R] H))
+          ((HopfAlgebra.antipodeAlgHom K (K ⊗[R] H)) ((1 : K) ⊗ₜ[R] h)) := by
+        rw [hSj]
+    _ = (Algebra.TensorProduct.map (HopfAlgebra.antipodeAlgHom K (K ⊗[R] H))
+          (HopfAlgebra.antipodeAlgHom K (K ⊗[R] H)))
+          ((Bialgebra.comulAlgHom K (K ⊗[R] H)) ((1 : K) ⊗ₜ[R] h)) := by
+        rw [← AlgHom.comp_apply, hK, AlgHom.comp_apply]
+    _ = (Algebra.TensorProduct.map (HopfAlgebra.antipodeAlgHom K (K ⊗[R] H))
+          (HopfAlgebra.antipodeAlgHom K (K ⊗[R] H)))
+          (jj ((Bialgebra.comulAlgHom R H) h)) := by rw [hΔj]
+    _ = jj ((Algebra.TensorProduct.map (HopfAlgebra.antipodeAlgHom R H)
+          (HopfAlgebra.antipodeAlgHom R H))
+          ((Bialgebra.comulAlgHom R H) h)) := hSSjj _
+
+/-- The generic quadratic order `R[X]/(X² − tX + n)` attached to a
+trace `t` and a norm `n`: the abstract incarnation of the ring of
+integers `R[θL]` of an unramified quadratic extension, presented so
+that its rank-2 freeness (`AdjoinRoot.powerBasis'` against the monic
+quadratic) and its conjugation (`quadraticOrderConj` below) are
+available without reference to any ambient field. -/
+abbrev quadraticOrder (R : Type) [CommRing R] (t n : R) : Type :=
+  AdjoinRoot (Polynomial.X ^ 2 - Polynomial.C t * Polynomial.X +
+    Polynomial.C n : Polynomial R)
+
+/-- The conjugation involution of the generic quadratic order
+`R[X]/(X² − tX + n)`: the `R`-algebra automorphism sending the root
+`r` to the "other root" `t − r` (indeed
+`(t−r)² − t(t−r) + n = r² − tr + n = 0`); it is its own inverse
+because `t − (t − r) = r`. -/
+noncomputable def quadraticOrderConj (R : Type) [CommRing R] (t n : R) :
+    quadraticOrder R t n ≃ₐ[R] quadraticOrder R t n :=
+  let φ : quadraticOrder R t n →ₐ[R] quadraticOrder R t n :=
+    AdjoinRoot.liftAlgHom _ (Algebra.ofId R (quadraticOrder R t n))
+      (algebraMap R (quadraticOrder R t n) t - AdjoinRoot.root _) (by
+        have hroot : Polynomial.aeval (AdjoinRoot.root
+            (Polynomial.X ^ 2 - Polynomial.C t * Polynomial.X +
+              Polynomial.C n : Polynomial R))
+            (Polynomial.X ^ 2 - Polynomial.C t * Polynomial.X +
+              Polynomial.C n : Polynomial R) = 0 := by
+          rw [AdjoinRoot.aeval_eq, AdjoinRoot.mk_self]
+        rw [show (((Algebra.ofId R (quadraticOrder R t n)) :
+            R →ₐ[R] quadraticOrder R t n) : R →+* quadraticOrder R t n) =
+          algebraMap R (quadraticOrder R t n) from rfl,
+          ← Polynomial.aeval_def]
+        simp only [map_add, map_sub, map_mul, map_pow, Polynomial.aeval_X,
+          Polynomial.aeval_C] at hroot ⊢
+        linear_combination hroot)
+  AlgEquiv.ofAlgHom φ φ
+    (by
+      apply AdjoinRoot.algHom_ext
+      rw [AlgHom.comp_apply, AdjoinRoot.liftAlgHom_root, map_sub,
+        AlgHom.commutes, AdjoinRoot.liftAlgHom_root, AlgHom.coe_id, id_eq]
+      ring)
+    (by
+      apply AdjoinRoot.algHom_ext
+      rw [AlgHom.comp_apply, AdjoinRoot.liftAlgHom_root, map_sub,
+        AlgHom.commutes, AdjoinRoot.liftAlgHom_root, AlgHom.coe_id, id_eq]
+      ring)
+
+open TensorProduct in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **The fixed-point order, algebra level** (sorry node — the
+eigenspace-splitting stage of the integral fixed-points descent, with
+NO costructure in sight): over a DVR `R` with `2` a unit, given a
+finite flat commutative `R`-Hopf algebra `H` with involutive antipode
+(`hS2`) and a monic quadratic `X² − tX + n` with UNIT discriminant,
+there is a finite flat `R`-ALGEBRA `H'` whose base change to the
+quadratic order `R_L = R[X]/(X² − tX + n)` is identified with
+`R_L ⊗ H` as an `R_L`-algebra, intertwining `τ ⊗ id` with `τ ⊗ S`.
+Intended construction: `ι := τ ⊗ S` is an `R`-algebra involution of
+`A := R_L ⊗ H` (involutive by `hS2` and the involutivity of the
+conjugation); `H' := A^ι` — the equalizer subalgebra of `ι` and the
+identity; the element `δ := 2·root − t` satisfies `τ δ = −δ` and
+`δ² = t² − 4n`, a unit (`hdisc`), so with `2` a unit (`h2`) every
+`a ∈ A` splits as `a = a⁺ + δ·(δ⁻¹·δ·a⁻)` with `a± := (a ± ιa)/2` and
+`a⁺, δ·a⁻ ∈ H'`: the multiplication map `R_L ⊗[R] H' → A` is
+surjective, and injective because the `±1`-eigenspaces of `ι` meet
+trivially (`2` a unit) while `δ` (a unit) exchanges them — this map is
+`Φ⁻¹`; `H'` is finite (a submodule of the finite `R`-module `A` over
+the Noetherian DVR `R`) and flat (finite and torsion-free inside the
+free `A`, over a PID); the equivariance clause holds because on the
+image of `H'` the map `τ ⊗ id` acts through the first factor exactly
+as `ι ∘ (τ ⊗ S)` does. -/
+theorem exists_fixedPointAlgebraOrder_of_descentData
+    (R : Type) [CommRing R] [IsDomain R] [IsDiscreteValuationRing R]
+    (h2 : IsUnit (2 : R)) (t n : R) (hdisc : IsUnit (t * t - 4 * n))
+    (H : Type) [CommRing H] [HopfAlgebra R H] [Module.Finite R H]
+    [Module.Flat R H]
+    (hS2 : (HopfAlgebra.antipodeAlgHom R H).comp
+      (HopfAlgebra.antipodeAlgHom R H) = AlgHom.id R H) :
+    ∃ (H' : Type) (_ : CommRing H') (_ : Algebra R H')
+      (_ : Module.Finite R H') (_ : Module.Flat R H')
+      (Φ : (quadraticOrder R t n ⊗[R] H') ≃ₐ[quadraticOrder R t n]
+        (quadraticOrder R t n ⊗[R] H)),
+      ∀ x : quadraticOrder R t n ⊗[R] H',
+        Φ (Algebra.TensorProduct.map
+          (quadraticOrderConj R t n : quadraticOrder R t n →ₐ[R]
+            quadraticOrder R t n) (AlgHom.id R H') x) =
+        Algebra.TensorProduct.map
+          (quadraticOrderConj R t n : quadraticOrder R t n →ₐ[R]
+            quadraticOrder R t n) (HopfAlgebra.antipodeAlgHom R H)
+          (Φ x) := by
+  classical
+  -- the concrete splitting ring and its arithmetic
+  set RL := quadraticOrder R t n with hRL
+  set root : RL := AdjoinRoot.root _ with hroot
+  set τ0alg : RL →ₐ[R] RL := (quadraticOrderConj R t n :
+    quadraticOrder R t n →ₐ[R] quadraticOrder R t n) with hτ0alg
+  have hmono : (Polynomial.X ^ 2 - Polynomial.C t * Polynomial.X +
+      Polynomial.C n : Polynomial R).Monic :=
+    GaloisRepresentation.monic_quadratic t n
+  haveI : Module.Finite R RL := hmono.finite_adjoinRoot
+  haveI : Module.Free R RL := hmono.free_adjoinRoot
+  have hτroot : τ0alg root = algebraMap R RL t - root := by
+    show quadraticOrderConj R t n (AdjoinRoot.root _) = _
+    simp only [quadraticOrderConj, AlgEquiv.ofAlgHom_apply,
+      AdjoinRoot.liftAlgHom_root]
+    rfl
+  have hτ0τ0 : ∀ r, τ0alg (τ0alg r) = r := by
+    have hcomp : τ0alg.comp τ0alg = AlgHom.id R RL := by
+      apply AdjoinRoot.algHom_ext
+      rw [AlgHom.comp_apply, hτroot, map_sub, AlgHom.commutes, hτroot,
+        AlgHom.coe_id, id_eq]
+      ring
+    exact fun r => AlgHom.congr_fun hcomp r
+  have hrootsq : root ^ 2 = algebraMap R RL t * root - algebraMap R RL n := by
+    have h0 : Polynomial.aeval root (Polynomial.X ^ 2 -
+        Polynomial.C t * Polynomial.X + Polynomial.C n : Polynomial R) = 0 := by
+      rw [hroot, AdjoinRoot.aeval_eq, AdjoinRoot.mk_self]
+    simp only [map_add, map_sub, map_mul, map_pow, Polynomial.aeval_X,
+      Polynomial.aeval_C] at h0
+    linear_combination h0
+  have hspan : ∀ r : RL, ∃ c₀ c₁ : R,
+      r = algebraMap R RL c₀ + algebraMap R RL c₁ * root := by
+    intro r
+    induction r using AdjoinRoot.induction_on with
+    | ih p =>
+      set q : Polynomial R := Polynomial.X ^ 2 -
+        Polynomial.C t * Polynomial.X + Polynomial.C n with hq
+      have hmk : AdjoinRoot.mk q p = AdjoinRoot.mk q (p %ₘ q) := by
+        rw [AdjoinRoot.mk_eq_mk]
+        refine ⟨p /ₘ q, ?_⟩
+        rw [Polynomial.modByMonic_eq_sub_mul_div p q]
+        ring
+      have hdeg : (p %ₘ q).degree < q.degree :=
+        Polynomial.degree_modByMonic_lt p hmono
+      have hqdeg : q.degree = 2 := by
+        rw [Polynomial.degree_eq_natDegree hmono.ne_zero,
+          GaloisRepresentation.natDegree_quadratic]
+        rfl
+      rw [hqdeg] at hdeg
+      have hle1 : (p %ₘ q).degree ≤ 1 :=
+        Order.le_of_lt_succ (by exact_mod_cast hdeg)
+      have hform := Polynomial.eq_X_add_C_of_degree_le_one hle1
+      refine ⟨(p %ₘ q).coeff 0, (p %ₘ q).coeff 1, ?_⟩
+      conv_lhs => rw [hmk, hform]
+      rw [map_add, map_mul, AdjoinRoot.mk_X]
+      simp only [AdjoinRoot.mk_C]
+      show algebraMap R RL ((p %ₘ q).coeff 1) * root +
+        algebraMap R RL ((p %ₘ q).coeff 0) =
+        algebraMap R RL ((p %ₘ q).coeff 0) +
+        algebraMap R RL ((p %ₘ q).coeff 1) * root
+      ring
+  -- the twisted conjugation involution of the base change
+  set SH := HopfAlgebra.antipodeAlgHom R H with hSH
+  set ι : RL ⊗[R] H →ₐ[R] RL ⊗[R] H := Algebra.TensorProduct.map τ0alg SH
+    with hιdef
+  have hSS : ∀ h : H, SH (SH h) = h := fun h => by
+    have := AlgHom.congr_fun hS2 h
+    simpa using this
+  have hι2 : ∀ a, ι (ι a) = a := by
+    intro a
+    induction a with
+    | zero => simp
+    | tmul r h =>
+      rw [hιdef]
+      simp only [Algebra.TensorProduct.map_tmul]
+      rw [hτ0τ0, hSS]
+    | add x y hx hy => simp only [map_add, hx, hy]
+  -- the fixed points and the base-change comparison
+  set H's : Subalgebra R (RL ⊗[R] H) :=
+    AlgHom.equalizer ι (AlgHom.id R (RL ⊗[R] H)) with hH's
+  have hmem : ∀ a : RL ⊗[R] H, a ∈ H's ↔ ι a = a := by
+    intro a
+    rw [hH's]
+    exact Iff.rfl
+  set Φ0 : (RL ⊗[R] ↥H's) →ₐ[RL] (RL ⊗[R] H) :=
+    Algebra.TensorProduct.lift (Algebra.ofId RL (RL ⊗[R] H))
+      H's.val (fun _ _ => Commute.all _ _) with hΦ0
+  have hΦ0tmul : ∀ (r : RL) (x : ↥H's),
+      Φ0 (r ⊗ₜ[R] x) = algebraMap RL (RL ⊗[R] H) r * (x : RL ⊗[R] H) := by
+    intro r x
+    rw [hΦ0]
+    rw [Algebra.TensorProduct.lift_tmul]
+    rfl
+  have hιalg : ∀ r : RL, ι (algebraMap RL (RL ⊗[R] H) r) =
+      algebraMap RL (RL ⊗[R] H) (τ0alg r) := by
+    intro r
+    rw [Algebra.TensorProduct.algebraMap_apply, hιdef,
+      Algebra.TensorProduct.map_tmul, map_one,
+      Algebra.TensorProduct.algebraMap_apply]
+    simp [Algebra.algebraMap_self]
+  -- the discriminant element and its unit square
+  set δ : RL := 2 * root - algebraMap R RL t with hδdef
+  have hτδ : τ0alg δ = -δ := by
+    rw [hδdef, map_sub, map_mul, AlgHom.commutes, hτroot]
+    have h2' : τ0alg 2 = 2 := by
+      rw [show (2 : RL) = algebraMap R RL 2 by rw [map_ofNat]]
+      rw [AlgHom.commutes]
+    rw [h2']
+    ring
+  have hδsq : δ * δ = algebraMap R RL (t * t - 4 * n) := by
+    rw [hδdef, map_sub, map_mul, map_mul]
+    rw [show algebraMap R RL 4 = 4 by rw [map_ofNat]]
+    linear_combination (4 : RL) * hrootsq
+  have hδunit : IsUnit δ := by
+    refine isUnit_of_mul_isUnit_left (y := δ) ?_
+    rw [hδsq]
+    exact hdisc.map (algebraMap R RL)
+  obtain ⟨u2, hu2⟩ := h2
+  obtain ⟨ud, hud⟩ := hdisc
+  -- surjectivity of the comparison: eigenspace averaging
+  have hsurj : Function.Surjective Φ0 := by
+    intro a
+    set hfA : RL ⊗[R] H := algebraMap R (RL ⊗[R] H) ((u2⁻¹ : Rˣ) : R)
+      with hhfA
+    have hhalf : hfA * 2 = 1 := by
+      rw [hhfA, show (2 : RL ⊗[R] H) = algebraMap R (RL ⊗[R] H) 2 from
+        (map_ofNat _ 2).symm, ← map_mul, ← hu2, ← Units.val_mul,
+        inv_mul_cancel, Units.val_one, map_one]
+    set aplus := hfA * (a + ι a) with haplus
+    set aminus := hfA * (a - ι a) with haminus
+    have hιhf : ι hfA = hfA := by rw [hhfA, AlgHom.commutes]
+    have hplus_mem : aplus ∈ H's := by
+      rw [hmem, haplus, map_mul, hιhf, map_add, hι2]
+      ring
+    have hminus : ι aminus = -aminus := by
+      rw [haminus, map_mul, hιhf, map_sub, hι2]
+      ring
+    set δA := algebraMap RL (RL ⊗[R] H) δ with hδA
+    have hιδA : ι δA = -δA := by
+      rw [hδA, hιalg, hτδ, map_neg]
+    have hy_mem : δA * aminus ∈ H's := by
+      rw [hmem, map_mul, hιδA, hminus]
+      ring
+    refine ⟨1 ⊗ₜ[R] ⟨aplus, hplus_mem⟩ +
+      (((ud⁻¹ : Rˣ) : R) • δ) ⊗ₜ[R] ⟨δA * aminus, hy_mem⟩, ?_⟩
+    rw [map_add, hΦ0tmul, hΦ0tmul]
+    show algebraMap RL (RL ⊗[R] H) 1 * aplus +
+      algebraMap RL (RL ⊗[R] H) (((ud⁻¹ : Rˣ) : R) • δ) * (δA * aminus) = a
+    rw [map_one, one_mul]
+    have hsmul : algebraMap RL (RL ⊗[R] H) (((ud⁻¹ : Rˣ) : R) • δ) =
+        algebraMap R (RL ⊗[R] H) ((ud⁻¹ : Rˣ) : R) * δA := by
+      rw [Algebra.smul_def, map_mul, hδA, ← IsScalarTower.algebraMap_apply]
+    rw [hsmul]
+    have hδAδA : δA * δA = algebraMap R (RL ⊗[R] H) (t * t - 4 * n) := by
+      rw [hδA, ← map_mul, hδsq, ← IsScalarTower.algebraMap_apply]
+    have hkey : algebraMap R (RL ⊗[R] H) ((ud⁻¹ : Rˣ) : R) *
+        (δA * (δA * aminus)) = aminus := by
+      rw [show algebraMap R (RL ⊗[R] H) ((ud⁻¹ : Rˣ) : R) *
+          (δA * (δA * aminus)) =
+          (algebraMap R (RL ⊗[R] H) ((ud⁻¹ : Rˣ) : R) * (δA * δA)) * aminus
+          from by ring,
+        hδAδA, ← map_mul, ← hud,
+        show ((ud⁻¹ : Rˣ) : R) * ((ud : Rˣ) : R) = 1 from by
+          rw [← Units.val_mul, inv_mul_cancel, Units.val_one],
+        map_one, one_mul]
+    calc aplus + algebraMap R (RL ⊗[R] H) ((ud⁻¹ : Rˣ) : R) * δA *
+          (δA * aminus)
+        = aplus + algebraMap R (RL ⊗[R] H) ((ud⁻¹ : Rˣ) : R) *
+          (δA * (δA * aminus)) := by ring
+      _ = aplus + aminus := by rw [hkey]
+      _ = hfA * (2 * a) := by rw [haplus, haminus]; ring
+      _ = (hfA * 2) * a := by ring
+      _ = a := by rw [hhalf, one_mul]
+  -- every element of the base change is supported on `{1, root}`
+  have hdecomp : ∀ z : RL ⊗[R] ↥H's, ∃ x₀ x₁ : ↥H's,
+      z = 1 ⊗ₜ[R] x₀ + root ⊗ₜ[R] x₁ := by
+    intro z
+    induction z with
+    | zero => exact ⟨0, 0, by simp⟩
+    | tmul r x =>
+      obtain ⟨c₀, c₁, rfl⟩ := hspan r
+      refine ⟨c₀ • x, c₁ • x, ?_⟩
+      rw [TensorProduct.add_tmul]
+      congr 1
+      · rw [Algebra.algebraMap_eq_smul_one, TensorProduct.smul_tmul]
+      · rw [show algebraMap R RL c₁ * root = c₁ • root from
+          (Algebra.smul_def _ _).symm, TensorProduct.smul_tmul]
+    | add z₁ z₂ h₁ h₂ =>
+      obtain ⟨a₀, a₁, rfl⟩ := h₁
+      obtain ⟨b₀, b₁, rfl⟩ := h₂
+      refine ⟨a₀ + b₀, a₁ + b₁, ?_⟩
+      rw [TensorProduct.tmul_add, TensorProduct.tmul_add]
+      abel
+  -- injectivity of the comparison: the conjugation separates `1` and `root`
+  have hinj : Function.Injective Φ0 := by
+    rw [injective_iff_map_eq_zero]
+    intro z hz
+    obtain ⟨x₀, x₁, rfl⟩ := hdecomp z
+    rw [map_add, hΦ0tmul, hΦ0tmul, map_one, one_mul] at hz
+    have hz2 := congrArg ι hz
+    rw [map_add, map_mul, map_zero] at hz2
+    have hx₀fix : ι (x₀ : RL ⊗[R] H) = x₀ := (hmem _).mp x₀.2
+    have hx₁fix : ι (x₁ : RL ⊗[R] H) = x₁ := (hmem _).mp x₁.2
+    rw [hx₀fix, hx₁fix, hιalg, hτroot, map_sub] at hz2
+    have hδx₁ : algebraMap RL (RL ⊗[R] H) δ * (x₁ : RL ⊗[R] H) = 0 := by
+      rw [hδdef, map_sub, map_mul,
+        show algebraMap RL (RL ⊗[R] H) (2 : RL) = 2 from map_ofNat _ 2]
+      linear_combination hz - hz2
+    have hδAunit : IsUnit (algebraMap RL (RL ⊗[R] H) δ) :=
+      hδunit.map (algebraMap RL (RL ⊗[R] H))
+    have hx₁0 : (x₁ : RL ⊗[R] H) = 0 := by
+      obtain ⟨v, hv⟩ := hδAunit
+      calc (x₁ : RL ⊗[R] H) = ((v⁻¹ : (RL ⊗[R] H)ˣ) : RL ⊗[R] H) *
+            (((v : (RL ⊗[R] H)ˣ) : RL ⊗[R] H) * x₁) := by
+            rw [← mul_assoc, ← Units.val_mul, inv_mul_cancel, Units.val_one,
+              one_mul]
+        _ = 0 := by rw [hv, hδx₁, mul_zero]
+    have hx₀0 : (x₀ : RL ⊗[R] H) = 0 := by
+      rw [hx₁0, mul_zero, add_zero] at hz
+      exact hz
+    rw [show x₀ = 0 from Subtype.ext hx₀0, show x₁ = 0 from Subtype.ext hx₁0]
+    simp
+  -- finiteness and flatness of the fixed points
+  haveI hAfin : Module.Finite R (RL ⊗[R] H) :=
+    Module.Finite.tensorProduct R RL H
+  haveI hAnoeth : IsNoetherian R (RL ⊗[R] H) :=
+    isNoetherian_of_isNoetherianRing_of_finite R (RL ⊗[R] H)
+  haveI hfin' : Module.Finite R ↥H's := by
+    have hfg : H's.toSubmodule.FG := IsNoetherian.noetherian H's.toSubmodule
+    exact Module.Finite.iff_fg.mpr hfg
+  haveI hHfree : Module.Free R H := Module.free_of_flat_of_isLocalRing
+  haveI hAnzsd : NoZeroSMulDivisors R (RL ⊗[R] H) := by
+    set b := Module.Free.chooseBasis R (RL ⊗[R] H) with hb
+    refine ⟨fun {r x} hrx => ?_⟩
+    rcases eq_or_ne r 0 with hr | hr
+    · exact Or.inl hr
+    · refine Or.inr ?_
+      have h1 : b.repr (r • x) = 0 := by rw [hrx, map_zero]
+      have h2 : ∀ i, r * b.repr x i = 0 := by
+        intro i
+        have h3 := DFunLike.congr_fun h1 i
+        rw [map_smul] at h3
+        rwa [Finsupp.smul_apply, smul_eq_mul] at h3
+      have h3 : b.repr x = 0 := by
+        ext i
+        rcases mul_eq_zero.mp (h2 i) with h | h
+        · exact absurd h hr
+        · exact h
+      have h4 := congrArg b.repr.symm h3
+      rwa [LinearEquiv.symm_apply_apply, map_zero] at h4
+  haveI : NoZeroSMulDivisors R ↥H's :=
+    Function.Injective.noZeroSMulDivisors (Subtype.val : ↥H's → RL ⊗[R] H)
+      Subtype.val_injective rfl (fun _ _ => rfl)
+  haveI hfree' : Module.Free R ↥H's := Module.free_of_finite_type_torsion_free'
+  haveI hflat' : Module.Flat R ↥H's := inferInstance
+  -- packaging, with the equivariance computed on generators
+  set Φ : (RL ⊗[R] ↥H's) ≃ₐ[RL] RL ⊗[R] H :=
+    AlgEquiv.ofBijective Φ0 ⟨hinj, hsurj⟩ with hΦdef
+  refine ⟨↥H's, inferInstance, inferInstance, hfin', hflat', Φ, ?_⟩
+  intro z
+  have hΦap : ∀ w, Φ w = Φ0 w := fun w => rfl
+  induction z with
+  | zero => simp
+  | tmul r x =>
+    rw [Algebra.TensorProduct.map_tmul, hΦap, hΦap, hΦ0tmul, hΦ0tmul,
+      map_mul, hιalg, (hmem _).mp x.2]
+    rfl
+  | add z₁ z₂ h₁ h₂ =>
+    rw [map_add, map_add, map_add, h₁, h₂, map_add]
+
+open TensorProduct in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **The fixed-point order, Hopf upgrade** (sorry node — the
+costructure-corestriction stage of the integral fixed-points descent):
+given the algebra-level fixed-point identification `Φ` of
+`exists_fixedPointAlgebraOrder_of_descentData` — an `R_L`-algebra
+identification `R_L ⊗ H' ≅ R_L ⊗ H` intertwining `τ ⊗ id` with
+`τ ⊗ S` — upgrade the finite flat `R`-algebra `H'` to a finite flat
+`R`-HOPF algebra for which `Φ` becomes an `R_L`-bialgebra
+identification. Intended construction: the costructure of `H'` is the
+corestriction of that of `R_L ⊗ H` through `Φ`: for `x ∈ H'`,
+`(Φ⁻¹ ⊗ Φ⁻¹)(Δ(Φ(1 ⊗ x)))` is fixed by the conjugation-twist
+`(τ ⊗ id) ⊗ (τ ⊗ id)` of `(R_L ⊗ H') ⊗[R_L] (R_L ⊗ H')` — because
+`hScomul` makes `τ ⊗ S` commute with the comultiplication and `Φ`
+intertwines the two twists — and the `(τ ⊗ id)`-fixed points of the
+base change are exactly `1 ⊗ H' ⊗ H'` (the `τ`-fixed points of `R_L`
+are `R`: `2` and `δ` are units, `h2`/`hdisc`), so the comultiplication
+corestricts; likewise the counit lands in the `τ`-fixed `R ⊆ R_L` and
+the transported antipode preserves the fixed points; the Hopf axioms
+transport from `R_L ⊗ H` along the injective comparison
+`H' ⊗ H' → (R_L ⊗ H') ⊗[R_L] (R_L ⊗ H')` (the base-change unit of the
+free rank-2 `R_L`, split injective). -/
+theorem exists_fixedPointHopfOrder_of_algebraOrder
+    (R : Type) [CommRing R] [IsDomain R] [IsDiscreteValuationRing R]
+    (h2 : IsUnit (2 : R)) (t n : R) (hdisc : IsUnit (t * t - 4 * n))
+    (H : Type) [CommRing H] [HopfAlgebra R H] [Module.Finite R H]
+    [Module.Flat R H]
+    (hS2 : (HopfAlgebra.antipodeAlgHom R H).comp
+      (HopfAlgebra.antipodeAlgHom R H) = AlgHom.id R H)
+    (hScomul : (Bialgebra.comulAlgHom R H).comp
+      (HopfAlgebra.antipodeAlgHom R H) =
+      (Algebra.TensorProduct.map (HopfAlgebra.antipodeAlgHom R H)
+        (HopfAlgebra.antipodeAlgHom R H)).comp
+        (Bialgebra.comulAlgHom R H))
+    (H' : Type) [CommRing H'] [Algebra R H'] [Module.Finite R H']
+    [Module.Flat R H']
+    (Φ : (quadraticOrder R t n ⊗[R] H') ≃ₐ[quadraticOrder R t n]
+      (quadraticOrder R t n ⊗[R] H))
+    (hΦ : ∀ x : quadraticOrder R t n ⊗[R] H',
+      Φ (Algebra.TensorProduct.map
+        (quadraticOrderConj R t n : quadraticOrder R t n →ₐ[R]
+          quadraticOrder R t n) (AlgHom.id R H') x) =
+      Algebra.TensorProduct.map
+        (quadraticOrderConj R t n : quadraticOrder R t n →ₐ[R]
+          quadraticOrder R t n) (HopfAlgebra.antipodeAlgHom R H)
+        (Φ x)) :
+    ∃ (H'' : Type) (_ : CommRing H'') (_ : HopfAlgebra R H'')
+      (_ : Module.Finite R H'') (_ : Module.Flat R H'')
+      (e : (quadraticOrder R t n ⊗[R] H'') ≃ₐc[quadraticOrder R t n]
+        (quadraticOrder R t n ⊗[R] H)),
+      ∀ x : quadraticOrder R t n ⊗[R] H'',
+        e (Algebra.TensorProduct.map
+          (quadraticOrderConj R t n : quadraticOrder R t n →ₐ[R]
+            quadraticOrder R t n) (AlgHom.id R H'') x) =
+        Algebra.TensorProduct.map
+          (quadraticOrderConj R t n : quadraticOrder R t n →ₐ[R]
+            quadraticOrder R t n) (HopfAlgebra.antipodeAlgHom R H)
+          (e x) := by
+  sorry
+
+open TensorProduct in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **The fixed-point Hopf order** (DECOMPOSED 2026-07-24 — the
+eigenspace splitting producing the algebra-level order and its
+equivariant base-change identification is the sorried leaf
+`exists_fixedPointAlgebraOrder_of_descentData`; the corestriction of
+the costructure upgrading it to a Hopf order is the sorried leaf
+`exists_fixedPointHopfOrder_of_algebraOrder`; PROVEN here is the glue
+chaining them): over a DVR `R` with `2` a unit, given a finite flat
+commutative `R`-Hopf algebra `H` whose antipode is an involution
+(`hS2`) commuting with the comultiplication without the swap
+(`hScomul`), and a monic quadratic `X² − tX + n` with UNIT
+discriminant, there is a finite flat `R`-Hopf algebra `H'` whose base
+change to the quadratic order `R_L = R[X]/(X² − tX + n)` is identified
+with `R_L ⊗ H` as an `R_L`-BIALGEBRA, by an identification `e` that
+intertwines the conjugation-twisted maps: `e ∘ (τ ⊗ id) = (τ ⊗ S) ∘ e`
+— i.e. `H'` is the twisted form of `H` split by `R_L`, with descent
+cocycle `τ ⊗ S`. -/
+theorem exists_fixedPointHopfOrder_of_descentData
+    (R : Type) [CommRing R] [IsDomain R] [IsDiscreteValuationRing R]
+    (h2 : IsUnit (2 : R)) (t n : R) (hdisc : IsUnit (t * t - 4 * n))
+    (H : Type) [CommRing H] [HopfAlgebra R H] [Module.Finite R H]
+    [Module.Flat R H]
+    (hS2 : (HopfAlgebra.antipodeAlgHom R H).comp
+      (HopfAlgebra.antipodeAlgHom R H) = AlgHom.id R H)
+    (hScomul : (Bialgebra.comulAlgHom R H).comp
+      (HopfAlgebra.antipodeAlgHom R H) =
+      (Algebra.TensorProduct.map (HopfAlgebra.antipodeAlgHom R H)
+        (HopfAlgebra.antipodeAlgHom R H)).comp
+        (Bialgebra.comulAlgHom R H)) :
+    ∃ (H' : Type) (_ : CommRing H') (_ : HopfAlgebra R H')
+      (_ : Module.Finite R H') (_ : Module.Flat R H')
+      (e : (quadraticOrder R t n ⊗[R] H') ≃ₐc[quadraticOrder R t n]
+        (quadraticOrder R t n ⊗[R] H)),
+      ∀ x : quadraticOrder R t n ⊗[R] H',
+        e (Algebra.TensorProduct.map
+          (quadraticOrderConj R t n : quadraticOrder R t n →ₐ[R]
+            quadraticOrder R t n) (AlgHom.id R H') x) =
+        Algebra.TensorProduct.map
+          (quadraticOrderConj R t n : quadraticOrder R t n →ₐ[R]
+            quadraticOrder R t n) (HopfAlgebra.antipodeAlgHom R H)
+          (e x) := by
+  obtain ⟨H', cH', aH', finH', flatH', Φ, hΦ⟩ :=
+    exists_fixedPointAlgebraOrder_of_descentData R h2 t n hdisc H hS2
+  letI := cH'
+  letI := aH'
+  letI := finH'
+  letI := flatH'
+  exact exists_fixedPointHopfOrder_of_algebraOrder R h2 t n hdisc H hS2
+    hScomul H' Φ hΦ
+
+open TensorProduct in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **Twisted points of the fixed-point order** (sorry node — the
+GENERIC-FIBRE stage of the fixed-points quadratic descent): given the
+integral fixed-point identification `e` of
+`exists_fixedPointHopfOrder_of_descentData` — an `R_L`-bialgebra
+identification `R_L ⊗ H' ≅ R_L ⊗ H` intertwining `τ ⊗ id` with
+`τ ⊗ S` — together with the arithmetic dictionary between the abstract
+quadratic order and the concrete quadratic extension `L/K` (`θL`
+generates `L`, `τ θL = t − θL`, `θL·τθL = n`), the generic fibre
+`K ⊗ H'` is étale and its `Ω`-point convolution group is identified
+with that of `K ⊗ H` UP TO the quadratic character `χ` of `L/K`.
+Intended proof: `K ⊗ R_L ≅ K[X]/(X² − tX + n) ≅ L` (the quadratic is
+the minimal polynomial of the generator `θL`, irreducible since
+`θL ∉ K`); base-changing `e` along it identifies `L ⊗[K] (K ⊗ H')`
+with `L ⊗[K] (K ⊗ H)` as `L`-bialgebras, so `K ⊗ H'` is étale over
+`K` because it becomes étale over the finite separable `L` (reduced
+descends along the injection, and finite reduced over a
+characteristic-zero field is étale); an `Ω`-point `φ` of `K ⊗ H'`
+extends uniquely to an `L`-point of the base change along the
+embedding `L → Ω` picked by `θL ↦ θΩ`, transports through `e` and
+restricts to an `Ω`-point `θ φ` of `K ⊗ H` — a convolution
+isomorphism since `e` is a bialgebra map; a Galois `σ` with `χ(σ) = 1`
+fixes the chosen embedding and commutes with the transport (clause 1),
+while `χ(σ) = −1` swaps the two embeddings of `L`, which the
+intertwining `e ∘ (τ ⊗ id) = (τ ⊗ S) ∘ e` converts into
+postcomposition with the ANTIPODE — the convolution inverse:
+`θ(σ ∘ φ) + σ(θ φ) = 0` (clause 2). -/
+theorem exists_twistedPointsEquiv_of_fixedPointOrder
+    (R : Type) [CommRing R] [IsDomain R] [IsDiscreteValuationRing R]
+    (K : Type) [Field K] [CharZero K] [Algebra R K] [IsFractionRing R K]
+    (Ω : Type) [Field Ω] [Algebra K Ω] [IsAlgClosure K Ω]
+    (L : Type) [Field L] [Algebra K L]
+    [Algebra.IsQuadraticExtension K L] [Algebra.IsSeparable K L]
+    [Algebra L Ω] [IsScalarTower K L Ω]
+    (θL : L) (hθtop : Algebra.adjoin K ({θL} : Set L) = ⊤)
+    (t n : R) (τ : L ≃ₐ[K] L) (hτ1 : τ ≠ 1)
+    (hτθ : τ θL = algebraMap K L (algebraMap R K t) - θL)
+    (hθn : θL * τ θL = algebraMap K L (algebraMap R K n))
+    (H : Type) [CommRing H] [HopfAlgebra R H] [Module.Finite R H]
+    [Module.Flat R H] [Algebra.Etale K (K ⊗[R] H)]
+    (H' : Type) [CommRing H'] [HopfAlgebra R H'] [Module.Finite R H']
+    [Module.Flat R H']
+    (e : (quadraticOrder R t n ⊗[R] H') ≃ₐc[quadraticOrder R t n]
+      (quadraticOrder R t n ⊗[R] H))
+    (he : ∀ x : quadraticOrder R t n ⊗[R] H',
+      e (Algebra.TensorProduct.map
+        (quadraticOrderConj R t n : quadraticOrder R t n →ₐ[R]
+          quadraticOrder R t n) (AlgHom.id R H') x) =
+      Algebra.TensorProduct.map
+        (quadraticOrderConj R t n : quadraticOrder R t n →ₐ[R]
+          quadraticOrder R t n) (HopfAlgebra.antipodeAlgHom R H)
+        (e x)) :
+    ∃ (_ : Algebra.Etale K (K ⊗[R] H'))
+      (θ : Additive (WithConv ((K ⊗[R] H') →ₐ[K] Ω)) ≃+
+        Additive (WithConv ((K ⊗[R] H) →ₐ[K] Ω))),
+      ∀ (σ : Ω ≃ₐ[K] Ω) (φ : (K ⊗[R] H') →ₐ[K] Ω),
+        (quadraticCharacter K L Ω σ = 1 →
+          θ (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) =
+            Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp
+              (WithConv.ofConv (Additive.toMul
+                (θ (Additive.ofMul (WithConv.toConv φ)))))))) ∧
+        (quadraticCharacter K L Ω σ = -1 →
+          θ (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) +
+            Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp
+              (WithConv.ofConv (Additive.toMul
+                (θ (Additive.ofMul (WithConv.toConv φ))))))) = 0) := by
+  sorry
+
+open TensorProduct in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **The fixed-points descent core** (DECOMPOSED 2026-07-24 — the
+integral fixed-point Hopf order with its equivariant base-change
+identification is the sorried leaf
+`exists_fixedPointHopfOrder_of_descentData`, entirely field-free; the
+étale generic fibre and the `χ`-twisted points equivalence extracted
+from that identification are the sorried leaf
+`exists_twistedPointsEquiv_of_fixedPointOrder`; PROVEN here is the
+glue chaining them): given a finite flat `R`-Hopf algebra `H`, an
+explicit quadratic order witness — the nontrivial automorphism `τ` of
+`L/K` with `τ θL = t − θL`, `θL · τ θL = n` for `t, n ∈ R` with
+`t² − 4n` a UNIT of `R` — an antipode involution witness `hS2` and the
+swap-free antipode–comultiplication commutation `hScomul`, produce the
+`χ`-twist of `H`: a finite flat `R`-Hopf algebra `H'` with étale
+generic fibre whose `Ω`-point convolution group is identified with
+that of `H` UP TO the quadratic character `χ` of `L/K`. The abstract
+quadratic order `R[X]/(X² − tX + n)` (`quadraticOrder`) with its
+conjugation (`quadraticOrderConj`) is the integral splitting ring: the
+first leaf builds `H'` as the fixed points of `τ ⊗ S` on the base
+change, the second computes its points against the dictionary
+`R[X]/(X² − tX + n) ⊗ K ≅ L` given by the witness relations. -/
+theorem exists_twistedHopfModel_of_descentData
+    (R : Type) [CommRing R] [IsDomain R] [IsDiscreteValuationRing R]
+    (K : Type) [Field K] [CharZero K] [Algebra R K] [IsFractionRing R K]
+    (Ω : Type) [Field Ω] [Algebra K Ω] [IsAlgClosure K Ω]
+    (h2 : IsUnit (2 : R))
+    (L : Type) [Field L] [Algebra K L]
+    [Algebra.IsQuadraticExtension K L] [Algebra.IsSeparable K L]
+    [Algebra L Ω] [IsScalarTower K L Ω]
+    (θL : L) (hθtop : Algebra.adjoin K ({θL} : Set L) = ⊤)
+    (t n : R) (τ : L ≃ₐ[K] L) (hτ1 : τ ≠ 1)
+    (hτθ : τ θL = algebraMap K L (algebraMap R K t) - θL)
+    (hθn : θL * τ θL = algebraMap K L (algebraMap R K n))
+    (hdisc : IsUnit (t * t - 4 * n))
+    (H : Type) [CommRing H] [HopfAlgebra R H] [Module.Finite R H]
+    [Module.Flat R H] [Algebra.Etale K (K ⊗[R] H)]
+    (hS2 : (HopfAlgebra.antipodeAlgHom R H).comp
+      (HopfAlgebra.antipodeAlgHom R H) = AlgHom.id R H)
+    (hScomul : (Bialgebra.comulAlgHom R H).comp
+      (HopfAlgebra.antipodeAlgHom R H) =
+      (Algebra.TensorProduct.map (HopfAlgebra.antipodeAlgHom R H)
+        (HopfAlgebra.antipodeAlgHom R H)).comp
+        (Bialgebra.comulAlgHom R H)) :
+    ∃ (H' : Type) (_ : CommRing H') (_ : HopfAlgebra R H')
+      (_ : Module.Finite R H') (_ : Module.Flat R H')
+      (_ : Algebra.Etale K (K ⊗[R] H'))
+      (θ : Additive (WithConv ((K ⊗[R] H') →ₐ[K] Ω)) ≃+
+        Additive (WithConv ((K ⊗[R] H) →ₐ[K] Ω))),
+      ∀ (σ : Ω ≃ₐ[K] Ω) (φ : (K ⊗[R] H') →ₐ[K] Ω),
+        (quadraticCharacter K L Ω σ = 1 →
+          θ (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) =
+            Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp
+              (WithConv.ofConv (Additive.toMul
+                (θ (Additive.ofMul (WithConv.toConv φ)))))))) ∧
+        (quadraticCharacter K L Ω σ = -1 →
+          θ (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) +
+            Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp
+              (WithConv.ofConv (Additive.toMul
+                (θ (Additive.ofMul (WithConv.toConv φ))))))) = 0) := by
+  obtain ⟨H', cH', hopfH', finH', flatH', e, he⟩ :=
+    exists_fixedPointHopfOrder_of_descentData R h2 t n hdisc H hS2 hScomul
+  letI := cH'
+  letI := hopfH'
+  letI := finH'
+  letI := flatH'
+  obtain ⟨etH', θ, hθ⟩ :=
+    exists_twistedPointsEquiv_of_fixedPointOrder R K Ω L θL hθtop t n τ hτ1
+      hτθ hθn H H' e he
+  exact ⟨H', cH', hopfH', finH', flatH', etH', θ, hθ⟩
+
+open TensorProduct in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **The `χ`-twisted finite flat Hopf model, abstract form**
+(DECOMPOSED 2026-07-24 — the number-theoretic quadratic order witness
+is the sorried leaf `exists_quadraticOrderWitness`, the swap-free
+antipode–comultiplication commutation is the sorried leaf
+`comulAlgHom_comp_antipodeAlgHom_of_commPoints`, the pure
+semilinear-algebra fixed-points stage is the sorried leaf
+`exists_twistedHopfModel_of_descentData`; PROVEN here is the assembly,
+with the antipode involution supplied by the PROVEN
+`antipodeAlgHom_comp_antipodeAlgHom`): given a finite flat `R`-Hopf
+algebra `H` with étale generic fibre and COMMUTATIVE `Ω`-points, a
+quadratic separable extension `L/K` whose unramifiedness is witnessed
+by a generator `θL` rooting a monic `R`-polynomial `Q` with separable
+residue, and `2` a unit in `R`, there is a finite flat `R`-Hopf
+algebra `H'` — the `χ`-twist of `H` — with étale generic fibre, whose
+`Ω`-point convolution group is identified with that of `H` by an
+equivalence `θ` intertwining the postcomposition Galois actions UP TO
+the quadratic character `χ` of `L/K`. Content (the fixed-points
+construction): the order `R_L = R[θL] ⊆ L` is `R`-free of rank `2`
+(`θL` is integral by `hQm`/`hθQ` and spans by `hθtop`) and stable
+under the conjugation `τ` of `L/K` (the trace of `θL` is integral
+because the DVR `R` is integrally closed); commutative points force
+the étale generic fibre to be cocommutative, so the antipode `S` is a
+Hopf involution and `ι = τ ⊗ S` is a costructure-compatible involution
+of the base change `R_L ⊗[R] H`; since `2` is a unit the averaging
+idempotent `(1 + ι)/2` splits `R_L ⊗[R] H`, so the fixed points
 `H' = (R_L ⊗[R] H)^ι` are a direct summand — finite flat — and a Hopf
 order; over `K` its points are computed against the `hQsep`-étale
 descent datum: an `Ω`-point of the fixed ring is an `Ω`-point of
@@ -8234,7 +9288,12 @@ theorem exists_twistedHopfModel_of_quadraticWitness
             Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp
               (WithConv.ofConv (Additive.toMul
                 (θ (Additive.ofMul (WithConv.toConv φ))))))) = 0) := by
-  sorry
+  obtain ⟨t, n, τ, hτ1, hτθ, hθn, hdisc⟩ :=
+    exists_quadraticOrderWitness R K L θL Q hQm hθtop hθQ hQsep
+  exact exists_twistedHopfModel_of_descentData R K Ω h2 L θL hθtop t n τ hτ1
+    hτθ hθn hdisc H
+    (antipodeAlgHom_comp_antipodeAlgHom R H)
+    (comulAlgHom_comp_antipodeAlgHom_of_commPoints R K Ω H hcomm)
 
 open TensorProduct ValuativeRel IsDedekindDomain WithZero in
 set_option backward.isDefEq.respectTransparency false in
