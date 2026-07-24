@@ -7470,6 +7470,10 @@ sub-character `1`, quotient character `χ` (the image of the nontrivial
 member of `{χsub, χquo}`), and no coboundary writing of the upper-right
 entry. The residue package (`hsurj'`/`hopen'`/`hker'`) is the
 general-`p` residue package of `Residual.lean` applied to `O`.
+The conclusion also RE-EXPORTS `[IsDiscreteValuationRing O]`
+(2026-07-24): E2a-i already produces the valuation ring of `Frac R` as
+a DVR, and the E2b′ tame transfer downstream is proven at exactly that
+generality, so the instance is threaded through rather than forgotten.
 Soundness (audit 2026-07-24): the hypothesis set is classically empty
 (section audit), but every step above consumes exactly the listed
 hypotheses and none consumes the emptiness; `p ≥ 5` is not consumed
@@ -7495,6 +7499,7 @@ theorem exists_ribet_lattice_of_residually_reducible
       (_ : IsDomain O) (_ : Module.Finite ℤ_[p] O)
       (_ : TopologicalSpace O) (_ : IsTopologicalRing O)
       (_ : IsLocalRing O) (_ : IsModuleTopology ℤ_[p] O)
+      (_ : IsDiscreteValuationRing O)
       (_ : Algebra O (AlgebraicClosure ℚ_[p]))
       (_ : ContinuousSMul O (AlgebraicClosure ℚ_[p]))
       (ρO : GaloisRep ℚ O (Fin 2 → O))
@@ -7739,8 +7744,8 @@ theorem exists_ribet_lattice_of_residually_reducible
     exists_ribet_walk_nonsplit_lattice hOinj hsurj' hopen' hker'
       hirrO ψ hψne htrψ hdetψ
   -- assemble, composing the generic identifications
-  refine ⟨O, hCRO, hAZO, hDomO, hMFO, hTopO, hTRO, hLocO, hMTO, hAQO,
-    hCSQO, ρO', e'.trans e₀, kk', hFk, hFink, hAZk, hTopk, hDisck,
+  refine ⟨O, hCRO, hAZO, hDomO, hMFO, hTopO, hTRO, hLocO, hMTO, hDVRO,
+    hAQO, hCSQO, ρO', e'.trans e₀, kk', hFk, hFink, hAZk, hTopk, hDisck,
     hTRk, hAOk, hCSOk, hSTk, ρE, er, ψ, cc, hOinj, hZOcompat, ?_,
     hsurj', hopen', hker', her, htri, hnonsplit⟩
   intro g x
@@ -7936,46 +7941,60 @@ theorem isFlatAt_lattice_of_generic_iso
       (Fact.out : p.Prime)) :=
   sorry
 
+omit [IsDomain R] [Module.Finite ℤ_[p] R] [IsModuleTopology ℤ_[p] R] in
 /-- **Lattice tameness-at-2 transfer** (Eisenstein pillar E2b′-tame;
-sorry node — the saturation half of the lattice transfer): the
-lattice representation `ρO` carries a rank-1 unramified
-square-trivial `G_2`-quotient, given the generic linkage. Classical
-proof: the quotient `(π, δ)` of `hρ.isTameAtTwo` cuts the
-`G_2`-stable hyperplane `ker ((π ⊗ ℚ̄_p) ∘ e)` in the generic fibre;
-its intersection with the standard lattice `Fin 2 → O` is a
-SATURATED `G_2`-stable `O`-submodule (the saturation of the kernel
-line), so the corresponding quotient of `Fin 2 → O` is a
-torsion-free rank-1 `O`-module on which `G_2` acts through the SAME
-character `δ` read through `O ↪ ℚ̄_p`: its generic values are those
-of `δ ⊗ ℚ̄_p` (integral because the quotient lattice is stable), and
-it is unramified and square-trivial because `δ` is — both conditions
-are equalities in `O`, checked after the injection `hOinj`. In the
-intended consumer (E2a takes `O` to be the valuation ring of
-`Frac R`, a finite extension of `ℚ_p`) the saturated quotient of the
-finite free module is free of rank 1, furnishing the surjection
-`π' : (Fin 2 → O) →ₗ[O] O`. Soundness: inherits the parent E2b′
-audit (2026-07-24) — the hypothesis set is classically INHABITED
-(take `O = R`, `ρO` a frame of `ρ`, `e` the identity, `π'` the frame
-transport of `π`), and the conclusion is asserted for every
-inhabitant by the parent's recorded saturation transfer; the
-freeness of the saturated quotient over a general module-finite
-local `ℤ_p`-domain is part of that recorded route (over the intended
-DVR inhabitants it is immediate). Circularity guard (inherited from
-E2b′): must not route through `Family.lean` or `Reducible.lean`'s
-B5. -/
+PROVEN 2026-07-24 at the DVR generality the E2a consumer supplies —
+the saturation half of the lattice transfer): the lattice
+representation `ρO` carries a rank-1 unramified square-trivial
+`G_2`-quotient, given the generic linkage. STATEMENT NARROWED
+(2026-07-24) from a general module-finite local `ℤ_p`-domain `O` to a
+DISCRETE VALUATION RING `O` (`[IsDiscreteValuationRing O]`, which
+supplies `[IsLocalRing O]`): the recorded classical route needs the
+saturated quotient of the rank-2 lattice to be FREE of rank 1, which
+over a general local domain is an extra input but is immediate over a
+DVR — and E2a's `exists_valuationRing_stable_lattice` produces exactly
+a DVR (the valuation ring of the `p`-adic field `Frac R`), so the
+narrowing costs the consumer chain nothing (the DVR instance is now
+re-exported by `exists_ribet_lattice_of_residually_reducible` and
+threaded through E2b′/E2b). The unused `hZOcompat` was dropped in the
+same pass: the tame fields are read entirely through `hOinj`.
+
+Proof as formalized: write the generic tame quotient as the
+`ℚ̄_p`-functional `ψ := (π ⊗ ℚ̄_p)` on `ℚ̄_p ⊗_R V` and pull it back
+along `e` and the lattice inclusion `w ↦ 1 ⊗ w`, giving an additive
+`O`-semilinear `φ : (Fin 2 → O) → ℚ̄_p` with
+`φ (ρO g w) = δ(g) · φ w`. The character values `δ(g) = δ(g)(1)` are
+square-trivial (`mul_self_eq_one_iff`), so they are `±1` and lift to
+the sign `ε : G_2 → O` with `algebraMap O ℚ̄_p (ε g) = δ(g)`;
+multiplicativity, triviality at `1` and on inertia all descend from
+`R` through the two injections. Writing `φ w = a·w₀ + b·w₁` in the
+standard coordinates (`a, b ∈ ℚ̄_p` not both zero — else `ψ ∘ e`
+vanishes identically, contradicting surjectivity of `π`), the DVR
+dichotomy `ValuationRing.dvd_total` splits into three cases: if
+`b = t·a` with `t ∈ O` the projection `w ↦ w₀ + t·w₁` is surjective
+and factors `φ = a · (that projection)`, so cancelling the nonzero `a`
+gives the `ε`-equivariance in `O` after `hOinj`; symmetrically if
+`a = t·b`; and if neither holds, `φ` is INJECTIVE on the lattice
+(a kernel vector would exhibit one of the two divisibilities), so
+`ρO g = ε g` acts as the scalar sign and the first coordinate
+projection works. The character `δ` over `O` is `ε · id`, continuous
+because `ε g = π (ρO g x₀)` for a `π`-preimage `x₀` of `1` — a
+continuous linear read-off of the continuous `ρO`. Soundness (audit
+2026-07-24): the hypothesis set is classically INHABITED (take
+`O = ℤ_p = R`, `ρO` a frame of `ρ`, `e` the identity); no step
+consumes `p ≥ 5`, irreducibility, or residual data. Circularity guard
+(inherited from E2b′): does not route through `Family.lean` or
+`Reducible.lean`'s B5. -/
 theorem isTameAtTwo_lattice_of_generic_iso
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
     (hρ : IsHardlyRamified hpodd hv ρ)
     {O : Type u} [CommRing O] [Algebra ℤ_[p] O] [IsDomain O]
     [Module.Finite ℤ_[p] O] [TopologicalSpace O] [IsTopologicalRing O]
-    [IsLocalRing O] [IsModuleTopology ℤ_[p] O]
+    [IsModuleTopology ℤ_[p] O] [IsDiscreteValuationRing O]
     [Algebra O (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul O (AlgebraicClosure ℚ_[p])]
     (hOinj : Function.Injective (algebraMap O (AlgebraicClosure ℚ_[p])))
-    (hZOcompat : ∀ x : ℤ_[p],
-      algebraMap O (AlgebraicClosure ℚ_[p]) (algebraMap ℤ_[p] O x) =
-        algebraMap R (AlgebraicClosure ℚ_[p]) (algebraMap ℤ_[p] R x))
     {ρO : GaloisRep ℚ O (Fin 2 → O)}
     (e : ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O))
       ≃ₗ[AlgebraicClosure ℚ_[p]] ((AlgebraicClosure ℚ_[p]) ⊗[R] V))
@@ -7989,8 +8008,363 @@ theorem isTameAtTwo_lattice_of_generic_iso
           ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup :
             AddSubgroup Z2bar) (Field.absoluteGaloisGroup ℚ_[2]) ≤
           δ.ker) ∧
-        (∀ g' : Field.absoluteGaloisGroup ℚ_[2], δ g' * δ g' = 1) :=
-  sorry
+        (∀ g' : Field.absoluteGaloisGroup ℚ_[2], δ g' * δ g' = 1) := by
+  classical
+  obtain ⟨πR, hπRsurj, δR, hδR⟩ := hρ.isTameAtTwo
+  -- the scalar values of the generic quotient character
+  set dR : Field.absoluteGaloisGroup ℚ_[2] → R := fun g => δR g 1
+    with hdRdef
+  have hδRapp : ∀ (g : Field.absoluteGaloisGroup ℚ_[2]) (c : R),
+      δR g c = c * dR g := by
+    intro g c
+    have h := map_smul (δR g) c (1 : R)
+    rw [smul_eq_mul, mul_one, smul_eq_mul] at h
+    exact h
+  -- and their images in `ℚ̄_p`
+  set d : Field.absoluteGaloisGroup ℚ_[2] → AlgebraicClosure ℚ_[p] :=
+    fun g => algebraMap R (AlgebraicClosure ℚ_[p]) (dR g) with hddef
+  have hdsq : ∀ g, d g = 1 ∨ d g = -1 := by
+    intro g
+    rw [← mul_self_eq_one_iff]
+    have h1 : δR g * δR g = 1 := (hδR 1 0).2.2 g
+    have h2 : dR g * dR g = 1 := by
+      have h3 := congrArg (fun E : Module.End R R => E 1) h1
+      simpa [Module.End.mul_apply, hδRapp] using h3
+    show algebraMap R (AlgebraicClosure ℚ_[p]) (dR g) *
+      algebraMap R (AlgebraicClosure ℚ_[p]) (dR g) = 1
+    rw [← map_mul, h2, map_one]
+  have hdRmul : ∀ g h : Field.absoluteGaloisGroup ℚ_[2],
+      dR (g * h) = dR g * dR h := by
+    intro g h
+    have h2 : δR (g * h) 1 = (δR g * δR h) 1 := by rw [map_mul δR g h]
+    rw [Module.End.mul_apply, hδRapp (g * h) 1, hδRapp g (δR h 1),
+      hδRapp h 1] at h2
+    simp only [one_mul] at h2
+    rw [h2]
+    ring
+  have hdRone : dR 1 = 1 := by
+    have h2 : δR (1 : Field.absoluteGaloisGroup ℚ_[2]) 1 =
+        (1 : Module.End R R) 1 := by rw [map_one δR]
+    rw [hδRapp 1 1, one_mul, Module.End.one_apply] at h2
+    exact h2
+  have hdRinertia : ∀ σ ∈ AddSubgroup.inertia
+      ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
+      (Field.absoluteGaloisGroup ℚ_[2]), dR σ = 1 := by
+    intro σ hσ
+    have h1 : δR σ = 1 := by
+      have h := (hδR 1 0).2.1 hσ
+      rwa [GaloisRep.ker, MonoidHom.mem_ker] at h
+    have h2 := congrArg (fun E : Module.End R R => E 1) h1
+    simpa [hδRapp] using h2
+  -- the sign character, lifted to `O` through the injection `hOinj`
+  set ε : Field.absoluteGaloisGroup ℚ_[2] → O :=
+    fun g => if d g = 1 then 1 else -1 with hεdef
+  have hεd : ∀ g, algebraMap O (AlgebraicClosure ℚ_[p]) (ε g) = d g := by
+    intro g
+    by_cases h2 : d g = 1
+    · simp [hεdef, h2]
+    · have h1 : d g = -1 := (hdsq g).resolve_left h2
+      have h3 : ε g = -1 := by rw [hεdef]; exact if_neg h2
+      rw [h3, map_neg, map_one, h1]
+  have hdmul : ∀ g h, d (g * h) = d g * d h := by
+    intro g h
+    show algebraMap R (AlgebraicClosure ℚ_[p]) (dR (g * h)) = _
+    rw [hdRmul, map_mul]
+  have hεmul : ∀ g h, ε (g * h) = ε g * ε h := by
+    intro g h
+    apply hOinj
+    rw [map_mul, hεd, hεd, hεd, hdmul]
+  have hεone : ε 1 = 1 := by
+    apply hOinj
+    rw [hεd, map_one]
+    show algebraMap R (AlgebraicClosure ℚ_[p]) (dR 1) = 1
+    rw [hdRone, map_one]
+  have hεsq : ∀ g, ε g * ε g = 1 := by
+    intro g
+    by_cases h2 : d g = 1 <;> simp [hεdef, h2]
+  have hεinertia : ∀ σ ∈ AddSubgroup.inertia
+      ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
+      (Field.absoluteGaloisGroup ℚ_[2]), ε σ = 1 := by
+    intro σ hσ
+    have h1 : d σ = 1 := by
+      show algebraMap R (AlgebraicClosure ℚ_[p]) (dR σ) = 1
+      rw [hdRinertia σ hσ, map_one]
+    simp [hεdef, h1]
+  -- the generic tame functional on `ℚ̄_p ⊗[R] V`
+  set ψ : ((AlgebraicClosure ℚ_[p]) ⊗[R] V) →ₗ[AlgebraicClosure ℚ_[p]]
+      (AlgebraicClosure ℚ_[p]) :=
+    LinearMap.liftBaseChange (AlgebraicClosure ℚ_[p])
+      ((Algebra.linearMap R (AlgebraicClosure ℚ_[p])).comp πR) with hψdef
+  have hψtmul : ∀ (c : AlgebraicClosure ℚ_[p]) (v : V),
+      ψ (c ⊗ₜ[R] v) =
+        c * algebraMap R (AlgebraicClosure ℚ_[p]) (πR v) := by
+    intro c v
+    rw [hψdef, LinearMap.liftBaseChange_tmul, LinearMap.comp_apply,
+      Algebra.linearMap_apply, smul_eq_mul]
+  have hψequi : ∀ (g : Field.absoluteGaloisGroup ℚ_[2])
+      (z : (AlgebraicClosure ℚ_[p]) ⊗[R] V),
+      ψ ((ρ.baseChange (AlgebraicClosure ℚ_[p]))
+        (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) g) z) =
+      d g * ψ z := by
+    intro g z
+    induction z using TensorProduct.induction_on with
+    | zero => simp
+    | add x y hx hy => simp only [map_add, hx, hy, mul_add]
+    | tmul c v =>
+      rw [GaloisRep.baseChange_tmul, hψtmul, hψtmul]
+      have h1 : πR (ρ (Field.absoluteGaloisGroup.map
+          (algebraMap ℚ ℚ_[2]) g) v) = δR g (πR v) := by
+        have h2 := (hδR g v).1
+        rwa [GaloisRep.map_apply] at h2
+      rw [h1, hδRapp, map_mul]
+      show c * (algebraMap R (AlgebraicClosure ℚ_[p]) (πR v) *
+        algebraMap R (AlgebraicClosure ℚ_[p]) (dR g)) =
+        algebraMap R (AlgebraicClosure ℚ_[p]) (dR g) *
+          (c * algebraMap R (AlgebraicClosure ℚ_[p]) (πR v))
+      ring
+  -- pulled back to the lattice along `e` and `w ↦ 1 ⊗ w`
+  set φfun : (Fin 2 → O) → (AlgebraicClosure ℚ_[p]) :=
+    fun x => ψ (e ((1 : AlgebraicClosure ℚ_[p]) ⊗ₜ[O] x)) with hφfundef
+  have hφadd : ∀ x y, φfun (x + y) = φfun x + φfun y := by
+    intro x y
+    show ψ (e ((1 : AlgebraicClosure ℚ_[p]) ⊗ₜ[O] (x + y))) = _
+    rw [TensorProduct.tmul_add, map_add, map_add]
+  have hφsmul : ∀ (c : O) (x : Fin 2 → O),
+      φfun (c • x) = algebraMap O (AlgebraicClosure ℚ_[p]) c * φfun x := by
+    intro c x
+    have h1 : (1 : AlgebraicClosure ℚ_[p]) ⊗ₜ[O] (c • x) =
+        (algebraMap O (AlgebraicClosure ℚ_[p]) c) •
+          ((1 : AlgebraicClosure ℚ_[p]) ⊗ₜ[O] x) := by
+      rw [TensorProduct.tmul_smul, algebraMap_smul]
+    show ψ (e ((1 : AlgebraicClosure ℚ_[p]) ⊗ₜ[O] (c • x))) = _
+    rw [h1, map_smul, map_smul, smul_eq_mul]
+  -- its coordinates in the standard frame
+  set a : AlgebraicClosure ℚ_[p] := φfun (Pi.single 0 1) with hadef
+  set b : AlgebraicClosure ℚ_[p] := φfun (Pi.single 1 1) with hbdef
+  have hdecomp : ∀ w : Fin 2 → O,
+      w = w 0 • Pi.single (0 : Fin 2) (1 : O) + w 1 • Pi.single 1 1 := by
+    intro w
+    funext i
+    fin_cases i <;> simp
+  have hφw : ∀ w : Fin 2 → O, φfun w =
+      algebraMap O (AlgebraicClosure ℚ_[p]) (w 0) * a +
+      algebraMap O (AlgebraicClosure ℚ_[p]) (w 1) * b := by
+    intro w
+    conv_lhs => rw [hdecomp w]
+    rw [hφadd, hφsmul, hφsmul]
+  have hφequi : ∀ (g : Field.absoluteGaloisGroup ℚ_[2]) (w : Fin 2 → O),
+      φfun ((ρO.map (algebraMap ℚ ℚ_[2])) g w) = d g * φfun w := by
+    intro g w
+    have h1 : (1 : AlgebraicClosure ℚ_[p]) ⊗ₜ[O]
+        ((ρO.map (algebraMap ℚ ℚ_[2])) g w) =
+        (ρO.baseChange (AlgebraicClosure ℚ_[p]))
+          (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) g)
+          ((1 : AlgebraicClosure ℚ_[p]) ⊗ₜ[O] w) := by
+      rw [GaloisRep.baseChange_tmul, GaloisRep.map_apply]
+    show ψ (e ((1 : AlgebraicClosure ℚ_[p]) ⊗ₜ[O]
+      ((ρO.map (algebraMap ℚ ℚ_[2])) g w))) = d g *
+      ψ (e ((1 : AlgebraicClosure ℚ_[p]) ⊗ₜ[O] w))
+    rw [h1, he, hψequi]
+  -- the functional does not vanish on the lattice
+  have hab : ¬ (a = 0 ∧ b = 0) := by
+    rintro ⟨ha, hb⟩
+    have hzero : ∀ z : (AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O),
+        ψ (e z) = 0 := by
+      intro z
+      induction z using TensorProduct.induction_on with
+      | zero => simp
+      | add x y hx hy => rw [map_add, map_add, hx, hy, add_zero]
+      | tmul c x =>
+        have h1 : (c ⊗ₜ[O] x :
+            (AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O)) =
+            c • ((1 : AlgebraicClosure ℚ_[p]) ⊗ₜ[O] x) := by
+          rw [TensorProduct.smul_tmul', smul_eq_mul, mul_one]
+        rw [h1, map_smul, map_smul,
+          show ψ (e ((1 : AlgebraicClosure ℚ_[p]) ⊗ₜ[O] x)) = φfun x
+            from rfl,
+          hφw x, ha, hb]
+        simp
+    obtain ⟨v₀, hv₀⟩ := hπRsurj 1
+    have h2 : ψ (e (e.symm ((1 : AlgebraicClosure ℚ_[p]) ⊗ₜ[R] v₀))) =
+        1 := by
+      rw [LinearEquiv.apply_symm_apply, hψtmul, hv₀, map_one, mul_one]
+    rw [hzero] at h2
+    exact zero_ne_one h2
+  -- the saturated quotient line: a surjective `O`-functional on which
+  -- `G_2` acts by the sign `ε`
+  have hmain : ∃ π : (Fin 2 → O) →ₗ[O] O, Function.Surjective π ∧
+      ∀ (g : Field.absoluteGaloisGroup ℚ_[2]) (w : Fin 2 → O),
+        π ((ρO.map (algebraMap ℚ ℚ_[2])) g w) = ε g * π w := by
+    by_cases hB : ∃ t : O,
+        b = algebraMap O (AlgebraicClosure ℚ_[p]) t * a
+    · -- `b = t·a`: the functional `w ↦ w₀ + t·w₁`
+      obtain ⟨t, ht⟩ := hB
+      have ha0 : a ≠ 0 := by
+        intro h0
+        exact hab ⟨h0, by rw [ht, h0, mul_zero]⟩
+      refine ⟨LinearMap.proj 0 + t • LinearMap.proj 1, ?_, ?_⟩
+      · intro c
+        refine ⟨Pi.single 0 c, ?_⟩
+        simp
+      · intro g w
+        have hfact : ∀ w' : Fin 2 → O, φfun w' =
+            a * algebraMap O (AlgebraicClosure ℚ_[p])
+              ((LinearMap.proj 0 + t • LinearMap.proj 1 :
+                (Fin 2 → O) →ₗ[O] O) w') := by
+          intro w'
+          rw [hφw, ht]
+          simp only [LinearMap.add_apply, LinearMap.smul_apply,
+            LinearMap.proj_apply, smul_eq_mul, map_add, map_mul]
+          ring
+        apply hOinj
+        rw [map_mul, hεd]
+        refine mul_left_cancel₀ ha0 ?_
+        have h1 := hφequi g w
+        rw [hfact, hfact] at h1
+        linear_combination h1
+    · by_cases hA : ∃ t : O,
+          a = algebraMap O (AlgebraicClosure ℚ_[p]) t * b
+      · -- `a = t·b`: the functional `w ↦ t·w₀ + w₁`
+        obtain ⟨t, ht⟩ := hA
+        have hb0 : b ≠ 0 := by
+          intro h0
+          exact hab ⟨by rw [ht, h0, mul_zero], h0⟩
+        refine ⟨t • LinearMap.proj 0 + LinearMap.proj 1, ?_, ?_⟩
+        · intro c
+          refine ⟨Pi.single 1 c, ?_⟩
+          simp
+        · intro g w
+          have hfact : ∀ w' : Fin 2 → O, φfun w' =
+              b * algebraMap O (AlgebraicClosure ℚ_[p])
+                ((t • LinearMap.proj 0 + LinearMap.proj 1 :
+                  (Fin 2 → O) →ₗ[O] O) w') := by
+            intro w'
+            rw [hφw, ht]
+            simp only [LinearMap.add_apply, LinearMap.smul_apply,
+              LinearMap.proj_apply, smul_eq_mul, map_add, map_mul]
+            ring
+          apply hOinj
+          rw [map_mul, hεd]
+          refine mul_left_cancel₀ hb0 ?_
+          have h1 := hφequi g w
+          rw [hfact, hfact] at h1
+          linear_combination h1
+      · -- neither divisibility: `φ` is injective on the lattice, so the
+        -- action is the scalar sign and any coordinate works
+        have hker : ∀ w : Fin 2 → O, φfun w = 0 → w = 0 := by
+          intro w hw
+          rw [hφw] at hw
+          have hzero01 : w 0 = 0 ∧ w 1 = 0 := by
+            rcases ValuationRing.dvd_total (w 0) (w 1) with
+              ⟨t, ht⟩ | ⟨t, ht⟩
+            · -- `w 1 = w 0 * t`
+              rcases eq_or_ne (w 0) 0 with h0 | h0
+              · exact ⟨h0, by rw [ht, h0, zero_mul]⟩
+              · exfalso
+                apply hA
+                refine ⟨-t, ?_⟩
+                have h1 : algebraMap O (AlgebraicClosure ℚ_[p]) (w 0) *
+                    (a + algebraMap O (AlgebraicClosure ℚ_[p]) t * b) =
+                    0 := by
+                  rw [ht, map_mul] at hw
+                  linear_combination hw
+                have h2 : a + algebraMap O (AlgebraicClosure ℚ_[p]) t *
+                    b = 0 :=
+                  (mul_eq_zero.mp h1).resolve_left
+                    (fun h3 => h0 (hOinj (by rw [h3, map_zero])))
+                rw [map_neg]
+                linear_combination h2
+            · -- `w 0 = w 1 * t`
+              rcases eq_or_ne (w 1) 0 with h0 | h0
+              · exact ⟨by rw [ht, h0, zero_mul], h0⟩
+              · exfalso
+                apply hB
+                refine ⟨-t, ?_⟩
+                have h1 : algebraMap O (AlgebraicClosure ℚ_[p]) (w 1) *
+                    (algebraMap O (AlgebraicClosure ℚ_[p]) t * a + b) =
+                    0 := by
+                  rw [ht, map_mul] at hw
+                  linear_combination hw
+                have h2 : algebraMap O (AlgebraicClosure ℚ_[p]) t * a +
+                    b = 0 :=
+                  (mul_eq_zero.mp h1).resolve_left
+                    (fun h3 => h0 (hOinj (by rw [h3, map_zero])))
+                rw [map_neg]
+                linear_combination h2
+          funext i
+          fin_cases i
+          · exact hzero01.1
+          · exact hzero01.2
+        have hφsub : ∀ u v' : Fin 2 → O,
+            φfun (u - v') = φfun u - φfun v' := by
+          intro u v'
+          rw [hφw, hφw, hφw]
+          simp only [Pi.sub_apply, map_sub]
+          ring
+        have hscal : ∀ (g : Field.absoluteGaloisGroup ℚ_[2])
+            (w : Fin 2 → O),
+            (ρO.map (algebraMap ℚ ℚ_[2])) g w = ε g • w := by
+          intro g w
+          have h1 : φfun ((ρO.map (algebraMap ℚ ℚ_[2])) g w -
+              ε g • w) = 0 := by
+            rw [hφsub, hφequi, hφsmul, hεd, sub_self]
+          exact sub_eq_zero.mp (hker _ h1)
+        refine ⟨LinearMap.proj 0, ?_, ?_⟩
+        · intro c
+          exact ⟨Pi.single 0 c, by simp⟩
+        · intro g w
+          rw [hscal g w]
+          simp [smul_eq_mul]
+  obtain ⟨π, hπsurj, hπequi⟩ := hmain
+  obtain ⟨x₀, hx₀⟩ := hπsurj 1
+  -- continuity of the sign: it is `π (ρO g x₀)`
+  letI := moduleTopology O (Module.End O (Fin 2 → O))
+  letI := moduleTopology O (Module.End O O)
+  haveI : ContinuousAdd (Module.End O O) :=
+    ModuleTopology.continuousAdd O _
+  haveI : ContinuousSMul O (Module.End O O) :=
+    ModuleTopology.continuousSMul O _
+  have hεcont : Continuous ε := by
+    have h1 : ε = fun g =>
+        (π ∘ₗ (LinearMap.applyₗ x₀ :
+          Module.End O (Fin 2 → O) →ₗ[O] (Fin 2 → O)))
+          ((ρO.map (algebraMap ℚ ℚ_[2])) g) := by
+      funext g
+      have h2 := hπequi g x₀
+      rw [hx₀, mul_one] at h2
+      exact h2.symm
+    rw [h1]
+    exact (IsModuleTopology.continuous_of_linearMap _).comp
+      (ρO.map (algebraMap ℚ ℚ_[2])).continuous_toFun
+  -- the quotient character over `O`
+  set δ : GaloisRep ℚ_[2] O O :=
+    { toFun := fun g => ε g • (1 : Module.End O O)
+      map_one' := by rw [hεone, one_smul]
+      map_mul' := fun g h => by
+        refine LinearMap.ext fun c => ?_
+        simp only [hεmul, LinearMap.smul_apply, Module.End.one_apply,
+          Module.End.mul_apply, smul_eq_mul]
+        ring
+      continuous_toFun := hεcont.smul continuous_const } with hδdef
+  have hδapp : ∀ (g : Field.absoluteGaloisGroup ℚ_[2]) (c : O),
+      δ g c = ε g * c := by
+    intro g c
+    show (ε g • (1 : Module.End O O)) c = ε g * c
+    rw [LinearMap.smul_apply, Module.End.one_apply, smul_eq_mul]
+  refine ⟨π, hπsurj, δ, fun g w => ⟨?_, ?_, ?_⟩⟩
+  · -- equivariance
+    rw [hπequi, hδapp]
+  · -- `δ` is unramified
+    intro σ hσ
+    have hone : δ σ = 1 := by
+      show ε σ • (1 : Module.End O O) = 1
+      rw [hεinertia σ hσ, one_smul]
+    exact hone
+  · -- `δ` squares to `1`
+    intro g'
+    refine LinearMap.ext fun c => ?_
+    show (δ g') ((δ g') c) = c
+    rw [hδapp, hδapp, ← mul_assoc, hεsq, one_mul]
 
 /-- **Lattice-level hardly-ramifiedness transfer** (Eisenstein pillar
 E2b′; PROVEN 2026-07-24 as a per-field assembly — the determinant and
@@ -7999,9 +8373,14 @@ unramifiedness fields are the PROVEN injection descents
 `isUnramifiedAt_lattice_of_generic_iso` above, and the two genuinely
 deep arithmetic fields are the sorried leaves
 `isFlatAt_lattice_of_generic_iso` (Raynaud scheme-theoretic closure)
-and `isTameAtTwo_lattice_of_generic_iso` (saturation of the quotient
-line) above — a stable lattice of a hardly ramified representation is
-hardly ramified): from `IsHardlyRamified ρ`, the generic-fibre equivariance
+and the now-PROVEN `isTameAtTwo_lattice_of_generic_iso` (saturation of
+the quotient line) above — a stable lattice of a hardly ramified
+representation is hardly ramified). NOTE (2026-07-24): `O` is now
+required to be a DISCRETE VALUATION RING (`[IsDiscreteValuationRing O]`
+replaces `[IsLocalRing O]`, which it implies) — the generality at which
+the tame half is proven, and exactly what E2a's
+`exists_valuationRing_stable_lattice` produces. From
+`IsHardlyRamified ρ`, the generic-fibre equivariance
 `e` over `ℚ̄_p`, the injectivity `O ↪ ℚ̄_p` and its
 `ℤ_p`-compatibility alone — no irreducibility, no residual-shape
 input — the lattice representation `ρO` on the standard rank-2
@@ -8043,7 +8422,7 @@ theorem isHardlyRamified_lattice_of_generic_iso
     (hρ : IsHardlyRamified hpodd hv ρ)
     {O : Type u} [CommRing O] [Algebra ℤ_[p] O] [IsDomain O]
     [Module.Finite ℤ_[p] O] [TopologicalSpace O] [IsTopologicalRing O]
-    [IsLocalRing O] [IsModuleTopology ℤ_[p] O]
+    [IsModuleTopology ℤ_[p] O] [IsDiscreteValuationRing O]
     [Algebra O (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul O (AlgebraicClosure ℚ_[p])]
     (hOinj : Function.Injective (algebraMap O (AlgebraicClosure ℚ_[p])))
@@ -8060,7 +8439,7 @@ theorem isHardlyRamified_lattice_of_generic_iso
   ⟨det_lattice_of_generic_iso hpodd hv hρ hOinj hZOcompat e he,
     isUnramifiedAt_lattice_of_generic_iso hpodd hv hρ hOinj e he,
     isFlatAt_lattice_of_generic_iso hpodd hv hρ hOinj hZOcompat e he,
-    isTameAtTwo_lattice_of_generic_iso hpodd hv hρ hOinj hZOcompat e he⟩
+    isTameAtTwo_lattice_of_generic_iso hpodd hv hρ hOinj e he⟩
 
 /-- **Integral hardly-ramifiedness transfer** (Eisenstein pillar E2b;
 PROVEN 2026-07-24 as an assembly — the lattice-level transfer is the
@@ -8082,6 +8461,9 @@ is exactly what E2a produces: the generic-fibre equivariance `e` over
 `ℚ̄_p`, the injectivity `O ↪ ℚ̄_p` and its `ℤ_p`-compatibility, the
 residue package `O ↠ kk'` (surjective, open maximal-ideal kernel),
 and the frame identification `er` intertwining `ρO ⊗ kk'` with `ρE`.
+NOTE (2026-07-24): `O` carries `[IsDiscreteValuationRing O]` (in place
+of the implied `[IsLocalRing O]`), inherited from the E2b′ lattice
+transfer whose tame half is proven at DVR generality; E2a supplies it.
 Soundness (audit 2026-07-24): the hypothesis set is classically
 INHABITED (take `O = R = ℤ_p`, `ρO` a frame of `ρ`, `ρE` its
 reduction — no irreducibility is assumed); hypothesis-honest: no step
@@ -8092,7 +8474,7 @@ theorem isHardlyRamified_reduction_of_ribet_lattice
     (hρ : IsHardlyRamified hpodd hv ρ)
     {O : Type u} [CommRing O] [Algebra ℤ_[p] O] [IsDomain O]
     [Module.Finite ℤ_[p] O] [TopologicalSpace O] [IsTopologicalRing O]
-    [IsLocalRing O] [IsModuleTopology ℤ_[p] O]
+    [IsModuleTopology ℤ_[p] O] [IsDiscreteValuationRing O]
     [Algebra O (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul O (AlgebraicClosure ℚ_[p])]
     (hOinj : Function.Injective (algebraMap O (AlgebraicClosure ℚ_[p])))
@@ -8276,8 +8658,8 @@ theorem exists_eisenstein_nonsplit_lattice_of_residually_reducible
       ¬ ∃ a : kk', ∀ g, cc g = (χ g - 1) * a := by
   -- E2a: the Ribet lattice, its generic-fibre linkage and the nonsplit
   -- triangular reduction on the standard frame
-  obtain ⟨O, hCRO, hAZO, hDomO, hMFO, hTopO, hTRO, hLocO, hMTO, hAQO,
-    hCSQO, ρO, e, kk', hFk, hFink, hAZk, hTopk, hDisck, hTRk, hAOk,
+  obtain ⟨O, hCRO, hAZO, hDomO, hMFO, hTopO, hTRO, hLocO, hMTO, hDVRO,
+    hAQO, hCSQO, ρO, e, kk', hFk, hFink, hAZk, hTopk, hDisck, hTRk, hAOk,
     hCSOk, hSTk, ρE, er, χ, cc, hOinj, hZOcompat, he, hsurj', hopen',
     hker', her, htri, hnonsplit⟩ :=
     exists_ribet_lattice_of_residually_reducible hpodd hv hZinj hρ hirr
@@ -8290,6 +8672,7 @@ theorem exists_eisenstein_nonsplit_lattice_of_residually_reducible
   letI := hTRO
   letI := hLocO
   letI := hMTO
+  letI := hDVRO
   letI := hAQO
   letI := hCSQO
   letI := hFk
