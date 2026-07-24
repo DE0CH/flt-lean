@@ -909,6 +909,167 @@ theorem exists_descended_heckeSystem_of_solvable
             w).map Wit.ιO = (P w).map Wit.ψℓ :=
   sorry
 
+set_option backward.isDefEq.respectTransparency false in
+/-- **`charFrob` is monic** (PROVEN helper for the Brauer gluing): it is
+by definition the characteristic polynomial of the local Frobenius
+endomorphism of a finite free module.
+
+(`Patching.lean` carries the same statement as `charFrob_monic`, but
+that module lives DOWNSTREAM of this one — it imports
+`Modularity/KhareWintenberger` — so the lemma is restated here under a
+distinct name rather than imported; the proof is the two-line
+unfolding to `LinearMap.charpoly_monic`.) -/
+theorem charFrob_monic_of_free {A : Type*} [CommRing A]
+    [TopologicalSpace A] [IsTopologicalRing A] {M : Type*} [AddCommGroup M]
+    [Module A M] [Module.Finite A M] [Module.Free A M]
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    (ρ : GaloisRep ℚ A M) : (ρ.charFrob v).Monic := by
+  show ((ρ.toLocal v (Field.AbsoluteGaloisGroup.adicArithFrob v)).charpoly).Monic
+  exact LinearMap.charpoly_monic _
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **`charFrob` of a rank-`2` representation has degree `2`** (PROVEN
+helper for the Brauer gluing): the characteristic polynomial of an
+endomorphism of a finite free module has degree the rank.
+
+(Downstream twin: `Patching.lean`'s `charFrob_natDegree`; see
+`charFrob_monic_of_free` for why it is restated here.) -/
+theorem charFrob_natDegree_of_rank_two {A : Type*} [CommRing A]
+    [Nontrivial A] [TopologicalSpace A] [IsTopologicalRing A] {M : Type*}
+    [AddCommGroup M] [Module A M] [Module.Finite A M] [Module.Free A M]
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    (ρ : GaloisRep ℚ A M) (hdim : Module.rank A M = 2) :
+    (ρ.charFrob v).natDegree = 2 := by
+  show ((ρ.toLocal v
+    (Field.AbsoluteGaloisGroup.adicArithFrob v)).charpoly).natDegree = 2
+  rw [LinearMap.charpoly_natDegree]
+  exact Module.finrank_eq_of_rank_eq (by exact_mod_cast hdim)
+
+/-- **Coefficientwise lifting of a family of polynomials along a ring
+homomorphism** (PROVEN helper, pure algebra): a family `p : ι →
+Polynomial L` admits a family of `E`-preimages `P` that is correct at
+exactly those indices where every coefficient of `p i` lies in the range
+of `g : E →+* L`. This is `Polynomial.lifts_iff_coeff_lifts` made
+uniform in the index by `choose` (indices failing the hypothesis get the
+junk value `0`), and it is the formal half of the Brauer gluing below:
+once the arithmetic leaves put each coefficient of the Frobenius
+charpoly into `ψℓ(E)`, the `E`-polynomial family `Pv` demanded by the
+statement is produced here, with no further arithmetic input. -/
+theorem exists_polynomial_family_of_coeff_mem_range {ι : Type*}
+    {E L : Type*} [CommRing E] [CommRing L] (g : E →+* L)
+    (p : ι → Polynomial L) :
+    ∃ P : ι → Polynomial E,
+      ∀ i, (∀ n, (p i).coeff n ∈ Set.range g) → p i = (P i).map g := by
+  classical
+  have key : ∀ i, ∃ Q : Polynomial E,
+      (∀ n, (p i).coeff n ∈ Set.range g) → p i = Q.map g := by
+    intro i
+    by_cases hi : ∀ n, (p i).coeff n ∈ Set.range g
+    · obtain ⟨Q, hQ⟩ :=
+        (Polynomial.mem_lifts _).1 ((Polynomial.lifts_iff_coeff_lifts _).2 hi)
+      exact ⟨Q, fun _ => hQ.symm⟩
+    · exact ⟨0, fun h => absurd h hi⟩
+  choose P hP using key
+  exact ⟨P, hP⟩
+
+/-- **The `ℓ`-adic cyclotomic character at an arithmetic Frobenius**
+(sorry node; FOUNDER leaf, pure `p`-adic bookkeeping): at a rational
+prime `q ≠ ℓ` the `ℓ`-adic cyclotomic character takes the value `q` on
+the global image of the arithmetic Frobenius at `q`.
+
+Literature/status: this is the classical unramifiedness of the
+cyclotomic character away from `ℓ` together with `Frob_q(ζ) = ζ^q` on
+roots of unity — Serre, *Abelian ℓ-adic Representations*, I.1;
+Neukirch, *Algebraic Number Theory*, IV.
+`Fermat/FLT/GaloisRepresentation/HardlyRamified/Family.lean` PROVES
+exactly this statement (`cyclotomicCharacter_adicArithFrob_natCast`,
+by `PadicInt.ext_of_toZModPow` + `modularCyclotomicCharacter.unique`
+over the ported roots-of-unity action
+`adicArithFrob_rootsOfUnity_pow_of_ne`), and
+`Deformations/RepresentationTheory/GaloisRep.lean` proves the `3`-adic
+case (`cyclotomicCharacter_adicArithFrob`). Neither is usable here:
+`Family.lean` is forbidden by the CIRCULARITY GUARD of this module (and
+is not in this module's import cone), and the `GaloisRep.lean` version
+is hard-wired to `ℓ = 3`. The leaf is therefore restated at general `ℓ`;
+discharging it is a PORT of the `Family.lean` proof into a
+`Family`-free module, not new mathematics.
+
+SOUNDNESS AUDIT (2026-07-24): a true classical theorem with NO vacuity
+route — the statement carries no hardly-ramified hypotheses, so it must
+be (and is) directly true as stated; it is already proven in-tree at
+general `ℓ`, in a module this one may not import. -/
+theorem cyclotomicCharacter_adicArithFrob_eq_natCast {ℓ : ℕ} [Fact ℓ.Prime]
+    {q : ℕ} (hq : q.Prime) (hqℓ : q ≠ ℓ) :
+    ((cyclotomicCharacter (AlgebraicClosure ℚ) ℓ
+      ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))
+        (Field.AbsoluteGaloisGroup.adicArithFrob
+          hq.toHeightOneSpectrumRingOfIntegersRat)).toRingEquiv) : ℤ_[ℓ]ˣ) :
+      ℤ_[ℓ]) = (q : ℤ_[ℓ]) :=
+  sorry
+
+/-- **The determinant coefficient of a hardly ramified Frobenius
+charpoly is `q`** (PROVEN from the cyclotomic leaf above): for a hardly
+ramified `ρ` on a rank-`2` module and a prime `q ≠ ℓ`, the constant
+coefficient of `charFrob ρ` at `q` is the rational integer `q`.
+
+Proof: for a rank-`2` charpoly `det = (-1)² · coeff 0`
+(`LinearMap.det_eq_sign_charpoly_coeff`); the determinant of the global
+image of the local Frobenius is the cyclotomic-character value by
+`IsHardlyRamified.det`; and that value is `q` by
+`cyclotomicCharacter_adicArithFrob_eq_natCast`. (Port of the PROVEN
+`Family.lean` lemma `charFrob_coeff_zero_eq_natCast`, restated without
+the auxiliary `Algebra R (AlgebraicClosure ℚ_[ℓ])` instance; only its
+cyclotomic input is left sorried here.)
+
+Consequence for the Brauer gluing below: of the three nonzero
+coefficients of the monic quadratic `charFrob`, only the TRACE
+(`coeff 1`) carries automorphy content — `coeff 2 = 1` by monicity and
+`coeff 0 = q` by this lemma. -/
+theorem charFrob_coeff_zero_eq_natCast_of_isHardlyRamified {ℓ : ℕ}
+    (hℓodd : Odd ℓ) [Fact ℓ.Prime]
+    {O : Type u} [CommRing O] [TopologicalSpace O] [IsTopologicalRing O]
+    [IsLocalRing O] [Algebra ℤ_[ℓ] O]
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {q : ℕ} (hq : q.Prime) (hqℓ : q ≠ ℓ) :
+    (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 0 = (q : O) := by
+  have hfinrank : Module.finrank O (Fin 2 → O) = 2 :=
+    Module.finrank_eq_of_rank_eq hrank
+  -- the constant coefficient of a rank-`2` charpoly is the determinant
+  have hdet := LinearMap.det_eq_sign_charpoly_coeff
+    (ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat
+      (Field.AbsoluteGaloisGroup.adicArithFrob
+        hq.toHeightOneSpectrumRingOfIntegersRat))
+  rw [hfinrank, neg_one_sq, one_mul] at hdet
+  -- the determinant of the global Frobenius image is `q`
+  have hcyclo := hρ.det (Field.absoluteGaloisGroup.map (algebraMap ℚ
+    (HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat))
+    (Field.AbsoluteGaloisGroup.adicArithFrob
+      hq.toHeightOneSpectrumRingOfIntegersRat))
+  rw [GaloisRep.det_apply, cyclotomicCharacter_adicArithFrob_eq_natCast hq hqℓ,
+    map_natCast] at hcyclo
+  -- bridge the local-Frobenius determinant to the global one (the two
+  -- spellings differ only in the subsingleton `Algebra ℚ _` instance)
+  have hdetq : LinearMap.det (ρ.toLocal
+      hq.toHeightOneSpectrumRingOfIntegersRat
+      (Field.AbsoluteGaloisGroup.adicArithFrob
+        hq.toHeightOneSpectrumRingOfIntegersRat)) = (q : O) := by
+    rw [GaloisRep.toLocal_apply]
+    convert hcyclo using 2
+    congr 1
+    congr 1
+    congr 1
+    exact Subsingleton.elim _ _
+  rw [show ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat =
+      (ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat
+        (Field.AbsoluteGaloisGroup.adicArithFrob
+          hq.toHeightOneSpectrumRingOfIntegersRat)).charpoly from rfl,
+    ← hdet, hdetq]
+
 /-- **Brauer gluing — reconstruction of the rational eigensystem from
 the descended pieces** (sorry node; the induced-character unwinding of
 the `ℓ`-adic Brauer descent): given a Brauer decomposition of the
