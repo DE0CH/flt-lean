@@ -60,6 +60,7 @@ import Fermat.FLT.EllipticCurve.UniversalCurve
 import Fermat.FLT.EllipticCurve.WeilPairing
 import Fermat.FLT.EllipticCurve.WeilPairingRecgen
 import Fermat.FLT.EllipticCurve.WeilPairingStepR
+import Fermat.FLT.EllipticCurve.WeilPairingTwoLine
 import Fermat.FLT.EllipticCurve.WronskianInduction
 import Fermat.FLT.EllipticCurve.WronskianStep
 import Fermat.FLT.FreyCurve.Basic
@@ -77,6 +78,7 @@ import Fermat.FLT.GaloisRepresentation.HardlyRamified.FreyConditions
 import Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift
 import Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree
 import Fermat.FLT.GaloisRepresentation.HardlyRamified.Reducible
+import Fermat.FLT.GaloisRepresentation.HardlyRamified.Residual
 import Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic
 import Fermat.FLT.KnownIn1980s.EllipticCurves.Flat
 import Fermat.FLT.KnownIn1980s.EllipticCurves.GoodReduction
@@ -149,7 +151,7 @@ import Fermat.FLT.Slop.RepresentationTheory.OddAbsIrredSlop
 import Fermat.PrimeFive
 import Fermat.SorryGate
 def censusInputPath : System.FilePath := "progress-census-input.json"
--- census-input fingerprint: ad10e257c79d54dea8a83b12eaaf3384493d922b
+-- census-input fingerprint: 897ffa64177002d6f464a1e5f5b132d3fe8364a0
 -- END GENERATED IMPORTS
 
 open Lean
