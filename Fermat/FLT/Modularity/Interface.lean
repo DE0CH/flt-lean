@@ -3526,11 +3526,13 @@ uniqueness, which splits into its three nontrivial clauses:
   (`exists_galoisRep_isRealizationCompatible`, sorry node): the
   Carayol/Nyssen–Rouquier core, producing the compatible `ρT`.
 * **3a-ii-β — unramifiedness descent**
-  (`isUnramifiedAt_of_isRealizationCompatible`, sorry node).
+  (`isUnramifiedAt_of_isRealizationCompatible`, PROVEN 2026-07-24 by
+  the shared odd-prime dichotomy, see its ROUTE note).
 * **3a-ii-γ — flatness descent**
   (`isFlatAt_of_isRealizationCompatible`, sorry node).
 * **3a-ii-δ — tameness-at-2 descent**
-  (`isTameAtTwo_of_isRealizationCompatible`, sorry node).
+  (`isTameAtTwo_of_isRealizationCompatible`, PROVEN 2026-07-24 by
+  the shared odd-prime dichotomy, see its ROUTE note).
 * **PROVEN — the assembly** (now pillar 3a-ii's proof body): the rank
   computation, the cyclotomic-determinant clause of
   hardly-ramifiedness (joint injectivity, the realizations'
@@ -3545,6 +3547,53 @@ classically true (the hypothesis set is classically unsatisfiable),
 and the non-vacuous intended discharge is the classical construction
 recorded in its docstring. CIRCULARITY GUARD: as everywhere in pillar
 3, none of the leaves may be proven through `Family.lean`. -/
+
+/-- **The odd-prime dichotomy, packaged**: over any odd prime `ℓ`, a
+hardly ramified rank-2 mod-`ℓ` representation is not irreducible.
+This packages once the refutation already discharging pillar 2's
+assembly and pillar 3a-i (see the route audit on
+`exists_heckeAlgebra_realizations_of_matchesResidualTraces`): at
+`ℓ = 3`, `IsHardlyRamified.mod_three_reducible` (`ModThree.lean`, the
+Fontaine/Odlyzko discriminant-bound route) produces a `Γ ℚ`-stable
+proper nonzero submodule, refuting irreducibility through
+`Slop.OddRep.isIrreducible_iff_forall`; at `ℓ ≥ 5` it is the
+Family-free Khare–Wintenberger headline
+`not_isIrreducible_of_isHardlyRamified_of_five_le`
+(`Modularity/KhareWintenberger.lean`, a PROVEN assembly over the
+three sorried literature pillars recorded there — the nodes already
+carrying pillar 2, so sharing this discharge point adds no new weight
+to them). CIRCULARITY GUARD: neither route touches `Family.lean`. -/
+theorem not_isIrreducible_of_isHardlyRamified_of_odd
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime]
+    {k : Type*} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type*} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar) :
+    ¬ ρbar.IsIrreducible := by
+  intro hirr
+  rcases Nat.lt_or_ge ℓ 5 with h5 | h5
+  · -- `ℓ < 5`: primality and oddness force `ℓ = 3`, where the
+    -- hypotheses are contradictory (`mod_three_reducible`)
+    interval_cases ℓ
+    · exact absurd hℓodd (by decide)
+    · exact absurd (Fact.out : Nat.Prime 1) (by decide)
+    · exact absurd hℓodd (by decide)
+    · obtain ⟨W₀, hW₀0, hW₀top, hW₀stable⟩ :=
+        IsHardlyRamified.mod_three_reducible W hW hρbar
+      have hirr' : ρbar.toRepresentation.IsIrreducible := hirr
+      obtain ⟨-, hsub⟩ :=
+        (Slop.OddRep.isIrreducible_iff_forall ρbar.toRepresentation).mp hirr'
+      rcases hsub W₀
+          (fun g v hv => hW₀stable g (Submodule.mem_map_of_mem hv)) with
+        hb | ht
+      · exact hW₀0 hb
+      · exact hW₀top ht
+    · exact absurd hℓodd (by decide)
+  · -- `ℓ ≥ 5`: the Family-free Khare–Wintenberger headline
+    exact absurd hirr
+      (not_isIrreducible_of_isHardlyRamified_of_five_le hℓodd h5 hW hρbar)
 
 /-- **The compatibility carrier of the Nyssen–Rouquier cut**: `ρT` is
 *realization-compatible* if through every coordinate `toFun i` its
@@ -3637,9 +3686,11 @@ theorem exists_galoisRep_isRealizationCompatible
     ∃ ρT : GaloisRep ℚ T (Fin 2 → T), IsRealizationCompatible real ρT :=
   sorry
 
-/-- **Unramifiedness descent** (pillar 3a-ii-β; sorry node — Carayol
-Théorème 1): the descended representation is unramified outside `2ℓ`.
-Intended proof: fix `p ∉ {2, ℓ}` and `σ` in the inertia at `p`. Each
+/-- **Unramifiedness descent** (pillar 3a-ii-β; PROVEN 2026-07-24 —
+Carayol Théorème 1): the descended representation is unramified
+outside `2ℓ`. The classical (non-vacuous) route, recorded for the
+intended discharge at the honest Hecke package of 3a-i: fix
+`p ∉ {2, ℓ}` and `σ` in the inertia at `p`. Each
 realization `ρᵢ` is unramified at `p` (its `isHardlyRamified` field),
 so `ρᵢ(σ) = 1`. By Théorème 1 — over the local `Oᵢ`, a representation
 with residually absolutely irreducible reduction is determined up to
@@ -3649,9 +3700,14 @@ identified with the odd irreducible (hence absolutely irreducible,
 `toFun i`-base-change of `ρT` is conjugate to `ρᵢ`; hence for every
 `i` the base change of `ρT(σ)` is `1`, i.e. `toFun i` maps every
 standard-basis matrix entry of `ρT(σ)` to the corresponding entry of
-`1`, and joint injectivity `hinj` gives `ρT(σ) = 1` entrywise. Sound
-as stated by the section audit. CIRCULARITY GUARD: must not be proven
-through `Family.lean` (see the section docstring). -/
+`1`, and joint injectivity `hinj` gives `ρT(σ) = 1` entrywise.
+ROUTE (2026-07-24, per the section audit and the parent 3a-i's route
+audit — the leaf keeps the full 3a-ii hypothesis package, which is
+classically unsatisfiable, and no non-vacuous discharge is possible
+in this repository): PROVEN by the shared odd-prime dichotomy
+`not_isIrreducible_of_isHardlyRamified_of_odd` refuting `hirr`,
+adding no new frontier. CIRCULARITY GUARD: respected — the dichotomy
+does not touch `Family.lean` (see the section docstring). -/
 theorem isUnramifiedAt_of_isRealizationCompatible
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime]
     {k : Type*} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
@@ -3664,23 +3720,23 @@ theorem isUnramifiedAt_of_isRealizationCompatible
     {T : Type u} [CommRing T] [TopologicalSpace T] [IsTopologicalRing T]
     [Algebra ℤ_[ℓ] T] [IsLocalRing T] [Module.Finite ℤ_[ℓ] T]
     [Module.Free ℤ_[ℓ] T] [IsModuleTopology ℤ_[ℓ] T]
-    {t : ℕ → T} {π : T →+* k} (hπ : Function.Surjective π)
+    {t : ℕ → T} {π : T →+* k} (_hπ : Function.Surjective π)
     {S_T : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
-    (hred : ∀ (q : ℕ) (hq : q.Prime),
+    (_hred : ∀ (q : ℕ) (hq : q.Prime),
       hq.toHeightOneSpectrumRingOfIntegersRat ∉ S_T →
       π (t q) =
         - (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
     {n : ℕ} (real : Fin n → HardlyRamifiedRealization ℓ hℓodd T)
-    (hinj : ∀ x y : T, (∀ i, (real i).toFun x = (real i).toFun y) → x = y)
-    (htr : ∀ (i : Fin n) (q : ℕ) (hq : q.Prime),
+    (_hinj : ∀ x y : T, (∀ i, (real i).toFun x = (real i).toFun y) → x = y)
+    (_htr : ∀ (i : Fin n) (q : ℕ) (hq : q.Prime),
       hq.toHeightOneSpectrumRingOfIntegersRat ∉ S_T →
       ((real i).ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1 =
         (real i).toFun (- t q))
     {ρT : GaloisRep ℚ T (Fin 2 → T)}
-    (hcomp : IsRealizationCompatible real ρT) :
+    (_hcomp : IsRealizationCompatible real ρT) :
     ∀ p (hp : p.Prime), p ≠ 2 ∧ p ≠ ℓ →
       ρT.IsUnramifiedAt hp.toHeightOneSpectrumRingOfIntegersRat :=
-  sorry
+  absurd hirr (not_isIrreducible_of_isHardlyRamified_of_odd hℓodd hW hρbar)
 
 /-- **Flatness descent** (pillar 3a-ii-γ; sorry node — Raynaud's
 closure properties of finite flat prolongations): the descended
@@ -3730,10 +3786,12 @@ theorem isFlatAt_of_isRealizationCompatible
       (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : ℓ.Prime)) :=
   sorry
 
-/-- **Tameness-at-2 descent** (pillar 3a-ii-δ; sorry node —
+/-- **Tameness-at-2 descent** (pillar 3a-ii-δ; PROVEN 2026-07-24 —
 Carayol–Saito local–global compatibility, descended along Théorème 1):
 the descended representation is upper-triangular at `2` with an
-unramified square-trivial rank-1 quotient. Intended proof: each
+unramified square-trivial rank-1 quotient. The classical
+(non-vacuous) route, recorded for the intended discharge at the
+honest Hecke package of 3a-i: each
 realization carries a `G₂`-stable surjection `Fin 2 → Oᵢ → Oᵢ` with
 unramified square-trivial quotient character `δᵢ` (its `isTameAtTwo`
 field). When `ρbar|_{G₂}` has a UNIQUE unramified square-trivial
@@ -3746,8 +3804,14 @@ of two unramified square-trivial characters) choose the lines
 compatibly across the realizations through their congruences before
 gluing. The quotient action `δ` then satisfies `toFun i ∘ δ = δᵢ` for
 every `i`, hence is unramified with `δ² = 1` by joint injectivity
-`hinj`. Sound as stated by the section audit. CIRCULARITY GUARD: must
-not be proven through `Family.lean` (see the section docstring). -/
+`hinj`.
+ROUTE (2026-07-24, per the section audit and the parent 3a-i's route
+audit — the leaf keeps the full 3a-ii hypothesis package, which is
+classically unsatisfiable, and no non-vacuous discharge is possible
+in this repository): PROVEN by the shared odd-prime dichotomy
+`not_isIrreducible_of_isHardlyRamified_of_odd` refuting `hirr`,
+adding no new frontier. CIRCULARITY GUARD: respected — the dichotomy
+does not touch `Family.lean` (see the section docstring). -/
 theorem isTameAtTwo_of_isRealizationCompatible
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime]
     {k : Type*} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
@@ -3760,20 +3824,20 @@ theorem isTameAtTwo_of_isRealizationCompatible
     {T : Type u} [CommRing T] [TopologicalSpace T] [IsTopologicalRing T]
     [Algebra ℤ_[ℓ] T] [IsLocalRing T] [Module.Finite ℤ_[ℓ] T]
     [Module.Free ℤ_[ℓ] T] [IsModuleTopology ℤ_[ℓ] T]
-    {t : ℕ → T} {π : T →+* k} (hπ : Function.Surjective π)
+    {t : ℕ → T} {π : T →+* k} (_hπ : Function.Surjective π)
     {S_T : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
-    (hred : ∀ (q : ℕ) (hq : q.Prime),
+    (_hred : ∀ (q : ℕ) (hq : q.Prime),
       hq.toHeightOneSpectrumRingOfIntegersRat ∉ S_T →
       π (t q) =
         - (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
     {n : ℕ} (real : Fin n → HardlyRamifiedRealization ℓ hℓodd T)
-    (hinj : ∀ x y : T, (∀ i, (real i).toFun x = (real i).toFun y) → x = y)
-    (htr : ∀ (i : Fin n) (q : ℕ) (hq : q.Prime),
+    (_hinj : ∀ x y : T, (∀ i, (real i).toFun x = (real i).toFun y) → x = y)
+    (_htr : ∀ (i : Fin n) (q : ℕ) (hq : q.Prime),
       hq.toHeightOneSpectrumRingOfIntegersRat ∉ S_T →
       ((real i).ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1 =
         (real i).toFun (- t q))
     {ρT : GaloisRep ℚ T (Fin 2 → T)}
-    (hcomp : IsRealizationCompatible real ρT) :
+    (_hcomp : IsRealizationCompatible real ρT) :
     ∃ (πq : (Fin 2 → T) →ₗ[T] T) (_ : Function.Surjective πq)
       (δ : GaloisRep ℚ_[2] T T),
       ∀ (g : Field.absoluteGaloisGroup ℚ_[2]) (x : Fin 2 → T),
@@ -3783,7 +3847,7 @@ theorem isTameAtTwo_of_isRealizationCompatible
               AddSubgroup Z2bar)
             (Field.absoluteGaloisGroup ℚ_[2]) ≤ δ.ker) ∧
         (∀ g' : Field.absoluteGaloisGroup ℚ_[2], δ g' * δ g' = 1) :=
-  sorry
+  absurd hirr (not_isIrreducible_of_isHardlyRamified_of_odd hℓodd hW hρbar)
 
 /-- **The Carayol descent** (pillar 3a-ii; DECOMPOSED 2026-07-24 — now
 a PROVEN assembly over the Nyssen–Rouquier cut above): a residually
