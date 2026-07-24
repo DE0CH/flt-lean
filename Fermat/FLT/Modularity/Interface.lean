@@ -2867,10 +2867,11 @@ leaves and PROVES the Chebotarev-density step between them:
   needs: it converts Frobenius-indexed trace data into a trace
   function on the whole group with values in `T`.
 * **3a-ii — the Carayol descent**
-  (`exists_hardlyRamified_galoisRep_of_realizations`, sorry node):
-  the glued trace system over the local ring `T`, reducing through
-  `π` to the traces of the residually IRREDUCIBLE `ρbar`, is the
-  trace system of an actual hardly ramified representation on
+  (`exists_hardlyRamified_galoisRep_of_realizations`, DECOMPOSED
+  2026-07-24 — now a PROVEN assembly over the Nyssen–Rouquier cut
+  below): the glued trace system over the local ring `T`, reducing
+  through `π` to the traces of the residually IRREDUCIBLE `ρbar`, is
+  the trace system of an actual hardly ramified representation on
   `Fin 2 → T`.
 
 The assembly (now pillar 3a's proof) is 3a-i, then the proven gluing,
@@ -3135,38 +3136,306 @@ theorem exists_heckeAlgebra_realizations_of_matchesResidualTraces
           (real i).toFun (- t q) :=
   sorry
 
-/-- **The Carayol descent** (pillar 3a-ii; sorry node — Carayol,
-*Formes modulaires et représentations galoisiennes à valeurs dans un
-anneau local complet*, Contemp. Math. 165 (1994), Théorème 2;
-equivalently the pseudocharacter theory of Nyssen and Rouquier): a
-residually irreducible trace system over the local ring `T` — here
-presented through its realizations: the glued membership `hglue`
-(every joint trace tuple of the realizations comes from `T`, supplied
-by the PROVEN Chebotarev gluing above), joint injectivity (making the
-`T`-valued trace function unique and multiplicative-with-determinant,
-i.e. a continuous pseudocharacter of dimension 2), and `π`-reduction
-to the traces of the IRREDUCIBLE `ρbar` (`hred` at Frobenii off
-`S_T`, which extends to all of `Γ ℚ` by the same Chebotarev/continuity
-argument into the discrete `k`) — is the trace system of an actual
-representation on `Fin 2 → T`: residual absolute irreducibility
-(plain irreducibility suffices — hardly ramified representations are
-odd, and odd irreducible mod-`ℓ` representations are absolutely
-irreducible for odd `ℓ`, the `OddRep` argument) lets Carayol's
-Théorème 2 descend the product representation of the realizations
-along the jointly injective coordinates to the complete local
-Noetherian `T` (module-finite local over `ℤ_ℓ` with finite residue
-field `k = T/ker π`). Hardly-ramifiedness descends along the same
-trace identification (by Théorème 1, the `λ_i`-base-changes of the
-descended representation are conjugate to the realizations):
-determinant cyclotomic by joint injectivity, unramifiedness outside
-`2ℓ` by the pseudocharacter inflation argument, flatness at `ℓ` by
-Raynaud's closure properties of finite flat prolongations (the
-`T`-lattice embeds in the product of the realization lattices), and
-tameness at 2 with the unramified square-trivial rank-1 quotient by
-the same descent (Carayol–Saito). Sound as stated by the section
-audit (vacuously; the non-vacuous intended discharge is at the honest
-Hecke package of 3a-i). CIRCULARITY GUARD: must not be proven through
-`Family.lean` (see the section docstring). -/
+/-! #### The Nyssen–Rouquier cut behind pillar 3a-ii
+
+Pillar 3a-ii DECOMPOSED, 2026-07-24, isolating the mathematical core
+of Carayol's Théorème 2 (equivalently the pseudocharacter theory of
+Nyssen and Rouquier) — a residually irreducible trace system over the
+local ring `T` is the trace system of an actual representation on
+`Fin 2 → T` — from the descent of hardly-ramifiedness along Théorème 1
+uniqueness, which splits into its three nontrivial clauses:
+
+* **the compatibility carrier** (`IsRealizationCompatible`,
+  definition): the descended representation is tied to the
+  realizations by trace AND determinant through every coordinate
+  `toFun i` at EVERY group element — exactly the interface Théorème 1
+  consumes.
+* **3a-ii-α — the construction**
+  (`exists_galoisRep_isRealizationCompatible`, sorry node): the
+  Carayol/Nyssen–Rouquier core, producing the compatible `ρT`.
+* **3a-ii-β — unramifiedness descent**
+  (`isUnramifiedAt_of_isRealizationCompatible`, sorry node).
+* **3a-ii-γ — flatness descent**
+  (`isFlatAt_of_isRealizationCompatible`, sorry node).
+* **3a-ii-δ — tameness-at-2 descent**
+  (`isTameAtTwo_of_isRealizationCompatible`, sorry node).
+* **PROVEN — the assembly** (now pillar 3a-ii's proof body): the rank
+  computation, the cyclotomic-determinant clause of
+  hardly-ramifiedness (joint injectivity, the realizations'
+  determinant clauses, and `AlgHom.commutes` for the `ℤ_ℓ`-algebra
+  normalization), and the Frobenius trace clause (joint injectivity
+  and the interpolation hypothesis `htr`).
+
+Soundness audit (2026-07-24, inherited from the section docstring):
+every leaf keeps the full hypothesis package of 3a-ii — in particular
+the irreducible hardly ramified residual `ρbar` — so each remains
+classically true (the hypothesis set is classically unsatisfiable),
+and the non-vacuous intended discharge is the classical construction
+recorded in its docstring. CIRCULARITY GUARD: as everywhere in pillar
+3, none of the leaves may be proven through `Family.lean`. -/
+
+/-- **The compatibility carrier of the Nyssen–Rouquier cut**: `ρT` is
+*realization-compatible* if through every coordinate `toFun i` its
+characteristic-polynomial linear coefficient (`= −trace`,
+`charpoly_coeff_one_eq_neg_trace`) and its determinant agree with
+those of the `i`-th realization at EVERY element of `Γ ℚ`. This is
+the exact interface between the construction leaf 3a-ii-α and the
+three descent leaves: by Carayol's Théorème 1 (uniqueness over a
+local ring with residually absolutely irreducible reduction), it pins
+the `toFun i`-base-change of `ρT` up to conjugacy to `(real i).ρ`,
+along which hardly-ramifiedness descends clause by clause. -/
+def IsRealizationCompatible {ℓ : ℕ} [Fact ℓ.Prime] {hℓodd : Odd ℓ}
+    {T : Type u} [CommRing T] [TopologicalSpace T] [Algebra ℤ_[ℓ] T]
+    {n : ℕ} (real : Fin n → HardlyRamifiedRealization ℓ hℓodd T)
+    (ρT : GaloisRep ℚ T (Fin 2 → T)) : Prop :=
+  ∀ (g : Field.absoluteGaloisGroup ℚ) (i : Fin n),
+    (real i).toFun ((ρT g).charpoly.coeff 1) =
+        ((real i).ρ g).charpoly.coeff 1 ∧
+      (real i).toFun (LinearMap.det (ρT g)) = LinearMap.det ((real i).ρ g)
+
+/-- **The Carayol/Nyssen–Rouquier construction** (pillar 3a-ii-α;
+sorry node — Carayol, *Formes modulaires et représentations
+galoisiennes à valeurs dans un anneau local complet*, Contemp. Math.
+165 (1994), Théorème 2; Nyssen, Math. Ann. 306 (1996) 257–283;
+Rouquier, J. Algebra 180 (1996) 571–586): the glued trace system over
+`T` is the trace system of an actual representation on `Fin 2 → T`,
+compatible with every realization. Intended construction:
+(1) *the pseudocharacter*: `hglue` + `hinj` define `τ : Γ ℚ → T` with
+`toFun i (τ g) = (charpoly (ρᵢ g)).coeff 1 = −tr ρᵢ(g)` for all `i`;
+set `tr := −τ` and `d g := (tr(g)² − tr(g²))/2` (`2` is a unit: `T`
+is a `ℤ_ℓ`-algebra, `ℓ` odd); all dimension-2 pseudocharacter
+identities and continuity hold because they hold coordinatewise in
+the honest traces of the `ρᵢ` and the joint coordinate map is
+injective (`hinj`) — continuity via the closed embedding of the
+compact `T` (module-finite free over `ℤ_ℓ` in the module topology)
+into `∏ᵢ Oᵢ`;
+(2) *residual absolute irreducibility*: `π ∘ tr` agrees with
+`tr ρbar` at the Frobenii off `S_T` (`hred`, `htr`), hence everywhere
+(Chebotarev density, continuity into the discrete `k`); `ρbar` is
+irreducible and odd (its determinant is cyclotomic, evaluating to
+`−1` at complex conjugation), hence absolutely irreducible for the
+odd `ℓ` (the `OddRep` argument);
+(3) *matrix coefficients over the local ring*: complex conjugation
+`c` has `tr c = 0` and `d c = −1`, so its residual image has the
+distinct eigenvalues `±1` (`ℓ` odd) and the trace system splits along
+the lifted idempotent pair into diagonal corner functions
+`a, d : Γ ℚ → T` and off-diagonal corner PRODUCTS
+`x(g)·y(h) ∈ T` (pseudocharacter polarizations); residual absolute
+irreducibility produces `g₀, h₀` with `x(g₀)·y(h₀) ∈ Tˣ` (`T` local —
+otherwise the residual trace system would be a sum of two
+characters), which normalizes the off-diagonal corners into honest
+functions; the pseudocharacter identities are then exactly the `2×2`
+multiplication law, yielding a continuous representation
+`ρT : Γ ℚ → GL₂(T)` on `Fin 2 → T` with trace `tr` and
+determinant `d`;
+(4) *compatibility*: `toFun i ∘ tr = tr ρᵢ` by construction, and
+`toFun i ∘ d = det ρᵢ` since a rank-2 determinant is determined by
+the traces at `g` and `g²` when `2` is a unit — which is
+`IsRealizationCompatible` in the `charpoly.coeff 1 = −tr` spelling.
+Sound as stated by the section audit (vacuously; the non-vacuous
+intended discharge is at the honest Hecke package of 3a-i).
+CIRCULARITY GUARD: must not be proven through `Family.lean` (see the
+section docstring). -/
+theorem exists_galoisRep_isRealizationCompatible
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime]
+    {k : Type*} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type*} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    {T : Type u} [CommRing T] [TopologicalSpace T] [IsTopologicalRing T]
+    [Algebra ℤ_[ℓ] T] [IsLocalRing T] [Module.Finite ℤ_[ℓ] T]
+    [Module.Free ℤ_[ℓ] T] [IsModuleTopology ℤ_[ℓ] T]
+    {t : ℕ → T} {π : T →+* k} (hπ : Function.Surjective π)
+    {S_T : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hred : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S_T →
+      π (t q) =
+        - (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
+    {n : ℕ} (real : Fin n → HardlyRamifiedRealization ℓ hℓodd T)
+    (hinj : ∀ x y : T, (∀ i, (real i).toFun x = (real i).toFun y) → x = y)
+    (htr : ∀ (i : Fin n) (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S_T →
+      ((real i).ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1 =
+        (real i).toFun (- t q))
+    (hglue : ∀ g : Field.absoluteGaloisGroup ℚ, ∃ x : T,
+      ∀ i, (real i).toFun x = ((real i).ρ g).charpoly.coeff 1) :
+    ∃ ρT : GaloisRep ℚ T (Fin 2 → T), IsRealizationCompatible real ρT :=
+  sorry
+
+/-- **Unramifiedness descent** (pillar 3a-ii-β; sorry node — Carayol
+Théorème 1): the descended representation is unramified outside `2ℓ`.
+Intended proof: fix `p ∉ {2, ℓ}` and `σ` in the inertia at `p`. Each
+realization `ρᵢ` is unramified at `p` (its `isHardlyRamified` field),
+so `ρᵢ(σ) = 1`. By Théorème 1 — over the local `Oᵢ`, a representation
+with residually absolutely irreducible reduction is determined up to
+conjugacy by its trace, and the residual reduction of `ρᵢ` is
+identified with the odd irreducible (hence absolutely irreducible,
+`OddRep`) `ρbar` through `hred`/`htr` and Brauer–Nesbitt — the
+`toFun i`-base-change of `ρT` is conjugate to `ρᵢ`; hence for every
+`i` the base change of `ρT(σ)` is `1`, i.e. `toFun i` maps every
+standard-basis matrix entry of `ρT(σ)` to the corresponding entry of
+`1`, and joint injectivity `hinj` gives `ρT(σ) = 1` entrywise. Sound
+as stated by the section audit. CIRCULARITY GUARD: must not be proven
+through `Family.lean` (see the section docstring). -/
+theorem isUnramifiedAt_of_isRealizationCompatible
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime]
+    {k : Type*} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type*} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    {T : Type u} [CommRing T] [TopologicalSpace T] [IsTopologicalRing T]
+    [Algebra ℤ_[ℓ] T] [IsLocalRing T] [Module.Finite ℤ_[ℓ] T]
+    [Module.Free ℤ_[ℓ] T] [IsModuleTopology ℤ_[ℓ] T]
+    {t : ℕ → T} {π : T →+* k} (hπ : Function.Surjective π)
+    {S_T : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hred : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S_T →
+      π (t q) =
+        - (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
+    {n : ℕ} (real : Fin n → HardlyRamifiedRealization ℓ hℓodd T)
+    (hinj : ∀ x y : T, (∀ i, (real i).toFun x = (real i).toFun y) → x = y)
+    (htr : ∀ (i : Fin n) (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S_T →
+      ((real i).ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1 =
+        (real i).toFun (- t q))
+    {ρT : GaloisRep ℚ T (Fin 2 → T)}
+    (hcomp : IsRealizationCompatible real ρT) :
+    ∀ p (hp : p.Prime), p ≠ 2 ∧ p ≠ ℓ →
+      ρT.IsUnramifiedAt hp.toHeightOneSpectrumRingOfIntegersRat :=
+  sorry
+
+/-- **Flatness descent** (pillar 3a-ii-γ; sorry node — Raynaud's
+closure properties of finite flat prolongations): the descended
+representation is flat at `ℓ`. Intended proof: for an open ideal
+`I ≤ T`, the finite `Γ ℚ_ℓ`-module `(Fin 2 → T)/I` embeds
+`Γ`-equivariantly into a finite product `∏ᵢ (Fin 2 → Oᵢ)/Jᵢ` of
+quotients of the realization lattices: the `toFun i`-base-changes of
+`ρT` are conjugate to the `ρᵢ` (Théorème 1, as in 3a-ii-β), the joint
+coordinate map is injective (`hinj`), and by linear compactness `I`
+contains the preimage of a suitable open `∏ᵢ Jᵢ`. Each
+`(Fin 2 → Oᵢ)/Jᵢ` has a finite flat prolongation (the `isFlat` field
+of the realizations), finite flat group schemes over `ℤ_ℓ` are closed
+under finite products, and — `ℓ` odd, absolute ramification `e = 1 <
+ℓ − 1` — Raynaud's theorem provides the finite flat prolongation of
+the generic-fiber subobject (schematic closure) realizing
+`(Fin 2 → T)/I`, and transports it back along the quotient towers to
+the given open `I`. Sound as stated by the section audit. CIRCULARITY
+GUARD: must not be proven through `Family.lean` (see the section
+docstring). -/
+theorem isFlatAt_of_isRealizationCompatible
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime]
+    {k : Type*} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type*} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    {T : Type u} [CommRing T] [TopologicalSpace T] [IsTopologicalRing T]
+    [Algebra ℤ_[ℓ] T] [IsLocalRing T] [Module.Finite ℤ_[ℓ] T]
+    [Module.Free ℤ_[ℓ] T] [IsModuleTopology ℤ_[ℓ] T]
+    {t : ℕ → T} {π : T →+* k} (hπ : Function.Surjective π)
+    {S_T : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hred : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S_T →
+      π (t q) =
+        - (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
+    {n : ℕ} (real : Fin n → HardlyRamifiedRealization ℓ hℓodd T)
+    (hinj : ∀ x y : T, (∀ i, (real i).toFun x = (real i).toFun y) → x = y)
+    (htr : ∀ (i : Fin n) (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S_T →
+      ((real i).ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1 =
+        (real i).toFun (- t q))
+    {ρT : GaloisRep ℚ T (Fin 2 → T)}
+    (hcomp : IsRealizationCompatible real ρT) :
+    ρT.IsFlatAt
+      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : ℓ.Prime)) :=
+  sorry
+
+/-- **Tameness-at-2 descent** (pillar 3a-ii-δ; sorry node —
+Carayol–Saito local–global compatibility, descended along Théorème 1):
+the descended representation is upper-triangular at `2` with an
+unramified square-trivial rank-1 quotient. Intended proof: each
+realization carries a `G₂`-stable surjection `Fin 2 → Oᵢ → Oᵢ` with
+unramified square-trivial quotient character `δᵢ` (its `isTameAtTwo`
+field). When `ρbar|_{G₂}` has a UNIQUE unramified square-trivial
+quotient character, the kernels of these surjections, pulled back
+through the Théorème 1 conjugacies (as in 3a-ii-β), are the
+`toFun i`-base-changes of one common `T`-line — the kernel of a
+surjection `Fin 2 → T → T` glued by joint injectivity and linear
+compactness of `T`; in the degenerate split case (`ρbar|_{G₂}` a sum
+of two unramified square-trivial characters) choose the lines
+compatibly across the realizations through their congruences before
+gluing. The quotient action `δ` then satisfies `toFun i ∘ δ = δᵢ` for
+every `i`, hence is unramified with `δ² = 1` by joint injectivity
+`hinj`. Sound as stated by the section audit. CIRCULARITY GUARD: must
+not be proven through `Family.lean` (see the section docstring). -/
+theorem isTameAtTwo_of_isRealizationCompatible
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime]
+    {k : Type*} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type*} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    {T : Type u} [CommRing T] [TopologicalSpace T] [IsTopologicalRing T]
+    [Algebra ℤ_[ℓ] T] [IsLocalRing T] [Module.Finite ℤ_[ℓ] T]
+    [Module.Free ℤ_[ℓ] T] [IsModuleTopology ℤ_[ℓ] T]
+    {t : ℕ → T} {π : T →+* k} (hπ : Function.Surjective π)
+    {S_T : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hred : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S_T →
+      π (t q) =
+        - (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
+    {n : ℕ} (real : Fin n → HardlyRamifiedRealization ℓ hℓodd T)
+    (hinj : ∀ x y : T, (∀ i, (real i).toFun x = (real i).toFun y) → x = y)
+    (htr : ∀ (i : Fin n) (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S_T →
+      ((real i).ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1 =
+        (real i).toFun (- t q))
+    {ρT : GaloisRep ℚ T (Fin 2 → T)}
+    (hcomp : IsRealizationCompatible real ρT) :
+    ∃ (πq : (Fin 2 → T) →ₗ[T] T) (_ : Function.Surjective πq)
+      (δ : GaloisRep ℚ_[2] T T),
+      ∀ (g : Field.absoluteGaloisGroup ℚ_[2]) (x : Fin 2 → T),
+        πq (ρT.map (algebraMap ℚ ℚ_[2]) g x) = δ g (πq x) ∧
+        (AddSubgroup.inertia
+            ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup :
+              AddSubgroup Z2bar)
+            (Field.absoluteGaloisGroup ℚ_[2]) ≤ δ.ker) ∧
+        (∀ g' : Field.absoluteGaloisGroup ℚ_[2], δ g' * δ g' = 1) :=
+  sorry
+
+/-- **The Carayol descent** (pillar 3a-ii; DECOMPOSED 2026-07-24 — now
+a PROVEN assembly over the Nyssen–Rouquier cut above): a residually
+irreducible trace system over the local ring `T` — here presented
+through its realizations: the glued membership `hglue` (every joint
+trace tuple of the realizations comes from `T`, supplied by the
+PROVEN Chebotarev gluing above), joint injectivity (making the
+`T`-valued trace function unique, i.e. a continuous pseudocharacter
+of dimension 2), and `π`-reduction to the traces of the IRREDUCIBLE
+`ρbar` (`hred` at Frobenii off `S_T`) — is the trace system of an
+actual hardly ramified representation on `Fin 2 → T` (Carayol,
+Contemp. Math. 165 (1994), Théorème 2; Nyssen; Rouquier). Assembly:
+the construction leaf 3a-ii-α produces `ρT` compatible in trace and
+determinant with every realization; the rank clause is the standard
+computation; the cyclotomic-determinant clause of hardly-ramifiedness
+is PROVEN here (joint injectivity + the realizations' determinant
+clauses + `AlgHom.commutes`); the unramifiedness/flatness/tameness
+clauses are the descent leaves 3a-ii-β/γ/δ (each descending along
+Théorème 1 uniqueness, see their docstrings); and the Frobenius trace
+clause is PROVEN from joint injectivity and the interpolation
+hypothesis `htr`. Sound as stated by the section audit (vacuously;
+the non-vacuous intended discharge is at the honest Hecke package of
+3a-i). CIRCULARITY GUARD: must not be proven through `Family.lean`
+(see the section docstring). -/
 theorem exists_hardlyRamified_galoisRep_of_realizations
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime]
     {k : Type*} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
@@ -3199,8 +3468,31 @@ theorem exists_hardlyRamified_galoisRep_of_realizations
       ∀ (q : ℕ) (hq : q.Prime),
         hq.toHeightOneSpectrumRingOfIntegersRat ∉ S_T →
         (ρT.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1 =
-          - t q :=
-  sorry
+          - t q := by
+  classical
+  obtain ⟨ρT, hcomp⟩ := exists_galoisRep_isRealizationCompatible hℓodd hW
+    hρbar hirr hπ hred real hinj htr hglue
+  have hrankT : Module.rank T (Fin 2 → T) = 2 := by simp
+  have hdet : ∀ g : Field.absoluteGaloisGroup ℚ, ρT.det g =
+      algebraMap ℤ_[ℓ] T
+        (cyclotomicCharacter (AlgebraicClosure ℚ) ℓ g.toRingEquiv) := by
+    intro g
+    refine hinj _ _ fun i => ?_
+    rw [GaloisRep.det_apply, (hcomp g i).2, ← GaloisRep.det_apply,
+      (real i).isHardlyRamified.det g, AlgHom.commutes]
+  refine ⟨ρT, hrankT,
+    ⟨hdet,
+      isUnramifiedAt_of_isRealizationCompatible hℓodd hW hρbar hirr hπ
+        hred real hinj htr hcomp,
+      isFlatAt_of_isRealizationCompatible hℓodd hW hρbar hirr hπ
+        hred real hinj htr hcomp,
+      isTameAtTwo_of_isRealizationCompatible hℓodd hW hρbar hirr hπ
+        hred real hinj htr hcomp⟩,
+    fun q hq hqS => ?_⟩
+  refine hinj _ _ fun i => ?_
+  rw [GaloisRep.charFrob_eq_charpoly_globalFrob,
+    (hcomp (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) i).1,
+    ← GaloisRep.charFrob_eq_charpoly_globalFrob, htr i q hq hqS]
 
 /-- **The Hecke-side deformation** (pillar 3a; DECOMPOSED 2026-07-24 —
 now a PROVEN assembly over the Carayol cut above: the geometric leaf
