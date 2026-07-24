@@ -262,6 +262,420 @@ noncomputable def enumVertical {ι : Type*} [Fintype ι]
     (W : WeierstrassCurve.Affine F) (val : ι → W.Point) : W.CoordinateRing :=
   (Finset.univ.val.map fun i => pointXClass W (val i)).prod
 
+/-!
+### Evaluation and translation substrate for L4-8
+
+The bricks consumed by the proof of `exists_translationChar`:
+computation rules for `pointEval` on the generators of the coordinate
+ring, the ring-hom extensionality principle they support, the
+nonconstancy of the tautological (and generic-translate) `x`-coordinate,
+and a `RingHom`-level additive point map (mathlib's `Point.map` is
+`AlgHom`-based, which does not fit the constants embedding `constHom`
+nor the fraction-field endomorphism extending `τ_κ^*`).
+-/
+
+omit [DecidableEq F] in
+/-- `pointEval` on the image of a univariate polynomial `r(X)`:
+evaluation of `r` at the point's `x`-coordinate. -/
+lemma pointEval_ofPoly {K' : Type*} [Field K'] (φ : F →+* K') {x₀ y₀ : K'}
+    (h : ((W.map φ).toAffine).Equation x₀ y₀) (r : Polynomial F) :
+    pointEval φ h (CoordinateRing.mk W (Polynomial.C r)) =
+      (r.map φ).eval x₀ := by
+  rw [pointEval, AdjoinRoot.lift_mk, Polynomial.eval₂_C]
+  rfl
+
+omit [DecidableEq F] in
+/-- `pointEval` fixes the constants: `τ_κ^*` restricted to `F` is `φ`. -/
+lemma pointEval_C {K' : Type*} [Field K'] (φ : F →+* K') {x₀ y₀ : K'}
+    (h : ((W.map φ).toAffine).Equation x₀ y₀) (d : F) :
+    pointEval φ h (CoordinateRing.mk W (Polynomial.C (Polynomial.C d))) =
+      φ d := by
+  rw [pointEval_ofPoly, Polynomial.map_C, Polynomial.eval_C]
+
+omit [DecidableEq F] in
+/-- `pointEval` sends the coordinate function `X` to the point's
+`x`-coordinate. -/
+lemma pointEval_X {K' : Type*} [Field K'] (φ : F →+* K') {x₀ y₀ : K'}
+    (h : ((W.map φ).toAffine).Equation x₀ y₀) :
+    pointEval φ h (CoordinateRing.mk W (Polynomial.C Polynomial.X)) = x₀ := by
+  rw [pointEval_ofPoly, Polynomial.map_X, Polynomial.eval_X]
+
+omit [DecidableEq F] in
+/-- `pointEval` sends the coordinate function `Y` to the point's
+`y`-coordinate. -/
+lemma pointEval_Y {K' : Type*} [Field K'] (φ : F →+* K') {x₀ y₀ : K'}
+    (h : ((W.map φ).toAffine).Equation x₀ y₀) :
+    pointEval φ h (CoordinateRing.mk W Polynomial.X) = y₀ :=
+  AdjoinRoot.lift_root _
+
+omit [DecidableEq F] in
+/-- Ring homomorphisms out of the coordinate ring are determined by
+their values on the constants and the two coordinate functions. -/
+theorem coordinateRing_ringHom_ext {S : Type*} [CommRing S]
+    {φ₁ φ₂ : W.CoordinateRing →+* S}
+    (hC : ∀ d : F, φ₁ (CoordinateRing.mk W (Polynomial.C (Polynomial.C d))) =
+      φ₂ (CoordinateRing.mk W (Polynomial.C (Polynomial.C d))))
+    (hX : φ₁ (CoordinateRing.mk W (Polynomial.C Polynomial.X)) =
+      φ₂ (CoordinateRing.mk W (Polynomial.C Polynomial.X)))
+    (hY : φ₁ (CoordinateRing.mk W Polynomial.X) =
+      φ₂ (CoordinateRing.mk W Polynomial.X)) :
+    φ₁ = φ₂ := by
+  have hpoly : ∀ r : Polynomial F,
+      φ₁ (CoordinateRing.mk W (Polynomial.C r)) =
+        φ₂ (CoordinateRing.mk W (Polynomial.C r)) := by
+    intro r
+    induction r using Polynomial.induction_on with
+    | C d => exact hC d
+    | add f g hf hg => rw [Polynomial.C_add, map_add, map_add, map_add, hf, hg]
+    | monomial n d _ =>
+      simp only [map_mul, map_pow]
+      rw [hC d, hX]
+  refine RingHom.ext fun z => ?_
+  obtain ⟨f, rfl⟩ := AdjoinRoot.mk_surjective z
+  induction f using Polynomial.induction_on with
+  | C r => exact hpoly r
+  | add f g hf hg => rw [map_add, map_add, map_add, hf, hg]
+  | monomial n r _ =>
+    simp only [map_mul, map_pow]
+    rw [hpoly r, hY]
+
+omit [DecidableEq F] in
+/-- **The tautological `x`-coordinate is not a constant**: its
+difference with any constant is the image of the nonzero vertical
+class `X − c`. -/
+theorem tautX_ne_constHom (c : F) : tautX W ≠ constHom W c := by
+  intro hc
+  have hXC : CoordinateRing.XClass W c =
+      CoordinateRing.mk W (Polynomial.C Polynomial.X) -
+        CoordinateRing.mk W (Polynomial.C (Polynomial.C c)) := by
+    rw [CoordinateRing.XClass, ← map_sub, ← Polynomial.C_sub]
+  have h0 : algebraMap W.CoordinateRing W.FunctionField
+      (CoordinateRing.XClass W c) = 0 := by
+    rw [hXC, map_sub]
+    show tautX W - constHom W c = 0
+    rw [hc, sub_self]
+  exact CoordinateRing.XClass_ne_zero c
+    ((map_eq_zero_iff _
+      (IsFractionRing.injective W.CoordinateRing W.FunctionField)).mp h0)
+
+/-- Transport of rational points along an equality of Weierstrass
+curves (the group structures correspond definitionally under
+`subst`). -/
+def castPoint {W₁ W₂ : WeierstrassCurve.Affine F} (h : W₁ = W₂) :
+    W₁.Point → W₂.Point :=
+  fun P => h ▸ P
+
+omit [DecidableEq F] in
+lemma castPoint_zero {W₁ W₂ : WeierstrassCurve.Affine F} (h : W₁ = W₂) :
+    castPoint h 0 = 0 := by subst h; rfl
+
+omit [DecidableEq F] in
+lemma castPoint_some {W₁ W₂ : WeierstrassCurve.Affine F} (h : W₁ = W₂)
+    {x y : F} (hn : W₁.Nonsingular x y) :
+    castPoint h (.some x y hn) = .some x y (h ▸ hn) := by subst h; rfl
+
+lemma castPoint_add {W₁ W₂ : WeierstrassCurve.Affine F} (h : W₁ = W₂)
+    (P R : W₁.Point) :
+    castPoint h (P + R) = castPoint h P + castPoint h R := by subst h; rfl
+
+/-- The map on rational points induced by a field homomorphism — the
+`RingHom`-level counterpart of mathlib's `AlgHom`-based `Point.map`,
+matching `constPoint` at the constants embedding and applicable to the
+fraction-field endomorphisms extending the translation evaluations. -/
+noncomputable def pointMap {K' : Type*} [Field K'] (φ : F →+* K') :
+    W.Point → (W.map φ).toAffine.Point
+  | .zero => .zero
+  | .some x y h => .some _ _ ((W.map_nonsingular φ.injective x y).mpr h)
+
+omit [DecidableEq F] in
+lemma pointMap_zero {K' : Type*} [Field K'] (φ : F →+* K') :
+    pointMap (W := W) φ 0 = 0 :=
+  rfl
+
+omit [DecidableEq F] in
+lemma pointMap_some {K' : Type*} [Field K'] (φ : F →+* K') {x y : F}
+    (h : W.Nonsingular x y) :
+    pointMap φ (.some x y h) =
+      .some (φ x) (φ y) ((W.map_nonsingular φ.injective x y).mpr h) :=
+  rfl
+
+/-- **Additivity of the point map** (`RingHom`-level transplant of
+mathlib's `Point.map.map_add'`). -/
+theorem pointMap_add {K' : Type*} [Field K'] [DecidableEq K']
+    (φ : F →+* K') (P R : W.Point) :
+    pointMap φ (P + R) = pointMap φ P + pointMap φ R := by
+  rcases P, R with ⟨_ | ⟨x₁, y₁, h₁⟩, _ | ⟨x₂, y₂, h₂⟩⟩
+  any_goals rfl
+  by_cases hxy : x₁ = x₂ ∧ y₁ = W.negY x₂ y₂
+  · rw [Point.add_of_Y_eq hxy.left hxy.right, pointMap_zero, pointMap_some,
+      pointMap_some,
+      Point.add_of_Y_eq (congr_arg φ hxy.left) (by rw [hxy.right, map_negY])]
+  · have hxy' : ¬(φ x₁ = φ x₂ ∧
+        φ y₁ = (W.map φ).toAffine.negY (φ x₂) (φ y₂)) := fun hc =>
+      hxy ⟨φ.injective hc.1, φ.injective (by
+        have := hc.2
+        rw [map_negY] at this
+        exact this)⟩
+    rw [Point.add_some hxy, pointMap_some, pointMap_some, pointMap_some,
+      Point.add_some hxy']
+    simp only [Point.some.injEq]
+    exact ⟨by rw [map_slope, map_addX], by rw [map_slope, map_addY]⟩
+
+omit [DecidableEq F] in
+/-- `constPoint` is the point map of the constants embedding. -/
+lemma constPoint_eq_pointMap (P : W.Point) :
+    constPoint W P = pointMap (constHom W) P := by
+  cases P <;> rfl
+
+/-- The base change of rational points to the function field, as an
+additive group homomorphism. -/
+noncomputable def constPointHom (W : WeierstrassCurve.Affine F) :
+    W.Point →+ (curveK W).Point where
+  toFun := constPoint W
+  map_zero' := rfl
+  map_add' P R := by
+    rw [constPoint_eq_pointMap, constPoint_eq_pointMap, constPoint_eq_pointMap,
+      pointMap_add]
+    rfl
+
+omit [DecidableEq F] in
+/-- **Units of the coordinate ring are the nonzero constants** (the
+affine curve is integral with only the place at infinity removed):
+generic-field transplant of the μ-proof's `hCunits` extraction
+(`coordRing_isUnit_constant` in WeilPairing.lean), via the norm to
+`F[X]` having degree zero. -/
+theorem coordinateRing_isUnit_eq_const {u : W.CoordinateRing}
+    (hu : IsUnit u) :
+    ∃ c : F, c ≠ 0 ∧
+      u = CoordinateRing.mk W (Polynomial.C (Polynomial.C c)) := by
+  obtain ⟨pp, qq, rfl⟩ := CoordinateRing.exists_smul_basis_eq u
+  obtain ⟨v, hv⟩ := hu
+  have hnu : IsUnit (Algebra.norm (Polynomial F)
+      (pp • (1 : W.CoordinateRing) +
+        qq • CoordinateRing.mk W Polynomial.X)) := by
+    refine isUnit_iff_exists.mpr ⟨Algebra.norm (Polynomial F)
+      ((v⁻¹ : W.CoordinateRingˣ) : W.CoordinateRing), ?_, ?_⟩
+    · rw [← map_mul,
+        show (pp • (1 : W.CoordinateRing) +
+            qq • CoordinateRing.mk W Polynomial.X) *
+            ((v⁻¹ : W.CoordinateRingˣ) : W.CoordinateRing) =
+          ((v * v⁻¹ : W.CoordinateRingˣ) : W.CoordinateRing) from by
+            rw [Units.val_mul, hv],
+        mul_inv_cancel, Units.val_one, map_one]
+    · rw [← map_mul,
+        show ((v⁻¹ : W.CoordinateRingˣ) : W.CoordinateRing) *
+            (pp • (1 : W.CoordinateRing) +
+              qq • CoordinateRing.mk W Polynomial.X) =
+          ((v⁻¹ * v : W.CoordinateRingˣ) : W.CoordinateRing) from by
+            rw [Units.val_mul, hv],
+        inv_mul_cancel, Units.val_one, map_one]
+  have hdeg0 : (Algebra.norm (Polynomial F)
+      (pp • (1 : W.CoordinateRing) +
+        qq • CoordinateRing.mk W Polynomial.X)).degree = 0 :=
+    Polynomial.degree_eq_zero_of_isUnit hnu
+  rw [CoordinateRing.degree_norm_smul_basis] at hdeg0
+  have hqq : qq = 0 := by
+    by_contra hqq0
+    have h1 : (2 • qq.degree + 3 : WithBot ℕ) ≤ 0 := by
+      rw [← hdeg0]
+      exact le_max_right _ _
+    have h3 : (0 : WithBot ℕ) ≤ qq.degree :=
+      Polynomial.zero_le_degree_iff.mpr hqq0
+    have h2 : (0 : WithBot ℕ) < 2 • qq.degree + 3 := by
+      refine lt_of_lt_of_le (by norm_num : (0 : WithBot ℕ) < 3) ?_
+      refine le_add_of_nonneg_left ?_
+      rw [two_nsmul]
+      exact le_trans h3 (le_add_of_nonneg_left h3)
+    exact absurd (le_antisymm h1 (le_of_lt h2)) (ne_of_gt h2)
+  have hpp : pp.degree = 0 := by
+    rw [hqq] at hdeg0
+    simp only [Polynomial.degree_zero] at hdeg0
+    have h4 : (2 • pp.degree : WithBot ℕ) = 0 := by
+      rw [← hdeg0, max_eq_left]
+      rw [show (2 : ℕ) • (⊥ : WithBot ℕ) + 3 = ⊥ from by rfl]
+      exact bot_le
+    rw [two_nsmul, Nat.WithBot.add_eq_zero_iff] at h4
+    exact h4.1
+  have hppC : pp = Polynomial.C (pp.coeff 0) :=
+    Polynomial.eq_C_of_degree_le_zero (le_of_eq hpp)
+  refine ⟨pp.coeff 0, ?_, ?_⟩
+  · intro h0
+    have hppz : pp = 0 := by rw [hppC, h0, Polynomial.C_0]
+    have hz : (pp • (1 : W.CoordinateRing) +
+        qq • CoordinateRing.mk W Polynomial.X) = 0 := by
+      rw [hppz, hqq, zero_smul, zero_smul, add_zero]
+    exact Units.ne_zero v (hv.trans hz)
+  · conv_lhs => rw [hqq, zero_smul, add_zero, hppC]
+    rw [Algebra.smul_def, mul_one]
+    rfl
+
+/-- **The `x`-coordinate of a generic translate is not a constant**
+(L4-4 substrate): were `x(Q ⊕ taut)` a constant, `y(Q ⊕ taut)` would
+satisfy a monic quadratic with constant coefficients, hence — the
+constants being algebraically closed — the whole translate would be a
+constant point, forcing the tautological point to be constant against
+`tautX_ne_constHom`. -/
+theorem xCoord_ne_constHom [IsAlgClosed F] (hΔ : W.Δ ≠ 0) {Q : W.Point}
+    {xκ yκ : W.FunctionField} {hκ : (curveK W).Nonsingular xκ yκ}
+    (hpt : constPoint W Q + tautPoint W hΔ =
+      WeierstrassCurve.Affine.Point.some xκ yκ hκ) (c : F) :
+    xκ ≠ constHom W c := by
+  intro hxc
+  subst hxc
+  have heq : yκ ^ 2 + constHom W (W.a₁ * c + W.a₃) * yκ -
+      constHom W (c ^ 3 + W.a₂ * c ^ 2 + W.a₄ * c + W.a₆) = 0 := by
+    have h := ((curveK W).equation_iff (constHom W c) yκ).mp hκ.left
+    simp only [curveK, WeierstrassCurve.map] at h
+    simp only [map_add, map_mul, map_pow]
+    linear_combination h
+  obtain ⟨r₁, hr₁⟩ := IsAlgClosed.exists_root
+    (p := Polynomial.X ^ 2 + Polynomial.C (W.a₁ * c + W.a₃) * Polynomial.X -
+      Polynomial.C (c ^ 3 + W.a₂ * c ^ 2 + W.a₄ * c + W.a₆)) (by
+      rw [show (Polynomial.X ^ 2 +
+          Polynomial.C (W.a₁ * c + W.a₃) * Polynomial.X -
+          Polynomial.C (c ^ 3 + W.a₂ * c ^ 2 + W.a₄ * c + W.a₆) :
+            Polynomial F) =
+          Polynomial.C 1 * Polynomial.X ^ 2 +
+            Polynomial.C (W.a₁ * c + W.a₃) * Polynomial.X +
+            Polynomial.C (-(c ^ 3 + W.a₂ * c ^ 2 + W.a₄ * c + W.a₆)) from by
+          rw [Polynomial.C_1, one_mul, Polynomial.C_neg]; ring,
+        Polynomial.degree_quadratic one_ne_zero]
+      norm_num)
+  have hr₁' : r₁ ^ 2 + (W.a₁ * c + W.a₃) * r₁ -
+      (c ^ 3 + W.a₂ * c ^ 2 + W.a₄ * c + W.a₆) = 0 := by
+    simpa using hr₁
+  have hfac : (yκ - constHom W r₁) *
+      (yκ - (-constHom W (W.a₁ * c + W.a₃) - constHom W r₁)) = 0 := by
+    have himg : constHom W r₁ ^ 2 +
+        constHom W (W.a₁ * c + W.a₃) * constHom W r₁ -
+        constHom W (c ^ 3 + W.a₂ * c ^ 2 + W.a₄ * c + W.a₆) = 0 := by
+      have h2 := congrArg (constHom W) hr₁'
+      simpa [map_add, map_sub, map_mul, map_pow] using h2
+    linear_combination heq - himg
+  have hy : ∃ r : F, yκ = constHom W r := by
+    rcases mul_eq_zero.mp hfac with h | h
+    · exact ⟨r₁, sub_eq_zero.mp h⟩
+    · exact ⟨-(W.a₁ * c + W.a₃) - r₁, by
+        rw [map_sub, map_neg]; exact sub_eq_zero.mp h⟩
+  obtain ⟨r, rfl⟩ := hy
+  have hns : W.Nonsingular c r :=
+    (W.map_nonsingular (constHom W).injective c r).mp hκ
+  have hR : constPoint W (.some c r hns) =
+      WeierstrassCurve.Affine.Point.some (constHom W c) (constHom W r) hκ :=
+    rfl
+  rw [← hR] at hpt
+  have htaut : tautPoint W hΔ = constPoint W (-Q + .some c r hns) := by
+    have h1 : tautPoint W hΔ =
+        -constPoint W Q + constPoint W (.some c r hns) := by
+      rw [← hpt, neg_add_cancel_left]
+    have h2 : constPoint W (-Q + .some c r hns) =
+        -constPoint W Q + constPoint W (.some c r hns) := by
+      rw [show constPoint W = ⇑(constPointHom W) from rfl, map_add, map_neg]
+    rw [h1, h2]
+  rcases hcase : -Q + WeierstrassCurve.Affine.Point.some c r hns
+    with _ | ⟨x', y', h'⟩
+  · rw [hcase] at htaut
+    exact Point.some_ne_zero (taut_nonsingular W hΔ) htaut
+  · rw [hcase] at htaut
+    have htaut' : WeierstrassCurve.Affine.Point.some (tautX W) (tautY W)
+        (taut_nonsingular W hΔ) =
+        WeierstrassCurve.Affine.Point.some (constHom W x') (constHom W y')
+          ((W.map_nonsingular (constHom W).injective x' y').mpr h') := htaut
+    injection htaut' with hx' hy'
+    exact tautX_ne_constHom x' hx'
+
+/-- **Generic-translate transcendence** (L4-4 substrate): evaluation at
+the `x`-coordinate of `Q ⊕ taut` kills no nonzero univariate
+polynomial — over the algebraically closed constants a root would make
+that coordinate a constant, against `xCoord_ne_constHom`. -/
+theorem eval_map_ne_zero_of_ne_zero [IsAlgClosed F] (hΔ : W.Δ ≠ 0)
+    {Q : W.Point} {xκ yκ : W.FunctionField}
+    {hκ : (curveK W).Nonsingular xκ yκ}
+    (hpt : constPoint W Q + tautPoint W hΔ =
+      WeierstrassCurve.Affine.Point.some xκ yκ hκ)
+    {q : Polynomial F} (hq : q ≠ 0) :
+    (q.map (constHom W)).eval xκ ≠ 0 := by
+  intro h0
+  set ev : Polynomial F →+* W.FunctionField :=
+    (Polynomial.evalRingHom xκ).comp (Polynomial.mapRingHom (constHom W))
+    with hev
+  have h0' : ev q = 0 := h0
+  rw [(IsAlgClosed.splits q).eq_prod_roots, map_mul,
+    map_multiset_prod, Multiset.map_map] at h0'
+  rcases mul_eq_zero.mp h0' with h1 | h1
+  · have h2 : ev (Polynomial.C q.leadingCoeff) =
+        constHom W q.leadingCoeff := by
+      simp [hev]
+    rw [h2] at h1
+    exact Polynomial.leadingCoeff_ne_zero.mpr hq
+      ((map_eq_zero_iff _ (constHom W).injective).mp h1)
+  · obtain ⟨a, _, h2⟩ := Multiset.mem_map.mp
+      (Multiset.prod_eq_zero_iff.mp h1)
+    have h3 : ev (Polynomial.X - Polynomial.C a) = xκ - constHom W a := by
+      simp [hev]
+    rw [Function.comp_apply, h3] at h2
+    exact xCoord_ne_constHom hΔ hpt a (sub_eq_zero.mp h2)
+
+/-- **Injectivity of evaluation at a generic translate** (L4-4
+substrate, the `τ_κ^*`-injectivity feeding both the nonvanishing
+conclusions of L4-8 and the extension of `τ_κ^*` to the function
+field): a relation `p(xκ) + q(xκ)·yκ = 0` forces the norm
+`p² − pq·(a₁X + a₃) − q²·(X³ + a₂X² + a₄X + a₆)` to vanish at `xκ`,
+hence to vanish identically, hence `p = q = 0` by the degree
+formula. -/
+theorem pointEval_injective [IsAlgClosed F] (hΔ : W.Δ ≠ 0) {Q : W.Point}
+    {xκ yκ : W.FunctionField} {hκ : (curveK W).Nonsingular xκ yκ}
+    (hpt : constPoint W Q + tautPoint W hΔ =
+      WeierstrassCurve.Affine.Point.some xκ yκ hκ) :
+    Function.Injective (pointEval (constHom W) hκ.left) := by
+  rw [injective_iff_map_eq_zero]
+  intro f hf
+  obtain ⟨pp, qq, rfl⟩ := CoordinateRing.exists_smul_basis_eq f
+  have h1 : pointEval (constHom W) hκ.left
+      (pp • (1 : W.CoordinateRing) + qq • CoordinateRing.mk W Polynomial.X) =
+      (pp.map (constHom W)).eval xκ + (qq.map (constHom W)).eval xκ * yκ := by
+    rw [CoordinateRing.smul, CoordinateRing.smul, mul_one, map_add, map_mul,
+      pointEval_ofPoly, pointEval_ofPoly, pointEval_Y]
+  rw [h1] at hf
+  have heqc : yκ ^ 2 + constHom W W.a₁ * xκ * yκ + constHom W W.a₃ * yκ =
+      xκ ^ 3 + constHom W W.a₂ * xκ ^ 2 + constHom W W.a₄ * xκ +
+        constHom W W.a₆ := by
+    have h := ((curveK W).equation_iff xκ yκ).mp hκ.left
+    simpa only [curveK, WeierstrassCurve.map] using h
+  have hnorm0 : ((Algebra.norm (Polynomial F)
+      (pp • (1 : W.CoordinateRing) +
+        qq • CoordinateRing.mk W Polynomial.X)).map (constHom W)).eval xκ =
+      0 := by
+    rw [CoordinateRing.norm_smul_basis]
+    simp only [Polynomial.map_sub, Polynomial.map_mul, Polynomial.map_pow,
+      Polynomial.map_add, Polynomial.map_C, Polynomial.map_X,
+      Polynomial.eval_sub, Polynomial.eval_mul, Polynomial.eval_pow,
+      Polynomial.eval_add, Polynomial.eval_C, Polynomial.eval_X]
+    linear_combination ((pp.map (constHom W)).eval xκ -
+        (qq.map (constHom W)).eval xκ * yκ -
+        (qq.map (constHom W)).eval xκ *
+          (constHom W W.a₁ * xκ + constHom W W.a₃)) * hf +
+      ((qq.map (constHom W)).eval xκ) ^ 2 * heqc
+  have hN : Algebra.norm (Polynomial F)
+      (pp • (1 : W.CoordinateRing) +
+        qq • CoordinateRing.mk W Polynomial.X) = 0 := by
+    by_contra hN0
+    exact eval_map_ne_zero_of_ne_zero hΔ hpt hN0 hnorm0
+  have hdeg := congrArg Polynomial.degree hN
+  rw [CoordinateRing.degree_norm_smul_basis, Polynomial.degree_zero,
+    max_eq_bot] at hdeg
+  have hqq : qq = 0 := by
+    rcases WithBot.add_eq_bot.mp hdeg.2 with h3 | h3
+    · rw [two_nsmul] at h3
+      rcases WithBot.add_eq_bot.mp h3 with h4 | h4 <;>
+        exact Polynomial.degree_eq_bot.mp h4
+    · exact absurd h3 (by norm_num)
+  have hpp : pp = 0 := by
+    rw [two_nsmul] at hdeg
+    rcases WithBot.add_eq_bot.mp hdeg.1 with h4 | h4 <;>
+      exact Polynomial.degree_eq_bot.mp h4
+  rw [hpp, hqq, zero_smul, zero_smul, add_zero]
+
 variable {p : ℕ} [Fact p.Prime] [IsAlgClosed F]
 
 /-- **L4-8 (sorry node): the translation character of the Miller
