@@ -6419,10 +6419,261 @@ theorem exists_ribet_lattice_of_residually_reducible
       ¬ ∃ a : kk', ∀ g, cc g = (χ g - 1) * a :=
   sorry
 
+omit [IsDomain R] [Module.Finite ℤ_[p] R] [IsModuleTopology ℤ_[p] R] in
+/-- **Lattice determinant transfer** (Eisenstein pillar E2b′-det;
+PROVEN 2026-07-24): the determinant of the lattice representation
+`ρO` is cyclotomic over `O`, given only the generic linkage through
+`O ↪ ℚ̄_p`. Route: `algebraMap O ℚ̄_p (det (ρO g))` is the
+determinant of the base change `(ρO ⊗ ℚ̄_p) g`
+(`LinearMap.det_baseChange`), which equals the determinant of
+`(ρ ⊗ ℚ̄_p) g` because conjugation by the equivariance `e` preserves
+determinants (`LinearMap.det_conj`); that in turn is
+`algebraMap R ℚ̄_p (det (ρ g))`, cyclotomic by `hρ.det`, and the
+`ℤ_p`-compatibility `hZOcompat` rewrites its cyclotomic value as an
+`O`-image, so the injectivity `hOinj` descends the equation to `O`. -/
+theorem det_lattice_of_generic_iso
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hρ : IsHardlyRamified hpodd hv ρ)
+    {O : Type u} [CommRing O] [Algebra ℤ_[p] O]
+    [TopologicalSpace O] [IsTopologicalRing O]
+    [Algebra O (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul O (AlgebraicClosure ℚ_[p])]
+    (hOinj : Function.Injective (algebraMap O (AlgebraicClosure ℚ_[p])))
+    (hZOcompat : ∀ x : ℤ_[p],
+      algebraMap O (AlgebraicClosure ℚ_[p]) (algebraMap ℤ_[p] O x) =
+        algebraMap R (AlgebraicClosure ℚ_[p]) (algebraMap ℤ_[p] R x))
+    {ρO : GaloisRep ℚ O (Fin 2 → O)}
+    (e : ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O))
+      ≃ₗ[AlgebraicClosure ℚ_[p]] ((AlgebraicClosure ℚ_[p]) ⊗[R] V))
+    (he : ∀ g x, e ((ρO.baseChange (AlgebraicClosure ℚ_[p])) g x) =
+      (ρ.baseChange (AlgebraicClosure ℚ_[p])) g (e x)) :
+    ∀ g, ρO.det g = algebraMap ℤ_[p] O
+      (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv) := by
+  intro g
+  apply hOinj
+  -- the generic-fibre representations are conjugate through `e`
+  have hconj : (ρ.baseChange (AlgebraicClosure ℚ_[p])) g =
+      (e : ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O))
+        →ₗ[AlgebraicClosure ℚ_[p]] ((AlgebraicClosure ℚ_[p]) ⊗[R] V)) ∘ₗ
+      ((ρO.baseChange (AlgebraicClosure ℚ_[p])) g) ∘ₗ
+      (e.symm : ((AlgebraicClosure ℚ_[p]) ⊗[R] V)
+        →ₗ[AlgebraicClosure ℚ_[p]]
+          ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O))) := by
+    refine LinearMap.ext fun y => ?_
+    have h1 := he g (e.symm y)
+    rw [LinearEquiv.apply_symm_apply] at h1
+    simp only [LinearMap.comp_apply, LinearEquiv.coe_coe]
+    exact h1.symm
+  calc algebraMap O (AlgebraicClosure ℚ_[p]) (ρO.det g)
+      = LinearMap.det ((ρO.baseChange (AlgebraicClosure ℚ_[p])) g) := by
+        rw [show ((ρO.baseChange (AlgebraicClosure ℚ_[p])) g :
+            Module.End (AlgebraicClosure ℚ_[p])
+              ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O))) =
+          LinearMap.baseChange (AlgebraicClosure ℚ_[p]) (ρO g) from rfl,
+          LinearMap.det_baseChange]
+        rfl
+    _ = LinearMap.det ((ρ.baseChange (AlgebraicClosure ℚ_[p])) g) := by
+        rw [hconj, LinearMap.det_conj]
+    _ = algebraMap R (AlgebraicClosure ℚ_[p]) (ρ.det g) := by
+        rw [show ((ρ.baseChange (AlgebraicClosure ℚ_[p])) g :
+            Module.End (AlgebraicClosure ℚ_[p])
+              ((AlgebraicClosure ℚ_[p]) ⊗[R] V)) =
+          LinearMap.baseChange (AlgebraicClosure ℚ_[p]) (ρ g) from rfl,
+          LinearMap.det_baseChange]
+        rfl
+    _ = algebraMap R (AlgebraicClosure ℚ_[p])
+          (algebraMap ℤ_[p] R (cyclotomicCharacter (AlgebraicClosure ℚ) p
+            g.toRingEquiv)) := by
+        rw [hρ.det g]
+    _ = algebraMap O (AlgebraicClosure ℚ_[p])
+          (algebraMap ℤ_[p] O (cyclotomicCharacter (AlgebraicClosure ℚ) p
+            g.toRingEquiv)) := (hZOcompat _).symm
+
+omit [IsDomain R] [Module.Finite ℤ_[p] R] [IsModuleTopology ℤ_[p] R] in
+/-- **Lattice unramifiedness transfer** (Eisenstein pillar
+E2b′-unram; PROVEN 2026-07-24): outside `2p` the lattice
+representation `ρO` is unramified, given the generic linkage. Route:
+local inertia lands in the kernel of `ρ` (`hρ.isUnramified`), hence
+acts as the identity on the generic fibre `ℚ̄_p ⊗ V`; pulling back
+through the equivariance `e` it acts as the identity on
+`ℚ̄_p ⊗ (Fin 2 → O)`, and the standard lattice injects into its
+generic fibre coefficientwise (`Module.Basis.baseChange_repr_tmul`
+against `hOinj`), so inertia lands in the kernel of `ρO` itself. -/
+theorem isUnramifiedAt_lattice_of_generic_iso
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hρ : IsHardlyRamified hpodd hv ρ)
+    {O : Type u} [CommRing O] [Algebra ℤ_[p] O]
+    [TopologicalSpace O] [IsTopologicalRing O]
+    [Algebra O (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul O (AlgebraicClosure ℚ_[p])]
+    (hOinj : Function.Injective (algebraMap O (AlgebraicClosure ℚ_[p])))
+    {ρO : GaloisRep ℚ O (Fin 2 → O)}
+    (e : ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O))
+      ≃ₗ[AlgebraicClosure ℚ_[p]] ((AlgebraicClosure ℚ_[p]) ⊗[R] V))
+    (he : ∀ g x, e ((ρO.baseChange (AlgebraicClosure ℚ_[p])) g x) =
+      (ρ.baseChange (AlgebraicClosure ℚ_[p])) g (e x)) :
+    ∀ q (hq : q.Prime), q ≠ 2 ∧ q ≠ p →
+      ρO.IsUnramifiedAt hq.toHeightOneSpectrumRingOfIntegersRat := by
+  -- kernel transfer: an element acting trivially through `ρ` acts
+  -- trivially through `ρO`, by injecting the lattice into the fibre
+  have key : ∀ g : Field.absoluteGaloisGroup ℚ, ρ g = 1 → ρO g = 1 := by
+    intro g hg
+    have hbase : ∀ z : (AlgebraicClosure ℚ_[p]) ⊗[R] V,
+        (ρ.baseChange (AlgebraicClosure ℚ_[p])) g z = z := by
+      intro z
+      induction z using TensorProduct.induction_on with
+      | zero => simp
+      | add a b ha hb => rw [map_add, ha, hb]
+      | tmul c y =>
+        rw [GaloisRep.baseChange_tmul, hg, Module.End.one_apply]
+    have hbaseO : ∀ x : (AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O),
+        (ρO.baseChange (AlgebraicClosure ℚ_[p])) g x = x := by
+      intro x
+      apply e.injective
+      rw [he, hbase]
+    refine LinearMap.ext fun m => ?_
+    show ρO g m = m
+    have htens := hbaseO ((1 : AlgebraicClosure ℚ_[p]) ⊗ₜ[O] m)
+    rw [GaloisRep.baseChange_tmul] at htens
+    funext i
+    apply hOinj
+    have hco := congrArg (fun z =>
+      (((Pi.basisFun O (Fin 2)).baseChange
+        (AlgebraicClosure ℚ_[p])).repr z) i) htens
+    simp only [Module.Basis.baseChange_repr_tmul, Pi.basisFun_repr,
+      Algebra.smul_def, mul_one] at hco
+    exact hco
+  intro q hq hqp
+  haveI : ρ.IsUnramifiedAt hq.toHeightOneSpectrumRingOfIntegersRat :=
+    hρ.isUnramified q hq hqp
+  refine ⟨fun σ hσ => ?_⟩
+  have h1 : (ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat) σ = 1 :=
+    GaloisRep.IsUnramifiedAt.localInertiaGroup_le (ρ := ρ) hσ
+  show (ρO.toLocal hq.toHeightOneSpectrumRingOfIntegersRat) σ = 1
+  rw [GaloisRep.toLocal_apply] at h1
+  rw [GaloisRep.toLocal_apply]
+  exact key _ h1
+
+/-- **Lattice flatness transfer** (Eisenstein pillar E2b′-flat; sorry
+node — the Raynaud scheme-theoretic-closure half of the lattice
+transfer): the lattice representation `ρO` is flat at `p`, given the
+generic linkage `e`/`hOinj`/`hZOcompat` and `hρ.isFlat`. Classical
+proof: for every open ideal `I ⊆ O` the finite quotient
+`(O ⧸ I) ⊗ (Fin 2 → O)` is a `G_p`-stable subquotient of a finite
+level `(R ⧸ J) ⊗ V` of the original flat tower — the two lattices
+are commensurable inside the common generic fibre through `e` (both
+are finite `ℤ_p`-lattices there, so a `p`-power scaling moves one
+into the other, and the open ideals of the module-finite local
+`ℤ_p`-algebras `O` and `R` interleave with `p`-power levels); and
+sub- and quotient objects of finite flat group schemes over `ℤ_p`
+are finite flat (scheme-theoretic closure: Raynaud, *Schémas en
+groupes de type `(p, …, p)`*, Bull. Soc. Math. France 102 (1974),
+2.1; Tate, in Cornell–Silverman–Stevens ch. V), so the prolongations
+furnished by `hρ.isFlat.cond` induce prolongations of every level of
+the lattice tower. SHARED-NODE NOTE (2026-07-24): the
+scheme-theoretic-closure input — finite flat Hopf-order closure
+under `Γ`-stable subquotients of the geometric points — is the
+classification-free half of the Raynaud input that pillar E1b
+(`residual_triangular_sub_character_pinned_of_eq_pow`) also cites;
+as of this dispatch no shared closure leaf has been landed, so this
+leaf records the citation — if E1b's owner lands one, the
+commensurability argument here should consume it rather than restate
+it. Soundness (audit 2026-07-24): the hypothesis set is classically
+INHABITED (take `O = R`, `ρO` a frame of `ρ`, `e` the identity), and
+the conclusion holds for every inhabitant by the cited closure
+argument; no step consumes `p ≥ 5`, irreducibility, or residual
+data. Circularity guard (inherited from E2b′): must not route
+through `Family.lean` or `Reducible.lean`'s B5. -/
+theorem isFlatAt_lattice_of_generic_iso
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hρ : IsHardlyRamified hpodd hv ρ)
+    {O : Type u} [CommRing O] [Algebra ℤ_[p] O] [IsDomain O]
+    [Module.Finite ℤ_[p] O] [TopologicalSpace O] [IsTopologicalRing O]
+    [IsLocalRing O] [IsModuleTopology ℤ_[p] O]
+    [Algebra O (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul O (AlgebraicClosure ℚ_[p])]
+    (hOinj : Function.Injective (algebraMap O (AlgebraicClosure ℚ_[p])))
+    (hZOcompat : ∀ x : ℤ_[p],
+      algebraMap O (AlgebraicClosure ℚ_[p]) (algebraMap ℤ_[p] O x) =
+        algebraMap R (AlgebraicClosure ℚ_[p]) (algebraMap ℤ_[p] R x))
+    {ρO : GaloisRep ℚ O (Fin 2 → O)}
+    (e : ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O))
+      ≃ₗ[AlgebraicClosure ℚ_[p]] ((AlgebraicClosure ℚ_[p]) ⊗[R] V))
+    (he : ∀ g x, e ((ρO.baseChange (AlgebraicClosure ℚ_[p])) g x) =
+      (ρ.baseChange (AlgebraicClosure ℚ_[p])) g (e x)) :
+    ρO.IsFlatAt (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+      (Fact.out : p.Prime)) :=
+  sorry
+
+/-- **Lattice tameness-at-2 transfer** (Eisenstein pillar E2b′-tame;
+sorry node — the saturation half of the lattice transfer): the
+lattice representation `ρO` carries a rank-1 unramified
+square-trivial `G_2`-quotient, given the generic linkage. Classical
+proof: the quotient `(π, δ)` of `hρ.isTameAtTwo` cuts the
+`G_2`-stable hyperplane `ker ((π ⊗ ℚ̄_p) ∘ e)` in the generic fibre;
+its intersection with the standard lattice `Fin 2 → O` is a
+SATURATED `G_2`-stable `O`-submodule (the saturation of the kernel
+line), so the corresponding quotient of `Fin 2 → O` is a
+torsion-free rank-1 `O`-module on which `G_2` acts through the SAME
+character `δ` read through `O ↪ ℚ̄_p`: its generic values are those
+of `δ ⊗ ℚ̄_p` (integral because the quotient lattice is stable), and
+it is unramified and square-trivial because `δ` is — both conditions
+are equalities in `O`, checked after the injection `hOinj`. In the
+intended consumer (E2a takes `O` to be the valuation ring of
+`Frac R`, a finite extension of `ℚ_p`) the saturated quotient of the
+finite free module is free of rank 1, furnishing the surjection
+`π' : (Fin 2 → O) →ₗ[O] O`. Soundness: inherits the parent E2b′
+audit (2026-07-24) — the hypothesis set is classically INHABITED
+(take `O = R`, `ρO` a frame of `ρ`, `e` the identity, `π'` the frame
+transport of `π`), and the conclusion is asserted for every
+inhabitant by the parent's recorded saturation transfer; the
+freeness of the saturated quotient over a general module-finite
+local `ℤ_p`-domain is part of that recorded route (over the intended
+DVR inhabitants it is immediate). Circularity guard (inherited from
+E2b′): must not route through `Family.lean` or `Reducible.lean`'s
+B5. -/
+theorem isTameAtTwo_lattice_of_generic_iso
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hρ : IsHardlyRamified hpodd hv ρ)
+    {O : Type u} [CommRing O] [Algebra ℤ_[p] O] [IsDomain O]
+    [Module.Finite ℤ_[p] O] [TopologicalSpace O] [IsTopologicalRing O]
+    [IsLocalRing O] [IsModuleTopology ℤ_[p] O]
+    [Algebra O (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul O (AlgebraicClosure ℚ_[p])]
+    (hOinj : Function.Injective (algebraMap O (AlgebraicClosure ℚ_[p])))
+    (hZOcompat : ∀ x : ℤ_[p],
+      algebraMap O (AlgebraicClosure ℚ_[p]) (algebraMap ℤ_[p] O x) =
+        algebraMap R (AlgebraicClosure ℚ_[p]) (algebraMap ℤ_[p] R x))
+    {ρO : GaloisRep ℚ O (Fin 2 → O)}
+    (e : ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O))
+      ≃ₗ[AlgebraicClosure ℚ_[p]] ((AlgebraicClosure ℚ_[p]) ⊗[R] V))
+    (he : ∀ g x, e ((ρO.baseChange (AlgebraicClosure ℚ_[p])) g x) =
+      (ρ.baseChange (AlgebraicClosure ℚ_[p])) g (e x)) :
+    ∃ (π : (Fin 2 → O) →ₗ[O] O) (_ : Function.Surjective π)
+      (δ : GaloisRep ℚ_[2] O O),
+      ∀ g : Field.absoluteGaloisGroup ℚ_[2], ∀ w : Fin 2 → O,
+        π (ρO.map (algebraMap ℚ ℚ_[2]) g w) = δ g (π w) ∧
+        (AddSubgroup.inertia
+          ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup :
+            AddSubgroup Z2bar) (Field.absoluteGaloisGroup ℚ_[2]) ≤
+          δ.ker) ∧
+        (∀ g' : Field.absoluteGaloisGroup ℚ_[2], δ g' * δ g' = 1) :=
+  sorry
+
 /-- **Lattice-level hardly-ramifiedness transfer** (Eisenstein pillar
-E2b′; sorry node — the genuinely deep arithmetic half of the Ribet
-cut: a stable lattice of a hardly ramified representation is hardly
-ramified): from `IsHardlyRamified ρ`, the generic-fibre equivariance
+E2b′; PROVEN 2026-07-24 as a per-field assembly — the determinant and
+unramifiedness fields are the PROVEN injection descents
+`det_lattice_of_generic_iso` and
+`isUnramifiedAt_lattice_of_generic_iso` above, and the two genuinely
+deep arithmetic fields are the sorried leaves
+`isFlatAt_lattice_of_generic_iso` (Raynaud scheme-theoretic closure)
+and `isTameAtTwo_lattice_of_generic_iso` (saturation of the quotient
+line) above — a stable lattice of a hardly ramified representation is
+hardly ramified): from `IsHardlyRamified ρ`, the generic-fibre equivariance
 `e` over `ℚ̄_p`, the injectivity `O ↪ ℚ̄_p` and its
 `ℤ_p`-compatibility alone — no irreducibility, no residual-shape
 input — the lattice representation `ρO` on the standard rank-2
@@ -6478,7 +6729,10 @@ theorem isHardlyRamified_lattice_of_generic_iso
       (ρ.baseChange (AlgebraicClosure ℚ_[p])) g (e x))
     (hrankO : Module.rank O (Fin 2 → O) = 2) :
     IsHardlyRamified hpodd hrankO ρO :=
-  sorry
+  ⟨det_lattice_of_generic_iso hpodd hv hρ hOinj hZOcompat e he,
+    isUnramifiedAt_lattice_of_generic_iso hpodd hv hρ hOinj e he,
+    isFlatAt_lattice_of_generic_iso hpodd hv hρ hOinj hZOcompat e he,
+    isTameAtTwo_lattice_of_generic_iso hpodd hv hρ hOinj hZOcompat e he⟩
 
 /-- **Integral hardly-ramifiedness transfer** (Eisenstein pillar E2b;
 PROVEN 2026-07-24 as an assembly — the lattice-level transfer is the
