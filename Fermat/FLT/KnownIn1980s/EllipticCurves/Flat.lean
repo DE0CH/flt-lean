@@ -4438,8 +4438,9 @@ theorem exists_isMaximal_center_integralClosure
     (𝒪 : ValuationSubring Ksep)
     (h𝒪 : (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range) :
     ∃ 𝔔 : Ideal (integralClosure R M), 𝔔.IsMaximal ∧
-      ∀ c : integralClosure R M,
-        (c ∈ 𝔔 ↔ algebraMap M Ksep (c : M) ∈ 𝒪.nonunits) := by
+      (∀ c : integralClosure R M,
+        (c ∈ 𝔔 ↔ algebraMap M Ksep (c : M) ∈ 𝒪.nonunits)) ∧
+      𝔔.comap (algebraMap R (integralClosure R M)) = IsLocalRing.maximalIdeal R := by
   letI : Algebra R Ksep := ((algebraMap K Ksep).comp (algebraMap R K)).toAlgebra
   haveI : IsScalarTower R K Ksep := IsScalarTower.of_algebraMap_eq fun _ => rfl
   haveI : IsScalarTower R M Ksep := IsScalarTower.of_algebraMap_eq fun r => by
@@ -4559,10 +4560,11 @@ theorem exists_isMaximal_center_integralClosure
   have h𝔔max : 𝔔c.IsMaximal :=
     Ideal.isMaximal_of_isIntegral_of_isMaximal_comap _
       (h𝔔under ▸ IsLocalRing.maximalIdeal.isMaximal R)
-  exact ⟨𝔔c, h𝔔max, h𝔔c⟩
+  exact ⟨𝔔c, h𝔔max, h𝔔c, h𝔔under⟩
 
-/-- **Denominator representation at a finite level** (sorry node, split from
-the inertia-lifting leaf 2026-07-24): an element of a finite separable
+omit [IsSepClosure K Ksep] [DecidableEq Ksep] in
+/-- **Denominator representation at a finite level** (PROVEN 2026-07-24, split
+from the inertia-lifting leaf): an element of a finite separable
 subextension `M` of `Kˢᵉᵖ` whose image lies in a valuation subring `𝒪` over
 `R` is a fraction of integral elements whose denominator avoids the center of
 `𝒪`. Intended proof: `𝒪.comap (algebraMap M Ksep)` is a valuation subring of
@@ -4582,7 +4584,143 @@ theorem exists_num_den_integralClosure_of_mem_valuationSubring
       (c ∈ 𝔔 ↔ algebraMap M Ksep (c : M) ∈ 𝒪.nonunits))
     (x : M) (hx : algebraMap M Ksep x ∈ 𝒪) :
     ∃ a s : integralClosure R M, s ∉ 𝔔 ∧ (s : M) * x = (a : M) := by
-  sorry
+  classical
+  haveI : Algebra.IsIntegral R (integralClosure R M) :=
+    ⟨fun c => IsIntegralClosure.isIntegral R M c⟩
+  haveI : IsFractionRing (integralClosure R M) M :=
+    IsIntegralClosure.isFractionRing_of_finite_extension R K M _
+  haveI : IsDedekindDomain (integralClosure R M) := IsIntegralClosure.isDedekindDomain R K M _
+  -- `𝔔` is the maximal center, lying over `𝔪 ≠ ⊥`
+  obtain ⟨𝔔₀, h𝔔₀max, h𝔔₀char, h𝔔₀under⟩ :=
+    exists_isMaximal_center_integralClosure R K Ksep M 𝒪 h𝒪
+  have h𝔔eq : 𝔔 = 𝔔₀ := by
+    ext c
+    rw [h𝔔 c, h𝔔₀char c]
+  haveI h𝔔max : 𝔔.IsMaximal := h𝔔eq ▸ h𝔔₀max
+  have h𝔔bot : 𝔔 ≠ ⊥ := by
+    intro h0
+    apply IsDiscreteValuationRing.not_a_field R
+    have halgRB : Function.Injective (algebraMap R (integralClosure R M)) := by
+      have h1 : Function.Injective (algebraMap R M) := by
+        rw [IsScalarTower.algebraMap_eq R K M]
+        exact (algebraMap K M).injective.comp (IsFractionRing.injective R K)
+      intro a b hab
+      apply h1
+      rw [IsScalarTower.algebraMap_apply R (integralClosure R M) M, hab,
+        ← IsScalarTower.algebraMap_apply R (integralClosure R M) M]
+    have h1 : 𝔔.comap (algebraMap R (integralClosure R M)) = IsLocalRing.maximalIdeal R := by
+      rw [h𝔔eq]
+      exact h𝔔₀under
+    rw [h0] at h1
+    rw [← h1]
+    exact Ideal.comap_bot_of_injective _ halgRB
+  -- trivial case `x = 0`
+  by_cases hx0 : x = 0
+  · refine ⟨0, 1, fun h1 => h𝔔max.ne_top (Ideal.eq_top_of_isUnit_mem _ h1 isUnit_one), ?_⟩
+    rw [hx0, mul_zero]
+    exact (map_zero (algebraMap (integralClosure R M) M)).symm
+  -- the localization of the closure at `𝔔`, as a subalgebra of `M`
+  have hle : 𝔔.primeCompl ≤ nonZeroDivisors ↥(integralClosure R M) :=
+    𝔔.primeCompl_le_nonZeroDivisors
+  haveI : IsDiscreteValuationRing ↥(Localization.subalgebra M 𝔔.primeCompl hle) :=
+    IsLocalization.AtPrime.isDiscreteValuationRing_of_dedekind_domain _ h𝔔bot _
+  -- integral elements of the level have image in `𝒪` (for the contradiction branch)
+  letI : Algebra R Ksep := ((algebraMap K Ksep).comp (algebraMap R K)).toAlgebra
+  haveI : IsScalarTower R K Ksep := IsScalarTower.of_algebraMap_eq fun _ => rfl
+  haveI : IsScalarTower R M Ksep := IsScalarTower.of_algebraMap_eq fun r => by
+    rw [IsScalarTower.algebraMap_apply R K Ksep, IsScalarTower.algebraMap_apply R K M,
+      IsScalarTower.algebraMap_apply K M Ksep]
+  have hRO : ∀ r : R, algebraMap R Ksep r ∈ 𝒪 := by
+    intro r
+    have h1 : algebraMap R K r ∈ (𝒪.comap (algebraMap K Ksep)).toSubring := by
+      rw [h𝒪]
+      exact ⟨r, rfl⟩
+    exact h1
+  have hOsub : ∀ c : integralClosure R M, algebraMap M Ksep (c : M) ∈ 𝒪 := by
+    intro c
+    have hcR : IsIntegral R (algebraMap M Ksep (c : M)) := IsIntegral.algebraMap c.2
+    letI : Algebra R 𝒪 := ((algebraMap R Ksep).codRestrict 𝒪.toSubring hRO).toAlgebra
+    haveI : IsScalarTower R 𝒪 Ksep := IsScalarTower.of_algebraMap_eq fun _ => rfl
+    obtain ⟨y, hy⟩ := IsIntegrallyClosed.isIntegral_iff.mp (hcR.tower_top (A := 𝒪))
+    exact hy ▸ y.2
+  -- unfold a membership of the localization subalgebra into the required form
+  have hrep : ∀ lam : ↥(Localization.subalgebra M 𝔔.primeCompl hle), (lam : M) = x →
+      ∃ a s : integralClosure R M, s ∉ 𝔔 ∧ (s : M) * x = (a : M) := by
+    rintro lam hlam
+    obtain ⟨a, s, hs, hmk⟩ := lam.2
+    refine ⟨a, s, hs, ?_⟩
+    have h2 := IsLocalization.mk'_spec M a
+      (⟨s, hle hs⟩ : nonZeroDivisors ↥(integralClosure R M))
+    rw [← hmk, hlam] at h2
+    rw [mul_comm]
+    exact h2
+  by_cases hxΛ : ∃ lam : ↥(Localization.subalgebra M 𝔔.primeCompl hle), (lam : M) = x
+  · obtain ⟨lam, hlam⟩ := hxΛ
+    exact hrep lam hlam
+  -- otherwise `x⁻¹` lies in the localization, is a nonunit there, and its
+  -- valuation forces `v(x) > 1`, contradicting `hx`
+  exfalso
+  rcases ValuationRing.isInteger_or_isInteger
+    ↥(Localization.subalgebra M 𝔔.primeCompl hle) x with h | h
+  · exact hxΛ h
+  obtain ⟨lam, hlam⟩ := h
+  have hlamnu : ¬ IsUnit lam := by
+    intro hu
+    obtain ⟨u, rfl⟩ := hu
+    refine hxΛ ⟨((u⁻¹ : _ˣ) : ↥(Localization.subalgebra M 𝔔.primeCompl hle)), ?_⟩
+    have h1 : (((u⁻¹ * u : _ˣ) : ↥(Localization.subalgebra M 𝔔.primeCompl hle)) : M) = 1 := by
+      rw [inv_mul_cancel]
+      rfl
+    have h2 : ((((u⁻¹ : _ˣ) : ↥(Localization.subalgebra M 𝔔.primeCompl hle)) : M)) *
+        (((u : _ˣ) : ↥(Localization.subalgebra M 𝔔.primeCompl hle)) : M) = 1 := h1
+    have h4 : (((u : _ˣ) : ↥(Localization.subalgebra M 𝔔.primeCompl hle)) : M) = x⁻¹ := hlam
+    rw [h4] at h2
+    have h5 : ((((u⁻¹ : _ˣ) : ↥(Localization.subalgebra M 𝔔.primeCompl hle)) : M)) / x = 1 := by
+      rw [div_eq_mul_inv]
+      exact h2
+    exact (div_eq_one_iff_eq hx0).mp h5
+  have hlammem : lam ∈ IsLocalRing.maximalIdeal
+      ↥(Localization.subalgebra M 𝔔.primeCompl hle) :=
+    (IsLocalRing.mem_maximalIdeal _).mpr hlamnu
+  obtain ⟨b, t, hbt⟩ := IsLocalization.exists_mk'_eq 𝔔.primeCompl lam
+  have hbmem : b ∈ 𝔔 := by
+    have h1 := IsLocalization.AtPrime.mk'_mem_maximal_iff
+      (↥(Localization.subalgebra M 𝔔.primeCompl hle)) 𝔔 b t
+    rw [hbt] at h1
+    exact h1.mp hlammem
+  -- push the representation `x⁻¹ · t = b` into `Kˢᵉᵖ`
+  have h3 : (lam : M) * ((t : integralClosure R M) : M) = (b : M) := by
+    have h4 := IsLocalization.mk'_spec
+      ↥(Localization.subalgebra M 𝔔.primeCompl hle) b t
+    have h5 := congrArg (fun w : ↥(Localization.subalgebra M 𝔔.primeCompl hle) => (w : M))
+      (hbt ▸ h4 : lam * algebraMap _ _ ((t : integralClosure R M)) = algebraMap _ _ b)
+    exact h5
+  have hlam' : (lam : M) = x⁻¹ := hlam
+  rw [hlam'] at h3
+  have h6 := congrArg (algebraMap M Ksep) h3
+  rw [map_mul] at h6
+  -- valuation estimates
+  have hvt : 𝒪.valuation (algebraMap M Ksep ((t : integralClosure R M) : M)) = 1 :=
+    le_antisymm ((ValuationSubring.valuation_le_one_iff 𝒪 _).mpr (hOsub _))
+      (not_lt.mp fun hlt => t.2 ((h𝔔 _).mpr ((𝒪.mem_nonunits_iff).mpr hlt)))
+  have hvb : 𝒪.valuation (algebraMap M Ksep ((b : integralClosure R M) : M)) < 1 :=
+    (𝒪.mem_nonunits_iff).mp ((h𝔔 b).mp hbmem)
+  have hvxinv : 𝒪.valuation (algebraMap M Ksep x⁻¹) < 1 := by
+    have h7 := congrArg (𝒪.valuation) h6
+    rw [map_mul, hvt, mul_one] at h7
+    rw [h7]
+    exact hvb
+  have hvx : 𝒪.valuation (algebraMap M Ksep x) *
+      𝒪.valuation (algebraMap M Ksep x⁻¹) = 1 := by
+    rw [← map_mul, ← map_mul, mul_inv_cancel₀ hx0, map_one, map_one]
+  have hvlt : 𝒪.valuation (algebraMap M Ksep x) *
+      𝒪.valuation (algebraMap M Ksep x⁻¹) < 1 := by
+    have h8 : 𝒪.valuation (algebraMap M Ksep x) *
+        𝒪.valuation (algebraMap M Ksep x⁻¹) ≤ 1 * 𝒪.valuation (algebraMap M Ksep x⁻¹) :=
+      mul_le_mul' ((𝒪.valuation_le_one_iff _).mpr hx) le_rfl
+    rw [one_mul] at h8
+    exact lt_of_le_of_lt h8 hvxinv
+  exact absurd hvx hvlt.ne
 
 open scoped Pointwise in
 /-- **One-level inertial lifting** (sorry node, split from the inertia-lifting
@@ -4677,7 +4815,7 @@ theorem smul_sub_mem_nonunits_of_forall_isIntegral
     obtain ⟨y, hy⟩ := IsIntegrallyClosed.isIntegral_iff.mp (hcR.tower_top (A := 𝒪))
     exact hy ▸ y.2
   -- the center and a denominator representation of `x`
-  obtain ⟨𝔔', h𝔔'max, h𝔔'char⟩ :=
+  obtain ⟨𝔔', -, h𝔔'char, -⟩ :=
     exists_isMaximal_center_integralClosure R K Ksep ↥Ex 𝒪 h𝒪
   have hx₀ : algebraMap ↥Ex Ksep ((⟨x, hxmem⟩ : ↥Ex)) ∈ 𝒪 := hx
   obtain ⟨a, s, hs, heq⟩ := exists_num_den_integralClosure_of_mem_valuationSubring R K Ksep
@@ -4793,7 +4931,7 @@ theorem exists_inertiaSubgroup_restrictNormalHom_eq
   haveI : Algebra.IsSeparable K N := Algebra.isSeparable_tower_bot_of_isSeparable K N Ksep
   have hNinj : Function.Injective (algebraMap N Ksep) := (algebraMap N Ksep).injective
   -- `𝔔` is maximal: it is the center of `𝒪`
-  obtain ⟨𝔔₀, h𝔔₀max, h𝔔₀⟩ := exists_isMaximal_center_integralClosure R K Ksep N 𝒪 h𝒪
+  obtain ⟨𝔔₀, h𝔔₀max, h𝔔₀, -⟩ := exists_isMaximal_center_integralClosure R K Ksep N 𝒪 h𝒪
   have h𝔔eq : 𝔔 = 𝔔₀ := by
     ext c
     rw [h𝔔 c, h𝔔₀ c]
@@ -4909,7 +5047,8 @@ theorem exists_inertiaSubgroup_restrictNormalHom_eq
       rw [← IsScalarTower.algebraMap_apply R K Ksep,
         IsScalarTower.algebraMap_apply R N Ksep]
     -- the center at level `E` and its compatibility with `𝔔`
-    obtain ⟨𝔔', h𝔔'max, h𝔔'char⟩ := exists_isMaximal_center_integralClosure R K Ksep ↥E 𝒪 h𝒪
+    obtain ⟨𝔔', h𝔔'max, h𝔔'char, -⟩ :=
+      exists_isMaximal_center_integralClosure R K Ksep ↥E 𝒪 h𝒪
     haveI := h𝔔'max
     have h𝔔𝔔' : 𝔔 = 𝔔'.comap (galRestrict' R (integralClosure R N) (integralClosure R ↥E)
         (IsScalarTower.toAlgHom K N ↥E)) := by
