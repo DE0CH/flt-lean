@@ -1371,7 +1371,74 @@ theorem exists_pullback_of_translation_fixed {ι : Type*} [Fintype ι]
             pointEval (constHom W) hpn.left b := by
   sorry
 
-/-- **L4-9 divisor comparison (sorry node): a `[p]^*`-descended Miller
+/-- **L4-7 (sorry node): multiplicity-one `[p]^*`-comparison — a
+divisor relation between pullbacks descends to the base.**  Let
+`val : ι → W.Point` enumerate the `p`-torsion subgroup
+(`card ι = p²`, `(p : F) ≠ 0`, so `[p]` is a separable isogeny whose
+fibers are the `p²` torsion translates), let `(xp, yp)` be the affine
+coordinates of the generic point `p • taut` — where `pointEval`
+realizes `z ↦ z ∘ [p]` — and let `b, c` be nonzero coordinate-ring
+elements with nonvanishing pullbacks `[p]^*(b), [p]^*(c)` satisfying
+the fractional-ideal comparison
+
+`∏_{R ∈ Σ(T'⊕κᵢ)+(⊖κᵢ)} I'_R · ([p]^*c) = ∏_{R ∈ Σ(κᵢ)+(⊖κᵢ)} I'_R · ([p]^*b)`
+
+(unit point-ideal products against `spanSingleton`s of the
+evaluations — the multiplied-out form of "`[p]^*(b/c)` has the divisor
+`Σ_κ (T'⊕κ) − (κ) = [p]^*((P) − (O))` of the Miller ratio `a/v`").
+Then the downstairs spans compare with exactly ONE copy of the point
+ideal of `P = p•T'`:  `(b) = I_P · (c)`.
+
+Proof plan (HLEG-NOTES.md §4(B), stage L4-7): the affine divisor of
+`[p]^*(z)` for `z ∈ F[W]` is the `[p]`-pullback of the full divisor
+of `z`: writing `div z = Σ_R m_R·(R) − n·(O)` (`n = Σ m_R`), each
+affine `(R)` pulls back to its fiber `Σ_{p•S = R} (S)` WITH
+MULTIPLICITY ONE — the fiber of a vertical `X − x_R` is cut out by
+the division-polynomial pullback `Φ_p − x_R·Ψ_p²` (mathlib's
+`WeierstrassCurve.Φ`/`ΨSq`; `Φ_p` is monic of degree `p²` by
+`natDegree_Φ`/`coeff_Φ`), separable since `(p : F) ≠ 0` — and the
+pole `(O)` pulls back to `Σ_i (val i)` away from infinity.  Fibers
+over distinct base points are disjoint (`hval_inj` plus the group
+law: `p•S = p•S'` iff `S' ⊖ S ∈ E[p]`), so matching pointIdeal
+multiplicities on the two sides of `hcmp` — via unique factorization
+of fractional ideals once `IsDedekindDomain F[W]` is established (the
+affine curve is nonsingular since `Δ ≠ 0`, and its maximal ideals are
+exactly the point ideals, `F` being algebraically closed) — forces
+`div(b) − div(c) = (P) − (O)`, i.e. `(b) = I_P·(c)` on affine parts.
+In the degenerate case `P = O` the two fiber products coincide, the
+comparison gives `(b) = (c)`, and `I_O = ⊤` keeps the statement
+uniform.  See HLEG-NOTES.md §4(B), stage L4-7. -/
+theorem span_eq_pointIdeal_mul_of_pullback {ι : Type*} [Fintype ι]
+    {val : ι → W.Point}
+    (hΔ : W.Δ ≠ 0) (hp : (p : F) ≠ 0)
+    (hval_inj : Function.Injective val)
+    (hval_tor : ∀ i, (p : ℤ) • val i = 0)
+    (hval_surj : ∀ Q : W.Point, (p : ℤ) • Q = 0 → ∃ i, val i = Q)
+    (hcard : Fintype.card ι = p ^ 2)
+    {P T' : W.Point} (hT : (p : ℤ) • T' = P)
+    {xp yp : W.FunctionField} {hpn : (curveK W).Nonsingular xp yp}
+    (hptaut : (p : ℤ) • tautPoint W hΔ =
+      WeierstrassCurve.Affine.Point.some xp yp hpn)
+    {b c : W.CoordinateRing} (hb : b ≠ 0) (hc : c ≠ 0)
+    (hbev : pointEval (constHom W) hpn.left b ≠ 0)
+    (hcev : pointEval (constHom W) hpn.left c ≠ 0)
+    (hcmp : ((((Finset.univ.val.map fun i => T' + val i) +
+          Finset.univ.val.map fun i => -val i)).map fun R =>
+          (pointIdeal' W R :
+            FractionalIdeal W.CoordinateRing⁰ W.FunctionField)).prod *
+        FractionalIdeal.spanSingleton W.CoordinateRing⁰
+          (pointEval (constHom W) hpn.left c) =
+      ((((Finset.univ.val.map fun i => val i) +
+          Finset.univ.val.map fun i => -val i)).map fun R =>
+          (pointIdeal' W R :
+            FractionalIdeal W.CoordinateRing⁰ W.FunctionField)).prod *
+        FractionalIdeal.spanSingleton W.CoordinateRing⁰
+          (pointEval (constHom W) hpn.left b)) :
+    Ideal.span {b} = pointIdeal W P * Ideal.span {c} := by
+  sorry
+
+/-- **L4-9 divisor comparison (PROVEN glue over the L4-7 brick
+`span_eq_pointIdeal_mul_of_pullback`): a `[p]^*`-descended Miller
 generator forces a trivial class.**  Let `a` be the Miller generator
 (`span {a} = ∏ pointIdeal (T'⊕κᵢ) · pointIdeal (⊖κᵢ)`, so
 `g := a/∏(X − x_κ)` has divisor `Σ_κ (T'⊕κ) − (κ) = [p]^*((P) − (O))`
@@ -1401,7 +1468,7 @@ theorem toClass_eq_zero_of_pullback {ι : Type*} [Fintype ι]
     (hval_tor : ∀ i, (p : ℤ) • val i = 0)
     (hval_surj : ∀ Q : W.Point, (p : ℤ) • Q = 0 → ∃ i, val i = Q)
     (hcard : Fintype.card ι = p ^ 2)
-    {P T' : W.Point} (hT : (p : ℤ) • T' = P) (hPtor : (p : ℤ) • P = 0)
+    {P T' : W.Point} (hT : (p : ℤ) • T' = P) (_hPtor : (p : ℤ) • P = 0)
     {a : W.CoordinateRing} (ha : a ≠ 0)
     (hspan : Ideal.span {a} =
       ((((Finset.univ.val.map fun i => T' + val i) +
@@ -1416,7 +1483,71 @@ theorem toClass_eq_zero_of_pullback {ι : Type*} [Fintype ι]
       algebraMap W.CoordinateRing W.FunctionField (enumVertical W val) *
         pointEval (constHom W) hpn.left b) :
     WeierstrassCurve.Affine.Point.toClass P = 0 := by
-  sorry
+  classical
+  have hinj := IsFractionRing.injective W.CoordinateRing W.FunctionField
+  -- ── the pullback of `b` is nonzero (from `heq`, since `ā·[p]^*(c) ≠ 0`)
+  have haa0 : algebraMap W.CoordinateRing W.FunctionField a ≠ 0 := fun h0 =>
+    ha ((map_eq_zero_iff _ hinj).mp h0)
+  have hbev : pointEval (constHom W) hpn.left b ≠ 0 := by
+    intro h0
+    rw [h0, mul_zero] at heq
+    exact mul_ne_zero haa0 hcnz heq
+  -- ── `heq` as the fractional-ideal comparison of the two point-ideal
+  --    products (the span factorizations of `a` and `enumVertical`)
+  have hcmp : ((((Finset.univ.val.map fun i => T' + val i) +
+        Finset.univ.val.map fun i => -val i)).map fun R =>
+        (pointIdeal' W R :
+          FractionalIdeal W.CoordinateRing⁰ W.FunctionField)).prod *
+      FractionalIdeal.spanSingleton W.CoordinateRing⁰
+        (pointEval (constHom W) hpn.left c) =
+      ((((Finset.univ.val.map fun i => val i) +
+        Finset.univ.val.map fun i => -val i)).map fun R =>
+        (pointIdeal' W R :
+          FractionalIdeal W.CoordinateRing⁰ W.FunctionField)).prod *
+      FractionalIdeal.spanSingleton W.CoordinateRing⁰
+        (pointEval (constHom W) hpn.left b) := by
+    rw [prod_coe_pointIdeal'_eq_spanSingleton hspan,
+      prod_coe_pointIdeal'_eq_spanSingleton (span_enumVertical (W := W) val),
+      FractionalIdeal.spanSingleton_mul_spanSingleton,
+      FractionalIdeal.spanSingleton_mul_spanSingleton, heq]
+  -- ── the descended span relation `(b) = I_P·(c)` (the L4-7 brick)
+  have hspanbc := span_eq_pointIdeal_mul_of_pullback hΔ hp hval_inj hval_tor
+    hval_surj hcard hT hptaut hb hc hbev hcnz hcmp
+  -- ── hence `I'_P` is the principal fractional ideal of `b̄/c̄`
+  have hcc0 : algebraMap W.CoordinateRing W.FunctionField c ≠ 0 := fun h0 =>
+    hc ((map_eq_zero_iff _ hinj).mp h0)
+  have hfrac : FractionalIdeal.spanSingleton W.CoordinateRing⁰
+      (algebraMap W.CoordinateRing W.FunctionField b) =
+      (pointIdeal' W P :
+        FractionalIdeal W.CoordinateRing⁰ W.FunctionField) *
+      FractionalIdeal.spanSingleton W.CoordinateRing⁰
+        (algebraMap W.CoordinateRing W.FunctionField c) := by
+    have h4 := congrArg (fun I : Ideal W.CoordinateRing =>
+      (I : FractionalIdeal W.CoordinateRing⁰ W.FunctionField)) hspanbc
+    simp only [FractionalIdeal.coeIdeal_mul,
+      FractionalIdeal.coeIdeal_span_singleton] at h4
+    rw [← coe_pointIdeal'] at h4
+    exact h4
+  have hIP : (pointIdeal' W P :
+      FractionalIdeal W.CoordinateRing⁰ W.FunctionField) =
+      FractionalIdeal.spanSingleton W.CoordinateRing⁰
+        (algebraMap W.CoordinateRing W.FunctionField b *
+          (algebraMap W.CoordinateRing W.FunctionField c)⁻¹) := by
+    rw [← FractionalIdeal.spanSingleton_mul_spanSingleton, hfrac, mul_assoc,
+      FractionalIdeal.spanSingleton_mul_spanSingleton,
+      mul_inv_cancel₀ hcc0, FractionalIdeal.spanSingleton_one, mul_one]
+  -- ── the class of `P` vanishes
+  have hsub : ((pointIdeal' W P :
+      FractionalIdeal W.CoordinateRing⁰ W.FunctionField) :
+      Submodule W.CoordinateRing W.FunctionField) =
+      Submodule.span W.CoordinateRing
+        {algebraMap W.CoordinateRing W.FunctionField b *
+          (algebraMap W.CoordinateRing W.FunctionField c)⁻¹} := by
+    rw [hIP, FractionalIdeal.coe_spanSingleton]
+  have hmk1 : ClassGroup.mk W.FunctionField (pointIdeal' W P) = 1 :=
+    ClassGroup.mk_eq_one_iff.mpr ⟨⟨_, hsub⟩⟩
+  exact Additive.toMul.injective
+    (((mk_pointIdeal' P).symm.trans hmk1).trans toMul_zero.symm)
 
 /-- **L4-9, first branch (PROVEN glue over the two stage nodes):
 trivial translation character forces a trivial class.**  If the translation character of the Miller
