@@ -64,6 +64,7 @@ import Fermat.FLT.EllipticCurve.WronskianInduction
 import Fermat.FLT.EllipticCurve.WronskianStep
 import Fermat.FLT.FreyCurve.Basic
 import Fermat.FLT.FreyCurve.FreyPackage
+import Fermat.FLT.FreyCurve.InertiaCardTransport
 import Fermat.FLT.FreyCurve.Mazur
 import Fermat.FLT.FreyCurve.MazurTorsion
 import Fermat.FLT.FreyCurve.Semistable
