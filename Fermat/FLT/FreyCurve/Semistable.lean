@@ -9081,32 +9081,610 @@ open TensorProduct in
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
-/-- **Twisted points of the fixed-point order** (sorry node — the
-GENERIC-FIBRE stage of the fixed-points quadratic descent): given the
-integral fixed-point identification `e` of
-`exists_fixedPointHopfOrder_of_descentData` — an `R_L`-bialgebra
-identification `R_L ⊗ H' ≅ R_L ⊗ H` intertwining `τ ⊗ id` with
-`τ ⊗ S` — together with the arithmetic dictionary between the abstract
-quadratic order and the concrete quadratic extension `L/K` (`θL`
-generates `L`, `τ θL = t − θL`, `θL·τθL = n`), the generic fibre
-`K ⊗ H'` is étale and its `Ω`-point convolution group is identified
-with that of `K ⊗ H` UP TO the quadratic character `χ` of `L/K`.
-Intended proof: `K ⊗ R_L ≅ K[X]/(X² − tX + n) ≅ L` (the quadratic is
-the minimal polynomial of the generator `θL`, irreducible since
-`θL ∉ K`); base-changing `e` along it identifies `L ⊗[K] (K ⊗ H')`
-with `L ⊗[K] (K ⊗ H)` as `L`-bialgebras, so `K ⊗ H'` is étale over
-`K` because it becomes étale over the finite separable `L` (reduced
-descends along the injection, and finite reduced over a
-characteristic-zero field is étale); an `Ω`-point `φ` of `K ⊗ H'`
-extends uniquely to an `L`-point of the base change along the
-embedding `L → Ω` picked by `θL ↦ θΩ`, transports through `e` and
-restricts to an `Ω`-point `θ φ` of `K ⊗ H` — a convolution
-isomorphism since `e` is a bialgebra map; a Galois `σ` with `χ(σ) = 1`
-fixes the chosen embedding and commutes with the transport (clause 1),
-while `χ(σ) = −1` swaps the two embeddings of `L`, which the
-intertwining `e ∘ (τ ⊗ id) = (τ ⊗ S) ∘ e` converts into
-postcomposition with the ANTIPODE — the convolution inverse:
-`θ(σ ∘ φ) + σ(θ φ) = 0` (clause 2). -/
+/-- **Base change of points is a convolution isomorphism** (PROVEN —
+the reusable brick of the twisted-points chain): for a bialgebra `C`
+over a commutative ring `R`, an `R`-algebra `S`, and a commutative
+`S`-algebra `B` (an `R`-algebra through `S`), the base-change
+adjunction `AlgHom.liftEquiv` between the `R`-points `C → B` and the
+`S`-points `S ⊗ C → B` respects the convolution products, hence is a
+monoid isomorphism of the points convolution monoids. Multiplicativity
+is checked on `1 ⊗ c` through the base-change comultiplication formula
+`Δ_{S⊗C}(1 ⊗ c) = Σ (1 ⊗ c₁) ⊗ (1 ⊗ c₂)`
+(`Bialgebra.TensorProduct.comulAlgHom_def`). -/
+noncomputable def pointsBaseChangeConvEquiv
+    (R S C B : Type) [CommRing R] [CommRing S] [CommRing C] [CommRing B]
+    [Algebra R S] [Bialgebra R C] [Algebra R B] [Algebra S B]
+    [IsScalarTower R S B] :
+    WithConv (C →ₐ[R] B) ≃* WithConv ((S ⊗[R] C) →ₐ[S] B) where
+  toFun x := WithConv.toConv (AlgHom.liftEquiv R S C B x.ofConv)
+  invFun y := WithConv.toConv ((AlgHom.liftEquiv R S C B).symm y.ofConv)
+  left_inv x := by
+    show WithConv.toConv ((AlgHom.liftEquiv R S C B).symm
+      (WithConv.toConv (AlgHom.liftEquiv R S C B x.ofConv)).ofConv) = x
+    rw [WithConv.ofConv_toConv, Equiv.symm_apply_apply, WithConv.toConv_ofConv]
+  right_inv y := by
+    show WithConv.toConv (AlgHom.liftEquiv R S C B
+      (WithConv.toConv ((AlgHom.liftEquiv R S C B).symm y.ofConv)).ofConv) = y
+    rw [WithConv.ofConv_toConv, Equiv.apply_symm_apply, WithConv.toConv_ofConv]
+  map_mul' x y := by
+    refine WithConv.ext ?_
+    rw [WithConv.ofConv_toConv]
+    refine Algebra.TensorProduct.ext_ring ?_
+    apply AlgHom.ext
+    intro c
+    have hL : (AlgHom.liftEquiv R S C B (x * y).ofConv) ((1 : S) ⊗ₜ[R] c) =
+        (x * y).ofConv c := by
+      rw [AlgHom.liftEquiv_tmul, one_smul]
+    have hx1 : (AlgHom.liftEquiv R S C B x.ofConv) ((1 : S) ⊗ₜ[R] c) =
+        x.ofConv c := by
+      rw [AlgHom.liftEquiv_tmul, one_smul]
+    -- the comultiplication of the base change on `1 ⊗ c`
+    have hΔ : Coalgebra.comul (R := S) (A := S ⊗[R] C) ((1 : S) ⊗ₜ[R] c) =
+        (Algebra.TensorProduct.tensorTensorTensorComm R S R S S S C C).toAlgHom
+          ((1 : S ⊗[S] S) ⊗ₜ[R] (Coalgebra.comul (R := R) c)) := by
+      rw [← Bialgebra.comulAlgHom_apply,
+        Bialgebra.TensorProduct.comulAlgHom_def, AlgHom.comp_apply,
+        Algebra.TensorProduct.map_tmul, map_one, Bialgebra.comulAlgHom_apply]
+    -- the generic comparison of the two convolution integrands
+    have key : ∀ z : C ⊗[R] C,
+        Algebra.TensorProduct.lift
+          (AlgHom.liftEquiv R S C B x.ofConv)
+          (AlgHom.liftEquiv R S C B y.ofConv) (fun _ _ => Commute.all _ _)
+          ((Algebra.TensorProduct.tensorTensorTensorComm R S R S S S C C).toAlgHom
+            ((1 : S ⊗[S] S) ⊗ₜ[R] z)) =
+        Algebra.TensorProduct.lift x.ofConv y.ofConv
+          (fun _ _ => Commute.all _ _) z := by
+      intro z
+      induction z with
+      | zero => simp
+      | tmul a b =>
+        rw [Algebra.TensorProduct.one_def, Algebra.TensorProduct.lift_tmul]
+        rw [show (Algebra.TensorProduct.tensorTensorTensorComm
+            R S R S S S C C).toAlgHom
+            (((1 : S) ⊗ₜ[S] (1 : S)) ⊗ₜ[R] (a ⊗ₜ[R] b)) =
+            ((1 : S) ⊗ₜ[R] a) ⊗ₜ[S] ((1 : S) ⊗ₜ[R] b) from
+          Algebra.TensorProduct.tensorTensorTensorComm_tmul _ _ _ _]
+        rw [Algebra.TensorProduct.lift_tmul, AlgHom.liftEquiv_tmul,
+          AlgHom.liftEquiv_tmul, one_smul, one_smul]
+      | add u v hu hv =>
+        rw [TensorProduct.tmul_add, map_add, map_add, hu, hv, ← map_add]
+    have hR : ((WithConv.toConv (AlgHom.liftEquiv R S C B x.ofConv) *
+        WithConv.toConv (AlgHom.liftEquiv R S C B y.ofConv)).ofConv)
+          ((1 : S) ⊗ₜ[R] c) =
+        (x * y).ofConv c := by
+      rw [show ((WithConv.toConv (AlgHom.liftEquiv R S C B x.ofConv) *
+          WithConv.toConv (AlgHom.liftEquiv R S C B y.ofConv)).ofConv)
+            ((1 : S) ⊗ₜ[R] c) =
+          (WithConv.toConv (AlgHom.liftEquiv R S C B x.ofConv) *
+            WithConv.toConv (AlgHom.liftEquiv R S C B y.ofConv))
+            ((1 : S) ⊗ₜ[R] c) from rfl]
+      rw [AlgHom.convMul_apply, WithConv.ofConv_toConv, WithConv.ofConv_toConv,
+        hΔ, key]
+      rw [show (x * y).ofConv c = (x * y) c from rfl, AlgHom.convMul_apply]
+    show (AlgHom.liftEquiv R S C B (x * y).ofConv) ((1 : S) ⊗ₜ[R] c) =
+      ((WithConv.toConv (AlgHom.liftEquiv R S C B x.ofConv) *
+        WithConv.toConv (AlgHom.liftEquiv R S C B y.ofConv)).ofConv)
+        ((1 : S) ⊗ₜ[R] c)
+    rw [hL, hR]
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **A character-`−1` automorphism restricts to the conjugation**
+(PROVEN — the embedding-classification brick of the twisted-points
+chain): if `σ` is a `K`-automorphism of `Ω` whose quadratic character
+at the separable quadratic subextension `L/K` is `−1`, then on the
+image of `L` in `Ω` the automorphism `σ` acts as the (unique)
+nontrivial automorphism `τ` of `L/K`: the restriction of `σ` to the
+normal subextension `L` is an automorphism of `L/K` that is not the
+identity (else the character were `1`), hence equals `τ` because
+`Gal(L/K)` has order two. -/
+theorem apply_algebraMap_of_quadraticCharacter_neg
+    (K L Ω : Type) [Field K] [Field L] [Field Ω]
+    [Algebra K L] [Algebra K Ω] [Algebra L Ω] [IsScalarTower K L Ω]
+    [Algebra.IsQuadraticExtension K L] [Algebra.IsSeparable K L]
+    {τ : L ≃ₐ[K] L} (hτ1 : τ ≠ 1) {σ : Ω ≃ₐ[K] Ω}
+    (hσ : quadraticCharacter K L Ω σ = -1) (x : L) :
+    σ (algebraMap L Ω x) = algebraMap L Ω (τ x) := by
+  have hres : σ.restrictNormal L = τ := by
+    rcases Algebra.IsQuadraticExtension.algEquiv_eq_one_or_eq K L hτ1
+        (σ.restrictNormal L) with h1 | h1
+    · exfalso
+      have hfix : ∀ y : L, σ (algebraMap L Ω y) = algebraMap L Ω y :=
+        (forall_apply_algebraMap_iff_restrictNormal_eq_one K L Ω σ).mpr h1
+      rw [(quadraticCharacter_eq_one_iff K L Ω σ).mpr hfix] at hσ
+      exact absurd hσ (by decide)
+    · exact h1
+  rw [← hres]
+  exact (AlgEquiv.restrictNormal_commutes σ L x).symm
+
+open TensorProduct in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **Base-change transport of a middle-layer identification** (PROVEN
+— the algebra-level brick of the twisted-points chain): an
+`R_L`-algebra identification of the base changes `R_L ⊗ H' ≅ R_L ⊗ H`
+transports, along any `R`-algebra map `R_L → L` into a field `L` over
+`K`, to an `L`-algebra identification of the `L/K`-base changes of the
+generic fibres: `L ⊗_K (K ⊗_R H') ≅ L ⊗_K (K ⊗_R H)`. Pure
+`cancelBaseChange` bookkeeping: both sides collapse to `L ⊗_R H'` and
+`L ⊗_R H`, which are the base changes along `R_L → L` of the two
+identified `R_L`-algebras. -/
+theorem nonempty_baseChangeAlgEquiv_of_middle
+    (R RL K L H H' : Type) [CommRing R] [CommRing RL] [Field K] [Field L]
+    [CommRing H] [CommRing H'] [Algebra R RL] [Algebra R K] [Algebra R L]
+    [Algebra K L] [IsScalarTower R K L] [Algebra RL L] [IsScalarTower R RL L]
+    [Algebra R H] [Algebra R H']
+    (E0 : (RL ⊗[R] H') ≃ₐ[RL] (RL ⊗[R] H)) :
+    Nonempty ((L ⊗[K] (K ⊗[R] H')) ≃ₐ[L] (L ⊗[K] (K ⊗[R] H))) :=
+  ⟨(Algebra.TensorProduct.cancelBaseChange R K L L H').trans
+    ((Algebra.TensorProduct.cancelBaseChange R RL L L H').symm.trans
+      ((Algebra.TensorProduct.congr (AlgEquiv.refl (R := L) (A₁ := L)) E0).trans
+        ((Algebra.TensorProduct.cancelBaseChange R RL L L H).trans
+          (Algebra.TensorProduct.cancelBaseChange R K L L H).symm)))⟩
+
+open TensorProduct in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **Étaleness descends along a base-change identification** (PROVEN
+— the reducedness brick of the twisted-points chain): over a
+characteristic-zero field `K`, a finite-dimensional commutative
+`K`-algebra `C` whose base change to a field extension `L` is
+identified with the base change of a finite étale `K`-algebra `D` is
+itself étale. The base change `L ⊗ D` is étale over `L` (base change
+of étale), hence reduced (formally unramified over a field); `L ⊗ C`
+is reduced by transport along the identification; `C` is reduced
+because it embeds into `L ⊗ C` (flatness of the field extension `L`);
+and a finite reduced algebra over a characteristic-zero field is
+étale: it is Artinian, a product of its residue fields, each a finite
+— hence separable, in characteristic zero — field extension. -/
+theorem etale_of_baseChange_algEquiv
+    (K L C D : Type) [Field K] [CharZero K] [Field L] [Algebra K L]
+    [CommRing C] [Algebra K C] [Module.Finite K C]
+    [CommRing D] [Algebra K D] [Module.Finite K D] [Algebra.Etale K D]
+    (E : (L ⊗[K] C) ≃ₐ[L] (L ⊗[K] D)) :
+    Algebra.Etale K C := by
+  classical
+  haveI : IsReduced (L ⊗[K] D) :=
+    Algebra.FormallyUnramified.isReduced_of_field L (L ⊗[K] D)
+  haveI hredLC : IsReduced (L ⊗[K] C) := by
+    constructor
+    intro x hx
+    obtain ⟨n, hn⟩ := hx
+    have hEx : E x = 0 := IsNilpotent.eq_zero
+      ⟨n, by rw [← map_pow, hn, map_zero]⟩
+    have hsymm := congrArg E.symm hEx
+    rwa [AlgEquiv.symm_apply_apply, map_zero] at hsymm
+  have hinj : Function.Injective fun c : C => ((1 : L) ⊗ₜ[K] c : L ⊗[K] C) := by
+    have h1 : Function.Injective
+        (LinearMap.rTensor C (Algebra.linearMap K L)) :=
+      Module.Flat.rTensor_preserves_injective_linearMap (Algebra.linearMap K L)
+        (fun a b hab => (algebraMap K L).injective
+          (by simpa [Algebra.linearMap_apply] using hab))
+    intro a b hab
+    apply (TensorProduct.lid K C).symm.injective
+    apply h1
+    simpa [TensorProduct.lid_symm_apply, LinearMap.rTensor_tmul,
+      Algebra.linearMap_apply, map_one] using hab
+  haveI : IsReduced C := by
+    constructor
+    intro x hx
+    obtain ⟨n, hn⟩ := hx
+    have h0 : ((1 : L) ⊗ₜ[K] x : L ⊗[K] C) = 0 := IsNilpotent.eq_zero
+      ⟨n, by rw [Algebra.TensorProduct.tmul_pow, one_pow, hn,
+        TensorProduct.tmul_zero]⟩
+    have h0' : ((1 : L) ⊗ₜ[K] x : L ⊗[K] C) = (1 : L) ⊗ₜ[K] (0 : C) := by
+      rw [TensorProduct.tmul_zero]
+      exact h0
+    exact hinj h0'
+  haveI : IsArtinianRing C := isArtinian_of_tower K inferInstance
+  haveI hFE : Algebra.FormallyEtale K C := by
+    have hsep : ∀ m : MaximalSpectrum C,
+        Algebra.IsSeparable K (C ⧸ m.asIdeal) := by
+      intro m
+      constructor
+      intro y
+      have hint : IsIntegral K y := by
+        haveI : Module.Finite K (C ⧸ m.asIdeal) :=
+          Module.Finite.of_surjective
+            (Ideal.Quotient.mkₐ K m.asIdeal).toLinearMap
+            (Ideal.Quotient.mkₐ_surjective K m.asIdeal)
+        exact IsIntegral.of_finite K y
+      exact (minpoly.irreducible hint).separable
+    rw [Algebra.FormallyEtale.iff_of_equiv
+      ((IsArtinianRing.equivPi C).restrictScalars K),
+      Algebra.FormallyEtale.pi_iff]
+    intro m
+    letI := Ideal.Quotient.field m.asIdeal
+    haveI := hsep m
+    exact Algebra.FormallyEtale.of_isSeparable K _
+  exact ⟨inferInstance, Algebra.FinitePresentation.of_finiteType.mp inferInstance⟩
+
+open TensorProduct in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **The χ-twisted points equivalence of the fixed-point order**
+(PROVEN — the points half of the generic-fibre extraction): from the
+`R_L`-bialgebra identification `e : R_L ⊗ H' ≅ R_L ⊗ H` intertwining
+`τ ⊗ id` with `τ ⊗ S` and the dictionary `ρ : R_L → L` (the root of
+`X² − tX + n` goes to `θL`), the `Ω`-point convolution monoids of
+`K ⊗ H'` and `K ⊗ H` are identified UP TO the quadratic character of
+`L/K`. The equivalence is the five-step chain
+`Points_K(K ⊗ H') ≅ Points_R(H') ≅ Points_{R_L}(R_L ⊗ H') ≅
+Points_{R_L}(R_L ⊗ H) ≅ Points_R(H) ≅ Points_K(K ⊗ H)` — the outer
+steps are the base-change convolution isomorphisms
+(`pointsBaseChangeConvEquiv`), the middle is precomposition with the
+bialgebra map `e⁻¹` (`convMul_comp_bialgHom_distrib`). Postcomposition
+by a Galois `σ` commutes with every step when `χ(σ) = 1` (`σ` fixes
+the embedding `ι∘ρ : R_L → Ω`); when `χ(σ) = −1` the automorphism `σ`
+acts on `ι(L)` through `τ`, the `R_L`-lift picks up the conjugation
+twist `τ ⊗ id`, which the intertwining of `e` converts into the
+antipode — the convolution inverse
+(`toConv_comp_antipodeAlgHom_mul_cancel`). -/
+theorem exists_twistedPointsAddEquiv_of_fixedPointOrder
+    (R : Type) [CommRing R]
+    (K : Type) [Field K] [Algebra R K]
+    (Ω : Type) [Field Ω] [Algebra K Ω]
+    (L : Type) [Field L] [Algebra K L]
+    [Algebra.IsQuadraticExtension K L] [Algebra.IsSeparable K L]
+    [Algebra L Ω] [IsScalarTower K L Ω]
+    (θL : L) (t n : R) (τ : L ≃ₐ[K] L) (hτ1 : τ ≠ 1)
+    (hτθ : τ θL = algebraMap K L (algebraMap R K t) - θL)
+    (hθn : θL * τ θL = algebraMap K L (algebraMap R K n))
+    (H : Type) [CommRing H] [HopfAlgebra R H]
+    (H' : Type) [CommRing H'] [HopfAlgebra R H']
+    (e : (quadraticOrder R t n ⊗[R] H') ≃ₐc[quadraticOrder R t n]
+      (quadraticOrder R t n ⊗[R] H))
+    (he : ∀ x : quadraticOrder R t n ⊗[R] H',
+      e (Algebra.TensorProduct.map
+        (quadraticOrderConj R t n : quadraticOrder R t n →ₐ[R]
+          quadraticOrder R t n) (AlgHom.id R H') x) =
+      Algebra.TensorProduct.map
+        (quadraticOrderConj R t n : quadraticOrder R t n →ₐ[R]
+          quadraticOrder R t n) (HopfAlgebra.antipodeAlgHom R H)
+        (e x)) :
+    ∃ θ : Additive (WithConv ((K ⊗[R] H') →ₐ[K] Ω)) ≃+
+        Additive (WithConv ((K ⊗[R] H) →ₐ[K] Ω)),
+      ∀ (σ : Ω ≃ₐ[K] Ω) (φ : (K ⊗[R] H') →ₐ[K] Ω),
+        (quadraticCharacter K L Ω σ = 1 →
+          θ (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) =
+            Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp
+              (WithConv.ofConv (Additive.toMul
+                (θ (Additive.ofMul (WithConv.toConv φ)))))))) ∧
+        (quadraticCharacter K L Ω σ = -1 →
+          θ (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) +
+            Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp
+              (WithConv.ofConv (Additive.toMul
+                (θ (Additive.ofMul (WithConv.toConv φ))))))) = 0) := by
+  classical
+  -- scalar towers `R → K → L → Ω` and the dictionary `R_L → L → Ω`
+  letI : Algebra R L := ((algebraMap K L).comp (algebraMap R K)).toAlgebra
+  haveI : IsScalarTower R K L := IsScalarTower.of_algebraMap_eq fun r => rfl
+  letI : Algebra R Ω := ((algebraMap K Ω).comp (algebraMap R K)).toAlgebra
+  haveI : IsScalarTower R K Ω := IsScalarTower.of_algebraMap_eq fun r => rfl
+  have hroot : Polynomial.aeval θL (Polynomial.X ^ 2 -
+      Polynomial.C t * Polynomial.X + Polynomial.C n : Polynomial R) = 0 := by
+    have h1 : θL * (algebraMap K L (algebraMap R K t) - θL) =
+        algebraMap K L (algebraMap R K n) := by rw [← hτθ]; exact hθn
+    simp only [map_add, map_sub, map_mul, map_pow, Polynomial.aeval_X,
+      Polynomial.aeval_C]
+    have halg : ∀ r : R, algebraMap R L r =
+        algebraMap K L (algebraMap R K r) := fun r => rfl
+    rw [halg, halg]
+    linear_combination -h1
+  set ρ : quadraticOrder R t n →ₐ[R] L :=
+    AdjoinRoot.liftAlgHom _ (Algebra.ofId R L) θL (by
+      rw [show (((Algebra.ofId R L) : R →ₐ[R] L) : R →+* L) =
+        algebraMap R L from rfl, ← Polynomial.aeval_def]
+      exact hroot)
+  have hρroot : ρ (AdjoinRoot.root _) = θL :=
+    AdjoinRoot.liftAlgHom_root _ _ _ _
+  letI : Algebra (quadraticOrder R t n) L := ρ.toRingHom.toAlgebra
+  haveI : IsScalarTower R (quadraticOrder R t n) L :=
+    IsScalarTower.of_algebraMap_eq fun r => (ρ.commutes r).symm
+  letI : Algebra (quadraticOrder R t n) Ω :=
+    ((algebraMap L Ω).comp ρ.toRingHom).toAlgebra
+  haveI : IsScalarTower R L Ω := IsScalarTower.of_algebraMap_eq fun r =>
+    IsScalarTower.algebraMap_apply K L Ω (algebraMap R K r)
+  haveI : IsScalarTower R (quadraticOrder R t n) Ω :=
+    IsScalarTower.of_algebraMap_eq fun r => by
+      show algebraMap R Ω r = algebraMap L Ω (ρ (algebraMap R _ r))
+      rw [ρ.commutes r]
+      exact IsScalarTower.algebraMap_apply R L Ω r
+  -- the conjugation of the quadratic order and its dictionary relations
+  set conj : quadraticOrder R t n →ₐ[R] quadraticOrder R t n :=
+    (quadraticOrderConj R t n : quadraticOrder R t n →ₐ[R]
+      quadraticOrder R t n)
+  have hconjroot : conj (AdjoinRoot.root _) =
+      algebraMap R (quadraticOrder R t n) t - AdjoinRoot.root _ := by
+    show quadraticOrderConj R t n (AdjoinRoot.root _) = _
+    simp only [quadraticOrderConj, AlgEquiv.ofAlgHom_apply,
+      AdjoinRoot.liftAlgHom_root]
+  have hconjconj : ∀ z : quadraticOrder R t n, conj (conj z) = z := by
+    have hcomp : conj.comp conj = AlgHom.id R (quadraticOrder R t n) := by
+      apply AdjoinRoot.algHom_ext
+      rw [AlgHom.comp_apply, hconjroot, map_sub, AlgHom.commutes, hconjroot,
+        AlgHom.coe_id, id_eq]
+      ring
+    exact fun z => AlgHom.congr_fun hcomp z
+  have hτρ : ∀ z : quadraticOrder R t n, τ (ρ z) = ρ (conj z) := by
+    have hcomp : ((τ.toAlgHom : L →ₐ[K] L).restrictScalars R).comp ρ =
+        ρ.comp conj := by
+      apply AdjoinRoot.algHom_ext
+      rw [AlgHom.comp_apply, AlgHom.comp_apply, hconjroot, map_sub,
+        AlgHom.commutes]
+      show τ (ρ (AdjoinRoot.root _)) = _
+      rw [hρroot, hτθ]
+      rfl
+    exact fun z => AlgHom.congr_fun hcomp z
+  -- the middle convolution equivalence: precomposition with `e⁻¹`
+  have hsymme : ∀ ψ : (quadraticOrder R t n ⊗[R] H') →ₐ[quadraticOrder R t n] Ω,
+      ((ψ.comp ((e.symm : (quadraticOrder R t n ⊗[R] H) →ₐc[quadraticOrder R t n]
+        (quadraticOrder R t n ⊗[R] H')) : (quadraticOrder R t n ⊗[R] H)
+          →ₐ[quadraticOrder R t n] (quadraticOrder R t n ⊗[R] H'))).comp
+        ((e : (quadraticOrder R t n ⊗[R] H') →ₐc[quadraticOrder R t n]
+          (quadraticOrder R t n ⊗[R] H)) : (quadraticOrder R t n ⊗[R] H')
+            →ₐ[quadraticOrder R t n] (quadraticOrder R t n ⊗[R] H))) = ψ := by
+    intro ψ
+    apply AlgHom.ext
+    intro z
+    show ψ (e.symm (e z)) = ψ z
+    rw [BialgEquiv.symm_apply_apply]
+  have hesymm : ∀ ψ : (quadraticOrder R t n ⊗[R] H) →ₐ[quadraticOrder R t n] Ω,
+      ((ψ.comp ((e : (quadraticOrder R t n ⊗[R] H') →ₐc[quadraticOrder R t n]
+        (quadraticOrder R t n ⊗[R] H)) : (quadraticOrder R t n ⊗[R] H')
+          →ₐ[quadraticOrder R t n] (quadraticOrder R t n ⊗[R] H))).comp
+        ((e.symm : (quadraticOrder R t n ⊗[R] H) →ₐc[quadraticOrder R t n]
+          (quadraticOrder R t n ⊗[R] H')) : (quadraticOrder R t n ⊗[R] H)
+            →ₐ[quadraticOrder R t n] (quadraticOrder R t n ⊗[R] H'))) = ψ := by
+    intro ψ
+    apply AlgHom.ext
+    intro z
+    show ψ (e (e.symm z)) = ψ z
+    rw [BialgEquiv.apply_symm_apply]
+  let M3 : WithConv ((quadraticOrder R t n ⊗[R] H')
+        →ₐ[quadraticOrder R t n] Ω) ≃*
+      WithConv ((quadraticOrder R t n ⊗[R] H) →ₐ[quadraticOrder R t n] Ω) :=
+    { toFun := fun x => WithConv.toConv (x.ofConv.comp
+        ((e.symm : (quadraticOrder R t n ⊗[R] H) →ₐc[quadraticOrder R t n]
+          (quadraticOrder R t n ⊗[R] H')) : (quadraticOrder R t n ⊗[R] H)
+            →ₐ[quadraticOrder R t n] (quadraticOrder R t n ⊗[R] H')))
+      invFun := fun y => WithConv.toConv (y.ofConv.comp
+        ((e : (quadraticOrder R t n ⊗[R] H') →ₐc[quadraticOrder R t n]
+          (quadraticOrder R t n ⊗[R] H)) : (quadraticOrder R t n ⊗[R] H')
+            →ₐ[quadraticOrder R t n] (quadraticOrder R t n ⊗[R] H)))
+      left_inv := fun x => by
+        refine WithConv.ext ?_
+        show ((WithConv.toConv (x.ofConv.comp
+          ((e.symm : (quadraticOrder R t n ⊗[R] H) →ₐc[quadraticOrder R t n]
+            (quadraticOrder R t n ⊗[R] H')) : (quadraticOrder R t n ⊗[R] H)
+              →ₐ[quadraticOrder R t n] (quadraticOrder R t n ⊗[R] H')))).ofConv.comp
+          ((e : (quadraticOrder R t n ⊗[R] H') →ₐc[quadraticOrder R t n]
+            (quadraticOrder R t n ⊗[R] H)) : (quadraticOrder R t n ⊗[R] H')
+              →ₐ[quadraticOrder R t n] (quadraticOrder R t n ⊗[R] H))) = x.ofConv
+        rw [WithConv.ofConv_toConv]
+        exact hsymme x.ofConv
+      right_inv := fun y => by
+        refine WithConv.ext ?_
+        show ((WithConv.toConv (y.ofConv.comp
+          ((e : (quadraticOrder R t n ⊗[R] H') →ₐc[quadraticOrder R t n]
+            (quadraticOrder R t n ⊗[R] H)) : (quadraticOrder R t n ⊗[R] H')
+              →ₐ[quadraticOrder R t n] (quadraticOrder R t n ⊗[R] H)))).ofConv.comp
+          ((e.symm : (quadraticOrder R t n ⊗[R] H) →ₐc[quadraticOrder R t n]
+            (quadraticOrder R t n ⊗[R] H')) : (quadraticOrder R t n ⊗[R] H)
+              →ₐ[quadraticOrder R t n] (quadraticOrder R t n ⊗[R] H'))) = y.ofConv
+        rw [WithConv.ofConv_toConv]
+        exact hesymm y.ofConv
+      map_mul' := fun x y => by
+        show WithConv.toConv ((x * y).ofConv.comp
+          ((e.symm : (quadraticOrder R t n ⊗[R] H) →ₐc[quadraticOrder R t n]
+            (quadraticOrder R t n ⊗[R] H')) : (quadraticOrder R t n ⊗[R] H)
+              →ₐ[quadraticOrder R t n] (quadraticOrder R t n ⊗[R] H'))) = _
+        rw [AlgHom.convMul_comp_bialgHom_distrib x y
+          (e.symm : (quadraticOrder R t n ⊗[R] H) →ₐc[quadraticOrder R t n]
+            (quadraticOrder R t n ⊗[R] H')), WithConv.toConv_ofConv] }
+  -- the five-step chain
+  let Θ : WithConv ((K ⊗[R] H') →ₐ[K] Ω) ≃*
+      WithConv ((K ⊗[R] H) →ₐ[K] Ω) :=
+    (pointsBaseChangeConvEquiv R K H' Ω).symm.trans
+      ((pointsBaseChangeConvEquiv R (quadraticOrder R t n) H' Ω).trans
+        (M3.trans ((pointsBaseChangeConvEquiv R (quadraticOrder R t n) H Ω).symm.trans
+          (pointsBaseChangeConvEquiv R K H Ω))))
+  have hΘapply : ∀ ψ : (K ⊗[R] H') →ₐ[K] Ω,
+      Θ (WithConv.toConv ψ) = WithConv.toConv
+        (AlgHom.liftEquiv R K H Ω
+          ((AlgHom.liftEquiv R (quadraticOrder R t n) H Ω).symm
+            ((AlgHom.liftEquiv R (quadraticOrder R t n) H' Ω
+              ((AlgHom.liftEquiv R K H' Ω).symm ψ)).comp
+              ((e.symm : (quadraticOrder R t n ⊗[R] H)
+                →ₐc[quadraticOrder R t n] (quadraticOrder R t n ⊗[R] H')) :
+                (quadraticOrder R t n ⊗[R] H) →ₐ[quadraticOrder R t n]
+                  (quadraticOrder R t n ⊗[R] H'))))) := fun ψ => rfl
+  refine ⟨MulEquiv.toAdditive Θ, ?_⟩
+  intro σ φ
+  -- σ as an `R`-algebra endomorphism of `Ω`
+  set σR : Ω →ₐ[R] Ω := (σ.toAlgHom : Ω →ₐ[K] Ω).restrictScalars R
+  -- the transported `H`-points of `φ` and of `σ ∘ φ`
+  set fφ : H' →ₐ[R] Ω := (AlgHom.liftEquiv R K H' Ω).symm φ with hfφ
+  set Fφ : (quadraticOrder R t n ⊗[R] H') →ₐ[quadraticOrder R t n] Ω :=
+    AlgHom.liftEquiv R (quadraticOrder R t n) H' Ω fφ with hFφ
+  set Gφ : (quadraticOrder R t n ⊗[R] H) →ₐ[quadraticOrder R t n] Ω :=
+    Fφ.comp ((e.symm : (quadraticOrder R t n ⊗[R] H)
+      →ₐc[quadraticOrder R t n] (quadraticOrder R t n ⊗[R] H')) :
+      (quadraticOrder R t n ⊗[R] H) →ₐ[quadraticOrder R t n]
+        (quadraticOrder R t n ⊗[R] H')) with hGφ
+  set uφ : H →ₐ[R] Ω :=
+    (AlgHom.liftEquiv R (quadraticOrder R t n) H Ω).symm Gφ with huφ
+  set fσ : H' →ₐ[R] Ω :=
+    (AlgHom.liftEquiv R K H' Ω).symm (σ.toAlgHom.comp φ) with hfσ
+  set Fσ : (quadraticOrder R t n ⊗[R] H') →ₐ[quadraticOrder R t n] Ω :=
+    AlgHom.liftEquiv R (quadraticOrder R t n) H' Ω fσ with hFσdef
+  set Gσ : (quadraticOrder R t n ⊗[R] H) →ₐ[quadraticOrder R t n] Ω :=
+    Fσ.comp ((e.symm : (quadraticOrder R t n ⊗[R] H)
+      →ₐc[quadraticOrder R t n] (quadraticOrder R t n ⊗[R] H')) :
+      (quadraticOrder R t n ⊗[R] H) →ₐ[quadraticOrder R t n]
+        (quadraticOrder R t n ⊗[R] H')) with hGσ
+  set uσ : H →ₐ[R] Ω :=
+    (AlgHom.liftEquiv R (quadraticOrder R t n) H Ω).symm Gσ with huσ
+  have hθφ : Θ (WithConv.toConv φ) =
+      WithConv.toConv (AlgHom.liftEquiv R K H Ω uφ) := hΘapply φ
+  have hθσφ : Θ (WithConv.toConv (σ.toAlgHom.comp φ)) =
+      WithConv.toConv (AlgHom.liftEquiv R K H Ω uσ) :=
+    hΘapply (σ.toAlgHom.comp φ)
+  -- pointwise descriptions of the transported points
+  have huφapp : ∀ a : H, uφ a = Fφ (e.symm ((1 : quadraticOrder R t n) ⊗ₜ[R] a)) := by
+    intro a
+    rw [huφ, AlgHom.liftEquiv_symm_apply, hGφ]
+    rfl
+  have huσapp : ∀ a : H, uσ a = Fσ (e.symm ((1 : quadraticOrder R t n) ⊗ₜ[R] a)) := by
+    intro a
+    rw [huσ, AlgHom.liftEquiv_symm_apply, hGσ]
+    rfl
+  have hfφapp : ∀ h' : H', fφ h' = φ ((1 : K) ⊗ₜ[R] h') := by
+    intro h'
+    rw [hfφ, AlgHom.liftEquiv_symm_apply]
+  have hfσapp : ∀ h' : H', fσ h' = σ (φ ((1 : K) ⊗ₜ[R] h')) := by
+    intro h'
+    rw [hfσ, AlgHom.liftEquiv_symm_apply]
+    rfl
+  -- lifting a postcomposed point over `K`
+  have hliftσ : ∀ v : H →ₐ[R] Ω,
+      AlgHom.liftEquiv R K H Ω (σR.comp v) =
+        σ.toAlgHom.comp (AlgHom.liftEquiv R K H Ω v) := by
+    intro v
+    refine Algebra.TensorProduct.ext_ring ?_
+    apply AlgHom.ext
+    intro a
+    show (AlgHom.liftEquiv R K H Ω (σR.comp v)) ((1 : K) ⊗ₜ[R] a) =
+      (σ.toAlgHom.comp (AlgHom.liftEquiv R K H Ω v)) ((1 : K) ⊗ₜ[R] a)
+    rw [AlgHom.liftEquiv_tmul, one_smul, AlgHom.comp_apply, AlgHom.comp_apply,
+      AlgHom.liftEquiv_tmul, one_smul]
+    rfl
+  refine ⟨?_, ?_⟩
+  · -- the `χ(σ) = 1` clause
+    intro hχ1
+    have hfix : ∀ l : L, σ (algebraMap L Ω l) = algebraMap L Ω l :=
+      (quadraticCharacter_eq_one_iff K L Ω σ).mp hχ1
+    have hFcomm : ∀ z : quadraticOrder R t n ⊗[R] H', Fσ z = σ (Fφ z) := by
+      intro z
+      induction z with
+      | zero => simp only [map_zero]
+      | tmul x h' =>
+        rw [hFσdef, hFφ, AlgHom.liftEquiv_tmul, AlgHom.liftEquiv_tmul,
+          Algebra.smul_def, Algebra.smul_def, map_mul]
+        congr 1
+        show algebraMap L Ω (ρ x) = σ (algebraMap L Ω (ρ x))
+        exact (hfix (ρ x)).symm
+      | add z₁ z₂ h₁ h₂ => simp only [map_add, h₁, h₂]
+    have huAlg : uσ = σR.comp uφ := by
+      apply AlgHom.ext
+      intro a
+      show uσ a = σR (uφ a)
+      rw [huσapp, huφapp, hFcomm]
+      rfl
+    show Additive.ofMul (Θ (WithConv.toConv (σ.toAlgHom.comp φ))) =
+      Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp
+        (Θ (WithConv.toConv φ)).ofConv))
+    refine congrArg Additive.ofMul ?_
+    rw [hθσφ, hθφ, WithConv.ofConv_toConv, huAlg, hliftσ]
+  · -- the `χ(σ) = −1` clause
+    intro hχm
+    have hστ : ∀ l : L, σ (algebraMap L Ω l) = algebraMap L Ω (τ l) :=
+      apply_algebraMap_of_quadraticCharacter_neg K L Ω hτ1 hχm
+    -- the lift of `σ ∘ φ` is `σ ∘ (lift of φ) ∘ (conj ⊗ id)`
+    have hFtwist : ∀ z : quadraticOrder R t n ⊗[R] H',
+        Fσ z = σ (Fφ (Algebra.TensorProduct.map conj (AlgHom.id R H') z)) := by
+      intro z
+      induction z with
+      | zero => simp only [map_zero]
+      | tmul x h' =>
+        rw [Algebra.TensorProduct.map_tmul, hFσdef, hFφ,
+          AlgHom.liftEquiv_tmul, AlgHom.liftEquiv_tmul,
+          Algebra.smul_def, Algebra.smul_def, map_mul]
+        congr 1
+        show algebraMap L Ω (ρ x) = σ (algebraMap L Ω (ρ (conj x)))
+        rw [hστ (ρ (conj x)), hτρ, hconjconj]
+      | add z₁ z₂ h₁ h₂ => simp only [map_add, h₁, h₂]
+    -- the intertwining moves the twist across `e⁻¹` onto the antipode
+    have hTe : ∀ w : quadraticOrder R t n ⊗[R] H,
+        Algebra.TensorProduct.map conj (AlgHom.id R H') (e.symm w) =
+        e.symm (Algebra.TensorProduct.map conj
+          (HopfAlgebra.antipodeAlgHom R H) w) := by
+      intro w
+      have h1 := he (e.symm w)
+      rw [BialgEquiv.apply_symm_apply] at h1
+      have h2 := congrArg e.symm h1
+      rwa [BialgEquiv.symm_apply_apply] at h2
+    have huS : ∀ a : H,
+        uσ a = σ (uφ (HopfAlgebra.antipodeAlgHom R H a)) := by
+      intro a
+      rw [huσapp, huφapp, hFtwist, hTe, Algebra.TensorProduct.map_tmul,
+        map_one]
+    have huAlg : uσ = (σR.comp uφ).comp (HopfAlgebra.antipodeAlgHom R H) := by
+      apply AlgHom.ext
+      intro a
+      rw [huS]
+      rfl
+    -- the antipode of the base change restricts to the antipode
+    have hSbc : AlgHom.liftEquiv R K H Ω
+        ((σR.comp uφ).comp (HopfAlgebra.antipodeAlgHom R H)) =
+        (AlgHom.liftEquiv R K H Ω (σR.comp uφ)).comp
+          (HopfAlgebra.antipodeAlgHom K (K ⊗[R] H)) := by
+      refine Algebra.TensorProduct.ext_ring ?_
+      apply AlgHom.ext
+      intro a
+      have hSj : (HopfAlgebra.antipodeAlgHom K (K ⊗[R] H)) ((1 : K) ⊗ₜ[R] a) =
+          (1 : K) ⊗ₜ[R] (HopfAlgebra.antipodeAlgHom R H a) := by
+        show HopfAlgebra.antipode K ((1 : K) ⊗ₜ[R] a) =
+          (1 : K) ⊗ₜ[R] HopfAlgebra.antipode R a
+        rw [TensorProduct.antipode_def]
+        rw [show (TensorProduct.AlgebraTensorModule.map
+          (HopfAlgebra.antipode K (A := K)) (HopfAlgebra.antipode R (A := H)))
+          ((1 : K) ⊗ₜ[R] a) = (HopfAlgebra.antipode K (1 : K)) ⊗ₜ[R]
+            (HopfAlgebra.antipode R a) from rfl]
+        rw [HopfAlgebra.antipode_one]
+      show (AlgHom.liftEquiv R K H Ω
+          ((σR.comp uφ).comp (HopfAlgebra.antipodeAlgHom R H)))
+          ((1 : K) ⊗ₜ[R] a) =
+        ((AlgHom.liftEquiv R K H Ω (σR.comp uφ)).comp
+          (HopfAlgebra.antipodeAlgHom K (K ⊗[R] H))) ((1 : K) ⊗ₜ[R] a)
+      rw [AlgHom.liftEquiv_tmul, one_smul]
+      conv_rhs => rw [AlgHom.comp_apply, hSj, AlgHom.liftEquiv_tmul, one_smul]
+      rfl
+    show Additive.ofMul (Θ (WithConv.toConv (σ.toAlgHom.comp φ)) *
+        WithConv.toConv (σ.toAlgHom.comp
+          (Θ (WithConv.toConv φ)).ofConv)) = Additive.ofMul 1
+    refine congrArg Additive.ofMul ?_
+    rw [hθσφ, hθφ, WithConv.ofConv_toConv, huAlg, hSbc, hliftσ]
+    exact toConv_comp_antipodeAlgHom_mul_cancel K Ω (K ⊗[R] H)
+      (WithConv.toConv (σ.toAlgHom.comp (AlgHom.liftEquiv R K H Ω uφ)))
+
+open TensorProduct in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **Twisted points of the fixed-point order** (PROVEN 2026-07-24 —
+the GENERIC-FIBRE stage of the fixed-points quadratic descent, glue
+over four proven bricks): given the integral fixed-point
+identification `e` of `exists_fixedPointHopfOrder_of_descentData` — an
+`R_L`-bialgebra identification `R_L ⊗ H' ≅ R_L ⊗ H` intertwining
+`τ ⊗ id` with `τ ⊗ S` — together with the arithmetic dictionary
+between the abstract quadratic order and the concrete quadratic
+extension `L/K` (`τ θL = t − θL`, `θL·τθL = n`, whence
+`ρ : R_L → L`, root ↦ `θL`), the generic fibre `K ⊗ H'` is étale and
+its `Ω`-point convolution group is identified with that of `K ⊗ H`
+UP TO the quadratic character `χ` of `L/K`. Étaleness: the algebra
+part of `e` transports along the `cancelBaseChange` chain
+(`nonempty_baseChangeAlgEquiv_of_middle`) to an `L`-algebra
+identification `L ⊗[K] (K ⊗ H') ≅ L ⊗[K] (K ⊗ H)`, whose right side
+is étale over `L`, so `K ⊗ H'` is reduced (it embeds into its reduced
+base change) hence étale over the characteristic-zero `K`
+(`etale_of_baseChange_algEquiv`). Points: the five-step convolution
+chain through the `R`- and `R_L`-points with the two character clauses
+is `exists_twistedPointsAddEquiv_of_fixedPointOrder`. -/
 theorem exists_twistedPointsEquiv_of_fixedPointOrder
     (R : Type) [CommRing R] [IsDomain R] [IsDiscreteValuationRing R]
     (K : Type) [Field K] [CharZero K] [Algebra R K] [IsFractionRing R K]
@@ -9114,7 +9692,7 @@ theorem exists_twistedPointsEquiv_of_fixedPointOrder
     (L : Type) [Field L] [Algebra K L]
     [Algebra.IsQuadraticExtension K L] [Algebra.IsSeparable K L]
     [Algebra L Ω] [IsScalarTower K L Ω]
-    (θL : L) (hθtop : Algebra.adjoin K ({θL} : Set L) = ⊤)
+    (θL : L) (_hθtop : Algebra.adjoin K ({θL} : Set L) = ⊤)
     (t n : R) (τ : L ≃ₐ[K] L) (hτ1 : τ ≠ 1)
     (hτθ : τ θL = algebraMap K L (algebraMap R K t) - θL)
     (hθn : θL * τ θL = algebraMap K L (algebraMap R K n))
@@ -9146,7 +9724,37 @@ theorem exists_twistedPointsEquiv_of_fixedPointOrder
             Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp
               (WithConv.ofConv (Additive.toMul
                 (θ (Additive.ofMul (WithConv.toConv φ))))))) = 0) := by
-  sorry
+  classical
+  -- the dictionary instances `R → K → L` and `R_L → L`
+  letI : Algebra R L := ((algebraMap K L).comp (algebraMap R K)).toAlgebra
+  haveI : IsScalarTower R K L := IsScalarTower.of_algebraMap_eq fun r => rfl
+  have hroot : Polynomial.aeval θL (Polynomial.X ^ 2 -
+      Polynomial.C t * Polynomial.X + Polynomial.C n : Polynomial R) = 0 := by
+    have h1 : θL * (algebraMap K L (algebraMap R K t) - θL) =
+        algebraMap K L (algebraMap R K n) := by rw [← hτθ]; exact hθn
+    simp only [map_add, map_sub, map_mul, map_pow, Polynomial.aeval_X,
+      Polynomial.aeval_C]
+    have halg : ∀ r : R, algebraMap R L r =
+        algebraMap K L (algebraMap R K r) := fun r => rfl
+    rw [halg, halg]
+    linear_combination -h1
+  set ρ : quadraticOrder R t n →ₐ[R] L :=
+    AdjoinRoot.liftAlgHom _ (Algebra.ofId R L) θL (by
+      rw [show (((Algebra.ofId R L) : R →ₐ[R] L) : R →+* L) =
+        algebraMap R L from rfl, ← Polynomial.aeval_def]
+      exact hroot)
+  letI : Algebra (quadraticOrder R t n) L := ρ.toRingHom.toAlgebra
+  haveI : IsScalarTower R (quadraticOrder R t n) L :=
+    IsScalarTower.of_algebraMap_eq fun r => (ρ.commutes r).symm
+  -- the étale generic fibre, by descent along the base-change chain
+  obtain ⟨Ealg⟩ := nonempty_baseChangeAlgEquiv_of_middle R
+    (quadraticOrder R t n) K L H H' e.toAlgEquiv
+  haveI het : Algebra.Etale K (K ⊗[R] H') :=
+    etale_of_baseChange_algEquiv K L (K ⊗[R] H') (K ⊗[R] H) Ealg
+  -- the χ-twisted points equivalence
+  obtain ⟨θ, hθ⟩ := exists_twistedPointsAddEquiv_of_fixedPointOrder R K Ω L
+    θL t n τ hτ1 hτθ hθn H H' e he
+  exact ⟨het, θ, hθ⟩
 
 open TensorProduct in
 set_option backward.isDefEq.respectTransparency false in
