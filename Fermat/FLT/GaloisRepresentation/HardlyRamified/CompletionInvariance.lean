@@ -1294,7 +1294,98 @@ theorem map_minpoly_eq_prod_X_sub_C
         (X - C (AlgebraicClosure.map (algebraMap ℚ Kv)
           ((algebraMap (RingOfIntegers K) K (σ • θ) : K) :
             AlgebraicClosure ℚ))) := by
-  sorry
+  classical
+  have hint : IsIntegral ℤ θ := Algebra.IsIntegral.isIntegral θ
+  have hintK : IsIntegral ℚ (algebraMap (RingOfIntegers K) K θ : K) :=
+    IsIntegral.of_finite ℚ _
+  set θK : K := algebraMap (RingOfIntegers K) K θ with hθKdef
+  set v : (K ≃ₐ[ℚ] K) → K := fun σ => σ θK with hvdef
+  -- injectivity of the conjugate map (rigidity of the primitive element)
+  have hvinj : Function.Injective v := by
+    intro σ τ hστ
+    have h1 : (τ⁻¹ * σ) θK = θK := by
+      have h2 : τ⁻¹ (σ θK) = τ⁻¹ (τ θK) := congrArg _ hστ
+      rwa [← AlgEquiv.mul_apply, ← AlgEquiv.mul_apply, inv_mul_cancel,
+        AlgEquiv.one_apply] at h2
+    have h3 : τ⁻¹ * σ = 1 := by
+      have h4 : Algebra.adjoin ℚ ({θK} : Set K) ≤
+          AlgHom.equalizer (τ⁻¹ * σ : K ≃ₐ[ℚ] K).toAlgHom (AlgHom.id ℚ K) :=
+        Algebra.adjoin_le (Set.singleton_subset_iff.mpr h1)
+      refine AlgEquiv.ext fun y => ?_
+      have hy : y ∈ Algebra.adjoin ℚ ({θK} : Set K) := by
+        rw [hθtop]
+        exact Algebra.mem_top
+      exact h4 hy
+    rw [← one_mul σ, ← mul_inv_cancel τ, mul_assoc, h3, mul_one]
+  -- the mapped minimal polynomial splits over `K` with the conjugates as roots
+  set P : Polynomial K := (minpoly ℚ θK).map (algebraMap ℚ K) with hPdef
+  have hPmonic : P.Monic := (minpoly.monic hintK).map _
+  have hPsplits : P.Splits := by
+    rw [hPdef]
+    exact Normal.splits inferInstance θK
+  have hPdeg : P.natDegree = Fintype.card (K ≃ₐ[ℚ] K) := by
+    have hadj : IntermediateField.adjoin ℚ {θK} = ⊤ := by
+      refine IntermediateField.toSubalgebra_injective ?_
+      rw [IntermediateField.adjoin_simple_toSubalgebra_of_isAlgebraic
+        hintK.isAlgebraic, IntermediateField.top_toSubalgebra]
+      exact hθtop
+    have hdeg : (minpoly ℚ θK).natDegree = Module.finrank ℚ K := by
+      rw [← IntermediateField.adjoin.finrank hintK, hadj]
+      exact IntermediateField.finrank_top'
+    have h2 : P.natDegree = (minpoly ℚ θK).natDegree := by
+      rw [hPdef]
+      exact Polynomial.natDegree_map_eq_of_injective
+        (algebraMap ℚ K).injective _
+    rw [h2, hdeg, ← Nat.card_eq_fintype_card]
+    exact (IsGalois.card_aut_eq_finrank ℚ K).symm
+  have hroots : P.roots = Finset.univ.val.map v := by
+    symm
+    refine Multiset.eq_of_le_of_card_le ?_ ?_
+    · rw [Multiset.le_iff_count]
+      intro a
+      by_cases ha : a ∈ Finset.univ.val.map v
+      · rw [Multiset.count_eq_one_of_mem (Finset.univ.nodup.map hvinj) ha]
+        rw [Nat.one_le_iff_ne_zero, Ne, Multiset.count_eq_zero, not_not]
+        obtain ⟨σ, -, rfl⟩ := Multiset.mem_map.mp ha
+        rw [Polynomial.mem_roots (hPmonic.ne_zero)]
+        rw [Polynomial.IsRoot, hPdef, Polynomial.eval_map,
+          ← Polynomial.aeval_def, hvdef]
+        have h2 : Polynomial.aeval (σ θK) (minpoly ℚ θK) =
+            σ (Polynomial.aeval θK (minpoly ℚ θK)) :=
+          Polynomial.aeval_algHom_apply σ.toAlgHom θK (minpoly ℚ θK)
+        rw [h2, minpoly.aeval, map_zero]
+      · rw [Multiset.count_eq_zero_of_notMem ha]
+        exact Nat.zero_le _
+    · rw [Multiset.card_map, ← Finset.card_def, Finset.card_univ,
+        Polynomial.splits_iff_card_roots.mp hPsplits, hPdeg]
+  -- `P` is the product of the linear factors at the conjugates
+  have hProd : P = ∏ σ : K ≃ₐ[ℚ] K, (X - C (v σ)) := by
+    have h1 := hPsplits.eq_prod_roots_of_monic hPmonic
+    rw [hroots] at h1
+    rw [h1, Finset.prod_eq_multiset_prod, Multiset.map_map]
+    rfl
+  -- `P` is the `ℤ → K` image of the integral minimal polynomial
+  have hPint : P = (minpoly ℤ θ).map (algebraMap ℤ K) := by
+    rw [hPdef, minpoly.isIntegrallyClosed_eq_field_fractions ℚ K hint,
+      Polynomial.map_map]
+    all_goals
+      exact congrArg (fun f : ℤ →+* K => (minpoly ℤ θ).map f)
+        (Subsingleton.elim _ _)
+  -- base-change everything along `κ = ι ∘ (K ↪ ℚᵃˡᵍ)`
+  set κ : K →+* AlgebraicClosure Kv :=
+    (AlgebraicClosure.map (algebraMap ℚ Kv)).comp
+      (algebraMap K (AlgebraicClosure ℚ))
+  have hmapmap : (minpoly ℤ θ).map (Int.castRingHom (AlgebraicClosure Kv)) =
+      ((minpoly ℤ θ).map (algebraMap ℤ K)).map κ := by
+    rw [Polynomial.map_map]
+    all_goals
+      exact congrArg
+        (fun f : ℤ →+* AlgebraicClosure Kv => (minpoly ℤ θ).map f)
+        (Subsingleton.elim _ _)
+  rw [hmapmap, ← hPint, hProd, Polynomial.map_prod]
+  refine Finset.prod_congr rfl fun σ _ => ?_
+  rw [Polynomial.map_sub, Polynomial.map_X, Polynomial.map_C]
+  all_goals congr 2
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
