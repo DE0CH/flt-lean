@@ -21,6 +21,9 @@ public import Fermat.FLT.EllipticCurve.PhiPsiCoprime
 import Fermat.FLT.EllipticCurve.TorsionCardSep
 import Mathlib.FieldTheory.Normal.Closure
 import Mathlib.RingTheory.Etale.Field
+-- infinite Galois theory (`InfiniteGalois.mem_range_algebraMap_iff_fixed`):
+-- Speiser's lemma at the infinite level in the `EtaleGrothendieck` section
+import Mathlib.FieldTheory.Galois.Infinite
 -- tensor products commute with finite products (`Algebra.TensorProduct.piRight`)
 -- and étale-ness is product-local (`Algebra.FormallyEtale.pi_iff`): the product
 -- assembly of `exists_finite_etale_algebra_form_of_inertia_fixes`
@@ -6311,37 +6314,11 @@ theorem WeierstrassCurve.torsion_flat_of_good_reduction_mul
   dsimp only
   simp [hfa σ, hfb σ, map_add]
 
-/-- **Grothendieck full faithfulness, algebra half** (sorry node; curve-free —
-the descent core of the comparison leaf
-`exists_bialgEquiv_of_torsion_points_equiv`): a `Gal(Kˢᵉᵖ/K)`-equivariant
-bijection between the `Kˢᵉᵖ`-points of two finite étale `K`-algebras is induced
-by composition with a (unique, but only existence is stated) `K`-algebra
-isomorphism. This is the full faithfulness of the Grothendieck
-anti-equivalence between finite étale `K`-algebras and finite discrete Galois
-sets. Intended proof, aligned with the `GaloisEtalePackage` section above:
-choose a finite Galois subextension `L` of `Kˢᵉᵖ` splitting both `A` and `B`
-(a compositum of the finitely many images of the finitely many points); the
-evaluation maps `A → (A →ₐ[K] Kˢᵉᵖ) → L` and `B → (B →ₐ[K] Kˢᵉᵖ) → L` land in
-the `Gal(L/K)`-equivariant functions and are isomorphisms onto them (the
-étale-algebra Gelfand transform: injective because points separate a finite
-étale algebra, surjective by the dimension count
-`dim A = #points = dim (equivariant functions)`); conjugating the second by
-the equivariant bijection `g` of the point sets identifies the two
-equivariant-function algebras, and the composite `B ≃ A` induces `g` by
-construction. -/
-theorem exists_algEquiv_of_algHom_equiv
-    (A : Type*) [CommRing A] [Algebra K A] [Module.Finite K A] [Algebra.Etale K A]
-    (B : Type*) [CommRing B] [Algebra K B] [Module.Finite K B] [Algebra.Etale K B]
-    (g : (A →ₐ[K] Ksep) ≃ (B →ₐ[K] Ksep))
-    (hg : ∀ (σ : Ksep ≃ₐ[K] Ksep) (φ : A →ₐ[K] Ksep),
-      g (σ.toAlgHom.comp φ) = σ.toAlgHom.comp (g φ)) :
-    ∃ e : B ≃ₐ[K] A, ∀ φ : A →ₐ[K] Ksep, g φ = φ.comp e.toAlgHom :=
-  sorry
-
 set_option backward.isDefEq.respectTransparency false in
 omit [DecidableEq Ksep] in
 /-- **Points separate a finite étale algebra** (PROVEN 2026-07-23; glue for the
-Hopf-upgrade leaf `exists_bialgEquiv_of_algEquiv_conv`): an element of a finite
+Hopf-upgrade leaf `exists_bialgEquiv_of_algEquiv_conv` and for the
+`EtaleGrothendieck` section below): an element of a finite
 étale `K`-algebra killed by every `Kˢᵉᵖ`-point is zero. The algebra is reduced
 (unramified over a field) and Artinian, so a nonzero element avoids some prime;
 that prime is maximal, its residue field is a finite unramified — hence
@@ -6375,6 +6352,303 @@ theorem eq_zero_of_forall_algHom_eq_zero
     (IsSepClosed.lift : (A ⧸ p) →ₐ[K] Ksep).toRingHom.injective
       (by simpa using hcontra)
   exact hxp (by rwa [Ideal.Quotient.mkₐ_eq_mk, Ideal.Quotient.eq_zero_iff_mem] at hker)
+
+/-!
+### The Gelfand transform onto equivariant functions at the infinite level
+
+Support for `exists_algEquiv_of_algHom_equiv` below. For a finite étale
+`K`-algebra `A`, the Gelfand transform `a ↦ (φ ↦ φ a)` maps `A` into the
+`Gal(Kˢᵉᵖ/K)`-equivariant functions `(A →ₐ[K] Kˢᵉᵖ) → Kˢᵉᵖ`; it is injective by
+the separation lemma `eq_zero_of_forall_algHom_eq_zero` (below) and surjective
+by a dimension squeeze that needs NO point counting and no finite splitting
+level: a `K`-linearly independent family of equivariant functions is
+automatically `Kˢᵉᵖ`-linearly independent (Speiser's lemma, the minimal-relation
+argument of split Galois descent run for the full group `Gal(Kˢᵉᵖ/K)`, with
+`InfiniteGalois.mem_range_algebraMap_iff_fixed` supplying "fixed by all of
+`Gal(Kˢᵉᵖ/K)` means in `K`"), so an equivariant function outside the image of
+the Gelfand transform would produce `dim_K A + 1` many `Kˢᵉᵖ`-independent
+vectors inside the function space on the points, whose `Kˢᵉᵖ`-dimension
+`#points` is at most `dim_K A` by `card_algHom_le_finrank`.
+-/
+
+section EtaleGrothendieck
+
+variable {S : Type*}
+
+omit [DecidableEq Ksep] in
+/-- **Speiser's lemma at the infinite level** (PROVEN; the descent half of the
+Gelfand identification feeding `exists_algEquiv_of_algHom_equiv`): a family of
+`Gal(Kˢᵉᵖ/K)`-equivariant functions on a `Gal(Kˢᵉᵖ/K)`-set `S` that is linearly
+independent over `K` is linearly independent over `Kˢᵉᵖ`. Minimal-relation
+argument: normalize a shortest nontrivial `Kˢᵉᵖ`-relation to have a coefficient
+`1`, subtract its Galois translates (again relations, by equivariance of the
+functions), conclude by strong induction that all coefficients are fixed by
+`Gal(Kˢᵉᵖ/K)`, hence lie in `K` (`Kˢᵉᵖ/K` is Galois, being a separable
+closure) — contradicting `K`-independence. No group laws of the action and no
+finiteness of `S` are needed. -/
+theorem linearIndependent_sepClosure_of_equivariant
+    (act : (Ksep ≃ₐ[K] Ksep) → S → S) {ι : Type*} {v : ι → S → Ksep}
+    (hmem : ∀ (i : ι) (σ : Ksep ≃ₐ[K] Ksep) (s : S), v i (act σ s) = σ (v i s))
+    (hv : LinearIndependent K v) : LinearIndependent Ksep v := by
+  classical
+  rw [linearIndependent_iff']
+  intro s
+  induction s using Finset.strongInduction with
+  | H s ih =>
+    intro c hc
+    by_contra hne
+    push Not at hne
+    obtain ⟨i₀, hi₀s, hi₀⟩ := hne
+    set c' : ι → Ksep := fun i => (c i₀)⁻¹ * c i with hc'def
+    have hrel : ∑ i ∈ s, c' i • v i = 0 := by
+      have h1 := congrArg (fun f : S → Ksep => (c i₀)⁻¹ • f) hc
+      simpa [Finset.smul_sum, smul_smul, hc'def] using h1
+    have hc'i₀ : c' i₀ = 1 := by
+      simp only [hc'def]
+      exact inv_mul_cancel₀ hi₀
+    have hrelg : ∀ σ : Ksep ≃ₐ[K] Ksep, ∑ i ∈ s, σ (c' i) • v i = 0 := by
+      intro σ
+      have h0 : ∀ b : S, ∑ i ∈ s, c' i * v i (act σ⁻¹ b) = 0 := by
+        intro b
+        have h2 := congrFun hrel (act σ⁻¹ b)
+        simpa using h2
+      funext b
+      simp only [Finset.sum_apply, Pi.smul_apply, smul_eq_mul, Pi.zero_apply]
+      calc ∑ i ∈ s, σ (c' i) * v i b
+          = ∑ i ∈ s, σ (c' i) * σ (v i (act σ⁻¹ b)) := by
+            refine Finset.sum_congr rfl fun i _ => ?_
+            rw [hmem i σ⁻¹ b, AlgEquiv.aut_inv, AlgEquiv.apply_symm_apply]
+        _ = σ (∑ i ∈ s, c' i * v i (act σ⁻¹ b)) := by
+            rw [map_sum]
+            exact Finset.sum_congr rfl fun i _ => (map_mul σ _ _).symm
+        _ = 0 := by rw [h0 b, map_zero]
+    have hfix : ∀ (σ : Ksep ≃ₐ[K] Ksep) (i : ι), i ∈ s → σ (c' i) = c' i := by
+      intro σ i hi
+      have h3 : ∑ j ∈ s, (σ (c' j) - c' j) • v j = 0 := by
+        simp only [sub_smul, Finset.sum_sub_distrib, hrelg σ, hrel, sub_zero]
+      have h4 : ∑ j ∈ s.erase i₀, (σ (c' j) - c' j) • v j = 0 := by
+        rwa [← Finset.add_sum_erase _ _ hi₀s, hc'i₀, map_one, sub_self, zero_smul,
+          zero_add] at h3
+      have h5 := ih (s.erase i₀) (Finset.erase_ssubset hi₀s) _ h4
+      rcases eq_or_ne i i₀ with rfl | hne'
+      · rw [hc'i₀, map_one]
+      · exact sub_eq_zero.mp (h5 i (Finset.mem_erase.mpr ⟨hne', hi⟩))
+    have hK : ∀ i : ι, ∃ k : K, i ∈ s → algebraMap K Ksep k = c' i := by
+      intro i
+      by_cases hi : i ∈ s
+      · have hmem' : c' i ∈ Set.range (algebraMap K Ksep) := by
+          rw [InfiniteGalois.mem_range_algebraMap_iff_fixed]
+          exact fun σ => hfix σ i hi
+        exact ⟨hmem'.choose, fun _ => hmem'.choose_spec⟩
+      · exact ⟨0, fun h => absurd h hi⟩
+    choose k hk using hK
+    have hrelK : ∑ i ∈ s, k i • v i = 0 := by
+      have hcoe : ∑ i ∈ s, k i • v i = ∑ i ∈ s, c' i • v i := by
+        refine Finset.sum_congr rfl fun i hi => ?_
+        rw [← hk i hi, algebraMap_smul]
+      rw [hcoe, hrel]
+    have h6 := linearIndependent_iff'.mp hv s k hrelK i₀ hi₀s
+    rw [← hk i₀ hi₀s, h6, map_zero] at hc'i₀
+    exact zero_ne_one hc'i₀
+
+omit [DecidableEq Ksep] in
+/-- **The equivariant-functions algebra on a `Gal(Kˢᵉᵖ/K)`-set** (glue for
+`exists_algEquiv_of_algHom_equiv`): the `K`-subalgebra of functions `S → Kˢᵉᵖ`
+commuting with the Galois action `act` — the infinite-level counterpart of
+`galoisEquivariantAlgebra` for a set-level action. -/
+def sepPointsEquivariantSubalgebra (act : (Ksep ≃ₐ[K] Ksep) → S → S) :
+    Subalgebra K (S → Ksep) where
+  carrier := {F | ∀ (σ : Ksep ≃ₐ[K] Ksep) (s : S), F (act σ s) = σ (F s)}
+  mul_mem' := fun hf hg σ s => by simp only [Pi.mul_apply, map_mul, hf σ s, hg σ s]
+  one_mem' := fun σ s => by simp only [Pi.one_apply, map_one]
+  add_mem' := fun hf hg σ s => by simp only [Pi.add_apply, map_add, hf σ s, hg σ s]
+  zero_mem' := fun σ s => by simp only [Pi.zero_apply, map_zero]
+  algebraMap_mem' := fun r σ s => by
+    simp only [Pi.algebraMap_apply, AlgEquiv.commutes]
+
+omit [IsSepClosure K Ksep] [DecidableEq Ksep] in
+/-- Membership in the equivariant subalgebra, unfolded. -/
+theorem mem_sepPointsEquivariantSubalgebra_iff {act : (Ksep ≃ₐ[K] Ksep) → S → S}
+    {F : S → Ksep} :
+    F ∈ sepPointsEquivariantSubalgebra K Ksep act ↔
+      ∀ (σ : Ksep ≃ₐ[K] Ksep) (s : S), F (act σ s) = σ (F s) :=
+  Iff.rfl
+
+set_option backward.isDefEq.respectTransparency false in
+omit [DecidableEq Ksep] in
+/-- **Gelfand surjectivity for finite étale algebras** (PROVEN; the descent core
+of `exists_algEquiv_of_algHom_equiv`): every `Gal(Kˢᵉᵖ/K)`-equivariant function
+on the `Kˢᵉᵖ`-points of a finite étale `K`-algebra is evaluation at an element.
+Proof by dimension squeeze: were `F` outside the image of the (injective, by
+separation) Gelfand transform, adjoining it to the image of a basis would give
+`dim_K A + 1` many `K`-independent equivariant functions, `Kˢᵉᵖ`-independent by
+Speiser's lemma, inside a function space of `Kˢᵉᵖ`-dimension
+`#(A →ₐ[K] Kˢᵉᵖ) ≤ dim_K A` (`card_algHom_le_finrank`). -/
+theorem exists_eval_eq_of_equivariant
+    (A : Type*) [CommRing A] [Algebra K A] [Module.Finite K A] [Algebra.Etale K A]
+    (F : (A →ₐ[K] Ksep) → Ksep)
+    (hF : ∀ (σ : Ksep ≃ₐ[K] Ksep) (φ : A →ₐ[K] Ksep),
+      F (σ.toAlgHom.comp φ) = σ (F φ)) :
+    ∃ a : A, ∀ φ : A →ₐ[K] Ksep, φ a = F φ := by
+  classical
+  haveI : Finite (A →ₐ[K] Ksep) := Finite.algHom K A Ksep
+  haveI := Fintype.ofFinite (A →ₐ[K] Ksep)
+  let ε : A →ₐ[K] ((A →ₐ[K] Ksep) → Ksep) := AlgHom.pi (fun φ => φ)
+  have hεinj : Function.Injective ε := by
+    intro x y hxy
+    have hzero : x - y = 0 := by
+      refine eq_zero_of_forall_algHom_eq_zero K Ksep A _ fun φ => ?_
+      rw [map_sub, sub_eq_zero]
+      exact congrFun hxy φ
+    exact sub_eq_zero.mp hzero
+  by_contra hnot
+  push Not at hnot
+  have hFnot : F ∉ Submodule.span K
+      (Set.range fun i => ε (Module.finBasis K A i)) := by
+    intro hFmem
+    have hrange : Submodule.span K (Set.range fun i => ε (Module.finBasis K A i)) =
+        LinearMap.range ε.toLinearMap := by
+      have h1 : (Set.range fun i => ε (Module.finBasis K A i)) =
+          ε.toLinearMap '' Set.range (Module.finBasis K A) := by
+        rw [← Set.range_comp]
+        rfl
+      rw [h1, Submodule.span_image, Module.Basis.span_eq, Submodule.map_top]
+    rw [hrange] at hFmem
+    obtain ⟨a, ha⟩ := hFmem
+    obtain ⟨φ, hφ⟩ := hnot a
+    exact hφ (congrFun ha φ)
+  have hvind : LinearIndependent K fun i => ε (Module.finBasis K A i) :=
+    (Module.finBasis K A).linearIndependent.map' ε.toLinearMap
+      (LinearMap.ker_eq_bot.mpr hεinj)
+  have hopt : LinearIndependent K
+      (fun o => Option.casesOn' o F fun i => ε (Module.finBasis K A i)) :=
+    hvind.option hFnot
+  have hΩ : LinearIndependent Ksep
+      (fun o => Option.casesOn' o F fun i => ε (Module.finBasis K A i)) := by
+    refine linearIndependent_sepClosure_of_equivariant K Ksep
+      (fun σ φ => σ.toAlgHom.comp φ) ?_ hopt
+    intro o σ φ
+    cases o with
+    | none => exact hF σ φ
+    | some i => rfl
+  have hcard := hΩ.fintype_card_le_finrank
+  rw [Module.finrank_pi, Fintype.card_option, Fintype.card_fin] at hcard
+  have hle := card_algHom_le_finrank K A Ksep
+  rw [Nat.card_eq_fintype_card] at hle
+  omega
+
+set_option backward.isDefEq.respectTransparency false in
+omit [DecidableEq Ksep] in
+/-- **One direction of Grothendieck full faithfulness** (PROVEN; glue for
+`exists_algEquiv_of_algHom_equiv`): an equivariant map `t` from the
+`Kˢᵉᵖ`-points of a finite étale `K`-algebra `A` to the points of any `K`-algebra
+`B` is induced by an algebra homomorphism `B →ₐ[K] A`. The homomorphism is the
+composite of `b ↦ (φ ↦ t φ b)` (landing in the equivariant functions on the
+points of `A`) with the inverse of the Gelfand transform of `A`, an isomorphism
+onto the equivariant functions by separation and
+`exists_eval_eq_of_equivariant`. -/
+theorem exists_algHom_of_algHom_map
+    (A : Type*) [CommRing A] [Algebra K A] [Module.Finite K A] [Algebra.Etale K A]
+    (B : Type*) [CommRing B] [Algebra K B]
+    (t : (A →ₐ[K] Ksep) → (B →ₐ[K] Ksep))
+    (ht : ∀ (σ : Ksep ≃ₐ[K] Ksep) (φ : A →ₐ[K] Ksep),
+      t (σ.toAlgHom.comp φ) = σ.toAlgHom.comp (t φ)) :
+    ∃ e₀ : B →ₐ[K] A, ∀ (φ : A →ₐ[K] Ksep) (b : B), φ (e₀ b) = t φ b := by
+  classical
+  let act : (Ksep ≃ₐ[K] Ksep) → (A →ₐ[K] Ksep) → (A →ₐ[K] Ksep) :=
+    fun σ φ => σ.toAlgHom.comp φ
+  let ε : A →ₐ[K] ((A →ₐ[K] Ksep) → Ksep) := AlgHom.pi (fun φ => φ)
+  have hεmem : ∀ a : A, ε a ∈ sepPointsEquivariantSubalgebra K Ksep act :=
+    fun a => (mem_sepPointsEquivariantSubalgebra_iff K Ksep).mpr fun σ φ => rfl
+  have hεbij : Function.Bijective
+      (ε.codRestrict (sepPointsEquivariantSubalgebra K Ksep act) hεmem) := by
+    constructor
+    · intro x y hxy
+      have hxy' : ∀ φ : A →ₐ[K] Ksep, φ x = φ y := fun φ =>
+        congrFun (congrArg Subtype.val hxy) φ
+      have hzero : x - y = 0 := by
+        refine eq_zero_of_forall_algHom_eq_zero K Ksep A _ fun φ => ?_
+        rw [map_sub, sub_eq_zero]
+        exact hxy' φ
+      exact sub_eq_zero.mp hzero
+    · rintro ⟨F, hF⟩
+      obtain ⟨a, ha⟩ := exists_eval_eq_of_equivariant K Ksep A F
+        ((mem_sepPointsEquivariantSubalgebra_iff K Ksep).mp hF)
+      exact ⟨a, Subtype.ext (funext fun φ => ha φ)⟩
+  let εe : A ≃ₐ[K] (sepPointsEquivariantSubalgebra K Ksep act) :=
+    AlgEquiv.ofBijective
+      (ε.codRestrict (sepPointsEquivariantSubalgebra K Ksep act) hεmem) hεbij
+  let T : B →ₐ[K] ((A →ₐ[K] Ksep) → Ksep) := AlgHom.pi (fun φ => t φ)
+  have hTmem : ∀ b : B, T b ∈ sepPointsEquivariantSubalgebra K Ksep act := by
+    intro b
+    refine (mem_sepPointsEquivariantSubalgebra_iff K Ksep).mpr fun σ φ => ?_
+    show (t (σ.toAlgHom.comp φ)) b = σ ((t φ) b)
+    rw [ht σ φ]
+    rfl
+  refine ⟨εe.symm.toAlgHom.comp
+    (T.codRestrict (sepPointsEquivariantSubalgebra K Ksep act) hTmem), ?_⟩
+  intro φ b
+  have h1 : εe (εe.symm
+      (T.codRestrict (sepPointsEquivariantSubalgebra K Ksep act) hTmem b)) =
+      T.codRestrict (sepPointsEquivariantSubalgebra K Ksep act) hTmem b :=
+    εe.apply_symm_apply _
+  exact congrFun (congrArg Subtype.val h1) φ
+
+end EtaleGrothendieck
+
+set_option backward.isDefEq.respectTransparency false in
+omit [DecidableEq Ksep] in
+/-- **Grothendieck full faithfulness, algebra half** (PROVEN 2026-07-23;
+curve-free — the descent core of the comparison leaf
+`exists_bialgEquiv_of_torsion_points_equiv`): a `Gal(Kˢᵉᵖ/K)`-equivariant
+bijection between the `Kˢᵉᵖ`-points of two finite étale `K`-algebras is induced
+by composition with a (unique, but only existence is stated) `K`-algebra
+isomorphism. This is the full faithfulness of the Grothendieck
+anti-equivalence between finite étale `K`-algebras and finite discrete Galois
+sets. Proof, via the `EtaleGrothendieck` section above: the two directions of
+the bijection induce (`exists_algHom_of_algHom_map`, the Gelfand transform onto
+the equivariant functions of the point set — injective by separation,
+surjective by Speiser independence plus `card_algHom_le_finrank`, with no point
+counting) algebra homomorphisms `e₀ : B →ₐ[K] A` and `e₁ : A →ₐ[K] B` acting
+on points as `g` and `g.symm` respectively; the composites act on points as the
+identity, hence are the identity by separation
+(`eq_zero_of_forall_algHom_eq_zero`), and `AlgEquiv.ofAlgHom` assembles the
+isomorphism. -/
+theorem exists_algEquiv_of_algHom_equiv
+    (A : Type*) [CommRing A] [Algebra K A] [Module.Finite K A] [Algebra.Etale K A]
+    (B : Type*) [CommRing B] [Algebra K B] [Module.Finite K B] [Algebra.Etale K B]
+    (g : (A →ₐ[K] Ksep) ≃ (B →ₐ[K] Ksep))
+    (hg : ∀ (σ : Ksep ≃ₐ[K] Ksep) (φ : A →ₐ[K] Ksep),
+      g (σ.toAlgHom.comp φ) = σ.toAlgHom.comp (g φ)) :
+    ∃ e : B ≃ₐ[K] A, ∀ φ : A →ₐ[K] Ksep, g φ = φ.comp e.toAlgHom := by
+  classical
+  have hgsymm : ∀ (σ : Ksep ≃ₐ[K] Ksep) (ψ : B →ₐ[K] Ksep),
+      g.symm (σ.toAlgHom.comp ψ) = σ.toAlgHom.comp (g.symm ψ) := by
+    intro σ ψ
+    apply g.injective
+    rw [Equiv.apply_symm_apply, hg σ (g.symm ψ), Equiv.apply_symm_apply]
+  obtain ⟨e₀, he₀⟩ := exists_algHom_of_algHom_map K Ksep A B (fun φ => g φ)
+    (fun σ φ => hg σ φ)
+  obtain ⟨e₁, he₁⟩ := exists_algHom_of_algHom_map K Ksep B A (fun ψ => g.symm ψ)
+    (fun σ ψ => hgsymm σ ψ)
+  have h1 : e₀.comp e₁ = AlgHom.id K A := by
+    apply AlgHom.ext
+    intro a
+    have hzero : e₀ (e₁ a) - a = 0 := by
+      refine eq_zero_of_forall_algHom_eq_zero K Ksep A _ fun φ => ?_
+      rw [map_sub, sub_eq_zero, he₀ φ (e₁ a), he₁ (g φ) a, Equiv.symm_apply_apply]
+    have h := sub_eq_zero.mp hzero
+    simpa using h
+  have h2 : e₁.comp e₀ = AlgHom.id K B := by
+    apply AlgHom.ext
+    intro b
+    have hzero : e₁ (e₀ b) - b = 0 := by
+      refine eq_zero_of_forall_algHom_eq_zero K Ksep B _ fun ψ => ?_
+      rw [map_sub, sub_eq_zero, he₁ ψ (e₀ b), he₀ (g.symm ψ) b, Equiv.apply_symm_apply]
+    have h := sub_eq_zero.mp hzero
+    simpa using h
+  refine ⟨AlgEquiv.ofAlgHom e₀ e₁ h1 h2, fun φ => AlgHom.ext fun b => ?_⟩
+  exact (he₀ φ b).symm
 
 omit [DecidableEq Ksep] in
 /-- **Grothendieck full faithfulness, Hopf upgrade** (PROVEN 2026-07-23;
@@ -6603,32 +6877,36 @@ theorem WeierstrassCurve.exists_bialgEquiv_of_torsion_points_equiv
     simp only [gdef, WithConv.toConv_ofConv, ofMul_mul, map_add, toMul_add]
   exact exists_bialgEquiv_of_algEquiv_conv K Ksep HK₁ HK₂ e hone hmul
 
-/-- **The Katz–Mazur flat model, mixed characteristic** (sorry node; the
-EXISTENCE half of the Katz–Mazur leaf — the flat-package statement with no
-reference algebra to compare against): when the prime `p` is not invertible in
-`R` but nonzero in `K`, SOME finite flat Hopf `R`-algebra has étale generic
-fibre whose `Kˢᵉᵖ`-points are, `Gal(Kˢᵉᵖ/K)`-equivariantly, the
-`p ^ k`-torsion of `E(Kˢᵉᵖ)`. Unlike the unramified case, `H` is NOT a
-normalization: division polynomials cannot produce `H` here (part of the
-torsion group scheme sits in the kernel of reduction, outside the affine
-chart), and the integral closure of `R` in the torsion algebra is in general
-not a Hopf algebra (for `μ_p` over `ℤ_p` the normalization has a special fibre
-with two connected components of lengths `1` and `p - 1`, which is not a group
-scheme). The mathematical content is [Katz–Mazur, *Arithmetic moduli of
-elliptic curves*, Thm 2.3.1]: `H` is the affine algebra of the kernel
-`𝓔[p ^ k]` of multiplication by `p ^ k` on the elliptic scheme `𝓔` of the
-minimal (good-reduction) Weierstrass equation.
+set_option backward.isDefEq.respectTransparency false in
+/-- **The Katz–Mazur Hopf order** (sorry node; the CURVE half of the decomposed
+Katz–Mazur existence leaf `exists_torsion_flat_model_of_good_reduction_prime_pow`,
+freed 2026-07-23 of all structure transport, and stated for ANY torsion order
+`m` nonzero in `K` — no primality and no non-invertibility in `R` is needed for
+the order to exist): inside the finite étale Hopf `K`-algebra `HK` of the
+`m`-torsion of a good-reduction curve, some finitely generated `R`-subalgebra
+`H₀` spans `HK` over `K` and is closed under the Hopf structure maps — the
+counit takes `H₀` into `R`, the antipode preserves `H₀`, and the
+comultiplication takes `H₀` into the `R`-span of the pure tensors of `H₀`.
+Unlike the unramified case, `H₀` is NOT the integral closure of `R` (for `μ_p`
+over `ℤ_p` the normalization has a special fibre with two connected components
+of lengths `1` and `p - 1`, which is not a group scheme). The mathematical
+content is [Katz–Mazur, *Arithmetic moduli of elliptic curves*, Thm 2.3.1]:
+`H₀` is (the image in the generic fibre of) the affine algebra of the kernel
+`𝓔[m]` of multiplication by `m` on the elliptic scheme `𝓔` of the minimal
+(good-reduction) Weierstrass equation. It suffices to construct the order for
+ONE `HK` carrying an equivariant points isomorphism: any other is Hopf-isomorphic
+to it by `exists_bialgEquiv_of_torsion_points_equiv` (proven), and Hopf-closed
+orders transport along Hopf isomorphisms.
 
-SCHEME-FREE CONSTRUCTION ROADMAP (worked out 2026-07-23, for the next owner —
-a Hopf-ORDER presentation of the same object; `𝓔[p ^ k]` is flat, so it is
-the schematic closure of its generic fibre, so `H` is the image of the
-functions on any affine open `U ⊇ 𝓔[p ^ k]` inside the étale generic-fibre
-algebra):
+SCHEME-FREE CONSTRUCTION ROADMAP (worked out 2026-07-23, restated for the
+Hopf-ORDER formulation; `𝓔[m]` is flat, so it is the schematic closure of its
+generic fibre, so `H₀` is the image of the functions on any affine open
+`U ⊇ 𝓔[m]` inside the étale generic-fibre algebra):
 
-1. Carrier. Realize the generic fibre concretely as the
-   `Gal(L/K)`-equivariant functions `V → L` of the `GaloisEtalePackage`
-   section, `V := E(Kˢᵉᵖ)[p ^ k]` (finite by `torsion_finite_of_ne_zero`),
-   `L` a finite Galois splitting subextension.
+1. Carrier. Realize `HK` concretely as the `Gal(L/K)`-equivariant functions
+   `V → L` of the `GaloisEtalePackage` section, `V := E(Kˢᵉᵖ)[m]` (finite by
+   `torsion_finite_of_ne_zero`), `L` a finite Galois splitting subextension —
+   or transport the order constructed there along the Hopf isomorphism above.
 2. Avoiding denominator. Choose `h ∈ R[X]` monic of degree `d ≥ 2` whose
    reduction is coprime to the reduced affine-torsion locus: `h(x(P))` is a
    unit of the valuation ring for every torsion point `P` with integral
@@ -6637,41 +6915,721 @@ algebra):
    residues; for non-integral abscissas `v(h(x(P))) = d·v(x(P)) < 0`
    automatically). Then `U := 𝓔 ∖ V(h ∘ x)` contains the whole kernel,
    including the origin.
-3. Generators. `H` := the `R`-subalgebra of equivariant functions generated
-   by the finitely many `g_{a,b} : P ↦ x(P)^a y(P)^b / h(x(P))^m` (with
-   `2a + 3b ≤ 2dm`, `b ≤ 1`, value `0`-or-limit at `P = 0`; these are the
+3. Generators. `H₀` := the `R`-subalgebra of equivariant functions generated
+   by the finitely many `g_{a,b} : P ↦ x(P)^a y(P)^b / h(x(P))^j` (with
+   `2a + 3b ≤ 2dj`, `b ≤ 1`, value `0`-or-limit at `P = 0`; these are the
    monomial sections of `Γ(U)` restricted to the kernel). Each `g_{a,b}` has
    integral values at every point (choice of `h`), hence is integral over
-   `R`: `H` is module-finite; it is torsion-free inside a `K`-space, hence
-   FREE over the DVR `R`: finite flat.
-4. Spanning. `K · H` is a `K`-subalgebra of the étale algebra separating the
+   `R`: `H₀` is module-finite (`(Subalgebra.toSubmodule H₀).FG`).
+4. Spanning. `K · H₀` is a `K`-subalgebra of the étale algebra separating the
    `Kˢᵉᵖ`-points (the `g_{a,b}` separate affine torsion points from each
    other and from the origin), and a separating subalgebra of a finite étale
    algebra is everything (both are étale — subalgebras of separable algebras
    are separable — so `dim = #points` on both sides, restriction of points is
-   injective by separation and surjective by integrality lifting).
-5. Hopf-closure — THE Katz–Mazur core: `Δ g_{a,b} ∈ H ⊗[R] H`, i.e. the
-   two-variable functions `(P, Q) ↦ g_{a,b}(P + Q)` are `R`-polynomial in
-   `g_{a',b'}(P), g_{a'',b''}(Q)`. This is the integrality of the addition
-   law relative to `h` on the kernel — the point where the division-polynomial
-   arithmetic enters: the addition formulas have denominators
-   `(x(P) - x(Q))²` resp. `ψ²`, controlled on the torsion locus by the monic
+   injective by separation and surjective by integrality lifting; compare the
+   dimension-squeeze route of `exists_eval_eq_of_equivariant`, which proves
+   the spanning without any point counting). This is the span hypothesis
+   `Submodule.span K H₀ = ⊤`.
+5. Hopf-closure — THE Katz–Mazur core: `Δ g_{a,b}` lies in the `R`-span of
+   pure tensors of `H₀`, i.e. the two-variable functions
+   `(P, Q) ↦ g_{a,b}(P + Q)` are `R`-polynomial in `g_{a',b'}(P),
+   g_{a'',b''}(Q)`. This is the integrality of the addition law relative to
+   `h` on the kernel — the point where the division-polynomial arithmetic
+   enters: the addition formulas have denominators `(x(P) - x(Q))²` resp.
+   `ψ²`, controlled on the torsion locus by the monic
    `(Φ n).eval X - ξ * (ΨSq n).eval X` (degree `n²` over `R[ξ]`) and the
    fibrewise coprimality `isCoprime_Φ_ΨSq` (proven,
    `Fermat.FLT.EllipticCurve.PhiPsiCoprime`). Counit and antipode closure are
-   immediate (`ε g = g(0) ∈ R`, `S g = g ∘ (-1)` is again a generator up to
-   the curve relation). Étaleness of the generic fibre is by construction
-   (step 4 identifies it with the étale package); the points identification
-   and its equivariance are the evaluation dictionary of the
-   `GaloisEtalePackage` section.
+   immediate (`ε g = g(0)`, integral over `R` and in `K`, hence in the
+   integrally closed DVR `R`; `S g = g ∘ (-1)` is again a generator up to the
+   curve relation).
 
-For the Frey curve application (`R = ℤ_(p)`, `K = ℚ`, `k = 1`) the same
+For the Frey curve application (`R = ℤ_(p)`, `K = ℚ`, `m = p`) the same
 object is the kernel of `[p]` on the good-reduction Weierstrass model; the
-`k = 1` specialization admits no genuine shortcut past the origin chart,
-because the connected component of `𝓔[p]` (where the model is NOT étale) is
-present for every `k`. -/
+prime case admits no genuine shortcut past the origin chart, because the
+connected component of `𝓔[p]` (where the model is NOT étale) is present
+whenever `p` is not invertible in `R`. -/
+theorem WeierstrassCurve.exists_hopf_order_of_good_reduction
+    (m : ℕ) (hm : (m : K) ≠ 0)
+    (HK : Type u) [CommRing HK] [HopfAlgebra K HK]
+    [Module.Finite K HK] [Algebra.Etale K HK]
+    [Algebra R HK] [IsScalarTower R K HK]
+    (f : Additive (WithConv (HK →ₐ[K] Ksep)) ≃+
+      AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ))
+    (hf : ∀ (σ : Ksep ≃ₐ[K] Ksep) (φ : HK →ₐ[K] Ksep),
+      (f (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) : (E⁄Ksep).Point) =
+        Affine.Point.map σ.toAlgHom (f (Additive.ofMul (WithConv.toConv φ)))) :
+    ∃ H₀ : Subalgebra R HK,
+      (Subalgebra.toSubmodule H₀).FG ∧
+      Submodule.span K (H₀ : Set HK) = ⊤ ∧
+      (∀ x ∈ H₀, Bialgebra.counitAlgHom K HK x ∈ (algebraMap R K).range) ∧
+      (∀ x ∈ H₀, HopfAlgebra.antipode K x ∈ H₀) ∧
+      (∀ x ∈ H₀, Bialgebra.comulAlgHom K HK x ∈
+        Submodule.span R {z : HK ⊗[K] HK | ∃ a ∈ H₀, ∃ b ∈ H₀, a ⊗ₜ[K] b = z}) :=
+  sorry
+
+set_option linter.unusedSectionVars false in -- deliberate: `omit` of the unused section
+-- instances measurably slows the consuming theorem's elaboration; keep the passing signature
+/-- Coalgebra counit axiom (`lTensor` side) for a corestricted comultiplication,
+stated against ABSTRACT corestricted maps `comul₀`/`counit₀`/`j2`: inline in the
+structure literal of `exists_flat_hopf_form_of_free_hopf_order` the same proof
+elaborates in a context where these are `let`-bound to large corestriction
+composites (`codRestrict`/`ofInjective` towers), and the rewrite path of this
+particular axiom forces those `let`s to unfold, making elaboration diverge
+(hours; observed 2026-07-23/24). Against opaque hypotheses every defeq step
+stays small. Consumed by `exists_flat_hopf_form_of_free_hopf_order` only. -/
+theorem corestrict_lTensor_counit_comp_comul
+    (HK : Type u) [CommRing HK] [HopfAlgebra K HK]
+    [Algebra R HK] [IsScalarTower R K HK]
+    (H₀ : Subalgebra R HK)
+    (comul₀ : H₀ →ₗ[R] H₀ ⊗[R] H₀) (counit₀ : H₀ →ₗ[R] R)
+    (j2 : H₀ ⊗[R] H₀ →ₗ[R] HK ⊗[K] HK)
+    (hj2tmul : ∀ x y : H₀, j2 (x ⊗ₜ[R] y) = (x : HK) ⊗ₜ[K] (y : HK))
+    (hj2comul₀ : ∀ x : H₀, j2 (comul₀ x) = Coalgebra.comul (R := K) (x : HK))
+    (hcounit₀K : ∀ x : H₀,
+      algebraMap R K (counit₀ x) = Coalgebra.counit (R := K) (x : HK)) :
+    counit₀.lTensor H₀ ∘ₗ comul₀ = (TensorProduct.mk R H₀ R).flip 1 := by
+  apply LinearMap.ext
+  intro x
+  apply (TensorProduct.rid R H₀).injective
+  apply Subtype.coe_injective
+  have haux : ∀ t : H₀ ⊗[R] H₀,
+      (((TensorProduct.rid R H₀) ((counit₀.lTensor H₀) t)) : HK) =
+      (TensorProduct.rid K HK)
+        (((Coalgebra.counit (R := K)).lTensor HK) (j2 t)) := by
+    intro t
+    induction t using TensorProduct.induction_on with
+    | zero => simp only [map_zero, ZeroMemClass.coe_zero]
+    | add u v hu hv => simp only [map_add, AddMemClass.coe_add, hu, hv]
+    | tmul a c =>
+      rw [hj2tmul, LinearMap.lTensor_tmul, LinearMap.lTensor_tmul,
+        TensorProduct.rid_tmul, TensorProduct.rid_tmul]
+      show ((counit₀ c • a : H₀) : HK) =
+        Coalgebra.counit (R := K) (c : HK) • (a : HK)
+      rw [← hcounit₀K c]
+      show counit₀ c • (a : HK) = algebraMap R K (counit₀ c) • (a : HK)
+      rw [algebraMap_smul]
+  have h1 := haux (comul₀ x)
+  rw [hj2comul₀ x] at h1
+  have h2 := LinearMap.congr_fun
+    (Coalgebra.lTensor_counit_comp_comul (R := K) (A := HK)) (x : HK)
+  rw [LinearMap.comp_apply] at h2
+  rw [h2] at h1
+  show (((TensorProduct.rid R H₀) ((counit₀.lTensor H₀) (comul₀ x))) : HK) =
+    (((TensorProduct.rid R H₀) (((TensorProduct.mk R H₀ R).flip 1) x)) : HK)
+  rw [h1]
+  show (TensorProduct.rid K HK) ((x : HK) ⊗ₜ[K] (1 : K)) =
+    (((TensorProduct.rid R H₀) (x ⊗ₜ[R] (1 : R))) : HK)
+  rw [TensorProduct.rid_tmul, TensorProduct.rid_tmul, one_smul]
+  show (x : HK) = (((1 : R) • x : H₀) : HK)
+  rw [one_smul]
+
+set_option maxHeartbeats 400000 in
+set_option synthInstance.maxHeartbeats 100000 in
+/-- **The Hopf corestriction core** (PROVEN 2026-07-24; the deepest layer of the
+curve-free structure half of the Katz–Mazur decomposition — pure
+transport-of-structure over the DVR `R`): a FREE finite Hopf order whose
+base-change map is bijective is a flat Hopf form. Given that the base-change
+algebra map `K ⊗[R] H₀ → HK`, `k ⊗ h ↦ k • h` (`AlgHom.liftEquiv` applied to
+the inclusion), is bijective, an `R`-basis of `H₀` is a `K`-basis of `HK`, so
+the induced maps `H₀ ⊗[R] H₀ → HK ⊗[K] HK` and the triple-tensor analogue are
+injective with image exactly the `R`-span of the pure tensors of `H₀`
+(expand both factors in the basis with `R`-coefficients); the three closure
+hypotheses then corestrict the comultiplication, the counit (through
+`R ≃ (algebraMap R K).range`) and the antipode to `H₀`; every coalgebra,
+bialgebra and Hopf axiom of the corestricted structure holds because it holds
+in `HK` and the comparison maps are injective; flatness is freeness; and the
+base-change equivalence is a bialgebra equivalence because comultiplication
+on `K ⊗[R] H₀` is the base change of the corestricted comultiplication, which
+agrees with the comultiplication of `HK` through the tensor-square comparison
+map by construction. -/
+theorem exists_flat_hopf_form_of_free_hopf_order
+    (HK : Type u) [CommRing HK] [HopfAlgebra K HK]
+    [Algebra R HK] [IsScalarTower R K HK]
+    (H₀ : Subalgebra R HK)
+    [Module.Finite R H₀] [Module.Free R H₀]
+    (hbij : Function.Bijective (AlgHom.liftEquiv R K H₀ HK H₀.val))
+    (hcounit : ∀ x ∈ H₀, Bialgebra.counitAlgHom K HK x ∈ (algebraMap R K).range)
+    (hantipode : ∀ x ∈ H₀, HopfAlgebra.antipode K x ∈ H₀)
+    (hcomul : ∀ x ∈ H₀, Bialgebra.comulAlgHom K HK x ∈
+      Submodule.span R {z : HK ⊗[K] HK | ∃ a ∈ H₀, ∃ b ∈ H₀, a ⊗ₜ[K] b = z}) :
+    ∃ (H : Type u) (_ : CommRing H) (_ : HopfAlgebra R H)
+      (_ : Module.Finite R H) (_ : Module.Flat R H),
+      Nonempty ((K ⊗[R] H) ≃ₐc[K] HK) := by
+  classical
+  -- the base-change equivalence of algebras
+  let μe : (K ⊗[R] H₀) ≃ₐ[K] HK :=
+    AlgEquiv.ofBijective (AlgHom.liftEquiv R K H₀ HK H₀.val) hbij
+  -- the tensor-square comparison map into the `K`-side tensor square
+  let j2 : H₀ ⊗[R] H₀ →ₗ[R] HK ⊗[K] HK :=
+    TensorProduct.lift (LinearMap.mk₂ R (fun x y => (x : HK) ⊗ₜ[K] (y : HK))
+      (fun x x' y => by simp [TensorProduct.add_tmul])
+      (fun r x y => by simp [TensorProduct.smul_tmul'])
+      (fun x y y' => by simp [TensorProduct.tmul_add])
+      (fun r x y => by simp [TensorProduct.tmul_smul]))
+  have hj2tmul : ∀ x y : H₀, j2 (x ⊗ₜ[R] y) = (x : HK) ⊗ₜ[K] (y : HK) :=
+    fun _ _ => rfl
+  -- the `R`-span of pure tensors of `H₀` is the range of `j2`
+  have hj2range : Submodule.span R
+      {z : HK ⊗[K] HK | ∃ a ∈ H₀, ∃ b ∈ H₀, a ⊗ₜ[K] b = z} ≤
+      LinearMap.range j2 := by
+    rw [Submodule.span_le]
+    rintro z ⟨a, ha, b', hb', rfl⟩
+    exact ⟨(⟨a, ha⟩ : H₀) ⊗ₜ[R] (⟨b', hb'⟩ : H₀), rfl⟩
+  -- an `R`-basis of `H₀` maps to a `K`-basis of `HK` under the inclusion
+  let b := Module.Free.chooseBasis R H₀
+  let bK := (b.baseChange K).map μe.toLinearEquiv
+  have hbK : ∀ i, bK i = (b i : HK) := by
+    intro i
+    show μe ((b.baseChange K) i) = (b i : HK)
+    rw [Module.Basis.baseChange_apply]
+    show AlgHom.liftEquiv R K H₀ HK H₀.val ((1 : K) ⊗ₜ[R] b i) = (b i : HK)
+    rw [AlgHom.liftEquiv_tmul, one_smul]
+    rfl
+  have hj2inj : Function.Injective j2 := by
+    -- the image of the tensor-square basis is `K`-linearly independent
+    have hli2 : LinearIndependent K fun p : _ × _ => j2 ((b.tensorProduct b) p) := by
+      have hEq : (fun p => j2 ((b.tensorProduct b) p)) =
+          fun p => (bK.tensorProduct bK) p := by
+        funext p
+        rw [Module.Basis.tensorProduct_apply', Module.Basis.tensorProduct_apply']
+        show (b p.1 : HK) ⊗ₜ[K] (b p.2 : HK) = bK p.1 ⊗ₜ[K] bK p.2
+        rw [hbK, hbK]
+      rw [hEq]
+      exact (bK.tensorProduct bK).linearIndependent
+    -- a map sending a basis to independent vectors is injective
+    rw [← LinearMap.ker_eq_bot, LinearMap.ker_eq_bot']
+    intro t ht
+    have h0 : ∑ p, algebraMap R K ((b.tensorProduct b).repr t p) •
+        j2 ((b.tensorProduct b) p) = 0 := by
+      have h1 : ∑ p, (b.tensorProduct b).repr t p • j2 ((b.tensorProduct b) p) =
+          j2 t := by
+        calc ∑ p, (b.tensorProduct b).repr t p • j2 ((b.tensorProduct b) p)
+            = j2 (∑ p, (b.tensorProduct b).repr t p • (b.tensorProduct b) p) := by
+              rw [map_sum]
+              exact Finset.sum_congr rfl fun p _ => (j2.map_smul _ _).symm
+          _ = j2 t := by rw [Module.Basis.sum_repr]
+      calc ∑ p, algebraMap R K ((b.tensorProduct b).repr t p) •
+          j2 ((b.tensorProduct b) p)
+          = ∑ p, (b.tensorProduct b).repr t p • j2 ((b.tensorProduct b) p) :=
+            Finset.sum_congr rfl fun p _ => by rw [algebraMap_smul]
+        _ = j2 t := h1
+        _ = 0 := ht
+    have h2 := Fintype.linearIndependent_iff.mp hli2 _ h0
+    have h3 : ∀ p, (b.tensorProduct b).repr t p = 0 := fun p =>
+      (injective_iff_map_eq_zero _).mp (IsFractionRing.injective R K) _ (h2 p)
+    rw [← Module.Basis.sum_repr (b.tensorProduct b) t]
+    simp [h3]
+  -- comultiplication corestricts to `H₀` through `j2`
+  let e2 : (H₀ ⊗[R] H₀) ≃ₗ[R] LinearMap.range j2 := LinearEquiv.ofInjective j2 hj2inj
+  have hmem2 : ∀ x : H₀, ((Coalgebra.comul (R := K)).restrictScalars R ∘ₗ
+      H₀.val.toLinearMap) x ∈ LinearMap.range j2 :=
+    fun x => hj2range (by simpa using hcomul x x.2)
+  let comul₀ : H₀ →ₗ[R] H₀ ⊗[R] H₀ :=
+    e2.symm.toLinearMap ∘ₗ LinearMap.codRestrict (LinearMap.range j2)
+      ((Coalgebra.comul (R := K)).restrictScalars R ∘ₗ H₀.val.toLinearMap) hmem2
+  -- the defining identity of the corestricted comultiplication
+  have hj2e2 : ∀ y : LinearMap.range j2, j2 (e2.symm y) = (y : HK ⊗[K] HK) := by
+    intro y
+    have h1 : e2 (e2.symm y) = y := e2.apply_symm_apply y
+    have h2 : (e2 (e2.symm y) : HK ⊗[K] HK) = j2 (e2.symm y) := rfl
+    rw [← h2, h1]
+  have hj2comul₀ : ∀ x : H₀, j2 (comul₀ x) = Coalgebra.comul (R := K) (x : HK) := by
+    intro x
+    show j2 (e2.symm (LinearMap.codRestrict (LinearMap.range j2)
+      ((Coalgebra.comul (R := K)).restrictScalars R ∘ₗ H₀.val.toLinearMap) hmem2 x)) =
+      Coalgebra.comul (R := K) (x : HK)
+    rw [hj2e2]
+    rfl
+  -- the counit corestricts to `R`
+  have hmemR : ∀ x : H₀, ((Coalgebra.counit (R := K)).restrictScalars R ∘ₗ
+      H₀.val.toLinearMap) x ∈ LinearMap.range (Algebra.linearMap R K) := by
+    intro x
+    obtain ⟨r, hr⟩ := hcounit x x.2
+    exact ⟨r, by simpa using hr⟩
+  let eR : R ≃ₗ[R] LinearMap.range (Algebra.linearMap R K) :=
+    LinearEquiv.ofInjective (Algebra.linearMap R K) (IsFractionRing.injective R K)
+  let counit₀ : H₀ →ₗ[R] R :=
+    eR.symm.toLinearMap ∘ₗ LinearMap.codRestrict (LinearMap.range (Algebra.linearMap R K))
+      ((Coalgebra.counit (R := K)).restrictScalars R ∘ₗ H₀.val.toLinearMap) hmemR
+  -- the defining identity of the corestricted counit
+  have hjReR : ∀ y : LinearMap.range (Algebra.linearMap R K),
+      algebraMap R K (eR.symm y) = (y : K) := by
+    intro y
+    have h1 : eR (eR.symm y) = y := eR.apply_symm_apply y
+    have h2 : (eR (eR.symm y) : K) = algebraMap R K (eR.symm y) := rfl
+    rw [← h2, h1]
+  have hcounit₀K : ∀ x : H₀,
+      algebraMap R K (counit₀ x) = Coalgebra.counit (R := K) (x : HK) := by
+    intro x
+    show algebraMap R K (eR.symm (LinearMap.codRestrict
+      (LinearMap.range (Algebra.linearMap R K))
+      ((Coalgebra.counit (R := K)).restrictScalars R ∘ₗ H₀.val.toLinearMap) hmemR x)) =
+      Coalgebra.counit (R := K) (x : HK)
+    rw [hjReR]
+    rfl
+  -- the antipode corestricts to `H₀`
+  let antipode₀ : H₀ →ₗ[R] H₀ :=
+    LinearMap.codRestrict (Subalgebra.toSubmodule H₀)
+      ((HopfAlgebra.antipode K : HK →ₗ[K] HK).restrictScalars R ∘ₗ H₀.val.toLinearMap)
+      (fun x => hantipode x x.2)
+  have hantval : ∀ x : H₀, ((antipode₀ x : H₀) : HK) = HopfAlgebra.antipode K (x : HK) :=
+    fun _ => rfl
+  -- the tensor-cube comparison map, injective by the same basis argument
+  let j3 : H₀ ⊗[R] (H₀ ⊗[R] H₀) →ₗ[R] HK ⊗[K] (HK ⊗[K] HK) :=
+    TensorProduct.lift (LinearMap.mk₂ R (fun x t => (x : HK) ⊗ₜ[K] j2 t)
+      (fun x x' t => by simp [TensorProduct.add_tmul])
+      (fun r x t => by simp [TensorProduct.smul_tmul'])
+      (fun x t t' => by simp [TensorProduct.tmul_add])
+      (fun r x t => by simp [TensorProduct.tmul_smul]))
+  have hj3inj : Function.Injective j3 := by
+    have hli3 : LinearIndependent K
+        fun p : _ × (_ × _) => j3 ((b.tensorProduct (b.tensorProduct b)) p) := by
+      have hEq : (fun p => j3 ((b.tensorProduct (b.tensorProduct b)) p)) =
+          fun p => (bK.tensorProduct (bK.tensorProduct bK)) p := by
+        funext p
+        rw [Module.Basis.tensorProduct_apply', Module.Basis.tensorProduct_apply',
+          Module.Basis.tensorProduct_apply', Module.Basis.tensorProduct_apply']
+        show (b p.1 : HK) ⊗ₜ[K] j2 (b p.2.1 ⊗ₜ[R] b p.2.2) =
+          bK p.1 ⊗ₜ[K] (bK p.2.1 ⊗ₜ[K] bK p.2.2)
+        rw [hbK, hbK, hbK]
+        rfl
+      rw [hEq]
+      exact (bK.tensorProduct (bK.tensorProduct bK)).linearIndependent
+    rw [← LinearMap.ker_eq_bot, LinearMap.ker_eq_bot']
+    intro t ht
+    have h0 : ∑ p, algebraMap R K ((b.tensorProduct (b.tensorProduct b)).repr t p) •
+        j3 ((b.tensorProduct (b.tensorProduct b)) p) = 0 := by
+      have h1 : ∑ p, (b.tensorProduct (b.tensorProduct b)).repr t p •
+          j3 ((b.tensorProduct (b.tensorProduct b)) p) = j3 t := by
+        calc ∑ p, (b.tensorProduct (b.tensorProduct b)).repr t p •
+            j3 ((b.tensorProduct (b.tensorProduct b)) p)
+            = j3 (∑ p, (b.tensorProduct (b.tensorProduct b)).repr t p •
+                (b.tensorProduct (b.tensorProduct b)) p) := by
+              rw [map_sum]
+              exact Finset.sum_congr rfl fun p _ => (j3.map_smul _ _).symm
+          _ = j3 t := by rw [Module.Basis.sum_repr]
+      calc ∑ p, algebraMap R K ((b.tensorProduct (b.tensorProduct b)).repr t p) •
+          j3 ((b.tensorProduct (b.tensorProduct b)) p)
+          = ∑ p, (b.tensorProduct (b.tensorProduct b)).repr t p •
+              j3 ((b.tensorProduct (b.tensorProduct b)) p) :=
+            Finset.sum_congr rfl fun p _ => by rw [algebraMap_smul]
+        _ = j3 t := h1
+        _ = 0 := ht
+    have h2 := Fintype.linearIndependent_iff.mp hli3 _ h0
+    have h3 : ∀ p, (b.tensorProduct (b.tensorProduct b)).repr t p = 0 := fun p =>
+      (injective_iff_map_eq_zero _).mp (IsFractionRing.injective R K) _ (h2 p)
+    rw [← Module.Basis.sum_repr (b.tensorProduct (b.tensorProduct b)) t]
+    simp [h3]
+  -- `j2` is multiplicative
+  have hj2mul : ∀ s t : H₀ ⊗[R] H₀, j2 (s * t) = j2 s * j2 t := by
+    intro s t
+    induction s using TensorProduct.induction_on with
+    | zero => simp
+    | add u v hu hv => simp [add_mul, map_add, hu, hv]
+    | tmul x y =>
+      induction t using TensorProduct.induction_on with
+      | zero => simp
+      | add u v hu hv => simp [mul_add, map_add, hu, hv]
+      | tmul x' y' =>
+        rw [Algebra.TensorProduct.tmul_mul_tmul]
+        show ((x * x' : H₀) : HK) ⊗ₜ[K] ((y * y' : H₀) : HK) =
+          ((x : HK) ⊗ₜ[K] (y : HK)) * ((x' : HK) ⊗ₜ[K] (y' : HK))
+        rw [Algebra.TensorProduct.tmul_mul_tmul]
+        rfl
+  -- the corestricted structure is a Hopf algebra: every axiom transfers along
+  -- the injective comparison maps
+  letI instCo : Coalgebra R H₀ :=
+    { comul := comul₀
+      counit := counit₀
+      coassoc := by
+        apply LinearMap.ext
+        intro x
+        apply hj3inj
+        simp only [LinearMap.comp_apply, LinearEquiv.coe_coe]
+        have hL : ∀ t : H₀ ⊗[R] H₀,
+            j3 ((TensorProduct.assoc R H₀ H₀ H₀) ((comul₀.rTensor H₀) t)) =
+            (TensorProduct.assoc K HK HK HK)
+              (((Coalgebra.comul (R := K)).rTensor HK) (j2 t)) := by
+          intro t
+          induction t using TensorProduct.induction_on with
+          | zero => simp only [map_zero]
+          | add u v hu hv => simp only [map_add, hu, hv]
+          | tmul y z =>
+            rw [LinearMap.rTensor_tmul]
+            show j3 ((TensorProduct.assoc R H₀ H₀ H₀) (comul₀ y ⊗ₜ[R] z)) =
+              (TensorProduct.assoc K HK HK HK)
+                (((Coalgebra.comul (R := K)).rTensor HK) ((y : HK) ⊗ₜ[K] (z : HK)))
+            rw [LinearMap.rTensor_tmul, ← hj2comul₀ y]
+            generalize comul₀ y = s
+            induction s using TensorProduct.induction_on with
+            | zero => simp
+            | add u v hu hv => simp only [TensorProduct.add_tmul, map_add, hu, hv]
+            | tmul a c =>
+              rw [TensorProduct.assoc_tmul]
+              show (a : HK) ⊗ₜ[K] j2 (c ⊗ₜ[R] z) =
+                (TensorProduct.assoc K HK HK HK)
+                  (((a : HK) ⊗ₜ[K] (c : HK)) ⊗ₜ[K] (z : HK))
+              rw [TensorProduct.assoc_tmul]
+              rfl
+        have hRt : ∀ t : H₀ ⊗[R] H₀,
+            j3 ((comul₀.lTensor H₀) t) =
+            ((Coalgebra.comul (R := K)).lTensor HK) (j2 t) := by
+          intro t
+          induction t using TensorProduct.induction_on with
+          | zero => simp only [map_zero]
+          | add u v hu hv => simp only [map_add, hu, hv]
+          | tmul y z =>
+            rw [LinearMap.lTensor_tmul]
+            show (y : HK) ⊗ₜ[K] j2 (comul₀ z) =
+              ((Coalgebra.comul (R := K)).lTensor HK) ((y : HK) ⊗ₜ[K] (z : HK))
+            rw [LinearMap.lTensor_tmul, hj2comul₀ z]
+        rw [hL (comul₀ x), hRt (comul₀ x), hj2comul₀ x]
+        exact Coalgebra.coassoc_apply (x : HK)
+      rTensor_counit_comp_comul := by
+        apply LinearMap.ext
+        intro x
+        apply (TensorProduct.lid R H₀).injective
+        apply Subtype.coe_injective
+        have haux : ∀ t : H₀ ⊗[R] H₀,
+            (((TensorProduct.lid R H₀) ((counit₀.rTensor H₀) t)) : HK) =
+            (TensorProduct.lid K HK)
+              (((Coalgebra.counit (R := K)).rTensor HK) (j2 t)) := by
+          intro t
+          induction t using TensorProduct.induction_on with
+          | zero => simp only [map_zero, ZeroMemClass.coe_zero]
+          | add u v hu hv =>
+            simp only [map_add, AddMemClass.coe_add, hu, hv]
+          | tmul a c =>
+            rw [LinearMap.rTensor_tmul]
+            show (((TensorProduct.lid R H₀) (counit₀ a ⊗ₜ[R] c)) : HK) =
+              (TensorProduct.lid K HK) (((Coalgebra.counit (R := K)).rTensor HK)
+                ((a : HK) ⊗ₜ[K] (c : HK)))
+            rw [LinearMap.rTensor_tmul, TensorProduct.lid_tmul, TensorProduct.lid_tmul]
+            show ((counit₀ a • c : H₀) : HK) =
+              Coalgebra.counit (R := K) (a : HK) • (c : HK)
+            rw [← hcounit₀K a]
+            show counit₀ a • (c : HK) = algebraMap R K (counit₀ a) • (c : HK)
+            rw [algebraMap_smul]
+        have h1 := haux (comul₀ x)
+        rw [hj2comul₀ x] at h1
+        have h2 := LinearMap.congr_fun
+          (Coalgebra.rTensor_counit_comp_comul (R := K) (A := HK)) (x : HK)
+        rw [LinearMap.comp_apply] at h2
+        rw [h2] at h1
+        show (((TensorProduct.lid R H₀) ((counit₀.rTensor H₀) (comul₀ x))) : HK) =
+          (((TensorProduct.lid R H₀) ((TensorProduct.mk R R H₀) 1 x)) : HK)
+        rw [h1]
+        show (TensorProduct.lid K HK) ((1 : K) ⊗ₜ[K] (x : HK)) =
+          (((TensorProduct.lid R H₀) ((1 : R) ⊗ₜ[R] x)) : HK)
+        rw [TensorProduct.lid_tmul, TensorProduct.lid_tmul, one_smul]
+        show (x : HK) = (((1 : R) • x : H₀) : HK)
+        rw [one_smul]
+      lTensor_counit_comp_comul :=
+        corestrict_lTensor_counit_comp_comul R K HK H₀ comul₀ counit₀ j2
+          hj2tmul hj2comul₀ hcounit₀K }
+  letI instBi : Bialgebra R H₀ := Bialgebra.mk' R H₀
+    (by
+      apply IsFractionRing.injective R K
+      show algebraMap R K (counit₀ (1 : H₀)) = algebraMap R K 1
+      rw [hcounit₀K, OneMemClass.coe_one, Bialgebra.counit_one, map_one])
+    (fun {a c} => by
+      apply IsFractionRing.injective R K
+      show algebraMap R K (counit₀ (a * c)) = algebraMap R K (counit₀ a * counit₀ c)
+      rw [hcounit₀K]
+      calc Coalgebra.counit (R := K) ((a * c : H₀) : HK)
+          = Coalgebra.counit (R := K) ((a : HK) * (c : HK)) := by
+            rw [MulMemClass.coe_mul]
+        _ = Coalgebra.counit (R := K) (a : HK) * Coalgebra.counit (R := K) (c : HK) :=
+            Bialgebra.counit_mul _ _
+        _ = algebraMap R K (counit₀ a) * algebraMap R K (counit₀ c) := by
+            rw [hcounit₀K, hcounit₀K]
+        _ = algebraMap R K (counit₀ a * counit₀ c) := (map_mul _ _ _).symm)
+    (by
+      apply hj2inj
+      show j2 (comul₀ (1 : H₀)) = j2 (1 : H₀ ⊗[R] H₀)
+      rw [hj2comul₀]
+      show Coalgebra.comul (R := K) ((1 : H₀) : HK) = j2 (1 : H₀ ⊗[R] H₀)
+      rw [OneMemClass.coe_one, Bialgebra.comul_one,
+        show (1 : H₀ ⊗[R] H₀) = (1 : H₀) ⊗ₜ[R] (1 : H₀) from
+          Algebra.TensorProduct.one_def]
+      show (1 : HK ⊗[K] HK) = ((1 : H₀) : HK) ⊗ₜ[K] ((1 : H₀) : HK)
+      rw [OneMemClass.coe_one]
+      exact Algebra.TensorProduct.one_def)
+    (fun {a c} => by
+      apply hj2inj
+      show j2 (comul₀ (a * c)) = j2 (comul₀ a * comul₀ c)
+      rw [hj2mul, hj2comul₀ (a * c), hj2comul₀ a, hj2comul₀ c]
+      show Coalgebra.comul (R := K) ((a * c : H₀) : HK) = _
+      rw [MulMemClass.coe_mul, Bialgebra.comul_mul])
+  letI instHopf : HopfAlgebra R H₀ :=
+    { antipode := antipode₀
+      mul_antipode_rTensor_comul := by
+        apply LinearMap.ext
+        intro x
+        apply Subtype.coe_injective
+        have haux : ∀ t : H₀ ⊗[R] H₀,
+            ((LinearMap.mul' R H₀ ((antipode₀.rTensor H₀) t)) : HK) =
+            LinearMap.mul' K HK
+              (((HopfAlgebra.antipode K : HK →ₗ[K] HK).rTensor HK) (j2 t)) := by
+          intro t
+          induction t using TensorProduct.induction_on with
+          | zero => simp only [map_zero, ZeroMemClass.coe_zero]
+          | add u v hu hv =>
+            simp only [map_add, AddMemClass.coe_add, hu, hv]
+          | tmul a c =>
+            rw [LinearMap.rTensor_tmul]
+            show ((LinearMap.mul' R H₀ (antipode₀ a ⊗ₜ[R] c)) : HK) =
+              LinearMap.mul' K HK
+                (((HopfAlgebra.antipode K : HK →ₗ[K] HK).rTensor HK)
+                  ((a : HK) ⊗ₜ[K] (c : HK)))
+            rw [LinearMap.rTensor_tmul, LinearMap.mul'_apply, LinearMap.mul'_apply]
+            show ((antipode₀ a * c : H₀) : HK) =
+              HopfAlgebra.antipode K (a : HK) * (c : HK)
+            rw [MulMemClass.coe_mul, hantval]
+        simp only [LinearMap.comp_apply]
+        show ((LinearMap.mul' R H₀ ((antipode₀.rTensor H₀) (comul₀ x))) : HK) =
+          ((Algebra.linearMap R H₀ (counit₀ x) : H₀) : HK)
+        rw [haux (comul₀ x), hj2comul₀ x,
+          HopfAlgebra.mul_antipode_rTensor_comul_apply, ← hcounit₀K x,
+          ← IsScalarTower.algebraMap_apply]
+        rfl
+      mul_antipode_lTensor_comul := by
+        apply LinearMap.ext
+        intro x
+        apply Subtype.coe_injective
+        have haux : ∀ t : H₀ ⊗[R] H₀,
+            ((LinearMap.mul' R H₀ ((antipode₀.lTensor H₀) t)) : HK) =
+            LinearMap.mul' K HK
+              (((HopfAlgebra.antipode K : HK →ₗ[K] HK).lTensor HK) (j2 t)) := by
+          intro t
+          induction t using TensorProduct.induction_on with
+          | zero => simp only [map_zero, ZeroMemClass.coe_zero]
+          | add u v hu hv =>
+            simp only [map_add, AddMemClass.coe_add, hu, hv]
+          | tmul a c =>
+            rw [LinearMap.lTensor_tmul]
+            show ((LinearMap.mul' R H₀ (a ⊗ₜ[R] antipode₀ c)) : HK) =
+              LinearMap.mul' K HK
+                (((HopfAlgebra.antipode K : HK →ₗ[K] HK).lTensor HK)
+                  ((a : HK) ⊗ₜ[K] (c : HK)))
+            rw [LinearMap.lTensor_tmul, LinearMap.mul'_apply, LinearMap.mul'_apply]
+            show ((a * antipode₀ c : H₀) : HK) =
+              (a : HK) * HopfAlgebra.antipode K (c : HK)
+            rw [MulMemClass.coe_mul, hantval]
+        simp only [LinearMap.comp_apply]
+        show ((LinearMap.mul' R H₀ ((antipode₀.lTensor H₀) (comul₀ x))) : HK) =
+          ((Algebra.linearMap R H₀ (counit₀ x) : H₀) : HK)
+        rw [haux (comul₀ x), hj2comul₀ x,
+          HopfAlgebra.mul_antipode_lTensor_comul_apply, ← hcounit₀K x,
+          ← IsScalarTower.algebraMap_apply]
+        rfl }
+  -- the base-change equivalence respects the corestricted Hopf structure
+  have hμ1 : ∀ y : H₀, μe ((1 : K) ⊗ₜ[R] y) = (y : HK) := by
+    intro y
+    show AlgHom.liftEquiv R K H₀ HK H₀.val ((1 : K) ⊗ₜ[R] y) = (y : HK)
+    rw [AlgHom.liftEquiv_tmul, one_smul]
+    rfl
+  have hO1 : (Bialgebra.counitAlgHom K HK).comp (μe : (K ⊗[R] H₀) →ₐ[K] HK) =
+      Bialgebra.counitAlgHom K (K ⊗[R] H₀) := by
+    apply Algebra.TensorProduct.ext_ring
+    apply AlgHom.ext
+    intro x
+    show Bialgebra.counitAlgHom K HK (μe ((1 : K) ⊗ₜ[R] x)) =
+      Bialgebra.counitAlgHom K (K ⊗[R] H₀) ((1 : K) ⊗ₜ[R] x)
+    rw [hμ1 x]
+    show Coalgebra.counit (R := K) (x : HK) =
+      Coalgebra.counit (R := K) ((1 : K) ⊗ₜ[R] x : K ⊗[R] H₀)
+    rw [TensorProduct.counit_tmul, CommSemiring.counit_apply, Algebra.smul_def,
+      mul_one]
+    exact (hcounit₀K x).symm
+  have hO2 : (Algebra.TensorProduct.map (μe : (K ⊗[R] H₀) →ₐ[K] HK)
+      (μe : (K ⊗[R] H₀) →ₐ[K] HK)).comp (Bialgebra.comulAlgHom K (K ⊗[R] H₀)) =
+      (Bialgebra.comulAlgHom K HK).comp (μe : (K ⊗[R] H₀) →ₐ[K] HK) := by
+    apply Algebra.TensorProduct.ext_ring
+    apply AlgHom.ext
+    intro x
+    show (Algebra.TensorProduct.map (μe : (K ⊗[R] H₀) →ₐ[K] HK)
+        (μe : (K ⊗[R] H₀) →ₐ[K] HK))
+        (Bialgebra.comulAlgHom K (K ⊗[R] H₀) ((1 : K) ⊗ₜ[R] x)) =
+      Bialgebra.comulAlgHom K HK (μe ((1 : K) ⊗ₜ[R] x))
+    rw [hμ1 x]
+    show (Algebra.TensorProduct.map (μe : (K ⊗[R] H₀) →ₐ[K] HK)
+        (μe : (K ⊗[R] H₀) →ₐ[K] HK))
+        (Coalgebra.comul (R := K) ((1 : K) ⊗ₜ[R] x : K ⊗[R] H₀)) =
+      Coalgebra.comul (R := K) (x : HK)
+    rw [TensorProduct.comul_tmul, CommSemiring.comul_apply]
+    -- the composite carrying the base-changed comultiplication into `HK ⊗ HK`
+    -- agrees with `j2`, checked on pure tensors
+    have hLext : (LinearMap.restrictScalars R
+          (Algebra.TensorProduct.map (μe : (K ⊗[R] H₀) →ₐ[K] HK)
+            (μe : (K ⊗[R] H₀) →ₐ[K] HK)).toLinearMap ∘ₗ
+        LinearMap.restrictScalars R
+          (TensorProduct.AlgebraTensorModule.tensorTensorTensorComm
+            R K R K K K H₀ H₀).toLinearMap ∘ₗ
+        TensorProduct.mk R (K ⊗[K] K) (H₀ ⊗[R] H₀)
+          ((1 : K) ⊗ₜ[K] (1 : K))) = j2 := by
+      apply TensorProduct.ext'
+      intro a c
+      show (Algebra.TensorProduct.map (μe : (K ⊗[R] H₀) →ₐ[K] HK)
+          (μe : (K ⊗[R] H₀) →ₐ[K] HK))
+          ((TensorProduct.AlgebraTensorModule.tensorTensorTensorComm R K R K K K H₀ H₀)
+            (((1 : K) ⊗ₜ[K] (1 : K)) ⊗ₜ[R] (a ⊗ₜ[R] c))) = j2 (a ⊗ₜ[R] c)
+      rw [TensorProduct.AlgebraTensorModule.tensorTensorTensorComm_tmul,
+        Algebra.TensorProduct.map_tmul]
+      show (μe ((1 : K) ⊗ₜ[R] a) : HK) ⊗ₜ[K] (μe ((1 : K) ⊗ₜ[R] c) : HK) =
+        j2 (a ⊗ₜ[R] c)
+      rw [hμ1 a, hμ1 c]
+      rfl
+    have h5 := LinearMap.congr_fun hLext (comul₀ x)
+    rw [hj2comul₀ x] at h5
+    exact h5
+  exact ⟨H₀, inferInstance, instHopf, inferInstance, inferInstance,
+    ⟨BialgEquiv.ofAlgEquiv μe hO1 hO2⟩⟩
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Hopf orders are flat Hopf forms** (DECOMPOSED 2026-07-23 into the
+corestriction core `exists_flat_hopf_form_of_free_hopf_order`; the reduction
+below is PROVEN — the curve-free STRUCTURE half of the decomposed Katz–Mazur
+existence leaf `exists_torsion_flat_model_of_good_reduction_prime_pow`,
+commutative algebra over the DVR `R`, no Galois theory and no elliptic
+curve): a finitely generated `R`-subalgebra `H₀` of a Hopf `K`-algebra `HK`,
+finite as a `K`-module, which spans `HK` over `K` and is closed under counit
+(into `R`), antipode, and comultiplication (into the `R`-span of its pure
+tensors), is a finite flat Hopf `R`-form of `HK`. The proven reduction: `H₀`
+is torsion-free (it sits inside a `K`-vector space and `R` injects into `K`)
+and finitely generated over the DVR `R`, hence finite FREE; an `R`-basis of
+`H₀` is a `K`-basis of `HK` — it spans by the span hypothesis, and it is
+`K`-independent because a `K`-relation clears denominators
+(`IsLocalization.exist_integer_multiples`) to an `R`-relation inside `H₀` —
+so the base-change algebra map `K ⊗[R] H₀ → HK` is bijective (it matches the
+basis equivalence), which is what the corestriction core consumes. The `μ_p`
+counterexample (normalization over `ℤ_p` not a Hopf order) does not
+contradict this statement: there the COMULTIPLICATION-closure hypothesis
+fails for the normalization. -/
+theorem exists_flat_hopf_form_of_hopf_order
+    (HK : Type u) [CommRing HK] [HopfAlgebra K HK]
+    [Module.Finite K HK] [Algebra R HK] [IsScalarTower R K HK]
+    (H₀ : Subalgebra R HK)
+    (hfg : (Subalgebra.toSubmodule H₀).FG)
+    (hspan : Submodule.span K (H₀ : Set HK) = ⊤)
+    (hcounit : ∀ x ∈ H₀, Bialgebra.counitAlgHom K HK x ∈ (algebraMap R K).range)
+    (hantipode : ∀ x ∈ H₀, HopfAlgebra.antipode K x ∈ H₀)
+    (hcomul : ∀ x ∈ H₀, Bialgebra.comulAlgHom K HK x ∈
+      Submodule.span R {z : HK ⊗[K] HK | ∃ a ∈ H₀, ∃ b ∈ H₀, a ⊗ₜ[K] b = z}) :
+    ∃ (H : Type u) (_ : CommRing H) (_ : HopfAlgebra R H)
+      (_ : Module.Finite R H) (_ : Module.Flat R H),
+      Nonempty ((K ⊗[R] H) ≃ₐc[K] HK) := by
+  classical
+  -- `H₀` is a finite `R`-module
+  haveI hfin : Module.Finite R H₀ := Module.Finite.iff_fg.mpr hfg
+  -- `HK` is torsion-free over `K` (a vector space), hence `H₀` over `R`
+  haveI : Module.IsTorsionFree K HK :=
+    ⟨fun k hk x y hxy => by
+      have hk0 : k ≠ 0 := isRegular_iff_ne_zero.mp hk
+      have h : k • x = k • y := hxy
+      calc x = k⁻¹ • (k • x) := by rw [smul_smul, inv_mul_cancel₀ hk0, one_smul]
+        _ = k⁻¹ • (k • y) := by rw [h]
+        _ = y := by rw [smul_smul, inv_mul_cancel₀ hk0, one_smul]⟩
+  haveI : Module.IsTorsionFree R H₀ :=
+    ⟨fun r hr x y hxy => by
+      have hr0 : r ≠ 0 := isRegular_iff_ne_zero.mp hr
+      have hrK : algebraMap R K r ≠ 0 :=
+        fun h0 => hr0 ((injective_iff_map_eq_zero _).mp
+          (IsFractionRing.injective R K) r h0)
+      have hval : algebraMap R K r • (x : HK) = algebraMap R K r • (y : HK) := by
+        rw [algebraMap_smul, algebraMap_smul]
+        exact congrArg Subtype.val hxy
+      exact Subtype.ext ((IsRegular.of_ne_zero hrK).isSMulRegular.eq_iff.mp hval)⟩
+  haveI hfree : Module.Free R H₀ := Module.free_of_finite_type_torsion_free'
+  -- an `R`-basis of `H₀`
+  let b := Module.Free.chooseBasis R H₀
+  -- its image in `HK` is `K`-linearly independent: clear denominators
+  have hli : LinearIndependent K (fun i => (b i : HK)) := by
+    rw [linearIndependent_iff']
+    intro s c hc
+    obtain ⟨d, hd⟩ := IsLocalization.exist_integer_multiples (nonZeroDivisors R) s c
+    have hnum : ∀ i : Module.Free.ChooseBasisIndex R H₀,
+        ∃ r : R, i ∈ s → algebraMap R K r = (d : R) • c i := by
+      intro i
+      by_cases hi : i ∈ s
+      · obtain ⟨r, hr⟩ := hd i hi
+        exact ⟨r, fun _ => hr⟩
+      · exact ⟨0, fun h => absurd h hi⟩
+    choose r hr using hnum
+    have hrel : ∑ i ∈ s, r i • b i = (0 : H₀) := by
+      apply Subtype.ext
+      have h1 : ((∑ i ∈ s, r i • b i : H₀) : HK) = ∑ i ∈ s, r i • (b i : HK) := by
+        rw [AddSubmonoidClass.coe_finsetSum]
+        exact Finset.sum_congr rfl fun i _ => rfl
+      have h2 : ∑ i ∈ s, r i • (b i : HK) = (d : R) • ∑ i ∈ s, c i • (b i : HK) := by
+        rw [Finset.smul_sum]
+        refine Finset.sum_congr rfl fun i hi => ?_
+        rw [← algebraMap_smul K (r i) ((b i : HK)), hr i hi, smul_assoc]
+      rw [h1, h2, hc, smul_zero]
+      rfl
+    intro i hi
+    have hri := linearIndependent_iff'.mp b.linearIndependent s r hrel i hi
+    have hzero : (d : R) • c i = 0 := by rw [← hr i hi, hri, map_zero]
+    have hd0 : algebraMap R K (d : R) ≠ 0 :=
+      IsFractionRing.to_map_ne_zero_of_mem_nonZeroDivisors d.2
+    rw [Algebra.smul_def] at hzero
+    exact (mul_eq_zero.mp hzero).resolve_left hd0
+  -- ... and spans `HK` over `K`
+  have hsp : ⊤ ≤ Submodule.span K (Set.range fun i => (b i : HK)) := by
+    rw [← hspan]
+    refine Submodule.span_le.mpr fun x hx => ?_
+    have hx' : (⟨x, hx⟩ : H₀) ∈ Submodule.span R (Set.range b) := by
+      rw [b.span_eq]
+      trivial
+    have h2 : x ∈ Submodule.map (Subalgebra.toSubmodule H₀).subtype
+        (Submodule.span R (Set.range b)) :=
+      ⟨⟨x, hx⟩, hx', rfl⟩
+    rw [Submodule.map_span] at h2
+    have h3 : (Subalgebra.toSubmodule H₀).subtype '' Set.range b =
+        Set.range fun i => (b i : HK) := by
+      rw [← Set.range_comp]
+      rfl
+    rw [h3] at h2
+    exact Submodule.span_subset_span R K _ h2
+  -- hence the base-change map matches a basis equivalence, so it is bijective
+  let bK := Module.Basis.mk hli hsp
+  have heq : (AlgHom.liftEquiv R K H₀ HK H₀.val).toLinearMap =
+      ↑((b.baseChange K).equiv bK (Equiv.refl _)) := by
+    refine (b.baseChange K).ext fun i => ?_
+    rw [LinearEquiv.coe_coe, Module.Basis.equiv_apply, Equiv.refl_apply,
+      Module.Basis.baseChange_apply]
+    show AlgHom.liftEquiv R K H₀ HK H₀.val ((1 : K) ⊗ₜ[R] b i) = bK i
+    rw [AlgHom.liftEquiv_tmul, one_smul, Module.Basis.mk_apply]
+    rfl
+  have hbij : Function.Bijective (AlgHom.liftEquiv R K H₀ HK H₀.val) := by
+    have hcoe : ⇑(AlgHom.liftEquiv R K H₀ HK H₀.val) =
+        ⇑((b.baseChange K).equiv bK (Equiv.refl _)) := by
+      have h1 := congrArg (fun f : K ⊗[R] H₀ →ₗ[K] HK => ⇑f) heq
+      simpa using h1
+    rw [hcoe]
+    exact ((b.baseChange K).equiv bK (Equiv.refl _)).bijective
+  exact exists_flat_hopf_form_of_free_hopf_order R K HK H₀ hbij hcounit
+    hantipode hcomul
+
+/-- **The Katz–Mazur flat model, mixed characteristic** (DECOMPOSED 2026-07-23
+into the curve leaf `exists_hopf_order_of_good_reduction` — the Katz–Mazur
+2.3.1 kernel model presented as a Hopf ORDER, a set-level statement inside the
+étale generic-fibre algebra, carrying the whole construction roadmap in its
+docstring — and the curve-free structure leaf
+`exists_flat_hopf_form_of_hopf_order` — Hopf orders over a DVR are flat Hopf
+forms; the assembly below is proven, through the proven transports
+`exists_torsion_etale_package_over_fractionField` and
+`torsion_flat_package_of_flat_hopf_form`): when the prime `p` is not
+invertible in `R` but nonzero in `K`, SOME finite flat Hopf `R`-algebra has
+étale generic fibre whose `Kˢᵉᵖ`-points are, `Gal(Kˢᵉᵖ/K)`-equivariantly, the
+`p ^ k`-torsion of `E(Kˢᵉᵖ)`. Routes examined and rejected for the order:
+normalization (the `μ_p` special fibre is not a group scheme),
+connected-étale splitting and `k`-dévissage (see the git history of this
+docstring). For the Frey curve application (`R = ℤ_(p)`, `K = ℚ`, `k = 1`)
+the object is the kernel of `[p]` on the good-reduction Weierstrass model. -/
 theorem WeierstrassCurve.exists_torsion_flat_model_of_good_reduction_prime_pow
-    (p : ℕ) (hp : p.Prime) (hpu : ¬IsUnit (p : R)) (k : ℕ) (hk : k ≠ 0)
+    (p : ℕ) (_hp : p.Prime) (_hpu : ¬IsUnit (p : R)) (k : ℕ) (hk : k ≠ 0)
     (hpK : (p : K) ≠ 0) :
     ∃ (H : Type u) (_ : CommRing H) (_ : HopfAlgebra R H)
       (_ : Module.Finite R H) (_ : Module.Flat R H)
@@ -6680,8 +7638,38 @@ theorem WeierstrassCurve.exists_torsion_flat_model_of_good_reduction_prime_pow
         AddSubgroup.torsionBy (E⁄Ksep).Point ((p ^ k : ℕ) : ℤ)),
       ∀ (σ : Ksep ≃ₐ[K] Ksep) (φ : K ⊗[R] H →ₐ[K] Ksep),
         (g (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) : (E⁄Ksep).Point) =
-          Affine.Point.map σ.toAlgHom (g (Additive.ofMul (WithConv.toConv φ))) :=
-  sorry
+          Affine.Point.map σ.toAlgHom (g (Additive.ofMul (WithConv.toConv φ))) := by
+  classical
+  -- `p ^ k` is nonzero in `R`, so the étale `K`-package of the torsion applies
+  have hpR : ((p ^ k : ℕ) : R) ≠ 0 := by
+    intro h0
+    apply hpK
+    have h1 : ((p ^ k : ℕ) : K) = 0 := by
+      rw [← map_natCast (algebraMap R K), h0, map_zero]
+    push_cast at h1
+    exact (pow_eq_zero_iff hk).mp h1
+  have hmK : ((p ^ k : ℕ) : K) ≠ 0 := by
+    push_cast
+    exact pow_ne_zero k hpK
+  obtain ⟨HK, iCR, iHopf, iFin, iEt, f, hf⟩ :=
+    WeierstrassCurve.exists_torsion_etale_package_over_fractionField R K E Ksep
+      (p ^ k) hpR
+  letI := iCR; letI := iHopf; letI := iFin; haveI := iEt
+  -- give `HK` its `R`-algebra structure through `K`
+  letI : Algebra R HK := ((algebraMap K HK).comp (algebraMap R K)).toAlgebra
+  haveI : IsScalarTower R K HK := IsScalarTower.of_algebraMap_eq fun _ => rfl
+  -- the Katz–Mazur Hopf order (the curve leaf)
+  obtain ⟨H₀, hfg, hspan, hcounit, hantipode, hcomul⟩ :=
+    WeierstrassCurve.exists_hopf_order_of_good_reduction R K E Ksep
+      (p ^ k) hmK HK f hf
+  -- the order is a flat Hopf form (the structure leaf)
+  obtain ⟨H, jCR, jHopf, jFin, jFlat, ⟨e⟩⟩ :=
+    exists_flat_hopf_form_of_hopf_order R K HK H₀ hfg hspan hcounit
+      hantipode hcomul
+  letI := jCR; letI := jHopf; letI := jFin; letI := jFlat
+  -- transport the étale package along the form (proven plumbing)
+  exact WeierstrassCurve.torsion_flat_package_of_flat_hopf_form R K E Ksep
+    (p ^ k) HK f hf H e
 
 /-- **The Katz–Mazur flat Hopf form, mixed characteristic** (DECOMPOSED
 2026-07-23 into the existence leaf
