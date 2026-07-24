@@ -59,6 +59,13 @@ public import Mathlib.RingTheory.IntegralClosure.IntegralRestrict
 -- integral closedness of valuation subrings and Chevalley domination
 -- (`LocalSubring.exists_le_valuationSubring`), same node
 import Mathlib.RingTheory.Valuation.LocalSubring
+-- `Ideal.ramificationIdx'` and the Dedekind-domain characterization
+-- `ramificationIdx'_eq_one_iff`: the counting leaf of the same node
+public import Mathlib.NumberTheory.RamificationInertia.Ramification
+-- `Algebra.isUnramifiedAt_iff_map_eq` (fibrewise unramifiedness through the
+-- localization) and the residue-field separability transfer instances
+import Mathlib.RingTheory.Unramified.LocalRing
+import Mathlib.RingTheory.LocalRing.ResidueField.Instances
 public import Fermat.FLT.KnownIn1980s.EllipticCurves.GoodReduction
 
 /-!
@@ -4393,16 +4400,16 @@ theorem exists_inertiaSubgroup_restrictNormalHom_eq
       AlgEquiv.restrictNormalHom N (τ : Ksep ≃ₐ[K] Ksep) = σ := by
   sorry
 
-/-- **Finite-level Hilbert theory: an inertia-fixed subextension is unramified
-at the center** (sorry node; the counting core of the DVR-Galois chain,
-isolated 2026-07-24, valid over an arbitrary DVR base — NO perfectness or
-finiteness of the residue field of `R` is assumed, so mathlib's
-`Ideal.card_inertia_eq_ramificationIdxIn` is NOT applicable): let `N/K` be
-finite Galois, `𝔔` a maximal ideal of `C := integralClosure R N`,
+/-- **The perfectness-free Hilbert counting core** (sorry node; the counting
+core of the DVR-Galois chain, isolated 2026-07-24, valid over an arbitrary DVR
+base — NO perfectness or finiteness of the residue field of `R` is assumed, so
+mathlib's `Ideal.card_inertia_eq_ramificationIdxIn` is NOT applicable): let
+`N/K` be finite Galois, `𝔔` a maximal ideal of `C := integralClosure R N`,
 `φ : L →ₐ[K] N`, and suppose every finite-level inertia element of `𝔔`
 (spelled through `galRestrict`) fixes the image of `φ` pointwise. Then the
 maximal ideal `𝔮` of `B := integralClosure R L` obtained as the trace of `𝔔`
-(`h𝔮`, through mathlib's induced map `galRestrict'`) is unramified over `R`.
+(`h𝔮`, through mathlib's induced map `galRestrict'`) has ramification index
+one over the maximal ideal of `R` and separable residue extension.
 Intended proof (the perfectness-free counting; all groups are finite): write
 `D`, `I` for the stabilizer and inertia group of `𝔔` in `G := Gal(N/K)` and
 `D'`, `I'` for those in `Gal(N/φ(L))` (the fixing subgroup of `φ.fieldRange`).
@@ -4430,15 +4437,43 @@ into any field inject into embeddings into an algebraic closure,
 |I'|·|Aut(κ(𝔔)/κ(𝔮))|·finSepDegree = |D'|·finSepDegree κ(𝔪) κ(𝔮)`, so
 `e(𝔮/𝔪)·f(𝔮/𝔪) ≤ [κ(𝔮):κ(𝔪)]_sep ≤ f(𝔮/𝔪)`, forcing `e(𝔮/𝔪) = 1` and
 `finSepDegree = finrank`, i.e. separability of `κ(𝔮)/κ(𝔪)`
-(`Field.finSepDegree_eq_finrank_iff`). (5) conclude by
-`Algebra.isUnramifiedAt_iff_map_eq`: separability is (4), and the ideal
-equality `𝔪·B_𝔮 = 𝔮·B_𝔮` follows from `e(𝔮/𝔪) = 1` since `B_𝔮` is a DVR (`B`
-is a Dedekind domain — `IsIntegralClosure.isDedekindDomain`), as in
-`maximalIdeal_map_eq_of_ramificationIdx_eq_one` of
-`Fermat.FLT.Deformations.RepresentationTheory.LocalInertiaFixedField`. The
-transport between `L` and `φ.fieldRange` is along `φ.fieldRangeAlgEquiv` and
-the induced isomorphism `galRestrict'` of integral closures, under which `𝔮`
-corresponds to the center of `𝔔` on `integralClosure R φ(L)` by `h𝔮`. -/
+(`Field.finSepDegree_eq_finrank_iff`). The transport between `L` and
+`φ.fieldRange` is along `φ.fieldRangeAlgEquiv` and the induced isomorphism
+`galRestrict'` of integral closures, under which `𝔮` corresponds to the center
+of `𝔔` on `integralClosure R φ(L)` by `h𝔮`. -/
+theorem ramificationIdx_eq_one_and_isSeparable_of_inertia_fixes_algHom
+    (L : Type u) [Field L] [Algebra K L]
+    [Module.Finite K L] [Algebra.IsSeparable K L]
+    [Algebra R L] [IsScalarTower R K L]
+    (N : Type*) [Field N] [Algebra K N] [FiniteDimensional K N] [IsGalois K N]
+    [Algebra R N] [IsScalarTower R K N]
+    (φ : L →ₐ[K] N)
+    (𝔔 : Ideal (integralClosure R N)) [𝔔.IsMaximal]
+    (hfixN : ∀ σ : N ≃ₐ[K] N,
+      (∀ c : integralClosure R N,
+        galRestrict R K N (integralClosure R N) σ c - c ∈ 𝔔) →
+      ∀ x : L, σ (φ x) = φ x)
+    (𝔮 : Ideal (integralClosure R L)) [𝔮.IsMaximal]
+    [𝔮.LiesOver (IsLocalRing.maximalIdeal R)]
+    (h𝔮 : 𝔮 = 𝔔.comap
+      (galRestrict' R (integralClosure R L) (integralClosure R N) φ)) :
+    Ideal.ramificationIdx' (IsLocalRing.maximalIdeal R) 𝔮 = 1 ∧
+      Algebra.IsSeparable (R ⧸ IsLocalRing.maximalIdeal R)
+        (integralClosure R L ⧸ 𝔮) := by
+  sorry
+
+/-- **Finite-level Hilbert theory: an inertia-fixed subextension is unramified
+at the center** (DECOMPOSED 2026-07-24 into the counting core
+`ramificationIdx_eq_one_and_isSeparable_of_inertia_fixes_algHom`; the assembly
+below is PROVEN): under the hypotheses of the counting core, the trace `𝔮` is
+unramified over `R` in the localized sense of `Algebra.IsUnramifiedAt`.
+Assembly: `𝔮` lies over `𝔪` (maximality and integrality over the local `R`);
+by `Algebra.isUnramifiedAt_iff_map_eq` it suffices to have the residue
+separability (the counting core) and `𝔪·B_𝔮 = 𝔮·B_𝔮`, which is
+`Ideal.IsDedekindDomain.ramificationIdx'_eq_one_iff` applied to the counting
+core's `e(𝔮/𝔪) = 1` — the closure is a Dedekind domain
+(`IsIntegralClosure.isDedekindDomain`) finite over `R`, and `𝔮 ≠ ⊥` since it
+lies over `𝔪 ≠ ⊥`. -/
 theorem isUnramifiedAt_of_inertia_fixes_algHom
     (L : Type u) [Field L] [Algebra K L]
     [Module.Finite K L] [Algebra.IsSeparable K L]
@@ -4455,7 +4490,45 @@ theorem isUnramifiedAt_of_inertia_fixes_algHom
     (h𝔮 : 𝔮 = 𝔔.comap
       (galRestrict' R (integralClosure R L) (integralClosure R N) φ)) :
     Algebra.IsUnramifiedAt R 𝔮 := by
-  sorry
+  haveI : Algebra.IsIntegral R (integralClosure R L) :=
+    ⟨fun x => IsIntegralClosure.isIntegral R L x⟩
+  haveI hlies : 𝔮.LiesOver (IsLocalRing.maximalIdeal R) :=
+    ⟨(IsLocalRing.eq_maximalIdeal
+      (Ideal.isMaximal_comap_of_isIntegral_of_isMaximal 𝔮)).symm⟩
+  obtain ⟨he, hsep⟩ :=
+    ramificationIdx_eq_one_and_isSeparable_of_inertia_fixes_algHom R K L N φ
+      𝔔 hfixN 𝔮 h𝔮
+  -- Dedekind structure of the closure and finiteness over `R`
+  haveI : Module.Finite R (integralClosure R L) := IsIntegralClosure.finite R K L _
+  haveI : IsDedekindDomain (integralClosure R L) :=
+    IsIntegralClosure.isDedekindDomain R K L _
+  -- the injectivity of `R → B` (through the fraction field)
+  have hinj : Function.Injective (algebraMap R (integralClosure R L)) := by
+    have h1 : Function.Injective (algebraMap R L) := by
+      rw [IsScalarTower.algebraMap_eq R K L]
+      exact (algebraMap K L).injective.comp (IsFractionRing.injective R K)
+    intro a b hab
+    refine h1 ?_
+    rw [IsScalarTower.algebraMap_apply R (integralClosure R L) L, hab,
+      ← IsScalarTower.algebraMap_apply R (integralClosure R L) L]
+  -- `𝔮` is nonzero, since it lies over the nonzero `𝔪`
+  have h𝔮0 : 𝔮 ≠ ⊥ := by
+    intro h0
+    apply IsDiscreteValuationRing.not_a_field R
+    have hover := hlies.over
+    rw [h0] at hover
+    rw [hover]
+    exact Ideal.comap_bot_of_injective _ hinj
+  have hle : (IsLocalRing.maximalIdeal R).map
+      (algebraMap R (integralClosure R L)) ≤ 𝔮 :=
+    Ideal.map_le_iff_le_comap.mpr (le_of_eq hlies.over)
+  -- the localized instance pack and the fibrewise characterization
+  letI := Localization.AtPrime.algebraOfLiesOver (IsLocalRing.maximalIdeal R) 𝔮
+  haveI := hsep
+  haveI hsepκ : Algebra.IsSeparable (IsLocalRing.maximalIdeal R).ResidueField
+      𝔮.ResidueField := inferInstance
+  exact (Algebra.isUnramifiedAt_iff_map_eq R (IsLocalRing.maximalIdeal R) 𝔮).mpr
+    ⟨hsepκ, (Ideal.IsDedekindDomain.ramificationIdx'_eq_one_iff h𝔮0 hle).mp he⟩
 
 /-- **Unramifiedness of the integral closure under inertia-fixed embeddings**
 (DECOMPOSED 2026-07-24 into the inertia-lifting leaf
