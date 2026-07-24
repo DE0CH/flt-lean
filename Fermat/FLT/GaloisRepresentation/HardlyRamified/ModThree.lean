@@ -11326,17 +11326,40 @@ theorem poitouConstEdge_tendsto (K : Type*) [Field K] [NumberField K] :
       (nhds (Real.log |(NumberField.discr K : ℝ)|)) := by
   sorry
 
-/-- **Poitou's Lemmes 1–2: the archimedean edge converges to the
-digamma terms** (sorry node, stated 2026-07-24 — leaf (b₂ᵢᵢ·2), the
-Γ-factor/digamma stage of the decomposition of
-`DedekindContinuation.poitouEdge_sub_poleEdge_tendsto`; Poitou
-pp. 6-04–6-06, Lemme 1, Lemme 2 and formula (5)).  The pin's digamma
+section PoitouGammaEdgeDigamma
+
+open MeasureTheory Filter Set Complex
+open scoped FourierTransform
+
+/-- **Gauss' digamma integral** (definition, 2026-07-24 — introduced
+in the decomposition of `poitouGammaEdge_tendsto`): the classical
+Gauss integral `∫₀^∞ (e^{−x} − e^{−sx})/(1 − e^{−x}) dx`, which on
+the half-plane `re s > 0` equals `ψ(s) + γ`
+(`digamma_eq_neg_euler_add_gaussIntegral`). -/
+noncomputable def gaussDigammaIntegral (s : ℂ) : ℂ :=
+  ∫ x in Set.Ioi (0 : ℝ),
+    (Complex.exp (-(x : ℂ)) - Complex.exp (-(s * (x : ℂ)))) /
+      (1 - Complex.exp (-(x : ℂ)))
+
+/-- **Unfolding lemma for `gaussDigammaIntegral`** (PROVEN 2026-07-24,
+definitional): stated separately because `rw` cannot always use the
+auto-generated equation theorem of the definition. -/
+theorem gaussDigammaIntegral_def (s : ℂ) :
+    gaussDigammaIntegral s =
+      ∫ x in Set.Ioi (0 : ℝ),
+        (Complex.exp (-(x : ℂ)) - Complex.exp (-(s * (x : ℂ)))) /
+          (1 - Complex.exp (-(x : ℂ))) := rfl
+
+/-- **Gauss' integral representation of the digamma function** (sorry
+node, stated 2026-07-24 — sub-leaf (b₂ᵢᵢ·2·A) of the decomposition of
+`poitouGammaEdge_tendsto`; a self-contained classical
+special-functions fact; Poitou p. 6-05, Lemme 1).  The pin's digamma
 material (`Mathlib.Analysis.SpecialFunctions.Gamma.Digamma`) is thin
 — `digamma = logDeriv Gamma`, the recurrence
 `Complex.digamma_apply_add_one`, and the anchor
 `Complex.digamma_one = −γ` (from `hasDerivAt_Gamma_one` of the pin's
-`Mathlib.NumberTheory.Harmonic.GammaDeriv`) — so this leaf must
-manufacture Gauss' integral representation itself.  Intended proof:
+`Mathlib.NumberTheory.Harmonic.GammaDeriv`) — so the representation
+must be MANUFACTURED.  Intended proof:
 
 1. *Partial fractions.*  From the Euler-limit
    `Complex.GammaSeq_tendsto_Gamma` (differentiate the logarithm of
@@ -11349,23 +11372,462 @@ manufacture Gauss' integral representation itself.  Intended proof:
    `Σ_k e^{−kx} = (1 − e^{−x})⁻¹` under the integral (Tonelli plus
    dominated convergence; integrands `O(x·e^{−x})` near `0`) gives
    `ψ(s) = −γ + ∫₀^∞ (e^{−x} − e^{−sx})/(1 − e^{−x}) dx` on
-   `re s > 0`.
-3. *Lemme 2 (pairing).*  Insert into the edge; Fubini swaps the
-   `t`- and `x`-integrals (absolute convergence from the `O(1/t²)`
-   strip decay of `Φ` against the `O(log|t|)` growth of `ψ` along
-   the line — the same decay brick as `poitouConstEdge_tendsto`,
-   which also supplies `π⁻¹ ∫_ℝ Φ(5/4+it) dt = 2`), and the Fourier
-   inversion at the shifted point evaluates
-   `π⁻¹ ∫_ℝ Φ(5/4+it)·e^{−(5/4+it)x} dt = 2·e^{−5x/4}·G(x)
-   = 2·F(x)·e^{−x/2}` for `x > 0`, `G(x) = F(x)e^{3x/4}`.  With
-   `1 − e^{−x} = e^{−x/2}·2 sinh(x/2)` the edge tends to
-   `n·(−γ − log 2π) + n·∫₀^∞ (e^{−x/2} − F(x))/(2 sinh(x/2)) dx`,
-   where `n = 2r₂` by `NumberField.IsTotallyComplex.finrank`.
-4. *Constant extraction.*  `∫₀^∞ (1 − e^{−x/2})/(2 sinh(x/2)) dx
-   = log 4` (substitute `u = e^{−x/2}`: the integrand becomes
-   `u/(1+u)·(2/u)`, and `2∫₀^1 du/(1+u) = 2 log 2`), so the limit is
-   `−n(γ + log 2π + log 4) + n∫₀^∞ (1−F)/(2 sinh(x/2))
-   = −n(γ + log 8π) + n∫₀^∞ (1−F)/(2 sinh(x/2))`, as stated. -/
+   `re s > 0`. -/
+theorem digamma_eq_neg_euler_add_gaussIntegral {s : ℂ} (hs : 0 < s.re) :
+    Complex.digamma s =
+      -(Real.eulerMascheroniConstant : ℂ) + gaussDigammaIntegral s := by
+  sorry
+
+/-- **`Φ` is integrable along the line `Re s = 5/4`** (sorry node,
+stated 2026-07-24 — sub-leaf (b₂ᵢᵢ·2·B) of the decomposition of
+`poitouGammaEdge_tendsto`; shared with the sibling leaf
+`poitouConstEdge_tendsto`, whose docstring records the same brick).
+The PROVEN `poitouPhi_line_decay` gives only `M/|t|` (one integration
+by parts); intended proof of the missing `O(1/t²)` bound: a SECOND
+integration by parts on each of `[−6, 0]`, `[0, 6]` against the
+smooth models `(1 ± x/6)·e^{3x/4}/cosh(x/2)` of `poitouG` (their
+derivatives are `C¹` on the closed pieces, so
+`intervalIntegral.integral_mul_deriv_eq_deriv_mul_of_hasDerivAt`
+applies again); the boundary terms no longer cancel (the kink of the
+Fejér profile at `0, ±6`) but are `O(1/t²)` individually, and the
+remaining integrals carry `1/t²` times bounded integrands.  Combine
+with continuity (`poitouPhi_line_continuous`) on `|t| ≤ 1` into a
+`K/(1+t²)` majorant exactly as in the PROVEN
+`poitouPoleTerm_integrable`. -/
+theorem poitouPhi_line_integrable :
+    Integrable fun t : ℝ => poitouPhi (5 / 4 + t * Complex.I) := by
+  sorry
+
+/-- **Fourier inversion at a shifted point: the paired line integral
+of `Φ` against `e^{−sx}`** (PROVEN 2026-07-24 — Poitou p. 6-04, the
+evaluation `∫_ℝ Φ(5/4+it)·e^{−(5/4+it)x} dt = 2π·F(x)·e^{−x/2}` used
+by Lemme 2 and, at `x = 0`, `integral_poitouPhi_line`): by
+`fourier_poitouG` the edge restriction of `Φ` is the Fourier
+transform of the integrable, continuous, compactly supported
+`poitouG`, so Fourier inversion
+(`Integrable.fourierInv_fourier_eq`, with `𝓕 poitouG` integrable by
+`poitouPhi_line_integrable` after the linear substitution
+`t = −2πξ`) evaluates the inverse transform at the point `x` to
+`poitouG x = F(x)·e^{3x/4}`; the prefactor `e^{−5x/4}` from
+`e^{−(5/4+it)x} = e^{−5x/4}·e^{−itx}` recombines to `F(x)·e^{−x/2}`. -/
+theorem integral_poitouPhi_line_mul_exp (x : ℝ) :
+    (∫ t : ℝ, poitouPhi (5 / 4 + t * Complex.I) *
+        Complex.exp (-((5 / 4 + t * Complex.I) * (x : ℂ)))) =
+      ((2 * Real.pi * (poitouF x * Real.exp (-(x / 2))) : ℝ) : ℂ) := by
+  have hFInt : Integrable (𝓕 poitouG) := by
+    have hne : (-(2 * Real.pi) : ℝ) ≠ 0 := by simp [Real.pi_ne_zero]
+    have h1 : Integrable fun ξ : ℝ =>
+        poitouPhi (5 / 4 + (((-(2 * Real.pi)) * ξ : ℝ) : ℂ) * Complex.I) :=
+      poitouPhi_line_integrable.comp_mul_left' hne
+    refine h1.congr (Filter.Eventually.of_forall fun ξ => ?_)
+    rw [fourier_poitouG]
+    norm_num
+  have hinv : 𝓕⁻ (𝓕 poitouG) x = poitouG x :=
+    poitouG_integrable.fourierInv_fourier_eq hFInt continuous_poitouG.continuousAt
+  have hL : 𝓕⁻ (𝓕 poitouG) x =
+      ∫ ξ : ℝ, Complex.exp (((-2 * Real.pi * ξ * -x : ℝ) : ℂ) * Complex.I) •
+        𝓕 poitouG ξ := by
+    rw [Real.fourierInv_eq_fourier_neg, Real.fourier_real_eq_integral_exp_smul]
+  have hchange : (∫ ξ : ℝ,
+        Complex.exp (((-2 * Real.pi * ξ * -x : ℝ) : ℂ) * Complex.I) • 𝓕 poitouG ξ) =
+      |((-(2 * Real.pi))⁻¹)| • ∫ t : ℝ, poitouPhi (5 / 4 + t * Complex.I) *
+        Complex.exp (((-(t * x) : ℝ) : ℂ) * Complex.I) := by
+    rw [show (fun ξ : ℝ =>
+        Complex.exp (((-2 * Real.pi * ξ * -x : ℝ) : ℂ) * Complex.I) • 𝓕 poitouG ξ) =
+        fun ξ : ℝ => (fun t : ℝ => poitouPhi (5 / 4 + t * Complex.I) *
+          Complex.exp (((-(t * x) : ℝ) : ℂ) * Complex.I)) ((-(2 * Real.pi)) * ξ) from
+      funext fun ξ => by
+        rw [fourier_poitouG, smul_eq_mul, mul_comm]
+        push_cast
+        ring_nf]
+    exact MeasureTheory.Measure.integral_comp_mul_left
+      (fun t : ℝ => poitouPhi (5 / 4 + t * Complex.I) *
+        Complex.exp (((-(t * x) : ℝ) : ℂ) * Complex.I)) (-(2 * Real.pi))
+  have habs : |((-(2 * Real.pi))⁻¹)| = (2 * Real.pi)⁻¹ := by
+    rw [abs_inv, abs_neg, abs_of_pos (by positivity)]
+  have hg_val : (∫ t : ℝ, poitouPhi (5 / 4 + t * Complex.I) *
+      Complex.exp (((-(t * x) : ℝ) : ℂ) * Complex.I)) =
+      ((2 * Real.pi : ℝ) : ℂ) * poitouG x := by
+    have h2π : (0:ℝ) < 2 * Real.pi := by positivity
+    have hkey : (2 * Real.pi)⁻¹ • (∫ t : ℝ, poitouPhi (5 / 4 + t * Complex.I) *
+        Complex.exp (((-(t * x) : ℝ) : ℂ) * Complex.I)) = poitouG x := by
+      rw [← habs, ← hchange, ← hL, hinv]
+    calc (∫ t : ℝ, poitouPhi (5 / 4 + t * Complex.I) *
+          Complex.exp (((-(t * x) : ℝ) : ℂ) * Complex.I))
+        = ((2 * Real.pi) * (2 * Real.pi)⁻¹) •
+          (∫ t : ℝ, poitouPhi (5 / 4 + t * Complex.I) *
+            Complex.exp (((-(t * x) : ℝ) : ℂ) * Complex.I)) := by
+          rw [mul_inv_cancel₀ h2π.ne', one_smul]
+      _ = (2 * Real.pi) • ((2 * Real.pi)⁻¹ •
+          (∫ t : ℝ, poitouPhi (5 / 4 + t * Complex.I) *
+            Complex.exp (((-(t * x) : ℝ) : ℂ) * Complex.I))) := by
+          rw [mul_smul]
+      _ = (2 * Real.pi) • poitouG x := by rw [hkey]
+      _ = ((2 * Real.pi : ℝ) : ℂ) * poitouG x := Complex.real_smul
+  have hsplit : ∀ t : ℝ, poitouPhi (5 / 4 + t * Complex.I) *
+      Complex.exp (-((5 / 4 + t * Complex.I) * (x : ℂ))) =
+      ((Real.exp (-(5 / 4 * x)) : ℝ) : ℂ) *
+        (poitouPhi (5 / 4 + t * Complex.I) *
+          Complex.exp (((-(t * x) : ℝ) : ℂ) * Complex.I)) := by
+    intro t
+    rw [show -((5 / 4 + t * Complex.I) * (x : ℂ)) =
+        ((-(5 / 4 * x) : ℝ) : ℂ) + ((-(t * x) : ℝ) : ℂ) * Complex.I by
+      push_cast; ring, Complex.exp_add, ← Complex.ofReal_exp]
+    ring
+  rw [integral_congr_ae (Filter.Eventually.of_forall hsplit), integral_const_mul,
+    hg_val, poitouG, ← Complex.ofReal_mul, ← Complex.ofReal_mul]
+  have hexp : Real.exp (-(5 / 4 * x)) * Real.exp (3 / 4 * x) = Real.exp (-(x / 2)) := by
+    rw [← Real.exp_add]; congr 1; ring
+  congr 1
+  linear_combination (2 * Real.pi * poitouF x) * hexp
+
+/-- **Fourier inversion at the origin: the full line integral of `Φ`
+is `2π`** (PROVEN 2026-07-24 — the specialization `x = 0` of
+`integral_poitouPhi_line_mul_exp`, since `poitouF 0 = 1`; this is
+Poitou's `π⁻¹ ∫_ℝ Φ(5/4+it) dt = 2`). -/
+theorem integral_poitouPhi_line :
+    (∫ t : ℝ, poitouPhi (5 / 4 + t * Complex.I)) = ((2 * Real.pi : ℝ) : ℂ) := by
+  have h := integral_poitouPhi_line_mul_exp 0
+  simp only [Complex.ofReal_zero, mul_zero, neg_zero, Complex.exp_zero, mul_one] at h
+  rw [h]
+  norm_num [poitouF, odlyzkoTestFn, Real.cosh_zero]
+
+/-- **Joint integrability of `Φ` against the Gauss kernel** (sorry
+node, stated 2026-07-24 — sub-leaf (b₂ᵢᵢ·2·C) of the decomposition of
+`poitouGammaEdge_tendsto`; the Fubini hypothesis of Poitou's Lemme 2).
+Intended proof, via Tonelli (`MeasureTheory.integrable_prod_iff` in
+the `∫_t ∫_x` order): for fixed `t` the kernel is integrable in `x`
+(near `0` the numerator is `O((1 + |s|)·x)` against `1 − e^{−x} ≥
+x·e^{−x}`, at `∞` it is `O(e^{−x})`), with `x`-integral of norms
+`O(log (2 + |t|))` (split at `x = 1/(2 + |t|)`); against
+`‖Φ(5/4+it)‖ = O(1/(1+t²))` — the second-integration-by-parts decay
+recorded at `poitouPhi_line_integrable`, quantitatively — the outer
+`t`-integral is finite. -/
+theorem poitouPhi_mul_gaussKernel_integrable :
+    Integrable
+      (Function.uncurry fun (t : ℝ) (x : ℝ) =>
+        poitouPhi (5 / 4 + t * Complex.I) *
+          ((Complex.exp (-(x : ℂ)) -
+              Complex.exp (-((5 / 4 + t * Complex.I) * (x : ℂ)))) /
+            (1 - Complex.exp (-(x : ℂ)))))
+      (volume.prod (volume.restrict (Set.Ioi (0 : ℝ)))) := by
+  sorry
+
+/-- **Poitou's Lemme 2: the paired line integral of `Φ` against the
+Gauss integral** (PROVEN 2026-07-24 over the Fubini sub-leaf
+`poitouPhi_mul_gaussKernel_integrable`; Poitou pp. 6-05–6-06, the
+computation of formula (5)): Fubini swaps the `t`- and `x`-integrals;
+for fixed `x > 0` the inner `t`-integral evaluates by the two Fourier
+inversion values `integral_poitouPhi_line` and
+`integral_poitouPhi_line_mul_exp` to
+`2π·(e^{−x} − F(x)e^{−x/2})/(1 − e^{−x})`, and
+`1 − e^{−x} = e^{−x/2}·2 sinh(x/2)` turns the quotient into
+`(e^{−x/2} − F(x))/(2 sinh(x/2))`. -/
+theorem integral_poitouPhi_line_mul_gauss :
+    (∫ t : ℝ, poitouPhi (5 / 4 + t * Complex.I) *
+        gaussDigammaIntegral (5 / 4 + t * Complex.I)) =
+      ((2 * Real.pi * ∫ x in Set.Ioi (0 : ℝ),
+          (Real.exp (-(x / 2)) - poitouF x) / (2 * Real.sinh (x / 2)) : ℝ) : ℂ) := by
+  have hinner : ∀ x ∈ Set.Ioi (0:ℝ), (∫ t : ℝ,
+      poitouPhi (5 / 4 + t * Complex.I) *
+        ((Complex.exp (-(x : ℂ)) -
+            Complex.exp (-((5 / 4 + t * Complex.I) * (x : ℂ)))) /
+          (1 - Complex.exp (-(x : ℂ))))) =
+      ((2 * Real.pi * ((Real.exp (-(x / 2)) - poitouF x) /
+        (2 * Real.sinh (x / 2))) : ℝ) : ℂ) := by
+    intro x hx
+    have hx0 : (0:ℝ) < x := hx
+    have hexp1 : Real.exp (-x) < 1 := Real.exp_lt_one_iff.2 (by linarith)
+    have hcast : Complex.exp (-(x : ℂ)) = ((Real.exp (-x) : ℝ) : ℂ) := by
+      simp [Complex.ofReal_exp]
+    have hB : Integrable (fun t : ℝ =>
+        poitouPhi (5 / 4 + t * Complex.I) *
+          Complex.exp (-((5 / 4 + t * Complex.I) * (x : ℂ)))) := by
+      refine (poitouPhi_line_integrable.norm.mul_const
+        (Real.exp (-(5 / 4 * x)))).mono' ?_ ?_
+      · exact (poitouPhi_line_continuous.mul
+          (Complex.continuous_exp.comp (by fun_prop))).aestronglyMeasurable
+      · refine Filter.Eventually.of_forall fun t => ?_
+        rw [norm_mul, Complex.norm_exp]
+        have hre : (-((5 / 4 + t * Complex.I) * (x : ℂ))).re = -(5 / 4 * x) := by
+          simp [Complex.mul_re]
+        rw [hre]
+    have hA : Integrable (fun t : ℝ =>
+        poitouPhi (5 / 4 + t * Complex.I) * Complex.exp (-(x : ℂ))) :=
+      poitouPhi_line_integrable.mul_const _
+    have hsplit : ∀ t : ℝ, poitouPhi (5 / 4 + t * Complex.I) *
+        ((Complex.exp (-(x : ℂ)) -
+            Complex.exp (-((5 / 4 + t * Complex.I) * (x : ℂ)))) /
+          (1 - Complex.exp (-(x : ℂ)))) =
+        (poitouPhi (5 / 4 + t * Complex.I) * Complex.exp (-(x : ℂ)) -
+          poitouPhi (5 / 4 + t * Complex.I) *
+            Complex.exp (-((5 / 4 + t * Complex.I) * (x : ℂ)))) *
+          (1 - Complex.exp (-(x : ℂ)))⁻¹ := fun t => by ring
+    rw [integral_congr_ae (Filter.Eventually.of_forall hsplit), integral_mul_const,
+      integral_sub hA hB, integral_mul_const, integral_poitouPhi_line,
+      integral_poitouPhi_line_mul_exp x, hcast]
+    have hs : (0:ℝ) < Real.sinh (x / 2) := Real.sinh_pos_iff.2 (by linarith)
+    have hd : 2 * Real.sinh (x / 2) = Real.exp (x / 2) - Real.exp (-(x / 2)) := by
+      rw [Real.sinh_eq]; ring
+    have hee : Real.exp (x / 2) * Real.exp (-(x / 2)) = 1 := by
+      rw [← Real.exp_add]; norm_num
+    have hex : Real.exp (-(x / 2)) * Real.exp (-(x / 2)) = Real.exp (-x) := by
+      rw [← Real.exp_add]; congr 1; ring
+    have hkey2 : (Real.exp (-x) - poitouF x * Real.exp (-(x / 2))) *
+        (2 * Real.sinh (x / 2)) =
+        (Real.exp (-(x / 2)) - poitouF x) * (1 - Real.exp (-x)) := by
+      rw [hd]
+      linear_combination (Real.exp (-(x / 2)) - poitouF x) * hee +
+        (poitouF x - Real.exp (x / 2)) * hex
+    have hreal : (2 * Real.pi * Real.exp (-x) -
+          2 * Real.pi * (poitouF x * Real.exp (-(x / 2)))) *
+        (1 - Real.exp (-x))⁻¹ =
+        2 * Real.pi * ((Real.exp (-(x / 2)) - poitouF x) / (2 * Real.sinh (x / 2))) := by
+      have h1w : (0:ℝ) < 1 - Real.exp (-x) := by linarith
+      have h2s : (0:ℝ) < 2 * Real.sinh (x / 2) := by linarith
+      rw [← div_eq_mul_inv, show 2 * Real.pi *
+          ((Real.exp (-(x / 2)) - poitouF x) / (2 * Real.sinh (x / 2))) =
+          (2 * Real.pi * (Real.exp (-(x / 2)) - poitouF x)) /
+            (2 * Real.sinh (x / 2)) by ring,
+        div_eq_div_iff h1w.ne' h2s.ne']
+      linear_combination (2 * Real.pi) * hkey2
+    rw [← hreal]
+    push_cast
+    ring
+  calc (∫ t : ℝ, poitouPhi (5 / 4 + t * Complex.I) *
+        gaussDigammaIntegral (5 / 4 + t * Complex.I))
+      = ∫ t : ℝ, ∫ x in Set.Ioi (0:ℝ), poitouPhi (5 / 4 + t * Complex.I) *
+          ((Complex.exp (-(x : ℂ)) -
+              Complex.exp (-((5 / 4 + t * Complex.I) * (x : ℂ)))) /
+            (1 - Complex.exp (-(x : ℂ)))) := by
+        refine integral_congr_ae (Filter.Eventually.of_forall fun t => ?_)
+        beta_reduce
+        rw [gaussDigammaIntegral_def, integral_const_mul]
+    _ = ∫ x in Set.Ioi (0:ℝ), ∫ t : ℝ, poitouPhi (5 / 4 + t * Complex.I) *
+          ((Complex.exp (-(x : ℂ)) -
+              Complex.exp (-((5 / 4 + t * Complex.I) * (x : ℂ)))) /
+            (1 - Complex.exp (-(x : ℂ)))) :=
+        MeasureTheory.integral_integral_swap poitouPhi_mul_gaussKernel_integrable
+    _ = ∫ x in Set.Ioi (0:ℝ), ((2 * Real.pi * ((Real.exp (-(x / 2)) - poitouF x) /
+          (2 * Real.sinh (x / 2))) : ℝ) : ℂ) :=
+        setIntegral_congr_fun measurableSet_Ioi hinner
+    _ = ((∫ x in Set.Ioi (0:ℝ), 2 * Real.pi * ((Real.exp (-(x / 2)) - poitouF x) /
+          (2 * Real.sinh (x / 2))) : ℝ) : ℂ) := integral_complex_ofReal
+    _ = ((2 * Real.pi * ∫ x in Set.Ioi (0 : ℝ),
+          (Real.exp (-(x / 2)) - poitouF x) / (2 * Real.sinh (x / 2)) : ℝ) : ℂ) := by
+        rw [integral_const_mul]
+
+/-- **The sinh-quotient of the exponential cutoff, closed form**
+(PROVEN 2026-07-24): for `x > 0`,
+`(1 − e^{−x/2})/(2 sinh(x/2)) = e^{−x/2}/(1 + e^{−x/2})` —
+multiply numerator and denominator by `e^{−x/2}`. -/
+theorem one_sub_exp_div_sinh_eq {x : ℝ} (hx : 0 < x) :
+    (1 - Real.exp (-(x / 2))) / (2 * Real.sinh (x / 2)) =
+      Real.exp (-(x / 2)) / (1 + Real.exp (-(x / 2))) := by
+  have hee : Real.exp (x / 2) * Real.exp (-(x / 2)) = 1 := by
+    rw [← Real.exp_add]; norm_num
+  have hs : (0:ℝ) < Real.sinh (x / 2) := Real.sinh_pos_iff.2 (by linarith)
+  have hpos : (0:ℝ) < 1 + Real.exp (-(x / 2)) := by positivity
+  have hd : 2 * Real.sinh (x / 2) = Real.exp (x / 2) - Real.exp (-(x / 2)) := by
+    rw [Real.sinh_eq]; ring
+  have hdpos : (0:ℝ) < Real.exp (x / 2) - Real.exp (-(x / 2)) := by
+    rw [← hd]; linarith
+  rw [hd, div_eq_div_iff hdpos.ne' hpos.ne']
+  linear_combination -hee
+
+/-- **Integrability of `e^{−x/2}/(1 + e^{−x/2})` on `(0, ∞)`**
+(PROVEN 2026-07-24): dominated by the integrable `e^{−x/2}`. -/
+theorem integrableOn_exp_div_one_add_exp :
+    IntegrableOn (fun x : ℝ => Real.exp (-(x / 2)) / (1 + Real.exp (-(x / 2))))
+      (Set.Ioi (0 : ℝ)) := by
+  refine (exp_neg_integrableOn_Ioi 0 (by norm_num : (0:ℝ) < 1/2)).mono' ?_ ?_
+  · have hc : Continuous fun x : ℝ => Real.exp (-(x / 2)) / (1 + Real.exp (-(x / 2))) := by
+      refine Continuous.div (by fun_prop) (by fun_prop) fun _ => ?_
+      positivity
+    exact hc.aestronglyMeasurable.restrict
+  · refine (ae_restrict_iff' measurableSet_Ioi).2
+      (Filter.Eventually.of_forall fun x _ => ?_)
+    rw [Real.norm_eq_abs, abs_of_nonneg (by positivity)]
+    have hh : Real.exp (-(1/2) * x) = Real.exp (-(x / 2)) := by
+      congr 1; ring
+    rw [hh]
+    exact div_le_self (Real.exp_pos _).le (by linarith [Real.exp_pos (-(x / 2))])
+
+/-- **Integrability of `(1 − e^{−x/2})/(2 sinh(x/2))` on `(0, ∞)`**
+(PROVEN 2026-07-24): transport of `integrableOn_exp_div_one_add_exp`
+along the pointwise identity `one_sub_exp_div_sinh_eq`. -/
+theorem integrableOn_one_sub_exp_div_sinh :
+    IntegrableOn (fun x : ℝ => (1 - Real.exp (-(x / 2))) / (2 * Real.sinh (x / 2)))
+      (Set.Ioi (0 : ℝ)) :=
+  integrableOn_exp_div_one_add_exp.congr_fun
+    (fun _ hx => (one_sub_exp_div_sinh_eq hx).symm) measurableSet_Ioi
+
+/-- **The constant-extraction integral: `∫₀^∞ (1 − e^{−x/2})/(2 sinh(x/2))
+= log 4`** (PROVEN 2026-07-24 — Poitou p. 6-06, the constant of
+formula (5); the bookkeeping `log 2π + log 4 = log 8π` is recorded in
+the target `poitouGammaEdge_tendsto`): rewrite the integrand as
+`e^{−x/2}/(1 + e^{−x/2})` (`one_sub_exp_div_sinh_eq`), which has
+antiderivative `−2 log(1 + e^{−x/2})`; the improper fundamental
+theorem of calculus (`MeasureTheory.integral_Ioi_of_hasDerivAt_of_tendsto`)
+gives `0 − (−2 log 2) = 2 log 2 = log 4`. -/
+theorem integral_one_sub_exp_div_sinh_eq_log_four :
+    (∫ x in Set.Ioi (0:ℝ), (1 - Real.exp (-(x / 2))) / (2 * Real.sinh (x / 2))) =
+      Real.log 4 := by
+  rw [setIntegral_congr_fun measurableSet_Ioi
+    (fun x hx => one_sub_exp_div_sinh_eq hx)]
+  have hderiv : ∀ x ∈ Set.Ioi (0:ℝ),
+      HasDerivAt (fun y : ℝ => -2 * Real.log (1 + Real.exp (-(y / 2))))
+        (Real.exp (-(x / 2)) / (1 + Real.exp (-(x / 2)))) x := by
+    intro x _
+    have h1 : HasDerivAt (fun y : ℝ => -(y / 2)) (-(1/2)) x :=
+      ((hasDerivAt_id x).div_const 2).neg
+    have h2 : HasDerivAt (fun y : ℝ => Real.exp (-(y / 2)))
+        (Real.exp (-(x / 2)) * -(1/2)) x := h1.exp
+    have h3 : HasDerivAt (fun y : ℝ => 1 + Real.exp (-(y / 2)))
+        (Real.exp (-(x / 2)) * -(1/2)) x := h2.const_add 1
+    have h4 : HasDerivAt (fun y : ℝ => Real.log (1 + Real.exp (-(y / 2))))
+        ((Real.exp (-(x / 2)) * -(1/2)) / (1 + Real.exp (-(x / 2)))) x :=
+      h3.log (by positivity)
+    have h5 := h4.const_mul (-2 : ℝ)
+    have h6 : Real.exp (-(x / 2)) / (1 + Real.exp (-(x / 2))) =
+        -2 * ((Real.exp (-(x / 2)) * -(1/2)) / (1 + Real.exp (-(x / 2)))) := by
+      ring
+    rw [h6]
+    exact h5
+  have hcont : ContinuousWithinAt
+      (fun y : ℝ => -2 * Real.log (1 + Real.exp (-(y / 2)))) (Set.Ici 0) 0 := by
+    have h1 : ContinuousAt (fun y : ℝ => 1 + Real.exp (-(y / 2))) 0 := by fun_prop
+    exact (continuousAt_const.mul (h1.log (by positivity))).continuousWithinAt
+  have htends : Tendsto (fun y : ℝ => -2 * Real.log (1 + Real.exp (-(y / 2))))
+      atTop (nhds 0) := by
+    have h0 : Tendsto (fun y : ℝ => -(y / 2)) atTop atBot :=
+      Filter.tendsto_neg_atTop_atBot.comp (tendsto_id.atTop_div_const (by norm_num))
+    have h1 : Tendsto (fun y : ℝ => Real.exp (-(y / 2))) atTop (nhds 0) :=
+      Real.tendsto_exp_atBot.comp h0
+    have h2 : Tendsto (fun y : ℝ => 1 + Real.exp (-(y / 2))) atTop (nhds 1) := by
+      simpa using h1.const_add 1
+    have h3 : Tendsto (fun y : ℝ => Real.log (1 + Real.exp (-(y / 2))))
+        atTop (nhds 0) := by
+      have h4 := h2.log one_ne_zero
+      simpa using h4
+    simpa using h3.const_mul (-2 : ℝ)
+  have h := MeasureTheory.integral_Ioi_of_hasDerivAt_of_tendsto hcont hderiv
+    integrableOn_exp_div_one_add_exp htends
+  rw [h]
+  have h4 : Real.log 4 = 2 * Real.log 2 := by
+    rw [show (4:ℝ) = 2 ^ 2 by norm_num, Real.log_pow]
+    push_cast
+    ring
+  rw [h4]
+  norm_num
+
+/-- **Integrability of `(1 − F)/(2 sinh(x/2))` on `(0, ∞)`**
+(PROVEN 2026-07-24; the integrand of the target limit value): on
+`(0, 6]` the quotient is bounded by `1` — the kink cancellation
+`1 − F(x) ≤ (cosh(x/2) − 1) + x/6 ≤ 2 sinh(x/2)` via
+`cosh t − sinh t = e^{−t} ≤ 1` and `x/6 ≤ x/2 ≤ sinh(x/2)` — and on
+`[6, ∞)` the numerator is `1` (`odlyzkoTestFn` vanishes) while
+`2 sinh(x/2) = e^{x/2}(1 − e^{−x}) ≥ e^{x/2}/2`, giving the
+integrable majorant `2e^{−x/2}`. -/
+theorem integrableOn_one_sub_poitouF_div_sinh :
+    IntegrableOn (fun x : ℝ => (1 - poitouF x) / (2 * Real.sinh (x / 2)))
+      (Set.Ioi (0 : ℝ)) := by
+  have hmeas : AEStronglyMeasurable
+      (fun x : ℝ => (1 - poitouF x) / (2 * Real.sinh (x / 2))) volume := by
+    refine Measurable.aestronglyMeasurable ?_
+    exact (measurable_const.sub continuous_poitouF.measurable).div
+      ((Real.continuous_sinh.comp (continuous_id.div_const 2)).measurable.const_mul 2)
+  have hIoc : IntegrableOn (fun x : ℝ => (1 - poitouF x) / (2 * Real.sinh (x / 2)))
+      (Set.Ioc (0:ℝ) 6) := by
+    refine Measure.integrableOn_of_bounded (M := 1) ?_ hmeas ?_
+    · simp [Real.volume_Ioc]
+    · refine (ae_restrict_iff' measurableSet_Ioc).2
+        (Filter.Eventually.of_forall fun x hx => ?_)
+      obtain ⟨hx0, hx6⟩ := hx
+      have hs : (0:ℝ) < Real.sinh (x / 2) := Real.sinh_pos_iff.2 (by linarith)
+      have hcosh1 : (1:ℝ) ≤ Real.cosh (x / 2) := Real.one_le_cosh _
+      have hodl : odlyzkoTestFn x = 1 - x / 6 := by
+        rw [odlyzkoTestFn, abs_of_pos hx0, max_eq_left (by linarith)]
+      have hF : poitouF x = (1 - x / 6) / Real.cosh (x / 2) := by
+        rw [poitouF, hodl]
+      have hFle : poitouF x ≤ 1 := by
+        rw [hF, div_le_one (by linarith)]
+        linarith
+      have hkeyb : 1 - poitouF x ≤ 2 * Real.sinh (x / 2) := by
+        have h1 : Real.cosh (x / 2) - 1 ≤ Real.sinh (x / 2) := by
+          have hcs := Real.cosh_sub_sinh (x / 2)
+          have h2 : Real.exp (-(x / 2)) ≤ 1 := Real.exp_le_one_iff.2 (by linarith)
+          linarith
+        have h2 : x / 6 ≤ Real.sinh (x / 2) := by
+          have h3 : x / 2 ≤ Real.sinh (x / 2) := Real.self_le_sinh_iff.2 (by linarith)
+          linarith
+        have h4 : 1 - poitouF x ≤ Real.cosh (x / 2) - (1 - x / 6) := by
+          have h6 : 1 - (1 - x / 6) / Real.cosh (x / 2) =
+              (Real.cosh (x / 2) - (1 - x / 6)) / Real.cosh (x / 2) := by
+            field_simp
+          have h5 : (Real.cosh (x / 2) - (1 - x / 6)) / Real.cosh (x / 2) ≤
+              Real.cosh (x / 2) - (1 - x / 6) :=
+            div_le_self (by linarith) hcosh1
+          rw [hF, h6]
+          exact h5
+        linarith
+      rw [Real.norm_eq_abs,
+        abs_of_nonneg (div_nonneg (by linarith) (by positivity))]
+      rw [div_le_one (by positivity)]
+      exact hkeyb
+  have hIoi6 : IntegrableOn (fun x : ℝ => (1 - poitouF x) / (2 * Real.sinh (x / 2)))
+      (Set.Ioi (6:ℝ)) := by
+    refine ((exp_neg_integrableOn_Ioi 6 (by norm_num : (0:ℝ) < 1/2)).const_mul 2).mono'
+      hmeas.restrict ?_
+    refine (ae_restrict_iff' measurableSet_Ioi).2
+      (Filter.Eventually.of_forall fun x hx => ?_)
+    have hx6 : (6:ℝ) < x := hx
+    have hs : (0:ℝ) < Real.sinh (x / 2) := Real.sinh_pos_iff.2 (by linarith)
+    have hF0 : poitouF x = 0 := by
+      have hz : odlyzkoTestFn x = 0 := by
+        rw [odlyzkoTestFn, max_eq_right]
+        rw [abs_of_pos (by linarith : (0:ℝ) < x)]
+        linarith
+      rw [poitouF, hz, zero_div]
+    rw [hF0, sub_zero, Real.norm_eq_abs, abs_of_nonneg (by positivity)]
+    rw [div_le_iff₀ (by positivity)]
+    have hE : Real.exp (-(1/2) * x) * Real.exp (x / 2) = 1 := by
+      rw [← Real.exp_add]
+      rw [show -(1/2 : ℝ) * x + x / 2 = 0 by ring, Real.exp_zero]
+    have hEx : Real.exp (-(1/2) * x) * Real.exp (-(x / 2)) = Real.exp (-x) := by
+      rw [← Real.exp_add]; congr 1; ring
+    have hlt : Real.exp (-x) ≤ 1/2 := by
+      have h7 := Real.add_one_le_exp x
+      rw [Real.exp_neg, inv_le_comm₀ (Real.exp_pos x) (by norm_num)]
+      norm_num
+      linarith
+    rw [Real.sinh_eq]
+    nlinarith [hE, hEx, hlt]
+  have h := hIoc.union hIoi6
+  rwa [Set.Ioc_union_Ioi_eq_Ioi (by norm_num : (0:ℝ) ≤ 6)] at h
+
+/-- **Poitou's Lemmes 1–2: the archimedean edge converges to the
+digamma terms** (DECOMPOSED and ASSEMBLED 2026-07-24 — leaf (b₂ᵢᵢ·2)
+of the decomposition of
+`DedekindContinuation.poitouEdge_sub_poleEdge_tendsto`; Poitou
+pp. 6-04–6-06, Lemme 1, Lemme 2 and formula (5)).  The proof is glue
+over this section's bricks: the pointwise Gauss rewrite
+`digamma_eq_neg_euler_add_gaussIntegral` (sorried sub-leaf A) splits
+the integrand into the constant part `r₂·(−γ − log 2π)·Φ` and the
+pairing part `r₂·Φ·gaussDigammaIntegral`; the constant part
+integrates over the line to `2π·r₂·(−γ − log 2π)` by
+`integral_poitouPhi_line` (PROVEN, Fourier inversion at the origin,
+over the line-integrability sub-leaf B `poitouPhi_line_integrable`);
+the pairing part integrates to `2π·r₂·(J − log 4)`, with
+`J = ∫₀^∞ (1−F)/(2 sinh(x/2))` the target integral, by
+`integral_poitouPhi_line_mul_gauss` (PROVEN over the Fubini sub-leaf
+C `poitouPhi_mul_gaussKernel_integrable`) together with the PROVEN
+constant extraction `integral_one_sub_exp_div_sinh_eq_log_four` and
+integrability `integrableOn_one_sub_poitouF_div_sinh`; the
+truncations converge by
+`MeasureTheory.intervalIntegral_tendsto_integral`; finally `n = 2r₂`
+(`NumberField.IsTotallyComplex.finrank`) and
+`log 2π + log 4 = log 8π` close the constants. -/
 theorem poitouGammaEdge_tendsto (K : Type*) [Field K] [NumberField K]
     (htc : NumberField.IsTotallyComplex K) :
     Filter.Tendsto (poitouGammaEdge K) Filter.atTop
@@ -11374,7 +11836,104 @@ theorem poitouGammaEdge_tendsto (K : Type*) [Field K] [NumberField K]
         (Module.finrank ℚ K : ℝ) *
           (∫ x in Set.Ioi (0 : ℝ),
             (1 - poitouF x) / (2 * Real.sinh (x / 2))))) := by
-  sorry
+  classical
+  have hn : (Module.finrank ℚ K : ℝ) =
+      2 * (NumberField.InfinitePlace.nrComplexPlaces K : ℝ) := by
+    have h := NumberField.IsTotallyComplex.finrank K (h := htc)
+    exact_mod_cast h
+  set Fc : ℝ → ℂ := fun t => poitouPhi (5 / 4 + t * Complex.I) *
+      ((NumberField.InfinitePlace.nrComplexPlaces K : ℂ) *
+        (Complex.digamma (5 / 4 + t * Complex.I) -
+          Complex.ofReal (Real.log (2 * Real.pi)))) with hFc
+  have hre : ∀ t : ℝ, (0:ℝ) < (5 / 4 + t * Complex.I).re := by
+    intro t
+    simp [Complex.add_re, Complex.mul_re]
+  have hpt : ∀ t : ℝ, Fc t =
+      (((NumberField.InfinitePlace.nrComplexPlaces K : ℝ) *
+          -(Real.eulerMascheroniConstant + Real.log (2 * Real.pi)) : ℝ) : ℂ) *
+        poitouPhi (5 / 4 + t * Complex.I) +
+      (NumberField.InfinitePlace.nrComplexPlaces K : ℂ) *
+        (poitouPhi (5 / 4 + t * Complex.I) *
+          gaussDigammaIntegral (5 / 4 + t * Complex.I)) := by
+    intro t
+    simp only [hFc]
+    rw [digamma_eq_neg_euler_add_gaussIntegral (hre t)]
+    push_cast
+    ring
+  have hIntΦI : Integrable
+      (fun t : ℝ => poitouPhi (5 / 4 + t * Complex.I) *
+        gaussDigammaIntegral (5 / 4 + t * Complex.I)) := by
+    have h := poitouPhi_mul_gaussKernel_integrable.integral_prod_left
+    refine h.congr (Filter.Eventually.of_forall fun t => ?_)
+    simp only [Function.uncurry_apply_pair]
+    rw [gaussDigammaIntegral_def, integral_const_mul]
+  have hIntF : Integrable Fc :=
+    ((poitouPhi_line_integrable.const_mul _).add (hIntΦI.const_mul _)).congr
+      (Filter.Eventually.of_forall fun t => (hpt t).symm)
+  have hIntRe : Integrable fun t : ℝ => (Fc t).re := by
+    have h := Complex.reCLM.integrable_comp hIntF
+    simpa using h
+  have hJsplit : (∫ x in Set.Ioi (0:ℝ),
+      (Real.exp (-(x / 2)) - poitouF x) / (2 * Real.sinh (x / 2))) =
+      (∫ x in Set.Ioi (0:ℝ), (1 - poitouF x) / (2 * Real.sinh (x / 2))) -
+        Real.log 4 := by
+    rw [← integral_one_sub_exp_div_sinh_eq_log_four,
+      ← integral_sub integrableOn_one_sub_poitouF_div_sinh
+        integrableOn_one_sub_exp_div_sinh]
+    refine setIntegral_congr_fun measurableSet_Ioi fun x _ => ?_
+    rw [div_sub_div_same]
+    congr 1
+    ring
+  have hkey : (∫ t : ℝ, Fc t) =
+      ((((NumberField.InfinitePlace.nrComplexPlaces K : ℝ) *
+          -(Real.eulerMascheroniConstant + Real.log (2 * Real.pi))) * (2 * Real.pi) +
+        (NumberField.InfinitePlace.nrComplexPlaces K : ℝ) *
+          (2 * Real.pi * ((∫ x in Set.Ioi (0:ℝ),
+            (1 - poitouF x) / (2 * Real.sinh (x / 2))) - Real.log 4)) : ℝ) : ℂ) := by
+    rw [integral_congr_ae (Filter.Eventually.of_forall hpt),
+      integral_add (poitouPhi_line_integrable.const_mul _) (hIntΦI.const_mul _),
+      integral_const_mul, integral_const_mul, integral_poitouPhi_line,
+      integral_poitouPhi_line_mul_gauss, hJsplit]
+    push_cast
+    ring
+  have hre_val : (∫ t : ℝ, (Fc t).re) =
+      ((NumberField.InfinitePlace.nrComplexPlaces K : ℝ) *
+          -(Real.eulerMascheroniConstant + Real.log (2 * Real.pi))) * (2 * Real.pi) +
+        (NumberField.InfinitePlace.nrComplexPlaces K : ℝ) *
+          (2 * Real.pi * ((∫ x in Set.Ioi (0:ℝ),
+            (1 - poitouF x) / (2 * Real.sinh (x / 2))) - Real.log 4)) := by
+    have h := Complex.reCLM.integral_comp_comm hIntF
+    rw [hkey] at h
+    simpa only [Complex.reCLM_apply, Complex.ofReal_re] using h
+  have hlim : Tendsto (fun T : ℝ => ∫ t in (-T)..T, (Fc t).re)
+      atTop (nhds (∫ t : ℝ, (Fc t).re)) :=
+    intervalIntegral_tendsto_integral hIntRe tendsto_neg_atTop_atBot tendsto_id
+  have hfin := hlim.const_mul Real.pi⁻¹
+  rw [hre_val] at hfin
+  have hval : Real.pi⁻¹ * (((NumberField.InfinitePlace.nrComplexPlaces K : ℝ) *
+          -(Real.eulerMascheroniConstant + Real.log (2 * Real.pi))) * (2 * Real.pi) +
+        (NumberField.InfinitePlace.nrComplexPlaces K : ℝ) *
+          (2 * Real.pi * ((∫ x in Set.Ioi (0:ℝ),
+            (1 - poitouF x) / (2 * Real.sinh (x / 2))) - Real.log 4))) =
+      -((Module.finrank ℚ K : ℝ) *
+          (Real.eulerMascheroniConstant + Real.log (8 * Real.pi))) +
+        (Module.finrank ℚ K : ℝ) *
+          (∫ x in Set.Ioi (0 : ℝ), (1 - poitouF x) / (2 * Real.sinh (x / 2))) := by
+    have hlog : Real.log (8 * Real.pi) = Real.log (2 * Real.pi) + Real.log 4 := by
+      rw [show (8:ℝ) * Real.pi = (2 * Real.pi) * 4 by ring,
+        Real.log_mul (by positivity) (by norm_num)]
+    rw [hn, hlog]
+    have hπ : Real.pi ≠ 0 := Real.pi_ne_zero
+    field_simp
+    ring
+  rw [hval] at hfin
+  have hEq : poitouGammaEdge K = fun T : ℝ => Real.pi⁻¹ * ∫ t in (-T)..T, (Fc t).re := by
+    funext T
+    rw [poitouGammaEdge]
+  rw [hEq]
+  exact hfin
+
+end PoitouGammaEdgeDigamma
 
 /-- **The prime edge converges to the prime sum** (sorry node, stated
 2026-07-24 — leaf (b₂ᵢᵢ·3), the Euler-product stage of the
