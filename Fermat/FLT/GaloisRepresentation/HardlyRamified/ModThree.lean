@@ -254,6 +254,13 @@ import Mathlib.MeasureTheory.Measure.Haar.NormedSpace
 import Mathlib.MeasureTheory.Group.Integral
 import Mathlib.Analysis.SpecialFunctions.ImproperIntegrals
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.IntegrationByParts
+import Mathlib.Analysis.SpecialFunctions.Gamma.BohrMollerup
+import Mathlib.Analysis.Complex.LocallyUniformLimit
+import Mathlib.Analysis.Complex.RealDeriv
+import Mathlib.Analysis.PSeries
+import Mathlib.Analysis.SpecialFunctions.Log.Deriv
+import Mathlib.Analysis.Complex.Convex
+import Mathlib.Analysis.SpecificLimits.Normed
 
 /-!
 # Mod-3 hardly ramified representations
@@ -16446,8 +16453,708 @@ theorem gaussDigammaIntegral_def (s : ℂ) :
         (Complex.exp (-(x : ℂ)) - Complex.exp (-(s * (x : ℂ)))) /
           (1 - Complex.exp (-(x : ℂ))) := rfl
 
-/-- **Gauss' integral representation of the digamma function** (sorry
-node, stated 2026-07-24 — sub-leaf (b₂ᵢᵢ·2·A) of the decomposition of
+namespace GaussDigamma
+
+/-- Integrability of `x ↦ e^{-ax}` on `(0, ∞)` for `re a > 0`. -/
+theorem integrableOn_cexp_neg_mul {a : ℂ} (ha : 0 < a.re) :
+    IntegrableOn (fun x : ℝ => Complex.exp (-(a * x))) (Set.Ioi (0 : ℝ)) := by
+  have hm : AEStronglyMeasurable (fun x : ℝ => Complex.exp (-(a * x)))
+      (volume.restrict (Set.Ioi (0 : ℝ))) :=
+    (Complex.continuous_exp.comp
+      ((continuous_const.mul Complex.continuous_ofReal).neg)).aestronglyMeasurable
+  have hg : IntegrableOn (fun x : ℝ => Real.exp (-a.re * x)) (Set.Ioi (0 : ℝ)) :=
+    exp_neg_integrableOn_Ioi 0 ha
+  refine hg.mono' hm ?_
+  filter_upwards with x
+  rw [Complex.norm_exp]
+  apply le_of_eq
+  congr 1
+  simp [Complex.mul_re]
+
+/-- The elementary Laplace integral `∫₀^∞ e^{-ax} dx = a⁻¹` for `re a > 0`. -/
+theorem integral_cexp_neg_mul {a : ℂ} (ha : 0 < a.re) :
+    ∫ x in Set.Ioi (0 : ℝ), Complex.exp (-(a * x)) = a⁻¹ := by
+  have ha0 : a ≠ 0 := by
+    intro h
+    rw [h] at ha
+    simp at ha
+  have hcont : ContinuousWithinAt (fun x : ℝ => -a⁻¹ * Complex.exp (-(a * x)))
+      (Set.Ici (0 : ℝ)) 0 :=
+    ((Complex.continuous_exp.comp
+      ((continuous_const.mul Complex.continuous_ofReal).neg)).const_mul
+        (-a⁻¹)).continuousWithinAt
+  have hderiv : ∀ x ∈ Set.Ioi (0 : ℝ),
+      HasDerivAt (fun x : ℝ => -a⁻¹ * Complex.exp (-(a * x)))
+        (Complex.exp (-(a * x))) x := by
+    intro x _
+    have hb : HasDerivAt (fun y : ℝ => ((y : ℝ) : ℂ)) 1 x := by
+      simpa using (hasDerivAt_id x).ofReal_comp
+    have hc : HasDerivAt (fun y : ℝ => a * ((y : ℝ) : ℂ)) a x := by
+      simpa using hb.const_mul a
+    have h1 : HasDerivAt (fun x : ℝ => -(a * (x : ℂ))) (-a) x := hc.neg
+    have h2 := (h1.cexp).const_mul (-a⁻¹)
+    have h3 : -a⁻¹ * (Complex.exp (-(a * (x : ℂ))) * -a) = Complex.exp (-(a * x)) := by
+      rw [show -a⁻¹ * (Complex.exp (-(a * (x : ℂ))) * -a) =
+        a * a⁻¹ * Complex.exp (-(a * (x : ℂ))) by ring,
+        mul_inv_cancel₀ ha0, one_mul]
+    rw [h3] at h2
+    exact h2
+  have hint : IntegrableOn (fun x : ℝ => Complex.exp (-(a * x))) (Set.Ioi (0 : ℝ)) :=
+    integrableOn_cexp_neg_mul ha
+  have htend : Filter.Tendsto (fun x : ℝ => -a⁻¹ * Complex.exp (-(a * x)))
+      Filter.atTop (nhds 0) := by
+    rw [tendsto_zero_iff_norm_tendsto_zero]
+    have heq : (fun x : ℝ => ‖-a⁻¹ * Complex.exp (-(a * x))‖) =
+        fun x : ℝ => ‖a⁻¹‖ * Real.exp (-(a.re * x)) := by
+      funext x
+      rw [norm_mul, norm_neg, Complex.norm_exp]
+      congr 2
+      simp [Complex.mul_re]
+    rw [heq]
+    have hexp : Filter.Tendsto (fun x : ℝ => Real.exp (-(a.re * x)))
+        Filter.atTop (nhds 0) := by
+      have hcomp := Real.tendsto_exp_neg_atTop_nhds_zero.comp
+        (Filter.Tendsto.const_mul_atTop ha Filter.tendsto_id)
+      simpa [Function.comp_def] using hcomp
+    simpa using hexp.const_mul ‖a⁻¹‖
+  have hval := MeasureTheory.integral_Ioi_of_hasDerivAt_of_tendsto hcont hderiv hint htend
+  rw [hval]
+  simp
+
+/-- Uniform-in-`k` bound for the digamma partial-fraction terms on a
+re-half-plane intersected with a norm ball. -/
+theorem term_bound {s : ℂ} {δ R : ℝ} (hδ : 0 < δ) (hsre : δ ≤ s.re)
+    (hR : ‖s‖ ≤ R) (k : ℕ) :
+    ‖((k : ℂ) + 1)⁻¹ - (s + k)⁻¹‖ ≤
+      (R + 1) / min δ 1 * (1 / ((k : ℝ) + 1) ^ 2) := by
+  have hk0 : ((k : ℂ) + 1) ≠ 0 := by
+    have h1 : ((k + 1 : ℕ) : ℂ) ≠ 0 := Nat.cast_ne_zero.mpr (Nat.succ_ne_zero k)
+    push_cast at h1
+    exact h1
+  have hkc : (0 : ℝ) ≤ (k : ℝ) := Nat.cast_nonneg k
+  have hsk0 : s + (k : ℂ) ≠ 0 := by
+    intro h
+    have h' := congrArg Complex.re h
+    simp only [Complex.add_re, Complex.natCast_re, Complex.zero_re] at h'
+    linarith [hkc]
+  rw [inv_sub_inv hk0 hsk0]
+  have hnum : s + (k : ℂ) - ((k : ℂ) + 1) = s - 1 := by ring
+  rw [hnum, norm_div, norm_mul]
+  have h1 : ‖(k : ℂ) + 1‖ = (k : ℝ) + 1 := by
+    rw [show ((k : ℂ) + 1) = ((k + 1 : ℕ) : ℂ) by push_cast; ring, Complex.norm_natCast]
+    push_cast
+    ring
+  have h2 : min δ 1 * ((k : ℝ) + 1) ≤ ‖s + (k : ℂ)‖ := by
+    have hstep : min δ 1 * ((k : ℝ) + 1) ≤ δ + k := by
+      rcases le_total δ 1 with h | h
+      · rw [min_eq_left h]
+        nlinarith [hkc]
+      · rw [min_eq_right h]
+        nlinarith [hkc]
+    have hre : δ + (k : ℝ) ≤ (s + (k : ℂ)).re := by
+      simp only [Complex.add_re, Complex.natCast_re]
+      linarith
+    exact hstep.trans (hre.trans (Complex.re_le_norm _))
+  have hp : (0 : ℝ) ≤ (k : ℝ) + 1 := by linarith [hkc]
+  have hden : min δ 1 * ((k : ℝ) + 1) ^ 2 ≤ ‖(k : ℂ) + 1‖ * ‖s + (k : ℂ)‖ := by
+    rw [h1, pow_two]
+    calc min δ 1 * (((k : ℝ) + 1) * ((k : ℝ) + 1))
+        = ((k : ℝ) + 1) * (min δ 1 * ((k : ℝ) + 1)) := by ring
+      _ ≤ ((k : ℝ) + 1) * ‖s + (k : ℂ)‖ := mul_le_mul_of_nonneg_left h2 hp
+  have hnum1 : ‖s - 1‖ ≤ R + 1 := by
+    calc ‖s - 1‖ ≤ ‖s‖ + ‖(1 : ℂ)‖ := norm_sub_le s 1
+      _ = ‖s‖ + 1 := by rw [norm_one]
+      _ ≤ R + 1 := by linarith
+  have hRHS : (R + 1) / min δ 1 * (1 / ((k : ℝ) + 1) ^ 2) =
+      (R + 1) / (min δ 1 * ((k : ℝ) + 1) ^ 2) := by
+    rw [div_mul_div_comm, mul_one]
+  rw [hRHS]
+  have hmin : (0 : ℝ) < min δ 1 := lt_min hδ one_pos
+  exact div_le_div₀ (by linarith [norm_nonneg s, hR]) hnum1
+    (mul_pos hmin (by positivity)) hden
+
+/-- Summability of the comparison series `C/(k+1)²`. -/
+theorem summable_aux (C : ℝ) :
+    Summable (fun k : ℕ => C * (1 / ((k : ℝ) + 1) ^ 2)) := by
+  apply Summable.mul_left
+  have h1 : Summable (fun n : ℕ => 1 / (n : ℝ) ^ 2) :=
+    Real.summable_one_div_nat_pow.mpr one_lt_two
+  have h2 := (summable_nat_add_iff 1).mpr h1
+  refine h2.congr fun n => ?_
+  push_cast
+  ring
+
+/-- Summability of the digamma partial-fraction series on `re s > 0`. -/
+theorem summable_series {s : ℂ} (hs : 0 < s.re) :
+    Summable (fun k : ℕ => ((k : ℂ) + 1)⁻¹ - (s + k)⁻¹) := by
+  apply Summable.of_norm
+  refine Summable.of_nonneg_of_le (fun k => norm_nonneg _)
+    (fun k => term_bound hs le_rfl (le_refl ‖s‖) k) ?_
+  exact summable_aux _
+
+/-- Iterated digamma recurrence: `ψ(s + N) = ψ(s) + ∑_{k<N} 1/(s+k)`. -/
+theorem digamma_add_nat {s : ℂ} (hs : 0 < s.re) (N : ℕ) :
+    Complex.digamma (s + N) =
+      Complex.digamma s + ∑ k ∈ Finset.range N, (s + k)⁻¹ := by
+  induction N with
+  | zero => simp
+  | succ n ih =>
+    have hsn : ∀ m : ℕ, s + (n : ℂ) ≠ -(m : ℂ) := by
+      intro m h
+      have h' := congrArg Complex.re h
+      simp only [Complex.add_re, Complex.natCast_re, Complex.neg_re] at h'
+      have hm : (0 : ℝ) ≤ (m : ℝ) := Nat.cast_nonneg m
+      have hn : (0 : ℝ) ≤ (n : ℝ) := Nat.cast_nonneg n
+      linarith [hm, hn]
+    have hrec := Complex.digamma_apply_add_one (s + n) hsn
+    have hcast : s + ((n + 1 : ℕ) : ℂ) = s + (n : ℂ) + 1 := by push_cast; ring
+    rw [hcast, hrec, ih, Finset.sum_range_succ]
+    ring
+
+/-- On the positive real axis the complex digamma function is the (real)
+logarithmic derivative of the real Gamma function. -/
+theorem digamma_ofReal {x : ℝ} (hx : 0 < x) :
+    Complex.digamma (x : ℂ) =
+      ((deriv (Real.log ∘ Real.Gamma) x : ℝ) : ℂ) := by
+  have hxne : ∀ m : ℕ, x ≠ -(m : ℝ) := by
+    intro m h
+    have hm : (0 : ℝ) ≤ (m : ℝ) := Nat.cast_nonneg m
+    linarith [hm]
+  have hcne : ∀ m : ℕ, (x : ℂ) ≠ -(m : ℂ) := by
+    intro m h
+    exact hxne m (by exact_mod_cast h)
+  have hRdiff : DifferentiableAt ℝ Real.Gamma x := Real.differentiableAt_Gamma hxne
+  have hCdiff : DifferentiableAt ℂ Complex.Gamma (x : ℂ) :=
+    Complex.differentiableAt_Gamma _ hcne
+  have hGpos : 0 < Real.Gamma x := Real.Gamma_pos_of_pos hx
+  have hderC : deriv Complex.Gamma (x : ℂ) = ((deriv Real.Gamma x : ℝ) : ℂ) := by
+    have h2 : HasDerivAt (fun y : ℝ => Complex.Gamma (y : ℂ))
+        (deriv Complex.Gamma (x : ℂ)) x := hCdiff.hasDerivAt.comp_ofReal
+    have h3 : HasDerivAt (fun y : ℝ => ((Real.Gamma y : ℝ) : ℂ))
+        ((deriv Real.Gamma x : ℝ) : ℂ) x := hRdiff.hasDerivAt.ofReal_comp
+    have h4 : (fun y : ℝ => Complex.Gamma (y : ℂ)) =
+        fun y : ℝ => ((Real.Gamma y : ℝ) : ℂ) :=
+      funext fun y => Complex.Gamma_ofReal y
+    rw [h4] at h2
+    exact h2.unique h3
+  have hlog : deriv (Real.log ∘ Real.Gamma) x = deriv Real.Gamma x / Real.Gamma x := by
+    rw [Function.comp_def]
+    exact _root_.deriv.log hRdiff hGpos.ne'
+  rw [Complex.digamma_def, logDeriv_apply, hderC, hlog, Complex.Gamma_ofReal]
+  push_cast
+  ring
+
+/-- Convexity sandwich for the real digamma: `log (y-1) ≤ ψ(y) ≤ log y`
+for real `y > 1` (from Bohr–Mollerup log-convexity of `Γ`). -/
+theorem deriv_logGamma_bounds {y : ℝ} (hy : 1 < y) :
+    Real.log (y - 1) ≤ deriv (Real.log ∘ Real.Gamma) y ∧
+      deriv (Real.log ∘ Real.Gamma) y ≤ Real.log y := by
+  have hc : ConvexOn ℝ (Set.Ioi 0) (Real.log ∘ Real.Gamma) := Real.convexOn_log_Gamma
+  have hdiff : ∀ t : ℝ, 0 < t → DifferentiableAt ℝ (Real.log ∘ Real.Gamma) t := by
+    intro t ht
+    have h1 : DifferentiableAt ℝ Real.Gamma t :=
+      Real.differentiableAt_Gamma (fun m => by
+        have hm : (0 : ℝ) ≤ (m : ℝ) := Nat.cast_nonneg m
+        intro h
+        linarith [hm])
+    have h2 := h1.log (Real.Gamma_pos_of_pos ht).ne'
+    simpa [Function.comp_def] using h2
+  have hrec : ∀ t : ℝ, 0 < t →
+      (Real.log ∘ Real.Gamma) (t + 1) = (Real.log ∘ Real.Gamma) t + Real.log t := by
+    intro t ht
+    simp only [Function.comp_apply, Real.Gamma_add_one ht.ne']
+    rw [Real.log_mul ht.ne' (Real.Gamma_pos_of_pos ht).ne']
+    ring
+  have hy0 : (0 : ℝ) < y := by linarith
+  constructor
+  · have hslope := hc.slope_le_deriv (Set.mem_Ioi.mpr (by linarith : (0 : ℝ) < y - 1))
+      (Set.mem_Ioi.mpr hy0) (by linarith) (hdiff y hy0)
+    have hval : slope (Real.log ∘ Real.Gamma) (y - 1) y = Real.log (y - 1) := by
+      rw [slope_def_field]
+      have hr := hrec (y - 1) (by linarith)
+      rw [show y - 1 + 1 = y by ring] at hr
+      rw [hr]
+      have hden : y - (y - 1) = 1 := by ring
+      rw [show (Real.log ∘ Real.Gamma) (y - 1) + Real.log (y - 1) -
+        (Real.log ∘ Real.Gamma) (y - 1) = Real.log (y - 1) by ring, hden, div_one]
+    rwa [hval] at hslope
+  · have hslope := hc.deriv_le_slope (Set.mem_Ioi.mpr hy0)
+      (Set.mem_Ioi.mpr (by linarith : (0 : ℝ) < y + 1)) (by linarith) (hdiff y hy0)
+    have hval : slope (Real.log ∘ Real.Gamma) y (y + 1) = Real.log y := by
+      rw [slope_def_field]
+      rw [hrec y hy0]
+      have hden : y + 1 - y = 1 := by ring
+      rw [show (Real.log ∘ Real.Gamma) y + Real.log y -
+        (Real.log ∘ Real.Gamma) y = Real.log y by ring, hden, div_one]
+    rwa [hval] at hslope
+
+/-- The partial-fraction expansion of digamma at positive REAL arguments:
+`ψ(x) = -γ + ∑_{k≥0} (1/(k+1) - 1/(x+k))`. -/
+theorem digamma_real_eq_tsum {x : ℝ} (hx : 0 < x) :
+    Complex.digamma (x : ℂ) =
+      -(Real.eulerMascheroniConstant : ℂ) +
+        ∑' k : ℕ, (((k : ℂ) + 1)⁻¹ - ((x : ℂ) + k)⁻¹) := by
+  have hxre : 0 < ((x : ℂ)).re := by simpa using hx
+  have hsum : Summable (fun k : ℕ => ((k : ℂ) + 1)⁻¹ - ((x : ℂ) + k)⁻¹) :=
+    summable_series hxre
+  have htsum := hsum.hasSum.tendsto_sum_nat
+  have hP : ∀ N : ℕ, ∑ k ∈ Finset.range N, (((k : ℂ) + 1)⁻¹ - ((x : ℂ) + k)⁻¹) =
+      (((harmonic N : ℚ) : ℝ) : ℂ) -
+        ((deriv (Real.log ∘ Real.Gamma) (x + N) : ℝ) : ℂ) +
+        Complex.digamma (x : ℂ) := by
+    intro N
+    rw [Finset.sum_sub_distrib]
+    have h1 : ∑ k ∈ Finset.range N, ((k : ℂ) + 1)⁻¹ =
+        (((harmonic N : ℚ) : ℝ) : ℂ) := by
+      unfold harmonic
+      push_cast
+      rfl
+    have h2 : ∑ k ∈ Finset.range N, ((x : ℂ) + k)⁻¹ =
+        Complex.digamma ((x : ℂ) + N) - Complex.digamma (x : ℂ) := by
+      rw [digamma_add_nat hxre N]
+      ring
+    have h3 : Complex.digamma ((x : ℂ) + N) =
+        ((deriv (Real.log ∘ Real.Gamma) (x + N) : ℝ) : ℂ) := by
+      have hc : ((x : ℂ) + N) = ((x + N : ℝ) : ℂ) := by push_cast; ring
+      rw [hc]
+      exact digamma_ofReal (by positivity)
+    rw [h1, h2, h3]
+    ring
+  have hreal : Filter.Tendsto
+      (fun N : ℕ => ((harmonic N : ℚ) : ℝ) - deriv (Real.log ∘ Real.Gamma) (x + N))
+      Filter.atTop (nhds Real.eulerMascheroniConstant) := by
+    have key : ∀ c : ℝ, Filter.Tendsto
+        (fun N : ℕ => Real.log ((N : ℝ) + c) - Real.log N)
+        Filter.atTop (nhds 0) := by
+      intro c
+      have h₁ : Filter.Tendsto (fun N : ℕ => 1 + c / (N : ℝ)) Filter.atTop (nhds 1) := by
+        have h0 := tendsto_const_div_atTop_nhds_zero_nat c
+        simpa using (tendsto_const_nhds (x := (1 : ℝ))).add h0
+      have h₂ : Filter.Tendsto (fun N : ℕ => Real.log (1 + c / (N : ℝ)))
+          Filter.atTop (nhds 0) := by
+        have hc0 : ContinuousAt Real.log 1 := Real.continuousAt_log one_ne_zero
+        have h3 := hc0.tendsto.comp h₁
+        simpa [Function.comp_def, Real.log_one] using h3
+      refine Filter.Tendsto.congr' ?_ h₂
+      filter_upwards [Filter.eventually_gt_atTop 0,
+        (tendsto_natCast_atTop_atTop (R := ℝ)).eventually_gt_atTop (-c)] with N hN0 hNc
+      have hN0' : (0 : ℝ) < (N : ℝ) := by exact_mod_cast hN0
+      have hNc' : (0 : ℝ) < (N : ℝ) + c := by linarith
+      rw [show 1 + c / (N : ℝ) = ((N : ℝ) + c) / N by field_simp]
+      rw [Real.log_div hNc'.ne' hN0'.ne']
+    have h1 : Filter.Tendsto (fun N : ℕ => ((harmonic N : ℚ) : ℝ) - Real.log N)
+        Filter.atTop (nhds Real.eulerMascheroniConstant) :=
+      Real.tendsto_harmonic_sub_log
+    have h2 : Filter.Tendsto
+        (fun N : ℕ => deriv (Real.log ∘ Real.Gamma) (x + N) - Real.log N)
+        Filter.atTop (nhds 0) := by
+      have hub : ∀ᶠ N : ℕ in Filter.atTop,
+          deriv (Real.log ∘ Real.Gamma) (x + N) - Real.log N ≤
+            Real.log (x + N) - Real.log N := by
+        filter_upwards [Filter.eventually_ge_atTop 1] with N hN
+        have h1N : (1 : ℝ) ≤ (N : ℝ) := by exact_mod_cast hN
+        have hb := (deriv_logGamma_bounds (y := x + N) (by linarith [h1N])).2
+        linarith [hb]
+      have hlb : ∀ᶠ N : ℕ in Filter.atTop,
+          Real.log (x + N - 1) - Real.log N ≤
+            deriv (Real.log ∘ Real.Gamma) (x + N) - Real.log N := by
+        filter_upwards [Filter.eventually_ge_atTop 1] with N hN
+        have h1N : (1 : ℝ) ≤ (N : ℝ) := by exact_mod_cast hN
+        have hb := (deriv_logGamma_bounds (y := x + N) (by linarith [h1N])).1
+        have harg : x + (N : ℝ) - 1 = (x + N) - 1 := by ring
+        rw [harg]
+        linarith [hb]
+      have hubt : Filter.Tendsto (fun N : ℕ => Real.log (x + N) - Real.log N)
+          Filter.atTop (nhds 0) := by
+        refine (key x).congr fun N => ?_
+        rw [add_comm (N : ℝ) x]
+      have hlbt : Filter.Tendsto (fun N : ℕ => Real.log (x + N - 1) - Real.log N)
+          Filter.atTop (nhds 0) := by
+        refine (key (x - 1)).congr fun N => ?_
+        rw [show (N : ℝ) + (x - 1) = x + N - 1 by ring]
+      exact tendsto_of_tendsto_of_tendsto_of_le_of_le' hlbt hubt hlb hub
+    have h3 := h1.sub h2
+    rw [sub_zero] at h3
+    refine h3.congr fun N => ?_
+    ring
+  have hlim : Filter.Tendsto
+      (fun N : ℕ => ∑ k ∈ Finset.range N, (((k : ℂ) + 1)⁻¹ - ((x : ℂ) + k)⁻¹))
+      Filter.atTop
+      (nhds ((Real.eulerMascheroniConstant : ℂ) + Complex.digamma (x : ℂ))) := by
+    have hC : Filter.Tendsto
+        (fun N : ℕ =>
+          ((((harmonic N : ℚ) : ℝ) - deriv (Real.log ∘ Real.Gamma) (x + N) : ℝ) : ℂ))
+        Filter.atTop (nhds ((Real.eulerMascheroniConstant : ℝ) : ℂ)) :=
+      (Complex.continuous_ofReal.tendsto _).comp hreal
+    have hadd := hC.add_const (Complex.digamma (x : ℂ))
+    refine hadd.congr fun N => ?_
+    rw [hP N]
+    push_cast
+    ring
+  have huniq := tendsto_nhds_unique htsum hlim
+  rw [huniq]
+  ring
+
+/-- Mean-value bound `‖e^{-x} - e^{-sx}‖ ≤ ‖s-1‖·x` for `x ≥ 0`, `re s > 0`. -/
+theorem norm_cexp_sub_cexp_le {s : ℂ} (hs : 0 < s.re) {x : ℝ} (hx : 0 ≤ x) :
+    ‖Complex.exp (-(x : ℂ)) - Complex.exp (-(s * x))‖ ≤ ‖s - 1‖ * x := by
+  set g : ℝ → ℂ := fun t => Complex.exp (-((1 + (t : ℂ) * (s - 1)) * x)) with hg
+  have hderiv : ∀ t ∈ Set.Icc (0 : ℝ) 1,
+      HasDerivWithinAt g
+        (Complex.exp (-((1 + (t : ℂ) * (s - 1)) * x)) * -((s - 1) * x))
+        (Set.Icc (0 : ℝ) 1) t := by
+    intro t _
+    have hb : HasDerivAt (fun y : ℝ => ((y : ℝ) : ℂ)) 1 t := by
+      simpa using (hasDerivAt_id t).ofReal_comp
+    have hc : HasDerivAt (fun y : ℝ => (1 + ((y : ℝ) : ℂ) * (s - 1)) * (x : ℂ))
+        ((s - 1) * x) t := by
+      have hd := ((hb.mul_const (s - 1)).const_add 1).mul_const ((x : ℂ))
+      simpa using hd
+    have h1 : HasDerivAt (fun t : ℝ => -((1 + (t : ℂ) * (s - 1)) * (x : ℂ)))
+        (-((s - 1) * x)) t := hc.neg
+    exact (h1.cexp).hasDerivWithinAt
+  have hbound : ∀ t ∈ Set.Ico (0 : ℝ) 1,
+      ‖Complex.exp (-((1 + (t : ℂ) * (s - 1)) * x)) * -((s - 1) * x)‖ ≤
+        ‖s - 1‖ * x := by
+    intro t ht
+    rw [norm_mul, norm_neg, norm_mul]
+    have hre : (-((1 + (t : ℂ) * (s - 1)) * (x : ℂ))).re =
+        -((1 + t * (s.re - 1)) * x) := by
+      simp [Complex.mul_re, Complex.add_re, Complex.sub_re, Complex.mul_im,
+        Complex.add_im, Complex.sub_im]
+    have hexp1 : ‖Complex.exp (-((1 + (t : ℂ) * (s - 1)) * x))‖ ≤ 1 := by
+      rw [Complex.norm_exp, hre]
+      have hcoef : 0 ≤ 1 + t * (s.re - 1) := by nlinarith [ht.1, ht.2]
+      have hu : -((1 + t * (s.re - 1)) * x) ≤ 0 := by nlinarith [hcoef, hx]
+      have h5 := Real.exp_le_exp.mpr hu
+      rwa [Real.exp_zero] at h5
+    have hxn : ‖((x : ℂ))‖ = x := by
+      rw [Complex.norm_real, Real.norm_eq_abs, abs_of_nonneg hx]
+    calc ‖Complex.exp (-((1 + (t : ℂ) * (s - 1)) * x))‖ * (‖s - 1‖ * ‖((x : ℂ))‖)
+        ≤ 1 * (‖s - 1‖ * ‖((x : ℂ))‖) :=
+          mul_le_mul_of_nonneg_right hexp1 (by positivity)
+      _ = ‖s - 1‖ * x := by rw [one_mul, hxn]
+  have hkey := norm_image_sub_le_of_norm_deriv_le_segment_01' hderiv hbound
+  have hg1 : g 1 = Complex.exp (-(s * x)) := by
+    simp only [hg, Complex.ofReal_one, one_mul]
+    congr 1
+    ring
+  have hg0 : g 0 = Complex.exp (-(x : ℂ)) := by
+    simp only [hg, Complex.ofReal_zero, zero_mul, add_zero, one_mul]
+  rw [hg1, hg0] at hkey
+  rw [norm_sub_rev] at hkey
+  exact hkey
+
+/-- The dominating bound for the Gauss integrand: for `x > 0`,
+`‖e^{-x} - e^{-sx}‖/(1 - e^{-x}) ≤ M·e^{-σx}` with `σ = min 1 (re s)` and
+`M = max (‖s-1‖e²) (2/(1-e⁻¹))`. -/
+theorem integrand_bound {s : ℂ} (hs : 0 < s.re) {x : ℝ} (hx : 0 < x) :
+    ‖Complex.exp (-(x : ℂ)) - Complex.exp (-(s * x))‖ / (1 - Real.exp (-x)) ≤
+      max (‖s - 1‖ * Real.exp 2) (2 / (1 - Real.exp (-1))) *
+        Real.exp (-(min 1 s.re) * x) := by
+  set σ := min 1 s.re with hσ
+  have hσ0 : 0 < σ := lt_min one_pos hs
+  have hσ1 : σ ≤ 1 := min_le_left _ _
+  have hσs : σ ≤ s.re := min_le_right _ _
+  rw [neg_mul]
+  rcases le_total x 1 with hx1 | hx1
+  · have hnum := norm_cexp_sub_cexp_le hs hx.le
+    have hlow : x * Real.exp (-x) ≤ 1 - Real.exp (-x) := by
+      have h1 : x + 1 ≤ Real.exp x := Real.add_one_le_exp x
+      have hex : (0 : ℝ) < Real.exp x := Real.exp_pos x
+      have h2 : (x + 1) * (Real.exp x)⁻¹ ≤ Real.exp x * (Real.exp x)⁻¹ :=
+        mul_le_mul_of_nonneg_right h1 (by positivity)
+      rw [mul_inv_cancel₀ hex.ne'] at h2
+      rw [Real.exp_neg]
+      nlinarith
+    have hstep : ‖Complex.exp (-(x : ℂ)) - Complex.exp (-(s * x))‖ /
+        (1 - Real.exp (-x)) ≤ ‖s - 1‖ * Real.exp x := by
+      have hxe : (0 : ℝ) < x * Real.exp (-x) := by positivity
+      calc ‖Complex.exp (-(x : ℂ)) - Complex.exp (-(s * x))‖ / (1 - Real.exp (-x))
+          ≤ (‖s - 1‖ * x) / (x * Real.exp (-x)) :=
+            div_le_div₀ (by positivity) hnum hxe hlow
+        _ = ‖s - 1‖ * Real.exp x := by
+            rw [Real.exp_neg]
+            field_simp
+    refine hstep.trans ?_
+    calc ‖s - 1‖ * Real.exp x
+        ≤ ‖s - 1‖ * (Real.exp 2 * Real.exp (-(σ * x))) := by
+          apply mul_le_mul_of_nonneg_left _ (norm_nonneg _)
+          rw [← Real.exp_add]
+          apply Real.exp_le_exp.mpr
+          nlinarith [hσ0, hσ1, hx1, hx.le]
+      _ = ‖s - 1‖ * Real.exp 2 * Real.exp (-(σ * x)) := by ring
+      _ ≤ max (‖s - 1‖ * Real.exp 2) (2 / (1 - Real.exp (-1))) *
+            Real.exp (-(σ * x)) :=
+          mul_le_mul_of_nonneg_right (le_max_left _ _) (Real.exp_nonneg _)
+  · have hnum : ‖Complex.exp (-(x : ℂ)) - Complex.exp (-(s * x))‖ ≤
+        2 * Real.exp (-(σ * x)) := by
+      calc ‖Complex.exp (-(x : ℂ)) - Complex.exp (-(s * x))‖
+          ≤ ‖Complex.exp (-(x : ℂ))‖ + ‖Complex.exp (-(s * x))‖ := norm_sub_le _ _
+        _ ≤ 2 * Real.exp (-(σ * x)) := by
+            rw [Complex.norm_exp, Complex.norm_exp]
+            have e1 : (-(x : ℂ)).re = -x := by simp
+            have e2 : (-(s * (x : ℂ))).re = -(s.re * x) := by
+              simp [Complex.mul_re]
+            rw [e1, e2]
+            have b1 : Real.exp (-x) ≤ Real.exp (-(σ * x)) :=
+              Real.exp_le_exp.mpr (by nlinarith [hσ1, hx.le])
+            have b2 : Real.exp (-(s.re * x)) ≤ Real.exp (-(σ * x)) :=
+              Real.exp_le_exp.mpr (by nlinarith [hσs, hx.le])
+            linarith [b1, b2]
+    have hden1' : 0 < 1 - Real.exp (-1) := by
+      have h1 : Real.exp (-1) < Real.exp 0 := Real.exp_lt_exp.mpr (by norm_num)
+      rw [Real.exp_zero] at h1
+      linarith [h1]
+    have hden1 : 1 - Real.exp (-1) ≤ 1 - Real.exp (-x) := by
+      have h1 : Real.exp (-x) ≤ Real.exp (-1) := Real.exp_le_exp.mpr (by linarith [hx1])
+      linarith [h1]
+    calc ‖Complex.exp (-(x : ℂ)) - Complex.exp (-(s * x))‖ / (1 - Real.exp (-x))
+        ≤ (2 * Real.exp (-(σ * x))) / (1 - Real.exp (-1)) :=
+          div_le_div₀ (by positivity) hnum hden1' hden1
+      _ = 2 / (1 - Real.exp (-1)) * Real.exp (-(σ * x)) := by ring
+      _ ≤ max (‖s - 1‖ * Real.exp 2) (2 / (1 - Real.exp (-1))) *
+            Real.exp (-(σ * x)) :=
+          mul_le_mul_of_nonneg_right (le_max_right _ _) (Real.exp_nonneg _)
+
+/-- Gauss' integral equals the partial-fraction series on `re s > 0`
+(geometric expansion of `(1-e^{-x})⁻¹` + dominated convergence). -/
+theorem integral_eq_tsum {s : ℂ} (hs : 0 < s.re) :
+    gaussDigammaIntegral s =
+      ∑' k : ℕ, (((k : ℂ) + 1)⁻¹ - (s + k)⁻¹) := by
+  classical
+  set σ := min 1 s.re with hσ
+  have hσ0 : 0 < σ := lt_min one_pos hs
+  set M := max (‖s - 1‖ * Real.exp 2) (2 / (1 - Real.exp (-1))) with hM
+  set F : ℕ → ℝ → ℂ := fun N x =>
+    ∑ k ∈ Finset.range N,
+      (Complex.exp (-(((k : ℂ) + 1) * x)) - Complex.exp (-((s + k) * x))) with hF
+  have hexp_lt : ∀ x : ℝ, 0 < x → ‖Complex.exp (-(x : ℂ))‖ < 1 := by
+    intro x hx
+    rw [Complex.norm_exp]
+    have h1 : (-(x : ℂ)).re = -x := by simp
+    rw [h1]
+    have h2 : Real.exp (-x) < Real.exp 0 := Real.exp_lt_exp.mpr (by linarith)
+    rwa [Real.exp_zero] at h2
+  have hexp_ne : ∀ x : ℝ, 0 < x → Complex.exp (-(x : ℂ)) ≠ 1 := by
+    intro x hx h
+    have h1 := hexp_lt x hx
+    rw [h, norm_one] at h1
+    exact lt_irrefl 1 h1
+  have hden0 : ∀ x : ℝ, 0 < x → 0 < 1 - Real.exp (-x) := by
+    intro x hx
+    have h1 : Real.exp (-x) < Real.exp 0 := Real.exp_lt_exp.mpr (by linarith)
+    rw [Real.exp_zero] at h1
+    linarith
+  have hclosed : ∀ (N : ℕ) (x : ℝ), 0 < x → F N x =
+      (Complex.exp (-(x : ℂ)) - Complex.exp (-(s * x))) *
+        ((1 - Complex.exp (-(x : ℂ)) ^ N) / (1 - Complex.exp (-(x : ℂ)))) := by
+    intro N x hx
+    have hterm : ∀ k : ℕ,
+        Complex.exp (-(((k : ℂ) + 1) * x)) - Complex.exp (-((s + k) * x)) =
+          Complex.exp (-(x : ℂ)) ^ k *
+            (Complex.exp (-(x : ℂ)) - Complex.exp (-(s * x))) := by
+      intro k
+      have e1 : -(((k : ℂ) + 1) * x) = (k : ℂ) * -(x : ℂ) + -(x : ℂ) := by ring
+      have e2 : -((s + k) * (x : ℂ)) = (k : ℂ) * -(x : ℂ) + -(s * x) := by ring
+      rw [e1, e2, Complex.exp_add, Complex.exp_add, Complex.exp_nat_mul]
+      ring
+    calc F N x = ∑ k ∈ Finset.range N,
+          Complex.exp (-(x : ℂ)) ^ k *
+            (Complex.exp (-(x : ℂ)) - Complex.exp (-(s * x))) :=
+        Finset.sum_congr rfl (fun k _ => hterm k)
+      _ = (∑ k ∈ Finset.range N, Complex.exp (-(x : ℂ)) ^ k) *
+            (Complex.exp (-(x : ℂ)) - Complex.exp (-(s * x))) := by
+          rw [Finset.sum_mul]
+      _ = (Complex.exp (-(x : ℂ)) - Complex.exp (-(s * x))) *
+            ((1 - Complex.exp (-(x : ℂ)) ^ N) / (1 - Complex.exp (-(x : ℂ)))) := by
+          rw [geom_sum_eq (hexp_ne x hx) N]
+          rw [show Complex.exp (-(x : ℂ)) ^ N - 1 =
+            -(1 - Complex.exp (-(x : ℂ)) ^ N) by ring,
+            show Complex.exp (-(x : ℂ)) - 1 = -(1 - Complex.exp (-(x : ℂ))) by ring,
+            neg_div_neg_eq]
+          ring
+  have hofReal : ∀ x : ℝ, Complex.exp (-(x : ℂ)) = ((Real.exp (-x) : ℝ) : ℂ) := by
+    intro x
+    rw [Complex.ofReal_exp, Complex.ofReal_neg]
+  have hFbound : ∀ (N : ℕ) (x : ℝ), 0 < x → ‖F N x‖ ≤ M * Real.exp (-σ * x) := by
+    intro N x hx
+    rw [hclosed N x hx, norm_mul]
+    have hquot : ‖(1 - Complex.exp (-(x : ℂ)) ^ N) / (1 - Complex.exp (-(x : ℂ)))‖ ≤
+        (1 - Real.exp (-x))⁻¹ := by
+      rw [norm_div]
+      have hd : ‖1 - Complex.exp (-(x : ℂ))‖ = 1 - Real.exp (-x) := by
+        rw [hofReal x, ← Complex.ofReal_one, ← Complex.ofReal_sub, Complex.norm_real,
+          Real.norm_eq_abs]
+        exact abs_of_nonneg (hden0 x hx).le
+      have hn : ‖1 - Complex.exp (-(x : ℂ)) ^ N‖ ≤ 1 := by
+        rw [hofReal x, ← Complex.ofReal_pow, ← Complex.ofReal_one,
+          ← Complex.ofReal_sub, Complex.norm_real, Real.norm_eq_abs]
+        have hp0 : (0 : ℝ) < Real.exp (-x) ^ N := by positivity
+        have hp1 : Real.exp (-x) ^ N ≤ 1 := by
+          apply pow_le_one₀ (Real.exp_nonneg _)
+          have h2 : Real.exp (-x) < Real.exp 0 := Real.exp_lt_exp.mpr (by linarith)
+          rw [Real.exp_zero] at h2
+          exact h2.le
+        rw [abs_of_nonneg (by linarith [hp1])]
+        linarith [hp0]
+      rw [hd]
+      rw [div_eq_mul_inv]
+      calc ‖1 - Complex.exp (-(x : ℂ)) ^ N‖ * (1 - Real.exp (-x))⁻¹
+          ≤ 1 * (1 - Real.exp (-x))⁻¹ := by
+            apply mul_le_mul_of_nonneg_right hn
+            exact inv_nonneg.mpr (hden0 x hx).le
+        _ = (1 - Real.exp (-x))⁻¹ := one_mul _
+    calc ‖Complex.exp (-(x : ℂ)) - Complex.exp (-(s * x))‖ *
+          ‖(1 - Complex.exp (-(x : ℂ)) ^ N) / (1 - Complex.exp (-(x : ℂ)))‖
+        ≤ ‖Complex.exp (-(x : ℂ)) - Complex.exp (-(s * x))‖ *
+            (1 - Real.exp (-x))⁻¹ :=
+          mul_le_mul_of_nonneg_left hquot (norm_nonneg _)
+      _ = ‖Complex.exp (-(x : ℂ)) - Complex.exp (-(s * x))‖ / (1 - Real.exp (-x)) :=
+          (div_eq_mul_inv _ _).symm
+      _ ≤ M * Real.exp (-σ * x) := integrand_bound hs hx
+  have hFtend : ∀ x ∈ Set.Ioi (0 : ℝ), Filter.Tendsto (fun N => F N x) Filter.atTop
+      (nhds ((Complex.exp (-(x : ℂ)) - Complex.exp (-(s * (x : ℂ)))) /
+        (1 - Complex.exp (-(x : ℂ))))) := by
+    intro x hx
+    have hx' : (0 : ℝ) < x := hx
+    have hpow : Filter.Tendsto (fun N : ℕ => Complex.exp (-(x : ℂ)) ^ N)
+        Filter.atTop (nhds 0) :=
+      tendsto_pow_atTop_nhds_zero_of_norm_lt_one (hexp_lt x hx')
+    have h1 : Filter.Tendsto (fun N : ℕ =>
+        (Complex.exp (-(x : ℂ)) - Complex.exp (-(s * x))) *
+          ((1 - Complex.exp (-(x : ℂ)) ^ N) / (1 - Complex.exp (-(x : ℂ)))))
+        Filter.atTop
+        (nhds ((Complex.exp (-(x : ℂ)) - Complex.exp (-(s * x))) *
+          ((1 - 0) / (1 - Complex.exp (-(x : ℂ)))))) := by
+      apply Filter.Tendsto.const_mul
+      apply Filter.Tendsto.div_const
+      exact tendsto_const_nhds.sub hpow
+    have h2 := h1.congr (fun N => (hclosed N x hx').symm)
+    simpa [sub_zero, one_div, div_eq_mul_inv] using h2
+  have hre1 : ∀ k : ℕ, 0 < ((k : ℂ) + 1).re := by
+    intro k
+    simp only [Complex.add_re, Complex.natCast_re, Complex.one_re]
+    have : (0 : ℝ) ≤ (k : ℝ) := Nat.cast_nonneg k
+    linarith
+  have hre2 : ∀ k : ℕ, 0 < (s + (k : ℂ)).re := by
+    intro k
+    simp only [Complex.add_re, Complex.natCast_re]
+    have : (0 : ℝ) ≤ (k : ℝ) := Nat.cast_nonneg k
+    linarith
+  have hint1 : ∀ k : ℕ, IntegrableOn
+      (fun x : ℝ => Complex.exp (-(((k : ℂ) + 1) * x))) (Set.Ioi (0 : ℝ)) :=
+    fun k => integrableOn_cexp_neg_mul (hre1 k)
+  have hint2 : ∀ k : ℕ, IntegrableOn
+      (fun x : ℝ => Complex.exp (-((s + (k : ℂ)) * x))) (Set.Ioi (0 : ℝ)) :=
+    fun k => integrableOn_cexp_neg_mul (hre2 k)
+  have hterm_int : ∀ k : ℕ, IntegrableOn
+      (fun x : ℝ => Complex.exp (-(((k : ℂ) + 1) * x)) -
+        Complex.exp (-((s + k) * x))) (Set.Ioi (0 : ℝ)) :=
+    fun k => (hint1 k).sub (hint2 k)
+  have hFint : ∀ N : ℕ, (∫ x in Set.Ioi (0 : ℝ), F N x) =
+      ∑ k ∈ Finset.range N, (((k : ℂ) + 1)⁻¹ - (s + k)⁻¹) := by
+    intro N
+    rw [hF]
+    rw [MeasureTheory.integral_finsetSum _ (fun k _ => hterm_int k)]
+    apply Finset.sum_congr rfl
+    intro k _
+    rw [MeasureTheory.integral_sub (hint1 k) (hint2 k),
+      integral_cexp_neg_mul (hre1 k), integral_cexp_neg_mul (hre2 k)]
+  have hmeas : ∀ N : ℕ, AEStronglyMeasurable (F N)
+      (volume.restrict (Set.Ioi (0 : ℝ))) := by
+    intro N
+    apply Continuous.aestronglyMeasurable
+    apply continuous_finsetSum
+    intro k _
+    exact (Complex.continuous_exp.comp
+        ((continuous_const.mul Complex.continuous_ofReal).neg)).sub
+      (Complex.continuous_exp.comp
+        ((continuous_const.mul Complex.continuous_ofReal).neg))
+  have hbound_int : IntegrableOn (fun x : ℝ => M * Real.exp (-σ * x))
+      (Set.Ioi (0 : ℝ)) :=
+    (exp_neg_integrableOn_Ioi 0 hσ0).const_mul M
+  have hDCT := MeasureTheory.tendsto_integral_of_dominated_convergence
+    (F := F) (bound := fun x => M * Real.exp (-σ * x)) hmeas hbound_int
+    (fun N => (ae_restrict_iff' measurableSet_Ioi).mpr
+      (Filter.Eventually.of_forall (fun x hx => hFbound N x hx)))
+    ((ae_restrict_iff' measurableSet_Ioi).mpr
+      (Filter.Eventually.of_forall hFtend))
+  have hsumt := (summable_series hs).hasSum.tendsto_sum_nat
+  have hPint := hDCT.congr hFint
+  exact tendsto_nhds_unique hPint hsumt
+
+/-- The partial-fraction series is analytic on the right half-plane. -/
+theorem analyticOnNhd_tsum :
+    AnalyticOnNhd ℂ
+      (fun s : ℂ => ∑' k : ℕ, (((k : ℂ) + 1)⁻¹ - (s + k)⁻¹))
+      {s : ℂ | 0 < s.re} := by
+  have hU : IsOpen {s : ℂ | 0 < s.re} := isOpen_lt continuous_const Complex.continuous_re
+  apply DifferentiableOn.analyticOnNhd _ hU
+  intro s₀ hs₀
+  apply DifferentiableAt.differentiableWithinAt
+  have hs₀' : 0 < s₀.re := hs₀
+  have hδ : 0 < s₀.re / 2 := half_pos hs₀'
+  have hVre : ∀ z ∈ Metric.ball s₀ (s₀.re / 2), s₀.re / 2 ≤ z.re := by
+    intro z hz
+    have h1 : ‖z - s₀‖ < s₀.re / 2 := by
+      rwa [Metric.mem_ball, dist_eq_norm] at hz
+    have h2 : |(z - s₀).re| ≤ ‖z - s₀‖ := Complex.abs_re_le_norm _
+    have h3 : (z - s₀).re = z.re - s₀.re := by simp [Complex.sub_re]
+    rw [h3] at h2
+    have h4 := abs_le.mp h2
+    linarith [h4.1, h1]
+  have hVnorm : ∀ z ∈ Metric.ball s₀ (s₀.re / 2), ‖z‖ ≤ ‖s₀‖ + s₀.re / 2 := by
+    intro z hz
+    have h1 : ‖z - s₀‖ < s₀.re / 2 := by
+      rwa [Metric.mem_ball, dist_eq_norm] at hz
+    calc ‖z‖ = ‖s₀ + (z - s₀)‖ := by ring_nf
+      _ ≤ ‖s₀‖ + ‖z - s₀‖ := norm_add_le _ _
+      _ ≤ ‖s₀‖ + s₀.re / 2 := by linarith [h1]
+  have hne : ∀ (k : ℕ), ∀ z ∈ Metric.ball s₀ (s₀.re / 2), z + (k : ℂ) ≠ 0 := by
+    intro k z hz h
+    have h' := congrArg Complex.re h
+    simp only [Complex.add_re, Complex.natCast_re, Complex.zero_re] at h'
+    have hk : (0 : ℝ) ≤ (k : ℝ) := Nat.cast_nonneg k
+    have hzre := hVre z hz
+    linarith [hk, hzre]
+  have hdiff : DifferentiableOn ℂ
+      (fun z : ℂ => ∑' k : ℕ, (((k : ℂ) + 1)⁻¹ - (z + k)⁻¹))
+      (Metric.ball s₀ (s₀.re / 2)) := by
+    apply differentiableOn_tsum_of_summable_norm
+      (summable_aux ((‖s₀‖ + s₀.re / 2 + 1) / min (s₀.re / 2) 1))
+      (fun k => ?_) Metric.isOpen_ball (fun k z hz => ?_)
+    · apply DifferentiableOn.sub (differentiableOn_const _)
+      apply DifferentiableOn.inv
+      · exact (differentiable_id.add_const ((k : ℂ))).differentiableOn
+      · exact fun z hz => hne k z hz
+    · exact term_bound hδ (hVre z hz) (hVnorm z hz) k
+  exact hdiff.differentiableAt (Metric.isOpen_ball.mem_nhds (Metric.mem_ball_self hδ))
+
+/-- The digamma function is analytic on the right half-plane. -/
+theorem analyticOnNhd_digamma :
+    AnalyticOnNhd ℂ Complex.digamma {s : ℂ | 0 < s.re} := by
+  have hU : IsOpen {s : ℂ | 0 < s.re} := isOpen_lt continuous_const Complex.continuous_re
+  have hne : ∀ z ∈ {s : ℂ | 0 < s.re}, ∀ m : ℕ, z ≠ -(m : ℂ) := by
+    intro z hz m h
+    have h' := congrArg Complex.re h
+    simp only [Complex.neg_re, Complex.natCast_re] at h'
+    have hm : (0 : ℝ) ≤ (m : ℝ) := Nat.cast_nonneg m
+    have hz' : 0 < z.re := hz
+    linarith [hm, hz']
+  have hΓ : AnalyticOnNhd ℂ Complex.Gamma {s : ℂ | 0 < s.re} := by
+    apply DifferentiableOn.analyticOnNhd _ hU
+    intro z hz
+    exact (Complex.differentiableAt_Gamma z (hne z hz)).differentiableWithinAt
+  have hΓ' : AnalyticOnNhd ℂ (deriv Complex.Gamma) {s : ℂ | 0 < s.re} := hΓ.deriv
+  have hΓne : ∀ z ∈ {s : ℂ | 0 < s.re}, Complex.Gamma z ≠ 0 :=
+    fun z hz => Complex.Gamma_ne_zero (hne z hz)
+  exact hΓ'.div hΓ hΓne
+
+end GaussDigamma
+
+/-- **Gauss' integral representation of the digamma function** (PROVEN
+2026-07-24 — sub-leaf (b₂ᵢᵢ·2·A) of the decomposition of
 `poitouGammaEdge_tendsto`; a self-contained classical
 special-functions fact; Poitou p. 6-05, Lemme 1).  The pin's digamma
 material (`Mathlib.Analysis.SpecialFunctions.Gamma.Digamma`) is thin
@@ -16455,24 +17162,72 @@ material (`Mathlib.Analysis.SpecialFunctions.Gamma.Digamma`) is thin
 `Complex.digamma_apply_add_one`, and the anchor
 `Complex.digamma_one = −γ` (from `hasDerivAt_Gamma_one` of the pin's
 `Mathlib.NumberTheory.Harmonic.GammaDeriv`) — so the representation
-must be MANUFACTURED.  Intended proof:
+is MANUFACTURED here, via the `GaussDigamma.*` bricks above:
 
-1. *Partial fractions.*  From the Euler-limit
-   `Complex.GammaSeq_tendsto_Gamma` (differentiate the logarithm of
-   `GammaSeq`, locally uniform convergence), or by telescoping the
-   recurrence against `digamma_one` with the tail asymptotics
-   `ψ(s + N) − log N → 0`, derive
-   `ψ(s) = −γ + Σ_{k≥0} (1/(k+1) − 1/(s+k))` for `re s > 0`.
-2. *Lemme 1 (Gauss).*  `1/(k+1) − 1/(s+k) =
-   ∫₀^∞ (e^{−(k+1)x} − e^{−(s+k)x}) dx`; summing the geometric series
-   `Σ_k e^{−kx} = (1 − e^{−x})⁻¹` under the integral (Tonelli plus
-   dominated convergence; integrands `O(x·e^{−x})` near `0`) gives
-   `ψ(s) = −γ + ∫₀^∞ (e^{−x} − e^{−sx})/(1 − e^{−x}) dx` on
-   `re s > 0`. -/
+1. *Partial fractions on the real axis*
+   (`GaussDigamma.digamma_real_eq_tsum`): telescoping the recurrence
+   (`digamma_add_nat`) against `harmonic N`, with the tail asymptotics
+   `ψ(x + N) − log N → 0` obtained from the Bohr–Mollerup convexity
+   sandwich `log (y−1) ≤ (log ∘ Γ)′(y) ≤ log y`
+   (`deriv_logGamma_bounds`) and `Real.tendsto_harmonic_sub_log`;
+   this yields `ψ(x) = −γ + Σ_{k≥0} (1/(k+1) − 1/(x+k))` for `x > 0`.
+2. *Lemme 1 (Gauss)* (`GaussDigamma.integral_eq_tsum`):
+   `1/(k+1) − 1/(s+k) = ∫₀^∞ (e^{−(k+1)x} − e^{−(s+k)x}) dx`
+   (`integral_cexp_neg_mul`); the geometric partial sums have closed
+   form `(e^{−x} − e^{−sx})·(1 − e^{−Nx})/(1 − e^{−x})`, dominated by
+   `M·e^{−σx}` (`integrand_bound`, `σ = min 1 (re s)`), so dominated
+   convergence converts the series to the Gauss integral on
+   `re s > 0`.
+3. *Identity theorem*: both sides are analytic on the half-plane
+   `re s > 0` (`analyticOnNhd_digamma`, `analyticOnNhd_tsum`) and
+   agree on the reals `1 + 1/(n+1) → 1`, hence everywhere
+   (`AnalyticOnNhd.eqOn_of_preconnected_of_frequently_eq`). -/
 theorem digamma_eq_neg_euler_add_gaussIntegral {s : ℂ} (hs : 0 < s.re) :
     Complex.digamma s =
       -(Real.eulerMascheroniConstant : ℂ) + gaussDigammaIntegral s := by
-  sorry
+  classical
+  set S : ℂ → ℂ := fun z => ∑' k : ℕ, (((k : ℂ) + 1)⁻¹ - (z + k)⁻¹)
+  have hpre : IsPreconnected {z : ℂ | 0 < z.re} :=
+    (convex_halfSpace_re_gt (0 : ℝ)).isPreconnected
+  have h1 : AnalyticOnNhd ℂ Complex.digamma {z : ℂ | 0 < z.re} :=
+    GaussDigamma.analyticOnNhd_digamma
+  have h2 : AnalyticOnNhd ℂ
+      (fun z => -(Real.eulerMascheroniConstant : ℂ) + S z) {z : ℂ | 0 < z.re} :=
+    (analyticOnNhd_const).add GaussDigamma.analyticOnNhd_tsum
+  have hfreq : ∃ᶠ z in nhdsWithin (1 : ℂ) {(1 : ℂ)}ᶜ,
+      Complex.digamma z = -(Real.eulerMascheroniConstant : ℂ) + S z := by
+    have hseq : Filter.Tendsto (fun n : ℕ => ((1 + ((n : ℝ) + 1)⁻¹ : ℝ) : ℂ))
+        Filter.atTop (nhdsWithin (1 : ℂ) {(1 : ℂ)}ᶜ) := by
+      apply tendsto_nhdsWithin_of_tendsto_nhds_of_eventually_within
+      · have h1' : Filter.Tendsto (fun n : ℕ => (1 + ((n : ℝ) + 1)⁻¹ : ℝ))
+            Filter.atTop (nhds 1) := by
+          have h0 : Filter.Tendsto (fun n : ℕ => 1 / ((n : ℝ) + 1))
+              Filter.atTop (nhds 0) := tendsto_one_div_add_atTop_nhds_zero_nat
+          have h0' : Filter.Tendsto (fun n : ℕ => ((n : ℝ) + 1)⁻¹)
+              Filter.atTop (nhds 0) := by
+            simpa [one_div] using h0
+          have hconst : Filter.Tendsto (fun _ : ℕ => (1 : ℝ))
+              Filter.atTop (nhds 1) := tendsto_const_nhds
+          simpa using hconst.add h0'
+        have h2' := (Complex.continuous_ofReal.tendsto (1 : ℝ)).comp h1'
+        simpa [Function.comp_def] using h2'
+      · apply Filter.Eventually.of_forall
+        intro n
+        simp only [Set.mem_compl_iff, Set.mem_singleton_iff]
+        intro h
+        rw [show ((1 : ℂ)) = ((1 : ℝ) : ℂ) by norm_num] at h
+        have h' := Complex.ofReal_inj.mp h
+        have hpos : 0 < ((n : ℝ) + 1)⁻¹ := by positivity
+        linarith [h', hpos]
+    refine hseq.frequently (Filter.Frequently.of_forall fun n => ?_)
+    have hxpos : (0 : ℝ) < 1 + ((n : ℝ) + 1)⁻¹ := by positivity
+    exact GaussDigamma.digamma_real_eq_tsum hxpos
+  have heq := h1.eqOn_of_preconnected_of_frequently_eq h2 hpre
+    (by simp : (1 : ℂ) ∈ {z : ℂ | 0 < z.re}) hfreq
+  have hs' : s ∈ {z : ℂ | 0 < z.re} := hs
+  have hval := heq hs'
+  rw [GaussDigamma.integral_eq_tsum hs]
+  exact hval
 
 /-- **The `1/t²` decay of `Φ` on the line `Re s = 5/4`** (PROVEN
 2026-07-24 — the quadratic strengthening of `poitouPhi_line_decay` by
