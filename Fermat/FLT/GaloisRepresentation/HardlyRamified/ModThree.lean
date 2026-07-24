@@ -7184,50 +7184,422 @@ theorem sum_analyticOrderNatAt_le_of_frontier_norm_le
       _ ≤ (R - r) * (M / (R - r)) := mul_le_mul_of_nonneg_left hIH (le_of_lt hRr)
       _ = M := by rw [mul_comm, div_mul_cancel₀ M hRr.ne']
 
+/-- **The elementary factor of the completed Dedekind zeta**
+(definition, 2026-07-24 — introduced for the decomposition of
+`DedekindContinuation.xi_window_ratio_bound`): the product
+`E(s) = s(s−1)·|d_K|^{s/2}·Γ_ℝ(s)^{r₁}·Γ_ℂ(s)^{r₂}` of all the
+non-Dirichlet factors of `eq_of_one_lt_re`, spelled so that
+`ξ_K(s) = E(s)·ζ_K(s)` on `re s > 1` DEFINITIONALLY
+(`DedekindContinuation.xi_eq_xiFactor_mul_dedekindZeta`).  Off the
+real axis `E` never vanishes (`s ≠ 0 ≠ s − 1`, complex powers of
+positive real bases are nonzero, and mathlib's `Complex.Gamma`
+vanishes only at the nonpositive integers), so on the window circles
+at height `T ≥ 8` — whose points have `im ≥ 2` — the quotient `ξ_K/E`
+is the honest analytically continued Dedekind zeta, the object whose
+polynomial growth Phragmén–Lindelöf controls. -/
+noncomputable def dedekindXiFactor (K : Type*) [Field K] [NumberField K]
+    (s : ℂ) : ℂ :=
+  s * (s - 1) * Complex.ofReal |(NumberField.discr K : ℝ)| ^ (s / 2) *
+    ((Real.pi : ℂ) ^ (-s / 2) * Complex.Gamma (s / 2)) ^
+      NumberField.InfinitePlace.nrRealPlaces K *
+    ((2 : ℂ) * ((2 * Real.pi : ℝ) : ℂ) ^ (-s) * Complex.Gamma s) ^
+      NumberField.InfinitePlace.nrComplexPlaces K
+
+/-- **The `re s > 1` formula, factored form** (PROVEN 2026-07-24):
+`ξ_K(s) = E(s)·ζ_K(s)` on the half-plane of absolute convergence —
+the interface field `eq_of_one_lt_re` with its first five factors
+folded into `dedekindXiFactor`. -/
+theorem DedekindContinuation.xi_eq_xiFactor_mul_dedekindZeta {K : Type*}
+    [Field K] [NumberField K] (pkg : DedekindContinuation K) (s : ℂ)
+    (hs : 1 < s.re) :
+    pkg.xi s = dedekindXiFactor K s * NumberField.dedekindZeta K s :=
+  pkg.eq_of_one_lt_re s hs
+
+open IsDedekindDomain in
+/-- **Uniform Euler-product lower bound for `ζ_K` on the line
+`re s = 2`** (PROVEN 2026-07-24 — leaf (iii) of the decomposition of
+`DedekindContinuation.xi_window_ratio_bound`): there is an `m > 0`
+with `‖ζ_K(s)‖ ≥ m` for EVERY `s` with `re s = 2`.  Through the
+project's exp-log Euler product
+`exp_tsum_neg_log_one_sub_dirichletCharacter_mul_cpow_neg_eq_LSeries`
+(from `Chebotarev.lean`, at the trivial character mod `1`),
+`ζ_K(s) = exp(Σ_𝔭 −log(1 − N𝔭^{−s}))`, so
+`‖ζ_K(s)‖ = exp(re Σ) ≥ exp(−‖Σ‖)`; each log is bounded in norm by
+`(3/2)·N𝔭^{−2}` (`Complex.norm_log_one_add_half_le_self`, the factors
+having norm `≤ 2^{−2} ≤ 1/2`), and the full-place sum `Σ_𝔭 N𝔭^{−2}`
+converges (`summable_rpow_neg_natCard_quotient`), giving the uniform
+constant `m = exp(−(3/2)·Σ_𝔭 N𝔭^{−2})` — the `ζ(2σ)/ζ(σ)`-style
+constant of the classical estimate, uniform in `im s`. -/
+theorem dedekindZeta_norm_lower_of_re_eq_two (K : Type*) [Field K]
+    [NumberField K] :
+    ∃ m : ℝ, 0 < m ∧ ∀ s : ℂ, s.re = 2 →
+      m ≤ ‖NumberField.dedekindZeta K s‖ := by
+  classical
+  have hsum2 : Summable
+      (fun P : HeightOneSpectrum (NumberField.RingOfIntegers K) =>
+        (Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℝ) ^
+          (-(2 : ℝ))) :=
+    summable_rpow_neg_natCard_quotient (by norm_num)
+  refine ⟨Real.exp (-(3 / 2 *
+      ∑' P : HeightOneSpectrum (NumberField.RingOfIntegers K),
+        (Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℝ) ^
+          (-(2 : ℝ)))), Real.exp_pos _, ?_⟩
+  intro s hs
+  have hs2 : 1 < s.re := by rw [hs]; norm_num
+  have h := exp_tsum_neg_log_one_sub_dirichletCharacter_mul_cpow_neg_eq_LSeries
+    K (1 : DirichletCharacter ℂ 1) hs2
+  have hcoeff : (fun k : ℕ => (1 : DirichletCharacter ℂ 1) (k : ZMod 1) *
+      (Nat.card {I : Ideal (NumberField.RingOfIntegers K) //
+        Ideal.absNorm I = k} : ℂ)) =
+      fun n : ℕ => (Nat.card {I : Ideal (NumberField.RingOfIntegers K) //
+        Ideal.absNorm I = n} : ℂ) := by
+    funext k
+    rw [MulChar.one_apply (isUnit_of_subsingleton _), one_mul]
+  -- per-place factor norm bound at `re s = 2`
+  have hzb : ∀ P : HeightOneSpectrum (NumberField.RingOfIntegers K),
+      ‖(1 : DirichletCharacter ℂ 1)
+          ((Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℕ) :
+            ZMod 1) *
+        (Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℂ) ^ (-s)‖ ≤
+        (Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℝ) ^
+          (-(2 : ℝ)) := by
+    intro P
+    have hNpos : 0 < Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) := by
+      have h2 := two_le_natCard_quotient P
+      omega
+    rw [norm_mul, Complex.norm_natCast_cpow_of_pos hNpos, Complex.neg_re, hs]
+    exact mul_le_of_le_one_left (Real.rpow_nonneg (Nat.cast_nonneg _) _)
+      (DirichletCharacter.norm_le_one _ _)
+  -- the factors are in the disc of radius `1/2` where `log` is tame
+  have hhalf : ∀ P : HeightOneSpectrum (NumberField.RingOfIntegers K),
+      ‖-((1 : DirichletCharacter ℂ 1)
+          ((Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℕ) :
+            ZMod 1) *
+        (Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℂ) ^ (-s))‖ ≤
+        1 / 2 := by
+    intro P
+    rw [norm_neg]
+    refine (hzb P).trans ?_
+    have h2N : (2 : ℝ) ≤
+        (Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℝ) := by
+      exact_mod_cast two_le_natCard_quotient P
+    calc (Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℝ) ^
+          (-(2 : ℝ))
+        ≤ (2 : ℝ) ^ (-(2 : ℝ)) :=
+          Real.rpow_le_rpow_of_nonpos two_pos h2N (by norm_num)
+      _ ≤ (2 : ℝ) ^ (-1 : ℝ) :=
+          (Real.rpow_le_rpow_left_iff one_lt_two).mpr (by norm_num)
+      _ = 1 / 2 := by rw [Real.rpow_neg_one]; norm_num
+  -- per-place log bound
+  have hlogb : ∀ P : HeightOneSpectrum (NumberField.RingOfIntegers K),
+      ‖-Complex.log (1 - (1 : DirichletCharacter ℂ 1)
+          ((Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℕ) :
+            ZMod 1) *
+        (Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℂ) ^ (-s))‖ ≤
+        3 / 2 * (Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℝ) ^
+          (-(2 : ℝ)) := by
+    intro P
+    rw [norm_neg, sub_eq_add_neg]
+    calc ‖Complex.log (1 + -((1 : DirichletCharacter ℂ 1)
+            ((Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℕ) :
+              ZMod 1) *
+          (Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℂ) ^
+            (-s)))‖
+        ≤ 3 / 2 * ‖-((1 : DirichletCharacter ℂ 1)
+            ((Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℕ) :
+              ZMod 1) *
+          (Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℂ) ^
+            (-s))‖ :=
+          Complex.norm_log_one_add_half_le_self (hhalf P)
+      _ = 3 / 2 * ‖(1 : DirichletCharacter ℂ 1)
+            ((Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℕ) :
+              ZMod 1) *
+          (Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℂ) ^
+            (-s)‖ := by rw [norm_neg]
+      _ ≤ 3 / 2 * (Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℝ) ^
+            (-(2 : ℝ)) :=
+          mul_le_mul_of_nonneg_left (hzb P) (by norm_num)
+  -- the log sum is absolutely bounded by `(3/2)·Σ_𝔭 N𝔭^{−2}`
+  have hnorm_summable : Summable
+      (fun P : HeightOneSpectrum (NumberField.RingOfIntegers K) =>
+        ‖-Complex.log (1 - (1 : DirichletCharacter ℂ 1)
+            ((Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℕ) :
+              ZMod 1) *
+          (Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℂ) ^
+            (-s))‖) :=
+    Summable.of_nonneg_of_le (fun P => norm_nonneg _) hlogb
+      (hsum2.mul_left (3 / 2))
+  have hS : ‖∑' P : HeightOneSpectrum (NumberField.RingOfIntegers K),
+      -Complex.log (1 - (1 : DirichletCharacter ℂ 1)
+          ((Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℕ) :
+            ZMod 1) *
+        (Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℂ) ^ (-s))‖ ≤
+      3 / 2 * ∑' P : HeightOneSpectrum (NumberField.RingOfIntegers K),
+        (Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℝ) ^
+          (-(2 : ℝ)) := by
+    refine (norm_tsum_le_tsum_norm hnorm_summable).trans ?_
+    rw [← tsum_mul_left]
+    exact Summable.tsum_le_tsum hlogb hnorm_summable (hsum2.mul_left _)
+  have hre : -(3 / 2 *
+      ∑' P : HeightOneSpectrum (NumberField.RingOfIntegers K),
+        (Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℝ) ^
+          (-(2 : ℝ))) ≤
+      (∑' P : HeightOneSpectrum (NumberField.RingOfIntegers K),
+        -Complex.log (1 - (1 : DirichletCharacter ℂ 1)
+            ((Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℕ) :
+              ZMod 1) *
+          (Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℂ) ^
+            (-s))).re :=
+    (abs_le.mp ((Complex.abs_re_le_norm _).trans hS)).1
+  unfold NumberField.dedekindZeta
+  rw [← hcoeff, ← h, Complex.norm_exp, Real.exp_le_exp]
+  exact hre
+
+/-- **Phragmén–Lindelöf window bound: `ξ_K` against its elementary
+factor on the window circle** (sorry node, stated 2026-07-24 — leaf
+(i) of the decomposition of
+`DedekindContinuation.xi_window_ratio_bound`): there are `C > 0` and
+`B : ℕ` with `‖ξ_K(z)‖ ≤ C·T^B·‖E(z)‖` on the circle
+`‖z − (2 + iT)‖ = 6` for all `T ≥ 8`, `E = dedekindXiFactor K`.
+Since `E` is zero-free on the window (its points have `im ≥ 2`), this
+says the analytically continued Dedekind zeta `ξ_K/E` grows
+polynomially on the window — the convexity step of Landau's zero
+count (E. Landau, *Algebraische Zahlen*, p. 122; Poitou p. 6-02).
+
+Intended proof: `q := ξ_K/E` is differentiable on `im s > 0`
+(quotient rule; `E ≠ 0` off the real axis) and agrees with `ζ_K` on
+`re s > 1` (`xi_eq_xiFactor_mul_dedekindZeta`).  Boundary bounds for
+the strip `−4 ≤ re s ≤ 8`, `im s ≥ 1`:
+
+* on `re s = 8`: `|q| = |ζ_K| ≤ Σ_𝔞 N𝔞^{−8} = ζ_K(8) < ∞` (absolute
+  convergence of the Dirichlet series);
+* on `re s = −4`: `q(−4 + it) = q(5 − it)·E(5 − it)/E(−4 + it)` by
+  `funcEq`, `|q(5 − it)| ≤ ζ_K(5)`, and the same-height ratio
+  `|E(5 − it)/E(−4 + it)| = O(|t|^B)` by iterating
+  `Complex.Gamma_add_one` (shifting `re` into `[1, 2)` costs
+  linear factors polynomially bounded above and below at height
+  `≥ 1`) together with the reflection formula
+  `Complex.Gamma_mul_Gamma_one_sub` (trading `Γ` at `re ≤ 0` for
+  `1/(Γ(1 − s)·sin πs)`, with `sinh(π|t|) ≤ |sin πs| ≤ e^{π|t|}` and
+  `|Γ(u + iv)| ≤ Γ(u)` for `u > 0` from the integral
+  representation);
+* a-priori growth: `|q| ≤ exp(C‖s‖ log ‖s‖)·|E|⁻¹` from the `growth`
+  field, and `|E(s)|⁻¹ ≤ exp(C′(1 + |im s|))` on the strip by the
+  same reflection/recurrence estimates
+  (`|Γ(s)| ≥ π e^{−π|im s|}/Γ(1 − re s)`-style) — far below the
+  `exp(B′·exp(c|im s|))`, `c < π/12`, tolerance of
+  `PhragmenLindelof.vertical_strip`.
+
+For the half-strip (mathlib's PL variants use full vertical lines):
+either reflect `q` across `im = 1` by Schwarz symmetry —
+`s ↦ conj (q (conj s + 2·I))` glues with `q` along `im = 1` via
+`pkg.conj_symm` and the factorwise conjugation identities
+(`Complex.Gamma_conj`, `conj_ofReal_cpow`) — or run the classical
+auxiliary-multiplier proof of half-strip Phragmén–Lindelöf on
+rectangles with the maximum principle
+(`Complex.norm_le_of_forall_mem_frontier_norm_le`).  Every window
+circle point has `im ≥ 2 > 1`, `re ∈ [−4, 8]`, and `|im| ≤ T + 6 ≤
+2T`, so the strip bound `O((1 + |im|)^B)` specializes to `C·T^B`. -/
+theorem DedekindContinuation.xi_window_le_xiFactor {K : Type*} [Field K]
+    [NumberField K] (pkg : DedekindContinuation K) :
+    ∃ C : ℝ, 0 < C ∧ ∃ B : ℕ, ∀ T : ℝ, 8 ≤ T → ∀ z : ℂ,
+      ‖z - (2 + (T : ℂ) * Complex.I)‖ = 6 →
+      ‖pkg.xi z‖ ≤ C * T ^ B * ‖dedekindXiFactor K z‖ := by
+  sorry
+
+/-- **Γ-ratio bound for the elementary factor across the window
+circle** (sorry node, stated 2026-07-24 — leaf (ii) of the
+decomposition of `DedekindContinuation.xi_window_ratio_bound`): on
+the circle `‖z − c‖ = 6`, `c = 2 + iT`, `T ≥ 8`, the elementary
+factor satisfies `‖E(z)‖ ≤ C·T^B·‖E(c)‖`.  Both sides carry the same
+`e^{−πT/4}`-type Γ-decay, so the ratio is polynomial.  Factorwise
+(`E = s(s−1)·|d|^{s/2}·Γ_ℝ(s)^{r₁}·Γ_ℂ(s)^{r₂}`):
+
+* `|z(z−1)| ≤ (T + 15)² ≤ 16T²`, while `|c(c−1)| ≥ T²` (both factors
+  of the centre have modulus `≥ T`); the power factors have moduli
+  `|d|^{re/2}`, `π^{−re/2}`, `(2π)^{−re}` with `re` confined to
+  `[−4, 8]`, so their window/centre ratios are absolute constants.
+* For the Γ-ratios `|Γ(z/2)/Γ(c/2)|` and `|Γ(z)/Γ(c)|`: shift both
+  arguments into `re ∈ [1, 2)` by `Complex.Gamma_add_one` (at most
+  nine shifts; each linear factor and its inverse is bounded by a
+  power of `T` since the heights stay in `[T/2 − 3, T + 6]`, all
+  `≥ 1`).  For the resulting equal-`re` comparison at heights
+  `y, y′` with `|y − y′| ≤ 6`, use the Euler limit
+  `Complex.GammaSeq_tendsto_Gamma`: for equal real parts the
+  `n^s·n!` parts of the two `GammaSeq`s cancel in modulus, so the
+  modulus ratio is the limit of
+  `Π_{j ≤ n} (((x+j)² + y′²)/((x+j)² + y²))^{1/2}`, and
+  `|y′² − y²| ≤ 6(2T + 6)` with
+  `Σ_j ((x+j)² + y²)⁻¹ ≤ y⁻² + π/(2y)` bounds every partial product
+  by `exp(6(2T + 6)(y⁻² + π/(2y))/2)`, a constant for
+  `y ≥ T/2 − 3 ≥ 1`; conclude with `le_of_tendsto`.  Horizontal
+  (equal-height, `re`-offset `≤ 6`) comparisons are recurrence
+  shifts again.
+* All bounds are uniform over the circle, giving one pair `C`, `B`. -/
+theorem dedekindXiFactor_window_ratio (K : Type*) [Field K]
+    [NumberField K] :
+    ∃ C : ℝ, 0 < C ∧ ∃ B : ℕ, ∀ T : ℝ, 8 ≤ T → ∀ z : ℂ,
+      ‖z - (2 + (T : ℂ) * Complex.I)‖ = 6 →
+      ‖dedekindXiFactor K z‖ ≤
+        C * T ^ B * ‖dedekindXiFactor K (2 + (T : ℂ) * Complex.I)‖ := by
+  sorry
+
+/-- **Window ratio bound at bounded heights `2 ≤ T ≤ 8`** (PROVEN
+2026-07-24 — the compactness regime of the decomposition of
+`DedekindContinuation.xi_window_ratio_bound`; for `T < 8` the window
+circle can cross the real axis, where the elementary factor has its
+`Γ`-degeneracies, so the analytic leaves start at `T ≥ 8` and this
+regime is handled by pure continuity): every window value is bounded
+by the maximum of `‖ξ_K‖` on the compact ball `‖z‖ ≤ 16` (extreme
+value theorem; every window point at height `T ≤ 8` lies there), and
+the centre values `‖ξ_K(2 + iT)‖`, `T ∈ [2, 8]`, have a positive
+minimum by `ne_zero_of_one_lt_re` at `re = 2` plus continuity on the
+compact segment. -/
+theorem DedekindContinuation.xi_window_ratio_bound_of_le_eight {K : Type*}
+    [Field K] [NumberField K] (pkg : DedekindContinuation K) :
+    ∃ C : ℝ, 0 < C ∧ ∀ T : ℝ, 2 ≤ T → T ≤ 8 → ∀ z : ℂ,
+      ‖z - (2 + (T : ℂ) * Complex.I)‖ = 6 →
+      ‖pkg.xi z‖ ≤ C * ‖pkg.xi (2 + (T : ℂ) * Complex.I)‖ := by
+  have hcont : Continuous pkg.xi := pkg.differentiable.continuous
+  -- global bound on a compact ball containing every bounded-height window
+  obtain ⟨w, -, hwmax⟩ := (isCompact_closedBall (0 : ℂ) 16).exists_isMaxOn
+    ⟨0, Metric.mem_closedBall_self (by norm_num)⟩ hcont.norm.continuousOn
+  -- positive minimum of the centre values over `T ∈ [2, 8]`
+  have hcentre : Continuous fun t : ℝ => (2 : ℂ) + (t : ℂ) * Complex.I :=
+    continuous_const.add (Complex.continuous_ofReal.mul continuous_const)
+  have hgcont : Continuous
+      fun t : ℝ => ‖pkg.xi ((2 : ℂ) + (t : ℂ) * Complex.I)‖ :=
+    (hcont.comp hcentre).norm
+  obtain ⟨T₀, -, hT₀min⟩ := (isCompact_Icc (a := (2 : ℝ)) (b := 8)).exists_isMinOn
+    ⟨2, Set.mem_Icc.mpr ⟨le_refl _, by norm_num⟩⟩ hgcont.continuousOn
+  have hm : 0 < ‖pkg.xi (2 + (T₀ : ℂ) * Complex.I)‖ := by
+    rw [norm_pos_iff]
+    refine pkg.ne_zero_of_one_lt_re _ ?_
+    have h2 : ((2 : ℂ) + (T₀ : ℂ) * Complex.I).re = 2 := by simp
+    rw [h2]
+    norm_num
+  refine ⟨(‖pkg.xi w‖ + 1) / ‖pkg.xi (2 + (T₀ : ℂ) * Complex.I)‖,
+    div_pos (by positivity) hm, ?_⟩
+  intro T hT2 hT8 z hz
+  have hzball : z ∈ Metric.closedBall (0 : ℂ) 16 := by
+    rw [Metric.mem_closedBall, dist_zero_right]
+    have h1 : ‖z‖ - ‖(2 : ℂ) + (T : ℂ) * Complex.I‖ ≤
+        ‖z - (2 + (T : ℂ) * Complex.I)‖ := norm_sub_norm_le _ _
+    have h2 : ‖(2 : ℂ) + (T : ℂ) * Complex.I‖ ≤ 2 + T := by
+      calc ‖(2 : ℂ) + (T : ℂ) * Complex.I‖
+          ≤ ‖(2 : ℂ)‖ + ‖(T : ℂ) * Complex.I‖ := norm_add_le _ _
+        _ = 2 + T := by
+            rw [norm_mul, Complex.norm_I, mul_one, Complex.norm_real,
+              Real.norm_eq_abs, abs_of_nonneg (by linarith : (0 : ℝ) ≤ T)]
+            norm_num
+    rw [hz] at h1
+    linarith
+  have hzM : ‖pkg.xi z‖ ≤ ‖pkg.xi w‖ := isMaxOn_iff.mp hwmax z hzball
+  have hcM : ‖pkg.xi (2 + (T₀ : ℂ) * Complex.I)‖ ≤
+      ‖pkg.xi (2 + (T : ℂ) * Complex.I)‖ :=
+    isMinOn_iff.mp hT₀min T (Set.mem_Icc.mpr ⟨hT2, hT8⟩)
+  calc ‖pkg.xi z‖ ≤ ‖pkg.xi w‖ + 1 := by linarith
+    _ = (‖pkg.xi w‖ + 1) / ‖pkg.xi (2 + (T₀ : ℂ) * Complex.I)‖ *
+        ‖pkg.xi (2 + (T₀ : ℂ) * Complex.I)‖ := by
+        rw [div_mul_cancel₀ _ hm.ne']
+    _ ≤ (‖pkg.xi w‖ + 1) / ‖pkg.xi (2 + (T₀ : ℂ) * Complex.I)‖ *
+        ‖pkg.xi (2 + (T : ℂ) * Complex.I)‖ :=
+        mul_le_mul_of_nonneg_left hcM (by positivity)
+
 /-- **Polynomial max/centre ratio for `ξ_K` on the window disc at
-height `T`** (sorry node, stated 2026-07-24 — the analytic leaf of the
-decomposition of `DedekindContinuation.zero_count_window`): there is a
-natural `A ≥ 1` with `‖ξ_K(z)‖ ≤ T^A·‖ξ_K(2 + iT)‖` for every `T ≥ 2`
-and every `z` on the circle of radius `6` around the centre
-`c = 2 + iT`.  This is the convexity estimate that makes Landau's
-window count `O(log T)`: numerator and denominator carry the same
-exponential Γ-decay in `T`, so the RATIO is polynomial even though
-`ξ_K` itself is exponentially small at height `T`.  (Only the upper
-window is stated; the `−T` window follows by `conj_symm`.)
+height `T`** (DECOMPOSED 2026-07-24, assembly PROVEN — the analytic
+leaf of the decomposition of `DedekindContinuation.zero_count_window`,
+now cut along Landau's route, E. Landau, *Algebraische Zahlen*,
+p. 122, quoted by Poitou p. 6-02, into the Phragmén–Lindelöf window
+bound `DedekindContinuation.xi_window_le_xiFactor` (leaf (i),
+sorried), the elementary-factor Γ-ratio
+`dedekindXiFactor_window_ratio` (leaf (ii), sorried), the
+Euler-product centre lower bound `dedekindZeta_norm_lower_of_re_eq_two`
+(leaf (iii), PROVEN), and the bounded-height compactness bound
+`DedekindContinuation.xi_window_ratio_bound_of_le_eight` (PROVEN)):
+there is a natural `A ≥ 1` with `‖ξ_K(z)‖ ≤ T^A·‖ξ_K(2 + iT)‖` for
+every `T ≥ 2` and every `z` on the circle of radius `6` around the
+centre `c = 2 + iT`.  This is the convexity estimate that makes
+Landau's window count `O(log T)`: numerator and denominator carry the
+same exponential Γ-decay in `T`, so the RATIO is polynomial even
+though `ξ_K` itself is exponentially small at height `T`.  (Only the
+upper window is stated; the `−T` window follows by `conj_symm`.)
 
-Intended proof (steps 3–4 of the recorded Landau route, E. Landau,
-*Algebraische Zahlen*, p. 122, quoted by Poitou p. 6-02):
-
-* *Upper bound on the disc.*  Write `ξ = E·ζ_K` on `re s > 1` via
-  `eq_of_one_lt_re`, with `E` the entire elementary factor
-  `s(s−1)·|d|^{s/2}·Γ_ℝ(s)^{r₁}·Γ_ℂ(s)^{r₂}` (nonvanishing off
-  `[0,1]`); the identity theorem extends the factorization to the
-  disc, which stays in `re s ∈ [−4, 8]`, `im s ∈ [T − 6, T + 6]`,
-  hence off the real axis.  There `|ζ_K(s)| = O(T^{A₁})` by
-  Phragmén–Lindelöf (`PhragmenLindelof.vertical_strip`, already
-  imported) between the trivial Dirichlet-series bound
-  `|ζ_K| ≤ ζ(2)^n` on `re s = 8` and the reflected bound on
-  `re s = −4` obtained from `funcEq` and Γ-ratio estimates; the
-  `growth` field supplies the a-priori hypothesis of
-  Phragmén–Lindelöf.
-* *Γ-ratio across the disc.*  `|E(z)|/|E(c)| = T^{O(1)}` for
-  `‖z − c‖ = 6` by the recurrence `Γ(s+1) = s·Γ(s)` (shifting both
-  arguments into a fixed closed substrip at height `≥ T − 6`)
-  together with boundedness of `Γ` and `1/Γ` there — only ratio
-  bounds at bounded horizontal offset are needed, not Stirling.
-* *Lower bound at the centre.*  `‖ξ(c)‖ ≥ |E(c)|·|ζ_K(2 + iT)|` and
-  `|ζ_K(2 + iT)|⁻¹ = ∏_𝔭 |1 − N𝔭^{−(2+iT)}| ≤ ∏_𝔭 (1 + N𝔭^{−2})
-  ≤ ζ_K(2) < ∞` from the Euler factorization of the Dedekind zeta
-  through `eq_of_one_lt_re` at `re = 2`.
-
-Combining the three bounds gives the stated single natural exponent
-`A`. -/
+ASSEMBLY (proven here): for `T ≥ 8` chain
+`‖ξ(z)‖ ≤ C₁T^{B₁}‖E(z)‖ ≤ C₁C₂T^{B₁+B₂}‖E(c)‖ ≤
+(C₁C₂/m)·T^{B₁+B₂}·‖ξ(c)‖`, the last step because
+`‖ξ(c)‖ = ‖E(c)‖·‖ζ_K(c)‖ ≥ m·‖E(c)‖` by
+`xi_eq_xiFactor_mul_dedekindZeta` at `re c = 2`; for `2 ≤ T ≤ 8` use
+the compactness constant `C₀`.  The constants are absorbed into the
+exponent: with `max C₀ (C₁C₂/m) < 2^k ≤ T^k`, the natural
+`A = B₁ + B₂ + k + 1 ≥ 1` works in both regimes. -/
 theorem DedekindContinuation.xi_window_ratio_bound {K : Type*} [Field K]
     [NumberField K] (pkg : DedekindContinuation K) :
     ∃ A : ℕ, 0 < A ∧ ∀ T : ℝ, 2 ≤ T → ∀ z : ℂ,
       ‖z - (2 + (T : ℂ) * Complex.I)‖ = 6 →
       ‖pkg.xi z‖ ≤ T ^ A * ‖pkg.xi (2 + (T : ℂ) * Complex.I)‖ := by
-  sorry
+  obtain ⟨C₀, hC₀, h₀⟩ := pkg.xi_window_ratio_bound_of_le_eight
+  obtain ⟨C₁, hC₁, B₁, h₁⟩ := pkg.xi_window_le_xiFactor
+  obtain ⟨C₂, hC₂, B₂, h₂⟩ := dedekindXiFactor_window_ratio K
+  obtain ⟨m, hm, hmlow⟩ := dedekindZeta_norm_lower_of_re_eq_two K
+  obtain ⟨k, hk⟩ := pow_unbounded_of_one_lt (max C₀ (C₁ * C₂ / m))
+    (by norm_num : (1 : ℝ) < 2)
+  refine ⟨B₁ + B₂ + k + 1, by omega, ?_⟩
+  intro T hT z hz
+  have hT1 : (1 : ℝ) ≤ T := by linarith
+  have hT0 : (0 : ℝ) < T := by linarith
+  have hxic : (0 : ℝ) ≤ ‖pkg.xi (2 + (T : ℂ) * Complex.I)‖ := norm_nonneg _
+  have h2k : (2 : ℝ) ^ k ≤ T ^ k := pow_le_pow_left₀ (by norm_num) hT k
+  rcases le_or_gt T 8 with hT8 | hT8
+  · -- bounded heights: the compactness constant, absorbed into `T ^ k`
+    calc ‖pkg.xi z‖
+        ≤ C₀ * ‖pkg.xi (2 + (T : ℂ) * Complex.I)‖ := h₀ T hT hT8 z hz
+      _ ≤ 2 ^ k * ‖pkg.xi (2 + (T : ℂ) * Complex.I)‖ :=
+          mul_le_mul_of_nonneg_right
+            (le_trans (le_max_left _ _) hk.le) hxic
+      _ ≤ T ^ k * ‖pkg.xi (2 + (T : ℂ) * Complex.I)‖ :=
+          mul_le_mul_of_nonneg_right h2k hxic
+      _ ≤ T ^ (B₁ + B₂ + k + 1) * ‖pkg.xi (2 + (T : ℂ) * Complex.I)‖ :=
+          mul_le_mul_of_nonneg_right
+            (pow_le_pow_right₀ hT1 (by omega)) hxic
+  · -- tall windows: Phragmén–Lindelöf × Γ-ratio × Euler lower bound
+    have hT8' : (8 : ℝ) ≤ T := hT8.le
+    have hcre : ((2 : ℂ) + (T : ℂ) * Complex.I).re = 2 := by simp
+    have hEc : m * ‖dedekindXiFactor K (2 + (T : ℂ) * Complex.I)‖ ≤
+        ‖pkg.xi (2 + (T : ℂ) * Complex.I)‖ := by
+      rw [pkg.xi_eq_xiFactor_mul_dedekindZeta _ (by rw [hcre]; norm_num),
+        norm_mul, mul_comm m]
+      exact mul_le_mul_of_nonneg_left (hmlow _ hcre) (norm_nonneg _)
+    calc ‖pkg.xi z‖
+        ≤ C₁ * T ^ B₁ * ‖dedekindXiFactor K z‖ := h₁ T hT8' z hz
+      _ ≤ C₁ * T ^ B₁ * (C₂ * T ^ B₂ *
+            ‖dedekindXiFactor K (2 + (T : ℂ) * Complex.I)‖) :=
+          mul_le_mul_of_nonneg_left (h₂ T hT8' z hz)
+            (mul_nonneg hC₁.le (pow_nonneg hT0.le _))
+      _ = C₁ * C₂ / m * T ^ (B₁ + B₂) *
+            (m * ‖dedekindXiFactor K (2 + (T : ℂ) * Complex.I)‖) := by
+          rw [pow_add]
+          field_simp [hm.ne']
+      _ ≤ C₁ * C₂ / m * T ^ (B₁ + B₂) *
+            ‖pkg.xi (2 + (T : ℂ) * Complex.I)‖ :=
+          mul_le_mul_of_nonneg_left hEc
+            (mul_nonneg (div_nonneg (mul_nonneg hC₁.le hC₂.le) hm.le)
+              (pow_nonneg hT0.le _))
+      _ ≤ 2 ^ k * T ^ (B₁ + B₂) *
+            ‖pkg.xi (2 + (T : ℂ) * Complex.I)‖ :=
+          mul_le_mul_of_nonneg_right
+            (mul_le_mul_of_nonneg_right
+              (le_trans (le_max_right _ _) hk.le)
+              (pow_nonneg hT0.le _)) hxic
+      _ ≤ T ^ k * T ^ (B₁ + B₂) *
+            ‖pkg.xi (2 + (T : ℂ) * Complex.I)‖ :=
+          mul_le_mul_of_nonneg_right
+            (mul_le_mul_of_nonneg_right h2k (pow_nonneg hT0.le _)) hxic
+      _ = T ^ (B₁ + B₂ + k) * ‖pkg.xi (2 + (T : ℂ) * Complex.I)‖ := by
+          rw [← pow_add, add_comm k (B₁ + B₂)]
+      _ ≤ T ^ (B₁ + B₂ + k + 1) * ‖pkg.xi (2 + (T : ℂ) * Complex.I)‖ :=
+          mul_le_mul_of_nonneg_right
+            (pow_le_pow_right₀ hT1 (Nat.le_succ _)) hxic
 
 /-- **Landau's window count: `O(log T)` zeros of `ξ_K` at height `T`,
 with multiplicity** (DECOMPOSED 2026-07-24, counting core PROVEN —
