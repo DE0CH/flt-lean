@@ -238,6 +238,7 @@ import Mathlib.RingTheory.Norm.Transitivity
 import Mathlib.RingTheory.Norm.Defs
 import Mathlib.RingTheory.DedekindDomain.Ideal.Basic
 import Mathlib.Data.Set.Card
+import Mathlib.Data.Set.Card.Arithmetic
 import Mathlib.RingTheory.Coprime.Lemmas
 import Mathlib.Data.Complex.BigOperators
 import Mathlib.LinearAlgebra.Basis.Defs
@@ -3335,8 +3336,90 @@ def HasLipschitzBoundaryCover {E : Type*} [NormedAddCommGroup E]
 
 open scoped Pointwise in
 open MeasureTheory in
-/-- **Cell count along a dilated Lipschitz-parametrized family** (sorry
-leaf) — the boundary-cell estimate of Lang, *Algebraic Number Theory*,
+/-- **The packing bound: cells meeting a set of bounded diameter** (sorry
+leaf) — the pigeonhole step of Lang, *Algebraic Number Theory*, VI §2
+Theorem 2: for a fixed `ℤ`-basis `b` of the lattice `L` with fundamental
+parallelotope `P = ZSpan.fundamentalDomain (b.ofZLatticeBasis ℝ)`, there
+is a bound `c = c(L, b, R)` such that EVERY set `S ⊆ E` of `ediam ≤ R`
+meets at most `c` of the lattice cells `x +ᵥ P`, `x ∈ L` — and the set
+of such cells is finite. Uniformity in the position of `S` is the point.
+
+Intended proof: empty `S` is trivial; otherwise fix `s₀ ∈ S`. Since
+`0 ∈ P` and `P` is bounded (`ZSpan.fundamentalDomain_isBounded`) with
+diameter `δ := diam P < ∞`, any `x ∈ L` whose cell meets `S` satisfies
+`dist (x : E) s₀ ≤ δ + R`, so all qualifying `x` lie in
+`closedBall s₀ (δ + R) ∩ L`, a finite set: lattice points in a bounded
+set are finite (`ZSpan.setFinite_inter` transported along
+`Module.Basis.ofZLatticeBasis_span`). For the uniform cardinality bound:
+the cells `x +ᵥ P` are pairwise disjoint
+(`ZSpan.exist_unique_vadd_mem_fundamentalDomain`: every point lies in
+exactly one cell), all contained in `closedBall s₀ (2δ + R)`, and each
+has Haar volume `volume P = covolume L > 0` (`ZLattice.covolume_pos`,
+`ZLattice.covolume_eq_measure_fundamentalDomain`), so their number is at
+most `volume (closedBall 0 (2δ + R)) / volume P` — a bound independent
+of `s₀` by translation invariance, e.g.
+`c = ⌈volume.real (closedBall 0 (2δ + R)) / ZLattice.covolume L⌉₊`. -/
+theorem exists_forall_natCard_inter_vadd_fundamentalDomain_le
+    {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+    [FiniteDimensional ℝ E] [MeasureSpace E] [BorelSpace E]
+    [Measure.IsAddHaarMeasure (volume : Measure E)]
+    (L : Submodule ℤ E) [DiscreteTopology L] [IsZLattice ℝ L]
+    {ι : Type*} [Fintype ι] (b : Module.Basis ι ℤ L) (R : NNReal) :
+    ∃ c : ℕ, ∀ S : Set E, Metric.ediam S ≤ (R : ENNReal) →
+      {x : L | (((x : E) +ᵥ ZSpan.fundamentalDomain (b.ofZLatticeBasis ℝ)) ∩
+        S).Nonempty}.Finite ∧
+      Nat.card {x : L // (((x : E) +ᵥ ZSpan.fundamentalDomain (b.ofZLatticeBasis ℝ)) ∩
+        S).Nonempty} ≤ c := by
+  sorry
+
+/-- **Subdivision of the unit cube into `n^ν` subcubes of side `1/n`**
+(PROVEN) — the elementary combinatorial step behind the Lipschitz
+parametrization count of Lang VI §2: the unit cube `[0,1]^ν` is covered
+by the `n^ν` closed subcubes `[g/n, (g+1)/n]`, `g : ν → Fin n`; the
+subcube containing `x` is found coordinatewise as `g j = min ⌊x j·n⌋ (n-1)`
+(the `min` handles the right endpoint `x j = 1`). -/
+theorem Icc_pi_subset_iUnion_Icc_div
+    {ν : Type*} [Fintype ν] {n : ℕ} (hn : 0 < n) :
+    Set.Icc (0 : ν → ℝ) 1 ⊆ ⋃ g : ν → Fin n,
+      Set.Icc (fun j => (g j : ℝ) / n) (fun j => ((g j : ℝ) + 1) / n) := by
+  intro x hx
+  have hnR : (0 : ℝ) < n := Nat.cast_pos.mpr hn
+  refine Set.mem_iUnion.mpr ⟨fun j => ⟨min ⌊x j * n⌋₊ (n - 1),
+    lt_of_le_of_lt (min_le_right _ _) (Nat.sub_lt hn one_pos)⟩, ?_, ?_⟩
+  · intro j
+    simp only
+    rw [div_le_iff₀ hnR]
+    have hx0 : (0 : ℝ) ≤ x j := by simpa using hx.1 j
+    have h0 : (0 : ℝ) ≤ x j * n := mul_nonneg hx0 hnR.le
+    calc ((min ⌊x j * n⌋₊ (n - 1) : ℕ) : ℝ) ≤ (⌊x j * n⌋₊ : ℝ) := by
+          exact_mod_cast min_le_left _ _
+      _ ≤ x j * n := Nat.floor_le h0
+  · intro j
+    simp only
+    rw [le_div_iff₀ hnR]
+    rcases le_or_gt ⌊x j * n⌋₊ (n - 1) with h | h
+    · rw [min_eq_left h]
+      exact (Nat.lt_floor_add_one (x j * n)).le
+    · rw [min_eq_right h.le]
+      have hcast : ((n - 1 : ℕ) : ℝ) + 1 = n := by
+        rw [Nat.cast_sub hn]
+        ring
+      have hx1 : x j ≤ 1 := by simpa using hx.2 j
+      calc x j * n ≤ 1 * n := by nlinarith
+        _ = ((n - 1 : ℕ) : ℝ) + 1 := by rw [one_mul, hcast]
+
+open scoped Pointwise in
+open MeasureTheory in
+set_option maxHeartbeats 800000 in
+/-- **Cell count along a dilated Lipschitz-parametrized family** (PROVEN
+2026-07-24 over the packing bound
+`exists_forall_natCard_inter_vadd_fundamentalDomain_le` and the cube
+subdivision `Icc_pi_subset_iUnion_Icc_div`: subdivide `[0,1]^{d-1}` into
+`⌈t⌉₊^{d-1}` subcubes of side `1/⌈t⌉₊`; each translated `t`-dilated
+Lipschitz image of a subcube has `ediam ≤ t·κ/⌈t⌉₊ ≤ κ`, so it meets at
+most `c` cells by packing; sum over the `m·⌈t⌉₊^{d-1}` pieces and use
+`⌈t⌉₊ ≤ 2t`) — the boundary-cell estimate of Lang, *Algebraic Number
+Theory*,
 VI §2 Theorem 2: fix a `ℤ`-basis `b` of the lattice `L`, with fundamental
 parallelotope `P = ZSpan.fundamentalDomain (b.ofZLatticeBasis ℝ)`, and
 finitely many maps `f i : [0,1]^{d-1} → E` Lipschitz on the cube with a
@@ -3345,22 +3428,8 @@ common constant `κ`. Then there is a `C` such that for every translate
 `w +ᵥ t • ⋃ i, f i '' [0,1]^{d-1}`, at most `C·t^{d-1}` of the lattice
 cells `x + P`, `x ∈ L`, meet `S`.
 
-Intended proof (Lang VI §2, the Lipschitz-parametrization count):
-subdivide `[0,1]^{d-1}` into `⌈t⌉₊^{d-1}` subcubes
-`Icc (g/⌈t⌉₊) ((g+1)/⌈t⌉₊)` indexed by `g : Fin (d-1) → Fin ⌈t⌉₊`, each
-of sup-metric diameter `≤ 1/⌈t⌉₊`; each covering piece
-`w +ᵥ t • f i '' Q_g` then has diameter `≤ t·κ/⌈t⌉₊ ≤ κ`
-(`LipschitzOnWith` scales `EMetric.diam` by `κ`, the dilation `t • ·`
-by `|t|`, the translation not at all), so each piece meets a number of
-cells bounded by a constant `c = c(L, b, κ)` — the packing bound (a
-sub-leaf to be introduced with the proof of this leaf: all cells
-meeting a set of diameter `≤ κ` lie in a ball of radius
-`κ + 2·diam P + 1`, the cells are pairwise disjoint of positive Haar
-volume `vol P`, so their number is at most
-`vol(ball)/vol P`, uniformly over the position of the piece). A cell
-meeting `S` meets one of the `m·⌈t⌉₊^{d-1}` pieces, and monotonicity
-plus `⌈t⌉₊ ≤ 2t` for `t ≥ 1` gives the bound with
-`C = m·c·2^{d-1}`. -/
+The constant is `C = m·c·2^{d-1}` with `c` the packing bound for
+diameter-`κ` sets. -/
 theorem exists_forall_natCard_inter_vadd_smul_lipschitz_le_pow
     {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
     [FiniteDimensional ℝ E] [MeasureSpace E] [BorelSpace E]
@@ -3374,7 +3443,124 @@ theorem exists_forall_natCard_inter_vadd_smul_lipschitz_le_pow
       (Nat.card {x : L // (((x : E) +ᵥ
           ZSpan.fundamentalDomain (b.ofZLatticeBasis ℝ)) ∩ S).Nonempty} : ℝ) ≤
         C * t ^ (Module.finrank ℝ E - 1) := by
-  sorry
+  classical
+  obtain ⟨c, hc⟩ := exists_forall_natCard_inter_vadd_fundamentalDomain_le L b κ
+  refine ⟨((m : ℝ) * c) * 2 ^ (Module.finrank ℝ E - 1), by positivity, ?_⟩
+  intro w t ht S hS
+  have ht0 : (0 : ℝ) ≤ t := zero_le_one.trans ht
+  set n := ⌈t⌉₊ with hndef
+  have hn0 : 0 < n := Nat.ceil_pos.mpr (lt_of_lt_of_le one_pos ht)
+  have hnR : (0 : ℝ) < n := Nat.cast_pos.mpr hn0
+  set Q : (Fin (Module.finrank ℝ E - 1) → Fin n) →
+      Set (Fin (Module.finrank ℝ E - 1) → ℝ) :=
+    fun g => Set.Icc (fun j => (g j : ℝ) / n) (fun j => ((g j : ℝ) + 1) / n)
+  set T : Fin m → (Fin (Module.finrank ℝ E - 1) → Fin n) → Set E := fun i g =>
+    w +ᵥ t • (f i '' (Q g ∩ Set.Icc 0 1)) with hT
+  have hcube : Set.Icc (0 : Fin (Module.finrank ℝ E - 1) → ℝ) 1 =
+      ⋃ g, (Q g ∩ Set.Icc 0 1) := by
+    rw [← Set.iUnion_inter]
+    exact (Set.inter_eq_right.mpr (Icc_pi_subset_iUnion_Icc_div hn0)).symm
+  have hScov : S ⊆ ⋃ i, ⋃ g, T i g := by
+    refine hS.trans ?_
+    rw [Set.smul_set_iUnion, Set.vadd_set_iUnion]
+    refine Set.iUnion_mono fun i => ?_
+    rw [hcube, Set.image_iUnion, Set.smul_set_iUnion, Set.vadd_set_iUnion]
+  have hQd : ∀ g, Metric.ediam (Q g ∩ Set.Icc 0 1) ≤ ENNReal.ofReal (1 / n) := by
+    intro g
+    refine Metric.ediam_le fun u hu v hv => ?_
+    rw [edist_pi_le_iff]
+    intro j
+    rw [edist_dist, Real.dist_eq]
+    refine ENNReal.ofReal_le_ofReal ?_
+    have hu1 : (g j : ℝ) / n ≤ u j := hu.1.1 j
+    have hu2 : u j ≤ ((g j : ℝ) + 1) / n := hu.1.2 j
+    have hv1 : (g j : ℝ) / n ≤ v j := hv.1.1 j
+    have hv2 : v j ≤ ((g j : ℝ) + 1) / n := hv.1.2 j
+    have hsplit : ((g j : ℝ) + 1) / n = (g j : ℝ) / n + 1 / n := by ring
+    rw [abs_sub_le_iff]
+    constructor <;> linarith
+  have hnorm : (‖t‖₊ : ENNReal) = ENNReal.ofReal t := by
+    rw [← Real.enorm_eq_ofReal ht0]; rfl
+  have hTd : ∀ i g, Metric.ediam (T i g) ≤ (κ : ENNReal) := by
+    intro i g
+    have h1 : Metric.ediam (f i '' (Q g ∩ Set.Icc 0 1)) ≤
+        (κ : ENNReal) * ENNReal.ofReal (1 / n) := by
+      refine Metric.ediam_le ?_
+      rintro y1 ⟨x1, hx1, rfl⟩ y2 ⟨x2, hx2, rfl⟩
+      refine le_trans (hf i hx1.2 hx2.2) ?_
+      gcongr
+      exact (Metric.edist_le_ediam_of_mem hx1 hx2).trans (hQd g)
+    have h2 : Metric.ediam (T i g) ≤
+        ENNReal.ofReal t * ((κ : ENNReal) * ENNReal.ofReal (1 / n)) := by
+      have hle := ediam_smul_le t (f i '' (Q g ∩ Set.Icc 0 1))
+      rw [ENNReal.smul_def, smul_eq_mul, hnorm] at hle
+      simp only [hT]
+      rw [ediam_vadd]
+      refine hle.trans ?_
+      gcongr
+    refine h2.trans ?_
+    rw [mul_comm (κ : ENNReal) (ENNReal.ofReal (1 / n)), ← mul_assoc,
+      ← ENNReal.ofReal_mul ht0]
+    calc ENNReal.ofReal (t * (1 / n)) * (κ : ENNReal) ≤ 1 * (κ : ENNReal) := by
+          gcongr
+          rw [ENNReal.ofReal_le_one, mul_one_div, div_le_one hnR]
+          exact Nat.le_ceil t
+      _ = (κ : ENNReal) := one_mul _
+  have hUfin : ∀ i g, {x : L | (((x : E) +ᵥ
+      ZSpan.fundamentalDomain (b.ofZLatticeBasis ℝ)) ∩ T i g).Nonempty}.Finite ∧
+      Nat.card {x : L // (((x : E) +ᵥ
+      ZSpan.fundamentalDomain (b.ofZLatticeBasis ℝ)) ∩ T i g).Nonempty} ≤ c :=
+    fun i g => hc (T i g) (hTd i g)
+  have hsub2 : {x : L | (((x : E) +ᵥ
+      ZSpan.fundamentalDomain (b.ofZLatticeBasis ℝ)) ∩ S).Nonempty} ⊆
+      ⋃ p : Fin m × (Fin (Module.finrank ℝ E - 1) → Fin n), {x : L | (((x : E) +ᵥ
+      ZSpan.fundamentalDomain (b.ofZLatticeBasis ℝ)) ∩ T p.1 p.2).Nonempty} := by
+    rintro x ⟨y, hyc, hyS⟩
+    have hy := hScov hyS
+    rw [Set.mem_iUnion] at hy
+    obtain ⟨i, hi⟩ := hy
+    rw [Set.mem_iUnion] at hi
+    obtain ⟨g, hg⟩ := hi
+    exact Set.mem_iUnion.mpr ⟨(i, g), ⟨y, hyc, hg⟩⟩
+  have hfinU : (⋃ p : Fin m × (Fin (Module.finrank ℝ E - 1) → Fin n),
+      {x : L | (((x : E) +ᵥ
+      ZSpan.fundamentalDomain (b.ofZLatticeBasis ℝ)) ∩ T p.1 p.2).Nonempty}).Finite :=
+    Set.finite_iUnion fun p => (hUfin p.1 p.2).1
+  have hcard : Nat.card {x : L // (((x : E) +ᵥ
+      ZSpan.fundamentalDomain (b.ofZLatticeBasis ℝ)) ∩ S).Nonempty} ≤
+      m * (n ^ (Module.finrank ℝ E - 1) * c) := by
+    have hstep : {x : L | (((x : E) +ᵥ
+        ZSpan.fundamentalDomain (b.ofZLatticeBasis ℝ)) ∩ S).Nonempty}.ncard ≤
+        m * (n ^ (Module.finrank ℝ E - 1) * c) := by
+      calc {x : L | (((x : E) +ᵥ
+          ZSpan.fundamentalDomain (b.ofZLatticeBasis ℝ)) ∩ S).Nonempty}.ncard
+          ≤ (⋃ p : Fin m × (Fin (Module.finrank ℝ E - 1) → Fin n),
+            {x : L | (((x : E) +ᵥ
+            ZSpan.fundamentalDomain (b.ofZLatticeBasis ℝ)) ∩
+            T p.1 p.2).Nonempty}).ncard := Set.ncard_le_ncard hsub2 hfinU
+        _ ≤ ∑ p : Fin m × (Fin (Module.finrank ℝ E - 1) → Fin n),
+            {x : L | (((x : E) +ᵥ
+            ZSpan.fundamentalDomain (b.ofZLatticeBasis ℝ)) ∩
+            T p.1 p.2).Nonempty}.ncard := Set.ncard_iUnion_le_of_fintype _
+        _ ≤ ∑ _p : Fin m × (Fin (Module.finrank ℝ E - 1) → Fin n), c :=
+            Finset.sum_le_sum fun p _ => (hUfin p.1 p.2).2
+        _ = (Fintype.card (Fin m × (Fin (Module.finrank ℝ E - 1) → Fin n))) * c := by
+            rw [Finset.sum_const, smul_eq_mul, Finset.card_univ]
+        _ = m * (n ^ (Module.finrank ℝ E - 1) * c) := by
+            simp only [Fintype.card_prod, Fintype.card_fun, Fintype.card_fin]
+            ring
+    exact hstep
+  have hn2t : (n : ℝ) ≤ 2 * t := by
+    have h := Nat.ceil_lt_add_one ht0
+    rw [hndef]
+    linarith
+  calc (Nat.card {x : L // (((x : E) +ᵥ
+      ZSpan.fundamentalDomain (b.ofZLatticeBasis ℝ)) ∩ S).Nonempty} : ℝ)
+      ≤ (m : ℝ) * ((n : ℝ) ^ (Module.finrank ℝ E - 1) * c) := by exact_mod_cast hcard
+    _ ≤ (m : ℝ) * ((2 * t) ^ (Module.finrank ℝ E - 1) * c) := by gcongr
+    _ = ((m : ℝ) * c) * 2 ^ (Module.finrank ℝ E - 1) *
+        t ^ (Module.finrank ℝ E - 1) := by
+        rw [mul_pow]; ring
 
 open scoped Pointwise in
 open MeasureTheory in
