@@ -81,6 +81,14 @@ public import Mathlib.MeasureTheory.Measure.Lebesgue.Basic
 import Mathlib.Analysis.SpecialFunctions.Integrals.Basic
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 import Mathlib.Analysis.Real.Pi.Bounds
+-- Quadratic class-number computations for the seven ray-class fields
+-- (isPrincipalIdealRing_ringOfIntegers_quadratic_ray_class /
+-- sq_isPrincipal_ringOfIntegers_neg_six_ray_class): the integral field
+-- norm bridge, degree-2 Kummer irreducibility, and the norm_num
+-- IsSquare extension.
+import Mathlib.NumberTheory.NumberField.Norm
+import Mathlib.FieldTheory.KummerPolynomial
+import Mathlib.Tactic.NormNum.IsSquare
 import Mathlib.Analysis.Complex.ExponentialBounds
 -- Phragmén–Lindelöf on the vertical strip, for the interior positivity
 -- of `Re Φ` in the Poitou explicit-formula decomposition (proof-only).
@@ -23459,9 +23467,476 @@ theorem character_pow_eight_localInertia_three_eq_one_ray_class
         hwdead.2, mul_one, hνpow _ hθt2]
     rw [hντ, ← pow_mul, mul_comm r 8, pow_mul, hνt28, one_pow]
 
-set_option maxHeartbeats 400000 in
+section QuadraticClassNumberRayClass
+
+open NumberField
+open InfinitePlace
+open Module Polynomial IntermediateField
+open scoped Real Matrix nonZeroDivisors
+
+section QuadraticRayClassHelpers
+
+variable {K : Type*} [Field K] [NumberField K]
+
+set_option maxHeartbeats 800000 in
+/-- **Discriminant bound from any integral basis family**: if `b` is any
+`ℚ`-basis of a number field `K` whose members are algebraic integers, then
+`|discr K| ≤ |Algebra.discr ℚ b|` (the change-of-basis matrix from the
+integral basis is integral, so its determinant squared is `≥ 1`). -/
+theorem abs_discr_le_discr_of_isIntegral_ray_class
+    {ι : Type*} [Fintype ι] [DecidableEq ι]
+    (b : Basis ι ℚ K) (hb : ∀ i, IsIntegral ℤ (b i)) :
+    |((NumberField.discr K : ℚ))| ≤ |Algebra.discr ℚ ⇑b| := by
+  classical
+  obtain ⟨b₀, hb₀⟩ : ∃ b₀ : Basis ι ℚ K,
+      b₀ = (integralBasis K).reindex ((integralBasis K).indexEquiv b) :=
+    ⟨_, rfl⟩
+  have hdiscr₀ : Algebra.discr ℚ ⇑b₀ = ((NumberField.discr K : ℚ)) := by
+    rw [hb₀, Basis.coe_reindex, Algebra.discr_reindex, coe_discr]
+  have hint : ∀ i j, IsIntegral ℤ (b₀.toMatrix ⇑b i j) := by
+    intro i j
+    have hbj : b j = algebraMap (𝓞 K) K ⟨b j, hb j⟩ := rfl
+    rw [Basis.toMatrix_apply, hb₀, Basis.repr_reindex_apply, hbj,
+      integralBasis_repr_apply]
+    exact isIntegral_algebraMap
+  obtain ⟨r, hr⟩ := IsIntegrallyClosed.isIntegral_iff.mp
+    (IsIntegral.det fun i j => hint i j)
+  have hr' : ((r : ℚ)) = (b₀.toMatrix ⇑b).det := by
+    rw [← hr]; rfl
+  have hkey : Algebra.discr ℚ ⇑b
+      = (b₀.toMatrix ⇑b).det ^ 2 * ((NumberField.discr K : ℚ)) := by
+    calc Algebra.discr ℚ ⇑b
+        = Algebra.discr ℚ (⇑b₀ ᵥ* ((b₀.toMatrix ⇑b).map (algebraMap ℚ K))) :=
+          congrArg (Algebra.discr ℚ) (b₀.toMatrix_map_vecMul ⇑b).symm
+      _ = (b₀.toMatrix ⇑b).det ^ 2 * Algebra.discr ℚ ⇑b₀ :=
+          Algebra.discr_of_matrix_vecMul ⇑b₀ _
+      _ = _ := by rw [hdiscr₀]
+  have hr0 : r ≠ 0 := by
+    rintro rfl
+    have h0 : Algebra.discr ℚ ⇑b = 0 := by
+      rw [hkey, ← hr']; norm_num
+    exact Algebra.discr_not_zero_of_basis ℚ b h0
+  have h1 : (1 : ℚ) ≤ (b₀.toMatrix ⇑b).det ^ 2 := by
+    rw [← hr']
+    have h2 : (1 : ℤ) ≤ r ^ 2 := by
+      calc (1 : ℤ) = 1 ^ 2 := by norm_num
+        _ ≤ |r| ^ 2 := by gcongr; exact Int.one_le_abs hr0
+        _ = r ^ 2 := sq_abs r
+    exact_mod_cast h2
+  calc |((NumberField.discr K : ℚ))|
+      = 1 * |((NumberField.discr K : ℚ))| := (one_mul _).symm
+    _ ≤ (b₀.toMatrix ⇑b).det ^ 2 * |((NumberField.discr K : ℚ))| :=
+        mul_le_mul_of_nonneg_right h1 (abs_nonneg _)
+    _ = |Algebra.discr ℚ ⇑b| := by
+        rw [hkey, abs_mul, abs_of_nonneg (sq_nonneg ((b₀.toMatrix ⇑b).det))]
+
+/-- A quadratic field has the basis `{y, 1}` for any non-rational `y`. -/
+theorem exists_quadBasis_ray_class (hrank : finrank ℚ K = 2) {y : K}
+    (hy : ∀ a : ℚ, y ≠ algebraMap ℚ K a) :
+    ∃ b : Basis (Fin 2) ℚ K, ⇑b = ![y, 1] := by
+  have hli : LinearIndependent ℚ ![y, (1 : K)] := by
+    rw [linearIndependent_fin2]
+    refine ⟨by simp, fun a ha => hy a ?_⟩
+    rw [Algebra.algebraMap_eq_smul_one]
+    simpa using ha.symm
+  refine ⟨basisOfLinearIndependentOfCardEqFinrank hli ?_, ?_⟩
+  · rw [hrank]; simp
+  · exact coe_basisOfLinearIndependentOfCardEqFinrank hli _
+
+/-- Coordinates in the `{y, 1}` basis. -/
+theorem quadBasis_repr_ray_class (b : Basis (Fin 2) ℚ K) {y : K}
+    (hb : ⇑b = ![y, 1]) (c₀ c₁ : ℚ) (i : Fin 2) :
+    b.repr (c₀ • y + c₁ • (1 : K)) i = ![c₀, c₁] i := by
+  have h0 : y = b 0 := by rw [hb]; simp
+  have h1 : (1 : K) = b 1 := by rw [hb]; simp
+  rw [h0, h1, map_add, map_smul, map_smul, b.repr_self, b.repr_self]
+  fin_cases i <;> simp
+
+/-- The trace of `1` in a quadratic field is `2`. -/
+theorem trace_one_ray_class (hrank : finrank ℚ K = 2) :
+    Algebra.trace ℚ K 1 = 2 := by
+  have h := Algebra.trace_algebraMap (R := ℚ) (S := K) 1
+  rw [map_one] at h
+  rw [h, hrank]
+  norm_num
+
+/-- The trace of `y` with `y² = T·y + N`. -/
+theorem quad_trace_ray_class (b : Basis (Fin 2) ℚ K) {y : K}
+    (hb : ⇑b = ![y, 1]) (T N : ℚ) (hsq : y * y = T • y + N • (1 : K)) :
+    Algebra.trace ℚ K y = T := by
+  have h0 : b 0 = y := by rw [hb]; simp
+  have h1 : b 1 = (1 : K) := by rw [hb]; simp
+  rw [Algebra.trace_eq_matrix_trace b, Matrix.trace_fin_two]
+  have e00 : Algebra.leftMulMatrix b y 0 0 = T := by
+    rw [Algebra.leftMulMatrix_eq_repr_mul, h0, hsq,
+      quadBasis_repr_ray_class b hb]
+    simp
+  have e11 : Algebra.leftMulMatrix b y 1 1 = 0 := by
+    rw [Algebra.leftMulMatrix_eq_repr_mul, h1, mul_one,
+      show y = (1 : ℚ) • y + (0 : ℚ) • (1 : K) by simp,
+      quadBasis_repr_ray_class b hb]
+    simp
+  rw [e00, e11, add_zero]
+
+/-- Norms in a quadratic field with `y² = dQ`. -/
+theorem quad_norm_ray_class (b : Basis (Fin 2) ℚ K) {y : K}
+    (hb : ⇑b = ![y, 1]) (dQ : ℚ) (hsq : y * y = dQ • (1 : K)) (a c : ℚ) :
+    Algebra.norm ℚ (a • (1 : K) + c • y) = a ^ 2 - dQ * c ^ 2 := by
+  have h0 : b 0 = y := by rw [hb]; simp
+  have h1 : b 1 = (1 : K) := by rw [hb]; simp
+  rw [Algebra.norm_eq_matrix_det b, Matrix.det_fin_two]
+  have hcol0 : (a • (1 : K) + c • y) * y = a • y + (c * dQ) • (1 : K) := by
+    rw [add_mul, smul_mul_assoc, one_mul, smul_mul_assoc, hsq, smul_smul]
+  have hcol1 : (a • (1 : K) + c • y) * 1 = c • y + a • (1 : K) := by
+    rw [mul_one, add_comm]
+  have e00 : Algebra.leftMulMatrix b (a • (1 : K) + c • y) 0 0 = a := by
+    rw [Algebra.leftMulMatrix_eq_repr_mul, h0, hcol0,
+      quadBasis_repr_ray_class b hb]
+    simp
+  have e10 : Algebra.leftMulMatrix b (a • (1 : K) + c • y) 1 0 = c * dQ := by
+    rw [Algebra.leftMulMatrix_eq_repr_mul, h0, hcol0,
+      quadBasis_repr_ray_class b hb]
+    simp
+  have e01 : Algebra.leftMulMatrix b (a • (1 : K) + c • y) 0 1 = c := by
+    rw [Algebra.leftMulMatrix_eq_repr_mul, h1, hcol1,
+      quadBasis_repr_ray_class b hb]
+    simp
+  have e11 : Algebra.leftMulMatrix b (a • (1 : K) + c • y) 1 1 = a := by
+    rw [Algebra.leftMulMatrix_eq_repr_mul, h1, hcol1,
+      quadBasis_repr_ray_class b hb]
+    simp
+  rw [e00, e01, e10, e11]
+  ring
+
+/-- **The discriminant bound for a quadratic field**: if `y ∉ ℚ` is an
+algebraic integer with `y² = T·y + N` (`T, N ∈ ℤ`), then
+`|discr K| ≤ |T² + 4N|`. -/
+theorem quad_abs_discr_le_ray_class (hrank : finrank ℚ K = 2) {y : K}
+    (hy : ∀ a : ℚ, y ≠ algebraMap ℚ K a) (hyint : IsIntegral ℤ y)
+    (T N : ℤ) (hsq : y * y = ((T : ℚ)) • y + ((N : ℚ)) • (1 : K)) :
+    |NumberField.discr K| ≤ |T ^ 2 + 4 * N| := by
+  obtain ⟨b, hb⟩ := exists_quadBasis_ray_class hrank hy
+  have htr1 : Algebra.trace ℚ K 1 = 2 := trace_one_ray_class hrank
+  have htry : Algebra.trace ℚ K y = ((T : ℚ)) :=
+    quad_trace_ray_class b hb _ _ hsq
+  have htryy : Algebra.trace ℚ K (y * y) = ((T : ℚ)) * T + 2 * N := by
+    rw [hsq, map_add, map_smul, map_smul, htry, htr1, smul_eq_mul,
+      smul_eq_mul]
+    ring
+  have hdiscr : Algebra.discr ℚ ⇑b = ((T : ℚ)) ^ 2 + 4 * N := by
+    rw [Algebra.discr_def, Matrix.det_fin_two]
+    have h00 : Algebra.traceMatrix ℚ ⇑b 0 0 = ((T : ℚ)) * T + 2 * N := by
+      rw [Algebra.traceMatrix_apply, Algebra.traceForm_apply, hb]
+      simpa using htryy
+    have h01 : Algebra.traceMatrix ℚ ⇑b 0 1 = ((T : ℚ)) := by
+      rw [Algebra.traceMatrix_apply, Algebra.traceForm_apply, hb]
+      simpa using htry
+    have h10 : Algebra.traceMatrix ℚ ⇑b 1 0 = ((T : ℚ)) := by
+      rw [Algebra.traceMatrix_apply, Algebra.traceForm_apply, hb]
+      simpa using htry
+    have h11 : Algebra.traceMatrix ℚ ⇑b 1 1 = 2 := by
+      rw [Algebra.traceMatrix_apply, Algebra.traceForm_apply, hb]
+      simpa using htr1
+    rw [h00, h01, h10, h11]
+    ring
+  have hbint : ∀ i, IsIntegral ℤ (b i) := by
+    intro i
+    fin_cases i
+    · simpa [hb] using hyint
+    · simpa [hb] using isIntegral_one
+  have hle := abs_discr_le_discr_of_isIntegral_ray_class b hbint
+  rw [hdiscr] at hle
+  exact_mod_cast hle
+
+end QuadraticRayClassHelpers
+
+section QuadraticFieldSetup
+
+/-- Integrality of the quadratic generator over `ℚ`. -/
+theorem quad_x_isIntegral_ray_class (d : ℤ) (x : AlgebraicClosure ℚ)
+    (hx : x ^ 2 = (d : AlgebraicClosure ℚ)) : IsIntegral ℚ x := by
+  refine ⟨X ^ 2 - C ((d : ℚ)), monic_X_pow_sub_C _ two_ne_zero, ?_⟩
+  rw [eval₂_sub, eval₂_pow, eval₂_X, eval₂_C, hx, map_intCast, sub_self]
+
+/-- The minimal polynomial of a quadratic irrationality. -/
+theorem quad_minpoly_ray_class (d : ℤ) (hdns : ¬ IsSquare ((d : ℚ)))
+    (x : AlgebraicClosure ℚ) (hx : x ^ 2 = (d : AlgebraicClosure ℚ)) :
+    minpoly ℚ x = X ^ 2 - C ((d : ℚ)) := by
+  have haev : (Polynomial.aeval x) (X ^ 2 - C ((d : ℚ))) = 0 := by
+    rw [map_sub, map_pow, aeval_X, aeval_C, hx, map_intCast, sub_self]
+  have hirr : Irreducible (X ^ 2 - C ((d : ℚ))) := by
+    apply X_pow_sub_C_irreducible_of_prime Nat.prime_two
+    intro b hb
+    exact hdns ⟨b, by rw [← hb]; ring⟩
+  exact (minpoly.eq_of_irreducible_of_monic hirr haev
+    (monic_X_pow_sub_C _ two_ne_zero)).symm
+
+/-- `ℚ(√d)` has degree `2` over `ℚ` for non-square `d`. -/
+theorem quad_finrank_ray_class (d : ℤ) (hdns : ¬ IsSquare ((d : ℚ)))
+    (x : AlgebraicClosure ℚ) (hx : x ^ 2 = (d : AlgebraicClosure ℚ)) :
+    finrank ℚ (IntermediateField.adjoin ℚ {x}) = 2 := by
+  rw [IntermediateField.adjoin.finrank (quad_x_isIntegral_ray_class d x hx),
+    quad_minpoly_ray_class d hdns x hx, natDegree_X_pow_sub_C]
+
+/-- The generator of `ℚ(√d)` squares to `d`. -/
+theorem quad_gen_sq_ray_class (d : ℤ) (x : AlgebraicClosure ℚ)
+    (hx : x ^ 2 = (d : AlgebraicClosure ℚ)) :
+    (⟨x, IntermediateField.mem_adjoin_simple_self ℚ x⟩ :
+      IntermediateField.adjoin ℚ {x}) ^ 2
+      = ((d : ℤ) : IntermediateField.adjoin ℚ {x}) := by
+  apply Subtype.ext
+  push_cast
+  exact hx
+
+/-- The generator of `ℚ(√d)` is irrational for non-square `d`. -/
+theorem quad_gen_irrational_ray_class (d : ℤ) (hdns : ¬ IsSquare ((d : ℚ)))
+    (x : AlgebraicClosure ℚ) (hx : x ^ 2 = (d : AlgebraicClosure ℚ)) :
+    ∀ a : ℚ, (⟨x, IntermediateField.mem_adjoin_simple_self ℚ x⟩ :
+      IntermediateField.adjoin ℚ {x})
+      ≠ algebraMap ℚ (IntermediateField.adjoin ℚ {x}) a := by
+  intro a ha
+  refine hdns ⟨a, ?_⟩
+  have hxa : x = algebraMap ℚ (AlgebraicClosure ℚ) a := by
+    have h := congrArg
+      (algebraMap (IntermediateField.adjoin ℚ {x}) (AlgebraicClosure ℚ)) ha
+    rwa [← IsScalarTower.algebraMap_apply ℚ
+      (IntermediateField.adjoin ℚ {x}) (AlgebraicClosure ℚ)] at h
+  have h2 : algebraMap ℚ (AlgebraicClosure ℚ) (a * a)
+      = algebraMap ℚ (AlgebraicClosure ℚ) ((d : ℚ)) := by
+    rw [map_mul, ← hxa, ← pow_two, hx, map_intCast]
+  exact ((algebraMap ℚ (AlgebraicClosure ℚ)).injective h2).symm
+
+/-- The generator of `ℚ(√d)` is an algebraic integer. -/
+theorem quad_gen_integral_ray_class (d : ℤ) (x : AlgebraicClosure ℚ)
+    (hx : x ^ 2 = (d : AlgebraicClosure ℚ)) :
+    IsIntegral ℤ (⟨x, IntermediateField.mem_adjoin_simple_self ℚ x⟩ :
+      IntermediateField.adjoin ℚ {x}) := by
+  refine ⟨X ^ 2 - C d, monic_X_pow_sub_C _ two_ne_zero, ?_⟩
+  rw [eval₂_sub, eval₂_pow, eval₂_X, eval₂_C]
+  have h := quad_gen_sq_ray_class d x hx
+  rw [h]
+  simp
+
+/-- Imaginary quadratic fields have `r₂ = 1`. -/
+theorem quad_nrComplexPlaces_eq_one_ray_class (d : ℤ) (hdneg : d < 0)
+    (x : AlgebraicClosure ℚ) (hx : x ^ 2 = (d : AlgebraicClosure ℚ))
+    [NumberField (IntermediateField.adjoin ℚ {x})]
+    (hrank : finrank ℚ (IntermediateField.adjoin ℚ {x}) = 2) :
+    nrComplexPlaces (IntermediateField.adjoin ℚ {x}) = 1 := by
+  have hempty : ∀ φ : (IntermediateField.adjoin ℚ {x}) →+* ℝ, False := by
+    intro φ
+    have hmem : x ∈ IntermediateField.adjoin ℚ {x} :=
+      IntermediateField.mem_adjoin_simple_self ℚ x
+    have hsq : (φ ⟨x, hmem⟩) ^ 2 = (d : ℝ) := by
+      rw [← map_pow, quad_gen_sq_ray_class d x hx, map_intCast]
+    have h0 := sq_nonneg (φ ⟨x, hmem⟩)
+    rw [hsq] at h0
+    have h0' : (0 : ℤ) ≤ d := by exact_mod_cast h0
+    omega
+  have hcomplex : IsTotallyComplex (IntermediateField.adjoin ℚ {x}) := by
+    refine ⟨fun v => ?_⟩
+    rw [← InfinitePlace.not_isReal_iff_isComplex]
+    intro hreal
+    exact hempty (InfinitePlace.embedding_of_isReal hreal)
+  have h0 : nrRealPlaces (IntermediateField.adjoin ℚ {x}) = 0 :=
+    nrRealPlaces_eq_zero_iff.mpr hcomplex
+  have h2 := InfinitePlace.card_add_two_mul_card_eq_rank
+    (IntermediateField.adjoin ℚ {x})
+  rw [h0, hrank] at h2
+  omega
+
+/-- Real quadratic fields are totally real, `r₂ = 0`. -/
+theorem quad_nrComplexPlaces_eq_zero_ray_class (d : ℤ) (hdpos : 0 < d)
+    (x : AlgebraicClosure ℚ) (hx : x ^ 2 = (d : AlgebraicClosure ℚ))
+    [NumberField (IntermediateField.adjoin ℚ {x})] :
+    nrComplexPlaces (IntermediateField.adjoin ℚ {x}) = 0 := by
+  have hxi := quad_x_isIntegral_ray_class d x hx
+  set pb := IntermediateField.adjoin.powerBasis hxi with hpb
+  have hreal : ∀ φ : (IntermediateField.adjoin ℚ {x}) →+* ℂ,
+      ComplexEmbedding.IsReal φ := by
+    intro φ
+    have hgen_eq : pb.gen
+        = ⟨x, IntermediateField.mem_adjoin_simple_self ℚ x⟩ :=
+      Subtype.ext rfl
+    have hgen : φ pb.gen ^ 2 = ((d : ℤ) : ℂ) := by
+      rw [← map_pow, hgen_eq, quad_gen_sq_ray_class d x hx, map_intCast]
+    have hd1 : (1 : ℝ) ≤ (d : ℝ) := by exact_mod_cast hdpos
+    have hre := congrArg Complex.re hgen
+    have him := congrArg Complex.im hgen
+    rw [pow_two, Complex.mul_re] at hre
+    rw [pow_two, Complex.mul_im] at him
+    simp only [Complex.intCast_re, Complex.intCast_im] at hre him
+    have him0 : (φ pb.gen).im = 0 := by
+      rcases mul_eq_zero.mp (by linarith : (φ pb.gen).re * (φ pb.gen).im = 0)
+        with h | h
+      · nlinarith
+      · exact h
+    have hval : (starRingEnd ℂ) (φ pb.gen) = φ pb.gen :=
+      Complex.conj_eq_iff_im.mpr him0
+    rw [ComplexEmbedding.isReal_iff]
+    let f : (IntermediateField.adjoin ℚ {x}) →ₐ[ℚ] ℂ :=
+      { toRingHom := ComplexEmbedding.conjugate φ
+        commutes' := fun q => by
+          show ComplexEmbedding.conjugate φ
+            ((algebraMap ℚ (IntermediateField.adjoin ℚ {x})) q)
+            = algebraMap ℚ ℂ q
+          rw [eq_ratCast (algebraMap ℚ (IntermediateField.adjoin ℚ {x})) q,
+            map_ratCast, eq_ratCast] }
+    let g : (IntermediateField.adjoin ℚ {x}) →ₐ[ℚ] ℂ :=
+      { toRingHom := φ
+        commutes' := fun q => by
+          show φ ((algebraMap ℚ (IntermediateField.adjoin ℚ {x})) q)
+            = algebraMap ℚ ℂ q
+          rw [eq_ratCast (algebraMap ℚ (IntermediateField.adjoin ℚ {x})) q,
+            map_ratCast, eq_ratCast] }
+    have hfg : f = g := pb.algHom_ext (by
+      show (ComplexEmbedding.conjugate φ) pb.gen = φ pb.gen
+      rw [ComplexEmbedding.conjugate_coe_eq]
+      exact hval)
+    exact RingHom.ext fun z => DFunLike.congr_fun hfg z
+  refine nrComplexPlaces_eq_zero_iff.mpr ⟨fun v => ?_⟩
+  rw [InfinitePlace.isReal_iff]
+  exact hreal v.embedding
+
+end QuadraticFieldSetup
+
+section NegSixHelpers
+
+variable {K : Type*} [Field K] [NumberField K]
+
+/-- Equal ideals from containment plus equal nonzero norms. -/
+theorem eq_of_le_of_absNorm_eq_ray_class {I J : Ideal (𝓞 K)}
+    (hle : I ≤ J) (heq : Ideal.absNorm I = Ideal.absNorm J)
+    (h0 : Ideal.absNorm I ≠ 0) : I = J := by
+  obtain ⟨Cid, hCid⟩ := Ideal.dvd_iff_le.mpr hle
+  have h1 : Ideal.absNorm J * Ideal.absNorm Cid
+      = Ideal.absNorm J * 1 := by
+    rw [mul_one, ← map_mul, ← hCid, heq]
+  have hJ0 : Ideal.absNorm J ≠ 0 := heq ▸ h0
+  have hC1 : Ideal.absNorm Cid = 1 :=
+    Nat.eq_of_mul_eq_mul_left (Nat.pos_of_ne_zero hJ0) h1
+  rw [hCid, Ideal.absNorm_eq_one_iff.mp hC1, Ideal.mul_top]
+
+/-- **Squares of prime-norm ideals in ramified quadratic situations**: if
+`y² = p·c` with `gcd(p, c) = 1` (Bezout witnesses `u, v`), then any ideal `J`
+of norm `p` satisfies `J² = (p)`. -/
+theorem pow_two_eq_span_of_absNorm_eq_prime_ray_class
+    (hrank : finrank ℚ K = 2) (yO : 𝓞 K) (p : ℕ) (hp : p.Prime)
+    (c u v : ℤ) (hyO : yO ^ 2 = ((p : ℕ) : 𝓞 K) * ((c : ℤ) : 𝓞 K))
+    (hbez : (p : ℤ) * u + c * v = 1)
+    (J : Ideal (𝓞 K)) (hJ : Ideal.absNorm J = p) :
+    J ^ 2 = Ideal.span {((p : ℕ) : 𝓞 K)} := by
+  have hrankZ : finrank ℤ (𝓞 K) = 2 := by
+    rw [RingOfIntegers.rank, hrank]
+  have hpne : ((p : ℕ) : 𝓞 K) ≠ 0 := Nat.cast_ne_zero.mpr hp.ne_zero
+  have hJprime : J.IsPrime := Ideal.isPrime_of_irreducible_absNorm
+    (by rw [hJ]; exact (Nat.irreducible_iff_nat_prime _).mpr hp)
+  have hpJ : ((p : ℕ) : 𝓞 K) ∈ J := by
+    have h := Ideal.absNorm_mem J
+    rwa [hJ] at h
+  have hyJ : yO ∈ J := by
+    refine hJprime.mem_of_pow_mem 2 ?_
+    rw [hyO]
+    exact Ideal.mul_mem_right _ _ hpJ
+  set P : Ideal (𝓞 K) := Ideal.span {((p : ℕ) : 𝓞 K), yO} with hP
+  have hPJ : P ≤ J := by
+    rw [hP, Ideal.span_le]
+    rintro z hz
+    simp only [Set.mem_insert_iff, Set.mem_singleton_iff] at hz
+    rcases hz with rfl | rfl
+    · exact hpJ
+    · exact hyJ
+  have hspanP : Ideal.span {((p : ℕ) : 𝓞 K)} ≤ P :=
+    Ideal.span_mono (by simp)
+  have hnormp : Ideal.absNorm (Ideal.span {((p : ℕ) : 𝓞 K)}) = p ^ 2 := by
+    rw [Ideal.absNorm_span_natCast, hrankZ]
+  have hdvd1 : Ideal.absNorm P ∣ p ^ 2 := by
+    rw [← hnormp]
+    exact Ideal.absNorm_dvd_absNorm_of_le hspanP
+  have hdvd2 : p ∣ Ideal.absNorm P := by
+    rw [← hJ]
+    exact Ideal.absNorm_dvd_absNorm_of_le hPJ
+  have hPnorm : Ideal.absNorm P = p := by
+    obtain ⟨i, hile, hi⟩ := (Nat.dvd_prime_pow hp).mp hdvd1
+    interval_cases i
+    · rw [pow_zero] at hi
+      rw [hi] at hdvd2
+      exact absurd (Nat.dvd_one.mp hdvd2) hp.ne_one
+    · rw [hi, pow_one]
+    · -- `absNorm P = p²` forces `P = (p)`, contradicting `p ∤ c`
+      exfalso
+      have hPeq : Ideal.span {((p : ℕ) : 𝓞 K)} = P :=
+        eq_of_le_of_absNorm_eq_ray_class hspanP
+          (by rw [hnormp, hi]) (by rw [hnormp]; exact pow_ne_zero 2 hp.ne_zero)
+      have hyspan : yO ∈ Ideal.span {((p : ℕ) : 𝓞 K)} := by
+        rw [hPeq, hP]
+        exact Ideal.subset_span (by simp)
+      obtain ⟨z, hz⟩ := Ideal.mem_span_singleton'.mp hyspan
+      -- `y = z·p` gives `c = p·z²`, hence `p ∣ c`, contradicting Bezout
+      have hc : ((c : ℤ) : 𝓞 K) = ((p : ℕ) : 𝓞 K) * z ^ 2 := by
+        have h1 : ((p : ℕ) : 𝓞 K) * (((p : ℕ) : 𝓞 K) * z ^ 2)
+            = ((p : ℕ) : 𝓞 K) * ((c : ℤ) : 𝓞 K) := by
+          rw [← hyO, ← hz]
+          ring
+        exact (mul_left_cancel₀ hpne h1).symm
+      have hcnorm : (c : ℤ) ^ 2 = ((p : ℤ)) ^ 2 * (Algebra.norm ℤ z) ^ 2 := by
+        have hnc := congrArg (Algebra.norm ℤ) hc
+        rw [map_mul, map_pow] at hnc
+        have h2 : Algebra.norm ℤ ((c : ℤ) : 𝓞 K) = c ^ 2 := by
+          rw [show ((c : ℤ) : 𝓞 K) = algebraMap ℤ (𝓞 K) c from rfl,
+            Algebra.norm_algebraMap, hrankZ]
+        have h3 : Algebra.norm ℤ ((p : ℕ) : 𝓞 K) = (p : ℤ) ^ 2 := by
+          rw [show ((p : ℕ) : 𝓞 K) = algebraMap ℤ (𝓞 K) ((p : ℕ) : ℤ) by
+            push_cast; rfl, Algebra.norm_algebraMap, hrankZ]
+        rw [h2, h3] at hnc
+        exact hnc
+      have hpdvd : (p : ℤ) ∣ c := by
+        have hpZ : Prime ((p : ℕ) : ℤ) := Nat.prime_iff_prime_int.mp hp
+        refine hpZ.dvd_of_dvd_pow (n := 2)
+          ⟨(p : ℤ) * (Algebra.norm ℤ z) ^ 2, ?_⟩
+        rw [hcnorm]; ring
+      have hp1 : (p : ℤ) ∣ 1 := by
+        rw [← hbez]
+        exact dvd_add (dvd_mul_right _ _) (hpdvd.mul_right v)
+      have hple := Int.le_of_dvd one_pos hp1
+      have h2 := hp.two_le
+      omega
+  have hJP : J = P :=
+    (eq_of_le_of_absNorm_eq_ray_class hPJ (by rw [hPnorm, hJ])
+      (by rw [hPnorm]; exact hp.ne_zero)).symm
+  rw [hJP]
+  apply le_antisymm
+  · rw [pow_two, Ideal.mul_le]
+    intro r hr s hs
+    rw [hP] at hr hs
+    obtain ⟨ar, br, har⟩ := Ideal.mem_span_pair.mp hr
+    obtain ⟨as, bs, has⟩ := Ideal.mem_span_pair.mp hs
+    rw [Ideal.mem_span_singleton']
+    refine ⟨ar * as * ((p : ℕ) : 𝓞 K) + ar * bs * yO + br * as * yO
+      + br * bs * ((c : ℤ) : 𝓞 K), ?_⟩
+    rw [← har, ← has]
+    linear_combination (-(br * bs) : 𝓞 K) * hyO
+  · rw [Ideal.span_singleton_le_iff_mem]
+    have hpmem : ((p : ℕ) : 𝓞 K) ∈ P := Ideal.subset_span (by simp)
+    have hymem : yO ∈ P := Ideal.subset_span (by simp)
+    have hp2 : (((p : ℕ) : 𝓞 K)) ^ 2 ∈ P ^ 2 := Ideal.pow_mem_pow hpmem 2
+    have hy2 : yO ^ 2 ∈ P ^ 2 := Ideal.pow_mem_pow hymem 2
+    have hbezO : ((p : ℕ) : 𝓞 K) * ((u : ℤ) : 𝓞 K)
+        + ((c : ℤ) : 𝓞 K) * ((v : ℤ) : 𝓞 K) = 1 := by
+      exact_mod_cast congrArg (fun t : ℤ => ((t : ℤ) : 𝓞 K)) hbez
+    have key : ((p : ℕ) : 𝓞 K) = ((u : ℤ) : 𝓞 K) * (((p : ℕ) : 𝓞 K)) ^ 2
+        + ((v : ℤ) : 𝓞 K) * yO ^ 2 := by
+      linear_combination (-((v : ℤ) : 𝓞 K)) * hyO
+        + (-((p : ℕ) : 𝓞 K)) * hbezO
+    rw [key]
+    exact Ideal.add_mem _ (Ideal.mul_mem_left _ _ hp2)
+      (Ideal.mul_mem_left _ _ hy2)
+
+end NegSixHelpers
+
+set_option maxHeartbeats 1000000 in
 /-- **Class number one for the six quadratic fields `ℚ(√d)`,
-`d = −1, 2, −2, 3, −3, 6`** (sorry node, created 2026-07-24 — the
+`d = −1, 2, −2, 3, −3, 6`** (PROVEN 2026-07-24 — the
 first per-field arithmetic sub-leaf of the route-(α) decomposition of
 `odd_character_eq_one_of_unramified_everywhere_ray_class` below): the
 ring of integers of `F = ℚ(x) ⊆ ℚ̄` with `x² = d` is a principal
@@ -23491,11 +23966,219 @@ theorem isPrincipalIdealRing_ringOfIntegers_quadratic_ray_class
     [NumberField (IntermediateField.adjoin ℚ {x})] :
     IsPrincipalIdealRing
       (NumberField.RingOfIntegers (IntermediateField.adjoin ℚ {x})) := by
-  sorry
+  have hdns : ¬ IsSquare ((d : ℚ)) := by
+    rcases hd with rfl | rfl | rfl | rfl | rfl | rfl <;> norm_num
+  have hrank := quad_finrank_ray_class d hdns x hx
+  have hy_irr := quad_gen_irrational_ray_class d hdns x hx
+  have hy_int := quad_gen_integral_ray_class d x hx
+  have hy_sq := quad_gen_sq_ray_class d x hx
+  set y : IntermediateField.adjoin ℚ {x} :=
+    ⟨x, IntermediateField.mem_adjoin_simple_self ℚ x⟩ with hy_def
+  have hsmul : y * y = (((0 : ℤ) : ℚ)) • y
+      + (((d : ℤ) : ℚ)) • (1 : IntermediateField.adjoin ℚ {x}) := by
+    rw [← pow_two, hy_sq]
+    rw [show (((0 : ℤ) : ℚ)) = (0 : ℚ) by norm_num, zero_smul, zero_add,
+      ← Algebra.algebraMap_eq_smul_one,
+      eq_ratCast (algebraMap ℚ (IntermediateField.adjoin ℚ {x}))]
+    push_cast
+    rfl
+  have hdiscr := quad_abs_discr_le_ray_class hrank hy_irr hy_int 0 d hsmul
+  rcases hd with rfl | rfl | rfl | rfl | rfl | rfl
+  · -- d = -1 : imaginary, |discr| ≤ 4 < π²
+    have hnrc := quad_nrComplexPlaces_eq_one_ray_class (-1) (by norm_num)
+      x hx hrank
+    apply RingOfIntegers.isPrincipalIdealRing_of_abs_discr_lt
+    rw [hnrc, hrank]
+    have hD :
+        |((NumberField.discr (IntermediateField.adjoin ℚ {x}) : ℤ) : ℝ)|
+          ≤ 4 := by
+      have h4 := le_trans hdiscr (show |(0 : ℤ) ^ 2 + 4 * (-1)| ≤ 4 by norm_num)
+      exact_mod_cast h4
+    have hπ := Real.pi_gt_three
+    norm_num [Nat.factorial]
+    nlinarith [hD, hπ]
+  · -- d = 2 : real, |discr| ≤ 8 < 16
+    have hnrc := quad_nrComplexPlaces_eq_zero_ray_class 2 (by norm_num) x hx
+    apply RingOfIntegers.isPrincipalIdealRing_of_abs_discr_lt
+    rw [hnrc, hrank]
+    have hD :
+        |((NumberField.discr (IntermediateField.adjoin ℚ {x}) : ℤ) : ℝ)|
+          ≤ 8 := by
+      have h8 := le_trans hdiscr (show |(0 : ℤ) ^ 2 + 4 * 2| ≤ 8 by norm_num)
+      exact_mod_cast h8
+    norm_num [Nat.factorial]
+    nlinarith [hD]
+  · -- d = -2 : imaginary, |discr| ≤ 8 < π²
+    have hnrc := quad_nrComplexPlaces_eq_one_ray_class (-2) (by norm_num)
+      x hx hrank
+    apply RingOfIntegers.isPrincipalIdealRing_of_abs_discr_lt
+    rw [hnrc, hrank]
+    have hD :
+        |((NumberField.discr (IntermediateField.adjoin ℚ {x}) : ℤ) : ℝ)|
+          ≤ 8 := by
+      have h8 := le_trans hdiscr
+        (show |(0 : ℤ) ^ 2 + 4 * (-2)| ≤ 8 by norm_num)
+      exact_mod_cast h8
+    have hπ := Real.pi_gt_three
+    norm_num [Nat.factorial]
+    nlinarith [hD, hπ]
+  · -- d = 3 : real, |discr| ≤ 12 < 16
+    have hnrc := quad_nrComplexPlaces_eq_zero_ray_class 3 (by norm_num) x hx
+    apply RingOfIntegers.isPrincipalIdealRing_of_abs_discr_lt
+    rw [hnrc, hrank]
+    have hD :
+        |((NumberField.discr (IntermediateField.adjoin ℚ {x}) : ℤ) : ℝ)|
+          ≤ 12 := by
+      have h12 := le_trans hdiscr
+        (show |(0 : ℤ) ^ 2 + 4 * 3| ≤ 12 by norm_num)
+      exact_mod_cast h12
+    norm_num [Nat.factorial]
+    nlinarith [hD]
+  · -- d = -3 : imaginary, use ζ = (1 + √-3)/2, |discr| ≤ 3 < π²
+    have hnrc := quad_nrComplexPlaces_eq_one_ray_class (-3) (by norm_num)
+      x hx hrank
+    have hy2 : y * y = -3 := by
+      rw [← pow_two, hy_sq]; norm_num
+    set z : IntermediateField.adjoin ℚ {x} := (1 + y) / 2 with hz_def
+    have h1 : z * z = z - 1 := by
+      rw [hz_def]
+      field_simp
+      linear_combination hy2
+    have hzsq : z * z = (((1 : ℤ) : ℚ)) • z
+        + ((((-1) : ℤ) : ℚ)) • (1 : IntermediateField.adjoin ℚ {x}) := by
+      rw [h1]
+      push_cast
+      rw [one_smul, neg_smul, one_smul, sub_eq_add_neg]
+    have hz_irr : ∀ a : ℚ,
+        z ≠ algebraMap ℚ (IntermediateField.adjoin ℚ {x}) a := by
+      intro a ha
+      apply hy_irr (2 * a - 1)
+      have hy_eq : y = 2 * z - 1 := by
+        rw [hz_def]; field_simp; ring
+      rw [hy_eq, ha, map_sub, map_mul, map_ofNat, map_one]
+    have hz_int : IsIntegral ℤ z := by
+      refine ⟨X ^ 2 - X + 1, ?_, ?_⟩
+      · have h1e : (X ^ 2 - X + 1 : Polynomial ℤ)
+            = X ^ 2 - (X - Polynomial.C 1) := by
+          rw [Polynomial.C_1]; ring
+        rw [h1e]
+        apply Polynomial.monic_X_pow_sub
+        rw [Polynomial.degree_X_sub_C]
+        norm_num
+      · rw [eval₂_add, eval₂_sub, eval₂_pow, eval₂_X, eval₂_one, pow_two, h1]
+        ring
+    have hdiscr3 := quad_abs_discr_le_ray_class hrank hz_irr hz_int 1 (-1) hzsq
+    apply RingOfIntegers.isPrincipalIdealRing_of_abs_discr_lt
+    rw [hnrc, hrank]
+    have hD :
+        |((NumberField.discr (IntermediateField.adjoin ℚ {x}) : ℤ) : ℝ)|
+          ≤ 3 := by
+      have h3 := le_trans hdiscr3
+        (show |(1 : ℤ) ^ 2 + 4 * (-1)| ≤ 3 by norm_num)
+      exact_mod_cast h3
+    have hπ := Real.pi_gt_three
+    norm_num [Nat.factorial]
+    nlinarith [hD, hπ]
+  · -- d = 6 : real, Minkowski bound √6 < 3, the prime over 2 is (2 + √6)
+    have hnrc := quad_nrComplexPlaces_eq_zero_ray_class 6 (by norm_num) x hx
+    obtain ⟨b, hb⟩ := exists_quadBasis_ray_class hrank hy_irr
+    have hy_mem : y ∈ integralClosure ℤ (IntermediateField.adjoin ℚ {x}) :=
+      hy_int
+    set yO : 𝓞 (IntermediateField.adjoin ℚ {x}) := ⟨y, hy_mem⟩ with hyO_def
+    have hyO6 : yO ^ 2 = 6 := by
+      refine NumberField.RingOfIntegers.coe_injective ?_
+      rw [map_pow, map_ofNat]
+      show y ^ 2 = (6 : IntermediateField.adjoin ℚ {x})
+      rw [hy_sq]
+      norm_num
+    have hD :
+        |((NumberField.discr (IntermediateField.adjoin ℚ {x}) : ℤ) : ℝ)|
+          ≤ 24 := by
+      have h24 := le_trans hdiscr
+        (show |(0 : ℤ) ^ 2 + 4 * 6| ≤ 24 by norm_num)
+      exact_mod_cast h24
+    apply RingOfIntegers.isPrincipalIdealRing_of_isPrincipal_of_pow_le_of_mem_primesOver_of_mem_Icc
+    intro p hpmem hp P hPmem _hple
+    have hple2 : p ≤ 2 := by
+      refine le_trans (Finset.mem_Icc.mp hpmem).2
+        (Nat.lt_succ_iff.mp ((Nat.floor_lt (by positivity)).mpr ?_))
+      rw [hnrc, hrank]
+      have hsqrt :
+          √(|((NumberField.discr (IntermediateField.adjoin ℚ {x}) : ℤ) : ℝ)|)
+            < 6 := by
+        rw [Real.sqrt_lt' (by norm_num)]
+        nlinarith [hD]
+      have hs0 := Real.sqrt_nonneg
+        (|((NumberField.discr (IntermediateField.adjoin ℚ {x}) : ℤ) : ℝ)|)
+      norm_num [Nat.factorial]
+      nlinarith [hsqrt, hs0]
+    have hp2 : p = 2 := by
+      have h2le := hp.two_le
+      omega
+    subst hp2
+    obtain ⟨hPprime, hPover⟩ := hPmem
+    have h2P : ((2 : ℕ) : 𝓞 (IntermediateField.adjoin ℚ {x})) ∈ P := by
+      have h2u : ((2 : ℕ) : ℤ) ∈ Ideal.under ℤ P := by
+        rw [← hPover.over]
+        exact Ideal.mem_span_singleton_self _
+      have h2m := Ideal.mem_comap.mp h2u
+      simpa using h2m
+    set β : 𝓞 (IntermediateField.adjoin ℚ {x}) := 2 + yO with hβ_def
+    have hβsq : β ^ 2 = 2 * (5 + 2 * yO) := by
+      rw [hβ_def]
+      linear_combination hyO6
+    have hyO_smul : y * y
+        = ((6 : ℚ)) • (1 : IntermediateField.adjoin ℚ {x}) := by
+      rw [← pow_two, hy_sq, ← Algebra.algebraMap_eq_smul_one,
+        eq_ratCast (algebraMap ℚ (IntermediateField.adjoin ℚ {x}))]
+      push_cast
+      rfl
+    have hnormβ : Algebra.norm ℚ
+        ((2 : ℚ) • (1 : IntermediateField.adjoin ℚ {x}) + (1 : ℚ) • y)
+          = -2 := by
+      rw [quad_norm_ray_class b hb 6 hyO_smul 2 1]
+      norm_num
+    have hβint : Algebra.norm ℤ β = -2 := by
+      have hcoe := Algebra.coe_norm_int (x := β)
+      have hβL : algebraMap (𝓞 (IntermediateField.adjoin ℚ {x}))
+          (IntermediateField.adjoin ℚ {x}) β = 2 + y := by
+        rw [hβ_def, map_add, map_ofNat]
+        show (2 : IntermediateField.adjoin ℚ {x}) + y = 2 + y
+        rfl
+      have h2y : (2 : IntermediateField.adjoin ℚ {x}) + y
+          = (2 : ℚ) • (1 : IntermediateField.adjoin ℚ {x}) + (1 : ℚ) • y := by
+        rw [one_smul, ← Algebra.algebraMap_eq_smul_one,
+          eq_ratCast (algebraMap ℚ (IntermediateField.adjoin ℚ {x}))]
+        norm_num
+      rw [NumberField.RingOfIntegers.coe_eq_algebraMap, hβL, h2y, hnormβ]
+        at hcoe
+      exact_mod_cast hcoe
+    have habsβ : Ideal.absNorm (Ideal.span {β}) = 2 := by
+      rw [Ideal.absNorm_span_singleton, hβint]
+      rfl
+    have hβsqP : β ^ 2 ∈ P := by
+      rw [hβsq]
+      refine Ideal.mul_mem_right _ _ ?_
+      simpa using h2P
+    have hβP : β ∈ P := hPprime.mem_of_pow_mem 2 hβsqP
+    obtain ⟨Cid, hCid⟩ := Ideal.dvd_iff_le.mpr
+      (Ideal.span_le.mpr (Set.singleton_subset_iff.mpr hβP))
+    have hnormfac : 2 = Ideal.absNorm P * Ideal.absNorm Cid := by
+      rw [← habsβ, hCid, map_mul]
+    have hPn1 : Ideal.absNorm P ≠ 1 := fun h =>
+      hPprime.ne_top (Ideal.absNorm_eq_one_iff.mp h)
+    have hCid1 : Ideal.absNorm Cid = 1 := by
+      rcases (Nat.prime_two.eq_one_or_self_of_dvd (Ideal.absNorm P)
+        ⟨Ideal.absNorm Cid, hnormfac⟩) with h | h
+      · exact absurd h hPn1
+      · rw [h] at hnormfac
+        omega
+    rw [Ideal.absNorm_eq_one_iff.mp hCid1, Ideal.mul_top] at hCid
+    exact ⟨⟨β, by rw [← hCid, Ideal.submodule_span_eq]⟩⟩
 
-set_option maxHeartbeats 400000 in
-/-- **The square of every ideal of `𝓞_{ℚ(√−6)}` is principal** (sorry
-node, created 2026-07-24 — the second per-field arithmetic sub-leaf of
+set_option maxHeartbeats 1000000 in
+/-- **The square of every ideal of `𝓞_{ℚ(√−6)}` is principal** (PROVEN 2026-07-24 —
+the second per-field arithmetic sub-leaf of
 the route-(α) decomposition of
 `odd_character_eq_one_of_unramified_everywhere_ray_class` below):
 `ℚ(√−6)` has class number `2` — Minkowski bound `(2/π)·√24 ≈ 3.12`;
@@ -23512,7 +24195,125 @@ theorem sq_isPrincipal_ringOfIntegers_neg_six_ray_class
     (I : Ideal (NumberField.RingOfIntegers
       (IntermediateField.adjoin ℚ {x}))) :
     (I ^ 2).IsPrincipal := by
-  sorry
+  subst hd
+  have hdns : ¬ IsSquare (((-6 : ℤ) : ℚ)) := by norm_num
+  have hrank := quad_finrank_ray_class (-6) hdns x hx
+  have hy_irr := quad_gen_irrational_ray_class (-6) hdns x hx
+  have hy_int := quad_gen_integral_ray_class (-6) x hx
+  have hy_sq := quad_gen_sq_ray_class (-6) x hx
+  set y : IntermediateField.adjoin ℚ {x} :=
+    ⟨x, IntermediateField.mem_adjoin_simple_self ℚ x⟩ with hy_def
+  have hy_mem : y ∈ integralClosure ℤ (IntermediateField.adjoin ℚ {x}) :=
+    hy_int
+  set yO : 𝓞 (IntermediateField.adjoin ℚ {x}) := ⟨y, hy_mem⟩ with hyO_def
+  have hyO2 : yO ^ 2 = ((2 : ℕ) : 𝓞 (IntermediateField.adjoin ℚ {x}))
+      * (((-3 : ℤ)) : 𝓞 (IntermediateField.adjoin ℚ {x})) := by
+    refine NumberField.RingOfIntegers.coe_injective ?_
+    rw [map_pow, map_mul, map_natCast, map_intCast]
+    show y ^ 2 = ((2 : ℕ) : IntermediateField.adjoin ℚ {x})
+      * (((-3 : ℤ)) : IntermediateField.adjoin ℚ {x})
+    rw [hy_sq]
+    norm_num
+  have hyO3 : yO ^ 2 = ((3 : ℕ) : 𝓞 (IntermediateField.adjoin ℚ {x}))
+      * (((-2 : ℤ)) : 𝓞 (IntermediateField.adjoin ℚ {x})) := by
+    refine NumberField.RingOfIntegers.coe_injective ?_
+    rw [map_pow, map_mul, map_natCast, map_intCast]
+    show y ^ 2 = ((3 : ℕ) : IntermediateField.adjoin ℚ {x})
+      * (((-2 : ℤ)) : IntermediateField.adjoin ℚ {x})
+    rw [hy_sq]
+    norm_num
+  by_cases hI : I = ⊥
+  · rw [hI]
+    rw [show ((⊥ : Ideal (NumberField.RingOfIntegers
+        (IntermediateField.adjoin ℚ {x}))) ^ 2 = ⊥) by simp]
+    exact bot_isPrincipal
+  · have hInz : I ∈ (Ideal (𝓞 (IntermediateField.adjoin ℚ {x})))⁰ :=
+      mem_nonZeroDivisors_iff_ne_zero.mpr hI
+    obtain ⟨J, hJmk, hJle⟩ :=
+      exists_ideal_in_class_of_norm_le (ClassGroup.mk0 ⟨I, hInz⟩)
+    have hnrc := quad_nrComplexPlaces_eq_one_ray_class (-6) (by norm_num)
+      x hx hrank
+    have hsmul : y * y = (((0 : ℤ) : ℚ)) • y
+        + ((((-6) : ℤ) : ℚ)) • (1 : IntermediateField.adjoin ℚ {x}) := by
+      rw [← pow_two, hy_sq]
+      rw [show (((0 : ℤ) : ℚ)) = (0 : ℚ) by norm_num, zero_smul, zero_add,
+        ← Algebra.algebraMap_eq_smul_one,
+        eq_ratCast (algebraMap ℚ (IntermediateField.adjoin ℚ {x}))]
+      push_cast
+      rfl
+    have hdiscr := quad_abs_discr_le_ray_class hrank hy_irr hy_int 0 (-6) hsmul
+    have hD :
+        |((NumberField.discr (IntermediateField.adjoin ℚ {x}) : ℤ) : ℝ)|
+          ≤ 24 := by
+      have h24 := le_trans hdiscr
+        (show |(0 : ℤ) ^ 2 + 4 * (-6)| ≤ 24 by norm_num)
+      exact_mod_cast h24
+    have hJle3 : Ideal.absNorm
+        (J : Ideal (𝓞 (IntermediateField.adjoin ℚ {x}))) ≤ 3 := by
+      have hsqrt :
+          √(|((NumberField.discr (IntermediateField.adjoin ℚ {x}) : ℤ) : ℝ)|)
+            < 5 := by
+        rw [Real.sqrt_lt' (by norm_num)]
+        nlinarith [hD]
+      have hs0 := Real.sqrt_nonneg
+        (|((NumberField.discr (IntermediateField.adjoin ℚ {x}) : ℤ) : ℝ)|)
+      have hπ := Real.pi_gt_three
+      have hπ0 := Real.pi_pos
+      have hM4 : ((Ideal.absNorm
+          (J : Ideal (𝓞 (IntermediateField.adjoin ℚ {x}))) : ℝ)) < 4 := by
+        refine lt_of_le_of_lt hJle ?_
+        rw [hnrc, hrank]
+        have hπ3 : (4 : ℝ) / π < 4 / 3 := by
+          rw [div_lt_div_iff₀ hπ0 (by norm_num)]
+          nlinarith [hπ]
+        have hπ4 : (0 : ℝ) < 4 / π := by positivity
+        norm_num [Nat.factorial]
+        nlinarith [hsqrt, hs0, hπ3, hπ4]
+      have hM4' : Ideal.absNorm
+          (J : Ideal (𝓞 (IntermediateField.adjoin ℚ {x}))) < 4 := by
+        exact_mod_cast hM4
+      omega
+    have hJ0 : Ideal.absNorm
+        (J : Ideal (𝓞 (IntermediateField.adjoin ℚ {x}))) ≠ 0 :=
+      Ideal.absNorm_ne_zero_of_nonZeroDivisors J
+    have hJsq : ((J : Ideal (𝓞 (IntermediateField.adjoin ℚ {x}))) ^ 2).IsPrincipal := by
+      have h123 : Ideal.absNorm
+            (J : Ideal (𝓞 (IntermediateField.adjoin ℚ {x}))) = 1
+          ∨ Ideal.absNorm (J : Ideal (𝓞 (IntermediateField.adjoin ℚ {x}))) = 2
+          ∨ Ideal.absNorm (J : Ideal (𝓞 (IntermediateField.adjoin ℚ {x}))) = 3 := by
+        omega
+      rcases h123 with h | h | h
+      · rw [Ideal.absNorm_eq_one_iff.mp h]
+        rw [show ((⊤ : Ideal (𝓞 (IntermediateField.adjoin ℚ {x}))) ^ 2 = ⊤)
+          by simp]
+        exact top_isPrincipal
+      · rw [pow_two_eq_span_of_absNorm_eq_prime_ray_class hrank yO 2
+          Nat.prime_two (-3) (-1) (-1) hyO2 (by norm_num) _ h]
+        exact ⟨⟨_, (Ideal.submodule_span_eq).symm⟩⟩
+      · rw [pow_two_eq_span_of_absNorm_eq_prime_ray_class hrank yO 3
+          Nat.prime_three (-2) 1 1 hyO3 (by norm_num) _ h]
+        exact ⟨⟨_, (Ideal.submodule_span_eq).symm⟩⟩
+    have hCsq : ClassGroup.mk0 (⟨I, hInz⟩ :
+        (Ideal (𝓞 (IntermediateField.adjoin ℚ {x})))⁰) ^ 2 = 1 := by
+      have hmemJ : ((J : Ideal (𝓞 (IntermediateField.adjoin ℚ {x}))) ^ 2)
+          ∈ (Ideal (𝓞 (IntermediateField.adjoin ℚ {x})))⁰ := pow_mem J.prop 2
+      have hone : ClassGroup.mk0
+          (⟨(J : Ideal (𝓞 (IntermediateField.adjoin ℚ {x}))) ^ 2, hmemJ⟩ :
+            (Ideal (𝓞 (IntermediateField.adjoin ℚ {x})))⁰) = 1 :=
+        (ClassGroup.mk0_eq_one_iff hmemJ).mpr hJsq
+      have heqJ : (⟨(J : Ideal (𝓞 (IntermediateField.adjoin ℚ {x}))) ^ 2,
+          hmemJ⟩ : (Ideal (𝓞 (IntermediateField.adjoin ℚ {x})))⁰) = J ^ 2 :=
+        Subtype.ext (by simp)
+      rw [← hJmk, ← map_pow, ← heqJ, hone]
+    have hmemI : (I ^ 2) ∈ (Ideal (𝓞 (IntermediateField.adjoin ℚ {x})))⁰ :=
+      pow_mem hInz 2
+    have heqI : (⟨I ^ 2, hmemI⟩ :
+        (Ideal (𝓞 (IntermediateField.adjoin ℚ {x})))⁰) = ⟨I, hInz⟩ ^ 2 :=
+      Subtype.ext (by simp)
+    rw [← map_pow, ← heqI] at hCsq
+    exact (ClassGroup.mk0_eq_one_iff hmemI).mp hCsq
+
+end QuadraticClassNumberRayClass
 
 set_option maxHeartbeats 400000 in
 /-- **Narrow-class exponent two for the seven quadratic fields — every
