@@ -4675,7 +4675,283 @@ theorem isUnramifiedAt_of_isRealizationCompatible
       ρT.IsUnramifiedAt hp.toHeightOneSpectrumRingOfIntegersRat :=
   absurd hirr (not_isIrreducible_of_isHardlyRamified_of_odd hℓodd hW hρbar)
 
-/-- **Raynaud closure for flat prolongations** (sorry node — Raynaud,
+/-! ##### The Raynaud-closure cut (DECOMPOSED 2026-07-24)
+
+`hasFlatProlongationAt_of_pi_embedding` — the closure of finite flat
+group schemes over the DVR `𝒪ᵥ` under finite products and under
+Galois-stable subobjects of the generic fibre (Raynaud, *Schémas en
+groupes de type `(p, …, p)`*, Bull. SMF 102 (1974); Tate, *Finite
+flat group schemes*, in Cornell–Silverman–Stevens) — is decomposed
+over the representation-free point-group carrier
+`IsFlatPointsGroupAt v X` ("`X` is, `Γ Kᵥ`-equivariantly, the
+geometric-point group of the generic fibre of a finite flat
+`𝒪ᵥ`-Hopf algebra with étale generic fibre"), which repackages
+`GaloisRep.HasFlatProlongationAt` with the representation abstracted
+away (`hasFlatProlongationAt_iff_isFlatPointsGroupAt`, PROVEN
+repackaging). The closure properties then split into
+
+* **products** (`IsFlatPointsGroupAt.prod`, sorry node): closure
+  under binary products, by the tensor product of the two witness
+  Hopf algebras — see its docstring for the mathlib route;
+* **subobjects** (`IsFlatPointsGroupAt.of_injective`, sorry node):
+  closure under equivariantly embedded subgroups, by the
+  étale–Galois correspondence over the characteristic-zero `Kᵥ`
+  plus schematic closure over the DVR — see its docstring;
+* **PROVEN glue**: transport along equivariant additive
+  isomorphisms (`IsFlatPointsGroupAt.of_addEquiv`), the trivial
+  package on a subsingleton (`IsFlatPointsGroupAt.of_subsingleton`,
+  witnessed by `𝒪ᵥ` itself exactly as in
+  `GaloisRep.hasFlatProlongationAt_of_subsingleton`), finite
+  products by `Fin`-recursion (`IsFlatPointsGroupAt.pi`), and the
+  assembly of the parent theorem.
+
+Every node of this cut is UNCONDITIONALLY true — permanent library
+material carrying no hypothesis package. This carrier is also the
+natural interface for any future finite-flat closure need (e.g. the
+E2b′ lattice transfer). -/
+
+section RaynaudClosure
+
+variable (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+
+local notation "Kᵥ" => HeightOneSpectrum.adicCompletion ℚ v
+local notation "𝒪ᵥ" => HeightOneSpectrum.adicCompletionIntegers ℚ v
+local notation "Γᵥ" =>
+  Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ v)
+local notation "Ωᵥ" =>
+  AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v)
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **The flat point-group carrier at `v`**: the additive group `X`
+with its `Γ Kᵥ`-action is, equivariantly, the geometric-point group
+of the generic fibre of some finite flat `𝒪ᵥ`-Hopf algebra with
+étale generic fibre. This is exactly the existential package of
+`GaloisRep.HasFlatProlongationAt` with the representation space
+replaced by an abstract `Γ Kᵥ`-module (the equivariant bijection is
+carried as an `AddMonoidHom` plus an explicit equivariance clause so
+the carrier needs no `DistribMulActionHom` instances on abstract
+`X`); `hasFlatProlongationAt_iff_isFlatPointsGroupAt` is the exact
+repackaging. Raynaud's closure properties of finite flat group
+schemes over the DVR `𝒪ᵥ` become closure properties of this
+predicate (`prod`, `of_injective` below). -/
+def IsFlatPointsGroupAt (X : Type*) [AddCommGroup X]
+    [DistribMulAction Γᵥ X] : Prop :=
+  ∃ (G : Type) (_ : CommRing G) (_ : HopfAlgebra 𝒪ᵥ G)
+    (_ : Module.Flat 𝒪ᵥ G) (_ : Module.Finite 𝒪ᵥ G)
+    (_ : Algebra.Etale Kᵥ (Kᵥ ⊗[𝒪ᵥ] G))
+    (f : Additive (Kᵥ ⊗[𝒪ᵥ] G →ₐ[Kᵥ] Ωᵥ) →+ X),
+    Function.Bijective f ∧
+      ∀ (g : Γᵥ) (y : Additive (Kᵥ ⊗[𝒪ᵥ] G →ₐ[Kᵥ] Ωᵥ)),
+        f (g • y) = g • f y
+
+variable {v}
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **The exact repackaging** (PROVEN): a Galois representation has a
+flat prolongation at `v` iff its local space is a flat point-group at
+`v`. The two sides differ only in how the equivariant bijection is
+carried (`DistribMulActionHom` versus `AddMonoidHom` + equivariance
+clause). -/
+theorem GaloisRep.hasFlatProlongationAt_iff_isFlatPointsGroupAt
+    {A : Type*} [CommRing A] [TopologicalSpace A]
+    {M : Type*} [AddCommGroup M] [Module A M] (ρ : GaloisRep ℚ A M) :
+    ρ.HasFlatProlongationAt v ↔ IsFlatPointsGroupAt v (ρ.toLocal v).Space := by
+  constructor
+  · rintro ⟨G, i1, i2, i3, i4, i5, f, hbij⟩
+    exact ⟨G, i1, i2, i3, i4, i5,
+      { toFun := f
+        map_zero' := f.map_zero
+        map_add' := f.map_add }, hbij, fun g y => f.map_smul g y⟩
+  · rintro ⟨G, i1, i2, i3, i4, i5, f, hbij, hequiv⟩
+    exact ⟨G, i1, i2, i3, i4, i5,
+      { toFun := f
+        map_smul' := hequiv
+        map_zero' := f.map_zero
+        map_add' := f.map_add }, hbij⟩
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Transport** (PROVEN): the flat point-group property moves along
+a `Γ Kᵥ`-equivariant additive isomorphism — the Hopf witness is
+reused verbatim and the point identification is composed with the
+isomorphism. -/
+theorem IsFlatPointsGroupAt.of_addEquiv {X Y : Type*}
+    [AddCommGroup X] [AddCommGroup Y]
+    [DistribMulAction Γᵥ X] [DistribMulAction Γᵥ Y]
+    (h : IsFlatPointsGroupAt v X) (e : X ≃+ Y)
+    (he : ∀ (g : Γᵥ) (x : X), e (g • x) = g • e x) :
+    IsFlatPointsGroupAt v Y := by
+  obtain ⟨G, i1, i2, i3, i4, i5, f, hbij, hequiv⟩ := h
+  exact ⟨G, i1, i2, i3, i4, i5, e.toAddMonoidHom.comp f,
+    e.bijective.comp hbij, fun g y => by
+      show e (f (g • y)) = g • e (f y)
+      rw [hequiv, he]⟩
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **The trivial package** (PROVEN — the abstract form of
+`GaloisRep.hasFlatProlongationAt_of_subsingleton`, by the same
+argument): a subsingleton is a flat point-group at every `v`,
+witnessed by the trivial Hopf algebra `𝒪ᵥ` itself, whose generic
+fibre `Kᵥ ⊗[𝒪ᵥ] 𝒪ᵥ ≅ Kᵥ` is étale with a unique `Kᵥᵃˡᵍ`-point. -/
+theorem IsFlatPointsGroupAt.of_subsingleton {X : Type*}
+    [AddCommGroup X] [DistribMulAction Γᵥ X] [Subsingleton X] :
+    IsFlatPointsGroupAt v X := by
+  classical
+  haveI hsub : Subsingleton ((Kᵥ ⊗[𝒪ᵥ] 𝒪ᵥ) →ₐ[Kᵥ] Ωᵥ) := by
+    constructor
+    intro φ ψ
+    have h1 : ∀ (χ : (Kᵥ ⊗[𝒪ᵥ] 𝒪ᵥ) →ₐ[Kᵥ] Ωᵥ),
+        χ = (χ.comp (Algebra.TensorProduct.rid 𝒪ᵥ Kᵥ Kᵥ).symm.toAlgHom).comp
+          (Algebra.TensorProduct.rid 𝒪ᵥ Kᵥ Kᵥ).toAlgHom := by
+      intro χ
+      refine AlgHom.ext fun x => ?_
+      simp
+    rw [h1 φ, h1 ψ, Subsingleton.elim
+      (φ.comp (Algebra.TensorProduct.rid 𝒪ᵥ Kᵥ Kᵥ).symm.toAlgHom)
+      (ψ.comp (Algebra.TensorProduct.rid 𝒪ᵥ Kᵥ Kᵥ).symm.toAlgHom)]
+  have hne : Nonempty ((Kᵥ ⊗[𝒪ᵥ] 𝒪ᵥ) →ₐ[Kᵥ] Ωᵥ) :=
+    ⟨(IsScalarTower.toAlgHom Kᵥ Kᵥ Ωᵥ).comp
+      (Algebra.TensorProduct.rid 𝒪ᵥ Kᵥ Kᵥ).toAlgHom⟩
+  exact ⟨𝒪ᵥ, inferInstance, inferInstance, inferInstance, inferInstance,
+    Algebra.Etale.of_equiv (Algebra.TensorProduct.rid 𝒪ᵥ Kᵥ Kᵥ).symm,
+    { toFun := fun _ => (0 : X)
+      map_zero' := rfl
+      map_add' := fun _ _ => (add_zero (0 : X)).symm },
+    ⟨fun a b _ => Subsingleton.elim a b,
+      fun _ => ⟨Additive.ofMul hne.some, Subsingleton.elim _ _⟩⟩,
+    fun g _ => (smul_zero g).symm⟩
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Product closure** (sorry node — the products half of Raynaud
+closure: finite flat group schemes over the DVR `𝒪ᵥ` are closed
+under finite products): the binary product of two flat point-groups
+at `v` is a flat point-group at `v`. Intended proof, in the
+vocabulary already on the pin: the witness is the tensor product
+`G₁ ⊗[𝒪ᵥ] G₂` of the two witness Hopf algebras —
+* Hopf structure: the `HopfAlgebra 𝒪ᵥ (G₁ ⊗[𝒪ᵥ] G₂)` instance of
+  `Mathlib.RingTheory.HopfAlgebra.TensorProduct` (already imported
+  by `FlatProlongation.lean`); flatness and module-finiteness of the
+  tensor product are mathlib instances.
+* Generic fibre: `Kᵥ ⊗[𝒪ᵥ] (G₁ ⊗[𝒪ᵥ] G₂) ≃ₐ[Kᵥ]
+  (Kᵥ ⊗[𝒪ᵥ] G₁) ⊗[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G₂)` (the base-change/cancel
+  algebra isomorphisms, `Algebra.TensorProduct.cancelBaseChange` and
+  friends); étaleness of a tensor product of two étale `Kᵥ`-algebras
+  follows from étale-stability under base change (`Kᵥ → Kᵥ ⊗ G₁`)
+  and composition (`Algebra.Etale.comp`), transported through the
+  isomorphism by `Algebra.Etale.of_equiv`.
+* Points: `AlgHom`s out of a tensor product over `Kᵥ` into the
+  commutative `Kᵥᵃˡᵍ` are exactly pairs of `AlgHom`s
+  (`Algebra.TensorProduct.lift` / `liftEquiv`, no commutation
+  hypothesis in a commutative target); the identification is
+  convolution-compatible — the comultiplication of the tensor
+  bialgebra is componentwise up to the middle-four exchange — by the
+  same `Coalgebra.comul`-induction style as `liftEquiv_convMul` /
+  `dvrPointsEquiv_mul` in `FlatProlongation.lean`, and
+  `Γ Kᵥ`-equivariant since postcomposition distributes over the
+  pairing. Composing with `f₁ × f₂` lands in `X × Y`.
+Unconditionally TRUE; no hypothesis package. -/
+theorem IsFlatPointsGroupAt.prod {X Y : Type*}
+    [AddCommGroup X] [AddCommGroup Y]
+    [DistribMulAction Γᵥ X] [DistribMulAction Γᵥ Y]
+    (hX : IsFlatPointsGroupAt v X) (hY : IsFlatPointsGroupAt v Y) :
+    IsFlatPointsGroupAt v (X × Y) :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Subobject closure** (sorry node — the subobjects half of
+Raynaud closure: a Galois-stable subgroup of the generic-fibre points
+of a finite flat group scheme over the DVR `𝒪ᵥ` is the generic-fibre
+point group of a finite flat group scheme, by schematic closure): a
+`Γ Kᵥ`-equivariantly embedded subgroup of a flat point-group at `v`
+is a flat point-group at `v`. Intended proof:
+* (α) *finiteness*: the ambient point group is finite (the generic
+  fibre `Kᵥ ⊗[𝒪ᵥ] G` is finite étale, so it has finitely many
+  `Kᵥᵃˡᵍ`-points), hence so is `Y` through the injection `j`.
+* (β) *étale–Galois*: the image `j(Y)` is a finite `Γ Kᵥ`-stable
+  subgroup of the points of the étale `Kᵥ`-Hopf algebra
+  `Q := Kᵥ ⊗[𝒪ᵥ] G`. By the PROVEN Gelfand-duality machinery of
+  `KnownIn1980s/EllipticCurves/Flat.lean` (`galoisEquivariantAlgebra`
+  with `galoisEquivariantEval_injective`/`_surjective`,
+  `exists_hopfAlgebra_galoisEquivariantAlgebra`, and the separation
+  lemma `subalgebra_eq_top_of_algHom_separating`), the finite
+  `Γ Kᵥ`-group `j(Y)` is the point group of a finite étale
+  `Kᵥ`-Hopf algebra `H` (the algebra of equivariant functions
+  `j(Y) → Kᵥᵃˡᵍ`), and restriction of functions along the inclusion
+  of point sets `j(Y) ↪ points(Q)` is a surjective `Kᵥ`-bialgebra
+  homomorphism `π : Q → H` (surjective because the image is a
+  subalgebra of `H` separating the points of `H`, hence `⊤` by
+  `subalgebra_eq_top_of_algHom_separating`; a bialgebra map because
+  the inclusion of point sets is a group homomorphism).
+* (γ) *schematic closure over the DVR*: `G' := π(image of G in Q)`
+  is an `𝒪ᵥ`-subalgebra of `H`, module-finite and torsion-free over
+  the DVR `𝒪ᵥ`, hence finite FREE — flat; it spans `H` over `Kᵥ`
+  (as `π` is surjective and `Q = Kᵥ · G`), so `Kᵥ ⊗[𝒪ᵥ] G' ≅ H`
+  and its generic fibre is étale. It is a sub-Hopf-order: `π` and
+  the inclusion `G → Q` are bialgebra maps, so the comultiplication
+  of `H` maps `G'` into the image of `G' ⊗[𝒪ᵥ] G'`, which injects
+  into `H ⊗[Kᵥ] H` (`G'` finite free over the domain `𝒪ᵥ`), and
+  likewise counit and antipode restrict. EXISTENCE of this closure
+  needs no `e < p − 1` bound — Raynaud's bound enters only for
+  uniqueness/full-faithfulness statements.
+* (δ) *conclusion*: the points of `Kᵥ ⊗[𝒪ᵥ] G'` are those of `H`,
+  i.e. `j(Y)`, identified with `Y` through `j⁻¹`,
+  `Γ Kᵥ`-equivariantly.
+Unconditionally TRUE; no hypothesis package (for `Y` a subsingleton
+this is already `IsFlatPointsGroupAt.of_subsingleton`). -/
+theorem IsFlatPointsGroupAt.of_injective {X Y : Type*}
+    [AddCommGroup X] [AddCommGroup Y]
+    [DistribMulAction Γᵥ X] [DistribMulAction Γᵥ Y]
+    (hX : IsFlatPointsGroupAt v X) (j : Y →+ X)
+    (hj : Function.Injective j)
+    (hje : ∀ (g : Γᵥ) (y : Y), j (g • y) = g • j y) :
+    IsFlatPointsGroupAt v Y :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Finite products** (PROVEN glue): a finite product of flat
+point-groups at `v` is a flat point-group at `v`, by `Fin`-recursion
+from the trivial package (`of_subsingleton`, base case) and binary
+products (`prod`), transported along the equivariant additive
+identification `(∀ i : Fin (m+1), X i) ≃+ X 0 × ∀ i : Fin m, X i.succ`
+(`Fin.cons`). -/
+theorem IsFlatPointsGroupAt.pi {n : ℕ} {X : Fin n → Type*}
+    [instG : ∀ i, AddCommGroup (X i)]
+    [instD : ∀ i, DistribMulAction Γᵥ (X i)]
+    (h : ∀ i, IsFlatPointsGroupAt v (X i)) :
+    IsFlatPointsGroupAt v (∀ i, X i) := by
+  induction n generalizing instG instD with
+  | zero =>
+    haveI : Subsingleton (∀ i : Fin 0, X i) :=
+      ⟨fun a b => funext fun i => i.elim0⟩
+    exact IsFlatPointsGroupAt.of_subsingleton
+  | succ m ih =>
+    have htail : IsFlatPointsGroupAt v (∀ i : Fin m, X i.succ) :=
+      ih fun i => h i.succ
+    have hprod : IsFlatPointsGroupAt v (X 0 × ∀ i : Fin m, X i.succ) :=
+      (h 0).prod htail
+    refine hprod.of_addEquiv
+      { toFun := fun p => Fin.cons p.1 p.2
+        invFun := fun q => (q 0, fun i => q i.succ)
+        left_inv := fun p => by
+          refine Prod.ext ?_ ?_
+          · simp
+          · funext i
+            simp
+        right_inv := fun q => by
+          funext i
+          refine Fin.cases ?_ (fun j => ?_) i <;> simp
+        map_add' := fun p q => by
+          funext i
+          refine Fin.cases ?_ (fun j => ?_) i <;> simp }
+      fun g p => ?_
+    funext i
+    refine Fin.cases ?_ (fun j => ?_) i <;> simp
+
+end RaynaudClosure
+
+/-- **Raynaud closure for flat prolongations** (DECOMPOSED 2026-07-24
+into a PROVEN assembly over the Raynaud-closure cut above — Raynaud,
 *Schémas en groupes de type `(p, …, p)`*, Bull. SMF 102 (1974); Tate,
 *Finite flat group schemes*, in Cornell–Silverman–Stevens — the
 classical closure of finite flat group schemes over a DVR under
@@ -4683,27 +4959,16 @@ finite products and under Galois-stable subobjects of the generic
 fibre): if the local space of a Galois representation at `v` embeds
 `Γ Kᵥ`-equivariantly into a finite product of spaces each of which
 has a flat prolongation at `v`, then it has a flat prolongation at
-`v`. Intended proof: (1) *products* — the tensor product
-`G := G₀ ⊗[𝒪ᵥ] ⋯ ⊗[𝒪ᵥ] G_{n−1}` of the witness Hopf algebras is a
-finite flat `𝒪ᵥ`-Hopf algebra whose generic fibre is étale with
-geometric points `∏ᵢ points(Gᵢ)` (the universal property of the
-tensor product identifies `AlgHom`s out of it with tuples of
-`AlgHom`s, convolution-compatibly), so the product of the given
-identifications realizes `∏ᵢ Mᵢ` as the points of `G`; (2)
-*subobjects* — the image `ι(M)` is a `Γ Kᵥ`-stable subgroup of those
-points, hence by the étale–Galois correspondence over the
-characteristic-zero `Kᵥ` the group of points of a quotient Hopf
-algebra `H` of `Kᵥ ⊗[𝒪ᵥ] G`; (3) *schematic closure* — the image of
-`G` in `H` is an `𝒪ᵥ`-Hopf algebra, finite and torsion-free over the
-DVR `𝒪ᵥ` hence finite FLAT, with generic fibre `H` (the schematic
-closure of the corresponding closed subgroup scheme, Raynaud 1974 —
-EXISTENCE over a DVR needs no `e < p − 1` bound, which enters
-Raynaud's theory only for uniqueness/full-faithfulness); its
-geometric points are `ι(M) ≅ M`, `Γ Kᵥ`-equivariantly through
-`ι⁻¹`. Sound as stated: unconditionally TRUE — this leaf carries no
-hypothesis package (at `n = 0` injectivity forces `M` subsingleton
-and `hasFlatProlongationAt_of_subsingleton_at` already discharges
-it). -/
+`v`. Proof: through the repackaging
+`hasFlatProlongationAt_iff_isFlatPointsGroupAt`, each factor space is
+a flat point-group at `v`; their product is one by
+`IsFlatPointsGroupAt.pi` (`Fin`-recursion over the sorried binary
+tensor-product leaf `IsFlatPointsGroupAt.prod`); and the embedded
+`(ρ.toLocal v).Space` is one by the sorried schematic-closure leaf
+`IsFlatPointsGroupAt.of_injective`. Sound as stated: unconditionally
+TRUE — this node and both remaining leaves carry no hypothesis
+package (at `n = 0` injectivity forces `M` subsingleton, matching
+`IsFlatPointsGroupAt.of_subsingleton`). -/
 theorem GaloisRep.hasFlatProlongationAt_of_pi_embedding
     (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
     {A : Type*} [CommRing A] [TopologicalSpace A]
@@ -4720,8 +4985,12 @@ theorem GaloisRep.hasFlatProlongationAt_of_pi_embedding
     (hιequiv : ∀ (g : Field.absoluteGaloisGroup
         (HeightOneSpectrum.adicCompletion ℚ v))
       (x : (ρ.toLocal v).Space), ι (g • x) = g • ι x) :
-    ρ.HasFlatProlongationAt v :=
-  sorry
+    ρ.HasFlatProlongationAt v := by
+  have hpts : ∀ i, IsFlatPointsGroupAt v ((ρ' i).toLocal v).Space := fun i =>
+    (GaloisRep.hasFlatProlongationAt_iff_isFlatPointsGroupAt (ρ' i)).mp
+      (hflat i)
+  exact (GaloisRep.hasFlatProlongationAt_iff_isFlatPointsGroupAt ρ).mpr
+    ((IsFlatPointsGroupAt.pi hpts).of_injective ι hιinj hιequiv)
 
 /-- **The finite-level lattice embedding** (sorry node — Carayol
 Théorème 1 + linear compactness, the level-by-level half of the
