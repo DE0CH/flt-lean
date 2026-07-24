@@ -48,7 +48,9 @@ conjugation transfer lemmas and the specialization-to-a-domain endgame
      stated over an arbitrary Noetherian local domain base.
 
 The sorried leaves (all SHARED by the two consumers; the names are those
-of their historical `Lift.lean` twins): `exists_conj_of_charFrob_eq`,
+of their historical `Lift.lean` twins — `exists_conj_of_charFrob_eq` was
+PROVEN 2026-07-24 via the shared Chebotarev–Brauer–Nesbitt node of
+`BrauerNesbittConjugacy.lean`):
 `exists_isWeaklyUniversalOnIdentified`, `exists_isTraceGenerated_ringHom`,
 `finite_quotient_span_of_isWeaklyUniversal_isTraceGenerated`,
 `exists_minimal_mvPowerSeries_presentation`,
@@ -77,6 +79,10 @@ public import Mathlib.RingTheory.PowerSeries.Basic
 -- `charpoly_baseChange_conj`'s consumers) — Family-free, see the module
 -- docstring.
 import Fermat.FLT.GaloisRepresentation.Chebotarev
+-- proof-only: the shared Chebotarev–Brauer–Nesbitt conjugacy node
+-- (`exists_conj_of_charFrob_eq_away`), from which the `{2, ℓ}` leaf
+-- below is derived.
+import Fermat.FLT.GaloisRepresentation.BrauerNesbittConjugacy
 -- proof-only: the characteristic of a finite field, `ℤ_ℓ`-unit lemmas.
 import Mathlib.FieldTheory.Finite.Basic
 import Mathlib.NumberTheory.Padics.RingHoms
@@ -600,26 +606,23 @@ def HardlyRamifiedDeformation.IsWeaklyUniversalOnIdentified
         (D.ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map f =
           D'.ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat
 
-/-- **Chebotarev–Brauer–Nesbitt conjugacy leaf** (sorry node — the
-identification half of the Mazur representability stratum): a
+/-- **Chebotarev–Brauer–Nesbitt conjugacy leaf** (PROVEN 2026-07-24 —
+the identification half of the Mazur representability stratum): a
 continuous mod-`ℓ` representation `τ` of `Gal(ℚ̄/ℚ)` on a 2-dimensional
 space whose Frobenius characteristic polynomials at all primes
 `q ∉ {2, ℓ}` agree with those of an *irreducible* `ρbar` is conjugate
 to `ρbar`.
 
-Mathematical content: by Chebotarev density
-(`dense_conjClasses_globalFrob`) and continuity into the discrete
-endomorphism spaces, the characteristic polynomials of `τ` and `ρbar`
-agree on all of the Galois group; by Brauer–Nesbitt the
-semisimplifications are then isomorphic; `ρbar` is irreducible and
-2-dimensional, so the semisimplification of `τ` is the single
-composition factor `ρbar` of full dimension — i.e. `τ` itself is
-isomorphic to `ρbar`, and an intertwining isomorphism is the required
-conjugation. (The proven machinery of `Chebotarev.lean` — the density
-node, the closed-agreement-set argument of
-`not_isIrreducible_of_charFrob_eq`, and the 2-dimensional
-Brauer–Nesbitt tools of `BrauerNesbitt.lean` — is the intended
-toolkit.) -/
+DERIVED as the `S = {(2), (ℓ)}` instance of the SHARED conjugacy node
+`exists_conj_of_charFrob_eq_away` (`BrauerNesbittConjugacy.lean`, which
+also discharges `Modularity/Patching.lean`'s identically-named leaf):
+Chebotarev density (`dense_conjClasses_globalFrob`) plus continuity
+into the discrete endomorphism spaces upgrade the off-`{2, ℓ}` charpoly
+agreement to agreement at every group element, and the abstract
+dimension-2 Brauer–Nesbitt core over a finite coefficient field —
+Kolchin irreducibility transfer plus Jacobson density plus little
+Wedderburn/separability, valid in every characteristic — produces the
+intertwining conjugation. -/
 theorem exists_conj_of_charFrob_eq
     (hdimV : Module.rank k V = 2)
     {W : Type*} [AddCommGroup W] [Module k W]
@@ -630,8 +633,19 @@ theorem exists_conj_of_charFrob_eq
     (hcf : ∀ q (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
       τ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat =
         ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat) :
-    ∃ e : W ≃ₗ[k] V, τ.conj e = ρbar :=
-  sorry
+    ∃ e : W ≃ₗ[k] V, τ.conj e = ρbar := by
+  classical
+  refine exists_conj_of_charFrob_eq_away hdimV hirr hdimW τ
+    {Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat,
+      (Fact.out : ℓ.Prime).toHeightOneSpectrumRingOfIntegersRat} ?_
+  intro q hq hqS
+  have hq2 : q ≠ 2 := by
+    rintro rfl
+    exact hqS (Finset.mem_insert.mpr (Or.inl rfl))
+  have hqℓ : q ≠ ℓ := by
+    rintro rfl
+    exact hqS (Finset.mem_insert.mpr (Or.inr (Finset.mem_singleton.mpr rfl)))
+  exact hcf q hq hq2 hqℓ
 
 /-- **Strict Mazur representability leaf** (sorry node — the
 representability half of the Mazur stratum): the hardly ramified
