@@ -7778,9 +7778,191 @@ theorem exists_valuationRing_stable_lattice
         (ρ.baseChange (AlgebraicClosure ℚ_[p])) g (e x)) :=
   sorry
 
-/-- **Ribet's walk across stable lattices** (Ribet cut E2a-ii; sorry
-node — Ribet's lemma in prescribed-order form over the valuation
-ring): a representation on the standard rank-2 frame over the
+/-- **Adapted frame for a stable line** (Ribet cut E2a-ii-frame,
+PROVEN glue): in a `2`-dimensional `K`-space carrying a family of
+endomorphisms `σ` that FIX a nonzero vector `v₀` and act by the scalar
+`ψ g` modulo the line `K·v₀`, the vector `v₀` extends to a basis in
+which every `σ g` is upper triangular with diagonal `(1, ψ g)`, and
+the upper-right entries `cc` form a coboundary `cc g = (ψ g − 1)·a`
+exactly when the `ψ`-eigenline `K·(v₁ + a·v₀)` splits off. Elementary:
+`K·v₀` is a proper subspace (a line inside a plane), so some `v₁` lies
+outside it, `![v₀, v₁]` is linearly independent
+(`LinearIndependent.pair_iff` + `Submodule.mem_span_singleton`) and
+hence a basis by dimension count
+(`basisOfLinearIndependentOfCardEqFinrank`); the matrix entries are
+read off `Module.Basis.repr_self` from `σ g v₀ = v₀` and
+`σ g v₁ = cc g • v₀ + ψ g • v₁`, and the coboundary computation is
+`σ g (v₁ + a • v₀) = (cc g + a) • v₀ + ψ g • v₁`. -/
+lemma exists_frame_of_stable_line {K : Type*} [Field K] {M : Type*}
+    [AddCommGroup M] [Module K M] (hdim : Module.finrank K M = 2)
+    {G : Type*} (σ : G → M →ₗ[K] M) (ψ : G → K)
+    (v₀ : M) (hv₀ : v₀ ≠ 0)
+    (hfix : ∀ g, σ g v₀ = v₀)
+    (hquo : ∀ g x, ∃ c : K, σ g x - ψ g • x = c • v₀) :
+    ∃ (b : Module.Basis (Fin 2) K M) (cc : G → K),
+      (∀ g, LinearMap.toMatrix b b (σ g) = !![1, cc g; 0, ψ g]) ∧
+      (∀ a : K, (∀ g, cc g = (ψ g - 1) * a) →
+        ∃ w : M, w ∉ Submodule.span K {v₀} ∧ ∀ g, σ g w = ψ g • w) := by
+  classical
+  haveI : FiniteDimensional K M := Module.finite_of_finrank_pos (by omega)
+  have hspan : Submodule.span K {v₀} ≠ ⊤ := by
+    intro h
+    have h1 : Module.finrank K (Submodule.span K {v₀}) = 1 :=
+      finrank_span_singleton hv₀
+    rw [h, finrank_top, hdim] at h1
+    omega
+  obtain ⟨v₁, hv₁⟩ : ∃ v₁, v₁ ∉ Submodule.span K {v₀} := by
+    by_contra h
+    exact hspan (eq_top_iff.mpr fun x _ => not_not.mp fun hx => h ⟨x, hx⟩)
+  obtain ⟨cc, hcc⟩ : ∃ cc : G → K, ∀ g, σ g v₁ - ψ g • v₁ = cc g • v₀ :=
+    ⟨fun g => (hquo g v₁).choose, fun g => (hquo g v₁).choose_spec⟩
+  have hli : LinearIndependent K ![v₀, v₁] := by
+    rw [LinearIndependent.pair_iff]
+    intro s t hst
+    have ht : t = 0 := by
+      by_contra ht
+      refine hv₁ (Submodule.mem_span_singleton.mpr ⟨-(t⁻¹ * s), ?_⟩)
+      have h2 : t • v₁ = -(s • v₀) := by
+        linear_combination (norm := module) hst
+      have h3 : v₁ = t⁻¹ • (t • v₁) := by
+        rw [smul_smul, inv_mul_cancel₀ ht, one_smul]
+      rw [h3, h2, smul_neg, smul_smul, neg_smul]
+    subst ht
+    refine ⟨?_, rfl⟩
+    have h4 : s • v₀ = 0 := by simpa using hst
+    exact (smul_eq_zero.mp h4).resolve_right hv₀
+  have hcard : Fintype.card (Fin 2) = Module.finrank K M := by simp [hdim]
+  set b : Module.Basis (Fin 2) K M :=
+    basisOfLinearIndependentOfCardEqFinrank hli hcard with hbdef
+  have hb : ⇑b = ![v₀, v₁] :=
+    coe_basisOfLinearIndependentOfCardEqFinrank hli hcard
+  have hb0 : b 0 = v₀ := by rw [hb]; rfl
+  have hb1 : b 1 = v₁ := by rw [hb]; rfl
+  have hfix' : ∀ g, σ g (b 0) = b 0 := by intro g; rw [hb0]; exact hfix g
+  have hcc' : ∀ g, σ g (b 1) = cc g • b 0 + ψ g • b 1 := by
+    intro g
+    rw [hb0, hb1]
+    linear_combination (norm := module) hcc g
+  refine ⟨b, cc, fun g => ?_, ?_⟩
+  · ext i j
+    rw [LinearMap.toMatrix_apply]
+    fin_cases j
+    · rw [show ((⟨0, by omega⟩ : Fin 2)) = (0 : Fin 2) from rfl, hfix' g]
+      fin_cases i <;> simp [Module.Basis.repr_self]
+    · rw [show ((⟨1, by omega⟩ : Fin 2)) = (1 : Fin 2) from rfl, hcc' g]
+      fin_cases i <;> simp [Module.Basis.repr_self]
+  · intro a ha
+    refine ⟨v₁ + a • v₀, ?_, fun g => ?_⟩
+    · intro hmem
+      refine hv₁ ?_
+      have h5 : v₁ = (v₁ + a • v₀) - a • v₀ := by abel
+      rw [h5]
+      exact Submodule.sub_mem _ hmem (Submodule.smul_mem _ _
+        (Submodule.mem_span_singleton_self _))
+    · have h6 : σ g v₁ = cc g • v₀ + ψ g • v₁ := by
+        linear_combination (norm := module) hcc g
+      rw [map_add, map_smul, h6, hfix g, ha g]
+      module
+
+/-- **Frame transport along `Module.Basis.equivFun`** (Ribet cut
+E2a-ii-frame, PROVEN glue): conjugating an endomorphism by the
+coordinate isomorphism `b.equivFun : M ≃ₗ[K] (n → K)` carries its
+matrix in the basis `b` to its matrix in the standard basis of
+`n → K`. Immediate from `LinearMap.toMatrix_apply` plus
+`b.equivFun.symm (Pi.basisFun K n j) = b j`. -/
+lemma toMatrix_conj_equivFun {K : Type*} [Field K] {M : Type*}
+    [AddCommGroup M] [Module K M] {n : Type*} [Fintype n] [DecidableEq n]
+    (b : Module.Basis n K M) (f : M →ₗ[K] M) :
+    LinearMap.toMatrix (Pi.basisFun K n) (Pi.basisFun K n)
+        (b.equivFun.conj f) =
+      LinearMap.toMatrix b b f := by
+  have hsymm : ∀ j : n, b.equivFun.symm (Pi.basisFun K n j) = b j := by
+    intro j
+    rw [Module.Basis.equivFun_symm_apply]
+    simp
+  ext i j
+  rw [LinearMap.toMatrix_apply, LinearMap.toMatrix_apply,
+    LinearEquiv.conj_apply]
+  simp only [LinearMap.comp_apply, LinearEquiv.coe_coe, hsymm j,
+    Pi.basisFun_repr, Module.Basis.equivFun_apply]
+
+/-- **Ribet's walk, intrinsic form** (Ribet cut E2a-ii-walk; sorry
+node — the whole arithmetic content of Ribet's lemma, stated WITHOUT
+any frame bookkeeping): under the hypotheses of
+`exists_ribet_walk_nonsplit_lattice` there is a commensurable stable
+lattice — again presented on `Fin 2 → O`, with a `ℚ̄_p`-equivariant
+generic identification `e'` to the original — whose reduction has a
+Galois-FIXED nonzero vector `v₀` (the trivial sub-character), acts by
+`ψ` on the quotient by the line `kk'·v₀`, and admits NO `ψ`-eigenvector
+outside that line (nonsplitness). Classical proof (Ribet, *A modular
+construction of unramified `p`-extensions of `ℚ(μ_p)`*, Invent. Math.
+34 (1976), Prop. 2.1; Bellaïche–Chenevier, *Families of Galois
+representations and Selmer groups*, Astérisque 324 (2009), ch. 1): the
+reduction of ANY stable lattice has semisimplification `1 ⊕ ψ` —
+2-dimensional Brauer–Nesbitt from `htr`/`hdet`, which pin the residual
+characteristic polynomials, and the diagonal characters of a triangular
+reduction are then forced GLOBALLY onto `{1, ψ}` by multiplicativity
+since `ψ ≠ 1`; walking the tree of lattices between a lattice and its
+`ψ`-isotypic neighbour `L' ⊆ L ⊆ 𝔪⁻¹L'` realizes BOTH orderings of the
+two DISTINCT residual characters, and if every lattice with
+sub-character `1` had SPLIT reduction — i.e. carried a `ψ`-eigenvector
+outside the fixed line — the splittings would glue into a `ρO`-stable
+line of the generic fibre (the inverse-limit argument inside Ribet's
+Prop. 2.1; the walk cannot descend forever because the valuation of
+`O` is discrete), contradicting `hirrO`. The residue package
+`hsurj'`/`hopen'`/`hker'` is what makes the reduction a continuous
+representation over the discrete field `kk'` (`𝔪_O` open), and `hOinj`
+is what identifies the generic fibre of the new lattice with that of
+the old. Soundness (audit 2026-07-24): the hypothesis set is
+classically inhabited (stable lattices in the `5`-adic Tate module of
+`X₀(11)`: generically irreducible, residually `1 ⊕ ω`), and the
+conclusion holds for every inhabitant by the cited walk;
+hypothesis-honest — `hψ` (multiplicity-freeness) and `hirrO` are each
+load-bearing (a scalar-residual or split-generic situation admits only
+split reductions). Circularity guard (inherited from the Ribet cut):
+must not route through `Family.lean` or `Reducible.lean`'s B5.
+Suggested further cut if this resists: (a) the Brauer–Nesbitt pinning
+of the residual characters of an ARBITRARY stable lattice to `{1, ψ}`,
+(b) the prescribed-order realization (one step of the walk), (c) the
+split-everywhere ⇒ generic stable line contradiction. -/
+theorem exists_ribet_walk_stable_line
+    {O : Type u} [CommRing O] [Algebra ℤ_[p] O] [IsDomain O]
+    [Module.Finite ℤ_[p] O] [TopologicalSpace O] [IsTopologicalRing O]
+    [IsModuleTopology ℤ_[p] O] [IsDiscreteValuationRing O]
+    [Algebra O (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul O (AlgebraicClosure ℚ_[p])]
+    (hOinj : Function.Injective (algebraMap O (AlgebraicClosure ℚ_[p])))
+    {kk' : Type u} [Field kk'] [Finite kk'] [Algebra ℤ_[p] kk']
+    [TopologicalSpace kk'] [DiscreteTopology kk'] [IsTopologicalRing kk']
+    [Algebra O kk'] [ContinuousSMul O kk']
+    (hsurj' : Function.Surjective (algebraMap O kk'))
+    (hopen' : IsOpen ((IsLocalRing.maximalIdeal O : Ideal O) : Set O))
+    (hker' : RingHom.ker (algebraMap O kk') = IsLocalRing.maximalIdeal O)
+    {ρO : GaloisRep ℚ O (Fin 2 → O)}
+    (hirrO : (ρO.baseChange (AlgebraicClosure ℚ_[p])).IsIrreducible)
+    (ψ : Field.absoluteGaloisGroup ℚ →* kk') (hψ : ∃ g, ψ g ≠ 1)
+    (htr : ∀ g, algebraMap O kk'
+      (LinearMap.trace O (Fin 2 → O) (ρO g)) = 1 + ψ g)
+    (hdet : ∀ g, algebraMap O kk' (LinearMap.det (ρO g)) = ψ g) :
+    ∃ (ρO' : GaloisRep ℚ O (Fin 2 → O))
+      (e' : ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O))
+        ≃ₗ[AlgebraicClosure ℚ_[p]]
+          ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O)))
+      (v₀ : kk' ⊗[O] (Fin 2 → O)),
+      (∀ g x, e' ((ρO'.baseChange (AlgebraicClosure ℚ_[p])) g x) =
+        (ρO.baseChange (AlgebraicClosure ℚ_[p])) g (e' x)) ∧
+      v₀ ≠ 0 ∧
+      (∀ g, (ρO'.baseChange kk') g v₀ = v₀) ∧
+      (∀ g x, ∃ c : kk',
+        (ρO'.baseChange kk') g x - ψ g • x = c • v₀) ∧
+      ¬ ∃ w : kk' ⊗[O] (Fin 2 → O),
+          w ∉ Submodule.span kk' {v₀} ∧
+            ∀ g, (ρO'.baseChange kk') g w = ψ g • w :=
+  sorry
+
+/-- **Ribet's walk across stable lattices** (Ribet cut E2a-ii; PROVEN
+2026-07-24 as the frame presentation over the intrinsic walk leaf
+`exists_ribet_walk_stable_line`): a representation on the standard rank-2 frame over the
 complete discrete valuation ring `O` (complete because compact:
 module-finite over `ℤ_p` in the module topology) whose generic fibre
 is irreducible over `ℚ̄_p` and whose residual characteristic
@@ -7789,39 +7971,37 @@ commensurable stable lattice — presented again on `Fin 2 → O`, with
 a `ℚ̄_p`-equivariant generic identification `e'` to the original —
 whose reduction `ρE` is TRIANGULAR on the standard residual frame
 with TRIVIAL sub-character, quotient character `ψ`, and NO
-coboundary writing of the upper-right entry. Classical proof (Ribet,
-*A modular construction of unramified `p`-extensions of `ℚ(μ_p)`*,
-Invent. Math. 34 (1976), Prop. 2.1; Bellaïche–Chenevier, *Families
-of Galois representations and Selmer groups*, Astérisque 324 (2009),
-ch. 1, the lattice-walking form): the reduction of ANY stable
-lattice has semisimplification `1 ⊕ ψ` — 2-dimensional
-Brauer–Nesbitt from `htr`/`hdet`, which pin the residual
-characteristic polynomials, and the diagonal characters of a
-triangular reduction are then forced GLOBALLY onto `{1, ψ}` by
-multiplicativity since `ψ ≠ 1`; walking the tree of lattices between
-a lattice and its `ψ`-isotypic neighbour `L' ⊆ L ⊆ 𝔪⁻¹L'` realizes
-BOTH orderings of the two DISTINCT residual characters, and if every
-lattice with sub-character `1` had SPLIT reduction the splittings
-would glue into a `ρO`-stable line of the generic fibre (the
-inverse-limit argument inside Ribet's Prop. 2.1), contradicting
-`hirrO`; the reduction data (`ρE`, `er`) presents `ρO' ⊗ kk'` on the
-standard frame through the canonical `kk' ⊗_O O² ≃ kk'²`
-(`TensorProduct.piScalarRight`) and a residual basis adapted to the
-stable sub-line, continuous because `𝔪_O` is open (`hopen'`) and the
-residue quotient is identified by `hker'`/`hsurj'`. Nonsplitness is
-the coboundary criterion: an `a` with `cc = (ψ − 1)·a` marks the
-stable complement `e₁ + a·e₀`. Soundness (audit 2026-07-24): the
-hypothesis set is classically inhabited (stable lattices in the
-`5`-adic Tate module of `X₀(11)`: generically irreducible,
-residually `1 ⊕ ω`), and the conclusion holds for every inhabitant
-by the cited walk; hypothesis-honest — `hψ` (multiplicity-freeness)
-and `hirrO` are each load-bearing (a scalar-residual or
-split-generic situation admits only split reductions). Circularity
-guard (inherited): must not route through `Family.lean` or
-`Reducible.lean`'s B5. If the walk proves genuinely deep, the
-natural further cut is (a) the Brauer–Nesbitt character pinning of
-triangular reductions, (b) the walk proper (prescribed-order
-nonsplit lattice), (c) the frame/reduction presentation. -/
+coboundary writing of the upper-right entry.
+
+DECOMPOSITION (2026-07-24, the recorded cut, items (a)+(b) versus
+(c)): ALL the arithmetic — the Brauer–Nesbitt pinning of the residual
+characters and the lattice walk proper (Ribet, *A modular construction
+of unramified `p`-extensions of `ℚ(μ_p)`*, Invent. Math. 34 (1976),
+Prop. 2.1; Bellaïche–Chenevier, Astérisque 324 (2009), ch. 1) — is
+isolated in the intrinsic, frame-free leaf
+`exists_ribet_walk_stable_line`, which returns the walked lattice
+`ρO'` together with a Galois-FIXED nonzero residual vector `v₀`, the
+statement that `ψ` is the character on the quotient by `kk'·v₀`, and
+the intrinsic nonsplitness "no `ψ`-eigenvector outside `kk'·v₀`". What
+is PROVEN here is item (c), the frame/reduction presentation: the
+residual space `kk' ⊗_O O²` is `2`-dimensional
+(`Algebra.TensorProduct.basis` on `Pi.basisFun`), so
+`exists_frame_of_stable_line` extends `v₀` to a basis `b` in which
+every reduced `ρO'(g)` is `!![1, cc g; 0, ψ g]`; the frame is moved to
+the standard one by the coordinate isomorphism
+`er := b.equivFun`, along which `ρE := (ρO' ⊗ kk').conj er` is a
+CONTINUOUS representation on `Fin 2 → kk'` by `GaloisRep.conj`, with
+matrices transported by `toMatrix_conj_equivFun`; and the coboundary
+criterion is exactly the intrinsic nonsplitness, since an `a` with
+`cc = (ψ − 1)·a` marks the `ψ`-eigenvector `v₁ + a·v₀` outside the
+fixed line. Soundness (audit 2026-07-24): the hypothesis set is
+classically inhabited (stable lattices in the `5`-adic Tate module of
+`X₀(11)`: generically irreducible, residually `1 ⊕ ω`);
+hypothesis-honest — every hypothesis is passed to the walk leaf, where
+`hψ` (multiplicity-freeness) and `hirrO` are each load-bearing (a
+scalar-residual or split-generic situation admits only split
+reductions). Circularity guard (inherited): must not route through
+`Family.lean` or `Reducible.lean`'s B5. -/
 theorem exists_ribet_walk_nonsplit_lattice
     {O : Type u} [CommRing O] [Algebra ℤ_[p] O] [IsDomain O]
     [Module.Finite ℤ_[p] O] [TopologicalSpace O] [IsTopologicalRing O]
@@ -7853,8 +8033,31 @@ theorem exists_ribet_walk_nonsplit_lattice
       (∀ g x, er ((ρO'.baseChange kk') g x) = ρE g (er x)) ∧
       (∀ g, LinearMap.toMatrix (Pi.basisFun kk' (Fin 2))
         (Pi.basisFun kk' (Fin 2)) (ρE g) = !![1, cc g; 0, ψ g]) ∧
-      ¬ ∃ a : kk', ∀ g, cc g = (ψ g - 1) * a :=
-  sorry
+      ¬ ∃ a : kk', ∀ g, cc g = (ψ g - 1) * a := by
+  classical
+  -- the intrinsic walk: a lattice whose reduction has a Galois-fixed
+  -- line with quotient character `ψ` and no `ψ`-eigenvector outside it
+  obtain ⟨ρO', e', v₀, he', hv₀, hfix, hquo, hns⟩ :=
+    exists_ribet_walk_stable_line hOinj hsurj' hopen' hker' hirrO ψ hψ
+      htr hdet
+  -- the residual space is `2`-dimensional over `kk'`
+  have hdim : Module.finrank kk' (kk' ⊗[O] (Fin 2 → O)) = 2 := by
+    rw [Module.finrank_eq_card_basis
+      (Algebra.TensorProduct.basis kk' (Pi.basisFun O (Fin 2)))]
+    simp
+  -- adapt a residual frame to the fixed line
+  obtain ⟨b, cc, htri, hsplit⟩ :=
+    exists_frame_of_stable_line hdim
+      (fun g => ((ρO'.baseChange kk') g : Module.End kk'
+        (kk' ⊗[O] (Fin 2 → O)))) (fun g => ψ g) v₀ hv₀ hfix hquo
+  refine ⟨ρO', e', (ρO'.baseChange kk').conj b.equivFun, b.equivFun, cc,
+    he', fun g x => ?_, fun g => ?_, ?_⟩
+  · rw [GaloisRep.conj_apply, LinearEquiv.conj_apply]
+    simp
+  · rw [GaloisRep.conj_apply]
+    exact (toMatrix_conj_equivFun b _).trans (htri g)
+  · rintro ⟨a, ha⟩
+    exact hns (hsplit a ha)
 
 /-- **Ribet's lattice walk** (Eisenstein pillar E2a; PROVEN
 2026-07-24 as an assembly over the Ribet-cut leaves — the
