@@ -4186,6 +4186,41 @@ theorem exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_one
   gcongr
 
 open IsDedekindDomain in
+/-- **Coset-cancelled upper bound for the sum of prime log-sums under
+the assumed vanishing** (sorry leaf) — the upper-bound half of the
+zeta-factorization argument: if the continued value of `L(s, χ)` at
+`s = 1` vanishes, then `∑_{j<ℓ-1} Re 𝒮_{χ^j}(s)`, which is
+`log ∏_j ‖L(s, χ^j)‖` by the Euler identity
+`exp_tsum_neg_log_one_sub_dirichletCharacter_mul_cpow_neg_eq_LSeries`,
+is bounded above on a right neighbourhood `(1, 1 + η]` of `1`.
+Intended proof (see the section docstring): factors with `χ^j` trivial
+on the norm-residue image share the trivial character's `L`-series
+(`LSeries_dirichletCharacter_mul_card_congr`), each
+`≤ C/(s-1)` (`exists_forall_norm_LSeries_dirichletCharacter_mul_card_le_div`);
+factors in the coset of `χ` share `χ`'s `L`-series, each `≤ C'·(s-1)`
+(`exists_forall_norm_LSeries_le_mul_sub_one_of_integral_eq_zero`,
+consuming the vanishing `h0`); the exponent translation `j ↦ j + 1`
+mod `ℓ - 1` (`dirichletCharacter_pow_mod`) matches the two classes
+bijectively, so the `log(s-1)` contributions cancel exactly; all
+remaining factors are uniformly bounded through
+`exists_forall_norm_LSeries_le_and_norm_deriv_le`. -/
+theorem exists_forall_sum_re_tsum_neg_log_le_of_integral_eq_zero
+    {F : Type*} [Field F] [NumberField F] {E : Type*} [Field E] [NumberField E]
+    [Algebra F E] {ℓ : ℕ} (hℓ : ℓ.Prime) [IsCyclotomicExtension {ℓ} F E]
+    {ζ : E} (hζ : IsPrimitiveRoot ζ ℓ) (χ : DirichletCharacter ℂ ℓ)
+    (hχ : ∃ (ρ : E ≃ₐ[F] E) (n : ℕ), ρ ζ = ζ ^ n ∧ χ (n : ZMod ℓ) ≠ 1)
+    (h0 : (∫ t in Set.Ioi (1 : ℝ),
+      (∑ k ∈ Finset.Icc 1 ⌊t⌋₊, χ (k : ZMod ℓ) *
+        (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) *
+      (t : ℂ) ^ (-(2 : ℂ))) = 0) :
+    ∃ K η : ℝ, 0 < η ∧ ∀ s : ℝ, 1 < s → s ≤ 1 + η →
+      ∑ j ∈ Finset.range (ℓ - 1),
+        (∑' P : HeightOneSpectrum (𝓞 F),
+          -Complex.log (1 - (χ ^ j) ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+            (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)))).re ≤ K :=
+  sorry
+
+open IsDedekindDomain in
 /-- **Nonvanishing of the continued twisted `L`-value at `s = 1`**
 (sorry leaf) — the arithmetic core of `L(1, χ) ≠ 0`, isolated from all
 continuation analysis: the extended value
@@ -4209,8 +4244,93 @@ theorem integral_sum_dirichletCharacter_mul_card_cpow_neg_two_ne_zero
     (∫ t in Set.Ioi (1 : ℝ),
       (∑ k ∈ Finset.Icc 1 ⌊t⌋₊, χ (k : ZMod ℓ) *
         (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) *
-      (t : ℂ) ^ (-(2 : ℂ))) ≠ 0 :=
-  sorry
+      (t : ℂ) ^ (-(2 : ℂ))) ≠ 0 := by
+  intro h0
+  -- upper-bound half: the log-sum total is bounded on a right window of `1`
+  obtain ⟨K, η, hη, hK⟩ :=
+    exists_forall_sum_re_tsum_neg_log_le_of_integral_eq_zero hℓ hζ χ hχ h0
+  have hlpos : (0 : ℝ) < ((ℓ - 1 : ℕ) : ℝ) := by
+    have h2 := hℓ.two_le
+    exact_mod_cast (by omega : 0 < ℓ - 1)
+  -- α-side: the split-class real prime sum is bounded on the window
+  have hsplit_le : ∀ s : ℝ, 1 < s → s ≤ 1 + η →
+      (∑' P : {P : HeightOneSpectrum (𝓞 F) //
+          (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+          ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) = 1},
+        (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ) ^ (-s)) ≤
+      K / ((ℓ - 1 : ℕ) : ℝ) := by
+    intro s hs1 hs2
+    refine (le_div_iff₀ hlpos).mpr ?_
+    rw [mul_comm]
+    exact (mul_tsum_rpow_neg_le_sum_re_tsum_neg_log F hℓ χ hs1).trans
+      (hK s hs1 hs2)
+  -- β-side: the split-class sum exceeds that bound at some `s₀ > 1`
+  obtain ⟨s₀, hs₀1, hs₀gt⟩ :=
+    exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_one (F := F) hℓ hζ
+      (ENNReal.ofReal (max (K / ((ℓ - 1 : ℕ) : ℝ)) 0)) ENNReal.ofReal_ne_top
+  set s : ℝ := min s₀ (1 + η) with hsdef
+  have hs1 : 1 < s := lt_min hs₀1 (by linarith)
+  have hs2 : s ≤ 1 + η := min_le_right _ _
+  have hss₀ : s ≤ s₀ := by rw [hsdef]; exact min_le_left _ _
+  -- shrinking the exponent only enlarges the `ℝ≥0∞`-sum
+  have hmono : (∑' P : {P : HeightOneSpectrum (𝓞 F) //
+        (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+        ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) = 1},
+      (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^ (-s₀)) ≤
+      ∑' P : {P : HeightOneSpectrum (𝓞 F) //
+        (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+        ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) = 1},
+      (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^ (-s) := by
+    refine ENNReal.tsum_le_tsum fun P => ?_
+    refine ENNReal.rpow_le_rpow_of_exponent_le ?_ (neg_le_neg hss₀)
+    have h2 := two_le_natCard_quotient (P : HeightOneSpectrum (𝓞 F))
+    exact_mod_cast
+      (by omega : 1 ≤ Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal))
+  -- `ℝ≥0∞` → `ℝ` conversion at the admissible exponent `s`
+  have hofReal : (∑' P : {P : HeightOneSpectrum (𝓞 F) //
+        (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+        ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) = 1},
+      (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^ (-s)) =
+      ENNReal.ofReal (∑' P : {P : HeightOneSpectrum (𝓞 F) //
+        (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+        ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) = 1},
+      (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ) ^ (-s)) := by
+    rw [ENNReal.ofReal_tsum_of_nonneg
+      (fun P => Real.rpow_nonneg (Nat.cast_nonneg _) _)
+      ((summable_rpow_neg_natCard_quotient hs1).subtype _)]
+    refine tsum_congr fun P => ?_
+    have hNpos : (0 : ℝ) <
+        (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ) := by
+      have h2 := two_le_natCard_quotient (P : HeightOneSpectrum (𝓞 F))
+      exact_mod_cast
+        (by omega : 0 < Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal))
+    rw [← ENNReal.ofReal_rpow_of_pos hNpos, ENNReal.ofReal_natCast]
+  -- assemble the contradiction
+  have hlt : max (K / ((ℓ - 1 : ℕ) : ℝ)) 0 <
+      ∑' P : {P : HeightOneSpectrum (𝓞 F) //
+        (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+        ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) = 1},
+      (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ) ^ (-s) := by
+    refine (ENNReal.ofReal_lt_ofReal_iff_of_nonneg (le_max_right _ _)).mp ?_
+    calc ENNReal.ofReal (max (K / ((ℓ - 1 : ℕ) : ℝ)) 0)
+        < ∑' P : {P : HeightOneSpectrum (𝓞 F) //
+            (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+            ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) = 1},
+          (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^
+            (-s₀) := hs₀gt
+      _ ≤ ∑' P : {P : HeightOneSpectrum (𝓞 F) //
+            (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+            ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) = 1},
+          (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^
+            (-s) := hmono
+      _ = ENNReal.ofReal (∑' P : {P : HeightOneSpectrum (𝓞 F) //
+            (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+            ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) = 1},
+          (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ) ^ (-s)) :=
+          hofReal
+  have hle := (hsplit_le s hs1 hs2).trans
+    (le_max_left (K / ((ℓ - 1 : ℕ) : ℝ)) 0)
+  exact absurd hlt (not_lt.mpr hle)
 
 open IsDedekindDomain in
 /-- **The twisted `L`-series is bounded away from `0` just right of
