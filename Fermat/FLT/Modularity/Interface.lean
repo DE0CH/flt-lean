@@ -4234,50 +4234,91 @@ theorem exists_ribet_lattice_of_residually_reducible
       ¬ ∃ a : kk', ∀ g, cc g = (χ g - 1) * a :=
   sorry
 
+/-- **Lattice-level hardly-ramifiedness transfer** (Eisenstein pillar
+E2b′; sorry node — the genuinely deep arithmetic half of the Ribet
+cut: a stable lattice of a hardly ramified representation is hardly
+ramified): from `IsHardlyRamified ρ`, the generic-fibre equivariance
+`e` over `ℚ̄_p`, the injectivity `O ↪ ℚ̄_p` and its
+`ℤ_p`-compatibility alone — no irreducibility, no residual-shape
+input — the lattice representation `ρO` on the standard rank-2
+`O`-frame is itself hardly ramified. Classical proof, field by field:
+DETERMINANT — `det (ρO g)` maps under the injection `O ↪ ℚ̄_p` to
+`det ((ρO ⊗ ℚ̄_p) g) = det ((ρ ⊗ ℚ̄_p) g)` (conjugation by `e`
+preserves determinants; `LinearMap.det_baseChange` computes both
+sides from the integral models), which is the image of the cyclotomic
+determinant of `hρ.det` by the compatibility equation `hZOcompat`, so
+`det ∘ ρO` is cyclotomic over `O` by injectivity; UNRAMIFIEDNESS
+outside `2p` — inertia acts trivially on the generic fibre through
+`e` and `hρ.isUnramified`, and the finite free module `Fin 2 → O`
+over the domain `O` injects into its `ℚ̄_p`-fibre (`hOinj`), so
+inertia lands in the kernel of `ρO` itself; FLATNESS at `p` — for
+every open ideal `I ⊆ O` the finite quotient `(Fin 2 → O) ⊗ O/I` is
+a subquotient of a finite level of the original flat tower (the two
+lattices are commensurable inside the common generic fibre `e`), and
+sub- and quotient objects of finite flat group schemes over `ℤ_p`
+are finite flat (scheme-theoretic closure: Raynaud, *Schémas en
+groupes de type `(p, …, p)`*, Bull. Soc. Math. France 102 (1974);
+Tate, in Cornell–Silverman–Stevens ch. V), so the prolongations of
+`hρ.isFlat` induce prolongations of the lattice tower; TAMENESS at
+`2` — the rank-1 unramified square-trivial quotient `(π, δ)` of
+`hρ.isTameAtTwo` cuts a `G_2`-stable line in the generic fibre; its
+saturation in the new lattice is a rank-1 free quotient of
+`Fin 2 → O` on which `G_2` acts by the SAME character `δ` read
+through `O` (its generic values are `δ ⊗ E`, integral because the
+quotient lattice is stable, unramified and square-trivial because
+`δ` is). Soundness (audit 2026-07-24): the hypothesis set is
+classically INHABITED (take `O = R`, `ρO` a frame of `ρ`, `e` the
+identity — no irreducibility is assumed), and the conclusion holds
+for every inhabitant by the cited transfers; hypothesis-honest: no
+step consumes `p ≥ 5`, irreducibility, or any residual data.
+Circularity guard: must not route through `Family.lean` or
+`Reducible.lean`'s B5. -/
+theorem isHardlyRamified_lattice_of_generic_iso
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hρ : IsHardlyRamified hpodd hv ρ)
+    {O : Type u} [CommRing O] [Algebra ℤ_[p] O] [IsDomain O]
+    [Module.Finite ℤ_[p] O] [TopologicalSpace O] [IsTopologicalRing O]
+    [IsLocalRing O] [IsModuleTopology ℤ_[p] O]
+    [Algebra O (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul O (AlgebraicClosure ℚ_[p])]
+    (hOinj : Function.Injective (algebraMap O (AlgebraicClosure ℚ_[p])))
+    (hZOcompat : ∀ x : ℤ_[p],
+      algebraMap O (AlgebraicClosure ℚ_[p]) (algebraMap ℤ_[p] O x) =
+        algebraMap R (AlgebraicClosure ℚ_[p]) (algebraMap ℤ_[p] R x))
+    {ρO : GaloisRep ℚ O (Fin 2 → O)}
+    (e : ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O))
+      ≃ₗ[AlgebraicClosure ℚ_[p]] ((AlgebraicClosure ℚ_[p]) ⊗[R] V))
+    (he : ∀ g x, e ((ρO.baseChange (AlgebraicClosure ℚ_[p])) g x) =
+      (ρ.baseChange (AlgebraicClosure ℚ_[p])) g (e x))
+    (hrankO : Module.rank O (Fin 2 → O) = 2) :
+    IsHardlyRamified hpodd hrankO ρO :=
+  sorry
+
 /-- **Integral hardly-ramifiedness transfer** (Eisenstein pillar E2b;
-sorry node — the per-field transfer half of the Ribet cut behind
-pillar E2): the reduction `ρE` of a stable lattice `ρO` of a hardly
+PROVEN 2026-07-24 as an assembly — the lattice-level transfer is the
+sorried leaf `isHardlyRamified_lattice_of_generic_iso` above, the
+residual reduction is the PROVEN pillar-1 machinery of
+`Residual.lean` (`isFlatAt_baseChange_residue_at`,
+`isTameAtTwo_baseChange_residue_res`, the determinant computation by
+`LinearMap.det_baseChange` and the base-change instance of
+`IsUnramifiedAt`), and the frame identification `er` is crossed by
+conjugation, proven here: determinants are conjugation-invariant
+(`LinearMap.det_conj`), kernels transfer pointwise, flat
+prolongations transport along the base-changed equivariant
+equivalence (`HasFlatProlongationAt.of_equiv` with
+`LinearEquiv.baseChange er`), and the tame projection composes with
+`er.symm`): the reduction `ρE` of a stable lattice `ρO` of a hardly
 ramified `p`-adic representation `ρ` is itself hardly ramified — with
 no irreducibility or residual-shape input consumed. The linkage data
 is exactly what E2a produces: the generic-fibre equivariance `e` over
 `ℚ̄_p`, the injectivity `O ↪ ℚ̄_p` and its `ℤ_p`-compatibility, the
 residue package `O ↠ kk'` (surjective, open maximal-ideal kernel),
 and the frame identification `er` intertwining `ρO ⊗ kk'` with `ρE`.
-Classical proof, field by field: DETERMINANT — `det (ρO g)` maps
-under the injection `O ↪ ℚ̄_p` to `det (ρ ⊗ ℚ̄_p) g` (conjugation by
-`e` preserves determinants), which is the image of the cyclotomic
-determinant of `hρ` by the compatibility equation, so
-`det ∘ ρO` is cyclotomic over `O` and reduces to the cyclotomic
-determinant over `kk'`; UNRAMIFIEDNESS outside `2p` — inertia acts
-trivially on the generic fibre through `e`, and a finite free module
-over the domain `O` injects into its `ℚ̄_p`-fibre, so `ρO` is
-unramified and so is its base change (`IsUnramifiedAt` is stable
-under base change); FLATNESS at `p` — for every open ideal `I ⊆ O`
-the finite quotient `(Fin 2 → O) ⊗ O/I` is a subquotient of a finite
-level of the original flat tower (a lattice commensurable with the
-base-changed one), and sub- and quotient objects of finite flat group
-schemes over `ℤ_p` are finite flat (scheme-theoretic closure:
-Raynaud, *Schémas en groupes de type `(p, …, p)`*, Bull. Soc. Math.
-France 102 (1974); Tate, in Cornell–Silverman–Stevens ch. V), giving
-`ρO.IsFlatAt p`, which passes to the residual reduction by the
-pillar-1 transfer `isFlatAt_baseChange_residue_at`; TAMENESS at `2` —
-the rank-1 unramified square-trivial quotient `π : V ↠ R, δ` of `hρ`
-saturates inside the new lattice to a rank-1 quotient of `Fin 2 → O`
-on which the `G_2`-action is by the SAME character `δ` read through
-`O` (its values on the generic fibre are `δ ⊗ E`, integral and
-square-trivial), and reduces by the pillar-1 transfer
-`isTameAtTwo_baseChange_residue_res`; finally all four fields cross
-the frame identification `er` by conjugation (determinants are
-conj-invariant, kernels are preserved, flat prolongations transport
-along equivariant equivalences — `HasFlatProlongationAt.of_equiv` —
-and the tame projection composes with `er.symm`). Soundness (audit
-2026-07-24): the hypothesis set is classically INHABITED (take
-`O = R = ℤ_p`, `ρO` a frame of `ρ`, `ρE` its reduction — no
-irreducibility is assumed), and the conclusion holds for every
-inhabitant by the cited transfers; hypothesis-honest: no step
-consumes `p ≥ 5`, irreducibility, or any residual triangular shape.
-Circularity guard: must not route through `Family.lean` or
-`Reducible.lean`'s B5. -/
+Soundness (audit 2026-07-24): the hypothesis set is classically
+INHABITED (take `O = R = ℤ_p`, `ρO` a frame of `ρ`, `ρE` its
+reduction — no irreducibility is assumed); hypothesis-honest: no step
+consumes `p ≥ 5`, irreducibility, or any residual triangular shape. -/
 theorem isHardlyRamified_reduction_of_ribet_lattice
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
@@ -4306,8 +4347,99 @@ theorem isHardlyRamified_reduction_of_ribet_lattice
     (er : (kk' ⊗[O] (Fin 2 → O)) ≃ₗ[kk'] (Fin 2 → kk'))
     (her : ∀ g x, er ((ρO.baseChange kk') g x) = ρE g (er x))
     (hrankE : Module.rank kk' (Fin 2 → kk') = 2) :
-    IsHardlyRamified hpodd hrankE ρE :=
-  sorry
+    IsHardlyRamified hpodd hrankE ρE := by
+  -- the rank of the standard frame over `O`
+  have hrankO : Module.rank O (Fin 2 → O) = 2 := by simp
+  -- the lattice-level transfer (the deep leaf: Raynaud closure and tame
+  -- saturation)
+  have hρO : IsHardlyRamified hpodd hrankO ρO :=
+    isHardlyRamified_lattice_of_generic_iso hpodd hv hρ hOinj hZOcompat
+      e he hrankO
+  -- `ρE` is the `er`-conjugate of the residual base change
+  have hconj : ∀ g : Field.absoluteGaloisGroup ℚ,
+      ρE g = (er : (kk' ⊗[O] (Fin 2 → O)) →ₗ[kk'] (Fin 2 → kk')) ∘ₗ
+        ((ρO.baseChange kk') g) ∘ₗ
+        (er.symm : (Fin 2 → kk') →ₗ[kk'] (kk' ⊗[O] (Fin 2 → O))) := by
+    intro g
+    refine LinearMap.ext fun y => ?_
+    have h1 := her g (er.symm y)
+    rw [LinearEquiv.apply_symm_apply] at h1
+    simp only [LinearMap.comp_apply, LinearEquiv.coe_coe]
+    exact h1.symm
+  constructor
+  · -- determinant: conjugation-invariance across `er`, then the residual
+    -- reduction of the cyclotomic determinant of the lattice
+    intro g
+    have hdet1 : ρE.det g = LinearMap.det ((ρO.baseChange kk') g) := by
+      rw [GaloisRep.det_apply, hconj g, LinearMap.det_conj]
+    have hdet2 : LinearMap.det ((ρO.baseChange kk') g) =
+        algebraMap O kk' (ρO.det g) := by
+      rw [show ((ρO.baseChange kk') g :
+          Module.End kk' (kk' ⊗[O] (Fin 2 → O))) =
+        LinearMap.baseChange kk' (ρO g) from rfl, LinearMap.det_baseChange]
+      rfl
+    rw [hdet1, hdet2, hρO.det g, ← IsScalarTower.algebraMap_apply]
+  · -- unramifiedness outside `2p`: the base-change instance plus the
+    -- pointwise kernel transfer across the frame conjugation
+    intro q hq hqp
+    haveI : ρO.IsUnramifiedAt hq.toHeightOneSpectrumRingOfIntegersRat :=
+      hρO.isUnramified q hq hqp
+    refine ⟨fun σ hσ => ?_⟩
+    have h3 : ((ρO.baseChange kk').toLocal
+        hq.toHeightOneSpectrumRingOfIntegersRat) σ = 1 :=
+      GaloisRep.IsUnramifiedAt.localInertiaGroup_le
+        (ρ := ρO.baseChange kk') hσ
+    show (ρE.toLocal hq.toHeightOneSpectrumRingOfIntegersRat) σ = 1
+    rw [GaloisRep.toLocal_apply] at h3
+    rw [GaloisRep.toLocal_apply, hconj, h3]
+    refine LinearMap.ext fun y => ?_
+    simp
+  · -- flatness at `p`: the pillar-1 residual transfer, then transport of
+    -- the prolongations along the base-changed frame identification
+    have hflatbar : (ρO.baseChange kk').IsFlatAt
+        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+          (Fact.out : p.Prime)) :=
+      IsHardlyRamified.isFlatAt_baseChange_residue_at _ kk' hsurj' hopen'
+        hker' hρO.isFlat
+    refine ⟨fun I hI => ?_⟩
+    refine ((hflatbar.cond I hI).of_equiv _
+      (er.baseChange kk' (kk' ⧸ I) _ _).toAddEquiv ?_)
+    intro g x
+    show (er.baseChange kk' (kk' ⧸ I) _ _)
+        ((((ρO.baseChange kk').baseChange (kk' ⧸ I)).toLocal
+          (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+            (Fact.out : p.Prime))) g x) =
+      ((ρE.baseChange (kk' ⧸ I)).toLocal
+          (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+            (Fact.out : p.Prime))) g
+        ((er.baseChange kk' (kk' ⧸ I) _ _) x)
+    induction x using TensorProduct.induction_on with
+    | zero => simp
+    | add a b ha hb => simp only [map_add, ha, hb]
+    | tmul c y =>
+      rw [GaloisRep.toLocal_apply, GaloisRep.toLocal_apply,
+        GaloisRep.baseChange_tmul, LinearEquiv.baseChange_tmul,
+        LinearEquiv.baseChange_tmul, GaloisRep.baseChange_tmul, her]
+  · -- tameness at `2`: the pillar-1 residual transfer, with the tame
+    -- projection composed with `er.symm`
+    obtain ⟨π, hπsurj, δ, h⟩ :=
+      IsHardlyRamified.isTameAtTwo_baseChange_residue_res kk'
+        hρO.isTameAtTwo
+    refine ⟨π ∘ₗ (er.symm :
+        (Fin 2 → kk') →ₗ[kk'] (kk' ⊗[O] (Fin 2 → O))),
+      fun c => ?_, δ, fun g w => ?_⟩
+    · obtain ⟨x, hx⟩ := hπsurj c
+      exact ⟨er x, by simp [hx]⟩
+    · refine ⟨?_, (h 1 0).2.1, (h 1 0).2.2⟩
+      have hs : er.symm ((ρE.map (algebraMap ℚ ℚ_[2]) g) w) =
+          ((ρO.baseChange kk').map (algebraMap ℚ ℚ_[2])) g (er.symm w) := by
+        rw [GaloisRep.map_apply, GaloisRep.map_apply, hconj]
+        simp
+      show π (er.symm ((ρE.map (algebraMap ℚ ℚ_[2]) g) w)) =
+        δ g ((π ∘ₗ (er.symm :
+          (Fin 2 → kk') →ₗ[kk'] (kk' ⊗[O] (Fin 2 → O)))) w)
+      rw [hs]
+      exact (h g (er.symm w)).1
 
 /-- **The Eisenstein lattice** (Eisenstein pillar E2; PROVEN
 2026-07-24 as an assembly over the Ribet cut E2a/E2b above — E2a
