@@ -87,6 +87,16 @@ import Mathlib.RingTheory.Etale.Field
 -- irreducibility of `X² + X + 1` over `ℚ₃ᵥ` in the finite-level
 -- inertia leaf.
 import Mathlib.Algebra.Polynomial.SpecificDegree
+-- `natCard_residue_quotient_toHeightOneSpectrum` (the residue field of
+-- `ℤ_3ˆ` has three elements), for the Frobenius-is-cubing input of the
+-- finite-level tame-generator leaf.
+import Fermat.FLT.DedekindDomain.ResidueCardinality
+-- `Nat.ordProj_dvd`/`Nat.coprime_ordCompl`, for the 3-part/coprime
+-- order decomposition in the wild-inertia lemma of the same leaf.
+import Mathlib.Data.Nat.Factorization.Basic
+-- `IsAlgebraic.exists_integral_multiple`, for the faithfulness of the
+-- Galois action on the finite-level integral closure (same leaf).
+import Mathlib.RingTheory.Algebraic.Integral
 -- The Dedekind zeta Dirichlet series (`NumberField.dedekindZeta`) and
 -- the archimedean Euler factors (`Complex.Gamma`, complex powers),
 -- appearing in the STATEMENT of the Hecke-continuation interface
@@ -9163,21 +9173,419 @@ theorem restrictNormalHom_mem_inertia_of_mem_localInertiaGroup_three
   exact (IsLocalRing.maximalIdeal.isMaximal _).ne_top
     (Ideal.eq_top_of_isUnit_mem _ hbig hmap)
 
-/-- **Finite-level tame ramification at `3`** (sorry node, isolated
-2026-07-23 — the genuine local-structure core of the tame-generator
-leaf below, unformalized in project and mathlib; Serre, *Corps
-Locaux* IV §1–2): for every finite Galois subextension `N` of the
-algebraic closure of `ℚ₃ᵥ` there is a finite-level inertia element
-`t` such that (a) every finite-level inertia element agrees with a
-power of `t` up to an element of `3`-power order — the wild inertia
-`P` is the (normal) `3`-Sylow of the inertia `I`, the tame quotient
-`I/P` is CYCLIC (it embeds into the multiplicative group of the
-residue field of `N` via `σ ↦ σ(π)/π` for a uniformizer `π`), `t` is
-any preimage of a generator, and the error `(tᵐ)⁻¹σ` lies in `P` —
+section TameGeneratorThree
+
+open scoped Pointwise
+
+/-- **Ring automorphisms preserve the maximal ideal of a local ring**:
+the action of a group element under a `MulSemiringAction` maps the
+maximal ideal into itself (a unit image would pull back to a unit along
+the inverse automorphism). -/
+theorem smul_mem_maximalIdeal_of_mem
+    {R : Type*} [CommRing R] [IsLocalRing R]
+    {G : Type*} [Group G] [MulSemiringAction G R]
+    (g : G) {x : R} (hx : x ∈ IsLocalRing.maximalIdeal R) :
+    g • x ∈ IsLocalRing.maximalIdeal R := by
+  rw [IsLocalRing.mem_maximalIdeal, mem_nonunits_iff] at hx ⊢
+  intro hu
+  have h1 := hu.map (MulSemiringAction.toRingEquiv G R g⁻¹)
+  rw [show (MulSemiringAction.toRingEquiv G R g⁻¹) (g • x) = g⁻¹ • (g • x) from rfl,
+    inv_smul_smul] at h1
+  exact hx h1
+
+/-- Powers of the maximal ideal are likewise preserved by ring
+automorphisms (induction over the ideal product). -/
+theorem smul_mem_maximalIdeal_pow_of_mem
+    {R : Type*} [CommRing R] [IsLocalRing R]
+    {G : Type*} [Group G] [MulSemiringAction G R]
+    (g : G) : ∀ (k : ℕ) {x : R}, x ∈ (IsLocalRing.maximalIdeal R) ^ k →
+      g • x ∈ (IsLocalRing.maximalIdeal R) ^ k := by
+  intro k
+  induction k with
+  | zero =>
+      intro x _
+      rw [pow_zero, Ideal.one_eq_top]
+      exact Submodule.mem_top
+  | succ n ih =>
+      intro x hx
+      rw [pow_succ] at hx ⊢
+      refine Submodule.mul_induction_on hx (fun a ha b hb => ?_) (fun a b ha hb => ?_)
+      · rw [smul_mul']
+        exact Ideal.mul_mem_mul (ih ha) (smul_mem_maximalIdeal_of_mem g hb)
+      · rw [smul_add]
+        exact add_mem ha hb
+
+/-- **The derivative bound at level `≥ 2`** (Serre, *Corps Locaux* IV):
+an automorphism displacing every ring element into `𝔪^(j+2)` displaces
+every element OF `𝔪^(j+2)` into `𝔪^(j+3)` — split `c = a·b` with
+`a ∈ 𝔪^(j+1)`, `b ∈ 𝔪` and use `g(ab) − ab = g(a)(g(b) − b) +
+(g(a) − a)b`, whose terms live in `𝔪^(2j+3)` and `𝔪^(j+3)`. -/
+theorem smul_sub_mem_maximalIdeal_pow_succ
+    {R : Type*} [CommRing R] [IsLocalRing R]
+    {G : Type*} [Group G] [MulSemiringAction G R]
+    (g : G) (j : ℕ)
+    (hg : ∀ a : R, g • a - a ∈ (IsLocalRing.maximalIdeal R) ^ (j + 2)) :
+    ∀ c ∈ (IsLocalRing.maximalIdeal R) ^ (j + 2),
+      g • c - c ∈ (IsLocalRing.maximalIdeal R) ^ (j + 3) := by
+  intro c hc
+  rw [show j + 2 = (j + 1) + 1 from rfl, pow_succ] at hc
+  refine Submodule.mul_induction_on hc (fun a ha b hb => ?_) (fun a b ha hb => ?_)
+  · have hkey : g • (a * b) - a * b = (g • a) * (g • b - b) + (g • a - a) * b := by
+      rw [smul_mul']
+      ring
+    rw [hkey]
+    refine add_mem ?_ ?_
+    · have h1 : (g • a) * (g • b - b) ∈
+          (IsLocalRing.maximalIdeal R) ^ (j + 1) * (IsLocalRing.maximalIdeal R) ^ (j + 2) :=
+        Ideal.mul_mem_mul (smul_mem_maximalIdeal_pow_of_mem g (j + 1) ha) (hg b)
+      have hle : (IsLocalRing.maximalIdeal R) ^ (j + 1 + (j + 2)) ≤
+          (IsLocalRing.maximalIdeal R) ^ (j + 3) := Ideal.pow_le_pow_right (by omega)
+      rw [← pow_add] at h1
+      exact hle h1
+    · have h1 : (g • a - a) * b ∈
+          (IsLocalRing.maximalIdeal R) ^ (j + 2) * IsLocalRing.maximalIdeal R :=
+        Ideal.mul_mem_mul (hg a) hb
+      rwa [← pow_succ] at h1
+  · have hkey : g • (a + b) - (a + b) = (g • a - a) + (g • b - b) := by
+      rw [smul_add]
+      ring
+    rw [hkey]
+    exact add_mem ha hb
+
+/-- **The cube step** (residue characteristic `3`): if `g` displaces
+`R` into `𝔪^(i+1)` and displaces `𝔪^(i+1)` into `𝔪^(i+2)`, then `g³`
+displaces `R` into `𝔪^(i+2)`. Key identity:
+`g³a − a = 3(ga − a) + (g(c) − c)` with
+`c = (g²a − a) + (ga − a) ∈ 𝔪^(i+1)`. -/
+theorem pow_three_smul_sub_mem_maximalIdeal_pow_succ
+    {R : Type*} [CommRing R] [IsLocalRing R]
+    {G : Type*} [Group G] [MulSemiringAction G R]
+    (h3 : (3 : R) ∈ IsLocalRing.maximalIdeal R)
+    (g : G) (i : ℕ)
+    (hg : ∀ a : R, g • a - a ∈ (IsLocalRing.maximalIdeal R) ^ (i + 1))
+    (hg2 : ∀ c ∈ (IsLocalRing.maximalIdeal R) ^ (i + 1),
+      g • c - c ∈ (IsLocalRing.maximalIdeal R) ^ (i + 2)) :
+    ∀ a : R, (g ^ 3) • a - a ∈ (IsLocalRing.maximalIdeal R) ^ (i + 2) := by
+  intro a
+  have hcmem : (g • (g • a) - a) + (g • a - a) ∈ (IsLocalRing.maximalIdeal R) ^ (i + 1) := by
+    have h2 : g • (g • a) - a = (g • (g • a) - g • a) + (g • a - a) := by ring
+    exact add_mem (h2 ▸ add_mem (hg (g • a)) (hg a)) (hg a)
+  have hgc := hg2 _ hcmem
+  have h3d : (3 : R) * (g • a - a) ∈ (IsLocalRing.maximalIdeal R) ^ (i + 2) := by
+    rw [pow_succ']
+    exact Ideal.mul_mem_mul h3 (hg a)
+  have hkey : (g ^ 3) • a - a =
+      (3 : R) * (g • a - a) +
+        (g • ((g • (g • a) - a) + (g • a - a)) - ((g • (g • a) - a) + (g • a - a))) := by
+    rw [pow_succ, pow_succ, pow_one, mul_smul, mul_smul, smul_add, smul_sub, smul_sub]
+    ring
+  rw [hkey]
+  exact add_mem h3d hgc
+
+/-- **Wild elements have `3`-power order** (Serre, *Corps Locaux* IV
+§2, made monogenicity-free): in a Noetherian local domain of residue
+characteristic `3` with a finite faithfully acting automorphism group,
+an automorphism `σ` displacing `R` into `𝔪` and `𝔪` into `𝔪²` has
+`3`-power order. The coprime-to-`3` part `τ = σ^(3^j₀)` climbs the
+filtration `H_i = {g | (g − 1)R ⊆ 𝔪^(i+1)}` forever: `τ ∈ H_i ⟹ τ³ ∈
+H_(i+1)` (cube step) and `τ ∈ ⟨τ³⟩` (Bézout, order coprime to `3`), so
+`τ` displaces into `⋂ 𝔪^n = 0` (Krull) and is trivial. -/
+theorem exists_pow_three_pow_eq_one_of_wild
+    {R : Type*} [CommRing R] [IsDomain R] [IsNoetherianRing R] [IsLocalRing R]
+    {G : Type*} [Group G] [Finite G] [MulSemiringAction G R]
+    (hfaith : ∀ g : G, (∀ a : R, g • a = a) → g = 1)
+    (h3 : (3 : R) ∈ IsLocalRing.maximalIdeal R)
+    (σ : G)
+    (hσ : ∀ a : R, σ • a - a ∈ IsLocalRing.maximalIdeal R)
+    (hker : ∀ c ∈ IsLocalRing.maximalIdeal R,
+      σ • c - c ∈ (IsLocalRing.maximalIdeal R) ^ 2) :
+    ∃ j : ℕ, σ ^ 3 ^ j = 1 := by
+  classical
+  refine ⟨(orderOf σ).factorization 3, ?_⟩
+  set τ := σ ^ 3 ^ (orderOf σ).factorization 3 with hτdef
+  -- the order of `τ` is coprime to `3`
+  have hn0 : orderOf σ ≠ 0 := (orderOf_pos σ).ne'
+  have hτord : Nat.Coprime 3 (orderOf τ) := by
+    have hdvd : 3 ^ (orderOf σ).factorization 3 ∣ orderOf σ := Nat.ordProj_dvd (orderOf σ) 3
+    have horder : orderOf τ = orderOf σ / 3 ^ (orderOf σ).factorization 3 := by
+      rw [hτdef, orderOf_pow, Nat.gcd_eq_right hdvd]
+    rw [horder]
+    exact Nat.coprime_ordCompl Nat.prime_three hn0
+  -- Bézout: `τ` lies in every subgroup containing `τ³`
+  have hbez : ∀ H : Subgroup G, τ ^ 3 ∈ H → τ ∈ H := by
+    intro H hH
+    have hab := Nat.gcd_eq_gcd_ab 3 (orderOf τ)
+    rw [Nat.Coprime.gcd_eq_one hτord] at hab
+    have hzp : ((τ ^ 3) ^ Nat.gcdA 3 (orderOf τ) : G) = τ := by
+      have hexp : (3 : ℤ) * Nat.gcdA 3 (orderOf τ) =
+          1 - (orderOf τ : ℤ) * Nat.gcdB 3 (orderOf τ) := by
+        push_cast at hab
+        linarith
+      rw [← zpow_natCast τ 3, ← zpow_mul]
+      push_cast
+      rw [hexp, zpow_sub, zpow_one, zpow_mul, zpow_natCast, pow_orderOf_eq_one, one_zpow,
+        inv_one, mul_one]
+    exact hzp ▸ Subgroup.zpow_mem H hH _
+  -- powers of `σ` keep the level-one displacement bounds
+  have hpow1 : ∀ (k : ℕ) (a : R), σ ^ k • a - a ∈ IsLocalRing.maximalIdeal R := by
+    intro k
+    induction k with
+    | zero => intro a; simp
+    | succ m ih =>
+        intro a
+        have hkey : σ ^ (m + 1) • a - a = σ ^ m • (σ • a - a) + (σ ^ m • a - a) := by
+          rw [pow_succ, mul_smul, smul_sub]
+          ring
+        rw [hkey]
+        exact add_mem (smul_mem_maximalIdeal_of_mem _ (hσ a)) (ih a)
+  have hpow2 : ∀ (k : ℕ), ∀ c ∈ IsLocalRing.maximalIdeal R,
+      σ ^ k • c - c ∈ (IsLocalRing.maximalIdeal R) ^ 2 := by
+    intro k
+    induction k with
+    | zero => intro c _; simp
+    | succ m ih =>
+        intro c hc
+        have hkey : σ ^ (m + 1) • c - c = σ ^ m • (σ • c - c) + (σ ^ m • c - c) := by
+          rw [pow_succ, mul_smul, smul_sub]
+          ring
+        rw [hkey]
+        exact add_mem (smul_mem_maximalIdeal_pow_of_mem _ 2 (hker c hc)) (ih c hc)
+  -- the main climb: `τ` lies in every level of the filtration
+  have hclaim : ∀ i : ℕ, τ ∈ ((IsLocalRing.maximalIdeal R) ^ (i + 1)).inertia G := by
+    intro i
+    induction i with
+    | zero =>
+        refine AddSubgroup.mem_inertia.mpr fun a => ?_
+        rw [zero_add, pow_one]
+        exact hpow1 _ a
+    | succ i ih =>
+        have hlev : ∀ a : R, τ • a - a ∈ (IsLocalRing.maximalIdeal R) ^ (i + 1) :=
+          fun a => AddSubgroup.mem_inertia.mp ih a
+        have h2 : ∀ c ∈ (IsLocalRing.maximalIdeal R) ^ (i + 1),
+            τ • c - c ∈ (IsLocalRing.maximalIdeal R) ^ (i + 2) := by
+          rcases i with _ | j
+          · intro c hc
+            rw [pow_one] at hc
+            exact hpow2 _ c hc
+          · exact smul_sub_mem_maximalIdeal_pow_succ τ j hlev
+        have hcube := pow_three_smul_sub_mem_maximalIdeal_pow_succ h3 τ i hlev h2
+        exact hbez _ (AddSubgroup.mem_inertia.mpr hcube)
+  -- Krull intersection: `τ` acts trivially
+  have htriv : ∀ a : R, τ • a = a := by
+    intro a
+    have hall : τ • a - a ∈ ⨅ m : ℕ, (IsLocalRing.maximalIdeal R) ^ m := by
+      rw [Submodule.mem_iInf]
+      intro m
+      rcases m with _ | m
+      · rw [pow_zero, Ideal.one_eq_top]
+        exact Submodule.mem_top
+      · exact AddSubgroup.mem_inertia.mp (hclaim m) a
+    rw [Ideal.iInf_pow_eq_bot_of_isLocalRing (IsLocalRing.maximalIdeal R)
+      (IsLocalRing.maximalIdeal.isMaximal R).ne_top] at hall
+    rw [← sub_eq_zero]
+    exact (Ideal.mem_bot).mp hall
+  exact hfaith τ htriv
+
+/-- **The generic finite-level tame-generator theorem** (Serre, *Corps
+Locaux* IV §1–2, over an abstract DVR with residue characteristic `3`):
+given a finite group acting faithfully by ring automorphisms on a DVR
+`R` with `3 ∈ 𝔪`, and an element `φ` acting as the cube map on the
+residue field, there is an inertia element `t` such that (a) every
+inertia element is a power of `t` times a `3`-power-order element, and
+(b) `φtφ⁻¹t⁻³` has `3`-power order. The tame character `θ(σ) =
+σ(π)/π mod 𝔪` (a cocycle made multiplicative on inertia by residue
+triviality) embeds inertia-mod-wild into the cyclic group `κˣ`;
+its kernel is `3`-power-order by `exists_pow_three_pow_eq_one_of_wild`,
+and `θ` is `φ`-semilinear: `θ(φσφ⁻¹) = θ(σ)³`. -/
+theorem exists_finite_level_tame_generator_of_frobenius
+    {R : Type*} [CommRing R] [IsDomain R] [IsDiscreteValuationRing R]
+    {G : Type*} [Group G] [Finite G] [MulSemiringAction G R]
+    (hfaith : ∀ g : G, (∀ a : R, g • a = a) → g = 1)
+    (h3 : (3 : R) ∈ IsLocalRing.maximalIdeal R)
+    (φ : G) (hφ : ∀ x : R, φ • x - x ^ 3 ∈ IsLocalRing.maximalIdeal R) :
+    ∃ t ∈ (IsLocalRing.maximalIdeal R).inertia G,
+      (∀ σ ∈ (IsLocalRing.maximalIdeal R).inertia G,
+        ∃ m j : ℕ, ((t ^ m)⁻¹ * σ) ^ 3 ^ j = 1) ∧
+      ∃ j : ℕ, (φ * t * φ⁻¹ * (t ^ 3)⁻¹) ^ 3 ^ j = 1 := by
+  classical
+  -- a uniformizer and the unit cocycle `g • π = π * U g`
+  obtain ⟨π, hπ⟩ := IsDiscreteValuationRing.exists_irreducible R
+  have hπ0 : π ≠ 0 := hπ.ne_zero
+  have hspan : IsLocalRing.maximalIdeal R = Ideal.span {π} := hπ.maximalIdeal_eq
+  have hUex : ∀ g : G, ∃ u : Rˣ, π * u = g • π := by
+    intro g
+    have hgπ : Irreducible (g • π) :=
+      (MulEquiv.irreducible_iff (MulSemiringAction.toRingEquiv G R g)).mpr hπ
+    exact IsDiscreteValuationRing.associated_of_irreducible R hπ hgπ
+  choose U hU using hUex
+  -- the cocycle relation and normalization
+  have hUmul : ∀ g h : G, (U (g * h) : R) = U g * (g • (U h : R)) := by
+    intro g h
+    refine mul_left_cancel₀ hπ0 ?_
+    calc π * (U (g * h) : R) = (g * h) • π := hU (g * h)
+      _ = g • (h • π) := mul_smul g h π
+      _ = g • (π * (U h : R)) := by rw [hU h]
+      _ = (g • π) * (g • (U h : R)) := smul_mul' g π (U h : R)
+      _ = (π * (U g : R)) * (g • (U h : R)) := by rw [hU g]
+      _ = π * ((U g : R) * (g • (U h : R))) := by ring
+  have hU1 : (U 1 : R) = 1 := by
+    refine mul_left_cancel₀ hπ0 ?_
+    rw [hU 1, one_smul, mul_one]
+  -- the tame character on the inertia subgroup
+  have hmul : ∀ σ τ : ↥((IsLocalRing.maximalIdeal R).inertia G),
+      Units.map (Ideal.Quotient.mk (IsLocalRing.maximalIdeal R)).toMonoidHom (U ((σ * τ : _) : G)) =
+        Units.map (Ideal.Quotient.mk (IsLocalRing.maximalIdeal R)).toMonoidHom (U (σ : G)) *
+          Units.map (Ideal.Quotient.mk (IsLocalRing.maximalIdeal R)).toMonoidHom (U (τ : G)) := by
+    intro σ τ
+    refine Units.ext ?_
+    show Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) (U ((σ : G) * (τ : G)) : R) =
+      Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) (U (σ : G) : R) *
+        Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) (U (τ : G) : R)
+    rw [hUmul (σ : G) (τ : G), map_mul]
+    congr 1
+    exact Ideal.Quotient.eq.mpr (AddSubgroup.mem_inertia.mp σ.2 (U (τ : G) : R))
+  set θ : ↥((IsLocalRing.maximalIdeal R).inertia G) →*
+      (R ⧸ IsLocalRing.maximalIdeal R)ˣ :=
+    MonoidHom.mk' (fun σ =>
+      Units.map (Ideal.Quotient.mk (IsLocalRing.maximalIdeal R)).toMonoidHom (U (σ : G))) hmul
+    with hθdef
+  have hθval : ∀ σ : ↥((IsLocalRing.maximalIdeal R).inertia G),
+      (θ σ : R ⧸ IsLocalRing.maximalIdeal R) =
+        Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) (U (σ : G) : R) := fun σ => rfl
+  -- the kernel of the tame character has 3-power order
+  have hker_of_θ : ∀ x : ↥((IsLocalRing.maximalIdeal R).inertia G), θ x = 1 →
+      ∀ c ∈ IsLocalRing.maximalIdeal R,
+        (x : G) • c - c ∈ (IsLocalRing.maximalIdeal R) ^ 2 := by
+    intro x hx c hc
+    have hu1 : (U (x : G) : R) - 1 ∈ IsLocalRing.maximalIdeal R := by
+      refine Ideal.Quotient.eq.mp ?_
+      have hval := congrArg Units.val hx
+      rw [hθval] at hval
+      simpa using hval
+    obtain ⟨r, hr⟩ := Ideal.mem_span_singleton'.mp (hspan ▸ hc)
+    have hxc : (x : G) • c - c = (((x : G) • r) * (U (x : G) : R) - r) * π := by
+      calc (x : G) • c - c = (x : G) • (r * π) - r * π := by rw [hr]
+        _ = ((x : G) • r) * ((x : G) • π) - r * π := by rw [smul_mul']
+        _ = ((x : G) • r) * (π * (U (x : G) : R)) - r * π := by rw [hU (x : G)]
+        _ = (((x : G) • r) * (U (x : G) : R) - r) * π := by ring
+    rw [hxc, pow_two]
+    refine Ideal.mul_mem_mul ?_ (hspan ▸ Ideal.mem_span_singleton_self π)
+    have hsplit : ((x : G) • r) * (U (x : G) : R) - r =
+        ((x : G) • r) * ((U (x : G) : R) - 1) + ((x : G) • r - r) := by ring
+    rw [hsplit]
+    exact add_mem (Ideal.mul_mem_left _ _ hu1) (AddSubgroup.mem_inertia.mp x.2 r)
+  have hwild : ∀ x : ↥((IsLocalRing.maximalIdeal R).inertia G), θ x = 1 →
+      ∃ j : ℕ, (x : G) ^ 3 ^ j = 1 := fun x hx =>
+    exists_pow_three_pow_eq_one_of_wild hfaith h3 (x : G)
+      (AddSubgroup.mem_inertia.mp x.2) (hker_of_θ x hx)
+  -- the image of the tame character is cyclic; pick a generator
+  have hfr : ((θ.range : Set (R ⧸ IsLocalRing.maximalIdeal R)ˣ)).Finite := by
+    rw [MonoidHom.coe_range]
+    exact Set.finite_range θ
+  haveI : Finite ↥θ.range := hfr.to_subtype
+  haveI : IsCyclic ↥θ.range := isCyclic_subgroup_units θ.range
+  obtain ⟨gen, hgen⟩ := IsCyclic.exists_generator (α := ↥θ.range)
+  obtain ⟨t₀, ht₀⟩ : ∃ t₀ : ↥((IsLocalRing.maximalIdeal R).inertia G),
+      θ t₀ = (gen : (R ⧸ IsLocalRing.maximalIdeal R)ˣ) := gen.2
+  refine ⟨(t₀ : G), t₀.2, ?_, ?_⟩
+  · -- clause (a): powers of `t₀` exhaust inertia mod wild
+    intro σ hσ
+    have hmemrange : (⟨θ ⟨σ, hσ⟩, ⟨⟨σ, hσ⟩, rfl⟩⟩ : ↥θ.range) ∈ Submonoid.powers gen :=
+      (isOfFinOrder_of_finite gen).mem_powers_iff_mem_zpowers.mpr (hgen _)
+    obtain ⟨m, hm⟩ := hmemrange
+    refine ⟨m, ?_⟩
+    have hval := congrArg (Subtype.val) hm
+    push_cast at hval
+    have hθ1 : θ ((t₀ ^ m)⁻¹ * ⟨σ, hσ⟩) = 1 := by
+      rw [map_mul, map_inv, map_pow, ht₀, hval, inv_mul_cancel]
+    obtain ⟨j, hj⟩ := hwild _ hθ1
+    refine ⟨j, ?_⟩
+    simpa using hj
+  · -- clause (b): Frobenius conjugation cubes the tame character
+    have hφres : ∀ x : R,
+        Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) (φ • x) =
+          (Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) x) ^ 3 := by
+      intro x
+      rw [← map_pow]
+      exact Ideal.Quotient.eq.mpr (hφ x)
+    have hconjmem : φ * (t₀ : G) * φ⁻¹ ∈ (IsLocalRing.maximalIdeal R).inertia G := by
+      refine AddSubgroup.mem_inertia.mpr fun x => ?_
+      have hrw : (φ * (t₀ : G) * φ⁻¹) • x - x =
+          φ • ((t₀ : G) • (φ⁻¹ • x) - φ⁻¹ • x) := by
+        rw [smul_sub, mul_smul, mul_smul, smul_inv_smul]
+      rw [hrw]
+      exact smul_mem_maximalIdeal_of_mem φ (AddSubgroup.mem_inertia.mp t₀.2 _)
+    -- the semilinearity computation
+    have hsemi : Ideal.Quotient.mk (IsLocalRing.maximalIdeal R)
+        (U (φ * (t₀ : G) * φ⁻¹) : R) =
+        Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) (U (t₀ : G) : R) ^ 3 := by
+      have e3 : Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) (U φ : R) *
+          Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) (U φ⁻¹ : R) ^ 3 = 1 := by
+        have e0 : (1 : R) = (U φ : R) * (φ • (U φ⁻¹ : R)) := by
+          rw [← hU1, ← hUmul φ φ⁻¹, mul_inv_cancel]
+        have e1 := congrArg (Ideal.Quotient.mk (IsLocalRing.maximalIdeal R)) e0
+        rw [map_one, map_mul, hφres] at e1
+        exact e1.symm
+      have e1 : (U (φ * (t₀ : G) * φ⁻¹) : R) =
+          (U φ : R) * (φ • ((U (t₀ : G) : R) * ((t₀ : G) • (U φ⁻¹ : R)))) := by
+        rw [mul_assoc, hUmul φ ((t₀ : G) * φ⁻¹), hUmul (t₀ : G) φ⁻¹]
+      have e2 := congrArg (Ideal.Quotient.mk (IsLocalRing.maximalIdeal R)) e1
+      rw [map_mul, smul_mul', map_mul, hφres, hφres] at e2
+      have et : Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) ((t₀ : G) • (U φ⁻¹ : R)) =
+          Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) (U φ⁻¹ : R) :=
+        Ideal.Quotient.eq.mpr (AddSubgroup.mem_inertia.mp t₀.2 _)
+      rw [et] at e2
+      calc Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) (U (φ * (t₀ : G) * φ⁻¹) : R)
+          = Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) (U φ : R) *
+            (Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) (U (t₀ : G) : R) ^ 3 *
+              Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) (U φ⁻¹ : R) ^ 3) := e2
+        _ = Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) (U (t₀ : G) : R) ^ 3 *
+            (Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) (U φ : R) *
+              Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) (U φ⁻¹ : R) ^ 3) := by ring
+        _ = Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) (U (t₀ : G) : R) ^ 3 := by
+            rw [e3, mul_one]
+    have hθ1 : θ ((⟨φ * (t₀ : G) * φ⁻¹, hconjmem⟩ :
+        ↥((IsLocalRing.maximalIdeal R).inertia G)) * (t₀ ^ 3)⁻¹) = 1 := by
+      have hc : θ (⟨φ * (t₀ : G) * φ⁻¹, hconjmem⟩ :
+          ↥((IsLocalRing.maximalIdeal R).inertia G)) = θ t₀ ^ 3 := by
+        refine Units.ext ?_
+        rw [hθval, Units.val_pow_eq_pow_val, hθval]
+        exact hsemi
+      rw [map_mul, map_inv, map_pow, hc, mul_inv_cancel]
+    obtain ⟨j, hj⟩ := hwild _ hθ1
+    refine ⟨j, ?_⟩
+    simpa using hj
+
+local notation "Kv₃" =>
+  IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+    Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat
+local notation "Ov₃" =>
+  IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+    Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **Finite-level tame ramification at `3`** (PROVEN 2026-07-24 by
+specializing `exists_finite_level_tame_generator_of_frobenius` above;
+Serre, *Corps Locaux* IV §1–2): for every finite Galois subextension
+`N` of the algebraic closure of `ℚ₃ᵥ` there is a finite-level inertia
+element `t` such that (a) every finite-level inertia element agrees
+with a power of `t` up to an element of `3`-power order — the wild
+inertia `P` is the (normal) `3`-Sylow of the inertia `I`, the tame
+quotient `I/P` is CYCLIC (it embeds into the multiplicative group of
+the residue field of `N` via `σ ↦ σ(π)/π` for a uniformizer `π`), `t`
+is any preimage of a generator, and the error `(tᵐ)⁻¹σ` lies in `P` —
 and (b) some automorphism `φ` of `N` (any Frobenius lift) conjugates
 `t` into `t³` up to an element of `3`-power order: the tame character
 is Frobenius-semilinear, `φtφ⁻¹ ≡ t^q (mod P)` with
-`q = |𝒪ᵥ/𝔪ᵥ| = |𝔽₃| = 3`. -/
+`q = |𝒪ᵥ/𝔪ᵥ| = |𝔽₃| = 3`. The specialization supplies: faithfulness
+of the Galois action on the integral closure (fraction-field
+denominator clearing), `3 ∈ 𝔪` (lying over `𝔪ᵥ = (3)`), and a
+Frobenius lift acting as cubing on the residue field
+(`Ideal.Quotient.stabilizerHom_surjective` against the cubing
+automorphism, which is `κᵥ`-linear because `|κᵥ| = 3` by
+`natCard_residue_quotient_toHeightOneSpectrum`). -/
 theorem exists_finite_level_tame_generator_three
     (N : IntermediateField
         (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
@@ -9202,7 +9610,123 @@ theorem exists_finite_level_tame_generator_three
       (∃ φ : N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
           Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat] N,
         ∃ j : ℕ, (φ * t * φ⁻¹ * (t ^ 3)⁻¹) ^ 3 ^ j = 1) := by
-  sorry
+  classical
+  -- `3` lies in the maximal ideal downstairs, hence upstairs
+  have h3O : (3 : Ov₃) ∈ IsLocalRing.maximalIdeal Ov₃ := by
+    rw [maximalIdeal_adicCompletionIntegers_eq_span Nat.prime_three]
+    exact_mod_cast Ideal.mem_span_singleton_self ((3 : ℕ) : Ov₃)
+  have h3R : (3 : IntegralClosure Ov₃ N) ∈
+      IsLocalRing.maximalIdeal (IntegralClosure Ov₃ N) := by
+    have h2 := (Ideal.mem_of_liesOver
+      (IsLocalRing.maximalIdeal (IntegralClosure Ov₃ N))
+      (IsLocalRing.maximalIdeal Ov₃) (3 : Ov₃)).mp h3O
+    rwa [map_ofNat] at h2
+  -- faithfulness of the Galois action on the integral closure
+  haveI : IsFractionRing (IntegralClosure Ov₃ N) N :=
+    IsIntegralClosure.isFractionRing_of_finite_extension Ov₃ Kv₃ N
+      (IntegralClosure Ov₃ N)
+  have halgmapinj : Function.Injective (algebraMap Ov₃ N) := by
+    rw [IsScalarTower.algebraMap_eq Ov₃ Kv₃ N]
+    exact (algebraMap Kv₃ N).injective.comp (IsFractionRing.injective Ov₃ Kv₃)
+  haveI : Module.IsTorsionFree Ov₃ N :=
+    Module.isTorsionFree_iff_algebraMap_injective.mpr halgmapinj
+  have hfaith : ∀ g : N ≃ₐ[Kv₃] N,
+      (∀ a : IntegralClosure Ov₃ N, g • a = a) → g = 1 := by
+    intro g hg
+    refine AlgEquiv.ext fun x => ?_
+    have halg : IsAlgebraic Ov₃ x :=
+      (IsFractionRing.isAlgebraic_iff Ov₃ Kv₃ N).mpr
+        (Algebra.IsAlgebraic.isAlgebraic x)
+    obtain ⟨c, hc0, hcx⟩ := halg.exists_integral_multiple
+    have hfix : g • (c • x) = c • x := by
+      have h1 := congrArg Subtype.val (hg ⟨c • x, hcx⟩)
+      rwa [IntegralClosure.coe_smul] at h1
+    rw [smul_comm] at hfix
+    have hgx : g • x = x := smul_right_injective N hc0 hfix
+    simpa [AlgEquiv.smul_def] using hgx
+  -- the residue field downstairs has three elements
+  haveI hOmax : (IsLocalRing.maximalIdeal Ov₃).IsMaximal :=
+    IsLocalRing.maximalIdeal.isMaximal _
+  have hcard : Nat.card (Ov₃ ⧸ IsLocalRing.maximalIdeal Ov₃) = 3 := by
+    have h1 := natCard_residue_quotient_toHeightOneSpectrum Nat.prime_three
+    rwa [IsLocalRing.eq_maximalIdeal (Ideal.IsMaximal.under Ov₃
+      (IsLocalRing.maximalIdeal
+        (IntegralClosure Ov₃ (AlgebraicClosure Kv₃))))] at h1
+  haveI hfinbase : Finite (Ov₃ ⧸ IsLocalRing.maximalIdeal Ov₃) :=
+    Nat.finite_of_card_ne_zero (by rw [hcard]; norm_num)
+  have hpow3 : ∀ y : Ov₃ ⧸ IsLocalRing.maximalIdeal Ov₃, y ^ 3 = y := by
+    haveI : Fintype (Ov₃ ⧸ IsLocalRing.maximalIdeal Ov₃) := Fintype.ofFinite _
+    letI : Field (Ov₃ ⧸ IsLocalRing.maximalIdeal Ov₃) :=
+      Ideal.Quotient.field (IsLocalRing.maximalIdeal Ov₃)
+    intro y
+    have h := FiniteField.pow_card y
+    rwa [show Fintype.card (Ov₃ ⧸ IsLocalRing.maximalIdeal Ov₃) = 3 from by
+      rw [← Nat.card_eq_fintype_card, hcard]] at h
+  -- the residue field upstairs: characteristic `3`, finite
+  haveI hRmax : (IsLocalRing.maximalIdeal (IntegralClosure Ov₃ N)).IsMaximal :=
+    IsLocalRing.maximalIdeal.isMaximal _
+  have h30 : ((3 : ℕ) : (IntegralClosure Ov₃ N) ⧸
+      IsLocalRing.maximalIdeal (IntegralClosure Ov₃ N)) = 0 := by
+    rw [← map_natCast (Ideal.Quotient.mk
+      (IsLocalRing.maximalIdeal (IntegralClosure Ov₃ N)))]
+    exact Ideal.Quotient.eq_zero_iff_mem.mpr (by exact_mod_cast h3R)
+  haveI : CharP ((IntegralClosure Ov₃ N) ⧸
+      IsLocalRing.maximalIdeal (IntegralClosure Ov₃ N)) 3 := by
+    have h := CharP.ringChar_of_prime_eq_zero Nat.prime_three h30
+    haveI := ringChar.charP ((IntegralClosure Ov₃ N) ⧸
+      IsLocalRing.maximalIdeal (IntegralClosure Ov₃ N))
+    exact CharP.congr _ h
+  haveI : ExpChar ((IntegralClosure Ov₃ N) ⧸
+      IsLocalRing.maximalIdeal (IntegralClosure Ov₃ N)) 3 :=
+    ExpChar.prime Nat.prime_three
+  haveI : Module.Finite Ov₃ (IntegralClosure Ov₃ N) :=
+    IsIntegralClosure.finite Ov₃ Kv₃ N (IntegralClosure Ov₃ N)
+  haveI : Module.Finite Ov₃ ((IntegralClosure Ov₃ N) ⧸
+      IsLocalRing.maximalIdeal (IntegralClosure Ov₃ N)) :=
+    Module.Finite.of_surjective
+      (Ideal.Quotient.mkₐ Ov₃
+        (IsLocalRing.maximalIdeal (IntegralClosure Ov₃ N))).toLinearMap
+      (Ideal.Quotient.mkₐ_surjective Ov₃ _)
+  haveI : Module.Finite (Ov₃ ⧸ IsLocalRing.maximalIdeal Ov₃)
+      ((IntegralClosure Ov₃ N) ⧸
+        IsLocalRing.maximalIdeal (IntegralClosure Ov₃ N)) :=
+    Module.Finite.of_restrictScalars_finite Ov₃ _ _
+  haveI hfinQ : Finite ((IntegralClosure Ov₃ N) ⧸
+      IsLocalRing.maximalIdeal (IntegralClosure Ov₃ N)) :=
+    Module.finite_of_finite (Ov₃ ⧸ IsLocalRing.maximalIdeal Ov₃)
+  -- the cubing automorphism of the residue field upstairs
+  have hbij : Function.Bijective (frobenius ((IntegralClosure Ov₃ N) ⧸
+      IsLocalRing.maximalIdeal (IntegralClosure Ov₃ N)) 3) :=
+    Finite.injective_iff_bijective.mp (frobenius_inj _ 3)
+  have hfrE_apply : ∀ z, (RingEquiv.ofBijective _ hbij) z = z ^ 3 := fun z => rfl
+  obtain ⟨φ', hφ'⟩ := Ideal.Quotient.stabilizerHom_surjective (N ≃ₐ[Kv₃] N)
+    (IsLocalRing.maximalIdeal Ov₃)
+    (IsLocalRing.maximalIdeal (IntegralClosure Ov₃ N))
+    (AlgEquiv.ofRingEquiv (f := RingEquiv.ofBijective _ hbij)
+      (fun y => by rw [hfrE_apply, ← map_pow, hpow3 y]))
+  have hφfrob : ∀ x : IntegralClosure Ov₃ N,
+      (φ' : N ≃ₐ[Kv₃] N) • x - x ^ 3 ∈
+        IsLocalRing.maximalIdeal (IntegralClosure Ov₃ N) := by
+    intro x
+    have h1 : Ideal.Quotient.stabilizerHom
+        (IsLocalRing.maximalIdeal (IntegralClosure Ov₃ N))
+        (IsLocalRing.maximalIdeal Ov₃) (N ≃ₐ[Kv₃] N) φ'
+        (Ideal.Quotient.mk _ x) =
+        Ideal.Quotient.mk _ ((φ' : N ≃ₐ[Kv₃] N) • x) := rfl
+    have h2 : Ideal.Quotient.stabilizerHom
+        (IsLocalRing.maximalIdeal (IntegralClosure Ov₃ N))
+        (IsLocalRing.maximalIdeal Ov₃) (N ≃ₐ[Kv₃] N) φ'
+        (Ideal.Quotient.mk _ x) = (Ideal.Quotient.mk _ x) ^ 3 := by
+      rw [hφ']
+      exact hfrE_apply _
+    refine Ideal.Quotient.eq.mp ?_
+    rw [← h1, h2, map_pow]
+  obtain ⟨t, htmem, hgen, hj⟩ :=
+    exists_finite_level_tame_generator_of_frobenius hfaith h3R
+      (φ' : N ≃ₐ[Kv₃] N) hφfrob
+  exact ⟨t, htmem, hgen, (φ' : N ≃ₐ[Kv₃] N), hj⟩
+
+end TameGeneratorThree
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
