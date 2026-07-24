@@ -7602,10 +7602,208 @@ theorem classIdealCount_LSeriesSummable (K : Type*) [Field K] [NumberField K]
     (fun n => Nat.cast_nonneg _) zero_le_one hs
   simpa using h5
 
-/-- **The Hecke theta kernel family of the class group** (sorry node,
-stated 2026-07-24 — the analytic core of the Neukirch VII §§3–5
-per-class continuation, cut out of `heckeFEPair_exists`, whose
-`WeakFEPair` assembly is PROVEN on top of this leaf): from the
+/-- **The archimedean Γ-profile of the signature `(r₁, r₂)`** (sorry
+node, stated 2026-07-24 — stage (α), the Neukirch VII §4 archimedean
+Euler-factor computation, of the decomposition of
+`heckeThetaKernel_exists`): there is a single profile function
+`H : ℝ → ℝ` — Neukirch's norm-one-hypersurface integral
+`H(τ) = c·∫_S exp(−π·τ^{1/n}·Σ_w d_w·x_w) dμ(x)`, where `S` is the
+norm-one hypersurface `{x ∈ Π_{w|∞} ℝ_{>0} : Π x_w^{d_w} = 1}`
+(`d_w = 1` real, `2` complex, `n = Σ d_w = [K:ℚ]`) with its Haar
+measure `dμ = Π dx_w/x_w`-restricted, and `c` the normalizing constant
+making the Mellin conjunct exact — which is continuous, nonnegative
+and antitone on `(0, ∞)`, decays stretched-exponentially like
+`exp(−a·τ^{1/n})` (AM–GM: `Σ_w d_w·x_w ≥ n·(Π x_w^{d_w})^{1/n} = n` on
+`S`; split the exponent in half to keep the hypersurface integral
+convergent), and whose Mellin transform at `s/2` is EXACTLY the
+product of archimedean Euler factors `Γ_ℝ(s)^{r₁}·Γ_ℂ(s)^{r₂}` for
+`re s > 1`: substituting `(τ, x) ↦ y = τ^{1/n}·x` factorizes the
+double integral `∫_0^∞ τ^{s/2}·H(τ)·dτ/τ` into `r₁` real-place
+integrals `∫_0^∞ y^{s/2}e^{−πy}·dy/y = π^{−s/2}Γ(s/2)` and `r₂`
+complex-place integrals `∫_0^∞ y^{s}e^{−2πy}·dy/y = (2π)^{−s}Γ(s)` —
+Neukirch VII (4.1)–(4.3) — with `c` absorbing the Jacobian and the
+`2^{r₂}`.  Degenerate check (`r₁ + r₂ = 1`, the hypersurface a point):
+for `K = ℚ`, `H(τ) = e^{−πτ}` with Mellin `π^{−s/2}Γ(s/2) = Γ_ℝ(s)`;
+for `K` imaginary quadratic, `H(τ) = e^{−2π√τ}` with Mellin
+`2·(2π)^{−s}Γ(s) = Γ_ℂ(s)` — so for the totally complex fields this
+project instantiates, `H` is an explicit elementary function whenever
+additionally `r₂ = 1`, and this leaf is a direct `Γ`-integral
+computation (`mellin_exp_neg_rpow`-style substitution +
+`Real.Gamma_eq_integral`). -/
+theorem archimedeanGammaProfile_exists (K : Type*) [Field K] [NumberField K] :
+    ∃ H : ℝ → ℝ,
+      ContinuousOn H (Set.Ioi 0) ∧
+      (∀ τ : ℝ, τ ∈ Set.Ioi (0 : ℝ) → 0 ≤ H τ) ∧
+      AntitoneOn H (Set.Ioi 0) ∧
+      (∃ A a : ℝ, 0 < a ∧ ∀ τ : ℝ, 1 ≤ τ →
+        H τ ≤ A * Real.exp (-a * τ ^ ((Module.finrank ℚ K : ℝ)⁻¹))) ∧
+      (∀ s : ℂ, 1 < s.re →
+        HasMellin (fun τ : ℝ => (H τ : ℂ)) (s / 2)
+          (((Real.pi : ℂ) ^ (-s / 2) * Complex.Gamma (s / 2)) ^
+              NumberField.InfinitePlace.nrRealPlaces K *
+            ((2 : ℂ) * ((2 * Real.pi : ℝ) : ℂ) ^ (-s) * Complex.Gamma s) ^
+              NumberField.InfinitePlace.nrComplexPlaces K)) := by
+  sorry
+
+/-- **The unit-domain theta functional equation of the per-class Hecke
+series** (sorry node, stated 2026-07-24 — stage (β), the geometric
+core — Neukirch VII §§3 + 5, (5.5)–(5.6) — of the decomposition of
+`heckeThetaKernel_exists`): for ANY profile `H` with the properties
+delivered by `archimedeanGammaProfile_exists` — the hypotheses pin `H`
+uniquely: continuity plus the convergent Mellin identification
+determine `H` a.e. on `(0, ∞)` (Mellin/Laplace uniqueness), hence
+everywhere by continuity, so `H` IS the norm-one-hypersurface integral
+of that leaf's docstring — the class-indexed family of Hecke theta
+series `t ↦ Σ_m a_C(m)·H(m²·t/|d_K|)` (`a_C = classIdealCount`)
+satisfies, with ONE shared constant `ρ₀` (the unit-domain volume
+constant `2^{r−1}·vol(𝔉)/w` in Neukirch's normalization, rescaled by
+the normalization of `H`), the weight-`1/2` functional equation
+pairing each class `C` with its dual `[𝔡]C⁻¹ = dedekindDualClass K C`.
+
+Intended proof (Neukirch VII §§3, 5): (1) *dictionary*: choose an
+integral ideal `𝔞 ∈ C⁻¹`; nonzero ideals `𝔟 ∈ C` biject with
+`𝒪_K^×`-orbits of nonzero `α ∈ 𝔞` via `𝔟𝔞 = (α)`,
+`N𝔟 = |N(α)|/N𝔞`.  (2) *ideal lattices*: realize `𝔞` as the
+`ZLattice` `σ(𝔞) ⊂ K_ℝ` with the Hermitian norm
+`‖x‖² = Σ_{τ:K→ℂ} |x_τ|²` (i.e. `Σ_real + 2·Σ_complex`), diagonally
+rescaled by `y ∈ Π_{w|∞} ℝ_{>0}` and normalized by
+`(N𝔞²·|d_K|)^{1/(2n)}`: with THIS metric the normalized lattice has
+covolume `1` (`ZLattice.covolume`; mathlib's
+`NumberField.mixedEmbedding.covolume_idealLattice` cluster transported
+along a linear isometry to `EuclideanSpace ℝ (Fin n)` — which is also
+what makes `hθ`'s universe-0 quantification over `E : Type`
+applicable), and its `⟪·,·⟫`-dual lattice is the coordinatewise
+complex conjugate — a further isometry fixing all theta sums — of the
+SAME normalization of the trace-dual ideal `(𝔞𝔡_K)⁻¹`
+(`FractionalIdeal.dual`, `differentIdeal`, `Tr(xy) = Σ_τ x_τ·y_τ`;
+`N((𝔞𝔡)⁻¹)²·|d| = (N𝔞²·|d|)⁻¹` inverts the normalization constant) —
+whence the dual class `[𝔡]C⁻¹` and functional-equation constant
+exactly `1`.  (3) *anisotropic law*: `hθ` applied to each diagonally
+rescaled lattice at `t = 1` gives
+`θ_𝔞(y⁻¹) = N(y)^{1/2}·θ_{(𝔞𝔡)⁻¹}(y)`.  (4) *unit-domain
+integration*: integrate over a fundamental domain `𝔉` of the
+squared-unit action on the norm-one hypersurface (Dirichlet,
+`NumberField.Units`; for the unit-rank-`0` fields — `ℚ` and imaginary
+quadratics, in particular this project's instantiations — `𝔉` is a
+single point and this step degenerates to the bare theta): per ideal
+orbit the `𝔉`-integrals sum to the `S`-integral, which by the
+uniqueness identification is `H(N𝔟²·t/|d|)`, while the `α = 0` term
+integrates to the shared `ρ₀`; the anisotropic law transports
+`𝔉`-integrals along `y ↦ y⁻¹` (whose image is again a fundamental
+domain) into the displayed functional equation.  Convergence
+bookkeeping (tsum/integral interchange) is justified by the decay
+hypothesis together with the per-class count asymptotics
+(`NumberField.Ideal.tendsto_norm_le_and_mk_eq_div_atTop`, as consumed
+in `classIdealCount_LSeriesSummable`). -/
+theorem heckeThetaSeries_functionalEquation (K : Type*) [Field K] [NumberField K]
+    (hθ : ∀ (E : Type) [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+      [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E]
+      (L : Submodule ℤ E) [DiscreteTopology L] [IsZLattice ℝ L]
+      (t : ℝ), 0 < t →
+      ∑' v : L, Real.exp (-Real.pi * t⁻¹ * ‖(v : E)‖ ^ 2) =
+        (ZLattice.covolume L)⁻¹ * t ^ ((Module.finrank ℝ E : ℝ) / 2) *
+          ∑' w : LinearMap.BilinForm.dualSubmodule (innerₗ E) L,
+            Real.exp (-Real.pi * t * ‖(w : E)‖ ^ 2))
+    (H : ℝ → ℝ)
+    (hHcont : ContinuousOn H (Set.Ioi 0))
+    (hHpos : ∀ τ : ℝ, τ ∈ Set.Ioi (0 : ℝ) → 0 ≤ H τ)
+    (hHanti : AntitoneOn H (Set.Ioi 0))
+    (hHdec : ∃ A a : ℝ, 0 < a ∧ ∀ τ : ℝ, 1 ≤ τ →
+      H τ ≤ A * Real.exp (-a * τ ^ ((Module.finrank ℚ K : ℝ)⁻¹)))
+    (hHmel : ∀ s : ℂ, 1 < s.re →
+      HasMellin (fun τ : ℝ => (H τ : ℂ)) (s / 2)
+        (((Real.pi : ℂ) ^ (-s / 2) * Complex.Gamma (s / 2)) ^
+            NumberField.InfinitePlace.nrRealPlaces K *
+          ((2 : ℂ) * ((2 * Real.pi : ℝ) : ℂ) ^ (-s) * Complex.Gamma s) ^
+            NumberField.InfinitePlace.nrComplexPlaces K)) :
+    ∃ ρ₀ : ℝ, ∀ C : ClassGroup (NumberField.RingOfIntegers K), ∀ x : ℝ, 0 < x →
+      ρ₀ + ∑' m : ℕ, (classIdealCount K C m : ℝ) *
+          H ((m : ℝ) ^ 2 / (|(NumberField.discr K : ℝ)| * x)) =
+        x ^ ((1 : ℝ) / 2) *
+          (ρ₀ + ∑' m : ℕ, (classIdealCount K (dedekindDualClass K C) m : ℝ) *
+            H ((m : ℝ) ^ 2 * x / |(NumberField.discr K : ℝ)|)) := by
+  sorry
+
+/-- **Analysis of the per-class Hecke theta series: local
+integrability, stretched-exponential decay, termwise Mellin** (sorry
+node, stated 2026-07-24 — stage (γ), the series-side analysis, of the
+decomposition of `heckeThetaKernel_exists`): for ANY profile `H` with
+the properties delivered by `archimedeanGammaProfile_exists`, the
+per-class series `S_C(t) = Σ_m a_C(m)·H(m²·t/|d_K|)`
+(`a_C = classIdealCount`, complex-cast) is
+
+(i) locally integrable on `(0, ∞)` — local uniform convergence: on a
+neighborhood `[t₀, ∞)` of each point the terms are dominated by
+`a_C(m)·H(m²·t₀/|d|)` (antitonicity), a series summable by the decay
+hypothesis and the linear growth of the per-class counting partial
+sums (`sum_Icc_classIdealCount` +
+`NumberField.Ideal.tendsto_norm_le_and_mk_eq_div_atTop`, as in
+`classIdealCount_LSeriesSummable`), so `S_C` is even continuous on
+`(0, ∞)`;
+
+(ii) bounded by `A'·exp(−a'·t^{1/n})` on `[1, ∞)`: from
+`(m²·t/|d|)^{1/n} = (m²/|d|)^{1/n}·t^{1/n}` and, for the finitely many
+`m` with `m² < |d|`, a residual factor bounded below by
+`(1/|d|)^{1/n}`, split off a `t`-independent summable `m`-series times
+`exp(−a'·t^{1/n})`;
+
+(iii) has termwise Mellin transform at `s/2` on `re s > 1`:
+`mellin (H((m²/|d|)·)) (s/2) = (m²/|d|)^{−s/2}·mellin H (s/2)` by the
+scaling substitution (`m ≥ 1`; the `m = 0` coefficient vanishes —
+`classIdealCount K C 0 = 0`, a nonzero ideal having positive norm), so
+Fubini–Tonelli for the nonnegative double integral gives
+`mellin S_C (s/2) = |d|^{s/2}·Γ_ℝ(s)^{r₁}·Γ_ℂ(s)^{r₂}·L(a_C, s)`, the
+`|d|^{s/2}` emerging as `Σ_m (m²/|d|)^{−s/2}·m^{... } =
+|d|^{s/2}·Σ_m a_C(m)·m^{−s}`, with convergence bundled in `HasMellin`
+— the interchange justified at `∞` by (ii) and at `0⁺` by the
+monotone blow-up bound `S_C(t) ≤ S_C(t₀)` for `t ≥ t₀ → 0` against
+`t^{re(s/2)−1}`, integrable since `re s > 1 > 0`. -/
+theorem heckeThetaSeries_analysis (K : Type*) [Field K] [NumberField K]
+    (H : ℝ → ℝ)
+    (hHcont : ContinuousOn H (Set.Ioi 0))
+    (hHpos : ∀ τ : ℝ, τ ∈ Set.Ioi (0 : ℝ) → 0 ≤ H τ)
+    (hHanti : AntitoneOn H (Set.Ioi 0))
+    (hHdec : ∃ A a : ℝ, 0 < a ∧ ∀ τ : ℝ, 1 ≤ τ →
+      H τ ≤ A * Real.exp (-a * τ ^ ((Module.finrank ℚ K : ℝ)⁻¹)))
+    (hHmel : ∀ s : ℂ, 1 < s.re →
+      HasMellin (fun τ : ℝ => (H τ : ℂ)) (s / 2)
+        (((Real.pi : ℂ) ^ (-s / 2) * Complex.Gamma (s / 2)) ^
+            NumberField.InfinitePlace.nrRealPlaces K *
+          ((2 : ℂ) * ((2 * Real.pi : ℝ) : ℂ) ^ (-s) * Complex.Gamma s) ^
+            NumberField.InfinitePlace.nrComplexPlaces K)) :
+    (∀ C : ClassGroup (NumberField.RingOfIntegers K),
+      MeasureTheory.LocallyIntegrableOn
+        (fun t : ℝ => ((∑' m : ℕ, (classIdealCount K C m : ℝ) *
+          H ((m : ℝ) ^ 2 * t / |(NumberField.discr K : ℝ)|) : ℝ) : ℂ))
+        (Set.Ioi 0)) ∧
+    (∀ C : ClassGroup (NumberField.RingOfIntegers K),
+      ∃ A a : ℝ, 0 < a ∧ ∀ t : ℝ, 1 ≤ t →
+        |∑' m : ℕ, (classIdealCount K C m : ℝ) *
+            H ((m : ℝ) ^ 2 * t / |(NumberField.discr K : ℝ)|)| ≤
+          A * Real.exp (-a * t ^ ((Module.finrank ℚ K : ℝ)⁻¹))) ∧
+    (∀ C : ClassGroup (NumberField.RingOfIntegers K), ∀ s : ℂ, 1 < s.re →
+      HasMellin
+        (fun t : ℝ => ((∑' m : ℕ, (classIdealCount K C m : ℝ) *
+          H ((m : ℝ) ^ 2 * t / |(NumberField.discr K : ℝ)|) : ℝ) : ℂ))
+        (s / 2)
+        (Complex.ofReal |(NumberField.discr K : ℝ)| ^ (s / 2) *
+          ((Real.pi : ℂ) ^ (-s / 2) * Complex.Gamma (s / 2)) ^
+            NumberField.InfinitePlace.nrRealPlaces K *
+          ((2 : ℂ) * ((2 * Real.pi : ℝ) : ℂ) ^ (-s) * Complex.Gamma s) ^
+            NumberField.InfinitePlace.nrComplexPlaces K *
+          LSeries (fun n => (classIdealCount K C n : ℂ)) s)) := by
+  sorry
+
+/-- **The Hecke theta kernel family of the class group** (DECOMPOSED
+2026-07-24, assembly PROVEN — the analytic core of the Neukirch VII
+§§3–5 per-class continuation, cut out of `heckeFEPair_exists`, whose
+`WeakFEPair` assembly is PROVEN on top of this leaf; now itself
+assembled over the three stage leaves
+`archimedeanGammaProfile_exists` (stage α, the archimedean Γ-profile),
+`heckeThetaSeries_functionalEquation` (stage β, the unit-domain theta
+functional equation) and `heckeThetaSeries_analysis` (stage γ, the
+series analysis), the kernel being DEFINED here as
+`F C t = ρ₀ + Σ_m classIdealCount(C, m)·H(m²·t/|d_K|)`): from the
 `n`-dimensional lattice theta law `hθ` (verbatim
 `zlattice_theta_transform`) produce a family of kernel functions
 `F C : ℝ → ℂ` — Neukirch's unit-domain theta integrals `g(C, t)` — and
@@ -7618,11 +7816,21 @@ one shared constant `ρ` with
   number `1` (Neukirch VII (5.6): the anisotropic theta law —
   `hθ` applied to the diagonally rescaled ideal lattices — integrated
   over the unit fundamental domain);
-* exponential approach to the shared constant term on `[1, ∞)`:
-  `‖F C t − ρ‖ ≤ A·exp(−a·t)` (Neukirch VII (5.7)/(5.8): `ρ` is the
-  `2^{r₁−1}·vol(F)/w`-style unit-domain volume constant, the SAME for
-  every class; the tail bound comes from the smallest nonzero vector
-  of the ideal lattice);
+* stretched-exponential approach to the shared constant term on
+  `[1, ∞)`: `‖F C t − ρ‖ ≤ A·exp(−a·t^b)` for some `b > 0` (Neukirch
+  VII (5.7)/(5.8): `ρ` is the `2^{r₁−1}·vol(F)/w`-style unit-domain
+  volume constant, the SAME for every class; the tail bound comes from
+  the smallest nonzero vector of the ideal lattice).  SOUNDNESS REPAIR
+  2026-07-24: this conjunct originally demanded genuine exponential
+  decay `A·exp(−a·t)`, which is UNSATISFIABLE for `n = [K:ℚ] ≥ 2` —
+  the Mellin conjunct below pins `F C − ρ` a.e. (Mellin inversion), and
+  the pinned kernel decays exactly like `exp(−c·t^{1/n})` (for `K`
+  imaginary quadratic it is `(1/w)·Σ_{α∈𝔞} exp(−2π·√t·|α|²/(N𝔞√|d|))`,
+  which is `≥ c·exp(−c'·√t)`), so the two conjuncts were contradictory;
+  the decay here and in `heckeFEPair_exists`/`weakFEPair_growth` was
+  weakened to the true stretched-exponential shape, which still gives
+  all-order polynomial decay for the `WeakFEPair` fields and the Lang
+  XIII §5 order-one growth bound;
 * the Mellin identification on `re s > 1`: the shifted Mellin
   transform of `F C − ρ` at `s/2` converges and equals
   `|d_K|^{s/2}·Γ_ℝ(s)^{r₁}·Γ_ℂ(s)^{r₂}·L(a_C, s)` with
@@ -7691,8 +7899,8 @@ theorem heckeThetaKernel_exists (K : Type*) [Field K] [NumberField K]
       (∀ C, ∀ x : ℝ, x ∈ Set.Ioi (0 : ℝ) →
         F C (1 / x) = ((x ^ ((1 : ℝ) / 2) : ℝ) : ℂ) •
           F (dedekindDualClass K C) x) ∧
-      (∀ C, ∃ A a : ℝ, 0 < a ∧
-        ∀ t : ℝ, 1 ≤ t → ‖F C t - ρ‖ ≤ A * Real.exp (-a * t)) ∧
+      (∀ C, ∃ A a b : ℝ, 0 < a ∧ 0 < b ∧
+        ∀ t : ℝ, 1 ≤ t → ‖F C t - ρ‖ ≤ A * Real.exp (-a * t ^ b)) ∧
       (∀ C, ∀ s : ℂ, 1 < s.re →
         HasMellin (fun t => F C t - ρ) (s / 2)
           (Complex.ofReal |(NumberField.discr K : ℝ)| ^ (s / 2) *
@@ -7701,7 +7909,61 @@ theorem heckeThetaKernel_exists (K : Type*) [Field K] [NumberField K]
             ((2 : ℂ) * ((2 * Real.pi : ℝ) : ℂ) ^ (-s) * Complex.Gamma s) ^
               NumberField.InfinitePlace.nrComplexPlaces K *
             LSeries (fun n => (classIdealCount K C n : ℂ)) s)) := by
-  sorry
+  obtain ⟨H, hHcont, hHpos, hHanti, hHdec, hHmel⟩ :=
+    archimedeanGammaProfile_exists K
+  obtain ⟨ρ₀, hFE⟩ :=
+    heckeThetaSeries_functionalEquation K hθ H hHcont hHpos hHanti hHdec hHmel
+  obtain ⟨hloc, hdec, hmel⟩ :=
+    heckeThetaSeries_analysis K H hHcont hHpos hHanti hHdec hHmel
+  refine ⟨fun C t => (ρ₀ : ℂ) + ((∑' m : ℕ, (classIdealCount K C m : ℝ) *
+      H ((m : ℝ) ^ 2 * t / |(NumberField.discr K : ℝ)|) : ℝ) : ℂ), (ρ₀ : ℂ),
+    fun C => ?_, fun C x hx => ?_, fun C => ?_, fun C s hs => ?_⟩
+  · -- (i) local integrability: constant plus the locally integrable series
+    exact (MeasureTheory.locallyIntegrableOn_const ((ρ₀ : ℂ))).add (hloc C)
+  · -- (ii) the scalar functional equation, via the real series identity
+    rw [Set.mem_Ioi] at hx
+    have harg : ∀ m : ℕ, (m : ℝ) ^ 2 * (1 / x) / |(NumberField.discr K : ℝ)| =
+        (m : ℝ) ^ 2 / (|(NumberField.discr K : ℝ)| * x) := by
+      intro m
+      field_simp
+    have h1 := hFE C x hx
+    calc (ρ₀ : ℂ) + ((∑' m : ℕ, (classIdealCount K C m : ℝ) *
+          H ((m : ℝ) ^ 2 * (1 / x) / |(NumberField.discr K : ℝ)|) : ℝ) : ℂ)
+        = (((ρ₀ + ∑' m : ℕ, (classIdealCount K C m : ℝ) *
+            H ((m : ℝ) ^ 2 / (|(NumberField.discr K : ℝ)| * x)) : ℝ)) : ℂ) := by
+          simp only [harg]
+          push_cast
+          ring
+      _ = ((x ^ ((1 : ℝ) / 2) *
+            (ρ₀ + ∑' m : ℕ, (classIdealCount K (dedekindDualClass K C) m : ℝ) *
+              H ((m : ℝ) ^ 2 * x / |(NumberField.discr K : ℝ)|)) : ℝ) : ℂ) := by
+          rw [h1]
+      _ = ((x ^ ((1 : ℝ) / 2) : ℝ) : ℂ) •
+            ((ρ₀ : ℂ) + ((∑' m : ℕ,
+              (classIdealCount K (dedekindDualClass K C) m : ℝ) *
+              H ((m : ℝ) ^ 2 * x / |(NumberField.discr K : ℝ)|) : ℝ) : ℂ)) := by
+          rw [smul_eq_mul]
+          push_cast
+          ring
+  · -- (iii) stretched-exponential decay with exponent `1/n`
+    obtain ⟨A, a, ha, hbound⟩ := hdec C
+    refine ⟨A, a, (Module.finrank ℚ K : ℝ)⁻¹, ha, ?_, fun t ht => ?_⟩
+    · have h1 : 0 < Module.finrank ℚ K := Module.finrank_pos
+      positivity
+    · rw [add_sub_cancel_left, Complex.norm_real, Real.norm_eq_abs]
+      exact hbound t ht
+  · -- (iv) the Mellin identification, termwise through the series
+    have h1 := hmel C s hs
+    have h2 : (fun t : ℝ => ((ρ₀ : ℂ) + ((∑' m : ℕ,
+        (classIdealCount K C m : ℝ) *
+        H ((m : ℝ) ^ 2 * t / |(NumberField.discr K : ℝ)|) : ℝ) : ℂ)) -
+          (ρ₀ : ℂ)) =
+        fun t : ℝ => ((∑' m : ℕ, (classIdealCount K C m : ℝ) *
+          H ((m : ℝ) ^ 2 * t / |(NumberField.discr K : ℝ)|) : ℝ) : ℂ) := by
+      funext t
+      exact add_sub_cancel_left _ _
+    rw [h2]
+    exact h1
 
 /-- **Hecke's theta–Mellin `WeakFEPair` family of the class group**
 (DECOMPOSED 2026-07-24, assembly PROVEN — the field-by-field
@@ -7715,8 +7977,11 @@ the `n`-dimensional lattice theta law `hθ` (verbatim
 machine (`Mathlib.NumberTheory.LSeries.AbstractFuncEq`) — with weight
 `k = 1/2`, root number `ε = 1`, shared constant term `f₀ = g₀ = ρ`,
 the `Λ₀`-level functional equation pairing `C` with
-`[𝔡]C⁻¹ = dedekindDualClass K C`, exponentially decaying kernels on
-`[1, ∞)`, and the `re s > 1` Mellin identification
+`[𝔡]C⁻¹ = dedekindDualClass K C`, stretched-exponentially decaying
+kernels on `[1, ∞)` (`A·exp(−a·t^b)`, `b > 0` — see the soundness
+repair recorded on `heckeThetaKernel_exists`: genuine exponential
+decay is unsatisfiable for `[K:ℚ] ≥ 2`), and the `re s > 1` Mellin
+identification
 `Λ(s/2) = |d_K|^{s/2}·Γ_ℝ(s)^{r₁}·Γ_ℂ(s)^{r₂}·L(a_C, s)` with bundled
 `LSeriesSummable`.
 
@@ -7728,18 +7993,20 @@ being the dual pair's `f`.  Field by field:
 * `hf_int`/`hg_int` are the kernel leaf's local integrability;
 * `h_feq` is the kernel leaf's scalar functional equation with the
   root number `1` made explicit (`one_mul`);
-* `hf_top`/`hg_top` (all-order decay): the exponential tail bound
-  `‖F C t − ρ‖ ≤ A·exp(−a·t)` beats every power
-  (`isLittleO_exp_neg_mul_rpow_atTop`);
+* `hf_top`/`hg_top` (all-order decay): the stretched-exponential tail
+  bound `‖F C t − ρ‖ ≤ A·exp(−a·t^b)` beats every power
+  (`isLittleO_exp_neg_mul_rpow_atTop` composed with
+  `tendsto_rpow_atTop`);
 * the `Λ₀`-level functional equation is
   `WeakFEPair.functional_equation₀` at `ε = 1` (`one_smul`), with
   `(P C).symm.Λ₀` identified with `(P ([𝔡]C⁻¹)).Λ₀` by
   `weakFEPair_lambdaZero_congr` — the five data fields entering `Λ₀`
   agree, `symm` inverting `ε = 1` (`inv_one`) and swapping the
   coherently chosen kernels;
-* the shared-`(A, a)` decay conjunct combines the two classes' tail
-  bounds by `max`/`min` (the leaf's constants are nonnegative since
-  they dominate a norm at `t = 1`);
+* the shared-`(A, a, b)` decay conjunct combines the two classes' tail
+  bounds by `max`/`min`/`min` (the leaf's constants are nonnegative
+  since they dominate a norm at `t = 1`; on `t ≥ 1` a smaller exponent
+  `b` gives a weaker bound, so `min b₁ b₂` works for both);
 * the Mellin conjunct: `LSeriesSummable` is the PROVEN
   `classIdealCount_LSeriesSummable`, and the `Λ(s/2)` formula chains
   `WeakFEPair.hasMellin` at `re (s/2) > 1/2 = k` with the kernel
@@ -7760,9 +8027,9 @@ theorem heckeFEPair_exists (K : Type*) [Field K] [NumberField K]
       (∀ C, (P C).f₀ = ρ) ∧
       (∀ C, (P C).g₀ = ρ) ∧
       (∀ C, ∀ s : ℂ, (P C).Λ₀ (1 / 2 - s) = (P (dedekindDualClass K C)).Λ₀ s) ∧
-      (∀ C, ∃ A a : ℝ, 0 < a ∧
-        (∀ t : ℝ, 1 ≤ t → ‖(P C).f t - (P C).f₀‖ ≤ A * Real.exp (-a * t)) ∧
-        (∀ t : ℝ, 1 ≤ t → ‖(P C).g t - (P C).g₀‖ ≤ A * Real.exp (-a * t))) ∧
+      (∀ C, ∃ A a b : ℝ, 0 < a ∧ 0 < b ∧
+        (∀ t : ℝ, 1 ≤ t → ‖(P C).f t - (P C).f₀‖ ≤ A * Real.exp (-a * t ^ b)) ∧
+        (∀ t : ℝ, 1 ≤ t → ‖(P C).g t - (P C).g₀‖ ≤ A * Real.exp (-a * t ^ b))) ∧
       (∀ C, ∀ s : ℂ, 1 < s.re →
         LSeriesSummable (fun n => (classIdealCount K C n : ℂ)) s ∧
         (P C).Λ (s / 2) =
@@ -7778,9 +8045,16 @@ theorem heckeFEPair_exists (K : Type*) [Field K] [NumberField K]
   have htop : ∀ C (r : ℝ),
       (fun t : ℝ => F C t - ρ) =O[Filter.atTop] fun t : ℝ => t ^ r := by
     intro C r
-    obtain ⟨A, a, ha, hA⟩ := hdec C
-    refine (Asymptotics.IsBigO.of_bound A ?_).trans
-      (isLittleO_exp_neg_mul_rpow_atTop ha r).isBigO
+    obtain ⟨A, a, b, ha, hb, hA⟩ := hdec C
+    have hlo : (fun t : ℝ => Real.exp (-a * t ^ b)) =o[Filter.atTop]
+        fun t : ℝ => t ^ r := by
+      have h1 := (isLittleO_exp_neg_mul_rpow_atTop ha (r / b)).comp_tendsto
+        (tendsto_rpow_atTop hb)
+      refine h1.congr' (Filter.Eventually.of_forall fun t => rfl) ?_
+      filter_upwards [Filter.eventually_gt_atTop (0 : ℝ)] with t ht
+      show (t ^ b) ^ (r / b) = t ^ r
+      rw [← Real.rpow_mul ht.le, mul_comm b (r / b), div_mul_cancel₀ r hb.ne']
+    refine (Asymptotics.IsBigO.of_bound A ?_).trans hlo.isBigO
     filter_upwards [Filter.eventually_ge_atTop (1 : ℝ)] with t ht
     rw [Real.norm_eq_abs, abs_of_pos (Real.exp_pos _)]
     exact hA t ht
@@ -7820,31 +8094,45 @@ theorem heckeFEPair_exists (K : Type*) [Field K] [NumberField K]
     rw [hk2] at h0
     rw [h0, hsymm]
     exact one_smul ℂ _
-  · -- Exponential decay of both kernels on `[1, ∞)`.
+  · -- Stretched-exponential decay of both kernels on `[1, ∞)`.
     intro C
-    obtain ⟨A₁, a₁, ha₁, hA₁⟩ := hdec C
-    obtain ⟨A₂, a₂, ha₂, hA₂⟩ := hdec (dedekindDualClass K C)
+    obtain ⟨A₁, a₁, b₁, ha₁, hb₁, hA₁⟩ := hdec C
+    obtain ⟨A₂, a₂, b₂, ha₂, hb₂, hA₂⟩ := hdec (dedekindDualClass K C)
     have hA₁0 : 0 ≤ A₁ := by
       have h1 := (norm_nonneg (F C 1 - ρ)).trans (hA₁ 1 le_rfl)
-      nlinarith [Real.exp_pos (-a₁ * 1)]
+      nlinarith [Real.exp_pos (-a₁ * (1 : ℝ) ^ b₁)]
     have hA₂0 : 0 ≤ A₂ := by
       have h1 := (norm_nonneg (F (dedekindDualClass K C) 1 - ρ)).trans
         (hA₂ 1 le_rfl)
-      nlinarith [Real.exp_pos (-a₂ * 1)]
-    refine ⟨max A₁ A₂, min a₁ a₂, lt_min ha₁ ha₂,
+      nlinarith [Real.exp_pos (-a₂ * (1 : ℝ) ^ b₂)]
+    refine ⟨max A₁ A₂, min a₁ a₂, min b₁ b₂, lt_min ha₁ ha₂, lt_min hb₁ hb₂,
       fun t ht => ?_, fun t ht => ?_⟩
-    · calc ‖(P C).f t - (P C).f₀‖
-          ≤ A₁ * Real.exp (-a₁ * t) := hA₁ t ht
-        _ ≤ max A₁ A₂ * Real.exp (-min a₁ a₂ * t) :=
-            mul_le_mul (le_max_left _ _)
-              (Real.exp_le_exp.mpr (by nlinarith [min_le_left a₁ a₂]))
+    · have hexp : -a₁ * t ^ b₁ ≤ -min a₁ a₂ * t ^ min b₁ b₂ := by
+        have h1 : t ^ min b₁ b₂ ≤ t ^ b₁ :=
+          Real.rpow_le_rpow_of_exponent_le ht (min_le_left _ _)
+        have h2 : (0 : ℝ) < t ^ min b₁ b₂ :=
+          Real.rpow_pos_of_pos (lt_of_lt_of_le one_pos ht) _
+        nlinarith [min_le_left a₁ a₂,
+          mul_le_mul_of_nonneg_left h1 ha₁.le,
+          mul_le_mul_of_nonneg_right (min_le_left a₁ a₂) h2.le]
+      calc ‖(P C).f t - (P C).f₀‖
+          ≤ A₁ * Real.exp (-a₁ * t ^ b₁) := hA₁ t ht
+        _ ≤ max A₁ A₂ * Real.exp (-min a₁ a₂ * t ^ min b₁ b₂) :=
+            mul_le_mul (le_max_left _ _) (Real.exp_le_exp.mpr hexp)
               (Real.exp_pos _).le (hA₁0.trans (le_max_left _ _))
-    · calc ‖(P C).g t - (P C).g₀‖
-          ≤ A₂ * Real.exp (-a₂ * t) := hA₂ t ht
-        _ ≤ max A₁ A₂ * Real.exp (-min a₁ a₂ * t) :=
-            mul_le_mul (le_max_right _ _)
-              (Real.exp_le_exp.mpr (by nlinarith [min_le_right a₁ a₂]))
-              (Real.exp_pos _).le (hA₁0.trans (le_max_left _ _))
+    · have hexp : -a₂ * t ^ b₂ ≤ -min a₁ a₂ * t ^ min b₁ b₂ := by
+        have h1 : t ^ min b₁ b₂ ≤ t ^ b₂ :=
+          Real.rpow_le_rpow_of_exponent_le ht (min_le_right _ _)
+        have h2 : (0 : ℝ) < t ^ min b₁ b₂ :=
+          Real.rpow_pos_of_pos (lt_of_lt_of_le one_pos ht) _
+        nlinarith [min_le_right a₁ a₂,
+          mul_le_mul_of_nonneg_left h1 ha₂.le,
+          mul_le_mul_of_nonneg_right (min_le_right a₁ a₂) h2.le]
+      calc ‖(P C).g t - (P C).g₀‖
+          ≤ A₂ * Real.exp (-a₂ * t ^ b₂) := hA₂ t ht
+        _ ≤ max A₁ A₂ * Real.exp (-min a₁ a₂ * t ^ min b₁ b₂) :=
+            mul_le_mul (le_max_right _ _) (Real.exp_le_exp.mpr hexp)
+              (Real.exp_pos _).le (hA₂0.trans (le_max_right _ _))
   · -- The Mellin identification on `re s > 1`.
     intro C s hs
     refine ⟨classIdealCount_LSeriesSummable K C hs, ?_⟩
@@ -7862,34 +8150,60 @@ theorem heckeFEPair_exists (K : Type*) [Field K] [NumberField K]
 half-plane `re z ≥ −1/2`** (Lang, *Algebraic Number Theory*, XIII §5 —
 the elementary integral estimation at the core of `weakFEPair_growth`):
 for a weight-`1/2` `WeakFEPair` over `ℂ` whose kernels approach their
-constant terms exponentially fast on `[1, ∞)`, the entire function
-`Λ₀ = mellin f_modif` satisfies `‖Λ₀ z‖ ≤ exp (C + C·x·log (x + 2))`
+constant terms stretched-exponentially fast on `[1, ∞)` — at rate
+`A·exp(−a·t^b)` for ANY `b > 0`; this generality is forced, since the
+Hecke unit-domain kernels of a degree-`n` field decay only like
+`exp(−c·t^{1/n})` — the entire function `Λ₀ = mellin f_modif`
+satisfies `‖Λ₀ z‖ ≤ exp (C + C·x·log (x + 2))`
 with `x = max (re z) 1` on the whole half-plane `re z ≥ −1/2`.
 
 Proof: majorize the Mellin integrand `t^{re z − 1}·‖f_modif t‖` by the
-`z`-uniform integrable function `K₁·𝟙_{(0,1]} + K₂(x)·e^{−(a/2)t}` on
-`(0, ∞)`.  On `(0, 1)` the functional equation gives
+`z`-uniform integrable function `K₁·𝟙_{(0,1]} + K₂(x)·𝟙_{(1,∞)}·t⁻²`
+on `(0, ∞)`.  On `(0, 1)` the functional equation gives
 `f_modif t = (ε·t^{−1/2})·(g(1/t) − g₀)`, so the integrand is at most
-`‖ε‖·A·t^{re z − 3/2}·e^{−a/t} ≤ ‖ε‖·A·t^{−2}·e^{−a/t} ≤
-‖ε‖·A·(4/a²) = K₁`, using `re z ≥ −1/2` and `e^v ≥ (v/2)²`.  On
-`(1, ∞)` the tangent-line bound `log t ≤ log c + t/c − 1` at
-`c = 2x/a` gives `t^{x−1}·e^{−at} ≤ e^{x·log(2x/a)}·e^{−(a/2)t}`, so
-the integrand is at most `K₂·e^{−(a/2)t}` with `K₂ = A·e^{x·log(2x/a)}`.
-The majorant integrates to `K₁ + K₂·(2/a)` exactly, and
-`x·log(2x/a) ≤ (1 + max(log(2/a), 0))·x·log(x + 2)` (with
+`‖ε‖·A·t^{re z − 3/2}·e^{−a·t^{−b}} ≤ ‖ε‖·A·t^{−2}·e^{−a·t^{−b}} ≤
+‖ε‖·A·(m!/aᵐ) = K₁` with `m = ⌈2/b⌉`, using `re z ≥ −1/2` and the
+factorial lower bound `e^v ≥ vᵐ/m!`, which clears the `t⁻²` blow-up
+since `b·m ≥ 2`.  On `(1, ∞)` the tangent-line bound
+`log u ≤ log c + u/c − 1` at `u = t^b`, `c = 2(x+1)/(ab)` gives
+`t^{x+1}·e^{−a·t^b} ≤ e^{((x+1)/b)·log(2(x+1)/(ab))}`, so the
+integrand `t^{x−1}·A·e^{−a·t^b}` is at most `K₂·t⁻²` with
+`K₂ = A·e^{((x+1)/b)·log(2(x+1)/(ab))}`.  The majorant integrates to
+`K₁ + K₂` exactly, and `((x+1)/b)·log(2(x+1)/(ab)) ≤
+(2/b)·(1 + max(log(2/(ab)), 0))·x·log(x + 2)` (with
 `log(x+2) ≥ log 3 > 1`) absorbs everything into one constant. -/
 theorem weakFEPair_growth_lambda0_bound (P : WeakFEPair ℂ) (hk : P.k = 1 / 2)
-    (A a : ℝ) (ha : 0 < a)
-    (hf : ∀ t : ℝ, 1 ≤ t → ‖P.f t - P.f₀‖ ≤ A * Real.exp (-a * t))
-    (hg : ∀ t : ℝ, 1 ≤ t → ‖P.g t - P.g₀‖ ≤ A * Real.exp (-a * t)) :
+    (A a b : ℝ) (ha : 0 < a) (hb : 0 < b)
+    (hf : ∀ t : ℝ, 1 ≤ t → ‖P.f t - P.f₀‖ ≤ A * Real.exp (-a * t ^ b))
+    (hg : ∀ t : ℝ, 1 ≤ t → ‖P.g t - P.g₀‖ ≤ A * Real.exp (-a * t ^ b)) :
     ∃ C : ℝ, 0 ≤ C ∧ ∀ z : ℂ, -(1 / 2 : ℝ) ≤ z.re →
       ‖P.Λ₀ z‖ ≤ Real.exp (C + C * (max z.re 1 * Real.log (max z.re 1 + 2))) := by
   have hA : 0 ≤ A := by
     have h1 := (norm_nonneg (P.f 1 - P.f₀)).trans (hf 1 le_rfl)
-    nlinarith [Real.exp_pos (-a * 1)]
+    nlinarith [Real.exp_pos (-a * (1 : ℝ) ^ b)]
+  -- the clearing exponent: `m = ⌈2/b⌉` has `b·m ≥ 2`
+  set m : ℕ := ⌈2 / b⌉₊ with hmdef
+  have hbm : 2 ≤ b * m := by
+    have h1 : 2 / b ≤ (m : ℝ) := Nat.le_ceil _
+    calc (2 : ℝ) = b * (2 / b) := by field_simp
+      _ ≤ b * m := by nlinarith
+  -- factorial lower bound for the exponential: `e^{−v} ≤ m!/vᵐ`
+  have hexp_pow : ∀ v : ℝ, 0 < v → Real.exp (-v) ≤ m.factorial / v ^ m := by
+    intro v hv
+    have h1 : v ^ m / (m.factorial : ℝ) ≤ Real.exp v :=
+      calc v ^ m / (m.factorial : ℝ)
+          ≤ ∑ i ∈ Finset.range (m + 1), v ^ i / (i.factorial : ℝ) :=
+            Finset.single_le_sum (f := fun i => v ^ i / (i.factorial : ℝ))
+              (fun i _ => by positivity) (Finset.self_mem_range_succ m)
+        _ ≤ Real.exp v := Real.sum_le_exp_of_nonneg hv.le _
+    rw [Real.exp_neg, inv_le_comm₀ (Real.exp_pos v) (by positivity), inv_div]
+    exact h1
+  set Kb : ℝ := m.factorial / a ^ m with hKbdef
+  have hKb0 : 0 ≤ Kb := by positivity
   -- kernel bound on `(0, 1]` through the functional equation
   have hsmall : ∀ t : ℝ, 0 < t → t ≤ 1 →
-      ‖P.f_modif t‖ ≤ ‖P.ε‖ * A * (t ^ (-(1 / 2) : ℝ) * Real.exp (-(a / t))) := by
+      ‖P.f_modif t‖ ≤ ‖P.ε‖ * A *
+        (t ^ (-(1 / 2) : ℝ) * Real.exp (-(a * t ^ (-b : ℝ)))) := by
     intro t ht ht1
     rcases eq_or_lt_of_le ht1 with rfl | ht1
     · have hval1 : P.f_modif 1 = 0 := by simp [WeakFEPair.f_modif]
@@ -7912,98 +8226,126 @@ theorem weakFEPair_growth_lambda0_bound (P : WeakFEPair ℂ) (hk : P.k = 1 / 2)
         rw [norm_mul, Complex.norm_real, Real.norm_eq_abs,
           abs_of_pos (Real.rpow_pos_of_pos ht _), hk]
       rw [h1]
-      have h2 : ‖P.g (1 / t) - P.g₀‖ ≤ A * Real.exp (-(a / t)) := by
+      have h2 : ‖P.g (1 / t) - P.g₀‖ ≤ A * Real.exp (-(a * t ^ (-b : ℝ))) := by
         have h3 := hg (1 / t) (one_le_one_div ht ht1.le)
-        rw [show -a * (1 / t) = -(a / t) by ring] at h3
+        have h4 : ((1 / t) ^ b : ℝ) = t ^ (-b : ℝ) := by
+          rw [one_div, Real.inv_rpow ht.le, ← Real.rpow_neg ht.le]
+        rw [h4, neg_mul] at h3
         exact h3
       calc ‖P.ε‖ * t ^ (-(1 / 2) : ℝ) * ‖P.g (1 / t) - P.g₀‖
-          ≤ ‖P.ε‖ * t ^ (-(1 / 2) : ℝ) * (A * Real.exp (-(a / t))) :=
+          ≤ ‖P.ε‖ * t ^ (-(1 / 2) : ℝ) * (A * Real.exp (-(a * t ^ (-b : ℝ)))) :=
             mul_le_mul_of_nonneg_left h2 (by positivity)
-        _ = ‖P.ε‖ * A * (t ^ (-(1 / 2) : ℝ) * Real.exp (-(a / t))) := by ring
+        _ = ‖P.ε‖ * A *
+            (t ^ (-(1 / 2) : ℝ) * Real.exp (-(a * t ^ (-b : ℝ)))) := by ring
   -- kernel bound on `(1, ∞)`
-  have hbig : ∀ t : ℝ, 1 < t → ‖P.f_modif t‖ ≤ A * Real.exp (-a * t) := by
+  have hbig : ∀ t : ℝ, 1 < t → ‖P.f_modif t‖ ≤ A * Real.exp (-a * t ^ b) := by
     intro t ht
     have hval : P.f_modif t = P.f t - P.f₀ := by
       simp [WeakFEPair.f_modif, Set.mem_Ioi.mpr ht, Set.notMem_Ioo_of_ge ht.le]
     rw [hval]
     exact hf t ht.le
-  -- scalar bound for the `(0, 1]` piece: `t⁻²·e^{−a/t} ≤ 4/a²`
-  have hsc1 : ∀ t : ℝ, 0 < t → t ^ (-2 : ℝ) * Real.exp (-(a / t)) ≤ 4 / a ^ 2 := by
-    intro t ht
-    have he1 : a / (2 * t) + 1 ≤ Real.exp (a / (2 * t)) := Real.add_one_le_exp _
-    have hd : 0 < a / (2 * t) := div_pos ha (by linarith)
-    have he2 : Real.exp (a / (2 * t)) * Real.exp (a / (2 * t)) = Real.exp (a / t) := by
-      rw [← Real.exp_add]
-      congr 1
-      field_simp
+  -- scalar bound for the `(0, 1]` piece: `t⁻²·e^{−a·t^{−b}} ≤ m!/aᵐ`
+  have hsc1 : ∀ t : ℝ, 0 < t → t ≤ 1 →
+      t ^ (-2 : ℝ) * Real.exp (-(a * t ^ (-b : ℝ))) ≤ Kb := by
+    intro t ht ht1
+    have hv : 0 < a * t ^ (-b : ℝ) := by positivity
+    have h1 : Real.exp (-(a * t ^ (-b : ℝ))) ≤
+        m.factorial / (a * t ^ (-b : ℝ)) ^ m := hexp_pow _ hv
+    have h2 : ((a * t ^ (-b : ℝ)) ^ m : ℝ) = a ^ m * t ^ (-(b * m) : ℝ) := by
+      rw [mul_pow, ← Real.rpow_natCast (t ^ (-b : ℝ)) m,
+        ← Real.rpow_mul ht.le, neg_mul]
+    have h3 : (m.factorial : ℝ) / (a ^ m * t ^ (-(b * m) : ℝ)) =
+        Kb * t ^ (b * m : ℝ) := by
+      rw [hKbdef, Real.rpow_neg ht.le, div_mul_eq_div_div, div_inv_eq_mul]
+    have h4 : t ^ (-2 : ℝ) * (Kb * t ^ (b * m : ℝ)) =
+        Kb * t ^ (b * m - 2 : ℝ) := by
+      rw [show (b * m - 2 : ℝ) = -2 + b * m by ring, Real.rpow_add ht]
       ring
-    have he3 : a ^ 2 / (4 * t ^ 2) ≤ Real.exp (a / t) := by
-      have h1 : (a / (2 * t)) ^ 2 ≤
-          Real.exp (a / (2 * t)) * Real.exp (a / (2 * t)) := by nlinarith
-      rw [he2] at h1
-      have h2 : (a / (2 * t)) ^ 2 = a ^ 2 / (4 * t ^ 2) := by
-        rw [div_pow]
-        ring_nf
-      rw [h2] at h1
-      exact h1
-    have ht2 : t ^ (-2 : ℝ) = (t ^ 2)⁻¹ := by
-      rw [show (-2 : ℝ) = -((2 : ℕ) : ℝ) by norm_num, Real.rpow_neg ht.le,
-        Real.rpow_natCast]
-    rw [ht2, Real.exp_neg, ← mul_inv,
-      inv_le_comm₀ (by positivity) (by positivity : (0 : ℝ) < 4 / a ^ 2),
-      show ((4 : ℝ) / a ^ 2)⁻¹ = a ^ 2 / 4 by rw [inv_div]]
-    calc a ^ 2 / 4 = t ^ 2 * (a ^ 2 / (4 * t ^ 2)) := by
-          field_simp
-      _ ≤ t ^ 2 * Real.exp (a / t) := mul_le_mul_of_nonneg_left he3 (sq_nonneg t)
-  -- scalar bound for the tail: the tangent-line estimate on `log`
+    calc t ^ (-2 : ℝ) * Real.exp (-(a * t ^ (-b : ℝ)))
+        ≤ t ^ (-2 : ℝ) * (m.factorial / (a * t ^ (-b : ℝ)) ^ m) :=
+          mul_le_mul_of_nonneg_left h1 (Real.rpow_nonneg ht.le _)
+      _ = Kb * t ^ (b * m - 2 : ℝ) := by rw [h2, h3, h4]
+      _ ≤ Kb * 1 := mul_le_mul_of_nonneg_left
+          (Real.rpow_le_one ht.le ht1 (by linarith)) hKb0
+      _ = Kb := mul_one _
+  -- scalar bound for the tail: the tangent-line estimate at `u = t^b`
   have hsc2 : ∀ x t : ℝ, 1 ≤ x → 1 ≤ t →
-      t ^ (x - 1 : ℝ) * Real.exp (-a * t) ≤
-        Real.exp (x * Real.log (2 * x / a)) * Real.exp (-(a / 2) * t) := by
+      t ^ (x - 1 : ℝ) * Real.exp (-a * t ^ b) ≤
+        Real.exp ((x + 1) / b * Real.log (2 * (x + 1) / (a * b))) *
+          t ^ (-2 : ℝ) := by
     intro x t hx ht
     have ht0 : (0 : ℝ) < t := lt_of_lt_of_le one_pos ht
     have hx0 : (0 : ℝ) < x := lt_of_lt_of_le one_pos hx
-    have hc : (0 : ℝ) < 2 * x / a := by positivity
-    have h1 : t ^ (x - 1 : ℝ) ≤ t ^ (x : ℝ) :=
-      Real.rpow_le_rpow_of_exponent_le ht (by linarith)
-    have h2 : Real.log t ≤ Real.log (2 * x / a) + t / (2 * x / a) - 1 := by
-      have h3 : Real.log (t / (2 * x / a)) ≤ t / (2 * x / a) - 1 :=
+    have hu0 : (0 : ℝ) < t ^ b := Real.rpow_pos_of_pos ht0 b
+    have hc : (0 : ℝ) < 2 * (x + 1) / (a * b) := by positivity
+    have h2 : Real.log (t ^ b) ≤ Real.log (2 * (x + 1) / (a * b)) +
+        t ^ b / (2 * (x + 1) / (a * b)) - 1 := by
+      have h3 : Real.log (t ^ b / (2 * (x + 1) / (a * b))) ≤
+          t ^ b / (2 * (x + 1) / (a * b)) - 1 :=
         Real.log_le_sub_one_of_pos (by positivity)
-      have h4 : Real.log (t / (2 * x / a)) = Real.log t - Real.log (2 * x / a) :=
-        Real.log_div ht0.ne' hc.ne'
+      have h4 : Real.log (t ^ b / (2 * (x + 1) / (a * b))) =
+          Real.log (t ^ b) - Real.log (2 * (x + 1) / (a * b)) :=
+        Real.log_div hu0.ne' hc.ne'
       linarith
-    have h6 : x * (t / (2 * x / a)) = a / 2 * t := by
+    have hlt : Real.log (t ^ b) = b * Real.log t := Real.log_rpow ht0 b
+    have h6 : (x + 1) / b * (t ^ b / (2 * (x + 1) / (a * b))) = a / 2 * t ^ b := by
       field_simp
-    have h5 : x * Real.log t ≤ x * Real.log (2 * x / a) + a / 2 * t := by
-      have h7 := mul_le_mul_of_nonneg_left h2 hx0.le
-      nlinarith [h7, h6]
-    have h8 : t ^ (x : ℝ) ≤ Real.exp (x * Real.log (2 * x / a) + a / 2 * t) := by
-      rw [Real.rpow_def_of_pos ht0]
-      exact Real.exp_le_exp.mpr (by linarith)
-    calc t ^ (x - 1 : ℝ) * Real.exp (-a * t)
-        ≤ Real.exp (x * Real.log (2 * x / a) + a / 2 * t) * Real.exp (-a * t) :=
-          mul_le_mul_of_nonneg_right (h1.trans h8) (Real.exp_pos _).le
-      _ = Real.exp (x * Real.log (2 * x / a)) * Real.exp (-(a / 2) * t) := by
-          rw [← Real.exp_add, ← Real.exp_add]
-          congr 1
-          ring
+    have h9 : (0 : ℝ) < (x + 1) / b := by positivity
+    have h5 : (x + 1) * Real.log t ≤
+        (x + 1) / b * Real.log (2 * (x + 1) / (a * b)) + a / 2 * t ^ b := by
+      have hexp := mul_le_mul_of_nonneg_left h2 h9.le
+      rw [hlt] at hexp
+      have hqid : (x + 1) / b * (Real.log (2 * (x + 1) / (a * b)) +
+          t ^ b / (2 * (x + 1) / (a * b)) - 1) =
+          (x + 1) / b * Real.log (2 * (x + 1) / (a * b)) + a / 2 * t ^ b -
+            (x + 1) / b := by
+        rw [mul_sub, mul_add, h6, mul_one]
+      rw [hqid] at hexp
+      have h8 : (x + 1) / b * (b * Real.log t) = (x + 1) * Real.log t := by
+        field_simp
+      rw [h8] at hexp
+      linarith
+    have h8v : t ^ (x + 1 : ℝ) ≤
+        Real.exp ((x + 1) / b * Real.log (2 * (x + 1) / (a * b)) +
+          a / 2 * t ^ b) := by
+      rw [Real.rpow_def_of_pos ht0, mul_comm (Real.log t) (x + 1)]
+      exact Real.exp_le_exp.mpr h5
+    have hsplit : t ^ (x - 1 : ℝ) = t ^ (x + 1 : ℝ) * t ^ (-2 : ℝ) := by
+      rw [← Real.rpow_add ht0, show (x + 1 + -2 : ℝ) = x - 1 by ring]
+    calc t ^ (x - 1 : ℝ) * Real.exp (-a * t ^ b)
+        = t ^ (x + 1 : ℝ) * Real.exp (-a * t ^ b) * t ^ (-2 : ℝ) := by
+          rw [hsplit]; ring
+      _ ≤ Real.exp ((x + 1) / b * Real.log (2 * (x + 1) / (a * b)) +
+            a / 2 * t ^ b) * Real.exp (-a * t ^ b) * t ^ (-2 : ℝ) :=
+          mul_le_mul_of_nonneg_right (mul_le_mul_of_nonneg_right h8v
+            (Real.exp_pos _).le) (Real.rpow_nonneg ht0.le _)
+      _ = Real.exp (((x + 1) / b * Real.log (2 * (x + 1) / (a * b)) +
+            a / 2 * t ^ b) + -a * t ^ b) * t ^ (-2 : ℝ) := by
+          rw [← Real.exp_add]
+      _ ≤ Real.exp ((x + 1) / b * Real.log (2 * (x + 1) / (a * b))) *
+            t ^ (-2 : ℝ) := by
+          refine mul_le_mul_of_nonneg_right (Real.exp_le_exp.mpr ?_)
+            (Real.rpow_nonneg ht0.le _)
+          nlinarith [hu0]
   -- the constant
-  refine ⟨max (Real.log (‖P.ε‖ * A * (4 / a ^ 2) + 2 * A / a + 1))
-      (1 + max (Real.log (2 / a)) 0), ?_, fun z hz => ?_⟩
-  · have h0 : (0 : ℝ) ≤ max (Real.log (2 / a)) 0 := le_max_right _ _
-    have h1 := le_max_right (Real.log (‖P.ε‖ * A * (4 / a ^ 2) + 2 * A / a + 1))
-      (1 + max (Real.log (2 / a)) 0)
-    linarith
+  refine ⟨max (Real.log (‖P.ε‖ * A * Kb + A + 1))
+      (2 / b * (1 + max (Real.log (2 / (a * b))) 0)), ?_, fun z hz => ?_⟩
+  · have h0 : (0 : ℝ) ≤ max (Real.log (2 / (a * b))) 0 := le_max_right _ _
+    have h1 : (0 : ℝ) ≤ 2 / b * (1 + max (Real.log (2 / (a * b))) 0) := by
+      positivity
+    exact h1.trans (le_max_right _ _)
   set x := max z.re 1 with hxdef
   have hx1 : (1 : ℝ) ≤ x := le_max_right _ _
   have hx0 : (0 : ℝ) < x := lt_of_lt_of_le one_pos hx1
-  set K₁ := ‖P.ε‖ * A * (4 / a ^ 2) with hK₁def
-  set K₂ := A * Real.exp (x * Real.log (2 * x / a)) with hK₂def
-  have hK₁0 : 0 ≤ K₁ := mul_nonneg (mul_nonneg (norm_nonneg _) hA) (by positivity)
+  set K₁ := ‖P.ε‖ * A * Kb with hK₁def
+  set K₂ := A * Real.exp ((x + 1) / b * Real.log (2 * (x + 1) / (a * b)))
+    with hK₂def
+  have hK₁0 : 0 ≤ K₁ := mul_nonneg (mul_nonneg (norm_nonneg _) hA) hKb0
   have hK₂0 : 0 ≤ K₂ := mul_nonneg hA (Real.exp_pos _).le
   -- pointwise majorization of the Mellin integrand, uniformly in `z`
   have hmaj : ∀ t ∈ Set.Ioi (0 : ℝ), ‖(t : ℂ) ^ (z - 1) • P.f_modif t‖ ≤
       Set.indicator (Set.Ioc (0 : ℝ) 1) (fun _ => K₁) t +
-        K₂ * Real.exp (-(a / 2) * t) := by
+        K₂ * Set.indicator (Set.Ioi (1 : ℝ)) (fun u => u ^ (-2 : ℝ)) t := by
     intro t ht
     rw [Set.mem_Ioi] at ht
     have hnorm_int : ‖(t : ℂ) ^ (z - 1) • P.f_modif t‖ =
@@ -8012,66 +8354,73 @@ theorem weakFEPair_growth_lambda0_bound (P : WeakFEPair ℂ) (hk : P.k = 1 / 2)
       congr 2
     rw [hnorm_int]
     rcases le_or_gt t 1 with ht1 | ht1
-    · rw [Set.indicator_of_mem (Set.mem_Ioc.mpr ⟨ht, ht1⟩)]
-      have hb : t ^ (z.re - 1 : ℝ) * ‖P.f_modif t‖ ≤ K₁ := by
-        calc t ^ (z.re - 1 : ℝ) * ‖P.f_modif t‖
-            ≤ t ^ (z.re - 1 : ℝ) *
-              (‖P.ε‖ * A * (t ^ (-(1 / 2) : ℝ) * Real.exp (-(a / t)))) :=
-              mul_le_mul_of_nonneg_left (hsmall t ht ht1)
-                (Real.rpow_nonneg ht.le _)
-          _ = ‖P.ε‖ * A * (t ^ (z.re - 1 + -(1 / 2) : ℝ) * Real.exp (-(a / t))) := by
-              rw [Real.rpow_add ht]
-              ring
-          _ ≤ ‖P.ε‖ * A * (t ^ (-2 : ℝ) * Real.exp (-(a / t))) := by
-              refine mul_le_mul_of_nonneg_left ?_ (mul_nonneg (norm_nonneg _) hA)
-              exact mul_le_mul_of_nonneg_right
-                (Real.rpow_le_rpow_of_exponent_ge ht ht1 (by linarith))
-                (Real.exp_pos _).le
-          _ ≤ ‖P.ε‖ * A * (4 / a ^ 2) :=
-              mul_le_mul_of_nonneg_left (hsc1 t ht)
-                (mul_nonneg (norm_nonneg _) hA)
-          _ = K₁ := rfl
-      have h0 : 0 ≤ K₂ * Real.exp (-(a / 2) * t) :=
-        mul_nonneg hK₂0 (Real.exp_pos _).le
-      linarith
+    · rw [Set.indicator_of_mem (Set.mem_Ioc.mpr ⟨ht, ht1⟩),
+        Set.indicator_of_notMem (Set.notMem_Ioi.mpr ht1), mul_zero, add_zero]
+      calc t ^ (z.re - 1 : ℝ) * ‖P.f_modif t‖
+          ≤ t ^ (z.re - 1 : ℝ) *
+            (‖P.ε‖ * A *
+              (t ^ (-(1 / 2) : ℝ) * Real.exp (-(a * t ^ (-b : ℝ))))) :=
+            mul_le_mul_of_nonneg_left (hsmall t ht ht1)
+              (Real.rpow_nonneg ht.le _)
+        _ = ‖P.ε‖ * A * (t ^ (z.re - 1 + -(1 / 2) : ℝ) *
+              Real.exp (-(a * t ^ (-b : ℝ)))) := by
+            rw [Real.rpow_add ht]
+            ring
+        _ ≤ ‖P.ε‖ * A * (t ^ (-2 : ℝ) * Real.exp (-(a * t ^ (-b : ℝ)))) := by
+            refine mul_le_mul_of_nonneg_left ?_ (mul_nonneg (norm_nonneg _) hA)
+            exact mul_le_mul_of_nonneg_right
+              (Real.rpow_le_rpow_of_exponent_ge ht ht1 (by linarith))
+              (Real.exp_pos _).le
+        _ ≤ ‖P.ε‖ * A * Kb :=
+            mul_le_mul_of_nonneg_left (hsc1 t ht ht1)
+              (mul_nonneg (norm_nonneg _) hA)
+        _ = K₁ := rfl
     · rw [Set.indicator_of_notMem
-        (fun hmem => absurd (Set.mem_Ioc.mp hmem).2 (not_le.mpr ht1)), zero_add]
+        (fun hmem => absurd (Set.mem_Ioc.mp hmem).2 (not_le.mpr ht1)),
+        Set.indicator_of_mem (Set.mem_Ioi.mpr ht1), zero_add]
       have h2 : t ^ (z.re - 1 : ℝ) ≤ t ^ (x - 1 : ℝ) :=
         Real.rpow_le_rpow_of_exponent_le ht1.le
           (by have := le_max_left z.re 1; linarith)
       calc t ^ (z.re - 1 : ℝ) * ‖P.f_modif t‖
-          ≤ t ^ (x - 1 : ℝ) * (A * Real.exp (-a * t)) :=
+          ≤ t ^ (x - 1 : ℝ) * (A * Real.exp (-a * t ^ b)) :=
             mul_le_mul h2 (hbig t ht1) (norm_nonneg _) (Real.rpow_nonneg ht.le _)
-        _ = A * (t ^ (x - 1 : ℝ) * Real.exp (-a * t)) := by ring
-        _ ≤ A * (Real.exp (x * Real.log (2 * x / a)) * Real.exp (-(a / 2) * t)) :=
+        _ = A * (t ^ (x - 1 : ℝ) * Real.exp (-a * t ^ b)) := by ring
+        _ ≤ A * (Real.exp ((x + 1) / b * Real.log (2 * (x + 1) / (a * b))) *
+              t ^ (-2 : ℝ)) :=
             mul_le_mul_of_nonneg_left (hsc2 x t hx1 ht1.le) hA
-        _ = K₂ * Real.exp (-(a / 2) * t) := by rw [hK₂def]; ring
+        _ = K₂ * t ^ (-2 : ℝ) := by rw [hK₂def]; ring
   -- integrability and exact integral of the majorant
-  have hexp_int : MeasureTheory.IntegrableOn
-      (fun t : ℝ => Real.exp (-(a / 2) * t)) (Set.Ioi 0) :=
-    exp_neg_integrableOn_Ioi 0 (by positivity)
+  have hpow_int : MeasureTheory.IntegrableOn (fun u : ℝ => u ^ (-2 : ℝ))
+      (Set.Ioi 1) :=
+    integrableOn_Ioi_rpow_of_lt (by norm_num) one_pos
+  have hind2_int : MeasureTheory.IntegrableOn
+      (fun t : ℝ => Set.indicator (Set.Ioi (1 : ℝ)) (fun u => u ^ (-2 : ℝ)) t)
+      (Set.Ioi 0) :=
+    (hpow_int.integrable_indicator measurableSet_Ioi).restrict
   have hind_int : MeasureTheory.IntegrableOn
       (Set.indicator (Set.Ioc (0 : ℝ) 1) fun _ => K₁) (Set.Ioi 0) :=
     ((MeasureTheory.integrableOn_const
       measure_Ioc_lt_top.ne).integrable_indicator measurableSet_Ioc).restrict
   have hG_int : MeasureTheory.IntegrableOn
       (fun t : ℝ => Set.indicator (Set.Ioc (0 : ℝ) 1) (fun _ => K₁) t +
-        K₂ * Real.exp (-(a / 2) * t)) (Set.Ioi 0) :=
-    hind_int.add (hexp_int.const_mul K₂)
+        K₂ * Set.indicator (Set.Ioi (1 : ℝ)) (fun u => u ^ (-2 : ℝ)) t)
+      (Set.Ioi 0) :=
+    hind_int.add (hind2_int.const_mul K₂)
   have hstep1 : ‖P.Λ₀ z‖ ≤
       ∫ t in Set.Ioi (0 : ℝ), ‖(t : ℂ) ^ (z - 1) • P.f_modif t‖ :=
     MeasureTheory.norm_integral_le_integral_norm _
   have hstep2 : (∫ t in Set.Ioi (0 : ℝ), ‖(t : ℂ) ^ (z - 1) • P.f_modif t‖) ≤
       ∫ t in Set.Ioi (0 : ℝ), (Set.indicator (Set.Ioc (0 : ℝ) 1) (fun _ => K₁) t +
-        K₂ * Real.exp (-(a / 2) * t)) := by
+        K₂ * Set.indicator (Set.Ioi (1 : ℝ)) (fun u => u ^ (-2 : ℝ)) t) := by
     refine MeasureTheory.integral_mono_of_nonneg
       (Filter.Eventually.of_forall fun t => norm_nonneg _) hG_int ?_
     filter_upwards [MeasureTheory.ae_restrict_mem measurableSet_Ioi] with t ht
     exact hmaj t ht
   have hval : (∫ t in Set.Ioi (0 : ℝ),
       (Set.indicator (Set.Ioc (0 : ℝ) 1) (fun _ => K₁) t +
-        K₂ * Real.exp (-(a / 2) * t))) = K₁ + K₂ * (2 / a) := by
-    rw [MeasureTheory.integral_add hind_int (hexp_int.const_mul K₂)]
+        K₂ * Set.indicator (Set.Ioi (1 : ℝ)) (fun u => u ^ (-2 : ℝ)) t)) =
+      K₁ + K₂ * 1 := by
+    rw [MeasureTheory.integral_add hind_int (hind2_int.const_mul K₂)]
     congr 1
     · rw [MeasureTheory.setIntegral_indicator measurableSet_Ioc,
         show Set.Ioi (0 : ℝ) ∩ Set.Ioc 0 1 = Set.Ioc 0 1 from
@@ -8080,15 +8429,13 @@ theorem weakFEPair_growth_lambda0_bound (P : WeakFEPair ℂ) (hk : P.k = 1 / 2)
       have hvol : MeasureTheory.volume.real (Set.Ioc (0 : ℝ) 1) = 1 := by
         simp [MeasureTheory.measureReal_def, Real.volume_Ioc]
       rw [hvol, one_mul]
-    · rw [MeasureTheory.integral_const_mul]
-      have h4 := MeasureTheory.integral_comp_mul_left_Ioi
-        (fun y : ℝ => Real.exp (-y)) 0 (show (0 : ℝ) < a / 2 by positivity)
-      simp only [smul_eq_mul, mul_zero] at h4
-      have h5 : (∫ t in Set.Ioi (0 : ℝ), Real.exp (-(a / 2) * t)) = 2 / a := by
-        simp only [neg_mul]
-        rw [h4, integral_exp_neg_Ioi_zero, mul_one, inv_div]
-      rw [h5]
-  have hraw : ‖P.Λ₀ z‖ ≤ K₁ + K₂ * (2 / a) :=
+    · rw [MeasureTheory.integral_const_mul,
+        MeasureTheory.setIntegral_indicator measurableSet_Ioi,
+        show Set.Ioi (0 : ℝ) ∩ Set.Ioi 1 = Set.Ioi 1 from
+          Set.inter_eq_self_of_subset_right (Set.Ioi_subset_Ioi zero_le_one),
+        integral_Ioi_rpow_of_lt (by norm_num) one_pos]
+      norm_num
+  have hraw : ‖P.Λ₀ z‖ ≤ K₁ + K₂ * 1 :=
     hstep1.trans (hstep2.trans_eq hval)
   -- absorb everything into the single-constant exponential form
   have hx2 : (0 : ℝ) < x + 2 := by linarith
@@ -8096,65 +8443,102 @@ theorem weakFEPair_growth_lambda0_bound (P : WeakFEPair ℂ) (hk : P.k = 1 / 2)
     rw [Real.le_log_iff_exp_le hx2]
     calc Real.exp 1 ≤ 2.7182818286 := Real.exp_one_lt_d9.le
       _ ≤ x + 2 := by linarith
-  have habs : x * Real.log (2 * x / a) ≤
-      (1 + max (Real.log (2 / a)) 0) * (x * Real.log (x + 2)) := by
-    have h1 : Real.log (2 * x / a) = Real.log x + Real.log (2 / a) := by
-      rw [show 2 * x / a = x * (2 / a) by ring,
-        Real.log_mul (by linarith : x ≠ 0) (by positivity : (2 : ℝ) / a ≠ 0)]
-    have h2 : Real.log x ≤ Real.log (x + 2) := Real.log_le_log hx0 (by linarith)
-    have h3 : Real.log (2 / a) ≤ max (Real.log (2 / a)) 0 := le_max_left _ _
-    have h4 : max (Real.log (2 / a)) 0 * 1 ≤
-        max (Real.log (2 / a)) 0 * Real.log (x + 2) :=
-      mul_le_mul_of_nonneg_left hlog1 (le_max_right _ _)
-    have h5 : Real.log (2 * x / a) ≤
-        (1 + max (Real.log (2 / a)) 0) * Real.log (x + 2) := by nlinarith
-    calc x * Real.log (2 * x / a)
-        ≤ x * ((1 + max (Real.log (2 / a)) 0) * Real.log (x + 2)) :=
-          mul_le_mul_of_nonneg_left h5 hx0.le
-      _ = (1 + max (Real.log (2 / a)) 0) * (x * Real.log (x + 2)) := by ring
   have hxlog0 : 0 ≤ x * Real.log (x + 2) := by nlinarith
-  have hE1 : (1 : ℝ) ≤ Real.exp ((1 + max (Real.log (2 / a)) 0) *
+  have habs : (x + 1) / b * Real.log (2 * (x + 1) / (a * b)) ≤
+      2 / b * (1 + max (Real.log (2 / (a * b))) 0) * (x * Real.log (x + 2)) := by
+    rcases le_or_gt (Real.log (2 * (x + 1) / (a * b))) 0 with hneg | hpos
+    · have h1 : (x + 1) / b * Real.log (2 * (x + 1) / (a * b)) ≤ 0 :=
+        mul_nonpos_of_nonneg_of_nonpos (by positivity) hneg
+      refine h1.trans ?_
+      have h2 : (0 : ℝ) ≤ 2 / b * (1 + max (Real.log (2 / (a * b))) 0) := by
+        positivity
+      exact mul_nonneg h2 hxlog0
+    · have h1 : Real.log (2 * (x + 1) / (a * b)) =
+          Real.log (x + 1) + Real.log (2 / (a * b)) := by
+        rw [show 2 * (x + 1) / (a * b) = (x + 1) * (2 / (a * b)) by ring,
+          Real.log_mul (by linarith : x + 1 ≠ 0)
+            (by positivity : (2 : ℝ) / (a * b) ≠ 0)]
+      have h2 : Real.log (x + 1) ≤ Real.log (x + 2) :=
+        Real.log_le_log (by linarith) (by linarith)
+      have h3 : Real.log (2 / (a * b)) ≤ max (Real.log (2 / (a * b))) 0 :=
+        le_max_left _ _
+      have h5 : max (Real.log (2 / (a * b))) 0 * 1 ≤
+          max (Real.log (2 / (a * b))) 0 * Real.log (x + 2) :=
+        mul_le_mul_of_nonneg_left hlog1 (le_max_right _ _)
+      have h4 : Real.log (2 * (x + 1) / (a * b)) ≤
+          (1 + max (Real.log (2 / (a * b))) 0) * Real.log (x + 2) := by
+        have h6 : (1 + max (Real.log (2 / (a * b))) 0) * Real.log (x + 2) =
+            Real.log (x + 2) + max (Real.log (2 / (a * b))) 0 * Real.log (x + 2) := by
+          ring
+        rw [h6]
+        linarith [h1, h2, h3, h5]
+      have h6 : (x + 1) / b ≤ 2 * x / b := by
+        gcongr
+        linarith
+      calc (x + 1) / b * Real.log (2 * (x + 1) / (a * b))
+          ≤ 2 * x / b * ((1 + max (Real.log (2 / (a * b))) 0) *
+              Real.log (x + 2)) :=
+            mul_le_mul h6 h4 hpos.le (by positivity)
+        _ = 2 / b * (1 + max (Real.log (2 / (a * b))) 0) *
+              (x * Real.log (x + 2)) := by ring
+  have hE1 : (1 : ℝ) ≤ Real.exp (2 / b * (1 + max (Real.log (2 / (a * b))) 0) *
       (x * Real.log (x + 2))) := by
     refine Real.one_le_exp ?_
-    have h0 := le_max_right (Real.log (2 / a)) (0 : ℝ)
-    nlinarith
-  have hM1 : (1 : ℝ) ≤ K₁ + 2 * A / a + 1 := by
-    have h1 : (0 : ℝ) ≤ 2 * A / a := by positivity
-    linarith
-  have hfin : K₁ + K₂ * (2 / a) ≤ (K₁ + 2 * A / a + 1) *
-      Real.exp ((1 + max (Real.log (2 / a)) 0) * (x * Real.log (x + 2))) := by
-    have hK₂b : K₂ * (2 / a) ≤ (2 * A / a) *
-        Real.exp ((1 + max (Real.log (2 / a)) 0) * (x * Real.log (x + 2))) := by
+    have h0 := le_max_right (Real.log (2 / (a * b))) (0 : ℝ)
+    have h1 : (0 : ℝ) ≤ 2 / b * (1 + max (Real.log (2 / (a * b))) 0) := by
+      positivity
+    exact mul_nonneg h1 hxlog0
+  have hM1 : (1 : ℝ) ≤ K₁ + A + 1 := by linarith
+  have hfin : K₁ + K₂ * 1 ≤ (K₁ + A + 1) *
+      Real.exp (2 / b * (1 + max (Real.log (2 / (a * b))) 0) *
+        (x * Real.log (x + 2))) := by
+    have hK₂b : K₂ ≤ A *
+        Real.exp (2 / b * (1 + max (Real.log (2 / (a * b))) 0) *
+          (x * Real.log (x + 2))) := by
       rw [hK₂def]
-      calc A * Real.exp (x * Real.log (2 * x / a)) * (2 / a)
-          = (2 * A / a) * Real.exp (x * Real.log (2 * x / a)) := by ring
-        _ ≤ (2 * A / a) * Real.exp ((1 + max (Real.log (2 / a)) 0) *
-            (x * Real.log (x + 2))) :=
-            mul_le_mul_of_nonneg_left (Real.exp_le_exp.mpr habs) (by positivity)
-    have hK₁b : K₁ ≤ K₁ * Real.exp ((1 + max (Real.log (2 / a)) 0) *
-        (x * Real.log (x + 2))) := le_mul_of_one_le_right hK₁0 hE1
-    nlinarith [hE1]
+      exact mul_le_mul_of_nonneg_left (Real.exp_le_exp.mpr habs) hA
+    have hK₁b : K₁ ≤ K₁ *
+        Real.exp (2 / b * (1 + max (Real.log (2 / (a * b))) 0) *
+          (x * Real.log (x + 2))) := le_mul_of_one_le_right hK₁0 hE1
+    have hdist : (K₁ + A + 1) *
+        Real.exp (2 / b * (1 + max (Real.log (2 / (a * b))) 0) *
+          (x * Real.log (x + 2))) =
+        K₁ * Real.exp (2 / b * (1 + max (Real.log (2 / (a * b))) 0) *
+          (x * Real.log (x + 2))) +
+        A * Real.exp (2 / b * (1 + max (Real.log (2 / (a * b))) 0) *
+          (x * Real.log (x + 2))) +
+        Real.exp (2 / b * (1 + max (Real.log (2 / (a * b))) 0) *
+          (x * Real.log (x + 2))) := by ring
+    rw [hdist, mul_one]
+    linarith [hE1]
   refine hraw.trans (hfin.trans ?_)
-  have hCmax1 := le_max_left (Real.log (K₁ + 2 * A / a + 1))
-    (1 + max (Real.log (2 / a)) 0)
-  have hCmax2 := le_max_right (Real.log (K₁ + 2 * A / a + 1))
-    (1 + max (Real.log (2 / a)) 0)
-  have hMle : K₁ + 2 * A / a + 1 ≤ Real.exp
-      (max (Real.log (K₁ + 2 * A / a + 1)) (1 + max (Real.log (2 / a)) 0)) :=
+  have hCmax1 := le_max_left (Real.log (K₁ + A + 1))
+    (2 / b * (1 + max (Real.log (2 / (a * b))) 0))
+  have hCmax2 := le_max_right (Real.log (K₁ + A + 1))
+    (2 / b * (1 + max (Real.log (2 / (a * b))) 0))
+  have hMle : K₁ + A + 1 ≤ Real.exp
+      (max (Real.log (K₁ + A + 1))
+        (2 / b * (1 + max (Real.log (2 / (a * b))) 0))) :=
     (Real.log_le_iff_le_exp (by linarith)).mp hCmax1
-  have hEle : Real.exp ((1 + max (Real.log (2 / a)) 0) * (x * Real.log (x + 2))) ≤
-      Real.exp (max (Real.log (K₁ + 2 * A / a + 1)) (1 + max (Real.log (2 / a)) 0) *
-        (x * Real.log (x + 2))) :=
-    Real.exp_le_exp.mpr (mul_le_mul_of_nonneg_right hCmax2 hxlog0)
-  calc (K₁ + 2 * A / a + 1) *
-      Real.exp ((1 + max (Real.log (2 / a)) 0) * (x * Real.log (x + 2)))
-      ≤ Real.exp
-          (max (Real.log (K₁ + 2 * A / a + 1)) (1 + max (Real.log (2 / a)) 0)) *
-        Real.exp (max (Real.log (K₁ + 2 * A / a + 1)) (1 + max (Real.log (2 / a)) 0) *
+  have hEle : Real.exp (2 / b * (1 + max (Real.log (2 / (a * b))) 0) *
+      (x * Real.log (x + 2))) ≤
+      Real.exp (max (Real.log (K₁ + A + 1))
+        (2 / b * (1 + max (Real.log (2 / (a * b))) 0)) *
           (x * Real.log (x + 2))) :=
+    Real.exp_le_exp.mpr (mul_le_mul_of_nonneg_right hCmax2 hxlog0)
+  calc (K₁ + A + 1) *
+      Real.exp (2 / b * (1 + max (Real.log (2 / (a * b))) 0) *
+        (x * Real.log (x + 2)))
+      ≤ Real.exp (max (Real.log (K₁ + A + 1))
+          (2 / b * (1 + max (Real.log (2 / (a * b))) 0))) *
+        Real.exp (max (Real.log (K₁ + A + 1))
+          (2 / b * (1 + max (Real.log (2 / (a * b))) 0)) *
+            (x * Real.log (x + 2))) :=
       mul_le_mul hMle hEle (Real.exp_pos _).le (Real.exp_pos _).le
-    _ = Real.exp (max (Real.log (K₁ + 2 * A / a + 1)) (1 + max (Real.log (2 / a)) 0) +
-        max (Real.log (K₁ + 2 * A / a + 1)) (1 + max (Real.log (2 / a)) 0) *
+    _ = Real.exp (max (Real.log (K₁ + A + 1))
+          (2 / b * (1 + max (Real.log (2 / (a * b))) 0)) +
+        max (Real.log (K₁ + A + 1))
+          (2 / b * (1 + max (Real.log (2 / (a * b))) 0)) *
           (x * Real.log (x + 2))) := (Real.exp_add _ _).symm
 
 /-- **Growth of `Λ(s/2)` on the right region `re s ≥ −1`, `‖s‖ ≥ 2`**
@@ -8166,12 +8550,12 @@ from both poles `0` and `1` — and absorbing the additive constant
 into the exponential (which is `≥ 1`) yields
 `‖Λ(s/2)‖ ≤ exp (C + C·‖s‖·log (‖s‖ + 2))` on the region. -/
 theorem weakFEPair_growth_lambda_right (P : WeakFEPair ℂ) (hk : P.k = 1 / 2)
-    (A a : ℝ) (ha : 0 < a)
-    (hf : ∀ t : ℝ, 1 ≤ t → ‖P.f t - P.f₀‖ ≤ A * Real.exp (-a * t))
-    (hg : ∀ t : ℝ, 1 ≤ t → ‖P.g t - P.g₀‖ ≤ A * Real.exp (-a * t)) :
+    (A a b : ℝ) (ha : 0 < a) (hb : 0 < b)
+    (hf : ∀ t : ℝ, 1 ≤ t → ‖P.f t - P.f₀‖ ≤ A * Real.exp (-a * t ^ b))
+    (hg : ∀ t : ℝ, 1 ≤ t → ‖P.g t - P.g₀‖ ≤ A * Real.exp (-a * t ^ b)) :
     ∃ C : ℝ, 0 ≤ C ∧ ∀ s : ℂ, 2 ≤ ‖s‖ → -1 ≤ s.re →
       ‖P.Λ (s / 2)‖ ≤ Real.exp (C + C * (‖s‖ * Real.log (‖s‖ + 2))) := by
-  obtain ⟨C, hC0, hΛ₀⟩ := weakFEPair_growth_lambda0_bound P hk A a ha hf hg
+  obtain ⟨C, hC0, hΛ₀⟩ := weakFEPair_growth_lambda0_bound P hk A a b ha hb hf hg
   have hK1 : (1 : ℝ) ≤ 1 + ‖P.f₀‖ + 2 * ‖P.ε‖ * ‖P.g₀‖ := by
     nlinarith [norm_nonneg P.f₀,
       mul_nonneg (norm_nonneg P.ε) (norm_nonneg P.g₀)]
@@ -8256,11 +8640,16 @@ theorem weakFEPair_growth_lambda_right (P : WeakFEPair ℂ) (hk : P.k = 1 / 2)
           Real.log_nonneg hK1
         nlinarith [mul_nonneg hlogK hG]
 
-/-- **Order-one growth for a weight-`1/2` FE-pair with exponentially
-decaying kernels** (sorry node, stated 2026-07-24 — the Lang XIII §5
-growth leaf of `heckeClassZeta_of_zlattice_theta`): for a
+/-- **Order-one growth for a weight-`1/2` FE-pair with
+stretched-exponentially decaying kernels** (PROVEN 2026-07-24 over
+`weakFEPair_growth_lambda_right` — the Lang XIII §5
+growth leaf of `heckeClassZeta_of_zlattice_theta`; decay hypotheses
+generalized 2026-07-24 from `exp(−a·t)` to `exp(−a·t^b)`, `b > 0`,
+since the Hecke unit-domain kernels of a degree-`n` field decay only
+like `exp(−c·t^{1/n})`): for a
 `WeakFEPair` of weight `k = 1/2` whose kernels approach their
-constant terms exponentially fast on `[1, ∞)`, the pole-cleared
+constant terms stretched-exponentially fast on `[1, ∞)`, the
+pole-cleared
 completed Mellin transform `s(s−1)·Λ(s/2)` is of order one:
 `‖s(s−1)·Λ(s/2)‖ ≤ exp(B·‖s‖·log ‖s‖)` off the disc `‖s‖ < 2`.
 
@@ -8297,18 +8686,21 @@ elementary integral estimation):
   `‖s(s−1)‖ ≤ (‖s‖+1)²` into the exponential
   (`Real.log ‖s‖ ≥ Real.log 2 > 0` on `‖s‖ ≥ 2`). -/
 theorem weakFEPair_growth (P : WeakFEPair ℂ) (hk : P.k = 1 / 2)
-    (A a : ℝ) (ha : 0 < a)
-    (hf : ∀ t : ℝ, 1 ≤ t → ‖P.f t - P.f₀‖ ≤ A * Real.exp (-a * t))
-    (hg : ∀ t : ℝ, 1 ≤ t → ‖P.g t - P.g₀‖ ≤ A * Real.exp (-a * t)) :
+    (A a b : ℝ) (ha : 0 < a) (hb : 0 < b)
+    (hf : ∀ t : ℝ, 1 ≤ t → ‖P.f t - P.f₀‖ ≤ A * Real.exp (-a * t ^ b))
+    (hg : ∀ t : ℝ, 1 ≤ t → ‖P.g t - P.g₀‖ ≤ A * Real.exp (-a * t ^ b)) :
     ∃ B : ℝ, 0 < B ∧ ∀ s : ℂ, 2 ≤ ‖s‖ →
       ‖s * (s - 1) * P.Λ (s / 2)‖ ≤ Real.exp (B * ‖s‖ * Real.log ‖s‖) := by
-  obtain ⟨C₁, hC₁, hR₁⟩ := weakFEPair_growth_lambda_right P hk A a ha hf hg
+  obtain ⟨C₁, hC₁, hR₁⟩ := weakFEPair_growth_lambda_right P hk A a b ha hb hf hg
   have hks : P.symm.k = 1 / 2 := by rw [WeakFEPair.symm_k]; exact hk
-  have hfs : ∀ t : ℝ, 1 ≤ t → ‖P.symm.f t - P.symm.f₀‖ ≤ A * Real.exp (-a * t) := by
+  have hfs : ∀ t : ℝ, 1 ≤ t →
+      ‖P.symm.f t - P.symm.f₀‖ ≤ A * Real.exp (-a * t ^ b) := by
     simpa only [WeakFEPair.symm_f, WeakFEPair.symm_f₀] using hg
-  have hgs : ∀ t : ℝ, 1 ≤ t → ‖P.symm.g t - P.symm.g₀‖ ≤ A * Real.exp (-a * t) := by
+  have hgs : ∀ t : ℝ, 1 ≤ t →
+      ‖P.symm.g t - P.symm.g₀‖ ≤ A * Real.exp (-a * t ^ b) := by
     simpa only [WeakFEPair.symm_g, WeakFEPair.symm_g₀] using hf
-  obtain ⟨C₂, hC₂, hR₂⟩ := weakFEPair_growth_lambda_right P.symm hks A a ha hfs hgs
+  obtain ⟨C₂, hC₂, hR₂⟩ :=
+    weakFEPair_growth_lambda_right P.symm hks A a b ha hb hfs hgs
   -- one constant covering both regions
   set C₃ : ℝ := C₁ + 5 * C₂ + Real.log (‖P.ε‖ + 1) with hC₃def
   have hlogε : 0 ≤ Real.log (‖P.ε‖ + 1) :=
@@ -8492,8 +8884,8 @@ theorem heckeClassZeta_of_zlattice_theta (K : Type*) [Field K] [NumberField K]
     rw [h2, hΛ₀FE C (s / 2)]
     ring
   · -- The order-one growth bound, from `weakFEPair_growth`.
-    obtain ⟨A, a, ha, hfd, hgd⟩ := hdecay C
-    obtain ⟨B, hB, hbound⟩ := weakFEPair_growth (P C) (hk C) A a ha hfd hgd
+    obtain ⟨A, a, b, ha, hb, hfd, hgd⟩ := hdecay C
+    obtain ⟨B, hB, hbound⟩ := weakFEPair_growth (P C) (hk C) A a b ha hb hfd hgd
     refine ⟨B, hB, fun s hs => ?_⟩
     have hs0 : s ≠ 0 := by rintro rfl; norm_num at hs
     have hs1 : s ≠ 1 := by rintro rfl; norm_num at hs
