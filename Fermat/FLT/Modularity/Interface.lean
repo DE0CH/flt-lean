@@ -3448,14 +3448,95 @@ theorem exists_ringHom_charFrob_eq_of_heckeDeformation
   rw [hsymm]
   exact (hψR' q hq hnotR).symm
 
+/-- **Points of the Hecke package are embedded eigensystems** (the
+Deligne–Serre point leaf of the Carayol cut; sorry node): a
+ring-homomorphism point `μ : T →+* ℚ̄_ℓ` of a Hecke-side coefficient
+package — `T` with its prime-indexed Hecke elements `t q`, residual
+reduction `π` matching the eigensystem of the irreducible hardly
+ramified `ρbar`, and hardly ramified eigenform realizations with
+jointly injective coordinates interpolating the `−t q` (the exact
+output vocabulary of pillar 3a-i,
+`exists_heckeAlgebra_realizations_of_matchesResidualTraces`) — carries
+the Hecke elements to the embedded coefficient system of a normalized
+weight-2 eigenform: `μ (t q) = ι (a_q(f))` away from a finite set.
+
+Intended (non-vacuous) discharge, at the honest `T = 𝕋_𝔪` of 3a-i —
+the Deligne–Serre eigensystem decomposition of `𝕋_𝔪 ⊗ ℚ̄_ℓ` read at
+one point (Deligne–Serre, Ann. Sci. ÉNS 7 (1974), the Lemme 6.11
+shape; Diamond–Shurman §5.8/§6.5):
+
+1. `ker μ` is a prime of `T` (`ℚ̄_ℓ` is a domain); the coordinates
+   `(real i).toFun =: λᵢ` are jointly injective, so
+   `∏ᵢ ker λᵢ ⊆ ⋂ᵢ ker λᵢ = 0 ⊆ ker μ` and primality selects an `i`
+   with `ker λᵢ ⊆ ker μ`: the point factors through the `i`-th
+   eigenform component `λᵢ(T) ⊆ Oᵢ`.
+2. The factored map is injective on `λᵢ(T)`: `μ` fixes `ℤ`, so `ℓ` is
+   not in its kernel, while at the honest instantiation `λᵢ(T)` is an
+   order in the `ℓ`-adic coefficient field `Eᵢ` and every nonzero
+   prime of such an order contains `ℓ`. Hence the point extends to a
+   field embedding `Eᵢ ↪ ℚ̄_ℓ`.
+3. `Eᵢ` is the completed Hecke field of the newform component `fᵢ`
+   attached to the `i`-th realization by the 3a-i construction, with
+   `λᵢ(t q)` the image of `a_q(fᵢ)`; composing the embedding of step 2
+   with `heckeField N fᵢ → Eᵢ` gives `ι`, and `μ (t q) = ι (a_q(fᵢ))`
+   off the finitely many junk primes.
+
+The abstract `HardlyRamifiedRealization` does not carry its eigenform,
+so steps 2–3 are the eigenform-attachment strengthening of 3a-i's
+interface: this leaf's discharge must be COORDINATED WITH
+`exists_heckeAlgebra_realizations_of_matchesResidualTraces` (whose
+classical construction produces the `fᵢ`), either by enriching that
+leaf's conclusion or by discharging the two together over a common
+construction — and must not duplicate the Hecke-operator development
+above (`heckeTransform`/`exists_heckeMatrix_eigenvector`), which
+supplies the `IsWeightTwoEigenform` certificates for the constructed
+components. Soundness of the abstract quantification: the section
+audit (the hypothesis set contains the classically unsatisfiable
+irreducible hardly ramified `ρbar`; the construction above is the
+non-vacuous intended discharge). CIRCULARITY GUARD: must not be proven
+through `Family.lean` (see the section docstring). -/
+theorem exists_weightTwoEigenform_of_heckeAlgebra_point
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime]
+    {k : Type*} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type*} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    {T : Type u} [CommRing T] [TopologicalSpace T] [IsTopologicalRing T]
+    [Algebra ℤ_[ℓ] T] [IsLocalRing T] [Module.Finite ℤ_[ℓ] T]
+    [Module.Free ℤ_[ℓ] T] [IsModuleTopology ℤ_[ℓ] T] [CompactSpace T]
+    {t : ℕ → T} {π : T →+* k} (hπ : Function.Surjective π)
+    {S_T : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hred : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S_T →
+      π (t q) =
+        - (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
+    {n : ℕ} (real : Fin n → HardlyRamifiedRealization ℓ hℓodd T)
+    (hinj : ∀ x y : T, (∀ i, (real i).toFun x = (real i).toFun y) → x = y)
+    (htr : ∀ (i : Fin n) (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S_T →
+      ((real i).ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1 =
+        (real i).toFun (- t q))
+    (μ : T →+* AlgebraicClosure ℚ_[ℓ]) :
+    ∃ (N : ℕ) (_ : 0 < N) (f : CuspForm (Gamma0GL N) 2)
+      (_ : IsWeightTwoEigenform N f)
+      (ι : heckeField N f →+* AlgebraicClosure ℚ_[ℓ])
+      (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
+      ∀ (q : ℕ) (hq : q.Prime), hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+        μ (t q) = ι (heckeCoeff N f q) :=
+  sorry
+
 /-- **Order-valued points of the Hecke-side deformation are modular**
-(the geometric half of pillar 3c; sorry node — the Deligne–Serre
-eigensystem decomposition / Fontaine–Mazur for points of the Hecke
-deformation): a point of a Hecke-side hardly ramified deformation
-`(T, ρT, π)` of an irreducible hardly ramified `ρbar` that has been
-factored through an ORDER — a `ℤ_ℓ`-algebra surjection `φ` of `T`
-onto a local domain `O`, module-finite and FREE over `ℤ_ℓ` (an order
-in the `ℓ`-adic field `O ⊗ ℚ_ℓ`), followed by an embedding
+(the geometric half of pillar 3c; DECOMPOSED 2026-07-24 — now a PROVEN
+assembly over the Deligne–Serre point leaf
+`exists_weightTwoEigenform_of_heckeAlgebra_point` above, via the
+Hecke-algebra route): a point of a Hecke-side hardly ramified
+deformation `(T, ρT, π)` of an irreducible hardly ramified `ρbar` that
+has been factored through an ORDER — a `ℤ_ℓ`-algebra surjection `φ` of
+`T` onto a local domain `O`, module-finite and FREE over `ℤ_ℓ` (an
+order in the `ℓ`-adic field `O ⊗ ℚ_ℓ`), followed by an embedding
 `j : O ↪ ℚ̄_ℓ` — carries the Frobenius-trace system of `ρT` to the
 coefficient system of a normalized weight-2 eigenform under an
 embedding of its Hecke field (sign convention as everywhere in this
@@ -3464,27 +3545,47 @@ finite-algebra half of pillar 3c
 (`exists_weightTwoEigenform_of_heckeDeformation_point` below) shows
 every `ℚ̄_ℓ`-point of `T` factors this way, with `O = T ⧸ ker lam`.
 
-For the intended instantiation `T = 𝕋_𝔪` (pillar 3a) this is the
-modular interpretation of the factors: `𝕋_𝔪 ⊗ ℚ̄_ℓ` is a finite
-product of copies of `ℚ̄_ℓ` (`𝕋_𝔪` is reduced and finite free over
-`ℤ_ℓ`), the composite `j ∘ φ` is projection to one factor, `O` is the
-`ℓ`-adic coefficient order generated by the Hecke eigenvalues of a
-normalized eigenform `f` of the optimized level — the full-Hecke
-eigenvector property of `f` is the coefficient characterization
-`IsWeightTwoEigenform` (Diamond–Shurman Prop. 5.8.5), `ι` is the
-induced embedding of `heckeField N f`, and
-`j ∘ φ ∘ (tr ∘ ρT ∘ Frob) = ι ∘ a_•(f)` off the exceptional set is
-the defining compatibility of Carayol's representation. For an
-abstract package the statement is covered by the section audit; the
-non-vacuous route is Kisin's Fontaine–Mazur theorem (*The
-Fontaine–Mazur conjecture for `GL₂`*, JAMS 22 (2009)): pushing `ρT`
-along `φ` gives a rank-2 representation with coefficients in the
-order `O` — geometric (hardly ramified: flat at `ℓ`, unramified
-outside `2ℓ`), odd (determinant cyclotomic), residually irreducible
-(`ker φ ⊆ 𝔪_T` since `T` is local, so the residue field of `O` is
-`T ⧸ 𝔪_T ≅ k` and the reduction is `ρbar`, irreducible by `hirr`) —
-so Kisin makes `Frac(O) ⊗ ρT` modular of weight 2, and the
-eigensystem lands in `j(O)` under the induced Hecke-field embedding.
+The abstract package `(T, ρT, π)` carries no Hecke structure of its
+own, so the proof executes the recorded Deligne–Serre/Carayol route
+at the `T = 𝕋_𝔪` instantiation of pillar 3a by RECONSTRUCTING the
+honest Hecke package from the residual data and identifying it with
+`T` through the universal deformation ring:
+
+1. residual modularity (pillar 2, a proven assembly over the
+   Khare–Wintenberger headline and `ModThree`) turns `(ρbar, hirr)`
+   into an eigenform match `(N₀, f₀, hmatch₀)`;
+2. the Carayol cut behind pillar 3a rebuilds the localized Hecke
+   algebra: 3a-i (`exists_heckeAlgebra_realizations_of_...`) gives the
+   coefficient package `(T₀, t, π₀)` with its eigenform realizations,
+   and the PROVEN Chebotarev gluing plus the descent leaf 3a-ii give
+   Carayol's hardly ramified `ρT₀` with `charFrob.coeff 1 = −t q`;
+3. Mazur representability (`Patching.lean`, pillar 3b-i) classifies
+   BOTH hardly ramified finite deformations of `ρbar` — the given
+   abstract `(T, ρT, π)` by `ψ : Runiv →+* T` and the Hecke package
+   `(T₀, ρT₀, π₀)` by `ψ₀ : Runiv →+* T₀` — and Carayol surjectivity
+   (3b-ii) plus Taylor–Wiles injectivity (3b-iii) upgrade `ψ₀` to a
+   ring isomorphism, exactly the `R = 𝕋` mechanism of the pillar-3b
+   assembly above;
+4. the order point `j ∘ φ` of `T` transports along `ψ ∘ ψ₀⁻¹` to a
+   ring-homomorphism point `μ` of the Hecke package, with
+   `μ (t q) = − j (φ ((charFrob ρT).coeff 1))` by the two trace
+   compatibilities;
+5. the Deligne–Serre point leaf evaluates `μ` to an embedded
+   eigensystem `μ (t q) = ι (a_q(f))`, which is the required
+   conclusion up to the file's sign convention.
+
+The order structure (`O` a domain, `ℤ_ℓ`-free; `j` injective) is
+consumed only in forming the point — it is exactly what the proven
+finite-algebra half below produces, and the shape the classical
+Deligne–Serre reading of a point uses. The alternative discharge for
+the abstract package — Kisin's Fontaine–Mazur theorem (*The
+Fontaine–Mazur conjecture for `GL₂`*, JAMS 22 (2009)) applied to the
+pushforward of `ρT` along `φ`: geometric (hardly ramified), odd
+(determinant cyclotomic), residually irreducible (`ker φ ⊆ 𝔪_T` since
+`T` is local, so the residue field of `O` is `T ⧸ 𝔪_T ≅ k` and the
+reduction is `ρbar`) — remains recorded as the route NOT taken: the
+Hecke-algebra route consumes only leaves already in the tree plus the
+sharply-scoped point leaf above.
 CIRCULARITY GUARD: must not be proven through `Family.lean`. -/
 theorem exists_weightTwoEigenform_of_heckeDeformation_order_point
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime]
@@ -3509,16 +3610,119 @@ theorem exists_weightTwoEigenform_of_heckeDeformation_order_point
         (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
     {O : Type u} [CommRing O] [IsDomain O] [Algebra ℤ_[ℓ] O]
     [IsLocalRing O] [Module.Finite ℤ_[ℓ] O] [Module.Free ℤ_[ℓ] O]
-    (φ : T →ₐ[ℤ_[ℓ]] O) (hφ : Function.Surjective φ)
-    (j : O →+* AlgebraicClosure ℚ_[ℓ]) (hj : Function.Injective j) :
+    (φ : T →ₐ[ℤ_[ℓ]] O) (_hφ : Function.Surjective φ)
+    (j : O →+* AlgebraicClosure ℚ_[ℓ]) (_hj : Function.Injective j) :
     ∃ (N : ℕ) (_ : 0 < N) (f : CuspForm (Gamma0GL N) 2)
       (_ : IsWeightTwoEigenform N f)
       (ι : heckeField N f →+* AlgebraicClosure ℚ_[ℓ])
       (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
       ∀ (q : ℕ) (hq : q.Prime), hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
         j (φ ((ρT.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)) =
-          - ι (heckeCoeff N f q) :=
-  sorry
+          - ι (heckeCoeff N f q) := by
+  classical
+  -- pillar 2 (proven assembly): residual modularity of `ρbar`
+  obtain ⟨N₀, hN₀, f₀, hf₀, S₀, hmatch₀⟩ :=
+    exists_weightTwoEigenform_residual_of_isIrreducible hℓodd hW hρbar hirr
+  -- 3a-i: the honest Hecke coefficient package with its realizations
+  obtain ⟨T₀, iCR₀, iTop₀, iTR₀, iAlg₀, iLoc₀, iFin₀, iFree₀, iMT₀, iCpt₀,
+    t, π₀, hπ₀, S_T₀, hred₀, n, real, hinj₀, htr₀⟩ :=
+    exists_heckeAlgebra_realizations_of_matchesResidualTraces hℓodd hW hρbar
+      hirr hN₀ hf₀ hmatch₀
+  letI := iCR₀
+  letI := iTop₀
+  letI := iTR₀
+  letI := iAlg₀
+  letI := iLoc₀
+  letI := iFin₀
+  letI := iFree₀
+  letI := iMT₀
+  letI := iCpt₀
+  -- the PROVEN Chebotarev gluing and the Carayol descent 3a-ii:
+  -- Carayol's hardly ramified representation over the Hecke package
+  have hglue := forall_exists_toFun_eq_charpoly_coeff_one real htr₀
+  obtain ⟨ρT₀, hrankT₀, hρT₀, htrT₀⟩ :=
+    exists_hardlyRamified_galoisRep_of_realizations hℓodd hW hρbar hirr hπ₀
+      hred₀ real hinj₀ htr₀ hglue
+  -- its reduction datum (sign bookkeeping, as in the pillar-3a assembly)
+  have hred₀' : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S_T₀ →
+      π₀ ((ρT₀.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
+        (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1 := by
+    intro q hq hqS
+    rw [htrT₀ q hq hqS, map_neg, hred₀ q hq hqS, neg_neg]
+  -- Mazur representability (Patching pillar 3b-i): the weakly universal
+  -- package classifying both hardly ramified deformations of `ρbar`
+  obtain ⟨Runiv, iuCR, iuTop, iuTR, iuLoc, iuAlg, iuNoeth, hadic, hcomplete,
+    ρuniv, hranku, hρuniv, πuniv, hπuniv, Suniv, hunivred, hfactU,
+    hfactV⟩ :=
+    exists_weaklyUniversal_hardlyRamifiedDeformation hℓodd hW hρbar hirr
+  letI := iuCR
+  letI := iuTop
+  letI := iuTR
+  letI := iuLoc
+  letI := iuAlg
+  letI := iuNoeth
+  -- classify the given abstract package: `ψ : Runiv →+* T` (only the
+  -- trace clause is consumed downstream)
+  obtain ⟨ψ, -, -, Sψ, hψ⟩ := hfactU
+    { A := T, Vd := Fin 2 → T, rank_eq := hrankT, ρ := ρT,
+      isHardlyRamified := hρT, π := π, π_surjective := hπ, S := S_T,
+      charFrob_compat := hred }
+  have hψ' : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ Sψ →
+      ψ ((ρuniv.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
+        (ρT.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1 := hψ
+  -- classify the Hecke package: `ψ₀ : Runiv →+* T₀`
+  obtain ⟨ψ₀, hψ₀alg, hψ₀π, Sψ₀, hψ₀⟩ := hfactV
+    { A := T₀, Vd := Fin 2 → T₀, rank_eq := hrankT₀, ρ := ρT₀,
+      isHardlyRamified := hρT₀, π := π₀, π_surjective := hπ₀, S := S_T₀,
+      charFrob_compat := hred₀' }
+  have hψ₀alg' : ψ₀.comp (algebraMap ℤ_[ℓ] Runiv) = algebraMap ℤ_[ℓ] T₀ :=
+    hψ₀alg
+  have hψ₀π' : π₀.comp ψ₀ = πuniv := hψ₀π
+  have hψ₀' : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ Sψ₀ →
+      ψ₀ ((ρuniv.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
+        (ρT₀.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1 := hψ₀
+  -- Carayol surjectivity and Taylor–Wiles injectivity (Patching pillars
+  -- 3b-ii/3b-iii): `ψ₀` is a ring isomorphism `Runiv ≃+* T₀`
+  have hsurj₀ : Function.Surjective ψ₀ :=
+    surjective_ringHom_of_charFrob_eq hℓodd hW hρbar hirr hadic hcomplete
+      hranku hρuniv hπuniv hunivred hrankT₀ hρT₀ hπ₀ hred₀' ψ₀ hψ₀alg'
+      hψ₀π' hψ₀'
+  have hinjψ₀ : Function.Injective ψ₀ :=
+    injective_ringHom_of_isWeaklyUniversal hℓodd hW hρbar hirr hadic
+      hcomplete hranku hρuniv hπuniv hunivred hfactV hrankT₀ hρT₀ hπ₀
+      hred₀' ψ₀ hψ₀alg' hψ₀π' hψ₀'
+  have hbij₀ : Function.Bijective ψ₀ := ⟨hinjψ₀, hsurj₀⟩
+  -- transport the order point `j ∘ φ` of `T` along `ψ ∘ ψ₀⁻¹` to a
+  -- point of the Hecke package and evaluate the Deligne–Serre leaf
+  obtain ⟨N, hN, f, hf, ι, S_f, hpt⟩ :=
+    exists_weightTwoEigenform_of_heckeAlgebra_point hℓodd hW hρbar hirr hπ₀
+      hred₀ real hinj₀ htr₀
+      (((j.comp φ.toRingHom).comp ψ).comp
+        (RingEquiv.ofBijective ψ₀ hbij₀).symm.toRingHom)
+  refine ⟨N, hN, f, hf, ι, S_T₀ ∪ Sψ ∪ Sψ₀ ∪ S_f, fun q hq hqS => ?_⟩
+  have hq₀ : hq.toHeightOneSpectrumRingOfIntegersRat ∉ S_T₀ := fun h =>
+    hqS (Finset.mem_union_left _ (Finset.mem_union_left _
+      (Finset.mem_union_left _ h)))
+  have hqψ : hq.toHeightOneSpectrumRingOfIntegersRat ∉ Sψ := fun h =>
+    hqS (Finset.mem_union_left _ (Finset.mem_union_left _
+      (Finset.mem_union_right _ h)))
+  have hqψ₀ : hq.toHeightOneSpectrumRingOfIntegersRat ∉ Sψ₀ := fun h =>
+    hqS (Finset.mem_union_left _ (Finset.mem_union_right _ h))
+  have hqf : hq.toHeightOneSpectrumRingOfIntegersRat ∉ S_f := fun h =>
+    hqS (Finset.mem_union_right _ h)
+  -- `ψ₀⁻¹` carries `t q` to `−(charFrob coeff)` of the universal
+  -- representation
+  have hsymm : (RingEquiv.ofBijective ψ₀ hbij₀).symm (t q) =
+      - ((ρuniv.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) := by
+    rw [RingEquiv.symm_apply_eq, map_neg, RingEquiv.ofBijective_apply,
+      hψ₀' q hq hqψ₀, htrT₀ q hq hq₀, neg_neg]
+  rw [← hpt q hq hqf]
+  show j (φ ((ρT.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)) =
+    - (j (φ (ψ ((RingEquiv.ofBijective ψ₀ hbij₀).symm (t q)))))
+  rw [hsymm, map_neg, map_neg, map_neg, hψ' q hq hqψ, neg_neg]
 
 /-- **Modular points of the Hecke-side deformation** (pillar 3c;
 DECOMPOSED 2026-07-24 — now a PROVEN assembly over the order-point
