@@ -184,6 +184,10 @@ import Mathlib.RingTheory.DiscreteValuationRing.Basic
 import Mathlib.LinearAlgebra.FreeModule.PID
 import Mathlib.Algebra.Module.Torsion.Free
 import Mathlib.NumberTheory.Padics.PadicIntegers
+-- `Polynomial.eval_one_cyclotomic_prime_pow` + the primitive-root product
+-- factorization: distinct `p`-power roots of unity differ by a `2`-adic
+-- unit — the arithmetic core of the at-`2` cyclotomic-inertia lemma
+-- `cyclotomicCharacter_eq_one_of_mem_inertia_two_upstream` (pillar E1a)
 import Mathlib.RingTheory.Polynomial.Cyclotomic.Eval
 import Fermat.FLT.GaloisRepresentation.HardlyRamified.Residual
 -- `IsHardlyRamified.exists_residual_odd`, discharging the residual
@@ -5898,11 +5902,423 @@ theorem exists_residual_triangular_shape_of_not_isIrreducible
   fin_cases i <;> fin_cases j <;>
     simp [hχ₀ g, hcd g, Module.Basis.repr_self]
 
+include hpodd in
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
+/-- **The cyclotomic character dies on inertia at `2`** (PROVEN
+2026-07-24): for an odd prime `p`, the `p`-adic cyclotomic character is
+trivial on the (image in `G_ℚ` of the) inertia at `2` — the extensions
+`ℚ_2(μ_{p^n})/ℚ_2` are unramified, i.e. inertia at `2` acts trivially
+on `p`-power roots of unity. Proof: a `p^n`-th root of unity `z` has
+spectral valuation `1`, so lies in `Z2bar`, and an inertia element `τ`
+moves it by `v (τ z - z) < 1`; but a NONtrivial `p`-power root of unity
+`u` has `v (u - 1) = 1` — by
+`Polynomial.eval_one_cyclotomic_prime_pow` the product of `1 - μ` over
+the primitive `p^m`-th roots is `p`, a `2`-adic unit since `p` is odd,
+while every factor has `v ≤ 1`, forcing `v = 1` on each factor — so
+`τ z = z` exactly. Hence every finite level of the cyclotomic
+character is trivial (`modularCyclotomicCharacter.unique`) and
+`p`-adic continuity (`PadicInt.ext_of_toZModPow`) concludes.
+
+UPSTREAM DUPLICATE (dedupe note, 2026-07-24): this is verbatim the
+proof of `IsHardlyRamified.cyclotomicCharacter_eq_one_of_mem_inertia_two`
+in `Family.lean`, duplicated here because `Family.lean` IMPORTS this
+file (the Eisenstein pillars' circularity guard forbids using it), the
+generalization lives at the residual prime `2` bookkeeping of pillar
+E1a, and this file may not modify other owners' files. At integration
+time `Family.lean`'s twin can be rewired to this upstream copy. -/
+theorem cyclotomicCharacter_eq_one_of_mem_inertia_two_upstream
+    (τ : Field.absoluteGaloisGroup ℚ_[2])
+    (hτ : τ ∈ AddSubgroup.inertia
+      ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
+      (Field.absoluteGaloisGroup ℚ_[2])) :
+    cyclotomicCharacter (AlgebraicClosure ℚ) p
+      ((Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) τ).toRingEquiv) = 1 := by
+  classical
+  -- roots of unity have spectral valuation `1`
+  have hval_of_root : ∀ (m : ℕ), m ≠ 0 → ∀ w : AlgebraicClosure ℚ_[2],
+      w ^ m = 1 → Valued.v w = 1 := by
+    intro m hm w hw
+    have h := congrArg Valued.v hw
+    rw [map_pow, map_one] at h
+    rcases lt_trichotomy (Valued.v w) 1 with hlt | heq | hgt
+    · exfalso
+      have hcon : Valued.v w ^ m < 1 := by
+        calc Valued.v w ^ m ≤ Valued.v w ^ 1 :=
+              pow_le_pow_right_of_le_one' (le_of_lt hlt) (Nat.one_le_iff_ne_zero.mpr hm)
+          _ = Valued.v w := pow_one _
+          _ < 1 := hlt
+      rw [h] at hcon
+      exact lt_irrefl _ hcon
+    · exact heq
+    · exfalso
+      have hcon : 1 < Valued.v w ^ m := by
+        calc 1 < Valued.v w := hgt
+          _ = Valued.v w ^ 1 := (pow_one _).symm
+          _ ≤ Valued.v w ^ m :=
+              pow_le_pow_right' (le_of_lt hgt) (Nat.one_le_iff_ne_zero.mpr hm)
+      rw [h] at hcon
+      exact lt_irrefl _ hcon
+  -- the odd prime `p` is a `2`-adic unit in the spectral valuation
+  have hvp : Valued.v (((p : ℕ) : AlgebraicClosure ℚ_[2])) = 1 := by
+    have hpnorm : ‖((p : ℕ) : ℚ_[2])‖ = 1 := by
+      rw [Padic.norm_natCast_eq_one_iff]
+      exact Nat.coprime_two_left.mpr hpodd
+    have halg : ((p : ℕ) : AlgebraicClosure ℚ_[2]) =
+        algebraMap ℚ_[2] (AlgebraicClosure ℚ_[2]) ((p : ℕ) : ℚ_[2]) := by
+      rw [map_natCast]
+    have hkey : ((Valued.v (algebraMap ℚ_[2] (AlgebraicClosure ℚ_[2])
+        ((p : ℕ) : ℚ_[2])) : NNReal) : ℝ) = ‖((p : ℕ) : ℚ_[2])‖ := by
+      rw [← spectralNorm_extends (K := ℚ_[2]) (L := AlgebraicClosure ℚ_[2]) _]
+      rfl
+    rw [halg]
+    apply NNReal.coe_injective
+    rw [hkey, hpnorm, NNReal.coe_one]
+  -- a nontrivial `p`-power root of unity keeps valuation `1` away from `1`:
+  -- the factors of `Φ_{p^m}(1) = p` all have `v ≤ 1` with product a unit
+  have hsub_val : ∀ (N : ℕ) (u : AlgebraicClosure ℚ_[2]), u ^ (p ^ N) = 1 →
+      u ≠ 1 → Valued.v (u - 1) = 1 := by
+    intro N u hu hune
+    obtain ⟨m, -, hordeq⟩ :=
+      (Nat.dvd_prime_pow hp.out).mp (orderOf_dvd_of_pow_eq_one hu)
+    have hm0 : m ≠ 0 := by
+      rintro rfl
+      rw [pow_zero] at hordeq
+      exact hune (orderOf_eq_one_iff.mp hordeq)
+    have hprim : IsPrimitiveRoot u (p ^ m) := hordeq ▸ IsPrimitiveRoot.orderOf u
+    obtain ⟨m', rfl⟩ : ∃ m', m = m' + 1 :=
+      ⟨m - 1, (Nat.succ_pred_eq_of_pos (Nat.pos_of_ne_zero hm0)).symm⟩
+    have hppos : 0 < p ^ (m' + 1) := pow_pos hp.out.pos _
+    have heval : (∏ μ ∈ primitiveRoots (p ^ (m' + 1)) (AlgebraicClosure ℚ_[2]),
+        ((1 : AlgebraicClosure ℚ_[2]) - μ)) =
+        ((p : ℕ) : AlgebraicClosure ℚ_[2]) := by
+      have h1 := Polynomial.eval_one_cyclotomic_prime_pow
+        (R := AlgebraicClosure ℚ_[2]) (p := p) m'
+      rw [Polynomial.cyclotomic_eq_prod_X_sub_primitiveRoots hprim,
+        Polynomial.eval_prod] at h1
+      simpa using h1
+    have hle : ∀ μ ∈ primitiveRoots (p ^ (m' + 1)) (AlgebraicClosure ℚ_[2]),
+        Valued.v ((1 : AlgebraicClosure ℚ_[2]) - μ) ≤ 1 := by
+      intro μ hμ
+      have hμval : Valued.v μ = 1 :=
+        hval_of_root _ hppos.ne' μ ((mem_primitiveRoots hppos).mp hμ).pow_eq_one
+      refine le_trans (Valued.v.map_sub _ _) ?_
+      rw [map_one, hμval]
+      exact le_of_eq (max_self 1)
+    have hprod : (∏ μ ∈ primitiveRoots (p ^ (m' + 1)) (AlgebraicClosure ℚ_[2]),
+        Valued.v ((1 : AlgebraicClosure ℚ_[2]) - μ)) = 1 := by
+      rw [← map_prod, heval, hvp]
+    have h1u := (Finset.prod_eq_one_iff_of_le_one' hle).mp hprod u
+      ((mem_primitiveRoots hppos).mpr hprim)
+    rw [show u - 1 = -((1 : AlgebraicClosure ℚ_[2]) - u) by ring, Valuation.map_neg]
+    exact h1u
+  -- inertia at `2` fixes every `p`-power root of unity of `ℚ_[2]ᵃˡᵍ`
+  have hfix2 : ∀ (n : ℕ) (z : AlgebraicClosure ℚ_[2]), z ^ (p ^ n) = 1 →
+      τ z = z := by
+    intro n z hz
+    have hpn : (p : ℕ) ^ n ≠ 0 := pow_ne_zero n hp.out.ne_zero
+    have hzval : Valued.v z = 1 := hval_of_root _ hpn z hz
+    have hz0 : z ≠ 0 := by
+      intro h0
+      rw [h0, map_zero] at hzval
+      exact zero_ne_one hzval
+    have hzmem : z ∈ Z2bar := by
+      rw [Valuation.mem_valuationSubring_iff, hzval]
+    have hτzpow : (τ z) ^ (p ^ n) = 1 := by rw [← map_pow, hz, map_one]
+    by_contra hne
+    -- the inertia condition: `v (τ z − z) < 1`
+    have hdiffval : Valued.v (τ z - z) < 1 := by
+      have hin := (AddSubgroup.mem_inertia.mp hτ) ⟨z, hzmem⟩
+      set y : Z2bar := τ • (⟨z, hzmem⟩ : Z2bar) - ⟨z, hzmem⟩ with hydef
+      have hy1 : (y : AlgebraicClosure ℚ_[2]) = τ z - z := rfl
+      have hnu : ¬IsUnit y := by
+        have hmem : y ∈ IsLocalRing.maximalIdeal Z2bar := hin
+        rwa [IsLocalRing.mem_maximalIdeal, mem_nonunits_iff] at hmem
+      have hyval : Valued.v (τ z - z) ≤ 1 := by
+        refine le_trans (Valued.v.map_sub _ _) ?_
+        rw [show Valued.v (τ z) = 1 from hval_of_root _ hpn _ hτzpow, hzval]
+        exact le_of_eq (max_self 1)
+      rcases lt_or_eq_of_le hyval with hlt | heq
+      · exact hlt
+      · exfalso
+        apply hnu
+        have hne0 : (τ z - z : AlgebraicClosure ℚ_[2]) ≠ 0 := by
+          intro h0
+          rw [h0, map_zero] at heq
+          exact zero_ne_one heq
+        have hinvmem : (τ z - z : AlgebraicClosure ℚ_[2])⁻¹ ∈ Z2bar := by
+          rw [Valuation.mem_valuationSubring_iff, map_inv₀, heq, inv_one]
+        refine isUnit_iff_exists.mpr
+          ⟨(⟨(τ z - z)⁻¹, hinvmem⟩ : Z2bar), ?_, ?_⟩
+        · apply Subtype.ext
+          show (y : AlgebraicClosure ℚ_[2]) * (τ z - z)⁻¹ = 1
+          rw [hy1]
+          exact mul_inv_cancel₀ hne0
+        · apply Subtype.ext
+          show (τ z - z)⁻¹ * (y : AlgebraicClosure ℚ_[2]) = 1
+          rw [hy1]
+          exact inv_mul_cancel₀ hne0
+    -- but `τ z / z` is a nontrivial `p`-power root of unity, so the
+    -- difference is a `Z2bar`-unit: contradiction
+    have hu : (τ z * z⁻¹) ^ (p ^ n) = 1 := by
+      rw [mul_pow, hτzpow, one_mul, inv_pow, hz, inv_one]
+    have hune : τ z * z⁻¹ ≠ 1 := fun h1 => hne ((mul_inv_eq_one₀ hz0).mp h1)
+    have hfac : τ z - z = (τ z * z⁻¹ - 1) * z := by
+      rw [sub_mul, one_mul, mul_assoc, inv_mul_cancel₀ hz0, mul_one]
+    rw [hfac, map_mul, hzval, mul_one, hsub_val n _ hu hune] at hdiffval
+    exact lt_irrefl _ hdiffval
+  -- conclude level by level through `p`-adic continuity
+  refine Units.ext ?_
+  rw [Units.val_one]
+  refine PadicInt.ext_of_toZModPow.mp fun n => ?_
+  rcases Nat.eq_zero_or_pos n with rfl | hnpos
+  · haveI : Subsingleton (ZMod (p ^ 0)) := by rw [pow_zero]; infer_instance
+    exact Subsingleton.elim _ _
+  haveI : NeZero (p ^ n) := ⟨pow_ne_zero n hp.out.ne_zero⟩
+  rw [map_one, cyclotomicCharacter.toZModPow]
+  refine (modularCyclotomicCharacter.unique (AlgebraicClosure ℚ)
+    (HasEnoughRootsOfUnity.natCard_rootsOfUnity (AlgebraicClosure ℚ) (p ^ n))
+    _ ?_).symm
+  intro t ht
+  have hval1 : ((1 : ZMod (p ^ n))).val = 1 := by
+    rw [ZMod.val_one_eq_one_mod,
+      Nat.mod_eq_of_lt (Nat.one_lt_pow hnpos.ne' hp.out.one_lt)]
+  rw [hval1, pow_one]
+  have ht1 : ((t : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ) ^ (p ^ n) = 1 := by
+    rw [← Units.val_pow_eq_pow_val, (mem_rootsOfUnity _ t).mp ht, Units.val_one]
+  show (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) τ)
+      ((t : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ) =
+    ((t : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ)
+  apply (AlgebraicClosure.map (algebraMap ℚ ℚ_[2])).injective
+  rw [Field.absoluteGaloisGroup.lift_map (algebraMap ℚ ℚ_[2]) τ]
+  exact hfix2 n _ (by rw [← map_pow, ht1, map_one])
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
+/-- **Tame unipotence of hardly ramified inertia at `2`, residual
+form** (PROVEN 2026-07-24 — the local Jordan–Hölder input of pillar
+E1a): every inertia element `τ` at `2` (spelled over `ℚ_[2]`, matching
+the `isTameAtTwo` clause) acts on a mod-`p` hardly ramified
+representation with `(ρ̄(τ) − 1)² = 0` — both local Jordan–Hölder
+factors of `ρ̄|_{G_2}` are trivial on inertia. Content: the tame-at-two
+datum `(π, δ)` exhibits the line `ker π` as `ρ̄(G_2)`-stable with `ρ̄ τ`
+descending to `δ τ = 1` on the quotient (inertia lies in `δ.ker`); on
+the line `ρ̄ τ` acts by the scalar `κ = det (ρ̄ τ)` (adapted-basis
+determinant), and `det ρ̄ = ω` is trivial on inertia at `2`
+(`cyclotomicCharacter_eq_one_of_mem_inertia_two_upstream`), so `ρ̄ τ`
+is trivial on both the line and the quotient — the field-coefficient
+residual analogue of `Family.lean`'s `charpoly_eq_of_mem_inertia_two`,
+proven directly (no charpoly) since over the field `k` the adapted
+basis is explicit. -/
+theorem residual_rep_sub_one_sq_eq_zero_of_inertia_two
+    {k : Type*} [Field k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type*} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hpodd hW ρbar)
+    {τ : Field.absoluteGaloisGroup ℚ_[2]}
+    (hτ : τ ∈ AddSubgroup.inertia
+      ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
+      (Field.absoluteGaloisGroup ℚ_[2])) :
+    (ρbar (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) τ) - 1) ^ 2 = 0 := by
+  classical
+  obtain ⟨π, hπsurj, δ, hδ⟩ := hρbar.isTameAtTwo
+  have hδτ : δ τ = 1 := (hδ τ 0).2.1 hτ
+  set e : Module.End k W :=
+    ρbar (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) τ) with hedef
+  -- `π` intertwines `e` with `δ τ = 1`
+  have hcomm : ∀ v : W, π (e v) = π v := by
+    intro v
+    have h1 := (hδ τ v).1
+    rw [GaloisRep.map_apply, hδτ, Module.End.one_apply] at h1
+    exact h1
+  -- the determinant of `e` is the cyclotomic character at `τ`, which
+  -- is trivial on inertia at `2`
+  have hdet : LinearMap.det e = 1 := by
+    have h := hρbar.det (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) τ)
+    rw [GaloisRep.det_apply] at h
+    rw [hedef, h,
+      cyclotomicCharacter_eq_one_of_mem_inertia_two_upstream hpodd τ hτ,
+      Units.val_one, map_one]
+  -- dimension bookkeeping: `ker π` is a line
+  have hfinrank : Module.finrank k W = 2 :=
+    Module.finrank_eq_of_rank_eq (by rw [hW]; norm_num)
+  set N : Submodule k W := LinearMap.ker π with hNdef
+  have hNrank : Module.finrank k N = 1 := by
+    have hsum := LinearMap.finrank_range_add_finrank_ker π
+    have hrange : Module.finrank k (LinearMap.range π) = 1 := by
+      rw [LinearMap.range_eq_top.mpr hπsurj, finrank_top]
+      exact Module.finrank_self k
+    rw [← hNdef] at hsum
+    omega
+  let bN : Module.Basis (Fin 1) k N := Module.finBasisOfFinrankEq k N hNrank
+  -- the adapted basis `(v₀, u)` with `π v₀ = 1` and `u` spanning `ker π`
+  obtain ⟨v₀, hv₀⟩ := hπsurj 1
+  have hli : ∀ c : k, ∀ x ∈ N, c • v₀ + x = 0 → c = 0 := by
+    intro c x hx hcx
+    have h := congrArg π hcx
+    rw [map_add, map_smul, hv₀, LinearMap.mem_ker.mp (hNdef ▸ hx), add_zero,
+      map_zero, smul_eq_mul, mul_one] at h
+    exact h
+  have hsp : ∀ z : W, ∃ c : k, z + c • v₀ ∈ N := by
+    intro z
+    refine ⟨-π z, ?_⟩
+    rw [hNdef, LinearMap.mem_ker, map_add, map_smul, hv₀, smul_eq_mul,
+      mul_one, add_neg_cancel]
+  let b2 : Module.Basis (Fin 2) k W := Module.Basis.mkFinCons v₀ bN hli hsp
+  have hb20 : b2 0 = v₀ := by
+    have h0 := congrFun (Module.Basis.coe_mkFinCons v₀ bN hli hsp) 0
+    rw [Fin.cons_zero] at h0
+    exact h0
+  have hb21 : b2 1 = (bN 0 : W) := by
+    have h1 := congrFun (Module.Basis.coe_mkFinCons v₀ bN hli hsp) (Fin.succ 0)
+    rw [Fin.cons_succ] at h1
+    exact h1
+  -- the action on the two basis vectors, through the rank-one basis of
+  -- `ker π` (repr-based, avoiding any rewrite of `N` under `bN`)
+  have hπu : π (bN 0 : W) = 0 := LinearMap.mem_ker.mp (bN 0).2
+  have heuN : e (bN 0 : W) ∈ N :=
+    LinearMap.mem_ker.mpr (by rw [hcomm]; exact hπu)
+  have hev₀N : e v₀ - v₀ ∈ N :=
+    LinearMap.mem_ker.mpr (by rw [map_sub, hcomm, sub_self])
+  have hκrepr := bN.sum_repr ⟨e (bN 0 : W), heuN⟩
+  rw [Fin.sum_univ_one] at hκrepr
+  set κ : k := bN.repr ⟨e (bN 0 : W), heuN⟩ 0
+  have hκu : κ • (bN 0 : W) = e (bN 0 : W) := by
+    have h := congrArg Subtype.val hκrepr
+    simpa using h
+  have hmrepr := bN.sum_repr ⟨e v₀ - v₀, hev₀N⟩
+  rw [Fin.sum_univ_one] at hmrepr
+  set m : k := bN.repr ⟨e v₀ - v₀, hev₀N⟩ 0
+  have hm : m • (bN 0 : W) = e v₀ - v₀ := by
+    have h := congrArg Subtype.val hmrepr
+    simpa using h
+  have hev0 : e (b2 0) = (1 : k) • b2 0 + m • b2 1 := by
+    rw [hb20, hb21, one_smul, hm]
+    abel
+  have heu : e (b2 1) = (0 : k) • b2 0 + κ • b2 1 := by
+    rw [hb21, zero_smul, zero_add]
+    exact hκu.symm
+  -- the determinant in the adapted basis is `κ`, so `κ = 1`
+  have hM00 : LinearMap.toMatrix b2 b2 e 0 0 = 1 := by
+    rw [LinearMap.toMatrix_apply, hev0]
+    simp [Module.Basis.repr_self]
+  have hM10 : LinearMap.toMatrix b2 b2 e 1 0 = m := by
+    rw [LinearMap.toMatrix_apply, hev0]
+    simp [Module.Basis.repr_self]
+  have hM01 : LinearMap.toMatrix b2 b2 e 0 1 = 0 := by
+    rw [LinearMap.toMatrix_apply, heu]
+    simp [Module.Basis.repr_self]
+  have hM11 : LinearMap.toMatrix b2 b2 e 1 1 = κ := by
+    rw [LinearMap.toMatrix_apply, heu]
+    simp [Module.Basis.repr_self]
+  have hκ1 : κ = 1 := by
+    have hdet2 : LinearMap.det e = κ := by
+      rw [← LinearMap.det_toMatrix b2 e, Matrix.det_fin_two, hM00, hM01,
+        hM10, hM11]
+      ring
+    rw [← hdet2, hdet]
+  -- both basis vectors are killed by `(e − 1)²`
+  have hsub1 : (e - 1) (b2 1) = 0 := by
+    rw [LinearMap.sub_apply, Module.End.one_apply, heu, hκ1, zero_smul,
+      zero_add, one_smul, sub_self]
+  have hsub0 : (e - 1) (b2 0) = m • b2 1 := by
+    rw [LinearMap.sub_apply, Module.End.one_apply, hev0, one_smul]
+    abel
+  refine b2.ext fun i => ?_
+  fin_cases i
+  · show (((e - 1) ^ 2 : Module.End k W)) (b2 0) = (0 : Module.End k W) (b2 0)
+    rw [pow_two, Module.End.mul_apply, hsub0, map_smul, hsub1, smul_zero,
+      LinearMap.zero_apply]
+  · show (((e - 1) ^ 2 : Module.End k W)) (b2 1) = (0 : Module.End k W) (b2 1)
+    rw [pow_two, Module.End.mul_apply, hsub1, map_zero, LinearMap.zero_apply]
+
+include hpodd in
+/-- **Kronecker–Weber pinning of characters unramified outside `p`**
+(sorry node — the ray-class/cyclotomic factorization core of pillar
+E1a): a character `χ` of `G_ℚ` with values in the units of a finite
+field `k` of characteristic `p`, with OPEN kernel, that kills the
+local inertia at EVERY prime `q ≠ p` (one embedding per prime
+suffices: `χ` has commutative values, hence is invariant under
+`G_ℚ`-conjugation, which sweeps out all primes above `q`), is a power
+of the mod-`p` cyclotomic character `ω` (the composite of the `p`-adic
+cyclotomic character with `algebraMap ℤ_[p] k`, which factors through
+`𝔽_p ⊆ k` since `k` has characteristic `p`).
+
+Classical proof (Neukirch, *Algebraic Number Theory*, V §1 and
+VI §6–7; Washington, *Introduction to Cyclotomic Fields*, ch. 14):
+the open kernel makes the image finite, and a finite subgroup of `kˣ`
+has order prime to `p`; the fixed field `K` of `ker χ` is a finite
+ABELIAN extension of `ℚ` unramified outside `p` (all inertia
+subgroups at `q ≠ p` die, by conjugation-invariance), so by
+Kronecker–Weber `K ⊆ ℚ(μ_{p^r})` for some `r` — equivalently `χ`
+factors through the ray class group of conductor `p^r∞`, i.e. through
+`Gal(ℚ(μ_{p^∞})/ℚ) ≅ ℤ_p^×`; the prime-to-`p` order kills the pro-`p`
+factor `1 + pℤ_p`, so `χ` factors through
+`Gal(ℚ(μ_p)/ℚ) ≅ (ℤ/p)^×`, a cyclic group of order `p − 1`; the
+mod-`p` cyclotomic character `ω` realizes an ISOMORPHISM of that
+quotient onto `μ_{p−1}(k) = 𝔽_p^× ⊆ k^×` (level-one detection:
+`cyclotomicCharacter.toZModPow` at `n = 1` plus `CharP k p`;
+surjectivity is `Gal(ℚ(μ_p)/ℚ) ≅ (ℤ/p)^×`), and every homomorphism
+`(ℤ/p)^× → kˣ` lands in the unique cyclic subgroup of order dividing
+`p − 1`, i.e. is a power of that isomorphism — so `χ = ω^i`.
+
+Project machinery for the attack: the conductor-descent ray-class
+engine at the residual prime,
+`IsHardlyRamified.character_pow_eight_localInertia_three_eq_one_ray_class`
+(`ModThree.lean`, PROVEN — tame-generator/Frobenius-conjugation
+analysis of local inertia, generalized past its quadratic data), the
+odd-order and quadratic ray-class leaves' shared skeleton
+(`odd_order_character_eq_one_ray_class` and companions), the
+Minkowski core `open_normal_subgroup_eq_top_of_inertia_le` /
+`minkowski_character_trivial` (`MazurTorsion.lean`, PROVEN — the same
+fixed-field bookkeeping specialized to "unramified everywhere ⇒
+trivial"; THIS node is its conductor-`p^∞` refinement), and the
+`InertiaCardTransport` toolkit for moving inertia orders between the
+local and number-field worlds. An alternative tame route avoiding
+full Kronecker–Weber: `Gal(K/ℚ)` is generated by its inertia at `p`
+(Minkowski, as in `open_normal_subgroup_eq_top_of_inertia_le`), which
+is cyclic of order dividing `p − 1` (tame, since the degree is prime
+to `p`), and the eigenvalue of a tame totally ramified abelian
+extension on inertia is detected by `ω` (Serre, Duke 1987, §1.3).
+
+Soundness (audit 2026-07-24): the hypothesis set is inhabited (`χ = 1`
+with `i = 0`, and the `toHomUnits` lift of `ω` itself, unramified
+outside `p` since `ℚ(μ_{p^n})/ℚ` is), and the conclusion holds for
+every inhabitant by the argument cited; the statement is true even at
+`p = 2` (`Gal(ℚ(μ_{2^∞})/ℚ)` is pro-`2` and the image has odd order,
+forcing `χ = 1`), so `hpodd` is uniformity, not load-bearing.
+CIRCULARITY GUARD (inherited from pillar E1a): must not be proven
+through `Family.lean` or `Reducible.lean`'s B5. -/
+theorem character_eq_pow_cyclotomicCharacter_of_unramified_outside_p
+    {k : Type*} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    (χ : Field.absoluteGaloisGroup ℚ →* kˣ)
+    (hker : IsOpen ((χ.ker : Subgroup (Field.absoluteGaloisGroup ℚ)) :
+      Set (Field.absoluteGaloisGroup ℚ)))
+    (hunram : ∀ (q : ℕ) (hq : q.Prime), q ≠ p →
+      ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+        χ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1) :
+    ∃ i : ℕ, ∀ g, (χ g : k) =
+      (algebraMap ℤ_[p] k
+        (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv)) ^ i :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
 /-- **Conductor-`2p` ray-class pinning of the sub-character**
-(Eisenstein pillar E1a; sorry node — the Kronecker–Weber input of the
-residual Eisenstein classification): the sub-character of a
-triangular hardly ramified mod-`p` representation is a POWER of the
-mod-`p` cyclotomic character `ω` (the image of the `p`-adic
+(Eisenstein pillar E1a; PROVEN 2026-07-24 as an assembly over the
+three helpers above — the at-`2` cyclotomic-inertia lemma
+`cyclotomicCharacter_eq_one_of_mem_inertia_two_upstream` (PROVEN),
+the tame unipotence lemma
+`residual_rep_sub_one_sq_eq_zero_of_inertia_two` (PROVEN), and the
+sorried Kronecker–Weber factorization node
+`character_eq_pow_cyclotomicCharacter_of_unramified_outside_p`, which
+now carries the arithmetic depth of this pillar): the sub-character
+of a triangular hardly ramified mod-`p` representation is a POWER of
+the mod-`p` cyclotomic character `ω` (the image of the `p`-adic
 cyclotomic character under `ℤ_p → k`, which factors through
 `𝔽_p ⊆ k` because the kernel of any ring homomorphism from `ℤ_p` to
 the finite field `k` is the nonzero prime `(p)`). Classical proof:
@@ -5943,8 +6359,120 @@ theorem residual_triangular_sub_character_eq_pow_cyclotomic
       !![χsub g, cc g; 0, χquo g]) :
     ∃ i : ℕ, ∀ g, χsub g =
       (algebraMap ℤ_[p] k
-        (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv)) ^ i :=
-  sorry
+        (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv)) ^ i := by
+  classical
+  haveI hfinW : Finite W := Module.finite_of_finite k
+  -- the action on the first basis vector, read off the triangular matrix
+  have hact : ∀ g, ρbar g (b 0) = χsub g • b 0 := by
+    intro g
+    have h00 : b.repr (ρbar g (b 0)) 0 = χsub g := by
+      simpa [LinearMap.toMatrix_apply] using
+        congrArg (fun M => M 0 0) (htri g)
+    have h10 : b.repr (ρbar g (b 0)) 1 = 0 := by
+      simpa [LinearMap.toMatrix_apply] using
+        congrArg (fun M => M 1 0) (htri g)
+    have hsum := b.sum_repr (ρbar g (b 0))
+    rw [Fin.sum_univ_two, h00, h10, zero_smul, add_zero] at hsum
+    exact hsum.symm
+  have hb0ne : b 0 ≠ 0 := b.ne_zero 0
+  -- the unit-valued lift of the sub-character
+  set χu : Field.absoluteGaloisGroup ℚ →* kˣ := χsub.toHomUnits with hχu
+  have hχuval : ∀ g, ((χu g : kˣ) : k) = χsub g := by
+    intro g
+    rw [hχu]
+    exact MonoidHom.coe_toHomUnits χsub g
+  -- the sub-character is trivial wherever the representation is
+  have htriv : ∀ g, ρbar g = 1 → χu g = 1 := by
+    intro g hg
+    apply Units.ext
+    rw [Units.val_one, hχuval]
+    refine subCharacter_eq_one_of_sq_eq_zero (ρbar g) ?_ hb0ne (hact g)
+    rw [hg, sub_self]
+    exact zero_pow two_ne_zero
+  -- the kernel is open: it contains the open kernel of the representation
+  have hker : IsOpen ((χu.ker : Subgroup (Field.absoluteGaloisGroup ℚ)) :
+      Set (Field.absoluteGaloisGroup ℚ)) := by
+    have hKρ_open : IsOpen {g : Field.absoluteGaloisGroup ℚ | ρbar g = 1} :=
+      isOpen_setOf_galoisRep_eq_one ρbar hfinW
+    let Kρ : Subgroup (Field.absoluteGaloisGroup ℚ) :=
+      { carrier := {g | ρbar g = 1}
+        one_mem' := map_one ρbar
+        mul_mem' := by
+          intro a b ha hb
+          show ρbar (a * b) = 1
+          rw [map_mul, ha, hb, mul_one]
+        inv_mem' := by
+          intro a ha
+          show ρbar a⁻¹ = 1
+          have h1 : ρbar a⁻¹ * ρbar a = 1 := by
+            rw [← map_mul, inv_mul_cancel, map_one]
+          rwa [ha, mul_one] at h1 }
+    have hle : Kρ ≤ χu.ker := fun g hg => MonoidHom.mem_ker.mpr (htriv g hg)
+    exact Subgroup.isOpen_mono hle hKρ_open
+  -- the sub-character kills local inertia at every prime `q ≠ p`
+  have hunram : ∀ (q : ℕ) (hq : q.Prime), q ≠ p →
+      ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+        χu (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1 := by
+    intro q hq hqp
+    by_cases hq2 : q = 2
+    · -- at `2`: the inertia bridge to `ℚ_[2]`, conjugation-stability of
+      -- unipotence, and the tame unipotence lemma
+      subst hq2
+      intro σ hσ
+      apply Units.ext
+      rw [Units.val_one, hχuval]
+      refine subCharacter_eq_one_of_sq_eq_zero _ ?_ hb0ne (hact _)
+      obtain ⟨τ, hτ, c, hconj⟩ :=
+        IsHardlyRamified.localInertia_two_eq_map_padic hσ
+      have hconj2 : Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) σ =
+          c * Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) τ * c⁻¹ :=
+        hconj
+      have hkey :=
+        residual_rep_sub_one_sq_eq_zero_of_inertia_two hpodd hW hρbar hτ
+      have ha : ρbar c * ρbar c⁻¹ = 1 := by
+        rw [← map_mul, mul_inv_cancel, map_one]
+      have ha' : ρbar c⁻¹ * ρbar c = 1 := by
+        rw [← map_mul, inv_mul_cancel, map_one]
+      rw [hconj2, map_mul, map_mul]
+      have hfac : ρbar c * ρbar (Field.absoluteGaloisGroup.map
+          (algebraMap ℚ ℚ_[2]) τ) * ρbar c⁻¹ - 1 =
+          ρbar c * (ρbar (Field.absoluteGaloisGroup.map
+            (algebraMap ℚ ℚ_[2]) τ) - 1) * ρbar c⁻¹ := by
+        rw [mul_sub, mul_one, sub_mul, ha]
+      rw [hfac, pow_two]
+      have h1 : ρbar c * (ρbar (Field.absoluteGaloisGroup.map
+          (algebraMap ℚ ℚ_[2]) τ) - 1) * ρbar c⁻¹ *
+          (ρbar c * (ρbar (Field.absoluteGaloisGroup.map
+            (algebraMap ℚ ℚ_[2]) τ) - 1) * ρbar c⁻¹) =
+          ρbar c * ((ρbar (Field.absoluteGaloisGroup.map
+            (algebraMap ℚ ℚ_[2]) τ) - 1) * (ρbar c⁻¹ * ρbar c) *
+            (ρbar (Field.absoluteGaloisGroup.map
+              (algebraMap ℚ ℚ_[2]) τ) - 1)) * ρbar c⁻¹ := by
+        simp only [mul_assoc]
+      rw [h1, ha', mul_one, ← pow_two, hkey, mul_zero, zero_mul]
+    · -- away from `2` and `p`: the representation itself is unramified,
+      -- through the PROVEN generic-`K` wrapper (the `ℚ`-side `algebraMap`
+      -- spelling gap is closed propositionally by `Subsingleton.elim`)
+      intro σ hσ
+      have h4 := character_localInertia_le_ker_of_isUnramifiedAt ρbar
+        hq.toHeightOneSpectrumRingOfIntegersRat
+        (hρbar.isUnramified q hq ⟨hq2, hqp⟩) χu htriv
+      have h5 := h4 hσ
+      rw [MonoidHom.mem_ker, MonoidHom.comp_apply] at h5
+      convert h5 using 4
+      exact congrArg (fun f : ℚ →+*
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat) =>
+        Field.absoluteGaloisGroup.map f σ) (Subsingleton.elim _ _)
+  -- the Kronecker–Weber node pins the character to a power of `ω`
+  obtain ⟨i, hi⟩ :=
+    character_eq_pow_cyclotomicCharacter_of_unramified_outside_p hpodd χu
+      hker hunram
+  exact ⟨i, fun g => (hχuval g).symm.trans (hi g)⟩
 
 /-- **A finite field with a `ℤ_[p]`-algebra structure has
 characteristic `p`** (PROVEN — cast form; the general-`p` analogue of
