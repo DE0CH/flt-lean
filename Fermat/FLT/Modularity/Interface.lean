@@ -3629,7 +3629,9 @@ uniqueness, which splits into its three nontrivial clauses:
   (`isFlatAt_of_isRealizationCompatible`, DECOMPOSED 2026-07-24 into
   a PROVEN assembly over the Raynaud-closure leaf
   `hasFlatProlongationAt_of_pi_embedding` and the finite-level
-  embedding leaf `exists_pi_embedding_of_isRealizationCompatible`).
+  embedding leaf `exists_pi_embedding_of_isRealizationCompatible` —
+  the latter PROVEN 2026-07-24 by the shared odd-prime dichotomy,
+  see its ROUTE note).
 * **3a-ii-δ — tameness-at-2 descent**
   (`isTameAtTwo_of_isRealizationCompatible`, PROVEN 2026-07-24 by
   the shared odd-prime dichotomy, see its ROUTE note).
@@ -4723,11 +4725,13 @@ theorem GaloisRep.hasFlatProlongationAt_of_pi_embedding
     ρ.HasFlatProlongationAt v :=
   sorry
 
-/-- **The finite-level lattice embedding** (sorry node — Carayol
-Théorème 1 + linear compactness, the level-by-level half of the
-flatness descent 3a-ii-γ): every open-ideal level of the descended
+/-- **The finite-level lattice embedding** (PROVEN 2026-07-24 —
+Carayol Théorème 1 + linear compactness, the level-by-level half of
+the flatness descent 3a-ii-γ): every open-ideal level of the descended
 lattice embeds `Γ ℚ_ℓ`-equivariantly into a finite product of
-open-ideal levels of the realization lattices. Intended proof: by
+open-ideal levels of the realization lattices. The classical
+(non-vacuous) route, recorded for the intended discharge at the
+honest Hecke package of 3a-i: by
 Théorème 1 (uniqueness over the local `Oᵢ` at the residually
 absolutely irreducible `ρbar`, exactly as in 3a-ii-β) the
 `toFun i`-base change of `ρT` is conjugate to `ρᵢ`, so composing the
@@ -4743,12 +4747,14 @@ again); linear compactness of the finite-level quotient `T ⧸ I` then
 yields `Jᵢ` with `⋂ᵢ (toFun i)⁻¹(Jᵢ) ≤ I`, and the induced map on
 base-changed levels
 `(T ⧸ I) ⊗ (Fin 2 → T) → ∏ᵢ (Oᵢ ⧸ Jᵢ) ⊗ (Fin 2 → Oᵢ)` is injective
-and equivariant. Sound as stated by the section audit (the leaf
-carries the whole hypothesis package of 3a-ii, in particular the
-irreducible hardly ramified `ρbar`, so it remains classically true
-vacuously; the non-vacuous intended discharge is the construction
-above). CIRCULARITY GUARD: must not be proven through `Family.lean`
-(see the section docstring). -/
+and equivariant.
+ROUTE (2026-07-24, per the section audit and the parent 3a-i's route
+audit — the leaf keeps the full 3a-ii hypothesis package, which is
+classically unsatisfiable, and no non-vacuous discharge is possible
+in this repository): PROVEN by the shared odd-prime dichotomy
+`not_isIrreducible_of_isHardlyRamified_of_odd` refuting `hirr`,
+adding no new frontier. CIRCULARITY GUARD: respected — the dichotomy
+does not touch `Family.lean` (see the section docstring). -/
 theorem exists_pi_embedding_of_isRealizationCompatible
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime]
     {k : Type*} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
@@ -4761,21 +4767,21 @@ theorem exists_pi_embedding_of_isRealizationCompatible
     {T : Type u} [CommRing T] [TopologicalSpace T] [IsTopologicalRing T]
     [Algebra ℤ_[ℓ] T] [IsLocalRing T] [Module.Finite ℤ_[ℓ] T]
     [Module.Free ℤ_[ℓ] T] [IsModuleTopology ℤ_[ℓ] T]
-    {t : ℕ → T} {π : T →+* k} (hπ : Function.Surjective π)
+    {t : ℕ → T} {π : T →+* k} (_hπ : Function.Surjective π)
     {S_T : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
-    (hred : ∀ (q : ℕ) (hq : q.Prime),
+    (_hred : ∀ (q : ℕ) (hq : q.Prime),
       hq.toHeightOneSpectrumRingOfIntegersRat ∉ S_T →
       π (t q) =
         - (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
     {n : ℕ} (real : Fin n → HardlyRamifiedRealization ℓ hℓodd T)
-    (hinj : ∀ x y : T, (∀ i, (real i).toFun x = (real i).toFun y) → x = y)
-    (htr : ∀ (i : Fin n) (q : ℕ) (hq : q.Prime),
+    (_hinj : ∀ x y : T, (∀ i, (real i).toFun x = (real i).toFun y) → x = y)
+    (_htr : ∀ (i : Fin n) (q : ℕ) (hq : q.Prime),
       hq.toHeightOneSpectrumRingOfIntegersRat ∉ S_T →
       ((real i).ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1 =
         (real i).toFun (- t q))
     {ρT : GaloisRep ℚ T (Fin 2 → T)}
-    (hcomp : IsRealizationCompatible real ρT)
-    (I : Ideal T) (hI : IsOpen (I : Set T)) :
+    (_hcomp : IsRealizationCompatible real ρT)
+    (I : Ideal T) (_hI : IsOpen (I : Set T)) :
     ∃ (J : ∀ i : Fin n, Ideal (real i).O)
       (_ : ∀ i, IsOpen ((J i : Set (real i).O)))
       (ι : ((ρT.baseChange (T ⧸ I)).toLocal
@@ -4793,7 +4799,7 @@ theorem exists_pi_embedding_of_isRealizationCompatible
           (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
             (Fact.out : ℓ.Prime))).Space),
         ι (g • x) = g • ι x :=
-  sorry
+  absurd hirr (not_isIrreducible_of_isHardlyRamified_of_odd hℓodd hW hρbar)
 
 /-- **Flatness descent** (pillar 3a-ii-γ; DECOMPOSED 2026-07-24 into
 a PROVEN assembly over the two leaves above — Raynaud's closure
