@@ -10212,34 +10212,136 @@ theorem DedekindContinuation.exists_goodHeight_gap {K : Type*} [Field K]
       ∀ ρ : ℂ, pkg.mult ρ ≠ 0 → c / Real.log T ≤ |(|ρ.im| - T')| := by
   sorry
 
+/-- **Uniform `1/t²` decay of `Φ` on the closed contour strip** (sorry
+node, stated 2026-07-24 — leaf (b₁ᵢᵢᵢ-α) of the decomposition of
+`DedekindContinuation.poitouHorizontal_gap_tendsto_zero`; the strip
+generalization of the PROVEN vertical-line bound
+`poitouPhi_line_decay_sq`, which lives later in this file in the
+PoitouPrimeEdgeFourier section): `‖Φ(σ + it)‖ ≤ M/t²` uniformly over
+`σ ∈ [−1/4, 5/4]`.
+
+Intended proof: the double integration by parts of
+`poitouPhi_line_decay_sq`, verbatim, with the fixed vertical-line
+exponent `3/4 = 5/4 − 1/2` generalized to the strip parameter
+`a = σ − 1/2 ∈ [−3/4, 3/4]`.  For `s = σ + it`,
+`Φ(s) = ∫_{−6}^{6} g_a(x)·e^{itx} dx` with
+`g_a(x) = odlyzkoTestFn x · e^{ax}/cosh(x/2)` continuous, vanishing
+at `±6`, and smooth on `[−6, 0]` and `[0, 6]` where it agrees with
+the models `(1 ± x/6)·q_a`, `q_a = e^{ax}/cosh(x/2)`; writing
+`q_a' = q_a·p_a` with `p_a = a − sinh(x/2)/(2·cosh(x/2))` and
+`p_a' = −1/(4·cosh²(x/2))` (hyperbolic Pythagoras), one
+parts-integration kills the boundary terms (`g_a(±6) = 0`, `g_a`
+continuous at the kink `0`), a second leaves the piece-endpoint
+values of the piecewise derivative and `∫ |(g_a')'|` — all bounded
+UNIFORMLY over `a ∈ [−3/4, 3/4]` because `x` ranges over the compact
+`[−6, 6]` (every coefficient is at most an `e^{9/2}`-type constant).
+For `0 < |t| < 1` the trivial strip bound
+`‖Φ(σ + it)‖ ≤ ∫_{−6}^{6} g_a ≤ 12·e^{9/2}` is absorbed by
+enlarging `M`. -/
+theorem poitouPhi_strip_decay_sq : ∃ M : ℝ, 0 ≤ M ∧ ∀ s : ℂ,
+    -(1 / 4) ≤ s.re → s.re ≤ 5 / 4 → s.im ≠ 0 →
+    ‖poitouPhi s‖ ≤ M / s.im ^ 2 := by
+  sorry
+
+/-- **Landau's log-derivative bound at gap-protected heights** (sorry
+node, stated 2026-07-24 — leaf (b₁ᵢᵢᵢ-β) of the decomposition of
+`DedekindContinuation.poitouHorizontal_gap_tendsto_zero`; E. Landau,
+*Algebraische Zahlen*, p. 122, as cited by Poitou p. 6-02): on the
+horizontal segments `re s ∈ [−1/4, 5/4]`, `|im s| = τ(T)` of the
+Poitou contour, at heights `τ(T) ∈ [T, T + 1]` whose ordinate gap to
+every zero is `≥ c/log T`, the completed-zeta log-derivative is
+`O(T·log² T)`.
+
+Intended proof (the classical Landau lemma, manufactured from the
+pin's `Complex.borelCaratheodory`):
+
+1. *Reflect to the upper edge.*  `conj_symm` differentiates to
+   `ξ'(conj s) = conj (ξ'(s))` (Schwarz reflection of the
+   derivative: `η(s) := conj (ξ(conj s))` equals `ξ` by `conj_symm`,
+   and the chain rule computes `η'(s) = conj (ξ'(conj s))`), so
+   `‖(ξ'/ξ)(conj s)‖ = ‖(ξ'/ξ)(s)‖` and the case `im s = −τ(T)`
+   follows from the case `im s = τ(T)`.
+2. *Setup.*  Centre `s₀ = 3/2 + i·τ(T)`; the segment lies in
+   `closedBall s₀ 2` (`|σ − 3/2| ≤ 7/4 < 2`).  On `closedBall s₀ 12`
+   the `growth` field gives
+   `log ‖ξ(s)‖ ≤ C·(T + 15)·log (T + 15) = O(T·log T)`, and at the
+   centre `eq_of_one_lt_re` bounds `‖ξ(s₀)‖` BELOW by
+   `exp(−C'·T·log T)`: `‖ζ_K(s₀)‖ ≥ 1/ζ_K(3/2)` (the inverse
+   Dirichlet series is dominated coefficientwise by the Möbius-type
+   expansion, so `‖ζ_K(s₀)⁻¹‖ ≤ ζ_K(3/2)`), the `Γ`-factors obey
+   vertical-line Stirling lower bounds `≥ exp(−c₁·T·log T)`, and
+   `s₀(s₀ − 1)·|d|^{s₀/2}` is polynomially large.
+3. *Divide out the zeros.*  The zeros of `ξ` in `closedBall s₀ 6`
+   are finitely many (`finite_truncation` at `τ(T) + 7`) with total
+   multiplicity `N = O(log T)`: each has `||im ρ| − τ(T)| ≤ 6`, so
+   thirteen `hcount` windows at heights `τ(T) − 6, …, τ(T) + 6`
+   cover them (window heights `< 2` occur only for `T ≤ 13`,
+   absorbed by a compactness constant); every such zero carries
+   `mult ρ ≠ 0` — `hbnd`, `funcEq` and `ne_zero_of_one_lt_re` clear
+   `re ρ ∉ (0, 1)` exactly as in the support analysis of
+   `DedekindContinuation.mult`, and inside the open strip a zero of
+   the nontrivial entire `ξ` has `analyticOrderNatAt ≠ 0`.  Iterated
+   `dslope` division (`sub_smul_dslope_of_zero`, as in
+   `sum_analyticOrderNatAt_le_of_frontier_norm_le`) writes
+   `ξ = (∏ (· − ρ)^{mult ρ}) • g` with `g` zero-free on
+   `closedBall s₀ 6` and analytic everywhere, with
+   `log ‖g‖ = O(T·log T)` on `sphere s₀ 12` (each divided linear
+   factor has modulus `≥ 6` there) hence on the ball by the maximum
+   principle, and `log ‖g(s₀)‖ ≥ −O(T·log T) − N·log 12`.
+4. *Borel–Carathéodory.*  `g` is zero-free on `ball s₀ 6`, so a
+   holomorphic logarithm of `g/g(s₀)` exists on the ball, and the
+   pin's `Complex.borelCaratheodory`
+   (`Mathlib/Analysis/Complex/BorelCaratheodory.lean`) turns the
+   bound `Re log (g/g(s₀)) = log ‖g‖ − log ‖g(s₀)‖ ≤ O(T·log T)` on
+   `ball s₀ 6` into `‖(g'/g)(s)‖ = O(T·log T)` on `closedBall s₀ 2`.
+5. *Partial fractions.*  On the segment,
+   `(ξ'/ξ)(s) = Σ_ρ mult ρ/(s − ρ) + (g'/g)(s)`; each near-zero
+   satisfies `|s − ρ| ≥ ||im ρ| − τ(T)| ≥ c/log T` (for `im ρ > 0`
+   directly, for `im ρ < 0` even `|s − ρ| ≥ τ(T) + |im ρ|`), so the
+   near-sum is `≤ N·(log T)/c = O(log² T)` and the total is
+   `O(T·log T) + O(log² T) ≤ A·T·log² T` for `T ≥ e`; the compact
+   range `T ∈ [2, e]` is absorbed into `A` (there the segment points
+   stay at ordinate distance `≥ c/log e` from the finitely many
+   zeros of `finite_truncation 4`, so `‖ξ'/ξ‖` is uniformly bounded
+   on the corresponding compact set, and `T·log² T ≥ 2·log² 2 > 0`
+   keeps the right side bounded below). -/
+theorem DedekindContinuation.xi_logDeriv_gap_bound {K : Type*} [Field K]
+    [NumberField K] (pkg : DedekindContinuation K)
+    (hcount : ∃ C : ℝ, 0 < C ∧ ∀ T : ℝ, 2 ≤ T → ∀ s : Finset ℂ,
+      (∀ ρ ∈ s, |(|ρ.im| - T)| ≤ 1) →
+      ∑ ρ ∈ s, (pkg.mult ρ : ℝ) ≤ C * Real.log T)
+    (hbnd : ∀ t : ℝ, pkg.xi (1 + t * Complex.I) ≠ 0)
+    {c : ℝ} (hc : 0 < c) (τ : ℝ → ℝ)
+    (hτ : ∀ T : ℝ, 2 ≤ T → T ≤ τ T ∧ τ T ≤ T + 1 ∧
+      ∀ ρ : ℂ, pkg.mult ρ ≠ 0 → c / Real.log T ≤ |(|ρ.im| - τ T)|) :
+    ∃ A : ℝ, 0 < A ∧ ∀ T : ℝ, 2 ≤ T → ∀ s : ℂ,
+      -(1 / 4) ≤ s.re → s.re ≤ 5 / 4 → |s.im| = τ T →
+      ‖deriv pkg.xi s / pkg.xi s‖ ≤ A * (T * Real.log T ^ 2) := by
+  sorry
+
 /-- **Poitou's Proposition 1: the horizontal edges vanish along
-good-height selections** (sorry node, stated 2026-07-24 — leaf
-(b₁ᵢᵢᵢ), the Borel–Carathéodory stage of the decomposition of
+good-height selections** (ASSEMBLED 2026-07-24 over the two stage
+leaves `poitouPhi_strip_decay_sq` (uniform `1/T²` decay of `Φ` on the
+contour strip, leaf α above) and
+`DedekindContinuation.xi_logDeriv_gap_bound` (Landau's `O(T·log² T)`
+log-derivative bound at gap-protected heights, leaf β above);
+originally leaf (b₁ᵢᵢᵢ), the Borel–Carathéodory stage of the
+decomposition of
 `DedekindContinuation.zero_sum_sub_poitouEdge_tendsto_zero`; Poitou
 p. 6-02, Proposition 1, citing E. Landau, *Algebraische Zahlen*,
 p. 122).
 
-Intended proof: on the disc `‖s − (3/2 + i·τ(T))‖ ≤ 12` the `growth`
-field bounds `log ‖ξ‖ = O(T·log T)`, and `‖ξ(3/2 + i·τ(T))‖` is
-bounded BELOW via `eq_of_one_lt_re` (absolute-convergence lower
-bound for the Dirichlet-series factor, elementary vertical-line
-lower bounds for the `Γ`-factors and `s(s−1)·|d|^{s/2}`), so the
-pin's `Complex.borelCaratheodory`
-(`Mathlib/Analysis/Complex/BorelCaratheodory.lean`) applied to a
-`log` of `ξ` divided by its zeros in the disc — the divided
-factorization by iterated `dslope` (`sub_smul_dslope_of_zero`, cf.
-`sum_analyticOrderNatAt_le_of_frontier_norm_le`) — bounds
-`‖(ξ'/ξ)(σ ± i·τ(T)) − Σ_{near ρ} mult(ρ)/(s − ρ)‖ = O(T·log T)` for
-`σ ∈ [−1/4, 5/4]`; the near-zero partial fractions are
-`O(log T · log T/c) = O(log² T)` by `hcount` and the injected
-ordinate gap `c/log T` (via `hbnd`, `funcEq` and
-`ne_zero_of_one_lt_re` every zero met by the closed strip carries
-`mult ≠ 0`, so the gap applies to every singularity near the
-segment).  Meanwhile `‖Φ(σ ± i·τ(T))‖ = O(1/T²)` uniformly in
-`σ ∈ [−1/4, 5/4]`: two integrations by parts in `poitouPhi` against
-the piecewise-`C¹` compactly supported `poitouF` (kink terms at
-`x ∈ {−6, 0, 6}` only).  The horizontal edges are
-`O(T·log T + log² T)·O(1/T²)·(3/2) = O(log T/T) → 0`. -/
+The assembly: on either horizontal segment `σ ↦ σ ± i·τ(T)`,
+`σ ∈ [−1/4, 5/4]`, the integrand of
+`DedekindContinuation.poitouHorizontal` is bounded pointwise by
+`(M/τ(T)²)·(A·T·log² T) ≤ M·A·(log² T)/T` (the two leaves and
+`τ(T) ≥ T > 0`), so each edge integral is at most
+`(3/2)·M·A·(log² T)/T` by
+`intervalIntegral.norm_integral_le_of_norm_le_const` — which needs
+NO integrability of the edge integrand for this direction — whence
+`|H(τ(T))| ≤ ‖(2πi)⁻¹‖·3·M·A·(log² T)/T`, a null sequence
+(`Real.tendsto_pow_log_div_mul_add_atTop`); conclude by
+`squeeze_zero_norm'`. -/
 theorem DedekindContinuation.poitouHorizontal_gap_tendsto_zero {K : Type*}
     [Field K] [NumberField K] (pkg : DedekindContinuation K)
     (hcount : ∃ C : ℝ, 0 < C ∧ ∀ T : ℝ, 2 ≤ T → ∀ s : Finset ℂ,
@@ -10251,7 +10353,85 @@ theorem DedekindContinuation.poitouHorizontal_gap_tendsto_zero {K : Type*}
       ∀ ρ : ℂ, pkg.mult ρ ≠ 0 → c / Real.log T ≤ |(|ρ.im| - τ T)|) :
     Filter.Tendsto (fun T : ℝ => pkg.poitouHorizontal (τ T))
       Filter.atTop (nhds 0) := by
-  sorry
+  obtain ⟨M, hM0, hM⟩ := poitouPhi_strip_decay_sq
+  obtain ⟨A, hA0, hA⟩ := pkg.xi_logDeriv_gap_bound hcount hbnd hc τ hτ
+  have hg : Filter.Tendsto (fun T : ℝ =>
+      ‖(2 * (Real.pi : ℂ) * Complex.I)⁻¹‖ * 3 * (M * A) *
+        (Real.log T ^ 2 / T)) Filter.atTop (nhds 0) := by
+    have h0 := (Real.tendsto_pow_log_div_mul_add_atTop 1 0 2
+      one_ne_zero).const_mul
+      (‖(2 * (Real.pi : ℂ) * Complex.I)⁻¹‖ * 3 * (M * A))
+    simpa using h0
+  refine squeeze_zero_norm' ?_ hg
+  filter_upwards [Filter.eventually_ge_atTop (2 : ℝ)] with T hT
+  obtain ⟨hτ1, -, -⟩ := hτ T hT
+  have hT0 : (0 : ℝ) < T := by linarith
+  have hτT0 : (0 : ℝ) < τ T := by linarith
+  have heq : M / T ^ 2 * (A * (T * Real.log T ^ 2)) =
+      M * A * (Real.log T ^ 2 / T) := by
+    field_simp
+  have hphi_le : M / τ T ^ 2 ≤ M / T ^ 2 := by
+    gcongr
+  have hKb : ∀ x ∈ Set.uIoc (-(1 / 4) : ℝ) (5 / 4),
+      ‖poitouPhi ((x : ℂ) - (τ T : ℂ) * Complex.I) *
+        (deriv pkg.xi ((x : ℂ) - (τ T : ℂ) * Complex.I) /
+          pkg.xi ((x : ℂ) - (τ T : ℂ) * Complex.I))‖ ≤
+      M * A * (Real.log T ^ 2 / T) := by
+    intro x hx
+    rw [Set.uIoc_of_le (by norm_num : (-(1 / 4) : ℝ) ≤ 5 / 4)] at hx
+    have hre : ((x : ℂ) - (τ T : ℂ) * Complex.I).re = x := by simp
+    have him : ((x : ℂ) - (τ T : ℂ) * Complex.I).im = -(τ T) := by simp
+    have h1 : ‖poitouPhi ((x : ℂ) - (τ T : ℂ) * Complex.I)‖ ≤ M / T ^ 2 := by
+      have hb := hM ((x : ℂ) - (τ T : ℂ) * Complex.I)
+        (by rw [hre]; exact hx.1.le) (by rw [hre]; exact hx.2)
+        (by rw [him]; exact neg_ne_zero.mpr hτT0.ne')
+      rw [him, neg_sq] at hb
+      exact hb.trans hphi_le
+    have h2 : ‖deriv pkg.xi ((x : ℂ) - (τ T : ℂ) * Complex.I) /
+        pkg.xi ((x : ℂ) - (τ T : ℂ) * Complex.I)‖ ≤
+        A * (T * Real.log T ^ 2) :=
+      hA T hT ((x : ℂ) - (τ T : ℂ) * Complex.I)
+        (by rw [hre]; exact hx.1.le) (by rw [hre]; exact hx.2)
+        (by rw [him, abs_neg, abs_of_pos hτT0])
+    rw [norm_mul]
+    exact (mul_le_mul h1 h2 (norm_nonneg _)
+      (div_nonneg hM0 (sq_nonneg _))).trans_eq heq
+  have hKt : ∀ x ∈ Set.uIoc (-(1 / 4) : ℝ) (5 / 4),
+      ‖poitouPhi ((x : ℂ) + (τ T : ℂ) * Complex.I) *
+        (deriv pkg.xi ((x : ℂ) + (τ T : ℂ) * Complex.I) /
+          pkg.xi ((x : ℂ) + (τ T : ℂ) * Complex.I))‖ ≤
+      M * A * (Real.log T ^ 2 / T) := by
+    intro x hx
+    rw [Set.uIoc_of_le (by norm_num : (-(1 / 4) : ℝ) ≤ 5 / 4)] at hx
+    have hre : ((x : ℂ) + (τ T : ℂ) * Complex.I).re = x := by simp
+    have him : ((x : ℂ) + (τ T : ℂ) * Complex.I).im = τ T := by simp
+    have h1 : ‖poitouPhi ((x : ℂ) + (τ T : ℂ) * Complex.I)‖ ≤ M / T ^ 2 := by
+      have hb := hM ((x : ℂ) + (τ T : ℂ) * Complex.I)
+        (by rw [hre]; exact hx.1.le) (by rw [hre]; exact hx.2)
+        (by rw [him]; exact hτT0.ne')
+      rw [him] at hb
+      exact hb.trans hphi_le
+    have h2 : ‖deriv pkg.xi ((x : ℂ) + (τ T : ℂ) * Complex.I) /
+        pkg.xi ((x : ℂ) + (τ T : ℂ) * Complex.I)‖ ≤
+        A * (T * Real.log T ^ 2) :=
+      hA T hT ((x : ℂ) + (τ T : ℂ) * Complex.I)
+        (by rw [hre]; exact hx.1.le) (by rw [hre]; exact hx.2)
+        (by rw [him, abs_of_pos hτT0])
+    rw [norm_mul]
+    exact (mul_le_mul h1 h2 (norm_nonneg _)
+      (div_nonneg hM0 (sq_nonneg _))).trans_eq heq
+  have hIb := intervalIntegral.norm_integral_le_of_norm_le_const hKb
+  have hIt := intervalIntegral.norm_integral_le_of_norm_le_const hKt
+  simp only [DedekindContinuation.poitouHorizontal]
+  rw [Real.norm_eq_abs]
+  refine (Complex.abs_re_le_norm _).trans ?_
+  rw [norm_mul]
+  refine (mul_le_mul_of_nonneg_left (norm_sub_le _ _)
+    (norm_nonneg _)).trans ?_
+  refine (mul_le_mul_of_nonneg_left (add_le_add hIb hIt)
+    (norm_nonneg _)).trans ?_
+  rw [show |(5 / 4 : ℝ) - -(1 / 4)| = 3 / 2 by norm_num]
+  exact le_of_eq (by ring)
 
 /-- **Bridging the zero sum from good heights to all heights** (sorry
 node, stated 2026-07-24 — leaf (b₁ᵢᵥ) of the decomposition of
