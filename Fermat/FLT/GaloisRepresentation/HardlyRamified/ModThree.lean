@@ -161,6 +161,10 @@ import Mathlib.MeasureTheory.Integral.ExpDecay
 import Mathlib.MeasureTheory.Integral.IntegralEqImproper
 import Mathlib.MeasureTheory.Measure.Lebesgue.Integral
 import Mathlib.MeasureTheory.Integral.Bochner.ContinuousLinearMap
+-- The PROVEN n-dimensional lattice Poisson summation at the Gaussian
+-- (multivariate Fourier series on the unit torus + Gaussian Fourier
+-- self-duality), consumed by the proof of `zlattice_theta_transform`.
+import Fermat.FLT.GaloisRepresentation.HardlyRamified.ZLatticePoisson
 
 /-!
 # Mod-3 hardly ramified representations
@@ -5173,12 +5177,14 @@ theorem dedekindDualClass_involutive (K : Type*) [Field K] [NumberField K] :
   rw [mul_inv_rev, inv_inv, mul_comm C, mul_inv_cancel_left]
 
 /-- **`n`-dimensional `ℤ`-lattice Poisson summation — the theta
-transformation law** (sorry node, stated 2026-07-24 — THE genuinely
-new analytic mathematics of the Dedekind continuation, the gap named
-in the decomposition of `completedClassZeta_exists`): for a full-rank
-`ℤ`-lattice `L` in a finite-dimensional real inner product space `E`
-(carrying its canonical Lebesgue measure,
-`measureSpaceOfInnerProductSpace`) and every `t > 0`,
+transformation law** (PROVEN 2026-07-24, in
+`Fermat.FLT.GaloisRepresentation.HardlyRamified.ZLatticePoisson` —
+this was THE genuinely new analytic mathematics of the Dedekind
+continuation, the gap named in the decomposition of
+`completedClassZeta_exists`): for a full-rank `ℤ`-lattice `L` in a
+finite-dimensional real inner product space `E` (carrying its
+canonical Lebesgue measure, `measureSpaceOfInnerProductSpace`) and
+every `t > 0`,
 
 `θ_L(1/t) = covol(L)⁻¹ · t^{n/2} · θ_{L∨}(t)`,
 
@@ -5196,36 +5202,23 @@ needed.
 
 The pin's Poisson summation is one-dimensional only
 (`Real.tsum_eq_tsum_fourier` and its `_of_rpow_decay` variants in
-`Mathlib.Analysis.Fourier.PoissonSummation`), while Gaussian
-self-duality is known in every dimension
-(`fourierIntegral_gaussian_innerProductSpace`).  Intended proof:
-
-1. *The case `ℤⁿ ⊂ EuclideanSpace ℝ (Fin n)`*: the Gaussian splits as
-   a product over coordinates (`EuclideanSpace.norm_eq`); the `tsum`
-   over `ℤⁿ` of the product factorizes into `n` one-dimensional
-   `tsum`s (`tsum_prod'`/`Summable.tsum_finsetProd`-style, with the
-   evident summability), and each factor transforms by the
-   one-dimensional Jacobi identity — mathlib's `jacobiTheta₂`
-   functional equation
-   (`Mathlib.NumberTheory.ModularForms.JacobiTheta.TwoVariable`) at
-   `z = 0`, or directly the pin's one-dimensional Poisson summation at
-   the Gaussian.  Here `covol = 1` and `(ℤⁿ)∨ = ℤⁿ`
-   (`LinearMap.BilinForm.dualSubmodule_span_of_basis` at the standard
-   basis, which is orthonormal hence self-dual).
-2. *General `L`*: choose a `ℤ`-basis `b` of `L`
-   (`Module.Free.chooseBasis`; free of rank `n` by the `ZLattice`
-   theory, `ZLattice.module_free`/`ZLattice.rank`); by
-   `IsZLattice.span_top` the map `(c : ℝⁿ) ↦ Σ cᵢ·bᵢ` is a linear
-   equivalence `T : ℝⁿ ≃ₗ[ℝ] E` carrying `ℤⁿ` onto `L`.  Run case 1
-   against the composed Gaussian `exp (−π·t⁻¹·‖T ·‖²)`: the Fourier
-   transform under a linear substitution picks up the transpose
-   inverse in the argument and the determinant factor
-   (`MeasureTheory.integral_comp_linearEquiv` /
-   `Measure.addHaar_linearMap`); the determinant is exactly
-   `ZLattice.covolume L` (`ZLattice.covolume_eq_det`), and the image
-   of `ℤⁿ` under the transpose inverse is exactly `L∨`, the
-   `ℤ`-span of the `⟪·,·⟫`-dual basis of `b`
-   (`LinearMap.BilinForm.dualSubmodule_span_of_basis`). -/
+`Mathlib.Analysis.Fourier.PoissonSummation`), so the proof (in
+`Fermat.FLT.GaloisRepresentation.HardlyRamified.ZLatticePoisson`) is
+genuine `n`-dimensional Poisson summation, run directly on `E` rather
+than by coordinate factorization: periodize the Gaussian over `L` and
+pull it back to the unit torus `(ℝ/ℤ)^ι` along a `ℤ`-basis of `L`;
+compute the multivariate Fourier coefficients
+(`Mathlib.Analysis.Fourier.AddCircleMulti`) by unfolding over a
+`ZSpan` fundamental domain — the `k`-th coefficient is
+`covol(L)⁻¹ · 𝓕 g (w_k)` with `w_k` in the dual lattice, evaluated by
+`n`-dimensional Gaussian self-duality
+(`fourier_gaussian_innerProductSpace`), the Jacobian factor coming
+from uniqueness of additive Haar measure; the coefficients have
+Gaussian decay along the dual lattice, so the Fourier series converges
+pointwise (`hasSum_mFourier_series_apply_of_summable`) and evaluating
+the periodization at `0` gives the transformation law, with the dual
+sum reindexed along the `⟪·,·⟫`-dual basis
+(`LinearMap.BilinForm.dualSubmodule_span_of_basis`). -/
 theorem zlattice_theta_transform
     {E : Type*} [NormedAddCommGroup E] [InnerProductSpace ℝ E]
     [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E]
@@ -5234,8 +5227,8 @@ theorem zlattice_theta_transform
     ∑' v : L, Real.exp (-Real.pi * t⁻¹ * ‖(v : E)‖ ^ 2) =
       (ZLattice.covolume L)⁻¹ * t ^ ((Module.finrank ℝ E : ℝ) / 2) *
         ∑' w : LinearMap.BilinForm.dualSubmodule (innerₗ E) L,
-          Real.exp (-Real.pi * t * ‖(w : E)‖ ^ 2) := by
-  sorry
+          Real.exp (-Real.pi * t * ‖(w : E)‖ ^ 2) :=
+  ZLatticePoisson.zlattice_theta_transform L t ht
 
 /-- **Hecke's per-ideal-class theta–Mellin machine, conditioned on
 lattice Poisson summation** (sorry node, stated 2026-07-24 — the
