@@ -5332,6 +5332,60 @@ theorem IsFlatPointsGroupAt.pi {n : ℕ} {X : Fin n → Type*}
     funext i
     refine Fin.cases ?_ (fun j => ?_) i <;> simp
 
+set_option backward.isDefEq.respectTransparency false in
+/-- **Quotient closure** (sorry node — the quotients half of Raynaud
+closure, added 2026-07-24 for the E2b′ lattice-flatness transfer: the
+quotient of a finite flat group scheme over the DVR `𝒪ᵥ` by a flat
+closed subgroup scheme is finite flat — Raynaud, *Schémas en groupes
+de type `(p, …, p)`*, Bull. SMF 102 (1974); Tate, *Finite flat group
+schemes*, in Cornell–Silverman–Stevens): a `Γ Kᵥ`-equivariant quotient
+of a flat point-group at `v` is a flat point-group at `v`. Intended
+proof — dual to `of_injective`, by SUB-algebras of the witness where
+`of_injective` quotients it, so the schematic-closure step is easier:
+* (α) *finiteness*: the ambient point group is finite (the generic
+  fibre `Q := Kᵥ ⊗[𝒪ᵥ] G` is finite étale), hence so is `Y` through
+  the surjection `π`.
+* (β) *étale–Galois*: `Y` is a finite `Γ Kᵥ`-group, so by the PROVEN
+  Gelfand-duality machinery of
+  `KnownIn1980s/EllipticCurves/Flat.lean` (`galoisEquivariantAlgebra`
+  with `galoisEquivariantEval_injective`/`_surjective` and
+  `exists_hopfAlgebra_galoisEquivariantAlgebra`) it is the point
+  group of a finite étale `Kᵥ`-Hopf algebra `H`; pullback of
+  functions along the point surjection `points(Q) ≅ X ↠ Y` is an
+  INJECTIVE `Kᵥ`-bialgebra homomorphism `H → Q` (injective because
+  the points of the étale `H` separate its functions — Gelfand
+  evaluation; a bialgebra map because the point surjection is a group
+  homomorphism).
+* (γ) *schematic closure over the DVR*: `G' := H ∩ G` (intersection
+  inside `Q`, through `H ↪ Q` and the integral witness `G ↪ Q`) is an
+  `𝒪ᵥ`-subalgebra of `H`, module-finite (a submodule of the finite
+  module `G` over the noetherian `𝒪ᵥ`) and torsion-free over the DVR,
+  hence finite FREE — flat; it spans `H` over `Kᵥ` (every `x ∈ H ⊆ Q`
+  has `cx ∈ G` for some nonzero `c ∈ 𝒪ᵥ` since `Q = Kᵥ · G`, and
+  `cx ∈ H` as `H` is a `Kᵥ`-subspace, so `cx ∈ G'`), so
+  `Kᵥ ⊗[𝒪ᵥ] G' ≅ H` with étale generic fibre. It is a Hopf order:
+  `G'` is SATURATED in `G` (`cx ∈ G'`, `x ∈ G`, `c ≠ 0` force
+  `x ∈ H`, hence `x ∈ G'`), so `G' ⊗ G'` is the intersection of
+  `H ⊗ H` with the image of `G ⊗ G` in `Q ⊗ Q`, and the
+  comultiplication of `H` (the restriction of `Q`'s, which maps the
+  Hopf order `G` into `G ⊗ G`) maps `G'` into `G' ⊗ G'`; counit and
+  antipode restrict likewise.
+* (δ) *conclusion*: the points of `Kᵥ ⊗[𝒪ᵥ] G'` are those of `H`,
+  i.e. `Y`, `Γ Kᵥ`-equivariantly.
+Unconditionally TRUE; no hypothesis package (for `π` bijective this
+is already `of_addEquiv`). CONSUMERS: the E2b′ lattice-flatness glue
+`isFlatAt_lattice_of_generic_iso` (reduction of arbitrary open-ideal
+levels to the cofinal `p`-power subtower); available to any future
+finite-flat quotient need (e.g. E1b's closure half). -/
+theorem IsFlatPointsGroupAt.of_surjective {X Y : Type*}
+    [AddCommGroup X] [AddCommGroup Y]
+    [DistribMulAction Γᵥ X] [DistribMulAction Γᵥ Y]
+    (hX : IsFlatPointsGroupAt v X) (π : X →+ Y)
+    (hπ : Function.Surjective π)
+    (hπe : ∀ (g : Γᵥ) (x : X), π (g • x) = g • π x) :
+    IsFlatPointsGroupAt v Y :=
+  sorry
+
 end RaynaudClosure
 
 /-- **Raynaud closure for flat prolongations** (DECOMPOSED 2026-07-24
@@ -8266,36 +8320,146 @@ theorem isUnramifiedAt_lattice_of_generic_iso
   rw [GaloisRep.toLocal_apply]
   exact key _ h1
 
-/-- **Lattice flatness transfer** (Eisenstein pillar E2b′-flat; sorry
-node — the Raynaud scheme-theoretic-closure half of the lattice
-transfer): the lattice representation `ρO` is flat at `p`, given the
-generic linkage `e`/`hOinj`/`hZOcompat` and `hρ.isFlat`. Classical
-proof: for every open ideal `I ⊆ O` the finite quotient
-`(O ⧸ I) ⊗ (Fin 2 → O)` is a `G_p`-stable subquotient of a finite
-level `(R ⧸ J) ⊗ V` of the original flat tower — the two lattices
-are commensurable inside the common generic fibre through `e` (both
-are finite `ℤ_p`-lattices there, so a `p`-power scaling moves one
-into the other, and the open ideals of the module-finite local
-`ℤ_p`-algebras `O` and `R` interleave with `p`-power levels); and
-sub- and quotient objects of finite flat group schemes over `ℤ_p`
-are finite flat (scheme-theoretic closure: Raynaud, *Schémas en
-groupes de type `(p, …, p)`*, Bull. Soc. Math. France 102 (1974),
-2.1; Tate, in Cornell–Silverman–Stevens ch. V), so the prolongations
-furnished by `hρ.isFlat.cond` induce prolongations of every level of
-the lattice tower. SHARED-NODE NOTE (2026-07-24): the
-scheme-theoretic-closure input — finite flat Hopf-order closure
-under `Γ`-stable subquotients of the geometric points — is the
-classification-free half of the Raynaud input that pillar E1b
-(`residual_triangular_sub_character_pinned_of_eq_pow`) also cites;
-as of this dispatch no shared closure leaf has been landed, so this
-leaf records the citation — if E1b's owner lands one, the
-commensurability argument here should consume it rather than restate
-it. Soundness (audit 2026-07-24): the hypothesis set is classically
-INHABITED (take `O = R`, `ρO` a frame of `ρ`, `e` the identity), and
-the conclusion holds for every inhabitant by the cited closure
-argument; no step consumes `p ≥ 5`, irreducibility, or residual
-data. Circularity guard (inherited from E2b′): must not route
-through `Family.lean` or `Reducible.lean`'s B5. -/
+/-- **Open ideals of a topological `ℤ_p`-algebra contain a power of
+`p`** (PROVEN 2026-07-24): `p^m → 0` in `ℤ_[p]` (`‖p‖ = p⁻¹ < 1`),
+the algebra map is continuous for the module topology, and an open
+ideal is a neighbourhood of `0`, so some `p^m` lands in it. This is
+the interleaving half of the E2b′-flat level bookkeeping: it exhibits
+the `p`-power levels of a lattice tower as a cofinal subtower of the
+full open-ideal tower. -/
+theorem exists_pow_p_mem_of_isOpen
+    {O : Type*} [CommRing O] [Algebra ℤ_[p] O]
+    [TopologicalSpace O] [IsTopologicalRing O] [IsModuleTopology ℤ_[p] O]
+    (I : Ideal O) (hI : IsOpen (I : Set O)) :
+    ∃ m : ℕ, (p : O) ^ m ∈ I := by
+  have hcont : Continuous (algebraMap ℤ_[p] O) :=
+    IsModuleTopology.continuous_of_linearMap (Algebra.linearMap ℤ_[p] O)
+  have htend : Filter.Tendsto (fun m : ℕ => ((p : ℤ_[p]) ^ m))
+      Filter.atTop (nhds 0) := by
+    apply tendsto_pow_atTop_nhds_zero_of_norm_lt_one
+    rw [PadicInt.norm_p]
+    exact inv_lt_one_of_one_lt₀ (by exact_mod_cast (Fact.out : p.Prime).one_lt)
+  have h2 : Filter.Tendsto (fun m : ℕ => algebraMap ℤ_[p] O ((p : ℤ_[p]) ^ m))
+      Filter.atTop (nhds (algebraMap ℤ_[p] O 0)) := (hcont.tendsto 0).comp htend
+  rw [map_zero] at h2
+  have h3 : ∀ᶠ m in Filter.atTop,
+      algebraMap ℤ_[p] O ((p : ℤ_[p]) ^ m) ∈ (I : Set O) :=
+    h2.eventually (hI.mem_nhds (by simp))
+  obtain ⟨m, hm⟩ := h3.exists
+  refine ⟨m, ?_⟩
+  rw [map_pow, map_natCast] at hm
+  exact hm
+
+/-- **Lattice flatness at the `p`-power levels** (Eisenstein pillar
+E2b′-flat, deep half; sorry node — carved out 2026-07-24 from
+`isFlatAt_lattice_of_generic_iso`, whose arbitrary-open-ideal
+quantifier is now PROVEN glue over this cofinal subtower via
+`exists_pow_p_mem_of_isOpen` and the quotient-closure brick
+`IsFlatPointsGroupAt.of_surjective`): every `p`-power level
+`(Fin 2 → O) ⧸ p^m` of the lattice tower has a finite flat
+prolongation at `p`, given the generic linkage. HONEST CLASSICAL
+ROUTE (recorded 2026-07-24, correcting the parent's original
+commensurability note):
+1. the flatness of the `R`-tower (`hρ.isFlat` at the `p`-power levels
+   of `R`) makes `V` the Tate module of a `p`-divisible group over
+   `ℤ_p`, so `V ⊗ ℚ_p` is Barsotti–Tate (crystalline with Hodge–Tate
+   weights in `{0, 1}` — Fontaine; Tate in
+   Cornell–Silverman–Stevens ch. V);
+2. EVERY `ℚ̄_p`-fibre of the `O`-structure is a `ℚ̄_p`-automorphism
+   conjugate of a fibre of the `R`-structure: through `e` the
+   matrices of `ρO` over `ι(O) ⊆ ℚ̄_p` are a `GL₂(ℚ̄_p)`-conjugate of
+   those of `ρ` over `ι_R(R)`, so applying any `τ ∈ Aut(ℚ̄_p/ℚ_p)`
+   carries the `τ∘ι`-fibre of the `O`-structure to a
+   `τ∘ι_R`-fibre of the `R`-structure; hence
+   `U := (Fin 2 → O) ⊗ ℚ_p` — whose `ℚ̄_p`-base change is the direct
+   sum of the embedding fibres — is again crystalline with weights in
+   `{0, 1}`, i.e. Barsotti–Tate;
+3. `Fin 2 → O` is a `Γ`-stable `ℤ_p`-lattice in the Barsotti–Tate
+   `ℚ_p`-representation `U`; some lattice `T ⊆ U` is the Tate module
+   of a `p`-divisible group, and `Fin 2 → O` is commensurable with
+   `T` INSIDE `U` (an honest `p`-power scaling: both are full-rank
+   `ℤ_p`-lattices in the same finite-dimensional `ℚ_p`-space), so
+   each level `(Fin 2 → O) ⧸ p^m` is a `Γ`-stable subquotient of a
+   level `T ⧸ p^k`, finite flat by Raynaud's scheme-theoretic closure
+   under subobjects and quotients (`IsFlatPointsGroupAt.of_injective`
+   and `.of_surjective` are exactly these two closure bricks over the
+   representation-free point carrier).
+WARNING (soundness of routes, recorded 2026-07-24): the parent's
+original note — "the two lattices are commensurable inside the common
+generic fibre through `e`" — is UNSOUND as literally stated:
+`e(Fin 2 → O)` and the image of `V` have different `ℤ_p`-ranks
+whenever `rank_ℤp O ≠ rank_ℤp R`, and no `p`-power scaling relates
+them inside `ℚ̄_p ⊗ V`. Likewise the level `(Fin 2 → O) ⧸ I` need NOT
+embed `Γ ℚ_p`-equivariantly into any finite product of `R`-levels
+(a non-split level — e.g. a non-split extension of `χ̄` by `1`
+arising as the reduction of a non-split stable lattice — cannot embed
+into a product whose `p`-torsion socle is semisimple), so the
+pi-embedding route through `hasFlatProlongationAt_of_pi_embedding`
+alone CANNOT discharge this leaf; step 2's conjugate-fibre argument
+is what legitimises commensurability, in `U` rather than in
+`ℚ̄_p ⊗ V`. Soundness: the hypothesis set is classically INHABITED
+(take `O = R`, `ρO` a frame of `ρ`, `e` the identity) and the
+conclusion holds for every inhabitant by the route above; the
+step-1/2 crystalline theory is classical (Fontaine, Raynaud, Tate).
+Circularity guard (inherited from E2b′): must not route through
+`Family.lean` or `Reducible.lean`'s B5. -/
+theorem hasFlatProlongationAt_lattice_pPow_of_generic_iso
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hρ : IsHardlyRamified hpodd hv ρ)
+    {O : Type u} [CommRing O] [Algebra ℤ_[p] O] [IsDomain O]
+    [Module.Finite ℤ_[p] O] [TopologicalSpace O] [IsTopologicalRing O]
+    [IsLocalRing O] [IsModuleTopology ℤ_[p] O]
+    [Algebra O (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul O (AlgebraicClosure ℚ_[p])]
+    (hOinj : Function.Injective (algebraMap O (AlgebraicClosure ℚ_[p])))
+    (hZOcompat : ∀ x : ℤ_[p],
+      algebraMap O (AlgebraicClosure ℚ_[p]) (algebraMap ℤ_[p] O x) =
+        algebraMap R (AlgebraicClosure ℚ_[p]) (algebraMap ℤ_[p] R x))
+    {ρO : GaloisRep ℚ O (Fin 2 → O)}
+    (e : ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O))
+      ≃ₗ[AlgebraicClosure ℚ_[p]] ((AlgebraicClosure ℚ_[p]) ⊗[R] V))
+    (he : ∀ g x, e ((ρO.baseChange (AlgebraicClosure ℚ_[p])) g x) =
+      (ρ.baseChange (AlgebraicClosure ℚ_[p])) g (e x))
+    (m : ℕ) :
+    (ρO.baseChange (O ⧸ Ideal.span {(p : O) ^ m})).HasFlatProlongationAt
+      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+        (Fact.out : p.Prime)) :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Lattice flatness transfer** (Eisenstein pillar E2b′-flat;
+DECOMPOSED 2026-07-24 into a PROVEN assembly — the arbitrary
+open-ideal quantifier is glue over the cofinal `p`-power subtower):
+the lattice representation `ρO` is flat at `p`, given the generic
+linkage `e`/`hOinj`/`hZOcompat` and `hρ.isFlat`. Proof, per field of
+the decomposition: an open ideal `I ⊆ O` contains some `p^m`
+(`exists_pow_p_mem_of_isOpen` — `p^m → 0` and `I` is a neighbourhood
+of `0`), so the `I`-level `(O ⧸ I) ⊗ (Fin 2 → O)` is a
+`Γ ℚ_p`-equivariant quotient of the `p`-power level
+`(O ⧸ p^m) ⊗ (Fin 2 → O)` (the quotient-transition map
+`Submodule.mapQ` tensored with the lattice; equivariance because both
+actions are `ρO` on the right tensor factor); the `p`-power level has
+a flat prolongation by the sorried deep leaf
+`hasFlatProlongationAt_lattice_pPow_of_generic_iso` above
+(conjugate-fibre/Barsotti–Tate argument — see its docstring, which
+also records why the pi-embedding route CANNOT discharge the
+transfer), and the prolongation passes to the quotient level by the
+Raynaud quotient-closure brick `IsFlatPointsGroupAt.of_surjective`
+through the PROVEN repackaging
+`hasFlatProlongationAt_iff_isFlatPointsGroupAt`. SHARED-NODE VERDICT
+(2026-07-24): the closure machinery landed as the
+representation-free carrier cut `IsFlatPointsGroupAt`
+(`of_injective`/`prod` sorried, separately owned; assembly
+`hasFlatProlongationAt_of_pi_embedding` PROVEN) — this leaf CONSUMES
+the carrier and adds the missing quotients brick `of_surjective` to
+the same neutral home rather than restating anything. Soundness
+(audit 2026-07-24): the hypothesis set is classically INHABITED
+(take `O = R`, `ρO` a frame of `ρ`, `e` the identity), and the
+conclusion holds for every inhabitant by the cited closure argument;
+no step consumes `p ≥ 5`, irreducibility, or residual data.
+Circularity guard (inherited from E2b′): must not route through
+`Family.lean` or `Reducible.lean`'s B5. -/
 theorem isFlatAt_lattice_of_generic_iso
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
@@ -8315,8 +8479,53 @@ theorem isFlatAt_lattice_of_generic_iso
     (he : ∀ g x, e ((ρO.baseChange (AlgebraicClosure ℚ_[p])) g x) =
       (ρ.baseChange (AlgebraicClosure ℚ_[p])) g (e x)) :
     ρO.IsFlatAt (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
-      (Fact.out : p.Prime)) :=
-  sorry
+      (Fact.out : p.Prime)) := by
+  constructor
+  intro I hI
+  obtain ⟨m, hm⟩ := exists_pow_p_mem_of_isOpen (p := p) I hI
+  have hle : Ideal.span {(p : O) ^ m} ≤ I := by
+    rw [Ideal.span_singleton_le_iff_mem]
+    exact hm
+  have hflat := hasFlatProlongationAt_lattice_pPow_of_generic_iso hpodd hv hρ
+    hOinj hZOcompat e he m
+  -- the level-transition surjection, `O`-linearly on the left factor
+  let q : (O ⧸ Ideal.span {(p : O) ^ m}) →ₗ[O] (O ⧸ I) :=
+    Submodule.mapQ (Ideal.span {(p : O) ^ m} : Submodule O O)
+      (I : Submodule O O) LinearMap.id hle
+  have hqsurj : Function.Surjective q := by
+    intro y
+    obtain ⟨x, rfl⟩ := Submodule.mkQ_surjective (I : Submodule O O) y
+    exact ⟨Submodule.Quotient.mk x, by simp [q]⟩
+  have hφsurj : Function.Surjective (LinearMap.rTensor (Fin 2 → O) q) := by
+    intro z
+    induction z using TensorProduct.induction_on with
+    | zero => exact ⟨0, map_zero _⟩
+    | add a b ha hb =>
+      obtain ⟨x, rfl⟩ := ha
+      obtain ⟨y, rfl⟩ := hb
+      exact ⟨x + y, map_add _ _ _⟩
+    | tmul c w =>
+      obtain ⟨c', rfl⟩ := hqsurj c
+      exact ⟨c' ⊗ₜ w, by rw [LinearMap.rTensor_tmul]⟩
+  refine (GaloisRep.hasFlatProlongationAt_iff_isFlatPointsGroupAt _).mpr
+    (IsFlatPointsGroupAt.of_surjective
+      ((GaloisRep.hasFlatProlongationAt_iff_isFlatPointsGroupAt _).mp hflat)
+      (LinearMap.rTensor (Fin 2 → O) q).toAddMonoidHom hφsurj ?_)
+  intro g x
+  show (LinearMap.rTensor (Fin 2 → O) q)
+      (((ρO.baseChange (O ⧸ Ideal.span {(p : O) ^ m})).toLocal
+        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+          (Fact.out : p.Prime))) g x) =
+    ((ρO.baseChange (O ⧸ I)).toLocal
+        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+          (Fact.out : p.Prime))) g ((LinearMap.rTensor (Fin 2 → O) q) x)
+  rw [GaloisRep.toLocal_apply, GaloisRep.toLocal_apply]
+  induction x using TensorProduct.induction_on with
+  | zero => simp
+  | add a b ha hb => simp only [map_add, ha, hb]
+  | tmul c w =>
+    rw [GaloisRep.baseChange_tmul, LinearMap.rTensor_tmul,
+      LinearMap.rTensor_tmul, GaloisRep.baseChange_tmul]
 
 /-- **Lattice tameness-at-2 transfer** (Eisenstein pillar E2b′-tame;
 sorry node — the saturation half of the lattice transfer): the
