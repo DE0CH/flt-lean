@@ -398,9 +398,251 @@ theorem exists_potentialModularityWitness_of_five_le
     Nonempty (PotentialModularityWitness ℓ O ρ) :=
   sorry
 
+/-- **Brauer's induction theorem — trivial-character form** (sorry
+node; FOUNDER leaf, pure finite group theory — the group-theoretic
+engine of the `ℓ`-adic Brauer descent): for a finite group `G` the
+trivial character is a `ℤ`-linear combination of characters induced
+from one-dimensional characters of SOLVABLE subgroups. The data is
+presented explicitly and self-containedly: subgroups `H i`,
+one-dimensional characters of `H i` carried as functions
+`φ i : G → ℂ` extended by zero off `H i` (the three conditions say
+exactly that: `φ i` vanishes outside `H i`, sends `1` to `1`, and is
+multiplicative on `H i` — its values on `H i` are then |G|-th roots of
+unity, each element having finite order), and integers `c i`, such
+that the Frobenius-formula combination
+`Σᵢ cᵢ · |Hᵢ|⁻¹ · Σ_{x ∈ G} φᵢ(x⁻¹ g x)` — the `i`-th inner term is
+the induced character `Ind_{Hᵢ}^G χᵢ` evaluated at `g` — is the
+constant `1`.
+
+Literature: Brauer's induction theorem — Serre, *Linear
+Representations of Finite Groups*, §10.5, Theorems 18–19 (every
+character of `G` is a `ℤ`-linear combination of characters induced
+from one-dimensional characters of `p`-elementary subgroups; apply to
+the trivial character); Isaacs, *Character Theory of Finite Groups*,
+Theorem 8.4; Curtis–Reiner §15. A `p`-elementary group (cyclic ×
+`p`-group) is nilpotent, hence solvable — solvability is the weaker
+form recorded here because it is exactly what solvable base change
+consumes downstream.
+
+PIN AUDIT (2026-07-24, hard search): the mathlib pin has the induction
+functor (`Representation.ind`, `Mathlib/RepresentationTheory/
+Induced.lean` — a categorical adjunction, no character formula) and
+basic character theory (`Mathlib/RepresentationTheory/Character.lean`:
+orthogonality only), but NO induced-character formula, NO virtual
+characters, NO Artin or Brauer induction in any form (`grep Brauer`
+over `Mathlib/`: only Brauer GROUPS of fields). The leaf is therefore
+stated self-containedly (no `FDRep`, no decidability or subtype
+baggage — the extension-by-zero form makes the induced character an
+unrestricted sum over `G`), in the exact shape its consumer
+(`exists_heckeField_system_of_witness_of_pieces`) needs. It is
+genuinely provable in-tree — finite character theory over `ℂ` — but is
+a real project (elementary subgroups, algebraic integrality of
+character values, the Brauer/Banaschewski counting argument), hence a
+leaf.
+
+SOUNDNESS AUDIT (2026-07-24): a true classical theorem with NO vacuity
+route — this leaf carries no arithmetic hypotheses, so unlike the
+arithmetic leaves of this module it must be (and is) directly true as
+stated: Serre §10.5, Theorem 19, applied to `1_G`, with each
+`p`-elementary subgroup relabelled solvable. Edge `G = 1`: take
+`n = 1`, `H 0 = ⊤`, `φ 0 = 1`, `c 0 = 1`. -/
+theorem brauer_induction_trivial_character (G : Type*) [Group G]
+    [Fintype G] :
+    ∃ (n : ℕ) (H : Fin n → Subgroup G) (φ : Fin n → G → ℂ)
+      (c : Fin n → ℤ),
+      (∀ i, IsSolvable (H i)) ∧
+      (∀ i, ∀ g ∉ H i, φ i g = 0) ∧
+      (∀ i, φ i 1 = 1) ∧
+      (∀ i, ∀ a ∈ H i, ∀ b ∈ H i, φ i (a * b) = φ i a * φ i b) ∧
+      (∀ g : G, ∑ i, (c i : ℂ) * (Nat.card (H i) : ℂ)⁻¹ *
+        ∑ x : G, φ i (x⁻¹ * g * x) = 1) :=
+  sorry
+
+/-- **Solvable base change — the descended Hecke system over a fixed
+field** (sorry node; the per-induced-piece citation leaf of the
+`ℓ`-adic Brauer descent): for a SOLVABLE subgroup `H ≤ Gal(F/ℚ)` of
+the potential-modularity carrier, the Hilbert eigensystem of the
+witness descends from `F` to the fixed field `K = F^H`: the Frobenius
+characteristic polynomials of `ρ|_{G_K}` at almost all places of `K`
+are `E`-coefficient polynomials through `ιO`/`ψℓ`.
+
+Classically: the Hilbert newform `f` over `F` attached to `ρ|_{G_F}`
+(fields `modularF`/`heckeF` of the carrier) is `Gal(F/K)`-invariant,
+because its Galois representation `ρ|_{G_F}` visibly extends to `G_K`
+(it is the restriction of `ρ`). `Gal(F/K) ≅ H` is solvable, so
+Langlands' cyclic base change and descent, iterated along a solvable
+chain (Langlands, *Base Change for GL(2)*, Ann. of Math. Studies 96
+(1980); Arthur–Clozel, *Simple Algebras, Base Change, and the Advanced
+Theory of the Trace Formula*, Ann. of Math. Studies 120 (1989)),
+produce a Hilbert newform `f_K` over `K` whose base change to `F` is
+`f`; its attached `ℓ`-adic representation restricted to `G_F` agrees
+with `ρ|_{G_F}`, so it differs from `ρ|_{G_K}` by a twist by a finite
+character of `Gal(F/K)`. Carayol's local–global compatibility over `K`
+identifies the Frobenius characteristic polynomials of the twisted
+`f_K`-system with Hecke polynomials; their coefficients — Hecke
+eigenvalues of `f_K` enlarged by the twisting-character values, roots
+of unity — lie in the carrier's `E` (which is, per the consumer's
+docstring parenthetical, the Hecke field OF THE DESCENDED system, the
+normalization that absorbs exactly these enlargements). The bad set
+`S` collects the places of `K` dividing the level, the places over
+`2`, `3`, `ℓ`, and the places ramified in `F/K`.
+
+Literature: Langlands 1980 and Arthur–Clozel 1989 (solvable base
+change and descent for `GL(2)`); Barnet-Lamb–Gee–Geraghty–Taylor,
+*Potential automorphy and change of weight*, Ann. of Math. 179
+(2014), §5.3 (this descent per Brauer piece, verbatim);
+Khare–Wintenberger, *Serre's modularity conjecture (I)*, Invent.
+Math. 178 (2009), §5; Carayol, Ann. Sci. ÉNS 19 (1986) (local–global
+compatibility over the totally real fixed field).
+
+SOUNDNESS AUDIT (both ways, 2026-07-24): (i) direct — for the carrier
+produced by the inhabitation leaf this is the chain above, with the
+Hecke-field enlargements landing in `E` by the carrier's
+normalization; for an abstract carrier the abstract-quantification
+caveat of pillar β applies, and (ii) collapse — the hypothesis set
+(an irreducible hardly ramified mod-`ℓ` representation, `ℓ ≥ 5`) is
+classically unsatisfiable (headline below), so the statement is
+classically true for every package.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
+discharge through `Family.lean`, `Lift.lean`, or
+`Modularity/Interface.lean`. -/
+theorem exists_descended_heckeSystem_of_solvable
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+    (Wit : PotentialModularityWitness ℓ O ρ)
+    (H : Subgroup (Wit.F ≃ₐ[ℚ] Wit.F)) (hH : IsSolvable H) :
+    ∃ (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers
+        (IntermediateField.fixedField H))))
+      (P : HeightOneSpectrum (NumberField.RingOfIntegers
+        (IntermediateField.fixedField H)) → Polynomial Wit.E),
+      ∀ w ∉ S,
+        ((ρ.map (algebraMap ℚ (IntermediateField.fixedField H))).charFrob
+            w).map Wit.ιO = (P w).map Wit.ψℓ :=
+  sorry
+
+/-- **Brauer gluing — reconstruction of the rational eigensystem from
+the descended pieces** (sorry node; the induced-character unwinding of
+the `ℓ`-adic Brauer descent): given a Brauer decomposition of the
+trivial character of `Gal(F/ℚ)` into solvable-induced one-dimensional
+pieces (`hbrauer`, as produced by `brauer_induction_trivial_character`)
+and, for each piece, a descended Hecke system over the fixed field
+`Kᵢ = F^{H i}` (`hP`, as produced by
+`exists_descended_heckeSystem_of_solvable`), the Frobenius
+characteristic polynomials of `ρ` itself at almost all RATIONAL primes
+are `E`-coefficient polynomials through `ιO`/`ψℓ`.
+
+Classically: tensoring the virtual identity
+`Σᵢ cᵢ · Ind_{Hᵢ}^{Gal(F/ℚ)} χᵢ = 1` with `ρ` and applying the
+projection formula gives
+`Σᵢ cᵢ · Ind_{G_{Kᵢ}}^{G_ℚ} (ρ|_{G_{Kᵢ}} ⊗ χᵢ) = ρ` as virtual
+representations of `G_ℚ`. Taking traces at `Frob_q` for `q` unramified
+in `F` and away from all bad data, the Mackey/Frobenius formula for
+induced traces (Serre, *Abelian ℓ-adic Representations*, I.2)
+evaluates each induced trace as the sum over the DEGREE-ONE places
+`w | q` of `Kᵢ` of `χᵢ(Frob_w) · a_w`, where `a_w` is the trace
+coefficient of the descended piece at `w` — an element of `ψℓ(E)` by
+`hP` — and `χᵢ(Frob_w)` is a root of unity lying in `E` by the
+carrier's normalization (`E` is the Hecke field of the descended
+system; the consumer docstring's parenthetical). Hence
+`ιO(tr ρ(Frob_q)) ∈ ψℓ(E)`. The determinant coefficient of the
+charpoly is the image of `q` itself (cyclotomic determinant,
+`hρ.det`), rational hence in `ψℓ(E)`; the charpoly is monic of degree
+`2`; so the full polynomial is the `ψℓ`-image of an `E`-polynomial.
+The exceptional set `S₀` collects the primes ramified in `F` and the
+primes below the pieces' bad sets `S i`.
+
+Literature: Barnet-Lamb–Gee–Geraghty–Taylor, *Potential automorphy
+and change of weight*, Ann. of Math. 179 (2014), §5.3 (gluing the
+descended systems through Brauer's theorem into a weakly compatible
+system over the base — verbatim this step); Khare–Wintenberger,
+*Serre's modularity conjecture (I)*, Invent. Math. 178 (2009), §5;
+Dieulefait, J. reine angew. Math. 577 (2004); Serre, *Abelian ℓ-adic
+Representations*, I.2 (induced traces via degree-one places).
+
+SOUNDNESS AUDIT (both ways, 2026-07-24): (i) direct — for a carrier
+and pieces produced by their own leaves this is BLGGT §5.3; for
+abstract data the abstract-quantification caveat of pillar β applies
+(in particular nothing formal ties the `φ i`-values into `E` — that
+identification is part of the citation, discharged by the carrier's
+normalization), and (ii) collapse — the hypothesis set is classically
+unsatisfiable (headline below), so the statement is classically true
+for every package.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
+discharge through `Family.lean`, `Lift.lean`, or
+`Modularity/Interface.lean`. -/
+theorem exists_heckeField_system_of_witness_of_pieces
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+    (Wit : PotentialModularityWitness ℓ O ρ)
+    (n : ℕ) (H : Fin n → Subgroup (Wit.F ≃ₐ[ℚ] Wit.F))
+    (φ : Fin n → (Wit.F ≃ₐ[ℚ] Wit.F) → ℂ) (c : Fin n → ℤ)
+    (hφ0 : ∀ i, ∀ g ∉ H i, φ i g = 0)
+    (hφ1 : ∀ i, φ i 1 = 1)
+    (hφmul : ∀ i, ∀ a ∈ H i, ∀ b ∈ H i, φ i (a * b) = φ i a * φ i b)
+    (hbrauer : ∀ g : Wit.F ≃ₐ[ℚ] Wit.F,
+      ∑ i, (c i : ℂ) * (Nat.card (H i) : ℂ)⁻¹ *
+        ∑ x : Wit.F ≃ₐ[ℚ] Wit.F, φ i (x⁻¹ * g * x) = 1)
+    (S : ∀ i, Finset (HeightOneSpectrum (NumberField.RingOfIntegers
+      (IntermediateField.fixedField (H i)))))
+    (P : ∀ i, HeightOneSpectrum (NumberField.RingOfIntegers
+      (IntermediateField.fixedField (H i))) → Polynomial Wit.E)
+    (hP : ∀ i, ∀ w ∉ S i,
+      ((ρ.map (algebraMap ℚ (IntermediateField.fixedField
+          (H i)))).charFrob w).map Wit.ιO = (P i w).map Wit.ψℓ) :
+    ∃ (S₀ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+      (Pv : HeightOneSpectrum (NumberField.RingOfIntegers ℚ) →
+        Polynomial Wit.E),
+      ∀ (q : ℕ) (hq : q.Prime),
+        hq.toHeightOneSpectrumRingOfIntegersRat ∉ S₀ →
+        q ≠ 2 → q ≠ 3 → q ≠ ℓ →
+        (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map Wit.ιO =
+          (Pv hq.toHeightOneSpectrumRingOfIntegersRat).map Wit.ψℓ :=
+  sorry
+
 /-- **Brauer descent, `ℓ`-adic side — the Hecke-field polynomial
-system over `ℚ`** (sorry node): given a potential-modularity carrier
-for the lift `ρ`, the Frobenius characteristic polynomials of `ρ` at
+system over `ℚ`** (PROVEN 2026-07-24 as an assembly over the three
+Brauer-descent leaves above; the depth now lives in
+`brauer_induction_trivial_character`,
+`exists_descended_heckeSystem_of_solvable` and
+`exists_heckeField_system_of_witness_of_pieces` — see the ASSEMBLY
+note at the end of this docstring): given a potential-modularity
+carrier for the lift `ρ`, the Frobenius characteristic polynomials of `ρ` at
 almost all rational primes descend to the Hecke field `E`: there is a
 family `Pv` of `E`-coefficient polynomials with
 `charFrob ρ (Frob_q) = Pv(q)` inside `ℚ̄_ℓ` through `ιO`/`ψℓ`, away
@@ -436,7 +678,19 @@ package.
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
 discharge through `Family.lean`, `Lift.lean`, or
-`Modularity/Interface.lean`. -/
+`Modularity/Interface.lean`.
+
+ASSEMBLY (2026-07-24, PROVEN): Brauer's induction theorem applied to
+the finite group `Gal(F/ℚ)` (`brauer_induction_trivial_character` —
+`F/ℚ` is Galois by `Wit.galoisF`, and the group is finite since `F`
+is a number field) + per Brauer piece the solvable base change
+descent (`exists_descended_heckeSystem_of_solvable`, applied to each
+solvable subgroup `H i` via `choose`) + the induced-character gluing
+(`exists_heckeField_system_of_witness_of_pieces`), consuming the
+Brauer data and the chosen piece systems. Those three leaves are now
+the residual sorries of this node; the circularity guard above binds
+the two arithmetic ones (the Brauer leaf is pure group theory — no
+guard needed, nothing arithmetic to route through). -/
 theorem exists_heckeField_system_of_witness
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
@@ -465,8 +719,20 @@ theorem exists_heckeField_system_of_witness
         hq.toHeightOneSpectrumRingOfIntegersRat ∉ S₀ →
         q ≠ 2 → q ≠ 3 → q ≠ ℓ →
         (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map Wit.ιO =
-          (Pv hq.toHeightOneSpectrumRingOfIntegersRat).map Wit.ψℓ :=
-  sorry
+          (Pv hq.toHeightOneSpectrumRingOfIntegersRat).map Wit.ψℓ := by
+  -- Brauer's induction theorem on the finite group `Gal(F/ℚ)`
+  obtain ⟨n, H, φ, c, hsolv, hφ0, hφ1, hφmul, hbrauer⟩ :=
+    brauer_induction_trivial_character (Wit.F ≃ₐ[ℚ] Wit.F)
+  -- per Brauer piece: solvable base change descends the eigensystem
+  -- to the fixed field of `H i`
+  choose S P hP using fun i : Fin n =>
+    exists_descended_heckeSystem_of_solvable hℓodd hℓ5 hZinj hrank hρ hW
+      hρbar hirr π hπsurj hπ Wit (H i) (hsolv i)
+  -- glue: the induced-character unwinding reconstructs the rational
+  -- eigensystem from the descended pieces
+  exact exists_heckeField_system_of_witness_of_pieces hℓodd hℓ5 hZinj
+    hrank hρ hW hρbar hirr π hπsurj hπ Wit n H φ c hφ0 hφ1 hφmul hbrauer
+    S P hP
 
 /-- **Brauer descent, `3`-adic side — the hardly ramified `3`-adic
 member over `ℚ`** (sorry node): given a potential-modularity carrier
