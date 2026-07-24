@@ -14,6 +14,7 @@ parent directory.
 """
 import argparse
 import fcntl
+import hashlib
 import json
 import os
 import select
@@ -45,6 +46,7 @@ class PipeLsp:
         self.req_seq = 0
         self.diags = {}
         self.doc_versions = {}
+        self.doc_hashes = {}
         self.initialized = False
         # identity of the server SESSION we last talked to, as the
         # (inode, mtime_ns) of state.json — see _ensure_initialized
@@ -153,6 +155,7 @@ class PipeLsp:
         if marker is None or marker != self.session_stat:
             self.initialized = False
             self.doc_versions.clear()
+            self.doc_hashes.clear()
             self.diags.clear()
             # the fifo fds may point at the dead server's pipes
             # ("response pipe EOF") — reopen against the new session
@@ -183,11 +186,19 @@ class PipeLsp:
         self.session_stat = self._session_marker()
         self.initialized = True
 
-    def diagnostics(self, abs_path, timeout=180):
+    def diagnostics(self, abs_path, timeout=1800):
         """Sync `abs_path` with disk content and return diagnostics via
         lake serve's `textDocument/waitForDiagnostics` request, which
         blocks server-side until the given version has fully elaborated
-        (no polling/settle heuristics needed)."""
+        (no polling/settle heuristics needed).
+
+        Retry-safety: a retried call with UNCHANGED on-disk content must
+        NOT bump the document version — every didChange starts a fresh
+        elaboration worker, so timeout-retry-polling on a slow file used
+        to pile up concurrent multi-GB workers (observed 2026-07-24 on a
+        ~21-min ModThree elaboration against the old 180 s default). An
+        unchanged retry now re-issues waitForDiagnostics for the version
+        already in flight, which is idempotent server-side."""
         uri = "file://" + abs_path
         with open(self.lock_file, "a+") as lock:
             fcntl.flock(lock, fcntl.LOCK_EX)
@@ -195,10 +206,13 @@ class PipeLsp:
             self._ensure_initialized(timeout)
 
             text = open(abs_path, encoding="utf-8").read()
-            self.diags.pop(uri, None)
-            version = self.doc_versions.get(uri, 0) + 1
-            self.doc_versions[uri] = version
-            if version == 1:
+            content_hash = hashlib.sha256(text.encode()).hexdigest()
+            version = self.doc_versions.get(uri, 0)
+            if version == 0:
+                version = 1
+                self.doc_versions[uri] = version
+                self.doc_hashes[uri] = content_hash
+                self.diags.pop(uri, None)
                 self._notify(
                     "textDocument/didOpen",
                     {
@@ -210,7 +224,11 @@ class PipeLsp:
                         }
                     },
                 )
-            else:
+            elif self.doc_hashes.get(uri) != content_hash:
+                version += 1
+                self.doc_versions[uri] = version
+                self.doc_hashes[uri] = content_hash
+                self.diags.pop(uri, None)
                 self._notify(
                     "textDocument/didChange",
                     {
@@ -218,6 +236,7 @@ class PipeLsp:
                         "contentChanges": [{"text": text}],
                     },
                 )
+            # unchanged content: keep the in-flight version, no notify
 
             self._request(
                 "textDocument/waitForDiagnostics",
@@ -235,10 +254,13 @@ def build_mcp(socket_dir):
     lsp = PipeLsp(socket_dir)
 
     @mcp.tool()
-    def diagnostics(file_path: str) -> dict:
+    def diagnostics(file_path: str, timeout_seconds: int = 1800) -> dict:
         """Compiler diagnostics (errors/warnings/infos) for a Lean file in
         this worktree, via the resident flt-report-server instance. Pass
-        an absolute path or one relative to this worktree's root."""
+        an absolute path or one relative to this worktree's root. Blocks
+        until the file's current on-disk version is fully elaborated
+        (big files can take ~20 min); retrying with unchanged content is
+        cheap and does NOT restart elaboration."""
         abs_path = (
             file_path
             if os.path.isabs(file_path)
@@ -246,7 +268,10 @@ def build_mcp(socket_dir):
         )
         if not os.path.exists(abs_path):
             raise ValueError(f"file not found: {abs_path}")
-        return {"file_path": abs_path, "diagnostics": lsp.diagnostics(abs_path)}
+        return {
+            "file_path": abs_path,
+            "diagnostics": lsp.diagnostics(abs_path, timeout=timeout_seconds),
+        }
 
     @mcp.tool()
     def build(clean: bool = False) -> dict:
