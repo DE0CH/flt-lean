@@ -1425,8 +1425,173 @@ theorem exists_smul_tautPoint_eq (hΔ : W.Δ ≠ 0) (hp : (p : F) ≠ 0) :
   · rw [hΨbridge, hΦbridge] at hx
     exact hx
 
-/-- **L4-5/6 core (sorry node): descent of a translation-invariant
-ratio through `Fix E[p] = [p]^*K`, coordinates of `p • taut` given.**
+omit [DecidableEq F] in
+/-- **The `x`-coordinate of the generic multiple `p • taut` is not a
+constant**: a constant value `c` would make `tautX` a root of the
+nonzero polynomial `Φ_p − c·ΨSq_p` over the constants (coefficient `1`
+in degree `p²` against `ΨSq_p` of degree `≤ p² − 1`), contradicting
+the transcendence of `tautX` over the constants. -/
+theorem smul_taut_xCoord_ne_constHom {xp : W.FunctionField}
+    (hxrel : xp * ((W.ΨSq (p : ℤ)).map (constHom W)).eval (tautX W) =
+      ((W.Φ (p : ℤ)).map (constHom W)).eval (tautX W)) (c : F) :
+    xp ≠ constHom W c := by
+  intro hxc
+  subst hxc
+  have hq0 : W.Φ (p : ℤ) - Polynomial.C c * W.ΨSq (p : ℤ) ≠ 0 := by
+    intro h0
+    have hΦc : (W.Φ (p : ℤ)).coeff (p ^ 2) = 1 := by
+      have h1 := W.coeff_Φ (p : ℤ)
+      rwa [Int.natAbs_natCast] at h1
+    have hΨc : (W.ΨSq (p : ℤ)).coeff (p ^ 2) = 0 := by
+      apply Polynomial.coeff_eq_zero_of_natDegree_lt
+      apply lt_of_le_of_lt (W.natDegree_ΨSq_le (p : ℤ))
+      rw [Int.natAbs_natCast]
+      exact Nat.sub_lt (pow_pos (Fact.out : p.Prime).pos 2) one_pos
+    have hcoeff : (W.Φ (p : ℤ) -
+        Polynomial.C c * W.ΨSq (p : ℤ)).coeff (p ^ 2) = 1 := by
+      rw [Polynomial.coeff_sub, Polynomial.coeff_C_mul, hΦc, hΨc, mul_zero,
+        sub_zero]
+    rw [h0, Polynomial.coeff_zero] at hcoeff
+    exact zero_ne_one hcoeff
+  have heval : (((W.Φ (p : ℤ) - Polynomial.C c * W.ΨSq (p : ℤ)).map
+      (constHom W)).eval (tautX W)) = 0 := by
+    rw [Polynomial.map_sub, Polynomial.map_mul, Polynomial.map_C,
+      Polynomial.eval_sub, Polynomial.eval_mul, Polynomial.eval_C]
+    linear_combination -hxrel
+  exact eval_map_ne_zero_of_forall_ne_constHom tautX_ne_constHom hq0 heval
+
+omit [DecidableEq F] in
+/-- **Injectivity of evaluation at a point with nonconstant
+`x`-coordinate** (generalization of `pointEval_injective` from generic
+translates to an abstract nonconstancy hypothesis — applied at the
+generic multiple `p • taut`, which is not itself a translate): a
+relation `p(x₀) + q(x₀)·y₀ = 0` forces the norm
+`p² − pq·(a₁X + a₃) − q²·(X³ + a₂X² + a₄X + a₆)` to vanish at `x₀`,
+hence to vanish identically, hence `p = q = 0` by the degree
+formula. -/
+theorem pointEval_injective_of_forall_ne_constHom
+    {x₀ y₀ : W.FunctionField} (hns : (curveK W).Nonsingular x₀ y₀)
+    (hxc : ∀ c : F, x₀ ≠ constHom W c) :
+    Function.Injective (pointEval (constHom W) hns.left) := by
+  rw [injective_iff_map_eq_zero]
+  intro f hf
+  obtain ⟨pp, qq, rfl⟩ := CoordinateRing.exists_smul_basis_eq f
+  have h1 : pointEval (constHom W) hns.left
+      (pp • (1 : W.CoordinateRing) + qq • CoordinateRing.mk W Polynomial.X) =
+      (pp.map (constHom W)).eval x₀ + (qq.map (constHom W)).eval x₀ * y₀ := by
+    rw [CoordinateRing.smul, CoordinateRing.smul, mul_one, map_add, map_mul,
+      pointEval_ofPoly, pointEval_ofPoly, pointEval_Y]
+  rw [h1] at hf
+  have heqc : y₀ ^ 2 + constHom W W.a₁ * x₀ * y₀ + constHom W W.a₃ * y₀ =
+      x₀ ^ 3 + constHom W W.a₂ * x₀ ^ 2 + constHom W W.a₄ * x₀ +
+        constHom W W.a₆ := by
+    have h2 := ((curveK W).equation_iff x₀ y₀).mp hns.left
+    simpa only [curveK, WeierstrassCurve.map] using h2
+  have hnorm0 : ((Algebra.norm (Polynomial F)
+      (pp • (1 : W.CoordinateRing) +
+        qq • CoordinateRing.mk W Polynomial.X)).map (constHom W)).eval x₀ =
+      0 := by
+    rw [CoordinateRing.norm_smul_basis]
+    simp only [Polynomial.map_sub, Polynomial.map_mul, Polynomial.map_pow,
+      Polynomial.map_add, Polynomial.map_C, Polynomial.map_X,
+      Polynomial.eval_sub, Polynomial.eval_mul, Polynomial.eval_pow,
+      Polynomial.eval_add, Polynomial.eval_C, Polynomial.eval_X]
+    linear_combination ((pp.map (constHom W)).eval x₀ -
+        (qq.map (constHom W)).eval x₀ * y₀ -
+        (qq.map (constHom W)).eval x₀ *
+          (constHom W W.a₁ * x₀ + constHom W W.a₃)) * hf +
+      ((qq.map (constHom W)).eval x₀) ^ 2 * heqc
+  have hN : Algebra.norm (Polynomial F)
+      (pp • (1 : W.CoordinateRing) +
+        qq • CoordinateRing.mk W Polynomial.X) = 0 := by
+    by_contra hN0
+    exact eval_map_ne_zero_of_forall_ne_constHom hxc hN0 hnorm0
+  have hdeg := congrArg Polynomial.degree hN
+  rw [CoordinateRing.degree_norm_smul_basis, Polynomial.degree_zero,
+    max_eq_bot] at hdeg
+  have hqq : qq = 0 := by
+    rcases WithBot.add_eq_bot.mp hdeg.2 with h3 | h3
+    · rw [two_nsmul] at h3
+      rcases WithBot.add_eq_bot.mp h3 with h4 | h4 <;>
+        exact Polynomial.degree_eq_bot.mp h4
+    · exact absurd h3 (by norm_num)
+  have hpp : pp = 0 := by
+    rw [two_nsmul] at hdeg
+    rcases WithBot.add_eq_bot.mp hdeg.1 with h4 | h4 <;>
+      exact Polynomial.degree_eq_bot.mp h4
+  rw [hpp, hqq, zero_smul, zero_smul, add_zero]
+
+/-- **L4-5/6 membership core (sorry node): a translation-invariant
+ratio lies in the range of the `[p]`-pullback embedding.**  Let
+`val : ι → W.Point` enumerate the `p`-torsion subgroup
+(`card ι = p²`), `(xp, yp)` the affine coordinates of the generic
+multiple `p • taut` with the division-polynomial relation `hxrel`, and
+`hinj` the injectivity of evaluation at `(xp, yp)` (supplied by
+`pointEval_injective_of_forall_ne_constHom`); suppose the ratio
+`g = g₁/g₂ ∈ K` is invariant under every translation evaluation
+(`hfix`, multiplied out at the generic translate).  Then `g = σ_p(h)`
+for some `h ∈ K`, where `σ_p = IsFractionRing.lift hinj : K →+* K` is
+the fraction-field extension of evaluation at `p • taut` — the
+realization of `h ↦ h ∘ [p]`, so `g` descends through the pullback.
+
+Proof plan (HLEG-NOTES.md §4(B), stages L4-5/6): each `τ_κ^*` extends
+to a field automorphism `σ_κ` of `K` fixing the constants
+(injectivity from `pointEval_injective` at the generic translate,
+lifted to `K` by `IsFractionRing.lift`; surjectivity from
+`σ_κ ∘ σ_{⊖κ} = id`, the composition law coming from `endoMap`
+additivity and the group law `(taut ⊖ κ) ⊕ κ = taut`); `κ ↦ σ_κ` is a
+faithful action of the order-`p²` torsion group on `K` (faithfulness:
+`σ_κ tautX = tautX` forces `x(κ ⊕ taut) = x(taut)`, so
+`κ ⊕ taut = ±taut`; the minus branch would make `x(2•taut)` a
+constant, against the `n = 2` instance of
+`smul_taut_xCoord_ne_constHom`-style nonconstancy), so Artin's theorem
+(mathlib's `FixedPoints.finrank_eq_card`) gives `[K : Fix E[p]] = p²`.
+The pullback subfield `L := (IsFractionRing.lift hinj).fieldRange`
+lies inside `Fix E[p]`: `σ_κ` fixes `xp` and `yp` because
+`endoMap σ_κ (p•taut) = p•(κ ⊕ taut) = constPoint ((p:ℤ)•κ) + p•taut =
+p•taut` by `hval_tor`, hence `σ_κ` fixes `L` pointwise
+(`coordinateRing_ringHom_ext` on the coordinate ring, then
+`IsFractionRing`-uniqueness of the extension).  And `[K : L] ≤ p²`:
+`constHom F ⊆ L` and `xp, yp ∈ L`; `tautX` is a root of the monic
+degree-`p²` polynomial `Φ_p − xp·ΨSq_p` over `L` (`hxrel`), and
+`tautY ∈ L(tautX)` by the `y`-bookkeeping (the nontrivial
+`L(tautX)`-automorphism of `K` would have to be the hyperelliptic
+involution, which moves `yp ∈ L` since `2p • taut ≠ 0`).  The degree
+squeeze `L ⊆ Fix E[p]`, `[K : Fix E[p]] = p² ≥ [K : L]` forces
+`Fix E[p] = L ∋ g`.  Finally `g` IS fixed: `hfix` says exactly
+`σ_κ(ḡ₁)·ḡ₂ = ḡ₁·σ_κ(ḡ₂)`, i.e. `σ_κ(g) = g`.  DECOMPOSE along these
+stages when opening this node. -/
+theorem translation_fixed_mem_range_pullback {ι : Type*} [Fintype ι]
+    {val : ι → W.Point}
+    (hΔ : W.Δ ≠ 0) (hp : (p : F) ≠ 0)
+    (hval_inj : Function.Injective val)
+    (hval_tor : ∀ i, (p : ℤ) • val i = 0)
+    (hval_surj : ∀ Q : W.Point, (p : ℤ) • Q = 0 → ∃ i, val i = Q)
+    (hcard : Fintype.card ι = p ^ 2)
+    {xp yp : W.FunctionField} {hpn : (curveK W).Nonsingular xp yp}
+    (hsmul : (p : ℤ) • tautPoint W hΔ =
+      WeierstrassCurve.Affine.Point.some xp yp hpn)
+    (hxrel : xp * ((W.ΨSq (p : ℤ)).map (constHom W)).eval (tautX W) =
+      ((W.Φ (p : ℤ)).map (constHom W)).eval (tautX W))
+    (hinj : Function.Injective (pointEval (constHom W) hpn.left))
+    {g₁ g₂ : W.CoordinateRing} (hg₁ : g₁ ≠ 0) (hg₂ : g₂ ≠ 0)
+    (hfix : ∀ (i₀ : ι) (xκ yκ : W.FunctionField)
+      (hκ : (curveK W).Nonsingular xκ yκ),
+      constPoint W (val i₀) + tautPoint W hΔ =
+        WeierstrassCurve.Affine.Point.some xκ yκ hκ →
+      pointEval (constHom W) hκ.left g₁ *
+          algebraMap W.CoordinateRing W.FunctionField g₂ =
+        algebraMap W.CoordinateRing W.FunctionField g₁ *
+          pointEval (constHom W) hκ.left g₂) :
+    ∃ h : W.FunctionField, IsFractionRing.lift hinj h =
+      algebraMap W.CoordinateRing W.FunctionField g₁ /
+        algebraMap W.CoordinateRing W.FunctionField g₂ := by
+  sorry
+
+/-- **L4-5/6 (PROVEN glue over the membership core
+`translation_fixed_mem_range_pullback`): descent of a
+translation-invariant ratio through `Fix E[p] = [p]^*K`, coordinates
+of `p • taut` given.**
 Let `val : ι → W.Point` enumerate the `p`-torsion subgroup
 (`card ι = p²`), `(xp, yp)` the affine coordinates of the generic
 multiple `p • taut` with the division-polynomial relation
@@ -1490,7 +1655,44 @@ theorem exists_pullback_pair_of_translation_fixed {ι : Type*} [Fintype ι]
           pointEval (constHom W) hpn.left c =
         algebraMap W.CoordinateRing W.FunctionField g₂ *
           pointEval (constHom W) hpn.left b := by
-  sorry
+  classical
+  have hg₁a : algebraMap W.CoordinateRing W.FunctionField g₁ ≠ 0 := fun h0 =>
+    hg₁ ((map_eq_zero_iff _
+      (IsFractionRing.injective W.CoordinateRing W.FunctionField)).mp h0)
+  have hg₂a : algebraMap W.CoordinateRing W.FunctionField g₂ ≠ 0 := fun h0 =>
+    hg₂ ((map_eq_zero_iff _
+      (IsFractionRing.injective W.CoordinateRing W.FunctionField)).mp h0)
+  have hinj : Function.Injective (pointEval (constHom W) hpn.left) :=
+    pointEval_injective_of_forall_ne_constHom hpn
+      (smul_taut_xCoord_ne_constHom hxrel)
+  obtain ⟨h, hh⟩ := translation_fixed_mem_range_pullback hΔ hp hval_inj
+    hval_tor hval_surj hcard hsmul hxrel hinj hg₁ hg₂ hfix
+  obtain ⟨b, c, hcmem, hbc⟩ :=
+    IsFractionRing.div_surjective (A := W.CoordinateRing) h
+  have hc0 : c ≠ 0 := nonZeroDivisors.ne_zero hcmem
+  have hτ : ∀ z : W.CoordinateRing,
+      IsFractionRing.lift hinj (algebraMap W.CoordinateRing
+        W.FunctionField z) = pointEval (constHom W) hpn.left z := fun z =>
+    IsFractionRing.lift_algebraMap hinj z
+  have hτc : pointEval (constHom W) hpn.left c ≠ 0 := fun h0 =>
+    hc0 (hinj (by rw [h0, map_zero]))
+  have hστ : pointEval (constHom W) hpn.left b /
+      pointEval (constHom W) hpn.left c =
+      algebraMap W.CoordinateRing W.FunctionField g₁ /
+        algebraMap W.CoordinateRing W.FunctionField g₂ := by
+    rw [← hτ b, ← hτ c, ← map_div₀ (IsFractionRing.lift hinj), hbc]
+    exact hh
+  have hmain : algebraMap W.CoordinateRing W.FunctionField g₁ *
+      pointEval (constHom W) hpn.left c =
+      algebraMap W.CoordinateRing W.FunctionField g₂ *
+        pointEval (constHom W) hpn.left b := by
+    have h1 := (div_eq_div_iff hτc hg₂a).mp hστ
+    linear_combination -h1
+  have hb0 : b ≠ 0 := by
+    intro hb
+    rw [hb, map_zero, mul_zero] at hmain
+    exact mul_ne_zero hg₁a hτc hmain
+  exact ⟨b, c, hb0, hc0, hτc, hmain⟩
 
 /-- **L4-5/6 (PROVEN glue over the `p • taut` substrate
 `exists_smul_tautPoint_eq` and the descent core
