@@ -4420,8 +4420,9 @@ theorem card_stabilizer_eq_ramificationIdx_mul_inertiaDeg
 
 end PerfectnessFreeHilbert
 
+omit [IsSepClosure K Ksep] [DecidableEq Ksep] in
 /-- **The center of a valuation subring on a finite-level integral closure**
-(sorry node, split from the inertia-lifting leaf 2026-07-24): for a
+(PROVEN 2026-07-24, split from the inertia-lifting leaf): for a
 subextension `M` of `Kˢᵉᵖ` (abstract tower `K ⊆ M ⊆ Kˢᵉᵖ`) and a valuation
 subring `𝒪` of `Kˢᵉᵖ` lying over `R`, the integral elements of `M` whose image
 is a nonunit of `𝒪` form a maximal ideal of `integralClosure R M`. The
@@ -4439,7 +4440,126 @@ theorem exists_isMaximal_center_integralClosure
     ∃ 𝔔 : Ideal (integralClosure R M), 𝔔.IsMaximal ∧
       ∀ c : integralClosure R M,
         (c ∈ 𝔔 ↔ algebraMap M Ksep (c : M) ∈ 𝒪.nonunits) := by
-  sorry
+  letI : Algebra R Ksep := ((algebraMap K Ksep).comp (algebraMap R K)).toAlgebra
+  haveI : IsScalarTower R K Ksep := IsScalarTower.of_algebraMap_eq fun _ => rfl
+  haveI : IsScalarTower R M Ksep := IsScalarTower.of_algebraMap_eq fun r => by
+    rw [IsScalarTower.algebraMap_apply R K Ksep, IsScalarTower.algebraMap_apply R K M,
+      IsScalarTower.algebraMap_apply K M Ksep]
+  haveI : Algebra.IsIntegral R (integralClosure R M) :=
+    ⟨fun x => IsIntegralClosure.isIntegral R M x⟩
+  have hRO : ∀ r : R, algebraMap R Ksep r ∈ 𝒪 := by
+    intro r
+    have h1 : algebraMap R K r ∈ (𝒪.comap (algebraMap K Ksep)).toSubring := by
+      rw [h𝒪]
+      exact ⟨r, rfl⟩
+    exact h1
+  have hOsub : ∀ c : integralClosure R M, algebraMap M Ksep (c : M) ∈ 𝒪 := by
+    intro c
+    have hcR : IsIntegral R (algebraMap M Ksep (c : M)) := IsIntegral.algebraMap c.2
+    letI : Algebra R 𝒪 := ((algebraMap R Ksep).codRestrict 𝒪.toSubring hRO).toAlgebra
+    haveI : IsScalarTower R 𝒪 Ksep := IsScalarTower.of_algebraMap_eq fun _ => rfl
+    obtain ⟨y, hy⟩ := IsIntegrallyClosed.isIntegral_iff.mp (hcR.tower_top (A := 𝒪))
+    exact hy ▸ y.2
+  set 𝔔c : Ideal (integralClosure R M) :=
+    { carrier := {c : integralClosure R M | algebraMap M Ksep (c : M) ∈ 𝒪.nonunits}
+      add_mem' := fun {a b} ha hb => by
+        show algebraMap M Ksep ((a + b : integralClosure R M) : M) ∈ 𝒪.nonunits
+        rw [show ((a + b : integralClosure R M) : M) = (a : M) + (b : M) from rfl,
+          map_add]
+        exact add_mem ha hb
+      zero_mem' := by
+        show algebraMap M Ksep ((0 : integralClosure R M) : M) ∈ 𝒪.nonunits
+        rw [show ((0 : integralClosure R M) : M) = 0 from rfl, map_zero]
+        exact zero_mem _
+      smul_mem' := fun c {x} hx => by
+        show algebraMap M Ksep ((c • x : integralClosure R M) : M) ∈ 𝒪.nonunits
+        rw [show ((c • x : integralClosure R M) : M) = (c : M) * (x : M) from rfl,
+          map_mul]
+        refine (𝒪.mem_nonunits_iff).mpr ?_
+        rw [map_mul]
+        calc 𝒪.valuation (algebraMap M Ksep (c : M)) *
+              𝒪.valuation (algebraMap M Ksep (x : M)) ≤
+            1 * 𝒪.valuation (algebraMap M Ksep (x : M)) :=
+          mul_le_mul_left ((ValuationSubring.valuation_le_one_iff 𝒪 _).mpr (hOsub c)) _
+        _ = 𝒪.valuation (algebraMap M Ksep (x : M)) := one_mul _
+        _ < 1 := (𝒪.mem_nonunits_iff).mp hx } with h𝔔cdef
+  have h𝔔c : ∀ c : integralClosure R M,
+      c ∈ 𝔔c ↔ algebraMap M Ksep (c : M) ∈ 𝒪.nonunits := fun c => Iff.rfl
+  have h𝔔under : 𝔔c.comap (algebraMap R (integralClosure R M)) =
+      IsLocalRing.maximalIdeal R := by
+    ext r
+    rw [Ideal.mem_comap, h𝔔c]
+    have himg : algebraMap M Ksep
+        ((algebraMap R (integralClosure R M) r : integralClosure R M) : M) =
+        algebraMap K Ksep (algebraMap R K r) := by
+      rw [show ((algebraMap R (integralClosure R M) r : integralClosure R M) : M) =
+          algebraMap R M r from rfl,
+        ← IsScalarTower.algebraMap_apply R M Ksep,
+        IsScalarTower.algebraMap_apply R K Ksep]
+    rw [himg]
+    constructor
+    · intro hmem
+      by_contra hru
+      have hunit : IsUnit r := not_not.mp fun h =>
+        hru (IsLocalRing.mem_maximalIdeal r |>.mpr h)
+      obtain ⟨u, hu⟩ := hunit
+      have hval : 𝒪.valuation (algebraMap K Ksep (algebraMap R K r)) *
+          𝒪.valuation (algebraMap K Ksep (algebraMap R K ((u⁻¹ : Rˣ) : R))) = 1 := by
+        rw [← map_mul, ← map_mul, ← map_mul, ← hu, ← Units.val_mul, mul_inv_cancel,
+          Units.val_one, map_one, map_one, map_one]
+      have hle : 𝒪.valuation (algebraMap K Ksep (algebraMap R K ((u⁻¹ : Rˣ) : R))) ≤ 1 :=
+        (ValuationSubring.valuation_le_one_iff 𝒪 _).mpr (hRO ((u⁻¹ : Rˣ) : R))
+      have hlt := (𝒪.mem_nonunits_iff).mp hmem
+      have hcon : 𝒪.valuation (algebraMap K Ksep (algebraMap R K r)) *
+          𝒪.valuation (algebraMap K Ksep (algebraMap R K ((u⁻¹ : Rˣ) : R))) < 1 :=
+        lt_of_le_of_lt (mul_le_mul_right hle _) (by rwa [mul_one])
+      exact absurd hval hcon.ne
+    · intro hr
+      rw [𝒪.mem_nonunits_iff_or]
+      by_cases hr0 : r = 0
+      · exact Or.inl (by rw [hr0, map_zero, map_zero])
+      refine Or.inr fun hinv => ?_
+      have hKinv : (algebraMap K Ksep (algebraMap R K r))⁻¹ =
+          algebraMap K Ksep (algebraMap R K r)⁻¹ := (map_inv₀ _ _).symm
+      have hmem2 : (algebraMap R K r)⁻¹ ∈ (𝒪.comap (algebraMap K Ksep)).toSubring := by
+        show algebraMap K Ksep (algebraMap R K r)⁻¹ ∈ 𝒪
+        rw [← hKinv]
+        exact hinv
+      rw [h𝒪] at hmem2
+      obtain ⟨s, hs⟩ := hmem2
+      have hsr : s * r = 1 := by
+        have h1 := congrArg (· * algebraMap R K r) hs
+        simp only [← map_mul] at h1
+        rw [inv_mul_cancel₀ (fun h0 => hr0 ((IsFractionRing.injective R K)
+          (h0.trans (map_zero _).symm)))] at h1
+        exact IsFractionRing.injective R K (h1.trans (map_one _).symm)
+      exact (IsLocalRing.mem_maximalIdeal r).mp hr (IsUnit.of_mul_eq_one s
+        (by rwa [mul_comm]))
+  haveI h𝔔prime : 𝔔c.IsPrime := by
+    constructor
+    · intro htop
+      have h1 : (1 : integralClosure R M) ∈ 𝔔c := htop ▸ Submodule.mem_top
+      have hv1 := (𝒪.mem_nonunits_iff).mp ((h𝔔c 1).mp h1)
+      rw [show ((1 : integralClosure R M) : M) = 1 from rfl, map_one, map_one] at hv1
+      exact absurd hv1 (lt_irrefl 1)
+    · intro a b hab
+      by_contra hcon
+      push Not at hcon
+      obtain ⟨ha, hb⟩ := hcon
+      have hva : 𝒪.valuation (algebraMap M Ksep (a : M)) = 1 :=
+        le_antisymm ((ValuationSubring.valuation_le_one_iff 𝒪 _).mpr (hOsub a))
+          (not_lt.mp fun h => ha ((h𝔔c a).mpr ((𝒪.mem_nonunits_iff).mpr h)))
+      have hvb : 𝒪.valuation (algebraMap M Ksep (b : M)) = 1 :=
+        le_antisymm ((ValuationSubring.valuation_le_one_iff 𝒪 _).mpr (hOsub b))
+          (not_lt.mp fun h => hb ((h𝔔c b).mpr ((𝒪.mem_nonunits_iff).mpr h)))
+      have hvab := (𝒪.mem_nonunits_iff).mp ((h𝔔c _).mp hab)
+      rw [show ((a * b : integralClosure R M) : M) = (a : M) * (b : M) from rfl,
+        map_mul, map_mul, hva, hvb, mul_one] at hvab
+      exact absurd hvab (lt_irrefl 1)
+  have h𝔔max : 𝔔c.IsMaximal :=
+    Ideal.isMaximal_of_isIntegral_of_isMaximal_comap _
+      (h𝔔under ▸ IsLocalRing.maximalIdeal.isMaximal R)
+  exact ⟨𝔔c, h𝔔max, h𝔔c⟩
 
 /-- **Denominator representation at a finite level** (sorry node, split from
 the inertia-lifting leaf 2026-07-24): an element of a finite separable
@@ -4528,7 +4648,90 @@ theorem smul_sub_mem_nonunits_of_forall_isIntegral
     (hloc : ∀ x : Ksep, IsIntegral R x → τ x - x ∈ 𝒪.nonunits)
     (x : Ksep) (hx : x ∈ 𝒪) :
     τ x - x ∈ 𝒪.nonunits := by
-  sorry
+  classical
+  -- the finite separable level `K⟮x⟯`
+  set Ex : IntermediateField K Ksep := IntermediateField.adjoin K {x} with hExdef
+  haveI : FiniteDimensional K ↥Ex :=
+    IntermediateField.adjoin.finiteDimensional (Algebra.IsIntegral.isIntegral x)
+  haveI : Algebra.IsSeparable K ↥Ex :=
+    Algebra.isSeparable_tower_bot_of_isSeparable K ↥Ex Ksep
+  letI : Algebra R ↥Ex := ((algebraMap K ↥Ex).comp (algebraMap R K)).toAlgebra
+  haveI : IsScalarTower R K ↥Ex := IsScalarTower.of_algebraMap_eq fun _ => rfl
+  haveI : IsScalarTower R ↥Ex Ksep := IsScalarTower.of_algebraMap_eq fun r => by
+    rw [IsScalarTower.algebraMap_apply R K Ksep]
+    rfl
+  have hxmem : x ∈ Ex := IntermediateField.mem_adjoin_simple_self K x
+  -- images of integral elements of the level lie in `𝒪`
+  have hRO : ∀ r : R, algebraMap R Ksep r ∈ 𝒪 := by
+    intro r
+    rw [IsScalarTower.algebraMap_apply R K Ksep]
+    have h1 : algebraMap R K r ∈ (𝒪.comap (algebraMap K Ksep)).toSubring := by
+      rw [h𝒪]
+      exact ⟨r, rfl⟩
+    exact h1
+  have hOsub : ∀ c : integralClosure R ↥Ex, algebraMap ↥Ex Ksep (c : ↥Ex) ∈ 𝒪 := by
+    intro c
+    have hcR : IsIntegral R (algebraMap ↥Ex Ksep (c : ↥Ex)) := IsIntegral.algebraMap c.2
+    letI : Algebra R 𝒪 := ((algebraMap R Ksep).codRestrict 𝒪.toSubring hRO).toAlgebra
+    haveI : IsScalarTower R 𝒪 Ksep := IsScalarTower.of_algebraMap_eq fun _ => rfl
+    obtain ⟨y, hy⟩ := IsIntegrallyClosed.isIntegral_iff.mp (hcR.tower_top (A := 𝒪))
+    exact hy ▸ y.2
+  -- the center and a denominator representation of `x`
+  obtain ⟨𝔔', h𝔔'max, h𝔔'char⟩ :=
+    exists_isMaximal_center_integralClosure R K Ksep ↥Ex 𝒪 h𝒪
+  have hx₀ : algebraMap ↥Ex Ksep ((⟨x, hxmem⟩ : ↥Ex)) ∈ 𝒪 := hx
+  obtain ⟨a, s, hs, heq⟩ := exists_num_den_integralClosure_of_mem_valuationSubring R K Ksep
+    ↥Ex 𝒪 h𝒪 𝔔' h𝔔'char ⟨x, hxmem⟩ hx₀
+  set sK : Ksep := algebraMap ↥Ex Ksep ((s : integralClosure R ↥Ex) : ↥Ex) with hsKdef
+  set aK : Ksep := algebraMap ↥Ex Ksep ((a : integralClosure R ↥Ex) : ↥Ex) with haKdef
+  have hs𝒪 : sK ∈ 𝒪 := hOsub s
+  have ha𝒪 : aK ∈ 𝒪 := hOsub a
+  have hsint : IsIntegral R sK := IsIntegral.algebraMap s.2
+  have haint : IsIntegral R aK := IsIntegral.algebraMap a.2
+  have hvs : 𝒪.valuation sK = 1 :=
+    le_antisymm ((ValuationSubring.valuation_le_one_iff 𝒪 _).mpr hs𝒪)
+      (not_lt.mp fun h => hs ((h𝔔'char s).mpr ((𝒪.mem_nonunits_iff).mpr h)))
+  have hxeq : sK * x = aK := by
+    have h1 := congrArg (algebraMap ↥Ex Ksep) heq
+    rw [map_mul] at h1
+    exact h1
+  have hda := hloc aK haint
+  have hds := hloc sK hsint
+  have hτs1 : 𝒪.valuation (τ sK) = 1 := by
+    have h1 : 𝒪.valuation (τ sK) ≤ 1 := by
+      have h2 : τ sK = sK + (τ sK - sK) := by ring
+      rw [h2]
+      exact le_trans (Valuation.map_add _ _ _)
+        (max_le ((ValuationSubring.valuation_le_one_iff 𝒪 _).mpr hs𝒪)
+          (le_of_lt ((𝒪.mem_nonunits_iff).mp hds)))
+    refine le_antisymm h1 (not_lt.mp fun hlt => ?_)
+    have h4 : 𝒪.valuation sK < 1 := by
+      have h3 : sK = τ sK - (τ sK - sK) := by ring
+      calc 𝒪.valuation sK = 𝒪.valuation (τ sK - (τ sK - sK)) := by rw [← h3]
+        _ ≤ max (𝒪.valuation (τ sK)) (𝒪.valuation (τ sK - sK)) := Valuation.map_sub _ _ _
+        _ < 1 := max_lt hlt ((𝒪.mem_nonunits_iff).mp hds)
+    rw [hvs] at h4
+    exact absurd h4 (lt_irrefl 1)
+  have hτxeq : τ sK * τ x = τ aK := by
+    rw [← map_mul, hxeq]
+  have hkey : (τ sK * sK) * (τ x - x) = sK * (τ aK - aK) - (τ sK - sK) * aK := by
+    linear_combination sK * hτxeq - τ sK * hxeq
+  have hnum : 𝒪.valuation (sK * (τ aK - aK) - (τ sK - sK) * aK) < 1 := by
+    have h7 : 𝒪.valuation (sK * (τ aK - aK)) < 1 := by
+      rw [map_mul, hvs, one_mul]
+      exact (𝒪.mem_nonunits_iff).mp hda
+    have h8 : 𝒪.valuation ((τ sK - sK) * aK) < 1 := by
+      rw [map_mul]
+      calc 𝒪.valuation (τ sK - sK) * 𝒪.valuation aK ≤ 𝒪.valuation (τ sK - sK) * 1 :=
+          mul_le_mul' le_rfl ((ValuationSubring.valuation_le_one_iff 𝒪 _).mpr ha𝒪)
+        _ = 𝒪.valuation (τ sK - sK) := mul_one _
+        _ < 1 := (𝒪.mem_nonunits_iff).mp hds
+    exact lt_of_le_of_lt (Valuation.map_sub _ _ _) (max_lt h7 h8)
+  refine (𝒪.mem_nonunits_iff).mpr ?_
+  have h9 := congrArg (𝒪.valuation) hkey
+  rw [map_mul, map_mul, hτs1, hvs, one_mul, one_mul] at h9
+  rw [h9]
+  exact hnum
 
 open scoped Pointwise in
 set_option maxHeartbeats 2000000 in
