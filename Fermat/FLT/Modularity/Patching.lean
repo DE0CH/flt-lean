@@ -131,6 +131,18 @@ public import Mathlib.RingTheory.MvPowerSeries.Inverse
 public import Mathlib.RingTheory.Regular.RegularSequence
 public import Mathlib.RingTheory.Ideal.Operations
 public import Mathlib.Data.Nat.ModEq
+public import Mathlib.Algebra.DualNumber
+-- `DualNumber k`, the tangent carrier of the FOUNDER cut of strict
+-- Mazur representability (tangent space as dual-number lifts)
+public import Mathlib.Topology.Instances.TrivSqZeroExt
+-- the product topology and topological-ring structure on `k[ε]`
+public import Mathlib.LinearAlgebra.TensorProduct.Tower
+-- `LinearEquiv.baseChange`, in the statement of the conjugation
+-- transport `baseChange_conj_apply`
+public import Mathlib.LinearAlgebra.Dimension.Free
+-- `Module.finBasisOfFinrankEq`: the standard frame of `reframe`
+import Mathlib.LinearAlgebra.Charpoly.ToMatrix
+-- `LinearEquiv.charpoly_conj`: conjugation-invariance of `charFrob`
 import Mathlib.LinearAlgebra.Charpoly.BaseChange
 import Mathlib.NumberTheory.Padics.ProperSpace
 -- the `CompactSpace ℤ_[p]` instance behind closedness of `ψ`'s range
@@ -681,19 +693,534 @@ theorem exists_conj_of_charFrob_eq_away.{uK, uW, uW'}
     ∃ e : W' ≃ₗ[k] W, τ.conj e = ρbar :=
   sorry
 
-/-- **Strict Mazur representability leaf** (sorry node — the
-representability half of the Mazur pillar): the hardly ramified
-deformation problem of an irreducible hardly ramified `ρbar` over a
-finite coefficient field admits a Mazur-category package
+/-!
+## Conjugation and reframing transport (PROVEN)
+
+The two universality clauses of the strict Mazur representability
+statement differ only in the universe of the test deformation's
+module.  The transport cluster below collapses them to the
+standard-framed clause: `charFrob`, hardly-ramifiedness and residual
+identifications are all conjugation-invariant, so every test
+deformation `D` may be *reframed* — replaced by the deformation on
+`Fin 2 → D.A` obtained by conjugating with a basis isomorphism of its
+rank-2 module (`Module.finBasisOfFinrankEq`) — without changing its
+coefficient ring, reduction map, exceptional set or `charFrob` data.
+A package that factors all standard-framed identified deformations
+therefore factors all identified deformations at EVERY module universe
+(`isWeaklyUniversalOnIdentifiedDeformation_of_reframe`).
+(`isHardlyRamified_conj` restates `Deformation.lean`'s same-named
+proof across two module universes — that module's version constrains
+both modules to a single universe, which the reframing step here
+inherently crosses; dedupe when a universe-polymorphic home is
+factored out.)
+-/
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **`charFrob` is conjugation-invariant** (PROVEN): conjugating a
+representation by a linear isomorphism of its module conjugates each
+Frobenius endomorphism, and characteristic polynomials are invariant
+under conjugation (`LinearEquiv.charpoly_conj`). -/
+lemma charFrob_conj {A : Type*} [CommRing A] [TopologicalSpace A]
+    [IsTopologicalRing A]
+    {M : Type*} [AddCommGroup M] [Module A M] [Module.Finite A M]
+    [Module.Free A M]
+    {N : Type*} [AddCommGroup N] [Module A N] [Module.Finite A N]
+    [Module.Free A N]
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    (ρ : GaloisRep ℚ A M) (e : M ≃ₗ[A] N) :
+    (ρ.conj e).charFrob v = ρ.charFrob v := by
+  show ((ρ.conj e).toLocal v
+      (Field.AbsoluteGaloisGroup.adicArithFrob v)).charpoly =
+    ((ρ.toLocal v (Field.AbsoluteGaloisGroup.adicArithFrob v)).charpoly)
+  rw [show (ρ.conj e).toLocal v
+        (Field.AbsoluteGaloisGroup.adicArithFrob v) =
+      (LinearEquiv.conj e) (ρ.toLocal v
+        (Field.AbsoluteGaloisGroup.adicArithFrob v)) from rfl,
+    LinearEquiv.charpoly_conj]
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Hardly-ramifiedness transfers along conjugation**, across module
+universes (PROVEN — the two-universe restatement of
+`Deformation.lean`'s `isHardlyRamified_conj`, whose proof it repeats
+verbatim; see the section docstring): the determinant is
+conjugation-invariant, the kernels of the local representations only
+grow, flatness transports through `HasFlatProlongationAt.of_equiv`
+along the base-changed isomorphism, and the tame quadratic quotient at
+`2` is composed with the inverse isomorphism. -/
+lemma isHardlyRamified_conj {p : ℕ} [Fact p.Prime] {hpodd : Odd p}
+    {R : Type*} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [Algebra ℤ_[p] R]
+    {M : Type*} [AddCommGroup M] [Module R M] [Module.Finite R M]
+    [Module.Free R M]
+    {N : Type*} [AddCommGroup N] [Module R N] [Module.Finite R N]
+    [Module.Free R N]
+    {hdimM : Module.rank R M = 2} (hdimN : Module.rank R N = 2)
+    {ρ : GaloisRep ℚ R M} (h : IsHardlyRamified hpodd hdimM ρ)
+    (e : M ≃ₗ[R] N) :
+    IsHardlyRamified hpodd hdimN (ρ.conj e) := by
+  constructor
+  · -- determinant: conjugation-invariant
+    intro g
+    rw [GaloisRep.det_apply, GaloisRep.conj_apply, LinearEquiv.conj_apply,
+      LinearMap.comp_assoc, LinearMap.det_conj]
+    exact h.det g
+  · -- unramifiedness: the kernel of the local representation only grows
+    intro q hq hqq
+    have hun := h.isUnramified q hq hqq
+    refine ⟨le_trans hun.localInertiaGroup_le ?_⟩
+    intro σ hσ
+    have h1 : ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat σ = 1 := hσ
+    show (ρ.conj e).toLocal hq.toHeightOneSpectrumRingOfIntegersRat σ = 1
+    rw [GaloisRep.toLocal_apply, GaloisRep.conj_apply,
+      ← GaloisRep.toLocal_apply, h1]
+    refine LinearMap.ext fun w => ?_
+    simp
+  · -- flatness: transport along the base-changed equivariant isomorphism
+    constructor
+    intro I hI
+    refine (h.isFlat.cond I hI).of_equiv _
+      (LinearEquiv.baseChange R (R ⧸ I) M N e).toAddEquiv ?_
+    intro g x
+    show (LinearEquiv.baseChange R (R ⧸ I) M N e)
+        (((ρ.baseChange (R ⧸ I)).toLocal
+          (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+            (Fact.out : p.Prime)) g) x) =
+      (((ρ.conj e).baseChange (R ⧸ I)).toLocal
+          (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+            (Fact.out : p.Prime)) g)
+        ((LinearEquiv.baseChange R (R ⧸ I) M N e) x)
+    induction x using TensorProduct.induction_on with
+    | zero => simp
+    | add a b ha hb => simp only [map_add, ha, hb]
+    | tmul c m =>
+      simp only [GaloisRep.toLocal_apply, GaloisRep.baseChange_tmul,
+        LinearEquiv.baseChange_tmul, GaloisRep.conj_apply,
+        LinearEquiv.conj_apply_apply, LinearEquiv.symm_apply_apply]
+  · -- tameness at 2: compose the quotient with the inverse isomorphism
+    obtain ⟨π, hπsurj, δ, hδ⟩ := h.isTameAtTwo
+    refine ⟨π.comp (e.symm : N →ₗ[R] M), ?_, δ, ?_⟩
+    · intro r
+      obtain ⟨m, hm⟩ := hπsurj r
+      exact ⟨e m, by simp [hm]⟩
+    · intro g w
+      refine ⟨?_, (hδ 1 0).2.1, (hδ 1 0).2.2⟩
+      have h1 := (hδ g (e.symm w)).1
+      show π (e.symm ((ρ.conj e).map (algebraMap ℚ ℚ_[2]) g w)) =
+        δ g (π (e.symm w))
+      rw [GaloisRep.map_apply, GaloisRep.conj_apply,
+        LinearEquiv.conj_apply_apply, LinearEquiv.symm_apply_apply,
+        ← GaloisRep.map_apply, h1]
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Base change intertwines conjugation** (PROVEN, pointwise): the
+base change of a conjugated representation acts through the base
+change of the conjugating isomorphism.  The elementary tensor
+computation consumed by the residual-identification transport
+`HardlyRamifiedFiniteDeformation.IsResidualIdentified.reframe`. -/
+lemma baseChange_conj_apply {A : Type*} [CommRing A] [TopologicalSpace A]
+    [IsTopologicalRing A] {B : Type*} [CommRing B] [TopologicalSpace B]
+    [IsTopologicalRing B] [Algebra A B] [ContinuousSMul A B]
+    {M : Type*} [AddCommGroup M] [Module A M] [Module.Finite A M]
+    [Module.Free A M]
+    {N : Type*} [AddCommGroup N] [Module A N] [Module.Finite A N]
+    [Module.Free A N]
+    (ρ : GaloisRep ℚ A M) (e : M ≃ₗ[A] N)
+    (σ : Field.absoluteGaloisGroup ℚ) (x : B ⊗[A] M) :
+    ((ρ.conj e).baseChange B) σ (LinearEquiv.baseChange A B M N e x) =
+      LinearEquiv.baseChange A B M N e ((ρ.baseChange B) σ x) := by
+  induction x using TensorProduct.induction_on with
+  | zero => simp
+  | add a b ha hb => simp only [map_add, ha, hb]
+  | tmul c m =>
+    simp only [GaloisRep.baseChange_tmul, LinearEquiv.baseChange_tmul,
+      GaloisRep.conj_apply, LinearEquiv.conj_apply_apply,
+      LinearEquiv.symm_apply_apply]
+
+/-- The standard rank-2 free module `Fin 2 → O` has rank 2 (the
+`Modularity` copy of `Deformation.lean`'s `rank_finTwoFun`, restated so
+that this module's project imports stay at `HardlyRamified/Defs` +
+`Chebotarev`; dedupe with the transport cluster above). -/
+lemma rank_finTwoFun (O : Type*) [CommRing O] [Nontrivial O] :
+    Module.rank O (Fin 2 → O) = 2 := by
+  simp
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **The standard frame of a test deformation's module** (PROVEN): a
+basis isomorphism `D.Vd ≃ₗ[D.A] (Fin 2 → D.A)`, from
+`Module.finBasisOfFinrankEq` at the rank-2 datum of the structure.
+Extracted as a definition so that `reframe` below and the residual
+identification transport refer to the SAME isomorphism. -/
+noncomputable def HardlyRamifiedFiniteDeformation.reframeEquiv.{s, t, uK, uW}
+    {p : ℕ} {hpodd : Odd p} [Fact p.Prime]
+    {k : Type uK} [CommRing k] [TopologicalSpace k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] {ρbar : GaloisRep ℚ k W}
+    (D : HardlyRamifiedFiniteDeformation.{s, t, uK, uW} hpodd ρbar) :
+    letI := D.commRing
+    letI := D.addCommGroup
+    letI := D.module
+    D.Vd ≃ₗ[D.A] (Fin 2 → D.A) :=
+  letI := D.commRing
+  letI := D.isLocalRing
+  letI := D.addCommGroup
+  letI := D.module
+  letI := D.moduleFiniteVd
+  letI := D.moduleFreeVd
+  (Module.finBasisOfFinrankEq D.A D.Vd
+    (Module.finrank_eq_of_rank_eq (by exact_mod_cast D.rank_eq))).equivFun
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Reframing a test deformation onto the standard frame** (PROVEN):
+the hardly ramified deformation with the same coefficient ring, module
+`Fin 2 → D.A`, representation `D.ρ.conj D.reframeEquiv`, and unchanged
+reduction data — legitimate by conjugation-invariance of
+hardly-ramifiedness (`isHardlyRamified_conj`) and of `charFrob`
+(`charFrob_conj`).  This is what collapses the module universe `t` of
+the weak-universality clauses onto the coefficient universe `s`. -/
+noncomputable def HardlyRamifiedFiniteDeformation.reframe.{s, t, uK, uW}
+    {p : ℕ} {hpodd : Odd p} [Fact p.Prime]
+    {k : Type uK} [CommRing k] [TopologicalSpace k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] {ρbar : GaloisRep ℚ k W}
+    (D : HardlyRamifiedFiniteDeformation.{s, t, uK, uW} hpodd ρbar) :
+    HardlyRamifiedFiniteDeformation.{s, s, uK, uW} hpodd ρbar :=
+  letI := D.commRing
+  letI := D.topologicalSpace
+  letI := D.isTopologicalRing
+  letI := D.isLocalRing
+  letI := D.algebra
+  letI := D.moduleFinite
+  letI := D.isModuleTopology
+  letI := D.addCommGroup
+  letI := D.module
+  letI := D.moduleFiniteVd
+  letI := D.moduleFreeVd
+  { A := D.A
+    Vd := Fin 2 → D.A
+    rank_eq := rank_finTwoFun D.A
+    ρ := D.ρ.conj D.reframeEquiv
+    isHardlyRamified :=
+      isHardlyRamified_conj (rank_finTwoFun D.A) D.isHardlyRamified
+        D.reframeEquiv
+    π := D.π
+    π_surjective := D.π_surjective
+    S := D.S
+    charFrob_compat := fun q hq hqS => by
+      rw [charFrob_conj]
+      exact D.charFrob_compat q hq hqS }
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Residual identifications transport along reframing** (PROVEN):
+compose the inverse base change of the framing isomorphism with the
+given identification; the elementary-tensor intertwining
+`baseChange_conj_apply` does the rest. -/
+lemma HardlyRamifiedFiniteDeformation.IsResidualIdentified.reframe.{s, t, uK, uW}
+    {p : ℕ} {hpodd : Odd p} [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [TopologicalSpace k]
+    [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] {ρbar : GaloisRep ℚ k W}
+    {D : HardlyRamifiedFiniteDeformation.{s, t, uK, uW} hpodd ρbar}
+    (hD : D.IsResidualIdentified) :
+    D.reframe.IsResidualIdentified := by
+  letI := D.commRing
+  letI := D.topologicalSpace
+  letI := D.isTopologicalRing
+  letI := D.isLocalRing
+  letI := D.algebra
+  letI := D.addCommGroup
+  letI := D.module
+  letI := D.moduleFiniteVd
+  letI := D.moduleFreeVd
+  letI : Algebra D.A k := D.π.toAlgebra
+  letI : ContinuousSMul D.A k := continuousSMul_of_algebraMap D.A k
+    (by rw [RingHom.algebraMap_toAlgebra]; exact D.continuous_pi)
+  obtain ⟨e₀, he₀⟩ := hD
+  refine ⟨(LinearEquiv.baseChange D.A k D.Vd (Fin 2 → D.A)
+      D.reframeEquiv).symm.trans e₀, ?_⟩
+  refine GaloisRep.ext fun σ => LinearMap.ext fun w => ?_
+  have hgoal := congrArg (fun τ : GaloisRep ℚ k W => τ σ w) he₀
+  simp only [GaloisRep.conj_apply, LinearEquiv.conj_apply_apply] at hgoal
+  have hkey := baseChange_conj_apply (B := k) D.ρ D.reframeEquiv σ
+    (e₀.symm w)
+  show ((LinearEquiv.baseChange D.A k D.Vd (Fin 2 → D.A)
+      D.reframeEquiv).symm.trans e₀)
+      (((D.ρ.conj D.reframeEquiv).baseChange k) σ
+        (((LinearEquiv.baseChange D.A k D.Vd (Fin 2 → D.A)
+          D.reframeEquiv).symm.trans e₀).symm w)) = ρbar σ w
+  have hsymmw : (((LinearEquiv.baseChange D.A k D.Vd (Fin 2 → D.A)
+      D.reframeEquiv).symm.trans e₀).symm w) =
+      LinearEquiv.baseChange D.A k D.Vd (Fin 2 → D.A) D.reframeEquiv
+        (e₀.symm w) := rfl
+  rw [hsymmw, hkey]
+  show e₀ ((LinearEquiv.baseChange D.A k D.Vd (Fin 2 → D.A)
+      D.reframeEquiv).symm
+      (LinearEquiv.baseChange D.A k D.Vd (Fin 2 → D.A) D.reframeEquiv
+        ((D.ρ.baseChange k) σ (e₀.symm w)))) = ρbar σ w
+  rw [LinearEquiv.symm_apply_apply]
+  exact hgoal
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Universe transport of identified weak universality** (PROVEN —
+the glue of the FOUNDER decomposition of the strict Mazur leaf,
+2026-07-24): a package factoring all standard-framed residually
+identified test deformations (module universe = coefficient universe
+`s`) factors all residually identified test deformations at EVERY
+module universe `t`: reframe the test deformation (`reframe`),
+transport its identification (`IsResidualIdentified.reframe`), and
+read the classifying map back through the conjugation-invariance of
+`charFrob` (`charFrob_conj`) — the coefficient ring, reduction map and
+exceptional set are unchanged by reframing. -/
+theorem isWeaklyUniversalOnIdentifiedDeformation_of_reframe.{s, t, uK, uW, uR}
+    {p : ℕ} {hpodd : Odd p} [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [TopologicalSpace k]
+    [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] {ρbar : GaloisRep ℚ k W}
+    {Runiv : Type uR} [CommRing Runiv] [TopologicalSpace Runiv]
+    [IsTopologicalRing Runiv] [IsLocalRing Runiv] [Algebra ℤ_[p] Runiv]
+    {ρuniv : GaloisRep ℚ Runiv (Fin 2 → Runiv)} {πuniv : Runiv →+* k}
+    (h : IsWeaklyUniversalOnIdentifiedDeformation.{s, s, uK, uW, uR} hpodd
+      ρbar ρuniv πuniv) :
+    IsWeaklyUniversalOnIdentifiedDeformation.{s, t, uK, uW, uR} hpodd ρbar
+      ρuniv πuniv := by
+  intro D hDid
+  letI := D.commRing
+  letI := D.topologicalSpace
+  letI := D.isTopologicalRing
+  letI := D.isLocalRing
+  letI := D.algebra
+  letI := D.addCommGroup
+  letI := D.module
+  letI := D.moduleFiniteVd
+  letI := D.moduleFreeVd
+  obtain ⟨ψ, hψalg, hψred, Sψ, hψtr⟩ := h D.reframe hDid.reframe
+  refine ⟨ψ, hψalg, hψred, Sψ, fun q hq hqS => ?_⟩
+  have ht : ψ ((ρuniv.charFrob
+      hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
+      ((D.ρ.conj D.reframeEquiv).charFrob
+        hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1 :=
+    hψtr q hq hqS
+  rwa [charFrob_conj] at ht
+
+/-!
+## The dual-number tangent carrier (the FOUNDER cut, 2026-07-24)
+
+With the module universes collapsed by the reframing transport, the
+strict Mazur representability statement is cut along the classical
+architecture of the deformation functor: its TANGENT SPACE is the set
+of hardly ramified lifts of `ρbar` to the dual numbers `k[ε]`
+(functor-of-points form of `H¹_{Σ}(G_{ℚ,{2,p}}, ad ρbar)`, the
+subspace of `H¹` cut out by the hardly ramified local conditions);
+its FINITENESS — Schlessinger's H3 — is the arithmetic input, isolated
+below as the restricted-ramification finiteness leaf
+`finite_setOf_isHardlyRamified` (Hermite–Minkowski); everything else —
+Schlessinger's H1, H2, H4, the relative representability of the hardly
+ramified conditions, and the de Smit–Lenstra presentation
+`R_univ = ℤ_p[[x₁,…,x_g]]/(f₁,…,f_m)` in `g = dim` tangent-space
+variables that yields the Mazur-category properties (Noetherian,
+`𝔪`-adic, complete) — is the deformation-theoretic core leaf
+`exists_weaklyUniversalOnIdentified_framed_of_finite_tangent`, which
+consumes the tangent finiteness as its sole arithmetic hypothesis.
+-/
+
+/-- The dual numbers over a finite ring are finite (the carrier is
+definitionally `K × K`). -/
+instance {K : Type*} [Finite K] : Finite (DualNumber K) :=
+  inferInstanceAs (Finite (K × K))
+
+/-- The dual numbers over a field form a local ring: a dual number is
+a unit exactly when its constant term is nonzero
+(`TrivSqZeroExt.isUnit_iff_isUnit_fst`), and for any `a` at least one
+of `a`, `1 - a` has nonzero constant term. -/
+instance {K : Type*} [Field K] : IsLocalRing (DualNumber K) :=
+  IsLocalRing.of_isUnit_or_isUnit_one_sub_self fun a => by
+    by_cases hfst : TrivSqZeroExt.fst a = 0
+    · refine Or.inr (TrivSqZeroExt.isUnit_iff_isUnit_fst.mpr ?_)
+      rw [TrivSqZeroExt.fst_sub, TrivSqZeroExt.fst_one, hfst, sub_zero]
+      exact isUnit_one
+    · exact Or.inl (TrivSqZeroExt.isUnit_iff_isUnit_fst.mpr
+        (isUnit_iff_ne_zero.mpr hfst))
+
+/-- **A dual-number tangent lift of `ρbar`** — a point of the framed
+tangent space of the hardly ramified deformation problem: a hardly
+ramified representation over the dual numbers `k[ε]` whose reduction
+along the constant-term map `k[ε] →+* k` (an identification, as in
+`IsResidualIdentified`) is conjugate to `ρbar`.  Classically the set
+of these lifts is a torsor under the cocycles
+`Z¹_{Σ}(G_{ℚ,{2,p}}, ad ρbar)` over the framed points, and its
+finiteness is exactly Schlessinger's H3 for the hardly ramified
+functor; here it is the hypothesis carrier feeding the arithmetic
+finiteness leaf into the deformation-theoretic core leaf below. -/
+def IsDualNumberTangentLift.{uK, uW} {p : ℕ} (hpodd : Odd p)
+    [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (ρbar : GaloisRep ℚ k W)
+    (ρε : GaloisRep ℚ (DualNumber k) (Fin 2 → DualNumber k)) : Prop :=
+  IsHardlyRamified hpodd (rank_finTwoFun (DualNumber k)) ρε ∧
+  (letI : Algebra (DualNumber k) k :=
+    (TrivSqZeroExt.fstHom k k k).toRingHom.toAlgebra
+  letI : ContinuousSMul (DualNumber k) k :=
+    ⟨continuous_of_discreteTopology⟩
+  ∃ e : (k ⊗[DualNumber k] (Fin 2 → DualNumber k)) ≃ₗ[k] W,
+    (ρε.baseChange k).conj e = ρbar)
+
+/-- **Restricted-ramification finiteness leaf** (sorry node — the
+arithmetic finiteness input of the FOUNDER cut, and the only
+number-theoretic content of Schlessinger's H3 for the hardly ramified
+problem): over a FINITE discrete local coefficient `ℤ_p`-algebra `A`,
+there are only finitely many hardly ramified representations
+`G_ℚ → GL₂(A)`.
+
+Mathematical content (Hermite–Minkowski; Serre, *Galois cohomology*,
+II §6, "`G_S` is small"; Neukirch–Schmidt–Wingberg, *Cohomology of
+Number Fields*, Thm. 10.9.x; Diamond–Darmon–Taylor, *Fermat's Last
+Theorem* (1995), §2): a hardly ramified representation is continuous
+into the finite discrete group of automorphisms of `A²` and unramified
+outside `{2, p}` (`IsHardlyRamified.isUnramified`), so its kernel is
+open and its fixed field is a number field of degree
+`≤ |GL₂(A)|` unramified outside `{2, p}`.  Ramification bounded to a
+fixed finite set of primes bounds the discriminant in terms of the
+degree (the exponent of a prime in the different is bounded by
+`e - 1 + e·v(e)`), and by the Hermite–Minkowski theorem there are only
+finitely many number fields of bounded degree and bounded
+discriminant; each supports finitely many homomorphisms of its (finite)
+Galois group into the finite `GL₂(A)`.  Equivalently: the Galois group
+`G_{ℚ,{2,p}}` of the maximal extension unramified outside `{2,p,∞}` is
+a *small* profinite group — it has finitely many open subgroups of
+each index — so the set of continuous homomorphisms into any fixed
+finite group is finite; the hardly ramified set injects into it.
+
+Both-ways audit: the statement quantifies over an abstract finite
+coefficient ring and asserts a plain classical finiteness — true
+outright, no vacuity needed.  Consumed by the pillar assembly at
+`A = k[ε]` (through `Set.Finite.subset`, the tangent lifts being among
+the hardly ramified representations); stated over a general finite
+coefficient ring because the same finiteness at every Artinian level
+is what the future proof of the deformation-theoretic core leaf will
+consume when building the universal ring as a limit. -/
+theorem finite_setOf_isHardlyRamified.{uA} {p : ℕ} (hpodd : Odd p)
+    [Fact p.Prime]
+    {A : Type uA} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+    [IsLocalRing A] [Algebra ℤ_[p] A] [Finite A] [DiscreteTopology A] :
+    {ρ : GaloisRep ℚ A (Fin 2 → A) |
+      IsHardlyRamified hpodd (rank_finTwoFun A) ρ}.Finite :=
+  sorry
+
+/-- **Schlessinger–Ramakrishna–CDT core leaf** (sorry node — the
+deformation-theoretic core of the FOUNDER cut of strict Mazur
+representability): GIVEN the finiteness of the dual-number tangent
+space (Schlessinger's H3, supplied by the restricted-ramification
+finiteness leaf through the proven glue of the pillar assembly), the
+hardly ramified deformation problem of an irreducible hardly ramified
+`ρbar` admits a Mazur-category package `(Runiv, ρuniv, πuniv)` —
+complete Noetherian local topological `ℤ_p`-algebra with the `𝔪`-adic
+topology, hardly ramified universal representation on the standard
+frame, surjective reduction matching linear `charFrob` coefficients
+off a finite set — that factors every residually identified
+STANDARD-FRAMED test deformation (module universe = coefficient
+universe; the reframing transport
+`isWeaklyUniversalOnIdentifiedDeformation_of_reframe` upgrades this to
+every module universe).
+
+Classical construction, stratum by stratum: (1) the framed hardly
+ramified lifting functor on Artinian local `ℤ_p`-algebras with residue
+field `k` satisfies Schlessinger's H1 and H2 (limits of lifts along
+small surjections glue — fibre products of coefficient rings carry
+fibre products of representations); its tangent space is the
+dual-number lift set of `IsDualNumberTangentLift`, FINITE by the
+hypothesis `hfin`, which is H3; `ρbar` is odd (cyclotomic determinant,
+odd `p`), and an odd irreducible 2-dimensional representation over a
+finite field of odd characteristic is absolutely irreducible, so
+`End_{k[G]}(ρbar) = k` (Schur) and H4 holds — by Schlessinger's
+theorem (Trans. AMS 130 (1968), Thm. 2.11) and Mazur (*Deforming
+Galois representations*, MSRI Publ. 16 (1989), §1.2) the unframed
+functor is pro-representable and the framing is a torsor.  (2) The
+hardly ramified conditions cut out a relatively representable closed
+subfunctor: cyclotomic determinant and unramifiedness outside `2p` are
+limit-stable; flatness at `p` in the `IsFlatAt` sense is Ramakrishna's
+flat condition (Compositio 87 (1994)); the tame quadratic quotient at
+`2` is an ordinary-type condition (Conrad–Diamond–Taylor, JAMS 12
+(1999), §2; the FLT blueprint's `S`-good theory at `S = {2}`).
+(3) `Runiv` is the universal ring: by de Smit–Lenstra (*Explicit
+construction of universal deformation rings*, in Cornell–Silverman–
+Stevens) it is a quotient of `ℤ_p[[x₁,…,x_g]]`, `g = dim_k` of the
+tangent space (finite by `hfin`), hence Noetherian, local,
+`𝔪`-adically complete with the `𝔪`-adic topology; the universal
+representation is hardly ramified because each condition is, in the
+`IsFlatAt`/inertia-kernel/quotient-character spelling, a limit of its
+Artinian-quotient instances.  (4) A residually identified test
+deformation over a module-finite local `ℤ_p`-algebra `A` is a
+legitimate Mazur test object (complete Noetherian local with the
+`𝔪`-adic topology — the module docstring's audit), so its
+identification-conjugated representation has a classifying map
+`ψ : Runiv →+* A`; `ℤ_p`-compatibility and reduction compatibility are
+strictness of the classifying map, and the trace clause is
+conjugation-invariance of `charFrob` (residual irreducibility kills
+the framing ambiguity on traces).
+
+Both-ways audit: for the genuine hardly ramified problem this is the
+cited Mazur/Ramakrishna/CDT representability; abstractly the
+hypothesis set contains an irreducible hardly ramified `ρbar`, which
+the section audit of `Interface.lean` shows to be classically
+unsatisfiable, so the statement is also classically true outright.
+CIRCULARITY GUARD (inherited): must not be proven through
+`Family.lean` or anything downstream of it (`Lift.lean` included). -/
+theorem exists_weaklyUniversalOnIdentified_framed_of_finite_tangent.{s, uK, uW}
+    {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hpodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (hfin : {ρε : GaloisRep ℚ (DualNumber k) (Fin 2 → DualNumber k) |
+      IsDualNumberTangentLift hpodd ρbar ρε}.Finite) :
+    ∃ (Runiv : Type s) (_ : CommRing Runiv) (_ : TopologicalSpace Runiv)
+      (_ : IsTopologicalRing Runiv) (_ : IsLocalRing Runiv)
+      (_ : Algebra ℤ_[p] Runiv) (_ : IsNoetherianRing Runiv)
+      (_ : IsAdic (IsLocalRing.maximalIdeal Runiv))
+      (_ : IsAdicComplete (IsLocalRing.maximalIdeal Runiv) Runiv)
+      (ρuniv : GaloisRep ℚ Runiv (Fin 2 → Runiv))
+      (hranku : Module.rank Runiv (Fin 2 → Runiv) = 2)
+      (_ : IsHardlyRamified hpodd hranku ρuniv)
+      (πuniv : Runiv →+* k) (_ : Function.Surjective πuniv)
+      (Suniv : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
+      (∀ (q : ℕ) (hq : q.Prime),
+        hq.toHeightOneSpectrumRingOfIntegersRat ∉ Suniv →
+        πuniv ((ρuniv.charFrob
+            hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
+          (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) ∧
+      IsWeaklyUniversalOnIdentifiedDeformation.{s, s, uK, uW, s} hpodd ρbar
+        ρuniv πuniv :=
+  sorry
+
+/-- **Strict Mazur representability** (the representability half of
+the Mazur pillar; DECOMPOSED 2026-07-24, FOUNDER cut — the assembly
+below is PROVEN over the restricted-ramification finiteness leaf
+`finite_setOf_isHardlyRamified` (Hermite–Minkowski, instantiated at
+the dual numbers to give Schlessinger's H3) and the
+deformation-theoretic core leaf
+`exists_weaklyUniversalOnIdentified_framed_of_finite_tangent`
+(Schlessinger H1/H2/H4, Schur via oddness, Ramakrishna's flat
+condition at `p`, CDT's tame condition at `2`, de Smit–Lenstra
+presentation), with the second universality clause obtained from the
+first by the proven reframing transport
+`isWeaklyUniversalOnIdentifiedDeformation_of_reframe`): the hardly
+ramified deformation problem of an irreducible hardly ramified `ρbar`
+over a finite coefficient field admits a Mazur-category package
 `(Runiv, ρuniv, πuniv)` — complete Noetherian local topological
 `ℤ_p`-algebra with the `𝔪`-adic topology, hardly ramified universal
 representation, surjective reduction matching linear `charFrob`
 coefficients off a finite set — that factors every *residually
 identified* test deformation, at both module universes the pillar-3b
 assembly instantiates.  The Chebotarev–Brauer–Nesbitt matching is NOT
-part of this leaf (it is supplied by `exists_conj_of_charFrob_eq_away`
-through the proven assemblies below); this leaf is Mazur/Ramakrishna/CDT
-representability proper.
+part of this node (it is supplied by `exists_conj_of_charFrob_eq_away`
+through the proven assemblies below); this node is
+Mazur/Ramakrishna/CDT representability proper.
 
 Classical construction (as in the parent pillar's docstring, which this
 leaf now carries alone): `ρbar` is odd (cyclotomic determinant, odd
@@ -760,8 +1287,20 @@ theorem exists_weaklyUniversalOnIdentified_hardlyRamifiedDeformation.{s, t, uK, 
       IsWeaklyUniversalOnIdentifiedDeformation.{s, s, uK, uW, s} hpodd ρbar
         ρuniv πuniv ∧
       IsWeaklyUniversalOnIdentifiedDeformation.{s, t, uK, uW, s} hpodd ρbar
-        ρuniv πuniv :=
-  sorry
+        ρuniv πuniv := by
+  obtain ⟨Runiv, iCR, iTS, iTR, iLR, iAlg, iNoeth, hadic, hcomplete, ρuniv,
+    hranku, hHR, πuniv, hπsurj, Suniv, hred, hws⟩ :=
+    exists_weaklyUniversalOnIdentified_framed_of_finite_tangent.{s, uK, uW}
+      hpodd hW hρbar hirr
+      ((finite_setOf_isHardlyRamified hpodd).subset fun ρε hρε => hρε.1)
+  letI := iCR
+  letI := iTS
+  letI := iTR
+  letI := iLR
+  letI := iAlg
+  exact ⟨Runiv, iCR, iTS, iTR, iLR, iAlg, iNoeth, hadic, hcomplete, ρuniv,
+    hranku, hHR, πuniv, hπsurj, Suniv, hred, hws,
+    isWeaklyUniversalOnIdentifiedDeformation_of_reframe hws⟩
 
 open scoped TensorProduct in
 /-- **Upgrade from identified to unconditional weak universality**
