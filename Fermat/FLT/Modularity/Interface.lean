@@ -230,6 +230,12 @@ import Fermat.FLT.Modularity.KhareWintenberger
 -- Taylor–Wiles injectivity) and the `charFrob`/base-change bridge.
 -- Proof-body use only (the 3b assembly).
 import Fermat.FLT.Modularity.Patching
+-- the connected–étale idempotent package
+-- (`Bialgebra.exists_connected_counit_idempotent`,
+-- `mul_eq_zero_or_mul_eq_of_minimal`) and the shared Oort–Tate
+-- `μ`-type node (`OortTate.*`), consumed by the Raynaud inertia
+-- dichotomy assembly (pillar E1b-i). Non-public: proofs only.
+import Fermat.FLT.GroupScheme.ConnectedEtale
 -- `ClassGroup`, `ClassGroup.mulEquiv`, `ClassGroup.mk0`: the ideal
 -- class group and its functoriality under ring isomorphisms — the
 -- carrier of the Galois action behind the Herbrand cut of Eisenstein
@@ -7336,46 +7342,80 @@ theorem cyclotomicCharacter_residue_pow_sub_one_eq_one
     exact h1.symm
   exact sub_eq_zero.mp hk
 
+-- Local abbreviations for the `p`-adic completion vocabulary of the
+-- Raynaud dichotomy assembly below (the notations elaborate to exactly
+-- the spelled-out terms of the statements they enter).
+local notation "𝔭ᵥ" => Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : p.Prime)
+local notation "𝒪ᵖᵥ" => IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : p.Prime))
+local notation "ℚᵖᵥ" => IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : p.Prime))
+
+/-- **`ℤ_p → k` factors through the mod-`p` residue** (PROVEN — glue
+for the Raynaud dichotomy assembly below): in a finite
+`ℤ_[p]`-algebra field `k`, the image of `x : ℤ_[p]` is the
+natural-number cast of its `ZMod p`-residue value: `x` differs from
+`(toZMod x).val` by an element of `p ℤ_p` (`PadicInt.ker_toZMod`),
+and `p` dies in `k` (`prime_eq_zero_of_finite_padicInt_algebra`). -/
+theorem algebraMap_padicInt_eq_natCast_toZMod_val
+    {k : Type*} [Field k] [Finite k] [Algebra ℤ_[p] k] (x : ℤ_[p]) :
+    algebraMap ℤ_[p] k x = ((PadicInt.toZMod x).val : k) := by
+  haveI : NeZero p := ⟨hp.out.ne_zero⟩
+  have hmem : x - (((PadicInt.toZMod x).val : ℕ) : ℤ_[p]) ∈
+      Ideal.span {((p : ℕ) : ℤ_[p])} := by
+    rw [← PadicInt.maximalIdeal_eq_span_p, ← PadicInt.ker_toZMod,
+      RingHom.mem_ker, map_sub, map_natCast, ZMod.natCast_val,
+      ZMod.cast_id, sub_self]
+  obtain ⟨t, ht⟩ := Ideal.mem_span_singleton'.mp hmem
+  have hp0 : algebraMap ℤ_[p] k ((p : ℕ) : ℤ_[p]) = 0 := by
+    rw [map_natCast]
+    exact prime_eq_zero_of_finite_padicInt_algebra
+  have h1 := congrArg (algebraMap ℤ_[p] k) ht
+  rw [map_mul, hp0, mul_zero, map_sub, map_natCast] at h1
+  exact sub_eq_zero.mp h1.symm
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
 /-- **Raynaud inertia dichotomy for the sub-character at `p`**
-(Eisenstein pillar E1b-i; sorry node — the finite-flat/Oort–Tate
-input of the Raynaud pinning): the sub-character `χsub = ω^i` of a
-(flat at `p`) triangular hardly ramified mod-`p` representation,
-restricted to the local inertia at `p`, is TRIVIAL or the mod-`p`
-CYCLOTOMIC character — nothing else occurs. Intended proof (Raynaud,
-*Schémas en groupes de type `(p, …, p)`*, Bull. SMF 102 (1974),
-3.3.2/3.4.3; Serre, Duke Math. J. 54 (1987), §2.4 and §2.8 prop. 8;
-Tate, "Finite flat group schemes", in Cornell–Silverman–Stevens):
-`hρbar.isFlat.cond ⊥` at the open ideal `⊥` of the discrete field
-`k` hands an explicit finite flat Hopf order `G` over `𝒪ᵥ ≅ ℤ_p`
-whose generic-fibre geometric points are `Γ ℚ_p`-equivariantly
-identified with `W` (transport `k ⧸ ⊥ ≅ k` along
-`HasFlatProlongationAt.of_equiv`); the stable line `k·(b 0)` of the
-triangular form is a Galois-stable subgroup of the points, and its
-schematic closure is a finite flat closed subgroup scheme over `ℤ_p`
-killed by `p` (Tate–Raynaud closure); at absolute ramification
-`e = 1 < p − 1` the connected–étale alternative for it reads: étale
-— its points are defined over `ℚ_p^nr`, inertia acts trivially, the
-LEFT disjunct — or connected, of multiplicative `μ`-type by
-Raynaud's classification (the `hpow` hypothesis places the inertia
-character in LEVEL 1, excluding the higher-level fundamental
-characters of the `𝔽_q`-vector-space-scheme classification), where
-inertia acts by the cyclotomic character — the RIGHT disjunct.
-SHARED CORE (audit 2026-07-24): the connected branch is the same
-Oort–Tate/μ-type content as the Family leaf
-`connected_point_smul_eq_cyclotomicCharacter_smul_of_hopf_package`
-(NOT consumable here — the circularity guard forbids `Family.lean`)
-and the ModThree leaf `inertiaFixed_connected_point_eq_one_at_three`;
-one Oort–Tate-at-`ℤ_p` classification leaf in the `ConnectedEtale`
-Hopf vocabulary (a connected finite flat Hopf order over `ℤ_p`
-killed by `p` at `e = 1` is of `μ`-type: inertia raises its points
-to the cyclotomic power) would discharge all three. Soundness (audit
+(Eisenstein pillar E1b-i; PROVEN 2026-07-24 as a connected–étale
+assembly over the single sorried shared Oort–Tate `μ`-type node
+`OortTate.connected_cyclic_point_smul_eq_conv_pow_cyclotomicCharacter`
+of `GroupScheme/ConnectedEtale.lean` — the neutral-home group-scheme
+classification leaf flagged by the E1b audit, reachable by all three
+Hopf-package consumers): the sub-character `χsub = ω^i` of a (flat at
+`p`) triangular hardly ramified mod-`p` representation, restricted to
+the local inertia at `p`, is TRIVIAL or the mod-`p` CYCLOTOMIC
+character — nothing else occurs. Assembly (Raynaud, *Schémas en
+groupes de type `(p, …, p)`*, Bull. SMF 102 (1974), 3.3.2/3.4.3;
+Serre, Duke Math. J. 54 (1987), §2.4 and §2.8 prop. 8; Tate, "Finite
+flat group schemes", in Cornell–Silverman–Stevens):
+`hρbar.isFlat.cond ⊥` at the open ideal `⊥` of the discrete field `k`
+hands an explicit finite flat Hopf order `G` over `𝒪ᵥ ≅ ℤ_p` whose
+generic-fibre geometric points are `Γ ℚ_p`-equivariantly identified
+with the congruence space `(k ⧸ ⊥) ⊗ W`; the PROVEN generic
+connected-idempotent package (`Bialgebra.exists_connected_counit_idempotent`)
+provides the connected counit idempotent `e₀`. Either `χsub` dies on
+the whole inertia (the LEFT disjunct, taken outright), or some
+inertia element `σ₀` has `χsub(σ̃₀) ≠ 1` — then the displacement
+vector `(χsub(σ̃₀) − 1)·(1 ⊗ b 0)` of the stable line is a NONZERO
+CONNECTED point (the PROVEN étale half
+`OortTate.displacement_point_apply_idempotent_eq_one`: inertia
+displacements die in the étale quotient), killed by `p` (char `p`),
+whose convolution-cyclic group is inertia-stable because `χsub = ω^i`
+is PRIME-FIELD-valued (`hpow` + `algebraMap_padicInt_eq_natCast_toZMod_val`
+— this is where the `hpow` hypothesis places the tame character in
+LEVEL 1, excluding the level-2 fundamental characters); the μ-type
+node then makes inertia act on it by the `χ_cyc mod p` convolution
+power, and transporting along the equivariant bijection and
+cancelling the nonzero coordinate on the basis line gives
+`χsub = ω` on ALL of inertia — the RIGHT disjunct. Soundness (audit
 2026-07-24): the hypothesis set is inhabited — the `μ_p`-over-`ℤ/p`
 lattice ordering of `1 ⊕ ω` realizes `χsub = ω` (tame quotient
 `δ = 1` at `2`) and the opposite ordering realizes `χsub = 1` — and
 the conclusion holds for every inhabitant by the classification
 cited; `p ≥ 5` is not consumed (`Odd p` gives `e = 1 < p − 1`).
 CIRCULARITY GUARD (inherited): must not be proven through
-`Family.lean` or `Reducible.lean`'s B5. -/
+`Family.lean` or `Reducible.lean`'s B5 — the assembly consumes only
+`GroupScheme/ConnectedEtale.lean`, which imports neither. -/
 theorem residual_triangular_sub_character_inertia_dichotomy_of_flat
     {k : Type*} [Field k] [Finite k] [Algebra ℤ_[p] k]
     [TopologicalSpace k] [DiscreteTopology k]
@@ -7410,8 +7450,225 @@ theorem residual_triangular_sub_character_inertia_dichotomy_of_flat
         ((Field.absoluteGaloisGroup.map (algebraMap ℚ
           (HeightOneSpectrum.adicCompletion ℚ
             (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
-              (Fact.out : p.Prime)))) σ).toRingEquiv))) :=
-  sorry
+              (Fact.out : p.Prime)))) σ).toRingEquiv))) := by
+  classical
+  by_cases htriv : ∀ σ ∈ localInertiaGroup 𝔭ᵥ,
+      χsub (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚᵖᵥ) σ) = 1
+  · exact Or.inl htriv
+  push Not at htriv
+  obtain ⟨σ₀, hσ₀, hne₀⟩ := htriv
+  refine Or.inr ?_
+  -- ==== the Hopf package of the flat prolongation at the open ideal `⊥` ====
+  obtain ⟨G, iCR, iHopf, iFlat, iFin, -, fG, hfG⟩ :=
+    hρbar.isFlat.cond (⊥ : Ideal k) (isOpen_discrete _)
+  letI := iCR
+  letI := iHopf
+  letI := iFlat
+  letI := iFin
+  -- the connected counit idempotent of the Hopf order
+  obtain ⟨e₀, he₀, hε₀, hmin₀, habs₀⟩ :=
+    Bialgebra.exists_connected_counit_idempotent (A := 𝒪ᵖᵥ) (G := G)
+  have hprim₀ : ∀ x : G, IsIdempotentElem x → x * e₀ = 0 ∨ x * e₀ = e₀ :=
+    fun x hx => mul_eq_zero_or_mul_eq_of_minimal he₀ hε₀ hmin₀ x hx
+  have hcomul₀ : Coalgebra.comul (R := 𝒪ᵖᵥ) e₀ * (e₀ ⊗ₜ[𝒪ᵖᵥ] e₀) =
+      e₀ ⊗ₜ[𝒪ᵖᵥ] e₀ := by
+    rwa [Bialgebra.comulAlgHom_apply] at habs₀
+  -- the points identification as an equivalence
+  let geq := Equiv.ofBijective fG hfG
+  have hfs : ∀ x, fG (geq.symm x) = x := fun x => geq.apply_symm_apply x
+  -- ==== the stable line through `1 ⊗ b 0` ====
+  have hact : ∀ gg : Field.absoluteGaloisGroup ℚ,
+      ρbar gg (b 0) = χsub gg • b 0 := by
+    intro gg
+    have h1 : ρbar gg (b 0) =
+        Matrix.toLin b b (LinearMap.toMatrix b b (ρbar gg)) (b 0) :=
+      (LinearMap.congr_fun (Matrix.toLin_toMatrix b b (ρbar gg)) (b 0)).symm
+    rw [htri gg, Matrix.toLin_self, Fin.sum_univ_two] at h1
+    simpa using h1
+  have hw_add : ∀ c d : k,
+      (1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] ((c + d) • b 0) =
+        (1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] (c • b 0) +
+          (1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] (d • b 0) := by
+    intro c d
+    rw [add_smul, TensorProduct.tmul_add]
+  have hlin : ∀ (τ : Field.absoluteGaloisGroup
+      (HeightOneSpectrum.adicCompletion ℚ 𝔭ᵥ)) (c : k),
+      (ρbar.baseChange (k ⧸ (⊥ : Ideal k)))
+          (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚᵖᵥ) τ)
+          ((1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] (c • b 0)) =
+        (1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k]
+          ((χsub (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚᵖᵥ) τ) * c) •
+            b 0) := by
+    intro τ c
+    rw [GaloisRep.baseChange_tmul]
+    congr 1
+    rw [map_smul, hact, smul_smul,
+      mul_comm c (χsub (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚᵖᵥ) τ))]
+  have hwsmul : ∀ (m : ℕ) (c : k),
+      m • ((1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] (c • b 0)) =
+        (1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] (((m : k) * c) • b 0) := by
+    intro m c
+    have h1 := map_nsmul (TensorProduct.mk k (k ⧸ (⊥ : Ideal k)) W 1) m
+      (c • b 0)
+    rw [TensorProduct.mk_apply, TensorProduct.mk_apply] at h1
+    rw [← h1]
+    congr 1
+    rw [← Nat.cast_smul_eq_nsmul k m (c • b 0), smul_smul]
+  have hwinj : ∀ x y : k,
+      (1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] (x • b 0) =
+        (1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] (y • b 0) → x = y := by
+    intro x y hxy
+    have h1 : ((TensorProduct.congr
+        (AlgEquiv.quotientBot k k).toLinearEquiv
+        (LinearEquiv.refl k W)).trans (TensorProduct.lid k W))
+        ((1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] ((x - y) • b 0)) = (x - y) • b 0 := by
+      rw [LinearEquiv.trans_apply, TensorProduct.congr_tmul,
+        TensorProduct.lid_tmul, LinearEquiv.refl_apply,
+        AlgEquiv.toLinearEquiv_apply, map_one, one_smul]
+    have h2 : (1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] ((x - y) • b 0) = 0 := by
+      rw [sub_smul, TensorProduct.tmul_sub, hxy, sub_self]
+    rw [h2, map_zero] at h1
+    rcases smul_eq_zero.mp h1.symm with h | h
+    · exact sub_eq_zero.mp h
+    · exact absurd h (b.ne_zero 0)
+  -- `p`-torsion of the congruence module (`p` dies in `k`)
+  have hpw : ∀ x : (k ⧸ (⊥ : Ideal k)) ⊗[k] W, p • x = 0 := by
+    intro x
+    have h1 : ((p : ℕ) : k ⧸ (⊥ : Ideal k)) = 0 := by
+      have h2 := congrArg (algebraMap k (k ⧸ (⊥ : Ideal k)))
+        (prime_eq_zero_of_finite_padicInt_algebra (p := p) (k := k))
+      rwa [map_natCast, map_zero] at h2
+    have h3 := Nat.cast_smul_eq_nsmul (k ⧸ (⊥ : Ideal k)) p x
+    rw [h1, zero_smul] at h3
+    exact h3.symm
+  -- the two spellings of the local action agree (ring homs out of `ℚ`)
+  have hbridge : ∀ (τ : Field.absoluteGaloisGroup
+      (HeightOneSpectrum.adicCompletion ℚ 𝔭ᵥ))
+      (x : (k ⧸ (⊥ : Ideal k)) ⊗[k] W),
+      ((ρbar.baseChange (k ⧸ (⊥ : Ideal k))).toLocal 𝔭ᵥ) τ x =
+        (ρbar.baseChange (k ⧸ (⊥ : Ideal k)))
+          (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚᵖᵥ) τ) x := by
+    intro τ x
+    rw [GaloisRep.toLocal_apply]
+    exact congrArg (fun (h : ℚ →+* ℚᵖᵥ) =>
+      (ρbar.baseChange (k ⧸ (⊥ : Ideal k)))
+        (Field.absoluteGaloisGroup.map h τ) x)
+      (Subsingleton.elim _ _)
+  -- ==== the nonzero connected vector on the stable line ====
+  set c₀ : k :=
+    χsub (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚᵖᵥ) σ₀) - 1
+    with hc₀def
+  have hc₀ : c₀ ≠ 0 := by
+    rw [hc₀def]
+    exact sub_ne_zero.mpr hne₀
+  have hXd : geq.symm ((1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] (c₀ • b 0)) +
+      geq.symm ((1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] ((1 : k) • b 0)) =
+      σ₀ • geq.symm ((1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] ((1 : k) • b 0)) := by
+    apply geq.injective
+    show fG _ = fG _
+    rw [map_add fG, map_smul fG, hfs, hfs]
+    show (1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] (c₀ • b 0) +
+        (1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] ((1 : k) • b 0) =
+      ((ρbar.baseChange (k ⧸ (⊥ : Ideal k))).toLocal 𝔭ᵥ) σ₀
+        ((1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] ((1 : k) • b 0))
+    rw [hbridge, hlin σ₀ 1, mul_one, ← hw_add,
+      show c₀ + 1 =
+          χsub (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚᵖᵥ) σ₀) from by
+        rw [hc₀def]; ring]
+  -- the displacement point is CONNECTED (the étale half)
+  have hconn : (Additive.toMul (geq.symm
+      ((1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] (c₀ • b 0))))
+      ((1 : ℚᵖᵥ) ⊗ₜ[𝒪ᵖᵥ] e₀) = 1 := by
+    refine OortTate.displacement_point_apply_idempotent_eq_one 𝔭ᵥ G e₀ he₀
+      hε₀ σ₀ hσ₀
+      (Additive.toMul (geq.symm
+        ((1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] ((1 : k) • b 0)))) _ ?_
+    have h1 := congrArg Additive.toMul hXd
+    rw [toMul_add] at h1
+    exact h1
+  -- the connected point is killed by `p`
+  have hord : (Additive.toMul (geq.symm
+      ((1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] (c₀ • b 0)))) ^ p = 1 := by
+    have h0 : fG (p • geq.symm
+        ((1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] (c₀ • b 0))) = fG 0 := by
+      rw [map_nsmul fG, map_zero fG, hfs]
+      exact hpw _
+    have h1 := hfG.injective h0
+    have h2 := congrArg Additive.toMul h1
+    rwa [toMul_nsmul, toMul_zero] at h2
+  -- inertia-stability of the cyclic point group: `χsub = ω^i` is
+  -- prime-field-valued (the LEVEL-1 placement through `hpow`)
+  have hstab : ∀ τ ∈ localInertiaGroup 𝔭ᵥ,
+      ∃ m : ℕ,
+        τ • (Additive.toMul (geq.symm
+          ((1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] (c₀ • b 0)))) =
+        (Additive.toMul (geq.symm
+          ((1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] (c₀ • b 0)))) ^ m := by
+    intro τ _
+    refine ⟨(PadicInt.toZMod ((cyclotomicCharacter (AlgebraicClosure ℚ) p
+      ((Field.absoluteGaloisGroup.map (algebraMap ℚ ℚᵖᵥ) τ).toRingEquiv) :
+        ℤ_[p]ˣ) : ℤ_[p])).val ^ i, ?_⟩
+    have hval : χsub (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚᵖᵥ) τ) =
+        (((PadicInt.toZMod ((cyclotomicCharacter (AlgebraicClosure ℚ) p
+          ((Field.absoluteGaloisGroup.map (algebraMap ℚ ℚᵖᵥ)
+            τ).toRingEquiv) : ℤ_[p]ˣ) : ℤ_[p])).val ^ i : ℕ) : k) := by
+      rw [hpow (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚᵖᵥ) τ),
+        algebraMap_padicInt_eq_natCast_toZMod_val, Nat.cast_pow]
+    have h2 : fG (τ • geq.symm
+        ((1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] (c₀ • b 0))) =
+        fG (((PadicInt.toZMod ((cyclotomicCharacter (AlgebraicClosure ℚ) p
+          ((Field.absoluteGaloisGroup.map (algebraMap ℚ ℚᵖᵥ)
+            τ).toRingEquiv) : ℤ_[p]ˣ) : ℤ_[p])).val ^ i) •
+          geq.symm ((1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] (c₀ • b 0))) := by
+      rw [map_smul fG, map_nsmul fG, hfs]
+      show ((ρbar.baseChange (k ⧸ (⊥ : Ideal k))).toLocal 𝔭ᵥ) τ
+          ((1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] (c₀ • b 0)) = _
+      rw [hbridge, hlin, hval, hwsmul]
+    have h3 := hfG.injective h2
+    have h4 := congrArg Additive.toMul h3
+    rw [toMul_nsmul] at h4
+    exact h4
+  -- ==== the RIGHT disjunct, one inertia element at a time ====
+  intro σ hσ
+  set nval : ℕ :=
+    (PadicInt.toZMod ((cyclotomicCharacter (AlgebraicClosure ℚ) p
+      ((Field.absoluteGaloisGroup.map (algebraMap ℚ ℚᵖᵥ) σ).toRingEquiv) :
+        ℤ_[p]ˣ) : ℤ_[p])).val with hnval
+  have hnmem : ((cyclotomicCharacter (AlgebraicClosure ℚ) p
+      ((Field.absoluteGaloisGroup.map (algebraMap ℚ ℚᵖᵥ) σ).toRingEquiv) :
+        ℤ_[p]ˣ) : ℤ_[p]) - (nval : ℤ_[p]) ∈
+      Ideal.span {((p : ℕ) : ℤ_[p])} := by
+    haveI : NeZero p := ⟨hp.out.ne_zero⟩
+    rw [hnval, ← PadicInt.maximalIdeal_eq_span_p, ← PadicInt.ker_toZMod,
+      RingHom.mem_ker, map_sub, map_natCast, ZMod.natCast_val,
+      ZMod.cast_id, sub_self]
+  -- the shared Oort–Tate `μ`-type node
+  have hsmul :=
+    OortTate.connected_cyclic_point_smul_eq_conv_pow_cyclotomicCharacter
+      hpodd G e₀ he₀ hε₀ hprim₀ hcomul₀
+      (Additive.toMul (geq.symm
+        ((1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] (c₀ • b 0))))
+      hconn hord hstab σ hσ nval hnmem
+  -- transport the convolution power identity to the congruence space
+  have hfinal : (1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k]
+      ((χsub (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚᵖᵥ) σ) * c₀) •
+        b 0) =
+      (1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] (((nval : k) * c₀) • b 0) := by
+    have h3a : σ • geq.symm ((1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] (c₀ • b 0)) =
+        nval • geq.symm ((1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] (c₀ • b 0)) :=
+      Additive.toMul.injective (by rw [toMul_nsmul]; exact hsmul)
+    have h3 := congrArg fG h3a
+    rw [map_smul fG, map_nsmul fG, hfs] at h3
+    have h4 : ((ρbar.baseChange (k ⧸ (⊥ : Ideal k))).toLocal 𝔭ᵥ) σ
+        ((1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] (c₀ • b 0)) =
+        nval • ((1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] (c₀ • b 0)) := h3
+    rw [hbridge, hlin, hwsmul] at h4
+    exact h4
+  -- cancel the nonzero coordinate on the basis line
+  have hchisub : χsub (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚᵖᵥ) σ) =
+      (nval : k) :=
+    mul_right_cancel₀ hc₀ (hwinj _ _ hfinal)
+  rw [hchisub, algebraMap_padicInt_eq_natCast_toZMod_val, hnval]
 
 set_option maxHeartbeats 2000000 in
 /-- **The mod-`p` cyclotomic character maps the inertia at `p` ONTO
