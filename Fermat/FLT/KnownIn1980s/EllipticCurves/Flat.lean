@@ -4166,9 +4166,12 @@ theorem isUnramifiedAt_bot_integralClosure
     (IsLocalization.algEquiv (⊥ : Ideal (integralClosure R L)).primeCompl L
       (Localization.AtPrime (⊥ : Ideal (integralClosure R L)))).surjective
 
+omit [IsSepClosure K Ksep] [DecidableEq Ksep] in
+set_option maxHeartbeats 2000000 in
+set_option synthInstance.maxHeartbeats 1000000 in
 /-- **Existence of a valuation subring of `Kˢᵉᵖ` centered on a given maximal
-ideal of the integral closure** (sorry node; the Chevalley-extension step of the
-DVR-Galois core, isolated 2026-07-24): given an embedding `φ : L →ₐ[K] Kˢᵉᵖ` and
+ideal of the integral closure** (PROVEN 2026-07-24; the Chevalley-extension step
+of the DVR-Galois core): given an embedding `φ : L →ₐ[K] Kˢᵉᵖ` and
 a maximal ideal `𝔮` of `integralClosure R L`, there is a valuation subring `𝒪`
 of `Kˢᵉᵖ` lying over `R` (its trace on `K` is exactly the image of `R`) whose
 trace on the integral closure through `φ` is exactly `𝔮`: images of the closure
@@ -4199,7 +4202,147 @@ theorem exists_valuationSubring_integralClosure_center
       (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range ∧
       ∀ b : integralClosure R L,
         φ (b : L) ∈ 𝒪 ∧ (b ∈ 𝔮 ↔ φ (b : L) ∈ 𝒪.nonunits) := by
-  sorry
+  haveI : Algebra.IsIntegral R (integralClosure R L) :=
+    ⟨fun x => IsIntegralClosure.isIntegral R L x⟩
+  -- `𝔮` lies over the maximal ideal of `R`
+  have hcomap_max : (𝔮.comap (algebraMap R (integralClosure R L))).IsMaximal :=
+    Ideal.isMaximal_comap_of_isIntegral_of_isMaximal 𝔮
+  have hqm : 𝔮.comap (algebraMap R (integralClosure R L)) = IsLocalRing.maximalIdeal R :=
+    IsLocalRing.eq_maximalIdeal hcomap_max
+  -- transport `𝔮` to an ideal of the `Subring`-subtype: the `Subalgebra`- and
+  -- `Subring`-subtypes of the closure are definitionally the same ring, but
+  -- letting unification identify the two `Ideal` types blows up `whnf`
+  let υ : ((integralClosure R L).toSubring : Subring L) ≃+* integralClosure R L :=
+    { toFun := fun x => ⟨x.1, x.2⟩
+      invFun := fun x => ⟨x.1, x.2⟩
+      left_inv := fun _ => rfl
+      right_inv := fun _ => rfl
+      map_mul' := fun _ _ => rfl
+      map_add' := fun _ _ => rfl }
+  let 𝔮' : Ideal ((integralClosure R L).toSubring : Subring L) := 𝔮.comap υ
+  haveI h𝔮'prime : 𝔮'.IsPrime := Ideal.IsPrime.comap (υ : _ ≃+* _)
+  -- the localization of the integral closure at `𝔮`, pushed forward into
+  -- `Kˢᵉᵖ`, and a valuation subring dominating it (Chevalley / Zorn)
+  obtain ⟨𝒪, hdom⟩ :=
+    ((LocalSubring.ofPrime (integralClosure R L).toSubring 𝔮').map
+      (φ : L →+* Ksep)).exists_le_valuationSubring
+  obtain ⟨hle, hloc⟩ := hdom
+  -- images of the integral closure land in the dominated subring, hence in `𝒪`
+  have hBA : ∀ b : integralClosure R L,
+      (b : L) ∈ (LocalSubring.ofPrime (integralClosure R L).toSubring 𝔮').toSubring :=
+    fun b => LocalSubring.le_ofPrime _ 𝔮' b.2
+  have hmem : ∀ b : integralClosure R L, φ (b : L) ∈ 𝒪 := fun b =>
+    hle (Subring.mem_map.mpr ⟨(b : L), hBA b, rfl⟩)
+  -- the subring isomorphism onto the image under `φ`
+  let e := ((LocalSubring.ofPrime (integralClosure R L).toSubring
+      𝔮').toSubring).equivMapOfInjective (φ : L →+* Ksep)
+    (RingHom.injective (φ : L →+* Ksep))
+  -- the unit dichotomy: `b` is a unit of the localization iff `b ∉ 𝔮`, and
+  -- units are matched with units of `𝒪` through domination
+  have hiff : ∀ b : integralClosure R L, b ∈ 𝔮 ↔ φ (b : L) ∈ 𝒪.nonunits := by
+    intro b
+    have hunit₀ : IsUnit (⟨(b : L), hBA b⟩ :
+        (LocalSubring.ofPrime (integralClosure R L).toSubring 𝔮').toSubring) ↔ b ∉ 𝔮 :=
+      IsLocalization.AtPrime.isUnit_to_map_iff
+        (LocalSubring.ofPrime (integralClosure R L).toSubring 𝔮').toSubring 𝔮'
+        ⟨(b : L), b.2⟩
+    have hincl : Subring.inclusion hle (e ⟨(b : L), hBA b⟩) =
+        (⟨φ (b : L), hmem b⟩ : 𝒪.toLocalSubring.toSubring) := Subtype.ext rfl
+    constructor
+    · intro hbq
+      have h₀ : ¬ IsUnit (⟨(b : L), hBA b⟩ :
+          (LocalSubring.ofPrime (integralClosure R L).toSubring 𝔮').toSubring) :=
+        fun h => (hunit₀.mp h) hbq
+      have h₁ : ¬ IsUnit (⟨φ (b : L), hmem b⟩ : 𝒪.toLocalSubring.toSubring) := by
+        intro h
+        have h₂ : IsUnit (Subring.inclusion hle (e ⟨(b : L), hBA b⟩)) := hincl ▸ h
+        have h₃ := hloc.map_nonunit _ h₂
+        have h₄ := h₃.map e.symm
+        exact h₀ ((e.symm_apply_apply ⟨(b : L), hBA b⟩) ▸ h₄)
+      exact ValuationSubring.coe_mem_nonunits_iff.mpr
+        ((IsLocalRing.mem_maximalIdeal _).mpr (mem_nonunits_iff.mpr h₁))
+    · intro hb
+      by_contra hbq
+      have h₄ : IsUnit (⟨(b : L), hBA b⟩ :
+          (LocalSubring.ofPrime (integralClosure R L).toSubring 𝔮').toSubring) :=
+        hunit₀.mpr hbq
+      have h₂ : IsUnit (⟨φ (b : L), hmem b⟩ : 𝒪.toLocalSubring.toSubring) :=
+        hincl ▸ ((h₄.map e).map (Subring.inclusion hle))
+      have h₅ := (ValuationSubring.coe_mem_nonunits_iff
+        (a := ⟨φ (b : L), hmem b⟩)).mp hb
+      exact mem_nonunits_iff.mp ((IsLocalRing.mem_maximalIdeal _).mp h₅) h₂
+  refine ⟨𝒪, ?_, fun b => ⟨hmem b, hiff b⟩⟩
+  -- the trace of `𝒪` on `K` is exactly `R`: one inclusion is integrality of
+  -- `R`-images, the other is the valuation-ring dichotomy in the DVR `R`
+  ext x
+  constructor
+  · intro hx
+    have hx𝒪 : algebraMap K Ksep x ∈ 𝒪 := hx
+    rcases eq_or_ne x 0 with rfl | hx0
+    · exact ⟨0, map_zero (algebraMap R K)⟩
+    obtain ⟨r, s, hs, rfl⟩ := IsFractionRing.div_surjective (A := R) x
+    have hs0 : algebraMap R K s ≠ 0 := fun h0 => nonZeroDivisors.ne_zero hs
+      (IsFractionRing.injective R K (h0.trans (map_zero _).symm))
+    rcases (ValuationRing.iff_dvd_total.mp inferInstance).total s r with ⟨c, hc⟩ | ⟨c, hc⟩
+    · -- `r = s * c`: the fraction is the image of `c`
+      refine ⟨c, ?_⟩
+      rw [hc, map_mul, mul_comm, mul_div_assoc, div_self hs0, mul_one]
+    · -- `s = r * c`
+      have hr0 : r ≠ 0 := by
+        rintro rfl
+        exact hx0 (by rw [map_zero, zero_div])
+      have hrK0 : algebraMap R K r ≠ 0 := fun h0 => hr0
+        (IsFractionRing.injective R K (h0.trans (map_zero _).symm))
+      have hc0 : c ≠ 0 := by
+        rintro rfl
+        exact hs0 (by rw [hc, mul_zero, map_zero])
+      have hcK0 : algebraMap R K c ≠ 0 := fun h0 => hc0
+        (IsFractionRing.injective R K (h0.trans (map_zero _).symm))
+      by_cases hcu : IsUnit c
+      · -- `c` a unit: the fraction is the image of its inverse
+        obtain ⟨u, rfl⟩ := hcu
+        refine ⟨((u⁻¹ : Rˣ) : R), ?_⟩
+        have hone : algebraMap R K ((u⁻¹ : Rˣ) : R) * algebraMap R K ((u : Rˣ) : R) = 1 := by
+          rw [← map_mul, ← Units.val_mul, inv_mul_cancel, Units.val_one, map_one]
+        rw [hc, map_mul, eq_div_iff (mul_ne_zero hrK0 hcK0), ← mul_assoc,
+          mul_comm (algebraMap R K ((u⁻¹ : Rˣ) : R)), mul_assoc, hone, mul_one]
+      · -- `c` a nonunit: its image is a nonunit of `𝒪`, contradicting that
+        -- the fraction (its inverse) also lies in `𝒪`
+        exfalso
+        have hcm : c ∈ IsLocalRing.maximalIdeal R :=
+          (IsLocalRing.mem_maximalIdeal c).mpr hcu
+        have hcq : algebraMap R (integralClosure R L) c ∈ 𝔮 :=
+          Ideal.mem_comap.mp (hqm ▸ hcm : c ∈ 𝔮.comap (algebraMap R (integralClosure R L)))
+        have hnon := (hiff (algebraMap R (integralClosure R L) c)).mp hcq
+        have himg : φ ((algebraMap R (integralClosure R L) c :
+            integralClosure R L) : L) = algebraMap K Ksep (algebraMap R K c) := by
+          rw [show ((algebraMap R (integralClosure R L) c :
+              integralClosure R L) : L) = algebraMap R L c from rfl,
+            IsScalarTower.algebraMap_apply R K L, φ.commutes]
+        rw [himg] at hnon
+        have hv1 : 𝒪.valuation (algebraMap K Ksep
+            (algebraMap R K r / algebraMap R K s)) ≤ 1 :=
+          (ValuationSubring.valuation_le_one_iff 𝒪 _).mpr hx𝒪
+        have hvc : 𝒪.valuation (algebraMap K Ksep (algebraMap R K c)) < 1 :=
+          (𝒪.mem_nonunits_iff).mp hnon
+        have hprod : algebraMap R K r / algebraMap R K s * algebraMap R K c = 1 := by
+          rw [hc, map_mul]
+          field_simp
+        have hval1 : 𝒪.valuation (algebraMap K Ksep
+              (algebraMap R K r / algebraMap R K s)) *
+            𝒪.valuation (algebraMap K Ksep (algebraMap R K c)) = 1 := by
+          rw [← map_mul, ← map_mul, hprod, map_one, map_one]
+        have hlt : 𝒪.valuation (algebraMap K Ksep
+              (algebraMap R K r / algebraMap R K s)) *
+            𝒪.valuation (algebraMap K Ksep (algebraMap R K c)) < 1 :=
+          lt_of_le_of_lt (mul_le_mul_left hv1 _) (by rwa [one_mul])
+        exact absurd hval1 hlt.ne
+  · intro hx
+    obtain ⟨r, rfl⟩ := hx
+    show algebraMap K Ksep (algebraMap R K r) ∈ 𝒪
+    have h1 := hmem ⟨algebraMap R L r, Subalgebra.algebraMap_mem _ r⟩
+    rwa [show φ (algebraMap R L r) = algebraMap K Ksep (algebraMap R K r) from by
+      rw [IsScalarTower.algebraMap_apply R K L, φ.commutes]] at h1
 
 /-- **Inertia lifting from a finite Galois level to the separable closure**
 (sorry node; the compactness step of the DVR-Galois core, isolated 2026-07-24):
@@ -4315,10 +4458,10 @@ theorem isUnramifiedAt_of_inertia_fixes_algHom
   sorry
 
 /-- **Unramifiedness of the integral closure under inertia-fixed embeddings**
-(DECOMPOSED 2026-07-24 into the Chevalley-center leaf
-`exists_valuationSubring_integralClosure_center`, the inertia-lifting leaf
+(DECOMPOSED 2026-07-24 into the inertia-lifting leaf
 `exists_inertiaSubgroup_restrictNormalHom_eq` and the finite-level counting
-leaf `isUnramifiedAt_of_inertia_fixes_algHom`; the per-prime reduction, the
+leaf `isUnramifiedAt_of_inertia_fixes_algHom`; the Chevalley-center step
+`exists_valuationSubring_integralClosure_center`, the per-prime reduction, the
 bottom-prime case and the assembly below are PROVEN — the étale upgrade from
 unramifiedness is PROVEN in `integralClosure_etale_of_inertia_fixes_field`
 below): for a finite separable field extension `L/K`, all of whose embeddings
