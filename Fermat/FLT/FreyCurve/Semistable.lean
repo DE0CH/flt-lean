@@ -7360,21 +7360,281 @@ open TensorProduct ValuativeRel IsDedekindDomain in
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
-/-- **The quadratic twist of a local Hopf model** (sorry node — the
-curve-free core of the unramified quadratic descent, isolated so that
-the character bookkeeping against the curve identification is PROVEN
-glue): given a finite flat Hopf algebra `H` over the completed
-integers `𝒪` with étale generic fibre, and an UNRAMIFIED quadratic
+/-- **The χ-twisted points module of a local Hopf model** (sorry node
+— the finite-group-theoretic half of the quadratic-twist construction,
+curve-free and Hopf-order-free): the `Ω̂`-point convolution monoid of a
+finite `𝒪`-Hopf algebra `H` with étale generic fibre and COMMUTATIVE
+points is a finite abelian group carrying a discrete Galois action,
+and twisting that action by the quadratic character `χ` of `L/ℚ_pˆ`
+yields again a discrete Galois module — packaged as an abstract module
+`A` with an action `ρ'` and a points identification `g` intertwining
+postcomposition with `ρ'` UP TO `χ`. Content: inverses in the
+convolution monoid are precomposition with the antipode
+(`id_mul_antipode`), commutativity is the hypothesis `hcomm`;
+finiteness is Dedekind's linear independence of the finitely many
+`Ω̂`-points of the finite-dimensional étale fibre; discreteness holds
+because each point factors through a finite subextension (its image is
+a finite-dimensional subfield) and `χ` factors through the finite
+subextension `L`; the twisted action `ρ' σ = χ(σ) • (σ ∘ ·)` is
+multiplicative because `χ` is a character and negation commutes with
+additive maps. -/
+theorem exists_twistedPointsModule_of_quadraticCharacter
+    {p : ℕ} (hp' : p.Prime) [Fact p.Prime]
+    (L : Type) [Field L]
+    [Algebra (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat) L]
+    [Algebra.IsQuadraticExtension (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat) L]
+    [Algebra.IsSeparable (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat) L]
+    [Algebra L (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat))]
+    [IsScalarTower (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat) L
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat))]
+    (H : Type) [CommRing H]
+    [HopfAlgebra 𝒪[HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat] H]
+    [Module.Finite 𝒪[HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat] H]
+    [Algebra.Etale (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat)
+      ((HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]] H)]
+    (hcomm : ∀ x y : Additive (WithConv (((HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]] H) →ₐ[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)))), x + y = y + x) :
+    ∃ (A : Type) (_ : AddCommGroup A) (_ : Finite A)
+      (ρ' : ((AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat))
+          ≃ₐ[HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat]
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat))) →* AddMonoid.End A)
+      (g : Additive (WithConv (((HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[𝒪[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat]] H) →ₐ[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat]
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)))) ≃+ A),
+      (∀ a : A, ∃ Lf : IntermediateField (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)),
+        FiniteDimensional (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) Lf ∧
+        ∀ σ : (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat))
+            ≃ₐ[HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat]
+            (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat)),
+          σ ∈ Lf.fixingSubgroup → ρ' σ a = a) ∧
+      ∀ (σ : (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat))
+            ≃ₐ[HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat]
+            (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat)))
+          (φ : ((HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[𝒪[HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat]] H) →ₐ[HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat]
+            (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat))),
+        (quadraticCharacter (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat) L
+            (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat)) σ = 1 →
+          g (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) =
+            ρ' σ (g (Additive.ofMul (WithConv.toConv φ)))) ∧
+        (quadraticCharacter (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat) L
+            (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat)) σ = -1 →
+          g (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) +
+            ρ' σ (g (Additive.ofMul (WithConv.toConv φ))) = 0) := by
+  sorry
+
+open TensorProduct ValuativeRel IsDedekindDomain in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **The finite flat model of an unramified quadratic points-twist**
+(sorry node — the integral-descent core of the quadratic-twist
+construction): given a finite flat `𝒪`-Hopf algebra `H` with étale
+generic fibre and commutative points, an UNRAMIFIED quadratic
 separable extension `L/ℚ_pˆ` (witnessed by a generator `θL` rooting a
-monic integral polynomial `Q` with separable residue), there is a
-finite flat `𝒪`-Hopf algebra `H'` — the `χ`-twist of `H`, concretely
-the invariants of `𝒪_L ⊗ H` under the character-twisted involution
-`τ ⊗ S` (`τ` the conjugation of `𝒪_L/𝒪`, `S` the antipode; a direct
-summand hence finite flat because the odd residue characteristic
-`p ≠ 2` makes `2` invertible) — whose `Ω̂`-point convolution group is
-identified with that of `H` by an equivalence `θ` intertwining the
+monic integral polynomial `Q` with separable residue), and an étale
+`ℚ_pˆ`-Hopf algebra `Hg` whose `Ω̂`-point convolution group is
+identified with that of `H` by an equivalence `θg` intertwining the
 postcomposition Galois actions UP TO the quadratic character `χ` of
-`L/ℚ_pˆ`. -/
+`L/ℚ_pˆ`, there is a finite flat `𝒪`-Hopf algebra `H'` with generic
+fibre `Hg`. Content (unramified descent): `H' = (𝒪_L ⊗ H)^{τ ⊗ S}` —
+the invariants of the base change to the quadratic unramified ring
+extension `𝒪_L = 𝒪[θL]` under the character-twisted involution (`τ`
+the conjugation of `𝒪_L/𝒪`, which preserves `𝒪[θL]` because the trace
+of `θL` is integral, `S` the antipode, a Hopf involution because
+commutative points force cocommutativity of the étale fibre) — is a
+direct summand of `𝒪_L ⊗ H` (odd residue characteristic: `2` is a
+unit), hence finite flat, and a Hopf order because the twisted
+involution is compatible with the costructure; its generic fibre has
+`Ω̂`-points the `χ`-twist of those of `H`, i.e. the points of `Hg`, so
+the reconstruction leaf `exists_bialgEquiv_of_equivariant_pointsEquiv`
+identifies it with `Hg` as a bialgebra. -/
+theorem exists_hopfModel_of_twistedPointsEquiv
+    {p : ℕ} (hp' : p.Prime) [Fact p.Prime] (hp2 : p ≠ 2)
+    (L : Type) [Field L]
+    [Algebra (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat) L]
+    [Algebra.IsQuadraticExtension (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat) L]
+    [Algebra.IsSeparable (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat) L]
+    [Algebra L (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat))]
+    [IsScalarTower (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat) L
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat))]
+    (θL : L)
+    (Q : Polynomial 𝒪[HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat])
+    (hQm : Q.Monic)
+    (hθtop : Algebra.adjoin (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat) ({θL} : Set L) = ⊤)
+    (hθQ : Polynomial.aeval θL
+      (Q.map (algebraMap 𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]
+        (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat))) = 0)
+    (hQsep : (Q.map (IsLocalRing.residue
+      𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat])).Separable)
+    (H : Type) [CommRing H]
+    [HopfAlgebra 𝒪[HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat] H]
+    [Module.Finite 𝒪[HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat] H]
+    [Module.Flat 𝒪[HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat] H]
+    [Algebra.Etale (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat)
+      ((HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]] H)]
+    (hcomm : ∀ x y : Additive (WithConv (((HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]] H) →ₐ[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)))), x + y = y + x)
+    (Hg : Type) [CommRing Hg]
+    [HopfAlgebra (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat) Hg]
+    [Module.Finite (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat) Hg]
+    [Algebra.Etale (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat)
+      ((HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat] Hg)]
+    (θg : Additive (WithConv (((HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat] Hg) →ₐ[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)))) ≃+
+      Additive (WithConv (((HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]] H) →ₐ[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)))))
+    (hθg : ∀ (σ : (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat))
+          ≃ₐ[HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat]
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)))
+        (ψ : ((HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat] Hg) →ₐ[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat]
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat))),
+      (quadraticCharacter (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) L
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)) σ = 1 →
+        θg (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp ψ))) =
+          Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp
+            (WithConv.ofConv (Additive.toMul
+              (θg (Additive.ofMul (WithConv.toConv ψ)))))))) ∧
+      (quadraticCharacter (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) L
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)) σ = -1 →
+        θg (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp ψ))) +
+          Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp
+            (WithConv.ofConv (Additive.toMul
+              (θg (Additive.ofMul (WithConv.toConv ψ))))))) = 0)) :
+    ∃ (H' : Type) (_ : CommRing H')
+      (_ : HopfAlgebra 𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat] H')
+      (_ : Module.Finite 𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat] H')
+      (_ : Module.Flat 𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat] H')
+      (_ : Algebra.Etale (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+        ((HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[𝒪[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat]] H')),
+      Nonempty
+        (((HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[𝒪[HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat]] H')
+          ≃ₐc[HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat]
+          ((HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat] Hg)) := by
+  sorry
+
+open TensorProduct ValuativeRel IsDedekindDomain in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **The quadratic twist of a local Hopf model** (DECOMPOSED
+2026-07-24 — the finite-group-theoretic twist of the points module is
+the sorried leaf `exists_twistedPointsModule_of_quadraticCharacter`,
+the integral descent is the sorried leaf
+`exists_hopfModel_of_twistedPointsEquiv`; PROVEN here is the assembly:
+the twisted module reconstructs to an étale generic fibre by the
+DERIVED chain `exists_galoisModulePackage`, whose points equivalence
+`fA.trans g.symm` is `χ`-twisted-equivariant by the twist leaf's
+clauses, and the integral model's generic-fibre bialgebra
+identification transports the points equivalence by precomposition —
+a morphism of convolution monoids by
+`AlgHom.convMul_comp_bialgHom_distrib` — with Galois equivariance
+associativity of composition): from a finite flat Hopf algebra `H`
+over the completed integers `𝒪` with étale generic fibre and
+COMMUTATIVE `Ω̂`-points (`hcomm`; the consumer discharges it through
+the curve identification, and it is NOT redundant — for `χ(σ) = -1`
+the twist clause makes `y ↦ θ (σ ∘ θ.symm y)` an additive negation,
+forcing commutativity), and an UNRAMIFIED quadratic separable
+extension `L/ℚ_pˆ` (witnessed by a generator `θL` rooting a monic
+integral polynomial `Q` with separable residue), there is a finite
+flat `𝒪`-Hopf algebra `H'` — the `χ`-twist of `H` — whose `Ω̂`-point
+convolution group is identified with that of `H` by an equivalence
+`θ` intertwining the postcomposition Galois actions UP TO the
+quadratic character `χ` of `L/ℚ_pˆ`. -/
 theorem exists_quadraticTwist_hopfModel
     {p : ℕ} (hp' : p.Prime) [Fact p.Prime] (hp2 : p ≠ 2)
     (L : Type) [Field L]
@@ -7415,7 +7675,13 @@ theorem exists_quadraticTwist_hopfModel
       hp'.toHeightOneSpectrumRingOfIntegersRat)
       ((HeightOneSpectrum.adicCompletion ℚ
         hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[𝒪[HeightOneSpectrum.adicCompletion ℚ
-        hp'.toHeightOneSpectrumRingOfIntegersRat]] H)] :
+        hp'.toHeightOneSpectrumRingOfIntegersRat]] H)]
+    (hcomm : ∀ x y : Additive (WithConv (((HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]] H) →ₐ[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)))), x + y = y + x) :
     ∃ (H' : Type) (_ : CommRing H')
       (_ : HopfAlgebra 𝒪[HeightOneSpectrum.adicCompletion ℚ
         hp'.toHeightOneSpectrumRingOfIntegersRat] H')
@@ -7468,7 +7734,195 @@ theorem exists_quadraticTwist_hopfModel
             Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp
               (WithConv.ofConv (Additive.toMul
                 (θ (Additive.ofMul (WithConv.toConv φ))))))) = 0) := by
-  sorry
+  classical
+  -- the χ-twisted points module of `H` (sorried leaf)
+  obtain ⟨A, iA1, iA2, ρ', g, hdisc, hgρ⟩ :=
+    exists_twistedPointsModule_of_quadraticCharacter hp' L H hcomm
+  letI := iA1
+  letI := iA2
+  -- the twisted étale generic fibre, reconstructed from the module
+  -- (the DERIVED discrete-Galois-module chain)
+  obtain ⟨Hg, cg, hopfg, fing, _flatg, etg, fA, hfA⟩ :=
+    exists_galoisModulePackage (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)) A ρ' hdisc
+  letI := cg
+  letI := hopfg
+  letI := fing
+  letI := etg
+  -- the generic-fibre points equivalence onto the points of `H`
+  let θg : Additive (WithConv (((HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat] Hg) →ₐ[HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat]
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)))) ≃+
+      Additive (WithConv (((HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[𝒪[HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat]] H) →ₐ[HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat]
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)))) := fA.trans g.symm
+  have hgθ : ∀ x, g (θg x) = fA x := fun x => g.apply_symm_apply (fA x)
+  -- the generic-fibre points equivalence is equivariant up to `χ`
+  have hθg : ∀ (σ : (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat))
+        ≃ₐ[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat]
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)))
+      (ψ : ((HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat] Hg) →ₐ[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat))),
+      (quadraticCharacter (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) L
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)) σ = 1 →
+        θg (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp ψ))) =
+          Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp
+            (WithConv.ofConv (Additive.toMul
+              (θg (Additive.ofMul (WithConv.toConv ψ)))))))) ∧
+      (quadraticCharacter (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) L
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)) σ = -1 →
+        θg (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp ψ))) +
+          Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp
+            (WithConv.ofConv (Additive.toMul
+              (θg (Additive.ofMul (WithConv.toConv ψ))))))) = 0) := by
+    intro σ ψ
+    have hrt : Additive.ofMul (WithConv.toConv (WithConv.ofConv (Additive.toMul
+        (θg (Additive.ofMul (WithConv.toConv ψ)))))) =
+        θg (Additive.ofMul (WithConv.toConv ψ)) := by
+      rw [WithConv.toConv_ofConv, ofMul_toMul]
+    obtain ⟨hg1, hg2⟩ := hgρ σ (WithConv.ofConv (Additive.toMul
+      (θg (Additive.ofMul (WithConv.toConv ψ)))))
+    constructor
+    · intro hχ
+      apply g.injective
+      rw [hgθ, hfA σ ψ, hg1 hχ, hrt, hgθ]
+    · intro hχ
+      apply g.injective
+      rw [map_add, map_zero, hgθ, hfA σ ψ]
+      have h2 := hg2 hχ
+      rw [hrt, hgθ] at h2
+      rw [add_comm]
+      exact h2
+  -- the integral Hopf model of the twist (sorried leaf)
+  obtain ⟨H', cH', hopfH', finH', flatH', etH', ⟨e⟩⟩ :=
+    exists_hopfModel_of_twistedPointsEquiv hp' hp2 L θL Q hQm hθtop hθQ hQsep
+      H hcomm Hg θg hθg
+  letI := cH'
+  letI := hopfH'
+  -- the coerced generic-fibre comparison maps
+  let c : ((HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat] Hg) →ₐ[HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat]
+      ((HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]] H') := e.symm.toBialgHom
+  let c' : ((HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[𝒪[HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat]] H') →ₐ[HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat]
+      ((HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat] Hg) := e.toBialgHom
+  have hcc' : ∀ φ' : ((HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[𝒪[HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat]] H') →ₐ[HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat]
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)),
+      (φ'.comp c).comp c' = φ' := by
+    intro φ'
+    apply AlgHom.ext
+    intro z
+    show φ' (e.symm (e z)) = φ' z
+    rw [BialgEquiv.symm_apply_apply]
+  have hc'c : ∀ ψ' : ((HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat] Hg) →ₐ[HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat]
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)),
+      (ψ'.comp c').comp c = ψ' := by
+    intro ψ'
+    apply AlgHom.ext
+    intro z
+    show ψ' (e (e.symm z)) = ψ' z
+    rw [BialgEquiv.apply_symm_apply]
+  -- precomposition with the comparison map, an isomorphism of the
+  -- convolution monoids (`convMul_comp_bialgHom_distrib`)
+  let pe : Additive (WithConv (((HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]] H') →ₐ[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)))) ≃+
+      Additive (WithConv (((HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat] Hg) →ₐ[HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat]
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)))) :=
+    { toFun := fun u => Additive.ofMul (WithConv.toConv
+        ((WithConv.ofConv (Additive.toMul u)).comp c))
+      invFun := fun v => Additive.ofMul (WithConv.toConv
+        ((WithConv.ofConv (Additive.toMul v)).comp c'))
+      left_inv := fun u => by
+        dsimp only
+        rw [toMul_ofMul, WithConv.ofConv_toConv, hcc', WithConv.toConv_ofConv,
+          ofMul_toMul]
+      right_inv := fun v => by
+        dsimp only
+        rw [toMul_ofMul, WithConv.ofConv_toConv, hc'c, WithConv.toConv_ofConv,
+          ofMul_toMul]
+      map_add' := fun u v => by
+        rw [show (WithConv.ofConv (Additive.toMul (u + v))).comp c =
+            AlgHom.comp (Additive.toMul u * Additive.toMul v).ofConv
+              (e.symm.toBialgHom : ((HeightOneSpectrum.adicCompletion ℚ
+                hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[HeightOneSpectrum.adicCompletion ℚ
+                hp'.toHeightOneSpectrumRingOfIntegersRat] Hg) →ₐ[HeightOneSpectrum.adicCompletion ℚ
+                hp'.toHeightOneSpectrumRingOfIntegersRat]
+                ((HeightOneSpectrum.adicCompletion ℚ
+                  hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[𝒪[HeightOneSpectrum.adicCompletion ℚ
+                  hp'.toHeightOneSpectrumRingOfIntegersRat]] H'))
+            from rfl,
+          AlgHom.convMul_comp_bialgHom_distrib (Additive.toMul u)
+            (Additive.toMul v) e.symm.toBialgHom,
+          WithConv.toConv_ofConv]
+        rfl }
+  refine ⟨H', cH', hopfH', finH', flatH', etH', pe.trans θg, ?_⟩
+  intro σ φ
+  have happ : ∀ ψ' : ((HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[𝒪[HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat]] H') →ₐ[HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat]
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)),
+      pe (Additive.ofMul (WithConv.toConv ψ')) =
+        Additive.ofMul (WithConv.toConv (ψ'.comp c)) := fun ψ' => rfl
+  have h1 : (pe.trans θg) (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) =
+      θg (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp (φ.comp c)))) := by
+    rw [AddEquiv.trans_apply, happ,
+      show (σ.toAlgHom.comp φ).comp c = σ.toAlgHom.comp (φ.comp c) from
+        AlgHom.comp_assoc σ.toAlgHom φ c]
+  have h2 : (pe.trans θg) (Additive.ofMul (WithConv.toConv φ)) =
+      θg (Additive.ofMul (WithConv.toConv (φ.comp c))) := by
+    rw [AddEquiv.trans_apply, happ]
+  constructor
+  · intro hχ
+    rw [h1, h2]
+    exact (hθg σ (φ.comp c)).1 hχ
+  · intro hχ
+    rw [h1, h2]
+    exact (hθg σ (φ.comp c)).2 hχ
 
 open TensorProduct ValuativeRel IsDedekindDomain in
 open scoped WeierstrassCurve.Affine in
@@ -7571,10 +8025,19 @@ theorem WeierstrassCurve.torsionFlatPackage_of_quadraticCharacter_twist
       (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
         hp'.toHeightOneSpectrumRingOfIntegersRat)) := by
   classical
+  -- commutativity of the `Ω̂`-point convolution group of `H`, through
+  -- the identification `f` with the (abelian) curve torsion
+  have hcomm : ∀ x y : Additive (WithConv (((HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[𝒪[HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat]] H) →ₐ[HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat]
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)))), x + y = y + x :=
+    fun x y => f.injective (by rw [map_add, map_add, add_comm])
   -- the twisted Hopf model with its up-to-character points equivalence
-  -- (sorried leaf)
+  -- (decomposed above into the module twist and the integral descent)
   obtain ⟨H', cH', hopfH', finH', flatH', etH', θ, hθ⟩ :=
-    exists_quadraticTwist_hopfModel hp' hp2 L θL Q hQm hθtop hθQ hQsep H
+    exists_quadraticTwist_hopfModel hp' hp2 L θL Q hQm hθtop hθQ hQsep H hcomm
   letI := cH'
   letI := hopfH'
   letI := finH'
