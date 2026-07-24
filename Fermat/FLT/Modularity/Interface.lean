@@ -8289,7 +8289,7 @@ theorem eisenstein_trivial_sub_extension_locally_split_at_p
   have hcc1 : cc 1 = 0 := by
     have h1 := hcc_mul 1 1
     rw [mul_one, map_one, mul_one] at h1
-    exact self_eq_add_right.mp h1
+    linear_combination -h1
   -- determinant pinning: the quotient character is `ω`
   have hχdet : ∀ g : Field.absoluteGaloisGroup ℚ,
       χ g = algebraMap ℤ_[p] kk'
@@ -8303,13 +8303,16 @@ theorem eisenstein_trivial_sub_extension_locally_split_at_p
   -- the quotient character is ramified at `p` (E1b-ii at exponent 1)
   have hram : ∃ σ, σ ∈ II ∧ χ (Φ σ) ≠ 1 := by
     by_contra hno
-    push_neg at hno
+    have hall : ∀ σ ∈ II, χ (Φ σ) = 1 := by
+      intro σ hσ
+      by_contra hne1
+      exact hno ⟨σ, hσ, hne1⟩
     have h1 : ∀ σ ∈ II,
         (algebraMap ℤ_[p] kk' (cyclotomicCharacter (AlgebraicClosure ℚ) p
           ((Φ σ).toRingEquiv))) ^ 1 = 1 := by
       intro σ hσ
       rw [pow_one, ← hχdet (Φ σ)]
-      exact hno σ hσ
+      exact hall σ hσ
     have h2 := sub_one_dvd_of_cyclotomicCharacter_residue_inertia_pow_eq_one
       (k := kk') 1 h1
     have h3 := Nat.le_of_dvd one_pos h2
@@ -8396,7 +8399,7 @@ theorem eisenstein_trivial_sub_extension_locally_split_at_p
     have hd2 : p ∣ p ^ (n : ℕ) := dvd_pow_self p n.2.ne'
     have hpow1 : 1 ≤ p ^ (n : ℕ) := Nat.one_le_pow _ _ hp.out.pos
     have hd3 : p ∣ 1 := by
-      have h6 := Nat.dvd_sub' hd2 hd1
+      have h6 := Nat.dvd_sub hd2 hd1
       rwa [Nat.sub_sub_self hpow1] at h6
     exact absurd (Nat.dvd_one.mp hd3) hp.out.one_lt.ne'
   -- the choice-based value of `cc` through `χ` on inertia
@@ -8443,7 +8446,6 @@ theorem eisenstein_trivial_sub_extension_locally_split_at_p
       have hσne : χ (Φ σ) ≠ 0 := hχ0 _
       have hτne : χ (Φ τ.1) ≠ 0 := hχ0 _
       field_simp
-      ring
     have hre := Equiv.sum_comp (Equiv.mulLeft cE)
       (fun w : ↥Cu => (((w : kk'ˣ) : kk'))⁻¹ * Gf ((w : kk'ˣ) : kk'))
     simp only [Equiv.coe_mulLeft] at hre
@@ -8507,7 +8509,7 @@ theorem eisenstein_trivial_sub_extension_locally_split_at_p
     have hkey : (χ (Φ σ₀) - 1) * (cc (Φ g) - (χ (Φ g) - 1) * a0) = 0 := by
       rw [h4, hχconj] at h2
       rw [h3] at h1
-      linear_combination h1 - h2
+      linear_combination h2 - h1
     rcases mul_eq_zero.mp hkey with h | h
     · exact absurd h hne
     · exact sub_eq_zero.mp h
