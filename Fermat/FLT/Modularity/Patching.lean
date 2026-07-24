@@ -1339,9 +1339,13 @@ ASSEMBLED below (proof written, 2026-07-24) from three sorried leaves
 that are exactly the classically-cited components of the Taylor–Wiles
 patching argument, plus one PROVEN commutative-algebra assembly:
 
-1. `exists_taylorWilesPrimeSet` (leaf) — Taylor–Wiles prime sets at
-   every level `p^n` and of every size: Chebotarev density against the
-   residual representation.
+1. `exists_taylorWilesPrimeSet` (PROVEN 2026-07-24 over the
+   group-theoretic leaf `exists_fixing_rootsOfUnity_charpoly_split`) —
+   Taylor–Wiles prime sets at every level `p^n` and of every size:
+   Chebotarev density (`dense_conjClasses_globalFrob`) applied to the
+   open conjugation-stable locus determined by the Wiles/DDT Galois
+   element (fixes `μ_{p^n}`, distinct `ρbar`-eigenvalues), whose
+   existence is the remaining sorried group-theoretic sub-leaf.
 2. `exists_patchedModule` (leaf) — the pigeonhole patching
    construction (Taylor–Wiles 1995, as reorganized by Diamond 1997 and
    Fujiwara): from the tower of auxiliary levels `Q_n` it produces a
@@ -1400,33 +1404,236 @@ def IsTaylorWilesPrimeSet.{uK, uW}
       ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat =
         (Polynomial.X - Polynomial.C α) * (Polynomial.X - Polynomial.C β)
 
-/-- **Existence of Taylor–Wiles primes** (patching leaf 1; sorry
-node): for the irreducible hardly ramified residual `ρbar` there are
-Taylor–Wiles prime sets of every level `n` and every size `r`.
+/-- **The Taylor–Wiles Galois element** (group-theoretic leaf; sorry
+node): in the absolute Galois group of `ℚ` there is an element `σ`
+that acts trivially on all `p^n`-th roots of unity and whose image
+`ρbar(σ)` has characteristic polynomial split with two DISTINCT roots
+over the residual coefficient field `k`.
 
-Classical route: apply Chebotarev density to the compositum of the
-splitting field of `ρbar` and `ℚ(ζ_{p^n})`.  One needs an element
-`σ ∈ Gal(F(ζ_{p^n})/ℚ)` that fixes `ζ_{p^n}` and has `ρbar(σ)` with
-distinct eigenvalues; this is the classical group-theoretic lemma of
-Wiles/Taylor–Wiles (Wiles, Ann. of Math. 141 (1995), ch. 3, Lemma
-"1.10–1.12" circle; Diamond–Darmon–Taylor (1995), Lemma 5.31; de
-Shalit in Cornell–Silverman–Stevens, §"Taylor–Wiles primes"), and its
-proof uses exactly this pillar's standing hypotheses: `p` odd and
-`ρbar` irreducible (whence `ρbar` restricted to `Gal(ℚ(ζ_p))` is
-absolutely irreducible for hardly ramified — odd, cyclotomic
-determinant — `ρbar`, so the image cannot centralize `ζ_{p^n}`-fixing
-subgroups into scalars).  Primes `q` whose Frobenius lies in the
-conjugacy class of `σ` then satisfy both conditions, and Chebotarev
-supplies infinitely many, hence sets of any size.  In this project the
-Frobenius-density input is CONSUMABLE: the Chebotarev development of
-`Fermat/FLT/GaloisRepresentation/Chebotarev.lean` provides
-`dense_conjClasses_globalFrob` (density of the global Frobenius
-conjugacy classes avoiding any finite set of places in `Γ ℚ`) together
-with `charFrob_eq_charpoly_globalFrob`, which translate "Frobenius in
-the open conjugation-stable set determined by `σ`" into exactly the
-`charFrob` splitting recorded by `IsTaylorWilesPrimeSet` (the
-eigenvalue condition is open: it is detected by the discriminant and
-the finitely many coefficient values over the finite `k`).
+This is the classical group-theoretic lemma of Wiles/Taylor–Wiles
+behind the existence of Taylor–Wiles primes (Wiles, Ann. of Math. 141
+(1995), ch. 3; Diamond–Darmon–Taylor (1995), Lemma 4.10/5.31; de
+Shalit in Cornell–Silverman–Stevens, "Hecke rings and universal
+deformation rings").  Classical route: `ρbar` is hardly ramified, so
+`det ρbar` is the mod-`p` cyclotomic character (`det_eq` of
+`IsHardlyRamified`), which is ODD; with `p` odd and `ρbar`
+irreducible, the restriction of `ρbar` to `Gal(ℚ̄/ℚ(ζ_p))` is
+(absolutely) irreducible — Serre's standard argument: were it
+reducible, `ρbar` would be induced from a character of the quadratic
+subfield of `ℚ(ζ_p)`, and the analysis of the dihedral case together
+with `p ∤ #ρbar(image)` obstructions rules this out for hardly
+ramified `ρbar` (the case analysis of DDT §4.3, using `p ≥ 3` and the
+determinant being cyclotomic).  In particular `ρbar` restricted to
+the subgroup `Gal(ℚ̄/ℚ(ζ_{p^n}))` — which fixes the `p^n`-th roots of
+unity — is still irreducible with nonabelian image, and a nonabelian
+finite subgroup of `GL₂(k)` acting irreducibly contains an element of
+order prime to `p` with distinct eigenvalues; enlarging `k` is not
+needed as the audited interface fixes `k` large enough (the
+eigenvalue-rationality convention recorded in the
+`IsTaylorWilesPrimeSet` docstring).
+
+Both-ways audit: at the intended instantiation this is the cited
+lemma; abstractly the hypothesis set contains the classically
+unsatisfiable irreducible hardly ramified `ρbar` (section audit of
+`Interface.lean`), so the statement is also classically true
+outright.  CIRCULARITY GUARD (inherited from pillar 3b): must not be
+proven through `Family.lean` or anything downstream of it. -/
+theorem exists_fixing_rootsOfUnity_charpoly_split.{uK, uW}
+    {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hpodd hW ρbar)
+    (hirr : ρbar.IsIrreducible) (n : ℕ) :
+    ∃ σ : Field.absoluteGaloisGroup ℚ,
+      (∀ ζ : AlgebraicClosure ℚ, ζ ^ p ^ n = 1 → σ ζ = ζ) ∧
+      ∃ α β : k, α ≠ β ∧
+        (ρbar σ).charpoly =
+          (Polynomial.X - Polynomial.C α) * (Polynomial.X - Polynomial.C β) :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Existence of a single Taylor–Wiles prime** (PROVEN 2026-07-24
+over the group-theoretic leaf): avoiding any given finite set `S` of
+places there is a prime `q ≡ 1 (mod p^n)` at which `charFrob ρbar`
+splits with distinct roots.  DERIVED from
+`exists_fixing_rootsOfUnity_charpoly_split` by Chebotarev density
+(`dense_conjClasses_globalFrob`): the locus
+`U = {x | charpoly (ρbar x) = (X−α)(X−β)} ∩ {x | x fixes μ_{p^n}}` is
+open (the endomorphism space is discrete since `k` is, so the first
+set is a preimage of an open set; the second is the fixing subgroup
+of the finite extension `ℚ(μ_{p^n})/ℚ`, open in the Krull topology)
+and contains `σ`, hence meets the dense union of Frobenius conjugacy
+classes off `S ∪ {p}`.  Both conditions transfer from the conjugate
+`g·Frob_q·g⁻¹ ∈ U` to `Frob_q` itself (`charpoly` is
+conjugation-invariant; the set of `p^n`-th roots of unity is
+Galois-stable, so fixing it pointwise is a conjugation-invariant
+condition), and at Frobenius they read off as the two arithmetic
+conditions: `charFrob` at `q` IS the charpoly at `globalFrob q`
+(`charFrob_eq_charpoly_globalFrob`), and the `p`-adic cyclotomic
+character takes the value `q` at `Frob_q`
+(`cyclotomicCharacter_globalFrob`), so fixing a primitive `p^n`-th
+root of unity forces `q ≡ 1 (mod p^n)`. -/
+theorem exists_taylorWilesPrime.{uK, uW}
+    {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hpodd hW ρbar)
+    (hirr : ρbar.IsIrreducible) (n : ℕ)
+    (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))) :
+    ∃ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S ∧
+      q ≡ 1 [MOD p ^ n] ∧
+      ∃ α β : k, α ≠ β ∧
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat =
+          (Polynomial.X - Polynomial.C α) * (Polynomial.X - Polynomial.C β) := by
+  classical
+  obtain ⟨σ, hσfix, α, β, hαβ, hσpoly⟩ :=
+    exists_fixing_rootsOfUnity_charpoly_split hpodd hW hρbar hirr n
+  -- the endomorphism space is discrete, so the eigenvalue locus is open
+  letI := moduleTopology k (Module.End k W)
+  haveI : DiscreteTopology (Module.End k W) :=
+    discreteTopology_moduleTopology _ _
+  have hρcont : Continuous fun g : Field.absoluteGaloisGroup ℚ => ρbar g :=
+    ContinuousMonoidHom.continuous_toFun ρbar
+  have hU1open : IsOpen ((fun x : Field.absoluteGaloisGroup ℚ => ρbar x) ⁻¹'
+      {φ : Module.End k W | φ.charpoly =
+        (Polynomial.X - Polynomial.C α) * (Polynomial.X - Polynomial.C β)}) :=
+    (isOpen_discrete _).preimage hρcont
+  -- the set of `p^n`-th roots of unity is finite …
+  have hSfin : {ζ : AlgebraicClosure ℚ | ζ ^ p ^ n = 1}.Finite := by
+    refine Set.Finite.subset
+      (Polynomial.nthRoots (p ^ n)
+        (1 : AlgebraicClosure ℚ)).toFinset.finite_toSet fun ζ hζ => ?_
+    rw [Finset.mem_coe, Multiset.mem_toFinset,
+      Polynomial.mem_nthRoots (pow_pos (Fact.out : p.Prime).pos n)]
+    exact hζ
+  haveI := hSfin.to_subtype
+  haveI : FiniteDimensional ℚ
+      (IntermediateField.adjoin ℚ
+        {ζ : AlgebraicClosure ℚ | ζ ^ p ^ n = 1}) :=
+    IntermediateField.finiteDimensional_adjoin fun x _ =>
+      (Algebra.IsAlgebraic.isAlgebraic x).isIntegral
+  -- … so pointwise fixing it is an open condition: it is exactly the
+  -- fixing subgroup of the finite extension `ℚ(μ_{p^n})/ℚ`
+  have hfixset : {x : Field.absoluteGaloisGroup ℚ |
+      ∀ ζ : AlgebraicClosure ℚ, ζ ^ p ^ n = 1 → x ζ = ζ} =
+      ((IntermediateField.adjoin ℚ
+        {ζ : AlgebraicClosure ℚ | ζ ^ p ^ n = 1}).fixingSubgroup :
+        Set (Field.absoluteGaloisGroup ℚ)) := by
+    ext x
+    constructor
+    · intro hx
+      have hle : IntermediateField.adjoin ℚ
+          {ζ : AlgebraicClosure ℚ | ζ ^ p ^ n = 1} ≤
+          IntermediateField.fixedField (Subgroup.zpowers x) := by
+        rw [IntermediateField.adjoin_le_iff]
+        intro ζ hζ
+        rw [SetLike.mem_coe, IntermediateField.mem_fixedField_iff]
+        intro f hf
+        have hst : Subgroup.zpowers x ≤
+            MulAction.stabilizer (Field.absoluteGaloisGroup ℚ) ζ :=
+          Subgroup.zpowers_le.mpr
+            (MulAction.mem_stabilizer_iff.mpr (hx ζ hζ))
+        exact hst hf
+      refine (IntermediateField.mem_fixingSubgroup_iff _ _).mpr fun a ha => ?_
+      exact (IntermediateField.mem_fixedField_iff _ _).mp (hle ha) x
+        (Subgroup.mem_zpowers x)
+    · intro hx ζ hζ
+      exact (IntermediateField.mem_fixingSubgroup_iff _ _).mp hx ζ
+        (IntermediateField.subset_adjoin ℚ _ hζ)
+  have hU2open : IsOpen {x : Field.absoluteGaloisGroup ℚ |
+      ∀ ζ : AlgebraicClosure ℚ, ζ ^ p ^ n = 1 → x ζ = ζ} := by
+    rw [hfixset]
+    exact (IntermediateField.adjoin ℚ _).fixingSubgroup_isOpen
+  -- Chebotarev density: a Frobenius conjugate off `S ∪ {p}` lies in
+  -- the nonempty open locus
+  have hdense := dense_conjClasses_globalFrob (K := ℚ)
+    (insert (Fact.out : p.Prime).toHeightOneSpectrumRingOfIntegersRat S)
+  obtain ⟨x, hxU, hxfrob⟩ := hdense.inter_open_nonempty _
+    (hU1open.inter hU2open) ⟨σ, hσpoly, hσfix⟩
+  obtain ⟨hxpoly, hxfix⟩ := hxU
+  obtain ⟨v, hvS, g, rfl⟩ := hxfrob
+  obtain ⟨q, hq, rfl⟩ := exists_prime_toHeightOneSpectrum v
+  have hqp : q ≠ p := by
+    rintro rfl
+    exact hvS (Finset.mem_insert_self _ _)
+  have hqS : hq.toHeightOneSpectrumRingOfIntegersRat ∉ S := fun hmem =>
+    hvS (Finset.mem_insert_of_mem hmem)
+  -- conjugation-invariance of the characteristic polynomial
+  have hgu : (ρbar g).comp (ρbar g⁻¹) = LinearMap.id := by
+    have h1 : ρbar g * ρbar g⁻¹ = 1 := by
+      rw [← map_mul, mul_inv_cancel, map_one]
+    exact h1
+  have hgu' : (ρbar g⁻¹).comp (ρbar g) = LinearMap.id := by
+    have h1 : ρbar g⁻¹ * ρbar g = 1 := by
+      rw [← map_mul, inv_mul_cancel, map_one]
+    exact h1
+  have hconj : (ρbar (g * globalFrob hq.toHeightOneSpectrumRingOfIntegersRat
+      * g⁻¹)).charpoly =
+      (ρbar (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)).charpoly := by
+    have heq : ρbar (g * globalFrob hq.toHeightOneSpectrumRingOfIntegersRat
+        * g⁻¹) =
+        (LinearEquiv.ofLinear (ρbar g) (ρbar g⁻¹) hgu hgu').conj
+          (ρbar (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)) := by
+      ext w
+      simp [map_mul, LinearEquiv.conj_apply, Module.End.mul_apply]
+    rw [heq, LinearEquiv.charpoly_conj]
+  -- the `p^n`-th roots of unity are Galois-stable, so `Frob_q` fixes
+  -- them because its conjugate does
+  have hfrobfix : ∀ ζ : AlgebraicClosure ℚ, ζ ^ p ^ n = 1 →
+      globalFrob hq.toHeightOneSpectrumRingOfIntegersRat ζ = ζ := by
+    intro ζ hζ
+    have hη : (g ζ) ^ p ^ n = 1 := by rw [← map_pow, hζ, map_one]
+    have h1 := hxfix (g ζ) hη
+    have h2 : (g * globalFrob hq.toHeightOneSpectrumRingOfIntegersRat * g⁻¹)
+        (g ζ) = g (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat ζ) := by
+      rw [AlgEquiv.mul_apply, AlgEquiv.mul_apply, AlgEquiv.aut_inv,
+        AlgEquiv.symm_apply_apply]
+    rw [h2] at h1
+    exact g.injective h1
+  -- … whence `q ≡ 1 (mod p^n)`: the `p`-adic cyclotomic character
+  -- takes the value `q` at `Frob_q`, and it fixes a primitive root
+  have hmod : q ≡ 1 [MOD p ^ n] := by
+    rcases Nat.eq_zero_or_pos n with hn | hn
+    · subst hn
+      rw [pow_zero]
+      exact Nat.modEq_one
+    · haveI : NeZero (p ^ n) := ⟨pow_ne_zero n (Fact.out : p.Prime).ne_zero⟩
+      obtain ⟨ζ, hζ⟩ := HasEnoughRootsOfUnity.exists_primitiveRoot
+        (AlgebraicClosure ℚ) (p ^ n)
+      have hχ := cyclotomicCharacter_globalFrob (ℓ := p) hq hqp
+      have hspec := cyclotomicCharacter.spec p
+        (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat).toRingEquiv
+        ζ hζ.pow_eq_one
+      rw [hχ, map_natCast] at hspec
+      have hz : ζ ^ ((q : ZMod (p ^ n))).val = ζ ^ 1 := by
+        rw [pow_one, ← hspec]
+        exact hfrobfix ζ hζ.pow_eq_one
+      have h1lt : 1 < p ^ n :=
+        Nat.one_lt_pow hn.ne' (Fact.out : p.Prime).one_lt
+      have hval : ((q : ZMod (p ^ n))).val = 1 :=
+        hζ.pow_inj (ZMod.val_lt _) h1lt hz
+      show q % p ^ n = 1 % p ^ n
+      rw [Nat.mod_eq_of_lt h1lt, ← ZMod.val_natCast]
+      exact hval
+  refine ⟨q, hq, hqS, hmod, α, β, hαβ, ?_⟩
+  rw [GaloisRep.charFrob_eq_charpoly_globalFrob, ← hconj]
+  exact hxpoly
+
+/-- **Existence of Taylor–Wiles primes** (patching leaf 1; PROVEN
+2026-07-24 over the group-theoretic leaf
+`exists_fixing_rootsOfUnity_charpoly_split`): for the irreducible
+hardly ramified residual `ρbar` there are Taylor–Wiles prime sets of
+every level `n` and every size `r`.  DERIVED by iterating the
+single-prime Chebotarev extraction `exists_taylorWilesPrime`, at each
+step excluding the (finitely many) places of the primes already
+chosen, so the set grows by a genuinely fresh prime.
 
 Both-ways audit: at the intended instantiation this is the cited
 Taylor–Wiles prime existence; abstractly the hypothesis set contains
@@ -1444,8 +1651,27 @@ theorem exists_taylorWilesPrimeSet.{uK, uW}
     (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
     (hρbar : IsHardlyRamified hpodd hW ρbar)
     (hirr : ρbar.IsIrreducible) (n r : ℕ) :
-    ∃ Q : Finset ℕ, r ≤ Q.card ∧ IsTaylorWilesPrimeSet ρbar p n Q :=
-  sorry
+    ∃ Q : Finset ℕ, r ≤ Q.card ∧ IsTaylorWilesPrimeSet ρbar p n Q := by
+  classical
+  induction r with
+  | zero =>
+    exact ⟨∅, Nat.zero_le _, fun q hq => absurd hq (Finset.notMem_empty q)⟩
+  | succ r ih =>
+    obtain ⟨Q, hQcard, hQ⟩ := ih
+    -- exclude the places of the primes already chosen
+    obtain ⟨q, hq, hqS, hqmod, α, β, hαβ, hqpoly⟩ :=
+      exists_taylorWilesPrime hpodd hW hρbar hirr n
+        (Q.image fun q' =>
+          if h : q'.Prime then h.toHeightOneSpectrumRingOfIntegersRat
+          else (Fact.out : p.Prime).toHeightOneSpectrumRingOfIntegersRat)
+    have hqQ : q ∉ Q := fun hmem => hqS (Finset.mem_image.mpr
+      ⟨q, hmem, dif_pos hq⟩)
+    refine ⟨insert q Q, ?_, fun q' hq' => ?_⟩
+    · rw [Finset.card_insert_of_notMem hqQ]
+      omega
+    · rcases Finset.mem_insert.mp hq' with rfl | hmem
+      · exact ⟨hq, hqmod, α, β, hαβ, hqpoly⟩
+      · exact hQ q' hmem
 
 set_option linter.checkUnivs false in
 /-- **The patched module** — the limit object of the Taylor–Wiles
