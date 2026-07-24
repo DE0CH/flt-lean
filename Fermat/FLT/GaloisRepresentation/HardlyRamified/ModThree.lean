@@ -126,6 +126,13 @@ public import Mathlib.Analysis.SpecialFunctions.Pow.Complex
 -- `zlattice_theta_transform` of the Hecke continuation (hence public).
 public import Mathlib.Algebra.Module.ZLattice.Covolume
 public import Mathlib.LinearAlgebra.BilinearForm.DualLattice
+-- The abstract Mellin functional-equation machine (`WeakFEPair`, its
+-- entire completion `Λ₀`, the meromorphic `Λ` and the `Λ₀`-level
+-- functional equation), appearing in the STATEMENTS of the Hecke
+-- theta–Mellin leaves `heckeFEPair_exists`/`weakFEPair_growth` and
+-- consumed by the PROVEN assembly of
+-- `heckeClassZeta_of_zlattice_theta` (hence public).
+public import Mathlib.NumberTheory.LSeries.AbstractFuncEq
 -- `Complex.Gamma_ne_zero_of_re_pos` (nonvanishing of the archimedean
 -- Euler factors) and the antiholomorphic-composition lemma
 -- `differentiableAt_conj_conj_iff` (Schwarz reflection), consumed by
@@ -5237,20 +5244,47 @@ theorem zlattice_theta_transform
           Real.exp (-Real.pi * t * ‖(w : E)‖ ^ 2) := by
   sorry
 
-/-- **Hecke's per-ideal-class theta–Mellin machine, conditioned on
-lattice Poisson summation** (sorry node, stated 2026-07-24 — the
-second leaf of the decomposition of `completedClassZeta_exists`; its
-sole hypothesis `hθ` is verbatim the Poisson leaf
-`zlattice_theta_transform`, so proving THIS theorem is exactly the
-Neukirch VII §§3–5 unit-domain/Mellin work sitting on top of that
-transformation law, and its conclusion is verbatim
-`completedClassZeta_exists`).
+/-- **Hecke's theta–Mellin `WeakFEPair` family of the class group**
+(sorry node, stated 2026-07-24 — the Neukirch VII §§3–5 core of the
+per-class Hecke continuation, cut out of
+`heckeClassZeta_of_zlattice_theta`, whose assembly is PROVEN on top of
+this leaf and `weakFEPair_growth`): from the `n`-dimensional lattice
+theta law `hθ` (verbatim `zlattice_theta_transform`) produce, for
+every ideal class `C`, a `WeakFEPair` `P C` — mathlib's abstract
+Mellin/functional-equation machine
+(`Mathlib.NumberTheory.LSeries.AbstractFuncEq`, instantiated exactly
+as `Mathlib.NumberTheory.LSeries.HurwitzZetaEven` does) — with
 
-Intended proof (J. Neukirch, *Algebraic Number Theory*, VII §§3–5, in
-the architecture mathlib itself uses for `riemannZeta` and the Hurwitz
-zetas — `WeakFEPair`/`StrongFEPair` of
-`Mathlib.NumberTheory.LSeries.AbstractFuncEq`, instantiated exactly as
-`Mathlib.NumberTheory.LSeries.HurwitzZetaEven` does):
+* weight `k = 1/2` and root number `ε = 1`;
+* one shared constant term `f₀ = g₀ = ρ` (Neukirch VII (5.7)/(5.8):
+  the unit-domain theta integral has the SAME limit
+  `ρ = 2^{r₁-1}·vol(F)/w`-style constant at `t → ∞` for every class,
+  and the same at `0` after the `t ↦ 1/t` reflection — this shared
+  constant is what makes the assembled completion
+  `s(s−1)·Λ₀(s/2) + 2ρ` satisfy an exact functional equation);
+* the `Λ₀`-level functional equation pairing `C` with
+  `[𝔡]C⁻¹ = dedekindDualClass K C` (from
+  `WeakFEPair.functional_equation₀` at `ε = 1` once `(P C).symm` is
+  identified with `P ([𝔡]C⁻¹)` — the pairs must be constructed
+  coherently: `(P C).g = (P ([𝔡]C⁻¹)).f`, using
+  `dedekindDualClass_involutive`);
+* exponential decay `‖f t − ρ‖ ≤ A·exp(−a·t)` on `t ≥ 1` for both
+  kernels (theta tail bounds: the smallest nonzero vector of the
+  ideal lattice gives `a`, discreteness/`ZLattice` finiteness gives
+  the constant — consumed by the growth leaf `weakFEPair_growth`);
+* the Mellin identification on `re s > 1`: the partial Dirichlet
+  series of the class converges (`LSeriesSummable`; from the pin's
+  per-class ideal-counting asymptotics
+  `Ideal.tendsto_norm_le_and_mk_eq_div_atTop` through
+  `LSeriesSummable_of_sum_norm_bigO`, or from the theta estimates
+  themselves) and
+  `Λ(s/2) = |d_K|^{s/2}·Γ_ℝ(s)^{r₁}·Γ_ℂ(s)^{r₂}·L(a_C, s)` with
+  `Γ_ℝ(s) = π^{−s/2}·Γ(s/2)`, `Γ_ℂ(s) = 2·(2π)^{−s}·Γ(s)` (Neukirch
+  VII §4's archimedean Euler factors, via `WeakFEPair.hasMellin` at
+  `re (s/2) > 1/2 = k`).
+
+Intended construction (J. Neukirch, *Algebraic Number Theory*, VII
+§§3–5):
 
 1. *Ideal lattices and their duals* (Neukirch VII §3).  Choose an
    integral ideal `𝔞 ∈ C⁻¹`; the nonzero integral ideals in `C`
@@ -5283,37 +5317,122 @@ zetas — `WeakFEPair`/`StrongFEPair` of
    with covolume `(Π y_w^{d_w/2})·covol 𝔞` and dual lattice
    `D_{√y}⁻¹·𝔞∨`), so the anisotropic transformation law is `hθ`
    applied to `D_{√y}·𝔞` at `t = 1`.
-3. *Unit-domain reduction and Mellin transform* (Neukirch VII §5,
-   (5.5)–(5.8)): integrating the theta minus its constant term over a
-   fundamental domain of `𝒪_K^×/μ(K)` acting on the norm-one
+3. *Unit-domain reduction* (Neukirch VII §5, (5.5)–(5.8)): the
+   kernels `f = g_C`, `g = g_{C'}` are the integrals of the theta
+   over a fundamental domain of `𝒪_K^×/μ(K)` acting on the norm-one
    hypersurface of `K_ℝ^×` (Dirichlet's unit theorem,
-   `NumberField.Units.*`) turns the completed partial zeta into a
-   Mellin transform of a function `g_C(t)` with
-   `g_C(1/t) = t^{1/2}·g_{C'}(t)` up to the constant terms;
-   instantiate `WeakFEPair` with these `g_C`, `g_{C'}` — its API
-   (`WeakFEPair.Λ`, `WeakFEPair.differentiable_Λ₀`,
-   `WeakFEPair.functional_equation`, as consumed by
-   `HurwitzZetaEven`) yields the continuation, the entirety of
-   `s(s−1)·Z C s`, and the functional equation
-   `Z C (1−s) = Z ([𝔡]C⁻¹) s`.
-4. *`re s > 1` formula and summability*: unfold the Mellin integral on
-   the convergence half-plane (Neukirch VII §4's evaluation of the
-   archimedean factors `Γ_ℝ(s) = π^{−s/2}·Γ(s/2)`,
-   `Γ_ℂ(s) = 2·(2π)^{−s}·Γ(s)`); the `LSeriesSummable` conjunct
-   follows from the same estimates, or directly from the pin's
-   per-class ideal-counting asymptotics
-   (`Ideal.tendsto_norm_le_and_mk_eq_div_atTop`) through
-   `LSeriesSummable_of_sum_norm_bigO`.
-5. *Growth* (S. Lang, *Algebraic Number Theory*, XIII §5): on
-   `re s ≥ 2` termwise bounds (`‖L(a_C, s)‖ ≤ L(a_C, 2)`,
-   `‖Γ(s)‖ ≤ Γ(re s)`, `Γ(x) ≤ exp(x·log x)` for large real `x`); on
-   `re s ≤ −1` reflect through the functional equation; on the strip
-   `−1 ≤ re s ≤ 2` the Mellin representation bounds `‖Z C s‖` by
-   `‖s(s−1)‖·(c₀ + ∫_1^∞ θ̃(t)·(t^{re s/2} + t^{(1−re s)/2}) dt/t)`,
-   polynomial on the strip — or Phragmén–Lindelöf
-   (`PhragmenLindelof.horizontal_strip`, already imported; the PROVEN
-   Poitou strip-positivity section of this file has the technique in
-   Lean). -/
+   `NumberField.Units.*`); the anisotropic law of step 2 integrates
+   to `g_C(1/t) = t^{1/2}·g_{C'}(t)`, which is the `WeakFEPair.h_feq`
+   field at `k = 1/2`, `ε = 1`; local integrability and the
+   all-order decay fields follow from the exponential tail bounds
+   above.  The `WeakFEPair` API then yields everything the assembly
+   consumes. -/
+theorem heckeFEPair_exists (K : Type*) [Field K] [NumberField K]
+    (hθ : ∀ (E : Type) [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+      [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E]
+      (L : Submodule ℤ E) [DiscreteTopology L] [IsZLattice ℝ L]
+      (t : ℝ), 0 < t →
+      ∑' v : L, Real.exp (-Real.pi * t⁻¹ * ‖(v : E)‖ ^ 2) =
+        (ZLattice.covolume L)⁻¹ * t ^ ((Module.finrank ℝ E : ℝ) / 2) *
+          ∑' w : LinearMap.BilinForm.dualSubmodule (innerₗ E) L,
+            Real.exp (-Real.pi * t * ‖(w : E)‖ ^ 2)) :
+    ∃ (P : ClassGroup (NumberField.RingOfIntegers K) → WeakFEPair ℂ) (ρ : ℂ),
+      (∀ C, (P C).k = 1 / 2) ∧
+      (∀ C, (P C).ε = 1) ∧
+      (∀ C, (P C).f₀ = ρ) ∧
+      (∀ C, (P C).g₀ = ρ) ∧
+      (∀ C, ∀ s : ℂ, (P C).Λ₀ (1 / 2 - s) = (P (dedekindDualClass K C)).Λ₀ s) ∧
+      (∀ C, ∃ A a : ℝ, 0 < a ∧
+        (∀ t : ℝ, 1 ≤ t → ‖(P C).f t - (P C).f₀‖ ≤ A * Real.exp (-a * t)) ∧
+        (∀ t : ℝ, 1 ≤ t → ‖(P C).g t - (P C).g₀‖ ≤ A * Real.exp (-a * t))) ∧
+      (∀ C, ∀ s : ℂ, 1 < s.re →
+        LSeriesSummable (fun n => (classIdealCount K C n : ℂ)) s ∧
+        (P C).Λ (s / 2) =
+          Complex.ofReal |(NumberField.discr K : ℝ)| ^ (s / 2) *
+            ((Real.pi : ℂ) ^ (-s / 2) * Complex.Gamma (s / 2)) ^
+              NumberField.InfinitePlace.nrRealPlaces K *
+            ((2 : ℂ) * ((2 * Real.pi : ℝ) : ℂ) ^ (-s) * Complex.Gamma s) ^
+              NumberField.InfinitePlace.nrComplexPlaces K *
+            LSeries (fun n => (classIdealCount K C n : ℂ)) s) := by
+  sorry
+
+/-- **Order-one growth for a weight-`1/2` FE-pair with exponentially
+decaying kernels** (sorry node, stated 2026-07-24 — the Lang XIII §5
+growth leaf of `heckeClassZeta_of_zlattice_theta`): for a
+`WeakFEPair` of weight `k = 1/2` whose kernels approach their
+constant terms exponentially fast on `[1, ∞)`, the pole-cleared
+completed Mellin transform `s(s−1)·Λ(s/2)` is of order one:
+`‖s(s−1)·Λ(s/2)‖ ≤ exp(B·‖s‖·log ‖s‖)` off the disc `‖s‖ < 2`.
+
+Intended proof, in three regions (S. Lang, *Algebraic Number
+Theory*, XIII §5; the pin has no Hadamard theory, so this is
+elementary integral estimation):
+
+* `re s ≥ 2`: `Λ(s/2)` is the convergent Mellin integral of `f − f₀`
+  (`WeakFEPair.hasMellin`, `re (s/2) > 1/2 = P.k`); split at `t = 1`:
+  the `(0,1]` piece is uniformly `O(1)` for `re s ≥ 2` by the
+  `t^{−1/2}` blow-up bound `WeakFEPair.hf_zero'`, and the `[1,∞)`
+  piece is bounded via `hf` by
+  `A·∫_1^∞ e^{−at}·t^{σ/2−1} dt ≤ A·max(1,a⁻¹)^{σ/2}·Γ(σ/2)` with
+  `Γ(x) ≤ x^x = exp(x·log x)` for `x ≥ 1` (elementary from
+  `Real.Gamma_le_self_rpow`-style estimates or the integral
+  definition), all absorbed into `exp(C·‖s‖·log ‖s‖)`.
+* `re s ≤ −1`: reflect through `WeakFEPair.functional_equation`,
+  `Λ(k − z) = ε • P.symm.Λ z` at `z = 1/2 − s/2` (so
+  `re z ≥ 3/4 > 1/2`), and apply the first region's estimate to
+  `P.symm`, whose `f`-kernel is `P.g` (hypothesis `hg`), using
+  `‖1 − s‖ ≤ 1 + ‖s‖ ≤ 2‖s‖` and the fixed constant `‖ε‖`.
+* strip `−1 ≤ re s ≤ 2`, `‖s‖ ≥ 2`: write
+  `Λ(s/2) = Λ₀(s/2) − (2/s)·f₀ − (ε/(1/2 − s/2))·g₀`
+  (`WeakFEPair.Λ₀_eq`); the pole corrections are bounded since
+  `‖s‖ ≥ 2` keeps `s` at distance `≥ 1` from `0` and `1`, and
+  `Λ₀ = mellin f_modif` is BOUNDED on the closed strip
+  `−1/2 ≤ re z ≤ 1`: split the integral at `1` and use the all-order
+  decay of `f_modif` at `0⁺` and `∞`
+  (`WeakFEPair.hf_zero`/`hf_modif_top` at exponents clearing the
+  strip) — alternatively Phragmén–Lindelöf
+  (`PhragmenLindelof.horizontal_strip`, already imported; the PROVEN
+  Poitou strip-positivity section of this file has the technique in
+  Lean).  Combine, absorbing the polynomial factor
+  `‖s(s−1)‖ ≤ (‖s‖+1)²` into the exponential
+  (`Real.log ‖s‖ ≥ Real.log 2 > 0` on `‖s‖ ≥ 2`). -/
+theorem weakFEPair_growth (P : WeakFEPair ℂ) (hk : P.k = 1 / 2)
+    (A a : ℝ) (ha : 0 < a)
+    (hf : ∀ t : ℝ, 1 ≤ t → ‖P.f t - P.f₀‖ ≤ A * Real.exp (-a * t))
+    (hg : ∀ t : ℝ, 1 ≤ t → ‖P.g t - P.g₀‖ ≤ A * Real.exp (-a * t)) :
+    ∃ B : ℝ, 0 < B ∧ ∀ s : ℂ, 2 ≤ ‖s‖ →
+      ‖s * (s - 1) * P.Λ (s / 2)‖ ≤ Real.exp (B * ‖s‖ * Real.log ‖s‖) := by
+  sorry
+
+/-- **Hecke's per-ideal-class theta–Mellin machine, conditioned on
+lattice Poisson summation** (DECOMPOSED 2026-07-24, assembly PROVEN —
+its sole hypothesis `hθ` is verbatim the Poisson leaf
+`zlattice_theta_transform`, and its conclusion is verbatim
+`completedClassZeta_exists`).
+
+The Neukirch VII §§3–5 route is cut at mathlib's abstract
+Mellin/functional-equation interface: the leaf `heckeFEPair_exists`
+(sorried above) packages the whole ideal-lattice/unit-domain/Mellin
+analysis into a class-indexed family `P` of `WeakFEPair`s (weight
+`1/2`, root number `1`, shared constant term `ρ`, `Λ₀`-level
+functional equation pairing `C` with `[𝔡]C⁻¹`, exponentially decaying
+kernels, and the `re s > 1` identification of `Λ(s/2)` with the
+completed partial zeta), and the leaf `weakFEPair_growth` (sorried
+above) supplies the Lang XIII §5 order-one bound for any such pair.
+
+The assembly here is pure complex algebra over the `WeakFEPair` API:
+the completed partial zeta is DEFINED as the entire function
+
+`Z C s := s·(s−1)·(P C).Λ₀ (s/2) + 2ρ`,
+
+which by `WeakFEPair.Λ₀_eq` (`Λ₀ = Λ + f₀/s + ε·g₀/(k−s)`) agrees
+with `s·(s−1)·(P C).Λ (s/2)` at every `s ∉ {0, 1}` — the two pole
+corrections contribute `2(s−1)ρ − 2sρ + 2ρ = 0` exactly because the
+constant terms are equal and `ε = 1`.  Entirety is
+`WeakFEPair.differentiable_Λ₀`; the `re s > 1` formula and the growth
+bound transfer through the off-`{0,1}` identity (`re s > 1` and
+`‖s‖ ≥ 2` each exclude `0` and `1`); the functional equation is the
+`Λ₀`-level one under `(1−s)/2 = 1/2 − s/2`. -/
 theorem heckeClassZeta_of_zlattice_theta (K : Type*) [Field K] [NumberField K]
     (hθ : ∀ (E : Type) [NormedAddCommGroup E] [InnerProductSpace ℝ E]
       [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E]
@@ -5336,7 +5455,48 @@ theorem heckeClassZeta_of_zlattice_theta (K : Type*) [Field K] [NumberField K]
       (∀ C, ∀ s : ℂ, Z C (1 - s) = Z (dedekindDualClass K C) s) ∧
       (∀ C, ∃ B : ℝ, 0 < B ∧ ∀ s : ℂ, 2 ≤ ‖s‖ →
         ‖Z C s‖ ≤ Real.exp (B * ‖s‖ * Real.log ‖s‖)) := by
-  sorry
+  obtain ⟨P, ρ, hk, hε, hf₀, hg₀, hΛ₀FE, hdecay, hMell⟩ := heckeFEPair_exists K hθ
+  -- The pole-clearing identity: away from `s ∈ {0, 1}` the entire
+  -- candidate `s(s−1)·Λ₀(s/2) + 2ρ` is exactly `s(s−1)·Λ(s/2)`.
+  have key : ∀ C, ∀ s : ℂ, s ≠ 0 → s ≠ 1 →
+      s * (s - 1) * (P C).Λ₀ (s / 2) + 2 * ρ = s * (s - 1) * (P C).Λ (s / 2) := by
+    intro C s hs0 hs1
+    rw [(P C).Λ₀_eq, hk C, hε C, hf₀ C, hg₀ C, smul_eq_mul, smul_eq_mul]
+    push_cast
+    have h1 : s / 2 ≠ 0 := div_ne_zero hs0 two_ne_zero
+    have h2 : (1 : ℂ) / 2 - s / 2 ≠ 0 := by
+      intro h
+      apply hs1
+      linear_combination -2 * h
+    field_simp
+    ring
+  refine ⟨fun C s => s * (s - 1) * (P C).Λ₀ (s / 2) + 2 * ρ,
+    fun C => ?_, fun C s hs => ?_, fun C s => ?_, fun C => ?_⟩
+  · -- Entirety, from `WeakFEPair.differentiable_Λ₀`.
+    have h1 : Differentiable ℂ (P C).Λ₀ := (P C).differentiable_Λ₀
+    fun_prop
+  · -- The `re s > 1` formula, through the Mellin identification.
+    obtain ⟨hsum, hΛ⟩ := hMell C s hs
+    have hs0 : s ≠ 0 := by rintro rfl; norm_num at hs
+    have hs1 : s ≠ 1 := by rintro rfl; norm_num at hs
+    refine ⟨hsum, ?_⟩
+    dsimp only
+    rw [key C s hs0 hs1, hΛ]
+    ring
+  · -- The functional equation, from the `Λ₀`-level one.
+    have h2 : (1 - s) / 2 = 1 / 2 - s / 2 := by ring
+    dsimp only
+    rw [h2, hΛ₀FE C (s / 2)]
+    ring
+  · -- The order-one growth bound, from `weakFEPair_growth`.
+    obtain ⟨A, a, ha, hfd, hgd⟩ := hdecay C
+    obtain ⟨B, hB, hbound⟩ := weakFEPair_growth (P C) (hk C) A a ha hfd hgd
+    refine ⟨B, hB, fun s hs => ?_⟩
+    have hs0 : s ≠ 0 := by rintro rfl; norm_num at hs
+    have hs1 : s ≠ 1 := by rintro rfl; norm_num at hs
+    dsimp only
+    rw [key C s hs0 hs1]
+    exact hbound s hs
 
 /-- **Hecke's theorem, per-ideal-class theta–Mellin core**
 (DECOMPOSED 2026-07-24, assembly PROVEN): every ideal class `C` of `K`
@@ -5351,7 +5511,9 @@ growth bound off the disc `‖s‖ < 2`.
 The decomposition cuts the Neukirch VII §§3–5 route at its Poisson
 core: the conclusion is verbatim that of
 `heckeClassZeta_of_zlattice_theta` (the ideal-lattice, unit-domain and
-`WeakFEPair`/Mellin machinery, sorried above), whose sole hypothesis
+`WeakFEPair`/Mellin machinery — assembly PROVEN above, over the
+sorried leaves `heckeFEPair_exists`/`weakFEPair_growth`), whose sole
+hypothesis
 is verbatim the `n`-dimensional `ZLattice` Poisson-summation theta law
 `zlattice_theta_transform` (sorried above, the pin's genuine gap) —
 the assembly here plugs the one into the other, making the analytic
