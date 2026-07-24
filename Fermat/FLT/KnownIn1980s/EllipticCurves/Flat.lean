@@ -8329,36 +8329,167 @@ theorem WeierstrassCurve.exists_bialgEquiv_of_torsion_points_equiv
     simp only [gdef, WithConv.toConv_ofConv, ofMul_mul, map_add, toMul_add]
   exact exists_bialgEquiv_of_algEquiv_conv K Ksep HK₁ HK₂ e hone hmul
 
-set_option backward.isDefEq.respectTransparency false in
-/-- **The Katz–Mazur Hopf order** (sorry node; the CURVE half of the decomposed
-Katz–Mazur existence leaf `exists_torsion_flat_model_of_good_reduction_prime_pow`,
-freed 2026-07-23 of all structure transport, and stated for ANY torsion order
-`m` nonzero in `K` — no primality and no non-invertibility in `R` is needed for
-the order to exist): inside the finite étale Hopf `K`-algebra `HK` of the
-`m`-torsion of a good-reduction curve, some finitely generated `R`-subalgebra
-`H₀` spans `HK` over `K` and is closed under the Hopf structure maps — the
-counit takes `H₀` into `R`, the antipode preserves `H₀`, and the
-comultiplication takes `H₀` into the `R`-span of the pure tensors of `H₀`.
-Unlike the unramified case, `H₀` is NOT the integral closure of `R` (for `μ_p`
-over `ℤ_p` the normalization has a special fibre with two connected components
-of lengths `1` and `p - 1`, which is not a group scheme). The mathematical
-content is [Katz–Mazur, *Arithmetic moduli of elliptic curves*, Thm 2.3.1]:
-`H₀` is (the image in the generic fibre of) the affine algebra of the kernel
-`𝓔[m]` of multiplication by `m` on the elliptic scheme `𝓔` of the minimal
-(good-reduction) Weierstrass equation. It suffices to construct the order for
-ONE `HK` carrying an equivariant points isomorphism: any other is Hopf-isomorphic
-to it by `exists_bialgEquiv_of_torsion_points_equiv` (proven), and Hopf-closed
-orders transport along Hopf isomorphisms.
+/-- **Bialgebra homomorphisms of commutative Hopf algebras intertwine the
+antipodes** (PROVEN 2026-07-24; curve-free, not in mathlib): in the convolution
+GROUP `WithConv (A →ₐ[K₁] B)` (mathlib's `AlgHom.convGroup`, available because
+`A` is a commutative Hopf algebra and `B` a commutative bialgebra), `S_B ∘ f`
+is a LEFT convolution inverse of `f` — precomposition with the bialgebra
+homomorphism `f` distributes over convolution
+(`AlgHom.convMul_comp_bialgHom_distrib`) and sends `S_B * id_B = 1`
+(`AlgHom.antipode_id_cancel`) to the convolution unit, since `f` preserves
+counits — while `f ∘ S_A` IS the group inverse by definition of
+`AlgHom.convInv`; they agree by uniqueness of inverses in a group. -/
+theorem antipodeAlgHom_comp_bialgHom {K₁ A B : Type*} [CommSemiring K₁]
+    [CommRing A] [HopfAlgebra K₁ A] [CommRing B] [HopfAlgebra K₁ B]
+    (f : A →ₐc[K₁] B) :
+    (HopfAlgebra.antipodeAlgHom K₁ B).comp (f : A →ₐ[K₁] B) =
+      (f : A →ₐ[K₁] B).comp (HopfAlgebra.antipodeAlgHom K₁ A) := by
+  classical
+  -- distribute precomposition with `f` over the convolution `S_B * id_B = 1`
+  have hdistrib := AlgHom.convMul_comp_bialgHom_distrib
+    (WithConv.toConv (HopfAlgebra.antipodeAlgHom K₁ B))
+    (WithConv.toConv (AlgHom.id K₁ B)) f
+  rw [AlgHom.antipode_id_cancel] at hdistrib
+  -- the left side is the convolution unit of `A →ₐ[K₁] B`: `f` preserves counits
+  have hone : ((1 : WithConv (B →ₐ[K₁] B)).ofConv).comp (f : A →ₐ[K₁] B) =
+      ((1 : WithConv (A →ₐ[K₁] B)).ofConv) := by
+    rw [AlgHom.convOne_def, AlgHom.convOne_def, WithConv.ofConv_toConv,
+      WithConv.ofConv_toConv, AlgHom.comp_assoc, BialgHom.counitAlgHom_comp f]
+  rw [hone, WithConv.ofConv_toConv, WithConv.ofConv_toConv, AlgHom.id_comp]
+    at hdistrib
+  -- so `S_B ∘ f` is a left convolution inverse of `f` …
+  have hleft : WithConv.toConv
+        ((HopfAlgebra.antipodeAlgHom K₁ B).comp (f : A →ₐ[K₁] B)) *
+      WithConv.toConv (f : A →ₐ[K₁] B) = 1 := by
+    apply WithConv.ofConv_injective
+    rw [← hdistrib]
+  -- … and the group inverse of `f` is `f ∘ S_A` by definition
+  have hinv := eq_inv_of_mul_eq_one_left hleft
+  have hinvdef : (WithConv.toConv (f : A →ₐ[K₁] B))⁻¹ =
+      WithConv.toConv ((f : A →ₐ[K₁] B).comp (HopfAlgebra.antipodeAlgHom K₁ A)) :=
+    rfl
+  rw [hinvdef] at hinv
+  exact WithConv.toConv_injective hinv
 
-SCHEME-FREE CONSTRUCTION ROADMAP (worked out 2026-07-23, restated for the
-Hopf-ORDER formulation; `𝓔[m]` is flat, so it is the schematic closure of its
-generic fibre, so `H₀` is the image of the functions on any affine open
-`U ⊇ 𝓔[m]` inside the étale generic-fibre algebra):
+omit [IsDomain R] [IsDiscreteValuationRing R] [IsFractionRing R K] in
+/-- **Hopf-closed orders transport along Hopf-algebra isomorphisms** (PROVEN
+2026-07-24; curve-free plumbing for the Katz–Mazur existence leaf): the image
+of a Hopf-closed `R`-order `H₀ ⊆ HK₁` under a `K`-bialgebra equivalence
+`Ψ : HK₁ ≃ₐc[K] HK₂` is again a Hopf-closed `R`-order. Finite generation and
+`K`-spanning transport along the underlying bijective `K`-linear map; counit
+closure holds because `Ψ` preserves counits
+(`CoalgHomClass.counit_comp_apply`); antipode closure because bialgebra maps
+of commutative Hopf algebras intertwine the antipodes
+(`antipodeAlgHom_comp_bialgHom`); comultiplication closure because
+`Δ (Ψ x) = (Ψ ⊗ Ψ) (Δ x)` (`BialgHom.map_comp_comulAlgHom`) and `Ψ ⊗ Ψ` maps
+the `R`-span of pure tensors of `H₀` into the `R`-span of pure tensors of the
+image (`Submodule.span_induction`, the `R`-scalars moving through the
+`K`-algebra map by the scalar tower). -/
+theorem exists_hopf_order_of_bialgEquiv
+    (HK₁ : Type*) [CommRing HK₁] [HopfAlgebra K HK₁]
+    [Algebra R HK₁] [IsScalarTower R K HK₁]
+    (HK₂ : Type*) [CommRing HK₂] [HopfAlgebra K HK₂]
+    [Algebra R HK₂] [IsScalarTower R K HK₂]
+    (Ψ : HK₁ ≃ₐc[K] HK₂)
+    (H₀ : Subalgebra R HK₁)
+    (hfg : (Subalgebra.toSubmodule H₀).FG)
+    (hspan : Submodule.span K (H₀ : Set HK₁) = ⊤)
+    (hcounit : ∀ x ∈ H₀, Bialgebra.counitAlgHom K HK₁ x ∈ (algebraMap R K).range)
+    (hantipode : ∀ x ∈ H₀, HopfAlgebra.antipode K x ∈ H₀)
+    (hcomul : ∀ x ∈ H₀, Bialgebra.comulAlgHom K HK₁ x ∈
+      Submodule.span R {z : HK₁ ⊗[K] HK₁ | ∃ a ∈ H₀, ∃ b ∈ H₀, a ⊗ₜ[K] b = z}) :
+    ∃ H₀' : Subalgebra R HK₂,
+      (Subalgebra.toSubmodule H₀').FG ∧
+      Submodule.span K (H₀' : Set HK₂) = ⊤ ∧
+      (∀ x ∈ H₀', Bialgebra.counitAlgHom K HK₂ x ∈ (algebraMap R K).range) ∧
+      (∀ x ∈ H₀', HopfAlgebra.antipode K x ∈ H₀') ∧
+      (∀ x ∈ H₀', Bialgebra.comulAlgHom K HK₂ x ∈
+        Submodule.span R {z : HK₂ ⊗[K] HK₂ | ∃ a ∈ H₀', ∃ b ∈ H₀', a ⊗ₜ[K] b = z}) := by
+  classical
+  set ψ : HK₁ →ₐc[K] HK₂ := Ψ.toBialgHom
+  set φ : HK₁ →ₐ[R] HK₂ := ((ψ : HK₁ →ₐ[K] HK₂)).restrictScalars R
+  refine ⟨H₀.map φ, ?_, ?_, ?_, ?_, ?_⟩
+  · -- finite generation transports along the map
+    rw [Subalgebra.map_toSubmodule]
+    exact hfg.map φ.toLinearMap
+  · -- spanning transports along the surjective `K`-linear map
+    rw [Subalgebra.coe_map]
+    have himg : ⇑φ '' (H₀ : Set HK₁) =
+        ⇑((ψ : HK₁ →ₐ[K] HK₂).toLinearMap) '' (H₀ : Set HK₁) := rfl
+    rw [himg, ← Submodule.map_span, hspan, Submodule.map_top,
+      LinearMap.range_eq_top]
+    exact Ψ.surjective
+  · -- counit closure: `Ψ` preserves counits
+    intro y hy
+    obtain ⟨x, hx, rfl⟩ := Subalgebra.mem_map.mp hy
+    have hc : Bialgebra.counitAlgHom K HK₂ (φ x) = Bialgebra.counitAlgHom K HK₁ x :=
+      CoalgHomClass.counit_comp_apply ψ x
+    rw [hc]
+    exact hcounit x hx
+  · -- antipode closure: bialgebra maps intertwine the antipodes
+    intro y hy
+    obtain ⟨x, hx, rfl⟩ := Subalgebra.mem_map.mp hy
+    have hS : HopfAlgebra.antipode K (φ x) = φ (HopfAlgebra.antipode K x) :=
+      AlgHom.congr_fun (antipodeAlgHom_comp_bialgHom ψ) x
+    rw [hS]
+    exact Subalgebra.mem_map.mpr ⟨_, hantipode x hx, rfl⟩
+  · -- comultiplication closure: `Δ ∘ Ψ = (Ψ ⊗ Ψ) ∘ Δ` and `Ψ ⊗ Ψ` maps the
+    -- `R`-span of pure tensors into the `R`-span of pure tensors
+    intro y hy
+    obtain ⟨x, hx, rfl⟩ := Subalgebra.mem_map.mp hy
+    have hkey : Bialgebra.comulAlgHom K HK₂ (φ x) =
+        (Algebra.TensorProduct.map (ψ : HK₁ →ₐ[K] HK₂) (ψ : HK₁ →ₐ[K] HK₂))
+          (Bialgebra.comulAlgHom K HK₁ x) :=
+      (AlgHom.congr_fun (BialgHom.map_comp_comulAlgHom ψ) x).symm
+    rw [hkey]
+    refine Submodule.span_induction ?_ ?_ ?_ ?_ (hcomul x hx)
+    · rintro z ⟨a, ha, b, hb, rfl⟩
+      apply Submodule.subset_span
+      refine ⟨φ a, Subalgebra.mem_map.mpr ⟨a, ha, rfl⟩,
+        φ b, Subalgebra.mem_map.mpr ⟨b, hb, rfl⟩, ?_⟩
+      show ((ψ : HK₁ →ₐ[K] HK₂) a) ⊗ₜ[K] ((ψ : HK₁ →ₐ[K] HK₂) b) =
+        (Algebra.TensorProduct.map (ψ : HK₁ →ₐ[K] HK₂) (ψ : HK₁ →ₐ[K] HK₂))
+          (a ⊗ₜ[K] b)
+      exact (Algebra.TensorProduct.map_tmul _ _ _ _).symm
+    · simp
+    · intro z w _ _ hz hw
+      rw [map_add]
+      exact Submodule.add_mem _ hz hw
+    · intro r z _ hz
+      rw [algebra_compatible_smul K r z, map_smul, ← algebra_compatible_smul K r]
+      exact Submodule.smul_mem _ r hz
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **The Katz–Mazur Hopf-order MODEL** (sorry node; the remaining CURVE half
+of the Katz–Mazur existence leaf, isolated 2026-07-24 from the free choice of
+carrier: the consumer `exists_hopf_order_of_good_reduction` transports the
+order to ANY equivariantly-pointed `HK` through
+`exists_bialgEquiv_of_torsion_points_equiv` and
+`exists_hopf_order_of_bialgEquiv`, both proven — so THIS node may realize the
+torsion Hopf algebra by whatever concrete carrier makes the construction most
+direct): SOME finite étale Hopf `K`-algebra `HK` with a `Gal(Kˢᵉᵖ/K)`-
+equivariant identification of its `Kˢᵉᵖ`-points with the `m`-torsion of the
+good-reduction curve `E` carries a Hopf-closed `R`-order — a finitely
+generated `R`-subalgebra `H₀` spanning `HK` over `K`, with counit into `R`,
+stable under the antipode, and with comultiplication into the `R`-span of the
+pure tensors of `H₀`. Unlike the unramified case, `H₀` is NOT the integral
+closure of `R` (for `μ_p` over `ℤ_p` the normalization has a special fibre
+with two connected components of lengths `1` and `p - 1`, which is not a
+group scheme). The mathematical content is [Katz–Mazur, *Arithmetic moduli of
+elliptic curves*, Thm 2.3.1]: `H₀` is (the image in the generic fibre of) the
+affine algebra of the kernel `𝓔[m]` of multiplication by `m` on the elliptic
+scheme `𝓔` of the minimal (good-reduction) Weierstrass equation.
+
+SCHEME-FREE CONSTRUCTION ROADMAP (worked out 2026-07-23; `𝓔[m]` is flat, so
+it is the schematic closure of its generic fibre, so `H₀` is the image of the
+functions on any affine open `U ⊇ 𝓔[m]` inside the étale generic-fibre
+algebra):
 
 1. Carrier. Realize `HK` concretely as the `Gal(L/K)`-equivariant functions
    `V → L` of the `GaloisEtalePackage` section, `V := E(Kˢᵉᵖ)[m]` (finite by
    `torsion_finite_of_ne_zero`), `L` a finite Galois splitting subextension —
-   or transport the order constructed there along the Hopf isomorphism above.
+   this node chooses the carrier, so pick the one where the order is
+   writable; the `R`-algebra structure is the tower one through `K`.
 2. Avoiding denominator. Choose `h ∈ R[X]` monic of degree `d ≥ 2` whose
    reduction is coprime to the reduced affine-torsion locus: `h(x(P))` is a
    unit of the valuation ring for every torsion point `P` with integral
@@ -8401,6 +8532,41 @@ object is the kernel of `[p]` on the good-reduction Weierstrass model; the
 prime case admits no genuine shortcut past the origin chart, because the
 connected component of `𝓔[p]` (where the model is NOT étale) is present
 whenever `p` is not invertible in `R`. -/
+theorem WeierstrassCurve.exists_hopf_order_model_of_good_reduction
+    (m : ℕ) (hm : (m : K) ≠ 0) :
+    ∃ (HK : Type u) (_ : CommRing HK) (_ : HopfAlgebra K HK)
+      (_ : Module.Finite K HK) (_ : Algebra.Etale K HK)
+      (_ : Algebra R HK) (_ : IsScalarTower R K HK)
+      (f : Additive (WithConv (HK →ₐ[K] Ksep)) ≃+
+        AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)),
+      (∀ (σ : Ksep ≃ₐ[K] Ksep) (φ : HK →ₐ[K] Ksep),
+        (f (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) : (E⁄Ksep).Point) =
+          Affine.Point.map σ.toAlgHom (f (Additive.ofMul (WithConv.toConv φ)))) ∧
+      ∃ H₀ : Subalgebra R HK,
+        (Subalgebra.toSubmodule H₀).FG ∧
+        Submodule.span K (H₀ : Set HK) = ⊤ ∧
+        (∀ x ∈ H₀, Bialgebra.counitAlgHom K HK x ∈ (algebraMap R K).range) ∧
+        (∀ x ∈ H₀, HopfAlgebra.antipode K x ∈ H₀) ∧
+        (∀ x ∈ H₀, Bialgebra.comulAlgHom K HK x ∈
+          Submodule.span R {z : HK ⊗[K] HK | ∃ a ∈ H₀, ∃ b ∈ H₀, a ⊗ₜ[K] b = z}) :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **The Katz–Mazur Hopf order** (DECOMPOSED 2026-07-24 into the model leaf
+`exists_hopf_order_model_of_good_reduction` — which constructs the Hopf-closed
+`R`-order on ONE concrete equivariantly-pointed carrier of its own choosing,
+see its docstring for the Katz–Mazur 2.3.1 roadmap — and two proven transport
+pieces; the assembly below is proven): inside ANY finite étale Hopf
+`K`-algebra `HK` whose `Kˢᵉᵖ`-points are `Gal(Kˢᵉᵖ/K)`-equivariantly the
+`m`-torsion of a good-reduction curve, some finitely generated `R`-subalgebra
+`H₀` spans `HK` over `K` and is closed under the Hopf structure maps — the
+counit takes `H₀` into `R`, the antipode preserves `H₀`, and the
+comultiplication takes `H₀` into the `R`-span of the pure tensors of `H₀`.
+The assembly: the model carrier and `HK` have equivariantly isomorphic point
+groups, hence are Hopf-isomorphic by Grothendieck full faithfulness
+(`exists_bialgEquiv_of_torsion_points_equiv`, proven), and Hopf-closed orders
+transport along Hopf isomorphisms (`exists_hopf_order_of_bialgEquiv`,
+proven). -/
 theorem WeierstrassCurve.exists_hopf_order_of_good_reduction
     (m : ℕ) (hm : (m : K) ≠ 0)
     (HK : Type u) [CommRing HK] [HopfAlgebra K HK]
@@ -8417,8 +8583,25 @@ theorem WeierstrassCurve.exists_hopf_order_of_good_reduction
       (∀ x ∈ H₀, Bialgebra.counitAlgHom K HK x ∈ (algebraMap R K).range) ∧
       (∀ x ∈ H₀, HopfAlgebra.antipode K x ∈ H₀) ∧
       (∀ x ∈ H₀, Bialgebra.comulAlgHom K HK x ∈
-        Submodule.span R {z : HK ⊗[K] HK | ∃ a ∈ H₀, ∃ b ∈ H₀, a ⊗ₜ[K] b = z}) :=
-  sorry
+        Submodule.span R {z : HK ⊗[K] HK | ∃ a ∈ H₀, ∃ b ∈ H₀, a ⊗ₜ[K] b = z}) := by
+  classical
+  -- the Katz–Mazur model: one concrete equivariantly-pointed finite étale
+  -- Hopf `K`-algebra carrying a Hopf-closed `R`-order
+  obtain ⟨HK', iCR, iHopf, iFin, iEt, iAlg, iTow, f', hf', H₀', hfg', hspan',
+      hcounit', hanti', hcomul'⟩ :=
+    WeierstrassCurve.exists_hopf_order_model_of_good_reduction R K E Ksep m hm
+  letI := iCR
+  letI := iHopf
+  letI := iFin
+  haveI := iEt
+  letI := iAlg
+  haveI := iTow
+  -- Grothendieck full faithfulness: the model is Hopf-isomorphic to `HK`
+  obtain ⟨Ψ⟩ := WeierstrassCurve.exists_bialgEquiv_of_torsion_points_equiv
+    K E Ksep m HK' HK f' hf' f hf
+  -- transport the Hopf-closed order along the Hopf isomorphism
+  exact exists_hopf_order_of_bialgEquiv R K HK' HK Ψ H₀' hfg' hspan' hcounit'
+    hanti' hcomul'
 
 set_option linter.unusedSectionVars false in -- deliberate: `omit` of the unused section
 -- instances measurably slows the consuming theorem's elaboration; keep the passing signature
