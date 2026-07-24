@@ -133,6 +133,15 @@ import Mathlib.Data.Nat.Factorization.Induction
 import Mathlib.FieldTheory.IntermediateField.Adjoin.Algebra
 import Mathlib.RingTheory.IntegralClosure.Algebra.Basic
 import Mathlib.RingTheory.Algebraic.Integral
+-- ℓ = 3 discharge of the residual-modularity pillar: an irreducible
+-- hardly ramified mod-3 representation does not exist
+-- (`IsHardlyRamified.mod_three_reducible`, the Fontaine/Odlyzko route),
+-- so the ℓ = 3 instance holds by contradiction. Proof-body use only.
+import Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree
+-- `Slop.OddRep.isIrreducible_iff_forall`, the elementary unpacking of
+-- `Representation.IsIrreducible` (stable-submodule form), used to turn
+-- `mod_three_reducible`'s stable submodule into `¬ IsIrreducible`.
+import Fermat.FLT.Slop.RepresentationTheory.OddAbsIrredSlop
 
 @[expose] public section
 
@@ -717,7 +726,13 @@ Skinner–Wiles, Khare–Wintenberger, Carayol/Ribet):
    MODULARITY (the Serre-conjecture shadow, weak form: some level
    `N ≥ 1`): an irreducible hardly ramified mod-`ℓ` representation
    arises, trace-by-trace modulo a prime over `ℓ`
-   (`MatchesResidualTraces`), from a weight-2 eigenform.
+   (`MatchesResidualTraces`), from a weight-2 eigenform. As of
+   2026-07-24 itself a PROVEN assembly: the `ℓ = 3` instance is
+   discharged by contradiction from
+   `IsHardlyRamified.mod_three_reducible`, and the sorry moved into
+   the `ℓ ≥ 5` leaf
+   `exists_weightTwoEigenform_residual_of_isIrreducible_of_five_le`
+   (the Khare–Wintenberger content).
 3. `exists_weightTwoEigenform_trace_eq_of_matchesResidualTraces` —
    MODULARITY LIFTING (the R = T shadow): a hardly ramified `p`-adic
    lift of an irreducible, residually modular representation is
@@ -745,11 +760,13 @@ so routing pillar 2 through it would close a dependency cycle. The
 sound proof routes are the Khare–Wintenberger induction (Invent. Math.
 178 (2009)) or the FLT blueprint's potential-modularity chain
 (Moret–Bailly + dihedral residual modularity + modularity lifting over
-totally real fields, blueprint ch. 4). At `ℓ = 3`, pillar 2 is
-dischargeable TODAY by contradiction from
+totally real fields, blueprint ch. 4). At `ℓ = 3`, pillar 2 IS
+discharged (2026-07-24) by contradiction from
 `IsHardlyRamified.mod_three_reducible` (`ModThree.lean`: no hardly
 ramified mod-3 representation is irreducible); the `ℓ ≥ 5` instances
-carry the real content. Pillar 4 at `p = 3` is similarly dischargeable
+carry the real content and live in the leaf
+`exists_weightTwoEigenform_residual_of_isIrreducible_of_five_le`.
+Pillar 4 at `p = 3` is similarly dischargeable
 from the 3-adic classification (`Threeadic.lean`) once its leaves
 close. -/
 
@@ -808,31 +825,38 @@ def MatchesResidualTraces (N : ℕ) (f : CuspForm (Gamma0GL N) 2)
         (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1 =
           - φ x
 
-/-- **Residual modularity** (pillar 2; sorry node — the
-Serre-conjecture shadow, weak form): an IRREDUCIBLE hardly ramified
-mod-`ℓ` representation arises from a normalized weight-2 eigenform of
-some level `N ≥ 1`. This is the level-and-weight-free ("weak") form of
-Serre's modularity conjecture in the hardly ramified case (Serre, Duke
-1987 — the refined conductor-2 form is recovered downstream by the
-level-optimization pillar, not consumed here), a theorem of
-Khare–Wintenberger (*Serre's modularity conjecture (I), (II)*, Invent.
-Math. 178 (2009)) via minimal lifting to strictly compatible families
-and induction on the residue characteristic; the FLT blueprint (ch. 4)
-reaches the same automorphy through potential modularity (Moret–Bailly
-plus dihedral residual modularity from converse theorems plus
-modularity lifting over totally real fields). Plain irreducibility
-suffices to state it: hardly ramified representations are odd
-(`det = χ_cyc` and `χ_cyc(c) = −1`), and an odd irreducible
-2-dimensional representation over a finite field of odd characteristic
-is absolutely irreducible (the `OddRep` argument consumed by
-`IsHardlyRamified.mod_three_reducible`). CIRCULARITY GUARD: must not
-be proven through `Family.lean`'s compatible-family machinery (which
-consumes the assemblies below); at `ℓ = 3` it is dischargeable by
-contradiction from `IsHardlyRamified.mod_three_reducible`
-(`ModThree.lean`), and the `ℓ ≥ 5` instances carry the
-Khare–Wintenberger content. -/
-theorem exists_weightTwoEigenform_residual_of_isIrreducible
-    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime]
+/-- **Residual modularity, `ℓ ≥ 5`** (the general-case leaf of pillar
+2; sorry node — the Khare–Wintenberger content): an IRREDUCIBLE hardly
+ramified mod-`ℓ` representation with `ℓ ≥ 5` arises from a normalized
+weight-2 eigenform of some level `N ≥ 1`. This is the
+level-and-weight-free ("weak") form of Serre's modularity conjecture
+in the hardly ramified case (Serre, Duke 1987 — the refined
+conductor-2 form is recovered downstream by the level-optimization
+pillar, not consumed here), a theorem of Khare–Wintenberger (*Serre's
+modularity conjecture (I), (II)*, Invent. Math. 178 (2009)) via
+minimal lifting to strictly compatible families and induction on the
+residue characteristic; the FLT blueprint (ch. 4) reaches the same
+automorphy through potential modularity (Moret–Bailly plus dihedral
+residual modularity from converse theorems plus modularity lifting
+over totally real fields). Plain irreducibility suffices to state it:
+hardly ramified representations are odd (`det = χ_cyc` and
+`χ_cyc(c) = −1`), and an odd irreducible 2-dimensional representation
+over a finite field of odd characteristic is absolutely irreducible
+(the `OddRep` argument consumed by
+`IsHardlyRamified.mod_three_reducible`). The `ℓ ≥ 5` hypothesis is
+genuine slack for the Khare–Wintenberger induction, whose base cases
+are `ℓ = 2, 3` — the induction bottoms out in representations with
+solvable/dihedral image where automorphy is classical
+(Langlands–Tunnell at 3, Tate's `ℓ = 2` argument); here the `ℓ = 3`
+case is instead discharged by contradiction in the assembly below, so
+this leaf never needs those base cases in their modular form — its
+eventual proof may equally follow the blueprint's potential-modularity
+chain, which needs no residue-characteristic induction at all.
+CIRCULARITY GUARD (unchanged from the assembly): must not be proven
+through `Family.lean`'s compatible-family machinery, which consumes
+the assemblies below. -/
+theorem exists_weightTwoEigenform_residual_of_isIrreducible_of_five_le
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     {k : Type*} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
     [TopologicalSpace k] [DiscreteTopology k]
     {W : Type*} [AddCommGroup W] [Module k W] [Module.Finite k W]
@@ -845,6 +869,70 @@ theorem exists_weightTwoEigenform_residual_of_isIrreducible
       (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
       MatchesResidualTraces N f ρbar S :=
   sorry
+
+/-- **Residual modularity** (pillar 2; DECOMPOSED 2026-07-24 — now a
+PROVEN assembly over the `ℓ ≥ 5` leaf above): an IRREDUCIBLE hardly
+ramified mod-`ℓ` representation arises from a normalized weight-2
+eigenform of some level `N ≥ 1` (the level-and-weight-free "weak" form
+of Serre's modularity conjecture in the hardly ramified case; see the
+leaf's docstring for the literature). The assembly is the odd-prime
+dichotomy `ℓ = 3 ∨ ℓ ≥ 5`:
+
+* at `ℓ = 3` the hypotheses are contradictory —
+  `IsHardlyRamified.mod_three_reducible` (`ModThree.lean`, the
+  Fontaine/Odlyzko discriminant-bound route) produces a proper nonzero
+  `Γ ℚ`-stable submodule of any hardly ramified mod-3 representation,
+  refuting `hirr` through the elementary unpacking
+  `Slop.OddRep.isIrreducible_iff_forall` — so no Langlands–Tunnell
+  input is needed;
+* at `ℓ ≥ 5` the statement is the sorried Khare–Wintenberger leaf
+  `exists_weightTwoEigenform_residual_of_isIrreducible_of_five_le`.
+
+AUDIT (2026-07-24): the general-`ℓ` form (not just `ℓ = 3`) is what
+the consumer chain needs — the sole consumer
+`exists_weightTwoEigenform_trace_eq_of_isIrreducible` instantiates
+`ℓ := p` with `p` the residue characteristic of the `p`-adic
+representation, and the top-level route (`Frey.lean` →
+`Reducible.lean` → `Lift.lean`'s `residual_charFrob_eq` →
+`Family.lean`'s `mem_isCompatible`) invokes that chain at the Frey
+prime `p`, arbitrary `≥ 5`; narrowing this pillar to `ℓ = 3` would
+break the assembly, so the split records exactly which instance is
+proven and which carries the remaining content. -/
+theorem exists_weightTwoEigenform_residual_of_isIrreducible
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime]
+    {k : Type*} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type*} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible) :
+    ∃ (N : ℕ) (_ : 0 < N) (f : CuspForm (Gamma0GL N) 2)
+      (_ : IsWeightTwoEigenform N f)
+      (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
+      MatchesResidualTraces N f ρbar S := by
+  rcases Nat.lt_or_ge ℓ 5 with h5 | h5
+  · -- `ℓ < 5`: primality and oddness force `ℓ = 3`, where the
+    -- hypotheses are contradictory (`mod_three_reducible`)
+    interval_cases ℓ
+    · exact absurd hℓodd (by decide)
+    · exact absurd (Fact.out : Nat.Prime 1) (by decide)
+    · exact absurd hℓodd (by decide)
+    · exfalso
+      obtain ⟨W₀, hW₀0, hW₀top, hW₀stable⟩ :=
+        IsHardlyRamified.mod_three_reducible W hW hρbar
+      have hirr' : ρbar.toRepresentation.IsIrreducible := hirr
+      obtain ⟨-, hsub⟩ :=
+        (Slop.OddRep.isIrreducible_iff_forall ρbar.toRepresentation).mp hirr'
+      rcases hsub W₀
+          (fun g v hv => hW₀stable g (Submodule.mem_map_of_mem hv)) with
+        hb | ht
+      · exact hW₀0 hb
+      · exact hW₀top ht
+    · exact absurd hℓodd (by decide)
+  · -- `ℓ ≥ 5`: the Khare–Wintenberger leaf
+    exact exists_weightTwoEigenform_residual_of_isIrreducible_of_five_le
+      hℓodd h5 hW hρbar hirr
 
 /-- **Modularity lifting** (pillar 3; sorry node — the R = T shadow,
 residually irreducible case): a hardly ramified `p`-adic
