@@ -9744,6 +9744,13 @@ structure EichlerShimuraPackage (M : ℕ) (g : CuspForm (Gamma0GL M) 2)
         ((τJ (globalFrob
           hq.toHeightOneSpectrumRingOfIntegersRat)).restrict hst) =
       (q : AlgebraicClosure ℚ_[p])
+  /-- Ribet irreducibility (Ribet 1977, Springer LNM 601, Thm. (2.3)):
+  the Galois action admits no proper nonzero stable subspace inside
+  the `κ`-eigenspace — the eigenspace representation is irreducible. -/
+  irred_eigenspace : ∀ U : Submodule (AlgebraicClosure ℚ_[p]) Vp,
+    U ≤ heckeEigenspace hecke (fun m => κ (heckeCoeff M g m)) →
+    (∀ γ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ U, τJ γ x ∈ U) →
+    U = ⊥ ∨ U = heckeEigenspace hecke (fun m => κ (heckeCoeff M g m))
 
 attribute [instance] EichlerShimuraPackage.addCommGroup
   EichlerShimuraPackage.module EichlerShimuraPackage.moduleFinite
@@ -9847,6 +9854,22 @@ structure ModularJacobianPackage (M : ℕ) where
     ∀ (κ : heckeField M g →+* AlgebraicClosure ℚ_[p]),
       ∃ e ∈ heckeSubalgebra hecke, e * e = e ∧ e ≠ 0 ∧
         ∀ (q : ℕ), q.Prime → hecke q * e = κ (heckeCoeff M g q) • e
+  /-- Ribet irreducibility (Ribet 1977, Springer LNM 601, Thm. (2.3)):
+  for every level-`M` newform and `p`-adic embedding of its Hecke
+  field, the Galois action admits no proper nonzero stable subspace
+  inside the `κ`-eigenspace. Like `eigen_idempotent` this is
+  quantified over `(g, κ)` INSIDE the structure — it is a fact about
+  the one intended inhabitant (through the Weil bound
+  `|a_q| ≤ 2√q` of the genuine newform), not about arbitrary abstract
+  carriers, so it must not be a standalone lemma quantifying over
+  packages. -/
+  irred_eigenspace : ∀ (g : CuspForm (Gamma0GL M) 2),
+    IsWeightTwoNewform M g →
+    ∀ (κ : heckeField M g →+* AlgebraicClosure ℚ_[p]),
+    ∀ U : Submodule (AlgebraicClosure ℚ_[p]) Vp,
+      U ≤ heckeEigenspace hecke (fun m => κ (heckeCoeff M g m)) →
+      (∀ γ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ U, τJ γ x ∈ U) →
+      U = ⊥ ∨ U = heckeEigenspace hecke (fun m => κ (heckeCoeff M g m))
 
 attribute [instance] ModularJacobianPackage.addCommGroup
   ModularJacobianPackage.module ModularJacobianPackage.moduleFinite
@@ -9908,6 +9931,25 @@ module of the modular Jacobian `J₀(M) = Jac X₀(M)`, with
   — étale — and its unit idempotent `e` is a nonzero element of the
   Hecke algebra with `T_q e = κ(a_q(g)) e` for every prime `q`. This
   is where the `IsWeightTwoNewform` hypothesis is consumed.
+* `irred_eigenspace` — RIBET IRREDUCIBILITY (Ribet, *Galois
+  representations attached to eigenforms with Nebentypus*, Springer
+  LNM 601 (1977), Thm. (2.3), weight-2 trivial-nebentypus case; also
+  D–S §9.6 exercises and Cornell–Silverman–Stevens ch. by Rohrlich):
+  the `κ`-eigencomponent `ρ_{g,λ}` of `V_p(J₀(M))` is irreducible.
+  Were a line inside the 2-dimensional eigenspace Galois-stable, the
+  semisimplification of `ρ_{g,λ}` would be `δ₁ ⊕ δ₂` with the `δᵢ`
+  continuous characters of `Γ ℚ` unramified outside `Mp`
+  (Néron–Ogg–Shafarevich: `J₀(M)` has good reduction outside `M`, so
+  the Tate module — hence any subquotient — is unramified away from
+  `Mp`) and `δ₁δ₂ = χ_cyc` (the Weil-pairing determinant); by class
+  field theory over `ℚ` each `δᵢ` is a finite-order character times
+  an integer power `χ_cyc^{nᵢ}` with `n₁ + n₂ = 1`, so
+  `a_q = δ₁(Frob_q) + δ₂(Frob_q)` has archimedean absolute value
+  `≍ 1 + q` (under any embedding of the coefficients into `ℂ`) at all
+  primes in a positive-density set, violating the Eichler–Shimura /
+  Weil bound `|a_q| ≤ 2√q` of the cuspidal eigensystem (D–S Theorem
+  5.9.1 via Ramanujan–Petersson, or directly the Riemann hypothesis
+  for the reduced `X₀(M)` at good `q`).
 
 SOUNDNESS (2026-07-24): the statement quantifies over nothing but the
 level, and the intended inhabitant witnesses every field, including
@@ -9957,6 +9999,9 @@ and `w₁ = e basis₁`, `w₂ = e basis₂`.
   nonzero `pair w₁ w₂` yields `det = q` — the standard fact that a
   symplectic similitude of multiplier `q` in dimension 2 has
   determinant `q`.
+* *`irred_eigenspace`*: passes through verbatim from the
+  `(g, κ)`-quantified Ribet-irreducibility field of the
+  modular-Jacobian package, instantiated at `(g, hg, κ)`.
 
 SOUNDNESS: unchanged — the statement quantifies over inhabitants of
 `IsWeightTwoNewform` and genuine embeddings `κ`; the classical
@@ -10239,7 +10284,8 @@ theorem nonempty_eichlerShimuraPackage {M : ℕ} (hM : 0 < M)
            hecke_comm := J.hecke_comm
            congruence := J.congruence
            rank_eigenspace := hrank
-           det_frob := hdet }⟩
+           det_frob := hdet
+           irred_eigenspace := J.irred_eigenspace g hg κ }⟩
 
 /-- **The Eichler–Shimura attachment at general level** (DECOMPOSED
 2026-07-24 into the Eichler–Shimura cut above and now a PROVEN
@@ -11573,38 +11619,101 @@ theorem weightTwoNewform_not_dvd_level_of_isUnramifiedAt
   exact hg.eigensystem_minimal M' hM'dvd (fun h => hqM' (h.symm ▸ hqM))
     g' hg' hagree
 
-/-- **Ribet irreducibility of the attached representation** (sorry
-node — Ribet, *Galois representations attached to eigenforms with
-Nebentypus*, Springer LNM 601 (1977), Thm. (2.3), in the weight-2
-trivial-nebentypus case): the Eichler–Shimura attachment of a
-weight-2 newform `g` of level `M ≥ 1` can be chosen IRREDUCIBLE —
-there is a continuous 2-dimensional `ℚ̄_p`-representation of `Γ ℚ`
-that is irreducible and matches the Hecke characteristic polynomials
-`X² − κ(a_q)·X + q` away from a finite set of places. Classical
-proof: the geometric attachment `ρ_{g,λ}` (the `κ`-eigencomponent of
-the Tate module of `J₀(M)` — the inhabitant behind
-`exists_galoisRep_charFrob_of_weightTwoNewform`'s package) is
-irreducible: were it reducible, its semisimplification would be
-`δ₁ ⊕ δ₂` with the `δᵢ` characters of `Γ ℚ` unramified outside `Mp`
-and `δ₁δ₂ = χ_cyc`, so each `δᵢ` is a finite-order character times an
-integer power of `χ_cyc` with the exponents summing to `1`; then
-`a_q = δ₁(Frob_q) + δ₂(Frob_q)` has absolute value `≍ 1 + q` at
-almost all primes, violating the Eichler–Shimura/Weil bound
-`|a_q| ≤ 2√q` of the cuspidal eigensystem.
+/-- **Characteristic-polynomial pinning of an invertible quadratic
+similitude** (PROVEN helper, factored 2026-07-24 out of
+`exists_galoisRep_charFrob_of_weightTwoNewform`'s Cayley–Hamilton
+endgame for reuse by the Ribet corollary below): an endomorphism `Φ`
+of the standard 2-dimensional space that is right-invertible,
+satisfies the monic quadratic relation `Φ² − a·Φ + c = 0`, and has
+determinant `c`, has characteristic polynomial exactly
+`X² − a·X + c`. Cayley–Hamilton makes the characteristic polynomial a
+second monic quadratic annihilating `Φ` with the same constant term
+(`det = c`); subtracting the two relations and cancelling the
+invertible `Φ` forces the linear coefficients to agree. -/
+theorem charpoly_eq_quadratic_of_sq_rel {F₂ : Type*} [Field F₂]
+    {Φ Ψ : Module.End F₂ (Fin 2 → F₂)} {a c : F₂}
+    (hinv : Φ * Ψ = 1)
+    (hQ : Φ ^ 2 - a • Φ + c • 1 = 0)
+    (hdet : LinearMap.det Φ = c) :
+    Φ.charpoly = Polynomial.X ^ 2 - Polynomial.C a * Polynomial.X
+      + Polynomial.C c := by
+  have hfr2 : Module.finrank F₂ (Fin 2 → F₂) = 2 := by simp
+  have hmon : Φ.charpoly.Monic := LinearMap.charpoly_monic _
+  have hdeg : Φ.charpoly.natDegree = 2 := by
+    rw [LinearMap.charpoly_natDegree]
+    exact hfr2
+  have hP2 := eq_quadratic_of_monic_natDegree_two hmon hdeg
+  have hc0 : Φ.charpoly.coeff 0 = c := by
+    have hsign := LinearMap.det_eq_sign_charpoly_coeff Φ
+    rw [hfr2, hdet] at hsign
+    have hpow : ((-1 : F₂)) ^ 2 * Φ.charpoly.coeff 0 =
+        Φ.charpoly.coeff 0 := by ring
+    rw [hpow] at hsign
+    exact hsign.symm
+  have hCH := LinearMap.aeval_self_charpoly Φ
+  rw [hP2] at hCH
+  simp only [map_add, map_mul, map_pow, Polynomial.aeval_X,
+    Polynomial.aeval_C, Algebra.algebraMap_eq_smul_one,
+    smul_mul_assoc, one_mul] at hCH
+  rw [hc0] at hCH
+  have hsub : (Φ.charpoly.coeff 1 + a) • Φ = 0 := by
+    have hmod : (Φ.charpoly.coeff 1 + a) • Φ =
+        (Φ ^ 2 + Φ.charpoly.coeff 1 • Φ + c • 1)
+          - (Φ ^ 2 - a • Φ + c • 1) := by
+      rw [add_smul]
+      abel
+    rw [hmod, hCH, hQ, sub_zero]
+  have hone : (Φ.charpoly.coeff 1 + a) •
+      (1 : Module.End F₂ (Fin 2 → F₂)) = 0 := by
+    have h2 : (Φ.charpoly.coeff 1 + a) • (Φ * Ψ) = 0 := by
+      rw [← smul_mul_assoc, hsub, zero_mul]
+    rwa [hinv] at h2
+  have hker : (Φ.charpoly.coeff 1 + a) •
+      (Pi.single (0 : Fin 2) (1 : F₂) : Fin 2 → F₂) = 0 := by
+    have h3 := congrArg (fun ψ : Module.End F₂ (Fin 2 → F₂) =>
+      ψ (Pi.single (0 : Fin 2) (1 : F₂))) hone
+    simpa using h3
+  have hc1 : Φ.charpoly.coeff 1 = -a := by
+    rcases smul_eq_zero.mp hker with h | h
+    · exact add_eq_zero_iff_eq_neg.mp h
+    · have h4 : (1 : F₂) = 0 := by simpa using congrFun h 0
+      exact absurd h4 one_ne_zero
+  rw [hP2, hc1, hc0, map_neg]
+  ring
 
-COORDINATION (2026-07-24): the natural permanent home of this fact is
-an irreducibility field on `EichlerShimuraPackage` (irreducibility of
-the eigenspace representation, D–S §9.5-adjacent), at which point
-this leaf becomes a proven corollary of the attachment assembly. It
-is founded HERE as a separate leaf because it is the shared rigidity
-prerequisite of all three per-place conductor leaves: each needs to
-pin an arbitrary charpoly-matched representation to the geometric one
-through the PROVEN rigidity `exists_linearEquiv_of_charFrob_eq`,
-whose characteristic-zero Brauer–Nesbitt engine consumes exactly one
-irreducible side. SOUNDNESS AUDIT (2026-07-24): non-vacuously
-satisfiable — the carrier's inhabitants are exactly the classical
-newforms (carrier audit above), each with its classical irreducible
-`ρ_{g,λ}`; the statement asserts existence only. -/
+/-- **Ribet irreducibility of the attached representation** (Ribet,
+*Galois representations attached to eigenforms with Nebentypus*,
+Springer LNM 601 (1977), Thm. (2.3), weight-2 trivial-nebentypus
+case — now a PROVEN assembly, 2026-07-24, via route (a) of the
+recorded coordination: the irreducibility lives as the
+`irred_eigenspace` field of `EichlerShimuraPackage`, threaded through
+the `(g, κ)`-quantified Ribet field of `ModularJacobianPackage`, with
+the classical justification folded into the docstring burden of the
+inhabitation leaf `nonempty_modularJacobianPackage`): the
+Eichler–Shimura attachment of a weight-2 newform `g` of level `M ≥ 1`
+can be chosen IRREDUCIBLE — there is a continuous 2-dimensional
+`ℚ̄_p`-representation of `Γ ℚ` that is irreducible and matches the
+Hecke characteristic polynomials `X² − κ(a_q)·X + q` away from a
+finite set of places.
+
+Assembly: rerun the compression of
+`exists_galoisRep_charFrob_of_weightTwoNewform` — the `κ`-eigenspace
+`W` of the package's Hecke operators is Galois-stable (`hecke_comm`)
+and 2-dimensional (`rank_eigenspace`); compressing `τJ` through a
+projection onto `W` and a frame `W ≃ ℚ̄_p²` yields the continuous
+representation `τ`, whose Frobenius characteristic polynomials off
+`S` are pinned by Cayley–Hamilton against the compressed congruence
+and the Weil-pairing determinant (the factored helper
+`charpoly_eq_quadratic_of_sq_rel`). Irreducibility: a `τ`-stable
+subspace `U ≤ ℚ̄_p²` transports through the frame and the inclusion to
+a Galois-stable subspace of `W` inside `Vp`, which the package's
+`irred_eigenspace` field forces to `⊥` or all of `W`; pulling back
+through the (injective) frame gives `U = ⊥` or `U = ⊤`. This theorem
+is the shared rigidity prerequisite of the three per-place conductor
+leaves: each pins an arbitrary charpoly-matched representation to
+this irreducible one through the PROVEN rigidity
+`exists_linearEquiv_of_charFrob_eq`, whose characteristic-zero
+Brauer–Nesbitt engine consumes exactly one irreducible side. -/
 theorem exists_irreducible_galoisRep_charFrob_of_weightTwoNewform
     {M : ℕ} (hM : 0 < M) {g : CuspForm (Gamma0GL M) 2}
     (hg : IsWeightTwoNewform M g)
@@ -11618,8 +11727,172 @@ theorem exists_irreducible_galoisRep_charFrob_of_weightTwoNewform
         τ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat =
           Polynomial.X ^ 2
             - Polynomial.C (κ (heckeCoeff M g q)) * Polynomial.X
-            + Polynomial.C ((q : AlgebraicClosure ℚ_[p])) :=
-  sorry
+            + Polynomial.C ((q : AlgebraicClosure ℚ_[p])) := by
+  classical
+  obtain ⟨P⟩ := nonempty_eichlerShimuraPackage hM hg κ
+  set W : Submodule (AlgebraicClosure ℚ_[p]) P.Vp :=
+    heckeEigenspace P.hecke (fun m => κ (heckeCoeff M g m)) with hWdef
+  -- Galois stability of the eigenspace (Hecke rationality)
+  have hstab : ∀ γ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ W, P.τJ γ x ∈ W := by
+    intro γ x hx
+    rw [hWdef, mem_heckeEigenspace_iff] at hx ⊢
+    intro q hq
+    have hcomm := LinearMap.congr_fun (P.hecke_comm q γ) x
+    rw [Module.End.mul_apply, Module.End.mul_apply, hx q hq,
+      map_smul] at hcomm
+    exact hcomm
+  -- the eigenspace is 2-dimensional; frame it
+  have hfrW : Module.finrank (AlgebraicClosure ℚ_[p]) W = 2 :=
+    Module.finrank_eq_of_rank_eq (by exact_mod_cast P.rank_eigenspace)
+  let e : W ≃ₗ[AlgebraicClosure ℚ_[p]]
+      (Fin 2 → AlgebraicClosure ℚ_[p]) :=
+    (Module.finBasisOfFinrankEq (AlgebraicClosure ℚ_[p]) W
+      hfrW).equivFun
+  -- a projection onto the eigenspace
+  obtain ⟨W', hWc⟩ := Submodule.exists_isCompl W
+  let πW : P.Vp →ₗ[AlgebraicClosure ℚ_[p]] W :=
+    Submodule.projectionOnto W W' hWc
+  have hπ : ∀ w : W, πW (w : P.Vp) = w := fun w =>
+    Submodule.projectionOnto_apply_left hWc w
+  -- module topologies on the two endomorphism algebras
+  letI : TopologicalSpace (Module.End (AlgebraicClosure ℚ_[p]) P.Vp) :=
+    moduleTopology (AlgebraicClosure ℚ_[p]) _
+  haveI : IsModuleTopology (AlgebraicClosure ℚ_[p])
+      (Module.End (AlgebraicClosure ℚ_[p]) P.Vp) := ⟨rfl⟩
+  letI : TopologicalSpace (Module.End (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])) :=
+    moduleTopology (AlgebraicClosure ℚ_[p]) _
+  haveI : IsModuleTopology (AlgebraicClosure ℚ_[p])
+      (Module.End (AlgebraicClosure ℚ_[p])
+        (Fin 2 → AlgebraicClosure ℚ_[p])) := ⟨rfl⟩
+  haveI := IsModuleTopology.toContinuousAdd (AlgebraicClosure ℚ_[p])
+    (Module.End (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p]))
+  have hτc : Continuous fun γ : Field.absoluteGaloisGroup ℚ =>
+      P.τJ γ := ContinuousMonoidHom.continuous_toFun P.τJ
+  have hΛc : Continuous (compressEnd W πW e) :=
+    IsModuleTopology.continuous_of_linearMap _
+  have hcont : Continuous fun γ : Field.absoluteGaloisGroup ℚ =>
+      compressEnd W πW e (P.τJ γ) := hΛc.comp hτc
+  -- the compressed representation
+  let τmh : Field.absoluteGaloisGroup ℚ →*
+      Module.End (AlgebraicClosure ℚ_[p])
+        (Fin 2 → AlgebraicClosure ℚ_[p]) :=
+    { toFun := fun γ => compressEnd W πW e (P.τJ γ)
+      map_one' := by
+        show compressEnd W πW e (P.τJ 1) = 1
+        rw [map_one]
+        exact compressEnd_one W πW e hπ
+      map_mul' := fun γ δ => by
+        show compressEnd W πW e (P.τJ (γ * δ)) =
+          compressEnd W πW e (P.τJ γ) * compressEnd W πW e (P.τJ δ)
+        rw [map_mul]
+        exact compressEnd_mul W πW e hπ _ _ (hstab δ) }
+  let τ' : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p]) := ⟨τmh, hcont⟩
+  refine ⟨τ', P.S, ?_, fun q hq hqS => ?_⟩
+  · -- irreducibility: transport a stable subspace through the frame
+    refine (Slop.OddRep.isIrreducible_iff_forall
+      τ'.toRepresentation).mpr ⟨inferInstance, fun U hU => ?_⟩
+    set U' : Submodule (AlgebraicClosure ℚ_[p]) P.Vp :=
+      (U.map e.symm.toLinearMap).map W.subtype with hU'def
+    have hU'le : U' ≤ W := by
+      rintro x hx
+      obtain ⟨w, -, rfl⟩ := Submodule.mem_map.mp hx
+      exact SetLike.coe_mem w
+    have hU'stab : ∀ γ : Field.absoluteGaloisGroup ℚ,
+        ∀ x ∈ U', P.τJ γ x ∈ U' := by
+      intro γ x hx
+      obtain ⟨w, hw, rfl⟩ := Submodule.mem_map.mp hx
+      obtain ⟨u, hu, rfl⟩ := Submodule.mem_map.mp hw
+      have hmem : P.τJ γ ↑(e.symm u) ∈ W :=
+        hstab γ _ (SetLike.coe_mem (e.symm u))
+      have hπτ : πW (P.τJ γ ↑(e.symm u)) =
+          ⟨P.τJ γ ↑(e.symm u), hmem⟩ := hπ ⟨_, hmem⟩
+      have hτu : τ' γ u = e ⟨P.τJ γ ↑(e.symm u), hmem⟩ := by
+        show compressEnd W πW e (P.τJ γ) u = _
+        rw [compressEnd_apply, hπτ]
+      refine Submodule.mem_map.mpr ⟨e.symm (τ' γ u),
+        Submodule.mem_map.mpr ⟨τ' γ u, hU γ u hu, rfl⟩, ?_⟩
+      rw [hτu, LinearEquiv.symm_apply_apply]
+      rfl
+    rcases P.irred_eigenspace U' (hWdef ▸ hU'le) hU'stab with hb | ht
+    · left
+      rw [eq_bot_iff]
+      intro u hu
+      have hmem0 : (↑(e.symm u) : P.Vp) ∈ U' :=
+        Submodule.mem_map.mpr ⟨e.symm u,
+          Submodule.mem_map.mpr ⟨u, hu, rfl⟩, rfl⟩
+      rw [hb, Submodule.mem_bot] at hmem0
+      have h0 : e.symm u = 0 := ZeroMemClass.coe_eq_zero.mp hmem0
+      have hu0 : u = 0 := by
+        have h1 := congrArg e h0
+        rwa [LinearEquiv.apply_symm_apply, map_zero] at h1
+      exact (Submodule.mem_bot _).mpr hu0
+    · right
+      rw [eq_top_iff]
+      rintro u -
+      have hmemW : (↑(e.symm u) : P.Vp) ∈ U' := by
+        rw [ht, ← hWdef]
+        exact SetLike.coe_mem (e.symm u)
+      obtain ⟨w, hw, hwx⟩ := Submodule.mem_map.mp hmemW
+      have hwe : w = e.symm u := Subtype.ext hwx
+      obtain ⟨u₀, hu₀, hu₀e⟩ := Submodule.mem_map.mp hw
+      have hu₀u : u₀ = u := by
+        refine e.symm.injective ?_
+        show e.symm u₀ = e.symm u
+        rw [← hwe]
+        exact hu₀e
+      rwa [← hu₀u]
+  · -- charpoly matching: the compression endgame through the helper
+    rw [GaloisRep.charFrob_eq_charpoly_globalFrob]
+    have happ : τ' (globalFrob
+        hq.toHeightOneSpectrumRingOfIntegersRat) =
+        compressEnd W πW e
+          (P.τJ (globalFrob
+            hq.toHeightOneSpectrumRingOfIntegersRat)) := rfl
+    rw [happ]
+    -- the compressed Frobenius is invertible …
+    have hinv : compressEnd W πW e
+          (P.τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)) *
+        compressEnd W πW e
+          (P.τJ ((globalFrob
+            hq.toHeightOneSpectrumRingOfIntegersRat)⁻¹)) = 1 := by
+      rw [← compressEnd_mul W πW e hπ _ _ (hstab _), ← map_mul,
+        mul_inv_cancel, map_one]
+      exact compressEnd_one W πW e hπ
+    -- … acts as the Hecke scalar through the congruence …
+    have hΛt : compressEnd W πW e (P.hecke q) =
+        κ (heckeCoeff M g q) • 1 :=
+      compressEnd_eq_smul_one W πW e hπ fun x hx =>
+        mem_heckeEigenspace_iff.mp hx q hq
+    have hcong := P.congruence q hq hqS
+    have hQ : compressEnd W πW e
+          (P.τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)) ^ 2
+        - κ (heckeCoeff M g q) • compressEnd W πW e
+          (P.τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat))
+        + (q : AlgebraicClosure ℚ_[p]) • 1 = 0 := by
+      have h₀ : compressEnd W πW e
+            (P.τJ (globalFrob
+              hq.toHeightOneSpectrumRingOfIntegersRat) ^ 2)
+          - compressEnd W πW e (P.hecke q *
+            P.τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat))
+          + (q : AlgebraicClosure ℚ_[p]) • compressEnd W πW e 1 = 0 := by
+        rw [← map_smul, ← map_sub, ← map_add, hcong, map_zero]
+      rw [pow_two, compressEnd_mul W πW e hπ _ _ (hstab _),
+        compressEnd_mul W πW e hπ _ _ (hstab _), hΛt,
+        compressEnd_one W πW e hπ, smul_mul_assoc, one_mul,
+        ← pow_two] at h₀
+      exact h₀
+    -- … and has determinant `q` by the Weil pairing
+    have hdet : LinearMap.det (compressEnd W πW e
+        (P.τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat))) =
+        (q : AlgebraicClosure ℚ_[p]) := by
+      rw [compressEnd_eq_conj_restrict W πW e hπ (hstab _),
+        LinearMap.det_conj]
+      exact P.det_frob q hq hqS (hstab _)
+    exact charpoly_eq_quadratic_of_sq_rel hinv hQ hdet
 
 include hpodd in
 /-- **Saito's local–global compatibility at `p`, geometric form**
