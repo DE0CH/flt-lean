@@ -3381,9 +3381,288 @@ theorem exists_forall_abs_natCard_add_mem_smul_sub_mul_le_pow
         C * t ^ (Module.finrank ℝ E - 1) := by
   sorry
 
+open NumberField in
+/-- Bridge between total positivity phrased over the real embeddings
+`F →+* ℝ` and positivity of the real components of the mixed embedding:
+for `y : F`, `φ y > 0` for every real embedding `φ` iff every real
+coordinate of `mixedEmbedding F y` is positive. Every real coordinate
+is evaluation by the real embedding attached to a real infinite place;
+conversely every `φ : F →+* ℝ` induces the real place `mk (ofRealHom ∘ φ)`
+whose real-embedding evaluation is `φ` itself. -/
+theorem forall_ringHom_pos_iff_forall_mixedEmbedding_fst_pos
+    {F : Type*} [Field F] [NumberField F] (y : F) :
+    (∀ φ : F →+* ℝ, 0 < φ y) ↔
+      ∀ w : {w : InfinitePlace F // w.IsReal}, 0 < (mixedEmbedding F y).1 w := by
+  constructor
+  · intro h w
+    rw [mixedEmbedding.mixedEmbedding_apply_isReal]
+    exact h _
+  · intro h φ
+    have hφR : ComplexEmbedding.IsReal ((Complex.ofRealHom : ℝ →+* ℂ).comp φ) := by
+      rw [ComplexEmbedding.isReal_iff]
+      ext x
+      simp [ComplexEmbedding.conjugate_coe_eq]
+    have hw : (InfinitePlace.mk ((Complex.ofRealHom : ℝ →+* ℂ).comp φ)).IsReal :=
+      InfinitePlace.isReal_mk_iff.mpr hφR
+    have h1 := h ⟨_, hw⟩
+    rw [mixedEmbedding.mixedEmbedding_apply_isReal] at h1
+    have h2 : ((InfinitePlace.embedding_of_isReal hw) y : ℂ) = ((φ y : ℝ) : ℂ) := by
+      rw [InfinitePlace.embedding_of_isReal_apply,
+        InfinitePlace.embedding_mk_eq_of_isReal hφR]
+      rfl
+    rwa [show (InfinitePlace.embedding_of_isReal hw) y = φ y from by exact_mod_cast h2]
+      at h1
+
+open NumberField in
+/-- The absolute norm of a principal ideal of `𝓞 F`, cast to `ℝ`, equals
+the mixed-space norm of the mixed embedding of its generator: combine
+`mixedEmbedding.norm_eq_norm`, `Ideal.absNorm_span_singleton` and
+`Algebra.coe_norm_int`. -/
+theorem cast_absNorm_span_singleton_eq_norm_mixedEmbedding
+    {F : Type*} [Field F] [NumberField F] (δ : 𝓞 F) :
+    ((Ideal.absNorm (Ideal.span {δ}) : ℕ) : ℝ) =
+      mixedEmbedding.norm (mixedEmbedding F (algebraMap (𝓞 F) F δ)) := by
+  rw [mixedEmbedding.norm_eq_norm, Ideal.absNorm_span_singleton,
+    ← RingOfIntegers.coe_eq_algebraMap, ← Algebra.coe_norm_int δ]
+  rw [Nat.cast_natAbs]
+  push_cast
+  rfl
+
+/-- The frontier of a finite union is contained in the union of the
+frontiers. -/
+theorem frontier_biUnion_finset_subset {α E : Type*} [TopologicalSpace E]
+    (s : Finset α) (f : α → Set E) :
+    frontier (⋃ i ∈ s, f i) ⊆ ⋃ i ∈ s, frontier (f i) := by
+  intro x hx
+  have hcl : x ∈ ⋃ i ∈ s, closure (f i) := by
+    have h1 := hx.1
+    rwa [Finset.closure_biUnion] at h1
+  rw [Set.mem_iUnion₂] at hcl ⊢
+  obtain ⟨i, hi, hxi⟩ := hcl
+  exact ⟨i, hi, hxi, fun hint => hx.2 (interior_mono (Set.subset_iUnion₂ i hi) hint)⟩
+
+/-- Package a finite family of Lipschitz maps covering the frontier
+(with individual constants) into the single-constant `Fin`-indexed form
+demanded by `HasLipschitzBoundaryCover`. -/
+theorem hasLipschitzBoundaryCover_of_finite {E : Type*} [NormedAddCommGroup E]
+    [NormedSpace ℝ E] {X : Set E} {ι : Type*} [Fintype ι]
+    (g : ι → (Fin (Module.finrank ℝ E - 1) → ℝ) → E) (κ : ι → NNReal)
+    (hg : ∀ i, LipschitzOnWith (κ i) (g i) (Set.Icc 0 1))
+    (hcov : frontier X ⊆ ⋃ i, g i '' Set.Icc 0 1) :
+    HasLipschitzBoundaryCover X := by
+  refine ⟨Fintype.card ι, fun j => g ((Fintype.equivFin ι).symm j), Finset.univ.sup κ,
+    fun j => (hg _).weaken (Finset.le_sup (Finset.mem_univ _)), fun x hx => ?_⟩
+  obtain ⟨i, hi⟩ := Set.mem_iUnion.mp (hcov hx)
+  exact Set.mem_iUnion.mpr ⟨Fintype.equivFin ι i, by
+    simpa [Equiv.symm_apply_apply] using hi⟩
+
+/-- A bounded subset of a proper subspace of a finite-dimensional real
+normed space is covered by a single Lipschitz image of the unit cube
+`[0,1]^(dim-1)`: choose a basis of the subspace and rescale the
+coordinate box onto the cube affinely. Used to cover the
+lower-dimensional pieces (coordinate hyperplanes, sector walls) of the
+frontier of the unit fundamental domain. -/
+theorem exists_lipschitzOnWith_cover_of_isBounded_of_subset
+    {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E] [FiniteDimensional ℝ E]
+    {Y : Set E} {W : Submodule ℝ E} (hY : Bornology.IsBounded Y)
+    (hYW : Y ⊆ (W : Set E)) (hW : W ≠ ⊤) :
+    ∃ (f : (Fin (Module.finrank ℝ E - 1) → ℝ) → E) (κ : NNReal),
+      LipschitzOnWith κ f (Set.Icc 0 1) ∧ Y ⊆ f '' Set.Icc 0 1 := by
+  classical
+  have hk : Module.finrank ℝ W ≤ Module.finrank ℝ E - 1 := by
+    have := Submodule.finrank_lt hW
+    omega
+  set b : Module.Basis (Fin (Module.finrank ℝ W)) ℝ W := Module.finBasis ℝ W
+  set eqC := LinearMap.toContinuousLinearMap (b.equivFun.toLinearMap)
+  have heqC_apply : ∀ w : W, eqC w = b.equivFun w := fun w => rfl
+  -- the coordinates of the points of `Y` are bounded
+  have hYW' : Bornology.IsBounded ((↑) ⁻¹' Y : Set W) := by
+    obtain ⟨ρ, hρ⟩ := hY.subset_closedBall 0
+    refine (Metric.isBounded_closedBall (x := (0 : W)) (r := ρ)).subset fun w hw => ?_
+    have h1 := hρ hw
+    rw [Metric.mem_closedBall, dist_zero_right] at h1 ⊢
+    exact h1
+  have hcoordb : Bornology.IsBounded (⇑eqC '' ((↑) ⁻¹' Y : Set W)) :=
+    (eqC.lipschitz).isBounded_image hYW'
+  obtain ⟨c₀, hc₀⟩ := hcoordb.subset_closedBall 0
+  set c : ℝ := max c₀ 0 + 1 with hc
+  have hcpos : 0 < c := by
+    have h1 : (0 : ℝ) ≤ max c₀ 0 := le_max_right _ _
+    rw [hc]; linarith
+  have hc₀c : c₀ ≤ c - 1 := by rw [hc]; simp
+  -- the covering map
+  set L : (Fin (Module.finrank ℝ E - 1) → ℝ) →ₗ[ℝ] E :=
+    W.subtype ∘ₗ b.equivFun.symm.toLinearMap ∘ₗ
+      LinearMap.funLeft ℝ ℝ (Fin.castLE hk)
+  set A : (Fin (Module.finrank ℝ E - 1) → ℝ) → (Fin (Module.finrank ℝ E - 1) → ℝ) :=
+    fun v j => 2 * c * v j - c with hA
+  refine ⟨fun v => L (A v),
+    ‖LinearMap.toContinuousLinearMap L‖₊ * Real.toNNReal (2 * c), ?_, ?_⟩
+  · -- the map is Lipschitz on the cube
+    have hALip : LipschitzWith (Real.toNNReal (2 * c)) A := by
+      refine LipschitzWith.of_dist_le_mul fun v v' => ?_
+      rw [Real.coe_toNNReal _ (by positivity)]
+      rw [dist_pi_le_iff (by positivity)]
+      intro j
+      have h1 : A v j - A v' j = 2 * c * (v j - v' j) := by simp only [hA]; ring
+      rw [Real.dist_eq, h1, abs_mul, abs_of_pos (by positivity : (0 : ℝ) < 2 * c)]
+      have h2 := dist_le_pi_dist v v' j
+      rw [Real.dist_eq] at h2
+      exact mul_le_mul_of_nonneg_left h2 (by positivity)
+    have h3 : (fun v => L (A v)) = ⇑(LinearMap.toContinuousLinearMap L) ∘ A := rfl
+    rw [h3]
+    exact ((LinearMap.toContinuousLinearMap L).lipschitz.comp hALip).lipschitzOnWith
+  · -- coverage
+    intro y hy
+    set w : W := ⟨y, hYW hy⟩
+    have hwc : ∀ i, |b.equivFun w i| ≤ c₀ := by
+      intro i
+      have h1 : eqC w ∈ Metric.closedBall 0 c₀ := hc₀ ⟨w, hy, rfl⟩
+      rw [Metric.mem_closedBall, dist_zero_right] at h1
+      calc |b.equivFun w i| = ‖(eqC w) i‖ := by rw [heqC_apply]; rfl
+        _ ≤ ‖eqC w‖ := norm_le_pi_norm _ i
+        _ ≤ c₀ := h1
+    refine ⟨fun j => if h : (j : ℕ) < Module.finrank ℝ W then
+        (b.equivFun w (⟨(j : ℕ), h⟩ : Fin (Module.finrank ℝ W)) + c) / (2 * c)
+      else 1 / 2, ?_, ?_⟩
+    · -- the parameter lies in the unit cube
+      rw [Set.mem_Icc]
+      constructor <;> intro j <;> simp only [Pi.zero_apply, Pi.one_apply]
+      · by_cases h : (j : ℕ) < Module.finrank ℝ W
+        · rw [dif_pos h]
+          have h1 := (abs_le.mp (hwc ⟨(j : ℕ), h⟩)).1
+          have h2 : (0 : ℝ) ≤ b.equivFun w ⟨(j : ℕ), h⟩ + c := by
+            have := hc₀c; linarith
+          positivity
+        · rw [dif_neg h]; norm_num
+      · by_cases h : (j : ℕ) < Module.finrank ℝ W
+        · rw [dif_pos h]
+          rw [div_le_one (by positivity)]
+          have h1 := (abs_le.mp (hwc ⟨(j : ℕ), h⟩)).2
+          have := hc₀c; linarith
+        · rw [dif_neg h]; norm_num
+    · -- the image point is `y`
+      have hAv : (fun i : Fin (Module.finrank ℝ W) =>
+          A (fun j => if h : (j : ℕ) < Module.finrank ℝ W then
+            (b.equivFun w (⟨(j : ℕ), h⟩ : Fin (Module.finrank ℝ W)) + c) / (2 * c)
+          else 1 / 2) (Fin.castLE hk i)) = b.equivFun w := by
+        funext i
+        have hi : ((Fin.castLE hk i : Fin (Module.finrank ℝ E - 1)) : ℕ) <
+            Module.finrank ℝ W := by
+          rw [Fin.val_castLE]; exact i.isLt
+        simp only [hA, dif_pos hi]
+        have hieq : (⟨((Fin.castLE hk i : Fin (Module.finrank ℝ E - 1)) : ℕ), hi⟩ :
+            Fin (Module.finrank ℝ W)) = i := by
+          apply Fin.ext; rw [Fin.val_castLE]
+        rw [hieq]
+        field_simp
+        ring
+      calc L (A _) = ((b.equivFun.symm (fun i => A _ (Fin.castLE hk i)) : W) : E) := rfl
+        _ = ((b.equivFun.symm (b.equivFun w) : W) : E) := by rw [hAv]
+        _ = (w : E) := by rw [LinearEquiv.symm_apply_apply]
+        _ = y := rfl
+
+open scoped Classical in
+open NumberField in
+/-- **Lipschitz parametrization of the boundary of `normLeOne`** (sorry
+leaf) — the boundary-regularity half of Lang, *Algebraic Number
+Theory*, VI §3: the frontier of the norm-≤-1 cut `normLeOne F` of the
+fundamental cone is covered by finitely many Lipschitz images of the
+unit cube of one dimension lower.
+
+Intended proof (Lang VI §3 Theorem 3; the pin's
+`Mathlib/NumberTheory/NumberField/CanonicalEmbedding/NormLeOne.lean`
+provides the full toolkit). `normLeOne F` is norm-stable
+(`normLeOne_eq_preimage_image`), and
+`normAtAllPlaces '' (normLeOne F) = expMapBasis '' (paramSet F)`
+(`normAtAllPlaces_normLeOne_eq_image`) where `paramSet` is the box
+`Iic 0 × [0,1)^(rank)` in `expMapBasis`-coordinates
+(`closure_paramSet`, `interior_paramSet` describe its closure and
+interior). The closure of `normLeOne F` is therefore contained in the
+image of a COMPACT box under the smooth map `expMapBasis` composed with
+the sign-choices/polar map back to the mixed space
+(`closure_normLeOne_subset`, `compactSet_eq_union`): the frontier is
+covered by the images of the FACES of that box — each face is a
+`(d-1)`-cube, and `expMapBasis` (given by exponentials and powers,
+`expMapBasis_apply'`) and the polar-coordinate map
+(`mixedEmbedding.polarCoord`, trigonometric functions scaled by radii
+bounded on the compact box) are Lipschitz on compact boxes since they
+are `C¹` (`hasFDerivAt_expMapBasis`); each face contributes one
+Lipschitz map per sign/argument chart, finitely many in total. -/
+theorem hasLipschitzBoundaryCover_normLeOne
+    (F : Type*) [Field F] [NumberField F] :
+    HasLipschitzBoundaryCover (mixedEmbedding.fundamentalCone.normLeOne F) := by
+  sorry
+
+open scoped Pointwise in
+open NumberField in
+/-- **Unit-coset transversal with torsion sector** (sorry leaf) — the
+construction half of the unit fundamental domain: a finite set `R` of
+units, a measurable positivity/sector cut `X`, and finitely many proper
+subspaces `W i` controlling `frontier X`, such that every totally
+positive point of the mixed space of nonzero norm has EXACTLY ONE
+multiple `u • x` inside `(⋃ c ∈ R, c • fundamentalCone F) ∩ X` by a
+totally positive unit `u ≡ 1 mod ℓ`.
+
+Intended construction (Lang VI §3). Let `G = (𝓞 F)ˣ`,
+`U = {u ∈ G | u totally positive, u ≡ 1 mod ℓ}` — the kernel of
+`G → {±1}^{r₁} × ((𝓞 F)/ℓ)ˣ`, hence of FINITE INDEX — `T` the torsion
+subgroup, `T_U = T ∩ U` (cyclic, of some order `m`). For any `x` with
+`mixedEmbedding.norm x ≠ 0`, mathlib's
+`fundamentalCone.exists_unit_smul_mem` and
+`fundamentalCone.unit_smul_mem_iff_mem_torsion` give
+`{g ∈ G : g • x ∈ fundamentalCone F} = T·g₀`, one full torsion coset.
+Take `R` a transversal of `G/(U·T)`: then
+`{u ∈ U : u • x ∈ ⋃ c ∈ R, c • fundamentalCone F}` is exactly one
+`T_U`-coset `T_U·u₁` (exactly one `c ∈ R` meets `(U·T)·g₀⁻¹`, and the
+matches within it form one `T_U`-coset). Finally `X = P ∩ Σ` where
+`P = {x | ∀ w real, 0 < x.1 w}` (transparent to the count since `U` is
+totally positive and cutting positivity of the point) and `Σ` is an
+angular sector `arg (x.2 w₁) ∈ [0, 2π/m)` at one fixed complex place
+`w₁` (present whenever `m > 1`, since `T_U ≠ 1` forces `F` totally
+complex): the image of `T_U` at `w₁` is exactly the group `μ_m` of
+`m`-th roots of unity, so exactly one member of `T_U·u₁` lands in the
+sector — `u • x` has nonzero coordinates as `norm (u • x) ≠ 0`.
+`Σ` is cut by two real-linear inequalities in the coordinate `x.2 w₁`
+(for `m = 2` a half-plane; trivial for `m = 1`), so `X` is measurable,
+invariant under positive scaling, and `frontier X` is contained in the
+union of the `r₁` coordinate hyperplanes `{x.1 w = 0}` and (at most
+two) proper subspaces `{x.2 w₁ ∈ ℝ·e^{iθ}}` — the required `W i`. -/
+theorem exists_finset_units_forall_existsUnique_unit_smul_mem
+    (F : Type*) [Field F] [NumberField F] (ℓ : ℕ) (hℓ : ℓ.Prime) :
+    ∃ (R : Finset (𝓞 F)ˣ) (X : Set (mixedEmbedding.mixedSpace F))
+      (k : ℕ) (W : Fin k → Submodule ℝ (mixedEmbedding.mixedSpace F)),
+      MeasurableSet X ∧
+      (∀ x ∈ X, ∀ w : {w : InfinitePlace F // w.IsReal}, 0 < x.1 w) ∧
+      (∀ r : ℝ, 0 < r → r • X ⊆ X) ∧
+      (∀ i, W i ≠ ⊤) ∧
+      (frontier X ⊆ ⋃ i, (W i : Set (mixedEmbedding.mixedSpace F))) ∧
+      ∀ x : mixedEmbedding.mixedSpace F,
+        (∀ w : {w : InfinitePlace F // w.IsReal}, 0 < x.1 w) →
+        mixedEmbedding.norm x ≠ 0 →
+        ∃! u : (𝓞 F)ˣ,
+          (∀ φ : F →+* ℝ, 0 < φ (algebraMap (𝓞 F) F (u : 𝓞 F))) ∧
+          ((u : 𝓞 F) - 1) ∈ Ideal.span {(ℓ : 𝓞 F)} ∧
+          u • x ∈ (⋃ c ∈ R, c • mixedEmbedding.fundamentalCone F) ∩ X := by
+  sorry
+
 open scoped Classical Pointwise nonZeroDivisors in
 open NumberField MeasureTheory in
-/-- **The unit fundamental domain dictionary** (sorry leaf) — the
+/-- **The unit fundamental domain dictionary** (DECOMPOSED 2026-07-24
+into the construction leaf
+`exists_finset_units_forall_existsUnique_unit_smul_mem` (coset
+transversal + torsion sector, Lang VI §3) and the boundary-regularity
+leaf `hasLipschitzBoundaryCover_normLeOne` (Lipschitz parametrization
+of `frontier (normLeOne F)`), with the exact counting bijection and all
+regularity transport PROVEN here: the domain is
+`S = (⋃ c ∈ R, c • normLeOne F) ∩ X`; multiplication by a unit is a
+continuous linear map of the mixed space preserving
+`mixedEmbedding.norm`, so `t • S` is cut out of the dilation-invariant
+cone `(⋃ c ∈ R, c • fundamentalCone F) ∩ X` by `norm ≤ t^d`; the
+admissible generators of an admissible ideal form a torsor under the
+totally positive units `≡ 1 mod ℓ` — by the transversal property
+exactly one of them embeds into the cone-domain, giving the bijection
+with the coset-lattice points) — the
 geometric half of Lang, *Algebraic Number Theory*, VI §3 Theorem 3:
 ONE bounded measurable set `S` in the mixed space of `F`, with
 `(d−1)`-Lipschitz-covered boundary, such that for EVERY admissible
@@ -3442,7 +3721,396 @@ theorem exists_fundamentalDomain_forall_natCard_span_dvd_eq_natCard_add_mem_smul
               (x : mixedEmbedding.mixedSpace F) ∈
               (((n * Ideal.absNorm J₀ : ℕ) : ℝ) ^
                 ((Module.finrank ℚ F : ℝ)⁻¹)) • S} := by
-  sorry
+  classical
+  obtain ⟨R, X, k, W, hXmeas, hXpos, hXscale, hWne, hXfr, htorsor⟩ :=
+    exists_finset_units_forall_existsUnique_unit_smul_mem F ℓ hℓ
+  -- the unit-translated cone and its norm-one cut
+  set Cone : Set (mixedEmbedding.mixedSpace F) :=
+    ⋃ c ∈ R, c • mixedEmbedding.fundamentalCone F with hConedef
+  set NLO : Set (mixedEmbedding.mixedSpace F) :=
+    ⋃ c ∈ R, c • mixedEmbedding.fundamentalCone.normLeOne F with hNLOdef
+  -- multiplication by a unit as a continuous linear map of the mixed space
+  have hmulL : ∀ c : (𝓞 F)ˣ,
+      ∃ L : mixedEmbedding.mixedSpace F →L[ℝ] mixedEmbedding.mixedSpace F,
+      ∀ x, L x = c • x := by
+    intro c
+    refine ⟨LinearMap.toContinuousLinearMap
+      (LinearMap.mulLeft ℝ (mixedEmbedding F ((c : 𝓞 F) : F))), fun x => ?_⟩
+    rw [mixedEmbedding.unitSMul_smul]
+    rfl
+  choose mulL hmulL_apply using hmulL
+  have hsmul_cont : ∀ c : (𝓞 F)ˣ,
+      Continuous fun x : mixedEmbedding.mixedSpace F => c • x := by
+    intro c
+    have h0 : (fun x : mixedEmbedding.mixedSpace F => c • x) = ⇑(mulL c) := by
+      funext x; rw [hmulL_apply]
+    rw [h0]
+    exact (mulL c).continuous
+  have hsmul_image : ∀ (c : (𝓞 F)ˣ) (A : Set (mixedEmbedding.mixedSpace F)),
+      c • A = ⇑(mulL c) '' A := by
+    intro c A
+    rw [← Set.image_smul]
+    exact Set.image_congr fun x _ => (hmulL_apply c x).symm
+  have hsmul_preimage : ∀ (c : (𝓞 F)ˣ) (A : Set (mixedEmbedding.mixedSpace F)),
+      c • A = (fun z => c⁻¹ • z) ⁻¹' A := by
+    intro c A
+    ext z
+    exact Set.mem_smul_set_iff_inv_smul_mem
+  -- boundedness and measurability of the norm-one cut
+  have hNLObd : Bornology.IsBounded NLO := by
+    rw [hNLOdef]
+    refine (Bornology.isBounded_biUnion_finset R).mpr fun c _ => ?_
+    rw [hsmul_image]
+    exact ((mulL c).lipschitz).isBounded_image
+      (mixedEmbedding.fundamentalCone.isBounded_normLeOne F)
+  have hNLOmeas : MeasurableSet NLO := by
+    rw [hNLOdef]
+    refine Finset.measurableSet_biUnion R fun c _ => ?_
+    rw [hsmul_preimage]
+    exact (hsmul_cont c⁻¹).measurable
+      (mixedEmbedding.fundamentalCone.measurableSet_normLeOne F)
+  -- frontier transport through the unit multiplication
+  have hfront_smul : ∀ (c : (𝓞 F)ˣ) (A : Set (mixedEmbedding.mixedSpace F)),
+      frontier (c • A) ⊆ c • frontier A := by
+    intro c A
+    rw [hsmul_preimage c A, hsmul_preimage c (frontier A)]
+    exact (hsmul_cont c⁻¹).frontier_preimage_subset A
+  -- the Lipschitz boundary cover of the domain
+  have hLip : HasLipschitzBoundaryCover (NLO ∩ X) := by
+    obtain ⟨mB, fB, κB, hfB, hcovB⟩ := hasLipschitzBoundaryCover_normLeOne F
+    have hpiece : ∀ i : Fin k,
+        ∃ (g : (Fin (Module.finrank ℝ (mixedEmbedding.mixedSpace F) - 1) → ℝ) →
+            mixedEmbedding.mixedSpace F) (κ' : NNReal),
+          LipschitzOnWith κ' g (Set.Icc 0 1) ∧
+          closure NLO ∩ (W i : Set (mixedEmbedding.mixedSpace F)) ⊆
+            g '' Set.Icc 0 1 := fun i =>
+      exists_lipschitzOnWith_cover_of_isBounded_of_subset
+        (hNLObd.closure.subset Set.inter_subset_left) Set.inter_subset_right (hWne i)
+    choose gW κW hgW hcovW using hpiece
+    refine hasLipschitzBoundaryCover_of_finite (ι := (R × Fin mB) ⊕ Fin k)
+      (Sum.elim (fun p => ⇑(mulL p.1.1) ∘ fB p.2) gW)
+      (Sum.elim (fun p => ‖mulL p.1.1‖₊ * κB) κW) ?_ ?_
+    · rintro (⟨c, j⟩ | i)
+      · exact ((mulL c.1).lipschitz).comp_lipschitzOnWith (hfB j)
+      · exact hgW i
+    · intro z hz
+      rcases frontier_inter_subset NLO X hz with ⟨hzN, -⟩ | ⟨hzcl, hzX⟩
+      · rw [hNLOdef] at hzN
+        have h1 := frontier_biUnion_finset_subset R _ hzN
+        rw [Set.mem_iUnion₂] at h1
+        obtain ⟨c, hcR, hzc⟩ := h1
+        have h2 := hfront_smul c _ hzc
+        obtain ⟨y, hy, rfl⟩ := Set.mem_smul_set.mp h2
+        have h3 := hcovB hy
+        rw [Set.mem_iUnion] at h3
+        obtain ⟨j, hj⟩ := h3
+        obtain ⟨s₀, hs₀, rfl⟩ := hj
+        rw [Set.mem_iUnion]
+        refine ⟨Sum.inl (⟨c, hcR⟩, j), s₀, hs₀, ?_⟩
+        show (mulL c) (fB j s₀) = c • fB j s₀
+        exact hmulL_apply c _
+      · have h4 := hXfr hzX
+        rw [Set.mem_iUnion] at h4
+        obtain ⟨i, hi⟩ := h4
+        rw [Set.mem_iUnion]
+        exact ⟨Sum.inr i, hcovW i ⟨hzcl, hi⟩⟩
+  -- norm never vanishes on the cone
+  have hCone_norm : ∀ z ∈ Cone, mixedEmbedding.norm z ≠ 0 := by
+    intro z hz
+    rw [hConedef, Set.mem_iUnion₂] at hz
+    obtain ⟨c, -, hm⟩ := hz
+    obtain ⟨y, hy, rfl⟩ := Set.mem_smul_set.mp hm
+    rw [mixedEmbedding.norm_unit_smul]
+    exact (mixedEmbedding.fundamentalCone.norm_pos_of_mem hy).ne'
+  -- the exact count
+  have hcount : ∀ (J₀ : Ideal (𝓞 F)) (γ₀ : 𝓞 F) (Jℓ : (Ideal (𝓞 F))⁰),
+      J₀ ≠ 0 →
+      IsCoprime J₀ (Ideal.span {(ℓ : 𝓞 F)}) →
+      (∀ φ : F →+* ℝ, 0 < φ (algebraMap (𝓞 F) F γ₀)) →
+      IsCoprime (Ideal.span {γ₀}) (Ideal.span {(ℓ : 𝓞 F)}) →
+      γ₀ ∈ J₀ →
+      (Jℓ : Ideal (𝓞 F)) = Ideal.span {(ℓ : 𝓞 F)} * J₀ →
+      ∀ n : ℕ, 0 < n →
+        Nat.card {I' : Ideal (𝓞 F) // (∃ δ : 𝓞 F,
+            (∀ φ : F →+* ℝ, 0 < φ (algebraMap (𝓞 F) F δ)) ∧
+            δ - γ₀ ∈ Ideal.span {(ℓ : 𝓞 F)} ∧ I' = Ideal.span {δ}) ∧
+            J₀ ∣ I' ∧ Ideal.absNorm I' ≤ n * Ideal.absNorm J₀} =
+        Nat.card {x : mixedEmbedding.idealLattice F (FractionalIdeal.mk0 F Jℓ) //
+          mixedEmbedding F (algebraMap (𝓞 F) F γ₀) +
+            (x : mixedEmbedding.mixedSpace F) ∈
+            (((n * Ideal.absNorm J₀ : ℕ) : ℝ) ^
+              ((Module.finrank ℚ F : ℝ)⁻¹)) • (NLO ∩ X)} := by
+    intro J₀ γ₀ Jℓ hJ0 hJcop hγpos hγcop hγmem hJℓeq n hn
+    -- coprimality is inherited along the congruence
+    have hγsup : Ideal.span {γ₀} ⊔ Ideal.span {(ℓ : 𝓞 F)} = ⊤ :=
+      Ideal.isCoprime_iff_sup_eq.mp hγcop
+    have hcop_of : ∀ δ : 𝓞 F, δ - γ₀ ∈ Ideal.span {(ℓ : 𝓞 F)} →
+        IsCoprime (Ideal.span {δ}) (Ideal.span {(ℓ : 𝓞 F)}) := by
+      intro δ hδ
+      rw [Ideal.isCoprime_iff_sup_eq, eq_top_iff, ← hγsup, sup_le_iff]
+      refine ⟨?_, le_sup_right⟩
+      rw [Ideal.span_singleton_le_iff_mem]
+      have h1 : γ₀ = δ - (δ - γ₀) := by ring
+      rw [h1]
+      exact sub_mem (Ideal.mem_sup_left (Ideal.mem_span_singleton_self δ))
+        (Ideal.mem_sup_right hδ)
+    -- numerics of the dilation factor
+    have hNJne : Ideal.absNorm J₀ ≠ 0 := fun h => hJ0 (Ideal.absNorm_eq_zero_iff.mp h)
+    set d : ℕ := Module.finrank ℚ F with hd
+    have hd0 : 0 < d := hd ▸ Module.finrank_pos
+    set N : ℕ := n * Ideal.absNorm J₀
+    have hN0 : 0 < N := Nat.mul_pos hn (Nat.pos_of_ne_zero hNJne)
+    have hN1 : (1 : ℝ) ≤ (N : ℝ) := by exact_mod_cast hN0
+    set t : ℝ := (N : ℝ) ^ ((d : ℝ)⁻¹) with ht
+    have ht1 : 1 ≤ t := Real.one_le_rpow hN1 (by positivity)
+    have ht0 : 0 < t := lt_of_lt_of_le one_pos ht1
+    have htd : t ^ d = (N : ℝ) := by
+      rw [ht, ← Real.rpow_natCast ((N : ℝ) ^ ((d : ℝ)⁻¹)) d,
+        ← Real.rpow_mul (by positivity), inv_mul_cancel₀ (Nat.cast_ne_zero.mpr hd0.ne'),
+        Real.rpow_one]
+    -- real scaling commutes with the unit action
+    have hcomm : ∀ (c : (𝓞 F)ˣ) (r : ℝ) (z : mixedEmbedding.mixedSpace F),
+        c • (r • z) = r • (c • z) := by
+      intro c r z
+      simp only [mixedEmbedding.unitSMul_smul]
+      exact mul_smul_comm r _ z
+    -- membership in the dilated domain
+    have htS : ∀ z : mixedEmbedding.mixedSpace F,
+        z ∈ t • (NLO ∩ X) ↔
+          z ∈ Cone ∧ z ∈ X ∧ mixedEmbedding.norm z ≤ (N : ℝ) := by
+      intro z
+      rw [Set.mem_smul_set_iff_inv_smul_mem₀ ht0.ne', Set.mem_inter_iff]
+      constructor
+      · rintro ⟨hnlo, hXz⟩
+        rw [hNLOdef, Set.mem_iUnion₂] at hnlo
+        obtain ⟨c, hcR, hm⟩ := hnlo
+        rw [Set.mem_smul_set_iff_inv_smul_mem, hcomm] at hm
+        obtain ⟨hcone, hnle⟩ := hm
+        have hcx : c⁻¹ • z ∈ mixedEmbedding.fundamentalCone F :=
+          (mixedEmbedding.fundamentalCone.smul_mem_iff_mem
+            (inv_ne_zero ht0.ne')).mp hcone
+        refine ⟨?_, ?_, ?_⟩
+        · rw [hConedef, Set.mem_iUnion₂]
+          exact ⟨c, hcR, Set.mem_smul_set_iff_inv_smul_mem.mpr hcx⟩
+        · have h2 := hXscale t ht0 (Set.smul_mem_smul_set hXz)
+          rwa [smul_inv_smul₀ ht0.ne'] at h2
+        · have h1 : mixedEmbedding.norm (t⁻¹ • (c⁻¹ • z)) ≤ 1 := hnle
+          rw [mixedEmbedding.norm_smul, mixedEmbedding.norm_unit_smul,
+            abs_of_pos (inv_pos.mpr ht0), inv_pow, ← hd,
+            inv_mul_le_iff₀ (by positivity), mul_one, htd] at h1
+          exact h1
+      · rintro ⟨hcz, hXz, hnz⟩
+        rw [hConedef, Set.mem_iUnion₂] at hcz
+        obtain ⟨c, hcR, hm⟩ := hcz
+        rw [Set.mem_smul_set_iff_inv_smul_mem] at hm
+        constructor
+        · rw [hNLOdef, Set.mem_iUnion₂]
+          refine ⟨c, hcR, ?_⟩
+          rw [Set.mem_smul_set_iff_inv_smul_mem, hcomm]
+          refine ⟨(mixedEmbedding.fundamentalCone.smul_mem_iff_mem
+            (inv_ne_zero ht0.ne')).mpr hm, ?_⟩
+          show mixedEmbedding.norm (t⁻¹ • (c⁻¹ • z)) ≤ 1
+          rw [mixedEmbedding.norm_smul, mixedEmbedding.norm_unit_smul,
+            abs_of_pos (inv_pos.mpr ht0), inv_pow, ← hd,
+            inv_mul_le_iff₀ (by positivity), mul_one, htd]
+          exact hnz
+        · exact hXscale t⁻¹ (inv_pos.mpr ht0) (Set.smul_mem_smul_set hXz)
+    -- the lattice of `ℓJ₀` through the mixed embedding
+    have hlat_iff : ∀ z : mixedEmbedding.mixedSpace F,
+        z ∈ mixedEmbedding.idealLattice F (FractionalIdeal.mk0 F Jℓ) ↔
+          ∃ a : 𝓞 F, a ∈ (Jℓ : Ideal (𝓞 F)) ∧
+            mixedEmbedding F (algebraMap (𝓞 F) F a) = z := by
+      intro z
+      rw [mixedEmbedding.mem_idealLattice]
+      constructor
+      · rintro ⟨y, hy, rfl⟩
+        have hy' : y ∈ ((Jℓ : Ideal (𝓞 F)) : FractionalIdeal (𝓞 F)⁰ F) := hy
+        obtain ⟨a, ha, rfl⟩ := (FractionalIdeal.mem_coeIdeal _).mp hy'
+        exact ⟨a, ha, rfl⟩
+      · rintro ⟨a, ha, rfl⟩
+        exact ⟨algebraMap (𝓞 F) F a,
+          (FractionalIdeal.mem_coeIdeal _).mpr ⟨a, ha, rfl⟩, rfl⟩
+    -- ideal arithmetic for `Jℓ = (ℓ)·J₀`
+    have hJℓ_le_ℓ : (Jℓ : Ideal (𝓞 F)) ≤ Ideal.span {(ℓ : 𝓞 F)} := by
+      rw [hJℓeq]
+      exact Ideal.mul_le_right
+    have hJℓ_le_J : (Jℓ : Ideal (𝓞 F)) ≤ J₀ := by
+      rw [hJℓeq]
+      exact Ideal.mul_le_left
+    have hℓJ_inf : ∀ a : 𝓞 F, a ∈ Ideal.span {(ℓ : 𝓞 F)} → a ∈ J₀ →
+        a ∈ (Jℓ : Ideal (𝓞 F)) := by
+      intro a h1 h2
+      rw [hJℓeq, Ideal.mul_eq_inf_of_coprime (by
+        rw [sup_comm]
+        exact Ideal.isCoprime_iff_sup_eq.mp hJcop)]
+      exact Submodule.mem_inf.mpr ⟨h1, h2⟩
+    -- a generator datum for every lattice point
+    have hBgen : ∀ x : mixedEmbedding.idealLattice F (FractionalIdeal.mk0 F Jℓ),
+        ∃ a : 𝓞 F, a ∈ (Jℓ : Ideal (𝓞 F)) ∧
+          mixedEmbedding F (algebraMap (𝓞 F) F a) =
+            (x : mixedEmbedding.mixedSpace F) :=
+      fun x => (hlat_iff _).mp x.2
+    choose aOf haMem haEmb using hBgen
+    set B := {x : mixedEmbedding.idealLattice F (FractionalIdeal.mk0 F Jℓ) //
+      mixedEmbedding F (algebraMap (𝓞 F) F γ₀) +
+        (x : mixedEmbedding.mixedSpace F) ∈ t • (NLO ∩ X)}
+    set A := {I' : Ideal (𝓞 F) // (∃ δ : 𝓞 F,
+        (∀ φ : F →+* ℝ, 0 < φ (algebraMap (𝓞 F) F δ)) ∧
+        δ - γ₀ ∈ Ideal.span {(ℓ : 𝓞 F)} ∧ I' = Ideal.span {δ}) ∧
+        J₀ ∣ I' ∧ Ideal.absNorm I' ≤ N}
+    -- data attached to a point of `B`
+    have hδspec : ∀ b : B,
+        mixedEmbedding F (algebraMap (𝓞 F) F (γ₀ + aOf b.1)) ∈ Cone ∧
+        mixedEmbedding F (algebraMap (𝓞 F) F (γ₀ + aOf b.1)) ∈ X ∧
+        mixedEmbedding.norm
+          (mixedEmbedding F (algebraMap (𝓞 F) F (γ₀ + aOf b.1))) ≤ (N : ℝ) := by
+      intro b
+      have h1 : mixedEmbedding F (algebraMap (𝓞 F) F (γ₀ + aOf b.1)) =
+          mixedEmbedding F (algebraMap (𝓞 F) F γ₀) +
+            (b.1 : mixedEmbedding.mixedSpace F) := by
+        rw [map_add, map_add, haEmb]
+      rw [h1]
+      exact (htS _).mp b.2
+    have hδpos : ∀ b : B, ∀ φ : F →+* ℝ,
+        0 < φ (algebraMap (𝓞 F) F (γ₀ + aOf b.1)) := by
+      intro b
+      rw [forall_ringHom_pos_iff_forall_mixedEmbedding_fst_pos]
+      intro w
+      exact hXpos _ (hδspec b).2.1 w
+    have hδcong : ∀ b : B, (γ₀ + aOf b.1) - γ₀ ∈ Ideal.span {(ℓ : 𝓞 F)} := by
+      intro b
+      rw [show (γ₀ + aOf b.1) - γ₀ = aOf b.1 from by ring]
+      exact hJℓ_le_ℓ (haMem b.1)
+    have hδJ : ∀ b : B, J₀ ∣ Ideal.span {γ₀ + aOf b.1} := fun b =>
+      (Ideal.dvd_iff_le).mpr ((Ideal.span_singleton_le_iff_mem _).mpr
+        (add_mem hγmem (hJℓ_le_J (haMem b.1))))
+    have hδN : ∀ b : B, Ideal.absNorm (Ideal.span {γ₀ + aOf b.1}) ≤ N := by
+      intro b
+      have h2 : ((Ideal.absNorm (Ideal.span {γ₀ + aOf b.1}) : ℕ) : ℝ) ≤ (N : ℝ) := by
+        rw [cast_absNorm_span_singleton_eq_norm_mixedEmbedding]
+        exact (hδspec b).2.2
+      exact_mod_cast h2
+    -- the comparison map
+    let f : B → A := fun b => ⟨Ideal.span {γ₀ + aOf b.1},
+      ⟨γ₀ + aOf b.1, hδpos b, hδcong b, rfl⟩, hδJ b, hδN b⟩
+    have hinj : Function.Injective f := by
+      intro b₁ b₂ hf
+      have hspan : Ideal.span {γ₀ + aOf b₁.1} = Ideal.span {γ₀ + aOf b₂.1} :=
+        congrArg Subtype.val hf
+      obtain ⟨u, hu⟩ := Ideal.span_singleton_eq_span_singleton.mp hspan
+      have hs₁ := hδspec b₁
+      have hs₂ := hδspec b₂
+      -- the transporting unit is totally positive and `≡ 1 mod ℓ`
+      have hupos : ∀ φ : F →+* ℝ, 0 < φ (algebraMap (𝓞 F) F (u : 𝓞 F)) := by
+        intro φ
+        have h2 := hδpos b₂ φ
+        rw [← hu, map_mul, map_mul] at h2
+        rcases mul_pos_iff.mp h2 with ⟨-, h⟩ | ⟨h, -⟩
+        · exact h
+        · exact absurd (hδpos b₁ φ) (not_lt.mpr h.le)
+      have hucong : ((u : 𝓞 F) - 1) ∈ Ideal.span {(ℓ : 𝓞 F)} := by
+        have hmul : (γ₀ + aOf b₁.1) * ((u : 𝓞 F) - 1) ∈
+            Ideal.span {(ℓ : 𝓞 F)} := by
+          rw [show (γ₀ + aOf b₁.1) * ((u : 𝓞 F) - 1) =
+            ((γ₀ + aOf b₂.1) - γ₀) - ((γ₀ + aOf b₁.1) - γ₀) from by rw [← hu]; ring]
+          exact sub_mem (hδcong b₂) (hδcong b₁)
+        have hdvd : Ideal.span {(ℓ : 𝓞 F)} ∣
+            Ideal.span {γ₀ + aOf b₁.1} * Ideal.span {(u : 𝓞 F) - 1} := by
+          rw [Ideal.span_singleton_mul_span_singleton]
+          exact Ideal.dvd_iff_le.mpr
+            ((Ideal.span_singleton_le_iff_mem _).mpr hmul)
+        exact (Ideal.span_singleton_le_iff_mem _).mp (Ideal.le_of_dvd
+          (((hcop_of _ (hδcong b₁)).symm).dvd_of_dvd_mul_left hdvd))
+      -- uniqueness in the fundamental domain forces `u = 1`
+      have hpos₁ : ∀ w : {w : InfinitePlace F // w.IsReal},
+          0 < (mixedEmbedding F (algebraMap (𝓞 F) F (γ₀ + aOf b₁.1))).1 w :=
+        (forall_ringHom_pos_iff_forall_mixedEmbedding_fst_pos _).mp (hδpos b₁)
+      obtain ⟨u₀, -, huniq⟩ := htorsor _ hpos₁ (hCone_norm _ hs₁.1)
+      have hone : (1 : (𝓞 F)ˣ) = u₀ := huniq 1 ⟨by
+          intro φ
+          simp,
+        by simp,
+        by rw [one_smul]; exact ⟨hs₁.1, hs₁.2.1⟩⟩
+      have humem : u • mixedEmbedding F (algebraMap (𝓞 F) F (γ₀ + aOf b₁.1)) =
+          mixedEmbedding F (algebraMap (𝓞 F) F (γ₀ + aOf b₂.1)) := by
+        have h9 : u • mixedEmbedding F ((γ₀ + aOf b₁.1 : 𝓞 F) : F) =
+            mixedEmbedding F ((γ₀ + aOf b₂.1 : 𝓞 F) : F) :=
+          mixedEmbedding.unit_smul_eq_iff_mul_eq.mpr (by rw [mul_comm]; exact hu)
+        simp only [RingOfIntegers.coe_eq_algebraMap] at h9
+        exact h9
+      have huu : u = u₀ := huniq u ⟨hupos, hucong, by
+        rw [humem]; exact ⟨hs₂.1, hs₂.2.1⟩⟩
+      have hu1 : u = 1 := huu.trans hone.symm
+      rw [hu1, Units.val_one, mul_one] at hu
+      have hval : (b₁.1 : mixedEmbedding.mixedSpace F) =
+          (b₂.1 : mixedEmbedding.mixedSpace F) := by
+        rw [← haEmb b₁.1, ← haEmb b₂.1, add_left_cancel hu]
+      exact Subtype.ext (Subtype.ext hval)
+    have hsurj : Function.Surjective f := by
+      rintro ⟨I', ⟨δ, hpos', hcong', rfl⟩, hdvd', hNle'⟩
+      have hcopδ := hcop_of δ hcong'
+      have hδ0 : δ ≠ 0 := by
+        rintro rfl
+        have hsup := Ideal.isCoprime_iff_sup_eq.mp hcopδ
+        rw [show Ideal.span {(0 : 𝓞 F)} = ⊥ from Ideal.span_singleton_eq_bot.mpr rfl,
+          bot_sup_eq] at hsup
+        exact not_isUnit_natCast_ringOfIntegers hℓ
+          (Ideal.span_singleton_eq_top.mp hsup)
+      have habs0 : Ideal.absNorm (Ideal.span {δ}) ≠ 0 := by
+        rw [Ne, Ideal.absNorm_eq_zero_iff, Ideal.span_singleton_eq_bot]
+        exact hδ0
+      have hposw : ∀ w : {w : InfinitePlace F // w.IsReal},
+          0 < (mixedEmbedding F (algebraMap (𝓞 F) F δ)).1 w :=
+        (forall_ringHom_pos_iff_forall_mixedEmbedding_fst_pos _).mp hpos'
+      have hnormδ : mixedEmbedding.norm
+          (mixedEmbedding F (algebraMap (𝓞 F) F δ)) ≠ 0 := by
+        rw [← cast_absNorm_span_singleton_eq_norm_mixedEmbedding]
+        exact_mod_cast habs0
+      obtain ⟨u, ⟨hupos, hucong, humem⟩, -⟩ := htorsor _ hposw hnormδ
+      have hembu : u • mixedEmbedding F (algebraMap (𝓞 F) F δ) =
+          mixedEmbedding F (algebraMap (𝓞 F) F ((u : 𝓞 F) * δ)) := by
+        have h9 : u • mixedEmbedding F ((δ : 𝓞 F) : F) =
+            mixedEmbedding F (((u : 𝓞 F) * δ : 𝓞 F) : F) :=
+          mixedEmbedding.unit_smul_eq_iff_mul_eq.mpr rfl
+        simp only [RingOfIntegers.coe_eq_algebraMap] at h9
+        exact h9
+      rw [hembu] at humem
+      have hspanu : Ideal.span {(u : 𝓞 F) * δ} = Ideal.span {δ} := by
+        rw [Ideal.span_singleton_eq_span_singleton]
+        exact Associated.symm ⟨u, mul_comm δ (u : 𝓞 F)⟩
+      have hcongu : ((u : 𝓞 F) * δ) - γ₀ ∈ Ideal.span {(ℓ : 𝓞 F)} := by
+        rw [show ((u : 𝓞 F) * δ) - γ₀ = ((u : 𝓞 F) - 1) * δ + (δ - γ₀) from by ring]
+        exact add_mem (Ideal.mul_mem_right _ _ hucong) hcong'
+      have hδJ' : δ ∈ J₀ :=
+        (Ideal.span_singleton_le_iff_mem _).mp (Ideal.le_of_dvd hdvd')
+      have haJℓ : ((u : 𝓞 F) * δ) - γ₀ ∈ (Jℓ : Ideal (𝓞 F)) :=
+        hℓJ_inf _ hcongu (sub_mem (Ideal.mul_mem_left _ _ hδJ') hγmem)
+      have hNu : mixedEmbedding.norm
+          (mixedEmbedding F (algebraMap (𝓞 F) F ((u : 𝓞 F) * δ))) ≤ (N : ℝ) := by
+        rw [← cast_absNorm_span_singleton_eq_norm_mixedEmbedding, hspanu]
+        exact_mod_cast hNle'
+      have hlatmem : mixedEmbedding F (algebraMap (𝓞 F) F (((u : 𝓞 F) * δ) - γ₀)) ∈
+          mixedEmbedding.idealLattice F (FractionalIdeal.mk0 F Jℓ) :=
+        (hlat_iff _).mpr ⟨_, haJℓ, rfl⟩
+      have hsummem : mixedEmbedding F (algebraMap (𝓞 F) F γ₀) +
+          mixedEmbedding F (algebraMap (𝓞 F) F (((u : 𝓞 F) * δ) - γ₀)) ∈
+          t • (NLO ∩ X) := by
+        rw [← map_add, ← map_add,
+          show γ₀ + (((u : 𝓞 F) * δ) - γ₀) = (u : 𝓞 F) * δ from by ring, htS]
+        exact ⟨humem.1, humem.2, hNu⟩
+      refine ⟨⟨⟨_, hlatmem⟩, hsummem⟩, ?_⟩
+      apply Subtype.ext
+      show Ideal.span {γ₀ + aOf _} = Ideal.span {δ}
+      have haid : aOf (⟨_, hlatmem⟩ :
+          mixedEmbedding.idealLattice F (FractionalIdeal.mk0 F Jℓ)) =
+          ((u : 𝓞 F) * δ) - γ₀ :=
+        IsFractionRing.injective (𝓞 F) F
+          (mixedEmbedding_injective F (haEmb ⟨_, hlatmem⟩))
+      rw [haid, show γ₀ + (((u : 𝓞 F) * δ) - γ₀) = (u : 𝓞 F) * δ from by ring,
+        hspanu]
+    exact (Nat.card_eq_of_bijective f ⟨hinj, hsurj⟩).symm
+  exact ⟨NLO ∩ X, hNLObd.subset Set.inter_subset_left,
+    hNLOmeas.inter hXmeas, hLip, hcount⟩
 
 open scoped Classical Pointwise nonZeroDivisors in
 open NumberField MeasureTheory in
