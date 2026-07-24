@@ -24,6 +24,7 @@ module
 
 public import Fermat.FLT.EllipticCurve.FrobeniusFixedField
 public import Fermat.FLT.EllipticCurve.Torsion
+public import Fermat.FLT.EllipticCurve.WeilPairingDescent
 public import Fermat.FLT.EllipticCurve.WeilPairingRecgen
 public import Fermat.FLT.EllipticCurve.WeilPairingTwoLine
 public import Fermat.FLT.GaloisRepresentation.Chebotarev
@@ -4220,7 +4221,15 @@ forcing `div h = (P⊕S) − (S)` and hence — `toClass` injectivity —
 `P = O`, a contradiction; if `χ(κ₀) ≠ 1`, the discrete bridge lemma
 (Silverman Ex. 3.16(c)) evaluates an admissible setup for `(κ₀, ·)`
 to `χ(κ₀)^{±1} ≠ 1`, contradicting `hall` through `huniq`
-(instantiated in the μ-theorem with its in-proof `huniqval`). -/
+(instantiated in the μ-theorem with its in-proof `huniqval`).
+STAGING STATUS (2026-07-24): L4-1 (`T'` via
+`TorsionCard.smul_surjective`), L4-2 (the `p²`-enumeration of `E[p]`),
+and L4-3 (the Miller generator of the zero-sum divisor multiset
+`Σ_{κ ∈ E[p]} (T'⊕κ) + (⊖κ)`, through
+`WeilPairing.exists_span_eq_prod_pointIdeal` in
+`WeilPairingDescent.lean`) are PROVEN and assembled in the proof
+skeleton below; the single remaining sorry is the in-proof leaf
+`hres` — the L4-4..9 descent core consuming the generator. -/
 theorem weilValueProp_all_one_torsion_trivial (q : ℕ) [Fact q.Prime]
     (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic]
     (p : ℕ) [Fact p.Prime] (hqp : q ≠ p)
@@ -4243,7 +4252,76 @@ theorem weilValueProp_all_one_torsion_trivial (q : ℕ) [Fact q.Prime]
   -- `χ(κ₀) ≠ 1` branch the bridge lemma contradicts `hall` through
   -- `huniq`, so anything follows — in particular this.
   have hclass : WeierstrassCurve.Affine.Point.toClass x.val = 0 := by
-    sorry
+    -- L4-1: a `p`-division point `T'` of the representative
+    haveI : CharP (AlgebraicClosure (ZMod q)) q :=
+      charP_of_injective_algebraMap
+        (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))).injective q
+    have hp0 : ((p : ℕ) : AlgebraicClosure (ZMod q)) ≠ 0 :=
+      CharP.cast_ne_zero_of_ne_of_prime
+        (R := AlgebraicClosure (ZMod q)) (Fact.out : p.Prime) hqp
+    obtain ⟨T', hT'⟩ := TorsionCard.smul_surjective
+      (E := Wbar.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))))
+      hp0 x.val
+    have hT2 : ((p : ℕ) : ℤ) • T' = x.val := hT'
+    -- L4-2: the `p`-torsion is finite of cardinality `p²`
+    have hcard : Nat.card ((Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).nTorsion p) = p ^ 2 :=
+      TorsionCard.card_torsionBy _ p hp0
+    haveI : Finite ((Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).nTorsion p) :=
+      Nat.finite_of_card_ne_zero (by
+        rw [hcard]
+        exact pow_ne_zero 2 (Fact.out : p.Prime).ne_zero)
+    haveI : Fintype ((Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).nTorsion p) := Fintype.ofFinite _
+    -- the divisor multiset `Σ_{κ ∈ E[p]} (T'⊕κ) + (⊖κ)` — the affine
+    -- support of `[p]^*((P) − (O))` — and its group-law zero sum:
+    -- `Σ (T'⊕κ) = p²•T' + Σκ = Σκ` and `Σ (⊖κ) = −Σκ` cancel
+    set D := (Finset.univ.val.map fun κ : (Wbar.map (algebraMap (ZMod q)
+          (AlgebraicClosure (ZMod q)))).nTorsion p => T' + κ.val) +
+        (Finset.univ.val.map fun κ : (Wbar.map (algebraMap (ZMod q)
+          (AlgebraicClosure (ZMod q)))).nTorsion p => -κ.val) with hDdef
+    have hsum : D.sum = 0 := by
+      rw [hDdef, Multiset.sum_add]
+      rw [show (Finset.univ.val.map fun κ : (Wbar.map (algebraMap (ZMod q)
+          (AlgebraicClosure (ZMod q)))).nTorsion p => T' + κ.val).sum =
+        ∑ κ : (Wbar.map (algebraMap (ZMod q)
+          (AlgebraicClosure (ZMod q)))).nTorsion p, (T' + κ.val) from rfl]
+      rw [show (Finset.univ.val.map fun κ : (Wbar.map (algebraMap (ZMod q)
+          (AlgebraicClosure (ZMod q)))).nTorsion p => -κ.val).sum =
+        ∑ κ : (Wbar.map (algebraMap (ZMod q)
+          (AlgebraicClosure (ZMod q)))).nTorsion p, -κ.val from rfl]
+      rw [Finset.sum_add_distrib, Finset.sum_const, Finset.sum_neg_distrib,
+        add_assoc, add_neg_cancel, add_zero]
+      rw [Finset.card_univ, ← Nat.card_eq_fintype_card, hcard]
+      rw [← Nat.cast_smul_eq_nsmul ℤ, Nat.cast_pow, pow_two, mul_smul]
+      have hx0 : ((p : ℕ) : ℤ) • x.val = 0 :=
+        (Submodule.mem_torsionBy_iff _ _).mp x.property
+      rw [hT2, hx0]
+    -- L4-4..9 (residual sorry): the `g = h∘[p]` descent on the Miller
+    -- generator of `D`.  Given ANY nonzero `a` with
+    -- `span {a} = ∏_{κ} I_{T'⊕κ} · I_{⊖κ}`, the function
+    -- `g := a / ∏_{κ ≠ O} XClass x_κ` has divisor
+    -- `Σ_κ (T'⊕κ) − (κ) = [p]^*((P) − (O))`; the translation character
+    -- `χ(κ) = (g∘τ_κ)/g : E[p] → μ_p` (L4-8, via the τ/[p]-substrate
+    -- L4-4..6 instantiating the tautological-point machinery at `Wb`
+    -- over its own function field, and the pullback factorization
+    -- `f_P∘[p] = c·g^p`, L4-7) is either trivial — then `g` descends
+    -- through `Fix(E[p]) = [p]^*K` to `g = h∘[p]` with
+    -- `div h = (P⊕S) − (S)`, so the point ideal is principal and the
+    -- class vanishes (L4-9, first branch) — or `χ(κ₀) ≠ 1` for some
+    -- `κ₀`, and the discrete bridge lemma (Silverman Ex. 3.16(c))
+    -- exhibits an admissible Weil value `χ(κ₀)^{±1} ≠ 1` for the pair
+    -- `(κ₀, x)`, contradicting `hall` through `huniq` (L4-9, second
+    -- branch), so anything follows.  See HLEG-NOTES.md §4(B).
+    have hres : ∀ a : (Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).toAffine.CoordinateRing, a ≠ 0 →
+        Ideal.span {a} = (D.map (pointIdeal _)).prod →
+        WeierstrassCurve.Affine.Point.toClass x.val = 0 := by
+      sorry
+    -- L4-3: the Miller generator of the zero-sum divisor multiset
+    obtain ⟨g, hg0, hgspan⟩ := exists_span_eq_prod_pointIdeal D hsum
+    exact hres g hg0 hgspan
   exact ZeroMemClass.coe_eq_zero.mp
     ((WeierstrassCurve.Affine.Point.toClass_eq_zero x.val).mp hclass)
 
