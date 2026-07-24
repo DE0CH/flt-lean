@@ -76,11 +76,15 @@ routes are sound:
   the potential-modularity construction. This pillar is where the
   genuine depth of the residual-modularity leaf now lives (2026-07-24:
   DISCHARGED as a proven assembly over the potential-modularity
-  carrier `PotentialModularityWitness`; the depth now lives in its
-  three sorried leaves — carrier inhabitation via Taylor 2002 +
-  modularity lifting over totally real fields, the ℓ-adic Brauer
-  descent of the Hecke eigensystem to `ℚ`, and the hardly ramified
-  `3`-adic member via BLGGT §5 — see their docstrings);
+  carrier `PotentialModularityWitness`; carrier inhabitation was in
+  turn PROVEN 2026-07-24 as an assembly over the Moret–Bailly seed
+  `MoretBaillySeed`, so the depth now lives in five sorried leaves —
+  Moret–Bailly base production (Taylor 2002 Thm B), modularity
+  lifting over the totally real base (Kisin/Taylor), the
+  Hilbert-modular `3`-adic realization (Carayol 1986/Taylor 1989),
+  the ℓ-adic Brauer descent of the Hecke eigensystem to `ℚ`, and the
+  hardly ramified `3`-adic member via BLGGT §5 — see their
+  docstrings);
 * pillar γ (`not_isIrreducible_of_charFrob_eisenstein`) is the
   finite-coefficient-field transfer of the PROVEN
   `not_isIrreducible_of_charFrob_eq`, whose proof consumes only
@@ -337,6 +341,339 @@ attribute [instance] PotentialModularityWitness.fieldF
   PotentialModularityWitness.moduleFreeB
   PotentialModularityWitness.isModuleTopologyB
 
+/-- **The Moret–Bailly modular seed** (interface structure): the output
+of Taylor's potential-modularity theorem BEFORE modularity lifting — a
+MODULAR `ℓ`-adic representation `σ` of `G_F` residually congruent to
+`ρbarF = ρbar|_{G_F}`, with "modular" recorded (as everywhere in this
+module) through the Hecke eigensystem of the attached Hilbert newform.
+This structure is the interface between the Moret–Bailly production
+leaf (`exists_moretBailly_seed_of_five_le`) and the
+modularity-lifting citation leaf (`exists_heckePackage_of_seed`): the
+MLT needs exactly a modular congruent companion as its residual seed,
+and this is its sharpest pin-stateable form — recording residual
+modularity as bare mod-`ℓ` Frobenius data alone would be vacuous
+(any function of `w` interpolates), so the seed carries the
+characteristic-zero eigensystem AND the congruence.
+
+Field provenance (classically `σ` is the `λ`-adic representation,
+`λ | ℓ`, of the Hilbert newform `g` over `F` attached to
+`ρbar|_{G_F}` by Taylor's Theorem B — equivalently the `ℓ`-adic Tate
+module of the Moret–Bailly Hilbert–Blumenthal abelian variety):
+
+* `E₀`, `bad₀`, `hecke₀` — the Hecke field of `g` (a number field, by
+  Shimura's rationality), its finite bad set (the level of `g` and
+  the places over `2`, `ℓ`), and its Hecke polynomials
+  `X² − a_w·X + Nw`.
+* `O₀` (with its local, module-finite, `ℤ_ℓ`-free package), `σ` — a
+  stable-lattice integral normalization of the `λ`-adic
+  representation of `g`: classically the Carayol-descended subring of
+  the integers of `E₀_λ` over which the residually irreducible `σ` is
+  definable with residue field inside `k` (Carayol, *Formes
+  modulaires et représentations galoisiennes à valeurs dans un anneau
+  local complet*, Contemp. Math. 165 (1994), Théorème 2 — applicable
+  because `ρbarF` is irreducible, which the Moret–Bailly leaf
+  guarantees alongside this seed).
+* `ψ₀`, `ι₀`, `ι₀_injective`, `modular₀` — the eigensystem match
+  inside `ℚ̄_ℓ` (Carayol local-global compatibility at unramified
+  places for `g`).
+* `π₀`, `residual₀` — the residual congruence to `ρbarF` at the level
+  of Frobenius characteristic polynomials: the reduction of `σ` is
+  `ρbar|_{G_F}` (Taylor 2002, Theorem B), so their `charFrob`s agree
+  through `π₀` away from the bad set.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): this
+interface may only be inhabited by the independent Moret–Bailly
+construction — never through `Family.lean`, `Lift.lean`, or
+`Modularity/Interface.lean`. -/
+structure MoretBaillySeed (ℓ : ℕ) [Fact ℓ.Prime]
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (ρbarF : GaloisRep F k W) : Type (u + 1) where
+  /-- The Hecke field of the seed newform `g`. -/
+  E₀ : Type u
+  [fieldE₀ : Field E₀]
+  [numberFieldE₀ : NumberField E₀]
+  /-- The finite bad set of the seed: the level of `g` and the places
+  over `2` and `ℓ`. -/
+  bad₀ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F))
+  /-- The Hecke polynomials `X² − a_w·X + Nw` of the seed newform. -/
+  hecke₀ : HeightOneSpectrum (NumberField.RingOfIntegers F) → Polynomial E₀
+  /-- The seed's coefficient ring: classically the Carayol-descended
+  subring of the integers of `E₀_λ`, `λ | ℓ`. -/
+  O₀ : Type u
+  [commRingO₀ : CommRing O₀]
+  [topologicalSpaceO₀ : TopologicalSpace O₀]
+  [isTopologicalRingO₀ : IsTopologicalRing O₀]
+  [algebraO₀ : Algebra ℤ_[ℓ] O₀]
+  [isLocalRingO₀ : IsLocalRing O₀]
+  [moduleFiniteO₀ : Module.Finite ℤ_[ℓ] O₀]
+  [moduleFreeO₀ : Module.Free ℤ_[ℓ] O₀]
+  [isModuleTopologyO₀ : IsModuleTopology ℤ_[ℓ] O₀]
+  /-- The modular `ℓ`-adic seed representation of `G_F` (classically
+  the `λ`-adic representation of `g` on a stable lattice). -/
+  σ : GaloisRep F O₀ (Fin 2 → O₀)
+  /-- The chosen place of `E₀` over `ℓ`, as an embedding into `ℚ̄_ℓ`. -/
+  ψ₀ : E₀ →+* AlgebraicClosure ℚ_[ℓ]
+  /-- The coefficient embedding of the seed into `ℚ̄_ℓ`. -/
+  ι₀ : O₀ →+* AlgebraicClosure ℚ_[ℓ]
+  ι₀_injective : Function.Injective ι₀
+  /-- Modularity of the seed: its Frobenius characteristic polynomials
+  away from `bad₀` are the Hecke polynomials of `g`. -/
+  modular₀ : ∀ w ∉ bad₀, (σ.charFrob w).map ι₀ = (hecke₀ w).map ψ₀
+  /-- The reduction map onto the residual coefficient field. -/
+  π₀ : O₀ →+* k
+  /-- The residual congruence: the seed reduces to `ρbarF` at the
+  level of Frobenius characteristic polynomials away from `bad₀`. -/
+  residual₀ : ∀ w ∉ bad₀, (σ.charFrob w).map π₀ = ρbarF.charFrob w
+
+attribute [instance] MoretBaillySeed.fieldE₀
+  MoretBaillySeed.numberFieldE₀
+  MoretBaillySeed.commRingO₀
+  MoretBaillySeed.topologicalSpaceO₀
+  MoretBaillySeed.isTopologicalRingO₀
+  MoretBaillySeed.algebraO₀
+  MoretBaillySeed.isLocalRingO₀
+  MoretBaillySeed.moduleFiniteO₀
+  MoretBaillySeed.moduleFreeO₀
+  MoretBaillySeed.isModuleTopologyO₀
+
+/-- **Moret–Bailly base production** (sorry node — Taylor 2002,
+Theorem B): for the irreducible hardly ramified residual
+representation `ρbar` at `ℓ ≥ 5`, there is a totally real number
+field `F`, Galois over `ℚ`, over which `ρbar` stays irreducible and
+acquires a modular congruent companion — a `MoretBaillySeed`.
+
+Classically: Moret–Bailly's theorem (*Groupes de Picard et problèmes
+de Skolem II*, Ann. Sci. ÉNS 22 (1989); the form used is Taylor 2002,
+Theorem G / Proposition 2.1) produces `F` totally real and Galois
+over `ℚ`, satisfying prescribed local conditions at any finite set of
+primes (split/unramified behavior at `2`, `3`, `ℓ`; linear
+disjointness from the fixed field data of `ρbar`, which keeps
+`ρbar|_{G_{F(ζ_ℓ)}}` absolutely irreducible — a fortiori
+`ρbar|_{G_F}` irreducible, the conjunct carried below), together with
+a point of a twisted Hilbert–Blumenthal moduli variety over `F`: an
+abelian variety `A/F` with real multiplication whose `ℓ`-torsion
+realizes `ρbar|_{G_F}` and whose `p`-torsion, for an auxiliary prime
+`p`, is induced from a character (dihedral). The dihedral `p`-torsion
+is modular (Hecke theta series / converse theorems +
+Jacquet–Langlands), and modularity lifting at `p` (the residually
+dihedral case, Taylor 2002 §5 following Wiles/Skinner–Wiles) makes
+`A` itself modular, attached to a Hilbert newform `g` of parallel
+weight `2` over `F`; its `λ`-adic representation at `λ | ℓ`, on a
+Carayol-normalized stable lattice, is the seed `σ`, residually
+`ρbar|_{G_F}`.
+
+PIN AUDIT (2026-07-24): the mathlib pin has NO Moret–Bailly material
+and no number-field weak approximation in the required form (no
+`Skolem`/`MoretBailly` declarations; `Mathlib/NumberTheory/
+NumberField/` carries no incompressible-neighborhood existence
+theorem on Picard-scheme torsors), so this leaf is a sharply-stated
+citation node; a future decomposition would begin with weak
+approximation on the twisted Hilbert modular variety.
+
+SOUNDNESS AUDIT (both ways, 2026-07-24): (i) direct — this is Taylor
+2002 Theorem B verbatim (with the Galois refinement of §1 and the
+irreducibility preservation built into the avoidance set), a true
+nonvacuous theorem: its proof (Moret–Bailly + converse theorems +
+residually dihedral lifting) nowhere presupposes Serre's conjecture;
+(ii) collapse — the hypothesis set (an irreducible hardly ramified
+mod-`ℓ` representation, `ℓ ≥ 5`) is classically unsatisfiable
+(headline below), so the statement is also vacuously sound.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): must be
+proven by the independent Moret–Bailly construction — never through
+`Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+theorem exists_moretBailly_seed_of_five_le
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat) :
+    ∃ (F : Type u) (_ : Field F) (_ : NumberField F)
+      (_ : NumberField.IsTotallyReal F) (_ : IsGalois ℚ F)
+      (_ : (ρbar.map (algebraMap ℚ F)).IsIrreducible),
+      Nonempty (MoretBaillySeed ℓ F (ρbar.map (algebraMap ℚ F))) :=
+  sorry
+
+/-- **Modularity lifting over the totally real base** (sorry node —
+Kisin/Taylor MLT + Carayol local-global): over the Moret–Bailly base
+`F`, the Khare–Wintenberger lift `ρ|_{G_F}` is itself modular — its
+Frobenius characteristic polynomials away from a finite bad set are
+the Hecke polynomials of a Hilbert newform, recorded through a number
+field `E`, embeddings `ψℓ`, `ιO` into `ℚ̄_ℓ`, and the matching clause
+that becomes the carrier's `modularF`.
+
+Classically: the seed `σ` is modular (`seed.modular₀`) and residually
+congruent to `ρbar|_{G_F}` (`seed.residual₀`); `ρ|_{G_F}` is a lift
+of the same residual representation (`hπ`, transported to `F`-places
+by Chebotarev — the mod-`ℓ` semisimplifications over `G_F` agree by
+Brauer–Nesbitt, and `hirrF` upgrades agreement to conjugacy); `ρ` is
+flat at `ℓ` with cyclotomic determinant and is unramified outside
+`{2, ℓ}` (`hρ`, restricted to `G_F`), matching the weight-`2` minimal
+flat deformation condition. The modularity lifting theorem over
+totally real fields (Kisin, *Moduli of finite flat group schemes, and
+modularity*, Ann. of Math. 170 (2009); Taylor, *On the meromorphic
+continuation of degree two L-functions*, Doc. Math. (2006), for the
+technical variants at small residual image; Taylor's 2018 Stanford
+course and the FLT blueprint ch. 4 for the statement form used here)
+concludes that `ρ|_{G_F}` arises from a Hilbert newform `f` of
+parallel weight `2` over `F`; `E` is the Hecke field of `f`
+(Shimura), and Carayol's local-global compatibility at unramified
+places identifies `charFrob` with the Hecke polynomials inside
+`ℚ̄_ℓ`. The Taylor–Wiles hypothesis `ρbar|_{G_{F(ζ_ℓ)}}` absolutely
+irreducible is part of the Moret–Bailly avoidance (leaf (i)); its
+pin-stateable trace `hirrF` is carried formally, the rest lives in
+this citation (abstract-quantification caveat below).
+
+SOUNDNESS AUDIT (both ways, 2026-07-24): (i) direct — for the
+intended instantiation (`F` and `seed` produced by
+`exists_moretBailly_seed_of_five_le`, `ρ` the KW minimal lift) this
+is the MLT chain above; for an abstract `(F, seed)` the
+abstract-quantification caveat applies (not every formally admissible
+`F` satisfies the unstated Taylor–Wiles conditions), and (ii)
+collapse — the hypothesis set (an irreducible hardly ramified
+mod-`ℓ` representation, `ℓ ≥ 5`) is classically unsatisfiable
+(headline below), so the statement is classically true for every
+package.
+
+MLT-SHARING NOTE (2026-07-24): the project's deformation-theoretic
+patching vocabulary (`Patching.lean`: `HardlyRamifiedFiniteDeformation`,
+strict Mazur representability, `exists_conj_of_charFrob_eq_away`) is
+pinned to base field `ℚ` — `IsHardlyRamified` itself hard-codes the
+local conditions at the rational places `2` and `ℓ` — so this leaf
+cannot yet be discharged through a shared general-base MLT node; if
+`Patching.lean`'s pillars are later generalized over a totally real
+base, this leaf is the natural consumer.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
+discharge through `Family.lean`, `Lift.lean`, or
+`Modularity/Interface.lean`. -/
+theorem exists_heckePackage_of_seed
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+    (F : Type u) [Field F] [NumberField F]
+    (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (seed : MoretBaillySeed ℓ F (ρbar.map (algebraMap ℚ F))) :
+    ∃ (E : Type u) (_ : Field E) (_ : NumberField E)
+      (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
+      (heckeF : HeightOneSpectrum (NumberField.RingOfIntegers F) →
+        Polynomial E)
+      (ψℓ : E →+* AlgebraicClosure ℚ_[ℓ])
+      (ιO : O →+* AlgebraicClosure ℚ_[ℓ]) (_ : Function.Injective ιO),
+      ∀ w ∉ badF,
+        ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO =
+          (heckeF w).map ψℓ :=
+  sorry
+
+/-- **The Hilbert-modular `3`-adic realization** (sorry node —
+Carayol 1986 / Taylor 1989): a Hilbert-modular Hecke eigensystem
+`(E, heckeF)` over the totally real field `F` — witnessed as modular
+by the `ℓ`-adic matching clause `hmod` for the lift `ρ` — has a
+`3`-adic Galois realization: a representation `τF` of `G_F` on a
+stable lattice over a local ring `B` finite FREE over `ℤ_3`
+(classically the integers of the completion `E_λ`, `λ | 3`), with the
+same Hecke polynomials through a place `ψ₃` of `E` over `3`.
+
+Literature: Carayol, *Sur les représentations ℓ-adiques associées aux
+formes modulaires de Hilbert*, Ann. Sci. ÉNS 19 (1986) (construction
+and local-global compatibility for `[F : ℚ]` odd or via
+Jacquet–Langlands at a finite place); Taylor, *On Galois
+representations associated to Hilbert modular forms*, Invent. Math.
+98 (1989) (the remaining even-degree cases, by congruences); the
+stable lattice exists because `G_F` is compact and `E_λ` is local
+(standard: Serre, *Abelian ℓ-adic representations*, I §1). The
+freeness of `B` over `ℤ_3` is the freeness of the integers of a
+finite extension of `ℚ_3`.
+
+SOUNDNESS AUDIT (both ways, 2026-07-24): (i) direct — for the
+intended instantiation (`(E, heckeF)` the eigensystem of the Hilbert
+newform attached to `ρ|_{G_F}` by `exists_heckePackage_of_seed`) this
+is Carayol/Taylor verbatim; for an abstract eigensystem merely
+satisfying `hmod` the abstract-quantification caveat applies (the
+hypothesis that `heckeF` IS a newform eigensystem lives in this
+citation), and (ii) collapse — the hypothesis set (an irreducible
+hardly ramified mod-`ℓ` representation, `ℓ ≥ 5`) is classically
+unsatisfiable (headline below), so the statement is classically true
+for every package.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
+discharge through `Family.lean`, `Lift.lean`, or
+`Modularity/Interface.lean`. -/
+theorem exists_threeadic_realization_of_heckePackage
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+    (F : Type u) [Field F] [NumberField F]
+    (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
+    (E : Type u) [Field E] [NumberField E]
+    (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
+    (heckeF : HeightOneSpectrum (NumberField.RingOfIntegers F) →
+      Polynomial E)
+    (ψℓ : E →+* AlgebraicClosure ℚ_[ℓ])
+    (ιO : O →+* AlgebraicClosure ℚ_[ℓ]) (hιO : Function.Injective ιO)
+    (hmod : ∀ w ∉ badF,
+      ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO =
+        (heckeF w).map ψℓ) :
+    ∃ (B : Type u) (_ : CommRing B) (_ : TopologicalSpace B)
+      (_ : IsTopologicalRing B) (_ : Algebra ℤ_[3] B) (_ : IsLocalRing B)
+      (_ : Module.Finite ℤ_[3] B) (_ : Module.Free ℤ_[3] B)
+      (_ : IsModuleTopology ℤ_[3] B)
+      (τF : GaloisRep F B (Fin 2 → B))
+      (ψ₃ : E →+* AlgebraicClosure ℚ_[3])
+      (ιB : B →+* AlgebraicClosure ℚ_[3]) (_ : Function.Injective ιB),
+      ∀ w ∉ badF, (τF.charFrob w).map ιB = (heckeF w).map ψ₃ :=
+  sorry
+
 /-- **Carrier inhabitation — potential modularity of the KW lift**
 (sorry node — Taylor's theorem, the analytic core of pillar β): the
 Khare–Wintenberger lift `ρ` of an irreducible hardly ramified mod-`ℓ`
@@ -374,7 +711,20 @@ below), so the statement is classically true for every package.
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): must be
 proven by the independent potential-modularity construction — never
-through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`.
+
+ASSEMBLY (2026-07-24, PROVEN): Moret–Bailly base production
+(`exists_moretBailly_seed_of_five_le` — Taylor 2002 Theorem B: the
+totally real Galois `F`, irreducibility preservation, and the modular
+congruent seed `MoretBaillySeed`) + modularity lifting over `F`
+(`exists_heckePackage_of_seed` — Kisin/Taylor MLT + Carayol
+local-global, producing the ℓ-adic Hecke block `E`/`badF`/`heckeF`/
+`ψℓ`/`ιO`/`modularF`) + the Hilbert-modular `3`-adic realization
+(`exists_threeadic_realization_of_heckePackage` — Carayol 1986 /
+Taylor 1989, producing the `3`-adic block `B`/`τF`/`ψ₃`/`ιB`/
+`matchF₃`), glued by instantiating the carrier fieldwise. Those three
+leaves are now the residual sorries of the inhabitation node; the
+circularity guard above binds each of them. -/
 theorem exists_potentialModularityWitness_of_five_le
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
@@ -395,8 +745,27 @@ theorem exists_potentialModularityWitness_of_five_le
     (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
       (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
         ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat) :
-    Nonempty (PotentialModularityWitness ℓ O ρ) :=
-  sorry
+    Nonempty (PotentialModularityWitness ℓ O ρ) := by
+  classical
+  -- (i) the Moret–Bailly base: totally real Galois `F`, irreducibility
+  -- preservation, and the modular congruent seed (Taylor 2002 Thm B)
+  obtain ⟨F, hF, hNF, hFtr, hFgal, hirrF, ⟨seed⟩⟩ :=
+    exists_moretBailly_seed_of_five_le hℓodd hℓ5 hZinj hrank hρ hW hρbar
+      hirr π hπsurj hπ
+  -- (ii) modularity lifting over `F`: the ℓ-adic Hecke block
+  obtain ⟨E, hE, hNE, badF, heckeF, ψℓ, ιO, hιO, hmod⟩ :=
+    exists_heckePackage_of_seed hℓodd hℓ5 hZinj hrank hρ hW hρbar hirr
+      π hπsurj hπ F hFtr hFgal hirrF seed
+  -- (iii) the Hilbert-modular `3`-adic realization: the 3-adic block
+  obtain ⟨B, hB₁, hB₂, hB₃, hB₄, hB₅, hB₆, hB₇, hB₈, τF, ψ₃, ιB, hιB,
+    hmatch⟩ :=
+    exists_threeadic_realization_of_heckePackage hℓodd hℓ5 hZinj hrank hρ
+      hW hρbar hirr π hπsurj hπ F hFtr hFgal E badF heckeF ψℓ ιO hιO hmod
+  -- glue: instantiate the carrier fieldwise
+  exact ⟨{ F := F, totallyReal := hFtr, galoisF := hFgal, E := E,
+           badF := badF, heckeF := heckeF, ψℓ := ψℓ, ιO := ιO,
+           ιO_injective := hιO, modularF := hmod, B := B, τF := τF,
+           ψ₃ := ψ₃, ιB := ιB, ιB_injective := hιB, matchF₃ := hmatch }⟩
 
 /-- **Brauer descent, `ℓ`-adic side — the Hecke-field polynomial
 system over `ℚ`** (sorry node): given a potential-modularity carrier
@@ -626,8 +995,12 @@ descent of the Hecke eigensystem to `ℚ`
 ramified `3`-adic member (`exists_threeadic_member_of_witness` —
 BLGGT §5.5, Fontaine–Laffaille, strict compatibility), glued by
 uniting the two exceptional sets and instantiating the `3`-adic
-compatibility clause at the descended polynomials. Those three
-leaves are now the residual sorries of this pillar; the circularity
+compatibility clause at the descended polynomials. Carrier
+inhabitation was in turn PROVEN (2026-07-24) as an assembly over the
+Moret–Bailly seed; the residual sorries of this pillar are now the
+two descent leaves plus the inhabitation node's three
+(`exists_moretBailly_seed_of_five_le`, `exists_heckePackage_of_seed`,
+`exists_threeadic_realization_of_heckePackage`); the circularity
 guard above binds each of them. -/
 theorem exists_threeadic_compatible_member_of_five_le
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
