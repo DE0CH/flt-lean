@@ -1023,10 +1023,34 @@ the statement uniform in the degenerate configurations `P = ±Q`
 (a zero escapes to infinity and the corresponding factor is `⊤`).
 CAS-checked numerically (PARI/GP: `y² = x³ − x + 1`, `Q = (1,1)`,
 `P = (3,5)`: vanishing at `Q` to second order and at `P⊖Q = (5,−11)`,
-`⊖P⊖Q = (0,−1)`).  Provable by the span-pair calculus of mathlib's
-`XYIdeal_mul_XYIdeal` (membership certificates, e.g. found with
-Singular/PARI), or by valuation comparison after
-`IsDedekindDomain F[W]`. -/
+`⊖P⊖Q = (0,−1)`).
+
+RECOMMENDED ROUTE (inclusion + colength, no Dedekind machinery):
+(1) the RHS is *principal*, `= ⟨m⟩` with `m ≠ 0`, by the proven
+`exists_span_eq_prod_pointIdeal` at the multiset
+`{Q, Q, P⊖Q, ⊖P⊖Q}` (sums to `O` by `abel`); (2) *membership*
+`n ∈ RHS`: `n` is syntactically a quadratic form in
+`(X − q₁, Y − q₂)`, so `n ∈ I_Q²` is certificate-free; vanishing at
+`P⊖Q` and `⊖P⊖Q` is the addition formula (`field_simp`/`ring` per
+configuration), and pairwise comaximality of distinct maximal ideals
+multiplies the memberships — BEWARE the coincidence zoo
+(`P = ±Q`, `P = ±2Q`, `2P = O`, small torsion of `Q`) where factors
+merge into higher powers `I_S^k` (up to `k = 4`) and second/third
+order certificates are needed; (3) *closing*: `n = m·u`, and
+`natDegree (Algebra.norm F[X] n) ≤ Σ multiplicities` (basis form
+`n = pp • 1 + qq • mk Y` with `qq = −(2q₂ + a₁q₁ + a₃)` constant and
+`pp` of degree ≤ 2 with leading coefficient `q₁ − x`, via
+`CoordinateRing.norm_smul_basis` / `degree_norm_smul_basis`; the
+degree drops in exactly the degenerate configurations) while
+`natDegree (Algebra.norm F[X] m) = finrank F (F[W]⧸RHS)`
+(`finrank_quotient_span_eq_natDegree_norm`) is bounded below by the
+same count via CRT over the distinct prime powers plus strictness of
+the chain `𝔪^j ⊋ 𝔪^{j+1}` (Nakayama in the localization — no
+regularity needed), so `Algebra.norm F[X] u` has degree `0` and `u`
+is a unit (`degree_norm_smul_basis` again), giving `⟨n⟩ = ⟨m⟩`.
+Alternative routes: the span-pair calculus of mathlib's
+`XYIdeal_mul_XYIdeal` (Singular/PARI certificates), or valuation
+comparison after `IsDedekindDomain F[W]`. -/
 theorem span_vertNumerator (hΔ : W.Δ ≠ 0) {q₁ q₂ x y : F}
     (hq : W.Nonsingular q₁ q₂) (h : W.Nonsingular x y) :
     Ideal.span {vertNumerator W q₁ q₂ x} =
@@ -1043,7 +1067,11 @@ numerator.**  `lineNumerator q₁ q₂ x₁ y₁ ℓ` (at the group-law slope
 line through `P` and `R`, cleared by `3(Q)`.  CAS-checked numerically
 (PARI/GP: `y² = x³ − x + 1`, `Q = (1,1)`, `P = (3,5)`, `R = (0,1)`:
 vanishing at `Q` to third order and at the three translated points).
-Same proof routes as `span_vertNumerator`. -/
+Same proof routes as `span_vertNumerator` (see its docstring for the
+worked-out inclusion + colength recipe); here the total multiplicity
+is `6`, the numerator is a *cubic* form in `(X − q₁, Y − q₂)` (so
+`n ∈ I_Q³` should again be certificate-free after regrouping), and
+the basis form has `pp` of degree ≤ 3 and `qq` of degree ≤ 1. -/
 theorem span_lineNumerator (hΔ : W.Δ ≠ 0) {q₁ q₂ x₁ y₁ x₂ y₂ : F}
     (hq : W.Nonsingular q₁ q₂) (h₁ : W.Nonsingular x₁ y₁)
     (h₂ : W.Nonsingular x₂ y₂) (hxy : ¬(x₁ = x₂ ∧ y₁ = W.negY x₂ y₂)) :
@@ -1490,8 +1518,9 @@ theorem spanSingleton_pointEval_YClass (hΔ : W.Δ ≠ 0) {Q : W.Point}
             ← coe_pointIdeal', ← coe_pointIdeal', ← coe_pointIdeal']
           ring
 
-/-- **L4-8 core (sorry node): divisor transport along evaluation at a
-generic translate.**  Let `b ∈ F[W]` generate the point-ideal product
+/-- **L4-8 core (PROVEN over the two numerator leaves): divisor
+transport along evaluation at a generic translate.**  Let `b ∈ F[W]`
+generate the point-ideal product
 of the affine divisor multiset `D` (so `div b = Σ_{R ∈ D} (R)` away
 from `O`; the class-group argument of `mk_prod_pointIdeal'` then
 forces `Σ_D R = O` in the group law), and let
@@ -1506,26 +1535,22 @@ The convention `I_O = 1` makes the statement invariant under
 `1` on the right against one surviving `I_{⊖Q}`-factor on the left,
 matching the vanishing of `b ∘ τ_Q` at infinity.
 
-PROOF PLAN (Miller-style reduction to lines).  Both sides are
-multiplicative in `(b, D)` (`spanSingleton` of a product splits, and
-the span hypothesis composes multiset-additively), and any generator
-of a point-ideal product reduces, by the group-law ideal calculus
-(`XYIdeal_mul_XYIdeal`, `XYIdeal_neg_mul` — the engine already
-extracted at `F`-points in WeilPairing.lean's `MillerEngine`), to a
-product of line classes `Y − (λX + ν)` (span `I_P·I_R·I_{⊖(P⊕R)}`,
-`|D| = 3`) and vertical classes `X − x_P` (span `I_P·I_{⊖P}`,
-`|D| = 2`) and unit constants (`|D| = 0`, evaluation is a constant of
-trivial divisor — `coordinateRing_isUnit_eq_const`).  For a vertical,
-`τ_Q^*(X − x_P) = x(Q ⊕ taut) − x_P` is an explicit rational function
-of `(tautX, tautY)` by the addition formula, with numerator span
-`I_{P⊖Q}·I_{⊖P⊖Q}·(vertical correction)` and denominator `I_{⊖Q}²`
-(the double pole of `x` at `O` pulled back through the translation) —
-computed by the same `C_simp`/`linear_combination` ideal calculus as
-the mathlib group-law lemmas; a line is analogous with `I_{⊖Q}³`.
-Alternatively: establish `IsDedekindDomain F[W]` (the affine curve is
-nonsingular for `Δ ≠ 0`) and compare the two sides
-valuation-by-valuation at height-one primes.  See HLEG-NOTES.md §4(B),
-stage L4-8. -/
+PROOF (Miller-style reduction to lines, implemented below).  Strong
+induction on `card D`: an `O`-entry contributes `⊤`/`I_{⊖Q}` to the
+two sides trivially; the empty divisor makes `b` a unit constant
+(`coordinateRing_isUnit_eq_const`) of trivial span; a single affine
+point is impossible (its class is nontrivial —
+`ClassGroup.mk_eq_one_of_coe_ideal` + `toClass_eq_zero`); and a pair
+of affine points at the head is peeled off by the group-law ideal
+calculus — `XYIdeal_neg_mul` extracts a vertical class `X − x` from
+an opposite pair, `XYIdeal_mul_XYIdeal` trades a generic pair for the
+sum point at the cost of a line class `Y − (λ(X − x₁) + y₁)` — with
+`exists_span_factor` dividing the extracted class out of `b` and the
+transported spans of the two explicit classes supplied by the bricks
+`spanSingleton_pointEval_XClass` / `spanSingleton_pointEval_YClass`
+(both PROVEN over the numerator leaves `span_vertNumerator` /
+`span_lineNumerator`, the remaining sorries of this stage).  See
+HLEG-NOTES.md §4(B), stage L4-8. -/
 theorem spanSingleton_pointEval_translate (hΔ : W.Δ ≠ 0) {Q : W.Point}
     {xκ yκ : W.FunctionField} {hκ : (curveK W).Nonsingular xκ yκ}
     (hpt : constPoint W Q + tautPoint W hΔ =
