@@ -3741,11 +3741,18 @@ dimension 2:
   glue over the adapted basis leaf): each realization, conjugated so
   the involution acts by `diag(1, −1)`, is an honest matrix-valued
   monoid homomorphism with the same characteristic polynomials.
-* **the polarization unit** (`exists_isUnit_polarization`, sorry
-  node): some off-diagonal polarization value of the glued trace
+* **the polarization unit** (`exists_isUnit_polarization`,
+  DECOMPOSED 2026-07-24 — now a PROVEN glue over the two-character
+  brick): some off-diagonal polarization value of the glued trace
   system is a unit of the local `T` — the only step consuming
   residual irreducibility; it keeps the full hypothesis package of
-  3a-ii.
+  3a-ii. Were all polarizations non-units they would die under `π`
+  (`T` local), making `π∘A` and `π∘D` characters summing to the
+  residual trace everywhere (Chebotarev density + continuity through
+  the closed joint coordinate embedding of the compact `T` and the
+  open kernel of `π`), refuting `hirr` through the remaining sorried
+  brick `not_isIrreducible_of_charpoly_coeff_one_eq_sum_monoidHom`
+  (Brauer–Nesbitt at rank 2 over the joint finite quotient).
 * **PROVEN — the corner system**
   (`exists_matrixCoefficients_of_realizations`): over the three
   leaves, the glued trace system splits into four continuous corner
@@ -4102,29 +4109,177 @@ theorem exists_matrixHom_charpoly_realization
     show (r.ρ g).charpoly = (LinearMap.toMatrixAlgEquiv b (r.ρ g)).charpoly
     rw [hMA, LinearMap.charpoly_toMatrix]
 
-/-- **The polarization unit** (sorry node — the residual
-irreducibility step of the corner-system cut): some off-diagonal
-polarization value of the glued trace system is a UNIT of the local
-ring `T`. Here `τ` is the glued function with
+/-- `2` is a unit of every `ℤ_ℓ`-algebra for odd `ℓ` (the coefficient
+form of the oddness hypothesis, factored out for the polarization
+argument below): `2` is an `ℓ`-adic unit since `ℓ ∤ 2`, and units push
+forward along the algebra map. -/
+lemma isUnit_two_of_odd_padicInt_algebra {ℓ : ℕ} [Fact ℓ.Prime]
+    (hℓodd : Odd ℓ) (R : Type*) [CommRing R] [Algebra ℤ_[ℓ] R] :
+    IsUnit (2 : R) := by
+  have h2Z : IsUnit (2 : ℤ_[ℓ]) := by
+    rw [PadicInt.isUnit_iff]
+    refine le_antisymm (PadicInt.norm_le_one _) (not_lt.mp fun hlt => ?_)
+    rw [show ((2 : ℤ_[ℓ])) = ((2 : ℤ) : ℤ_[ℓ]) by norm_cast,
+      PadicInt.norm_int_lt_one_iff_dvd] at hlt
+    have hdvd : ℓ ∣ 2 := by exact_mod_cast hlt
+    rw [(Nat.prime_dvd_prime_iff_eq (Fact.out) Nat.prime_two).mp hdvd]
+      at hℓodd
+    exact (by decide : ¬ Odd 2) hℓodd
+  have h := h2Z.map (algebraMap ℤ_[ℓ] R)
+  rwa [map_ofNat] at h
+
+/-- **Continuity of residual reductions** (PROVEN — topological glue
+for the polarization argument below): any ring homomorphism from a
+finite free `ℤ_ℓ`-algebra `T` carrying the module topology to a finite
+discrete field `k` with a `ℤ_ℓ`-algebra structure is continuous. Any
+such `k` has characteristic `ℓ` (a prime `q ≠ ℓ` is an `ℓ`-adic unit,
+so its image cannot vanish), so the kernel of the map contains the
+sublattice `ℓ·T`, which is OPEN: under the coordinates of a
+`ℤ_ℓ`-basis it is the product of the open unit balls `ℓ·ℤ_ℓ`
+(`PadicInt.norm_lt_one_iff_dvd`). A ring map with open kernel into a
+discrete target is locally constant, hence continuous. -/
+lemma continuous_ringHom_finite_of_isModuleTopology {ℓ : ℕ}
+    [Fact ℓ.Prime]
+    {T : Type u} [CommRing T] [TopologicalSpace T] [IsTopologicalRing T]
+    [Algebra ℤ_[ℓ] T] [Module.Finite ℤ_[ℓ] T] [Module.Free ℤ_[ℓ] T]
+    [IsModuleTopology ℤ_[ℓ] T]
+    {k : Type*} [Field k] [Finite k] [TopologicalSpace k]
+    [DiscreteTopology k] [Algebra ℤ_[ℓ] k]
+    (π : T →+* k) : Continuous π := by
+  classical
+  -- `k` has characteristic `ℓ`
+  have hℓk : ((ℓ : ℕ) : k) = 0 := by
+    cases nonempty_fintype k
+    obtain ⟨q, hchar⟩ := CharP.exists k
+    haveI := hchar
+    haveI hq : Fact q.Prime := ⟨CharP.char_is_prime k q⟩
+    rcases eq_or_ne q ℓ with rfl | hqℓ
+    · exact CharP.cast_eq_zero k q
+    · exfalso
+      have hunit : IsUnit ((q : ℕ) : ℤ_[ℓ]) := by
+        by_contra hnu
+        have hlt : ‖((q : ℕ) : ℤ_[ℓ])‖ < 1 := PadicInt.not_isUnit_iff.mp hnu
+        rw [show ‖((q : ℕ) : ℤ_[ℓ])‖ = ‖((q : ℕ) : ℚ_[ℓ])‖ from by
+          rw [PadicInt.norm_def]; norm_cast] at hlt
+        have hdvd : ℓ ∣ q := Padic.norm_natCast_lt_one_iff.mp hlt
+        exact hqℓ ((Nat.prime_dvd_prime_iff_eq (Fact.out) hq.out).mp
+          hdvd).symm
+      have hzero : algebraMap ℤ_[ℓ] k ((q : ℕ) : ℤ_[ℓ]) = 0 := by
+        rw [map_natCast]
+        exact CharP.cast_eq_zero k q
+      exact (hunit.map (algebraMap ℤ_[ℓ] k)).ne_zero hzero
+  -- the coordinatewise divisibility ball is open in `ℤ_ℓ`
+  have hopenl : IsOpen {a : ℤ_[ℓ] | ((ℓ : ℕ) : ℤ_[ℓ]) ∣ a} := by
+    have hset : {a : ℤ_[ℓ] | ((ℓ : ℕ) : ℤ_[ℓ]) ∣ a} =
+        {a : ℤ_[ℓ] | ‖a‖ < 1} := by
+      ext a
+      exact (PadicInt.norm_lt_one_iff_dvd a).symm
+    rw [hset]
+    exact isOpen_lt continuous_norm continuous_const
+  -- … so the sublattice `ℓ·T` is open
+  let bT := Module.Free.chooseBasis ℤ_[ℓ] T
+  have hc1 : Continuous bT.equivFun :=
+    IsModuleTopology.continuous_of_linearMap bT.equivFun.toLinearMap
+  have hVopen : IsOpen {x : T | ∃ y : T, x = ((ℓ : ℕ) : ℤ_[ℓ]) • y} := by
+    have hset : {x : T | ∃ y : T, x = ((ℓ : ℕ) : ℤ_[ℓ]) • y} =
+        bT.equivFun ⁻¹' (Set.pi Set.univ
+          fun _ : Module.Free.ChooseBasisIndex ℤ_[ℓ] T =>
+          {a : ℤ_[ℓ] | ((ℓ : ℕ) : ℤ_[ℓ]) ∣ a}) := by
+      ext x
+      constructor
+      · rintro ⟨y, rfl⟩
+        rintro i -
+        exact ⟨bT.equivFun y i, by rw [map_smul, Pi.smul_apply, smul_eq_mul]⟩
+      · intro hx
+        choose f hf using fun i => hx i (Set.mem_univ i)
+        refine ⟨bT.equivFun.symm f, ?_⟩
+        have hfx : bT.equivFun x = ((ℓ : ℕ) : ℤ_[ℓ]) • f := by
+          funext i
+          rw [Pi.smul_apply, smul_eq_mul, ← hf i]
+        calc x = bT.equivFun.symm (bT.equivFun x) :=
+              (bT.equivFun.symm_apply_apply x).symm
+          _ = bT.equivFun.symm (((ℓ : ℕ) : ℤ_[ℓ]) • f) := by rw [hfx]
+          _ = ((ℓ : ℕ) : ℤ_[ℓ]) • bT.equivFun.symm f := by rw [map_smul]
+    rw [hset]
+    exact hc1.isOpen_preimage _
+      (isOpen_set_pi Set.finite_univ fun _ _ => hopenl)
+  -- the open sublattice dies under `π`, so `π` is locally constant
+  have hker : ∀ x : T, (∃ y : T, x = ((ℓ : ℕ) : ℤ_[ℓ]) • y) → π x = 0 := by
+    rintro x ⟨y, rfl⟩
+    rw [Algebra.smul_def, map_natCast (algebraMap ℤ_[ℓ] T), map_mul,
+      map_natCast π, hℓk, zero_mul]
+  haveI : ContinuousAdd k := ⟨continuous_of_discreteTopology⟩
+  refine continuous_of_continuousAt_zero π ?_
+  have hmem : π ⁻¹' {0} ∈ nhds (0 : T) := by
+    refine Filter.mem_of_superset
+      (hVopen.mem_nhds ⟨0, (smul_zero _).symm⟩) ?_
+    intro x hx
+    exact hker x hx
+  show Filter.Tendsto π (nhds 0) (nhds (π 0))
+  rw [map_zero, nhds_discrete k, Filter.tendsto_pure]
+  filter_upwards [hmem] with x hx using hx
+
+/-- **Two-character refutation of residual irreducibility** (sorry
+node — the character-decomposition brick of the polarization argument
+below): a rank-2 residual representation over a finite field `k` (with
+`2 ∈ kˣ`) whose trace decomposes globally as a sum of two `k`-valued
+characters of `Γ ℚ` is not irreducible. Stated through
+`charpoly.coeff 1 = −trace`. Intended proof (Brauer–Nesbitt at rank
+2): `End k W` and `k` are finite sets, so `ρbar`, `χ₁`, `χ₂` all have
+finite image and factor jointly through the finite quotient
+`G := Γ ℚ ⧸ (ker ρbar ⊓ ker χ₁ ⊓ ker χ₂)`; the trace identity forces
+`det ρbar = χ₁·χ₂` by Cayley–Hamilton at rank 2
+(`2·det ρ(g) = (tr ρ(g))² − tr ρ(g²)`, with `2` a unit), so `ρbar g`
+and `diag(χ₁ g, χ₂ g)` share characteristic polynomials
+`(X − χ₁ g)(X − χ₂ g)` at every `g`; Brauer–Nesbitt for the finite
+group `G` identifies the semisimplification of `ρbar` with
+`χ₁ ⊕ χ₂`, and a two-dimensional representation with reducible
+semisimplification has a stable line — refuting irreducibility
+through `Slop.OddRep.isIrreducible_iff_forall`. CIRCULARITY GUARD:
+must not be proven through `Family.lean` (see the section
+docstring). -/
+theorem not_isIrreducible_of_charpoly_coeff_one_eq_sum_monoidHom
+    {k : Type*} [Field k] [Finite k] [TopologicalSpace k]
+    {W : Type*} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) (ρbar : GaloisRep ℚ k W)
+    (h2 : IsUnit (2 : k)) (χ₁ χ₂ : Field.absoluteGaloisGroup ℚ →* k)
+    (hsum : ∀ g, ((ρbar g).charpoly).coeff 1 = -(χ₁ g + χ₂ g)) :
+    ¬ ρbar.IsIrreducible :=
+  sorry
+
+/-- **The polarization unit** (PROVEN 2026-07-24 — the residual
+irreducibility step of the corner-system cut, a glue over the
+two-character brick above): some off-diagonal polarization value of
+the glued trace system is a UNIT of the local ring `T`. Here `τ` is
+the glued function with
 `toFun i (τ g) = (charpoly ρᵢ(g)).coeff 1 = −tr ρᵢ(g)` in every
 coordinate, `c₀` the involution, and `A` the upper-left corner
 function, pinned by `2·A(g) = −τ(g) − τ(c₀g)` (`2 ∈ Tˣ` since `ℓ` is
-odd, so this determines `A`). Intended proof: were every
-polarization `A(gh) − A(g)A(h)` a non-unit, i.e. in `𝔪_T` (`T`
-local), the reductions `π ∘ A` and `π ∘ D` (where
-`2·D(g) = −τ(g) + τ(c₀g)`) would be multiplicative `k`-valued
-characters summing to `π ∘ (−τ)`; by `hred`/`htr` at the Frobenii
-off `S_T`, Chebotarev density (`dense_conjClasses_globalFrob`) and
+odd, so this determines `A`). Proof (the honest two-character
+refutation, implemented below): were every polarization
+`A(gh) − A(g)A(h)` a non-unit, i.e. in `𝔪_T = ker π` (`T` local, `π`
+surjective onto the field `k`: `IsLocalRing.ker_eq_maximalIdeal`),
+the reductions `π ∘ A` and `π ∘ D` (where `2·D(g) = −τ(g) + τ(c₀g)`)
+would be multiplicative `k`-valued characters normalized at `1` —
+multiplicativity of `π ∘ D` reduces to that of `π ∘ A` because the
+`D`-polarization at `(g, h)` equals the `A`-polarization at `(h, g)`
+in every matrix coordinate (`bᵢ(h)cᵢ(g)` both ways, through the
+aligned matrix forms and joint injectivity) — summing to `π ∘ (−τ)`;
+by `hred`/`htr` at the Frobenii off `S_T`, Chebotarev density
+(`dense_conjClasses_globalFrob`), conjugation-invariance of `τ`, and
 continuity (of `τ` through the closed joint coordinate embedding of
-the compact `T`, and of the reduction to the finite discrete `k` —
-`𝔪_T` is open), `π ∘ (−τ)` is the trace of `ρbar` EVERYWHERE, so
-`tr ρbar` is a sum of two characters; linear independence of
-characters then produces a `ρbar`-stable line, i.e. a proper nonzero
-invariant submodule refuting `hirr` through
-`Slop.OddRep.isIrreducible_iff_forall`. Sound as stated by the
-section audit (the hypothesis package includes the irreducible
-hardly ramified `ρbar`). CIRCULARITY GUARD: must not be proven
-through `Family.lean` (see the section docstring). -/
+the compact `T`, of `π` through
+`continuous_ringHom_finite_of_isModuleTopology`, and of the residual
+coefficient function through discreteness of `End k W`),
+`π ∘ (−τ)` is `−(charpoly ρbar).coeff 1 = tr ρbar` EVERYWHERE, so
+the residual trace is a sum of two characters — refuting `hirr`
+through the Brauer–Nesbitt brick
+`not_isIrreducible_of_charpoly_coeff_one_eq_sum_monoidHom` above.
+Sound as stated by the section audit (the hypothesis package
+includes the irreducible hardly ramified `ρbar`). CIRCULARITY GUARD:
+must not be proven through `Family.lean` (see the section
+docstring). -/
 theorem exists_isUnit_polarization
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime]
     {k : Type*} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
@@ -4132,7 +4287,7 @@ theorem exists_isUnit_polarization
     {W : Type*} [AddCommGroup W] [Module k W] [Module.Finite k W]
     [Module.Free k W]
     (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
-    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (_hρbar : IsHardlyRamified hℓodd hW ρbar)
     (hirr : ρbar.IsIrreducible)
     {T : Type u} [CommRing T] [TopologicalSpace T] [IsTopologicalRing T]
     [Algebra ℤ_[ℓ] T] [IsLocalRing T] [Module.Finite ℤ_[ℓ] T]
@@ -4158,8 +4313,235 @@ theorem exists_isUnit_polarization
     {A : Field.absoluteGaloisGroup ℚ → T}
     (hA : ∀ g, 2 * A g = - τ g - τ (c₀ * g)) :
     ∃ g₀ h₀ : Field.absoluteGaloisGroup ℚ,
-      IsUnit (A (g₀ * h₀) - A g₀ * A h₀) :=
-  sorry
+      IsUnit (A (g₀ * h₀) - A g₀ * A h₀) := by
+  classical
+  by_contra hcon
+  push Not at hcon
+  -- every polarization value dies under the residual reduction `π`
+  have hπ0 : ∀ x : T, ¬ IsUnit x → π x = 0 := by
+    intro x hx
+    have hmem : x ∈ RingHom.ker π := by
+      rw [IsLocalRing.ker_eq_maximalIdeal π hπ,
+        IsLocalRing.mem_maximalIdeal]
+      exact hx
+    rwa [RingHom.mem_ker] at hmem
+  -- the aligned matrix forms of the realizations
+  choose M hMc₀ hMchar using fun i : Fin n =>
+    exists_matrixHom_charpoly_realization (real i) hc₀ hχ
+  have hcoeff : ∀ (i : Fin n) g, ((real i).ρ g).charpoly.coeff 1 =
+      -(M i g 0 0 + M i g 1 1) := by
+    intro i g
+    have h1 := Matrix.trace_eq_neg_charpoly_coeff (M i g)
+    rw [Matrix.trace_fin_two] at h1
+    norm_num at h1
+    rw [hMchar i g]
+    linear_combination h1
+  have halign : ∀ (i : Fin n) g, ((real i).ρ (c₀ * g)).charpoly.coeff 1 =
+      -(M i g 0 0 - M i g 1 1) := by
+    intro i g
+    have hM : M i (c₀ * g) = !![1, 0; 0, -1] * M i g := by
+      rw [map_mul, hMc₀ i]
+    have htr2 : Matrix.trace (M i (c₀ * g)) =
+        M i g 0 0 - M i g 1 1 := by
+      rw [hM, Matrix.trace_fin_two]
+      simp [Matrix.mul_apply, Fin.sum_univ_two, sub_eq_add_neg]
+    have h1 := Matrix.trace_eq_neg_charpoly_coeff (M i (c₀ * g))
+    rw [htr2, Fintype.card_fin, show (2 : ℕ) - 1 = 1 from rfl] at h1
+    rw [hMchar i (c₀ * g)]
+    linear_combination h1
+  -- `2` is a unit, and the complementary diagonal corner `D`
+  have h2T : IsUnit (2 : T) := isUnit_two_of_odd_padicInt_algebra hℓodd T
+  have hhalf : (2 : T) * (↑h2T.unit⁻¹ : T) = 1 := h2T.mul_val_inv
+  obtain ⟨D, hDdef⟩ : ∃ f : Field.absoluteGaloisGroup ℚ → T,
+      f = fun g => (- τ g + τ (c₀ * g)) * (↑h2T.unit⁻¹ : T) := ⟨_, rfl⟩
+  have hD2 : ∀ g, 2 * D g = - τ g + τ (c₀ * g) := by
+    intro g
+    simp only [hDdef]
+    rw [show (2 : T) * ((- τ g + τ (c₀ * g)) * (↑h2T.unit⁻¹ : T)) =
+      (- τ g + τ (c₀ * g)) * ((2 : T) * (↑h2T.unit⁻¹ : T)) by ring,
+      hhalf, mul_one]
+  -- coordinate identifications of the two diagonal corners
+  have haiA : ∀ (i : Fin n) g, (real i).toFun (A g) = M i g 0 0 := by
+    intro i g
+    have h2O : IsUnit (2 : (real i).O) :=
+      isUnit_two_of_odd_padicInt_algebra hℓodd (real i).O
+    refine h2O.mul_left_cancel ?_
+    have h1 := congrArg (real i).toFun (hA g)
+    rw [map_mul, map_ofNat, map_sub, map_neg, hτ g i, hτ (c₀ * g) i] at h1
+    rw [h1, hcoeff i g, halign i g]
+    ring
+  have haiD : ∀ (i : Fin n) g, (real i).toFun (D g) = M i g 1 1 := by
+    intro i g
+    have h2O : IsUnit (2 : (real i).O) :=
+      isUnit_two_of_odd_padicInt_algebra hℓodd (real i).O
+    refine h2O.mul_left_cancel ?_
+    have h1 := congrArg (real i).toFun (hD2 g)
+    rw [map_mul, map_ofNat, map_add, map_neg, hτ g i, hτ (c₀ * g) i] at h1
+    rw [h1, hcoeff i g, halign i g]
+    ring
+  -- the `A`- and `D`-polarizations are transposes of one another
+  have hXiA : ∀ (i : Fin n) (g h : Field.absoluteGaloisGroup ℚ),
+      (real i).toFun (A (g * h) - A g * A h) =
+        M i g 0 1 * M i h 1 0 := by
+    intro i g h
+    rw [map_sub, map_mul, haiA i (g * h), haiA i g, haiA i h,
+      map_mul (M i) g h]
+    simp only [Matrix.mul_apply, Fin.sum_univ_two]
+    ring
+  have hXiD : ∀ (i : Fin n) (g h : Field.absoluteGaloisGroup ℚ),
+      (real i).toFun (D (g * h) - D g * D h) =
+        M i g 1 0 * M i h 0 1 := by
+    intro i g h
+    rw [map_sub, map_mul, haiD i (g * h), haiD i g, haiD i h,
+      map_mul (M i) g h]
+    simp only [Matrix.mul_apply, Fin.sum_univ_two]
+    ring
+  have hswap : ∀ g h : Field.absoluteGaloisGroup ℚ,
+      D (g * h) - D g * D h = A (h * g) - A h * A g := by
+    intro g h
+    refine hinj _ _ fun i => ?_
+    rw [hXiD i g h, hXiA i h g]
+    ring
+  -- normalization at `1`
+  have hA1 : A 1 = 1 := by
+    refine hinj _ _ fun i => ?_
+    rw [haiA i 1, map_one (M i), map_one]
+    simp
+  have hD1 : D 1 = 1 := by
+    refine hinj _ _ fun i => ?_
+    rw [haiD i 1, map_one (M i), map_one]
+    simp
+  -- the two residual characters
+  have hmulA : ∀ g h, π (A (g * h)) = π (A g) * π (A h) := by
+    intro g h
+    have h0 : π (A (g * h) - A g * A h) = 0 := hπ0 _ (hcon g h)
+    rw [map_sub, map_mul, sub_eq_zero] at h0
+    exact h0
+  have hmulD : ∀ g h, π (D (g * h)) = π (D g) * π (D h) := by
+    intro g h
+    have h0 : π (D (g * h) - D g * D h) = 0 := by
+      rw [hswap g h]
+      exact hπ0 _ (hcon h g)
+    rw [map_sub, map_mul, sub_eq_zero] at h0
+    exact h0
+  -- the glued trace function is conjugation-invariant …
+  have hτconj : ∀ (h g : Field.absoluteGaloisGroup ℚ),
+      τ (h * g * h⁻¹) = τ g := by
+    intro h g
+    refine hinj _ _ fun i => ?_
+    rw [hτ (h * g * h⁻¹) i, hτ g i, charpoly_conj_mul_inv]
+  -- … and continuous, through the closed joint coordinate embedding
+  have hcτ : Continuous τ := by
+    haveI : CompactSpace T := by
+      let bT := Module.Free.chooseBasis ℤ_[ℓ] T
+      have hc1 : Continuous bT.equivFun :=
+        IsModuleTopology.continuous_of_linearMap bT.equivFun.toLinearMap
+      have hc2 : Continuous bT.equivFun.symm :=
+        IsModuleTopology.continuous_of_linearMap bT.equivFun.symm.toLinearMap
+      exact (Homeomorph.mk bT.equivFun.toEquiv hc1 hc2).symm.compactSpace
+    have hΦcont : Continuous fun (x : T) (i : Fin n) => (real i).toFun x := by
+      rw [continuous_pi_iff]
+      intro i
+      haveI := IsModuleTopology.toContinuousAdd ℤ_[ℓ] (real i).O
+      exact IsModuleTopology.continuous_of_linearMap
+        ((real i).toFun).toLinearMap
+    have hΦinj : Function.Injective
+        fun (x : T) (i : Fin n) => (real i).toFun x :=
+      fun x y hxy => hinj x y fun i => congrFun hxy i
+    have hemb := hΦcont.isClosedEmbedding hΦinj
+    rw [hemb.toIsEmbedding.toIsInducing.continuous_iff]
+    have heq : ((fun (x : T) (i : Fin n) => (real i).toFun x) ∘ τ) =
+        fun g (i : Fin n) => ((real i).ρ g).charpoly.coeff 1 := by
+      funext g i
+      exact hτ g i
+    rw [heq, continuous_pi_iff]
+    intro i
+    letI := moduleTopology (real i).O
+      (Module.End (real i).O (Fin 2 → (real i).O))
+    haveI : IsModuleTopology (real i).O
+        (Module.End (real i).O (Fin 2 → (real i).O)) := ⟨rfl⟩
+    have hρc : Continuous fun g : Field.absoluteGaloisGroup ℚ =>
+        (real i).ρ g := ContinuousMonoidHom.continuous_toFun ((real i).ρ)
+    have htrcc : Continuous fun φ : Module.End (real i).O
+        (Fin 2 → (real i).O) =>
+        LinearMap.trace (real i).O (Fin 2 → (real i).O) φ :=
+      IsModuleTopology.continuous_of_linearMap _
+    have hcoeffeq : (fun g : Field.absoluteGaloisGroup ℚ =>
+        ((real i).ρ g).charpoly.coeff 1) =
+        fun g => - LinearMap.trace (real i).O (Fin 2 → (real i).O)
+          ((real i).ρ g) := by
+      funext g
+      exact charpoly_coeff_one_eq_neg_trace _
+    rw [hcoeffeq]
+    exact (htrcc.comp hρc).neg
+  -- the reduction and the residual coefficient function are continuous
+  have hπc : Continuous π :=
+    continuous_ringHom_finite_of_isModuleTopology (ℓ := ℓ) π
+  letI : TopologicalSpace (Module.End k W) := moduleTopology k (Module.End k W)
+  haveI : DiscreteTopology (Module.End k W) :=
+    discreteTopology_moduleTopology _ _
+  have hρbarc : Continuous fun g : Field.absoluteGaloisGroup ℚ => ρbar g :=
+    ContinuousMonoidHom.continuous_toFun ρbar
+  have hcoeffbar : Continuous fun g : Field.absoluteGaloisGroup ℚ =>
+      ((ρbar g).charpoly).coeff 1 := by
+    have hout : Continuous fun φ : Module.End k W => (φ.charpoly).coeff 1 :=
+      continuous_of_discreteTopology
+    exact hout.comp hρbarc
+  -- the agreement locus is closed and contains the Frobenius classes
+  have hclosed : IsClosed {g : Field.absoluteGaloisGroup ℚ |
+      π (τ g) = ((ρbar g).charpoly).coeff 1} :=
+    isClosed_eq (hπc.comp hcτ) hcoeffbar
+  have hsub : {x : Field.absoluteGaloisGroup ℚ |
+      ∃ v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ), v ∉ S_T ∧
+        ∃ g : Field.absoluteGaloisGroup ℚ, x = g * globalFrob v * g⁻¹} ⊆
+      {g : Field.absoluteGaloisGroup ℚ |
+        π (τ g) = ((ρbar g).charpoly).coeff 1} := by
+    rintro x ⟨v, hvS, h, rfl⟩
+    obtain ⟨q, hq, rfl⟩ := exists_prime_toHeightOneSpectrum v
+    have hτfrob : τ (globalFrob
+        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq)) = - t q := by
+      refine hinj _ _ fun i => ?_
+      rw [hτ _ i]
+      have hval := htr i q hq hvS
+      rw [GaloisRep.charFrob_eq_charpoly_globalFrob] at hval
+      exact hval
+    show π (τ _) = _
+    rw [hτconj h _, hτfrob, map_neg, hred q hq hvS, neg_neg,
+      GaloisRep.charFrob_eq_charpoly_globalFrob,
+      charpoly_conj_mul_inv ρbar h
+        (globalFrob (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq))]
+  -- Chebotarev density upgrades Frobenius agreement to everywhere
+  have hglobal : ∀ g : Field.absoluteGaloisGroup ℚ,
+      π (τ g) = ((ρbar g).charpoly).coeff 1 := by
+    intro g
+    have hdense := dense_conjClasses_globalFrob (K := ℚ) S_T
+    have huniv : (Set.univ : Set (Field.absoluteGaloisGroup ℚ)) ⊆
+        {g : Field.absoluteGaloisGroup ℚ |
+          π (τ g) = ((ρbar g).charpoly).coeff 1} :=
+      hdense.closure_eq ▸ hclosed.closure_subset_iff.mpr hsub
+    exact huniv (Set.mem_univ g)
+  -- the residual trace is the sum of the two characters: refute `hirr`
+  have h2k : IsUnit (2 : k) := by
+    have h := h2T.map π
+    rwa [map_ofNat] at h
+  have hADτ : ∀ g, A g + D g = - τ g := by
+    intro g
+    refine h2T.mul_left_cancel ?_
+    rw [mul_add, hA g, hD2 g]
+    ring
+  refine absurd hirr
+    (not_isIrreducible_of_charpoly_coeff_one_eq_sum_monoidHom hW ρbar h2k
+      { toFun := fun g => π (A g)
+        map_one' := by rw [hA1, map_one]
+        map_mul' := hmulA }
+      { toFun := fun g => π (D g)
+        map_one' := by rw [hD1, map_one]
+        map_mul' := hmulD }
+      fun g => ?_)
+  show ((ρbar g).charpoly).coeff 1 = -(π (A g) + π (D g))
+  rw [← hglobal g, ← map_add, ← map_neg]
+  congr 1
+  rw [hADτ g, neg_neg]
 
 set_option maxHeartbeats 1000000 in
 /-- **The corner system** (PROVEN — the algebraic core of the
