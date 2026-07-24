@@ -13924,21 +13924,6 @@ theorem DedekindContinuation.zero_sum_bridge_tendsto_zero {K : Type*}
     simpa using h2
   exact squeeze_zero_norm' hbnd hlim
 
-/-- **`Γ` is dominated on vertical lines by its real value** (PROVEN
-2026-07-24 — helper of the vertical-line lower bounds of
-`DedekindContinuation.norm_xi_line_ge`): for `Re w > 0`,
-`‖Γ(w)‖ ≤ Γ(Re w)` — the norm passes inside Euler's integral, where
-`‖x^{w-1}‖ = x^{Re w - 1}`. -/
-theorem norm_Gamma_le_Gamma_re {w : ℂ} (hw : 0 < w.re) :
-    ‖Complex.Gamma w‖ ≤ Real.Gamma w.re := by
-  rw [Complex.Gamma_eq_integral hw, Real.Gamma_eq_integral hw,
-    Complex.GammaIntegral]
-  refine (norm_integral_le_integral_norm _).trans (le_of_eq ?_)
-  refine setIntegral_congr_fun measurableSet_Ioi fun x hx => ?_
-  rw [norm_mul, Complex.norm_real, Real.norm_eq_abs,
-    abs_of_pos (Real.exp_pos _), Complex.norm_cpow_eq_rpow_re_of_pos hx,
-    Complex.sub_re, Complex.one_re]
-
 /-- **The elementary exponential bound for `sin` on horizontal
 strips** (PROVEN 2026-07-24 — helper of `norm_Gamma_lower_strip`):
 `‖sin w‖ ≤ e^{|Im w|}`, from the exponential formula. -/
