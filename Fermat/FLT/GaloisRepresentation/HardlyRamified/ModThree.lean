@@ -11601,12 +11601,704 @@ theorem cyclotomicCharacter_algebraMap_eq_one_of_inertia_ne_two_three
   rw [show ((3 : ℕ) : k) = 0 from CharP.cast_eq_zero k 3]
   ring
 
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **Restriction of the local inertia at `3` to a finite Galois
+level** (PROVEN 2026-07-23 — the downward companion of the compactness
+lifting `exists_mem_localInertiaGroup_restrictNormalHom_eq`): the
+restriction to a finite Galois subextension `N` of an element of the
+full local inertia group at `3` lies in the finite-level inertia
+subgroup. If a displacement `τ • x − x` were NOT in `𝔪(IC-N)`, it
+would be a unit of the local ring `IC-N`; its image under
+`integralClosureInclusion` — which equals `σ • x̂ − x̂` by
+`AlgEquiv.restrictNormal_commutes` — would then be a unit of the big
+integral closure lying in `𝔪(IC-big)` (the defining property of
+`localInertiaGroup`), forcing `𝔪(IC-big) = ⊤`. -/
+theorem restrictNormalHom_mem_inertia_of_mem_localInertiaGroup_three
+    (N : IntermediateField
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)
+        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)))
+    [FiniteDimensional (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) N]
+    [IsGalois (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) N]
+    (σ : AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)
+      ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat]
+      AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat))
+    (hσ : σ ∈ localInertiaGroup
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) :
+    AlgEquiv.restrictNormalHom N σ ∈
+      (IsLocalRing.maximalIdeal (IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) N)).inertia
+        (N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat] N) := by
+  rw [show (IsLocalRing.maximalIdeal (IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) N)).inertia
+      (N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat] N) =
+    (IsLocalRing.maximalIdeal (IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) N)).toAddSubgroup.inertia _
+    from rfl, AddSubgroup.mem_inertia]
+  intro x
+  rw [Submodule.mem_toAddSubgroup]
+  by_contra hnot
+  -- the displacement would be a unit of the local ring `IC-N`
+  have hunit : IsUnit ((AlgEquiv.restrictNormalHom N σ) • x - x) := by
+    by_contra hnu
+    exact hnot ((IsLocalRing.mem_maximalIdeal _).mpr (mem_nonunits_iff.mpr hnu))
+  -- push the displacement into the big integral closure
+  have hkey : integralClosureInclusion
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat N
+      ((AlgEquiv.restrictNormalHom N σ) • x - x) =
+      σ • (integralClosureInclusion
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat N x) -
+      integralClosureInclusion
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat N x := by
+    rw [map_sub]
+    congr 1
+    exact Subtype.ext (AlgEquiv.restrictNormal_commutes σ N x.1)
+  -- the defining property of the full local inertia group
+  have hbig := AddSubgroup.mem_inertia.mp hσ
+    (integralClosureInclusion
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat N x)
+  rw [Submodule.mem_toAddSubgroup] at hbig
+  -- a unit inside the big maximal ideal: absurd
+  have hmap := hunit.map (integralClosureInclusion
+    Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat N)
+  rw [hkey] at hmap
+  exact (IsLocalRing.maximalIdeal.isMaximal _).ne_top
+    (Ideal.eq_top_of_isUnit_mem _ hbig hmap)
+
+section TameGeneratorThree
+
+open scoped Pointwise
+
+local notation "Kv₃" =>
+  IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+    Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat
+local notation "Ov₃" =>
+  IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+    Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **Finite-level tame ramification at `3`** (PROVEN 2026-07-24 by
+specializing `exists_finite_level_tame_generator_of_frobenius` above;
+Serre, *Corps Locaux* IV §1–2): for every finite Galois subextension
+`N` of the algebraic closure of `ℚ₃ᵥ` there is a finite-level inertia
+element `t` such that (a) every finite-level inertia element agrees
+with a power of `t` up to an element of `3`-power order — the wild
+inertia `P` is the (normal) `3`-Sylow of the inertia `I`, the tame
+quotient `I/P` is CYCLIC (it embeds into the multiplicative group of
+the residue field of `N` via `σ ↦ σ(π)/π` for a uniformizer `π`), `t`
+is any preimage of a generator, and the error `(tᵐ)⁻¹σ` lies in `P` —
+and (b) some automorphism `φ` of `N` (any Frobenius lift) conjugates
+`t` into `t³` up to an element of `3`-power order: the tame character
+is Frobenius-semilinear, `φtφ⁻¹ ≡ t^q (mod P)` with
+`q = |𝒪ᵥ/𝔪ᵥ| = |𝔽₃| = 3`. The specialization supplies: faithfulness
+of the Galois action on the integral closure (fraction-field
+denominator clearing), `3 ∈ 𝔪` (lying over `𝔪ᵥ = (3)`), and a
+Frobenius lift acting as cubing on the residue field
+(`Ideal.Quotient.stabilizerHom_surjective` against the cubing
+automorphism, which is `κᵥ`-linear because `|κᵥ| = 3` by
+`natCard_residue_quotient_toHeightOneSpectrum`). -/
+theorem exists_finite_level_tame_generator_three
+    (N : IntermediateField
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)
+        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)))
+    [FiniteDimensional (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) N]
+    [IsGalois (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) N] :
+    ∃ t ∈ (IsLocalRing.maximalIdeal (IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) N)).inertia
+        (N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat] N),
+      (∀ σ ∈ (IsLocalRing.maximalIdeal (IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) N)).inertia
+          (N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat] N),
+        ∃ m j : ℕ, ((t ^ m)⁻¹ * σ) ^ 3 ^ j = 1) ∧
+      (∃ φ : N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat] N,
+        ∃ j : ℕ, (φ * t * φ⁻¹ * (t ^ 3)⁻¹) ^ 3 ^ j = 1) := by
+  classical
+  -- `3` lies in the maximal ideal downstairs, hence upstairs
+  have h3O : (3 : Ov₃) ∈ IsLocalRing.maximalIdeal Ov₃ := by
+    rw [maximalIdeal_adicCompletionIntegers_eq_span Nat.prime_three]
+    exact_mod_cast Ideal.mem_span_singleton_self ((3 : ℕ) : Ov₃)
+  have h3R : (3 : IntegralClosure Ov₃ N) ∈
+      IsLocalRing.maximalIdeal (IntegralClosure Ov₃ N) := by
+    have h2 := (Ideal.mem_of_liesOver
+      (IsLocalRing.maximalIdeal (IntegralClosure Ov₃ N))
+      (IsLocalRing.maximalIdeal Ov₃) (3 : Ov₃)).mp h3O
+    rwa [map_ofNat] at h2
+  -- faithfulness of the Galois action on the integral closure
+  haveI : IsFractionRing (IntegralClosure Ov₃ N) N :=
+    IsIntegralClosure.isFractionRing_of_finite_extension Ov₃ Kv₃ N
+      (IntegralClosure Ov₃ N)
+  have halgmapinj : Function.Injective (algebraMap Ov₃ N) := by
+    rw [IsScalarTower.algebraMap_eq Ov₃ Kv₃ N]
+    exact (algebraMap Kv₃ N).injective.comp (IsFractionRing.injective Ov₃ Kv₃)
+  haveI : Module.IsTorsionFree Ov₃ N :=
+    Module.isTorsionFree_iff_algebraMap_injective.mpr halgmapinj
+  have hfaith : ∀ g : N ≃ₐ[Kv₃] N,
+      (∀ a : IntegralClosure Ov₃ N, g • a = a) → g = 1 := by
+    intro g hg
+    refine AlgEquiv.ext fun x => ?_
+    have halg : IsAlgebraic Ov₃ x :=
+      (IsFractionRing.isAlgebraic_iff Ov₃ Kv₃ N).mpr
+        (Algebra.IsAlgebraic.isAlgebraic x)
+    obtain ⟨c, hc0, hcx⟩ := halg.exists_integral_multiple
+    have hfix : g • (c • x) = c • x := by
+      have h1 := congrArg Subtype.val (hg ⟨c • x, hcx⟩)
+      rwa [IntegralClosure.coe_smul] at h1
+    rw [smul_comm] at hfix
+    have hgx : g • x = x := smul_right_injective N hc0 hfix
+    simpa [AlgEquiv.smul_def] using hgx
+  -- the residue field downstairs has three elements
+  haveI hOmax : (IsLocalRing.maximalIdeal Ov₃).IsMaximal :=
+    IsLocalRing.maximalIdeal.isMaximal _
+  have hcard : Nat.card (Ov₃ ⧸ IsLocalRing.maximalIdeal Ov₃) = 3 := by
+    have h1 := natCard_residue_quotient_toHeightOneSpectrum Nat.prime_three
+    rwa [IsLocalRing.eq_maximalIdeal (Ideal.IsMaximal.under Ov₃
+      (IsLocalRing.maximalIdeal
+        (IntegralClosure Ov₃ (AlgebraicClosure Kv₃))))] at h1
+  haveI hfinbase : Finite (Ov₃ ⧸ IsLocalRing.maximalIdeal Ov₃) :=
+    Nat.finite_of_card_ne_zero (by rw [hcard]; norm_num)
+  have hpow3 : ∀ y : Ov₃ ⧸ IsLocalRing.maximalIdeal Ov₃, y ^ 3 = y := by
+    haveI : Fintype (Ov₃ ⧸ IsLocalRing.maximalIdeal Ov₃) := Fintype.ofFinite _
+    letI : Field (Ov₃ ⧸ IsLocalRing.maximalIdeal Ov₃) :=
+      Ideal.Quotient.field (IsLocalRing.maximalIdeal Ov₃)
+    intro y
+    have h := FiniteField.pow_card y
+    rwa [show Fintype.card (Ov₃ ⧸ IsLocalRing.maximalIdeal Ov₃) = 3 from by
+      rw [← Nat.card_eq_fintype_card, hcard]] at h
+  -- the residue field upstairs: characteristic `3`, finite
+  haveI hRmax : (IsLocalRing.maximalIdeal (IntegralClosure Ov₃ N)).IsMaximal :=
+    IsLocalRing.maximalIdeal.isMaximal _
+  have h30 : ((3 : ℕ) : (IntegralClosure Ov₃ N) ⧸
+      IsLocalRing.maximalIdeal (IntegralClosure Ov₃ N)) = 0 := by
+    rw [← map_natCast (Ideal.Quotient.mk
+      (IsLocalRing.maximalIdeal (IntegralClosure Ov₃ N)))]
+    exact Ideal.Quotient.eq_zero_iff_mem.mpr (by exact_mod_cast h3R)
+  haveI : CharP ((IntegralClosure Ov₃ N) ⧸
+      IsLocalRing.maximalIdeal (IntegralClosure Ov₃ N)) 3 := by
+    have h := CharP.ringChar_of_prime_eq_zero Nat.prime_three h30
+    haveI := ringChar.charP ((IntegralClosure Ov₃ N) ⧸
+      IsLocalRing.maximalIdeal (IntegralClosure Ov₃ N))
+    exact CharP.congr _ h
+  haveI : ExpChar ((IntegralClosure Ov₃ N) ⧸
+      IsLocalRing.maximalIdeal (IntegralClosure Ov₃ N)) 3 :=
+    ExpChar.prime Nat.prime_three
+  haveI : Module.Finite Ov₃ (IntegralClosure Ov₃ N) :=
+    IsIntegralClosure.finite Ov₃ Kv₃ N (IntegralClosure Ov₃ N)
+  haveI : Module.Finite Ov₃ ((IntegralClosure Ov₃ N) ⧸
+      IsLocalRing.maximalIdeal (IntegralClosure Ov₃ N)) :=
+    Module.Finite.of_surjective
+      (Ideal.Quotient.mkₐ Ov₃
+        (IsLocalRing.maximalIdeal (IntegralClosure Ov₃ N))).toLinearMap
+      (Ideal.Quotient.mkₐ_surjective Ov₃ _)
+  haveI : Module.Finite (Ov₃ ⧸ IsLocalRing.maximalIdeal Ov₃)
+      ((IntegralClosure Ov₃ N) ⧸
+        IsLocalRing.maximalIdeal (IntegralClosure Ov₃ N)) :=
+    Module.Finite.of_restrictScalars_finite Ov₃ _ _
+  haveI hfinQ : Finite ((IntegralClosure Ov₃ N) ⧸
+      IsLocalRing.maximalIdeal (IntegralClosure Ov₃ N)) :=
+    Module.finite_of_finite (Ov₃ ⧸ IsLocalRing.maximalIdeal Ov₃)
+  -- the cubing automorphism of the residue field upstairs
+  have hbij : Function.Bijective (frobenius ((IntegralClosure Ov₃ N) ⧸
+      IsLocalRing.maximalIdeal (IntegralClosure Ov₃ N)) 3) :=
+    Finite.injective_iff_bijective.mp (frobenius_inj _ 3)
+  have hfrE_apply : ∀ z, (RingEquiv.ofBijective _ hbij) z = z ^ 3 := fun z => rfl
+  obtain ⟨φ', hφ'⟩ := Ideal.Quotient.stabilizerHom_surjective (N ≃ₐ[Kv₃] N)
+    (IsLocalRing.maximalIdeal Ov₃)
+    (IsLocalRing.maximalIdeal (IntegralClosure Ov₃ N))
+    (AlgEquiv.ofRingEquiv (f := RingEquiv.ofBijective _ hbij)
+      (fun y => by rw [hfrE_apply, ← map_pow, hpow3 y]))
+  have hφfrob : ∀ x : IntegralClosure Ov₃ N,
+      (φ' : N ≃ₐ[Kv₃] N) • x - x ^ 3 ∈
+        IsLocalRing.maximalIdeal (IntegralClosure Ov₃ N) := by
+    intro x
+    have h1 : Ideal.Quotient.stabilizerHom
+        (IsLocalRing.maximalIdeal (IntegralClosure Ov₃ N))
+        (IsLocalRing.maximalIdeal Ov₃) (N ≃ₐ[Kv₃] N) φ'
+        (Ideal.Quotient.mk _ x) =
+        Ideal.Quotient.mk _ ((φ' : N ≃ₐ[Kv₃] N) • x) := rfl
+    have h2 : Ideal.Quotient.stabilizerHom
+        (IsLocalRing.maximalIdeal (IntegralClosure Ov₃ N))
+        (IsLocalRing.maximalIdeal Ov₃) (N ≃ₐ[Kv₃] N) φ'
+        (Ideal.Quotient.mk _ x) = (Ideal.Quotient.mk _ x) ^ 3 := by
+      rw [hφ']
+      exact hfrE_apply _
+    refine Ideal.Quotient.eq.mp ?_
+    rw [← h1, h2, map_pow]
+  obtain ⟨t, htmem, hgen, hj⟩ :=
+    exists_finite_level_tame_generator_of_frobenius hfaith Nat.prime_three
+      (by exact_mod_cast h3R) (φ' : N ≃ₐ[Kv₃] N) hφfrob
+  exact ⟨t, htmem, hgen, (φ' : N ≃ₐ[Kv₃] N), hj⟩
+
+end TameGeneratorThree
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **The eighth power of a prime-to-`3`-order character of
+`Γ_{ℚ(√d)}` dies on every conjugated inertia element at `3` — the
+conductor-descent leaf at the residual prime** (PROVEN 2026-07-24 —
+leaf (a) of the decomposition of `odd_order_character_eq_one_ray_class`
+below, over the finite-level engine above): a function `ν` that is
+a nonvanishing multiplicative character on `H = ker θ' = Γ_{ℚ(√d)}`
+(`hνmul`, `hνne0`) with OPEN kernel (`hUopen`, `hUker`) and pointwise
+orders coprime to `3` (only the `¬ 3 ∣ n` clause of `hνodd` is
+genuinely consumed; the full packet is passed for uniformity with the
+consumer) satisfies `ν(τ)⁸ = 1` for every `Γ ℚ`-conjugate
+`τ = c·σ̃·c⁻¹ ∈ H` of a local inertia image `σ̃` at `3`.
+
+Content (Serre, *Corps Locaux* IV §2; Serre, Duke 1987 §5.3): the
+local inertia `I ≤ Γ ℚ₃ᵥ` is an extension of the procyclic
+prime-to-`3` tame quotient by the pro-`3` wild inertia, and any
+Frobenius lift conjugates the tame quotient by cubing. The proof
+runs the finite-level leaf `exists_finite_level_tame_generator_three`
+above (tame generator `t̄` with `3`-power-order errors, Frobenius `φ`
+with `φt̄φ⁻¹·(t̄³)⁻¹` of `3`-power order) through
+`exists_mem_localInertiaGroup_restrictNormalHom_eq` /
+`restrictNormalHom_mem_inertia_of_mem_localInertiaGroup_three`,
+mirroring the PROVEN global assembly
+`exists_localInertia_three_generator` below — which does not apply
+literally, since `ν` is a character of the index-`2` subgroup `H`
+only. The three index-`2` adaptations: (1) the finite Galois level
+`N` is chosen inside the `Emb`-preimage of the `c`-conjugated kernel
+`{γ | c·Emb γ·c⁻¹ ∈ U}` — openness survives conjugation, so no
+normal core is needed; (2) `ν` cannot be factored through level `N`
+(it is not a homomorphism on `Γ ℚ`), so every kill happens upstairs:
+an element `γ` whose level-`N` restriction has `3`-power order has
+`(c·Emb γ·c⁻¹)^{3^k} ∈ U`, whence `θ'` dies on it (odd power in
+`ZMod 2`) and `ν` dies against the prime-to-`3` pointwise orders;
+(3) the tame conjugation uses the SQUARE `Φ²` of a profinite
+Frobenius lift `Φ`: `θ'(Φ²) = θ'(Φ)² = 1` always (values in
+`ZMod 2`), so `Φ²`-conjugation is by an `H`-element, under which `ν`
+is invariant (abelian values, `hνmul`), while
+`Φ²·t·Φ⁻² = P·t⁹` with `P` an explicit five-factor product of
+conjugates of level-`N`-trivial or `3`-power-order elements; this
+forces `ν = ν⁹` on the tame part, i.e. its eighth power is `1` —
+uniformly over the seven `d`, with no case split on the splitting
+behaviour of `3` in `ℚ(√d)` (the sharp exponent is
+`3^f − 1 ∈ {2, 8}`, but `2 ∣ 8` makes `8` uniform). When the
+transported tame generator falls OUTSIDE `H` (`θ'` value `≠ 1`, the
+ramified fields), its exponent `m` in the decomposition of `τ` is
+even and the same argument runs on the square of the generator.
+NOTE: the quadratic-field data (`d`, `x`) of the consumer is NOT
+needed — the statement holds for the kernel of ANY character
+`θ' : Γ ℚ →* Multiplicative (ZMod 2)`, since the `Φ²`/even-exponent
+splitting sidesteps the residue degrees entirely. -/
+theorem character_pow_eight_localInertia_three_eq_one_ray_class
+    (θ' : Γ ℚ →* Multiplicative (ZMod 2))
+    (ν : Γ ℚ → Dickson.K 3)
+    (hνmul : ∀ g h : Γ ℚ, θ' g = 1 → θ' h = 1 →
+      ν (g * h) = ν g * ν h)
+    (hνne0 : ∀ g : Γ ℚ, θ' g = 1 → ν g ≠ 0)
+    (U : Subgroup (Γ ℚ)) (hUopen : IsOpen (U : Set (Γ ℚ)))
+    (hUker : ∀ g ∈ U, θ' g = 1 ∧ ν g = 1)
+    (hνodd : ∀ g : Γ ℚ, θ' g = 1 →
+      ∃ n : ℕ, 0 < n ∧ Odd n ∧ ¬ (3 ∣ n) ∧ ν g ^ n = 1) :
+    ∀ c : Γ ℚ,
+      ∀ σ ∈ localInertiaGroup
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat,
+        θ' (c * Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ * c⁻¹) = 1 →
+        ν (c * Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ * c⁻¹) ^ 8
+          = 1 := by
+  classical
+  intro c
+  set v := Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat
+  set Emb := Field.absoluteGaloisGroup.map (algebraMap ℚ
+    (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))
+  intro σ₃ hσ₃ hθτ
+  -- (0) `H = ker θ'` bookkeeping: closure, unit value, inverses,
+  -- powers, `H`-conjugation invariance
+  have hHinv : ∀ g : Γ ℚ, θ' g = 1 → θ' g⁻¹ = 1 := by
+    intro g hg
+    rw [map_inv, hg, inv_one]
+  have hHmul : ∀ g h : Γ ℚ, θ' g = 1 → θ' h = 1 → θ' (g * h) = 1 := by
+    intro g h hg hh
+    rw [map_mul, hg, hh, mul_one]
+  have hνone : ν 1 = 1 := by
+    have h := hνmul 1 1 (map_one θ') (map_one θ')
+    rw [mul_one] at h
+    have hne := hνne0 1 (map_one θ')
+    field_simp at h
+    exact h.symm
+  have hνinv : ∀ g : Γ ℚ, θ' g = 1 → ν g⁻¹ = (ν g)⁻¹ := by
+    intro g hg
+    have h := hνmul g⁻¹ g (hHinv g hg) hg
+    rw [inv_mul_cancel, hνone] at h
+    exact eq_inv_of_mul_eq_one_left h.symm
+  have hνpow : ∀ g : Γ ℚ, θ' g = 1 → ∀ n : ℕ, ν (g ^ n) = ν g ^ n := by
+    intro g hg n
+    induction n with
+    | zero => simpa using hνone
+    | succ n ih =>
+      have hgn : θ' (g ^ n) = 1 := by rw [map_pow, hg, one_pow]
+      rw [pow_succ, pow_succ, hνmul _ _ hgn hg, ih]
+  have hνconj : ∀ g h : Γ ℚ, θ' g = 1 → θ' h = 1 →
+      ν (h * g * h⁻¹) = ν g := by
+    intro g h hg hh
+    rw [hνmul (h * g) h⁻¹ (hHmul h g hh hg) (hHinv h hh),
+      hνmul h g hh hg, hνinv h hh]
+    field_simp [hνne0 h hh]
+  -- (1) arithmetic of `Multiplicative (ZMod 2)`: squares vanish, odd
+  -- powers are the identity
+  have hθsq : ∀ a : Multiplicative (ZMod 2), a ^ 2 = 1 := by decide
+  have hθpow3 : ∀ (a : Multiplicative (ZMod 2)) (k : ℕ), a ^ 3 ^ k = a := by
+    intro a k
+    obtain ⟨s, hs⟩ : ∃ s, 3 ^ k = 2 * s + 1 := by
+      have h1 : 3 ^ k % 2 = 1 := by
+        rw [Nat.pow_mod]
+        simp
+      exact ⟨3 ^ k / 2, by omega⟩
+    rw [hs, pow_add, pow_mul, hθsq, one_pow, pow_one, one_mul]
+  -- (2) the transport homomorphism `γ ↦ c·(Emb γ)·c⁻¹`
+  set T := ((MulAut.conj c).toMonoidHom.comp Emb.toMonoidHom) with hTdef
+  have hTapp : ∀ γ, T γ = c * Emb γ * c⁻¹ := by
+    intro γ
+    simp [hTdef, MonoidHom.comp_apply, MulAut.conj_apply]
+  rw [← hTapp σ₃] at hθτ ⊢
+  -- (3) a finite Galois level inside the `c`-conjugated kernel
+  have hcont : Continuous fun γ :
+      Γ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) =>
+      c * Emb γ * c⁻¹ :=
+    (continuous_const.mul Emb.continuous).mul continuous_const
+  have hWnhds : {γ : Γ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) |
+      c * Emb γ * c⁻¹ ∈ U} ∈
+      nhds (1 : Γ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) := by
+    refine IsOpen.mem_nhds (hUopen.preimage hcont) ?_
+    show c * Emb 1 * c⁻¹ ∈ U
+    rw [map_one, mul_one, mul_inv_cancel]
+    exact one_mem U
+  obtain ⟨N, hfdN, hnormN, hle⟩ :=
+    (krullTopology_mem_nhds_one_iff_of_normal
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))
+      _).mp hWnhds
+  haveI := hfdN
+  haveI := hnormN
+  haveI : Algebra.IsSeparable
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) N :=
+    Algebra.IsAlgebraic.isSeparable_of_perfectField
+  haveI : IsGalois (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) N := ⟨⟩
+  -- level-`N` triviality pushes into `U` after transport
+  have hkerU : ∀ γ : Γ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v),
+      AlgEquiv.restrictNormalHom N γ = 1 → T γ ∈ U := by
+    intro γ hγ
+    have h1 : γ ∈ N.fixingSubgroup := by
+      have h2 : γ ∈ (AlgEquiv.restrictNormalHom
+          (F := IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) N).ker := hγ
+      rwa [IntermediateField.restrictNormalHom_ker] at h2
+    have h3 := hle h1
+    rw [hTapp]
+    exact h3
+  -- (4) the kill lemma: `3`-power order at level `N` dies under `θ'`
+  -- (odd power in `ZMod 2`) and under `ν` (prime-to-`3` orders)
+  have hdead : ∀ (γ : Γ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))
+      (k : ℕ), (AlgEquiv.restrictNormalHom N γ) ^ 3 ^ k = 1 →
+      θ' (T γ) = 1 ∧ ν (T γ) = 1 := by
+    intro γ k hγk
+    have hUmem : T γ ^ 3 ^ k ∈ U := by
+      have h1 : T (γ ^ 3 ^ k) ∈ U := by
+        refine hkerU _ ?_
+        rw [map_pow]
+        exact hγk
+      rwa [map_pow] at h1
+    obtain ⟨hθU, hνU⟩ := hUker _ hUmem
+    have hθγ : θ' (T γ) = 1 := by
+      have h1 : θ' (T γ) ^ 3 ^ k = 1 := by
+        rw [← map_pow]
+        exact hθU
+      rw [← hθpow3 (θ' (T γ)) k]
+      exact h1
+    refine ⟨hθγ, ?_⟩
+    have hν3 : ν (T γ) ^ 3 ^ k = 1 := by
+      rw [← hνpow _ hθγ]
+      exact hνU
+    obtain ⟨n, hn0, hnodd, hn3, hνn⟩ := hνodd _ hθγ
+    have hgcd := Nat.dvd_gcd (orderOf_dvd_of_pow_eq_one hν3)
+      (orderOf_dvd_of_pow_eq_one hνn)
+    have hco : Nat.gcd (3 ^ k) n = 1 :=
+      Nat.Coprime.pow_left k ((Nat.prime_three.coprime_iff_not_dvd).mpr hn3)
+    rw [hco, Nat.dvd_one] at hgcd
+    exact orderOf_eq_one_iff.mp hgcd
+  have hdeadmul : ∀ a b : Γ ℚ, (θ' a = 1 ∧ ν a = 1) → (θ' b = 1 ∧ ν b = 1) →
+      θ' (a * b) = 1 ∧ ν (a * b) = 1 := by
+    rintro a b ⟨ha1, ha2⟩ ⟨hb1, hb2⟩
+    exact ⟨hHmul a b ha1 hb1, by rw [hνmul a b ha1 hb1, ha2, hb2, mul_one]⟩
+  have hdeadconj : ∀ (g γ : Γ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))
+      (k : ℕ), (AlgEquiv.restrictNormalHom N γ) ^ 3 ^ k = 1 →
+      θ' (T (g * γ * g⁻¹)) = 1 ∧ ν (T (g * γ * g⁻¹)) = 1 := by
+    intro g γ k hγk
+    refine hdead _ k ?_
+    have h1 := map_pow (MulAut.conj (AlgEquiv.restrictNormalHom N g))
+      (AlgEquiv.restrictNormalHom N γ) (3 ^ k)
+    simp only [MulAut.conj_apply] at h1
+    rw [map_mul, map_mul, map_inv, ← h1, hγk]
+    simp
+  -- (5) tame generator, Frobenius, and their profinite lifts
+  have hsurj : Function.Surjective (AlgEquiv.restrictNormalHom N :
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)
+        ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v]
+      AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) →*
+      (N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v] N)) :=
+    AlgEquiv.restrictNormalHom_surjective _
+  obtain ⟨tbar, htbarI, htbargen, φ, j0, hφ⟩ :=
+    exists_finite_level_tame_generator_three N
+  obtain ⟨t, -, htres⟩ :=
+    exists_mem_localInertiaGroup_restrictNormalHom_eq v N tbar htbarI
+  obtain ⟨Φ, hΦres⟩ := hsurj φ
+  obtain ⟨xh, hxhres⟩ := hsurj (φ * tbar * φ⁻¹ * (tbar ^ 3)⁻¹)
+  -- the exact level-`N`-trivial correction of the Frobenius relation
+  set R := Φ * t * Φ⁻¹ * (xh * t ^ 3)⁻¹ with hRdef
+  have hRres : AlgEquiv.restrictNormalHom N R = 1 := by
+    rw [hRdef]
+    simp only [map_mul, map_inv, map_pow, hΦres, htres, hxhres]
+    rw [inv_mul_cancel_right, mul_inv_cancel]
+  have hRxhatom : (AlgEquiv.restrictNormalHom N (R * xh)) ^ 3 ^ j0 = 1 := by
+    rw [map_mul, hRres, one_mul, hxhres]
+    exact hφ
+  -- the squared Frobenius relation upstairs, with dead correction `P`
+  set P := (Φ * R * Φ⁻¹) * (Φ * xh * Φ⁻¹) * (R * xh) *
+    (t ^ 3 * (R * xh) * (t ^ 3)⁻¹) * (t ^ 6 * (R * xh) * (t ^ 6)⁻¹) with hPdef
+  have hΦ2 : Φ ^ 2 * t * (Φ ^ 2)⁻¹ = P * t ^ 9 := by
+    rw [hPdef, hRdef, pow_two Φ]
+    group
+  have hPdead : θ' (T P) = 1 ∧ ν (T P) = 1 := by
+    rw [hPdef, map_mul T, map_mul T, map_mul T, map_mul T]
+    exact hdeadmul _ _ (hdeadmul _ _ (hdeadmul _ _ (hdeadmul _ _
+      (hdeadconj Φ R 0 (by simpa using hRres))
+      (hdeadconj Φ xh j0 (by rw [hxhres]; exact hφ)))
+      (hdead _ j0 hRxhatom))
+      (hdeadconj (t ^ 3) (R * xh) j0 hRxhatom))
+      (hdeadconj (t ^ 6) (R * xh) j0 hRxhatom)
+  -- (6) decomposition of the given inertia element along the generator
+  obtain ⟨m, j, hmj⟩ := htbargen (AlgEquiv.restrictNormalHom N σ₃)
+    (restrictNormalHom_mem_inertia_of_mem_localInertiaGroup_three N σ₃ hσ₃)
+  set w := (t ^ m)⁻¹ * σ₃ with hwdef
+  have hwdead : θ' (T w) = 1 ∧ ν (T w) = 1 := by
+    refine hdead w j ?_
+    rw [hwdef, map_mul, map_inv, map_pow, htres]
+    exact hmj
+  have hσw : σ₃ = t ^ m * w := by
+    rw [hwdef]
+    group
+  have hτsplit : T σ₃ = T t ^ m * T w := by
+    rw [hσw, map_mul, map_pow]
+  have hθtm : θ' (T t ^ m) = 1 := by
+    have h1 := congrArg θ' hτsplit
+    rw [map_mul, hwdead.1, mul_one, hθτ] at h1
+    exact h1.symm
+  have hθΦ2 : θ' (T Φ ^ 2) = 1 := by
+    rw [map_pow]
+    exact hθsq _
+  -- (7) the tame kill and the assembly, split on whether the
+  -- transported generator lies in `H`
+  by_cases hθt : θ' (T t) = 1
+  · -- transported generator inside `H`: kill `ν (T t)` directly
+    have hTrel : T Φ ^ 2 * T t * (T Φ ^ 2)⁻¹ = T P * T t ^ 9 := by
+      simpa only [map_mul, map_inv, map_pow] using congrArg T hΦ2
+    have hνconjt : ν (T Φ ^ 2 * T t * (T Φ ^ 2)⁻¹) = ν (T t) :=
+      hνconj (T t) (T Φ ^ 2) hθt hθΦ2
+    have hθt9 : θ' (T t ^ 9) = 1 := by
+      rw [map_pow, hθt, one_pow]
+    have hνRHS : ν (T P * T t ^ 9) = ν (T t) ^ 9 := by
+      rw [hνmul _ _ hPdead.1 hθt9, hPdead.2, one_mul, hνpow _ hθt]
+    have hkey : ν (T t) = ν (T t) ^ 9 := by
+      calc ν (T t) = ν (T Φ ^ 2 * T t * (T Φ ^ 2)⁻¹) := hνconjt.symm
+        _ = ν (T P * T t ^ 9) := by rw [hTrel]
+        _ = ν (T t) ^ 9 := hνRHS
+    have hνt8 : ν (T t) ^ 8 = 1 := by
+      have hne := hνne0 (T t) hθt
+      have h1 : ν (T t) ^ 8 * ν (T t) = 1 * ν (T t) := by
+        rw [← pow_succ, one_mul]
+        exact hkey.symm
+      exact mul_right_cancel₀ hne h1
+    have hντ : ν (T σ₃) = ν (T t) ^ m := by
+      rw [hτsplit, hνmul _ _ hθtm hwdead.1, hwdead.2, mul_one, hνpow _ hθt]
+    rw [hντ, ← pow_mul, mul_comm m 8, pow_mul, hνt8, one_pow]
+  · -- transported generator outside `H`: its exponent is even, run the
+    -- same argument on the square of the generator
+    have hmeven : m % 2 = 0 := by
+      by_contra hodd
+      have h1 : θ' (T t) ^ m = 1 := by
+        rw [← map_pow]
+        exact hθtm
+      obtain ⟨s, hs⟩ : ∃ s, m = 2 * s + 1 := ⟨m / 2, by omega⟩
+      rw [hs, pow_add, pow_mul, hθsq, one_pow, pow_one, one_mul] at h1
+      exact hθt h1
+    obtain ⟨r, hr⟩ : ∃ r, m = 2 * r := ⟨m / 2, by omega⟩
+    have hθt2 : θ' (T t ^ 2) = 1 := by
+      rw [map_pow]
+      exact hθsq _
+    have hΦ2sq : Φ ^ 2 * t ^ 2 * (Φ ^ 2)⁻¹ =
+        P * (t ^ 9 * P * (t ^ 9)⁻¹) * (t ^ 2) ^ 9 := by
+      have h1 : Φ ^ 2 * t ^ 2 * (Φ ^ 2)⁻¹ =
+          (Φ ^ 2 * t * (Φ ^ 2)⁻¹) * (Φ ^ 2 * t * (Φ ^ 2)⁻¹) := by
+        have h2 := map_pow (MulAut.conj (Φ ^ 2)) t 2
+        simp only [MulAut.conj_apply] at h2
+        rw [pow_two (Φ ^ 2 * t * (Φ ^ 2)⁻¹)] at h2
+        exact h2
+      rw [h1, hΦ2]
+      group
+    have hQsplit : t ^ 9 * P * (t ^ 9)⁻¹ =
+        (t ^ 9 * Φ * R * (t ^ 9 * Φ)⁻¹) * (t ^ 9 * Φ * xh * (t ^ 9 * Φ)⁻¹) *
+        (t ^ 9 * (R * xh) * (t ^ 9)⁻¹) * (t ^ 12 * (R * xh) * (t ^ 12)⁻¹) *
+        (t ^ 15 * (R * xh) * (t ^ 15)⁻¹) := by
+      rw [hPdef]
+      group
+    have hQdead : θ' (T (t ^ 9 * P * (t ^ 9)⁻¹)) = 1 ∧
+        ν (T (t ^ 9 * P * (t ^ 9)⁻¹)) = 1 := by
+      rw [hQsplit, map_mul T, map_mul T, map_mul T, map_mul T]
+      exact hdeadmul _ _ (hdeadmul _ _ (hdeadmul _ _ (hdeadmul _ _
+        (hdeadconj (t ^ 9 * Φ) R 0 (by simpa using hRres))
+        (hdeadconj (t ^ 9 * Φ) xh j0 (by rw [hxhres]; exact hφ)))
+        (hdeadconj (t ^ 9) (R * xh) j0 hRxhatom))
+        (hdeadconj (t ^ 12) (R * xh) j0 hRxhatom))
+        (hdeadconj (t ^ 15) (R * xh) j0 hRxhatom)
+    have hQdead' : θ' (T t ^ 9 * T P * (T t ^ 9)⁻¹) = 1 ∧
+        ν (T t ^ 9 * T P * (T t ^ 9)⁻¹) = 1 := by
+      have h := hQdead
+      rw [map_mul T, map_mul T, map_inv T, map_pow T] at h
+      exact h
+    have hTrel2 : T Φ ^ 2 * T t ^ 2 * (T Φ ^ 2)⁻¹ =
+        T P * (T t ^ 9 * T P * (T t ^ 9)⁻¹) * (T t ^ 2) ^ 9 := by
+      simpa only [map_mul, map_inv, map_pow] using congrArg T hΦ2sq
+    have hνconj2 : ν (T Φ ^ 2 * T t ^ 2 * (T Φ ^ 2)⁻¹) = ν (T t ^ 2) :=
+      hνconj (T t ^ 2) (T Φ ^ 2) hθt2 hθΦ2
+    have hθt29 : θ' ((T t ^ 2) ^ 9) = 1 := by
+      rw [map_pow, hθt2, one_pow]
+    have hνRHS2 : ν (T P * (T t ^ 9 * T P * (T t ^ 9)⁻¹) * (T t ^ 2) ^ 9) =
+        ν (T t ^ 2) ^ 9 := by
+      rw [hνmul _ _ (hHmul _ _ hPdead.1 hQdead'.1) hθt29,
+        hνmul _ _ hPdead.1 hQdead'.1, hPdead.2, hQdead'.2, one_mul, one_mul,
+        hνpow _ hθt2]
+    have hkey2 : ν (T t ^ 2) = ν (T t ^ 2) ^ 9 := by
+      calc ν (T t ^ 2) = ν (T Φ ^ 2 * T t ^ 2 * (T Φ ^ 2)⁻¹) := hνconj2.symm
+        _ = ν (T P * (T t ^ 9 * T P * (T t ^ 9)⁻¹) * (T t ^ 2) ^ 9) := by
+            rw [hTrel2]
+        _ = ν (T t ^ 2) ^ 9 := hνRHS2
+    have hνt28 : ν (T t ^ 2) ^ 8 = 1 := by
+      have hne := hνne0 (T t ^ 2) hθt2
+      have h1 : ν (T t ^ 2) ^ 8 * ν (T t ^ 2) = 1 * ν (T t ^ 2) := by
+        rw [← pow_succ, one_mul]
+        exact hkey2.symm
+      exact mul_right_cancel₀ hne h1
+    have hντ : ν (T σ₃) = ν (T t ^ 2) ^ r := by
+      have hsplit2 : T σ₃ = (T t ^ 2) ^ r * T w := by
+        rw [hτsplit, ← pow_mul, ← hr]
+      rw [hsplit2, hνmul _ _ (by rw [map_pow, hθt2, one_pow]) hwdead.1,
+        hwdead.2, mul_one, hνpow _ hθt2]
+    rw [hντ, ← pow_mul, mul_comm r 8, pow_mul, hνt28, one_pow]
+
+set_option maxHeartbeats 1000000 in
+/-- **An odd-order character of `Γ_{ℚ(√d)}` unramified at EVERY
+finite place is trivial — the narrow-class reciprocity leaf over the
+seven quadratic fields** (sorry node, created 2026-07-24 — leaf (b)
+of the decomposition of `odd_order_character_eq_one_ray_class` below,
+and the genuinely class-field-theoretic input): with the data of leaf
+(a), but with the unramifiedness hypothesis `hνunr` now available at
+EVERY rational prime `q` — `3` included — the character `ν` is
+identically `1` on `H = ker θ' = Γ_{ℚ(√d)}`.
+
+Intended content (Serre, Duke 1987 §5.3–5.4; Neukirch ANT VI §6–§7):
+`ν` is a finite-order character of `Γ_F`, `F = ℚ(√d)` (open kernel by
+`hUopen`/`hUker`; pointwise finite odd order by `hνodd`), trivial on
+every `Γ ℚ`-conjugate of the local inertia image at every rational
+prime, i.e. unramified at every finite place of `F`. By Artin
+reciprocity it therefore factors through
+`Gal(H⁺(F)/F) ≅ Cl⁺(F)` — the narrow Hilbert class field and narrow
+class group; reciprocity is THE gap, since mathlib has no global
+class field theory at this pin. Per-field arithmetic:
+`h⁺ = 1, 1, 1, 2, 1, 2, 2` for `d = −1, 2, −2, 3, −3, 6, −6` (the
+ordinary class numbers are `1` except `h(ℚ(√−6)) = 2`,
+Minkowski-bound computations as in
+`Mathlib.NumberTheory.ClassNumber.*`; among the real fields the
+fundamental unit `1 + √2` of norm `−1` keeps `h⁺ = h` for `d = 2`,
+while `2 + √3` and `5 + 2√6` of norm `+1` double it for
+`d = 3, 6`), so `Cl⁺(F)` is an elementary abelian `2`-group in all
+seven cases and the odd-order `ν` dies. Two viable routes for the
+resolver: (α) split off `∀ g, θ' g = 1 → ν g ^ 2 = 1` as the pure
+reciprocity sub-leaf (exponent of `Cl⁺` divides `2`) and glue by
+`gcd(odd, 2) = 1`, building the reciprocity statement on the
+narrow-ray vocabulary under construction in
+`Fermat/FLT/GaloisRepresentation/Chebotarev.lean` (`IsNarrowRayEquiv`,
+`exists_finset_forall_existsUnique_isNarrowRayEquiv`); or (β) the
+discriminant-bound route needing NO reciprocity: the fixed field of
+`ker(ν|_H)` is a cyclic extension `M/F` of odd degree `m` coprime to
+`3` (the image of `ν` is a finite subgroup of `𝔽̄₃ˣ` generated by
+elements of odd order), unramified at every finite place by the
+inertia hypothesis and at the infinite places automatically
+(`2 ∤ m`), so its root discriminant equals
+`rd(F) = √|d_F| ≤ √24 < 4.9`; Minkowski's bound
+`rd ≥ (π/4)·(n^n/n!)^{2/n} → (π/4)e² ≈ 5.80` rules out all
+sufficiently large degrees `n = 2m` over `ℚ` (`n ≥ 36` suffices for
+`√24`), and the finitely many small `m` fall to sharper Odlyzko-type
+explicit-formula bounds — exactly the regime of the
+`poitou_explicit_formula_bound` analytic cluster already under
+construction in this file. -/
+theorem odd_character_eq_one_of_unramified_everywhere_ray_class
+    (θ' : Γ ℚ →* Multiplicative (ZMod 2))
+    (d : ℤ)
+    (hd : d = -1 ∨ d = 2 ∨ d = -2 ∨ d = 3 ∨ d = -3 ∨ d = 6 ∨ d = -6)
+    (x : AlgebraicClosure ℚ) (hx : x ^ 2 = (d : AlgebraicClosure ℚ))
+    (hθ'x : ∀ g : Γ ℚ, θ' g = 1 ↔ g x = x)
+    (ν : Γ ℚ → Dickson.K 3)
+    (hνmul : ∀ g h : Γ ℚ, θ' g = 1 → θ' h = 1 →
+      ν (g * h) = ν g * ν h)
+    (hνne0 : ∀ g : Γ ℚ, θ' g = 1 → ν g ≠ 0)
+    (U : Subgroup (Γ ℚ)) (hUopen : IsOpen (U : Set (Γ ℚ)))
+    (hUker : ∀ g ∈ U, θ' g = 1 ∧ ν g = 1)
+    (hνodd : ∀ g : Γ ℚ, θ' g = 1 →
+      ∃ n : ℕ, 0 < n ∧ Odd n ∧ ¬ (3 ∣ n) ∧ ν g ^ n = 1)
+    (hνunr : ∀ (q : ℕ) (hq : q.Prime), ∀ c : Γ ℚ,
+      ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+        θ' (c * Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) σ * c⁻¹) = 1 →
+        ν (c * Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) σ * c⁻¹) = 1) :
+    ∀ g : Γ ℚ, θ' g = 1 → ν g = 1 := by
+  sorry
+
 set_option maxHeartbeats 1000000 in
 /-- **An odd-order character of `Γ_{ℚ(√d)}` unramified outside `3` is
-trivial — the representation-free odd ray-class core** (sorry node,
-isolated 2026-07-24 from
-`anti_equivariant_ratio_character_eq_one_ray_class` below, whose
-odd/2-power splitting layer is now PROVEN glue there): a function
+trivial — the representation-free odd ray-class core** (DECOMPOSED
+2026-07-24 into the two sorry nodes above — the conductor-descent
+leaf at `3` `character_pow_eight_localInertia_three_eq_one_ray_class`
+(wild inertia is pro-`3`, the tame quotient Frobenius-conjugates by
+cubing, so a prime-to-`3`-order character has eighth power `1` on the
+inertia at `3`) and the narrow-class reciprocity leaf
+`odd_character_eq_one_of_unramified_everywhere_ray_class` (the seven
+narrow class groups `h⁺ = 1, 1, 1, 2, 1, 2, 2` are elementary
+`2`-groups, killing odd characters) — with the assembly PROVEN here:
+at `q = 3` the eighth-power kill of leaf (a) combines with the odd
+pointwise order through `orderOf ∣ gcd(8, n) = 1`, extending `hνunr`
+to every prime, and leaf (b) concludes): a function
 `ν : Γ ℚ → 𝔽̄₃` that is a nonvanishing multiplicative character on
 `H = ker θ' = Γ_{ℚ(√d)}` (`hνmul`, `hνne0`), trivial on an OPEN
 subgroup `U ≤ H` (`hUopen`, `hUker` — so `ν` factors through a finite
@@ -11614,31 +12306,9 @@ abelian extension of `ℚ(√d)`), of ODD pointwise order coprime to `3`
 (`hνodd`), and trivial on EVERY `Γ ℚ`-conjugate of the local inertia
 image at every prime `q ≠ 3` that lies in `H` (`hνunr` — i.e. `ν` is
 unramified at every place of `ℚ(√d)` not above `3`), is identically
-`1` on `H`. No Galois representation appears: this leaf is pure
+`1` on `H`. No Galois representation appears: this node is pure
 class field theory over the seven quadratic fields, and NO
-anti-equivariance is needed for the odd part.
-
-Intended content (Serre, Duke 1987 §5.3–5.4; Neukirch ANT VI §6).
-(i) An odd character of order coprime to `3` is automatically
-unramified ABOVE `3` as well: the wild inertia at a place `𝔭 ∣ 3` of
-`F = ℚ(√d)` is pro-`3` (killed since the order is coprime to `3`),
-and the tame quotient the character sees is cyclic of order
-`3^f − 1 ∈ {2, 8}` (`f ≤ 2`), a `2`-group — killed since the order is
-odd. So `ν` is a character of the NARROW class group of `F`.
-(ii) Per-field arithmetic: the narrow class numbers of the seven
-fields `ℚ(√-1), ℚ(√2), ℚ(√-2), ℚ(√3), ℚ(√-3), ℚ(√6), ℚ(√-6)` are
-`1, 1, 1, 2, 1, 2, 2` — all `2`-groups — so every odd character is
-trivial. The residual reciprocity input, at its sharpest: `F` has no
-abelian extension of odd degree `> 1` unramified at all finite and
-infinite places (one statement per field; the class-number-one cases
-`d = -1, 2, -2, -3` need only "unramified odd-degree abelian ⇒
-trivial" over a field with `h⁺ = 1`, and `d = 3, 6, -6` in addition
-that the `2`-part `h⁺ = 2` carries no odd quotient). Mathlib has the
-class-number computations (`Mathlib.NumberTheory.ClassNumber.*`) and
-unit groups (`Mathlib.NumberTheory.NumberField.Units.*`); the
-unramified-abelian-bounded-by-class-group step is the genuine gap —
-resolving this node means decomposing it further into those per-field
-statements. -/
+anti-equivariance is needed for the odd part. -/
 theorem odd_order_character_eq_one_ray_class
     (θ' : Γ ℚ →* Multiplicative (ZMod 2))
     (d : ℤ)
@@ -11662,7 +12332,25 @@ theorem odd_order_character_eq_one_ray_class
           (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
             hq.toHeightOneSpectrumRingOfIntegersRat)) σ * c⁻¹) = 1) :
     ∀ g : Γ ℚ, θ' g = 1 → ν g = 1 := by
-  sorry
+  refine odd_character_eq_one_of_unramified_everywhere_ray_class θ' d hd
+    x hx hθ'x ν hνmul hνne0 U hUopen hUker hνodd ?_
+  intro q hq c σ hσ hθ
+  by_cases hq3 : q = 3
+  · subst hq3
+    have h8 := character_pow_eight_localInertia_three_eq_one_ray_class θ'
+      ν hνmul hνne0 U hUopen hUker hνodd c σ hσ hθ
+    obtain ⟨n, hn0, hnodd, hn3, hgn⟩ := hνodd _ hθ
+    have hdgcd := Nat.dvd_gcd (orderOf_dvd_of_pow_eq_one h8)
+      (orderOf_dvd_of_pow_eq_one hgn)
+    have hco : Nat.gcd 8 n = 1 := by
+      have h2n : Nat.Coprime 2 n :=
+        (Nat.prime_two.coprime_iff_not_dvd).mpr (by
+          rw [Nat.odd_iff] at hnodd
+          omega)
+      exact Nat.Coprime.pow_left 3 h2n
+    rw [hco, Nat.dvd_one] at hdgcd
+    exact orderOf_eq_one_iff.mp hdgcd
+  · exact hνunr q hq hq3 c σ hσ hθ
 
 /-- **A quadratic character of `Γ_{ℚ(√-3)}` unramified outside `3` is
 trivial — the `d = -3` narrow-ray-class core** (sorry node, isolated
@@ -14174,258 +14862,6 @@ lemma cyclotomicCharacter_algebraMap_eq_one_iff_fix {k : Type*} [Field k]
     rw [hcast, hw1]
     norm_num
 
-set_option backward.isDefEq.respectTransparency false in
-set_option synthInstance.maxHeartbeats 1000000 in
-set_option maxHeartbeats 2000000 in
-/-- **Restriction of the local inertia at `3` to a finite Galois
-level** (PROVEN 2026-07-23 — the downward companion of the compactness
-lifting `exists_mem_localInertiaGroup_restrictNormalHom_eq`): the
-restriction to a finite Galois subextension `N` of an element of the
-full local inertia group at `3` lies in the finite-level inertia
-subgroup. If a displacement `τ • x − x` were NOT in `𝔪(IC-N)`, it
-would be a unit of the local ring `IC-N`; its image under
-`integralClosureInclusion` — which equals `σ • x̂ − x̂` by
-`AlgEquiv.restrictNormal_commutes` — would then be a unit of the big
-integral closure lying in `𝔪(IC-big)` (the defining property of
-`localInertiaGroup`), forcing `𝔪(IC-big) = ⊤`. -/
-theorem restrictNormalHom_mem_inertia_of_mem_localInertiaGroup_three
-    (N : IntermediateField
-        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)
-        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)))
-    [FiniteDimensional (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) N]
-    [IsGalois (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) N]
-    (σ : AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)
-      ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat]
-      AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat))
-    (hσ : σ ∈ localInertiaGroup
-      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) :
-    AlgEquiv.restrictNormalHom N σ ∈
-      (IsLocalRing.maximalIdeal (IntegralClosure
-        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
-          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) N)).inertia
-        (N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat] N) := by
-  rw [show (IsLocalRing.maximalIdeal (IntegralClosure
-      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
-        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) N)).inertia
-      (N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat] N) =
-    (IsLocalRing.maximalIdeal (IntegralClosure
-      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
-        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) N)).toAddSubgroup.inertia _
-    from rfl, AddSubgroup.mem_inertia]
-  intro x
-  rw [Submodule.mem_toAddSubgroup]
-  by_contra hnot
-  -- the displacement would be a unit of the local ring `IC-N`
-  have hunit : IsUnit ((AlgEquiv.restrictNormalHom N σ) • x - x) := by
-    by_contra hnu
-    exact hnot ((IsLocalRing.mem_maximalIdeal _).mpr (mem_nonunits_iff.mpr hnu))
-  -- push the displacement into the big integral closure
-  have hkey : integralClosureInclusion
-      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat N
-      ((AlgEquiv.restrictNormalHom N σ) • x - x) =
-      σ • (integralClosureInclusion
-        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat N x) -
-      integralClosureInclusion
-        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat N x := by
-    rw [map_sub]
-    congr 1
-    exact Subtype.ext (AlgEquiv.restrictNormal_commutes σ N x.1)
-  -- the defining property of the full local inertia group
-  have hbig := AddSubgroup.mem_inertia.mp hσ
-    (integralClosureInclusion
-      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat N x)
-  rw [Submodule.mem_toAddSubgroup] at hbig
-  -- a unit inside the big maximal ideal: absurd
-  have hmap := hunit.map (integralClosureInclusion
-    Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat N)
-  rw [hkey] at hmap
-  exact (IsLocalRing.maximalIdeal.isMaximal _).ne_top
-    (Ideal.eq_top_of_isUnit_mem _ hbig hmap)
-
-section TameGeneratorThree
-
-open scoped Pointwise
-
-local notation "Kv₃" =>
-  IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-    Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat
-local notation "Ov₃" =>
-  IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
-    Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat
-
-set_option backward.isDefEq.respectTransparency false in
-set_option synthInstance.maxHeartbeats 1000000 in
-set_option maxHeartbeats 2000000 in
-/-- **Finite-level tame ramification at `3`** (PROVEN 2026-07-24 by
-specializing `exists_finite_level_tame_generator_of_frobenius` above;
-Serre, *Corps Locaux* IV §1–2): for every finite Galois subextension
-`N` of the algebraic closure of `ℚ₃ᵥ` there is a finite-level inertia
-element `t` such that (a) every finite-level inertia element agrees
-with a power of `t` up to an element of `3`-power order — the wild
-inertia `P` is the (normal) `3`-Sylow of the inertia `I`, the tame
-quotient `I/P` is CYCLIC (it embeds into the multiplicative group of
-the residue field of `N` via `σ ↦ σ(π)/π` for a uniformizer `π`), `t`
-is any preimage of a generator, and the error `(tᵐ)⁻¹σ` lies in `P` —
-and (b) some automorphism `φ` of `N` (any Frobenius lift) conjugates
-`t` into `t³` up to an element of `3`-power order: the tame character
-is Frobenius-semilinear, `φtφ⁻¹ ≡ t^q (mod P)` with
-`q = |𝒪ᵥ/𝔪ᵥ| = |𝔽₃| = 3`. The specialization supplies: faithfulness
-of the Galois action on the integral closure (fraction-field
-denominator clearing), `3 ∈ 𝔪` (lying over `𝔪ᵥ = (3)`), and a
-Frobenius lift acting as cubing on the residue field
-(`Ideal.Quotient.stabilizerHom_surjective` against the cubing
-automorphism, which is `κᵥ`-linear because `|κᵥ| = 3` by
-`natCard_residue_quotient_toHeightOneSpectrum`). -/
-theorem exists_finite_level_tame_generator_three
-    (N : IntermediateField
-        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)
-        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)))
-    [FiniteDimensional (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) N]
-    [IsGalois (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) N] :
-    ∃ t ∈ (IsLocalRing.maximalIdeal (IntegralClosure
-        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
-          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) N)).inertia
-        (N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat] N),
-      (∀ σ ∈ (IsLocalRing.maximalIdeal (IntegralClosure
-          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
-            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) N)).inertia
-          (N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat] N),
-        ∃ m j : ℕ, ((t ^ m)⁻¹ * σ) ^ 3 ^ j = 1) ∧
-      (∃ φ : N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat] N,
-        ∃ j : ℕ, (φ * t * φ⁻¹ * (t ^ 3)⁻¹) ^ 3 ^ j = 1) := by
-  classical
-  -- `3` lies in the maximal ideal downstairs, hence upstairs
-  have h3O : (3 : Ov₃) ∈ IsLocalRing.maximalIdeal Ov₃ := by
-    rw [maximalIdeal_adicCompletionIntegers_eq_span Nat.prime_three]
-    exact_mod_cast Ideal.mem_span_singleton_self ((3 : ℕ) : Ov₃)
-  have h3R : (3 : IntegralClosure Ov₃ N) ∈
-      IsLocalRing.maximalIdeal (IntegralClosure Ov₃ N) := by
-    have h2 := (Ideal.mem_of_liesOver
-      (IsLocalRing.maximalIdeal (IntegralClosure Ov₃ N))
-      (IsLocalRing.maximalIdeal Ov₃) (3 : Ov₃)).mp h3O
-    rwa [map_ofNat] at h2
-  -- faithfulness of the Galois action on the integral closure
-  haveI : IsFractionRing (IntegralClosure Ov₃ N) N :=
-    IsIntegralClosure.isFractionRing_of_finite_extension Ov₃ Kv₃ N
-      (IntegralClosure Ov₃ N)
-  have halgmapinj : Function.Injective (algebraMap Ov₃ N) := by
-    rw [IsScalarTower.algebraMap_eq Ov₃ Kv₃ N]
-    exact (algebraMap Kv₃ N).injective.comp (IsFractionRing.injective Ov₃ Kv₃)
-  haveI : Module.IsTorsionFree Ov₃ N :=
-    Module.isTorsionFree_iff_algebraMap_injective.mpr halgmapinj
-  have hfaith : ∀ g : N ≃ₐ[Kv₃] N,
-      (∀ a : IntegralClosure Ov₃ N, g • a = a) → g = 1 := by
-    intro g hg
-    refine AlgEquiv.ext fun x => ?_
-    have halg : IsAlgebraic Ov₃ x :=
-      (IsFractionRing.isAlgebraic_iff Ov₃ Kv₃ N).mpr
-        (Algebra.IsAlgebraic.isAlgebraic x)
-    obtain ⟨c, hc0, hcx⟩ := halg.exists_integral_multiple
-    have hfix : g • (c • x) = c • x := by
-      have h1 := congrArg Subtype.val (hg ⟨c • x, hcx⟩)
-      rwa [IntegralClosure.coe_smul] at h1
-    rw [smul_comm] at hfix
-    have hgx : g • x = x := smul_right_injective N hc0 hfix
-    simpa [AlgEquiv.smul_def] using hgx
-  -- the residue field downstairs has three elements
-  haveI hOmax : (IsLocalRing.maximalIdeal Ov₃).IsMaximal :=
-    IsLocalRing.maximalIdeal.isMaximal _
-  have hcard : Nat.card (Ov₃ ⧸ IsLocalRing.maximalIdeal Ov₃) = 3 := by
-    have h1 := natCard_residue_quotient_toHeightOneSpectrum Nat.prime_three
-    rwa [IsLocalRing.eq_maximalIdeal (Ideal.IsMaximal.under Ov₃
-      (IsLocalRing.maximalIdeal
-        (IntegralClosure Ov₃ (AlgebraicClosure Kv₃))))] at h1
-  haveI hfinbase : Finite (Ov₃ ⧸ IsLocalRing.maximalIdeal Ov₃) :=
-    Nat.finite_of_card_ne_zero (by rw [hcard]; norm_num)
-  have hpow3 : ∀ y : Ov₃ ⧸ IsLocalRing.maximalIdeal Ov₃, y ^ 3 = y := by
-    haveI : Fintype (Ov₃ ⧸ IsLocalRing.maximalIdeal Ov₃) := Fintype.ofFinite _
-    letI : Field (Ov₃ ⧸ IsLocalRing.maximalIdeal Ov₃) :=
-      Ideal.Quotient.field (IsLocalRing.maximalIdeal Ov₃)
-    intro y
-    have h := FiniteField.pow_card y
-    rwa [show Fintype.card (Ov₃ ⧸ IsLocalRing.maximalIdeal Ov₃) = 3 from by
-      rw [← Nat.card_eq_fintype_card, hcard]] at h
-  -- the residue field upstairs: characteristic `3`, finite
-  haveI hRmax : (IsLocalRing.maximalIdeal (IntegralClosure Ov₃ N)).IsMaximal :=
-    IsLocalRing.maximalIdeal.isMaximal _
-  have h30 : ((3 : ℕ) : (IntegralClosure Ov₃ N) ⧸
-      IsLocalRing.maximalIdeal (IntegralClosure Ov₃ N)) = 0 := by
-    rw [← map_natCast (Ideal.Quotient.mk
-      (IsLocalRing.maximalIdeal (IntegralClosure Ov₃ N)))]
-    exact Ideal.Quotient.eq_zero_iff_mem.mpr (by exact_mod_cast h3R)
-  haveI : CharP ((IntegralClosure Ov₃ N) ⧸
-      IsLocalRing.maximalIdeal (IntegralClosure Ov₃ N)) 3 := by
-    have h := CharP.ringChar_of_prime_eq_zero Nat.prime_three h30
-    haveI := ringChar.charP ((IntegralClosure Ov₃ N) ⧸
-      IsLocalRing.maximalIdeal (IntegralClosure Ov₃ N))
-    exact CharP.congr _ h
-  haveI : ExpChar ((IntegralClosure Ov₃ N) ⧸
-      IsLocalRing.maximalIdeal (IntegralClosure Ov₃ N)) 3 :=
-    ExpChar.prime Nat.prime_three
-  haveI : Module.Finite Ov₃ (IntegralClosure Ov₃ N) :=
-    IsIntegralClosure.finite Ov₃ Kv₃ N (IntegralClosure Ov₃ N)
-  haveI : Module.Finite Ov₃ ((IntegralClosure Ov₃ N) ⧸
-      IsLocalRing.maximalIdeal (IntegralClosure Ov₃ N)) :=
-    Module.Finite.of_surjective
-      (Ideal.Quotient.mkₐ Ov₃
-        (IsLocalRing.maximalIdeal (IntegralClosure Ov₃ N))).toLinearMap
-      (Ideal.Quotient.mkₐ_surjective Ov₃ _)
-  haveI : Module.Finite (Ov₃ ⧸ IsLocalRing.maximalIdeal Ov₃)
-      ((IntegralClosure Ov₃ N) ⧸
-        IsLocalRing.maximalIdeal (IntegralClosure Ov₃ N)) :=
-    Module.Finite.of_restrictScalars_finite Ov₃ _ _
-  haveI hfinQ : Finite ((IntegralClosure Ov₃ N) ⧸
-      IsLocalRing.maximalIdeal (IntegralClosure Ov₃ N)) :=
-    Module.finite_of_finite (Ov₃ ⧸ IsLocalRing.maximalIdeal Ov₃)
-  -- the cubing automorphism of the residue field upstairs
-  have hbij : Function.Bijective (frobenius ((IntegralClosure Ov₃ N) ⧸
-      IsLocalRing.maximalIdeal (IntegralClosure Ov₃ N)) 3) :=
-    Finite.injective_iff_bijective.mp (frobenius_inj _ 3)
-  have hfrE_apply : ∀ z, (RingEquiv.ofBijective _ hbij) z = z ^ 3 := fun z => rfl
-  obtain ⟨φ', hφ'⟩ := Ideal.Quotient.stabilizerHom_surjective (N ≃ₐ[Kv₃] N)
-    (IsLocalRing.maximalIdeal Ov₃)
-    (IsLocalRing.maximalIdeal (IntegralClosure Ov₃ N))
-    (AlgEquiv.ofRingEquiv (f := RingEquiv.ofBijective _ hbij)
-      (fun y => by rw [hfrE_apply, ← map_pow, hpow3 y]))
-  have hφfrob : ∀ x : IntegralClosure Ov₃ N,
-      (φ' : N ≃ₐ[Kv₃] N) • x - x ^ 3 ∈
-        IsLocalRing.maximalIdeal (IntegralClosure Ov₃ N) := by
-    intro x
-    have h1 : Ideal.Quotient.stabilizerHom
-        (IsLocalRing.maximalIdeal (IntegralClosure Ov₃ N))
-        (IsLocalRing.maximalIdeal Ov₃) (N ≃ₐ[Kv₃] N) φ'
-        (Ideal.Quotient.mk _ x) =
-        Ideal.Quotient.mk _ ((φ' : N ≃ₐ[Kv₃] N) • x) := rfl
-    have h2 : Ideal.Quotient.stabilizerHom
-        (IsLocalRing.maximalIdeal (IntegralClosure Ov₃ N))
-        (IsLocalRing.maximalIdeal Ov₃) (N ≃ₐ[Kv₃] N) φ'
-        (Ideal.Quotient.mk _ x) = (Ideal.Quotient.mk _ x) ^ 3 := by
-      rw [hφ']
-      exact hfrE_apply _
-    refine Ideal.Quotient.eq.mp ?_
-    rw [← h1, h2, map_pow]
-  obtain ⟨t, htmem, hgen, hj⟩ :=
-    exists_finite_level_tame_generator_of_frobenius hfaith Nat.prime_three
-      (by exact_mod_cast h3R) (φ' : N ≃ₐ[Kv₃] N) hφfrob
-  exact ⟨t, htmem, hgen, (φ' : N ≃ₐ[Kv₃] N), hj⟩
-
-end TameGeneratorThree
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
