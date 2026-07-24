@@ -124,7 +124,9 @@ Lean. Standard references for this project: Silverman *AEC* and
 the Frey-curve conditions), Mazur's torsion papers, Diamond–Shurman
 (modular forms), Cornell–Silverman–Stevens (the FLT survey volume),
 Neukirch (algebraic number theory, ramification/inertia). Also mine
-`~/cs/FLT` (the reference Lean project, same mathlib pin) for
+`~/cs/FLT` (the reference Lean project; NOTE its mathlib pin has
+drifted from ours — 81a5d2 vs a3364f as of 2026-07-24, so vendoring
+requires a pin-drift audit, not verbatim copying) for
 vendorable sorry-free material before proving anything from scratch.
 Previously downloaded sources stayed in the dissertation repo — see
 `SOURCES.md` for the list.
