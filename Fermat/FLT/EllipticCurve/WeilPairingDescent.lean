@@ -1222,6 +1222,48 @@ theorem spanSingleton_pointEval_XClass (hΔ : W.Δ ≠ 0) {Q : W.Point}
             ← coe_pointIdeal', ← coe_pointIdeal']
           ring
 
+omit [IsAlgClosed F] in
+/-- **The fractional span of a line**: the line through two affine
+points `P`, `R` (not opposite) spans `I_P · I_R · I_{⊖(P⊕R)}` — from
+`XYIdeal_mul_XYIdeal` and `XYIdeal_neg_mul` at the sum, cancelling the
+invertible `I_{P⊕R}`. -/
+lemma coe_YIdeal_line {x₁ y₁ x₂ y₂ : F} (h₁ : W.Nonsingular x₁ y₁)
+    (h₂ : W.Nonsingular x₂ y₂) (hxy : ¬(x₁ = x₂ ∧ y₁ = W.negY x₂ y₂)) :
+    ((CoordinateRing.YIdeal W (linePolynomial x₁ y₁ (W.slope x₁ x₂ y₁ y₂)) :
+        Ideal W.CoordinateRing) :
+      FractionalIdeal W.CoordinateRing⁰ W.FunctionField) =
+    (pointIdeal' W (.some x₁ y₁ h₁) :
+        FractionalIdeal W.CoordinateRing⁰ W.FunctionField) *
+      ((pointIdeal' W (.some x₂ y₂ h₂) :
+        FractionalIdeal W.CoordinateRing⁰ W.FunctionField) *
+        (pointIdeal' W (-(.some x₁ y₁ h₁ + .some x₂ y₂ h₂)) :
+          FractionalIdeal W.CoordinateRing⁰ W.FunctionField)) := by
+  have hadd := Point.add_some (h₁ := h₁) (h₂ := h₂) hxy
+  have hMul := CoordinateRing.XYIdeal_mul_XYIdeal (W := W)
+    h₁.left h₂.left hxy
+  have hu : IsUnit ((pointIdeal' W (WeierstrassCurve.Affine.Point.some _ _
+        (WeierstrassCurve.Affine.nonsingular_add h₁ h₂ hxy)) :
+      FractionalIdeal W.CoordinateRing⁰ W.FunctionField)) :=
+    (pointIdeal' W _).isUnit
+  apply hu.mul_left_cancel
+  rw [show (-(WeierstrassCurve.Affine.Point.some x₁ y₁ h₁ +
+        WeierstrassCurve.Affine.Point.some x₂ y₂ h₂) : W.Point) =
+      WeierstrassCurve.Affine.Point.some
+        (W.addX x₁ x₂ (W.slope x₁ x₂ y₁ y₂))
+        (W.negY (W.addX x₁ x₂ (W.slope x₁ x₂ y₁ y₂))
+          (W.addY x₁ x₂ y₁ (W.slope x₁ x₂ y₁ y₂)))
+        ((WeierstrassCurve.Affine.nonsingular_neg ..).mpr
+          (WeierstrassCurve.Affine.nonsingular_add h₁ h₂ hxy)) from by
+      rw [hadd, Point.neg_some],
+    coe_pointIdeal', coe_pointIdeal', coe_pointIdeal', coe_pointIdeal',
+    pointIdeal_some, pointIdeal_some, pointIdeal_some, pointIdeal_some,
+    ← FractionalIdeal.coeIdeal_mul, ← FractionalIdeal.coeIdeal_mul,
+    ← FractionalIdeal.coeIdeal_mul, ← FractionalIdeal.coeIdeal_mul,
+    FractionalIdeal.coeIdeal_inj, mul_comm, ← hMul,
+    ← CoordinateRing.XYIdeal_neg_mul
+      (WeierstrassCurve.Affine.nonsingular_add h₁ h₂ hxy)]
+  ring
+
 /-- **L4-8 line brick: divisor transport of a line class.**  The
 translated line `τ_Q^*(Y − (ℓ(X − x₁) + y₁))` (at the group-law slope
 `ℓ` of the pair `P R`) spans
@@ -1246,7 +1288,207 @@ theorem spanSingleton_pointEval_YClass (hΔ : W.Δ ≠ 0) {Q : W.Point}
         FractionalIdeal W.CoordinateRing⁰ W.FunctionField) *
         (pointIdeal' W (-(.some x₁ y₁ h₁ + .some x₂ y₂ h₂) - Q) :
           FractionalIdeal W.CoordinateRing⁰ W.FunctionField)) := by
-  sorry
+  cases Q with
+  | zero =>
+    -- at `Q = O` the evaluation is the canonical embedding and the
+    -- statement is the fractional span of the line
+    rw [← Point.zero_def] at hpt ⊢
+    rw [show constPoint W 0 = 0 from rfl, zero_add] at hpt
+    have hpt2 : WeierstrassCurve.Affine.Point.some (tautX W) (tautY W)
+        (taut_nonsingular W hΔ) =
+        WeierstrassCurve.Affine.Point.some xκ yκ hκ := hpt
+    injection hpt2 with hx hy
+    subst hx
+    subst hy
+    have hτ : pointEval (constHom W) hκ.left =
+        algebraMap W.CoordinateRing W.FunctionField := by
+      refine coordinateRing_ringHom_ext (fun d => ?_) ?_ ?_
+      · rw [pointEval_C]; rfl
+      · rw [pointEval_X]; rfl
+      · rw [pointEval_Y]; rfl
+    rw [hτ, neg_zero, sub_zero, sub_zero, sub_zero,
+      show pointIdeal' W (0 : W.Point) = 1 from rfl, Units.val_one, one_pow,
+      mul_one, ← FractionalIdeal.coeIdeal_span_singleton,
+      show Ideal.span {CoordinateRing.YClass W
+          (linePolynomial x₁ y₁ (W.slope x₁ x₂ y₁ y₂))} =
+        CoordinateRing.YIdeal W
+          (linePolynomial x₁ y₁ (W.slope x₁ x₂ y₁ y₂)) from rfl]
+    exact coe_YIdeal_line h₁ h₂ hxy
+  | some q₁ q₂ hq =>
+    -- the generic translate is computed by the chord formula
+    have hqx : constHom W q₁ ≠ tautX W := fun hc =>
+      tautX_ne_constHom q₁ hc.symm
+    have hne : ¬(constHom W q₁ = tautX W ∧
+        constHom W q₂ = (curveK W).negY (tautX W) (tautY W)) :=
+      fun hc => hqx hc.1
+    have hadd := Point.add_some (W := curveK W)
+      (h₁ := (W.map_nonsingular (constHom W).injective q₁ q₂).mpr hq)
+      (h₂ := taut_nonsingular W hΔ) hne
+    have hpt2 := hadd.symm.trans hpt
+    injection hpt2 with hxκ hyκ
+    have hsl : (curveK W).slope (constHom W q₁) (tautX W)
+        (constHom W q₂) (tautY W) =
+        (constHom W q₂ - tautY W) / (constHom W q₁ - tautX W) :=
+      WeierstrassCurve.Affine.slope_of_X_ne hqx
+    have hδ' : constHom W q₁ - tautX W ≠ 0 := sub_ne_zero.mpr hqx
+    have ha₁ : (curveK W).a₁ = constHom W W.a₁ := rfl
+    have ha₂ : (curveK W).a₂ = constHom W W.a₂ := rfl
+    have ha₃ : (curveK W).a₃ = constHom W W.a₃ := rfl
+    -- the translated line and the cleared numerator
+    have hτY : pointEval (constHom W) hκ.left
+        (CoordinateRing.YClass W
+          (linePolynomial x₁ y₁ (W.slope x₁ x₂ y₁ y₂))) =
+        yκ - (constHom W (W.slope x₁ x₂ y₁ y₂) * (xκ - constHom W x₁) +
+          constHom W y₁) := by
+      rw [YClass_line_eq]
+      simp only [map_sub, map_add, map_mul, coordX, coordY, coordC,
+        pointEval_X, pointEval_Y, pointEval_C]
+    have hXCq : algebraMap W.CoordinateRing W.FunctionField
+        (CoordinateRing.XClass W q₁) = tautX W - constHom W q₁ := by
+      rw [XClass_eq, map_sub, algebraMap_coordX, algebraMap_coordC]
+    have hkey : (yκ - (constHom W (W.slope x₁ x₂ y₁ y₂) *
+          (xκ - constHom W x₁) + constHom W y₁)) *
+        (tautX W - constHom W q₁) ^ 3 =
+        algebraMap W.CoordinateRing W.FunctionField
+          (lineNumerator W q₁ q₂ x₁ y₁ (W.slope x₁ x₂ y₁ y₂)) := by
+      rw [← hxκ, ← hyκ, hsl]
+      simp only [lineNumerator, map_sub, map_add, map_mul, map_pow, map_neg,
+        algebraMap_coordX, algebraMap_coordY, algebraMap_coordC,
+        WeierstrassCurve.Affine.addX, WeierstrassCurve.Affine.addY,
+        WeierstrassCurve.Affine.negAddY, WeierstrassCurve.Affine.negY,
+        ha₁, ha₂, ha₃]
+      field_simp [hδ']
+      ring
+    -- the vertical at `Q` spans `I_{⊖Q} · I_Q`
+    have hVQ : (pointIdeal' W
+          (-WeierstrassCurve.Affine.Point.some q₁ q₂ hq) :
+          FractionalIdeal W.CoordinateRing⁰ W.FunctionField) *
+        (pointIdeal' W (WeierstrassCurve.Affine.Point.some q₁ q₂ hq) :
+          FractionalIdeal W.CoordinateRing⁰ W.FunctionField) =
+        FractionalIdeal.spanSingleton W.CoordinateRing⁰
+          (algebraMap W.CoordinateRing W.FunctionField
+            (CoordinateRing.XClass W q₁)) := by
+      rw [Point.neg_some, coe_pointIdeal', coe_pointIdeal', pointIdeal_some,
+        pointIdeal_some, ← FractionalIdeal.coeIdeal_mul,
+        CoordinateRing.XYIdeal_neg_mul hq,
+        show CoordinateRing.XIdeal W q₁ =
+          Ideal.span {CoordinateRing.XClass W q₁} from rfl,
+        FractionalIdeal.coeIdeal_span_singleton]
+    -- cancel `I_Q³` against the numerator's span
+    have hu : IsUnit ((pointIdeal' W
+          (WeierstrassCurve.Affine.Point.some q₁ q₂ hq) :
+        FractionalIdeal W.CoordinateRing⁰ W.FunctionField) ^ 3) :=
+      (pointIdeal' W (WeierstrassCurve.Affine.Point.some q₁ q₂ hq)).isUnit.pow 3
+    apply hu.mul_left_cancel
+    calc (pointIdeal' W (WeierstrassCurve.Affine.Point.some q₁ q₂ hq) :
+          FractionalIdeal W.CoordinateRing⁰ W.FunctionField) ^ 3 *
+        (FractionalIdeal.spanSingleton W.CoordinateRing⁰
+            (pointEval (constHom W) hκ.left
+              (CoordinateRing.YClass W
+                (linePolynomial x₁ y₁ (W.slope x₁ x₂ y₁ y₂)))) *
+          (pointIdeal' W (-WeierstrassCurve.Affine.Point.some q₁ q₂ hq) :
+            FractionalIdeal W.CoordinateRing⁰ W.FunctionField) ^ 3)
+        = FractionalIdeal.spanSingleton W.CoordinateRing⁰
+            (pointEval (constHom W) hκ.left
+              (CoordinateRing.YClass W
+                (linePolynomial x₁ y₁ (W.slope x₁ x₂ y₁ y₂)))) *
+          (((pointIdeal' W
+                (-WeierstrassCurve.Affine.Point.some q₁ q₂ hq) :
+              FractionalIdeal W.CoordinateRing⁰ W.FunctionField) *
+            (pointIdeal' W (WeierstrassCurve.Affine.Point.some q₁ q₂ hq) :
+              FractionalIdeal W.CoordinateRing⁰ W.FunctionField)) *
+            (((pointIdeal' W
+                  (-WeierstrassCurve.Affine.Point.some q₁ q₂ hq) :
+                FractionalIdeal W.CoordinateRing⁰ W.FunctionField) *
+              (pointIdeal' W
+                  (WeierstrassCurve.Affine.Point.some q₁ q₂ hq) :
+                FractionalIdeal W.CoordinateRing⁰ W.FunctionField)) *
+              ((pointIdeal' W
+                  (-WeierstrassCurve.Affine.Point.some q₁ q₂ hq) :
+                FractionalIdeal W.CoordinateRing⁰ W.FunctionField) *
+              (pointIdeal' W
+                  (WeierstrassCurve.Affine.Point.some q₁ q₂ hq) :
+                FractionalIdeal W.CoordinateRing⁰ W.FunctionField)))) := by
+          ring
+      _ = FractionalIdeal.spanSingleton W.CoordinateRing⁰
+            (pointEval (constHom W) hκ.left
+              (CoordinateRing.YClass W
+                (linePolynomial x₁ y₁ (W.slope x₁ x₂ y₁ y₂)))) *
+          (FractionalIdeal.spanSingleton W.CoordinateRing⁰
+              (algebraMap W.CoordinateRing W.FunctionField
+                (CoordinateRing.XClass W q₁)) *
+            (FractionalIdeal.spanSingleton W.CoordinateRing⁰
+                (algebraMap W.CoordinateRing W.FunctionField
+                  (CoordinateRing.XClass W q₁)) *
+              FractionalIdeal.spanSingleton W.CoordinateRing⁰
+                (algebraMap W.CoordinateRing W.FunctionField
+                  (CoordinateRing.XClass W q₁)))) := by rw [hVQ]
+      _ = FractionalIdeal.spanSingleton W.CoordinateRing⁰
+            (pointEval (constHom W) hκ.left
+              (CoordinateRing.YClass W
+                (linePolynomial x₁ y₁ (W.slope x₁ x₂ y₁ y₂))) *
+              (algebraMap W.CoordinateRing W.FunctionField
+                  (CoordinateRing.XClass W q₁) *
+                (algebraMap W.CoordinateRing W.FunctionField
+                    (CoordinateRing.XClass W q₁) *
+                  algebraMap W.CoordinateRing W.FunctionField
+                    (CoordinateRing.XClass W q₁)))) := by
+          rw [FractionalIdeal.spanSingleton_mul_spanSingleton,
+            FractionalIdeal.spanSingleton_mul_spanSingleton,
+            FractionalIdeal.spanSingleton_mul_spanSingleton]
+      _ = FractionalIdeal.spanSingleton W.CoordinateRing⁰
+            (algebraMap W.CoordinateRing W.FunctionField
+              (lineNumerator W q₁ q₂ x₁ y₁ (W.slope x₁ x₂ y₁ y₂))) := by
+          rw [hτY, hXCq, show (yκ - (constHom W (W.slope x₁ x₂ y₁ y₂) *
+                (xκ - constHom W x₁) + constHom W y₁)) *
+              ((tautX W - constHom W q₁) * ((tautX W - constHom W q₁) *
+                (tautX W - constHom W q₁))) =
+            (yκ - (constHom W (W.slope x₁ x₂ y₁ y₂) *
+                (xκ - constHom W x₁) + constHom W y₁)) *
+              (tautX W - constHom W q₁) ^ 3 from by ring, hkey]
+      _ = ((Ideal.span {lineNumerator W q₁ q₂ x₁ y₁
+              (W.slope x₁ x₂ y₁ y₂)} : Ideal W.CoordinateRing) :
+            FractionalIdeal W.CoordinateRing⁰ W.FunctionField) :=
+          (FractionalIdeal.coeIdeal_span_singleton _).symm
+      _ = ((pointIdeal W (WeierstrassCurve.Affine.Point.some q₁ q₂ hq) *
+              (pointIdeal W (WeierstrassCurve.Affine.Point.some q₁ q₂ hq) *
+                pointIdeal W (WeierstrassCurve.Affine.Point.some q₁ q₂ hq)) *
+              (pointIdeal W (WeierstrassCurve.Affine.Point.some x₁ y₁ h₁ -
+                  WeierstrassCurve.Affine.Point.some q₁ q₂ hq) *
+                (pointIdeal W (WeierstrassCurve.Affine.Point.some x₂ y₂ h₂ -
+                    WeierstrassCurve.Affine.Point.some q₁ q₂ hq) *
+                  pointIdeal W
+                    (-(WeierstrassCurve.Affine.Point.some x₁ y₁ h₁ +
+                      WeierstrassCurve.Affine.Point.some x₂ y₂ h₂) -
+                      WeierstrassCurve.Affine.Point.some q₁ q₂ hq))) :
+            Ideal W.CoordinateRing) :
+            FractionalIdeal W.CoordinateRing⁰ W.FunctionField) := by
+          rw [span_lineNumerator hΔ hq h₁ h₂ hxy,
+            show pointIdeal W (WeierstrassCurve.Affine.Point.some q₁ q₂
+                hq) ^ 3 =
+              pointIdeal W (WeierstrassCurve.Affine.Point.some q₁ q₂ hq) *
+                (pointIdeal W
+                    (WeierstrassCurve.Affine.Point.some q₁ q₂ hq) *
+                  pointIdeal W
+                    (WeierstrassCurve.Affine.Point.some q₁ q₂ hq)) from by
+              ring]
+      _ = (pointIdeal' W (WeierstrassCurve.Affine.Point.some q₁ q₂ hq) :
+            FractionalIdeal W.CoordinateRing⁰ W.FunctionField) ^ 3 *
+          ((pointIdeal' W (WeierstrassCurve.Affine.Point.some x₁ y₁ h₁ -
+              WeierstrassCurve.Affine.Point.some q₁ q₂ hq) :
+            FractionalIdeal W.CoordinateRing⁰ W.FunctionField) *
+          ((pointIdeal' W (WeierstrassCurve.Affine.Point.some x₂ y₂ h₂ -
+              WeierstrassCurve.Affine.Point.some q₁ q₂ hq) :
+            FractionalIdeal W.CoordinateRing⁰ W.FunctionField) *
+          (pointIdeal' W (-(WeierstrassCurve.Affine.Point.some x₁ y₁ h₁ +
+              WeierstrassCurve.Affine.Point.some x₂ y₂ h₂) -
+              WeierstrassCurve.Affine.Point.some q₁ q₂ hq) :
+            FractionalIdeal W.CoordinateRing⁰ W.FunctionField))) := by
+          rw [FractionalIdeal.coeIdeal_mul, FractionalIdeal.coeIdeal_mul,
+            FractionalIdeal.coeIdeal_mul, FractionalIdeal.coeIdeal_mul,
+            FractionalIdeal.coeIdeal_mul, ← coe_pointIdeal',
+            ← coe_pointIdeal', ← coe_pointIdeal', ← coe_pointIdeal']
+          ring
 
 /-- **L4-8 core (sorry node): divisor transport along evaluation at a
 generic translate.**  Let `b ∈ F[W]` generate the point-ideal product
