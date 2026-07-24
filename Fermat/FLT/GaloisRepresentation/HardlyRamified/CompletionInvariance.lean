@@ -8,6 +8,7 @@ module
 public import Fermat.FLT.FreyCurve.MazurTorsion
 public import Fermat.FLT.Deformations.RepresentationTheory.LocalInertiaFixedField
 public import Mathlib.NumberTheory.RamificationInertia.Galois
+public import Mathlib.NumberTheory.RamificationInertia.Basic
 public import Mathlib.FieldTheory.Galois.IsGaloisGroup
 public import Mathlib.RingTheory.DedekindDomain.Different
 public import Mathlib.RingTheory.Nakayama
@@ -1278,6 +1279,46 @@ end LocalConductor
 
 section Counting
 
+/-- **Injectivity of the embedded-conjugate map**: for a primitive
+`θ`, distinct Galois substitutions give distinct `ι`-images of the
+conjugates `σθ` (rigidity of the primitive element plus injectivity of
+the field embeddings). -/
+theorem conjugate_algebraMap_injective
+    (K : IntermediateField ℚ (AlgebraicClosure ℚ)) [NumberField K]
+    {θ : RingOfIntegers K}
+    (hθtop : Algebra.adjoin ℚ
+      {(algebraMap (RingOfIntegers K) K θ : K)} = ⊤) :
+    Function.Injective (fun σ : K ≃ₐ[ℚ] K =>
+      AlgebraicClosure.map (algebraMap ℚ Kv)
+        ((algebraMap (RingOfIntegers K) K (σ • θ) : K) :
+          AlgebraicClosure ℚ)) := by
+  intro σ τ h
+  have h1 : σ (algebraMap (RingOfIntegers K) K θ) =
+      τ (algebraMap (RingOfIntegers K) K θ) := by
+    have h2 := (AlgebraicClosure.map (algebraMap ℚ Kv)).injective h
+    have h3 := (algebraMap K (AlgebraicClosure ℚ)).injective
+      (a₁ := (algebraMap (RingOfIntegers K) K (σ • θ) : K))
+      (a₂ := (algebraMap (RingOfIntegers K) K (τ • θ) : K)) h2
+    exact h3
+  have h4 : (τ⁻¹ * σ) (algebraMap (RingOfIntegers K) K θ) =
+      algebraMap (RingOfIntegers K) K θ := by
+    have h5 : τ⁻¹ (σ (algebraMap (RingOfIntegers K) K θ)) =
+        τ⁻¹ (τ (algebraMap (RingOfIntegers K) K θ)) := congrArg _ h1
+    rwa [← AlgEquiv.mul_apply, ← AlgEquiv.mul_apply, inv_mul_cancel,
+      AlgEquiv.one_apply] at h5
+  have h6 : τ⁻¹ * σ = 1 := by
+    have h7 : Algebra.adjoin ℚ
+        ({(algebraMap (RingOfIntegers K) K θ : K)} : Set K) ≤
+        AlgHom.equalizer (τ⁻¹ * σ : K ≃ₐ[ℚ] K).toAlgHom (AlgHom.id ℚ K) :=
+      Algebra.adjoin_le (Set.singleton_subset_iff.mpr h4)
+    refine AlgEquiv.ext fun y => ?_
+    have hy : y ∈ Algebra.adjoin ℚ
+        ({(algebraMap (RingOfIntegers K) K θ : K)} : Set K) := by
+      rw [hθtop]
+      exact Algebra.mem_top
+    exact h7 hy
+  rw [← one_mul σ, ← mul_inv_cancel τ, mul_assoc, h6, mul_one]
+
 /-- **The mapped minimal polynomial is the nodal polynomial of the
 embedded conjugates** (Serre, *Corps Locaux* III §6, base-changed along
 `ι`): for a primitive algebraic integer `θ` of the Galois number field
@@ -1429,7 +1470,475 @@ theorem isUnit_aeval_cofactor
     {h : Polynomial Ov}
     (hFgh : (minpoly ℤ θ).map (Int.castRingHom Ov) = minpoly Ov (φ θ) * h) :
     IsUnit (Polynomial.aeval (φ θ) h) := by
-  sorry
+  classical
+  -- ambient instances
+  haveI : IsFractionRing (IntegralClosure Ov M) M :=
+    IsIntegralClosure.isFractionRing_of_finite_extension Ov Kv M
+      (IntegralClosure Ov M)
+  haveI : Module.Finite Ov (IntegralClosure Ov M) :=
+    IsIntegralClosure.finite Ov Kv M (IntegralClosure Ov M)
+  haveI hmaxprime : (IsLocalRing.maximalIdeal (IntegralClosure Ov M)).IsPrime :=
+    (IsLocalRing.maximalIdeal.isMaximal _).isPrime
+  set Q₀ : Ideal (RingOfIntegers K) :=
+    Ideal.comap φ (IsLocalRing.maximalIdeal (IntegralClosure Ov M)) with hQ₀def
+  haveI hQ₀prime : Q₀.IsPrime := Ideal.IsPrime.comap φ
+  have hq0R : ((q : ℕ) : RingOfIntegers K) ∈ Q₀ := by
+    rw [hQ₀def, Ideal.mem_comap, map_natCast]
+    exact natCast_mem_maximalIdeal hq M
+  have hqR0 : ((q : ℕ) : RingOfIntegers K) ≠ 0 := Nat.cast_ne_zero.mpr hq.ne_zero
+  have hQ₀bot : Q₀ ≠ ⊥ := by
+    intro h0
+    refine hqR0 ?_
+    rw [← Ideal.mem_bot, ← h0]
+    exact hq0R
+  haveI hQ₀max : Q₀.IsMaximal := hQ₀prime.isMaximal hQ₀bot
+  -- the embedded-conjugate function
+  set w : (K ≃ₐ[ℚ] K) → AlgebraicClosure Kv := fun σ =>
+    AlgebraicClosure.map (algebraMap ℚ Kv)
+      ((algebraMap (RingOfIntegers K) K (σ • θ) : K) : AlgebraicClosure ℚ)
+    with hwdef
+  have hwinj : Function.Injective w := conjugate_algebraMap_injective hq K hθtop
+  -- passage to the integral closure `B'' ⊆ Ω` and its maximal ideal
+  have hmemB'' : ∀ b : IntegralClosure Ov M,
+      algebraMap M (AlgebraicClosure Kv)
+        (algebraMap (IntegralClosure Ov M) M b) ∈
+        integralClosure Ov (AlgebraicClosure Kv) := by
+    intro b
+    exact (IsIntegralClosure.isIntegral Ov M b).map
+      ((IsScalarTower.toAlgHom Ov M (AlgebraicClosure Kv)).comp
+        (IsScalarTower.toAlgHom Ov (IntegralClosure Ov M) M))
+  have hwval : ∀ r : RingOfIntegers K,
+      algebraMap M (AlgebraicClosure Kv)
+        (algebraMap (IntegralClosure Ov M) M (φ r)) =
+      AlgebraicClosure.map (algebraMap ℚ Kv)
+        ((algebraMap (RingOfIntegers K) K r : K) : AlgebraicClosure ℚ) := by
+    intro r
+    exact hφ r
+  have hwmem' : ∀ σ : K ≃ₐ[ℚ] K,
+      w σ ∈ integralClosure Ov (AlgebraicClosure Kv) := by
+    intro σ
+    have h1 := hmemB'' (φ (σ • θ))
+    rwa [hwval (σ • θ)] at h1
+  -- `B''` is a local ring; membership descends and lifts along `Q₀`
+  haveI hVR : ValuationRing (IntegralClosure Ov (AlgebraicClosure Kv)) :=
+    valuationRing_integralClosure hq.toHeightOneSpectrumRingOfIntegersRat
+  haveI hB''max : (IsLocalRing.maximalIdeal
+      (IntegralClosure Ov (AlgebraicClosure Kv))).IsMaximal :=
+    IsLocalRing.maximalIdeal.isMaximal _
+  set ρ : IntegralClosure Ov M →+* IntegralClosure Ov (AlgebraicClosure Kv) :=
+    RingHom.codRestrict ((algebraMap M (AlgebraicClosure Kv)).comp
+      (algebraMap (IntegralClosure Ov M) M))
+      (integralClosure Ov (AlgebraicClosure Kv)).toSubring
+      (fun b => hmemB'' b) with hρdef
+  letI := ρ.toAlgebra
+  haveI httower : IsScalarTower Ov (IntegralClosure Ov M)
+      (IntegralClosure Ov (AlgebraicClosure Kv)) := by
+    refine IsScalarTower.of_algebraMap_eq' ?_
+    refine RingHom.ext fun c => ?_
+    refine Subtype.ext ?_
+    have e1 : Subtype.val (algebraMap Ov
+        (IntegralClosure Ov (AlgebraicClosure Kv)) c) =
+        algebraMap Ov (AlgebraicClosure Kv) c := rfl
+    have e2 : Subtype.val (((algebraMap (IntegralClosure Ov M)
+        (IntegralClosure Ov (AlgebraicClosure Kv))).comp
+          (algebraMap Ov (IntegralClosure Ov M))) c) =
+        algebraMap M (AlgebraicClosure Kv)
+          (algebraMap (IntegralClosure Ov M) M
+            (algebraMap Ov (IntegralClosure Ov M) c)) := by
+      rw [show (algebraMap (IntegralClosure Ov M)
+        (IntegralClosure Ov (AlgebraicClosure Kv))) = ρ from rfl, hρdef]
+      rfl
+    rw [e1, e2, ← IsScalarTower.algebraMap_apply Ov
+      (IntegralClosure Ov M) M, ← IsScalarTower.algebraMap_apply Ov M
+      (AlgebraicClosure Kv)]
+  haveI hint'' : Algebra.IsIntegral (IntegralClosure Ov M)
+      (IntegralClosure Ov (AlgebraicClosure Kv)) := by
+    constructor
+    intro y
+    have h1 : IsIntegral Ov y :=
+      IsIntegralClosure.isIntegral Ov (AlgebraicClosure Kv) y
+    exact h1.tower_top
+  have hcomapρ : Ideal.comap (algebraMap (IntegralClosure Ov M)
+      (IntegralClosure Ov (AlgebraicClosure Kv)))
+      (IsLocalRing.maximalIdeal (IntegralClosure Ov (AlgebraicClosure Kv))) =
+      IsLocalRing.maximalIdeal (IntegralClosure Ov M) := by
+    haveI hc := Ideal.isMaximal_comap_of_isIntegral_of_isMaximal
+      (R := IntegralClosure Ov M)
+      (IsLocalRing.maximalIdeal (IntegralClosure Ov (AlgebraicClosure Kv)))
+    exact IsLocalRing.eq_maximalIdeal hc
+  have himgQ : ∀ z : RingOfIntegers K, z ∈ Q₀ →
+      algebraMap (IntegralClosure Ov M)
+        (IntegralClosure Ov (AlgebraicClosure Kv)) (φ z) ∈
+        IsLocalRing.maximalIdeal (IntegralClosure Ov (AlgebraicClosure Kv)) := by
+    intro z hz
+    have h1 : φ z ∈ IsLocalRing.maximalIdeal (IntegralClosure Ov M) :=
+      Ideal.mem_comap.mp hz
+    rw [← hcomapρ] at h1
+    exact h1
+  have himgQ' : ∀ b : IntegralClosure Ov M,
+      algebraMap (IntegralClosure Ov M)
+        (IntegralClosure Ov (AlgebraicClosure Kv)) b ∈
+        IsLocalRing.maximalIdeal (IntegralClosure Ov (AlgebraicClosure Kv)) →
+      b ∈ IsLocalRing.maximalIdeal (IntegralClosure Ov M) := by
+    intro b hb
+    rw [← hcomapρ]
+    exact hb
+  -- the coercion of `ρ`-images
+  have hρcoe : ∀ b : IntegralClosure Ov M,
+      Subtype.val (algebraMap (IntegralClosure Ov M)
+        (IntegralClosure Ov (AlgebraicClosure Kv)) b) =
+      algebraMap M (AlgebraicClosure Kv)
+        (algebraMap (IntegralClosure Ov M) M b) := by
+    intro b
+    rw [show (algebraMap (IntegralClosure Ov M)
+      (IntegralClosure Ov (AlgebraicClosure Kv))) = ρ from rfl, hρdef]
+    rfl
+  -- root bookkeeping over `Ω`
+  have hFΩ := map_minpoly_eq_prod_X_sub_C hq K hθtop
+  have hFmonic : (minpoly ℤ θ).Monic :=
+    minpoly.monic (Algebra.IsIntegral.isIntegral θ)
+  have hFΩmonic : ((minpoly ℤ θ).map
+      (Int.castRingHom (AlgebraicClosure Kv))).Monic := hFmonic.map _
+  have hFΩprod : (minpoly ℤ θ).map (Int.castRingHom (AlgebraicClosure Kv)) =
+      ((Finset.univ.val.map w).map (fun a => X - C a)).prod := by
+    rw [hFΩ, Finset.prod_eq_multiset_prod, Multiset.map_map]
+    rfl
+  have hrootsF : ((minpoly ℤ θ).map
+      (Int.castRingHom (AlgebraicClosure Kv))).roots = Finset.univ.val.map w := by
+    rw [hFΩprod]
+    exact Polynomial.roots_multiset_prod_X_sub_C _
+  have hrootsFnodup : ((minpoly ℤ θ).map
+      (Int.castRingHom (AlgebraicClosure Kv))).roots.Nodup := by
+    rw [hrootsF]
+    exact Finset.univ.nodup.map hwinj
+  have hxint : IsIntegral Ov (φ θ) := IsIntegralClosure.isIntegral Ov M (φ θ)
+  have hgmonic : (minpoly Ov (φ θ)).Monic := minpoly.monic hxint
+  have hhmonic : h.Monic := by
+    refine Polynomial.Monic.of_mul_monic_left hgmonic ?_
+    rw [← hFgh]
+    exact hFmonic.map _
+  have hFgh' : (minpoly ℤ θ).map (Int.castRingHom (AlgebraicClosure Kv)) =
+      (minpoly Ov (φ θ)).map (algebraMap Ov (AlgebraicClosure Kv)) *
+        h.map (algebraMap Ov (AlgebraicClosure Kv)) := by
+    rw [← Polynomial.map_mul, ← hFgh, Polynomial.map_map]
+    all_goals
+      exact congrArg
+        (fun f : ℤ →+* AlgebraicClosure Kv => (minpoly ℤ θ).map f)
+        (Subsingleton.elim _ _)
+  have hFΩ0 : (minpoly ℤ θ).map (Int.castRingHom (AlgebraicClosure Kv)) ≠ 0 :=
+    hFΩmonic.ne_zero
+  have hrootsadd : ((minpoly ℤ θ).map
+      (Int.castRingHom (AlgebraicClosure Kv))).roots =
+      ((minpoly Ov (φ θ)).map (algebraMap Ov (AlgebraicClosure Kv))).roots +
+      (h.map (algebraMap Ov (AlgebraicClosure Kv))).roots := by
+    rw [hFgh']
+    exact Polynomial.roots_mul (by rw [← hFgh']; exact hFΩ0)
+  have hgle : ((minpoly Ov (φ θ)).map
+      (algebraMap Ov (AlgebraicClosure Kv))).roots ≤
+      ((minpoly ℤ θ).map (Int.castRingHom (AlgebraicClosure Kv))).roots := by
+    rw [hrootsadd]
+    exact Multiset.le_add_right _ _
+  have hhle : (h.map (algebraMap Ov (AlgebraicClosure Kv))).roots ≤
+      ((minpoly ℤ θ).map (Int.castRingHom (AlgebraicClosure Kv))).roots := by
+    rw [hrootsadd]
+    exact Multiset.le_add_left _ _
+  have hFsplits : ((minpoly ℤ θ).map
+      (Int.castRingHom (AlgebraicClosure Kv))).Splits :=
+    IsAlgClosed.splits _
+  have hgsplits : ((minpoly Ov (φ θ)).map
+      (algebraMap Ov (AlgebraicClosure Kv))).Splits :=
+    IsAlgClosed.splits _
+  have hhsplits : (h.map (algebraMap Ov (AlgebraicClosure Kv))).Splits :=
+    IsAlgClosed.splits _
+  -- `x = φθ` is a unit of `𝒪_M`, hence so is `g₀`
+  have hxunit : IsUnit (φ θ) := by
+    rw [← IsLocalRing.notMem_maximalIdeal]
+    exact fun hmem => hθQ (Ideal.mem_comap.mpr hmem)
+  have hg0 : IsUnit ((minpoly Ov (φ θ)).coeff 0) :=
+    isUnit_coeff_zero_minpoly hq M (φ θ)
+      (adjoin_algebraMap_eq_top_of_adjoin_eq_top hq K M hMgen φ hφ hθtop) hxunit
+  -- conjugates outside the decomposition group land in `Q₀`
+  have hsmulmem : ∀ σ : K ≃ₐ[ℚ] K, σ • Q₀ ≠ Q₀ → σ • θ ∈ Q₀ := by
+    intro σ hσ
+    have hσ' : σ⁻¹ • Q₀ ≠ Q₀ := by
+      intro h0
+      refine hσ ?_
+      calc σ • Q₀ = σ • (σ⁻¹ • Q₀) := by rw [h0]
+        _ = Q₀ := by rw [smul_smul, mul_inv_cancel, one_smul]
+    have h1 := hθmem σ⁻¹ hσ'
+    have h2 := Ideal.mem_pointwise_smul_iff_inv_smul_mem.mp h1
+    rwa [inv_inv] at h2
+  -- CLAIM A: every root of `g` is a `D`-conjugate
+  have hDroot : ∀ σ : K ≃ₐ[ℚ] K,
+      w σ ∈ ((minpoly Ov (φ θ)).map
+        (algebraMap Ov (AlgebraicClosure Kv))).roots → σ • Q₀ = Q₀ := by
+    intro σ hσroot
+    by_contra hσD
+    -- the `B''`-point at `w σ`
+    set y' : IntegralClosure Ov (AlgebraicClosure Kv) :=
+      algebraMap (IntegralClosure Ov M)
+        (IntegralClosure Ov (AlgebraicClosure Kv)) (φ (σ • θ)) with hy'def
+    have hy'val : Subtype.val y' = w σ := by
+      rw [hy'def, hρcoe (φ (σ • θ))]
+      exact hwval (σ • θ)
+    have hy'mem : y' ∈
+        IsLocalRing.maximalIdeal (IntegralClosure Ov (AlgebraicClosure Kv)) :=
+      himgQ _ (hsmulmem σ hσD)
+    -- `y'` is a root of the minimal polynomial of `φθ` over `𝒪_q`
+    have hy'root : Polynomial.aeval y' (minpoly Ov (φ θ)) = 0 := by
+      refine Subtype.ext ?_
+      have hval : Subtype.val (Polynomial.aeval y' (minpoly Ov (φ θ))) =
+          Polynomial.aeval (Subtype.val y') (minpoly Ov (φ θ)) := by
+        exact (Polynomial.aeval_algHom_apply
+          (IsScalarTower.toAlgHom Ov (IntegralClosure Ov (AlgebraicClosure Kv))
+            (AlgebraicClosure Kv)) y' (minpoly Ov (φ θ))).symm
+      rw [hval, hy'val]
+      have h2 : Polynomial.eval (w σ)
+          ((minpoly Ov (φ θ)).map (algebraMap Ov (AlgebraicClosure Kv))) = 0 :=
+        (Polynomial.mem_roots
+          (p := (minpoly Ov (φ θ)).map (algebraMap Ov (AlgebraicClosure Kv)))
+          ((hgmonic.map _).ne_zero)).mp hσroot
+      rwa [Polynomial.eval_map, ← Polynomial.aeval_def] at h2
+      -- the trailing coefficient is then in the maximal ideal
+    have hsplit := Polynomial.X_mul_divX_add (minpoly Ov (φ θ))
+    have haeval := congrArg (Polynomial.aeval y') hsplit
+    rw [hy'root, map_add, map_mul, Polynomial.aeval_X, Polynomial.aeval_C] at haeval
+    have hcoefmem : algebraMap Ov (IntegralClosure Ov (AlgebraicClosure Kv))
+        ((minpoly Ov (φ θ)).coeff 0) ∈
+        IsLocalRing.maximalIdeal (IntegralClosure Ov (AlgebraicClosure Kv)) := by
+      have h3 : algebraMap Ov (IntegralClosure Ov (AlgebraicClosure Kv))
+          ((minpoly Ov (φ θ)).coeff 0) =
+          -(y' * Polynomial.aeval y' (Polynomial.divX (minpoly Ov (φ θ)))) := by
+        linear_combination haeval
+      rw [h3]
+      exact neg_mem (Ideal.mul_mem_right _ _ hy'mem)
+    exact hB''max.ne_top (Ideal.eq_top_of_isUnit_mem _ hcoefmem
+      (hg0.map (algebraMap Ov (IntegralClosure Ov (AlgebraicClosure Kv)))))
+  -- CLAIM B: the count `deg g = [M : ℚ_q] = e·f = #D`
+  set D : Finset (K ≃ₐ[ℚ] K) := Finset.univ.filter (fun σ => σ • Q₀ = Q₀)
+    with hDdef
+  have hrootsgnodup : ((minpoly Ov (φ θ)).map
+      (algebraMap Ov (AlgebraicClosure Kv))).roots.Nodup :=
+    Multiset.nodup_of_le hgle hrootsFnodup
+  have hrootsgD : ((minpoly Ov (φ θ)).map
+      (algebraMap Ov (AlgebraicClosure Kv))).roots ≤ D.val.map w := by
+    rw [Multiset.le_iff_subset hrootsgnodup]
+    intro r hr
+    have hrF := Multiset.mem_of_le hgle hr
+    rw [hrootsF] at hrF
+    obtain ⟨τ, -, rfl⟩ := Multiset.mem_map.mp hrF
+    refine Multiset.mem_map_of_mem w ?_
+    rw [hDdef]
+    exact Finset.mem_filter.mpr ⟨Finset.mem_univ _, hDroot τ hr⟩
+  -- the degree of `g` is the local degree
+  have hxMint : IsIntegral Kv (algebraMap (IntegralClosure Ov M) M (φ θ)) :=
+    IsIntegral.of_finite Kv _
+  have hminp : minpoly Kv (algebraMap (IntegralClosure Ov M) M (φ θ)) =
+      (minpoly Ov (φ θ)).map (algebraMap Ov Kv) :=
+    minpoly.isIntegrallyClosed_eq_field_fractions Kv M hxint
+  have hcardg : ((minpoly Ov (φ θ)).map
+      (algebraMap Ov (AlgebraicClosure Kv))).roots.card =
+      Module.finrank Kv M := by
+    rw [← Polynomial.Splits.natDegree_eq_card_roots hgsplits]
+    have h1 : ((minpoly Ov (φ θ)).map
+        (algebraMap Ov (AlgebraicClosure Kv))).natDegree =
+        (minpoly Ov (φ θ)).natDegree := by
+      refine Polynomial.natDegree_map_eq_of_injective ?_ _
+      rw [IsScalarTower.algebraMap_eq Ov Kv (AlgebraicClosure Kv)]
+      exact (algebraMap Kv (AlgebraicClosure Kv)).injective.comp
+        (IsFractionRing.injective Ov Kv)
+    have h2 : (minpoly Ov (φ θ)).natDegree =
+        (minpoly Kv (algebraMap (IntegralClosure Ov M) M (φ θ))).natDegree := by
+      rw [hminp]
+      exact (Polynomial.natDegree_map_eq_of_injective
+        (IsFractionRing.injective Ov Kv) _).symm
+    have hadj : IntermediateField.adjoin Kv
+        {(algebraMap (IntegralClosure Ov M) M (φ θ) : M)} = ⊤ := by
+      refine IntermediateField.toSubalgebra_injective ?_
+      rw [IntermediateField.adjoin_simple_toSubalgebra_of_isAlgebraic
+        hxMint.isAlgebraic, IntermediateField.top_toSubalgebra]
+      exact adjoin_algebraMap_eq_top_of_adjoin_eq_top hq K M hMgen φ hφ hθtop
+    have h3 : (minpoly Kv
+        (algebraMap (IntegralClosure Ov M) M (φ θ))).natDegree =
+        Module.finrank Kv M := by
+      rw [← IntermediateField.adjoin.finrank hxMint, hadj]
+      exact IntermediateField.finrank_top'
+    rw [h1, h2, h3]
+  -- the local fundamental identity
+  have hOvbot : IsLocalRing.maximalIdeal Ov ≠ ⊥ :=
+    IsDiscreteValuationRing.not_a_field Ov
+  have hlocEF := Ideal.ramificationIdx_mul_inertiaDeg_of_isLocalRing
+    (R := Ov) (S := IntegralClosure Ov M) Kv M
+    (p := IsLocalRing.maximalIdeal Ov) hOvbot
+  -- the global `#D = e·f` (Hilbert)
+  have hqZ0 : ((q : ℕ) : ℤ) ≠ 0 := Int.natCast_ne_zero.mpr hq.ne_zero
+  haveI hprimeZ : (Ideal.span {((q : ℕ) : ℤ)}).IsPrime :=
+    (Ideal.span_singleton_prime hqZ0).mpr (Nat.prime_iff_prime_int.mp hq)
+  haveI hmaxZ : (Ideal.span {((q : ℕ) : ℤ)}).IsMaximal :=
+    hprimeZ.isMaximal (by rw [Ne, Ideal.span_singleton_eq_bot]; exact hqZ0)
+  have hunder : Ideal.comap (algebraMap ℤ (RingOfIntegers K)) Q₀ =
+      Ideal.span {((q : ℕ) : ℤ)} := by
+    refine (hmaxZ.eq_of_le ?_ ?_).symm
+    · intro htop
+      refine hQ₀prime.ne_top (Ideal.eq_top_iff_one _ |>.mpr ?_)
+      have h1 : (1 : ℤ) ∈ Ideal.comap (algebraMap ℤ (RingOfIntegers K)) Q₀ := by
+        rw [htop]
+        trivial
+      have h2 := Ideal.mem_comap.mp h1
+      rwa [map_one] at h2
+    · rw [Ideal.span_le, Set.singleton_subset_iff, SetLike.mem_coe,
+        Ideal.mem_comap, map_natCast]
+      exact hq0R
+  haveI hLOgl : Q₀.LiesOver (Ideal.span {((q : ℕ) : ℤ)}) := ⟨hunder.symm⟩
+  haveI : Finite (ℤ ⧸ Ideal.span {((q : ℕ) : ℤ)}) := by
+    haveI : NeZero q := ⟨hq.ne_zero⟩
+    exact Finite.of_equiv _ (Int.quotientSpanNatEquivZMod q).symm.toEquiv
+  haveI : Finite ((Ideal.span {((q : ℕ) : ℤ)}).ResidueField) := by
+    have hsurj : Function.Surjective
+        (algebraMap (ℤ ⧸ Ideal.span {((q : ℕ) : ℤ)})
+          ((Ideal.span {((q : ℕ) : ℤ)}).ResidueField)) :=
+      IsFractionRing.surjective_iff_isField.mpr
+        ((Ideal.Quotient.maximal_ideal_iff_isField_quotient _).mp hmaxZ)
+    exact Finite.of_surjective _ hsurj
+  have hstab := Ideal.card_stabilizer_eq (G := K ≃ₐ[ℚ] K)
+    (Ideal.span {((q : ℕ) : ℤ)}) Q₀
+  have hDstab : D.card = Nat.card (MulAction.stabilizer (K ≃ₐ[ℚ] K) Q₀) := by
+    rw [Nat.card_eq_fintype_card, hDdef]
+    exact (Fintype.card_subtype (fun σ => σ • Q₀ = Q₀)).symm
+  -- convert the `In`-indices to the primed indices at `Q₀`
+  have hramconv : (Ideal.span {((q : ℕ) : ℤ)}).ramificationIdxIn
+      (RingOfIntegers K) =
+      Ideal.ramificationIdx' (Ideal.span {((q : ℕ) : ℤ)}) Q₀ := by
+    rw [Ideal.ramificationIdxIn_eq_ramificationIdx
+      (Ideal.span {((q : ℕ) : ℤ)}) Q₀ (K ≃ₐ[ℚ] K)]
+    exact (Ideal.ramificationIdx'_eq_ramificationIdx
+      (Ideal.span {((q : ℕ) : ℤ)}) Q₀
+      (by rw [Ne, Ideal.span_singleton_eq_bot]; exact hqZ0)).symm
+  have hinertconv : (Ideal.span {((q : ℕ) : ℤ)}).inertiaDegIn
+      (RingOfIntegers K) =
+      Ideal.inertiaDeg' (Ideal.span {((q : ℕ) : ℤ)}) Q₀ := by
+    rw [Ideal.inertiaDegIn_eq_inertiaDeg
+      (Ideal.span {((q : ℕ) : ℤ)}) Q₀ (K ≃ₐ[ℚ] K)]
+    exact (Ideal.inertiaDeg'_eq_inertiaDeg
+      (Ideal.span {((q : ℕ) : ℤ)}) Q₀).symm
+  have hcardD : D.card = Module.finrank Kv M := by
+    rw [hDstab, hstab, hramconv, hinertconv,
+      ramificationIdx'_comap_maximalIdeal_eq_of_dense hq K M hMgen φ hφ,
+      inertiaDeg'_comap_maximalIdeal_eq_of_dense hq K M hMgen φ hφ]
+    exact hlocEF
+  -- the roots of `g` exhaust the `D`-conjugates
+  have hrootseq : ((minpoly Ov (φ θ)).map
+      (algebraMap Ov (AlgebraicClosure Kv))).roots = D.val.map w := by
+    refine Multiset.eq_of_le_of_card_le hrootsgD ?_
+    rw [Multiset.card_map, ← Finset.card_def, hcardD, hcardg]
+  -- roots of `h` are outside `D`
+  have hrootshD : ∀ τ : K ≃ₐ[ℚ] K,
+      w τ ∈ (h.map (algebraMap Ov (AlgebraicClosure Kv))).roots →
+      τ • Q₀ ≠ Q₀ := by
+    intro τ hτ hτD
+    have h1 : w τ ∈ ((minpoly Ov (φ θ)).map
+        (algebraMap Ov (AlgebraicClosure Kv))).roots := by
+      rw [hrootseq]
+      refine Multiset.mem_map_of_mem w ?_
+      rw [hDdef]
+      exact Finset.mem_filter.mpr ⟨Finset.mem_univ _, hτD⟩
+    have h2 : (2 : ℕ) ≤ ((minpoly ℤ θ).map
+        (Int.castRingHom (AlgebraicClosure Kv))).roots.count (w τ) := by
+      rw [hrootsadd, Multiset.count_add]
+      have h3 := Multiset.one_le_count_iff_mem.mpr h1
+      have h4 := Multiset.one_le_count_iff_mem.mpr hτ
+      omega
+    have h5 := Multiset.nodup_iff_count_le_one.mp hrootsFnodup (w τ)
+    omega
+  -- extract the `h`-roots as a multiset of substitutions outside `D`
+  have hsubT : ∀ r ∈ (h.map (algebraMap Ov (AlgebraicClosure Kv))).roots,
+      ∃ τ : K ≃ₐ[ℚ] K, w τ = r ∧ τ • Q₀ ≠ Q₀ := by
+    intro r hr
+    have hrF := Multiset.mem_of_le hhle hr
+    rw [hrootsF] at hrF
+    obtain ⟨τ, -, rfl⟩ := Multiset.mem_map.mp hrF
+    exact ⟨τ, rfl, hrootshD τ hr⟩
+  set T : Multiset (K ≃ₐ[ℚ] K) :=
+    (h.map (algebraMap Ov (AlgebraicClosure Kv))).roots.pmap
+      (fun r hr => (hsubT r hr).choose) (fun _ hh => hh) with hTdef
+  have hTroots : (h.map (algebraMap Ov (AlgebraicClosure Kv))).roots =
+      T.map w := by
+    rw [hTdef, Multiset.map_pmap]
+    have hid : (h.map (algebraMap Ov (AlgebraicClosure Kv))).roots.pmap
+        (fun r (_ : r ∈ (h.map (algebraMap Ov (AlgebraicClosure Kv))).roots) => r)
+        (fun _ hh => hh) =
+        (h.map (algebraMap Ov (AlgebraicClosure Kv))).roots := by
+      rw [Multiset.pmap_eq_map]
+      exact Multiset.map_id _
+    refine hid.symm.trans (Multiset.pmap_congr _ ?_)
+    intro r hr _ _
+    exact ((hsubT r hr).choose_spec.1).symm
+  have hTD : ∀ τ ∈ T, τ • Q₀ ≠ Q₀ := by
+    intro τ hτ
+    rw [hTdef] at hτ
+    obtain ⟨r, hr, rfl⟩ := Multiset.mem_pmap.mp hτ
+    exact (hsubT r hr).choose_spec.2
+  -- evaluate `h` at `x` as the product of the global differences
+  have hxeval : algebraMap M (AlgebraicClosure Kv)
+      (algebraMap (IntegralClosure Ov M) M (Polynomial.aeval (φ θ) h)) =
+      algebraMap M (AlgebraicClosure Kv)
+        (algebraMap (IntegralClosure Ov M) M
+          ((T.map (fun τ => φ (θ - τ • θ))).prod)) := by
+    -- LHS: evaluation of `hΩ` at `w 1`
+    rw [← Polynomial.aeval_algebraMap_apply M (φ θ) h,
+      ← Polynomial.aeval_algebraMap_apply (AlgebraicClosure Kv)
+        (algebraMap (IntegralClosure Ov M) M (φ θ)) h]
+    have hxΩ : algebraMap M (AlgebraicClosure Kv)
+        (algebraMap (IntegralClosure Ov M) M (φ θ)) = w 1 := by
+      rw [hwval θ, hwdef]
+      show _ = AlgebraicClosure.map (algebraMap ℚ Kv)
+        ((algebraMap (RingOfIntegers K) K ((1 : K ≃ₐ[ℚ] K) • θ) : K) :
+          AlgebraicClosure ℚ)
+      rw [one_smul]
+    rw [hxΩ]
+    have hevalform : Polynomial.aeval (w 1) h =
+        Polynomial.eval (w 1) (h.map (algebraMap Ov (AlgebraicClosure Kv))) := by
+      rw [Polynomial.aeval_def, Polynomial.eval_map]
+    rw [hevalform]
+    rw [hhsplits.eval_eq_prod_roots_of_monic (hhmonic.map _)]
+    rw [hTroots, Multiset.map_map]
+    -- RHS: the ring-hom image of the product
+    rw [map_multiset_prod, map_multiset_prod, Multiset.map_map,
+      Multiset.map_map]
+    congr 1
+    refine Multiset.map_congr rfl fun τ _ => ?_
+    show w 1 - w τ = algebraMap M (AlgebraicClosure Kv)
+      (algebraMap (IntegralClosure Ov M) M (φ (θ - τ • θ)))
+    rw [hwval (θ - τ • θ)]
+    have hsub : ((algebraMap (RingOfIntegers K) K (θ - τ • θ) : K) :
+        AlgebraicClosure ℚ) =
+        ((algebraMap (RingOfIntegers K) K θ : K) : AlgebraicClosure ℚ) -
+        ((algebraMap (RingOfIntegers K) K (τ • θ) : K) : AlgebraicClosure ℚ) := by
+      push_cast
+      ring
+    rw [hsub, map_sub, hwdef]
+    show _ - _ = _ - _
+    congr 2
+  have haeval_eq : Polynomial.aeval (φ θ) h =
+      (T.map (fun τ => φ (θ - τ • θ))).prod := by
+    have hinj : Function.Injective ((algebraMap M (AlgebraicClosure Kv)).comp
+        (algebraMap (IntegralClosure Ov M) M)) :=
+      (algebraMap M (AlgebraicClosure Kv)).injective.comp
+        (IsFractionRing.injective (IntegralClosure Ov M) M)
+    exact hinj hxeval
+  rw [haeval_eq]
+  -- the product of the unit factors is a unit
+  rw [← IsLocalRing.notMem_maximalIdeal]
+  intro hmem
+  obtain ⟨u, hu, humem⟩ :=
+    (hmaxprime.multiset_prod_mem_iff_exists_mem _).mp hmem
+  obtain ⟨τ, hτT, rfl⟩ := Multiset.mem_map.mp hu
+  have hτmem : θ - τ • θ ∈ Q₀ := Ideal.mem_comap.mpr humem
+  have hθQ' : θ ∈ Q₀ := by
+    have h1 : θ = (θ - τ • θ) + τ • θ := by ring
+    rw [h1]
+    exact Submodule.add_mem _ hτmem (hsmulmem τ (hTD τ hτT))
+  exact hθQ hθQ'
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
