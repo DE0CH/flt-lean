@@ -25,6 +25,7 @@ module
 public import Fermat.FLT.EllipticCurve.FrobeniusFixedField
 public import Fermat.FLT.EllipticCurve.Torsion
 public import Fermat.FLT.EllipticCurve.WeilPairingRecgen
+public import Fermat.FLT.EllipticCurve.WeilPairingTwoLine
 public import Fermat.FLT.GaloisRepresentation.Chebotarev
 public import Fermat.FLT.KnownIn1980s.EllipticCurves.GoodReduction
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
@@ -3671,11 +3672,10 @@ theorem coordRing_evalEval_XClass (q : ℕ) [Fact q.Prime]
     AdjoinRoot.evalEval_mk]
   simp [Polynomial.evalEval]
 
-set_option maxHeartbeats 1000000 in
-/-- **The `p = 2` self-pair value computation** (sorry node — reduced
-to the single polynomial identity `hkey`): in any admissible Miller
-setup for the self-pair of a `2`-torsion point `P`, the value `z` is
-`1`.  Generic in the curve and the configuration; the engine facts
+set_option maxHeartbeats 16000000 in
+/-- **The `p = 2` self-pair value computation** (PROVEN): in any
+admissible Miller setup for the self-pair of a `2`-torsion point `P`,
+the value `z` is `1`.  Generic in the curve and the configuration; the engine facts
 (`hCunits`, `hline`, `hevvert`) are hypotheses, instantiated by the
 `coordRing_*` lemmas above.  Proof: `⊖P = P` (`h2t`) factors both
 Miller generators into constant-times-line-squares via
@@ -3717,6 +3717,8 @@ theorem weilValue_two_torsion_config_eq_one {F : Type*} [Field F]
         WeierstrassCurve.Affine.Point.some xR yR hR)
     (hxSP : xS ≠ xP) (hxRP : xR ≠ xP) (hxPSP : xPS ≠ xP)
     (hxQRP : xQR ≠ xP)
+    (hxRS : xR ≠ xS) (hxRPS : xR ≠ xPS)
+    (hxQRS : xQR ≠ xS) (hxQRPS : xQR ≠ xPS)
     (aP aQ : W.CoordinateRing)
     (haP : Ideal.span {aP} =
       (WeierstrassCurve.Affine.CoordinateRing.XYIdeal W xPS
@@ -3920,14 +3922,175 @@ theorem weilValue_two_torsion_config_eq_one {F : Type*} [Field F]
     hevvert xR xS yS hS.left] at heq hA
   rw [map_pow, map_pow, hevvert xS xR yR hR.left,
     hevvert xR xPS yPS hPS.left] at heq
-  -- the key CAS-verified configuration identity (HLEG-NOTES §3(c-i))
+  -- the key CAS-verified configuration identity (HLEG-NOTES §3(c-i)),
+  -- PROVEN via the norm factorizations (`line_norm_cubic`) and the
+  -- machine-certified two-line reciprocity (`two_line_reciprocity`)
   have hkey : (xQR - xS) ^ 2 * (yR - (L₁ * (xR - xPS) + yPS)) ^ 2 *
         (xS - xR) ^ 2 * (yPS - (L₂ * (xPS - xQR) + yQR)) ^ 2 *
         ((xQR - xP) * (xS - xP)) =
       (yQR - (L₁ * (xQR - xPS) + yPS)) ^ 2 * (xR - xS) ^ 2 *
         (yS - (L₂ * (xS - xQR) + yQR)) ^ 2 * (xPS - xR) ^ 2 *
         ((xR - xP) * (xPS - xP)) := by
-    sorry
+    -- scalar forms of the four curve equations
+    have hE_S := (WeierstrassCurve.Affine.equation_iff (W := W) xS yS).mp
+      hS.left
+    have hE_R := (WeierstrassCurve.Affine.equation_iff (W := W) xR yR).mp
+      hR.left
+    have hE_PS := (WeierstrassCurve.Affine.equation_iff (W := W)
+      xPS yPS).mp hPS.left
+    have hE_QR := (WeierstrassCurve.Affine.equation_iff (W := W)
+      xQR yQR).mp hQR.left
+    -- the 2-torsion relation, scalar form
+    have hT_s : 2 * yP + W.a₁ * xP + W.a₃ = 0 := by
+      have h := h2t
+      rw [WeierstrassCurve.Affine.negY] at h
+      linear_combination -h
+    -- the six collinearity relations, scalar forms
+    have h1_s : L₁ ^ 2 + W.a₁ * L₁ - W.a₂ - xPS - xS = xP := by
+      have h := hthird₁.1
+      rw [WeierstrassCurve.Affine.addX] at h
+      linear_combination h
+    have h2_s : L₂ ^ 2 + W.a₁ * L₂ - W.a₂ - xQR - xR = xP := by
+      have h := hthird₂.1
+      rw [WeierstrassCurve.Affine.addX] at h
+      linear_combination h
+    have h3_s : L₁ * (xP - xPS) + yPS = yP := by
+      have h := hthird₁.2
+      rw [WeierstrassCurve.Affine.addY, WeierstrassCurve.Affine.negAddY,
+        hthird₁.1] at h
+      have h' := congrArg (W.negY xP) h
+      rw [W.negY_negY, h2t] at h'
+      exact h'
+    have h4_s : L₂ * (xP - xQR) + yQR = yP := by
+      have h := hthird₂.2
+      rw [WeierstrassCurve.Affine.addY, WeierstrassCurve.Affine.negAddY,
+        hthird₂.1] at h
+      have h' := congrArg (W.negY xP) h
+      rw [W.negY_negY, h2t] at h'
+      exact h'
+    have h5_m : L₁ * (xS - xPS) + yPS = W.negY xS yS := by
+      by_cases hx : xPS = xS
+      · rw [W.negY_negY] at hPne
+        have hyne : yPS ≠ yS := fun hy => hPne ⟨hx, hy⟩
+        have hy' : yPS = W.negY xS yS := by
+          subst hx
+          exact (WeierstrassCurve.Affine.Y_eq_of_X_eq hPS.left hS.left
+            rfl).resolve_left hyne
+        rw [hx, sub_self, mul_zero, zero_add, hy']
+      · rw [hL₁, WeierstrassCurve.Affine.slope_of_X_ne hx]
+        field_simp [sub_ne_zero.mpr hx]
+        ring
+    have h5_s : L₁ * (xS - xPS) + yPS = -yS - W.a₁ * xS - W.a₃ := by
+      rw [h5_m, WeierstrassCurve.Affine.negY]
+    have h6_m : L₂ * (xR - xQR) + yQR = W.negY xR yR := by
+      by_cases hx : xQR = xR
+      · rw [W.negY_negY] at hQne
+        have hyne : yQR ≠ yR := fun hy => hQne ⟨hx, hy⟩
+        have hy' : yQR = W.negY xR yR := by
+          subst hx
+          exact (WeierstrassCurve.Affine.Y_eq_of_X_eq hQR.left hR.left
+            rfl).resolve_left hyne
+        rw [hx, sub_self, mul_zero, zero_add, hy']
+      · rw [hL₂, WeierstrassCurve.Affine.slope_of_X_ne hx]
+        field_simp [sub_ne_zero.mpr hx]
+        ring
+    have h6_s : L₂ * (xR - xQR) + yQR = -yR - W.a₁ * xR - W.a₃ := by
+      rw [h6_m, WeierstrassCurve.Affine.negY]
+    -- the chord/tangent branch selectors
+    have hbr₁ : xPS ≠ xS ∨ (xPS = xS ∧
+        L₁ * (2 * yPS + W.a₁ * xPS + W.a₃) =
+          3 * xPS ^ 2 + 2 * W.a₂ * xPS + W.a₄ - W.a₁ * yPS) := by
+      by_cases hx : xPS = xS
+      · subst hx
+        refine Or.inr ⟨rfl, ?_⟩
+        rw [W.negY_negY] at hPne
+        have hyne : yPS ≠ yS := fun hy => hPne ⟨rfl, hy⟩
+        have hy' : yPS = W.negY xPS yS :=
+          (WeierstrassCurve.Affine.Y_eq_of_X_eq hPS.left hS.left
+            rfl).resolve_left hyne
+        have hyne' : yPS ≠ W.negY xPS (W.negY xPS yS) := by
+          rw [W.negY_negY]
+          exact hyne
+        have hslope := WeierstrassCurve.Affine.slope_of_Y_ne
+          (W := W) (x₁ := xPS) (x₂ := xPS) (y₁ := yPS)
+          (y₂ := W.negY xPS yS) rfl hyne'
+        have hden : yPS - W.negY xPS yPS =
+            2 * yPS + W.a₁ * xPS + W.a₃ := by
+          rw [WeierstrassCurve.Affine.negY]
+          ring
+        have hden0 : 2 * yPS + W.a₁ * xPS + W.a₃ ≠ 0 := by
+          rw [← hden]
+          refine sub_ne_zero.mpr ?_
+          intro h0
+          apply hyne
+          calc yPS = W.negY xPS yPS := h0
+            _ = W.negY xPS (W.negY xPS yS) := by rw [← hy']
+            _ = yS := W.negY_negY ..
+        rw [hL₁, hslope, hden]
+        exact div_mul_cancel₀ _ hden0
+      · exact Or.inl hx
+    have hbr₂ : xQR ≠ xR ∨ (xQR = xR ∧
+        L₂ * (2 * yQR + W.a₁ * xQR + W.a₃) =
+          3 * xQR ^ 2 + 2 * W.a₂ * xQR + W.a₄ - W.a₁ * yQR) := by
+      by_cases hx : xQR = xR
+      · subst hx
+        refine Or.inr ⟨rfl, ?_⟩
+        rw [W.negY_negY] at hQne
+        have hyne : yQR ≠ yR := fun hy => hQne ⟨rfl, hy⟩
+        have hy' : yQR = W.negY xQR yR :=
+          (WeierstrassCurve.Affine.Y_eq_of_X_eq hQR.left hR.left
+            rfl).resolve_left hyne
+        have hyne' : yQR ≠ W.negY xQR (W.negY xQR yR) := by
+          rw [W.negY_negY]
+          exact hyne
+        have hslope := WeierstrassCurve.Affine.slope_of_Y_ne
+          (W := W) (x₁ := xQR) (x₂ := xQR) (y₁ := yQR)
+          (y₂ := W.negY xQR yR) rfl hyne'
+        have hden : yQR - W.negY xQR yQR =
+            2 * yQR + W.a₁ * xQR + W.a₃ := by
+          rw [WeierstrassCurve.Affine.negY]
+          ring
+        have hden0 : 2 * yQR + W.a₁ * xQR + W.a₃ ≠ 0 := by
+          rw [← hden]
+          refine sub_ne_zero.mpr ?_
+          intro h0
+          apply hyne
+          calc yQR = W.negY xQR yQR := h0
+            _ = W.negY xQR (W.negY xQR yR) := by rw [← hy']
+            _ = yR := W.negY_negY ..
+        rw [hL₂, hslope, hden]
+        exact div_mul_cancel₀ _ hden0
+      · exact Or.inl hx
+    -- the four norm factorizations and the reciprocity
+    have hn1R := line_norm_cubic W.a₁ W.a₂ W.a₃ W.a₄ W.a₆ xS yS xPS yPS
+      xP L₁ xR yR h1_s h5_s hE_S hE_PS hE_R hbr₁
+    have hn1QR := line_norm_cubic W.a₁ W.a₂ W.a₃ W.a₄ W.a₆ xS yS xPS yPS
+      xP L₁ xQR yQR h1_s h5_s hE_S hE_PS hE_QR hbr₁
+    have hn2S := line_norm_cubic W.a₁ W.a₂ W.a₃ W.a₄ W.a₆ xR yR xQR yQR
+      xP L₂ xS yS h2_s h6_s hE_R hE_QR hE_S hbr₂
+    have hn2PS := line_norm_cubic W.a₁ W.a₂ W.a₃ W.a₄ W.a₆ xR yR xQR yQR
+      xP L₂ xPS yPS h2_s h6_s hE_R hE_QR hE_PS hbr₂
+    have hrec := two_line_reciprocity W.a₁ W.a₂ W.a₃ W.a₄ W.a₆ xS yS
+      xR yR xPS yPS xQR yQR xP yP L₁ L₂ h1_s h2_s h3_s h4_s h5_s h6_s
+      hT_s hE_S hE_R hE_PS hE_QR
+    -- assemble via the atom-level lemma (the heavy ring normalization
+    -- happens once, in `WeilPairingTwoLine`)
+    exact norm_reciprocity_assembly xP xS xR xPS xQR
+      (yR - (L₁ * (xR - xPS) + yPS))
+      ((-yR - W.a₁ * xR - W.a₃) - (L₁ * (xR - xPS) + yPS))
+      (yQR - (L₁ * (xQR - xPS) + yPS))
+      ((-yQR - W.a₁ * xQR - W.a₃) - (L₁ * (xQR - xPS) + yPS))
+      (yS - (L₂ * (xS - xQR) + yQR))
+      ((-yS - W.a₁ * xS - W.a₃) - (L₂ * (xS - xQR) + yQR))
+      (yPS - (L₂ * (xPS - xQR) + yQR))
+      ((-yPS - W.a₁ * xPS - W.a₃) - (L₂ * (xPS - xQR) + yQR))
+      hn1R hn1QR hn2S hn2PS hrec
+      (sub_ne_zero.mpr hxRPS) (sub_ne_zero.mpr hxRS)
+      (sub_ne_zero.mpr hxRP) (sub_ne_zero.mpr hxQRPS)
+      (sub_ne_zero.mpr hxQRS) (sub_ne_zero.mpr hxQRP)
+      (sub_ne_zero.mpr (Ne.symm hxQRS)) (sub_ne_zero.mpr (Ne.symm hxRS))
+      (sub_ne_zero.mpr hxSP) (sub_ne_zero.mpr (Ne.symm hxQRPS))
+      (sub_ne_zero.mpr (Ne.symm hxRPS)) (sub_ne_zero.mpr hxPSP)
   -- assemble: `A = B`, hence `z = 1`
   have hD1 : xQR - xP ≠ 0 := sub_ne_zero.mpr hxQRP
   have hD2 : xR - xP ≠ 0 := sub_ne_zero.mpr hxRP
@@ -4001,9 +4164,9 @@ theorem weilValueProp_self_of_two (q : ℕ) [Fact q.Prime]
     -- `aQ·XClass x_P = c₂·ℓ₂²` (ℓ₂ through `QR, ⊖R, P`); substituted
     -- into the value equation `heq` and divided by the nonvanishing
     -- `x• − x_P` factors (the setup's F-avoidances), `z` becomes the
-    -- verified cross-ratio, equal to `1`; the residual sorry `hkey` is
-    -- the ONE polynomial configuration identity (CAS-verified in both
-    -- `slope` branches)
+    -- verified cross-ratio, equal to `1` by the norm factorizations
+    -- (`line_norm_cubic`) and the machine-certified two-line
+    -- reciprocity (`two_line_reciprocity`)
     haveI := hDD
     -- the 2-torsion relation `⊖P = P`
     have h2t : (Wbar.map (algebraMap (ZMod q)
@@ -4021,6 +4184,8 @@ theorem weilValueProp_self_of_two (q : ℕ) [Fact q.Prime]
     have hxRP : xR ≠ xP := fun h => hxRF' (by rw [h]; exact hFF' hxPF)
     have hxPSP : xPS ≠ xP := fun h => hxPSF (by rw [h]; exact hxPF)
     have hxQRP : xQR ≠ xP := fun h => hxQRF' (by rw [h]; exact hFF' hxPF)
+    have hxRS : xR ≠ xS := fun h => hxRF' (by rw [h]; exact hxSF')
+    have hxRPS : xR ≠ xPS := fun h => hxRF' (by rw [h]; exact hxPSF')
     -- the generic `p = 2` value computation, instantiated on the setup
     exact Units.ext (weilValue_two_torsion_config_eq_one
       ((Wbar.map (algebraMap (ZMod q)
@@ -4033,6 +4198,7 @@ theorem weilValueProp_self_of_two (q : ℕ) [Fact q.Prime]
         (AlgebraicClosure (ZMod q)))))
       xP yP xS yS xR yR xPS yPS xQR yQR (z : AlgebraicClosure (ZMod q))
       hP hS hR hPS hQR h2t hPSc hQRc hxSP hxRP hxPSP hxQRP
+      hxRS hxRPS hxQRnS hxQRnPS
       aP aQ haP haQ hA heq)
 
 /-- **Nondegeneracy descent core** (sorry node — Silverman AEC
