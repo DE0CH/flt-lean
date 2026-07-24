@@ -11664,48 +11664,312 @@ theorem odd_order_character_eq_one_ray_class
     ∀ g : Γ ℚ, θ' g = 1 → ν g = 1 := by
   sorry
 
+/-- **A quadratic character of `Γ_{ℚ(√-3)}` unramified outside `3` is
+trivial — the `d = -3` narrow-ray-class core** (sorry node, isolated
+2026-07-24 from `anti_invariant_quadratic_character_eq_one_ray_class`
+below, whose `d`-case split and at-`2` elimination of the other six
+fields are PROVEN glue there): a function `ν : Γ ℚ → 𝔽̄₃` that is a
+multiplicative character on `H = ker θ' = Γ_{ℚ(√-3)}` (`hνmul`) of
+pointwise order dividing `2` (`hνsq`), trivial on an open subgroup
+contained in `H ∩ ker ν` (`hUopen`, `hUker` — so `ν` factors through
+a finite abelian extension of `ℚ(√-3)`), and trivial on every
+`Γ ℚ`-conjugate of the local inertia image at every prime `q ≠ 3`
+that lies in `H` (`hνunr` — i.e. `ν` is unramified at every finite
+place of `ℚ(√-3)` not above `3`), is identically `1` on `H`.
+REPRESENTATION-FREE: `ℚ(√-3)` is the one field of the seven where no
+representation input is needed, because its ray class group with the
+allowed conductor is already trivial. Intended content (Serre, Duke
+1987 §5.3; Neukirch ANT VI §6): `ν` cuts an abelian extension
+`M/F = ℚ(√-3)` of exponent dividing `2`, unramified at every finite
+place away from `3` (`hνunr` ranges over all conjugates, i.e. over
+all places of `F` above each `q ≠ 3`), and TAME at the unique prime
+`𝔭₃ = (√-3)` above `3`: the wild inertia at `𝔭₃` is pro-`3` and `ν`
+is quadratic, so the conductor exponent at `𝔭₃` is at most `1`.
+Hence `M` lies in the ray class field of `F` of modulus `𝔭₃` (no
+archimedean modulus: `F` is imaginary quadratic). The ray class group
+mod `𝔭₃` of `ℚ(√-3)` is TRIVIAL: `h(ℚ(√-3)) = 1`, and in the exact
+sequence `𝒪ˣ → (𝒪/𝔭₃)ˣ → Cl_{𝔭₃} → Cl → 1` the global unit `-1`
+already hits all of `(𝒪/𝔭₃)ˣ = 𝔽₃ˣ = {±1}`. So `M = F` and `ν = 1`
+on `H`. Sibling of the odd-order leaf
+`odd_order_character_eq_one_ray_class` above: same skeleton, order
+`2` instead of odd order, the single field `d = -3`, and no
+unramifiedness above `3` required. -/
+theorem quadratic_character_eq_one_ray_class_neg_three
+    (θ' : Γ ℚ →* Multiplicative (ZMod 2))
+    (x : AlgebraicClosure ℚ)
+    (hx : x ^ 2 = ((-3 : ℤ) : AlgebraicClosure ℚ))
+    (hθ'x : ∀ g : Γ ℚ, θ' g = 1 ↔ g x = x)
+    (ν : Γ ℚ → Dickson.K 3)
+    (hνmul : ∀ g h : Γ ℚ, θ' g = 1 → θ' h = 1 →
+      ν (g * h) = ν g * ν h)
+    (U : Subgroup (Γ ℚ)) (hUopen : IsOpen (U : Set (Γ ℚ)))
+    (hUker : ∀ g ∈ U, θ' g = 1 ∧ ν g = 1)
+    (hνsq : ∀ g : Γ ℚ, θ' g = 1 → ν g ^ 2 = 1)
+    (hνunr : ∀ (q : ℕ) (hq : q.Prime), q ≠ 3 → ∀ c : Γ ℚ,
+      ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+        θ' (c * Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) σ * c⁻¹) = 1 →
+        ν (c * Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) σ * c⁻¹) = 1) :
+    ∀ g : Γ ℚ, θ' g = 1 → ν g = 1 := by
+  sorry
+
+/-- **`ℚ(√d)` is ramified at `2` for `d ∈ {-1, ±2, 3, ±6}`, in
+inertia-element form** (sorry node, isolated 2026-07-24 as the local
+witness leaf of the at-`2` dihedral-field elimination in
+`anti_invariant_quadratic_character_eq_one_ray_class` below): some
+element of the local inertia group at `2` moves the chosen square
+root `x` of `d`. Truth: none of `-1, 2, -2, 3, 6, -6` is a square of
+`ℚ₂` (the even ones have odd `2`-adic valuation; `-1 ≡ 7` and
+`3 ≡ 3 mod 8` are units outside `ℤ₂ˣ² = 1 + 8ℤ₂`), and none generates
+the unramified quadratic extension (whose unit generators are
+`≡ 1 mod squares` times a nonresidue LIFT `5 mod 8`; concretely
+`ℚ₂(√5)` is the unramified one and `d/5` is never a square either),
+so `ℚ₂(√d)/ℚ₂` is a RAMIFIED quadratic extension and its inertia is
+the full order-`2` Galois group, containing `√d ↦ -√d`. Intended
+proof route: (i) the image `y` of `x` in `ℚ̄ᵥ` (`v` the place `2`)
+satisfies `y² = d` and generates a ramified quadratic extension of
+`ℚᵥ` — for even `d` because `y` has valuation `1/2 ∉ ℤ`, for
+`d = -1, 3` by the mod-`8` square obstruction; (ii) an element of
+`localInertiaGroup` moving `y` exists: otherwise every inertia
+element fixes `y`, so `y` lies in the fixed field of the inertia,
+which is contained in the maximal unramified extension (residue-faith
+of the integral-closure congruence, the converse companion of the
+PROVEN `restrictNormalHom_mem_inertia_of_mem_localInertiaGroup_two`
+above: restrict to the finite Galois level `N = ℚᵥ(y)`, where the
+inertia subgroup has index `e·f/e = f = 1` — the extension being
+totally ramified — and use surjectivity of the level restriction on
+inertia, or directly the valuation argument that an inertia-fixed
+`y` would force the residue extension to have degree `2`).
+References: Serre, Local Fields I §7, IV §1; Neukirch ANT II §7, §9. -/
+theorem exists_mem_localInertiaGroup_two_moving_sqrt
+    (d : ℤ)
+    (hd : d = -1 ∨ d = 2 ∨ d = -2 ∨ d = 3 ∨ d = 6 ∨ d = -6)
+    (x : AlgebraicClosure ℚ) (hx : x ^ 2 = (d : AlgebraicClosure ℚ)) :
+    ∃ σ ∈ localInertiaGroup Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat,
+      Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ x ≠ x := by
+  sorry
+
+set_option maxHeartbeats 1000000 in
+/-- **Cube-triviality of `ρ` on the local inertia at `2`, at the
+representation level** (PROVEN 2026-07-24 — the `End k V`-level
+restatement of the PROVEN matrix-level pair
+`map_localInertiaGroup_at_two_sub_one_sq_eq_zero` /
+`map_localInertiaGroup_at_two_pow_three_eq_one` above, re-run over `k`
+itself so that no matrix form `(b, e, u)` needs to be threaded
+through): for a hardly ramified `ρ`, the image of the cube of any
+element of the local inertia at `2` is the identity. Content (Serre
+§4.1): the inertia bridge `localInertia_two_eq_map_padic` writes the
+global image `g'` as `c·m·c⁻¹` with `m` the image of a
+`ℚ_[2]`-inertia element `τ`; the determinant of `ρ g'` is the mod-3
+cyclotomic character (conjugation-invariant and trivial on the
+inertia at `2` by the PROVEN
+`cyclotomicCharacter_algebraMap_eq_one_of_inertia_two`), so
+`det (ρ g') = 1`; the tame quotient at `2` (`hρ.isTameAtTwo`, `δ`
+unramified) conjugates to a surjective `ρ g'`-invariant functional,
+so `det (ρ g' − 1) = 0`; in a basis `bk` the matrix `M` of `ρ g'`
+then has `M − 1` traceless and singular, hence square-zero by 2×2
+Cayley–Hamilton, and characteristic `3` kills
+`M³ − 1 = (M−1)³ + 3(M−1)² + 3(M−1)`. Consumed by the at-`2`
+elimination in `anti_invariant_quadratic_character_eq_one_ray_class`
+below. -/
+theorem galoisRep_pow_three_eq_one_of_mem_localInertiaGroup_two {k : Type u}
+    [Finite k] [Field k]
+    [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
+    (V : Type*) [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (hV : Module.rank k V = 2) {ρ : GaloisRep ℚ k V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ) :
+    ∀ σ ∈ localInertiaGroup Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat,
+      ρ ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ) ^ 3) = 1 := by
+  classical
+  intro σ hσ
+  obtain ⟨τ, hτ, c, heq⟩ := localInertia_two_eq_map_padic hσ
+  set g' : Γ ℚ := Field.absoluteGaloisGroup.map (algebraMap ℚ
+    (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ
+  set m : Γ ℚ := Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) τ
+    with hm
+  -- (1) the determinant of `ρ g'` is `1`: it is the mod-3 cyclotomic
+  -- character, conjugation-invariant and trivial on the inertia at `2`
+  have hdetk : LinearMap.det (ρ g' : Module.End k V) = 1 := by
+    have h := hρ.det g'
+    rw [GaloisRep.det_apply] at h
+    have hconj : cyclotomicCharacter (AlgebraicClosure ℚ) 3 g'.toRingEquiv =
+        cyclotomicCharacter (AlgebraicClosure ℚ) 3 m.toRingEquiv := by
+      rw [heq,
+        show (c * m * c⁻¹).toRingEquiv =
+          c.toRingEquiv * m.toRingEquiv * (c.toRingEquiv)⁻¹ from rfl,
+        map_mul, map_mul, map_inv,
+        mul_comm (cyclotomicCharacter (AlgebraicClosure ℚ) 3 c.toRingEquiv),
+        mul_assoc, mul_inv_cancel, mul_one]
+    rw [h, hconj]
+    exact cyclotomicCharacter_algebraMap_eq_one_of_inertia_two (k := k) hτ
+  -- (2) the tame structure at `2`: the functional `π₂` is `ρ m`-invariant,
+  -- so its conjugate `π'` is `ρ g'`-invariant and surjective
+  obtain ⟨π₂, hπsurj, δ, hδ⟩ := hρ.isTameAtTwo
+  have hδτ : δ τ = 1 := by
+    have h := (hδ τ 0).2.1 hτ
+    rwa [GaloisRep.ker, MonoidHom.mem_ker] at h
+  have hπm : ∀ x : V, π₂ (ρ m x) = π₂ x := by
+    intro x
+    have h := (hδ τ x).1
+    rw [GaloisRep.map_apply, ← hm] at h
+    rw [h, hδτ, Module.End.one_apply]
+  set π' : V →ₗ[k] k := π₂.comp (ρ c⁻¹ : Module.End k V) with hπ'
+  have hπ'surj : Function.Surjective π' := by
+    intro r
+    obtain ⟨x, hx⟩ := hπsurj r
+    refine ⟨ρ c x, ?_⟩
+    rw [hπ', LinearMap.comp_apply]
+    have hcc : (ρ c⁻¹) ((ρ c) x) = x := by
+      rw [← Module.End.mul_apply, ← map_mul, inv_mul_cancel, map_one,
+        Module.End.one_apply]
+    rw [hcc, hx]
+  have hπ'inv : ∀ x : V, π' (ρ g' x) = π' x := by
+    intro x
+    rw [hπ', LinearMap.comp_apply, LinearMap.comp_apply]
+    have h1 : (ρ c⁻¹ : Module.End k V) * ρ g' =
+        ρ m * (ρ c⁻¹ : Module.End k V) := by
+      rw [← map_mul, ← map_mul, heq]
+      congr 1
+      group
+    have h2 := congrArg (fun F : Module.End k V => F x) h1
+    simp only [Module.End.mul_apply] at h2
+    rw [h2, hπm]
+  -- (3) hence `det (ρ g' - 1) = 0`: the row of `π'`-values is a nonzero
+  -- kernel covector of its matrix
+  have hfr : Module.finrank k V = 2 :=
+    Module.finrank_eq_of_rank_eq (by exact_mod_cast hV)
+  set bk : Module.Basis (Fin 2) k V := Module.finBasisOfFinrankEq k V hfr
+  have hdet0 : LinearMap.det ((ρ g' : Module.End k V) - 1) = 0 := by
+    rw [← LinearMap.det_toMatrix bk, ← Matrix.exists_vecMul_eq_zero_iff]
+    refine ⟨fun i => π' (bk i), ?_, ?_⟩
+    · intro h0
+      obtain ⟨x, hx⟩ := hπ'surj 1
+      have hzero : ∀ i, π' (bk i) = 0 := fun i => congrFun h0 i
+      have hpx : π' x = 0 := by
+        rw [← bk.sum_repr x, map_sum]
+        simp [map_smul, hzero]
+      rw [hx] at hpx
+      exact one_ne_zero hpx
+    · funext j
+      simp only [Matrix.vecMul, dotProduct, LinearMap.toMatrix_apply,
+        Pi.zero_apply]
+      have hterm : ∀ i : Fin 2,
+          π' (bk i) * (bk.repr (((ρ g' : Module.End k V) - 1) (bk j))) i =
+          π' ((bk.repr (((ρ g' : Module.End k V) - 1) (bk j))) i • bk i) := by
+        intro i
+        rw [map_smul, smul_eq_mul, mul_comm]
+      rw [Finset.sum_congr rfl fun i _ => hterm i, ← map_sum, bk.sum_repr]
+      simp only [LinearMap.sub_apply, Module.End.one_apply, map_sub, hπ'inv,
+        sub_self]
+  -- (4) Cayley–Hamilton in the basis `bk`: `M − 1` is traceless and
+  -- singular, so `(M − 1)² = 0`, and characteristic `3` kills the cube
+  haveI hchark : CharP k 3 := charP_three_of_finite_padicIntThree_algebra
+  set M : Matrix (Fin 2) (Fin 2) k :=
+    LinearMap.toMatrix bk bk (ρ g' : Module.End k V) with hM
+  have hMdet : M.det = 1 := by
+    rw [hM, LinearMap.det_toMatrix]
+    exact hdetk
+  have hMsub : LinearMap.toMatrix bk bk ((ρ g' : Module.End k V) - 1) =
+      M - 1 := by
+    rw [map_sub, LinearMap.toMatrix_one, hM]
+  have hMsubdet : (M - 1).det = 0 := by
+    rw [← hMsub, LinearMap.det_toMatrix]
+    exact hdet0
+  have hdetM : (M - 1) 0 0 * (M - 1) 1 1 - (M - 1) 0 1 * (M - 1) 1 0 = 0 := by
+    rw [← Matrix.det_fin_two]
+    exact hMsubdet
+  have htrM : (M - 1) 0 0 + (M - 1) 1 1 = 0 := by
+    have e00 : (M - 1) 0 0 = M 0 0 - 1 := by simp [Matrix.sub_apply]
+    have e01 : (M - 1) 0 1 = M 0 1 := by simp [Matrix.sub_apply]
+    have e10 : (M - 1) 1 0 = M 1 0 := by simp [Matrix.sub_apply]
+    have e11 : (M - 1) 1 1 = M 1 1 - 1 := by simp [Matrix.sub_apply]
+    have hd1 : M 0 0 * M 1 1 - M 0 1 * M 1 0 = 1 := by
+      rw [← Matrix.det_fin_two]
+      exact hMdet
+    have hd0 := hdetM
+    rw [e00, e01, e10, e11] at hd0
+    rw [e00, e11]
+    linear_combination hd1 - hd0
+  have hsq : (M - 1) ^ 2 = 0 := by
+    ext i j
+    rw [pow_two, Matrix.mul_apply, Fin.sum_univ_two, Matrix.zero_apply]
+    fin_cases i <;> fin_cases j <;> simp only [Fin.zero_eta, Fin.mk_one]
+    · linear_combination (M - 1) 0 0 * htrM - hdetM
+    · linear_combination (M - 1) 0 1 * htrM
+    · linear_combination (M - 1) 1 0 * htrM
+    · linear_combination (M - 1) 1 1 * htrM - hdetM
+  have h3 : (3 : Matrix (Fin 2) (Fin 2) k) = 0 := by
+    exact_mod_cast CharP.cast_eq_zero (Matrix (Fin 2) (Fin 2) k) 3
+  have hcube3 : (M - 1) ^ 3 = 0 := by
+    rw [pow_succ, hsq, zero_mul]
+  have hM3 : M ^ 3 = 1 := by
+    calc M ^ 3
+        = (M - 1) ^ 3 + 3 * (M - 1) ^ 2 + 3 * (M - 1) + 1 := by noncomm_ring
+      _ = 1 := by rw [hcube3, h3]; simp
+  -- (5) transport back through the matrix algebra equivalence
+  apply (LinearMap.toMatrixAlgEquiv bk).injective
+  rw [map_one, map_pow, map_pow,
+    show LinearMap.toMatrixAlgEquiv bk (ρ g' : Module.End k V) = M from rfl,
+    hM3]
+
 set_option maxHeartbeats 1000000 in
 /-- **An anti-invariant QUADRATIC character of `Γ_{ℚ(√d)}` unramified
 outside `3` and factoring through a hardly ramified representation is
-trivial — the `2`-part of the dihedral elimination, where the Raynaud
-flatness input lives** (sorry node, isolated 2026-07-24 from
-`anti_equivariant_ratio_character_eq_one_ray_class` below, whose
-odd/2-power splitting and descent layer is now PROVEN glue there):
-with all the data of the parent node, but with `ν` of pointwise order
-dividing `2` (`hνsq`), the conclusion `ν = 1` on `H = ker θ'`. For a
-quadratic `ν` the anti-equivariance `hνanti` is EQUIVALENT to
-invariance (`ν⁻¹ = ν`), so `ν` cuts a quadratic extension `M/ℚ(√d)`
-with `M/ℚ` Galois of degree `4` (group `C₄` or `V₄`), unramified
-outside `3` over `F = ℚ(√d)` (`hνunr`, at all conjugates) but
-possibly TAMELY RAMIFIED at the places above `3` — the narrow ray
-class groups mod `𝔪 = ∏_{𝔭∣3} 𝔭` of all seven fields except
-`ℚ(√-3)` have order exactly `2`, so unlike the odd leaf this
-statement is FALSE without the representation input: e.g. for
-`d = -1` the quadratic character of `Γ_{ℚ(i)}` cutting
-`ℚ(ζ₁₂)/ℚ(i)` satisfies every abstract hypothesis. What must rule it
-out is `hνker` + `hρ`: `ν` factors through the splitting field of the
-hardly ramified `ρ` (flat at `3` by `hρ.isFlat`), and Raynaud's
-classification of the finite flat group schemes over the completions
-of `F` above `3` (`e ≤ 2 = 3 − 1`) constrains the tame inertia at `3`
-of that splitting field: on tame inertia the eigencharacters of
-`ρ|_{I_𝔭}` are level-`≤ 2` fundamental characters with exponents
-bounded by `e`, and (Serre's computation, Duke 1987 §5.4, mod-3
-analogue of Tate's 2-adic letter) any INVARIANT ratio of them that is
-ramified at `𝔭 ∣ 3` has order `4` on inertia, never `2` — so a
-quadratic invariant `ν` is unramified above `3` too, hence a
-character of the NARROW class group; the narrow class groups
-`1, 1, 1, 2, 1, 2, 2` of the seven fields are generated by classes of
-RAMIFIED primes (genus theory), on which the invariant `ν` vanishes
-by the same flatness bound, forcing `ν = 1`. CAUTION for the
-resolver: if the fundamental-character computation turns out to need
-the determinant relation `χ₀·χ₀^{σ₀} = cyclotomic` (available in the
-consumer `dihedral_eigenvalue_character_symmetric_ray_class` as
-`hχprod` but NOT threaded through the parent node), the fix is to
-re-decompose upstream — add the hypothesis to the parent and to this
-leaf — not to weaken this statement. References: Serre, Duke Math. J.
-54 (1987) §5.3–5.4; Tate, letter to Serre (1974), Œuvres III;
-Raynaud, "Schémas en groupes de type (p, …, p)", Bull. SMF 102
-(1974). -/
+trivial — the `2`-part of the dihedral elimination** (PROVEN
+2026-07-24 as glue over the two sorry leaves
+`quadratic_character_eq_one_ray_class_neg_three` and
+`exists_mem_localInertiaGroup_two_moving_sqrt` above, plus the PROVEN
+cube-triviality `galoisRep_pow_three_eq_one_of_mem_localInertiaGroup_two`):
+with all the data of the parent node
+`anti_equivariant_ratio_character_eq_one_ray_class` below, but with
+`ν` of pointwise order dividing `2` (`hνsq`), the conclusion `ν = 1`
+on `H = ker θ'`.
+
+RESOLUTION RECORD (2026-07-24). The isolation docstring sketched a
+Raynaud route — flatness at `3` (`hρ.isFlat`) excluding tame
+quadratic ramification above `3` via the fundamental-character
+computation of Serre, Duke 1987 §5.4 — and flagged a possible
+upstream re-decomposition to thread the determinant relation
+`hχprod`. NEITHER was needed: the cheapest use of the representation
+input is the tame quotient AT `2` (`hρ.isTameAtTwo` + the cyclotomic
+determinant `hρ.det`), through the case split on `d`:
+* `d ≠ -3` (six fields, all with `ℚ(√d)/ℚ` ramified at `2`): the
+  hypotheses are CONTRADICTORY, `ν` never enters. A hardly ramified
+  `ρ` is unipotent on the inertia at `2` (both diagonal characters of
+  the triangular form are unramified there, the quotient `δ` by
+  definition and the sub `χ₃/δ` because the mod-3 cyclotomic
+  character is unramified at `2`), so `ρ (gσ³) = 1` for the image
+  `gσ` of every inertia element `σ` at `2`; `htriv'` then gives
+  `θ'(gσ) = θ'(gσ)³ = 1`, i.e. `gσ` fixes `√d` (`hθ'x`) — but some
+  inertia element at `2` moves `√d`
+  (`exists_mem_localInertiaGroup_two_moving_sqrt`, ramification of
+  `ℚ₂(√d)/ℚ₂`). This is Serre's §5.3 observation that the dihedral
+  field of a hardly ramified mod-`3` representation can only be
+  `ℚ(√-3)`; the docstring's `d = -1` counterexample record (the
+  quadratic character of `Γ_{ℚ(i)}` cutting `ℚ(ζ₁₂)/ℚ(i)` satisfies
+  every representation-free hypothesis) is killed here because
+  `htriv'` would force `ℚ(i)` inside the splitting field of `ρ`,
+  whose inertia at `2` is a `3`-group.
+* `d = -3`: the representation enters only through its OPEN KERNEL
+  (`hνker` + continuity of `ρ` into the discrete `GL(V)`), and the
+  statement reduces to the representation-free ray-class leaf
+  `quadratic_character_eq_one_ray_class_neg_three` above — the
+  narrow ray class group of `ℚ(√-3)` mod `(√-3)` is trivial, so even
+  tame ramification at `3` is harmless for this one field.
+The anti-invariance `hνanti`, the nonvanishing `hνne0` (subsumed by
+`hνsq`) and `hσ₀` are NOT needed at this leaf (the parent already
+consumed the anti-equivariance in its conjugate-closure step); the
+signature keeps them for the consumer. References: Serre, Duke Math.
+J. 54 (1987) §5.3–5.4; Serre §4.1 for the at-`2` unipotence. -/
 theorem anti_invariant_quadratic_character_eq_one_ray_class {k : Type u}
     [Finite k] [Field k]
     [Algebra ℤ_[3] k] [TopologicalSpace k] [DiscreteTopology k]
@@ -11719,12 +11983,12 @@ theorem anti_invariant_quadratic_character_eq_one_ray_class {k : Type u}
     (hd : d = -1 ∨ d = 2 ∨ d = -2 ∨ d = 3 ∨ d = -3 ∨ d = 6 ∨ d = -6)
     (x : AlgebraicClosure ℚ) (hx : x ^ 2 = (d : AlgebraicClosure ℚ))
     (hθ'x : ∀ g : Γ ℚ, θ' g = 1 ↔ g x = x)
-    (σ₀ : Γ ℚ) (hσ₀ : θ' σ₀ ≠ 1)
+    (σ₀ : Γ ℚ) (_hσ₀ : θ' σ₀ ≠ 1)
     (ν : Γ ℚ → Dickson.K 3)
     (hνmul : ∀ g h : Γ ℚ, θ' g = 1 → θ' h = 1 →
       ν (g * h) = ν g * ν h)
-    (hνne0 : ∀ g : Γ ℚ, θ' g = 1 → ν g ≠ 0)
-    (hνanti : ∀ g : Γ ℚ, θ' g = 1 → ν (σ₀⁻¹ * g * σ₀) = (ν g)⁻¹)
+    (_hνne0 : ∀ g : Γ ℚ, θ' g = 1 → ν g ≠ 0)
+    (_hνanti : ∀ g : Γ ℚ, θ' g = 1 → ν (σ₀⁻¹ * g * σ₀) = (ν g)⁻¹)
     (hνker : ∀ g : Γ ℚ, ρ g = 1 → ν g = 1)
     (hνsq : ∀ g : Γ ℚ, θ' g = 1 → ν g ^ 2 = 1)
     (hνunr : ∀ (q : ℕ) (hq : q.Prime), q ≠ 3 → ∀ c : Γ ℚ,
@@ -11736,7 +12000,59 @@ theorem anti_invariant_quadratic_character_eq_one_ray_class {k : Type u}
           (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
             hq.toHeightOneSpectrumRingOfIntegersRat)) σ * c⁻¹) = 1) :
     ∀ g : Γ ℚ, θ' g = 1 → ν g = 1 := by
-  sorry
+  by_cases hd3 : d = -3
+  · -- `d = -3`: the representation enters only through its open kernel;
+    -- the narrow-ray-class leaf does the arithmetic
+    subst hd3
+    haveI hfinV : Finite V := Module.finite_of_finite k
+    set Kρ : Subgroup (Γ ℚ) :=
+      { carrier := {g : Γ ℚ | ρ g = 1}
+        one_mem' := map_one ρ
+        mul_mem' := fun {a b} ha hb => by
+          have ha' : ρ a = 1 := ha
+          have hb' : ρ b = 1 := hb
+          show ρ (a * b) = 1
+          rw [map_mul, ha', hb', mul_one]
+        inv_mem' := fun {a} ha => by
+          have ha' : ρ a = 1 := ha
+          show ρ a⁻¹ = 1
+          have h1 : ρ a⁻¹ * ρ a = 1 := by
+            rw [← map_mul, inv_mul_cancel, map_one]
+          rw [ha', mul_one] at h1
+          exact h1 }
+    have hKopen : IsOpen (Kρ : Set (Γ ℚ)) :=
+      isOpen_setOf_galoisRep_eq_one ρ hfinV
+    refine quadratic_character_eq_one_ray_class_neg_three θ' x hx hθ'x ν
+      hνmul Kρ hKopen ?_ hνsq hνunr
+    intro g' hg'
+    have hρ1 : ρ g' = 1 := hg'
+    exact ⟨htriv' g' hρ1, hνker g' hρ1⟩
+  · -- `d ≠ -3`: `ℚ(√d)` is ramified at `2`, contradicting the
+    -- unipotence at `2` of the hardly ramified `ρ`
+    have hd' : d = -1 ∨ d = 2 ∨ d = -2 ∨ d = 3 ∨ d = 6 ∨ d = -6 := by
+      rcases hd with h | h | h | h | h | h | h
+      · exact Or.inl h
+      · exact Or.inr (Or.inl h)
+      · exact Or.inr (Or.inr (Or.inl h))
+      · exact Or.inr (Or.inr (Or.inr (Or.inl h)))
+      · exact absurd h hd3
+      · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inl h))))
+      · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr h))))
+    obtain ⟨σ, hσI, hσx⟩ :=
+      exists_mem_localInertiaGroup_two_moving_sqrt d hd' x hx
+    set gσ : Γ ℚ := Field.absoluteGaloisGroup.map (algebraMap ℚ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ
+    have hcube : ρ (gσ ^ 3) = 1 :=
+      galoisRep_pow_three_eq_one_of_mem_localInertiaGroup_two V hV hρ σ hσI
+    have hθ3 : θ' gσ ^ 3 = 1 := by
+      rw [← map_pow]
+      exact htriv' _ hcube
+    have hθ1 : θ' gσ = 1 := by
+      have hsolve : ∀ a : Multiplicative (ZMod 2), a ^ 3 = 1 → a = 1 := by
+        decide
+      exact hsolve _ hθ3
+    exact (hσx ((hθ'x gσ).mp hθ1)).elim
 
 set_option maxHeartbeats 1000000 in
 /-- **An anti-equivariant, almost-everywhere-unramified, prime-to-3
