@@ -8028,12 +8028,203 @@ theorem exists_uniform_conj_decomposition_two_padic :
               Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ * c⁻¹ :=
   sorry
 
+/-- **The mod-`p` cyclotomic character is unramified at `2`** (sorry
+node — the residue-injectivity of `μ_p` at residue characteristic
+`2`): for odd `p`, the reduction of the `p`-adic cyclotomic character
+to a finite field of characteristic `p` kills the local inertia at the
+place `2`. Classical proof: the value mod `p` is determined by the
+action on `μ_p ⊂ ℚᵃˡᵍ` (level `1` of `cyclotomicCharacter.toZModPow`,
+as in the `ℓ = 3` computation inside
+`IsHardlyRamified.exists_conj_cyclotomicCharacter_three`'s
+infrastructure); a primitive `p`-th root of unity is integral over the
+completed integers at `2`, `X^p − 1` is separable over the residue
+field (`p` odd, residue characteristic `2`), so reduction is injective
+on `μ_p`; an inertia element fixes residues, hence fixes `μ_p`
+elementwise, hence has cyclotomic value `≡ 1 (mod p)`. (Serre, *Corps
+Locaux*, IV; the same reduction-injectivity underlies the PROVEN
+Frobenius/roots-of-unity leaf `adicArithFrob_rootsOfUnity_pow` of
+`GaloisRep.lean`, which can be mined for the integrality bookkeeping.) -/
+theorem algebraMap_cyclotomicCharacter_eq_one_of_mem_localInertiaGroup_two
+    (hodd : Odd p) {kk' : Type u} [Field kk'] [Finite kk']
+    [Algebra ℤ_[p] kk']
+    {σ : Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)}
+    (hσ : σ ∈ localInertiaGroup
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) :
+    algebraMap ℤ_[p] kk' (cyclotomicCharacter (AlgebraicClosure ℚ) p
+      ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))
+        σ).toRingEquiv)) = 1 :=
+  sorry
+
+/-- **The mod-`p` cyclotomic character at the arithmetic Frobenius of
+`2`** (sorry node — the mirror at the place `2` of the PROVEN
+`cyclotomicCharacter_adicArithFrob` of `GaloisRep.lean`, which runs
+the identical argument for the `3`-adic character at the place `p`):
+for odd `p`, the reduction of the `p`-adic cyclotomic character to a
+finite field of characteristic `p` takes the value `2` at the chosen
+arithmetic Frobenius `adicArithFrob` of the place `2`. Classical
+proof: `IsArithFrobAt` (via
+`Field.AbsoluteGaloisGroup.isArithFrobAt_adicArithFrob` and
+`AlgHom.IsArithFrobAt.apply_of_pow_eq_one`) forces `ζ ↦ ζ^2` on any
+root of unity of order prime to the residue characteristic — here a
+primitive `p`-th root, `p` odd, whose order avoids the maximal ideal
+over `(2)` — and level `1` of `cyclotomicCharacter.toZModPow` together
+with `modularCyclotomicCharacter.unique` reads the value `2` off this
+action; the reduction map `ℤ_[p] → kk'` (characteristic `p`) sees
+exactly level `1`. -/
+theorem algebraMap_cyclotomicCharacter_map_adicArithFrob_two_eq_two
+    (hodd : Odd p) {kk' : Type u} [Field kk'] [Finite kk']
+    [Algebra ℤ_[p] kk'] :
+    algebraMap ℤ_[p] kk' (cyclotomicCharacter (AlgebraicClosure ℚ) p
+      ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))
+        (Field.AbsoluteGaloisGroup.adicArithFrob
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)).toRingEquiv)) =
+      2 :=
+  sorry
+
+/-- **Tame killing of the cocycle on inertia at `2`** (sorry node — the
+genuine tame-Frobenius stroke of pillar E3b, the FIRST consumption
+point of `hp5`): for a hardly ramified mod-`p` extension with TRIVIAL
+sub-character and `p ≥ 5`, the upper-right entry `cc` vanishes on the
+image of the local inertia at the place `2`. Classical proof: `χ` is
+pinned to the mod-`p` cyclotomic character by the determinant of
+`htri` against `hρE.det` and is `1` on inertia
+(`algebraMap_cyclotomicCharacter_eq_one_of_mem_localInertiaGroup_two`
+above), so by the χ-twisted cocycle identity
+`cc(gh) = cc(h) + cc(g)·χ(h)` the restriction of `cc` to the mapped
+inertia is a continuous homomorphism into `(kk', +)`; its kernel is
+open, so it factors through a finite Galois level `N`
+(`krullTopology_mem_nhds_one_iff_of_normal`), where the finite-level
+tame-Frobenius generator `t` of
+`exists_finite_level_tame_frobenius_generator_two` (`ModThree.lean`,
+PROVEN) controls everything: wild errors have `2`-power order and die
+in the characteristic-`p` additive target (`p` odd), so the value on
+any inertia element is a multiple of the value `x` on (a profinite
+lift, via `exists_mem_localInertiaGroup_restrictNormalHom_eq`, of) the
+tame generator; the Frobenius clause `φtφ⁻¹ = t²·(wild)` plus the
+conjugation identity `cc(σnσ⁻¹) = χ(σ)⁻¹·cc(n)` (cocycle algebra, with
+`χ(σ) = 2` at the Frobenius by
+`algebraMap_cyclotomicCharacter_map_adicArithFrob_two_eq_two`) yields
+`2·x = 2⁻¹·x`, i.e. `3·x = 0` after clearing the unit `2`, and
+`3 ≠ 0` in characteristic `p ≥ 5`, so `x = 0`. This is exactly the
+tame escape ridden by the `p = 3` Kummer-of-2 counterexample
+(`v_2(2) = 1 ≢ 0 mod 3`), which is why `hp5` is load-bearing here and
+nowhere else in the at-`2` analysis. -/
+theorem eisenstein_trivial_sub_extension_cc_eq_zero_on_inertia_two_of_five_le
+    (hp5 : 5 ≤ p)
+    {kk' : Type u} [Field kk'] [Finite kk'] [Algebra ℤ_[p] kk']
+    [TopologicalSpace kk'] [DiscreteTopology kk'] [IsTopologicalRing kk']
+    {ρE : GaloisRep ℚ kk' (Fin 2 → kk')}
+    (hrankE : Module.rank kk' (Fin 2 → kk') = 2)
+    (hρE : IsHardlyRamified hpodd hrankE ρE)
+    (χ : Field.absoluteGaloisGroup ℚ →* kk')
+    (cc : Field.absoluteGaloisGroup ℚ → kk')
+    (htri : ∀ g, LinearMap.toMatrix (Pi.basisFun kk' (Fin 2))
+      (Pi.basisFun kk' (Fin 2)) (ρE g) = !![1, cc g; 0, χ g]) :
+    ∀ σ ∈ localInertiaGroup
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat,
+      cc (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ) = 0 :=
+  sorry
+
+/-- **Inertia and one Frobenius generate the local Galois group at `2`
+against open subgroups** (sorry node — the procyclic-unramified-
+quotient density, finite-level Galois theory of finite fields): an
+OPEN subgroup of the local absolute Galois group at the place `2`
+containing the full local inertia and the chosen arithmetic Frobenius
+`adicArithFrob` is everything. Classical proof: an open subgroup
+contains (Krull topology, `krullTopology_mem_nhds_one_iff_of_normal`)
+the fixing subgroup of a finite Galois level `N`, so it suffices to
+generate each finite quotient `Gal(N/Kv₂)`: there the inertia
+subgroup is the kernel of the surjection onto the residue-field
+automorphism group (`Ideal.Quotient.stabilizerHom`), the residue
+extension of a finite field with `2` elements
+(`natCard_residue_quotient_toHeightOneSpectrum` at `prime_two`) has
+automorphism group cyclic generated by the squaring Frobenius, and
+`IsArithFrobAt` (via
+`Field.AbsoluteGaloisGroup.isArithFrobAt_adicArithFrob`) says the
+image of `adicArithFrob` acts as squaring on residues — so its class
+generates `Gal(N/Kv₂)/inertia` and every element of `Gal(N/Kv₂)` is
+(image of Frobenius)^m · (finite-level inertia), the latter hit by the
+full inertia through the restriction lemma
+`restrictNormalHom_mem_inertia_of_mem_localInertiaGroup_two`
+(`ModThree.lean`, PROVEN). (Serre, *Corps Locaux*, IV §1; the same
+assembly shape as the PROVEN
+`exists_localInertia_two_generator_of_cube_one` of `ModThree.lean`.) -/
+theorem mem_of_isOpen_of_localInertiaGroup_le_of_adicArithFrob_mem_two
+    (H : Subgroup (Field.absoluteGaloisGroup
+      (HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)))
+    (hopen : IsOpen (H : Set (Field.absoluteGaloisGroup
+      (HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))))
+    (hinertia : localInertiaGroup
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat ≤ H)
+    (hfrob : Field.AbsoluteGaloisGroup.adicArithFrob
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat ∈ H) :
+    ∀ g, g ∈ H :=
+  sorry
+
+/-- **The coboundary-agreement locus is a subgroup** (PROVEN
+2026-07-24; pure cocycle algebra): for a character `χ` and a
+`χ`-twisted cocycle `cc` on a group `H` — the relation
+`cc(gh) = cc(h) + cc(g)·χ(h)` of an upper-triangular representation
+`!![1, cc; 0, χ]` — a homomorphism `e : G →* H`, and any fixed
+constant `a`, the locus `{g : G | cc(e g) = (χ(e g) − 1)·a}` where the
+pulled-back cocycle agrees with the coboundary of `a` is a SUBGROUP of
+`G`: coboundaries are themselves cocycles, and the agreement locus of
+two cocycles is closed under the twisted addition. Stated over a
+`MonoidHomClass` so continuous homomorphisms can be passed directly. -/
+def coboundaryLocus {k : Type*} [CommRing k] {G H : Type*} [Group G]
+    [Group H] {F : Type*} [FunLike F G H] [MonoidHomClass F G H] (e : F)
+    (χ : H →* k) (cc : H → k)
+    (hcoc : ∀ g h, cc (g * h) = cc h + cc g * χ h) (a : k) :
+    Subgroup G where
+  carrier := {g | cc (e g) = (χ (e g) - 1) * a}
+  one_mem' := by
+    have h1 := hcoc 1 1
+    rw [mul_one, map_one, mul_one] at h1
+    show cc (e 1) = (χ (e 1) - 1) * a
+    rw [map_one, map_one]
+    linear_combination -h1
+  mul_mem' := by
+    intro x y hx hy
+    have hx' : cc (e x) = (χ (e x) - 1) * a := hx
+    have hy' : cc (e y) = (χ (e y) - 1) * a := hy
+    show cc (e (x * y)) = (χ (e (x * y)) - 1) * a
+    rw [map_mul, hcoc, map_mul, hx', hy']
+    ring
+  inv_mem' := by
+    intro x hx
+    have hx' : cc (e x) = (χ (e x) - 1) * a := hx
+    have h3 := hcoc (e x) (e x)⁻¹
+    rw [mul_inv_cancel] at h3
+    have h1 := hcoc 1 1
+    rw [mul_one, map_one, mul_one] at h1
+    have hu : χ (e x) * χ (e x)⁻¹ = 1 := by
+      rw [← map_mul, mul_inv_cancel, map_one]
+    show cc (e x⁻¹) = (χ (e x⁻¹) - 1) * a
+    rw [map_inv]
+    linear_combination -h3 - h1 - χ (e x)⁻¹ * hx' - a * hu
+
 /-- **Tame local splitting at the place `2`, adic-completion spelling**
-(Eisenstein pillar E3b core; sorry node — the at-2 unit analysis in
-the spelling of `ModThree.lean`'s tame machinery; `hp5` is
-load-bearing HERE): a hardly ramified mod-`p` extension with TRIVIAL
-sub-character, `p ≥ 5`, splits on the image of the local Galois group
-`Γ Kv₂` of the adic completion of `ℚ` at the place `prime_two`.
+(Eisenstein pillar E3b core; PROVEN 2026-07-24 as an assembly over the
+four leaves above — the two cyclotomic-value pins, the tame inertia
+kill, and the Frobenius-density statement; the assembly is the
+open-subgroup argument: the coboundary-agreement locus is an OPEN
+subgroup of `Γ Kv₂` by the cocycle algebra of `htri` and discreteness
+of `End(kk'²)` in its module topology, it contains inertia — where
+`cc` dies tamely and `χ` is `1` — and the arithmetic Frobenius — where
+the correcting constant `a := cc(F)` is chosen, well-formed since
+`χ(F) − 1 = 2 − 1 = 1` — hence is everything): a hardly ramified
+mod-`p` extension with TRIVIAL sub-character, `p ≥ 5`, splits on the
+image of the local Galois group `Γ Kv₂` of the adic completion of `ℚ`
+at the place `prime_two`.
 Classical proof, in two strokes. (i) *Killing inertia*: `χ` is pinned
 to `ω = χ̄_cyc` by the determinant of `htri` against `hρE.det`, and
 `ω` is unramified at `2`, so on the image of `localInertiaGroup v₂`
@@ -8072,8 +8263,171 @@ theorem eisenstein_trivial_sub_extension_locally_split_at_place_two_of_five_le
           Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ) =
         (χ (Field.absoluteGaloisGroup.map (algebraMap ℚ
           (HeightOneSpectrum.adicCompletion ℚ
-            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ) - 1) * a :=
-  sorry
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ) - 1) * a := by
+  classical
+  -- the χ-twisted cocycle identity, from multiplicativity of `ρE`
+  -- through the triangular form
+  have hcoc : ∀ g h, cc (g * h) = cc h + cc g * χ h := by
+    intro g h
+    have h1 : LinearMap.toMatrix (Pi.basisFun kk' (Fin 2))
+        (Pi.basisFun kk' (Fin 2)) (ρE (g * h)) =
+        !![1, cc g; 0, χ g] * !![1, cc h; 0, χ h] := by
+      rw [map_mul, LinearMap.toMatrix_mul, htri g, htri h]
+    rw [htri (g * h), Matrix.mul_fin_two] at h1
+    simpa using congrFun (congrFun h1 0) 1
+  -- `χ` is pinned to the mod-`p` cyclotomic character by the determinant
+  have hχdet : ∀ g : Field.absoluteGaloisGroup ℚ, χ g =
+      algebraMap ℤ_[p] kk' (cyclotomicCharacter (AlgebraicClosure ℚ) p
+        g.toRingEquiv) := by
+    intro g
+    have h5 : LinearMap.det (ρE g) = Matrix.det (LinearMap.toMatrix
+        (Pi.basisFun kk' (Fin 2)) (Pi.basisFun kk' (Fin 2)) (ρE g)) :=
+      (LinearMap.det_toMatrix _ _).symm
+    have h4 : χ g = ρE.det g := by
+      rw [ρE.det_apply g, h5, htri g, Matrix.det_fin_two_of]
+      ring
+    rw [h4, hρE.det g]
+  -- matrix-entry readings of `cc` and `χ` through the triangular form
+  have hccentry : ∀ g : Field.absoluteGaloisGroup ℚ,
+      cc g = LinearMap.toMatrix (Pi.basisFun kk' (Fin 2))
+        (Pi.basisFun kk' (Fin 2)) (ρE g) 0 1 := by
+    intro g
+    rw [htri g]
+    simp
+  have hχentry : ∀ g : Field.absoluteGaloisGroup ℚ,
+      χ g = LinearMap.toMatrix (Pi.basisFun kk' (Fin 2))
+        (Pi.basisFun kk' (Fin 2)) (ρE g) 1 1 := by
+    intro g
+    rw [htri g]
+    simp
+  -- the endomorphism space is discrete in its module topology
+  letI : TopologicalSpace (Module.End kk' (Fin 2 → kk')) :=
+    moduleTopology kk' (Module.End kk' (Fin 2 → kk'))
+  haveI : DiscreteTopology (Module.End kk' (Fin 2 → kk')) :=
+    discreteTopology_moduleTopology _ _
+  have hρcont : Continuous fun g : Field.absoluteGaloisGroup ℚ => ρE g :=
+    ContinuousMonoidHom.continuous_toFun ρE
+  -- the coboundary-agreement locus of the Frobenius constant
+  -- `a := cc(F)`, as a subgroup of the local Galois group
+  have hVopen : IsOpen {σ : Field.absoluteGaloisGroup
+      (HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) |
+      cc (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ) =
+      (χ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ) - 1) *
+      cc (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))
+        (Field.AbsoluteGaloisGroup.adicArithFrob
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))} := by
+    have hpre : {σ : Field.absoluteGaloisGroup
+        (HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) |
+        cc (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ) =
+        (χ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ) - 1) *
+        cc (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))
+          (Field.AbsoluteGaloisGroup.adicArithFrob
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))} =
+        (fun σ : Field.absoluteGaloisGroup
+          (HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) =>
+          ρE (Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (HeightOneSpectrum.adicCompletion ℚ
+              Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ)) ⁻¹'
+        {φ : Module.End kk' (Fin 2 → kk') |
+          LinearMap.toMatrix (Pi.basisFun kk' (Fin 2))
+            (Pi.basisFun kk' (Fin 2)) φ 0 1 =
+          (LinearMap.toMatrix (Pi.basisFun kk' (Fin 2))
+            (Pi.basisFun kk' (Fin 2)) φ 1 1 - 1) *
+          cc (Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (HeightOneSpectrum.adicCompletion ℚ
+              Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))
+            (Field.AbsoluteGaloisGroup.adicArithFrob
+              Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))} := by
+      ext σ
+      simp only [Set.mem_setOf_eq, Set.mem_preimage, ← hccentry, ← hχentry]
+    rw [hpre]
+    exact (isOpen_discrete _).preimage (hρcont.comp
+      (ContinuousMonoidHom.continuous_toFun
+        (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)))))
+  -- inertia lies in the locus: `cc` dies tamely, `χ` is `1` there
+  have hle : localInertiaGroup
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat ≤
+      coboundaryLocus (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))) χ cc hcoc
+        (cc (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))
+          (Field.AbsoluteGaloisGroup.adicArithFrob
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))) := by
+    intro σ hσ
+    have h0 := eisenstein_trivial_sub_extension_cc_eq_zero_on_inertia_two_of_five_le
+      hpodd hp5 hrankE hρE χ cc htri σ hσ
+    have h1 : χ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1 :=
+      (hχdet _).trans
+        (algebraMap_cyclotomicCharacter_eq_one_of_mem_localInertiaGroup_two
+          hpodd hσ)
+    show cc (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ) = _
+    rw [h0, h1]
+    ring
+  -- the Frobenius lies in the locus: `χ(F) − 1 = 2 − 1 = 1`
+  have hFmem : Field.AbsoluteGaloisGroup.adicArithFrob
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat ∈
+      coboundaryLocus (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))) χ cc hcoc
+        (cc (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))
+          (Field.AbsoluteGaloisGroup.adicArithFrob
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))) := by
+    have h2 : χ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))
+        (Field.AbsoluteGaloisGroup.adicArithFrob
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) = 2 :=
+      (hχdet _).trans
+        (algebraMap_cyclotomicCharacter_map_adicArithFrob_two_eq_two hpodd)
+    show cc (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))
+        (Field.AbsoluteGaloisGroup.adicArithFrob
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) = _
+    rw [h2]
+    ring
+  -- density: an open subgroup containing inertia and Frobenius is all
+  have hall := mem_of_isOpen_of_localInertiaGroup_le_of_adicArithFrob_mem_two
+    (coboundaryLocus (Field.absoluteGaloisGroup.map (algebraMap ℚ
+      (HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))) χ cc hcoc
+      (cc (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))
+        (Field.AbsoluteGaloisGroup.adicArithFrob
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))))
+    hVopen hle hFmem
+  exact ⟨cc (Field.absoluteGaloisGroup.map (algebraMap ℚ
+    (HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))
+    (Field.AbsoluteGaloisGroup.adicArithFrob
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)),
+    fun σ => hall σ⟩
 
 /-- **Tame local splitting at `2`** (Eisenstein pillar E3b; PROVEN
 2026-07-24 as an assembly over the adic-completion-spelled core
