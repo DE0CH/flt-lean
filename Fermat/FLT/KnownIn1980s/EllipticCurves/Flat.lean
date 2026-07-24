@@ -9183,6 +9183,141 @@ lemma WeierstrassCurve.torsionKernel_aeval_ne_zero
   rw [h0, map_zero] at hu
   exact zero_ne_one hu
 
+set_option linter.unusedSectionVars false in
+/-- The base-changed `a₁` comes from the integral model over `R`. -/
+lemma baseChange_a₁_integralModel :
+    (E⁄Ksep).a₁ = algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₁ := by
+  rw [IsScalarTower.algebraMap_apply R K Ksep,
+    WeierstrassCurve.integralModel_a₁_eq]
+  simp [WeierstrassCurve.baseChange]
+
+set_option linter.unusedSectionVars false in
+/-- The base-changed `a₃` comes from the integral model over `R`. -/
+lemma baseChange_a₃_integralModel :
+    (E⁄Ksep).a₃ = algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₃ := by
+  rw [IsScalarTower.algebraMap_apply R K Ksep,
+    WeierstrassCurve.integralModel_a₃_eq]
+  simp [WeierstrassCurve.baseChange]
+
+set_option linter.unusedSectionVars false in
+/-- The even (`b = 0`) monomial sections are invariant under negation:
+negation fixes the abscissa. -/
+lemma WeierstrassCurve.torsionKernelFun_neg_even (h : Polynomial R) (a : ℕ)
+    (P : (E⁄Ksep).Point) :
+    WeierstrassCurve.torsionKernelFun R K E Ksep h a 0 (-P) =
+      WeierstrassCurve.torsionKernelFun R K E Ksep h a 0 P := by
+  cases P with
+  | zero => rfl
+  | some x y hns =>
+    rw [Affine.Point.neg_some, WeierstrassCurve.torsionKernelFun_some,
+      WeierstrassCurve.torsionKernelFun_some, pow_zero, pow_zero]
+
+set_option linter.unusedSectionVars false in
+/-- The odd (`b = 1`) monomial sections transform under negation by the
+`R`-integral combination coming from `y(-P) = -y(P) - a₁x(P) - a₃`; the
+weight bound keeps every origin value at `0` on both sides. -/
+lemma WeierstrassCurve.torsionKernelFun_neg_odd (m : ℕ) (h : Polynomial R)
+    (hmon : h.Monic)
+    (hunit : ∀ 𝒪 : ValuationSubring Ksep,
+      (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range →
+      ∀ (x y : Ksep) (hns : (E⁄Ksep).toAffine.Nonsingular x y),
+        (m : ℤ) • (Affine.Point.some x y hns : (E⁄Ksep).Point) = 0 →
+        x ∈ 𝒪 → 𝒪.valuation (Polynomial.aeval x h) = 1)
+    (a : ℕ) (hw : 2 * a + 3 ≤ 2 * h.natDegree)
+    (P : (E⁄Ksep).Point) (hP : (m : ℤ) • P = 0) :
+    WeierstrassCurve.torsionKernelFun R K E Ksep h a 1 (-P) =
+      -(WeierstrassCurve.torsionKernelFun R K E Ksep h a 1 P)
+      - algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₁ *
+          WeierstrassCurve.torsionKernelFun R K E Ksep h (a + 1) 0 P
+      - algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₃ *
+          WeierstrassCurve.torsionKernelFun R K E Ksep h a 0 P := by
+  cases P with
+  | zero =>
+    show (if 2 * a + 3 * 1 = 2 * h.natDegree then (1 : Ksep) else 0) =
+      -(if 2 * a + 3 * 1 = 2 * h.natDegree then (1 : Ksep) else 0)
+      - algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₁ *
+          (if 2 * (a + 1) + 3 * 0 = 2 * h.natDegree then (1 : Ksep) else 0)
+      - algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₃ *
+          (if 2 * a + 3 * 0 = 2 * h.natDegree then (1 : Ksep) else 0)
+    rw [if_neg (by omega), if_neg (by omega), if_neg (by omega)]
+    ring
+  | some x y hns =>
+    have hne := WeierstrassCurve.torsionKernel_aeval_ne_zero R K E Ksep m h hmon
+      hunit hns hP
+    rw [Affine.Point.neg_some, WeierstrassCurve.torsionKernelFun_some,
+      WeierstrassCurve.torsionKernelFun_some,
+      WeierstrassCurve.torsionKernelFun_some,
+      WeierstrassCurve.torsionKernelFun_some]
+    rw [show (E⁄Ksep).negY x y = -y - (E⁄Ksep).a₁ * x - (E⁄Ksep).a₃ from rfl,
+      baseChange_a₁_integralModel R K E Ksep, baseChange_a₃_integralModel R K E Ksep]
+    field_simp
+    ring
+
+set_option linter.unusedSectionVars false in
+/-- **Separation**: the monomial sections separate the `m`-torsion points —
+`1/h(x)` splits the origin (value `0`) from the affine points (nonzero
+value), and `x/h(x)`, `y/h(x)` then separate distinct affine points. -/
+lemma WeierstrassCurve.torsionKernelFun_separates (m : ℕ) (h : Polynomial R)
+    (hmon : h.Monic) (hdeg : 2 ≤ h.natDegree)
+    (hunit : ∀ 𝒪 : ValuationSubring Ksep,
+      (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range →
+      ∀ (x y : Ksep) (hns : (E⁄Ksep).toAffine.Nonsingular x y),
+        (m : ℤ) • (Affine.Point.some x y hns : (E⁄Ksep).Point) = 0 →
+        x ∈ 𝒪 → 𝒪.valuation (Polynomial.aeval x h) = 1)
+    {P Q : (E⁄Ksep).Point} (hPm : (m : ℤ) • P = 0) (hQm : (m : ℤ) • Q = 0)
+    (heq : ∀ a b : ℕ, a ≤ h.natDegree → b ≤ 1 → 2 * a + 3 * b ≤ 2 * h.natDegree →
+      WeierstrassCurve.torsionKernelFun R K E Ksep h a b P =
+        WeierstrassCurve.torsionKernelFun R K E Ksep h a b Q) :
+    P = Q := by
+  have h00 := heq 0 0 (by omega) (by omega) (by omega)
+  cases P with
+  | zero =>
+    cases Q with
+    | zero => rfl
+    | some x y hns =>
+      exfalso
+      have hne := WeierstrassCurve.torsionKernel_aeval_ne_zero R K E Ksep m h
+        hmon hunit hns hQm
+      rw [WeierstrassCurve.torsionKernelFun_zero,
+        WeierstrassCurve.torsionKernelFun_some, if_neg (by omega), pow_zero,
+        pow_zero, one_mul, one_div] at h00
+      exact hne (inv_eq_zero.mp h00.symm)
+  | some x₁ y₁ hns₁ =>
+    have hne₁ := WeierstrassCurve.torsionKernel_aeval_ne_zero R K E Ksep m h
+      hmon hunit hns₁ hPm
+    cases Q with
+    | zero =>
+      exfalso
+      rw [WeierstrassCurve.torsionKernelFun_zero,
+        WeierstrassCurve.torsionKernelFun_some, if_neg (by omega), pow_zero,
+        pow_zero, one_mul, one_div] at h00
+      exact hne₁ (inv_eq_zero.mp h00)
+    | some x₂ y₂ hns₂ =>
+      have hne₂ := WeierstrassCurve.torsionKernel_aeval_ne_zero R K E Ksep m h
+        hmon hunit hns₂ hQm
+      have h10 := heq 1 0 (by omega) (by omega) (by omega)
+      have h01 := heq 0 1 (by omega) (by omega) (by omega)
+      rw [WeierstrassCurve.torsionKernelFun_some,
+        WeierstrassCurve.torsionKernelFun_some] at h00
+      rw [WeierstrassCurve.torsionKernelFun_some,
+        WeierstrassCurve.torsionKernelFun_some] at h10
+      rw [WeierstrassCurve.torsionKernelFun_some,
+        WeierstrassCurve.torsionKernelFun_some] at h01
+      simp only [pow_zero, pow_one, one_mul, mul_one] at h00 h10 h01
+      have hu : Polynomial.aeval x₂ h = Polynomial.aeval x₁ h := by
+        rw [div_eq_div_iff hne₁ hne₂, one_mul, one_mul] at h00
+        exact h00
+      rw [hu] at h10 h01
+      have hx : x₁ = x₂ := by
+        rw [div_eq_div_iff hne₁ hne₁] at h10
+        exact mul_right_cancel₀ hne₁ h10
+      have hy : y₁ = y₂ := by
+        rw [div_eq_div_iff hne₁ hne₁] at h01
+        exact mul_right_cancel₀ hne₁ h01
+      subst hx
+      subst hy
+      rfl
+
 /-- **The avoiding denominator** (sorry node — stage A of the Katz–Mazur
 kernel-functions leaf): a monic `h ∈ R[X]` of degree `≥ 2` such that
 `h(x(P))` is a unit of every centered valuation subring for every affine
