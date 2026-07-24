@@ -8332,12 +8332,12 @@ theorem WeierstrassCurve.exists_bialgEquiv_of_torsion_points_equiv
 set_option backward.isDefEq.respectTransparency false in
 omit [DecidableEq Ksep] in
 /-- **Point-integral elements of a finite étale algebra are integral over the
-DVR** (sorry node; curve-free étale leaf of the Katz–Mazur order assembly
-`exists_hopf_order_of_good_reduction`): an element of a finite étale
+DVR** (PROVEN 2026-07-24; curve-free étale leaf of the Katz–Mazur order
+assembly `exists_hopf_order_of_good_reduction`): an element of a finite étale
 `K`-algebra whose value at every `Kˢᵉᵖ`-point is integral over `R` is integral
 over `R`. The integrality hypothesis is phrased through
 `RingHom.IsIntegralElem` for the composite `R → K → Kˢᵉᵖ` to avoid demanding
-an `Algebra R Kˢᵉᵖ` instance in the signature. Intended proof: the point set
+an `Algebra R Kˢᵉᵖ` instance in the signature. Proof: the point set
 is finite (`Finite.algHom`), and the monic `q := ∏_φ (X - C (φ a)) ∈ Kˢᵉᵖ[X]`
 has Galois-fixed coefficients — postcomposition by `σ` permutes the points,
 and `σ (φ a) = (σ.toAlgHom.comp φ) a` — hence coefficients in `K`
@@ -8355,7 +8355,90 @@ theorem isIntegral_of_forall_algHom_isIntegralElem
     (ha : ∀ φ : A →ₐ[K] Ksep,
       ((algebraMap K Ksep).comp (algebraMap R K)).IsIntegralElem (φ a)) :
     IsIntegral R a := by
-  sorry
+  classical
+  -- `Kˢᵉᵖ` as an `R`-algebra through `K`, proof-locally
+  letI : Algebra R Ksep := ((algebraMap K Ksep).comp (algebraMap R K)).toAlgebra
+  haveI : IsScalarTower R K Ksep := IsScalarTower.of_algebraMap_eq fun _ => rfl
+  haveI : Finite (A →ₐ[K] Ksep) := Finite.algHom K A Ksep
+  haveI := Fintype.ofFinite (A →ₐ[K] Ksep)
+  -- the characteristic polynomial of the values of `a`
+  set q : Polynomial Ksep := ∏ φ : A →ₐ[K] Ksep,
+    (Polynomial.X - Polynomial.C (φ a)) with hq
+  have hqmonic : q.Monic :=
+    Polynomial.monic_prod_of_monic _ _ fun φ _ => Polynomial.monic_X_sub_C _
+  -- postcomposition by a Galois automorphism permutes the points, fixing `q`
+  have hmapfix : ∀ σ : Ksep ≃ₐ[K] Ksep, q.map σ.toAlgHom.toRingHom = q := by
+    intro σ
+    rw [hq, Polynomial.map_prod]
+    have hbij : Function.Bijective
+        (fun φ : A →ₐ[K] Ksep => σ.toAlgHom.comp φ) := by
+      constructor
+      · intro φ ψ hφψ
+        ext x
+        have h1 := congrArg (fun g : A →ₐ[K] Ksep => σ.symm (g x)) hφψ
+        simpa using h1
+      · intro φ
+        refine ⟨σ.symm.toAlgHom.comp φ, ?_⟩
+        ext x
+        simp
+    refine Fintype.prod_bijective _ hbij _ _ fun φ => ?_
+    rw [Polynomial.map_sub, Polynomial.map_X, Polynomial.map_C]
+    rfl
+  -- hence the coefficients of `q` are Galois-fixed, so they lie in `K`
+  have hcoeffK : ∀ i : ℕ, q.coeff i ∈ Set.range (algebraMap K Ksep) := by
+    intro i
+    rw [InfiniteGalois.mem_range_algebraMap_iff_fixed]
+    intro σ
+    have h1 : σ.toAlgHom.toRingHom (q.coeff i) =
+        (q.map σ.toAlgHom.toRingHom).coeff i := (Polynomial.coeff_map _ _).symm
+    calc σ (q.coeff i)
+        = (q.map σ.toAlgHom.toRingHom).coeff i := h1
+      _ = q.coeff i := by rw [hmapfix σ]
+  -- the coefficients of `q` are also integral over `R`
+  have hvals : ∀ φ : A →ₐ[K] Ksep, φ a ∈ integralClosure R Ksep := fun φ => ha φ
+  set qS : Polynomial (integralClosure R Ksep) := ∏ φ : A →ₐ[K] Ksep,
+    (Polynomial.X - Polynomial.C (⟨φ a, hvals φ⟩ : integralClosure R Ksep))
+    with hqSdef
+  have hqSmap : qS.map (algebraMap (integralClosure R Ksep) Ksep) = q := by
+    rw [hqSdef, hq, Polynomial.map_prod]
+    refine Finset.prod_congr rfl fun φ _ => ?_
+    rw [Polynomial.map_sub, Polynomial.map_X, Polynomial.map_C]
+    rfl
+  have hcoeffint : ∀ i : ℕ, IsIntegral R (q.coeff i) := by
+    intro i
+    rw [← hqSmap, Polynomial.coeff_map]
+    exact (qS.coeff i).2
+  -- descend `q` to a monic polynomial over `K`
+  obtain ⟨q₀K, hq₀Kmap, _, hq₀Kmonic⟩ :=
+    Polynomial.lifts_and_natDegree_eq_and_monic
+      ((Polynomial.lifts_iff_coeff_lifts q).mpr hcoeffK) hqmonic
+  -- its coefficients are integral elements of `K`, hence lie in the DVR `R`
+  have hq₀Kcoeff : ∀ n : ℕ, q₀K.coeff n ∈ Set.range (algebraMap R K) := by
+    intro n
+    have h1 : algebraMap K Ksep (q₀K.coeff n) = q.coeff n := by
+      rw [← hq₀Kmap, Polynomial.coeff_map]
+    have h2 : IsIntegral R (q₀K.coeff n) :=
+      (isIntegral_algebraMap_iff (algebraMap K Ksep).injective).mp
+        (h1 ▸ hcoeffint n)
+    obtain ⟨r, hr⟩ := IsIntegrallyClosed.isIntegral_iff.mp h2
+    exact ⟨r, hr⟩
+  -- descend once more, to a monic polynomial over `R`
+  obtain ⟨q₀, hq₀map, _, hq₀monic⟩ :=
+    Polynomial.lifts_and_natDegree_eq_and_monic
+      ((Polynomial.lifts_iff_coeff_lifts q₀K).mpr hq₀Kcoeff) hq₀Kmonic
+  -- `q₀(a) = 0`: every point kills it, and points separate
+  have haeval : Polynomial.aeval a q₀ = 0 := by
+    refine eq_zero_of_forall_algHom_eq_zero K Ksep A _ fun φ => ?_
+    have h1 : Polynomial.aeval (φ a) q₀ = φ (Polynomial.aeval a q₀) :=
+      Polynomial.aeval_algHom_apply (φ.restrictScalars R) a q₀
+    rw [← h1, Polynomial.aeval_def, ← Polynomial.eval_map]
+    have h2 : q₀.map (algebraMap R Ksep) = q := by
+      rw [IsScalarTower.algebraMap_eq R K Ksep, ← Polynomial.map_map, hq₀map,
+        hq₀Kmap]
+    rw [h2, hq, Polynomial.eval_prod]
+    exact Finset.prod_eq_zero (Finset.mem_univ φ) (by
+      rw [Polynomial.eval_sub, Polynomial.eval_X, Polynomial.eval_C, sub_self])
+  exact ⟨q₀, hq₀monic, by rw [← Polynomial.aeval_def]; exact haeval⟩
 
 set_option backward.isDefEq.respectTransparency false in
 omit [DecidableEq Ksep] in
