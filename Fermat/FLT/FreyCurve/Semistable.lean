@@ -8651,10 +8651,123 @@ open TensorProduct in
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
-/-- **The fixed-point Hopf order** (sorry node — the INTEGRAL stage of
-the fixed-points quadratic descent, entirely field-free: no `K`, no
-`Ω`, no étaleness): over a DVR `R` with `2` a unit, given a finite
-flat commutative `R`-Hopf algebra `H` whose antipode is an involution
+/-- **The fixed-point order, algebra level** (sorry node — the
+eigenspace-splitting stage of the integral fixed-points descent, with
+NO costructure in sight): over a DVR `R` with `2` a unit, given a
+finite flat commutative `R`-Hopf algebra `H` with involutive antipode
+(`hS2`) and a monic quadratic `X² − tX + n` with UNIT discriminant,
+there is a finite flat `R`-ALGEBRA `H'` whose base change to the
+quadratic order `R_L = R[X]/(X² − tX + n)` is identified with
+`R_L ⊗ H` as an `R_L`-algebra, intertwining `τ ⊗ id` with `τ ⊗ S`.
+Intended construction: `ι := τ ⊗ S` is an `R`-algebra involution of
+`A := R_L ⊗ H` (involutive by `hS2` and the involutivity of the
+conjugation); `H' := A^ι` — the equalizer subalgebra of `ι` and the
+identity; the element `δ := 2·root − t` satisfies `τ δ = −δ` and
+`δ² = t² − 4n`, a unit (`hdisc`), so with `2` a unit (`h2`) every
+`a ∈ A` splits as `a = a⁺ + δ·(δ⁻¹·δ·a⁻)` with `a± := (a ± ιa)/2` and
+`a⁺, δ·a⁻ ∈ H'`: the multiplication map `R_L ⊗[R] H' → A` is
+surjective, and injective because the `±1`-eigenspaces of `ι` meet
+trivially (`2` a unit) while `δ` (a unit) exchanges them — this map is
+`Φ⁻¹`; `H'` is finite (a submodule of the finite `R`-module `A` over
+the Noetherian DVR `R`) and flat (finite and torsion-free inside the
+free `A`, over a PID); the equivariance clause holds because on the
+image of `H'` the map `τ ⊗ id` acts through the first factor exactly
+as `ι ∘ (τ ⊗ S)` does. -/
+theorem exists_fixedPointAlgebraOrder_of_descentData
+    (R : Type) [CommRing R] [IsDomain R] [IsDiscreteValuationRing R]
+    (h2 : IsUnit (2 : R)) (t n : R) (hdisc : IsUnit (t * t - 4 * n))
+    (H : Type) [CommRing H] [HopfAlgebra R H] [Module.Finite R H]
+    [Module.Flat R H]
+    (hS2 : (HopfAlgebra.antipodeAlgHom R H).comp
+      (HopfAlgebra.antipodeAlgHom R H) = AlgHom.id R H) :
+    ∃ (H' : Type) (_ : CommRing H') (_ : Algebra R H')
+      (_ : Module.Finite R H') (_ : Module.Flat R H')
+      (Φ : (quadraticOrder R t n ⊗[R] H') ≃ₐ[quadraticOrder R t n]
+        (quadraticOrder R t n ⊗[R] H)),
+      ∀ x : quadraticOrder R t n ⊗[R] H',
+        Φ (Algebra.TensorProduct.map
+          (quadraticOrderConj R t n : quadraticOrder R t n →ₐ[R]
+            quadraticOrder R t n) (AlgHom.id R H') x) =
+        Algebra.TensorProduct.map
+          (quadraticOrderConj R t n : quadraticOrder R t n →ₐ[R]
+            quadraticOrder R t n) (HopfAlgebra.antipodeAlgHom R H)
+          (Φ x) := by
+  sorry
+
+open TensorProduct in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **The fixed-point order, Hopf upgrade** (sorry node — the
+costructure-corestriction stage of the integral fixed-points descent):
+given the algebra-level fixed-point identification `Φ` of
+`exists_fixedPointAlgebraOrder_of_descentData` — an `R_L`-algebra
+identification `R_L ⊗ H' ≅ R_L ⊗ H` intertwining `τ ⊗ id` with
+`τ ⊗ S` — upgrade the finite flat `R`-algebra `H'` to a finite flat
+`R`-HOPF algebra for which `Φ` becomes an `R_L`-bialgebra
+identification. Intended construction: the costructure of `H'` is the
+corestriction of that of `R_L ⊗ H` through `Φ`: for `x ∈ H'`,
+`(Φ⁻¹ ⊗ Φ⁻¹)(Δ(Φ(1 ⊗ x)))` is fixed by the conjugation-twist
+`(τ ⊗ id) ⊗ (τ ⊗ id)` of `(R_L ⊗ H') ⊗[R_L] (R_L ⊗ H')` — because
+`hScomul` makes `τ ⊗ S` commute with the comultiplication and `Φ`
+intertwines the two twists — and the `(τ ⊗ id)`-fixed points of the
+base change are exactly `1 ⊗ H' ⊗ H'` (the `τ`-fixed points of `R_L`
+are `R`: `2` and `δ` are units, `h2`/`hdisc`), so the comultiplication
+corestricts; likewise the counit lands in the `τ`-fixed `R ⊆ R_L` and
+the transported antipode preserves the fixed points; the Hopf axioms
+transport from `R_L ⊗ H` along the injective comparison
+`H' ⊗ H' → (R_L ⊗ H') ⊗[R_L] (R_L ⊗ H')` (the base-change unit of the
+free rank-2 `R_L`, split injective). -/
+theorem exists_fixedPointHopfOrder_of_algebraOrder
+    (R : Type) [CommRing R] [IsDomain R] [IsDiscreteValuationRing R]
+    (h2 : IsUnit (2 : R)) (t n : R) (hdisc : IsUnit (t * t - 4 * n))
+    (H : Type) [CommRing H] [HopfAlgebra R H] [Module.Finite R H]
+    [Module.Flat R H]
+    (hS2 : (HopfAlgebra.antipodeAlgHom R H).comp
+      (HopfAlgebra.antipodeAlgHom R H) = AlgHom.id R H)
+    (hScomul : (Bialgebra.comulAlgHom R H).comp
+      (HopfAlgebra.antipodeAlgHom R H) =
+      (Algebra.TensorProduct.map (HopfAlgebra.antipodeAlgHom R H)
+        (HopfAlgebra.antipodeAlgHom R H)).comp
+        (Bialgebra.comulAlgHom R H))
+    (H' : Type) [CommRing H'] [Algebra R H'] [Module.Finite R H']
+    [Module.Flat R H']
+    (Φ : (quadraticOrder R t n ⊗[R] H') ≃ₐ[quadraticOrder R t n]
+      (quadraticOrder R t n ⊗[R] H))
+    (hΦ : ∀ x : quadraticOrder R t n ⊗[R] H',
+      Φ (Algebra.TensorProduct.map
+        (quadraticOrderConj R t n : quadraticOrder R t n →ₐ[R]
+          quadraticOrder R t n) (AlgHom.id R H') x) =
+      Algebra.TensorProduct.map
+        (quadraticOrderConj R t n : quadraticOrder R t n →ₐ[R]
+          quadraticOrder R t n) (HopfAlgebra.antipodeAlgHom R H)
+        (Φ x)) :
+    ∃ (H'' : Type) (_ : CommRing H'') (_ : HopfAlgebra R H'')
+      (_ : Module.Finite R H'') (_ : Module.Flat R H'')
+      (e : (quadraticOrder R t n ⊗[R] H'') ≃ₐc[quadraticOrder R t n]
+        (quadraticOrder R t n ⊗[R] H)),
+      ∀ x : quadraticOrder R t n ⊗[R] H'',
+        e (Algebra.TensorProduct.map
+          (quadraticOrderConj R t n : quadraticOrder R t n →ₐ[R]
+            quadraticOrder R t n) (AlgHom.id R H'') x) =
+        Algebra.TensorProduct.map
+          (quadraticOrderConj R t n : quadraticOrder R t n →ₐ[R]
+            quadraticOrder R t n) (HopfAlgebra.antipodeAlgHom R H)
+          (e x) := by
+  sorry
+
+open TensorProduct in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **The fixed-point Hopf order** (DECOMPOSED 2026-07-24 — the
+eigenspace splitting producing the algebra-level order and its
+equivariant base-change identification is the sorried leaf
+`exists_fixedPointAlgebraOrder_of_descentData`; the corestriction of
+the costructure upgrading it to a Hopf order is the sorried leaf
+`exists_fixedPointHopfOrder_of_algebraOrder`; PROVEN here is the glue
+chaining them): over a DVR `R` with `2` a unit, given a finite flat
+commutative `R`-Hopf algebra `H` whose antipode is an involution
 (`hS2`) commuting with the comultiplication without the swap
 (`hScomul`), and a monic quadratic `X² − tX + n` with UNIT
 discriminant, there is a finite flat `R`-Hopf algebra `H'` whose base
@@ -8662,22 +8775,7 @@ change to the quadratic order `R_L = R[X]/(X² − tX + n)` is identified
 with `R_L ⊗ H` as an `R_L`-BIALGEBRA, by an identification `e` that
 intertwines the conjugation-twisted maps: `e ∘ (τ ⊗ id) = (τ ⊗ S) ∘ e`
 — i.e. `H'` is the twisted form of `H` split by `R_L`, with descent
-cocycle `τ ⊗ S`. Intended construction: `ι := τ ⊗ S` is an `R`-algebra
-involution of `A := R_L ⊗ H` (`hS2`); `H' := A^ι` is the fixed-point
-subalgebra; the element `δ := 2·root − t` satisfies `τ δ = −δ` and
-`δ² = t² − 4n`, a unit (`hdisc`), so with `2` a unit (`h2`) every
-`a ∈ A` splits as `a = a⁺ + δ·(δ⁻¹a⁻)` with `a± := (a ± ιa)/2`,
-`a⁺, δa⁻ ∈ H'` — hence multiplication `R_L ⊗[R] H' → A` is an
-`R_L`-algebra isomorphism `e⁻¹` (injectivity: the two eigenspaces of
-`ι` meet trivially since `2` is a unit), `H'` is finite (submodule of
-a finite module over the Noetherian `R`) and flat (finite
-torsion-free over the DVR), and the costructure of `H'` is the
-corestriction of that of `A` along `e` — landing in the fixed points
-of `ι ⊗ ι`, which the splitting identifies with `H' ⊗[R] H'`
-(`hScomul` makes `ι` a coalgebra map, so the corestriction satisfies
-the Hopf axioms transported from `A`); `e` is then a bialgebra
-identification by construction and the `τ ⊗ id` / `τ ⊗ S` intertwining
-is the definition of `ι`. -/
+cocycle `τ ⊗ S`. -/
 theorem exists_fixedPointHopfOrder_of_descentData
     (R : Type) [CommRing R] [IsDomain R] [IsDiscreteValuationRing R]
     (h2 : IsUnit (2 : R)) (t n : R) (hdisc : IsUnit (t * t - 4 * n))
@@ -8702,7 +8800,14 @@ theorem exists_fixedPointHopfOrder_of_descentData
           (quadraticOrderConj R t n : quadraticOrder R t n →ₐ[R]
             quadraticOrder R t n) (HopfAlgebra.antipodeAlgHom R H)
           (e x) := by
-  sorry
+  obtain ⟨H', cH', aH', finH', flatH', Φ, hΦ⟩ :=
+    exists_fixedPointAlgebraOrder_of_descentData R h2 t n hdisc H hS2
+  letI := cH'
+  letI := aH'
+  letI := finH'
+  letI := flatH'
+  exact exists_fixedPointHopfOrder_of_algebraOrder R h2 t n hdisc H hS2
+    hScomul H' Φ hΦ
 
 open TensorProduct in
 set_option backward.isDefEq.respectTransparency false in
