@@ -97,10 +97,22 @@ here. This file provides:
   generalized Frobenius existence
   `exists_algEquiv_map_zeta_eq_pow_natCard_of_not_dvd`; the main
   terms cancel by nontriviality of `χ` on the image subgroup) from
-  the single sorried per-residue Weber counting leaf
+  the per-residue Weber counting theorem
   `exists_forall_abs_sum_card_absNorm_residue_sub_mul_le_rpow`,
   the `κ·n + O(n^r)` equidistribution of ideals over the
-  Galois-image norm residues) and
+  Galois-image norm residues — itself now DERIVED, through the PROVEN
+  ray-class assembly
+  `exists_forall_abs_sum_card_absNorm_residue_sub_mul_le_rpow_of_ideal`,
+  from THREE sorried leaves: the per-narrow-ray-class Weber count
+  `exists_forall_abs_natCard_isNarrowRayEquiv_sub_mul_le_rpow`
+  (the geometry-of-numbers core, Lang VI §3), the equal-fiber
+  norm-residue fibering
+  `exists_forall_sum_card_absNorm_residue_eq_sum_natCard_isNarrowRayEquiv`,
+  and the Frobenius residue realization
+  `exists_ideal_not_dvd_absNorm_and_residue_eq_of_map_zeta_eq_pow`
+  (Galois-image residues are ideal norm residues; NOT derivable from
+  this file's downstream infinitude theorem — that would be circular,
+  see its docstring)) and
   `exists_forall_le_norm_LSeries_near_one` (`L` bounded away from `0`
   just right of `1`: the `L(1,χ) ≠ 0` half — now itself DERIVED,
   through the PROVEN dominated-convergence continuation
@@ -110,7 +122,8 @@ here. This file provides:
   `integral_sum_dirichletCharacter_mul_card_cpow_neg_two_ne_zero`,
   the nonvanishing of the continued value at `1` by the classical
   zeta-factorization argument)); the L-function half thus rests on
-  exactly TWO deep sorried cores — the Weber counting leaf
+  exactly FOUR sorried leaves — the three ray-class/realization
+  leaves behind the Weber counting theorem
   `exists_forall_abs_sum_card_absNorm_residue_sub_mul_le_rpow` and
   the arithmetic core
   `integral_sum_dirichletCharacter_mul_card_cpow_neg_two_ne_zero`;
@@ -2908,37 +2921,225 @@ theorem exists_algEquiv_map_zeta_eq_pow_of_not_dvd_absNorm
     · rw [AlgEquiv.mul_apply, hm, map_pow, hσ, ← pow_mul]
     · rw [Nat.cast_mul, hcard, hmres, hmul, Nat.cast_mul]
 
+/-- **Narrow ray equivalence mod `ℓ`** on integral ideals of the number
+field `F`: `I ∼ J` iff `(α)·I = (β)·J` for some `α, β ∈ 𝓞 F` that are
+totally positive, coprime to `ℓ`, and congruent mod `ℓ𝓞 F`. Restricted
+to ideals coprime to `ℓ` this is precisely the equivalence whose
+classes form the narrow ray class group of `F` of modulus `ℓ·𝔪∞`
+(`𝔪∞` the product of all real places): Lang, *Algebraic Number
+Theory*, ch. VI §1; Neukirch ch. VI §1. Two structural facts shape the
+definition (used by the sorried consumers below, not needed as
+standalone lemmas here): the relation is transitive and compatible
+with ideal multiplication, because totally positive elements are
+closed under products and congruences mod `ℓ` multiply; and the
+ideal-norm residue mod `ℓ` is constant on classes — a totally positive
+`α` has `(Ideal.absNorm (span {α}) : ℤ) = Algebra.norm ℤ α > 0`, and
+`α ≡ β mod ℓ𝓞 F` forces `Algebra.norm ℤ α ≡ Algebra.norm ℤ β mod ℓ`
+(the norm is an integer polynomial in the coordinates over a
+`ℤ`-basis), so `absNorm` residues of equivalent coprime ideals agree
+after cancelling the unit `Algebra.norm ℤ α mod ℓ`. -/
+def IsNarrowRayEquiv {F : Type*} [Field F] [NumberField F] (ℓ : ℕ)
+    (I J : Ideal (𝓞 F)) : Prop :=
+  ∃ α β : 𝓞 F,
+    (∀ φ : F →+* ℝ, 0 < φ (algebraMap (𝓞 F) F α)) ∧
+    (∀ φ : F →+* ℝ, 0 < φ (algebraMap (𝓞 F) F β)) ∧
+    IsCoprime (Ideal.span {α}) (Ideal.span {(ℓ : 𝓞 F)}) ∧
+    IsCoprime (Ideal.span {β}) (Ideal.span {(ℓ : 𝓞 F)}) ∧
+    α - β ∈ Ideal.span {(ℓ : 𝓞 F)} ∧
+    Ideal.span {α} * I = Ideal.span {β} * J
+
+/-- **Weber's theorem: ideal counting per narrow ray class, with
+power-saving error** (sorry leaf) — Lang, *Algebraic Number Theory*,
+ch. VI §3 Theorem 3: the number of nonzero integral ideals `I` of
+`𝓞 F` in the narrow ray class mod `ℓ` of `I₀` with `N(I) ≤ n` is
+`κ₀·n + O(n^r)` for some `r < 1`, where `κ₀` and the error constant
+`C` depend only on `F` and `ℓ`, NOT on the class of `I₀`.
+
+Intended proof (Weber; Lang VI §3): fix an auxiliary integral ideal
+`J` in the inverse narrow ray class of `I₀`, so that `I ↦ I·J` maps
+the counted ideals bijectively onto principal ideals `(γ) ⊆ J` with
+`γ` totally positive, `γ ≡ γ₀ mod ℓJ` for a fixed `γ₀` (determined by
+the class), and `0 < N(γ) ≤ n·N(J)`. Generators `γ` modulo the action
+of the totally positive units correspond to points of the TRANSLATED
+lattice `γ₀ + ℓJ` (under the Minkowski embedding) lying in the
+homogeneously expanding region `{x : N(x) ≤ t}` cut down to a
+fundamental domain of the unit action on the norm-one hypersurface;
+this domain is bounded and has `(d−1)`-Lipschitz-parametrizable
+boundary (`d = [F:ℚ]`), so the translated-lattice point count is
+`(vol/covol)·t + O(t^{(d−1)/d})` uniformly in the translate (Lang VI
+§2 Theorem 2 — the geometry-of-numbers core), whence the claim with
+`r = 1 − 1/d` for `d ≥ 2` (any `0 < r < 1` works for `d = 1`, where
+the count is elementary: positive integers `≡ a mod ℓ` up to `n`).
+Mathlib pin: `ZLattice.covolume.tendsto_card_le_div'` gives the
+error-free limit through `fundamentalCone`/`normLeOne` (measure-zero
+frontier only); no error-term lattice count and no Lipschitz boundary
+parametrization exist — those are the honest content of this leaf. -/
+theorem exists_forall_abs_natCard_isNarrowRayEquiv_sub_mul_le_rpow
+    (F : Type*) [Field F] [NumberField F] (ℓ : ℕ) (hℓ : ℓ.Prime) :
+    ∃ κ₀ r C : ℝ, 0 < r ∧ r < 1 ∧ 0 ≤ C ∧
+      ∀ I₀ : Ideal (𝓞 F), I₀ ≠ 0 →
+        IsCoprime I₀ (Ideal.span {(ℓ : 𝓞 F)}) → ∀ n : ℕ,
+      |(Nat.card {I : Ideal (𝓞 F) // I ≠ 0 ∧ Ideal.absNorm I ≤ n ∧
+          IsNarrowRayEquiv ℓ I I₀} : ℝ) - κ₀ * n| ≤ C * (n : ℝ) ^ r :=
+  sorry
+
+/-- **Ray-class fibering of the norm-residue count** (sorry leaf):
+there is one fiber size `f ≥ 1` such that every residue `a mod ℓ`
+realized as `N(I) mod ℓ` by an ideal with `ℓ ∤ N(I)` is realized by
+exactly `f` narrow ray classes mod `ℓ`, and the ideals of norm
+residue `a` and norm in `[1, n]` partition into those classes:
+`∑_{1 ≤ k ≤ n, k ≡ a} #{I : N(I) = k}` equals the sum of the
+class counts over a set `R` of `f` class representatives
+(depending on `a` but not on `n`).
+
+Intended proof: (i) the classes of `IsNarrowRayEquiv` on
+coprime-to-`ℓ` ideals form a FINITE abelian group — the narrow ray
+class group mod `ℓ𝔪∞`: finiteness reduces to the finiteness of the
+class group, of `(𝓞 F ⧸ ℓ𝓞 F)ˣ` and of the real-sign group
+`(ℤ/2)^{r₁}`; inverses exist because some power of every class is
+principal-with-conditions. (ii) `N(·) mod ℓ` descends to a group
+homomorphism from it to `(ZMod ℓ)ˣ` (residue constant on classes —
+see `IsNarrowRayEquiv`'s docstring). (iii) The residues realized by
+ideals prime to `ℓ` form exactly the image of this homomorphism, and
+the fibers over image points are cosets of its kernel, all of one
+cardinality `f = #ker`. (iv) The partition identity: an ideal with
+`ℓ ∤ N(I)` is coprime to `ℓ𝓞 F` (`ℓ` is prime, so `N(I)` a unit mod
+`ℓ` meets every prime over `ℓ` trivially), hence lies in exactly one
+narrow ray class, whose residue is `N(I) mod ℓ`; conversely members
+of the fiber classes are nonzero with `ℓ ∤ N(I)` and residue `a`.
+Nothing here is geometric — this is finite group theory over the ray
+class group, the `κ`-uniformity mechanism of Weber's theorem. -/
+theorem exists_forall_sum_card_absNorm_residue_eq_sum_natCard_isNarrowRayEquiv
+    (F : Type*) [Field F] [NumberField F] (ℓ : ℕ) (hℓ : ℓ.Prime) :
+    ∃ f : ℕ, 0 < f ∧ ∀ a : ZMod ℓ,
+      (∃ I : Ideal (𝓞 F), ¬ ℓ ∣ Ideal.absNorm I ∧
+        (Ideal.absNorm I : ZMod ℓ) = a) →
+      ∃ R : Finset (Ideal (𝓞 F)), R.card = f ∧
+        (∀ I₀ ∈ R, I₀ ≠ 0 ∧ IsCoprime I₀ (Ideal.span {(ℓ : 𝓞 F)})) ∧
+        ∀ n : ℕ,
+          ∑ k ∈ (Finset.Icc 1 n).filter (fun k : ℕ => (k : ZMod ℓ) = a),
+            (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℝ) =
+          ∑ I₀ ∈ R, (Nat.card {I : Ideal (𝓞 F) // I ≠ 0 ∧
+            Ideal.absNorm I ≤ n ∧ IsNarrowRayEquiv ℓ I I₀} : ℝ) :=
+  sorry
+
+/-- **Weber's fibered ideal counting, ideal-residue form**: the count
+of nonzero ideals of `𝓞 F` with norm in `[1, n]` and norm residue
+`a mod ℓ` is `κ·n + O(n^r)`, `r < 1`, with the SAME `κ` for every
+residue `a` realized by an ideal prime to `ℓ`. Purely about `F` and
+`ℓ` — no cyclotomic extension appears.
+
+DERIVED from the two sorried ray-class leaves above by pure
+bookkeeping: take `κ = f·κ₀` and `C' = f·C` where `f` is the fiber
+size of `exists_forall_sum_card_absNorm_residue_eq_sum_natCard_isNarrowRayEquiv`
+and `κ₀, C` the per-class constants of
+`exists_forall_abs_natCard_isNarrowRayEquiv_sub_mul_le_rpow`; the
+fibering identity rewrites the residue count as a sum of `f` class
+counts, and the triangle inequality spreads the error over the `f`
+classes. -/
+theorem exists_forall_abs_sum_card_absNorm_residue_sub_mul_le_rpow_of_ideal
+    (F : Type*) [Field F] [NumberField F] (ℓ : ℕ) (hℓ : ℓ.Prime) :
+    ∃ κ r C : ℝ, 0 < r ∧ r < 1 ∧ 0 ≤ C ∧ ∀ a : ZMod ℓ,
+      (∃ I : Ideal (𝓞 F), ¬ ℓ ∣ Ideal.absNorm I ∧
+        (Ideal.absNorm I : ZMod ℓ) = a) → ∀ n : ℕ,
+      |(∑ k ∈ (Finset.Icc 1 n).filter (fun k : ℕ => (k : ZMod ℓ) = a),
+          (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℝ)) - κ * n| ≤
+        C * (n : ℝ) ^ r := by
+  classical
+  obtain ⟨κ₀, r, C, hr0, hr1, hC, hclass⟩ :=
+    exists_forall_abs_natCard_isNarrowRayEquiv_sub_mul_le_rpow F ℓ hℓ
+  obtain ⟨f, hf0, hfib⟩ :=
+    exists_forall_sum_card_absNorm_residue_eq_sum_natCard_isNarrowRayEquiv F ℓ hℓ
+  refine ⟨f * κ₀, r, f * C, hr0, hr1,
+    mul_nonneg (Nat.cast_nonneg f) hC, fun a ha n => ?_⟩
+  obtain ⟨R, hRcard, hRmem, hRsum⟩ := hfib a ha
+  have hkey : ∑ I₀ ∈ R, ((Nat.card {I : Ideal (𝓞 F) // I ≠ 0 ∧
+        Ideal.absNorm I ≤ n ∧ IsNarrowRayEquiv ℓ I I₀} : ℝ) - κ₀ * n) =
+      (∑ I₀ ∈ R, (Nat.card {I : Ideal (𝓞 F) // I ≠ 0 ∧
+        Ideal.absNorm I ≤ n ∧ IsNarrowRayEquiv ℓ I I₀} : ℝ)) -
+        (f : ℝ) * κ₀ * n := by
+    rw [Finset.sum_sub_distrib, Finset.sum_const, hRcard, nsmul_eq_mul,
+      mul_assoc]
+  rw [hRsum n, ← hkey]
+  refine (Finset.abs_sum_le_sum_abs _ _).trans
+    ((Finset.sum_le_sum fun I₀ hI₀ =>
+      hclass I₀ (hRmem I₀ hI₀).1 (hRmem I₀ hI₀).2 n).trans_eq ?_)
+  rw [Finset.sum_const, hRcard, nsmul_eq_mul, mul_assoc]
+
+/-- **Frobenius residue realization: Galois-image residues are ideal
+norm residues** (sorry leaf) — the converse of the proven
+`exists_algEquiv_map_zeta_eq_pow_of_not_dvd_absNorm`: every residue
+`m mod ℓ` realized by the Galois action on `ζ` (`ρ ζ = ζ ^ m` for some
+`ρ ∈ Gal(E/F)`) is the norm residue of an integral ideal of `𝓞 F`
+prime to `ℓ`. Together the two inclusions say: the subgroup of
+`(ℤ/ℓ)ˣ` of norm residues of prime-to-`ℓ` ideals EQUALS the image of
+`Gal(E/F) → (ℤ/ℓ)ˣ`.
+
+CIRCULARITY WARNING (this shaped the decomposition): this file proves
+the far stronger `infinite_setOf_natCard_quotient_prime_and_map_zeta_eq_pow`
+(each `ρ`-class contains infinitely many primes), which would give
+this leaf in one line — but that theorem lies DOWNSTREAM of the
+L-function chain whose counting input is
+`exists_forall_abs_sum_card_absNorm_residue_sub_mul_le_rpow` below,
+which consumes THIS leaf. Deriving this leaf from it would be
+circular (and is impossible order-wise in this file). The original
+plan recorded in the docstring of the counting leaf overlooked this;
+hence the separate, strictly shallower leaf here.
+
+Non-circular intended proof (Deuring's trick; Neukirch ch. VII §13
+Cor. 13.10 "an extension in which almost all primes split completely
+is trivial"; Lang ch. VIII §4): the norm residues of prime-to-`ℓ`
+ideals form a submonoid, hence (finite) subgroup, `H` of `(ℤ/ℓ)ˣ`,
+contained in the Galois image `G ≅ Gal(E/F)` by
+`exists_algEquiv_map_zeta_eq_pow_of_not_dvd_absNorm`. If `H < G`, the
+fixed field `M = E^H` is a subextension with `[M : F] > 1` in which
+every prime of `F` away from `ℓ` splits completely (its Frobenius
+`N(P) mod ℓ` lies in `H`). Comparing degree-one prime sums as
+`s → 1⁺`: complete splitting gives `[M:F] · ∑_{P of F} N(P)^{-s} ≤
+∑_{Q of M} N(Q)^{-s} + O(1)`, the sum over `M` is at most
+`log(1/(s-1)) + O(1)` (upper Mertens bound through `ζ_M`, from the
+Euler product as in this file's `norm_dedekindZeta_le` machinery),
+while the sum over `F` is at least `log(1/(s-1)) - O(1)` (lower
+Mertens through `ζ_F`, the quantitative form of the Dedekind-zeta
+half `exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_ne` proved
+from the same Euler-product estimates) — forcing `[M : F] ≤ 1`,
+a contradiction. Everything cited lives strictly ABOVE the L-function
+chain: no circularity. -/
+theorem exists_ideal_not_dvd_absNorm_and_residue_eq_of_map_zeta_eq_pow
+    {F : Type*} [Field F] [NumberField F] {E : Type*} [Field E] [NumberField E]
+    [Algebra F E] {ℓ : ℕ} (hℓ : ℓ.Prime) [IsCyclotomicExtension {ℓ} F E]
+    {ζ : E} (hζ : IsPrimitiveRoot ζ ℓ) (ρ : E ≃ₐ[F] E) (m : ℕ)
+    (hρ : ρ ζ = ζ ^ m) :
+    ∃ I : Ideal (𝓞 F), ¬ ℓ ∣ Ideal.absNorm I ∧
+      (Ideal.absNorm I : ZMod ℓ) = (m : ZMod ℓ) :=
+  sorry
+
 open IsDedekindDomain in
 /-- **Weber's ideal-counting theorem with power-saving error, fibered
-over the norm residues in the Galois image** (sorry leaf) — THE deep
-geometry-of-numbers core of the analytic-continuation half, isolated:
-there are constants `κ ∈ ℝ`, `r < 1` and `C` such that for EVERY
-residue `a mod ℓ` realized by the Galois action on `ζ` (i.e. `a` in
-the image of `Gal(E/F) → (ℤ/ℓ)ˣ`, `ρ ↦ (n : ρζ = ζ^n)`), the count of
-nonzero ideals of `𝓞 F` with norm `≤ n` and norm residue `a` is
-`κ·n + O(n^r)` — with the SAME `κ` for every such `a`.
+over the norm residues in the Galois image** — THE counting core of
+the analytic-continuation half: there are constants `κ ∈ ℝ`, `r < 1`
+and `C` such that for EVERY residue `a mod ℓ` realized by the Galois
+action on `ζ` (i.e. `a` in the image of `Gal(E/F) → (ℤ/ℓ)ˣ`,
+`ρ ↦ (n : ρζ = ζ^n)`), the count of nonzero ideals of `𝓞 F` with norm
+`≤ n` and norm residue `a` is `κ·n + O(n^r)` — with the SAME `κ` for
+every such `a`.
 
-Intended proof (Weber; Lang, *Algebraic Number Theory*, ch. VI §3
-Thm 3; Neukirch ch. VII): (i) per narrow-ray-class counting —
-`#{I ∈ 𝔠 : N(I) ≤ x} = κ₀·x + O(x^{1-1/d})`, `d = [F:ℚ]`, uniformly
-over classes `𝔠` of the narrow ray class group mod `ℓ𝓞_F`, by
-lattice-point counting in a homogeneously expanding fundamental
-domain with Lipschitz-parametrizable boundary; (ii) the norm residue
-`N(·) mod ℓ` is well defined on narrow ray classes mod `ℓ` (for
-`α ≡ 1 mod ℓ𝓞_F` totally positive, `N(α) ≡ 1 mod ℓ`), giving a group
-homomorphism onto the subgroup of realized norm residues, whose
-fibers all have the same number of ray classes — whence the uniform
-`κ`; (iii) the realized-norm-residue subgroup coincides with the
-image of `Gal(E/F)` — one inclusion is
-`exists_algEquiv_map_zeta_eq_pow_of_not_dvd_absNorm` (proven above),
-the other is Frobenius surjectivity, available from this file's
-`infinite_setOf_natCard_quotient_prime_and_map_zeta_eq_pow` (each
-`ρ`-class contains a prime, in fact infinitely many). The mathlib pin
-has the error-free leading term
+Now DERIVED, no longer a leaf: the Galois-realized residue `a` is an
+ideal-realized residue by the sorried Frobenius-realization leaf
+`exists_ideal_not_dvd_absNorm_and_residue_eq_of_map_zeta_eq_pow`
+(usable here, unlike the downstream — and circular —
+`infinite_setOf_natCard_quotient_prime_and_map_zeta_eq_pow`; see its
+docstring), and the counting with uniform `κ` over ideal-realized
+residues is
+`exists_forall_abs_sum_card_absNorm_residue_sub_mul_le_rpow_of_ideal`,
+itself derived from the two sorried ray-class leaves
+`exists_forall_abs_natCard_isNarrowRayEquiv_sub_mul_le_rpow` (Weber's
+per-narrow-ray-class count, the geometry-of-numbers core) and
+`exists_forall_sum_card_absNorm_residue_eq_sum_natCard_isNarrowRayEquiv`
+(the equal-fiber norm-residue fibering). The mathlib pin has the
+error-free leading term
 (`NumberField.Ideal.tendsto_norm_le_and_mk_eq_div_atTop`, over the
-plain class group) but neither ray classes nor any error term; the
-lattice-point count with Lipschitz-boundary error is the missing
-ingredient. -/
+plain class group) but neither ray classes nor any error term. -/
 theorem exists_forall_abs_sum_card_absNorm_residue_sub_mul_le_rpow
     {F : Type*} [Field F] [NumberField F] {E : Type*} [Field E] [NumberField E]
     [Algebra F E] {ℓ : ℕ} (hℓ : ℓ.Prime) [IsCyclotomicExtension {ℓ} F E]
@@ -2947,8 +3148,14 @@ theorem exists_forall_abs_sum_card_absNorm_residue_sub_mul_le_rpow
       (∃ (ρ : E ≃ₐ[F] E) (m : ℕ), ρ ζ = ζ ^ m ∧ (m : ZMod ℓ) = a) → ∀ n : ℕ,
       |(∑ k ∈ (Finset.Icc 1 n).filter (fun k : ℕ => (k : ZMod ℓ) = a),
           (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℝ)) - κ * n| ≤
-        C * (n : ℝ) ^ r :=
-  sorry
+        C * (n : ℝ) ^ r := by
+  obtain ⟨κ, r, C, hr0, hr1, hC, hcore⟩ :=
+    exists_forall_abs_sum_card_absNorm_residue_sub_mul_le_rpow_of_ideal F ℓ hℓ
+  refine ⟨κ, r, C, hr0, hr1, hC, fun a ha => hcore a ?_⟩
+  obtain ⟨ρ, m, hρζ, hm⟩ := ha
+  obtain ⟨I, hnd, hres⟩ :=
+    exists_ideal_not_dvd_absNorm_and_residue_eq_of_map_zeta_eq_pow hℓ hζ ρ m hρζ
+  exact ⟨I, hnd, hm ▸ hres⟩
 
 open IsDedekindDomain in
 /-- **Power-saving cancellation in the twisted Hecke coefficient sums**
