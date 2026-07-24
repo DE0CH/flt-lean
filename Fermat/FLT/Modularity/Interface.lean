@@ -100,9 +100,15 @@ it is split off as separate sorried leaves
    (Eichler–Shimura/Deligne plus Carayol/Saito) is not needed.
 4. **The residual modularity sorries** `exists_weightTwoEigenform_*`
    below (Wiles–Taylor–Wiles + Skinner–Wiles + Ribet, per the FLT
-   blueprint's hardly-ramified formulation): decompose along the
-   blueprint — residual modularity (Langlands–Tunnell at 3 via the
-   `ModThree` classification), modularity lifting, level lowering.
+   blueprint's hardly-ramified formulation) — DECOMPOSED (2026-07-24)
+   into five classical pillars (see the section "The classical pillars
+   behind the two modularity sorries"): residual reduction, residual
+   modularity (weak Serre / Khare–Wintenberger; at `ℓ = 3`
+   dischargeable from `ModThree`), modularity lifting (R = T,
+   residually irreducible case), the Skinner–Wiles residually
+   reducible branch, and level optimization to `Γ₀(2)`
+   (Carayol/Ribet). Both former sorries are now proven assemblies
+   over those pillars.
 5. **Eisenstein branch** (`*_of_not_isIrreducible` in `Family.lean`):
    from the proven reducibility analysis
    (`exists_char_charpoly_map_eq_of_not_isIrreducible`) and the
@@ -452,8 +458,311 @@ variable {p : ℕ} (hpodd : Odd p) [hp : Fact p.Prime]
     {V : Type v} [AddCommGroup V] [Module R V] [Module.Finite R V]
     [Module.Free R V] (hv : Module.rank R V = 2) {ρ : GaloisRep ℚ R V}
 
-/-- **Modularity of the trace system** (sorry node; the modularity
-input of the trace-field atom
+/-! ### The classical pillars behind the two modularity sorries
+
+DECOMPOSITION PLAN item 4, executed (2026-07-24). The two automorphy
+statements `exists_weightTwoEigenform_trace_eq_of_isIrreducible` and
+`exists_weightTwoEigenform_of_isIrreducible` below are PROVEN
+assemblies over five stated-and-sorried classical pillars, following
+the shape of the classical argument (Wiles, Taylor–Wiles,
+Skinner–Wiles, Khare–Wintenberger, Carayol/Ribet):
+
+1. `exists_residual_isHardlyRamified_odd` — residual reduction: the
+   reduction of a hardly ramified `p`-adic representation modulo the
+   maximal ideal is mod-`p` hardly ramified over the finite residue
+   field (general-`p` analogue of
+   `IsHardlyRamified.exists_residual_isHardlyRamified`, whose `p = 3`
+   instance is already assembled in `Threeadic.lean`).
+2. `exists_weightTwoEigenform_residual_of_isIrreducible` — RESIDUAL
+   MODULARITY (the Serre-conjecture shadow, weak form: some level
+   `N ≥ 1`): an irreducible hardly ramified mod-`ℓ` representation
+   arises, trace-by-trace modulo a prime over `ℓ`
+   (`MatchesResidualTraces`), from a weight-2 eigenform.
+3. `exists_weightTwoEigenform_trace_eq_of_matchesResidualTraces` —
+   MODULARITY LIFTING (the R = T shadow): a hardly ramified `p`-adic
+   lift of an irreducible, residually modular representation is
+   modular.
+4. `exists_weightTwoEigenform_trace_eq_of_residually_reducible` — the
+   RESIDUALLY REDUCIBLE branch (the Skinner–Wiles shadow).
+5. `exists_weightTwoEigenform_level_two_of_trace_eq` — LEVEL
+   OPTIMIZATION to `Γ₀(2)` (the Carayol-conductor/Ribet shadow).
+
+Soundness audit (2026-07-24): since `S₂(Γ₀(2)) = 0` is proven above
+(`weightTwoEigenform_level_two_false`), every statement in this
+subtree whose hypotheses include an irreducible hardly ramified
+representation is — classically — true both by its cited direct proof
+and because the classical chain 2→3/4→5 shows those hypotheses are
+unsatisfiable (that unsatisfiability IS the Wiles argument, and it is
+where the mathematical depth of the remaining sorries lives). Each
+pillar is nevertheless stated in the exact shape of its literature
+theorem, so each can be attacked by following its citations without
+reference to the collapse.
+
+CIRCULARITY GUARD for future dispatches: pillar 2 (residual
+modularity) must NOT be proven through the compatible-family machinery
+of `Family.lean` — that machinery CONSUMES the two assemblies below,
+so routing pillar 2 through it would close a dependency cycle. The
+sound proof routes are the Khare–Wintenberger induction (Invent. Math.
+178 (2009)) or the FLT blueprint's potential-modularity chain
+(Moret–Bailly + dihedral residual modularity + modularity lifting over
+totally real fields, blueprint ch. 4). At `ℓ = 3`, pillar 2 is
+dischargeable TODAY by contradiction from
+`IsHardlyRamified.mod_three_reducible` (`ModThree.lean`: no hardly
+ramified mod-3 representation is irreducible); the `ℓ ≥ 5` instances
+carry the real content. Pillar 4 at `p = 3` is similarly dischargeable
+from the 3-adic classification (`Threeadic.lean`) once its leaves
+close. -/
+
+open scoped TensorProduct
+
+/-- **Residual reduction** (pillar 1; sorry node): the reduction of a
+hardly ramified `p`-adic representation modulo the maximal ideal of
+its coefficient ring is a mod-`p` hardly ramified representation over
+the finite residue field. This is the general-odd-`p` analogue of
+`IsHardlyRamified.exists_residual_isHardlyRamified` (`Threeadic.lean`),
+whose `p = 3` proof this leaf's proof should follow verbatim: the
+residue field is finite and of characteristic `p` because `R` is a
+module-finite local `ℤ_p`-algebra and a nontrivial domain (`p ∈ 𝔪` by
+Nakayama, so `R ⧸ 𝔪` is a finite-dimensional `𝔽_p`-space), the
+determinant and outside-`2p` unramifiedness conditions pass to any
+base change, and flatness at `p` resp. tameness at `2` transfer along
+the open-kernel residue quotient exactly as in the `p = 3` transfer
+leaves `isFlatAt_baseChange_residue` and
+`isTameAtTwo_baseChange_residue`. -/
+theorem exists_residual_isHardlyRamified_odd
+    (hρ : IsHardlyRamified hpodd hv ρ) :
+    ∃ (kk : Type u) (_ : Field kk) (_ : Finite kk) (_ : Algebra ℤ_[p] kk)
+      (_ : TopologicalSpace kk) (_ : DiscreteTopology kk)
+      (_ : IsTopologicalRing kk) (_ : Algebra R kk)
+      (_ : ContinuousSMul R kk)
+      (_ : Function.Surjective (algebraMap R kk))
+      (hVbar : Module.rank kk (kk ⊗[R] V) = 2),
+      IsHardlyRamified hpodd hVbar (ρ.baseChange kk) :=
+  sorry
+
+/-- **Residual eigensystem matching**: the residual representation
+`ρbar` (over a coefficient ring `k`; in the intended use a finite
+field of characteristic `ℓ`) *arises from the weight-2 eigenform `f`
+modulo a prime over `ℓ`* if some ring homomorphism `φ` from the
+algebraic integers of the Hecke field `K_f` to `k` — classically:
+reduction modulo a prime `λ ∣ ℓ` of `𝒪_{K_f}` composed with an
+embedding of its residue field — carries, away from a finite
+exceptional set `S`, the Hecke eigenvalue `a_q` to the Frobenius trace
+of `ρbar` at `q`. The eigenvalue is an algebraic integer classically,
+but `IsWeightTwoEigenform` does not bake integrality in, so the
+integrality witness `x` is part of the data. The trace convention
+matches the pillar conclusions below: the linear coefficient of the
+characteristic polynomial is `−a_q`. This is Serre's "`ρbar` arises
+from a cusp form of weight 2 and level `N`" (Serre, Duke 1987, §3),
+stated purely through `q`-expansion coefficients. -/
+def MatchesResidualTraces (N : ℕ) (f : CuspForm (Gamma0GL N) 2)
+    {k : Type*} [CommRing k] [TopologicalSpace k]
+    {W : Type*} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (ρbar : GaloisRep ℚ k W)
+    (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))) :
+    Prop :=
+  ∃ φ : integralClosure ℤ (heckeField N f) →+* k,
+    ∀ (q : ℕ) (hq : q.Prime), hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+      ∃ x : integralClosure ℤ (heckeField N f),
+        (x : heckeField N f) = heckeCoeff N f q ∧
+        (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1 =
+          - φ x
+
+/-- **Residual modularity** (pillar 2; sorry node — the
+Serre-conjecture shadow, weak form): an IRREDUCIBLE hardly ramified
+mod-`ℓ` representation arises from a normalized weight-2 eigenform of
+some level `N ≥ 1`. This is the level-and-weight-free ("weak") form of
+Serre's modularity conjecture in the hardly ramified case (Serre, Duke
+1987 — the refined conductor-2 form is recovered downstream by the
+level-optimization pillar, not consumed here), a theorem of
+Khare–Wintenberger (*Serre's modularity conjecture (I), (II)*, Invent.
+Math. 178 (2009)) via minimal lifting to strictly compatible families
+and induction on the residue characteristic; the FLT blueprint (ch. 4)
+reaches the same automorphy through potential modularity (Moret–Bailly
+plus dihedral residual modularity from converse theorems plus
+modularity lifting over totally real fields). Plain irreducibility
+suffices to state it: hardly ramified representations are odd
+(`det = χ_cyc` and `χ_cyc(c) = −1`), and an odd irreducible
+2-dimensional representation over a finite field of odd characteristic
+is absolutely irreducible (the `OddRep` argument consumed by
+`IsHardlyRamified.mod_three_reducible`). CIRCULARITY GUARD: must not
+be proven through `Family.lean`'s compatible-family machinery (which
+consumes the assemblies below); at `ℓ = 3` it is dischargeable by
+contradiction from `IsHardlyRamified.mod_three_reducible`
+(`ModThree.lean`), and the `ℓ ≥ 5` instances carry the
+Khare–Wintenberger content. -/
+theorem exists_weightTwoEigenform_residual_of_isIrreducible
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime]
+    {k : Type*} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type*} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible) :
+    ∃ (N : ℕ) (_ : 0 < N) (f : CuspForm (Gamma0GL N) 2)
+      (_ : IsWeightTwoEigenform N f)
+      (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
+      MatchesResidualTraces N f ρbar S :=
+  sorry
+
+/-- **Modularity lifting** (pillar 3; sorry node — the R = T shadow,
+residually irreducible case): a hardly ramified `p`-adic
+representation whose residual representation is irreducible and
+modular (in the `MatchesResidualTraces` sense) is itself modular: its
+Frobenius traces arise, away from a finite set of places, from a
+single weight-2 eigenform under a single embedding of its Hecke field.
+The hardly ramified hypotheses on `ρ` instantiate exactly the
+classical deformation conditions of the FLT blueprint's lifting
+theorem (ch. 4, "`S`-good" with `S = {2}`): determinant cyclotomic,
+unramified outside `2p`, flat at `p` (weight 2), tame at `2` with
+unramified square-trivial rank-1 quotient. Literature: Wiles, *Modular
+elliptic curves and Fermat's Last Theorem*, Ann. of Math. 141 (1995),
+ch. 3 and 5; Taylor–Wiles, *Ring-theoretic properties of certain Hecke
+algebras*, ibid. (the patching input); Conrad–Diamond–Taylor and
+Diamond's refinements for the flat deformation condition at `p`; in
+the "geometric odd irreducible 2-dimensional `p`-adic representations
+of `Γ ℚ` are modular" formulation this is the relevant case of the
+Fontaine–Mazur conjecture (Kisin, *The Fontaine–Mazur conjecture for
+GL₂*, JAMS 22 (2009); Pan for the `p = 3` corners). A future
+decomposition should align the deformation-problem bookkeeping with
+`Fermat/FLT/Deformations/` (`GaloisRep`, `IsFlatAt`/flat
+prolongations); the residual hardly-ramifiedness and the surjectivity
+of the residue map are carried so that the Taylor–Wiles hypotheses can
+be quoted verbatim. -/
+theorem exists_weightTwoEigenform_trace_eq_of_matchesResidualTraces
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hZinj : Function.Injective (algebraMap ℤ_[p] R))
+    (hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
+    (hρ : IsHardlyRamified hpodd hv ρ)
+    {kk : Type u} [Field kk] [Finite kk] [Algebra ℤ_[p] kk]
+    [TopologicalSpace kk] [DiscreteTopology kk] [IsTopologicalRing kk]
+    [Algebra R kk] [ContinuousSMul R kk]
+    (hsurj : Function.Surjective (algebraMap R kk))
+    (hVbar : Module.rank kk (kk ⊗[R] V) = 2)
+    (hρbar : IsHardlyRamified hpodd hVbar (ρ.baseChange kk))
+    (hirrbar : (ρ.baseChange kk).IsIrreducible)
+    {N₀ : ℕ} (hN₀ : 0 < N₀) {f₀ : CuspForm (Gamma0GL N₀) 2}
+    (hf₀ : IsWeightTwoEigenform N₀ f₀)
+    {S₀ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hmatch₀ : MatchesResidualTraces N₀ f₀ (ρ.baseChange kk) S₀) :
+    ∃ (N : ℕ) (_ : 0 < N) (f : CuspForm (Gamma0GL N) 2)
+      (_ : IsWeightTwoEigenform N f)
+      (ι : heckeField N f →+* AlgebraicClosure ℚ_[p])
+      (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
+      ∀ (q : ℕ) (hq : q.Prime), hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+        ((ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map
+            (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff 1 =
+          - ι (heckeCoeff N f q) :=
+  sorry
+
+/-- **The residually reducible branch** (pillar 4; sorry node — the
+Skinner–Wiles shadow): a hardly ramified `p`-adic representation that
+is irreducible over `ℚ̄_p` but whose residual representation is
+REDUCIBLE is still modular, in the same trace sense as pillar 3.
+Classically the residual semisimplification is `1 ⊕ χ̄_cyc` — its two
+characters are unramified outside `2p` with cyclotomic product, tame
+at `2`, flat-constrained at `p`, so Minkowski-style arguments pin them
+(compare the proven character analysis
+`char_add_char_eq_one_add_cyclotomicCharacter` in `Family.lean`, the
+same classification one level up) — which is exactly the
+Eisenstein-congruence situation of Skinner–Wiles, *Residually
+reducible representations and modular forms*, Publ. Math. IHÉS 89
+(1999); the de Rham/Fontaine–Mazur formulation matching this statement
+is Pan, *The Fontaine–Mazur conjecture in the residually reducible
+case*, JAMS 35 (2022). At `p = 3` this pillar is alternatively
+dischargeable by contradiction from the 3-adic classification
+(`Threeadic.lean`: a 3-adic hardly ramified representation is an
+extension of the trivial character by the cyclotomic one, hence never
+irreducible over `ℚ̄_3`) once its leaves close. -/
+theorem exists_weightTwoEigenform_trace_eq_of_residually_reducible
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hZinj : Function.Injective (algebraMap ℤ_[p] R))
+    (hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
+    (hρ : IsHardlyRamified hpodd hv ρ)
+    (hirr : (ρ.baseChange (AlgebraicClosure ℚ_[p])).IsIrreducible)
+    {kk : Type u} [Field kk] [Finite kk] [Algebra ℤ_[p] kk]
+    [TopologicalSpace kk] [DiscreteTopology kk] [IsTopologicalRing kk]
+    [Algebra R kk] [ContinuousSMul R kk]
+    (hsurj : Function.Surjective (algebraMap R kk))
+    (hVbar : Module.rank kk (kk ⊗[R] V) = 2)
+    (hρbar : IsHardlyRamified hpodd hVbar (ρ.baseChange kk))
+    (hred : ¬ (ρ.baseChange kk).IsIrreducible) :
+    ∃ (N : ℕ) (_ : 0 < N) (f : CuspForm (Gamma0GL N) 2)
+      (_ : IsWeightTwoEigenform N f)
+      (ι : heckeField N f →+* AlgebraicClosure ℚ_[p])
+      (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
+      ∀ (q : ℕ) (hq : q.Prime), hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+        ((ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map
+            (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff 1 =
+          - ι (heckeCoeff N f q) :=
+  sorry
+
+/-- **Level optimization to `Γ₀(2)`** (pillar 5; sorry node — the
+Carayol-conductor/Ribet shadow): if the eigensystem `(E, S, Pv)` of an
+irreducible hardly ramified `p`-adic representation `ρ` arises, in the
+trace convention of the pillars above, from a weight-2 eigenform `f`
+of SOME level `N ≥ 1`, then it arises from a weight-2 eigenform of
+level `Γ₀(2)` exactly, matching `Pv` in the `MatchesEigensystem`
+sense. Classical route: the coefficient characterization
+(`IsWeightTwoEigenform`, Diamond–Shurman Prop. 5.8.5) places behind
+`f` a newform `g` of level `M ∣ N` with the same good-prime
+eigensystem (D–S Prop. 5.8.4, strong multiplicity one); `ρ` and the
+`λ`-adic representation of `g` agree on Frobenius traces, and the
+Artin conductor of a hardly ramified representation divides `2`
+(unramified outside `2p`; flatness at `p` kills the `p`-part; the
+tame rank-1 unramified quotient at `2` bounds the conductor exponent
+at `2` by `1`), so Carayol's theorem (*Sur les représentations
+`ℓ`-adiques associées aux formes modulaires de Hilbert*, Ann. Sci.
+ÉNS 19 (1986); Livné for the residual cases — "level of the newform =
+conductor of the representation") forces `M ∣ 2`, and a newform of
+level `M ∣ 2` is a normalized eigenform of `S₂(Γ₀(2))` (oldform
+inclusion when `M = 1`). Mod-`p` level lowering (Ribet, *On modular
+representations of `Gal(ℚ̄/ℚ)` arising from modular forms*, Invent.
+Math. 100 (1990); Serre, Duke 1987, §4.1) is the residual counterpart
+used when this content is instead reached through the
+Khare–Wintenberger induction. Soundness under the collapse
+(2026-07-24): `S₂(Γ₀(2)) = 0` is proven above
+(`weightTwoEigenform_level_two_false`), so this pillar equivalently
+asserts that its hypotheses are contradictory — that an irreducible
+hardly ramified `p`-adic representation is never modular of any level
+— which is the true classical content (Wiles' final contradiction),
+derived in the literature exactly along the route just cited. -/
+theorem exists_weightTwoEigenform_level_two_of_trace_eq
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hZinj : Function.Injective (algebraMap ℤ_[p] R))
+    (hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
+    (hρ : IsHardlyRamified hpodd hv ρ)
+    (hirr : (ρ.baseChange (AlgebraicClosure ℚ_[p])).IsIrreducible)
+    {N : ℕ} (hN : 0 < N) {f : CuspForm (Gamma0GL N) 2}
+    (hf : IsWeightTwoEigenform N f)
+    (ι : heckeField N f →+* AlgebraicClosure ℚ_[p])
+    {S₁ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hmatch : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S₁ →
+      ((ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map
+          (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff 1 =
+        - ι (heckeCoeff N f q))
+    {E : Type v} [Field E] [NumberField E] (ψ : E →+* AlgebraicClosure ℚ_[p])
+    (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (Pv : HeightOneSpectrum (NumberField.RingOfIntegers ℚ) → Polynomial E)
+    (heig : ∀ v ∉ S,
+      (ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p])) =
+        (Pv v).map ψ) :
+    ∃ (f₂ : CuspForm (Gamma0GL 2) 2)
+      (S' : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
+      IsWeightTwoEigenform 2 f₂ ∧ MatchesEigensystem 2 f₂ S' Pv :=
+  sorry
+
+/-- **Modularity of the trace system** (DECOMPOSED 2026-07-24 — now a
+PROVEN assembly over the pillar section above: residual reduction
+(pillar 1), then, according to whether the residual representation is
+irreducible, residual modularity + modularity lifting (pillars 2–3) or
+the Skinner–Wiles branch (pillar 4); the modularity input of the
+trace-field atom
 `exists_finiteDimensional_trace_field_of_isIrreducible`): the Frobenius
 traces of an IRREDUCIBLE hardly ramified `p`-adic representation are,
 away from a finite set of places, the images under a single embedding
@@ -481,11 +790,33 @@ theorem exists_weightTwoEigenform_trace_eq_of_isIrreducible
       ∀ (q : ℕ) (hq : q.Prime), hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
         ((ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map
             (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff 1 =
-          - ι (heckeCoeff N f q) :=
-  sorry
+          - ι (heckeCoeff N f q) := by
+  obtain ⟨kk, hField, hFin, hAlg, hTop, hDisc, hTR, hAlgR, hCS, hsurj,
+    hVbar, hρbar⟩ := exists_residual_isHardlyRamified_odd hpodd hv hρ
+  letI := hField
+  letI := hFin
+  letI := hAlg
+  letI := hTop
+  letI := hDisc
+  letI := hTR
+  letI := hAlgR
+  letI := hCS
+  by_cases hirrbar : (ρ.baseChange kk).IsIrreducible
+  · obtain ⟨N₀, hN₀, f₀, hf₀, S₀, hmatch₀⟩ :=
+      exists_weightTwoEigenform_residual_of_isIrreducible hpodd hVbar
+        hρbar hirrbar
+    exact exists_weightTwoEigenform_trace_eq_of_matchesResidualTraces hpodd hv
+      hZinj hRinj hρ hsurj hVbar hρbar hirrbar hN₀ hf₀ hmatch₀
+  · exact exists_weightTwoEigenform_trace_eq_of_residually_reducible hpodd hv
+      hZinj hRinj hρ hirr hsurj hVbar hρbar hirrbar
 
-/-- **Modularity at level 2** (sorry node; the modularity input of the
-two realization atoms `exists_hardlyRamified_ringOfIntegers_realizations`
+/-- **Modularity at level 2** (DECOMPOSED 2026-07-24 — now a PROVEN
+assembly: the trace-system chain
+`exists_weightTwoEigenform_trace_eq_of_isIrreducible` above followed by
+the level-optimization pillar
+`exists_weightTwoEigenform_level_two_of_trace_eq`; the modularity input
+of the two realization atoms
+`exists_hardlyRamified_ringOfIntegers_realizations`
 and `exists_realization_at_two_generated`): the eigensystem `(E, S, Pv)`
 of an IRREDUCIBLE hardly ramified `p`-adic representation arises from a
 normalized weight-2 eigenform of level `Γ₀(2)` — matching away from a
@@ -513,7 +844,11 @@ theorem exists_weightTwoEigenform_of_isIrreducible
       (ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p])) = (Pv v).map ψ) :
     ∃ (f : CuspForm (Gamma0GL 2) 2)
       (S' : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
-      IsWeightTwoEigenform 2 f ∧ MatchesEigensystem 2 f S' Pv :=
-  sorry
+      IsWeightTwoEigenform 2 f ∧ MatchesEigensystem 2 f S' Pv := by
+  obtain ⟨N, hN, f, hf, ι, S₁, hmatch⟩ :=
+    exists_weightTwoEigenform_trace_eq_of_isIrreducible hpodd hv hZinj hRinj
+      hρ hirr
+  exact exists_weightTwoEigenform_level_two_of_trace_eq hpodd hv hZinj hRinj
+    hρ hirr hN hf ι hmatch ψ S Pv heig
 
 end GaloisRepresentation.Modularity
