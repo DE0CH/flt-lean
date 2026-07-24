@@ -8692,7 +8692,275 @@ theorem exists_fixedPointAlgebraOrder_of_descentData
           (quadraticOrderConj R t n : quadraticOrder R t n →ₐ[R]
             quadraticOrder R t n) (HopfAlgebra.antipodeAlgHom R H)
           (Φ x) := by
-  sorry
+  classical
+  -- the concrete splitting ring and its arithmetic
+  set RL := quadraticOrder R t n with hRL
+  set root : RL := AdjoinRoot.root _ with hroot
+  set τ0alg : RL →ₐ[R] RL := (quadraticOrderConj R t n :
+    quadraticOrder R t n →ₐ[R] quadraticOrder R t n) with hτ0alg
+  have hmono : (Polynomial.X ^ 2 - Polynomial.C t * Polynomial.X +
+      Polynomial.C n : Polynomial R).Monic :=
+    GaloisRepresentation.monic_quadratic t n
+  haveI : Module.Finite R RL := hmono.finite_adjoinRoot
+  haveI : Module.Free R RL := hmono.free_adjoinRoot
+  have hτroot : τ0alg root = algebraMap R RL t - root := by
+    show quadraticOrderConj R t n (AdjoinRoot.root _) = _
+    simp only [quadraticOrderConj, AlgEquiv.ofAlgHom_apply,
+      AdjoinRoot.liftAlgHom_root]
+    rfl
+  have hτ0τ0 : ∀ r, τ0alg (τ0alg r) = r := by
+    have hcomp : τ0alg.comp τ0alg = AlgHom.id R RL := by
+      apply AdjoinRoot.algHom_ext
+      rw [AlgHom.comp_apply, hτroot, map_sub, AlgHom.commutes, hτroot,
+        AlgHom.coe_id, id_eq]
+      ring
+    exact fun r => AlgHom.congr_fun hcomp r
+  have hrootsq : root ^ 2 = algebraMap R RL t * root - algebraMap R RL n := by
+    have h0 : Polynomial.aeval root (Polynomial.X ^ 2 -
+        Polynomial.C t * Polynomial.X + Polynomial.C n : Polynomial R) = 0 := by
+      rw [hroot, AdjoinRoot.aeval_eq, AdjoinRoot.mk_self]
+    simp only [map_add, map_sub, map_mul, map_pow, Polynomial.aeval_X,
+      Polynomial.aeval_C] at h0
+    linear_combination h0
+  have hspan : ∀ r : RL, ∃ c₀ c₁ : R,
+      r = algebraMap R RL c₀ + algebraMap R RL c₁ * root := by
+    intro r
+    induction r using AdjoinRoot.induction_on with
+    | ih p =>
+      set q : Polynomial R := Polynomial.X ^ 2 -
+        Polynomial.C t * Polynomial.X + Polynomial.C n with hq
+      have hmk : AdjoinRoot.mk q p = AdjoinRoot.mk q (p %ₘ q) := by
+        rw [AdjoinRoot.mk_eq_mk]
+        refine ⟨p /ₘ q, ?_⟩
+        rw [Polynomial.modByMonic_eq_sub_mul_div p q]
+        ring
+      have hdeg : (p %ₘ q).degree < q.degree :=
+        Polynomial.degree_modByMonic_lt p hmono
+      have hqdeg : q.degree = 2 := by
+        rw [Polynomial.degree_eq_natDegree hmono.ne_zero,
+          GaloisRepresentation.natDegree_quadratic]
+        rfl
+      rw [hqdeg] at hdeg
+      have hle1 : (p %ₘ q).degree ≤ 1 :=
+        Order.le_of_lt_succ (by exact_mod_cast hdeg)
+      have hform := Polynomial.eq_X_add_C_of_degree_le_one hle1
+      refine ⟨(p %ₘ q).coeff 0, (p %ₘ q).coeff 1, ?_⟩
+      conv_lhs => rw [hmk, hform]
+      rw [map_add, map_mul, AdjoinRoot.mk_X]
+      simp only [AdjoinRoot.mk_C]
+      show algebraMap R RL ((p %ₘ q).coeff 1) * root +
+        algebraMap R RL ((p %ₘ q).coeff 0) =
+        algebraMap R RL ((p %ₘ q).coeff 0) +
+        algebraMap R RL ((p %ₘ q).coeff 1) * root
+      ring
+  -- the twisted conjugation involution of the base change
+  set SH := HopfAlgebra.antipodeAlgHom R H with hSH
+  set ι : RL ⊗[R] H →ₐ[R] RL ⊗[R] H := Algebra.TensorProduct.map τ0alg SH
+    with hιdef
+  have hSS : ∀ h : H, SH (SH h) = h := fun h => by
+    have := AlgHom.congr_fun hS2 h
+    simpa using this
+  have hι2 : ∀ a, ι (ι a) = a := by
+    intro a
+    induction a with
+    | zero => simp
+    | tmul r h =>
+      rw [hιdef]
+      simp only [Algebra.TensorProduct.map_tmul]
+      rw [hτ0τ0, hSS]
+    | add x y hx hy => simp only [map_add, hx, hy]
+  -- the fixed points and the base-change comparison
+  set H's : Subalgebra R (RL ⊗[R] H) :=
+    AlgHom.equalizer ι (AlgHom.id R (RL ⊗[R] H)) with hH's
+  have hmem : ∀ a : RL ⊗[R] H, a ∈ H's ↔ ι a = a := by
+    intro a
+    rw [hH's]
+    exact Iff.rfl
+  set Φ0 : (RL ⊗[R] ↥H's) →ₐ[RL] (RL ⊗[R] H) :=
+    Algebra.TensorProduct.lift (Algebra.ofId RL (RL ⊗[R] H))
+      H's.val (fun _ _ => Commute.all _ _) with hΦ0
+  have hΦ0tmul : ∀ (r : RL) (x : ↥H's),
+      Φ0 (r ⊗ₜ[R] x) = algebraMap RL (RL ⊗[R] H) r * (x : RL ⊗[R] H) := by
+    intro r x
+    rw [hΦ0]
+    rw [Algebra.TensorProduct.lift_tmul]
+    rfl
+  have hιalg : ∀ r : RL, ι (algebraMap RL (RL ⊗[R] H) r) =
+      algebraMap RL (RL ⊗[R] H) (τ0alg r) := by
+    intro r
+    rw [Algebra.TensorProduct.algebraMap_apply, hιdef,
+      Algebra.TensorProduct.map_tmul, map_one,
+      Algebra.TensorProduct.algebraMap_apply]
+    simp [Algebra.algebraMap_self]
+  -- the discriminant element and its unit square
+  set δ : RL := 2 * root - algebraMap R RL t with hδdef
+  have hτδ : τ0alg δ = -δ := by
+    rw [hδdef, map_sub, map_mul, AlgHom.commutes, hτroot]
+    have h2' : τ0alg 2 = 2 := by
+      rw [show (2 : RL) = algebraMap R RL 2 by rw [map_ofNat]]
+      rw [AlgHom.commutes]
+    rw [h2']
+    ring
+  have hδsq : δ * δ = algebraMap R RL (t * t - 4 * n) := by
+    rw [hδdef, map_sub, map_mul, map_mul]
+    rw [show algebraMap R RL 4 = 4 by rw [map_ofNat]]
+    linear_combination (4 : RL) * hrootsq
+  have hδunit : IsUnit δ := by
+    refine isUnit_of_mul_isUnit_left (y := δ) ?_
+    rw [hδsq]
+    exact hdisc.map (algebraMap R RL)
+  obtain ⟨u2, hu2⟩ := h2
+  obtain ⟨ud, hud⟩ := hdisc
+  -- surjectivity of the comparison: eigenspace averaging
+  have hsurj : Function.Surjective Φ0 := by
+    intro a
+    set hfA : RL ⊗[R] H := algebraMap R (RL ⊗[R] H) ((u2⁻¹ : Rˣ) : R)
+      with hhfA
+    have hhalf : hfA * 2 = 1 := by
+      rw [hhfA, show (2 : RL ⊗[R] H) = algebraMap R (RL ⊗[R] H) 2 from
+        (map_ofNat _ 2).symm, ← map_mul, ← hu2, ← Units.val_mul,
+        inv_mul_cancel, Units.val_one, map_one]
+    set aplus := hfA * (a + ι a) with haplus
+    set aminus := hfA * (a - ι a) with haminus
+    have hιhf : ι hfA = hfA := by rw [hhfA, AlgHom.commutes]
+    have hplus_mem : aplus ∈ H's := by
+      rw [hmem, haplus, map_mul, hιhf, map_add, hι2]
+      ring
+    have hminus : ι aminus = -aminus := by
+      rw [haminus, map_mul, hιhf, map_sub, hι2]
+      ring
+    set δA := algebraMap RL (RL ⊗[R] H) δ with hδA
+    have hιδA : ι δA = -δA := by
+      rw [hδA, hιalg, hτδ, map_neg]
+    have hy_mem : δA * aminus ∈ H's := by
+      rw [hmem, map_mul, hιδA, hminus]
+      ring
+    refine ⟨1 ⊗ₜ[R] ⟨aplus, hplus_mem⟩ +
+      (((ud⁻¹ : Rˣ) : R) • δ) ⊗ₜ[R] ⟨δA * aminus, hy_mem⟩, ?_⟩
+    rw [map_add, hΦ0tmul, hΦ0tmul]
+    show algebraMap RL (RL ⊗[R] H) 1 * aplus +
+      algebraMap RL (RL ⊗[R] H) (((ud⁻¹ : Rˣ) : R) • δ) * (δA * aminus) = a
+    rw [map_one, one_mul]
+    have hsmul : algebraMap RL (RL ⊗[R] H) (((ud⁻¹ : Rˣ) : R) • δ) =
+        algebraMap R (RL ⊗[R] H) ((ud⁻¹ : Rˣ) : R) * δA := by
+      rw [Algebra.smul_def, map_mul, hδA, ← IsScalarTower.algebraMap_apply]
+    rw [hsmul]
+    have hδAδA : δA * δA = algebraMap R (RL ⊗[R] H) (t * t - 4 * n) := by
+      rw [hδA, ← map_mul, hδsq, ← IsScalarTower.algebraMap_apply]
+    have hkey : algebraMap R (RL ⊗[R] H) ((ud⁻¹ : Rˣ) : R) *
+        (δA * (δA * aminus)) = aminus := by
+      rw [show algebraMap R (RL ⊗[R] H) ((ud⁻¹ : Rˣ) : R) *
+          (δA * (δA * aminus)) =
+          (algebraMap R (RL ⊗[R] H) ((ud⁻¹ : Rˣ) : R) * (δA * δA)) * aminus
+          from by ring,
+        hδAδA, ← map_mul, ← hud,
+        show ((ud⁻¹ : Rˣ) : R) * ((ud : Rˣ) : R) = 1 from by
+          rw [← Units.val_mul, inv_mul_cancel, Units.val_one],
+        map_one, one_mul]
+    calc aplus + algebraMap R (RL ⊗[R] H) ((ud⁻¹ : Rˣ) : R) * δA *
+          (δA * aminus)
+        = aplus + algebraMap R (RL ⊗[R] H) ((ud⁻¹ : Rˣ) : R) *
+          (δA * (δA * aminus)) := by ring
+      _ = aplus + aminus := by rw [hkey]
+      _ = hfA * (2 * a) := by rw [haplus, haminus]; ring
+      _ = (hfA * 2) * a := by ring
+      _ = a := by rw [hhalf, one_mul]
+  -- every element of the base change is supported on `{1, root}`
+  have hdecomp : ∀ z : RL ⊗[R] ↥H's, ∃ x₀ x₁ : ↥H's,
+      z = 1 ⊗ₜ[R] x₀ + root ⊗ₜ[R] x₁ := by
+    intro z
+    induction z with
+    | zero => exact ⟨0, 0, by simp⟩
+    | tmul r x =>
+      obtain ⟨c₀, c₁, rfl⟩ := hspan r
+      refine ⟨c₀ • x, c₁ • x, ?_⟩
+      rw [TensorProduct.add_tmul]
+      congr 1
+      · rw [Algebra.algebraMap_eq_smul_one, TensorProduct.smul_tmul]
+      · rw [show algebraMap R RL c₁ * root = c₁ • root from
+          (Algebra.smul_def _ _).symm, TensorProduct.smul_tmul]
+    | add z₁ z₂ h₁ h₂ =>
+      obtain ⟨a₀, a₁, rfl⟩ := h₁
+      obtain ⟨b₀, b₁, rfl⟩ := h₂
+      refine ⟨a₀ + b₀, a₁ + b₁, ?_⟩
+      rw [TensorProduct.tmul_add, TensorProduct.tmul_add]
+      abel
+  -- injectivity of the comparison: the conjugation separates `1` and `root`
+  have hinj : Function.Injective Φ0 := by
+    rw [injective_iff_map_eq_zero]
+    intro z hz
+    obtain ⟨x₀, x₁, rfl⟩ := hdecomp z
+    rw [map_add, hΦ0tmul, hΦ0tmul, map_one, one_mul] at hz
+    have hz2 := congrArg ι hz
+    rw [map_add, map_mul, map_zero] at hz2
+    have hx₀fix : ι (x₀ : RL ⊗[R] H) = x₀ := (hmem _).mp x₀.2
+    have hx₁fix : ι (x₁ : RL ⊗[R] H) = x₁ := (hmem _).mp x₁.2
+    rw [hx₀fix, hx₁fix, hιalg, hτroot, map_sub] at hz2
+    have hδx₁ : algebraMap RL (RL ⊗[R] H) δ * (x₁ : RL ⊗[R] H) = 0 := by
+      rw [hδdef, map_sub, map_mul,
+        show algebraMap RL (RL ⊗[R] H) (2 : RL) = 2 from map_ofNat _ 2]
+      linear_combination hz - hz2
+    have hδAunit : IsUnit (algebraMap RL (RL ⊗[R] H) δ) :=
+      hδunit.map (algebraMap RL (RL ⊗[R] H))
+    have hx₁0 : (x₁ : RL ⊗[R] H) = 0 := by
+      obtain ⟨v, hv⟩ := hδAunit
+      calc (x₁ : RL ⊗[R] H) = ((v⁻¹ : (RL ⊗[R] H)ˣ) : RL ⊗[R] H) *
+            (((v : (RL ⊗[R] H)ˣ) : RL ⊗[R] H) * x₁) := by
+            rw [← mul_assoc, ← Units.val_mul, inv_mul_cancel, Units.val_one,
+              one_mul]
+        _ = 0 := by rw [hv, hδx₁, mul_zero]
+    have hx₀0 : (x₀ : RL ⊗[R] H) = 0 := by
+      rw [hx₁0, mul_zero, add_zero] at hz
+      exact hz
+    rw [show x₀ = 0 from Subtype.ext hx₀0, show x₁ = 0 from Subtype.ext hx₁0]
+    simp
+  -- finiteness and flatness of the fixed points
+  haveI hAfin : Module.Finite R (RL ⊗[R] H) :=
+    Module.Finite.tensorProduct R RL H
+  haveI hAnoeth : IsNoetherian R (RL ⊗[R] H) :=
+    isNoetherian_of_isNoetherianRing_of_finite R (RL ⊗[R] H)
+  haveI hfin' : Module.Finite R ↥H's := by
+    have hfg : H's.toSubmodule.FG := IsNoetherian.noetherian H's.toSubmodule
+    exact Module.Finite.iff_fg.mpr hfg
+  haveI hHfree : Module.Free R H := Module.free_of_flat_of_isLocalRing
+  haveI hAnzsd : NoZeroSMulDivisors R (RL ⊗[R] H) := by
+    set b := Module.Free.chooseBasis R (RL ⊗[R] H) with hb
+    refine ⟨fun {r x} hrx => ?_⟩
+    rcases eq_or_ne r 0 with hr | hr
+    · exact Or.inl hr
+    · refine Or.inr ?_
+      have h1 : b.repr (r • x) = 0 := by rw [hrx, map_zero]
+      have h2 : ∀ i, r * b.repr x i = 0 := by
+        intro i
+        have h3 := DFunLike.congr_fun h1 i
+        rw [map_smul] at h3
+        rwa [Finsupp.smul_apply, smul_eq_mul] at h3
+      have h3 : b.repr x = 0 := by
+        ext i
+        rcases mul_eq_zero.mp (h2 i) with h | h
+        · exact absurd h hr
+        · exact h
+      have h4 := congrArg b.repr.symm h3
+      rwa [LinearEquiv.symm_apply_apply, map_zero] at h4
+  haveI : NoZeroSMulDivisors R ↥H's :=
+    Function.Injective.noZeroSMulDivisors (Subtype.val : ↥H's → RL ⊗[R] H)
+      Subtype.val_injective rfl (fun _ _ => rfl)
+  haveI hfree' : Module.Free R ↥H's := Module.free_of_finite_type_torsion_free'
+  haveI hflat' : Module.Flat R ↥H's := inferInstance
+  -- packaging, with the equivariance computed on generators
+  set Φ : (RL ⊗[R] ↥H's) ≃ₐ[RL] RL ⊗[R] H :=
+    AlgEquiv.ofBijective Φ0 ⟨hinj, hsurj⟩ with hΦdef
+  refine ⟨↥H's, inferInstance, inferInstance, hfin', hflat', Φ, ?_⟩
+  intro z
+  have hΦap : ∀ w, Φ w = Φ0 w := fun w => rfl
+  induction z with
+  | zero => simp
+  | tmul r x =>
+    rw [Algebra.TensorProduct.map_tmul, hΦap, hΦap, hΦ0tmul, hΦ0tmul,
+      map_mul, hιalg, (hmem _).mp x.2]
+    rfl
+  | add z₁ z₂ h₁ h₂ =>
+    rw [map_add, map_add, map_add, h₁, h₂, map_add]
 
 open TensorProduct in
 set_option backward.isDefEq.respectTransparency false in
