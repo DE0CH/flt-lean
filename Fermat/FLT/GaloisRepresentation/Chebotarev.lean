@@ -3335,36 +3335,114 @@ def HasLipschitzBoundaryCover {E : Type*} [NormedAddCommGroup E]
 
 open scoped Pointwise in
 open MeasureTheory in
+/-- **Cell count along a dilated Lipschitz-parametrized family** (sorry
+leaf) — the boundary-cell estimate of Lang, *Algebraic Number Theory*,
+VI §2 Theorem 2: fix a `ℤ`-basis `b` of the lattice `L`, with fundamental
+parallelotope `P = ZSpan.fundamentalDomain (b.ofZLatticeBasis ℝ)`, and
+finitely many maps `f i : [0,1]^{d-1} → E` Lipschitz on the cube with a
+common constant `κ`. Then there is a `C` such that for every translate
+`w`, every dilation factor `t ≥ 1` and every subset `S` of
+`w +ᵥ t • ⋃ i, f i '' [0,1]^{d-1}`, at most `C·t^{d-1}` of the lattice
+cells `x + P`, `x ∈ L`, meet `S`.
+
+Intended proof (Lang VI §2, the Lipschitz-parametrization count):
+subdivide `[0,1]^{d-1}` into `⌈t⌉₊^{d-1}` subcubes
+`Icc (g/⌈t⌉₊) ((g+1)/⌈t⌉₊)` indexed by `g : Fin (d-1) → Fin ⌈t⌉₊`, each
+of sup-metric diameter `≤ 1/⌈t⌉₊`; each covering piece
+`w +ᵥ t • f i '' Q_g` then has diameter `≤ t·κ/⌈t⌉₊ ≤ κ`
+(`LipschitzOnWith` scales `EMetric.diam` by `κ`, the dilation `t • ·`
+by `|t|`, the translation not at all), so each piece meets a number of
+cells bounded by a constant `c = c(L, b, κ)` — the packing bound (a
+sub-leaf to be introduced with the proof of this leaf: all cells
+meeting a set of diameter `≤ κ` lie in a ball of radius
+`κ + 2·diam P + 1`, the cells are pairwise disjoint of positive Haar
+volume `vol P`, so their number is at most
+`vol(ball)/vol P`, uniformly over the position of the piece). A cell
+meeting `S` meets one of the `m·⌈t⌉₊^{d-1}` pieces, and monotonicity
+plus `⌈t⌉₊ ≤ 2t` for `t ≥ 1` gives the bound with
+`C = m·c·2^{d-1}`. -/
+theorem exists_forall_natCard_inter_vadd_smul_lipschitz_le_pow
+    {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+    [FiniteDimensional ℝ E] [MeasureSpace E] [BorelSpace E]
+    [Measure.IsAddHaarMeasure (volume : Measure E)]
+    (L : Submodule ℤ E) [DiscreteTopology L] [IsZLattice ℝ L]
+    {ι : Type*} [Fintype ι] (b : Module.Basis ι ℤ L)
+    {m : ℕ} {κ : NNReal} {f : Fin m → (Fin (Module.finrank ℝ E - 1) → ℝ) → E}
+    (hf : ∀ i, LipschitzOnWith κ (f i) (Set.Icc 0 1)) :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ (w : E) (t : ℝ), 1 ≤ t → ∀ S : Set E,
+      S ⊆ w +ᵥ t • ⋃ i, f i '' Set.Icc 0 1 →
+      (Nat.card {x : L // (((x : E) +ᵥ
+          ZSpan.fundamentalDomain (b.ofZLatticeBasis ℝ)) ∩ S).Nonempty} : ℝ) ≤
+        C * t ^ (Module.finrank ℝ E - 1) := by
+  sorry
+
+open scoped Pointwise in
+open MeasureTheory in
+/-- **The Davenport sandwich: lattice-point count against volume, error
+located at the boundary cells** (sorry leaf) — the core inequality of
+Lang, *Algebraic Number Theory*, VI §2 Theorem 2, for a single body: with
+`P = ZSpan.fundamentalDomain (b.ofZLatticeBasis ℝ)` the fundamental
+parallelotope of the `ℤ`-basis `b` of `L`, the count of lattice points
+in a bounded measurable `A` differs from `vol A / vol P` by at most the
+number of cells `x + P` (`x ∈ L`) meeting `frontier A`.
+
+Intended proof: the cells tile `E` (`ZLattice.isAddFundamentalDomain`),
+so `vol A = ∑_{x ∈ L} vol (A ∩ (x +ᵥ P))`
+(`IsAddFundamentalDomain.measure_eq_tsum'`). Only cells meeting `A`
+contribute, each at most `vol P`, and cells with `x +ᵥ P ⊆ A` contribute
+exactly `vol P`; since `0 ∈ P`, `x +ᵥ P ⊆ A` forces `x ∈ A`, and `x ∈ A`
+forces `(x +ᵥ P) ∩ A ≠ ∅`. Hence the count `#{x ∈ L : x ∈ A}` and the
+ratio `vol A / vol P` are BOTH sandwiched between
+`N_in = #{x : x +ᵥ P ⊆ A}` and `N_meet = #{x : (x +ᵥ P) ∩ A ≠ ∅}` (all
+counts finite: qualifying `x` lie in a bounded neighbourhood of `A`, and
+lattice points in a bounded set form a finite set — `ZSpan.setFinite_inter`
+through `Module.Basis.ofZLatticeBasis_span`). Finally
+`N_meet - N_in ≤ #{x : (x +ᵥ P) ∩ frontier A ≠ ∅}`: a cell meeting both
+`A` and `Aᶜ` meets `frontier A`, because the cell is convex (preimage of
+a box under the linear repr map), hence preconnected, while
+`interior A` and `(closure A)ᶜ` are disjoint open sets that would cover
+it otherwise, with the definition of `IsPreconnected` yielding the
+contradiction. -/
+theorem abs_natCard_sub_measureReal_div_le_natCard_inter_frontier
+    {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+    [FiniteDimensional ℝ E] [MeasureSpace E] [BorelSpace E]
+    [Measure.IsAddHaarMeasure (volume : Measure E)]
+    {L : Submodule ℤ E} [DiscreteTopology L] [IsZLattice ℝ L]
+    {ι : Type*} [Fintype ι] (b : Module.Basis ι ℤ L)
+    {A : Set E} (hAb : Bornology.IsBounded A) (hAm : MeasurableSet A) :
+    |(Nat.card {x : L // (x : E) ∈ A} : ℝ) -
+        volume.real A /
+          volume.real (ZSpan.fundamentalDomain (b.ofZLatticeBasis ℝ))| ≤
+      (Nat.card {x : L // (((x : E) +ᵥ
+          ZSpan.fundamentalDomain (b.ofZLatticeBasis ℝ)) ∩
+          frontier A).Nonempty} : ℝ) := by
+  sorry
+
+open scoped Pointwise in
+open MeasureTheory in
+set_option maxHeartbeats 400000 in
 /-- **Translated-lattice point counting in Lipschitz-bounded dilated
-domains, with power-saving error** (sorry leaf) — Lang, *Algebraic
-Number Theory*, ch. VI §2 Theorem 2, uniform in the translate: for a
+domains, with power-saving error** (DECOMPOSED 2026-07-24 into the two
+sorry leaves above — the Davenport sandwich
+`abs_natCard_sub_measureReal_div_le_natCard_inter_frontier` (count vs
+volume, error at the boundary cells) and the Lipschitz boundary-cell
+estimate `exists_forall_natCard_inter_vadd_smul_lipschitz_le_pow`
+(`O(t^{d-1})` cells meet the dilated Lipschitz cover) — with the
+assembly PROVEN here: translate by `-v` to turn the coset count into a
+plain lattice-point count in `A = -v +ᵥ t • X` (uniformity in `v` is
+exactly translation invariance of the Haar measure and of the frontier),
+identify `vol A / vol P = vol X / covol L · t^d` by `measure_vadd`,
+`Measure.addHaar_smul_of_nonneg` and
+`ZLattice.covolume_eq_measure_fundamentalDomain`, identify
+`frontier A = -v +ᵥ t • frontier X` since translation and nonzero
+dilation are homeomorphisms, and chain the two leaves over the cover
+`frontier X ⊆ ⋃ i, f i '' [0,1]^{d-1}`) — Lang, *Algebraic Number
+Theory*, ch. VI §2 Theorem 2, uniform in the translate: for a
 `ℤ`-lattice `L` in a `d`-dimensional real vector space (`volume` an
 additive Haar measure) and a bounded measurable set `X` with
 Lipschitz-covered boundary, the number of points of the coset `v + L`
 in the dilate `t • X` is `vol(X)/covol(L) · t^d + O(t^{d-1})`, with an
-error constant independent of `v` and `t ≥ 1`.
-
-Intended proof (Lang VI §2; the classical Davenport/Lipschitz
-principle): fix a fundamental parallelotope `P` of a `ℤ`-basis of `L`
-(mathlib: `ZSpan.fundamentalDomain`, `ZLattice.covolume_eq_measure_fundamentalDomain`)
-and for each `x` in the coset count the cell `x + P`. Cells entirely
-inside `t • X` under-count, cells meeting `t • X` over-count, and both
-counts multiplied by `vol(P)` sandwich `vol(t • X) = t^d·vol(X)`
-(homogeneity of Haar measure under dilation,
-`Measure.addHaar_smul`); so the error is at most the number of cells
-meeting `frontier (t • X) = t • frontier X` (dilation is a
-homeomorphism). Cover `frontier X` by the `m` Lipschitz images: for
-`t ≥ 1` subdivide `[0,1]^{d-1}` into `⌈t⌉^{d-1}` subcubes of side
-`1/⌈t⌉`; the `t`-dilate of the image of each subcube has diameter
-`≤ t·κ·√(d-1)/⌈t⌉ ≤ κ·√(d-1)`, hence meets a number of cells bounded
-by a constant `c(P, κ, d)` independent of everything but `P, κ, d`
-(a diameter-`R` set meets at most `(R/ρ + 2)^d`-ish translates of `P`,
-`ρ` the inradius); total `≤ m·c·⌈t⌉^{d-1} ≤ m·c·(2t)^{d-1}`. The
-count in each dilated cell is translation-invariant, whence uniformity
-in `v`. Mathlib pin: only the error-free limit exists
-(`ZLattice.covolume.tendsto_card_le_div`); `BoxIntegral.unitPartition`
-(`Mathlib/Analysis/BoxIntegral/UnitPartition.lean`, used by that
-limit) provides the cell-counting skeleton to vendor. For `d = 1` the
+error constant independent of `v` and `t ≥ 1`. For `d = 1` the
 exponent `d - 1 = 0` (ℕ-subtraction) makes the error bound `C`, which
 is correct: `X` is then a bounded set with finite boundary, i.e. a
 finite union of intervals. -/
@@ -3379,7 +3457,49 @@ theorem exists_forall_abs_natCard_add_mem_smul_sub_mul_le_pow
       |(Nat.card {x : L // v + (x : E) ∈ t • X} : ℝ) -
           volume.real X / ZLattice.covolume L * t ^ Module.finrank ℝ E| ≤
         C * t ^ (Module.finrank ℝ E - 1) := by
-  sorry
+  classical
+  obtain ⟨m, f, κ, hf, hfX⟩ := hXl
+  let b := Module.Free.chooseBasis ℤ L
+  obtain ⟨C, hC0, hCb⟩ :=
+    exists_forall_natCard_inter_vadd_smul_lipschitz_le_pow L b hf
+  refine ⟨C, hC0, ?_⟩
+  intro v t ht
+  have ht0 : (0 : ℝ) ≤ t := zero_le_one.trans ht
+  have htne : t ≠ 0 := (one_pos.trans_le ht).ne'
+  set A : Set E := -v +ᵥ t • X with hAdef
+  have hAb : Bornology.IsBounded A := (hXb.smul₀ t).vadd _
+  have hAm : MeasurableSet A := (hXm.const_smul₀ t).const_vadd _
+  have hcount : Nat.card {x : L // v + (x : E) ∈ t • X} =
+      Nat.card {x : L // (x : E) ∈ A} :=
+    Nat.card_congr <| Equiv.subtypeEquivRight fun x => by
+      rw [hAdef, Set.mem_vadd_set_iff_neg_vadd_mem, neg_neg, vadd_eq_add]
+  have hcovP : ZLattice.covolume L = volume.real
+      (ZSpan.fundamentalDomain (b.ofZLatticeBasis ℝ)) :=
+    ZLattice.covolume_eq_measure_fundamentalDomain L volume
+      (ZLattice.isAddFundamentalDomain b volume)
+  have hvol : volume.real A / volume.real
+        (ZSpan.fundamentalDomain (b.ofZLatticeBasis ℝ)) =
+      volume.real X / ZLattice.covolume L * t ^ Module.finrank ℝ E := by
+    have h1 : volume A = ENNReal.ofReal (t ^ Module.finrank ℝ E) * volume X := by
+      rw [hAdef, measure_vadd, Measure.addHaar_smul_of_nonneg volume ht0]
+    rw [measureReal_def, h1, ENNReal.toReal_mul,
+      ENNReal.toReal_ofReal (by positivity), hcovP, ← measureReal_def]
+    ring
+  have hfr : frontier A = -v +ᵥ t • frontier X := by
+    have h1 : frontier (t • X) = t • frontier X := by
+      simpa only [Homeomorph.smulOfNeZero_apply, Set.image_smul] using
+        ((Homeomorph.smulOfNeZero t htne).image_frontier X).symm
+    have h2 : frontier A = -v +ᵥ frontier (t • X) := by
+      simpa only [Homeomorph.coe_addLeft, ← vadd_eq_add, Set.image_vadd] using
+        ((Homeomorph.addLeft (-v)).image_frontier (t • X)).symm
+    rw [h2, h1]
+  have hsub : frontier A ⊆ -v +ᵥ t • ⋃ i, f i '' Set.Icc 0 1 := by
+    rw [hfr]
+    exact Set.vadd_set_mono (Set.smul_set_mono hfX)
+  have hmid := abs_natCard_sub_measureReal_div_le_natCard_inter_frontier b hAb hAm
+  rw [hvol] at hmid
+  rw [hcount]
+  exact hmid.trans (hCb (-v) t ht (frontier A) hsub)
 
 open scoped Classical Pointwise nonZeroDivisors in
 open NumberField MeasureTheory in
