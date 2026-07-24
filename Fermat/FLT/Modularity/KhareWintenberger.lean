@@ -128,6 +128,9 @@ public import Mathlib.FieldTheory.Galois.Basic
 import Fermat.FLT.GaloisRepresentation.HardlyRamified.Deformation
 import Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic
 import Mathlib.LinearAlgebra.Charpoly.ToMatrix
+-- `LinearMap.det_eq_sign_charpoly_coeff`, for the determinant coefficient
+-- of the Brauer-descent Frobenius charpolys
+import Mathlib.LinearAlgebra.Charpoly.BaseChange
 import Mathlib.LinearAlgebra.Matrix.Charpoly.Coeff
 -- pillar-γ proof-only imports (see the module docstring's import note):
 -- the Family-free Chebotarev/Brauer–Nesbitt machinery and its Kolchin
@@ -972,42 +975,215 @@ theorem exists_polynomial_family_of_coeff_mem_range {ι : Type*}
   choose P hP using key
   exact ⟨P, hP⟩
 
+/-- **The rational prime `ℓ` is a unit at a place over `q ≠ ℓ`** (PROVEN
+helper for the cyclotomic evaluation below): `ℓ` lies in the prime
+complement of the `q`-adic ideal, so its `q`-adic valuation is `1`.
+
+Port of `Family.lean`'s
+`valued_natCast_adicCompletionIntegers_eq_one_of_ne`, which this module
+may not import (CIRCULARITY GUARD); the only delta from that source is
+`norm_cast` in place of its `simp only [algebraMap.coe_natCast]` in the
+`hbridge` step, the latter making no progress in this file's instance
+context. -/
+lemma valued_natCast_adicCompletionIntegers_eq_one_of_ne
+    {ℓ : ℕ} [hℓ : Fact ℓ.Prime] {q : ℕ}
+    (hq : q.Prime) (hqℓ : q ≠ ℓ) :
+    Valued.v ((((ℓ : ℕ) :
+        HeightOneSpectrum.adicCompletionIntegers ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)) :
+      HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat) = 1 := by
+  set v := hq.toHeightOneSpectrumRingOfIntegersRat
+  have hcompl : ((ℓ : ℕ) : NumberField.RingOfIntegers ℚ) ∈
+      v.asIdeal.primeCompl := by
+    intro hmem
+    have hdvd := (Nat.Prime.mem_toHeightOneSpectrumRingOfIntegersRat_asIdeal
+      hq _).mp hmem
+    rw [map_natCast, Int.natCast_dvd_natCast] at hdvd
+    exact hqℓ ((Nat.prime_dvd_prime_iff_eq hq hℓ.out).mp hdvd)
+  have hint1 : HeightOneSpectrum.intValuation v
+      ((ℓ : ℕ) : NumberField.RingOfIntegers ℚ) = 1 :=
+    (HeightOneSpectrum.intValuation_eq_one_iff_mem_primeCompl
+      v _).mpr hcompl
+  have hK := (HeightOneSpectrum.valuedAdicCompletion_eq_valuation
+      (v := v) (K := ℚ) (((ℓ : ℕ) : NumberField.RingOfIntegers ℚ))).trans
+    ((HeightOneSpectrum.valuation_of_algebraMap
+      (v := v) (K := ℚ) (((ℓ : ℕ) : NumberField.RingOfIntegers ℚ))).trans hint1)
+  have hbridge : ((((ℓ : ℕ) :
+        HeightOneSpectrum.adicCompletionIntegers ℚ v)) :
+      HeightOneSpectrum.adicCompletion ℚ v) =
+      @algebraMap _ _ _ _
+        (HeightOneSpectrum.instAlgebraAdicCompletion
+          (NumberField.RingOfIntegers ℚ) ℚ v)
+        (((ℓ : ℕ) : NumberField.RingOfIntegers ℚ)) := by
+    rw [map_natCast]
+    norm_cast
+  rw [hbridge]
+  exact hK
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
+/-- **The arithmetic Frobenius at `q ≠ ℓ` raises `ℓ`-power roots of
+unity to the `q`-th power** (PROVEN): at a prime `q ≠ ℓ` the `ℓ`-power
+roots of unity are unramified, the arithmetic Frobenius reduces to
+`x ↦ x^q` on the residue field, and roots of unity of order coprime to
+`q` inject into the residue field, so the action is exactly `ζ ↦ ζ^q`.
+Stated in the `modularCyclotomicCharacter.unique` hypothesis shape.
+
+Port of `Family.lean`'s `adicArithFrob_rootsOfUnity_pow_of_ne` (a
+forbidden import here — CIRCULARITY GUARD), itself the general-`ℓ` port
+of the `3`-adic `adicArithFrob_rootsOfUnity_pow` of `GaloisRep.lean`.
+Every lemma it consumes (`natCard_residue_quotient_toHeightOneSpectrum`,
+`mem_completionIdeal_iff`, `isArithFrobAt_adicArithFrob`,
+`absoluteGaloisGroup.lift_map`) already lies in this module's import
+cone; only the helper above had to travel with it. -/
+theorem adicArithFrob_rootsOfUnity_pow_of_ne
+    {ℓ : ℕ} [hℓ : Fact ℓ.Prime] {q : ℕ}
+    (hq : q.Prime) (hqℓ : q ≠ ℓ) (n : ℕ) :
+    ∀ t ∈ rootsOfUnity (ℓ ^ n) (AlgebraicClosure ℚ),
+      ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))
+        (Field.AbsoluteGaloisGroup.adicArithFrob
+          hq.toHeightOneSpectrumRingOfIntegersRat)).toRingEquiv) t =
+        t ^ ((q : ZMod (ℓ ^ n)).val) := by
+  intro t ht
+  classical
+  -- the `q` of the Frobenius specification is the residue cardinality
+  have hcard :=
+    GaloisRepresentation.natCard_residue_quotient_toHeightOneSpectrum hq
+  set v := hq.toHeightOneSpectrumRingOfIntegersRat
+  set f := algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ v)
+  -- the root of unity, its power identity, and its image under the chosen
+  -- embedding of algebraic closures
+  have htL : ((t : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ) ^ (ℓ ^ n)
+      = 1 := by
+    have h1 := (mem_rootsOfUnity _ _).mp ht
+    calc ((t : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ) ^ (ℓ ^ n)
+        = ((t ^ (ℓ ^ n) : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ) := by
+          push_cast; rfl
+      _ = 1 := by rw [h1]; rfl
+  set ζ : AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v) :=
+    AlgebraicClosure.map f ((t : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ)
+    with hζdef
+  have hζpow : ζ ^ (ℓ ^ n) = 1 := by
+    rw [hζdef, ← map_pow, htL, map_one]
+  -- the image is integral over the completion integers (it kills `X^{ℓⁿ}-1`)
+  have hint : IsIntegral
+      (HeightOneSpectrum.adicCompletionIntegers ℚ v) ζ := by
+    refine ⟨Polynomial.X ^ (ℓ ^ n) - 1, ?_, ?_⟩
+    · have := Polynomial.monic_X_pow_sub_C
+        (R := HeightOneSpectrum.adicCompletionIntegers ℚ v)
+        (1 : _) (n := ℓ ^ n) (pow_ne_zero _ hℓ.out.pos.ne')
+      simpa [Polynomial.C_1] using this
+    · simp [Polynomial.eval₂_sub, hζpow]
+  set ζ' : IntegralClosure
+      (HeightOneSpectrum.adicCompletionIntegers ℚ v)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v)) :=
+    ⟨ζ, hint⟩ with hζ'def
+  have hζ'pow : ζ' ^ (ℓ ^ n) = 1 := by
+    apply Subtype.ext
+    push_cast [hζ'def]
+    exact hζpow
+  -- `ℓ` is a unit at the `q`-place (`q ≠ ℓ`), so `ℓⁿ` avoids the maximal
+  -- ideal
+  have hpnotin : ((ℓ : ℕ) ^ n : IntegralClosure
+      (HeightOneSpectrum.adicCompletionIntegers ℚ v)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))) ∉
+      IsLocalRing.maximalIdeal _ := by
+    have hunit : IsUnit ((ℓ : ℕ) :
+        HeightOneSpectrum.adicCompletionIntegers ℚ v) := by
+      by_contra hnu
+      have hmem := (IsLocalRing.mem_maximalIdeal _).mpr hnu
+      have hlt := (HeightOneSpectrum.mem_completionIdeal_iff
+        (K := ℚ) (v := v) _).mp hmem
+      have h1 := valued_natCast_adicCompletionIntegers_eq_one_of_ne hq hqℓ
+      exact absurd (lt_of_lt_of_le hlt h1.symm.le) (lt_irrefl _)
+    have hunitIC : IsUnit (((ℓ : ℕ) ^ n) : IntegralClosure
+        (HeightOneSpectrum.adicCompletionIntegers ℚ v)
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))) := by
+      have h1 := hunit.map (algebraMap
+        (HeightOneSpectrum.adicCompletionIntegers ℚ v)
+        (IntegralClosure
+          (HeightOneSpectrum.adicCompletionIntegers ℚ v)
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))))
+      rw [map_natCast] at h1
+      exact h1.pow n
+    intro hmem
+    exact ((IsLocalRing.mem_maximalIdeal _).mp hmem) hunitIC
+  -- the Frobenius specification on the integral closure
+  have hfrob := AlgHom.IsArithFrobAt.apply_of_pow_eq_one
+    (Field.AbsoluteGaloisGroup.isArithFrobAt_adicArithFrob (v := v))
+    hζ'pow (by exact_mod_cast hpnotin)
+  rw [hcard] at hfrob
+  -- read the specification off in `Kᵥᵃˡᵍ`
+  have hfrobK : Field.AbsoluteGaloisGroup.adicArithFrob v ζ = ζ ^ q := by
+    have h1 := hfrob
+    rw [MulSemiringAction.toAlgHom_apply] at h1
+    have h2 := congrArg Subtype.val h1
+    rw [IntegralClosure.coe_smul] at h2
+    have h3 : ((⟨ζ, hint⟩ : IntegralClosure _ _) ^ q).1 = ζ ^ q :=
+      SubmonoidClass.coe_pow _ _
+    simpa [hζ'def, AlgEquiv.smul_def] using h2.trans h3
+  -- globalize through the chosen embedding, which is injective
+  have hsq := Field.absoluteGaloisGroup.lift_map f
+    (Field.AbsoluteGaloisGroup.adicArithFrob v)
+    ((t : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ)
+  have hmain : (Field.absoluteGaloisGroup.map f
+      (Field.AbsoluteGaloisGroup.adicArithFrob v))
+      ((t : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ) =
+      ((t : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ) ^ q := by
+    apply (AlgebraicClosure.map f).injective
+    rw [hsq, map_pow]
+    exact hfrobK
+  -- the goal's `toRingEquiv` application is the automorphism application
+  show (Field.absoluteGaloisGroup.map f
+      (Field.AbsoluteGaloisGroup.adicArithFrob v))
+      ((t : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ) = _
+  rw [hmain]
+  -- the exponent-mod juggle: `t^q = t^(q mod ℓⁿ)` since `t^{ℓⁿ} = 1`
+  haveI : NeZero (ℓ ^ n) := ⟨pow_ne_zero _ hℓ.out.pos.ne'⟩
+  have hval : ((q : ZMod (ℓ ^ n))).val = q % ℓ ^ n := ZMod.val_natCast _ q
+  conv_lhs => rw [show q = ℓ ^ n * (q / ℓ ^ n) + q % ℓ ^ n from
+    (Nat.div_add_mod q (ℓ ^ n)).symm]
+  rw [pow_add, pow_mul, htL, one_pow, one_mul, hval]
+
 /-- **The `ℓ`-adic cyclotomic character at an arithmetic Frobenius**
-(sorry node; FOUNDER leaf, pure `p`-adic bookkeeping): at a rational
-prime `q ≠ ℓ` the `ℓ`-adic cyclotomic character takes the value `q` on
-the global image of the arithmetic Frobenius at `q`.
+(PROVEN): at a rational prime `q ≠ ℓ` the `ℓ`-adic cyclotomic character
+takes the value `q` on the global image of the arithmetic Frobenius at
+`q`. By `ℓ`-adic continuity: `PadicInt.ext_of_toZModPow` reduces the
+identity to every level `ℓⁿ`, where `cyclotomicCharacter.toZModPow` and
+`modularCyclotomicCharacter.unique` identify the character value with
+`q` from the roots-of-unity action above. Classically this is the
+unramifiedness of the cyclotomic character away from `ℓ` together with
+`Frob_q(ζ) = ζ^q` (Serre, *Abelian ℓ-adic Representations*, I.1;
+Neukirch, *Algebraic Number Theory*, IV).
 
-Literature/status: this is the classical unramifiedness of the
-cyclotomic character away from `ℓ` together with `Frob_q(ζ) = ζ^q` on
-roots of unity — Serre, *Abelian ℓ-adic Representations*, I.1;
-Neukirch, *Algebraic Number Theory*, IV.
-`Fermat/FLT/GaloisRepresentation/HardlyRamified/Family.lean` PROVES
-exactly this statement (`cyclotomicCharacter_adicArithFrob_natCast`,
-by `PadicInt.ext_of_toZModPow` + `modularCyclotomicCharacter.unique`
-over the ported roots-of-unity action
-`adicArithFrob_rootsOfUnity_pow_of_ne`), and
-`Deformations/RepresentationTheory/GaloisRep.lean` proves the `3`-adic
-case (`cyclotomicCharacter_adicArithFrob`). Neither is usable here:
-`Family.lean` is forbidden by the CIRCULARITY GUARD of this module (and
-is not in this module's import cone), and the `GaloisRep.lean` version
-is hard-wired to `ℓ = 3`. The leaf is therefore restated at general `ℓ`;
-discharging it is a PORT of the `Family.lean` proof into a
-`Family`-free module, not new mathematics.
-
-SOUNDNESS AUDIT (2026-07-24): a true classical theorem with NO vacuity
-route — the statement carries no hardly-ramified hypotheses, so it must
-be (and is) directly true as stated; it is already proven in-tree at
-general `ℓ`, in a module this one may not import. -/
-theorem cyclotomicCharacter_adicArithFrob_eq_natCast {ℓ : ℕ} [Fact ℓ.Prime]
-    {q : ℕ} (hq : q.Prime) (hqℓ : q ≠ ℓ) :
+Port of `Family.lean`'s `cyclotomicCharacter_adicArithFrob_natCast`,
+which the CIRCULARITY GUARD of this module forbids importing;
+`GaloisRep.lean`'s `cyclotomicCharacter_adicArithFrob` is the same
+statement hard-wired to `ℓ = 3`. Consumed by
+`charFrob_coeff_zero_eq_natCast_of_isHardlyRamified` below, which is
+what makes the DETERMINANT coefficient of the Brauer-descent Frobenius
+charpolys rational and leaves the trace as the only coefficient
+carrying automorphy content. -/
+theorem cyclotomicCharacter_adicArithFrob_eq_natCast
+    {ℓ : ℕ} [hℓ : Fact ℓ.Prime] {q : ℕ}
+    (hq : q.Prime) (hqℓ : q ≠ ℓ) :
     ((cyclotomicCharacter (AlgebraicClosure ℚ) ℓ
       ((Field.absoluteGaloisGroup.map (algebraMap ℚ
         (HeightOneSpectrum.adicCompletion ℚ
           hq.toHeightOneSpectrumRingOfIntegersRat))
         (Field.AbsoluteGaloisGroup.adicArithFrob
           hq.toHeightOneSpectrumRingOfIntegersRat)).toRingEquiv) : ℤ_[ℓ]ˣ) :
-      ℤ_[ℓ]) = (q : ℤ_[ℓ]) :=
-  sorry
+      ℤ_[ℓ]) = (q : ℤ_[ℓ]) := by
+  rw [← PadicInt.ext_of_toZModPow]
+  intro n
+  rw [map_natCast, cyclotomicCharacter.toZModPow]
+  exact (modularCyclotomicCharacter.unique
+    (hn := HasEnoughRootsOfUnity.natCard_rootsOfUnity (AlgebraicClosure ℚ)
+      (ℓ ^ n))
+    _ _ (adicArithFrob_rootsOfUnity_pow_of_ne hq hqℓ n)).symm
 
 /-- **The determinant coefficient of a hardly ramified Frobenius
 charpoly is `q`** (PROVEN from the cyclotomic leaf above): for a hardly
@@ -1020,8 +1196,8 @@ image of the local Frobenius is the cyclotomic-character value by
 `IsHardlyRamified.det`; and that value is `q` by
 `cyclotomicCharacter_adicArithFrob_eq_natCast`. (Port of the PROVEN
 `Family.lean` lemma `charFrob_coeff_zero_eq_natCast`, restated without
-the auxiliary `Algebra R (AlgebraicClosure ℚ_[ℓ])` instance; only its
-cyclotomic input is left sorried here.)
+the auxiliary `Algebra R (AlgebraicClosure ℚ_[ℓ])` instance; its
+cyclotomic input is ported above, so this lemma is unconditional.)
 
 Consequence for the Brauer gluing below: of the three nonzero
 coefficients of the monic quadratic `charFrob`, only the TRACE
@@ -1069,6 +1245,95 @@ theorem charFrob_coeff_zero_eq_natCast_of_isHardlyRamified {ℓ : ℕ}
         (Field.AbsoluteGaloisGroup.adicArithFrob
           hq.toHeightOneSpectrumRingOfIntegersRat)).charpoly from rfl,
     ← hdet, hdetq]
+
+/-- **Brauer gluing, trace coefficient — the induced-character
+expansion** (sorry node; the arithmetic HALF of the Brauer gluing
+below, and the only coefficient carrying automorphy content): given a
+Brauer decomposition of the trivial character of `Gal(F/ℚ)` into
+solvable-induced one-dimensional pieces (`hbrauer`) and, for each
+piece, a descended Hecke system over the fixed field `Kᵢ = F^{H i}`
+(`hP`), the TRACE of Frobenius of `ρ` itself at almost all rational
+primes lies in `ψℓ(E)` through `ιO` — equivalently, so does the linear
+coefficient `coeff 1 = −tr` of the Frobenius characteristic polynomial.
+
+Classically (Serre, *Abelian ℓ-adic Representations*, I.2; BLGGT §5.3):
+tensoring the virtual identity
+`Σᵢ cᵢ · Ind_{Hᵢ}^{Gal(F/ℚ)} χᵢ = 1` with `ρ` and applying the
+projection formula gives
+`Σᵢ cᵢ · Ind_{G_{Kᵢ}}^{G_ℚ} (ρ|_{G_{Kᵢ}} ⊗ χᵢ) = ρ` as virtual
+representations of `G_ℚ`. Taking traces at `Frob_q` for `q` unramified
+in `F` and away from all bad data, the Mackey/Frobenius formula for
+induced traces evaluates each induced trace as the sum over the
+DEGREE-ONE places `w | q` of `Kᵢ` of `χᵢ(Frob_w) · a_w`, where `a_w` is
+the trace coefficient of the descended piece at `w` — an element of
+`ψℓ(E)` by `hP` — and `χᵢ(Frob_w)` is a root of unity lying in `E` by
+the carrier's normalization (`E` is the Hecke field OF THE DESCENDED
+system). Hence `ιO(tr ρ(Frob_q)) ∈ ψℓ(E)`. The exceptional set `S₀`
+collects the primes ramified in `F` and the primes below the pieces'
+bad sets `S i`.
+
+Literature: Barnet-Lamb–Gee–Geraghty–Taylor, *Potential automorphy and
+change of weight*, Ann. of Math. 179 (2014), §5.3; Khare–Wintenberger,
+*Serre's modularity conjecture (I)*, Invent. Math. 178 (2009), §5;
+Dieulefait, J. reine angew. Math. 577 (2004); Serre, *Abelian ℓ-adic
+Representations*, I.2 (induced traces via degree-one places).
+
+SOUNDNESS AUDIT (both ways, 2026-07-24): (i) direct — for a carrier and
+pieces produced by their own leaves this is BLGGT §5.3; for abstract
+data the abstract-quantification caveat of pillar β applies (in
+particular nothing formal ties the `φ i`-values into `E` — that
+identification is part of the citation, discharged by the carrier's
+normalization), and (ii) collapse — the hypothesis set (an irreducible
+hardly ramified mod-`ℓ` representation, `ℓ ≥ 5`) is classically
+unsatisfiable (headline below), so the statement is classically true
+for every package.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
+through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+theorem heckeField_trace_mem_range_of_pieces
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+    (Wit : PotentialModularityWitness ℓ O ρ)
+    (n : ℕ) (H : Fin n → Subgroup (Wit.F ≃ₐ[ℚ] Wit.F))
+    (φ : Fin n → (Wit.F ≃ₐ[ℚ] Wit.F) → ℂ) (c : Fin n → ℤ)
+    (hφ0 : ∀ i, ∀ g ∉ H i, φ i g = 0)
+    (hφ1 : ∀ i, φ i 1 = 1)
+    (hφmul : ∀ i, ∀ a ∈ H i, ∀ b ∈ H i, φ i (a * b) = φ i a * φ i b)
+    (hbrauer : ∀ g : Wit.F ≃ₐ[ℚ] Wit.F,
+      ∑ i, (c i : ℂ) * (Nat.card (H i) : ℂ)⁻¹ *
+        ∑ x : Wit.F ≃ₐ[ℚ] Wit.F, φ i (x⁻¹ * g * x) = 1)
+    (S : ∀ i, Finset (HeightOneSpectrum (NumberField.RingOfIntegers
+      (IntermediateField.fixedField (H i)))))
+    (P : ∀ i, HeightOneSpectrum (NumberField.RingOfIntegers
+      (IntermediateField.fixedField (H i))) → Polynomial Wit.E)
+    (hP : ∀ i, ∀ w ∉ S i,
+      ((ρ.map (algebraMap ℚ (IntermediateField.fixedField
+          (H i)))).charFrob w).map Wit.ιO = (P i w).map Wit.ψℓ) :
+    ∃ S₀ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)),
+      ∀ (q : ℕ) (hq : q.Prime),
+        hq.toHeightOneSpectrumRingOfIntegersRat ∉ S₀ →
+        q ≠ 2 → q ≠ 3 → q ≠ ℓ →
+        Wit.ιO ((ρ.charFrob
+            hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
+          ∈ Set.range Wit.ψℓ :=
+  sorry
 
 /-- **Brauer gluing — reconstruction of the rational eigensystem from
 the descended pieces** (sorry node; the induced-character unwinding of
@@ -1120,7 +1385,33 @@ for every package.
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
 discharge through `Family.lean`, `Lift.lean`, or
-`Modularity/Interface.lean`. -/
+`Modularity/Interface.lean`.
+
+ASSEMBLY (2026-07-24, PROVEN over a coefficientwise split): the monic
+quadratic `charFrob` has exactly three coefficients to place inside
+`ψℓ(E)`, and only ONE of them is arithmetic.
+
+* `coeff 1` (the TRACE, the induced-character unwinding proper) is the
+  residual arithmetic leaf `heckeField_trace_mem_range_of_pieces`,
+  which consumes the Brauer data (`hbrauer`, `hφ0`, `hφ1`, `hφmul`) and
+  the descended piece systems (`hP`) exactly as this statement received
+  them, and produces the exceptional set `S₀`;
+* `coeff 0` (the DETERMINANT) is `q` by
+  `charFrob_coeff_zero_eq_natCast_of_isHardlyRamified` — PROVEN above
+  from the cyclotomic-determinant field of `IsHardlyRamified` over the
+  equally PROVEN `cyclotomicCharacter_adicArithFrob_eq_natCast` (ported
+  into this module because the circularity guard forbids importing
+  `Family.lean`, where the same statement is already proven) — and
+  `ψℓ`/`ιO` agree on `ℕ`-casts, so it lands in `ψℓ(E)` formally;
+* `coeff 2 = 1` and `coeff (m+3) = 0` are monicity and degree
+  (`charFrob_monic_of_free`, `charFrob_natDegree_of_rank_two`), hence
+  in `ψℓ(E)` formally.
+
+The polynomial family `Pv` itself is then produced with NO further
+arithmetic input by `exists_polynomial_family_of_coeff_mem_range`
+(`Polynomial.lifts_iff_coeff_lifts` made uniform in the place). So the
+depth of this node now lives ENTIRELY in the single trace leaf
+`heckeField_trace_mem_range_of_pieces`, which the guard above binds. -/
 theorem exists_heckeField_system_of_witness_of_pieces
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
@@ -1164,8 +1455,47 @@ theorem exists_heckeField_system_of_witness_of_pieces
         hq.toHeightOneSpectrumRingOfIntegersRat ∉ S₀ →
         q ≠ 2 → q ≠ 3 → q ≠ ℓ →
         (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map Wit.ιO =
-          (Pv hq.toHeightOneSpectrumRingOfIntegersRat).map Wit.ψℓ :=
-  sorry
+          (Pv hq.toHeightOneSpectrumRingOfIntegersRat).map Wit.ψℓ := by
+  classical
+  -- (i) the arithmetic half: the induced-character expansion puts the
+  -- TRACE coefficient into `ψℓ(E)` away from a finite set of primes
+  obtain ⟨S₀, htr⟩ := heckeField_trace_mem_range_of_pieces hℓodd hℓ5 hZinj
+    hrank hρ hW hρbar hirr π hπsurj hπ Wit n H φ c hφ0 hφ1 hφmul hbrauer S P hP
+  -- (ii) the formal half: a coefficientwise lift of the whole family
+  obtain ⟨Pv, hPv⟩ := exists_polynomial_family_of_coeff_mem_range Wit.ψℓ
+    (fun v => (ρ.charFrob v).map Wit.ιO)
+  refine ⟨S₀, Pv, ?_⟩
+  intro q hq hqS h2 h3 hℓq
+  refine hPv _ ?_
+  intro m
+  simp only [Polynomial.coeff_map]
+  match m with
+  | 0 =>
+    -- the determinant coefficient is the rational integer `q`
+    refine ⟨(q : Wit.E), ?_⟩
+    rw [charFrob_coeff_zero_eq_natCast_of_isHardlyRamified hℓodd hrank hρ hq
+      hℓq, map_natCast, map_natCast]
+  | 1 =>
+    -- the trace coefficient: the arithmetic leaf
+    exact htr q hq hqS h2 h3 hℓq
+  | 2 =>
+    -- the leading coefficient of a monic quadratic
+    refine ⟨1, ?_⟩
+    have hmon := (charFrob_monic_of_free
+      hq.toHeightOneSpectrumRingOfIntegersRat ρ).coeff_natDegree
+    rw [charFrob_natDegree_of_rank_two hq.toHeightOneSpectrumRingOfIntegersRat
+      ρ hrank] at hmon
+    rw [hmon, map_one, map_one]
+  | (m + 3) =>
+    -- above the degree everything vanishes
+    refine ⟨0, ?_⟩
+    have hz : (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff
+        (m + 3) = 0 := by
+      refine Polynomial.coeff_eq_zero_of_natDegree_lt ?_
+      rw [charFrob_natDegree_of_rank_two hq.toHeightOneSpectrumRingOfIntegersRat
+        ρ hrank]
+      omega
+    rw [hz, map_zero, map_zero]
 
 /-- **Brauer descent, `ℓ`-adic side — the Hecke-field polynomial
 system over `ℚ`** (PROVEN 2026-07-24 as an assembly over the three
