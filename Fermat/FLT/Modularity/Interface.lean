@@ -81,7 +81,13 @@ it is split off as separate sorried leaves
    2026-07-23, wrong abstraction to build on); prove the
    `q`-expansion formulas `a_m(Tₙ f) = Σ_{d ∣ (m,n), (d,N)=1} d·a_{mn/d²}(f)`
    and derive Proposition 5.8.5 connecting eigenvectors to
-   `IsWeightTwoEigenform`.
+   `IsWeightTwoEigenform`. STARTED (2026-07-24): the prime-index
+   weight-2 slash-sum `heckeTransform` (with explicit coset
+   representatives `heckeRep`/`heckeRepInf`) is defined below, with
+   its stability on cusp forms (`exists_cuspForm_heckeTransform`) and
+   its coefficient formula (`qExpansion_heckeTransform_coeff`) as
+   sorried leaves; the eigenform side of Proposition 5.8.5 at prime
+   index is PROVEN (`hecke_eigen_coeff_identity`).
 2. **Hecke field finiteness** (`heckeField_finiteDimensional`;
    Diamond–Shurman §6.5): the Hecke algebra preserves the integral
    homology lattice of `X₀(N)` (equivalently: `S₂(Γ₀(N))` has a basis
@@ -138,6 +144,9 @@ import Mathlib.Data.Nat.Factorization.Induction
 import Mathlib.FieldTheory.IntermediateField.Adjoin.Algebra
 import Mathlib.RingTheory.IntegralClosure.Algebra.Basic
 import Mathlib.RingTheory.Algebraic.Integral
+import Mathlib.LinearAlgebra.LinearIndependent.BaseChange
+import Mathlib.LinearAlgebra.LinearIndependent.Lemmas
+import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
 import Fermat.FLT.GaloisRepresentation.HardlyRamified.Residual
 -- `IsHardlyRamified.exists_residual_odd`, discharging the residual
 -- reduction pillar `exists_residual_isHardlyRamified_odd` below
@@ -511,22 +520,35 @@ end LevelTwoEmptiness
 
 /-! ### Hecke field finiteness: the single-finite-structure argument
 
-DECOMPOSITION PLAN item 2, executed (2026-07-24) up to one sorried
-leaf. `heckeField_finiteDimensional` below is Diamond–Shurman
+DECOMPOSITION PLAN item 2, executed (2026-07-24), with the former
+single geometric leaf `exists_heckeMatrix_eigenvector` DECOMPOSED
+(2026-07-24, second round) along the analytic route of DECOMPOSITION
+PLAN item 1. `heckeField_finiteDimensional` below is Diamond–Shurman
 Theorem 6.5.1: the coefficients of a normalized weight-2 eigenform
 generate a number field. The classical proof pivots on ONE finite
-object: the Hecke operators act by integer matrices on the homology
-lattice `H₁(X₀(N), ℤ)` (rank `2·dim S₂(Γ₀(N))`), and the eigenform's
-coefficient system is the eigenvalue system of that action on a common
-eigenvector (the `f`-isotypic period vector). On this pin none of the
-ingredients exist — no Hecke operators on `CuspForm`, no modular
-curve, no homology, and not even finite-dimensionality of
-`CuspForm (Gamma0GL N) 2` (audited 2026-07-24: only the level-1 space
-carries a `FiniteDimensional` instance, from the level-1 dimension
-formula; `~/cs/FLT`'s Hecke material is quaternionic-automorphic, not
-connected to the pin's analytic cusp forms) — so exactly that finite
-object is isolated as the sorried leaf
-`exists_heckeMatrix_eigenvector`. Everything else is proven:
+object: a Hecke-stable finite rational structure on `S₂(Γ₀(N))`. On
+this pin neither Hecke operators on `CuspForm`, nor the modular curve,
+nor even finite-dimensionality of `CuspForm (Gamma0GL N) 2` exist
+(audited 2026-07-24: only the level-1 space carries a
+`FiniteDimensional` instance, from the level-1 dimension formula;
+`~/cs/FLT`'s Hecke material is quaternionic-automorphic, not connected
+to the pin's analytic cusp forms). The Hecke action is therefore BUILT
+here (the weight-2 slash-sum operator `heckeTransform`, over the
+explicit coset representatives `heckeRep`/`heckeRepInf` of the
+`q`-isogeny matrices), and `exists_heckeMatrix_eigenvector` is now a
+PROVEN assembly over three sharply-stated sorried leaves:
+
+* `exists_cuspForm_heckeTransform` — `T_q` preserves `S₂(Γ₀(N))`
+  (Diamond–Shurman Propositions 5.1.5/5.2.1);
+* `qExpansion_heckeTransform_coeff` — the classical coefficient
+  formula `a_m(T_q f) = a_{qm}(f) + 1_{q ∤ N} · q · a_{m/q}(f)`
+  (Diamond–Shurman Proposition 5.2.2 at weight 2);
+* `exists_rational_qExpansion_basis` — `S₂(Γ₀(N))` has a finite
+  `ℂ`-basis of forms with rational `q`-expansions (finite
+  dimensionality plus the rational structure; Diamond–Shurman §6.5,
+  Shimura, *Introduction to the Arithmetic Theory*, Theorem 3.52).
+
+Everything else is proven:
 
 * `exists_finiteDimensional_subalgebra_of_matrix_eigenvector` — the
   linear-algebra core: the simultaneous eigenvalues, on one common
@@ -572,35 +594,587 @@ theorem qCoeff_zero (N : ℕ) (f : CuspForm (Gamma0GL N) 2) :
   CuspFormClass.qExpansion_coeff_zero (Γ := Gamma0GL N) (k := 2) f
     one_pos (one_mem_strictPeriods_Gamma0GL N)
 
-/-- **Integral Hecke structure of an eigenform** (sorry node;
-Diamond–Shurman §6.5, the geometric input to Theorem 6.5.1): for a
-normalized weight-2 level-`N` eigenform `f` there are a dimension `n`,
-a family of RATIONAL `n × n` matrices `T q` (only the values at prime
-indices matter), and a common nonzero complex eigenvector `v` with
-`T q ⬝ v = a_q(f) • v` for every prime `q`. Classical instantiation:
-`n = 2g` with `g = dim S₂(Γ₀(N))` the genus of `X₀(N)`, `T q` the
-matrix of the Hecke operator `T_q` (resp. `U_q` for `q ∣ N`) acting on
-`H₁(X₀(N), ℚ)` in an integral basis — the Hecke correspondences are
-defined over `ℤ` on homology (Diamond–Shurman Proposition 6.5.1 proves
-exactly this lattice stability) — and `v` the period vector of `f`:
-the coordinates of the `f`-component under the Eichler–Shimura
-isomorphism `H₁(X₀(N), ℤ) ⊗ ℂ ≅ S₂ ⊕ S̄₂`, on which `T_q` acts by
-`a_q(f)` (Prop 5.8.5 makes the coefficient relations of
-`IsWeightTwoEigenform` equivalent to full-Hecke eigenvector-ness);
-`v ≠ 0` because `f ≠ 0`, having `a₁ = 1`. An alternative analytic
-route avoiding homology: `S₂(Γ₀(N))` is finite-dimensional with a
-basis of integral `q`-expansions stable under the (yet to be
-constructed, DECOMPOSITION PLAN item 1) Hecke action, and `v` the
-coordinate vector of `f` itself. Neither Hecke operators, nor
-`X₀(N)`, nor finite-dimensionality of `CuspForm (Gamma0GL N) 2`
-exists on this pin (audited 2026-07-24), which makes this the
-irreducible geometric leaf of the Hecke-field-finiteness node. -/
+section HeckeOperator
+
+open UpperHalfPlane ModularForm
+
+/-- `Γ₀(N)` in its `GL₂(ℝ)` incarnation consists of determinant-one
+matrices — the `mapGL`-image instance, restated so that instance
+search sees through the `Gamma0GL` definition. This is what puts the
+`ℂ`-module structure on `CuspForm (Gamma0GL N) 2`, used throughout
+the Hecke-basis material below. -/
+instance (N : ℕ) : (Gamma0GL N).HasDetOne :=
+  inferInstanceAs
+    ((CongruenceSubgroup.Gamma0 N).map (Matrix.SpecialLinearGroup.mapGL ℝ)).HasDetOne
+
+/-- The `j`-th upper-triangular coset representative `[1, j; 0, q]` of
+the weight-2 Hecke operator `T_q`, viewed in `GL(2, ℝ)` (junk value
+`1` when `q = 0`; all uses have `q` prime). Under the slash action it
+contributes `τ ↦ f((τ + j)/q)/q` (Diamond–Shurman §5.2: the
+representatives `[1, j; 0, q]`, `0 ≤ j < q`, together with
+`heckeRepInf q` for `q ∤ N`, form a complete system of right-coset
+representatives of `Γ₀(N)` in the degree-`q` double coset). -/
+noncomputable def heckeRep (q j : ℕ) : GL (Fin 2) ℝ :=
+  if hq : (q : ℝ) ≠ 0 then
+    Matrix.GeneralLinearGroup.mkOfDetNeZero !![1, (j : ℝ); 0, (q : ℝ)]
+      (by rw [Matrix.det_fin_two_of]; simpa using hq)
+  else 1
+
+/-- The extra coset representative `[q, 0; 0, 1]` of the weight-2
+Hecke operator `T_q` at a good prime `q ∤ N` (junk value `1` when
+`q = 0`). Under the slash action it contributes `τ ↦ q·f(qτ)`. At
+level `N` with `q ∤ N` the classical representative is
+`[m, n; N, q]·[q, 0; 0, 1]` with `mq − nN = 1`, and `[m, n; N, q]`
+lies in `Γ₀(N)`, so on `Γ₀(N)`-invariant forms the two choices give
+the same slash-sum: this plain matrix is the honest representative of
+the same right coset. -/
+noncomputable def heckeRepInf (q : ℕ) : GL (Fin 2) ℝ :=
+  if hq : (q : ℝ) ≠ 0 then
+    Matrix.GeneralLinearGroup.mkOfDetNeZero !![(q : ℝ), 0; 0, 1]
+      (by rw [Matrix.det_fin_two_of]; simpa using hq)
+  else 1
+
+/-- **The weight-2 Hecke slash-sum** (DECOMPOSITION PLAN item 1: the
+double-coset operator `T_q` — `U_q` when `q ∣ N` — on functions on the
+upper half plane): `f ↦ Σ_{j<q} f∣[2] [1,j;0,q] + 1_{q ∤ N} · f∣[2]
+[q,0;0,1]`. With mathlib's slash normalization
+(`f∣[k]γ = det(γ)^{k−1}·j(γ,τ)^{−k}·f(γτ)`, and `σ γ = id` since all
+representatives have determinant `q > 0`) this is exactly the
+classical `T_q` of Diamond–Shurman (5.10) at weight `k = 2`; its
+`q`-expansion is computed by the sorried leaf
+`qExpansion_heckeTransform_coeff` below, and its stability on cusp
+forms is the sorried leaf `exists_cuspForm_heckeTransform`. -/
+noncomputable def heckeTransform (N q : ℕ) (f : ℍ → ℂ) : ℍ → ℂ :=
+  (∑ j ∈ Finset.range q, f ∣[(2 : ℤ)] heckeRep q j) +
+    if q ∣ N then 0 else f ∣[(2 : ℤ)] heckeRepInf q
+
+/-- The Hecke slash-sum is additive in the form (each slash is). -/
+theorem heckeTransform_add (N q : ℕ) (f g : ℍ → ℂ) :
+    heckeTransform N q (f + g) = heckeTransform N q f + heckeTransform N q g := by
+  unfold heckeTransform
+  split_ifs with h
+  · simp [Finset.sum_add_distrib]
+  · simp only [SlashAction.add_slash, Finset.sum_add_distrib]
+    abel
+
+/-- The slash conjugation factor `σ` of the upper-triangular Hecke
+representatives is the identity (their determinants are positive), so
+their slash action commutes with COMPLEX scalars. -/
+theorem σ_heckeRep (q j : ℕ) (c : ℂ) : σ (heckeRep q j) c = c := by
+  have hdet : 0 < (heckeRep q j).det.val := by
+    unfold heckeRep
+    split_ifs with hq
+    · have hq' : (0 : ℝ) < q := lt_of_le_of_ne (Nat.cast_nonneg q) (Ne.symm hq)
+      simpa [Matrix.GeneralLinearGroup.val_det_apply, Matrix.det_fin_two_of] using hq'
+    · simp
+  simp only [σ, if_pos hdet, ContinuousAlgEquiv.refl_apply]
+
+/-- The slash conjugation factor `σ` of the extra Hecke representative
+is the identity (its determinant is positive). -/
+theorem σ_heckeRepInf (q : ℕ) (c : ℂ) : σ (heckeRepInf q) c = c := by
+  have hdet : 0 < (heckeRepInf q).det.val := by
+    unfold heckeRepInf
+    split_ifs with hq
+    · have hq' : (0 : ℝ) < q := lt_of_le_of_ne (Nat.cast_nonneg q) (Ne.symm hq)
+      simpa [Matrix.GeneralLinearGroup.val_det_apply, Matrix.det_fin_two_of] using hq'
+    · simp
+  simp only [σ, if_pos hdet, ContinuousAlgEquiv.refl_apply]
+
+/-- The Hecke slash-sum commutes with complex scalars (each slash
+does, the representatives having positive determinant). -/
+theorem heckeTransform_smul (N q : ℕ) (c : ℂ) (f : ℍ → ℂ) :
+    heckeTransform N q (c • f) = c • heckeTransform N q f := by
+  unfold heckeTransform
+  split_ifs with h
+  · simp [ModularForm.smul_slash, Finset.smul_sum, σ_heckeRep]
+  · simp [ModularForm.smul_slash, Finset.smul_sum, smul_add, σ_heckeRep, σ_heckeRepInf]
+
+/-- **Hecke stability of cusp forms** (sorry node; Diamond–Shurman
+Propositions 5.1.5 and 5.2.1–5.2.2 for `Γ₀(N)`, weight 2): the Hecke
+slash-sum of a weight-2 level-`N` cusp form is again a weight-2
+level-`N` cusp form. Classical proof: right multiplication by `γ ∈
+Γ₀(N)` permutes the right cosets `Γ₀(N)·heckeRep q j` (resp. the
+extra coset at good primes), and `f∣[2](δγᵢ) = f∣[2]γᵢ` for `δ ∈
+Γ₀(N)` by slash invariance, so the sum is `Γ₀(N)`-slash-invariant;
+each summand is holomorphic on `ℍ` (a Möbius pullback times a nonzero
+holomorphic factor); and each summand vanishes at every cusp because
+`f` does (the representatives carry cusps to cusps), giving the
+`zero_at_cusps` condition. The statement is an existential rather
+than a definition because on this pin the bundled `CuspForm`
+constructor needs exactly these three unproven facts. -/
+theorem exists_cuspForm_heckeTransform {N : ℕ} (hN : 0 < N) {q : ℕ}
+    (hq : q.Prime) (f : CuspForm (Gamma0GL N) 2) :
+    ∃ g : CuspForm (Gamma0GL N) 2, ⇑g = heckeTransform N q ⇑f :=
+  sorry
+
+/-- **The `q`-expansion of the Hecke slash-sum** (sorry node;
+Diamond–Shurman Proposition 5.2.2 at weight 2, trivial character):
+`a_m(T_q f) = a_{qm}(f)` for `q ∣ N`, and
+`a_m(T_q f) = a_{qm}(f) + q·a_{m/q}(f)` (second term only when
+`q ∣ m`) for `q ∤ N`. Classical proof, entirely analytic on this
+pin's `hasSum_qExpansion` API: substituting the width-1 `q`-expansion
+of `f` into the finite slash-sum, the `q` upper-triangular
+representatives average the additive character
+(`Σ_{j<q} e^{2πimj/q} = q·1_{q ∣ m}`), reindexing `m ↦ qm`, while the
+extra representative contributes `q·f(qτ)`, reindexing `m ↦ m/q`; the
+resulting everywhere-convergent expansion is THE `q`-expansion by
+`UpperHalfPlane.qExpansion_coeff_unique` (analyticity of the cusp
+function coming from `exists_cuspForm_heckeTransform`). -/
+theorem qExpansion_heckeTransform_coeff {N : ℕ} (hN : 0 < N) {q : ℕ}
+    (hq : q.Prime) (f : CuspForm (Gamma0GL N) 2) (m : ℕ) :
+    (qExpansion 1 (heckeTransform N q ⇑f)).coeff m =
+      qCoeff N f (q * m) +
+        (if q ∣ N then 0 else if q ∣ m then (q : ℂ) * qCoeff N f (m / q) else 0) :=
+  sorry
+
+/-- The `q`-expansion coefficients of the zero cusp form vanish. -/
+theorem qCoeff_zero_cuspForm (N m : ℕ) :
+    qCoeff N (0 : CuspForm (Gamma0GL N) 2) m = 0 := by
+  show (qExpansion 1 ⇑(0 : CuspForm (Gamma0GL N) 2)).coeff m = 0
+  rw [CuspForm.coe_zero, qExpansion_zero]
+  simp
+
+/-- The `m`-th `q`-expansion coefficient as a `ℂ`-linear functional on
+`S₂(Γ₀(N))` — additivity and scalar equivariance through the pin's
+`qExpansion_add`/`qExpansion_smul`. -/
+noncomputable def qCoeffL (N m : ℕ) : CuspForm (Gamma0GL N) 2 →ₗ[ℂ] ℂ where
+  toFun f := qCoeff N f m
+  map_add' f g := by
+    have hfa := ModularFormClass.analyticAt_cuspFunction_zero f one_pos
+      (one_mem_strictPeriods_Gamma0GL N)
+    have hga := ModularFormClass.analyticAt_cuspFunction_zero g one_pos
+      (one_mem_strictPeriods_Gamma0GL N)
+    show (qExpansion 1 ⇑(f + g)).coeff m = _
+    rw [CuspForm.coe_add, qExpansion_add hfa hga]
+    simp [qCoeff]
+  map_smul' c f := by
+    have hfa := ModularFormClass.analyticAt_cuspFunction_zero f one_pos
+      (one_mem_strictPeriods_Gamma0GL N)
+    show (qExpansion 1 ⇑(c • f)).coeff m = _
+    rw [CuspForm.IsGLPos.coe_smul, qExpansion_smul hfa]
+    simp [qCoeff]
+
+@[simp] theorem qCoeffL_apply (N m : ℕ) (f : CuspForm (Gamma0GL N) 2) :
+    qCoeffL N m f = qCoeff N f m := rfl
+
+/-- **`q`-expansion principle** for weight-2 level-`N` cusp forms: the
+coefficient system determines the form. Proven from the pin's
+`qExpansion_eq_zero_iff` (Taylor-series vanishing at the cusp forces
+functional vanishing) applied to the difference. -/
+theorem cuspForm_eq_of_forall_qCoeff_eq {N : ℕ}
+    {f g : CuspForm (Gamma0GL N) 2} (h : ∀ m, qCoeff N f m = qCoeff N g m) :
+    f = g := by
+  haveI : Fact (IsCusp OnePoint.infty (Gamma0GL N)) :=
+    ⟨(Gamma0GL N).isCusp_of_mem_strictPeriods one_pos
+      (one_mem_strictPeriods_Gamma0GL N)⟩
+  have hfa := ModularFormClass.analyticAt_cuspFunction_zero f one_pos
+    (one_mem_strictPeriods_Gamma0GL N)
+  have hga := ModularFormClass.analyticAt_cuspFunction_zero g one_pos
+    (one_mem_strictPeriods_Gamma0GL N)
+  have hsub : qExpansion 1 ⇑(f - g) = 0 := by
+    rw [CuspForm.coe_sub, qExpansion_sub hfa hga]
+    ext m
+    have := h m
+    simp only [qCoeff] at this
+    simp [this]
+  have h0 : ⇑(f - g) = 0 := by
+    rw [← qExpansion_eq_zero_iff one_pos
+      (SlashInvariantFormClass.periodic_comp_ofComplex (f - g)
+        (one_mem_strictPeriods_Gamma0GL N))
+      (ModularFormClass.holo (f - g)) (ModularFormClass.bdd_at_infty (f - g))]
+    exact hsub
+  have hfg : f - g = 0 := DFunLike.coe_injective (by rw [h0, CuspForm.coe_zero])
+  exact sub_eq_zero.mp hfg
+
+/-- **The eigenform coefficient identity**: for a normalized weight-2
+eigenform, the Hecke-transform coefficient
+`a_{qm} + 1_{q ∤ N}·1_{q ∣ m}·q·a_{m/q}` collapses to `a_q·a_m` —
+i.e. `T_q f = a_q·f` at the level of coefficient systems. This is the
+converse half of Diamond–Shurman Proposition 5.8.5 at weight 2,
+proven here from the four `IsWeightTwoEigenform` accessor fields by
+splitting `m = q^r·m'` with `q ∤ m'`. -/
+theorem hecke_eigen_coeff_identity {N : ℕ} {f : CuspForm (Gamma0GL N) 2}
+    (hf : IsWeightTwoEigenform N f) {q : ℕ} (hq : q.Prime) (m : ℕ) :
+    qCoeff N f (q * m) +
+      (if q ∣ N then 0 else if q ∣ m then (q : ℂ) * qCoeff N f (m / q) else 0) =
+      qCoeff N f q * qCoeff N f m := by
+  rcases eq_or_ne m 0 with rfl | hm
+  · simp [qCoeff_zero, Nat.zero_div]
+  · set r := m.factorization q with hrdef
+    set m' := m / q ^ r with hm'def
+    have hsplit : q ^ r * m' = m := Nat.ordProj_mul_ordCompl_eq_self m q
+    have hqm' : ¬ q ∣ m' := Nat.not_dvd_ordCompl hq hm
+    have hcop : ∀ s : ℕ, (q ^ s).Coprime m' :=
+      fun s => Nat.Coprime.pow_left s (hq.coprime_iff_not_dvd.mpr hqm')
+    by_cases hqN : q ∣ N
+    · rw [if_pos hqN, add_zero]
+      have h1 : q * m = q ^ (r + 1) * m' := by rw [← hsplit]; ring
+      rw [h1, ← hsplit, hf.qCoeff_mul_coprime _ _ (hcop (r + 1)),
+        hf.qCoeff_mul_coprime _ _ (hcop r),
+        hf.qCoeff_prime_pow_of_dvd q hq hqN r, mul_assoc]
+    · rw [if_neg hqN]
+      by_cases hqm : q ∣ m
+      · have hr1 : 1 ≤ r := hq.factorization_pos_of_dvd hm hqm
+        rw [if_pos hqm]
+        have e2 : r - 1 + 1 = r := Nat.sub_add_cancel hr1
+        have h1 : q * m = q ^ (r + 1) * m' := by rw [← hsplit]; ring
+        have h2 : m / q = q ^ (r - 1) * m' := by
+          have hm2 : m = q * (q ^ (r - 1) * m') := by
+            calc m = q ^ r * m' := hsplit.symm
+              _ = q ^ (r - 1 + 1) * m' := by rw [e2]
+              _ = q * (q ^ (r - 1) * m') := by rw [pow_succ']; ring
+          rw [hm2, Nat.mul_div_cancel_left _ hq.pos]
+        rw [h1, h2, ← hsplit, hf.qCoeff_mul_coprime _ _ (hcop (r + 1)),
+          hf.qCoeff_mul_coprime _ _ (hcop (r - 1)),
+          hf.qCoeff_mul_coprime _ _ (hcop r)]
+        have hrec := hf.qCoeff_prime_pow_of_not_dvd q hq hqN (r - 1)
+        have e1 : r - 1 + 2 = r + 1 := by omega
+        rw [e1, e2] at hrec
+        rw [hrec]
+        ring
+      · rw [if_neg hqm, add_zero,
+          hf.qCoeff_mul_coprime q m (hq.coprime_iff_not_dvd.mpr hqm)]
+
+/-- A trivial intersection of countably many subspaces of a
+finite-dimensional space is trivial on a finite subfamily (finrank
+descent). Feeds the finite-coordinate selection in
+`exists_finset_restrict_linearIndependent`. -/
+theorem exists_finset_iInf_eq_bot {k : ℕ} (W : ℕ → Submodule ℚ (Fin k → ℚ))
+    (hW : (⨅ m, W m) = ⊥) :
+    ∃ T : Finset ℕ, (⨅ m ∈ T, W m) = ⊥ := by
+  classical
+  suffices h : ∀ (d : ℕ) (T : Finset ℕ),
+      Module.finrank ℚ ↥(⨅ m ∈ T, W m) ≤ d →
+      ∃ T' : Finset ℕ, (⨅ m ∈ T', W m) = ⊥ by
+    exact h (Module.finrank ℚ ↥(⨅ m ∈ (∅ : Finset ℕ), W m)) ∅ le_rfl
+  intro d
+  induction d with
+  | zero =>
+    intro T hT
+    exact ⟨T, Submodule.finrank_eq_zero.mp (Nat.le_zero.mp hT)⟩
+  | succ d ih =>
+    intro T hT
+    by_cases hbot : (⨅ m ∈ T, W m) = ⊥
+    · exact ⟨T, hbot⟩
+    · obtain ⟨x, hx, hx0⟩ := Submodule.exists_mem_ne_zero_of_ne_bot hbot
+      have hxall : ¬ ∀ m, x ∈ W m := fun hall =>
+        hx0 (by simpa [hW] using (Submodule.mem_iInf W).mpr hall)
+      obtain ⟨m₀, hm₀⟩ := not_forall.mp hxall
+      refine ih (insert m₀ T) ?_
+      have hlt : (⨅ m ∈ insert m₀ T, W m) < ⨅ m ∈ T, W m := by
+        rw [Finset.iInf_insert]
+        refine lt_of_le_of_ne inf_le_right fun heq => hm₀ ?_
+        exact (heq.symm.le.trans inf_le_left) hx
+      exact Nat.lt_succ_iff.mp
+        (lt_of_lt_of_le (Submodule.finrank_lt_finrank_of_lt hlt) hT)
+
+/-- A `ℚ`-linearly independent finite family of rational sequences
+stays independent after restriction to a suitable FINITE set of
+coordinates (via the kernel intersection of the coordinate
+functionals and `exists_finset_iInf_eq_bot`). This is the bridge to
+mathlib's finite-coordinate base-change lemma
+`linearIndependent_algebraMap_comp_iff`. -/
+theorem exists_finset_restrict_linearIndependent {k : ℕ} {w : Fin k → ℕ → ℚ}
+    (hw : LinearIndependent ℚ w) :
+    ∃ T : Finset ℕ, LinearIndependent ℚ fun i => fun m : T => w i m := by
+  classical
+  set φ : ℕ → ((Fin k → ℚ) →ₗ[ℚ] ℚ) := fun m =>
+    { toFun := fun c => ∑ i, c i * w i m
+      map_add' := fun a b => by simp [add_mul, Finset.sum_add_distrib]
+      map_smul' := fun s a => by simp [Finset.mul_sum, mul_assoc] } with hφ
+  have hker : (⨅ m, LinearMap.ker (φ m)) = ⊥ := by
+    rw [Submodule.eq_bot_iff]
+    intro c hc
+    rw [Submodule.mem_iInf] at hc
+    have hc' : ∑ i, c i • w i = 0 := by
+      funext m
+      have hcm := hc m
+      rw [LinearMap.mem_ker] at hcm
+      simpa [hφ, Finset.sum_apply] using hcm
+    exact funext (Fintype.linearIndependent_iff.mp hw c hc')
+  obtain ⟨T, hT⟩ := exists_finset_iInf_eq_bot _ hker
+  refine ⟨T, ?_⟩
+  rw [Fintype.linearIndependent_iff]
+  intro c hc
+  have hcT : c ∈ ⨅ m ∈ T, LinearMap.ker (φ m) := by
+    rw [Submodule.mem_iInf]
+    intro m
+    rw [Submodule.mem_iInf]
+    intro hmT
+    rw [LinearMap.mem_ker]
+    have := congrFun hc ⟨m, hmT⟩
+    simpa [hφ, Finset.sum_apply] using this
+  rw [hT, Submodule.mem_bot] at hcT
+  intro i
+  exact congrFun hcT i
+
+/-- **Base change for sequences**: a `ℚ`-linearly independent family
+of rational sequences is `ℂ`-linearly independent after coercion.
+Proven by restricting to a finite coordinate window
+(`exists_finset_restrict_linearIndependent`), applying mathlib's
+finite-coordinate `linearIndependent_algebraMap_comp_iff`, and
+pulling back along the restriction map. -/
+theorem linearIndependent_ratCast_of_linearIndependent {k : ℕ}
+    {w : Fin k → ℕ → ℚ} (hw : LinearIndependent ℚ w) :
+    LinearIndependent ℂ fun i => fun m : ℕ => (w i m : ℂ) := by
+  obtain ⟨T, hT⟩ := exists_finset_restrict_linearIndependent hw
+  have hTc : LinearIndependent ℂ fun i => algebraMap ℚ ℂ ∘ (fun m : T => w i m) :=
+    linearIndependent_algebraMap_comp_iff.mpr hT
+  refine LinearIndependent.of_comp
+    (LinearMap.funLeft ℂ ℂ (Subtype.val : T → ℕ)) ?_
+  have heq : (LinearMap.funLeft ℂ ℂ (Subtype.val : T → ℕ) ∘
+      fun i => fun m : ℕ => (w i m : ℂ))
+      = fun i => algebraMap ℚ ℂ ∘ (fun m : T => w i m) := by
+    funext i m
+    simp [LinearMap.funLeft, eq_ratCast]
+  rw [heq]
+  exact hTc
+
+/-- **Rationality of coordinates**: if finitely many rational
+sequences are `ℂ`-independent (after coercion) and a COMPLEX linear
+combination of them is again a rational sequence, the coefficients
+are rational. The classical content: a rational vector lying in the
+`ℂ`-span of independent rational vectors already lies in their
+`ℚ`-span (else `Fin.cons` extension plus base change contradicts the
+span membership), and independence matches the two coordinate
+systems. -/
+theorem exists_ratCast_coords {k : ℕ} {w : Fin k → ℕ → ℚ} {b : Fin k → ℂ}
+    {u : ℕ → ℚ}
+    (hw : LinearIndependent ℂ fun i => fun m : ℕ => (w i m : ℂ))
+    (hu : ∀ m : ℕ, ∑ i, b i * (w i m : ℂ) = (u m : ℂ)) :
+    ∃ c : Fin k → ℚ, ∀ i, b i = (c i : ℂ) := by
+  classical
+  have hwq : LinearIndependent ℚ w := by
+    rw [Fintype.linearIndependent_iff]
+    intro c hc i
+    have hcc : ∑ j, ((c j : ℂ)) • (fun m : ℕ => (w j m : ℂ)) = 0 := by
+      funext m
+      have hcm := congrFun hc m
+      simp only [Finset.sum_apply, Pi.smul_apply, smul_eq_mul, Pi.zero_apply] at hcm ⊢
+      exact_mod_cast congrArg (Rat.cast (K := ℂ)) hcm
+    exact_mod_cast Fintype.linearIndependent_iff.mp hw _ hcc i
+  have humem : u ∈ Submodule.span ℚ (Set.range w) := by
+    by_contra hnot
+    have hcons : LinearIndependent ℚ (Fin.cons u w : Fin (k + 1) → ℕ → ℚ) :=
+      linearIndependent_finCons.mpr ⟨hwq, hnot⟩
+    have hconsC := linearIndependent_ratCast_of_linearIndependent hcons
+    have hconseq :
+        (fun i => fun m : ℕ => ((Fin.cons u w : Fin (k + 1) → ℕ → ℚ) i m : ℂ))
+        = Fin.cons (fun m : ℕ => (u m : ℂ)) (fun i => fun m : ℕ => (w i m : ℂ)) := by
+      funext i
+      refine Fin.cases ?_ (fun j => ?_) i <;> simp
+    rw [hconseq] at hconsC
+    refine (linearIndependent_finCons.mp hconsC).2 ?_
+    rw [Submodule.mem_span_range_iff_exists_fun]
+    exact ⟨b, funext fun m => by
+      simpa [Finset.sum_apply, smul_eq_mul] using hu m⟩
+  rw [Submodule.mem_span_range_iff_exists_fun] at humem
+  obtain ⟨c, hc⟩ := humem
+  refine ⟨c, fun i => ?_⟩
+  have hdiff : ∑ j, (b j - (c j : ℂ)) • (fun m : ℕ => (w j m : ℂ)) = 0 := by
+    funext m
+    have h2 : ∑ j, (c j : ℂ) * (w j m : ℂ) = (u m : ℂ) := by
+      have hcm := congrFun hc m
+      simp only [Finset.sum_apply, Pi.smul_apply, smul_eq_mul] at hcm
+      exact_mod_cast congrArg (Rat.cast (K := ℂ)) hcm
+    simp only [Finset.sum_apply, Pi.smul_apply, smul_eq_mul, Pi.zero_apply,
+      sub_mul, Finset.sum_sub_distrib, hu m, h2, sub_self]
+  have := Fintype.linearIndependent_iff.mp hw _ hdiff i
+  exact sub_eq_zero.mp this
+
+/-- **Rational basis of `S₂(Γ₀(N))`** (sorry node; the irreducible
+geometric leaf of the Hecke-field-finiteness node): the space of
+weight-2 level-`N` cusp forms is finite-dimensional over `ℂ` and has
+a basis of forms whose `q`-expansion coefficients are RATIONAL. This
+combines two classical facts unavailable on this pin: (i) finite
+dimensionality of `S₂(Γ₀(N))` (Diamond–Shurman ch. 3 dimension
+formulas, `dim = genus X₀(N)`; only level 1 exists on the pin), and
+(ii) the rational structure (Diamond–Shurman §6.5; Shimura,
+*Introduction to the Arithmetic Theory of Automorphic Functions*,
+Theorem 3.52: `S₂` has a basis with INTEGER coefficients — via the
+`ℤ`-structure of `H₁(X₀(N), ℤ)` under the Eichler–Shimura
+isomorphism, or via the `q`-expansion principle on the modular curve
+over `ℚ`). Spanning is phrased with explicit coordinates to keep
+consumers span-vocabulary-free. Note the statement is sound for every
+`N ≥ 1` including genus-zero levels, where `n = 0` and both clauses
+are vacuous. -/
+theorem exists_rational_qExpansion_basis {N : ℕ} (hN : 0 < N) :
+    ∃ (n : ℕ) (g : Fin n → CuspForm (Gamma0GL N) 2),
+      LinearIndependent ℂ g ∧
+      (∀ f : CuspForm (Gamma0GL N) 2, ∃ b : Fin n → ℂ, f = ∑ i, b i • g i) ∧
+      (∀ i m, ∃ r : ℚ, qCoeff N (g i) m = (r : ℂ)) :=
+  sorry
+
+/-- Coercion to functions commutes with finite linear combinations of
+cusp forms. -/
+theorem coe_sum_smul {N n : ℕ} (c : Fin n → ℂ)
+    (gs : Fin n → CuspForm (Gamma0GL N) 2) :
+    ⇑(∑ i, c i • gs i) = ∑ i, c i • ⇑(gs i) := by
+  classical
+  suffices h : ∀ s : Finset (Fin n),
+      ⇑(∑ i ∈ s, c i • gs i) = ∑ i ∈ s, c i • ⇑(gs i) from h Finset.univ
+  intro s
+  induction s using Finset.induction_on with
+  | empty => simp [CuspForm.coe_zero]
+  | insert a s ha ih =>
+    rw [Finset.sum_insert ha, Finset.sum_insert ha, CuspForm.coe_add,
+      CuspForm.IsGLPos.coe_smul, ih]
+
+/-- **Integral Hecke structure of an eigenform** (Diamond–Shurman
+§6.5, the finite input to Theorem 6.5.1; PROVEN assembly, 2026-07-24,
+over the three sorried leaves `exists_cuspForm_heckeTransform`,
+`qExpansion_heckeTransform_coeff` and
+`exists_rational_qExpansion_basis`): for a normalized weight-2
+level-`N` eigenform `f` there are a dimension `n`, a family of
+RATIONAL `n × n` matrices `T q`, and a common nonzero complex
+eigenvector `v` with `T q ⬝ v = a_q(f)·v` for every prime `q`. The
+assembly instantiates the analytic route: `v` is the coordinate
+vector of `f` in a rational basis `g` of `S₂(Γ₀(N))` (nonzero since
+`a₁(f) = 1`), `T q` is the matrix of the Hecke slash-sum in that
+basis — its entries are rational because `T_q` preserves rational
+`q`-expansions (`qExpansion_heckeTransform_coeff`) and rational
+coordinates against a rational basis are rational
+(`exists_ratCast_coords`) — and the eigen-equation is the eigenform
+coefficient identity `hecke_eigen_coeff_identity` transported through
+the `q`-expansion principle `cuspForm_eq_of_forall_qCoeff_eq`. -/
 theorem exists_heckeMatrix_eigenvector {N : ℕ} (hN : 0 < N)
     {f : CuspForm (Gamma0GL N) 2} (hf : IsWeightTwoEigenform N f) :
     ∃ (n : ℕ) (T : ℕ → Matrix (Fin n) (Fin n) ℚ) (v : Fin n → ℂ),
       v ≠ 0 ∧ ∀ q : ℕ, q.Prime →
-        (T q).map (algebraMap ℚ ℂ) *ᵥ v = qCoeff N f q • v :=
-  sorry
+        (T q).map (algebraMap ℚ ℂ) *ᵥ v = qCoeff N f q • v := by
+  classical
+  obtain ⟨n, g, hind, hspan, hrat⟩ := exists_rational_qExpansion_basis hN
+  choose w hw using hrat
+  -- the rational coefficient sequences of the basis are ℂ-independent
+  have hseq : LinearIndependent ℂ fun i => fun m : ℕ => (w i m : ℂ) := by
+    rw [Fintype.linearIndependent_iff]
+    intro c hc
+    have hzero : (∑ i, c i • g i) = (0 : CuspForm (Gamma0GL N) 2) := by
+      apply cuspForm_eq_of_forall_qCoeff_eq
+      intro m
+      have h1 : qCoeff N (∑ i, c i • g i) m = ∑ i, c i * qCoeff N (g i) m := by
+        have hs := map_sum (qCoeffL N m) (fun i => c i • g i) Finset.univ
+        simp only [map_smul, smul_eq_mul] at hs
+        simp only [qCoeffL_apply] at hs
+        exact hs
+      rw [h1, qCoeff_zero_cuspForm]
+      have hcm := congrFun hc m
+      simpa [Finset.sum_apply, hw, smul_eq_mul] using hcm
+    exact Fintype.linearIndependent_iff.mp hind c hzero
+  -- coordinates of the eigenform
+  obtain ⟨b, hb⟩ := hspan f
+  have hb0 : b ≠ 0 := by
+    rintro rfl
+    have hf0 : f = 0 := by simpa using hb
+    have h1 := hf.qCoeff_one
+    rw [hf0, qCoeff_zero_cuspForm] at h1
+    exact zero_ne_one h1
+  -- the rational Hecke matrices
+  have hex : ∀ q : ℕ, q.Prime → ∃ M : Matrix (Fin n) (Fin n) ℚ,
+      ∀ i, heckeTransform N q ⇑(g i) = ⇑(∑ j, ((M j i : ℚ) : ℂ) • g j) := by
+    intro q hq
+    have hstep : ∀ i : Fin n, ∃ col : Fin n → ℚ,
+        heckeTransform N q ⇑(g i) = ⇑(∑ j, (col j : ℂ) • g j) := by
+      intro i
+      obtain ⟨h, hh⟩ := exists_cuspForm_heckeTransform hN hq (g i)
+      obtain ⟨c, hc⟩ := hspan h
+      have hu : ∀ m : ℕ, ∑ j, c j * (w j m : ℂ) =
+          ((w i (q * m) +
+            (if q ∣ N then 0 else if q ∣ m then (q : ℚ) * w i (m / q) else 0) : ℚ) : ℂ) := by
+        intro m
+        have h1 : qCoeff N h m = ∑ j, c j * qCoeff N (g j) m := by
+          rw [hc]
+          have hs := map_sum (qCoeffL N m) (fun j => c j • g j) Finset.univ
+          simp only [map_smul, smul_eq_mul] at hs
+          simp only [qCoeffL_apply] at hs
+          exact hs
+        have h2 : qCoeff N h m =
+            (qExpansion 1 (heckeTransform N q ⇑(g i))).coeff m := by
+          show (qExpansion 1 ⇑h).coeff m = _
+          rw [hh]
+        simp only [← hw]
+        rw [← h1, h2, qExpansion_heckeTransform_coeff hN hq (g i) m]
+        split_ifs <;> push_cast <;> simp [hw]
+      obtain ⟨col, hcol⟩ := exists_ratCast_coords hseq hu
+      refine ⟨col, ?_⟩
+      rw [← hh, hc]
+      exact congrArg _ (Finset.sum_congr rfl fun j _ => by rw [hcol j])
+    choose cols hcols using hstep
+    exact ⟨Matrix.of fun jj ii => cols ii jj, fun i => by simpa using hcols i⟩
+  choose Mat hMat using hex
+  refine ⟨n, fun q => if hq : q.Prime then Mat q hq else 0, b, hb0, ?_⟩
+  intro q hq
+  simp only [dif_pos hq]
+  -- the transformed eigenform is its eigen-multiple
+  obtain ⟨hF, hhF⟩ := exists_cuspForm_heckeTransform hN hq f
+  have heig : hF = qCoeff N f q • f := by
+    apply cuspForm_eq_of_forall_qCoeff_eq
+    intro m
+    have h1 : qCoeff N hF m =
+        (qExpansion 1 (heckeTransform N q ⇑f)).coeff m := by
+      show (qExpansion 1 ⇑hF).coeff m = _
+      rw [hhF]
+    rw [h1, qExpansion_heckeTransform_coeff hN hq f m,
+      hecke_eigen_coeff_identity hf hq m]
+    have h2 : qCoeff N (qCoeff N f q • f) m = qCoeff N f q * qCoeff N f m := by
+      have hs := map_smul (qCoeffL N m) (qCoeff N f q) f
+      simp only [qCoeffL_apply, smul_eq_mul] at hs
+      exact hs
+    exact h2.symm
+  -- expand the Hecke transform of `f` over the basis
+  have hL : heckeTransform N q ⇑f = ∑ i, b i • heckeTransform N q ⇑(g i) := by
+    rw [hb, coe_sum_smul]
+    let TL : (ℍ → ℂ) →ₗ[ℂ] (ℍ → ℂ) :=
+      { toFun := heckeTransform N q
+        map_add' := heckeTransform_add N q
+        map_smul' := heckeTransform_smul N q }
+    have hTL : ∀ x : ℍ → ℂ, TL x = heckeTransform N q x := fun _ => rfl
+    calc heckeTransform N q (∑ i, b i • ⇑(g i))
+        = TL (∑ i, b i • ⇑(g i)) := (hTL _).symm
+      _ = ∑ i, TL (b i • ⇑(g i)) := map_sum TL _ Finset.univ
+      _ = ∑ i, b i • heckeTransform N q ⇑(g i) := by
+          refine Finset.sum_congr rfl fun i _ => ?_
+          rw [map_smul, hTL]
+  have hL2 : heckeTransform N q ⇑f =
+      ⇑(∑ j, (∑ i, ((Mat q hq) j i : ℂ) * b i) • g j) := by
+    rw [hL, coe_sum_smul]
+    calc ∑ i, b i • heckeTransform N q ⇑(g i)
+        = ∑ i, b i • ∑ j, ((Mat q hq) j i : ℂ) • ⇑(g j) := by
+          refine Finset.sum_congr rfl fun i _ => ?_
+          rw [hMat q hq i, coe_sum_smul]
+      _ = ∑ i, ∑ j, (((Mat q hq) j i : ℂ) * b i) • ⇑(g j) := by
+          refine Finset.sum_congr rfl fun i _ => ?_
+          rw [Finset.smul_sum]
+          refine Finset.sum_congr rfl fun j _ => ?_
+          rw [smul_smul, mul_comm]
+      _ = ∑ j, ∑ i, (((Mat q hq) j i : ℂ) * b i) • ⇑(g j) := Finset.sum_comm
+      _ = ∑ j, (∑ i, ((Mat q hq) j i : ℂ) * b i) • ⇑(g j) := by
+          refine Finset.sum_congr rfl fun j _ => ?_
+          rw [Finset.sum_smul]
+  -- match coefficients through independence
+  have hRform : (∑ j, (qCoeff N f q * b j) • g j) = qCoeff N f q • f := by
+    rw [hb, Finset.smul_sum]
+    exact Finset.sum_congr rfl fun j _ => (smul_smul _ _ _).symm
+  have hforms : (∑ j, (∑ i, ((Mat q hq) j i : ℂ) * b i) • g j)
+      = qCoeff N f q • f := by
+    apply DFunLike.coe_injective
+    calc ⇑(∑ j, (∑ i, ((Mat q hq) j i : ℂ) * b i) • g j)
+        = heckeTransform N q ⇑f := hL2.symm
+      _ = ⇑hF := hhF.symm
+      _ = ⇑(qCoeff N f q • f) := by rw [heig]
+  have hzero2 : ∑ j, ((∑ i, ((Mat q hq) j i : ℂ) * b i)
+      - qCoeff N f q * b j) • g j = 0 := by
+    simp only [sub_smul, Finset.sum_sub_distrib]
+    rw [hforms, hRform, sub_self]
+  have hcoef := Fintype.linearIndependent_iff.mp hind _ hzero2
+  funext j
+  have hj := sub_eq_zero.mp (hcoef j)
+  show ∑ i, (Mat q hq).map (algebraMap ℚ ℂ) j i * b i = qCoeff N f q * b j
+  rw [← hj]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  rw [Matrix.map_apply, eq_ratCast]
+
+end HeckeOperator
 
 /-- **The single-finite-structure argument** (pure linear algebra):
 if a family of matrices with RATIONAL entries has a common nonzero
