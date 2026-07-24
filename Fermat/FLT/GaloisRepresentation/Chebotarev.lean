@@ -3312,38 +3312,160 @@ theorem exists_finset_forall_isNarrowRayEquiv
     have hmem' : t.1 ∈ hfin.toFinset := (hfin.mem_toFinset).mpr t.2
     exact Finset.mem_image.mpr ⟨⟨t.1, hmem'⟩, Finset.mem_attach _ _, rfl⟩
 
-/-- **Weber's translated-lattice generator count** (sorry leaf) — the
-geometry-of-numbers core: Lang, *Algebraic Number Theory*, VI §2
-Theorem 2 applied as in VI §3 Theorem 3. Given a nonzero auxiliary
-ideal `J₀` coprime to `ℓ` and a totally positive `γ₀ ∈ J₀` coprime to
-`ℓ`, the number of principal ideals `(δ) ⊆ J₀` with `δ` totally
-positive, `δ ≡ γ₀ mod ℓ𝓞 F` and `N(δ) ≤ n·N(J₀)` is
-`κ₀·n + O_{J₀,γ₀}(n^r)`, with `κ₀` and `0 < r < 1` depending only on
-`F` and `ℓ` — NOT on `J₀, γ₀`.
+/-- A bounded set whose topological boundary is covered by finitely
+many Lipschitz images of the unit cube of one dimension lower — the
+regularity condition of Lang, *Algebraic Number Theory*, ch. VI §2
+("`(d-1)`-Lipschitz parametrizable boundary"): there are finitely many
+maps `[0,1]^{d-1} → E` (`d = dim_ℝ E`), Lipschitz on the cube with a
+common constant, whose images cover `frontier X`. Such a set is
+volume-measurable up to null sets and its dilates `t • X` contain
+`vol(X)·t^d/covol(L) + O(t^{d-1})` points of any translate of any
+`ℤ`-lattice `L` — the content of
+`exists_forall_abs_natCard_add_mem_smul_sub_mul_le_pow`. -/
+def HasLipschitzBoundaryCover {E : Type*} [NormedAddCommGroup E]
+    [NormedSpace ℝ E] (X : Set E) : Prop :=
+  ∃ (m : ℕ) (f : Fin m → (Fin (Module.finrank ℝ E - 1) → ℝ) → E) (κ : NNReal),
+    (∀ i, LipschitzOnWith κ (f i) (Set.Icc 0 1)) ∧
+    frontier X ⊆ ⋃ i, f i '' Set.Icc 0 1
 
-Intended proof: the admissible generators `δ` form the translated
-lattice `γ₀ + ℓJ₀` (CRT: `δ ∈ J₀` together with `δ ≡ γ₀ mod ℓ𝓞 F` is
-`δ ≡ γ₀ mod ℓJ₀`, since `J₀` is coprime to `ℓ` and `γ₀ ∈ J₀`)
-intersected with the totally positive cone; two of them generate the
-same ideal iff they differ by a totally positive unit `≡ 1 mod ℓ` —
-a finite-index subgroup `U` of `(𝓞 F)ˣ` (coprimality of `δ` to `ℓ`
-turns `uδ ≡ δ` into `u ≡ 1`). Cutting the cone to a fundamental
-domain of `U` on the norm-one hypersurface and dilating by
-`N(x) ≤ t := n·N(J₀)` gives a region `t^{1/d}·S` (`d = [F:ℚ]`) with
-`S` bounded and `(d−1)`-Lipschitz-parametrizable boundary, so the
-translated-lattice point count is `vol(S)/covol(ℓJ₀)·t +
-O(t^{(d−1)/d})` UNIFORMLY in the translate (Lang VI §2 Thm 2); with
-`covol(ℓJ₀) = ℓ^d·N(J₀)·covol(𝓞 F)` the factors `N(J₀)` cancel,
-leaving `κ₀ = vol(S)/(ℓ^d·covol(𝓞 F))` and `r = 1 − 1/d` for `d ≥ 2`
-(for `d = 1`, `F = ℚ`, the count is `#{0 < m ≤ n : m ≡ γ₀ mod ℓ}` up
-to unit sign and any `0 < r < 1` works). Mathlib pin (audited
-2026-07-24): `ZLattice.covolume.tendsto_card_le_div'` with
-`fundamentalCone`/`normLeOne` (`NumberField/Ideal/Asymptotics`,
-`CanonicalEmbedding/NormLeOne`) give exactly this count WITHOUT an
-error term (limit only, from the measure-zero frontier of
-`normLeOne`); no translated-lattice count with power-saving error and
-no Lipschitz boundary parametrization exist in the pin — they are the
-honest content of this leaf. -/
+open scoped Pointwise in
+open MeasureTheory in
+/-- **Translated-lattice point counting in Lipschitz-bounded dilated
+domains, with power-saving error** (sorry leaf) — Lang, *Algebraic
+Number Theory*, ch. VI §2 Theorem 2, uniform in the translate: for a
+`ℤ`-lattice `L` in a `d`-dimensional real vector space (`volume` an
+additive Haar measure) and a bounded measurable set `X` with
+Lipschitz-covered boundary, the number of points of the coset `v + L`
+in the dilate `t • X` is `vol(X)/covol(L) · t^d + O(t^{d-1})`, with an
+error constant independent of `v` and `t ≥ 1`.
+
+Intended proof (Lang VI §2; the classical Davenport/Lipschitz
+principle): fix a fundamental parallelotope `P` of a `ℤ`-basis of `L`
+(mathlib: `ZSpan.fundamentalDomain`, `ZLattice.covolume_eq_measure_fundamentalDomain`)
+and for each `x` in the coset count the cell `x + P`. Cells entirely
+inside `t • X` under-count, cells meeting `t • X` over-count, and both
+counts multiplied by `vol(P)` sandwich `vol(t • X) = t^d·vol(X)`
+(homogeneity of Haar measure under dilation,
+`Measure.addHaar_smul`); so the error is at most the number of cells
+meeting `frontier (t • X) = t • frontier X` (dilation is a
+homeomorphism). Cover `frontier X` by the `m` Lipschitz images: for
+`t ≥ 1` subdivide `[0,1]^{d-1}` into `⌈t⌉^{d-1}` subcubes of side
+`1/⌈t⌉`; the `t`-dilate of the image of each subcube has diameter
+`≤ t·κ·√(d-1)/⌈t⌉ ≤ κ·√(d-1)`, hence meets a number of cells bounded
+by a constant `c(P, κ, d)` independent of everything but `P, κ, d`
+(a diameter-`R` set meets at most `(R/ρ + 2)^d`-ish translates of `P`,
+`ρ` the inradius); total `≤ m·c·⌈t⌉^{d-1} ≤ m·c·(2t)^{d-1}`. The
+count in each dilated cell is translation-invariant, whence uniformity
+in `v`. Mathlib pin: only the error-free limit exists
+(`ZLattice.covolume.tendsto_card_le_div`); `BoxIntegral.unitPartition`
+(`Mathlib/Analysis/BoxIntegral/UnitPartition.lean`, used by that
+limit) provides the cell-counting skeleton to vendor. For `d = 1` the
+exponent `d - 1 = 0` (ℕ-subtraction) makes the error bound `C`, which
+is correct: `X` is then a bounded set with finite boundary, i.e. a
+finite union of intervals. -/
+theorem exists_forall_abs_natCard_add_mem_smul_sub_mul_le_pow
+    {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
+    [FiniteDimensional ℝ E] [MeasureSpace E] [BorelSpace E] [Nontrivial E]
+    [Measure.IsAddHaarMeasure (volume : Measure E)]
+    (L : Submodule ℤ E) [DiscreteTopology L] [IsZLattice ℝ L]
+    {X : Set E} (hXb : Bornology.IsBounded X) (hXm : MeasurableSet X)
+    (hXl : HasLipschitzBoundaryCover X) :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ (v : E) (t : ℝ), 1 ≤ t →
+      |(Nat.card {x : L // v + (x : E) ∈ t • X} : ℝ) -
+          volume.real X / ZLattice.covolume L * t ^ Module.finrank ℝ E| ≤
+        C * t ^ (Module.finrank ℝ E - 1) := by
+  sorry
+
+open scoped Classical Pointwise nonZeroDivisors in
+open NumberField MeasureTheory in
+/-- **The unit fundamental domain dictionary** (sorry leaf) — the
+geometric half of Lang, *Algebraic Number Theory*, VI §3 Theorem 3:
+ONE bounded measurable set `S` in the mixed space of `F`, with
+`(d−1)`-Lipschitz-covered boundary, such that for EVERY admissible
+pair `(J₀, γ₀)` (auxiliary ideal coprime to `ℓ`, totally positive
+generator datum `γ₀ ∈ J₀` coprime to `ℓ`) and every `n ≥ 1`, the
+principal ideals `(δ) ⊆ J₀` with `δ` totally positive,
+`δ ≡ γ₀ mod ℓ𝓞 F` and `N((δ)) ≤ n·N(J₀)` are counted EXACTLY by the
+points of the ideal lattice of `ℓJ₀` translated by `γ₀` that lie in
+the dilate `(n·N(J₀))^{1/d}·S` (`d = [F:ℚ]`).
+
+Intended content. (i) CRT: since `J₀` is coprime to `ℓ` and
+`γ₀ ∈ J₀`, the admissible generators are exactly the coset
+`γ₀ + ℓJ₀`, whose image under `mixedEmbedding` is the translate by
+`mixedEmbedding γ₀` of `mixedEmbedding.idealLattice F (ℓJ₀)`
+(membership: `mem_span_fractionalIdealLatticeBasis` /
+`span_idealLatticeBasis`). (ii) Units: two admissible generators cut
+the same ideal iff they differ by a unit in
+`U = {u ∈ (𝓞 F)ˣ | u totally positive, u ≡ 1 mod ℓ}` (coprimality of
+`δ` to `ℓ` turns `uδ ≡ δ` into `u ≡ 1`; total positivity of both
+forces `u` totally positive), a finite-index subgroup of `(𝓞 F)ˣ`.
+(iii) `S` is a conical EXACT fundamental domain for the `U`-action
+on the totally positive open cone of the mixed space, cut by
+`mixedEmbedding.norm ≤ 1`: every totally positive point of nonzero
+norm has exactly ONE `U`-multiple in the cone-domain, the domain is
+dilation-invariant, and `norm (t • x) = t^d · norm x` converts
+`N ≤ n·N(J₀)` into membership in `(n·N(J₀))^{1/d}·S`. Starting
+points in the pin: `NumberField.mixedEmbedding.fundamentalCone` is
+such an exact conical domain for the FULL unit group modulo torsion
+(`exists_unique_smul_mem` etc.), and
+`fundamentalCone.normLeOne` is its norm-cut, proved bounded with
+null frontier — a `U`-domain is a finite union of translates of its
+totally positive part by coset representatives, and the boundary
+Lipschitz parametrization comes from the logarithm-map coordinates
+(Lang VI §3; the closure of `normLeOne` is parametrized by scaling
+times the `logMap`-preimage of a fundamental parallelotope of the
+unit lattice). The `n ≥ 1` restriction keeps the dilation factor
+nonzero; `n = 0` is handled by the consumer. -/
+theorem exists_fundamentalDomain_forall_natCard_span_dvd_eq_natCard_add_mem_smul
+    (F : Type*) [Field F] [NumberField F] (ℓ : ℕ) (hℓ : ℓ.Prime) :
+    ∃ S : Set (mixedEmbedding.mixedSpace F),
+      Bornology.IsBounded S ∧ MeasurableSet S ∧ HasLipschitzBoundaryCover S ∧
+      ∀ (J₀ : Ideal (𝓞 F)) (γ₀ : 𝓞 F) (Jℓ : (Ideal (𝓞 F))⁰),
+        J₀ ≠ 0 →
+        IsCoprime J₀ (Ideal.span {(ℓ : 𝓞 F)}) →
+        (∀ φ : F →+* ℝ, 0 < φ (algebraMap (𝓞 F) F γ₀)) →
+        IsCoprime (Ideal.span {γ₀}) (Ideal.span {(ℓ : 𝓞 F)}) →
+        γ₀ ∈ J₀ →
+        (Jℓ : Ideal (𝓞 F)) = Ideal.span {(ℓ : 𝓞 F)} * J₀ →
+        ∀ n : ℕ, 0 < n →
+          Nat.card {I' : Ideal (𝓞 F) // (∃ δ : 𝓞 F,
+              (∀ φ : F →+* ℝ, 0 < φ (algebraMap (𝓞 F) F δ)) ∧
+              δ - γ₀ ∈ Ideal.span {(ℓ : 𝓞 F)} ∧ I' = Ideal.span {δ}) ∧
+              J₀ ∣ I' ∧ Ideal.absNorm I' ≤ n * Ideal.absNorm J₀} =
+          Nat.card {x : mixedEmbedding.idealLattice F (FractionalIdeal.mk0 F Jℓ) //
+            mixedEmbedding F (algebraMap (𝓞 F) F γ₀) +
+              (x : mixedEmbedding.mixedSpace F) ∈
+              (((n * Ideal.absNorm J₀ : ℕ) : ℝ) ^
+                ((Module.finrank ℚ F : ℝ)⁻¹)) • S} := by
+  sorry
+
+open scoped Classical Pointwise nonZeroDivisors in
+open NumberField MeasureTheory in
+/-- **Weber's translated-lattice generator count** (DECOMPOSED
+2026-07-24 into the two sorry leaves above — the analytic
+translated-lattice count with power-saving error
+`exists_forall_abs_natCard_add_mem_smul_sub_mul_le_pow` (Lang VI §2
+Thm 2, Davenport/Lipschitz) and the unit-fundamental-domain
+dictionary
+`exists_fundamentalDomain_forall_natCard_span_dvd_eq_natCard_add_mem_smul`
+(Lang VI §3, exact count identity) — with the assembly PROVEN here:
+instantiate the lattice count at the ideal lattice of `ℓJ₀` and the
+dilation `t = (n·N(J₀))^{1/d}`, compute
+`covol(ℓJ₀) = ℓ^d·N(J₀)·(2⁻¹)^{r₂}·√|disc F|` by
+`mixedEmbedding.covolume_idealLattice`, so the factors `N(J₀)` cancel
+in the main term, leaving `κ₀ = vol(S)/((2⁻¹)^{r₂}·√|disc F|·ℓ^d)`
+independent of `(J₀, γ₀)`; the error `C·t^{d−1} =
+C·(n·N(J₀))^{(d−1)/d} ≤ (C·N(J₀))·n^r` for
+`r = max(1/2, 1 − 1/d)`, uniformly including `d = 1`; the case
+`n = 0` is empty since a totally positive congruent-to-`γ₀`
+generator of a norm-zero ideal would put `γ₀ ∈ (ℓ)` against its
+coprimality) — the geometry-of-numbers core: Lang, *Algebraic Number
+Theory*, VI §2 Theorem 2 applied as in VI §3 Theorem 3. Given a
+nonzero auxiliary ideal `J₀` coprime to `ℓ` and a totally positive
+`γ₀ ∈ J₀` coprime to `ℓ`, the number of principal ideals `(δ) ⊆ J₀`
+with `δ` totally positive, `δ ≡ γ₀ mod ℓ𝓞 F` and `N(δ) ≤ n·N(J₀)`
+is `κ₀·n + O_{J₀,γ₀}(n^r)`, with `κ₀` and `0 < r < 1` depending only
+on `F` and `ℓ` — NOT on `J₀, γ₀`. -/
 theorem exists_forall_exists_abs_natCard_span_dvd_sub_mul_le_rpow
     (F : Type*) [Field F] [NumberField F] (ℓ : ℕ) (hℓ : ℓ.Prime) :
     ∃ κ₀ r : ℝ, 0 < r ∧ r < 1 ∧
@@ -3357,8 +3479,154 @@ theorem exists_forall_exists_abs_natCard_span_dvd_sub_mul_le_rpow
               (∀ φ : F →+* ℝ, 0 < φ (algebraMap (𝓞 F) F δ)) ∧
               δ - γ₀ ∈ Ideal.span {(ℓ : 𝓞 F)} ∧ I' = Ideal.span {δ}) ∧
               J₀ ∣ I' ∧ Ideal.absNorm I' ≤ n * Ideal.absNorm J₀} : ℝ) -
-            κ₀ * n| ≤ C * (n : ℝ) ^ r :=
-  sorry
+            κ₀ * n| ≤ C * (n : ℝ) ^ r := by
+  classical
+  obtain ⟨S, hSb, hSm, hSl, hScount⟩ :=
+    exists_fundamentalDomain_forall_natCard_span_dvd_eq_natCard_add_mem_smul
+      F ℓ hℓ
+  set D := Module.finrank ℚ F with hDdef
+  have hD0 : 0 < D := Module.finrank_pos
+  have hDne : ((D : ℝ)) ≠ 0 := Nat.cast_ne_zero.mpr hD0.ne'
+  set c := (2⁻¹ : ℝ) ^ InfinitePlace.nrComplexPlaces F * Real.sqrt |(discr F : ℝ)| with hcdef
+  have hc0 : 0 < c := by
+    rw [hcdef]
+    have h1 : (discr F : ℝ) ≠ 0 := Int.cast_ne_zero.mpr (discr_ne_zero F)
+    positivity
+  set κ₀ := volume.real S / (c * (ℓ : ℝ) ^ D) with hκdef
+  set r := max (1 / 2 : ℝ) (1 - 1 / (D : ℝ)) with hrdef
+  have hr0 : 0 < r := lt_of_lt_of_le one_half_pos (le_max_left _ _)
+  refine ⟨κ₀, r, hr0, ?_, ?_⟩
+  · refine max_lt one_half_lt_one ?_
+    rw [sub_lt_self_iff]
+    positivity
+  intro J₀ γ₀ hJ0 hJcop hγpos hγcop hγmem
+  -- the lattice of `ℓJ₀`
+  have hℓspan0 : Ideal.span {(ℓ : 𝓞 F)} ≠ (0 : Ideal (𝓞 F)) := by
+    rw [Ne, Ideal.zero_eq_bot, Ideal.span_singleton_eq_bot]
+    exact Nat.cast_ne_zero.mpr hℓ.pos.ne'
+  have hJℓ0 : Ideal.span {(ℓ : 𝓞 F)} * J₀ ≠ 0 := mul_ne_zero hℓspan0 hJ0
+  set Jℓ : (Ideal (𝓞 F))⁰ := ⟨Ideal.span {(ℓ : 𝓞 F)} * J₀,
+    mem_nonZeroDivisors_of_ne_zero hJℓ0⟩ with hJℓdef
+  obtain ⟨C, hC0, hCb⟩ := exists_forall_abs_natCard_add_mem_smul_sub_mul_le_pow
+    (mixedEmbedding.idealLattice F (FractionalIdeal.mk0 F Jℓ)) hSb hSm hSl
+  -- norms
+  have hNJne : Ideal.absNorm J₀ ≠ 0 := fun h =>
+    hJ0 (Ideal.absNorm_eq_zero_iff.mp h)
+  have hNJ1 : (1 : ℝ) ≤ (Ideal.absNorm J₀ : ℝ) := by
+    exact_mod_cast Nat.one_le_iff_ne_zero.mpr hNJne
+  have hNℓJ : Ideal.absNorm (Jℓ : Ideal (𝓞 F)) = ℓ ^ D * Ideal.absNorm J₀ := by
+    rw [hJℓdef]
+    show Ideal.absNorm (Ideal.span {(ℓ : 𝓞 F)} * J₀) = ℓ ^ D * Ideal.absNorm J₀
+    rw [map_mul]
+    congr 1
+    rw [Ideal.absNorm_span_singleton,
+      show ((ℓ : ℕ) : 𝓞 F) = algebraMap ℤ (𝓞 F) ((ℓ : ℕ) : ℤ) from
+        (map_natCast (algebraMap ℤ (𝓞 F)) ℓ).symm,
+      Algebra.norm_algebraMap, RingOfIntegers.rank, Int.natAbs_pow,
+      Int.natAbs_natCast, ← hDdef]
+  -- covolume of the lattice of `ℓJ₀`
+  have hcov : ZLattice.covolume
+      (mixedEmbedding.idealLattice F (FractionalIdeal.mk0 F Jℓ)) =
+      ((ℓ : ℝ) ^ D * (Ideal.absNorm J₀ : ℝ)) * c := by
+    rw [mixedEmbedding.covolume_idealLattice, FractionalIdeal.coe_mk0,
+      FractionalIdeal.coeIdeal_absNorm, hNℓJ, hcdef]
+    push_cast
+    ring
+  refine ⟨C * (Ideal.absNorm J₀ : ℝ), by positivity, ?_⟩
+  intro n
+  rcases Nat.eq_zero_or_pos n with rfl | hn
+  · -- `n = 0`: the counted set is empty
+    have hempty : IsEmpty {I' : Ideal (𝓞 F) // (∃ δ : 𝓞 F,
+        (∀ φ : F →+* ℝ, 0 < φ (algebraMap (𝓞 F) F δ)) ∧
+        δ - γ₀ ∈ Ideal.span {(ℓ : 𝓞 F)} ∧ I' = Ideal.span {δ}) ∧
+        J₀ ∣ I' ∧ Ideal.absNorm I' ≤ 0 * Ideal.absNorm J₀} := by
+      refine ⟨?_⟩
+      rintro ⟨I', ⟨δ, -, hδγ, rfl⟩, -, hNle⟩
+      rw [zero_mul, Nat.le_zero, Ideal.absNorm_eq_zero_iff,
+        Ideal.span_singleton_eq_bot] at hNle
+      rw [hNle, zero_sub] at hδγ
+      have hγℓ : γ₀ ∈ Ideal.span {(ℓ : 𝓞 F)} := by
+        rw [show γ₀ = -(-γ₀) by ring]
+        exact neg_mem hδγ
+      have hsup := Ideal.isCoprime_iff_sup_eq.mp hγcop
+      rw [sup_eq_right.mpr ((Ideal.span_singleton_le_iff_mem _).mpr hγℓ)]
+        at hsup
+      exact not_isUnit_natCast_ringOfIntegers hℓ
+        (Ideal.span_singleton_eq_top.mp hsup)
+    rw [Nat.card_of_isEmpty, Nat.cast_zero, mul_zero, sub_zero, abs_zero,
+      Real.zero_rpow hr0.ne', mul_zero]
+  · -- `n ≥ 1`: instantiate the two leaves and rescale
+    have hcount := hScount J₀ γ₀ Jℓ hJ0 hJcop hγpos hγcop hγmem
+      (by rw [hJℓdef]) n hn
+    set t : ℝ := ((n * Ideal.absNorm J₀ : ℕ) : ℝ) ^ ((D : ℝ)⁻¹) with htdef
+    have hX1 : (1 : ℝ) ≤ ((n * Ideal.absNorm J₀ : ℕ) : ℝ) := by
+      exact_mod_cast Nat.one_le_iff_ne_zero.mpr (Nat.mul_ne_zero hn.ne' hNJne)
+    have hX0 : (0 : ℝ) ≤ ((n * Ideal.absNorm J₀ : ℕ) : ℝ) :=
+      le_trans zero_le_one hX1
+    have ht1 : 1 ≤ t := Real.one_le_rpow hX1 (by positivity)
+    have htD : t ^ D = ((n * Ideal.absNorm J₀ : ℕ) : ℝ) := by
+      rw [htdef, ← Real.rpow_natCast
+        (((n * Ideal.absNorm J₀ : ℕ) : ℝ) ^ ((D : ℝ)⁻¹)) D,
+        ← Real.rpow_mul hX0, inv_mul_cancel₀ hDne, Real.rpow_one]
+    have hbound := hCb (mixedEmbedding F (algebraMap (𝓞 F) F γ₀)) t ht1
+    rw [mixedEmbedding.finrank, ← hDdef, htD, hcov] at hbound
+    -- the main terms agree
+    have hmain : volume.real S / (((ℓ : ℝ) ^ D * (Ideal.absNorm J₀ : ℝ)) * c) *
+        ((n * Ideal.absNorm J₀ : ℕ) : ℝ) = κ₀ * n := by
+      rw [hκdef]
+      have hNJ0' : (Ideal.absNorm J₀ : ℝ) ≠ 0 := by positivity
+      have hℓD : ((ℓ : ℝ)) ^ D ≠ 0 := by
+        have : (0 : ℝ) < (ℓ : ℝ) := by exact_mod_cast hℓ.pos
+        positivity
+      push_cast
+      field_simp
+    rw [hmain] at hbound
+    -- the error rescales with a `J₀`-factor
+    have herr : t ^ (D - 1) ≤ (Ideal.absNorm J₀ : ℝ) * (n : ℝ) ^ r := by
+      have hexp : (D : ℝ)⁻¹ * ((D - 1 : ℕ) : ℝ) = 1 - 1 / (D : ℝ) := by
+        rw [Nat.cast_sub hD0, Nat.cast_one]
+        field_simp
+      have hstep : t ^ (D - 1) =
+          ((n * Ideal.absNorm J₀ : ℕ) : ℝ) ^ (1 - 1 / (D : ℝ)) := by
+        rw [htdef, ← Real.rpow_natCast
+          (((n * Ideal.absNorm J₀ : ℕ) : ℝ) ^ ((D : ℝ)⁻¹)) (D - 1),
+          ← Real.rpow_mul hX0, hexp]
+      have hsplit : ((n * Ideal.absNorm J₀ : ℕ) : ℝ) =
+          (n : ℝ) * (Ideal.absNorm J₀ : ℝ) := by
+        push_cast
+        ring
+      have hn1 : (1 : ℝ) ≤ (n : ℝ) := by exact_mod_cast hn
+      have he1 : 1 - 1 / (D : ℝ) ≤ 1 := by
+        have h2 : (0 : ℝ) ≤ 1 / (D : ℝ) := by positivity
+        linarith
+      have her : 1 - 1 / (D : ℝ) ≤ r := le_max_right _ _
+      have he0 : 0 ≤ 1 - 1 / (D : ℝ) := by
+        have h3 : 1 / (D : ℝ) ≤ 1 := by
+          rw [div_le_one (by positivity)]
+          exact_mod_cast hD0
+        linarith
+      calc t ^ (D - 1)
+          = ((n : ℝ) * (Ideal.absNorm J₀ : ℝ)) ^ (1 - 1 / (D : ℝ)) := by
+            rw [hstep, hsplit]
+        _ = (n : ℝ) ^ (1 - 1 / (D : ℝ)) *
+            (Ideal.absNorm J₀ : ℝ) ^ (1 - 1 / (D : ℝ)) :=
+            Real.mul_rpow (by positivity) (by positivity)
+        _ ≤ (n : ℝ) ^ r * (Ideal.absNorm J₀ : ℝ) ^ (1 : ℝ) :=
+            mul_le_mul (Real.rpow_le_rpow_of_exponent_le hn1 her)
+              (Real.rpow_le_rpow_of_exponent_le hNJ1 he1)
+              (Real.rpow_nonneg (by positivity) _) (by positivity)
+        _ = (Ideal.absNorm J₀ : ℝ) * (n : ℝ) ^ r := by
+            rw [Real.rpow_one]
+            ring
+    rw [hcount]
+    calc |(Nat.card {x : mixedEmbedding.idealLattice F
+            (FractionalIdeal.mk0 F Jℓ) //
+          mixedEmbedding F (algebraMap (𝓞 F) F γ₀) +
+            (x : mixedEmbedding.mixedSpace F) ∈ t • S} : ℝ) - κ₀ * n|
+        ≤ C * t ^ (D - 1) := hbound
+      _ ≤ C * ((Ideal.absNorm J₀ : ℝ) * (n : ℝ) ^ r) :=
+          mul_le_mul_of_nonneg_left herr hC0
+      _ = C * (Ideal.absNorm J₀ : ℝ) * (n : ℝ) ^ r := by ring
 
 /-- **The Weber dictionary: multiplication by the auxiliary ideal**
 (proven): given `(γ₀) = I₀·J₀` with `γ₀` totally positive and coprime
