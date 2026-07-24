@@ -103,9 +103,18 @@ here. This file provides:
   Galois-image norm residues — itself now DERIVED, through the PROVEN
   ray-class assembly
   `exists_forall_abs_sum_card_absNorm_residue_sub_mul_le_rpow_of_ideal`,
-  from THREE sorried leaves: the per-narrow-ray-class Weber count
+  from THREE ray-class leaves: the per-narrow-ray-class Weber count
   `exists_forall_abs_natCard_isNarrowRayEquiv_sub_mul_le_rpow`
-  (the geometry-of-numbers core, Lang VI §3), the equal-fiber
+  (Lang VI §3 — itself now DERIVED, by class-finiteness bookkeeping
+  over the proven equivalence-relation lemmas
+  `IsNarrowRayEquiv.symm`/`IsNarrowRayEquiv.trans` and the count
+  congruence `natCard_setOf_isNarrowRayEquiv_congr`, from the sorried
+  class-representative finiteness leaf
+  `exists_finset_forall_isNarrowRayEquiv` and the sorried per-class
+  counting core
+  `exists_forall_exists_abs_natCard_isNarrowRayEquiv_sub_mul_le_rpow`,
+  the geometry-of-numbers leaf with class-independent main
+  coefficient but class-dependent error constant), the equal-fiber
   norm-residue fibering
   `exists_forall_sum_card_absNorm_residue_eq_sum_natCard_isNarrowRayEquiv`,
   and the Frobenius residue realization
@@ -122,7 +131,7 @@ here. This file provides:
   `integral_sum_dirichletCharacter_mul_card_cpow_neg_two_ne_zero`,
   the nonvanishing of the continued value at `1` by the classical
   zeta-factorization argument)); the L-function half thus rests on
-  exactly FOUR sorried leaves — the three ray-class/realization
+  exactly FIVE sorried leaves — the four ray-class/realization
   leaves behind the Weber counting theorem
   `exists_forall_abs_sum_card_absNorm_residue_sub_mul_le_rpow` and
   the arithmetic core
@@ -2948,21 +2957,109 @@ def IsNarrowRayEquiv {F : Type*} [Field F] [NumberField F] (ℓ : ℕ)
     α - β ∈ Ideal.span {(ℓ : 𝓞 F)} ∧
     Ideal.span {α} * I = Ideal.span {β} * J
 
-/-- **Weber's theorem: ideal counting per narrow ray class, with
-power-saving error** (sorry leaf) — Lang, *Algebraic Number Theory*,
-ch. VI §3 Theorem 3: the number of nonzero integral ideals `I` of
-`𝓞 F` in the narrow ray class mod `ℓ` of `I₀` with `N(I) ≤ n` is
-`κ₀·n + O(n^r)` for some `r < 1`, where `κ₀` and the error constant
-`C` depend only on `F` and `ℓ`, NOT on the class of `I₀`.
+/-- **Symmetry of narrow ray equivalence**: swap the two multiplier
+witnesses (`neg_sub` flips the congruence). -/
+theorem IsNarrowRayEquiv.symm {F : Type*} [Field F] [NumberField F] {ℓ : ℕ}
+    {I J : Ideal (𝓞 F)} (h : IsNarrowRayEquiv ℓ I J) : IsNarrowRayEquiv ℓ J I := by
+  obtain ⟨α, β, hα, hβ, hcα, hcβ, hcong, heq⟩ := h
+  refine ⟨β, α, hβ, hα, hcβ, hcα, ?_, heq.symm⟩
+  have h1 := neg_mem hcong
+  rwa [neg_sub] at h1
+
+/-- **Transitivity of narrow ray equivalence**: multiply the witness
+pairs — totally positive elements are closed under products, coprimality
+to `ℓ` multiplies (`IsCoprime.mul_left` after
+`Ideal.span_singleton_mul_span_singleton`), and the congruences combine
+through `α·α' − β·β' = α·(α' − β') + (α − β)·β'`. -/
+theorem IsNarrowRayEquiv.trans {F : Type*} [Field F] [NumberField F] {ℓ : ℕ}
+    {I₁ I₂ I₃ : Ideal (𝓞 F)} (h : IsNarrowRayEquiv ℓ I₁ I₂)
+    (h' : IsNarrowRayEquiv ℓ I₂ I₃) : IsNarrowRayEquiv ℓ I₁ I₃ := by
+  obtain ⟨α, β, hα, hβ, hcα, hcβ, hcong, heq⟩ := h
+  obtain ⟨α', β', hα', hβ', hcα', hcβ', hcong', heq'⟩ := h'
+  refine ⟨α * α', β * β', ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · intro φ
+    rw [map_mul, map_mul]
+    exact mul_pos (hα φ) (hα' φ)
+  · intro φ
+    rw [map_mul, map_mul]
+    exact mul_pos (hβ φ) (hβ' φ)
+  · rw [← Ideal.span_singleton_mul_span_singleton]
+    exact hcα.mul_left hcα'
+  · rw [← Ideal.span_singleton_mul_span_singleton]
+    exact hcβ.mul_left hcβ'
+  · have key : α * α' - β * β' = α * (α' - β') + (α - β) * β' := by ring
+    rw [key]
+    exact Ideal.add_mem _ (Ideal.mul_mem_left _ _ hcong') (Ideal.mul_mem_right _ _ hcong)
+  · rw [← Ideal.span_singleton_mul_span_singleton,
+      ← Ideal.span_singleton_mul_span_singleton]
+    calc Ideal.span {α} * Ideal.span {α'} * I₁
+        = Ideal.span {α} * I₁ * Ideal.span {α'} := by ring
+      _ = Ideal.span {β} * I₂ * Ideal.span {α'} := by rw [heq]
+      _ = Ideal.span {α'} * I₂ * Ideal.span {β} := by ring
+      _ = Ideal.span {β'} * I₃ * Ideal.span {β} := by rw [heq']
+      _ = Ideal.span {β} * Ideal.span {β'} * I₃ := by ring
+
+/-- **The Weber count depends only on the narrow ray class**: if
+`I₀ ∼ I₁` then the counted subtypes are equivalent
+(`Equiv.subtypeEquivRight`, transporting the class condition through
+transitivity and symmetry). This is the mechanism that lets a single
+error constant, chosen over a finite set of class representatives,
+serve every ideal in the class. -/
+theorem natCard_setOf_isNarrowRayEquiv_congr {F : Type*} [Field F] [NumberField F]
+    {ℓ : ℕ} {I₀ I₁ : Ideal (𝓞 F)} (h : IsNarrowRayEquiv ℓ I₀ I₁) (n : ℕ) :
+    Nat.card {I : Ideal (𝓞 F) // I ≠ 0 ∧ Ideal.absNorm I ≤ n ∧
+        IsNarrowRayEquiv ℓ I I₀} =
+      Nat.card {I : Ideal (𝓞 F) // I ≠ 0 ∧ Ideal.absNorm I ≤ n ∧
+        IsNarrowRayEquiv ℓ I I₁} := by
+  refine Nat.card_congr (Equiv.subtypeEquivRight fun I => ?_)
+  exact and_congr_right fun _ => and_congr_right fun _ =>
+    ⟨fun hI => hI.trans h, fun hI => hI.trans h.symm⟩
+
+/-- **Finiteness of the narrow ray classes mod `ℓ`** (sorry leaf):
+a finite set `R` of nonzero integral ideals coprime to `ℓ` meets every
+narrow ray class mod `ℓ` of such ideals. This is the finiteness of the
+narrow ray class group of modulus `ℓ·𝔪∞` (Lang ANT VI §1; Neukirch VI
+§1), and nothing more — no counting, no geometry.
+
+Intended proof: the class of `I` (nonzero, coprime to `ℓ`) refines its
+ordinary ideal class by finite data. Pick integral representatives
+`A₁, …, A_h` of the finitely many ideal classes (`ClassGroup (𝓞 F)` is
+finite in mathlib), each coprime to `ℓ` (prime avoidance: every ideal
+class contains an integral ideal coprime to any fixed modulus). For
+`I` in the class of `Aᵢ`, `I = (x)·Aᵢ` with `x ∈ F*` supported away
+from `ℓ`; writing `x = a/b` with `a, b ∈ 𝓞 F` coprime to `ℓ`, the pair
+of residues `(a, b) mod ℓ𝓞 F` and the sign vectors of `a, b` at the
+real places range over the FINITE set `((𝓞 F ⧸ ℓ)ˣ × {±1}^{r₁})²`;
+ideals with equal ideal class and equal residue/sign data are narrow
+ray equivalent (the quotient multiplier is `≡ 1 mod ℓ` and totally
+positive after clearing by a square, and `α − β ∈ (ℓ)` follows).
+Choosing one representative per realized datum gives `R`. -/
+theorem exists_finset_forall_isNarrowRayEquiv
+    (F : Type*) [Field F] [NumberField F] (ℓ : ℕ) (hℓ : ℓ.Prime) :
+    ∃ R : Finset (Ideal (𝓞 F)),
+      (∀ J ∈ R, J ≠ 0 ∧ IsCoprime J (Ideal.span {(ℓ : 𝓞 F)})) ∧
+      ∀ I₀ : Ideal (𝓞 F), I₀ ≠ 0 → IsCoprime I₀ (Ideal.span {(ℓ : 𝓞 F)}) →
+        ∃ J ∈ R, IsNarrowRayEquiv ℓ I₀ J :=
+  sorry
+
+/-- **Weber's per-class count, class-dependent error constant** (sorry
+leaf) — Lang, *Algebraic Number Theory*, ch. VI §3 Theorem 3, with the
+constant-uniformity burden reduced to the main coefficient only: the
+number of nonzero integral ideals in the narrow ray class of `I₀` with
+`N(I) ≤ n` is `κ₀·n + O_{I₀}(n^r)`, where `κ₀ > 0` — the residue
+`vol/covol` — and the exponent `r < 1` do NOT depend on the class,
+while the error constant `C` MAY (the full class-uniform statement is
+recovered downstream by finiteness of the classes,
+`exists_finset_forall_isNarrowRayEquiv`).
 
 Intended proof (Weber; Lang VI §3): fix an auxiliary integral ideal
 `J` in the inverse narrow ray class of `I₀`, so that `I ↦ I·J` maps
 the counted ideals bijectively onto principal ideals `(γ) ⊆ J` with
 `γ` totally positive, `γ ≡ γ₀ mod ℓJ` for a fixed `γ₀` (determined by
 the class), and `0 < N(γ) ≤ n·N(J)`. Generators `γ` modulo the action
-of the totally positive units correspond to points of the TRANSLATED
-lattice `γ₀ + ℓJ` (under the Minkowski embedding) lying in the
-homogeneously expanding region `{x : N(x) ≤ t}` cut down to a
+of the totally positive units `≡ 1 mod ℓ` correspond to points of the
+TRANSLATED lattice `γ₀ + ℓJ` (under the Minkowski embedding) lying in
+the homogeneously expanding region `{x : N(x) ≤ t}` cut down to a
 fundamental domain of the unit action on the norm-one hypersurface;
 this domain is bounded and has `(d−1)`-Lipschitz-parametrizable
 boundary (`d = [F:ℚ]`), so the translated-lattice point count is
@@ -2970,18 +3067,59 @@ boundary (`d = [F:ℚ]`), so the translated-lattice point count is
 §2 Theorem 2 — the geometry-of-numbers core), whence the claim with
 `r = 1 − 1/d` for `d ≥ 2` (any `0 < r < 1` works for `d = 1`, where
 the count is elementary: positive integers `≡ a mod ℓ` up to `n`).
-Mathlib pin: `ZLattice.covolume.tendsto_card_le_div'` gives the
-error-free limit through `fundamentalCone`/`normLeOne` (measure-zero
-frontier only); no error-term lattice count and no Lipschitz boundary
-parametrization exist — those are the honest content of this leaf. -/
+`κ₀ = vol(domain slice)/covol(ℓJ)` is class-independent: `covol(ℓJ) =
+ℓ^d·N(J)·covol(𝓞 F)` and the region volume scales with `n·N(J)`, so
+`N(J)` cancels. Mathlib pin: `ZLattice.covolume.tendsto_card_le_div'`
+gives the error-free limit through `fundamentalCone`/`normLeOne`
+(measure-zero frontier only); no error-term lattice count and no
+Lipschitz boundary parametrization exist — those are the honest
+content of this leaf. -/
+theorem exists_forall_exists_abs_natCard_isNarrowRayEquiv_sub_mul_le_rpow
+    (F : Type*) [Field F] [NumberField F] (ℓ : ℕ) (hℓ : ℓ.Prime) :
+    ∃ κ₀ r : ℝ, 0 < r ∧ r < 1 ∧
+      ∀ I₀ : Ideal (𝓞 F), I₀ ≠ 0 → IsCoprime I₀ (Ideal.span {(ℓ : 𝓞 F)}) →
+        ∃ C : ℝ, 0 ≤ C ∧ ∀ n : ℕ,
+          |(Nat.card {I : Ideal (𝓞 F) // I ≠ 0 ∧ Ideal.absNorm I ≤ n ∧
+              IsNarrowRayEquiv ℓ I I₀} : ℝ) - κ₀ * n| ≤ C * (n : ℝ) ^ r :=
+  sorry
+
+/-- **Weber's theorem: ideal counting per narrow ray class, with
+power-saving error and class-independent constants** — Lang,
+*Algebraic Number Theory*, ch. VI §3 Theorem 3: the number of nonzero
+integral ideals `I` of `𝓞 F` in the narrow ray class mod `ℓ` of `I₀`
+with `N(I) ≤ n` is `κ₀·n + O(n^r)` for some `r < 1`, where `κ₀` and
+the error constant `C` depend only on `F` and `ℓ`, NOT on the class of
+`I₀`.
+
+DERIVED from the two sorried leaves above by finiteness bookkeeping:
+`exists_forall_exists_abs_natCard_isNarrowRayEquiv_sub_mul_le_rpow`
+supplies the class-independent `κ₀` and `r` with a per-class constant
+`C(I₀)`; `exists_finset_forall_isNarrowRayEquiv` supplies a finite set
+`R` of class representatives; the count is constant on classes
+(`natCard_setOf_isNarrowRayEquiv_congr`, via
+transitivity/symmetry of `IsNarrowRayEquiv`), so
+`C := ∑_{J ∈ R} C(J)` dominates every class's constant
+(`Finset.single_le_sum`) and is class-independent. -/
 theorem exists_forall_abs_natCard_isNarrowRayEquiv_sub_mul_le_rpow
     (F : Type*) [Field F] [NumberField F] (ℓ : ℕ) (hℓ : ℓ.Prime) :
     ∃ κ₀ r C : ℝ, 0 < r ∧ r < 1 ∧ 0 ≤ C ∧
       ∀ I₀ : Ideal (𝓞 F), I₀ ≠ 0 →
         IsCoprime I₀ (Ideal.span {(ℓ : 𝓞 F)}) → ∀ n : ℕ,
       |(Nat.card {I : Ideal (𝓞 F) // I ≠ 0 ∧ Ideal.absNorm I ≤ n ∧
-          IsNarrowRayEquiv ℓ I I₀} : ℝ) - κ₀ * n| ≤ C * (n : ℝ) ^ r :=
-  sorry
+          IsNarrowRayEquiv ℓ I I₀} : ℝ) - κ₀ * n| ≤ C * (n : ℝ) ^ r := by
+  classical
+  obtain ⟨κ₀, r, hr0, hr1, hcls⟩ :=
+    exists_forall_exists_abs_natCard_isNarrowRayEquiv_sub_mul_le_rpow F ℓ hℓ
+  obtain ⟨R, hRval, hRrep⟩ := exists_finset_forall_isNarrowRayEquiv F ℓ hℓ
+  choose C hC0 hC using fun J : {J // J ∈ R} =>
+    hcls J.1 (hRval J.1 J.2).1 (hRval J.1 J.2).2
+  refine ⟨κ₀, r, ∑ J ∈ R.attach, C J, hr0, hr1,
+    Finset.sum_nonneg fun J _ => hC0 J, fun I₀ h0 hcop n => ?_⟩
+  obtain ⟨J, hJR, hequiv⟩ := hRrep I₀ h0 hcop
+  rw [natCard_setOf_isNarrowRayEquiv_congr hequiv n]
+  refine (hC ⟨J, hJR⟩ n).trans (mul_le_mul_of_nonneg_right ?_
+    (Real.rpow_nonneg (Nat.cast_nonneg n) r))
+  exact Finset.single_le_sum (fun J _ => hC0 J) (Finset.mem_attach _ ⟨J, hJR⟩)
 
 /-- **Ray-class fibering of the norm-residue count** (sorry leaf):
 there is one fiber size `f ≥ 1` such that every residue `a mod ℓ`
