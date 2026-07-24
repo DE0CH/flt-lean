@@ -7929,12 +7929,125 @@ theorem exists_bialgEquiv_of_equivariant_pointsEquiv
     Nonempty (B ≃ₐc[K] A) := by
   sorry
 
+open TensorProduct IsDedekindDomain in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **The rational local/global points comparison** (PROVEN — the
+`R = ℚ` two-step variant of `dvrPointsEquiv`): for a finite
+`ℚ`-bialgebra `Hg`, there is an equivalence from the `Ω̂`-points of the
+completed base change `ℚ_vˆ ⊗[ℚ] Hg` to the `ℚ̄`-points of the redundant
+base change `ℚ ⊗[ℚ] Hg` (through `AlgHom.liftEquiv` twice and
+`algHomEquivOfFinite`), preserving the convolution unit and product and
+intertwining postcomposition by a local Galois element with
+postcomposition by its global restriction. -/
+theorem exists_ratLocalPointsEquiv
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    (Hg : Type) [CommRing Hg] [Bialgebra ℚ Hg] [Module.Finite ℚ Hg] :
+    ∃ (Pe : (((HeightOneSpectrum.adicCompletion ℚ v) ⊗[ℚ] Hg)
+          →ₐ[HeightOneSpectrum.adicCompletion ℚ v]
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))) ≃
+        ((ℚ ⊗[ℚ] Hg) →ₐ[ℚ] AlgebraicClosure ℚ)),
+      Pe ((1 : WithConv (((HeightOneSpectrum.adicCompletion ℚ v) ⊗[ℚ] Hg)
+          →ₐ[HeightOneSpectrum.adicCompletion ℚ v]
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v)))).ofConv) =
+        (1 : WithConv ((ℚ ⊗[ℚ] Hg) →ₐ[ℚ] AlgebraicClosure ℚ)).ofConv ∧
+      (∀ ψ₁ ψ₂ : WithConv (((HeightOneSpectrum.adicCompletion ℚ v) ⊗[ℚ] Hg)
+          →ₐ[HeightOneSpectrum.adicCompletion ℚ v]
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))),
+        Pe ((ψ₁ * ψ₂).ofConv) =
+          (WithConv.toConv (Pe ψ₁.ofConv) *
+            WithConv.toConv (Pe ψ₂.ofConv)).ofConv) ∧
+      (∀ (σ : (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))
+            ≃ₐ[HeightOneSpectrum.adicCompletion ℚ v]
+            (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v)))
+          (φ : ((HeightOneSpectrum.adicCompletion ℚ v) ⊗[ℚ] Hg)
+            →ₐ[HeightOneSpectrum.adicCompletion ℚ v]
+            (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))),
+        Pe (σ.toAlgHom.comp φ) =
+          ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+              (HeightOneSpectrum.adicCompletion ℚ v)) σ :
+            AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)).toAlgHom.comp
+            (Pe φ)) := by
+  classical
+  -- the ℚ-algebra structure on the local closure PINNED to the tower
+  -- composite baked into `algHomEquivOfFinite` (fresh synthesis picks
+  -- `DivisionRing.toRatAlgebra`, which does not match it syntactically)
+  letI algQΩ : Algebra ℚ
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v)) :=
+    @AlgebraicClosure.instAlgebra (HeightOneSpectrum.adicCompletion ℚ v) _ ℚ _
+      (IsDedekindDomain.HeightOneSpectrum.instAlgebraAdicCompletion
+        (NumberField.RingOfIntegers ℚ) ℚ v)
+  haveI tower :=
+    @IsScalarTower.of_algebraMap_eq ℚ (HeightOneSpectrum.adicCompletion ℚ v)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v)) _ _ _ _ _ algQΩ
+      (fun x =>
+        ((eq_ratCast (@algebraMap ℚ (AlgebraicClosure
+            (HeightOneSpectrum.adicCompletion ℚ v)) _ _ algQΩ) x).trans
+          (eq_ratCast ((algebraMap (HeightOneSpectrum.adicCompletion ℚ v)
+              (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))).comp
+            (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ v))) x).symm))
+  refine ⟨(AlgHom.liftEquiv ℚ (HeightOneSpectrum.adicCompletion ℚ v) Hg
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))).symm.trans
+    ((AlgHom.liftEquiv ℚ ℚ Hg
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))).trans
+      (algHomEquivOfFinite v (ℚ ⊗[ℚ] Hg))), ?_, ?_, ?_⟩
+  · show algHomEquivOfFinite v (ℚ ⊗[ℚ] Hg)
+      ((AlgHom.liftEquiv ℚ ℚ Hg
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v)))
+        ((AlgHom.liftEquiv ℚ (HeightOneSpectrum.adicCompletion ℚ v) Hg
+            (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))).symm
+          ((1 : WithConv (((HeightOneSpectrum.adicCompletion ℚ v) ⊗[ℚ] Hg)
+            →ₐ[HeightOneSpectrum.adicCompletion ℚ v]
+            (AlgebraicClosure
+              (HeightOneSpectrum.adicCompletion ℚ v)))).ofConv))) = _
+    rw [liftEquiv_symm_convOne, liftEquiv_convOne, algHomEquivOfFinite_convOne]
+  · intro ψ₁ ψ₂
+    show algHomEquivOfFinite v (ℚ ⊗[ℚ] Hg)
+      ((AlgHom.liftEquiv ℚ ℚ Hg
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v)))
+        ((AlgHom.liftEquiv ℚ (HeightOneSpectrum.adicCompletion ℚ v) Hg
+            (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))).symm
+          ((ψ₁ * ψ₂).ofConv))) = _
+    rw [liftEquiv_symm_convMul, liftEquiv_convMul, algHomEquivOfFinite_convMul]
+    rfl
+  · intro σ φ
+    show algHomEquivOfFinite v (ℚ ⊗[ℚ] Hg)
+      ((AlgHom.liftEquiv ℚ ℚ Hg
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v)))
+        ((AlgHom.liftEquiv ℚ (HeightOneSpectrum.adicCompletion ℚ v) Hg
+            (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))).symm
+          (σ.toAlgHom.comp φ))) = _
+    rw [liftEquiv_symm_comp]
+    have hrs : (σ.toAlgHom.restrictScalars ℚ :
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v)) →ₐ[ℚ]
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))) =
+        ((σ.toAlgHom.restrictScalars ℚ).restrictScalars ℚ) := rfl
+    rw [hrs, liftEquiv_comp]
+    -- the two spellings of `algebraMap ℚ ℚ_vˆ` (fresh synthesis vs the
+    -- completion instance baked into `algHomEquivOfFinite`) agree, ring
+    -- homs out of `ℚ` being unique
+    rw [show (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (HeightOneSpectrum.adicCompletion ℚ v)) σ) =
+        (Field.absoluteGaloisGroup.map (@algebraMap ℚ
+          (HeightOneSpectrum.adicCompletion ℚ v) _ _
+          (IsDedekindDomain.HeightOneSpectrum.instAlgebraAdicCompletion
+            (NumberField.RingOfIntegers ℚ) ℚ v)) σ) from
+      congrArg (fun f : ℚ →+* (HeightOneSpectrum.adicCompletion ℚ v) =>
+        Field.absoluteGaloisGroup.map f σ)
+        (RingHom.ext fun x => (eq_ratCast _ x).trans (eq_ratCast _ x).symm)]
+    exact algHomEquivOfFinite_comp v σ
+      ((AlgHom.liftEquiv ℚ ℚ Hg
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v)))
+        ((AlgHom.liftEquiv ℚ (HeightOneSpectrum.adicCompletion ℚ v) Hg
+            (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))).symm φ))
+
 open TensorProduct ValuativeRel IsDedekindDomain in
 open scoped WeierstrassCurve.Affine in
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
-/-- **The global-to-local points transport** (sorry node — the
+/-- **The global-to-local points transport** (PROVEN 2026-07-24 — the
 embedding half of the adic comparison): a GLOBAL equivariant points
 identification for the finite `ℚ`-Hopf algebra `Hg` induces, through
 the chosen embedding `ℚ̄ ↪ Ω̂` (`algClosureEmbeddingRat`), a LOCAL
@@ -7990,7 +8103,183 @@ theorem WeierstrassCurve.exists_localPointsEquiv_of_globalPackage
               hp'.toHeightOneSpectrumRingOfIntegersRat))).Point) =
           WeierstrassCurve.Affine.Point.map σ.toAlgHom
             (fgl (Additive.ofMul (WithConv.toConv φ))) := by
-  sorry
+  classical
+  letI := algebraRatAlgClosureAdic hp'.toHeightOneSpectrumRingOfIntegersRat
+  -- the points comparison, with its convolution/equivariance properties
+  obtain ⟨Pe, hPe1, hPemul, hPecomp⟩ :=
+    exists_ratLocalPointsEquiv hp'.toHeightOneSpectrumRingOfIntegersRat Hg
+  -- the points comparison as an additive equivalence of the
+  -- convolution groups
+  let eqv : Additive (WithConv (((HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[ℚ] Hg)
+        →ₐ[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat]
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)))) ≃+
+      Additive (WithConv ((ℚ ⊗[ℚ] Hg) →ₐ[ℚ] AlgebraicClosure ℚ)) :=
+    { toFun := fun x => Additive.ofMul (WithConv.toConv
+        (Pe (WithConv.ofConv (Additive.toMul x))))
+      invFun := fun y => Additive.ofMul (WithConv.toConv
+        (Pe.symm (WithConv.ofConv (Additive.toMul y))))
+      left_inv := fun x => by
+        show Additive.ofMul (WithConv.toConv (Pe.symm (WithConv.ofConv
+          (Additive.toMul (Additive.ofMul (WithConv.toConv
+            (Pe (WithConv.ofConv (Additive.toMul x))))))))) = x
+        rw [toMul_ofMul, WithConv.ofConv_toConv, Equiv.symm_apply_apply,
+          WithConv.toConv_ofConv, ofMul_toMul]
+      right_inv := fun y => by
+        show Additive.ofMul (WithConv.toConv (Pe (WithConv.ofConv
+          (Additive.toMul (Additive.ofMul (WithConv.toConv
+            (Pe.symm (WithConv.ofConv (Additive.toMul y))))))))) = y
+        rw [toMul_ofMul, WithConv.ofConv_toConv, Equiv.apply_symm_apply,
+          WithConv.toConv_ofConv, ofMul_toMul]
+      map_add' := fun x y => by
+        show Additive.ofMul (WithConv.toConv
+            (Pe (WithConv.ofConv (Additive.toMul (x + y))))) = _
+        have hxy : Additive.toMul (x + y) =
+            Additive.toMul x * Additive.toMul y := rfl
+        rw [hxy, hPemul (Additive.toMul x) (Additive.toMul y),
+          WithConv.toConv_ofConv]
+        rfl }
+  -- the transported point of a global torsion class is local torsion
+  have hmem : ∀ w : AddSubgroup.torsionBy
+      (E⁄(AlgebraicClosure ℚ)).Point ((p : ℕ) : ℤ),
+      (show ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+          (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat))).Point from
+        WeierstrassCurve.Affine.Point.map (W' := E)
+          (algClosureEmbeddingRat hp'.toHeightOneSpectrumRingOfIntegersRat)
+          (show ((E)⁄(AlgebraicClosure ℚ)).Point from w.1)) ∈
+      AddSubgroup.torsionBy
+        ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+          (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat))).Point ((p : ℕ) : ℤ) := by
+    intro w
+    have h1 : ((p : ℕ) : ℤ) •
+        (show ((E)⁄(AlgebraicClosure ℚ)).Point from w.1) = 0 := w.2
+    show ((p : ℕ) : ℤ) • WeierstrassCurve.Affine.Point.map (W' := E)
+        (algClosureEmbeddingRat hp'.toHeightOneSpectrumRingOfIntegersRat)
+        (show ((E)⁄(AlgebraicClosure ℚ)).Point from w.1) = 0
+    rw [← map_zsmul, h1, map_zero]
+  -- the transport map on torsion
+  let ι : AddSubgroup.torsionBy
+      (E⁄(AlgebraicClosure ℚ)).Point ((p : ℕ) : ℤ) →
+      AddSubgroup.torsionBy
+        ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+          (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat))).Point ((p : ℕ) : ℤ) :=
+    fun w => ⟨_, hmem w⟩
+  have hιadd : ∀ w₁ w₂, ι (w₁ + w₂) = ι w₁ + ι w₂ := by
+    intro w₁ w₂
+    apply Subtype.ext
+    show WeierstrassCurve.Affine.Point.map (W' := E)
+        (algClosureEmbeddingRat hp'.toHeightOneSpectrumRingOfIntegersRat)
+        ((show ((E)⁄(AlgebraicClosure ℚ)).Point from w₁.1) +
+          (show ((E)⁄(AlgebraicClosure ℚ)).Point from w₂.1)) = _
+    rw [map_add]
+    rfl
+  have hιinj : Function.Injective ι := by
+    intro a b hab
+    have h1 : WeierstrassCurve.Affine.Point.map (W' := E)
+        (algClosureEmbeddingRat hp'.toHeightOneSpectrumRingOfIntegersRat)
+        (show ((E)⁄(AlgebraicClosure ℚ)).Point from a.1) =
+        WeierstrassCurve.Affine.Point.map (W' := E)
+          (algClosureEmbeddingRat hp'.toHeightOneSpectrumRingOfIntegersRat)
+          (show ((E)⁄(AlgebraicClosure ℚ)).Point from b.1) :=
+      congrArg Subtype.val hab
+    apply Subtype.ext
+    show (show ((E)⁄(AlgebraicClosure ℚ)).Point from a.1) =
+      (show ((E)⁄(AlgebraicClosure ℚ)).Point from b.1)
+    exact WeierstrassCurve.Affine.Point.map_injective
+      (f := algClosureEmbeddingRat hp'.toHeightOneSpectrumRingOfIntegersRat) h1
+  -- the `p²`-counts on both sides make the transport bijective
+  have hcardG : Nat.card (AddSubgroup.torsionBy
+      (E⁄(AlgebraicClosure ℚ)).Point ((p : ℕ) : ℤ)) = p ^ 2 :=
+    TorsionCard.card_torsionBy (E.map (algebraMap ℚ (AlgebraicClosure ℚ))) p
+      (Nat.cast_ne_zero.mpr hp'.ne_zero)
+  have hcardL : Nat.card (AddSubgroup.torsionBy
+      ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+        (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat))).Point ((p : ℕ) : ℤ)) =
+      p ^ 2 :=
+    TorsionCard.card_torsionBy
+      ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat))).map
+        (algebraMap (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)))) p
+      (Nat.cast_ne_zero.mpr hp'.ne_zero)
+  haveI hfinG : Finite (AddSubgroup.torsionBy
+      (E⁄(AlgebraicClosure ℚ)).Point ((p : ℕ) : ℤ)) :=
+    Nat.finite_of_card_ne_zero (by
+      rw [hcardG]
+      have := hp'.pos
+      positivity)
+  haveI hfinL : Finite (AddSubgroup.torsionBy
+      ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+        (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat))).Point ((p : ℕ) : ℤ)) :=
+    Nat.finite_of_card_ne_zero (by
+      rw [hcardL]
+      have := hp'.pos
+      positivity)
+  have hιbij : Function.Bijective ι :=
+    (Nat.bijective_iff_injective_and_card ι).mpr
+      ⟨hιinj, by rw [hcardG, hcardL]⟩
+  -- the torsion transport as an additive equivalence
+  let Te := AddEquiv.ofBijective (AddMonoidHom.mk' ι hιadd) hιbij
+  refine ⟨(eqv.trans fg).trans Te, ?_⟩
+  intro σ φ
+  show ((Te (fg (Additive.ofMul (WithConv.toConv
+      (Pe (σ.toAlgHom.comp φ)))))) :
+      ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+        (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat))).Point) =
+    WeierstrassCurve.Affine.Point.map σ.toAlgHom
+      (Te (fg (Additive.ofMul (WithConv.toConv (Pe φ)))))
+  rw [hPecomp σ φ]
+  -- unfold the transport on the left-hand side
+  show WeierstrassCurve.Affine.Point.map (W' := E)
+      (algClosureEmbeddingRat hp'.toHeightOneSpectrumRingOfIntegersRat)
+      ((fg (Additive.ofMul (WithConv.toConv
+        (((Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat)) σ :
+          AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)).toAlgHom.comp
+          (Pe φ))))) : (E⁄(AlgebraicClosure ℚ)).Point) = _
+  rw [hfg ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+      (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)) σ :
+      AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)) (Pe φ)]
+  rw [point_map_algClosureEmbeddingRat_comm]
+  -- both spellings of the `σ`-action agree pointwise
+  have hbb : ∀ Q : ((E)⁄(AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat))).Point,
+      WeierstrassCurve.Affine.Point.map (W' := E)
+        (algClosureSigmaRat hp'.toHeightOneSpectrumRingOfIntegersRat σ) Q =
+      (show ((E)⁄(AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat))).Point from
+        WeierstrassCurve.Affine.Point.map
+          (W' := E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)))
+          σ.toAlgHom
+          (show ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+              (HeightOneSpectrum.adicCompletion ℚ
+                hp'.toHeightOneSpectrumRingOfIntegersRat))).Point from Q)) := by
+    intro Q
+    cases Q with
+    | zero => rfl
+    | some x y h => rfl
+  rw [hbb]
+  rfl
 
 open TensorProduct ValuativeRel IsDedekindDomain in
 open scoped WeierstrassCurve.Affine in
