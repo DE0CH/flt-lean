@@ -4523,10 +4523,21 @@ leaf is now a PROVEN assembly over:
   over `ℚ̄_p` (density half `trace_eq_of_charFrob_eq`, module-theoretic
   half `nonempty_linearEquiv_of_trace_eq` via mathlib's Jacobson
   density theorem).
-* `weightTwoNewform_level_dvd_two_of_isHardlyRamified` — SORRY:
-  Carayol's conductor theorem evaluated on the hardly ramified class
-  (level of the newform = conductor of its attached representation,
-  which divides `2`). -/
+* `weightTwoNewform_level_dvd_two_of_isHardlyRamified` — Carayol's
+  conductor theorem evaluated on the hardly ramified class; as of
+  2026-07-24 itself a PROVEN per-place assembly (see its docstring):
+  the hardly-ramified side — transport of `ρ`'s unramifiedness,
+  flatness and tame-at-2 structure through the rigidity equivalence
+  `e` to `τ`, the fixed-line linear algebra, and the `M ∣ 2`
+  arithmetic — is fully PROVEN here, and the literature content is
+  isolated in three per-place conductor leaves
+  (`weightTwoNewform_not_dvd_level_of_isUnramifiedAt`,
+  `weightTwoNewform_not_dvd_level_p_of_isFlatAt`,
+  `weightTwoNewform_not_four_dvd_level_of_inertia_two` — Carayol
+  1986/Saito 1997 per place) plus the local-arithmetic leaf
+  `cyclotomicCharacter_eq_one_of_inertia_two` (the `p`-adic
+  cyclotomic character is unramified at `2`, generalizing the PROVEN
+  mod-3 instance in `ModThree.lean`). -/
 
 section ConductorCut
 
@@ -5413,56 +5424,343 @@ theorem exists_linearEquiv_of_charFrob_eq
   exact exists_linearEquiv_of_trace_eq hfr₁ hfr₂ hirr
     (trace_eq_of_charFrob_eq hfr₁ hfr₂ h)
 
-/-- **Carayol's conductor bound on the hardly ramified class** (sorry
-node — the conductor comparison isolated; Carayol, *Sur les
-représentations `ℓ`-adiques associées aux formes modulaires de
-Hilbert*, Ann. Sci. ÉNS 19 (1986), with Deligne–Rapoport/Langlands for
-the weight-2 modular-curve cases and Saito for the general
-local–global compatibility; the `p`-part by weight-2 flatness theory):
-let `g` be a weight-2 newform of level `M` (the minimal-level
-carrier), `τ` a representation matching its Hecke polynomials away
-from a finite set (the attachment shape produced by
+/-- **The `M ∣ 2` endgame arithmetic** (PROVEN glue for the Carayol
+assembly below): a positive natural number all of whose prime factors
+are `2` and which `4` does not divide is a divisor of `2`. Immediate
+from `Nat.eq_prime_pow_of_unique_prime_dvd`: `M = 2 ^ k` with
+`k ≤ 1`. -/
+theorem dvd_two_of_forall_prime_eq_two {M : ℕ} (hM : 0 < M)
+    (h2 : ∀ q : ℕ, q.Prime → q ∣ M → q = 2) (h4 : ¬ (4 ∣ M)) : M ∣ 2 := by
+  have hMpow : M = 2 ^ M.primeFactorsList.length :=
+    Nat.eq_prime_pow_of_unique_prime_dvd hM.ne'
+      fun {d} hd hdM => h2 d hd hdM
+  rw [hMpow] at h4 ⊢
+  rcases Nat.lt_or_ge M.primeFactorsList.length 2 with hk | hk
+  · calc (2 : ℕ) ^ M.primeFactorsList.length ∣ 2 ^ 1 :=
+          pow_dvd_pow 2 (by omega)
+      _ = 2 := pow_one 2
+  · exact absurd ((show (4 : ℕ) = 2 ^ 2 by norm_num) ▸ pow_dvd_pow 2 hk) h4
+
+/-- **The fixed-line criterion in dimension 2** (PROVEN glue — the
+linear-algebra heart of the tame-at-2 transport): an endomorphism `T`
+of a 2-dimensional space that preserves a surjective functional `π`
+(`π ∘ T = π`) and has determinant `1` fixes the kernel line of `π`
+pointwise. Proof: `ker π` is a line, `T`-stable since `π (T u) = π u`;
+in the basis `(k₀, w₀)` with `k₀` spanning the kernel and `π w₀ = 1`
+the matrix of `T` is upper triangular with diagonal `(c, 1)`, so
+`det T = c = 1` and `T` is the identity on the kernel. -/
+theorem end_apply_eq_self_of_det_one_of_comp_eq
+    {F : Type*} [Field F] {W : Type*} [AddCommGroup W] [Module F W]
+    [Module.Finite F W]
+    (hrank : Module.finrank F W = 2)
+    (T : Module.End F W)
+    (π : W →ₗ[F] F) (hπ : Function.Surjective π)
+    (hcomm : ∀ u : W, π (T u) = π u)
+    (hdet : LinearMap.det T = 1)
+    {w : W} (hw : π w = 0) : T w = w := by
+  classical
+  have hker : Module.finrank F (LinearMap.ker π) = 1 := by
+    have h := LinearMap.finrank_range_add_finrank_ker π
+    rw [hrank, LinearMap.range_eq_top.mpr hπ, finrank_top] at h
+    simp only [Module.finrank_self] at h
+    omega
+  obtain ⟨k₀', hk₀ne, hk₀span⟩ := finrank_eq_one_iff'.mp hker
+  have hk₀mem : π (k₀' : W) = 0 := k₀'.2
+  have hk₀ne' : (k₀' : W) ≠ 0 := fun h => hk₀ne (Subtype.ext h)
+  obtain ⟨w₀, hw₀⟩ := hπ 1
+  have hTk₀mem : T (k₀' : W) ∈ LinearMap.ker π := by
+    simp [LinearMap.mem_ker, hcomm, hk₀mem]
+  obtain ⟨c, hc⟩ := hk₀span ⟨T (k₀' : W), hTk₀mem⟩
+  have hc' : c • (k₀' : W) = T (k₀' : W) := congrArg Subtype.val hc
+  have hTw₀mem : T w₀ - w₀ ∈ LinearMap.ker π := by
+    simp [LinearMap.mem_ker, hcomm, hw₀]
+  obtain ⟨x, hx⟩ := hk₀span ⟨T w₀ - w₀, hTw₀mem⟩
+  have hx' : x • (k₀' : W) = T w₀ - w₀ := congrArg Subtype.val hx
+  have hli : LinearIndependent F ![(k₀' : W), w₀] := by
+    rw [LinearIndependent.pair_iff]
+    intro s t hst
+    have h1 : π (s • (k₀' : W) + t • w₀) = t := by
+      simp [map_add, map_smul, hk₀mem, hw₀]
+    rw [hst, map_zero] at h1
+    subst h1
+    simp only [zero_smul, add_zero, smul_eq_zero] at hst
+    exact ⟨hst.resolve_right hk₀ne', rfl⟩
+  have hcard : Fintype.card (Fin 2) = Module.finrank F W := by
+    simp [hrank]
+  let b := basisOfLinearIndependentOfCardEqFinrank hli hcard
+  have hb : ⇑b = ![(k₀' : W), w₀] :=
+    coe_basisOfLinearIndependentOfCardEqFinrank _ _
+  have hb0 : b 0 = (k₀' : W) := by rw [hb]; simp
+  have hb1 : b 1 = w₀ := by rw [hb]; simp
+  have hT0 : T (b 0) = c • b 0 := by rw [hb0, ← hc']
+  have hT1 : T (b 1) = x • b 0 + b 1 := by
+    rw [hb0, hb1]
+    have h2 := hx'
+    rw [eq_sub_iff_add_eq] at h2
+    rw [h2]
+  have e00 : (LinearMap.toMatrix b b) T 0 0 = c := by
+    rw [LinearMap.toMatrix_apply, hT0, map_smul, b.repr_self]
+    simp
+  have e10 : (LinearMap.toMatrix b b) T 1 0 = 0 := by
+    rw [LinearMap.toMatrix_apply, hT0, map_smul, b.repr_self]
+    simp
+  have e01 : (LinearMap.toMatrix b b) T 0 1 = x := by
+    rw [LinearMap.toMatrix_apply, hT1, map_add, map_smul, b.repr_self,
+      b.repr_self]
+    simp
+  have e11 : (LinearMap.toMatrix b b) T 1 1 = 1 := by
+    rw [LinearMap.toMatrix_apply, hT1, map_add, map_smul, b.repr_self,
+      b.repr_self]
+    simp
+  have hdet' := LinearMap.det_toMatrix b T
+  rw [Matrix.det_fin_two, e00, e10, e01, e11, hdet] at hdet'
+  have hcone : c = 1 := by linear_combination hdet'
+  have hTfix : T (k₀' : W) = (k₀' : W) := by
+    rw [← hc', hcone, one_smul]
+  obtain ⟨t, ht⟩ := hk₀span ⟨w, by simpa [LinearMap.mem_ker] using hw⟩
+  have ht' : t • (k₀' : W) = w := congrArg Subtype.val ht
+  rw [← ht', map_smul, hTfix]
+
+/-- **Transport of unramifiedness across an equivariant linear
+equivalence** (PROVEN glue): if `e` intertwines `τ₁` with `τ₂` and
+`τ₂` is unramified at `v`, so is `τ₁` — the local inertia acts through
+`τ₁` by `e⁻¹ ∘ 1 ∘ e = 1`. Used to carry `hρ.isUnramified` (through
+the base-change instance and the rigidity equivalence) to the attached
+representation `τ` in the Carayol assembly below. -/
+theorem isUnramifiedAt_of_linearEquiv
+    {A : Type*} [CommRing A] [TopologicalSpace A]
+    {W₁ W₂ : Type*} [AddCommGroup W₁] [Module A W₁]
+    [AddCommGroup W₂] [Module A W₂]
+    {τ₁ : GaloisRep ℚ A W₁} {τ₂ : GaloisRep ℚ A W₂}
+    (e : W₁ ≃ₗ[A] W₂)
+    (he : ∀ (γ : Field.absoluteGaloisGroup ℚ) (w : W₁),
+      e (τ₁ γ w) = τ₂ γ (e w))
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    [τ₂.IsUnramifiedAt v] : τ₁.IsUnramifiedAt v := by
+  letI := moduleTopology A (Module.End A W₁)
+  letI := moduleTopology A (Module.End A W₂)
+  constructor
+  intro σ hσ
+  have h2 := GaloisRep.IsUnramifiedAt.localInertiaGroup_le (ρ := τ₂) hσ
+  rw [GaloisRep.ker, MonoidHom.mem_ker] at h2 ⊢
+  have hx : (τ₂.toLocal v) σ = (1 : Module.End A W₂) := h2
+  rw [GaloisRep.toLocal_apply] at hx
+  show (τ₁.toLocal v) σ = (1 : Module.End A W₁)
+  rw [GaloisRep.toLocal_apply]
+  ext w
+  apply e.injective
+  rw [Module.End.one_apply, he, hx, Module.End.one_apply]
+
+include hpodd in
+/-- **The `p`-adic cyclotomic character is unramified at `2`** (sorry
+node — the local-arithmetic leaf of the tame-at-2 transport; for odd
+`p` the extension `ℚ_2(μ_{p^∞})/ℚ_2` is unramified): every element of
+the inertia at `2` (in the `Z2bar` spelling of
+`IsHardlyRamified.isTameAtTwo`) has trivial `p`-adic cyclotomic
+character. This is the full-level generalization of the PROVEN mod-3
+instance `cyclotomicCharacter_algebraMap_eq_one_of_inertia_two`
+(`ModThree.lean`), whose argument is the intended proof at every
+level: for each `n` the `p^n`-th roots of unity in `ℚ_[2]ᵃˡᵍ` are
+units with pairwise differences of valuation `1` (as `p^n` is odd,
+`X^{p^n} − 1` is separable modulo the maximal ideal of `Z2bar`), so an
+inertia element — which acts trivially on the residue field — fixes
+each of them; via the `lift_map` commuting square its image in `Γ ℚ`
+fixes `μ_{p^n} ⊂ ℚᵃˡᵍ`, making the level-`n` cyclotomic character
+trivial, and `χ = 1` in `ℤ_[p]ˣ` follows from triviality at every
+finite level (`PadicInt.ext_of_toZModPow`). SOUNDNESS: this is the
+standard fact that `χ_cyc,p` is unramified away from `p` (Serre,
+*Abelian ℓ-adic representations*, I §1.2), specialized to the place
+`2 ≠ p`. -/
+theorem cyclotomicCharacter_eq_one_of_inertia_two
+    {σ : Field.absoluteGaloisGroup ℚ_[2]}
+    (hσ : σ ∈ AddSubgroup.inertia
+      ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
+      (Field.absoluteGaloisGroup ℚ_[2])) :
+    cyclotomicCharacter (AlgebraicClosure ℚ) p
+      ((Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) σ).toRingEquiv)
+      = 1 :=
+  sorry
+
+/-- **Carayol's prime-to-`p` conductor bound, unramified case** (sorry
+node — Carayol, *Sur les représentations `ℓ`-adiques associées aux
+formes modulaires de Hilbert*, Ann. Sci. ÉNS 19 (1986), Théorème (A);
+for weight 2 over `ℚ` the modular-curve cases are Deligne–Rapoport and
+Langlands): if a 2-dimensional continuous `ℚ̄_p`-representation `τ`
+matching the Hecke polynomials of the weight-2 newform `g` of level
+`M ≥ 1` away from a finite set is unramified at a prime `q ≠ p`, then
+`q ∤ M`. Classical proof: the attached representation `ρ_{g,λ}` is
+irreducible (Ribet, 1977), so Chebotarev density plus Brauer–Nesbitt
+identify `τ ≅ ρ_{g,λ} ⊗ ℚ̄_p` from the charpoly matching (both
+representations are continuous); Carayol's theorem gives
+`ord_q(M) = a_q(ρ_{g,λ})` (the prime-to-`p` Artin conductor exponent)
+for `q ≠ p`, and `IsUnramifiedAt` is exactly `a_q = 0`. SOUNDNESS
+AUDIT (2026-07-24): the hypotheses are non-vacuously satisfiable —
+take any classical newform `g`, `τ := ρ_{g,λ}`, and any good prime `q`
+— and the statement quantifies over the `IsWeightTwoNewform` carrier,
+whose inhabitants are exactly the classical newforms (carrier
+audit), so every instance is an instance of the cited theorems. -/
+theorem weightTwoNewform_not_dvd_level_of_isUnramifiedAt
+    {M : ℕ} (hM : 0 < M) {g : CuspForm (Gamma0GL M) 2}
+    (hg : IsWeightTwoNewform M g)
+    (κ : heckeField M g →+* AlgebraicClosure ℚ_[p])
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    {S_τ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hτ : ∀ (r : ℕ) (hr : r.Prime),
+      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ →
+      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
+        Polynomial.X ^ 2
+          - Polynomial.C (κ (heckeCoeff M g r)) * Polynomial.X
+          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
+    {q : ℕ} (hq : q.Prime) (hqp : q ≠ p)
+    (hun : τ.IsUnramifiedAt hq.toHeightOneSpectrumRingOfIntegersRat) :
+    ¬ q ∣ M :=
+  sorry
+
+include hpodd in
+/-- **The conductor bound at `p`: flat implies `p ∤ M`** (sorry node —
+Saito, *Modular forms and `p`-adic Hodge theory*, Invent. Math. 129
+(1997), local–global compatibility at `p`, with the weight-2 flatness
+input from Raynaud/Fontaine): if the representation `τ` attached (in
+the charpoly-matching sense) to the weight-2 newform `g` of level `M`
+is equivalent, through `e`, to the base change of an integral
+representation `ρ` over the local pro-`p` coefficient ring `R` that is
+FLAT at `p` (`GaloisRep.IsFlatAt` — finite flat prolongations of all
+finite quotients), then `p ∤ M`. Classical proof: flatness makes
+`ρ|_{G_p}` the generic fiber of a `p`-divisible group, hence
+crystalline with Hodge–Tate weights in `{0, 1}` (Raynaud, Bull. SMF 102
+(1974); Fontaine); by rigidity `τ ≅ ρ_{g,λ} ⊗ ℚ̄_p` (Ribet
+irreducibility + Chebotarev/Brauer–Nesbitt as in the unramified leaf),
+so `ρ_{g,λ}` is crystalline at `p`; but for `p ∥ M` the local
+representation of a weight-2 newform at `p` is an unramified twist of
+Steinberg — semistable non-crystalline (Deligne–Rapoport/Langlands,
+Saito), and for `p² ∣ M` it is not even semistable. Hence `p ∤ M`.
+The oddness of `p` keeps the flatness-to-crystalline dictionary in
+its classical range (`e = 1 < p − 1`). SOUNDNESS AUDIT (2026-07-24):
+non-vacuously satisfiable — any newform of level prime to `p` with
+its stable lattice over `R = 𝒪_λ` realizes all hypotheses — and every
+instance is covered by the cited theorems through the carrier
+audit. -/
+theorem weightTwoNewform_not_dvd_level_p_of_isFlatAt
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hflat : ρ.IsFlatAt
+      (Fact.out : p.Prime).toHeightOneSpectrumRingOfIntegersRat)
+    {M : ℕ} (hM : 0 < M) {g : CuspForm (Gamma0GL M) 2}
+    (hg : IsWeightTwoNewform M g)
+    (κ : heckeField M g →+* AlgebraicClosure ℚ_[p])
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    {S_τ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hτ : ∀ (r : ℕ) (hr : r.Prime),
+      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ →
+      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
+        Polynomial.X ^ 2
+          - Polynomial.C (κ (heckeCoeff M g r)) * Polynomial.X
+          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
+    (e : (Fin 2 → AlgebraicClosure ℚ_[p]) ≃ₗ[AlgebraicClosure ℚ_[p]]
+      (AlgebraicClosure ℚ_[p] ⊗[R] V))
+    (he : ∀ (γ : Field.absoluteGaloisGroup ℚ)
+        (w : Fin 2 → AlgebraicClosure ℚ_[p]),
+      e (τ γ w) = ρ.baseChange (AlgebraicClosure ℚ_[p]) γ (e w)) :
+    ¬ p ∣ M :=
+  sorry
+
+include hpodd in
+/-- **The conductor bound at `2`: a tame fixed line implies `4 ∤ M`**
+(sorry node — Carayol's theorem at the place `2 ≠ p` combined with the
+Artin conductor exponent formula): if the representation `τ` attached
+(in the charpoly-matching sense) to the weight-2 newform `g` of level
+`M` admits a surjective functional `π₂` whose kernel line is fixed
+POINTWISE by the inertia at `2` (`hfix`) and on whose quotient the
+inertia at `2` acts trivially (`hquot`), then `4 ∤ M`. Classical
+proof: by rigidity `τ ≅ ρ_{g,λ} ⊗ ℚ̄_p` (Ribet irreducibility +
+Chebotarev/Brauer–Nesbitt); transporting the hypotheses, the inertia
+`I₂` acts on `ρ_{g,λ}` through unipotent upper-triangular matrices
+with an `I₂`-pointwise-fixed line, so `dim V^{I₂} ≥ 1`, and the wild
+inertia — a pro-2 group acting continuously and unipotently over a
+field of residue characteristic `p ≠ 2` (its image is simultaneously
+pro-2 as a continuous quotient and pro-`p` as a compact subgroup of
+the unipotent group `≅ (ℚ̄_p, +)`) — acts trivially, so the Swan
+conductor vanishes; the Artin exponent is
+`a₂ = (2 − dim V^{I₂}) + Sw₂ ≤ 1`, and Carayol gives
+`ord_2(M) = a₂ ≤ 1`. The inertia here is spelled over `Γ ℚ_[2]` via
+`Z2bar` exactly as in `IsHardlyRamified.isTameAtTwo` (the PROVEN
+bridge `localInertia_two_eq_map_padic` of `ModThree.lean` converts to
+the adic-completion spelling up to conjugacy when needed). SOUNDNESS
+AUDIT (2026-07-24): non-vacuously satisfiable — any newform of odd
+level or of level `2·(odd)` with its attached representation
+realizes the hypotheses — and every instance follows from the cited
+theorems through the carrier audit. -/
+theorem weightTwoNewform_not_four_dvd_level_of_inertia_two
+    {M : ℕ} (hM : 0 < M) {g : CuspForm (Gamma0GL M) 2}
+    (hg : IsWeightTwoNewform M g)
+    (κ : heckeField M g →+* AlgebraicClosure ℚ_[p])
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    {S_τ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hτ : ∀ (r : ℕ) (hr : r.Prime),
+      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ →
+      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
+        Polynomial.X ^ 2
+          - Polynomial.C (κ (heckeCoeff M g r)) * Polynomial.X
+          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
+    (π₂ : (Fin 2 → AlgebraicClosure ℚ_[p]) →ₗ[AlgebraicClosure ℚ_[p]]
+      AlgebraicClosure ℚ_[p])
+    (hπ₂ : Function.Surjective π₂)
+    (hquot : ∀ σ ∈ AddSubgroup.inertia
+        ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
+        (Field.absoluteGaloisGroup ℚ_[2]),
+      ∀ w : Fin 2 → AlgebraicClosure ℚ_[p],
+        π₂ (τ.map (algebraMap ℚ ℚ_[2]) σ w) = π₂ w)
+    (hfix : ∀ σ ∈ AddSubgroup.inertia
+        ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
+        (Field.absoluteGaloisGroup ℚ_[2]),
+      ∀ w : Fin 2 → AlgebraicClosure ℚ_[p],
+        π₂ w = 0 → τ.map (algebraMap ℚ ℚ_[2]) σ w = w) :
+    ¬ (4 ∣ M) :=
+  sorry
+
+/-- **Carayol's conductor bound on the hardly ramified class**
+(DECOMPOSED 2026-07-24 into the per-place cut above and now a PROVEN
+assembly): let `g` be a weight-2 newform of level `M` (the
+minimal-level carrier), `τ` a representation matching its Hecke
+polynomials away from a finite set (the attachment shape produced by
 `exists_galoisRep_charFrob_of_weightTwoNewform`), and suppose `τ` is
 equivalent to the base change to `ℚ̄_p` of a HARDLY RAMIFIED integral
-representation `ρ`. Then `M ∣ 2`.
+representation `ρ`. Then `M ∣ 2`. The assembly follows the classical
+per-place conductor computation verbatim:
 
-Classical proof: by rigidity (Chebotarev + Brauer–Nesbitt — here part
-of the classical argument for this leaf, not a Lean input) `τ` is
-isomorphic to the base change of the attached representation
-`ρ_{g,λ}` of the newform `g`, so `ρ_{g,λ} ⊗ ℚ̄_p ≅ ρ ⊗ ℚ̄_p`;
-Carayol's theorem identifies the prime-to-`p` Artin conductor of
-`ρ_{g,λ}` with the prime-to-`p` part of `M`, and local–global
-compatibility at `p` handles the rest:
+* at primes `q ∉ {2, p}`: `ρ` is unramified (`isUnramified`), the
+  base-change instance and the PROVEN transport
+  `isUnramifiedAt_of_linearEquiv` carry this through `e` to `τ`, and
+  the Carayol leaf
+  `weightTwoNewform_not_dvd_level_of_isUnramifiedAt` gives `q ∤ M`;
+* at `p`: `ρ` is flat (`isFlat`), and the Saito/flatness leaf
+  `weightTwoNewform_not_dvd_level_p_of_isFlatAt` gives `p ∤ M`;
+* at `2`: the `isTameAtTwo` structure of `ρ` transports through `e`
+  to `τ` (PROVEN here): the functional `π₂ := (lift of π) ∘ e` is
+  surjective, inertia-equivariant with quotient character `δ` trivial
+  on inertia, and its kernel line is fixed POINTWISE by the inertia
+  at `2` — by the fixed-line criterion
+  `end_apply_eq_self_of_det_one_of_comp_eq`, since
+  `det τ = det ρ = χ_cyc` on inertia at `2` is `1` by the cyclotomic
+  leaf `cyclotomicCharacter_eq_one_of_inertia_two` (odd `p`); the
+  at-2 conductor leaf
+  `weightTwoNewform_not_four_dvd_level_of_inertia_two` then gives
+  `4 ∤ M`.
 
-* at primes `q ∉ {2, p}`: `ρ` is unramified (`isUnramified`), so the
-  conductor exponent of `ρ_{g,λ}` at `q` is `0`, i.e. `q ∤ M`;
-* at `p`: `ρ` is flat (`isFlat`), so `ρ_{g,λ}` is crystalline with
-  Hodge–Tate weights `{0, 1}` at `p`, and a weight-2 newform whose
-  `λ ∣ p` representation is crystalline at `p` has `p ∤ M` (for
-  `p ∥ M` the local representation is an unramified twist of
-  Steinberg — semistable non-crystalline (Saito); for `p² ∣ M` not
-  even semistable);
-* at `2`: by `isTameAtTwo` the local representation at `2` is an
-  extension of an unramified character `δ` by `χ_cyc·δ⁻¹` — also
-  unramified at `2`, since `det = χ_cyc` is unramified at `2` for odd
-  `p` — so inertia at `2` acts tamely and fixes a line: the conductor
-  exponent at `2` is `dim V − dim V^{I₂} ≤ 1` with zero Swan
-  conductor, i.e. `4 ∤ M`.
-
-Hence `M ∣ 2`. SOUNDNESS AUDIT (2026-07-24): the leaf is stated in
-the exact shape of the literature theorems just cited, and each cited
-step is a true classical statement about the classical objects that
-inhabit the hypotheses. As the previous audit of the conductor leaf
-predicted, the hypothesis-level contradiction of the collapsed
-endgame (no irreducible hardly ramified representation is modular)
-now concentrates HERE: classically no configuration satisfies all
-hypotheses at once — for irreducible `ρ` because the conclusion feeds
-the proven emptiness downstream, for reducible `ρ` because a cuspidal
-newform's eigensystem is never the Eisenstein system `1 ⊕ χ_cyc`
-(so no `τ` can both match `g` and be equivalent to `ρ ⊗ ℚ̄_p`). That
-does not make the leaf a restatement of the collapse: its intended
-proof is the direct conductor computation above, attackable from
-Carayol/Saito without reference to any contradiction. -/
+The endgame `M ∣ 2` is the PROVEN arithmetic
+`dvd_two_of_forall_prime_eq_two` (every prime factor of `M` is `2`
+since `p` is odd, and `4 ∤ M`). SOUNDNESS AUDIT (2026-07-24, carried
+over): each per-place leaf is a non-vacuously satisfiable literature
+statement (see the individual audits); the hypothesis-level
+unsatisfiability that previous audits tracked (no irreducible hardly
+ramified representation is modular — Wiles' final contradiction) is
+no longer concentrated in any single leaf: the leaves are individually
+true and satisfiable statements about newforms, and the collapse
+lives, as it classically does, in the CONJUNCTION of the modularity
+hypotheses upstream. -/
 theorem weightTwoNewform_level_dvd_two_of_isHardlyRamified
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
@@ -5484,8 +5782,128 @@ theorem weightTwoNewform_level_dvd_two_of_isHardlyRamified
     (he : ∀ (γ : Field.absoluteGaloisGroup ℚ)
         (w : Fin 2 → AlgebraicClosure ℚ_[p]),
       e (τ γ w) = ρ.baseChange (AlgebraicClosure ℚ_[p]) γ (e w)) :
-    M ∣ 2 :=
-  sorry
+    M ∣ 2 := by
+  classical
+  -- transport of the tame-at-2 structure of `ρ` to `τ` through `e`
+  obtain ⟨π, hπsurj, δ, hδ⟩ := hρ.isTameAtTwo
+  set π₂ : (Fin 2 → AlgebraicClosure ℚ_[p]) →ₗ[AlgebraicClosure ℚ_[p]]
+      AlgebraicClosure ℚ_[p] :=
+    (LinearMap.liftBaseChange (AlgebraicClosure ℚ_[p])
+      ((Algebra.linearMap R (AlgebraicClosure ℚ_[p])).comp π)).comp
+      (e : (Fin 2 → AlgebraicClosure ℚ_[p]) →ₗ[AlgebraicClosure ℚ_[p]]
+        AlgebraicClosure ℚ_[p] ⊗[R] V) with hπ₂def
+  have hπ₂surj : Function.Surjective π₂ := by
+    intro c
+    obtain ⟨v₀, hv₀⟩ := hπsurj 1
+    refine ⟨e.symm (c ⊗ₜ[R] v₀), ?_⟩
+    rw [hπ₂def]
+    simp only [LinearMap.comp_apply, LinearEquiv.coe_coe]
+    rw [LinearEquiv.apply_symm_apply, LinearMap.liftBaseChange_tmul,
+      LinearMap.comp_apply, hv₀]
+    simp
+  -- the inertia at `2` preserves `π₂`-values: `δ` is unramified
+  have hquot : ∀ σ ∈ AddSubgroup.inertia
+      ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
+      (Field.absoluteGaloisGroup ℚ_[2]),
+      ∀ w : Fin 2 → AlgebraicClosure ℚ_[p],
+        π₂ (τ.map (algebraMap ℚ ℚ_[2]) σ w) = π₂ w := by
+    intro σ hσ w
+    have hδσ : δ σ = 1 := by
+      have h := (hδ σ 0).2.1 hσ
+      rwa [GaloisRep.ker, MonoidHom.mem_ker] at h
+    have hcommρ : ∀ x : (AlgebraicClosure ℚ_[p]) ⊗[R] V,
+        LinearMap.liftBaseChange (AlgebraicClosure ℚ_[p])
+          ((Algebra.linearMap R (AlgebraicClosure ℚ_[p])).comp π)
+          (ρ.baseChange (AlgebraicClosure ℚ_[p])
+            (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) σ) x) =
+        LinearMap.liftBaseChange (AlgebraicClosure ℚ_[p])
+          ((Algebra.linearMap R (AlgebraicClosure ℚ_[p])).comp π) x := by
+      intro x
+      induction x using TensorProduct.induction_on with
+      | zero => simp
+      | tmul r v =>
+          rw [GaloisRep.baseChange_tmul, LinearMap.liftBaseChange_tmul,
+            LinearMap.liftBaseChange_tmul, LinearMap.comp_apply,
+            LinearMap.comp_apply]
+          have h := (hδ σ v).1
+          rw [GaloisRep.map_apply] at h
+          rw [h, hδσ, Module.End.one_apply]
+      | add x y hx hy => simp only [map_add, hx, hy]
+    have hmap : τ.map (algebraMap ℚ ℚ_[2]) σ =
+        τ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) σ) :=
+      GaloisRep.map_apply τ (algebraMap ℚ ℚ_[2]) σ
+    rw [hmap, hπ₂def]
+    simp only [LinearMap.comp_apply, LinearEquiv.coe_coe]
+    rw [he, hcommρ]
+  -- the determinant of `τ` is trivial on the inertia at `2`:
+  -- it is `χ_cyc` through `e`, and `χ_cyc` is unramified at `2`
+  have hdet1 : ∀ σ ∈ AddSubgroup.inertia
+      ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
+      (Field.absoluteGaloisGroup ℚ_[2]),
+      LinearMap.det (τ.map (algebraMap ℚ ℚ_[2]) σ) = 1 := by
+    intro σ hσ
+    have hmap : τ.map (algebraMap ℚ ℚ_[2]) σ =
+        τ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) σ) :=
+      GaloisRep.map_apply τ (algebraMap ℚ ℚ_[2]) σ
+    have hconj : τ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) σ) =
+        (e.symm : AlgebraicClosure ℚ_[p] ⊗[R] V →ₗ[AlgebraicClosure ℚ_[p]]
+          (Fin 2 → AlgebraicClosure ℚ_[p])) ∘ₗ
+        (ρ.baseChange (AlgebraicClosure ℚ_[p])
+          (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) σ)) ∘ₗ
+        (e.symm.symm : (Fin 2 → AlgebraicClosure ℚ_[p])
+          →ₗ[AlgebraicClosure ℚ_[p]] AlgebraicClosure ℚ_[p] ⊗[R] V) := by
+      refine LinearMap.ext fun w => ?_
+      simp only [LinearMap.comp_apply, LinearEquiv.coe_coe,
+        LinearEquiv.symm_symm]
+      apply e.injective
+      rw [he, LinearEquiv.apply_symm_apply]
+    have hbc : ρ.baseChange (AlgebraicClosure ℚ_[p])
+        (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) σ) =
+        LinearMap.baseChange (AlgebraicClosure ℚ_[p])
+          (ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) σ)) := by
+      refine LinearMap.ext fun x => ?_
+      induction x using TensorProduct.induction_on with
+      | zero => simp
+      | tmul r v => rw [GaloisRep.baseChange_tmul, LinearMap.baseChange_tmul]
+      | add x y hx hy => simp only [map_add, hx, hy]
+    have hdetρ : LinearMap.det
+        (ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) σ)) = 1 := by
+      have h := hρ.det (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) σ)
+      rw [GaloisRep.det_apply] at h
+      rw [h, cyclotomicCharacter_eq_one_of_inertia_two hpodd hσ,
+        Units.val_one, map_one]
+    rw [hmap, hconj, LinearMap.det_conj, hbc, LinearMap.det_baseChange,
+      hdetρ, map_one]
+  -- the inertia at `2` fixes the kernel line of `π₂` pointwise
+  have hfix : ∀ σ ∈ AddSubgroup.inertia
+      ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
+      (Field.absoluteGaloisGroup ℚ_[2]),
+      ∀ w : Fin 2 → AlgebraicClosure ℚ_[p],
+        π₂ w = 0 → τ.map (algebraMap ℚ ℚ_[2]) σ w = w := by
+    intro σ hσ w hw
+    exact end_apply_eq_self_of_det_one_of_comp_eq (by simp)
+      (τ.map (algebraMap ℚ ℚ_[2]) σ) π₂ hπ₂surj (hquot σ hσ)
+      (hdet1 σ hσ) hw
+  -- the three per-place conductor bounds
+  have h4 : ¬ (4 ∣ M) :=
+    weightTwoNewform_not_four_dvd_level_of_inertia_two hpodd hM hg κ hτ
+      π₂ hπ₂surj hquot hfix
+  have hpM : ¬ p ∣ M :=
+    weightTwoNewform_not_dvd_level_p_of_isFlatAt hpodd hρ.isFlat hM hg κ hτ
+      e he
+  have hprime : ∀ q : ℕ, q.Prime → q ∣ M → q = 2 := by
+    intro q hq hqM
+    by_contra hq2
+    rcases eq_or_ne q p with rfl | hqp
+    · exact hpM hqM
+    · haveI := hρ.isUnramified q hq ⟨hq2, hqp⟩
+      have hun : τ.IsUnramifiedAt hq.toHeightOneSpectrumRingOfIntegersRat :=
+        isUnramifiedAt_of_linearEquiv (τ₂ := ρ.baseChange
+          (AlgebraicClosure ℚ_[p])) e he
+          hq.toHeightOneSpectrumRingOfIntegersRat
+      exact weightTwoNewform_not_dvd_level_of_isUnramifiedAt hM hg κ hτ
+        hq hqp hun hqM
+  exact dvd_two_of_forall_prime_eq_two hM hprime h4
 
 end ConductorCut
 
@@ -5518,13 +5936,15 @@ the classical route verbatim:
    PROVEN from `det = χ_cyc`) and the monic-quadratic shape, and
    `ρ ⊗ ℚ̄_p` is irreducible (`hirr`).
 4. *Carayol's conductor bound*
-   (`weightTwoNewform_level_dvd_two_of_isHardlyRamified`, sorry
-   leaf): the level of a newform whose attached representation is
-   (through the rigidity equivalence) the base change of a hardly
-   ramified representation divides `2` — Ribet's mod-`p` level
-   lowering (Invent. Math. 100 (1990)) is the residual counterpart
-   used when this content is reached through the Khare–Wintenberger
-   induction instead.
+   (`weightTwoNewform_level_dvd_two_of_isHardlyRamified`, since
+   2026-07-24 itself a PROVEN per-place assembly over three conductor
+   leaves and the cyclotomic-inertia leaf — see its docstring): the
+   level of a newform whose attached representation is (through the
+   rigidity equivalence) the base change of a hardly ramified
+   representation divides `2` — Ribet's mod-`p` level lowering
+   (Invent. Math. 100 (1990)) is the residual counterpart used when
+   this content is reached through the Khare–Wintenberger induction
+   instead.
 5. The conclusion matches `ρ`'s traces with `g`'s coefficients
    through `κ` away from `S₁ ∪ {v : v ∣ N}` — bookkeeping, proven
    inline.
@@ -5539,12 +5959,13 @@ representation is modular of ANY level, which is exactly Wiles' final
 contradiction. The previous audit predicted that a finer decomposition
 must build the missing step 1–4 vocabulary rather than push the
 contradiction out of this leaf; the section above does precisely
-that. Of the three remaining sorried leaves, the attachment and
-rigidity leaves are non-vacuously satisfiable literature statements,
-and the hypothesis-level contradiction now concentrates in the
-Carayol leaf (see its docstring), stated nevertheless in the exact
-shape of Carayol's conductor theorem, attackable from its citations
-without reference to the collapse. -/
+that. All remaining sorried leaves of this subtree — the attachment
+and rigidity leaves here, and the per-place conductor leaves behind
+the (now assembled) Carayol step — are non-vacuously satisfiable
+literature statements; the hypothesis-level contradiction is no
+longer concentrated in any single leaf but lives in the conjunction
+of the modularity hypotheses, as it classically does (see the
+Carayol assembly's audit). -/
 theorem exists_eigenform_level_dvd_two_of_trace_eq
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
