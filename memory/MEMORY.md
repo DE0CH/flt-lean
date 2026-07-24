@@ -22,3 +22,4 @@
 - [Orchestrator sync-only; async via agents](orchestrator-sync-only-async-via-agents.md) — Deyao 2026-07-23: background Bash banned (source of bugs); slow work = a task queue dispatched to a subagent that runs it synchronously, merged later
 - [Kill recovery: just resume](kill-recovery-just-resume.md) — Deyao 2026-07-23: a kill interrupts only the in-flight call; transcript + worktree ARE the state — resume via SendMessage, never revert or pre-merge
 - [Modularity subtree approved](modularity-subtree-approved.md) — Deyao 2026-07-23: build the eigenform/attached-representation machinery, top-down from the three deferred Family atoms; 23k+ lines accepted; ~/cs/FLT as reference, textbooks via Anna's Archive
+- [Self-restart by forking](flt-self-restart-by-forking.md) — Deyao 2026-07-24: fork into new tmux window + refill repoint + detached kill→continue + handover note; drive autonomously when needed
