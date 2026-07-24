@@ -143,6 +143,21 @@ public import Mathlib.LinearAlgebra.Dimension.Free
 -- `Module.finBasisOfFinrankEq`: the standard frame of `reframe`
 import Mathlib.LinearAlgebra.Charpoly.ToMatrix
 -- `LinearEquiv.charpoly_conj`: conjugation-invariance of `charFrob`
+public import Mathlib.RingTheory.Depth.Rees
+-- the Rees theorem `ModuleCat.exists_isRegular_tfae` (Ext-vanishing ↔
+-- existence of regular sequences in an ideal): the depth engine of the
+-- Auslander–Buchsbaum instance behind patching leaf 3
+public import Mathlib.RingTheory.Regular.Free
+-- `Module.free_quotSMulTop_iff_free`: the Nakayama dévissage lifting
+-- freeness through the quotient by a regular element
+public import Mathlib.RingTheory.Ideal.AssociatedPrime.Finiteness
+-- finiteness of the set of associated primes, feeding the Davis coset
+-- prime-avoidance step of the Auslander–Buchsbaum induction
+public import Mathlib.RingTheory.Ideal.Quotient.Noetherian
+-- Noetherianity of quotient rings (instance), for the dimension
+-- induction over `R ↝ R/(x)`
+public import Mathlib.LinearAlgebra.Basis.VectorSpace
+-- `Module.Free.of_divisionRing`: the dimension-zero base case
 import Mathlib.LinearAlgebra.Charpoly.BaseChange
 import Mathlib.NumberTheory.Padics.ProperSpace
 -- the `CompactSpace ℤ_[p]` instance behind closedness of `ψ`'s range
@@ -1900,10 +1915,14 @@ patching argument, plus one PROVEN commutative-algebra assembly:
        commutative-algebra half: the pigeonhole/ultraproduct
        extraction of the limit object, vendorable from the FLT
        project's abstract patching development.
-3. `free_of_isRegular_mvPowerSeries` (leaf) — the commutative-algebra
-   endgame: over the regular local ring `ℤ_p[[x₁, …, x_q]]` a finite
-   module carrying a regular sequence of length `q + 1` (depth ≥ dim)
-   is FREE (Auslander–Buchsbaum; Diamond 1997, Thm. 2.4).
+3. `free_of_isRegular_mvPowerSeries` (PROVEN 2026-07-24) — the
+   commutative-algebra endgame: over the regular local ring
+   `ℤ_p[[x₁, …, x_q]]` a finite module carrying a regular sequence of
+   length `q + 1` (depth ≥ dim) is FREE (Auslander–Buchsbaum; Diamond
+   1997, Thm. 2.4).  Proven by the abstract dimension induction
+   `free_of_isRegular_of_ofList_eq_maximalIdeal` over two remaining
+   power-series leaves: `isNoetherianRing_mvPowerSeries` and
+   `exists_isRegular_ofList_eq_maximalIdeal_mvPowerSeries`.
 4. `PatchedModule.injective` (PROVEN) — the faithfulness argument
    assembling 3 into the conclusion: the patched module is free over
    `R_∞ = ℤ_p[[x₁, …, x_q]]`, its bottom quotient `M₀` therefore has
@@ -1918,11 +1937,15 @@ Andrew Yang) so that its sorry-free material can be vendored to
 discharge leaf 2b; note that that development ends at
 `ker_RtoT_le_nilradical` (`R_red = 𝕋_red`), while the freeness route
 through Diamond 1997 taken here yields full injectivity — the
-difference is exactly leaf 3's Auslander–Buchsbaum input, for which
-mathlib currently has no depth/Cohen–Macaulay theory (audited
-2026-07-24: no `Module.depth`, no Auslander–Buchsbaum under
-`Mathlib/RingTheory/`; the FLT project's `FLT/Patching/Utils/Depth.lean`
-is a vendorable model). -/
+difference is exactly leaf 3's Auslander–Buchsbaum input.  CORRECTED
+AUDIT (2026-07-24, second pass): the pin DOES carry the needed depth
+layer — the Rees theorem `ModuleCat.exists_isRegular_tfae`
+(`Mathlib/RingTheory/Depth/Rees.lean`), the regular-sequence
+permutation lemmas, and the freeness dévissage
+`Module.free_quotSMulTop_iff_free` (`Mathlib/RingTheory/Regular/Free.lean`)
+— and leaf 3 is PROVEN on top of them in the Auslander–Buchsbaum
+section below, with only two concrete power-series facts
+(Noetherianity, the regular system of parameters) left as leaves. -/
 
 /-- **Taylor–Wiles prime sets.**  A finite set `Q` of rational primes
 is a Taylor–Wiles set of level `n` for the residual representation
@@ -2322,8 +2345,413 @@ structure PatchedModule.{v, w, s, uR} (p : ℕ) [Fact p.Prime]
     m ∈ RingHom.ker toRuniv •
       (⊤ : Submodule (MvPowerSeries (Fin q) ℤ_[p]) Minf)
 
-/-- **The commutative-algebra endgame** (patching leaf 3; sorry node):
-a finite module over the regular local ring
+/-! #### The Auslander–Buchsbaum machinery behind patching leaf 3
+
+`free_of_isRegular_mvPowerSeries` (Diamond 1997, Thm. 2.4) is PROVEN
+below (2026-07-24) by a dimension induction over Noetherian local
+rings — the Auslander–Buchsbaum instance the patching endgame needs,
+founded on two mathlib pillars that the earlier audit note missed
+(the pin DOES carry a depth layer): the **Rees theorem**
+(`ModuleCat.exists_isRegular_tfae`, existence of length-`n`
+`M`-regular sequences in `I` ↔ vanishing of `Ext^{<n}(R/I, M)`) and
+the **Nakayama dévissage** `Module.free_quotSMulTop_iff_free`
+(freeness lifts through the quotient by an `M`-regular element of the
+Jacobson radical).  The induction (theorem
+`free_of_isRegular_of_ofList_eq_maximalIdeal`): if the maximal ideal
+of `R` is SPANNED by a regular sequence `ts` of length `n` — the
+statement-level form of "`R` is regular local of dimension `n`" — and
+the finite module `M` carries an `M`-regular sequence of length `n`
+in the maximal ideal ("depth `M ≥ n`"), then `M` is free.  Step: pick
+by Davis coset prime avoidance (`exists_add_notMem_of_forall_not_le`)
+a replacement generator `x = t₀ + y`, `y ∈ (ts.tail)`, avoiding every
+associated prime of `M` (legitimate because `𝔪 ∉ Ass M`: the head of
+`rs` is `M`-regular); then `x` is `M`-regular
+(`isSMulRegular_of_forall_notMem_associatedPrimes`), `x :: ts.tail`
+is again a spanning regular sequence (permutation invariance
+`IsLocalRing.isRegular_of_perm` plus invariance of the last element
+modulo the ideal of the earlier ones), `R/(x)` is again a
+"power-series-like" Noetherian local ring with spanning regular
+sequence of length `n - 1`, the depth hypothesis descends to `M/xM`
+by the Rees theorem run through the `Ext` long exact sequence of
+`0 → M → M → M/xM → 0` (`exists_isRegular_quotSMulTop_of_isSMulRegular`),
+and the induction hypothesis plus the dévissage conclude.  The base
+case `n = 0` is a field.  Two concrete power-series leaves feed the
+instantiation and stay sorried below: Noetherianity
+(`isNoetherianRing_mvPowerSeries`) and the regular system of
+parameters `(p, x₁, …, x_q)` spanning the maximal ideal
+(`exists_isRegular_ofList_eq_maximalIdeal_mvPowerSeries`). -/
+
+section AuslanderBuchsbaum
+
+open RingTheory.Sequence IsLocalRing Pointwise CategoryTheory Abelian Limits
+
+/-- **Coset prime avoidance** (E. Davis; Kaplansky, *Commutative
+Rings*, Thm. 124; PROVEN): if none of the finitely many primes
+`P ∈ ps` contains the ideal `(x) + J`, then some element of the coset
+`x + J` avoids every `P ∈ ps`.  Used by the Auslander–Buchsbaum
+induction to replace the head generator `t₀` of the maximal ideal by
+a congruent-mod-tail generator that is regular for the module.
+Standard induction on `ps`: primes containing `J` and primes
+contained in another listed prime may be discarded; in the remaining
+antichain case, if the avoider `y₁` for `ps \ {P₀}` fails at `P₀`,
+correct it by `z·∏ a_Q` with `z ∈ J \ P₀` and `a_Q ∈ Q \ P₀`. -/
+theorem exists_add_notMem_of_forall_not_le.{u} {R : Type u} [CommRing R]
+    (ps : Finset (Ideal R)) (x : R) (J : Ideal R)
+    (hps : ∀ P ∈ ps, P.IsPrime) (h : ∀ P ∈ ps, ¬ (Ideal.span {x} ⊔ J ≤ P)) :
+    ∃ y ∈ J, ∀ P ∈ ps, x + y ∉ P := by
+  classical
+  induction ps using Finset.strongInduction with
+  | _ ps IH => ?_
+  by_cases hJ : ∃ P ∈ ps, J ≤ P
+  · obtain ⟨P, hP, hJP⟩ := hJ
+    obtain ⟨y, hyJ, hy⟩ := IH (ps.erase P) (Finset.erase_ssubset hP)
+      (fun Q hQ => hps Q (Finset.mem_of_mem_erase hQ))
+      (fun Q hQ => h Q (Finset.mem_of_mem_erase hQ))
+    refine ⟨y, hyJ, fun Q hQ hmem => ?_⟩
+    rcases eq_or_ne Q P with rfl | hne
+    · refine h Q hP (sup_le ((Ideal.span_singleton_le_iff_mem _).mpr ?_) hJP)
+      simpa using Q.sub_mem hmem (hJP hyJ)
+    · exact hy Q (Finset.mem_erase.mpr ⟨hne, hQ⟩) hmem
+  push Not at hJ
+  by_cases hchain : ∃ P ∈ ps, ∃ Q ∈ ps, P ≠ Q ∧ P ≤ Q
+  · obtain ⟨P, hP, Q, hQ, hne, hle⟩ := hchain
+    obtain ⟨y, hyJ, hy⟩ := IH (ps.erase P) (Finset.erase_ssubset hP)
+      (fun Q' hQ' => hps Q' (Finset.mem_of_mem_erase hQ'))
+      (fun Q' hQ' => h Q' (Finset.mem_of_mem_erase hQ'))
+    refine ⟨y, hyJ, fun Q' hQ' hmem => ?_⟩
+    rcases eq_or_ne Q' P with rfl | hne'
+    · exact hy Q (Finset.mem_erase.mpr ⟨hne.symm, hQ⟩) (hle hmem)
+    · exact hy Q' (Finset.mem_erase.mpr ⟨hne', hQ'⟩) hmem
+  push Not at hchain
+  rcases Finset.eq_empty_or_nonempty ps with rfl | ⟨P₀, hP₀⟩
+  · exact ⟨0, J.zero_mem, by simp⟩
+  obtain ⟨y₁, hy₁J, hy₁⟩ := IH (ps.erase P₀) (Finset.erase_ssubset hP₀)
+    (fun Q hQ => hps Q (Finset.mem_of_mem_erase hQ))
+    (fun Q hQ => h Q (Finset.mem_of_mem_erase hQ))
+  by_cases hx₀ : x + y₁ ∈ P₀
+  · haveI hP₀p : P₀.IsPrime := hps P₀ hP₀
+    obtain ⟨z, hzJ, hzP₀⟩ := SetLike.not_le_iff_exists.mp (hJ P₀ hP₀)
+    have hpick : ∀ Q ∈ ps.erase P₀, ∃ a, a ∈ Q ∧ a ∉ P₀ := by
+      intro Q hQ
+      obtain ⟨hne, hQps⟩ := Finset.mem_erase.mp hQ
+      exact SetLike.not_le_iff_exists.mp (fun hle => hchain Q hQps P₀ hP₀ hne hle)
+    choose a haQ haP using hpick
+    set w₀ : R := ∏ Q ∈ (ps.erase P₀).attach, a Q.1 Q.2 with hw₀def
+    have hw₀Q : ∀ Q ∈ ps.erase P₀, w₀ ∈ Q := by
+      intro Q hQ
+      rw [hw₀def, ← Finset.mul_prod_erase _ _ (Finset.mem_attach _ ⟨Q, hQ⟩)]
+      exact Ideal.mul_mem_right _ _ (haQ Q hQ)
+    have hprodNotMem : w₀ ∉ P₀ := fun hmem => by
+      obtain ⟨⟨Q, hQ⟩, -, hmemQ⟩ := Ideal.IsPrime.prod_mem_iff.mp hmem
+      exact haP Q hQ hmemQ
+    refine ⟨y₁ + z * w₀, J.add_mem hy₁J (J.mul_mem_right _ hzJ), fun Q hQ hmem => ?_⟩
+    by_cases hne : Q = P₀
+    · have hw : z * w₀ ∈ P₀ := by
+        have := P₀.sub_mem (hne ▸ hmem) hx₀
+        simpa [add_sub_add_left_eq_sub] using this
+      exact (hP₀p.mem_or_mem hw).elim hzP₀ hprodNotMem
+    · have hwQ : z * w₀ ∈ Q := Q.mul_mem_left z (hw₀Q Q (Finset.mem_erase.mpr ⟨hne, hQ⟩))
+      have : x + y₁ ∈ Q := by
+        have := Q.sub_mem hmem hwQ
+        simpa [← add_assoc] using this
+      exact hy₁ Q (Finset.mem_erase.mpr ⟨hne, hQ⟩) this
+  · refine ⟨y₁, hy₁J, fun Q hQ => ?_⟩
+    rcases eq_or_ne Q P₀ with rfl | hne
+    · exact hx₀
+    · exact hy₁ Q (Finset.mem_erase.mpr ⟨hne, hQ⟩)
+
+/-- **Avoiding all associated primes gives a regular element**
+(PROVEN): over a Noetherian ring the zero-divisors of a module lie in
+the union of its associated primes — if `x·z = 0` with `z ≠ 0` then
+`ann(z)` sits inside an associated prime
+(`exists_le_isAssociatedPrime_of_isNoetherianRing`). -/
+theorem isSMulRegular_of_forall_notMem_associatedPrimes.{u, w} {R : Type u} [CommRing R]
+    [IsNoetherianRing R] {N : Type w} [AddCommGroup N] [Module R N] {x : R}
+    (h : ∀ P ∈ associatedPrimes R N, x ∉ P) : IsSMulRegular N x := by
+  intro a b hab
+  by_contra hne
+  have hz : x • (a - b) = 0 := by
+    simp only [smul_sub, sub_eq_zero]
+    exact hab
+  obtain ⟨P, hP, hle⟩ :=
+    exists_le_isAssociatedPrime_of_isNoetherianRing R (a - b) (sub_ne_zero.mpr hne)
+  exact h P hP (hle (by rw [Submodule.mem_colon_singleton]; simpa using hz))
+
+/-- **Positive depth pushes the maximal ideal off `Ass N`** (PROVEN):
+if some element of the maximal ideal acts regularly on `N`, no
+associated prime of `N` can contain the maximal ideal (an associated
+prime is the radical of the annihilator of a nonzero element, and a
+power of the regular element would kill that element).  This is the
+legitimacy check for prime avoidance against `Ass N` inside the
+maximal ideal. -/
+theorem not_maximalIdeal_le_of_mem_associatedPrimes.{u, w} {R : Type u} [CommRing R]
+    [IsLocalRing R] {N : Type w} [AddCommGroup N] [Module R N]
+    {P : Ideal R} (hP : P ∈ associatedPrimes R N)
+    {r : R} (hr : r ∈ maximalIdeal R) (hreg : IsSMulRegular N r) :
+    ¬ maximalIdeal R ≤ P := by
+  intro hle
+  obtain ⟨hprime, z, hz⟩ := hP
+  have hzne : z ≠ 0 := by
+    rintro rfl
+    rw [Submodule.colon_singleton_zero, Ideal.radical_top] at hz
+    exact hprime.ne_top hz
+  have hrP : r ∈ P := hle hr
+  rw [hz, Ideal.mem_radical_iff] at hrP
+  obtain ⟨k, hk⟩ := hrP
+  rw [Submodule.mem_colon_singleton, Submodule.mem_bot] at hk
+  exact hzne ((hreg.pow k) (by simpa using hk))
+
+/-- **Depth descent along a regular element** (PROVEN; the classical
+`depth (M/xM) = depth M − 1`, in existence form): if the finite
+module `M` over the Noetherian local `R` carries an `M`-regular
+sequence `rs` inside the maximal ideal and `x ∈ 𝔪` is `M`-regular,
+then `M/xM` carries a regular sequence of length `|rs| − 1` inside
+the maximal ideal.  Both directions of mathlib's Rees theorem
+(`ModuleCat.exists_isRegular_tfae`) are used: `rs` gives
+`Ext^{<n}(k, M) = 0`; the `Ext(k, −)` long exact sequence of
+`0 → M →ₓ M → M/xM → 0` (via `Ext.covariant_sequence_exact₃'` on
+`IsSMulRegular.smulShortComplex_shortExact`) kills
+`Ext^{<n−1}(k, M/xM); Rees back-translates into a regular sequence on
+`M/xM`. -/
+theorem exists_isRegular_quotSMulTop_of_isSMulRegular.{u, w} {R : Type u} [CommRing R]
+    [IsLocalRing R] [IsNoetherianRing R] [Small.{w} R]
+    {M : Type w} [AddCommGroup M] [Module R M] [Module.Finite R M] [Nontrivial M]
+    {rs : List R} (hreg : RingTheory.Sequence.IsRegular M rs)
+    (hmem : ∀ r ∈ rs, r ∈ maximalIdeal R)
+    {x : R} (hx : x ∈ maximalIdeal R) (hxreg : IsSMulRegular M x) :
+    ∃ rs' : List R, rs'.length = rs.length - 1 ∧
+      (∀ r ∈ rs', r ∈ maximalIdeal R) ∧
+      RingTheory.Sequence.IsRegular (QuotSMulTop x M) rs' := by
+  have smul_lt : maximalIdeal R • (⊤ : Submodule R M) < ⊤ :=
+    lt_of_le_of_ne le_top
+      (Submodule.top_ne_ideal_smul_of_le_jacobson_annihilator
+        (le_trans (maximalIdeal_le_jacobson _) (Ideal.jacobson_mono bot_le))).symm
+  haveI : Nontrivial (QuotSMulTop x M) :=
+    nontrivial_quotSMulTop_of_mem_maximalIdeal M hx
+  have smul_lt' : maximalIdeal R • (⊤ : Submodule R (QuotSMulTop x M)) < ⊤ :=
+    lt_of_le_of_ne le_top
+      (Submodule.top_ne_ideal_smul_of_le_jacobson_annihilator
+        (le_trans (maximalIdeal_le_jacobson _) (Ideal.jacobson_mono bot_le))).symm
+  have tfae₁ := ModuleCat.exists_isRegular_tfae (maximalIdeal R) rs.length
+    (ModuleCat.of R M) smul_lt
+  have h4 : ∃ rs₀ : List R, rs₀.length = rs.length ∧ (∀ r ∈ rs₀, r ∈ maximalIdeal R) ∧
+      RingTheory.Sequence.IsRegular (ModuleCat.of R M) rs₀ := ⟨rs, rfl, hmem, hreg⟩
+  have hext := (tfae₁.out 3 1).mp h4
+  have hxreg' : IsSMulRegular (ModuleCat.of R M) x := hxreg
+  have hext' : ∀ i < rs.length - 1, Subsingleton
+      (Ext (ModuleCat.of R (Shrink.{w} (R ⧸ maximalIdeal R)))
+        (ModuleCat.of R (QuotSMulTop x M)) i) := by
+    intro i hi
+    have zero1 := AddCommGrpCat.isZero_of_iff_subsingleton.mpr (hext i (by omega))
+    have zero2 := AddCommGrpCat.isZero_of_iff_subsingleton.mpr (hext (i + 1) (by omega))
+    exact AddCommGrpCat.subsingleton_of_isZero <| ShortComplex.Exact.isZero_of_both_zeros
+      ((Ext.covariant_sequence_exact₃' _ hxreg'.smulShortComplex_shortExact) i (i + 1) rfl)
+      (zero1.eq_zero_of_src _) (zero2.eq_zero_of_tgt _)
+  have tfae₂ := ModuleCat.exists_isRegular_tfae (maximalIdeal R) (rs.length - 1)
+    (ModuleCat.of R (QuotSMulTop x M)) smul_lt'
+  exact (tfae₂.out 1 3).mp hext'
+
+/-- **The abstract Auslander–Buchsbaum instance** (PROVEN; Diamond
+1997, Thm. 2.4 in spanning-regular-sequence form): over a Noetherian
+local ring whose maximal ideal is SPANNED by a regular sequence of
+length `n` (the statement-level form of "regular local of dimension
+`n`"), any finite module carrying a regular sequence of length `n`
+inside the maximal ideal ("depth ≥ dim") is free.  Dimension
+induction over `(R, M) ↝ (R/(x), M/xM)`; see the section header for
+the full architecture. -/
+theorem free_of_isRegular_of_ofList_eq_maximalIdeal.{u, w} (n : ℕ)
+    {R : Type u} [CommRing R] [IsLocalRing R] [IsNoetherianRing R] [Small.{w} R]
+    {M : Type w} [AddCommGroup M] [Module R M] [Module.Finite R M]
+    (ts : List R) (hts : RingTheory.Sequence.IsRegular R ts) (htslen : ts.length = n)
+    (htsspan : Ideal.ofList ts = maximalIdeal R)
+    (rs : List R) (hrs : RingTheory.Sequence.IsRegular M rs) (hrslen : rs.length = n)
+    (hrsmem : ∀ r ∈ rs, r ∈ maximalIdeal R) :
+    Module.Free R M := by
+  induction n generalizing R M with
+  | zero =>
+    -- the base case: `𝔪 = (∅) = ⊥`, so `R` is a field
+    have hbot : maximalIdeal R = ⊥ := by
+      rw [← htsspan, List.length_eq_zero_iff.mp htslen, Ideal.ofList_nil]
+    have hfield : IsField R := IsLocalRing.isField_iff_maximalIdeal_eq.mpr hbot
+    letI := hfield.toField
+    exact Module.Free.of_divisionRing R M
+  | succ n IH =>
+    rcases subsingleton_or_nontrivial M with _hM | _hM
+    · infer_instance
+    obtain ⟨t₀, ts', rfl⟩ : ∃ a l, ts = a :: l := by
+      cases ts with
+      | nil => simp at htslen
+      | cons a l => exact ⟨a, l, rfl⟩
+    obtain ⟨r₀, rs', rfl⟩ : ∃ a l, rs = a :: l := by
+      cases rs with
+      | nil => simp at hrslen
+      | cons a l => exact ⟨a, l, rfl⟩
+    have hmem_ts : ∀ t ∈ t₀ :: ts', t ∈ maximalIdeal R := fun t ht =>
+      htsspan ▸ Ideal.subset_span ht
+    have hr₀ : IsSMulRegular M r₀ := ((isRegular_cons_iff _ _ _).mp hrs).1
+    have hr₀m : r₀ ∈ maximalIdeal R := hrsmem r₀ List.mem_cons_self
+    -- Davis avoidance: replace `t₀` by `x = t₀ + y`, `y ∈ (ts')`, avoiding
+    -- every associated prime of `M` (all of which miss `𝔪 = (t₀) ⊔ (ts')`
+    -- because `r₀ ∈ 𝔪` is `M`-regular)
+    have hfin : (associatedPrimes R M).Finite := associatedPrimes.finite R M
+    obtain ⟨y, hyJ, hy⟩ := exists_add_notMem_of_forall_not_le hfin.toFinset t₀
+      (Ideal.ofList ts')
+      (fun P hP => (hfin.mem_toFinset.mp hP).1)
+      (fun P hP hle => by
+        rw [← Ideal.ofList_cons, htsspan] at hle
+        exact not_maximalIdeal_le_of_mem_associatedPrimes
+          (hfin.mem_toFinset.mp hP) hr₀m hr₀ hle)
+    set x := t₀ + y with hxdef
+    have hxm : x ∈ maximalIdeal R := by
+      apply (maximalIdeal R).add_mem (hmem_ts t₀ List.mem_cons_self)
+      rw [← htsspan, Ideal.ofList_cons]
+      exact Ideal.mem_sup_right hyJ
+    have hxM : IsSMulRegular M x := isSMulRegular_of_forall_notMem_associatedPrimes
+      (fun P hP => hy P (hfin.mem_toFinset.mpr hP))
+    -- `x :: ts'` is again a spanning regular sequence: permute `t₀` to the
+    -- end, exchange it there for the congruent-mod-`(ts')` element `x`,
+    -- permute back
+    have hperm₁ : RingTheory.Sequence.IsRegular R (ts' ++ [t₀]) :=
+      IsLocalRing.isRegular_of_perm hts (List.perm_append_singleton t₀ ts').symm
+    have hlastswap : RingTheory.Sequence.IsRegular R (ts' ++ [x]) := by
+      refine IsRegular.of_isWeaklyRegular_of_mem_maximalIdeal _ ?_ ?_
+      · intro r hr
+        rcases List.mem_append.mp hr with hr | hr
+        · exact hmem_ts r (List.mem_cons_of_mem _ hr)
+        · rw [List.mem_singleton.mp hr]; exact hxm
+      · have hw := hperm₁.toIsWeaklyRegular
+        rw [isWeaklyRegular_append_iff] at hw ⊢
+        refine ⟨hw.1, ?_⟩
+        obtain ⟨-, ht₀q⟩ := hw
+        rw [isWeaklyRegular_singleton_iff] at ht₀q ⊢
+        have hy0 : ∀ c : R ⧸ (Ideal.ofList ts' • ⊤ : Submodule R R), y • c = 0 := by
+          intro c
+          obtain ⟨c, rfl⟩ := Submodule.Quotient.mk_surjective _ c
+          rw [← Submodule.Quotient.mk_smul, Submodule.Quotient.mk_eq_zero]
+          exact Submodule.smul_mem_smul hyJ trivial
+        intro a b hab
+        refine ht₀q (?_ : t₀ • a = t₀ • b)
+        have h1 : x • a = t₀ • a := by rw [hxdef, add_smul, hy0, add_zero]
+        have h2 : x • b = t₀ • b := by rw [hxdef, add_smul, hy0, add_zero]
+        rw [← h1, ← h2]
+        exact hab
+    have hxts : RingTheory.Sequence.IsRegular R (x :: ts') :=
+      IsLocalRing.isRegular_of_perm hlastswap (List.perm_append_singleton x ts')
+    -- the quotient ring `R/(x)` is Noetherian local with maximal ideal
+    -- spanned by the images of `ts'`
+    haveI hR'nt : Nontrivial (R ⧸ Ideal.span {x}) :=
+      Submodule.Quotient.nontrivial_iff.mpr
+        (Ideal.span_singleton_ne_top ((IsLocalRing.mem_maximalIdeal x).mp hxm))
+    haveI : IsLocalRing (R ⧸ Ideal.span {x}) :=
+      IsLocalRing.of_surjective' (Ideal.Quotient.mk _) Ideal.Quotient.mk_surjective
+    haveI : Small.{w} (R ⧸ Ideal.span {x}) :=
+      small_of_surjective Ideal.Quotient.mk_surjective
+    have hm' : Ideal.map (Ideal.Quotient.mk (Ideal.span {x})) (maximalIdeal R) =
+        maximalIdeal (R ⧸ Ideal.span {x}) :=
+      IsLocalRing.map_maximalIdeal_of_surjective _ Ideal.Quotient.mk_surjective
+    have hQts' : RingTheory.Sequence.IsRegular (QuotSMulTop x R) ts' :=
+      ((isRegular_cons_iff _ _ _).mp hxts).2
+    have heq : (x • ⊤ : Submodule R R) = (Ideal.span {x} : Ideal R) := by
+      rw [← Submodule.ideal_span_singleton_smul, smul_eq_mul, Ideal.mul_top]
+    have hRts' : RingTheory.Sequence.IsRegular (R ⧸ Ideal.span {x}) ts' :=
+      ((Submodule.quotEquivOfEq _ _ heq).isRegular_congr ts').mp hQts'
+    have htss_weak : IsWeaklyRegular (R ⧸ Ideal.span {x})
+        (ts'.map (algebraMap R (R ⧸ Ideal.span {x}))) :=
+      (isWeaklyRegular_map_algebraMap_iff _ _ ts').mpr hRts'.toIsWeaklyRegular
+    have hmem'' : ∀ r ∈ ts'.map (algebraMap R (R ⧸ Ideal.span {x})),
+        r ∈ maximalIdeal (R ⧸ Ideal.span {x}) := by
+      intro r hr
+      obtain ⟨t, ht, rfl⟩ := List.mem_map.mp hr
+      rw [Ideal.Quotient.algebraMap_eq]
+      exact hm' ▸ Ideal.mem_map_of_mem _ (hmem_ts t (List.mem_cons_of_mem _ ht))
+    have htss : RingTheory.Sequence.IsRegular (R ⧸ Ideal.span {x})
+        (ts'.map (algebraMap R (R ⧸ Ideal.span {x}))) :=
+      IsRegular.of_isWeaklyRegular_of_mem_maximalIdeal _ hmem'' htss_weak
+    have htssspan : Ideal.ofList (ts'.map (algebraMap R (R ⧸ Ideal.span {x}))) =
+        maximalIdeal (R ⧸ Ideal.span {x}) := by
+      rw [Ideal.Quotient.algebraMap_eq, ← Ideal.map_ofList, ← hm']
+      conv_rhs => rw [← htsspan, Ideal.ofList_cons, Ideal.map_sup]
+      refine (sup_eq_right.mpr ?_).symm
+      rw [Ideal.map_span, Set.image_singleton, Ideal.span_singleton_le_iff_mem]
+      have ht₀y : (Ideal.Quotient.mk (Ideal.span {x})) t₀ = - Ideal.Quotient.mk _ y := by
+        rw [eq_neg_iff_add_eq_zero, ← map_add, Ideal.Quotient.eq_zero_iff_mem, ← hxdef]
+        exact Ideal.mem_span_singleton_self x
+      rw [ht₀y]
+      exact neg_mem (Ideal.mem_map_of_mem _ hyJ)
+    -- depth descent to `M/xM`, and transfer of the sequence to `R/(x)`
+    haveI hMnt' : Nontrivial (QuotSMulTop x M) :=
+      nontrivial_quotSMulTop_of_mem_maximalIdeal M hxm
+    obtain ⟨rs₂, hrs₂len, hrs₂mem, hrs₂⟩ :=
+      exists_isRegular_quotSMulTop_of_isSMulRegular hrs hrsmem hxm hxM
+    haveI : Module.Finite (R ⧸ Ideal.span {x}) (QuotSMulTop x M) :=
+      Module.Finite.of_restrictScalars_finite R _ _
+    have hrs₂w : IsWeaklyRegular (QuotSMulTop x M)
+        (rs₂.map (algebraMap R (R ⧸ Ideal.span {x}))) :=
+      (isWeaklyRegular_map_algebraMap_iff _ _ rs₂).mpr hrs₂.toIsWeaklyRegular
+    have hrs₂mem' : ∀ r ∈ rs₂.map (algebraMap R (R ⧸ Ideal.span {x})),
+        r ∈ maximalIdeal (R ⧸ Ideal.span {x}) := by
+      intro r hr
+      obtain ⟨t, ht, rfl⟩ := List.mem_map.mp hr
+      rw [Ideal.Quotient.algebraMap_eq]
+      exact hm' ▸ Ideal.mem_map_of_mem _ (hrs₂mem t ht)
+    have hrs₂' : RingTheory.Sequence.IsRegular (QuotSMulTop x M)
+        (rs₂.map (algebraMap R (R ⧸ Ideal.span {x}))) :=
+      IsRegular.of_isWeaklyRegular_of_mem_maximalIdeal _ hrs₂mem' hrs₂w
+    have hts'len : ts'.length = n := by simpa using htslen
+    have hrs₂len' : rs₂.length = n := by
+      rw [hrs₂len]
+      simp only [List.length_cons] at hrslen ⊢
+      omega
+    -- induction hypothesis downstairs, Nakayama dévissage upstairs
+    haveI := Module.finitePresentation_of_finite R M
+    refine (Module.free_quotSMulTop_iff_free R M
+      (maximalIdeal_le_jacobson ⊥ hxm) hxM).mp ?_
+    exact IH (R := R ⧸ Ideal.span {x}) (M := QuotSMulTop x M)
+      (ts'.map (algebraMap R _)) htss (by simpa using hts'len) htssspan
+      (rs₂.map (algebraMap R _)) hrs₂' (by simpa using hrs₂len') hrs₂mem'
+
+/-- **Noetherianity of `A[[x₁, …, xₙ]]`** (power-series leaf; sorry
+node): finite-variable power series over a Noetherian commutative
+ring are Noetherian.  Unconditionally true, zero arithmetic content.
+Classical route: `A⟦X⟧` is Noetherian (mathlib instance on
+`PowerSeries`, Hilbert basis for power series), and
+`MvPowerSeries (Fin (n+1)) A ≃+* PowerSeries (MvPowerSeries (Fin n) A)`
+(currying of the coefficient functions along
+`(Fin (n+1) →₀ ℕ) ≃ (Fin n →₀ ℕ) × ℕ` — the successor ring
+equivalence is the missing mathlib plumbing; multiplicativity is the
+antidiagonal-splitting computation), then induct.  Consumed by
+`free_of_isRegular_mvPowerSeries` to feed the Auslander–Buchsbaum
+induction. -/
+theorem isNoetherianRing_mvPowerSeries.{uA} (n : ℕ) {A : Type uA} [CommRing A]
+    [IsNoetherianRing A] : IsNoetherianRing (MvPowerSeries (Fin n) A) :=
+  sorry
+
+/-- **The regular system of parameters of `ℤ_p[[x₁, …, x_q]]`**
+(power-series leaf; sorry node): the maximal ideal of
+`R_∞ = ℤ_p[[x₁, …, x_q]]` is spanned by a regular sequence of length
+`q + 1` — concretely `(C p, X 0, …, X (q-1))`.  Unconditionally true,
+zero arithmetic content.  Proof plan: (a) spanning — every `f` with
+`constantCoeff f ∈ (p)` decomposes as `C (f 0) + Σᵢ Xᵢ · gᵢ` by
+greedy monomial splitting (each monomial ≠ 1 contains some `Xᵢ`), and
+the maximal ideal of `MvPowerSeries` over the local `ℤ_p` is exactly
+`{f | constantCoeff f ∈ 𝔪_{ℤ_p}}` (`MvPowerSeries.isUnit_iff` through
+the local-ring instance); (b) regularity — `X i` and `p` are
+successively regular because each quotient
+`R_∞/(X_{i₁}, …, X_{i_k})` is identified with the power series ring
+on the remaining variables (kernel-of-substitution computation:
+`f ∈ (X_{i₁}, …, X_{i_k})` iff every monomial of `f` involves one of
+the listed variables), where multiplication by the next variable and
+by the nonzerodivisor `p` (coefficientwise, `ℤ_p` a domain) are
+injective.  Consumed by `free_of_isRegular_mvPowerSeries`. -/
+theorem exists_isRegular_ofList_eq_maximalIdeal_mvPowerSeries (p : ℕ) [Fact p.Prime]
+    (q : ℕ) :
+    ∃ ts : List (MvPowerSeries (Fin q) ℤ_[p]), ts.length = q + 1 ∧
+      RingTheory.Sequence.IsRegular (MvPowerSeries (Fin q) ℤ_[p]) ts ∧
+      Ideal.ofList ts = maximalIdeal (MvPowerSeries (Fin q) ℤ_[p]) :=
+  sorry
+
+/-- **The commutative-algebra endgame** (patching leaf 3; PROVEN
+2026-07-24): a finite module over the regular local ring
 `R_∞ = ℤ_p[[x₁, …, x_q]]` carrying a regular sequence of length
 `q + 1 = dim R_∞` inside the maximal ideal — i.e. of depth at least
 `dim R_∞` — is FREE.  This is the Auslander–Buchsbaum step of the
@@ -2332,14 +2760,12 @@ multiplicity one*, Invent. Math. 128 (1997), Thm. 2.4: over a regular
 local ring, `depth M ≥ dim R` forces `pd M = 0`; see also
 Diamond–Darmon–Taylor (1995), Thm. 5.28 and Bruns–Herzog,
 *Cohen–Macaulay rings*, Thm. 1.3.3 + 2.2.7).  Unconditionally true —
-no arithmetic content.  Mathlib audit (2026-07-24): mathlib has
-regular sequences (`RingTheory.Sequence.IsRegular`,
-`Mathlib/RingTheory/Regular/RegularSequence.lean`) but no
-depth/Cohen–Macaulay/Auslander–Buchsbaum theory yet; the FLT project's
-`FLT/Patching/Utils/Depth.lean` (same-shaped development, different
-mathlib pin) is a vendorable model for the missing layer, and
-`ℤ_p[[x₁, …, x_q]]` is regular local of dimension `q + 1` by the
-standard power-series induction. -/
+no arithmetic content.  Proven as the instantiation of the abstract
+dimension induction `free_of_isRegular_of_ofList_eq_maximalIdeal`
+(Rees theorem + Davis avoidance + Nakayama dévissage; see the section
+header above) at the two concrete power-series leaves
+`isNoetherianRing_mvPowerSeries` and
+`exists_isRegular_ofList_eq_maximalIdeal_mvPowerSeries`. -/
 theorem free_of_isRegular_mvPowerSeries.{v} {p : ℕ} [Fact p.Prime] {q : ℕ}
     {M : Type v} [AddCommGroup M]
     [Module (MvPowerSeries (Fin q) ℤ_[p]) M]
@@ -2348,8 +2774,16 @@ theorem free_of_isRegular_mvPowerSeries.{v} {p : ℕ} [Fact p.Prime] {q : ℕ}
     (hmem : ∀ x ∈ rs, x ∈ IsLocalRing.maximalIdeal
       (MvPowerSeries (Fin q) ℤ_[p]))
     (hreg : RingTheory.Sequence.IsRegular M rs) :
-    Module.Free (MvPowerSeries (Fin q) ℤ_[p]) M :=
-  sorry
+    Module.Free (MvPowerSeries (Fin q) ℤ_[p]) M := by
+  haveI := hfin
+  haveI : IsNoetherianRing (MvPowerSeries (Fin q) ℤ_[p]) :=
+    isNoetherianRing_mvPowerSeries q
+  obtain ⟨ts, htslen, hts, htsspan⟩ :=
+    exists_isRegular_ofList_eq_maximalIdeal_mvPowerSeries p q
+  exact free_of_isRegular_of_ofList_eq_maximalIdeal (q + 1) ts hts htslen htsspan
+    rs hreg hlen hmem
+
+end AuslanderBuchsbaum
 
 /-- **The patched faithfulness assembly** (PROVEN): a `PatchedModule`
 for `ψ` forces `ψ` to be injective.  This is the classical endgame of
