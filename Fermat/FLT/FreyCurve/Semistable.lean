@@ -7907,8 +7907,8 @@ theorem WeierstrassCurve.torsionFlatPackage_of_nonsplit_adic
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
-/-- **Points of a finite étale algebra separate its elements** (sorry
-node — the reducedness third of the reconstruction, curve-free): over
+/-- **Points of a finite étale algebra separate its elements** (PROVEN
+2026-07-24 — the reducedness third of the reconstruction, curve-free): over
 a characteristic-zero field `K` with algebraic closure `Ω`, an element
 of a finite étale `K`-algebra killed by every `Ω`-point is zero.
 Content: `A` is finite-dimensional and reduced (étale over a field),
@@ -7949,17 +7949,15 @@ set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
 /-- **Pair separation on the tensor square of a finite étale algebra**
-(sorry node — the linear-independence third of the reconstruction,
+(PROVEN 2026-07-24 — the second third of the reconstruction,
 curve-free): an element of `A ⊗[K] A` killed by every PAIR of
 `Ω`-points (through `Algebra.TensorProduct.lift`, which enumerates the
-`Ω`-points of the tensor square) is zero. Content: writing
-`z = ∑ mᵢ ⊗ nᵢ` over a `K`-basis `nᵢ` of `A`, the hypothesis says each
-`φ` kills `∑ φ(mᵢ) ψ(nᵢ)` for every point `ψ`; the evaluation matrix
-`(ψ(nᵢ))` of a basis at the `Nat.card = finrank` points (étale point
-count) is invertible over `Ω` — distinct algebra homomorphisms into a
-field are linearly independent (Dedekind) and `K`-linear combinations
-of basis evaluations realize all point values — so `φ(mᵢ) = 0` for all
-`φ, i`, and `etale_points_separate` kills each `mᵢ`. -/
+`Ω`-points of the tensor square) is zero. Content: the tensor square
+is itself finite étale over `K` (étale is stable under base change and
+composition: `Algebra.Etale.baseChange` + `Algebra.Etale.comp`), every
+`Ω`-point of `A ⊗[K] A` is the lift of the pair of its restrictions
+along `includeLeft`/`includeRight` (`Algebra.TensorProduct.ext`), and
+`etale_points_separate` applied to `A ⊗[K] A` finishes. -/
 theorem etale_tensor_points_separate
     (K : Type) [Field K] [CharZero K]
     (Ω : Type) [Field Ω] [Algebra K Ω] [IsAlgClosure K Ω]
@@ -7990,8 +7988,8 @@ theorem etale_tensor_points_separate
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
-/-- **Equivariant functions on the point set are evaluations** (sorry
-node — the essential-surjectivity third of the reconstruction,
+/-- **Equivariant functions on the point set are evaluations** (PROVEN
+2026-07-24 — the essential-surjectivity third of the reconstruction,
 curve-free): a `Gal(Ω/K)`-equivariant function `c` from the `Ω`-points
 of a finite étale `K`-algebra to `Ω` is evaluation at a (unique)
 element of `A`. Content: `A ≅ ∏ Lᵢ` with `Lᵢ/K` finite; fix a point
@@ -8012,13 +8010,151 @@ theorem exists_eval_of_equivariant_function
     (hc : ∀ (σ : Ω ≃ₐ[K] Ω) (φ : A →ₐ[K] Ω),
       c (σ.toAlgHom.comp φ) = σ (c φ)) :
     ∃ a : A, ∀ φ : A →ₐ[K] Ω, φ a = c φ := by
-  sorry
+  classical
+  haveI : IsAlgClosed Ω := IsAlgClosure.isAlgClosed K
+  haveI : Algebra.IsAlgebraic K Ω := IsAlgClosure.isAlgebraic
+  haveI : IsGalois K Ω := ⟨⟩
+  -- the structure theorem: a finite product of finite separable extensions
+  obtain ⟨I, hIfin, Ai, hAiField, hAiAlg, e, hAi⟩ :=
+    (Algebra.Etale.iff_exists_algEquiv_prod (K := K) (A := A)).mp inferInstance
+  haveI : Fintype I := Fintype.ofFinite I
+  haveI hFinAi : ∀ i, Module.Finite K (Ai i) := fun i => (hAi i).1
+  haveI hAlgbAi : ∀ i, Algebra.IsAlgebraic K (Ai i) := fun i =>
+    Algebra.IsAlgebraic.of_finite K (Ai i)
+  -- the chosen embedding of each factor and the induced point of `A`
+  let emb : ∀ i, Ai i →ₐ[K] Ω := fun i =>
+    IsAlgClosed.lift (M := Ω) (R := K) (S := Ai i)
+  let Pt : ∀ i, A →ₐ[K] Ω := fun i =>
+    (emb i).comp ((Pi.evalAlgHom K Ai i).comp e.toAlgHom)
+  -- the value of `c` at the distinguished point of each factor lies in
+  -- that factor's image (equivariance + the infinite Galois
+  -- correspondence at the finite subextension)
+  have hcPt : ∀ i, c (Pt i) ∈ (emb i).fieldRange := by
+    intro i
+    have hfix : c (Pt i) ∈ IntermediateField.fixedField
+        (IntermediateField.fixingSubgroup ((emb i).fieldRange)) := by
+      rw [IntermediateField.mem_fixedField_iff]
+      intro σ hσ
+      have hσPt : σ.toAlgHom.comp (Pt i) = Pt i := by
+        apply AlgHom.ext
+        intro a
+        exact (IntermediateField.mem_fixingSubgroup_iff
+            ((emb i).fieldRange) σ).mp hσ (Pt i a)
+          (AlgHom.mem_fieldRange.mpr ⟨e a i, rfl⟩)
+      have h1 := hc σ (Pt i)
+      rw [hσPt] at h1
+      exact h1.symm
+    rwa [InfiniteGalois.fixedField_fixingSubgroup] at hfix
+  -- the component values of the sought element
+  have hval : ∀ i, ∃ s : Ai i, emb i s = c (Pt i) := fun i =>
+    AlgHom.mem_fieldRange.mp (hcPt i)
+  choose t ht using hval
+  refine ⟨e.symm (fun i => t i), ?_⟩
+  intro φ
+  -- `φ`, read on the product side
+  let F : (Π i, Ai i) →ₐ[K] Ω := φ.comp e.symm.toAlgHom
+  have hφF : ∀ a : A, φ a = F (e a) := by
+    intro a
+    show φ a = φ (e.symm (e a))
+    rw [AlgEquiv.symm_apply_apply]
+  -- the idempotent values of `F` on the factor units are `0` or `1`
+  have hidem : ∀ i, F (Pi.single i 1) = 0 ∨ F (Pi.single i 1) = 1 := by
+    intro i
+    have h2 : F (Pi.single i 1) * F (Pi.single i 1) = F (Pi.single i 1) := by
+      rw [← map_mul, ← Pi.single_mul, one_mul]
+    exact IsIdempotentElem.iff_eq_zero_or_one.mp h2
+  have hsum : ∑ i, F (Pi.single i 1) = 1 := by
+    rw [← map_sum,
+      show (∑ i, Pi.single i (1 : Ai i)) = (1 : Π i, Ai i) from
+        Finset.univ_sum_single 1,
+      map_one]
+  -- exactly one factor unit survives
+  have hex : ∃ i₀, F (Pi.single i₀ 1) = 1 := by
+    by_contra hno
+    have hall : ∀ i, F (Pi.single i 1) = 0 := by
+      intro i
+      rcases hidem i with h | h
+      · exact h
+      · exact absurd ⟨i, h⟩ hno
+    rw [Finset.sum_congr rfl (fun i _ => hall i), Finset.sum_const_zero] at hsum
+    exact zero_ne_one hsum
+  obtain ⟨i₀, hi₀⟩ := hex
+  -- `F` kills the other components
+  have hkill : ∀ (y : Π i, Ai i) (i : I), i ≠ i₀ → F (Pi.single i (y i)) = 0 := by
+    intro y i hi
+    have h0 : Pi.single i (y i) * Pi.single i₀ (1 : Ai i₀) = 0 := by
+      funext j
+      rw [Pi.mul_apply, Pi.zero_apply]
+      by_cases hj : j = i
+      · subst hj
+        rw [Pi.single_eq_of_ne hi, mul_zero]
+      · rw [Pi.single_eq_of_ne hj, zero_mul]
+    have h1 := congrArg F h0
+    rw [map_mul, map_zero, hi₀, mul_one] at h1
+    exact h1
+  -- `F` factors through the surviving component
+  have hfactor : ∀ y : Π i, Ai i, F y = F (Pi.single i₀ (y i₀)) := by
+    intro y
+    have h1 : F (∑ i, Pi.single i (y i)) = F (Pi.single i₀ (y i₀)) := by
+      rw [map_sum]
+      exact Finset.sum_eq_single_of_mem i₀ (Finset.mem_univ i₀)
+        (fun i _ hi => hkill y i hi)
+    rw [Finset.univ_sum_single y] at h1
+    exact h1
+  -- the factor point carried by `φ`
+  let ψ : Ai i₀ →ₐ[K] Ω :=
+    { toFun := fun s => F (Pi.single i₀ s)
+      map_one' := hi₀
+      map_mul' := fun s₁ s₂ => by rw [Pi.single_mul, map_mul]
+      map_zero' := by rw [Pi.single_zero, map_zero]
+      map_add' := fun s₁ s₂ => by rw [Pi.single_add, map_add]
+      commutes' := fun k => by
+        have h1 : Pi.single i₀ (algebraMap K (Ai i₀) k) =
+            Pi.single i₀ (1 : Ai i₀) * algebraMap K (Π i, Ai i) k := by
+          funext j
+          rw [Pi.mul_apply]
+          by_cases hj : j = i₀
+          · subst hj
+            rw [Pi.single_eq_same, Pi.single_eq_same, one_mul]
+            rfl
+          · rw [Pi.single_eq_of_ne hj, Pi.single_eq_of_ne hj, zero_mul]
+        rw [h1, map_mul, hi₀, one_mul]
+        exact F.commutes k }
+  have hφψ : ∀ a : A, φ a = ψ (e a i₀) := by
+    intro a
+    rw [hφF a, hfactor (e a)]
+    rfl
+  -- extend the factor point to an automorphism carrying the
+  -- distinguished embedding to it
+  letI : Algebra (Ai i₀) Ω := (emb i₀).toRingHom.toAlgebra
+  haveI : IsScalarTower K (Ai i₀) Ω :=
+    IsScalarTower.of_algebraMap_eq (fun k => ((emb i₀).commutes k).symm)
+  let σ0 : Ω →ₐ[K] Ω := AlgHom.liftNormal ψ Ω
+  have hσ0 : ∀ s : Ai i₀, σ0 (emb i₀ s) = ψ s := by
+    intro s
+    exact AlgHom.liftNormal_commutes ψ Ω s
+  let σ : Ω ≃ₐ[K] Ω := AlgEquiv.ofBijective σ0 (AlgHom.normal_bijective K Ω Ω σ0)
+  -- `φ` is `σ` after the distinguished point
+  have hφPt : ∀ a : A, φ a = σ (Pt i₀ a) := by
+    intro a
+    rw [hφψ a]
+    exact (hσ0 (e a i₀)).symm
+  have hcφ : c φ = σ (c (Pt i₀)) := by
+    rw [show φ = σ.toAlgHom.comp (Pt i₀) from AlgHom.ext hφPt]
+    exact hc σ (Pt i₀)
+  -- conclude at the chosen element
+  have hL : φ (e.symm (fun i => t i)) = ψ (t i₀) := by
+    rw [hφψ (e.symm (fun i => t i)), AlgEquiv.apply_symm_apply]
+  have hR : c φ = ψ (t i₀) := by
+    rw [hcφ, ← ht i₀]
+    exact hσ0 (t i₀)
+  exact hL.trans hR.symm
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
 /-- **Reconstruction of finite étale bialgebras from their Galois
-sets** (DECOMPOSED 2026-07-24 into the three étale leaves above — the
+sets** (PROVEN 2026-07-24 through the three étale leaves above — the
 fully-faithful half of the étale/Galois-sets correspondence,
 curve-free and completion-free): two finite étale
 bialgebras `A`, `B` over a characteristic-zero field `K` whose
