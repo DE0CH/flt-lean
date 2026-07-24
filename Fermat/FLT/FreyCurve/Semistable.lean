@@ -87,6 +87,8 @@ public import Mathlib.RingTheory.HopfAlgebra.Convolution
 import Mathlib.RingTheory.Bialgebra.TensorProduct
 -- free-of-torsion-free over a PID, for the lattice Hopf order
 import Mathlib.LinearAlgebra.FreeModule.PID
+-- vector spaces are free (hence flat), for the lattice comparison maps
+import Mathlib.LinearAlgebra.Basis.VectorSpace
 -- `LinearIndependent.iff_fractionRing`, for the lattice comparison maps
 import Mathlib.RingTheory.Localization.Module
 -- standard étale pairs and finite products of étale algebras, consumed
@@ -8161,6 +8163,54 @@ variable (R K Hg : Type) [CommRing R] [Field K] [Algebra R K]
   [CommRing Hg] [HopfAlgebra K Hg] [Algebra R Hg] [IsScalarTower R K Hg]
   (H₀ : Subalgebra R Hg)
 
+/-- A linear map sending a basis to a linearly independent family is
+injective. -/
+lemma injective_of_basis_linearIndependent {S M W ι : Type*} [Ring S]
+    [AddCommGroup M] [AddCommGroup W] [Module S M] [Module S W]
+    (c : Module.Basis ι S M) (g : M →ₗ[S] W)
+    (h : LinearIndependent S (⇑g ∘ ⇑c)) : Function.Injective g := by
+  rw [← LinearMap.ker_eq_bot]
+  refine (Submodule.eq_bot_iff _).mpr fun x hx => ?_
+  have h1 : Finsupp.linearCombination S (⇑g ∘ ⇑c) (c.repr x) = 0 := by
+    rw [← Finsupp.apply_linearCombination, Module.Basis.linearCombination_repr]
+    exact LinearMap.mem_ker.mp hx
+  have h2 : c.repr x = 0 := linearIndependent_iff.mp h _ h1
+  have h3 := congrArg (Finsupp.linearCombination S (⇑c)) h2
+  rwa [Module.Basis.linearCombination_repr, map_zero] at h3
+
+/-- Torsion-freeness of the generic fibre as an `R`-module, through the
+fraction field. -/
+lemma lattice_noZeroSMulDivisors [IsDomain R] [IsFractionRing R K] :
+    NoZeroSMulDivisors R Hg := by
+  refine ⟨fun {r x} h => ?_⟩
+  rcases eq_or_ne r 0 with hr | hr
+  · exact Or.inl hr
+  · refine Or.inr ?_
+    have hu : algebraMap R K r ≠ 0 := fun h0 =>
+      hr (IsFractionRing.injective R K (h0.trans (map_zero _).symm))
+    have h' : algebraMap R K r • x = 0 := by
+      rw [algebraMap_smul K r x]; exact h
+    exact (smul_eq_zero.mp h').resolve_left hu
+
+/-- A finite order over a PID is free (finite + torsion-free). -/
+lemma latticeFree [IsDomain R] [IsPrincipalIdealRing R] [IsFractionRing R K]
+    (hfin : Module.Finite R ↥H₀) : Module.Free R ↥H₀ := by
+  haveI := lattice_noZeroSMulDivisors R K Hg
+  haveI : NoZeroSMulDivisors R ↥H₀ :=
+    Function.Injective.noZeroSMulDivisors (Subtype.val : ↥H₀ → Hg)
+      Subtype.val_injective rfl (fun _ _ => rfl)
+  haveI := hfin
+  exact Module.free_of_finite_type_torsion_free'
+
+/-- An `R`-linearly independent family in the order is `K`-linearly
+independent in the generic fibre. -/
+lemma latticeLinearIndependent_coe [IsDomain R] [IsFractionRing R K]
+    {ι : Type*} {v : ι → ↥H₀} (hv : LinearIndependent R v) :
+    LinearIndependent K (fun i => (v i : Hg)) := by
+  rw [← LinearIndependent.iff_fractionRing (R := R) (K := K)]
+  exact hv.map' H₀.val.toLinearMap
+    (LinearMap.ker_eq_bot.mpr Subtype.val_injective)
+
 /-- The canonical `R`-algebra map `H₀ ⊗[R] H₀ → Hg ⊗[K] Hg` from the tensor
 square of an `R`-order `H₀` inside the `K`-Hopf algebra `Hg` into the tensor
 square of the generic fibre, sending `a ⊗ b` to `a ⊗ b`. -/
@@ -8174,16 +8224,6 @@ noncomputable def latticeTensorSquareIncl : (↥H₀ ⊗[R] ↥H₀) →ₐ[R] (
     latticeTensorSquareIncl R K Hg H₀ (a ⊗ₜ[R] b) = (a : Hg) ⊗ₜ[K] (b : Hg) := by
   simp [latticeTensorSquareIncl, Algebra.TensorProduct.lift_tmul,
     Algebra.TensorProduct.tmul_mul_tmul]
-
-/-- SORRY LEAF: the tensor-square comparison of a finite order over a PID with
-fraction field `K` is injective (freeness of `H₀` from finite + torsion-free
-over the PID; a basis of `H₀` stays `K`-linearly independent in `Hg` by
-`LinearIndependent.iff_fractionRing`, hence so does the family of its pair
-tensors, to which the map sends the basis of `H₀ ⊗[R] H₀`). -/
-lemma latticeTensorSquareIncl_injective [IsDomain R] [IsPrincipalIdealRing R]
-    [IsFractionRing R K] (hfin : Module.Finite R ↥H₀) :
-    Function.Injective (latticeTensorSquareIncl R K Hg H₀) := by
-  sorry
 
 /-- The base-change comparison `K ⊗[R] H₀ → Hg`, `q ⊗ a ↦ q • a`. -/
 noncomputable def latticeBaseChange : (K ⊗[R] ↥H₀) →ₐ[K] Hg :=
@@ -8208,14 +8248,92 @@ lemma latticeBaseChange_surjective [IsDomain R] [IsFractionRing R K]
   show (algebraMap R K r)⁻¹ • (r • y) = y
   rw [← algebraMap_smul K r y, smul_smul, inv_mul_cancel₀ hu, one_smul]
 
-/-- SORRY LEAF: the base-change comparison of a finite order over a PID with
-fraction field `K` is injective (an `R`-basis of the free module `H₀` gives a
-`K`-basis `1 ⊗ bᵢ` of `K ⊗[R] H₀`; its image `bᵢ` in `Hg` is `K`-linearly
-independent by `LinearIndependent.iff_fractionRing`). -/
+/-- The base-change comparison of a finite order over a PID with fraction
+field `K` is injective: an `R`-basis of the free module `H₀` gives a
+`K`-basis `1 ⊗ bᵢ` of `K ⊗[R] H₀` whose image `bᵢ` in `Hg` is `K`-linearly
+independent by `LinearIndependent.iff_fractionRing`. -/
 lemma latticeBaseChange_injective [IsDomain R] [IsPrincipalIdealRing R]
     [IsFractionRing R K] (hfin : Module.Finite R ↥H₀) :
     Function.Injective (latticeBaseChange R K Hg H₀) := by
-  sorry
+  haveI := latticeFree R K Hg H₀ hfin
+  set b := Module.Free.chooseBasis R ↥H₀ with hb
+  have hind : LinearIndependent K
+      (⇑(latticeBaseChange R K Hg H₀).toLinearMap ∘ ⇑(b.baseChange K)) := by
+    have heq : ⇑(latticeBaseChange R K Hg H₀).toLinearMap ∘ ⇑(b.baseChange K) =
+        fun i => ((b i : Hg)) := by
+      funext i
+      simp only [Function.comp_apply, AlgHom.toLinearMap_apply,
+        Module.Basis.baseChange_apply]
+      rw [latticeBaseChange_tmul, one_smul]
+    rw [heq]
+    exact latticeLinearIndependent_coe R K Hg H₀ b.linearIndependent
+  exact injective_of_basis_linearIndependent (b.baseChange K)
+    (latticeBaseChange R K Hg H₀).toLinearMap hind
+
+set_option synthInstance.maxHeartbeats 200000 in
+set_option maxHeartbeats 1000000 in
+/-- The tensor-square comparison of a finite order over a PID with fraction
+field `K` is injective: it factors as the composition of the (flatness)
+injection into the base change, the base-change/tensor distribution
+equivalence, and the tensor square of the injective base-change
+comparison. -/
+lemma latticeTensorSquareIncl_injective [IsDomain R] [IsPrincipalIdealRing R]
+    [IsFractionRing R K] (hfin : Module.Finite R ↥H₀) :
+    Function.Injective (latticeTensorSquareIncl R K Hg H₀) := by
+  haveI := latticeFree R K Hg H₀ hfin
+  set e := latticeBaseChange R K Hg H₀ with he
+  -- the unit of the base change, injective by flatness of the free
+  -- tensor square
+  set u : (↥H₀ ⊗[R] ↥H₀) →ₗ[R] K ⊗[R] (↥H₀ ⊗[R] ↥H₀) :=
+    (LinearMap.rTensor (↥H₀ ⊗[R] ↥H₀) (Algebra.linearMap R K)).comp
+      (TensorProduct.lid R (↥H₀ ⊗[R] ↥H₀)).symm.toLinearMap with hu
+  have huinj : Function.Injective u := by
+    have h1 : Function.Injective
+        (LinearMap.rTensor (↥H₀ ⊗[R] ↥H₀) (Algebra.linearMap R K)) :=
+      Module.Flat.rTensor_preserves_injective_linearMap (Algebra.linearMap R K)
+        (fun a b hab => IsFractionRing.injective R K
+          (by simpa [Algebra.linearMap_apply] using hab))
+    intro x y hxy
+    rw [hu] at hxy
+    simp only [LinearMap.comp_apply, LinearEquiv.coe_coe] at hxy
+    exact (TensorProduct.lid R (↥H₀ ⊗[R] ↥H₀)).symm.injective (h1 hxy)
+  -- the tensor square of the base-change comparison, injective since all
+  -- K-modules are flat
+  have hminj : Function.Injective
+      (TensorProduct.map e.toLinearMap e.toLinearMap) :=
+    TensorProduct.map_injective_of_flat_flat e.toLinearMap e.toLinearMap
+      (latticeBaseChange_injective R K Hg H₀ hfin)
+      (latticeBaseChange_injective R K Hg H₀ hfin)
+  -- the comparison factors through the two
+  have hfact : ∀ t : ↥H₀ ⊗[R] ↥H₀,
+      latticeTensorSquareIncl R K Hg H₀ t =
+      TensorProduct.map e.toLinearMap e.toLinearMap
+        ((TensorProduct.AlgebraTensorModule.distribBaseChange R K ↥H₀ ↥H₀)
+          (u t)) := by
+    intro t
+    induction t with
+    | zero => simp
+    | tmul a b =>
+        simp only [hu, LinearMap.comp_apply, LinearEquiv.coe_coe,
+          TensorProduct.lid_symm_apply, LinearMap.rTensor_tmul,
+          Algebra.linearMap_apply, map_one,
+          TensorProduct.AlgebraTensorModule.distribBaseChange_tmul,
+          TensorProduct.map_tmul]
+        rw [latticeTensorSquareIncl_tmul]
+        simp only [he, AlgHom.toLinearMap_apply]
+        rw [latticeBaseChange_tmul, latticeBaseChange_tmul, one_smul, one_smul]
+    | add x y hx hy => simp only [map_add, hx, hy]
+  intro s t hst
+  have h2 : TensorProduct.map e.toLinearMap e.toLinearMap
+      ((TensorProduct.AlgebraTensorModule.distribBaseChange R K ↥H₀ ↥H₀)
+        (u s)) =
+      TensorProduct.map e.toLinearMap e.toLinearMap
+      ((TensorProduct.AlgebraTensorModule.distribBaseChange R K ↥H₀ ↥H₀)
+        (u t)) := by
+    rw [← hfact s, ← hfact t]; exact hst
+  exact huinj
+    ((TensorProduct.AlgebraTensorModule.distribBaseChange R K ↥H₀
+      ↥H₀).injective (hminj h2))
 
 /-- The comultiplication of the order: the generic-fibre comultiplication
 corestricted along the (injective) tensor-square comparison, using the
@@ -8323,22 +8441,9 @@ theorem exists_hopfOrder_of_latticeClosure_abstract [IsDomain R]
       (_ : Module.Finite R H) (_ : Module.Flat R H),
       Nonempty ((K ⊗[R] H) ≃ₐc[K] Hg) := by
   classical
-  -- torsion-freeness of the order, through the generic fibre
-  haveI hnz : NoZeroSMulDivisors R Hg := by
-    refine ⟨fun {r x} h => ?_⟩
-    rcases eq_or_ne r 0 with hr | hr
-    · exact Or.inl hr
-    · refine Or.inr ?_
-      have hu : algebraMap R K r ≠ 0 := fun h0 =>
-        hr (IsFractionRing.injective R K (h0.trans (map_zero _).symm))
-      have h' : algebraMap R K r • x = 0 := by
-        rw [algebraMap_smul K r x]; exact h
-      exact (smul_eq_zero.mp h').resolve_left hu
-  haveI : NoZeroSMulDivisors R ↥H₀ :=
-    Function.Injective.noZeroSMulDivisors (Subtype.val : ↥H₀ → Hg)
-      Subtype.val_injective rfl (fun _ _ => rfl)
+  -- freeness and flatness of the order (finite + torsion-free over the PID)
   haveI := hfin
-  haveI hfree : Module.Free R ↥H₀ := Module.free_of_finite_type_torsion_free'
+  haveI hfree : Module.Free R ↥H₀ := latticeFree R K Hg H₀ hfin
   haveI hflat : Module.Flat R ↥H₀ := inferInstance
   -- the corestricted costructure
   set Δ := latticeComul R K Hg H₀ hfin hcomul with hΔdef
