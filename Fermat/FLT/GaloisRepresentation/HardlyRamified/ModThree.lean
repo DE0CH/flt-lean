@@ -9524,42 +9524,360 @@ theorem dedekindXiFactor_reflection_ratio (K : Type*) [Field K]
   unfold dedekindXiFactor
   exact h z hre him
 
+/-- **The complex `Γ` is dominated by the real `Γ` of its real part**
+(PROVEN 2026-07-24 — for the elementary-factor lower bound
+`dedekindXiFactor_norm_lower_strip`): for `re w > 0`,
+`‖Γ(w)‖ ≤ Γ(re w)` — the integral representations
+`Complex.Gamma_eq_integral` / `Real.Gamma_eq_integral` have literally
+the same integrand in norm (`‖e^{−x}·x^{w−1}‖ = e^{−x}·x^{re w − 1}`
+for `x > 0`), so this is `norm_integral_le_integral_norm`. -/
+theorem norm_Gamma_le_Gamma_re (w : ℂ) (hw : 0 < w.re) :
+    ‖Complex.Gamma w‖ ≤ Real.Gamma w.re := by
+  rw [Complex.Gamma_eq_integral hw, Real.Gamma_eq_integral hw]
+  refine (MeasureTheory.norm_integral_le_integral_norm _).trans_eq ?_
+  refine MeasureTheory.setIntegral_congr_fun measurableSet_Ioi (fun x hx => ?_)
+  rw [norm_mul, Complex.norm_real, Real.norm_eq_abs, abs_of_pos (Real.exp_pos _),
+    Complex.norm_cpow_eq_rpow_re_of_pos hx, Complex.sub_re, Complex.one_re]
+
+/-- **`Γ` grows by at most `2^n` under an upward integral shift, off
+the real axis** (PROVEN 2026-07-24 — for
+`dedekindXiFactor_norm_lower_strip`): if `|im w| ≥ 1/2` then
+`‖Γ(w)‖ ≤ 2^n·‖Γ(w + n)‖`, because each recurrence factor in
+`Γ(w+n) = (w+n−1)⋯w·Γ(w)` has modulus `≥ |im w| ≥ 1/2`.  This is how
+the reflected factor `Γ(1−w)` is pushed into the half-plane
+`re ≥ 1` where `norm_Gamma_le_Gamma_re` applies. -/
+theorem norm_Gamma_le_two_pow_mul (w : ℂ) (hw : 1/2 ≤ |w.im|) (n : ℕ) :
+    ‖Complex.Gamma w‖ ≤ 2^n * ‖Complex.Gamma (w + n)‖ := by
+  induction n with
+  | zero => simp
+  | succ n ih =>
+    have him : (w + (n:ℂ)).im = w.im := by simp
+    have hnorm : 1/2 ≤ ‖w + (n:ℂ)‖ := by
+      refine hw.trans ?_
+      rw [← him]
+      exact Complex.abs_im_le_norm _
+    have hwn : w + (n:ℂ) ≠ 0 := by
+      intro h
+      rw [h] at him
+      simp at him
+      rw [← him] at hw
+      norm_num at hw
+    have hstep : Complex.Gamma (w + ((n : ℕ) + 1 : ℕ)) =
+        (w + n) * Complex.Gamma (w + n) := by
+      rw [show ((w + ((n : ℕ) + 1 : ℕ) : ℂ)) = (w + n) + 1 by push_cast; ring]
+      exact Complex.Gamma_add_one _ hwn
+    calc ‖Complex.Gamma w‖ ≤ 2^n * ‖Complex.Gamma (w+n)‖ := ih
+      _ ≤ 2^n * (2 * ‖Complex.Gamma (w + ((n:ℕ)+1:ℕ))‖) := by
+          apply mul_le_mul_of_nonneg_left _ (by positivity)
+          rw [hstep, norm_mul]
+          calc ‖Complex.Gamma (w+n)‖ = 2 * ((1/2) * ‖Complex.Gamma (w+n)‖) := by
+                ring
+            _ ≤ 2 * (‖w + (n:ℂ)‖ * ‖Complex.Gamma (w+n)‖) := by
+                apply mul_le_mul_of_nonneg_left _ (by norm_num)
+                exact mul_le_mul_of_nonneg_right hnorm (norm_nonneg _)
+      _ = 2^((n:ℕ)+1) * ‖Complex.Gamma (w + ((n:ℕ)+1:ℕ))‖ := by ring
+
+/-- **Elementary exponential bound for the complex sine in the upper
+half-plane** (PROVEN 2026-07-24 — for
+`dedekindXiFactor_norm_lower_strip`): for `im u ≥ 0`,
+`‖sin u‖ ≤ e^{im u}` — from the definition
+`sin u = (e^{−iu} − e^{iu})·i/2` and `‖e^{±iu}‖ = e^{±im u}`. -/
+theorem norm_sin_le_exp (u : ℂ) (hu : 0 ≤ u.im) :
+    ‖Complex.sin u‖ ≤ Real.exp u.im := by
+  rw [Complex.sin]
+  rw [norm_div, norm_mul, Complex.norm_I, mul_one]
+  have h1 : ‖Complex.exp (-u * Complex.I) - Complex.exp (u * Complex.I)‖ ≤
+      Real.exp u.im + Real.exp (-u.im) := by
+    refine (norm_sub_le _ _).trans ?_
+    have h2 : ‖Complex.exp (-u * Complex.I)‖ = Real.exp u.im := by
+      rw [Complex.norm_exp]
+      congr 1
+      rw [show -u * Complex.I = -(u * Complex.I) by ring, Complex.neg_re,
+        Complex.mul_I_re]
+      ring
+    have h3 : ‖Complex.exp (u * Complex.I)‖ = Real.exp (-u.im) := by
+      rw [Complex.norm_exp]
+      congr 1
+      rw [Complex.mul_I_re]
+    rw [h2, h3]
+  have h4 : Real.exp (-u.im) ≤ Real.exp u.im := Real.exp_le_exp.mpr (by linarith)
+  have h5 : ‖(2:ℂ)‖ = (2:ℝ) := by simp
+  rw [h5]
+  calc ‖Complex.exp (-u * Complex.I) - Complex.exp (u * Complex.I)‖ / 2
+      ≤ (Real.exp u.im + Real.exp (-u.im)) / 2 := by linarith
+    _ ≤ Real.exp u.im := by linarith
+
+/-- **Uniform exponential lower bound for `Γ` on the extended strip**
+(PROVEN 2026-07-24 — the Γ-engine of
+`dedekindXiFactor_norm_lower_strip`): there is `c > 0` with
+`‖Γ(w)‖ ≥ c·e^{−π·im w}` for every `w` with `−9/2 ≤ re w ≤ 8`,
+`im w ≥ 1/2` — wide enough to serve both `Γ(z)` and `Γ(z/2)` for `z`
+on the Phragmén–Lindelöf strip.  Route: Euler's reflection
+`Γ(w)·Γ(1−w)·sin(πw) = π` (`Complex.Gamma_mul_Gamma_one_sub`; the
+sine is nonzero because `im ≠ 0`), with `‖sin(πw)‖ ≤ e^{π·im w}`
+(`norm_sin_le_exp`) and
+`‖Γ(1−w)‖ ≤ 2⁸·‖Γ(9−w)‖ ≤ 2⁸·Γ(9−re w) ≤ 2⁸·sup_{[1,27/2]} Γ`
+(`norm_Gamma_le_two_pow_mul`, `norm_Gamma_le_Gamma_re`, and the
+extreme value theorem for the continuous `Real.Gamma` on the compact
+`[1, 27/2]`). -/
+theorem exists_norm_Gamma_lower :
+    ∃ c : ℝ, 0 < c ∧ ∀ w : ℂ, -(9/2 : ℝ) ≤ w.re → w.re ≤ 8 → 1/2 ≤ w.im →
+      c * Real.exp (-Real.pi * w.im) ≤ ‖Complex.Gamma w‖ := by
+  have hΓcont : ContinuousOn Real.Gamma (Set.Icc (1:ℝ) (27/2)) := by
+    intro x hx
+    refine (Real.differentiableAt_Gamma ?_).continuousAt.continuousWithinAt
+    intro m
+    have h1 := hx.1
+    have hm : (0:ℝ) ≤ m := Nat.cast_nonneg m
+    intro h
+    rw [h] at h1
+    linarith
+  obtain ⟨x₀, hx₀mem, hx₀⟩ :=
+    (isCompact_Icc (a := (1:ℝ)) (b := 27/2)).exists_isMaxOn
+      ⟨1, Set.mem_Icc.mpr ⟨le_refl _, by norm_num⟩⟩ hΓcont
+  have hG0 : 0 < Real.Gamma x₀ := Real.Gamma_pos_of_pos (by linarith [hx₀mem.1])
+  refine ⟨Real.pi / (2^8 * Real.Gamma x₀), by positivity, ?_⟩
+  intro w h1 h2 h3
+  have him0 : (0:ℝ) < w.im := by linarith
+  have hsin_ne : Complex.sin (Real.pi * w) ≠ 0 := by
+    rw [Ne, Complex.sin_eq_zero_iff]
+    rintro ⟨k, hk⟩
+    have him' : Real.pi * w.im = 0 := by
+      have h5 := congrArg Complex.im hk
+      simpa using h5
+    rcases mul_eq_zero.mp him' with h6 | h6
+    · exact Real.pi_ne_zero h6
+    · rw [h6] at him0; norm_num at him0
+  have hkey : ‖Complex.Gamma w‖ * (‖Complex.Gamma (1 - w)‖ *
+      ‖Complex.sin (Real.pi * w)‖) = Real.pi := by
+    have h := Complex.Gamma_mul_Gamma_one_sub w
+    have h2' : Complex.Gamma w * Complex.Gamma (1 - w) *
+        Complex.sin (Real.pi * w) = (Real.pi : ℂ) := by
+      rw [h]
+      exact div_mul_cancel₀ _ hsin_ne
+    have h3' := congrArg norm h2'
+    rw [norm_mul, norm_mul, Complex.norm_real, Real.norm_eq_abs,
+      abs_of_pos Real.pi_pos] at h3'
+    rw [← mul_assoc]
+    exact h3'
+  have hG1w : ‖Complex.Gamma (1 - w)‖ ≤ 2^8 * Real.Gamma x₀ := by
+    have himw : |(1 - w).im| = w.im := by
+      rw [Complex.sub_im, Complex.one_im]
+      rw [abs_of_nonpos (by linarith)]
+      ring
+    have hshift := norm_Gamma_le_two_pow_mul (1 - w) (by rw [himw]; exact h3) 8
+    refine hshift.trans ?_
+    apply mul_le_mul_of_nonneg_left _ (by positivity)
+    have hre9 : ((1 - w) + ((8:ℕ):ℂ)).re = 9 - w.re := by
+      push_cast
+      simp
+      ring
+    refine (norm_Gamma_le_Gamma_re _ (by rw [hre9]; linarith)).trans ?_
+    rw [hre9]
+    exact isMaxOn_iff.mp hx₀ (9 - w.re)
+      (Set.mem_Icc.mpr ⟨by linarith, by linarith⟩)
+  have hsinb : ‖Complex.sin (Real.pi * w)‖ ≤ Real.exp (Real.pi * w.im) := by
+    have h4 := norm_sin_le_exp ((Real.pi : ℂ) * w)
+      (by rw [Complex.im_ofReal_mul]; positivity)
+    rwa [Complex.im_ofReal_mul] at h4
+  have hprod_le : ‖Complex.Gamma (1 - w)‖ * ‖Complex.sin (Real.pi * w)‖ ≤
+      2^8 * Real.Gamma x₀ * Real.exp (Real.pi * w.im) :=
+    mul_le_mul hG1w hsinb (norm_nonneg _) (by positivity)
+  have hπle : Real.pi ≤ ‖Complex.Gamma w‖ *
+      (2^8 * Real.Gamma x₀ * Real.exp (Real.pi * w.im)) := by
+    calc Real.pi = ‖Complex.Gamma w‖ * (‖Complex.Gamma (1 - w)‖ *
+          ‖Complex.sin (Real.pi * w)‖) := hkey.symm
+      _ ≤ ‖Complex.Gamma w‖ *
+          (2^8 * Real.Gamma x₀ * Real.exp (Real.pi * w.im)) :=
+          mul_le_mul_of_nonneg_left hprod_le (norm_nonneg _)
+  rw [div_mul_eq_mul_div,
+    div_le_iff₀ (by positivity : (0:ℝ) < 2^8 * Real.Gamma x₀)]
+  have hstep := mul_le_mul_of_nonneg_right hπle
+    (Real.exp_nonneg (-Real.pi * w.im))
+  have hexp1 : Real.exp (Real.pi * w.im) * Real.exp (-Real.pi * w.im) = 1 := by
+    rw [← Real.exp_add, show Real.pi * w.im + -Real.pi * w.im = 0 by ring,
+      Real.exp_zero]
+  have hcancel : ‖Complex.Gamma w‖ *
+      (2^8 * Real.Gamma x₀ * Real.exp (Real.pi * w.im)) *
+      Real.exp (-Real.pi * w.im) =
+      ‖Complex.Gamma w‖ * (2^8 * Real.Gamma x₀) := by
+    calc ‖Complex.Gamma w‖ *
+        (2^8 * Real.Gamma x₀ * Real.exp (Real.pi * w.im)) *
+        Real.exp (-Real.pi * w.im)
+        = ‖Complex.Gamma w‖ * (2^8 * Real.Gamma x₀) *
+          (Real.exp (Real.pi * w.im) * Real.exp (-Real.pi * w.im)) := by ring
+      _ = ‖Complex.Gamma w‖ * (2^8 * Real.Gamma x₀) * 1 := by rw [hexp1]
+      _ = ‖Complex.Gamma w‖ * (2^8 * Real.Gamma x₀) := mul_one _
+  linarith [hstep, hcancel.le, hcancel.ge]
+
+/-- **Exponential-quadratic lower bound for the elementary-factor
+shape** (PROVEN 2026-07-24 — abstract-base form of
+`dedekindXiFactor_norm_lower_strip`, over any `A ≥ 1` and
+multiplicities `r₁, r₂`): on the strip `−9/2 ≤ re z ≤ 8`, `im z ≥ 1`
+the elementary-factor expression is `≥ exp(−κ(1 + im z)²)`.
+Factorwise: `‖z‖, ‖z−1‖ ≥ im z ≥ 1`; the constant-base powers are
+`≥ A^{−9/4}`, `π^{−4}`, `(2π)^{−8}` (`re` is confined to the strip);
+both Γ-factors are `≥ c·e^{−π·im z}` by `exists_norm_Gamma_lower`
+(applied at `z` and `z/2`).  The product is `c₀·e^{−π(r₁+r₂)·im z}`,
+and `κ := π(r₁+r₂) + |log c₀| + 1` makes `e^{−κ(1+t)²}` smaller since
+`(1+t)² ≥ 1 + t`. -/
+theorem xiFactor_shape_norm_lower (A : ℝ) (hA1 : 1 ≤ A) (r₁ r₂ : ℕ) :
+    ∃ κ : ℝ, 0 < κ ∧ ∀ z : ℂ, -(9/2 : ℝ) ≤ z.re → z.re ≤ 8 → 1 ≤ z.im →
+      Real.exp (-κ * (1 + z.im)^2) ≤
+        ‖z * (z - 1) * Complex.ofReal A ^ (z / 2) *
+          ((Real.pi : ℂ) ^ (-z / 2) * Complex.Gamma (z / 2)) ^ r₁ *
+          ((2 : ℂ) * ((2 * Real.pi : ℝ) : ℂ) ^ (-z) *
+            Complex.Gamma z) ^ r₂‖ := by
+  obtain ⟨c, hc, hΓ⟩ := exists_norm_Gamma_lower
+  have hA0 : (0:ℝ) < A := lt_of_lt_of_le one_pos hA1
+  have hπ1 : (1:ℝ) ≤ Real.pi := by linarith [Real.pi_gt_three]
+  have hπ0 : (0:ℝ) < Real.pi := by linarith
+  have h2π1 : (1:ℝ) ≤ 2*Real.pi := by linarith
+  have h2π0 : (0:ℝ) < 2*Real.pi := by linarith
+  set c₀ : ℝ := A ^ (-(9/4) : ℝ) * (Real.pi ^ (-(4:ℝ)) * c) ^ r₁ *
+    (2 * (2*Real.pi) ^ (-(8:ℝ)) * c) ^ r₂ with hc₀def
+  have hc₀ : 0 < c₀ := by
+    rw [hc₀def]
+    exact mul_pos (mul_pos (Real.rpow_pos_of_pos hA0 _)
+      (pow_pos (mul_pos (Real.rpow_pos_of_pos hπ0 _) hc) _))
+      (pow_pos (mul_pos (mul_pos two_pos (Real.rpow_pos_of_pos h2π0 _)) hc) _)
+  refine ⟨Real.pi * ((r₁:ℝ) + r₂) + |Real.log c₀| + 1, by positivity, ?_⟩
+  intro z h1 h2 h3
+  have ht0 : (0:ℝ) < z.im := by linarith
+  have hz1 : (1:ℝ) ≤ ‖z‖ := by
+    have h4 := Complex.abs_im_le_norm z
+    rw [abs_of_pos ht0] at h4; linarith
+  have hz2 : (1:ℝ) ≤ ‖z - 1‖ := by
+    have h4 := Complex.abs_im_le_norm (z - 1)
+    have h5 : (z - 1).im = z.im := by simp
+    rw [h5, abs_of_pos ht0] at h4; linarith
+  have hcpA : A ^ (-(9/4) : ℝ) ≤ ‖Complex.ofReal A ^ (z/2)‖ := by
+    rw [Complex.norm_cpow_eq_rpow_re_of_pos hA0]
+    apply Real.rpow_le_rpow_of_exponent_le hA1
+    rw [show (z/2).re = z.re/2 by simp]
+    linarith
+  have hcpπ : Real.pi ^ (-(4:ℝ)) ≤ ‖(Real.pi:ℂ) ^ (-z/2)‖ := by
+    rw [Complex.norm_cpow_eq_rpow_re_of_pos hπ0]
+    apply Real.rpow_le_rpow_of_exponent_le hπ1
+    rw [show (-z/2).re = -z.re/2 by simp]
+    linarith
+  have hcp2π : (2*Real.pi) ^ (-(8:ℝ)) ≤ ‖((2*Real.pi:ℝ):ℂ) ^ (-z)‖ := by
+    rw [Complex.norm_cpow_eq_rpow_re_of_pos h2π0]
+    apply Real.rpow_le_rpow_of_exponent_le h2π1
+    rw [show (-z).re = -z.re by simp]
+    linarith
+  have hΓ2 : c * Real.exp (-Real.pi * z.im) ≤ ‖Complex.Gamma (z/2)‖ := by
+    have hre : (z/2).re = z.re/2 := by simp
+    have him : (z/2).im = z.im/2 := by simp
+    have h6 := hΓ (z/2) (by rw [hre]; linarith) (by rw [hre]; linarith)
+      (by rw [him]; linarith)
+    refine le_trans ?_ h6
+    rw [him]
+    apply mul_le_mul_of_nonneg_left _ hc.le
+    apply Real.exp_le_exp.mpr
+    nlinarith [hπ0, ht0]
+  have hΓ1 : c * Real.exp (-Real.pi * z.im) ≤ ‖Complex.Gamma z‖ :=
+    hΓ z h1 h2 (by linarith)
+  have hP1 : (0:ℝ) ≤ Real.pi ^ (-(4:ℝ)) * (c * Real.exp (-Real.pi * z.im)) :=
+    mul_nonneg (Real.rpow_nonneg hπ0.le _) (mul_nonneg hc.le (Real.exp_nonneg _))
+  have hP2 : (0:ℝ) ≤ 2 * (2*Real.pi) ^ (-(8:ℝ)) *
+      (c * Real.exp (-Real.pi * z.im)) :=
+    mul_nonneg (mul_nonneg (by norm_num) (Real.rpow_nonneg h2π0.le _))
+      (mul_nonneg hc.le (Real.exp_nonneg _))
+  have hQ1 : (0:ℝ) ≤ ‖(Real.pi:ℂ) ^ (-z/2)‖ * ‖Complex.Gamma (z/2)‖ :=
+    mul_nonneg (norm_nonneg _) (norm_nonneg _)
+  have hlow : Real.exp (-(Real.pi * ((r₁:ℝ) + r₂) + |Real.log c₀| + 1) *
+      (1 + z.im)^2) ≤ c₀ * Real.exp (-(Real.pi * ((r₁:ℝ) + r₂)) * z.im) := by
+    have hgoal : -(Real.pi * ((r₁:ℝ) + r₂) + |Real.log c₀| + 1) *
+        (1 + z.im)^2 ≤
+        Real.log c₀ + -(Real.pi * ((r₁:ℝ) + r₂)) * z.im := by
+      have hsq : (0:ℝ) ≤ (1 + z.im)^2 - (1 + z.im) := by nlinarith
+      have habs : -|Real.log c₀| ≤ Real.log c₀ := neg_abs_le _
+      have ha0 : (0:ℝ) ≤ Real.pi * ((r₁:ℝ) + r₂) := by positivity
+      nlinarith [mul_nonneg (by positivity : (0:ℝ) ≤ Real.pi * ((r₁:ℝ) + r₂) +
+          |Real.log c₀| + 1) hsq,
+        mul_nonneg (by positivity : (0:ℝ) ≤ |Real.log c₀| + 1) ht0.le, ha0]
+    calc Real.exp (-(Real.pi * ((r₁:ℝ) + r₂) + |Real.log c₀| + 1) *
+        (1 + z.im)^2)
+        ≤ Real.exp (Real.log c₀ + -(Real.pi * ((r₁:ℝ) + r₂)) * z.im) :=
+          Real.exp_le_exp.mpr hgoal
+      _ = c₀ * Real.exp (-(Real.pi * ((r₁:ℝ) + r₂)) * z.im) := by
+          rw [Real.exp_add, Real.exp_log hc₀]
+  refine le_trans hlow ?_
+  simp only [norm_mul, norm_pow, Complex.norm_ofNat]
+  calc c₀ * Real.exp (-(Real.pi * ((r₁:ℝ) + r₂)) * z.im)
+      = A ^ (-(9/4) : ℝ) *
+        (Real.pi ^ (-(4:ℝ)) * (c * Real.exp (-Real.pi * z.im))) ^ r₁ *
+        (2 * (2*Real.pi) ^ (-(8:ℝ)) * (c * Real.exp (-Real.pi * z.im))) ^ r₂ := by
+        rw [hc₀def, show -(Real.pi * ((r₁:ℝ) + r₂)) * z.im =
+          ((r₁ + r₂ : ℕ):ℝ) * (-Real.pi * z.im) by push_cast; ring,
+          Real.exp_nat_mul, pow_add]
+        ring
+    _ ≤ ‖Complex.ofReal A ^ (z/2)‖ *
+        (‖(Real.pi:ℂ) ^ (-z/2)‖ * ‖Complex.Gamma (z/2)‖) ^ r₁ *
+        (2 * ‖((2*Real.pi:ℝ):ℂ) ^ (-z)‖ * ‖Complex.Gamma z‖) ^ r₂ := by
+        apply mul_le_mul
+        · apply mul_le_mul hcpA
+            (pow_le_pow_left₀ hP1 (mul_le_mul hcpπ hΓ2
+              (mul_nonneg hc.le (Real.exp_nonneg _)) (norm_nonneg _)) r₁)
+            (pow_nonneg hP1 _) (norm_nonneg _)
+        · apply pow_le_pow_left₀ hP2
+          apply mul_le_mul _ hΓ1 (mul_nonneg hc.le (Real.exp_nonneg _))
+            (mul_nonneg (by norm_num) (norm_nonneg _))
+          exact mul_le_mul_of_nonneg_left hcp2π (by norm_num)
+        · exact pow_nonneg hP2 _
+        · exact mul_nonneg (norm_nonneg _) (pow_nonneg hQ1 _)
+    _ ≤ ‖z‖ * ‖z - 1‖ * ‖Complex.ofReal A ^ (z/2)‖ *
+        (‖(Real.pi:ℂ) ^ (-z/2)‖ * ‖Complex.Gamma (z/2)‖) ^ r₁ *
+        (2 * ‖((2*Real.pi:ℝ):ℂ) ^ (-z)‖ * ‖Complex.Gamma z‖) ^ r₂ := by
+        have h12 : (1:ℝ) ≤ ‖z‖ * ‖z - 1‖ :=
+          one_le_mul_of_one_le_of_one_le hz1 hz2
+        have hXnn : (0:ℝ) ≤ ‖Complex.ofReal A ^ (z/2)‖ *
+            (‖(Real.pi:ℂ) ^ (-z/2)‖ * ‖Complex.Gamma (z/2)‖) ^ r₁ *
+            (2 * ‖((2*Real.pi:ℝ):ℂ) ^ (-z)‖ * ‖Complex.Gamma z‖) ^ r₂ :=
+          mul_nonneg (mul_nonneg (norm_nonneg _) (pow_nonneg hQ1 _))
+            (pow_nonneg (mul_nonneg (mul_nonneg (by norm_num) (norm_nonneg _))
+              (norm_nonneg _)) _)
+        calc ‖Complex.ofReal A ^ (z/2)‖ *
+            (‖(Real.pi:ℂ) ^ (-z/2)‖ * ‖Complex.Gamma (z/2)‖) ^ r₁ *
+            (2 * ‖((2*Real.pi:ℝ):ℂ) ^ (-z)‖ * ‖Complex.Gamma z‖) ^ r₂
+            ≤ (‖z‖ * ‖z - 1‖) * (‖Complex.ofReal A ^ (z/2)‖ *
+              (‖(Real.pi:ℂ) ^ (-z/2)‖ * ‖Complex.Gamma (z/2)‖) ^ r₁ *
+              (2 * ‖((2*Real.pi:ℝ):ℂ) ^ (-z)‖ * ‖Complex.Gamma z‖) ^ r₂) :=
+              le_mul_of_one_le_left hXnn h12
+          _ = ‖z‖ * ‖z - 1‖ * ‖Complex.ofReal A ^ (z/2)‖ *
+              (‖(Real.pi:ℂ) ^ (-z/2)‖ * ‖Complex.Gamma (z/2)‖) ^ r₁ *
+              (2 * ‖((2*Real.pi:ℝ):ℂ) ^ (-z)‖ * ‖Complex.Gamma z‖) ^ r₂ := by
+              ring
+
 /-- **Exponential-quadratic lower bound for the elementary factor on
-the Phragmén–Lindelöf strip** (sorry node, stated 2026-07-24 — the
-sole remaining analytic leaf of the decomposition of
+the Phragmén–Lindelöf strip** (PROVEN 2026-07-24 — the final analytic
+leaf of the decomposition of
 `DedekindContinuation.xi_window_le_xiFactor`): on the strip
 `−9/2 ≤ re z ≤ 8`, `im z ≥ 1`, the elementary factor satisfies
 `‖E(z)‖ ≥ exp(−κ·(1 + im z)²)`.  This is FAR weaker than the truth
 (Stirling gives `‖E‖ ≍ poly·e^{−c·im}`), but it is all the a-priori
 input `phragmenLindelof_half_strip` needs for the quotient `ξ_K/E`.
-
-Intended proof, factor by factor (`E = z(z−1)·|d|^{z/2}·Γ_ℝ(z)^{r₁}·
-Γ_ℂ(z)^{r₂}`): `‖z‖, ‖z−1‖ ≥ im z ≥ 1` (`Complex.abs_im_le_norm`);
-`|d|^{re/2} ≥ |d|^{−9/4}`, `π^{−re/2} ≥ π^{−4}`,
-`(2π)^{−re} ≥ (2π)^{−8}` — positive constants
-(`Complex.norm_cpow_eq_rpow_re_of_pos`,
-`Real.rpow_le_rpow_of_exponent_le`).  For the Γ-factors use Euler's
-reflection `Γ(w)·Γ(1−w) = π/sin(πw)`
-(`Complex.Gamma_mul_Gamma_one_sub`, valid off `ℤ`, and `im ≠ 0` here):
-`‖Γ(w)‖ = π/(‖sin(πw)‖·‖Γ(1−w)‖)` with `‖sin(πw)‖ ≤ e^{π·im w}`
-(unfold `Complex.sin` as a combination of `exp(±iπw)` and use
-`Complex.norm_exp`), and `‖Γ(1−w)‖ ≤ ‖Γ(9−w)‖` by dividing out eight
-recurrence factors of modulus `≥ im w ≥ 1/2`
-(`Complex.Gamma_add_one`); finally `‖Γ(u)‖` for `re u ∈ [1, 27/2]` is
-bounded by `Real.Gamma (re u) ≤ sup_{[1,27/2]} Real.Gamma` — the norm
-estimate `‖Γ(u)‖ ≤ Real.Gamma (re u)` comes from the integral
-representation `Complex.Gamma_eq_integral` (valid at `re u ≥ 1 > 0`)
-via `norm_integral_le_integral_norm` and
-`Real.Gamma_eq_integral`, and the sup from continuity of `Real.Gamma`
-on the compact `[1, 27/2]` (extreme value theorem).  Combining:
-`‖E(z)‖ ≥ c·e^{−c′·(1 + im z)} ≥ exp(−κ(1 + im z)²)` for `κ` large
-enough that `e^{−κ(1+t)²}` absorbs both the constant `c` and the
-linear exponential. -/
+Instance of `xiFactor_shape_norm_lower` at `A = |d_K| ≥ 1`
+(`NumberField.discr_ne_zero`), whose Γ-engine is Euler's reflection
+formula plus the integral bound `norm_Gamma_le_Gamma_re` — no
+Stirling needed at this precision. -/
 theorem dedekindXiFactor_norm_lower_strip (K : Type*) [Field K]
     [NumberField K] :
     ∃ κ : ℝ, 0 < κ ∧ ∀ z : ℂ, -(9/2 : ℝ) ≤ z.re → z.re ≤ 8 → 1 ≤ z.im →
       Real.exp (-κ * (1 + z.im) ^ 2) ≤ ‖dedekindXiFactor K z‖ := by
-  sorry
+  have hA1 : (1:ℝ) ≤ |(NumberField.discr K : ℝ)| := by
+    rw [show |(NumberField.discr K : ℝ)| = ((|NumberField.discr K| : ℤ) : ℝ) by
+      push_cast; ring]
+    exact_mod_cast Int.one_le_abs (NumberField.discr_ne_zero K)
+  obtain ⟨κ, hκ, h⟩ := xiFactor_shape_norm_lower
+    (|(NumberField.discr K : ℝ)|) hA1
+    (NumberField.InfinitePlace.nrRealPlaces K)
+    (NumberField.InfinitePlace.nrComplexPlaces K)
+  refine ⟨κ, hκ, ?_⟩
+  intro z h1 h2 h3
+  unfold dedekindXiFactor
+  exact h z h1 h2 h3
 
 /-- **Phragmén–Lindelöf for the half-strip `[−9/2, 8] × [1, ∞)`**
 (PROVEN 2026-07-24 — the convexity engine of
@@ -9788,7 +10106,7 @@ polynomially growing boundary data to constants:
 * `im = 1`: continuity of `g` on the compact bottom segment (extreme
   value theorem; `E ≠ 0` there by `dedekindXiFactor_ne_zero`);
 * a-priori: the `growth` field (plus compactness on `‖z‖ ≤ 2`) gives
-  `‖ξ‖ ≤ exp(K′(1+im)²)`, and the sorried leaf
+  `‖ξ‖ ≤ exp(K′(1+im)²)`, and the PROVEN leaf
   `dedekindXiFactor_norm_lower_strip` bounds `‖1/E‖`, so
   `‖g‖ ≤ exp((K′+κ)(1+im)²)` — inside the half-strip PL tolerance. -/
 theorem DedekindContinuation.xi_strip_le_xiFactor {K : Type*} [Field K]
@@ -10052,9 +10370,10 @@ Phragmén–Lindelöf with a cubic multiplier
 (`dedekindZeta_norm_upper_of_two_le_re`), the functional-equation
 reflection with EXACT integral Γ-shifts
 (`dedekindXiFactor_reflection_ratio`; the strip's left edge `−9/2`
-mirrors to `11/2`, distance `10`), and the `growth` interface field;
-the sole remaining sorried input is the elementary lower bound
-`dedekindXiFactor_norm_lower_strip`. -/
+mirrors to `11/2`, distance `10`), the elementary lower bound
+`dedekindXiFactor_norm_lower_strip` (Euler reflection + the
+Γ-integral bound), and the `growth` interface field — every input is
+PROVEN. -/
 theorem DedekindContinuation.xi_window_le_xiFactor {K : Type*} [Field K]
     [NumberField K] (pkg : DedekindContinuation K) :
     ∃ C : ℝ, 0 < C ∧ ∃ B : ℕ, ∀ T : ℝ, 8 ≤ T → ∀ z : ℂ,
