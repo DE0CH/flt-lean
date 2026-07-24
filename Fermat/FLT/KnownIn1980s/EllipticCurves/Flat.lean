@@ -8891,6 +8891,240 @@ lemma WeierstrassCurve.torsionKernelFun_map (h : Polynomial R) (a b : ℕ)
     simpa using Polynomial.aeval_algHom_apply
       (σ.toAlgHom.restrictScalars R) x h
 
+set_option linter.unusedSectionVars false in
+/-- A valuation subring of `Kˢᵉᵖ` centered on `R` contains the image of `R`. -/
+lemma mem_centered_algebraMap (𝒪 : ValuationSubring Ksep)
+    (hc : (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range)
+    (r : R) : algebraMap R Ksep r ∈ 𝒪 := by
+  have h1 : algebraMap R K r ∈ (𝒪.comap (algebraMap K Ksep)).toSubring := by
+    rw [hc]
+    exact ⟨r, rfl⟩
+  have h2 : algebraMap K Ksep (algebraMap R K r) ∈ 𝒪 := h1
+  rwa [← IsScalarTower.algebraMap_apply] at h2
+
+set_option linter.unusedSectionVars false in
+/-- The coefficients of the base-changed good-reduction model lie in every
+centered valuation subring: they come from the integral model over `R`. -/
+lemma baseChange_coeffs_mem_centered (𝒪 : ValuationSubring Ksep)
+    (hc : (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range) :
+    (E⁄Ksep).a₁ ∈ 𝒪 ∧ (E⁄Ksep).a₂ ∈ 𝒪 ∧ (E⁄Ksep).a₃ ∈ 𝒪 ∧
+      (E⁄Ksep).a₄ ∈ 𝒪 ∧ (E⁄Ksep).a₆ ∈ 𝒪 := by
+  refine ⟨?_, ?_, ?_, ?_, ?_⟩
+  · have ha : (E⁄Ksep).a₁ =
+        algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₁ := by
+      rw [IsScalarTower.algebraMap_apply R K Ksep,
+        WeierstrassCurve.integralModel_a₁_eq]
+      simp [WeierstrassCurve.baseChange]
+    rw [ha]
+    exact mem_centered_algebraMap R K Ksep 𝒪 hc _
+  · have ha : (E⁄Ksep).a₂ =
+        algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₂ := by
+      rw [IsScalarTower.algebraMap_apply R K Ksep,
+        WeierstrassCurve.integralModel_a₂_eq]
+      simp [WeierstrassCurve.baseChange]
+    rw [ha]
+    exact mem_centered_algebraMap R K Ksep 𝒪 hc _
+  · have ha : (E⁄Ksep).a₃ =
+        algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₃ := by
+      rw [IsScalarTower.algebraMap_apply R K Ksep,
+        WeierstrassCurve.integralModel_a₃_eq]
+      simp [WeierstrassCurve.baseChange]
+    rw [ha]
+    exact mem_centered_algebraMap R K Ksep 𝒪 hc _
+  · have ha : (E⁄Ksep).a₄ =
+        algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₄ := by
+      rw [IsScalarTower.algebraMap_apply R K Ksep,
+        WeierstrassCurve.integralModel_a₄_eq]
+      simp [WeierstrassCurve.baseChange]
+    rw [ha]
+    exact mem_centered_algebraMap R K Ksep 𝒪 hc _
+  · have ha : (E⁄Ksep).a₆ =
+        algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₆ := by
+      rw [IsScalarTower.algebraMap_apply R K Ksep,
+        WeierstrassCurve.integralModel_a₆_eq]
+      simp [WeierstrassCurve.baseChange]
+    rw [ha]
+    exact mem_centered_algebraMap R K Ksep 𝒪 hc _
+
+/-- **Some valuation subring of `Kˢᵉᵖ` is centered on `R`** (sorry node —
+glue for the Katz–Mazur kernel-functions leaf; the universe constraint of
+`exists_valuationSubring_integralClosure_center` blocks the trivial
+instantiation `L = K`, so this is proved directly). Intended proof:
+Chevalley's extension theorem (`LocalSubring.exists_le_valuationSubring`)
+applied to the image of the local ring `R` in `Kˢᵉᵖ` gives a valuation
+subring `𝒪` DOMINATING it; its trace on `K` is an overring of the DVR `R`
+whose maximal ideal survives (a uniformizer's image is a nonunit of `𝒪` by
+domination), so the trace is exactly `R.range`: an `s ∈ K ∖ R.range` has
+`s⁻¹ = algebraMap r₀` with `r₀` a nonunit, and `s ∈ 𝒪` would make the
+image of `r₀` a unit of `𝒪`. -/
+lemma exists_centered_valuationSubring :
+    ∃ 𝒪 : ValuationSubring Ksep,
+      (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range := by
+  sorry
+
+/-- An element of `Kˢᵉᵖ` integral over `R` lies in every centered valuation
+subring: push the monic witness into the (integrally closed) subring. -/
+lemma mem_centered_of_isIntegral (𝒪 : ValuationSubring Ksep)
+    (hc : (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range)
+    {z : Ksep} (hz : _root_.IsIntegral R z) : z ∈ 𝒪 := by
+  obtain ⟨p, hp, hp0⟩ := hz
+  set φ : R →+* 𝒪 := (algebraMap R Ksep).codRestrict 𝒪.toSubring
+    (fun r => mem_centered_algebraMap R K Ksep 𝒪 hc r) with hφ
+  have h1 : _root_.IsIntegral (↥𝒪) z := by
+    refine ⟨p.map φ, hp.map φ, ?_⟩
+    rw [Polynomial.eval₂_map]
+    have hcomp : (algebraMap ↥𝒪 Ksep).comp φ = algebraMap R Ksep := by
+      ext r
+      rfl
+    rw [hcomp]
+    exact hp0
+  obtain ⟨w, hw⟩ := IsIntegrallyClosed.isIntegral_iff.mp h1
+  rw [← hw]
+  exact w.2
+
+set_option linter.unusedSectionVars false in
+/-- **Monic dominance at a non-integral point**: for monic `h ∈ R[X]` and
+`x ∉ 𝒪`, the valuation of `h(x)` is exactly `v(x)^deg h` — the leading term
+strictly dominates every `R`-integral lower term. -/
+lemma val_aeval_monic_of_notMem (𝒪 : ValuationSubring Ksep)
+    (hR : ∀ r : R, algebraMap R Ksep r ∈ 𝒪) (h : Polynomial R)
+    (hmon : h.Monic) {x : Ksep} (hx : x ∉ 𝒪) :
+    𝒪.valuation (Polynomial.aeval x h) = 𝒪.valuation x ^ h.natDegree := by
+  rw [← 𝒪.valuation_le_one_iff, not_le] at hx
+  have hx0 : (𝒪.valuation x : _) ≠ 0 := (zero_lt_one.trans hx).ne'
+  have hexp : Polynomial.aeval x h =
+      x ^ h.natDegree + ∑ i ∈ Finset.range h.natDegree,
+        algebraMap R Ksep (h.coeff i) * x ^ i := by
+    rw [Polynomial.aeval_def, Polynomial.eval₂_eq_sum_range,
+      Finset.sum_range_succ, hmon.coeff_natDegree, map_one, one_mul, add_comm]
+  have hlt : 𝒪.valuation (∑ i ∈ Finset.range h.natDegree,
+      algebraMap R Ksep (h.coeff i) * x ^ i) < 𝒪.valuation (x ^ h.natDegree) := by
+    rw [map_pow]
+    refine Valuation.map_sum_lt _ (pow_ne_zero _ hx0) fun i hi => ?_
+    rw [map_mul]
+    calc 𝒪.valuation (algebraMap R Ksep (h.coeff i)) * 𝒪.valuation (x ^ i)
+        ≤ 1 * 𝒪.valuation (x ^ i) :=
+          mul_le_mul_left ((𝒪.valuation_le_one_iff _).mpr (hR _)) _
+      _ = 𝒪.valuation x ^ i := by rw [one_mul, map_pow]
+      _ < 𝒪.valuation x ^ h.natDegree :=
+          pow_lt_pow_right₀ hx (Finset.mem_range.mp hi)
+  rw [hexp, 𝒪.valuation.map_add_eq_of_lt_left hlt, map_pow]
+
+/-- **The exact ordinate valuation**: on the base-changed good-reduction
+model, an affine point with non-integral abscissa satisfies
+`v(y)² = v(x)³` exactly — the Weierstrass equation equates the two dominant
+terms. Sharpening of `val_abscissa_lt_val_ordinate` used for the weighted
+integrality `2a + 3b ≤ 2d` of the monomial sections. -/
+lemma WeierstrassCurve.val_ordinate_sq_of_abscissa_notMem
+    (𝒪 : ValuationSubring Ksep)
+    (hc : (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range)
+    {x y : Ksep} (hE : (E⁄Ksep).toAffine.Equation x y) (hx : x ∉ 𝒪) :
+    𝒪.valuation y ^ 2 = 𝒪.valuation x ^ 3 := by
+  obtain ⟨ha₁, ha₂, ha₃, ha₄, ha₆⟩ := baseChange_coeffs_mem_centered R K E Ksep 𝒪 hc
+  have hvxy : 𝒪.valuation x < 𝒪.valuation y :=
+    WeierstrassCurve.val_abscissa_lt_val_ordinate 𝒪 (E⁄Ksep) ha₁ ha₂ ha₃ ha₄ ha₆
+      hE hx
+  rw [← 𝒪.valuation_le_one_iff, not_le] at hx
+  have hE' := (WeierstrassCurve.Affine.equation_iff x y).mp hE
+  -- the `x`-side has valuation exactly `v(x)³`
+  have hR3 : 𝒪.valuation (x ^ 3 + (E⁄Ksep).a₂ * x ^ 2 + (E⁄Ksep).a₄ * x +
+      (E⁄Ksep).a₆) = 𝒪.valuation x ^ 3 := by
+    rw [show x ^ 3 + (E⁄Ksep).a₂ * x ^ 2 + (E⁄Ksep).a₄ * x + (E⁄Ksep).a₆
+        = x ^ 3 + ((E⁄Ksep).a₂ * x ^ 2 + ((E⁄Ksep).a₄ * x + (E⁄Ksep).a₆))
+        from by ring]
+    have h2 : 𝒪.valuation ((E⁄Ksep).a₂ * x ^ 2 + ((E⁄Ksep).a₄ * x +
+        (E⁄Ksep).a₆)) < 𝒪.valuation (x ^ 3) := by
+      rw [map_pow]
+      refine 𝒪.valuation.map_add_lt ?_ (𝒪.valuation.map_add_lt ?_ ?_)
+      · rw [map_mul, map_pow]
+        calc 𝒪.valuation (E⁄Ksep).a₂ * 𝒪.valuation x ^ 2
+            ≤ 1 * 𝒪.valuation x ^ 2 :=
+              mul_le_mul_left ((𝒪.valuation_le_one_iff _).mpr ha₂) _
+        _ = 𝒪.valuation x ^ 2 := one_mul _
+        _ < 𝒪.valuation x ^ 3 := pow_lt_pow_right₀ hx (by omega)
+      · rw [map_mul]
+        calc 𝒪.valuation (E⁄Ksep).a₄ * 𝒪.valuation x
+            ≤ 1 * 𝒪.valuation x :=
+              mul_le_mul_left ((𝒪.valuation_le_one_iff _).mpr ha₄) _
+        _ = 𝒪.valuation x ^ 1 := by rw [one_mul, pow_one]
+        _ < 𝒪.valuation x ^ 3 := pow_lt_pow_right₀ hx (by omega)
+      · calc 𝒪.valuation (E⁄Ksep).a₆ ≤ 1 :=
+          (𝒪.valuation_le_one_iff _).mpr ha₆
+        _ = 𝒪.valuation x ^ 0 := (pow_zero _).symm
+        _ < 𝒪.valuation x ^ 3 := pow_lt_pow_right₀ hx (by omega)
+    rw [𝒪.valuation.map_add_eq_of_lt_left h2, map_pow]
+  -- the `y`-side has valuation exactly `v(y)²`
+  have hyadd : 𝒪.valuation (y + ((E⁄Ksep).a₁ * x + (E⁄Ksep).a₃)) =
+      𝒪.valuation y := by
+    refine 𝒪.valuation.map_add_eq_of_lt_left (lt_of_le_of_lt ?_ hvxy)
+    refine Valuation.map_add_le _ ?_ ?_
+    · rw [map_mul]
+      calc 𝒪.valuation (E⁄Ksep).a₁ * 𝒪.valuation x ≤ 1 * 𝒪.valuation x :=
+        mul_le_mul_left ((𝒪.valuation_le_one_iff _).mpr ha₁) _
+      _ = 𝒪.valuation x := one_mul _
+    · calc 𝒪.valuation (E⁄Ksep).a₃ ≤ 1 := (𝒪.valuation_le_one_iff _).mpr ha₃
+      _ ≤ 𝒪.valuation x := hx.le
+  have hL : 𝒪.valuation (y ^ 2 + (E⁄Ksep).a₁ * x * y + (E⁄Ksep).a₃ * y) =
+      𝒪.valuation y * 𝒪.valuation y := by
+    rw [show y ^ 2 + (E⁄Ksep).a₁ * x * y + (E⁄Ksep).a₃ * y =
+      y * (y + ((E⁄Ksep).a₁ * x + (E⁄Ksep).a₃)) from by ring, map_mul, hyadd]
+  rw [hE'] at hL
+  rw [hR3] at hL
+  rw [sq]
+  exact hL.symm
+
+/-- **The centered-integrality bridge** (sorry node — stage-B endgame of the
+Katz–Mazur kernel-functions leaf): an element of `Kˢᵉᵖ` lying in EVERY
+valuation subring centered on `R` is integral over `R`. Intended proof: by
+`iInf_valuationSubring_superset` the intersection of all valuation subrings
+containing the image of `R` is the integral closure of (the subring closure
+of) that image, so it suffices to see that a valuation subring `V ⊇ im R`
+that is NOT centered contains everything anyway: its trace
+`V.comap (algebraMap K Ksep)` is an overring of the DVR `R` inside `K`,
+hence `R.range` (centered) or all of `K` (if some `s ∈ trace ∖ R.range`,
+then `s⁻¹` is a nonunit of `R`, so `π ∣ s⁻¹` for a uniformizer `π`, so
+`π⁻¹ = (s⁻¹/π)·s ∈ trace`, and every element of `K` is `r·π^{-j}`); in the
+latter case the valuation of `V` is trivial on `K`, hence trivial on the
+algebraic extension `Kˢᵉᵖ` (value groups of algebraic extensions embed in
+the divisible hull), i.e. `V = ⊤` — concretely, every `z ∈ Kˢᵉᵖ` is
+integral over `K ⊆ V` and valuation subrings are integrally closed.
+Finally descend integrality over the image subring to integrality over `R`
+along the surjection `R → im R` (lift the monic witness coefficientwise). -/
+theorem isIntegral_of_forall_mem_centered (z : Ksep)
+    (hz : ∀ 𝒪 : ValuationSubring Ksep,
+      (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range →
+      z ∈ 𝒪) :
+    _root_.IsIntegral R z := by
+  sorry
+
+/-- **The avoiding denominator** (sorry node — stage A of the Katz–Mazur
+kernel-functions leaf): a monic `h ∈ R[X]` of degree `≥ 2` such that
+`h(x(P))` is a unit of every centered valuation subring for every affine
+`m`-torsion point `P` with integral abscissa. Intended construction: an
+affine `m`-torsion abscissa is a root of `ΨSq m` (`smul_some_eq_zero_iff`),
+a polynomial with `R`-integral coefficients whose reduction over the
+residue field `κ` of `R` is the division polynomial of the reduced curve —
+NONZERO because good reduction makes the reduction elliptic — so the
+residue of an integral torsion abscissa in the residue field of any
+centered `𝒪` is algebraic over `κ` of degree `≤ N := natDegree (ΨSq m)`,
+uniformly in `𝒪` and `P`. If `κ` is finite of order `q`, take
+`h := X^(q^e) − X + 1` with `e := lcm (1 .. N)` (an element `α` of any
+`𝔽_{q^j}` with `j ∣ e` has `α^(q^e) = α`, so `h(α) = 1 ≠ 0`); if `κ` is
+infinite, take `h := (X − c)²` with `c ∈ R` lifting an element of `κ`
+avoiding the finitely many `κ`-rational roots of the reduced `ΨSq m` (a
+residue outside `κ` differs from `c̄` automatically). In both cases the
+reduction of `h` does not vanish at the residue of the abscissa, i.e.
+`h(x(P))` is a unit of `𝒪`. -/
+theorem WeierstrassCurve.exists_torsion_avoiding_denominator
+    (m : ℕ) (hm : (m : K) ≠ 0) :
+    ∃ h : Polynomial R, h.Monic ∧ 2 ≤ h.natDegree ∧
+      ∀ 𝒪 : ValuationSubring Ksep,
+        (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range →
+        ∀ (x y : Ksep) (hns : (E⁄Ksep).toAffine.Nonsingular x y),
+          (m : ℤ) • (Affine.Point.some x y hns : (E⁄Ksep).Point) = 0 →
+          x ∈ 𝒪 → 𝒪.valuation (Polynomial.aeval x h) = 1 := by
+  sorry
+
 end TorsionKernelFunctions
 
 set_option backward.isDefEq.respectTransparency false in
