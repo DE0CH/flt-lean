@@ -4172,40 +4172,297 @@ theorem exists_eisenstein_nonsplit_lattice_of_residually_reducible
       ¬ ∃ a : kk', ∀ g, cc g = (χ g - 1) * a :=
   sorry
 
-/-- **Level-2 Eisenstein vanishing** (Eisenstein pillar E3; sorry node
-— Mazur/Herbrand, the deep arithmetic input of the residually
-reducible branch): a hardly ramified mod-`p` extension with TRIVIAL
-sub-character SPLITS when `p ≥ 5` — some `a : kk'` writes the
-upper-right entry as the coboundary `cc g = (χ g − 1) a`. Classical
-proof: the extension class lives in `H¹(ℚ, ω^{−1})` (the determinant
-field of `IsHardlyRamified` pins the quotient character `χ` to
-`ω = χ̄_cyc`, and the twist `Hom(χ, 1)` is `ω^{−1}`), subject to:
-unramified outside `{2, p}` (the hardly ramified hypothesis); LOCALLY
-TRIVIAL at `p` — the flat model is an extension of the connected
-`μ_p` by the étale `ℤ/p` over `ℤ_p`, split by its own connected–étale
-sequence (Tate, in Cornell–Silverman–Stevens ch. V; equivalently
-`ω^{−1} = ω^{p−2}` has inertia weight `p − 2 ∉ {0, 1}` for `p ≥ 5`,
-outside Raynaud's flat range); and UNRAMIFIED at `2` — for
-`ℓ = 2 ≠ p` the ramified quotient of `H¹(ℚ_2, ω^{−1})` is controlled
-by `Frob₂`-equivariance on tame inertia, nonzero only when
-`ω²(Frob₂) = 1`, i.e. `p ∣ 2² − 1 = 3`, excluded by `hp5` (see the
-section audit for the genuine `p = 3` counterexample, the Kummer
-class of `2`). The surviving group is `Hom_{Gal}` out of the
-`ω^{−1}`-eigenspace of `Cl(ℚ(μ_p)) ⊗ 𝔽_p`, which VANISHES by
-Herbrand's theorem: `ω^{−1} = ω^{1−2}` and
-`p ∤ num(B₂) = num(1/6) = 1` (Herbrand 1932; Washington,
-*Introduction to Cyclotomic Fields*, Thm. 6.17; Ribet, Invent. Math.
-34 (1976) is the unused converse). Equivalently, in Hecke-algebra
-language: the index of the Eisenstein ideal at prime level `N` is
-`num((N−1)/12)` (Mazur, *Modular curves and the Eisenstein ideal*,
-Publ. Math. IHÉS 47 (1977)), which is `1` at `N = 2` — no Eisenstein
+/-- **Flat local splitting at `p`** (Eisenstein pillar E3a; sorry node
+— the connected–étale splitting of the flat model): a hardly ramified
+mod-`p` extension with TRIVIAL sub-character splits LOCALLY AT `p`:
+some `a : kk'` writes the upper-right entry as a coboundary on the
+whole image of the decomposition group at `p`. Classical proof:
+flatness at `p` (`hρE.isFlat`) gives a finite flat group scheme over
+`ℤ_p` with generic fibre `ρE|_{G_p}`; the scheme-theoretic closure of
+the trivial sub-line is the UNIQUE prolongation of the trivial
+rank-one representation (Raynaud, Bull. Soc. Math. France 102 (1974),
+3.3.3: prolongations are unique for `e ≤ p − 2`, here `e = 1`), namely
+the constant étale sub, and the quotient is the unique prolongation of
+`ω`, the `μ_p`-type connected model; a finite flat extension with
+étale SUB and connected QUOTIENT is split by its own connected–étale
+sequence — the identity component meets the étale sub trivially,
+injects into the connected quotient, and matches its order, hence is a
+group-scheme section (Tate, in Cornell–Silverman–Stevens, ch. V;
+Mazur, Publ. Math. IHÉS 47 (1977), ch. I: `Ext¹(μ_p, ℤ/p) = 0` over
+`ℤ_p`). Generic fibres give a `G_p`-stable complement `e₁ + a·e₀`,
+i.e. exactly the coboundary equation below. Soundness (audit
+2026-07-24): the hypothesis set is inhabited (split triangulars
+`1 ⊕ ω`), the conclusion holds for every inhabitant by the cited
+route, which consumes only oddness of `p` (`e = 1 ≤ p − 2` needs
+`p ≥ 3`) — `p ≥ 5` is NOT needed, so it is not demanded. Note the
+load-bearing asymmetry of orderings: in the OPPOSITE (trivial-quotient,
+`μ_p`-sub) order the local extensions form
+`Ext¹(ℤ/p, μ_p) = ℤ_pˣ ⊗ 𝔽_p ≠ 0` (unit Kummer classes, e.g. the
+Kummer class of `2` for every `p`), which is exactly why pillar E2
+must PRESCRIBE the trivial-sub order for its lattice. -/
+theorem eisenstein_trivial_sub_extension_locally_split_at_p
+    {kk' : Type u} [Field kk'] [Finite kk'] [Algebra ℤ_[p] kk']
+    [TopologicalSpace kk'] [DiscreteTopology kk'] [IsTopologicalRing kk']
+    {ρE : GaloisRep ℚ kk' (Fin 2 → kk')}
+    (hrankE : Module.rank kk' (Fin 2 → kk') = 2)
+    (hρE : IsHardlyRamified hpodd hrankE ρE)
+    (χ : Field.absoluteGaloisGroup ℚ →* kk')
+    (cc : Field.absoluteGaloisGroup ℚ → kk')
+    (htri : ∀ g, LinearMap.toMatrix (Pi.basisFun kk' (Fin 2))
+      (Pi.basisFun kk' (Fin 2)) (ρE g) = !![1, cc g; 0, χ g]) :
+    ∃ a : kk', ∀ g : Field.absoluteGaloisGroup ℚ_[p],
+      cc (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[p]) g) =
+        (χ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[p]) g) - 1) * a :=
+  sorry
+
+/-- **Tame local splitting at `2`** (Eisenstein pillar E3b; sorry node
+— the at-2 unit analysis; `hp5` is load-bearing HERE): a hardly
+ramified mod-`p` extension with TRIVIAL sub-character, `p ≥ 5`, splits
+locally at `2`. Classical proof, in two strokes. (i) *Killing
+inertia*: `χ` is pinned to `ω = χ̄_cyc` by the determinant of `htri`
+against `hρE.det`, and `ω` is unramified at `2`, so on (the image of)
+the inertia subgroup `I_2` the function `cc` is a plain homomorphism
+into `(kk', +)` — a pro-`p` target, killed by wild (pro-2) inertia,
+hence factoring through the tame quotient, on which a Frobenius lift
+`F` acts by `t ↦ t²`; the conjugation identity
+`cc(σ n σ⁻¹) = χ(σ)⁻¹ · cc(n)` for `n ∈ ker χ` (pure cocycle algebra
+from `htri`) applied to tame `n` gives `2 · cc(n) = χ(F)⁻¹ · cc(n)`
+with `χ(F) = ω(Frob₂) = 2`, so `(2 − 2⁻¹) · cc(n) = 0` and
+`2 − 2⁻¹ = 3/2 ≠ 0` in characteristic `p` exactly when
+`p ∤ 2² − 1 = 3` — excluded by `hp5`. This is the tame escape that the
+section audit's `p = 3` Kummer-of-2 counterexample rides
+(`v_2(2) = 1 ≢ 0 mod 3`: tamely ramified at `2`). (ii) *Killing the
+unramified part*: `a := cc(F)/(χ(F) − 1)` is well-formed since
+`χ(F) − 1 = 2 − 1 = 1 ≠ 0` (more generally `p ∤ 2 − 1` always kills
+`H¹_ur(ℚ_2, ω^{−1})`), and correcting `cc` by its coboundary yields a
+continuous cocycle vanishing on `I_2` and on `F`, hence on the closed
+subgroup they topologically generate — all of `G_2`, the unramified
+quotient being procyclic on `Frob₂` (the finite-level tame generator
+machinery of `ModThree.lean`,
+`exists_finite_level_tame_frobenius_generator_two` and
+`localInertia_two_eq_map_padic`, is the intended formal route; Serre,
+Duke Math. J. 54 (1987), §4.1 runs this at-2 computation). Soundness
+(audit 2026-07-24): the hypothesis set is inhabited (split
+triangulars), the conclusion holds for every inhabitant — for `p ≥ 5`
+in fact `H¹(ℚ_2, ω^{−1}) = 0` outright (local Euler characteristic
+plus `h⁰ = h² = 0` from `p ∤ 2 − 1` and `p ∤ 2² − 1`) — and the route
+is hypothesis-honest: `hp5` is consumed at the tame escape `p ∤ 3` and
+nowhere else. -/
+theorem eisenstein_trivial_sub_extension_locally_split_at_two_of_five_le
+    (hp5 : 5 ≤ p)
+    {kk' : Type u} [Field kk'] [Finite kk'] [Algebra ℤ_[p] kk']
+    [TopologicalSpace kk'] [DiscreteTopology kk'] [IsTopologicalRing kk']
+    {ρE : GaloisRep ℚ kk' (Fin 2 → kk')}
+    (hrankE : Module.rank kk' (Fin 2 → kk') = 2)
+    (hρE : IsHardlyRamified hpodd hrankE ρE)
+    (χ : Field.absoluteGaloisGroup ℚ →* kk')
+    (cc : Field.absoluteGaloisGroup ℚ → kk')
+    (htri : ∀ g, LinearMap.toMatrix (Pi.basisFun kk' (Fin 2))
+      (Pi.basisFun kk' (Fin 2)) (ρE g) = !![1, cc g; 0, χ g]) :
+    ∃ a : kk', ∀ g : Field.absoluteGaloisGroup ℚ_[2],
+      cc (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) g) =
+        (χ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) g) - 1) * a :=
+  sorry
+
+/-- **Kernel vanishing — Herbrand at `B₂`** (Eisenstein pillar E3c;
+sorry node — the class-field-theory pillar, the deep arithmetic input
+of the residually reducible branch): a hardly ramified mod-`p`
+extension with TRIVIAL sub-character that splits locally at `p` and at
+`2` has `cc` vanishing IDENTICALLY on `ker χ`. Classical proof:
+`χ = ω = χ̄_cyc` is pinned by the determinant of `htri` against
+`hρE.det`, so `ker χ = G_{ℚ(μ_p)}`; on the kernel the twisted cocycle
+relation (from `htri`) degenerates and `φ := cc|_{ker χ}` is a
+continuous homomorphism into `(kk', +)`, with the conjugation
+equivariance `φ(σ n σ⁻¹) = χ(σ)⁻¹ · φ(n)` (cocycle algebra:
+`cc(σ n σ⁻¹) = cc(σ⁻¹) + (cc(n) + cc(σ)) χ(σ)⁻¹` and
+`cc(σ⁻¹) + cc(σ) χ(σ)⁻¹ = cc(1) = 0`). `φ` kills every inertia
+subgroup of `ker χ`: over `ℓ ∉ {2, p}` because `ρE` is literally
+trivial on inertia there (`hρE.isUnramified`); over `2` and `p`
+because the decomposition subgroups are the `Γℚ`-conjugates of the
+images of `Γℚ_2`, `Γℚ_p`, on which `cc` is the given coboundary —
+vanishing on `ker χ` since coboundaries do — and vanishing transports
+along the conjugation identity. So `φ` factors through the Galois
+group of the maximal abelian everywhere-unramified `p`-elementary
+extension of `ℚ(μ_p)`, i.e. through `Cl(ℚ(μ_p)) ⊗ 𝔽_p` (Artin
+reciprocity for the Hilbert class field; Neukirch, *Algebraic Number
+Theory*, VI §6–7), equivariantly for `Gal(ℚ(μ_p)/ℚ)`; a nonzero `φ`
+would exhibit a nonzero `ω^{−1} = ω^{1−2}`-eigenspace of
+`Cl(ℚ(μ_p)) ⊗ 𝔽_p`, which Herbrand's theorem forbids:
+`p ∤ num(B₂) = num(1/6) = 1`, with `k = 2` inside the window
+`2 ≤ k ≤ p − 3` — the second consumption of `hp5` (Herbrand 1932;
+Washington, *Introduction to Cyclotomic Fields*, Thm. 6.17; Ribet,
+Invent. Math. 34 (1976) is the unused converse). Intended further cut
+for the successor, top-down: (i) found the `Gal`-action on
+`ClassGroup (𝓞 (CyclotomicField p ℚ))` (via `galRestrict` and
+fractional-ideal functoriality — the mathlib pin has NO such action,
+audited 2026-07-24, nor any Herbrand/regular-prime material); (ii) the
+CFT localization leaf — everywhere-unramified `ω^{−1}`-equivariant
+homs factor through the class group; (iii) the sharply separated
+Herbrand leaf — the `ω^{−1}`-eigenspace dies for `p ∤ num(B₂)`
+(Washington 6.17). Soundness (audit 2026-07-24): the hypothesis set is
+inhabited (split extensions), the conclusion holds for every
+inhabitant by the vanishing cited, and no elementary route around the
+class-group localization is known: this pillar is irreducibly
+Herbrand/Mazur. -/
+theorem eisenstein_trivial_sub_extension_ker_vanishing_of_five_le
+    (hp5 : 5 ≤ p)
+    {kk' : Type u} [Field kk'] [Finite kk'] [Algebra ℤ_[p] kk']
+    [TopologicalSpace kk'] [DiscreteTopology kk'] [IsTopologicalRing kk']
+    {ρE : GaloisRep ℚ kk' (Fin 2 → kk')}
+    (hrankE : Module.rank kk' (Fin 2 → kk') = 2)
+    (hρE : IsHardlyRamified hpodd hrankE ρE)
+    (χ : Field.absoluteGaloisGroup ℚ →* kk')
+    (cc : Field.absoluteGaloisGroup ℚ → kk')
+    (htri : ∀ g, LinearMap.toMatrix (Pi.basisFun kk' (Fin 2))
+      (Pi.basisFun kk' (Fin 2)) (ρE g) = !![1, cc g; 0, χ g])
+    (hlocp : ∃ a : kk', ∀ g : Field.absoluteGaloisGroup ℚ_[p],
+      cc (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[p]) g) =
+        (χ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[p]) g) - 1) * a)
+    (hloc2 : ∃ a : kk', ∀ g : Field.absoluteGaloisGroup ℚ_[2],
+      cc (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) g) =
+        (χ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) g) - 1) * a) :
+    ∀ g, χ g = 1 → cc g = 0 :=
+  sorry
+
+/-- **Inflation–restriction by finite averaging** (PROVEN 2026-07-24):
+for a character `χ` of an arbitrary group with values in a finite
+field and a `χ`-twisted cocycle `cc` — the relation
+`cc (g h) = cc h + cc g · χ h` of an upper-triangular matrix
+representation `!![1, cc; 0, χ]` — vanishing identically on `ker χ`,
+the cocycle is a coboundary: `cc g = (χ g − 1) a` for a single fixed
+`a`. Coboundaries vanish on `ker χ`, so restriction of the extension
+class to the kernel is the homomorphism `cc|_{ker χ}` itself, and this
+lemma is the converse direction — concretely the vanishing of
+`H¹(G/ker χ, k(χ^{−1}))` for the finite group `G/ker χ ≤ kˣ` of order
+prime to the characteristic (inflation–restriction;
+Neukirch–Schmidt–Wingberg, *Cohomology of Number Fields*, I §6) —
+realized by averaging the cocycle against `χ^{−1}` over the image
+`χ(G)`: summing `cc(gh) = cc h + cc g · χ h` weighted by `χ(gh)^{−1}`
+over a translated fibre section gives
+`S = χ(g)^{−1} S + #χ(G) · χ(g)^{−1} cc(g)`, and `#χ(G)` divides
+`#kˣ = #k − 1`, hence is invertible in `k`. -/
+theorem exists_coboundary_of_forall_ker_eq_zero {k : Type*} [Field k]
+    [Finite k] {G : Type*} [Group G] (χ : G →* k) (cc : G → k)
+    (hcoc : ∀ g h, cc (g * h) = cc h + cc g * χ h)
+    (hker : ∀ g, χ g = 1 → cc g = 0) :
+    ∃ a : k, ∀ g, cc g = (χ g - 1) * a := by
+  classical
+  haveI : Fintype k := Fintype.ofFinite k
+  haveI : Fintype χ.toHomUnits.range := Fintype.ofFinite _
+  -- `cc` is constant on the fibres of `χ`
+  have hfib : ∀ g h : G, χ g = χ h → cc h = cc g := by
+    intro g h hgh
+    have hne : χ g ≠ 0 := by
+      have := (χ.toHomUnits g).ne_zero
+      simpa [MonoidHom.coe_toHomUnits] using this
+    have h1 : χ (g⁻¹ * h) = 1 := by
+      have h2 : χ g * χ (g⁻¹ * h) = χ g * 1 := by
+        rw [← map_mul, mul_inv_cancel_left, hgh, mul_one]
+      exact mul_left_cancel₀ hne h2
+    have h3 := hcoc g (g⁻¹ * h)
+    rw [mul_inv_cancel_left, h1, mul_one, hker _ h1, zero_add] at h3
+    exact h3
+  -- a set-theoretic section of `χ.toHomUnits` over its range
+  choose sec hsec using fun x : χ.toHomUnits.range => MonoidHom.mem_range.mp x.2
+  have hχsec : ∀ x : χ.toHomUnits.range, χ (sec x) = ((x : kˣ) : k) := by
+    intro x
+    have := congrArg Units.val (hsec x)
+    simpa [MonoidHom.coe_toHomUnits] using this
+  -- the order of the image of `χ` is invertible in `k`
+  have hcard : (Fintype.card χ.toHomUnits.range : k) ≠ 0 := by
+    intro h0
+    rw [← Nat.card_eq_fintype_card] at h0
+    obtain ⟨t, ht⟩ := Subgroup.card_subgroup_dvd_card χ.toHomUnits.range
+    have hq : ((Nat.card kˣ : ℕ) : k) = 0 := by
+      rw [ht, Nat.cast_mul, h0, zero_mul]
+    have hq' : ((Nat.card k - 1 : ℕ) : k) = 0 := by rwa [Nat.card_units] at hq
+    rw [Nat.cast_sub Nat.card_pos, Nat.cast_one, Nat.card_eq_fintype_card,
+      FiniteField.cast_card_eq_zero, zero_sub, neg_eq_zero] at hq'
+    exact one_ne_zero hq'
+  refine ⟨(Fintype.card χ.toHomUnits.range : k)⁻¹ *
+    ∑ x : χ.toHomUnits.range, (((x : kˣ) : k))⁻¹ * cc (sec x), fun g => ?_⟩
+  set S : k := ∑ x : χ.toHomUnits.range, (((x : kˣ) : k))⁻¹ * cc (sec x)
+    with hS
+  have hgmem : χ.toHomUnits g ∈ χ.toHomUnits.range := ⟨g, rfl⟩
+  have hgne : χ g ≠ 0 := by
+    have := (χ.toHomUnits g).ne_zero
+    simpa [MonoidHom.coe_toHomUnits] using this
+  set a : χ.toHomUnits.range := ⟨χ.toHomUnits g, hgmem⟩ with ha
+  -- the termwise translation identity
+  have hterm : ∀ x : χ.toHomUnits.range,
+      ((((a * x : χ.toHomUnits.range) : kˣ) : k))⁻¹ * cc (sec (a * x))
+        = (χ g)⁻¹ * ((((x : kˣ) : k))⁻¹ * cc (sec x)) + (χ g)⁻¹ * cc g := by
+    intro x
+    have hcoe : ((((a * x : χ.toHomUnits.range) : kˣ) : k))
+        = χ g * ((x : kˣ) : k) := by
+      simp [ha, MonoidHom.coe_toHomUnits]
+    have hax : χ (g * sec x) = χ (sec (a * x)) := by
+      rw [hχsec, map_mul, hχsec, hcoe]
+    have hcc : cc (sec (a * x)) = cc (sec x) + cc g * ((x : kˣ) : k) := by
+      rw [hfib (g * sec x) (sec (a * x)) hax, hcoc g (sec x), hχsec]
+    have hxne : (((x : kˣ) : k)) ≠ 0 := Units.ne_zero _
+    rw [hcc, hcoe]
+    field_simp
+  -- averaging over the image
+  have hsum : S = (χ g)⁻¹ * S +
+      (Fintype.card χ.toHomUnits.range : k) * ((χ g)⁻¹ * cc g) := by
+    have hre := Equiv.sum_comp (Equiv.mulLeft a)
+      (fun x : χ.toHomUnits.range => (((x : kˣ) : k))⁻¹ * cc (sec x))
+    conv_lhs => rw [hS, ← hre]
+    simp only [Equiv.coe_mulLeft]
+    rw [Finset.sum_congr rfl fun x _ => hterm x, Finset.sum_add_distrib,
+      ← Finset.mul_sum, Finset.sum_const, Finset.card_univ, nsmul_eq_mul,
+      ← hS]
+  have h3 : χ g * S = S + (Fintype.card χ.toHomUnits.range : k) * cc g := by
+    conv_lhs => rw [hsum]
+    field_simp
+  have key : (Fintype.card χ.toHomUnits.range : k) * cc g = (χ g - 1) * S :=
+    by linear_combination -h3
+  calc cc g = (Fintype.card χ.toHomUnits.range : k)⁻¹ *
+        ((Fintype.card χ.toHomUnits.range : k) * cc g) := by
+        rw [← mul_assoc, inv_mul_cancel₀ hcard, one_mul]
+  _ = (Fintype.card χ.toHomUnits.range : k)⁻¹ * ((χ g - 1) * S) := by
+        rw [key]
+  _ = (χ g - 1) * ((Fintype.card χ.toHomUnits.range : k)⁻¹ * S) := by ring
+
+/-- **Level-2 Eisenstein vanishing** (Eisenstein pillar E3; PROVEN
+2026-07-24 as an assembly over the local–global cut E3a–E3c above plus
+the finite-averaging inflation–restriction lemma): a hardly ramified
+mod-`p` extension with TRIVIAL sub-character SPLITS when `p ≥ 5` —
+some `a : kk'` writes the upper-right entry as the coboundary
+`cc g = (χ g − 1) a`; equivalently
+`H¹_{hardly ramified}(ℚ, ω^{−1}) = 0` in matrix coordinates. The
+classical content lives in the three pillars: the class is LOCALLY
+TRIVIAL at `p` (E3a — the flat model splits by its own connected–étale
+sequence, `Ext¹(μ_p, ℤ/p) = 0` over `ℤ_p`) and at `2` (E3b — tame
+Frobenius weights; a ramified part survives only when
+`ω²(Frob₂) = 1`, i.e. `p ∣ 2² − 1 = 3`, excluded by `hp5`; the section
+audit's `p = 3` Kummer-of-2 counterexample rides exactly that escape),
+hence its cocycle vanishes identically on `ker χ` (E3c — Artin
+reciprocity into `Cl(ℚ(μ_p)) ⊗ 𝔽_p` and Herbrand's theorem at
+`ω^{−1} = ω^{1−2}`, `p ∤ num(B₂) = num(1/6) = 1`, Washington
+Thm. 6.17 — the second consumption of `hp5`, through the Herbrand
+window `2 ≤ 2 ≤ p − 3`); the assembly is then pure algebra, proven
+here: matrix multiplicativity of `htri` yields the χ-twisted cocycle
+identity `cc(gh) = cc(h) + cc(g)·χ(h)`, and
+`exists_coboundary_of_forall_ker_eq_zero` (finite averaging over the
+prime-to-`p` image `χ(Γℚ) ≤ kk'ˣ`) upgrades kernel vanishing to a
+global coboundary. In Hecke-algebra language the vanishing is Mazur's:
+the index of the Eisenstein ideal at prime level `N` is
+`num((N−1)/12)` (*Modular curves and the Eisenstein ideal*, Publ.
+Math. IHÉS 47 (1977)), which is `1` at `N = 2` — no Eisenstein
 congruence exists at conductor `2`, which is why the Skinner–Wiles
 congruence machinery has nothing to produce here and the residually
-reducible branch terminates in this vanishing instead. Soundness
-(audit 2026-07-24): the hypothesis set is inhabited (split extensions
-`1 ⊕ ω` in triangular form), the conclusion is true of every
-inhabitant by the vanishing just cited, and the statement is exactly
-`H¹_{hardly ramified}(ℚ, ω^{−1}) = 0` in matrix coordinates. -/
+reducible branch terminates in this vanishing instead. Ordering audit
+(2026-07-24): the trivial-SUB order is essential — in the opposite
+(trivial-quotient, `μ_p`-sub) order the analogous vanishing is FALSE
+for EVERY odd `p`: the Kummer class of `2`, cut out by
+`ℚ(μ_p, 2^{1/p})`, is a nonsplit hardly ramified inhabitant there,
+flat at `p` because `2` is a `p`-adic unit
+(`Ext¹(ℤ/p, μ_p) = ℤ_pˣ ⊗ 𝔽_p ≠ 0`, the peu-ramifiée line, against
+E3a's `Ext¹(μ_p, ℤ/p) = 0`); pillar E2's prescribed-order lattice
+(Bellaïche–Chenevier) exists precisely to land on the trivial-sub
+side. -/
 theorem eisenstein_trivial_sub_extension_splits_of_five_le
     (hp5 : 5 ≤ p)
     {kk' : Type u} [Field kk'] [Finite kk'] [Algebra ℤ_[p] kk']
@@ -4217,8 +4474,27 @@ theorem eisenstein_trivial_sub_extension_splits_of_five_le
     (cc : Field.absoluteGaloisGroup ℚ → kk')
     (htri : ∀ g, LinearMap.toMatrix (Pi.basisFun kk' (Fin 2))
       (Pi.basisFun kk' (Fin 2)) (ρE g) = !![1, cc g; 0, χ g]) :
-    ∃ a : kk', ∀ g, cc g = (χ g - 1) * a :=
-  sorry
+    ∃ a : kk', ∀ g, cc g = (χ g - 1) * a := by
+  -- the χ-twisted cocycle identity, from multiplicativity of `ρE`
+  -- through the triangular form
+  have hcoc : ∀ g h, cc (g * h) = cc h + cc g * χ h := by
+    intro g h
+    have h1 : LinearMap.toMatrix (Pi.basisFun kk' (Fin 2))
+        (Pi.basisFun kk' (Fin 2)) (ρE (g * h)) =
+        !![1, cc g; 0, χ g] * !![1, cc h; 0, χ h] := by
+      rw [map_mul, LinearMap.toMatrix_mul, htri g, htri h]
+    rw [htri (g * h), Matrix.mul_fin_two] at h1
+    simpa using congrFun (congrFun h1 0) 1
+  -- E3a/E3b: the two local coboundaries
+  have hlocp := eisenstein_trivial_sub_extension_locally_split_at_p hpodd
+    hrankE hρE χ cc htri
+  have hloc2 := eisenstein_trivial_sub_extension_locally_split_at_two_of_five_le
+    hpodd hp5 hrankE hρE χ cc htri
+  -- E3c: the Herbrand/Mazur kernel vanishing
+  have hker := eisenstein_trivial_sub_extension_ker_vanishing_of_five_le
+    hpodd hp5 hrankE hρE χ cc htri hlocp hloc2
+  -- inflation–restriction by finite averaging
+  exact exists_coboundary_of_forall_ker_eq_zero χ cc hcoc hker
 
 /-- **The residually reducible branch at `p ≥ 5`** (pillar 4 leaf;
 PROVEN 2026-07-24 as an assembly over the Eisenstein cut E1–E3 above
