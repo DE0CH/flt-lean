@@ -11753,7 +11753,6 @@ theorem poitouPhi_line_decay_sq : ∃ M : ℝ, 0 ≤ M ∧ ∀ t : ℝ, t ≠ 0 
     _ = (|rd₁ 0| + |rd₁ (-6)| + (∫ x in (-6:ℝ)..0, |rdd₁ x|) +
         (|rd₂ 6| + |rd₂ 0| + ∫ x in (0:ℝ)..6, |rdd₂ x|)) / t ^ 2 := (add_div _ _ _).symm
 
-
 /-- **Integrability of `Φ` along the line `Re s = 5/4`** (PROVEN
 2026-07-24 — leaf (b₂ᵢᵢ·3·B) of the prime-edge decomposition, the
 quadratic-decay brick of the termwise Fourier inversion): the
@@ -12365,6 +12364,117 @@ theorem poitouPhi_line_mul_exp_integrable
   · exact Filter.Eventually.of_forall fun t =>
       le_of_eq (by rw [Complex.norm_exp, neg_edge_mul_ofReal_re])
 
+/-- **Fourier inversion at a shifted point: the full-line prime-term
+integral** (PROVEN 2026-07-24, the crux of the prime edge — the exact
+analogue of `integral_poitouPhi_line_div` with the oscillating factor
+`e^{−(5/4+it)x}` in place of the pole factor `1/(a+it)`):
+`∫_ℝ Φ(5/4 + it)·e^{−(5/4+it)x} dt = 2π·F(x)·e^{−x/2}`.  Proof:
+`𝓕 poitouG` is integrable by hypothesis after the linear change of
+variables `t = −2πξ` (`fourier_poitouG`), so Fourier inversion
+(`Integrable.fourierInv_fourier_eq`) at the point `x` gives
+`(2π)⁻¹ ∫_ℝ Φ(5/4+it)·e^{−itx} dt = G(x)`; multiplying by the
+constant `e^{−5x/4}` and `G(x) = F(x)·e^{3x/4}` yields the claim. -/
+theorem integral_poitouPhi_line_mul_exp_of_integrable
+    (hInt : Integrable fun t : ℝ => poitouPhi (5 / 4 + t * Complex.I)) (x : ℝ) :
+    (∫ t : ℝ, poitouPhi (5 / 4 + t * Complex.I) *
+        Complex.exp (-(5 / 4 + t * Complex.I) * (x : ℂ))) =
+      (2 * Real.pi) • ((poitouF x * Real.exp (-(x / 2)) : ℝ) : ℂ) := by
+  have hFGInt : Integrable (𝓕 poitouG) := by
+    have hne : (-(2 * Real.pi)) ≠ (0 : ℝ) := by
+      simp [Real.pi_ne_zero]
+    have h1 : Integrable fun ξ : ℝ =>
+        poitouPhi (5 / 4 + (((-(2 * Real.pi)) * ξ : ℝ) : ℂ) * Complex.I) :=
+      hInt.comp_mul_left' hne
+    refine h1.congr (Filter.Eventually.of_forall fun ξ => ?_)
+    rw [fourier_poitouG]
+    simp only [neg_mul]
+  have hinv : 𝓕⁻ (𝓕 poitouG) x = poitouG x :=
+    poitouG_integrable.fourierInv_fourier_eq hFGInt continuous_poitouG.continuousAt
+  have hL : 𝓕⁻ (𝓕 poitouG) x = ∫ ξ : ℝ,
+      Complex.exp (((2 * Real.pi * ξ * x : ℝ) : ℂ) * Complex.I) • 𝓕 poitouG ξ := by
+    rw [Real.fourierInv_eq_fourier_neg, Real.fourier_real_eq_integral_exp_smul]
+    refine integral_congr_ae (Filter.Eventually.of_forall fun ξ => ?_)
+    show Complex.exp (((-2 * Real.pi * ξ * -x : ℝ) : ℂ) * Complex.I) • 𝓕 poitouG ξ =
+      Complex.exp (((2 * Real.pi * ξ * x : ℝ) : ℂ) * Complex.I) • 𝓕 poitouG ξ
+    rw [show ((-2 * Real.pi * ξ * -x : ℝ) : ℂ) = ((2 * Real.pi * ξ * x : ℝ) : ℂ) from by
+      push_cast; ring]
+  have hchange : (∫ ξ : ℝ,
+      Complex.exp (((2 * Real.pi * ξ * x : ℝ) : ℂ) * Complex.I) • 𝓕 poitouG ξ) =
+      |((-(2 * Real.pi))⁻¹)| • ∫ t : ℝ, poitouPhi (5 / 4 + t * Complex.I) *
+        Complex.exp (((-(t * x) : ℝ) : ℂ) * Complex.I) := by
+    have hfun : (fun ξ : ℝ =>
+        Complex.exp (((2 * Real.pi * ξ * x : ℝ) : ℂ) * Complex.I) • 𝓕 poitouG ξ) =
+        fun ξ : ℝ => (fun t : ℝ => poitouPhi (5 / 4 + t * Complex.I) *
+          Complex.exp (((-(t * x) : ℝ) : ℂ) * Complex.I)) ((-(2 * Real.pi)) * ξ) := by
+      funext ξ
+      show Complex.exp (((2 * Real.pi * ξ * x : ℝ) : ℂ) * Complex.I) • 𝓕 poitouG ξ =
+        poitouPhi (5 / 4 + (((-(2 * Real.pi)) * ξ : ℝ) : ℂ) * Complex.I) *
+          Complex.exp (((-((-(2 * Real.pi)) * ξ * x) : ℝ) : ℂ) * Complex.I)
+      have e1 : ((-(2 * Real.pi * ξ) : ℝ) : ℂ) = (((-(2 * Real.pi)) * ξ : ℝ) : ℂ) := by
+        push_cast; ring
+      have e2 : ((2 * Real.pi * ξ * x : ℝ) : ℂ) =
+          ((-((-(2 * Real.pi)) * ξ * x) : ℝ) : ℂ) := by
+        push_cast; ring
+      rw [fourier_poitouG, smul_eq_mul,
+        mul_comm (Complex.exp (((2 * Real.pi * ξ * x : ℝ) : ℂ) * Complex.I)), e1, e2]
+    rw [hfun]
+    exact MeasureTheory.Measure.integral_comp_mul_left
+      (fun t : ℝ => poitouPhi (5 / 4 + t * Complex.I) *
+        Complex.exp (((-(t * x) : ℝ) : ℂ) * Complex.I)) (-(2 * Real.pi))
+  have habs : |((-(2 * Real.pi))⁻¹)| = (2 * Real.pi)⁻¹ := by
+    rw [abs_inv, abs_neg, abs_of_pos (by positivity)]
+  have hkey : (2 * Real.pi)⁻¹ • (∫ t : ℝ, poitouPhi (5 / 4 + t * Complex.I) *
+      Complex.exp (((-(t * x) : ℝ) : ℂ) * Complex.I)) = poitouG x := by
+    rw [← habs, ← hchange, ← hL]
+    exact hinv
+  have h2π : (0 : ℝ) < 2 * Real.pi := by positivity
+  have hval : (∫ t : ℝ, poitouPhi (5 / 4 + t * Complex.I) *
+      Complex.exp (((-(t * x) : ℝ) : ℂ) * Complex.I)) = (2 * Real.pi) • poitouG x := by
+    calc (∫ t : ℝ, poitouPhi (5 / 4 + t * Complex.I) *
+          Complex.exp (((-(t * x) : ℝ) : ℂ) * Complex.I))
+        = ((2 * Real.pi) * (2 * Real.pi)⁻¹) •
+          (∫ t : ℝ, poitouPhi (5 / 4 + t * Complex.I) *
+            Complex.exp (((-(t * x) : ℝ) : ℂ) * Complex.I)) := by
+          rw [mul_inv_cancel₀ h2π.ne', one_smul]
+      _ = (2 * Real.pi) • ((2 * Real.pi)⁻¹ •
+          (∫ t : ℝ, poitouPhi (5 / 4 + t * Complex.I) *
+            Complex.exp (((-(t * x) : ℝ) : ℂ) * Complex.I))) := by
+          rw [mul_smul]
+      _ = (2 * Real.pi) • poitouG x := by rw [hkey]
+  have hsplit : ∀ t : ℝ, poitouPhi (5 / 4 + t * Complex.I) *
+      Complex.exp (-(5 / 4 + t * Complex.I) * (x : ℂ)) =
+      ((Real.exp (-(5 / 4 * x)) : ℝ) : ℂ) * (poitouPhi (5 / 4 + t * Complex.I) *
+        Complex.exp (((-(t * x) : ℝ) : ℂ) * Complex.I)) := by
+    intro t
+    rw [show -(5 / 4 + (t : ℂ) * Complex.I) * (x : ℂ) =
+        ((-(5 / 4 * x) : ℝ) : ℂ) + ((-(t * x) : ℝ) : ℂ) * Complex.I by push_cast; ring,
+      Complex.exp_add, ← Complex.ofReal_exp]
+    ring
+  calc (∫ t : ℝ, poitouPhi (5 / 4 + t * Complex.I) *
+        Complex.exp (-(5 / 4 + t * Complex.I) * (x : ℂ)))
+      = ∫ t : ℝ, ((Real.exp (-(5 / 4 * x)) : ℝ) : ℂ) *
+          (poitouPhi (5 / 4 + t * Complex.I) *
+            Complex.exp (((-(t * x) : ℝ) : ℂ) * Complex.I)) :=
+        integral_congr_ae (Filter.Eventually.of_forall hsplit)
+    _ = ((Real.exp (-(5 / 4 * x)) : ℝ) : ℂ) *
+          ∫ t : ℝ, poitouPhi (5 / 4 + t * Complex.I) *
+            Complex.exp (((-(t * x) : ℝ) : ℂ) * Complex.I) :=
+        integral_const_mul _ _
+    _ = ((Real.exp (-(5 / 4 * x)) : ℝ) : ℂ) * ((2 * Real.pi) • poitouG x) := by
+        rw [hval]
+    _ = (2 * Real.pi) • ((poitouF x * Real.exp (-(x / 2)) : ℝ) : ℂ) := by
+        rw [poitouG, Complex.real_smul, Complex.real_smul, ← Complex.ofReal_mul,
+          ← Complex.ofReal_mul, ← Complex.ofReal_mul]
+        congr 1
+        have he : Real.exp (-(5 / 4 * x)) * Real.exp (3 / 4 * x) = Real.exp (-(x / 2)) := by
+          rw [← Real.exp_add]
+          congr 1
+          ring
+        calc Real.exp (-(5 / 4 * x)) * (2 * Real.pi * (poitouF x * Real.exp (3 / 4 * x)))
+            = 2 * Real.pi * (poitouF x *
+                (Real.exp (-(5 / 4 * x)) * Real.exp (3 / 4 * x))) := by ring
+          _ = 2 * Real.pi * (poitouF x * Real.exp (-(x / 2))) := by rw [he]
+
 /-- **The truncated shifted-point edge integrals converge to the
 inverted value** (PROVEN 2026-07-24, the termwise limit of the prime
 edge): for every `x`,
@@ -12372,7 +12482,7 @@ edge): for every `x`,
 as `T → ∞` — the symmetric truncations converge to the full-line
 integral (`MeasureTheory.intervalIntegral_tendsto_integral`, with
 integrability from `poitouPhi_line_mul_exp_integrable`), whose value
-is `integral_poitouPhi_line_mul_exp` after commuting `Re` with the
+is `integral_poitouPhi_line_mul_exp_of_integrable` after commuting `Re` with the
 integral. -/
 theorem poitouPhi_line_mul_exp_tendsto
     (hInt : Integrable fun t : ℝ => poitouPhi (5 / 4 + t * Complex.I)) (x : ℝ) :
@@ -12389,7 +12499,7 @@ theorem poitouPhi_line_mul_exp_tendsto
       Complex.exp (-(5 / 4 + t * Complex.I) * (x : ℂ))).re) =
       2 * Real.pi * (poitouF x * Real.exp (-(x / 2))) := by
     have h := Complex.reCLM.integral_comp_comm hint2
-    rw [integral_poitouPhi_line_mul_exp hInt x] at h
+    rw [integral_poitouPhi_line_mul_exp_of_integrable hInt x] at h
     simp only [Complex.reCLM_apply] at h
     rw [h, Complex.real_smul, ← Complex.ofReal_mul, Complex.ofReal_re]
   have hlim0 : Filter.Tendsto (fun T : ℝ => ∫ t in (-T)..T,
