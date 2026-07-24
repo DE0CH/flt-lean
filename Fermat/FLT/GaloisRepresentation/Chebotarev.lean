@@ -110,11 +110,20 @@ here. This file provides:
   `IsNarrowRayEquiv.symm`/`IsNarrowRayEquiv.trans` and the count
   congruence `natCard_setOf_isNarrowRayEquiv_congr`, from the sorried
   class-representative finiteness leaf
-  `exists_finset_forall_isNarrowRayEquiv` and the sorried per-class
-  counting core
-  `exists_forall_exists_abs_natCard_isNarrowRayEquiv_sub_mul_le_rpow`,
-  the geometry-of-numbers leaf with class-independent main
-  coefficient but class-dependent error constant), the equal-fiber
+  `exists_finset_forall_isNarrowRayEquiv` and the per-class counting
+  theorem
+  `exists_forall_exists_abs_natCard_isNarrowRayEquiv_sub_mul_le_rpow`
+  with class-independent main coefficient but class-dependent error
+  constant — the latter itself DERIVED, through the PROVEN
+  auxiliary-generator lemma
+  `exists_ideal_forall_pos_span_singleton_eq_mul` and the PROVEN
+  Weber dictionary bijection
+  `natCard_setOf_isNarrowRayEquiv_eq_natCard_setOf_span_dvd`
+  (`I ↦ I·J₀` onto principal ideals with congruence and positivity
+  conditions), from the single sorried geometric core
+  `exists_forall_exists_abs_natCard_span_dvd_sub_mul_le_rpow`, the
+  translated-lattice generator count `κ₀·n + O(n^r)` of Lang VI §2
+  Thm 2 / §3 Thm 3), the equal-fiber
   norm-residue fibering
   `exists_forall_sum_card_absNorm_residue_eq_sum_natCard_isNarrowRayEquiv`,
   and the Frobenius residue realization
@@ -3042,46 +3051,292 @@ theorem exists_finset_forall_isNarrowRayEquiv
         ∃ J ∈ R, IsNarrowRayEquiv ℓ I₀ J :=
   sorry
 
-/-- **Weber's per-class count, class-dependent error constant** (sorry
-leaf) — Lang, *Algebraic Number Theory*, ch. VI §3 Theorem 3, with the
+/-- **A prime `ℓ` is not a unit of `𝓞 F`**: its `ℤ`-norm is
+`ℓ^[F:ℚ]` (`Algebra.norm_algebraMap`), a non-unit integer. -/
+theorem not_isUnit_natCast_ringOfIntegers {F : Type*} [Field F] [NumberField F]
+    {ℓ : ℕ} (hℓ : ℓ.Prime) : ¬ IsUnit ((ℓ : 𝓞 F)) := by
+  intro h
+  have h1 : IsUnit (Algebra.norm ℤ ((ℓ : 𝓞 F))) := h.map (Algebra.norm ℤ)
+  rw [show ((ℓ : 𝓞 F)) = algebraMap ℤ (𝓞 F) (ℓ : ℤ) by simp,
+    Algebra.norm_algebraMap] at h1
+  have h2 : IsUnit ((ℓ : ℤ)) := isUnit_of_dvd_unit
+    (dvd_pow_self _ (Module.finrank_pos (R := ℤ) (M := 𝓞 F)).ne') h1
+  have h3 := Int.isUnit_iff.mp h2
+  have h4 := hℓ.one_lt
+  omega
+
+/-- **Elements whose span is coprime to `ℓ` are nonzero**: otherwise
+`(ℓ)` would be the unit ideal, i.e. `ℓ` a unit of `𝓞 F`. -/
+theorem ne_zero_of_isCoprime_span_natCast {F : Type*} [Field F] [NumberField F]
+    {ℓ : ℕ} (hℓ : ℓ.Prime) {α : 𝓞 F}
+    (h : IsCoprime (Ideal.span {α}) (Ideal.span {(ℓ : 𝓞 F)})) : α ≠ 0 := by
+  rintro rfl
+  rw [Ideal.span_singleton_eq_bot.mpr rfl, ← Ideal.zero_eq_bot] at h
+  have h1 : IsUnit (Ideal.span {(ℓ : 𝓞 F)}) := isCoprime_zero_left.mp h
+  exact not_isUnit_natCast_ringOfIntegers hℓ
+    (Ideal.span_singleton_eq_top.mp (Ideal.isUnit_iff.mp h1))
+
+/-- **Auxiliary ideal and totally positive generator for a narrow ray
+class**: every nonzero integral ideal `I₀` coprime to `ℓ` admits a
+nonzero integral `J₀` coprime to `ℓ` such that `I₀·J₀` is principal
+with a TOTALLY POSITIVE generator `γ₀`. Proof: pick `x ∈ I₀` with
+`x ≡ 1 mod ℓ𝓞 F` (from `I₀ ⊔ (ℓ) = ⊤`); then `(x) = I₀·J` by Dedekind
+divisibility, `J` coprime to `ℓ` since `(x)` is; take `J₀ := J·(x)`
+and `γ₀ := x²`, totally positive because `φ(x²) = φ(x)² > 0`
+(`x ≠ 0` as `(x)` is coprime to the non-unit `(ℓ)`). -/
+theorem exists_ideal_forall_pos_span_singleton_eq_mul
+    {F : Type*} [Field F] [NumberField F] {ℓ : ℕ} (hℓ : ℓ.Prime)
+    {I₀ : Ideal (𝓞 F)}
+    (hcop : IsCoprime I₀ (Ideal.span {(ℓ : 𝓞 F)})) :
+    ∃ (J₀ : Ideal (𝓞 F)) (γ₀ : 𝓞 F), J₀ ≠ 0 ∧
+      IsCoprime J₀ (Ideal.span {(ℓ : 𝓞 F)}) ∧
+      (∀ φ : F →+* ℝ, 0 < φ (algebraMap (𝓞 F) F γ₀)) ∧
+      Ideal.span {γ₀} = I₀ * J₀ := by
+  have hsup : I₀ ⊔ Ideal.span {(ℓ : 𝓞 F)} = ⊤ :=
+    Ideal.isCoprime_iff_sup_eq.mp hcop
+  have h1 : (1 : 𝓞 F) ∈ I₀ ⊔ Ideal.span {(ℓ : 𝓞 F)} := hsup ▸ Submodule.mem_top
+  obtain ⟨x, hxI, b, hb, hxb⟩ := Submodule.mem_sup.mp h1
+  have hx1 : x - 1 ∈ Ideal.span {(ℓ : 𝓞 F)} := by
+    have h2 : x - 1 = -b := by linear_combination hxb
+    rw [h2]
+    exact neg_mem hb
+  have hxcop : IsCoprime (Ideal.span {x}) (Ideal.span {(ℓ : 𝓞 F)}) := by
+    rw [Ideal.isCoprime_iff_sup_eq, Ideal.eq_top_iff_one,
+      show (1 : 𝓞 F) = x - (x - 1) by ring]
+    exact Submodule.sub_mem _
+      (Submodule.mem_sup_left (Ideal.mem_span_singleton_self x))
+      (Submodule.mem_sup_right hx1)
+  have hx0 : x ≠ 0 := ne_zero_of_isCoprime_span_natCast hℓ hxcop
+  obtain ⟨J, hJ⟩ := Ideal.dvd_span_singleton.mpr hxI
+  have hJcop : IsCoprime J (Ideal.span {(ℓ : 𝓞 F)}) := by
+    have h3 := hxcop
+    rw [hJ] at h3
+    exact h3.of_mul_left_right
+  have hxspan : Ideal.span {x} ≠ (0 : Ideal (𝓞 F)) := by
+    rw [Ne, Ideal.zero_eq_bot, Ideal.span_singleton_eq_bot]
+    exact hx0
+  have hJ0 : J ≠ 0 := by
+    rintro rfl
+    rw [mul_zero] at hJ
+    exact hxspan hJ
+  refine ⟨J * Ideal.span {x}, x ^ 2, mul_ne_zero hJ0 hxspan,
+    hJcop.mul_left hxcop, fun φ => ?_, ?_⟩
+  · have h4 : φ (algebraMap (𝓞 F) F x) ≠ 0 := by
+      intro h
+      apply hx0
+      apply IsFractionRing.injective (𝓞 F) F
+      apply φ.injective
+      rw [h, map_zero, map_zero]
+    rw [map_pow, map_pow]
+    exact (sq_nonneg _).lt_of_ne fun h =>
+      h4 ((pow_eq_zero_iff two_ne_zero).mp h.symm)
+  · rw [pow_two, ← Ideal.span_singleton_mul_span_singleton]
+    nth_rewrite 1 [hJ]
+    rw [mul_assoc]
+
+/-- **Weber's translated-lattice generator count** (sorry leaf) — the
+geometry-of-numbers core: Lang, *Algebraic Number Theory*, VI §2
+Theorem 2 applied as in VI §3 Theorem 3. Given a nonzero auxiliary
+ideal `J₀` coprime to `ℓ` and a totally positive `γ₀ ∈ J₀` coprime to
+`ℓ`, the number of principal ideals `(δ) ⊆ J₀` with `δ` totally
+positive, `δ ≡ γ₀ mod ℓ𝓞 F` and `N(δ) ≤ n·N(J₀)` is
+`κ₀·n + O_{J₀,γ₀}(n^r)`, with `κ₀` and `0 < r < 1` depending only on
+`F` and `ℓ` — NOT on `J₀, γ₀`.
+
+Intended proof: the admissible generators `δ` form the translated
+lattice `γ₀ + ℓJ₀` (CRT: `δ ∈ J₀` together with `δ ≡ γ₀ mod ℓ𝓞 F` is
+`δ ≡ γ₀ mod ℓJ₀`, since `J₀` is coprime to `ℓ` and `γ₀ ∈ J₀`)
+intersected with the totally positive cone; two of them generate the
+same ideal iff they differ by a totally positive unit `≡ 1 mod ℓ` —
+a finite-index subgroup `U` of `(𝓞 F)ˣ` (coprimality of `δ` to `ℓ`
+turns `uδ ≡ δ` into `u ≡ 1`). Cutting the cone to a fundamental
+domain of `U` on the norm-one hypersurface and dilating by
+`N(x) ≤ t := n·N(J₀)` gives a region `t^{1/d}·S` (`d = [F:ℚ]`) with
+`S` bounded and `(d−1)`-Lipschitz-parametrizable boundary, so the
+translated-lattice point count is `vol(S)/covol(ℓJ₀)·t +
+O(t^{(d−1)/d})` UNIFORMLY in the translate (Lang VI §2 Thm 2); with
+`covol(ℓJ₀) = ℓ^d·N(J₀)·covol(𝓞 F)` the factors `N(J₀)` cancel,
+leaving `κ₀ = vol(S)/(ℓ^d·covol(𝓞 F))` and `r = 1 − 1/d` for `d ≥ 2`
+(for `d = 1`, `F = ℚ`, the count is `#{0 < m ≤ n : m ≡ γ₀ mod ℓ}` up
+to unit sign and any `0 < r < 1` works). Mathlib pin (audited
+2026-07-24): `ZLattice.covolume.tendsto_card_le_div'` with
+`fundamentalCone`/`normLeOne` (`NumberField/Ideal/Asymptotics`,
+`CanonicalEmbedding/NormLeOne`) give exactly this count WITHOUT an
+error term (limit only, from the measure-zero frontier of
+`normLeOne`); no translated-lattice count with power-saving error and
+no Lipschitz boundary parametrization exist in the pin — they are the
+honest content of this leaf. -/
+theorem exists_forall_exists_abs_natCard_span_dvd_sub_mul_le_rpow
+    (F : Type*) [Field F] [NumberField F] (ℓ : ℕ) (hℓ : ℓ.Prime) :
+    ∃ κ₀ r : ℝ, 0 < r ∧ r < 1 ∧
+      ∀ (J₀ : Ideal (𝓞 F)) (γ₀ : 𝓞 F), J₀ ≠ 0 →
+        IsCoprime J₀ (Ideal.span {(ℓ : 𝓞 F)}) →
+        (∀ φ : F →+* ℝ, 0 < φ (algebraMap (𝓞 F) F γ₀)) →
+        IsCoprime (Ideal.span {γ₀}) (Ideal.span {(ℓ : 𝓞 F)}) →
+        γ₀ ∈ J₀ →
+        ∃ C : ℝ, 0 ≤ C ∧ ∀ n : ℕ,
+          |(Nat.card {I' : Ideal (𝓞 F) // (∃ δ : 𝓞 F,
+              (∀ φ : F →+* ℝ, 0 < φ (algebraMap (𝓞 F) F δ)) ∧
+              δ - γ₀ ∈ Ideal.span {(ℓ : 𝓞 F)} ∧ I' = Ideal.span {δ}) ∧
+              J₀ ∣ I' ∧ Ideal.absNorm I' ≤ n * Ideal.absNorm J₀} : ℝ) -
+            κ₀ * n| ≤ C * (n : ℝ) ^ r :=
+  sorry
+
+/-- **The Weber dictionary: multiplication by the auxiliary ideal**
+(proven): given `(γ₀) = I₀·J₀` with `γ₀` totally positive and coprime
+to `ℓ`, the map `I ↦ I·J₀` is a bijection from the nonzero ideals of
+norm `≤ n` narrow-ray-equivalent to `I₀` onto the principal ideals
+`(δ)` divisible by `J₀` with `δ` totally positive `≡ γ₀ mod ℓ` and
+norm `≤ n·N(J₀)`. Forward: from `(α)·I = (β)·I₀` extract
+`δ := β·γ₀/α ∈ 𝓞 F` and cancel `(α)` (Dedekind cancellation); `δ` is
+totally positive, and `δ ≡ γ₀ mod ℓ` because `α·(δ−γ₀) = (β−α)·γ₀ ∈
+(ℓ)` with `(α)` coprime to `(ℓ)`. Backward: writing `(δ) = J₀·K`, the
+pair `(γ₀, δ)` witnesses `K ∼ I₀`. Injectivity is cancellation by
+`J₀ ≠ 0`. -/
+theorem natCard_setOf_isNarrowRayEquiv_eq_natCard_setOf_span_dvd
+    {F : Type*} [Field F] [NumberField F] {ℓ : ℕ} (hℓ : ℓ.Prime)
+    {I₀ J₀ : Ideal (𝓞 F)} {γ₀ : 𝓞 F} (hJ0 : J₀ ≠ 0)
+    (hspan : Ideal.span {γ₀} = I₀ * J₀)
+    (hγpos : ∀ φ : F →+* ℝ, 0 < φ (algebraMap (𝓞 F) F γ₀))
+    (hγcop : IsCoprime (Ideal.span {γ₀}) (Ideal.span {(ℓ : 𝓞 F)}))
+    (n : ℕ) :
+    Nat.card {I : Ideal (𝓞 F) // I ≠ 0 ∧ Ideal.absNorm I ≤ n ∧
+        IsNarrowRayEquiv ℓ I I₀} =
+      Nat.card {I' : Ideal (𝓞 F) // (∃ δ : 𝓞 F,
+          (∀ φ : F →+* ℝ, 0 < φ (algebraMap (𝓞 F) F δ)) ∧
+          δ - γ₀ ∈ Ideal.span {(ℓ : 𝓞 F)} ∧ I' = Ideal.span {δ}) ∧
+        J₀ ∣ I' ∧ Ideal.absNorm I' ≤ n * Ideal.absNorm J₀} := by
+  classical
+  have hforward : ∀ I : {I : Ideal (𝓞 F) // I ≠ 0 ∧ Ideal.absNorm I ≤ n ∧
+      IsNarrowRayEquiv ℓ I I₀},
+      (∃ δ : 𝓞 F, (∀ φ : F →+* ℝ, 0 < φ (algebraMap (𝓞 F) F δ)) ∧
+        δ - γ₀ ∈ Ideal.span {(ℓ : 𝓞 F)} ∧ I.1 * J₀ = Ideal.span {δ}) ∧
+      J₀ ∣ I.1 * J₀ ∧ Ideal.absNorm (I.1 * J₀) ≤ n * Ideal.absNorm J₀ := by
+    rintro ⟨I, -, hIn, α, β, hα, hβ, hcα, hcβ, hcong, heq⟩
+    have hα0 : α ≠ 0 := ne_zero_of_isCoprime_span_natCast hℓ hcα
+    have hαne : Ideal.span {α} ≠ (0 : Ideal (𝓞 F)) := by
+      rw [Ne, Ideal.zero_eq_bot, Ideal.span_singleton_eq_bot]
+      exact hα0
+    have h1 : Ideal.span {α} * (I * J₀) = Ideal.span {β * γ₀} := by
+      rw [← mul_assoc, heq, mul_assoc, ← hspan,
+        Ideal.span_singleton_mul_span_singleton]
+    have h2 : β * γ₀ ∈ Ideal.span {α} := by
+      have h3 : β * γ₀ ∈ Ideal.span {α} * (I * J₀) := by
+        rw [h1]
+        exact Ideal.mem_span_singleton_self _
+      exact Ideal.mul_le_right h3
+    obtain ⟨δ, hδ⟩ := Ideal.mem_span_singleton.mp h2
+    have hIJ : I * J₀ = Ideal.span {δ} := by
+      refine mul_left_cancel₀ hαne ?_
+      rw [h1, Ideal.span_singleton_mul_span_singleton, ← hδ]
+    have hδpos : ∀ φ : F →+* ℝ, 0 < φ (algebraMap (𝓞 F) F δ) := by
+      intro φ
+      have h4 : φ (algebraMap (𝓞 F) F β) * φ (algebraMap (𝓞 F) F γ₀) =
+          φ (algebraMap (𝓞 F) F α) * φ (algebraMap (𝓞 F) F δ) := by
+        rw [← map_mul, ← map_mul, ← map_mul, ← map_mul, hδ]
+      nlinarith [hα φ, mul_pos (hβ φ) (hγpos φ)]
+    have hδcong : δ - γ₀ ∈ Ideal.span {(ℓ : 𝓞 F)} := by
+      have h5 : α * (δ - γ₀) = (β - α) * γ₀ := by linear_combination -hδ
+      have hβα : β - α ∈ Ideal.span {(ℓ : 𝓞 F)} := by
+        have h6 := neg_mem hcong
+        rwa [neg_sub] at h6
+      have h7 : Ideal.span {(ℓ : 𝓞 F)} ∣
+          Ideal.span {α} * Ideal.span {δ - γ₀} := by
+        rw [Ideal.span_singleton_mul_span_singleton, h5]
+        exact Ideal.dvd_span_singleton.mpr (Ideal.mul_mem_right _ _ hβα)
+      exact Ideal.dvd_span_singleton.mp (hcα.symm.dvd_of_dvd_mul_left h7)
+    refine ⟨⟨δ, hδpos, hδcong, hIJ⟩, dvd_mul_left J₀ I, ?_⟩
+    rw [map_mul]
+    exact Nat.mul_le_mul hIn le_rfl
+  refine Nat.card_congr (Equiv.ofBijective
+    (fun I => ⟨I.1 * J₀, hforward I⟩) ⟨?_, ?_⟩)
+  · rintro ⟨I₁, h₁⟩ ⟨I₂, h₂⟩ h
+    exact Subtype.ext (mul_right_cancel₀ hJ0 (congrArg Subtype.val h))
+  · rintro ⟨I', ⟨δ, hδpos, hδcong, hI'eq⟩, ⟨K, hK⟩, hnorm⟩
+    have hδcop : IsCoprime (Ideal.span {δ}) (Ideal.span {(ℓ : 𝓞 F)}) := by
+      have h7 := Ideal.isCoprime_iff_sup_eq.mp hγcop
+      rw [Ideal.isCoprime_iff_sup_eq]
+      refine top_le_iff.mp ?_
+      rw [← h7]
+      refine sup_le ?_ le_sup_right
+      rw [Ideal.span_singleton_le_iff_mem,
+        show γ₀ = δ - (δ - γ₀) by ring]
+      exact Submodule.sub_mem _
+        (Submodule.mem_sup_left (Ideal.mem_span_singleton_self δ))
+        (Submodule.mem_sup_right hδcong)
+    have hδ0 : δ ≠ 0 := ne_zero_of_isCoprime_span_natCast hℓ hδcop
+    have hI'0 : I' ≠ 0 := by
+      rw [hI'eq, Ne, Ideal.zero_eq_bot, Ideal.span_singleton_eq_bot]
+      exact hδ0
+    have hK0 : K ≠ 0 := by
+      rintro rfl
+      rw [mul_zero] at hK
+      exact hI'0 hK
+    have hJnorm : 0 < Ideal.absNorm J₀ := Nat.pos_of_ne_zero fun h =>
+      hJ0 (by rwa [Ideal.absNorm_eq_zero_iff, ← Ideal.zero_eq_bot] at h)
+    have hKn : Ideal.absNorm K ≤ n := by
+      have h9 : Ideal.absNorm J₀ * Ideal.absNorm K ≤ n * Ideal.absNorm J₀ := by
+        rw [← map_mul, ← hK]
+        exact hnorm
+      rw [mul_comm (Ideal.absNorm J₀) (Ideal.absNorm K)] at h9
+      exact Nat.le_of_mul_le_mul_right h9 hJnorm
+    have hγδcong : γ₀ - δ ∈ Ideal.span {(ℓ : 𝓞 F)} := by
+      have h10 := neg_mem hδcong
+      rwa [neg_sub] at h10
+    have hprod : Ideal.span {γ₀} * K = Ideal.span {δ} * I₀ := by
+      rw [hspan]
+      calc I₀ * J₀ * K = I₀ * (J₀ * K) := mul_assoc _ _ _
+        _ = I₀ * I' := by rw [← hK]
+        _ = I₀ * Ideal.span {δ} := by rw [hI'eq]
+        _ = Ideal.span {δ} * I₀ := mul_comm _ _
+    have hKequiv : IsNarrowRayEquiv ℓ K I₀ :=
+      ⟨γ₀, δ, hγpos, hδpos, hγcop, hδcop, hγδcong, hprod⟩
+    refine ⟨⟨K, hK0, hKn, hKequiv⟩, Subtype.ext ?_⟩
+    show K * J₀ = I'
+    rw [mul_comm]
+    exact hK.symm
+
+/-- **Weber's per-class count, class-dependent error constant** —
+Lang, *Algebraic Number Theory*, ch. VI §3 Theorem 3, with the
 constant-uniformity burden reduced to the main coefficient only: the
 number of nonzero integral ideals in the narrow ray class of `I₀` with
-`N(I) ≤ n` is `κ₀·n + O_{I₀}(n^r)`, where `κ₀ > 0` — the residue
+`N(I) ≤ n` is `κ₀·n + O_{I₀}(n^r)`, where `κ₀` — the residue
 `vol/covol` — and the exponent `r < 1` do NOT depend on the class,
 while the error constant `C` MAY (the full class-uniform statement is
 recovered downstream by finiteness of the classes,
 `exists_finset_forall_isNarrowRayEquiv`).
 
-Intended proof (Weber; Lang VI §3): fix an auxiliary integral ideal
-`J` in the inverse narrow ray class of `I₀`, so that `I ↦ I·J` maps
-the counted ideals bijectively onto principal ideals `(γ) ⊆ J` with
-`γ` totally positive, `γ ≡ γ₀ mod ℓJ` for a fixed `γ₀` (determined by
-the class), and `0 < N(γ) ≤ n·N(J)`. Generators `γ` modulo the action
-of the totally positive units `≡ 1 mod ℓ` correspond to points of the
-TRANSLATED lattice `γ₀ + ℓJ` (under the Minkowski embedding) lying in
-the homogeneously expanding region `{x : N(x) ≤ t}` cut down to a
-fundamental domain of the unit action on the norm-one hypersurface;
-this domain is bounded and has `(d−1)`-Lipschitz-parametrizable
-boundary (`d = [F:ℚ]`), so the translated-lattice point count is
-`(vol/covol)·t + O(t^{(d−1)/d})` uniformly in the translate (Lang VI
-§2 Theorem 2 — the geometry-of-numbers core), whence the claim with
-`r = 1 − 1/d` for `d ≥ 2` (any `0 < r < 1` works for `d = 1`, where
-the count is elementary: positive integers `≡ a mod ℓ` up to `n`).
-`κ₀ = vol(domain slice)/covol(ℓJ)` is class-independent: `covol(ℓJ) =
-ℓ^d·N(J)·covol(𝓞 F)` and the region volume scales with `n·N(J)`, so
-`N(J)` cancels. Mathlib pin: `ZLattice.covolume.tendsto_card_le_div'`
-gives the error-free limit through `fundamentalCone`/`normLeOne`
-(measure-zero frontier only); no error-term lattice count and no
-Lipschitz boundary parametrization exist — those are the honest
-content of this leaf. -/
+DERIVED from the sorried geometric core
+`exists_forall_exists_abs_natCard_span_dvd_sub_mul_le_rpow` through
+the PROVEN auxiliary-data lemma
+`exists_ideal_forall_pos_span_singleton_eq_mul` (a totally positive
+generator `γ₀` of `I₀·J₀` for some coprime-to-`ℓ` ideal `J₀`) and the
+PROVEN Weber dictionary
+`natCard_setOf_isNarrowRayEquiv_eq_natCard_setOf_span_dvd`
+(the bijection `I ↦ I·J₀` between the class count and the
+translated-lattice generator count). -/
 theorem exists_forall_exists_abs_natCard_isNarrowRayEquiv_sub_mul_le_rpow
     (F : Type*) [Field F] [NumberField F] (ℓ : ℕ) (hℓ : ℓ.Prime) :
     ∃ κ₀ r : ℝ, 0 < r ∧ r < 1 ∧
       ∀ I₀ : Ideal (𝓞 F), I₀ ≠ 0 → IsCoprime I₀ (Ideal.span {(ℓ : 𝓞 F)}) →
         ∃ C : ℝ, 0 ≤ C ∧ ∀ n : ℕ,
           |(Nat.card {I : Ideal (𝓞 F) // I ≠ 0 ∧ Ideal.absNorm I ≤ n ∧
-              IsNarrowRayEquiv ℓ I I₀} : ℝ) - κ₀ * n| ≤ C * (n : ℝ) ^ r :=
-  sorry
+              IsNarrowRayEquiv ℓ I I₀} : ℝ) - κ₀ * n| ≤ C * (n : ℝ) ^ r := by
+  obtain ⟨κ₀, r, hr0, hr1, hgeo⟩ :=
+    exists_forall_exists_abs_natCard_span_dvd_sub_mul_le_rpow F ℓ hℓ
+  refine ⟨κ₀, r, hr0, hr1, fun I₀ _ hcop => ?_⟩
+  obtain ⟨J₀, γ₀, hJ0, hJcop, hγpos, hspan⟩ :=
+    exists_ideal_forall_pos_span_singleton_eq_mul hℓ hcop
+  have hγcop : IsCoprime (Ideal.span {γ₀}) (Ideal.span {(ℓ : 𝓞 F)}) := by
+    rw [hspan]
+    exact hcop.mul_left hJcop
+  have hγJ : γ₀ ∈ J₀ :=
+    Ideal.mul_le_left (hspan ▸ Ideal.mem_span_singleton_self γ₀)
+  obtain ⟨C, hC0, hC⟩ := hgeo J₀ γ₀ hJ0 hJcop hγpos hγcop hγJ
+  refine ⟨C, hC0, fun n => ?_⟩
+  rw [natCard_setOf_isNarrowRayEquiv_eq_natCard_setOf_span_dvd hℓ hJ0 hspan
+    hγpos hγcop n]
+  exact hC n
 
 /-- **Weber's theorem: ideal counting per narrow ray class, with
 power-saving error and class-independent constants** — Lang,
