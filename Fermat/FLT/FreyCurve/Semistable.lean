@@ -112,6 +112,13 @@ import Mathlib.RingTheory.TensorProduct.Finite
 -- `exists_hopfOrder_of_adic_bialgEquiv`)
 import Mathlib.RingTheory.Valuation.Basic
 import Mathlib.Topology.Algebra.Valued.ValuationTopology
+-- the structure theorem for finite étale algebras over a field
+-- (product of finite separable extensions), consumed by the
+-- reconstruction leaves `etale_points_separate` etc.
+import Mathlib.RingTheory.Etale.Field
+-- the infinite Galois correspondence (`fixedField_fixingSubgroup`),
+-- consumed by `exists_eval_of_equivariant_function`
+import Mathlib.FieldTheory.Galois.Infinite
 
 @[expose] public section
 
@@ -8380,19 +8387,270 @@ theorem WeierstrassCurve.torsionFlatPackage_of_nonsplit_adic
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
+/-- **Points of a finite étale algebra separate its elements** (PROVEN
+2026-07-24 — the reducedness third of the reconstruction, curve-free): over
+a characteristic-zero field `K` with algebraic closure `Ω`, an element
+of a finite étale `K`-algebra killed by every `Ω`-point is zero.
+Content: `A` is finite-dimensional and reduced (étale over a field),
+hence a finite product of finite field extensions of `K`
+(`IsArtinianRing` structure theory); a nonzero element has a nonzero
+component in some factor field `L`, and any `K`-embedding `L → Ω`
+(`IsAlgClosed.lift`, `L/K` algebraic) composed with the projection is
+an `Ω`-point not vanishing on it. -/
+theorem etale_points_separate
+    (K : Type) [Field K] [CharZero K]
+    (Ω : Type) [Field Ω] [Algebra K Ω] [IsAlgClosure K Ω]
+    (A : Type) [CommRing A] [Algebra K A] [Module.Finite K A]
+    [Algebra.Etale K A]
+    (x : A) (hx : ∀ φ : A →ₐ[K] Ω, φ x = 0) : x = 0 := by
+  classical
+  haveI : IsAlgClosed Ω := IsAlgClosure.isAlgClosed K
+  -- the structure theorem: a finite product of finite separable extensions
+  obtain ⟨I, hIfin, Ai, hAiField, hAiAlg, e, hAi⟩ :=
+    (Algebra.Etale.iff_exists_algEquiv_prod (K := K) (A := A)).mp inferInstance
+  -- every component of `e x` is killed by an embedding into `Ω`
+  have hzero : ∀ i, e x i = 0 := by
+    intro i
+    haveI : Module.Finite K (Ai i) := (hAi i).1
+    haveI : Algebra.IsAlgebraic K (Ai i) := Algebra.IsAlgebraic.of_finite K (Ai i)
+    have hx' := hx ((IsAlgClosed.lift (M := Ω) (R := K) (S := Ai i)).comp
+      ((Pi.evalAlgHom K Ai i).comp e.toAlgHom))
+    have h0 : (IsAlgClosed.lift (M := Ω) (R := K) (S := Ai i)) (e x i) = 0 := hx'
+    have hinj : Function.Injective
+        (IsAlgClosed.lift (M := Ω) (R := K) (S := Ai i)) :=
+      RingHom.injective ((IsAlgClosed.lift (M := Ω) (R := K)
+        (S := Ai i)) : Ai i →+* Ω)
+    exact hinj (by rw [h0, map_zero])
+  have hex := congrArg e.symm (funext hzero : e x = 0)
+  rwa [AlgEquiv.symm_apply_apply, map_zero] at hex
+
+open TensorProduct in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **Pair separation on the tensor square of a finite étale algebra**
+(PROVEN 2026-07-24 — the second third of the reconstruction,
+curve-free): an element of `A ⊗[K] A` killed by every PAIR of
+`Ω`-points (through `Algebra.TensorProduct.lift`, which enumerates the
+`Ω`-points of the tensor square) is zero. Content: the tensor square
+is itself finite étale over `K` (étale is stable under base change and
+composition: `Algebra.Etale.baseChange` + `Algebra.Etale.comp`), every
+`Ω`-point of `A ⊗[K] A` is the lift of the pair of its restrictions
+along `includeLeft`/`includeRight` (`Algebra.TensorProduct.ext`), and
+`etale_points_separate` applied to `A ⊗[K] A` finishes. -/
+theorem etale_tensor_points_separate
+    (K : Type) [Field K] [CharZero K]
+    (Ω : Type) [Field Ω] [Algebra K Ω] [IsAlgClosure K Ω]
+    (A : Type) [CommRing A] [Algebra K A] [Module.Finite K A]
+    [Algebra.Etale K A]
+    (z : A ⊗[K] A)
+    (hz : ∀ φ ψ : A →ₐ[K] Ω,
+      Algebra.TensorProduct.lift φ ψ (fun _ _ => Commute.all _ _) z = 0) :
+    z = 0 := by
+  classical
+  -- the tensor square is finite étale over `K` (base change + transitivity)
+  haveI : Algebra.Etale K (A ⊗[K] A) := Algebra.Etale.comp K A (A ⊗[K] A)
+  haveI : Module.Finite K (A ⊗[K] A) := Module.Finite.tensorProduct K A A
+  -- every point of the tensor square is a pair of points
+  refine etale_points_separate K Ω (A ⊗[K] A) z ?_
+  intro χ
+  have hχ : χ = Algebra.TensorProduct.lift
+      (χ.comp (Algebra.TensorProduct.includeLeft (R := K) (S := K)))
+      (χ.comp (Algebra.TensorProduct.includeRight (R := K) (A := A) (B := A)))
+      (fun _ _ => Commute.all _ _) := by
+    apply Algebra.TensorProduct.ext
+    · rw [Algebra.TensorProduct.lift_comp_includeLeft]
+    · rw [Algebra.TensorProduct.lift_comp_includeRight]
+      rfl
+  rw [hχ]
+  exact hz _ _
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **Equivariant functions on the point set are evaluations** (PROVEN
+2026-07-24 — the essential-surjectivity third of the reconstruction,
+curve-free): a `Gal(Ω/K)`-equivariant function `c` from the `Ω`-points
+of a finite étale `K`-algebra to `Ω` is evaluation at a (unique)
+element of `A`. Content: `A ≅ ∏ Lᵢ` with `Lᵢ/K` finite; fix a point
+`Pᵢ` of each factor; equivariance forces `c Pᵢ` into the fixed field
+of the fixing subgroup of the finite subextension `Pᵢ(Lᵢ) ⊆ Ω`, which
+is `Pᵢ(Lᵢ)` itself (Galois correspondence for the finite subextension
+of the infinite Galois extension `Ω/K`), so `c Pᵢ = Pᵢ(aᵢ)` defines
+`a = (aᵢ)`; every point of `A` is `σ ∘ Pᵢ` for some `σ ∈ Gal(Ω/K)`
+(any two embeddings of `Lᵢ` are conjugate: `IsAlgClosed.lift` plus
+bijectivity of endomorphisms of algebraic extensions), and
+equivariance propagates `φ a = c φ` from the `Pᵢ` to all points. -/
+theorem exists_eval_of_equivariant_function
+    (K : Type) [Field K] [CharZero K]
+    (Ω : Type) [Field Ω] [Algebra K Ω] [IsAlgClosure K Ω]
+    (A : Type) [CommRing A] [Algebra K A] [Module.Finite K A]
+    [Algebra.Etale K A]
+    (c : (A →ₐ[K] Ω) → Ω)
+    (hc : ∀ (σ : Ω ≃ₐ[K] Ω) (φ : A →ₐ[K] Ω),
+      c (σ.toAlgHom.comp φ) = σ (c φ)) :
+    ∃ a : A, ∀ φ : A →ₐ[K] Ω, φ a = c φ := by
+  classical
+  haveI : IsAlgClosed Ω := IsAlgClosure.isAlgClosed K
+  haveI : Algebra.IsAlgebraic K Ω := IsAlgClosure.isAlgebraic
+  haveI : IsGalois K Ω := ⟨⟩
+  -- the structure theorem: a finite product of finite separable extensions
+  obtain ⟨I, hIfin, Ai, hAiField, hAiAlg, e, hAi⟩ :=
+    (Algebra.Etale.iff_exists_algEquiv_prod (K := K) (A := A)).mp inferInstance
+  haveI : Fintype I := Fintype.ofFinite I
+  haveI hFinAi : ∀ i, Module.Finite K (Ai i) := fun i => (hAi i).1
+  haveI hAlgbAi : ∀ i, Algebra.IsAlgebraic K (Ai i) := fun i =>
+    Algebra.IsAlgebraic.of_finite K (Ai i)
+  -- the chosen embedding of each factor and the induced point of `A`
+  let emb : ∀ i, Ai i →ₐ[K] Ω := fun i =>
+    IsAlgClosed.lift (M := Ω) (R := K) (S := Ai i)
+  let Pt : ∀ i, A →ₐ[K] Ω := fun i =>
+    (emb i).comp ((Pi.evalAlgHom K Ai i).comp e.toAlgHom)
+  -- the value of `c` at the distinguished point of each factor lies in
+  -- that factor's image (equivariance + the infinite Galois
+  -- correspondence at the finite subextension)
+  have hcPt : ∀ i, c (Pt i) ∈ (emb i).fieldRange := by
+    intro i
+    have hfix : c (Pt i) ∈ IntermediateField.fixedField
+        (IntermediateField.fixingSubgroup ((emb i).fieldRange)) := by
+      rw [IntermediateField.mem_fixedField_iff]
+      intro σ hσ
+      have hσPt : σ.toAlgHom.comp (Pt i) = Pt i := by
+        apply AlgHom.ext
+        intro a
+        exact (IntermediateField.mem_fixingSubgroup_iff
+            ((emb i).fieldRange) σ).mp hσ (Pt i a)
+          (AlgHom.mem_fieldRange.mpr ⟨e a i, rfl⟩)
+      have h1 := hc σ (Pt i)
+      rw [hσPt] at h1
+      exact h1.symm
+    rwa [InfiniteGalois.fixedField_fixingSubgroup] at hfix
+  -- the component values of the sought element
+  have hval : ∀ i, ∃ s : Ai i, emb i s = c (Pt i) := fun i =>
+    AlgHom.mem_fieldRange.mp (hcPt i)
+  choose t ht using hval
+  refine ⟨e.symm (fun i => t i), ?_⟩
+  intro φ
+  -- `φ`, read on the product side
+  let F : (Π i, Ai i) →ₐ[K] Ω := φ.comp e.symm.toAlgHom
+  have hφF : ∀ a : A, φ a = F (e a) := by
+    intro a
+    show φ a = φ (e.symm (e a))
+    rw [AlgEquiv.symm_apply_apply]
+  -- the idempotent values of `F` on the factor units are `0` or `1`
+  have hidem : ∀ i, F (Pi.single i 1) = 0 ∨ F (Pi.single i 1) = 1 := by
+    intro i
+    have h2 : F (Pi.single i 1) * F (Pi.single i 1) = F (Pi.single i 1) := by
+      rw [← map_mul, ← Pi.single_mul, one_mul]
+    exact IsIdempotentElem.iff_eq_zero_or_one.mp h2
+  have hsum : ∑ i, F (Pi.single i 1) = 1 := by
+    rw [← map_sum,
+      show (∑ i, Pi.single i (1 : Ai i)) = (1 : Π i, Ai i) from
+        Finset.univ_sum_single 1,
+      map_one]
+  -- exactly one factor unit survives
+  have hex : ∃ i₀, F (Pi.single i₀ 1) = 1 := by
+    by_contra hno
+    have hall : ∀ i, F (Pi.single i 1) = 0 := by
+      intro i
+      rcases hidem i with h | h
+      · exact h
+      · exact absurd ⟨i, h⟩ hno
+    rw [Finset.sum_congr rfl (fun i _ => hall i), Finset.sum_const_zero] at hsum
+    exact zero_ne_one hsum
+  obtain ⟨i₀, hi₀⟩ := hex
+  -- `F` kills the other components
+  have hkill : ∀ (y : Π i, Ai i) (i : I), i ≠ i₀ → F (Pi.single i (y i)) = 0 := by
+    intro y i hi
+    have h0 : Pi.single i (y i) * Pi.single i₀ (1 : Ai i₀) = 0 := by
+      funext j
+      rw [Pi.mul_apply, Pi.zero_apply]
+      by_cases hj : j = i
+      · subst hj
+        rw [Pi.single_eq_of_ne hi, mul_zero]
+      · rw [Pi.single_eq_of_ne hj, zero_mul]
+    have h1 := congrArg F h0
+    rw [map_mul, map_zero, hi₀, mul_one] at h1
+    exact h1
+  -- `F` factors through the surviving component
+  have hfactor : ∀ y : Π i, Ai i, F y = F (Pi.single i₀ (y i₀)) := by
+    intro y
+    have h1 : F (∑ i, Pi.single i (y i)) = F (Pi.single i₀ (y i₀)) := by
+      rw [map_sum]
+      exact Finset.sum_eq_single_of_mem i₀ (Finset.mem_univ i₀)
+        (fun i _ hi => hkill y i hi)
+    rw [Finset.univ_sum_single y] at h1
+    exact h1
+  -- the factor point carried by `φ`
+  let ψ : Ai i₀ →ₐ[K] Ω :=
+    { toFun := fun s => F (Pi.single i₀ s)
+      map_one' := hi₀
+      map_mul' := fun s₁ s₂ => by rw [Pi.single_mul, map_mul]
+      map_zero' := by rw [Pi.single_zero, map_zero]
+      map_add' := fun s₁ s₂ => by rw [Pi.single_add, map_add]
+      commutes' := fun k => by
+        have h1 : Pi.single i₀ (algebraMap K (Ai i₀) k) =
+            Pi.single i₀ (1 : Ai i₀) * algebraMap K (Π i, Ai i) k := by
+          funext j
+          rw [Pi.mul_apply]
+          by_cases hj : j = i₀
+          · subst hj
+            rw [Pi.single_eq_same, Pi.single_eq_same, one_mul]
+            rfl
+          · rw [Pi.single_eq_of_ne hj, Pi.single_eq_of_ne hj, zero_mul]
+        rw [h1, map_mul, hi₀, one_mul]
+        exact F.commutes k }
+  have hφψ : ∀ a : A, φ a = ψ (e a i₀) := by
+    intro a
+    rw [hφF a, hfactor (e a)]
+    rfl
+  -- extend the factor point to an automorphism carrying the
+  -- distinguished embedding to it
+  letI : Algebra (Ai i₀) Ω := (emb i₀).toRingHom.toAlgebra
+  haveI : IsScalarTower K (Ai i₀) Ω :=
+    IsScalarTower.of_algebraMap_eq (fun k => ((emb i₀).commutes k).symm)
+  let σ0 : Ω →ₐ[K] Ω := AlgHom.liftNormal ψ Ω
+  have hσ0 : ∀ s : Ai i₀, σ0 (emb i₀ s) = ψ s := by
+    intro s
+    exact AlgHom.liftNormal_commutes ψ Ω s
+  let σ : Ω ≃ₐ[K] Ω := AlgEquiv.ofBijective σ0 (AlgHom.normal_bijective K Ω Ω σ0)
+  -- `φ` is `σ` after the distinguished point
+  have hφPt : ∀ a : A, φ a = σ (Pt i₀ a) := by
+    intro a
+    rw [hφψ a]
+    exact (hσ0 (e a i₀)).symm
+  have hcφ : c φ = σ (c (Pt i₀)) := by
+    rw [show φ = σ.toAlgHom.comp (Pt i₀) from AlgHom.ext hφPt]
+    exact hc σ (Pt i₀)
+  -- conclude at the chosen element
+  have hL : φ (e.symm (fun i => t i)) = ψ (t i₀) := by
+    rw [hφψ (e.symm (fun i => t i)), AlgEquiv.apply_symm_apply]
+  have hR : c φ = ψ (t i₀) := by
+    rw [hcφ, ← ht i₀]
+    exact hσ0 (t i₀)
+  exact hL.trans hR.symm
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
 /-- **Reconstruction of finite étale bialgebras from their Galois
-sets** (sorry node — the fully-faithful half of the étale/Galois-sets
-correspondence, curve-free and completion-free): two finite étale
+sets** (PROVEN 2026-07-24 through the three étale leaves above — the
+fully-faithful half of the étale/Galois-sets correspondence,
+curve-free and completion-free): two finite étale
 bialgebras `A`, `B` over a characteristic-zero field `K` whose
 `Ω`-point convolution monoids are identified `Gal(Ω/K)`-equivariantly
 are isomorphic as `K`-bialgebras (contravariantly: the points
 equivalence `pts A ≃ pts B` yields `B ≃ₐc A`). Content
 (Grothendieck's Galois theory, the reconstruction direction dual to
-`exists_galoisModulePackage`): evaluation identifies a finite étale
-`K`-algebra with the equivariant functions on its finite point set,
-compatibly with the convolution structure, and an equivariant
-identification of point sets identifies the equivariant function
-bialgebras. -/
+`exists_galoisModulePackage`): for `b : B` the function
+`φ ↦ (θ φ) b` on the points of `A` is equivariant, hence evaluation at
+a unique element `e b : A` (`exists_eval_of_equivariant_function` +
+`etale_points_separate`); `e` is an algebra isomorphism (the same
+construction along `θ.symm` inverts it), matches counits (`θ` sends
+the convolution unit to the convolution unit), and matches
+comultiplications because both sides of the comul square evaluate
+equally against every pair of points (`θ` is a monoid map;
+`etale_tensor_points_separate`). -/
 theorem exists_bialgEquiv_of_equivariant_pointsEquiv
     (K : Type) [Field K] [CharZero K]
     (Ω : Type) [Field Ω] [Algebra K Ω] [IsAlgClosure K Ω]
@@ -8407,14 +8665,334 @@ theorem exists_bialgEquiv_of_equivariant_pointsEquiv
           (WithConv.ofConv (Additive.toMul
             (θ (Additive.ofMul (WithConv.toConv φ)))))))) :
     Nonempty (B ≃ₐc[K] A) := by
-  sorry
+  classical
+  -- the transported maps on bare points
+  let θfun : (A →ₐ[K] Ω) → (B →ₐ[K] Ω) := fun φ =>
+    WithConv.ofConv (Additive.toMul (θ (Additive.ofMul (WithConv.toConv φ))))
+  let θinv : (B →ₐ[K] Ω) → (A →ₐ[K] Ω) := fun ψ =>
+    WithConv.ofConv (Additive.toMul (θ.symm (Additive.ofMul (WithConv.toConv ψ))))
+  have hθinvfun : ∀ φ, θinv (θfun φ) = φ := by
+    intro φ
+    show WithConv.ofConv (Additive.toMul (θ.symm (Additive.ofMul (WithConv.toConv
+      (WithConv.ofConv (Additive.toMul (θ (Additive.ofMul
+        (WithConv.toConv φ))))))))) = φ
+    rw [WithConv.toConv_ofConv, ofMul_toMul, AddEquiv.symm_apply_apply,
+      toMul_ofMul, WithConv.ofConv_toConv]
+  have hθfuninv : ∀ ψ, θfun (θinv ψ) = ψ := by
+    intro ψ
+    show WithConv.ofConv (Additive.toMul (θ (Additive.ofMul (WithConv.toConv
+      (WithConv.ofConv (Additive.toMul (θ.symm (Additive.ofMul
+        (WithConv.toConv ψ))))))))) = ψ
+    rw [WithConv.toConv_ofConv, ofMul_toMul, AddEquiv.apply_symm_apply,
+      toMul_ofMul, WithConv.ofConv_toConv]
+  -- equivariance of the transported maps
+  have hθfun_comp : ∀ (σ : Ω ≃ₐ[K] Ω) (φ : A →ₐ[K] Ω),
+      θfun (σ.toAlgHom.comp φ) = σ.toAlgHom.comp (θfun φ) := by
+    intro σ φ
+    show WithConv.ofConv (Additive.toMul (θ (Additive.ofMul (WithConv.toConv
+      (σ.toAlgHom.comp φ))))) = _
+    rw [hθ σ φ, toMul_ofMul, WithConv.ofConv_toConv]
+  have hθinv_comp : ∀ (σ : Ω ≃ₐ[K] Ω) (ψ : B →ₐ[K] Ω),
+      θinv (σ.toAlgHom.comp ψ) = σ.toAlgHom.comp (θinv ψ) := by
+    intro σ ψ
+    apply Function.LeftInverse.injective hθinvfun
+    rw [hθfuninv, hθfun_comp, hθfuninv]
+  -- the transported maps intertwine the convolution structures
+  have hθfun_one : θfun ((1 : WithConv (A →ₐ[K] Ω)).ofConv) =
+      (1 : WithConv (B →ₐ[K] Ω)).ofConv := by
+    show WithConv.ofConv (Additive.toMul (θ (Additive.ofMul (WithConv.toConv
+      ((1 : WithConv (A →ₐ[K] Ω)).ofConv))))) = _
+    rw [WithConv.toConv_ofConv,
+      show Additive.ofMul (1 : WithConv (A →ₐ[K] Ω)) =
+        (0 : Additive (WithConv (A →ₐ[K] Ω))) from rfl,
+      map_zero θ]
+    rfl
+  have hθfun_mul : ∀ ψ₁ ψ₂ : WithConv (A →ₐ[K] Ω),
+      θfun ((ψ₁ * ψ₂).ofConv) =
+        (WithConv.toConv (θfun ψ₁.ofConv) *
+          WithConv.toConv (θfun ψ₂.ofConv)).ofConv := by
+    intro ψ₁ ψ₂
+    show WithConv.ofConv (Additive.toMul (θ (Additive.ofMul (WithConv.toConv
+      ((ψ₁ * ψ₂).ofConv))))) = _
+    rw [WithConv.toConv_ofConv,
+      show Additive.ofMul (ψ₁ * ψ₂) =
+        Additive.ofMul ψ₁ + Additive.ofMul ψ₂ from rfl,
+      map_add θ]
+    rfl
+  -- separation-uniqueness on both sides
+  have huniqA : ∀ x y : A, (∀ φ : A →ₐ[K] Ω, φ x = φ y) → x = y := by
+    intro x y h
+    have h0 := etale_points_separate K Ω A (x - y)
+      (fun φ => by rw [map_sub, h φ, sub_self])
+    exact sub_eq_zero.mp h0
+  have huniqB : ∀ x y : B, (∀ ψ : B →ₐ[K] Ω, ψ x = ψ y) → x = y := by
+    intro x y h
+    have h0 := etale_points_separate K Ω B (x - y)
+      (fun ψ => by rw [map_sub, h ψ, sub_self])
+    exact sub_eq_zero.mp h0
+  -- the underlying function of the reconstruction and of its inverse
+  have heval : ∀ b : B, ∃ a : A, ∀ φ : A →ₐ[K] Ω, φ a = θfun φ b := by
+    intro b
+    exact exists_eval_of_equivariant_function K Ω A (fun φ => θfun φ b)
+      (fun σ φ => by rw [hθfun_comp σ φ]; rfl)
+  choose eF heF using heval
+  have heval' : ∀ a : A, ∃ b : B, ∀ ψ : B →ₐ[K] Ω, ψ b = θinv ψ a := by
+    intro a
+    exact exists_eval_of_equivariant_function K Ω B (fun ψ => θinv ψ a)
+      (fun σ ψ => by rw [hθinv_comp σ ψ]; rfl)
+  choose eG heG using heval'
+  -- the reconstruction is a K-algebra homomorphism
+  let eHom : B →ₐ[K] A :=
+    { toFun := eF
+      map_one' := by
+        apply huniqA
+        intro φ
+        rw [heF 1 φ, map_one, map_one]
+      map_mul' := fun b₁ b₂ => by
+        apply huniqA
+        intro φ
+        rw [heF (b₁ * b₂) φ, map_mul, map_mul, heF b₁ φ, heF b₂ φ]
+      map_zero' := by
+        apply huniqA
+        intro φ
+        rw [heF 0 φ, map_zero, map_zero]
+      map_add' := fun b₁ b₂ => by
+        apply huniqA
+        intro φ
+        rw [heF (b₁ + b₂) φ, map_add, map_add, heF b₁ φ, heF b₂ φ]
+      commutes' := fun k => by
+        apply huniqA
+        intro φ
+        rw [heF (algebraMap K B k) φ, AlgHom.commutes, AlgHom.commutes] }
+  let gHom : A →ₐ[K] B :=
+    { toFun := eG
+      map_one' := by
+        apply huniqB
+        intro ψ
+        rw [heG 1 ψ, map_one, map_one]
+      map_mul' := fun a₁ a₂ => by
+        apply huniqB
+        intro ψ
+        rw [heG (a₁ * a₂) ψ, map_mul, map_mul, heG a₁ ψ, heG a₂ ψ]
+      map_zero' := by
+        apply huniqB
+        intro ψ
+        rw [heG 0 ψ, map_zero, map_zero]
+      map_add' := fun a₁ a₂ => by
+        apply huniqB
+        intro ψ
+        rw [heG (a₁ + a₂) ψ, map_add, map_add, heG a₁ ψ, heG a₂ ψ]
+      commutes' := fun k => by
+        apply huniqB
+        intro ψ
+        rw [heG (algebraMap K A k) ψ, AlgHom.commutes, AlgHom.commutes] }
+  -- the two reconstructions are mutually inverse
+  let eAlg : B ≃ₐ[K] A := AlgEquiv.ofAlgHom eHom gHom
+    (AlgHom.ext fun a => by
+      show eF (eG a) = a
+      apply huniqA
+      intro φ
+      rw [heF (eG a) φ, heG a (θfun φ), hθinvfun φ])
+    (AlgHom.ext fun b => by
+      show eG (eF b) = b
+      apply huniqB
+      intro ψ
+      rw [heG (eF b) ψ, heF b (θinv ψ), hθfuninv ψ])
+  -- evaluation against the reconstruction, restated for the equivalence
+  have heF' : ∀ (b : B) (φ : A →ₐ[K] Ω), φ ((eAlg : B →ₐ[K] A) b) = θfun φ b :=
+    fun b φ => heF b φ
+  -- counit compatibility, through the convolution units
+  have hcounit : (Bialgebra.counitAlgHom K A).comp (eAlg : B →ₐ[K] A) =
+      Bialgebra.counitAlgHom K B := by
+    apply AlgHom.ext
+    intro b
+    apply (algebraMap K Ω).injective
+    calc algebraMap K Ω ((Bialgebra.counitAlgHom K A).comp
+          (eAlg : B →ₐ[K] A) b)
+        = ((1 : WithConv (A →ₐ[K] Ω)).ofConv) ((eAlg : B →ₐ[K] A) b) :=
+          (AlgHom.convOne_apply _).symm
+      _ = θfun ((1 : WithConv (A →ₐ[K] Ω)).ofConv) b := heF' b _
+      _ = ((1 : WithConv (B →ₐ[K] Ω)).ofConv) b := by rw [hθfun_one]
+      _ = algebraMap K Ω (Bialgebra.counitAlgHom K B b) :=
+          AlgHom.convOne_apply b
+  -- comultiplication compatibility, through pair separation
+  have hcomul : (Algebra.TensorProduct.map (eAlg : B →ₐ[K] A)
+      (eAlg : B →ₐ[K] A)).comp (Bialgebra.comulAlgHom K B) =
+      (Bialgebra.comulAlgHom K A).comp (eAlg : B →ₐ[K] A) := by
+    apply AlgHom.ext
+    intro b
+    have hpair : ∀ φ ψ : A →ₐ[K] Ω,
+        Algebra.TensorProduct.lift φ ψ (fun _ _ => Commute.all _ _)
+          ((Algebra.TensorProduct.map (eAlg : B →ₐ[K] A) (eAlg : B →ₐ[K] A))
+            (Bialgebra.comulAlgHom K B b) -
+          (Bialgebra.comulAlgHom K A) ((eAlg : B →ₐ[K] A) b)) = 0 := by
+      intro φ ψ
+      rw [map_sub]
+      -- the map side evaluates through the transported pair
+      have hL : Algebra.TensorProduct.lift φ ψ (fun _ _ => Commute.all _ _)
+          ((Algebra.TensorProduct.map (eAlg : B →ₐ[K] A) (eAlg : B →ₐ[K] A))
+            (Bialgebra.comulAlgHom K B b)) =
+          Algebra.TensorProduct.lift (θfun φ) (θfun ψ)
+            (fun _ _ => Commute.all _ _) (Bialgebra.comulAlgHom K B b) := by
+        induction Bialgebra.comulAlgHom K B b with
+        | zero => simp
+        | tmul b₁ b₂ =>
+          rw [Algebra.TensorProduct.map_tmul, Algebra.TensorProduct.lift_tmul,
+            Algebra.TensorProduct.lift_tmul, heF' b₁ φ, heF' b₂ ψ]
+        | add z₁ z₂ h₁ h₂ => rw [map_add, map_add, map_add, h₁, h₂]
+      -- the comul side is the convolution product at the reconstruction
+      have hR : Algebra.TensorProduct.lift φ ψ (fun _ _ => Commute.all _ _)
+          ((Bialgebra.comulAlgHom K A) ((eAlg : B →ₐ[K] A) b)) =
+          Algebra.TensorProduct.lift (θfun φ) (θfun ψ)
+            (fun _ _ => Commute.all _ _) (Bialgebra.comulAlgHom K B b) := by
+        have h1 : Algebra.TensorProduct.lift φ ψ (fun _ _ => Commute.all _ _)
+            ((Bialgebra.comulAlgHom K A) ((eAlg : B →ₐ[K] A) b)) =
+            θfun ((WithConv.toConv φ * WithConv.toConv ψ).ofConv) b := by
+          rw [← heF' b ((WithConv.toConv φ * WithConv.toConv ψ).ofConv)]
+          rw [show (((WithConv.toConv φ * WithConv.toConv ψ).ofConv :
+              A →ₐ[K] Ω) ((eAlg : B →ₐ[K] A) b)) =
+              (WithConv.toConv φ * WithConv.toConv ψ)
+                ((eAlg : B →ₐ[K] A) b) from rfl]
+          rw [AlgHom.convMul_apply]
+          rfl
+        have h2 : θfun ((WithConv.toConv φ * WithConv.toConv ψ).ofConv) b =
+            Algebra.TensorProduct.lift (θfun φ) (θfun ψ)
+              (fun _ _ => Commute.all _ _) (Bialgebra.comulAlgHom K B b) := by
+          rw [hθfun_mul (WithConv.toConv φ) (WithConv.toConv ψ)]
+          rw [show (((WithConv.toConv (θfun φ) *
+              WithConv.toConv (θfun ψ)).ofConv : B →ₐ[K] Ω) b) =
+              (WithConv.toConv (θfun φ) * WithConv.toConv (θfun ψ)) b
+            from rfl]
+          rw [AlgHom.convMul_apply]
+          rfl
+        exact h1.trans h2
+      rw [hL, hR, sub_self]
+    have h0 := etale_tensor_points_separate K Ω A
+      ((Algebra.TensorProduct.map (eAlg : B →ₐ[K] A) (eAlg : B →ₐ[K] A))
+        (Bialgebra.comulAlgHom K B b) -
+        (Bialgebra.comulAlgHom K A) ((eAlg : B →ₐ[K] A) b)) hpair
+    exact sub_eq_zero.mp h0
+  exact ⟨BialgEquiv.ofAlgEquiv eAlg hcounit hcomul⟩
+
+open TensorProduct IsDedekindDomain in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **The rational local/global points comparison** (PROVEN — the
+`R = ℚ` two-step variant of `dvrPointsEquiv`): for a finite
+`ℚ`-bialgebra `Hg`, there is an equivalence from the `Ω̂`-points of the
+completed base change `ℚ_vˆ ⊗[ℚ] Hg` to the `ℚ̄`-points of the redundant
+base change `ℚ ⊗[ℚ] Hg` (through `AlgHom.liftEquiv` twice and
+`algHomEquivOfFinite`), preserving the convolution unit and product and
+intertwining postcomposition by a local Galois element with
+postcomposition by its global restriction. -/
+theorem exists_ratLocalPointsEquiv
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    (Hg : Type) [CommRing Hg] [Bialgebra ℚ Hg] [Module.Finite ℚ Hg] :
+    ∃ (Pe : (((HeightOneSpectrum.adicCompletion ℚ v) ⊗[ℚ] Hg)
+          →ₐ[HeightOneSpectrum.adicCompletion ℚ v]
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))) ≃
+        ((ℚ ⊗[ℚ] Hg) →ₐ[ℚ] AlgebraicClosure ℚ)),
+      Pe ((1 : WithConv (((HeightOneSpectrum.adicCompletion ℚ v) ⊗[ℚ] Hg)
+          →ₐ[HeightOneSpectrum.adicCompletion ℚ v]
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v)))).ofConv) =
+        (1 : WithConv ((ℚ ⊗[ℚ] Hg) →ₐ[ℚ] AlgebraicClosure ℚ)).ofConv ∧
+      (∀ ψ₁ ψ₂ : WithConv (((HeightOneSpectrum.adicCompletion ℚ v) ⊗[ℚ] Hg)
+          →ₐ[HeightOneSpectrum.adicCompletion ℚ v]
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))),
+        Pe ((ψ₁ * ψ₂).ofConv) =
+          (WithConv.toConv (Pe ψ₁.ofConv) *
+            WithConv.toConv (Pe ψ₂.ofConv)).ofConv) ∧
+      (∀ (σ : (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))
+            ≃ₐ[HeightOneSpectrum.adicCompletion ℚ v]
+            (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v)))
+          (φ : ((HeightOneSpectrum.adicCompletion ℚ v) ⊗[ℚ] Hg)
+            →ₐ[HeightOneSpectrum.adicCompletion ℚ v]
+            (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))),
+        Pe (σ.toAlgHom.comp φ) =
+          ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+              (HeightOneSpectrum.adicCompletion ℚ v)) σ :
+            AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)).toAlgHom.comp
+            (Pe φ)) := by
+  classical
+  -- the ℚ-algebra structure on the local closure PINNED to the tower
+  -- composite baked into `algHomEquivOfFinite` (fresh synthesis picks
+  -- `DivisionRing.toRatAlgebra`, which does not match it syntactically)
+  letI algQΩ : Algebra ℚ
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v)) :=
+    @AlgebraicClosure.instAlgebra (HeightOneSpectrum.adicCompletion ℚ v) _ ℚ _
+      (IsDedekindDomain.HeightOneSpectrum.instAlgebraAdicCompletion
+        (NumberField.RingOfIntegers ℚ) ℚ v)
+  haveI tower :=
+    @IsScalarTower.of_algebraMap_eq ℚ (HeightOneSpectrum.adicCompletion ℚ v)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v)) _ _ _ _ _ algQΩ
+      (fun x =>
+        ((eq_ratCast (@algebraMap ℚ (AlgebraicClosure
+            (HeightOneSpectrum.adicCompletion ℚ v)) _ _ algQΩ) x).trans
+          (eq_ratCast ((algebraMap (HeightOneSpectrum.adicCompletion ℚ v)
+              (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))).comp
+            (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ v))) x).symm))
+  refine ⟨(AlgHom.liftEquiv ℚ (HeightOneSpectrum.adicCompletion ℚ v) Hg
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))).symm.trans
+    ((AlgHom.liftEquiv ℚ ℚ Hg
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))).trans
+      (algHomEquivOfFinite v (ℚ ⊗[ℚ] Hg))), ?_, ?_, ?_⟩
+  · show algHomEquivOfFinite v (ℚ ⊗[ℚ] Hg)
+      ((AlgHom.liftEquiv ℚ ℚ Hg
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v)))
+        ((AlgHom.liftEquiv ℚ (HeightOneSpectrum.adicCompletion ℚ v) Hg
+            (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))).symm
+          ((1 : WithConv (((HeightOneSpectrum.adicCompletion ℚ v) ⊗[ℚ] Hg)
+            →ₐ[HeightOneSpectrum.adicCompletion ℚ v]
+            (AlgebraicClosure
+              (HeightOneSpectrum.adicCompletion ℚ v)))).ofConv))) = _
+    rw [liftEquiv_symm_convOne, liftEquiv_convOne, algHomEquivOfFinite_convOne]
+  · intro ψ₁ ψ₂
+    show algHomEquivOfFinite v (ℚ ⊗[ℚ] Hg)
+      ((AlgHom.liftEquiv ℚ ℚ Hg
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v)))
+        ((AlgHom.liftEquiv ℚ (HeightOneSpectrum.adicCompletion ℚ v) Hg
+            (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))).symm
+          ((ψ₁ * ψ₂).ofConv))) = _
+    rw [liftEquiv_symm_convMul, liftEquiv_convMul, algHomEquivOfFinite_convMul]
+    rfl
+  · intro σ φ
+    show algHomEquivOfFinite v (ℚ ⊗[ℚ] Hg)
+      ((AlgHom.liftEquiv ℚ ℚ Hg
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v)))
+        ((AlgHom.liftEquiv ℚ (HeightOneSpectrum.adicCompletion ℚ v) Hg
+            (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))).symm
+          (σ.toAlgHom.comp φ))) = _
+    rw [liftEquiv_symm_comp]
+    have hrs : (σ.toAlgHom.restrictScalars ℚ :
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v)) →ₐ[ℚ]
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))) =
+        ((σ.toAlgHom.restrictScalars ℚ).restrictScalars ℚ) := rfl
+    rw [hrs, liftEquiv_comp]
+    -- the two spellings of `algebraMap ℚ ℚ_vˆ` (fresh synthesis vs the
+    -- completion instance baked into `algHomEquivOfFinite`) agree, ring
+    -- homs out of `ℚ` being unique
+    rw [show (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (HeightOneSpectrum.adicCompletion ℚ v)) σ) =
+        (Field.absoluteGaloisGroup.map (@algebraMap ℚ
+          (HeightOneSpectrum.adicCompletion ℚ v) _ _
+          (IsDedekindDomain.HeightOneSpectrum.instAlgebraAdicCompletion
+            (NumberField.RingOfIntegers ℚ) ℚ v)) σ) from
+      congrArg (fun f : ℚ →+* (HeightOneSpectrum.adicCompletion ℚ v) =>
+        Field.absoluteGaloisGroup.map f σ)
+        (RingHom.ext fun x => (eq_ratCast _ x).trans (eq_ratCast _ x).symm)]
+    exact algHomEquivOfFinite_comp v σ
+      ((AlgHom.liftEquiv ℚ ℚ Hg
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v)))
+        ((AlgHom.liftEquiv ℚ (HeightOneSpectrum.adicCompletion ℚ v) Hg
+            (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))).symm φ))
 
 open TensorProduct ValuativeRel IsDedekindDomain in
 open scoped WeierstrassCurve.Affine in
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
-/-- **The global-to-local points transport** (sorry node — the
+/-- **The global-to-local points transport** (PROVEN 2026-07-24 — the
 embedding half of the adic comparison): a GLOBAL equivariant points
 identification for the finite `ℚ`-Hopf algebra `Hg` induces, through
 the chosen embedding `ℚ̄ ↪ Ω̂` (`algClosureEmbeddingRat`), a LOCAL
@@ -8470,7 +9048,183 @@ theorem WeierstrassCurve.exists_localPointsEquiv_of_globalPackage
               hp'.toHeightOneSpectrumRingOfIntegersRat))).Point) =
           WeierstrassCurve.Affine.Point.map σ.toAlgHom
             (fgl (Additive.ofMul (WithConv.toConv φ))) := by
-  sorry
+  classical
+  letI := algebraRatAlgClosureAdic hp'.toHeightOneSpectrumRingOfIntegersRat
+  -- the points comparison, with its convolution/equivariance properties
+  obtain ⟨Pe, hPe1, hPemul, hPecomp⟩ :=
+    exists_ratLocalPointsEquiv hp'.toHeightOneSpectrumRingOfIntegersRat Hg
+  -- the points comparison as an additive equivalence of the
+  -- convolution groups
+  let eqv : Additive (WithConv (((HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat) ⊗[ℚ] Hg)
+        →ₐ[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat]
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)))) ≃+
+      Additive (WithConv ((ℚ ⊗[ℚ] Hg) →ₐ[ℚ] AlgebraicClosure ℚ)) :=
+    { toFun := fun x => Additive.ofMul (WithConv.toConv
+        (Pe (WithConv.ofConv (Additive.toMul x))))
+      invFun := fun y => Additive.ofMul (WithConv.toConv
+        (Pe.symm (WithConv.ofConv (Additive.toMul y))))
+      left_inv := fun x => by
+        show Additive.ofMul (WithConv.toConv (Pe.symm (WithConv.ofConv
+          (Additive.toMul (Additive.ofMul (WithConv.toConv
+            (Pe (WithConv.ofConv (Additive.toMul x))))))))) = x
+        rw [toMul_ofMul, WithConv.ofConv_toConv, Equiv.symm_apply_apply,
+          WithConv.toConv_ofConv, ofMul_toMul]
+      right_inv := fun y => by
+        show Additive.ofMul (WithConv.toConv (Pe (WithConv.ofConv
+          (Additive.toMul (Additive.ofMul (WithConv.toConv
+            (Pe.symm (WithConv.ofConv (Additive.toMul y))))))))) = y
+        rw [toMul_ofMul, WithConv.ofConv_toConv, Equiv.apply_symm_apply,
+          WithConv.toConv_ofConv, ofMul_toMul]
+      map_add' := fun x y => by
+        show Additive.ofMul (WithConv.toConv
+            (Pe (WithConv.ofConv (Additive.toMul (x + y))))) = _
+        have hxy : Additive.toMul (x + y) =
+            Additive.toMul x * Additive.toMul y := rfl
+        rw [hxy, hPemul (Additive.toMul x) (Additive.toMul y),
+          WithConv.toConv_ofConv]
+        rfl }
+  -- the transported point of a global torsion class is local torsion
+  have hmem : ∀ w : AddSubgroup.torsionBy
+      (E⁄(AlgebraicClosure ℚ)).Point ((p : ℕ) : ℤ),
+      (show ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+          (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat))).Point from
+        WeierstrassCurve.Affine.Point.map (W' := E)
+          (algClosureEmbeddingRat hp'.toHeightOneSpectrumRingOfIntegersRat)
+          (show ((E)⁄(AlgebraicClosure ℚ)).Point from w.1)) ∈
+      AddSubgroup.torsionBy
+        ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+          (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat))).Point ((p : ℕ) : ℤ) := by
+    intro w
+    have h1 : ((p : ℕ) : ℤ) •
+        (show ((E)⁄(AlgebraicClosure ℚ)).Point from w.1) = 0 := w.2
+    show ((p : ℕ) : ℤ) • WeierstrassCurve.Affine.Point.map (W' := E)
+        (algClosureEmbeddingRat hp'.toHeightOneSpectrumRingOfIntegersRat)
+        (show ((E)⁄(AlgebraicClosure ℚ)).Point from w.1) = 0
+    rw [← map_zsmul, h1, map_zero]
+  -- the transport map on torsion
+  let ι : AddSubgroup.torsionBy
+      (E⁄(AlgebraicClosure ℚ)).Point ((p : ℕ) : ℤ) →
+      AddSubgroup.torsionBy
+        ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+          (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat))).Point ((p : ℕ) : ℤ) :=
+    fun w => ⟨_, hmem w⟩
+  have hιadd : ∀ w₁ w₂, ι (w₁ + w₂) = ι w₁ + ι w₂ := by
+    intro w₁ w₂
+    apply Subtype.ext
+    show WeierstrassCurve.Affine.Point.map (W' := E)
+        (algClosureEmbeddingRat hp'.toHeightOneSpectrumRingOfIntegersRat)
+        ((show ((E)⁄(AlgebraicClosure ℚ)).Point from w₁.1) +
+          (show ((E)⁄(AlgebraicClosure ℚ)).Point from w₂.1)) = _
+    rw [map_add]
+    rfl
+  have hιinj : Function.Injective ι := by
+    intro a b hab
+    have h1 : WeierstrassCurve.Affine.Point.map (W' := E)
+        (algClosureEmbeddingRat hp'.toHeightOneSpectrumRingOfIntegersRat)
+        (show ((E)⁄(AlgebraicClosure ℚ)).Point from a.1) =
+        WeierstrassCurve.Affine.Point.map (W' := E)
+          (algClosureEmbeddingRat hp'.toHeightOneSpectrumRingOfIntegersRat)
+          (show ((E)⁄(AlgebraicClosure ℚ)).Point from b.1) :=
+      congrArg Subtype.val hab
+    apply Subtype.ext
+    show (show ((E)⁄(AlgebraicClosure ℚ)).Point from a.1) =
+      (show ((E)⁄(AlgebraicClosure ℚ)).Point from b.1)
+    exact WeierstrassCurve.Affine.Point.map_injective
+      (f := algClosureEmbeddingRat hp'.toHeightOneSpectrumRingOfIntegersRat) h1
+  -- the `p²`-counts on both sides make the transport bijective
+  have hcardG : Nat.card (AddSubgroup.torsionBy
+      (E⁄(AlgebraicClosure ℚ)).Point ((p : ℕ) : ℤ)) = p ^ 2 :=
+    TorsionCard.card_torsionBy (E.map (algebraMap ℚ (AlgebraicClosure ℚ))) p
+      (Nat.cast_ne_zero.mpr hp'.ne_zero)
+  have hcardL : Nat.card (AddSubgroup.torsionBy
+      ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+        (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat))).Point ((p : ℕ) : ℤ)) =
+      p ^ 2 :=
+    TorsionCard.card_torsionBy
+      ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat))).map
+        (algebraMap (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)))) p
+      (Nat.cast_ne_zero.mpr hp'.ne_zero)
+  haveI hfinG : Finite (AddSubgroup.torsionBy
+      (E⁄(AlgebraicClosure ℚ)).Point ((p : ℕ) : ℤ)) :=
+    Nat.finite_of_card_ne_zero (by
+      rw [hcardG]
+      have := hp'.pos
+      positivity)
+  haveI hfinL : Finite (AddSubgroup.torsionBy
+      ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+        (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat))).Point ((p : ℕ) : ℤ)) :=
+    Nat.finite_of_card_ne_zero (by
+      rw [hcardL]
+      have := hp'.pos
+      positivity)
+  have hιbij : Function.Bijective ι :=
+    (Nat.bijective_iff_injective_and_card ι).mpr
+      ⟨hιinj, by rw [hcardG, hcardL]⟩
+  -- the torsion transport as an additive equivalence
+  let Te := AddEquiv.ofBijective (AddMonoidHom.mk' ι hιadd) hιbij
+  refine ⟨(eqv.trans fg).trans Te, ?_⟩
+  intro σ φ
+  show ((Te (fg (Additive.ofMul (WithConv.toConv
+      (Pe (σ.toAlgHom.comp φ)))))) :
+      ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+        (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat))).Point) =
+    WeierstrassCurve.Affine.Point.map σ.toAlgHom
+      (Te (fg (Additive.ofMul (WithConv.toConv (Pe φ)))))
+  rw [hPecomp σ φ]
+  -- unfold the transport on the left-hand side
+  show WeierstrassCurve.Affine.Point.map (W' := E)
+      (algClosureEmbeddingRat hp'.toHeightOneSpectrumRingOfIntegersRat)
+      ((fg (Additive.ofMul (WithConv.toConv
+        (((Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (HeightOneSpectrum.adicCompletion ℚ
+              hp'.toHeightOneSpectrumRingOfIntegersRat)) σ :
+          AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)).toAlgHom.comp
+          (Pe φ))))) : (E⁄(AlgebraicClosure ℚ)).Point) = _
+  rw [hfg ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+      (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)) σ :
+      AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)) (Pe φ)]
+  rw [point_map_algClosureEmbeddingRat_comm]
+  -- both spellings of the `σ`-action agree pointwise
+  have hbb : ∀ Q : ((E)⁄(AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat))).Point,
+      WeierstrassCurve.Affine.Point.map (W' := E)
+        (algClosureSigmaRat hp'.toHeightOneSpectrumRingOfIntegersRat σ) Q =
+      (show ((E)⁄(AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat))).Point from
+        WeierstrassCurve.Affine.Point.map
+          (W' := E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)))
+          σ.toAlgHom
+          (show ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+              (HeightOneSpectrum.adicCompletion ℚ
+                hp'.toHeightOneSpectrumRingOfIntegersRat))).Point from Q)) := by
+    intro Q
+    cases Q with
+    | zero => rfl
+    | some x y h => rfl
+  rw [hbb]
+  rfl
 
 open TensorProduct ValuativeRel IsDedekindDomain in
 open scoped WeierstrassCurve.Affine in
