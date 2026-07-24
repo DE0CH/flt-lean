@@ -3429,6 +3429,354 @@ theorem exists_forall_norm_LSeries_le_mul_sub_one_of_integral_eq_zero
   have hfin := le_of_tendsto_of_tendsto h1 h2 hev2
   rwa [sub_zero] at hfin
 
+/-- **Root-of-unity factorization of the character-averaged Euler
+factor**: for `a ∈ ℂ` with `a ^ M = 1` (`M > 0`) and any `x`,
+`∏_{j<M} (1 - a^j·x) = (1 - x^f)^{M/f}` where `f` is the order of `a`.
+Via `∏_{r<f} (y - a^r) = y^f - 1` (the `f`-th roots of unity are
+exactly the powers of `a`, `Polynomial.X_pow_sub_one_eq_prod`)
+evaluated at `y = x⁻¹`, and `f`-periodicity of `j ↦ a^j`. -/
+theorem prod_range_one_sub_pow_mul {M : ℕ} (hM : 0 < M) {a : ℂ} (ha : a ^ M = 1)
+    (x : ℂ) :
+    ∏ j ∈ Finset.range M, (1 - a ^ j * x) =
+      (1 - x ^ orderOf a) ^ (M / orderOf a) := by
+  classical
+  have hfin : IsOfFinOrder a := isOfFinOrder_iff_pow_eq_one.mpr ⟨M, hM, ha⟩
+  have hfpos : 0 < orderOf a := hfin.orderOf_pos
+  have hprim : IsPrimitiveRoot a (orderOf a) := IsPrimitiveRoot.orderOf a
+  have hdvd : orderOf a ∣ M := orderOf_dvd_of_pow_eq_one ha
+  -- the `f`-th roots of unity are exactly the powers of `a`
+  have himg : (Finset.range (orderOf a)).image (a ^ ·) =
+      Polynomial.nthRootsFinset (orderOf a) (1 : ℂ) := by
+    refine Finset.eq_of_subset_of_card_le ?_ ?_
+    · intro μ hμ
+      obtain ⟨r, _, rfl⟩ := Finset.mem_image.mp hμ
+      refine (Polynomial.mem_nthRootsFinset hfpos 1).mpr ?_
+      rw [← pow_mul, mul_comm, pow_mul, pow_orderOf_eq_one, one_pow]
+    · rw [hprim.card_nthRootsFinset,
+        Finset.card_image_of_injOn hprim.injOn_pow, Finset.card_range]
+  have hroots : ∀ y : ℂ, ∏ r ∈ Finset.range (orderOf a), (y - a ^ r) =
+      y ^ orderOf a - 1 := by
+    intro y
+    calc ∏ r ∈ Finset.range (orderOf a), (y - a ^ r)
+        = ∏ μ ∈ (Finset.range (orderOf a)).image (a ^ ·), (y - μ) :=
+          (Finset.prod_image fun i hi j hj hij =>
+            hprim.injOn_pow (Finset.mem_coe.mpr hi) (Finset.mem_coe.mpr hj)
+              hij).symm
+      _ = ∏ μ ∈ Polynomial.nthRootsFinset (orderOf a) (1 : ℂ), (y - μ) := by
+          rw [himg]
+      _ = Polynomial.eval y (∏ μ ∈ Polynomial.nthRootsFinset (orderOf a) (1 : ℂ),
+            (Polynomial.X - Polynomial.C μ)) := by
+          rw [Polynomial.eval_prod]
+          exact Finset.prod_congr rfl fun μ _ => by
+            rw [Polynomial.eval_sub, Polynomial.eval_X, Polynomial.eval_C]
+      _ = Polynomial.eval y (Polynomial.X ^ orderOf a - 1) := by
+          rw [← Polynomial.X_pow_sub_one_eq_prod hfpos hprim]
+      _ = y ^ orderOf a - 1 := by
+          rw [Polynomial.eval_sub, Polynomial.eval_pow, Polynomial.eval_X,
+            Polynomial.eval_one]
+  -- one period of the product
+  have hblock : ∏ r ∈ Finset.range (orderOf a), (1 - a ^ r * x) =
+      1 - x ^ orderOf a := by
+    rcases eq_or_ne x 0 with rfl | hx
+    · simp [zero_pow hfpos.ne']
+    · have h1 := hroots x⁻¹
+      have h2 : ∏ r ∈ Finset.range (orderOf a), (1 - a ^ r * x) =
+          ∏ r ∈ Finset.range (orderOf a), (x * (x⁻¹ - a ^ r)) := by
+        refine Finset.prod_congr rfl fun r _ => ?_
+        rw [mul_sub, mul_inv_cancel₀ hx, mul_comm x (a ^ r)]
+      have hxf : x ^ orderOf a ≠ 0 := pow_ne_zero _ hx
+      rw [h2, Finset.prod_mul_distrib, Finset.prod_const, Finset.card_range, h1,
+        inv_pow, mul_sub, mul_inv_cancel₀ hxf, mul_one]
+  -- periodicity glue
+  have hper : ∀ m : ℕ, ∏ j ∈ Finset.range (orderOf a * m), (1 - a ^ j * x) =
+      (1 - x ^ orderOf a) ^ m := by
+    intro m
+    induction m with
+    | zero => simp
+    | succ k ihk =>
+        rw [Nat.mul_succ, Finset.prod_range_add, ihk, pow_succ]
+        congr 1
+        rw [← hblock]
+        refine Finset.prod_congr rfl fun r _ => ?_
+        rw [pow_add, pow_mul, pow_orderOf_eq_one, one_pow, one_mul]
+  obtain ⟨m, rfl⟩ := hdvd
+  rw [Nat.mul_div_cancel_left m hfpos]
+  exact hper m
+
+/-- **Per-place positivity of the character-power averaged
+log-factor**: for `u ∈ ZMod ℓ` and `0 < x ≤ 1/2`, the real part of
+`∑_{j<ℓ-1} -log(1 - χ^j(u)·x)` is nonnegative, and is at least
+`(ℓ-1)·x` when `u = 1`.  For a unit `u` the sum is
+`-(M/f)·log(1 - x^f) ≥ 0` (`f` the order of `χ(u)`, via
+`prod_range_one_sub_pow_mul` and `Re log = log ‖·‖`); for a nonunit
+`u` every factor is `-log 1 = 0`. -/
+theorem re_sum_range_neg_log_one_sub_nonneg {ℓ : ℕ} (hℓ : ℓ.Prime)
+    (χ : DirichletCharacter ℂ ℓ) (u : ZMod ℓ) {x : ℝ} (hx0 : 0 < x)
+    (hx2 : x ≤ 1 / 2) :
+    0 ≤ (∑ j ∈ Finset.range (ℓ - 1),
+        -Complex.log (1 - (χ ^ j) u * (x : ℂ))).re ∧
+      (u = 1 → ((ℓ - 1 : ℕ) : ℝ) * x ≤
+        (∑ j ∈ Finset.range (ℓ - 1),
+          -Complex.log (1 - (χ ^ j) u * (x : ℂ))).re) := by
+  classical
+  haveI : NeZero ℓ := ⟨hℓ.pos.ne'⟩
+  have hM1 : 0 < ℓ - 1 := by have := hℓ.two_le; omega
+  by_cases hu : IsUnit u
+  · -- unit case: closed form via the factorization
+    have hb : ∀ j : ℕ, (χ ^ j) u = χ u ^ j := by
+      intro j
+      conv_lhs => rw [← hu.unit_spec]
+      rw [MulChar.pow_apply_coe]
+      rw [hu.unit_spec]
+    have haM : χ u ^ (ℓ - 1) = 1 := by
+      rw [← hb, dirichletCharacter_pow_card_sub_one_eq_one hℓ χ,
+        MulChar.one_apply hu]
+    have hfin : IsOfFinOrder (χ u) :=
+      isOfFinOrder_iff_pow_eq_one.mpr ⟨_, hM1, haM⟩
+    have hfpos : 0 < orderOf (χ u) := hfin.orderOf_pos
+    -- `x ^ f` stays in `(0, 1)`
+    have hxf1 : x ^ orderOf (χ u) ≤ x := by
+      calc x ^ orderOf (χ u) ≤ x ^ 1 :=
+            pow_le_pow_of_le_one hx0.le (by linarith) hfpos
+        _ = x := pow_one x
+    have hxfpos : 0 < x ^ orderOf (χ u) := pow_pos hx0 _
+    -- each factor is away from zero
+    have hne : ∀ j : ℕ, (1 : ℂ) - χ u ^ j * (x : ℂ) ≠ 0 := by
+      intro j hzero
+      have h1 : χ u ^ j * (x : ℂ) = 1 := (sub_eq_zero.mp hzero).symm
+      have h2 : ‖χ u ^ j * (x : ℂ)‖ = 1 := by rw [h1, norm_one]
+      have h3 : ‖χ u ^ j * (x : ℂ)‖ ≤ 1 / 2 := by
+        rw [norm_mul, norm_pow, Complex.norm_real,
+          Real.norm_of_nonneg hx0.le]
+        calc ‖χ u‖ ^ j * x ≤ 1 ^ j * x := by
+              gcongr
+              exact DirichletCharacter.norm_le_one χ u
+          _ = x := by rw [one_pow, one_mul]
+          _ ≤ 1 / 2 := hx2
+      rw [h2] at h3
+      linarith
+    -- the real part of the sum is `-log` of the norm of the product
+    have hre : (∑ j ∈ Finset.range (ℓ - 1),
+        -Complex.log (1 - (χ ^ j) u * (x : ℂ))).re =
+        -Real.log ‖∏ j ∈ Finset.range (ℓ - 1), (1 - χ u ^ j * (x : ℂ))‖ := by
+      calc (∑ j ∈ Finset.range (ℓ - 1),
+            -Complex.log (1 - (χ ^ j) u * (x : ℂ))).re
+          = ∑ j ∈ Finset.range (ℓ - 1),
+              (-Complex.log (1 - (χ ^ j) u * (x : ℂ))).re :=
+            Complex.re_sum _ _
+        _ = ∑ j ∈ Finset.range (ℓ - 1),
+              -Real.log ‖1 - χ u ^ j * (x : ℂ)‖ := by
+            refine Finset.sum_congr rfl fun j _ => ?_
+            rw [Complex.neg_re, Complex.log_re, hb j]
+        _ = -∑ j ∈ Finset.range (ℓ - 1),
+              Real.log ‖1 - χ u ^ j * (x : ℂ)‖ := by
+            rw [Finset.sum_neg_distrib]
+        _ = -Real.log (∏ j ∈ Finset.range (ℓ - 1),
+              ‖1 - χ u ^ j * (x : ℂ)‖) := by
+            rw [Real.log_prod (fun j _ => norm_ne_zero_iff.mpr (hne j))]
+        _ = -Real.log ‖∏ j ∈ Finset.range (ℓ - 1),
+              (1 - χ u ^ j * (x : ℂ))‖ := by rw [norm_prod]
+    have hnormval : ‖∏ j ∈ Finset.range (ℓ - 1), (1 - χ u ^ j * (x : ℂ))‖ =
+        (1 - x ^ orderOf (χ u)) ^ ((ℓ - 1) / orderOf (χ u)) := by
+      rw [prod_range_one_sub_pow_mul hM1 haM (x : ℂ),
+        show ((1 : ℂ) - (x : ℂ) ^ orderOf (χ u)) =
+          ((1 - x ^ orderOf (χ u) : ℝ) : ℂ) by push_cast; ring,
+        norm_pow, Complex.norm_real,
+        Real.norm_of_nonneg (by linarith : (0 : ℝ) ≤ 1 - x ^ orderOf (χ u))]
+    constructor
+    · rw [hre, hnormval]
+      have hlogle : Real.log ((1 - x ^ orderOf (χ u)) ^
+          ((ℓ - 1) / orderOf (χ u))) ≤ 0 := by
+        refine Real.log_nonpos (pow_nonneg (by linarith) _) ?_
+        exact pow_le_one₀ (by linarith) (by linarith)
+      linarith
+    · intro hu1
+      have hf1 : orderOf (χ u) = 1 := by rw [hu1, map_one, orderOf_one]
+      rw [hre, hnormval, hf1, pow_one, Nat.div_one, Real.log_pow]
+      have hlog : Real.log (1 - x) ≤ -x := by
+        have h4 := Real.log_le_sub_one_of_pos (by linarith : (0 : ℝ) < 1 - x)
+        linarith
+      have h5 := mul_le_mul_of_nonneg_left hlog
+        (Nat.cast_nonneg (ℓ - 1) : (0 : ℝ) ≤ ((ℓ - 1 : ℕ) : ℝ))
+      nlinarith
+  · -- nonunit: every term vanishes
+    have hzero : ∀ j ∈ Finset.range (ℓ - 1),
+        -Complex.log (1 - (χ ^ j) u * (x : ℂ)) = 0 := by
+      intro j _
+      rw [MulChar.map_nonunit (χ ^ j) hu, zero_mul, sub_zero, Complex.log_one,
+        neg_zero]
+    rw [Finset.sum_congr rfl hzero, Finset.sum_const, smul_zero]
+    exact ⟨le_refl _, fun hu1 => absurd isUnit_one (hu1 ▸ hu)⟩
+
+open IsDedekindDomain in
+/-- **Character-power averaged lower bound for the prime log-sums**:
+for real `s > 1`, `(ℓ-1)` times the congruence-class prime sum
+`∑_{N P ≡ 1 (mod ℓ)} N P^{-s}` (over degree-one places of `F`) is
+dominated by the real part of `∑_{j<ℓ-1} 𝒮_{χ^j}(s)`, the sum of the
+prime log-sums of ALL powers of `χ`.  Per place the real part is
+nonnegative, and at the congruence-class places it is
+`≥ (ℓ-1)·N P^{-s}` (`re_sum_range_neg_log_one_sub_nonneg`). -/
+theorem mul_tsum_rpow_neg_le_sum_re_tsum_neg_log
+    (F : Type*) [Field F] [NumberField F] {ℓ : ℕ} (hℓ : ℓ.Prime)
+    (χ : DirichletCharacter ℂ ℓ) {s : ℝ} (hs : 1 < s) :
+    ((ℓ - 1 : ℕ) : ℝ) * ∑' P : {P : HeightOneSpectrum (𝓞 F) //
+        (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+        ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) = 1},
+      (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ) ^ (-s) ≤
+    ∑ j ∈ Finset.range (ℓ - 1),
+      (∑' P : HeightOneSpectrum (𝓞 F),
+        -Complex.log (1 - (χ ^ j) ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+          (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)))).re := by
+  classical
+  have hNpos : ∀ P : HeightOneSpectrum (𝓞 F),
+      (0 : ℝ) < (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) := by
+    intro P
+    have h := two_le_natCard_quotient P
+    exact_mod_cast (by omega : 0 < Nat.card (𝓞 F ⧸ P.asIdeal))
+  have hxpos : ∀ P : HeightOneSpectrum (𝓞 F),
+      (0 : ℝ) < (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-s) :=
+    fun P => Real.rpow_pos_of_pos (hNpos P) _
+  have hxhalf : ∀ P : HeightOneSpectrum (𝓞 F),
+      (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-s) ≤ 1 / 2 := by
+    intro P
+    have h2N : (2 : ℝ) ≤ (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) := by
+      exact_mod_cast two_le_natCard_quotient P
+    calc (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-s)
+        ≤ (2 : ℝ) ^ (-s) :=
+          Real.rpow_le_rpow_of_nonpos two_pos h2N (by linarith)
+      _ ≤ (2 : ℝ) ^ (-1 : ℝ) :=
+          (Real.rpow_le_rpow_left_iff one_lt_two).mpr (by linarith)
+      _ = 1 / 2 := by rw [Real.rpow_neg_one]; norm_num
+  have hcpow : ∀ P : HeightOneSpectrum (𝓞 F),
+      (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)) =
+        (((Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-s) : ℝ) : ℂ) := by
+    intro P
+    rw [show ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ℂ) =
+        (((Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ)) : ℂ) by push_cast; ring,
+      show (-(s : ℂ)) = ((-s : ℝ) : ℂ) by push_cast; ring,
+      ← Complex.ofReal_cpow (hNpos P).le]
+  -- norm bound for the log terms, uniform in the power `j`
+  have hlogb : ∀ (j : ℕ) (P : HeightOneSpectrum (𝓞 F)),
+      ‖-Complex.log (1 - (χ ^ j) ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+        (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)))‖ ≤
+        3 / 2 * (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-s) := by
+    intro j P
+    have hzb : ‖(χ ^ j) ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+        (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ))‖ ≤
+        (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-s) := by
+      rw [hcpow P, norm_mul, Complex.norm_real,
+        Real.norm_of_nonneg (hxpos P).le]
+      exact mul_le_of_le_one_left (hxpos P).le
+        (DirichletCharacter.norm_le_one (χ ^ j) _)
+    have h6 : ‖-((χ ^ j) ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+        (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)))‖ ≤ 1 / 2 := by
+      rw [norm_neg]
+      exact le_trans hzb (hxhalf P)
+    rw [norm_neg]
+    calc ‖Complex.log (1 - (χ ^ j) ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+          (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)))‖
+        = ‖Complex.log (1 + -((χ ^ j) ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+            (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ))))‖ := by
+          rw [sub_eq_add_neg]
+      _ ≤ 3 / 2 * ‖-((χ ^ j) ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+            (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)))‖ :=
+          Complex.norm_log_one_add_half_le_self h6
+      _ = 3 / 2 * ‖(χ ^ j) ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+            (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ))‖ := by rw [norm_neg]
+      _ ≤ 3 / 2 * (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-s) :=
+          mul_le_mul_of_nonneg_left hzb (by norm_num)
+  have hsum_s : Summable (fun P : HeightOneSpectrum (𝓞 F) =>
+      (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-s)) :=
+    summable_rpow_neg_natCard_quotient hs
+  have hlogsum : ∀ j : ℕ, Summable (fun P : HeightOneSpectrum (𝓞 F) =>
+      -Complex.log (1 - (χ ^ j) ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+        (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)))) := fun j =>
+    Summable.of_norm (Summable.of_nonneg_of_le (fun P => norm_nonneg _)
+      (hlogb j) (hsum_s.mul_left _))
+  have hsumsum : Summable (fun P : HeightOneSpectrum (𝓞 F) =>
+      ∑ j ∈ Finset.range (ℓ - 1),
+        -Complex.log (1 - (χ ^ j) ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+          (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)))) :=
+    (hasSum_sum fun j _ => (hlogsum j).hasSum).summable
+  -- swap the finite and infinite sums, take real parts inside
+  have hswap : ∑ j ∈ Finset.range (ℓ - 1),
+      (∑' P : HeightOneSpectrum (𝓞 F),
+        -Complex.log (1 - (χ ^ j) ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+          (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)))).re =
+      ∑' P : HeightOneSpectrum (𝓞 F),
+        (∑ j ∈ Finset.range (ℓ - 1),
+          -Complex.log (1 - (χ ^ j) ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+            (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)))).re := by
+    rw [← Complex.re_sum, ← Summable.tsum_finsetSum (fun j _ => hlogsum j),
+      Complex.re_tsum hsumsum]
+  -- per-place bounds
+  have hkey : ∀ P : HeightOneSpectrum (𝓞 F),
+      0 ≤ (∑ j ∈ Finset.range (ℓ - 1),
+          -Complex.log (1 - (χ ^ j) ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+            (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)))).re ∧
+        (((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) = 1 →
+          ((ℓ - 1 : ℕ) : ℝ) * (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-s) ≤
+          (∑ j ∈ Finset.range (ℓ - 1),
+            -Complex.log (1 - (χ ^ j) ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+              (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)))).re) := by
+    intro P
+    have h := re_sum_range_neg_log_one_sub_nonneg hℓ χ
+      ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) (hxpos P) (hxhalf P)
+    rw [show ((((Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-s) : ℝ)) : ℂ) =
+        (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)) from (hcpow P).symm] at h
+    exact h
+  -- real-part family: nonnegative, dominated, summable
+  have hrle : ∀ P : HeightOneSpectrum (𝓞 F),
+      (∑ j ∈ Finset.range (ℓ - 1),
+        -Complex.log (1 - (χ ^ j) ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+          (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)))).re ≤
+        ((ℓ - 1 : ℕ) : ℝ) * (3 / 2 * (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-s)) := by
+    intro P
+    refine le_trans (le_trans (le_abs_self _) (Complex.abs_re_le_norm _)) ?_
+    refine le_trans (norm_sum_le _ _) ?_
+    calc ∑ j ∈ Finset.range (ℓ - 1),
+          ‖-Complex.log (1 - (χ ^ j) ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+            (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)))‖
+        ≤ ∑ _j ∈ Finset.range (ℓ - 1),
+            3 / 2 * (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-s) :=
+          Finset.sum_le_sum fun j _ => hlogb j P
+      _ = ((ℓ - 1 : ℕ) : ℝ) *
+            (3 / 2 * (Nat.card (𝓞 F ⧸ P.asIdeal) : ℝ) ^ (-s)) := by
+          rw [Finset.sum_const, Finset.card_range, nsmul_eq_mul]
+  have hrsum : Summable (fun P : HeightOneSpectrum (𝓞 F) =>
+      (∑ j ∈ Finset.range (ℓ - 1),
+        -Complex.log (1 - (χ ^ j) ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+          (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)))).re) :=
+    Summable.of_nonneg_of_le (fun P => (hkey P).1) hrle
+      (((hsum_s.mul_left _).mul_left _))
+  rw [hswap]
+  -- restrict to the congruence-class places and use the per-place bound
+  calc ((ℓ - 1 : ℕ) : ℝ) * ∑' P : {P : HeightOneSpectrum (𝓞 F) //
+          (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+          ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) = 1},
+        (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ) ^ (-s)
+      = ∑' P : {P : HeightOneSpectrum (𝓞 F) //
+          (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+          ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) = 1},
+        ((ℓ - 1 : ℕ) : ℝ) *
+          (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ) ^ (-s) :=
+        (tsum_mul_left).symm
+    _ ≤ ∑' P : {P : HeightOneSpectrum (𝓞 F) //
+          (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+          ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) = 1},
+        (∑ j ∈ Finset.range (ℓ - 1),
+          -Complex.log (1 - (χ ^ j) ((Nat.card (𝓞 F ⧸
+              (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℕ) : ZMod ℓ) *
+            (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℂ) ^
+              (-(s : ℂ)))).re :=
+        ((hsum_s.mul_left _).subtype _).tsum_le_tsum
+          (fun P => (hkey P.1).2 P.2.2) (hrsum.subtype _)
+    _ ≤ ∑' P : HeightOneSpectrum (𝓞 F),
+        (∑ j ∈ Finset.range (ℓ - 1),
+          -Complex.log (1 - (χ ^ j) ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+            (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)))).re :=
+        Summable.tsum_subtype_le _ _ (fun P => (hkey P).1) hrsum
+
 open IsDedekindDomain in
 /-- **Nonvanishing of the continued twisted `L`-value at `s = 1`**
 (sorry leaf) — the arithmetic core of `L(1, χ) ≠ 0`, isolated from all
