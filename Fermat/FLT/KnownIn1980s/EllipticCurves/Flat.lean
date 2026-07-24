@@ -4501,37 +4501,263 @@ theorem integralClosureMul_bijective
       obtain ⟨v₂, hv₂⟩ := ih₂
       exact ⟨v₁ + v₂, by rw [map_add, map_add, hv₁, hv₂]⟩
 
-/-- **The corestricted Hopf structure maps of the integral closure** (sorry
-node; the pure corestriction content of the Hopf-order leaf, isolated
-2026-07-24 — the instance packaging, flatness and the upgrade of the
-canonical multiplication map to a bialgebra equivalence are PROVEN in the
-assembly `exists_hopfAlgebra_integralClosure_of_mul_bijective` below): granted
+/-- **Corestriction of an algebra map along an injective algebra map containing
+its range** (PROVEN 2026-07-24; glue for the Hopf-corestriction leaf below,
+used three times — comultiplication along the tensor-square comparison, counit
+along `R → K`, antipode along the subalgebra inclusion): if every value of
+`f : A →ₐ[R'] T` lies in the range of the injective `g : W →ₐ[R'] T`, then `f`
+factors through `g` by an `R'`-algebra map `F` with `g ∘ F = f`. -/
+theorem exists_algHom_comp_eq_of_forall_mem_range {R' A W T : Type*}
+    [CommRing R'] [CommRing A] [CommRing W] [CommRing T]
+    [Algebra R' A] [Algebra R' W] [Algebra R' T]
+    (f : A →ₐ[R'] T) (g : W →ₐ[R'] T) (hg : Function.Injective g)
+    (hle : ∀ a, f a ∈ g.range) :
+    ∃ F : A →ₐ[R'] W, g.comp F = f := by
+  refine ⟨((AlgEquiv.ofInjective g hg).symm.toAlgHom).comp
+    (f.codRestrict g.range hle), AlgHom.ext fun a => ?_⟩
+  have h1 := congrArg Subtype.val
+    (AlgEquiv.apply_symm_apply (AlgEquiv.ofInjective g hg)
+      (f.codRestrict g.range hle a))
+  rw [AlgEquiv.ofInjective_apply] at h1
+  simpa using h1
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
+omit [IsDomain R] [IsDiscreteValuationRing R] [IsFractionRing R K] in
+/-- **The base change of the tensor square of the integral closure is the
+tensor square of `HK`** (PROVEN 2026-07-24; glue for the Hopf-corestriction
+leaf below): granted bijectivity of the canonical multiplication map, any
+`R`-algebra map `j` on the tensor square of `H₀ = integralClosure R HK` acting
+on pure tensors by `a ⊗ b ↦ a ⊗ b` extends to a `K`-algebra equivalence
+`K ⊗[R] (H₀ ⊗[R] H₀) ≃ HK ⊗[K] HK` sending `1 ⊗ w` to `j w`. The forward map
+is the `K`-linear `lift` of `j`; bijectivity holds because, as a function, it
+coincides with the composition of the module-level distribution equivalence
+`K ⊗[R] (H₀ ⊗[R] H₀) ≃ (K ⊗[R] H₀) ⊗[K] (K ⊗[R] H₀)` with `e ⊗ e` for the
+canonical-multiplication equivalence `e` — both bijective. -/
+theorem exists_baseChange_tensorSquare_equiv_of_tmul_eq
+    (HK : Type*) [CommRing HK] [Algebra K HK] [Algebra R HK]
+    [IsScalarTower R K HK]
+    (hbij : Function.Bijective (integralClosureMul R K HK))
+    (j : (integralClosure R HK) ⊗[R] (integralClosure R HK) →ₐ[R] HK ⊗[K] HK)
+    (hj : ∀ a b : integralClosure R HK,
+      j (a ⊗ₜ[R] b) = ((a : HK) ⊗ₜ[K] (b : HK))) :
+    ∃ e₂ : (K ⊗[R] ((integralClosure R HK) ⊗[R] (integralClosure R HK)))
+        ≃ₐ[K] (HK ⊗[K] HK),
+      ∀ w, e₂ ((1 : K) ⊗ₜ[R] w) = j w := by
+  classical
+  set e : (K ⊗[R] (integralClosure R HK)) ≃ₐ[K] HK :=
+    AlgEquiv.ofBijective (integralClosureMul R K HK) hbij with hedef
+  have he_tmul : ∀ (k : K) (h : integralClosure R HK),
+      e (k ⊗ₜ[R] h) = algebraMap K HK k * ((h : HK)) := by
+    intro k h
+    rw [hedef]
+    simp [integralClosureMul, Algebra.TensorProduct.lift_tmul, Algebra.ofId_apply]
+  set f : (K ⊗[R] ((integralClosure R HK) ⊗[R] (integralClosure R HK)))
+      →ₐ[K] HK ⊗[K] HK :=
+    Algebra.TensorProduct.lift (Algebra.ofId K (HK ⊗[K] HK)) j
+      (fun _ _ => Commute.all _ _) with hfdef
+  have hf_tmul : ∀ (k : K)
+      (w : (integralClosure R HK) ⊗[R] (integralClosure R HK)),
+      f (k ⊗ₜ[R] w) = algebraMap K (HK ⊗[K] HK) k * j w := by
+    intro k w
+    rw [hfdef, Algebra.TensorProduct.lift_tmul, Algebra.ofId_apply]
+  -- the module-level distribution equivalence composed with `e ⊗ e`
+  set Φ : (K ⊗[R] ((integralClosure R HK) ⊗[R] (integralClosure R HK)))
+      ≃ₗ[K] HK ⊗[K] HK :=
+    (TensorProduct.AlgebraTensorModule.distribBaseChange R K
+        (integralClosure R HK) (integralClosure R HK)) ≪≫ₗ
+      TensorProduct.congr e.toLinearEquiv e.toLinearEquiv with hΦdef
+  have hkey : ∀ x, f x = Φ x := by
+    intro x
+    induction x with
+    | zero => simp
+    | tmul k w =>
+        induction w with
+        | zero => rw [TensorProduct.tmul_zero, map_zero, map_zero]
+        | tmul a b =>
+            have hdist : (TensorProduct.AlgebraTensorModule.distribBaseChange
+                R K (integralClosure R HK) (integralClosure R HK))
+                  (k ⊗ₜ[R] (a ⊗ₜ[R] b))
+                = ((k ⊗ₜ[R] a) ⊗ₜ[K] ((1 : K) ⊗ₜ[R] b)) := by
+              apply (TensorProduct.AlgebraTensorModule.distribBaseChange R K
+                (integralClosure R HK) (integralClosure R HK)).symm.injective
+              rw [LinearEquiv.symm_apply_apply]
+              simp [TensorProduct.AlgebraTensorModule.distribBaseChange]
+            rw [hf_tmul, hj, hΦdef, LinearEquiv.trans_apply, hdist,
+              TensorProduct.congr_tmul, AlgEquiv.toLinearEquiv_apply,
+              AlgEquiv.toLinearEquiv_apply, he_tmul, he_tmul, map_one, one_mul,
+              Algebra.TensorProduct.algebraMap_apply,
+              Algebra.TensorProduct.tmul_mul_tmul, one_mul]
+        | add w₁ w₂ ih₁ ih₂ =>
+            rw [TensorProduct.tmul_add, map_add, map_add, ih₁, ih₂]
+    | add x₁ x₂ ih₁ ih₂ => rw [map_add, map_add, ih₁, ih₂]
+  have hfbij : Function.Bijective f :=
+    ⟨fun x y hxy => Φ.injective (by rw [← hkey, ← hkey, hxy]),
+      fun z => ⟨Φ.symm z, by rw [hkey, Φ.apply_symm_apply]⟩⟩
+  refine ⟨AlgEquiv.ofBijective f hfbij, fun w => ?_⟩
+  show f ((1 : K) ⊗ₜ[R] w) = j w
+  rw [hf_tmul, map_one, one_mul]
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
+/-- **The canonical tensor-square comparison is injective with range the
+integral closure of the tensor square** (PROVEN 2026-07-24; the range-identity
+core of the Hopf-corestriction leaf below): granted finiteness and étaleness
+of the integral closure and bijectivity of the canonical multiplication map,
+any `R`-algebra map `j` on the tensor square of `H₀ = integralClosure R HK`
+acting on pure tensors by `a ⊗ b ↦ a ⊗ b` is injective with range exactly the
+integral closure of `R` in `HK ⊗[K] HK`. The tensor square is finite étale
+over `R` (étale is stable under base change and composition, finiteness under
+tensor squares), `j` is the composition of its base-change equivalence with
+`x ↦ 1 ⊗ x` (injective by flatness), and the range identity is the canonicity
+workhorse `range_comp_includeRight_eq_integralClosure_of_etale_form` applied
+to the tensor square. -/
+theorem injective_and_range_eq_integralClosure_of_tmul_eq
+    (HK : Type*) [CommRing HK] [Algebra K HK] [Algebra R HK]
+    [IsScalarTower R K HK]
+    (hfin : Module.Finite R (integralClosure R HK))
+    (het : Algebra.Etale R (integralClosure R HK))
+    (hbij : Function.Bijective (integralClosureMul R K HK))
+    (j : (integralClosure R HK) ⊗[R] (integralClosure R HK) →ₐ[R] HK ⊗[K] HK)
+    (hj : ∀ a b : integralClosure R HK,
+      j (a ⊗ₜ[R] b) = ((a : HK) ⊗ₜ[K] (b : HK))) :
+    Function.Injective j ∧ j.range = integralClosure R (HK ⊗[K] HK) := by
+  classical
+  haveI := hfin
+  haveI := het
+  haveI : Algebra.Smooth R (integralClosure R HK) := inferInstance
+  haveI hflat : Module.Flat R (integralClosure R HK) := inferInstance
+  haveI hfin₂ : Module.Finite R
+      ((integralClosure R HK) ⊗[R] (integralClosure R HK)) := inferInstance
+  haveI het₂ : Algebra.Etale R
+      ((integralClosure R HK) ⊗[R] (integralClosure R HK)) :=
+    Algebra.Etale.comp R (integralClosure R HK)
+      ((integralClosure R HK) ⊗[R] (integralClosure R HK))
+  obtain ⟨e₂, he₂⟩ :=
+    exists_baseChange_tensorSquare_equiv_of_tmul_eq R K HK hbij j hj
+  have hcomp : ((e₂.toAlgHom.restrictScalars R).comp
+      (Algebra.TensorProduct.includeRight :
+        (integralClosure R HK) ⊗[R] (integralClosure R HK) →ₐ[R]
+          K ⊗[R] ((integralClosure R HK) ⊗[R] (integralClosure R HK)))) = j := by
+    refine AlgHom.ext fun w => ?_
+    simp only [AlgHom.coe_comp, AlgHom.coe_restrictScalars', Function.comp_apply,
+      Algebra.TensorProduct.includeRight_apply]
+    exact he₂ w
+  constructor
+  · rw [← hcomp, AlgHom.coe_comp]
+    exact Function.Injective.comp
+      (show Function.Injective ⇑(e₂.toAlgHom.restrictScalars R) from e₂.injective)
+      (Algebra.TensorProduct.includeRight_injective (IsFractionRing.injective R K))
+  · rw [← hcomp]
+    exact range_comp_includeRight_eq_integralClosure_of_etale_form R K
+      (HK ⊗[K] HK) ((integralClosure R HK) ⊗[R] (integralClosure R HK)) e₂
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
+omit [IsFractionRing R K] in
+/-- **Injectivity of the canonical triple-tensor comparison** (PROVEN
+2026-07-24; glue for the coassociativity axiom of the Hopf-corestriction leaf
+below): granted étaleness of the integral closure and bijectivity of the
+canonical multiplication map, an `R`-algebra map `j₃` on the right-associated
+triple tensor power of `H₀ = integralClosure R HK` acting on pure tensors by
+`a ⊗ u ↦ a ⊗ j u` over an injective tensor-square comparison `j` is
+injective: as a function, `j₃` factors as the flip of `j ⊗ id` — injective
+because the flat `H₀` (étale ⟹ smooth ⟹ flat) preserves injections under
+`rTensor` — followed by the base-change cancellation
+`(HK ⊗[K] HK) ⊗[R] H₀ ≃ (HK ⊗[K] HK) ⊗[K] (K ⊗[R] H₀)` and the
+canonical-multiplication equivalence on the right leg, all bijective. This
+keeps every intermediate type at the module level, where the instance paths
+of the nested tensor products stay tractable. -/
+theorem injective_tensorTriple_of_tmul_eq
+    (HK : Type*) [CommRing HK] [Algebra K HK] [Algebra R HK]
+    [IsScalarTower R K HK]
+    (het : Algebra.Etale R (integralClosure R HK))
+    (hbij : Function.Bijective (integralClosureMul R K HK))
+    (j : (integralClosure R HK) ⊗[R] (integralClosure R HK) →ₐ[R] HK ⊗[K] HK)
+    (hjinj : Function.Injective j)
+    (j₃ : (integralClosure R HK) ⊗[R]
+        ((integralClosure R HK) ⊗[R] (integralClosure R HK)) →ₐ[R]
+        HK ⊗[K] (HK ⊗[K] HK))
+    (hj₃ : ∀ (a : integralClosure R HK)
+        (u : (integralClosure R HK) ⊗[R] (integralClosure R HK)),
+      j₃ (a ⊗ₜ[R] u) = ((a : HK) ⊗ₜ[K] (j u))) :
+    Function.Injective j₃ := by
+  classical
+  haveI := het
+  haveI : Algebra.Smooth R (integralClosure R HK) := inferInstance
+  haveI hflat : Module.Flat R (integralClosure R HK) := inferInstance
+  set e : (K ⊗[R] (integralClosure R HK)) ≃ₐ[K] HK :=
+    AlgEquiv.ofBijective (integralClosureMul R K HK) hbij with hedef
+  have he_one_tmul : ∀ h : integralClosure R HK,
+      e ((1 : K) ⊗ₜ[R] h) = ((h : HK)) := by
+    intro h
+    rw [hedef]
+    simp [integralClosureMul, Algebra.TensorProduct.lift_tmul, Algebra.ofId_apply]
+  -- the linear factorization of `j₃`
+  have hfact : ∀ x : (integralClosure R HK) ⊗[R]
+      ((integralClosure R HK) ⊗[R] (integralClosure R HK)),
+      j₃ x = (TensorProduct.comm K HK (HK ⊗[K] HK)).symm
+        ((TensorProduct.congr (LinearEquiv.refl K (HK ⊗[K] HK))
+            e.toLinearEquiv)
+          ((TensorProduct.AlgebraTensorModule.cancelBaseChange R K K
+              (HK ⊗[K] HK) (integralClosure R HK)).symm
+            ((LinearMap.rTensor (integralClosure R HK) j.toLinearMap)
+              ((TensorProduct.comm R (integralClosure R HK)
+                ((integralClosure R HK) ⊗[R] (integralClosure R HK))) x)))) := by
+    intro x
+    induction x with
+    | zero => simp
+    | tmul a u =>
+        rw [hj₃, TensorProduct.comm_tmul, LinearMap.rTensor_tmul,
+          AlgHom.toLinearMap_apply,
+          TensorProduct.AlgebraTensorModule.cancelBaseChange_symm_tmul,
+          TensorProduct.congr_tmul, LinearEquiv.refl_apply,
+          AlgEquiv.toLinearEquiv_apply, he_one_tmul,
+          TensorProduct.comm_symm_tmul]
+    | add x₁ x₂ ih₁ ih₂ => simp only [map_add, ih₁, ih₂]
+  -- peel the injective layers
+  intro x y hxy
+  have h1 := (hfact x).symm.trans (hxy.trans (hfact y))
+  have h2 := (TensorProduct.comm K HK (HK ⊗[K] HK)).symm.injective h1
+  have h3 := (TensorProduct.congr (LinearEquiv.refl K (HK ⊗[K] HK))
+    e.toLinearEquiv).injective h2
+  have h4 := (TensorProduct.AlgebraTensorModule.cancelBaseChange R K K
+    (HK ⊗[K] HK) (integralClosure R HK)).symm.injective h3
+  have h5 := Module.Flat.rTensor_preserves_injective_linearMap
+    (M := integralClosure R HK) j.toLinearMap
+    (fun a b hab => hjinj hab) h4
+  exact (TensorProduct.comm R (integralClosure R HK)
+    ((integralClosure R HK) ⊗[R] (integralClosure R HK))).injective h5
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **The corestricted Hopf structure maps of the integral closure** (PROVEN
+2026-07-24; the pure corestriction content of the Hopf-order leaf — the
+instance packaging, flatness and the upgrade of the canonical multiplication
+map to a bialgebra equivalence are in the assembly
+`exists_hopfAlgebra_integralClosure_of_mul_bijective` below): granted
 bijectivity of the canonical multiplication map, the integral closure
 `H₀ := integralClosure R HK` carries comultiplication, counit and antipode
-over `R` that are compatible with the Hopf structure maps of `HK` through the
+over `R` compatible with the Hopf structure maps of `HK` through the
 subalgebra inclusion `ι` and the canonical comparison
 `j := productMap (includeLeft ∘ ι) (includeRight ∘ ι) :
-H₀ ⊗[R] H₀ →ₐ[R] HK ⊗[K] HK`, and satisfy the Hopf-algebra axioms. Intended
-proof: comultiplication is a ring homomorphism, so it sends `H₀` (integral
-over `R`) into elements of `HK ⊗[K] HK` integral over `R`; the integral
-closure of `R` there is exactly the range of `j` — identify `j` with
-`e₂ ∘ includeRight` for the base-change comparison
-`e₂ : K ⊗[R] (H₀ ⊗[R] H₀) ≃ HK ⊗[K] HK`
-(`Algebra.TensorProduct.assoc`/`cancelBaseChange` composed with `congr μ μ`)
-and apply the canonicity workhorse
-`range_comp_includeRight_eq_integralClosure_of_etale_form` to the tensor
-square (`H₀ ⊗[R] H₀` is finite étale over `R`: étale is stable under base
-change and composition, finiteness under tensor products); so the
-comultiplication corestricts along the injective `j` (injectivity: flatness
-of `H₀ ⊗[R] H₀` over `R` and injectivity of `R → K`). The counit sends `H₀`
-into elements of `K` integral over `R`, i.e. into `R` (`IsIntegrallyClosed R`,
-`R` a DVR); the antipode is an algebra endomorphism of `HK`, so it preserves
-the integral closure and corestricts along the injective `ι`. The
+H₀ ⊗[R] H₀ →ₐ[R] HK ⊗[K] HK`, and satisfying the Hopf-algebra axioms.
+Comultiplication corestricts along `j`: it maps the integral `H₀` into
+elements of `HK ⊗[K] HK` integral over `R`, and the integral closure there is
+exactly the range of the injective `j`
+(`injective_and_range_eq_integralClosure_of_tmul_eq` — the canonicity
+workhorse applied to the finite étale tensor square). The counit sends `H₀`
+into elements of `K` integral over `R`, i.e. into `R` (`IsIntegrallyClosed`
+of the DVR `R`); the antipode is an algebra endomorphism of `HK`, so it
+preserves the integral closure and corestricts along the injective `ι`. The
 corestricted operations inherit the five Hopf-algebra axioms from those of
-`HK` after composing with `j`, `ι` and their double/triple-tensor analogues,
-which are injective for the same flatness reason; the `μ_p` counterexample
-(whose normalization over `ℤ_p` is NOT a Hopf order) does not contradict
-this: there the normalization is not étale over `R`. -/
+`HK` pointwise, after injecting through `ι`, `j` and the triple-tensor
+comparison `j₃` (`injective_tensorTriple_of_tmul_eq`); the `μ_p`
+counterexample (whose normalization over `ℤ_p` is NOT a Hopf order) does not
+contradict this: there the normalization is not étale over `R`. -/
 theorem exists_hopfAlgebraMaps_integralClosure_of_mul_bijective
     (HK : Type u) [CommRing HK] [HopfAlgebra K HK] [Algebra R HK]
     [IsScalarTower R K HK] [Module.Finite K HK] [Algebra.Etale K HK]
@@ -4576,8 +4802,276 @@ theorem exists_hopfAlgebraMaps_integralClosure_of_mul_bijective
         = (Algebra.ofId R (integralClosure R HK)).comp ε₀ ∧
       (Algebra.TensorProduct.lift (AlgHom.id R (integralClosure R HK)) S₀
           fun _ _ => Commute.all _ _).comp Δ₀
-        = (Algebra.ofId R (integralClosure R HK)).comp ε₀ :=
-  sorry
+        = (Algebra.ofId R (integralClosure R HK)).comp ε₀ := by
+  classical
+  haveI := hfin
+  haveI := het
+  -- the subalgebra inclusion and the canonical tensor-square comparison
+  set ι : (integralClosure R HK) →ₐ[R] HK := (integralClosure R HK).val
+    with hιdef
+  set j : (integralClosure R HK) ⊗[R] (integralClosure R HK) →ₐ[R]
+      HK ⊗[K] HK :=
+    Algebra.TensorProduct.productMap
+      (((Algebra.TensorProduct.includeLeft :
+          HK →ₐ[K] HK ⊗[K] HK).restrictScalars R).comp ι)
+      (((Algebra.TensorProduct.includeRight :
+          HK →ₐ[K] HK ⊗[K] HK).restrictScalars R).comp ι) with hjdef
+  have hj_tmul : ∀ a b : integralClosure R HK,
+      j (a ⊗ₜ[R] b) = ((a : HK) ⊗ₜ[K] (b : HK)) := by
+    intro a b
+    rw [hjdef, Algebra.TensorProduct.productMap_apply_tmul]
+    simp only [AlgHom.coe_comp, AlgHom.coe_restrictScalars',
+      Function.comp_apply, hιdef, Subalgebra.coe_val,
+      Algebra.TensorProduct.includeLeft_apply,
+      Algebra.TensorProduct.includeRight_apply]
+    rw [Algebra.TensorProduct.tmul_mul_tmul, mul_one, one_mul]
+  obtain ⟨hj_inj, hj_range⟩ :=
+    injective_and_range_eq_integralClosure_of_tmul_eq R K HK hfin het hbij
+      j hj_tmul
+  -- corestrict the three structure maps
+  obtain ⟨Δ₀, hC1⟩ := exists_algHom_comp_eq_of_forall_mem_range
+    (((Bialgebra.comulAlgHom K HK).restrictScalars R).comp ι) j hj_inj
+    (fun h => by
+      rw [hj_range]
+      exact (IsIntegral.of_finite R h).map
+        (((Bialgebra.comulAlgHom K HK).restrictScalars R).comp ι))
+  obtain ⟨ε₀, hC2⟩ := exists_algHom_comp_eq_of_forall_mem_range
+    (((Bialgebra.counitAlgHom K HK).restrictScalars R).comp ι)
+    (Algebra.ofId R K)
+    (fun a b hab => IsFractionRing.injective R K
+      (by simpa only [Algebra.ofId_apply] using hab))
+    (fun h => by
+      obtain ⟨r, hr⟩ := IsIntegrallyClosed.isIntegral_iff.mp
+        ((IsIntegral.of_finite R h).map
+          (((Bialgebra.counitAlgHom K HK).restrictScalars R).comp ι))
+      exact ⟨r, hr⟩)
+  obtain ⟨S₀, hC3⟩ := exists_algHom_comp_eq_of_forall_mem_range
+    (((HopfAlgebra.antipodeAlgHom K HK).restrictScalars R).comp ι) ι
+    (fun a b hab => Subtype.ext hab)
+    (fun h => by
+      rw [hιdef, Subalgebra.range_val]
+      exact (IsIntegral.of_finite R h).map
+        (((HopfAlgebra.antipodeAlgHom K HK).restrictScalars R).comp ι))
+  -- pointwise forms of the three compatibilities
+  have hC1' : ∀ h : integralClosure R HK,
+      j (Δ₀ h) = Coalgebra.comul (R := K) ((h : HK)) := by
+    intro h
+    have h1 := DFunLike.congr_fun hC1 h
+    simp only [AlgHom.coe_comp, AlgHom.coe_restrictScalars',
+      Function.comp_apply, hιdef, Subalgebra.coe_val] at h1
+    exact h1
+  have hC2' : ∀ h : integralClosure R HK,
+      algebraMap R K (ε₀ h) = Coalgebra.counit (R := K) ((h : HK)) := by
+    intro h
+    have h1 := DFunLike.congr_fun hC2 h
+    simp only [AlgHom.coe_comp, AlgHom.coe_restrictScalars',
+      Function.comp_apply, hιdef, Subalgebra.coe_val,
+      Algebra.ofId_apply] at h1
+    exact h1
+  have hC3' : ∀ h : integralClosure R HK,
+      ((S₀ h : HK)) = HopfAlgebra.antipode K ((h : HK)) := by
+    intro h
+    have h1 := DFunLike.congr_fun hC3 h
+    simp only [AlgHom.coe_comp, AlgHom.coe_restrictScalars',
+      Function.comp_apply, hιdef, Subalgebra.coe_val,
+      HopfAlgebra.antipodeAlgHom_apply] at h1
+    exact h1
+  refine ⟨Δ₀, ε₀, S₀, hC1, hC2, hC3, ?_, ?_, ?_, ?_, ?_⟩
+  · -- coassociativity
+    set j₃ : (integralClosure R HK) ⊗[R]
+        ((integralClosure R HK) ⊗[R] (integralClosure R HK)) →ₐ[R]
+        HK ⊗[K] (HK ⊗[K] HK) :=
+      Algebra.TensorProduct.productMap
+        (((Algebra.TensorProduct.includeLeft :
+            HK →ₐ[K] HK ⊗[K] (HK ⊗[K] HK)).restrictScalars R).comp ι)
+        (((Algebra.TensorProduct.includeRight :
+            HK ⊗[K] HK →ₐ[K] HK ⊗[K] (HK ⊗[K] HK)).restrictScalars R).comp j)
+      with hj₃def
+    have hj₃_left : ∀ (a : integralClosure R HK)
+        (u : (integralClosure R HK) ⊗[R] (integralClosure R HK)),
+        j₃ (a ⊗ₜ[R] u) = ((a : HK) ⊗ₜ[K] (j u)) := by
+      intro a u
+      rw [hj₃def, Algebra.TensorProduct.productMap_apply_tmul]
+      simp only [AlgHom.coe_comp, AlgHom.coe_restrictScalars',
+        Function.comp_apply, hιdef, Subalgebra.coe_val,
+        Algebra.TensorProduct.includeLeft_apply,
+        Algebra.TensorProduct.includeRight_apply]
+      rw [Algebra.TensorProduct.tmul_mul_tmul, mul_one, one_mul]
+    have hj₃_inj := injective_tensorTriple_of_tmul_eq R K HK het hbij
+      j hj_inj j₃ hj₃_left
+    have hassoc : ∀ (u : (integralClosure R HK) ⊗[R] (integralClosure R HK))
+        (c : integralClosure R HK),
+        j₃ ((Algebra.TensorProduct.assoc R R R (integralClosure R HK)
+            (integralClosure R HK) (integralClosure R HK)) (u ⊗ₜ[R] c))
+          = (TensorProduct.assoc K HK HK HK) ((j u) ⊗ₜ[K] ((c : HK))) := by
+      intro u c
+      induction u with
+      | zero => simp
+      | tmul x y =>
+          rw [Algebra.TensorProduct.assoc_tmul, hj₃_left, hj_tmul, hj_tmul,
+            TensorProduct.assoc_tmul]
+      | add u₁ u₂ ih₁ ih₂ =>
+          simp only [TensorProduct.add_tmul, map_add, ih₁, ih₂]
+    have hpush_r : ∀ w : (integralClosure R HK) ⊗[R] (integralClosure R HK),
+        j₃ ((Algebra.TensorProduct.map (AlgHom.id R (integralClosure R HK))
+            Δ₀) w)
+          = LinearMap.lTensor HK (Coalgebra.comul (R := K) (A := HK))
+              (j w) := by
+      intro w
+      induction w with
+      | zero => simp
+      | tmul a b =>
+          rw [Algebra.TensorProduct.map_tmul, AlgHom.id_apply, hj₃_left,
+            hC1' b, hj_tmul, LinearMap.lTensor_tmul]
+      | add w₁ w₂ ih₁ ih₂ => simp only [map_add, ih₁, ih₂]
+    have hpush_l : ∀ w : (integralClosure R HK) ⊗[R] (integralClosure R HK),
+        j₃ ((Algebra.TensorProduct.assoc R R R (integralClosure R HK)
+            (integralClosure R HK) (integralClosure R HK))
+            ((Algebra.TensorProduct.map Δ₀
+              (AlgHom.id R (integralClosure R HK))) w))
+          = (TensorProduct.assoc K HK HK HK)
+              (LinearMap.rTensor HK (Coalgebra.comul (R := K) (A := HK))
+                (j w)) := by
+      intro w
+      induction w with
+      | zero => simp
+      | tmul a b =>
+          rw [Algebra.TensorProduct.map_tmul, AlgHom.id_apply, hassoc,
+            hC1' a, hj_tmul, LinearMap.rTensor_tmul]
+      | add w₁ w₂ ih₁ ih₂ => simp only [map_add, ih₁, ih₂]
+    refine AlgHom.ext fun h => hj₃_inj ?_
+    show j₃ ((Algebra.TensorProduct.assoc R R R (integralClosure R HK)
+        (integralClosure R HK) (integralClosure R HK))
+        ((Algebra.TensorProduct.map Δ₀ (AlgHom.id R (integralClosure R HK)))
+          (Δ₀ h)))
+      = j₃ ((Algebra.TensorProduct.map (AlgHom.id R (integralClosure R HK))
+          Δ₀) (Δ₀ h))
+    rw [hpush_l, hpush_r, hC1' h]
+    exact Coalgebra.coassoc_apply ((h : HK))
+  · -- left counit axiom
+    have hcnt : ∀ w : (integralClosure R HK) ⊗[R] (integralClosure R HK),
+        (((Algebra.TensorProduct.lid R (integralClosure R HK))
+            ((Algebra.TensorProduct.map ε₀
+              (AlgHom.id R (integralClosure R HK))) w) :
+          integralClosure R HK) : HK)
+          = (TensorProduct.lid K HK)
+              (LinearMap.rTensor HK (Coalgebra.counit (R := K) (A := HK))
+                (j w)) := by
+      intro w
+      induction w with
+      | zero => simp
+      | tmul a b =>
+          rw [Algebra.TensorProduct.map_tmul, AlgHom.id_apply,
+            Algebra.TensorProduct.lid_tmul, hj_tmul,
+            LinearMap.rTensor_tmul, TensorProduct.lid_tmul]
+          rw [show (((ε₀ a • b : integralClosure R HK)) : HK)
+              = ε₀ a • ((b : HK)) from rfl]
+          rw [Algebra.smul_def, Algebra.smul_def,
+            IsScalarTower.algebraMap_apply R K HK, hC2' a]
+      | add w₁ w₂ ih₁ ih₂ =>
+          simp only [map_add, AddMemClass.coe_add, ih₁, ih₂]
+    refine AlgHom.ext fun h => ?_
+    apply (Algebra.TensorProduct.lid R (integralClosure R HK)).injective
+    apply Subtype.val_injective
+    show (((Algebra.TensorProduct.lid R (integralClosure R HK))
+        ((Algebra.TensorProduct.map ε₀ (AlgHom.id R (integralClosure R HK)))
+          (Δ₀ h)) : integralClosure R HK) : HK)
+      = (((Algebra.TensorProduct.lid R (integralClosure R HK))
+          ((Algebra.TensorProduct.lid R (integralClosure R HK)).symm h) :
+        integralClosure R HK) : HK)
+    rw [hcnt (Δ₀ h), AlgEquiv.apply_symm_apply, hC1' h,
+      Coalgebra.rTensor_counit_comul, TensorProduct.lid_tmul, one_smul]
+  · -- right counit axiom
+    have hcnt' : ∀ w : (integralClosure R HK) ⊗[R] (integralClosure R HK),
+        (((Algebra.TensorProduct.rid R R (integralClosure R HK))
+            ((Algebra.TensorProduct.map
+              (AlgHom.id R (integralClosure R HK)) ε₀) w) :
+          integralClosure R HK) : HK)
+          = (TensorProduct.rid K HK)
+              (LinearMap.lTensor HK (Coalgebra.counit (R := K) (A := HK))
+                (j w)) := by
+      intro w
+      induction w with
+      | zero => simp
+      | tmul a b =>
+          rw [Algebra.TensorProduct.map_tmul, AlgHom.id_apply,
+            Algebra.TensorProduct.rid_tmul, hj_tmul,
+            LinearMap.lTensor_tmul, TensorProduct.rid_tmul]
+          rw [show (((ε₀ b • a : integralClosure R HK)) : HK)
+              = ε₀ b • ((a : HK)) from rfl]
+          rw [Algebra.smul_def, Algebra.smul_def,
+            IsScalarTower.algebraMap_apply R K HK, hC2' b]
+      | add w₁ w₂ ih₁ ih₂ =>
+          simp only [map_add, AddMemClass.coe_add, ih₁, ih₂]
+    refine AlgHom.ext fun h => ?_
+    apply (Algebra.TensorProduct.rid R R (integralClosure R HK)).injective
+    apply Subtype.val_injective
+    show (((Algebra.TensorProduct.rid R R (integralClosure R HK))
+        ((Algebra.TensorProduct.map (AlgHom.id R (integralClosure R HK)) ε₀)
+          (Δ₀ h)) : integralClosure R HK) : HK)
+      = (((Algebra.TensorProduct.rid R R (integralClosure R HK))
+          ((Algebra.TensorProduct.rid R R (integralClosure R HK)).symm h) :
+        integralClosure R HK) : HK)
+    rw [hcnt' (Δ₀ h), AlgEquiv.apply_symm_apply, hC1' h,
+      Coalgebra.lTensor_counit_comul, TensorProduct.rid_tmul, one_smul]
+  · -- antipode axiom, antipode on the left leg
+    have hmul : ∀ w : (integralClosure R HK) ⊗[R] (integralClosure R HK),
+        (((Algebra.TensorProduct.lift S₀
+            (AlgHom.id R (integralClosure R HK))
+            fun _ => Commute.all _) w : integralClosure R HK) : HK)
+          = LinearMap.mul' K HK
+              (LinearMap.rTensor HK (HopfAlgebra.antipode K) (j w)) := by
+      intro w
+      induction w with
+      | zero => simp
+      | tmul a b =>
+          rw [Algebra.TensorProduct.lift_tmul, AlgHom.id_apply, hj_tmul,
+            LinearMap.rTensor_tmul, LinearMap.mul'_apply]
+          rw [show (((S₀ a * b : integralClosure R HK)) : HK)
+              = ((S₀ a : HK)) * ((b : HK)) from rfl]
+          rw [hC3' a]
+      | add w₁ w₂ ih₁ ih₂ =>
+          simp only [map_add, AddMemClass.coe_add, ih₁, ih₂]
+    refine AlgHom.ext fun h => ?_
+    apply Subtype.val_injective
+    show (((Algebra.TensorProduct.lift S₀
+        (AlgHom.id R (integralClosure R HK))
+        fun _ => Commute.all _) (Δ₀ h) : integralClosure R HK) : HK)
+      = (((Algebra.ofId R (integralClosure R HK)) (ε₀ h) :
+          integralClosure R HK) : HK)
+    rw [hmul (Δ₀ h), hC1' h,
+      HopfAlgebra.mul_antipode_rTensor_comul_apply, ← hC2' h,
+      ← IsScalarTower.algebraMap_apply R K HK, Algebra.ofId_apply,
+      SubalgebraClass.coe_algebraMap]
+  · -- antipode axiom, antipode on the right leg
+    have hmul' : ∀ w : (integralClosure R HK) ⊗[R] (integralClosure R HK),
+        (((Algebra.TensorProduct.lift
+            (AlgHom.id R (integralClosure R HK)) S₀
+            fun _ _ => Commute.all _ _) w : integralClosure R HK) : HK)
+          = LinearMap.mul' K HK
+              (LinearMap.lTensor HK (HopfAlgebra.antipode K) (j w)) := by
+      intro w
+      induction w with
+      | zero => simp
+      | tmul a b =>
+          rw [Algebra.TensorProduct.lift_tmul, AlgHom.id_apply, hj_tmul,
+            LinearMap.lTensor_tmul, LinearMap.mul'_apply]
+          rw [show (((a * S₀ b : integralClosure R HK)) : HK)
+              = ((a : HK)) * ((S₀ b : HK)) from rfl]
+          rw [hC3' b]
+      | add w₁ w₂ ih₁ ih₂ =>
+          simp only [map_add, AddMemClass.coe_add, ih₁, ih₂]
+    refine AlgHom.ext fun h => ?_
+    apply Subtype.val_injective
+    show (((Algebra.TensorProduct.lift
+        (AlgHom.id R (integralClosure R HK)) S₀
+        fun _ _ => Commute.all _ _) (Δ₀ h) : integralClosure R HK) : HK)
+      = (((Algebra.ofId R (integralClosure R HK)) (ε₀ h) :
+          integralClosure R HK) : HK)
+    rw [hmul' (Δ₀ h), hC1' h,
+      HopfAlgebra.mul_antipode_lTensor_comul_apply, ← hC2' h,
+      ← IsScalarTower.algebraMap_apply R K HK, Algebra.ofId_apply,
+      SubalgebraClass.coe_algebraMap]
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
