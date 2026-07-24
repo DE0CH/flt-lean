@@ -8541,10 +8541,10 @@ theorem formallyEtale_of_forall_separable_annihilator
 set_option backward.isDefEq.respectTransparency false in
 omit [DecidableEq Ksep] in
 /-- **Points of a finite étale algebra restrict onto the points of a
-subalgebra** (sorry node; the integrality-lifting half of
+subalgebra** (PROVEN 2026-07-24; the integrality-lifting half of
 `subalgebra_eq_top_of_algHom_separating`): every `Kˢᵉᵖ`-point of a subalgebra
-`B` of a finite étale `K`-algebra `A` extends to a point of `A`. Intended
-proof: `A` is integral over `B` (it is integral over `K`), so lying-over
+`B` of a finite étale `K`-algebra `A` extends to a point of `A`. Proof:
+`A` is integral over `B` (it is integral over `K`), so lying-over
 (`Ideal.exists_ideal_over_prime_of_isIntegral`, with `I = ⊥` — the inclusion
 `B.val` is injective) puts a prime `P` of `A` over `p := ker ψ`; both
 quotients are fields (`A` and `B` are artinian, so primes are maximal);
@@ -8558,7 +8558,80 @@ theorem exists_algHom_comp_val_eq_of_etale
     (A : Type*) [CommRing A] [Algebra K A] [Module.Finite K A] [Algebra.Etale K A]
     (B : Subalgebra K A) (ψ : B →ₐ[K] Ksep) :
     ∃ φ : A →ₐ[K] Ksep, φ.comp B.val = ψ := by
-  sorry
+  classical
+  haveI : IsSepClosed Ksep := IsSepClosure.sep_closed K
+  haveI : IsArtinianRing A := IsArtinianRing.of_finite K A
+  haveI : IsNoetherian K A := IsNoetherian.iff_fg.mpr inferInstance
+  haveI : Module.Finite K B :=
+    Module.Finite.iff_fg.mpr (IsNoetherian.noetherian (Subalgebra.toSubmodule B))
+  haveI : IsArtinianRing ↥B := IsArtinianRing.of_finite K ↥B
+  -- `A` is integral over `B`, being integral over `K`
+  haveI : Algebra.IsIntegral K A := Algebra.IsIntegral.of_finite K A
+  haveI : Algebra.IsIntegral (↥B) A :=
+    ⟨fun a => IsIntegral.tower_top (Algebra.IsIntegral.isIntegral (R := K) a)⟩
+  -- the prime downstairs and a prime of `A` lying over it
+  set p : Ideal ↥B := RingHom.ker ψ with hp
+  haveI : p.IsPrime := RingHom.ker_isPrime ψ
+  have hbot : (⊥ : Ideal A).comap (algebraMap (↥B) A) ≤ p := by
+    intro b hb
+    have hb0 : algebraMap (↥B) A b = 0 := by simpa using hb
+    have hb1 : b = 0 := by
+      apply Subtype.coe_injective
+      simpa using hb0
+    rw [hb1]
+    exact p.zero_mem
+  obtain ⟨P, -, hPprime, hPcomap⟩ :=
+    Ideal.exists_ideal_over_prime_of_isIntegral p ⊥ hbot
+  haveI := hPprime
+  -- both quotients are fields
+  haveI : P.IsMaximal := IsArtinianRing.isMaximal_of_isPrime P
+  letI : Field (A ⧸ P) := Ideal.Quotient.field P
+  haveI : p.IsMaximal := IsArtinianRing.isMaximal_of_isPrime p
+  letI : Field (↥B ⧸ p) := Ideal.Quotient.field p
+  -- `A ⧸ P` as an algebra over `B ⧸ p`, through the lying-over identification
+  have hle : p ≤ P.comap (algebraMap (↥B) A) := le_of_eq hPcomap.symm
+  letI : Algebra (↥B ⧸ p) (A ⧸ P) := Ideal.Quotient.algebraQuotientOfLEComap hle
+  haveI : IsScalarTower K (↥B ⧸ p) (A ⧸ P) :=
+    IsScalarTower.of_algebraMap_eq fun k => by
+      show algebraMap K (A ⧸ P) k =
+        Ideal.quotientMap P (algebraMap (↥B) A) hle (algebraMap K (↥B ⧸ p) k)
+      calc algebraMap K (A ⧸ P) k
+          = Ideal.Quotient.mk P (algebraMap K A k) :=
+            (Ideal.Quotient.mk_algebraMap K P k).symm
+        _ = Ideal.Quotient.mk P (algebraMap (↥B) A (algebraMap K (↥B) k)) := by
+            rw [← IsScalarTower.algebraMap_apply]
+        _ = Ideal.quotientMap P (algebraMap (↥B) A) hle
+              (Ideal.Quotient.mk p (algebraMap K (↥B) k)) :=
+            Ideal.quotientMap_mk.symm
+        _ = Ideal.quotientMap P (algebraMap (↥B) A) hle
+              (algebraMap K (↥B ⧸ p) k) := by
+            rw [Ideal.Quotient.mk_algebraMap]
+  -- the residue extension is separable, `A ⧸ P` being étale-residue over `K`
+  haveI : Algebra.IsSeparable K (A ⧸ P) :=
+    Algebra.FormallyUnramified.isSeparable K (A ⧸ P)
+  haveI : Algebra.IsSeparable (↥B ⧸ p) (A ⧸ P) :=
+    Algebra.isSeparable_tower_top_of_isSeparable K (↥B ⧸ p) (A ⧸ P)
+  -- `ψ` embeds `B ⧸ p` into `Kˢᵉᵖ`; extend it along the separable extension
+  have hpker : ∀ b : ↥B, b ∈ p → ψ b = 0 := fun b hb => hb
+  letI : Algebra (↥B ⧸ p) Ksep :=
+    (Ideal.Quotient.liftₐ p ψ hpker).toRingHom.toAlgebra
+  haveI : IsScalarTower K (↥B ⧸ p) Ksep :=
+    IsScalarTower.of_algebraMap_eq fun k =>
+      ((Ideal.Quotient.liftₐ p ψ hpker).commutes k).symm
+  set χ : (A ⧸ P) →ₐ[↥B ⧸ p] Ksep := IsSepClosed.lift with hχ
+  refine ⟨(χ.restrictScalars K).comp (Ideal.Quotient.mkₐ K P), ?_⟩
+  ext b
+  show χ (Ideal.Quotient.mk P (algebraMap (↥B) A b)) = ψ b
+  calc χ (Ideal.Quotient.mk P (algebraMap (↥B) A b))
+      = χ (Ideal.quotientMap P (algebraMap (↥B) A) hle
+          (Ideal.Quotient.mk p b)) := by rw [Ideal.quotientMap_mk]
+    _ = algebraMap (↥B ⧸ p) Ksep (Ideal.Quotient.mk p b) :=
+        χ.commutes (Ideal.Quotient.mk p b)
+    _ = (Ideal.Quotient.liftₐ p ψ hpker) (Ideal.Quotient.mk p b) := rfl
+    _ = ψ b := by
+        have h1 := congrArg (fun g : ↥B →ₐ[K] Ksep => g b)
+          (Ideal.Quotient.liftₐ_comp p ψ hpker)
+        exact h1
 
 set_option backward.isDefEq.respectTransparency false in
 omit [DecidableEq Ksep] in
