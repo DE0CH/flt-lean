@@ -3336,29 +3336,20 @@ def HasLipschitzBoundaryCover {E : Type*} [NormedAddCommGroup E]
 
 open scoped Pointwise in
 open MeasureTheory in
-/-- **The packing bound: cells meeting a set of bounded diameter** (sorry
-leaf) — the pigeonhole step of Lang, *Algebraic Number Theory*, VI §2
+set_option maxHeartbeats 800000 in
+/-- **The packing bound: cells meeting a set of bounded diameter**
+(PROVEN) — the pigeonhole step of Lang, *Algebraic Number Theory*, VI §2
 Theorem 2: for a fixed `ℤ`-basis `b` of the lattice `L` with fundamental
 parallelotope `P = ZSpan.fundamentalDomain (b.ofZLatticeBasis ℝ)`, there
 is a bound `c = c(L, b, R)` such that EVERY set `S ⊆ E` of `ediam ≤ R`
 meets at most `c` of the lattice cells `x +ᵥ P`, `x ∈ L` — and the set
-of such cells is finite. Uniformity in the position of `S` is the point.
-
-Intended proof: empty `S` is trivial; otherwise fix `s₀ ∈ S`. Since
-`0 ∈ P` and `P` is bounded (`ZSpan.fundamentalDomain_isBounded`) with
-diameter `δ := diam P < ∞`, any `x ∈ L` whose cell meets `S` satisfies
-`dist (x : E) s₀ ≤ δ + R`, so all qualifying `x` lie in
-`closedBall s₀ (δ + R) ∩ L`, a finite set: lattice points in a bounded
-set are finite (`ZSpan.setFinite_inter` transported along
-`Module.Basis.ofZLatticeBasis_span`). For the uniform cardinality bound:
-the cells `x +ᵥ P` are pairwise disjoint
-(`ZSpan.exist_unique_vadd_mem_fundamentalDomain`: every point lies in
-exactly one cell), all contained in `closedBall s₀ (2δ + R)`, and each
-has Haar volume `volume P = covolume L > 0` (`ZLattice.covolume_pos`,
-`ZLattice.covolume_eq_measure_fundamentalDomain`), so their number is at
-most `volume (closedBall 0 (2δ + R)) / volume P` — a bound independent
-of `s₀` by translation invariance, e.g.
-`c = ⌈volume.real (closedBall 0 (2δ + R)) / ZLattice.covolume L⌉₊`. -/
+of such cells is finite. Uniformity in the position of `S` is the point:
+`c = ⌈vol(closedBall 0 (2δ + R)) / covol L⌉₊` with `P ⊆ closedBall 0 δ`,
+by translation invariance of the Haar volume; qualifying `x` lie in
+`closedBall s₀ (δ + R) ∩ L` (finite, `ZSpan.setFinite_inter`), their
+cells are pairwise a.e.-disjoint of volume `covol L > 0` inside
+`closedBall s₀ (2δ + R)`, and `measure_biUnion_finset₀` turns that into
+the counting bound. -/
 theorem exists_forall_natCard_inter_vadd_fundamentalDomain_le
     {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
     [FiniteDimensional ℝ E] [MeasureSpace E] [BorelSpace E]
@@ -3370,7 +3361,105 @@ theorem exists_forall_natCard_inter_vadd_fundamentalDomain_le
         S).Nonempty}.Finite ∧
       Nat.card {x : L // (((x : E) +ᵥ ZSpan.fundamentalDomain (b.ofZLatticeBasis ℝ)) ∩
         S).Nonempty} ≤ c := by
-  sorry
+  classical
+  set P := ZSpan.fundamentalDomain (b.ofZLatticeBasis ℝ) with hPdef
+  obtain ⟨δ, hδ0, hδ⟩ :=
+    (ZSpan.fundamentalDomain_isBounded (b.ofZLatticeBasis ℝ)).subset_closedBall_lt 0 0
+  have hfd := ZLattice.isAddFundamentalDomain b volume
+  have hPmeas : MeasurableSet P := ZSpan.fundamentalDomain_measurableSet _
+  have hcovP : ZLattice.covolume L = volume.real P :=
+    ZLattice.covolume_eq_measure_fundamentalDomain L volume hfd
+  have hcov0 : 0 < ZLattice.covolume L := ZLattice.covolume_pos L volume
+  refine ⟨⌈volume.real (Metric.closedBall (0 : E) (2 * δ + R)) /
+    ZLattice.covolume L⌉₊, ?_⟩
+  intro S hSd
+  rcases Set.eq_empty_or_nonempty S with rfl | ⟨s₀, hs₀⟩
+  · constructor
+    · simp
+    · simp
+  have hdistS : ∀ y ∈ S, dist y s₀ ≤ R := by
+    intro y hy
+    have h2 : edist y s₀ ≤ (R : ENNReal) :=
+      (Metric.edist_le_ediam_of_mem hy hs₀).trans hSd
+    exact_mod_cast edist_le_coe.mp h2
+  have hUball : ∀ x : L, (((x : E) +ᵥ P) ∩ S).Nonempty →
+      (x : E) ∈ Metric.closedBall s₀ (δ + R) := by
+    rintro x ⟨y, hyc, hyS⟩
+    obtain ⟨p, hp, rfl⟩ := Set.mem_vadd_set.mp hyc
+    have hpn : ‖p‖ ≤ δ := by
+      simpa [dist_zero_right] using hδ hp
+    have h1 : dist ((x : E) +ᵥ p) (x : E) = ‖p‖ := by
+      simp [vadd_eq_add, dist_eq_norm]
+    have h2 : dist ((x : E) +ᵥ p) s₀ ≤ R := hdistS _ hyS
+    have h3 := dist_triangle (x : E) ((x : E) +ᵥ p) s₀
+    rw [dist_comm (x : E) ((x : E) +ᵥ p)] at h3
+    simp only [Metric.mem_closedBall]
+    linarith
+  have hcell : ∀ x : L, (((x : E) +ᵥ P) ∩ S).Nonempty →
+      (x : E) +ᵥ P ⊆ Metric.closedBall s₀ (2 * δ + R) := by
+    intro x hx z hz
+    have hxb := hUball x hx
+    obtain ⟨q, hq, rfl⟩ := Set.mem_vadd_set.mp hz
+    have hqn : ‖q‖ ≤ δ := by
+      simpa [dist_zero_right] using hδ hq
+    have h1 : dist ((x : E) +ᵥ q) (x : E) = ‖q‖ := by
+      simp [vadd_eq_add, dist_eq_norm]
+    have h2 : dist (x : E) s₀ ≤ δ + R := hxb
+    have h3 := dist_triangle ((x : E) +ᵥ q) (x : E) s₀
+    simp only [Metric.mem_closedBall]
+    linarith
+  have hL := b.ofZLatticeBasis_span ℝ
+  have hball_fin : ((Metric.closedBall s₀ (δ + R) : Set E) ∩ (L : Set E)).Finite := by
+    have h := ZSpan.setFinite_inter (b.ofZLatticeBasis ℝ)
+      (Metric.isBounded_closedBall (x := s₀) (r := δ + R))
+    rwa [hL] at h
+  have hUfin : {x : L | (((x : E) +ᵥ P) ∩ S).Nonempty}.Finite := by
+    have hsub : {x : L | (((x : E) +ᵥ P) ∩ S).Nonempty} ⊆
+        (fun x : L => (x : E)) ⁻¹' (Metric.closedBall s₀ (δ + R) ∩ (L : Set E)) := by
+      intro x hx
+      exact ⟨hUball x hx, x.2⟩
+    exact (hball_fin.preimage Subtype.val_injective.injOn).subset hsub
+  refine ⟨hUfin, ?_⟩
+  set Ufin := hUfin.toFinset with hUdef
+  have hsum : (Ufin.card : ENNReal) * volume P ≤
+      volume (Metric.closedBall s₀ (2 * δ + R)) := by
+    have hdisjoint : (↑Ufin : Set L).Pairwise
+        (fun x y : L => MeasureTheory.AEDisjoint volume ((x : E) +ᵥ P) ((y : E) +ᵥ P)) :=
+      fun x _ y _ hxy => hfd.aedisjoint hxy
+    have hmeas : ∀ x ∈ Ufin, MeasureTheory.NullMeasurableSet ((x : E) +ᵥ P) volume :=
+      fun x _ => (hPmeas.const_vadd (x : E)).nullMeasurableSet
+    have hunion := MeasureTheory.measure_biUnion_finset₀ hdisjoint hmeas
+    have hsubU : (⋃ x ∈ Ufin, (x : E) +ᵥ P) ⊆ Metric.closedBall s₀ (2 * δ + R) := by
+      intro z hz
+      rw [Set.mem_iUnion₂] at hz
+      obtain ⟨x, hxU, hzx⟩ := hz
+      exact hcell x (hUfin.mem_toFinset.mp hxU) hzx
+    calc (Ufin.card : ENNReal) * volume P
+        = ∑ _x ∈ Ufin, volume P := by
+          rw [Finset.sum_const, nsmul_eq_mul]
+      _ = ∑ x ∈ Ufin, volume ((x : E) +ᵥ P) := by
+          exact Finset.sum_congr rfl fun x _ => (measure_vadd volume (x : E) P).symm
+      _ = volume (⋃ x ∈ Ufin, (x : E) +ᵥ P) := hunion.symm
+      _ ≤ volume (Metric.closedBall s₀ (2 * δ + R)) := measure_mono hsubU
+  have hballfin : volume (Metric.closedBall (0 : E) (2 * δ + R)) ≠ ⊤ :=
+    (Metric.isBounded_closedBall.measure_lt_top).ne
+  have hreal : (Ufin.card : ℝ) * volume.real P ≤
+      volume.real (Metric.closedBall (0 : E) (2 * δ + R)) := by
+    rw [Measure.addHaar_closedBall_center] at hsum
+    have h := ENNReal.toReal_mono hballfin hsum
+    rwa [ENNReal.toReal_mul, ENNReal.toReal_natCast] at h
+  have hfinal : (Ufin.card : ℝ) ≤
+      volume.real (Metric.closedBall (0 : E) (2 * δ + R)) / ZLattice.covolume L := by
+    rw [le_div_iff₀ hcov0, hcovP]
+    exact hreal
+  have hle : Ufin.card ≤ ⌈volume.real (Metric.closedBall (0 : E) (2 * δ + R)) /
+      ZLattice.covolume L⌉₊ := by
+    exact_mod_cast hfinal.trans (Nat.le_ceil _)
+  have hcards : Nat.card {x : L // (((x : E) +ᵥ P) ∩ S).Nonempty} = Ufin.card := by
+    rw [hUdef, ← Set.ncard_eq_toFinset_card _ hUfin]
+    rfl
+  rw [hcards]
+  exact hle
 
 /-- **Subdivision of the unit cube into `n^ν` subcubes of side `1/n`**
 (PROVEN) — the elementary combinatorial step behind the Lipschitz
