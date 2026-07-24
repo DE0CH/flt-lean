@@ -163,6 +163,11 @@ import Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic
 -- `IsHardlyRamified.mod_three` and the global triangular form
 -- `exists_global_triangular_of_residual_trivial_quotient`, discharging
 -- the `p = 3` instance of the residually reducible pillar below
+import Fermat.FLT.Modularity.Patching
+-- The deformation-theoretic pillars behind the Taylor–Wiles patching
+-- statement 3b (Mazur representability, Carayol surjectivity,
+-- Taylor–Wiles injectivity) and the `charFrob`/base-change bridge.
+-- Proof-body use only (the 3b assembly).
 
 @[expose] public section
 
@@ -1849,8 +1854,11 @@ theorem exists_hardlyRamified_heckeDeformation_of_matchesResidualTraces
           (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1 :=
   sorry
 
-/-- **Patching: `R = 𝕋`** (pillar 3b; sorry node — the Taylor–Wiles
-theorem specialized to the hardly ramified deformation problem): a
+omit [IsDomain R] in
+/-- **Patching: `R = 𝕋`** (pillar 3b; DECOMPOSED 2026-07-24 — now a
+PROVEN assembly over the deformation-theoretic pillars of
+`Modularity/Patching.lean`; the Taylor–Wiles theorem specialized to
+the hardly ramified deformation problem): a
 hardly ramified `p`-adic representation `ρ` over `R` whose residual
 representation `ρ.baseChange kk` is irreducible and underlies a
 Hecke-side hardly ramified deformation `(T, ρT, π)` factors through
@@ -1881,7 +1889,26 @@ Theorem*, Ann. of Math. 141 (1995), ch. 2–3; Taylor–Wiles,
 — for a packet smaller than the full `𝕋_𝔪` the factorization is not
 the literature statement; the leaf remains sound by the section audit,
 and its intended discharge is at the full packet of pillar 3a.
-CIRCULARITY GUARD: must not be proven through `Family.lean`. -/
+CIRCULARITY GUARD: must not be proven through `Family.lean`.
+
+The proof is exactly the recorded classical route, assembled over the
+three sorried pillars of `Modularity/Patching.lean` (a module upstream
+of this file — the guard is structural: `Lift.lean`'s parallel
+deformation vocabulary sits BELOW `Family.lean` and is
+import-unreachable): Mazur representability
+(`exists_weaklyUniversal_hardlyRamifiedDeformation`) yields a weakly
+universal package `(Runiv, ρuniv, πuniv)` with factorization clauses
+at the two needed module universes; the `T`-side clause classifies the
+Hecke packet (a `HardlyRamifiedFiniteDeformation` literal) by
+`ψT : Runiv →+* T`, which Carayol surjectivity
+(`surjective_ringHom_of_charFrob_eq`) and Taylor–Wiles injectivity
+(`injective_ringHom_of_isWeaklyUniversal`) upgrade to a ring
+isomorphism; the `V`-side clause classifies `ρ` itself by
+`ψR : Runiv →+* R` — its reduction datum is the PROVEN
+`charFrob`/base-change bridge (`charFrob_baseChange`), with empty
+exceptional set; and `Φ := ψR ∘ ψT⁻¹`.  (The domain hypothesis on `R`
+plays no role in the argument — the deformation vocabulary needs only
+the module-finite local `ℤ_p`-algebra structure — so it is omitted.) -/
 theorem exists_ringHom_charFrob_eq_of_heckeDeformation
     (hρ : IsHardlyRamified hpodd hv ρ)
     {kk : Type u} [Field kk] [Finite kk] [Algebra ℤ_[p] kk]
@@ -1908,8 +1935,83 @@ theorem exists_ringHom_charFrob_eq_of_heckeDeformation
       (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
       ∀ (q : ℕ) (hq : q.Prime), hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
         (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1 =
-          Φ ((ρT.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) :=
-  sorry
+          Φ ((ρT.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) := by
+  classical
+  -- Mazur representability (pillar 3b-i): the weakly universal hardly
+  -- ramified deformation package of the residual representation, with
+  -- factorization clauses at module universes `u` (the Fin-2-framed
+  -- Hecke side) and `v` (the abstract module `V` carrying `ρ`)
+  obtain ⟨Runiv, iCR, iTop, iTR, iLoc, iAlg, iNoeth, hadic, hcomplete,
+    ρuniv, hranku, hρuniv, πuniv, hπuniv, Suniv, hunivred, hfactU,
+    hfactV⟩ :=
+    exists_weaklyUniversal_hardlyRamifiedDeformation.{u, v, u, max u v}
+      hpodd hVbar hρbar hirrbar
+  letI := iCR
+  letI := iTop
+  letI := iTR
+  letI := iLoc
+  letI := iAlg
+  letI := iNoeth
+  -- classify the Hecke-side deformation: `ψT : Runiv →+* T`
+  obtain ⟨ψT, hψTalg, hψTπ, SψT, hψT⟩ := hfactU
+    { A := T, Vd := Fin 2 → T, rank_eq := hrankT, ρ := ρT,
+      isHardlyRamified := hρT, π := π, π_surjective := hπ, S := S_T,
+      charFrob_compat := hred }
+  -- recast the classification data at the bare Hecke package (the
+  -- structure-literal projections reduce definitionally)
+  have hψTalg' : ψT.comp (algebraMap ℤ_[p] Runiv) = algebraMap ℤ_[p] T :=
+    hψTalg
+  have hψTπ' : π.comp ψT = πuniv := hψTπ
+  have hψT' : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ SψT →
+      ψT ((ρuniv.charFrob
+          hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
+        (ρT.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1 :=
+    hψT
+  -- classify `ρ` itself: `ψR : Runiv →+* R` (its reduction datum is
+  -- the proven `charFrob`/base-change bridge, with empty exceptional
+  -- set; the `ℤ_p`-structure and reduction-map compatibilities of the
+  -- classifying map are not needed downstream)
+  obtain ⟨ψR, -, -, SψR, hψR⟩ := hfactV
+    { A := R, Vd := V, rank_eq := hv, ρ := ρ, isHardlyRamified := hρ,
+      π := algebraMap R kk, π_surjective := hsurj, S := ∅,
+      charFrob_compat := fun q hq _ => by
+        rw [charFrob_baseChange, Polynomial.coeff_map] }
+  have hψR' : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ SψR →
+      ψR ((ρuniv.charFrob
+          hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
+        (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1 :=
+    hψR
+  -- Carayol surjectivity (pillar 3b-ii) and Taylor–Wiles injectivity
+  -- (pillar 3b-iii): the Hecke-side classifying map is a ring
+  -- isomorphism `Runiv ≃+* T`
+  have hsurjT : Function.Surjective ψT :=
+    surjective_ringHom_of_charFrob_eq hpodd hVbar hρbar hirrbar hadic
+      hcomplete hranku hρuniv hπuniv hunivred hrankT hρT hπ hred ψT
+      hψTalg' hψTπ' hψT'
+  have hinjT : Function.Injective ψT :=
+    injective_ringHom_of_isWeaklyUniversal hpodd hVbar hρbar hirrbar
+      hadic hcomplete hranku hρuniv hπuniv hunivred hfactU hrankT hρT hπ
+      hred ψT hψTalg' hψTπ' hψT'
+  -- assemble `Φ := ψR ∘ ψT⁻¹` and chase the traces through `Runiv`
+  have hbijT : Function.Bijective ψT := ⟨hinjT, hsurjT⟩
+  refine ⟨ψR.comp (RingEquiv.ofBijective ψT hbijT).symm.toRingHom,
+    SψT ∪ SψR, fun q hq hqS => ?_⟩
+  have hnotT : hq.toHeightOneSpectrumRingOfIntegersRat ∉ SψT :=
+    fun h => hqS (Finset.mem_union_left _ h)
+  have hnotR : hq.toHeightOneSpectrumRingOfIntegersRat ∉ SψR :=
+    fun h => hqS (Finset.mem_union_right _ h)
+  have hsymm : (RingEquiv.ofBijective ψT hbijT).symm
+      ((ρT.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
+      (ρuniv.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1 := by
+    rw [RingEquiv.symm_apply_eq, RingEquiv.ofBijective_apply]
+    exact (hψT' q hq hnotT).symm
+  show (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1 =
+    ψR ((RingEquiv.ofBijective ψT hbijT).symm
+      ((ρT.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1))
+  rw [hsymm]
+  exact (hψR' q hq hnotR).symm
 
 /-- **Modular points of the Hecke-side deformation** (pillar 3c; sorry
 node — the Deligne–Serre eigensystem decomposition): every
@@ -1964,6 +2066,7 @@ theorem exists_weightTwoEigenform_of_heckeDeformation_point
           - ι (heckeCoeff N f q) :=
   sorry
 
+omit [IsDomain R] in
 /-- **Modularity lifting** (pillar 3; DECOMPOSED 2026-07-24 — now a
 PROVEN assembly over the Taylor–Wiles cut of the section above; the
 R = T shadow, residually irreducible case): a hardly ramified `p`-adic
