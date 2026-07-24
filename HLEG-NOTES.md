@@ -564,6 +564,61 @@ Notes for its owner:
   `build` tool dies at 1800 s of client-side idle (its aborted child is
   killed with it).
 
+**STATUS UPDATE (2026-07-24, third pass): `hres` PROVEN as glue — the
+L4-4..9 core is now decomposed into THREE named top-level sorried
+leaves.** The τ/[p]-substrate (L4-4 start) is BUILT AND PROVEN in
+`WeilPairingDescent.lean`, section `TautSubstrate`, generic over
+`(F, W)` (field `F`, plus `[IsAlgClosed F]`/`[Fact p.Prime]` for the
+stage statements):
+
+* PROVEN definitional bricks: `constHom` (constants `F → K = Frac F[W]`;
+  injective for free — field hom), `tautX`/`tautY`/`taut_equation`/
+  `taut_nonsingular` (TautologicalPoint pattern transplanted to `W`
+  over its own function field; needs `hΔ : W.Δ ≠ 0`), `curveK`
+  (base change to `K`), `tautPoint`, `constPoint` (pointwise base
+  change of rational points, via `map_nonsingular`), `pointEval`
+  (evaluation `F[W] →+* K'` at a `K'`-point — `AdjoinRoot.lift`
+  against `evalRingHom ∘ mapRingHom`; at `κ ⊕ taut` this IS `τ_κ^*`),
+  `pointXClass`/`enumVertical` (the vertical denominator
+  `∏ (X − x_κ)` of `g = a/∏(X − x_κ)`).
+  NOTE a global `noncomputable instance : DecidableEq W.FunctionField`
+  (Classical) — mathlib's point group law needs it over `K`.
+* `descent_toClass_eq_zero_or_translationChar` — the **L4-9 dichotomy,
+  PROVEN glue**: either `toClass P = 0`, or some torsion index carries
+  translation-character data `c ≠ 1`, `c^p = 1` with the multiplied-out
+  character equation `τ(a)·v̄ = c·ā·τ(v)` in `K` (`v = enumVertical`;
+  no field-extension of `pointEval` needed).  Torsion enumeration is
+  hypothesis-parametrized (`val : ι → W.Point` injective, torsion,
+  surjective-onto-torsion, `card ι = p²`) so the statement lives
+  generically; the main file instantiates `val := Subtype.val` on
+  `nTorsion p` (the defeq `E⁄F̄ ≡ E` crossings all unify).
+* The THREE residual sorried leaves (each with a full proof-plan
+  docstring):
+  1. `WeilPairing.exists_translationChar` (WeilPairingDescent.lean)
+     — L4-8: χ(κ₀) is a constant `p`-th root of unity + evaluation
+     nonvanishing at the generic translate; needs div-g translation
+     invariance, units-are-constants, and the L4-7 pullback
+     factorization for `c^p = 1`.
+  2. `WeilPairing.toClass_eq_zero_of_translationChar_trivial`
+     (WeilPairingDescent.lean) — L4-5/6/7 + L4-9 first branch: trivial
+     character ⟹ `g = h∘[p]` through `Fix E[p] = [p]^*K` ⟹
+     `div h = (P) − (O)` ⟹ class vanishes.
+  3. `WeilPairing.weilValue_of_translationChar` (WeilPairing.lean,
+     right before the descent-core theorem) — the bridge (Silverman
+     Ex. 3.16(c)): nontrivial character data ⟹ a nontrivial
+     admissible Weil value `∃ v w z, weilValueProp ∧ z ≠ 1`; consumed
+     in `hres` against `hall`/`huniq`.
+* CAUTION for successors: the substrate bricks the stage proofs will
+  want next (`pointEval_mk`, `pointEval` at `taut` = `algebraMap`,
+  `tautX ∉ constants`, `constPoint ⊕ taut ≠ 0`, τ-functoriality/
+  injectivity via `τ_{⊖κ}`) were deliberately NOT added — they would
+  be free-floating until a consuming skeleton exists.  Open the stage
+  lemma's proof skeleton first, then add them to `TautSubstrate`.
+* Verification note: the current report-mcp `diagnostics` accepts
+  `timeout_seconds` (default 1800) and is retry-safe on unchanged
+  content; a from-line-4200 re-elaboration of WeilPairing.lean runs
+  ~3-5 min (the 30-min figure is a cold full-file pass).
+
 **STATUS UPDATE (2026-07-23).** The reduction (A) is fully in place and
 sorry-free inside the μ-theorem (`hleg4` = `pairing_trivial_of_radical`
 + the rank-2 computation + `hglobal`); `hglobal` itself is discharged
