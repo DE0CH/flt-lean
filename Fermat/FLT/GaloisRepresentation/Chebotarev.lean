@@ -4217,8 +4217,192 @@ theorem exists_forall_sum_re_tsum_neg_log_le_of_integral_eq_zero
       ∑ j ∈ Finset.range (ℓ - 1),
         (∑' P : HeightOneSpectrum (𝓞 F),
           -Complex.log (1 - (χ ^ j) ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
-            (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)))).re ≤ K :=
-  sorry
+            (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)))).re ≤ K := by
+  classical
+  obtain ⟨δ, C₁, hδ0, hC₁0, hC₁⟩ :=
+    exists_forall_norm_LSeries_dirichletCharacter_mul_card_le_div F ℓ
+  obtain ⟨C₂, hC₂0, hC₂⟩ :=
+    exists_forall_norm_LSeries_le_mul_sub_one_of_integral_eq_zero hℓ hζ χ hχ h0
+  -- the trivial-on-image and `χ`-coset exponent classes
+  set T : Finset ℕ := (Finset.range (ℓ - 1)).filter (fun j =>
+    ∀ (ρ : E ≃ₐ[F] E) (n : ℕ), ρ ζ = ζ ^ n →
+      (χ ^ j) ((n : ℕ) : ZMod ℓ) = 1) with hTdef
+  set U : Finset ℕ := (Finset.range (ℓ - 1)).filter (fun j =>
+    ∀ (ρ : E ≃ₐ[F] E) (n : ℕ), ρ ζ = ζ ^ n →
+      (χ ^ j) ((n : ℕ) : ZMod ℓ) = χ ((n : ℕ) : ZMod ℓ)) with hUdef
+  -- outside `T` the power character is nontrivial on the image
+  have hRne : ∀ j ∈ Finset.range (ℓ - 1) \ (T ∪ U),
+      ∃ (ρ : E ≃ₐ[F] E) (n : ℕ), ρ ζ = ζ ^ n ∧
+        (χ ^ j) ((n : ℕ) : ZMod ℓ) ≠ 1 := by
+    intro j hj
+    rw [Finset.mem_sdiff, Finset.mem_union] at hj
+    obtain ⟨hjr, hjnot⟩ := hj
+    have hnp : ¬ ∀ (ρ : E ≃ₐ[F] E) (n : ℕ), ρ ζ = ζ ^ n →
+        (χ ^ j) ((n : ℕ) : ZMod ℓ) = 1 := by
+      intro hp
+      exact hjnot (Or.inl (by rw [hTdef, Finset.mem_filter]; exact ⟨hjr, hp⟩))
+    push_neg at hnp
+    exact hnp
+  -- uniform bounds for the nontrivial factors outside the two classes
+  have hRex : ∀ j ∈ Finset.range (ℓ - 1) \ (T ∪ U), ∃ C : ℝ,
+      ∀ s : ℝ, 1 < s → s ≤ 2 →
+      ‖LSeries (fun k => (χ ^ j) (k : ZMod ℓ) *
+        (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) (s : ℂ)‖ ≤ C := by
+    intro j hj
+    obtain ⟨C, hC⟩ :=
+      exists_forall_norm_LSeries_le_and_norm_deriv_le hℓ hζ (χ ^ j) (hRne j hj)
+    exact ⟨C, fun s h1 h2 => (hC s h1 h2).1⟩
+  choose! C₃ hC₃ using hRex
+  -- the exponent translation `j ↦ (j+1) % (ℓ-1)` injects `T` into `U`
+  have hl1 : 0 < ℓ - 1 := by
+    have h2 := hℓ.two_le
+    omega
+  have hmaps : ∀ j ∈ T, (j + 1) % (ℓ - 1) ∈ U := by
+    intro j hj
+    rw [hTdef, Finset.mem_filter] at hj
+    obtain ⟨hjr, hjp⟩ := hj
+    rw [hUdef, Finset.mem_filter]
+    refine ⟨Finset.mem_range.mpr (Nat.mod_lt _ hl1), fun ρ n hρn => ?_⟩
+    rw [← dirichletCharacter_pow_mod hℓ χ (j + 1), pow_succ, MulChar.mul_apply,
+      hjp ρ n hρn, one_mul]
+  have hinj : Set.InjOn (fun j => (j + 1) % (ℓ - 1)) ↑T := by
+    intro j₁ h₁ j₂ h₂ heq
+    have hb₁ : j₁ < ℓ - 1 := Finset.mem_range.mp
+      (Finset.mem_filter.mp (Finset.mem_coe.mp h₁)).1
+    have hb₂ : j₂ < ℓ - 1 := Finset.mem_range.mp
+      (Finset.mem_filter.mp (Finset.mem_coe.mp h₂)).1
+    simp only at heq
+    rcases Nat.lt_or_ge (j₁ + 1) (ℓ - 1) with hc₁ | hc₁ <;>
+      rcases Nat.lt_or_ge (j₂ + 1) (ℓ - 1) with hc₂ | hc₂
+    · rw [Nat.mod_eq_of_lt hc₁, Nat.mod_eq_of_lt hc₂] at heq
+      omega
+    · have he₂ : j₂ + 1 = ℓ - 1 := by omega
+      rw [Nat.mod_eq_of_lt hc₁, he₂, Nat.mod_self] at heq
+      omega
+    · have he₁ : j₁ + 1 = ℓ - 1 := by omega
+      rw [Nat.mod_eq_of_lt hc₂, he₁, Nat.mod_self] at heq
+      omega
+    · omega
+  have hcard : T.card ≤ U.card :=
+    Finset.card_le_card_of_injOn _ hmaps hinj
+  -- the two classes are disjoint: `χ` is nontrivial on the image
+  have hdisj : Disjoint T U := by
+    rw [Finset.disjoint_left]
+    intro j hjT hjU
+    obtain ⟨ρ, n, hρn, hne⟩ := hχ
+    have h1 := (Finset.mem_filter.mp (hTdef ▸ hjT)).2 ρ n hρn
+    have h2 := (Finset.mem_filter.mp (hUdef ▸ hjU)).2 ρ n hρn
+    exact hne (by rw [← h2, h1])
+  have hsub : T ∪ U ⊆ Finset.range (ℓ - 1) := by
+    rw [hTdef, hUdef]
+    exact Finset.union_subset (Finset.filter_subset _ _) (Finset.filter_subset _ _)
+  -- the window and the constant
+  refine ⟨(T.card : ℝ) * Real.log (max C₁ 1) +
+      (U.card : ℝ) * Real.log (max C₂ 1) +
+      ∑ j ∈ Finset.range (ℓ - 1) \ (T ∪ U), Real.log (max (C₃ j) 1),
+    min δ 1, lt_min hδ0 one_pos, fun s hs1 hsη => ?_⟩
+  have hsδ : s ≤ 1 + δ := hsη.trans (by
+    have := min_le_left δ 1
+    linarith)
+  have hs2 : s ≤ 2 := hsη.trans (by
+    have := min_le_right δ 1
+    linarith)
+  have hs10 : (0 : ℝ) < s - 1 := by linarith
+  have hlog_nonpos : Real.log (s - 1) ≤ 0 :=
+    Real.log_nonpos (by linarith) (by linarith)
+  have hC₁pos : (0 : ℝ) < max C₁ 1 := lt_of_lt_of_le one_pos (le_max_right _ _)
+  have hC₂pos : (0 : ℝ) < max C₂ 1 := lt_of_lt_of_le one_pos (le_max_right _ _)
+  -- each log-sum real part is the log of the `L`-value's norm
+  have hRe : ∀ j : ℕ,
+      (∑' P : HeightOneSpectrum (𝓞 F),
+        -Complex.log (1 - (χ ^ j) ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+          (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)))).re =
+      Real.log ‖LSeries (fun k => (χ ^ j) (k : ZMod ℓ) *
+        (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) (s : ℂ)‖ ∧
+      0 < ‖LSeries (fun k => (χ ^ j) (k : ZMod ℓ) *
+        (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) (s : ℂ)‖ := by
+    intro j
+    have hexp := exp_tsum_neg_log_one_sub_dirichletCharacter_mul_cpow_neg_eq_LSeries
+      F (χ ^ j) (w := (s : ℂ)) (by rw [Complex.ofReal_re]; exact hs1)
+    have hnorm : ‖LSeries (fun k => (χ ^ j) (k : ZMod ℓ) *
+        (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) (s : ℂ)‖ =
+        Real.exp ((∑' P : HeightOneSpectrum (𝓞 F),
+          -Complex.log (1 - (χ ^ j) ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+            (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)))).re) := by
+      rw [← hexp, Complex.norm_exp]
+    exact ⟨by rw [hnorm, Real.log_exp], hnorm ▸ Real.exp_pos _⟩
+  -- per-class termwise bounds
+  have hT_le : ∀ j ∈ T,
+      (∑' P : HeightOneSpectrum (𝓞 F),
+        -Complex.log (1 - (χ ^ j) ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+          (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)))).re ≤
+      Real.log (max C₁ 1) - Real.log (s - 1) := by
+    intro j _
+    rw [(hRe j).1]
+    have hb : ‖LSeries (fun k => (χ ^ j) (k : ZMod ℓ) *
+        (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) (s : ℂ)‖ ≤
+        max C₁ 1 / (s - 1) := by
+      refine (hC₁ (χ ^ j) s hs1 hsδ).trans ?_
+      gcongr
+      exact le_max_left _ _
+    refine (Real.log_le_log (hRe j).2 hb).trans_eq ?_
+    rw [Real.log_div (ne_of_gt hC₁pos) (ne_of_gt hs10)]
+  have hU_le : ∀ j ∈ U,
+      (∑' P : HeightOneSpectrum (𝓞 F),
+        -Complex.log (1 - (χ ^ j) ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+          (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)))).re ≤
+      Real.log (max C₂ 1) + Real.log (s - 1) := by
+    intro j hj
+    rw [(hRe j).1]
+    have hpred := (Finset.mem_filter.mp (hUdef ▸ hj)).2
+    have hcongr := LSeries_dirichletCharacter_mul_card_congr hℓ hζ (χ ^ j) χ
+      hpred (s : ℂ)
+    have hb : ‖LSeries (fun k => (χ ^ j) (k : ZMod ℓ) *
+        (Nat.card {I : Ideal (𝓞 F) // Ideal.absNorm I = k} : ℂ)) (s : ℂ)‖ ≤
+        max C₂ 1 * (s - 1) := by
+      rw [hcongr]
+      refine (hC₂ s hs1 hs2).trans ?_
+      gcongr
+      exact le_max_left _ _
+    refine (Real.log_le_log (hRe j).2 hb).trans_eq ?_
+    rw [Real.log_mul (ne_of_gt hC₂pos) (ne_of_gt hs10)]
+  have hR_le : ∀ j ∈ Finset.range (ℓ - 1) \ (T ∪ U),
+      (∑' P : HeightOneSpectrum (𝓞 F),
+        -Complex.log (1 - (χ ^ j) ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+          (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)))).re ≤
+      Real.log (max (C₃ j) 1) := by
+    intro j hj
+    rw [(hRe j).1]
+    exact Real.log_le_log (hRe j).2
+      (((hC₃ j hj) s hs1 hs2).trans (le_max_left _ _))
+  -- split the sum over the partition and assemble
+  rw [← Finset.sum_sdiff hsub, Finset.sum_union hdisj]
+  have hTsum : ∑ j ∈ T,
+      (∑' P : HeightOneSpectrum (𝓞 F),
+        -Complex.log (1 - (χ ^ j) ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+          (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)))).re ≤
+      (T.card : ℝ) * Real.log (max C₁ 1) - (T.card : ℝ) * Real.log (s - 1) := by
+    refine (Finset.sum_le_sum hT_le).trans_eq ?_
+    rw [Finset.sum_const, nsmul_eq_mul]
+    ring
+  have hUsum : ∑ j ∈ U,
+      (∑' P : HeightOneSpectrum (𝓞 F),
+        -Complex.log (1 - (χ ^ j) ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+          (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)))).re ≤
+      (U.card : ℝ) * Real.log (max C₂ 1) + (U.card : ℝ) * Real.log (s - 1) := by
+    refine (Finset.sum_le_sum hU_le).trans_eq ?_
+    rw [Finset.sum_const, nsmul_eq_mul]
+    ring
+  have hRsum : ∑ j ∈ Finset.range (ℓ - 1) \ (T ∪ U),
+      (∑' P : HeightOneSpectrum (𝓞 F),
+        -Complex.log (1 - (χ ^ j) ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) *
+          (Nat.card (𝓞 F ⧸ P.asIdeal) : ℂ) ^ (-(s : ℂ)))).re ≤
+      ∑ j ∈ Finset.range (ℓ - 1) \ (T ∪ U), Real.log (max (C₃ j) 1) :=
+    Finset.sum_le_sum hR_le
+  have hUx : (U.card : ℝ) * Real.log (s - 1) ≤
+      (T.card : ℝ) * Real.log (s - 1) :=
+    mul_le_mul_of_nonpos_right (Nat.cast_le.mpr hcard) hlog_nonpos
+  linarith
 
 open IsDedekindDomain in
 /-- **Nonvanishing of the continued twisted `L`-value at `s = 1`**
