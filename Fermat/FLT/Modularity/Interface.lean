@@ -163,6 +163,12 @@ import Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic
 -- `IsHardlyRamified.mod_three` and the global triangular form
 -- `exists_global_triangular_of_residual_trivial_quotient`, discharging
 -- the `p = 3` instance of the residually reducible pillar below
+import Fermat.FLT.GaloisRepresentation.Chebotarev
+-- `globalFrob`, `dense_conjClasses_globalFrob`,
+-- `exists_prime_toHeightOneSpectrum`,
+-- `GaloisRep.charFrob_eq_charpoly_globalFrob`: the Chebotarev-density
+-- input to the PROVEN trace-gluing step of the Carayol cut behind
+-- pillar 3a. Proof-body use only.
 
 @[expose] public section
 
@@ -1791,8 +1797,385 @@ may be proven through `Family.lean`'s compatible-family machinery —
 `Family.lean` imports this file and consumes the assemblies below, so
 any such route is circular (and is structurally an import cycle). -/
 
-/-- **The Hecke-side deformation** (pillar 3a; sorry node — Carayol's
-Hecke-algebra-valued Galois representation): an irreducible hardly
+/-! #### The Carayol cut behind pillar 3a
+
+Pillar 3a DECOMPOSED, 2026-07-24, following the actual shape of
+Carayol's construction (*Formes modulaires et représentations
+galoisiennes à valeurs dans un anneau local complet*, Contemp. Math.
+165 (1994)): the Hecke-side deformation is glued from the `λ`-adic
+representations attached to the eigenform components of the localized
+Hecke algebra. The cut isolates the geometric content in two sorried
+leaves and PROVES the Chebotarev-density step between them:
+
+* **3a-i — the Hecke algebra with its realizations**
+  (`exists_heckeAlgebra_realizations_of_matchesResidualTraces`, sorry
+  node): residual modularity produces the coefficient package
+  `(T, t, π)` — the localized anemic weight-2 Hecke algebra with its
+  prime-indexed Hecke elements `t q` and residual reduction `π` —
+  together with finitely many jointly injective coordinates into
+  local coefficient rings, each carrying a hardly ramified eigenform
+  representation whose Frobenius traces interpolate the `t q`
+  (the bundled `HardlyRamifiedRealization`).
+* **PROVEN — the Chebotarev trace gluing**
+  (`forall_exists_toFun_eq_charpoly_coeff_one`): at EVERY group
+  element — not just at Frobenii — the joint trace tuple of the
+  realizations lies in the image of `T`. Proof: the image of the
+  compact `T` under the continuous joint coordinate map is closed;
+  the joint trace function is continuous (the trace is a linear
+  functional on the endomorphism algebra, hence continuous in the
+  module topology — `charpoly.coeff 1` itself has no continuity
+  API, whence the proven bridge
+  `charpoly_coeff_one_eq_neg_trace`); the Frobenius conjugacy
+  classes off the exceptional set land in the image by the
+  interpolation hypothesis and conjugation-invariance of
+  characteristic polynomials (`charpoly_conj_mul_inv`); and those
+  classes are dense (`dense_conjClasses_globalFrob`,
+  `Chebotarev.lean`). This is the exact glue Carayol's construction
+  needs: it converts Frobenius-indexed trace data into a trace
+  function on the whole group with values in `T`.
+* **3a-ii — the Carayol descent**
+  (`exists_hardlyRamified_galoisRep_of_realizations`, sorry node):
+  the glued trace system over the local ring `T`, reducing through
+  `π` to the traces of the residually IRREDUCIBLE `ρbar`, is the
+  trace system of an actual hardly ramified representation on
+  `Fin 2 → T`.
+
+The assembly (now pillar 3a's proof) is 3a-i, then the proven gluing,
+then 3a-ii, then the sign bookkeeping `π (t q) = −tr ρbar(Frob q)`.
+
+Soundness audit (2026-07-24, inherited from the section docstring):
+as with 3b/3c, the leaves quantify over data more general than the
+honest localized Hecke algebra; both remain classically true because
+their hypothesis sets include an irreducible hardly ramified residual
+representation, which the classical chain 2→3/4→5 shows to be
+unsatisfiable, and their non-vacuous intended discharge is the
+classical construction recorded in their docstrings. -/
+
+/-- **A hardly ramified realization of a Hecke-side coefficient ring**
+`T`: one "eigenform component" of the would-be Hecke algebra — a local
+coefficient ring `O` (intended: the integers of a finite extension of
+`ℚ_ℓ`, the completion of the Hecke field of an eigenform component of
+`T ⊗ ℚ_ℓ` at a place over `ℓ`), a `ℤ_ℓ`-algebra coordinate
+`toFun : T →ₐ O`, and a hardly ramified representation over `O` (the
+`λ`-adic representation attached to the eigenform by Eichler–Shimura,
+integrally realized on a stable lattice — unique up to homothety when
+the residual representation is irreducible). The instance fields
+mirror the coefficient package of `Lift.lean`'s `HardlyRamifiedLift`
+(which lives DOWNSTREAM of this file and cannot be imported), plus
+`ℤ_ℓ`-freeness and Hausdorffness — both automatic for the intended `O`
+and consumed by the compactness/closedness step of the Chebotarev
+gluing below. -/
+structure HardlyRamifiedRealization (ℓ : ℕ) [Fact ℓ.Prime] (hℓodd : Odd ℓ)
+    (T : Type u) [CommRing T] [Algebra ℤ_[ℓ] T] where
+  /-- The local coefficient ring of the realization. -/
+  O : Type u
+  [commRing : CommRing O]
+  [topologicalSpace : TopologicalSpace O]
+  [isTopologicalRing : IsTopologicalRing O]
+  [isLocalRing : IsLocalRing O]
+  [t2Space : T2Space O]
+  [algebra : Algebra ℤ_[ℓ] O]
+  [moduleFinite : Module.Finite ℤ_[ℓ] O]
+  [moduleFree : Module.Free ℤ_[ℓ] O]
+  [isModuleTopology : IsModuleTopology ℤ_[ℓ] O]
+  /-- The coordinate: a `ℤ_ℓ`-algebra map from the coefficient ring. -/
+  toFun : T →ₐ[ℤ_[ℓ]] O
+  /-- The realized representation, framed by the standard basis. -/
+  ρ : GaloisRep ℚ O (Fin 2 → O)
+  /-- The standard rank computation, fixed as a field so the
+  hardly-ramifiedness field can be stated against it. -/
+  hrank : Module.rank O (Fin 2 → O) = 2
+  /-- The realized representation is hardly ramified. -/
+  isHardlyRamified : IsHardlyRamified hℓodd hrank ρ
+
+attribute [instance] HardlyRamifiedRealization.commRing
+  HardlyRamifiedRealization.topologicalSpace
+  HardlyRamifiedRealization.isTopologicalRing
+  HardlyRamifiedRealization.isLocalRing
+  HardlyRamifiedRealization.t2Space
+  HardlyRamifiedRealization.algebra
+  HardlyRamifiedRealization.moduleFinite
+  HardlyRamifiedRealization.moduleFree
+  HardlyRamifiedRealization.isModuleTopology
+
+/-- The linear coefficient of the characteristic polynomial of an
+endomorphism of the standard rank-2 free module is the negated trace
+(`charpoly = X² − (tr φ)·X + det φ`). Bridge for the continuity step
+of the Chebotarev gluing below: the trace is a linear functional on
+the endomorphism algebra, hence continuous in the module topology,
+while `charpoly.coeff 1` has no direct continuity API. -/
+lemma charpoly_coeff_one_eq_neg_trace {A : Type*} [CommRing A]
+    (φ : Module.End A (Fin 2 → A)) :
+    φ.charpoly.coeff 1 = - LinearMap.trace A (Fin 2 → A) φ := by
+  have h := Matrix.trace_eq_neg_charpoly_coeff
+    (LinearMap.toMatrix (Pi.basisFun A (Fin 2)) (Pi.basisFun A (Fin 2)) φ)
+  rw [LinearMap.charpoly_toMatrix] at h
+  rw [LinearMap.trace_eq_matrix_trace A (Pi.basisFun A (Fin 2)), h]
+  norm_num
+
+/-- Characteristic polynomials of a Galois representation are constant
+on conjugacy classes (the standalone form of the conjugation step
+inside `Lift.lean`'s `not_isIrreducible_of_charFrob_eq`, restated here
+because that file lives downstream). Feeds the Frobenius-classes step
+of the Chebotarev gluing below. -/
+lemma charpoly_conj_mul_inv {A : Type*} [CommRing A] [TopologicalSpace A]
+    {M : Type*} [AddCommGroup M] [Module A M] [Module.Finite A M]
+    [Module.Free A M] (ρ : GaloisRep ℚ A M)
+    (h g : Field.absoluteGaloisGroup ℚ) :
+    (ρ (h * g * h⁻¹)).charpoly = (ρ g).charpoly := by
+  have hgu : (ρ h).comp (ρ h⁻¹) = LinearMap.id := by
+    have h1 : ρ h * ρ h⁻¹ = 1 := by rw [← map_mul, mul_inv_cancel, map_one]
+    exact h1
+  have hgu' : (ρ h⁻¹).comp (ρ h) = LinearMap.id := by
+    have h1 : ρ h⁻¹ * ρ h = 1 := by rw [← map_mul, inv_mul_cancel, map_one]
+    exact h1
+  have heq : ρ (h * g * h⁻¹) =
+      (LinearEquiv.ofLinear (ρ h) (ρ h⁻¹) hgu hgu').conj (ρ g) := by
+    ext x
+    simp [map_mul, LinearEquiv.conj_apply, Module.End.mul_apply]
+  rw [heq, LinearEquiv.charpoly_conj]
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **The Chebotarev trace gluing** (PROVEN — the density step of
+Carayol's construction): given finitely many hardly ramified
+realizations of a compact coefficient ring `T` whose Frobenius traces
+off a finite exceptional set jointly interpolate the elements `- t q`
+of `T`, EVERY group element's joint trace tuple lies in the image of
+`T`. The three ingredients are closedness of the image of the compact
+`T` under the continuous joint coordinate map, continuity of the joint
+trace function (via `charpoly_coeff_one_eq_neg_trace` and linearity of
+the trace in the module topology), and density of the Frobenius
+conjugacy classes off the exceptional set
+(`dense_conjClasses_globalFrob`), on which the tuple is the image of
+`- t q` by hypothesis and conjugation-invariance
+(`charpoly_conj_mul_inv`). -/
+theorem forall_exists_toFun_eq_charpoly_coeff_one
+    {ℓ : ℕ} [Fact ℓ.Prime] {hℓodd : Odd ℓ}
+    {T : Type u} [CommRing T] [TopologicalSpace T] [Algebra ℤ_[ℓ] T]
+    [IsModuleTopology ℤ_[ℓ] T] [CompactSpace T]
+    {n : ℕ} (real : Fin n → HardlyRamifiedRealization ℓ hℓodd T)
+    {t : ℕ → T}
+    {S_T : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (htr : ∀ (i : Fin n) (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S_T →
+      ((real i).ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1 =
+        (real i).toFun (- t q)) :
+    ∀ g : Field.absoluteGaloisGroup ℚ, ∃ x : T,
+      ∀ i, (real i).toFun x = ((real i).ρ g).charpoly.coeff 1 := by
+  classical
+  -- continuity of the joint trace function
+  have hFcont : Continuous fun (g : Field.absoluteGaloisGroup ℚ)
+      (i : Fin n) => ((real i).ρ g).charpoly.coeff 1 := by
+    rw [continuous_pi_iff]
+    intro i
+    letI := moduleTopology (real i).O
+      (Module.End (real i).O (Fin 2 → (real i).O))
+    haveI : IsModuleTopology (real i).O
+        (Module.End (real i).O (Fin 2 → (real i).O)) := ⟨rfl⟩
+    have hρc : Continuous fun g : Field.absoluteGaloisGroup ℚ =>
+        (real i).ρ g := ContinuousMonoidHom.continuous_toFun ((real i).ρ)
+    have htrc : Continuous fun φ : Module.End (real i).O
+        (Fin 2 → (real i).O) =>
+        LinearMap.trace (real i).O (Fin 2 → (real i).O) φ :=
+      IsModuleTopology.continuous_of_linearMap _
+    have hcoeff : (fun g : Field.absoluteGaloisGroup ℚ =>
+        ((real i).ρ g).charpoly.coeff 1) =
+        fun g => - LinearMap.trace (real i).O (Fin 2 → (real i).O)
+          ((real i).ρ g) := by
+      funext g
+      exact charpoly_coeff_one_eq_neg_trace _
+    rw [hcoeff]
+    exact (htrc.comp hρc).neg
+  -- the joint image of `T` is compact, hence closed
+  have hΦcont : Continuous fun (x : T) (i : Fin n) => (real i).toFun x := by
+    rw [continuous_pi_iff]
+    intro i
+    haveI := IsModuleTopology.toContinuousAdd ℤ_[ℓ] (real i).O
+    exact IsModuleTopology.continuous_of_linearMap ((real i).toFun).toLinearMap
+  have hclosed : IsClosed
+      (Set.range fun (x : T) (i : Fin n) => (real i).toFun x) :=
+    (isCompact_range hΦcont).isClosed
+  -- the agreement set is closed …
+  have hDclosed : IsClosed ((fun (g : Field.absoluteGaloisGroup ℚ)
+      (i : Fin n) => ((real i).ρ g).charpoly.coeff 1) ⁻¹'
+      Set.range fun (x : T) (i : Fin n) => (real i).toFun x) :=
+    hclosed.preimage hFcont
+  -- … and contains the dense set of Frobenius conjugates off `S_T`
+  have hsub : {x : Field.absoluteGaloisGroup ℚ |
+      ∃ v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ), v ∉ S_T ∧
+        ∃ g : Field.absoluteGaloisGroup ℚ, x = g * globalFrob v * g⁻¹} ⊆
+      (fun (g : Field.absoluteGaloisGroup ℚ) (i : Fin n) =>
+        ((real i).ρ g).charpoly.coeff 1) ⁻¹'
+        Set.range fun (x : T) (i : Fin n) => (real i).toFun x := by
+    rintro x ⟨v, hvS, h, rfl⟩
+    obtain ⟨q, hq, rfl⟩ := exists_prime_toHeightOneSpectrum v
+    refine ⟨- t q, ?_⟩
+    funext i
+    have hconj := charpoly_conj_mul_inv (real i).ρ h
+      (globalFrob (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq))
+    have hval := htr i q hq hvS
+    rw [GaloisRep.charFrob_eq_charpoly_globalFrob] at hval
+    show (real i).toFun (- t q) =
+      ((real i).ρ (h * globalFrob
+        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq) * h⁻¹)).charpoly.coeff 1
+    rw [hconj, ← hval]
+  -- density: every group element's trace tuple comes from `T`
+  intro g
+  have hdense := dense_conjClasses_globalFrob (K := ℚ) S_T
+  have hmem : (fun i => ((real i).ρ g).charpoly.coeff 1) ∈
+      Set.range fun (x : T) (i : Fin n) => (real i).toFun x := by
+    have huniv : (Set.univ : Set (Field.absoluteGaloisGroup ℚ)) ⊆ _ :=
+      hdense.closure_eq ▸ hDclosed.closure_subset_iff.mpr hsub
+    exact huniv (Set.mem_univ g)
+  obtain ⟨x, hx⟩ := hmem
+  exact ⟨x, fun i => congrFun hx i⟩
+
+/-- **The Hecke algebra with its hardly ramified realizations**
+(pillar 3a-i; sorry node — the geometric core of the Carayol cut):
+residual modularity of the irreducible hardly ramified `ρbar` at some
+level `N₀` produces the Hecke-side coefficient package with its
+eigenform realizations. Classical construction: (1) optimize the
+level to the Serre type of `ρbar` (Ribet, Invent. Math. 100 (1990);
+Serre, Duke 1987 §4.1 — for the hardly ramified type the odd part of
+the conductor is trivial and the weight is 2); (2) let `T₀` be the
+ANEMIC weight-2 Hecke algebra `ℤ[T_q : q ∤ 2ℓN] ⊗ ℤ_ℓ` — good primes
+only, so the algebra is reduced (the good `T_q` act semisimply on
+`S₂`) and its traces are exactly what Carayol's gluing controls —
+localized at the maximal ideal cut out by `ρbar`'s eigensystem
+through the `φ` of `MatchesResidualTraces` (non-Eisenstein because
+`ρbar` is irreducible): `T₀` is local, module-finite and torsion-free
+over `ℤ_ℓ` (it acts faithfully on the `𝔪`-localized integral homology
+of the modular curve `X₀(N)`), hence FREE over the PID `ℤ_ℓ`, and
+compact in its module topology (quotient of `ℤ_ℓ^m`); (3) enlarge
+coefficients unramifiedly, `T := (T₀ ⊗_{W(k₀)} W(k))_𝔪'`, so that the
+residual reduction `π` is surjective onto the GIVEN `k` (not merely
+onto the subfield its eigenvalues generate); (4) `t q` := the image
+of the Hecke operator `T_q` (junk at the finitely many excluded
+primes — absorbed into `S_T`), with `π (t q) = tr ρbar(Frob q)
+= −charFrob.coeff 1` by the matching hypothesis; (5) `T` reduced and
+finite flat makes `T ⊗ ℚ_ℓ` a finite product of finite extensions
+`E_i/ℚ_ℓ`; the coordinates `λ_i : T →ₐ O_{E_i}` (integrality of `T`)
+are JOINTLY INJECTIVE by torsion-freeness; (6) each factor is the
+eigensystem of a Galois-conjugate newform component `f_i`, whose
+attached `λ`-adic representation (Eichler–Shimura/Deligne, weight 2)
+realizes it integrally on a residually irreducible — hence unique up
+to homothety — lattice over `O_{E_i}`, hardly ramified by: determinant
+cyclotomic (weight 2, trivial nebentypus), unramified outside `2ℓ`
+(optimized level), flat at `ℓ` (weight 2, level prime to `ℓ`:
+Fontaine–Laffaille; Conrad–Diamond–Taylor), tame at 2 with unramified
+square-trivial rank-1 quotient (conductor exponent `≤ 1` at 2:
+Carayol–Saito local–global compatibility); the Eichler–Shimura
+congruence gives the interpolation `tr ρ_i(Frob q) = λ_i(t q)`.
+Soundness of the abstract statement: the section audit (the
+hypothesis set is classically unsatisfiable, so the statement is true;
+the construction above is its non-vacuous intended discharge).
+CIRCULARITY GUARD: must not be proven through `Family.lean` (see the
+section docstring). -/
+theorem exists_heckeAlgebra_realizations_of_matchesResidualTraces
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime]
+    {k : Type*} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type*} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    {N₀ : ℕ} (hN₀ : 0 < N₀) {f₀ : CuspForm (Gamma0GL N₀) 2}
+    (hf₀ : IsWeightTwoEigenform N₀ f₀)
+    {S₀ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hmatch₀ : MatchesResidualTraces N₀ f₀ ρbar S₀) :
+    ∃ (T : Type u) (_ : CommRing T) (_ : TopologicalSpace T)
+      (_ : IsTopologicalRing T) (_ : Algebra ℤ_[ℓ] T) (_ : IsLocalRing T)
+      (_ : Module.Finite ℤ_[ℓ] T) (_ : Module.Free ℤ_[ℓ] T)
+      (_ : IsModuleTopology ℤ_[ℓ] T) (_ : CompactSpace T)
+      (t : ℕ → T) (π : T →+* k) (_ : Function.Surjective π)
+      (S_T : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+      (_ : ∀ (q : ℕ) (hq : q.Prime),
+        hq.toHeightOneSpectrumRingOfIntegersRat ∉ S_T →
+        π (t q) =
+          - (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
+      (n : ℕ) (real : Fin n → HardlyRamifiedRealization ℓ hℓodd T)
+      (_ : ∀ x y : T, (∀ i, (real i).toFun x = (real i).toFun y) → x = y),
+      ∀ (i : Fin n) (q : ℕ) (hq : q.Prime),
+        hq.toHeightOneSpectrumRingOfIntegersRat ∉ S_T →
+        ((real i).ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1 =
+          (real i).toFun (- t q) :=
+  sorry
+
+/-- **The Carayol descent** (pillar 3a-ii; sorry node — Carayol,
+*Formes modulaires et représentations galoisiennes à valeurs dans un
+anneau local complet*, Contemp. Math. 165 (1994), Théorème 2;
+equivalently the pseudocharacter theory of Nyssen and Rouquier): a
+residually irreducible trace system over the local ring `T` — here
+presented through its realizations: the glued membership `hglue`
+(every joint trace tuple of the realizations comes from `T`, supplied
+by the PROVEN Chebotarev gluing above), joint injectivity (making the
+`T`-valued trace function unique and multiplicative-with-determinant,
+i.e. a continuous pseudocharacter of dimension 2), and `π`-reduction
+to the traces of the IRREDUCIBLE `ρbar` (`hred` at Frobenii off
+`S_T`, which extends to all of `Γ ℚ` by the same Chebotarev/continuity
+argument into the discrete `k`) — is the trace system of an actual
+representation on `Fin 2 → T`: residual absolute irreducibility
+(plain irreducibility suffices — hardly ramified representations are
+odd, and odd irreducible mod-`ℓ` representations are absolutely
+irreducible for odd `ℓ`, the `OddRep` argument) lets Carayol's
+Théorème 2 descend the product representation of the realizations
+along the jointly injective coordinates to the complete local
+Noetherian `T` (module-finite local over `ℤ_ℓ` with finite residue
+field `k = T/ker π`). Hardly-ramifiedness descends along the same
+trace identification (by Théorème 1, the `λ_i`-base-changes of the
+descended representation are conjugate to the realizations):
+determinant cyclotomic by joint injectivity, unramifiedness outside
+`2ℓ` by the pseudocharacter inflation argument, flatness at `ℓ` by
+Raynaud's closure properties of finite flat prolongations (the
+`T`-lattice embeds in the product of the realization lattices), and
+tameness at 2 with the unramified square-trivial rank-1 quotient by
+the same descent (Carayol–Saito). Sound as stated by the section
+audit (vacuously; the non-vacuous intended discharge is at the honest
+Hecke package of 3a-i). CIRCULARITY GUARD: must not be proven through
+`Family.lean` (see the section docstring). -/
+theorem exists_hardlyRamified_galoisRep_of_realizations
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime]
+    {k : Type*} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type*} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    {T : Type u} [CommRing T] [TopologicalSpace T] [IsTopologicalRing T]
+    [Algebra ℤ_[ℓ] T] [IsLocalRing T] [Module.Finite ℤ_[ℓ] T]
+    [Module.Free ℤ_[ℓ] T] [IsModuleTopology ℤ_[ℓ] T]
+    {t : ℕ → T} {π : T →+* k} (hπ : Function.Surjective π)
+    {S_T : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hred : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S_T →
+      π (t q) =
+        - (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
+    {n : ℕ} (real : Fin n → HardlyRamifiedRealization ℓ hℓodd T)
+    (hinj : ∀ x y : T, (∀ i, (real i).toFun x = (real i).toFun y) → x = y)
+    (htr : ∀ (i : Fin n) (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S_T →
+      ((real i).ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1 =
+        (real i).toFun (- t q))
+    (hglue : ∀ g : Field.absoluteGaloisGroup ℚ, ∃ x : T,
+      ∀ i, (real i).toFun x = ((real i).ρ g).charpoly.coeff 1) :
+    ∃ (ρT : GaloisRep ℚ T (Fin 2 → T))
+      (hrankT : Module.rank T (Fin 2 → T) = 2)
+      (_ : IsHardlyRamified hℓodd hrankT ρT),
+      ∀ (q : ℕ) (hq : q.Prime),
+        hq.toHeightOneSpectrumRingOfIntegersRat ∉ S_T →
+        (ρT.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1 =
+          - t q :=
+  sorry
+
+/-- **The Hecke-side deformation** (pillar 3a; DECOMPOSED 2026-07-24 —
+now a PROVEN assembly over the Carayol cut above: the geometric leaf
+3a-i produces the Hecke algebra with its eigenform realizations, the
+PROVEN Chebotarev gluing turns their Frobenius-indexed traces into a
+`T`-valued trace system on the whole group, the descent leaf 3a-ii
+produces the hardly ramified `ρT`, and the residual clause is the sign
+bookkeeping `π (−t q) = charFrob.coeff 1`): an irreducible hardly
 ramified mod-`ℓ` representation that arises from a weight-2 eigenform
 of some level `N₀ ≥ 1` (in the `MatchesResidualTraces` sense) arises
 from a whole Hecke-side hardly ramified DEFORMATION: a local
@@ -1846,8 +2229,32 @@ theorem exists_hardlyRamified_heckeDeformation_of_matchesResidualTraces
       (S_T : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
       ∀ (q : ℕ) (hq : q.Prime), hq.toHeightOneSpectrumRingOfIntegersRat ∉ S_T →
         π ((ρT.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
-          (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1 :=
-  sorry
+          (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1 := by
+  classical
+  -- 3a-i: the Hecke algebra with its eigenform realizations
+  obtain ⟨T, iCR, iTop, iTR, iAlg, iLoc, iFin, iFree, iMT, iCpt, t, π, hπ,
+    S_T, hred, n, real, hinj, htr⟩ :=
+    exists_heckeAlgebra_realizations_of_matchesResidualTraces hℓodd hW hρbar
+      hirr hN₀ hf₀ hmatch₀
+  letI := iCR
+  letI := iTop
+  letI := iTR
+  letI := iAlg
+  letI := iLoc
+  letI := iFin
+  letI := iFree
+  letI := iMT
+  letI := iCpt
+  -- the PROVEN Chebotarev gluing: the joint trace tuple of the
+  -- realizations comes from `T` at EVERY group element
+  have hglue := forall_exists_toFun_eq_charpoly_coeff_one real htr
+  -- 3a-ii: Carayol descent to a hardly ramified representation over `T`
+  obtain ⟨ρT, hrankT, hhr, htrT⟩ :=
+    exists_hardlyRamified_galoisRep_of_realizations hℓodd hW hρbar hirr hπ
+      hred real hinj htr hglue
+  refine ⟨T, iCR, iTop, iTR, iAlg, iLoc, iFin, iFree, iMT, ρT, hrankT, hhr,
+    π, hπ, S_T, fun q hq hqS => ?_⟩
+  rw [htrT q hq hqS, map_neg, hred q hq hqS, neg_neg]
 
 /-- **Patching: `R = 𝕋`** (pillar 3b; sorry node — the Taylor–Wiles
 theorem specialized to the hardly ramified deformation problem): a
