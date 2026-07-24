@@ -230,6 +230,17 @@ import Fermat.FLT.Modularity.KhareWintenberger
 -- Taylor–Wiles injectivity) and the `charFrob`/base-change bridge.
 -- Proof-body use only (the 3b assembly).
 import Fermat.FLT.Modularity.Patching
+-- `ClassGroup`, `ClassGroup.mulEquiv`, `ClassGroup.mk0`: the ideal
+-- class group and its functoriality under ring isomorphisms — the
+-- carrier of the Galois action behind the Herbrand cut of Eisenstein
+-- pillar E3c. PUBLIC: `ClassGroup` appears in the SIGNATURES of the
+-- E3c support leaves.
+public import Mathlib.RingTheory.ClassGroup.Basic
+-- `IsCyclotomicExtension.Rat.galEquivZMod` (the `Gal(ℚ(μ_p)/ℚ) ≅
+-- (ℤ/p)ˣ` bookkeeping of the `ω^{−1}`-eigenspace statements) and
+-- `NumberField.RingOfIntegers.mapRingEquiv`. PUBLIC: both appear in
+-- the SIGNATURES of the E3c support leaves.
+public import Mathlib.NumberTheory.NumberField.Cyclotomic.Galois
 
 @[expose] public section
 
@@ -625,10 +636,14 @@ two are PROVEN (2026-07-24) and one remains sorried:
   `exists_cuspForm_sturm_bound`/`cuspForm_finiteDimensional`), so the
   former leaf `exists_rational_qExpansion_basis` is now a proven
   assembly. `cuspForm_mem_span_rational` itself is now a PROVEN
-  Galois-descent assembly (2026-07-24) whose single remaining sorried
-  leaf is the arithmetic `Aut(ℂ)`-stability of the `q`-expansion image
-  (`exists_cuspForm_ringEquiv_conj`, Shimura's rationality theorem);
-  the field-theoretic fixed-field computation
+  Galois-descent assembly (2026-07-24); its `Aut(ℂ)`-stability input
+  (`exists_cuspForm_ringEquiv_conj`, Shimura's rationality theorem)
+  is since likewise PROVEN (2026-07-24) by coordinate transport over
+  the single remaining sorried leaf of this whole chain — the
+  integral-structure citation node
+  `exists_integral_qExpansion_spanning` (`S₂(Γ₀(N); ℤ) ⊗ ℂ =
+  S₂(Γ₀(N))`, the arithmetic-model interface); the field-theoretic
+  fixed-field computation
   (`exists_ratCast_eq_of_forall_ringEquiv_fixed`) is PROVEN.
 
 Everything else is proven:
@@ -1882,9 +1897,11 @@ A cusp form is therefore determined by finitely many coefficients and
 a spanning set of forms with rational `q`-expansions, the genuinely
 arithmetic-geometric fact (Shimura Thm 3.52) — is
 `cuspForm_mem_span_rational` below, now itself a PROVEN Galois-descent
-assembly (2026-07-24) whose single remaining sorried leaf is the
-`Aut(ℂ)`-stability of the `q`-expansion image
-(`exists_cuspForm_ringEquiv_conj`); the fixed-field computation
+assembly (2026-07-24); the `Aut(ℂ)`-stability of the `q`-expansion
+image (`exists_cuspForm_ringEquiv_conj`) is since likewise PROVEN
+(2026-07-24) over the single remaining sorried leaf, the
+integral-structure citation node
+`exists_integral_qExpansion_spanning`; the fixed-field computation
 (`exists_ratCast_eq_of_forall_ringEquiv_fixed`) is PROVEN. -/
 
 section SturmFiniteness
@@ -2003,29 +2020,92 @@ theorem cuspForm_finiteDimensional (N : ℕ) (hN : 0 < N) :
   refine hB f fun m hm => ?_
   simpa [LinearMap.pi_apply] using congrFun hf ⟨m, hm⟩
 
-/-- **`Aut(ℂ)`-stability of `S₂(Γ₀(N))` on `q`-expansions** (sorry
-node; THE residual arithmetic leaf of the rational-spanning node,
-isolated 2026-07-24 when `cuspForm_mem_span_rational` was reduced to
-it by the Galois-descent linear algebra below): for every field
-automorphism `σ` of `ℂ` (as a ring automorphism — no continuity) and
-every weight-2 level-`N` cusp form `f` there is a cusp form `f^σ`
-whose `q`-expansion is the coefficientwise `σ`-conjugate of that of
-`f`. This is Shimura's rationality theorem (*Introduction to the
+/-- **The integral structure of `S₂(Γ₀(N))`** (sorry node — the
+arithmetic-model citation interface, isolated 2026-07-24 as the
+sharpest satisfiable carrier of the former sorried leaf
+`exists_cuspForm_ringEquiv_conj`, which is now PROVEN from it by the
+coordinate-transport glue below): the weight-2 level-`N` cusp space
+is spanned over `ℂ` by finitely many cusp forms ALL of whose
+`q`-expansion coefficients are INTEGERS — equivalently,
+`S₂(Γ₀(N); ℤ) ⊗_ℤ ℂ = S₂(Γ₀(N))`. This is the standard `ℤ`-structure
+of the cusp space: the `ℚ`-form is Shimura's rationality theorem
+(*Introduction to the Arithmetic Theory of Automorphic Functions*,
+Theorem 3.52; Diamond–Shurman §6.5), and the integral refinement —
+full `ℤ`-rank plus bounded denominators — is classical (Diamond–Im,
+*Modular forms and modular curves*, §12.3; Darmon–Diamond–Taylor,
+*Fermat's Last Theorem*, §1.6). The classical proofs go through
+arithmetic geometry absent from this pin: either (i) the
+`q`-expansion principle (Katz, Deligne–Rapoport) on the integral
+model of the modular curve `X₀(N)/ℤ`, where cusp forms are global
+sections of a line bundle whose formal expansion at the cusp `∞` has
+`ℤ`-coefficients and cohomological flatness gives full rank; or
+(ii) the Eichler–Shimura isomorphism onto `H¹(X₀(N), ℂ)` carrying the
+Hecke-stable lattice `H¹(X₀(N), ℤ)`, transferred to `q`-expansions
+through the perfect duality `𝕋 × S₂ → ℤ`, `(T, f) ↦ a₁(Tf)`. Neither
+modular curves, their integral models, nor Eichler–Shimura exist on
+this pin, and the elementary substitutes fail structurally: Victor
+Miller's constructive echelon basis needs the level-1 generation of
+the graded ring by `E₄, E₆` (no analogue for `Γ₀(N)`), and the
+integral Hecke-duality route needs the Eichler–Selberg trace formula
+— both audited 2026-07-24 and found beyond leaf scope, hence the
+interface shape. Note the statement is sound for every `N ≥ 1`:
+spanning is claimed only over `ℂ` (no independence, no echelon
+normalization), and at genus-zero levels `n = 0` works. The in-file
+consumers of the sharper `ℤ`-form (vs the `ℚ`-form it implies through
+`cuspForm_mem_span_rational`): coefficientwise `Aut(ℂ)`-transport
+(`exists_cuspForm_ringEquiv_conj` below, since `σ` fixes `ℤ`
+pointwise), with the mod-`p` congruence pillars as anticipated future
+consumers. -/
+theorem exists_integral_qExpansion_spanning {N : ℕ} (hN : 0 < N) :
+    ∃ (n : ℕ) (g : Fin n → CuspForm (Gamma0GL N) 2),
+      (∀ f : CuspForm (Gamma0GL N) 2, ∃ c : Fin n → ℂ, f = ∑ i, c i • g i) ∧
+      (∀ i m, ∃ z : ℤ, qCoeff N (g i) m = (z : ℂ)) :=
+  sorry
+
+/-- **`Aut(ℂ)`-stability of `S₂(Γ₀(N))` on `q`-expansions** (PROVEN
+glue, 2026-07-24, over the integral-structure citation node
+`exists_integral_qExpansion_spanning`; formerly THE residual
+arithmetic sorried leaf of the rational-spanning node, isolated
+2026-07-24 when `cuspForm_mem_span_rational` was reduced to it by the
+Galois-descent linear algebra below): for every field automorphism
+`σ` of `ℂ` (as a ring automorphism — no continuity) and every
+weight-2 level-`N` cusp form `f` there is a cusp form `f^σ` whose
+`q`-expansion is the coefficientwise `σ`-conjugate of that of `f`.
+This is Shimura's rationality theorem (*Introduction to the
 Arithmetic Theory of Automorphic Functions*, Theorem 3.52 together
 with the `Aut(ℂ)`-action of §3.5; equivalently Diamond–Shurman §6.5,
 where the action `f ↦ f^σ` on `S₂(Γ₀(N))` is defined through the
-`ℚ`-structure): the classical proofs go through the `ℤ`-structure of
-`H₁(X₀(N), ℤ)` under the Eichler–Shimura isomorphism, or through the
-`q`-expansion principle on the modular curve over `ℚ`, neither of
-which exists on this pin. Note the equivalence with the rational-basis
-form of the theorem: given a rational basis, `σ` acts coordinatewise
-on the rational-coefficient span, and conversely (the direction proven
-here in `cuspForm_mem_span_rational`) stability under all `σ` descends
-the space to `ℚ`. -/
+`ℚ`-structure). Proof from the carrier — coordinate transport: write
+`f = ∑ cᵢ • gᵢ` in an integral spanning family and set
+`f^σ := ∑ σ(cᵢ) • gᵢ`; then coefficientwise
+`a_m(f^σ) = ∑ σ(cᵢ)·zᵢₘ = σ(∑ cᵢ·zᵢₘ) = σ(a_m(f))` because `σ` fixes
+the integer coefficients `zᵢₘ` (`map_intCast`). Note the equivalence
+with the rational-basis form of the theorem: given a rational basis,
+`σ` acts coordinatewise on the rational-coefficient span (the
+argument here), and conversely (the direction proven in
+`cuspForm_mem_span_rational`) stability under all `σ` descends the
+space to `ℚ`. -/
 theorem exists_cuspForm_ringEquiv_conj {N : ℕ} (hN : 0 < N)
     (σ : ℂ ≃+* ℂ) (f : CuspForm (Gamma0GL N) 2) :
-    ∃ g : CuspForm (Gamma0GL N) 2, ∀ m : ℕ, qCoeff N g m = σ (qCoeff N f m) :=
-  sorry
+    ∃ g : CuspForm (Gamma0GL N) 2, ∀ m : ℕ, qCoeff N g m = σ (qCoeff N f m) := by
+  classical
+  obtain ⟨n, g, hspan, hint⟩ := exists_integral_qExpansion_spanning hN
+  choose z hz using hint
+  obtain ⟨c, hc⟩ := hspan f
+  refine ⟨∑ i, σ (c i) • g i, fun m => ?_⟩
+  have hconj : qCoeff N (∑ i, σ (c i) • g i) m
+      = ∑ i, σ (c i) * qCoeff N (g i) m := by
+    have hs := map_sum (qCoeffL N m) (fun i => σ (c i) • g i) Finset.univ
+    simp only [map_smul, smul_eq_mul, qCoeffL_apply] at hs
+    exact hs
+  have horig : qCoeff N f m = ∑ i, c i * qCoeff N (g i) m := by
+    have hs := map_sum (qCoeffL N m) (fun i => c i • g i) Finset.univ
+    simp only [map_smul, smul_eq_mul, qCoeffL_apply] at hs
+    rw [hc]
+    exact hs
+  rw [hconj, horig, map_sum]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  rw [hz i m, map_mul, map_intCast]
 
 /-- **Extension of subfield automorphisms to `Aut(ℂ)`** (PROVEN,
 2026-07-24; the workhorse of the fixed-field computation below): every
@@ -2204,7 +2284,9 @@ theorem exists_ratCast_eq_of_forall_ringEquiv_fixed {x : ℂ}
   exact hyne (Subtype.ext h4)
 
 /-- **Rational spanning of `S₂(Γ₀(N))`** (PROVEN assembly, 2026-07-24,
-over the sorried arithmetic leaf `exists_cuspForm_ringEquiv_conj` and
+over `exists_cuspForm_ringEquiv_conj` — itself since PROVEN
+(2026-07-24) over the integral-structure citation node
+`exists_integral_qExpansion_spanning` — and
 the PROVEN field-theory lemma
 `exists_ratCast_eq_of_forall_ringEquiv_fixed`): every weight-2
 level-`N` cusp form is a `ℂ`-linear combination of cusp forms ALL of
@@ -2307,8 +2389,9 @@ end SturmFiniteness
 
 /-- **Rational basis of `S₂(Γ₀(N))`** (PROVEN assembly, 2026-07-24,
 over the rational-spanning assembly `cuspForm_mem_span_rational` —
-itself since PROVEN over the single remaining sorried leaf
-`exists_cuspForm_ringEquiv_conj` — and the PROVEN
+itself since PROVEN, through `exists_cuspForm_ringEquiv_conj`, over
+the single remaining sorried leaf
+`exists_integral_qExpansion_spanning` — and the PROVEN
 finite dimensionality `cuspForm_finiteDimensional`): the space of
 weight-2 level-`N` cusp forms has a finite `ℂ`-independent family of
 forms with RATIONAL `q`-expansion coefficients through which every
@@ -2369,9 +2452,10 @@ theorem coe_sum_smul {N n : ℕ} (c : Fin n → ℂ)
 §6.5, the finite input to Theorem 6.5.1; PROVEN assembly, 2026-07-24,
 over `exists_cuspForm_heckeTransform` and
 `qExpansion_heckeTransform_coeff` — both since PROVEN — and, through
-the now-proven assemblies `exists_rational_qExpansion_basis` and
-`cuspForm_mem_span_rational`, the one remaining sorried leaf
-`exists_cuspForm_ringEquiv_conj`): for a
+the now-proven assemblies `exists_rational_qExpansion_basis`,
+`cuspForm_mem_span_rational` and `exists_cuspForm_ringEquiv_conj`,
+the one remaining sorried leaf
+`exists_integral_qExpansion_spanning`): for a
 normalized weight-2
 level-`N` eigenform `f` there are a dimension `n`, a family of
 RATIONAL `n × n` matrices `T q`, and a common nonzero complex
@@ -8498,46 +8582,320 @@ theorem eisenstein_trivial_sub_extension_locally_split_at_two_of_five_le
         (χ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) g) - 1) * a :=
   sorry
 
-/-- **Kernel vanishing — Herbrand at `B₂`** (Eisenstein pillar E3c;
-sorry node — the class-field-theory pillar, the deep arithmetic input
-of the residually reducible branch): a hardly ramified mod-`p`
-extension with TRIVIAL sub-character that splits locally at `p` and at
-`2` has `cc` vanishing IDENTICALLY on `ker χ`. Classical proof:
-`χ = ω = χ̄_cyc` is pinned by the determinant of `htri` against
-`hρE.det`, so `ker χ = G_{ℚ(μ_p)}`; on the kernel the twisted cocycle
-relation (from `htri`) degenerates and `φ := cc|_{ker χ}` is a
-continuous homomorphism into `(kk', +)`, with the conjugation
-equivariance `φ(σ n σ⁻¹) = χ(σ)⁻¹ · φ(n)` (cocycle algebra:
-`cc(σ n σ⁻¹) = cc(σ⁻¹) + (cc(n) + cc(σ)) χ(σ)⁻¹` and
+/-! #### The class-group Galois action and the Herbrand cut behind E3c
+
+Support for the Eisenstein pillar E3c below (cut executed 2026-07-24).
+The mathlib pin (audited 2026-07-24) has `ClassGroup.mulEquiv` —
+functoriality of the class group under ring isomorphisms — but NO
+Galois action on class groups, NO computation of `mulEquiv` on ideal
+classes, and NO Herbrand/regular-prime material. This section
+provides, in order: the `mulEquiv`-on-ideal-classes computation
+(three proven lemmas), the Galois action itself (proven — support
+node (i) of the E3c cut), and the two sorried arithmetic leaves it
+feeds — Herbrand's theorem at `B₂` (leaf (iii)) and the CFT
+localization of an everywhere-locally-split Eisenstein cocycle into
+the `ω^{−1}`-eigenspace (leaf (ii)).
+
+Everything is stated over an ABSTRACT cyclotomic field
+`[IsCyclotomicExtension {p} ℚ CF]`, mathlib style: the concrete
+`CyclotomicField p ℚ` carries its splitting-field `ℚ`-algebra
+structure, which is propositionally but NOT reducibly-definitionally
+equal to the `DivisionRing.toRatAlgebra` instance that abstract
+statements elaborate with (typeclass search on
+`IsCyclotomicExtension {p} ℚ (CyclotomicField p ℚ)` FAILS on this pin
+for exactly that reason — verified 2026-07-24); a prover needing a
+concrete model bridges the two `ℚ`-algebra structures with
+`Subsingleton (Algebra ℚ CF)`. -/
+
+section ClassGroupGaloisAction
+
+open scoped nonZeroDivisors
+open NumberField
+
+/-- **Fractional-ideal functoriality computed on integral ideals**
+(PROVEN 2026-07-24; support for the class-group Galois action below):
+the fractional-ideal isomorphism induced by a ring isomorphism
+`f : A ≃+* B` of domains (`FractionalIdeal.ringEquivOfRingEquiv`)
+sends the coercion of an integral ideal `I ⊆ A` to the coercion of
+its image ideal `Ideal.map f I ⊆ B`. Pure unfolding: both sides are
+the `algebraMap` images of `I` resp. `f(I)` in the fraction fields,
+matched element-by-element through
+`IsFractionRing.semilinearEquivOfRingEquiv_algebraMap`, with
+surjectivity of `f` converting membership in `Ideal.map f I` back to
+membership in `I` (`Ideal.mem_map_iff_of_surjective`). The pin has
+the principal case (`ringEquivOfRingEquiv_spanSingleton`) but not
+this integral-ideal computation. -/
+theorem fractionalIdeal_ringEquivOfRingEquiv_coeIdeal
+    {A B : Type*} [CommRing A] [IsDomain A] [CommRing B] [IsDomain B]
+    (KA KB : Type*) [CommRing KA] [CommRing KB] [Algebra A KA]
+    [Algebra B KB] [IsFractionRing A KA] [IsFractionRing B KB]
+    (f : A ≃+* B) (I : Ideal A) :
+    FractionalIdeal.ringEquivOfRingEquiv KA KB f (I : FractionalIdeal A⁰ KA) =
+      (Ideal.map (f : A →+* B) I : FractionalIdeal B⁰ KB) := by
+  ext x
+  rw [FractionalIdeal.mem_coeIdeal]
+  constructor
+  · intro hx
+    rw [← FractionalIdeal.mem_coe, ← FractionalIdeal.val_eq_coe,
+      FractionalIdeal.ringEquivOfRingEquiv_apply_val] at hx
+    obtain ⟨y, hy, rfl⟩ := hx
+    simp only [FractionalIdeal.val_eq_coe] at hy
+    obtain ⟨a, haI, rfl⟩ := hy
+    exact ⟨f a, Ideal.mem_map_of_mem _ haI,
+      (IsFractionRing.semilinearEquivOfRingEquiv_algebraMap KA KB f a).symm⟩
+  · rintro ⟨b, hb, rfl⟩
+    obtain ⟨a, haI, rfl⟩ := (Ideal.mem_map_iff_of_surjective _ f.surjective).mp hb
+    rw [← FractionalIdeal.mem_coe, ← FractionalIdeal.val_eq_coe,
+      FractionalIdeal.ringEquivOfRingEquiv_apply_val]
+    refine ⟨algebraMap A KA a, ?_,
+      IsFractionRing.semilinearEquivOfRingEquiv_algebraMap KA KB f a⟩
+    simp only [FractionalIdeal.val_eq_coe]
+    exact ⟨a, haI, rfl⟩
+
+/-- **Ring isomorphisms of Dedekind domains preserve nonzeroness of
+ideals** (PROVEN 2026-07-24): the image `Ideal.map f I` of a nonzero
+ideal under a ring isomorphism is again a nonzero ideal — the subtype
+bookkeeping (`(Ideal A)⁰` membership transport) needed to write the
+class-group action on `ClassGroup.mk0` representatives below.
+Injectivity of `f` gives `Ideal.map f I = ⊥ ↔ I = ⊥`
+(`Ideal.map_eq_bot_iff_of_injective`). -/
+theorem ideal_map_mem_nonZeroDivisors_of_ringEquiv
+    {A B : Type*} [CommRing A] [CommRing B]
+    [IsDedekindDomain A] [IsDedekindDomain B]
+    (f : A ≃+* B) (I : (Ideal A)⁰) :
+    Ideal.map (f : A →+* B) (I : Ideal A) ∈ (Ideal B)⁰ := by
+  rw [mem_nonZeroDivisors_iff_ne_zero, Ne, Ideal.zero_eq_bot,
+    Ideal.map_eq_bot_iff_of_injective
+      (show Function.Injective (f : A →+* B) from f.injective),
+    ← Ideal.zero_eq_bot]
+  exact mem_nonZeroDivisors_iff_ne_zero.mp I.2
+
+/-- **`ClassGroup.mulEquiv` computed on ideal classes** (PROVEN
+2026-07-24): mathlib's class-group functoriality under a ring
+isomorphism `f` of Dedekind domains sends the class of a nonzero
+integral ideal `I` to the class of its image ideal `Ideal.map f I` —
+unwinding the pin's three-layer composite (`ClassGroup.equiv` into
+the fraction-ring model, `QuotientGroup.congr` over
+`Units.mapEquiv (ringEquivOfRingEquiv f)`, back along
+`ClassGroup.equiv`) on the `mk0` representative via
+`ClassGroup.equiv_mk0` and the integral-ideal computation above. This
+is the entire content of the class-group Galois action: everything
+else is generator bookkeeping. -/
+theorem classGroup_mulEquiv_mk0
+    {A B : Type*} [CommRing A] [CommRing B]
+    [IsDedekindDomain A] [IsDedekindDomain B]
+    (f : A ≃+* B) (I : (Ideal A)⁰) :
+    ClassGroup.mulEquiv f (ClassGroup.mk0 I) =
+      ClassGroup.mk0 ⟨Ideal.map (f : A →+* B) (I : Ideal A),
+        ideal_map_mem_nonZeroDivisors_of_ringEquiv f I⟩ := by
+  rw [ClassGroup.mulEquiv, MulEquiv.trans_apply, MulEquiv.trans_apply,
+    ClassGroup.equiv_mk0, QuotientGroup.congr_mk', MulEquiv.symm_apply_eq,
+    ClassGroup.equiv_mk0]
+  congr 1
+  ext : 1
+  rw [Units.coe_mapEquiv]
+  simp only [FractionalIdeal.coe_mk0, RingEquiv.coe_toMulEquiv]
+  exact fractionalIdeal_ringEquivOfRingEquiv_coeIdeal _ _ f I
+
+/-- **The Galois action on the ideal class group** (E3c support node
+(i), PROVEN 2026-07-24): the natural action of the automorphism group
+of a number field `K` on `ClassGroup (𝓞 K)`, packaged as a
+homomorphism `(K ≃ₐ[ℚ] K) →* MulAut (ClassGroup (𝓞 K))`: an
+automorphism `σ` restricts to a ring automorphism of the ring of
+integers (`NumberField.RingOfIntegers.mapRingEquiv`) and acts on
+classes by mapping ideals (`ClassGroup.mulEquiv`); on generators the
+action is `[I] ↦ [Ideal.map σ I]` (`classGroup_mulEquiv_mk0` above),
+from which the homomorphism laws are generator-by-generator ideal
+algebra (`Ideal.map_id`, `Ideal.map_map`, with `ClassGroup.mk0`
+surjective). This is the action under which the Artin isomorphism
+`Gal(H/K) ≅ Cl(K)` for the Hilbert class field `H` is
+`Gal(K/ℚ)`-equivariant — conjugation on the Galois side, this action
+on the class side (Neukirch, *Algebraic Number Theory*, VI §7) — the
+form consumed by the CFT localization leaf below. -/
+noncomputable def classGroupGalAut (K : Type*) [Field K] [NumberField K] :
+    (K ≃ₐ[ℚ] K) →* MulAut (ClassGroup (𝓞 K)) where
+  toFun σ := ClassGroup.mulEquiv (RingOfIntegers.mapRingEquiv σ.toRingEquiv)
+  map_one' := by
+    ext c
+    obtain ⟨I, rfl⟩ := ClassGroup.mk0_surjective c
+    rw [MulAut.one_apply, classGroup_mulEquiv_mk0]
+    refine congrArg ClassGroup.mk0 (Subtype.ext ?_)
+    show Ideal.map
+        ((RingOfIntegers.mapRingEquiv (1 : K ≃ₐ[ℚ] K).toRingEquiv :
+          𝓞 K ≃+* 𝓞 K) : 𝓞 K →+* 𝓞 K) (I : Ideal (𝓞 K)) = (I : Ideal (𝓞 K))
+    have h1 : ((RingOfIntegers.mapRingEquiv (1 : K ≃ₐ[ℚ] K).toRingEquiv :
+        𝓞 K ≃+* 𝓞 K) : 𝓞 K →+* 𝓞 K) = RingHom.id (𝓞 K) := by
+      ext a
+      rfl
+    rw [h1, Ideal.map_id]
+  map_mul' σ τ := by
+    ext c
+    obtain ⟨I, rfl⟩ := ClassGroup.mk0_surjective c
+    rw [MulAut.mul_apply, classGroup_mulEquiv_mk0, classGroup_mulEquiv_mk0,
+      classGroup_mulEquiv_mk0]
+    refine congrArg ClassGroup.mk0 (Subtype.ext ?_)
+    show Ideal.map
+        ((RingOfIntegers.mapRingEquiv (σ * τ).toRingEquiv :
+          𝓞 K ≃+* 𝓞 K) : 𝓞 K →+* 𝓞 K) (I : Ideal (𝓞 K)) =
+      Ideal.map
+        ((RingOfIntegers.mapRingEquiv σ.toRingEquiv : 𝓞 K ≃+* 𝓞 K) :
+          𝓞 K →+* 𝓞 K)
+        (Ideal.map
+          ((RingOfIntegers.mapRingEquiv τ.toRingEquiv : 𝓞 K ≃+* 𝓞 K) :
+            𝓞 K →+* 𝓞 K)
+          (I : Ideal (𝓞 K)))
+    rw [Ideal.map_map]
+    congr 1
+
+/-- **Herbrand's theorem at `B₂`: the `ω^{−1}`-eigenspace of
+`Cl(ℚ(μ_p)) ⊗ 𝔽_p` vanishes** (E3c support leaf (iii); sorry node —
+the citation-shaped arithmetic input of the Eisenstein cut;
+Herbrand 1932; Washington, *Introduction to Cyclotomic Fields*,
+Thm. 6.17): for `p ≥ 5` and an abstract `p`-th cyclotomic field `CF`,
+every ideal class `c` killed by `p` on which the Galois group acts
+through the INVERSE of the mod-`p` cyclotomic character —
+`σ_u • c = c^(u⁻¹.val)` for all `u ∈ (ℤ/p)ˣ`, `σ_u` the automorphism
+with `σ_u(ζ) = ζ^u` (`IsCyclotomicExtension.Rat.galEquivZMod`) — is
+trivial. This is the component `C(ω^{1−k})` of Herbrand's theorem at
+`k = 2`: `C(ω^{1−k}) ≠ 0` forces `p ∣ num(B_k)`, and
+`num(B₂) = num(1/6) = 1` is divisible by no prime; the theorem's
+window `2 ≤ k ≤ p − 3` demands `p ≥ 5` — THE consumption point of
+`hp5` in pillar E3c (for `p = 3` the statement happens to be true
+anyway — `h(ℚ(μ_3)) = 1` — but the cited proof runs through the
+window, so the hypothesis is kept citation-faithful). Classical proof
+(Washington 6.17): the Stickelberger element
+`θ = Σ_a (a/p) σ_a⁻¹` annihilates `Cl(ℚ(μ_p))` (Stickelberger's
+theorem, Washington 6.10); projecting `θ` by the idempotent
+`ε_{ω^{−1}} = (1/(p−1)) Σ σ ω^{−1}(σ)⁻¹ σ` gives the action of the
+scalar `B_{2,ω^{-2}·ω} ≡ B₂/2 · (unit) (mod p)` on the
+`ω^{−1}`-component (the congruence `B_{1,ω^{k-1}} ≡ B_k/k (mod p)`
+for `2 ≤ k ≤ p − 3`, Washington Cor. 5.15 — the window enters here),
+a `p`-adic unit when `p ∤ num(B_k)`, so the component is killed by a
+unit and vanishes. Formalization note (soundness of the pointwise
+form, audit 2026-07-24): the `p`-torsion pointwise-eigenvector
+statement used here is equivalent to the vanishing of the
+`ω^{−1}`-isotypic component of the `p`-part of the class group:
+`𝔽_p[Δ]` for `Δ = (ℤ/p)ˣ` cyclic of order `p − 1` prime to `p` is
+SPLIT semisimple (all `p − 1` characters of `Δ` take values in
+`𝔽_pˣ`), so eigenspaces of `Cl[p]` ARE isotypic components, and a
+finite `ℤ_p[Δ]`-module has trivial `χ`-component iff its `p`-torsion
+`χ`-eigenspace is trivial; classes killed by `p` automatically lie in
+the `p`-Sylow part. The hypothesis set is inhabited (any cyclotomic
+field, any `c` with the equivariance — e.g. `c = 1`) and the
+conclusion is exactly Herbrand's vanishing, quantified over abstract
+`CF` in `Type` so that the CFT localization leaf below can
+instantiate it on whatever model of `ℚ(μ_p)` its argument
+constructs. -/
+theorem herbrand_omega_inv_classGroup_eigenspace_trivial_of_five_le
+    (hp5 : 5 ≤ p)
+    (CF : Type) [Field CF] [NumberField CF]
+    [IsCyclotomicExtension {p} ℚ CF]
+    (c : ClassGroup (𝓞 CF)) (hc : c ^ p = 1)
+    (heig : ∀ u : (ZMod p)ˣ,
+      classGroupGalAut CF ((IsCyclotomicExtension.Rat.galEquivZMod p CF).symm u) c =
+        c ^ ((u⁻¹ : (ZMod p)ˣ) : ZMod p).val) :
+    c = 1 :=
+  sorry
+
+/-- **CFT localization: an everywhere-locally-split Eisenstein
+cocycle dies on the kernel, given eigenspace vanishing** (E3c support
+leaf (ii); sorry node — the class-field-theory pillar of the
+Eisenstein cut, now SEPARATED from its Herbrand input, which enters
+as the explicit hypothesis `hcl`): a hardly ramified mod-`p`
+extension with TRIVIAL sub-character that splits locally at `p` and
+at `2` has `cc` vanishing identically on `ker χ`, provided the
+`ω^{−1}`-eigenspace of `Cl(ℚ(μ_p)) ⊗ 𝔽_p` is trivial (`hcl`, in the
+pointwise `p`-torsion form of the Herbrand leaf above, quantified
+over abstract models `CF` of `ℚ(μ_p)`). Classical proof (Mazur,
+Publ. Math. IHÉS 47 (1977), ch. I; Neukirch, *Algebraic Number
+Theory*, VI §6–7): `χ = ω = χ̄_cyc` is pinned by the determinant of
+`htri` against `hρE.det`, so `ker χ = G_{ℚ(μ_p)}`; on the kernel the
+twisted cocycle relation from `htri` degenerates and
+`φ := cc|_{ker χ}` is a continuous homomorphism into `(kk', +)`, with
+conjugation equivariance `φ(σ n σ⁻¹) = χ(σ)⁻¹ · φ(n)` (cocycle
+algebra: `cc(σ n σ⁻¹) = cc(σ⁻¹) + (cc(n) + cc(σ)) χ(σ)⁻¹` and
 `cc(σ⁻¹) + cc(σ) χ(σ)⁻¹ = cc(1) = 0`). `φ` kills every inertia
 subgroup of `ker χ`: over `ℓ ∉ {2, p}` because `ρE` is literally
 trivial on inertia there (`hρE.isUnramified`); over `2` and `p`
 because the decomposition subgroups are the `Γℚ`-conjugates of the
-images of `Γℚ_2`, `Γℚ_p`, on which `cc` is the given coboundary —
-vanishing on `ker χ` since coboundaries do — and vanishing transports
-along the conjugation identity. So `φ` factors through the Galois
-group of the maximal abelian everywhere-unramified `p`-elementary
-extension of `ℚ(μ_p)`, i.e. through `Cl(ℚ(μ_p)) ⊗ 𝔽_p` (Artin
-reciprocity for the Hilbert class field; Neukirch, *Algebraic Number
-Theory*, VI §6–7), equivariantly for `Gal(ℚ(μ_p)/ℚ)`; a nonzero `φ`
-would exhibit a nonzero `ω^{−1} = ω^{1−2}`-eigenspace of
-`Cl(ℚ(μ_p)) ⊗ 𝔽_p`, which Herbrand's theorem forbids:
-`p ∤ num(B₂) = num(1/6) = 1`, with `k = 2` inside the window
-`2 ≤ k ≤ p − 3` — the second consumption of `hp5` (Herbrand 1932;
-Washington, *Introduction to Cyclotomic Fields*, Thm. 6.17; Ribet,
-Invent. Math. 34 (1976) is the unused converse). Intended further cut
-for the successor, top-down: (i) found the `Gal`-action on
-`ClassGroup (𝓞 (CyclotomicField p ℚ))` (via `galRestrict` and
-fractional-ideal functoriality — the mathlib pin has NO such action,
-audited 2026-07-24, nor any Herbrand/regular-prime material); (ii) the
-CFT localization leaf — everywhere-unramified `ω^{−1}`-equivariant
-homs factor through the class group; (iii) the sharply separated
-Herbrand leaf — the `ω^{−1}`-eigenspace dies for `p ∤ num(B₂)`
-(Washington 6.17). Soundness (audit 2026-07-24): the hypothesis set is
-inhabited (split extensions), the conclusion holds for every
-inhabitant by the vanishing cited, and no elementary route around the
-class-group localization is known: this pillar is irreducibly
-Herbrand/Mazur. -/
+images of `Γℚ_2`, `Γℚ_p`, on which `cc` is the given coboundary
+(`hlocp`, `hloc2`) — vanishing on `ker χ` since coboundaries do — and
+vanishing transports along the conjugation identity. So `φ` factors
+through the Galois group of the maximal abelian everywhere-unramified
+`p`-elementary extension of `ℚ(μ_p)`, i.e. through
+`Cl(ℚ(μ_p)) ⊗ 𝔽_p` (Artin reciprocity for the Hilbert class field),
+equivariantly for `Gal(ℚ(μ_p)/ℚ)` acting by conjugation on the source
+and by `classGroupGalAut` on the target (the equivariance of the
+Artin map). Were `φ ≠ 0`, split semisimplicity of `𝔽_p[(ℤ/p)ˣ]` would
+produce a `p`-torsion class `c ≠ 1` with
+`σ_u • c = c^(u⁻¹.val)` — a nonzero pointwise `ω^{−1}`-eigenvector —
+contradicting `hcl` applied to the model of `ℚ(μ_p)` in play.
+Hypothesis honesty (audit 2026-07-24): `hp5` is NOT taken — the
+localization argument runs for every odd prime `p` (oddness via
+`hpodd` through `IsHardlyRamified`); `p ≥ 5` is consumed exclusively
+by the Herbrand leaf that DISCHARGES `hcl` in the E3c assembly below.
+Instantiation note for the prover: `hcl` quantifies over `CF : Type`
+with instance binders elaborated at the abstract
+`DivisionRing.toRatAlgebra` `ℚ`-algebra structure; instantiating at a
+concrete model (e.g. `CyclotomicField p ℚ` or an adjoin inside a
+fixed algebraic closure) requires transporting the
+`IsCyclotomicExtension` instance across `Subsingleton (Algebra ℚ CF)`
+— see the section header. -/
+theorem eisenstein_trivial_sub_extension_ker_vanishing_of_eigenspace_trivial
+    {kk' : Type u} [Field kk'] [Finite kk'] [Algebra ℤ_[p] kk']
+    [TopologicalSpace kk'] [DiscreteTopology kk'] [IsTopologicalRing kk']
+    {ρE : GaloisRep ℚ kk' (Fin 2 → kk')}
+    (hrankE : Module.rank kk' (Fin 2 → kk') = 2)
+    (hρE : IsHardlyRamified hpodd hrankE ρE)
+    (χ : Field.absoluteGaloisGroup ℚ →* kk')
+    (cc : Field.absoluteGaloisGroup ℚ → kk')
+    (htri : ∀ g, LinearMap.toMatrix (Pi.basisFun kk' (Fin 2))
+      (Pi.basisFun kk' (Fin 2)) (ρE g) = !![1, cc g; 0, χ g])
+    (hlocp : ∃ a : kk', ∀ g : Field.absoluteGaloisGroup ℚ_[p],
+      cc (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[p]) g) =
+        (χ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[p]) g) - 1) * a)
+    (hloc2 : ∃ a : kk', ∀ g : Field.absoluteGaloisGroup ℚ_[2],
+      cc (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) g) =
+        (χ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) g) - 1) * a)
+    (hcl : ∀ (CF : Type) [Field CF] [NumberField CF]
+      [IsCyclotomicExtension {p} ℚ CF],
+      ∀ c : ClassGroup (𝓞 CF), c ^ p = 1 →
+        (∀ u : (ZMod p)ˣ,
+          classGroupGalAut CF
+              ((IsCyclotomicExtension.Rat.galEquivZMod p CF).symm u) c =
+            c ^ ((u⁻¹ : (ZMod p)ˣ) : ZMod p).val) → c = 1) :
+    ∀ g, χ g = 1 → cc g = 0 :=
+  sorry
+
+end ClassGroupGaloisAction
+
+/-- **Kernel vanishing — Herbrand at `B₂`** (Eisenstein pillar E3c;
+PROVEN 2026-07-24 as an assembly over the mapped cut, executed
+exactly as planned: (i) the class-group Galois action
+`classGroupGalAut` — PROVEN above, together with its `mk0`
+computation `classGroup_mulEquiv_mk0`; (ii) the CFT localization leaf
+`eisenstein_trivial_sub_extension_ker_vanishing_of_eigenspace_trivial`
+— sorried above, taking the eigenspace vanishing as an explicit
+hypothesis; (iii) the Herbrand leaf
+`herbrand_omega_inv_classGroup_eigenspace_trivial_of_five_le` —
+sorried above, citation-shaped at Washington Thm. 6.17): a hardly
+ramified mod-`p` extension with TRIVIAL sub-character that splits
+locally at `p` and at `2` has `cc` vanishing IDENTICALLY on `ker χ`.
+The mathematics lives in the two leaves — the localization of the
+everywhere-locally-split cocycle through Artin reciprocity into
+`Cl(ℚ(μ_p)) ⊗ 𝔽_p` equivariantly for the PROVEN Galois action, and
+Herbrand's theorem at `k = 2`, `p ∤ num(B₂) = num(1/6) = 1`, whose
+window `2 ≤ k ≤ p − 3` is exactly where `hp5` is consumed (its second
+and final consumption point in the Eisenstein cut; the localization
+leaf is hypothesis-honest and does not take it). The assembly is pure
+application: feed the Herbrand leaf, quantified over abstract models
+`CF` of `ℚ(μ_p)`, into the localization leaf's `hcl` slot. (Ribet,
+Invent. Math. 34 (1976) is the unused converse; Mazur, Publ. Math.
+IHÉS 47 (1977), ch. I is the ambient argument.) Soundness (audit
+2026-07-24, unchanged by the cut): the hypothesis set is inhabited
+(split extensions), the conclusion holds for every inhabitant by the
+vanishing cited, and no elementary route around the class-group
+localization is known: this pillar is irreducibly Herbrand/Mazur. -/
 theorem eisenstein_trivial_sub_extension_ker_vanishing_of_five_le
     (hp5 : 5 ≤ p)
     {kk' : Type u} [Field kk'] [Finite kk'] [Algebra ℤ_[p] kk']
@@ -8556,7 +8914,11 @@ theorem eisenstein_trivial_sub_extension_ker_vanishing_of_five_le
       cc (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) g) =
         (χ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) g) - 1) * a) :
     ∀ g, χ g = 1 → cc g = 0 :=
-  sorry
+  eisenstein_trivial_sub_extension_ker_vanishing_of_eigenspace_trivial hpodd
+    hrankE hρE χ cc htri hlocp hloc2
+    (fun CF _ _ _ c hc heig =>
+      herbrand_omega_inv_classGroup_eigenspace_trivial_of_five_le hp5 CF c hc
+        heig)
 
 /-- **Inflation–restriction by finite averaging** (PROVEN 2026-07-24):
 for a character `χ` of an arbitrary group with values in a finite
