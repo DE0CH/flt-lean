@@ -10086,8 +10086,32 @@ abscissas are roots of `ΨSq m` (`smul_some_eq_zero_iff`,
 reduction) forces one branch function to be a unit at every fibre point.
 No indicator idempotents are available (for `μ_p` over `ℤ_p` the origin
 idempotent is NOT integral), so the covering must come from these global
-identities. DECOMPOSE when attacked: (E3a) chord-branch kill identity,
-(E3b) tangent-branch kill identity, (E3c) origin rows/columns, (E3d) the
+identities.
+
+COVERING CASE ANALYSIS (worked out 2026-07-24; `v := 𝒪.valuation`,
+`e := 1/h`, `ξ := x/h`, `w := x^d/h`, `T := Ψ₂Sq(x)/h²` — all in the
+section algebra, `T` because the `b`-invariants of the good-reduction
+model are `R`-integral and `Ψ₂Sq` has degree `3 ≤ 2d`). Per point:
+`e(P)` is a unit iff `x(P)` is integral; `w(P)` is a unit iff `P = 0`,
+`v(x(P)) > 1` (formal-group locus, where `v(h(x)) = v(x)^d`), or
+`v(x(P)) = 1` — so `{e, w}` covers every single point. Per PAIR the
+extra branches are only needed on the both-integral locus:
+`D := (ξ(P)e(Q) − e(P)ξ(Q))²` (value `((x(P)−x(Q))/h(P)h(Q))²`) is a
+unit iff the reductions differ affinely; on the COLLISION locus
+(`x(P) ≡ x(Q) mod 𝔪_𝒪`, common reduced point `T̄`) one has
+`v(Ψ₂Sq(x(P))) = 1` iff `2T̄ ≠ 0` on the special fibre, so `T(P)`
+covers collisions away from reduced 2-torsion. HAZARD — the residual case
+`P̄ = Q̄ = T̄` with `2T̄ = 0`: BOTH the chord and the tangent
+denominators vanish mod `𝔪_𝒪` (then `P + Q` lies on the formal-group
+locus and the kill identity needs the origin-chart/symmetric-function
+form of the addition law: `x(P+Q) + x(P−Q)` and `x(P+Q)·x(P−Q)` have
+`(x(P)−x(Q))²`-denominators, and `w`-weighted products stay integral);
+any proposed finite family MUST produce a unit on this locus — e.g.
+`w(P)·w(Q)`-type products times the Bézout unit `Φ_m(x)·F(x) = 1` on
+the torsion locus (`isCoprime_Φ_ΨSq` with `ΨSq_m(x(P)) = 0` from
+`torsion_abscissa_psiSq_eq_zero`). DECOMPOSE when attacked: (E3a)
+chord-branch kill identity, (E3b) tangent-branch kill identity, (E3c)
+origin rows/columns and the formal-group collision locus, (E3d) the
 fibrewise covering case split. -/
 theorem WeierstrassCurve.exists_torsionKernel_branch_family
     (m : ℕ) (hm : (m : K) ≠ 0) (h : Polynomial R) (hmon : h.Monic)
