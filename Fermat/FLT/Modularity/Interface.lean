@@ -163,6 +163,13 @@ import Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic
 -- `IsHardlyRamified.mod_three` and the global triangular form
 -- `exists_global_triangular_of_residual_trivial_quotient`, discharging
 -- the `p = 3` instance of the residually reducible pillar below
+-- `LinearMap.charpoly_baseChange`, for the `charFrob`/base-change
+-- bridge of the conductor cut below
+import Mathlib.LinearAlgebra.Charpoly.BaseChange
+-- `globalFrob`, `charFrob_eq_charpoly_globalFrob` and
+-- `cyclotomicCharacter_globalFrob`, consumed by the determinant
+-- normalization of the conductor cut (proof bodies only)
+import Fermat.FLT.GaloisRepresentation.Chebotarev
 
 @[expose] public section
 
@@ -2094,65 +2101,497 @@ theorem exists_weightTwoEigenform_trace_eq_of_residually_reducible_of_five_le
           - ι (heckeCoeff N f q) :=
   sorry
 
-/-- **Level lowering to conductor level `M ∣ 2`** (the sorried heart of
-pillar 5 — the Carayol-conductor/Ribet content, isolated 2026-07-24):
-if the Frobenius traces of an irreducible hardly ramified `p`-adic
+/-! ### The founder cut behind the conductor leaf (2026-07-24)
+
+The conductor leaf `exists_eigenform_level_dvd_two_of_trace_eq` below
+was a single sorry carrying the whole of steps 1–4 of its classical
+route (newform descent, Eichler–Shimura attachment, trace rigidity,
+Carayol's conductor theorem). The pin has NONE of that vocabulary
+(audited in the leaf's docstring), so this section founds it, and the
+leaf is now a PROVEN assembly over:
+
+* `IsWeightTwoNewform` +
+  `exists_weightTwoNewform_of_weightTwoEigenform` — the newform
+  carrier (minimal-level coefficient characterization) and the PROVEN
+  descent: behind every normalized eigenform of level `N` lies a
+  minimal-level eigenform of some level `M ∣ N` with the same
+  eigensystem away from `N` (Diamond–Shurman Prop. 5.8.4; the
+  classical content — that the inhabitants are exactly the newforms —
+  is the carrier's soundness audit, not a Lean obligation).
+* `exists_ringHom_heckeField_of_qCoeff_eq` — PROVEN glue: the given
+  `p`-adic embedding of the old form's Hecke field transports to an
+  embedding of the newform's Hecke field agreeing on the shared good
+  coefficients (extension of embeddings into the algebraically closed
+  `ℚ̄_p` along an algebraic extension).
+* `exists_galoisRep_charFrob_of_weightTwoNewform` — SORRY: the
+  Eichler–Shimura attachment at general level, the REAL geometric
+  leaf (unlike the level-`∣ 2` attachment statements, which are
+  discharged by the proven emptiness of their carriers).
+* `charFrob_baseChange` and
+  `charFrob_map_coeff_zero_of_isHardlyRamified` and
+  `eq_quadratic_of_monic_natDegree_two` — PROVEN bookkeeping that
+  upgrades the trace matching `hmatch` to FULL characteristic
+  polynomial matching: `charFrob` commutes with coefficient base
+  change, is monic quadratic, and has constant Frobenius coefficient
+  `q` by `det ρ = χ_cyc` (through the Frobenius value of the
+  cyclotomic character, `Chebotarev.lean`'s
+  `cyclotomicCharacter_globalFrob`).
+* `exists_linearEquiv_of_charFrob_eq` — SORRY: trace rigidity,
+  Chebotarev density + Brauer–Nesbitt over `ℚ̄_p`.
+* `weightTwoNewform_level_dvd_two_of_isHardlyRamified` — SORRY:
+  Carayol's conductor theorem evaluated on the hardly ramified class
+  (level of the newform = conductor of its attached representation,
+  which divides `2`). -/
+
+section ConductorCut
+
+/-- **The newform carrier** (Diamond–Shurman §5.8, coefficient-level):
+`g ∈ S₂(Γ₀(M))` is a normalized full-Hecke eigenform
+(`IsWeightTwoEigenform`, Prop. 5.8.5) whose away-from-`M` prime
+eigensystem does not arise from any normalized eigenform of a strictly
+smaller level dividing `M` — the *minimal-level* characterization of
+newform-ness, the only spelling available on a pin with no newform
+theory, no Petersson product and no oldform degeneracy maps.
+
+SOUNDNESS AUDIT (2026-07-24, both directions):
+
+* every classical newform `g` of level `M` inhabits the carrier: it is
+  a normalized full-Hecke eigenform (D–S Theorem 5.8.2 with
+  Prop. 5.8.5), and no eigenform `g'` of a proper divisor level
+  `M' ∣ M` shares its eigensystem away from `M` — behind `g'` lies a
+  newform of level `M₀ ∣ M'` with the same away-from-`M'` eigensystem
+  (Prop. 5.8.4), which would then share `g`'s eigensystem away from
+  `M`, and two distinct newforms never do (strong multiplicity one,
+  the Main Lemma engine behind D–S Theorem 5.8.3), while a newform of
+  level `M₀ ∣ M' < M` is certainly distinct from `g`;
+* conversely every inhabitant is a classical newform: behind it lies a
+  newform `g₀` of level `M₀ ∣ M` with the same eigensystem away from
+  `M` (Prop. 5.8.4); were `M₀ ≠ M`, then `g₀` itself — a normalized
+  full-Hecke eigenform of level `M₀` — would witness exactly what
+  `eigensystem_minimal` excludes, so `M₀ = M`; and a normalized
+  full-Hecke eigenform of level `M` sharing a level-`M` newform's
+  eigensystem away from `M` IS that newform (strong multiplicity one
+  again, in the full-eigenvalue form).
+
+Consequently the two sorried leaves below that quantify over this
+carrier (`exists_galoisRep_charFrob_of_weightTwoNewform` and
+`weightTwoNewform_level_dvd_two_of_isHardlyRamified`) quantify exactly
+over the forms for which the classical theory provides attached
+representations and conductor control. -/
+structure IsWeightTwoNewform (M : ℕ) (g : CuspForm (Gamma0GL M) 2) : Prop
+    extends IsWeightTwoEigenform M g where
+  /-- The away-from-`M` eigensystem of `g` occurs at no strictly
+  smaller level dividing `M`. -/
+  eigensystem_minimal : ∀ M' : ℕ, M' ∣ M → M' ≠ M →
+    ∀ g' : CuspForm (Gamma0GL M') 2, IsWeightTwoEigenform M' g' →
+      ¬ ∀ (q : ℕ), q.Prime → ¬ q ∣ M → qCoeff M' g' q = qCoeff M g q
+
+/-- **Newform descent** (Diamond–Shurman Prop. 5.8.4 in the
+minimal-level spelling; PROVEN): behind every normalized weight-2
+eigenform of level `N ≥ 1` lies an inhabitant of the minimal-level
+newform carrier `IsWeightTwoNewform`, of some level `M ∣ N`, with the
+same eigensystem at every prime `q ∤ N`. With the carrier as defined
+this is a strong induction on the level: either `f` is already
+minimal, or some strictly smaller divisor level realizes its
+away-from-`N` eigensystem and the induction hypothesis applies to
+that realization; agreement sets compose because a prime not dividing
+`N` divides no divisor of `N`. (The analytic content of 5.8.4 — that
+the minimal realization is a genuine newform with multiplicity-one
+rigidity — lives in the carrier's soundness audit, where it belongs:
+no Lean consumer needs more than minimality plus the agreement.) -/
+theorem exists_weightTwoNewform_of_weightTwoEigenform :
+    ∀ {N : ℕ}, 0 < N → ∀ {f : CuspForm (Gamma0GL N) 2},
+      IsWeightTwoEigenform N f →
+      ∃ (M : ℕ) (_ : M ∣ N) (_ : 0 < M) (g : CuspForm (Gamma0GL M) 2)
+        (_ : IsWeightTwoNewform M g),
+        ∀ (q : ℕ), q.Prime → ¬ q ∣ N → qCoeff M g q = qCoeff N f q := by
+  intro N
+  induction N using Nat.strong_induction_on with
+  | h N ih =>
+    intro hN f hf
+    by_cases hmin : ∀ M' : ℕ, M' ∣ N → M' ≠ N →
+        ∀ g' : CuspForm (Gamma0GL M') 2, IsWeightTwoEigenform M' g' →
+          ¬ ∀ (q : ℕ), q.Prime → ¬ q ∣ N → qCoeff M' g' q = qCoeff N f q
+    · exact ⟨N, dvd_rfl, hN, f, ⟨hf, hmin⟩, fun q _ _ => rfl⟩
+    · push Not at hmin
+      obtain ⟨M', hM'dvd, hM'ne, g', hg', hagree⟩ := hmin
+      have hM'pos : 0 < M' := Nat.pos_of_dvd_of_pos hM'dvd hN
+      have hM'lt : M' < N := lt_of_le_of_ne (Nat.le_of_dvd hN hM'dvd) hM'ne
+      obtain ⟨M, hMdvd, hMpos, g, hgnew, hagree'⟩ := ih M' hM'lt hM'pos hg'
+      refine ⟨M, hMdvd.trans hM'dvd, hMpos, g, hgnew, fun q hq hqN => ?_⟩
+      exact (hagree' q hq fun h => hqN (h.trans hM'dvd)).trans (hagree q hq hqN)
+
+/-- **Transport of the `p`-adic Hecke-field embedding to the newform**
+(PROVEN; step 5 of the classical route in the conductor leaf's
+docstring): if the eigenform `g` (level `M ≥ 1`) shares the
+away-from-`N` prime coefficients of `f`, then any embedding
+`ι : K_f → ℚ̄_p` yields an embedding `κ : K_g → ℚ̄_p` agreeing with
+`ι` on the shared good coefficients. Pure field theory: the good
+coefficients generate a common subfield `E₀` of `ℂ` contained in both
+Hecke fields; `K_g` is a number field (`heckeField_finiteDimensional`),
+hence algebraic over `E₀`, so the restriction of `ι` to `E₀` extends
+to `K_g` because `ℚ̄_p` is algebraically closed (`IsAlgClosed.lift`). -/
+theorem exists_ringHom_heckeField_of_qCoeff_eq {N M : ℕ} (hM : 0 < M)
+    {f : CuspForm (Gamma0GL N) 2} {g : CuspForm (Gamma0GL M) 2}
+    (hg : IsWeightTwoEigenform M g)
+    (ι : heckeField N f →+* AlgebraicClosure ℚ_[p])
+    (hagree : ∀ (q : ℕ), q.Prime → ¬ q ∣ N → qCoeff M g q = qCoeff N f q) :
+    ∃ κ : heckeField M g →+* AlgebraicClosure ℚ_[p],
+      ∀ (q : ℕ), q.Prime → ¬ q ∣ N →
+        κ (heckeCoeff M g q) = ι (heckeCoeff N f q) := by
+  classical
+  have hE₀f : IntermediateField.adjoin ℚ
+      {x : ℂ | ∃ q : ℕ, q.Prime ∧ ¬ q ∣ N ∧ x = qCoeff N f q} ≤
+        heckeField N f := by
+    refine IntermediateField.adjoin_le_iff.mpr ?_
+    rintro x ⟨q, -, -, rfl⟩
+    exact IntermediateField.subset_adjoin ℚ _ ⟨q, rfl⟩
+  have hE₀g : IntermediateField.adjoin ℚ
+      {x : ℂ | ∃ q : ℕ, q.Prime ∧ ¬ q ∣ N ∧ x = qCoeff N f q} ≤
+        heckeField M g := by
+    refine IntermediateField.adjoin_le_iff.mpr ?_
+    rintro x ⟨q, hq, hqN, rfl⟩
+    rw [← hagree q hq hqN]
+    exact IntermediateField.subset_adjoin ℚ _ ⟨q, rfl⟩
+  set E₀ : IntermediateField ℚ ℂ := IntermediateField.adjoin ℚ
+    {x : ℂ | ∃ q : ℕ, q.Prime ∧ ¬ q ∣ N ∧ x = qCoeff N f q} with hE₀
+  letI : Algebra E₀ (heckeField M g) :=
+    (IntermediateField.inclusion hE₀g).toRingHom.toAlgebra
+  letI : Algebra E₀ (AlgebraicClosure ℚ_[p]) :=
+    (ι.comp (IntermediateField.inclusion hE₀f).toRingHom).toAlgebra
+  haveI : IsScalarTower ℚ E₀ (heckeField M g) :=
+    IsScalarTower.of_algebraMap_eq fun x => rfl
+  haveI : FiniteDimensional ℚ (heckeField M g) :=
+    heckeField_finiteDimensional hM hg
+  haveI : Algebra.IsAlgebraic ℚ (heckeField M g) :=
+    Algebra.IsAlgebraic.of_finite ℚ _
+  haveI : Algebra.IsAlgebraic E₀ (heckeField M g) :=
+    Algebra.IsAlgebraic.tower_top (K := ℚ) E₀
+  let κa : heckeField M g →ₐ[E₀] AlgebraicClosure ℚ_[p] := IsAlgClosed.lift
+  refine ⟨κa.toRingHom, fun q hq hqN => ?_⟩
+  have hmem : qCoeff N f q ∈ E₀ :=
+    IntermediateField.subset_adjoin ℚ _ ⟨q, hq, hqN, rfl⟩
+  have hval : heckeCoeff M g q =
+      algebraMap E₀ (heckeField M g) ⟨qCoeff N f q, hmem⟩ := by
+    apply Subtype.ext
+    exact hagree q hq hqN
+  rw [hval]
+  have hcomm := κa.commutes ⟨qCoeff N f q, hmem⟩
+  rw [AlgHom.toRingHom_eq_coe, RingHom.coe_coe, hcomm]
+  show ι ((IntermediateField.inclusion hE₀f) ⟨qCoeff N f q, hmem⟩) =
+    ι (heckeCoeff N f q)
+  congr 1
+
+/-- **The Eichler–Shimura attachment at general level** (sorry node —
+THE geometric leaf of the conductor cut, deliberately non-vacuous
+unlike the level-`∣ 2` attachment statements discharged by emptiness
+above): a weight-2 newform `g` of level `M ≥ 1`, together with an
+embedding `κ` of its Hecke field into `ℚ̄_p`, has an attached
+2-dimensional continuous `ℚ̄_p`-representation of `Γ ℚ` whose
+Frobenius characteristic polynomials away from a finite set of places
+are the Hecke polynomials `X² − a_q(g)·X + q` of `g` under `κ`.
+
+Classical construction (Diamond–Shurman ch. 8–9, Theorem 9.5.1 at
+weight 2; for weight 2 no étale cohomology beyond the Jacobian is
+needed — Deligne's construction is the higher-weight generalization):
+`ρ_{g,λ}` acts on the `λ`-adic Tate module of the modular abelian
+variety `A_g = J₀(M)/I_g J₀(M)`, `λ` being the place of the Hecke
+field `K_g` induced by `κ`; the Eichler–Shimura relation
+`Frob_q² − T_q∘Frob_q + q⟨q⟩ = 0` on `J₀(M)` in characteristic
+`q ∤ M` (Igusa good reduction) yields the stated characteristic
+polynomials with exceptional set `{v : v ∣ Mp}`. SOUNDNESS: the
+statement quantifies over inhabitants of `IsWeightTwoNewform`, which
+are exactly the classical newforms (the carrier's audit), so the
+classical construction witnesses every instance; and it asserts
+nothing about `τ` beyond the charpoly matching — precisely the input
+shape the rigidity and Carayol leaves consume. (An eigenform-level
+statement would ALSO be classically true via the underlying newform,
+but the newform hypothesis is what the Carayol leaf needs, so the
+attachment is stated at the same carrier.) -/
+theorem exists_galoisRep_charFrob_of_weightTwoNewform
+    {M : ℕ} (hM : 0 < M) {g : CuspForm (Gamma0GL M) 2}
+    (hg : IsWeightTwoNewform M g)
+    (κ : heckeField M g →+* AlgebraicClosure ℚ_[p]) :
+    ∃ (τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+        (Fin 2 → AlgebraicClosure ℚ_[p]))
+      (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
+      ∀ (q : ℕ) (hq : q.Prime),
+        hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+        τ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat =
+          Polynomial.X ^ 2
+            - Polynomial.C (κ (heckeCoeff M g q)) * Polynomial.X
+            + Polynomial.C ((q : AlgebraicClosure ℚ_[p])) :=
+  sorry
+
+omit [IsDomain R] [IsTopologicalRing R] [IsLocalRing R] in
+/-- `charFrob` commutes with coefficient base change (PROVEN glue):
+the Frobenius characteristic polynomial of `ρ.baseChange B` is the
+image of that of `ρ` — mathlib's `LinearMap.charpoly_baseChange`
+transported through the definitional equality
+`(ρ.baseChange B) σ = (ρ σ).baseChange B`. This connects the trace
+hypothesis of the conductor leaf (stated via `.map`) to statements
+about the representation `ρ.baseChange ℚ̄_p` itself, as consumed by
+the rigidity leaf. -/
+theorem charFrob_baseChange {B : Type*} [CommRing B] [TopologicalSpace B]
+    [IsTopologicalRing B] [Algebra R B] [ContinuousSMul R B]
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
+    (ρ.baseChange B).charFrob v = (ρ.charFrob v).map (algebraMap R B) := by
+  show ((ρ.baseChange B).toLocal v
+      (Field.AbsoluteGaloisGroup.adicArithFrob v)).charpoly =
+    ((ρ.toLocal v (Field.AbsoluteGaloisGroup.adicArithFrob v)).charpoly).map
+      (algebraMap R B)
+  rw [show (ρ.baseChange B).toLocal v
+        (Field.AbsoluteGaloisGroup.adicArithFrob v) =
+      LinearMap.baseChange B (ρ.toLocal v
+        (Field.AbsoluteGaloisGroup.adicArithFrob v)) from rfl,
+    LinearMap.charpoly_baseChange]
+
+/-- Quadratic decomposition of a monic degree-2 polynomial (PROVEN
+glue): `P = X² + P₁·X + P₀`. Applied to the mapped Frobenius
+characteristic polynomials to turn the coefficientwise information of
+the conductor leaf (`hmatch` and the determinant normalization below)
+into the polynomial identities the rigidity leaf consumes. -/
+theorem eq_quadratic_of_monic_natDegree_two {A : Type*} [CommRing A]
+    {P : Polynomial A} (hm : P.Monic) (hd : P.natDegree = 2) :
+    P = Polynomial.X ^ 2 + Polynomial.C (P.coeff 1) * Polynomial.X
+      + Polynomial.C (P.coeff 0) := by
+  ext n
+  rcases n with _ | _ | _ | n
+  · simp
+  · simp
+  · have h2 : P.coeff 2 = 1 := by
+      have hlc := hm.coeff_natDegree
+      rwa [hd] at hlc
+    simp [h2, Polynomial.coeff_X_pow]
+  · have hzero : P.coeff (n + 3) = 0 :=
+      Polynomial.coeff_eq_zero_of_natDegree_lt (by omega)
+    simp [hzero, Polynomial.coeff_X_pow]
+
+omit [IsDomain R] [Module.Finite ℤ_[p] R] [IsModuleTopology ℤ_[p] R] in
+/-- **Determinant normalization of the Frobenius characteristic
+polynomial** (PROVEN — the `det = χ_cyc` bookkeeping): for a hardly
+ramified `ρ` and a prime `q ≠ p`, the constant coefficient of the
+mapped Frobenius characteristic polynomial at `q` is `q`. Since that
+polynomial is monic quadratic (`LinearMap.charpoly`), this upgrades
+the trace matching hypothesis of the conductor leaf to FULL
+characteristic polynomial matching — the honest input of
+Brauer–Nesbitt. Proof: the constant coefficient of a rank-2
+characteristic polynomial is the determinant
+(`LinearMap.det_eq_sign_charpoly_coeff`), the determinant of `ρ` is
+the cyclotomic character (the `det` field of `IsHardlyRamified`), and
+the cyclotomic character evaluates to `q` at the global Frobenius of
+`q ≠ p` (`cyclotomicCharacter_globalFrob`, `Chebotarev.lean`). -/
+theorem charFrob_map_coeff_zero_of_isHardlyRamified
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    (hρ : IsHardlyRamified hpodd hv ρ) {q : ℕ} (hq : q.Prime)
+    (hqp : q ≠ p) :
+    ((ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map
+        (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff 0 =
+      (q : AlgebraicClosure ℚ_[p]) := by
+  have hfr : Module.finrank R V = 2 :=
+    Module.finrank_eq_of_rank_eq (by exact_mod_cast hv)
+  rw [Polynomial.coeff_map, GaloisRep.charFrob_eq_charpoly_globalFrob]
+  have hdet := LinearMap.det_eq_sign_charpoly_coeff
+    (ρ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat))
+  rw [hfr] at hdet
+  have hc0 : (ρ (globalFrob
+      hq.toHeightOneSpectrumRingOfIntegersRat)).charpoly.coeff 0 =
+      LinearMap.det (ρ (globalFrob
+        hq.toHeightOneSpectrumRingOfIntegersRat)) := by
+    rw [hdet]; ring
+  rw [hc0]
+  have hdet2 : LinearMap.det (ρ (globalFrob
+      hq.toHeightOneSpectrumRingOfIntegersRat)) =
+      algebraMap ℤ_[p] R
+        ((cyclotomicCharacter (AlgebraicClosure ℚ) p
+          (globalFrob
+            hq.toHeightOneSpectrumRingOfIntegersRat).toRingEquiv : ℤ_[p]ˣ) :
+          ℤ_[p]) :=
+    hρ.det _
+  rw [hdet2, cyclotomicCharacter_globalFrob hq hqp]
+  simp [map_natCast]
+
+/-- **Trace rigidity over `ℚ̄_p`** (sorry node — Chebotarev +
+Brauer–Nesbitt, the characteristic-zero analogue of the PROVEN
+mod-`ℓ` instance `not_isIrreducible_of_charpoly_eq` in
+`Chebotarev.lean`): two continuous 2-dimensional representations of
+`Γ ℚ` over `ℚ̄_p` with equal Frobenius characteristic polynomials
+away from a finite set of places, the second irreducible, are
+equivalent. Intended proof, along the route already assembled for
+`Lift.lean`'s `not_isIrreducible_of_charFrob_eq`: the locus
+`{γ | charpoly (τ₁ γ) = charpoly (τ₂ γ)}` is closed (the coefficient
+functions are polynomial in the matrix entries, hence continuous, and
+`ℚ̄_p` is Hausdorff), conjugation-invariant, and contains the global
+Frobenius classes off the finite set — dense by the Chebotarev
+density node `dense_conjClasses_globalFrob` — hence is everything.
+Brauer–Nesbitt in dimension 2 over a characteristic-0 field then
+forces equivalence: the semisimplification of `τ₁` has the
+characteristic polynomials of the irreducible 2-dimensional `τ₂`, so
+it is isomorphic to `τ₂` (equality of characters of semisimple
+modules; Curtis–Reiner §30, Serre *Abelian ℓ-adic representations*
+I §2.3), and a representation with irreducible full-dimensional
+semisimplification is itself irreducible and isomorphic to it. The
+conclusion is a bare equivariant linear isomorphism — no continuity
+clause, since the consumer (the Carayol leaf) transports only
+charpoly-visible and inertia-theoretic data across it. -/
+theorem exists_linearEquiv_of_charFrob_eq
+    {V₁ : Type*} [AddCommGroup V₁] [Module (AlgebraicClosure ℚ_[p]) V₁]
+    [Module.Finite (AlgebraicClosure ℚ_[p]) V₁]
+    [Module.Free (AlgebraicClosure ℚ_[p]) V₁]
+    {V₂ : Type*} [AddCommGroup V₂] [Module (AlgebraicClosure ℚ_[p]) V₂]
+    [Module.Finite (AlgebraicClosure ℚ_[p]) V₂]
+    [Module.Free (AlgebraicClosure ℚ_[p]) V₂]
+    (hrank₁ : Module.rank (AlgebraicClosure ℚ_[p]) V₁ = 2)
+    (hrank₂ : Module.rank (AlgebraicClosure ℚ_[p]) V₂ = 2)
+    {τ₁ : GaloisRep ℚ (AlgebraicClosure ℚ_[p]) V₁}
+    {τ₂ : GaloisRep ℚ (AlgebraicClosure ℚ_[p]) V₂}
+    (hirr : τ₂.IsIrreducible)
+    {S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (h : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+      τ₁.charFrob hq.toHeightOneSpectrumRingOfIntegersRat =
+        τ₂.charFrob hq.toHeightOneSpectrumRingOfIntegersRat) :
+    ∃ e : V₁ ≃ₗ[AlgebraicClosure ℚ_[p]] V₂,
+      ∀ (γ : Field.absoluteGaloisGroup ℚ) (w : V₁),
+        e (τ₁ γ w) = τ₂ γ (e w) :=
+  sorry
+
+/-- **Carayol's conductor bound on the hardly ramified class** (sorry
+node — the conductor comparison isolated; Carayol, *Sur les
+représentations `ℓ`-adiques associées aux formes modulaires de
+Hilbert*, Ann. Sci. ÉNS 19 (1986), with Deligne–Rapoport/Langlands for
+the weight-2 modular-curve cases and Saito for the general
+local–global compatibility; the `p`-part by weight-2 flatness theory):
+let `g` be a weight-2 newform of level `M` (the minimal-level
+carrier), `τ` a representation matching its Hecke polynomials away
+from a finite set (the attachment shape produced by
+`exists_galoisRep_charFrob_of_weightTwoNewform`), and suppose `τ` is
+equivalent to the base change to `ℚ̄_p` of a HARDLY RAMIFIED integral
+representation `ρ`. Then `M ∣ 2`.
+
+Classical proof: by rigidity (Chebotarev + Brauer–Nesbitt — here part
+of the classical argument for this leaf, not a Lean input) `τ` is
+isomorphic to the base change of the attached representation
+`ρ_{g,λ}` of the newform `g`, so `ρ_{g,λ} ⊗ ℚ̄_p ≅ ρ ⊗ ℚ̄_p`;
+Carayol's theorem identifies the prime-to-`p` Artin conductor of
+`ρ_{g,λ}` with the prime-to-`p` part of `M`, and local–global
+compatibility at `p` handles the rest:
+
+* at primes `q ∉ {2, p}`: `ρ` is unramified (`isUnramified`), so the
+  conductor exponent of `ρ_{g,λ}` at `q` is `0`, i.e. `q ∤ M`;
+* at `p`: `ρ` is flat (`isFlat`), so `ρ_{g,λ}` is crystalline with
+  Hodge–Tate weights `{0, 1}` at `p`, and a weight-2 newform whose
+  `λ ∣ p` representation is crystalline at `p` has `p ∤ M` (for
+  `p ∥ M` the local representation is an unramified twist of
+  Steinberg — semistable non-crystalline (Saito); for `p² ∣ M` not
+  even semistable);
+* at `2`: by `isTameAtTwo` the local representation at `2` is an
+  extension of an unramified character `δ` by `χ_cyc·δ⁻¹` — also
+  unramified at `2`, since `det = χ_cyc` is unramified at `2` for odd
+  `p` — so inertia at `2` acts tamely and fixes a line: the conductor
+  exponent at `2` is `dim V − dim V^{I₂} ≤ 1` with zero Swan
+  conductor, i.e. `4 ∤ M`.
+
+Hence `M ∣ 2`. SOUNDNESS AUDIT (2026-07-24): the leaf is stated in
+the exact shape of the literature theorems just cited, and each cited
+step is a true classical statement about the classical objects that
+inhabit the hypotheses. As the previous audit of the conductor leaf
+predicted, the hypothesis-level contradiction of the collapsed
+endgame (no irreducible hardly ramified representation is modular)
+now concentrates HERE: classically no configuration satisfies all
+hypotheses at once — for irreducible `ρ` because the conclusion feeds
+the proven emptiness downstream, for reducible `ρ` because a cuspidal
+newform's eigensystem is never the Eisenstein system `1 ⊕ χ_cyc`
+(so no `τ` can both match `g` and be equivalent to `ρ ⊗ ℚ̄_p`). That
+does not make the leaf a restatement of the collapse: its intended
+proof is the direct conductor computation above, attackable from
+Carayol/Saito without reference to any contradiction. -/
+theorem weightTwoNewform_level_dvd_two_of_isHardlyRamified
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hρ : IsHardlyRamified hpodd hv ρ)
+    {M : ℕ} (hM : 0 < M) {g : CuspForm (Gamma0GL M) 2}
+    (hg : IsWeightTwoNewform M g)
+    (κ : heckeField M g →+* AlgebraicClosure ℚ_[p])
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    {S_τ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hτ : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ →
+      τ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat =
+        Polynomial.X ^ 2
+          - Polynomial.C (κ (heckeCoeff M g q)) * Polynomial.X
+          + Polynomial.C ((q : AlgebraicClosure ℚ_[p])))
+    (e : (Fin 2 → AlgebraicClosure ℚ_[p]) ≃ₗ[AlgebraicClosure ℚ_[p]]
+      (AlgebraicClosure ℚ_[p] ⊗[R] V))
+    (he : ∀ (γ : Field.absoluteGaloisGroup ℚ)
+        (w : Fin 2 → AlgebraicClosure ℚ_[p]),
+      e (τ γ w) = ρ.baseChange (AlgebraicClosure ℚ_[p]) γ (e w)) :
+    M ∣ 2 :=
+  sorry
+
+end ConductorCut
+
+/-- **Level lowering to conductor level `M ∣ 2`** (pillar 5's heart —
+the Carayol-conductor/Ribet content; DECOMPOSED 2026-07-24 into the
+FOUNDER CUT of the section above and now a PROVEN assembly): if the
+Frobenius traces of an irreducible hardly ramified `p`-adic
 representation `ρ` arise (away from a finite set, in the `-a_q` trace
 convention) from a weight-2 normalized eigenform `f` of some level
-`N ≥ 1`, then they arise, in the same sense, from a weight-2 normalized
-eigenform of level `M` dividing `2`. Classical route, following the
-citations of the pillar docstring below:
+`N ≥ 1`, then they arise, in the same sense, from a weight-2
+normalized eigenform of level `M` dividing `2`. The assembly follows
+the classical route verbatim:
 
-1. *Newform descent* (Diamond–Shurman Prop. 5.8.4, via Strong
-   Multiplicity One): behind the full-Hecke eigenform `f` (coefficient
-   characterization, Prop. 5.8.5) lies a newform `g` of level
-   `M₀ ∣ N` with the same eigenvalues at every prime `q ∤ N`.
-2. *Attachment and rigidity*: the `λ`-adic Galois representation
-   `ρ_{g,λ}` attached to `g` at a place `λ ∣ p` of its Hecke field
-   (Eichler–Shimura/Deligne) has the same Frobenius traces as `ρ` away
-   from a finite set (by the matching hypothesis), and both are
-   irreducible, so `ρ ⊗ ℚ̄_p ≅ ρ_{g,λ} ⊗ ℚ̄_p` (Chebotarev density +
-   Brauer–Nesbitt).
-3. *Conductor bound*: the prime-to-`p` Artin conductor of a hardly
-   ramified representation divides `2` — unramified outside `{2, p}`,
-   and at `2` the ramification is tame with unramified rank-1 quotient,
-   so the conductor exponent at `2` is at most `1`; flatness at `p` and
-   `det = χ_cyc` put the pair (conductor, weight) in Serre's `(2, 2)`
-   class (Serre, Duke 1987, §4.1).
-4. *Carayol's theorem* (Ann. Sci. ÉNS 19 (1986); Livné for the
-   residual statement; "level of the newform = conductor of its
-   `λ`-adic representation"): hence `M₀ ∣ 2` — Ribet's mod-`p` level
+1. *Newform descent*
+   (`exists_weightTwoNewform_of_weightTwoEigenform`, PROVEN): behind
+   `f` lies a minimal-level eigenform `g` of level `M ∣ N` with the
+   same eigensystem away from `N`; the `p`-adic embedding transports
+   to its Hecke field (`exists_ringHom_heckeField_of_qCoeff_eq`,
+   PROVEN).
+2. *Attachment* (`exists_galoisRep_charFrob_of_weightTwoNewform`,
+   sorry leaf): `g` has an attached 2-dimensional
+   `ℚ̄_p`-representation `τ` with the Hecke characteristic
+   polynomials at good primes (Eichler–Shimura).
+3. *Rigidity* (`exists_linearEquiv_of_charFrob_eq`, sorry leaf):
+   `τ ≅ ρ ⊗ ℚ̄_p` — their Frobenius characteristic polynomials agree
+   away from a finite set, because the trace matching `hmatch`
+   upgrades to full charpoly matching through the determinant
+   normalization (`charFrob_map_coeff_zero_of_isHardlyRamified`,
+   PROVEN from `det = χ_cyc`) and the monic-quadratic shape, and
+   `ρ ⊗ ℚ̄_p` is irreducible (`hirr`).
+4. *Carayol's conductor bound*
+   (`weightTwoNewform_level_dvd_two_of_isHardlyRamified`, sorry
+   leaf): the level of a newform whose attached representation is
+   (through the rigidity equivalence) the base change of a hardly
+   ramified representation divides `2` — Ribet's mod-`p` level
    lowering (Invent. Math. 100 (1990)) is the residual counterpart
    used when this content is reached through the Khare–Wintenberger
    induction instead.
-5. The eigensystem of `g` embeds into `ℚ̄_p` compatibly with `ι` (both
-   generate the same coefficients at good primes), giving the stated
-   `κ` with exceptional set `S₂ = S₁ ∪ {v : v ∣ 2Np}`.
+5. The conclusion matches `ρ`'s traces with `g`'s coefficients
+   through `κ` away from `S₁ ∪ {v : v ∣ N}` — bookkeeping, proven
+   inline.
 
-SOUNDNESS/DEPTH AUDIT (2026-07-24): both level-`M ∣ 2` spaces are
-proven empty in this file (`weightTwoEigenform_level_one_false`,
-`weightTwoEigenform_level_two_false`), so this leaf's conclusion is
-unsatisfiable and the leaf equivalently asserts that its hypotheses
-are contradictory — that no irreducible hardly ramified `p`-adic
-representation is modular of ANY level. That is not an artifact: it is
-exactly where the classical proof's final contradiction (Wiles) lives,
-and steps 1–4 above ARE its literature derivation. Every honest
-intermediate past this point (existence of an eigenform of level
-`∣ 2`) is unsatisfiable-conclusion-shaped, so no decomposition can
-push the contradiction out of this boundary leaf; a genuinely finer
-decomposition must instead build the step 1–4 vocabulary the pin
-lacks — newforms/strong multiplicity one, attached `λ`-adic
-representations at general level `N` (Eichler–Shimura/Deligne, a REAL
-non-vacuous attachment sorry, unlike the level-2 one discharged by
-emptiness), trace rigidity (Chebotarev + Brauer–Nesbitt for
-`GaloisRep`), and the Artin conductor — and prove `M₀ ∣ 2` through
-them. That vocabulary-building is the designated next dispatch for
-this node. -/
+SOUNDNESS/DEPTH AUDIT (2026-07-24, carried over and sharpened): both
+level-`M ∣ 2` spaces are proven empty in this file
+(`weightTwoEigenform_level_one_false`,
+`weightTwoEigenform_level_two_false`), so this theorem's conclusion is
+unsatisfiable and it equivalently asserts that its hypotheses are
+contradictory — that no irreducible hardly ramified `p`-adic
+representation is modular of ANY level, which is exactly Wiles' final
+contradiction. The previous audit predicted that a finer decomposition
+must build the missing step 1–4 vocabulary rather than push the
+contradiction out of this leaf; the section above does precisely
+that. Of the three remaining sorried leaves, the attachment and
+rigidity leaves are non-vacuously satisfiable literature statements,
+and the hypothesis-level contradiction now concentrates in the
+Carayol leaf (see its docstring), stated nevertheless in the exact
+shape of Carayol's conductor theorem, attackable from its citations
+without reference to the collapse. -/
 theorem exists_eigenform_level_dvd_two_of_trace_eq
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
-    (hZinj : Function.Injective (algebraMap ℤ_[p] R))
-    (hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
+    (_hZinj : Function.Injective (algebraMap ℤ_[p] R))
+    (_hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
     (hρ : IsHardlyRamified hpodd hv ρ)
     (hirr : (ρ.baseChange (AlgebraicClosure ℚ_[p])).IsIrreducible)
     {N : ℕ} (hN : 0 < N) {f : CuspForm (Gamma0GL N) 2}
@@ -2171,8 +2610,82 @@ theorem exists_eigenform_level_dvd_two_of_trace_eq
       ∀ (q : ℕ) (hq : q.Prime), hq.toHeightOneSpectrumRingOfIntegersRat ∉ S₂ →
         ((ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map
             (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff 1 =
-          - κ (heckeCoeff M g q) :=
-  sorry
+          - κ (heckeCoeff M g q) := by
+  classical
+  -- step 1: the underlying newform and the transported embedding
+  obtain ⟨M, hMN, hM0, g, hgnew, hagree⟩ :=
+    exists_weightTwoNewform_of_weightTwoEigenform hN hf
+  obtain ⟨κ, hκ⟩ := exists_ringHom_heckeField_of_qCoeff_eq hM0
+    hgnew.toIsWeightTwoEigenform ι hagree
+  -- step 2: the attached representation of the newform
+  obtain ⟨τ, S_τ, hτ⟩ :=
+    exists_galoisRep_charFrob_of_weightTwoNewform hM0 hgnew κ
+  -- the places over the primes dividing `N`
+  have hbadmem : ∀ (q : ℕ) (hq : q.Prime), q ∣ N →
+      hq.toHeightOneSpectrumRingOfIntegersRat ∈
+        N.primeFactors.attach.image fun t =>
+          (Nat.prime_of_mem_primeFactors
+            t.2).toHeightOneSpectrumRingOfIntegersRat := by
+    intro q hq hqN
+    exact Finset.mem_image.mpr
+      ⟨⟨q, Nat.mem_primeFactors.mpr ⟨hq, hqN, hN.ne'⟩⟩,
+        Finset.mem_attach _ _, rfl⟩
+  -- full charpoly comparison of `τ` with `ρ ⊗ ℚ̄_p` off the union set
+  have hcomp : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉
+        ((S₁ ∪ S_τ) ∪
+          ((N.primeFactors.attach.image fun t =>
+              (Nat.prime_of_mem_primeFactors
+                t.2).toHeightOneSpectrumRingOfIntegersRat) ∪
+            {(Fact.out : p.Prime).toHeightOneSpectrumRingOfIntegersRat})) →
+      τ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat =
+        (ρ.baseChange (AlgebraicClosure ℚ_[p])).charFrob
+          hq.toHeightOneSpectrumRingOfIntegersRat := by
+    intro q hq hqS
+    simp only [Finset.mem_union, Finset.mem_singleton, not_or] at hqS
+    obtain ⟨⟨hqS₁, hqSτ⟩, hqbad, hqvp⟩ := hqS
+    have hqN : ¬ q ∣ N := fun hdvd => hqbad (hbadmem q hq hdvd)
+    have hqp : q ≠ p := by
+      intro hqp'
+      subst hqp'
+      exact hqvp rfl
+    have hmon : ((ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map
+        (algebraMap R (AlgebraicClosure ℚ_[p]))).Monic := by
+      rw [GaloisRep.charFrob_eq_charpoly_globalFrob]
+      exact (LinearMap.charpoly_monic _).map _
+    have hdeg : ((ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map
+        (algebraMap R (AlgebraicClosure ℚ_[p]))).natDegree = 2 := by
+      rw [GaloisRep.charFrob_eq_charpoly_globalFrob,
+        (LinearMap.charpoly_monic _).natDegree_map,
+        LinearMap.charpoly_natDegree]
+      exact Module.finrank_eq_of_rank_eq (by exact_mod_cast hv)
+    rw [hτ q hq hqSτ, charFrob_baseChange,
+      eq_quadratic_of_monic_natDegree_two hmon hdeg,
+      hmatch q hq hqS₁,
+      charFrob_map_coeff_zero_of_isHardlyRamified hpodd hv hρ hq hqp,
+      ← hκ q hq hqN, map_neg]
+    ring
+  -- step 3: rigidity — `τ` is equivalent to `ρ ⊗ ℚ̄_p`
+  have hrank₁ : Module.rank (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p]) = 2 := by simp
+  have hrank₂ : Module.rank (AlgebraicClosure ℚ_[p])
+      (AlgebraicClosure ℚ_[p] ⊗[R] V) = 2 := by
+    rw [Module.rank_baseChange, hv]; simp
+  obtain ⟨e, he⟩ :=
+    exists_linearEquiv_of_charFrob_eq hrank₁ hrank₂ hirr hcomp
+  -- step 4: Carayol's conductor bound
+  have hM2 : M ∣ 2 :=
+    weightTwoNewform_level_dvd_two_of_isHardlyRamified hpodd hv hρ hM0
+      hgnew κ hτ e he
+  -- step 5: the trace matching with `g` through `κ`
+  refine ⟨M, hM2, g, hgnew.toIsWeightTwoEigenform, κ,
+    S₁ ∪ (N.primeFactors.attach.image fun t =>
+      (Nat.prime_of_mem_primeFactors
+        t.2).toHeightOneSpectrumRingOfIntegersRat),
+    fun q hq hqS => ?_⟩
+  simp only [Finset.mem_union, not_or] at hqS
+  obtain ⟨hqS₁, hqbad⟩ := hqS
+  rw [hmatch q hq hqS₁, hκ q hq fun hdvd => hqbad (hbadmem q hq hdvd)]
 
 /-- **The residually reducible branch** (pillar 4; DECOMPOSED
 2026-07-24 into a PROVEN dichotomy on `p = 3` vs `p ≥ 5` — the AUDIT
