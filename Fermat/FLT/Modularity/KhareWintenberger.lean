@@ -829,6 +829,295 @@ theorem brauer_induction_trivial_character (G : Type*) [Group G]
         ∑ x : G, φ i (x⁻¹ * g * x) = 1) :=
   sorry
 
+/-- **The descended Hecke system over a fixed field** (the shared shape
+of the `ℓ`-adic solvable-descent chain — the sharpest pin-stateable
+joint of solvable base change on this pin): the Frobenius
+characteristic polynomials of `ρ` restricted to `G_K`, `K = F^C`, are
+`E`-coefficient polynomials through `ιO`/`ψℓ` away from a finite set of
+places of `K`.
+
+This is verbatim the conclusion of
+`exists_descended_heckeSystem_of_solvable` with the subgroup as a
+parameter; naming it lets the descent run as an INDUCTION along a
+cyclic refinement of the solvable group: `C ↦ F^C` is
+inclusion-reversing, so a chain `⊥ = C₀ ≤ ⋯ ≤ Cₙ = H` of subgroups is a
+tower `F = F^{C₀} ⊇ ⋯ ⊇ F^{Cₙ} = K` of intermediate fields, each step
+of which is the cyclic descent of the literature (Langlands 1980,
+Arthur–Clozel 1989).
+
+JOINT NOTE (2026-07-24): the reference Lean project (`~/cs/FLT`,
+`FLT/GaloisRepresentation/Automorphic.lean`, `cyclic_base_change`)
+states solvable base change at the AUTOMORPHIC joint — an `IsAutomorphic`
+predicate on quaternionic forms, an iff between automorphy over `F` and
+over a solvable `E/F`. This pin has no automorphy predicate (this
+module records "modular" everywhere through Hecke eigensystems only:
+`PotentialModularityWitness.modularF`), so that statement is not
+vendorable — pin drift aside, the vocabulary does not exist here. The
+eigensystem shape below is the corresponding joint in this module's own
+vocabulary: it is what the Brauer gluing
+(`exists_heckeField_system_of_witness_of_pieces`) consumes and all it
+consumes.
+
+Note that the restriction is taken from `ℚ` DIRECTLY at every stage
+(`ρ.map (algebraMap ℚ (fixedField C))`), never as a restriction from
+the previous stage: no compatibility of restrictions along the tower is
+needed anywhere in the descent. -/
+def HeckeSystemDescendsTo {ℓ : ℕ} [Fact ℓ.Prime]
+    {O : Type u} [CommRing O] [TopologicalSpace O] [IsTopologicalRing O]
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (Wit : PotentialModularityWitness ℓ O ρ)
+    (C : Subgroup (Wit.F ≃ₐ[ℚ] Wit.F)) : Prop :=
+  ∃ (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers
+      (IntermediateField.fixedField C))))
+    (P : HeightOneSpectrum (NumberField.RingOfIntegers
+      (IntermediateField.fixedField C)) → Polynomial Wit.E),
+    ∀ w ∉ S,
+      ((ρ.map (algebraMap ℚ (IntermediateField.fixedField C))).charFrob
+          w).map Wit.ιO = (P w).map Wit.ψℓ
+
+/-- **Cyclic refinement of a solvable subgroup** (sorry node; FOUNDER
+leaf, pure finite group theory — the group-theoretic engine of the
+solvable-descent chain, as `brauer_induction_trivial_character` is the
+engine of the Brauer decomposition): a solvable subgroup `H` of a
+finite group `G` sits at the top of a finite ascending chain of
+subgroups starting at `⊥`, each step `C i ≤ C (i+1)` being NORMAL with
+CYCLIC quotient.
+
+The data is presented explicitly and self-containedly: the chain as a
+function `C : ℕ → Subgroup G` (only its values at `0, …, n` matter),
+the endpoints as equations, and the step condition as inclusion plus
+normality of `C i` inside `C (i+1)` (as a subgroup of the coerced group
+`↥(C (i+1))`, i.e. `(C i).subgroupOf (C (i+1))`) plus cyclicity of the
+quotient. Normality is carried as an anonymous existential precisely so
+that the quotient group structure — and hence `IsCyclic` — is available
+inside the statement.
+
+Literature: the standard dévissage of a finite solvable group. `H` is
+solvable, so its derived series `H ⊇ H' ⊇ H'' ⊇ ⋯` terminates at `⊥`
+(mathlib: `derivedSeries`, `IsSolvable`) with ABELIAN quotients; each
+abelian step is refined into cyclic steps by choosing generators one at
+a time (equivalently by the structure theorem for finite abelian
+groups: an abelian group with a chosen generating set
+`{g₁, …, g_r}` gives the chain `⟨g₁⟩ ≤ ⟨g₁, g₂⟩ ≤ ⋯`, whose successive
+quotients are cyclic), and the refined chain is reindexed by `ℕ`.
+References: Rotman, *An Introduction to the Theory of Groups*, Thm 5.15
+(solvable ⇔ a subnormal series with cyclic factors, for finite groups);
+Isaacs, *Finite Group Theory*, §3B; Serre, *Linear Representations*,
+§8.
+
+PIN AUDIT (2026-07-24): the mathlib pin has `IsSolvable`,
+`derivedSeries` and the abelian-quotient facts, and `IsCyclic` with the
+finite-abelian structure theory, but no chain/refinement statement of
+this shape (`grep` for `subnormal`, `compositionSeries` over
+`Mathlib/GroupTheory/`: `CompositionSeries` is about SIMPLE factors, not
+cyclic ones, and carries no solvability bridge). The leaf is therefore
+stated self-containedly in the exact shape its consumer
+(`exists_descended_heckeSystem_of_solvable`) needs; it is genuinely
+provable in-tree — finite group theory only — but is a real project
+(derived-series dévissage plus abelian refinement), hence a leaf.
+
+SOUNDNESS AUDIT (2026-07-24): a true classical theorem with NO vacuity
+route — this leaf carries no arithmetic hypotheses, so, like the Brauer
+leaf above and unlike the arithmetic leaves of this module, it must be
+(and is) directly true as stated. Edge `H = ⊥`: take `n = 0`, `C ≡ ⊥`,
+the step condition being vacuous. -/
+theorem exists_cyclicRefinement_of_isSolvable {G : Type*} [Group G]
+    [Finite G] (H : Subgroup G) (hH : IsSolvable H) :
+    ∃ (n : ℕ) (C : ℕ → Subgroup G),
+      C 0 = ⊥ ∧ C n = H ∧
+      ∀ i < n, C i ≤ C (i + 1) ∧
+        ∃ _ : ((C i).subgroupOf (C (i + 1))).Normal,
+          IsCyclic (C (i + 1) ⧸ (C i).subgroupOf (C (i + 1))) :=
+  sorry
+
+/-- **The base of the descent chain — the witness's own eigensystem,
+read over `F^⊥`** (sorry node; a pure TRANSPORT leaf, no arithmetic
+content): the carrier's modularity clause `Wit.modularF` is a statement
+about the number field `F`; the descent chain starts at the fixed field
+of the trivial subgroup, `F^⊥`, which is `⊤ ≤ F` — the same field in a
+different model. This leaf transports the clause across that model
+change.
+
+Classically (and formally, in principle): `IntermediateField.fixedField
+⊥ = ⊤` (mathlib: `IntermediateField.fixedField_bot`) and
+`IntermediateField.topEquiv : (⊤ : IntermediateField ℚ F) ≃ₐ[ℚ] F`, so
+the two fields are ℚ-isomorphic number fields. A ℚ-isomorphism of
+number fields carries height-one primes to height-one primes
+bijectively, carries the arithmetic Frobenius conjugacy class at a
+place to the class at its image, and `charFrob` is a characteristic
+polynomial — invariant under conjugation. Hence `S := badF` and
+`P := heckeF`, both transported along that bijection, witness the
+conclusion.
+
+WHY IT IS A LEAF (2026-07-24): the transport is not formally free on
+this pin. `GaloisRep.map` is defined through
+`Field.absoluteGaloisGroup.map`, which "relies on an arbitrarily chosen
+embedding of the algebraic closures" (`GaloisRep.lean`), and `charFrob`
+is evaluated at `Field.AbsoluteGaloisGroup.adicArithFrob`, itself
+defined through an arbitrary choice of a valuation on the algebraic
+closure extending `v`. Independence of `charFrob` from those choices
+(equivalently: its invariance under the conjugation relating two
+choices) is exactly the missing API — `GaloisRep.charFrob` has no
+transport lemma along an `AlgEquiv` of number fields anywhere in the
+project or in the pin. Writing that API is the content of this leaf; it
+is FORMAL work, not literature, and it is independent of everything
+else in the descent.
+
+SOUNDNESS AUDIT (both ways, 2026-07-24): (i) direct — the statement is
+`Wit.modularF` read through a ℚ-isomorphism of number fields, true for
+EVERY carrier (no hypothesis beyond the carrier itself is used), and
+(ii) collapse — the hypothesis package is classically unsatisfiable
+(headline below), so the statement is classically true for every
+package.
+
+ROUTE AUDIT (2026-07-24): discharge by vacuity — `absurd hirr
+(not_isIrreducible_of_isHardlyRamified_of_five_le …)`, the route the
+interface leaves of `Modularity/Interface.lean` take — is NOT available
+here: the headline consumes this node (headline ← `exists_threeadic_
+compatible_member_of_five_le` ← `exists_heckeField_system_of_witness` ←
+`exists_descended_heckeSystem_of_solvable` ← this leaf), so the
+vacuity route would be circular. The classical route above is the one
+to follow.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
+discharge through `Family.lean`, `Lift.lean`, or
+`Modularity/Interface.lean`. -/
+theorem heckeSystemDescendsTo_bot
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+    (Wit : PotentialModularityWitness ℓ O ρ) :
+    HeckeSystemDescendsTo Wit ⊥ :=
+  sorry
+
+/-- **One cyclic step of solvable base change** (sorry node; THE
+literature node of the `ℓ`-adic solvable descent — Langlands 1980,
+Arthur–Clozel 1989): if the eigensystem of `ρ` descends to the fixed
+field `L = F^C`, and `C ≤ D` is normal with CYCLIC quotient `D/C`
+(equivalently: `L/M` is a cyclic Galois extension, where `M = F^D`),
+then the eigensystem descends to `M`.
+
+Classically, in three moves — the joints of the literature argument, in
+order:
+
+* *Cyclic ascent (base change).* `L/M` is cyclic of prime power degree
+  after refinement; `Gal(L/M) ≅ D/C` acts on the automorphic side, and
+  Langlands' cyclic base change `BC_{L/M}` is defined on the
+  cuspidal spectrum of `GL(2)/M` and characterized by the Arthur–Clozel
+  character identity below. The descended system over `L` (hypothesis
+  `hC`) is, through Carayol local-global compatibility, the eigensystem
+  of a Hilbert newform `f_L` over `L`.
+* *`Gal(L/M)`-invariance.* `f_L`'s Galois representation is
+  `ρ|_{G_L}` — the restriction to `G_L` of the representation
+  `ρ|_{G_M}` of the LARGER group `G_M` — hence visibly
+  `Gal(L/M)`-invariant: for `σ ∈ Gal(L/M)`, `f_L^σ` has the same
+  Frobenius eigenvalues as `f_L` at almost all places, so `f_L^σ = f_L`
+  by strong multiplicity one.
+* *Cyclic descent (the Arthur–Clozel character identity).* A
+  `Gal(L/M)`-invariant cuspidal automorphic representation of
+  `GL(2)/L` is in the image of base change from `GL(2)/M`, and its
+  fibre is a torsor under the characters of `Gal(L/M)` (Langlands,
+  *Base Change for GL(2)*, Ann. of Math. Studies 96 (1980), Ch. 2 and
+  Thm 4.2; Arthur–Clozel, *Simple Algebras, Base Change, and the
+  Advanced Theory of the Trace Formula*, Ann. of Math. Studies 120
+  (1989), Ch. 3 Thm 4.2 and Ch. 1 §6 for the twisted character
+  identity `Θ_{BC(π)}(g × σ) = Θ_π(N g)` that defines and characterizes
+  the transfer). So there is a Hilbert newform `f_M` over `M` with
+  `BC_{L/M}(f_M) = f_L`; its `ℓ`-adic representation restricted to
+  `G_L` agrees with `ρ|_{G_L}`, hence differs from `ρ|_{G_M}` by a
+  twist by a character of `Gal(L/M)` — a finite-order character, whose
+  values are roots of unity.
+
+Carayol's local-global compatibility over `M` then identifies the
+Frobenius characteristic polynomials of the (twisted) `f_M`-system with
+Hecke polynomials; their coefficients — Hecke eigenvalues of `f_M`
+enlarged by the twisting-character values — lie in the carrier's `E`,
+which is, per the consumers' docstrings, the Hecke field OF THE
+DESCENDED system, the normalization that absorbs exactly these
+enlargements. The new bad set collects the places of `M` below the bad
+set of the `L`-system, the places over `2`, `3`, `ℓ`, and the places
+ramified in `L/M`.
+
+Literature: Langlands 1980 and Arthur–Clozel 1989 as above (the cyclic
+prime-degree case is the theorem; the general solvable case is the
+dévissage carried out formally by the assembly
+`exists_descended_heckeSystem_of_solvable` over
+`exists_cyclicRefinement_of_isSolvable`);
+Barnet-Lamb–Gee–Geraghty–Taylor, *Potential automorphy and change of
+weight*, Ann. of Math. 179 (2014), §5.3 (this descent per Brauer piece,
+verbatim); Khare–Wintenberger, *Serre's modularity conjecture (I)*,
+Invent. Math. 178 (2009), §5; Carayol, Ann. Sci. ÉNS 19 (1986).
+
+PIN AUDIT (2026-07-24): no automorphic-representation vocabulary exists
+on this pin, and the reference project's `cyclic_base_change`
+(`~/cs/FLT`) is itself a sorried statement in a vocabulary this project
+does not have (see the `HeckeSystemDescendsTo` docstring); nothing is
+vendorable. This is the terminal citation node of the descent: below it
+lie the trace formula and the twisted character identity, not further
+Galois-theoretic bookkeeping.
+
+SOUNDNESS AUDIT (both ways, 2026-07-24): (i) direct — for the carrier
+produced by the inhabitation leaf and a system produced by the chain
+this is the argument above, with the Hecke-field enlargements landing
+in `E` by the carrier's normalization; for an abstract carrier the
+abstract-quantification caveat of pillar β applies (in particular
+nothing formal ties the twisting-character values into `E`; that
+identification is part of the citation), and (ii) collapse — the
+hypothesis package is classically unsatisfiable (headline below), so
+the statement is classically true for every package.
+
+ROUTE AUDIT (2026-07-24): as for the base leaf above, discharge by
+vacuity through `not_isIrreducible_of_isHardlyRamified_of_five_le` is
+NOT available — the headline consumes this node, so that route is
+circular. The classical route above is the one to follow.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
+discharge through `Family.lean`, `Lift.lean`, or
+`Modularity/Interface.lean`. -/
+theorem heckeSystemDescendsTo_of_cyclic_step
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+    (Wit : PotentialModularityWitness ℓ O ρ)
+    (C D : Subgroup (Wit.F ≃ₐ[ℚ] Wit.F)) (hCD : C ≤ D)
+    (hnormal : (C.subgroupOf D).Normal)
+    (hcyclic : IsCyclic (D ⧸ C.subgroupOf D))
+    (hC : HeckeSystemDescendsTo Wit C) :
+    HeckeSystemDescendsTo Wit D :=
+  sorry
+
 /-- **Solvable base change — the descended Hecke system over a fixed
 field** (sorry node; the per-induced-piece citation leaf of the
 `ℓ`-adic Brauer descent): for a SOLVABLE subgroup `H ≤ Gal(F/ℚ)` of
@@ -877,7 +1166,33 @@ classically true for every package.
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
 discharge through `Family.lean`, `Lift.lean`, or
-`Modularity/Interface.lean`. -/
+`Modularity/Interface.lean`.
+
+ASSEMBLY (2026-07-24, PROVEN): the solvable descent is the DÉVISSAGE of
+the literature made formal — the theorem of Langlands/Arthur–Clozel is
+about a CYCLIC step, and the solvable case is reached by iterating it
+along a cyclic refinement. So:
+`exists_cyclicRefinement_of_isSolvable` (pure finite group theory: the
+solvable `H` is the top of a chain `⊥ = C₀ ≤ ⋯ ≤ Cₙ = H` with each step
+normal with cyclic quotient) + `heckeSystemDescendsTo_bot` (the base of
+the chain: the carrier's own clause `Wit.modularF` transported from `F`
+to `F^⊥`, a formal-transport leaf with no arithmetic content) +
+`heckeSystemDescendsTo_of_cyclic_step` (the literature node: one cyclic
+step of base change and descent), glued by induction on the chain
+index through the shared shape `HeckeSystemDescendsTo`. The fixed
+fields are taken as restrictions from `ℚ` at every stage, so the
+induction needs no compatibility of restrictions along the tower.
+Those three leaves are now the residual sorries of this node; the
+circularity guard above binds the two arithmetic ones (the refinement
+leaf is pure group theory — nothing arithmetic to route through).
+
+ROUTE AUDIT (2026-07-24): discharge by vacuity — `absurd hirr
+(not_isIrreducible_of_isHardlyRamified_of_five_le …)` — is NOT
+available at this node or below it: the headline consumes this node
+(headline ← `exists_threeadic_compatible_member_of_five_le` ←
+`exists_heckeField_system_of_witness` ← this node), so the vacuity
+route is circular here. The classical route above is the one the
+sub-leaves must follow. -/
 theorem exists_descended_heckeSystem_of_solvable
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
@@ -906,8 +1221,31 @@ theorem exists_descended_heckeSystem_of_solvable
         (IntermediateField.fixedField H)) → Polynomial Wit.E),
       ∀ w ∉ S,
         ((ρ.map (algebraMap ℚ (IntermediateField.fixedField H))).charFrob
-            w).map Wit.ιO = (P w).map Wit.ψℓ :=
-  sorry
+            w).map Wit.ιO = (P w).map Wit.ψℓ := by
+  classical
+  -- (i) the group-theoretic dévissage: a cyclic refinement of `H`
+  obtain ⟨n, C, hC0, hCn, hstep⟩ :=
+    exists_cyclicRefinement_of_isSolvable H hH
+  -- (ii) descend along the chain, one cyclic step of base change at a
+  -- time, starting from the carrier's own eigensystem at `F^⊥ = F`
+  have key : ∀ i, i ≤ n → HeckeSystemDescendsTo Wit (C i) := by
+    intro i
+    induction i with
+    | zero =>
+      intro _
+      rw [hC0]
+      exact heckeSystemDescendsTo_bot hℓodd hℓ5 hZinj hrank hρ hW hρbar
+        hirr π hπsurj hπ Wit
+    | succ j ih =>
+      intro hj
+      obtain ⟨hle, hnormal, hcyclic⟩ := hstep j (by omega)
+      exact heckeSystemDescendsTo_of_cyclic_step hℓodd hℓ5 hZinj hrank hρ
+        hW hρbar hirr π hπsurj hπ Wit (C j) (C (j + 1)) hle hnormal
+        hcyclic (ih (by omega))
+  -- (iii) the top of the chain is `H` itself
+  have hfinal := key n le_rfl
+  rw [hCn] at hfinal
+  exact hfinal
 
 /-- **Brauer gluing — reconstruction of the rational eigensystem from
 the descended pieces** (sorry node; the induced-character unwinding of
