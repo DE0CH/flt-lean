@@ -191,7 +191,10 @@ import Mathlib.LinearAlgebra.Charpoly.BaseChange
 -- normalization of the conductor cut and the Chebotarev-density
 -- trace-gluing step of the Carayol cut behind pillar 3a (proof
 -- bodies only)
-import Fermat.FLT.GaloisRepresentation.Chebotarev
+-- PUBLIC since 2026-07-24: `globalFrob` appears in the SIGNATURES of
+-- the Eichler–Shimura interface (`EichlerShimuraPackage.congruence`,
+-- `det_frob`), not only in proof bodies.
+public import Fermat.FLT.GaloisRepresentation.Chebotarev
 -- The Khare–Wintenberger cut (Family-free by construction): the
 -- headline nonexistence theorem
 -- `not_isIrreducible_of_isHardlyRamified_of_five_le` discharging the
@@ -4009,10 +4012,14 @@ leaf is now a PROVEN assembly over:
   embedding of the newform's Hecke field agreeing on the shared good
   coefficients (extension of embeddings into the algebraically closed
   `ℚ̄_p` along an algebraic extension).
-* `exists_galoisRep_charFrob_of_weightTwoNewform` — SORRY: the
+* `exists_galoisRep_charFrob_of_weightTwoNewform` — the
   Eichler–Shimura attachment at general level, the REAL geometric
   leaf (unlike the level-`∣ 2` attachment statements, which are
-  discharged by the proven emptiness of their carriers).
+  discharged by the proven emptiness of their carriers). DECOMPOSED
+  2026-07-24 into the Eichler–Shimura cut (see its own section
+  docstring below) and now a PROVEN assembly over the single sorried
+  inhabitation leaf `nonempty_eichlerShimuraPackage` — the
+  modular-Jacobian interface carrier.
 * `charFrob_baseChange` and
   `charFrob_map_coeff_zero_of_isHardlyRamified` and
   `eq_quadratic_of_monic_natDegree_two` — PROVEN bookkeeping that
@@ -4168,47 +4175,6 @@ theorem exists_ringHom_heckeField_of_qCoeff_eq {N M : ℕ} (hM : 0 < M)
     ι (heckeCoeff N f q)
   congr 1
 
-/-- **The Eichler–Shimura attachment at general level** (sorry node —
-THE geometric leaf of the conductor cut, deliberately non-vacuous
-unlike the level-`∣ 2` attachment statements discharged by emptiness
-above): a weight-2 newform `g` of level `M ≥ 1`, together with an
-embedding `κ` of its Hecke field into `ℚ̄_p`, has an attached
-2-dimensional continuous `ℚ̄_p`-representation of `Γ ℚ` whose
-Frobenius characteristic polynomials away from a finite set of places
-are the Hecke polynomials `X² − a_q(g)·X + q` of `g` under `κ`.
-
-Classical construction (Diamond–Shurman ch. 8–9, Theorem 9.5.1 at
-weight 2; for weight 2 no étale cohomology beyond the Jacobian is
-needed — Deligne's construction is the higher-weight generalization):
-`ρ_{g,λ}` acts on the `λ`-adic Tate module of the modular abelian
-variety `A_g = J₀(M)/I_g J₀(M)`, `λ` being the place of the Hecke
-field `K_g` induced by `κ`; the Eichler–Shimura relation
-`Frob_q² − T_q∘Frob_q + q⟨q⟩ = 0` on `J₀(M)` in characteristic
-`q ∤ M` (Igusa good reduction) yields the stated characteristic
-polynomials with exceptional set `{v : v ∣ Mp}`. SOUNDNESS: the
-statement quantifies over inhabitants of `IsWeightTwoNewform`, which
-are exactly the classical newforms (the carrier's audit), so the
-classical construction witnesses every instance; and it asserts
-nothing about `τ` beyond the charpoly matching — precisely the input
-shape the rigidity and Carayol leaves consume. (An eigenform-level
-statement would ALSO be classically true via the underlying newform,
-but the newform hypothesis is what the Carayol leaf needs, so the
-attachment is stated at the same carrier.) -/
-theorem exists_galoisRep_charFrob_of_weightTwoNewform
-    {M : ℕ} (hM : 0 < M) {g : CuspForm (Gamma0GL M) 2}
-    (hg : IsWeightTwoNewform M g)
-    (κ : heckeField M g →+* AlgebraicClosure ℚ_[p]) :
-    ∃ (τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
-        (Fin 2 → AlgebraicClosure ℚ_[p]))
-      (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
-      ∀ (q : ℕ) (hq : q.Prime),
-        hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
-        τ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat =
-          Polynomial.X ^ 2
-            - Polynomial.C (κ (heckeCoeff M g q)) * Polynomial.X
-            + Polynomial.C ((q : AlgebraicClosure ℚ_[p])) :=
-  sorry
-
 /-- Quadratic decomposition of a monic degree-2 polynomial (PROVEN
 glue): `P = X² + P₁·X + P₀`. Applied to the mapped Frobenius
 characteristic polynomials to turn the coefficientwise information of
@@ -4229,6 +4195,495 @@ theorem eq_quadratic_of_monic_natDegree_two {A : Type*} [CommRing A]
   · have hzero : P.coeff (n + 3) = 0 :=
       Polynomial.coeff_eq_zero_of_natDegree_lt (by omega)
     simp [hzero, Polynomial.coeff_X_pow]
+
+/-! ##### The Eichler–Shimura cut behind the attachment leaf (2026-07-24)
+
+`exists_galoisRep_charFrob_of_weightTwoNewform` — the attachment of a
+2-dimensional `ℚ̄_p`-representation to a weight-2 newform — was a
+single sorry carrying the whole of Diamond–Shurman ch. 8–9. The pin
+has NO modular curves, NO Jacobian varieties, NO abelian varieties
+(audited 2026-07-24: `Mathlib/AlgebraicGeometry/EllipticCurve/*` is
+Weierstrass-equation material — its `Jacobian/` folder is Jacobian
+*coordinates*, not Jacobian varieties — and the reference Lean FLT
+project likewise consumes its abelian-variety input, Mazur, as a
+stated assumption). So the modular Jacobian enters as an INTERFACE
+STRUCTURE (`EichlerShimuraPackage`), in the style of
+`HardlyRamifiedRealization` above: its fields are exactly the
+classically-true cited facts about the `p`-adic Tate module of
+`J₀(M)` that the classical proof of the attachment consumes, and
+everything from those facts to the attachment statement is PROVEN:
+
+* `heckeEigenspace`, `compressEnd` — PROVEN linear algebra: the joint
+  eigenspace of a prime-indexed operator family, and the compression
+  of the endomorphism algebra onto a framed invariant subspace
+  through a chosen projection. The compression is a LINEAR map on the
+  whole endomorphism algebra (multiplicative only on the stabilizer
+  of the subspace, `compressEnd_mul`) — the continuity-compatible
+  substitute for restriction, since the module topology sees linear
+  maps (`IsModuleTopology.continuous_of_linearMap`) while a bare
+  restriction to an abstract submodule has no continuity API.
+* `EichlerShimuraPackage` — the modular-Jacobian carrier: the
+  Tate-module Galois module `Vp` with its continuous action `τJ`, the
+  Hecke operators commuting with the action (`ℚ`-rationality of the
+  Hecke correspondences), the Eichler–Shimura congruence at good
+  primes, 2-dimensionality of the `κ`-eigenspace (multiplicity one),
+  and the Weil-pairing determinant on it.
+* `nonempty_eichlerShimuraPackage` — SORRY: the residual geometric
+  leaf, inhabitation of the carrier (see its docstring for the
+  classical construction, field by field).
+* `exists_galoisRep_charFrob_of_weightTwoNewform` — now a PROVEN
+  assembly: compress `τJ` to the eigenspace, transport congruence and
+  determinant through the compression, and pin the Frobenius
+  characteristic polynomial `X² − κ(a_q)·X + q` by Cayley–Hamilton
+  against the congruence: the compressed Frobenius is invertible and
+  is annihilated by two monic quadratics with equal constant terms
+  (`det = q`), which forces equal linear terms. -/
+
+/-- The joint eigenspace of the prime-indexed operator family `t` for
+the eigenvalue system `a`: the intersection over all primes `q` of
+`ker (t q − a q)`. For the Eichler–Shimura package below this carves
+the `κ`-eigencomponent of the newform `g` out of the Tate module of
+the modular Jacobian. -/
+def heckeEigenspace {A : Type*} [CommRing A] {V₀ : Type*}
+    [AddCommGroup V₀] [Module A V₀] (t : ℕ → Module.End A V₀)
+    (a : ℕ → A) : Submodule A V₀ :=
+  ⨅ (q : ℕ) (_ : q.Prime),
+    LinearMap.ker (t q - a q • (1 : Module.End A V₀))
+
+/-- Membership in `heckeEigenspace`: a simultaneous eigenvector at
+every prime index. -/
+theorem mem_heckeEigenspace_iff {A : Type*} [CommRing A] {V₀ : Type*}
+    [AddCommGroup V₀] [Module A V₀] {t : ℕ → Module.End A V₀}
+    {a : ℕ → A} {x : V₀} :
+    x ∈ heckeEigenspace t a ↔
+      ∀ (q : ℕ), q.Prime → t q x = a q • x := by
+  simp [heckeEigenspace, Submodule.mem_iInf, LinearMap.mem_ker,
+    LinearMap.sub_apply, LinearMap.smul_apply, Module.End.one_apply,
+    sub_eq_zero]
+
+section CompressEnd
+
+variable {A : Type*} [CommRing A] {V₀ : Type*} [AddCommGroup V₀]
+    [Module A V₀] {n : ℕ} (W : Submodule A V₀) (πW : V₀ →ₗ[A] W)
+    (e : W ≃ₗ[A] (Fin n → A))
+
+/-- Compression of an endomorphism of `V₀` to the standard frame of a
+distinguished subspace `W`, through a chosen projection `πW` and a
+chosen frame `e`. As a map of endomorphism ALGEBRAS it is only
+multiplicative on the stabilizer of `W` (`compressEnd_mul`), but as a
+LINEAR map it is everywhere defined — which is what makes the
+compressed Galois representation of the Eichler–Shimura assembly
+continuous for the module topologies. -/
+def compressEnd :
+    Module.End A V₀ →ₗ[A] Module.End A (Fin n → A) where
+  toFun φ :=
+    e.toLinearMap ∘ₗ πW ∘ₗ φ ∘ₗ W.subtype ∘ₗ e.symm.toLinearMap
+  map_add' φ ψ := by ext x; simp
+  map_smul' c φ := by ext x; simp
+
+/-- Evaluation of the compression. -/
+theorem compressEnd_apply (φ : Module.End A V₀) (x : Fin n → A) :
+    compressEnd W πW e φ x = e (πW (φ ↑(e.symm x))) := rfl
+
+/-- The compression sends the identity to the identity, given that
+`πW` retracts the inclusion of `W`. -/
+theorem compressEnd_one (hπ : ∀ w : W, πW (w : V₀) = w) :
+    compressEnd W πW e 1 = 1 := by
+  refine LinearMap.ext fun x => ?_
+  rw [compressEnd_apply, Module.End.one_apply, hπ (e.symm x),
+    LinearEquiv.apply_symm_apply, Module.End.one_apply]
+
+/-- The compression is multiplicative when the right factor
+stabilizes `W`. -/
+theorem compressEnd_mul (hπ : ∀ w : W, πW (w : V₀) = w)
+    (φ ψ : Module.End A V₀) (hψ : ∀ x ∈ W, ψ x ∈ W) :
+    compressEnd W πW e (φ * ψ) =
+      compressEnd W πW e φ * compressEnd W πW e ψ := by
+  refine LinearMap.ext fun x => ?_
+  simp only [Module.End.mul_apply, compressEnd_apply,
+    LinearEquiv.symm_apply_apply]
+  have hmem : ψ ↑(e.symm x) ∈ W := hψ _ (SetLike.coe_mem (e.symm x))
+  have hproj : πW (ψ ↑(e.symm x)) = ⟨ψ ↑(e.symm x), hmem⟩ :=
+    hπ ⟨_, hmem⟩
+  rw [hproj]
+
+/-- The compression of an operator acting on `W` as the scalar `c` is
+the scalar `c`. -/
+theorem compressEnd_eq_smul_one (hπ : ∀ w : W, πW (w : V₀) = w)
+    {φ : Module.End A V₀} {c : A} (hφ : ∀ x ∈ W, φ x = c • x) :
+    compressEnd W πW e φ = c • 1 := by
+  refine LinearMap.ext fun x => ?_
+  rw [compressEnd_apply, hφ _ (SetLike.coe_mem (e.symm x)), map_smul,
+    hπ (e.symm x), map_smul, LinearEquiv.apply_symm_apply,
+    LinearMap.smul_apply, Module.End.one_apply]
+
+/-- On the stabilizer of `W` the compression is conjugation of the
+restriction by the frame — the bridge to `LinearMap.det_conj` for the
+determinant transport of the Eichler–Shimura assembly. -/
+theorem compressEnd_eq_conj_restrict (hπ : ∀ w : W, πW (w : V₀) = w)
+    {φ : Module.End A V₀} (hφ : ∀ x ∈ W, φ x ∈ W) :
+    compressEnd W πW e φ =
+      (e : W →ₗ[A] (Fin n → A)) ∘ₗ φ.restrict hφ ∘ₗ
+        (e.symm : (Fin n → A) →ₗ[A] W) := by
+  refine LinearMap.ext fun x => ?_
+  simp only [compressEnd_apply, LinearMap.comp_apply,
+    LinearEquiv.coe_coe, LinearMap.restrict_apply]
+  exact congrArg e
+    (hπ ⟨φ ↑(e.symm x), hφ _ (SetLike.coe_mem (e.symm x))⟩)
+
+end CompressEnd
+
+/-- **The Eichler–Shimura package of a weight-2 newform** `g` at the
+`p`-adic embedding `κ` — the modular-Jacobian carrier. The intended
+inhabitant (Diamond–Shurman ch. 8–9) is the rational `p`-adic Tate
+module `Vp = V_p(J₀(M)) ⊗ ℚ̄_p` of the modular Jacobian
+`J₀(M) = Jac X₀(M)`, with its continuous Galois action `τJ`, its
+Hecke operators `hecke` (the correspondences `T_m`, resp. `U_q` at
+`q ∣ M`), and the exceptional set `S = {v : v ∣ Mp}`. Each field is a
+classically-true cited assertion about this inhabitant — the precise
+citations are in the docstring of the inhabitation leaf
+`nonempty_eichlerShimuraPackage`, the only sorried node of the cut. -/
+structure EichlerShimuraPackage (M : ℕ) (g : CuspForm (Gamma0GL M) 2)
+    (κ : heckeField M g →+* AlgebraicClosure ℚ_[p]) where
+  /-- The Galois module: intended `V_p(J₀(M)) ⊗ ℚ̄_p`. -/
+  Vp : Type
+  [addCommGroup : AddCommGroup Vp]
+  [module : Module (AlgebraicClosure ℚ_[p]) Vp]
+  [moduleFinite : Module.Finite (AlgebraicClosure ℚ_[p]) Vp]
+  /-- The continuous Galois action on the Tate module. -/
+  τJ : GaloisRep ℚ (AlgebraicClosure ℚ_[p]) Vp
+  /-- The Hecke operators, base-changed to `ℚ̄_p`. -/
+  hecke : ℕ → Module.End (AlgebraicClosure ℚ_[p]) Vp
+  /-- The exceptional set (intended: the places over `Mp`). -/
+  S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+  /-- Hecke correspondences are defined over `ℚ`, so they commute
+  with the whole Galois action. -/
+  hecke_comm : ∀ (m : ℕ) (γ : Field.absoluteGaloisGroup ℚ),
+    hecke m * τJ γ = τJ γ * hecke m
+  /-- The Eichler–Shimura congruence relation at good primes:
+  `Frob_q² − T_q·Frob_q + q = 0` on the Tate module. -/
+  congruence : ∀ (q : ℕ) (hq : q.Prime),
+    hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+    τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) ^ 2
+      - hecke q *
+        τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+      + (q : AlgebraicClosure ℚ_[p]) • 1 = 0
+  /-- Multiplicity one: the joint `κ(a(g))`-eigenspace of the Hecke
+  operators is 2-dimensional. -/
+  rank_eigenspace :
+    Module.rank (AlgebraicClosure ℚ_[p])
+      (heckeEigenspace hecke (fun m => κ (heckeCoeff M g m))) = 2
+  /-- The Weil-pairing determinant: the Galois determinant on the
+  eigenspace is cyclotomic, with value `q` at the `q`-Frobenius. -/
+  det_frob : ∀ (q : ℕ) (hq : q.Prime),
+    hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+    ∀ (hst : ∀ x ∈ heckeEigenspace hecke
+        (fun m => κ (heckeCoeff M g m)),
+      τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) x ∈
+        heckeEigenspace hecke (fun m => κ (heckeCoeff M g m))),
+    LinearMap.det
+        ((τJ (globalFrob
+          hq.toHeightOneSpectrumRingOfIntegersRat)).restrict hst) =
+      (q : AlgebraicClosure ℚ_[p])
+
+attribute [instance] EichlerShimuraPackage.addCommGroup
+  EichlerShimuraPackage.module EichlerShimuraPackage.moduleFinite
+
+/-- **Inhabitation of the Eichler–Shimura package** (sorry node — THE
+residual geometric leaf of the attachment cut, and the only place
+where the modular Jacobian itself is consumed): every weight-2
+newform `g` of level `M ≥ 1` with a `p`-adic Hecke-field embedding
+`κ` admits an Eichler–Shimura package.
+
+Classical construction (Diamond–Shurman ch. 8–9): take
+`Vp := V_p(J₀(M)) ⊗_{ℚ_p} ℚ̄_p`, the rational `p`-adic Tate module of
+the modular Jacobian (dimension `2·dim S₂(Γ₀(M))`; D–S §6.1 and
+ch. 8), with
+
+* `τJ` the Galois action on the Tate module — continuous because the
+  action on each `pⁿ`-torsion level factors through a finite
+  quotient;
+* `hecke m` the Hecke correspondence `T_m` (`U_q` at `q ∣ M`) acting
+  through `End(J₀(M)) ⊗ ℚ̄_p`; the modular curve, its Hecke
+  correspondences and the Jacobian all have `ℚ`-models (D–S §7.9,
+  §8.5), so the operators commute with the Galois action —
+  `hecke_comm`;
+* `S := {v : v ∣ Mp}`;
+* `congruence` — the EICHLER–SHIMURA RELATION (D–S Theorem 8.7.2): at
+  a prime `q ∤ Mp` the curve `X₀(M)` has good reduction (Igusa, D–S
+  Theorem 8.6.1), reduction identifies the `p`-adic Tate module with
+  that of the special fiber (`q ≠ p`), and on the reduced Jacobian
+  `T_q = Frob_q + q·⟨q⟩·Frob_q⁻¹` with `⟨q⟩ = 1` on `Γ₀(M)`, i.e.
+  `Frob_q² − T_q·Frob_q + q = 0`;
+* `rank_eigenspace` — MULTIPLICITY ONE: the joint eigenspace of the
+  Hecke operators with eigensystem `κ(a(g))` is
+  `V_p(A_g) ⊗_{K_g ⊗ ℚ_p, κ} ℚ̄_p` for the modular abelian variety
+  `A_g = J₀(M)/I_g J₀(M)`: `V_p(A_g)` is free of rank 2 over
+  `K_g ⊗ ℚ_p` (D–S Lemma 9.5.3), so each `κ`-component is
+  2-dimensional, and no other isogeny component of `J₀(M)` carries
+  the full eigensystem of the NEWFORM `g` (strong multiplicity one,
+  D–S Theorem 5.8.2 with §6.6 — this is where the
+  `IsWeightTwoNewform` hypothesis is consumed);
+* `det_frob` — the WEIL PAIRING: the Galois determinant on the
+  2-dimensional eigencomponent is the `p`-adic cyclotomic character
+  (the determinant clause of D–S Theorem 9.5.4, from the Weil pairing
+  on `J₀(M)` and triviality of the nebentypus), whose value at the
+  `q`-Frobenius is `q`.
+
+SOUNDNESS (2026-07-24): the statement quantifies over inhabitants of
+`IsWeightTwoNewform` — exactly the classical newforms (the carrier's
+audit above) — and over genuine embeddings `κ` of the Hecke field, so
+the classical construction witnesses every instance. The
+`hst`-quantified spelling of `det_frob` asserts the determinant
+against EVERY stability proof; `LinearMap.restrict` does not depend
+on that proof, so this is one fact, not a family. -/
+theorem nonempty_eichlerShimuraPackage {M : ℕ} (hM : 0 < M)
+    {g : CuspForm (Gamma0GL M) 2} (hg : IsWeightTwoNewform M g)
+    (κ : heckeField M g →+* AlgebraicClosure ℚ_[p]) :
+    Nonempty (EichlerShimuraPackage M g κ) :=
+  sorry
+
+/-- **The Eichler–Shimura attachment at general level** (DECOMPOSED
+2026-07-24 into the Eichler–Shimura cut above and now a PROVEN
+assembly over the inhabitation leaf
+`nonempty_eichlerShimuraPackage`): a weight-2 newform `g` of level
+`M ≥ 1`, together with an embedding `κ` of its Hecke field into
+`ℚ̄_p`, has an attached 2-dimensional continuous
+`ℚ̄_p`-representation of `Γ ℚ` whose Frobenius characteristic
+polynomials away from a finite set of places are the Hecke
+polynomials `X² − κ(a_q(g))·X + q`.
+
+Assembly: the `κ`-eigenspace `W` of the package's Hecke operators is
+Galois-stable (`hecke_comm`) and 2-dimensional (`rank_eigenspace`);
+compressing `τJ` through a projection onto `W` and a frame
+`W ≃ ℚ̄_p²` (`compressEnd`, multiplicative on the stabilizer, linear
+hence continuous for the module topologies) yields the continuous
+representation `τ`. At a good prime the compressed Frobenius `F` is
+invertible, satisfies the compressed congruence
+`F² − κ(a_q)·F + q = 0`, and has `det F = q` (`det_frob` through
+`LinearMap.det_conj`); Cayley–Hamilton makes the characteristic
+polynomial a second monic quadratic annihilating `F` with the same
+constant term `q`, and subtracting the two relations forces the
+linear coefficient `−κ(a_q)` — i.e. `charFrob = X² − κ(a_q)·X + q`.
+SOUNDNESS: unchanged from the previous audit — the statement asserts
+nothing about `τ` beyond the charpoly matching, precisely the input
+shape the rigidity and Carayol leaves consume. -/
+theorem exists_galoisRep_charFrob_of_weightTwoNewform
+    {M : ℕ} (hM : 0 < M) {g : CuspForm (Gamma0GL M) 2}
+    (hg : IsWeightTwoNewform M g)
+    (κ : heckeField M g →+* AlgebraicClosure ℚ_[p]) :
+    ∃ (τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+        (Fin 2 → AlgebraicClosure ℚ_[p]))
+      (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
+      ∀ (q : ℕ) (hq : q.Prime),
+        hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+        τ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat =
+          Polynomial.X ^ 2
+            - Polynomial.C (κ (heckeCoeff M g q)) * Polynomial.X
+            + Polynomial.C ((q : AlgebraicClosure ℚ_[p])) := by
+  classical
+  obtain ⟨P⟩ := nonempty_eichlerShimuraPackage hM hg κ
+  set W : Submodule (AlgebraicClosure ℚ_[p]) P.Vp :=
+    heckeEigenspace P.hecke (fun m => κ (heckeCoeff M g m)) with hWdef
+  -- Galois stability of the eigenspace (Hecke rationality)
+  have hstab : ∀ γ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ W, P.τJ γ x ∈ W := by
+    intro γ x hx
+    rw [hWdef, mem_heckeEigenspace_iff] at hx ⊢
+    intro q hq
+    have hcomm := LinearMap.congr_fun (P.hecke_comm q γ) x
+    rw [Module.End.mul_apply, Module.End.mul_apply, hx q hq,
+      map_smul] at hcomm
+    exact hcomm
+  -- the eigenspace is 2-dimensional; frame it
+  have hfrW : Module.finrank (AlgebraicClosure ℚ_[p]) W = 2 :=
+    Module.finrank_eq_of_rank_eq (by exact_mod_cast P.rank_eigenspace)
+  let e : W ≃ₗ[AlgebraicClosure ℚ_[p]]
+      (Fin 2 → AlgebraicClosure ℚ_[p]) :=
+    (Module.finBasisOfFinrankEq (AlgebraicClosure ℚ_[p]) W
+      hfrW).equivFun
+  -- a projection onto the eigenspace
+  obtain ⟨W', hWc⟩ := Submodule.exists_isCompl W
+  let πW : P.Vp →ₗ[AlgebraicClosure ℚ_[p]] W :=
+    Submodule.projectionOnto W W' hWc
+  have hπ : ∀ w : W, πW (w : P.Vp) = w := fun w =>
+    Submodule.projectionOnto_apply_left hWc w
+  -- module topologies on the two endomorphism algebras
+  letI : TopologicalSpace (Module.End (AlgebraicClosure ℚ_[p]) P.Vp) :=
+    moduleTopology (AlgebraicClosure ℚ_[p]) _
+  haveI : IsModuleTopology (AlgebraicClosure ℚ_[p])
+      (Module.End (AlgebraicClosure ℚ_[p]) P.Vp) := ⟨rfl⟩
+  letI : TopologicalSpace (Module.End (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])) :=
+    moduleTopology (AlgebraicClosure ℚ_[p]) _
+  haveI : IsModuleTopology (AlgebraicClosure ℚ_[p])
+      (Module.End (AlgebraicClosure ℚ_[p])
+        (Fin 2 → AlgebraicClosure ℚ_[p])) := ⟨rfl⟩
+  haveI := IsModuleTopology.toContinuousAdd (AlgebraicClosure ℚ_[p])
+    (Module.End (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p]))
+  have hτc : Continuous fun γ : Field.absoluteGaloisGroup ℚ =>
+      P.τJ γ := ContinuousMonoidHom.continuous_toFun P.τJ
+  have hΛc : Continuous (compressEnd W πW e) :=
+    IsModuleTopology.continuous_of_linearMap _
+  have hcont : Continuous fun γ : Field.absoluteGaloisGroup ℚ =>
+      compressEnd W πW e (P.τJ γ) := hΛc.comp hτc
+  -- the compressed representation
+  let τmh : Field.absoluteGaloisGroup ℚ →*
+      Module.End (AlgebraicClosure ℚ_[p])
+        (Fin 2 → AlgebraicClosure ℚ_[p]) :=
+    { toFun := fun γ => compressEnd W πW e (P.τJ γ)
+      map_one' := by
+        show compressEnd W πW e (P.τJ 1) = 1
+        rw [map_one]
+        exact compressEnd_one W πW e hπ
+      map_mul' := fun γ δ => by
+        show compressEnd W πW e (P.τJ (γ * δ)) =
+          compressEnd W πW e (P.τJ γ) * compressEnd W πW e (P.τJ δ)
+        rw [map_mul]
+        exact compressEnd_mul W πW e hπ _ _ (hstab δ) }
+  let τ' : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p]) := ⟨τmh, hcont⟩
+  refine ⟨τ', P.S, fun q hq hqS => ?_⟩
+  rw [GaloisRep.charFrob_eq_charpoly_globalFrob]
+  have happ : τ' (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) =
+      compressEnd W πW e
+        (P.τJ (globalFrob
+          hq.toHeightOneSpectrumRingOfIntegersRat)) := rfl
+  rw [happ]
+  -- the compressed Frobenius is invertible …
+  have hinv : compressEnd W πW e
+        (P.τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)) *
+      compressEnd W πW e
+        (P.τJ ((globalFrob
+          hq.toHeightOneSpectrumRingOfIntegersRat)⁻¹)) = 1 := by
+    rw [← compressEnd_mul W πW e hπ _ _ (hstab _), ← map_mul,
+      mul_inv_cancel, map_one]
+    exact compressEnd_one W πW e hπ
+  -- … acts as the Hecke scalar through the congruence …
+  have hΛt : compressEnd W πW e (P.hecke q) =
+      κ (heckeCoeff M g q) • 1 :=
+    compressEnd_eq_smul_one W πW e hπ fun x hx =>
+      mem_heckeEigenspace_iff.mp hx q hq
+  have hcong := P.congruence q hq hqS
+  have hQ : compressEnd W πW e
+        (P.τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)) ^ 2
+      - κ (heckeCoeff M g q) • compressEnd W πW e
+        (P.τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat))
+      + (q : AlgebraicClosure ℚ_[p]) • 1 = 0 := by
+    have h₀ : compressEnd W πW e
+          (P.τJ (globalFrob
+            hq.toHeightOneSpectrumRingOfIntegersRat) ^ 2)
+        - compressEnd W πW e (P.hecke q *
+          P.τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat))
+        + (q : AlgebraicClosure ℚ_[p]) • compressEnd W πW e 1 = 0 := by
+      rw [← map_smul, ← map_sub, ← map_add, hcong, map_zero]
+    rw [pow_two, compressEnd_mul W πW e hπ _ _ (hstab _),
+      compressEnd_mul W πW e hπ _ _ (hstab _), hΛt,
+      compressEnd_one W πW e hπ, smul_mul_assoc, one_mul,
+      ← pow_two] at h₀
+    exact h₀
+  -- … and has determinant `q` by the Weil pairing
+  have hdet : LinearMap.det (compressEnd W πW e
+      (P.τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat))) =
+      (q : AlgebraicClosure ℚ_[p]) := by
+    rw [compressEnd_eq_conj_restrict W πW e hπ (hstab _),
+      LinearMap.det_conj]
+    exact P.det_frob q hq hqS (hstab _)
+  -- Cayley–Hamilton against the congruence pins the charpoly
+  have hfr2 : Module.finrank (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p]) = 2 := by simp
+  have hmon : (compressEnd W πW e (P.τJ (globalFrob
+      hq.toHeightOneSpectrumRingOfIntegersRat))).charpoly.Monic :=
+    LinearMap.charpoly_monic _
+  have hdeg : (compressEnd W πW e (P.τJ (globalFrob
+      hq.toHeightOneSpectrumRingOfIntegersRat))).charpoly.natDegree =
+      2 := by
+    rw [LinearMap.charpoly_natDegree]
+    exact hfr2
+  have hP2 := eq_quadratic_of_monic_natDegree_two hmon hdeg
+  have hc0 : (compressEnd W πW e (P.τJ (globalFrob
+      hq.toHeightOneSpectrumRingOfIntegersRat))).charpoly.coeff 0 =
+      (q : AlgebraicClosure ℚ_[p]) := by
+    have hsign := LinearMap.det_eq_sign_charpoly_coeff
+      (compressEnd W πW e (P.τJ (globalFrob
+        hq.toHeightOneSpectrumRingOfIntegersRat)))
+    rw [hfr2, hdet] at hsign
+    have hpow : ((-1 : AlgebraicClosure ℚ_[p])) ^ 2 *
+        (compressEnd W πW e (P.τJ (globalFrob
+          hq.toHeightOneSpectrumRingOfIntegersRat))).charpoly.coeff 0 =
+        (compressEnd W πW e (P.τJ (globalFrob
+          hq.toHeightOneSpectrumRingOfIntegersRat))).charpoly.coeff 0
+      := by ring
+    rw [hpow] at hsign
+    exact hsign.symm
+  have hCH := LinearMap.aeval_self_charpoly
+    (compressEnd W πW e (P.τJ (globalFrob
+      hq.toHeightOneSpectrumRingOfIntegersRat)))
+  rw [hP2] at hCH
+  simp only [map_add, map_mul, map_pow, Polynomial.aeval_X,
+    Polynomial.aeval_C, Algebra.algebraMap_eq_smul_one,
+    smul_mul_assoc, one_mul] at hCH
+  rw [hc0] at hCH
+  have hsub : ((compressEnd W πW e (P.τJ (globalFrob
+        hq.toHeightOneSpectrumRingOfIntegersRat))).charpoly.coeff 1
+      + κ (heckeCoeff M g q)) • compressEnd W πW e
+        (P.τJ (globalFrob
+          hq.toHeightOneSpectrumRingOfIntegersRat)) = 0 := by
+    have hmod : ((compressEnd W πW e (P.τJ (globalFrob
+          hq.toHeightOneSpectrumRingOfIntegersRat))).charpoly.coeff 1
+        + κ (heckeCoeff M g q)) • compressEnd W πW e
+          (P.τJ (globalFrob
+            hq.toHeightOneSpectrumRingOfIntegersRat)) =
+        (compressEnd W πW e (P.τJ (globalFrob
+            hq.toHeightOneSpectrumRingOfIntegersRat)) ^ 2
+          + (compressEnd W πW e (P.τJ (globalFrob
+            hq.toHeightOneSpectrumRingOfIntegersRat))).charpoly.coeff 1
+            • compressEnd W πW e (P.τJ (globalFrob
+              hq.toHeightOneSpectrumRingOfIntegersRat))
+          + (q : AlgebraicClosure ℚ_[p]) • 1)
+        - (compressEnd W πW e (P.τJ (globalFrob
+            hq.toHeightOneSpectrumRingOfIntegersRat)) ^ 2
+          - κ (heckeCoeff M g q) • compressEnd W πW e
+            (P.τJ (globalFrob
+              hq.toHeightOneSpectrumRingOfIntegersRat))
+          + (q : AlgebraicClosure ℚ_[p]) • 1) := by
+      rw [add_smul]
+      abel
+    rw [hmod, hCH, hQ, sub_zero]
+  have hone : ((compressEnd W πW e (P.τJ (globalFrob
+        hq.toHeightOneSpectrumRingOfIntegersRat))).charpoly.coeff 1
+      + κ (heckeCoeff M g q)) •
+      (1 : Module.End (AlgebraicClosure ℚ_[p])
+        (Fin 2 → AlgebraicClosure ℚ_[p])) = 0 := by
+    have h2 : ((compressEnd W πW e (P.τJ (globalFrob
+          hq.toHeightOneSpectrumRingOfIntegersRat))).charpoly.coeff 1
+        + κ (heckeCoeff M g q)) •
+        (compressEnd W πW e (P.τJ (globalFrob
+            hq.toHeightOneSpectrumRingOfIntegersRat)) *
+          compressEnd W πW e (P.τJ ((globalFrob
+            hq.toHeightOneSpectrumRingOfIntegersRat)⁻¹))) = 0 := by
+      rw [← smul_mul_assoc, hsub, zero_mul]
+    rwa [hinv] at h2
+  have hker : ((compressEnd W πW e (P.τJ (globalFrob
+        hq.toHeightOneSpectrumRingOfIntegersRat))).charpoly.coeff 1
+      + κ (heckeCoeff M g q)) •
+      (Pi.single (0 : Fin 2) (1 : AlgebraicClosure ℚ_[p]) :
+        Fin 2 → AlgebraicClosure ℚ_[p]) = 0 := by
+    have h3 := congrArg (fun ψ : Module.End (AlgebraicClosure ℚ_[p])
+        (Fin 2 → AlgebraicClosure ℚ_[p]) =>
+      ψ (Pi.single (0 : Fin 2) (1 : AlgebraicClosure ℚ_[p]))) hone
+    simpa using h3
+  have hc1 : (compressEnd W πW e (P.τJ (globalFrob
+      hq.toHeightOneSpectrumRingOfIntegersRat))).charpoly.coeff 1 =
+      - κ (heckeCoeff M g q) := by
+    rcases smul_eq_zero.mp hker with h | h
+    · exact add_eq_zero_iff_eq_neg.mp h
+    · have h4 : (1 : AlgebraicClosure ℚ_[p]) = 0 := by
+        simpa using congrFun h 0
+      exact absurd h4 one_ne_zero
+  rw [hP2, hc1, hc0, map_neg]
+  ring
 
 omit [IsDomain R] [Module.Finite ℤ_[p] R] [IsModuleTopology ℤ_[p] R] in
 /-- **Determinant normalization of the Frobenius characteristic
