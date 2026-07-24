@@ -14726,9 +14726,258 @@ theorem odd_order_character_eq_one_ray_class
     exact orderOf_eq_one_iff.mp hdgcd
   · exact hνunr q hq hq3 c σ hσ hθ
 
+set_option maxHeartbeats 1000000 in
+set_option backward.isDefEq.respectTransparency false in
+/-- **A quadratic character of an open subgroup of `Γ ℚ` is cut out by
+a square root — the exponent-`2` Kummer leaf** (PROVEN 2026-07-24 —
+created as leaf (i) of the decomposition of
+`quadratic_character_eq_one_ray_class_neg_three` below and resolved
+the same dispatch): a function
+`ν : Γ ℚ → 𝔽̄₃` that is multiplicative on `H = ker θ'` (`hνmul`), of
+pointwise order dividing `2` there (`hνsq`), and trivial on an open
+subgroup `U ⊆ H ∩ ker ν` (`hUopen`, `hUker`), is the sign character of
+a square root: there is `y ∈ ℚ̄` whose square is fixed by ALL of `H`
+and which detects `ν` — for `g ∈ H`, `ν g = 1` exactly when `g y = y`.
+NO arithmetic input: this leaf is pure (infinite) Galois theory of
+`ℚ̄/ℚ`, true for any base in place of `√-3` (hence stated without `x`).
+
+Proof as implemented (Krull correspondence, mathlib
+`Mathlib/FieldTheory/Galois/Infinite.lean`; Neukirch ANT IV §1): the
+values of `ν` on `H` lie in `{1, -1}` (`hνsq` in the domain `𝔽̄₃`), so
+`N = {g | θ' g = 1 ∧ ν g = 1}` is a subgroup of `H = ker θ'`
+(multiplicativity `hνmul`; inverses because `ν g⁻¹ = (ν g)⁻¹ = ν g`
+from `ν g ^ 2 = 1`, and `ν 1 = 1` from `ν 1 = ν 1 * ν 1` with
+`ν 1 ^ 2 = 1`); `N` contains the open `U` (`hUker`), hence is open —
+a subgroup containing an open subgroup is a union of its cosets —
+and therefore closed. If `ν = 1` on all of `H`, take `y = 1`.
+Otherwise pick `g₀ ∈ H` with `ν g₀ = -1`; since `N` is closed,
+`InfiniteGalois.fixingSubgroup_fixedField` recovers `N` from its
+fixed field, so `g₀ ∉ N` yields `t ∈ ℚ̄^N` with `g₀ t ≠ t`. Set
+`y = t - g₀ t ≠ 0`. `N` is stable under conjugation by `H` (`ν` is a
+sign character on `H`), so `g₀ t` is also `N`-fixed
+(`n (g₀ t) = g₀ ((g₀⁻¹ n g₀) t) = g₀ t`), whence `g y = y` for
+`g ∈ N`; and for `g ∈ H \ N` the factorizations `g = (g g₀⁻¹) · g₀`
+and `g g₀ = (g g₀⁻¹) · g₀²` with `g g₀⁻¹, g₀² ∈ N` give `g t = g₀ t`
+and `g (g₀ t) = t`, i.e. `g y = -y ≠ y` in characteristic `0`. Both
+signs square to `1`, so `y²` is `H`-fixed, and `g y = y ↔ ν g = 1`
+on `H`. Consumed by the glue of
+`quadratic_character_eq_one_ray_class_neg_three` below. -/
+theorem exists_kummer_element_of_quadratic_character_ray_class
+    (θ' : Γ ℚ →* Multiplicative (ZMod 2))
+    (ν : Γ ℚ → Dickson.K 3)
+    (hνmul : ∀ g h : Γ ℚ, θ' g = 1 → θ' h = 1 →
+      ν (g * h) = ν g * ν h)
+    (U : Subgroup (Γ ℚ)) (hUopen : IsOpen (U : Set (Γ ℚ)))
+    (hUker : ∀ g ∈ U, θ' g = 1 ∧ ν g = 1)
+    (hνsq : ∀ g : Γ ℚ, θ' g = 1 → ν g ^ 2 = 1) :
+    ∃ y : AlgebraicClosure ℚ,
+      (∀ g : Γ ℚ, θ' g = 1 → g (y ^ 2) = y ^ 2) ∧
+      (∀ g : Γ ℚ, θ' g = 1 → (ν g = 1 ↔ g y = y)) := by
+  classical
+  by_cases htriv : ∀ g : Γ ℚ, θ' g = 1 → ν g = 1
+  · exact ⟨1, fun g _ => by rw [one_pow, map_one],
+      fun g hg => iff_of_true (htriv g hg) (map_one g)⟩
+  · push Not at htriv
+    obtain ⟨g₀, hg₀H, hg₀ν⟩ := htriv
+    -- basic character bookkeeping on `H = ker θ'`
+    have hν0 : ∀ g : Γ ℚ, θ' g = 1 → ν g ≠ 0 := by
+      intro g hg h0
+      have h2 := hνsq g hg
+      rw [h0, sq, mul_zero] at h2
+      exact zero_ne_one h2
+    have hν1 : ν 1 = 1 := by
+      have h := hνmul 1 1 (map_one θ') (map_one θ')
+      rw [mul_one] at h
+      exact h.trans (by rw [← sq]; exact hνsq 1 (map_one θ'))
+    have hνinv : ∀ g : Γ ℚ, θ' g = 1 → ν g⁻¹ = ν g := by
+      intro g hg
+      have hgi : θ' g⁻¹ = 1 := by rw [map_inv, hg, inv_one]
+      have hm := hνmul g g⁻¹ hg hgi
+      rw [mul_inv_cancel, hν1] at hm
+      have h2 := hνsq g hg
+      rw [sq] at h2
+      exact mul_left_cancel₀ (hν0 g hg) (hm.symm.trans h2.symm)
+    have hνneg : ∀ g : Γ ℚ, θ' g = 1 → ν g ≠ 1 → ν g = -1 := by
+      intro g hg hne
+      have hfac : (ν g - 1) * (ν g + 1) = 0 := by
+        linear_combination hνsq g hg
+      rcases mul_eq_zero.mp hfac with h | h
+      · exact absurd (by linear_combination h) hne
+      · linear_combination h
+    -- the kernel `N = H ∩ ker ν` as an open (hence closed) subgroup
+    set N : Subgroup (Γ ℚ) :=
+      { carrier := {g : Γ ℚ | θ' g = 1 ∧ ν g = 1}
+        one_mem' := ⟨map_one θ', hν1⟩
+        mul_mem' := fun ha hb =>
+          ⟨by rw [map_mul, ha.1, hb.1, mul_one],
+            by rw [hνmul _ _ ha.1 hb.1, ha.2, hb.2, mul_one]⟩
+        inv_mem' := fun ha =>
+          ⟨by rw [map_inv, ha.1, inv_one], by rw [hνinv _ ha.1, ha.2]⟩ }
+    have hmemN : ∀ g : Γ ℚ, g ∈ N ↔ θ' g = 1 ∧ ν g = 1 := fun g => Iff.rfl
+    have hg₀N : g₀ ∉ N := fun h => hg₀ν ((hmemN g₀).mp h).2
+    have hUN : U ≤ N := fun u hu => (hmemN u).mpr (hUker u hu)
+    have hNopen : IsOpen (N : Set (Γ ℚ)) := Subgroup.isOpen_mono hUN hUopen
+    have hNclosed : IsClosed (N : Set (Γ ℚ)) := N.isClosed_of_isOpen hNopen
+    -- Krull correspondence: an element of the fixed field moved by `g₀`
+    haveI : IsGalois ℚ (AlgebraicClosure ℚ) := ⟨⟩
+    have hfixL : (IntermediateField.fixedField
+        (E := AlgebraicClosure ℚ) N).fixingSubgroup = N :=
+      InfiniteGalois.fixingSubgroup_fixedField ⟨N, hNclosed⟩
+    have hg₀nf : g₀ ∉ (IntermediateField.fixedField
+        (E := AlgebraicClosure ℚ) N).fixingSubgroup := by
+      rw [hfixL]; exact hg₀N
+    rw [IntermediateField.mem_fixingSubgroup_iff] at hg₀nf
+    push Not at hg₀nf
+    obtain ⟨t, htL, hg₀t⟩ := hg₀nf
+    rw [IntermediateField.mem_fixedField_iff] at htL
+    -- conjugation stability of `N` inside `H`, and the two orbit facts
+    have hmulapp : ∀ (a b : Γ ℚ) (u : AlgebraicClosure ℚ),
+        (a * b) u = a (b u) := fun a b u => rfl
+    have hg₀i : θ' g₀⁻¹ = 1 := by rw [map_inv, hg₀H, inv_one]
+    have hconjN : ∀ n : Γ ℚ, n ∈ N → g₀⁻¹ * n * g₀ ∈ N := by
+      intro n hn
+      obtain ⟨hnθ, hnν⟩ := (hmemN n).mp hn
+      have h1 : θ' (g₀⁻¹ * n) = 1 := by rw [map_mul, hg₀i, hnθ, mul_one]
+      refine (hmemN _).mpr ⟨?_, ?_⟩
+      · rw [map_mul, h1, hg₀H, mul_one]
+      · rw [hνmul _ _ h1 hg₀H, hνmul _ _ hg₀i hnθ, hνinv _ hg₀H, hnν,
+          mul_one, ← sq]
+        exact hνsq g₀ hg₀H
+    have hg₀orbit : ∀ n : Γ ℚ, n ∈ N → n (g₀ t) = g₀ t := by
+      intro n hn
+      calc n (g₀ t) = (n * g₀) t := (hmulapp n g₀ t).symm
+        _ = (g₀ * (g₀⁻¹ * n * g₀)) t := by
+            rw [show n * g₀ = g₀ * (g₀⁻¹ * n * g₀) by group]
+        _ = g₀ ((g₀⁻¹ * n * g₀) t) := hmulapp _ _ _
+        _ = g₀ t := by rw [htL _ (hconjN n hn)]
+    have hg₀sq : g₀ * g₀ ∈ N := (hmemN _).mpr
+      ⟨by rw [map_mul, hg₀H, mul_one],
+        by rw [hνmul _ _ hg₀H hg₀H, ← sq]; exact hνsq g₀ hg₀H⟩
+    -- the two sign computations for `y = t - g₀ t`
+    have hfix1 : ∀ g : Γ ℚ, θ' g = 1 → ν g = 1 →
+        g (t - g₀ t) = t - g₀ t := by
+      intro g hg hν
+      have hgN : g ∈ N := (hmemN g).mpr ⟨hg, hν⟩
+      rw [map_sub, htL _ hgN, hg₀orbit g hgN]
+    have hfix2 : ∀ g : Γ ℚ, θ' g = 1 → ν g ≠ 1 →
+        g (t - g₀ t) = -(t - g₀ t) := by
+      intro g hg hν
+      have hn : g * g₀⁻¹ ∈ N := (hmemN _).mpr
+        ⟨by rw [map_mul, hg, hg₀i, mul_one],
+          by rw [hνmul _ _ hg hg₀i, hνinv _ hg₀H, hνneg g hg hν,
+            hνneg g₀ hg₀H hg₀ν]; norm_num⟩
+      have hgt : g t = g₀ t := by
+        calc g t = (g * g₀⁻¹ * g₀) t := by rw [inv_mul_cancel_right]
+          _ = (g * g₀⁻¹) (g₀ t) := hmulapp _ _ _
+          _ = g₀ t := hg₀orbit _ hn
+      have hggt : g (g₀ t) = t := by
+        calc g (g₀ t) = (g * g₀) t := (hmulapp _ _ _).symm
+          _ = ((g * g₀⁻¹) * (g₀ * g₀)) t := by
+              rw [show g * g₀ = (g * g₀⁻¹) * (g₀ * g₀) by group]
+          _ = (g * g₀⁻¹) ((g₀ * g₀) t) := hmulapp _ _ _
+          _ = (g * g₀⁻¹) t := by rw [htL _ hg₀sq]
+          _ = t := htL _ hn
+      rw [map_sub, hgt, hggt, neg_sub]
+    -- assembly
+    refine ⟨t - g₀ t, fun g hg => ?_, fun g hg => ⟨hfix1 g hg, fun hgy => ?_⟩⟩
+    · rw [map_pow]
+      by_cases hν : ν g = 1
+      · rw [hfix1 g hg hν]
+      · rw [hfix2 g hg hν, neg_sq]
+    · by_contra hν
+      have h2 := hfix2 g hg hν
+      rw [hgy] at h2
+      have h3 : (2 : AlgebraicClosure ℚ) * (t - g₀ t) = 0 := by
+        linear_combination h2
+      rcases mul_eq_zero.mp h3 with h4 | h4
+      · norm_num at h4
+      · exact sub_ne_zero_of_ne (Ne.symm hg₀t) h4
+
+/-- **A square root over `ℚ(√-3)` unramified outside `3` is rational
+over `ℚ(√-3)` — the `d = -3` ray-class-triviality leaf** (sorry node,
+created 2026-07-24 as leaf (ii) of the decomposition of
+`quadratic_character_eq_one_ray_class_neg_three` below, and the
+genuinely arithmetic input — the concrete form of the triviality of
+the ray class group of `ℚ(√-3)` of modulus `(√-3)`): an element
+`y ∈ ℚ̄` whose square is fixed by all of `H = ker θ' = Γ_{ℚ(√-3)}`
+(`hy2`) and which is itself fixed by every member of every
+`Γ ℚ`-conjugate of the local inertia at every prime `q ≠ 3` that lies
+in `H` (`hyunr`) is fixed by all of `H`.
+
+Intended content (Serre, Duke 1987 §5.3; Neukirch ANT VI §6). Setup:
+`H` is the (open, hence closed) stabilizer of `x = √-3` (`hθ'x`), so
+by the Krull correspondence `α := y²` lies in the fixed field
+`F = ℚ(x) = ℚ(√-3) = ℚ(ω)`, `ω` a primitive cube root of unity.
+Suppose some `g ∈ H` moves `y`; then `y ∉ F` and `M = F(y) = F(√α)`
+is a quadratic extension of `F`. The hypothesis `hyunr` ranges over
+ALL conjugates `c`, i.e. over all places `w` of `F` above each
+`q ≠ 3`: the inertia subgroup of `Γ_F = H` at `w` is
+`H ∩ c·I_q·c⁻¹` for the corresponding `c`, so every inertia element
+at `w` fixes `y`, i.e. `M/F` is unramified at every finite place away
+from `3`. Two recorded routes to the contradiction, resolver's
+choice:
+
+(α) *Explicit Kummer arithmetic in the Euclidean ring
+`𝒪_F = ℤ[ω]`* (class number `1`, units `μ₆`): unramifiedness of
+`F(√α)/F` at a prime `𝔮 ∤ 2·3` forces `v_𝔮(α)` even, and at the
+inert prime `𝔮₂ = (2)` (inert since `-3 ≡ 5 mod 8`) it forces
+`v_{𝔮₂}(α)` even as well; since `ℤ[ω]` is a PID, `α` is, modulo
+`Fˣ²`, a unit times `π₃^ε`, `π₃ = √-3 = 1 + 2ω`, `ε ∈ {0,1}`; and
+modulo squares `μ₆/μ₆² = {±1}` (`ω = (ω²)²`), so
+`α ∈ {1, -1, π₃, -π₃}·Fˣ²`. The three nontrivial classes are all
+RAMIFIED at `𝔮₂`: in the unramified local field `K₂ = ℚ₂(ω)`
+(`e = 1`), a quadratic class is unramified iff it meets
+`K₂ˣ²·(1 + 4𝒪₂)` (Artin–Schreier normalization: `K₂(√(1+4c)) =
+K₂[z]/(z² - z - c)` with `z = (1+√(1+4c))/2`, integral and separable
+mod `2`); the square of a unit of `ℤ₂[ω]` mod `4` depends only on the
+unit mod `2` (`(u+2t)² ≡ u² mod 4`), giving unit squares mod `4`
+exactly `{1² , ω², (1+ω)²} = {1, 3+3ω, ω}`; but `-1 ≡ 3`,
+`π₃ = 1+2ω`, `-π₃ ≡ 3+2ω mod 4` lie in none of these classes mod
+`4𝒪₂`. So `α ∈ Fˣ²`, `y ∈ F` after all — contradiction.
+
+(β) *Minkowski discriminant bound, NO local square computation*
+(matching this file's imported `Discriminant.Different` and
+ramification-inertia vocabulary): `M/F` is unramified at every finite
+place away from `3` — the place above `2` included — and TAME at the
+unique prime `𝔭₃ = (√-3)` above `3` (`e ≤ 2` is prime to the residue
+characteristic `3`), so the relative different divides `𝔭₃` and
+`|d_M| = |d_F|² · N_{F/ℚ}(𝔡_{M/F}) ≤ 9 · 3 = 27`; but `M` is a
+totally imaginary quartic field (`F` is imaginary), and the Minkowski
+bound — every ideal class contains an ideal of norm at most
+`(4/π)^{r₂}·(n!/nⁿ)·√|d_M|`, applied to any nonzero ideal of norm
+`≥ 1` — forces `√|d_M| ≥ (π/4)²·(4⁴/4!) = (π/4)²·(32/3) ≈ 6.58`,
+i.e. `|d_M| ≥ 44 > 27`. Contradiction; so no `g ∈ H` moves `y`. -/
+theorem kummer_element_fixed_of_unramified_outside_three_neg_three
+    (θ' : Γ ℚ →* Multiplicative (ZMod 2))
+    (x : AlgebraicClosure ℚ)
+    (hx : x ^ 2 = ((-3 : ℤ) : AlgebraicClosure ℚ))
+    (hθ'x : ∀ g : Γ ℚ, θ' g = 1 ↔ g x = x)
+    (y : AlgebraicClosure ℚ)
+    (hy2 : ∀ g : Γ ℚ, θ' g = 1 → g (y ^ 2) = y ^ 2)
+    (hyunr : ∀ (q : ℕ) (hq : q.Prime), q ≠ 3 → ∀ c : Γ ℚ,
+      ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+        θ' (c * Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) σ * c⁻¹) = 1 →
+        (c * Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) σ * c⁻¹) y = y) :
+    ∀ g : Γ ℚ, θ' g = 1 → g y = y := by
+  sorry
+
 /-- **A quadratic character of `Γ_{ℚ(√-3)}` unramified outside `3` is
-trivial — the `d = -3` narrow-ray-class core** (sorry node, isolated
-2026-07-24 from `anti_invariant_quadratic_character_eq_one_ray_class`
+trivial — the `d = -3` narrow-ray-class core** (DECOMPOSED 2026-07-24
+into the two leaves above — the PROVEN exponent-`2` Kummer leaf
+`exists_kummer_element_of_quadratic_character_ray_class` (the
+character `ν` is the sign character of a square root `y` with
+`y² ∈ ℚ(√-3)`) and the sorried arithmetic leaf
+`kummer_element_fixed_of_unramified_outside_three_neg_three` (a
+square root over `ℚ(√-3)` unramified outside `3` already lies in
+`ℚ(√-3)` — the concrete triviality of the ray class group of modulus
+`(√-3)`) — with the assembly PROVEN here: the detection equivalence
+of leaf (i) converts `hνunr` into the fixing hypothesis of leaf (ii),
+and back into `ν = 1` on `H`; originally isolated 2026-07-24 from
+`anti_invariant_quadratic_character_eq_one_ray_class`
 below, whose `d`-case split and at-`2` elimination of the other six
 fields are PROVEN glue there): a function `ν : Γ ℚ → 𝔽̄₃` that is a
 multiplicative character on `H = ker θ' = Γ_{ℚ(√-3)}` (`hνmul`) of
@@ -14776,7 +15025,14 @@ theorem quadratic_character_eq_one_ray_class_neg_three
           (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
             hq.toHeightOneSpectrumRingOfIntegersRat)) σ * c⁻¹) = 1) :
     ∀ g : Γ ℚ, θ' g = 1 → ν g = 1 := by
-  sorry
+  obtain ⟨y, hy2, hyiff⟩ :=
+    exists_kummer_element_of_quadratic_character_ray_class θ' ν hνmul U
+      hUopen hUker hνsq
+  have hfix : ∀ g : Γ ℚ, θ' g = 1 → g y = y :=
+    kummer_element_fixed_of_unramified_outside_three_neg_three θ' x hx hθ'x
+      y hy2 (fun q hq hq3 c σ hσ hθ =>
+        (hyiff _ hθ).mp (hνunr q hq hq3 c σ hσ hθ))
+  exact fun g hg => (hyiff g hg).mpr (hfix g hg)
 
 /-- **`ℚ(√d)` is ramified at `2` for `d ∈ {-1, ±2, 3, ±6}`, in
 inertia-element form** (sorry node, isolated 2026-07-24 as the local
