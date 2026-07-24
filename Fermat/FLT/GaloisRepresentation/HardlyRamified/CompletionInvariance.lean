@@ -1105,6 +1105,9 @@ end Dense
 
 section LocalConductor
 
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
 /-- **Conductor triviality and the local different** (the
 Kummer–Dedekind computation over the complete base): if `x ∈ 𝒪_M`
 generates `M` over `ℚ_q` and `ℤ[x]` is dense in `𝒪_M`, then
@@ -1124,7 +1127,101 @@ theorem differentIdeal_eq_span_of_dense
     differentIdeal Ov (IntegralClosure Ov M) =
       Ideal.span {Polynomial.aeval x
         (Polynomial.derivative (minpoly Ov x))} := by
-  sorry
+  classical
+  haveI : IsFractionRing (IntegralClosure Ov M) M :=
+    IsIntegralClosure.isFractionRing_of_finite_extension Ov Kv M
+      (IntegralClosure Ov M)
+  haveI : Module.Finite Ov (IntegralClosure Ov M) :=
+    IsIntegralClosure.finite Ov Kv M (IntegralClosure Ov M)
+  haveI : CharZero Kv :=
+    charZero_of_injective_algebraMap (algebraMap ℚ Kv).injective
+  haveI : CharZero M :=
+    charZero_of_injective_algebraMap (algebraMap Kv M).injective
+  have hqB0 : ((q : ℕ) : IntegralClosure Ov M) ≠ 0 := by
+    intro h0
+    refine (Nat.cast_ne_zero.mpr hq.ne_zero : ((q : ℕ) : M) ≠ 0) ?_
+    rw [← map_natCast (algebraMap (IntegralClosure Ov M) M) q, h0, map_zero]
+  -- `𝔪_M^{n₁} = (q)` for some `n₁` (DVR ideal classification)
+  obtain ⟨π, hπirr⟩ :=
+    IsDiscreteValuationRing.exists_irreducible (IntegralClosure Ov M)
+  obtain ⟨n₁, hn₁⟩ := IsDiscreteValuationRing.ideal_eq_span_pow_irreducible
+    (s := Ideal.span {((q : ℕ) : IntegralClosure Ov M)})
+    (by rw [Ne, Ideal.span_singleton_eq_bot]; exact hqB0) hπirr
+  have hpow : IsLocalRing.maximalIdeal (IntegralClosure Ov M) ^ n₁ =
+      Ideal.span {((q : ℕ) : IntegralClosure Ov M)} := by
+    rw [hπirr.maximalIdeal_eq, Ideal.span_singleton_pow, ← hn₁]
+  -- Nakayama: `𝒪_q[x] = 𝒪_M`
+  have hadj : Algebra.adjoin Ov ({x} : Set (IntegralClosure Ov M)) = ⊤ := by
+    set N₀ : Submodule Ov (IntegralClosure Ov M) :=
+      Subalgebra.toSubmodule (Algebra.adjoin Ov ({x} : Set (IntegralClosure Ov M)))
+      with hN₀def
+    have hmem : ∀ hpoly : Polynomial ℤ, Polynomial.aeval x hpoly ∈ N₀ := by
+      intro hpoly
+      have h1 : Polynomial.aeval x hpoly =
+          Polynomial.aeval x (hpoly.map (algebraMap ℤ Ov)) := by
+        rw [Polynomial.aeval_def, Polynomial.aeval_def, Polynomial.eval₂_map,
+          Subsingleton.elim ((algebraMap Ov (IntegralClosure Ov M)).comp
+            (algebraMap ℤ Ov)) (algebraMap ℤ (IntegralClosure Ov M))]
+      rw [h1]
+      have h2 : Polynomial.aeval x (hpoly.map (algebraMap ℤ Ov)) ∈
+          Algebra.adjoin Ov ({x} : Set (IntegralClosure Ov M)) := by
+        rw [Algebra.adjoin_singleton_eq_range_aeval]
+        exact ⟨hpoly.map (algebraMap ℤ Ov), rfl⟩
+      exact h2
+    have htop : ∀ y : IntegralClosure Ov M,
+        y ∈ N₀ ⊔ (IsLocalRing.maximalIdeal Ov • ⊤ :
+          Submodule Ov (IntegralClosure Ov M)) := by
+      intro y
+      obtain ⟨hpoly, hy⟩ := hdens y n₁
+      rw [hpow, Ideal.mem_span_singleton] at hy
+      obtain ⟨m, hm⟩ := hy
+      have hyeq : y = Polynomial.aeval x hpoly +
+          ((q : ℕ) : IntegralClosure Ov M) * m := by
+        linear_combination hm
+      rw [hyeq]
+      refine Submodule.add_mem _ (Submodule.mem_sup_left (hmem hpoly))
+        (Submodule.mem_sup_right ?_)
+      have hq' : ((q : ℕ) : IntegralClosure Ov M) * m = ((q : ℕ) : Ov) • m := by
+        rw [Algebra.smul_def, map_natCast]
+      rw [hq']
+      refine Submodule.smul_mem_smul ?_ Submodule.mem_top
+      rw [maximalIdeal_adicCompletionIntegers_eq_span hq]
+      exact Ideal.mem_span_singleton_self _
+    -- pass to the quotient and apply Nakayama
+    have hQle : (⊤ : Submodule Ov ((IntegralClosure Ov M) ⧸ N₀)) ≤
+        IsLocalRing.maximalIdeal Ov • ⊤ := by
+      intro qy _
+      obtain ⟨y, rfl⟩ := N₀.mkQ_surjective qy
+      obtain ⟨a, ha, b, hb, hab⟩ := Submodule.mem_sup.mp (htop y)
+      have h4 : N₀.mkQ y = N₀.mkQ b := by
+        rw [← hab, map_add]
+        have h5 : N₀.mkQ a = 0 := (Submodule.Quotient.mk_eq_zero N₀).mpr ha
+        rw [Submodule.mkQ_apply] at h5 ⊢
+        rw [h5, zero_add]
+      rw [h4]
+      have h6 : N₀.mkQ b ∈ Submodule.map N₀.mkQ
+          (IsLocalRing.maximalIdeal Ov • ⊤ :
+            Submodule Ov (IntegralClosure Ov M)) :=
+        Submodule.mem_map_of_mem hb
+      rw [Submodule.map_smul''] at h6
+      exact Submodule.smul_mono le_rfl le_top h6
+    have hfg : (⊤ : Submodule Ov ((IntegralClosure Ov M) ⧸ N₀)).FG :=
+      Module.Finite.fg_top
+    have hjac : IsLocalRing.maximalIdeal Ov ≤ (⊥ : Ideal Ov).jacobson := by
+      rw [IsLocalRing.jacobson_eq_maximalIdeal (⊥ : Ideal Ov) bot_ne_top]
+    have hbot := Submodule.eq_bot_of_le_smul_of_le_jacobson_bot
+      (IsLocalRing.maximalIdeal Ov) ⊤ hfg hQle hjac
+    rw [eq_top_iff]
+    rintro y -
+    have h7 : N₀.mkQ y ∈ (⊤ : Submodule Ov ((IntegralClosure Ov M) ⧸ N₀)) :=
+      Submodule.mem_top
+    rw [hbot, Submodule.mem_bot] at h7
+    exact (Submodule.Quotient.mk_eq_zero N₀).mp h7
+  -- the conductor is the unit ideal, so the different is principal
+  have hcond : conductor Ov x = ⊤ := conductor_eq_top_of_adjoin_eq_top hadj
+  have hmul := conductor_mul_differentIdeal Ov Kv M x hx
+  rw [hcond, Ideal.top_mul] at hmul
+  exact hmul
 
 /-- **The constant coefficient of the minimal polynomial of a local
 unit is a unit**: the integral norm `intNorm 𝒪_q 𝒪_M` is a monoid
@@ -1139,7 +1236,43 @@ theorem isUnit_coeff_zero_minpoly
       {(algebraMap (IntegralClosure Ov M) M x : M)} = ⊤)
     (hxu : IsUnit x) :
     IsUnit ((minpoly Ov x).coeff 0) := by
-  sorry
+  classical
+  haveI : IsFractionRing (IntegralClosure Ov M) M :=
+    IsIntegralClosure.isFractionRing_of_finite_extension Ov Kv M
+      (IntegralClosure Ov M)
+  -- the unit is carried to a unit of `𝒪_q` by the integral norm
+  have hnormunit : IsUnit (Algebra.intNorm Ov (IntegralClosure Ov M) x) :=
+    hxu.map (Algebra.intNorm Ov (IntegralClosure Ov M))
+  -- the power basis of `M` generated by `x`
+  have hxM_int : IsIntegral Kv (algebraMap (IntegralClosure Ov M) M x) :=
+    IsIntegral.of_finite Kv _
+  let pb0 := Algebra.adjoin.powerBasis hxM_int
+  let e : Algebra.adjoin Kv
+      ({(algebraMap (IntegralClosure Ov M) M x : M)} : Set M) ≃ₐ[Kv] M :=
+    (Subalgebra.equivOfEq _ _ hx).trans Subalgebra.topEquiv
+  let pb : PowerBasis Kv M := pb0.map e
+  have hgen : pb.gen = (algebraMap (IntegralClosure Ov M) M x : M) := by
+    show e pb0.gen = _
+    rw [Algebra.adjoin.powerBasis_gen]
+    rfl
+  -- the norm computes the constant coefficient of the minimal polynomial
+  have hnorm := Algebra.PowerBasis.norm_gen_eq_coeff_zero_minpoly pb
+  rw [hgen] at hnorm
+  -- transport along `algebraMap Ov Kv`
+  have hxint : IsIntegral Ov x := IsIntegralClosure.isIntegral Ov M x
+  have hminp : minpoly Kv (algebraMap (IntegralClosure Ov M) M x) =
+      (minpoly Ov x).map (algebraMap Ov Kv) :=
+    minpoly.isIntegrallyClosed_eq_field_fractions Kv M hxint
+  have hintnorm := Algebra.algebraMap_intNorm (A := Ov) (K := Kv) (L := M)
+    (B := IntegralClosure Ov M) (x := x)
+  rw [hnorm, hminp, Polynomial.coeff_map] at hintnorm
+  -- conclude: `intNorm x = ±(coeff 0)` in `𝒪_q`
+  have hsign : Algebra.intNorm Ov (IntegralClosure Ov M) x =
+      (-1) ^ pb.dim * ((minpoly Ov x).coeff 0) := by
+    apply IsFractionRing.injective Ov Kv
+    rw [hintnorm, map_mul, map_pow, map_neg, map_one]
+  rw [hsign] at hnormunit
+  exact (IsUnit.mul_iff.mp hnormunit).2
 
 end LocalConductor
 
