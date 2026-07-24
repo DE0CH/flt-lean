@@ -8330,77 +8330,181 @@ theorem WeierstrassCurve.exists_bialgEquiv_of_torsion_points_equiv
   exact exists_bialgEquiv_of_algEquiv_conv K Ksep HK₁ HK₂ e hone hmul
 
 set_option backward.isDefEq.respectTransparency false in
-/-- **The Katz–Mazur Hopf order** (sorry node; the CURVE half of the decomposed
-Katz–Mazur existence leaf `exists_torsion_flat_model_of_good_reduction_prime_pow`,
-freed 2026-07-23 of all structure transport, and stated for ANY torsion order
-`m` nonzero in `K` — no primality and no non-invertibility in `R` is needed for
-the order to exist): inside the finite étale Hopf `K`-algebra `HK` of the
-`m`-torsion of a good-reduction curve, some finitely generated `R`-subalgebra
-`H₀` spans `HK` over `K` and is closed under the Hopf structure maps — the
-counit takes `H₀` into `R`, the antipode preserves `H₀`, and the
-comultiplication takes `H₀` into the `R`-span of the pure tensors of `H₀`.
-Unlike the unramified case, `H₀` is NOT the integral closure of `R` (for `μ_p`
-over `ℤ_p` the normalization has a special fibre with two connected components
-of lengths `1` and `p - 1`, which is not a group scheme). The mathematical
-content is [Katz–Mazur, *Arithmetic moduli of elliptic curves*, Thm 2.3.1]:
-`H₀` is (the image in the generic fibre of) the affine algebra of the kernel
-`𝓔[m]` of multiplication by `m` on the elliptic scheme `𝓔` of the minimal
-(good-reduction) Weierstrass equation. It suffices to construct the order for
-ONE `HK` carrying an equivariant points isomorphism: any other is Hopf-isomorphic
-to it by `exists_bialgEquiv_of_torsion_points_equiv` (proven), and Hopf-closed
-orders transport along Hopf isomorphisms.
+omit [DecidableEq Ksep] in
+/-- **Point-integral elements of a finite étale algebra are integral over the
+DVR** (sorry node; curve-free étale leaf of the Katz–Mazur order assembly
+`exists_hopf_order_of_good_reduction`): an element of a finite étale
+`K`-algebra whose value at every `Kˢᵉᵖ`-point is integral over `R` is integral
+over `R`. The integrality hypothesis is phrased through
+`RingHom.IsIntegralElem` for the composite `R → K → Kˢᵉᵖ` to avoid demanding
+an `Algebra R Kˢᵉᵖ` instance in the signature. Intended proof: the point set
+is finite (`Finite.algHom`), and the monic `q := ∏_φ (X - C (φ a)) ∈ Kˢᵉᵖ[X]`
+has Galois-fixed coefficients — postcomposition by `σ` permutes the points,
+and `σ (φ a) = (σ.toAlgHom.comp φ) a` — hence coefficients in `K`
+(`InfiniteGalois.mem_range_algebraMap_iff_fixed`); the coefficients are also
+integral over `R` (sums of products of the integral values `φ a`, working in
+`Kˢᵉᵖ` as an `R`-algebra through a proof-local `letI`), hence lie in the
+integrally closed DVR `R` (`IsIntegrallyClosed.isIntegral_iff` over the
+fraction field `K`), giving a monic `q₀ ∈ R[X]` mapping onto `q`; finally
+`aeval a q₀ = 0` because every point kills it — `φ (aeval a q₀) = q (φ a) = 0`
+— and points separate (`eq_zero_of_forall_algHom_eq_zero`). -/
+theorem isIntegral_of_forall_algHom_isIntegralElem
+    (A : Type*) [CommRing A] [Algebra K A] [Module.Finite K A] [Algebra.Etale K A]
+    [Algebra R A] [IsScalarTower R K A]
+    (a : A)
+    (ha : ∀ φ : A →ₐ[K] Ksep,
+      ((algebraMap K Ksep).comp (algebraMap R K)).IsIntegralElem (φ a)) :
+    IsIntegral R a := by
+  sorry
 
-SCHEME-FREE CONSTRUCTION ROADMAP (worked out 2026-07-23, restated for the
-Hopf-ORDER formulation; `𝓔[m]` is flat, so it is the schematic closure of its
-generic fibre, so `H₀` is the image of the functions on any affine open
-`U ⊇ 𝓔[m]` inside the étale generic-fibre algebra):
+set_option backward.isDefEq.respectTransparency false in
+omit [DecidableEq Ksep] in
+/-- **A point-separating subalgebra of a finite étale algebra is everything**
+(sorry node; curve-free étale leaf of the Katz–Mazur order assembly
+`exists_hopf_order_of_good_reduction` — the spanning stage of the Katz–Mazur
+roadmap, the dimension-squeeze route promised next to
+`exists_eval_eq_of_equivariant`): a `K`-subalgebra `B` of a finite étale
+`K`-algebra `A` that separates the `Kˢᵉᵖ`-points of `A` is all of `A`.
+Intended proof: `B` is itself finite étale (every element of `A` — hence of
+`B` — is killed by a separable polynomial over `K`, because `A` is étale;
+compare `galoisEquivariantAlgebra_exists_separable_annihilator` and the
+formally-étale criterion used for `galoisEquivariantAlgebra_formallyEtale`);
+the restriction map `(A →ₐ[K] Kˢᵉᵖ) → (B →ₐ[K] Kˢᵉᵖ)` is injective by the
+separation hypothesis and surjective by integrality lifting — `B ⊆ A` is an
+integral extension of artinian reduced rings, so lying-over puts a prime of
+`A` over each kernel, and separability of the residue extension prolongs the
+embedding into `Kˢᵉᵖ` (`IsSepClosed.lift`) — and it is
+`Gal(Kˢᵉᵖ/K)`-equivariant; Grothendieck full faithfulness for the finite
+étale algebra `B` (`exists_algHom_of_algHom_map`, applied to the inverse of
+the restriction bijection) yields `s : A →ₐ[K] B` with `B.val.comp s` acting
+as the identity on the points of `A`, hence `B.val.comp s = AlgHom.id`
+by separation (`eq_zero_of_forall_algHom_eq_zero`), so the inclusion `B.val`
+is surjective and `B = ⊤`. -/
+theorem subalgebra_eq_top_of_algHom_separating
+    (A : Type*) [CommRing A] [Algebra K A] [Module.Finite K A] [Algebra.Etale K A]
+    (B : Subalgebra K A)
+    (hsep : ∀ φ ψ : A →ₐ[K] Ksep, (∀ b ∈ B, φ b = ψ b) → φ = ψ) :
+    B = ⊤ := by
+  sorry
 
-1. Carrier. Realize `HK` concretely as the `Gal(L/K)`-equivariant functions
-   `V → L` of the `GaloisEtalePackage` section, `V := E(Kˢᵉᵖ)[m]` (finite by
-   `torsion_finite_of_ne_zero`), `L` a finite Galois splitting subextension —
-   or transport the order constructed there along the Hopf isomorphism above.
+set_option backward.isDefEq.respectTransparency false in
+/-- **The Katz–Mazur generators** (sorry node; the curve core of the Hopf-order
+leaf `exists_hopf_order_of_good_reduction`, whose assembly from this bundle is
+PROVEN — all remaining Hopf-order bookkeeping has been discharged there, so
+this statement is pure curve arithmetic against the abstract étale torsion
+algebra): finitely many elements of the finite étale Hopf `K`-algebra `HK` of
+the `m`-torsion of a good-reduction curve that (i) take values integral over
+`R` at every `Kˢᵉᵖ`-point, (ii) separate the `Kˢᵉᵖ`-points, (iii) are closed
+under the antipode relative to the `R`-subalgebra they generate, and (iv) have
+comultiplication in the `R`-span of the pure tensors of that subalgebra. The
+mathematical content is [Katz–Mazur, *Arithmetic moduli of elliptic curves*,
+Thm 2.3.1]: the generators are the monomial sections of the affine algebra of
+the kernel `𝓔[m]` of multiplication by `m` on the elliptic scheme `𝓔` of the
+minimal (good-reduction) Weierstrass equation.
+
+SCHEME-FREE CONSTRUCTION ROADMAP (worked out 2026-07-23, restated 2026-07-24
+for the generators formulation inside the ABSTRACT `HK`; no transport to a
+concrete carrier is needed — étale Gelfand duality realizes elements of `HK`
+from equivariant functions on the points):
+
+1. Carrier. Every `Gal(Kˢᵉᵖ/K)`-equivariant function on the point set
+   `HK →ₐ[K] Kˢᵉᵖ` is `φ ↦ φ g` for a unique `g ∈ HK`
+   (`exists_eval_eq_of_equivariant` for existence,
+   `eq_zero_of_forall_algHom_eq_zero` for uniqueness); via `f` the points ARE
+   the `m`-torsion points of `E(Kˢᵉᵖ)`, equivariantly by `hf`, so a generator
+   is specified by an equivariant function `V → Kˢᵉᵖ` on
+   `V := E(Kˢᵉᵖ)[m]` (finite by `torsion_finite_of_ne_zero`).
 2. Avoiding denominator. Choose `h ∈ R[X]` monic of degree `d ≥ 2` whose
    reduction is coprime to the reduced affine-torsion locus: `h(x(P))` is a
-   unit of the valuation ring for every torsion point `P` with integral
-   abscissa (possible because the residue field admits irreducibles of
-   arbitrarily large degree avoiding the finitely many torsion abscissa
-   residues; for non-integral abscissas `v(h(x(P))) = d·v(x(P)) < 0`
-   automatically). Then `U := 𝓔 ∖ V(h ∘ x)` contains the whole kernel,
-   including the origin.
-3. Generators. `H₀` := the `R`-subalgebra of equivariant functions generated
-   by the finitely many `g_{a,b} : P ↦ x(P)^a y(P)^b / h(x(P))^j` (with
-   `2a + 3b ≤ 2dj`, `b ≤ 1`, value `0`-or-limit at `P = 0`; these are the
-   monomial sections of `Γ(U)` restricted to the kernel). Each `g_{a,b}` has
-   integral values at every point (choice of `h`), hence is integral over
-   `R`: `H₀` is module-finite (`(Subalgebra.toSubmodule H₀).FG`).
-4. Spanning. `K · H₀` is a `K`-subalgebra of the étale algebra separating the
-   `Kˢᵉᵖ`-points (the `g_{a,b}` separate affine torsion points from each
-   other and from the origin), and a separating subalgebra of a finite étale
-   algebra is everything (both are étale — subalgebras of separable algebras
-   are separable — so `dim = #points` on both sides, restriction of points is
-   injective by separation and surjective by integrality lifting; compare the
-   dimension-squeeze route of `exists_eval_eq_of_equivariant`, which proves
-   the spanning without any point counting). This is the span hypothesis
-   `Submodule.span K H₀ = ⊤`.
-5. Hopf-closure — THE Katz–Mazur core: `Δ g_{a,b}` lies in the `R`-span of
-   pure tensors of `H₀`, i.e. the two-variable functions
-   `(P, Q) ↦ g_{a,b}(P + Q)` are `R`-polynomial in `g_{a',b'}(P),
-   g_{a'',b''}(Q)`. This is the integrality of the addition law relative to
-   `h` on the kernel — the point where the division-polynomial arithmetic
-   enters: the addition formulas have denominators `(x(P) - x(Q))²` resp.
-   `ψ²`, controlled on the torsion locus by the monic
-   `(Φ n).eval X - ξ * (ΨSq n).eval X` (degree `n²` over `R[ξ]`) and the
-   fibrewise coprimality `isCoprime_Φ_ΨSq` (proven,
-   `Fermat.FLT.EllipticCurve.PhiPsiCoprime`). Counit and antipode closure are
-   immediate (`ε g = g(0)`, integral over `R` and in `K`, hence in the
-   integrally closed DVR `R`; `S g = g ∘ (-1)` is again a generator up to the
-   curve relation).
+   unit of every valuation ring of `Kˢᵉᵖ` over `R` for every torsion point
+   `P` with abscissa integral over `R` (possible because the residue field
+   admits monic polynomials of arbitrary degree avoiding the finitely many
+   torsion abscissa residues — an irreducible of large degree when the
+   residue field is finite, a power `(X - c)^d` avoiding the residues when it
+   is infinite; for non-integral abscissas `v(h(x(P))) = d·v(x(P)) < 0`
+   automatically). Coordinates are taken on a good-reduction integral model.
+3. Generators. The equivariant functions `g_{a,b,j} : P ↦ x(P)^a y(P)^b /
+   h(x(P))^j` (with `2a + 3b ≤ 2dj`, `b ≤ 1`, value `0`-or-`1` at `P = 0`
+   according to `2a + 3b < 2dj` or `=`), realized in `HK` by stage 1. Each
+   has values integral over `R` at every point by the choice of `h` — this is
+   hypothesis (i), which the consuming assembly feeds to
+   `isIntegral_of_forall_algHom_isIntegralElem`.
+4. Separation. `1/h(x)` distinguishes the origin (value `0`) from the affine
+   points (values nonzero), and `x/h(x)^j`, `y/h(x)^j` then distinguish
+   distinct affine points — hypothesis (ii), which the assembly feeds to
+   `subalgebra_eq_top_of_algHom_separating` for the spanning of the order.
+5. Hopf closure — THE Katz–Mazur core. Antipode: `S g` is the function
+   `P ↦ g(-P)` (the antipode point is the convolution inverse, `f`-image
+   `-f(P)`), and `(x, y)(-P) = (x, -y - a₁x - a₃)` keeps the generator family
+   stable up to `R`-combinations — hypothesis (iii), shallow. Comultiplication:
+   `Δ g_{a,b,j}` is the two-variable function `(P, Q) ↦ g_{a,b,j}(P + Q)`
+   (points of `HK ⊗[K] HK` are convolution products through
+   `Algebra.TensorProduct.lift`), and the claim is that it is an
+   `R`-polynomial in the `g_{a',b',j'}(P)` and `g_{a'',b'',j''}(Q)` — the
+   integrality of the addition law relative to `h` on the kernel, where the
+   division-polynomial arithmetic enters: the addition formulas have
+   denominators `(x(P) - x(Q))²` resp. `ψ²`, controlled on the torsion locus
+   by the monic `(Φ n).eval X - ξ * (ΨSq n).eval X` (degree `n²` over `R[ξ]`)
+   and the fibrewise coprimality `isCoprime_Φ_ΨSq` (proven,
+   `Fermat.FLT.EllipticCurve.PhiPsiCoprime`) — hypothesis (iv), the deep half.
 
 For the Frey curve application (`R = ℤ_(p)`, `K = ℚ`, `m = p`) the same
 object is the kernel of `[p]` on the good-reduction Weierstrass model; the
 prime case admits no genuine shortcut past the origin chart, because the
 connected component of `𝓔[p]` (where the model is NOT étale) is present
 whenever `p` is not invertible in `R`. -/
+theorem WeierstrassCurve.exists_hopf_order_generators_of_good_reduction
+    (m : ℕ) (hm : (m : K) ≠ 0)
+    (HK : Type u) [CommRing HK] [HopfAlgebra K HK]
+    [Module.Finite K HK] [Algebra.Etale K HK]
+    [Algebra R HK] [IsScalarTower R K HK]
+    (f : Additive (WithConv (HK →ₐ[K] Ksep)) ≃+
+      AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ))
+    (hf : ∀ (σ : Ksep ≃ₐ[K] Ksep) (φ : HK →ₐ[K] Ksep),
+      (f (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) : (E⁄Ksep).Point) =
+        Affine.Point.map σ.toAlgHom (f (Additive.ofMul (WithConv.toConv φ)))) :
+    ∃ gens : Finset HK,
+      (∀ g ∈ gens, ∀ φ : HK →ₐ[K] Ksep,
+        ((algebraMap K Ksep).comp (algebraMap R K)).IsIntegralElem (φ g)) ∧
+      (∀ φ ψ : HK →ₐ[K] Ksep, (∀ g ∈ gens, φ g = ψ g) → φ = ψ) ∧
+      (∀ g ∈ gens,
+        HopfAlgebra.antipode K g ∈ Algebra.adjoin R (gens : Set HK)) ∧
+      (∀ g ∈ gens, Bialgebra.comulAlgHom K HK g ∈
+        Submodule.span R {z : HK ⊗[K] HK |
+          ∃ a ∈ Algebra.adjoin R (gens : Set HK),
+          ∃ b ∈ Algebra.adjoin R (gens : Set HK), a ⊗ₜ[K] b = z}) := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **The Katz–Mazur Hopf order** (DECOMPOSED 2026-07-24 into the curve leaf
+`exists_hopf_order_generators_of_good_reduction` — finitely many
+point-integral, point-separating, antipode- and comultiplication-closed
+generators, carrying the scheme-free Katz–Mazur construction roadmap in its
+docstring — and the two curve-free étale leaves
+`isIntegral_of_forall_algHom_isIntegralElem` (point-integral elements are
+integral over `R`) and `subalgebra_eq_top_of_algHom_separating` (a
+point-separating subalgebra of a finite étale algebra is everything); the
+assembly below is PROVEN: `H₀ := Algebra.adjoin R gens` is module-finite by
+`fg_adjoin_of_finite` over the integral generators, spans `HK` over `K` by
+the separation leaf through `Algebra.adjoin_eq_span`, its counit values are
+integral elements of `K` hence lie in the integrally closed DVR `R` — no
+separate counit hypothesis on the generators is needed — and antipode and
+comultiplication closure propagate from the generators by
+`Algebra.adjoin_induction`, the latter because the `R`-span of the pure
+tensors of a subalgebra is closed under multiplication. Stated for ANY
+torsion order `m` nonzero in `K` — no primality and no non-invertibility in
+`R` is needed for the order to exist): inside the finite étale Hopf
+`K`-algebra `HK` of the `m`-torsion of a good-reduction curve, some finitely
+generated `R`-subalgebra `H₀` spans `HK` over `K` and is closed under the
+Hopf structure maps — the counit takes `H₀` into `R`, the antipode preserves
+`H₀`, and the comultiplication takes `H₀` into the `R`-span of the pure
+tensors of `H₀`. Unlike the unramified case, `H₀` is NOT the integral closure
+of `R` (for `μ_p` over `ℤ_p` the normalization has a special fibre with two
+connected components of lengths `1` and `p - 1`, which is not a group
+scheme). The mathematical content is [Katz–Mazur, *Arithmetic moduli of
+elliptic curves*, Thm 2.3.1]: `H₀` is (the image in the generic fibre of) the
+affine algebra of the kernel `𝓔[m]` of multiplication by `m` on the elliptic
+scheme `𝓔` of the minimal (good-reduction) Weierstrass equation. -/
 theorem WeierstrassCurve.exists_hopf_order_of_good_reduction
     (m : ℕ) (hm : (m : K) ≠ 0)
     (HK : Type u) [CommRing HK] [HopfAlgebra K HK]
@@ -8417,8 +8521,135 @@ theorem WeierstrassCurve.exists_hopf_order_of_good_reduction
       (∀ x ∈ H₀, Bialgebra.counitAlgHom K HK x ∈ (algebraMap R K).range) ∧
       (∀ x ∈ H₀, HopfAlgebra.antipode K x ∈ H₀) ∧
       (∀ x ∈ H₀, Bialgebra.comulAlgHom K HK x ∈
-        Submodule.span R {z : HK ⊗[K] HK | ∃ a ∈ H₀, ∃ b ∈ H₀, a ⊗ₜ[K] b = z}) :=
-  sorry
+        Submodule.span R {z : HK ⊗[K] HK | ∃ a ∈ H₀, ∃ b ∈ H₀, a ⊗ₜ[K] b = z}) := by
+  classical
+  obtain ⟨gens, hint, hsepg, hanti, hcomulg⟩ :=
+    WeierstrassCurve.exists_hopf_order_generators_of_good_reduction R K E Ksep
+      m hm HK f hf
+  -- every generator is integral over `R` (abstract étale leaf)
+  have hginta : ∀ x ∈ (gens : Set HK), _root_.IsIntegral R x := fun x hx =>
+    isIntegral_of_forall_algHom_isIntegralElem R K Ksep HK x
+      (hint x (Finset.mem_coe.mp hx))
+  -- (1) module-finiteness of the order
+  have hfg : (Subalgebra.toSubmodule (Algebra.adjoin R (gens : Set HK))).FG :=
+    fg_adjoin_of_finite (Finset.finite_toSet gens) hginta
+  -- (2) the order spans `HK` over `K`: the `K`-subalgebra generated by the
+  -- generators is everything by separation, and its underlying submodule is
+  -- the `K`-span of the multiplicative closure, which sits inside the order
+  have hspan : Submodule.span K
+      ((Algebra.adjoin R (gens : Set HK) : Subalgebra R HK) : Set HK) = ⊤ := by
+    have htop : Algebra.adjoin K (gens : Set HK) = ⊤ :=
+      subalgebra_eq_top_of_algHom_separating K Ksep HK _ fun φ ψ h =>
+        hsepg φ ψ fun g hg => h g (Algebra.subset_adjoin (Finset.mem_coe.mpr hg))
+    refine eq_top_iff.mpr ?_
+    have h1 : (⊤ : Submodule K HK) =
+        Subalgebra.toSubmodule (Algebra.adjoin K (gens : Set HK)) := by
+      rw [htop, Algebra.top_toSubmodule]
+    rw [h1, Algebra.adjoin_eq_span]
+    have hsub : ∀ x ∈ Submonoid.closure (gens : Set HK),
+        x ∈ Algebra.adjoin R (gens : Set HK) := by
+      intro x hx
+      induction hx using Submonoid.closure_induction with
+      | mem y hy => exact Algebra.subset_adjoin hy
+      | one => exact one_mem _
+      | mul y z _ _ ihy ihz => exact mul_mem ihy ihz
+    exact Submodule.span_mono fun x hx => hsub x hx
+  -- (3) counit closure: elements of the order are integral over `R`, so their
+  -- counit values are integral elements of `K`, hence in the DVR `R`
+  have hcounit : ∀ x ∈ Algebra.adjoin R (gens : Set HK),
+      Bialgebra.counitAlgHom K HK x ∈ (algebraMap R K).range := by
+    intro x hx
+    have hxint : _root_.IsIntegral R x :=
+      IsIntegral.of_mem_of_fg (Algebra.adjoin R (gens : Set HK)) hfg x hx
+    have hεint : _root_.IsIntegral R (Bialgebra.counitAlgHom K HK x) :=
+      hxint.map ((Bialgebra.counitAlgHom K HK).restrictScalars R)
+    obtain ⟨r, hr⟩ := IsIntegrallyClosed.isIntegral_iff.mp hεint
+    exact ⟨r, hr⟩
+  -- (4) antipode closure, by induction over the adjoin
+  have hantipode : ∀ x ∈ Algebra.adjoin R (gens : Set HK),
+      HopfAlgebra.antipode K x ∈ Algebra.adjoin R (gens : Set HK) := by
+    intro x hx
+    induction hx using Algebra.adjoin_induction with
+    | mem g hg => exact hanti g (Finset.mem_coe.mp hg)
+    | algebraMap r =>
+      have h1 : HopfAlgebra.antipode K ((algebraMap R HK) r) =
+          (algebraMap R HK) r := by
+        rw [IsScalarTower.algebraMap_apply R K HK r,
+          Algebra.algebraMap_eq_smul_one, map_smul, HopfAlgebra.antipode_one]
+      rw [h1]
+      exact Subalgebra.algebraMap_mem _ r
+    | add x y _ _ ihx ihy =>
+      rw [map_add]
+      exact add_mem ihx ihy
+    | mul x y _ _ ihx ihy =>
+      rw [HopfAlgebra.antipode_mul_distrib]
+      exact mul_mem ihx ihy
+  -- the `R`-span of the pure tensors of the order is closed under multiplication
+  have hmulspan : ∀ z ∈ Submodule.span R {t : HK ⊗[K] HK |
+        ∃ a ∈ Algebra.adjoin R (gens : Set HK),
+        ∃ b ∈ Algebra.adjoin R (gens : Set HK), a ⊗ₜ[K] b = t},
+      ∀ w ∈ Submodule.span R {t : HK ⊗[K] HK |
+        ∃ a ∈ Algebra.adjoin R (gens : Set HK),
+        ∃ b ∈ Algebra.adjoin R (gens : Set HK), a ⊗ₜ[K] b = t},
+      z * w ∈ Submodule.span R {t : HK ⊗[K] HK |
+        ∃ a ∈ Algebra.adjoin R (gens : Set HK),
+        ∃ b ∈ Algebra.adjoin R (gens : Set HK), a ⊗ₜ[K] b = t} := by
+    intro z hz
+    induction hz using Submodule.span_induction with
+    | mem z hzmem =>
+      intro w hw
+      induction hw using Submodule.span_induction with
+      | mem w hwmem =>
+        obtain ⟨a, ha, b, hb, rfl⟩ := hzmem
+        obtain ⟨c, hc, d, hd, rfl⟩ := hwmem
+        refine Submodule.subset_span
+          ⟨a * c, mul_mem ha hc, b * d, mul_mem hb hd, ?_⟩
+        rw [Algebra.TensorProduct.tmul_mul_tmul]
+      | zero =>
+        rw [mul_zero]
+        exact Submodule.zero_mem _
+      | add w₁ w₂ _ _ ih1 ih2 =>
+        rw [mul_add]
+        exact Submodule.add_mem _ ih1 ih2
+      | smul r w _ ih =>
+        rw [← algebraMap_smul K r w, mul_smul_comm, algebraMap_smul K r]
+        exact Submodule.smul_mem _ r ih
+    | zero =>
+      intro w hw
+      rw [zero_mul]
+      exact Submodule.zero_mem _
+    | add z₁ z₂ _ _ ih1 ih2 =>
+      intro w hw
+      rw [add_mul]
+      exact Submodule.add_mem _ (ih1 w hw) (ih2 w hw)
+    | smul r z _ ih =>
+      intro w hw
+      rw [← algebraMap_smul K r z, smul_mul_assoc, algebraMap_smul K r]
+      exact Submodule.smul_mem _ r (ih w hw)
+  -- (5) comultiplication closure, by induction over the adjoin
+  have hcomul : ∀ x ∈ Algebra.adjoin R (gens : Set HK),
+      Bialgebra.comulAlgHom K HK x ∈ Submodule.span R {t : HK ⊗[K] HK |
+        ∃ a ∈ Algebra.adjoin R (gens : Set HK),
+        ∃ b ∈ Algebra.adjoin R (gens : Set HK), a ⊗ₜ[K] b = t} := by
+    intro x hx
+    induction hx using Algebra.adjoin_induction with
+    | mem g hg => exact hcomulg g (Finset.mem_coe.mp hg)
+    | algebraMap r =>
+      have h1 : Bialgebra.comulAlgHom K HK ((algebraMap R HK) r) =
+          r • ((1 : HK) ⊗ₜ[K] (1 : HK)) := by
+        rw [IsScalarTower.algebraMap_apply R K HK r, AlgHom.commutes,
+          Algebra.algebraMap_eq_smul_one, Algebra.TensorProduct.one_def,
+          algebraMap_smul K r]
+      rw [h1]
+      exact Submodule.smul_mem _ r (Submodule.subset_span
+        ⟨1, one_mem _, 1, one_mem _, rfl⟩)
+    | add x y _ _ ihx ihy =>
+      rw [map_add]
+      exact Submodule.add_mem _ ihx ihy
+    | mul x y _ _ ihx ihy =>
+      rw [map_mul]
+      exact hmulspan _ ihx _ ihy
+  exact ⟨Algebra.adjoin R (gens : Set HK), hfg, hspan, hcounit, hantipode, hcomul⟩
 
 set_option linter.unusedSectionVars false in -- deliberate: `omit` of the unused section
 -- instances measurably slows the consuming theorem's elaboration; keep the passing signature
