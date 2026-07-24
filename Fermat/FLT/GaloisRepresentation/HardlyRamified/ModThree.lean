@@ -12389,9 +12389,11 @@ theorem poitouPhi_line_mul_exp_tendsto
       Complex.exp (-(5 / 4 + t * Complex.I) * (x : ℂ))).re) =
       2 * Real.pi * (poitouF x * Real.exp (-(x / 2))) := by
     have h := Complex.reCLM.integral_comp_comm hint2
-    rw [integral_poitouPhi_line_mul_exp hInt x] at h
+    have hlem := integral_poitouPhi_line_mul_exp x
+    simp only [← neg_mul] at hlem
+    rw [hlem] at h
     simp only [Complex.reCLM_apply] at h
-    rw [h, Complex.real_smul, ← Complex.ofReal_mul, Complex.ofReal_re]
+    rw [h, Complex.ofReal_re]
   have hlim0 : Filter.Tendsto (fun T : ℝ => ∫ t in (-T)..T,
       (poitouPhi (5 / 4 + t * Complex.I) *
         Complex.exp (-(5 / 4 + t * Complex.I) * (x : ℂ))).re) Filter.atTop
