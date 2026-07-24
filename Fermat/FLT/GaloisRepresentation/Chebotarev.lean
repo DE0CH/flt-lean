@@ -3778,6 +3778,414 @@ theorem mul_tsum_rpow_neg_le_sum_re_tsum_neg_log
         Summable.tsum_subtype_le _ _ (fun P => (hkey P).1) hrsum
 
 open IsDedekindDomain in
+/-- **Degree-one places of a field with an `ℓ`-th root of unity lie
+over split primes**: if `E` contains a primitive `ℓ`-th root of unity
+(`ℓ` prime) and `Q` is a finite place of `E` of prime residue
+cardinality `q ≠ ℓ`, then `q ≡ 1 (mod ℓ)`.  The reduction of `ζ`
+mod `Q` is a nontrivial `ℓ`-th root of unity of the residue field
+(nontrivial because `∑_{i<ℓ} ζ^i = 0` would otherwise reduce to
+`ℓ = 0` in characteristic `q ≠ ℓ`), so its exact order `ℓ` divides
+`q - 1`, the order of the unit group. -/
+theorem natCast_natCard_quotient_eq_one_of_prime
+    {E : Type*} [Field E] [NumberField E] {ℓ : ℕ} (hℓ : ℓ.Prime)
+    {ζ : E} (hζ : IsPrimitiveRoot ζ ℓ) (Q : HeightOneSpectrum (𝓞 E))
+    (hq : (Nat.card (𝓞 E ⧸ Q.asIdeal)).Prime)
+    (hne : Nat.card (𝓞 E ⧸ Q.asIdeal) ≠ ℓ) :
+    ((Nat.card (𝓞 E ⧸ Q.asIdeal) : ℕ) : ZMod ℓ) = 1 := by
+  classical
+  haveI hQfin : Finite (𝓞 E ⧸ Q.asIdeal) := Nat.finite_of_card_ne_zero hq.ne_zero
+  haveI := Fintype.ofFinite (𝓞 E ⧸ Q.asIdeal)
+  letI : Field (𝓞 E ⧸ Q.asIdeal) := Ideal.Quotient.field Q.asIdeal
+  -- `ζ` as an algebraic integer, and its reduction mod `Q`
+  have hζint : IsIntegral ℤ ζ := by
+    refine IsIntegral.of_pow hℓ.pos ?_
+    rw [hζ.pow_eq_one]
+    exact isIntegral_one
+  set ζO : 𝓞 E := ⟨ζ, hζint⟩ with hζO
+  set ζbar : 𝓞 E ⧸ Q.asIdeal := Ideal.Quotient.mk Q.asIdeal ζO with hζbar
+  have hζOpow : ζO ^ ℓ = 1 := by
+    apply NumberField.RingOfIntegers.ext
+    show algebraMap (𝓞 E) E (ζO ^ ℓ) = algebraMap (𝓞 E) E 1
+    rw [map_pow, map_one]
+    show ζ ^ ℓ = 1
+    exact hζ.pow_eq_one
+  have hζpow : ζbar ^ ℓ = 1 := by rw [hζbar, ← map_pow, hζOpow, map_one]
+  -- the residue characteristic kills `q`
+  have hqzero : ((Nat.card (𝓞 E ⧸ Q.asIdeal) : ℕ) : 𝓞 E ⧸ Q.asIdeal) = 0 := by
+    rw [Nat.card_eq_fintype_card]
+    exact Nat.cast_card_eq_zero _
+  -- `ζbar ≠ 1`: else the geometric sum `ℓ` would vanish mod `Q`
+  have hζne1 : ζbar ≠ 1 := by
+    intro h1
+    have hgeom : ∑ i ∈ Finset.range ℓ, ζ ^ i = 0 :=
+      hζ.geom_sum_eq_zero hℓ.one_lt
+    have hgeomO : ∑ i ∈ Finset.range ℓ, ζO ^ i = 0 := by
+      apply NumberField.RingOfIntegers.ext
+      show algebraMap (𝓞 E) E (∑ i ∈ Finset.range ℓ, ζO ^ i) =
+        algebraMap (𝓞 E) E 0
+      rw [map_zero, map_sum]
+      calc ∑ i ∈ Finset.range ℓ, algebraMap (𝓞 E) E (ζO ^ i)
+          = ∑ i ∈ Finset.range ℓ, ζ ^ i :=
+            Finset.sum_congr rfl fun i _ => by rw [map_pow]; rfl
+        _ = 0 := hgeom
+    have hsum0 : ∑ i ∈ Finset.range ℓ, ζbar ^ i = 0 := by
+      rw [hζbar]
+      calc ∑ i ∈ Finset.range ℓ, (Ideal.Quotient.mk Q.asIdeal ζO) ^ i
+          = Ideal.Quotient.mk Q.asIdeal (∑ i ∈ Finset.range ℓ, ζO ^ i) := by
+            rw [map_sum]
+            exact Finset.sum_congr rfl fun i _ => by rw [map_pow]
+        _ = 0 := by rw [hgeomO, map_zero]
+    rw [h1] at hsum0
+    simp only [one_pow, Finset.sum_const, Finset.card_range, nsmul_eq_mul,
+      mul_one] at hsum0
+    -- Bezout: `ℓ` and `q` both vanish in the quotient, yet are coprime
+    have hco : IsCoprime (ℓ : ℤ) ((Nat.card (𝓞 E ⧸ Q.asIdeal) : ℕ) : ℤ) :=
+      Int.isCoprime_iff_gcd_eq_one.mpr
+        (by
+          rw [Int.gcd_natCast_natCast]
+          exact (Nat.coprime_primes hℓ hq).mpr fun h => hne h.symm)
+    obtain ⟨u, v, huv⟩ := hco
+    have h4 : (1 : 𝓞 E ⧸ Q.asIdeal) = 0 := by
+      calc (1 : 𝓞 E ⧸ Q.asIdeal)
+          = ((u * (ℓ : ℤ) + v * ((Nat.card (𝓞 E ⧸ Q.asIdeal) : ℕ) : ℤ) : ℤ) :
+              𝓞 E ⧸ Q.asIdeal) := by rw [huv, Int.cast_one]
+        _ = (u : 𝓞 E ⧸ Q.asIdeal) * ((ℓ : ℕ) : 𝓞 E ⧸ Q.asIdeal) +
+            (v : 𝓞 E ⧸ Q.asIdeal) *
+              ((Nat.card (𝓞 E ⧸ Q.asIdeal) : ℕ) : 𝓞 E ⧸ Q.asIdeal) := by
+            push_cast
+            ring
+        _ = 0 := by rw [hsum0, hqzero, mul_zero, mul_zero, add_zero]
+    exact one_ne_zero h4
+  -- exact order `ℓ`, dividing the order of the unit group
+  have horder : orderOf ζbar = ℓ := by
+    have hdvd : orderOf ζbar ∣ ℓ := orderOf_dvd_of_pow_eq_one hζpow
+    rcases hℓ.eq_one_or_self_of_dvd _ hdvd with h1 | h1
+    · exact absurd (orderOf_eq_one_iff.mp h1) hζne1
+    · exact h1
+  have hζbar_ne : ζbar ≠ 0 := by
+    intro h0
+    rw [h0, zero_pow hℓ.pos.ne'] at hζpow
+    exact zero_ne_one hζpow
+  have hpow1 : ζbar ^ (Nat.card (𝓞 E ⧸ Q.asIdeal) - 1) = 1 := by
+    rw [Nat.card_eq_fintype_card]
+    exact FiniteField.pow_card_sub_one_eq_one ζbar hζbar_ne
+  have hdvd1 : ℓ ∣ Nat.card (𝓞 E ⧸ Q.asIdeal) - 1 := by
+    rw [← horder]
+    exact orderOf_dvd_of_pow_eq_one hpow1
+  have hq2 : 2 ≤ Nat.card (𝓞 E ⧸ Q.asIdeal) := hq.two_le
+  calc ((Nat.card (𝓞 E ⧸ Q.asIdeal) : ℕ) : ZMod ℓ)
+      = (((Nat.card (𝓞 E ⧸ Q.asIdeal) - 1) + 1 : ℕ) : ZMod ℓ) := by
+        congr 1
+        omega
+    _ = ((Nat.card (𝓞 E ⧸ Q.asIdeal) - 1 : ℕ) : ZMod ℓ) + 1 := by
+        push_cast
+        ring
+    _ = 0 + 1 := by rw [(ZMod.natCast_eq_zero_iff _ _).mpr hdvd1]
+    _ = 1 := zero_add 1
+
+open IsDedekindDomain in
+/-- **Uniform fiber bound for places over a rational prime**: a number
+field `E` has at most `[𝓞 E : ℤ]` finite places of residue cardinality
+a given prime `q`.  Each such place contains `q`, so the product of
+the (distinct, prime) ideals of the fiber divides `(q)`; taking
+absolute norms gives `q ^ #fiber ∣ q ^ [𝓞 E : ℤ]`
+(`Ideal.absNorm_span_singleton` with `Algebra.norm_algebraMap`). -/
+theorem natCard_setOf_natCard_quotient_eq_le
+    (E : Type*) [Field E] [NumberField E] {q : ℕ} (hq : q.Prime) :
+    Nat.card {Q : HeightOneSpectrum (𝓞 E) //
+      Nat.card (𝓞 E ⧸ Q.asIdeal) = q} ≤ Module.finrank ℤ (𝓞 E) := by
+  classical
+  haveI hfinset : Finite {Q : HeightOneSpectrum (𝓞 E) //
+      Nat.card (𝓞 E ⧸ Q.asIdeal) = q} :=
+    (finite_setOf_natCard_quotient_eq E q).to_subtype
+  haveI := Fintype.ofFinite {Q : HeightOneSpectrum (𝓞 E) //
+      Nat.card (𝓞 E ⧸ Q.asIdeal) = q}
+  have hinj : Function.Injective (fun Q : {Q : HeightOneSpectrum (𝓞 E) //
+      Nat.card (𝓞 E ⧸ Q.asIdeal) = q} =>
+      (Q : HeightOneSpectrum (𝓞 E)).asIdeal) := by
+    intro Q₁ Q₂ h
+    exact Subtype.ext (HeightOneSpectrum.ext h)
+  set T : Finset (Ideal (𝓞 E)) := Finset.univ.image
+    (fun Q : {Q : HeightOneSpectrum (𝓞 E) //
+      Nat.card (𝓞 E ⧸ Q.asIdeal) = q} =>
+      (Q : HeightOneSpectrum (𝓞 E)).asIdeal) with hT
+  have hTcard : T.card = Nat.card {Q : HeightOneSpectrum (𝓞 E) //
+      Nat.card (𝓞 E ⧸ Q.asIdeal) = q} := by
+    rw [hT, Finset.card_image_of_injective _ hinj, Finset.card_univ,
+      Nat.card_eq_fintype_card]
+  -- each member divides `(q)`
+  have hqmem : ∀ Q : {Q : HeightOneSpectrum (𝓞 E) //
+      Nat.card (𝓞 E ⧸ Q.asIdeal) = q},
+      (Q : HeightOneSpectrum (𝓞 E)).asIdeal ∣
+        Ideal.span {((q : ℕ) : 𝓞 E)} := by
+    intro Q
+    rw [Ideal.dvd_iff_le, Ideal.span_le]
+    intro y hy
+    rw [Set.mem_singleton_iff.mp hy]
+    haveI : Finite (𝓞 E ⧸ (Q : HeightOneSpectrum (𝓞 E)).asIdeal) := by
+      refine Nat.finite_of_card_ne_zero ?_
+      rw [Q.2]
+      exact hq.ne_zero
+    haveI := Fintype.ofFinite (𝓞 E ⧸ (Q : HeightOneSpectrum (𝓞 E)).asIdeal)
+    have h0 : ((Nat.card (𝓞 E ⧸ (Q : HeightOneSpectrum (𝓞 E)).asIdeal) : ℕ) :
+        𝓞 E ⧸ (Q : HeightOneSpectrum (𝓞 E)).asIdeal) = 0 := by
+      rw [Nat.card_eq_fintype_card]
+      exact Nat.cast_card_eq_zero _
+    rw [Q.2, ← map_natCast (Ideal.Quotient.mk
+      (Q : HeightOneSpectrum (𝓞 E)).asIdeal),
+      Ideal.Quotient.eq_zero_iff_mem] at h0
+    exact h0
+  -- the product of the fiber divides `(q)`
+  have hproddvd : ∏ P ∈ T, P ∣ Ideal.span {((q : ℕ) : 𝓞 E)} := by
+    refine Finset.prod_primes_dvd _ ?_ ?_
+    · intro P hP
+      obtain ⟨Q, _, rfl⟩ := Finset.mem_image.mp hP
+      exact Ideal.prime_of_isPrime (Q : HeightOneSpectrum (𝓞 E)).ne_bot
+        (Q : HeightOneSpectrum (𝓞 E)).isPrime
+    · intro P hP
+      obtain ⟨Q, _, rfl⟩ := Finset.mem_image.mp hP
+      exact hqmem Q
+  -- take absolute norms
+  have hnormprod : Ideal.absNorm (∏ P ∈ T, P) = q ^ T.card := by
+    rw [map_prod, Finset.prod_congr rfl (fun P hP => ?_), Finset.prod_const]
+    obtain ⟨Q, _, rfl⟩ := Finset.mem_image.mp hP
+    rw [Ideal.absNorm_apply, Submodule.cardQuot_apply]
+    exact Q.2
+  have hnormspan : Ideal.absNorm (Ideal.span {((q : ℕ) : 𝓞 E)}) =
+      q ^ Module.finrank ℤ (𝓞 E) := by
+    rw [Ideal.absNorm_span_singleton,
+      show ((q : ℕ) : 𝓞 E) = algebraMap ℤ (𝓞 E) ((q : ℕ) : ℤ) from
+        (map_natCast (algebraMap ℤ (𝓞 E)) q).symm,
+      Algebra.norm_algebraMap, Int.natAbs_pow, Int.natAbs_natCast]
+  have hdvdnorm : q ^ T.card ∣ q ^ Module.finrank ℤ (𝓞 E) := by
+    rw [← hnormprod, ← hnormspan]
+    obtain ⟨K, hK⟩ := hproddvd
+    rw [hK, map_mul]
+    exact dvd_mul_right _ _
+  rw [← hTcard]
+  exact (Nat.pow_dvd_pow_iff_le_right hq.one_lt).mp hdvdnorm
+
+open IsDedekindDomain in
+/-- **Pullback comparison of degree-one prime sums**: the degree-one
+prime sum of `E ⊇ F(ζ_ℓ)` away from `ℓ` is at most `[𝓞 E : ℤ]` times
+the congruence-class prime sum `∑_{N P ≡ 1 (mod ℓ)} N P^{-s}` of `F`.
+Each degree-one place `Q` of `E` pulls back to `P = Q ∩ 𝓞 F` with the
+same residue cardinality
+(`natCard_quotient_under_eq_of_natCard_prime`), which is
+`≡ 1 (mod ℓ)` (`natCast_natCard_quotient_eq_one_of_prime`); the fibers
+of `Q ↦ P` embed into the places of `E` of one fixed prime residue
+cardinality, so have at most `[𝓞 E : ℤ]` elements
+(`natCard_setOf_natCard_quotient_eq_le`). -/
+theorem tsum_rpow_neg_natCard_quotient_prime_and_ne_le_finrank_mul_tsum
+    {F : Type*} [Field F] [NumberField F] {E : Type*} [Field E] [NumberField E]
+    [Algebra F E] {ℓ : ℕ} (hℓ : ℓ.Prime) {ζ : E} (hζ : IsPrimitiveRoot ζ ℓ)
+    (s : ℝ) :
+    (∑' Q : {Q : HeightOneSpectrum (𝓞 E) //
+        (Nat.card (𝓞 E ⧸ Q.asIdeal)).Prime ∧ Nat.card (𝓞 E ⧸ Q.asIdeal) ≠ ℓ},
+      (Nat.card (𝓞 E ⧸ (Q : HeightOneSpectrum (𝓞 E)).asIdeal) : ℝ≥0∞) ^ (-s)) ≤
+    (Module.finrank ℤ (𝓞 E) : ℝ≥0∞) *
+      ∑' P : {P : HeightOneSpectrum (𝓞 F) //
+        (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+        ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) = 1},
+      (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^ (-s) := by
+  classical
+  -- residue cardinality is preserved under pullback
+  have hcard : ∀ Q : HeightOneSpectrum (𝓞 E),
+      (Nat.card (𝓞 E ⧸ Q.asIdeal)).Prime →
+      Nat.card (𝓞 F ⧸ Q.asIdeal.under (𝓞 F)) = Nat.card (𝓞 E ⧸ Q.asIdeal) := by
+    intro Q hq
+    haveI := Q.isPrime
+    exact natCard_quotient_under_eq_of_natCard_prime (A := 𝓞 F) Q.asIdeal hq
+  have hPrime : ∀ Q : HeightOneSpectrum (𝓞 E),
+      (Q.asIdeal.under (𝓞 F)).IsPrime := by
+    intro Q
+    haveI := Q.isPrime
+    exact Ideal.IsPrime.under (𝓞 F) Q.asIdeal
+  have hne_bot : ∀ Q : HeightOneSpectrum (𝓞 E),
+      (Nat.card (𝓞 E ⧸ Q.asIdeal)).Prime → Q.asIdeal.under (𝓞 F) ≠ ⊥ := by
+    intro Q hq hbot
+    haveI := Q.isPrime
+    haveI hfin : Finite (𝓞 F ⧸ Q.asIdeal.under (𝓞 F)) := by
+      refine Nat.finite_of_card_ne_zero ?_
+      rw [hcard Q hq]
+      exact hq.ne_zero
+    have hinj : Function.Injective
+        (Ideal.Quotient.mk (Q.asIdeal.under (𝓞 F))) := by
+      rw [RingHom.injective_iff_ker_eq_bot, Ideal.mk_ker]
+      exact hbot
+    haveI : Finite (𝓞 F) := Finite.of_injective _ hinj
+    exact not_finite (𝓞 F)
+  -- the pullback map on the index subtypes
+  set Φ : {Q : HeightOneSpectrum (𝓞 E) //
+      (Nat.card (𝓞 E ⧸ Q.asIdeal)).Prime ∧ Nat.card (𝓞 E ⧸ Q.asIdeal) ≠ ℓ} →
+      {P : HeightOneSpectrum (𝓞 F) //
+        (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+        ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) = 1} :=
+    fun Q => ⟨⟨(Q : HeightOneSpectrum (𝓞 E)).asIdeal.under (𝓞 F),
+      hPrime (Q : HeightOneSpectrum (𝓞 E)),
+      hne_bot (Q : HeightOneSpectrum (𝓞 E)) Q.2.1⟩,
+      by
+        constructor
+        · rw [hcard (Q : HeightOneSpectrum (𝓞 E)) Q.2.1]
+          exact Q.2.1
+        · rw [hcard (Q : HeightOneSpectrum (𝓞 E)) Q.2.1]
+          exact natCast_natCard_quotient_eq_one_of_prime hℓ hζ
+            (Q : HeightOneSpectrum (𝓞 E)) Q.2.1 Q.2.2⟩ with hΦdef
+  have hNeq : ∀ Q : {Q : HeightOneSpectrum (𝓞 E) //
+      (Nat.card (𝓞 E ⧸ Q.asIdeal)).Prime ∧ Nat.card (𝓞 E ⧸ Q.asIdeal) ≠ ℓ},
+      Nat.card (𝓞 F ⧸ ((Φ Q : {P : HeightOneSpectrum (𝓞 F) //
+        (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+        ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) = 1}) :
+          HeightOneSpectrum (𝓞 F)).asIdeal) =
+      Nat.card (𝓞 E ⧸ (Q : HeightOneSpectrum (𝓞 E)).asIdeal) := by
+    intro Q
+    rw [hΦdef]
+    exact hcard (Q : HeightOneSpectrum (𝓞 E)) Q.2.1
+  -- fiber bound
+  have hfib : ∀ p : {P : HeightOneSpectrum (𝓞 F) //
+      (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+      ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) = 1},
+      Nat.card ↥(Φ ⁻¹' {p}) ≤ Module.finrank ℤ (𝓞 E) := by
+    intro p
+    haveI hfin2 : Finite {Q : HeightOneSpectrum (𝓞 E) //
+        Nat.card (𝓞 E ⧸ Q.asIdeal) =
+          Nat.card (𝓞 F ⧸ (p : HeightOneSpectrum (𝓞 F)).asIdeal)} :=
+      (finite_setOf_natCard_quotient_eq E _).to_subtype
+    have hmap : ∀ Qf : ↥(Φ ⁻¹' {p}),
+        Nat.card (𝓞 E ⧸ ((Qf : {Q : HeightOneSpectrum (𝓞 E) //
+          (Nat.card (𝓞 E ⧸ Q.asIdeal)).Prime ∧
+          Nat.card (𝓞 E ⧸ Q.asIdeal) ≠ ℓ}) :
+            HeightOneSpectrum (𝓞 E)).asIdeal) =
+        Nat.card (𝓞 F ⧸ (p : HeightOneSpectrum (𝓞 F)).asIdeal) := by
+      intro Qf
+      have h1 : Φ Qf.1 = p := Qf.2
+      have h2 := hNeq Qf.1
+      rw [h1] at h2
+      exact h2.symm
+    refine le_trans (Nat.card_le_card_of_injective
+      (fun Qf : ↥(Φ ⁻¹' {p}) =>
+        (⟨((Qf : {Q : HeightOneSpectrum (𝓞 E) //
+          (Nat.card (𝓞 E ⧸ Q.asIdeal)).Prime ∧
+          Nat.card (𝓞 E ⧸ Q.asIdeal) ≠ ℓ}) : HeightOneSpectrum (𝓞 E)),
+          hmap Qf⟩ : {Q : HeightOneSpectrum (𝓞 E) //
+            Nat.card (𝓞 E ⧸ Q.asIdeal) =
+              Nat.card (𝓞 F ⧸ (p : HeightOneSpectrum (𝓞 F)).asIdeal)}))
+      ?_) (natCard_setOf_natCard_quotient_eq_le E p.2.1)
+    intro Qf₁ Qf₂ h
+    simp only [Subtype.mk.injEq] at h
+    exact Subtype.ext (Subtype.ext h)
+  -- fiberwise decomposition of the `E`-side sum
+  calc ∑' Q : {Q : HeightOneSpectrum (𝓞 E) //
+        (Nat.card (𝓞 E ⧸ Q.asIdeal)).Prime ∧ Nat.card (𝓞 E ⧸ Q.asIdeal) ≠ ℓ},
+      (Nat.card (𝓞 E ⧸ (Q : HeightOneSpectrum (𝓞 E)).asIdeal) : ℝ≥0∞) ^ (-s)
+      = ∑' Q : {Q : HeightOneSpectrum (𝓞 E) //
+          (Nat.card (𝓞 E ⧸ Q.asIdeal)).Prime ∧
+          Nat.card (𝓞 E ⧸ Q.asIdeal) ≠ ℓ},
+        (Nat.card (𝓞 F ⧸ ((Φ Q : {P : HeightOneSpectrum (𝓞 F) //
+          (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+          ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) = 1}) :
+            HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^ (-s) :=
+        tsum_congr fun Q => by rw [hNeq Q]
+    _ = ∑' p : {P : HeightOneSpectrum (𝓞 F) //
+          (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+          ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) = 1},
+        ∑' Qf : ↥(Φ ⁻¹' {p}),
+          (Nat.card (𝓞 F ⧸ ((Φ (Qf : {Q : HeightOneSpectrum (𝓞 E) //
+            (Nat.card (𝓞 E ⧸ Q.asIdeal)).Prime ∧
+            Nat.card (𝓞 E ⧸ Q.asIdeal) ≠ ℓ}) :
+              {P : HeightOneSpectrum (𝓞 F) //
+                (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+                ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) = 1}) :
+              HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^ (-s) :=
+        (ENNReal.tsum_fiberwise _ Φ).symm
+    _ ≤ ∑' p : {P : HeightOneSpectrum (𝓞 F) //
+          (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+          ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) = 1},
+        (Module.finrank ℤ (𝓞 E) : ℝ≥0∞) *
+          (Nat.card (𝓞 F ⧸ (p : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^
+            (-s) := by
+        refine ENNReal.tsum_le_tsum fun p => ?_
+        calc ∑' Qf : ↥(Φ ⁻¹' {p}),
+              (Nat.card (𝓞 F ⧸ ((Φ (Qf : {Q : HeightOneSpectrum (𝓞 E) //
+                (Nat.card (𝓞 E ⧸ Q.asIdeal)).Prime ∧
+                Nat.card (𝓞 E ⧸ Q.asIdeal) ≠ ℓ}) :
+                  {P : HeightOneSpectrum (𝓞 F) //
+                    (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+                    ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) = 1}) :
+                  HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^ (-s)
+            = ∑' _Qf : ↥(Φ ⁻¹' {p}),
+              (Nat.card (𝓞 F ⧸ (p : HeightOneSpectrum (𝓞 F)).asIdeal) :
+                ℝ≥0∞) ^ (-s) :=
+              tsum_congr fun Qf => by
+                rw [show Φ Qf.1 = p from Qf.2]
+          _ = ENat.card ↥(Φ ⁻¹' {p}) *
+              (Nat.card (𝓞 F ⧸ (p : HeightOneSpectrum (𝓞 F)).asIdeal) :
+                ℝ≥0∞) ^ (-s) := ENNReal.tsum_const _
+          _ ≤ (Module.finrank ℤ (𝓞 E) : ℝ≥0∞) *
+              (Nat.card (𝓞 F ⧸ (p : HeightOneSpectrum (𝓞 F)).asIdeal) :
+                ℝ≥0∞) ^ (-s) := by
+              gcongr
+              haveI hfibfin : Finite ↥(Φ ⁻¹' {p}) := by
+                haveI : Finite {Q : HeightOneSpectrum (𝓞 E) //
+                    Nat.card (𝓞 E ⧸ Q.asIdeal) =
+                      Nat.card (𝓞 F ⧸ (p : HeightOneSpectrum (𝓞 F)).asIdeal)} :=
+                  (finite_setOf_natCard_quotient_eq E _).to_subtype
+                refine Finite.of_injective (fun Qf : ↥(Φ ⁻¹' {p}) =>
+                  (⟨((Qf : {Q : HeightOneSpectrum (𝓞 E) //
+                    (Nat.card (𝓞 E ⧸ Q.asIdeal)).Prime ∧
+                    Nat.card (𝓞 E ⧸ Q.asIdeal) ≠ ℓ}) :
+                      HeightOneSpectrum (𝓞 E)),
+                    by
+                      have h1 : Φ Qf.1 = p := Qf.2
+                      have h2 := hNeq Qf.1
+                      rw [h1] at h2
+                      exact h2.symm⟩ :
+                    {Q : HeightOneSpectrum (𝓞 E) //
+                      Nat.card (𝓞 E ⧸ Q.asIdeal) =
+                        Nat.card (𝓞 F ⧸
+                          (p : HeightOneSpectrum (𝓞 F)).asIdeal)})) ?_
+                intro Qf₁ Qf₂ h
+                simp only [Subtype.mk.injEq] at h
+                exact Subtype.ext (Subtype.ext h)
+              rw [ENat.card_eq_coe_natCard]
+              exact_mod_cast hfib p
+    _ = (Module.finrank ℤ (𝓞 E) : ℝ≥0∞) *
+        ∑' P : {P : HeightOneSpectrum (𝓞 F) //
+          (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+          ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) = 1},
+        (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^
+          (-s) := ENNReal.tsum_mul_left
+
+open IsDedekindDomain in
+/-- **Divergence of the congruence-class prime sum of `F` at `1⁺`**:
+the sum `∑_{N P ≡ 1 (mod ℓ)} N P^{-s}` over degree-one places of `F`
+in the split class exceeds any `C ≠ ⊤` for some `s > 1`.  DERIVED:
+the degree-one prime sum of `E ⊇ F(ζ_ℓ)` away from `ℓ` diverges
+(`exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_ne E ℓ`, through
+the pole of `ζ_E`), and is at most `[𝓞 E : ℤ]` times the split-class
+sum of `F`
+(`tsum_rpow_neg_natCard_quotient_prime_and_ne_le_finrank_mul_tsum`). -/
+theorem exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_one
+    {F : Type*} [Field F] [NumberField F] {E : Type*} [Field E] [NumberField E]
+    [Algebra F E] {ℓ : ℕ} (hℓ : ℓ.Prime) {ζ : E} (hζ : IsPrimitiveRoot ζ ℓ)
+    (C : ℝ≥0∞) (hC : C ≠ ⊤) :
+    ∃ s : ℝ, 1 < s ∧ C < ∑' P : {P : HeightOneSpectrum (𝓞 F) //
+        (Nat.card (𝓞 F ⧸ P.asIdeal)).Prime ∧
+        ((Nat.card (𝓞 F ⧸ P.asIdeal) : ℕ) : ZMod ℓ) = 1},
+      (Nat.card (𝓞 F ⧸ (P : HeightOneSpectrum (𝓞 F)).asIdeal) : ℝ≥0∞) ^ (-s) := by
+  obtain ⟨s, hs1, hsgt⟩ :=
+    exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_ne E ℓ
+      ((Module.finrank ℤ (𝓞 E) : ℝ≥0∞) * C)
+      (ENNReal.mul_ne_top (ENNReal.natCast_ne_top _) hC)
+  refine ⟨s, hs1, ?_⟩
+  by_contra hcon
+  rw [not_lt] at hcon
+  refine absurd hsgt (not_lt.mpr ?_)
+  refine (tsum_rpow_neg_natCard_quotient_prime_and_ne_le_finrank_mul_tsum
+    (F := F) hℓ hζ s).trans ?_
+  gcongr
+
+open IsDedekindDomain in
 /-- **Nonvanishing of the continued twisted `L`-value at `s = 1`**
 (sorry leaf) — the arithmetic core of `L(1, χ) ≠ 0`, isolated from all
 continuation analysis: the extended value
