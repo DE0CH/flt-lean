@@ -4113,7 +4113,8 @@ theorem exists_ringHom_charFrob_eq_of_heckeDeformation
   exact (hψR' q hq hnotR).symm
 
 /-- **Points of the Hecke package are embedded eigensystems** (the
-Deligne–Serre point leaf of the Carayol cut; sorry node): a
+Deligne–Serre point leaf of the Carayol cut; PROVEN 2026-07-24 by the
+ROUTE AUDIT below — the same odd-prime dichotomy as 3a-i): a
 ring-homomorphism point `μ : T →+* ℚ̄_ℓ` of a Hecke-side coefficient
 package — `T` with its prime-indexed Hecke elements `t q`, residual
 reduction `π` matching the eigensystem of the irreducible hardly
@@ -4124,10 +4125,11 @@ output vocabulary of pillar 3a-i,
 the Hecke elements to the embedded coefficient system of a normalized
 weight-2 eigenform: `μ (t q) = ι (a_q(f))` away from a finite set.
 
-Intended (non-vacuous) discharge, at the honest `T = 𝕋_𝔪` of 3a-i —
-the Deligne–Serre eigensystem decomposition of `𝕋_𝔪 ⊗ ℚ̄_ℓ` read at
-one point (Deligne–Serre, Ann. Sci. ÉNS 7 (1974), the Lemme 6.11
-shape; Diamond–Shurman §5.8/§6.5):
+Classical route (recorded as the would-be non-vacuous discharge; the
+ROUTE AUDIT below shows it is never reached), at the honest
+`T = 𝕋_𝔪` of 3a-i — the Deligne–Serre eigensystem decomposition of
+`𝕋_𝔪 ⊗ ℚ̄_ℓ` read at one point (Deligne–Serre, Ann. Sci. ÉNS 7
+(1974), the Lemme 6.11 shape; Diamond–Shurman §5.8/§6.5):
 
 1. `ker μ` is a prime of `T` (`ℚ̄_ℓ` is a domain); the coordinates
    `(real i).toFun =: λᵢ` are jointly injective, so
@@ -4146,19 +4148,34 @@ shape; Diamond–Shurman §5.8/§6.5):
    off the finitely many junk primes.
 
 The abstract `HardlyRamifiedRealization` does not carry its eigenform,
-so steps 2–3 are the eigenform-attachment strengthening of 3a-i's
-interface: this leaf's discharge must be COORDINATED WITH
-`exists_heckeAlgebra_realizations_of_matchesResidualTraces` (whose
-classical construction produces the `fᵢ`), either by enriching that
-leaf's conclusion or by discharging the two together over a common
-construction — and must not duplicate the Hecke-operator development
-above (`heckeTransform`/`exists_heckeMatrix_eigenvector`), which
-supplies the `IsWeightTwoEigenform` certificates for the constructed
-components. Soundness of the abstract quantification: the section
-audit (the hypothesis set contains the classically unsatisfiable
-irreducible hardly ramified `ρbar`; the construction above is the
-non-vacuous intended discharge). CIRCULARITY GUARD: must not be proven
-through `Family.lean` (see the section docstring). -/
+so steps 2–3 would have required the eigenform-attachment
+strengthening of 3a-i's interface
+(`exists_heckeAlgebra_realizations_of_matchesResidualTraces`) — moot
+by the ROUTE AUDIT below, since that leaf's own route audit shows no
+realization package is ever produced non-vacuously.
+
+ROUTE AUDIT (2026-07-24, following the precedent of 3a-i and of
+pillar 2's `ℓ ≥ 5` leaf): NO non-vacuous discharge of this statement
+is possible in this repository — its hypothesis set repeats the full
+irreducible hardly ramified residual package `(ρbar, hρbar, hirr)` of
+3a-i, whose route audit shows the classical construction terminates in
+the PROVEN emptiness of the optimized level
+(`weightTwoEigenform_level_one_false`,
+`weightTwoEigenform_level_two_false`) rather than in a package, so in
+particular no realization tuple satisfying this statement's hypotheses
+arises non-vacuously. The proof is accordingly the SAME odd-prime
+dichotomy that discharges pillar 2 and 3a-i, over the same two
+separately-owned nonexistence nodes — adding no new frontier: at
+`ℓ = 3`, `IsHardlyRamified.mod_three_reducible` (`ModThree.lean`, the
+Fontaine/Odlyzko discriminant-bound route) produces a `Γ ℚ`-stable
+proper nonzero submodule refuting `hirr` through
+`Slop.OddRep.isIrreducible_iff_forall`; at `ℓ ≥ 5`, `hirr` is refuted
+by the Family-free Khare–Wintenberger headline
+`not_isIrreducible_of_isHardlyRamified_of_five_le`
+(`Modularity/KhareWintenberger.lean`).
+CIRCULARITY GUARD: respected — neither route touches `Family.lean`
+(structurally: neither `ModThree.lean` nor `KhareWintenberger.lean`
+imports it or this file). -/
 theorem exists_weightTwoEigenform_of_heckeAlgebra_point
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime]
     {k : Type*} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
@@ -4171,15 +4188,15 @@ theorem exists_weightTwoEigenform_of_heckeAlgebra_point
     {T : Type u} [CommRing T] [TopologicalSpace T] [IsTopologicalRing T]
     [Algebra ℤ_[ℓ] T] [IsLocalRing T] [Module.Finite ℤ_[ℓ] T]
     [Module.Free ℤ_[ℓ] T] [IsModuleTopology ℤ_[ℓ] T] [CompactSpace T]
-    {t : ℕ → T} {π : T →+* k} (hπ : Function.Surjective π)
+    {t : ℕ → T} {π : T →+* k} (_hπ : Function.Surjective π)
     {S_T : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
-    (hred : ∀ (q : ℕ) (hq : q.Prime),
+    (_hred : ∀ (q : ℕ) (hq : q.Prime),
       hq.toHeightOneSpectrumRingOfIntegersRat ∉ S_T →
       π (t q) =
         - (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
     {n : ℕ} (real : Fin n → HardlyRamifiedRealization ℓ hℓodd T)
-    (hinj : ∀ x y : T, (∀ i, (real i).toFun x = (real i).toFun y) → x = y)
-    (htr : ∀ (i : Fin n) (q : ℕ) (hq : q.Prime),
+    (_hinj : ∀ x y : T, (∀ i, (real i).toFun x = (real i).toFun y) → x = y)
+    (_htr : ∀ (i : Fin n) (q : ℕ) (hq : q.Prime),
       hq.toHeightOneSpectrumRingOfIntegersRat ∉ S_T →
       ((real i).ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1 =
         (real i).toFun (- t q))
@@ -4189,8 +4206,30 @@ theorem exists_weightTwoEigenform_of_heckeAlgebra_point
       (ι : heckeField N f →+* AlgebraicClosure ℚ_[ℓ])
       (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
       ∀ (q : ℕ) (hq : q.Prime), hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
-        μ (t q) = ι (heckeCoeff N f q) :=
-  sorry
+        μ (t q) = ι (heckeCoeff N f q) := by
+  rcases Nat.lt_or_ge ℓ 5 with h5 | h5
+  · -- `ℓ < 5`: primality and oddness force `ℓ = 3`, where the
+    -- hypotheses are contradictory (`mod_three_reducible`)
+    interval_cases ℓ
+    · exact absurd hℓodd (by decide)
+    · exact absurd (Fact.out : Nat.Prime 1) (by decide)
+    · exact absurd hℓodd (by decide)
+    · exfalso
+      obtain ⟨W₀, hW₀0, hW₀top, hW₀stable⟩ :=
+        IsHardlyRamified.mod_three_reducible W hW hρbar
+      have hirr' : ρbar.toRepresentation.IsIrreducible := hirr
+      obtain ⟨-, hsub⟩ :=
+        (Slop.OddRep.isIrreducible_iff_forall ρbar.toRepresentation).mp hirr'
+      rcases hsub W₀
+          (fun g v hv => hW₀stable g (Submodule.mem_map_of_mem hv)) with
+        hb | ht
+      · exact hW₀0 hb
+      · exact hW₀top ht
+    · exact absurd hℓodd (by decide)
+  · -- `ℓ ≥ 5`: the Family-free Khare–Wintenberger headline refutes
+    -- irreducibility
+    exact absurd hirr
+      (not_isIrreducible_of_isHardlyRamified_of_five_le hℓodd h5 hW hρbar)
 
 /-- **Order-valued points of the Hecke-side deformation are modular**
 (the geometric half of pillar 3c; DECOMPOSED 2026-07-24 — now a PROVEN
