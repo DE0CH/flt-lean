@@ -83,11 +83,13 @@ it is split off as separate sorried leaves
    and derive Proposition 5.8.5 connecting eigenvectors to
    `IsWeightTwoEigenform`. STARTED (2026-07-24): the prime-index
    weight-2 slash-sum `heckeTransform` (with explicit coset
-   representatives `heckeRep`/`heckeRepInf`) is defined below, with
-   its stability on cusp forms (`exists_cuspForm_heckeTransform`) and
-   its coefficient formula (`qExpansion_heckeTransform_coeff`) as
-   sorried leaves; the eigenform side of Proposition 5.8.5 at prime
-   index is PROVEN (`hecke_eigen_coeff_identity`).
+   representatives `heckeRep`/`heckeRepInf`) is defined below; its
+   stability on cusp forms (`exists_cuspForm_heckeTransform`, via the
+   `CuspForm.trace` identification) and its coefficient formula
+   (`qExpansion_heckeTransform_coeff`, via `hasSum_qExpansion` and
+   `qExpansion_coeff_unique`) are PROVEN (2026-07-24); the eigenform
+   side of Proposition 5.8.5 at prime index is PROVEN
+   (`hecke_eigen_coeff_identity`).
 2. **Hecke field finiteness** (`heckeField_finiteDimensional`;
    Diamond–Shurman §6.5): the Hecke algebra preserves the integral
    homology lattice of `X₀(N)` (equivalently: `S₂(Γ₀(N))` has a basis
@@ -559,15 +561,22 @@ to the pin's analytic cusp forms). The Hecke action is therefore BUILT
 here (the weight-2 slash-sum operator `heckeTransform`, over the
 explicit coset representatives `heckeRep`/`heckeRepInf` of the
 `q`-isogeny matrices), and `exists_heckeMatrix_eigenvector` is now a
-PROVEN assembly over three sharply-stated sorried leaves:
+PROVEN assembly over three sharply-stated leaves, of which the first
+two are PROVEN (2026-07-24) and one remains sorried:
 
-* `exists_cuspForm_heckeTransform` — `T_q` preserves `S₂(Γ₀(N))`
-  (Diamond–Shurman Propositions 5.1.5/5.2.1);
-* `qExpansion_heckeTransform_coeff` — the classical coefficient
-  formula `a_m(T_q f) = a_{qm}(f) + 1_{q ∤ N} · q · a_{m/q}(f)`
-  (Diamond–Shurman Proposition 5.2.2 at weight 2);
-* `exists_rational_qExpansion_basis` — `S₂(Γ₀(N))` has a finite
-  `ℂ`-basis of forms with rational `q`-expansions (finite
+* `exists_cuspForm_heckeTransform` (PROVEN) — `T_q` preserves
+  `S₂(Γ₀(N))` (Diamond–Shurman Propositions 5.1.5/5.2.1; here via the
+  `CuspForm.trace` of the `α`-translate over the arithmetic conjugate
+  group, with the coset space enumerated through the divisibility
+  criterion `heckeRep_conj_mem_iff`);
+* `qExpansion_heckeTransform_coeff` (PROVEN) — the classical
+  coefficient formula
+  `a_m(T_q f) = a_{qm}(f) + 1_{q ∤ N} · q · a_{m/q}(f)`
+  (Diamond–Shurman Proposition 5.2.2 at weight 2; via
+  `hasSum_qExpansion`, the additive character sum, and
+  `qExpansion_coeff_unique`);
+* `exists_rational_qExpansion_basis` (sorried) — `S₂(Γ₀(N))` has a
+  finite `ℂ`-basis of forms with rational `q`-expansions (finite
   dimensionality plus the rational structure; Diamond–Shurman §6.5,
   Shimura, *Introduction to the Arithmetic Theory*, Theorem 3.52).
 
@@ -664,9 +673,9 @@ upper half plane): `f ↦ Σ_{j<q} f∣[2] [1,j;0,q] + 1_{q ∤ N} · f∣[2]
 (`f∣[k]γ = det(γ)^{k−1}·j(γ,τ)^{−k}·f(γτ)`, and `σ γ = id` since all
 representatives have determinant `q > 0`) this is exactly the
 classical `T_q` of Diamond–Shurman (5.10) at weight `k = 2`; its
-`q`-expansion is computed by the sorried leaf
-`qExpansion_heckeTransform_coeff` below, and its stability on cusp
-forms is the sorried leaf `exists_cuspForm_heckeTransform`. -/
+`q`-expansion is computed by `qExpansion_heckeTransform_coeff` below,
+and its stability on cusp forms is `exists_cuspForm_heckeTransform`
+(both PROVEN). -/
 noncomputable def heckeTransform (N q : ℕ) (f : ℍ → ℂ) : ℍ → ℂ :=
   (∑ j ∈ Finset.range q, f ∣[(2 : ℤ)] heckeRep q j) +
     if q ∣ N then 0 else f ∣[(2 : ℤ)] heckeRepInf q
@@ -712,43 +721,839 @@ theorem heckeTransform_smul (N q : ℕ) (c : ℂ) (f : ℍ → ℂ) :
   · simp [ModularForm.smul_slash, Finset.smul_sum, σ_heckeRep]
   · simp [ModularForm.smul_slash, Finset.smul_sum, smul_add, σ_heckeRep, σ_heckeRepInf]
 
-/-- **Hecke stability of cusp forms** (sorry node; Diamond–Shurman
-Propositions 5.1.5 and 5.2.1–5.2.2 for `Γ₀(N)`, weight 2): the Hecke
-slash-sum of a weight-2 level-`N` cusp form is again a weight-2
-level-`N` cusp form. Classical proof: right multiplication by `γ ∈
-Γ₀(N)` permutes the right cosets `Γ₀(N)·heckeRep q j` (resp. the
-extra coset at good primes), and `f∣[2](δγᵢ) = f∣[2]γᵢ` for `δ ∈
-Γ₀(N)` by slash invariance, so the sum is `Γ₀(N)`-slash-invariant;
-each summand is holomorphic on `ℍ` (a Möbius pullback times a nonzero
-holomorphic factor); and each summand vanishes at every cusp because
-`f` does (the representatives carry cusps to cusps), giving the
-`zero_at_cusps` condition. The statement is an existential rather
-than a definition because on this pin the bundled `CuspForm`
-constructor needs exactly these three unproven facts. -/
+/-! #### Hecke stability: the trace identification toolkit
+
+`exists_cuspForm_heckeTransform` below is proven by identifying the
+Hecke slash-sum with mathlib's `CuspForm.trace`: for
+`α = heckeRep q 0 = [1, 0; 0, q]` the translate `f ∣[2] α` is a cusp
+form on the conjugate group `α⁻¹ Γ₀(N) α` (`CuspForm.translate` —
+holomorphy and cusp vanishing travel along), and its trace back to
+`Γ₀(N)` is a bona fide `CuspForm` whose underlying function is
+EXACTLY `heckeTransform N q f`, once the coset space
+`Γ₀(N) ⧸ (Γ₀(N) ∩ α⁻¹Γ₀(N)α)` is enumerated by the classical Hecke
+representatives. The finiteness of that coset space is mathlib's
+`Subgroup.IsArithmetic.conj` (conjugation by `GL(2, ℚ)` preserves
+arithmeticity). The enumeration itself is driven by one divisibility
+criterion, `heckeRep_conj_mem_iff`: for `ρ ∈ Γ₀(N)`, the conjugate
+`α ρ α⁻¹` lies in `Γ₀(N)` iff `q ∣ ρ₀₁` — conjugation by `α` divides
+the upper-right entry by `q` and multiplies the lower-left by `q`, so
+integrality is exactly that divisibility. -/
+section HeckeStability
+
+open Matrix.SpecialLinearGroup CongruenceSubgroup ConjAct
+open scoped Pointwise
+
+/-- The matrix entries of the Hecke representative (any `q ≠ 0`). -/
+theorem heckeRep_coe {q : ℕ} (hq0 : (q : ℝ) ≠ 0) (j : ℕ) :
+    (heckeRep q j : Matrix (Fin 2) (Fin 2) ℝ) = !![1, (j : ℝ); 0, (q : ℝ)] := by
+  unfold heckeRep
+  rw [dif_pos hq0]
+  rfl
+
+/-- The matrix entries of the extra Hecke representative (any `q ≠ 0`). -/
+theorem heckeRepInf_coe {q : ℕ} (hq0 : (q : ℝ) ≠ 0) :
+    (heckeRepInf q : Matrix (Fin 2) (Fin 2) ℝ) = !![(q : ℝ), 0; 0, 1] := by
+  unfold heckeRepInf
+  rw [dif_pos hq0]
+  rfl
+
+/-- The integral translation matrix `[1, j; 0, 1]` — the `SL(2, ℤ)`
+carrier of (the inverses of) the finite Hecke coset representatives. -/
+def heckeTMat (j : ℤ) : SL(2, ℤ) :=
+  ⟨!![1, j; 0, 1], by simp [Matrix.det_fin_two_of]⟩
+
+/-- Translations lie in `Γ₀(N)` for every `N`. -/
+theorem heckeTMat_mem_Gamma0 (N : ℕ) (j : ℤ) :
+    heckeTMat j ∈ CongruenceSubgroup.Gamma0 N := by
+  simp [CongruenceSubgroup.Gamma0_mem, heckeTMat]
+
+/-- Translations compose additively. -/
+theorem heckeTMat_mul (a b : ℤ) :
+    heckeTMat a * heckeTMat b = heckeTMat (a + b) := by
+  ext i j
+  fin_cases i <;> fin_cases j <;>
+    simp [heckeTMat, Matrix.mul_apply, Fin.sum_univ_two, add_comm]
+
+/-- The inverse of a translation is the opposite translation. -/
+theorem heckeTMat_inv (a : ℤ) : (heckeTMat a)⁻¹ = heckeTMat (-a) := by
+  have h1 : heckeTMat a * heckeTMat (-a) = 1 := by
+    rw [heckeTMat_mul, add_neg_cancel]
+    ext i j
+    fin_cases i <;> fin_cases j <;> simp [heckeTMat]
+  exact inv_eq_of_mul_eq_one_right h1
+
+/-- The upper-right entry of an `SL(2, ℤ)` product, explicitly. -/
+theorem SL2_mul_apply_zero_one (x y : SL(2, ℤ)) :
+    (x * y) 0 1 = x 0 0 * y 0 1 + x 0 1 * y 1 1 := by
+  simp [Matrix.mul_apply, Fin.sum_univ_two]
+
+/-- `Γ₀(N)` in `GL(2, ℝ)` is exactly the `mapGL`-image of the integral
+`Γ₀(N)` — membership unfolded. -/
+theorem mem_Gamma0GL_iff {N : ℕ} {x : GL (Fin 2) ℝ} :
+    x ∈ Gamma0GL N ↔ ∃ δ ∈ CongruenceSubgroup.Gamma0 N, mapGL ℝ δ = x := by
+  unfold Gamma0GL
+  exact Subgroup.mem_map
+
+/-- Membership in the `ConjAct`-conjugate subgroup, unfolded to a
+conjugation condition. -/
+theorem mem_conjAct_inv_smul_iff {α x : GL (Fin 2) ℝ}
+    {Γ : Subgroup (GL (Fin 2) ℝ)} :
+    x ∈ toConjAct α⁻¹ • Γ ↔ α * x * α⁻¹ ∈ Γ := by
+  rw [Subgroup.mem_pointwise_smul_iff_inv_smul_mem, ← map_inv, inv_inv,
+    toConjAct_smul]
+
+/-- **The Hecke coset criterion**: for `ρ ∈ Γ₀(N)` and `q` prime, the
+conjugate `α ρ α⁻¹` by `α = heckeRep q 0 = [1, 0; 0, q]` lies in
+`Γ₀(N)` iff `q ∣ ρ₀₁`. Conjugation by `α` divides the upper-right
+entry by `q` and multiplies the lower-left by `q`, so integrality of
+the conjugate is exactly the divisibility of `ρ₀₁`. This single
+equivalence drives both injectivity and surjectivity of the Hecke
+coset enumeration in `exists_cuspForm_heckeTransform`. -/
+theorem heckeRep_conj_mem_iff {N q : ℕ} (hq : q.Prime) {ρ : SL(2, ℤ)}
+    (hρ : ρ ∈ CongruenceSubgroup.Gamma0 N) :
+    heckeRep q 0 * mapGL ℝ ρ * (heckeRep q 0)⁻¹ ∈ Gamma0GL N ↔
+      (q : ℤ) ∣ ρ 0 1 := by
+  have hq0 : (q : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hq.ne_zero
+  constructor
+  · intro h
+    obtain ⟨ε, -, hεeq⟩ := mem_Gamma0GL_iff.mp h
+    have heq : mapGL ℝ ε * heckeRep q 0 = heckeRep q 0 * mapGL ℝ ρ := by
+      rw [hεeq]; group
+    have h01 := congr_arg
+      (fun g : GL (Fin 2) ℝ => (g : Matrix (Fin 2) (Fin 2) ℝ) 0 1) heq
+    simp [heckeRep_coe hq0,
+      mapGL_coe_matrix, Matrix.SpecialLinearGroup.map_apply_coe,
+      RingHom.mapMatrix_apply, Int.coe_castRingHom, Matrix.map_apply,
+      Matrix.mul_apply, Fin.sum_univ_two] at h01
+    refine ⟨ε 0 1, ?_⟩
+    have hcast : ((ρ 0 1 : ℤ) : ℝ) = (((q : ℤ) * ε 0 1 : ℤ) : ℝ) := by
+      push_cast
+      linarith [h01]
+    exact_mod_cast hcast
+  · rintro ⟨t, ht⟩
+    have hdet : ρ 0 0 * ρ 1 1 - ρ 0 1 * ρ 1 0 = 1 := by
+      have h2 := ρ.2
+      rwa [Matrix.det_fin_two] at h2
+    have hc : ((ρ 1 0 : ℤ) : ZMod N) = 0 := by
+      rw [CongruenceSubgroup.Gamma0_mem] at hρ
+      exact_mod_cast hρ
+    refine mem_Gamma0GL_iff.mpr ⟨⟨!![ρ 0 0, t; (q : ℤ) * ρ 1 0, ρ 1 1], ?_⟩,
+      ?_, ?_⟩
+    · rw [Matrix.det_fin_two_of]
+      have hqt : ρ 0 0 * ρ 1 1 - ((q : ℤ) * t) * ρ 1 0 = 1 := ht ▸ hdet
+      linarith [hqt]
+    · rw [CongruenceSubgroup.Gamma0_mem]
+      show (((q : ℤ) * ρ 1 0 : ℤ) : ZMod N) = 0
+      push_cast
+      rw [hc, mul_zero]
+    · rw [eq_mul_inv_iff_mul_eq]
+      ext i j
+      fin_cases i <;> fin_cases j <;>
+        · simp [heckeRep_coe hq0, mapGL_coe_matrix,
+            Matrix.SpecialLinearGroup.map_apply_coe, RingHom.mapMatrix_apply,
+            Int.coe_castRingHom, Matrix.map_apply, Matrix.mul_apply,
+            Fin.sum_univ_two, ht]
+          try ring
+
+/-- The rational carrier of `heckeRep q 0`, witnessing that
+conjugation by it preserves arithmeticity (junk value `1` at
+`q = 0`). -/
+noncomputable def heckeRepQ (q : ℕ) : GL (Fin 2) ℚ :=
+  if hq : (q : ℚ) ≠ 0 then
+    Matrix.GeneralLinearGroup.mkOfDetNeZero !![1, 0; 0, (q : ℚ)]
+      (by rw [Matrix.det_fin_two_of]; simpa using hq)
+  else 1
+
+/-- `heckeRep q 0` is the real image of its rational carrier. -/
+theorem heckeRepQ_map {q : ℕ} (hq0 : (q : ℝ) ≠ 0) :
+    Matrix.GeneralLinearGroup.map (Rat.castHom ℝ) (heckeRepQ q) =
+      heckeRep q 0 := by
+  have hqQ : (q : ℚ) ≠ 0 := fun h => hq0 (by exact_mod_cast h)
+  have hcoe : (heckeRepQ q : Matrix (Fin 2) (Fin 2) ℚ) = !![1, 0; 0, (q : ℚ)] := by
+    unfold heckeRepQ
+    rw [dif_pos hqQ]
+    rfl
+  ext i j
+  fin_cases i <;> fin_cases j <;>
+    simp [Matrix.GeneralLinearGroup.map_apply, hcoe, heckeRep_coe hq0]
+
+/-- The `α⁻¹Γ₀(N)α`-conjugate of `Γ₀(N)` is arithmetic — mathlib's
+`Subgroup.IsArithmetic.conj` applied to the rational carrier of the
+Hecke matrix. -/
+theorem heckeConj_isArithmetic {N q : ℕ} [NeZero N] (hq : q.Prime) :
+    (toConjAct (heckeRep q 0)⁻¹ • Gamma0GL N).IsArithmetic := by
+  have hq0 : (q : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hq.ne_zero
+  have h := Subgroup.IsArithmetic.conj (Gamma0GL N) (heckeRepQ q)⁻¹
+  rwa [Matrix.GeneralLinearGroup.map_inv, heckeRepQ_map hq0] at h
+
+/-- The conjugate `α⁻¹Γ₀(N)α` has finite relative index in `Γ₀(N)`
+(both are arithmetic, hence commensurable through `SL(2, ℤ)`). This is
+the hypothesis powering `CuspForm.trace` in
+`exists_cuspForm_heckeTransform`. -/
+theorem heckeConj_isFiniteRelIndex {N q : ℕ} [NeZero N] (hq : q.Prime) :
+    Subgroup.IsFiniteRelIndex (toConjAct (heckeRep q 0)⁻¹ • Gamma0GL N)
+      (Gamma0GL N) :=
+  haveI := heckeConj_isArithmetic (N := N) hq
+  ⟨(Subgroup.IsArithmetic.is_commensurable.trans
+      Subgroup.IsArithmetic.is_commensurable.symm).1⟩
+
+/-- The finite Hecke representatives as products: `α · [1, j; 0, 1] =
+[1, j; 0, q]`. -/
+theorem heckeRep_zero_mul_heckeTMat {q : ℕ} (hq0 : (q : ℝ) ≠ 0) (j : ℕ) :
+    heckeRep q 0 * mapGL ℝ (heckeTMat (j : ℤ)) = heckeRep q j := by
+  ext i k
+  fin_cases i <;> fin_cases k <;>
+    simp [heckeRep_coe hq0, heckeTMat, mapGL_coe_matrix, Matrix.mul_apply,
+      Fin.sum_univ_two]
+
+/-- **Hecke stability of cusp forms** (Diamond–Shurman Propositions
+5.1.5 and 5.2.1–5.2.2 for `Γ₀(N)`, weight 2): the Hecke slash-sum of a
+weight-2 level-`N` cusp form is again a weight-2 level-`N` cusp form.
+Proof: the slash-sum is the `CuspForm.trace` back to `Γ₀(N)` of the
+`α`-translate of `f` (`α = [1, 0; 0, q]`), a cusp form on the
+arithmetic conjugate group; the coset space is enumerated by the
+classical representatives through the divisibility criterion
+`heckeRep_conj_mem_iff` — the `q` translations `[1, j; 0, q]`, plus
+`[q, 0; 0, 1]` at good primes via a Bézout matrix in `Γ₀(N)`. -/
 theorem exists_cuspForm_heckeTransform {N : ℕ} (hN : 0 < N) {q : ℕ}
     (hq : q.Prime) (f : CuspForm (Gamma0GL N) 2) :
-    ∃ g : CuspForm (Gamma0GL N) 2, ⇑g = heckeTransform N q ⇑f :=
-  sorry
+    ∃ g : CuspForm (Gamma0GL N) 2, ⇑g = heckeTransform N q ⇑f := by
+  haveI : NeZero N := ⟨hN.ne'⟩
+  haveI : NeZero q := ⟨hq.ne_zero⟩
+  haveI hFact : Fact q.Prime := ⟨hq⟩
+  have hq0 : (q : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hq.ne_zero
+  haveI hFRI := heckeConj_isFiniteRelIndex (N := N) hq
+  refine ⟨CuspForm.trace (Gamma0GL N) (CuspForm.translate f (heckeRep q 0)), ?_⟩
+  rw [CuspForm.coe_trace]
+  set Γc : Subgroup (GL (Fin 2) ℝ) := toConjAct (heckeRep q 0)⁻¹ • Gamma0GL N
+    with hΓc
+  letI instQ : Fintype ((Gamma0GL N) ⧸ Γc.subgroupOf (Gamma0GL N)) :=
+    Fintype.ofFinite _
+  -- membership of the translation representatives
+  have hTmem : ∀ j : ℤ, mapGL ℝ (heckeTMat j) ∈ Gamma0GL N := fun j =>
+    mem_Gamma0GL_iff.mpr ⟨heckeTMat j, heckeTMat_mem_Gamma0 N j, rfl⟩
+  -- the packaged coset criterion
+  have hcrit : ∀ (x y : Gamma0GL N) (ρ : SL(2, ℤ)),
+      ρ ∈ CongruenceSubgroup.Gamma0 N →
+      mapGL ℝ ρ = (x : GL (Fin 2) ℝ)⁻¹ * y →
+      ((⟦x⟧ : (Gamma0GL N) ⧸ Γc.subgroupOf (Gamma0GL N)) = ⟦y⟧ ↔
+        (q : ℤ) ∣ ρ 0 1) := by
+    intro x y ρ hρ hxy
+    rw [QuotientGroup.eq, Subgroup.mem_subgroupOf]
+    have hcoe : ((x⁻¹ * y : Gamma0GL N) : GL (Fin 2) ℝ) = mapGL ℝ ρ := by
+      rw [hxy]; rfl
+    rw [hcoe, hΓc, mem_conjAct_inv_smul_iff]
+    exact heckeRep_conj_mem_iff hq hρ
+  -- the finite coset representatives
+  set E : Fin q → Gamma0GL N := fun j =>
+    ⟨mapGL ℝ (heckeTMat (-(j : ℤ))), hTmem _⟩ with hE
+  have hEinv : ∀ j : Fin q,
+      ((E j : Gamma0GL N) : GL (Fin 2) ℝ)⁻¹ = mapGL ℝ (heckeTMat (j : ℤ)) := by
+    intro j
+    show (mapGL ℝ (heckeTMat (-(j : ℤ))))⁻¹ = _
+    rw [← map_inv, heckeTMat_inv, neg_neg]
+  -- value of each finite coset under quotientFunc
+  have hEval : ∀ j : Fin q,
+      SlashInvariantForm.quotientFunc (CuspForm.translate f (heckeRep q 0)) ⟦E j⟧
+        = ⇑f ∣[(2 : ℤ)] heckeRep q (j : ℕ) := by
+    intro j
+    rw [SlashInvariantForm.quotientFunc_mk]
+    show (⇑f ∣[(2 : ℤ)] heckeRep q 0) ∣[(2 : ℤ)]
+      ((E j : Gamma0GL N) : GL (Fin 2) ℝ)⁻¹ = _
+    rw [hEinv j, ← SlashAction.slash_mul, heckeRep_zero_mul_heckeTMat hq0]
+  -- injectivity of the finite enumeration
+  have hEinj : ∀ j j' : Fin q,
+      ((⟦E j⟧ : (Gamma0GL N) ⧸ Γc.subgroupOf (Gamma0GL N)) = ⟦E j'⟧) →
+      j = j' := by
+    intro j j' hjj'
+    have hρ : mapGL ℝ (heckeTMat ((j : ℤ) - (j' : ℤ))) =
+        ((E j : Gamma0GL N) : GL (Fin 2) ℝ)⁻¹ * (E j') := by
+      rw [hEinv j]
+      show _ = mapGL ℝ (heckeTMat (j : ℤ)) * mapGL ℝ (heckeTMat (-(j' : ℤ)))
+      rw [← map_mul, heckeTMat_mul, sub_eq_add_neg]
+    have hd := (hcrit _ _ _ (heckeTMat_mem_Gamma0 N _) hρ).mp hjj'
+    have hd' : (q : ℤ) ∣ (j : ℤ) - (j' : ℤ) := by simpa [heckeTMat] using hd
+    obtain ⟨t, ht⟩ := hd'
+    have hjq : ((j : ℕ) : ℤ) < q := by exact_mod_cast j.isLt
+    have hj'q : ((j' : ℕ) : ℤ) < q := by exact_mod_cast j'.isLt
+    have hj0 : (0 : ℤ) ≤ ((j : ℕ) : ℤ) := Int.natCast_nonneg _
+    have hj'0 : (0 : ℤ) ≤ ((j' : ℕ) : ℤ) := Int.natCast_nonneg _
+    have hqpos : (0 : ℤ) < q := by exact_mod_cast hq.pos
+    have h1 : t < 1 := by
+      by_contra hcon
+      have hcon' : (1 : ℤ) ≤ t := not_lt.mp hcon
+      have h2 : (q : ℤ) * 1 ≤ q * t := mul_le_mul_of_nonneg_left hcon' hqpos.le
+      linarith
+    have h3 : -1 < t := by
+      by_contra hcon
+      have hcon' : t ≤ -1 := not_lt.mp hcon
+      have h4 : (q : ℤ) * t ≤ q * (-1) := mul_le_mul_of_nonneg_left hcon' hqpos.le
+      linarith
+    have ht0 : t = 0 := by omega
+    rw [ht0, mul_zero] at ht
+    have hjj : ((j : ℕ) : ℤ) = ((j' : ℕ) : ℤ) := by linarith
+    exact Fin.ext (by exact_mod_cast hjj)
+  -- the finite-representative finder: whenever `q ∤ δ₁₁`, the coset of
+  -- `mapGL δ` is one of the `q` translation cosets
+  have hfind : ∀ (y : Gamma0GL N) (δ : SL(2, ℤ)),
+      δ ∈ CongruenceSubgroup.Gamma0 N → mapGL ℝ δ = (y : GL (Fin 2) ℝ) →
+      ¬ (q : ℤ) ∣ δ 1 1 →
+      ∃ j : Fin q,
+        (⟦E j⟧ : (Gamma0GL N) ⧸ Γc.subgroupOf (Gamma0GL N)) = ⟦y⟧ := by
+    intro y δ hδ hδeq hqd
+    have hdbar : ((δ 1 1 : ℤ) : ZMod q) ≠ 0 := by
+      rwa [Ne, ZMod.intCast_zmod_eq_zero_iff_dvd]
+    refine ⟨⟨(-((δ 0 1 : ℤ) : ZMod q) * ((δ 1 1 : ℤ) : ZMod q)⁻¹).val,
+      ZMod.val_lt _⟩, ?_⟩
+    have hρmem : heckeTMat
+          (((-((δ 0 1 : ℤ) : ZMod q) * ((δ 1 1 : ℤ) : ZMod q)⁻¹).val : ℕ) : ℤ) * δ
+        ∈ CongruenceSubgroup.Gamma0 N :=
+      mul_mem (heckeTMat_mem_Gamma0 N _) hδ
+    have hρeq : mapGL ℝ (heckeTMat
+          (((-((δ 0 1 : ℤ) : ZMod q) * ((δ 1 1 : ℤ) : ZMod q)⁻¹).val : ℕ) : ℤ) * δ) =
+        ((E ⟨(-((δ 0 1 : ℤ) : ZMod q) * ((δ 1 1 : ℤ) : ZMod q)⁻¹).val,
+          ZMod.val_lt _⟩ : Gamma0GL N) : GL (Fin 2) ℝ)⁻¹ * y := by
+      rw [map_mul, hEinv, hδeq]
+    refine (hcrit _ _ _ hρmem hρeq).mpr ?_
+    have hval : (heckeTMat
+          (((-((δ 0 1 : ℤ) : ZMod q) * ((δ 1 1 : ℤ) : ZMod q)⁻¹).val : ℕ) : ℤ) * δ) 0 1
+        = δ 0 1 +
+          (((-((δ 0 1 : ℤ) : ZMod q) * ((δ 1 1 : ℤ) : ZMod q)⁻¹).val : ℕ) : ℤ) * δ 1 1 := by
+      rw [SL2_mul_apply_zero_one]
+      simp [heckeTMat]
+    rw [hval, ← ZMod.intCast_zmod_eq_zero_iff_dvd]
+    push_cast
+    rw [ZMod.natCast_val, ZMod.cast_id]
+    field_simp
+    ring
+  by_cases hqN : q ∣ N
+  · -- `U_q`: exactly the `q` translation cosets
+    have hEsurj : Function.Surjective (fun j : Fin q =>
+        (⟦E j⟧ : (Gamma0GL N) ⧸ Γc.subgroupOf (Gamma0GL N))) := by
+      intro x
+      induction x using Quotient.inductionOn with
+      | h y =>
+        obtain ⟨δ, hδ, hδeq⟩ := mem_Gamma0GL_iff.mp y.2
+        have hNc : ((N : ℤ)) ∣ δ 1 0 := by
+          have hg := hδ
+          rw [CongruenceSubgroup.Gamma0_mem] at hg
+          rwa [← ZMod.intCast_zmod_eq_zero_iff_dvd]
+        have hqd : ¬ (q : ℤ) ∣ δ 1 1 := by
+          intro hdvd
+          have hqc : (q : ℤ) ∣ δ 1 0 :=
+            dvd_trans (Int.natCast_dvd_natCast.mpr hqN) hNc
+          have hdet : δ 0 0 * δ 1 1 - δ 0 1 * δ 1 0 = 1 := by
+            have h2 := δ.2
+            rwa [Matrix.det_fin_two] at h2
+          have hone : (q : ℤ) ∣ 1 := by
+            have h5 : (q : ℤ) ∣ δ 0 0 * δ 1 1 := hdvd.mul_left _
+            have h6 : (q : ℤ) ∣ δ 0 1 * δ 1 0 := hqc.mul_left _
+            have h7 := dvd_sub h5 h6
+            rwa [hdet] at h7
+          have hle := Int.le_of_dvd one_pos hone
+          exact absurd hle (by exact_mod_cast hq.one_lt.not_ge)
+        exact hfind y δ hδ hδeq hqd
+    have hbij : Function.Bijective (fun j : Fin q =>
+        (⟦E j⟧ : (Gamma0GL N) ⧸ Γc.subgroupOf (Gamma0GL N))) :=
+      ⟨fun a b hab => hEinj a b hab, hEsurj⟩
+    have h11 : (∑ j : Fin q, SlashInvariantForm.quotientFunc
+          (CuspForm.translate f (heckeRep q 0)) ⟦E j⟧)
+        = ∑ x : (Gamma0GL N) ⧸ Γc.subgroupOf (Gamma0GL N),
+            SlashInvariantForm.quotientFunc
+              (CuspForm.translate f (heckeRep q 0)) x :=
+      Fintype.sum_bijective _ hbij _ _ (fun _ => rfl)
+    have h12 : (∑ j : Fin q, SlashInvariantForm.quotientFunc
+          (CuspForm.translate f (heckeRep q 0)) ⟦E j⟧)
+        = heckeTransform N q ⇑f := by
+      unfold heckeTransform
+      rw [if_pos hqN, add_zero, ← Fin.sum_univ_eq_sum_range]
+      exact Finset.sum_congr rfl fun j _ => hEval j
+    exact h11.symm.trans h12
+  · -- `T_q` at a good prime: the `q` translation cosets plus the `∞` coset
+    obtain ⟨u, v, huv⟩ : ∃ u v : ℤ, u * q - v * N = 1 := by
+      have hcop : Nat.Coprime q N := (hq.coprime_iff_not_dvd).mpr hqN
+      have hb := Nat.gcd_eq_gcd_ab q N
+      rw [hcop] at hb
+      refine ⟨Nat.gcdA q N, -(Nat.gcdB q N), ?_⟩
+      push_cast at hb
+      linarith [hb]
+    set W : SL(2, ℤ) := ⟨!![u * q, v; (N : ℤ), 1], by
+      rw [Matrix.det_fin_two_of]; linarith [huv]⟩ with hW
+    have hWmem : W ∈ CongruenceSubgroup.Gamma0 N := by
+      rw [CongruenceSubgroup.Gamma0_mem]
+      show (((N : ℤ)) : ZMod N) = 0
+      push_cast
+      exact ZMod.natCast_self N
+    set D : SL(2, ℤ) := ⟨!![u, v; (N : ℤ), (q : ℤ)], by
+      rw [Matrix.det_fin_two_of]; linarith [huv]⟩ with hD
+    have hDmem : D ∈ CongruenceSubgroup.Gamma0 N := by
+      rw [CongruenceSubgroup.Gamma0_mem]
+      show (((N : ℤ)) : ZMod N) = 0
+      push_cast
+      exact ZMod.natCast_self N
+    have hWinvmem : mapGL ℝ W⁻¹ ∈ Gamma0GL N :=
+      mem_Gamma0GL_iff.mpr ⟨W⁻¹, inv_mem hWmem, rfl⟩
+    set Einf : Gamma0GL N := ⟨mapGL ℝ W⁻¹, hWinvmem⟩ with hEinf
+    have hEinfinv : ((Einf : Gamma0GL N) : GL (Fin 2) ℝ)⁻¹ = mapGL ℝ W := by
+      show (mapGL ℝ W⁻¹)⁻¹ = _
+      rw [← map_inv, inv_inv]
+    -- the explicit inverse of the Bézout matrix
+    have hWinv : W⁻¹ = ⟨!![1, -v; -(N : ℤ), u * q], by
+        rw [Matrix.det_fin_two_of]; linarith [huv]⟩ := by
+      rw [Matrix.SpecialLinearGroup.SL2_inv_expl]
+      ext i k
+      fin_cases i <;> fin_cases k <;> simp [hW]
+    -- α · W = D · heckeRepInf q
+    have hkey : heckeRep q 0 * mapGL ℝ W = mapGL ℝ D * heckeRepInf q := by
+      ext i k
+      fin_cases i <;> fin_cases k <;>
+        · simp [heckeRep_coe hq0, heckeRepInf_coe hq0, hW, hD, mapGL_coe_matrix,
+            Matrix.mul_apply, Fin.sum_univ_two]
+          try ring
+    -- value at the `∞` coset
+    have hEinfval : SlashInvariantForm.quotientFunc
+        (CuspForm.translate f (heckeRep q 0)) ⟦Einf⟧
+          = ⇑f ∣[(2 : ℤ)] heckeRepInf q := by
+      rw [SlashInvariantForm.quotientFunc_mk]
+      show (⇑f ∣[(2 : ℤ)] heckeRep q 0) ∣[(2 : ℤ)]
+        ((Einf : Gamma0GL N) : GL (Fin 2) ℝ)⁻¹ = _
+      rw [hEinfinv, ← SlashAction.slash_mul, hkey, SlashAction.slash_mul,
+        SlashInvariantFormClass.slash_action_eq f (mapGL ℝ D)
+          (mem_Gamma0GL_iff.mpr ⟨D, hDmem, rfl⟩)]
+    -- the full enumeration
+    have hinj : Function.Injective (fun o : Option (Fin q) =>
+        Option.elim o
+          (⟦Einf⟧ : (Gamma0GL N) ⧸ Γc.subgroupOf (Gamma0GL N))
+          (fun j => ⟦E j⟧)) := by
+      intro o o' hoo'
+      -- the mixed case is impossible: `q ∤ v`
+      have hmix : ∀ j : Fin q,
+          (⟦E j⟧ : (Gamma0GL N) ⧸ Γc.subgroupOf (Gamma0GL N)) ≠ ⟦Einf⟧ := by
+        intro j hjinf
+        have hρ : mapGL ℝ (heckeTMat (j : ℤ) * W⁻¹) =
+            ((E j : Gamma0GL N) : GL (Fin 2) ℝ)⁻¹ * Einf := by
+          rw [map_mul, hEinv j]
+        have hd := (hcrit _ _ _
+          (mul_mem (heckeTMat_mem_Gamma0 N _) (inv_mem hWmem)) hρ).mp hjinf
+        have hval : (heckeTMat (j : ℤ) * W⁻¹) 0 1 = -v + (j : ℤ) * (u * q) := by
+          rw [hWinv, SL2_mul_apply_zero_one]
+          simp [heckeTMat]
+        rw [hval] at hd
+        have hqv : (q : ℤ) ∣ v := by
+          have h7 : (q : ℤ) ∣ (j : ℤ) * (u * q) := ⟨(j : ℤ) * u, by ring⟩
+          have h8 := dvd_sub h7 hd
+          have h9 : (j : ℤ) * (u * q) - (-v + (j : ℤ) * (u * q)) = v := by ring
+          rwa [h9] at h8
+        have hone : (q : ℤ) ∣ 1 := by
+          have h9 : (q : ℤ) ∣ u * q := ⟨u, mul_comm _ _⟩
+          have h10 : (q : ℤ) ∣ v * N := hqv.mul_right _
+          have h11 := dvd_sub h9 h10
+          rwa [huv] at h11
+        have hle := Int.le_of_dvd one_pos hone
+        exact absurd hle (by exact_mod_cast hq.one_lt.not_ge)
+      match o, o' with
+      | none, none => rfl
+      | none, some j' => exact absurd hoo'.symm (hmix j')
+      | some j, none => exact absurd hoo' (hmix j)
+      | some j, some j' => exact congrArg some (hEinj j j' hoo')
+    have hsurj : Function.Surjective (fun o : Option (Fin q) =>
+        Option.elim o
+          (⟦Einf⟧ : (Gamma0GL N) ⧸ Γc.subgroupOf (Gamma0GL N))
+          (fun j => ⟦E j⟧)) := by
+      intro x
+      induction x using Quotient.inductionOn with
+      | h y =>
+        obtain ⟨δ, hδ, hδeq⟩ := mem_Gamma0GL_iff.mp y.2
+        by_cases hqd : (q : ℤ) ∣ δ 1 1
+        · refine ⟨none, ?_⟩
+          show (⟦Einf⟧ : (Gamma0GL N) ⧸ Γc.subgroupOf (Gamma0GL N)) = ⟦y⟧
+          have hρeq : mapGL ℝ (W * δ) =
+              ((Einf : Gamma0GL N) : GL (Fin 2) ℝ)⁻¹ * y := by
+            rw [map_mul, hEinfinv, hδeq]
+          refine (hcrit _ _ _ (mul_mem hWmem hδ) hρeq).mpr ?_
+          have hval : (W * δ) 0 1 = u * q * δ 0 1 + v * δ 1 1 := by
+            rw [SL2_mul_apply_zero_one]
+            simp [hW]
+          rw [hval]
+          exact dvd_add ⟨u * δ 0 1, by ring⟩ (hqd.mul_left v)
+        · obtain ⟨j, hj⟩ := hfind y δ hδ hδeq hqd
+          exact ⟨some j, hj⟩
+    have hbij : Function.Bijective (fun o : Option (Fin q) =>
+        Option.elim o
+          (⟦Einf⟧ : (Gamma0GL N) ⧸ Γc.subgroupOf (Gamma0GL N))
+          (fun j => ⟦E j⟧)) := ⟨hinj, hsurj⟩
+    have h11 : (∑ o : Option (Fin q), SlashInvariantForm.quotientFunc
+          (CuspForm.translate f (heckeRep q 0))
+          (Option.elim o ⟦Einf⟧ (fun j => ⟦E j⟧)))
+        = ∑ x : (Gamma0GL N) ⧸ Γc.subgroupOf (Gamma0GL N),
+            SlashInvariantForm.quotientFunc
+              (CuspForm.translate f (heckeRep q 0)) x :=
+      Fintype.sum_bijective _ hbij _ _ (fun _ => rfl)
+    have h12 : (∑ o : Option (Fin q), SlashInvariantForm.quotientFunc
+          (CuspForm.translate f (heckeRep q 0))
+          (Option.elim o ⟦Einf⟧ (fun j => ⟦E j⟧)))
+        = heckeTransform N q ⇑f := by
+      have hsum : (∑ j : Fin q, SlashInvariantForm.quotientFunc
+            (CuspForm.translate f (heckeRep q 0)) ⟦E j⟧)
+          = ∑ j ∈ Finset.range q, ⇑f ∣[(2 : ℤ)] heckeRep q j := by
+        rw [← Fin.sum_univ_eq_sum_range]
+        exact Finset.sum_congr rfl fun j _ => hEval j
+      rw [Fintype.sum_option]
+      show SlashInvariantForm.quotientFunc (CuspForm.translate f (heckeRep q 0)) ⟦Einf⟧
+          + (∑ j : Fin q, SlashInvariantForm.quotientFunc
+              (CuspForm.translate f (heckeRep q 0)) ⟦E j⟧) = _
+      rw [hEinfval, hsum]
+      unfold heckeTransform
+      rw [if_neg hqN]
+      exact add_comm _ _
+    exact h11.symm.trans h12
 
-/-- **The `q`-expansion of the Hecke slash-sum** (sorry node;
-Diamond–Shurman Proposition 5.2.2 at weight 2, trivial character):
+end HeckeStability
+
+/-! #### The `q`-expansion of the Hecke slash-sum
+
+Diamond–Shurman Proposition 5.2.2 at weight 2, trivial character,
+computed entirely on the pin's `hasSum_qExpansion` /
+`qExpansion_coeff_unique` API. The toolkit below evaluates the slash
+summands pointwise (`heckeRep_slash_apply` — with mathlib's
+normalization the `[1, j; 0, q]` summand is `f((τ+j)/q)/q` and the
+`[q, 0; 0, 1]` summand is `q·f(qτ)`), sums the additive character
+(`heckeRep_char_sum`: `Σ_{j<q} e^{2πinj/q} = q·1_{q∣n}`), and moves
+between the width-`q` and width-1 `q`-parameters
+(`qParam_nat_pow`/`qParam_shift`/`qParam_nat_mul`). -/
+section HeckeQExpansion
+
+open Complex
+
+/-- The determinant of the Hecke representative is `q`. -/
+theorem heckeRep_det_val {q : ℕ} (hq0 : (q : ℝ) ≠ 0) (j : ℕ) :
+    ((heckeRep q j).det.val : ℝ) = q := by
+  rw [Matrix.GeneralLinearGroup.val_det_apply, heckeRep_coe hq0,
+    Matrix.det_fin_two_of]
+  simp
+
+/-- The determinant of the extra Hecke representative is `q`. -/
+theorem heckeRepInf_det_val {q : ℕ} (hq0 : (q : ℝ) ≠ 0) :
+    ((heckeRepInf q).det.val : ℝ) = q := by
+  rw [Matrix.GeneralLinearGroup.val_det_apply, heckeRepInf_coe hq0,
+    Matrix.det_fin_two_of]
+  simp
+
+/-- The Möbius action of the Hecke representative: `τ ↦ (τ + j)/q`. -/
+theorem heckeRep_smul_coe {q : ℕ} (hqpos : 0 < q) (j : ℕ) (τ : ℍ) :
+    ((heckeRep q j • τ : ℍ) : ℂ) = ((τ : ℂ) + j) / q := by
+  have hq0 : (q : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hqpos.ne'
+  have hdet : (0 : ℝ) < (heckeRep q j).det.val := by
+    rw [heckeRep_det_val hq0]
+    exact_mod_cast hqpos
+  rw [UpperHalfPlane.coe_smul_of_det_pos hdet, UpperHalfPlane.num,
+    UpperHalfPlane.denom, heckeRep_coe hq0]
+  show (((1 : ℝ) : ℂ) * ↑τ + ((j : ℝ) : ℂ)) / (((0 : ℝ) : ℂ) * ↑τ + ((q : ℝ) : ℂ)) = _
+  push_cast
+  try ring
+
+/-- The Möbius action of the extra Hecke representative: `τ ↦ qτ`. -/
+theorem heckeRepInf_smul_coe {q : ℕ} (hqpos : 0 < q) (τ : ℍ) :
+    ((heckeRepInf q • τ : ℍ) : ℂ) = q * (τ : ℂ) := by
+  have hq0 : (q : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hqpos.ne'
+  have hdet : (0 : ℝ) < (heckeRepInf q).det.val := by
+    rw [heckeRepInf_det_val hq0]
+    exact_mod_cast hqpos
+  rw [UpperHalfPlane.coe_smul_of_det_pos hdet, UpperHalfPlane.num,
+    UpperHalfPlane.denom, heckeRepInf_coe hq0]
+  show (((q : ℝ) : ℂ) * ↑τ + ((0 : ℝ) : ℂ)) / (((0 : ℝ) : ℂ) * ↑τ + ((1 : ℝ) : ℂ)) = _
+  push_cast
+  try ring
+
+/-- Pointwise value of the weight-2 slash by `[1, j; 0, q]`:
+`(f ∣[2] heckeRep q j)(τ) = f(heckeRep q j • τ)/q` (mathlib
+normalization: `det^{k−1}·denom^{−k} = q·q^{−2} = 1/q`). -/
+theorem heckeRep_slash_apply {q : ℕ} (hqpos : 0 < q) (j : ℕ) (f : ℍ → ℂ)
+    (τ : ℍ) :
+    (f ∣[(2 : ℤ)] heckeRep q j) τ = (1 / q : ℂ) * f (heckeRep q j • τ) := by
+  have hq0 : (q : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hqpos.ne'
+  rw [ModularForm.slash_apply]
+  have hdetpos : (0 : ℝ) < (heckeRep q j).det.val := by
+    rw [heckeRep_det_val hq0]; exact_mod_cast hqpos
+  have hσ : σ (heckeRep q j) (f (heckeRep q j • τ)) = f (heckeRep q j • τ) :=
+    σ_heckeRep q j _
+  have hdenom : denom (heckeRep q j) ↑τ = (q : ℂ) := by
+    rw [UpperHalfPlane.denom, heckeRep_coe hq0]
+    show ((0 : ℝ) : ℂ) * ↑τ + ((q : ℝ) : ℂ) = _
+    push_cast
+    ring
+  rw [hσ, hdenom, heckeRep_det_val hq0, abs_of_pos (by exact_mod_cast hqpos)]
+  have hqC : (q : ℂ) ≠ 0 := Nat.cast_ne_zero.mpr hqpos.ne'
+  push_cast
+  field_simp
+
+/-- Pointwise value of the weight-2 slash by `[q, 0; 0, 1]`:
+`(f ∣[2] heckeRepInf q)(τ) = q·f(heckeRepInf q • τ)`. -/
+theorem heckeRepInf_slash_apply {q : ℕ} (hqpos : 0 < q) (f : ℍ → ℂ)
+    (τ : ℍ) :
+    (f ∣[(2 : ℤ)] heckeRepInf q) τ = (q : ℂ) * f (heckeRepInf q • τ) := by
+  have hq0 : (q : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hqpos.ne'
+  rw [ModularForm.slash_apply]
+  have hσ : σ (heckeRepInf q) (f (heckeRepInf q • τ)) = f (heckeRepInf q • τ) :=
+    σ_heckeRepInf q _
+  have hdenom : denom (heckeRepInf q) ↑τ = (1 : ℂ) := by
+    rw [UpperHalfPlane.denom, heckeRepInf_coe hq0]
+    show ((0 : ℝ) : ℂ) * ↑τ + ((1 : ℝ) : ℂ) = _
+    push_cast
+    ring
+  rw [hσ, hdenom, heckeRepInf_det_val hq0, abs_of_pos (by exact_mod_cast hqpos)]
+  push_cast
+  simp [zpow_one, mul_comm]
+
+/-- The additive character sum: `Σ_{j<q} e^{2πin/q·j} = q·1_{q ∣ n}`
+(geometric series; the ratio is a `q`-th root of unity, equal to `1`
+exactly when `q ∣ n`). -/
+theorem heckeRep_char_sum {q : ℕ} (hqpos : 0 < q) (n : ℕ) :
+    ∑ j ∈ Finset.range q, Complex.exp (2 * Real.pi * Complex.I * n / q) ^ j
+      = if q ∣ n then (q : ℂ) else 0 := by
+  by_cases h : q ∣ n
+  · rw [if_pos h]
+    have h1 : Complex.exp (2 * Real.pi * Complex.I * n / q) = 1 :=
+      (Complex.exp_two_pi_mul_I_mul_div_eq_one_iff hqpos.ne').mpr h
+    simp [h1]
+  · rw [if_neg h]
+    have h1 : Complex.exp (2 * Real.pi * Complex.I * n / q) ≠ 1 := fun hc =>
+      h ((Complex.exp_two_pi_mul_I_mul_div_eq_one_iff hqpos.ne').mp hc)
+    rw [geom_sum_eq h1]
+    have h3 : (q : ℂ) ≠ 0 := Nat.cast_ne_zero.mpr hqpos.ne'
+    have h2 : Complex.exp (2 * Real.pi * Complex.I * n / q) ^ q = 1 := by
+      rw [← Complex.exp_nat_mul]
+      have h4 : (q : ℂ) * (2 * Real.pi * Complex.I * n / q)
+          = 2 * Real.pi * Complex.I * n / ((1 : ℕ) : ℂ) := by
+        push_cast
+        field_simp
+      rw [h4]
+      exact (Complex.exp_two_pi_mul_I_mul_div_eq_one_iff one_ne_zero).mpr
+        (one_dvd n)
+    rw [h2]
+    simp
+
+/-- The width-`q` `q`-parameter, raised to the `q`, is the width-1
+parameter: `e^{2πiz/q·q} = e^{2πiz}`. -/
+theorem qParam_nat_pow {q : ℕ} (hq0 : (q : ℝ) ≠ 0) (z : ℂ) :
+    Function.Periodic.qParam (q : ℝ) z ^ q = Function.Periodic.qParam 1 z := by
+  rw [Function.Periodic.qParam, Function.Periodic.qParam, ← Complex.exp_nat_mul]
+  congr 1
+  have h3 : (q : ℂ) ≠ 0 := by exact_mod_cast hq0
+  push_cast
+  field_simp
+
+/-- The width-1 parameter at the moved point `(z + j)/q` splits as the
+width-`q` parameter times a root of unity. -/
+theorem qParam_shift {q : ℕ} (hq0 : (q : ℝ) ≠ 0) (j : ℕ) (z : ℂ) :
+    Function.Periodic.qParam 1 ((z + j) / q)
+      = Function.Periodic.qParam (q : ℝ) z *
+          Complex.exp (2 * Real.pi * Complex.I * j / q) := by
+  rw [Function.Periodic.qParam, Function.Periodic.qParam, ← Complex.exp_add]
+  congr 1
+  have h3 : (q : ℂ) ≠ 0 := by exact_mod_cast hq0
+  push_cast
+  field_simp
+  try ring
+
+/-- The width-1 parameter at `qz` is the `q`-th power of the width-1
+parameter. -/
+theorem qParam_nat_mul (q : ℕ) (z : ℂ) :
+    Function.Periodic.qParam 1 ((q : ℂ) * z)
+      = Function.Periodic.qParam 1 z ^ q := by
+  rw [Function.Periodic.qParam, Function.Periodic.qParam, ← Complex.exp_nat_mul]
+  congr 1
+  push_cast
+  ring
+
+/-- **The `q`-expansion of the Hecke slash-sum** (Diamond–Shurman
+Proposition 5.2.2 at weight 2, trivial character):
 `a_m(T_q f) = a_{qm}(f)` for `q ∣ N`, and
 `a_m(T_q f) = a_{qm}(f) + q·a_{m/q}(f)` (second term only when
-`q ∣ m`) for `q ∤ N`. Classical proof, entirely analytic on this
-pin's `hasSum_qExpansion` API: substituting the width-1 `q`-expansion
-of `f` into the finite slash-sum, the `q` upper-triangular
-representatives average the additive character
-(`Σ_{j<q} e^{2πimj/q} = q·1_{q ∣ m}`), reindexing `m ↦ qm`, while the
-extra representative contributes `q·f(qτ)`, reindexing `m ↦ m/q`; the
-resulting everywhere-convergent expansion is THE `q`-expansion by
-`UpperHalfPlane.qExpansion_coeff_unique` (analyticity of the cusp
-function coming from `exists_cuspForm_heckeTransform`). -/
+`q ∣ m`) for `q ∤ N`. Proof, entirely analytic on this pin's
+`hasSum_qExpansion` API: substituting the width-1 `q`-expansion of `f`
+into the finite slash-sum, the `q` upper-triangular representatives
+average the additive character (`heckeRep_char_sum`), reindexing
+`m ↦ qm`, while the extra representative contributes `q·f(qτ)`,
+reindexing `m ↦ m/q`; the resulting everywhere-convergent expansion is
+THE `q`-expansion by `ModularFormClass.qExpansion_coeff_unique`
+(analyticity of the cusp function coming from
+`exists_cuspForm_heckeTransform`). -/
 theorem qExpansion_heckeTransform_coeff {N : ℕ} (hN : 0 < N) {q : ℕ}
     (hq : q.Prime) (f : CuspForm (Gamma0GL N) 2) (m : ℕ) :
     (qExpansion 1 (heckeTransform N q ⇑f)).coeff m =
       qCoeff N f (q * m) +
-        (if q ∣ N then 0 else if q ∣ m then (q : ℂ) * qCoeff N f (m / q) else 0) :=
-  sorry
+        (if q ∣ N then 0 else if q ∣ m then (q : ℂ) * qCoeff N f (m / q) else 0) := by
+  have hqpos : 0 < q := hq.pos
+  have hq0 : (q : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hq.ne_zero
+  have hqC : (q : ℂ) ≠ 0 := Nat.cast_ne_zero.mpr hq.ne_zero
+  -- the `q`-expansion of `f` itself, as a `HasSum` at every point
+  have hper : Function.Periodic (⇑f ∘ UpperHalfPlane.ofComplex) 1 :=
+    SlashInvariantFormClass.periodic_comp_ofComplex f
+      (one_mem_strictPeriods_Gamma0GL N)
+  have hbdd : UpperHalfPlane.IsBoundedAtImInfty ⇑f := by
+    have hc : IsCusp OnePoint.infty (Gamma0GL N) :=
+      (Gamma0GL N).isCusp_of_mem_strictPeriods one_pos
+        (one_mem_strictPeriods_Gamma0GL N)
+    exact (OnePoint.isZeroAt_infty_iff.mp
+      (CuspFormClass.zero_at_cusps f hc)).boundedAtFilter
+  have hsumf : ∀ τ : ℍ, HasSum
+      (fun n : ℕ => (qExpansion 1 ⇑f).coeff n •
+        Function.Periodic.qParam 1 ↑τ ^ n) (f τ) :=
+    fun τ => hasSum_qExpansion one_pos hper (CuspFormClass.holo f) hbdd τ
+  have hinj : Function.Injective (fun m : ℕ => q * m) := fun a b h =>
+    Nat.eq_of_mul_eq_mul_left hqpos h
+  -- the master `HasSum` for the transform, at every point
+  have hmaster : ∀ τ : ℍ, HasSum (fun n : ℕ =>
+      (qCoeff N f (q * n) +
+        (if q ∣ N then 0 else if q ∣ n then (q : ℂ) * qCoeff N f (n / q) else 0)) •
+        Function.Periodic.qParam 1 ↑τ ^ n)
+      (heckeTransform N q ⇑f τ) := by
+    intro τ
+    -- part 1: the `q` upper-triangular representatives
+    have hj : ∀ j : ℕ, HasSum (fun n : ℕ =>
+        (1 / q : ℂ) * ((qExpansion 1 ⇑f).coeff n *
+          (Function.Periodic.qParam (q : ℝ) ↑τ ^ n *
+            Complex.exp (2 * Real.pi * Complex.I * n / q) ^ j)))
+        ((⇑f ∣[(2 : ℤ)] heckeRep q j) τ) := by
+      intro j
+      have hs := hsumf (heckeRep q j • τ)
+      rw [heckeRep_smul_coe hqpos j τ] at hs
+      have hs2 := hs.mul_left (1 / q : ℂ)
+      rw [← heckeRep_slash_apply hqpos j ⇑f τ] at hs2
+      have hfun : (fun n : ℕ => (1 / q : ℂ) * ((qExpansion 1 ⇑f).coeff n •
+          Function.Periodic.qParam 1 (((τ : ℂ) + j) / q) ^ n))
+          = fun n : ℕ => (1 / q : ℂ) * ((qExpansion 1 ⇑f).coeff n *
+              (Function.Periodic.qParam (q : ℝ) ↑τ ^ n *
+                Complex.exp (2 * Real.pi * Complex.I * n / q) ^ j)) := by
+        funext n
+        rw [smul_eq_mul, qParam_shift hq0 j ↑τ, mul_pow]
+        congr 2
+        rw [← Complex.exp_nat_mul, ← Complex.exp_nat_mul]
+        congr 1
+        ring_nf
+      rw [hfun] at hs2
+      exact hs2
+    have h13 := hasSum_sum (fun j (_ : j ∈ Finset.range q) => hj j)
+    have hterm : ∀ n : ℕ, (∑ j ∈ Finset.range q,
+        (1 / q : ℂ) * ((qExpansion 1 ⇑f).coeff n *
+          (Function.Periodic.qParam (q : ℝ) ↑τ ^ n *
+            Complex.exp (2 * Real.pi * Complex.I * n / q) ^ j)))
+        = if q ∣ n then (qExpansion 1 ⇑f).coeff n *
+            Function.Periodic.qParam (q : ℝ) ↑τ ^ n else 0 := by
+      intro n
+      have hfac : ∀ j ∈ Finset.range q,
+          (1 / q : ℂ) * ((qExpansion 1 ⇑f).coeff n *
+            (Function.Periodic.qParam (q : ℝ) ↑τ ^ n *
+              Complex.exp (2 * Real.pi * Complex.I * n / q) ^ j))
+          = ((1 / q : ℂ) * ((qExpansion 1 ⇑f).coeff n *
+              Function.Periodic.qParam (q : ℝ) ↑τ ^ n)) *
+              Complex.exp (2 * Real.pi * Complex.I * n / q) ^ j :=
+        fun j _ => by ring
+      rw [Finset.sum_congr rfl hfac, ← Finset.mul_sum,
+        heckeRep_char_sum hqpos n]
+      by_cases hdvd : q ∣ n
+      · rw [if_pos hdvd, if_pos hdvd]
+        field_simp
+      · rw [if_neg hdvd, if_neg hdvd, mul_zero]
+    have h14 : (fun n : ℕ => ∑ j ∈ Finset.range q,
+        (1 / q : ℂ) * ((qExpansion 1 ⇑f).coeff n *
+          (Function.Periodic.qParam (q : ℝ) ↑τ ^ n *
+            Complex.exp (2 * Real.pi * Complex.I * n / q) ^ j)))
+        = fun n : ℕ => if q ∣ n then (qExpansion 1 ⇑f).coeff n *
+            Function.Periodic.qParam (q : ℝ) ↑τ ^ n else 0 := funext hterm
+    rw [h14] at h13
+    have h0 : ∀ n, n ∉ Set.range (fun m : ℕ => q * m) →
+        (if q ∣ n then (qExpansion 1 ⇑f).coeff n *
+          Function.Periodic.qParam (q : ℝ) ↑τ ^ n else 0) = 0 := by
+      intro n hn
+      rw [if_neg]
+      rintro ⟨t, ht⟩
+      exact hn ⟨t, ht.symm⟩
+    have h15 := (Function.Injective.hasSum_iff hinj h0).mpr h13
+    have h16 : ((fun n : ℕ => if q ∣ n then (qExpansion 1 ⇑f).coeff n *
+        Function.Periodic.qParam (q : ℝ) ↑τ ^ n else 0) ∘ (fun m : ℕ => q * m))
+        = fun n : ℕ => qCoeff N f (q * n) •
+            Function.Periodic.qParam 1 ↑τ ^ n := by
+      funext n
+      simp only [Function.comp_apply]
+      rw [if_pos ⟨n, rfl⟩, pow_mul, qParam_nat_pow hq0, smul_eq_mul]
+      rfl
+    rw [h16] at h15
+    -- part 2 and assembly, by cases on `q ∣ N`
+    by_cases hqN : q ∣ N
+    · have hval : heckeTransform N q ⇑f τ
+          = ∑ j ∈ Finset.range q, (⇑f ∣[(2 : ℤ)] heckeRep q j) τ := by
+        unfold heckeTransform
+        rw [if_pos hqN, add_zero, Finset.sum_apply]
+      rw [hval]
+      have hcoeff : (fun n : ℕ =>
+          (qCoeff N f (q * n) +
+            (if q ∣ N then 0 else if q ∣ n then (q : ℂ) * qCoeff N f (n / q) else 0)) •
+            Function.Periodic.qParam 1 ↑τ ^ n)
+          = fun n : ℕ => qCoeff N f (q * n) •
+              Function.Periodic.qParam 1 ↑τ ^ n := by
+        funext n
+        rw [if_pos hqN, add_zero]
+      rw [hcoeff]
+      exact h15
+    · -- the extra representative
+      have h2 : HasSum (fun n : ℕ =>
+          (if q ∣ n then (q : ℂ) * qCoeff N f (n / q) else 0) •
+            Function.Periodic.qParam 1 ↑τ ^ n)
+          ((⇑f ∣[(2 : ℤ)] heckeRepInf q) τ) := by
+        have hs := hsumf (heckeRepInf q • τ)
+        rw [heckeRepInf_smul_coe hqpos τ] at hs
+        have hs2 := hs.mul_left (q : ℂ)
+        rw [← heckeRepInf_slash_apply hqpos ⇑f τ] at hs2
+        have hfun : (fun n : ℕ => (q : ℂ) * ((qExpansion 1 ⇑f).coeff n •
+            Function.Periodic.qParam 1 ((q : ℂ) * ↑τ) ^ n))
+            = (fun n : ℕ => (if q ∣ n then (q : ℂ) * qCoeff N f (n / q) else 0) •
+                Function.Periodic.qParam 1 ↑τ ^ n) ∘ (fun n : ℕ => q * n) := by
+          funext n
+          simp only [Function.comp_apply]
+          rw [if_pos ⟨n, rfl⟩, Nat.mul_div_cancel_left n hqpos,
+            qParam_nat_mul q ↑τ, ← pow_mul, smul_eq_mul, smul_eq_mul]
+          simp only [qCoeff]
+          ring
+        rw [hfun] at hs2
+        have h0' : ∀ n, n ∉ Set.range (fun m : ℕ => q * m) →
+            ((if q ∣ n then (q : ℂ) * qCoeff N f (n / q) else 0) •
+              Function.Periodic.qParam 1 ↑τ ^ n) = 0 := by
+          intro n hn
+          rw [if_neg, zero_smul]
+          rintro ⟨t, ht⟩
+          exact hn ⟨t, ht.symm⟩
+        exact (Function.Injective.hasSum_iff hinj h0').mp hs2
+      have hval : heckeTransform N q ⇑f τ
+          = (∑ j ∈ Finset.range q, (⇑f ∣[(2 : ℤ)] heckeRep q j) τ)
+            + (⇑f ∣[(2 : ℤ)] heckeRepInf q) τ := by
+        unfold heckeTransform
+        rw [if_neg hqN, Pi.add_apply, Finset.sum_apply]
+      rw [hval]
+      have h17 := h15.add h2
+      have hcoeff : (fun n : ℕ =>
+          (qCoeff N f (q * n) +
+            (if q ∣ N then 0 else if q ∣ n then (q : ℂ) * qCoeff N f (n / q) else 0)) •
+            Function.Periodic.qParam 1 ↑τ ^ n)
+          = fun n : ℕ => qCoeff N f (q * n) •
+              Function.Periodic.qParam 1 ↑τ ^ n +
+            (if q ∣ n then (q : ℂ) * qCoeff N f (n / q) else 0) •
+              Function.Periodic.qParam 1 ↑τ ^ n := by
+        funext n
+        rw [if_neg hqN, add_smul]
+      rw [hcoeff]
+      exact h17
+  -- uniqueness of `q`-expansions through the cusp form of
+  -- `exists_cuspForm_heckeTransform`
+  obtain ⟨g, hg⟩ := exists_cuspForm_heckeTransform hN hq f
+  have huniq := ModularFormClass.qExpansion_coeff_unique one_pos
+    (one_mem_strictPeriods_Gamma0GL N) (f := g)
+    (fun τ => by rw [show ⇑g = heckeTransform N q ⇑f from hg]; exact hmaster τ) m
+  rw [← hg]
+  exact huniq.symm
+
+end HeckeQExpansion
 
 /-- The `q`-expansion coefficients of the zero cusp form vanish. -/
 theorem qCoeff_zero_cuspForm (N m : ℕ) :
@@ -1045,8 +1850,9 @@ theorem coe_sum_smul {N n : ℕ} (c : Fin n → ℂ)
 
 /-- **Integral Hecke structure of an eigenform** (Diamond–Shurman
 §6.5, the finite input to Theorem 6.5.1; PROVEN assembly, 2026-07-24,
-over the three sorried leaves `exists_cuspForm_heckeTransform`,
-`qExpansion_heckeTransform_coeff` and
+over `exists_cuspForm_heckeTransform` and
+`qExpansion_heckeTransform_coeff` — both since PROVEN — and the one
+remaining sorried leaf
 `exists_rational_qExpansion_basis`): for a normalized weight-2
 level-`N` eigenform `f` there are a dimension `n`, a family of
 RATIONAL `n × n` matrices `T q`, and a common nonzero complex
