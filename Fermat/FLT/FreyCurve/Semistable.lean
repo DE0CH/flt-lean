@@ -7900,19 +7900,99 @@ theorem WeierstrassCurve.torsionFlatPackage_of_nonsplit_adic
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
+/-- **Points of a finite étale algebra separate its elements** (sorry
+node — the reducedness third of the reconstruction, curve-free): over
+a characteristic-zero field `K` with algebraic closure `Ω`, an element
+of a finite étale `K`-algebra killed by every `Ω`-point is zero.
+Content: `A` is finite-dimensional and reduced (étale over a field),
+hence a finite product of finite field extensions of `K`
+(`IsArtinianRing` structure theory); a nonzero element has a nonzero
+component in some factor field `L`, and any `K`-embedding `L → Ω`
+(`IsAlgClosed.lift`, `L/K` algebraic) composed with the projection is
+an `Ω`-point not vanishing on it. -/
+theorem etale_points_separate
+    (K : Type) [Field K] [CharZero K]
+    (Ω : Type) [Field Ω] [Algebra K Ω] [IsAlgClosure K Ω]
+    (A : Type) [CommRing A] [Algebra K A] [Module.Finite K A]
+    [Algebra.Etale K A]
+    (x : A) (hx : ∀ φ : A →ₐ[K] Ω, φ x = 0) : x = 0 := by
+  sorry
+
+open TensorProduct in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **Pair separation on the tensor square of a finite étale algebra**
+(sorry node — the linear-independence third of the reconstruction,
+curve-free): an element of `A ⊗[K] A` killed by every PAIR of
+`Ω`-points (through `Algebra.TensorProduct.lift`, which enumerates the
+`Ω`-points of the tensor square) is zero. Content: writing
+`z = ∑ mᵢ ⊗ nᵢ` over a `K`-basis `nᵢ` of `A`, the hypothesis says each
+`φ` kills `∑ φ(mᵢ) ψ(nᵢ)` for every point `ψ`; the evaluation matrix
+`(ψ(nᵢ))` of a basis at the `Nat.card = finrank` points (étale point
+count) is invertible over `Ω` — distinct algebra homomorphisms into a
+field are linearly independent (Dedekind) and `K`-linear combinations
+of basis evaluations realize all point values — so `φ(mᵢ) = 0` for all
+`φ, i`, and `etale_points_separate` kills each `mᵢ`. -/
+theorem etale_tensor_points_separate
+    (K : Type) [Field K] [CharZero K]
+    (Ω : Type) [Field Ω] [Algebra K Ω] [IsAlgClosure K Ω]
+    (A : Type) [CommRing A] [Algebra K A] [Module.Finite K A]
+    [Algebra.Etale K A]
+    (z : A ⊗[K] A)
+    (hz : ∀ φ ψ : A →ₐ[K] Ω,
+      Algebra.TensorProduct.lift φ ψ (fun _ _ => Commute.all _ _) z = 0) :
+    z = 0 := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **Equivariant functions on the point set are evaluations** (sorry
+node — the essential-surjectivity third of the reconstruction,
+curve-free): a `Gal(Ω/K)`-equivariant function `c` from the `Ω`-points
+of a finite étale `K`-algebra to `Ω` is evaluation at a (unique)
+element of `A`. Content: `A ≅ ∏ Lᵢ` with `Lᵢ/K` finite; fix a point
+`Pᵢ` of each factor; equivariance forces `c Pᵢ` into the fixed field
+of the fixing subgroup of the finite subextension `Pᵢ(Lᵢ) ⊆ Ω`, which
+is `Pᵢ(Lᵢ)` itself (Galois correspondence for the finite subextension
+of the infinite Galois extension `Ω/K`), so `c Pᵢ = Pᵢ(aᵢ)` defines
+`a = (aᵢ)`; every point of `A` is `σ ∘ Pᵢ` for some `σ ∈ Gal(Ω/K)`
+(any two embeddings of `Lᵢ` are conjugate: `IsAlgClosed.lift` plus
+bijectivity of endomorphisms of algebraic extensions), and
+equivariance propagates `φ a = c φ` from the `Pᵢ` to all points. -/
+theorem exists_eval_of_equivariant_function
+    (K : Type) [Field K] [CharZero K]
+    (Ω : Type) [Field Ω] [Algebra K Ω] [IsAlgClosure K Ω]
+    (A : Type) [CommRing A] [Algebra K A] [Module.Finite K A]
+    [Algebra.Etale K A]
+    (c : (A →ₐ[K] Ω) → Ω)
+    (hc : ∀ (σ : Ω ≃ₐ[K] Ω) (φ : A →ₐ[K] Ω),
+      c (σ.toAlgHom.comp φ) = σ (c φ)) :
+    ∃ a : A, ∀ φ : A →ₐ[K] Ω, φ a = c φ := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
 /-- **Reconstruction of finite étale bialgebras from their Galois
-sets** (sorry node — the fully-faithful half of the étale/Galois-sets
-correspondence, curve-free and completion-free): two finite étale
+sets** (DECOMPOSED 2026-07-24 into the three étale leaves above — the
+fully-faithful half of the étale/Galois-sets correspondence,
+curve-free and completion-free): two finite étale
 bialgebras `A`, `B` over a characteristic-zero field `K` whose
 `Ω`-point convolution monoids are identified `Gal(Ω/K)`-equivariantly
 are isomorphic as `K`-bialgebras (contravariantly: the points
 equivalence `pts A ≃ pts B` yields `B ≃ₐc A`). Content
 (Grothendieck's Galois theory, the reconstruction direction dual to
-`exists_galoisModulePackage`): evaluation identifies a finite étale
-`K`-algebra with the equivariant functions on its finite point set,
-compatibly with the convolution structure, and an equivariant
-identification of point sets identifies the equivariant function
-bialgebras. -/
+`exists_galoisModulePackage`): for `b : B` the function
+`φ ↦ (θ φ) b` on the points of `A` is equivariant, hence evaluation at
+a unique element `e b : A` (`exists_eval_of_equivariant_function` +
+`etale_points_separate`); `e` is an algebra isomorphism (the same
+construction along `θ.symm` inverts it), matches counits (`θ` sends
+the convolution unit to the convolution unit), and matches
+comultiplications because both sides of the comul square evaluate
+equally against every pair of points (`θ` is a monoid map;
+`etale_tensor_points_separate`). -/
 theorem exists_bialgEquiv_of_equivariant_pointsEquiv
     (K : Type) [Field K] [CharZero K]
     (Ω : Type) [Field Ω] [Algebra K Ω] [IsAlgClosure K Ω]
@@ -7927,7 +8007,214 @@ theorem exists_bialgEquiv_of_equivariant_pointsEquiv
           (WithConv.ofConv (Additive.toMul
             (θ (Additive.ofMul (WithConv.toConv φ)))))))) :
     Nonempty (B ≃ₐc[K] A) := by
-  sorry
+  classical
+  -- the transported maps on bare points
+  let θfun : (A →ₐ[K] Ω) → (B →ₐ[K] Ω) := fun φ =>
+    WithConv.ofConv (Additive.toMul (θ (Additive.ofMul (WithConv.toConv φ))))
+  let θinv : (B →ₐ[K] Ω) → (A →ₐ[K] Ω) := fun ψ =>
+    WithConv.ofConv (Additive.toMul (θ.symm (Additive.ofMul (WithConv.toConv ψ))))
+  have hθinvfun : ∀ φ, θinv (θfun φ) = φ := by
+    intro φ
+    show WithConv.ofConv (Additive.toMul (θ.symm (Additive.ofMul (WithConv.toConv
+      (WithConv.ofConv (Additive.toMul (θ (Additive.ofMul
+        (WithConv.toConv φ))))))))) = φ
+    rw [WithConv.toConv_ofConv, ofMul_toMul, AddEquiv.symm_apply_apply,
+      toMul_ofMul, WithConv.ofConv_toConv]
+  have hθfuninv : ∀ ψ, θfun (θinv ψ) = ψ := by
+    intro ψ
+    show WithConv.ofConv (Additive.toMul (θ (Additive.ofMul (WithConv.toConv
+      (WithConv.ofConv (Additive.toMul (θ.symm (Additive.ofMul
+        (WithConv.toConv ψ))))))))) = ψ
+    rw [WithConv.toConv_ofConv, ofMul_toMul, AddEquiv.apply_symm_apply,
+      toMul_ofMul, WithConv.ofConv_toConv]
+  -- equivariance of the transported maps
+  have hθfun_comp : ∀ (σ : Ω ≃ₐ[K] Ω) (φ : A →ₐ[K] Ω),
+      θfun (σ.toAlgHom.comp φ) = σ.toAlgHom.comp (θfun φ) := by
+    intro σ φ
+    show WithConv.ofConv (Additive.toMul (θ (Additive.ofMul (WithConv.toConv
+      (σ.toAlgHom.comp φ))))) = _
+    rw [hθ σ φ, toMul_ofMul, WithConv.ofConv_toConv]
+  have hθinv_comp : ∀ (σ : Ω ≃ₐ[K] Ω) (ψ : B →ₐ[K] Ω),
+      θinv (σ.toAlgHom.comp ψ) = σ.toAlgHom.comp (θinv ψ) := by
+    intro σ ψ
+    apply Function.LeftInverse.injective hθinvfun
+    rw [hθfuninv, hθfun_comp, hθfuninv]
+  -- the transported maps intertwine the convolution structures
+  have hθfun_one : θfun ((1 : WithConv (A →ₐ[K] Ω)).ofConv) =
+      (1 : WithConv (B →ₐ[K] Ω)).ofConv := by
+    show WithConv.ofConv (Additive.toMul (θ (Additive.ofMul (WithConv.toConv
+      ((1 : WithConv (A →ₐ[K] Ω)).ofConv))))) = _
+    rw [WithConv.toConv_ofConv,
+      show Additive.ofMul (1 : WithConv (A →ₐ[K] Ω)) =
+        (0 : Additive (WithConv (A →ₐ[K] Ω))) from rfl,
+      map_zero θ]
+    rfl
+  have hθfun_mul : ∀ ψ₁ ψ₂ : WithConv (A →ₐ[K] Ω),
+      θfun ((ψ₁ * ψ₂).ofConv) =
+        (WithConv.toConv (θfun ψ₁.ofConv) *
+          WithConv.toConv (θfun ψ₂.ofConv)).ofConv := by
+    intro ψ₁ ψ₂
+    show WithConv.ofConv (Additive.toMul (θ (Additive.ofMul (WithConv.toConv
+      ((ψ₁ * ψ₂).ofConv))))) = _
+    rw [WithConv.toConv_ofConv,
+      show Additive.ofMul (ψ₁ * ψ₂) =
+        Additive.ofMul ψ₁ + Additive.ofMul ψ₂ from rfl,
+      map_add θ]
+    rfl
+  -- separation-uniqueness on both sides
+  have huniqA : ∀ x y : A, (∀ φ : A →ₐ[K] Ω, φ x = φ y) → x = y := by
+    intro x y h
+    have h0 := etale_points_separate K Ω A (x - y)
+      (fun φ => by rw [map_sub, h φ, sub_self])
+    exact sub_eq_zero.mp h0
+  have huniqB : ∀ x y : B, (∀ ψ : B →ₐ[K] Ω, ψ x = ψ y) → x = y := by
+    intro x y h
+    have h0 := etale_points_separate K Ω B (x - y)
+      (fun ψ => by rw [map_sub, h ψ, sub_self])
+    exact sub_eq_zero.mp h0
+  -- the underlying function of the reconstruction and of its inverse
+  have heval : ∀ b : B, ∃ a : A, ∀ φ : A →ₐ[K] Ω, φ a = θfun φ b := by
+    intro b
+    exact exists_eval_of_equivariant_function K Ω A (fun φ => θfun φ b)
+      (fun σ φ => by rw [hθfun_comp σ φ]; rfl)
+  choose eF heF using heval
+  have heval' : ∀ a : A, ∃ b : B, ∀ ψ : B →ₐ[K] Ω, ψ b = θinv ψ a := by
+    intro a
+    exact exists_eval_of_equivariant_function K Ω B (fun ψ => θinv ψ a)
+      (fun σ ψ => by rw [hθinv_comp σ ψ]; rfl)
+  choose eG heG using heval'
+  -- the reconstruction is a K-algebra homomorphism
+  let eHom : B →ₐ[K] A :=
+    { toFun := eF
+      map_one' := by
+        apply huniqA
+        intro φ
+        rw [heF 1 φ, map_one, map_one]
+      map_mul' := fun b₁ b₂ => by
+        apply huniqA
+        intro φ
+        rw [heF (b₁ * b₂) φ, map_mul, map_mul, heF b₁ φ, heF b₂ φ]
+      map_zero' := by
+        apply huniqA
+        intro φ
+        rw [heF 0 φ, map_zero, map_zero]
+      map_add' := fun b₁ b₂ => by
+        apply huniqA
+        intro φ
+        rw [heF (b₁ + b₂) φ, map_add, map_add, heF b₁ φ, heF b₂ φ]
+      commutes' := fun k => by
+        apply huniqA
+        intro φ
+        rw [heF (algebraMap K B k) φ, AlgHom.commutes, AlgHom.commutes] }
+  let gHom : A →ₐ[K] B :=
+    { toFun := eG
+      map_one' := by
+        apply huniqB
+        intro ψ
+        rw [heG 1 ψ, map_one, map_one]
+      map_mul' := fun a₁ a₂ => by
+        apply huniqB
+        intro ψ
+        rw [heG (a₁ * a₂) ψ, map_mul, map_mul, heG a₁ ψ, heG a₂ ψ]
+      map_zero' := by
+        apply huniqB
+        intro ψ
+        rw [heG 0 ψ, map_zero, map_zero]
+      map_add' := fun a₁ a₂ => by
+        apply huniqB
+        intro ψ
+        rw [heG (a₁ + a₂) ψ, map_add, map_add, heG a₁ ψ, heG a₂ ψ]
+      commutes' := fun k => by
+        apply huniqB
+        intro ψ
+        rw [heG (algebraMap K A k) ψ, AlgHom.commutes, AlgHom.commutes] }
+  -- the two reconstructions are mutually inverse
+  let eAlg : B ≃ₐ[K] A := AlgEquiv.ofAlgHom eHom gHom
+    (AlgHom.ext fun a => by
+      show eF (eG a) = a
+      apply huniqA
+      intro φ
+      rw [heF (eG a) φ, heG a (θfun φ), hθinvfun φ])
+    (AlgHom.ext fun b => by
+      show eG (eF b) = b
+      apply huniqB
+      intro ψ
+      rw [heG (eF b) ψ, heF b (θinv ψ), hθfuninv ψ])
+  -- evaluation against the reconstruction, restated for the equivalence
+  have heF' : ∀ (b : B) (φ : A →ₐ[K] Ω), φ ((eAlg : B →ₐ[K] A) b) = θfun φ b :=
+    fun b φ => heF b φ
+  -- counit compatibility, through the convolution units
+  have hcounit : (Bialgebra.counitAlgHom K A).comp (eAlg : B →ₐ[K] A) =
+      Bialgebra.counitAlgHom K B := by
+    apply AlgHom.ext
+    intro b
+    apply (algebraMap K Ω).injective
+    calc algebraMap K Ω ((Bialgebra.counitAlgHom K A).comp
+          (eAlg : B →ₐ[K] A) b)
+        = ((1 : WithConv (A →ₐ[K] Ω)).ofConv) ((eAlg : B →ₐ[K] A) b) :=
+          (AlgHom.convOne_apply _).symm
+      _ = θfun ((1 : WithConv (A →ₐ[K] Ω)).ofConv) b := heF' b _
+      _ = ((1 : WithConv (B →ₐ[K] Ω)).ofConv) b := by rw [hθfun_one]
+      _ = algebraMap K Ω (Bialgebra.counitAlgHom K B b) :=
+          AlgHom.convOne_apply b
+  -- comultiplication compatibility, through pair separation
+  have hcomul : (Algebra.TensorProduct.map (eAlg : B →ₐ[K] A)
+      (eAlg : B →ₐ[K] A)).comp (Bialgebra.comulAlgHom K B) =
+      (Bialgebra.comulAlgHom K A).comp (eAlg : B →ₐ[K] A) := by
+    apply AlgHom.ext
+    intro b
+    have hpair : ∀ φ ψ : A →ₐ[K] Ω,
+        Algebra.TensorProduct.lift φ ψ (fun _ _ => Commute.all _ _)
+          ((Algebra.TensorProduct.map (eAlg : B →ₐ[K] A) (eAlg : B →ₐ[K] A))
+            (Bialgebra.comulAlgHom K B b) -
+          (Bialgebra.comulAlgHom K A) ((eAlg : B →ₐ[K] A) b)) = 0 := by
+      intro φ ψ
+      rw [map_sub]
+      -- the map side evaluates through the transported pair
+      have hL : Algebra.TensorProduct.lift φ ψ (fun _ _ => Commute.all _ _)
+          ((Algebra.TensorProduct.map (eAlg : B →ₐ[K] A) (eAlg : B →ₐ[K] A))
+            (Bialgebra.comulAlgHom K B b)) =
+          Algebra.TensorProduct.lift (θfun φ) (θfun ψ)
+            (fun _ _ => Commute.all _ _) (Bialgebra.comulAlgHom K B b) := by
+        induction Bialgebra.comulAlgHom K B b with
+        | zero => simp
+        | tmul b₁ b₂ =>
+          rw [Algebra.TensorProduct.map_tmul, Algebra.TensorProduct.lift_tmul,
+            Algebra.TensorProduct.lift_tmul, heF' b₁ φ, heF' b₂ ψ]
+        | add z₁ z₂ h₁ h₂ => rw [map_add, map_add, map_add, h₁, h₂]
+      -- the comul side is the convolution product at the reconstruction
+      have hR : Algebra.TensorProduct.lift φ ψ (fun _ _ => Commute.all _ _)
+          ((Bialgebra.comulAlgHom K A) ((eAlg : B →ₐ[K] A) b)) =
+          Algebra.TensorProduct.lift (θfun φ) (θfun ψ)
+            (fun _ _ => Commute.all _ _) (Bialgebra.comulAlgHom K B b) := by
+        have h1 : Algebra.TensorProduct.lift φ ψ (fun _ _ => Commute.all _ _)
+            ((Bialgebra.comulAlgHom K A) ((eAlg : B →ₐ[K] A) b)) =
+            θfun ((WithConv.toConv φ * WithConv.toConv ψ).ofConv) b := by
+          rw [← heF' b ((WithConv.toConv φ * WithConv.toConv ψ).ofConv)]
+          rw [show (((WithConv.toConv φ * WithConv.toConv ψ).ofConv :
+              A →ₐ[K] Ω) ((eAlg : B →ₐ[K] A) b)) =
+              (WithConv.toConv φ * WithConv.toConv ψ)
+                ((eAlg : B →ₐ[K] A) b) from rfl]
+          rw [AlgHom.convMul_apply]
+          rfl
+        have h2 : θfun ((WithConv.toConv φ * WithConv.toConv ψ).ofConv) b =
+            Algebra.TensorProduct.lift (θfun φ) (θfun ψ)
+              (fun _ _ => Commute.all _ _) (Bialgebra.comulAlgHom K B b) := by
+          rw [hθfun_mul (WithConv.toConv φ) (WithConv.toConv ψ)]
+          rw [show (((WithConv.toConv (θfun φ) *
+              WithConv.toConv (θfun ψ)).ofConv : B →ₐ[K] Ω) b) =
+              (WithConv.toConv (θfun φ) * WithConv.toConv (θfun ψ)) b
+            from rfl]
+          rw [AlgHom.convMul_apply]
+          rfl
+        exact h1.trans h2
+      rw [hL, hR, sub_self]
+    have h0 := etale_tensor_points_separate K Ω A
+      ((Algebra.TensorProduct.map (eAlg : B →ₐ[K] A) (eAlg : B →ₐ[K] A))
+        (Bialgebra.comulAlgHom K B b) -
+        (Bialgebra.comulAlgHom K A) ((eAlg : B →ₐ[K] A) b)) hpair
+    exact sub_eq_zero.mp h0
+  exact ⟨BialgEquiv.ofAlgEquiv eAlg hcounit hcomul⟩
 
 open TensorProduct IsDedekindDomain in
 set_option backward.isDefEq.respectTransparency false in
