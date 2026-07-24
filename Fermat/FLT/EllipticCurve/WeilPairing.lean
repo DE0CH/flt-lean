@@ -4202,10 +4202,326 @@ theorem weilValueProp_self_of_two (q : ℕ) [Fact q.Prime]
       hxRS hxRPS hxQRnS hxQRnPS
       aP aQ haP haQ hA heq)
 
-/-- **Bridge lemma** (sorry node — Silverman AEC Ex. 3.16(c), the
+section TranslationCharDegenerate
+
+/-! ### Degenerate cases of the translation character
+
+The two degenerate branches of the Silverman Ex. 3.16(c) bridge: a
+translation character evaluated at the tautological point itself
+(`κ₀ = O`), or attached to a trivial base point (`P = O`), is
+necessarily `1` — so a NONTRIVIAL character value excludes both,
+leaving the affine core `weilValueProp_translationChar_witness`. -/
+
+variable {F : Type*} [Field F]
+
+/-- **Evaluation at the tautological point is the fraction-field
+embedding**: `pointEval` at the generic point `(tautX, tautY)` of
+`curveK W` is the canonical map `F[W] → K = Frac F[W]`. -/
+theorem pointEval_taut {W : WeierstrassCurve.Affine F}
+    (h : (curveK W).Equation (tautX W) (tautY W)) (f : W.CoordinateRing) :
+    pointEval (constHom W) h f =
+      algebraMap W.CoordinateRing W.FunctionField f := by
+  have hhom : Polynomial.eval₂RingHom
+      ((Polynomial.evalRingHom (tautX W)).comp
+        (Polynomial.mapRingHom (constHom W))) (tautY W) =
+      (algebraMap W.CoordinateRing W.FunctionField).comp
+        (AdjoinRoot.mk W.polynomial) := by
+    apply Polynomial.ringHom_ext'
+    · apply Polynomial.ringHom_ext'
+      · ext r
+        show Polynomial.eval₂ _ _ (Polynomial.C (Polynomial.C r)) = _
+        rw [Polynomial.eval₂_C]
+        show ((Polynomial.C r).map (constHom W)).eval (tautX W) = _
+        rw [Polynomial.map_C, Polynomial.eval_C]
+        rfl
+      · show Polynomial.eval₂ _ _ (Polynomial.C Polynomial.X) = _
+        rw [Polynomial.eval₂_C]
+        show (Polynomial.X.map (constHom W)).eval (tautX W) = _
+        rw [Polynomial.map_X, Polynomial.eval_X]
+        rfl
+    · show Polynomial.eval₂ _ _ Polynomial.X = _
+      rw [Polynomial.eval₂_X]
+      rfl
+  induction f using AdjoinRoot.induction_on with
+  | ih g =>
+    show AdjoinRoot.lift _ _ _ (AdjoinRoot.mk W.polynomial g) = _
+    rw [AdjoinRoot.lift_mk]
+    exact RingHom.congr_fun hhom g
+
+/-- **Evaluation of a constant**: `pointEval` sends the constant `k`
+of the coordinate ring to `φ k`. -/
+theorem pointEval_ofC {K' : Type*} [Field K'] {W : WeierstrassCurve.Affine F}
+    (φ : F →+* K') {x₀ y₀ : K'}
+    (h : ((W.map φ).toAffine).Equation x₀ y₀) (k : F) :
+    pointEval φ h (AdjoinRoot.of W.polynomial (Polynomial.C k)) = φ k := by
+  show AdjoinRoot.lift _ _ _ (AdjoinRoot.of W.polynomial (Polynomial.C k)) = _
+  rw [AdjoinRoot.lift_of]
+  show ((Polynomial.C k).map φ).eval x₀ = _
+  rw [Polynomial.map_C, Polynomial.eval_C]
+
+/-- The constants embedding factors through the coordinate ring:
+`constHom W k` is the image of the constant `k`. -/
+theorem algebraMap_ofC {W : WeierstrassCurve.Affine F} (k : F) :
+    algebraMap W.CoordinateRing W.FunctionField
+      (AdjoinRoot.of W.polynomial (Polynomial.C k)) = constHom W k :=
+  rfl
+
+/-- **The point ideal times its negative's is the vertical ideal**:
+`I_Q · I_{⊖Q} = ⟨X − x_Q⟩` (and `⊤ = ⟨1⟩` at `O`) — mathlib's
+`XYIdeal_neg_mul` in the `pointIdeal`/`pointXClass` vocabulary. -/
+theorem pointIdeal_mul_neg (W : WeierstrassCurve.Affine F) (Q : W.Point) :
+    pointIdeal W Q * pointIdeal W (-Q) =
+      Ideal.span {pointXClass W Q} := by
+  cases Q with
+  | zero =>
+    show (⊤ : Ideal W.CoordinateRing) * ⊤ = Ideal.span {(1 : W.CoordinateRing)}
+    rw [Ideal.top_mul, Ideal.span_singleton_one]
+  | some x y h =>
+    rw [WeierstrassCurve.Affine.Point.neg_some]
+    show WeierstrassCurve.Affine.CoordinateRing.XYIdeal W x (Polynomial.C y) *
+      WeierstrassCurve.Affine.CoordinateRing.XYIdeal W x
+        (Polynomial.C (W.negY x y)) = _
+    rw [mul_comm]
+    exact WeierstrassCurve.Affine.CoordinateRing.XYIdeal_neg_mul h
+
+/-- **Degenerate translation character, `κ₀ = O` branch**: if the
+translate point is the tautological point itself (the torsion point
+being translated by is `O`), then the multiplied-out character
+equation forces `c = 1` — evaluation at the tautological point is the
+fraction-field embedding, so the equation reads `ā·v̄ = c·ā·v̄`. -/
+theorem translationChar_eq_one_of_translate_zero
+    {W : WeierstrassCurve.Affine F}
+    (hΔ : W.Δ ≠ 0) {a v : W.CoordinateRing} (ha : a ≠ 0)
+    {Q : W.Point} (hQ : Q = 0)
+    {xκ yκ : W.FunctionField} {hκ : (curveK W).Nonsingular xκ yκ}
+    (hpt : constPoint W Q + tautPoint W hΔ =
+      WeierstrassCurve.Affine.Point.some xκ yκ hκ)
+    {c : F}
+    (hτv : pointEval (constHom W) hκ.left v ≠ 0)
+    (heq : pointEval (constHom W) hκ.left a *
+        algebraMap W.CoordinateRing W.FunctionField v =
+      constHom W c * algebraMap W.CoordinateRing W.FunctionField a *
+        pointEval (constHom W) hκ.left v) :
+    c = 1 := by
+  subst hQ
+  rw [show constPoint W 0 = 0 from rfl, zero_add,
+    show tautPoint W hΔ = WeierstrassCurve.Affine.Point.some (tautX W)
+      (tautY W) (taut_nonsingular W hΔ) from rfl,
+    WeierstrassCurve.Affine.Point.some.injEq] at hpt
+  obtain ⟨hx, hy⟩ := hpt
+  subst hx
+  subst hy
+  simp only [pointEval_taut] at heq hτv
+  have hAa : algebraMap W.CoordinateRing W.FunctionField a ≠ 0 :=
+    fun h0 => ha ((map_eq_zero_iff _
+      (IsFractionRing.injective W.CoordinateRing W.FunctionField)).mp h0)
+  have h1 : algebraMap W.CoordinateRing W.FunctionField a =
+      constHom W c * algebraMap W.CoordinateRing W.FunctionField a :=
+    mul_right_cancel₀ hτv heq
+  rcases mul_left_eq_self₀.mp h1.symm with h | h
+  · exact (constHom W).injective (h.trans (map_one (constHom W)).symm)
+  · exact absurd h hAa
+
+/-- **Degenerate translation character, `P = O` branch**: if the base
+point of the descent is trivial — `p•T' = 0`, so the Miller generator's
+divisor multiset `Σ_κ (T'⊕κ) + (⊖κ)` is a reindexing of
+`Σ_κ (κ) + (⊖κ)` — then the generator is a constant multiple of the
+vertical product `∏ (X − x_κ)` (per-pair `I_κ·I_{⊖κ} = ⟨X − x_κ⟩` and
+units of the coordinate ring are constants, the engine hypothesis
+`hCunits`), so the multiplied-out character equation forces `c = 1`. -/
+theorem translationChar_eq_one_of_smul_zero
+    [DecidableEq F] {W : WeierstrassCurve.Affine F} {p : ℕ}
+    (hCunits : ∀ u : W.CoordinateRing, IsUnit u → ∃ k : F, k ≠ 0 ∧
+      u = AdjoinRoot.of W.polynomial (Polynomial.C k))
+    {ι : Type*} [Fintype ι] {val : ι → W.Point}
+    (hval_inj : Function.Injective val)
+    (hval_tor : ∀ i, (p : ℤ) • val i = 0)
+    (hval_surj : ∀ Q : W.Point, (p : ℤ) • Q = 0 → ∃ i, val i = Q)
+    {T' : W.Point} (hT : (p : ℤ) • T' = 0)
+    {a : W.CoordinateRing} (ha : a ≠ 0)
+    (hspan : Ideal.span {a} =
+      ((((Finset.univ.val.map fun i => T' + val i) +
+        Finset.univ.val.map fun i => -val i)).map (pointIdeal W)).prod)
+    {xκ yκ : W.FunctionField} {hκ : (curveK W).Nonsingular xκ yκ}
+    {c : F}
+    (hτv : pointEval (constHom W) hκ.left (enumVertical W val) ≠ 0)
+    (heq : pointEval (constHom W) hκ.left a *
+        algebraMap W.CoordinateRing W.FunctionField (enumVertical W val) =
+      constHom W c * algebraMap W.CoordinateRing W.FunctionField a *
+        pointEval (constHom W) hκ.left (enumVertical W val)) :
+    c = 1 := by
+  classical
+  -- reindex the translated enumeration through `κ ↦ T' ⊕ κ`
+  have htor' : ∀ i, (p : ℤ) • (T' + val i) = 0 := fun i => by
+    rw [smul_add, hT, hval_tor i, add_zero]
+  choose g hg using fun i => hval_surj _ (htor' i)
+  have hginj : Function.Injective g := fun i j hij =>
+    hval_inj (add_left_cancel (a := T') (by rw [← hg i, ← hg j, hij]))
+  have hgbij : Function.Bijective g :=
+    Finite.injective_iff_bijective.mp hginj
+  -- the span identity: `span {a} = span {∏ (X − x_κ)}`
+  have hspan' : Ideal.span {a} = Ideal.span {enumVertical W val} := by
+    rw [hspan, Multiset.map_add, Multiset.prod_add]
+    have h1 : (((Finset.univ.val.map fun i => T' + val i)).map
+        (pointIdeal W)).prod = ∏ i, pointIdeal W (val i) := by
+      rw [Multiset.map_map]
+      show ∏ i, pointIdeal W (T' + val i) = ∏ i, pointIdeal W (val i)
+      simp only [← hg]
+      exact hgbij.prod_comp fun i => pointIdeal W (val i)
+    have h2 : (((Finset.univ.val.map fun i => -val i)).map
+        (pointIdeal W)).prod = ∏ i, pointIdeal W (-val i) := by
+      rw [Multiset.map_map]
+      rfl
+    rw [h1, h2, ← Finset.prod_mul_distrib,
+      Finset.prod_congr rfl fun i _ => pointIdeal_mul_neg W (val i),
+      Ideal.prod_span_singleton]
+    rfl
+  -- extract the constant unit relating `a` to the vertical product
+  obtain ⟨u, hu⟩ := Ideal.span_singleton_eq_span_singleton.mp hspan'
+  obtain ⟨k, hk0, hk⟩ := hCunits u u.isUnit
+  have hu0 : (u : W.CoordinateRing) ≠ 0 := Units.ne_zero u
+  rw [hk] at hu0 hu
+  -- evaluate the associate relation under both maps
+  have h1 : pointEval (constHom W) hκ.left a * constHom W k =
+      pointEval (constHom W) hκ.left (enumVertical W val) := by
+    rw [← pointEval_ofC (constHom W) hκ.left k, ← map_mul, hu]
+  have h2 : algebraMap W.CoordinateRing W.FunctionField a * constHom W k =
+      algebraMap W.CoordinateRing W.FunctionField (enumVertical W val) := by
+    rw [← algebraMap_ofC k, ← map_mul, hu]
+  have hAv : algebraMap W.CoordinateRing W.FunctionField
+      (enumVertical W val) ≠ 0 := by
+    have hv0 : enumVertical W val ≠ 0 := hu ▸ mul_ne_zero ha hu0
+    exact fun h0 => hv0 ((map_eq_zero_iff _
+      (IsFractionRing.injective W.CoordinateRing W.FunctionField)).mp h0)
+  -- multiply the character equation through by the constant `k`
+  have key : algebraMap W.CoordinateRing W.FunctionField (enumVertical W val) *
+      pointEval (constHom W) hκ.left (enumVertical W val) =
+      (constHom W c * algebraMap W.CoordinateRing W.FunctionField
+        (enumVertical W val)) *
+        pointEval (constHom W) hκ.left (enumVertical W val) := by
+    calc algebraMap W.CoordinateRing W.FunctionField (enumVertical W val) *
+        pointEval (constHom W) hκ.left (enumVertical W val)
+        = (pointEval (constHom W) hκ.left a * constHom W k) *
+          algebraMap W.CoordinateRing W.FunctionField (enumVertical W val) := by
+          rw [h1]; ring
+      _ = (pointEval (constHom W) hκ.left a *
+            algebraMap W.CoordinateRing W.FunctionField (enumVertical W val)) *
+          constHom W k := by ring
+      _ = (constHom W c * algebraMap W.CoordinateRing W.FunctionField a *
+            pointEval (constHom W) hκ.left (enumVertical W val)) *
+          constHom W k := by rw [heq]
+      _ = constHom W c * (algebraMap W.CoordinateRing W.FunctionField a *
+            constHom W k) * pointEval (constHom W) hκ.left
+              (enumVertical W val) := by ring
+      _ = _ := by rw [h2]
+  have h3 := mul_right_cancel₀ hτv key
+  rcases mul_left_eq_self₀.mp h3.symm with h | h
+  · exact (constHom W).injective (h.trans (map_one (constHom W)).symm)
+  · exact absurd h hAv
+
+end TranslationCharDegenerate
+
+/-- **Nondegenerate translation-character witness** (sorry node —
+Silverman AEC Ex. 3.16(c), the computation core of the bridge lemma,
+with both degenerate cases already excluded: `κ₀ ≠ O` (`hi₀`) and
+`P ≠ O` (`hx0`)): the nontrivial translation character value `c` of
+the Miller generator is realized as a nontrivial admissible Weil value
+for the pair `(κ₀, x)` itself.  Sketch: existence of an admissible
+setup for `(κ₀, x)` follows the μ-theorem's own `hexval` construction
+(whose `F/F'/S/R` genericity choices are independent of the character
+data); its cross-ratio is then evaluated — through the L4-7 pullback
+factorization `f∘[p] = c'·g^p` applied pointwise at the balanced
+divisor `D_{κ₀} = (κ₀⊕W') − (W')` — to `[g(κ₀'⊕W')/g(W')]^p`, and the
+level-`p²` cocycle of `g` collapses the `p`-th power to `χ(κ₀) = c`
+times coboundaries, so the value is `c^{±1} ≠ 1`.  `hp0` and `hcard`
+(derived in the bridge glue from `hqp`) provide the separability and
+`p²`-enumeration inputs of the pullback stages.  See Howe, *The Weil
+pairing and the Hilbert symbol*, and HLEG-NOTES.md §4(B) L4-9. -/
+theorem weilValueProp_translationChar_witness (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic]
+    (p : ℕ) [Fact p.Prime] (hqp : q ≠ p)
+    [Fintype ((Wbar.map (algebraMap (ZMod q)
+      (AlgebraicClosure (ZMod q)))).nTorsion p)]
+    (x : (Wbar.map (algebraMap (ZMod q)
+      (AlgebraicClosure (ZMod q)))).nTorsion p)
+    (T' : (WeierstrassCurve.Affine.baseChange (Wbar.map (algebraMap (ZMod q)
+      (AlgebraicClosure (ZMod q)))) (AlgebraicClosure (ZMod q))).Point)
+    (hT : ((p : ℕ) : ℤ) • T' = x.val)
+    (hΔ : (Wbar.map (algebraMap (ZMod q)
+      (AlgebraicClosure (ZMod q)))).toAffine.Δ ≠ 0)
+    (a : (Wbar.map (algebraMap (ZMod q)
+      (AlgebraicClosure (ZMod q)))).toAffine.CoordinateRing) (ha : a ≠ 0)
+    (hspan : Ideal.span {a} = ((((Finset.univ.val.map
+        fun κ : (Wbar.map (algebraMap (ZMod q)
+          (AlgebraicClosure (ZMod q)))).nTorsion p => T' + κ.val) +
+      Finset.univ.val.map fun κ : (Wbar.map (algebraMap (ZMod q)
+          (AlgebraicClosure (ZMod q)))).nTorsion p => -κ.val)).map
+        (pointIdeal ((Wbar.map (algebraMap (ZMod q)
+          (AlgebraicClosure (ZMod q)))).toAffine))).prod)
+    (i₀ : (Wbar.map (algebraMap (ZMod q)
+      (AlgebraicClosure (ZMod q)))).nTorsion p)
+    (xκ yκ : (Wbar.map (algebraMap (ZMod q)
+      (AlgebraicClosure (ZMod q)))).toAffine.FunctionField)
+    (hκ : (curveK ((Wbar.map (algebraMap (ZMod q)
+      (AlgebraicClosure (ZMod q)))).toAffine)).Nonsingular xκ yκ)
+    (hpt : constPoint ((Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).toAffine) i₀.val +
+        tautPoint ((Wbar.map (algebraMap (ZMod q)
+          (AlgebraicClosure (ZMod q)))).toAffine) hΔ =
+      WeierstrassCurve.Affine.Point.some xκ yκ hκ)
+    (c : AlgebraicClosure (ZMod q)) (hc1 : c ≠ 1) (hcp : c ^ p = 1)
+    (hτa : pointEval (constHom ((Wbar.map (algebraMap (ZMod q)
+      (AlgebraicClosure (ZMod q)))).toAffine)) hκ.left a ≠ 0)
+    (hτv : pointEval (constHom ((Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).toAffine)) hκ.left
+      (enumVertical ((Wbar.map (algebraMap (ZMod q)
+          (AlgebraicClosure (ZMod q)))).toAffine)
+        fun κ : (Wbar.map (algebraMap (ZMod q)
+          (AlgebraicClosure (ZMod q)))).nTorsion p =>
+          (κ.val : (Wbar.map (algebraMap (ZMod q)
+            (AlgebraicClosure (ZMod q)))).toAffine.Point)) ≠ 0)
+    (heq : pointEval (constHom ((Wbar.map (algebraMap (ZMod q)
+          (AlgebraicClosure (ZMod q)))).toAffine)) hκ.left a *
+        algebraMap ((Wbar.map (algebraMap (ZMod q)
+            (AlgebraicClosure (ZMod q)))).toAffine.CoordinateRing)
+          ((Wbar.map (algebraMap (ZMod q)
+            (AlgebraicClosure (ZMod q)))).toAffine.FunctionField)
+          (enumVertical ((Wbar.map (algebraMap (ZMod q)
+              (AlgebraicClosure (ZMod q)))).toAffine)
+            fun κ : (Wbar.map (algebraMap (ZMod q)
+              (AlgebraicClosure (ZMod q)))).nTorsion p =>
+              (κ.val : (Wbar.map (algebraMap (ZMod q)
+                (AlgebraicClosure (ZMod q)))).toAffine.Point)) =
+      constHom ((Wbar.map (algebraMap (ZMod q)
+          (AlgebraicClosure (ZMod q)))).toAffine) c *
+        algebraMap ((Wbar.map (algebraMap (ZMod q)
+            (AlgebraicClosure (ZMod q)))).toAffine.CoordinateRing)
+          ((Wbar.map (algebraMap (ZMod q)
+            (AlgebraicClosure (ZMod q)))).toAffine.FunctionField) a *
+        pointEval (constHom ((Wbar.map (algebraMap (ZMod q)
+            (AlgebraicClosure (ZMod q)))).toAffine)) hκ.left
+          (enumVertical ((Wbar.map (algebraMap (ZMod q)
+              (AlgebraicClosure (ZMod q)))).toAffine)
+            fun κ : (Wbar.map (algebraMap (ZMod q)
+              (AlgebraicClosure (ZMod q)))).nTorsion p =>
+              (κ.val : (Wbar.map (algebraMap (ZMod q)
+                (AlgebraicClosure (ZMod q)))).toAffine.Point)))
+    (hp0 : ((p : ℕ) : AlgebraicClosure (ZMod q)) ≠ 0)
+    (hcard : Fintype.card ((Wbar.map (algebraMap (ZMod q)
+      (AlgebraicClosure (ZMod q)))).nTorsion p) = p ^ 2)
+    (hi₀ : i₀.val ≠ 0) (hx0 : x.val ≠ 0) :
+    ∃ z : (AlgebraicClosure (ZMod q))ˣ,
+      weilValueProp q Wbar p i₀ x z ∧ z ≠ 1 := by
+  sorry
+
+/-- **Bridge lemma** (PROVEN GLUE — Silverman AEC Ex. 3.16(c), the
 discrete triviality direction; L4-9 second branch, HLEG-NOTES.md
-§4(B)): a NONTRIVIAL translation character value of the Miller
-generator produces a nontrivial admissible Weil value for some pair
+§4(B) — over the two degenerate-case lemmas
+`translationChar_eq_one_of_translate_zero` /
+`translationChar_eq_one_of_smul_zero` (proven above) and the sorried
+affine core `weilValueProp_translationChar_witness`): a NONTRIVIAL
+translation character value of the Miller generator produces a
+nontrivial admissible Weil value for some pair
 of `p`-torsion points.  Inputs: `T'` a `p`-division point of the
 torsion representative `x.val`; `a` the Miller generator of the
 point-ideal product of the zero-sum multiset
@@ -4295,7 +4611,44 @@ theorem weilValue_of_translationChar (q : ℕ) [Fact q.Prime]
         (AlgebraicClosure (ZMod q)))).nTorsion p)
       (z : (AlgebraicClosure (ZMod q))ˣ),
       weilValueProp q Wbar p v w z ∧ z ≠ 1 := by
-  sorry
+  classical
+  -- degenerate branch `κ₀ = O`: the translate is the tautological
+  -- point, forcing `c = 1` — excluded by `hc1`
+  by_cases hi0 : i₀.val = 0
+  · exact absurd
+      (translationChar_eq_one_of_translate_zero hΔ ha hi0 hpt hτv heq) hc1
+  -- degenerate branch `P = O`: the generator is a constant multiple of
+  -- the vertical product, forcing `c = 1` — excluded by `hc1`
+  by_cases hx0 : x.val = 0
+  · exact absurd
+      (translationChar_eq_one_of_smul_zero
+        (coordRing_isUnit_constant q (Wbar.map (algebraMap (ZMod q)
+          (AlgebraicClosure (ZMod q)))))
+        (val := fun κ : (Wbar.map (algebraMap (ZMod q)
+          (AlgebraicClosure (ZMod q)))).nTorsion p =>
+          (κ.val : (Wbar.map (algebraMap (ZMod q)
+            (AlgebraicClosure (ZMod q)))).toAffine.Point))
+        (hκ := hκ)
+        (fun _ _ h => Subtype.ext h)
+        (fun κ => (Submodule.mem_torsionBy_iff _ _).mp κ.property)
+        (fun Q hQ => ⟨⟨Q, (Submodule.mem_torsionBy_iff _ _).mpr hQ⟩, rfl⟩)
+        (hT.trans hx0) ha hspan hτv heq) hc1
+  -- the nondegenerate affine core: the character value is realized as
+  -- an admissible Weil value for the pair `(κ₀, x)`
+  have hp0 : ((p : ℕ) : AlgebraicClosure (ZMod q)) ≠ 0 := by
+    haveI : CharP (AlgebraicClosure (ZMod q)) q :=
+      charP_of_injective_algebraMap
+        (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))).injective q
+    exact CharP.cast_ne_zero_of_ne_of_prime
+      (R := AlgebraicClosure (ZMod q)) (Fact.out : p.Prime) hqp
+  have hcard : Fintype.card ((Wbar.map (algebraMap (ZMod q)
+      (AlgebraicClosure (ZMod q)))).nTorsion p) = p ^ 2 := by
+    rw [← Nat.card_eq_fintype_card]
+    exact TorsionCard.card_torsionBy _ p hp0
+  obtain ⟨z, hz, hz1⟩ := weilValueProp_translationChar_witness q Wbar p hqp
+    x T' hT hΔ a ha hspan i₀ xκ yκ hκ hpt c hc1 hcp hτa hτv heq hp0 hcard
+    hi0 hx0
+  exact ⟨i₀, x, z, hz, hz1⟩
 
 /-- **Nondegeneracy descent core** (Silverman AEC
 III.8.1(c), the `g = h∘[p]` descent; staged plan L4-1..9 on record in
