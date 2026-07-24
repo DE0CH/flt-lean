@@ -4241,7 +4241,7 @@ theorem exists_forall_sum_re_tsum_neg_log_le_of_integral_eq_zero
         (χ ^ j) ((n : ℕ) : ZMod ℓ) = 1 := by
       intro hp
       exact hjnot (Or.inl (by rw [hTdef, Finset.mem_filter]; exact ⟨hjr, hp⟩))
-    push_neg at hnp
+    push Not at hnp
     exact hnp
   -- uniform bounds for the nontrivial factors outside the two classes
   have hRex : ∀ j ∈ Finset.range (ℓ - 1) \ (T ∪ U), ∃ C : ℝ,
@@ -4290,8 +4290,10 @@ theorem exists_forall_sum_re_tsum_neg_log_le_of_integral_eq_zero
     rw [Finset.disjoint_left]
     intro j hjT hjU
     obtain ⟨ρ, n, hρn, hne⟩ := hχ
-    have h1 := (Finset.mem_filter.mp (hTdef ▸ hjT)).2 ρ n hρn
-    have h2 := (Finset.mem_filter.mp (hUdef ▸ hjU)).2 ρ n hρn
+    rw [hTdef, Finset.mem_filter] at hjT
+    rw [hUdef, Finset.mem_filter] at hjU
+    have h1 := hjT.2 ρ n hρn
+    have h2 := hjU.2 ρ n hρn
     exact hne (by rw [← h2, h1])
   have hsub : T ∪ U ⊆ Finset.range (ℓ - 1) := by
     rw [hTdef, hUdef]
