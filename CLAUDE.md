@@ -30,17 +30,38 @@ are disjoint regions, so merges are clean or trivially resolvable at
 integration. Do not serialize a file's independent leaves behind one
 owner out of conflict fear; partition them.
 
-## Fleet dispatch: fixed pool of 13 numbered worktrees
+## Fleet dispatch: fixed pool of 26 numbered worktrees
 
-(Deyao, 2026-07-23.) Subagent dispatch runs over a FIXED pool of 13
-worktrees, `~/flt-lean-1` .. `~/flt-lean-13`, each on its own
-same-numbered branch, each with its own `flt-report-server@flt-lean-N`
-systemd instance (the template unit `flt-report-server@.service`,
-`WorkingDirectory=%h/%i`) already running — `lake serve` on FIFOs,
-scoped to that worktree. Live allocation state: `~/.flt-worktree-pool`,
-one line per worktree, `<name> free` or `<name> claimed`.
+(Deyao, 2026-07-23; extended 2026-07-24.) Subagent dispatch runs over a
+FIXED pool of 26 worktrees, each on its own same-numbered branch, each
+with its own already-running systemd instance — `lake serve` on FIFOs,
+scoped to that worktree. Live allocation state:
+`~/.flt-worktree-pool`, one line per worktree, `<name> free` or
+`<name> claimed`.
 
-- **Max 13 concurrent subagents**, one per worktree, 1:1.
+- **Batch 1, `~/flt-lean-1` .. `~/flt-lean-13`**: template unit
+  `flt-report-server@.service`, `WorkingDirectory=%h/%i`.
+- **Batch 2, `/scratch/chend-flt/flt-lean-14` ..
+  `/scratch/chend-flt/flt-lean-26`**: template unit
+  `flt-report-server-scratch@.service`, identical except
+  `WorkingDirectory=/scratch/chend-flt/%i`. They live off `$HOME`
+  because a worktree costs ~5.4G (4.6G of it mathlib oleans in
+  `.lake/packages`, 826M project build) and the 67G home volume filled
+  up; `/scratch` is a 9.7T local disk. **`/tmp` is NOT an option — it
+  is a 9.7G volume, one worktree's worth.** Batch 1 was deliberately
+  left exactly as it was (Deyao: "i don't want to touch things that
+  still work"). Note `/scratch` is not backed up and may be purged;
+  only `.lake` and uncommitted work would be lost, since branch refs
+  live in the main repo's object store.
+- `.claude/worktree-pool-hook.py` resolves a pool entry by trying each
+  root in `ROOTS` in order, so batch-1 names still resolve under
+  `$HOME`.
+- A fresh batch-2 worktree needs `lake exe cache get` run in it once
+  (with `XDG_CACHE_HOME` pointed at scratch so the ltar cache does not
+  refill `$HOME`) BEFORE its server is started — otherwise `lake serve`
+  tries to build mathlib from source.
+
+- **Max 26 concurrent subagents**, one per worktree, 1:1.
 - **FIFO task queue** (Deyao, 2026-07-23): `~/.flt-task-queue`, a
   plain text file — full agent prompts separated by lines consisting
   exactly of `=== TASK ===`. The orchestrator reorders and drops tasks

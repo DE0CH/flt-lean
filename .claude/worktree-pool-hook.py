@@ -37,6 +37,7 @@ file. No scripts on that side.
 
 import fcntl
 import json
+import os
 import subprocess
 import sys
 import traceback
@@ -47,6 +48,12 @@ PLACEHOLDER = "{{FLT_WORKTREE}}"
 SENTINEL = "{{FLT_QUEUE_POP}}"
 DELIMITER = "=== TASK ==="
 HOME = "/home/chend"
+# Second pool batch (Deyao, 2026-07-24): the home volume filled up (a
+# worktree costs ~5.4G, 4.6G of it mathlib oleans), so flt-lean-14..26
+# live on the local scratch disk. A pool entry is resolved by looking
+# for the worktree in each root in order, so the original 13 keep
+# resolving under $HOME exactly as before.
+ROOTS = [HOME, "/scratch/chend-flt"]
 
 
 def git(args, cwd):
@@ -106,7 +113,13 @@ def allocate_worktree(pool_fh):
     free_name = next((n for n, status in entries if status == "free"), None)
     if free_name is None:
         return None
-    worktree_path = f"{HOME}/{free_name}"
+    worktree_path = next(
+        (p for p in (f"{root}/{free_name}" for root in ROOTS)
+         if os.path.isdir(p)), None)
+    if worktree_path is None:
+        raise RuntimeError(
+            f"pool entry {free_name} resolves to no worktree directory "
+            f"under any of {ROOTS}")
 
     status_out = git(["status", "--porcelain"], worktree_path)
     if status_out.returncode != 0:
