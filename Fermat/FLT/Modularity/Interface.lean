@@ -136,6 +136,10 @@ import Mathlib.RingTheory.Algebraic.Integral
 import Fermat.FLT.GaloisRepresentation.HardlyRamified.Residual
 -- `IsHardlyRamified.exists_residual_odd`, discharging the residual
 -- reduction pillar `exists_residual_isHardlyRamified_odd` below
+import Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic
+-- `IsHardlyRamified.mod_three` and the global triangular form
+-- `exists_global_triangular_of_residual_trivial_quotient`, discharging
+-- the `p = 3` instance of the residually reducible pillar below
 
 @[expose] public section
 
@@ -690,6 +694,120 @@ theorem exists_realization_at_two_of_weightTwoEigenform
       ∀ v ∉ T, τ.IsUnramifiedAt v ∧ τ.charFrob v = (Pv v).map φ₀ :=
   (weightTwoEigenform_level_two_false f hf).elim
 
+section ThreeadicDischarge
+
+open scoped TensorProduct
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Reducibility of `3`-adic hardly ramified representations over
+`ℚ̄_3`** (PROVEN glue for the `p = 3` discharge of the residually
+reducible pillar below, DERIVED from the 3-adic classification of
+`Threeadic.lean`): a hardly ramified `3`-adic representation is globally
+an extension of the trivial character by a character — the mod-3
+classification (`IsHardlyRamified.mod_three`, `ModThree.lean`) produces
+a residual trivial-quotient functional out of the given residual
+package, and the equivariant-lifting machinery
+(`IsHardlyRamified.exists_global_triangular_of_residual_trivial_quotient`,
+`Threeadic.lean`) upgrades it to a global triangular basis
+`!![χ g, c g; 0, 1]` — so its base change to `ℚ̄_3` has the invariant
+line spanned by `1 ⊗ b 0` and is not irreducible. The freeness of the
+coefficient ring over `ℤ_[3]` consumed by the triangularization is
+derived from module-finiteness plus torsion-freeness (`hZinj` and the
+domain hypothesis), as in `Family.lean`'s instance layer. -/
+theorem not_isIrreducible_baseChange_of_isHardlyRamified_three
+    {R : Type u} [CommRing R] [Algebra ℤ_[3] R] [IsDomain R]
+    [Module.Finite ℤ_[3] R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [IsModuleTopology ℤ_[3] R]
+    {V : Type v} [AddCommGroup V] [Module R V] [Module.Finite R V]
+    [Module.Free R V] (hv : Module.rank R V = 2) {ρ : GaloisRep ℚ R V}
+    [Algebra R (AlgebraicClosure ℚ_[3])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[3])]
+    (hZinj : Function.Injective (algebraMap ℤ_[3] R))
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hv ρ)
+    {kk : Type u} [Field kk] [Finite kk] [Algebra ℤ_[3] kk]
+    [TopologicalSpace kk] [DiscreteTopology kk] [IsTopologicalRing kk]
+    [Algebra R kk] [ContinuousSMul R kk]
+    (hsurj : Function.Surjective (algebraMap R kk))
+    (hVbar : Module.rank kk (kk ⊗[R] V) = 2)
+    (hρbar : IsHardlyRamified (show Odd 3 by decide) hVbar
+      (ρ.baseChange kk)) :
+    ¬ (ρ.baseChange (AlgebraicClosure ℚ_[3])).IsIrreducible := by
+  intro hirr
+  -- the coefficient ring is free over `ℤ_[3]`: finite and torsion-free
+  -- over a PID
+  haveI : Module.IsTorsionFree ℤ_[3] R :=
+    Module.isTorsionFree_iff_algebraMap_injective.mpr hZinj
+  haveI : Module.Free ℤ_[3] R := Module.free_of_finite_type_torsion_free'
+  -- the mod-3 classification: a residual trivial-quotient functional
+  obtain ⟨π, hπsurj, hπequiv⟩ :=
+    IsHardlyRamified.mod_three (kk ⊗[R] V) hVbar hρbar
+  -- the global triangular form
+  obtain ⟨b, χ, cc, hb⟩ :=
+    IsHardlyRamified.exists_global_triangular_of_residual_trivial_quotient
+      V hv hρ kk hsurj π hπsurj hπequiv
+  -- the stable line `R • b 0`
+  have hbg : ∀ g : Field.absoluteGaloisGroup ℚ, ρ g (b 0) = χ g • b 0 := by
+    intro g
+    have h : ρ g = Matrix.toLin b b !![χ g, cc g; 0, 1] := by
+      rw [← hb g, Matrix.toLin_toMatrix]
+    rw [h, Matrix.toLin_self, Fin.sum_univ_two]
+    simp
+  -- its base change is invariant under `ρ ⊗ ℚ̄_3`
+  have hstab : ∀ (g : Field.absoluteGaloisGroup ℚ)
+      (w : AlgebraicClosure ℚ_[3] ⊗[R] V),
+      w ∈ Submodule.span (AlgebraicClosure ℚ_[3])
+        {(1 : AlgebraicClosure ℚ_[3]) ⊗ₜ[R] b 0} →
+      ρ.baseChange (AlgebraicClosure ℚ_[3]) g w ∈
+        Submodule.span (AlgebraicClosure ℚ_[3])
+          {(1 : AlgebraicClosure ℚ_[3]) ⊗ₜ[R] b 0} := by
+    intro g w hw
+    obtain ⟨c, rfl⟩ := Submodule.mem_span_singleton.mp hw
+    rw [map_smul]
+    refine Submodule.smul_mem _ c ?_
+    have hgen : ρ.baseChange (AlgebraicClosure ℚ_[3]) g
+        ((1 : AlgebraicClosure ℚ_[3]) ⊗ₜ[R] b 0) =
+        χ g • ((1 : AlgebraicClosure ℚ_[3]) ⊗ₜ[R] b 0) := by
+      rw [GaloisRep.baseChange_tmul, hbg g, TensorProduct.tmul_smul]
+    rw [hgen]
+    exact Submodule.smul_of_tower_mem _ _
+      (Submodule.mem_span_singleton_self _)
+  -- the line is nonzero and proper: it is spanned by the first vector of
+  -- the base-changed basis
+  have hK0 : (b.baseChange (AlgebraicClosure ℚ_[3])) 0 =
+      (1 : AlgebraicClosure ℚ_[3]) ⊗ₜ[R] b 0 := by
+    simp
+  have hne : (1 : AlgebraicClosure ℚ_[3]) ⊗ₜ[R] b 0 ≠ 0 := by
+    rw [← hK0]
+    exact (b.baseChange (AlgebraicClosure ℚ_[3])).ne_zero 0
+  have hnot : (1 : AlgebraicClosure ℚ_[3]) ⊗ₜ[R] b 1 ∉
+      Submodule.span (AlgebraicClosure ℚ_[3])
+        {(1 : AlgebraicClosure ℚ_[3]) ⊗ₜ[R] b 0} := by
+    intro hmem
+    refine (b.baseChange (AlgebraicClosure ℚ_[3])).linearIndependent
+      |>.notMem_span_image (s := {(0 : Fin 2)}) (x := 1) (by simp) ?_
+    rw [Set.image_singleton, hK0]
+    simpa using hmem
+  -- refute simplicity with the proper nonzero invariant line
+  haveI : IsSimpleOrder (Subrepresentation
+      (ρ.baseChange (AlgebraicClosure ℚ_[3])).toRepresentation) := hirr
+  rcases eq_bot_or_eq_top
+      (⟨Submodule.span (AlgebraicClosure ℚ_[3])
+          {(1 : AlgebraicClosure ℚ_[3]) ⊗ₜ[R] b 0},
+        fun g w hw => hstab g w hw⟩ :
+        Subrepresentation
+          (ρ.baseChange (AlgebraicClosure ℚ_[3])).toRepresentation)
+    with hP | hP
+  · exact hne (Submodule.span_singleton_eq_bot.mp
+      (congrArg Subrepresentation.toSubmodule hP))
+  · refine hnot ?_
+    have htop : Submodule.span (AlgebraicClosure ℚ_[3])
+        {(1 : AlgebraicClosure ℚ_[3]) ⊗ₜ[R] b 0} = ⊤ :=
+      congrArg Subrepresentation.toSubmodule hP
+    rw [htop]
+    exact Submodule.mem_top
+
+end ThreeadicDischarge
+
 -- The hardly ramified representation whose eigensystem the modularity
 -- statements below attach to an eigenform: same coefficient-ring
 -- package as `Family.lean` (the integers in a finite extension of
@@ -752,9 +870,12 @@ totally real fields, blueprint ch. 4). At `ℓ = 3`, pillar 2 is
 dischargeable TODAY by contradiction from
 `IsHardlyRamified.mod_three_reducible` (`ModThree.lean`: no hardly
 ramified mod-3 representation is irreducible); the `ℓ ≥ 5` instances
-carry the real content. Pillar 4 at `p = 3` is similarly dischargeable
-from the 3-adic classification (`Threeadic.lean`) once its leaves
-close. -/
+carry the real content. Pillar 4 at `p = 3` was similarly discharged
+(2026-07-24) from the 3-adic classification (`Threeadic.lean`, via
+`not_isIrreducible_baseChange_of_isHardlyRamified_three` above): the
+pillar is now a PROVEN dichotomy assembly over the `p ≥ 5` leaf
+`exists_weightTwoEigenform_trace_eq_of_residually_reducible_of_five_le`,
+which carries the Skinner–Wiles content. -/
 
 open scoped TensorProduct
 
@@ -906,26 +1027,29 @@ theorem exists_weightTwoEigenform_trace_eq_of_matchesResidualTraces
           - ι (heckeCoeff N f q) :=
   sorry
 
-/-- **The residually reducible branch** (pillar 4; sorry node — the
-Skinner–Wiles shadow): a hardly ramified `p`-adic representation that
-is irreducible over `ℚ̄_p` but whose residual representation is
-REDUCIBLE is still modular, in the same trace sense as pillar 3.
-Classically the residual semisimplification is `1 ⊕ χ̄_cyc` — its two
-characters are unramified outside `2p` with cyclotomic product, tame
-at `2`, flat-constrained at `p`, so Minkowski-style arguments pin them
-(compare the proven character analysis
-`char_add_char_eq_one_add_cyclotomicCharacter` in `Family.lean`, the
-same classification one level up) — which is exactly the
-Eisenstein-congruence situation of Skinner–Wiles, *Residually
-reducible representations and modular forms*, Publ. Math. IHÉS 89
-(1999); the de Rham/Fontaine–Mazur formulation matching this statement
-is Pan, *The Fontaine–Mazur conjecture in the residually reducible
-case*, JAMS 35 (2022). At `p = 3` this pillar is alternatively
-dischargeable by contradiction from the 3-adic classification
-(`Threeadic.lean`: a 3-adic hardly ramified representation is an
-extension of the trivial character by the cyclotomic one, hence never
-irreducible over `ℚ̄_3`) once its leaves close. -/
-theorem exists_weightTwoEigenform_trace_eq_of_residually_reducible
+/-- **The residually reducible branch at `p ≥ 5`** (pillar 4 leaf;
+sorry node — the Skinner–Wiles shadow): a hardly ramified `p`-adic
+representation, `p ≥ 5`, that is irreducible over `ℚ̄_p` but whose
+residual representation is REDUCIBLE is still modular, in the same
+trace sense as pillar 3. Classically the residual semisimplification
+is `1 ⊕ χ̄_cyc` — its two characters are unramified outside `2p` with
+cyclotomic product, tame at `2`, flat-constrained at `p`, so
+Minkowski-style arguments pin them (compare the proven character
+analysis `char_add_char_eq_one_add_cyclotomicCharacter` in
+`Family.lean`, the same classification one level up) — which is
+exactly the Eisenstein-congruence situation of Skinner–Wiles,
+*Residually reducible representations and modular forms*, Publ. Math.
+IHÉS 89 (1999); the de Rham/Fontaine–Mazur formulation matching this
+statement is Pan, *The Fontaine–Mazur conjecture in the residually
+reducible case*, JAMS 35 (2022). The `p = 3` instance is NOT here: it
+is discharged (AUDIT 2026-07-24) by contradiction from the 3-adic
+classification — see the pillar-4 assembly below — so this leaf
+carries exactly the `p ≥ 5` Skinner–Wiles/Pan content (`hp5` is
+genuinely available to any future decomposition, e.g. for the
+Eisenstein-ideal congruence arguments, which need `p ∤ 6`
+corner-case-free room). -/
+theorem exists_weightTwoEigenform_trace_eq_of_residually_reducible_of_five_le
+    (hp5 : 5 ≤ p)
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
     (hZinj : Function.Injective (algebraMap ℤ_[p] R))
@@ -948,6 +1072,62 @@ theorem exists_weightTwoEigenform_trace_eq_of_residually_reducible
             (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff 1 =
           - ι (heckeCoeff N f q) :=
   sorry
+
+/-- **The residually reducible branch** (pillar 4; DECOMPOSED
+2026-07-24 into a PROVEN dichotomy on `p = 3` vs `p ≥ 5` — the AUDIT
+of the consumers showed the general-odd-`p` statement is genuinely
+needed, since `Family.lean`'s `mem_isCompatible` chain is instantiated
+at every odd residue characteristic by `Lift.lean`, so no statement
+narrowing is possible; instead the two instances are separated): a
+hardly ramified `p`-adic representation that is irreducible over
+`ℚ̄_p` but whose residual representation is REDUCIBLE is still
+modular, in the same trace sense as pillar 3.
+
+* At `p = 3` the hypotheses are contradictory: by the 3-adic
+  classification (`Threeadic.lean`, through the helper
+  `not_isIrreducible_baseChange_of_isHardlyRamified_three` above) a
+  hardly ramified `3`-adic representation is a global extension of the
+  trivial character by a character, hence never irreducible over
+  `ℚ̄_3` — refuting `hirr`.
+* At `p ≥ 5` the statement is the genuine Skinner–Wiles/Pan content,
+  delegated to the sorried leaf
+  `exists_weightTwoEigenform_trace_eq_of_residually_reducible_of_five_le`
+  above. -/
+theorem exists_weightTwoEigenform_trace_eq_of_residually_reducible
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hZinj : Function.Injective (algebraMap ℤ_[p] R))
+    (hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
+    (hρ : IsHardlyRamified hpodd hv ρ)
+    (hirr : (ρ.baseChange (AlgebraicClosure ℚ_[p])).IsIrreducible)
+    {kk : Type u} [Field kk] [Finite kk] [Algebra ℤ_[p] kk]
+    [TopologicalSpace kk] [DiscreteTopology kk] [IsTopologicalRing kk]
+    [Algebra R kk] [ContinuousSMul R kk]
+    (hsurj : Function.Surjective (algebraMap R kk))
+    (hVbar : Module.rank kk (kk ⊗[R] V) = 2)
+    (hρbar : IsHardlyRamified hpodd hVbar (ρ.baseChange kk))
+    (hred : ¬ (ρ.baseChange kk).IsIrreducible) :
+    ∃ (N : ℕ) (_ : 0 < N) (f : CuspForm (Gamma0GL N) 2)
+      (_ : IsWeightTwoEigenform N f)
+      (ι : heckeField N f →+* AlgebraicClosure ℚ_[p])
+      (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
+      ∀ (q : ℕ) (hq : q.Prime), hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+        ((ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map
+            (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff 1 =
+          - ι (heckeCoeff N f q) := by
+  have hcase : p = 3 ∨ 5 ≤ p := by
+    have h2 : 2 ≤ p := hp.out.two_le
+    obtain ⟨k, hk⟩ := id hpodd
+    revert h2
+    omega
+  rcases hcase with rfl | hp5
+  · -- `p = 3`: the 3-adic classification refutes irreducibility over `ℚ̄_3`
+    exact absurd hirr
+      (not_isIrreducible_baseChange_of_isHardlyRamified_three hv hZinj hρ
+        hsurj hVbar hρbar)
+  · -- `p ≥ 5`: the Skinner–Wiles leaf
+    exact exists_weightTwoEigenform_trace_eq_of_residually_reducible_of_five_le
+      hpodd hv hp5 hZinj hRinj hρ hirr hsurj hVbar hρbar hred
 
 /-- **Level optimization to `Γ₀(2)`** (pillar 5; sorry node — the
 Carayol-conductor/Ribet shadow): if the eigensystem `(E, S, Pv)` of an
