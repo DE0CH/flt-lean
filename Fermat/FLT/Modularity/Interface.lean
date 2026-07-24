@@ -184,6 +184,7 @@ import Mathlib.RingTheory.DiscreteValuationRing.Basic
 import Mathlib.LinearAlgebra.FreeModule.PID
 import Mathlib.Algebra.Module.Torsion.Free
 import Mathlib.NumberTheory.Padics.PadicIntegers
+import Mathlib.RingTheory.Polynomial.Cyclotomic.Eval
 import Fermat.FLT.GaloisRepresentation.HardlyRamified.Residual
 -- `IsHardlyRamified.exists_residual_odd`, discharging the residual
 -- reduction pillar `exists_residual_isHardlyRamified_odd` below
@@ -7552,26 +7553,30 @@ theorem isUnramifiedAt_of_linearEquiv
   apply e.injective
   rw [Module.End.one_apply, he, hx, Module.End.one_apply]
 
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
 include hpodd in
-/-- **The `p`-adic cyclotomic character is unramified at `2`** (sorry
-node — the local-arithmetic leaf of the tame-at-2 transport; for odd
-`p` the extension `ℚ_2(μ_{p^∞})/ℚ_2` is unramified): every element of
-the inertia at `2` (in the `Z2bar` spelling of
+/-- **The `p`-adic cyclotomic character is unramified at `2`** (PROVEN
+2026-07-24 — the local-arithmetic leaf of the tame-at-2 transport; for
+odd `p` the extension `ℚ_2(μ_{p^∞})/ℚ_2` is unramified): every element
+of the inertia at `2` (in the `Z2bar` spelling of
 `IsHardlyRamified.isTameAtTwo`) has trivial `p`-adic cyclotomic
 character. This is the full-level generalization of the PROVEN mod-3
 instance `cyclotomicCharacter_algebraMap_eq_one_of_inertia_two`
-(`ModThree.lean`), whose argument is the intended proof at every
-level: for each `n` the `p^n`-th roots of unity in `ℚ_[2]ᵃˡᵍ` are
-units with pairwise differences of valuation `1` (as `p^n` is odd,
-`X^{p^n} − 1` is separable modulo the maximal ideal of `Z2bar`), so an
-inertia element — which acts trivially on the residue field — fixes
-each of them; via the `lift_map` commuting square its image in `Γ ℚ`
-fixes `μ_{p^n} ⊂ ℚᵃˡᵍ`, making the level-`n` cyclotomic character
-trivial, and `χ = 1` in `ℤ_[p]ˣ` follows from triviality at every
-finite level (`PadicInt.ext_of_toZModPow`). SOUNDNESS: this is the
-standard fact that `χ_cyc,p` is unramified away from `p` (Serre,
-*Abelian ℓ-adic representations*, I §1.2), specialized to the place
-`2 ≠ p`. -/
+(`ModThree.lean`), whose argument is run here at every level: a
+`p^n`-th root of unity `z` has spectral valuation `1`, so lies in
+`Z2bar`, and an inertia element `σ` moves it by `v (σ z − z) < 1`; but
+a NONtrivial `p`-power root of unity `u` has `v (u − 1) = 1` — by
+`Polynomial.eval_one_cyclotomic_prime_pow` the product of `1 − μ` over
+the primitive `p^m`-th roots is `p`, a `2`-adic unit since `p` is odd,
+while every factor has `v ≤ 1`, forcing `v = 1` on each factor — so
+`σ z = z` exactly; via the `lift_map` commuting square the image of
+`σ` in `Γ ℚ` fixes `μ_{p^n} ⊂ ℚᵃˡᵍ`, making the level-`n` cyclotomic
+character trivial (`modularCyclotomicCharacter.unique`), and `χ = 1`
+in `ℤ_[p]ˣ` follows from triviality at every finite level
+(`PadicInt.ext_of_toZModPow`). SOUNDNESS: this is the standard fact
+that `χ_cyc,p` is unramified away from `p` (Serre, *Abelian ℓ-adic
+representations*, I §1.2), specialized to the place `2 ≠ p`. -/
 theorem cyclotomicCharacter_eq_one_of_inertia_two
     {σ : Field.absoluteGaloisGroup ℚ_[2]}
     (hσ : σ ∈ AddSubgroup.inertia
@@ -7579,8 +7584,165 @@ theorem cyclotomicCharacter_eq_one_of_inertia_two
       (Field.absoluteGaloisGroup ℚ_[2])) :
     cyclotomicCharacter (AlgebraicClosure ℚ) p
       ((Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) σ).toRingEquiv)
-      = 1 :=
-  sorry
+      = 1 := by
+  classical
+  -- roots of unity have spectral valuation `1`
+  have hval_of_root : ∀ (m : ℕ), m ≠ 0 → ∀ w : AlgebraicClosure ℚ_[2],
+      w ^ m = 1 → Valued.v w = 1 := by
+    intro m hm w hw
+    have h := congrArg Valued.v hw
+    rw [map_pow, map_one] at h
+    rcases lt_trichotomy (Valued.v w) 1 with hlt | heq | hgt
+    · exfalso
+      have hcon : Valued.v w ^ m < 1 := by
+        calc Valued.v w ^ m ≤ Valued.v w ^ 1 :=
+              pow_le_pow_right_of_le_one' (le_of_lt hlt) (Nat.one_le_iff_ne_zero.mpr hm)
+          _ = Valued.v w := pow_one _
+          _ < 1 := hlt
+      rw [h] at hcon
+      exact lt_irrefl _ hcon
+    · exact heq
+    · exfalso
+      have hcon : 1 < Valued.v w ^ m := by
+        calc 1 < Valued.v w := hgt
+          _ = Valued.v w ^ 1 := (pow_one _).symm
+          _ ≤ Valued.v w ^ m :=
+              pow_le_pow_right' (le_of_lt hgt) (Nat.one_le_iff_ne_zero.mpr hm)
+      rw [h] at hcon
+      exact lt_irrefl _ hcon
+  -- the odd prime `p` is a `2`-adic unit in the spectral valuation
+  have hvp : Valued.v (((p : ℕ) : AlgebraicClosure ℚ_[2])) = 1 := by
+    have hpnorm : ‖((p : ℕ) : ℚ_[2])‖ = 1 := by
+      rw [Padic.norm_natCast_eq_one_iff]
+      exact Nat.coprime_two_left.mpr hpodd
+    have halg : ((p : ℕ) : AlgebraicClosure ℚ_[2]) =
+        algebraMap ℚ_[2] (AlgebraicClosure ℚ_[2]) ((p : ℕ) : ℚ_[2]) := by
+      rw [map_natCast]
+    have hkey : ((Valued.v (algebraMap ℚ_[2] (AlgebraicClosure ℚ_[2])
+        ((p : ℕ) : ℚ_[2])) : NNReal) : ℝ) = ‖((p : ℕ) : ℚ_[2])‖ := by
+      rw [← spectralNorm_extends (K := ℚ_[2]) (L := AlgebraicClosure ℚ_[2]) _]
+      rfl
+    rw [halg]
+    apply NNReal.coe_injective
+    rw [hkey, hpnorm, NNReal.coe_one]
+  -- a nontrivial `p`-power root of unity keeps valuation `1` away from `1`:
+  -- the factors of `Φ_{p^m}(1) = p` all have `v ≤ 1` with product a unit
+  have hsub_val : ∀ (N : ℕ) (u : AlgebraicClosure ℚ_[2]), u ^ (p ^ N) = 1 →
+      u ≠ 1 → Valued.v (u - 1) = 1 := by
+    intro N u hu hune
+    obtain ⟨m, -, hordeq⟩ :=
+      (Nat.dvd_prime_pow hp.out).mp (orderOf_dvd_of_pow_eq_one hu)
+    have hm0 : m ≠ 0 := by
+      rintro rfl
+      rw [pow_zero] at hordeq
+      exact hune (orderOf_eq_one_iff.mp hordeq)
+    have hprim : IsPrimitiveRoot u (p ^ m) := hordeq ▸ IsPrimitiveRoot.orderOf u
+    obtain ⟨m', rfl⟩ : ∃ m', m = m' + 1 :=
+      ⟨m - 1, (Nat.succ_pred_eq_of_pos (Nat.pos_of_ne_zero hm0)).symm⟩
+    have hppos : 0 < p ^ (m' + 1) := pow_pos hp.out.pos _
+    have heval : (∏ μ ∈ primitiveRoots (p ^ (m' + 1)) (AlgebraicClosure ℚ_[2]),
+        ((1 : AlgebraicClosure ℚ_[2]) - μ)) =
+        ((p : ℕ) : AlgebraicClosure ℚ_[2]) := by
+      have h1 := Polynomial.eval_one_cyclotomic_prime_pow
+        (R := AlgebraicClosure ℚ_[2]) (p := p) m'
+      rw [Polynomial.cyclotomic_eq_prod_X_sub_primitiveRoots hprim,
+        Polynomial.eval_prod] at h1
+      simpa using h1
+    have hle : ∀ μ ∈ primitiveRoots (p ^ (m' + 1)) (AlgebraicClosure ℚ_[2]),
+        Valued.v ((1 : AlgebraicClosure ℚ_[2]) - μ) ≤ 1 := by
+      intro μ hμ
+      have hμval : Valued.v μ = 1 :=
+        hval_of_root _ hppos.ne' μ ((mem_primitiveRoots hppos).mp hμ).pow_eq_one
+      refine le_trans (Valued.v.map_sub _ _) ?_
+      rw [map_one, hμval]
+      exact le_of_eq (max_self 1)
+    have hprod : (∏ μ ∈ primitiveRoots (p ^ (m' + 1)) (AlgebraicClosure ℚ_[2]),
+        Valued.v ((1 : AlgebraicClosure ℚ_[2]) - μ)) = 1 := by
+      rw [← map_prod, heval, hvp]
+    have h1u := (Finset.prod_eq_one_iff_of_le_one' hle).mp hprod u
+      ((mem_primitiveRoots hppos).mpr hprim)
+    rw [show u - 1 = -((1 : AlgebraicClosure ℚ_[2]) - u) by ring, Valuation.map_neg]
+    exact h1u
+  -- inertia at `2` fixes every `p`-power root of unity of `ℚ_[2]ᵃˡᵍ`
+  have hfix2 : ∀ (n : ℕ) (z : AlgebraicClosure ℚ_[2]), z ^ (p ^ n) = 1 →
+      σ z = z := by
+    intro n z hz
+    have hpn : (p : ℕ) ^ n ≠ 0 := pow_ne_zero n hp.out.ne_zero
+    have hzval : Valued.v z = 1 := hval_of_root _ hpn z hz
+    have hz0 : z ≠ 0 := by
+      intro h0
+      rw [h0, map_zero] at hzval
+      exact zero_ne_one hzval
+    have hzmem : z ∈ Z2bar := by
+      rw [Valuation.mem_valuationSubring_iff, hzval]
+    have hσzpow : (σ z) ^ (p ^ n) = 1 := by rw [← map_pow, hz, map_one]
+    by_contra hne
+    -- the inertia condition: `v (σ z − z) < 1`
+    have hdiffval : Valued.v (σ z - z) < 1 := by
+      have hin := (AddSubgroup.mem_inertia.mp hσ) ⟨z, hzmem⟩
+      set y : Z2bar := σ • (⟨z, hzmem⟩ : Z2bar) - ⟨z, hzmem⟩ with hydef
+      have hy1 : (y : AlgebraicClosure ℚ_[2]) = σ z - z := rfl
+      have hnu : ¬IsUnit y := by
+        have hmem : y ∈ IsLocalRing.maximalIdeal Z2bar := hin
+        rwa [IsLocalRing.mem_maximalIdeal, mem_nonunits_iff] at hmem
+      have hyval : Valued.v (σ z - z) ≤ 1 := by
+        refine le_trans (Valued.v.map_sub _ _) ?_
+        rw [show Valued.v (σ z) = 1 from hval_of_root _ hpn _ hσzpow, hzval]
+        exact le_of_eq (max_self 1)
+      rcases lt_or_eq_of_le hyval with hlt | heq
+      · exact hlt
+      · exfalso
+        apply hnu
+        have hne0 : (σ z - z : AlgebraicClosure ℚ_[2]) ≠ 0 := by
+          intro h0
+          rw [h0, map_zero] at heq
+          exact zero_ne_one heq
+        have hinvmem : (σ z - z : AlgebraicClosure ℚ_[2])⁻¹ ∈ Z2bar := by
+          rw [Valuation.mem_valuationSubring_iff, map_inv₀, heq, inv_one]
+        refine isUnit_iff_exists.mpr
+          ⟨(⟨(σ z - z)⁻¹, hinvmem⟩ : Z2bar), ?_, ?_⟩
+        · apply Subtype.ext
+          show (y : AlgebraicClosure ℚ_[2]) * (σ z - z)⁻¹ = 1
+          rw [hy1]
+          exact mul_inv_cancel₀ hne0
+        · apply Subtype.ext
+          show (σ z - z)⁻¹ * (y : AlgebraicClosure ℚ_[2]) = 1
+          rw [hy1]
+          exact inv_mul_cancel₀ hne0
+    -- but `σ z / z` is a nontrivial `p`-power root of unity, so the
+    -- difference is a `Z2bar`-unit: contradiction
+    have hu : (σ z * z⁻¹) ^ (p ^ n) = 1 := by
+      rw [mul_pow, hσzpow, one_mul, inv_pow, hz, inv_one]
+    have hune : σ z * z⁻¹ ≠ 1 := fun h1 => hne ((mul_inv_eq_one₀ hz0).mp h1)
+    have hfac : σ z - z = (σ z * z⁻¹ - 1) * z := by
+      rw [sub_mul, one_mul, mul_assoc, inv_mul_cancel₀ hz0, mul_one]
+    rw [hfac, map_mul, hzval, mul_one, hsub_val n _ hu hune] at hdiffval
+    exact lt_irrefl _ hdiffval
+  -- conclude level by level through `p`-adic continuity
+  refine Units.ext ?_
+  rw [Units.val_one]
+  refine PadicInt.ext_of_toZModPow.mp fun n => ?_
+  rcases Nat.eq_zero_or_pos n with rfl | hnpos
+  · haveI : Subsingleton (ZMod (p ^ 0)) := by rw [pow_zero]; infer_instance
+    exact Subsingleton.elim _ _
+  haveI : NeZero (p ^ n) := ⟨pow_ne_zero n hp.out.ne_zero⟩
+  rw [map_one, cyclotomicCharacter.toZModPow]
+  refine (modularCyclotomicCharacter.unique (AlgebraicClosure ℚ)
+    (HasEnoughRootsOfUnity.natCard_rootsOfUnity (AlgebraicClosure ℚ) (p ^ n))
+    _ ?_).symm
+  intro t ht
+  have hval1 : ((1 : ZMod (p ^ n))).val = 1 := by
+    rw [ZMod.val_one_eq_one_mod,
+      Nat.mod_eq_of_lt (Nat.one_lt_pow hnpos.ne' hp.out.one_lt)]
+  rw [hval1, pow_one]
+  have ht1 : ((t : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ) ^ (p ^ n) = 1 := by
+    rw [← Units.val_pow_eq_pow_val, (mem_rootsOfUnity _ t).mp ht, Units.val_one]
+  show (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) σ)
+      ((t : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ) =
+    ((t : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ)
+  apply (AlgebraicClosure.map (algebraMap ℚ ℚ_[2])).injective
+  rw [Field.absoluteGaloisGroup.lift_map (algebraMap ℚ ℚ_[2]) σ]
+  exact hfix2 n _ (by rw [← map_pow, ht1, map_one])
 
 /-- **Level lowering at an unramified prime — Carayol's conductor
 theorem in existence form** (sorry node — Carayol, *Sur les
@@ -7845,31 +8007,78 @@ theorem weightTwoNewform_not_dvd_level_p_of_isFlatAt
   rw [hfw, he]
 
 include hpodd in
-/-- **The conductor bound at `2`: a tame fixed line implies `4 ∤ M`**
-(sorry node — Carayol's theorem at the place `2 ≠ p` combined with the
-Artin conductor exponent formula): if the representation `τ` attached
+/-- **Carayol's conductor exponent bound at `2`, fixed-line form**
+(sorry node — the sharp exponent-form Carayol input at the place
+`2 ≠ p`: Carayol, *Sur les représentations `ℓ`-adiques associées aux
+formes modulaires de Hilbert*, Ann. Sci. ÉNS 19 (1986), Théorème (A),
+combined with the Artin conductor exponent formula
+`a₂ = (2 − dim V^{I₂}) + Sw₂`): if the representation `τ` attached
 (in the charpoly-matching sense) to the weight-2 newform `g` of level
-`M` admits a surjective functional `π₂` whose kernel line is fixed
-POINTWISE by the inertia at `2` (`hfix`) and on whose quotient the
-inertia at `2` acts trivially (`hquot`), then `4 ∤ M`. Classical
-proof: by rigidity `τ ≅ ρ_{g,λ} ⊗ ℚ̄_p` (Ribet irreducibility +
-Chebotarev/Brauer–Nesbitt); transporting the hypotheses, the inertia
-`I₂` acts on `ρ_{g,λ}` through unipotent upper-triangular matrices
-with an `I₂`-pointwise-fixed line, so `dim V^{I₂} ≥ 1`, and the wild
-inertia — a pro-2 group acting continuously and unipotently over a
-field of residue characteristic `p ≠ 2` (its image is simultaneously
-pro-2 as a continuous quotient and pro-`p` as a compact subgroup of
-the unipotent group `≅ (ℚ̄_p, +)`) — acts trivially, so the Swan
-conductor vanishes; the Artin exponent is
-`a₂ = (2 − dim V^{I₂}) + Sw₂ ≤ 1`, and Carayol gives
-`ord_2(M) = a₂ ≤ 1`. The inertia here is spelled over `Γ ℚ_[2]` via
-`Z2bar` exactly as in `IsHardlyRamified.isTameAtTwo` (the PROVEN
+`M` has a NONZERO vector `w₀` fixed by every element of the inertia
+at `2` (`hfixline`) and every inertia element moves every vector by a
+multiple of `w₀` (`hquotline`), then `4 ∤ M`. Classical proof: by
+rigidity `τ ≅ ρ_{g,λ} ⊗ ℚ̄_p` (Ribet irreducibility + Chebotarev/
+Brauer–Nesbitt as in the sibling unramified leaf); transporting the
+hypotheses, the inertia `I₂` acts through the transvection group
+`{w ↦ w + c·w₀} ≅ (ℚ̄_p, +)` fixing the line `ℚ̄_p·w₀` pointwise, so
+`dim V^{I₂} ≥ 1`; the wild inertia — a pro-2 group acting
+continuously through a group with `p ≠ 2` (its image is
+simultaneously pro-2 as a continuous quotient and pro-`p` as a
+compact subgroup of `(ℚ̄_p, +)`) — acts trivially, so the Swan
+conductor vanishes; hence `a₂ ≤ (2 − 1) + 0 = 1`, and Carayol's
+`ord_2(M) = a₂` gives `4 ∤ M`. The inertia is spelled over `Γ ℚ_[2]`
+via `Z2bar` exactly as in `IsHardlyRamified.isTameAtTwo` (the PROVEN
 bridge `localInertia_two_eq_map_padic` of `ModThree.lean` converts to
 the adic-completion spelling up to conjugacy when needed). SOUNDNESS
 AUDIT (2026-07-24): non-vacuously satisfiable — any newform of odd
-level or of level `2·(odd)` with its attached representation
-realizes the hypotheses — and every instance follows from the cited
-theorems through the carrier audit. -/
+level with its attached representation (inertia at `2` acting
+trivially, any `w₀ ≠ 0`) realizes the hypotheses — and the statement
+quantifies over the `IsWeightTwoNewform` carrier exactly as its
+sibling leaves do, so every instance is an instance of the cited
+theorems. -/
+theorem weightTwoNewform_not_four_dvd_level_of_inertia_fixed_line
+    {M : ℕ} (hM : 0 < M) {g : CuspForm (Gamma0GL M) 2}
+    (hg : IsWeightTwoNewform M g)
+    (κ : heckeField M g →+* AlgebraicClosure ℚ_[p])
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    {S_τ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hτ : ∀ (r : ℕ) (hr : r.Prime),
+      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ →
+      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
+        Polynomial.X ^ 2
+          - Polynomial.C (κ (heckeCoeff M g r)) * Polynomial.X
+          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
+    (w₀ : Fin 2 → AlgebraicClosure ℚ_[p]) (hw₀ : w₀ ≠ 0)
+    (hfixline : ∀ σ ∈ AddSubgroup.inertia
+        ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
+        (Field.absoluteGaloisGroup ℚ_[2]),
+      τ.map (algebraMap ℚ ℚ_[2]) σ w₀ = w₀)
+    (hquotline : ∀ σ ∈ AddSubgroup.inertia
+        ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
+        (Field.absoluteGaloisGroup ℚ_[2]),
+      ∀ w : Fin 2 → AlgebraicClosure ℚ_[p],
+        τ.map (algebraMap ℚ ℚ_[2]) σ w - w ∈
+          Submodule.span (AlgebraicClosure ℚ_[p]) {w₀}) :
+    ¬ (4 ∣ M) :=
+  sorry
+
+include hpodd in
+/-- **The conductor bound at `2`: a tame fixed line implies `4 ∤ M`**
+(PROVEN 2026-07-24 — reduced to the sharp fixed-line Carayol exponent
+leaf `weightTwoNewform_not_four_dvd_level_of_inertia_fixed_line`
+above): if the representation `τ` attached (in the charpoly-matching
+sense) to the weight-2 newform `g` of level `M` admits a surjective
+functional `π₂` whose kernel line is fixed POINTWISE by the inertia
+at `2` (`hfix`) and on whose quotient the inertia at `2` acts
+trivially (`hquot`), then `4 ∤ M`. The reduction is rank–nullity: the
+kernel of the surjective functional `π₂` on the 2-dimensional space
+has dimension `1`, so it is the span of any one of its nonzero
+vectors `w₀`; `hfix` specializes to the fixation of `w₀`, and `hquot`
+says exactly that every inertia displacement `τ(σ)w − w` lies in
+`ker π₂ = span {w₀}`. The remaining content — Carayol's theorem at
+the place `2 ≠ p` with the Artin exponent bookkeeping — is exactly
+the leaf above. -/
 theorem weightTwoNewform_not_four_dvd_level_of_inertia_two
     {M : ℕ} (hM : 0 < M) {g : CuspForm (Gamma0GL M) 2}
     (hg : IsWeightTwoNewform M g)
@@ -7896,8 +8105,31 @@ theorem weightTwoNewform_not_four_dvd_level_of_inertia_two
         (Field.absoluteGaloisGroup ℚ_[2]),
       ∀ w : Fin 2 → AlgebraicClosure ℚ_[p],
         π₂ w = 0 → τ.map (algebraMap ℚ ℚ_[2]) σ w = w) :
-    ¬ (4 ∣ M) :=
-  sorry
+    ¬ (4 ∣ M) := by
+  classical
+  -- rank–nullity: the kernel of the surjective functional is a line
+  have hkerrank : Module.finrank (AlgebraicClosure ℚ_[p])
+      (LinearMap.ker π₂) = 1 := by
+    have h := LinearMap.finrank_range_add_finrank_ker π₂
+    rw [LinearMap.range_eq_top.mpr hπ₂, finrank_top, Module.finrank_self,
+      Module.finrank_fin_fun] at h
+    omega
+  have hkerne : LinearMap.ker π₂ ≠ ⊥ := by
+    intro h0
+    rw [h0, finrank_bot] at hkerrank
+    exact zero_ne_one hkerrank
+  obtain ⟨w₀, hw₀mem, hw₀ne⟩ := (Submodule.ne_bot_iff _).mp hkerne
+  -- the kernel is the span of any of its nonzero vectors
+  have hspan : Submodule.span (AlgebraicClosure ℚ_[p]) {w₀} =
+      LinearMap.ker π₂ :=
+    Submodule.eq_of_le_of_finrank_le
+      ((Submodule.span_singleton_le_iff_mem _ _).mpr hw₀mem)
+      (by rw [hkerrank, finrank_span_singleton hw₀ne])
+  refine weightTwoNewform_not_four_dvd_level_of_inertia_fixed_line hpodd hM
+    hg κ hτ w₀ hw₀ne
+    (fun σ hσ => hfix σ hσ w₀ (LinearMap.mem_ker.mp hw₀mem))
+    (fun σ hσ w => ?_)
+  rw [hspan, LinearMap.mem_ker, map_sub, hquot σ hσ w, sub_self]
 
 /-- **Carayol's conductor bound on the hardly ramified class**
 (DECOMPOSED 2026-07-24 into the per-place cut above and now a PROVEN
