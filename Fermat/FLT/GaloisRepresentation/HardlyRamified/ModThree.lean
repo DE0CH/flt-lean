@@ -16986,17 +16986,333 @@ theorem integral_poitouPhi_line :
   rw [h]
   norm_num [poitouF, odlyzkoTestFn, Real.cosh_zero]
 
-/-- **Joint integrability of `Φ` against the Gauss kernel** (sorry
-node, stated 2026-07-24 — sub-leaf (b₂ᵢᵢ·2·C) of the decomposition of
-`poitouGammaEdge_tendsto`; the Fubini hypothesis of Poitou's Lemme 2).
-Intended proof, via Tonelli (`MeasureTheory.integrable_prod_iff` in
-the `∫_t ∫_x` order): for fixed `t` the kernel is integrable in `x`
-(near `0` the numerator is `O((1 + |s|)·x)` against `1 − e^{−x} ≥
-x·e^{−x}`, at `∞` it is `O(e^{−x})`), with `x`-integral of norms
-`O(log (2 + |t|))` (split at `x = 1/(2 + |t|)`); against
-`‖Φ(5/4+it)‖ = O(1/(1+t²))` — the second-integration-by-parts decay
-recorded at `poitouPhi_line_integrable`, quantitatively — the outer
-`t`-integral is finite. -/
+/-- **Contraction bound for `1 − e^{−z}` on the closed right
+half-plane** (PROVEN 2026-07-24 — elementary brick for the Gauss-kernel
+majorant): for `Re z ≥ 0`, `‖1 − e^{−z}‖ ≤ ‖z‖`, by the fundamental
+theorem of calculus `1 − e^{−z} = ∫₀¹ z·e^{−uz} du` and
+`‖e^{−uz}‖ = e^{−u·Re z} ≤ 1` on the integration range. Sharper than
+mathlib's `Complex.norm_exp_sub_one_le` (which needs `‖z‖ ≤ 1`): the
+half-plane hypothesis replaces the smallness hypothesis, which is what
+the vertical-line application `z = (5/4 + it)x` with `|t|` large
+requires. -/
+theorem norm_one_sub_cexp_neg_le {z : ℂ} (hz : 0 ≤ z.re) :
+    ‖1 - Complex.exp (-z)‖ ≤ ‖z‖ := by
+  have hder : ∀ u ∈ Set.uIcc (0:ℝ) 1,
+      HasDerivAt (fun v : ℝ => Complex.exp (-((v:ℂ) * z)))
+        (Complex.exp (-((u:ℂ) * z)) * (-z)) u := by
+    intro u _
+    have h1 : HasDerivAt (fun v : ℝ => ((v:ℂ) * z)) z u := by
+      simpa using (Complex.ofRealCLM.hasDerivAt (x := u)).mul_const z
+    simpa using (h1.neg).cexp
+  have hcont : IntervalIntegrable (fun u : ℝ => Complex.exp (-((u:ℂ) * z)) * (-z))
+      MeasureTheory.volume 0 1 := by
+    apply Continuous.intervalIntegrable
+    fun_prop
+  have hFTC := intervalIntegral.integral_eq_sub_of_hasDerivAt hder hcont
+  have hval : (1:ℂ) - Complex.exp (-z) =
+      -(∫ u in (0:ℝ)..1, Complex.exp (-((u:ℂ) * z)) * (-z)) := by
+    rw [hFTC]
+    push_cast
+    simp
+  rw [hval, norm_neg]
+  refine (intervalIntegral.norm_integral_le_of_norm_le_const (C := ‖z‖) ?_).trans (by simp)
+  intro u hu
+  rw [Set.uIoc_of_le zero_le_one] at hu
+  rw [norm_mul, norm_neg, Complex.norm_exp]
+  have hre : (-((u:ℂ) * z)).re = -(u * z.re) := by simp [Complex.mul_re]
+  rw [hre]
+  have hle : Real.exp (-(u * z.re)) ≤ 1 :=
+    Real.exp_le_one_iff.2 (neg_nonpos.2 (mul_nonneg hu.1.le hz))
+  exact mul_le_of_le_one_left (norm_nonneg z) hle
+
+/-- **Separated majorant for the Gauss kernel on the line
+`Re s = 5/4`** (PROVEN 2026-07-24 — the pointwise brick of the Fubini
+hypothesis `poitouPhi_mul_gaussKernel_integrable`): for `x > 0`,
+`‖(e^{−x} − e^{−(5/4+it)x})/(1 − e^{−x})‖ ≤
+√(9/4+|t|) · (4·e^{−x/2}/√x)` — a product of a `t`-factor and an
+`x`-factor. On `x ≤ 1` interpolate `min(a,b) ≤ √(ab)` between the
+numerator bounds `(9/4+|t|)x` (from `norm_one_sub_cexp_neg_le`) and
+`2e^{−x}`, against the denominator lower bound `1 − e^{−x} ≥ x·e^{−x}`;
+on `x ≥ 1` use `‖num‖ ≤ 2e^{−x}` against `1 − e^{−x} ≥ 1/2` and
+`√x ≤ e^{x/2}`. -/
+theorem poitouGaussKernel_norm_le (t : ℝ) {x : ℝ} (hx : 0 < x) :
+    ‖(Complex.exp (-(x : ℂ)) -
+        Complex.exp (-((5 / 4 + t * Complex.I) * (x : ℂ)))) /
+      (1 - Complex.exp (-(x : ℂ)))‖ ≤
+    Real.sqrt (9 / 4 + |t|) * (4 * (Real.exp (-(x / 2)) / Real.sqrt x)) := by
+  have hme : Real.exp (-x) * Real.exp x = 1 := by
+    rw [← Real.exp_add]; simp
+  have hden_eq : (1 : ℂ) - Complex.exp (-(x:ℂ)) = ((1 - Real.exp (-x) : ℝ) : ℂ) := by
+    rw [show -(x:ℂ) = ((-x : ℝ) : ℂ) by push_cast; ring, ← Complex.ofReal_exp]
+    push_cast
+    ring
+  have hexp1 : Real.exp (-x) < 1 := Real.exp_lt_one_iff.2 (by linarith)
+  have hden_pos : (0:ℝ) < 1 - Real.exp (-x) := by linarith
+  have hden_norm : ‖(1:ℂ) - Complex.exp (-(x:ℂ))‖ = 1 - Real.exp (-x) := by
+    rw [hden_eq, Complex.norm_real, Real.norm_eq_abs, abs_of_pos hden_pos]
+  have hdenlow : x * Real.exp (-x) ≤ 1 - Real.exp (-x) := by
+    nlinarith [mul_le_mul_of_nonneg_right (Real.add_one_le_exp x) (Real.exp_pos (-x)).le, hme]
+  have hnum2 : ‖Complex.exp (-(x:ℂ)) -
+      Complex.exp (-((5 / 4 + t * Complex.I) * (x : ℂ)))‖ ≤ 2 * Real.exp (-x) := by
+    refine (norm_sub_le _ _).trans ?_
+    rw [Complex.norm_exp, Complex.norm_exp]
+    have h1 : (-(x:ℂ)).re = -x := by simp
+    have h2 : (-((5 / 4 + t * Complex.I) * (x : ℂ))).re = -(5 / 4 * x) := by
+      simp [Complex.mul_re]
+    rw [h1, h2]
+    have h3 : Real.exp (-(5 / 4 * x)) ≤ Real.exp (-x) := Real.exp_le_exp.2 (by linarith)
+    linarith
+  have hnum1 : ‖Complex.exp (-(x:ℂ)) -
+      Complex.exp (-((5 / 4 + t * Complex.I) * (x : ℂ)))‖ ≤ (9 / 4 + |t|) * x := by
+    have ha : ‖Complex.exp (-(x:ℂ)) - 1‖ ≤ x := by
+      rw [show Complex.exp (-(x:ℂ)) - 1 = -((1:ℂ) - Complex.exp (-(x:ℂ))) by ring,
+        norm_neg, hden_norm]
+      linarith [Real.add_one_le_exp (-x)]
+    have hb : ‖(1:ℂ) - Complex.exp (-((5 / 4 + t * Complex.I) * (x : ℂ)))‖ ≤
+        (5 / 4 + |t|) * x := by
+      have hre : ((5 / 4 + t * Complex.I) * (x : ℂ)).re = 5 / 4 * x := by
+        simp [Complex.mul_re]
+      refine (norm_one_sub_cexp_neg_le (by rw [hre]; positivity)).trans ?_
+      rw [norm_mul]
+      have hnx : ‖(x:ℂ)‖ = x := by
+        rw [Complex.norm_real, Real.norm_eq_abs, abs_of_pos hx]
+      have hns : ‖(5 / 4 + t * Complex.I : ℂ)‖ ≤ 5 / 4 + |t| := by
+        refine (norm_add_le _ _).trans (le_of_eq ?_)
+        rw [norm_mul, Complex.norm_I, mul_one, Complex.norm_real,
+          show (5/4 : ℂ) = ((5/4 : ℝ) : ℂ) by norm_num, Complex.norm_real,
+          Real.norm_eq_abs, Real.norm_eq_abs,
+          abs_of_pos (by norm_num : (0:ℝ) < 5/4)]
+      rw [hnx]
+      exact mul_le_mul_of_nonneg_right hns hx.le
+    calc ‖Complex.exp (-(x:ℂ)) - Complex.exp (-((5 / 4 + t * Complex.I) * (x : ℂ)))‖
+        = ‖(Complex.exp (-(x:ℂ)) - 1) +
+            ((1:ℂ) - Complex.exp (-((5 / 4 + t * Complex.I) * (x : ℂ))))‖ := by
+          ring_nf
+      _ ≤ ‖Complex.exp (-(x:ℂ)) - 1‖ +
+            ‖(1:ℂ) - Complex.exp (-((5 / 4 + t * Complex.I) * (x : ℂ)))‖ :=
+          norm_add_le _ _
+      _ ≤ x + (5 / 4 + |t|) * x := add_le_add ha hb
+      _ = (9 / 4 + |t|) * x := by ring
+  rw [norm_div, hden_norm]
+  set N : ℝ := ‖Complex.exp (-(x:ℂ)) -
+      Complex.exp (-((5 / 4 + t * Complex.I) * (x : ℂ)))‖ with hN
+  have hN0 : 0 ≤ N := norm_nonneg _
+  have hK0 : 0 ≤ N / (1 - Real.exp (-x)) := div_nonneg hN0 hden_pos.le
+  have hxe : (0:ℝ) < x * Real.exp (-x) := by positivity
+  rcases le_total x 1 with hx1 | hx1
+  · -- x ≤ 1 : interpolate the two bounds under one square root
+    have hKa : N / (1 - Real.exp (-x)) ≤ (9 / 4 + |t|) * Real.exp x := by
+      calc N / (1 - Real.exp (-x)) ≤ ((9 / 4 + |t|) * x) / (x * Real.exp (-x)) := by
+            gcongr
+          _ = (9 / 4 + |t|) * Real.exp x := by
+            rw [div_eq_iff hxe.ne']
+            linear_combination (-(9 / 4 + |t|) * x) * hme
+    have hKb : N / (1 - Real.exp (-x)) ≤ 2 / x := by
+      calc N / (1 - Real.exp (-x)) ≤ (2 * Real.exp (-x)) / (x * Real.exp (-x)) := by
+            gcongr
+          _ = 2 / x := mul_div_mul_right _ _ (Real.exp_ne_zero _)
+    have hsq : (N / (1 - Real.exp (-x))) ^ 2 ≤ ((9 / 4 + |t|) * Real.exp x) * (2 / x) := by
+      rw [sq]
+      exact mul_le_mul hKa hKb hK0 (by positivity)
+    have he2 : Real.exp x * Real.exp x ≤ 8 := by
+      nlinarith [Real.exp_one_lt_d9, Real.exp_le_exp.2 hx1, (Real.exp_pos x).le,
+        (Real.exp_pos 1).le]
+    have hT2 : (Real.sqrt (9 / 4 + |t|) * (4 * (Real.exp (-(x / 2)) / Real.sqrt x))) ^ 2 =
+        (9 / 4 + |t|) * (16 * (Real.exp (-x) / x)) := by
+      have h1 : Real.sqrt (9 / 4 + |t|) ^ 2 = 9 / 4 + |t| :=
+        Real.sq_sqrt (by positivity)
+      have h2 : Real.sqrt x ^ 2 = x := Real.sq_sqrt hx.le
+      have h3 : Real.exp (-(x / 2)) ^ 2 = Real.exp (-x) := by
+        rw [sq, ← Real.exp_add]
+        congr 1
+        ring
+      rw [mul_pow, mul_pow, div_pow, h1, h2, h3]
+      ring
+    have hsq2 : (N / (1 - Real.exp (-x))) ^ 2 ≤
+        (Real.sqrt (9 / 4 + |t|) * (4 * (Real.exp (-(x / 2)) / Real.sqrt x))) ^ 2 := by
+      refine hsq.trans ?_
+      rw [hT2]
+      calc (9 / 4 + |t|) * Real.exp x * (2 / x)
+          = (9 / 4 + |t|) / x * (2 * Real.exp x) := by ring
+        _ ≤ (9 / 4 + |t|) / x * (16 * Real.exp (-x)) := by
+            refine mul_le_mul_of_nonneg_left ?_ (by positivity)
+            nlinarith [mul_le_mul_of_nonneg_right he2 (Real.exp_pos (-x)).le, hme,
+              (Real.exp_pos x).le, (Real.exp_pos (-x)).le]
+        _ = (9 / 4 + |t|) * (16 * (Real.exp (-x) / x)) := by ring
+    have := Real.sqrt_le_sqrt hsq2
+    rwa [Real.sqrt_sq hK0, Real.sqrt_sq (by positivity)] at this
+  · -- 1 ≤ x : exponential regime
+    have hden2 : (1:ℝ) / 2 ≤ 1 - Real.exp (-x) := by
+      have h1 : Real.exp (-x) ≤ Real.exp (-1) := Real.exp_le_exp.2 (by linarith)
+      have hme1 : Real.exp (-1) * Real.exp 1 = 1 := by
+        rw [← Real.exp_add]; simp
+      have h2 : Real.exp (-1) < 1 / 2 := by
+        nlinarith [Real.exp_one_gt_d9, (Real.exp_pos (-1)).le, hme1]
+      linarith
+    have hK4 : N / (1 - Real.exp (-x)) ≤ 4 * Real.exp (-x) := by
+      calc N / (1 - Real.exp (-x)) ≤ (2 * Real.exp (-x)) / (1 / 2) := by
+            gcongr
+          _ = 4 * Real.exp (-x) := by ring
+    have hsx : (0:ℝ) < Real.sqrt x := Real.sqrt_pos.2 hx
+    have hsxe : Real.sqrt x ≤ Real.exp (x / 2) := by
+      have h1 : x ≤ Real.exp x := by linarith [Real.add_one_le_exp x]
+      have h2 : Real.sqrt x ≤ Real.sqrt (Real.exp x) := Real.sqrt_le_sqrt h1
+      rwa [show Real.exp x = Real.exp (x / 2) ^ 2 by
+          rw [sq, ← Real.exp_add]; congr 1; ring,
+        Real.sqrt_sq (Real.exp_pos _).le] at h2
+    have hsplit : Real.exp (-x) * Real.exp (x / 2) = Real.exp (-(x / 2)) := by
+      rw [← Real.exp_add]
+      congr 1
+      ring
+    have h6 : 4 * Real.exp (-x) ≤ 6 * (Real.exp (-(x / 2)) / Real.sqrt x) := by
+      rw [mul_div_assoc', le_div_iff₀ hsx]
+      nlinarith [mul_le_mul_of_nonneg_left hsxe (by positivity : (0:ℝ) ≤ 4 * Real.exp (-x)),
+        hsplit, (Real.exp_pos (-(x / 2))).le]
+    have h32 : (3:ℝ) / 2 ≤ Real.sqrt (9 / 4 + |t|) := by
+      have h1 : Real.sqrt (9 / 4) ≤ Real.sqrt (9 / 4 + |t|) :=
+        Real.sqrt_le_sqrt (by linarith [abs_nonneg t])
+      have h94 : Real.sqrt (9 / 4 : ℝ) = 3 / 2 := by
+        rw [show (9/4 : ℝ) = (3/2) ^ 2 by norm_num,
+          Real.sqrt_sq (by norm_num : (0:ℝ) ≤ 3/2)]
+      linarith
+    calc N / (1 - Real.exp (-x)) ≤ 4 * Real.exp (-x) := hK4
+      _ ≤ 6 * (Real.exp (-(x / 2)) / Real.sqrt x) := h6
+      _ = (3 / 2) * (4 * (Real.exp (-(x / 2)) / Real.sqrt x)) := by ring
+      _ ≤ Real.sqrt (9 / 4 + |t|) * (4 * (Real.exp (-(x / 2)) / Real.sqrt x)) :=
+          mul_le_mul_of_nonneg_right h32 (by positivity)
+
+/-- **Integrability of the weighted line profile
+`‖Φ(5/4+it)‖·√(9/4+|t|)`** (PROVEN 2026-07-24 — the `t`-factor of the
+separated Tonelli majorant for
+`poitouPhi_mul_gaussKernel_integrable`): the quadratic decay
+`poitouPhi_line_decay_sq` beats the `√|t|` weight, leaving `|t|^{−3/2}`
+decay, integrable by the Japanese-bracket criterion
+`integrable_one_add_norm` with exponent `3/2 > 1 = dim ℝ`; near `t = 0`
+the trivial bound `poitouPhi_line_norm_le_const` applies. -/
+theorem poitouPhi_sqrt_weight_integrable :
+    Integrable fun t : ℝ =>
+      ‖poitouPhi (5 / 4 + t * Complex.I)‖ * Real.sqrt (9 / 4 + |t|) := by
+  obtain ⟨M, hM0, hM⟩ := poitouPhi_line_decay_sq
+  set C : ℝ := ∫ x : ℝ, ‖poitouG x‖ with hCdef
+  have hC0 : 0 ≤ C := integral_nonneg fun x => norm_nonneg _
+  set A : ℝ := max (6 * C) (6 * M) with hAdef
+  have hbase : Integrable fun t : ℝ => (1 + ‖t‖) ^ (-((3:ℝ)/2)) :=
+    integrable_one_add_norm (by rw [Module.finrank_self]; norm_num)
+  refine ((hbase.const_mul A).mono' ?_ ?_)
+  · exact (poitouPhi_line_continuous.norm.mul
+      (Real.continuous_sqrt.comp (continuous_const.add continuous_abs))).aestronglyMeasurable
+  · refine Filter.Eventually.of_forall fun t => ?_
+    have hb : (0:ℝ) < 1 + |t| := by positivity
+    have hrpow : (1 + ‖t‖) ^ (-((3:ℝ)/2)) = ((1 + |t|) * Real.sqrt (1 + |t|))⁻¹ := by
+      rw [Real.norm_eq_abs, Real.rpow_neg hb.le]
+      congr 1
+      rw [show ((3:ℝ)/2) = 1 + 1/2 by norm_num, Real.rpow_add hb, Real.rpow_one,
+        ← Real.sqrt_eq_rpow]
+    rw [Real.norm_eq_abs, abs_of_nonneg (by positivity), hrpow, ← div_eq_mul_inv,
+      le_div_iff₀ (by positivity), mul_assoc]
+    rcases le_total |t| 1 with ht | ht
+    · have hΦ : ‖poitouPhi (5 / 4 + t * Complex.I)‖ ≤ C := poitouPhi_line_norm_le_const t
+      have hs1 : Real.sqrt (9 / 4 + |t|) ≤ 2 := by
+        nlinarith [Real.sq_sqrt (show (0:ℝ) ≤ 9/4 + |t| by positivity),
+          Real.sqrt_nonneg (9/4 + |t|)]
+      have hs2 : Real.sqrt (1 + |t|) ≤ 3 / 2 := by
+        nlinarith [Real.sq_sqrt (show (0:ℝ) ≤ 1 + |t| by positivity),
+          Real.sqrt_nonneg (1 + |t|)]
+      have hstep : Real.sqrt (9 / 4 + |t|) * ((1 + |t|) * Real.sqrt (1 + |t|)) ≤ 6 := by
+        calc Real.sqrt (9 / 4 + |t|) * ((1 + |t|) * Real.sqrt (1 + |t|))
+            ≤ 2 * (2 * (3 / 2)) := by
+              gcongr
+              linarith
+          _ = 6 := by norm_num
+      calc ‖poitouPhi (5 / 4 + t * Complex.I)‖ *
+            (Real.sqrt (9 / 4 + |t|) * ((1 + |t|) * Real.sqrt (1 + |t|)))
+          ≤ C * 6 := mul_le_mul hΦ hstep (by positivity) hC0
+        _ = 6 * C := by ring
+        _ ≤ A := le_max_left _ _
+    · have ht0 : t ≠ 0 := abs_pos.mp (by linarith)
+      have hΦ : ‖poitouPhi (5 / 4 + t * Complex.I)‖ ≤ M / t ^ 2 := hM t ht0
+      have hu2 : Real.sqrt |t| ^ 2 = |t| := Real.sq_sqrt (abs_nonneg t)
+      have hs1 : Real.sqrt (9 / 4 + |t|) ≤ 2 * Real.sqrt |t| := by
+        calc Real.sqrt (9 / 4 + |t|) ≤ Real.sqrt (4 * |t|) :=
+              Real.sqrt_le_sqrt (by linarith)
+          _ = 2 * Real.sqrt |t| := by
+              rw [show (4:ℝ) = 2 ^ 2 by norm_num, Real.sqrt_mul (by positivity),
+                Real.sqrt_sq (by norm_num : (0:ℝ) ≤ 2)]
+      have hs2 : Real.sqrt (1 + |t|) ≤ (3 / 2) * Real.sqrt |t| := by
+        calc Real.sqrt (1 + |t|) ≤ Real.sqrt ((9 / 4) * |t|) :=
+              Real.sqrt_le_sqrt (by linarith)
+          _ = (3 / 2) * Real.sqrt |t| := by
+              rw [show (9/4:ℝ) = (3/2) ^ 2 by norm_num, Real.sqrt_mul (by positivity),
+                Real.sqrt_sq (by norm_num : (0:ℝ) ≤ 3/2)]
+      have h1t : 1 + |t| ≤ 2 * Real.sqrt |t| ^ 2 := by
+        rw [hu2]
+        linarith
+      have hstep : Real.sqrt (9 / 4 + |t|) * ((1 + |t|) * Real.sqrt (1 + |t|)) ≤
+          6 * t ^ 2 := by
+        calc Real.sqrt (9 / 4 + |t|) * ((1 + |t|) * Real.sqrt (1 + |t|))
+            ≤ (2 * Real.sqrt |t|) *
+                ((2 * Real.sqrt |t| ^ 2) * ((3 / 2) * Real.sqrt |t|)) := by
+              gcongr
+          _ = 6 * (Real.sqrt |t| ^ 2) ^ 2 := by ring
+          _ = 6 * t ^ 2 := by rw [hu2, sq_abs]
+      calc ‖poitouPhi (5 / 4 + t * Complex.I)‖ *
+            (Real.sqrt (9 / 4 + |t|) * ((1 + |t|) * Real.sqrt (1 + |t|)))
+          ≤ (M / t ^ 2) * (6 * t ^ 2) :=
+            mul_le_mul hΦ hstep (by positivity) (div_nonneg hM0 (sq_nonneg t))
+        _ = 6 * M := by
+            field_simp
+        _ ≤ A := le_max_right _ _
+
+/-- **Integrability of `e^{−x/2}/√x` on `(0, ∞)`** (PROVEN 2026-07-24
+— the `x`-factor of the separated Tonelli majorant for
+`poitouPhi_mul_gaussKernel_integrable`, a scaled `Γ(1/2)` integrand):
+on `(0,1]` it is dominated by the integrable `x^{−1/2}`
+(`intervalIntegral.intervalIntegrable_rpow'`), on `(1,∞)` by the
+integrable `e^{−x/2}` (`exp_neg_integrableOn_Ioi`). -/
+theorem integrableOn_exp_neg_half_div_sqrt :
+    IntegrableOn (fun x : ℝ => Real.exp (-(x / 2)) / Real.sqrt x) (Set.Ioi (0:ℝ)) := by
+  have hmeas : Measurable fun x : ℝ => Real.exp (-(x / 2)) / Real.sqrt x := by
+    fun_prop
+  have h1 : IntegrableOn (fun x : ℝ => Real.exp (-(x / 2)) / Real.sqrt x)
+      (Set.Ioc (0:ℝ) 1) := by
+    have hbase : IntegrableOn (fun x : ℝ => x ^ (-(1/2) : ℝ)) (Set.Ioc (0:ℝ) 1) :=
+      (intervalIntegral.intervalIntegrable_rpow' (by norm_num)).1
+    refine hbase.mono' hmeas.aestronglyMeasurable.restrict ?_
+    filter_upwards [ae_restrict_mem measurableSet_Ioc] with x hx
+    have hx0 : (0:ℝ) < x := hx.1
+    have hs : (0:ℝ) < Real.sqrt x := Real.sqrt_pos.2 hx0
+    have hxr : x ^ (-(1/2) : ℝ) = (Real.sqrt x)⁻¹ := by
+      rw [Real.sqrt_eq_rpow, ← Real.rpow_neg hx0.le]
+    rw [Real.norm_eq_abs, abs_of_nonneg (by positivity), hxr, div_eq_mul_inv]
+    exact mul_le_of_le_one_left (by positivity)
+      (Real.exp_le_one_iff.2 (by linarith))
+  have h2 : IntegrableOn (fun x : ℝ => Real.exp (-(x / 2)) / Real.sqrt x)
+      (Set.Ioi (1:ℝ)) := by
+    refine (exp_neg_integrableOn_Ioi 1 (by norm_num : (0:ℝ) < 1/2)).mono'
+      hmeas.aestronglyMeasurable.restrict ?_
+    filter_upwards [ae_restrict_mem measurableSet_Ioi] with x hx
+    have hx1 : (1:ℝ) < x := hx
+    have hs1 : (1:ℝ) ≤ Real.sqrt x := by
+      rw [show (1:ℝ) = Real.sqrt 1 by simp]
+      exact Real.sqrt_le_sqrt (by linarith)
+    rw [Real.norm_eq_abs, abs_of_nonneg (by positivity)]
+    calc Real.exp (-(x / 2)) / Real.sqrt x ≤ Real.exp (-(x / 2)) / 1 := by
+          gcongr
+      _ = Real.exp (-(1/2) * x) := by
+          rw [div_one]
+          congr 1
+          ring
+  have hu := h1.union h2
+  rwa [Set.Ioc_union_Ioi_eq_Ioi zero_le_one] at hu
+
+/-- **Joint integrability of `Φ` against the Gauss kernel** (PROVEN
+2026-07-24 — sub-leaf (b₂ᵢᵢ·2·C) of the decomposition of
+`poitouGammaEdge_tendsto`; the Fubini hypothesis of Poitou's Lemme 2):
+the pointwise separated majorant `poitouGaussKernel_norm_le` bounds the
+integrand by the product of the `t`-integrable
+`‖Φ(5/4+it)‖·√(9/4+|t|)` (`poitouPhi_sqrt_weight_integrable`) and the
+`x`-integrable `4·e^{−x/2}/√x` (`integrableOn_exp_neg_half_div_sqrt`),
+which is product-integrable by `Integrable.mul_prod`. -/
 theorem poitouPhi_mul_gaussKernel_integrable :
     Integrable
       (Function.uncurry fun (t : ℝ) (x : ℝ) =>
@@ -17005,7 +17321,51 @@ theorem poitouPhi_mul_gaussKernel_integrable :
               Complex.exp (-((5 / 4 + t * Complex.I) * (x : ℂ)))) /
             (1 - Complex.exp (-(x : ℂ)))))
       (volume.prod (volume.restrict (Set.Ioi (0 : ℝ)))) := by
-  sorry
+  have hmeas : AEStronglyMeasurable
+      (Function.uncurry fun (t : ℝ) (x : ℝ) =>
+        poitouPhi (5 / 4 + t * Complex.I) *
+          ((Complex.exp (-(x : ℂ)) -
+              Complex.exp (-((5 / 4 + t * Complex.I) * (x : ℂ)))) /
+            (1 - Complex.exp (-(x : ℂ)))))
+      (volume.prod (volume.restrict (Set.Ioi (0 : ℝ)))) := by
+    have h1 : Measurable fun p : ℝ × ℝ => poitouPhi (5 / 4 + p.1 * Complex.I) :=
+      (poitouPhi_line_continuous.comp continuous_fst).measurable
+    have h2 : Measurable fun p : ℝ × ℝ =>
+        (Complex.exp (-(p.2 : ℂ)) -
+            Complex.exp (-((5 / 4 + p.1 * Complex.I) * (p.2 : ℂ)))) /
+          (1 - Complex.exp (-(p.2 : ℂ))) := by
+      fun_prop
+    exact (h1.mul h2).aestronglyMeasurable
+  have hInt : Integrable (fun p : ℝ × ℝ =>
+      (‖poitouPhi (5 / 4 + p.1 * Complex.I)‖ * Real.sqrt (9 / 4 + |p.1|)) *
+        (4 * (Real.exp (-(p.2 / 2)) / Real.sqrt p.2)))
+      (volume.prod (volume.restrict (Set.Ioi (0 : ℝ)))) :=
+    poitouPhi_sqrt_weight_integrable.mul_prod
+      (integrableOn_exp_neg_half_div_sqrt.const_mul 4)
+  refine hInt.mono' hmeas ?_
+  have hae : ∀ᵐ p : ℝ × ℝ
+      ∂(volume.prod (volume.restrict (Set.Ioi (0 : ℝ)))), 0 < p.2 := by
+    have hprodeq : (volume : Measure ℝ).prod (volume.restrict (Set.Ioi (0:ℝ))) =
+        ((volume : Measure ℝ).prod (volume : Measure ℝ)).restrict
+          (Set.univ ×ˢ Set.Ioi (0:ℝ)) := by
+      rw [← Measure.prod_restrict, Measure.restrict_univ]
+    rw [hprodeq]
+    filter_upwards [ae_restrict_mem (MeasurableSet.univ.prod measurableSet_Ioi)] with p hp
+    exact hp.2
+  filter_upwards [hae] with p hp
+  obtain ⟨t, x⟩ := p
+  simp only [Function.uncurry_apply_pair]
+  rw [norm_mul]
+  have hker := poitouGaussKernel_norm_le t (x := x) hp
+  calc ‖poitouPhi (5 / 4 + t * Complex.I)‖ *
+        ‖(Complex.exp (-(x : ℂ)) -
+            Complex.exp (-((5 / 4 + t * Complex.I) * (x : ℂ)))) /
+          (1 - Complex.exp (-(x : ℂ)))‖
+      ≤ ‖poitouPhi (5 / 4 + t * Complex.I)‖ *
+          (Real.sqrt (9 / 4 + |t|) * (4 * (Real.exp (-(x / 2)) / Real.sqrt x))) :=
+        mul_le_mul_of_nonneg_left hker (norm_nonneg _)
+    _ = (‖poitouPhi (5 / 4 + t * Complex.I)‖ * Real.sqrt (9 / 4 + |t|)) *
+          (4 * (Real.exp (-(x / 2)) / Real.sqrt x)) := by ring
 
 /-- **Poitou's Lemme 2: the paired line integral of `Φ` against the
 Gauss integral** (PROVEN 2026-07-24 over the Fubini sub-leaf
