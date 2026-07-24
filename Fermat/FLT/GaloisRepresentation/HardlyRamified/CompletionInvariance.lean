@@ -881,7 +881,148 @@ theorem inertiaDeg'_comap_maximalIdeal_eq_of_dense
       (Ideal.comap φ (IsLocalRing.maximalIdeal (IntegralClosure Ov M))) =
     Ideal.inertiaDeg' (IsLocalRing.maximalIdeal Ov)
       (IsLocalRing.maximalIdeal (IntegralClosure Ov M)) := by
-  sorry
+  classical
+  haveI hmaxprime : (IsLocalRing.maximalIdeal (IntegralClosure Ov M)).IsPrime :=
+    (IsLocalRing.maximalIdeal.isMaximal _).isPrime
+  set Q₀ : Ideal (RingOfIntegers K) :=
+    Ideal.comap φ (IsLocalRing.maximalIdeal (IntegralClosure Ov M)) with hQ₀def
+  haveI hQ₀prime : Q₀.IsPrime := Ideal.IsPrime.comap φ
+  have hq0R : ((q : ℕ) : RingOfIntegers K) ∈ Q₀ := by
+    rw [hQ₀def, Ideal.mem_comap, map_natCast]
+    exact natCast_mem_maximalIdeal hq M
+  have hqR0 : ((q : ℕ) : RingOfIntegers K) ≠ 0 := Nat.cast_ne_zero.mpr hq.ne_zero
+  have hQ₀bot : Q₀ ≠ ⊥ := by
+    intro h0
+    refine hqR0 ?_
+    rw [← Ideal.mem_bot, ← h0]
+    exact hq0R
+  -- the bottom prime `span {q} ⊆ ℤ` is maximal
+  have hqZ0 : ((q : ℕ) : ℤ) ≠ 0 := Int.natCast_ne_zero.mpr hq.ne_zero
+  haveI hprimeZ : (Ideal.span {((q : ℕ) : ℤ)}).IsPrime :=
+    (Ideal.span_singleton_prime hqZ0).mpr (Nat.prime_iff_prime_int.mp hq)
+  haveI hmaxZ : (Ideal.span {((q : ℕ) : ℤ)}).IsMaximal :=
+    hprimeZ.isMaximal (by rw [Ne, Ideal.span_singleton_eq_bot]; exact hqZ0)
+  -- `Q₀` lies over `span {q}`
+  have hunder : Ideal.comap (algebraMap ℤ (RingOfIntegers K)) Q₀ =
+      Ideal.span {((q : ℕ) : ℤ)} := by
+    refine (hmaxZ.eq_of_le ?_ ?_).symm
+    · intro htop
+      refine hQ₀prime.ne_top (Ideal.eq_top_iff_one _ |>.mpr ?_)
+      have h1 : (1 : ℤ) ∈ Ideal.comap (algebraMap ℤ (RingOfIntegers K)) Q₀ := by
+        rw [htop]
+        trivial
+      have h2 := Ideal.mem_comap.mp h1
+      rwa [map_one] at h2
+    · rw [Ideal.span_le, Set.singleton_subset_iff, SetLike.mem_coe, Ideal.mem_comap]
+      rw [map_natCast]
+      exact hq0R
+  haveI hLOgl : Q₀.LiesOver (Ideal.span {((q : ℕ) : ℤ)}) := ⟨hunder.symm⟩
+  -- rewrite both inertia degrees as `finrank`s
+  rw [Ideal.inertiaDeg'_algebraMap, Ideal.inertiaDeg'_algebraMap]
+  -- the residue equivalence upstairs, from density at level `1`
+  have hsurjB : Function.Surjective
+      ((Ideal.Quotient.mk (IsLocalRing.maximalIdeal (IntegralClosure Ov M))).comp φ) := by
+    intro b
+    obtain ⟨bb, rfl⟩ := Ideal.Quotient.mk_surjective b
+    obtain ⟨z, hz⟩ := exists_sub_mem_pow_maximalIdeal hq K M hMgen φ hφ bb 1
+    rw [pow_one] at hz
+    refine ⟨z, ?_⟩
+    rw [RingHom.comp_apply, Ideal.Quotient.mk_eq_mk_iff_sub_mem]
+    rw [show φ z - bb = -(bb - φ z) by ring]
+    exact Submodule.neg_mem _ hz
+  have hkerB : RingHom.ker
+      ((Ideal.Quotient.mk (IsLocalRing.maximalIdeal (IntegralClosure Ov M))).comp φ) = Q₀ := by
+    rw [← RingHom.comap_ker, Ideal.mk_ker]
+  let eB : (RingOfIntegers K ⧸ Q₀) ≃+*
+      ((IntegralClosure Ov M) ⧸ IsLocalRing.maximalIdeal (IntegralClosure Ov M)) :=
+    (Ideal.quotEquivOfEq hkerB.symm).trans
+      (RingHom.quotientKerEquivOfSurjective hsurjB)
+  -- the residue equivalence downstairs, from integer density at level `1`
+  have hqOv : ((q : ℕ) : Ov) ∈ IsLocalRing.maximalIdeal Ov := by
+    rw [maximalIdeal_adicCompletionIntegers_eq_span hq]
+    exact Ideal.mem_span_singleton_self _
+  have hsurjO : Function.Surjective
+      ((Ideal.Quotient.mk (IsLocalRing.maximalIdeal Ov)).comp (Int.castRingHom Ov)) := by
+    intro b
+    obtain ⟨c, rfl⟩ := Ideal.Quotient.mk_surjective b
+    obtain ⟨z, hz⟩ := exists_intCast_sub_mem_pow_maximalIdeal hq c 1
+    rw [pow_one] at hz
+    refine ⟨z, ?_⟩
+    rw [RingHom.comp_apply, Ideal.Quotient.mk_eq_mk_iff_sub_mem]
+    rw [show (Int.castRingHom Ov) z - c = -(c - (z : Ov)) by
+      rw [eq_intCast]; ring]
+    exact Submodule.neg_mem _ hz
+  have hkerO : RingHom.ker
+      ((Ideal.Quotient.mk (IsLocalRing.maximalIdeal Ov)).comp (Int.castRingHom Ov)) =
+      Ideal.span {((q : ℕ) : ℤ)} := by
+    rw [← RingHom.comap_ker, Ideal.mk_ker]
+    refine (hmaxZ.eq_of_le ?_ ?_).symm
+    · intro htop
+      refine (IsLocalRing.maximalIdeal.isMaximal Ov).ne_top
+        (Ideal.eq_top_iff_one _ |>.mpr ?_)
+      have h1 : (1 : ℤ) ∈ Ideal.comap (Int.castRingHom Ov)
+          (IsLocalRing.maximalIdeal Ov) := by
+        rw [htop]
+        trivial
+      have h2 := Ideal.mem_comap.mp h1
+      rwa [map_one] at h2
+    · rw [Ideal.span_le, Set.singleton_subset_iff, SetLike.mem_coe, Ideal.mem_comap]
+      rw [map_natCast]
+      exact hqOv
+  let eO : (ℤ ⧸ Ideal.span {((q : ℕ) : ℤ)}) ≃+* (Ov ⧸ IsLocalRing.maximalIdeal Ov) :=
+    (Ideal.quotEquivOfEq hkerO.symm).trans
+      (RingHom.quotientKerEquivOfSurjective hsurjO)
+  -- finiteness and field structure of the residue rings
+  haveI hQ₀max : Q₀.IsMaximal := hQ₀prime.isMaximal hQ₀bot
+  letI : Field (ℤ ⧸ Ideal.span {((q : ℕ) : ℤ)}) := Ideal.Quotient.field _
+  letI : Field (Ov ⧸ IsLocalRing.maximalIdeal Ov) := Ideal.Quotient.field _
+  haveI : NeZero q := ⟨hq.ne_zero⟩
+  haveI finZq : Finite (ℤ ⧸ Ideal.span {((q : ℕ) : ℤ)}) :=
+    Finite.of_equiv _ (Int.quotientSpanNatEquivZMod q).symm.toEquiv
+  haveI finR : Finite (RingOfIntegers K ⧸ Q₀) :=
+    Ring.HasFiniteQuotients.finiteQuotient hQ₀bot
+  haveI finOv : Finite (Ov ⧸ IsLocalRing.maximalIdeal Ov) :=
+    Finite.of_equiv _ eO.toEquiv
+  haveI finB : Finite ((IntegralClosure Ov M) ⧸
+      IsLocalRing.maximalIdeal (IntegralClosure Ov M)) :=
+    Finite.of_equiv _ eB.toEquiv
+  haveI := Fintype.ofFinite (ℤ ⧸ Ideal.span {((q : ℕ) : ℤ)})
+  haveI := Fintype.ofFinite (RingOfIntegers K ⧸ Q₀)
+  haveI := Fintype.ofFinite (Ov ⧸ IsLocalRing.maximalIdeal Ov)
+  haveI := Fintype.ofFinite ((IntegralClosure Ov M) ⧸
+    IsLocalRing.maximalIdeal (IntegralClosure Ov M))
+  -- the two cardinality formulas
+  have hcard1 := Module.card_eq_pow_finrank
+    (K := ℤ ⧸ Ideal.span {((q : ℕ) : ℤ)}) (V := RingOfIntegers K ⧸ Q₀)
+  have hcard2 := Module.card_eq_pow_finrank
+    (K := Ov ⧸ IsLocalRing.maximalIdeal Ov)
+    (V := (IntegralClosure Ov M) ⧸ IsLocalRing.maximalIdeal (IntegralClosure Ov M))
+  have hcardV : Fintype.card (RingOfIntegers K ⧸ Q₀) =
+      Fintype.card ((IntegralClosure Ov M) ⧸
+        IsLocalRing.maximalIdeal (IntegralClosure Ov M)) :=
+    Fintype.card_congr eB.toEquiv
+  have hcardk : Fintype.card (ℤ ⧸ Ideal.span {((q : ℕ) : ℤ)}) =
+      Fintype.card (Ov ⧸ IsLocalRing.maximalIdeal Ov) :=
+    Fintype.card_congr eO.toEquiv
+  have hqcard : Fintype.card (ℤ ⧸ Ideal.span {((q : ℕ) : ℤ)}) = q := by
+    rw [Fintype.card_congr (Int.quotientSpanNatEquivZMod q).toEquiv]
+    exact ZMod.card q
+  have e1 : q ^ (Module.finrank (ℤ ⧸ Ideal.span {((q : ℕ) : ℤ)})
+      (RingOfIntegers K ⧸ Q₀)) = Fintype.card (RingOfIntegers K ⧸ Q₀) := by
+    rw [hcard1, hqcard]
+  have e2 : q ^ (Module.finrank (Ov ⧸ IsLocalRing.maximalIdeal Ov)
+      ((IntegralClosure Ov M) ⧸
+        IsLocalRing.maximalIdeal (IntegralClosure Ov M))) =
+      Fintype.card ((IntegralClosure Ov M) ⧸
+        IsLocalRing.maximalIdeal (IntegralClosure Ov M)) := by
+    rw [hcard2, ← hcardk, hqcard]
+  have hpow : q ^ (Module.finrank (ℤ ⧸ Ideal.span {((q : ℕ) : ℤ)})
+      (RingOfIntegers K ⧸ Q₀)) =
+      q ^ (Module.finrank (Ov ⧸ IsLocalRing.maximalIdeal Ov)
+        ((IntegralClosure Ov M) ⧸
+          IsLocalRing.maximalIdeal (IntegralClosure Ov M))) := by
+    rw [e1, e2, hcardV]
+  exact Nat.pow_right_injective hq.two_le hpow
 
 /-- **Transport of a primitive global generator**: if `θ` generates `K`
 as a `ℚ`-algebra, then its image generates `M` as a `ℚ_q`-algebra
@@ -903,7 +1044,62 @@ theorem adjoin_algebraMap_eq_top_of_adjoin_eq_top
       {(algebraMap (RingOfIntegers K) K θ : K)} = ⊤) :
     Algebra.adjoin Kv
       {(algebraMap (IntegralClosure Ov M) M (φ θ) : M)} = ⊤ := by
-  sorry
+  classical
+  have hspan := span_range_algebraMap_comp_eq_top hq K M hMgen φ hφ
+  have hgen : ∀ r : RingOfIntegers K,
+      (algebraMap (IntegralClosure Ov M) M (φ r) : M) ∈
+        Algebra.adjoin Kv {(algebraMap (IntegralClosure Ov M) M (φ θ) : M)} := by
+    intro r
+    have hrmem : (algebraMap (RingOfIntegers K) K r : K) ∈
+        Algebra.adjoin ℚ {(algebraMap (RingOfIntegers K) K θ : K)} := by
+      rw [hθtop]
+      exact Algebra.mem_top
+    rw [Algebra.adjoin_singleton_eq_range_aeval] at hrmem
+    obtain ⟨p, hp⟩ := hrmem
+    have hM : (algebraMap (IntegralClosure Ov M) M (φ r) : M) =
+        Polynomial.aeval (algebraMap (IntegralClosure Ov M) M (φ θ) : M)
+          (p.map (algebraMap ℚ Kv)) := by
+      apply (algebraMap M (AlgebraicClosure Kv)).injective
+      rw [← Polynomial.aeval_algebraMap_apply (AlgebraicClosure Kv)
+        (algebraMap (IntegralClosure Ov M) M (φ θ) : M)
+        (p.map (algebraMap ℚ Kv))]
+      have hcoe : ∀ z : M, algebraMap M (AlgebraicClosure Kv) z =
+          (z : AlgebraicClosure Kv) := fun z => rfl
+      rw [hcoe, hcoe, hφ r, hφ θ]
+      rw [Polynomial.aeval_def, Polynomial.eval₂_map,
+        Subsingleton.elim ((algebraMap Kv (AlgebraicClosure Kv)).comp
+          (algebraMap ℚ Kv)) (algebraMap ℚ (AlgebraicClosure Kv)),
+        ← Polynomial.aeval_def]
+      -- transport the `ℚ`-polynomial identity `p(θ) = r` through `ι`
+      have hp' : Polynomial.aeval ((algebraMap (RingOfIntegers K) K θ)) p =
+          algebraMap (RingOfIntegers K) K r := hp
+      have hcoe2 : ∀ z : K, algebraMap K (AlgebraicClosure ℚ) z =
+          (z : AlgebraicClosure ℚ) := fun z => rfl
+      have hι := congrArg (fun z : K =>
+        AlgebraicClosure.map (algebraMap ℚ Kv) (z : AlgebraicClosure ℚ)) hp'
+      rw [← hι]
+      rw [show (((Polynomial.aeval ((algebraMap (RingOfIntegers K) K θ))) p : K) :
+          AlgebraicClosure ℚ) = algebraMap K (AlgebraicClosure ℚ)
+            ((Polynomial.aeval ((algebraMap (RingOfIntegers K) K θ))) p) from rfl,
+        ← Polynomial.aeval_algebraMap_apply (AlgebraicClosure ℚ)
+          ((algebraMap (RingOfIntegers K) K θ)) p]
+      rw [hcoe2]
+      rw [Polynomial.aeval_def, Polynomial.aeval_def, Polynomial.hom_eval₂]
+      congr 1
+      exact Subsingleton.elim _ _
+    rw [hM, Algebra.adjoin_singleton_eq_range_aeval]
+    exact ⟨p.map (algebraMap ℚ Kv), rfl⟩
+  have hle : Submodule.span Kv
+      (Set.range fun r : RingOfIntegers K =>
+        (algebraMap (IntegralClosure Ov M) M (φ r) : M)) ≤
+      Subalgebra.toSubmodule (Algebra.adjoin Kv
+        {(algebraMap (IntegralClosure Ov M) M (φ θ) : M)}) := by
+    rw [Submodule.span_le]
+    rintro _ ⟨r, rfl⟩
+    exact hgen r
+  rw [eq_top_iff]
+  rintro x -
+  exact hle (by rw [hspan]; exact Submodule.mem_top)
 
 end Dense
 
