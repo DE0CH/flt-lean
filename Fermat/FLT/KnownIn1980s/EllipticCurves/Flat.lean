@@ -8716,33 +8716,28 @@ theorem subalgebra_eq_top_of_algHom_separating
   exact (s x).2
 
 set_option backward.isDefEq.respectTransparency false in
-/-- **The Katz–Mazur generators** (sorry node; the curve core of the Hopf-order
-leaf `exists_hopf_order_of_good_reduction`, whose assembly from this bundle is
-PROVEN — all remaining Hopf-order bookkeeping has been discharged there, so
-this statement is pure curve arithmetic against the abstract étale torsion
-algebra): finitely many elements of the finite étale Hopf `K`-algebra `HK` of
-the `m`-torsion of a good-reduction curve that (i) take values integral over
-`R` at every `Kˢᵉᵖ`-point, (ii) separate the `Kˢᵉᵖ`-points, (iii) are closed
-under the antipode relative to the `R`-subalgebra they generate, and (iv) have
-comultiplication in the `R`-span of the pure tensors of that subalgebra. The
-mathematical content is [Katz–Mazur, *Arithmetic moduli of elliptic curves*,
-Thm 2.3.1]: the generators are the monomial sections of the affine algebra of
-the kernel `𝓔[m]` of multiplication by `m` on the elliptic scheme `𝓔` of the
-minimal (good-reduction) Weierstrass equation.
+/-- **The Katz–Mazur kernel functions** (sorry node; the pointwise curve core
+of the Katz–Mazur order cut, freed 2026-07-24 of ALL Hopf-algebra content by
+the proven Gelfand bridge `exists_hopf_order_generators_of_good_reduction`
+below — this statement mentions only the `m`-torsion Galois module of the
+curve and functions on it): finitely many `Gal(Kˢᵉᵖ/K)`-equivariant functions
+on the `m`-torsion of a good-reduction curve, with values integral over `R`,
+separating the torsion points, closed under precomposition with negation
+relative to the `R`-subalgebra of functions they generate, and whose
+pullbacks along the group addition lie in the `R`-span of the product
+two-variable functions of that subalgebra. The `Algebra R Ksep` instance is a
+hypothesis (the consumer instantiates it with the composite `R → K → Kˢᵉᵖ`).
+The mathematical content is [Katz–Mazur, *Arithmetic moduli of elliptic
+curves*, Thm 2.3.1]: the functions are the monomial sections of the affine
+algebra of the kernel `𝓔[m]` of multiplication by `m` on the elliptic scheme
+`𝓔` of the minimal (good-reduction) Weierstrass equation, restricted to the
+`Kˢᵉᵖ`-points of the kernel.
 
 SCHEME-FREE CONSTRUCTION ROADMAP (worked out 2026-07-23, restated 2026-07-24
-for the generators formulation inside the ABSTRACT `HK`; no transport to a
-concrete carrier is needed — étale Gelfand duality realizes elements of `HK`
-from equivariant functions on the points):
+for the pointwise formulation; `V := E(Kˢᵉᵖ)[m]`, finite by
+`torsion_finite_of_ne_zero`):
 
-1. Carrier. Every `Gal(Kˢᵉᵖ/K)`-equivariant function on the point set
-   `HK →ₐ[K] Kˢᵉᵖ` is `φ ↦ φ g` for a unique `g ∈ HK`
-   (`exists_eval_eq_of_equivariant` for existence,
-   `eq_zero_of_forall_algHom_eq_zero` for uniqueness); via `f` the points ARE
-   the `m`-torsion points of `E(Kˢᵉᵖ)`, equivariantly by `hf`, so a generator
-   is specified by an equivariant function `V → Kˢᵉᵖ` on
-   `V := E(Kˢᵉᵖ)[m]` (finite by `torsion_finite_of_ne_zero`).
-2. Avoiding denominator. Choose `h ∈ R[X]` monic of degree `d ≥ 2` whose
+1. Avoiding denominator. Choose `h ∈ R[X]` monic of degree `d ≥ 2` whose
    reduction is coprime to the reduced affine-torsion locus: `h(x(P))` is a
    unit of every valuation ring of `Kˢᵉᵖ` over `R` for every torsion point
    `P` with abscissa integral over `R` (possible because the residue field
@@ -8750,37 +8745,78 @@ from equivariant functions on the points):
    torsion abscissa residues — an irreducible of large degree when the
    residue field is finite, a power `(X - c)^d` avoiding the residues when it
    is infinite; for non-integral abscissas `v(h(x(P))) = d·v(x(P)) < 0`
-   automatically). Coordinates are taken on a good-reduction integral model.
-3. Generators. The equivariant functions `g_{a,b,j} : P ↦ x(P)^a y(P)^b /
-   h(x(P))^j` (with `2a + 3b ≤ 2dj`, `b ≤ 1`, value `0`-or-`1` at `P = 0`
-   according to `2a + 3b < 2dj` or `=`), realized in `HK` by stage 1. Each
-   has values integral over `R` at every point by the choice of `h` — this is
-   hypothesis (i), which the consuming assembly feeds to
-   `isIntegral_of_forall_algHom_isIntegralElem`.
-4. Separation. `1/h(x)` distinguishes the origin (value `0`) from the affine
+   automatically). Coordinates are taken on a good-reduction integral model;
+   integrality over `R` means membership in every valuation subring of
+   `Kˢᵉᵖ` centered on `R` (`exists_valuationSubring_integralClosure_center`
+   and the `KernelValuationHelpers` section are the local vocabulary).
+2. The functions. `g_{a,b,j} : P ↦ x(P)^a y(P)^b / h(x(P))^j` (with
+   `2a + 3b ≤ 2dj`, `b ≤ 1`, value `0`-or-`1` at `P = 0` according to
+   `2a + 3b < 2dj` or `=`). Equivariance holds because the coordinates are
+   Galois-natural and `h` has coefficients in `R`; integrality of the values
+   is the choice of `h`.
+3. Separation. `1/h(x)` distinguishes the origin (value `0`) from the affine
    points (values nonzero), and `x/h(x)^j`, `y/h(x)^j` then distinguish
-   distinct affine points — hypothesis (ii), which the assembly feeds to
-   `subalgebra_eq_top_of_algHom_separating` for the spanning of the order.
-5. Hopf closure — THE Katz–Mazur core. Antipode: `S g` is the function
-   `P ↦ g(-P)` (the antipode point is the convolution inverse, `f`-image
-   `-f(P)`), and `(x, y)(-P) = (x, -y - a₁x - a₃)` keeps the generator family
-   stable up to `R`-combinations — hypothesis (iii), shallow. Comultiplication:
-   `Δ g_{a,b,j}` is the two-variable function `(P, Q) ↦ g_{a,b,j}(P + Q)`
-   (points of `HK ⊗[K] HK` are convolution products through
-   `Algebra.TensorProduct.lift`), and the claim is that it is an
+   distinct affine points.
+4. Negation closure: `(x, y)(-P) = (x, -y - a₁x - a₃)` keeps the family
+   stable up to `R`-combinations — shallow.
+5. Addition closure — THE Katz–Mazur core: `(P, Q) ↦ g_{a,b,j}(P + Q)` is an
    `R`-polynomial in the `g_{a',b',j'}(P)` and `g_{a'',b'',j''}(Q)` — the
    integrality of the addition law relative to `h` on the kernel, where the
    division-polynomial arithmetic enters: the addition formulas have
    denominators `(x(P) - x(Q))²` resp. `ψ²`, controlled on the torsion locus
    by the monic `(Φ n).eval X - ξ * (ΨSq n).eval X` (degree `n²` over `R[ξ]`)
    and the fibrewise coprimality `isCoprime_Φ_ΨSq` (proven,
-   `Fermat.FLT.EllipticCurve.PhiPsiCoprime`) — hypothesis (iv), the deep half.
+   `Fermat.FLT.EllipticCurve.PhiPsiCoprime`) — the deep half.
 
 For the Frey curve application (`R = ℤ_(p)`, `K = ℚ`, `m = p`) the same
 object is the kernel of `[p]` on the good-reduction Weierstrass model; the
 prime case admits no genuine shortcut past the origin chart, because the
 connected component of `𝓔[p]` (where the model is NOT étale) is present
 whenever `p` is not invertible in `R`. -/
+theorem WeierstrassCurve.exists_torsion_kernel_function_generators
+    (m : ℕ) (hm : (m : K) ≠ 0)
+    [Algebra R Ksep] [IsScalarTower R K Ksep] :
+    ∃ gens₀ : Finset ((AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep),
+      (∀ u ∈ gens₀, ∀ (σ : Ksep ≃ₐ[K] Ksep)
+        (P Q : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)),
+        (Q : (E⁄Ksep).Point) = Affine.Point.map σ.toAlgHom (P : (E⁄Ksep).Point) →
+          u Q = σ (u P)) ∧
+      (∀ u ∈ gens₀, ∀ P, _root_.IsIntegral R (u P)) ∧
+      (∀ P Q : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ),
+        (∀ u ∈ gens₀, u P = u Q) → P = Q) ∧
+      (∀ u ∈ gens₀, (fun P => u (-P)) ∈ Algebra.adjoin R
+        ((gens₀ : Set ((AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep)))) ∧
+      (∀ u ∈ gens₀,
+        (fun PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+            (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) => u (PQ.1 + PQ.2)) ∈
+        Submodule.span R {t : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+            (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep |
+          ∃ a ∈ Algebra.adjoin R
+            ((gens₀ : Set ((AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep))),
+          ∃ b ∈ Algebra.adjoin R
+            ((gens₀ : Set ((AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep))),
+            (fun PQ => a PQ.1 * b PQ.2) = t}) := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **The Katz–Mazur generators** (DECOMPOSED 2026-07-24 into the pointwise
+curve core `exists_torsion_kernel_function_generators` above — equivariant
+functions on the torsion with integrality, separation, negation- and
+addition-law closure, no Hopf algebra in the statement — and the Gelfand
+bridge below, which is PROVEN: étale Gelfand duality
+(`exists_eval_eq_of_equivariant` / `eq_zero_of_forall_algHom_eq_zero`)
+realizes each function as an element of `HK` through the points-torsion
+dictionary `f`; the antipode acts on points as the convolution inverse,
+`f`-image the negative; the comultiplication pairs with two points as the
+convolution product, `f`-image the sum, and membership statements transport
+through the injective evaluation maps `ε` and `ε₂` — `HK ⊗[K] HK` is itself
+finite étale via base change and composition, and its `Kˢᵉᵖ`-points are
+exactly the pairs): finitely many elements of the finite étale Hopf
+`K`-algebra `HK` of the `m`-torsion of a good-reduction curve that (i) take
+values integral over `R` at every `Kˢᵉᵖ`-point, (ii) separate the
+`Kˢᵉᵖ`-points, (iii) are closed under the antipode relative to the
+`R`-subalgebra they generate, and (iv) have comultiplication in the `R`-span
+of the pure tensors of that subalgebra. -/
 theorem WeierstrassCurve.exists_hopf_order_generators_of_good_reduction
     (m : ℕ) (hm : (m : K) ≠ 0)
     (HK : Type u) [CommRing HK] [HopfAlgebra K HK]
@@ -8801,7 +8837,310 @@ theorem WeierstrassCurve.exists_hopf_order_generators_of_good_reduction
         Submodule.span R {z : HK ⊗[K] HK |
           ∃ a ∈ Algebra.adjoin R (gens : Set HK),
           ∃ b ∈ Algebra.adjoin R (gens : Set HK), a ⊗ₜ[K] b = z}) := by
-  sorry
+  classical
+  -- `Kˢᵉᵖ` as an `R`-algebra through `K`
+  letI : Algebra R Ksep := ((algebraMap K Ksep).comp (algebraMap R K)).toAlgebra
+  haveI : IsScalarTower R K Ksep := IsScalarTower.of_algebraMap_eq fun _ => rfl
+  -- the pointwise curve core
+  obtain ⟨gens₀, hequi, hint₀, hsep₀, hneg₀, hadd₀⟩ :=
+    WeierstrassCurve.exists_torsion_kernel_function_generators R K E Ksep m hm
+  -- the point of `HK` attached to a torsion point, and its round trips
+  set pt : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ) → (HK →ₐ[K] Ksep) :=
+    fun P => WithConv.ofConv (Additive.toMul (f.symm P)) with hpt
+  have hpt_round : ∀ φ : HK →ₐ[K] Ksep,
+      pt (f (Additive.ofMul (WithConv.toConv φ))) = φ := by
+    intro φ
+    simp only [hpt]
+    rw [AddEquiv.symm_apply_apply, toMul_ofMul, WithConv.ofConv_toConv]
+  have hpt_round' : ∀ P, f (Additive.ofMul (WithConv.toConv (pt P))) = P := by
+    intro P
+    simp only [hpt]
+    rw [WithConv.toConv_ofConv, ofMul_toMul, AddEquiv.apply_symm_apply]
+  -- the Gelfand evaluation onto functions on the torsion
+  set ε : HK →ₐ[K] ((AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep) :=
+    AlgHom.pi (fun P => pt P) with hε
+  have hval : ∀ (g : HK) (φ : HK →ₐ[K] Ksep),
+      ε g (f (Additive.ofMul (WithConv.toConv φ))) = φ g := by
+    intro g φ
+    show pt (f (Additive.ofMul (WithConv.toConv φ))) g = φ g
+    rw [hpt_round]
+  -- realize each generator function as an element of `HK`
+  have hreal : ∀ u ∈ gens₀, ∃ g : HK, ε g = u := by
+    intro u hu
+    obtain ⟨g, hg⟩ := exists_eval_eq_of_equivariant K Ksep HK
+      (fun φ => u (f (Additive.ofMul (WithConv.toConv φ))))
+      (fun σ φ => hequi u hu σ _ _ (hf σ φ))
+    refine ⟨g, funext fun P => ?_⟩
+    calc ε g P = pt P g := rfl
+      _ = u (f (Additive.ofMul (WithConv.toConv (pt P)))) := hg (pt P)
+      _ = u P := by rw [hpt_round']
+  choose gfun hgfun using hreal
+  set gens : Finset HK :=
+    Finset.image (fun x : {u // u ∈ gens₀} => gfun x.1 x.2) gens₀.attach with hgens
+  -- the evaluation image of the generators is the generator-function family
+  have himg : (⇑ε '' ((gens : Finset HK) : Set HK)) =
+      (gens₀ : Set ((AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep)) := by
+    ext u
+    constructor
+    · rintro ⟨g, hg, rfl⟩
+      obtain ⟨x, -, rfl⟩ := Finset.mem_image.mp (Finset.mem_coe.mp hg)
+      rw [hgfun x.1 x.2]
+      exact Finset.mem_coe.mpr x.2
+    · intro hu
+      exact ⟨gfun u hu, Finset.mem_coe.mpr
+        (Finset.mem_image_of_mem _ (Finset.mem_attach _ ⟨u, hu⟩)), hgfun u hu⟩
+  -- the evaluation is injective (points separate the étale algebra)
+  have hεinj : Function.Injective ε := by
+    intro a b hab
+    have h0 : a - b = 0 := by
+      refine eq_zero_of_forall_algHom_eq_zero K Ksep HK _ fun φ => ?_
+      rw [map_sub, sub_eq_zero]
+      calc φ a = ε a (f (Additive.ofMul (WithConv.toConv φ))) := (hval a φ).symm
+        _ = ε b (f (Additive.ofMul (WithConv.toConv φ))) := by rw [hab]
+        _ = φ b := hval b φ
+    exact sub_eq_zero.mp h0
+  -- the order maps onto the pointwise order under the evaluation
+  have hmapadj : (Algebra.adjoin R ((gens : Finset HK) : Set HK)).map
+        (ε.restrictScalars R) =
+      Algebra.adjoin R
+        (gens₀ : Set ((AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep)) := by
+    rw [AlgHom.map_adjoin]
+    exact congrArg (Algebra.adjoin R) himg
+  -- the antipode acts on points as negation of the torsion point: the
+  -- composite with the antipode is the convolution inverse of the point, and
+  -- `f` turns convolution into torsion addition
+  have hptneg : ∀ P, (pt P).comp (HopfAlgebra.antipodeAlgHom K HK) = pt (-P) := by
+    intro P
+    have hconv : WithConv.toConv ((pt P).comp (HopfAlgebra.antipodeAlgHom K HK)) *
+        WithConv.toConv (pt P) = (1 : WithConv (HK →ₐ[K] Ksep)) := by
+      have h1 := AlgHom.comp_convMul_distrib (pt P)
+        (WithConv.toConv (HopfAlgebra.antipodeAlgHom K HK))
+        (WithConv.toConv (AlgHom.id K HK))
+      rw [AlgHom.antipode_id_cancel] at h1
+      simp only [AlgHom.comp_id] at h1
+      have h2 : (pt P).comp ((1 : WithConv (HK →ₐ[K] HK)).ofConv) =
+          (1 : WithConv (HK →ₐ[K] Ksep)).ofConv := by
+        refine AlgHom.ext fun a => ?_
+        show pt P (algebraMap K HK (Bialgebra.counitAlgHom K HK a)) =
+          algebraMap K Ksep (Bialgebra.counitAlgHom K HK a)
+        exact AlgHom.commutes _ _
+      rw [h2] at h1
+      have h3 := congrArg WithConv.toConv h1
+      rw [WithConv.toConv_ofConv, WithConv.toConv_ofConv] at h3
+      exact h3.symm
+    have hzero : f (Additive.ofMul (WithConv.toConv ((pt P).comp
+        (HopfAlgebra.antipodeAlgHom K HK)))) + P = 0 := by
+      have h3 : Additive.ofMul (WithConv.toConv ((pt P).comp
+          (HopfAlgebra.antipodeAlgHom K HK))) +
+          Additive.ofMul (WithConv.toConv (pt P)) = 0 := by
+        rw [← ofMul_mul, hconv]
+        rfl
+      calc f (Additive.ofMul (WithConv.toConv ((pt P).comp
+            (HopfAlgebra.antipodeAlgHom K HK)))) + P
+          = f (Additive.ofMul (WithConv.toConv ((pt P).comp
+              (HopfAlgebra.antipodeAlgHom K HK)))) +
+            f (Additive.ofMul (WithConv.toConv (pt P))) := by rw [hpt_round']
+        _ = f (Additive.ofMul (WithConv.toConv ((pt P).comp
+              (HopfAlgebra.antipodeAlgHom K HK))) +
+            Additive.ofMul (WithConv.toConv (pt P))) := (map_add f _ _).symm
+        _ = 0 := by rw [h3, map_zero]
+    have h4 : f.symm (-P) = Additive.ofMul (WithConv.toConv ((pt P).comp
+        (HopfAlgebra.antipodeAlgHom K HK))) := by
+      rw [← eq_neg_of_add_eq_zero_left hzero, AddEquiv.symm_apply_apply]
+    have h6 : pt (-P) = WithConv.ofConv (Additive.toMul (f.symm (-P))) :=
+      congrFun hpt (-P)
+    rw [h6, h4, toMul_ofMul, WithConv.ofConv_toConv]
+  refine ⟨gens, ?_, ?_, ?_, ?_⟩
+  · -- (i) point values are integral over `R`
+    intro g hg φ
+    obtain ⟨x, -, rfl⟩ := Finset.mem_image.mp hg
+    have h1 : φ (gfun x.1 x.2) = x.1 (f (Additive.ofMul (WithConv.toConv φ))) := by
+      rw [← hval, hgfun x.1 x.2]
+    rw [h1]
+    exact hint₀ x.1 x.2 _
+  · -- (ii) separation of points
+    intro φ ψ h
+    have h2 : f (Additive.ofMul (WithConv.toConv φ)) =
+        f (Additive.ofMul (WithConv.toConv ψ)) := by
+      refine hsep₀ _ _ fun u hu => ?_
+      have h3 := h (gfun u hu)
+        (Finset.mem_image_of_mem _ (Finset.mem_attach _ ⟨u, hu⟩))
+      calc u (f (Additive.ofMul (WithConv.toConv φ)))
+          = ε (gfun u hu) (f (Additive.ofMul (WithConv.toConv φ))) := by
+            rw [hgfun u hu]
+        _ = φ (gfun u hu) := hval _ φ
+        _ = ψ (gfun u hu) := h3
+        _ = ε (gfun u hu) (f (Additive.ofMul (WithConv.toConv ψ))) :=
+            (hval _ ψ).symm
+        _ = u (f (Additive.ofMul (WithConv.toConv ψ))) := by rw [hgfun u hu]
+    exact WithConv.toConv_injective (Additive.ofMul.injective (f.injective h2))
+  · -- (iii) antipode closure
+    intro g hg
+    obtain ⟨x, -, rfl⟩ := Finset.mem_image.mp hg
+    have hεanti : ε (HopfAlgebra.antipode K (gfun x.1 x.2)) =
+        fun P => x.1 (-P) := by
+      funext P
+      calc ε (HopfAlgebra.antipode K (gfun x.1 x.2)) P
+          = ((pt P).comp (HopfAlgebra.antipodeAlgHom K HK)) (gfun x.1 x.2) := rfl
+        _ = pt (-P) (gfun x.1 x.2) := by rw [hptneg]
+        _ = ε (gfun x.1 x.2) (-P) := rfl
+        _ = x.1 (-P) := by rw [hgfun x.1 x.2]
+    have hmem₀ : (fun P => x.1 (-P)) ∈
+        (Algebra.adjoin R ((gens : Finset HK) : Set HK)).map
+          (ε.restrictScalars R) := by
+      rw [hmapadj]
+      exact hneg₀ x.1 x.2
+    obtain ⟨y, hy, hyeq⟩ := Subalgebra.mem_map.mp hmem₀
+    have hyg : y = HopfAlgebra.antipode K (gfun x.1 x.2) :=
+      hεinj (hyeq.trans hεanti.symm)
+    rw [← hyg]
+    exact hy
+  · -- (iv) comultiplication closure, through the pair evaluation
+    intro g hg
+    obtain ⟨x, -, rfl⟩ := Finset.mem_image.mp hg
+    -- the tensor square is finite étale
+    haveI : Algebra.Etale K (HK ⊗[K] HK) := Algebra.Etale.comp K HK (HK ⊗[K] HK)
+    -- the pair evaluation
+    set ε₂ : (HK ⊗[K] HK) →ₐ[K]
+        (((AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+          (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ))) → Ksep) :=
+      AlgHom.pi (fun PQ => Algebra.TensorProduct.lift (pt PQ.1) (pt PQ.2)
+        (fun _ _ => Commute.all _ _)) with hε₂
+    have hliftcongr : ∀ φ φ' ψ ψ' : HK →ₐ[K] Ksep, φ = φ' → ψ = ψ' →
+        Algebra.TensorProduct.lift φ ψ (fun _ _ => Commute.all _ _) =
+        Algebra.TensorProduct.lift φ' ψ' (fun _ _ => Commute.all _ _) := by
+      rintro _ _ _ _ rfl rfl
+      rfl
+    have hε₂tmul : ∀ a b : HK,
+        ε₂ (a ⊗ₜ[K] b) = fun PQ => ε a PQ.1 * ε b PQ.2 := by
+      intro a b
+      funext PQ
+      show Algebra.TensorProduct.lift (pt PQ.1) (pt PQ.2)
+        (fun _ _ => Commute.all _ _) (a ⊗ₜ[K] b) = _
+      rw [Algebra.TensorProduct.lift_tmul]
+      rfl
+    have hε₂comul : ∀ a : HK,
+        ε₂ (Bialgebra.comulAlgHom K HK a) = fun PQ => ε a (PQ.1 + PQ.2) := by
+      intro a
+      funext PQ
+      have h1 : Algebra.TensorProduct.lift (pt PQ.1) (pt PQ.2)
+          (fun _ _ => Commute.all _ _) (Coalgebra.comul (R := K) a) =
+          (WithConv.toConv (pt PQ.1) * WithConv.toConv (pt PQ.2)) a :=
+        (AlgHom.convMul_apply (WithConv.toConv (pt PQ.1))
+          (WithConv.toConv (pt PQ.2)) a).symm
+      have h2 : WithConv.toConv (pt PQ.1) * WithConv.toConv (pt PQ.2) =
+          WithConv.toConv (pt (PQ.1 + PQ.2)) := by
+        simp only [hpt]
+        rw [WithConv.toConv_ofConv, WithConv.toConv_ofConv,
+          WithConv.toConv_ofConv, map_add, toMul_add]
+      calc ε₂ (Bialgebra.comulAlgHom K HK a) PQ
+          = Algebra.TensorProduct.lift (pt PQ.1) (pt PQ.2)
+              (fun _ _ => Commute.all _ _) (Coalgebra.comul (R := K) a) := by
+            rw [Bialgebra.comulAlgHom_apply]
+            rfl
+        _ = (WithConv.toConv (pt PQ.1) * WithConv.toConv (pt PQ.2)) a := h1
+        _ = WithConv.toConv (pt (PQ.1 + PQ.2)) a := by rw [h2]
+        _ = ε a (PQ.1 + PQ.2) := rfl
+    -- the pair evaluation is injective: every point of the tensor square is
+    -- a pair of points
+    have hε₂app : ∀ (z : HK ⊗[K] HK)
+        (P Q : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)),
+        ε₂ z (P, Q) = Algebra.TensorProduct.lift (pt P) (pt Q)
+          (fun _ _ => Commute.all _ _) z := fun _ _ _ => rfl
+    have hε₂inj : Function.Injective ε₂ := by
+      intro z w hzw
+      have h0 : z - w = 0 := by
+        refine eq_zero_of_forall_algHom_eq_zero K Ksep (HK ⊗[K] HK) _ fun χ => ?_
+        rw [map_sub, sub_eq_zero]
+        have hχ : χ = Algebra.TensorProduct.lift
+            (χ.comp Algebra.TensorProduct.includeLeft)
+            ((χ.restrictScalars K).comp
+              (Algebra.TensorProduct.includeRight (R := K) (A := HK) (B := HK)))
+            (fun _ _ => Commute.all _ _) := by
+          apply Algebra.TensorProduct.ext
+          · rw [Algebra.TensorProduct.lift_comp_includeLeft]
+          · rw [Algebra.TensorProduct.lift_comp_includeRight]
+        have hP := hpt_round (χ.comp Algebra.TensorProduct.includeLeft)
+        have hQ := hpt_round ((χ.restrictScalars K).comp
+          (Algebra.TensorProduct.includeRight (R := K) (A := HK) (B := HK)))
+        calc χ z
+            = Algebra.TensorProduct.lift
+                (χ.comp Algebra.TensorProduct.includeLeft)
+                ((χ.restrictScalars K).comp
+                  (Algebra.TensorProduct.includeRight (R := K) (A := HK) (B := HK)))
+                (fun _ _ => Commute.all _ _) z := DFunLike.congr_fun hχ z
+          _ = Algebra.TensorProduct.lift
+                (pt (f (Additive.ofMul (WithConv.toConv
+                  (χ.comp Algebra.TensorProduct.includeLeft)))))
+                (pt (f (Additive.ofMul (WithConv.toConv ((χ.restrictScalars K).comp
+                  (Algebra.TensorProduct.includeRight (R := K) (A := HK) (B := HK)))))))
+                (fun _ _ => Commute.all _ _) z := by
+              rw [hliftcongr _ _ _ _ hP.symm hQ.symm]
+          _ = ε₂ z (f (Additive.ofMul (WithConv.toConv
+                  (χ.comp Algebra.TensorProduct.includeLeft))),
+                f (Additive.ofMul (WithConv.toConv ((χ.restrictScalars K).comp
+                  (Algebra.TensorProduct.includeRight
+                    (R := K) (A := HK) (B := HK)))))) := (hε₂app z _ _).symm
+          _ = ε₂ w (f (Additive.ofMul (WithConv.toConv
+                  (χ.comp Algebra.TensorProduct.includeLeft))),
+                f (Additive.ofMul (WithConv.toConv ((χ.restrictScalars K).comp
+                  (Algebra.TensorProduct.includeRight
+                    (R := K) (A := HK) (B := HK)))))) := by rw [hzw]
+          _ = Algebra.TensorProduct.lift
+                (pt (f (Additive.ofMul (WithConv.toConv
+                  (χ.comp Algebra.TensorProduct.includeLeft)))))
+                (pt (f (Additive.ofMul (WithConv.toConv ((χ.restrictScalars K).comp
+                  (Algebra.TensorProduct.includeRight (R := K) (A := HK) (B := HK)))))))
+                (fun _ _ => Commute.all _ _) w := hε₂app w _ _
+          _ = Algebra.TensorProduct.lift
+                (χ.comp Algebra.TensorProduct.includeLeft)
+                ((χ.restrictScalars K).comp
+                  (Algebra.TensorProduct.includeRight (R := K) (A := HK) (B := HK)))
+                (fun _ _ => Commute.all _ _) w := by
+              rw [hliftcongr _ _ _ _ hP.symm hQ.symm]
+          _ = χ w := (DFunLike.congr_fun hχ w).symm
+      exact sub_eq_zero.mp h0
+    -- the pair evaluation matches the two span sets
+    have himg₂ : (⇑ε₂ '' {z : HK ⊗[K] HK |
+          ∃ a ∈ Algebra.adjoin R ((gens : Finset HK) : Set HK),
+          ∃ b ∈ Algebra.adjoin R ((gens : Finset HK) : Set HK),
+            a ⊗ₜ[K] b = z}) =
+        {t : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+            (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep |
+          ∃ a ∈ Algebra.adjoin R
+            (gens₀ : Set ((AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep)),
+          ∃ b ∈ Algebra.adjoin R
+            (gens₀ : Set ((AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep)),
+            (fun PQ => a PQ.1 * b PQ.2) = t} := by
+      ext t
+      constructor
+      · rintro ⟨z, ⟨a, ha, b, hb, rfl⟩, rfl⟩
+        refine ⟨ε a, ?_, ε b, ?_, ?_⟩
+        · rw [← hmapadj]
+          exact Subalgebra.mem_map.mpr ⟨a, ha, rfl⟩
+        · rw [← hmapadj]
+          exact Subalgebra.mem_map.mpr ⟨b, hb, rfl⟩
+        · exact (hε₂tmul a b).symm
+      · rintro ⟨a', ha', b', hb', rfl⟩
+        rw [← hmapadj] at ha' hb'
+        obtain ⟨a, ha, rfl⟩ := Subalgebra.mem_map.mp ha'
+        obtain ⟨b, hb, rfl⟩ := Subalgebra.mem_map.mp hb'
+        exact ⟨a ⊗ₜ[K] b, ⟨a, ha, b, hb, rfl⟩, hε₂tmul a b⟩
+    -- transfer the pointwise addition-law closure through the pair evaluation
+    have hpoint : ε₂ (Bialgebra.comulAlgHom K HK (gfun x.1 x.2)) ∈
+        Submodule.span R
+          (⇑ε₂ '' {z : HK ⊗[K] HK |
+            ∃ a ∈ Algebra.adjoin R ((gens : Finset HK) : Set HK),
+            ∃ b ∈ Algebra.adjoin R ((gens : Finset HK) : Set HK),
+              a ⊗ₜ[K] b = z}) := by
+      rw [himg₂, hε₂comul, hgfun x.1 x.2]
+      exact hadd₀ x.1 x.2
+    have hcoe₂ : ⇑(ε₂.toLinearMap.restrictScalars R) = ⇑ε₂ := rfl
+    rw [← hcoe₂, ← Submodule.map_span (ε₂.toLinearMap.restrictScalars R)] at hpoint
+    obtain ⟨z, hz, hzeq⟩ := Submodule.mem_map.mp hpoint
+    have hzg : z = Bialgebra.comulAlgHom K HK (gfun x.1 x.2) := hε₂inj hzeq
+    rw [← hzg]
+    exact hz
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **The Katz–Mazur Hopf order** (DECOMPOSED 2026-07-24 into the curve leaf
