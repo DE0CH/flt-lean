@@ -104,6 +104,21 @@ import Mathlib.RingTheory.Algebraic.Integral
 public import Mathlib.NumberTheory.NumberField.DedekindZeta
 public import Mathlib.Analysis.SpecialFunctions.Gamma.Basic
 public import Mathlib.Analysis.SpecialFunctions.Pow.Complex
+-- `Complex.Gamma_ne_zero_of_re_pos` (nonvanishing of the archimedean
+-- Euler factors) and the antiholomorphic-composition lemma
+-- `differentiableAt_conj_conj_iff` (Schwarz reflection), consumed by
+-- the PROVEN glue of `dedekindContinuation_exists` (proof-only).
+import Mathlib.Analysis.SpecialFunctions.Gamma.Beta
+import Mathlib.Analysis.Calculus.Deriv.Star
+-- `ClassGroup` with its `Fintype` instance and `ClassGroup.mk0`,
+-- appearing in the STATEMENT of the per-class Hecke leaf
+-- `completedClassZeta_exists` and in the exposed bodies of
+-- `classIdealCount`/`dedekindDualClass` (hence public).
+public import Mathlib.NumberTheory.NumberField.ClassNumber
+-- `LSeries_sum` (finite additivity of L-series), for the PROVEN
+-- class-group summation glue of `completedDedekindZeta_exists`
+-- (proof-only).
+import Mathlib.NumberTheory.LSeries.Linearity
 -- `analyticOrderAt`/`analyticOrderNatAt`, the zero-multiplicity
 -- vocabulary of the continued Dedekind zeta (in the exposed body of
 -- `DedekindContinuation.mult`, hence public).
@@ -4315,32 +4330,451 @@ structure DedekindContinuation (K : Type*) [Field K] [NumberField K] where
   growth : ∃ C : ℝ, 0 < C ∧ ∀ s : ℂ, 2 ≤ ‖s‖ →
     ‖xi s‖ ≤ Real.exp (C * ‖s‖ * Real.log ‖s‖)
 
-/-- **Hecke's theorem: the continuation package exists** (sorry node,
-stated 2026-07-23 — the first of the two deep analytic leaves of the
-decomposition of `dedekind_explicit_formula_fejer`).  Intended proof:
-Hecke's theta-function argument, in the shape mathlib itself uses to
-continue `riemannZeta` — instantiate the abstract Mellin-transform
-functional-equation machinery `WeakFEPair`/`StrongFEPair` of
-`Mathlib.NumberTheory.LSeries.AbstractFuncEq` at the Hecke theta
-series of the ideal classes of `K`.  Concretely (Neukirch, *Algebraic
-Number Theory*, VII §3–§5): for each ideal class the completed partial
-zeta `Z(𝔎, s)` is the Mellin transform of a theta series
-`f_F(𝔞, t)` satisfying the transformation law `f(1/t) = t^{1/2}·g(t)`
-of Neukirch VII (5.8), so VII (1.4) (= mathlib's `WeakFEPair` main
-theorems) gives continuation to `ℂ ∖ {0, 1}`, the functional equation
-`Z(𝔎, s) = Z(𝔎', 1 − s)`, and the simple-pole data at `0` and `1`
-(residues `±2^r·R/w`); summing over the finitely many classes yields
-`Z_K` (VII (5.10)), and `ξ = s(s−1)Z_K` is entire of order one.
-`eq_of_one_lt_re` is VII §4's computation of the archimedean Euler
-factors; `conj_symm` follows from the real coefficients via the
-identity theorem; `growth` from Stirling estimates plus
-Phragmén–Lindelöf between `re s = −1` and `re s = 2` (S. Lang, *ANT*,
-XIII §5).  The official FLT project takes the downstream discriminant
-bound as a standing axiom (`FLT.Assumptions.Odlyzko`); here Hecke's
-theorem is an honest leaf. -/
+open scoped nonZeroDivisors in
+/-- **The ideal-counting coefficients of one ideal class** (definition,
+2026-07-24): `classIdealCount K C n` is the number of nonzero integral
+ideals of `𝒪_K` of absolute norm `n` in the class `C` of the class
+group.  The Dirichlet series with these coefficients is the partial
+zeta function `ζ(C, s)` of Neukirch, *Algebraic Number Theory*, VII
+§5; summed over the finitely many classes the coefficients recover
+those of the pin's `NumberField.dedekindZeta`
+(`sum_classIdealCount` below). -/
+noncomputable def classIdealCount (K : Type*) [Field K] [NumberField K]
+    (C : ClassGroup (NumberField.RingOfIntegers K)) (n : ℕ) : ℕ :=
+  Nat.card {I : (Ideal (NumberField.RingOfIntegers K))⁰ //
+    Ideal.absNorm (I : Ideal (NumberField.RingOfIntegers K)) = n ∧
+    ClassGroup.mk0 I = C}
+
+/-- **The dual ideal class of the functional equation** (definition,
+2026-07-24): `C' = [𝔡_K]·C⁻¹` where `𝔡_K = differentIdeal ℤ 𝒪_K` is
+the different ideal — the unique class with `C·C' = [𝔡_K]`.  Hecke's
+functional equation pairs the completed partial zeta of `C` at `s`
+with that of `C'` at `1 − s` (Neukirch VII (5.9)): the theta series of
+the lattice of an ideal `𝔞` transforms under `t ↦ 1/t` into that of
+its trace-dual lattice `(𝔞𝔡_K)⁻¹` by Poisson summation, which shifts
+ideal classes by `[𝔡_K]⁻¹` and inverts them. -/
+noncomputable def dedekindDualClass (K : Type*) [Field K] [NumberField K]
+    (C : ClassGroup (NumberField.RingOfIntegers K)) :
+    ClassGroup (NumberField.RingOfIntegers K) :=
+  ClassGroup.mk0 ⟨differentIdeal ℤ (NumberField.RingOfIntegers K),
+    mem_nonZeroDivisors_iff_ne_zero.mpr differentIdeal_ne_bot⟩ * C⁻¹
+
+/-- **Duality of ideal classes is an involution** (PROVEN 2026-07-24):
+`C ↦ [𝔡_K]·C⁻¹` is self-inverse — `[𝔡]·([𝔡]·C⁻¹)⁻¹ = C` in the
+abelian class group — hence a bijection; this is what lets the
+per-class functional equations `Z(C, 1−s) = Z(C', s)` of
+`completedClassZeta_exists` sum to `ξ_K(1−s) = ξ_K(s)` over the class
+group in `completedDedekindZeta_exists`. -/
+theorem dedekindDualClass_involutive (K : Type*) [Field K] [NumberField K] :
+    Function.Involutive (dedekindDualClass K) := fun C => by
+  unfold dedekindDualClass
+  rw [mul_inv_rev, inv_inv, mul_comm C, mul_inv_cancel_left]
+
+/-- **Hecke's theorem, per-ideal-class theta–Mellin core** (sorry
+node, stated 2026-07-24 — THE deep analytic leaf of the decomposition
+of `dedekindContinuation_exists`): every ideal class `C` of `K` has an
+entire `s(s−1)`-normalized completed partial zeta `Z C` — on
+`re s > 1` equal to `s(s−1)·|d_K|^{s/2}·Γ_ℝ(s)^{r₁}·Γ_ℂ(s)^{r₂}`
+times the (absolutely convergent, whence the bundled
+`LSeriesSummable`) partial Dirichlet series of the class
+(`classIdealCount`) — satisfying the functional equation
+`Z C (1−s) = Z ([𝔡]C⁻¹) s` (`dedekindDualClass`) and an order-one
+growth bound off the disc `‖s‖ < 2`.
+
+Intended proof (J. Neukirch, *Algebraic Number Theory*, VII §3–§5, in
+the shape mathlib itself uses to continue `riemannZeta` and the
+Hurwitz zetas):
+
+1. *Theta series of the class* (Neukirch VII §3).  Choose an integral
+   ideal `𝔞 ∈ C⁻¹`; the integral ideals in `C` biject with the
+   nonzero `𝒪_K^×`-orbits on `𝔞` (`𝔟 ↦ 𝔟𝔞 = (a)`,
+   `N𝔟 = |N_{K/ℚ}(a)|/N𝔞`), so the completed partial zeta is an
+   integral of the theta series of the lattice `𝔞 ⊂ K_ℝ = ℝ^{r₁} ×
+   ℂ^{r₂}` (mathlib: `NumberField.mixedEmbedding` with its `ZLattice`
+   structure on ideals,
+   `Mathlib.NumberTheory.NumberField.CanonicalEmbedding.*`).  The
+   transformation law of the theta series under `t ↦ 1/t` (Neukirch
+   VII (3.6)) is Poisson summation on `𝔞` with trace-dual lattice
+   `(𝔞·𝔡)⁻¹` (`differentIdeal`) — whence the class shift `[𝔡]C⁻¹`;
+   the pin has ONE-dimensional Poisson summation
+   (`Mathlib.Analysis.Fourier.PoissonSummation`) and Gaussian
+   self-duality
+   (`Mathlib.Analysis.SpecialFunctions.Gaussian.PoissonSummation`,
+   `Mathlib.NumberTheory.ModularForms.JacobiTheta.TwoVariable`) — the
+   `n`-dimensional `ZLattice` version is the genuine gap: the product
+   structure of the Gaussian reduces the `ℤⁿ` case to `n`
+   one-dimensional applications, and a general lattice is `B·ℤⁿ` for a
+   basis `B`, handled by the change-of-variables formula for the
+   Fourier transform.
+2. *Unit-domain reduction and Mellin transform* (Neukirch VII §5,
+   (5.5)–(5.8)): integrating over a fundamental domain of the action
+   of `𝒪_K^×/μ(K)` on the norm-one hypersurface of `K_ℝ^×` turns the
+   completed partial zeta `Z(C, s)` into the Mellin transform of a
+   theta integral `g_C(t)` with law `g_C(1/t) = t^{1/2}·g_{C'}(t)`;
+   instantiate mathlib's `WeakFEPair`
+   (`Mathlib.NumberTheory.LSeries.AbstractFuncEq`, exactly as
+   `Mathlib.NumberTheory.LSeries.HurwitzZetaEven` does): its main
+   theorems yield the continuation of `Z(C, ·)` to `ℂ ∖ {0, 1}` with
+   simple poles of known residue at `0` and `1`, the entirety of
+   `s(s−1)·Z(C, s)`, and the functional equation
+   `Z(C, s) = Z(C', 1 − s)`.  The absolute convergence of the partial
+   series on `re s > 1` (the `LSeriesSummable` conjunct) falls out of
+   the same Mellin analysis, or directly from the pin's per-class
+   Cesàro asymptotics `Ideal.tendsto_norm_le_and_mk_eq_div_atTop`
+   via `LSeriesSummable_of_sum_norm_bigO`.
+3. *`re s > 1` formula*: Neukirch VII §4's computation of the
+   archimedean Euler factors (`Γ_ℝ(s) = π^{-s/2}Γ(s/2)`,
+   `Γ_ℂ(s) = 2(2π)^{-s}Γ(s)`).
+4. *Growth* (S. Lang, *Algebraic Number Theory*, XIII §5): on
+   `re s ≥ 2`, termwise `‖L(a_C, s)‖ ≤ L(a_C, 2)` (nonnegative
+   coefficients) and `‖Γ(s)‖ ≤ Γ(re s)` (integral representation)
+   with the elementary `Γ(x) ≤ x^x = exp(x log x)`; on `re s ≤ −1`
+   reflect through the functional equation (`‖1 − s‖ ≤ 1 + ‖s‖`); on
+   the strip `−1 ≤ re s ≤ 2` use the a priori bound
+   `‖Z C s‖ ≤ ‖s(s−1)‖·(c₀ + ∫_1^∞ θ̃(t)·(t^{re s/2} + t^{(1−re s)/2})
+   dt/t)`, bounded polynomially there by the Mellin representation of
+   step 2 — or Phragmén–Lindelöf
+   (`Mathlib.Analysis.Complex.PhragmenLindelof.horizontal_strip`,
+   already imported).
+
+The official FLT project takes the downstream discriminant bound as a
+standing axiom (`FLT.Assumptions.Odlyzko`); here Hecke's theorem is an
+honest leaf. -/
+theorem completedClassZeta_exists (K : Type*) [Field K] [NumberField K] :
+    ∃ Z : ClassGroup (NumberField.RingOfIntegers K) → ℂ → ℂ,
+      (∀ C, Differentiable ℂ (Z C)) ∧
+      (∀ C, ∀ s : ℂ, 1 < s.re →
+        LSeriesSummable (fun n => (classIdealCount K C n : ℂ)) s ∧
+        Z C s = s * (s - 1) * Complex.ofReal |(NumberField.discr K : ℝ)| ^ (s / 2) *
+          ((Real.pi : ℂ) ^ (-s / 2) * Complex.Gamma (s / 2)) ^
+            NumberField.InfinitePlace.nrRealPlaces K *
+          ((2 : ℂ) * ((2 * Real.pi : ℝ) : ℂ) ^ (-s) * Complex.Gamma s) ^
+            NumberField.InfinitePlace.nrComplexPlaces K *
+          LSeries (fun n => (classIdealCount K C n : ℂ)) s) ∧
+      (∀ C, ∀ s : ℂ, Z C (1 - s) = Z (dedekindDualClass K C) s) ∧
+      (∀ C, ∃ B : ℝ, 0 < B ∧ ∀ s : ℂ, 2 ≤ ‖s‖ →
+        ‖Z C s‖ ≤ Real.exp (B * ‖s‖ * Real.log ‖s‖)) := by
+  sorry
+
+open scoped nonZeroDivisors in
+/-- **Partition of the ideal count over the class group** (PROVEN
+2026-07-24): for `n ≠ 0` the ideals of norm `n` — all nonzero — are
+partitioned by their ideal classes:
+`Σ_C classIdealCount K C n = #{𝔞 : N𝔞 = n}`, the `n`-th coefficient
+of the pin's `NumberField.dedekindZeta`.  Proof: the norm-`n` ideals
+form a finite type (`Ideal.finite_setOf_absNorm_eq`);
+`Equiv.sigmaFiberEquiv` fibers it over `ClassGroup.mk0` and
+`Nat.card_sigma` turns the sigma type into the sum over classes. -/
+theorem sum_classIdealCount (K : Type*) [Field K] [NumberField K] (n : ℕ)
+    (hn : n ≠ 0) :
+    ∑ C : ClassGroup (NumberField.RingOfIntegers K), classIdealCount K C n =
+      Nat.card {I : Ideal (NumberField.RingOfIntegers K) // Ideal.absNorm I = n} := by
+  have hfin : Finite {I : Ideal (NumberField.RingOfIntegers K) // Ideal.absNorm I = n} :=
+    (Ideal.finite_setOf_absNorm_eq n).to_subtype
+  have e0 : {I : (Ideal (NumberField.RingOfIntegers K))⁰ //
+      Ideal.absNorm (I : Ideal (NumberField.RingOfIntegers K)) = n} ≃
+      {I : Ideal (NumberField.RingOfIntegers K) // Ideal.absNorm I = n} :=
+    { toFun := fun I => ⟨I.1.1, I.2⟩
+      invFun := fun I => ⟨⟨I.1, mem_nonZeroDivisors_iff_ne_zero.mpr (by
+        intro h0
+        exact hn (by rw [← I.2, h0]; simp))⟩, I.2⟩
+      left_inv := fun _ => rfl
+      right_inv := fun _ => rfl }
+  haveI : Finite {I : (Ideal (NumberField.RingOfIntegers K))⁰ //
+      Ideal.absNorm (I : Ideal (NumberField.RingOfIntegers K)) = n} := .of_equiv _ e0.symm
+  calc ∑ C : ClassGroup (NumberField.RingOfIntegers K), classIdealCount K C n
+      = ∑ C : ClassGroup (NumberField.RingOfIntegers K),
+          Nat.card {I : {I : (Ideal (NumberField.RingOfIntegers K))⁰ //
+            Ideal.absNorm (I : Ideal (NumberField.RingOfIntegers K)) = n} //
+            ClassGroup.mk0 I.1 = C} :=
+        Finset.sum_congr rfl fun C _ =>
+          (Nat.card_congr (Equiv.subtypeSubtypeEquivSubtypeInter _ _)).symm
+    _ = Nat.card ((C : ClassGroup (NumberField.RingOfIntegers K)) ×
+          {I : {I : (Ideal (NumberField.RingOfIntegers K))⁰ //
+            Ideal.absNorm (I : Ideal (NumberField.RingOfIntegers K)) = n} //
+            ClassGroup.mk0 I.1 = C}) := Nat.card_sigma.symm
+    _ = Nat.card {I : (Ideal (NumberField.RingOfIntegers K))⁰ //
+          Ideal.absNorm (I : Ideal (NumberField.RingOfIntegers K)) = n} :=
+        Nat.card_congr (Equiv.sigmaFiberEquiv _)
+    _ = Nat.card {I : Ideal (NumberField.RingOfIntegers K) // Ideal.absNorm I = n} :=
+        Nat.card_congr e0
+
+/-- **The entire completed Dedekind zeta, its functional equation and
+its order-one growth** (DECOMPOSED 2026-07-24, assembly PROVEN — the
+class-group summation step, Neukirch VII (5.10), of Hecke's theorem,
+on top of the per-class leaf `completedClassZeta_exists`):
+`ξ_K := Σ_C Z C`.  A finite sum of entire functions is entire
+(`Differentiable.fun_sum`); on `re s > 1` the common archimedean
+factor pulls out of the sum (`Finset.mul_sum`) and the partial
+Dirichlet series add up to `ζ_K` (`LSeries_sum` with the bundled
+per-class summability, `LSeries_congr`, and the counting partition
+`sum_classIdealCount`); the functional equation follows by reindexing
+the sum along the involution `C ↦ [𝔡]C⁻¹` (`Fintype.sum_bijective`
+with `dedekindDualClass_involutive`); and the growth bound absorbs the
+class number: with `M = max_C B_C` (`Finset.sup'`) and `h = #Cl(K)`,
+`h·exp(M·X) ≤ exp((M + log h + 1)·X)` for `X = ‖s‖·log ‖s‖ ≥
+2·log 2 = log 4 ≥ 1`.  The four conjuncts are verbatim the fields
+`differentiable`, `eq_of_one_lt_re`, `funcEq`, `growth` of
+`DedekindContinuation`, consumed by the assembly
+`dedekindContinuation_exists` below. -/
+theorem completedDedekindZeta_exists (K : Type*) [Field K] [NumberField K] :
+    ∃ xi : ℂ → ℂ, Differentiable ℂ xi ∧
+      (∀ s : ℂ, 1 < s.re →
+        xi s = s * (s - 1) * Complex.ofReal |(NumberField.discr K : ℝ)| ^ (s / 2) *
+          ((Real.pi : ℂ) ^ (-s / 2) * Complex.Gamma (s / 2)) ^
+            NumberField.InfinitePlace.nrRealPlaces K *
+          ((2 : ℂ) * ((2 * Real.pi : ℝ) : ℂ) ^ (-s) * Complex.Gamma s) ^
+            NumberField.InfinitePlace.nrComplexPlaces K *
+          NumberField.dedekindZeta K s) ∧
+      (∀ s : ℂ, xi (1 - s) = xi s) ∧
+      ∃ C : ℝ, 0 < C ∧ ∀ s : ℂ, 2 ≤ ‖s‖ →
+        ‖xi s‖ ≤ Real.exp (C * ‖s‖ * Real.log ‖s‖) := by
+  obtain ⟨Z, hdiff, hformula, hfe, hgrowth⟩ := completedClassZeta_exists K
+  refine ⟨fun s => ∑ C : ClassGroup (NumberField.RingOfIntegers K), Z C s,
+    ?_, ?_, ?_, ?_⟩
+  · exact Differentiable.fun_sum fun C _ => hdiff C
+  · intro s hs
+    have hsummable : ∀ C ∈ (Finset.univ : Finset (ClassGroup (NumberField.RingOfIntegers K))),
+        LSeriesSummable (fun n => (classIdealCount K C n : ℂ)) s :=
+      fun C _ => (hformula C s hs).1
+    have hpart : ∑ C : ClassGroup (NumberField.RingOfIntegers K),
+        LSeries (fun n => (classIdealCount K C n : ℂ)) s =
+        NumberField.dedekindZeta K s := by
+      rw [← LSeries_sum hsummable]
+      unfold NumberField.dedekindZeta
+      refine LSeries_congr (fun {n} hn => ?_) s
+      simp only [Finset.sum_apply]
+      rw [← Nat.cast_sum, sum_classIdealCount K n hn]
+    calc ∑ C : ClassGroup (NumberField.RingOfIntegers K), Z C s
+        = ∑ C : ClassGroup (NumberField.RingOfIntegers K),
+            s * (s - 1) * Complex.ofReal |(NumberField.discr K : ℝ)| ^ (s / 2) *
+              ((Real.pi : ℂ) ^ (-s / 2) * Complex.Gamma (s / 2)) ^
+                NumberField.InfinitePlace.nrRealPlaces K *
+              ((2 : ℂ) * ((2 * Real.pi : ℝ) : ℂ) ^ (-s) * Complex.Gamma s) ^
+                NumberField.InfinitePlace.nrComplexPlaces K *
+              LSeries (fun n => (classIdealCount K C n : ℂ)) s :=
+          Finset.sum_congr rfl fun C _ => (hformula C s hs).2
+      _ = s * (s - 1) * Complex.ofReal |(NumberField.discr K : ℝ)| ^ (s / 2) *
+            ((Real.pi : ℂ) ^ (-s / 2) * Complex.Gamma (s / 2)) ^
+              NumberField.InfinitePlace.nrRealPlaces K *
+            ((2 : ℂ) * ((2 * Real.pi : ℝ) : ℂ) ^ (-s) * Complex.Gamma s) ^
+              NumberField.InfinitePlace.nrComplexPlaces K *
+            NumberField.dedekindZeta K s := by
+          rw [← Finset.mul_sum, hpart]
+  · intro s
+    calc ∑ C : ClassGroup (NumberField.RingOfIntegers K), Z C (1 - s)
+        = ∑ C : ClassGroup (NumberField.RingOfIntegers K), Z (dedekindDualClass K C) s :=
+          Finset.sum_congr rfl fun C _ => hfe C s
+      _ = ∑ C : ClassGroup (NumberField.RingOfIntegers K), Z C s :=
+          Fintype.sum_bijective (dedekindDualClass K)
+            (dedekindDualClass_involutive K).bijective _ _ fun C => rfl
+  · choose B hBpos hB using hgrowth
+    have hM1 : (0:ℝ) < B 1 := hBpos 1
+    set M := Finset.univ.sup' Finset.univ_nonempty B
+    have hMle : B 1 ≤ M := Finset.le_sup' B (Finset.mem_univ 1)
+    have hMpos : 0 < M := lt_of_lt_of_le hM1 hMle
+    set h := (Fintype.card (ClassGroup (NumberField.RingOfIntegers K)) : ℝ) with hhdef
+    have hh1 : (1:ℝ) ≤ h := by
+      rw [hhdef]
+      exact_mod_cast Fintype.card_pos
+    have hlogh : 0 ≤ Real.log h := Real.log_nonneg hh1
+    refine ⟨M + Real.log h + 1, by linarith, ?_⟩
+    intro s hs
+    have hlogs0 : 0 < Real.log ‖s‖ := Real.log_pos (by linarith)
+    have hlog2 : Real.log 2 ≤ Real.log ‖s‖ := Real.log_le_log two_pos hs
+    have hX1 : 1 ≤ ‖s‖ * Real.log ‖s‖ := by
+      have h4 : (1:ℝ) ≤ Real.log 4 := by
+        rw [Real.le_log_iff_exp_le (by norm_num)]
+        exact (lt_trans Real.exp_one_lt_d9 (by norm_num)).le
+      have h24 : (2:ℝ) * Real.log 2 = Real.log 4 := by
+        rw [show (4:ℝ) = 2 ^ 2 by norm_num, Real.log_pow]
+        push_cast
+        ring
+      have h2s : 2 * Real.log 2 ≤ ‖s‖ * Real.log ‖s‖ :=
+        mul_le_mul hs hlog2 (Real.log_nonneg (by norm_num)) (by linarith)
+      linarith
+    calc ‖∑ C : ClassGroup (NumberField.RingOfIntegers K), Z C s‖
+        ≤ ∑ C : ClassGroup (NumberField.RingOfIntegers K), ‖Z C s‖ :=
+          norm_sum_le _ _
+      _ ≤ ∑ _C : ClassGroup (NumberField.RingOfIntegers K),
+            Real.exp (M * ‖s‖ * Real.log ‖s‖) :=
+          Finset.sum_le_sum fun C _ => le_trans (hB C s hs)
+            (Real.exp_le_exp.mpr
+              (mul_le_mul_of_nonneg_right
+                (mul_le_mul_of_nonneg_right (Finset.le_sup' B (Finset.mem_univ C))
+                  (by linarith)) hlogs0.le))
+      _ = h * Real.exp (M * ‖s‖ * Real.log ‖s‖) := by
+          rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul, hhdef]
+      _ ≤ Real.exp ((M + Real.log h + 1) * ‖s‖ * Real.log ‖s‖) := by
+          have hh0 : (0:ℝ) < h := lt_of_lt_of_le one_pos hh1
+          have hexp : h * Real.exp (M * ‖s‖ * Real.log ‖s‖) =
+              Real.exp (Real.log h + M * ‖s‖ * Real.log ‖s‖) := by
+            rw [Real.exp_add, Real.exp_log hh0]
+          rw [hexp, Real.exp_le_exp]
+          have hkey : (Real.log h + 1) * 1 ≤
+              (Real.log h + 1) * (‖s‖ * Real.log ‖s‖) :=
+            mul_le_mul_of_nonneg_left hX1 (by linarith)
+          nlinarith [hkey]
+
+/-- **Euler-product nonvanishing of the Dedekind zeta Dirichlet series
+on the open half-plane of absolute convergence** (sorry node, stated
+2026-07-24 — the second, much shallower leaf of the decomposition of
+`dedekindContinuation_exists`; unlike `completedDedekindZeta_exists`
+it mentions no continued object, only the pin's raw Dirichlet series).
+For `re s > 1` the series `ζ_K(s) = Σ_𝔞 N𝔞^{−s}` factors as the
+absolutely convergent Euler product `Π_𝔭 (1 − N𝔭^{−s})^{−1}` over the
+nonzero prime ideals of `𝒪_K` (Neukirch VII (5.2)): unique
+factorization of ideals in the Dedekind domain `𝒪_K` makes the
+counting coefficient `n ↦ #{𝔞 : N𝔞 = n}` multiplicative, with finitely
+many primes above each rational prime.  Intended routes (either
+suffices): (a) mathlib's Euler-product machinery
+(`Mathlib.NumberTheory.EulerProduct.Basic`,
+`ArithmeticFunction.IsMultiplicative.eulerProduct`) applied to the
+multiplicative counting function, nonvanishing because a `tprod` of
+nonzero factors of a multipliable family is nonzero; (b) the
+Möbius-inverse route mathlib uses for
+`riemannZeta_ne_zero_of_one_lt_re`
+(`Mathlib.NumberTheory.LSeries.Dirichlet`): the ideal Möbius function
+`μ_K(𝔟) ∈ {0, ±1}` gives Dirichlet-inverse coefficients
+`b(n) = Σ_{N𝔟 = n} μ_K(𝔟)` with `|b(n)| ≤ #{𝔟 : N𝔟 = n}`, so
+`L(b, s)` converges absolutely on `re s > 1` alongside `ζ_K`
+(summability from the pin's Cesàro bound
+`Ideal.tendsto_norm_le_div_atTop₀` via
+`LSeriesSummable_of_sum_norm_bigO`), and the convolution identity
+`(Σ_{𝔟 ∣ 𝔞} μ_K(𝔟)) = [𝔞 = 1]` yields `ζ_K(s)·L(b, s) = 1`, so
+`ζ_K(s) ≠ 0`. -/
+theorem dedekindZeta_ne_zero_of_one_lt_re (K : Type*) [Field K] [NumberField K]
+    (s : ℂ) (hs : 1 < s.re) : NumberField.dedekindZeta K s ≠ 0 := by
+  sorry
+
+/-- **Conjugation of a complex power with nonnegative real base**
+(PROVEN 2026-07-24, helper for the Schwarz-reflection glue of
+`dedekindContinuation_exists`): `conj (x^w) = x^(conj w)` for
+`0 ≤ x : ℝ` — the branch cut is avoided since `arg x = 0 ≠ π`. -/
+theorem conj_ofReal_cpow (x : ℝ) (hx : 0 ≤ x) (w : ℂ) :
+    (starRingEnd ℂ) ((x : ℂ) ^ w) = (x : ℂ) ^ ((starRingEnd ℂ) w) := by
+  rw [Complex.cpow_conj (x : ℂ) w
+      (by rw [Complex.arg_ofReal_of_nonneg hx]; exact Real.pi_ne_zero.symm),
+    Complex.conj_ofReal]
+
+/-- **Conjugation symmetry of the Dedekind zeta Dirichlet series**
+(PROVEN 2026-07-24, glue for the `conj_symm` field of
+`DedekindContinuation`): `ζ_K(s̄) = conj (ζ_K(s))` for EVERY `s : ℂ` —
+the pin's `NumberField.dedekindZeta` is the raw `LSeries` of the
+natural-number ideal-counting coefficients, so conjugation commutes
+with each term (`n^s̄ = conj (n^s)` for the nonnegative real base
+`n`), and with the `tsum` unconditionally, `starRingEnd ℂ` being a
+homeomorphism (divergent junk values are both `0`). -/
+theorem dedekindZeta_conj (K : Type*) [Field K] [NumberField K] (s : ℂ) :
+    NumberField.dedekindZeta K ((starRingEnd ℂ) s) =
+      (starRingEnd ℂ) (NumberField.dedekindZeta K s) := by
+  unfold NumberField.dedekindZeta LSeries
+  rw [Complex.conj_tsum]
+  refine tsum_congr fun n => ?_
+  rcases eq_or_ne n 0 with rfl | hn
+  · simp
+  · rw [LSeries.term_of_ne_zero hn, LSeries.term_of_ne_zero hn, map_div₀,
+      Complex.cpow_conj (n : ℂ) s
+        (by rw [Complex.natCast_arg]; exact Real.pi_ne_zero.symm)]
+    simp
+
+/-- **Hecke's theorem: the continuation package exists** (DECOMPOSED
+2026-07-24, assembly PROVEN — previously the monolithic sorried leaf
+of the decomposition of `dedekind_explicit_formula_fejer`, now cut
+into the theta–Mellin core `completedDedekindZeta_exists` (entire
+`ξ_K`, the `re s > 1` formula, the functional equation, the order-one
+growth bound — the genuinely deep Poisson-summation material) and the
+Euler-product leaf `dedekindZeta_ne_zero_of_one_lt_re`, both sorried
+above).  The two remaining fields of `DedekindContinuation` are
+DERIVED here: `conj_symm` by Schwarz reflection — `z ↦ conj (ξ(z̄))`
+is entire (`differentiableAt_conj_conj_iff`) and agrees with `ξ` on
+`re s > 1` because every factor of `eq_of_one_lt_re` has real
+coefficients (`dedekindZeta_conj`, `Complex.Gamma_conj`,
+`conj_ofReal_cpow`), so the identity theorem
+(`AnalyticOnNhd.eqOn_of_preconnected_of_eventuallyEq` at the interior
+point `2` of the open half-plane, exactly the argument of mathlib's
+`riemannZeta_conj`) propagates the agreement to all of `ℂ` — and
+`ne_zero_of_one_lt_re` factorwise from the formula: `s ≠ 0 ≠ s − 1`
+on `re s > 1`, complex powers of the nonzero bases `|d_K|`, `π`,
+`2π` never vanish (`Complex.cpow_ne_zero_iff`), `Γ` has no zeros on
+`re > 0` (`Complex.Gamma_ne_zero_of_re_pos`), and `ζ_K(s) ≠ 0` is the
+Euler-product leaf. -/
 theorem dedekindContinuation_exists (K : Type*) [Field K] [NumberField K] :
     Nonempty (DedekindContinuation K) := by
-  sorry
+  obtain ⟨xi, hdiff, heq, hfe, hgrowth⟩ := completedDedekindZeta_exists K
+  -- Schwarz reflection on the half-plane `re s > 1`, factor by factor
+  have hhalf : ∀ z : ℂ, 1 < z.re →
+      (starRingEnd ℂ) (xi ((starRingEnd ℂ) z)) = xi z := by
+    intro z hz
+    rw [heq ((starRingEnd ℂ) z) (by rwa [Complex.conj_re])]
+    rw [show (starRingEnd ℂ) z / 2 = (starRingEnd ℂ) (z / 2) by
+          rw [map_div₀, map_ofNat],
+        show -(starRingEnd ℂ) z / 2 = (starRingEnd ℂ) (-z / 2) by
+          rw [map_div₀, map_ofNat, map_neg],
+        show -(starRingEnd ℂ) z = (starRingEnd ℂ) (-z) from (map_neg _ z).symm]
+    have hd := conj_ofReal_cpow |(NumberField.discr K : ℝ)| (abs_nonneg _)
+    have hpi := conj_ofReal_cpow Real.pi Real.pi_nonneg
+    have h2pi := conj_ofReal_cpow (2 * Real.pi) (by positivity)
+    simp only [map_mul, map_sub, map_pow, map_one, map_ofNat, Complex.conj_conj,
+      Complex.Gamma_conj, hd, hpi, h2pi, dedekindZeta_conj]
+    exact (heq z hz).symm
+  -- the identity theorem propagates the reflection to all of `ℂ`
+  have hg_an : AnalyticOnNhd ℂ
+      (fun z => (starRingEnd ℂ) (xi ((starRingEnd ℂ) z))) Set.univ :=
+    DifferentiableOn.analyticOnNhd
+      (fun z _ =>
+        (differentiableAt_conj_conj_iff.mpr (hdiff _)).differentiableWithinAt)
+      isOpen_univ
+  have hxi_an : AnalyticOnNhd ℂ xi Set.univ :=
+    hdiff.differentiableOn.analyticOnNhd isOpen_univ
+  have heqOn : Set.EqOn (fun z => (starRingEnd ℂ) (xi ((starRingEnd ℂ) z))) xi
+      Set.univ :=
+    hg_an.eqOn_of_preconnected_of_eventuallyEq hxi_an isPreconnected_univ
+      (Set.mem_univ (2 : ℂ))
+      (Filter.eventuallyEq_of_mem
+        ((isOpen_lt continuous_const Complex.continuous_re).mem_nhds
+          (by norm_num : (2 : ℂ) ∈ {z : ℂ | 1 < z.re}))
+        fun z hz => hhalf z hz)
+  have hconj : ∀ s : ℂ, xi ((starRingEnd ℂ) s) = (starRingEnd ℂ) (xi s) := by
+    intro s
+    have h := heqOn (Set.mem_univ ((starRingEnd ℂ) s))
+    simp only [Complex.conj_conj] at h
+    exact h.symm
+  -- factorwise nonvanishing on `re s > 1`
+  have hne : ∀ s : ℂ, 1 < s.re → xi s ≠ 0 := by
+    intro s hs
+    rw [heq s hs]
+    have hs0 : s ≠ 0 := by
+      rintro rfl
+      norm_num [Complex.zero_re] at hs
+    have hs1 : s - 1 ≠ 0 := by
+      rw [sub_ne_zero]
+      rintro rfl
+      norm_num [Complex.one_re] at hs
+    have hdisc : Complex.ofReal |(NumberField.discr K : ℝ)| ^ (s / 2) ≠ 0 := by
+      rw [Complex.cpow_ne_zero_iff]
+      refine Or.inl ?_
+      simp only [ne_eq, Complex.ofReal_eq_zero, abs_eq_zero, Int.cast_eq_zero]
+      exact NumberField.discr_ne_zero K
+    have hpi1 : ((Real.pi : ℂ) ^ (-s / 2) * Complex.Gamma (s / 2)) ^
+        NumberField.InfinitePlace.nrRealPlaces K ≠ 0 := by
+      refine pow_ne_zero _ (mul_ne_zero ?_ ?_)
+      · rw [Complex.cpow_ne_zero_iff]
+        exact Or.inl (by simp)
+      · refine Complex.Gamma_ne_zero_of_re_pos ?_
+        rw [Complex.div_ofNat_re]
+        linarith
+    have hpi2 : ((2 : ℂ) * ((2 * Real.pi : ℝ) : ℂ) ^ (-s) * Complex.Gamma s) ^
+        NumberField.InfinitePlace.nrComplexPlaces K ≠ 0 := by
+      refine pow_ne_zero _ (mul_ne_zero (mul_ne_zero two_ne_zero ?_) ?_)
+      · rw [Complex.cpow_ne_zero_iff]
+        refine Or.inl ?_
+        simp only [ne_eq, Complex.ofReal_eq_zero]
+        positivity
+      · exact Complex.Gamma_ne_zero_of_re_pos (by linarith)
+    exact mul_ne_zero (mul_ne_zero (mul_ne_zero (mul_ne_zero (mul_ne_zero hs0 hs1)
+      hdisc) hpi1) hpi2) (dedekindZeta_ne_zero_of_one_lt_re K s hs)
+  exact ⟨⟨xi, hdiff, heq, hfe, hconj, hne, hgrowth⟩⟩
 
 open scoped Classical in
 /-- **Zero multiplicity of the continued Dedekind zeta** (definition,
