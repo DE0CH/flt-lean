@@ -190,6 +190,18 @@ import Mathlib.RingTheory.Ideal.Norm.AbsNorm
 -- (multivariate Fourier series on the unit torus + Gaussian Fourier
 -- self-duality), consumed by the proof of `zlattice_theta_transform`.
 import Fermat.FLT.GaloisRepresentation.HardlyRamified.ZLatticePoisson
+-- Boundary-nonvanishing toolkit for the preliminary leaves
+-- `DedekindContinuation.xi_one_ne_zero` and
+-- `DedekindContinuation.xi_ne_zero_of_re_eq_one_of_im_ne_zero`
+-- (proof-only): the Taylor series of `-log(1-z)` and the
+-- `‖log(1+z)‖ ≤ 3/2·‖z‖` bound (the 3-4-1 Mertens positivity),
+-- differentiability of `Γ` off its poles, continuity of `a^s` in the
+-- exponent, and the slope characterization of the complex derivative
+-- (the order-one vanishing of `ξ` at a putative boundary zero).
+import Mathlib.Analysis.SpecialFunctions.Complex.LogBounds
+import Mathlib.Analysis.SpecialFunctions.Gamma.Deriv
+import Mathlib.Analysis.SpecialFunctions.Pow.Continuity
+import Mathlib.Analysis.Calculus.Deriv.Slope
 
 /-!
 # Mod-3 hardly ramified representations
@@ -7423,50 +7435,606 @@ noncomputable def DedekindContinuation.poitouEdge {K : Type*} [Field K]
       (deriv pkg.xi (5 / 4 + t * Complex.I) /
         pkg.xi (5 / 4 + t * Complex.I))).re
 
-/-- **`ξ_K(1) ≠ 0`: the class-number-formula residue** (sorry node,
-stated 2026-07-24 — preliminary leaf (b₀ᵢ) of the decomposition of
+/-- **The archimedean elementary factor of the completed Dedekind
+zeta** (definition, 2026-07-24 — shared helper of the two boundary
+leaves `DedekindContinuation.xi_one_ne_zero` and
+`DedekindContinuation.xi_ne_zero_of_re_eq_one_of_im_ne_zero`):
+`G_K(s) = |d_K|^{s/2}·Γ_ℝ(s)^{r₁}·Γ_ℂ(s)^{r₂}`, so that the field
+`eq_of_one_lt_re` of `DedekindContinuation` reads
+`ξ_K(s) = s(s−1)·G_K(s)·ζ_K(s)` on `re s > 1`
+(`DedekindContinuation.xi_eq_dedekindGammaFactor` below).  Separating
+this factor out is what both boundary leaves need: it is continuous
+and nonvanishing on the half-plane `re s > 0` (the two lemmas below),
+so along `re s = 1` every zero or pole phenomenon of `ξ` is carried by
+`s(s−1)` and the continued `ζ_K` alone. -/
+noncomputable def dedekindGammaFactor (K : Type*) [Field K] [NumberField K]
+    (s : ℂ) : ℂ :=
+  Complex.ofReal |(NumberField.discr K : ℝ)| ^ (s / 2) *
+    ((Real.pi : ℂ) ^ (-s / 2) * Complex.Gamma (s / 2)) ^
+      NumberField.InfinitePlace.nrRealPlaces K *
+    ((2 : ℂ) * ((2 * Real.pi : ℝ) : ℂ) ^ (-s) * Complex.Gamma s) ^
+      NumberField.InfinitePlace.nrComplexPlaces K
+
+/-- **The completed zeta through the elementary factor** (PROVEN
+2026-07-24): the field `eq_of_one_lt_re` of `DedekindContinuation`
+regrouped as `ξ_K(s) = s(s−1)·G_K(s)·ζ_K(s)` with
+`G_K = dedekindGammaFactor K` — pure reassociation. -/
+theorem DedekindContinuation.xi_eq_dedekindGammaFactor {K : Type*} [Field K]
+    [NumberField K] (pkg : DedekindContinuation K) {s : ℂ} (hs : 1 < s.re) :
+    pkg.xi s = s * (s - 1) * dedekindGammaFactor K s *
+      NumberField.dedekindZeta K s := by
+  rw [pkg.eq_of_one_lt_re s hs]
+  simp only [dedekindGammaFactor]
+  ring
+
+/-- **Continuity of the elementary factor on `re s > 0`** (PROVEN
+2026-07-24): `|d_K|^{s/2}` and the `π`-powers are continuous as
+constant-base complex powers of nonzero bases
+(`continuousAt_const_cpow`), and `Γ(s/2)`, `Γ(s)` are differentiable
+away from the nonpositive integers (`Complex.differentiableAt_Gamma`),
+which `re s > 0` avoids. -/
+theorem dedekindGammaFactor_continuousAt (K : Type*) [Field K] [NumberField K]
+    {s : ℂ} (hs : 0 < s.re) : ContinuousAt (dedekindGammaFactor K) s := by
+  have hd : (Complex.ofReal |(NumberField.discr K : ℝ)|) ≠ 0 := by
+    simp only [ne_eq, Complex.ofReal_eq_zero, abs_eq_zero, Int.cast_eq_zero]
+    exact NumberField.discr_ne_zero K
+  have hpi : ((Real.pi : ℝ) : ℂ) ≠ 0 := by
+    simp [Real.pi_ne_zero]
+  have h2pi : (((2 : ℝ) * Real.pi : ℝ) : ℂ) ≠ 0 := by
+    simp [Real.pi_ne_zero]
+  have hhalf_ne : ∀ m : ℕ, s / 2 ≠ -(m : ℂ) := by
+    intro m h
+    have hre := congrArg Complex.re h
+    rw [Complex.div_ofNat_re] at hre
+    simp only [Complex.neg_re, Complex.natCast_re] at hre
+    have hm : (0 : ℝ) ≤ (m : ℝ) := Nat.cast_nonneg m
+    linarith
+  have hs_ne : ∀ m : ℕ, s ≠ -(m : ℂ) := by
+    intro m h
+    have hre := congrArg Complex.re h
+    simp only [Complex.neg_re, Complex.natCast_re] at hre
+    have hm : (0 : ℝ) ≤ (m : ℝ) := Nat.cast_nonneg m
+    linarith
+  have hdiv2 : ContinuousAt (fun z : ℂ => z / 2) s :=
+    (continuous_id.div_const (2 : ℂ)).continuousAt
+  have hc1 : ContinuousAt
+      (fun z : ℂ => Complex.ofReal |(NumberField.discr K : ℝ)| ^ (z / 2)) s :=
+    ContinuousAt.comp
+      (g := fun w : ℂ => Complex.ofReal |(NumberField.discr K : ℝ)| ^ w)
+      (f := fun z : ℂ => z / 2) (continuousAt_const_cpow hd) hdiv2
+  have hc2a : ContinuousAt (fun z : ℂ => (Real.pi : ℂ) ^ (-z / 2)) s :=
+    ContinuousAt.comp (g := fun w : ℂ => (Real.pi : ℂ) ^ w)
+      (f := fun z : ℂ => -z / 2) (continuousAt_const_cpow hpi)
+      ((continuous_id.neg.div_const (2 : ℂ)).continuousAt)
+  have hc2b : ContinuousAt (fun z : ℂ => Complex.Gamma (z / 2)) s :=
+    ContinuousAt.comp (g := Complex.Gamma) (f := fun z : ℂ => z / 2)
+      (Complex.differentiableAt_Gamma (s / 2) hhalf_ne).continuousAt hdiv2
+  have hc3a : ContinuousAt (fun z : ℂ => ((2 * Real.pi : ℝ) : ℂ) ^ (-z)) s :=
+    ContinuousAt.comp (g := fun w : ℂ => ((2 * Real.pi : ℝ) : ℂ) ^ w)
+      (f := fun z : ℂ => -z) (continuousAt_const_cpow h2pi)
+      continuous_neg.continuousAt
+  have hΓ : ContinuousAt Complex.Gamma s :=
+    (Complex.differentiableAt_Gamma s hs_ne).continuousAt
+  show ContinuousAt (fun z : ℂ =>
+    Complex.ofReal |(NumberField.discr K : ℝ)| ^ (z / 2) *
+      ((Real.pi : ℂ) ^ (-z / 2) * Complex.Gamma (z / 2)) ^
+        NumberField.InfinitePlace.nrRealPlaces K *
+      ((2 : ℂ) * ((2 * Real.pi : ℝ) : ℂ) ^ (-z) * Complex.Gamma z) ^
+        NumberField.InfinitePlace.nrComplexPlaces K) s
+  exact (hc1.mul ((hc2a.mul hc2b).pow _)).mul
+    (((continuousAt_const.mul hc3a).mul hΓ).pow _)
+
+/-- **Nonvanishing of the elementary factor on `re s > 0`** (PROVEN
+2026-07-24): complex powers of the nonzero bases `|d_K|`, `π`, `2π`
+never vanish (`Complex.cpow_ne_zero_iff`), and `Γ` has no zeros on
+`re > 0` (`Complex.Gamma_ne_zero_of_re_pos`) — the same factorwise
+argument as the `ne_zero_of_one_lt_re` glue of
+`dedekindContinuation_exists`, but valid on the wider half-plane. -/
+theorem dedekindGammaFactor_ne_zero (K : Type*) [Field K] [NumberField K]
+    {s : ℂ} (hs : 0 < s.re) : dedekindGammaFactor K s ≠ 0 := by
+  simp only [dedekindGammaFactor]
+  have hdisc : Complex.ofReal |(NumberField.discr K : ℝ)| ^ (s / 2) ≠ 0 := by
+    rw [Complex.cpow_ne_zero_iff]
+    refine Or.inl ?_
+    simp only [ne_eq, Complex.ofReal_eq_zero, abs_eq_zero, Int.cast_eq_zero]
+    exact NumberField.discr_ne_zero K
+  have hpi1 : ((Real.pi : ℂ) ^ (-s / 2) * Complex.Gamma (s / 2)) ^
+      NumberField.InfinitePlace.nrRealPlaces K ≠ 0 := by
+    refine pow_ne_zero _ (mul_ne_zero ?_ ?_)
+    · rw [Complex.cpow_ne_zero_iff]
+      exact Or.inl (by simp)
+    · refine Complex.Gamma_ne_zero_of_re_pos ?_
+      rw [Complex.div_ofNat_re]
+      linarith
+  have hpi2 : ((2 : ℂ) * ((2 * Real.pi : ℝ) : ℂ) ^ (-s) * Complex.Gamma s) ^
+      NumberField.InfinitePlace.nrComplexPlaces K ≠ 0 := by
+    refine pow_ne_zero _ (mul_ne_zero (mul_ne_zero two_ne_zero ?_) ?_)
+    · rw [Complex.cpow_ne_zero_iff]
+      refine Or.inl ?_
+      simp only [ne_eq, Complex.ofReal_eq_zero]
+      positivity
+    · exact Complex.Gamma_ne_zero_of_re_pos hs
+  exact mul_ne_zero (mul_ne_zero hdisc hpi1) hpi2
+
+open IsDedekindDomain in
+/-- **The Dedekind zeta Dirichlet series as an exponential** (PROVEN
+2026-07-24, helper for the de la Vallée Poussin leaf): on `re s > 1`,
+`ζ_K(s) = exp(Σ_P −log(1 − N P^{−s}))` — the trivial-character
+specialization of the project's Chebotarev Euler product
+`exp_tsum_neg_log_one_sub_dirichletCharacter_mul_cpow_neg_eq_LSeries`,
+the same specialization already used by
+`dedekindZeta_ne_zero_of_one_lt_re`.  Exhibiting `ζ_K` as an
+exponential is what makes `log|ζ_K|` a prime sum in the 3-4-1
+inequality `norm_dedekindZeta_product_ge_one` below. -/
+theorem dedekindZeta_eq_exp_tsum (K : Type*) [Field K] [NumberField K]
+    {s : ℂ} (hs : 1 < s.re) :
+    Complex.exp (∑' P : HeightOneSpectrum (NumberField.RingOfIntegers K),
+        -Complex.log (1 -
+          (Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℂ) ^ (-s))) =
+      NumberField.dedekindZeta K s := by
+  have h := exp_tsum_neg_log_one_sub_dirichletCharacter_mul_cpow_neg_eq_LSeries
+    K (1 : DirichletCharacter ℂ 1) hs
+  have hcoeff : (fun k : ℕ => (1 : DirichletCharacter ℂ 1) (k : ZMod 1) *
+      (Nat.card {I : Ideal (NumberField.RingOfIntegers K) //
+        Ideal.absNorm I = k} : ℂ)) =
+      fun n : ℕ => (Nat.card {I : Ideal (NumberField.RingOfIntegers K) //
+        Ideal.absNorm I = n} : ℂ) := by
+    funext k
+    rw [MulChar.one_apply (isUnit_of_subsingleton _), one_mul]
+  have hterm : ∀ P : HeightOneSpectrum (NumberField.RingOfIntegers K),
+      -Complex.log (1 - (1 : DirichletCharacter ℂ 1)
+          ((Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℕ) : ZMod 1) *
+        (Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℂ) ^ (-s)) =
+      -Complex.log (1 -
+        (Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℂ) ^ (-s)) := by
+    intro P
+    rw [MulChar.one_apply (isUnit_of_subsingleton _), one_mul]
+  rw [hcoeff] at h
+  unfold NumberField.dedekindZeta
+  rw [← h]
+  exact congrArg Complex.exp (tsum_congr fun P => (hterm P).symm)
+
+/-- **Norm bound for the logarithmic Euler factors** (PROVEN
+2026-07-24, helper for the summability of the prime log-sums): for
+`n ≥ 2` and `re s > 1`, `‖−log(1 − n^{−s})‖ ≤ 3/2·n^{−re s}` — the
+factor `n^{−s}` has norm `≤ 2^{−re s} ≤ 1/2`, so mathlib's
+`Complex.norm_log_one_add_half_le_self` applies; the same estimate as
+the Chebotarev log bounds, without the character. -/
+theorem norm_neg_log_one_sub_natCast_cpow_le {n : ℕ} (hn : 2 ≤ n) {s : ℂ}
+    (hs : 1 < s.re) :
+    ‖-Complex.log (1 - (n : ℂ) ^ (-s))‖ ≤ 3 / 2 * (n : ℝ) ^ (-s.re) := by
+  have hnpos : 0 < n := by omega
+  have hn2 : (2 : ℝ) ≤ (n : ℝ) := by exact_mod_cast hn
+  have hnorm : ‖(n : ℂ) ^ (-s)‖ = (n : ℝ) ^ (-s.re) := by
+    rw [Complex.norm_natCast_cpow_of_pos hnpos, Complex.neg_re]
+  have hhalf : ‖(n : ℂ) ^ (-s)‖ ≤ 1 / 2 := by
+    rw [hnorm]
+    calc (n : ℝ) ^ (-s.re) ≤ (2 : ℝ) ^ (-s.re) :=
+          Real.rpow_le_rpow_of_nonpos two_pos hn2 (by linarith)
+      _ ≤ (2 : ℝ) ^ (-1 : ℝ) :=
+          (Real.rpow_le_rpow_left_iff one_lt_two).mpr (by linarith)
+      _ = 1 / 2 := by rw [Real.rpow_neg_one]; norm_num
+  rw [norm_neg, sub_eq_add_neg]
+  calc ‖Complex.log (1 + -((n : ℂ) ^ (-s)))‖
+      ≤ 3 / 2 * ‖-((n : ℂ) ^ (-s))‖ :=
+        Complex.norm_log_one_add_half_le_self (by rwa [norm_neg])
+    _ = 3 / 2 * (n : ℝ) ^ (-s.re) := by rw [norm_neg, hnorm]
+
+open IsDedekindDomain in
+/-- **Summability of the prime log-sum of `ζ_K`** (PROVEN 2026-07-24):
+the family `P ↦ −log(1 − N P^{−s})` is summable for `re s > 1`, by the
+`3/2·N P^{−re s}` bound above against the place-sum summability leaf
+`summable_rpow_neg_natCard_quotient` from the Chebotarev development.
+Feeds the `Re`-and-`tsum` exchanges of the 3-4-1 inequality. -/
+theorem summable_neg_log_one_sub_natCard_cpow (K : Type*) [Field K]
+    [NumberField K] {s : ℂ} (hs : 1 < s.re) :
+    Summable (fun P : HeightOneSpectrum (NumberField.RingOfIntegers K) =>
+      -Complex.log (1 -
+        (Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℂ) ^ (-s))) :=
+  Summable.of_norm (Summable.of_nonneg_of_le (fun _ => norm_nonneg _)
+    (fun P => norm_neg_log_one_sub_natCast_cpow_le (two_le_natCard_quotient P) hs)
+    ((summable_rpow_neg_natCard_quotient hs).mul_left (3 / 2)))
+
+/-- **Mertens' `3-4-1` positivity for a single Euler factor** (PROVEN
+2026-07-24; the statement and proof are mathlib's private
+`DirichletCharacter.re_log_comb_nonneg'` from
+`Mathlib.NumberTheory.LSeries.Nonvanishing`, reproved here because
+mathlib keeps it `private`): for `0 ≤ a < 1` and `‖z‖ = 1`,
+`0 ≤ 3·Re(−log(1−a)) + 4·Re(−log(1−az)) + Re(−log(1−az²))` — expand
+each logarithm by its Taylor series (`hasSum_taylorSeries_neg_log`)
+and observe `3 + 4·Re(zⁿ) + Re(z²ⁿ) = 2(1 + Re zⁿ)² + (‖zⁿ‖² −
+(Re zⁿ)²)·… ≥ 0` termwise, the trigonometric inequality
+`3 + 4cos θ + cos 2θ = 2(1 + cos θ)² ≥ 0`. -/
+theorem re_log_comb_nonneg_aux {a : ℝ} (ha₀ : 0 ≤ a) (ha₁ : a < 1) {z : ℂ}
+    (hz : ‖z‖ = 1) :
+    0 ≤ 3 * (-Complex.log (1 - a)).re + 4 * (-Complex.log (1 - a * z)).re +
+      (-Complex.log (1 - a * z ^ 2)).re := by
+  have hac₀ : ‖(a : ℂ)‖ < 1 := by
+    simp only [Complex.norm_of_nonneg ha₀, ha₁]
+  have hac₁ : ‖(a : ℂ) * z‖ < 1 := by rwa [norm_mul, hz, mul_one]
+  have hac₂ : ‖(a : ℂ) * z ^ 2‖ < 1 := by
+    rwa [norm_mul, norm_pow, hz, one_pow, mul_one]
+  rw [← ((Complex.hasSum_re <|
+      Complex.hasSum_taylorSeries_neg_log hac₀).mul_left 3).add
+    ((Complex.hasSum_re <|
+      Complex.hasSum_taylorSeries_neg_log hac₁).mul_left 4) |>.add
+    (Complex.hasSum_re <|
+      Complex.hasSum_taylorSeries_neg_log hac₂) |>.tsum_eq]
+  refine tsum_nonneg fun n => ?_
+  simp only [← Complex.ofReal_pow, Complex.div_natCast_re, Complex.ofReal_re,
+    mul_pow, Complex.mul_re, Complex.ofReal_im, zero_mul, sub_zero]
+  rcases n.eq_zero_or_pos with rfl | hn
+  · simp
+  · simp only [← mul_div_assoc, ← add_div]
+    refine div_nonneg ?_ n.cast_nonneg
+    rw [← pow_mul, pow_mul', sq, Complex.mul_re, ← sq, ← sq,
+      ← Complex.sq_norm_sub_sq_re, norm_pow, hz]
+    convert! (show 0 ≤ 2 * a ^ n * ((z ^ n).re + 1) ^ 2 by positivity) using 1
+    ring
+
+/-- **The `3-4-1` positivity at one prime power base** (PROVEN
+2026-07-24; the analog of mathlib's private
+`DirichletCharacter.re_log_comb_nonneg` at the trivial character): for
+`n ≥ 2`, `x > 0`, `t : ℝ`, the three Euler factors of `ζ_K` at
+`1+x`, `1+x+it`, `1+x+2it` split as `a`, `az`, `az²` with
+`a = n^{−(1+x)} ∈ [0,1)` and `z = n^{−it}` of norm one, so
+`re_log_comb_nonneg_aux` applies. -/
+theorem re_log_comb_nonneg_natCast {n : ℕ} (hn : 2 ≤ n) {x : ℝ} (hx : 0 < x)
+    (t : ℝ) :
+    0 ≤ 3 * (-Complex.log (1 - (n : ℂ) ^ (-(1 + x : ℂ)))).re +
+      4 * (-Complex.log (1 - (n : ℂ) ^ (-(1 + x + t * Complex.I : ℂ)))).re +
+      (-Complex.log (1 - (n : ℂ) ^ (-(1 + x + 2 * t * Complex.I : ℂ)))).re := by
+  have hn0 : (n : ℂ) ≠ 0 := Nat.cast_ne_zero.mpr (by omega)
+  have hnR : (1 : ℝ) < (n : ℝ) := by exact_mod_cast (by omega : 1 < n)
+  have ha₀ : (0 : ℝ) ≤ (n : ℝ) ^ (-(1 + x)) :=
+    Real.rpow_nonneg (Nat.cast_nonneg n) _
+  have ha₁ : (n : ℝ) ^ (-(1 + x)) < 1 :=
+    Real.rpow_lt_one_of_one_lt_of_neg hnR (by linarith)
+  have hz : ‖(n : ℂ) ^ (-((t : ℂ) * Complex.I))‖ = 1 := by
+    rw [Complex.norm_natCast_cpow_of_pos (by omega)]
+    simp
+  have e₀ : (n : ℂ) ^ (-(1 + x : ℂ)) = (((n : ℝ) ^ (-(1 + x)) : ℝ) : ℂ) := by
+    rw [Complex.ofReal_cpow (Nat.cast_nonneg n)]
+    push_cast
+    rfl
+  have e₁ : (n : ℂ) ^ (-(1 + x + t * Complex.I : ℂ)) =
+      (((n : ℝ) ^ (-(1 + x)) : ℝ) : ℂ) * (n : ℂ) ^ (-((t : ℂ) * Complex.I)) := by
+    rw [show -(1 + x + t * Complex.I : ℂ) =
+        -(1 + x : ℂ) + -((t : ℂ) * Complex.I) by ring,
+      Complex.cpow_add _ _ hn0, e₀]
+  have e₂ : (n : ℂ) ^ (-(1 + x + 2 * t * Complex.I : ℂ)) =
+      (((n : ℝ) ^ (-(1 + x)) : ℝ) : ℂ) *
+        ((n : ℂ) ^ (-((t : ℂ) * Complex.I))) ^ 2 := by
+    rw [show -(1 + x + 2 * t * Complex.I : ℂ) =
+        -(1 + x : ℂ) + ((2 : ℕ) : ℂ) * -((t : ℂ) * Complex.I) by push_cast; ring,
+      Complex.cpow_add _ _ hn0, Complex.cpow_nat_mul, e₀]
+  rw [e₀, e₁, e₂]
+  exact re_log_comb_nonneg_aux ha₀ ha₁ hz
+
+open IsDedekindDomain in
+/-- **Mertens' `3-4-1` inequality for the Dedekind zeta function**
+(PROVEN 2026-07-24; the transplant of mathlib's
+`DirichletCharacter.norm_LSeries_product_ge_one` onto the Dedekind
+Euler product): for `x > 0` and `t : ℝ`,
+`1 ≤ |ζ_K(1+x)³ · ζ_K(1+x+it)⁴ · ζ_K(1+x+2it)|`.  Through
+`dedekindZeta_eq_exp_tsum` the norm of the product is
+`exp(Σ_P Re(3(−log …) + 4(−log …) + (−log …)))`, and the per-place
+summand is nonnegative by `re_log_comb_nonneg_natCast`.  This is the
+inequality that forbids a zero of `ζ_K` on `re s = 1`: a zero at
+`1 + it` would make the `4`-th power vanish to order `4` as `x → 0⁺`,
+beating the order-`3` pole of `ζ_K(1+x)³`. -/
+theorem norm_dedekindZeta_product_ge_one (K : Type*) [Field K] [NumberField K]
+    {x : ℝ} (hx : 0 < x) (t : ℝ) :
+    1 ≤ ‖NumberField.dedekindZeta K (1 + x) ^ 3 *
+      NumberField.dedekindZeta K (1 + x + t * Complex.I) ^ 4 *
+      NumberField.dedekindZeta K (1 + x + 2 * t * Complex.I)‖ := by
+  have h₀ : 1 < (1 + x : ℂ).re := by
+    simp only [Complex.add_re, Complex.one_re, Complex.ofReal_re]
+    linarith
+  have h₁ : 1 < (1 + x + t * Complex.I : ℂ).re := by
+    simp only [Complex.add_re, Complex.one_re, Complex.ofReal_re,
+      Complex.mul_re, Complex.ofReal_im, Complex.I_re, Complex.I_im,
+      mul_zero, mul_one, sub_zero, add_zero]
+    linarith
+  have h₂ : 1 < (1 + x + 2 * t * Complex.I : ℂ).re := by
+    simp only [Complex.add_re, Complex.one_re, Complex.ofReal_re,
+      Complex.mul_re, Complex.mul_im, Complex.ofReal_im, Complex.I_re,
+      Complex.I_im, Complex.re_ofNat, Complex.im_ofNat, mul_zero, mul_one,
+      zero_mul, sub_zero, add_zero]
+    linarith
+  have H₀ := summable_neg_log_one_sub_natCard_cpow K h₀
+  have H₁ := summable_neg_log_one_sub_natCard_cpow K h₁
+  have H₂ := summable_neg_log_one_sub_natCard_cpow K h₂
+  have hsum₀ := (Complex.hasSum_re H₀.hasSum).summable.mul_left 3
+  have hsum₁ := (Complex.hasSum_re H₁.hasSum).summable.mul_left 4
+  have hsum₂ := (Complex.hasSum_re H₂.hasSum).summable
+  rw [← dedekindZeta_eq_exp_tsum K h₀, ← dedekindZeta_eq_exp_tsum K h₁,
+    ← dedekindZeta_eq_exp_tsum K h₂, ← Complex.exp_nat_mul,
+    ← Complex.exp_nat_mul, ← Complex.exp_add, ← Complex.exp_add,
+    Complex.norm_exp, Real.one_le_exp_iff]
+  simp only [Nat.cast_ofNat, Complex.add_re, Complex.mul_re, Complex.re_ofNat,
+    Complex.im_ofNat, zero_mul, sub_zero]
+  rw [Complex.re_tsum H₀, Complex.re_tsum H₁, Complex.re_tsum H₂,
+    ← tsum_mul_left, ← tsum_mul_left, ← hsum₀.tsum_add hsum₁,
+    ← (hsum₀.add hsum₁).tsum_add hsum₂]
+  exact tsum_nonneg fun P =>
+    re_log_comb_nonneg_natCast (two_le_natCard_quotient P) hx t
+
+/-- **`ξ_K(1) ≠ 0`: the class-number-formula residue** (PROVEN
+2026-07-24 — preliminary leaf (b₀ᵢ) of the decomposition of
 `DedekindContinuation.weil_explicit_formula_F`; Poitou p. 6-01
-"Préliminaires", the `t = 0` boundary case).  Intended proof:
+"Préliminaires", the `t = 0` boundary case).  Proof:
 `ξ(1) = lim_{σ→1⁺} σ(σ−1)·|d|^{σ/2}·Γ_ℝ(σ)^{r₁}·Γ_ℂ(σ)^{r₂}·ζ_K(σ)`
 along real `σ ↓ 1`, by continuity of `xi` (from `differentiable`)
 and `eq_of_one_lt_re`; the pin's Dirichlet class number formula
 `NumberField.tendsto_sub_one_mul_dedekindZeta_nhdsGT` with
 `NumberField.dedekindZeta_residue_pos` makes
-`(σ−1)·ζ_K(σ) → residue ≠ 0` while every remaining factor tends to
-a nonzero limit (`σ → 1`, `|d|^{1/2} ≠ 0` by `discr ≠ 0`,
-`Γ(1/2), Γ(1) ≠ 0`), so `ξ(1)` is a product of nonzero reals.  Note
-`funcEq` at `s = 1` gives `ξ(0) = ξ(1)`, so this leaf also rules
-out a zero at `0`. -/
+`(σ−1)·ζ_K(σ) → residue ≠ 0` while the remaining factor
+`σ·G_K(σ)` tends to the nonzero `G_K(1)`
+(`dedekindGammaFactor_continuousAt`/`_ne_zero`), so `ξ(1)` is a
+product of nonzero numbers by uniqueness of limits.  Note `funcEq` at
+`s = 1` gives `ξ(0) = ξ(1)`, so this leaf also rules out a zero at
+`0`. -/
 theorem DedekindContinuation.xi_one_ne_zero {K : Type*} [Field K]
     [NumberField K] (pkg : DedekindContinuation K) :
     pkg.xi 1 ≠ 0 := by
-  sorry
+  have hcoe : Filter.Tendsto (fun σ : ℝ => (σ : ℂ))
+      (nhdsWithin 1 (Set.Ioi 1)) (nhds (1 : ℂ)) := by
+    have h := Complex.continuous_ofReal.tendsto (1 : ℝ)
+    rw [Complex.ofReal_one] at h
+    exact h.mono_left nhdsWithin_le_nhds
+  have hG : Filter.Tendsto (fun σ : ℝ => (σ : ℂ) * dedekindGammaFactor K (σ : ℂ))
+      (nhdsWithin 1 (Set.Ioi 1)) (nhds (dedekindGammaFactor K 1)) := by
+    have h := ((continuousAt_id.mul (dedekindGammaFactor_continuousAt K
+      (by simp : (0 : ℝ) < (1 : ℂ).re))).tendsto).comp hcoe
+    simpa only [Function.comp_def, Pi.mul_apply, id_eq, one_mul] using h
+  have hres := NumberField.tendsto_sub_one_mul_dedekindZeta_nhdsGT K
+  have hxi : Filter.Tendsto (fun σ : ℝ => pkg.xi (σ : ℂ))
+      (nhdsWithin 1 (Set.Ioi 1))
+      (nhds (dedekindGammaFactor K 1 *
+        (NumberField.dedekindZeta_residue K : ℂ))) := by
+    refine (hG.mul hres).congr' ?_
+    filter_upwards [self_mem_nhdsWithin] with σ hσ
+    rw [pkg.xi_eq_dedekindGammaFactor
+      (by rw [Complex.ofReal_re]; exact hσ : 1 < ((σ : ℂ)).re)]
+    ring
+  have hxc : Filter.Tendsto (fun σ : ℝ => pkg.xi (σ : ℂ))
+      (nhdsWithin 1 (Set.Ioi 1)) (nhds (pkg.xi 1)) := by
+    have h := (pkg.differentiable 1).continuousAt.tendsto.comp hcoe
+    simpa only [Function.comp_def] using h
+  rw [tendsto_nhds_unique hxc hxi]
+  exact mul_ne_zero (dedekindGammaFactor_ne_zero K (by simp))
+    (by exact_mod_cast NumberField.dedekindZeta_residue_ne_zero K)
 
-/-- **`ξ_K(1 + it) ≠ 0` for `t ≠ 0`: de la Vallée Poussin** (sorry
-node, stated 2026-07-24 — preliminary leaf (b₀ᵢᵢ) of the
-decomposition of `DedekindContinuation.weil_explicit_formula_F`;
-Poitou p. 6-01 "Préliminaires", the `t ≠ 0` boundary case).
-Intended proof: through `eq_of_one_lt_re` and continuity the claim
-reduces to `ζ_K(1 + it) ≠ 0` (the elementary factors
-`s(s−1)·|d|^{s/2}·Γ-powers` are nonzero at `1 + it`); if
-`ζ_K(1 + it) = 0`, the Mertens `3-4-1` inequality
-`ζ_K(σ)³·|ζ_K(σ + it)|⁴·|ζ_K(σ + 2it)| ≥ 1` for `σ > 1` (from
-`3 + 4cos θ + cos 2θ = 2(1 + cos θ)² ≥ 0` applied to the Dirichlet
-series of `log ζ_K`, whose coefficients `Λ_K(𝔞)/log N𝔞 ≥ 0` are
-nonnegative — Euler product over `IsDedekindDomain.HeightOneSpectrum`
-through the pin's `EulerProduct` machinery; mathlib proves the
-`K = ℚ` case as `riemannZeta_ne_zero_of_one_le_re` via
-`norm_dirichlet_char_mul_L...`-style bounds in
-`Mathlib.NumberTheory.LSeries.Nonvanishing`, whose
-`LFunction`-of-a-character skeleton is the pattern to imitate)
-contradicts the simple pole of `ζ_K` at `1` as `σ → 1⁺`: a zero of
-order `≥ 1` at `1 + it` makes the `4`-th power vanish to order `4`,
-beating the order-`3` pole of `ζ_K(σ)³`. -/
+/-- **`ξ_K(1 + it) ≠ 0` for `t ≠ 0`: de la Vallée Poussin** (PROVEN
+2026-07-24 — preliminary leaf (b₀ᵢᵢ) of the decomposition of
+`DedekindContinuation.weil_explicit_formula_F`; Poitou p. 6-01
+"Préliminaires", the `t ≠ 0` boundary case).  Proof: suppose
+`ξ(1+it) = 0` and let `x ↓ 0`.  The Mertens `3-4-1` inequality
+`norm_dedekindZeta_product_ge_one` (the transplant of mathlib's
+`riemannZeta_ne_zero_of_one_le_re` skeleton from
+`Mathlib.NumberTheory.LSeries.Nonvanishing` onto the Dedekind Euler
+product of the Chebotarev development) gives
+`1 ≤ |ζ_K(1+x)|³·|ζ_K(1+x+it)|⁴·|ζ_K(1+x+2it)|`.  Rewrite the right
+side as `|x·ζ_K(1+x)|³ · |ζ_K(1+x+it)/x|⁴ · |ζ_K(1+x+2it)| · x`:
+through `ξ = s(s−1)·G_K·ζ_K` with the elementary factor continuous
+and nonzero near the boundary points (`dedekindGammaFactor_*`), the
+first factor tends to the class-number-formula residue cubed
+(`NumberField.tendsto_sub_one_mul_dedekindZeta_nhdsGT`), the second
+to `|ξ'(1+it)/E(1+it)|⁴` by the slope characterization of the
+derivative at the putative zero (`hasDerivAt_iff_tendsto_slope`), the
+third to a finite value, and the trailing `x` to `0` — so the whole
+product tends to `0`, contradicting `≥ 1`: a zero of order `≥ 1` at
+`1 + it` makes the `4`-th power vanish to order `4`, beating the
+order-`3` pole of `ζ_K(σ)³`. -/
 theorem DedekindContinuation.xi_ne_zero_of_re_eq_one_of_im_ne_zero {K : Type*}
     [Field K] [NumberField K] (pkg : DedekindContinuation K)
     (t : ℝ) (ht : t ≠ 0) :
     pkg.xi (1 + t * Complex.I) ≠ 0 := by
-  sorry
+  intro hzero
+  -- continuity and nonvanishing of the full elementary factor
+  have hE_cont : ∀ w : ℂ, 0 < w.re →
+      ContinuousAt (fun z : ℂ => z * (z - 1) * dedekindGammaFactor K z) w :=
+    fun w hw => (continuousAt_id.mul (continuousAt_id.sub continuousAt_const)).mul
+      (dedekindGammaFactor_continuousAt K hw)
+  have hE_ne : ∀ w : ℂ, 0 < w.re → w ≠ 0 → w ≠ 1 →
+      w * (w - 1) * dedekindGammaFactor K w ≠ 0 := fun w hw h0 h1 =>
+    mul_ne_zero (mul_ne_zero h0 (sub_ne_zero.mpr h1))
+      (dedekindGammaFactor_ne_zero K hw)
+  -- real parts along the two shifted vertical lines
+  have hre₁ : ∀ x : ℝ, (1 + (x : ℂ) + t * Complex.I).re = 1 + x := by
+    intro x
+    simp [Complex.add_re, Complex.mul_re]
+  have hre₂ : ∀ x : ℝ, (1 + (x : ℂ) + 2 * t * Complex.I).re = 1 + x := by
+    intro x
+    simp [Complex.add_re, Complex.mul_re, Complex.mul_im]
+  -- the two boundary points avoid `0` and `1`
+  have hz₁re : (0 : ℝ) < (1 + (t : ℂ) * Complex.I).re := by
+    norm_num [Complex.add_re, Complex.mul_re]
+  have hz₂re : (0 : ℝ) < (1 + 2 * (t : ℂ) * Complex.I).re := by
+    norm_num [Complex.add_re, Complex.mul_re, Complex.mul_im]
+  have hz₁0 : (1 + (t : ℂ) * Complex.I) ≠ 0 := by
+    intro h
+    have h0 := congrArg Complex.re h
+    norm_num [Complex.add_re, Complex.mul_re] at h0
+  have hz₁1 : (1 + (t : ℂ) * Complex.I) ≠ 1 := by
+    intro h
+    have h1 := congrArg Complex.im h
+    norm_num [Complex.add_im, Complex.mul_im] at h1
+    exact ht h1
+  have hz₂0 : (1 + 2 * (t : ℂ) * Complex.I) ≠ 0 := by
+    intro h
+    have h0 := congrArg Complex.re h
+    norm_num [Complex.add_re, Complex.mul_re, Complex.mul_im] at h0
+  have hz₂1 : (1 + 2 * (t : ℂ) * Complex.I) ≠ 1 := by
+    intro h
+    have h1 := congrArg Complex.im h
+    norm_num [Complex.add_im, Complex.mul_im, Complex.mul_re] at h1
+    exact ht h1
+  -- filter maps as `x ↓ 0`
+  have hcoe0 : Filter.Tendsto (fun x : ℝ => (x : ℂ))
+      (nhdsWithin 0 (Set.Ioi 0)) (nhds (0 : ℂ)) := by
+    have h := Complex.continuous_ofReal.tendsto (0 : ℝ)
+    rw [Complex.ofReal_zero] at h
+    exact h.mono_left nhdsWithin_le_nhds
+  have hm₁ : Filter.Tendsto (fun x : ℝ => 1 + (x : ℂ) + t * Complex.I)
+      (nhdsWithin 0 (Set.Ioi 0)) (nhds (1 + (t : ℂ) * Complex.I)) := by
+    have h := (hcoe0.const_add (1 : ℂ)).add_const ((t : ℂ) * Complex.I)
+    simpa only [add_zero] using h
+  have hm₂ : Filter.Tendsto (fun x : ℝ => 1 + (x : ℂ) + 2 * t * Complex.I)
+      (nhdsWithin 0 (Set.Ioi 0)) (nhds (1 + 2 * (t : ℂ) * Complex.I)) := by
+    have h := (hcoe0.const_add (1 : ℂ)).add_const (2 * (t : ℂ) * Complex.I)
+    simpa only [add_zero] using h
+  -- the residue factor `x·ζ_K(1+x) → residue`
+  have hmap1 : Filter.Tendsto (fun x : ℝ => 1 + x) (nhdsWithin 0 (Set.Ioi 0))
+      (nhdsWithin 1 (Set.Ioi 1)) := by
+    rw [tendsto_nhdsWithin_iff]
+    refine ⟨?_, ?_⟩
+    · have h := ((Filter.tendsto_id (x := nhds (0 : ℝ))).const_add
+        (1 : ℝ)).mono_left (nhdsWithin_le_nhds (s := Set.Ioi (0 : ℝ)))
+      simpa using h
+    · filter_upwards [self_mem_nhdsWithin] with x hx
+      simpa using (hx : (0 : ℝ) < x)
+  have hres0 : Filter.Tendsto
+      (fun x : ℝ => (x : ℂ) * NumberField.dedekindZeta K (1 + x))
+      (nhdsWithin 0 (Set.Ioi 0))
+      (nhds (NumberField.dedekindZeta_residue K : ℂ)) := by
+    have h := (NumberField.tendsto_sub_one_mul_dedekindZeta_nhdsGT K).comp hmap1
+    simp only [Function.comp_def] at h
+    refine h.congr fun x => ?_
+    push_cast
+    ring
+  -- the slope factor `ξ(1+x+it)/x → ξ'(1+it)` at the putative zero
+  have hslope : Filter.Tendsto
+      (fun x : ℝ => pkg.xi (1 + (x : ℂ) + t * Complex.I) / (x : ℂ))
+      (nhdsWithin 0 (Set.Ioi 0))
+      (nhds (deriv pkg.xi (1 + (t : ℂ) * Complex.I))) := by
+    have hd : HasDerivAt pkg.xi (deriv pkg.xi (1 + (t : ℂ) * Complex.I))
+        (1 + (t : ℂ) * Complex.I) :=
+      (pkg.differentiable (1 + (t : ℂ) * Complex.I)).hasDerivAt
+    have hmapc : Filter.Tendsto (fun x : ℝ => 1 + (x : ℂ) + t * Complex.I)
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhdsWithin (1 + (t : ℂ) * Complex.I) {(1 + (t : ℂ) * Complex.I)}ᶜ) := by
+      rw [tendsto_nhdsWithin_iff]
+      refine ⟨hm₁, ?_⟩
+      filter_upwards [self_mem_nhdsWithin] with x hx
+      simp only [Set.mem_compl_iff, Set.mem_singleton_iff]
+      intro h
+      have hx0 : (x : ℂ) = 0 := by linear_combination h
+      rw [Complex.ofReal_eq_zero] at hx0
+      exact ne_of_gt (hx : (0 : ℝ) < x) hx0
+    have h := (hasDerivAt_iff_tendsto_slope.mp hd).comp hmapc
+    simp only [Function.comp_def] at h
+    refine h.congr fun x => ?_
+    rw [slope_def_field, hzero, sub_zero]
+    congr 1
+    ring
+  -- the two elementary-factor limits
+  have hE₁ : Filter.Tendsto (fun x : ℝ =>
+      (1 + (x : ℂ) + t * Complex.I) * ((1 + (x : ℂ) + t * Complex.I) - 1) *
+        dedekindGammaFactor K (1 + (x : ℂ) + t * Complex.I))
+      (nhdsWithin 0 (Set.Ioi 0))
+      (nhds ((1 + (t : ℂ) * Complex.I) * ((1 + (t : ℂ) * Complex.I) - 1) *
+        dedekindGammaFactor K (1 + (t : ℂ) * Complex.I))) := by
+    have h := (hE_cont _ hz₁re).tendsto.comp hm₁
+    simpa only [Function.comp_def] using h
+  have hE₂ : Filter.Tendsto (fun x : ℝ =>
+      (1 + (x : ℂ) + 2 * t * Complex.I) *
+        ((1 + (x : ℂ) + 2 * t * Complex.I) - 1) *
+        dedekindGammaFactor K (1 + (x : ℂ) + 2 * t * Complex.I))
+      (nhdsWithin 0 (Set.Ioi 0))
+      (nhds ((1 + 2 * (t : ℂ) * Complex.I) *
+        ((1 + 2 * (t : ℂ) * Complex.I) - 1) *
+        dedekindGammaFactor K (1 + 2 * (t : ℂ) * Complex.I))) := by
+    have h := (hE_cont _ hz₂re).tendsto.comp hm₂
+    simpa only [Function.comp_def] using h
+  -- the vanishing-to-first-order zeta factor
+  have hzeta₁ : Filter.Tendsto (fun x : ℝ =>
+      NumberField.dedekindZeta K (1 + (x : ℂ) + t * Complex.I) / (x : ℂ))
+      (nhdsWithin 0 (Set.Ioi 0))
+      (nhds (deriv pkg.xi (1 + (t : ℂ) * Complex.I) /
+        ((1 + (t : ℂ) * Complex.I) * ((1 + (t : ℂ) * Complex.I) - 1) *
+          dedekindGammaFactor K (1 + (t : ℂ) * Complex.I)))) := by
+    refine (hslope.div hE₁ (hE_ne _ hz₁re hz₁0 hz₁1)).congr' ?_
+    filter_upwards [self_mem_nhdsWithin] with x hx
+    simp only [Pi.div_apply]
+    have hre : 1 < (1 + (x : ℂ) + t * Complex.I).re := by
+      rw [hre₁ x]
+      linarith [Set.mem_Ioi.mp hx]
+    have hs0 : (1 + (x : ℂ) + t * Complex.I) ≠ 0 := by
+      intro h
+      rw [h] at hre
+      norm_num [Complex.zero_re] at hre
+    have hs1 : (1 + (x : ℂ) + t * Complex.I) ≠ 1 := by
+      intro h
+      rw [h] at hre
+      norm_num [Complex.one_re] at hre
+    rw [pkg.xi_eq_dedekindGammaFactor hre, div_right_comm,
+      mul_div_cancel_left₀ _ (hE_ne _ (lt_trans zero_lt_one hre) hs0 hs1)]
+  -- the bounded zeta factor
+  have hzeta₂ : Filter.Tendsto (fun x : ℝ =>
+      NumberField.dedekindZeta K (1 + (x : ℂ) + 2 * t * Complex.I))
+      (nhdsWithin 0 (Set.Ioi 0))
+      (nhds (pkg.xi (1 + 2 * (t : ℂ) * Complex.I) /
+        ((1 + 2 * (t : ℂ) * Complex.I) * ((1 + 2 * (t : ℂ) * Complex.I) - 1) *
+          dedekindGammaFactor K (1 + 2 * (t : ℂ) * Complex.I)))) := by
+    have hxi₂ : Filter.Tendsto
+        (fun x : ℝ => pkg.xi (1 + (x : ℂ) + 2 * t * Complex.I))
+        (nhdsWithin 0 (Set.Ioi 0))
+        (nhds (pkg.xi (1 + 2 * (t : ℂ) * Complex.I))) := by
+      have h := (pkg.differentiable
+        (1 + 2 * (t : ℂ) * Complex.I)).continuousAt.tendsto.comp hm₂
+      simpa only [Function.comp_def] using h
+    refine (hxi₂.div hE₂ (hE_ne _ hz₂re hz₂0 hz₂1)).congr' ?_
+    filter_upwards [self_mem_nhdsWithin] with x hx
+    simp only [Pi.div_apply]
+    have hre : 1 < (1 + (x : ℂ) + 2 * t * Complex.I).re := by
+      rw [hre₂ x]
+      linarith [Set.mem_Ioi.mp hx]
+    have hs0 : (1 + (x : ℂ) + 2 * t * Complex.I) ≠ 0 := by
+      intro h
+      rw [h] at hre
+      norm_num [Complex.zero_re] at hre
+    have hs1 : (1 + (x : ℂ) + 2 * t * Complex.I) ≠ 1 := by
+      intro h
+      rw [h] at hre
+      norm_num [Complex.one_re] at hre
+    rw [pkg.xi_eq_dedekindGammaFactor hre,
+      mul_div_cancel_left₀ _ (hE_ne _ (lt_trans zero_lt_one hre) hs0 hs1)]
+  -- the whole comparison product tends to `0` …
+  have hxlim : Filter.Tendsto (fun x : ℝ => x) (nhdsWithin 0 (Set.Ioi 0))
+      (nhds (0 : ℝ)) :=
+    Filter.tendsto_id.mono_left nhdsWithin_le_nhds
+  have hprod : Filter.Tendsto (fun x : ℝ =>
+      ‖(x : ℂ) * NumberField.dedekindZeta K (1 + x)‖ ^ 3 *
+        ‖NumberField.dedekindZeta K (1 + (x : ℂ) + t * Complex.I) / (x : ℂ)‖ ^ 4 *
+        ‖NumberField.dedekindZeta K (1 + (x : ℂ) + 2 * t * Complex.I)‖ * x)
+      (nhdsWithin 0 (Set.Ioi 0)) (nhds 0) := by
+    have h := (((hres0.norm.pow 3).mul (hzeta₁.norm.pow 4)).mul
+      hzeta₂.norm).mul hxlim
+    simpa only [mul_zero] using h
+  -- … but the `3-4-1` inequality keeps it `≥ 1`
+  have hge : ∀ᶠ x : ℝ in nhdsWithin 0 (Set.Ioi 0),
+      1 ≤ ‖(x : ℂ) * NumberField.dedekindZeta K (1 + x)‖ ^ 3 *
+        ‖NumberField.dedekindZeta K (1 + (x : ℂ) + t * Complex.I) / (x : ℂ)‖ ^ 4 *
+        ‖NumberField.dedekindZeta K (1 + (x : ℂ) + 2 * t * Complex.I)‖ * x := by
+    filter_upwards [self_mem_nhdsWithin] with x hx
+    have hx0 : (0 : ℝ) < x := hx
+    calc (1 : ℝ)
+        ≤ ‖NumberField.dedekindZeta K (1 + x) ^ 3 *
+            NumberField.dedekindZeta K (1 + x + t * Complex.I) ^ 4 *
+            NumberField.dedekindZeta K (1 + x + 2 * t * Complex.I)‖ :=
+          norm_dedekindZeta_product_ge_one K hx0 t
+      _ = ‖(x : ℂ) * NumberField.dedekindZeta K (1 + x)‖ ^ 3 *
+            ‖NumberField.dedekindZeta K (1 + (x : ℂ) + t * Complex.I) /
+              (x : ℂ)‖ ^ 4 *
+            ‖NumberField.dedekindZeta K (1 + (x : ℂ) + 2 * t * Complex.I)‖ *
+            x := by
+          rw [norm_mul, norm_mul, norm_pow, norm_pow, norm_mul, norm_div,
+            Complex.norm_real, Real.norm_eq_abs, abs_of_pos hx0]
+          field_simp
+  have hcon := ge_of_tendsto hprod hge
+  norm_num at hcon
 
 /-- **Nonvanishing of `ξ_K` on the closed boundary line `re s = 1`**
 (ASSEMBLED 2026-07-24 by case split from the residue leaf
