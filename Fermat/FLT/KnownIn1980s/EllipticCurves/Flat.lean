@@ -9097,6 +9097,92 @@ theorem isIntegral_of_forall_mem_centered (z : Ksep)
     _root_.IsIntegral R z := by
   sorry
 
+/-- **Integrality of the monomial-section values**: with an avoiding
+denominator `h` (monic, `deg ≥ 2`, unit values on integral torsion
+abscissas) and weight `2a + 3b ≤ 2·deg h`, every value of the monomial
+section on the `m`-torsion is integral over `R` — on an integral abscissa
+the ordinate is integral and `h(x)` is a unit; on a non-integral abscissa
+`v(y)² = v(x)³` makes the weight condition exactly the required
+domination. -/
+lemma WeierstrassCurve.torsionKernelFun_isIntegral
+    (m : ℕ) (h : Polynomial R) (hmon : h.Monic)
+    (hunit : ∀ 𝒪 : ValuationSubring Ksep,
+      (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range →
+      ∀ (x y : Ksep) (hns : (E⁄Ksep).toAffine.Nonsingular x y),
+        (m : ℤ) • (Affine.Point.some x y hns : (E⁄Ksep).Point) = 0 →
+        x ∈ 𝒪 → 𝒪.valuation (Polynomial.aeval x h) = 1)
+    (a b : ℕ) (hw : 2 * a + 3 * b ≤ 2 * h.natDegree)
+    (P : (E⁄Ksep).Point) (hP : (m : ℤ) • P = 0) :
+    _root_.IsIntegral R (WeierstrassCurve.torsionKernelFun R K E Ksep h a b P) := by
+  cases P with
+  | zero =>
+    rw [WeierstrassCurve.torsionKernelFun_zero]
+    split_ifs
+    · exact isIntegral_one
+    · exact isIntegral_zero
+  | some x y hns =>
+    rw [WeierstrassCurve.torsionKernelFun_some]
+    refine isIntegral_of_forall_mem_centered R K Ksep _ fun 𝒪 hc => ?_
+    by_cases hx : x ∈ 𝒪
+    · -- integral abscissa: integral ordinate, unit denominator
+      obtain ⟨ha₁, ha₂, ha₃, ha₄, ha₆⟩ :=
+        baseChange_coeffs_mem_centered R K E Ksep 𝒪 hc
+      have hy : y ∈ 𝒪 := WeierstrassCurve.ordinate_mem_of_abscissa_mem 𝒪
+        (E⁄Ksep) ha₁ ha₂ ha₃ ha₄ ha₆ hns.1 hx
+      have hu := hunit 𝒪 hc x y hns hP hx
+      rw [← 𝒪.valuation_le_one_iff, map_div₀, hu, div_one, map_mul, map_pow,
+        map_pow]
+      exact mul_le_one' (pow_le_one' ((𝒪.valuation_le_one_iff _).mpr hx) a)
+        (pow_le_one' ((𝒪.valuation_le_one_iff _).mpr hy) b)
+    · -- non-integral abscissa: the weighted domination
+      have hy2 := WeierstrassCurve.val_ordinate_sq_of_abscissa_notMem R K E Ksep
+        𝒪 hc hns.1 hx
+      have hh := val_aeval_monic_of_notMem R Ksep 𝒪
+        (mem_centered_algebraMap R K Ksep 𝒪 hc) h hmon hx
+      have hvx : 1 < 𝒪.valuation x := by
+        rwa [← 𝒪.valuation_le_one_iff, not_le] at hx
+      have hxne : 𝒪.valuation x ≠ 0 := (zero_lt_one.trans hvx).ne'
+      rw [← 𝒪.valuation_le_one_iff, map_div₀, hh, map_mul, map_pow, map_pow,
+        div_le_one₀ (zero_lt_iff.mpr (pow_ne_zero _ hxne))]
+      have hsq : (𝒪.valuation x ^ a * 𝒪.valuation y ^ b) ^ 2 ≤
+          (𝒪.valuation x ^ h.natDegree) ^ 2 := by
+        rw [mul_pow, pow_right_comm (𝒪.valuation y) b 2, hy2, ← pow_mul,
+          ← pow_mul, ← pow_mul, ← pow_add]
+        exact pow_le_pow_right₀ hvx.le (by omega)
+      by_contra hlt
+      rw [not_le] at hlt
+      have hwpos : (0 : _) < 𝒪.valuation x ^ h.natDegree :=
+        zero_lt_iff.mpr (pow_ne_zero _ hxne)
+      have hstrict : (𝒪.valuation x ^ h.natDegree) ^ 2 <
+          (𝒪.valuation x ^ a * 𝒪.valuation y ^ b) ^ 2 := by
+        rw [sq, sq]
+        exact mul_lt_mul_of_lt_of_le_of_pos_of_nonneg hlt hlt.le hwpos zero_le
+      exact absurd hsq (not_le.mpr hstrict)
+
+set_option linter.unusedSectionVars false in
+/-- **Nonvanishing of the avoiding denominator on the torsion**: `h(x(P))`
+is nonzero at every affine `m`-torsion point — a root of the monic `h`
+would be integral over `R`, hence inside some centered valuation subring,
+where `h` takes unit values on integral torsion abscissas. -/
+lemma WeierstrassCurve.torsionKernel_aeval_ne_zero
+    (m : ℕ) (h : Polynomial R) (hmon : h.Monic)
+    (hunit : ∀ 𝒪 : ValuationSubring Ksep,
+      (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range →
+      ∀ (x y : Ksep) (hns : (E⁄Ksep).toAffine.Nonsingular x y),
+        (m : ℤ) • (Affine.Point.some x y hns : (E⁄Ksep).Point) = 0 →
+        x ∈ 𝒪 → 𝒪.valuation (Polynomial.aeval x h) = 1)
+    {x y : Ksep} (hns : (E⁄Ksep).toAffine.Nonsingular x y)
+    (hP : (m : ℤ) • (Affine.Point.some x y hns : (E⁄Ksep).Point) = 0) :
+    Polynomial.aeval x h ≠ 0 := by
+  intro h0
+  have hxint : _root_.IsIntegral R x := ⟨h, hmon, by
+    rwa [Polynomial.aeval_def] at h0⟩
+  obtain ⟨𝒪, hc⟩ := exists_centered_valuationSubring R K Ksep
+  have hx : x ∈ 𝒪 := mem_centered_of_isIntegral R K Ksep 𝒪 hc hxint
+  have hu := hunit 𝒪 hc x y hns hP hx
+  rw [h0, map_zero] at hu
+  exact zero_ne_one hu
+
 /-- **The avoiding denominator** (sorry node — stage A of the Katz–Mazur
 kernel-functions leaf): a monic `h ∈ R[X]` of degree `≥ 2` such that
 `h(x(P))` is a unit of every centered valuation subring for every affine
