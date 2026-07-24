@@ -2475,9 +2475,228 @@ theorem pointEval_injective_of_forall_ne_constHom
       exact Polynomial.degree_eq_bot.mp h4
   rw [hpp, hqq, zero_smul, zero_smul, add_zero]
 
-/-- **L4-5/6 Galois core (sorry node): every element of the function
-field fixed by all lifted translation evaluations lies in the range of
-the `[p]`-pullback embedding — `Fix E[p] ⊆ [p]^*K`.**  Let
+/-- **Degree squeeze against a finite group of automorphisms** (the
+pure field-theoretic core of the L4-5/6 descent — Artin's fixed-field
+theorem in the form `[K : Fix H] = |H|`): if `K/L` is a finite
+extension of degree at most the order of a group `H` of
+`L`-automorphisms of `K`, then every `H`-fixed element of `K` already
+lies in `L`.  Indeed `L ⊆ Fix H` and
+`[Fix H : L]·|H| = [Fix H : L]·[K : Fix H] = [K : L] ≤ |H|` forces
+`[Fix H : L] = 1`, i.e. `Fix H = L`. -/
+theorem mem_range_algebraMap_of_fixed_of_finrank_le
+    {L K : Type*} [Field L] [Field K] [Algebra L K] [FiniteDimensional L K]
+    (H : Subgroup (K ≃ₐ[L] K)) (hle : Module.finrank L K ≤ Nat.card H)
+    (z : K) (hz : ∀ g ∈ H, g z = z) : ∃ w : L, algebraMap L K w = z := by
+  have hzmem : z ∈ IntermediateField.fixedField H := fun g => hz g g.2
+  have hcard : Module.finrank (IntermediateField.fixedField H) K = Nat.card H :=
+    IntermediateField.finrank_fixedField_eq_card H
+  have htower : Module.finrank L (IntermediateField.fixedField H) *
+      Module.finrank (IntermediateField.fixedField H) K = Module.finrank L K :=
+    Module.finrank_mul_finrank _ _ _
+  have hpos : 0 < Nat.card H := Nat.card_pos
+  have h1 : Module.finrank L (IntermediateField.fixedField H) = 1 := by
+    refine le_antisymm (Nat.le_of_mul_le_mul_right ?_ hpos) Module.finrank_pos
+    calc Module.finrank L (IntermediateField.fixedField H) * Nat.card H
+        = Module.finrank L (IntermediateField.fixedField H) *
+            Module.finrank (IntermediateField.fixedField H) K := by rw [hcard]
+      _ = Module.finrank L K := htower
+      _ ≤ Nat.card H := hle
+      _ = 1 * Nat.card H := (one_mul _).symm
+  have hbot : IntermediateField.fixedField H = ⊥ :=
+    IntermediateField.finrank_eq_one_iff.mp h1
+  rw [hbot] at hzmem
+  exact IntermediateField.mem_bot.mp hzmem
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- **Base change of rational points is injective** (the constants
+embedding is): the `p`-torsion enumeration stays an enumeration after
+base change to the function field. -/
+lemma constPoint_injective (W : WeierstrassCurve.Affine F) :
+    Function.Injective (constPoint W) := by
+  intro P Q h
+  cases P with
+  | zero =>
+    cases Q with
+    | zero => rfl
+    | some x y hn =>
+      exact absurd h.symm (Point.some_ne_zero
+        ((W.map_nonsingular (constHom W).injective x y).mpr hn))
+  | some x y hn =>
+    cases Q with
+    | zero =>
+      exact absurd h (Point.some_ne_zero
+        ((W.map_nonsingular (constHom W).injective x y).mpr hn))
+    | some x' y' hn' =>
+      have h' : (WeierstrassCurve.Affine.Point.some (constHom W x) (constHom W y)
+          ((W.map_nonsingular (constHom W).injective x y).mpr hn) :
+            (curveK W).Point) =
+          WeierstrassCurve.Affine.Point.some (constHom W x') (constHom W y')
+            ((W.map_nonsingular (constHom W).injective x' y').mpr hn') := h
+      injection h' with hx hy
+      have hx' : x = x' := (constHom W).injective hx
+      have hy' : y = y' := (constHom W).injective hy
+      subst hx'
+      subst hy'
+      rfl
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- **The generic translate is affine** (L4-5/6 substrate): `Q ⊕ taut`
+is never the point at infinity — otherwise `constPoint Q = ⊖taut` would
+make the tautological `x`-coordinate the constant `x(Q)`, against
+`tautX_ne_constHom`.  This supplies the affine presentation demanded by
+the translation-evaluation substrate at every torsion point. -/
+theorem exists_translate_some (hΔ : W.Δ ≠ 0) (Q : W.Point) :
+    ∃ (xκ yκ : W.FunctionField) (hκ : (curveK W).Nonsingular xκ yκ),
+      constPoint W Q + tautPoint W hΔ =
+        WeierstrassCurve.Affine.Point.some xκ yκ hκ := by
+  rcases hsum : constPoint W Q + tautPoint W hΔ with _ | ⟨xκ, yκ, hκ⟩
+  · exfalso
+    have hsum0 : constPoint W Q + tautPoint W hΔ = 0 := hsum
+    cases Q with
+    | zero =>
+      rw [show constPoint W (WeierstrassCurve.Affine.Point.zero : W.Point) = 0
+        from rfl, zero_add] at hsum0
+      exact Point.some_ne_zero (taut_nonsingular W hΔ) hsum0
+    | some x y hn =>
+      have hneg : (WeierstrassCurve.Affine.Point.some (constHom W x)
+          (constHom W y) ((W.map_nonsingular (constHom W).injective x y).mpr hn) :
+            (curveK W).Point) = -tautPoint W hΔ :=
+        add_eq_zero_iff_eq_neg.mp hsum0
+      rw [tautPoint, Point.neg_some] at hneg
+      injection hneg with hx _
+      exact tautX_ne_constHom x hx.symm
+  · exact ⟨xκ, yκ, hκ, rfl⟩
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- A fraction-field lift of the canonical embedding is the identity
+(the lift is the unique ring endomorphism of `K` restricting to the
+given map on `F[W]`). -/
+lemma lift_eq_self_of_eq_algebraMap
+    {g : W.CoordinateRing →+* W.FunctionField} (hg : Function.Injective g)
+    (hgeq : g = algebraMap W.CoordinateRing W.FunctionField)
+    (w : W.FunctionField) : IsFractionRing.lift hg w = w := by
+  have h : IsFractionRing.lift hg = RingHom.id W.FunctionField := by
+    refine IsLocalization.ringHom_ext W.CoordinateRing⁰ (RingHom.ext fun a => ?_)
+    simp only [RingHom.coe_comp, Function.comp_apply, RingHom.id_apply,
+      IsFractionRing.lift_algebraMap, hgeq]
+  rw [h, RingHom.id_apply]
+
+/-- **The translation evaluation at the zero torsion point is the
+identity**: `O ⊕ taut = taut`, so the evaluation is the canonical
+embedding `F[W] → K` and its fraction-field lift is `id`. -/
+theorem lift_pointEval_eq_self_of_eq_zero (hΔ : W.Δ ≠ 0) {Q : W.Point}
+    (hQ : Q = 0) {xκ yκ : W.FunctionField}
+    {hκ : (curveK W).Nonsingular xκ yκ}
+    (hpt : constPoint W Q + tautPoint W hΔ =
+      WeierstrassCurve.Affine.Point.some xκ yκ hκ) (w : W.FunctionField) :
+    IsFractionRing.lift (pointEval_injective hΔ hpt) w = w := by
+  have hc : constPoint W Q = 0 := by rw [hQ]; rfl
+  have h0 : (WeierstrassCurve.Affine.Point.some (tautX W) (tautY W)
+      (taut_nonsingular W hΔ) : (curveK W).Point) =
+      WeierstrassCurve.Affine.Point.some xκ yκ hκ := by
+    rw [← hpt, hc, zero_add]
+    rfl
+  injection h0 with hx hy
+  refine lift_eq_self_of_eq_algebraMap (pointEval_injective hΔ hpt) ?_ w
+  refine coordinateRing_ringHom_ext (fun d => ?_) ?_ ?_
+  · rw [pointEval_C]; rfl
+  · rw [pointEval_X, ← hx]; rfl
+  · rw [pointEval_Y, ← hy]; rfl
+
+/-- **L4-5/6 sub-leaf (sorry): the composition law of the lifted
+translation evaluations.**  Writing `σ_Q` for the fraction-field
+extension of evaluation at `Q ⊕ taut` (i.e. `f ↦ f ∘ τ_Q`), applying
+`σ_Q` inside `σ_R` substitutes `taut ↦ Q ⊕ taut`, so
+`σ_Q ∘ σ_R = σ_{Q ⊕ R}`.
+
+Proof plan: both sides are fraction-field lifts, so by
+`IsLocalization.ringHom_ext` it suffices to compare them on the image
+of `F[W]`, where `coordinateRing_ringHom_ext` reduces the claim to the
+constants (all three restrict to `constHom`, by `pointEval_C`) and the
+two coordinate functions — there the statement is the coordinate
+identity `(x, y)(R ⊕ (Q ⊕ taut)) = (x, y)((Q ⊕ R) ⊕ taut)`, i.e. the
+`endoMap` transport of the group law along `σ_Q` (`endoMap_add`, whose
+coefficient hypothesis `(curveK W).map σ_Q = W.map (constHom W)` holds
+because `σ_Q` fixes the constants). -/
+theorem lift_pointEval_comp (hΔ : W.Δ ≠ 0) {Q R S : W.Point}
+    (hQRS : Q + R = S)
+    {xQ yQ : W.FunctionField} {hQn : (curveK W).Nonsingular xQ yQ}
+    (hptQ : constPoint W Q + tautPoint W hΔ =
+      WeierstrassCurve.Affine.Point.some xQ yQ hQn)
+    {xR yR : W.FunctionField} {hRn : (curveK W).Nonsingular xR yR}
+    (hptR : constPoint W R + tautPoint W hΔ =
+      WeierstrassCurve.Affine.Point.some xR yR hRn)
+    {xS yS : W.FunctionField} {hSn : (curveK W).Nonsingular xS yS}
+    (hptS : constPoint W S + tautPoint W hΔ =
+      WeierstrassCurve.Affine.Point.some xS yS hSn)
+    (w : W.FunctionField) :
+    IsFractionRing.lift (pointEval_injective hΔ hptQ)
+        (IsFractionRing.lift (pointEval_injective hΔ hptR) w) =
+      IsFractionRing.lift (pointEval_injective hΔ hptS) w := by
+  sorry
+
+/-- **L4-5/6 sub-leaf (sorry): the lifted translation evaluations fix
+the `[p]`-pullback subfield pointwise** — `[p]^*K ⊆ Fix E[p]`.  For a
+`p`-torsion point `Q`, the lifted translation `σ_Q` fixes every
+`[p]^*(w) = IsFractionRing.lift hinj w`.
+
+Proof plan: `σ_Q ∘ [p]^*` and `[p]^*` are fraction-field lifts, so by
+`IsLocalization.ringHom_ext` and `coordinateRing_ringHom_ext` the claim
+reduces to the constants (both restrict to `constHom`) and to
+`σ_Q xp = xp`, `σ_Q yp = yp` — which is the `endoMap` computation
+`endoMap σ_Q (p • taut) = p • (Q ⊕ taut) =
+constPoint ((p : ℤ) • Q) + p • taut = p • taut`, the last step by the
+torsion hypothesis `hQtor`. -/
+theorem lift_pointEval_pullback_eq (hΔ : W.Δ ≠ 0) {Q : W.Point}
+    (hQtor : (p : ℤ) • Q = 0)
+    {xQ yQ : W.FunctionField} {hQn : (curveK W).Nonsingular xQ yQ}
+    (hptQ : constPoint W Q + tautPoint W hΔ =
+      WeierstrassCurve.Affine.Point.some xQ yQ hQn)
+    {xp yp : W.FunctionField} {hpn : (curveK W).Nonsingular xp yp}
+    (hsmul : (p : ℤ) • tautPoint W hΔ =
+      WeierstrassCurve.Affine.Point.some xp yp hpn)
+    (hinj : Function.Injective (pointEval (constHom W) hpn.left))
+    (w : W.FunctionField) :
+    IsFractionRing.lift (pointEval_injective hΔ hptQ)
+        (IsFractionRing.lift hinj w) = IsFractionRing.lift hinj w := by
+  sorry
+
+/-- **L4-5/6 sub-leaf (sorry): the `[p]`-pullback subfield has index at
+most `p²`** — `[K : [p]^*K] ≤ p²`.  The subfield
+`L := (IsFractionRing.lift hinj).fieldRange` contains the constants
+(`[p]^*` fixes them) and the coordinates `xp, yp` of `p • taut`.
+
+Proof plan: `tautX` is a root of the monic degree-`p²` polynomial
+`Φ_p − xp·ΨSq_p ∈ L[T]` (that is exactly `hxrel`, with the leading
+coefficient computed as in `smul_taut_xCoord_ne_constHom`), so
+`[L(tautX) : L] ≤ p²`; and `tautY ∈ L(tautX)` by the `y`-bookkeeping
+(the nontrivial `L(tautX)`-automorphism of `K` would be the
+hyperelliptic involution, which moves `yp ∈ L` because `2p • taut ≠ 0`
+for `hp : (p : F) ≠ 0`).  Since `K = F(tautX, tautY)` — every element
+of `F[W]` is `pp(tautX) + qq(tautX)·tautY` by
+`CoordinateRing.exists_smul_basis_eq`, and `K` is its fraction field —
+the extension `K/L` is finite of degree at most `p²`. -/
+theorem finiteDimensional_and_finrank_le_pullback (hΔ : W.Δ ≠ 0)
+    (hp : (p : F) ≠ 0)
+    {xp yp : W.FunctionField} {hpn : (curveK W).Nonsingular xp yp}
+    (hsmul : (p : ℤ) • tautPoint W hΔ =
+      WeierstrassCurve.Affine.Point.some xp yp hpn)
+    (hxrel : xp * ((W.ΨSq (p : ℤ)).map (constHom W)).eval (tautX W) =
+      ((W.Φ (p : ℤ)).map (constHom W)).eval (tautX W))
+    (hinj : Function.Injective (pointEval (constHom W) hpn.left)) :
+    FiniteDimensional
+        ↥(IsFractionRing.lift (K := W.FunctionField) hinj).fieldRange
+        W.FunctionField ∧
+      Module.finrank
+        ↥(IsFractionRing.lift (K := W.FunctionField) hinj).fieldRange
+        W.FunctionField ≤ p ^ 2 := by
+  sorry
+
+/-- **L4-5/6 Galois core (PROVEN over the three sub-leaves
+`lift_pointEval_comp`, `lift_pointEval_pullback_eq`,
+`finiteDimensional_and_finrank_le_pullback`): every element of the
+function field fixed by all lifted translation evaluations lies in the
+range of the `[p]`-pullback embedding — `Fix E[p] ⊆ [p]^*K`.**  Let
 `val : ι → W.Point` enumerate the `p`-torsion subgroup
 (`card ι = p²`), `(xp, yp)` the affine coordinates of the generic
 multiple `p • taut` with the division-polynomial relation `hxrel`, and
@@ -2488,30 +2707,24 @@ presentations of the translates `κ ⊕ taut`).  Then `z = σ_p(h)` for
 some `h ∈ K`, where `σ_p = IsFractionRing.lift hinj : K →+* K`
 realizes `h ↦ h ∘ [p]`.
 
-Proof plan (HLEG-NOTES.md §4(B), stages L4-5/6): each lifted
-evaluation `σ_κ` is a field automorphism of `K` fixing the constants
-(surjectivity from `σ_κ ∘ σ_{⊖κ} = id`, the composition law coming
-from `endoMap` additivity and the group law `(taut ⊖ κ) ⊕ κ = taut`);
-`κ ↦ σ_κ` is a faithful action of the order-`p²` torsion group on `K`
-(faithfulness: `σ_κ tautX = tautX` forces `x(κ ⊕ taut) = x(taut)`, so
-`κ ⊕ taut = ±taut`; the minus branch would make `x(2•taut)` a
-constant, against the `n = 2` instance of
-`smul_taut_xCoord_ne_constHom`-style nonconstancy), so Artin's theorem
-(mathlib's `FixedPoints.finrank_eq_card`) gives `[K : Fix E[p]] = p²`.
-The pullback subfield `L := (IsFractionRing.lift hinj).fieldRange`
-lies inside `Fix E[p]`: `σ_κ` fixes `xp` and `yp` because
-`endoMap σ_κ (p•taut) = p•(κ ⊕ taut) = constPoint ((p:ℤ)•κ) + p•taut =
-p•taut` by `hval_tor`, hence `σ_κ` fixes `L` pointwise
-(`coordinateRing_ringHom_ext` on the coordinate ring, then
-`IsFractionRing`-uniqueness of the extension).  And `[K : L] ≤ p²`:
-`constHom F ⊆ L` and `xp, yp ∈ L`; `tautX` is a root of the monic
-degree-`p²` polynomial `Φ_p − xp·ΨSq_p` over `L` (`hxrel`), and
-`tautY ∈ L(tautX)` by the `y`-bookkeeping (the nontrivial
-`L(tautX)`-automorphism of `K` would have to be the hyperelliptic
-involution, which moves `yp ∈ L` since `2p • taut ≠ 0`).  The degree
-squeeze `L ⊆ Fix E[p]`, `[K : Fix E[p]] = p² ≥ [K : L]` forces
-`Fix E[p] = L ∋ z`.  DECOMPOSE along these stages when opening this
-node. -/
+The proof (HLEG-NOTES.md §4(B), stages L4-5/6) is the degree squeeze
+`mem_range_algebraMap_of_fixed_of_finrank_le` applied to
+`L := (IsFractionRing.lift hinj).fieldRange` and the group
+`H = {σ_κ : κ ∈ E[p]}`, assembled here from three sub-leaves:
+
+* every translate `κ ⊕ taut` is affine (`exists_translate_some`), so
+  every `σ_κ` is defined; `σ_O = id`
+  (`lift_pointEval_eq_self_of_eq_zero`) and `σ_κ ∘ σ_λ = σ_{κ⊕λ}`
+  (`lift_pointEval_comp`), whence each `σ_κ` is bijective with inverse
+  `σ_{⊖κ}` and `H` is a subgroup of `Aut K` of order `p²` — the order
+  because `κ ↦ σ_κ` is injective (`σ_κ tautX = x(κ ⊕ taut)` and
+  `σ_κ tautY = y(κ ⊕ taut)` recover the translate, hence `κ`, from
+  `σ_κ` through `constPoint_injective` and `hval_inj`);
+* each `σ_κ` fixes `L` pointwise (`lift_pointEval_pullback_eq`), so
+  `H` is a group of `L`-automorphisms;
+* `[K : L] ≤ p²` (`finiteDimensional_and_finrank_le_pullback`).
+
+The squeeze then gives `Fix H = L ∋ z`. -/
 theorem mem_range_pullback_of_translation_lift_fixed {ι : Type*}
     [Fintype ι] {val : ι → W.Point}
     (hΔ : W.Δ ≠ 0) (hp : (p : F) ≠ 0)
@@ -2532,7 +2745,127 @@ theorem mem_range_pullback_of_translation_lift_fixed {ι : Type*}
         WeierstrassCurve.Affine.Point.some xκ yκ hκ),
       IsFractionRing.lift (pointEval_injective hΔ hpt) z = z) :
     ∃ h : W.FunctionField, IsFractionRing.lift hinj h = z := by
-  sorry
+  classical
+  obtain ⟨hfd, hfr⟩ :=
+    finiteDimensional_and_finrank_le_pullback hΔ hp hsmul hxrel hinj
+  haveI : FiniteDimensional
+    ↥(IsFractionRing.lift (K := W.FunctionField) hinj).fieldRange
+    W.FunctionField := hfd
+  choose xv yv hv hptv using fun i : ι => exists_translate_some hΔ (val i)
+  -- the lifted translation evaluations, on the two coordinate functions
+  have hτX : ∀ i : ι,
+      IsFractionRing.lift (pointEval_injective hΔ (hptv i)) (tautX W) = xv i := by
+    intro i
+    rw [tautX, IsFractionRing.lift_algebraMap, pointEval_X]
+  have hτY : ∀ i : ι,
+      IsFractionRing.lift (pointEval_injective hΔ (hptv i)) (tautY W) = yv i := by
+    intro i
+    rw [tautY, IsFractionRing.lift_algebraMap, pointEval_Y]
+  -- the torsion group structure carried by the index type
+  obtain ⟨i₀, hi₀⟩ := hval_surj 0 (smul_zero _)
+  have hnegex : ∀ i : ι, ∃ j : ι, val j = -val i := by
+    intro i
+    exact hval_surj (-val i) (by rw [smul_neg, hval_tor i, neg_zero])
+  choose jinv hjinv using hnegex
+  have hid : ∀ i : ι, val i = 0 → ∀ w : W.FunctionField,
+      IsFractionRing.lift (pointEval_injective hΔ (hptv i)) w = w :=
+    fun i hi w => lift_pointEval_eq_self_of_eq_zero hΔ hi (hptv i) w
+  have hcomp : ∀ i j k : ι, val i + val j = val k → ∀ w : W.FunctionField,
+      IsFractionRing.lift (pointEval_injective hΔ (hptv i))
+          (IsFractionRing.lift (pointEval_injective hΔ (hptv j)) w) =
+        IsFractionRing.lift (pointEval_injective hΔ (hptv k)) w :=
+    fun i j k hijk w =>
+      lift_pointEval_comp hΔ hijk (hptv i) (hptv j) (hptv k) w
+  -- each lift is an automorphism over the pullback subfield
+  have hpack : ∀ i : ι, ∃ e : W.FunctionField ≃ₐ[↥(IsFractionRing.lift
+      (K := W.FunctionField) hinj).fieldRange] W.FunctionField,
+      ∀ w, e w = IsFractionRing.lift (pointEval_injective hΔ (hptv i)) w := by
+    intro i
+    have hri : (IsFractionRing.lift (pointEval_injective hΔ (hptv i))).comp
+        (IsFractionRing.lift (pointEval_injective hΔ (hptv (jinv i)))) =
+        RingHom.id W.FunctionField := by
+      refine RingHom.ext fun w => ?_
+      simp only [RingHom.coe_comp, Function.comp_apply, RingHom.id_apply]
+      rw [hcomp i (jinv i) i₀ (by rw [hjinv i, add_neg_cancel, hi₀])]
+      exact hid i₀ hi₀ w
+    have hri' : (IsFractionRing.lift (pointEval_injective hΔ (hptv (jinv i)))).comp
+        (IsFractionRing.lift (pointEval_injective hΔ (hptv i))) =
+        RingHom.id W.FunctionField := by
+      refine RingHom.ext fun w => ?_
+      simp only [RingHom.coe_comp, Function.comp_apply, RingHom.id_apply]
+      rw [hcomp (jinv i) i i₀ (by rw [hjinv i, neg_add_cancel, hi₀])]
+      exact hid i₀ hi₀ w
+    refine ⟨AlgEquiv.ofRingEquiv
+      (f := RingEquiv.ofRingHom _ _ hri hri') ?_, fun w => rfl⟩
+    intro x
+    obtain ⟨v, hv'⟩ := RingHom.mem_fieldRange.mp x.2
+    show IsFractionRing.lift (pointEval_injective hΔ (hptv i))
+      (x : W.FunctionField) = (x : W.FunctionField)
+    rw [← hv']
+    exact lift_pointEval_pullback_eq hΔ (hval_tor i) (hptv i) hsmul hinj v
+  choose e he using hpack
+  -- distinct torsion points give distinct automorphisms
+  have hsome : ∀ {x₁ y₁ x₂ y₂ : W.FunctionField}
+      (h₁ : (curveK W).Nonsingular x₁ y₁) (h₂ : (curveK W).Nonsingular x₂ y₂),
+      x₁ = x₂ → y₁ = y₂ →
+      (WeierstrassCurve.Affine.Point.some x₁ y₁ h₁ : (curveK W).Point) =
+        WeierstrassCurve.Affine.Point.some x₂ y₂ h₂ := by
+    intro x₁ y₁ x₂ y₂ h₁ h₂ hx hy
+    subst hx
+    subst hy
+    rfl
+  have heinj : Function.Injective e := by
+    intro i j hij
+    have hx : xv i = xv j := by
+      rw [← hτX i, ← hτX j, ← he i, ← he j, hij]
+    have hy : yv i = yv j := by
+      rw [← hτY i, ← hτY j, ← he i, ← he j, hij]
+    refine hval_inj (constPoint_injective W
+      (add_right_cancel (b := tautPoint W hΔ) ?_))
+    rw [hptv i, hptv j]
+    exact hsome (hv i) (hv j) hx hy
+  -- the automorphism group
+  obtain ⟨H, hH⟩ : ∃ H : Subgroup (W.FunctionField ≃ₐ[↥(IsFractionRing.lift
+      (K := W.FunctionField) hinj).fieldRange] W.FunctionField),
+      ∀ g, g ∈ H ↔ ∃ i : ι, e i = g := by
+    refine ⟨{ carrier := Set.range e
+              mul_mem' := ?_
+              one_mem' := ?_
+              inv_mem' := ?_ }, fun g => Iff.rfl⟩
+    · rintro a b ⟨i, rfl⟩ ⟨j, rfl⟩
+      obtain ⟨k, hk⟩ := hval_surj (val i + val j)
+        (by rw [smul_add, hval_tor i, hval_tor j, add_zero])
+      refine ⟨k, AlgEquiv.ext fun w => ?_⟩
+      show e k w = e i (e j w)
+      rw [he i, he j, he k, hcomp i j k hk.symm w]
+    · refine ⟨i₀, AlgEquiv.ext fun w => ?_⟩
+      show e i₀ w = w
+      rw [he i₀]
+      exact hid i₀ hi₀ w
+    · rintro a ⟨i, rfl⟩
+      refine ⟨jinv i, ?_⟩
+      refine inv_eq_of_mul_eq_one_right (AlgEquiv.ext fun w => ?_) |>.symm
+      show e i (e (jinv i) w) = w
+      rw [he i, he (jinv i),
+        hcomp i (jinv i) i₀ (by rw [hjinv i, add_neg_cancel, hi₀])]
+      exact hid i₀ hi₀ w
+  have hHcard : Nat.card H = p ^ 2 := by
+    have hbij : Function.Bijective
+        (fun i : ι => (⟨e i, (hH (e i)).mpr ⟨i, rfl⟩⟩ : H)) := by
+      refine ⟨fun i j hij => heinj (congrArg Subtype.val hij), ?_⟩
+      rintro ⟨g, hg⟩
+      obtain ⟨i, rfl⟩ := (hH g).mp hg
+      exact ⟨i, rfl⟩
+    rw [← Nat.card_eq_of_bijective _ hbij, Nat.card_eq_fintype_card, hcard]
+  -- the degree squeeze
+  obtain ⟨w, hw⟩ := mem_range_algebraMap_of_fixed_of_finrank_le H
+    (by rw [hHcard]; exact hfr) z (by
+      intro g hg
+      obtain ⟨i, rfl⟩ := (hH g).mp hg
+      rw [he i]
+      exact hz i (xv i) (yv i) (hv i) (hptv i))
+  obtain ⟨v, hv'⟩ := RingHom.mem_fieldRange.mp w.2
+  exact ⟨v, hv'.trans hw⟩
 
 /-- **L4-5/6 membership core (PROVEN glue over the Galois core
 `mem_range_pullback_of_translation_lift_fixed`): a
