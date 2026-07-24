@@ -118,6 +118,11 @@ import Mathlib.RingTheory.Algebraic.Integral
 public import Mathlib.NumberTheory.NumberField.DedekindZeta
 public import Mathlib.Analysis.SpecialFunctions.Gamma.Basic
 public import Mathlib.Analysis.SpecialFunctions.Pow.Complex
+-- `Complex.digamma` (the logarithmic derivative of `Γ`), appearing in
+-- the exposed body of the archimedean edge functional
+-- `poitouGammaEdge` of the Poitou Propositions 2–3 decomposition
+-- (hence public).
+public import Mathlib.Analysis.SpecialFunctions.Gamma.Digamma
 -- The `ℤ`-lattice covolume (`ZLattice.covolume`, with the canonical
 -- Lebesgue volume of a finite-dimensional real inner product space)
 -- and the bilinear-form dual lattice
@@ -7865,65 +7870,231 @@ theorem poitouPoleEdge_tendsto :
       (nhds ((poitouPhi 0).re + (poitouPhi 1).re)) := by
   sorry
 
+/-- **The discriminant part of the folded vertical edge** (definition,
+2026-07-24 — introduced in the decomposition of
+`DedekindContinuation.poitouEdge_sub_poleEdge_tendsto`): the analogue
+of `DedekindContinuation.poitouEdge` with the CONSTANT `(log|d_K|)/2`
+— the log-derivative of the discriminant factor `|d_K|^{s/2}` of the
+completed zeta `Z_K` — in place of `ξ'/ξ`. -/
+noncomputable def poitouConstEdge (K : Type*) [Field K] [NumberField K]
+    (T : ℝ) : ℝ :=
+  Real.pi⁻¹ * ∫ t in (-T)..T,
+    (poitouPhi (5 / 4 + t * Complex.I) *
+      Complex.ofReal (Real.log |(NumberField.discr K : ℝ)| / 2)).re
+
+/-- **The archimedean part of the folded vertical edge** (definition,
+2026-07-24 — introduced in the decomposition of
+`DedekindContinuation.poitouEdge_sub_poleEdge_tendsto`): the analogue
+of `DedekindContinuation.poitouEdge` with
+`r₂·(ψ(s) − log 2π)` — the log-derivative of the archimedean factor
+`Γ_ℂ(s)^{r₂} = (2·(2π)^{−s}·Γ(s))^{r₂}` of the completed zeta, where
+`ψ = Complex.digamma` is the pin's logarithmic derivative of `Γ` —
+in place of `ξ'/ξ`.  (For the totally complex fields of the consuming
+decomposition the real factor `Γ_ℝ^{r₁}` is absent, `r₁ = 0`, so this
+is the WHOLE archimedean log-derivative.) -/
+noncomputable def poitouGammaEdge (K : Type*) [Field K] [NumberField K]
+    (T : ℝ) : ℝ :=
+  Real.pi⁻¹ * ∫ t in (-T)..T,
+    (poitouPhi (5 / 4 + t * Complex.I) *
+      ((NumberField.InfinitePlace.nrComplexPlaces K : ℂ) *
+        (Complex.digamma (5 / 4 + t * Complex.I) -
+          Complex.ofReal (Real.log (2 * Real.pi))))).re
+
+/-- **The prime part of the folded vertical edge** (definition,
+2026-07-24 — introduced in the decomposition of
+`DedekindContinuation.poitouEdge_sub_poleEdge_tendsto`): the analogue
+of `DedekindContinuation.poitouEdge` with the log-derivative
+`ζ_K'/ζ_K` of the pin's raw Dedekind zeta Dirichlet series in place
+of `ξ'/ξ`.  On the edge line `re s = 5/4 > 1` the series converges
+absolutely and `ζ_K(s) ≠ 0` (`dedekindZeta_ne_zero_of_one_lt_re`), so
+the integrand is the honest logarithmic derivative there. -/
+noncomputable def poitouPrimeEdge (K : Type*) [Field K] [NumberField K]
+    (T : ℝ) : ℝ :=
+  Real.pi⁻¹ * ∫ t in (-T)..T,
+    (poitouPhi (5 / 4 + t * Complex.I) *
+      (deriv (NumberField.dedekindZeta K) (5 / 4 + t * Complex.I) /
+        NumberField.dedekindZeta K (5 / 4 + t * Complex.I))).re
+
+/-- **The integrand split: edge minus pole edge = discriminant +
+archimedean + prime edges** (sorry node, stated 2026-07-24 — leaf
+(b₂ᵢᵢ·0), the log-derivative bookkeeping stage of the decomposition
+of `DedekindContinuation.poitouEdge_sub_poleEdge_tendsto`; an exact
+identity for EVERY `T`, no limits).  Intended proof, pointwise on the
+edge `s = 5/4 + it` where `re s = 5/4 > 1`:
+
+1. `eq_of_one_lt_re` writes `ξ` on the OPEN half-plane `re > 1` as
+   the product `s(s−1)·|d|^{s/2}·Γ_ℝ-factor^{r₁}·Γ_ℂ-factor^{r₂}·ζ_K`,
+   and `htc` kills the real factor
+   (`NumberField.IsTotallyComplex.nrRealPlaces_eq_zero`, `pow_zero`).
+2. Openness (`isOpen_lt continuous_const Complex.continuous_re`) lets
+   `Filter.EventuallyEq.deriv_eq` transport `deriv pkg.xi` to the
+   derivative of the product; each factor is differentiable at `s` —
+   polynomials, the `cpow`s with nonzero constant base
+   (`|d| ≠ 0` by `NumberField.discr_ne_zero`, `2π ≠ 0`), `Γ(s)` for
+   `re s > 0`, and `ζ_K` by the pin's `LSeries_hasDerivAt` above the
+   abscissa of absolute convergence (`≤ 1` for the ideal-counting
+   coefficients via `summable_natCard_absNorm_mul_rpow_neg` from
+   `Chebotarev.lean`) — and nonvanishing at `s`: `s, s−1 ≠ 0`
+   (`re = 5/4`), `Complex.Gamma_ne_zero`, nonzero-base `cpow`s, and
+   `dedekindZeta_ne_zero_of_one_lt_re` (PROVEN above).  Iterated
+   `logDeriv_mul`/`logDeriv_pow` then split the logarithmic
+   derivative: `(ξ'/ξ)(s) = 1/s + 1/(s−1) + (log|d|)/2 +
+   r₂·(ψ(s) − log 2π) + (ζ_K'/ζ_K)(s)`, with `ψ = Complex.digamma`
+   (`Complex.digamma_def`, `logDeriv_apply`) and the elementary
+   log-derivatives `(c^s)'/c^s = log c` of constant-base `cpow`.
+3. Multiply by `Φ(s)`, take `Re`: pointwise in `t`, the
+   `DedekindContinuation.poitouEdge` integrand minus the
+   `poitouPoleEdge` integrand equals the sum of the three edge
+   integrands (`mul_add`, `Complex.add_re`).
+4. Integrate over `[−T, T]`: `intervalIntegral.integral_sub` and
+   `integral_add` need integrability of each piece, which follows
+   from continuity in `t` (`Continuous.intervalIntegrable`): `Φ`
+   along the edge by dominated parameter-continuity of `poitouPhi`
+   (compactly supported integrand — the same continuity brick the
+   sibling leaf `poitouPoleEdge_tendsto` needs; manufacture a shared
+   forward helper), `ψ` at zero-free points of the differentiable
+   `Γ`, `ζ_K'/ζ_K` since `deriv ζ_K` is again an `LSeries`
+   (`LSeries_deriv`) differentiable above the abscissa and the
+   denominator is nonvanishing and continuous; finally distribute
+   `π⁻¹` over the sum (`mul_add`). -/
+theorem DedekindContinuation.poitouEdge_sub_poleEdge_eq {K : Type*}
+    [Field K] [NumberField K] (pkg : DedekindContinuation K)
+    (htc : NumberField.IsTotallyComplex K) (T : ℝ) :
+    pkg.poitouEdge T - poitouPoleEdge T =
+      poitouConstEdge K T + poitouGammaEdge K T + poitouPrimeEdge K T := by
+  sorry
+
+/-- **Fourier inversion at the origin: the discriminant edge converges
+to `log |d_K|`** (sorry node, stated 2026-07-24 — leaf (b₂ᵢᵢ·1), the
+Fourier/test-function bookkeeping stage of the decomposition of
+`DedekindContinuation.poitouEdge_sub_poleEdge_tendsto`; Poitou
+p. 6-03, the constant term of Proposition 2).  Intended proof: with
+`G(x) = poitouF x · e^{3x/4}` — continuous, piecewise-`C¹`, supported
+in `[−6, 6]` — the edge value of `Φ` is a Fourier integral:
+`Φ(5/4 + it) = ∫ G(x)·e^{itx} dx` (unfold `poitouPhi`;
+`e^{(s−1/2)x} = e^{3x/4}·e^{itx}` at `s = 5/4 + it`), i.e. up to the
+`2π`-rescaling of the pin's normalization `e^{−2πi·x·ξ}` the inverse
+Fourier transform of `G`.  `G` is integrable (continuous with compact
+support) and its transform is `O(1/t²)` (two integrations by parts
+against the piecewise-affine `odlyzkoTestFn`, whose derivative has
+bounded variation), hence integrable, so
+`Continuous.fourierInv_fourier_eq` (the pin's
+`Mathlib.Analysis.Fourier.Inversion`) evaluated at `0` gives
+`(2π)⁻¹ ∫_ℝ Φ(5/4 + it) dt = G(0) = poitouF 0 = 1` (`cosh 0 = 1`,
+`odlyzkoTestFn 0 = 1`).  The symmetric truncations converge to the
+full integral (`MeasureTheory.intervalIntegral_tendsto_integral`
+with the integrability of `t ↦ (Φ(5/4+it)·c).re` from the same
+`O(1/t²)` decay), and the real constant `c = (log|d|)/2` commutes
+with `Re` and the integral, so
+`poitouConstEdge K T → π⁻¹·2π·1·(log|d|)/2 = log |d_K|`. -/
+theorem poitouConstEdge_tendsto (K : Type*) [Field K] [NumberField K] :
+    Filter.Tendsto (poitouConstEdge K) Filter.atTop
+      (nhds (Real.log |(NumberField.discr K : ℝ)|)) := by
+  sorry
+
+/-- **Poitou's Lemmes 1–2: the archimedean edge converges to the
+digamma terms** (sorry node, stated 2026-07-24 — leaf (b₂ᵢᵢ·2), the
+Γ-factor/digamma stage of the decomposition of
+`DedekindContinuation.poitouEdge_sub_poleEdge_tendsto`; Poitou
+pp. 6-04–6-06, Lemme 1, Lemme 2 and formula (5)).  The pin's digamma
+material (`Mathlib.Analysis.SpecialFunctions.Gamma.Digamma`) is thin
+— `digamma = logDeriv Gamma`, the recurrence
+`Complex.digamma_apply_add_one`, and the anchor
+`Complex.digamma_one = −γ` (from `hasDerivAt_Gamma_one` of the pin's
+`Mathlib.NumberTheory.Harmonic.GammaDeriv`) — so this leaf must
+manufacture Gauss' integral representation itself.  Intended proof:
+
+1. *Partial fractions.*  From the Euler-limit
+   `Complex.GammaSeq_tendsto_Gamma` (differentiate the logarithm of
+   `GammaSeq`, locally uniform convergence), or by telescoping the
+   recurrence against `digamma_one` with the tail asymptotics
+   `ψ(s + N) − log N → 0`, derive
+   `ψ(s) = −γ + Σ_{k≥0} (1/(k+1) − 1/(s+k))` for `re s > 0`.
+2. *Lemme 1 (Gauss).*  `1/(k+1) − 1/(s+k) =
+   ∫₀^∞ (e^{−(k+1)x} − e^{−(s+k)x}) dx`; summing the geometric series
+   `Σ_k e^{−kx} = (1 − e^{−x})⁻¹` under the integral (Tonelli plus
+   dominated convergence; integrands `O(x·e^{−x})` near `0`) gives
+   `ψ(s) = −γ + ∫₀^∞ (e^{−x} − e^{−sx})/(1 − e^{−x}) dx` on
+   `re s > 0`.
+3. *Lemme 2 (pairing).*  Insert into the edge; Fubini swaps the
+   `t`- and `x`-integrals (absolute convergence from the `O(1/t²)`
+   strip decay of `Φ` against the `O(log|t|)` growth of `ψ` along
+   the line — the same decay brick as `poitouConstEdge_tendsto`,
+   which also supplies `π⁻¹ ∫_ℝ Φ(5/4+it) dt = 2`), and the Fourier
+   inversion at the shifted point evaluates
+   `π⁻¹ ∫_ℝ Φ(5/4+it)·e^{−(5/4+it)x} dt = 2·e^{−5x/4}·G(x)
+   = 2·F(x)·e^{−x/2}` for `x > 0`, `G(x) = F(x)e^{3x/4}`.  With
+   `1 − e^{−x} = e^{−x/2}·2 sinh(x/2)` the edge tends to
+   `n·(−γ − log 2π) + n·∫₀^∞ (e^{−x/2} − F(x))/(2 sinh(x/2)) dx`,
+   where `n = 2r₂` by `NumberField.IsTotallyComplex.finrank`.
+4. *Constant extraction.*  `∫₀^∞ (1 − e^{−x/2})/(2 sinh(x/2)) dx
+   = log 4` (substitute `u = e^{−x/2}`: the integrand becomes
+   `u/(1+u)·(2/u)`, and `2∫₀^1 du/(1+u) = 2 log 2`), so the limit is
+   `−n(γ + log 2π + log 4) + n∫₀^∞ (1−F)/(2 sinh(x/2))
+   = −n(γ + log 8π) + n∫₀^∞ (1−F)/(2 sinh(x/2))`, as stated. -/
+theorem poitouGammaEdge_tendsto (K : Type*) [Field K] [NumberField K]
+    (htc : NumberField.IsTotallyComplex K) :
+    Filter.Tendsto (poitouGammaEdge K) Filter.atTop
+      (nhds (-((Module.finrank ℚ K : ℝ) *
+          (Real.eulerMascheroniConstant + Real.log (8 * Real.pi))) +
+        (Module.finrank ℚ K : ℝ) *
+          (∫ x in Set.Ioi (0 : ℝ),
+            (1 - poitouF x) / (2 * Real.sinh (x / 2))))) := by
+  sorry
+
+/-- **The prime edge converges to the prime sum** (sorry node, stated
+2026-07-24 — leaf (b₂ᵢᵢ·3), the Euler-product stage of the
+decomposition of `DedekindContinuation.poitouEdge_sub_poleEdge_tendsto`;
+Poitou pp. 6-03–6-04, the ultrametric term of Proposition 2).
+Intended proof: on `re s = 5/4` the log-derivative of the Euler
+product is the absolutely convergent double Dirichlet series
+`−(ζ_K'/ζ_K)(s) = Σ_𝔭 Σ_{m≥1} (log N𝔭)·N𝔭^{−ms}` over the nonzero
+primes of `𝒪_K`: the project's own ideal Euler product
+(`exp_tsum_neg_log_one_sub_dirichletCharacter_mul_cpow_neg_eq_LSeries`
+from `Chebotarev.lean` at the trivial character of level `1` — the
+same PROVEN input that closed `dedekindZeta_ne_zero_of_one_lt_re`
+above) writes `ζ_K = exp(Σ_𝔭 −log(1 − N𝔭^{−s}))` on the half-plane;
+differentiating the locally uniformly convergent sum termwise
+(`hasDerivAt_tsum`-shape, each summand via the geometric expansion
+`(−log(1−w))' · w' = Σ_m w^m·log N𝔭`, tails dominated by
+`Σ_𝔭 N𝔭^{−9/8}` — summable by
+`summable_natCard_absNorm_mul_rpow_neg`) gives the double series.
+Termwise, the same Fourier inversion as `poitouConstEdge_tendsto` at
+the shifted point `x = m·log N𝔭 > 0`:
+`π⁻¹ ∫_ℝ Re[Φ(5/4+it)·N𝔭^{−m(5/4+it)}] dt
+= 2·e^{−5x/4}·G(x) = 2·F(m·log N𝔭)/N𝔭^{m/2}`, so each pair `(𝔭, m)`
+contributes `−2·(log N𝔭/N𝔭^{m/2})·F(m·log N𝔭)`.  Summation and the
+`T → ∞` limit exchange by dominated convergence against the
+absolutely convergent majorant `Σ_{𝔭,m} log N𝔭 · N𝔭^{−5m/4}`
+(uniform in `T`; only the finitely many pairs with
+`m·log N𝔭 ≤ 6` survive in the limit since `F` is supported in
+`[−6, 6]`), yielding the stated sum in its `m : ℕ` (`m+1`)
+indexing over the subtype of nonzero primes. -/
+theorem poitouPrimeEdge_tendsto (K : Type*) [Field K] [NumberField K] :
+    Filter.Tendsto (poitouPrimeEdge K) Filter.atTop
+      (nhds (-(2 * ∑' (P : {P : Ideal (NumberField.RingOfIntegers K) //
+              P.IsPrime ∧ P ≠ ⊥}) (m : ℕ),
+          Real.log (Ideal.absNorm P.1) /
+              (Ideal.absNorm P.1 : ℝ) ^ (((m : ℝ) + 1) / 2) *
+            poitouF (((m : ℝ) + 1) * Real.log (Ideal.absNorm P.1))))) := by
+  sorry
+
 /-- **Poitou's Propositions 2–3: the vertical edge minus its pole
-part converges to the arithmetic terms** (sorry node, stated
-2026-07-24 — leaf (b₂ᵢᵢ), the edge-evaluation core of the
-decomposition of `DedekindContinuation.poitouEdge_tendsto`; Poitou
-pp. 6-02–6-06, Propositions 2–3 with Lemmes 1–2).  The whole edge
-lies in the absolute-convergence half-plane `re s = 5/4 > 1`, so
-`eq_of_one_lt_re` applies along it and `ξ ≠ 0` there by
-`ne_zero_of_one_lt_re`; subtracting `poitouPoleEdge` removes exactly
-the log-derivative `1/s + 1/(s−1)` of the normalizing factor
-`s(s−1)`, so (after the `intervalIntegral.integral_sub`
-rearrangement, integrands continuous on compacts) the difference is
-the folded edge of `Φ·Z_K'/Z_K` with
-`(Z_K'/Z_K)(s) = (log|d|)/2 + r₂·(Γ_ℂ'/Γ_ℂ)(s) + (ζ_K'/ζ_K)(s)`
-(log-derivative of the product of `eq_of_one_lt_re`; `r₁ = 0` by
-`htc`).  Term by term:
-
-1. *Constant part `(log|d|)/2` gives `log|d|` by Fourier
-   inversion.*  `Φ(5/4 + it) = ∫ F(x)e^{3x/4}·e^{itx} dx` is the
-   conjugate Fourier transform of the continuous, piecewise-`C¹`,
-   compactly supported `G(x) = F(x)e^{3x/4}` at `t`; it is `O(1/t²)`
-   (integration by parts twice, `F'` of bounded variation), so
-   Fourier inversion at `0` (`MeasureTheory.Integrable` version in
-   the pin's `Mathlib.Analysis.Fourier.Inversion`) gives
-   `(2π)⁻¹ ∫_ℝ Φ(5/4 + it) dt = G(0) = F(0) = 1`; multiply by
-   `2·(log|d|)/2`.
-2. *Prime part: `ζ_K'/ζ_K` gives the prime sum.*  On the line,
-   `−(ζ_K'/ζ_K)(s) = Σ_{𝔭, m≥1} (log N𝔭)·N𝔭^{−ms}` (log-derivative
-   of the Euler product over `IsDedekindDomain.HeightOneSpectrum`,
-   absolutely convergent; the pin has
-   `NumberField.dedekindZeta_eulerProduct`-shaped input through the
-   `EulerProduct` machinery).  Termwise, the same Fourier inversion
-   as step 1 at the shifted point `x = m·log N𝔭` gives
-   `(2π)⁻¹ ∫_ℝ Φ(5/4+it)·(log N𝔭)·N𝔭^{−m(5/4+it)} dt
-   = (log N𝔭/N𝔭^{m/2})·F(m log N𝔭)`; summing (dominated
-   convergence against the absolutely convergent
-   `Σ log N𝔭·N𝔭^{−5m/4}`) yields
-   `−2·Σ_{𝔭,m≥1} (log N𝔭/N𝔭^{m/2})·F(m·log N𝔭)`, i.e. the stated
-   sum in its `m : ℕ` (`m+1`) indexing.
-3. *Archimedean part: `r₂·Γ_ℂ'/Γ_ℂ` gives
-   `−n(γ + log 8π) + n·∫₀^∞ (1−F)/(2 sinh(x/2))`.*  Poitou's
-   Lemmes 1–2 and formula (5), p. 6-05: `(Γ_ℂ'/Γ_ℂ)(s) =
-   −log 2π + ψ(s)` with the digamma integral representation
-   `ψ(s) = −γ + ∫₀^∞ (e^{−x} − e^{−sx})/(1 − e^{−x}) dx` (pin:
-   digamma material is thin — manufacture from
-   `Real.eulerMascheroniConstant` limits and the `1/(s+k)` partial
-   fractions of `Complex.Gamma_seq`); pairing against
-   `π⁻¹∫ Re[Φ(5/4+it)·…] dt` and Fourier inversion turns each
-   `e^{−sx}` kernel into an evaluation of `F`, and the bookkeeping
-   of Lemme 2 assembles exactly
-   `n·(−γ − log 8π + ∫₀^∞ (1 − F(x))/(2 sinh(x/2)) dx)` for
-   `n = 2r₂` (`htc`: `r₁ = 0`, `n = 2r₂` via
-   `NumberField.InfinitePlace.card_eq_nrRealPlaces_add_two_mul_nrComplexPlaces`).
-
-Each of steps 1–3 is a candidate further leaf; the split into the
-three integrals is limit arithmetic over
-`intervalIntegral.integral_add` given termwise integrability (all
-integrands continuous in `t` on compacts: `differentiable` with
-`Differentiable.deriv`, `ne_zero_of_one_lt_re` on the line, and the
-parameter-integral continuity of `poitouPhi`). -/
+part converges to the arithmetic terms** (ASSEMBLED 2026-07-24 from
+the integrand-split leaf
+`DedekindContinuation.poitouEdge_sub_poleEdge_eq` and the three limit
+leaves `poitouConstEdge_tendsto`, `poitouGammaEdge_tendsto`,
+`poitouPrimeEdge_tendsto` by limit arithmetic (`Filter.Tendsto.add`
++ `Filter.Tendsto.congr`); Poitou pp. 6-02–6-06, Propositions 2–3
+with Lemmes 1–2).  The whole edge lies in the absolute-convergence
+half-plane `re s = 5/4 > 1`, where subtracting `poitouPoleEdge`
+removes exactly the log-derivative `1/s + 1/(s−1)` of the
+normalizing factor `s(s−1)` and leaves the folded edge of
+`Φ·Z_K'/Z_K` with `(Z_K'/Z_K)(s) = (log|d|)/2 + r₂·(ψ(s) − log 2π)
++ (ζ_K'/ζ_K)(s)` (`r₁ = 0` via `htc`) — the split leaf; the three
+limit leaves then evaluate the pieces to `log|d_K|`,
+`−n(γ + log 8π) + n·∫₀^∞ (1−F)/(2 sinh(x/2))`, and
+`−2·Σ_{𝔭,m} (log N𝔭/N𝔭^{m/2})·F(m·log N𝔭)` respectively. -/
 theorem DedekindContinuation.poitouEdge_sub_poleEdge_tendsto {K : Type*}
     [Field K] [NumberField K] (pkg : DedekindContinuation K)
     (htc : NumberField.IsTotallyComplex K) :
@@ -7939,7 +8110,32 @@ theorem DedekindContinuation.poitouEdge_sub_poleEdge_tendsto {K : Type*}
           Real.log (Ideal.absNorm P.1) /
               (Ideal.absNorm P.1 : ℝ) ^ (((m : ℝ) + 1) / 2) *
             poitouF (((m : ℝ) + 1) * Real.log (Ideal.absNorm P.1)))) := by
-  sorry
+  have hlim := ((poitouConstEdge_tendsto K).add
+    (poitouGammaEdge_tendsto K htc)).add (poitouPrimeEdge_tendsto K)
+  have hkey : Real.log |(NumberField.discr K : ℝ)| -
+        (Module.finrank ℚ K : ℝ) *
+          (Real.eulerMascheroniConstant + Real.log (8 * Real.pi)) +
+        (Module.finrank ℚ K : ℝ) *
+          (∫ x in Set.Ioi (0 : ℝ), (1 - poitouF x) / (2 * Real.sinh (x / 2))) -
+        2 * ∑' (P : {P : Ideal (NumberField.RingOfIntegers K) //
+              P.IsPrime ∧ P ≠ ⊥}) (m : ℕ),
+          Real.log (Ideal.absNorm P.1) /
+              (Ideal.absNorm P.1 : ℝ) ^ (((m : ℝ) + 1) / 2) *
+            poitouF (((m : ℝ) + 1) * Real.log (Ideal.absNorm P.1)) =
+      Real.log |(NumberField.discr K : ℝ)| +
+        (-((Module.finrank ℚ K : ℝ) *
+            (Real.eulerMascheroniConstant + Real.log (8 * Real.pi))) +
+          (Module.finrank ℚ K : ℝ) *
+            (∫ x in Set.Ioi (0 : ℝ),
+              (1 - poitouF x) / (2 * Real.sinh (x / 2)))) +
+        -(2 * ∑' (P : {P : Ideal (NumberField.RingOfIntegers K) //
+              P.IsPrime ∧ P ≠ ⊥}) (m : ℕ),
+          Real.log (Ideal.absNorm P.1) /
+              (Ideal.absNorm P.1 : ℝ) ^ (((m : ℝ) + 1) / 2) *
+            poitouF (((m : ℝ) + 1) * Real.log (Ideal.absNorm P.1))) := by
+    ring
+  rw [hkey]
+  exact hlim.congr fun T => (pkg.poitouEdge_sub_poleEdge_eq htc T).symm
 
 /-- **Poitou's Propositions 2–3: evaluation of the folded vertical
 edge** (ASSEMBLED 2026-07-24 from the pole-part leaf
