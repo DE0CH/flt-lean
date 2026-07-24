@@ -195,6 +195,11 @@ import Mathlib.NumberTheory.NumberField.InfinitePlace.Basic
 import Mathlib.RingTheory.Norm.Defs
 import Mathlib.RingTheory.Norm.Transitivity
 import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
+-- for the finiteness of the narrow ray class number
+import Mathlib.RingTheory.ClassGroup.Basic
+import Mathlib.NumberTheory.NumberField.ClassNumber
+import Mathlib.RingTheory.UniqueFactorizationDomain.Finite
+import Mathlib.RingTheory.Ideal.Quotient.Operations
 
 @[expose] public section
 
@@ -3029,32 +3034,6 @@ instance narrowRaySetoid (F : Type*) [Field F] [NumberField F] (ℓ : ℕ) :
   iseqv := ⟨fun I => isNarrowRayEquiv_refl ℓ I.1,
     isNarrowRayEquiv_symm, isNarrowRayEquiv_trans⟩
 
-/-- **Finiteness of the narrow ray class number** (sorry leaf): the
-narrow ray classes mod `ℓ` of nonzero ideals of `𝓞 F` coprime to `(ℓ)`
-are finite in number — the classical finiteness of the ray class group
-(Lang, *Algebraic Number Theory*, ch. VI §1; Neukirch VI §1).
-
-Intended proof: the class of `I` within its ideal class (finitely many,
-by mathlib's `ClassGroup` finiteness) is determined by finite residual
-data. Concretely: fix representatives `J₁, …, J_h` of the ideal
-classes, chosen coprime to `(ℓ)` (every ideal class contains such a
-representative: clear denominators and use prime avoidance / CRT to
-move the support off `ℓ`). For `I` coprime in the class of `J_i` there
-are `x, y ∈ 𝓞 F ∖ {0}` with `(x)·I = (y)·J_i`, and after multiplying
-`x, y` by a common totally positive element chosen by CRT to make both
-coprime to `(ℓ)` (possible since `I, J_i` are), the narrow ray class of
-`I` is determined by `(i, [x·y⁻¹])` where the second datum lives in the
-FINITE group `(𝓞 F ⧸ ℓ)ˣ × ∏_{φ real} {±1}` (sign vector of the real
-embeddings): if two ideals produce the same datum, the quotient of
-their multipliers is congruent to `1 mod ℓ` and totally positive after
-adjusting by the same unit, which is exactly `IsNarrowRayEquiv`. Hence
-the classes inject into a finite set. Nothing analytic is needed —
-this is the algebraic finiteness half of Weber's theorem, isolated from
-the geometry-of-numbers counting leaf below. -/
-theorem finite_quotient_narrowRaySetoid (F : Type*) [Field F] [NumberField F]
-    (ℓ : ℕ) (hℓ : ℓ.Prime) : Finite (Quotient (narrowRaySetoid F ℓ)) :=
-  sorry
-
 /-- For a prime `ℓ`, the ideal `(ℓ)` of `𝓞 F` is proper: its absolute
 norm is `ℓ ^ [F : ℚ] ≠ 1`. -/
 theorem span_natCast_prime_ne_top {F : Type*} [Field F] [NumberField F] {ℓ : ℕ}
@@ -3069,6 +3048,397 @@ theorem span_natCast_prime_ne_top {F : Type*} [Field F] [NumberField F] {ℓ : �
   rcases (Nat.pow_eq_one).mp h1 with h2 | h2
   · exact hℓ.ne_one h2
   · omega
+
+/-- **Every ideal class contains an integral ideal coprime to `(ℓ)`** —
+the moving lemma for the finiteness of the narrow ray class number.
+Pick a nonzero integral ideal `I₀` in the inverse class, and an element
+`t ∈ I₀` avoiding `I₀·P` for every (of the finitely many) maximal
+ideal(s) `P` over `ℓ`, built by the Chinese remainder theorem as
+`t = ∑_P e_P·u_P` with `u_P ∈ I₀ ∖ I₀·P` and `e_P ≡ 1 mod P`,
+`e_P ∈ Q` for `Q ≠ P`. Then `(t) = I₀·D` with `D` integral, coprime to
+`(ℓ)` (no maximal over `ℓ` divides it), and `[D] = [I₀]⁻¹ = c`. -/
+theorem exists_ne_zero_isCoprime_span_mk0_eq {F : Type*} [Field F] [NumberField F]
+    {ℓ : ℕ} (hℓ : ℓ.Prime) (c : ClassGroup (𝓞 F)) :
+    ∃ (D : Ideal (𝓞 F)) (hD : D ≠ 0), IsCoprime D (Ideal.span {(ℓ : 𝓞 F)}) ∧
+      ClassGroup.mk0 ⟨D, mem_nonZeroDivisors_iff_ne_zero.mpr hD⟩ = c := by
+  classical
+  obtain ⟨⟨I₀, hI₀mem⟩, hI₀c⟩ := ClassGroup.mk0_surjective (R := 𝓞 F) c⁻¹
+  have hI₀ : I₀ ≠ 0 := mem_nonZeroDivisors_iff_ne_zero.mp hI₀mem
+  have hL0 : (Ideal.span {(ℓ : 𝓞 F)} : Ideal (𝓞 F)) ≠ 0 := by
+    rw [Ideal.zero_eq_bot, Ne, Ideal.span_singleton_eq_bot]
+    exact_mod_cast hℓ.ne_zero
+  haveI := UniqueFactorizationMonoid.fintypeSubtypeDvd
+    (Ideal.span {(ℓ : 𝓞 F)}) hL0
+  -- the maximal ideals over `ℓ` form a finite set
+  have hdvdfin : {P : Ideal (𝓞 F) | P ∣ Ideal.span {(ℓ : 𝓞 F)}}.Finite := by
+    refine Set.Finite.ofFinset ((Finset.univ :
+      Finset {P : Ideal (𝓞 F) // P ∣ Ideal.span {(ℓ : 𝓞 F)}}).image Subtype.val) ?_
+    intro Q
+    simp only [Finset.mem_image, Finset.mem_univ, true_and, Set.mem_setOf_eq]
+    constructor
+    · rintro ⟨⟨P, hP⟩, rfl⟩
+      exact hP
+    · intro hQ
+      exact ⟨⟨Q, hQ⟩, rfl⟩
+  have hSfin : {P : Ideal (𝓞 F) | P.IsMaximal ∧ Ideal.span {(ℓ : 𝓞 F)} ≤ P}.Finite :=
+    hdvdfin.subset (fun P hP => Ideal.dvd_iff_le.mpr hP.2)
+  have hSmem : ∀ P, P ∈ hSfin.toFinset ↔
+      (P.IsMaximal ∧ Ideal.span {(ℓ : 𝓞 F)} ≤ P) := by
+    intro P
+    rw [Set.Finite.mem_toFinset]
+    rfl
+  -- elements of `I₀` outside each `I₀·P`
+  have hu : ∀ P ∈ hSfin.toFinset, ∃ u, u ∈ I₀ ∧ u ∉ I₀ * P := by
+    intro P hP
+    have hlt : I₀ * P < I₀ := by
+      refine lt_of_le_of_ne Ideal.mul_le_right ?_
+      intro heq
+      refine ((hSmem P).mp hP).1.ne_top ?_
+      have h3 : I₀ * P = I₀ * ⊤ := by rw [Ideal.mul_top]; exact heq
+      exact mul_left_cancel₀ hI₀ h3
+    obtain ⟨u, huB, huA⟩ := SetLike.exists_of_lt hlt
+    exact ⟨u, huB, huA⟩
+  choose u humem hunot using hu
+  -- CRT coefficients: `e_P ≡ 1 mod P`, `e_P ∈ Q` for the other `Q` over `ℓ`
+  have he : ∀ P ∈ hSfin.toFinset, ∃ e : 𝓞 F, e - 1 ∈ P ∧
+      ∀ Q ∈ hSfin.toFinset, Q ≠ P → e ∈ Q := by
+    intro P hP
+    have hpair : Pairwise (Function.onFun IsCoprime
+        (fun Q : {Q // Q ∈ hSfin.toFinset} => (Q.1 : Ideal (𝓞 F)))) := by
+      rintro ⟨Q, hQ⟩ ⟨Q', hQ'⟩ hne'
+      have hne'' : Q ≠ Q' := fun h => hne' (Subtype.ext h)
+      exact Ideal.isCoprime_iff_sup_eq.mpr
+        (((hSmem Q).mp hQ).1.coprime_of_ne ((hSmem Q').mp hQ').1 hne'')
+    obtain ⟨ee, hecrt⟩ := Ideal.exists_forall_sub_mem_ideal (R := 𝓞 F) hpair
+      (fun Q => if Q.1 = P then 1 else 0)
+    refine ⟨ee, ?_, ?_⟩
+    · have h4 := hecrt ⟨P, hP⟩
+      simpa using h4
+    · intro Q hQ hQP
+      have h4 := hecrt ⟨Q, hQ⟩
+      simp only [if_neg hQP] at h4
+      simpa using h4
+  choose e he1 he2 using he
+  -- the avoiding element `t = ∑ e_P · u_P`
+  have htI₀ : (∑ P ∈ hSfin.toFinset.attach, e P.1 P.2 * u P.1 P.2) ∈ I₀ :=
+    Submodule.sum_mem _ (fun P _ => Ideal.mul_mem_left _ _ (humem P.1 P.2))
+  have htnot : ∀ P₀ (hP₀ : P₀ ∈ hSfin.toFinset),
+      (∑ P ∈ hSfin.toFinset.attach, e P.1 P.2 * u P.1 P.2) ∉ I₀ * P₀ := by
+    intro P₀ hP₀ htmem
+    have hsplit : (∑ P ∈ hSfin.toFinset.attach, e P.1 P.2 * u P.1 P.2)
+        = e P₀ hP₀ * u P₀ hP₀ +
+          ∑ P ∈ hSfin.toFinset.attach.erase ⟨P₀, hP₀⟩, e P.1 P.2 * u P.1 P.2 :=
+      (Finset.add_sum_erase _
+        (fun P : {P // P ∈ hSfin.toFinset} => e P.1 P.2 * u P.1 P.2)
+        (Finset.mem_attach _ ⟨P₀, hP₀⟩)).symm
+    have hdiff : (∑ P ∈ hSfin.toFinset.attach, e P.1 P.2 * u P.1 P.2)
+        - u P₀ hP₀ ∈ I₀ * P₀ := by
+      rw [hsplit]
+      have hkey : e P₀ hP₀ * u P₀ hP₀ +
+          (∑ P ∈ hSfin.toFinset.attach.erase ⟨P₀, hP₀⟩, e P.1 P.2 * u P.1 P.2)
+          - u P₀ hP₀
+          = (e P₀ hP₀ - 1) * u P₀ hP₀ +
+            ∑ P ∈ hSfin.toFinset.attach.erase ⟨P₀, hP₀⟩, e P.1 P.2 * u P.1 P.2 := by
+        ring
+      rw [hkey]
+      refine Ideal.add_mem _ ?_ (Submodule.sum_mem _ ?_)
+      · rw [mul_comm I₀ P₀]
+        exact Ideal.mul_mem_mul (he1 P₀ hP₀) (humem P₀ hP₀)
+      · intro P hPmem
+        have hPne : P₀ ≠ P.1 := by
+          intro h
+          apply Finset.ne_of_mem_erase hPmem
+          exact Subtype.ext h.symm
+        rw [mul_comm I₀ P₀]
+        exact Ideal.mul_mem_mul (he2 P.1 P.2 P₀ hP₀ hPne) (humem P.1 P.2)
+    have hu0 : u P₀ hP₀ ∈ I₀ * P₀ := by
+      have h5 := Ideal.sub_mem _ htmem hdiff
+      simpa using h5
+    exact hunot P₀ hP₀ hu0
+  have hSne : hSfin.toFinset.Nonempty := by
+    obtain ⟨M, hM, hMle⟩ := Ideal.exists_le_maximal _
+      (span_natCast_prime_ne_top (F := F) hℓ)
+    exact ⟨M, (hSmem M).mpr ⟨hM, hMle⟩⟩
+  obtain ⟨Pw, hPw⟩ := hSne
+  have ht0 : (∑ P ∈ hSfin.toFinset.attach, e P.1 P.2 * u P.1 P.2) ≠ 0 := by
+    intro h
+    exact htnot Pw hPw (h ▸ Ideal.zero_mem _)
+  -- the complementary ideal `D` with `(t) = I₀·D`
+  have hle : Ideal.span {∑ P ∈ hSfin.toFinset.attach, e P.1 P.2 * u P.1 P.2} ≤ I₀ :=
+    (Ideal.span_singleton_le_iff_mem _).mpr htI₀
+  obtain ⟨D, hD⟩ := Ideal.dvd_iff_le.mpr hle
+  have hD0 : D ≠ 0 := by
+    intro h0
+    rw [h0, mul_zero] at hD
+    apply ht0
+    rw [← Ideal.span_singleton_eq_bot, ← Ideal.zero_eq_bot]
+    exact hD
+  have hDcop : IsCoprime D (Ideal.span {(ℓ : 𝓞 F)}) := by
+    rw [Ideal.isCoprime_iff_sup_eq]
+    by_contra hsup
+    obtain ⟨M, hMmax, hMle⟩ := Ideal.exists_le_maximal _ hsup
+    have hMS : M ∈ hSfin.toFinset := (hSmem M).mpr ⟨hMmax, le_trans le_sup_right hMle⟩
+    have hDM : D ≤ M := le_trans le_sup_left hMle
+    have h6 : Ideal.span {∑ P ∈ hSfin.toFinset.attach, e P.1 P.2 * u P.1 P.2}
+        ≤ I₀ * M := by
+      rw [hD]
+      exact Ideal.mul_mono_right hDM
+    exact htnot M hMS (h6 (Ideal.mem_span_singleton_self _))
+  refine ⟨D, hD0, hDcop, ?_⟩
+  have hprin : (I₀ * D).IsPrincipal :=
+    ⟨⟨∑ P ∈ hSfin.toFinset.attach, e P.1 P.2 * u P.1 P.2, hD.symm⟩⟩
+  have hmul : ClassGroup.mk0 ⟨I₀, hI₀mem⟩ *
+      ClassGroup.mk0 ⟨D, mem_nonZeroDivisors_iff_ne_zero.mpr hD0⟩ = 1 := by
+    rw [← map_mul]
+    exact (ClassGroup.mk0_eq_one_iff
+      (mem_nonZeroDivisors_iff_ne_zero.mpr (mul_ne_zero hI₀ hD0))).mpr hprin
+  have h7 : ClassGroup.mk0 ⟨D, mem_nonZeroDivisors_iff_ne_zero.mpr hD0⟩
+      = (ClassGroup.mk0 ⟨I₀, hI₀mem⟩)⁻¹ := eq_inv_of_mul_eq_one_left
+      (by rw [mul_comm] at hmul; exact hmul)
+  rw [h7, hI₀c, inv_inv]
+
+open scoped nonZeroDivisors in
+/-- **Coprime-to-`(ℓ)` principal witnesses**: two nonzero ideals coprime
+to `(ℓ)` in the same ideal class are related by `(x')·I = (y')·J` with
+`(x')`, `(y')` both coprime to `(ℓ)`. Multiply by an auxiliary integral
+ideal `D` coprime to `(ℓ)` in the inverse class
+(`exists_ne_zero_isCoprime_span_mk0_eq`): then `I·D = (u)` and
+`J·D = (v)` are principal with generators coprime to `(ℓ)`, and
+`(v)·I = J·D·I = (u)·J`. -/
+theorem exists_isCoprime_span_witnesses_of_span_mul_eq {F : Type*} [Field F] [NumberField F]
+    {ℓ : ℕ} (hℓ : ℓ.Prime) {I J : Ideal (𝓞 F)} (hI : I ≠ 0) (hJ : J ≠ 0)
+    (hIc : IsCoprime I (Ideal.span {(ℓ : 𝓞 F)}))
+    (hJc : IsCoprime J (Ideal.span {(ℓ : 𝓞 F)}))
+    {x y : 𝓞 F} (hx : x ≠ 0) (hy : y ≠ 0)
+    (hxy : Ideal.span {x} * I = Ideal.span {y} * J) :
+    ∃ x' y' : 𝓞 F, x' ≠ 0 ∧ y' ≠ 0 ∧
+      IsCoprime (Ideal.span {x'}) (Ideal.span {(ℓ : 𝓞 F)}) ∧
+      IsCoprime (Ideal.span {y'}) (Ideal.span {(ℓ : 𝓞 F)}) ∧
+      Ideal.span {x'} * I = Ideal.span {y'} * J := by
+  classical
+  have hmk : ClassGroup.mk0 ⟨I, mem_nonZeroDivisors_iff_ne_zero.mpr hI⟩
+      = ClassGroup.mk0 ⟨J, mem_nonZeroDivisors_iff_ne_zero.mpr hJ⟩ :=
+    ClassGroup.mk0_eq_mk0_iff.mpr ⟨x, y, hx, hy, hxy⟩
+  obtain ⟨D, hD0, hDcop, hDmk⟩ := exists_ne_zero_isCoprime_span_mk0_eq hℓ
+    (ClassGroup.mk0 ⟨I, mem_nonZeroDivisors_iff_ne_zero.mpr hI⟩)⁻¹
+  have hID : (I * D).IsPrincipal := by
+    rw [← ClassGroup.mk0_eq_one_iff
+      (mem_nonZeroDivisors_iff_ne_zero.mpr (mul_ne_zero hI hD0))]
+    have h1 : (⟨I * D, mem_nonZeroDivisors_iff_ne_zero.mpr (mul_ne_zero hI hD0)⟩ :
+        (Ideal (𝓞 F))⁰)
+        = ⟨I, mem_nonZeroDivisors_iff_ne_zero.mpr hI⟩ *
+          ⟨D, mem_nonZeroDivisors_iff_ne_zero.mpr hD0⟩ := rfl
+    rw [h1, map_mul, hDmk, mul_inv_cancel]
+  have hJD : (J * D).IsPrincipal := by
+    rw [← ClassGroup.mk0_eq_one_iff
+      (mem_nonZeroDivisors_iff_ne_zero.mpr (mul_ne_zero hJ hD0))]
+    have h1 : (⟨J * D, mem_nonZeroDivisors_iff_ne_zero.mpr (mul_ne_zero hJ hD0)⟩ :
+        (Ideal (𝓞 F))⁰)
+        = ⟨J, mem_nonZeroDivisors_iff_ne_zero.mpr hJ⟩ *
+          ⟨D, mem_nonZeroDivisors_iff_ne_zero.mpr hD0⟩ := rfl
+    rw [h1, map_mul, ← hmk, hDmk, mul_inv_cancel]
+  obtain ⟨u, hu⟩ := hID.principal
+  obtain ⟨v, hv⟩ := hJD.principal
+  have huspan : I * D = Ideal.span {u} := hu
+  have hvspan : J * D = Ideal.span {v} := hv
+  have hu0 : u ≠ 0 := by
+    intro h0
+    rw [h0] at huspan
+    apply mul_ne_zero hI hD0
+    rw [huspan, Set.singleton_zero, Ideal.span_zero]
+    exact Ideal.zero_eq_bot.symm
+  have hv0 : v ≠ 0 := by
+    intro h0
+    rw [h0] at hvspan
+    apply mul_ne_zero hJ hD0
+    rw [hvspan, Set.singleton_zero, Ideal.span_zero]
+    exact Ideal.zero_eq_bot.symm
+  refine ⟨v, u, hv0, hu0, ?_, ?_, ?_⟩
+  · rw [← hvspan]
+    exact hJc.mul_left hDcop
+  · rw [← huspan]
+    exact hIc.mul_left hDcop
+  · rw [← huspan, ← hvspan]
+    ring
+
+/-- **Finiteness of the narrow ray class number**: the narrow ray
+classes mod `ℓ` of nonzero ideals of `𝓞 F` coprime to `(ℓ)` are finite
+in number — the classical finiteness of the ray class group (Lang,
+*Algebraic Number Theory*, ch. VI §1; Neukirch VI §1). PROVEN: the
+ideal-class datum descends to narrow classes (`ClassGroup.mk0_eq_mk0_iff`)
+and the class group is finite (mathlib), so it suffices to bound each
+fiber; within a fiber, fix a base class `q₀` and choose for every class
+coprime-to-`(ℓ)` principal witnesses against `q₀`'s representative
+(`exists_isCoprime_span_witnesses_of_span_mul_eq`). The map recording
+the witnesses' residues mod `(ℓ)` and real-embedding sign vectors lands
+in a finite type and is injective: if two classes share the datum, the
+cross products `α = x·y'`, `β = x'·y` are congruent mod `(ℓ)`, coprime
+to `(ℓ)` and of equal sign vectors, so `(α², α·β)` witnesses the narrow
+ray equivalence of the representatives (`α²` and `α·β` are totally
+positive since `α, β` share signs). -/
+theorem finite_quotient_narrowRaySetoid (F : Type*) [Field F] [NumberField F]
+    (ℓ : ℕ) (hℓ : ℓ.Prime) : Finite (Quotient (narrowRaySetoid F ℓ)) := by
+  classical
+  -- the ideal-class datum descends to narrow classes
+  have hwd : ∀ (I J : {I : Ideal (𝓞 F) // I ≠ 0 ∧
+      IsCoprime I (Ideal.span {(ℓ : 𝓞 F)})}), IsNarrowRayEquiv ℓ I.1 J.1 →
+      ClassGroup.mk0 ⟨I.1, mem_nonZeroDivisors_iff_ne_zero.mpr I.2.1⟩
+        = ClassGroup.mk0 ⟨J.1, mem_nonZeroDivisors_iff_ne_zero.mpr J.2.1⟩ := by
+    intro I J hIJ
+    obtain ⟨α, β, hα, hβ, hcα, hcβ, hcong, heq⟩ := hIJ
+    have hne : ∀ γ : 𝓞 F, IsCoprime (Ideal.span {γ}) (Ideal.span {(ℓ : 𝓞 F)}) → γ ≠ 0 := by
+      intro γ hcγ hγ0
+      rw [hγ0, Set.singleton_zero, Ideal.span_zero, ← Ideal.zero_eq_bot] at hcγ
+      exact span_natCast_prime_ne_top hℓ (Ideal.isUnit_iff.mp (isCoprime_zero_left.mp hcγ))
+    exact ClassGroup.mk0_eq_mk0_iff.mpr ⟨α, β, hne α hcα, hne β hcβ, heq⟩
+  let D : Quotient (narrowRaySetoid F ℓ) → ClassGroup (𝓞 F) :=
+    Quotient.lift
+      (fun I : {I : Ideal (𝓞 F) // I ≠ 0 ∧ IsCoprime I (Ideal.span {(ℓ : 𝓞 F)})} =>
+        ClassGroup.mk0 ⟨I.1, mem_nonZeroDivisors_iff_ne_zero.mpr I.2.1⟩)
+      hwd
+  -- it suffices to bound the fiber over each of the finitely many classes
+  suffices hfib : ∀ c : ClassGroup (𝓞 F),
+      Finite {q : Quotient (narrowRaySetoid F ℓ) // D q = c} by
+    exact Finite.of_equiv _ (Equiv.sigmaFiberEquiv D)
+  intro c
+  by_cases hne : Nonempty {q : Quotient (narrowRaySetoid F ℓ) // D q = c}
+  swap
+  · haveI := not_nonempty_iff.mp hne
+    infer_instance
+  obtain ⟨q₀⟩ := hne
+  -- coprime witnesses relating each fiber member's representative to `q₀`'s
+  have hwit : ∀ q : {q : Quotient (narrowRaySetoid F ℓ) // D q = c},
+      ∃ x y : 𝓞 F, x ≠ 0 ∧ y ≠ 0 ∧
+        IsCoprime (Ideal.span {x}) (Ideal.span {(ℓ : 𝓞 F)}) ∧
+        IsCoprime (Ideal.span {y}) (Ideal.span {(ℓ : 𝓞 F)}) ∧
+        Ideal.span {x} * (Quotient.out q.1).1 = Ideal.span {y} * (Quotient.out q₀.1).1 := by
+    intro q
+    have h1 : D q.1 = D q₀.1 := by rw [q.2, q₀.2]
+    have h2 : ClassGroup.mk0 ⟨(Quotient.out q.1).1,
+        mem_nonZeroDivisors_iff_ne_zero.mpr (Quotient.out q.1).2.1⟩
+        = ClassGroup.mk0 ⟨(Quotient.out q₀.1).1,
+          mem_nonZeroDivisors_iff_ne_zero.mpr (Quotient.out q₀.1).2.1⟩ := by
+      have e1 : D q.1 = ClassGroup.mk0 ⟨(Quotient.out q.1).1,
+          mem_nonZeroDivisors_iff_ne_zero.mpr (Quotient.out q.1).2.1⟩ := by
+        conv_lhs => rw [← Quotient.out_eq q.1]
+        rfl
+      have e2 : D q₀.1 = ClassGroup.mk0 ⟨(Quotient.out q₀.1).1,
+          mem_nonZeroDivisors_iff_ne_zero.mpr (Quotient.out q₀.1).2.1⟩ := by
+        conv_lhs => rw [← Quotient.out_eq q₀.1]
+        rfl
+      rw [← e1, ← e2]
+      exact h1
+    obtain ⟨x, y, hx0, hy0, hxy⟩ := ClassGroup.mk0_eq_mk0_iff.mp h2
+    exact exists_isCoprime_span_witnesses_of_span_mul_eq hℓ
+      (Quotient.out q.1).2.1 (Quotient.out q₀.1).2.1
+      (Quotient.out q.1).2.2 (Quotient.out q₀.1).2.2 hx0 hy0 hxy
+  choose xw yw hx0 hy0 hxc hyc hxy using hwit
+  -- the finite residual datum: residues mod `(ℓ)` and real sign vectors
+  haveI : Finite (𝓞 F ⧸ Ideal.span {(ℓ : 𝓞 F)}) := by
+    have hbne : Ideal.span {(ℓ : 𝓞 F)} ≠ ⊥ := by
+      rw [Ne, Ideal.span_singleton_eq_bot]
+      exact_mod_cast hℓ.ne_zero
+    exact Ring.HasFiniteQuotients.finiteQuotient hbne
+  haveI : Finite (F →+* ℝ) :=
+    Finite.of_equiv _ (RingHom.equivRatAlgHom (R := F) (S := ℝ)).symm
+  refine Finite.of_injective
+    (fun q : {q : Quotient (narrowRaySetoid F ℓ) // D q = c} =>
+      (Ideal.Quotient.mk (Ideal.span {(ℓ : 𝓞 F)}) (xw q),
+       Ideal.Quotient.mk (Ideal.span {(ℓ : 𝓞 F)}) (yw q),
+       fun φ : F →+* ℝ => decide (0 < φ (algebraMap (𝓞 F) F (xw q))),
+       fun φ : F →+* ℝ => decide (0 < φ (algebraMap (𝓞 F) F (yw q))))) ?_
+  intro q q' hE
+  simp only [Prod.mk.injEq] at hE
+  obtain ⟨hEx, hEy, hEsx, hEsy⟩ := hE
+  have hxcong : xw q - xw q' ∈ Ideal.span {(ℓ : 𝓞 F)} := Ideal.Quotient.eq.mp hEx
+  have hycong : yw q - yw q' ∈ Ideal.span {(ℓ : 𝓞 F)} := Ideal.Quotient.eq.mp hEy
+  have hsx : ∀ φ : F →+* ℝ, (0 < φ (algebraMap (𝓞 F) F (xw q))) ↔
+      (0 < φ (algebraMap (𝓞 F) F (xw q'))) :=
+    fun φ => decide_eq_decide.mp (congrFun hEsx φ)
+  have hsy : ∀ φ : F →+* ℝ, (0 < φ (algebraMap (𝓞 F) F (yw q))) ↔
+      (0 < φ (algebraMap (𝓞 F) F (yw q'))) :=
+    fun φ => decide_eq_decide.mp (congrFun hEsy φ)
+  -- the cross products witness the narrow equivalence after squaring
+  obtain ⟨α, hα⟩ : ∃ t : 𝓞 F, t = xw q * yw q' := ⟨_, rfl⟩
+  obtain ⟨β, hβ⟩ : ∃ t : 𝓞 F, t = xw q' * yw q := ⟨_, rfl⟩
+  have hαβeq : Ideal.span {α} * (Quotient.out q.1).1
+      = Ideal.span {β} * (Quotient.out q'.1).1 := by
+    rw [hα, hβ, ← Ideal.span_singleton_mul_span_singleton,
+      ← Ideal.span_singleton_mul_span_singleton]
+    calc Ideal.span {xw q} * Ideal.span {yw q'} * (Quotient.out q.1).1
+        = Ideal.span {yw q'} * (Ideal.span {xw q} * (Quotient.out q.1).1) := by ring
+      _ = Ideal.span {yw q'} * (Ideal.span {yw q} * (Quotient.out q₀.1).1) := by
+          rw [hxy q]
+      _ = Ideal.span {yw q} * (Ideal.span {yw q'} * (Quotient.out q₀.1).1) := by ring
+      _ = Ideal.span {yw q} * (Ideal.span {xw q'} * (Quotient.out q'.1).1) := by
+          rw [hxy q']
+      _ = Ideal.span {xw q'} * Ideal.span {yw q} * (Quotient.out q'.1).1 := by ring
+  have hαβcong : α - β ∈ Ideal.span {(ℓ : 𝓞 F)} := by
+    have hkey : α - β = xw q * (yw q' - yw q) + yw q * (xw q - xw q') := by
+      rw [hα, hβ]; ring
+    rw [hkey]
+    refine Ideal.add_mem _ (Ideal.mul_mem_left _ _ ?_) (Ideal.mul_mem_left _ _ hxcong)
+    rw [← neg_sub (yw q) (yw q')]
+    exact neg_mem hycong
+  have hα0 : α ≠ 0 := by
+    rw [hα]
+    exact mul_ne_zero (hx0 q) (hy0 q')
+  have hφne : ∀ (φ : F →+* ℝ) (γ : 𝓞 F), γ ≠ 0 → φ (algebraMap (𝓞 F) F γ) ≠ 0 := by
+    intro φ γ hγ h0
+    apply hγ
+    have h1 : algebraMap (𝓞 F) F γ = 0 := by
+      apply RingHom.injective φ
+      rw [h0, map_zero]
+    exact FaithfulSMul.algebraMap_injective (𝓞 F) F (by rw [h1, map_zero])
+  have hpp : ∀ (u v : ℝ), u ≠ 0 → v ≠ 0 → ((0 < u) ↔ (0 < v)) → 0 < u * v := by
+    intro u v hu hv hiff
+    rcases lt_or_gt_of_ne hu with h | h
+    · rcases lt_or_gt_of_ne hv with h2 | h2
+      · exact mul_pos_of_neg_of_neg h h2
+      · exact absurd (hiff.mpr h2) (not_lt.mpr h.le)
+    · exact mul_pos h (hiff.mp h)
+  have hposα : ∀ φ : F →+* ℝ, 0 < φ (algebraMap (𝓞 F) F (α * α)) := by
+    intro φ
+    rw [map_mul, map_mul]
+    exact mul_self_pos.mpr (hφne φ α hα0)
+  have hposβ : ∀ φ : F →+* ℝ, 0 < φ (algebraMap (𝓞 F) F (α * β)) := by
+    intro φ
+    rw [map_mul, map_mul]
+    have hexp : φ (algebraMap (𝓞 F) F α) * φ (algebraMap (𝓞 F) F β)
+        = (φ (algebraMap (𝓞 F) F (xw q)) * φ (algebraMap (𝓞 F) F (xw q')))
+          * (φ (algebraMap (𝓞 F) F (yw q)) * φ (algebraMap (𝓞 F) F (yw q'))) := by
+      rw [hα, hβ, map_mul, map_mul, map_mul, map_mul]
+      ring
+    rw [hexp]
+    exact mul_pos
+      (hpp _ _ (hφne φ _ (hx0 q)) (hφne φ _ (hx0 q')) (hsx φ))
+      (hpp _ _ (hφne φ _ (hy0 q)) (hφne φ _ (hy0 q')) (hsy φ))
+  have hcspanα : IsCoprime (Ideal.span {α}) (Ideal.span {(ℓ : 𝓞 F)}) := by
+    rw [hα, ← Ideal.span_singleton_mul_span_singleton]
+    exact (hxc q).mul_left (hyc q')
+  have hcspanβ : IsCoprime (Ideal.span {β}) (Ideal.span {(ℓ : 𝓞 F)}) := by
+    rw [hβ, ← Ideal.span_singleton_mul_span_singleton]
+    exact (hxc q').mul_left (hyc q)
+  have hequiv : IsNarrowRayEquiv ℓ (Quotient.out q.1).1 (Quotient.out q'.1).1 := by
+    refine ⟨α * α, α * β, hposα, hposβ, ?_, ?_, ?_, ?_⟩
+    · rw [← Ideal.span_singleton_mul_span_singleton]
+      exact hcspanα.mul_left hcspanα
+    · rw [← Ideal.span_singleton_mul_span_singleton]
+      exact hcspanα.mul_left hcspanβ
+    · have hkey : α * α - α * β = α * (α - β) := by ring
+      rw [hkey]
+      exact Ideal.mul_mem_left _ _ hαβcong
+    · rw [← Ideal.span_singleton_mul_span_singleton,
+        ← Ideal.span_singleton_mul_span_singleton]
+      calc Ideal.span {α} * Ideal.span {α} * (Quotient.out q.1).1
+          = Ideal.span {α} * (Ideal.span {α} * (Quotient.out q.1).1) := by ring
+        _ = Ideal.span {α} * (Ideal.span {β} * (Quotient.out q'.1).1) := by rw [hαβeq]
+        _ = Ideal.span {α} * Ideal.span {β} * (Quotient.out q'.1).1 := by ring
+  have hqq : q.1 = q'.1 := by
+    have h2 : (⟦Quotient.out q.1⟧ : Quotient (narrowRaySetoid F ℓ))
+        = ⟦Quotient.out q'.1⟧ := Quotient.sound hequiv
+    rwa [Quotient.out_eq, Quotient.out_eq] at h2
+  exact Subtype.ext hqq
 
 /-- **Norm–membership dictionary at a maximal ideal**: for a maximal
 ideal `M` of `𝓞 F` and a prime `ℓ`, `ℓ` divides the absolute norm of
@@ -3352,8 +3722,8 @@ norm in `[1, n]` partition into those classes:
 counts over a set `R` of `f` class representatives (depending on `a`
 but not on `n`).
 
-Now DERIVED over the single sorried finiteness leaf
-`finite_quotient_narrowRaySetoid`: the coprime-to-`ℓ` classes of
+Now DERIVED, sorry-free in this subtree: through the PROVEN finiteness
+`finite_quotient_narrowRaySetoid`, the coprime-to-`ℓ` classes of
 `narrowRaySetoid` carry a multiplication (`Quotient.map₂` through
 `isNarrowRayEquiv_mul`) which is cancellative (ideal cancellation in
 the Dedekind domain `𝓞 F`), and the norm residue descends to a
