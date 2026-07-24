@@ -550,10 +550,14 @@ PROVEN assembly over three sharply-stated sorried leaves:
 * `qExpansion_heckeTransform_coeff` — the classical coefficient
   formula `a_m(T_q f) = a_{qm}(f) + 1_{q ∤ N} · q · a_{m/q}(f)`
   (Diamond–Shurman Proposition 5.2.2 at weight 2);
-* `exists_rational_qExpansion_basis` — `S₂(Γ₀(N))` has a finite
-  `ℂ`-basis of forms with rational `q`-expansions (finite
-  dimensionality plus the rational structure; Diamond–Shurman §6.5,
-  Shimura, *Introduction to the Arithmetic Theory*, Theorem 3.52).
+* `cuspForm_mem_span_rational` — the forms with rational
+  `q`-expansions span `S₂(Γ₀(N))` (the rational structure;
+  Diamond–Shurman §6.5, Shimura, *Introduction to the Arithmetic
+  Theory*, Theorem 3.52). Finite dimensionality of `S₂(Γ₀(N))` and
+  the general-level Sturm bound are PROVEN (2026-07-24,
+  `exists_cuspForm_sturm_bound`/`cuspForm_finiteDimensional`), so the
+  former leaf `exists_rational_qExpansion_basis` is now a proven
+  assembly.
 
 Everything else is proven:
 
@@ -989,28 +993,208 @@ theorem exists_ratCast_coords {k : ℕ} {w : Fin k → ℕ → ℚ} {b : Fin k �
   have := Fintype.linearIndependent_iff.mp hw _ hdiff i
   exact sub_eq_zero.mp this
 
-/-- **Rational basis of `S₂(Γ₀(N))`** (sorry node; the irreducible
-geometric leaf of the Hecke-field-finiteness node): the space of
-weight-2 level-`N` cusp forms is finite-dimensional over `ℂ` and has
-a basis of forms whose `q`-expansion coefficients are RATIONAL. This
-combines two classical facts unavailable on this pin: (i) finite
-dimensionality of `S₂(Γ₀(N))` (Diamond–Shurman ch. 3 dimension
-formulas, `dim = genus X₀(N)`; only level 1 exists on the pin), and
-(ii) the rational structure (Diamond–Shurman §6.5; Shimura,
+/-! #### Finite dimensionality of `S₂(Γ₀(N))`: the norm/Sturm route
+
+Added 2026-07-24, cutting the former single geometric leaf
+`exists_rational_qExpansion_basis` into its two genuinely different
+contents. (i) FINITE DIMENSIONALITY of the weight-2 cusp space at
+general level is PROVEN here in full, by upgrading the
+level-1/level-2 emptiness technique (`cuspForm_level_two_coe_eq_zero`)
+to a quantitative Sturm bound: the norm of `f` down to level 1 factors
+as `f · g` where `g` — the product of the translates of `f` over the
+NON-identity cosets of `Γ₀(N)` in `SL(2, ℤ)` — is itself
+`Γ₀(N)`-slash-invariant (every element of `Γ₀(N)` stabilizes the
+identity coset and permutes the rest), holomorphic and bounded at
+`i∞`; hence both factors have width-1 `q`-expansions and
+`ord(norm) ≥ ord(f)` (`PowerSeries.le_order_mul`), so if the first
+`2·[SL(2,ℤ):Γ₀(N)]/12 + 1` coefficients of `f` vanish the norm beats
+the level-1 Sturm threshold `weight/12` and dies, hence so does `f`.
+A cusp form is therefore determined by finitely many coefficients and
+`S₂(Γ₀(N))` embeds into `Fin B → ℂ`. (ii) The RATIONAL STRUCTURE —
+a spanning set of forms with rational `q`-expansions, the genuinely
+arithmetic-geometric fact (Shimura Thm 3.52) — is isolated as the
+single remaining sorried leaf `cuspForm_mem_span_rational` below. -/
+
+section SturmFiniteness
+
+open scoped Manifold
+
+/-- **Sturm bound for `S₂(Γ₀(N))`** (PROVEN, 2026-07-24): there is a
+finite bound `B` — here `2·[SL(2,ℤ):Γ₀(N)]/12 + 1` — such that a
+weight-2 level-`N` cusp form whose `q`-expansion coefficients `a_m`
+vanish for all `m < B` is zero. General-level analogue of the
+classical Sturm bound, proven by the norm-to-level-1 route of
+`cuspForm_level_two_coe_eq_zero` made quantitative through the
+factorization `norm f = f · (complementary product)` described in the
+section header. -/
+theorem exists_cuspForm_sturm_bound (N : ℕ) (hN : 0 < N) :
+    ∃ B : ℕ, ∀ f : CuspForm (Gamma0GL N) 2,
+      (∀ m < B, qCoeff N f m = 0) → f = 0 := by
+  classical
+  haveI : NeZero N := ⟨hN.ne'⟩
+  refine ⟨2 * Nat.card (𝒮ℒ ⧸ (Gamma0GL N).subgroupOf 𝒮ℒ) / 12 + 1, fun f hcoeff => ?_⟩
+  suffices hf0 : ⇑f = 0 from DFunLike.coe_injective (by rw [hf0, CuspForm.coe_zero])
+  by_contra hf
+  refine ModularForm.norm_ne_zero 𝒮ℒ hf ?_
+  apply sturm_bound_levelOne
+  letI := Fintype.ofFinite (𝒮ℒ ⧸ (Gamma0GL N).subgroupOf 𝒮ℒ)
+  set q₀ : 𝒮ℒ ⧸ (Gamma0GL N).subgroupOf 𝒮ℒ := ⟦1⟧ with hq₀
+  set g : ℍ → ℂ :=
+    ∏ q ∈ Finset.univ.erase q₀, SlashInvariantForm.quotientFunc f q with hgdef
+  -- every element of `Γ₀(N)` stabilizes the identity coset
+  have hfix : ∀ (γ : GL (Fin 2) ℝ) (hγSL : γ ∈ 𝒮ℒ), γ ∈ Gamma0GL N →
+      (⟨γ, hγSL⟩ : 𝒮ℒ)⁻¹ • q₀ = q₀ := by
+    intro γ hγSL hγ
+    rw [hq₀]
+    exact Quotient.sound (QuotientGroup.leftRel_apply.mpr (by
+      simpa [Subgroup.mem_subgroupOf] using hγ))
+  have hfix' : ∀ (γ : GL (Fin 2) ℝ) (hγSL : γ ∈ 𝒮ℒ), γ ∈ Gamma0GL N →
+      (⟨γ, hγSL⟩ : 𝒮ℒ) • q₀ = q₀ := by
+    intro γ hγSL hγ
+    conv_lhs => rw [← hfix γ hγSL hγ]
+    rw [smul_inv_smul]
+  -- hence permutes the complementary cosets: `g` is `Γ₀(N)`-slash-invariant
+  have hslash : ∀ γ ∈ Gamma0GL N,
+      g ∣[(2 * ((Finset.univ.erase q₀).card : ℤ))] γ = g := by
+    intro γ hγ
+    have hγSL : γ ∈ 𝒮ℒ := by
+      rcases Subgroup.mem_map.mp hγ with ⟨s, -, rfl⟩
+      exact ⟨s, rfl⟩
+    have habs : |γ.det.val| = 1 := Subgroup.HasDetPlusMinusOne.abs_det hγSL
+    rw [hgdef, ModularForm.prod_slash, habs, one_zpow, one_smul]
+    refine Finset.prod_equiv (MulAction.toPerm ((⟨γ, hγSL⟩ : 𝒮ℒ)⁻¹))
+      (fun q => ?_) (fun q _ => ?_)
+    · simp only [Finset.mem_erase, Finset.mem_univ, and_true, MulAction.toPerm_apply]
+      rw [not_iff_not, inv_smul_eq_iff, hfix' γ hγSL hγ]
+    · simpa [MulAction.toPerm_apply] using
+        SlashInvariantForm.quotientFunc_smul f hγSL q
+  let G : SlashInvariantForm (Gamma0GL N) (2 * ((Finset.univ.erase q₀).card : ℤ)) :=
+    ⟨g, hslash⟩
+  have hper : Function.Periodic (g ∘ UpperHalfPlane.ofComplex) 1 :=
+    SlashInvariantFormClass.periodic_comp_ofComplex G (one_mem_strictPeriods_Gamma0GL N)
+  have hhol : MDiff g := by
+    rw [hgdef]
+    exact MDifferentiable.prod (Quotient.forall.mpr fun ⟨r, _⟩ _ =>
+      (ModularForm.translate f r⁻¹).holo')
+  have hqzero : ∀ q : 𝒮ℒ ⧸ (Gamma0GL N).subgroupOf 𝒮ℒ,
+      IsZeroAtImInfty (SlashInvariantForm.quotientFunc f q) := by
+    intro q
+    induction q using Quotient.inductionOn with
+    | h r =>
+      rw [SlashInvariantForm.quotientFunc_mk]
+      have hinf : IsCusp OnePoint.infty 𝒮ℒ := isCusp_SL2Z_iff'.mpr ⟨1, by simp⟩
+      have hcusp : IsCusp ((r.val)⁻¹ • OnePoint.infty) (Gamma0GL N) :=
+        (hinf.smul_of_mem (inv_mem r.2)).of_isFiniteRelIndex
+      exact CuspFormClass.zero_at_cusps f hcusp _ rfl
+  have hbdd : IsBoundedAtImInfty g := by
+    rw [hgdef]
+    exact Filter.BoundedAtFilter.prod _ fun q _ =>
+      Filter.ZeroAtFilter.boundedAtFilter (hqzero q)
+  have hganal : AnalyticAt ℂ (cuspFunction 1 g) 0 :=
+    analyticAt_cuspFunction_zero one_pos hper hhol hbdd
+  have hfanal : AnalyticAt ℂ (cuspFunction 1 ⇑f) 0 :=
+    ModularFormClass.analyticAt_cuspFunction_zero f one_pos
+      (one_mem_strictPeriods_Gamma0GL N)
+  have hfac : ⇑(ModularForm.norm 𝒮ℒ f) = ⇑f * g := by
+    rw [ModularForm.coe_norm,
+      ← Finset.mul_prod_erase Finset.univ _ (Finset.mem_univ q₀), ← hgdef]
+    congr 1
+    rw [hq₀, SlashInvariantForm.quotientFunc_mk]
+    simp
+  rw [hfac, qExpansion_mul hfanal hganal]
+  have horderf : ((2 * Nat.card (𝒮ℒ ⧸ (Gamma0GL N).subgroupOf 𝒮ℒ) / 12 + 1 : ℕ) : ℕ∞)
+      ≤ (qExpansion 1 ⇑f).order :=
+    PowerSeries.nat_le_order _ _ fun i hi => hcoeff i hi
+  have hcast : ((2 : ℤ) * (Nat.card (𝒮ℒ ⧸ (Gamma0GL N).subgroupOf 𝒮ℒ) : ℤ)).toNat
+      = 2 * Nat.card (𝒮ℒ ⧸ (Gamma0GL N).subgroupOf 𝒮ℒ) := by omega
+  calc ((((2 : ℤ) * (Nat.card (𝒮ℒ ⧸ (Gamma0GL N).subgroupOf 𝒮ℒ) : ℤ)).toNat / 12 : ℕ) : ℕ∞)
+      < ((2 * Nat.card (𝒮ℒ ⧸ (Gamma0GL N).subgroupOf 𝒮ℒ) / 12 + 1 : ℕ) : ℕ∞) := by
+        rw [hcast]
+        exact_mod_cast Nat.lt_succ_self _
+    _ ≤ (qExpansion 1 ⇑f).order := horderf
+    _ ≤ (qExpansion 1 ⇑f).order + (qExpansion 1 g).order := self_le_add_right _ _
+    _ ≤ ((qExpansion 1 ⇑f) * qExpansion 1 g).order := PowerSeries.le_order_mul _ _
+
+/-- **Finite dimensionality of `S₂(Γ₀(N))`** (PROVEN, 2026-07-24): the
+Sturm bound `exists_cuspForm_sturm_bound` makes the finitely many
+coefficient functionals `qCoeffL N 0, …, qCoeffL N (B−1)` jointly
+injective, so the weight-2 cusp space embeds `ℂ`-linearly into
+`Fin B → ℂ`. This is the content of the Diamond–Shurman ch. 3
+dimension theory actually needed downstream, obtained with no
+modular-curve geometry. -/
+theorem cuspForm_finiteDimensional (N : ℕ) (hN : 0 < N) :
+    FiniteDimensional ℂ (CuspForm (Gamma0GL N) 2) := by
+  obtain ⟨B, hB⟩ := exists_cuspForm_sturm_bound N hN
+  refine FiniteDimensional.of_injective
+    (LinearMap.pi (fun i : Fin B => qCoeffL N (i : ℕ)))
+    ((injective_iff_map_eq_zero _).mpr fun f hf => ?_)
+  refine hB f fun m hm => ?_
+  simpa [LinearMap.pi_apply] using congrFun hf ⟨m, hm⟩
+
+/-- **Rational spanning of `S₂(Γ₀(N))`** (sorry node; THE residual
+geometric leaf of the rational-basis node, isolated 2026-07-24 after
+finite dimensionality was proven): every weight-2 level-`N` cusp form
+is a `ℂ`-linear combination of cusp forms ALL of whose `q`-expansion
+coefficients are rational. This is the arithmetic core of Shimura,
 *Introduction to the Arithmetic Theory of Automorphic Functions*,
-Theorem 3.52: `S₂` has a basis with INTEGER coefficients — via the
-`ℤ`-structure of `H₁(X₀(N), ℤ)` under the Eichler–Shimura
-isomorphism, or via the `q`-expansion principle on the modular curve
-over `ℚ`). Spanning is phrased with explicit coordinates to keep
-consumers span-vocabulary-free. Note the statement is sound for every
-`N ≥ 1` including genus-zero levels, where `n = 0` and both clauses
-are vacuous. -/
+Theorem 3.52 (`S₂(Γ₀(N))` has a basis with integer — a fortiori
+rational — coefficients; equivalently Diamond–Shurman §6.5): the
+classical proofs go through the `ℤ`-structure of `H₁(X₀(N), ℤ)` under
+the Eichler–Shimura isomorphism, or through the `q`-expansion
+principle on the modular curve over `ℚ`, neither of which exists on
+this pin. Combined with `cuspForm_finiteDimensional`, any maximal
+independent subfamily of the rational-coefficient forms is a basis,
+which is how `exists_rational_qExpansion_basis` consumes it. -/
+theorem cuspForm_mem_span_rational {N : ℕ} (hN : 0 < N)
+    (f : CuspForm (Gamma0GL N) 2) :
+    f ∈ Submodule.span ℂ
+      {g : CuspForm (Gamma0GL N) 2 | ∀ m : ℕ, ∃ r : ℚ, qCoeff N g m = (r : ℂ)} :=
+  sorry
+
+end SturmFiniteness
+
+/-- **Rational basis of `S₂(Γ₀(N))`** (PROVEN assembly, 2026-07-24,
+over the sorried leaf `cuspForm_mem_span_rational` and the PROVEN
+finite dimensionality `cuspForm_finiteDimensional`): the space of
+weight-2 level-`N` cusp forms has a finite `ℂ`-independent family of
+forms with RATIONAL `q`-expansion coefficients through which every
+cusp form factors with explicit coordinates. Assembly: inside the
+spanning set of rational-coefficient forms choose an independent
+subfamily with the same span (`exists_linearIndependent`); it is
+finite by `cuspForm_finiteDimensional`, and every `f` lies in its span
+by `cuspForm_mem_span_rational`. Spanning is phrased with explicit
+coordinates to keep consumers span-vocabulary-free. Note the statement
+is sound for every `N ≥ 1` including genus-zero levels, where `n = 0`
+and both clauses are vacuous. -/
 theorem exists_rational_qExpansion_basis {N : ℕ} (hN : 0 < N) :
     ∃ (n : ℕ) (g : Fin n → CuspForm (Gamma0GL N) 2),
       LinearIndependent ℂ g ∧
       (∀ f : CuspForm (Gamma0GL N) 2, ∃ b : Fin n → ℂ, f = ∑ i, b i • g i) ∧
-      (∀ i m, ∃ r : ℚ, qCoeff N (g i) m = (r : ℂ)) :=
-  sorry
+      (∀ i m, ∃ r : ℚ, qCoeff N (g i) m = (r : ℂ)) := by
+  classical
+  haveI := cuspForm_finiteDimensional N hN
+  obtain ⟨b, hbR, hbspan, hbind⟩ := exists_linearIndependent ℂ
+    {g : CuspForm (Gamma0GL N) 2 | ∀ m : ℕ, ∃ r : ℚ, qCoeff N g m = (r : ℂ)}
+  have hbfin : b.Finite := hbind.setFinite
+  letI := hbfin.fintype
+  refine ⟨Fintype.card b,
+    fun i => (((Fintype.equivFin b).symm i : b) : CuspForm (Gamma0GL N) 2),
+    ?_, ?_, ?_⟩
+  · exact hbind.comp (Fintype.equivFin b).symm (Equiv.injective _)
+  · intro f
+    have hrange : Set.range
+        (fun i => (((Fintype.equivFin b).symm i : b) : CuspForm (Gamma0GL N) 2)) = b := by
+      rw [show (fun i => (((Fintype.equivFin b).symm i : b) : CuspForm (Gamma0GL N) 2))
+          = (Subtype.val ∘ (Fintype.equivFin b).symm) from rfl,
+        Set.range_comp, Equiv.range_eq_univ, Set.image_univ, Subtype.range_coe]
+    have hf : f ∈ Submodule.span ℂ (Set.range
+        (fun i => (((Fintype.equivFin b).symm i : b) : CuspForm (Gamma0GL N) 2))) := by
+      rw [hrange, hbspan]
+      exact cuspForm_mem_span_rational hN f
+    obtain ⟨c, hc⟩ := (Submodule.mem_span_range_iff_exists_fun ℂ).mp hf
+    exact ⟨c, hc.symm⟩
+  · intro i m
+    exact hbR ((Fintype.equivFin b).symm i).2 m
 
 /-- Coercion to functions commutes with finite linear combinations of
 cusp forms. -/
@@ -1029,9 +1213,10 @@ theorem coe_sum_smul {N n : ℕ} (c : Fin n → ℂ)
 
 /-- **Integral Hecke structure of an eigenform** (Diamond–Shurman
 §6.5, the finite input to Theorem 6.5.1; PROVEN assembly, 2026-07-24,
-over the three sorried leaves `exists_cuspForm_heckeTransform`,
-`qExpansion_heckeTransform_coeff` and
-`exists_rational_qExpansion_basis`): for a normalized weight-2
+over the sorried leaves `exists_cuspForm_heckeTransform`,
+`qExpansion_heckeTransform_coeff` and — through the now-proven
+assembly `exists_rational_qExpansion_basis` —
+`cuspForm_mem_span_rational`): for a normalized weight-2
 level-`N` eigenform `f` there are a dimension `n`, a family of
 RATIONAL `n × n` matrices `T q`, and a common nonzero complex
 eigenvector `v` with `T q ⬝ v = a_q(f)·v` for every prime `q`. The
