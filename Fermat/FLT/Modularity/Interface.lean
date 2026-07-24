@@ -3582,18 +3582,22 @@ pseudocharacter material, so the construction is hand-rolled at
 dimension 2:
 
 * **the oddness input**
-  (`exists_involution_cyclotomicCharacter_neg_one`, sorry node): the
-  absolute Galois group of `ℚ` contains an involution on which the
-  `ℓ`-adic cyclotomic character evaluates to `−1` — the general-`ℓ`
-  form of the PROVEN `ℓ = 3` instance
+  (`exists_involution_cyclotomicCharacter_neg_one`, PROVEN
+  2026-07-24): the absolute Galois group of `ℚ` contains an
+  involution on which the `ℓ`-adic cyclotomic character evaluates to
+  `−1` — the general-`ℓ` form of the `ℓ = 3` instance
   `IsHardlyRamified.exists_conj_cyclotomicCharacter_three`
-  (`ModThree.lean`). Unconditionally true, no hypothesis package.
+  (`ModThree.lean`), by the same argument.
+* **the adapted basis of an odd involution**
+  (`exists_basis_involution_diag`, sorry node): pure linear algebra
+  over a local ring with `2` a unit — an involution of `Fin 2 → O`
+  with determinant `−1` has an eigenbasis with eigenvalues `1, −1`.
+  Unconditionally true.
 * **the aligned matrix form of one realization**
-  (`exists_matrixHom_charpoly_realization`, sorry node): each
-  realization, conjugated so the involution acts by `diag(1, −1)`,
-  is an honest matrix-valued monoid homomorphism with the same
-  characteristic polynomials. Unconditionally true over any
-  realization.
+  (`exists_matrixHom_charpoly_realization`, PROVEN 2026-07-24 as a
+  glue over the adapted basis leaf): each realization, conjugated so
+  the involution acts by `diag(1, −1)`, is an honest matrix-valued
+  monoid homomorphism with the same characteristic polynomials.
 * **the polarization unit** (`exists_isUnit_polarization`, sorry
   node): some off-diagonal polarization value of the glued trace
   system is a unit of the local `T` — the only step consuming
@@ -3747,23 +3751,43 @@ theorem exists_involution_cyclotomicCharacter_neg_one
     | mul a b _ _ ha hb => rw [map_mul, ha, hb]
     | inv a _ ha => rw [map_inv₀, ha]
 
-/-- **The aligned matrix form of one realization** (sorry node — the
-normalization step of the corner-system cut): over the local
-coefficient ring `O` of a hardly ramified realization, the realized
-representation is conjugate to a matrix-valued monoid homomorphism
-sending the involution `c₀` to `diag(1, −1)`. Intended proof:
-`J := ρ(c₀)` satisfies `J² = 1` (from `c₀² = 1`) and `det J = −1`
-(the cyclotomic-determinant clause of hardly-ramifiedness at `c₀`
-plus the value `hχ`); `2` is a unit of the `ℤ_ℓ`-algebra `O` (`ℓ`
-odd), so the idempotents `(1 ± J)/2` split `Fin 2 → O` into
-`J`-eigenspaces, finitely generated projective — hence FREE over the
-local `O` — of ranks summing to `2`; ranks `(2, 0)` and `(0, 2)`
-would force `det J = 1 ≠ −1` (`2 ∈ Oˣ` and `O` nontrivial), so both
-eigenspaces are lines, and the matrix of `ρ` in an adapted basis is
-the sought homomorphism; characteristic polynomials are unchanged
-because `LinearMap.charpoly` is basis-free
-(`LinearMap.charpoly_toMatrix`). Sound: unconditionally true over
-any realization, independent of the residual hypotheses.
+/-- **The adapted basis of an odd involution over a local ring**
+(sorry node — pure linear algebra, the normalization core of the
+aligned matrix form): over a commutative local ring `O` in which `2`
+is a unit, an involution `J` of `Fin 2 → O` with determinant `−1`
+admits a basis of eigenvectors with eigenvalues `1` and `−1`.
+Intended proof: `p := (1 + J)/2` and `1 − p = (1 − J)/2` are
+complementary idempotent endomorphisms (direct computation from
+`J² = 1`), so `Fin 2 → O = range p ⊕ range (1 − p)` with both
+summands finitely generated projective — hence FREE over the local
+`O` (`Module.free_of_flat_of_isLocalRing`) — of ranks summing to `2`
+(rank additivity; `O` commutative has the strong rank condition); in
+an adapted basis `J` is diagonal with `1`s and `−1`s, so
+`det J = (−1)^(rank of the minus part) = −1`, which for total rank
+`2` with `−1 ≠ 1` (`2 ∈ Oˣ`, `O` nontrivial) forces ranks `(1, 1)`;
+the two generators are the sought eigenvectors. Sound:
+unconditionally true. -/
+theorem exists_basis_involution_diag {O : Type u} [CommRing O]
+    [IsLocalRing O] (h2 : IsUnit (2 : O))
+    {J : Module.End O (Fin 2 → O)} (hJ2 : J * J = 1)
+    (hdet : LinearMap.det J = -1) :
+    ∃ b : Module.Basis (Fin 2) O (Fin 2 → O),
+      J (b 0) = b 0 ∧ J (b 1) = - b 1 :=
+  sorry
+
+/-- **The aligned matrix form of one realization** (PROVEN — the
+normalization step of the corner-system cut, a glue over the adapted
+basis leaf above): over the local coefficient ring `O` of a hardly
+ramified realization, the realized representation is conjugate to a
+matrix-valued monoid homomorphism sending the involution `c₀` to
+`diag(1, −1)`. Proof: `J := ρ(c₀)` satisfies `J² = 1` (from
+`c₀² = 1`) and `det J = −1` (the cyclotomic-determinant clause of
+hardly-ramifiedness at `c₀` plus the value `hχ`); `2` is a unit of
+the `ℤ_ℓ`-algebra `O` (`ℓ` odd); the adapted basis leaf produces the
+`J`-eigenbasis, and the matrix of `ρ` in it
+(`LinearMap.toMatrixAlgEquiv`) is the sought homomorphism;
+characteristic polynomials are unchanged because
+`LinearMap.charpoly` is basis-free (`LinearMap.charpoly_toMatrix`).
 CIRCULARITY GUARD: must not be proven through `Family.lean` (see the
 section docstring). -/
 theorem exists_matrixHom_charpoly_realization
@@ -3775,8 +3799,43 @@ theorem exists_matrixHom_charpoly_realization
       ℤ_[ℓ]ˣ) : ℤ_[ℓ]) = -1) :
     ∃ M : Field.absoluteGaloisGroup ℚ →* Matrix (Fin 2) (Fin 2) r.O,
       M c₀ = !![1, 0; 0, -1] ∧
-      ∀ g, (r.ρ g).charpoly = (M g).charpoly :=
-  sorry
+      ∀ g, (r.ρ g).charpoly = (M g).charpoly := by
+  classical
+  -- `2` is a unit of the coefficient ring
+  have h2Z : IsUnit (2 : ℤ_[ℓ]) := by
+    rw [PadicInt.isUnit_iff]
+    refine le_antisymm (PadicInt.norm_le_one _) (not_lt.mp fun hlt => ?_)
+    rw [show ((2 : ℤ_[ℓ])) = ((2 : ℤ) : ℤ_[ℓ]) by norm_cast,
+      PadicInt.norm_int_lt_one_iff_dvd] at hlt
+    have hdvd : ℓ ∣ 2 := by exact_mod_cast hlt
+    rw [(Nat.prime_dvd_prime_iff_eq (Fact.out) Nat.prime_two).mp hdvd]
+      at hℓodd
+    exact (by decide : ¬ Odd 2) hℓodd
+  have h2O : IsUnit (2 : r.O) := by
+    have h := h2Z.map (algebraMap ℤ_[ℓ] r.O)
+    rwa [map_ofNat] at h
+  -- the involution `J = ρ(c₀)`: square one, determinant `−1`
+  have hJ2 : r.ρ c₀ * r.ρ c₀ = 1 := by rw [← map_mul, hc₀, map_one]
+  have hJdet : LinearMap.det (r.ρ c₀) = -1 := by
+    have h := r.isHardlyRamified.det c₀
+    rw [GaloisRep.det_apply, hχ] at h
+    rw [h, map_neg, map_one]
+  obtain ⟨b, hb0, hb1⟩ := exists_basis_involution_diag h2O hJ2 hJdet
+  refine ⟨{ toFun := fun g => LinearMap.toMatrixAlgEquiv b (r.ρ g)
+            map_one' := by rw [map_one, map_one]
+            map_mul' := fun g h => by rw [map_mul, map_mul] }, ?_, ?_⟩
+  · -- the involution is `diag(1, −1)` in the adapted basis
+    show LinearMap.toMatrixAlgEquiv b (r.ρ c₀) = !![1, 0; 0, -1]
+    ext i j
+    fin_cases i <;> fin_cases j <;>
+      simp [LinearMap.toMatrixAlgEquiv_apply, hb0, hb1]
+  · -- characteristic polynomials are basis-free
+    intro g
+    have hMA : LinearMap.toMatrixAlgEquiv b (r.ρ g) =
+        LinearMap.toMatrix b b (r.ρ g) := by
+      simp [LinearMap.toMatrixAlgEquiv, AlgEquiv.ofLinearEquiv_apply]
+    show (r.ρ g).charpoly = (LinearMap.toMatrixAlgEquiv b (r.ρ g)).charpoly
+    rw [hMA, LinearMap.charpoly_toMatrix]
 
 /-- **The polarization unit** (sorry node — the residual
 irreducibility step of the corner-system cut): some off-diagonal
