@@ -9839,7 +9839,136 @@ theorem exists_valuationSubring_center_of_isMaximal
     ∃ 𝒪 : ValuationSubring Ksep,
       (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range ∧
       ∀ c : C, (c : Ksep) ∈ 𝒪 ∧ (c ∈ 𝔫 ↔ (c : Ksep) ∈ 𝒪.nonunits) := by
-  sorry
+  haveI : Algebra.IsIntegral R C := (Subalgebra.isIntegral_iff C).mpr hC
+  -- `𝔫` lies over the maximal ideal of `R`
+  have hcomap_max : (𝔫.comap (algebraMap R C)).IsMaximal :=
+    Ideal.isMaximal_comap_of_isIntegral_of_isMaximal 𝔫
+  have hqm : 𝔫.comap (algebraMap R C) = IsLocalRing.maximalIdeal R :=
+    IsLocalRing.eq_maximalIdeal hcomap_max
+  -- transport `𝔫` to the `Subring`-subtype
+  let υ : (C.toSubring : Subring Ksep) ≃+* C :=
+    { toFun := fun x => ⟨x.1, x.2⟩
+      invFun := fun x => ⟨x.1, x.2⟩
+      left_inv := fun _ => rfl
+      right_inv := fun _ => rfl
+      map_mul' := fun _ _ => rfl
+      map_add' := fun _ _ => rfl }
+  let 𝔫' : Ideal (C.toSubring : Subring Ksep) := 𝔫.comap υ
+  haveI h𝔫'prime : 𝔫'.IsPrime := Ideal.IsPrime.comap (υ : _ ≃+* _)
+  -- Chevalley: dominate the localization of `C` at `𝔫`
+  obtain ⟨𝒪, hdom⟩ :=
+    (LocalSubring.ofPrime C.toSubring 𝔫').exists_le_valuationSubring
+  obtain ⟨hle, hloc⟩ := hdom
+  have hBA : ∀ c : C,
+      (c : Ksep) ∈ (LocalSubring.ofPrime C.toSubring 𝔫').toSubring :=
+    fun c => LocalSubring.le_ofPrime _ 𝔫' c.2
+  have hmem : ∀ c : C, (c : Ksep) ∈ 𝒪 := fun c => hle (hBA c)
+  -- the unit dichotomy through the domination
+  have hiff : ∀ c : C, c ∈ 𝔫 ↔ (c : Ksep) ∈ 𝒪.nonunits := by
+    intro c
+    have hunit₀ : IsUnit (⟨(c : Ksep), hBA c⟩ :
+        (LocalSubring.ofPrime C.toSubring 𝔫').toSubring) ↔ c ∉ 𝔫 :=
+      IsLocalization.AtPrime.isUnit_to_map_iff
+        (LocalSubring.ofPrime C.toSubring 𝔫').toSubring 𝔫' ⟨(c : Ksep), c.2⟩
+    have hincl : Subring.inclusion hle ⟨(c : Ksep), hBA c⟩ =
+        (⟨(c : Ksep), hmem c⟩ : 𝒪.toLocalSubring.toSubring) := Subtype.ext rfl
+    constructor
+    · intro hcq
+      have h₀ : ¬ IsUnit (⟨(c : Ksep), hBA c⟩ :
+          (LocalSubring.ofPrime C.toSubring 𝔫').toSubring) :=
+        fun hu => (hunit₀.mp hu) hcq
+      have h₁ : ¬ IsUnit (⟨(c : Ksep), hmem c⟩ : 𝒪.toLocalSubring.toSubring) := by
+        intro hu
+        have h₂ : IsUnit (Subring.inclusion hle ⟨(c : Ksep), hBA c⟩) :=
+          hincl ▸ hu
+        exact h₀ (hloc.map_nonunit _ h₂)
+      exact ValuationSubring.coe_mem_nonunits_iff.mpr
+        ((IsLocalRing.mem_maximalIdeal _).mpr (mem_nonunits_iff.mpr h₁))
+    · intro hnon
+      by_contra hcq
+      have h₄ : IsUnit (⟨(c : Ksep), hBA c⟩ :
+          (LocalSubring.ofPrime C.toSubring 𝔫').toSubring) := hunit₀.mpr hcq
+      have h₂ : IsUnit (⟨(c : Ksep), hmem c⟩ : 𝒪.toLocalSubring.toSubring) :=
+        hincl ▸ (h₄.map (Subring.inclusion hle))
+      have h₅ := (ValuationSubring.coe_mem_nonunits_iff
+        (a := ⟨(c : Ksep), hmem c⟩)).mp hnon
+      exact mem_nonunits_iff.mp ((IsLocalRing.mem_maximalIdeal _).mp h₅) h₂
+  refine ⟨𝒪, ?_, fun c => ⟨hmem c, hiff c⟩⟩
+  -- the trace of `𝒪` on `K` is exactly `R`: one inclusion is integrality of
+  -- `R`-images, the other is the valuation-ring dichotomy in the DVR `R`
+  ext x
+  constructor
+  · intro hx
+    have hx𝒪 : algebraMap K Ksep x ∈ 𝒪 := hx
+    rcases eq_or_ne x 0 with rfl | hx0
+    · exact ⟨0, map_zero (algebraMap R K)⟩
+    obtain ⟨r, s, hs, rfl⟩ := IsFractionRing.div_surjective (A := R) x
+    have hs0 : algebraMap R K s ≠ 0 := fun h0 => nonZeroDivisors.ne_zero hs
+      (IsFractionRing.injective R K (h0.trans (map_zero _).symm))
+    rcases (ValuationRing.iff_dvd_total.mp inferInstance).total s r with
+      ⟨c, hc⟩ | ⟨c, hc⟩
+    · -- `r = s * c`: the fraction is the image of `c`
+      refine ⟨c, ?_⟩
+      rw [hc, map_mul, mul_comm, mul_div_assoc, div_self hs0, mul_one]
+    · -- `s = r * c`
+      have hr0 : r ≠ 0 := by
+        rintro rfl
+        exact hx0 (by rw [map_zero, zero_div])
+      have hrK0 : algebraMap R K r ≠ 0 := fun h0 => hr0
+        (IsFractionRing.injective R K (h0.trans (map_zero _).symm))
+      have hc0 : c ≠ 0 := by
+        rintro rfl
+        exact hs0 (by rw [hc, mul_zero, map_zero])
+      have hcK0 : algebraMap R K c ≠ 0 := fun h0 => hc0
+        (IsFractionRing.injective R K (h0.trans (map_zero _).symm))
+      by_cases hcu : IsUnit c
+      · -- `c` a unit: the fraction is the image of its inverse
+        obtain ⟨u, rfl⟩ := hcu
+        refine ⟨((u⁻¹ : Rˣ) : R), ?_⟩
+        have hone : algebraMap R K ((u⁻¹ : Rˣ) : R) *
+            algebraMap R K ((u : Rˣ) : R) = 1 := by
+          rw [← map_mul, ← Units.val_mul, inv_mul_cancel, Units.val_one, map_one]
+        rw [hc, map_mul, eq_div_iff (mul_ne_zero hrK0 hcK0), ← mul_assoc,
+          mul_comm (algebraMap R K ((u⁻¹ : Rˣ) : R)), mul_assoc, hone, mul_one]
+      · -- `c` a nonunit: its image is a nonunit of `𝒪`, contradicting that
+        -- the fraction (its inverse) also lies in `𝒪`
+        exfalso
+        have hcm : c ∈ IsLocalRing.maximalIdeal R :=
+          (IsLocalRing.mem_maximalIdeal c).mpr hcu
+        have hcq : algebraMap R C c ∈ 𝔫 :=
+          Ideal.mem_comap.mp (hqm ▸ hcm : c ∈ 𝔫.comap (algebraMap R C))
+        have hnon := (hiff (algebraMap R C c)).mp hcq
+        have himg : ((algebraMap R C c : C) : Ksep) =
+            algebraMap K Ksep (algebraMap R K c) := by
+          rw [← IsScalarTower.algebraMap_apply R K Ksep]
+          rfl
+        rw [himg] at hnon
+        have hv1 : 𝒪.valuation (algebraMap K Ksep
+            (algebraMap R K r / algebraMap R K s)) ≤ 1 :=
+          (ValuationSubring.valuation_le_one_iff 𝒪 _).mpr hx𝒪
+        have hvc : 𝒪.valuation (algebraMap K Ksep (algebraMap R K c)) < 1 :=
+          (𝒪.mem_nonunits_iff).mp hnon
+        have hprod : algebraMap R K r / algebraMap R K s *
+            algebraMap R K c = 1 := by
+          rw [hc, map_mul]
+          field_simp
+        have hval1 : 𝒪.valuation (algebraMap K Ksep
+              (algebraMap R K r / algebraMap R K s)) *
+            𝒪.valuation (algebraMap K Ksep (algebraMap R K c)) = 1 := by
+          rw [← map_mul, ← map_mul, hprod, map_one, map_one]
+        have hlt : 𝒪.valuation (algebraMap K Ksep
+              (algebraMap R K r / algebraMap R K s)) *
+            𝒪.valuation (algebraMap K Ksep (algebraMap R K c)) < 1 :=
+          lt_of_le_of_lt (mul_le_mul_left hv1 _) (by rwa [one_mul])
+        exact absurd hval1 hlt.ne
+  · intro hx
+    obtain ⟨r, rfl⟩ := hx
+    show algebraMap K Ksep (algebraMap R K r) ∈ 𝒪
+    have h1 := hmem (algebraMap R C r)
+    rwa [show ((algebraMap R C r : C) : Ksep) =
+        algebraMap K Ksep (algebraMap R K r) from by
+      rw [← IsScalarTower.algebraMap_apply R K Ksep]
+      rfl] at h1
 
 set_option linter.unusedSectionVars false in
 /-- **Partition of unity from fibrewise center units** (stage E2 of the
