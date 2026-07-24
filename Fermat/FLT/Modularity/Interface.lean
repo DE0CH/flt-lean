@@ -133,6 +133,9 @@ import Mathlib.Data.Nat.Factorization.Induction
 import Mathlib.FieldTheory.IntermediateField.Adjoin.Algebra
 import Mathlib.RingTheory.IntegralClosure.Algebra.Basic
 import Mathlib.RingTheory.Algebraic.Integral
+import Fermat.FLT.GaloisRepresentation.HardlyRamified.Residual
+-- `IsHardlyRamified.exists_residual_odd`, discharging the residual
+-- reduction pillar `exists_residual_isHardlyRamified_odd` below
 
 @[expose] public section
 
@@ -755,20 +758,26 @@ close. -/
 
 open scoped TensorProduct
 
-/-- **Residual reduction** (pillar 1; sorry node): the reduction of a
-hardly ramified `p`-adic representation modulo the maximal ideal of
-its coefficient ring is a mod-`p` hardly ramified representation over
-the finite residue field. This is the general-odd-`p` analogue of
+omit [IsDomain R] in
+/-- **Residual reduction** (pillar 1; PROVEN 2026-07-24 by delegation
+to `IsHardlyRamified.exists_residual_odd` in
+`HardlyRamified/Residual.lean`): the reduction of a hardly ramified
+`p`-adic representation modulo the maximal ideal of its coefficient
+ring is a mod-`p` hardly ramified representation over the finite
+residue field. This is the general-odd-`p` analogue of
 `IsHardlyRamified.exists_residual_isHardlyRamified` (`Threeadic.lean`),
-whose `p = 3` proof this leaf's proof should follow verbatim: the
-residue field is finite and of characteristic `p` because `R` is a
-module-finite local `ℤ_p`-algebra and a nontrivial domain (`p ∈ 𝔪` by
-Nakayama, so `R ⧸ 𝔪` is a finite-dimensional `𝔽_p`-space), the
-determinant and outside-`2p` unramifiedness conditions pass to any
-base change, and flatness at `p` resp. tameness at `2` transfer along
-the open-kernel residue quotient exactly as in the `p = 3` transfer
-leaves `isFlatAt_baseChange_residue` and
-`isTameAtTwo_baseChange_residue`. -/
+whose `p = 3` route the proof follows: the residue field is finite and
+of characteristic `p` because `R` is a module-finite local
+`ℤ_p`-algebra and a nontrivial domain (`p ∈ 𝔪` by Nakayama, and `𝔪` is
+open because a module-finiteness surjection `ℤ_p^n → R` is an open map
+for the module topology, so `R ⧸ 𝔪` is a finite quotient of the
+compact `R` by an open subgroup), the determinant and outside-`2p`
+unramifiedness conditions pass to any base change, and flatness at `p`
+resp. tameness at `2` transfer along the open-kernel residue quotient
+by the general-place transfer leaves `isFlatAt_baseChange_residue_at`
+and `isTameAtTwo_baseChange_residue_res`.  The domain hypothesis on `R`
+is not needed (nontriviality, which is what the Nakayama step consumes,
+already follows from `IsLocalRing R`), so it is omitted. -/
 theorem exists_residual_isHardlyRamified_odd
     (hρ : IsHardlyRamified hpodd hv ρ) :
     ∃ (kk : Type u) (_ : Field kk) (_ : Finite kk) (_ : Algebra ℤ_[p] kk)
@@ -778,7 +787,7 @@ theorem exists_residual_isHardlyRamified_odd
       (_ : Function.Surjective (algebraMap R kk))
       (hVbar : Module.rank kk (kk ⊗[R] V) = 2),
       IsHardlyRamified hpodd hVbar (ρ.baseChange kk) :=
-  sorry
+  IsHardlyRamified.exists_residual_odd hpodd hv hρ
 
 /-- **Residual eigensystem matching**: the residual representation
 `ρbar` (over a coefficient ring `k`; in the intended use a finite
