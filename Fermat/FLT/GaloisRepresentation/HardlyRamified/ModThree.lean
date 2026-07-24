@@ -153,6 +153,16 @@ public import Mathlib.NumberTheory.NumberField.ClassNumber
 -- class-group summation glue of `completedDedekindZeta_exists`
 -- (proof-only).
 import Mathlib.NumberTheory.LSeries.Linearity
+-- The pin's per-class ideal-counting asymptotics
+-- (`NumberField.Ideal.tendsto_norm_le_and_mk_eq_div_atTop`) and the
+-- partial-sum summability criterion
+-- (`LSeriesSummable_of_sum_norm_bigO_and_nonneg`), consumed by the
+-- PROVEN `classIdealCount_LSeriesSummable`; `exp (-a·t)` beating every
+-- power (`isLittleO_exp_neg_mul_rpow_atTop`), consumed by the PROVEN
+-- assembly of `heckeFEPair_exists` (all proof-only).
+import Mathlib.NumberTheory.NumberField.Ideal.Asymptotics
+import Mathlib.NumberTheory.LSeries.SumCoeff
+import Mathlib.Analysis.SpecialFunctions.Pow.Asymptotics
 -- `analyticOrderAt`/`analyticOrderNatAt`, the zero-multiplicity
 -- vocabulary of the continued Dedekind zeta (in the exposed body of
 -- `DedekindContinuation.mult`, hence public).
@@ -6544,47 +6554,166 @@ theorem zlattice_theta_transform
           Real.exp (-Real.pi * t * ‖(w : E)‖ ^ 2) :=
   ZLatticePoisson.zlattice_theta_transform L t ht
 
-/-- **Hecke's theta–Mellin `WeakFEPair` family of the class group**
-(sorry node, stated 2026-07-24 — the Neukirch VII §§3–5 core of the
-per-class Hecke continuation, cut out of
-`heckeClassZeta_of_zlattice_theta`, whose assembly is PROVEN on top of
-this leaf and `weakFEPair_growth`): from the `n`-dimensional lattice
-theta law `hθ` (verbatim `zlattice_theta_transform`) produce, for
-every ideal class `C`, a `WeakFEPair` `P C` — mathlib's abstract
-Mellin/functional-equation machine
-(`Mathlib.NumberTheory.LSeries.AbstractFuncEq`, instantiated exactly
-as `Mathlib.NumberTheory.LSeries.HurwitzZetaEven` does) — with
+/-- **`Λ₀` of a `WeakFEPair` depends only on the data entering the
+modified kernel** (PROVEN 2026-07-24, glue for the assembly of
+`heckeFEPair_exists`): the entire completion `Λ₀ = mellin f_modif` is
+built from `f`, `k`, `ε`, `f₀`, `g₀` alone — `WeakFEPair.f_modif`
+never touches `g` or the proof fields — so two pairs sharing those
+five fields share `Λ₀`.  This is what identifies `(P C).symm.Λ₀` with
+`(P ([𝔡]C⁻¹)).Λ₀` in a coherently constructed Hecke family: `symm`
+swaps `f` with `g` and inverts `ε`, and at `ε = 1 = 1⁻¹` with
+`f₀ = g₀` the swapped data is exactly the data of the dual class's
+pair. -/
+theorem weakFEPair_lambdaZero_congr (P Q : WeakFEPair ℂ)
+    (hf : P.f = Q.f) (hk : P.k = Q.k) (hε : P.ε = Q.ε)
+    (hf₀ : P.f₀ = Q.f₀) (hg₀ : P.g₀ = Q.g₀) : P.Λ₀ = Q.Λ₀ := by
+  have hmod : P.f_modif = Q.f_modif := by
+    unfold WeakFEPair.f_modif
+    rw [hf, hk, hε, hf₀, hg₀]
+  unfold WeakFEPair.Λ₀
+  rw [hmod]
 
-* weight `k = 1/2` and root number `ε = 1`;
-* one shared constant term `f₀ = g₀ = ρ` (Neukirch VII (5.7)/(5.8):
-  the unit-domain theta integral has the SAME limit
-  `ρ = 2^{r₁-1}·vol(F)/w`-style constant at `t → ∞` for every class,
-  and the same at `0` after the `t ↦ 1/t` reflection — this shared
-  constant is what makes the assembled completion
-  `s(s−1)·Λ₀(s/2) + 2ρ` satisfy an exact functional equation);
-* the `Λ₀`-level functional equation pairing `C` with
-  `[𝔡]C⁻¹ = dedekindDualClass K C` (from
-  `WeakFEPair.functional_equation₀` at `ε = 1` once `(P C).symm` is
-  identified with `P ([𝔡]C⁻¹)` — the pairs must be constructed
-  coherently: `(P C).g = (P ([𝔡]C⁻¹)).f`, using
-  `dedekindDualClass_involutive`);
-* exponential decay `‖f t − ρ‖ ≤ A·exp(−a·t)` on `t ≥ 1` for both
-  kernels (theta tail bounds: the smallest nonzero vector of the
-  ideal lattice gives `a`, discreteness/`ZLattice` finiteness gives
-  the constant — consumed by the growth leaf `weakFEPair_growth`);
-* the Mellin identification on `re s > 1`: the partial Dirichlet
-  series of the class converges (`LSeriesSummable`; from the pin's
-  per-class ideal-counting asymptotics
-  `Ideal.tendsto_norm_le_and_mk_eq_div_atTop` through
-  `LSeriesSummable_of_sum_norm_bigO`, or from the theta estimates
-  themselves) and
-  `Λ(s/2) = |d_K|^{s/2}·Γ_ℝ(s)^{r₁}·Γ_ℂ(s)^{r₂}·L(a_C, s)` with
+open scoped nonZeroDivisors in
+/-- **Cumulative per-class ideal count** (PROVEN 2026-07-24): summing
+the norm-`k` counts of one ideal class over `1 ≤ k ≤ n` counts the
+ideals of the class of norm at most `n` — every ideal in the count is
+nonzero, hence has norm `≥ 1`, so the `≤ n` set is fibered over the
+norm values in `Icc 1 n` (an explicit fibering equivalence plus
+`Nat.card_sigma`; finiteness of each fiber from
+`Ideal.finite_setOf_absNorm_eq`).  Consumed by
+`classIdealCount_LSeriesSummable`, where it matches the count whose
+linear asymptotics the pin provides. -/
+theorem sum_Icc_classIdealCount (K : Type*) [Field K] [NumberField K]
+    (C : ClassGroup (NumberField.RingOfIntegers K)) (n : ℕ) :
+    ∑ k ∈ Finset.Icc 1 n, classIdealCount K C k =
+      Nat.card {I : (Ideal (NumberField.RingOfIntegers K))⁰ //
+        Ideal.absNorm (I : Ideal (NumberField.RingOfIntegers K)) ≤ n ∧
+        ClassGroup.mk0 I = C} := by
+  haveI hfib : ∀ k : Finset.Icc 1 n, Finite
+      {I : (Ideal (NumberField.RingOfIntegers K))⁰ //
+        Ideal.absNorm (I : Ideal (NumberField.RingOfIntegers K)) = (k : ℕ) ∧
+        ClassGroup.mk0 I = C} := by
+    intro k
+    haveI : Finite {I : Ideal (NumberField.RingOfIntegers K) //
+        Ideal.absNorm I = (k : ℕ)} :=
+      (Ideal.finite_setOf_absNorm_eq (k : ℕ)).to_subtype
+    refine Finite.of_injective
+      (fun I => (⟨(I.1 : Ideal (NumberField.RingOfIntegers K)), I.2.1⟩ :
+        {I : Ideal (NumberField.RingOfIntegers K) //
+          Ideal.absNorm I = (k : ℕ)})) ?_
+    intro I J h
+    simp only [Subtype.mk.injEq] at h
+    exact Subtype.ext (Subtype.ext h)
+  have e : (Σ k : Finset.Icc 1 n,
+      {I : (Ideal (NumberField.RingOfIntegers K))⁰ //
+        Ideal.absNorm (I : Ideal (NumberField.RingOfIntegers K)) = (k : ℕ) ∧
+        ClassGroup.mk0 I = C}) ≃
+      {I : (Ideal (NumberField.RingOfIntegers K))⁰ //
+        Ideal.absNorm (I : Ideal (NumberField.RingOfIntegers K)) ≤ n ∧
+        ClassGroup.mk0 I = C} :=
+    { toFun := fun p => ⟨p.2.1,
+        le_trans (le_of_eq p.2.2.1) (Finset.mem_Icc.mp p.1.2).2, p.2.2.2⟩
+      invFun := fun I =>
+        ⟨⟨Ideal.absNorm (I.1 : Ideal (NumberField.RingOfIntegers K)),
+          Finset.mem_Icc.mpr ⟨Nat.one_le_iff_ne_zero.mpr
+            (Ideal.absNorm_ne_zero_of_nonZeroDivisors I.1), I.2.1⟩⟩,
+          ⟨I.1, rfl, I.2.2⟩⟩
+      left_inv := by
+        rintro ⟨⟨k, hk⟩, I, hIk, hIC⟩
+        obtain rfl : Ideal.absNorm (I : Ideal (NumberField.RingOfIntegers K)) = k := hIk
+        rfl
+      right_inv := fun I => rfl }
+  calc ∑ k ∈ Finset.Icc 1 n, classIdealCount K C k
+      = ∑ k : Finset.Icc 1 n, classIdealCount K C (k : ℕ) :=
+        (Finset.sum_coe_sort (Finset.Icc 1 n) (classIdealCount K C)).symm
+    _ = Nat.card (Σ k : Finset.Icc 1 n,
+          {I : (Ideal (NumberField.RingOfIntegers K))⁰ //
+            Ideal.absNorm (I : Ideal (NumberField.RingOfIntegers K)) = (k : ℕ) ∧
+            ClassGroup.mk0 I = C}) := Nat.card_sigma.symm
+    _ = _ := Nat.card_congr e
+
+open scoped nonZeroDivisors in
+/-- **Absolute convergence of the partial zeta of one ideal class on
+`re s > 1`** (PROVEN 2026-07-24 — the `LSeriesSummable` half of the
+Mellin conjunct of `heckeFEPair_exists`, proven directly from the
+pin's ideal-counting asymptotics rather than through the theta
+machinery): the per-class cumulative count is `O(n)` — the pin's
+Weber/Dedekind linear asymptotic
+`NumberField.Ideal.tendsto_norm_le_and_mk_eq_div_atTop` gives
+`count(x)/x → c`, hence `count =O[atTop] id`, composed with `ℕ ↪ ℝ`
+and identified with the coefficient partial sums by
+`sum_Icc_classIdealCount` — and a Dirichlet series with nonnegative
+real coefficients whose partial sums grow linearly converges
+absolutely on `re s > 1` (`LSeriesSummable_of_sum_norm_bigO_and_nonneg`
+at `r = 1`). -/
+theorem classIdealCount_LSeriesSummable (K : Type*) [Field K] [NumberField K]
+    (C : ClassGroup (NumberField.RingOfIntegers K)) {s : ℂ} (hs : 1 < s.re) :
+    LSeriesSummable (fun n => (classIdealCount K C n : ℂ)) s := by
+  have h1 : (fun x : ℝ => (Nat.card {I : (Ideal (NumberField.RingOfIntegers K))⁰ //
+      Ideal.absNorm (I : Ideal (NumberField.RingOfIntegers K)) ≤ x ∧
+      ClassGroup.mk0 I = C} : ℝ)) =O[Filter.atTop] fun x : ℝ => x := by
+    have h0 := ((NumberField.Ideal.tendsto_norm_le_and_mk_eq_div_atTop K C).isBigO_one
+      ℝ).mul (Asymptotics.isBigO_refl (fun x : ℝ => x) Filter.atTop)
+    refine h0.congr' ?_ ?_
+    · filter_upwards [Filter.eventually_gt_atTop (0 : ℝ)] with x hx
+      exact div_mul_cancel₀ _ hx.ne'
+    · filter_upwards with x
+      exact one_mul x
+  have h4 : ∀ n : ℕ, (Nat.card {I : (Ideal (NumberField.RingOfIntegers K))⁰ //
+      Ideal.absNorm (I : Ideal (NumberField.RingOfIntegers K)) ≤ (n : ℝ) ∧
+      ClassGroup.mk0 I = C} : ℝ) =
+      ∑ k ∈ Finset.Icc 1 n, (classIdealCount K C k : ℝ) := by
+    intro n
+    rw [← Nat.cast_sum, sum_Icc_classIdealCount K C n]
+    have e2 : {I : (Ideal (NumberField.RingOfIntegers K))⁰ //
+        (Ideal.absNorm (I : Ideal (NumberField.RingOfIntegers K)) : ℝ) ≤ (n : ℝ) ∧
+        ClassGroup.mk0 I = C} ≃
+        {I : (Ideal (NumberField.RingOfIntegers K))⁰ //
+        Ideal.absNorm (I : Ideal (NumberField.RingOfIntegers K)) ≤ n ∧
+        ClassGroup.mk0 I = C} :=
+      Equiv.subtypeEquivRight fun I => and_congr_left' Nat.cast_le
+    exact congrArg (fun m : ℕ => (m : ℝ)) (Nat.card_congr e2)
+  have h2 : (fun n : ℕ => ∑ k ∈ Finset.Icc 1 n, (classIdealCount K C k : ℝ))
+      =O[Filter.atTop] fun n : ℕ => (n : ℝ) ^ (1 : ℝ) :=
+    (h1.comp_tendsto tendsto_natCast_atTop_atTop).congr'
+      (Filter.Eventually.of_forall fun n => h4 n)
+      (Filter.Eventually.of_forall fun n => (Real.rpow_one _).symm)
+  have h5 := LSeriesSummable_of_sum_norm_bigO_and_nonneg h2
+    (fun n => Nat.cast_nonneg _) zero_le_one hs
+  simpa using h5
+
+/-- **The Hecke theta kernel family of the class group** (sorry node,
+stated 2026-07-24 — the analytic core of the Neukirch VII §§3–5
+per-class continuation, cut out of `heckeFEPair_exists`, whose
+`WeakFEPair` assembly is PROVEN on top of this leaf): from the
+`n`-dimensional lattice theta law `hθ` (verbatim
+`zlattice_theta_transform`) produce a family of kernel functions
+`F C : ℝ → ℂ` — Neukirch's unit-domain theta integrals `g(C, t)` — and
+one shared constant `ρ` with
+
+* local integrability on `(0, ∞)` (each `F C` is continuous there);
+* the scalar functional equation
+  `F C (1/x) = x^{1/2} · F ([𝔡]C⁻¹) x` for `x > 0`, pairing `C` with
+  its dual class `dedekindDualClass K C` at weight `1/2` and root
+  number `1` (Neukirch VII (5.6): the anisotropic theta law —
+  `hθ` applied to the diagonally rescaled ideal lattices — integrated
+  over the unit fundamental domain);
+* exponential approach to the shared constant term on `[1, ∞)`:
+  `‖F C t − ρ‖ ≤ A·exp(−a·t)` (Neukirch VII (5.7)/(5.8): `ρ` is the
+  `2^{r₁−1}·vol(F)/w`-style unit-domain volume constant, the SAME for
+  every class; the tail bound comes from the smallest nonzero vector
+  of the ideal lattice);
+* the Mellin identification on `re s > 1`: the shifted Mellin
+  transform of `F C − ρ` at `s/2` converges and equals
+  `|d_K|^{s/2}·Γ_ℝ(s)^{r₁}·Γ_ℂ(s)^{r₂}·L(a_C, s)` with
   `Γ_ℝ(s) = π^{−s/2}·Γ(s/2)`, `Γ_ℂ(s) = 2·(2π)^{−s}·Γ(s)` (Neukirch
-  VII §4's archimedean Euler factors, via `WeakFEPair.hasMellin` at
-  `re (s/2) > 1/2 = k`).
+  VII §4's archimedean Euler factors; the `HasMellin` bundle carries
+  the convergence).  The `LSeriesSummable` half of the corresponding
+  `heckeFEPair_exists` conjunct is NOT needed here — it is already
+  PROVEN independently (`classIdealCount_LSeriesSummable`).
 
 Intended construction (J. Neukirch, *Algebraic Number Theory*, VII
-§§3–5):
+§§3–5), the natural further decomposition of this leaf:
 
 1. *Ideal lattices and their duals* (Neukirch VII §3).  Choose an
    integral ideal `𝔞 ∈ C⁻¹`; the nonzero integral ideals in `C`
@@ -6617,16 +6746,85 @@ Intended construction (J. Neukirch, *Algebraic Number Theory*, VII
    with covolume `(Π y_w^{d_w/2})·covol 𝔞` and dual lattice
    `D_{√y}⁻¹·𝔞∨`), so the anisotropic transformation law is `hθ`
    applied to `D_{√y}·𝔞` at `t = 1`.
-3. *Unit-domain reduction* (Neukirch VII §5, (5.5)–(5.8)): the
-   kernels `f = g_C`, `g = g_{C'}` are the integrals of the theta
-   over a fundamental domain of `𝒪_K^×/μ(K)` acting on the norm-one
-   hypersurface of `K_ℝ^×` (Dirichlet's unit theorem,
-   `NumberField.Units.*`); the anisotropic law of step 2 integrates
-   to `g_C(1/t) = t^{1/2}·g_{C'}(t)`, which is the `WeakFEPair.h_feq`
-   field at `k = 1/2`, `ε = 1`; local integrability and the
-   all-order decay fields follow from the exponential tail bounds
-   above.  The `WeakFEPair` API then yields everything the assembly
-   consumes. -/
+3. *Unit-domain reduction* (Neukirch VII §5, (5.5)–(5.8)): define
+   `F C` as the integral of the theta of step 2 over a fundamental
+   domain of `𝒪_K^×/μ(K)` acting on the norm-one hypersurface of
+   `K_ℝ^×` (Dirichlet's unit theorem, `NumberField.Units.*`); the
+   anisotropic law of step 2 integrates to the scalar functional
+   equation above; the exponential decay is the theta tail bound
+   uniform over the (compact closure of the) unit domain; and the
+   Mellin identification is the `Γ`-integral computation of Neukirch
+   VII §4 through the orbit-count dictionary of step 1 (Fubini for
+   the interchange of `Σ` and `∫`, justified by the same tail
+   bounds). -/
+theorem heckeThetaKernel_exists (K : Type*) [Field K] [NumberField K]
+    (hθ : ∀ (E : Type) [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+      [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E]
+      (L : Submodule ℤ E) [DiscreteTopology L] [IsZLattice ℝ L]
+      (t : ℝ), 0 < t →
+      ∑' v : L, Real.exp (-Real.pi * t⁻¹ * ‖(v : E)‖ ^ 2) =
+        (ZLattice.covolume L)⁻¹ * t ^ ((Module.finrank ℝ E : ℝ) / 2) *
+          ∑' w : LinearMap.BilinForm.dualSubmodule (innerₗ E) L,
+            Real.exp (-Real.pi * t * ‖(w : E)‖ ^ 2)) :
+    ∃ (F : ClassGroup (NumberField.RingOfIntegers K) → ℝ → ℂ) (ρ : ℂ),
+      (∀ C, MeasureTheory.LocallyIntegrableOn (F C) (Set.Ioi 0)) ∧
+      (∀ C, ∀ x : ℝ, x ∈ Set.Ioi (0 : ℝ) →
+        F C (1 / x) = ((x ^ ((1 : ℝ) / 2) : ℝ) : ℂ) •
+          F (dedekindDualClass K C) x) ∧
+      (∀ C, ∃ A a : ℝ, 0 < a ∧
+        ∀ t : ℝ, 1 ≤ t → ‖F C t - ρ‖ ≤ A * Real.exp (-a * t)) ∧
+      (∀ C, ∀ s : ℂ, 1 < s.re →
+        HasMellin (fun t => F C t - ρ) (s / 2)
+          (Complex.ofReal |(NumberField.discr K : ℝ)| ^ (s / 2) *
+            ((Real.pi : ℂ) ^ (-s / 2) * Complex.Gamma (s / 2)) ^
+              NumberField.InfinitePlace.nrRealPlaces K *
+            ((2 : ℂ) * ((2 * Real.pi : ℝ) : ℂ) ^ (-s) * Complex.Gamma s) ^
+              NumberField.InfinitePlace.nrComplexPlaces K *
+            LSeries (fun n => (classIdealCount K C n : ℂ)) s)) := by
+  sorry
+
+/-- **Hecke's theta–Mellin `WeakFEPair` family of the class group**
+(DECOMPOSED 2026-07-24, assembly PROVEN — the field-by-field
+`WeakFEPair` instantiation, following the pattern of
+`Mathlib.NumberTheory.LSeries.HurwitzZetaEven`, on top of the analytic
+kernel leaf `heckeThetaKernel_exists` and the PROVEN
+`classIdealCount_LSeriesSummable`/`weakFEPair_lambdaZero_congr`): from
+the `n`-dimensional lattice theta law `hθ` (verbatim
+`zlattice_theta_transform`) produce, for every ideal class `C`, a
+`WeakFEPair` `P C` — mathlib's abstract Mellin/functional-equation
+machine (`Mathlib.NumberTheory.LSeries.AbstractFuncEq`) — with weight
+`k = 1/2`, root number `ε = 1`, shared constant term `f₀ = g₀ = ρ`,
+the `Λ₀`-level functional equation pairing `C` with
+`[𝔡]C⁻¹ = dedekindDualClass K C`, exponentially decaying kernels on
+`[1, ∞)`, and the `re s > 1` Mellin identification
+`Λ(s/2) = |d_K|^{s/2}·Γ_ℝ(s)^{r₁}·Γ_ℂ(s)^{r₂}·L(a_C, s)` with bundled
+`LSeriesSummable`.
+
+The assembly: take the kernel family `F` and constant `ρ` of
+`heckeThetaKernel_exists` and set `(P C).f := F C`,
+`(P C).g := F ([𝔡]C⁻¹)` — the COHERENT construction, every pair's `g`
+being the dual pair's `f`.  Field by field:
+
+* `hf_int`/`hg_int` are the kernel leaf's local integrability;
+* `h_feq` is the kernel leaf's scalar functional equation with the
+  root number `1` made explicit (`one_mul`);
+* `hf_top`/`hg_top` (all-order decay): the exponential tail bound
+  `‖F C t − ρ‖ ≤ A·exp(−a·t)` beats every power
+  (`isLittleO_exp_neg_mul_rpow_atTop`);
+* the `Λ₀`-level functional equation is
+  `WeakFEPair.functional_equation₀` at `ε = 1` (`one_smul`), with
+  `(P C).symm.Λ₀` identified with `(P ([𝔡]C⁻¹)).Λ₀` by
+  `weakFEPair_lambdaZero_congr` — the five data fields entering `Λ₀`
+  agree, `symm` inverting `ε = 1` (`inv_one`) and swapping the
+  coherently chosen kernels;
+* the shared-`(A, a)` decay conjunct combines the two classes' tail
+  bounds by `max`/`min` (the leaf's constants are nonnegative since
+  they dominate a norm at `t = 1`);
+* the Mellin conjunct: `LSeriesSummable` is the PROVEN
+  `classIdealCount_LSeriesSummable`, and the `Λ(s/2)` formula chains
+  `WeakFEPair.hasMellin` at `re (s/2) > 1/2 = k` with the kernel
+  leaf's `HasMellin` identification (two Mellin transforms of the
+  same function). -/
 theorem heckeFEPair_exists (K : Type*) [Field K] [NumberField K]
     (hθ : ∀ (E : Type) [NormedAddCommGroup E] [InnerProductSpace ℝ E]
       [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E]
@@ -6654,7 +6852,91 @@ theorem heckeFEPair_exists (K : Type*) [Field K] [NumberField K]
             ((2 : ℂ) * ((2 * Real.pi : ℝ) : ℂ) ^ (-s) * Complex.Gamma s) ^
               NumberField.InfinitePlace.nrComplexPlaces K *
             LSeries (fun n => (classIdealCount K C n : ℂ)) s) := by
-  sorry
+  obtain ⟨F, ρ, hloc, hfeq, hdec, hmel⟩ := heckeThetaKernel_exists K hθ
+  -- Rapid decay at `∞` of the recentered kernels: the exponential
+  -- tail bound beats every power.
+  have htop : ∀ C (r : ℝ),
+      (fun t : ℝ => F C t - ρ) =O[Filter.atTop] fun t : ℝ => t ^ r := by
+    intro C r
+    obtain ⟨A, a, ha, hA⟩ := hdec C
+    refine (Asymptotics.IsBigO.of_bound A ?_).trans
+      (isLittleO_exp_neg_mul_rpow_atTop ha r).isBigO
+    filter_upwards [Filter.eventually_ge_atTop (1 : ℝ)] with t ht
+    rw [Real.norm_eq_abs, abs_of_pos (Real.exp_pos _)]
+    exact hA t ht
+  -- The functional-equation field, with the root number `1` explicit.
+  have hfeq' : ∀ C, ∀ x : ℝ, x ∈ Set.Ioi (0 : ℝ) →
+      F C (1 / x) = ((1 : ℂ) * ((x ^ ((1 : ℝ) / 2) : ℝ) : ℂ)) •
+        F (dedekindDualClass K C) x := by
+    intro C x hx
+    rw [one_mul]
+    exact hfeq C x hx
+  -- The coherent family: every pair's `g` is the dual pair's `f`.
+  let P : ClassGroup (NumberField.RingOfIntegers K) → WeakFEPair ℂ := fun C =>
+    { f := F C
+      g := F (dedekindDualClass K C)
+      k := 1 / 2
+      ε := 1
+      f₀ := ρ
+      g₀ := ρ
+      hf_int := hloc C
+      hg_int := hloc (dedekindDualClass K C)
+      hk := one_half_pos
+      hε := one_ne_zero
+      h_feq := hfeq' C
+      hf_top := htop C
+      hg_top := htop (dedekindDualClass K C) }
+  refine ⟨P, ρ, fun C => rfl, fun C => rfl, fun C => rfl, fun C => rfl,
+    ?_, ?_, ?_⟩
+  · -- The `Λ₀`-level functional equation, pairing `C` with `[𝔡]C⁻¹`.
+    intro C s
+    have hsymm : (P C).symm.Λ₀ = (P (dedekindDualClass K C)).Λ₀ :=
+      weakFEPair_lambdaZero_congr _ _ rfl rfl inv_one rfl rfl
+    have h0 := (P C).functional_equation₀ s
+    have hk2 : (((P C).k : ℝ) : ℂ) = 1 / 2 := by
+      show (((1 : ℝ) / 2 : ℝ) : ℂ) = 1 / 2
+      push_cast
+      norm_num
+    rw [hk2] at h0
+    rw [h0, hsymm]
+    exact one_smul ℂ _
+  · -- Exponential decay of both kernels on `[1, ∞)`.
+    intro C
+    obtain ⟨A₁, a₁, ha₁, hA₁⟩ := hdec C
+    obtain ⟨A₂, a₂, ha₂, hA₂⟩ := hdec (dedekindDualClass K C)
+    have hA₁0 : 0 ≤ A₁ := by
+      have h1 := (norm_nonneg (F C 1 - ρ)).trans (hA₁ 1 le_rfl)
+      nlinarith [Real.exp_pos (-a₁ * 1)]
+    have hA₂0 : 0 ≤ A₂ := by
+      have h1 := (norm_nonneg (F (dedekindDualClass K C) 1 - ρ)).trans
+        (hA₂ 1 le_rfl)
+      nlinarith [Real.exp_pos (-a₂ * 1)]
+    refine ⟨max A₁ A₂, min a₁ a₂, lt_min ha₁ ha₂,
+      fun t ht => ?_, fun t ht => ?_⟩
+    · calc ‖(P C).f t - (P C).f₀‖
+          ≤ A₁ * Real.exp (-a₁ * t) := hA₁ t ht
+        _ ≤ max A₁ A₂ * Real.exp (-min a₁ a₂ * t) :=
+            mul_le_mul (le_max_left _ _)
+              (Real.exp_le_exp.mpr (by nlinarith [min_le_left a₁ a₂]))
+              (Real.exp_pos _).le (hA₁0.trans (le_max_left _ _))
+    · calc ‖(P C).g t - (P C).g₀‖
+          ≤ A₂ * Real.exp (-a₂ * t) := hA₂ t ht
+        _ ≤ max A₁ A₂ * Real.exp (-min a₁ a₂ * t) :=
+            mul_le_mul (le_max_right _ _)
+              (Real.exp_le_exp.mpr (by nlinarith [min_le_right a₁ a₂]))
+              (Real.exp_pos _).le (hA₁0.trans (le_max_left _ _))
+  · -- The Mellin identification on `re s > 1`.
+    intro C s hs
+    refine ⟨classIdealCount_LSeriesSummable K C hs, ?_⟩
+    have hks : (P C).k < (s / 2).re := by
+      show (1 : ℝ) / 2 < (s / 2).re
+      have h2 : (s / 2).re = s.re / 2 := by
+        rw [show (2 : ℂ) = ((2 : ℝ) : ℂ) by norm_num, Complex.div_ofReal_re]
+      rw [h2]
+      linarith
+    have h1 := (P C).hasMellin hks
+    rw [← h1.2]
+    exact (hmel C s hs).2
 
 /-- **Order-one growth for a weight-`1/2` FE-pair with exponentially
 decaying kernels** (sorry node, stated 2026-07-24 — the Lang XIII §5
