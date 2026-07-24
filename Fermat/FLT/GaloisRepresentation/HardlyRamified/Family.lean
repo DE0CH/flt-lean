@@ -3142,8 +3142,443 @@ theorem exists_ringOfIntegers_realizations_of_weightTwoEigenform
             (Pv v).map φ :=
   (Modularity.weightTwoEigenform_level_two_false f hf).elim
 
-/-- **Eisenstein realizations at odd residue characteristics** (sorry
-node; the REDUCIBLE branch of the realization atom below): if the base
+/-! ### The explicit Eisenstein member `1 ⊕ χ_cyc`
+
+Infrastructure for the two REDUCIBLE-branch realization leaves
+(`exists_hardlyRamified_ringOfIntegers_realizations_of_not_isIrreducible`
+and `exists_realization_at_two_generated_of_not_isIrreducible` below):
+by the PROVEN reducibility analysis
+(`exists_char_charpoly_map_eq_of_not_isIrreducible`) and the Eisenstein
+character dichotomy (`char_add_char_eq_one_add_cyclotomicCharacter`),
+the eigensystem of a reducible hardly ramified member degenerates to
+`Pv v = (X - 1)(X - q)` with coefficients in the PRIME FIELD away from
+`S ∪ {p}` (`eisenstein_Pv_eq_of_not_isIrreducible` below), so it is
+realized at every residue characteristic by the explicit DIAGONAL
+member `1 ⊕ χ_cyc,ℓ` — built here over any topological `ℤ_ℓ`-algebra
+with continuous structure map, on any rank-2 carrier with a chosen
+basis. Its Frobenius characteristic polynomial at `q ≠ ℓ` is exactly
+`(X - 1)(X - q)` (PROVEN via `cyclotomicCharacter_adicArithFrob_natCast`),
+it is unramified at every `q ≠ ℓ` (sorry leaf
+`cyclotomicCharacter_eq_one_of_mem_localInertiaGroup_of_ne`:
+`μ_{ℓ^∞}/ℚ` is unramified away from `ℓ`), and over the concrete rings
+of integers it is hardly ramified (cyclotomic determinant and tameness
+at `2` with TRIVIAL quotient character both PROVEN; flatness at `ℓ` as
+the Tate module of `μ_{ℓ^∞} × ℚ_ℓ/ℤ_ℓ` is the sorry leaf
+`isFlatAt_cycDiagRep`).
+
+SOUNDNESS AUDIT (2026-07-24, the reducible-but-INDECOMPOSABLE
+subtlety): a reducible hardly ramified member may itself be a
+nontrivial extension of `χ_cyc` by `1` (or vice versa), NOT isomorphic
+to this diagonal model. This threatens nothing: the realization leaves
+only demand SOME hardly ramified representation whose Frobenius
+characteristic polynomials match the eigensystem away from finitely
+many places — no integral model of `ρ` itself, and no isomorphism with
+`ρ`'s base change. The characteristic-polynomial data of an extension
+agrees everywhere with that of its semisimplification, so the diagonal
+member realizes exactly the same eigensystem and the statements are
+TRUE as written for extension classes too. -/
+
+section EisensteinDiagonal
+
+/-- The `ℓ`-adic cyclotomic character of `G_ℚ`, pushed into a
+`ℤ_ℓ`-algebra `A` (PROVEN layer): the scalar by which the second
+diagonal entry of the explicit Eisenstein member `1 ⊕ χ_cyc,ℓ` acts. -/
+noncomputable def cycUnitChar (ℓ : ℕ) [Fact ℓ.Prime] (A : Type*) [CommRing A]
+    [Algebra ℤ_[ℓ] A] (g : Field.absoluteGaloisGroup ℚ) : A :=
+  algebraMap ℤ_[ℓ] A
+    ((cyclotomicCharacter (AlgebraicClosure ℚ) ℓ g.toRingEquiv : ℤ_[ℓ]ˣ) : ℤ_[ℓ])
+
+/-- `cycUnitChar` is unital (PROVEN). -/
+lemma cycUnitChar_one {ℓ : ℕ} [Fact ℓ.Prime] (A : Type*) [CommRing A]
+    [Algebra ℤ_[ℓ] A] : cycUnitChar ℓ A 1 = 1 := by
+  have h1 : (1 : Field.absoluteGaloisGroup ℚ).toRingEquiv = 1 := rfl
+  simp [cycUnitChar, h1]
+
+/-- `cycUnitChar` is multiplicative (PROVEN). -/
+lemma cycUnitChar_mul {ℓ : ℕ} [Fact ℓ.Prime] (A : Type*) [CommRing A]
+    [Algebra ℤ_[ℓ] A] (g h : Field.absoluteGaloisGroup ℚ) :
+    cycUnitChar ℓ A (g * h) = cycUnitChar ℓ A g * cycUnitChar ℓ A h := by
+  have h1 : (g * h).toRingEquiv = g.toRingEquiv * h.toRingEquiv := rfl
+  simp [cycUnitChar, h1]
+
+/-- `cycUnitChar` is continuous whenever the structure map is (PROVEN:
+mathlib's `cyclotomicCharacter.continuous` against the Krull topology
+on `G_ℚ`). -/
+lemma continuous_cycUnitChar {ℓ : ℕ} [Fact ℓ.Prime] (A : Type*) [CommRing A]
+    [TopologicalSpace A] [Algebra ℤ_[ℓ] A]
+    (hcont : Continuous (algebraMap ℤ_[ℓ] A)) :
+    Continuous (cycUnitChar ℓ A) := by
+  have h1 := cyclotomicCharacter.continuous ℓ ℚ (AlgebraicClosure ℚ)
+  exact (hcont.comp (Units.continuous_val.comp h1)).congr fun g => rfl
+
+/-- The diagonal endomorphism `diag(1, a)` in a chosen basis (PROVEN
+layer): the value of the explicit Eisenstein member at a group element
+acting through the scalar `a`. -/
+noncomputable def cycDiagEnd {A : Type*} [CommRing A] {W : Type*} [AddCommGroup W]
+    [Module A W] (b : Module.Basis (Fin 2) A W) (a : A) : Module.End A W :=
+  Matrix.toLin b b (Matrix.diagonal ![1, a])
+
+/-- `diag(1, 1) = 1` (PROVEN). -/
+lemma cycDiagEnd_one {A : Type*} [CommRing A] {W : Type*} [AddCommGroup W]
+    [Module A W] (b : Module.Basis (Fin 2) A W) : cycDiagEnd b 1 = 1 := by
+  rw [cycDiagEnd]
+  have h : ![(1 : A), 1] = fun _ => 1 := by funext i; fin_cases i <;> simp
+  rw [h, Matrix.diagonal_one, Matrix.toLin_one]
+  rfl
+
+/-- `diag(1, a) * diag(1, c) = diag(1, ac)` (PROVEN). -/
+lemma cycDiagEnd_mul {A : Type*} [CommRing A] {W : Type*} [AddCommGroup W]
+    [Module A W] (b : Module.Basis (Fin 2) A W) (a c : A) :
+    cycDiagEnd b a * cycDiagEnd b c = cycDiagEnd b (a * c) := by
+  show (Matrix.toLin b b _).comp (Matrix.toLin b b _) = _
+  rw [cycDiagEnd, ← Matrix.toLin_mul, Matrix.diagonal_mul_diagonal]
+  congr 2
+  funext i
+  fin_cases i <;> simp
+
+/-- `diag(1, a)` is a constant plus `a` times a constant (PROVEN): the
+decomposition giving continuity of the Eisenstein member in the module
+topology on endomorphisms. -/
+lemma cycDiagEnd_eq_add_smul {A : Type*} [CommRing A] {W : Type*} [AddCommGroup W]
+    [Module A W] (b : Module.Basis (Fin 2) A W) (a : A) :
+    cycDiagEnd b a = Matrix.toLin b b (Matrix.diagonal ![1, 0]) +
+      a • Matrix.toLin b b (Matrix.diagonal ![0, 1]) := by
+  rw [cycDiagEnd, ← map_smul, ← map_add]
+  congr 1
+  ext i j
+  fin_cases i <;> fin_cases j <;> simp [Matrix.diagonal]
+
+/-- The characteristic polynomial of `diag(1, a)` is `(X - 1)(X - a)`
+(PROVEN). -/
+lemma charpoly_cycDiagEnd {A : Type*} [CommRing A] {W : Type*} [AddCommGroup W]
+    [Module A W] [Module.Finite A W] [Module.Free A W]
+    (b : Module.Basis (Fin 2) A W) (a : A) :
+    (cycDiagEnd b a).charpoly =
+      (Polynomial.X - Polynomial.C 1) * (Polynomial.X - Polynomial.C a) := by
+  rw [cycDiagEnd, ← LinearMap.charpoly_toMatrix _ b, LinearMap.toMatrix_toLin,
+    Matrix.charpoly_diagonal, Fin.prod_univ_two]
+  simp
+
+/-- The determinant of `diag(1, a)` is `a` (PROVEN). -/
+lemma det_cycDiagEnd {A : Type*} [CommRing A] {W : Type*} [AddCommGroup W]
+    [Module A W] (b : Module.Basis (Fin 2) A W) (a : A) :
+    LinearMap.det (cycDiagEnd b a) = a := by
+  rw [cycDiagEnd, LinearMap.det_toLin, Matrix.det_diagonal, Fin.prod_univ_two]
+  simp
+
+/-- `diag(1, a)` acts trivially on the first coordinate (PROVEN): the
+tame-at-two quotient of the Eisenstein member is the TRIVIAL character. -/
+lemma coord_zero_cycDiagEnd {A : Type*} [CommRing A] {W : Type*} [AddCommGroup W]
+    [Module A W] (b : Module.Basis (Fin 2) A W) (a : A) (w : W) :
+    b.coord 0 (cycDiagEnd b a w) = b.coord 0 w := by
+  simp [cycDiagEnd, Matrix.toLin_apply, Matrix.mulVec, Matrix.diagonal, Fin.sum_univ_two,
+    dotProduct]
+
+/-- **The explicit Eisenstein member `1 ⊕ χ_cyc,ℓ`** (PROVEN
+construction): the diagonal Galois representation acting by `1` on the
+first basis vector and by the `ℓ`-adic cyclotomic character on the
+second, over any topological `ℤ_ℓ`-algebra whose structure map is
+continuous, on any carrier with a chosen rank-2 basis. Continuity is
+the decomposition `cycDiagEnd_eq_add_smul` against the continuity of
+the module topology's operations. -/
+noncomputable def cycDiagRep {ℓ : ℕ} [Fact ℓ.Prime] {A : Type*} [CommRing A]
+    [TopologicalSpace A] [IsTopologicalRing A] [Algebra ℤ_[ℓ] A]
+    {W : Type*} [AddCommGroup W] [Module A W]
+    (hcont : Continuous (algebraMap ℤ_[ℓ] A)) (b : Module.Basis (Fin 2) A W) :
+    GaloisRep ℚ A W :=
+  letI := moduleTopology A (Module.End A W)
+  haveI : ContinuousAdd (Module.End A W) := ModuleTopology.continuousAdd A _
+  haveI : ContinuousSMul A (Module.End A W) := ModuleTopology.continuousSMul A _
+  { toFun := fun g => cycDiagEnd b (cycUnitChar ℓ A g)
+    map_one' := by rw [cycUnitChar_one, cycDiagEnd_one]
+    map_mul' := fun g h => by rw [cycUnitChar_mul, ← cycDiagEnd_mul]
+    continuous_toFun := by
+      simp only [cycDiagEnd_eq_add_smul]
+      exact continuous_const.add ((continuous_cycUnitChar A hcont).smul continuous_const) }
+
+/-- Evaluation of the Eisenstein member (PROVEN, definitional). -/
+lemma cycDiagRep_apply {ℓ : ℕ} [Fact ℓ.Prime] {A : Type*} [CommRing A]
+    [TopologicalSpace A] [IsTopologicalRing A] [Algebra ℤ_[ℓ] A]
+    {W : Type*} [AddCommGroup W] [Module A W]
+    (hcont : Continuous (algebraMap ℤ_[ℓ] A)) (b : Module.Basis (Fin 2) A W)
+    (g : Field.absoluteGaloisGroup ℚ) :
+    cycDiagRep hcont b g = cycDiagEnd b (cycUnitChar ℓ A g) := rfl
+
+/-- **The `ℓ`-adic cyclotomic character dies on inertia away from `ℓ`**
+(sorry node; the arithmetic leaf of the explicit Eisenstein member): at
+a rational prime `q ≠ ℓ` the `ℓ`-adic cyclotomic character kills the
+image in `G_ℚ` of the local inertia at `q` — the extensions
+`ℚ_q(μ_{ℓ^n})/ℚ_q` are unramified for `q ≠ ℓ`. Intended proof: the
+inertia analogue of the PROVEN Frobenius computation
+`adicArithFrob_rootsOfUnity_pow_of_ne` above, sharing all its
+infrastructure: an `ℓ^n`-th root of unity `ζ` is integral over the
+completion integers at `q` (it kills `X^{ℓ^n} - 1`), distinct `ℓ^n`-th
+roots of unity have UNIT difference in residue characteristic `q ≠ ℓ`
+(their difference divides `ℓ^{ℓ^n}`, a `q`-adic unit, cf.
+`valued_natCast_adicCompletionIntegers_eq_one_of_ne`), and an inertia
+element fixes the residue field of the integral closure, so it fixes
+`ζ` itself; then every level `toZModPow n` of the character is trivial
+(`modularCyclotomicCharacter.unique` with the trivial action) and
+`ℓ`-adic continuity (`PadicInt.ext_of_toZModPow`) concludes. This is
+the general-`(q, ℓ)` place-spelled form of the at-`2` statement
+`cyclotomicCharacter_eq_one_of_mem_inertia_two` above (which is
+spelled over `ℚ_[2]`/`Z2bar` instead and stays a separate leaf). -/
+theorem cyclotomicCharacter_eq_one_of_mem_localInertiaGroup_of_ne
+    {ℓ q : ℕ} [Fact ℓ.Prime] (hq : q.Prime) (hqℓ : q ≠ ℓ)
+    (σ : Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat))
+    (hσ : σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat) :
+    cyclotomicCharacter (AlgebraicClosure ℚ) ℓ
+      ((Field.absoluteGaloisGroup.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)) σ).toRingEquiv) = 1 :=
+  sorry
+
+/-- The Eisenstein member is unramified at every `q ≠ ℓ` (PROVEN over
+the arithmetic leaf `cyclotomicCharacter_eq_one_of_mem_localInertiaGroup_of_ne`:
+the diagonal value `diag(1, χ_cyc(σ))` at an inertia element is
+`diag(1, 1) = 1`). -/
+theorem isUnramifiedAt_cycDiagRep_of_ne {ℓ : ℕ} [Fact ℓ.Prime] {A : Type*}
+    [CommRing A] [TopologicalSpace A] [IsTopologicalRing A] [Algebra ℤ_[ℓ] A]
+    {W : Type*} [AddCommGroup W] [Module A W]
+    (hcont : Continuous (algebraMap ℤ_[ℓ] A)) (b : Module.Basis (Fin 2) A W)
+    {q : ℕ} (hq : q.Prime) (hqℓ : q ≠ ℓ) :
+    (cycDiagRep hcont b).IsUnramifiedAt hq.toHeightOneSpectrumRingOfIntegersRat := by
+  refine ⟨fun σ hσ => ?_⟩
+  show (cycDiagRep hcont b).toLocal hq.toHeightOneSpectrumRingOfIntegersRat σ = 1
+  rw [GaloisRep.toLocal_apply, cycDiagRep_apply]
+  -- the value at the (freshly spelled) global image of `σ` is `1`
+  have h2 : cycUnitChar ℓ A (Field.absoluteGaloisGroup.map (algebraMap ℚ
+      (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1 := by
+    rw [cycUnitChar, cyclotomicCharacter_eq_one_of_mem_localInertiaGroup_of_ne hq hqℓ σ hσ,
+      Units.val_one, map_one]
+  have h3 : cycDiagEnd b (cycUnitChar ℓ A (Field.absoluteGaloisGroup.map (algebraMap ℚ
+      (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat)) σ)) =
+      (1 : Module.End A W) := by
+    rw [h2, cycDiagEnd_one]
+  -- bridge the `toLocal` spelling of the coefficient embedding to the fresh
+  -- one (they differ only in the subsingleton `Algebra ℚ _` instance)
+  convert h3 using 5
+  exact Subsingleton.elim _ _
+
+/-- **Frobenius characteristic polynomials of the Eisenstein member**
+(PROVEN): at every prime `q ≠ ℓ` the characteristic polynomial of the
+Frobenius under `1 ⊕ χ_cyc,ℓ` is exactly `(X - 1)(X - q)`, by the
+proven cyclotomic evaluation `cyclotomicCharacter_adicArithFrob_natCast`. -/
+theorem charFrob_cycDiagRep_of_ne {ℓ : ℕ} [Fact ℓ.Prime] {A : Type*}
+    [CommRing A] [TopologicalSpace A] [IsTopologicalRing A] [Algebra ℤ_[ℓ] A]
+    {W : Type*} [AddCommGroup W] [Module A W] [Module.Finite A W] [Module.Free A W]
+    (hcont : Continuous (algebraMap ℤ_[ℓ] A)) (b : Module.Basis (Fin 2) A W)
+    {q : ℕ} (hq : q.Prime) (hqℓ : q ≠ ℓ) :
+    (cycDiagRep hcont b).charFrob hq.toHeightOneSpectrumRingOfIntegersRat =
+      (Polynomial.X - Polynomial.C 1) * (Polynomial.X - Polynomial.C (q : A)) := by
+  rw [show (cycDiagRep hcont b).charFrob hq.toHeightOneSpectrumRingOfIntegersRat =
+    ((cycDiagRep hcont b).toLocal hq.toHeightOneSpectrumRingOfIntegersRat
+      (Field.AbsoluteGaloisGroup.adicArithFrob
+        hq.toHeightOneSpectrumRingOfIntegersRat)).charpoly from rfl,
+    GaloisRep.toLocal_apply, cycDiagRep_apply, charpoly_cycDiagEnd]
+  -- the character value at the (freshly spelled) global Frobenius image is `q`
+  have hval : cycUnitChar ℓ A (Field.absoluteGaloisGroup.map (algebraMap ℚ
+      (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat))
+      (Field.AbsoluteGaloisGroup.adicArithFrob
+        hq.toHeightOneSpectrumRingOfIntegersRat)) = (q : A) := by
+    rw [cycUnitChar, cyclotomicCharacter_adicArithFrob_natCast hq hqℓ, map_natCast]
+  have h3 : (Polynomial.X - Polynomial.C 1) * (Polynomial.X - Polynomial.C
+      (cycUnitChar ℓ A (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat))
+        (Field.AbsoluteGaloisGroup.adicArithFrob
+          hq.toHeightOneSpectrumRingOfIntegersRat)))) =
+      (Polynomial.X - Polynomial.C 1) * (Polynomial.X - Polynomial.C (q : A)) := by
+    rw [hval]
+  -- bridge the `toLocal` spelling of the coefficient embedding to the fresh
+  -- one (subsingleton `Algebra ℚ _` instance)
+  convert h3 using 7
+  exact Subsingleton.elim _ _
+
+/-- The trivial rank-one Galois representation over `A` (PROVEN layer):
+the tame-at-two quotient character of the Eisenstein member — the
+first diagonal entry of `diag(1, χ_cyc)` is `1`. Elaborated in this
+generic context (instance synthesis at the `IntegralClosure` type
+synonym is unreliable inside tactic blocks; binders sidestep it, the
+pattern of `isModuleTopology_of_compactSpace_t2Space` above). -/
+noncomputable def trivialQuotChar (K : Type*) [Field K] (A : Type*) [CommRing A]
+    [TopologicalSpace A] : GaloisRep K A A :=
+  letI := moduleTopology A (Module.End A A)
+  { toMonoidHom := 1
+    continuous_toFun := continuous_const }
+
+/-- **Flatness of the Eisenstein member at `ℓ`** (sorry node; the
+group-scheme leaf of the explicit member): over the ring of integers
+`𝒪 = IntegralClosure ℤ_ℓ L` of a finite extension `L/ℚ_ℓ`, the
+diagonal representation `1 ⊕ χ_cyc,ℓ` is flat at `ℓ` — it is the
+Galois module of geometric points of the `ℓ`-divisible group
+`ℚ_ℓ/ℤ_ℓ × μ_{ℓ^∞}` tensored with `𝒪`. Intended proof: an open ideal
+`I ⊆ 𝒪` has finite quotient (`𝒪` is module-finite over the compact
+`ℤ_ℓ`, and `I ⊇ ℓ^N 𝒪` for some `N`), and `𝒪/I ≅ ⊕ᵢ ℤ/ℓ^{kᵢ}` as an
+abelian `ℓ`-group; multiplication by the integer scalars `χ_cyc(g)`
+preserves each cyclic factor, and `ℤ/ℓ^k` with `G_{ℚ_ℓ}` acting
+through `χ_cyc mod ℓ^k` is exactly `μ_{ℓ^k}(ℚ̄_ℓ)`. So the reduction
+`W/IW ≅ (𝒪/I)²` (trivial factor ⊕ cyclotomic factor) is the group of
+points of the finite flat `ℤ_ℓ`-group scheme
+`⊕ᵢ (ℤ/ℓ^{kᵢ})_{const} × ⊕ᵢ μ_{ℓ^{kᵢ}}`, i.e. of the Hopf algebra
+`⊗ᵢ ℤ_ℓ[ℤ/ℓ^{kᵢ}] ⊗ ⊗ᵢ ℤ_ℓ[x]/(x^{ℓ^{kᵢ}} - 1)` (constant group
+algebras and `μ`-torsion algebras, both finite free over `ℤ_ℓ` with
+étale generic fiber in characteristic zero), giving the
+`HasFlatProlongationAt` witness demanded by `IsFlatAt` at every open
+ideal. -/
+theorem isFlatAt_cycDiagRep {ℓ : ℕ} [Fact ℓ.Prime]
+    (L : IntermediateField ℚ_[ℓ] (AlgebraicClosure ℚ_[ℓ])) [FiniteDimensional ℚ_[ℓ] L]
+    {W : Type*} [AddCommGroup W] [Module (IntegralClosure ℤ_[ℓ] L) W]
+    [Module.Finite (IntegralClosure ℤ_[ℓ] L) W] [Module.Free (IntegralClosure ℤ_[ℓ] L) W]
+    (hcont : Continuous (algebraMap ℤ_[ℓ] (IntegralClosure ℤ_[ℓ] L)))
+    (b : Module.Basis (Fin 2) (IntegralClosure ℤ_[ℓ] L) W) :
+    (cycDiagRep hcont b).IsFlatAt
+      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : ℓ.Prime)) :=
+  sorry
+
+/-- **The Eisenstein member is hardly ramified** (PROVEN assembly over
+the two sorry leaves): over the ring of integers of a finite extension
+`L/ℚ_ℓ`, the diagonal member `1 ⊕ χ_cyc,ℓ` has cyclotomic determinant
+(`det diag(1, χ_cyc) = χ_cyc`, PROVEN), is unramified outside `{2, ℓ}`
+(PROVEN over the arithmetic leaf), flat at `ℓ` (sorry leaf
+`isFlatAt_cycDiagRep`), and tame at `2` with the TRIVIAL quotient
+character on the first coordinate (PROVEN: the first diagonal entry is
+`1`, and the trivial character is unramified with square one). -/
+theorem isHardlyRamified_cycDiagRep {ℓ : ℕ} [Fact ℓ.Prime] (hℓodd : Odd ℓ)
+    (L : IntermediateField ℚ_[ℓ] (AlgebraicClosure ℚ_[ℓ])) [FiniteDimensional ℚ_[ℓ] L]
+    {W : Type*} [AddCommGroup W] [Module (IntegralClosure ℤ_[ℓ] L) W]
+    [Module.Finite (IntegralClosure ℤ_[ℓ] L) W] [Module.Free (IntegralClosure ℤ_[ℓ] L) W]
+    (hcont : Continuous (algebraMap ℤ_[ℓ] (IntegralClosure ℤ_[ℓ] L)))
+    (b : Module.Basis (Fin 2) (IntegralClosure ℤ_[ℓ] L) W)
+    (hrank : Module.rank (IntegralClosure ℤ_[ℓ] L) W = 2) :
+    IsHardlyRamified hℓodd hrank (cycDiagRep hcont b) := by
+  classical
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · -- cyclotomic determinant
+    intro g
+    rw [GaloisRep.det_apply, cycDiagRep_apply, det_cycDiagEnd]
+    rfl
+  · -- unramified outside `{2, ℓ}`
+    intro q hq hq2ℓ
+    exact isUnramifiedAt_cycDiagRep_of_ne hcont b hq hq2ℓ.2
+  · -- flat at `ℓ`: the group-scheme sorry leaf
+    exact isFlatAt_cycDiagRep L hcont b
+  · -- tame at `2`: quotient by the first coordinate, TRIVIAL character
+    refine ⟨b.coord 0, fun a => ⟨a • b 0, by simp⟩, trivialQuotChar ℚ_[2] _,
+      fun g w => ⟨?_, ?_, fun g' => ?_⟩⟩
+    · rw [GaloisRep.map_apply, cycDiagRep_apply]
+      exact coord_zero_cycDiagEnd b _ w
+    · intro σ _
+      exact rfl
+    · exact one_mul 1
+
+/-- Mapping `(X - 1)(X - q)` along a ring homomorphism (PROVEN
+bookkeeping, shared by the two realization leaves below). -/
+lemma map_X_sub_one_mul_X_sub_natCast {A B : Type*} [CommRing A] [CommRing B]
+    (f : A →+* B) (q : ℕ) :
+    ((Polynomial.X - Polynomial.C 1) * (Polynomial.X - Polynomial.C (q : A))).map f =
+      (Polynomial.X - Polynomial.C 1) * (Polynomial.X - Polynomial.C (q : B)) := by
+  rw [Polynomial.map_mul, Polynomial.map_sub, Polynomial.map_sub, Polynomial.map_X,
+    Polynomial.map_C, Polynomial.map_C, map_one, map_natCast]
+
+/-- **The reducible eigensystem is `(X - 1)(X - q)`** (PROVEN assembly
+over the Eisenstein character dichotomy): for a hardly ramified `ρ`
+whose base change to `ℚ̄_p` is NOT irreducible, the eigensystem
+polynomial `Pv v` at the place of every prime `q ∉ S ∪ {p}` is exactly
+`(X - 1)(X - q)` IN `E[X]`. Route: the diagonal characters `χ₁, χ₂` of
+the reducibility analysis satisfy `χ₁ + χ₂ = 1 + χ_cyc`
+(`char_add_char_eq_one_add_cyclotomicCharacter`) and `χ₁χ₂ = χ_cyc`
+(the determinant identity, read off `coeff 0` via
+`charFrob_coeff_zero_eq_natCast`); at the arithmetic Frobenius of `q`
+the cyclotomic character is `q` (PROVEN
+`cyclotomicCharacter_adicArithFrob_natCast`), so the mapped Frobenius
+charpoly is `X² - (1+q)X + q = (X - 1)(X - q)`, and `ψ`-injectivity
+descends the identity from `ℚ̄_p[X]` to `E[X]` (a ring homomorphism
+out of `ℚ` is unique, so the coefficients on both sides are the `ψ`-
+resp. identity-images of the SAME rational polynomial). -/
+theorem eisenstein_Pv_eq_of_not_isIrreducible
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hZinj : Function.Injective (algebraMap ℤ_[p] R))
+    (hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
+    (hρ : IsHardlyRamified hpodd hv ρ)
+    (hred : ¬ (ρ.baseChange (AlgebraicClosure ℚ_[p])).IsIrreducible)
+    {E : Type v} [Field E] [NumberField E] (ψ : E →+* AlgebraicClosure ℚ_[p])
+    {S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    {Pv : HeightOneSpectrum (NumberField.RingOfIntegers ℚ) → Polynomial E}
+    (heig : ∀ v ∉ S,
+      (ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p])) = (Pv v).map ψ)
+    {q : ℕ} (hq : q.Prime) (hqp : q ≠ p)
+    (hqS : hq.toHeightOneSpectrumRingOfIntegersRat ∉ S) :
+    Pv hq.toHeightOneSpectrumRingOfIntegersRat =
+      (Polynomial.X - Polynomial.C 1) * (Polynomial.X - Polynomial.C (q : E)) := by
+  classical
+  obtain ⟨χ₁, χ₂, hcont₁, hcont₂, hone₁, hone₂, hmul₁, hmul₂, hchar⟩ :=
+    exists_char_charpoly_map_eq_of_not_isIrreducible hv hred
+  have hsum := char_add_char_eq_one_add_cyclotomicCharacter hpodd hv hZinj hRinj hρ
+    χ₁ χ₂ hcont₁ hcont₂ hone₁ hone₂ hmul₁ hmul₂ hchar
+  -- the Frobenius charpoly in the freshly spelled global-Frobenius form
+  -- (the `Subsingleton.elim` juggle of `exists_rat_trace_coeff_of_not_isIrreducible`)
+  have hcp : ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat =
+      (ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat))
+        (Field.AbsoluteGaloisGroup.adicArithFrob
+          hq.toHeightOneSpectrumRingOfIntegersRat))).charpoly := by
+    rw [show ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat =
+      (ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat
+        (Field.AbsoluteGaloisGroup.adicArithFrob
+          hq.toHeightOneSpectrumRingOfIntegersRat)).charpoly from rfl,
+      GaloisRep.toLocal_apply]
+    congr 1
+    congr 1
+    congr 1
+    congr 1
+    exact Subsingleton.elim _ _
+  set g₀ : Field.absoluteGaloisGroup ℚ := Field.absoluteGaloisGroup.map (algebraMap ℚ
+    (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat))
+    (Field.AbsoluteGaloisGroup.adicArithFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+    with hg₀
+  -- the trace identity at the Frobenius: `χ₁ + χ₂ = 1 + q`
+  have hsq : χ₁ g₀ + χ₂ g₀ = 1 + (q : AlgebraicClosure ℚ_[p]) := by
+    have h := hsum g₀
+    rw [hg₀, cyclotomicCharacter_adicArithFrob_natCast hq hqp, map_natCast] at h
+    rw [hg₀]
+    exact h
+  -- the determinant identity at the Frobenius: `χ₁ · χ₂ = q`
+  have hc0 := charFrob_coeff_zero_eq_natCast hpodd hv hρ hq hqp
+  have hpr : χ₁ g₀ * χ₂ g₀ = (q : AlgebraicClosure ℚ_[p]) := by
+    have h0 : ((ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map
+        (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff 0 = χ₁ g₀ * χ₂ g₀ := by
+      rw [hcp, hchar g₀, Polynomial.mul_coeff_zero]
+      simp only [Polynomial.coeff_sub, Polynomial.coeff_X_zero, Polynomial.coeff_C_zero,
+        zero_sub, neg_mul_neg]
+    rw [← h0, hc0]
+  -- the split quadratic collapses to `(X - 1)(X - q)` over `ℚ̄_p`
+  have hfact : (Polynomial.X - Polynomial.C (χ₁ g₀)) * (Polynomial.X - Polynomial.C (χ₂ g₀)) =
+      (Polynomial.X - Polynomial.C 1) *
+        (Polynomial.X - Polynomial.C ((q : AlgebraicClosure ℚ_[p]))) := by
+    have hexp : ∀ a c : AlgebraicClosure ℚ_[p],
+        (Polynomial.X - Polynomial.C a) * (Polynomial.X - Polynomial.C c) =
+          Polynomial.X ^ 2 - (Polynomial.C a + Polynomial.C c) * Polynomial.X +
+            Polynomial.C a * Polynomial.C c := by
+      intro a c
+      ring
+    rw [hexp, hexp]
+    simp only [← Polynomial.C_add, ← Polynomial.C_mul]
+    rw [hsq, hpr, one_mul]
+  -- the mapped eigensystem polynomial over `ℚ̄_p`
+  have h1 : (Pv hq.toHeightOneSpectrumRingOfIntegersRat).map ψ =
+      (Polynomial.X - Polynomial.C 1) *
+        (Polynomial.X - Polynomial.C ((q : AlgebraicClosure ℚ_[p]))) := by
+    rw [← heig _ hqS, hcp, hchar g₀, hfact]
+  -- descend along the injective `ψ`
+  refine Polynomial.map_injective ψ ψ.injective ?_
+  rw [h1, map_X_sub_one_mul_X_sub_natCast ψ q]
+
+end EisensteinDiagonal
+
+/-- **Eisenstein realizations at odd residue characteristics** (PROVEN
+assembly, DECOMPOSED 2026-07-24; the REDUCIBLE branch of the
+realization atom below): if the base
 extension of the hardly ramified `ρ` to `ℚ̄_p` is NOT irreducible, its
 eigensystem is realized integrally at every odd `(ℓ, φ)` — with no
 modular form involved. The classical route: by the proven reducibility
@@ -3160,7 +3595,19 @@ outside `{ℓ}` ⊆ `{2, ℓ}`; flat at `ℓ` as the Tate module of
 `μ_{ℓ^∞} × ℚ_ℓ/ℤ_ℓ`; unramified hence tame at `2`; cyclotomic
 determinant) with `charFrob v = (X − 1)(X − q)` by the proven
 `cyclotomicCharacter_adicArithFrob_natCast`. See DECOMPOSITION PLAN
-item 5 in `Fermat/FLT/Modularity/Interface.lean`. -/
+item 5 in `Fermat/FLT/Modularity/Interface.lean`.
+
+DECOMPOSED (2026-07-24) into a PROVEN assembly over the
+`EisensteinDiagonal` section above: the eigensystem identification is
+the PROVEN `eisenstein_Pv_eq_of_not_isIrreducible`; the realizing
+member is the explicit `cycDiagRep` over `IntegralClosure ℤ_ℓ ⊥` on
+the `Type v` carrier `ULift (Fin 2 → 𝒪)`, hardly ramified by the
+PROVEN assembly `isHardlyRamified_cycDiagRep` and matching Frobenius
+charpolys by the PROVEN `charFrob_cycDiagRep_of_ne`. The two remaining
+sorried sub-leaves, both `ρ`-free and automorphy-free:
+`cyclotomicCharacter_eq_one_of_mem_localInertiaGroup_of_ne` (μ_{ℓ^∞}
+unramified away from `ℓ`) and `isFlatAt_cycDiagRep` (the
+`ℤ/ℓⁿ × μ_{ℓⁿ}` flat prolongations). -/
 theorem exists_hardlyRamified_ringOfIntegers_realizations_of_not_isIrreducible
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
@@ -3191,8 +3638,59 @@ theorem exists_hardlyRamified_ringOfIntegers_realizations_of_not_isIrreducible
           τ.IsUnramifiedAt v ∧
           (τ.charFrob v).map
               (algebraMap (IntegralClosure ℤ_[ℓ] L) (AlgebraicClosure ℚ_[ℓ])) =
-            (Pv v).map φ :=
-  sorry
+            (Pv v).map φ := by
+  classical
+  refine ⟨S ∪ {hp.out.toHeightOneSpectrumRingOfIntegersRat}, ?_⟩
+  intro ℓ hℓ hℓodd φ
+  haveI := hℓ
+  -- the explicit member `1 ⊕ χ_cyc,ℓ` over the integers of `L = ⊥`, on the
+  -- `Type v` carrier `ULift (Fin 2 → 𝒪)` framed by the standard basis
+  have hcont : Continuous (algebraMap ℤ_[ℓ]
+      (IntegralClosure ℤ_[ℓ] (⊥ : IntermediateField ℚ_[ℓ] (AlgebraicClosure ℚ_[ℓ])))) :=
+    continuous_algebraMap_integralClosure_padicInt _
+  let b : Module.Basis (Fin 2)
+      (IntegralClosure ℤ_[ℓ] (⊥ : IntermediateField ℚ_[ℓ] (AlgebraicClosure ℚ_[ℓ])))
+      (ULift.{v} (Fin 2 → IntegralClosure ℤ_[ℓ]
+        (⊥ : IntermediateField ℚ_[ℓ] (AlgebraicClosure ℚ_[ℓ])))) :=
+    (Pi.basisFun _ (Fin 2)).map
+      (ULift.moduleEquiv : ULift.{v} (Fin 2 → IntegralClosure ℤ_[ℓ]
+        (⊥ : IntermediateField ℚ_[ℓ] (AlgebraicClosure ℚ_[ℓ]))) ≃ₗ[IntegralClosure ℤ_[ℓ]
+          (⊥ : IntermediateField ℚ_[ℓ] (AlgebraicClosure ℚ_[ℓ]))] _).symm
+  haveI hWfin : Module.Finite
+      (IntegralClosure ℤ_[ℓ] (⊥ : IntermediateField ℚ_[ℓ] (AlgebraicClosure ℚ_[ℓ])))
+      (ULift.{v} (Fin 2 → IntegralClosure ℤ_[ℓ]
+        (⊥ : IntermediateField ℚ_[ℓ] (AlgebraicClosure ℚ_[ℓ])))) := Module.Finite.of_basis b
+  haveI hWfree : Module.Free
+      (IntegralClosure ℤ_[ℓ] (⊥ : IntermediateField ℚ_[ℓ] (AlgebraicClosure ℚ_[ℓ])))
+      (ULift.{v} (Fin 2 → IntegralClosure ℤ_[ℓ]
+        (⊥ : IntermediateField ℚ_[ℓ] (AlgebraicClosure ℚ_[ℓ])))) := Module.Free.of_basis b
+  have hrank : Module.rank
+      (IntegralClosure ℤ_[ℓ] (⊥ : IntermediateField ℚ_[ℓ] (AlgebraicClosure ℚ_[ℓ])))
+      (ULift.{v} (Fin 2 → IntegralClosure ℤ_[ℓ]
+        (⊥ : IntermediateField ℚ_[ℓ] (AlgebraicClosure ℚ_[ℓ])))) = 2 := by
+    rw [rank_eq_card_basis b, Fintype.card_fin]
+    norm_num
+  refine ⟨⊥, inferInstance,
+    ULift.{v} (Fin 2 → IntegralClosure ℤ_[ℓ]
+      (⊥ : IntermediateField ℚ_[ℓ] (AlgebraicClosure ℚ_[ℓ]))),
+    inferInstance, inferInstance, hWfin, hWfree, hrank,
+    cycDiagRep hcont b, (b.baseChange (AlgebraicClosure ℚ_[ℓ])).equivFun,
+    isHardlyRamified_cycDiagRep hℓodd ⊥ hcont b hrank, ?_⟩
+  intro w hwT hwℓ
+  obtain ⟨q, hq, rfl⟩ := exists_prime_toHeightOneSpectrumRingOfIntegersRat w
+  have hqS : hq.toHeightOneSpectrumRingOfIntegersRat ∉ S := fun hmem =>
+    hwT (Finset.mem_union_left _ hmem)
+  have hqp : q ≠ p := by
+    rintro rfl
+    exact hwT (Finset.mem_union_right _ (Finset.mem_singleton_self _))
+  have hqℓ : q ≠ ℓ := by
+    rintro rfl
+    exact hwℓ
+      ((Nat.Prime.mem_toHeightOneSpectrumRingOfIntegersRat_asIdeal hq _).mpr (by simp))
+  refine ⟨isUnramifiedAt_cycDiagRep_of_ne hcont b hq hqℓ, ?_⟩
+  rw [charFrob_cycDiagRep_of_ne hcont b hq hqℓ, map_X_sub_one_mul_X_sub_natCast,
+    eisenstein_Pv_eq_of_not_isIrreducible hpodd hv hZinj hRinj hρ hred ψ heig hq hqp hqS,
+    map_X_sub_one_mul_X_sub_natCast]
 
 /-- **Automorphy core over concrete rings of integers, odd residue
 characteristics** (PROVEN assembly as of 2026-07-23 — see the
@@ -3258,7 +3756,8 @@ assembly over three strictly shallower sorried nodes:
    node, above) — Eichler–Shimura/Deligne attachment with integral
    model at odd `ℓ`, for level-2 eigenforms; `ρ`-free.
 3. `exists_hardlyRamified_ringOfIntegers_realizations_of_not_isIrreducible`
-   (sorry node, above) — the reducible/Eisenstein branch, where no
+   (PROVEN assembly as of 2026-07-24, above; two `ρ`-free sub-leaves
+   remain sorried) — the reducible/Eisenstein branch, where no
    cusp form matches the eigensystem (`1 ⊕ χ_cyc` realizes it
    explicitly).
 
@@ -3524,7 +4023,8 @@ theorem exists_hardlyRamified_integral_realizations
   exact ⟨A, iA1, iA2, iA3, iA4, iA5, iA6, iA7, iA8, iA10, iA11, iA12, iA13, hAinj,
     W, iW1, iW2, iW3, iW4, hW, τ, r, hτ, hmatch⟩
 
-/-- **Eisenstein realization at the even prime** (sorry node; the
+/-- **Eisenstein realization at the even prime** (PROVEN assembly,
+DECOMPOSED 2026-07-24; the
 REDUCIBLE branch of the `λ ∣ 2` atom below): if the base extension of
 the hardly ramified `ρ` to `ℚ̄_p` is NOT irreducible, its eigensystem
 is realized over any generated coefficient field `K ⊆ ℚ̄_₂` — with no
@@ -3538,7 +4038,21 @@ analysis + the Eisenstein character dichotomy + injectivity of `ψ`), so
 representation `1 ⊕ χ_cyc,2` on `K²` realizes it (unramified outside
 `{2}`, absorbed by `T`; `charFrob v = (X − 1)(X − q)` by the proven
 `cyclotomicCharacter_adicArithFrob_natCast`). See DECOMPOSITION PLAN
-item 5 in `Fermat/FLT/Modularity/Interface.lean`. -/
+item 5 in `Fermat/FLT/Modularity/Interface.lean`.
+
+DECOMPOSED (2026-07-24) into a PROVEN assembly over the
+`EisensteinDiagonal` section above, exactly as at the odd-`ℓ`
+Eisenstein leaf: the eigensystem identification is the PROVEN
+`eisenstein_Pv_eq_of_not_isIrreducible`, the realizing member is the
+explicit `cycDiagRep` at `ℓ = 2` over `K` itself on `Fin 2 → K` with
+the standard basis (no integral model and no hardly-ramifiedness are
+demanded at the even prime, so the field-level member suffices), and
+the Frobenius charpolys match by the PROVEN `charFrob_cycDiagRep_of_ne`.
+The single remaining sorried sub-leaf here is the `ρ`-free arithmetic
+`cyclotomicCharacter_eq_one_of_mem_localInertiaGroup_of_ne` (at
+`ℓ = 2`: `μ_{2^∞}/ℚ` is unramified away from `2`); the generation
+hypothesis `_hgen` is not consumed — any `K` with an embedding of `E`
+carries the member. -/
 theorem exists_realization_at_two_generated_of_not_isIrreducible
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
@@ -3553,12 +4067,39 @@ theorem exists_realization_at_two_generated_of_not_isIrreducible
       (ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p])) = (Pv v).map ψ)
     (K : IntermediateField ℚ_[2] (AlgebraicClosure ℚ_[2]))
     [FiniteDimensional ℚ_[2] K] (φ₀ : E →+* K)
-    (hgen : K = IntermediateField.adjoin ℚ_[2]
+    (_hgen : K = IntermediateField.adjoin ℚ_[2]
       (Set.range fun x : E => (φ₀ x : AlgebraicClosure ℚ_[2]))) :
     ∃ (T : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
       (τ : GaloisRep ℚ K (Fin 2 → K)),
-      ∀ v ∉ T, τ.IsUnramifiedAt v ∧ τ.charFrob v = (Pv v).map φ₀ :=
-  sorry
+      ∀ v ∉ T, τ.IsUnramifiedAt v ∧ τ.charFrob v = (Pv v).map φ₀ := by
+  classical
+  -- the structure map `ℤ_2 → K` is continuous for the subspace topology
+  have hcont : Continuous (algebraMap ℤ_[2] K) := by
+    refine continuous_induced_rng.mpr ?_
+    have hcomp : Continuous (algebraMap ℤ_[2] (AlgebraicClosure ℚ_[2])) := by
+      rw [IsScalarTower.algebraMap_eq ℤ_[2] ℚ_[2] (AlgebraicClosure ℚ_[2])]
+      exact (continuous_algebraMap ℚ_[2] (AlgebraicClosure ℚ_[2])).comp
+        continuous_subtype_val
+    exact hcomp.congr fun z =>
+      IsScalarTower.algebraMap_apply ℤ_[2] K (AlgebraicClosure ℚ_[2]) z
+  refine ⟨S ∪ {hp.out.toHeightOneSpectrumRingOfIntegersRat,
+    Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat},
+    cycDiagRep hcont (Pi.basisFun K (Fin 2)), ?_⟩
+  intro w hwT
+  obtain ⟨q, hq, rfl⟩ := exists_prime_toHeightOneSpectrumRingOfIntegersRat w
+  have hqS : hq.toHeightOneSpectrumRingOfIntegersRat ∉ S := fun hmem =>
+    hwT (Finset.mem_union_left _ hmem)
+  have hqp : q ≠ p := by
+    rintro rfl
+    exact hwT (Finset.mem_union_right _ (Finset.mem_insert_self _ _))
+  have hq2 : q ≠ 2 := by
+    rintro rfl
+    exact hwT (Finset.mem_union_right _
+      (Finset.mem_insert_of_mem (Finset.mem_singleton_self _)))
+  refine ⟨isUnramifiedAt_cycDiagRep_of_ne hcont (Pi.basisFun K (Fin 2)) hq hq2, ?_⟩
+  rw [charFrob_cycDiagRep_of_ne hcont (Pi.basisFun K (Fin 2)) hq hq2,
+    eisenstein_Pv_eq_of_not_isIrreducible hpodd hv hZinj hRinj hρ hred ψ heig hq hqp hqS,
+    map_X_sub_one_mul_X_sub_natCast]
 
 /-- **Automorphy atom at the even prime, generated coefficients**
 (PROVEN assembly as of 2026-07-23 — see the DECOMPOSED note at the
@@ -3606,9 +4147,10 @@ dichotomy assembly over three strictly shallower sorried nodes:
    (interface sorry, `ρ`-free) — Eichler–Shimura/Deligne at `λ ∣ 2`
    for level-2 eigenforms, over exactly the generated coefficient
    field; also dischargeable via `dim S₂(Γ₀(2)) = 0`.
-3. `exists_realization_at_two_generated_of_not_isIrreducible` (sorry
-   node, above) — the reducible/Eisenstein branch (`1 ⊕ χ_cyc,2` over
-   `K`).
+3. `exists_realization_at_two_generated_of_not_isIrreducible` (PROVEN
+   assembly as of 2026-07-24, above; one `ρ`-free arithmetic sub-leaf
+   remains sorried) — the reducible/Eisenstein branch (`1 ⊕ χ_cyc,2`
+   over `K`).
 
 The assembly (below) is the same excluded-middle split on
 irreducibility of `ρ ⊗ ℚ̄_p` as at the odd-`ℓ` atom. -/
