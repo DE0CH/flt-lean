@@ -5946,27 +5946,210 @@ theorem residual_triangular_sub_character_eq_pow_cyclotomic
         (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv)) ^ i :=
   sorry
 
+/-- **A finite field with a `ℤ_[p]`-algebra structure has
+characteristic `p`** (PROVEN — cast form; the general-`p` analogue of
+ModThree's `three_eq_zero_of_finite_padicIntThree_algebra`, stated
+here as glue for the Raynaud pinning assembly below): the
+characteristic `q` of `k` is a prime with `(q : k) = 0`; were
+`q ≠ p`, then `p ∤ q` would make `(q : ℤ_[p])` a `p`-adic unit whose
+image in `k` cannot vanish. -/
+theorem prime_eq_zero_of_finite_padicInt_algebra
+    {k : Type*} [Field k] [Finite k] [Algebra ℤ_[p] k] : (p : k) = 0 := by
+  cases nonempty_fintype k
+  obtain ⟨q, hchar⟩ := CharP.exists k
+  haveI := hchar
+  haveI hq : Fact q.Prime := ⟨CharP.char_is_prime k q⟩
+  rcases eq_or_ne q p with rfl | hqp
+  · exact CharP.cast_eq_zero k q
+  · exfalso
+    have hunit : IsUnit ((q : ℕ) : ℤ_[p]) := by
+      by_contra hnu
+      have hlt : ‖((q : ℕ) : ℤ_[p])‖ < 1 := PadicInt.not_isUnit_iff.mp hnu
+      rw [show ‖((q : ℕ) : ℤ_[p])‖ = ‖((q : ℕ) : ℚ_[p])‖ from by
+        rw [PadicInt.norm_def]; norm_cast] at hlt
+      have hdvd : p ∣ q := Padic.norm_natCast_lt_one_iff.mp hlt
+      exact hqp ((Nat.prime_dvd_prime_iff_eq hp.out hq.out).mp hdvd).symm
+    have hzero : algebraMap ℤ_[p] k ((q : ℕ) : ℤ_[p]) = 0 := by
+      rw [map_natCast]
+      exact CharP.cast_eq_zero k q
+    exact (hunit.map (algebraMap ℤ_[p] k)).ne_zero hzero
+
+/-- **Global `(p − 1)`-torsion of the residual cyclotomic character**
+(PROVEN — the globalization glue of the Raynaud pinning assembly
+below): the image of the `p`-adic cyclotomic character in a finite
+`ℤ_[p]`-algebra field `k` is killed by `p − 1`. The character value
+is a `p`-adic unit `u`; Fermat's little theorem in `ℤ_[p]/(p) = 𝔽_p`
+(through `PadicInt.toZMod` and `ZMod.pow_card_sub_one_eq_one`) writes
+`u^(p−1) = 1 + p·t`, and `p` dies in `k`
+(`prime_eq_zero_of_finite_padicInt_algebra`). -/
+theorem cyclotomicCharacter_residue_pow_sub_one_eq_one
+    {k : Type*} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    (g : Field.absoluteGaloisGroup ℚ) :
+    (algebraMap ℤ_[p] k
+      (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv)) ^ (p - 1) =
+      1 := by
+  have hunit : IsUnit
+      ((cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv : ℤ_[p]ˣ) :
+        ℤ_[p]) :=
+    (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv).isUnit
+  set u : ℤ_[p] :=
+    ((cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv : ℤ_[p]ˣ) :
+      ℤ_[p])
+  have hz : PadicInt.toZMod (u ^ (p - 1) - 1) = (0 : ZMod p) := by
+    have hune : (PadicInt.toZMod u : ZMod p) ≠ 0 :=
+      (hunit.map (PadicInt.toZMod (p := p))).ne_zero
+    rw [map_sub, map_pow, map_one, ZMod.pow_card_sub_one_eq_one hune, sub_self]
+  have hmem : u ^ (p - 1) - 1 ∈ Ideal.span {((p : ℕ) : ℤ_[p])} := by
+    rw [← PadicInt.maximalIdeal_eq_span_p, ← PadicInt.ker_toZMod,
+      RingHom.mem_ker]
+    exact hz
+  obtain ⟨t, ht⟩ := Ideal.mem_span_singleton'.mp hmem
+  have hp0 : algebraMap ℤ_[p] k ((p : ℕ) : ℤ_[p]) = 0 := by
+    rw [map_natCast]
+    exact prime_eq_zero_of_finite_padicInt_algebra
+  have hk : algebraMap ℤ_[p] k u ^ (p - 1) - 1 = 0 := by
+    have h1 := congrArg (algebraMap ℤ_[p] k) ht
+    rw [map_mul, map_sub, map_pow, map_one, hp0, mul_zero] at h1
+    exact h1.symm
+  exact sub_eq_zero.mp hk
+
+/-- **Raynaud inertia dichotomy for the sub-character at `p`**
+(Eisenstein pillar E1b-i; sorry node — the finite-flat/Oort–Tate
+input of the Raynaud pinning): the sub-character `χsub = ω^i` of a
+(flat at `p`) triangular hardly ramified mod-`p` representation,
+restricted to the local inertia at `p`, is TRIVIAL or the mod-`p`
+CYCLOTOMIC character — nothing else occurs. Intended proof (Raynaud,
+*Schémas en groupes de type `(p, …, p)`*, Bull. SMF 102 (1974),
+3.3.2/3.4.3; Serre, Duke Math. J. 54 (1987), §2.4 and §2.8 prop. 8;
+Tate, "Finite flat group schemes", in Cornell–Silverman–Stevens):
+`hρbar.isFlat.cond ⊥` at the open ideal `⊥` of the discrete field
+`k` hands an explicit finite flat Hopf order `G` over `𝒪ᵥ ≅ ℤ_p`
+whose generic-fibre geometric points are `Γ ℚ_p`-equivariantly
+identified with `W` (transport `k ⧸ ⊥ ≅ k` along
+`HasFlatProlongationAt.of_equiv`); the stable line `k·(b 0)` of the
+triangular form is a Galois-stable subgroup of the points, and its
+schematic closure is a finite flat closed subgroup scheme over `ℤ_p`
+killed by `p` (Tate–Raynaud closure); at absolute ramification
+`e = 1 < p − 1` the connected–étale alternative for it reads: étale
+— its points are defined over `ℚ_p^nr`, inertia acts trivially, the
+LEFT disjunct — or connected, of multiplicative `μ`-type by
+Raynaud's classification (the `hpow` hypothesis places the inertia
+character in LEVEL 1, excluding the higher-level fundamental
+characters of the `𝔽_q`-vector-space-scheme classification), where
+inertia acts by the cyclotomic character — the RIGHT disjunct.
+SHARED CORE (audit 2026-07-24): the connected branch is the same
+Oort–Tate/μ-type content as the Family leaf
+`connected_point_smul_eq_cyclotomicCharacter_smul_of_hopf_package`
+(NOT consumable here — the circularity guard forbids `Family.lean`)
+and the ModThree leaf `inertiaFixed_connected_point_eq_one_at_three`;
+one Oort–Tate-at-`ℤ_p` classification leaf in the `ConnectedEtale`
+Hopf vocabulary (a connected finite flat Hopf order over `ℤ_p`
+killed by `p` at `e = 1` is of `μ`-type: inertia raises its points
+to the cyclotomic power) would discharge all three. Soundness (audit
+2026-07-24): the hypothesis set is inhabited — the `μ_p`-over-`ℤ/p`
+lattice ordering of `1 ⊕ ω` realizes `χsub = ω` (tame quotient
+`δ = 1` at `2`) and the opposite ordering realizes `χsub = 1` — and
+the conclusion holds for every inhabitant by the classification
+cited; `p ≥ 5` is not consumed (`Odd p` gives `e = 1 < p − 1`).
+CIRCULARITY GUARD (inherited): must not be proven through
+`Family.lean` or `Reducible.lean`'s B5. -/
+theorem residual_triangular_sub_character_inertia_dichotomy_of_flat
+    {k : Type*} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type*} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hpodd hW ρbar)
+    (b : Module.Basis (Fin 2) k W)
+    (χsub χquo : Field.absoluteGaloisGroup ℚ →* k)
+    (cc : Field.absoluteGaloisGroup ℚ → k)
+    (htri : ∀ g, LinearMap.toMatrix b b (ρbar g) =
+      !![χsub g, cc g; 0, χquo g])
+    (i : ℕ)
+    (hpow : ∀ g, χsub g =
+      (algebraMap ℤ_[p] k
+        (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv)) ^ i) :
+    (∀ σ ∈ localInertiaGroup
+        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+          (Fact.out : p.Prime)),
+      χsub (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (HeightOneSpectrum.adicCompletion ℚ
+          (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+            (Fact.out : p.Prime)))) σ) = 1) ∨
+    (∀ σ ∈ localInertiaGroup
+        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+          (Fact.out : p.Prime)),
+      χsub (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (HeightOneSpectrum.adicCompletion ℚ
+          (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+            (Fact.out : p.Prime)))) σ) =
+      algebraMap ℤ_[p] k (cyclotomicCharacter (AlgebraicClosure ℚ) p
+        ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (HeightOneSpectrum.adicCompletion ℚ
+            (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+              (Fact.out : p.Prime)))) σ).toRingEquiv))) :=
+  sorry
+
+/-- **Exact order `p − 1` of the residual cyclotomic character on
+tame inertia at `p`** (Eisenstein pillar E1b-ii; sorry node — the
+Serre §1.3 fundamental-character input of the Raynaud pinning): if a
+power `ω^i` of the residual cyclotomic character dies on the WHOLE
+local inertia at `p`, then `p − 1` divides `i`. Classical content:
+`ℚ_p(μ_p)/ℚ_p` is totally ramified with group `(ℤ/p)^×`, and `ω`
+maps `I_p` ONTO `(ℤ/p)^×` — the level-1 fundamental character of
+tame inertia has EXACT order `p − 1` (Serre, Duke Math. J. 54
+(1987), §1.3, 1.7); the residue composite
+`(ℤ/p)^× ≅ μ_{p−1}(ℤ_p) → k^×` is injective (the Teichmüller lift
+followed by reduction is the canonical embedding `𝔽_p^× ↪ k^×`), so
+an inertia element `σ` with `ω(σ)` a generator has residue of exact
+order `p − 1` in `k^×`, and `ω(σ)^i = 1` forces `(p − 1) ∣ i`.
+Intended Lean route: adjoin a primitive `p`-th root of unity `ζ` to
+`ℚᵖᵥᵃˡᵍ`; `cyclotomicCharacter` mod `p` reads the action on `ζ`
+(`cyclotomicCharacter.toZModPow` at `n = 1`), inertia surjects onto
+`Gal(ℚ_p(ζ)/ℚ_p)` by total ramification (the inertia field of the
+extension is trivial since its residue extension is), and the
+generator transports as above. Soundness (audit 2026-07-24): the
+hypothesis set is inhabited (`i = 0`, or `i = p − 1` via
+`cyclotomicCharacter_residue_pow_sub_one_eq_one`), the conclusion is
+the exact-order statement cited, TRUE for every prime `p` (`p = 2`
+reads `1 ∣ i`) — neither `hpodd` nor `p ≥ 5` is consumed.
+CIRCULARITY GUARD (inherited): must not be proven through
+`Family.lean` or `Reducible.lean`'s B5. -/
+theorem sub_one_dvd_of_cyclotomicCharacter_residue_inertia_pow_eq_one
+    {k : Type*} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    (i : ℕ)
+    (h : ∀ σ ∈ localInertiaGroup
+        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+          (Fact.out : p.Prime)),
+      (algebraMap ℤ_[p] k (cyclotomicCharacter (AlgebraicClosure ℚ) p
+        ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (HeightOneSpectrum.adicCompletion ℚ
+            (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+              (Fact.out : p.Prime)))) σ).toRingEquiv))) ^ i = 1) :
+    (p - 1) ∣ i :=
+  sorry
+
 /-- **Raynaud flat-weight pinning of the sub-character** (Eisenstein
-pillar E1b; sorry node — the finite-flat input of the residual
-Eisenstein classification): a power `ω^i` of the mod-`p` cyclotomic
-character occurring as the sub-character of a (flat at `p`)
-triangular hardly ramified representation has inertia weight `0` or
-`1` — i.e. equals `1` or `ω` GLOBALLY (only the residue of `i` mod
-`p − 1` matters, since `ω` takes values in `𝔽_p^× ⊆ k^×`). Classical
-proof: flatness (`IsHardlyRamified.isFlat`) makes `ρbar|_{G_p}` the
-generic fibre of a finite flat group scheme over `ℤ_p` killed by `p`;
-sub- and quotient objects of such group schemes are finite flat
-(scheme-theoretic closure; Tate in Cornell–Silverman–Stevens ch. V),
-so the stable line is itself the generic fibre of a finite flat
-character scheme, and for `e = 1 < p − 1` its Jordan–Hölder character
-restricted to inertia is `ω^0` or `ω^1` (Raynaud, *Schémas en groupes
-de type `(p, …, p)`*, Bull. Soc. Math. France 102 (1974), 3.3.2;
-Serre, Duke Math. J. 54 (1987), §2.4); `ω` restricted to inertia at
-`p` is the level-1 fundamental character, of EXACT order `p − 1` on
-tame inertia (Serre, loc. cit., §1.3, 1.7), so
-`ω^i|_{I_p} ∈ {1, ω|_{I_p}}` forces `i ≡ 0` or `1 mod (p − 1)`,
-i.e. `χsub = 1` or `χsub = ω` globally. Soundness (audit 2026-07-24):
-the hypothesis set is inhabited (`1 ⊕ ω` in triangular form realizes
+pillar E1b; PROVEN 2026-07-24 as an assembly over the E1b-i/E1b-ii
+cut — the finite-flat input is the sorried inertia dichotomy
+`residual_triangular_sub_character_inertia_dichotomy_of_flat`
+(Raynaud/Oort–Tate at `ℤ_p`), the tame-character input is the
+sorried exact-order leaf
+`sub_one_dvd_of_cyclotomicCharacter_residue_inertia_pow_eq_one`
+(Serre §1.3), and the globalization is the PROVEN `(p − 1)`-torsion
+lemma `cyclotomicCharacter_residue_pow_sub_one_eq_one` above): a
+power `ω^i` of the mod-`p` cyclotomic character occurring as the
+sub-character of a (flat at `p`) triangular hardly ramified
+representation has inertia weight `0` or `1` — i.e. equals `1` or
+`ω` GLOBALLY (only the residue of `i` mod `p − 1` matters, since `ω`
+takes values in `𝔽_p^× ⊆ k^×`). The assembly: `i = 0` lands in the
+left disjunct outright; for `i = j + 1`, the inertia dichotomy
+either kills `ω^i` on inertia — then E1b-ii gives `(p − 1) ∣ i` and
+the global torsion kills `χsub = ω^i` EVERYWHERE — or makes it
+cyclotomic there — then cancelling one unit factor `ω` on inertia
+kills `ω^j`, E1b-ii gives `(p − 1) ∣ j`, and globally
+`χsub = ω^j · ω = ω`. Soundness (audit 2026-07-24, inherited): the
+hypothesis set is inhabited (`1 ⊕ ω` in triangular form realizes
 `χsub = ω^0`; the opposite lattice ordering realizes `χsub = ω^1`),
 the conclusion holds for every inhabitant by the restriction cited,
 and `p ≥ 5` is not consumed (`Odd p` gives `p − 1 ≥ 2`). CIRCULARITY
@@ -5990,8 +6173,60 @@ theorem residual_triangular_sub_character_pinned_of_eq_pow
         (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv)) ^ i) :
     (∀ g, χsub g = 1) ∨
       (∀ g, χsub g = algebraMap ℤ_[p] k
-        (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv)) :=
-  sorry
+        (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv)) := by
+  classical
+  -- the global `(p − 1)`-torsion of `ω`, in divisibility form
+  have hdvdpow : ∀ j : ℕ, (p - 1) ∣ j → ∀ g : Field.absoluteGaloisGroup ℚ,
+      (algebraMap ℤ_[p] k
+        (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv)) ^ j =
+      1 := by
+    rintro j ⟨m, rfl⟩ g
+    rw [pow_mul, cyclotomicCharacter_residue_pow_sub_one_eq_one g, one_pow]
+  cases i with
+  | zero =>
+    -- weight `0`: the sub-character is trivial outright
+    exact Or.inl fun g => by rw [hpow g, pow_zero]
+  | succ j =>
+    -- the Raynaud inertia dichotomy for `χsub = ω^(j+1)`
+    rcases residual_triangular_sub_character_inertia_dichotomy_of_flat hpodd
+        hW hρbar b χsub χquo cc htri (j + 1) hpow with hL | hR
+    · -- trivial branch: `ω^(j+1)` dies on inertia, so `p − 1 ∣ j + 1`
+      have hi : (p - 1) ∣ j + 1 := by
+        refine sub_one_dvd_of_cyclotomicCharacter_residue_inertia_pow_eq_one
+          (k := k) (j + 1) (fun σ hσ => ?_)
+        rw [← hpow (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (HeightOneSpectrum.adicCompletion ℚ
+            (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+              (Fact.out : p.Prime)))) σ)]
+        exact hL σ hσ
+      exact Or.inl fun g => by rw [hpow g]; exact hdvdpow (j + 1) hi g
+    · -- cyclotomic branch: cancel one unit factor `ω` on inertia
+      have hj : (p - 1) ∣ j := by
+        refine sub_one_dvd_of_cyclotomicCharacter_residue_inertia_pow_eq_one
+          (k := k) j (fun σ hσ => ?_)
+        have h1 := hpow (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (HeightOneSpectrum.adicCompletion ℚ
+            (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+              (Fact.out : p.Prime)))) σ)
+        rw [hR σ hσ] at h1
+        have hne : algebraMap ℤ_[p] k
+            (cyclotomicCharacter (AlgebraicClosure ℚ) p
+              ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+                (HeightOneSpectrum.adicCompletion ℚ
+                  (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+                    (Fact.out : p.Prime)))) σ).toRingEquiv)) ≠ (0 : k) :=
+          IsUnit.ne_zero
+            (IsUnit.map (algebraMap ℤ_[p] k)
+              (cyclotomicCharacter (AlgebraicClosure ℚ) p
+                ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+                  (HeightOneSpectrum.adicCompletion ℚ
+                    (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+                      (Fact.out : p.Prime)))) σ).toRingEquiv)).isUnit)
+        refine mul_right_cancel₀ hne ?_
+        rw [one_mul, ← pow_succ]
+        exact h1.symm
+      exact Or.inr fun g => by
+        rw [hpow g, pow_succ, hdvdpow j hj g, one_mul]
 
 /-- **Residual Eisenstein classification** (Eisenstein pillar E1;
 PROVEN 2026-07-24 as an assembly over the E1a/E1b cut — the
