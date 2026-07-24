@@ -26,6 +26,9 @@ public import Fermat.FLT.KnownIn1980s.RepresentationTheory.OddAbsIrred
 -- involution in `exists_conj_cyclotomicCharacter_three`)
 import Mathlib.Analysis.Complex.Polynomial.Basic
 import Mathlib.Topology.Instances.Complex
+-- Tannery's theorem (dominated convergence for sums), used by the
+-- prime-edge assembly `poitouPrimeEdge_tendsto`.
+import Mathlib.Analysis.Normed.Group.Tannery
 -- Dickson's classification of the finite subgroups of PGL₂(𝔽̄₃)
 -- (vendored PROVEN), consumed by `not_isAbsolutelyIrreducible`.
 public import Fermat.FLT.KnownIn1980s.PGL2.Defs
@@ -10595,34 +10598,373 @@ theorem poitouGammaEdge_tendsto (K : Type*) [Field K] [NumberField K]
             (1 - poitouF x) / (2 * Real.sinh (x / 2))))) := by
   sorry
 
-/-- **The prime edge converges to the prime sum** (sorry node, stated
-2026-07-24 — leaf (b₂ᵢᵢ·3), the Euler-product stage of the
-decomposition of `DedekindContinuation.poitouEdge_sub_poleEdge_tendsto`;
-Poitou pp. 6-03–6-04, the ultrametric term of Proposition 2).
-Intended proof: on `re s = 5/4` the log-derivative of the Euler
-product is the absolutely convergent double Dirichlet series
-`−(ζ_K'/ζ_K)(s) = Σ_𝔭 Σ_{m≥1} (log N𝔭)·N𝔭^{−ms}` over the nonzero
-primes of `𝒪_K`: the project's own ideal Euler product
-(`exp_tsum_neg_log_one_sub_dirichletCharacter_mul_cpow_neg_eq_LSeries`
-from `Chebotarev.lean` at the trivial character of level `1` — the
-same PROVEN input that closed `dedekindZeta_ne_zero_of_one_lt_re`
-above) writes `ζ_K = exp(Σ_𝔭 −log(1 − N𝔭^{−s}))` on the half-plane;
-differentiating the locally uniformly convergent sum termwise
-(`hasDerivAt_tsum`-shape, each summand via the geometric expansion
-`(−log(1−w))' · w' = Σ_m w^m·log N𝔭`, tails dominated by
-`Σ_𝔭 N𝔭^{−9/8}` — summable by
-`summable_natCard_absNorm_mul_rpow_neg`) gives the double series.
-Termwise, the same Fourier inversion as `poitouConstEdge_tendsto` at
-the shifted point `x = m·log N𝔭 > 0`:
-`π⁻¹ ∫_ℝ Re[Φ(5/4+it)·N𝔭^{−m(5/4+it)}] dt
-= 2·e^{−5x/4}·G(x) = 2·F(m·log N𝔭)/N𝔭^{m/2}`, so each pair `(𝔭, m)`
-contributes `−2·(log N𝔭/N𝔭^{m/2})·F(m·log N𝔭)`.  Summation and the
-`T → ∞` limit exchange by dominated convergence against the
-absolutely convergent majorant `Σ_{𝔭,m} log N𝔭 · N𝔭^{−5m/4}`
-(uniform in `T`; only the finitely many pairs with
-`m·log N𝔭 ≤ 6` survive in the limit since `F` is supported in
-`[−6, 6]`), yielding the stated sum in its `m : ℕ` (`m+1`)
-indexing over the subtype of nonzero primes. -/
+section PoitouPrimeEdgeFourier
+
+open MeasureTheory Filter Set Complex
+open scoped FourierTransform
+
+/-- **Integrability of `Φ` along the line `Re s = 5/4`** (sorry node,
+stated 2026-07-24 — leaf (b₂ᵢᵢ·3·B), the quadratic-decay brick of the
+prime-edge leaf `poitouPrimeEdge_tendsto`; the only analytic input of
+the termwise Fourier inversion that this file does not already
+provide).  Intended proof — a SECOND integration by parts,
+strengthening the PROVEN `1/|t|` decay `poitouPhi_line_decay` to
+`M₂/t²`: on `[-6, 0]` and `[0, 6]` the profile `poitouG` agrees with
+the smooth models `r₁ = (1 + x/6)·q`, `r₂ = (1 − x/6)·q`,
+`q(x) = e^{3x/4}/cosh(x/2)` (exactly as in `poitouPhi_line_decay`,
+whose first parts-integration leaves `Φ = −(∫ rd₁·v + ∫ rd₂·v)` with
+`v = e^{itx}/(it)` and cancelled boundary terms).  The first
+derivatives `rd₁ = q/6 + (1 + x/6)·q'`, `rd₂ = −q/6 + (1 − x/6)·q'`
+are themselves `C¹` (`q` is smooth with continuous second
+derivative), so integrating each `∫ rdᵢ·v` by parts once more
+(`intervalIntegral.integral_mul_deriv_eq_deriv_mul_of_hasDerivAt`
+against the same `v`-antiderivative) produces finite boundary terms
+`rdᵢ(endpoint)·e^{it·endpoint}/(it)²` — they need not cancel — plus
+`∫ rdᵢ'·e^{itx}/(it)²`, whence `‖Φ(5/4 + it)‖ ≤ M₂/t²` for `t ≠ 0`
+with `M₂ = Σᵢ (|rdᵢ| at the endpoints) + ∫ |rdᵢ'|`.  Combined with
+the trivial bound `poitouPhi_line_norm_le_const` on `|t| ≤ 1` this
+gives the integrable majorant `K·(1 + t²)⁻¹`
+(`integrable_inv_one_add_sq`), and continuity
+`poitouPhi_line_continuous` supplies measurability — the same endgame
+as the PROVEN `poitouPoleTerm_integrable`. -/
+theorem poitouPhi_line_integrable :
+    Integrable fun t : ℝ => poitouPhi (5 / 4 + t * Complex.I) := by
+  sorry
+
+/-- **Real part of the edge exponent** (PROVEN 2026-07-24, arithmetic
+helper for the prime-edge leaves): `Re(−(5/4 + it)·x) = −(5/4)·x` for
+real `t, x`. -/
+theorem neg_edge_mul_ofReal_re (t x : ℝ) :
+    (-(5 / 4 + t * Complex.I) * (x : ℂ)).re = -(5 / 4 * x) := by
+  rw [show -(5 / 4 + (t : ℂ) * Complex.I) * (x : ℂ) =
+      ((-(5 / 4 * x) : ℝ) : ℂ) + ((-(t * x) : ℝ) : ℂ) * Complex.I by push_cast; ring]
+  simp
+
+/-- **Integrability of the shifted prime-term edge integrand**
+(PROVEN 2026-07-24): `t ↦ Φ(5/4 + it)·e^{−(5/4+it)x}` is integrable
+on `ℝ` — the exponential factor has constant modulus `e^{−5x/4}`
+along the line, so the majorant is a constant multiple of the
+integrable `‖Φ‖`. -/
+theorem poitouPhi_line_mul_exp_integrable
+    (hInt : Integrable fun t : ℝ => poitouPhi (5 / 4 + t * Complex.I)) (x : ℝ) :
+    Integrable fun t : ℝ => poitouPhi (5 / 4 + t * Complex.I) *
+      Complex.exp (-(5 / 4 + t * Complex.I) * (x : ℂ)) := by
+  refine hInt.mul_bdd (c := Real.exp (-(5 / 4 * x))) ?_ ?_
+  · exact (Complex.continuous_exp.comp (by fun_prop)).aestronglyMeasurable
+  · exact Filter.Eventually.of_forall fun t =>
+      le_of_eq (by rw [Complex.norm_exp, neg_edge_mul_ofReal_re])
+
+/-- **Fourier inversion at a shifted point: the full-line prime-term
+integral** (PROVEN 2026-07-24, the crux of the prime edge — the exact
+analogue of `integral_poitouPhi_line_div` with the oscillating factor
+`e^{−(5/4+it)x}` in place of the pole factor `1/(a+it)`):
+`∫_ℝ Φ(5/4 + it)·e^{−(5/4+it)x} dt = 2π·F(x)·e^{−x/2}`.  Proof:
+`𝓕 poitouG` is integrable by hypothesis after the linear change of
+variables `t = −2πξ` (`fourier_poitouG`), so Fourier inversion
+(`Integrable.fourierInv_fourier_eq`) at the point `x` gives
+`(2π)⁻¹ ∫_ℝ Φ(5/4+it)·e^{−itx} dt = G(x)`; multiplying by the
+constant `e^{−5x/4}` and `G(x) = F(x)·e^{3x/4}` yields the claim. -/
+theorem integral_poitouPhi_line_mul_exp
+    (hInt : Integrable fun t : ℝ => poitouPhi (5 / 4 + t * Complex.I)) (x : ℝ) :
+    (∫ t : ℝ, poitouPhi (5 / 4 + t * Complex.I) *
+        Complex.exp (-(5 / 4 + t * Complex.I) * (x : ℂ))) =
+      (2 * Real.pi) • ((poitouF x * Real.exp (-(x / 2)) : ℝ) : ℂ) := by
+  have hFGInt : Integrable (𝓕 poitouG) := by
+    have hne : (-(2 * Real.pi)) ≠ (0 : ℝ) := by
+      simp [Real.pi_ne_zero]
+    have h1 : Integrable fun ξ : ℝ =>
+        poitouPhi (5 / 4 + (((-(2 * Real.pi)) * ξ : ℝ) : ℂ) * Complex.I) :=
+      hInt.comp_mul_left' hne
+    refine h1.congr (Filter.Eventually.of_forall fun ξ => ?_)
+    rw [fourier_poitouG]
+    simp only [neg_mul]
+  have hinv : 𝓕⁻ (𝓕 poitouG) x = poitouG x :=
+    poitouG_integrable.fourierInv_fourier_eq hFGInt continuous_poitouG.continuousAt
+  have hL : 𝓕⁻ (𝓕 poitouG) x = ∫ ξ : ℝ,
+      Complex.exp (((2 * Real.pi * ξ * x : ℝ) : ℂ) * Complex.I) • 𝓕 poitouG ξ := by
+    rw [Real.fourierInv_eq_fourier_neg, Real.fourier_real_eq_integral_exp_smul]
+    refine integral_congr_ae (Filter.Eventually.of_forall fun ξ => ?_)
+    show Complex.exp (((-2 * Real.pi * ξ * -x : ℝ) : ℂ) * Complex.I) • 𝓕 poitouG ξ =
+      Complex.exp (((2 * Real.pi * ξ * x : ℝ) : ℂ) * Complex.I) • 𝓕 poitouG ξ
+    rw [show ((-2 * Real.pi * ξ * -x : ℝ) : ℂ) = ((2 * Real.pi * ξ * x : ℝ) : ℂ) from by
+      push_cast; ring]
+  have hchange : (∫ ξ : ℝ,
+      Complex.exp (((2 * Real.pi * ξ * x : ℝ) : ℂ) * Complex.I) • 𝓕 poitouG ξ) =
+      |((-(2 * Real.pi))⁻¹)| • ∫ t : ℝ, poitouPhi (5 / 4 + t * Complex.I) *
+        Complex.exp (((-(t * x) : ℝ) : ℂ) * Complex.I) := by
+    have hfun : (fun ξ : ℝ =>
+        Complex.exp (((2 * Real.pi * ξ * x : ℝ) : ℂ) * Complex.I) • 𝓕 poitouG ξ) =
+        fun ξ : ℝ => (fun t : ℝ => poitouPhi (5 / 4 + t * Complex.I) *
+          Complex.exp (((-(t * x) : ℝ) : ℂ) * Complex.I)) ((-(2 * Real.pi)) * ξ) := by
+      funext ξ
+      show Complex.exp (((2 * Real.pi * ξ * x : ℝ) : ℂ) * Complex.I) • 𝓕 poitouG ξ =
+        poitouPhi (5 / 4 + (((-(2 * Real.pi)) * ξ : ℝ) : ℂ) * Complex.I) *
+          Complex.exp (((-((-(2 * Real.pi)) * ξ * x) : ℝ) : ℂ) * Complex.I)
+      have e1 : ((-(2 * Real.pi * ξ) : ℝ) : ℂ) = (((-(2 * Real.pi)) * ξ : ℝ) : ℂ) := by
+        push_cast; ring
+      have e2 : ((2 * Real.pi * ξ * x : ℝ) : ℂ) =
+          ((-((-(2 * Real.pi)) * ξ * x) : ℝ) : ℂ) := by
+        push_cast; ring
+      rw [fourier_poitouG, smul_eq_mul,
+        mul_comm (Complex.exp (((2 * Real.pi * ξ * x : ℝ) : ℂ) * Complex.I)), e1, e2]
+    rw [hfun]
+    exact MeasureTheory.Measure.integral_comp_mul_left
+      (fun t : ℝ => poitouPhi (5 / 4 + t * Complex.I) *
+        Complex.exp (((-(t * x) : ℝ) : ℂ) * Complex.I)) (-(2 * Real.pi))
+  have habs : |((-(2 * Real.pi))⁻¹)| = (2 * Real.pi)⁻¹ := by
+    rw [abs_inv, abs_neg, abs_of_pos (by positivity)]
+  have hkey : (2 * Real.pi)⁻¹ • (∫ t : ℝ, poitouPhi (5 / 4 + t * Complex.I) *
+      Complex.exp (((-(t * x) : ℝ) : ℂ) * Complex.I)) = poitouG x := by
+    rw [← habs, ← hchange, ← hL]
+    exact hinv
+  have h2π : (0 : ℝ) < 2 * Real.pi := by positivity
+  have hval : (∫ t : ℝ, poitouPhi (5 / 4 + t * Complex.I) *
+      Complex.exp (((-(t * x) : ℝ) : ℂ) * Complex.I)) = (2 * Real.pi) • poitouG x := by
+    calc (∫ t : ℝ, poitouPhi (5 / 4 + t * Complex.I) *
+          Complex.exp (((-(t * x) : ℝ) : ℂ) * Complex.I))
+        = ((2 * Real.pi) * (2 * Real.pi)⁻¹) •
+          (∫ t : ℝ, poitouPhi (5 / 4 + t * Complex.I) *
+            Complex.exp (((-(t * x) : ℝ) : ℂ) * Complex.I)) := by
+          rw [mul_inv_cancel₀ h2π.ne', one_smul]
+      _ = (2 * Real.pi) • ((2 * Real.pi)⁻¹ •
+          (∫ t : ℝ, poitouPhi (5 / 4 + t * Complex.I) *
+            Complex.exp (((-(t * x) : ℝ) : ℂ) * Complex.I))) := by
+          rw [mul_smul]
+      _ = (2 * Real.pi) • poitouG x := by rw [hkey]
+  have hsplit : ∀ t : ℝ, poitouPhi (5 / 4 + t * Complex.I) *
+      Complex.exp (-(5 / 4 + t * Complex.I) * (x : ℂ)) =
+      ((Real.exp (-(5 / 4 * x)) : ℝ) : ℂ) * (poitouPhi (5 / 4 + t * Complex.I) *
+        Complex.exp (((-(t * x) : ℝ) : ℂ) * Complex.I)) := by
+    intro t
+    rw [show -(5 / 4 + (t : ℂ) * Complex.I) * (x : ℂ) =
+        ((-(5 / 4 * x) : ℝ) : ℂ) + ((-(t * x) : ℝ) : ℂ) * Complex.I by push_cast; ring,
+      Complex.exp_add, ← Complex.ofReal_exp]
+    ring
+  calc (∫ t : ℝ, poitouPhi (5 / 4 + t * Complex.I) *
+        Complex.exp (-(5 / 4 + t * Complex.I) * (x : ℂ)))
+      = ∫ t : ℝ, ((Real.exp (-(5 / 4 * x)) : ℝ) : ℂ) *
+          (poitouPhi (5 / 4 + t * Complex.I) *
+            Complex.exp (((-(t * x) : ℝ) : ℂ) * Complex.I)) :=
+        integral_congr_ae (Filter.Eventually.of_forall hsplit)
+    _ = ((Real.exp (-(5 / 4 * x)) : ℝ) : ℂ) *
+          ∫ t : ℝ, poitouPhi (5 / 4 + t * Complex.I) *
+            Complex.exp (((-(t * x) : ℝ) : ℂ) * Complex.I) :=
+        integral_const_mul _ _
+    _ = ((Real.exp (-(5 / 4 * x)) : ℝ) : ℂ) * ((2 * Real.pi) • poitouG x) := by
+        rw [hval]
+    _ = (2 * Real.pi) • ((poitouF x * Real.exp (-(x / 2)) : ℝ) : ℂ) := by
+        rw [poitouG, Complex.real_smul, Complex.real_smul, ← Complex.ofReal_mul,
+          ← Complex.ofReal_mul, ← Complex.ofReal_mul]
+        congr 1
+        have he : Real.exp (-(5 / 4 * x)) * Real.exp (3 / 4 * x) = Real.exp (-(x / 2)) := by
+          rw [← Real.exp_add]
+          congr 1
+          ring
+        calc Real.exp (-(5 / 4 * x)) * (2 * Real.pi * (poitouF x * Real.exp (3 / 4 * x)))
+            = 2 * Real.pi * (poitouF x *
+                (Real.exp (-(5 / 4 * x)) * Real.exp (3 / 4 * x))) := by ring
+          _ = 2 * Real.pi * (poitouF x * Real.exp (-(x / 2))) := by rw [he]
+
+/-- **The truncated shifted-point edge integrals converge to the
+inverted value** (PROVEN 2026-07-24, the termwise limit of the prime
+edge): for every `x`,
+`π⁻¹·∫_{−T}^{T} Re[Φ(5/4+it)·e^{−(5/4+it)x}] dt → 2·F(x)·e^{−x/2}`
+as `T → ∞` — the symmetric truncations converge to the full-line
+integral (`MeasureTheory.intervalIntegral_tendsto_integral`, with
+integrability from `poitouPhi_line_mul_exp_integrable`), whose value
+is `integral_poitouPhi_line_mul_exp` after commuting `Re` with the
+integral. -/
+theorem poitouPhi_line_mul_exp_tendsto
+    (hInt : Integrable fun t : ℝ => poitouPhi (5 / 4 + t * Complex.I)) (x : ℝ) :
+    Filter.Tendsto (fun T : ℝ => Real.pi⁻¹ * ∫ t in (-T)..T,
+        (poitouPhi (5 / 4 + t * Complex.I) *
+          Complex.exp (-(5 / 4 + t * Complex.I) * (x : ℂ))).re)
+      Filter.atTop (nhds (2 * (poitouF x * Real.exp (-(x / 2))))) := by
+  have hint2 := poitouPhi_line_mul_exp_integrable hInt x
+  have hre : Integrable fun t : ℝ => (poitouPhi (5 / 4 + t * Complex.I) *
+      Complex.exp (-(5 / 4 + t * Complex.I) * (x : ℂ))).re := by
+    have h := Complex.reCLM.integrable_comp hint2
+    simpa using h
+  have hval : (∫ t : ℝ, (poitouPhi (5 / 4 + t * Complex.I) *
+      Complex.exp (-(5 / 4 + t * Complex.I) * (x : ℂ))).re) =
+      2 * Real.pi * (poitouF x * Real.exp (-(x / 2))) := by
+    have h := Complex.reCLM.integral_comp_comm hint2
+    rw [integral_poitouPhi_line_mul_exp hInt x] at h
+    simp only [Complex.reCLM_apply] at h
+    rw [h, Complex.real_smul, ← Complex.ofReal_mul, Complex.ofReal_re]
+  have hlim0 : Filter.Tendsto (fun T : ℝ => ∫ t in (-T)..T,
+      (poitouPhi (5 / 4 + t * Complex.I) *
+        Complex.exp (-(5 / 4 + t * Complex.I) * (x : ℂ))).re) Filter.atTop
+      (nhds (∫ t : ℝ, (poitouPhi (5 / 4 + t * Complex.I) *
+        Complex.exp (-(5 / 4 + t * Complex.I) * (x : ℂ))).re)) :=
+    intervalIntegral_tendsto_integral hre tendsto_neg_atTop_atBot tendsto_id
+  have hfin := hlim0.const_mul Real.pi⁻¹
+  rw [hval] at hfin
+  rwa [show Real.pi⁻¹ * (2 * Real.pi * (poitouF x * Real.exp (-(x / 2)))) =
+      (Real.pi⁻¹ * Real.pi) * (2 * (poitouF x * Real.exp (-(x / 2)))) from by ring,
+    inv_mul_cancel₀ Real.pi_ne_zero, one_mul] at hfin
+
+open IsDedekindDomain in
+/-- **Summability of the log-weighted prime-power norms** (PROVEN
+2026-07-24, the dominating-majorant brick of the prime edge): for
+`σ > 1` the double family `(𝔭, m) ↦ log N𝔭 · N𝔭^{−(m+1)σ}` over the
+nonzero primes of `𝒪_K` is summable.  Proof: with `δ = (σ−1)/2`,
+`log N ≤ N^δ/δ` (`Real.log_le_rpow_div`) absorbs the logarithm, and
+`N^{−mσ} ≤ 2^{−m}` (as `N ≥ 2`) splits the majorant into the product
+of `Σ_𝔭 N𝔭^{−(σ−δ)}` (`summable_rpow_neg_natCard_quotient` at
+`σ − δ = (σ+1)/2 > 1`, transported from the height-one spectrum along
+the canonical equivalence) and a geometric series
+(`Summable.mul_of_nonneg`). -/
+theorem summable_log_absNorm_mul_rpow_neg (K : Type*) [Field K] [NumberField K]
+    {σ : ℝ} (hσ : 1 < σ) :
+    Summable (fun Pm : {P : Ideal (NumberField.RingOfIntegers K) //
+        P.IsPrime ∧ P ≠ ⊥} × ℕ =>
+      Real.log (Ideal.absNorm Pm.1.1) *
+        (Ideal.absNorm Pm.1.1 : ℝ) ^ (-(((Pm.2 : ℝ) + 1) * σ))) := by
+  classical
+  set δ : ℝ := (σ - 1) / 2 with hδdef
+  have hδ0 : 0 < δ := by rw [hδdef]; linarith
+  have hσδ : 1 < σ - δ := by rw [hδdef]; linarith
+  have hN2 : ∀ P : {P : Ideal (NumberField.RingOfIntegers K) // P.IsPrime ∧ P ≠ ⊥},
+      2 ≤ Ideal.absNorm P.1 := by
+    intro P
+    have h := two_le_natCard_quotient (F := K) ⟨P.1, P.2.1, P.2.2⟩
+    have h2 : Ideal.absNorm P.1 = Nat.card (NumberField.RingOfIntegers K ⧸ P.1) := by
+      rw [Ideal.absNorm_apply, Submodule.cardQuot_apply]
+    rw [h2]
+    exact h
+  have hbase : Summable (fun P : {P : Ideal (NumberField.RingOfIntegers K) //
+      P.IsPrime ∧ P ≠ ⊥} => (Ideal.absNorm P.1 : ℝ) ^ (-(σ - δ))) := by
+    refine (Equiv.summable_iff (Equiv.mk
+      (fun Q : HeightOneSpectrum (NumberField.RingOfIntegers K) =>
+        (⟨Q.asIdeal, Q.isPrime, Q.ne_bot⟩ :
+          {P : Ideal (NumberField.RingOfIntegers K) // P.IsPrime ∧ P ≠ ⊥}))
+      (fun P => ⟨P.1, P.2.1, P.2.2⟩) (fun Q => rfl) (fun P => rfl))).mp ?_
+    refine (summable_rpow_neg_natCard_quotient hσδ).congr fun Q => ?_
+    show (Nat.card (NumberField.RingOfIntegers K ⧸ Q.asIdeal) : ℝ) ^ (-(σ - δ)) =
+      (Ideal.absNorm Q.asIdeal : ℝ) ^ (-(σ - δ))
+    rw [Ideal.absNorm_apply, Submodule.cardQuot_apply]
+  have hgeom : Summable (fun m : ℕ => ((2 : ℝ)⁻¹) ^ m) :=
+    summable_geometric_of_lt_one (by norm_num) (by norm_num)
+  have hmajor : Summable (fun Pm : {P : Ideal (NumberField.RingOfIntegers K) //
+      P.IsPrime ∧ P ≠ ⊥} × ℕ =>
+      (δ⁻¹ * (Ideal.absNorm Pm.1.1 : ℝ) ^ (-(σ - δ))) * ((2 : ℝ)⁻¹) ^ Pm.2) :=
+    (hbase.mul_left δ⁻¹).mul_of_nonneg hgeom
+      (fun P => mul_nonneg (inv_nonneg.mpr hδ0.le) (Real.rpow_nonneg (Nat.cast_nonneg _) _))
+      (fun m => pow_nonneg (by norm_num) _)
+  refine Summable.of_nonneg_of_le (fun Pm => ?_) (fun Pm => ?_) hmajor
+  · exact mul_nonneg (Real.log_natCast_nonneg _) (Real.rpow_nonneg (Nat.cast_nonneg _) _)
+  · obtain ⟨P, m⟩ := Pm
+    show Real.log (Ideal.absNorm P.1) *
+        (Ideal.absNorm P.1 : ℝ) ^ (-(((m : ℝ) + 1) * σ)) ≤
+      (δ⁻¹ * (Ideal.absNorm P.1 : ℝ) ^ (-(σ - δ))) * ((2 : ℝ)⁻¹) ^ m
+    set N : ℝ := (Ideal.absNorm P.1 : ℝ) with hNdef
+    have h2N : (2 : ℝ) ≤ N := by
+      rw [hNdef]
+      exact_mod_cast hN2 P
+    have hN0 : (0 : ℝ) < N := lt_of_lt_of_le two_pos h2N
+    have hlogle : Real.log N ≤ N ^ δ / δ := Real.log_le_rpow_div hN0.le hδ0
+    have hNσ : N ^ (-σ) ≤ (2 : ℝ)⁻¹ := by
+      calc N ^ (-σ) ≤ (2 : ℝ) ^ (-σ) :=
+            Real.rpow_le_rpow_of_nonpos two_pos h2N (by linarith)
+        _ ≤ (2 : ℝ) ^ (-1 : ℝ) :=
+            (Real.rpow_le_rpow_left_iff one_lt_two).mpr (by linarith)
+        _ = (2 : ℝ)⁻¹ := by rw [Real.rpow_neg_one]
+    have hsplit : N ^ (-(((m : ℝ) + 1) * σ)) =
+        N ^ (-δ) * (N ^ (-(σ - δ)) * (N ^ (-σ)) ^ m) := by
+      rw [← Real.rpow_natCast (N ^ (-σ)) m, ← Real.rpow_mul hN0.le, ← Real.rpow_add hN0,
+        ← Real.rpow_add hN0]
+      congr 1
+      ring
+    have hpow : (N ^ (-σ)) ^ m ≤ ((2 : ℝ)⁻¹) ^ m :=
+      pow_le_pow_left₀ (Real.rpow_nonneg hN0.le _) hNσ m
+    calc Real.log N * N ^ (-(((m : ℝ) + 1) * σ))
+        ≤ (N ^ δ / δ) * N ^ (-(((m : ℝ) + 1) * σ)) :=
+          mul_le_mul_of_nonneg_right hlogle (Real.rpow_nonneg hN0.le _)
+      _ = δ⁻¹ * ((N ^ δ * N ^ (-δ)) * (N ^ (-(σ - δ)) * (N ^ (-σ)) ^ m)) := by
+          rw [hsplit]; ring
+      _ = δ⁻¹ * (N ^ (-(σ - δ)) * (N ^ (-σ)) ^ m) := by
+          rw [← Real.rpow_add hN0, add_neg_cancel, Real.rpow_zero, one_mul]
+      _ ≤ δ⁻¹ * (N ^ (-(σ - δ)) * ((2 : ℝ)⁻¹) ^ m) :=
+          mul_le_mul_of_nonneg_left
+            (mul_le_mul_of_nonneg_left hpow (Real.rpow_nonneg hN0.le _))
+            (inv_nonneg.mpr hδ0.le)
+      _ = (δ⁻¹ * N ^ (-(σ - δ))) * ((2 : ℝ)⁻¹) ^ m := by ring
+
+/-- **The truncated prime edge as an absolutely convergent prime-power
+sum** (sorry node, stated 2026-07-24 — leaf (b₂ᵢᵢ·3·A), the
+Euler-product/Fubini bookkeeping stage of the prime-edge leaf
+`poitouPrimeEdge_tendsto`; an exact identity for EVERY `T`, no
+limits).  Intended proof:
+
+1. *Log-derivative Dirichlet series.*  On the edge `s = 5/4 + it`
+   (`re s = 5/4 > 1`) the project's exp-log Euler product
+   `exp_tsum_neg_log_one_sub_dirichletCharacter_mul_cpow_neg_eq_LSeries`
+   (from `Chebotarev.lean`, at the trivial character mod `1` — the
+   same PROVEN input that closed `dedekindZeta_ne_zero_of_one_lt_re`)
+   writes `ζ_K = exp ∘ g` on `re > 1` with
+   `g(s) = Σ_P −log(1 − N𝔭^{−s})` over the height-one spectrum, so
+   `deriv ζ_K s / ζ_K s = deriv g s` there (chain rule, `exp ≠ 0`;
+   transport `deriv` along the eventual equality on the OPEN
+   half-plane via `Filter.EventuallyEq.deriv_eq`).  Termwise
+   differentiation (`hasDerivAt_tsum` against the uniform majorant
+   `Σ_P (3/2)·N𝔭^{−9/8}` from `summable_rpow_neg_natCard_quotient` on
+   the neighbourhood `re > 9/8`) with
+   `(−log(1 − N𝔭^{−s}))' = (log N𝔭)·N𝔭^{−s}/(1 − N𝔭^{−s})
+   = Σ_{m≥0} (log N𝔭)·N𝔭^{−(m+1)s}` (geometric series,
+   `‖N𝔭^{−s}‖ ≤ 1/2`) gives
+   `deriv ζ_K s / ζ_K s = −Σ'_{(P,m)} log N𝔭 · N𝔭^{−(m+1)s}`,
+   absolutely convergent; transport the index from
+   `HeightOneSpectrum (𝓞 K) × ℕ` to the prime-ideal subtype pair by
+   the canonical equivalence (`Ideal.absNorm_apply`,
+   `Submodule.cardQuot_apply` identify the norms — same bridge as in
+   the PROVEN `summable_log_absNorm_mul_rpow_neg` above).
+2. *Pointwise rearrangement.*  Multiply by `Φ(s)` (`tsum_mul_left`),
+   rewrite `N𝔭^{−(m+1)s} = exp(−s·((m+1)·log N𝔭))` for the positive
+   natural base (`Complex.cpow_def_of_ne_zero`,
+   `Complex.ofReal_log`), and take real parts (`Complex.re_tsum`
+   with the same absolute convergence).
+3. *Sum–integral swap at fixed `T`.*  On `[−T, T]` the summands are
+   dominated in norm by the constants
+   `C·log N𝔭·N𝔭^{−5(m+1)/4}` with `C = sup‖Φ‖`
+   (`poitouPhi_line_norm_le_const`, `neg_edge_mul_ofReal_re`),
+   summable by `summable_log_absNorm_mul_rpow_neg` at `σ = 5/4`;
+   hence `MeasureTheory.integral_tsum_of_summable_integral_norm`
+   swaps the truncated integral (a set integral over the finite
+   measure of `Ι (−T) T`) with the sum, and `tsum_mul_left`
+   distributes the `π⁻¹`.  For `T < 0` both sides are the common
+   negation of the `[T, −T]` case (`intervalIntegral.integral_symm`,
+   `tsum_neg`). -/
+theorem poitouPrimeEdge_eq_tsum (K : Type*) [Field K] [NumberField K] (T : ℝ) :
+    poitouPrimeEdge K T = ∑' Pm : {P : Ideal (NumberField.RingOfIntegers K) //
+        P.IsPrime ∧ P ≠ ⊥} × ℕ,
+      -(Real.log (Ideal.absNorm Pm.1.1) *
+        (Real.pi⁻¹ * ∫ t in (-T)..T,
+          (poitouPhi (5 / 4 + t * Complex.I) *
+            Complex.exp (-(5 / 4 + t * Complex.I) *
+              ((((Pm.2 : ℝ) + 1) * Real.log (Ideal.absNorm Pm.1.1) : ℝ) : ℂ))).re)) := by
+  sorry
+
+/-- **The prime edge converges to the prime sum** (DECOMPOSED
+2026-07-24, assembly PROVEN — leaf (b₂ᵢᵢ·3), the Euler-product stage
+of the decomposition of
+`DedekindContinuation.poitouEdge_sub_poleEdge_tendsto`; Poitou
+pp. 6-03–6-04, the ultrametric term of Proposition 2; now cut into
+the two remaining sorried leaves `poitouPrimeEdge_eq_tsum` (b₂ᵢᵢ·3·A,
+the exact truncated identity via the Euler-product log-derivative)
+and `poitouPhi_line_integrable` (b₂ᵢᵢ·3·B, the `1/t²` decay of `Φ`
+on the edge), all Fourier analysis PROVEN above).  Assembly: by
+`poitouPrimeEdge_eq_tsum` the truncated edge is the sum over pairs
+`(𝔭, m)` of `−log N𝔭 · (π⁻¹∫_{−T}^{T} Re[Φ·e^{−s·(m+1)log N𝔭}])`;
+each term tends to `−2·(log N𝔭/N𝔭^{(m+1)/2})·F((m+1)·log N𝔭)` by
+the shifted-point Fourier inversion
+(`poitouPhi_line_mul_exp_tendsto`, `e^{−x/2} = N𝔭^{−(m+1)/2}` at
+`x = (m+1)·log N𝔭`), uniformly dominated in `T` by
+`π⁻¹·‖Φ‖₁·log N𝔭·N𝔭^{−5(m+1)/4}` — summable by
+`summable_log_absNorm_mul_rpow_neg` at `σ = 5/4` — so Tannery's
+theorem (`tendsto_tsum_of_dominated_convergence`) exchanges the sum
+with the `T → ∞` limit, and `Summable.tsum_prod'` regroups the
+product index into the stated iterated sum. -/
 theorem poitouPrimeEdge_tendsto (K : Type*) [Field K] [NumberField K] :
     Filter.Tendsto (poitouPrimeEdge K) Filter.atTop
       (nhds (-(2 * ∑' (P : {P : Ideal (NumberField.RingOfIntegers K) //
@@ -10630,7 +10972,184 @@ theorem poitouPrimeEdge_tendsto (K : Type*) [Field K] [NumberField K] :
           Real.log (Ideal.absNorm P.1) /
               (Ideal.absNorm P.1 : ℝ) ^ (((m : ℝ) + 1) / 2) *
             poitouF (((m : ℝ) + 1) * Real.log (Ideal.absNorm P.1))))) := by
-  sorry
+  classical
+  have hInt := poitouPhi_line_integrable
+  have hN2 : ∀ P : {P : Ideal (NumberField.RingOfIntegers K) // P.IsPrime ∧ P ≠ ⊥},
+      (2 : ℝ) ≤ (Ideal.absNorm P.1 : ℝ) := by
+    intro P
+    have h := two_le_natCard_quotient (F := K) ⟨P.1, P.2.1, P.2.2⟩
+    have h2 : Ideal.absNorm P.1 = Nat.card (NumberField.RingOfIntegers K ⧸ P.1) := by
+      rw [Ideal.absNorm_apply, Submodule.cardQuot_apply]
+    rw [h2]
+    exact_mod_cast h
+  have hNpos : ∀ P : {P : Ideal (NumberField.RingOfIntegers K) // P.IsPrime ∧ P ≠ ⊥},
+      (0 : ℝ) < (Ideal.absNorm P.1 : ℝ) :=
+    fun P => lt_of_lt_of_le two_pos (hN2 P)
+  have hlogpos : ∀ P : {P : Ideal (NumberField.RingOfIntegers K) // P.IsPrime ∧ P ≠ ⊥},
+      0 < Real.log (Ideal.absNorm P.1) :=
+    fun P => Real.log_pos (lt_of_lt_of_le one_lt_two (hN2 P))
+  set C : ℝ := ∫ t : ℝ, ‖poitouPhi (5 / 4 + t * Complex.I)‖ with hC
+  -- the summable uniform majorant
+  have hbound_summable : Summable (fun Pm : {P : Ideal (NumberField.RingOfIntegers K) //
+      P.IsPrime ∧ P ≠ ⊥} × ℕ => Real.pi⁻¹ * C *
+        (Real.log (Ideal.absNorm Pm.1.1) *
+          (Ideal.absNorm Pm.1.1 : ℝ) ^ (-(((Pm.2 : ℝ) + 1) * (5 / 4))))) :=
+    (summable_log_absNorm_mul_rpow_neg K (by norm_num : (1 : ℝ) < 5 / 4)).mul_left _
+  -- the termwise limits, by Fourier inversion at the shifted points
+  have hlim : ∀ Pm : {P : Ideal (NumberField.RingOfIntegers K) //
+      P.IsPrime ∧ P ≠ ⊥} × ℕ, Filter.Tendsto (fun T : ℝ =>
+        -(Real.log (Ideal.absNorm Pm.1.1) * (Real.pi⁻¹ * ∫ t in (-T)..T,
+          (poitouPhi (5 / 4 + t * Complex.I) *
+            Complex.exp (-(5 / 4 + t * Complex.I) *
+              ((((Pm.2 : ℝ) + 1) * Real.log (Ideal.absNorm Pm.1.1) : ℝ) : ℂ))).re)))
+        Filter.atTop
+        (nhds (-(Real.log (Ideal.absNorm Pm.1.1) *
+          (2 * (poitouF (((Pm.2 : ℝ) + 1) * Real.log (Ideal.absNorm Pm.1.1)) *
+            Real.exp (-((((Pm.2 : ℝ) + 1) * Real.log (Ideal.absNorm Pm.1.1)) / 2))))))) :=
+    fun Pm => ((poitouPhi_line_mul_exp_tendsto hInt
+      (((Pm.2 : ℝ) + 1) * Real.log (Ideal.absNorm Pm.1.1))).const_mul
+        (Real.log (Ideal.absNorm Pm.1.1))).neg
+  -- the uniform-in-`T` bound
+  have hbnd : ∀ (T : ℝ) (Pm : {P : Ideal (NumberField.RingOfIntegers K) //
+      P.IsPrime ∧ P ≠ ⊥} × ℕ),
+      ‖-(Real.log (Ideal.absNorm Pm.1.1) * (Real.pi⁻¹ * ∫ t in (-T)..T,
+        (poitouPhi (5 / 4 + t * Complex.I) *
+          Complex.exp (-(5 / 4 + t * Complex.I) *
+            ((((Pm.2 : ℝ) + 1) * Real.log (Ideal.absNorm Pm.1.1) : ℝ) : ℂ))).re))‖ ≤
+      Real.pi⁻¹ * C * (Real.log (Ideal.absNorm Pm.1.1) *
+        (Ideal.absNorm Pm.1.1 : ℝ) ^ (-(((Pm.2 : ℝ) + 1) * (5 / 4)))) := by
+    intro T Pm
+    set x : ℝ := ((Pm.2 : ℝ) + 1) * Real.log (Ideal.absNorm Pm.1.1) with hxdef
+    have hre_int : Integrable fun s : ℝ => (poitouPhi (5 / 4 + s * Complex.I) *
+        Complex.exp (-(5 / 4 + s * Complex.I) * ((x : ℝ) : ℂ))).re := by
+      have h := Complex.reCLM.integrable_comp (poitouPhi_line_mul_exp_integrable hInt x)
+      simpa using h
+    have hJ : ‖∫ t in (-T)..T, (poitouPhi (5 / 4 + t * Complex.I) *
+        Complex.exp (-(5 / 4 + t * Complex.I) * ((x : ℝ) : ℂ))).re‖ ≤
+        C * Real.exp (-(5 / 4 * x)) := by
+      refine intervalIntegral.norm_integral_le_integral_norm_uIoc.trans ?_
+      have hmono : ∀ s ∈ Set.uIoc (-T) T, ‖(poitouPhi (5 / 4 + s * Complex.I) *
+          Complex.exp (-(5 / 4 + s * Complex.I) * ((x : ℝ) : ℂ))).re‖ ≤
+          ‖poitouPhi (5 / 4 + s * Complex.I)‖ * Real.exp (-(5 / 4 * x)) := by
+        intro s _
+        rw [Real.norm_eq_abs]
+        refine (Complex.abs_re_le_norm _).trans (le_of_eq ?_)
+        rw [norm_mul, Complex.norm_exp, neg_edge_mul_ofReal_re]
+      calc (∫ s in Set.uIoc (-T) T, ‖(poitouPhi (5 / 4 + s * Complex.I) *
+              Complex.exp (-(5 / 4 + s * Complex.I) * ((x : ℝ) : ℂ))).re‖)
+          ≤ ∫ s in Set.uIoc (-T) T, ‖poitouPhi (5 / 4 + s * Complex.I)‖ *
+              Real.exp (-(5 / 4 * x)) :=
+            setIntegral_mono_on hre_int.norm.integrableOn
+              (hInt.norm.mul_const _).integrableOn measurableSet_uIoc hmono
+        _ ≤ ∫ s : ℝ, ‖poitouPhi (5 / 4 + s * Complex.I)‖ * Real.exp (-(5 / 4 * x)) :=
+            setIntegral_le_integral (hInt.norm.mul_const _)
+              (Filter.Eventually.of_forall fun s =>
+                mul_nonneg (norm_nonneg _) (Real.exp_pos _).le)
+        _ = C * Real.exp (-(5 / 4 * x)) := by
+            rw [integral_mul_const, ← hC]
+    rw [norm_neg, norm_mul, norm_mul, Real.norm_of_nonneg (hlogpos Pm.1).le,
+      Real.norm_of_nonneg (inv_nonneg.mpr Real.pi_pos.le)]
+    calc Real.log (Ideal.absNorm Pm.1.1) * (Real.pi⁻¹ * ‖∫ t in (-T)..T,
+          (poitouPhi (5 / 4 + t * Complex.I) *
+            Complex.exp (-(5 / 4 + t * Complex.I) * ((x : ℝ) : ℂ))).re‖)
+        ≤ Real.log (Ideal.absNorm Pm.1.1) *
+            (Real.pi⁻¹ * (C * Real.exp (-(5 / 4 * x)))) :=
+          mul_le_mul_of_nonneg_left
+            (mul_le_mul_of_nonneg_left hJ (inv_nonneg.mpr Real.pi_pos.le))
+            (hlogpos Pm.1).le
+      _ = Real.pi⁻¹ * C * (Real.log (Ideal.absNorm Pm.1.1) *
+            (Ideal.absNorm Pm.1.1 : ℝ) ^ (-(((Pm.2 : ℝ) + 1) * (5 / 4)))) := by
+          rw [Real.rpow_def_of_pos (hNpos Pm.1),
+            show Real.log (Ideal.absNorm Pm.1.1) * (-(((Pm.2 : ℝ) + 1) * (5 / 4))) =
+              -(5 / 4 * x) from by rw [hxdef]; ring]
+          ring
+  -- Tannery: exchange the sum with the `T → ∞` limit
+  have hmain := tendsto_tsum_of_dominated_convergence hbound_summable hlim
+    (Filter.Eventually.of_forall hbnd)
+  have hmain2 : Filter.Tendsto (poitouPrimeEdge K) Filter.atTop
+      (nhds (∑' Pm : {P : Ideal (NumberField.RingOfIntegers K) //
+          P.IsPrime ∧ P ≠ ⊥} × ℕ,
+        -(Real.log (Ideal.absNorm Pm.1.1) *
+          (2 * (poitouF (((Pm.2 : ℝ) + 1) * Real.log (Ideal.absNorm Pm.1.1)) *
+            Real.exp (-((((Pm.2 : ℝ) + 1) * Real.log (Ideal.absNorm Pm.1.1)) / 2))))))) :=
+    hmain.congr fun T => (poitouPrimeEdge_eq_tsum K T).symm
+  -- identify the limit with the stated iterated prime sum
+  have hLbound : ∀ Pm : {P : Ideal (NumberField.RingOfIntegers K) //
+      P.IsPrime ∧ P ≠ ⊥} × ℕ,
+      ‖-(Real.log (Ideal.absNorm Pm.1.1) *
+        (2 * (poitouF (((Pm.2 : ℝ) + 1) * Real.log (Ideal.absNorm Pm.1.1)) *
+          Real.exp (-((((Pm.2 : ℝ) + 1) * Real.log (Ideal.absNorm Pm.1.1)) / 2)))))‖ ≤
+      Real.pi⁻¹ * C * (Real.log (Ideal.absNorm Pm.1.1) *
+        (Ideal.absNorm Pm.1.1 : ℝ) ^ (-(((Pm.2 : ℝ) + 1) * (5 / 4)))) :=
+    fun Pm => le_of_tendsto (hlim Pm).norm
+      (Filter.Eventually.of_forall fun T => hbnd T Pm)
+  have hLsummable := Summable.of_norm_bounded hbound_summable hLbound
+  have hLa : ∀ Pm : {P : Ideal (NumberField.RingOfIntegers K) //
+      P.IsPrime ∧ P ≠ ⊥} × ℕ,
+      -(Real.log (Ideal.absNorm Pm.1.1) *
+        (2 * (poitouF (((Pm.2 : ℝ) + 1) * Real.log (Ideal.absNorm Pm.1.1)) *
+          Real.exp (-((((Pm.2 : ℝ) + 1) * Real.log (Ideal.absNorm Pm.1.1)) / 2))))) =
+      -(2 * (Real.log (Ideal.absNorm Pm.1.1) /
+          (Ideal.absNorm Pm.1.1 : ℝ) ^ (((Pm.2 : ℝ) + 1) / 2) *
+        poitouF (((Pm.2 : ℝ) + 1) * Real.log (Ideal.absNorm Pm.1.1)))) := by
+    intro Pm
+    have hkey : Real.exp (-((((Pm.2 : ℝ) + 1) * Real.log (Ideal.absNorm Pm.1.1)) / 2)) =
+        ((Ideal.absNorm Pm.1.1 : ℝ) ^ (((Pm.2 : ℝ) + 1) / 2))⁻¹ := by
+      rw [Real.rpow_def_of_pos (hNpos Pm.1), ← Real.exp_neg]
+      congr 1
+      ring
+    rw [hkey]
+    ring
+  have hsa : Summable (fun Pm : {P : Ideal (NumberField.RingOfIntegers K) //
+      P.IsPrime ∧ P ≠ ⊥} × ℕ =>
+      Real.log (Ideal.absNorm Pm.1.1) /
+          (Ideal.absNorm Pm.1.1 : ℝ) ^ (((Pm.2 : ℝ) + 1) / 2) *
+        poitouF (((Pm.2 : ℝ) + 1) * Real.log (Ideal.absNorm Pm.1.1))) := by
+    refine (hLsummable.mul_left (-(1 / 2 : ℝ))).congr fun Pm => ?_
+    rw [hLa Pm]
+    ring
+  have hfinal : (∑' Pm : {P : Ideal (NumberField.RingOfIntegers K) //
+      P.IsPrime ∧ P ≠ ⊥} × ℕ,
+      -(Real.log (Ideal.absNorm Pm.1.1) *
+        (2 * (poitouF (((Pm.2 : ℝ) + 1) * Real.log (Ideal.absNorm Pm.1.1)) *
+          Real.exp (-((((Pm.2 : ℝ) + 1) * Real.log (Ideal.absNorm Pm.1.1)) / 2)))))) =
+      -(2 * ∑' (P : {P : Ideal (NumberField.RingOfIntegers K) //
+          P.IsPrime ∧ P ≠ ⊥}) (m : ℕ),
+        Real.log (Ideal.absNorm P.1) /
+            (Ideal.absNorm P.1 : ℝ) ^ (((m : ℝ) + 1) / 2) *
+          poitouF (((m : ℝ) + 1) * Real.log (Ideal.absNorm P.1))) := by
+    calc (∑' Pm : {P : Ideal (NumberField.RingOfIntegers K) //
+          P.IsPrime ∧ P ≠ ⊥} × ℕ,
+        -(Real.log (Ideal.absNorm Pm.1.1) *
+          (2 * (poitouF (((Pm.2 : ℝ) + 1) * Real.log (Ideal.absNorm Pm.1.1)) *
+            Real.exp (-((((Pm.2 : ℝ) + 1) * Real.log (Ideal.absNorm Pm.1.1)) / 2))))))
+        = ∑' Pm : {P : Ideal (NumberField.RingOfIntegers K) //
+            P.IsPrime ∧ P ≠ ⊥} × ℕ,
+          -(2 * (Real.log (Ideal.absNorm Pm.1.1) /
+              (Ideal.absNorm Pm.1.1 : ℝ) ^ (((Pm.2 : ℝ) + 1) / 2) *
+            poitouF (((Pm.2 : ℝ) + 1) * Real.log (Ideal.absNorm Pm.1.1)))) :=
+          tsum_congr hLa
+      _ = -∑' Pm : {P : Ideal (NumberField.RingOfIntegers K) //
+            P.IsPrime ∧ P ≠ ⊥} × ℕ,
+          2 * (Real.log (Ideal.absNorm Pm.1.1) /
+              (Ideal.absNorm Pm.1.1 : ℝ) ^ (((Pm.2 : ℝ) + 1) / 2) *
+            poitouF (((Pm.2 : ℝ) + 1) * Real.log (Ideal.absNorm Pm.1.1))) := tsum_neg
+      _ = -(2 * ∑' Pm : {P : Ideal (NumberField.RingOfIntegers K) //
+            P.IsPrime ∧ P ≠ ⊥} × ℕ,
+          Real.log (Ideal.absNorm Pm.1.1) /
+              (Ideal.absNorm Pm.1.1 : ℝ) ^ (((Pm.2 : ℝ) + 1) / 2) *
+            poitouF (((Pm.2 : ℝ) + 1) * Real.log (Ideal.absNorm Pm.1.1))) := by
+          rw [tsum_mul_left]
+      _ = -(2 * ∑' (P : {P : Ideal (NumberField.RingOfIntegers K) //
+            P.IsPrime ∧ P ≠ ⊥}) (m : ℕ),
+          Real.log (Ideal.absNorm P.1) /
+              (Ideal.absNorm P.1 : ℝ) ^ (((m : ℝ) + 1) / 2) *
+            poitouF (((m : ℝ) + 1) * Real.log (Ideal.absNorm P.1))) := by
+          rw [hsa.tsum_prod' fun P => hsa.prod_factor P]
+  rw [← hfinal]
+  exact hmain2
+
+end PoitouPrimeEdgeFourier
 
 /-- **Poitou's Propositions 2–3: the vertical edge minus its pole
 part converges to the arithmetic terms** (ASSEMBLED 2026-07-24 from
