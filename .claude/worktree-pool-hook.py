@@ -127,8 +127,18 @@ def allocate_worktree(pool_fh, target="main"):
     clean+ancestor, move it EXACTLY onto `target` (the task's pinned base
     commit) in either direction, mark claimed. Returns its path, or None
     if the pool is exhausted. Hard-raises on unexpected state."""
-    entries = [line.split() for line in pool_fh.read().splitlines() if line.strip()]
-    free_name = next((n for n, status in entries if status == "free"), None)
+    # `<name> <status> [extra...]` — a SUSPENDED entry (Deyao, 2026-07-24)
+    # carries the stopped agent's transcript id as a third field so its work
+    # can be picked up later; it is never allocated, which is also how a
+    # reduced worker count is enforced under memory pressure. Trailing
+    # fields are preserved verbatim on rewrite.
+    entries = []
+    for line in pool_fh.read().splitlines():
+        if not line.strip():
+            continue
+        parts = line.split()
+        entries.append((parts[0], parts[1], parts[2:]))
+    free_name = next((n for n, status, _ in entries if status == "free"), None)
     if free_name is None:
         return None
     worktree_path = next(
@@ -182,8 +192,8 @@ def allocate_worktree(pool_fh, target="main"):
                 f"failed: {reset.stderr}")
 
     new_lines = [
-        f"{n} claimed" if n == free_name else f"{n} {status}"
-        for n, status in entries
+        " ".join([n, "claimed" if n == free_name else status] + extra)
+        for n, status, extra in entries
     ]
     pool_fh.seek(0)
     pool_fh.write("\n".join(new_lines) + "\n")
