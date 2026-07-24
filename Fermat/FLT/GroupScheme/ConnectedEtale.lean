@@ -49,7 +49,7 @@ public import Mathlib.RingTheory.AdicCompletion.Topology
 
 open IsLocalRing
 
-open scoped WithZero
+open scoped WithZero TensorProduct
 
 /-! ### Transport of adic completeness to `adicCompletionIntegers` -/
 
@@ -365,5 +365,145 @@ theorem exists_pow_mem_of_counit_mem_maximalIdeal
     haveI : Nontrivial (A ⧸ maximalIdeal A) :=
       Ideal.Quotient.nontrivial_iff.mpr (Ideal.IsMaximal.ne_top inferInstance)
     exact one_ne_zero hεe
+
+omit [IsDomain A] in
+/-- **The counit absorbs the comultiplication**: `ε_{G⊗G} ∘ Δ = ε`.
+Choose a representation `Δg = ∑ xᵢ ⊗ yᵢ`; the tensor counit sends it
+to `∑ ε(yᵢ)·ε(xᵢ) = ε(∑ ε(yᵢ)·xᵢ) = ε(g)` by the right counit
+axiom. -/
+theorem Bialgebra.counit_comulAlgHom_apply (g : G) :
+    Coalgebra.counit (R := A) (Bialgebra.comulAlgHom A G g) =
+      Coalgebra.counit (R := A) g := by
+  set 𝓡 := Coalgebra.Repr.arbitrary A g with h𝓡
+  have hmirror : ∑ i ∈ 𝓡.index,
+      Coalgebra.counit (R := A) (𝓡.right i) • 𝓡.left i = g := by
+    have h := Coalgebra.sum_tmul_counit_eq 𝓡
+    have h2 : _root_.TensorProduct.rid A G (∑ i ∈ 𝓡.index,
+          𝓡.left i ⊗ₜ[A] Coalgebra.counit (R := A) (𝓡.right i)) =
+        _root_.TensorProduct.rid A G (g ⊗ₜ[A] (1 : A)) := by rw [h]
+    simpa only [map_sum, _root_.TensorProduct.rid_tmul, one_smul] using h2
+  calc Coalgebra.counit (R := A) (Bialgebra.comulAlgHom A G g)
+      = Coalgebra.counit (R := A) (Coalgebra.comul (R := A) g) := by
+        rw [Bialgebra.comulAlgHom_apply]
+    _ = Coalgebra.counit (R := A)
+        (∑ i ∈ 𝓡.index, 𝓡.left i ⊗ₜ[A] 𝓡.right i) := by rw [𝓡.eq]
+    _ = ∑ i ∈ 𝓡.index,
+        Coalgebra.counit (R := A) (𝓡.left i ⊗ₜ[A] 𝓡.right i) :=
+          map_sum _ _ _
+    _ = ∑ i ∈ 𝓡.index, Coalgebra.counit (R := A) (𝓡.right i) *
+        Coalgebra.counit (R := A) (𝓡.left i) := by
+          simp [smul_eq_mul]
+    _ = Coalgebra.counit (R := A) (∑ i ∈ 𝓡.index,
+        Coalgebra.counit (R := A) (𝓡.right i) • 𝓡.left i) := by
+          rw [map_sum]
+          simp [smul_eq_mul]
+    _ = Coalgebra.counit (R := A) g := by rw [hmirror]
+
+/-- **Tensor primitivity** (Tate; "connected × connected is
+connected"): over a complete Noetherian local domain, the tensor
+square `e₀ ⊗ e₀` of a minimal counit-one idempotent is itself a
+minimal counit-one idempotent of `G ⊗[A] G`. Residue-theoretically:
+the corner `(G/𝔪G)·ē₀` is local artinian with residue field `𝓀(A)`
+(the counit splits the residue extension), the tensor product over
+`𝓀(A)` of two such algebras is again local with the same residue
+field, and a counit-one idempotent below `ē₀ ⊗ ē₀` must reduce to the
+identity of that local corner; henselian lifting and minimality
+upstairs then force equality. -/
+theorem Bialgebra.tmul_minimal_counit_idempotent
+    [IsNoetherianRing A] [IsLocalRing A]
+    [IsAdicComplete (maximalIdeal A) A] [Module.Finite A G]
+    {e₀ : G} (he₀ : IsIdempotentElem e₀)
+    (hε₀ : Coalgebra.counit (R := A) e₀ = (1 : A))
+    (hmin : ∀ y : G, IsIdempotentElem y → y * e₀ = y →
+      Coalgebra.counit (R := A) y = (1 : A) → y = e₀) :
+    ∀ w : G ⊗[A] G, IsIdempotentElem w → w * (e₀ ⊗ₜ[A] e₀) = w →
+      Coalgebra.counit (R := A) w = (1 : A) → w = e₀ ⊗ₜ[A] e₀ := by
+  sorry
+
+/-- **The connected counit idempotent of a finite bialgebra** over a
+complete Noetherian local domain: a primitive idempotent `e₀` with
+counit `1` whose comultiplication absorbs `e₀ ⊗ e₀` — the coordinate
+ring of the connected component of the identity, closed under the
+group law. The absorption defect `z = e₀⊗e₀ − Δe₀·(e₀⊗e₀)` is an
+idempotent of the corner of `e₀ ⊗ e₀` with counit `0`; corner
+nilpotency puts it in `𝔪·(G⊗G)`, which lies inside the Jacobson
+radical (integrality over the local base), where idempotents die. -/
+theorem Bialgebra.exists_connected_counit_idempotent
+    [IsNoetherianRing A] [IsLocalRing A]
+    [IsAdicComplete (maximalIdeal A) A] [Module.Finite A G] :
+    ∃ e₀ : G, IsIdempotentElem e₀ ∧
+      Coalgebra.counit (R := A) e₀ = (1 : A) ∧
+      (∀ y : G, IsIdempotentElem y → y * e₀ = y →
+        Coalgebra.counit (R := A) y = (1 : A) → y = e₀) ∧
+      Bialgebra.comulAlgHom A G e₀ * (e₀ ⊗ₜ[A] e₀) = e₀ ⊗ₜ[A] e₀ := by
+  obtain ⟨e₀, he₀, hε₀, hmin⟩ :=
+    exists_minimal_counit_idempotent (A := A) (G := G)
+  refine ⟨e₀, he₀, hε₀, hmin, ?_⟩
+  set a : G ⊗[A] G := Bialgebra.comulAlgHom A G e₀ with ha_def
+  set b : G ⊗[A] G := e₀ ⊗ₜ[A] e₀ with hb_def
+  have ha : IsIdempotentElem a := by
+    show a * a = a
+    rw [ha_def, ← map_mul, he₀.eq]
+  have hb : IsIdempotentElem b := by
+    show b * b = b
+    rw [hb_def, Algebra.TensorProduct.tmul_mul_tmul, he₀.eq]
+  have hεb : Coalgebra.counit (R := A) b = 1 := by
+    rw [hb_def]
+    simp [hε₀]
+  set z : G ⊗[A] G := b - a * b with hz_def
+  have hz : IsIdempotentElem z := by
+    show z * z = z
+    rw [hz_def]
+    have hexp : (b - a * b) * (b - a * b) =
+        b * b - a * (b * b) - (a * (b * b) - a * a * (b * b)) := by ring
+    rw [hexp, hb.eq, ha.eq]
+    ring
+  have hzb : z * b = z := by
+    rw [hz_def]
+    have hexp : (b - a * b) * b = b * b - a * (b * b) := by ring
+    rw [hexp, hb.eq]
+  have hεz : Coalgebra.counit (R := A) z ∈ maximalIdeal A := by
+    have hεa : Coalgebra.counit (R := A) a = 1 := by
+      rw [ha_def, Bialgebra.counit_comulAlgHom_apply, hε₀]
+    rw [hz_def, map_sub, Bialgebra.counit_mul, hεa, hεb, one_mul,
+      sub_self]
+    exact zero_mem _
+  have hminT := Bialgebra.tmul_minimal_counit_idempotent he₀ hε₀ hmin
+  obtain ⟨n, hzn⟩ :=
+    exists_pow_mem_of_counit_mem_maximalIdeal hb hεb hminT hzb hεz
+  -- `𝔪·(G⊗G)` is proper: the counit maps it into `𝔪`
+  have hMTne : (maximalIdeal A).map (algebraMap A (G ⊗[A] G)) ≠ ⊤ := by
+    have hMTcomap : (maximalIdeal A).map (algebraMap A (G ⊗[A] G)) ≤
+        (maximalIdeal A).comap
+          (Bialgebra.counitAlgHom A (G ⊗[A] G) : (G ⊗[A] G) →+* A) := by
+      rw [Ideal.map_le_iff_le_comap]
+      intro r hr
+      rw [Ideal.mem_comap, Ideal.mem_comap]
+      simpa using hr
+    intro htop
+    have h2 := hMTcomap
+      (htop ▸ Submodule.mem_top : (1 : G ⊗[A] G) ∈ _)
+    rw [Ideal.mem_comap, map_one] at h2
+    exact (Ideal.ne_top_iff_one _).mp
+      (Ideal.IsMaximal.ne_top inferInstance) h2
+  -- the exponent is positive, so `z` itself lies in `𝔪·(G⊗G)`
+  have hzmem : z ∈ (maximalIdeal A).map (algebraMap A (G ⊗[A] G)) := by
+    rcases n with - | m
+    · exact absurd ((Ideal.eq_top_iff_one _).mpr (by simpa using hzn))
+        hMTne
+    · rw [← hz.pow_succ_eq m]
+      exact hzn
+  -- `𝔪·(G⊗G)` sits inside the Jacobson radical, killing idempotents
+  have hjac : (maximalIdeal A).map (algebraMap A (G ⊗[A] G)) ≤
+      Ideal.jacobson (⊥ : Ideal (G ⊗[A] G)) := by
+    refine le_sInf ?_
+    rintro J ⟨-, hJmax⟩
+    haveI := hJmax
+    have hcomax : (J.comap (algebraMap A (G ⊗[A] G))).IsMaximal :=
+      Ideal.isMaximal_comap_of_isIntegral_of_isMaximal J
+    rw [Ideal.map_le_iff_le_comap, IsLocalRing.eq_maximalIdeal hcomax]
+  have hz0 : z = 0 := hz.eq_zero_of_mem_jacobson_bot (hjac hzmem)
+  rw [hz_def] at hz0
+  exact (sub_eq_zero.mp hz0).symm
 
 end CounitIdempotent
