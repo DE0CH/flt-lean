@@ -404,6 +404,91 @@ theorem weightTwoEigenform_level_two_false (f : CuspForm (Gamma0GL 2) 2)
   rw [qCoeff, cuspForm_level_two_coe_eq_zero f, qExpansion_zero_fn_coeff] at h1
   exact one_ne_zero h1.symm
 
+/-! #### The level-1 companion: `S₂(Γ₀(1)) = 0`
+
+Added 2026-07-24 for the conductor leaf
+`exists_eigenform_level_dvd_two_of_trace_eq` below, whose conclusion
+produces an eigenform of level `M ∣ 2` — i.e. `M = 1` or `M = 2`. The
+`M = 2` branch is refuted by `weightTwoEigenform_level_two_false`
+above; the `M = 1` branch needs the (classical, easier) level-1
+vanishing `S₂(SL(2, ℤ)) = 0`, proven here by the same norm/Sturm
+route with relative index `1` in place of `3` (weight stays
+`2·1 = 2 < 12`, so the level-1 Sturm bound is again `0`). -/
+
+/-- `Γ₀(1) = SL(2, ℤ)`: the mod-1 congruence condition is vacuous
+(`ZMod 1` is trivial). -/
+theorem Gamma0_one_eq_top : CongruenceSubgroup.Gamma0 1 = ⊤ := by
+  ext g
+  simp [CongruenceSubgroup.Gamma0_mem, Subsingleton.elim (g.1 1 0 : ZMod 1) 0]
+
+/-- The relative index of `Γ₀(1)` in `SL(2, ℤ)` (both viewed in
+`GL(2, ℝ)`) is `1`: `Γ₀(1)` IS `SL(2, ℤ)`. The level-1 analogue of
+`Gamma0GL_two_relIndex`. -/
+theorem Gamma0GL_one_relIndex : (Gamma0GL 1).relIndex 𝒮ℒ = 1 := by
+  show ((CongruenceSubgroup.Gamma0 1).map (mapGL ℝ)).relIndex 𝒮ℒ = 1
+  rw [Gamma0_one_eq_top, ← MonoidHom.range_eq_map, Subgroup.relIndex_self]
+
+/-- Every `SL(2, ℤ)`-translate of a weight-2 cusp form on `Γ₀(1)`
+vanishes at `i∞` — the level-1 analogue of
+`quotientFunc_isZeroAtImInfty`. -/
+theorem quotientFunc_level_one_isZeroAtImInfty (f : CuspForm (Gamma0GL 1) 2)
+    (q : 𝒮ℒ ⧸ (Gamma0GL 1).subgroupOf 𝒮ℒ) :
+    IsZeroAtImInfty (SlashInvariantForm.quotientFunc f q) := by
+  induction q using Quotient.inductionOn with
+  | h r =>
+    rw [SlashInvariantForm.quotientFunc_mk]
+    have hinf : IsCusp OnePoint.infty 𝒮ℒ := isCusp_SL2Z_iff'.mpr ⟨1, by simp⟩
+    have hcusp : IsCusp ((r.val)⁻¹ • OnePoint.infty) (Gamma0GL 1) :=
+      (hinf.smul_of_mem (inv_mem r.2)).of_isFiniteRelIndex
+    exact CuspFormClass.zero_at_cusps f hcusp _ rfl
+
+/-- The norm (over `SL(2, ℤ)`) of a weight-2 cusp form on `Γ₀(1)`
+vanishes at `i∞` — the level-1 analogue of `norm_isZeroAtImInfty`. -/
+theorem norm_level_one_isZeroAtImInfty (f : CuspForm (Gamma0GL 1) 2) :
+    IsZeroAtImInfty ⇑(ModularForm.norm 𝒮ℒ f) := by
+  rw [ModularForm.coe_norm]
+  letI := Fintype.ofFinite (𝒮ℒ ⧸ (Gamma0GL 1).subgroupOf 𝒮ℒ)
+  rw [IsZeroAtImInfty, Filter.ZeroAtFilter]
+  have hzero : (0 : ℂ) = ∏ _q : 𝒮ℒ ⧸ (Gamma0GL 1).subgroupOf 𝒮ℒ, (0 : ℂ) := by
+    rw [Finset.prod_const, zero_pow]
+    simp [Finset.card_univ, Fintype.card_ne_zero]
+  rw [Finset.prod_fn, hzero]
+  exact tendsto_finsetProd _ fun q _ => quotientFunc_level_one_isZeroAtImInfty f q
+
+/-- **`S₂(Γ₀(1)) = 0`** — every weight-2 cusp form on `Γ₀(1)` (i.e. on
+`SL(2, ℤ)`) vanishes identically: its norm to level 1 is a weight-2
+level-1 form vanishing at `i∞`, killed by the level-1 Sturm bound
+(`2/12 = 0`). Level-1 analogue of `cuspForm_level_two_coe_eq_zero`. -/
+theorem cuspForm_level_one_coe_eq_zero (f : CuspForm (Gamma0GL 1) 2) : ⇑f = 0 := by
+  by_contra hf
+  refine ModularForm.norm_ne_zero 𝒮ℒ hf ?_
+  apply sturm_bound_levelOne
+  have hcoeff0 : (qExpansion 1 ⇑(ModularForm.norm 𝒮ℒ f)).coeff 0 = 0 := by
+    rw [qExpansion_coeff_zero one_pos
+      (ModularFormClass.analyticAt_cuspFunction_zero _ one_pos one_mem_strictPeriods_SL)
+      (SlashInvariantFormClass.periodic_comp_ofComplex _ one_mem_strictPeriods_SL)]
+    exact (norm_level_one_isZeroAtImInfty f).valueAtInfty_eq_zero
+  rw [PowerSeries.coeff_zero_eq_constantCoeff] at hcoeff0
+  have horder : 1 ≤ (qExpansion 1 ⇑(ModularForm.norm 𝒮ℒ f)).order :=
+    PowerSeries.one_le_order_iff_constCoeff_eq_zero.mpr hcoeff0
+  have hwt : ((2 * (Nat.card (𝒮ℒ ⧸ (Gamma0GL 1).subgroupOf 𝒮ℒ) : ℤ)).toNat / 12) = 0 := by
+    rw [show Nat.card (𝒮ℒ ⧸ (Gamma0GL 1).subgroupOf 𝒮ℒ) = 1 from Gamma0GL_one_relIndex]
+    decide
+  rw [hwt]
+  exact lt_of_lt_of_le (by norm_num) horder
+
+/-- **There is no weight-2 level-1 normalized eigenform**: the carrier
+`IsWeightTwoEigenform 1` is empty, since `S₂(Γ₀(1)) = 0` while a
+normalized eigenform has `a₁ = 1`. Level-1 analogue of
+`weightTwoEigenform_level_two_false`; together they refute both
+branches `M ∈ {1, 2}` of the conductor leaf
+`exists_eigenform_level_dvd_two_of_trace_eq` below. -/
+theorem weightTwoEigenform_level_one_false (f : CuspForm (Gamma0GL 1) 2)
+    (hf : IsWeightTwoEigenform 1 f) : False := by
+  have h1 := hf.qCoeff_one
+  rw [qCoeff, cuspForm_level_one_coe_eq_zero f, qExpansion_zero_fn_coeff] at h1
+  exact one_ne_zero h1.symm
+
 end LevelTwoEmptiness
 
 /-! ### Hecke field finiteness: the single-finite-structure argument
@@ -729,6 +814,13 @@ Skinner–Wiles, Khare–Wintenberger, Carayol/Ribet):
    RESIDUALLY REDUCIBLE branch (the Skinner–Wiles shadow).
 5. `exists_weightTwoEigenform_level_two_of_trace_eq` — LEVEL
    OPTIMIZATION to `Γ₀(2)` (the Carayol-conductor/Ribet shadow).
+   PROVEN 2026-07-24 as an assembly: the sorried conductor leaf
+   `exists_eigenform_level_dvd_two_of_trace_eq` (level lowering to
+   some `M ∣ 2`, the genuine Carayol/Ribet content — see its
+   docstring for the audit of why the contradiction cannot be pushed
+   past that boundary) plus the proven emptiness of both target
+   spaces (`weightTwoEigenform_level_one_false` — new, level-1
+   norm/Sturm route — and `weightTwoEigenform_level_two_false`).
 
 Soundness audit (2026-07-24): since `S₂(Γ₀(2)) = 0` is proven above
 (`weightTwoEigenform_level_two_false`), every statement in this
@@ -949,8 +1041,95 @@ theorem exists_weightTwoEigenform_trace_eq_of_residually_reducible
           - ι (heckeCoeff N f q) :=
   sorry
 
-/-- **Level optimization to `Γ₀(2)`** (pillar 5; sorry node — the
-Carayol-conductor/Ribet shadow): if the eigensystem `(E, S, Pv)` of an
+/-- **Level lowering to conductor level `M ∣ 2`** (the sorried heart of
+pillar 5 — the Carayol-conductor/Ribet content, isolated 2026-07-24):
+if the Frobenius traces of an irreducible hardly ramified `p`-adic
+representation `ρ` arise (away from a finite set, in the `-a_q` trace
+convention) from a weight-2 normalized eigenform `f` of some level
+`N ≥ 1`, then they arise, in the same sense, from a weight-2 normalized
+eigenform of level `M` dividing `2`. Classical route, following the
+citations of the pillar docstring below:
+
+1. *Newform descent* (Diamond–Shurman Prop. 5.8.4, via Strong
+   Multiplicity One): behind the full-Hecke eigenform `f` (coefficient
+   characterization, Prop. 5.8.5) lies a newform `g` of level
+   `M₀ ∣ N` with the same eigenvalues at every prime `q ∤ N`.
+2. *Attachment and rigidity*: the `λ`-adic Galois representation
+   `ρ_{g,λ}` attached to `g` at a place `λ ∣ p` of its Hecke field
+   (Eichler–Shimura/Deligne) has the same Frobenius traces as `ρ` away
+   from a finite set (by the matching hypothesis), and both are
+   irreducible, so `ρ ⊗ ℚ̄_p ≅ ρ_{g,λ} ⊗ ℚ̄_p` (Chebotarev density +
+   Brauer–Nesbitt).
+3. *Conductor bound*: the prime-to-`p` Artin conductor of a hardly
+   ramified representation divides `2` — unramified outside `{2, p}`,
+   and at `2` the ramification is tame with unramified rank-1 quotient,
+   so the conductor exponent at `2` is at most `1`; flatness at `p` and
+   `det = χ_cyc` put the pair (conductor, weight) in Serre's `(2, 2)`
+   class (Serre, Duke 1987, §4.1).
+4. *Carayol's theorem* (Ann. Sci. ÉNS 19 (1986); Livné for the
+   residual statement; "level of the newform = conductor of its
+   `λ`-adic representation"): hence `M₀ ∣ 2` — Ribet's mod-`p` level
+   lowering (Invent. Math. 100 (1990)) is the residual counterpart
+   used when this content is reached through the Khare–Wintenberger
+   induction instead.
+5. The eigensystem of `g` embeds into `ℚ̄_p` compatibly with `ι` (both
+   generate the same coefficients at good primes), giving the stated
+   `κ` with exceptional set `S₂ = S₁ ∪ {v : v ∣ 2Np}`.
+
+SOUNDNESS/DEPTH AUDIT (2026-07-24): both level-`M ∣ 2` spaces are
+proven empty in this file (`weightTwoEigenform_level_one_false`,
+`weightTwoEigenform_level_two_false`), so this leaf's conclusion is
+unsatisfiable and the leaf equivalently asserts that its hypotheses
+are contradictory — that no irreducible hardly ramified `p`-adic
+representation is modular of ANY level. That is not an artifact: it is
+exactly where the classical proof's final contradiction (Wiles) lives,
+and steps 1–4 above ARE its literature derivation. Every honest
+intermediate past this point (existence of an eigenform of level
+`∣ 2`) is unsatisfiable-conclusion-shaped, so no decomposition can
+push the contradiction out of this boundary leaf; a genuinely finer
+decomposition must instead build the step 1–4 vocabulary the pin
+lacks — newforms/strong multiplicity one, attached `λ`-adic
+representations at general level `N` (Eichler–Shimura/Deligne, a REAL
+non-vacuous attachment sorry, unlike the level-2 one discharged by
+emptiness), trace rigidity (Chebotarev + Brauer–Nesbitt for
+`GaloisRep`), and the Artin conductor — and prove `M₀ ∣ 2` through
+them. That vocabulary-building is the designated next dispatch for
+this node. -/
+theorem exists_eigenform_level_dvd_two_of_trace_eq
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hZinj : Function.Injective (algebraMap ℤ_[p] R))
+    (hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
+    (hρ : IsHardlyRamified hpodd hv ρ)
+    (hirr : (ρ.baseChange (AlgebraicClosure ℚ_[p])).IsIrreducible)
+    {N : ℕ} (hN : 0 < N) {f : CuspForm (Gamma0GL N) 2}
+    (hf : IsWeightTwoEigenform N f)
+    (ι : heckeField N f →+* AlgebraicClosure ℚ_[p])
+    {S₁ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hmatch : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S₁ →
+      ((ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map
+          (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff 1 =
+        - ι (heckeCoeff N f q)) :
+    ∃ (M : ℕ) (_ : M ∣ 2) (g : CuspForm (Gamma0GL M) 2)
+      (_ : IsWeightTwoEigenform M g)
+      (κ : heckeField M g →+* AlgebraicClosure ℚ_[p])
+      (S₂ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
+      ∀ (q : ℕ) (hq : q.Prime), hq.toHeightOneSpectrumRingOfIntegersRat ∉ S₂ →
+        ((ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map
+            (algebraMap R (AlgebraicClosure ℚ_[p]))).coeff 1 =
+          - κ (heckeCoeff M g q) :=
+  sorry
+
+/-- **Level optimization to `Γ₀(2)`** (pillar 5; PROVEN 2026-07-24 as
+an assembly over the sorried conductor leaf
+`exists_eigenform_level_dvd_two_of_trace_eq` just above, which now
+carries the Carayol-conductor/Ribet content, plus the proven emptiness
+of both level-`M ∣ 2` eigenform carriers —
+`weightTwoEigenform_level_one_false`,
+`weightTwoEigenform_level_two_false`; the eigensystem `(E, S, Pv)`
+conclusion follows from the resulting contradiction): if the
+eigensystem `(E, S, Pv)` of an
 irreducible hardly ramified `p`-adic representation `ρ` arises, in the
 trace convention of the pillars above, from a weight-2 eigenform `f`
 of SOME level `N ≥ 1`, then it arises from a weight-2 eigenform of
@@ -998,13 +1177,18 @@ theorem exists_weightTwoEigenform_level_two_of_trace_eq
     {E : Type v} [Field E] [NumberField E] (ψ : E →+* AlgebraicClosure ℚ_[p])
     (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
     (Pv : HeightOneSpectrum (NumberField.RingOfIntegers ℚ) → Polynomial E)
-    (heig : ∀ v ∉ S,
+    (_heig : ∀ v ∉ S,
       (ρ.charFrob v).map (algebraMap R (AlgebraicClosure ℚ_[p])) =
         (Pv v).map ψ) :
     ∃ (f₂ : CuspForm (Gamma0GL 2) 2)
       (S' : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
-      IsWeightTwoEigenform 2 f₂ ∧ MatchesEigensystem 2 f₂ S' Pv :=
-  sorry
+      IsWeightTwoEigenform 2 f₂ ∧ MatchesEigensystem 2 f₂ S' Pv := by
+  obtain ⟨M, hM2, g, hg, -, -, -⟩ :=
+    exists_eigenform_level_dvd_two_of_trace_eq hpodd hv hZinj hRinj hρ hirr hN
+      hf ι hmatch
+  rcases Nat.prime_two.eq_one_or_self_of_dvd M hM2 with rfl | rfl
+  · exact (weightTwoEigenform_level_one_false g hg).elim
+  · exact (weightTwoEigenform_level_two_false g hg).elim
 
 /-- **Modularity of the trace system** (DECOMPOSED 2026-07-24 — now a
 PROVEN assembly over the pillar section above: residual reduction
