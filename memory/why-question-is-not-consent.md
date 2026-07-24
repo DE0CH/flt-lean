@@ -35,3 +35,14 @@ fix the underlying issue, do not also execute a proposal you'd floated, do not
 treat the question as implicit approval of anything. Wait for an explicit
 instruction (yes/go-ahead/do it) before taking any action tied to what the why
 question was about.
+
+**The symmetric direction (Deyao, 2026-07-24):** a why question also does NOT
+mean he disapproves of the action, is upset, or wants an apology. After asking
+why I had fixed a script unprompted and getting a factual answer, he said:
+"no it's good that you fixed it. i was simply asking a question about why.
+remember, a why question also does not mean i disapprove of the action or that
+i'm upset or that an apology is required." So: answer why questions factually
+and neutrally — no walking the action back, no offering to revert, no
+apologetic framing — and equally no reading of approval into them. A why
+question carries zero valence in either direction; it is purely a request for
+the reasoning.
