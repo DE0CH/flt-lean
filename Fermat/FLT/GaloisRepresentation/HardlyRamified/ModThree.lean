@@ -75,6 +75,15 @@ import Mathlib.NumberTheory.Padics.RingHoms
 import Mathlib.LinearAlgebra.Charpoly.BaseChange
 -- `Set.ncard_pair`, for the two-element determinant image.
 import Mathlib.Data.Set.Card
+-- The convolution toolkit on Hopf-algebra points (`WithConv`, the
+-- antipode as an algebra hom), used by the connected–étale skeleton of
+-- `exists_connectedEtale_subgroup_of_hopf_package`; the helper-lemma
+-- STATEMENTS mention `WithConv.toConv`, hence public.
+public import Mathlib.RingTheory.HopfAlgebra.Convolution
+-- The tensor–hom adjunction bridges between the `𝒪ᵥ`-points and the
+-- `Kᵥ`-points of a Hopf order and their convolution monoids
+-- (`liftEquiv_symm_convMul` and friends), proof-only.
+import Fermat.FLT.Deformations.RepresentationTheory.FlatProlongation
 -- `Ideal.sum_ramification_inertia` (the fundamental identity
 -- `Σ e·f = [K:ℚ]`), `Ideal.absNorm_eq_pow_inertiaDeg'` and the
 -- `normalizedFactors` bookkeeping, for the discriminant-exponent
@@ -11708,10 +11717,230 @@ theorem subCharacter_unramified_at_three_of_quot_ramified
   rw [MonoidHom.mem_ker]
   exact Units.ext hψ1
 
+section ConnectedEtaleHopfPackage
+
+open WithConv
+
+-- Local abbreviations for the 3-adic completion vocabulary of the
+-- connected–étale skeleton (the notations elaborate to exactly the
+-- spelled-out terms used by the consumer below).
+local notation "𝒪₃ᵥ" => IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat
+local notation "ℚ₃ᵥ" => IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat
+local notation "ℚ₃ᵥᵃˡᵍ" => AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **The identity–antipode convolution cancels on the LEFT**
+(PROVEN): `id ⋆ S = 1` in the convolution monoid of a commutative
+Hopf algebra. Mathlib has the other order
+(`AlgHom.antipode_id_cancel`); this one reduces to the linear-level
+`LinearMap.id_mul_antipode` the same way. -/
+theorem toConv_id_mul_toConv_antipodeAlgHom
+    {R A : Type*} [CommSemiring R] [CommSemiring A] [HopfAlgebra R A] :
+    toConv (AlgHom.id R A) * toConv (HopfAlgebra.antipodeAlgHom R A) =
+      (1 : WithConv (A →ₐ[R] A)) := by
+  apply WithConv.ofConv_injective
+  apply AlgHom.toLinearMap_injective
+  apply WithConv.toConv_injective
+  rw [AlgHom.toLinearMap_convMul, AlgHom.toLinearMap_convOne]
+  simp [LinearMap.id_mul_antipode]
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Convolution right-inverse of a Hopf-algebra point** (PROVEN):
+`χ ⋆ (χ ∘ S) = 1` for any point `χ : A →ₐ[R] C` of a commutative Hopf
+algebra `A` with values in a commutative algebra `C` — the
+postcomposition image of `id ⋆ S = 1` under `χ`, which distributes
+over convolution. Used to invert the points of the generic fibre of a
+Hopf package without a group instance on the bare-hom monoid. -/
+theorem toConv_mul_toConv_comp_antipodeAlgHom
+    {R A C : Type*} [CommSemiring R] [CommSemiring A] [HopfAlgebra R A]
+    [CommSemiring C] [Algebra R C] (χ : A →ₐ[R] C) :
+    toConv χ * toConv (χ.comp (HopfAlgebra.antipodeAlgHom R A)) =
+      (1 : WithConv (A →ₐ[R] C)) := by
+  have h := AlgHom.comp_convMul_distrib χ (toConv (AlgHom.id R A))
+    (toConv (HopfAlgebra.antipodeAlgHom R A))
+  rw [toConv_id_mul_toConv_antipodeAlgHom] at h
+  have h1 : χ.comp ((1 : WithConv (A →ₐ[R] A)).ofConv) =
+      (1 : WithConv (A →ₐ[R] C)).ofConv := by
+    rw [AlgHom.convOne_def, AlgHom.convOne_def, WithConv.ofConv_toConv,
+      WithConv.ofConv_toConv, ← AlgHom.comp_assoc]
+    congr 1
+    refine AlgHom.ext fun r => ?_
+    simp [Algebra.ofId_apply]
+  rw [h1] at h
+  have h2 : χ.comp ((toConv (AlgHom.id R A)).ofConv) = χ := AlgHom.comp_id χ
+  rw [h2] at h
+  exact (WithConv.ofConv_injective h).symm
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Convolution value on an absorbed idempotent** (PROVEN): if the
+comultiplication of an idempotent `e₀` absorbs `e₀ ⊗ e₀` (that is,
+`Δe₀ · (e₀ ⊗ e₀) = e₀ ⊗ e₀`, the defining property of a connected
+counit idempotent), then two points taking the value `1` on `e₀`
+convolve to a point taking the value `1` on `e₀`:
+`(χ₁ ⋆ χ₂)(e₀) = μ(Δe₀) = μ(Δe₀)·μ(e₀⊗e₀) = μ(Δe₀·(e₀⊗e₀)) = 1`. -/
+theorem convMul_apply_one_of_comul_absorbs
+    {R G C : Type*} [CommRing R] [CommRing G] [Bialgebra R G]
+    [CommRing C] [Algebra R C]
+    (e₀ : G)
+    (hcomul : Coalgebra.comul (R := R) e₀ * (e₀ ⊗ₜ[R] e₀) = e₀ ⊗ₜ[R] e₀)
+    (χ₁ χ₂ : G →ₐ[R] C) (h₁ : χ₁ e₀ = 1) (h₂ : χ₂ e₀ = 1) :
+    (toConv χ₁ * toConv χ₂).ofConv e₀ = 1 := by
+  have happ : (toConv χ₁ * toConv χ₂).ofConv e₀ =
+      Algebra.TensorProduct.lift χ₁ χ₂ (fun _ _ => Commute.all _ _)
+        (Coalgebra.comul (R := R) e₀) :=
+    AlgHom.convMul_apply (toConv χ₁) (toConv χ₂) e₀
+  have hμe : Algebra.TensorProduct.lift χ₁ χ₂ (fun _ _ => Commute.all _ _)
+      (e₀ ⊗ₜ[R] e₀) = 1 := by
+    rw [Algebra.TensorProduct.lift_tmul, h₁, h₂, one_mul]
+  rw [happ]
+  calc Algebra.TensorProduct.lift χ₁ χ₂ (fun _ _ => Commute.all _ _)
+        (Coalgebra.comul (R := R) e₀)
+      = Algebra.TensorProduct.lift χ₁ χ₂ (fun _ _ => Commute.all _ _)
+          (Coalgebra.comul (R := R) e₀) *
+        Algebra.TensorProduct.lift χ₁ χ₂ (fun _ _ => Commute.all _ _)
+          (e₀ ⊗ₜ[R] e₀) := by rw [hμe, mul_one]
+    _ = Algebra.TensorProduct.lift χ₁ χ₂ (fun _ _ => Commute.all _ _)
+          (Coalgebra.comul (R := R) e₀ * (e₀ ⊗ₜ[R] e₀)) := (map_mul _ _ _).symm
+    _ = 1 := by rw [hcomul, hμe]
+
+/-- **The connected counit idempotent of a finite flat Hopf order over
+`ℤ₃`** (sorry node, 2026-07-24 — the henselian idempotent theory of
+the connected–étale decomposition): a finite flat Hopf algebra `G`
+over `𝒪₃ᵥ ≅ ℤ₃` carries a PRIMITIVE idempotent `e₀` with counit value
+`1` whose comultiplication absorbs `e₀ ⊗ e₀`. Intended proof: `𝒪₃ᵥ` is
+a complete (hence henselian) DVR, so the module-finite algebra `G` is
+a finite product of local rings (its Noetherian spectrum has finitely
+many connected components, and henselianity makes the factors local);
+write `1 = Σ eᵢ` with `eᵢ` the primitive orthogonal idempotents.
+Exactly one `eᵢ` has `ε(eᵢ) = 1`: the values `ε(eᵢ)` are orthogonal
+idempotents of the domain `𝒪₃ᵥ` summing to `1`, so exactly one is `1`
+and the rest are `0`; take `e₀` to be that one. Primitivity gives the
+absorption dichotomy (`x·e₀` is an idempotent of the local ring
+`Ge₀`, hence `0` or `e₀`). For the comultiplication absorption:
+`x ↦ Δ(x)·(e₀ ⊗ e₀)` is an algebra map `G → Ge₀ ⊗ Ge₀`, and
+`Ge₀ ⊗ Ge₀` is LOCAL — `Ge₀` is local with residue field `𝔽₃` (the
+counit splits off the residue map), so `(Ge₀ ⊗ Ge₀) ⊗ 𝔽₃ ≅
+(Ge₀ ⊗ 𝔽₃) ⊗[𝔽₃] (Ge₀ ⊗ 𝔽₃)` is local artinian, and `3` lies in the
+Jacobson radical of the module-finite algebra `Ge₀ ⊗ Ge₀` over the
+complete `𝒪₃ᵥ`; therefore the image `Δ(e₀)·(e₀ ⊗ e₀)` is an
+idempotent of a local ring, hence `0` or the identity `e₀ ⊗ e₀`, and
+the counit axiom `(ε ⊗ ε)(Δe₀) = ε(e₀) = 1` rules out `0`. -/
+theorem exists_connected_counit_idempotent_at_three
+    (G : Type) [CommRing G]
+    [HopfAlgebra 𝒪₃ᵥ G] [Module.Flat 𝒪₃ᵥ G] [Module.Finite 𝒪₃ᵥ G] :
+    ∃ e₀ : G, IsIdempotentElem e₀ ∧
+      Coalgebra.counit (R := 𝒪₃ᵥ) e₀ = (1 : 𝒪₃ᵥ) ∧
+      (∀ x : G, IsIdempotentElem x → x * e₀ = 0 ∨ x * e₀ = e₀) ∧
+      Coalgebra.comul (R := 𝒪₃ᵥ) e₀ * (e₀ ⊗ₜ[𝒪₃ᵥ] e₀) = e₀ ⊗ₜ[𝒪₃ᵥ] e₀ := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **Inertia congruence for convolution values** (PROVEN): for `σ` in
+the local inertia group at `3` and two `𝒪₃ᵥ`-points `χ, ψ` of a
+module-finite Hopf order `G` (whose values are automatically integral
+over `𝒪₃ᵥ`), the paired lift values of `(σ ∘ χ, ψ)` and of `(χ, ψ)`
+agree on every tensor modulo the maximal ideal of the integral
+closure of `𝒪₃ᵥ` in `ℚ₃ᵥᵃˡᵍ`: inertia moves integral values only
+within the maximal ideal (the DEFINING property of
+`localInertiaGroup`), and the difference on a pure tensor is an
+`𝔪`-multiple of an integral value. -/
+theorem lift_sub_lift_mem_of_localInertiaGroup_three
+    (G : Type) [CommRing G]
+    [HopfAlgebra 𝒪₃ᵥ G] [Module.Finite 𝒪₃ᵥ G]
+    (σ : Γ (ℚ₃ᵥ))
+    (hσ : σ ∈ localInertiaGroup
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)
+    (χ ψ : G →ₐ[𝒪₃ᵥ] ℚ₃ᵥᵃˡᵍ) (t : G ⊗[𝒪₃ᵥ] G) :
+    Algebra.TensorProduct.lift ((σ.toAlgHom.restrictScalars 𝒪₃ᵥ).comp χ) ψ
+        (fun _ _ => Commute.all _ _) t -
+      Algebra.TensorProduct.lift χ ψ (fun _ _ => Commute.all _ _) t ∈
+      Submodule.map (Algebra.linearMap (IntegralClosure 𝒪₃ᵥ ℚ₃ᵥᵃˡᵍ) ℚ₃ᵥᵃˡᵍ)
+        (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ ℚ₃ᵥᵃˡᵍ)) := by
+  haveI : Algebra.IsIntegral 𝒪₃ᵥ G := Algebra.IsIntegral.of_finite 𝒪₃ᵥ G
+  induction t using TensorProduct.induction_on with
+  | zero =>
+    simp only [map_zero, sub_self]
+    exact Submodule.zero_mem _
+  | add x y hx hy =>
+    rw [map_add, map_add, add_sub_add_comm]
+    exact Submodule.add_mem _ hx hy
+  | tmul a b =>
+    rw [Algebra.TensorProduct.lift_tmul, Algebra.TensorProduct.lift_tmul]
+    have ha : IsIntegral 𝒪₃ᵥ (χ a) :=
+      (Algebra.IsIntegral.isIntegral (R := 𝒪₃ᵥ) a).map χ
+    have hb : IsIntegral 𝒪₃ᵥ (ψ b) :=
+      (Algebra.IsIntegral.isIntegral (R := 𝒪₃ᵥ) b).map ψ
+    set xa : IntegralClosure 𝒪₃ᵥ ℚ₃ᵥᵃˡᵍ := ⟨χ a, ha⟩
+    set xb : IntegralClosure 𝒪₃ᵥ ℚ₃ᵥᵃˡᵍ := ⟨ψ b, hb⟩
+    have hin := AddSubgroup.mem_inertia.mp hσ xa
+    rw [Submodule.mem_toAddSubgroup] at hin
+    have hval : algebraMap (IntegralClosure 𝒪₃ᵥ ℚ₃ᵥᵃˡᵍ) ℚ₃ᵥᵃˡᵍ
+        (σ • xa - xa) = σ (χ a) - χ a := by
+      rw [map_sub]
+      congr 1
+    have hkey : ((σ.toAlgHom.restrictScalars 𝒪₃ᵥ).comp χ) a * ψ b -
+        χ a * ψ b =
+        xb • (algebraMap (IntegralClosure 𝒪₃ᵥ ℚ₃ᵥᵃˡᵍ) ℚ₃ᵥᵃˡᵍ
+          (σ • xa - xa)) := by
+      rw [hval, Algebra.smul_def]
+      show σ (χ a) * ψ b - χ a * ψ b = ψ b * (σ (χ a) - χ a)
+      ring
+    rw [hkey]
+    exact Submodule.smul_mem _ _ (Submodule.mem_map_of_mem hin)
+
+/-- **Inertia-fixed points of the connected part are trivial at `3`**
+(sorry node, 2026-07-24 — the Raynaud `e = 1 < p − 1` core): a
+geometric point `φ` of the generic fibre of a finite flat Hopf order
+`G` over `𝒪₃ᵥ ≅ ℤ₃` which (a) lies in the connected component (value
+`1` on the connected counit idempotent `e₀`), (b) has convolution
+order dividing `3`, and (c) is fixed by the local inertia at `3`, is
+the identity point. Intended proof (Raynaud 1974; Serre, Duke 1987,
+§5.4; Tate, "Finite flat group schemes", in
+Cornell–Silverman–Stevens): an inertia-fixed point has values in the
+fixed field `(ℚ₃ᵥᵃˡᵍ)^I = ℚ₃ⁿʳ` (infinite Galois correspondence), and
+by integrality over the module-finite Hopf order in the valuation
+ring `𝒪ⁿʳ = W(𝔽̄₃)`, which is absolutely unramified (`e = 1`). The
+hypothesis `φ(e₀) = 1` places the point in the connected component
+`Spec (Ge₀)`, whose special fibre is local artinian, so the point
+reduces to the identity modulo the maximal ideal. The schematic
+closure of the subgroup generated by the generic point is a finite
+flat closed subgroup scheme of `Spec (Ge₀)`, CONNECTED (quotients of
+the local ring `Ge₀` stay local) and killed by `3` (the point has
+order dividing `3`); by the Oort–Tate classification of order-`3`
+group schemes over the absolutely unramified `𝒪ⁿʳ` — at
+`e = 1 < 2 = p − 1` only `μ₃` (connected; no nontrivial point over
+`ℚ₃ⁿʳ`, since `ζ₃` generates a ramified extension) and `ℤ/3` (étale,
+excluded by connectedness) occur — each composition factor of the
+closure kills the point, and unwinding the filtration gives `φ = ε`.
+-/
+theorem inertiaFixed_connected_point_eq_one_at_three
+    (G : Type) [CommRing G]
+    [HopfAlgebra 𝒪₃ᵥ G] [Module.Flat 𝒪₃ᵥ G] [Module.Finite 𝒪₃ᵥ G]
+    (e₀ : G) (he₀ : IsIdempotentElem e₀)
+    (hε₀ : Coalgebra.counit (R := 𝒪₃ᵥ) e₀ = (1 : 𝒪₃ᵥ))
+    (hprim₀ : ∀ x : G, IsIdempotentElem x → x * e₀ = 0 ∨ x * e₀ = e₀)
+    (hcomul₀ : Coalgebra.comul (R := 𝒪₃ᵥ) e₀ * (e₀ ⊗ₜ[𝒪₃ᵥ] e₀) =
+      e₀ ⊗ₜ[𝒪₃ᵥ] e₀)
+    (φ : ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ)
+    (hφe : φ ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1)
+    (hord : φ * φ * φ = 1)
+    (hfix : ∀ σ ∈ localInertiaGroup
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat, σ • φ = φ) :
+    φ = 1 := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
 /-- **The connected–étale inertia subgroup of a Hopf package at `3`**
-(sorry node, isolated 2026-07-23 — the finite-flat/Raynaud content of
-the connected–étale node below, whose flatness-to-package assembly is
-proven): given an EXPLICIT finite flat Hopf algebra `G` over
+(DECOMPOSED 2026-07-24 into the henselian idempotent leaf
+`exists_connected_counit_idempotent_at_three` and the Raynaud leaf
+`inertiaFixed_connected_point_eq_one_at_three` above; the
+connected-part subgroup construction, the inertia-displacement
+absorption, and the convolution/points plumbing are PROVEN here):
+given an EXPLICIT finite flat Hopf algebra `G` over
 `𝒪ᵥ ≅ ℤ₃` with étale generic fibre whose geometric points are
 `Γ ℚ₃ᵥ`-equivariantly identified with the space `V` of `ρ` (the
 witness packaged by `GaloisRep.HasFlatProlongationAt`), the space
@@ -11783,7 +12012,203 @@ theorem exists_connectedEtale_subgroup_of_hopf_package
             (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
               Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ) u = u) →
         u = 0) := by
-  sorry
+  classical
+  -- the connected counit idempotent of the Hopf order
+  obtain ⟨e₀, he₀, hε₀, hprim₀, hcomul₀⟩ :=
+    exists_connected_counit_idempotent_at_three G
+  -- the points identification as an equivalence
+  let g := Equiv.ofBijective f hf
+  have hfs : ∀ x : V, f (g.symm x) = x := fun x => g.apply_symm_apply x
+  have hgs_add : ∀ u w : V, g.symm (u + w) = g.symm u + g.symm w := by
+    intro u w
+    apply g.injective
+    show f (g.symm (u + w)) = f (g.symm u + g.symm w)
+    rw [map_add f, hfs, hfs, hfs]
+  have hgs_zero : g.symm (0 : V) = 0 := by
+    apply g.injective
+    show f (g.symm (0 : V)) = f 0
+    rw [map_zero f, hfs]
+  -- the coefficient field has characteristic `3`
+  have h3V : ∀ u : V, u + u + u = 0 := by
+    intro u
+    have h3k : (3 : k) = 0 := three_eq_zero_of_finite_padicIntThree_algebra
+    have h1 : ((3 : ℕ) : k) • u = (3 : ℕ) • u := Nat.cast_smul_eq_nsmul k 3 u
+    rw [show ((3 : ℕ) : k) = (3 : k) from by norm_cast, h3k, zero_smul] at h1
+    have h2 : (3 : ℕ) • u = u + u + u := by
+      rw [show (3 : ℕ) = 2 + 1 from rfl, add_nsmul, two_nsmul, one_nsmul]
+    rw [← h2]
+    exact h1.symm
+  -- the two spellings of the local action agree: ring homs out of `ℚ`
+  -- are unique, so the `algebraMap` baked into `toLocal` is the one of
+  -- the statement
+  have hbridge : ∀ (τ : Γ (ℚ₃ᵥ)) (w : V),
+      (ρ.toLocal Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) τ w =
+      ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ (ℚ₃ᵥ)) τ) w := by
+    intro τ w
+    rw [GaloisRep.toLocal_apply]
+    exact congrArg (fun (h : ℚ →+* (ℚ₃ᵥ)) =>
+      ρ (Field.absoluteGaloisGroup.map h τ) w) (Subsingleton.elim _ _)
+  -- the connected-part subgroup: vectors whose point takes the value
+  -- `1` on the connected counit idempotent
+  refine ⟨{
+      carrier := {u : V |
+        (AlgHom.liftEquiv 𝒪₃ᵥ ℚ₃ᵥ G ℚ₃ᵥᵃˡᵍ).symm
+          (Additive.toMul (g.symm u)) e₀ = 1}
+      zero_mem' := ?_
+      add_mem' := ?_
+      neg_mem' := ?_ }, ?_, ?_⟩
+  · -- closure under addition: the comultiplication absorbs `e₀ ⊗ e₀`
+    intro u w hu hw
+    show (AlgHom.liftEquiv 𝒪₃ᵥ ℚ₃ᵥ G ℚ₃ᵥᵃˡᵍ).symm
+      (Additive.toMul (g.symm (u + w))) e₀ = 1
+    rw [hgs_add, toMul_add, vendored_mul_eq_convMul,
+      liftEquiv_symm_convMul]
+    exact convMul_apply_one_of_comul_absorbs e₀ hcomul₀ _ _ hu hw
+  · -- `0` is the counit point, whose value on `e₀` is `ε(e₀) = 1`
+    show (AlgHom.liftEquiv 𝒪₃ᵥ ℚ₃ᵥ G ℚ₃ᵥᵃˡᵍ).symm
+      (Additive.toMul (g.symm (0 : V))) e₀ = 1
+    rw [hgs_zero, toMul_zero, vendored_one_eq_convOne,
+      liftEquiv_symm_convOne]
+    show algebraMap 𝒪₃ᵥ ℚ₃ᵥᵃˡᵍ (Coalgebra.counit (R := 𝒪₃ᵥ) e₀) = 1
+    rw [hε₀, map_one]
+  · -- closure under negation: `-u = u + u` in characteristic `3`
+    intro u hu
+    have hneg : -u = u + u := neg_eq_of_add_eq_zero_left (h3V u)
+    show (AlgHom.liftEquiv 𝒪₃ᵥ ℚ₃ᵥ G ℚ₃ᵥᵃˡᵍ).symm
+      (Additive.toMul (g.symm (-u))) e₀ = 1
+    rw [hneg, hgs_add, toMul_add, vendored_mul_eq_convMul,
+      liftEquiv_symm_convMul]
+    exact convMul_apply_one_of_comul_absorbs e₀ hcomul₀ _ _ hu hu
+  · -- (i) every inertia displacement lies in the connected part: the
+    -- displacement point is `(σ∘χ) ⋆ χ⁻¹`, congruent to `1` modulo the
+    -- maximal ideal (inertia moves integral values within `𝔪`), and
+    -- its idempotent value on `e₀` is `0` or `1` — so it is `1`
+    intro σ hσ u
+    set d : V := ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ (ℚ₃ᵥ)) σ) u - u
+      with hd
+    show (AlgHom.liftEquiv 𝒪₃ᵥ ℚ₃ᵥ G ℚ₃ᵥᵃˡᵍ).symm
+      (Additive.toMul (g.symm d)) e₀ = 1
+    set χu : G →ₐ[𝒪₃ᵥ] ℚ₃ᵥᵃˡᵍ := (AlgHom.liftEquiv 𝒪₃ᵥ ℚ₃ᵥ G ℚ₃ᵥᵃˡᵍ).symm
+      (Additive.toMul (g.symm u)) with hχu
+    set δd : G →ₐ[𝒪₃ᵥ] ℚ₃ᵥᵃˡᵍ := (AlgHom.liftEquiv 𝒪₃ᵥ ℚ₃ᵥ G ℚ₃ᵥᵃˡᵍ).symm
+      (Additive.toMul (g.symm d)) with hδd
+    -- the displacement point multiplies the point of `u` into its
+    -- inertia translate
+    have hXd : g.symm d + g.symm u = σ • g.symm u := by
+      apply g.injective
+      show f (g.symm d + g.symm u) = f (σ • g.symm u)
+      rw [map_add f, map_smul f, hfs, hfs]
+      show d + u = (ρ.toLocal
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) σ u
+      rw [hbridge, hd, sub_add_cancel]
+    have hDφ : Additive.toMul (g.symm d) * Additive.toMul (g.symm u) =
+        σ • Additive.toMul (g.symm u) := by
+      have h1 := congrArg Additive.toMul hXd
+      have h2 : Additive.toMul (σ • g.symm u) =
+          σ • Additive.toMul (g.symm u) := rfl
+      rw [toMul_add, h2] at h1
+      exact h1
+    -- transport to the `𝒪₃ᵥ`-points: `δ ⋆ χ = σ∘χ`
+    have h3 := congrArg (AlgHom.liftEquiv 𝒪₃ᵥ ℚ₃ᵥ G ℚ₃ᵥᵃˡᵍ).symm hDφ
+    rw [vendored_mul_eq_convMul, liftEquiv_symm_convMul] at h3
+    rw [show σ • Additive.toMul (g.symm u) =
+        (σ.toAlgHom : ℚ₃ᵥᵃˡᵍ →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ).comp (Additive.toMul (g.symm u))
+        from AlgHom.ext fun _ => rfl, liftEquiv_symm_comp] at h3
+    rw [← hχu, ← hδd] at h3
+    have h4 : toConv δd * toConv χu =
+        toConv ((σ.toAlgHom.restrictScalars 𝒪₃ᵥ).comp χu) := by
+      have h4a := congrArg WithConv.toConv h3
+      rwa [WithConv.toConv_ofConv] at h4a
+    -- cancel `χ` on the right through the antipode inverse
+    have h5 : toConv δd =
+        toConv ((σ.toAlgHom.restrictScalars 𝒪₃ᵥ).comp χu) *
+          toConv (χu.comp (HopfAlgebra.antipodeAlgHom 𝒪₃ᵥ G)) := by
+      rw [← h4, mul_assoc, toConv_mul_toConv_comp_antipodeAlgHom, mul_one]
+    have h6 : δd e₀ =
+        Algebra.TensorProduct.lift ((σ.toAlgHom.restrictScalars 𝒪₃ᵥ).comp χu)
+          (χu.comp (HopfAlgebra.antipodeAlgHom 𝒪₃ᵥ G))
+          (fun _ _ => Commute.all _ _) (Coalgebra.comul (R := 𝒪₃ᵥ) e₀) := by
+      have h7 := congrArg WithConv.ofConv h5
+      rw [WithConv.ofConv_toConv] at h7
+      rw [h7]
+      exact AlgHom.convMul_apply _ _ e₀
+    -- the corresponding value of `χ ⋆ χ⁻¹ = 1` is `ε(e₀) = 1`
+    have h8 : Algebra.TensorProduct.lift χu
+        (χu.comp (HopfAlgebra.antipodeAlgHom 𝒪₃ᵥ G))
+        (fun _ _ => Commute.all _ _) (Coalgebra.comul (R := 𝒪₃ᵥ) e₀) = 1 := by
+      have h9 := AlgHom.convMul_apply (toConv χu)
+        (toConv (χu.comp (HopfAlgebra.antipodeAlgHom 𝒪₃ᵥ G))) e₀
+      rw [toConv_mul_toConv_comp_antipodeAlgHom] at h9
+      rw [← h9]
+      show algebraMap 𝒪₃ᵥ ℚ₃ᵥᵃˡᵍ (Coalgebra.counit (R := 𝒪₃ᵥ) e₀) = 1
+      rw [hε₀, map_one]
+    -- the inertia congruence: `δ(e₀) ≡ 1` modulo the maximal ideal
+    have h10 := lift_sub_lift_mem_of_localInertiaGroup_three G σ hσ χu
+      (χu.comp (HopfAlgebra.antipodeAlgHom 𝒪₃ᵥ G))
+      (Coalgebra.comul (R := 𝒪₃ᵥ) e₀)
+    rw [h8, ← h6] at h10
+    -- the value is an idempotent of a field, hence `0` or `1`; the
+    -- congruence rules out `0`
+    have h11 : δd e₀ * δd e₀ = δd e₀ := by
+      rw [← map_mul, he₀.eq]
+    have h12 : δd e₀ * (δd e₀ - 1) = 0 := by
+      rw [mul_sub, h11, mul_one, sub_self]
+    rcases mul_eq_zero.mp h12 with h13 | h13
+    · exfalso
+      rw [h13, zero_sub] at h10
+      have h14 : (1 : ℚ₃ᵥᵃˡᵍ) ∈
+          Submodule.map (Algebra.linearMap (IntegralClosure 𝒪₃ᵥ ℚ₃ᵥᵃˡᵍ) ℚ₃ᵥᵃˡᵍ)
+            (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ ℚ₃ᵥᵃˡᵍ)) := by
+        have h15 := Submodule.neg_mem _ h10
+        rwa [neg_neg] at h15
+      obtain ⟨m, hm, hm1⟩ := h14
+      have hm2 : m = 1 := by
+        apply Subtype.ext
+        exact hm1
+      rw [hm2] at hm
+      exact (IsLocalRing.maximalIdeal.isMaximal
+        (IntegralClosure 𝒪₃ᵥ ℚ₃ᵥᵃˡᵍ)).ne_top
+        (Ideal.eq_top_of_isUnit_mem _ hm isUnit_one)
+    · exact sub_eq_zero.mp h13
+  · -- (ii) an inertia-fixed vector of the connected part is zero: its
+    -- point is an inertia-fixed connected point of order dividing `3`,
+    -- which the Raynaud leaf forces to be the identity
+    intro u hu hufix
+    have hφe : Additive.toMul (g.symm u) ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 := hu
+    have hord : Additive.toMul (g.symm u) * Additive.toMul (g.symm u) *
+        Additive.toMul (g.symm u) = 1 := by
+      have h0 : g.symm u + g.symm u + g.symm u = 0 := by
+        rw [← hgs_add, ← hgs_add, h3V u, hgs_zero]
+      have h1 := congrArg Additive.toMul h0
+      rwa [toMul_add, toMul_add, toMul_zero] at h1
+    have hfixφ : ∀ σ ∈ localInertiaGroup
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat,
+        σ • Additive.toMul (g.symm u) = Additive.toMul (g.symm u) := by
+      intro σ hσ
+      have h1 : σ • g.symm u = g.symm u := by
+        apply g.injective
+        show f (σ • g.symm u) = f (g.symm u)
+        rw [map_smul f, hfs]
+        show (ρ.toLocal
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) σ u = u
+        rw [hbridge]
+        exact hufix σ hσ
+      have h2 : Additive.toMul (σ • g.symm u) =
+          σ • Additive.toMul (g.symm u) := rfl
+      rw [← h2, h1]
+    have hone := inertiaFixed_connected_point_eq_one_at_three G e₀ he₀ hε₀
+      hprim₀ hcomul₀ (Additive.toMul (g.symm u)) hφe hord hfixφ
+    have hX : g.symm u = 0 := by
+      have h1 : Additive.toMul (g.symm u) =
+          Additive.toMul (0 : Additive (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ)) := by
+        rw [toMul_zero]
+        exact hone
+      exact Additive.toMul.injective h1
+    calc u = f (g.symm u) := (hfs u).symm
+      _ = f 0 := by rw [hX]
+      _ = 0 := map_zero f
+
+end ConnectedEtaleHopfPackage
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
