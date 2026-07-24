@@ -9956,7 +9956,11 @@ leaf is now a PROVEN assembly over:
   (`weightTwoNewform_not_dvd_level_of_isUnramifiedAt` — since
   2026-07-24 itself a PROVEN assembly consuming the newform carrier's
   `eigensystem_minimal` over the level-lowering existence leaf
-  `exists_weightTwoEigenform_not_dvd_level_of_isUnramifiedAt` —,
+  `exists_weightTwoEigenform_not_dvd_level_of_isUnramifiedAt`, in turn
+  a PROVEN assembly (newform descent + embedding transport + Ribet
+  leaf + rigidity + unramifiedness transport) over the residual
+  irreducible Carayol citation leaf
+  `weightTwoNewform_not_dvd_level_of_isUnramifiedAt_of_isIrreducible` —,
   `weightTwoNewform_not_dvd_level_p_of_isFlatAt`,
   `weightTwoNewform_not_four_dvd_level_of_inertia_two` — Carayol
   1986/Saito 1997 per place) plus the local-arithmetic leaf
@@ -12264,72 +12268,36 @@ theorem cyclotomicCharacter_eq_one_of_inertia_two
   rw [Field.absoluteGaloisGroup.lift_map (algebraMap ℚ ℚ_[2]) σ]
   exact hfix2 n _ (by rw [← map_pow, ht1, map_one])
 
-/-- **Level lowering at an unramified prime — Carayol's conductor
-theorem in existence form** (sorry node — Carayol, *Sur les
-représentations `ℓ`-adiques associées aux formes modulaires de
-Hilbert*, Ann. Sci. ÉNS 19 (1986), Théorème (A); for weight 2 over `ℚ`
-the modular-curve cases are Deligne–Rapoport and Langlands): if a
-2-dimensional continuous `ℚ̄_p`-representation `τ` matching the Hecke
-polynomials of the weight-2 EIGENFORM `g` of level `M ≥ 1` away from a
-finite set is unramified at a prime `q ≠ p`, then the away-from-`M`
-eigensystem of `g` already occurs at a level PRIME TO `q`: some
-weight-2 eigenform `g'` of a level `M' ∣ M` with `q ∤ M'` agrees with
-`g` at every prime not dividing `M`. Classical proof: behind `g` lies
-a newform `g₀` of level `M₀ ∣ M` with the same away-from-`M`
-eigensystem (Diamond–Shurman Prop. 5.8.4); the attached representation
-`ρ_{g₀,λ}` is irreducible (Ribet, 1977), so Chebotarev density plus
-characteristic-zero Brauer–Nesbitt identify the semisimplification of
-`τ` with `ρ_{g₀,λ} ⊗ ℚ̄_p` from the charpoly matching; unramifiedness
-of `τ` at `q` passes to the semisimplification, and Carayol's theorem
-`ord_q(M₀) = a_q(ρ_{g₀,λ})` (the prime-to-`p` Artin conductor
-exponent, valid at every `q ≠ p`) forces `ord_q(M₀) = 0`, i.e.
-`q ∤ M₀`; take `M' := M₀`, `g' := g₀`. SOUNDNESS AUDIT (2026-07-24):
-non-vacuously satisfiable — for any classical newform `g` of level `M`
-take `τ := ρ_{g,λ}` and any prime `q ∤ Mp`: the conclusion holds with
-`M' = M`, `g' = g`. The statement quantifies over the
-`IsWeightTwoEigenform` carrier, whose inhabitants are exactly the
-classical normalized eigenforms, so every instance is an instance of
-the cited theorems; the load-bearing case `q ∣ M` is witnessed by the
-underlying newform, whose level Carayol proves prime to `q`. -/
-theorem exists_weightTwoEigenform_not_dvd_level_of_isUnramifiedAt
-    {M : ℕ} (hM : 0 < M) {g : CuspForm (Gamma0GL M) 2}
-    (hg : IsWeightTwoEigenform M g)
-    (κ : heckeField M g →+* AlgebraicClosure ℚ_[p])
-    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
-      (Fin 2 → AlgebraicClosure ℚ_[p])}
-    {S_τ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
-    (hτ : ∀ (r : ℕ) (hr : r.Prime),
-      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ →
-      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
-        Polynomial.X ^ 2
-          - Polynomial.C (κ (heckeCoeff M g r)) * Polynomial.X
-          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
-    {q : ℕ} (hq : q.Prime) (hqp : q ≠ p)
-    (hun : τ.IsUnramifiedAt hq.toHeightOneSpectrumRingOfIntegersRat) :
-    ∃ (M' : ℕ) (_ : M' ∣ M) (_ : ¬ q ∣ M')
-      (g' : CuspForm (Gamma0GL M') 2)
-      (_ : IsWeightTwoEigenform M' g'),
-      ∀ (r : ℕ), r.Prime → ¬ r ∣ M → qCoeff M' g' r = qCoeff M g r :=
-  sorry
-
-/-- **Carayol's prime-to-`p` conductor bound, unramified case**
-(DECOMPOSED 2026-07-24 into the level-lowering existence leaf
-`exists_weightTwoEigenform_not_dvd_level_of_isUnramifiedAt` above and
-now a PROVEN assembly over it): if a 2-dimensional continuous
-`ℚ̄_p`-representation `τ` matching the Hecke polynomials of the
-weight-2 NEWFORM `g` of level `M ≥ 1` away from a finite set is
-unramified at a prime `q ≠ p`, then `q ∤ M`. Assembly: were `q ∣ M`,
-the level-lowering leaf would produce an eigenform `g'` of a level
-`M' ∣ M` prime to `q` — hence `M' ≠ M` — agreeing with `g` at every
-prime not dividing `M`, which is exactly what the newform carrier's
-minimality field `eigensystem_minimal` excludes (its first Lean
-consumer: the minimality that DEFINES newform-ness in this
-architecture now carries the conductor bound, as it does classically).
-All literature content (Ribet irreducibility,
-Chebotarev/Brauer–Nesbitt identification, Carayol's conductor formula)
-lives in the existence leaf; the newform-minimality arithmetic is
-proven here. -/
-theorem weightTwoNewform_not_dvd_level_of_isUnramifiedAt
+/-- **Carayol's conductor theorem at an unramified prime `q ≠ p`,
+irreducible form** (sorry node — the residual literature leaf of the
+at-`q` conductor cut: Carayol, *Sur les représentations `ℓ`-adiques
+associées aux formes modulaires de Hilbert*, Ann. Sci. ÉNS 19 (1986),
+Théorème (A); for weight 2 over `ℚ` the underlying geometry is
+Deligne–Rapoport plus the Langlands/Deligne local computations at the
+bad primes): an IRREDUCIBLE representation `τ` matching the Hecke
+polynomials of the weight-2 NEWFORM `g` of level `M` away from a
+finite set and unramified at a prime `q ≠ p` forces `q ∤ M`. The
+rigidity identification is NOT part of this leaf's citation burden
+(mirroring the geometric Saito cut at `p` below): `τ` is IRREDUCIBLE,
+so the PROVEN rigidity `exists_linearEquiv_of_charFrob_eq` — with `τ`
+on the irreducible side — identifies the geometric attachment
+`ρ_{g,λ}` (the `κ`-eigencomponent of `V_p(J₀(M))`, matched to the
+same Hecke polynomials by Eichler–Shimura) with `τ`, and
+unramifiedness of `τ` at `q` transports across the equivalence
+(`isUnramifiedAt_of_linearEquiv`); the residual content is pure
+local–global compatibility at `q ≠ p`: Carayol's Théorème (A)
+computes the prime-to-`p` Artin conductor of `ρ_{g,λ}` as the level —
+`ord_q (cond ρ_{g,λ}) = ord_q M` at every prime `q ≠ p` — and an
+unramified representation has conductor exponent `0` at `q`, so
+`ord_q M = 0`, i.e. `q ∤ M`. SOUNDNESS AUDIT (2026-07-24):
+non-vacuously satisfiable — any classical newform `g` of level `M`, a
+prime `q ∤ Mp`, and `τ := ρ_{g,λ}` (irreducible by Ribet 1977,
+unramified at `q` by Eichler–Shimura good reduction of `J₀(M)` away
+from `M`) realize every hypothesis; and every instance is an instance
+of the cited theorem through the newform carrier audit
+(`IsWeightTwoNewform`'s inhabitants are exactly the classical
+newforms). -/
+theorem weightTwoNewform_not_dvd_level_of_isUnramifiedAt_of_isIrreducible
     {M : ℕ} (hM : 0 < M) {g : CuspForm (Gamma0GL M) 2}
     (hg : IsWeightTwoNewform M g)
     (κ : heckeField M g →+* AlgebraicClosure ℚ_[p])
@@ -12342,15 +12310,11 @@ theorem weightTwoNewform_not_dvd_level_of_isUnramifiedAt
         Polynomial.X ^ 2
           - Polynomial.C (κ (heckeCoeff M g r)) * Polynomial.X
           + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
+    (hirr : τ.IsIrreducible)
     {q : ℕ} (hq : q.Prime) (hqp : q ≠ p)
     (hun : τ.IsUnramifiedAt hq.toHeightOneSpectrumRingOfIntegersRat) :
-    ¬ q ∣ M := by
-  intro hqM
-  obtain ⟨M', hM'dvd, hqM', g', hg', hagree⟩ :=
-    exists_weightTwoEigenform_not_dvd_level_of_isUnramifiedAt hM
-      hg.toIsWeightTwoEigenform κ hτ hq hqp hun
-  exact hg.eigensystem_minimal M' hM'dvd (fun h => hqM' (h.symm ▸ hqM))
-    g' hg' hagree
+    ¬ q ∣ M :=
+  sorry
 
 /-- **Characteristic-polynomial pinning of an invertible quadratic
 similitude** (PROVEN helper, factored 2026-07-24 out of
@@ -12727,6 +12691,150 @@ theorem exists_weightTwoEigenform_not_dvd_level_p_of_isFlatAt_of_isIrreducible
       (_ : IsWeightTwoEigenform M' g'),
       ∀ (r : ℕ), r.Prime → ¬ r ∣ M → qCoeff M' g' r = qCoeff M g r :=
   sorry
+
+/-- **Level lowering at an unramified prime — Carayol's conductor
+theorem in existence form** (DECOMPOSED 2026-07-24 into the
+irreducible Carayol leaf
+`weightTwoNewform_not_dvd_level_of_isUnramifiedAt_of_isIrreducible`
+above and now a PROVEN assembly, by the same intertwining pattern as
+the geometric Saito cut at `p`): if a 2-dimensional continuous
+`ℚ̄_p`-representation `τ` matching the Hecke polynomials of the
+weight-2 EIGENFORM `g` of level `M ≥ 1` away from a finite set is
+unramified at a prime `q ≠ p`, then the away-from-`M` eigensystem of
+`g` already occurs at a level PRIME TO `q`: some weight-2 eigenform
+`g'` of a level `M' ∣ M` with `q ∤ M'` agrees with `g` at every prime
+not dividing `M`. Assembly: behind `g` lies a newform `g₀` of level
+`M₀ ∣ M` with the same away-from-`M` eigensystem (PROVEN newform
+descent `exists_weightTwoNewform_of_weightTwoEigenform`,
+Diamond–Shurman Prop. 5.8.4); the `p`-adic embedding `κ` transports
+to an embedding `κ₀` of the newform's Hecke field agreeing on the
+shared good coefficients (PROVEN
+`exists_ringHom_heckeField_of_qCoeff_eq`), so `τ` matches `g₀`'s
+Hecke polynomials away from `S_τ` together with the primes dividing
+`M`; the Ribet leaf
+`exists_irreducible_galoisRep_charFrob_of_weightTwoNewform` produces
+an IRREDUCIBLE representation `τg` matched to `g₀`, the PROVEN
+rigidity `exists_linearEquiv_of_charFrob_eq` (Chebotarev +
+characteristic-zero Brauer–Nesbitt, consuming the irreducibility of
+`τg`) intertwines `τ` with `τg`, and unramifiedness at `q` transports
+across the equivalence (PROVEN `isUnramifiedAt_of_linearEquiv`); the
+irreducible Carayol leaf then gives `q ∤ M₀`, and `(M₀, g₀)`
+witnesses the conclusion. All literature content now lives in the
+two cited sorried leaves (Ribet 1977 irreducibility and Carayol 1986
+Théorème (A)); the newform descent, embedding transport, matching
+bookkeeping, rigidity and unramifiedness transport are PROVEN. -/
+theorem exists_weightTwoEigenform_not_dvd_level_of_isUnramifiedAt
+    {M : ℕ} (hM : 0 < M) {g : CuspForm (Gamma0GL M) 2}
+    (hg : IsWeightTwoEigenform M g)
+    (κ : heckeField M g →+* AlgebraicClosure ℚ_[p])
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    {S_τ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hτ : ∀ (r : ℕ) (hr : r.Prime),
+      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ →
+      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
+        Polynomial.X ^ 2
+          - Polynomial.C (κ (heckeCoeff M g r)) * Polynomial.X
+          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
+    {q : ℕ} (hq : q.Prime) (hqp : q ≠ p)
+    (hun : τ.IsUnramifiedAt hq.toHeightOneSpectrumRingOfIntegersRat) :
+    ∃ (M' : ℕ) (_ : M' ∣ M) (_ : ¬ q ∣ M')
+      (g' : CuspForm (Gamma0GL M') 2)
+      (_ : IsWeightTwoEigenform M' g'),
+      ∀ (r : ℕ), r.Prime → ¬ r ∣ M → qCoeff M' g' r = qCoeff M g r := by
+  classical
+  -- step 1: the underlying newform (Diamond–Shurman Prop. 5.8.4)
+  obtain ⟨M₀, hM₀dvd, hM₀pos, g₀, hg₀, hagree⟩ :=
+    exists_weightTwoNewform_of_weightTwoEigenform hM hg
+  -- step 2: transport the `p`-adic embedding to the newform's Hecke field
+  obtain ⟨κ₀, hκ₀⟩ := exists_ringHom_heckeField_of_qCoeff_eq hM₀pos
+    hg₀.toIsWeightTwoEigenform κ hagree
+  -- step 3: `τ` matches `g₀`'s Hecke polynomials away from
+  -- `S_τ ∪ (primes dividing M)`
+  set badM : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :=
+    M.primeFactors.attach.image fun r =>
+      (Nat.prime_of_mem_primeFactors r.2).toHeightOneSpectrumRingOfIntegersRat
+  have hτ₀ : ∀ (r : ℕ) (hr : r.Prime),
+      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ ∪ badM →
+      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
+        Polynomial.X ^ 2
+          - Polynomial.C (κ₀ (heckeCoeff M₀ g₀ r)) * Polynomial.X
+          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])) := by
+    intro r hr hrS
+    have hrM : ¬ r ∣ M := by
+      intro hdvd
+      exact hrS (Finset.mem_union_right _ (Finset.mem_image.mpr
+        ⟨⟨r, Nat.mem_primeFactors.mpr ⟨hr, hdvd, hM.ne'⟩⟩,
+          Finset.mem_attach _ _, rfl⟩))
+    rw [hτ r hr fun h => hrS (Finset.mem_union_left _ h), hκ₀ r hr hrM]
+  -- step 4: Ribet — an irreducible representation matched to `g₀`
+  obtain ⟨τg, Sg, hirrg, hτg⟩ :=
+    exists_irreducible_galoisRep_charFrob_of_weightTwoNewform hM₀pos hg₀ κ₀
+  -- step 5: rigidity — `τ ≅ τg` from charpoly agreement off
+  -- `(S_τ ∪ badM) ∪ Sg`
+  have hrank2 : Module.rank (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p]) = 2 := by
+    simp
+  obtain ⟨f, hf⟩ := exists_linearEquiv_of_charFrob_eq hrank2 hrank2 hirrg
+    (S := (S_τ ∪ badM) ∪ Sg) (τ₁ := τ) fun r hr hrS => by
+      rw [hτ₀ r hr fun h => hrS (Finset.mem_union_left _ h),
+        hτg r hr fun h => hrS (Finset.mem_union_right _ h)]
+  -- step 6: unramifiedness at `q` transports across the equivalence
+  haveI : τ.IsUnramifiedAt hq.toHeightOneSpectrumRingOfIntegersRat := hun
+  have hfsymm : ∀ (γ : Field.absoluteGaloisGroup ℚ)
+      (w : Fin 2 → AlgebraicClosure ℚ_[p]),
+      f.symm (τg γ w) = τ γ (f.symm w) := by
+    intro γ w
+    have hX : f (τ γ (f.symm w)) = τg γ w := by
+      rw [hf, LinearEquiv.apply_symm_apply]
+    rw [← hX, LinearEquiv.symm_apply_apply]
+  have hung : τg.IsUnramifiedAt hq.toHeightOneSpectrumRingOfIntegersRat :=
+    isUnramifiedAt_of_linearEquiv f.symm hfsymm _
+  -- step 7: the irreducible Carayol leaf gives `q ∤ M₀`
+  exact ⟨M₀, hM₀dvd,
+    weightTwoNewform_not_dvd_level_of_isUnramifiedAt_of_isIrreducible
+      hM₀pos hg₀ κ₀ hτg hirrg hq hqp hung,
+    g₀, hg₀.toIsWeightTwoEigenform, hagree⟩
+
+/-- **Carayol's prime-to-`p` conductor bound, unramified case**
+(DECOMPOSED 2026-07-24 into the level-lowering existence leaf
+`exists_weightTwoEigenform_not_dvd_level_of_isUnramifiedAt` above —
+itself since 2026-07-24 a PROVEN assembly over the irreducible
+Carayol leaf — and a PROVEN assembly over it): if a 2-dimensional
+continuous `ℚ̄_p`-representation `τ` matching the Hecke polynomials
+of the weight-2 NEWFORM `g` of level `M ≥ 1` away from a finite set
+is unramified at a prime `q ≠ p`, then `q ∤ M`. Assembly: were
+`q ∣ M`, the level-lowering leaf would produce an eigenform `g'` of a
+level `M' ∣ M` prime to `q` — hence `M' ≠ M` — agreeing with `g` at
+every prime not dividing `M`, which is exactly what the newform
+carrier's minimality field `eigensystem_minimal` excludes (its first
+Lean consumer: the minimality that DEFINES newform-ness in this
+architecture now carries the conductor bound, as it does
+classically). All literature content (Ribet irreducibility, Carayol's
+conductor formula) lives behind the existence leaf; the
+newform-minimality arithmetic is proven here. -/
+theorem weightTwoNewform_not_dvd_level_of_isUnramifiedAt
+    {M : ℕ} (hM : 0 < M) {g : CuspForm (Gamma0GL M) 2}
+    (hg : IsWeightTwoNewform M g)
+    (κ : heckeField M g →+* AlgebraicClosure ℚ_[p])
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    {S_τ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hτ : ∀ (r : ℕ) (hr : r.Prime),
+      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ →
+      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
+        Polynomial.X ^ 2
+          - Polynomial.C (κ (heckeCoeff M g r)) * Polynomial.X
+          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
+    {q : ℕ} (hq : q.Prime) (hqp : q ≠ p)
+    (hun : τ.IsUnramifiedAt hq.toHeightOneSpectrumRingOfIntegersRat) :
+    ¬ q ∣ M := by
+  intro hqM
+  obtain ⟨M', hM'dvd, hqM', g', hg', hagree⟩ :=
+    exists_weightTwoEigenform_not_dvd_level_of_isUnramifiedAt hM
+      hg.toIsWeightTwoEigenform κ hτ hq hqp hun
+  exact hg.eigensystem_minimal M' hM'dvd (fun h => hqM' (h.symm ▸ hqM))
+    g' hg' hagree
 
 include hpodd in
 /-- **Saito's local–global compatibility at `p`, geometric form**
