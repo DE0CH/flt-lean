@@ -16,6 +16,16 @@ public import Fermat.FLT.Modularity.Interface
 -- by the at-2 stage of the Eisenstein character dichotomy. Non-public:
 -- used in proofs only.
 import Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree
+-- the generic connected–étale idempotent package
+-- (`Bialgebra.exists_connected_counit_idempotent`,
+-- `mul_eq_zero_or_mul_eq_of_minimal`) and the generic `IsAdicComplete`
+-- instance for `adicCompletionIntegers`, consumed by the
+-- connected–étale cyclotomic assembly at `p`. Non-public: proofs only.
+import Fermat.FLT.GroupScheme.ConnectedEtale
+-- the generic convolution/points transport toolkit (`WithConv`
+-- bridges, `liftEquiv_symm_convMul`, `vendored_mul_eq_convMul`),
+-- consumed by the same assembly. Non-public: proofs only.
+import Fermat.FLT.Deformations.RepresentationTheory.FlatProlongation
 import Mathlib.Algebra.Field.ULift
 import Mathlib.Topology.Algebra.IntermediateField
 import Mathlib.LinearAlgebra.Charpoly.ToMatrix
@@ -1281,56 +1291,204 @@ theorem char_eq_one_of_mem_localInertiaGroup_two
       Polynomial.eval_C, Polynomial.eval_one, sub_self, mul_zero] at h
     rwa [mul_self_eq_zero, sub_eq_zero] at h
 
-/-- **The connected–étale cyclotomic subgroup of a Hopf package at
-`p`** (sorry node, isolated 2026-07-24 — the Raynaud/Fontaine
-group-scheme core of the per-level trace congruence
-`trace_sub_one_add_cyclotomicCharacter_mem_of_hopf_package` below,
-whose Cayley–Hamilton trace bookkeeping is PROVEN there; stated in the
-SAME package shape as the ModThree connected–étale leaf
-`exists_connectedEtale_subgroup_of_hopf_package` and the two Threeadic
-Hopf-package Fontaine cores, so that the flat-cluster owner's
-connected–étale/Raynaud machinery — the proven generic idempotent
-package `Bialgebra.exists_connected_counit_idempotent` and its
-consumers — discharges the whole family): given the explicit finite
-flat Hopf package for the congruence quotient `ρ.baseChange (R ⧸ I)`
-at `p`, the congruence space carries an additive subgroup `U` —
-intended: the image under `fG` of the geometric points of the
-connected component `G⁰ ⊆ Spec G` (the points valued `1` on the
-connected counit idempotent, exactly as in the PROVEN ModThree
-assembly) — such that for every `σ` in the local inertia at `p`:
+-- Local abbreviations for the `p`-adic completion vocabulary of the
+-- connected–étale skeleton at `p` (same pattern as the ModThree
+-- block: the notations elaborate to exactly the spelled-out terms
+-- used by the statements below).
+local notation "𝒪ᵖᵥ" => IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ hp.out.toHeightOneSpectrumRingOfIntegersRat
+local notation "ℚᵖᵥ" => IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ hp.out.toHeightOneSpectrumRingOfIntegersRat
+local notation "ℚᵖᵥᵃˡᵍ" => AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ hp.out.toHeightOneSpectrumRingOfIntegersRat)
 
-* (i) every inertia displacement `ρ̄(σ̃)m − m` lies in `U`: the étale
-  quotient of the connected–étale sequence of `Spec G` is finite étale
-  over the henselian `ℤ_p`, so its points live over the maximal
-  unramified extension and inertia fixes them; by left-exactness of
-  points the displacement dies in the étale points and lands in the
-  connected points (in the points-of-Hopf-algebras spelling this is
-  the inertia-congruence/idempotent-dichotomy argument proven at `3`
-  in `exists_connectedEtale_subgroup_of_hopf_package`, generic over
-  the base once `lift_sub_lift_mem_of_localInertiaGroup_three` is
-  restated at `p`);
-* (ii) the inertia acts on `U` through the EXACT cyclotomic scalar
-  `χ_cyc(σ̃) mod I`. Intended proof (Raynaud 1974, *Schémas en groupes
-  de type `(p, …, p)`*; Serre, Duke 1987, §4.1; Fontaine; the
-  Fontaine/Raynaud material in Cornell–Silverman–Stevens): by `hchar`
-  the trace function of `ρ ⊗ ℚ̄_p` on the decomposition group at `p`
-  is the sum of the two continuous multiplicative characters
-  `χ₁ + χ₂`, so the semisimplification of the generic fibre of
-  `Spec G` is a sum of characters — the level-two (supersingular,
-  fundamental-characters-of-level-2) branch of Raynaud's
-  classification is excluded and every Jordan–Hölder factor of `G` is
-  one-dimensional; at absolute ramification `e = 1 < p − 1` (`hpodd`)
-  each connected one-dimensional factor is of multiplicative
-  (`μ`-)type, and `G⁰` itself is of multiplicative type (its Cartier
-  dual has étale Jordan–Hölder factors, and an extension of étale by
-  étale over the henselian `ℤ_p` is étale); the geometric points of a
-  multiplicative-type group, `U ≅ Hom(X, μ_{p^∞}(ℚ̄_p))` with `X` the
-  inertia-trivial étale character group, carry the inertia action
-  `u ↦ [χ_cyc(σ̃)] · u`, and the intrinsic `ℤ_p`-action on the finite
-  `p`-group `U` agrees with the action through
-  `algebraMap ℤ_[p] (R ⧸ I)` (finite abelian `p`-groups carry a
-  unique `ℤ_p`-module structure), giving the stated scalar identity —
-  pinned against `hρ.det` exactly as in the trace bookkeeping below. -/
+open WithConv
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **Inertia congruence for convolution values at `p`** (PROVEN —
+the general-`p` restatement of the ModThree helper
+`lift_sub_lift_mem_of_localInertiaGroup_three`, same proof): for `σ`
+in the local inertia group at `p` and two `𝒪ᵖᵥ`-points `χ, ψ` of a
+module-finite Hopf order `G` (whose values are automatically integral
+over `𝒪ᵖᵥ`), the paired lift values of `(σ ∘ χ, ψ)` and of `(χ, ψ)`
+agree on every tensor modulo the maximal ideal of the integral
+closure of `𝒪ᵖᵥ` in `ℚᵖᵥᵃˡᵍ`: inertia moves integral values only
+within the maximal ideal (the DEFINING property of
+`localInertiaGroup`), and the difference on a pure tensor is an
+`𝔪`-multiple of an integral value. -/
+theorem lift_sub_lift_mem_of_localInertiaGroup_p
+    (G : Type) [CommRing G]
+    [HopfAlgebra 𝒪ᵖᵥ G] [Module.Finite 𝒪ᵖᵥ G]
+    (σ : Field.absoluteGaloisGroup ℚᵖᵥ)
+    (hσ : σ ∈ localInertiaGroup hp.out.toHeightOneSpectrumRingOfIntegersRat)
+    (χ ψ : G →ₐ[𝒪ᵖᵥ] ℚᵖᵥᵃˡᵍ) (t : G ⊗[𝒪ᵖᵥ] G) :
+    Algebra.TensorProduct.lift ((σ.toAlgHom.restrictScalars 𝒪ᵖᵥ).comp χ) ψ
+        (fun _ _ => Commute.all _ _) t -
+      Algebra.TensorProduct.lift χ ψ (fun _ _ => Commute.all _ _) t ∈
+      Submodule.map (Algebra.linearMap (IntegralClosure 𝒪ᵖᵥ ℚᵖᵥᵃˡᵍ) ℚᵖᵥᵃˡᵍ)
+        (IsLocalRing.maximalIdeal (IntegralClosure 𝒪ᵖᵥ ℚᵖᵥᵃˡᵍ)) := by
+  haveI : Algebra.IsIntegral 𝒪ᵖᵥ G := Algebra.IsIntegral.of_finite 𝒪ᵖᵥ G
+  induction t using TensorProduct.induction_on with
+  | zero =>
+    simp only [map_zero, sub_self]
+    exact Submodule.zero_mem _
+  | add x y hx hy =>
+    rw [map_add, map_add, add_sub_add_comm]
+    exact Submodule.add_mem _ hx hy
+  | tmul a b =>
+    rw [Algebra.TensorProduct.lift_tmul, Algebra.TensorProduct.lift_tmul]
+    have ha : IsIntegral 𝒪ᵖᵥ (χ a) :=
+      (Algebra.IsIntegral.isIntegral (R := 𝒪ᵖᵥ) a).map χ
+    have hb : IsIntegral 𝒪ᵖᵥ (ψ b) :=
+      (Algebra.IsIntegral.isIntegral (R := 𝒪ᵖᵥ) b).map ψ
+    set xa : IntegralClosure 𝒪ᵖᵥ ℚᵖᵥᵃˡᵍ := ⟨χ a, ha⟩
+    set xb : IntegralClosure 𝒪ᵖᵥ ℚᵖᵥᵃˡᵍ := ⟨ψ b, hb⟩
+    have hin := AddSubgroup.mem_inertia.mp hσ xa
+    rw [Submodule.mem_toAddSubgroup] at hin
+    have hval : algebraMap (IntegralClosure 𝒪ᵖᵥ ℚᵖᵥᵃˡᵍ) ℚᵖᵥᵃˡᵍ
+        (σ • xa - xa) = σ (χ a) - χ a := by
+      rw [map_sub]
+      congr 1
+    have hkey : ((σ.toAlgHom.restrictScalars 𝒪ᵖᵥ).comp χ) a * ψ b -
+        χ a * ψ b =
+        xb • (algebraMap (IntegralClosure 𝒪ᵖᵥ ℚᵖᵥᵃˡᵍ) ℚᵖᵥᵃˡᵍ
+          (σ • xa - xa)) := by
+      rw [hval, Algebra.smul_def]
+      show σ (χ a) * ψ b - χ a * ψ b = ψ b * (σ (χ a) - χ a)
+      ring
+    rw [hkey]
+    exact Submodule.smul_mem _ _ (Submodule.mem_map_of_mem hin)
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **Inertia moves connected points by the exact cyclotomic scalar
+at `p`** (sorry node, isolated 2026-07-24 — part (ii), the
+μ-type/Raynaud core, of the (i)/(ii) split of
+`exists_connectedEtale_cyclotomic_subgroup_of_hopf_package` below;
+SIBLING of the Threeadic Raynaud leaf
+`inertiaFixed_connected_point_eq_one_at_three` in ModThree: generic
+multiplicative-type machinery proving this leaf also discharges that
+one, since an inertia-fixed connected point whose exact cyclotomic
+scalar action is forced must be the identity point): a geometric
+point `φ` of the generic fibre of the finite flat Hopf order `G` —
+whose points are `Γ`-equivariantly identified by `fG` with the
+congruence space of `ρ` at the open ideal `I` — lying in the
+CONNECTED component (value `1` on a connected counit idempotent
+`e₀`) is moved by a local inertia element `σ` at `p` to its
+`χ_cyc(σ̃) mod I` scalar multiple.
+
+Intended proof (Raynaud 1974, *Schémas en groupes de type
+`(p, …, p)`*; Serre, Duke 1987, §4.1; Fontaine; Tate, "Finite flat
+group schemes", and the Fontaine/Raynaud material in
+Cornell–Silverman–Stevens):
+
+1. by `hchar` the trace function of `ρ ⊗ ℚ̄_p` on the decomposition
+   group at `p` is the sum of the two continuous multiplicative
+   characters `χ₁ + χ₂`, so the semisimplification of the generic
+   fibre of `Spec G` is a sum of characters — the level-two
+   (supersingular, fundamental-characters-of-level-2) branch of
+   Raynaud's classification is excluded and every Jordan–Hölder
+   factor of `Spec G` is one-dimensional;
+2. at absolute ramification `e = 1 < p − 1` (`hpodd`) each connected
+   one-dimensional factor is of multiplicative (`μ`-)type, and the
+   connected component `Spec (G·e₀)` is itself of multiplicative
+   type (its Cartier dual is filtered by étale factors, and an
+   extension of étale by étale over the henselian `ℤ_p` is étale);
+3. the geometric points of a multiplicative-type group form
+   `Hom(X, μ_{p^∞}(ℚ̄ᵖᵥ))` with `X` the inertia-trivially-acted
+   étale character group, so inertia raises connected points to the
+   `χ_cyc`-th convolution power: concretely, the convolution order
+   of `φ` divides `p ^ k` for any `k` with
+   `algebraMap ℤ_[p] R (p ^ k) ∈ I` (such `k` exists since `I` is
+   open, and the point group is `fG`-isomorphic to the
+   `p ^ k`-torsion congruence module), and for any `n : ℕ` with
+   `n ≡ χ_cyc(σ̃) mod p ^ k` the μ-type action reads `σ • φ = φ ^ n`
+   (values on the character group are `p ^ k`-th roots of unity,
+   raised to the `χ_cyc`-power by inertia);
+4. transporting along the additive `Γ`-equivariant bijection `fG`,
+   `ρ̄(σ̃)(fG φ) = n • fG φ = (n : R ⧸ I) • fG φ =
+   (χ_cyc(σ̃) mod I) • fG φ`, the intrinsic `ℤ`-action agreeing with
+   the `R ⧸ I`-scalar action through the finite-exponent congruence
+   (`Nat.cast_smul_eq_nsmul` plus `n − χ_cyc(σ̃) ∈ p ^ k ℤ_p ⊆ I`).
+-/
+theorem connected_point_smul_eq_cyclotomicCharacter_smul_of_hopf_package
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hZinj : Function.Injective (algebraMap ℤ_[p] R))
+    (hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
+    (hρ : IsHardlyRamified hpodd hv ρ)
+    (χ₁ χ₂ : Field.absoluteGaloisGroup ℚ → AlgebraicClosure ℚ_[p])
+    (hcont₁ : Continuous χ₁) (hcont₂ : Continuous χ₂)
+    (hone₁ : χ₁ 1 = 1) (hone₂ : χ₂ 1 = 1)
+    (hmul₁ : ∀ g h, χ₁ (g * h) = χ₁ g * χ₁ h)
+    (hmul₂ : ∀ g h, χ₂ (g * h) = χ₂ g * χ₂ h)
+    (hchar : ∀ g, ((ρ g).charpoly).map (algebraMap R (AlgebraicClosure ℚ_[p])) =
+      (Polynomial.X - Polynomial.C (χ₁ g)) * (Polynomial.X - Polynomial.C (χ₂ g)))
+    (I : Ideal R) (hI : IsOpen (I : Set R))
+    (G : Type) [CommRing G]
+    [HopfAlgebra 𝒪ᵖᵥ G] [Module.Flat 𝒪ᵖᵥ G] [Module.Finite 𝒪ᵖᵥ G]
+    [Algebra.Etale ℚᵖᵥ (ℚᵖᵥ ⊗[𝒪ᵖᵥ] G)]
+    (fG : Additive (ℚᵖᵥ ⊗[𝒪ᵖᵥ] G →ₐ[ℚᵖᵥ] ℚᵖᵥᵃˡᵍ) →+[Field.absoluteGaloisGroup ℚᵖᵥ]
+      (((ρ.baseChange (R ⧸ I)).toLocal
+        hp.out.toHeightOneSpectrumRingOfIntegersRat).Space))
+    (hfG : Function.Bijective fG)
+    (e₀ : G) (he₀ : IsIdempotentElem e₀)
+    (hε₀ : Coalgebra.counit (R := 𝒪ᵖᵥ) e₀ = (1 : 𝒪ᵖᵥ))
+    (hprim₀ : ∀ x : G, IsIdempotentElem x → x * e₀ = 0 ∨ x * e₀ = e₀)
+    (hcomul₀ : Coalgebra.comul (R := 𝒪ᵖᵥ) e₀ * (e₀ ⊗ₜ[𝒪ᵖᵥ] e₀) =
+      e₀ ⊗ₜ[𝒪ᵖᵥ] e₀)
+    (φ : ℚᵖᵥ ⊗[𝒪ᵖᵥ] G →ₐ[ℚᵖᵥ] ℚᵖᵥᵃˡᵍ)
+    (hφe : φ ((1 : ℚᵖᵥ) ⊗ₜ[𝒪ᵖᵥ] e₀) = 1)
+    (u : (R ⧸ I) ⊗[R] V)
+    (hφu : fG (Additive.ofMul φ) = u)
+    (σ : Field.absoluteGaloisGroup ℚᵖᵥ)
+    (hσ : σ ∈ localInertiaGroup hp.out.toHeightOneSpectrumRingOfIntegersRat) :
+    (ρ.baseChange (R ⧸ I)) (Field.absoluteGaloisGroup.map
+        (algebraMap ℚ ℚᵖᵥ) σ) u =
+      (algebraMap R (R ⧸ I) (algebraMap ℤ_[p] R
+        ((cyclotomicCharacter (AlgebraicClosure ℚ) p
+          ((Field.absoluteGaloisGroup.map (algebraMap ℚ ℚᵖᵥ)
+            σ).toRingEquiv) : ℤ_[p]ˣ) : ℤ_[p]))) • u :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **The connected–étale cyclotomic subgroup of a Hopf package at
+`p`** (PROVEN assembly, DECOMPOSED 2026-07-24 along the (i)/(ii)
+split over the single sorried μ-type/Raynaud leaf
+`connected_point_smul_eq_cyclotomicCharacter_smul_of_hopf_package`
+above — the subgroup construction, part (i), and all
+convolution/points plumbing are proven here, mirroring the PROVEN
+ModThree assembly `exists_connectedEtale_subgroup_of_hopf_package`
+with the char-3 negation step replaced by a finite-exponent
+argument): given the explicit finite flat Hopf package for the
+congruence quotient `ρ.baseChange (R ⧸ I)` at `p`, the congruence
+space carries an additive subgroup `U` — the image under `fG` of the
+geometric points of the connected component `G⁰ ⊆ Spec G`, i.e. the
+vectors whose point takes the value `1` on the connected counit
+idempotent `e₀` of the PROVEN generic package
+`Bialgebra.exists_connected_counit_idempotent` — such that for every
+`σ` in the local inertia at `p`:
+
+* (i) every inertia displacement `ρ̄(σ̃)m − m` lies in `U` (PROVEN
+  here): the displacement point is the convolution quotient
+  `(σ∘χ) ⋆ χ⁻¹` of the point `χ` of `m`, its value on `e₀` is an
+  idempotent of the field `ℚᵖᵥᵃˡᵍ` congruent to `1` modulo the
+  maximal ideal of the integral closure
+  (`lift_sub_lift_mem_of_localInertiaGroup_p` — inertia moves
+  integral values only within `𝔪`), hence exactly `1`;
+* (ii) `σ̃` acts on `U` by the EXACT cyclotomic scalar
+  `χ_cyc(σ̃) mod I` — the sorried μ-type/Raynaud leaf above, applied
+  to the point of `u`.
+
+`U` is closed under addition because the comultiplication of `e₀`
+absorbs `e₀ ⊗ e₀` (`convMul_apply_one_of_comul_absorbs`), contains
+`0` (the counit point), and is closed under negation because the
+congruence module is `p ^ k`-torsion for any `k` with
+`algebraMap ℤ_[p] R (p ^ k) ∈ I` — such `k` exists since `I` is OPEN
+and `algebraMap ℤ_[p] R` is continuous for the module topology — so
+`-u = (p ^ k − 1) • u` is a repeated sum. -/
 theorem exists_connectedEtale_cyclotomic_subgroup_of_hopf_package
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
@@ -1385,8 +1543,226 @@ theorem exists_connectedEtale_cyclotomic_subgroup_of_hopf_package
               ((Field.absoluteGaloisGroup.map (algebraMap ℚ
                 (HeightOneSpectrum.adicCompletion ℚ
                   hp.out.toHeightOneSpectrumRingOfIntegersRat)) σ).toRingEquiv) :
-              ℤ_[p]ˣ) : ℤ_[p]))) • u) :=
-  sorry
+              ℤ_[p]ˣ) : ℤ_[p]))) • u) := by
+  classical
+  -- the congruence level: the open ideal `I` absorbs a power of `p`
+  obtain ⟨k, hk⟩ : ∃ k : ℕ, algebraMap ℤ_[p] R ((p : ℤ_[p]) ^ k) ∈ I := by
+    have hcont : Continuous (algebraMap ℤ_[p] R) :=
+      IsModuleTopology.continuous_of_linearMap (Algebra.linearMap ℤ_[p] R)
+    have htend : Filter.Tendsto (fun n : ℕ => (p : ℤ_[p]) ^ n)
+        Filter.atTop (nhds 0) := by
+      apply tendsto_pow_atTop_nhds_zero_of_norm_lt_one
+      rw [PadicInt.norm_p]
+      exact inv_lt_one_of_one_lt₀ (by exact_mod_cast hp.out.one_lt)
+    have htend2 : Filter.Tendsto
+        (fun n : ℕ => algebraMap ℤ_[p] R ((p : ℤ_[p]) ^ n))
+        Filter.atTop (nhds (algebraMap ℤ_[p] R 0)) :=
+      (hcont.tendsto 0).comp htend
+    rw [map_zero] at htend2
+    exact (htend2.eventually_mem (hI.mem_nhds I.zero_mem)).exists
+  -- the connected counit idempotent of the Hopf order
+  obtain ⟨e₀, he₀, hε₀, hmin₀, habs₀⟩ :=
+    Bialgebra.exists_connected_counit_idempotent (A := 𝒪ᵖᵥ) (G := G)
+  have hprim₀ : ∀ x : G, IsIdempotentElem x → x * e₀ = 0 ∨ x * e₀ = e₀ :=
+    fun x hx => mul_eq_zero_or_mul_eq_of_minimal he₀ hε₀ hmin₀ x hx
+  have hcomul₀ : Coalgebra.comul (R := 𝒪ᵖᵥ) e₀ * (e₀ ⊗ₜ[𝒪ᵖᵥ] e₀) =
+      e₀ ⊗ₜ[𝒪ᵖᵥ] e₀ := by
+    rwa [Bialgebra.comulAlgHom_apply] at habs₀
+  -- the points identification as an equivalence
+  let g := Equiv.ofBijective fG hfG
+  have hfs : ∀ x : (R ⧸ I) ⊗[R] V, fG (g.symm x) = x :=
+    fun x => g.apply_symm_apply x
+  have hgs_add : ∀ u w : (R ⧸ I) ⊗[R] V,
+      g.symm (u + w) = g.symm u + g.symm w := by
+    intro u w
+    apply g.injective
+    show fG (g.symm (u + w)) = fG (g.symm u + g.symm w)
+    rw [map_add fG, hfs, hfs, hfs]
+  have hgs_zero : g.symm (0 : (R ⧸ I) ⊗[R] V) = 0 := by
+    apply g.injective
+    show fG (g.symm (0 : (R ⧸ I) ⊗[R] V)) = fG 0
+    rw [map_zero fG, hfs]
+  -- the congruence module is `p ^ k`-torsion
+  have hpkS : ((p ^ k : ℕ) : R ⧸ I) = 0 := by
+    have h1 : algebraMap R (R ⧸ I)
+        (algebraMap ℤ_[p] R ((p : ℤ_[p]) ^ k)) = 0 := by
+      rw [Ideal.Quotient.algebraMap_eq]
+      exact Ideal.Quotient.eq_zero_iff_mem.mpr hk
+    rw [show ((p : ℤ_[p]) ^ k) = ((p ^ k : ℕ) : ℤ_[p]) by norm_cast] at h1
+    rwa [map_natCast, map_natCast] at h1
+  have hpkV : ∀ m : (R ⧸ I) ⊗[R] V, (p ^ k) • m = 0 := by
+    intro m
+    have h1 : ((p ^ k : ℕ) : R ⧸ I) • m = (p ^ k) • m :=
+      Nat.cast_smul_eq_nsmul (R ⧸ I) (p ^ k) m
+    rw [hpkS, zero_smul] at h1
+    exact h1.symm
+  -- the two spellings of the local action agree: ring homs out of `ℚ`
+  -- are unique, so the `algebraMap` baked into `toLocal` is the one of
+  -- the statement
+  have hbridge : ∀ (τ : Field.absoluteGaloisGroup ℚᵖᵥ)
+      (w : (R ⧸ I) ⊗[R] V),
+      ((ρ.baseChange (R ⧸ I)).toLocal
+        hp.out.toHeightOneSpectrumRingOfIntegersRat) τ w =
+      (ρ.baseChange (R ⧸ I)) (Field.absoluteGaloisGroup.map
+        (algebraMap ℚ ℚᵖᵥ) τ) w := by
+    intro τ w
+    rw [GaloisRep.toLocal_apply]
+    exact congrArg (fun (h : ℚ →+* ℚᵖᵥ) =>
+      (ρ.baseChange (R ⧸ I)) (Field.absoluteGaloisGroup.map h τ) w)
+      (Subsingleton.elim _ _)
+  -- the zero point lies in the connected part (the counit point)
+  have hP0 : (AlgHom.liftEquiv 𝒪ᵖᵥ ℚᵖᵥ G ℚᵖᵥᵃˡᵍ).symm
+      (Additive.toMul (g.symm (0 : (R ⧸ I) ⊗[R] V))) e₀ = 1 := by
+    rw [hgs_zero, toMul_zero, vendored_one_eq_convOne,
+      liftEquiv_symm_convOne]
+    show algebraMap 𝒪ᵖᵥ ℚᵖᵥᵃˡᵍ (Coalgebra.counit (R := 𝒪ᵖᵥ) e₀) = 1
+    rw [hε₀, map_one]
+  -- the connected-part subgroup: vectors whose point takes the value
+  -- `1` on the connected counit idempotent
+  refine ⟨{
+      carrier := {u : (R ⧸ I) ⊗[R] V |
+        (AlgHom.liftEquiv 𝒪ᵖᵥ ℚᵖᵥ G ℚᵖᵥᵃˡᵍ).symm
+          (Additive.toMul (g.symm u)) e₀ = 1}
+      zero_mem' := ?_
+      add_mem' := ?_
+      neg_mem' := ?_ }, fun σ hσ => ⟨?_, ?_⟩⟩
+  · -- closure under addition: the comultiplication absorbs `e₀ ⊗ e₀`
+    intro u w hu hw
+    show (AlgHom.liftEquiv 𝒪ᵖᵥ ℚᵖᵥ G ℚᵖᵥᵃˡᵍ).symm
+      (Additive.toMul (g.symm (u + w))) e₀ = 1
+    rw [hgs_add, toMul_add, vendored_mul_eq_convMul, liftEquiv_symm_convMul]
+    exact convMul_apply_one_of_comul_absorbs e₀ hcomul₀ _ _ hu hw
+  · -- `0` is the counit point, whose value on `e₀` is `ε(e₀) = 1`
+    exact hP0
+  · -- closure under negation: the module is `p ^ k`-torsion, so
+    -- `-u = (p ^ k - 1) • u`, a repeated sum
+    intro u hu
+    have hnsmul : ∀ n : ℕ,
+        (AlgHom.liftEquiv 𝒪ᵖᵥ ℚᵖᵥ G ℚᵖᵥᵃˡᵍ).symm
+          (Additive.toMul (g.symm ((n + 1) • u))) e₀ = 1 := by
+      intro n
+      induction n with
+      | zero =>
+        rw [zero_add, one_nsmul]
+        exact hu
+      | succ m ih =>
+        rw [succ_nsmul u (m + 1), hgs_add, toMul_add,
+          vendored_mul_eq_convMul, liftEquiv_symm_convMul]
+        exact convMul_apply_one_of_comul_absorbs e₀ hcomul₀ _ _ ih hu
+    have hneg : -u = (p ^ k - 1) • u := by
+      have hsum : (p ^ k - 1) • u + u = 0 := by
+        have h2 : (p ^ k - 1) • u + u = (p ^ k - 1 + 1) • u :=
+          (succ_nsmul u (p ^ k - 1)).symm
+        rw [h2, Nat.sub_add_cancel
+          (Nat.one_le_iff_ne_zero.mpr (pow_ne_zero k hp.out.ne_zero))]
+        exact hpkV u
+      exact neg_eq_of_add_eq_zero_left hsum
+    show (AlgHom.liftEquiv 𝒪ᵖᵥ ℚᵖᵥ G ℚᵖᵥᵃˡᵍ).symm
+      (Additive.toMul (g.symm (-u))) e₀ = 1
+    rcases hcase : p ^ k - 1 with - | m
+    · rw [hneg, hcase, zero_nsmul]
+      exact hP0
+    · rw [hneg, hcase]
+      exact hnsmul m
+  · -- (i) every inertia displacement lies in the connected part: the
+    -- displacement point is `(σ∘χ) ⋆ χ⁻¹`, congruent to `1` modulo the
+    -- maximal ideal (inertia moves integral values within `𝔪`), and
+    -- its idempotent value on `e₀` is `0` or `1` — so it is `1`
+    intro m
+    set d : (R ⧸ I) ⊗[R] V := (ρ.baseChange (R ⧸ I))
+      (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚᵖᵥ) σ) m - m with hd
+    show (AlgHom.liftEquiv 𝒪ᵖᵥ ℚᵖᵥ G ℚᵖᵥᵃˡᵍ).symm
+      (Additive.toMul (g.symm d)) e₀ = 1
+    set χm : G →ₐ[𝒪ᵖᵥ] ℚᵖᵥᵃˡᵍ := (AlgHom.liftEquiv 𝒪ᵖᵥ ℚᵖᵥ G ℚᵖᵥᵃˡᵍ).symm
+      (Additive.toMul (g.symm m)) with hχm
+    set δd : G →ₐ[𝒪ᵖᵥ] ℚᵖᵥᵃˡᵍ := (AlgHom.liftEquiv 𝒪ᵖᵥ ℚᵖᵥ G ℚᵖᵥᵃˡᵍ).symm
+      (Additive.toMul (g.symm d)) with hδd
+    -- the displacement point multiplies the point of `m` into its
+    -- inertia translate
+    have hXd : g.symm d + g.symm m = σ • g.symm m := by
+      apply g.injective
+      show fG (g.symm d + g.symm m) = fG (σ • g.symm m)
+      rw [map_add fG, map_smul fG, hfs, hfs]
+      show d + m = ((ρ.baseChange (R ⧸ I)).toLocal
+        hp.out.toHeightOneSpectrumRingOfIntegersRat) σ m
+      rw [hbridge, hd, sub_add_cancel]
+    have hDφ : Additive.toMul (g.symm d) * Additive.toMul (g.symm m) =
+        σ • Additive.toMul (g.symm m) := by
+      have h1 := congrArg Additive.toMul hXd
+      have h2 : Additive.toMul (σ • g.symm m) =
+          σ • Additive.toMul (g.symm m) := rfl
+      rw [toMul_add, h2] at h1
+      exact h1
+    -- transport to the `𝒪ᵖᵥ`-points: `δ ⋆ χ = σ∘χ`
+    have h3 := congrArg (AlgHom.liftEquiv 𝒪ᵖᵥ ℚᵖᵥ G ℚᵖᵥᵃˡᵍ).symm hDφ
+    rw [vendored_mul_eq_convMul, liftEquiv_symm_convMul] at h3
+    rw [show σ • Additive.toMul (g.symm m) =
+        (σ.toAlgHom : ℚᵖᵥᵃˡᵍ →ₐ[ℚᵖᵥ] ℚᵖᵥᵃˡᵍ).comp (Additive.toMul (g.symm m))
+        from AlgHom.ext fun _ => rfl, liftEquiv_symm_comp] at h3
+    rw [← hχm, ← hδd] at h3
+    have h4 : toConv δd * toConv χm =
+        toConv ((σ.toAlgHom.restrictScalars 𝒪ᵖᵥ).comp χm) := by
+      have h4a := congrArg WithConv.toConv h3
+      rwa [WithConv.toConv_ofConv] at h4a
+    -- cancel `χ` on the right through the antipode inverse
+    have h5 : toConv δd =
+        toConv ((σ.toAlgHom.restrictScalars 𝒪ᵖᵥ).comp χm) *
+          toConv (χm.comp (HopfAlgebra.antipodeAlgHom 𝒪ᵖᵥ G)) := by
+      rw [← h4, mul_assoc, toConv_mul_toConv_comp_antipodeAlgHom, mul_one]
+    have h6 : δd e₀ =
+        Algebra.TensorProduct.lift ((σ.toAlgHom.restrictScalars 𝒪ᵖᵥ).comp χm)
+          (χm.comp (HopfAlgebra.antipodeAlgHom 𝒪ᵖᵥ G))
+          (fun _ _ => Commute.all _ _) (Coalgebra.comul (R := 𝒪ᵖᵥ) e₀) := by
+      have h7 := congrArg WithConv.ofConv h5
+      rw [WithConv.ofConv_toConv] at h7
+      rw [h7]
+      exact AlgHom.convMul_apply _ _ e₀
+    -- the corresponding value of `χ ⋆ χ⁻¹ = 1` is `ε(e₀) = 1`
+    have h8 : Algebra.TensorProduct.lift χm
+        (χm.comp (HopfAlgebra.antipodeAlgHom 𝒪ᵖᵥ G))
+        (fun _ _ => Commute.all _ _) (Coalgebra.comul (R := 𝒪ᵖᵥ) e₀) = 1 := by
+      have h9 := AlgHom.convMul_apply (toConv χm)
+        (toConv (χm.comp (HopfAlgebra.antipodeAlgHom 𝒪ᵖᵥ G))) e₀
+      rw [toConv_mul_toConv_comp_antipodeAlgHom] at h9
+      rw [← h9]
+      show algebraMap 𝒪ᵖᵥ ℚᵖᵥᵃˡᵍ (Coalgebra.counit (R := 𝒪ᵖᵥ) e₀) = 1
+      rw [hε₀, map_one]
+    -- the inertia congruence: `δ(e₀) ≡ 1` modulo the maximal ideal
+    have h10 := lift_sub_lift_mem_of_localInertiaGroup_p G σ hσ χm
+      (χm.comp (HopfAlgebra.antipodeAlgHom 𝒪ᵖᵥ G))
+      (Coalgebra.comul (R := 𝒪ᵖᵥ) e₀)
+    rw [h8, ← h6] at h10
+    -- the value is an idempotent of a field, hence `0` or `1`; the
+    -- congruence rules out `0`
+    have h11 : δd e₀ * δd e₀ = δd e₀ := by
+      rw [← map_mul, he₀.eq]
+    have h12 : δd e₀ * (δd e₀ - 1) = 0 := by
+      rw [mul_sub, h11, mul_one, sub_self]
+    rcases mul_eq_zero.mp h12 with h13 | h13
+    · exfalso
+      rw [h13, zero_sub] at h10
+      have h14 : (1 : ℚᵖᵥᵃˡᵍ) ∈
+          Submodule.map (Algebra.linearMap (IntegralClosure 𝒪ᵖᵥ ℚᵖᵥᵃˡᵍ) ℚᵖᵥᵃˡᵍ)
+            (IsLocalRing.maximalIdeal (IntegralClosure 𝒪ᵖᵥ ℚᵖᵥᵃˡᵍ)) := by
+        have h15 := Submodule.neg_mem _ h10
+        rwa [neg_neg] at h15
+      obtain ⟨m', hm', hm1⟩ := h14
+      have hm2 : m' = 1 := by
+        apply Subtype.ext
+        exact hm1
+      rw [hm2] at hm'
+      exact (IsLocalRing.maximalIdeal.isMaximal
+        (IntegralClosure 𝒪ᵖᵥ ℚᵖᵥᵃˡᵍ)).ne_top
+        (Ideal.eq_top_of_isUnit_mem _ hm' isUnit_one)
+    · exact sub_eq_zero.mp h13
+  · -- (ii) the connected part carries the exact cyclotomic scalar
+    -- action: the sorried μ-type leaf, applied to the point of `u`
+    intro u hu
+    have hφe : Additive.toMul (g.symm u) ((1 : ℚᵖᵥ) ⊗ₜ[𝒪ᵖᵥ] e₀) = 1 := hu
+    exact connected_point_smul_eq_cyclotomicCharacter_smul_of_hopf_package
+      hpodd hv hZinj hRinj hρ χ₁ χ₂ hcont₁ hcont₂ hone₁ hone₂ hmul₁ hmul₂
+      hchar I hI G fG hfG e₀ he₀ hε₀ hprim₀ hcomul₀
+      (Additive.toMul (g.symm u)) hφe u (hfs u) σ hσ
 
 /-- **The per-level Raynaud trace congruence at `p`** (PROVEN
 assembly, DECOMPOSED 2026-07-24 over the single sorried
