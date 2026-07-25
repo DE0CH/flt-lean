@@ -3083,6 +3083,8 @@ theorem exists_threeadic_realization_domain_of_heckePackage
   -- course the module topology, and both injectivity statements follow
   -- from the mere existence of the characteristic-zero comparison
   -- embedding `ιB`
+  -- the topology must be FIXED by `letI` before the components whose types
+  -- mention it are elaborated
   letI : TopologicalSpace B := moduleTopology ℤ_[3] B
   exact ⟨B, hCR, hDom, moduleTopology ℤ_[3] B,
     isTopologicalRing_moduleTopology_of_finite 3 B, hAlg, hLR, hFin, ⟨rfl⟩,
