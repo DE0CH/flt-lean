@@ -54,13 +54,14 @@ PROVEN 2026-07-24 via the shared Chebotarev–Brauer–Nesbitt node of
 `exists_isWeaklyUniversalOnIdentified`, `exists_isTraceGenerated_ringHom`,
 `finite_quotient_span_of_isWeaklyUniversal_isTraceGenerated`, and — after
 the presentation-stratum decomposition of 2026-07-25, which turned the
-two former presentation leaves into proven assemblies — the four
+two former presentation leaves into proven assemblies — the remaining
 commutative-algebra strata of the minimal presentation
 `exists_coefficientRing_ringHom`,
-`exists_mvPowerSeries_ringHom_of_mem_maximalIdeal`,
 `surjective_of_mvPowerSeries_ringHom`,
-`ker_le_of_minimal_mvPowerSeries_ringHom` together with the arithmetic
-relation count
+`ker_le_of_minimal_mvPowerSeries_ringHom` (its fourth stratum, the
+convergent substitution
+`exists_mvPowerSeries_ringHom_of_mem_maximalIdeal`, is PROVEN) together
+with the arithmetic relation count
 `exists_relations_lt_le_smul_of_minimal_mvPowerSeries_presentation`.
 Everything else is proven glue, culminating in
 `exists_hardlyRamified_lift_of_five_le` — verbatim the statement of
@@ -104,6 +105,12 @@ import Mathlib.RingTheory.MvPowerSeries.NoZeroDivisors
 -- proof-only: Nakayama's lemma, the generation step of the Böckle
 -- relation-bound assembly.
 import Mathlib.RingTheory.Nakayama
+-- proof-only: evaluation of multivariate power series at topologically
+-- nilpotent elements, and the bridge from `IsAdicComplete` to
+-- `CompleteSpace` + `T2Space` in the adic topology — together they give
+-- the substitution homomorphism of the de Smit–Lenstra presentation.
+import Mathlib.RingTheory.MvPowerSeries.Evaluation
+import Mathlib.RingTheory.AdicCompletion.Topology
 -- proof-only imports for the topology glue
 -- `isModuleTopology_of_isAdic_maximalIdeal`.
 import Mathlib.NumberTheory.Padics.ProperSpace
@@ -1450,8 +1457,9 @@ theorem exists_coefficientRing_ringHom {R : Type*} [CommRing R]
         Function.Surjective (π.comp ι) :=
   sorry
 
-/-- **Convergent-substitution leaf** (sorry node — pure commutative
-algebra, the second stratum of the 2026-07-25 decomposition of
+open Filter Topology in
+/-- **Convergent-substitution stratum** (PROVEN 2026-07-25 — pure
+commutative algebra, the second stratum of the same-day decomposition of
 `exists_minimal_mvPowerSeries_presentation`): substituting
 topologically nilpotent elements into a power series converges in a
 complete local ring. Given a coefficient map `ι : Λ →+* R` into a local
@@ -1459,24 +1467,21 @@ ring that is `𝔪`-adically complete and separated, and elements
 `t₁, …, t_g ∈ 𝔪_R`, there is a ring homomorphism
 `φ : Λ[[x₁, …, x_g]] →+* R` with `φ ∘ C = ι` and `φ xᵢ = tᵢ`.
 
-The map is the evaluation `f ↦ ∑_m ι(coeff m f) · t^m`: each monomial
-of total degree `d` lands in `𝔪_R^d`, so the partial sums over
-`{m : |m| < d}` form a Cauchy sequence for the `𝔪_R`-adic filtration,
-`IsPrecomplete` supplies the limit and `IsHausdorff` its uniqueness —
-whence additivity and multiplicativity by passing to the limit in the
-finite truncations (the Cauchy product is a finite sum in each degree).
-
-Mathlib route worth trying before proving this by hand:
-`MvPowerSeries.eval₂` / `MvPowerSeries.substAlgHom`
-(`Mathlib/RingTheory/MvPowerSeries/Evaluation.lean`,
-`…/Substitution.lean`) already build exactly this map, but for a
-TOPOLOGICALLY stated hypothesis (`HasEval`, over a complete Hausdorff
-uniform ring). The bridge is
-`IsAdic.isAdicComplete_iff : IsAdicComplete I R ↔ CompleteSpace R ∧ T2Space R`
-in `Mathlib/RingTheory/AdicCompletion/Topology.lean`, applied to the
-`𝔪_R`-adic topology `Ideal.adicTopology`; the module already installs
-adic topologies (`t2Space_of_isAdic`,
-`isModuleTopology_of_isAdic_maximalIdeal`). -/
+Proven through mathlib's `MvPowerSeries.eval₂Hom`, which builds
+`f ↦ ∑_m ι(coeff m f) · t^m` by density from polynomials over a
+complete separated linearly topologized ring. Supplying its hypotheses
+is the whole proof, and each is a one-liner in the right vocabulary:
+`WithIdeal R := ⟨𝔪_R⟩` installs the `𝔪`-adic topology together with its
+uniformity, `IsUniformAddGroup` and `IsLinearTopology` instances;
+`IsAdic.isAdicComplete_iff` converts the ALGEBRAIC hypothesis
+`IsAdicComplete 𝔪 R` into `CompleteSpace R ∧ T2Space R` for exactly
+that topology; `WithIdeal Λ := ⟨⊥⟩` makes `Λ` discrete, so `ι` is
+continuous by `WithIdeal.uniformContinuous_of_map_le` (`⊥.map ι = ⊥`);
+and `HasEval t` holds because `tᵢ ∈ 𝔪_R` gives `tᵢ^n ∈ 𝔪_R^n → 0`
+(topological nilpotence) while `Fin g` is finite, so the cofinite
+filter is `⊥` and the vanishing-at-infinity clause is vacuous. The two
+conclusions are then `MvPowerSeries.eval₂_C` and
+`MvPowerSeries.eval₂_X`. -/
 theorem exists_mvPowerSeries_ringHom_of_mem_maximalIdeal {R : Type*}
     [CommRing R] [IsLocalRing R]
     [IsAdicComplete (IsLocalRing.maximalIdeal R) R]
@@ -1484,8 +1489,33 @@ theorem exists_mvPowerSeries_ringHom_of_mem_maximalIdeal {R : Type*}
     (ht : ∀ i, t i ∈ IsLocalRing.maximalIdeal R) :
     ∃ φ : MvPowerSeries (Fin g) Λ →+* R,
       φ.comp (MvPowerSeries.C : Λ →+* MvPowerSeries (Fin g) Λ) = ι ∧
-      ∀ i, φ (MvPowerSeries.X i) = t i :=
-  sorry
+      ∀ i, φ (MvPowerSeries.X i) = t i := by
+  -- the `𝔪`-adic topology on `R`, the discrete one on `Λ`
+  letI : WithIdeal Λ := ⟨⊥⟩
+  letI : WithIdeal R := ⟨IsLocalRing.maximalIdeal R⟩
+  have hIadic : IsAdic (IsLocalRing.maximalIdeal R) := rfl
+  obtain ⟨hcomplete, hT2⟩ := hIadic.isAdicComplete_iff.mp inferInstance
+  letI := hcomplete
+  letI := hT2
+  have hι : Continuous ι :=
+    (WithIdeal.uniformContinuous_of_map_le (f := ι)
+      (by show Ideal.map ι ⊥ ≤ IsLocalRing.maximalIdeal R
+          rw [Ideal.map_bot]
+          exact bot_le)).continuous
+  -- the `tᵢ` are topologically nilpotent, and there are finitely many of them
+  have hteval : MvPowerSeries.HasEval t := by
+    refine ⟨fun i => ?_, ?_⟩
+    · rw [IsTopologicallyNilpotent,
+        (IsLocalRing.maximalIdeal R).hasBasis_nhds_zero_adic.tendsto_right_iff]
+      intro n _
+      filter_upwards [eventually_ge_atTop n] with m hm
+      exact Ideal.pow_le_pow_right hm (Ideal.pow_mem_pow (ht i) m)
+    · rw [Filter.cofinite_eq_bot]
+      exact tendsto_bot
+  refine ⟨MvPowerSeries.eval₂Hom hι hteval, ?_, fun i => ?_⟩
+  · refine RingHom.ext fun r => ?_
+    rw [RingHom.comp_apply, MvPowerSeries.coe_eval₂Hom, MvPowerSeries.eval₂_C]
+  · rw [MvPowerSeries.coe_eval₂Hom, MvPowerSeries.eval₂_X]
 
 /-- **Surjectivity leaf of the de Smit–Lenstra presentation** (sorry
 node — pure commutative algebra, the third stratum of the 2026-07-25
