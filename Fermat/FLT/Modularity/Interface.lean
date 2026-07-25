@@ -9805,16 +9805,273 @@ theorem exists_pow_p_mem_of_isOpen
   rw [map_pow, map_natCast] at hm
   exact hm
 
+/-- **Tensor-level divisibility** (PROVEN 2026-07-25 — pure module
+algebra, the arithmetic engine of the E2b′ commensurability step): if
+`1 ⊗ t` vanishes in `(A ⧸ (a)) ⊗[A] T` then `a` divides `t` in `T`.
+Proof: the `A`-linear map `A → (T →ₗ[A] T ⧸ a • T)`, `r ↦ r • mkQ`,
+kills `a` (because `a • t ∈ a • T` for every `t`), hence descends to
+`A ⧸ (a)`; the induced map on the tensor product sends `1 ⊗ t` to the
+class of `t`, so vanishing of `1 ⊗ t` forces `t ∈ a • T`. Only the
+"vanishing ⇒ divisible" direction is needed (the converse is trivial),
+and no finiteness or freeness hypothesis enters. -/
+theorem exists_smul_of_tmul_one_eq_zero {A : Type*} [CommRing A]
+    {T : Type*} [AddCommGroup T] [Module A T] (a : A) (t : T)
+    (h : (1 : A ⧸ Ideal.span {a}) ⊗ₜ[A] t = 0) :
+    ∃ y : T, t = a • y := by
+  classical
+  set N : Submodule A T := LinearMap.range (a • (LinearMap.id : T →ₗ[A] T)) with hN
+  set B : A →ₗ[A] (T →ₗ[A] (T ⧸ N)) := LinearMap.toSpanSingleton A _ N.mkQ with hB
+  have hBker : Ideal.span {a} ≤ LinearMap.ker B := by
+    rw [Ideal.span_le, Set.singleton_subset_iff]
+    show B a = 0
+    ext t'
+    show a • (N.mkQ t') = 0
+    rw [← map_smul]
+    refine (Submodule.Quotient.mk_eq_zero _).mpr ⟨t', ?_⟩
+    simp
+  set ψ := Submodule.liftQ (Ideal.span {a}) B hBker with hψ
+  have key := congrArg (TensorProduct.lift ψ) h
+  rw [map_zero, TensorProduct.lift.tmul] at key
+  have h1 : ψ (1 : A ⧸ Ideal.span {a}) = B 1 := Submodule.liftQ_apply _ _ _
+  rw [h1] at key
+  have hzero : N.mkQ t = 0 := by
+    have hb : B 1 t = N.mkQ t := by simp [hB, LinearMap.toSpanSingleton]
+    rw [← hb]; exact key
+  obtain ⟨y, hy⟩ := (Submodule.Quotient.mk_eq_zero _).mp hzero
+  exact ⟨y, by simpa using hy.symm⟩
+
+/-- **Action on a quotient by an invariant subgroup** (PROVEN
+2026-07-25 — the instance glue the E2b′ commensurability step needs to
+present a subquotient of a flat point-group as an object the
+`IsFlatPointsGroupAt` carrier accepts): a distributive monoid action on
+an additive group descends to the quotient by any subgroup the action
+preserves, with `g • ⟦x⟧ = ⟦g • x⟧` definitionally. -/
+@[reducible] def quotientDistribMulAction
+    {G : Type*} [Monoid G] {A : Type*} [AddCommGroup A]
+    [DistribMulAction G A] (N : AddSubgroup A)
+    (h : ∀ (g : G) (x : A), x ∈ N → g • x ∈ N) :
+    DistribMulAction G (A ⧸ N) where
+  smul g := QuotientAddGroup.lift N
+    ((QuotientAddGroup.mk' N).comp (DistribSMul.toAddMonoidHom A g))
+    (fun x hx => (QuotientAddGroup.eq_zero_iff _).mpr (h g x hx))
+  one_smul z := by
+    induction z using QuotientAddGroup.induction_on with
+    | H x => show QuotientAddGroup.mk ((1 : G) • x) = _; rw [one_smul]
+  mul_smul a b z := by
+    induction z using QuotientAddGroup.induction_on with
+    | H x =>
+      show QuotientAddGroup.mk ((a * b) • x) = QuotientAddGroup.mk (a • b • x)
+      rw [mul_smul]
+  smul_zero a := by
+    show QuotientAddGroup.mk (a • (0 : A)) = 0
+    rw [smul_zero]; rfl
+  smul_add a x y := by
+    induction x using QuotientAddGroup.induction_on with
+    | H x =>
+      induction y using QuotientAddGroup.induction_on with
+      | H y =>
+        show QuotientAddGroup.mk (a • (x + y)) =
+          QuotientAddGroup.mk (a • x) + QuotientAddGroup.mk (a • y)
+        rw [smul_add]; rfl
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Subquotient closure for the flat point-group carrier** (PROVEN
+2026-07-25 — the composite of the two Raynaud closure bricks, in the
+shape the E2b′ lattice-flatness transfer consumes): if a
+`Γ Kᵥ`-module `Y` is an equivariant QUOTIENT of an equivariant
+SUBOBJECT of a flat point-group `X` at `v`, then `Y` is a flat
+point-group at `v`. The subquotient is presented by a single ambient
+`Γ Kᵥ`-module `L` with two equivariant additive maps out of it, `F`
+into `X` and `π` onto `Y`, such that `ker F ⊆ ker π`: then
+`L ⧸ ker F` embeds into `X` (`QuotientAddGroup.kerLift`, injective) and
+surjects onto `Y` (`QuotientAddGroup.lift`, surjective because `π` is),
+so `IsFlatPointsGroupAt.of_injective` followed by
+`IsFlatPointsGroupAt.of_surjective` gives the claim. The action on `L`
+is taken FIRST-ORDER, as a multiplicative family `act` of additive
+endomorphisms rather than a `DistribMulAction` instance: consumers
+whose `L` is a bare module (with the Galois action only available
+through a `GaloisRep`, i.e. on a `GaloisRep.Space` synonym) can then
+apply this brick without transporting any instance onto `L`.
+Unconditionally TRUE; no hypothesis package beyond the two closure
+bricks it is assembled from. -/
+theorem isFlatPointsGroupAt_of_subquotient
+    {v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)}
+    {X Y L : Type*} [AddCommGroup X] [AddCommGroup Y] [AddCommGroup L]
+    [DistribMulAction (Field.absoluteGaloisGroup
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) X]
+    [DistribMulAction (Field.absoluteGaloisGroup
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) Y]
+    (act : Field.absoluteGaloisGroup
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) → (L →+ L))
+    (hact1 : ∀ x, act 1 x = x)
+    (hactmul : ∀ a b x, act (a * b) x = act a (act b x))
+    (hX : IsFlatPointsGroupAt v X)
+    (F : L →+ X) (hF : ∀ g x, F (act g x) = g • F x)
+    (π : L →+ Y) (hπe : ∀ g x, π (act g x) = g • π x)
+    (hπs : Function.Surjective π)
+    (hFπ : ∀ x, F x = 0 → π x = 0) :
+    IsFlatPointsGroupAt v Y := by
+  letI : DistribMulAction (Field.absoluteGaloisGroup
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) L :=
+    { smul := fun g x => act g x
+      one_smul := hact1
+      mul_smul := hactmul
+      smul_zero := fun g => (act g).map_zero
+      smul_add := fun g x y => (act g).map_add x y }
+  have hstab : ∀ (g : Field.absoluteGaloisGroup
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) (x : L),
+      x ∈ F.ker → g • x ∈ F.ker := by
+    intro g x hx
+    rw [AddMonoidHom.mem_ker] at hx ⊢
+    show F (act g x) = 0
+    rw [hF, hx, smul_zero]
+  letI := quotientDistribMulAction F.ker hstab
+  refine IsFlatPointsGroupAt.of_surjective
+    (IsFlatPointsGroupAt.of_injective hX (QuotientAddGroup.kerLift F)
+      (QuotientAddGroup.kerLift_injective F) ?_)
+    (QuotientAddGroup.lift F.ker π
+      (fun x hx => hFπ x (AddMonoidHom.mem_ker.mp hx))) ?_ ?_
+  · intro g z
+    induction z using QuotientAddGroup.induction_on with
+    | H x => exact hF g x
+  · intro y
+    obtain ⟨x, hx⟩ := hπs y
+    exact ⟨QuotientAddGroup.mk x, hx⟩
+  · intro g z
+    induction z using QuotientAddGroup.induction_on with
+    | H x => exact hπe g x
+
+/-- **Barsotti–Tate comparison lattice for the `O`-structure**
+(Eisenstein pillar E2b′-flat, CITATION LEAF carved out 2026-07-25 —
+the sole classical `p`-adic-Hodge-theoretic input of the lattice
+flatness transfer): the `ℤ_p`-lattice `Fin 2 → O` underlying `ρO` is
+`Γ ℚ`-equivariantly commensurable with the Tate module of a
+`p`-divisible group over `ℤ_p`. Concretely the leaf produces a
+`ℤ_p`-lattice `T` with a `Γ ℚ`-action `ρT` all of whose `p`-power
+levels `T ⧸ p^k` have finite flat prolongations at `p`, together with
+an equivariant `ℤ_p`-linear `f : (Fin 2 → O) → T` and a `ℤ_p`-linear
+`g : T → (Fin 2 → O)` with `g ∘ f = p^c` — i.e. `f` realises
+`Fin 2 → O` as a sublattice of `T` up to the bounded `p`-power `p^c`,
+which is exactly commensurability of the two lattices inside the
+common `ℚ_p`-space they span.
+
+CLASSICAL ROUTE (Fontaine; Raynaud; Tate, *`p`-divisible groups*, and
+Tate's article in Cornell–Silverman–Stevens ch. V):
+1. `hρ.isFlat` says every `p`-power level of the `R`-tower is finite
+   flat at `p`, i.e. `V` is the Tate module of a `p`-divisible group
+   over `ℤ_p`, so `V ⊗ ℚ_p` is Barsotti–Tate (crystalline with
+   Hodge–Tate weights in `{0, 1}`);
+2. every `ℚ̄_p`-fibre of the `O`-structure is an
+   `Aut(ℚ̄_p / ℚ_p)`-conjugate of a fibre of the `R`-structure: through
+   `e` the matrices of `ρO` over `ι(O) ⊆ ℚ̄_p` are a
+   `GL₂(ℚ̄_p)`-conjugate of those of `ρ` over `ι_R(R)`
+   (`hOinj`/`hZOcompat` make the two coefficient embeddings compatible
+   over `ℤ_p`), so applying `τ ∈ Aut(ℚ̄_p / ℚ_p)` carries the
+   `τ ∘ ι`-fibre of the `O`-structure to a `τ ∘ ι_R`-fibre of the
+   `R`-structure; being crystalline with weights in `{0, 1}` is
+   insensitive to such conjugation, so
+   `U := (Fin 2 → O) ⊗_{ℤ_p} ℚ_p` — whose `ℚ̄_p`-base change is the
+   direct sum of the embedding fibres — is again Barsotti–Tate;
+3. a Barsotti–Tate `ℚ_p`-representation contains a `Γ`-stable lattice
+   `T` which is the Tate module of a `p`-divisible group over `ℤ_p`
+   (Fontaine/Raynaud), and any two full-rank `Γ`-stable `ℤ_p`-lattices
+   in the same finite-dimensional `ℚ_p`-space are commensurable: after
+   scaling `T` by a `p`-power one may assume `f : (Fin 2 → O) ↪ T` is
+   the inclusion and `p^c T ⊆ (Fin 2 → O)`, whence `g` is
+   multiplication by `p^c` followed by that inclusion and
+   `g ∘ f = p^c`. Flatness of the levels `T ⧸ p^k` is the defining
+   property of the Tate module of a `p`-divisible group.
+
+WHY NOT THE PI-EMBEDDING ROUTE (recorded 2026-07-24, re-audited
+2026-07-25): `e(Fin 2 → O)` and the image of `V` have different
+`ℤ_p`-ranks whenever `rank_ℤp O ≠ rank_ℤp R`, so no `p`-power scaling
+relates them inside `ℚ̄_p ⊗ V`; and a non-split level `(Fin 2 → O) ⧸ I`
+cannot embed `Γ ℚ_p`-equivariantly into a finite product of `R`-levels
+whose `p`-torsion socle is semisimple. Commensurability is legitimate
+only in `U`, which is what step 2 supplies — that is precisely the
+content isolated here.
+
+Soundness: the hypothesis set is classically INHABITED (take `O = R`,
+`ρO` a frame of `ρ`, `e` the identity; then `T = Fin 2 → R` viewed
+over `ℤ_p`, `c = 0`, `f = g = id` works) and the conclusion holds for
+every inhabitant by the route above. Circularity guard (inherited from
+E2b′): must not route through `Family.lean` or `Reducible.lean`'s
+B5. -/
+theorem exists_flatIsogenousLattice_of_generic_iso
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hρ : IsHardlyRamified hpodd hv ρ)
+    {O : Type u} [CommRing O] [Algebra ℤ_[p] O] [IsDomain O]
+    [Module.Finite ℤ_[p] O] [TopologicalSpace O] [IsTopologicalRing O]
+    [IsLocalRing O] [IsModuleTopology ℤ_[p] O]
+    [Algebra O (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul O (AlgebraicClosure ℚ_[p])]
+    (hOinj : Function.Injective (algebraMap O (AlgebraicClosure ℚ_[p])))
+    (hZOcompat : ∀ x : ℤ_[p],
+      algebraMap O (AlgebraicClosure ℚ_[p]) (algebraMap ℤ_[p] O x) =
+        algebraMap R (AlgebraicClosure ℚ_[p]) (algebraMap ℤ_[p] R x))
+    {ρO : GaloisRep ℚ O (Fin 2 → O)}
+    (e : ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O))
+      ≃ₗ[AlgebraicClosure ℚ_[p]] ((AlgebraicClosure ℚ_[p]) ⊗[R] V))
+    (he : ∀ g x, e ((ρO.baseChange (AlgebraicClosure ℚ_[p])) g x) =
+      (ρ.baseChange (AlgebraicClosure ℚ_[p])) g (e x)) :
+    ∃ (T : Type u) (_ : AddCommGroup T) (_ : Module ℤ_[p] T)
+      (_ : Module.Finite ℤ_[p] T) (_ : Module.Free ℤ_[p] T)
+      (ρT : GaloisRep ℚ ℤ_[p] T) (c : ℕ)
+      (f : (Fin 2 → O) →ₗ[ℤ_[p]] T) (g : T →ₗ[ℤ_[p]] (Fin 2 → O)),
+      (∀ k : ℕ,
+        (ρT.baseChange (ℤ_[p] ⧸ Ideal.span {(p : ℤ_[p]) ^ k})).HasFlatProlongationAt
+          (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : p.Prime))) ∧
+      (∀ (σ : Field.absoluteGaloisGroup ℚ) (x : Fin 2 → O),
+        f (ρO σ x) = ρT σ (f x)) ∧
+      (∀ x : Fin 2 → O, g (f x) = (p : ℤ_[p]) ^ c • x) :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
 /-- **Lattice flatness at the `p`-power levels** (Eisenstein pillar
-E2b′-flat, deep half; sorry node — carved out 2026-07-24 from
-`isFlatAt_lattice_of_generic_iso`, whose arbitrary-open-ideal
-quantifier is now PROVEN glue over this cofinal subtower via
-`exists_pow_p_mem_of_isOpen` and the quotient-closure brick
-`IsFlatPointsGroupAt.of_surjective`): every `p`-power level
+E2b′-flat, deep half; DECOMPOSED 2026-07-25 into a PROVEN
+commensurability + Raynaud-closure assembly over the single citation
+leaf `exists_flatIsogenousLattice_of_generic_iso` — carved out
+2026-07-24 from `isFlatAt_lattice_of_generic_iso`, whose
+arbitrary-open-ideal quantifier is PROVEN glue over this cofinal
+subtower via `exists_pow_p_mem_of_isOpen` and the quotient-closure
+brick `IsFlatPointsGroupAt.of_surjective`): every `p`-power level
 `(Fin 2 → O) ⧸ p^m` of the lattice tower has a finite flat
-prolongation at `p`, given the generic linkage. HONEST CLASSICAL
-ROUTE (recorded 2026-07-24, correcting the parent's original
-commensurability note):
+prolongation at `p`, given the generic linkage.
+
+PROOF (2026-07-25), the commensurability + closure half of the honest
+classical route; the Barsotti–Tate/conjugate-fibre half is the
+citation leaf. The citation supplies a `ℤ_p`-lattice `T` with a
+`Γ ℚ`-action all of whose `p`-power levels `T ⧸ p^k` are finite flat
+at `p`, an equivariant `ℤ_p`-linear `f : (Fin 2 → O) → T` and a
+`ℤ_p`-linear `g : T → (Fin 2 → O)` with `g ∘ f = p^c`. Then:
+* `(p : O) ≠ 0` — `O` embeds in the characteristic-zero `ℚ̄_p` — and
+  `O` is a domain, so the lattice `Fin 2 → O` has no `p`-torsion;
+* KERNEL BOUND (the commensurability step): if `1 ⊗ f x` vanishes in
+  `(ℤ_p ⧸ p^{m+c}) ⊗ T` then `f x = p^{m+c} y`
+  (`exists_smul_of_tmul_one_eq_zero`), so
+  `p^c x = g (f x) = p^c (p^m g y)`, and torsion-freeness gives
+  `x = p^m · g y`; that is, the kernel of the comparison map
+  `cmp : (Fin 2 → O) → (ℤ_p ⧸ p^{m+c}) ⊗ T`, `x ↦ 1 ⊗ f x`, is
+  contained in `p^m (Fin 2 → O)`, which is exactly the kernel of the
+  level-`m` reduction `projm : x ↦ 1 ⊗ x`;
+* CLOSURE (Raynaud): both `cmp` and the level-`m` reduction `projm`
+  are `Γ ℚ_p`-equivariant, so the level is a `Γ ℚ_p`-equivariant
+  SUBQUOTIENT of the flat level `(ℤ_p ⧸ p^{m+c}) ⊗ T` — sub then
+  quotient, the two Raynaud closure bricks, packaged as
+  `isFlatPointsGroupAt_of_subquotient` (which builds the intermediate
+  `(Fin 2 → O) ⧸ ker cmp` with the induced action
+  `quotientDistribMulAction`, embeds it by
+  `QuotientAddGroup.kerLift` through
+  `IsFlatPointsGroupAt.of_injective`, and pushes it onto the target
+  level by `QuotientAddGroup.lift` through
+  `IsFlatPointsGroupAt.of_surjective`). The repackaging
+  `hasFlatProlongationAt_iff_isFlatPointsGroupAt` converts at both
+  ends.
+
+HONEST CLASSICAL ROUTE (recorded 2026-07-24, correcting the parent's
+original commensurability note; steps 1–2 and the lattice production
+of step 3 are the citation leaf, the rest is the proof above):
 1. the flatness of the `R`-tower (`hρ.isFlat` at the `p`-power levels
    of `R`) makes `V` the Tate module of a `p`-divisible group over
    `ℤ_p`, so `V ⊗ ℚ_p` is Barsotti–Tate (crystalline with Hodge–Tate
@@ -9879,8 +10136,110 @@ theorem hasFlatProlongationAt_lattice_pPow_of_generic_iso
     (m : ℕ) :
     (ρO.baseChange (O ⧸ Ideal.span {(p : O) ^ m})).HasFlatProlongationAt
       (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
-        (Fact.out : p.Prime)) :=
-  sorry
+        (Fact.out : p.Prime)) := by
+  classical
+  obtain ⟨T, _, _, _, _, ρT, c, f, g, hflatT, hfequiv, hgf⟩ :=
+    exists_flatIsogenousLattice_of_generic_iso hpodd hv hρ hOinj hZOcompat e he
+  -- `p` is a nonzero element of the domain `O`: it maps to `p ≠ 0` in the
+  -- characteristic-zero field `ℚ̄_p`.
+  have hpO : (p : O) ≠ 0 := by
+    intro h0
+    have h2 : ((p : ℕ) : AlgebraicClosure ℚ_[p]) = 0 := by
+      rw [← map_natCast (algebraMap O (AlgebraicClosure ℚ_[p])), h0, map_zero]
+    exact (Nat.cast_ne_zero.mpr (Fact.out : p.Prime).ne_zero) h2
+  -- hence the lattice has no `p`-torsion
+  have htors : ∀ z : Fin 2 → O, (p : ℤ_[p]) ^ c • z = 0 → z = 0 := by
+    intro z hz
+    funext i
+    have hz' := congrFun hz i
+    rw [Pi.zero_apply, Pi.smul_apply, Algebra.smul_def, map_pow, map_natCast] at hz'
+    exact (mul_eq_zero.mp hz').resolve_left (pow_ne_zero _ hpO)
+  -- `p^m` annihilates the level-`m` tensor
+  have hkill : ∀ w : Fin 2 → O,
+      (1 : O ⧸ Ideal.span {(p : O) ^ m}) ⊗ₜ[O] (((p : O) ^ m) • w) = 0 := by
+    intro w
+    rw [← TensorProduct.smul_tmul]
+    have hz : (((p : O) ^ m) • (1 : O ⧸ Ideal.span {(p : O) ^ m})) = 0 := by
+      rw [Algebra.smul_def]; simp
+    rw [hz, TensorProduct.zero_tmul]
+  -- COMMENSURABILITY: the kernel of the comparison map into the level
+  -- `m + c` of `T` is contained in `p^m` times the lattice
+  have hker : ∀ x : Fin 2 → O,
+      (1 : ℤ_[p] ⧸ Ideal.span {(p : ℤ_[p]) ^ (m + c)}) ⊗ₜ[ℤ_[p]] (f x) = 0 →
+      ∃ w : Fin 2 → O, x = ((p : O) ^ m) • w := by
+    intro x hx
+    obtain ⟨y, hy⟩ := exists_smul_of_tmul_one_eq_zero _ _ hx
+    have h1 : (p : ℤ_[p]) ^ c • x = (p : ℤ_[p]) ^ c • ((p : ℤ_[p]) ^ m • g y) :=
+      calc (p : ℤ_[p]) ^ c • x = g (f x) := (hgf x).symm
+        _ = g ((p : ℤ_[p]) ^ (m + c) • y) := by rw [hy]
+        _ = (p : ℤ_[p]) ^ (m + c) • g y := map_smul g _ _
+        _ = (p : ℤ_[p]) ^ c • ((p : ℤ_[p]) ^ m • g y) := by
+            rw [smul_smul, ← pow_add, Nat.add_comm]
+    have h2 : (p : ℤ_[p]) ^ c • (x - (p : ℤ_[p]) ^ m • g y) = 0 := by
+      rw [smul_sub, h1, sub_self]
+    refine ⟨g y, ?_⟩
+    rw [sub_eq_zero.mp (htors _ h2), ← algebraMap_smul O ((p : ℤ_[p]) ^ m) (g y),
+      map_pow, map_natCast]
+  -- the two comparison maps, at their natural types
+  let cmp : (Fin 2 → O) →+
+      ((ℤ_[p] ⧸ Ideal.span {(p : ℤ_[p]) ^ (m + c)}) ⊗[ℤ_[p]] T) :=
+    ((TensorProduct.mk ℤ_[p] (ℤ_[p] ⧸ Ideal.span {(p : ℤ_[p]) ^ (m + c)}) T
+      (1 : ℤ_[p] ⧸ Ideal.span {(p : ℤ_[p]) ^ (m + c)})).comp f).toAddMonoidHom
+  let projm : (Fin 2 → O) →+ ((O ⧸ Ideal.span {(p : O) ^ m}) ⊗[O] (Fin 2 → O)) :=
+    (TensorProduct.mk O (O ⧸ Ideal.span {(p : O) ^ m}) (Fin 2 → O)
+      (1 : O ⧸ Ideal.span {(p : O) ^ m})).toAddMonoidHom
+  have hcmpapp : ∀ x : Fin 2 → O,
+      cmp x = (1 : ℤ_[p] ⧸ Ideal.span {(p : ℤ_[p]) ^ (m + c)}) ⊗ₜ[ℤ_[p]] f x :=
+    fun _ => rfl
+  have hprojapp : ∀ x : Fin 2 → O,
+      projm x = (1 : O ⧸ Ideal.span {(p : O) ^ m}) ⊗ₜ[O] x :=
+    fun _ => rfl
+  -- the local lattice action as a multiplicative family of additive
+  -- endomorphisms (first-order, so no instance is transported onto the
+  -- lattice itself)
+  have hact1 : ∀ x : Fin 2 → O, ((ρO.toLocal 𝔭ᵥ) 1) x = x :=
+    fun x => by simp only [map_one, Module.End.one_apply]
+  have hactmul : ∀ (a b : Field.absoluteGaloisGroup ℚᵖᵥ) (x : Fin 2 → O),
+      ((ρO.toLocal 𝔭ᵥ) (a * b)) x = ((ρO.toLocal 𝔭ᵥ) a) (((ρO.toLocal 𝔭ᵥ) b) x) :=
+    fun a b x => by simp only [map_mul, Module.End.mul_apply]
+  -- the kernel bound: `ker cmp ⊆ ker projm`
+  have hkerle : ∀ x : Fin 2 → O, cmp x = 0 → projm x = 0 := by
+    intro x hx
+    obtain ⟨w, hw⟩ := hker x (by rw [← hcmpapp]; exact hx)
+    rw [hprojapp, hw]
+    exact hkill w
+  have hprojsurj : Function.Surjective projm := by
+    intro z
+    induction z using TensorProduct.induction_on with
+    | zero => exact ⟨0, map_zero _⟩
+    | add a b ha hb =>
+      obtain ⟨x, hx⟩ := ha
+      obtain ⟨y, hy⟩ := hb
+      exact ⟨x + y, by rw [map_add, hx, hy]⟩
+    | tmul cc w =>
+      obtain ⟨cc', rfl⟩ := Ideal.Quotient.mk_surjective cc
+      refine ⟨cc' • w, ?_⟩
+      rw [hprojapp, ← TensorProduct.smul_tmul, Algebra.smul_def, mul_one]
+      rfl
+  -- RAYNAUD CLOSURE: a subobject of the flat level `T ⧸ p^(m+c)`, then a
+  -- quotient onto the level `(O ⧸ p^m) ⊗ (Fin 2 → O)`
+  refine (GaloisRep.hasFlatProlongationAt_iff_isFlatPointsGroupAt _).mpr ?_
+  refine isFlatPointsGroupAt_of_subquotient
+    (fun σ => ((ρO.toLocal 𝔭ᵥ) σ).toAddMonoidHom) hact1 hactmul
+    ((GaloisRep.hasFlatProlongationAt_iff_isFlatPointsGroupAt _).mp
+      (hflatT (m + c)))
+    cmp ?_ projm ?_ hprojsurj hkerle
+  · intro σ x
+    show cmp (((ρO.toLocal 𝔭ᵥ) σ) x) =
+      ((ρT.baseChange (ℤ_[p] ⧸ Ideal.span {(p : ℤ_[p]) ^ (m + c)})).toLocal 𝔭ᵥ) σ
+        (cmp x)
+    rw [GaloisRep.toLocal_apply, GaloisRep.toLocal_apply]
+    simp only [hcmpapp, hfequiv, GaloisRep.baseChange_tmul]
+  · intro σ x
+    show projm (((ρO.toLocal 𝔭ᵥ) σ) x) =
+      ((ρO.baseChange (O ⧸ Ideal.span {(p : O) ^ m})).toLocal 𝔭ᵥ) σ (projm x)
+    rw [GaloisRep.toLocal_apply, GaloisRep.toLocal_apply]
+    simp only [hprojapp, GaloisRep.baseChange_tmul]
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **Lattice flatness transfer** (Eisenstein pillar E2b′-flat;
