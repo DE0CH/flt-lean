@@ -1298,8 +1298,103 @@ theorem threeadicRealization_det_cyclotomic_of_witness
         (cyclotomicCharacter (AlgebraicClosure ℚ) 3 g.toRingEquiv) :=
   sorry
 
+/-- **Carayol local-global compatibility away from the residue
+characteristic — the conductor of the descended system** (sorry node,
+CITATION LEAF): the Brauer-descended `3`-adic member `τ` has a
+conductor `N` in the usual sense, namely
+
+* `τ` is unramified at every prime `p ∤ 3N` (clause 1), and
+* every prime `p ∤ 3` dividing `N` is a prime at which the `ℓ`-adic
+  member `ρ` itself genuinely ramifies, and is distinct from `ℓ`
+  (clause 2).
+
+This is exactly the literature joint of the ramification transfer, and
+nothing more: it is the statement that the conductor is an invariant of
+the compatible system away from the residue characteristic. Clause 1 is
+Carayol's local-global compatibility at the places `p ∤ 3` (the
+automorphic side is unramified at every place prime to the level, and
+the Weil–Deligne parameter of the Galois side at such a place matches
+it, so inertia at `p` acts trivially on `τ`). Clause 2 is the
+member-independence half of the same compatibility, read on the
+`ℓ`-adic member of the same system: a place `p ∤ 3` in the support of
+the conductor carries a ramified Weil–Deligne parameter, and that
+parameter is member-independent for `p` prime to BOTH residue
+characteristics, so `ρ` is ramified at `p` too; the extra clause
+`p ≠ ℓ` is the Fontaine–Laffaille/Carayol input at the `ℓ`-adic
+member's own residue characteristic — `ρ` is FLAT at `ℓ`
+(`hρ.isFlat`), i.e. crystalline of Hodge–Tate weights `{0, 1}`, which
+is the local condition corresponding to level prime to `ℓ`, so `ℓ`
+does not divide the conductor.
+
+Note that no numerical value of `N` is asserted here: the numerical
+"conductor divides `2`" of the informal argument is DERIVED from these
+two clauses together with the hardly ramified hypotheses on `ρ` in the
+consumer below (`threeadicRealization_isUnramified_of_witness`), which
+is where the transport lives. Correspondingly this leaf is stated with
+`N` existentially quantified, so any correct route to the conductor —
+via the level of the descended Hilbert newform, via the Artin conductor
+of `τ`, or via the local Langlands parameters — may discharge it.
+
+Literature: Carayol, *Sur les représentations `ℓ`-adiques associées aux
+formes modulaires de Hilbert*, Ann. Sci. ÉNS 19 (1986) (local-global
+compatibility fixing the conductor); Khare–Wintenberger, *Serre's
+modularity conjecture (I)*, Invent. Math. 178 (2009), §5 (strict
+compatibility away from the residue characteristic); BLGGT, *Potential
+automorphy and change of weight*, Ann. of Math. 179 (2014), §5.5
+(strict compatibility of the constructed system); Fontaine–Laffaille,
+*Construction de représentations p-adiques*, Ann. Sci. ÉNS 15 (1982)
+(flat at `ℓ` ⟺ level prime to `ℓ` in weight `2`).
+
+SOUNDNESS AUDIT (both ways, 2026-07-24): (i) direct — for the
+realization produced by the construction leaf this is Carayol's
+theorem as cited, applied to the descended eigensystem on both sides of
+the compatible family; for an abstract realization the
+abstract-quantification caveat of pillar β applies, and (ii) collapse —
+the hypothesis set is classically unsatisfiable (headline below), so
+the statement is classically true for every package. Degeneracy check:
+the statement is NOT satisfiable by a degenerate `N`. `N = 0` is
+excluded by clause 2 at `p = ℓ` (`ℓ ∣ 0` and `ℓ ≠ 3` since `ℓ ≥ 5`
+would force `ℓ ≠ ℓ`), so any witness has finitely many bad primes; and
+clause 1 is not vacuous for any witness, since it covers every prime
+outside the finite support of `3N`.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
+discharge through `Family.lean`, `Lift.lean`, or
+`Modularity/Interface.lean`. -/
+theorem exists_conductor_threeadicRealization_of_witness
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+    {Wit : PotentialModularityWitness ℓ O ρ}
+    (Rlz : ThreeadicRealization ℓ O ρ Wit) :
+    ∃ N : ℕ,
+      (∀ p (hp : p.Prime), p ≠ 3 → ¬ p ∣ N →
+        Rlz.τ.IsUnramifiedAt hp.toHeightOneSpectrumRingOfIntegersRat) ∧
+      (∀ p (hp : p.Prime), p ≠ 3 → p ∣ N →
+        p ≠ ℓ ∧
+          ¬ ρ.IsUnramifiedAt hp.toHeightOneSpectrumRingOfIntegersRat) :=
+  sorry
+
 /-- **Condition transfer, ramification — unramified outside `{2, 3}`**
-(sorry node): the Brauer-descended `3`-adic member is unramified at
+(PROVEN 2026-07-24 over the Carayol citation leaf
+`exists_conductor_threeadicRealization_of_witness`): the
+Brauer-descended `3`-adic member is unramified at
 every prime `p ∉ {2, 3}`. Classically: the compatible system attached
 to the descended eigensystem has conductor dividing `2` (the hardly
 ramified `ρ` has conductor `2`, and the conductor is constant in a
@@ -1318,6 +1413,47 @@ the constructed system); Carayol, *Sur les représentations ℓ-adiques
 associées aux formes modulaires de Hilbert*, Ann. Sci. ÉNS 19 (1986)
 (local-global compatibility fixing the conductor).
 
+ROUTE AUDIT (2026-07-24). Two cuts of this node were considered.
+
+* The *charFrob cut*: transport the ramification statement out of the
+  realization's own compatibility clause `Rlz.compat`. REJECTED — and
+  it is worth recording why, since `compat` is the only arithmetic
+  datum the interface structure carries. `compat` equates
+  CHARACTERISTIC POLYNOMIALS OF FROBENIUS at unramified places; it says
+  nothing whatever about inertia, and it is quantified away from the
+  finite exceptional set `Rlz.S₁`, which is precisely where the
+  ramification question is nontrivial. No amount of Frobenius data
+  determines an inertia action, so this cut cannot close — it would
+  have to smuggle the whole content into a "compatibility ⟹ inertia"
+  step that is itself the theorem.
+* The *conductor cut* (TAKEN): cut at the literature joint, i.e. at
+  Carayol's local-global compatibility itself, which is the theorem
+  that produces a conductor with the two defining properties (`τ`
+  unramified off `3N`; the support of `N` away from `3` seen on the
+  `ℓ`-adic member). Everything downstream of that joint is then a
+  formal `p ∣ N` dichotomy against the hardly ramified hypotheses on
+  `ρ`, and is PROVEN here.
+
+ASSEMBLY (2026-07-24, PROVEN): let `N` be the conductor supplied by
+`exists_conductor_threeadicRealization_of_witness`, and let `p` be a
+prime with `p ≠ 2`, `p ≠ 3`. Dichotomy on `p ∣ N`.
+
+* `p ∤ N`: clause 1 of the citation leaf gives `τ` unramified at `p`
+  directly — this is the generic case, and the informal "conductor
+  divides `2`" is exactly the assertion that it is the only case.
+* `p ∣ N`: clause 2 gives `p ≠ ℓ` together with `ρ` RAMIFIED at `p`.
+  But `ρ` is hardly ramified, hence unramified at every prime outside
+  `{2, ℓ}` (`hρ.isUnramified`), and `p ∉ {2, ℓ}` — contradiction. So
+  this case is empty, which is the Lean rendering of "the conductor of
+  the system divides `2`": its only possible odd prime divisor away
+  from `3` would be a prime of genuine ramification of `ρ`, and there
+  is none.
+
+The residual sorry of this node is therefore exactly the one citation
+leaf, and the two hardly ramified inputs it is cut against
+(`hρ.isUnramified` here, `hρ.isFlat` inside the leaf's `p ≠ ℓ` clause)
+are recorded at the joint rather than assumed silently.
+
 SOUNDNESS AUDIT (both ways, 2026-07-24): (i) direct — for the
 realization produced by the construction leaf this is the strict
 compatibility transfer above; for an abstract realization the
@@ -1327,7 +1463,8 @@ so the statement is classically true for every package.
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
 discharge through `Family.lean`, `Lift.lean`, or
-`Modularity/Interface.lean`. -/
+`Modularity/Interface.lean` — the citation leaf carries the same
+guard, and the assembly below consumes nothing else. -/
 theorem threeadicRealization_isUnramified_of_witness
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
@@ -1351,8 +1488,20 @@ theorem threeadicRealization_isUnramified_of_witness
     {Wit : PotentialModularityWitness ℓ O ρ}
     (Rlz : ThreeadicRealization ℓ O ρ Wit) :
     ∀ p (hp : p.Prime), p ≠ 2 ∧ p ≠ 3 →
-      Rlz.τ.IsUnramifiedAt hp.toHeightOneSpectrumRingOfIntegersRat :=
-  sorry
+      Rlz.τ.IsUnramifiedAt hp.toHeightOneSpectrumRingOfIntegersRat := by
+  -- the conductor of the descended system (Carayol local-global
+  -- compatibility away from the residue characteristic)
+  obtain ⟨N, hunr, hbad⟩ :=
+    exists_conductor_threeadicRealization_of_witness hℓodd hℓ5 hZinj
+      hrank hρ hW hρbar hirr π hπsurj hπ Rlz
+  rintro p hp ⟨hp2, hp3⟩
+  by_cases hdvd : p ∣ N
+  · -- `p` divides the conductor: then `ρ` itself ramifies at `p`,
+    -- contradicting hard ramification since `p ∉ {2, ℓ}`
+    obtain ⟨hpℓ, hρbad⟩ := hbad p hp hp3 hdvd
+    exact absurd (hρ.isUnramified p hp ⟨hp2, hpℓ⟩) hρbad
+  · -- `p` is prime to the conductor and to `3`
+    exact hunr p hp hp3 hdvd
 
 /-- **Condition transfer, flatness at `3` — Fontaine–Laffaille**
 (sorry node): the Brauer-descended `3`-adic member is flat at `3`.
