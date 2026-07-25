@@ -379,25 +379,78 @@ end Identities
 
 /-! ### The sorry leaves: Vélu's theorem -/
 
-/-- **SORRY LEAF (general Weierstrass geometry), cut 2026-07-26 out of
-`velu_isElliptic`.** Over a field of characteristic zero, a Weierstrass curve carrying
-three affine points of order dividing `2` with pairwise distinct `x`-coordinates is
-nonsingular.
+/-- **PROVEN 2026-07-26** (general Weierstrass geometry, no Vélu input). Over a field of
+characteristic zero, a Weierstrass curve carrying three affine points of order dividing `2`
+with pairwise distinct `x`-coordinates is nonsingular.
 
-Route. Substituting `y = negY x y`, i.e. `2y + a₁x + a₃ = 0`, into the Weierstrass equation
+Proof. Substituting `y = negY x y`, i.e. `2y + a₁x + a₃ = 0`, into the Weierstrass equation
 turns it into `4x³ + b₂x² + 2b₄x + b₆ = 0`; the hypothesis therefore supplies three distinct
-roots of that cubic, which is thus separable. Its discriminant is `16 Δ`, so `Δ ≠ 0`. Only
-the last step needs a computation: with `4x³ + b₂x² + 2b₄x + b₆ = 4(x−e₁)(x−e₂)(x−e₃)` one
-has `b₂ = −4(e₁+e₂+e₃)`, `2b₄ = 4(e₁e₂+e₁e₃+e₂e₃)`, `b₆ = −4e₁e₂e₃`, and
-`Δ = 16(e₁−e₂)²(e₁−e₃)²(e₂−e₃)²` is then a `ring` identity in `e₁, e₂, e₃` after unfolding
-`Δ`, `b₂`, `b₄`, `b₆`, `b₈`. Characteristic zero is used to solve `2y = −a₁x − a₃` for `y`
-and to divide by `4`; characteristic `≠ 2` would do. -/
+roots `e₁, e₂, e₃` of that cubic. Dividing the differences of the three instances by
+`eᵢ − eⱼ` — which is where the distinctness is consumed — solves the resulting Vandermonde
+system for the coefficients:
+
+  `b₂ = −4(e₁+e₂+e₃)`,  `b₄ = 2(e₁e₂+e₁e₃+e₂e₃)`,  `b₆ = −4e₁e₂e₃`,
+
+and then `b₈ = 4(e₁+e₂+e₃)e₁e₂e₃ − (e₁e₂+e₁e₃+e₂e₃)²` from `4b₈ = b₂b₆ − b₄²`. Unfolding
+`Δ = −b₂²b₈ − 8b₄³ − 27b₆² + 9b₂b₄b₆` and substituting gives the `ring` identity
+
+  `Δ = 16 (e₁−e₂)² (e₁−e₃)² (e₂−e₃)²`
+
+— i.e. `16Δ` is the discriminant of `4x³ + b₂x² + 2b₄x + b₆`, cf. mathlib's
+`twoTorsionPolynomial_discr` — so `Δ ≠ 0`. Characteristic zero is used only to divide by
+`2` and `4`; characteristic `≠ 2` would do. -/
 theorem isElliptic_of_three_twoTorsion {K : Type*} [Field K] [CharZero K]
     {W' : Affine K} {x₁ x₂ x₃ y₁ y₂ y₃ : K}
     (h₁ : W'.Equation x₁ y₁) (h₂ : W'.Equation x₂ y₂) (h₃ : W'.Equation x₃ y₃)
     (t₁ : y₁ = W'.negY x₁ y₁) (t₂ : y₂ = W'.negY x₂ y₂) (t₃ : y₃ = W'.negY x₃ y₃)
-    (h₁₂ : x₁ ≠ x₂) (h₁₃ : x₁ ≠ x₃) (h₂₃ : x₂ ≠ x₃) : W'.IsElliptic :=
-  sorry
+    (h₁₂ : x₁ ≠ x₂) (h₁₃ : x₁ ≠ x₃) (h₂₃ : x₂ ≠ x₃) : W'.IsElliptic := by
+  -- Substituting `2y + a₁x + a₃ = 0` into the Weierstrass equation.
+  have C : ∀ {x y : K}, W'.Equation x y → y = W'.negY x y →
+      4 * x ^ 3 + W'.b₂ * x ^ 2 + 2 * W'.b₄ * x + W'.b₆ = 0 := by
+    intro x y he ht
+    rw [equation_iff'] at he
+    have hT : 2 * y + W'.a₁ * x + W'.a₃ = 0 := by
+      simp only [negY] at ht; linear_combination ht
+    simp only [b₂, b₄, b₆]
+    linear_combination (2 * y + W'.a₁ * x + W'.a₃) * hT - 4 * he
+  have c₁ := C h₁ t₁
+  have c₂ := C h₂ t₂
+  have c₃ := C h₃ t₃
+  -- Dividing the difference of two instances of the cubic by `u − v`.
+  have key : ∀ {u v : K}, u ≠ v →
+      4 * u ^ 3 + W'.b₂ * u ^ 2 + 2 * W'.b₄ * u + W'.b₆ = 0 →
+      4 * v ^ 3 + W'.b₂ * v ^ 2 + 2 * W'.b₄ * v + W'.b₆ = 0 →
+      4 * (u ^ 2 + u * v + v ^ 2) + W'.b₂ * (u + v) + 2 * W'.b₄ = 0 := by
+    intro u v huv hu hv
+    have hmul : (u - v) * (4 * (u ^ 2 + u * v + v ^ 2) + W'.b₂ * (u + v) + 2 * W'.b₄) = 0 := by
+      linear_combination hu - hv
+    rcases mul_eq_zero.mp hmul with h | h
+    · exact absurd (sub_eq_zero.mp h) huv
+    · exact h
+  have A₁₂ := key h₁₂ c₁ c₂
+  have A₁₃ := key h₁₃ c₁ c₃
+  have hb₂ : W'.b₂ = -4 * (x₁ + x₂ + x₃) := by
+    have hmul : (x₂ - x₃) * (4 * (x₁ + x₂ + x₃) + W'.b₂) = 0 := by linear_combination A₁₂ - A₁₃
+    rcases mul_eq_zero.mp hmul with h | h
+    · exact absurd (sub_eq_zero.mp h) h₂₃
+    · linear_combination h
+  have hb₄ : W'.b₄ = 2 * (x₁ * x₂ + x₁ * x₃ + x₂ * x₃) := by
+    linear_combination (1 / 2 : K) * A₁₂ - ((x₁ + x₂) / 2) * hb₂
+  have hb₆ : W'.b₆ = -4 * (x₁ * x₂ * x₃) := by
+    linear_combination c₁ - x₁ ^ 2 * hb₂ - 2 * x₁ * hb₄
+  have hb₈ : W'.b₈ = 4 * (x₁ + x₂ + x₃) * (x₁ * x₂ * x₃)
+      - (x₁ * x₂ + x₁ * x₃ + x₂ * x₃) ^ 2 := by
+    have h := W'.b_relation
+    rw [hb₂, hb₄, hb₆] at h
+    linear_combination h / 4
+  have hΔ : W'.Δ = 16 * ((x₁ - x₂) * (x₁ - x₃) * (x₂ - x₃)) ^ 2 := by
+    simp only [WeierstrassCurve.Δ, hb₂, hb₄, hb₆, hb₈]
+    ring
+  refine ⟨isUnit_iff_ne_zero.mpr ?_⟩
+  rw [hΔ]
+  exact mul_ne_zero (by norm_num)
+    (pow_ne_zero _ (mul_ne_zero (mul_ne_zero (sub_ne_zero.mpr h₁₂) (sub_ne_zero.mpr h₁₃))
+      (sub_ne_zero.mpr h₂₃)))
 
 section Velu
 
