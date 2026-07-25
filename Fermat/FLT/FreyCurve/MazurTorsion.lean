@@ -733,43 +733,331 @@ theorem WeierstrassCurve.no_torsion_order_20 (E : WeierstrassCurve ℚ)
   simp only [Finset.mem_insert, Finset.mem_singleton] at h
   omega
 
-/-- **No rational point of order `21`** (sorry node — IRREDUCIBLE
-literature citation, audited 2026-07-25): `X_1(21)` has genus `5` and
-no non-cuspidal rational point (Kubert–Kenku–Ligozat; subsumed in
-Mazur 1977, Thm 8).
+/-!
+##### Level `21`: the `X_0(21) ∩ X_1(7)` cut (2026-07-25)
 
-By the criterion in the section note the `X_0` shortcut of
-`mem_cyclicIsogenyDegrees` is NOT available here — `21` is one of the
-three levels (`21, 25, 27`) that are in Kenku's list and have no
-level-structure sharpening either, so these are the only bare sorry
-nodes left among the eleven. `21` IS a
-rational cyclic isogeny degree, so a rational `21`-isogeny is no
-contradiction at all. `X_0(21)` is a genus-one curve of Mordell–Weil
-rank `0` with non-cuspidal rational points; an explicit witness curve
-carrying a rational cyclic `21`-isogeny is `[a₁,a₂,a₃,a₄,a₆] =
-[1, −1, 0, 3, −1]`, of conductor `162` (found with PARI/GP
-`ellisomat`; untrusted searcher, never a proof). Only the finer
-`X_1(21)` statement — that none of the finitely many non-cuspidal
-rational points of `X_0(21)` lifts to a rational point of order `21` —
-excludes the point, and that needs `X_1(21)` itself.
+`no_torsion_order_21` used to be a bare genus-`5` citation (`X_1(21)` has
+genus `5`; Chabauty on its Jacobian). It is now PROVEN from two strictly
+shallower leaves whose images in the `j`-line are disjoint, plus an
+arithmetic computation that is discharged in full here.
 
-Other routes checked and rejected:
+A rational point `Q` of order `21` supplies TWO independent pieces of level
+structure, and it suffices to intersect the two loci they cut out on the
+`j`-line — neither of which is `X_1(21)`:
 
-* *Divisor reduction fails by design.* `21 = 3 · 7` and both `3` and
-  `7` are permitted torsion orders, so neither the other levels nor
+* `⟨Q⟩` is a rational — indeed pointwise Galois-FIXED — cyclic subgroup of
+  order `21`, i.e. a non-cuspidal rational point of `X_0(21)`. That curve
+  has genus `1`: it is the elliptic curve `21a1 = [1,0,0,−4,−1]`, of
+  Mordell–Weil rank `0` with `#X_0(21)(ℚ) = 8` (torsion `ℤ/4 × ℤ/2`), and
+  `21` being squarefree with two prime factors it has `2² = 4` cusps. So
+  there are exactly FOUR non-cuspidal rational points; that is
+  `j_mem_of_cyclic_twentyOne_isogeny`.
+* `3 • Q` is a rational point of order `7`, so `E` lies in the level-`7`
+  Tate normal form family — `X_1(7)` has genus `0`, with explicit rational
+  parameter `d`, `b = d³ − d²`, `c = d² − d`; that is
+  `exists_levelSeven_jParam`.
+
+**The two loci do not meet, and the reason is a single congruence** — which
+is what makes the intersection a finite computation rather than another
+Chabauty problem. Each of the four `X_0(21)` values has strictly positive
+`5`-adic valuation and a denominator that is a power of `2`:
+
+  `3375/2 = 5³·27/2`,   `−140625/8 = −5⁶·9/2³`,
+  `−189613868625/128 = −5³·1516910949/2⁷`,
+  `−1159088625/2097152 = −5³·9272709/2²¹`.
+
+The level-`7` `j`-map never takes such a value. Writing the parameter in
+lowest terms as `d = n/m`, the numerator of `j` is `c₄(n,m)³` for the
+degree-`8` homogeneous form `c₄`, and `c₄` has NO zero on `ℙ¹(𝔽₅)` — a
+`25`-case check discharged by `decide` in `MazurLevelSeven.cFourHom_mod_five`.
+So `5` never divides the numerator of `j` for a curve with a rational
+`7`-torsion point, while it divides all four of the values above.
+
+Routes checked and REJECTED on the way, recorded so they are not retried:
+
+* *The `X_0` shortcut alone is not enough.* `21` IS a rational cyclic
+  isogeny degree, so `mem_cyclicIsogenyDegrees` yields no contradiction at
+  all. The cut above uses `X_0(21)` for the `j`-VALUES, not for the degree,
+  and that is exactly the extra strength it needs.
+* *The level-`3` refinement FAILS.* Replacing the order-`7` point by the
+  order-`3` point `7 • Q` gives a far cheaper genus-`0` family,
+  `y² + a₁xy + a₃y = x³` with `j = t(t−24)³/(t−27)` and `t = a₁³/a₃`, of
+  degree `4` instead of `24`. But every one of the four quartics
+  `t(t−24)³ − j₀(t−27)` HAS a rational root — `t = 9`, `−27/2`, `−1125`,
+  `3375/128` respectively — as it must, since two of the four curves
+  literally have torsion `ℤ/3`. The `7`-torsion is the binding constraint;
+  the `3`-torsion carries no information here.
+* *Divisor reduction fails by design.* `21 = 3 · 7` and both `3` and `7`
+  are permitted torsion orders, so neither the other levels nor
   `no_prime_torsion_ge_eleven` applies.
-* *Reduction plus Hasse only bounds the conductor.* `21` is odd, so
-  the point injects into `Ẽ(𝔽_p)` at every prime `p` of good
-  reduction, `p = 2` included; `21 ≤ ⌊p + 1 + 2√p⌋` then forces bad
-  reduction exactly at `2, 3, 5, 7, 11`, while at `p = 13` already
-  `#Ẽ(𝔽_13) = 21` is Hasse-admissible (`a₁₃ = −7`, `|a₁₃| ≤ 2√13`).
-  A lower bound on the conductor is never a contradiction.
+* *Reduction plus Hasse only bounds the conductor.* `21` is odd, so the
+  point injects into `Ẽ(𝔽_p)` at every prime `p` of good reduction, `p = 2`
+  included; `21 ≤ ⌊p + 1 + 2√p⌋` forces bad reduction exactly at
+  `2, 3, 5, 7, 11`, while at `p = 13` already `#Ẽ(𝔽_13) = 21` is
+  Hasse-admissible (`a₁₃ = −7`). A lower bound on `N_E` is never a
+  contradiction.
 
-A formal proof needs `X_1(21)` as an arithmetic curve over `ℚ`
-together with a Chabauty-style determination of its rational points. -/
-theorem WeierstrassCurve.no_torsion_order_21 (E : WeierstrassCurve ℚ)
-    [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 21 :=
+The four `j`-invariants and the isogeny structure were FOUND with PARI/GP
+(`ellisomat` on `[1,−1,0,3,−1]` of conductor `162`, whose class is exactly
+four curves with degree matrix `[1,3,7,21; 3,1,21,7; 7,21,1,3; 21,7,3,1]`,
+so the four curves carry one rational cyclic `21`-subgroup each) — an
+untrusted searcher, never a proof: the mod-`5` fact that the argument
+actually rests on is re-verified inside Lean by `decide` below, and the
+`5`-adic valuations by `norm_num`.
+-/
+
+namespace MazurLevelSeven
+
+/-- **`c₄` of the level-`7` Tate normal form** (PROVEN correct against
+PARI/GP, 2026-07-25): for `E_d : y² + (1−c)xy − by = x³ − bx²` with
+`b = d³ − d²` and `c = d² − d` — the universal elliptic curve with a point
+of order `7` at `(0,0)` — this polynomial is exactly `E_d.c₄`. -/
+def cFourPoly (d : ℚ) : ℚ :=
+  d ^ 8 - 12 * d ^ 7 + 42 * d ^ 6 - 56 * d ^ 5 + 35 * d ^ 4 - 14 * d ^ 2 + 4 * d + 1
+
+/-- **The discriminant of the level-`7` Tate normal form** (PROVEN correct
+against PARI/GP, 2026-07-25): `Δ(E_d) = d⁷(d−1)⁷(d³ − 8d² + 5d + 1)`. Its
+three factors are the three ways `E_d` degenerates, and `j = c₄³/Δ` is the
+degree-`24` map `X_1(7) → X(1)`, matching `[PSL₂(ℤ) : Γ̄₁(7)] = 24`. -/
+def discPoly (d : ℚ) : ℚ :=
+  d ^ 7 * (d - 1) ^ 7 * (d ^ 3 - 8 * d ^ 2 + 5 * d + 1)
+
+/-- Degree-`8` homogenization of `cFourPoly`: `cFourHom n m = m⁸ · c₄(n/m)`. -/
+def cFourHom (n m : ℤ) : ℤ :=
+  n ^ 8 - 12 * n ^ 7 * m + 42 * n ^ 6 * m ^ 2 - 56 * n ^ 5 * m ^ 3 + 35 * n ^ 4 * m ^ 4
+    - 14 * n ^ 2 * m ^ 6 + 4 * n * m ^ 7 + m ^ 8
+
+/-- Degree-`17` homogenization of `discPoly`: `discHom n m = m¹⁷ · Δ(n/m)`. -/
+def discHom (n m : ℤ) : ℤ :=
+  n ^ 7 * (n - m) ^ 7 * (n ^ 3 - 8 * n ^ 2 * m + 5 * n * m ^ 2 + m ^ 3)
+
+/-- **`c₄` has no zero on `ℙ¹(𝔽₅)`** (PROVEN by exhaustive `decide` over the
+`25` pairs): this single congruence is the whole reason the `X_0(21)` and
+`X_1(7)` loci are disjoint. Note it genuinely needs the projective form —
+`c₄(0,0) = 0`, so coprimality of `(n, m)` is doing work. -/
+lemma cFourHom_mod_five : ∀ x y : ZMod 5, (x ≠ 0 ∨ y ≠ 0) →
+    x ^ 8 - 12 * x ^ 7 * y + 42 * x ^ 6 * y ^ 2 - 56 * x ^ 5 * y ^ 3 + 35 * x ^ 4 * y ^ 4
+      - 14 * x ^ 2 * y ^ 6 + 4 * x * y ^ 7 + y ^ 8 ≠ 0 := by decide
+
+/-- Homogenization identity for `c₄` (PROVEN — pure field algebra). -/
+lemma cFourPoly_hom (n m : ℤ) (hm : (m : ℚ) ≠ 0) :
+    (m : ℚ) ^ 8 * cFourPoly ((n : ℚ) / (m : ℚ)) = (cFourHom n m : ℚ) := by
+  unfold cFourPoly cFourHom
+  push_cast
+  field_simp
+
+/-- Homogenization identity for `Δ` (PROVEN — pure field algebra). -/
+lemma discPoly_hom (n m : ℤ) (hm : (m : ℚ) ≠ 0) :
+    (m : ℚ) ^ 17 * discPoly ((n : ℚ) / (m : ℚ)) = (discHom n m : ℚ) := by
+  unfold discPoly discHom
+  push_cast
+  field_simp
+
+/-- **`5` never divides `c₄(n, m)` for coprime `(n, m)`** (PROVEN from the
+`decide` check by reduction mod `5`). -/
+lemma five_not_dvd_cFourHom {n m : ℤ} (h : ¬((n : ZMod 5) = 0 ∧ (m : ZMod 5) = 0)) :
+    ¬ (5 : ℤ) ∣ cFourHom n m := by
+  intro hdvd
+  have hz : ((cFourHom n m : ℤ) : ZMod 5) = 0 :=
+    (ZMod.intCast_zmod_eq_zero_iff_dvd _ 5).mpr (by exact_mod_cast hdvd)
+  have hx : ((n : ZMod 5) ≠ 0 ∨ (m : ZMod 5) ≠ 0) := by
+    rcases eq_or_ne (n : ZMod 5) 0 with h1 | h1
+    · exact Or.inr fun h2 => h ⟨h1, h2⟩
+    · exact Or.inl h1
+  refine cFourHom_mod_five _ _ hx ?_
+  rw [← hz]
+  unfold cFourHom
+  push_cast
+  ring
+
+/-- **The level-`7` `j`-map never takes a value whose numerator is divisible
+by `5` and whose denominator is a power of `2`** (PROVEN 2026-07-25 — this is
+the arithmetic heart of `no_torsion_order_21`).
+
+Given `j₀ · 2ᵉ = u` with `5 ∣ u`, no rational `d` satisfies
+`j₀ · Δ(d) = c₄(d)³`. Writing `d = n/m` in lowest terms and clearing
+denominators turns that equation into the integer identity
+`u · m⁷ · Δ(n,m) = 2ᵉ · c₄(n,m)³`; since `5 ∣ u` and `5 ∤ 2ᵉ`, this forces
+`5 ∣ c₄(n,m)`, which `five_not_dvd_cFourHom` refutes.
+
+Note the hypothesis `Δ(d) ≠ 0` is NOT needed: if `Δ(d) = 0` the equation
+forces `c₄(d) = 0` and the same contradiction applies. -/
+theorem j_ne_of_five_dvd {u : ℤ} {e : ℕ} {j₀ : ℚ} (hu : (5 : ℤ) ∣ u)
+    (hj : j₀ * 2 ^ e = (u : ℚ)) (d : ℚ) :
+    j₀ * discPoly d ≠ (cFourPoly d) ^ 3 := by
+  intro h
+  set n : ℤ := d.num with hn
+  set m : ℤ := (d.den : ℤ) with hm
+  have hdpos : (0 : ℚ) < (d.den : ℚ) := by exact_mod_cast d.pos
+  have hm0 : (m : ℚ) ≠ 0 := by rw [hm]; push_cast; exact ne_of_gt hdpos
+  have hd : d = (n : ℚ) / (m : ℚ) := by
+    rw [hn, hm]; push_cast; exact (Rat.num_div_den d).symm
+  have h1 : (m : ℚ) ^ 8 * cFourPoly d = (cFourHom n m : ℚ) := by
+    conv_lhs => rw [hd]
+    exact cFourPoly_hom n m hm0
+  have h2 : (m : ℚ) ^ 17 * discPoly d = (discHom n m : ℚ) := by
+    conv_lhs => rw [hd]
+    exact discPoly_hom n m hm0
+  have h' : (u : ℚ) * discPoly d = 2 ^ e * (cFourPoly d) ^ 3 := by
+    rw [← hj]; linear_combination (2 : ℚ) ^ e * h
+  have key : (u : ℚ) * (m : ℚ) ^ 7 * (discHom n m : ℚ) = 2 ^ e * ((cFourHom n m : ℚ)) ^ 3 := by
+    rw [← h1, ← h2]; linear_combination (m : ℚ) ^ 24 * h'
+  have keyZ : u * m ^ 7 * discHom n m = 2 ^ e * (cFourHom n m) ^ 3 := by exact_mod_cast key
+  have hp5 : Prime (5 : ℤ) := Int.prime_iff_natAbs_prime.mpr (by decide)
+  have h5 : (5 : ℤ) ∣ 2 ^ e * (cFourHom n m) ^ 3 := by
+    rw [← keyZ]; exact Dvd.dvd.mul_right (Dvd.dvd.mul_right hu _) _
+  have hcH : (5 : ℤ) ∣ cFourHom n m := by
+    rcases (hp5.dvd_mul).mp h5 with hc | hc
+    · exact absurd (hp5.dvd_of_dvd_pow hc) (by norm_num)
+    · exact hp5.dvd_of_dvd_pow hc
+  refine five_not_dvd_cFourHom ?_ hcH
+  rintro ⟨hn5, hm5⟩
+  rw [ZMod.intCast_zmod_eq_zero_iff_dvd] at hn5 hm5
+  have hg := Int.dvd_gcd hn5 hm5
+  have hcop : Int.gcd n m = 1 := by
+    rw [hn, hm]
+    simpa [Int.gcd, Nat.Coprime] using d.reduced
+  rw [hcop] at hg
+  norm_num at hg
+
+end MazurLevelSeven
+
+/-- **The `j`-invariants of the four curves with a rational cyclic
+`21`-isogeny** (sorry node — the `X_0(21)` input, and the ONLY modular
+citation left at this level): if the cyclic subgroup `⟨g⟩` generated by a
+geometric point `g` of an elliptic curve `E/ℚ` has exact order `21` and is
+stable under `Gal(ℚ̄/ℚ)`, then
+
+  `j(E) ∈ {3375/2, −140625/8, −189613868625/128, −1159088625/2097152}`.
+
+This is the determination of the non-cuspidal rational points of `X_0(21)`.
+That modular curve has genus `1`; concretely it is the elliptic curve
+`21a1 = [1,0,0,−4,−1]`, whose Mordell–Weil group is `ℤ/4 × ℤ/2` — rank `0`,
+`8` rational points. Level `21` is squarefree with two prime factors, so
+`X_0(21)` has `2² = 4` cusps, leaving exactly `4` non-cuspidal rational
+points; they are the four curves of the conductor-`162` isogeny class, whose
+`j`-invariants are the values above.
+
+STRICTLY WEAKER than the genus-`5` `X_1(21)` citation this node replaced:
+`X_0(21)` is a rank-`0` ELLIPTIC curve, so its rational points are a
+Mordell–Weil computation, not a Chabauty argument on a genus-`5` Jacobian.
+It is also a refinement of the same Kenku input that
+`composite_mem_cyclicIsogenyDegrees` already carries — that node records
+that `21` occurs as a cyclic isogeny degree, this one records WHICH curves
+realise it — so the tree gains no new source, only a sharper reading of one
+it already cites.
+
+IRREDUCIBLE at this mathlib pin, for the same reason as the neighbouring
+`X_0` nodes: no modular curve, no Jacobian and no Mordell–Weil machinery
+exists in this development. -/
+theorem WeierstrassCurve.j_mem_of_cyclic_twentyOne_isogeny (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 21)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) :
+    E.j ∈ ({3375 / 2, -140625 / 8, -189613868625 / 128,
+      -1159088625 / 2097152} : Finset ℚ) :=
   sorry
+
+/-- **A rational point of order `21` pins down `j`** (PROVEN 2026-07-25 — the
+same base-change bookkeeping as `mem_cyclicIsogenyDegrees_of_addOrderOf`,
+feeding the `X_0(21)` node): a rational point `Q` of exact order `21`
+generates a cyclic subgroup of order `21` in `E(ℚ̄)` all of whose elements
+are base changes of rational points, hence pointwise Galois-FIXED and in
+particular Galois-stable. -/
+lemma WeierstrassCurve.j_mem_of_addOrderOf_twentyOne
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] (Q : (E⁄ℚ).Point)
+    (hQ : addOrderOf Q = 21) :
+    E.j ∈ ({3375 / 2, -140625 / 8, -189613868625 / 128,
+      -1159088625 / 2097152} : Finset ℚ) := by
+  set g : (E⁄(AlgebraicClosure ℚ)).Point :=
+    Affine.Point.baseChange ℚ (AlgebraicClosure ℚ) Q with hgdef
+  have hgfix : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom g = g := fun σ =>
+    Affine.Point.map_baseChange
+      (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Q
+  have hgord : addOrderOf g = 21 := by
+    rw [← hQ, hgdef]
+    exact addOrderOf_injective _
+      (Affine.Point.map_injective (f := Algebra.ofId ℚ (AlgebraicClosure ℚ))) Q
+  refine E.j_mem_of_cyclic_twentyOne_isogeny g hgord ?_
+  intro σ x hx
+  obtain ⟨k, rfl⟩ := AddSubgroup.mem_zmultiples_iff.mp hx
+  rw [map_zsmul, hgfix σ]
+  exact AddSubgroup.zsmul_mem _ (AddSubgroup.mem_zmultiples g) k
+
+/-- **The level-`7` Tate normal form, in its `j`-invariant shadow** (sorry
+node — the `X_1(7)` input, a GENUS-`0` statement): if `E/ℚ` carries a
+rational point `P` of order `7`, then there is a rational parameter `d` with
+`Δ(d) ≠ 0` and
+
+  `j(E) · Δ(d) = c₄(d)³`,
+
+for the level-`7` polynomials of `MazurLevelSeven` above.
+
+This is the classical Tate normal form at level `7` (Kubert, *Universal
+bounds on the torsion of elliptic curves*, 1976, Table 3). The full
+statement is the ℚ-ISOMORPHISM `E ≅ E_d` with
+
+  `E_d : y² + (1 − c)xy − by = x³ − bx²`,  `b = d³ − d²`, `c = d² − d`,
+
+carrying `P` to `(0,0)`; asserted here is only its `j`-invariant shadow,
+which is what this level consumes and is invariant under the quadratic
+twisting that the `j`-invariant alone cannot see.
+
+ELEMENTARY, unlike its `X_0(21)` sibling: `X_1(7)` has genus `0` and the
+parameter `d` is a rational coordinate on it, so no Mordell–Weil or Chabauty
+input is involved. Proving it needs (i) the normalisation moving `P` to
+`(0,0)` with `a₄ = a₆ = 0` and then scaling the tangent so that `a₂ = a₃`,
+which is the general Tate normal form for a point of order `≥ 4`, and
+(ii) the level-`7` condition `7 • P = 0`, which is what cuts `b, c` down to
+the one-parameter family above. Both are explicit polynomial algebra; the
+first is the same construction as
+`exists_normalForm_pointEquiv_of_rational_two_torsion` further down this
+file, one order up.
+
+Numerically checked with PARI/GP (2026-07-25; untrusted searcher, never a
+proof): for `d = 2, …, 7` the curve `E_d` has rational torsion of order
+exactly `7`, and its `c₄`, `Δ` and `j` agree on the nose with `cFourPoly`,
+`discPoly` and `c₄³/Δ`. Conversely `26b1 = [1,−1,1,−3,3]`, of torsion
+`ℤ/7`, is hit at `d = 2, −1, 1/2`. -/
+theorem WeierstrassCurve.exists_levelSeven_jParam (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] (P : (E⁄ℚ).Point) (hP : addOrderOf P = 7) :
+    ∃ d : ℚ, MazurLevelSeven.discPoly d ≠ 0 ∧
+      E.j * MazurLevelSeven.discPoly d = (MazurLevelSeven.cFourPoly d) ^ 3 :=
+  sorry
+
+/-- **No rational point of order `21`** (PROVEN 2026-07-25 from the
+`X_0(21)` node `j_mem_of_cyclic_twentyOne_isogeny`, the genus-`0` `X_1(7)`
+node `exists_levelSeven_jParam`, and the mod-`5` computation
+`MazurLevelSeven.j_ne_of_five_dvd`): a point `Q` of order `21` gives at once
+a Galois-stable cyclic subgroup `⟨Q⟩` of order `21`, forcing `j(E)` into the
+four-element `X_0(21)` list, and a rational point `3 • Q` of order `7`,
+forcing `j(E)` into the image of the level-`7` `j`-map. Those two loci are
+disjoint because every value in the list has `5` dividing its numerator and
+a power of `2` as its denominator, while the level-`7` `j`-map never does.
+See the section note above for the full account, including the routes that
+fail. -/
+theorem WeierstrassCurve.no_torsion_order_21 (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 21 := by
+  intro hQ
+  have h7 : addOrderOf ((3 : ℕ) • Q) = 7 := by
+    rw [addOrderOf_nsmul' Q (by decide), hQ]; decide
+  obtain ⟨d, -, hd⟩ := E.exists_levelSeven_jParam ((3 : ℕ) • Q) h7
+  have hj := E.j_mem_of_addOrderOf_twentyOne Q hQ
+  simp only [Finset.mem_insert, Finset.mem_singleton] at hj
+  rcases hj with h | h | h | h
+  · exact MazurLevelSeven.j_ne_of_five_dvd (u := 3375) (e := 1) (j₀ := E.j)
+      (by norm_num) (by rw [h]; norm_num) d hd
+  · exact MazurLevelSeven.j_ne_of_five_dvd (u := -140625) (e := 3) (j₀ := E.j)
+      (by norm_num) (by rw [h]; norm_num) d hd
+  · exact MazurLevelSeven.j_ne_of_five_dvd (u := -189613868625) (e := 7) (j₀ := E.j)
+      (by norm_num) (by rw [h]; norm_num) d hd
+  · exact MazurLevelSeven.j_ne_of_five_dvd (u := -1159088625) (e := 21) (j₀ := E.j)
+      (by norm_num) (by rw [h]; norm_num) d hd
 
 /-- **No rational point of order `24`** (PROVEN 2026-07-25 from the
 `X_0` node `mem_cyclicIsogenyDegrees`): a rational point of order `24`
