@@ -64,6 +64,42 @@ noncomputable def tateMarkedPoint (b c : ℚ) [(tateNormalForm b c).IsElliptic] 
     (tateNormalForm b c).toAffine.Point :=
   .some 0 0 (tateNormalForm_nonsingular_zero b c)
 
+/-- **The origin is a flex when `a₂` vanishes** (PROVEN): on a curve
+`y² + a₁ x y + a₃ y = x³ + a₂ x² + a₄ x` with `a₂ = a₄ = 0` and
+`a₃ ≠ 0`, the origin is a point of order dividing `3`.
+
+`a₄ = 0` makes the tangent slope at `(0,0)` equal `a₄/a₃ = 0`, so the
+tangent is the line `y = 0`; it meets the curve where `x³ + a₂ x² = 0`,
+which with `a₂ = 0` is `x³ = 0` — a triple contact. Concretely the
+doubling formulas give `addX = −a₂ = 0` and `negAddY = 0`, so
+`P + P = −P`. The hypothesis `a₃ ≠ 0` is what makes the tangent
+non-vertical, i.e. `P` not `2`-torsion.
+
+(Written by the owner of the level-`ℓ ≥ 11` nodes and relocated here from
+`MazurTorsion.lean` on 2026-07-25, when the two independently-built copies of
+the Tate normal form were merged into this module.) -/
+lemma three_nsmul_origin_eq_zero (V : WeierstrassCurve ℚ)
+    (h2 : V.a₂ = 0) (h4 : V.a₄ = 0) (h3 : V.a₃ ≠ 0)
+    (h00 : V.toAffine.Nonsingular 0 0) :
+    Affine.Point.some 0 0 h00 + Affine.Point.some 0 0 h00 +
+      Affine.Point.some 0 0 h00 = 0 := by
+  have hne : (0 : ℚ) ≠ V.toAffine.negY 0 0 := by
+    simp only [Affine.negY]
+    intro h
+    exact h3 (by linarith)
+  have hslope : V.toAffine.slope 0 0 0 0 = 0 := by
+    rw [Affine.slope_of_Y_ne rfl hne]
+    simp only [Affine.negY, h2, h4]
+    ring_nf
+  have key : Affine.Point.some 0 0 h00 + Affine.Point.some 0 0 h00 =
+      -Affine.Point.some 0 0 h00 := by
+    rw [Affine.Point.add_self_of_Y_ne' hne]
+    congr 1
+    refine Affine.Point.some_eq_some V ?_ ?_
+    · simp only [Affine.addX, hslope, h2]; ring
+    · simp only [Affine.negAddY, Affine.addX, hslope, h2]; ring
+  rw [key, neg_add_cancel]
+
 /-- **Tate normal form** (PROVEN 2026-07-25 — the normalisation that mathlib
 lacks): an elliptic curve `W` over `ℚ` together with a rational point `Q` with
 `2Q ≠ 0` and `3Q ≠ 0` is `ℚ`-isomorphic to a curve `E(b, c)` in Tate normal
@@ -98,7 +134,7 @@ division appears anywhere in step 1 and each coefficient identity is a
 not `simp only`: `variableChange_a₁` and friends apply at BOTH levels of
 `C₂ • (C₁ • W)`, so `simp only` silently rewrites the inner change as well and
 destroys the shape. -/
-theorem exists_tateNormalForm (W : WeierstrassCurve ℚ) [W.IsElliptic]
+theorem exists_tateNormalForm_of_ne (W : WeierstrassCurve ℚ) [W.IsElliptic]
     (Q : W.toAffine.Point) (h2 : Q + Q ≠ 0) (h3 : Q + Q + Q ≠ 0) :
     ∃ (b c : ℚ) (_ : b ≠ 0) (_ : (tateNormalForm b c).IsElliptic)
       (Ψ : W.toAffine.Point ≃+ (tateNormalForm b c).toAffine.Point),
@@ -143,20 +179,8 @@ theorem exists_tateNormalForm (W : WeierstrassCurve ℚ) [W.IsElliptic]
     have h' := congrArg (Affine.Point.equivVariableChange W C₁) h
     rwa [map_add, map_add, map_zero, hmapV] at h'
   -- STEP 2: on the normalised curve, `a₂ ≠ 0` is exactly `3Q ≠ 0`.
-  have hnegY : (0 : ℚ) ≠ (C₁ • W).toAffine.negY 0 0 := by
-    show (0 : ℚ) ≠ -0 - (C₁ • W).a₁ * 0 - (C₁ • W).a₃
-    intro h; exact hV₃ne (by linarith)
-  have hV₂ne : (C₁ • W).a₂ ≠ 0 := by
-    intro h0
-    refine h3V ?_
-    rw [Affine.Point.add_self_of_Y_ne hnegY]
-    refine Affine.Point.add_of_Y_eq ?_ ?_
-    · rw [Affine.slope_of_Y_ne rfl hnegY]
-      simp only [Affine.addX, Affine.negY, hV₄, h0]
-      ring
-    · rw [Affine.slope_of_Y_ne rfl hnegY]
-      simp only [Affine.addY, Affine.negAddY, Affine.addX, Affine.negY, hV₄, h0]
-      ring
+  have hV₂ne : (C₁ • W).a₂ ≠ 0 := fun h0 =>
+    h3V (three_nsmul_origin_eq_zero _ h0 hV₄ hV₃ne h00V)
   -- STEP 3: scale so that `a₂` and `a₃` coincide.
   set C₂ : VariableChange ℚ :=
     ⟨Units.mk0 ((C₁ • W).a₃ / (C₁ • W).a₂) (div_ne_zero hV₃ne hV₂ne), 0, 0, 0⟩ with hC₂
@@ -203,6 +227,43 @@ theorem exists_tateNormalForm (W : WeierstrassCurve ℚ) [W.IsElliptic]
   rw [AddEquiv.trans_apply, AddEquiv.trans_apply, ← hmapV, AddEquiv.symm_apply_apply,
     ← hmapU, AddEquiv.symm_apply_apply, Affine.Point.equivOfEq_some]
   rfl
+
+/-- **Tate normal form for a point of order `≥ 4`** (PROVEN 2026-07-25;
+no mathlib counterpart): an elliptic curve `W` over `ℚ` carrying a
+rational point `P` with `4 ≤ addOrderOf P` is `ℚ`-isomorphic to
+`tateNormalForm b c` for some `b, c ∈ ℚ`, by an isomorphism of
+Mordell–Weil groups carrying `P` to `(0, 0)`.
+
+This is the corollary of `exists_tateNormalForm_of_ne` in which the two
+nonvanishing hypotheses are supplied by an order bound; `4` is the threshold
+precisely because `2P ≠ 0` licenses the shear and `3P ≠ 0` the rescaling. It
+is stated in exactly the form the level-`ℓ ≥ 11` nodes consume
+(`no_torsion_order_of_tateNormalForm` in `MazurTorsion.lean`), and is kept
+separate because the hypothesis `4 ≤ addOrderOf P` is strictly stronger than
+what the theorem needs: `exists_tateNormalForm_of_ne` also applies to points
+of INFINITE order, where `addOrderOf P = 0`.
+
+Silverman ATAEC / Husemöller "Elliptic Curves" Ch. 4; the form is due to
+Tate. -/
+theorem exists_tateNormalForm (W : WeierstrassCurve ℚ) [W.IsElliptic]
+    (P : W.toAffine.Point) (h4 : 4 ≤ addOrderOf P) :
+    ∃ (b c : ℚ) (_ : (tateNormalForm b c).IsElliptic)
+      (h00 : (tateNormalForm b c).toAffine.Nonsingular 0 0)
+      (Ψ : W.toAffine.Point ≃+ (tateNormalForm b c).toAffine.Point),
+      Ψ P = Affine.Point.some 0 0 h00 := by
+  have hPP : P + P ≠ 0 := by
+    intro h
+    rw [← two_nsmul] at h
+    have := Nat.le_of_dvd (by norm_num) (addOrderOf_dvd_of_nsmul_eq_zero h)
+    omega
+  have hPPP : P + P + P ≠ 0 := by
+    intro h
+    have h3 : (3 : ℕ) • P = 0 := by
+      rw [show (3 : ℕ) = 2 + 1 from rfl, add_nsmul, two_nsmul, one_nsmul]; exact h
+    have := Nat.le_of_dvd (by norm_num) (addOrderOf_dvd_of_nsmul_eq_zero h3)
+    omega
+  obtain ⟨b, c, -, hell, Ψ, hΨ⟩ := exists_tateNormalForm_of_ne W P hPP hPPP
+  exact ⟨b, c, hell, tateNormalForm_nonsingular_zero b c, Ψ, hΨ⟩
 
 /-! ## The level-`7` parametrisation -/
 
