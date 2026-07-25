@@ -120,6 +120,12 @@ public import Mathlib.RingTheory.Ideal.Norm.AbsNorm
 -- proof-only: `RingHom.injective` (a ring hom out of a field is
 -- injective), the descent step of the automorphic joint's transport
 import Mathlib.RingTheory.SimpleRing.Basic
+-- public: `Field (ULift ℝ)` / `Field (ULift ℚ)`. The Moret–Bailly cut
+-- states its local and global points over the `Type u` copies `ULift ℝ`
+-- and `ULift ℚ`, and the affine reduction needs them to be FIELDS — that
+-- is what makes `Spec` of them a one-point scheme, which is the whole
+-- reason a field-valued point factors through an affine open.
+public import Mathlib.Algebra.Field.ULift
 public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 -- the potential-modularity carrier's fields (totally real base field,
 -- Galois enabling hypothesis for Brauer induction) live in these:
@@ -837,11 +843,38 @@ declarations below may be discharged through `Family.lean`,
 `specRatMap`, `HasRationalPoint` (functor-of-points vocabulary),
 `forall_exists_map_eq_of_ker_sup_range_eq_top` (PROVEN),
 `isOpen_ker_of_finite_discrete` (PROVEN),
-`exists_totallyReal_point_of_geometricallyIrreducible` (SORRY —
-Moret–Bailly 1989 Thm 1.3), and
+`HasRationalPoint.of_comp` (PROVEN, added 2026-07-25),
+`exists_isAffineOpen_hasRationalPoint` (PROVEN, added 2026-07-25),
+`exists_totallyReal_point_of_geometricallyIrreducible` (**PROVEN
+2026-07-25** — no longer a leaf: it is now the affine reduction over the
+next name),
+`exists_totallyReal_point_of_affine_geometricallyIrreducible` (SORRY —
+Moret–Bailly 1989 Thm 1.3, affine case; the surviving geometric leaf), and
 `exists_twistedHilbertBlumenthalModuli_of_five_le` (SORRY — Taylor
 2002 §2). `exists_hilbertBlumenthalPoint_of_five_le` itself is now
-PROVEN and is no longer a leaf. -/
+PROVEN and is no longer a leaf.
+
+MISSING MACHINERY for the surviving geometric leaf, in dependency order
+(2026-07-25 audit of this pin; none of these exists in mathlib):
+
+1. **The field `ℚ^tr` of totally real algebraic numbers**, as a field with
+   the property that a number field embeds in it iff it is totally real.
+   Cheapest of the three and a prerequisite for stating the others.
+2. **Ampleness/largeness of `ℚ^tr`** (Pop): a smooth `ℚ^tr`-variety with a
+   `ℚ^tr`-point has a Zariski-dense set of them. This is the modern
+   packaging of Moret–Bailly's conclusion, and is what makes step 3's
+   local–global principle usable.
+3. **Bertini over a field of characteristic zero**: a smooth
+   geometrically irreducible quasi-projective variety of dimension `> 1`
+   has a smooth geometrically irreducible hyperplane section through a
+   prescribed rational point. This is the (i) of the classical route and
+   reduces the leaf to a curve.
+4. **Picard schemes / Jacobians as schemes**, with the torsor formalism
+   and the "incompressible neighbourhood" existence statement — step (ii),
+   and by far the largest of the four.
+
+Each is an independently ownable subproject; 1 and 3 are the ones that can
+be started without the other two. -/
 
 /-- **The structure morphism of a `ℚ`-algebra's spectrum.** `ℚ` lives in
 `Type 0` while the number field produced by Moret–Bailly must land in
@@ -897,8 +930,146 @@ theorem forall_exists_map_eq_of_ker_sup_range_eq_top
   rw [GaloisRep.map_apply, ← hg, map_mul, hn1, one_mul]
   rfl
 
+open CategoryTheory AlgebraicGeometry in
+/-- **A rational point of a subscheme is a rational point of the ambient
+scheme** (PROVEN glue): if `i : U ⟶ X` is any morphism and `U` has an
+`F`-rational point over the base `Spec ℚ`, then so has `X` — compose. This
+is the trivial direction of the affine reduction below: shrinking `X` to an
+open subscheme loses no points. -/
+theorem HasRationalPoint.of_comp {X U : AlgebraicGeometry.Scheme.{u}} (i : U ⟶ X)
+    (fX : X ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    {F : Type u} [CommRing F] [Algebra ℚ F]
+    (h : HasRationalPoint (i ≫ fX) F) : HasRationalPoint fX F := by
+  obtain ⟨x, hx⟩ := h
+  exact ⟨x ≫ i, by rw [Category.assoc]; exact hx⟩
+
+open CategoryTheory AlgebraicGeometry in
+/-- **A field-valued point already lives in an affine open** (PROVEN glue):
+`Spec F` is a ONE-POINT scheme when `F` is a field, so an `F`-rational point
+`x : Spec F ⟶ X` meets `X` in the single point `x.base y`; any affine open
+neighbourhood `W` of that point then contains the whole of
+`Set.range x.base`, and `x` factors through the open immersion `W.ι`
+(`IsOpenImmersion.lift`). The factorization is a point of `W` over the same
+base, because `lift ≫ W.ι = x`.
+
+This is the nontrivial direction of the affine reduction: together with
+`HasRationalPoint.of_comp` it lets Moret–Bailly's theorem be ASSUMED only
+for affine `X`, which is where its classical proof starts — one passes to
+an affine (indeed quasi-projective) neighbourhood of the given local point
+before cutting down to a curve. -/
+theorem exists_isAffineOpen_hasRationalPoint {X : AlgebraicGeometry.Scheme.{u}}
+    (fX : X ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    {F : Type u} [Field F] [Algebra ℚ F] (h : HasRationalPoint fX F) :
+    ∃ U : X.Opens, AlgebraicGeometry.IsAffineOpen U ∧
+      HasRationalPoint (U.ι ≫ fX) F := by
+  obtain ⟨x, hx⟩ := h
+  obtain ⟨y⟩ : Nonempty ↥(Spec (CommRingCat.of F)) := inferInstance
+  obtain ⟨W, hW, hxW, -⟩ :=
+    exists_isAffineOpen_mem_and_subset (X := X) (x := x.base y) (U := ⊤) trivial
+  have hrange : Set.range x.base ⊆ Set.range (W.ι).base := by
+    rw [Scheme.Opens.range_ι]
+    rintro _ ⟨z, rfl⟩
+    rw [Subsingleton.elim z y]
+    exact hxW
+  refine ⟨W, hW, IsOpenImmersion.lift W.ι x hrange, ?_⟩
+  rw [← Category.assoc, IsOpenImmersion.lift_fac]
+  exact hx
+
+/-- **Moret–Bailly's existence theorem, AFFINE CASE** (sorry node — pure
+algebraic geometry, no arithmetic of `ρbar`): exactly the statement of
+`exists_totallyReal_point_of_geometricallyIrreducible` below, with `X`
+required AFFINE. Concretely `X = Spec A` for `A` a finitely generated,
+smooth, geometrically integral `ℚ`-algebra admitting a `ℚ`-algebra map to
+`ℝ`, and the conclusion produces a totally real Galois `F` — disjoint from
+the fixed field of `N` — with a `ℚ`-algebra map `A → F`.
+
+WHY THE AFFINE CASE SUFFICES (2026-07-25, PROVEN below). `Spec F` is a
+one-point scheme for a field `F`, so the given real point lands in a single
+point of `X` and factors through any affine open neighbourhood `W` of it
+(`exists_isAffineOpen_hasRationalPoint`). All five geometric hypotheses
+survive the restriction to `W`: smoothness, separatedness and finite type
+because open immersions have all three (`IsOpenImmersion` is smooth, is a
+mono hence separated, and is locally of finite type) and each property is
+stable under composition; quasi-compactness because `W` is affine, hence a
+compact space, over an affine — so quasi-separated — base; and geometric
+irreducibility by mathlib's instance "a nonempty open subscheme of a
+geometrically irreducible scheme, still surjecting onto the base, is
+geometrically irreducible", the surjectivity being automatic because the
+base `Spec ℚ` is a single point and `W` is nonempty. Conversely a point of
+`W` is a point of `X` by composition (`HasRationalPoint.of_comp`), so
+nothing is lost either way.
+
+THE QUASI-PROJECTIVITY CAVEAT IS DISCHARGED BY THIS CUT (2026-07-25). The
+parent's FORM AUDIT records, honestly, that Moret–Bailly's own hypotheses
+include quasi-projectivity, that this pin has no `QuasiProjective` morphism
+property, and that the leaf therefore relied on the intended discharge
+supplying a quasi-projective `X` — soundness bought on credit. In the
+AFFINE case that credit is repaid outright: an affine scheme of finite type
+over a field is a closed subscheme of some `𝔸ⁿ`, hence quasi-affine, hence
+quasi-projective. So every hypothesis of Moret–Bailly's theorem as he
+states it genuinely holds for this leaf, and the missing word costs nothing
+here. Reducing to the affine case is thus not only a simplification, it is
+what makes the leaf a faithful instance of the cited theorem rather than an
+approximation of it.
+
+TWO HYPOTHESES ARE REDUNDANT HERE, and are kept only so that this statement
+is LITERALLY the parent's: for `X` affine over the affine base `Spec ℚ`,
+`hsep` holds because a morphism of affine schemes is separated, and `hqc`
+because an affine scheme is a compact space. A prover may ignore both —
+they are not the content. (Correspondingly the parent's own `hqc` is not
+consumed by the reduction: quasi-compactness of the affine open is
+re-derived rather than inherited.)
+
+WHAT REMAINS — the whole theorem. Given `A` as above with a real point,
+produce a TOTALLY REAL `F`. A real point only supplies a residue field
+admitting SOME real embedding — for instance `ℚ(2^(1/3))` — which is
+emphatically not totally real, and no shrinking, specialization or
+Galois-closure step repairs that: the Galois closure of a field with one
+real embedding need not be totally real, and enlarging `F` to its Galois
+closure also destroys the disjointness condition `N ⊔ Γ F = ⊤` (take `F`
+cubic non-Galois and `N` the group of the quadratic subfield of its Galois
+closure). So the totally real conclusion and the disjointness conclusion
+must BOTH come from Moret–Bailly's construction; neither is formal given
+the other.
+
+The classical route (Moret–Bailly, *Groupes de Picard et problèmes de
+Skolem II*, Ann. Sci. ÉNS 22 (1989), Thm 1.3; cf. Rumely's local–global
+principle over the ring of totally real algebraic integers, and Pop's
+theorem that `ℚ^tr` is a large/ample field) is: (i) cut `X` down to a
+smooth geometrically irreducible CURVE through the real point by a
+Bertini-type argument that preserves the real point; (ii) on that curve,
+exhibit the wanted point via a torsor under the Jacobian, using an
+"incompressible neighbourhood" in the Picard scheme; (iii) conclude by the
+local–global principle over `ℚ^tr`. None of Bertini, Picard schemes as
+schemes, or `ℚ^tr` exists at this pin — see the MISSING MACHINERY list in
+the section docstring above.
+
+CIRCULARITY GUARD: a statement of algebraic geometry with no
+Galois-representation hypotheses, so no route through `Family.lean`,
+`Lift.lean` or `Modularity/Interface.lean` is even relevant; it must be
+proven by the geometric argument recorded above. -/
+theorem exists_totallyReal_point_of_affine_geometricallyIrreducible
+    {X : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine X]
+    (fX : X ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (hsmooth : AlgebraicGeometry.Smooth fX)
+    (hsep : AlgebraicGeometry.IsSeparated fX)
+    (hft : AlgebraicGeometry.LocallyOfFiniteType fX)
+    (hqc : AlgebraicGeometry.QuasiCompact fX)
+    (hgi : AlgebraicGeometry.GeometricallyIrreducible fX)
+    (hreal : HasRationalPoint fX (ULift.{u} ℝ))
+    (N : Subgroup (Field.absoluteGaloisGroup ℚ))
+    (hNopen : IsOpen (N : Set (Field.absoluteGaloisGroup ℚ))) :
+    ∃ (F : Type u) (_ : Field F) (_ : NumberField F)
+      (_ : NumberField.IsTotallyReal F) (_ : IsGalois ℚ F),
+      N ⊔ (Field.absoluteGaloisGroup.map (algebraMap ℚ F)).toMonoidHom.range = ⊤ ∧
+      HasRationalPoint fX F :=
+  sorry
+
+open CategoryTheory AlgebraicGeometry in
 /-- **Moret–Bailly's existence theorem for global points with prescribed
-local behaviour** (sorry node — pure algebraic geometry, no arithmetic of
+local behaviour** (PROVEN 2026-07-25 as the affine reduction over
+`exists_totallyReal_point_of_affine_geometricallyIrreducible` — pure
+algebraic geometry, no arithmetic of
 `ρbar`): let `X` be a smooth, separated, quasi-compact, finite-type,
 geometrically irreducible variety over `ℚ` which has a real point. Then
 for every open subgroup `N ≤ Γ ℚ` there is a number field `F`, TOTALLY
@@ -927,11 +1098,29 @@ present in Moret–Bailly's own hypotheses, is not expressible at this pin
 ones under which BLGGT record the result, and the intended discharge
 supplies a quasi-projective `X`. See the section docstring.
 
+ASSEMBLY (2026-07-25, PROVEN — the AFFINE REDUCTION): the real point is a
+morphism out of the ONE-POINT scheme `Spec ℝ`, so it factors through an
+affine open `U ⊆ X` (`exists_isAffineOpen_hasRationalPoint`); all five
+geometric hypotheses transfer to `U.ι ≫ fX` (smooth/separated/finite type
+by stability under composition with an open immersion, quasi-compact
+because `U` is affine over an affine base, geometrically irreducible
+because a nonempty open still surjecting onto the one-point base `Spec ℚ`
+stays geometrically irreducible);
+`exists_totallyReal_point_of_affine_geometricallyIrreducible` then supplies
+`F`; and the resulting `F`-point of `U` is an `F`-point of `X` by
+composition (`HasRationalPoint.of_comp`). The disjointness conjunct
+`N ⊔ Γ F = ⊤` is carried through untouched — the reduction never renames
+or weakens it. NOTE: `hqc` is the one hypothesis the reduction does not
+consume, since quasi-compactness of the affine open is re-derived rather
+than inherited; it is kept because the affine leaf is stated as literally
+the same theorem.
+
 CIRCULARITY GUARD: this is a statement of algebraic geometry with no
 Galois-representation hypotheses, so no route through `Family.lean`,
-`Lift.lean` or `Modularity/Interface.lean` could even be relevant; it
-must be proven by the geometric argument (Picard-scheme torsors over an
-incompressible neighbourhood) recorded above. -/
+`Lift.lean` or `Modularity/Interface.lean` could even be relevant; the
+remaining content must be proven by the geometric argument (Picard-scheme
+torsors over an incompressible neighbourhood) recorded on the affine leaf
+above. -/
 theorem exists_totallyReal_point_of_geometricallyIrreducible
     {X : AlgebraicGeometry.Scheme.{u}}
     (fX : X ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
@@ -946,8 +1135,30 @@ theorem exists_totallyReal_point_of_geometricallyIrreducible
     ∃ (F : Type u) (_ : Field F) (_ : NumberField F)
       (_ : NumberField.IsTotallyReal F) (_ : IsGalois ℚ F),
       N ⊔ (Field.absoluteGaloisGroup.map (algebraMap ℚ F)).toMonoidHom.range = ⊤ ∧
-      HasRationalPoint fX F :=
-  sorry
+      HasRationalPoint fX F := by
+  classical
+  -- (i) shrink `X` to an affine open neighbourhood of the real point
+  obtain ⟨U, hU, hUreal⟩ := exists_isAffineOpen_hasRationalPoint fX hreal
+  haveI : IsAffine (U : Scheme.{u}) := hU
+  -- (ii) that open is nonempty — it carries the real point
+  haveI : Nonempty (U : Scheme.{u}) := by
+    obtain ⟨z, -⟩ := hUreal
+    obtain ⟨w⟩ : Nonempty ↥(Spec (CommRingCat.of (ULift.{u} ℝ))) := inferInstance
+    exact ⟨z.base w⟩
+  -- (iii) hence it still surjects onto the one-point base `Spec ℚ`, which is
+  -- what upgrades geometric irreducibility along the open immersion
+  haveI : Surjective (U.ι ≫ fX) :=
+    ⟨fun _ => ⟨Classical.arbitrary _, Subsingleton.elim _ _⟩⟩
+  haveI : GeometricallyIrreducible fX := hgi
+  -- (iv) Moret–Bailly in the affine case
+  obtain ⟨F, hF, hNF, hFtr, hFgal, hsup, hFpt⟩ :=
+    exists_totallyReal_point_of_affine_geometricallyIrreducible (U.ι ≫ fX)
+      (MorphismProperty.comp_mem _ _ _ inferInstance hsmooth)
+      (MorphismProperty.comp_mem _ _ _ inferInstance hsep)
+      (MorphismProperty.comp_mem _ _ _ inferInstance hft)
+      inferInstance inferInstance hUreal N hNopen
+  -- (v) a point of the open subscheme is a point of `X`
+  exact ⟨F, hF, hNF, hFtr, hFgal, hsup, HasRationalPoint.of_comp U.ι fX hFpt⟩
 
 /-- **The twisted Hilbert–Blumenthal moduli variety** (sorry node — the
 MODULI INPUT ALONE, Taylor 2002 §2 via Shimura's theory of
