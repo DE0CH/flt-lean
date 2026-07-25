@@ -5361,7 +5361,7 @@ theorem translationChar_setup_value (q : ℕ) [Fact q.Prime]
     · rw [hcoords_some x y h]
       exact Set.mem_insert_of_mem _ rfl
   refine ⟨G₀, hG₀fin, ?_⟩
-  intro F₁ F₂ hF₁fin hF₂fin hF₁₂ hG₀F _ _ _ _ _
+  intro F₁ F₂ hF₁fin hF₂fin hF₁₂ hG₀F _ _ _ hxQF₁ hyQF₁
     xS yS hS hxSF₂ hySF₂ hxSF₁ xR yR hR hxRF₂
     xPS yPS hPS hPSc hxPSF₂ hyPSF₂ hxPSF₁
     xQR yQR hQR hQRc _ _ hxQRF₂
@@ -5423,6 +5423,16 @@ theorem translationChar_setup_value (q : ℕ) [Fact q.Prime]
         x ∈ F₁ ∧ y ∈ F₁ := fun κ lam hκt hlamt x y h hcase =>
     ⟨hG₀F (hbadmem κ lam hκt hlamt x y h hcase).1,
       hG₀F (hbadmem κ lam hκt hlamt x y h hcase).2⟩
+  -- ── the curve's coefficients lie in the prime field `ZMod q`, hence in
+  --    EVERY subfield: that is what makes the `F₂`-rational points a
+  --    subgroup, which is leaf 1's genericity engine
+  have hcoefmem : ∀ (z : ZMod q) (S : Subfield (AlgebraicClosure (ZMod q))),
+      algebraMap (ZMod q) (AlgebraicClosure (ZMod q)) z ∈ S := by
+    haveI : NeZero q := ⟨(Fact.out : q.Prime).ne_zero⟩
+    intro z S
+    have hz : ((z.val : ℕ) : ZMod q) = z := ZMod.natCast_rightInverse z
+    rw [← hz, map_natCast]
+    exact natCast_mem S z.val
   -- ── STAGE LEAF 1: the `p`-division points `S'`, `R'`, `κ₀'` and the
   --    generic offset pair `U = S'⊖R'`, `V = κ₀'⊕U`
   obtain ⟨S', R', P', hS'p, hR'p, hP'p, xU, yU, hU, xV, yV, hV, hUeq, hVeq,
@@ -5432,8 +5442,10 @@ theorem translationChar_setup_value (q : ℕ) [Fact q.Prime]
         (AlgebraicClosure (ZMod q)))).nTorsion p =>
         (κ.val : (Wbar.map (algebraMap (ZMod q)
           (AlgebraicClosure (ZMod q)))).toAffine.Point))
-      hΔ hp0 hval_inj hval_tor hval_surj hcard hT hPtor ha hspan
-      hF₁fin hF₂fin hF₁₂ hbadF hS hxSF₂ hySF₂ hR hxRF₂
+      hΔ hp0 hval_inj hval_tor hval_surj hcard hQ hTQ hPtor ha hspan
+      hF₁fin hF₂fin hF₁₂ (hcoefmem Wbar.a₁ F₁) (hcoefmem Wbar.a₂ F₁)
+      (hcoefmem Wbar.a₃ F₁) (hcoefmem Wbar.a₄ F₁) (hcoefmem Wbar.a₆ F₁)
+      hbadF hxQF₁ hyQF₁ hS hxSF₂ hySF₂ hR hxRF₂
   -- ── STAGE LEAF 2: `f_x(D_{κ₀}) = [g(V)/g(U)]^p`
   have hpull := millerRatio_eval_pow_of_pullback
       (val := fun κ : (Wbar.map (algebraMap (ZMod q)
