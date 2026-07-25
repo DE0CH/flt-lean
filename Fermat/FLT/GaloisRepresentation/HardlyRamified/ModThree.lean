@@ -8561,9 +8561,7 @@ theorem archProfile_stretchedExp (n : ℕ) (hn : 0 < n) {c : ℝ} (hc : 0 < c) :
   · exact fun _ _ => (Real.exp_pos _).le
   · intro a ha b _ hab
     refine Real.exp_le_exp.mpr ?_
-    have hr : a ^ ((n : ℝ)⁻¹) ≤ b ^ ((n : ℝ)⁻¹) :=
-      Real.rpow_le_rpow (le_of_lt ha) hab hinv.le
-    nlinarith
+    nlinarith [Real.rpow_le_rpow (le_of_lt ha) hab hinv.le (x := a) (y := b) (z := ((n : ℝ)⁻¹))]
   · intro τ _
     rw [one_mul]
   · intro s hs
@@ -8720,15 +8718,11 @@ theorem archConv_decay {p q : ℕ} {M₁ M₂ : ℂ → ℂ} {H₁ H₂ : ℝ �
   obtain ⟨A₁, a₁, ha₁, hd₁⟩ := h₁.2.2.2.1
   obtain ⟨A₂, a₂, ha₂, hd₂⟩ := h₂.2.2.2.1
   have hA₁ : 0 ≤ A₁ := by
-    have hb := hd₁ 1 le_rfl
-    have h0 := h₁.2.1 1 (Set.mem_Ioi.mpr one_pos)
-    have hpos := Real.exp_pos (-a₁ * (1 : ℝ) ^ ((p : ℝ)⁻¹))
-    nlinarith
+    nlinarith [hd₁ 1 le_rfl, h₁.2.1 1 (Set.mem_Ioi.mpr one_pos),
+      Real.exp_pos (-a₁ * (1 : ℝ) ^ ((p : ℝ)⁻¹))]
   have hA₂ : 0 ≤ A₂ := by
-    have hb := hd₂ 1 le_rfl
-    have h0 := h₂.2.1 1 (Set.mem_Ioi.mpr one_pos)
-    have hpos := Real.exp_pos (-a₂ * (1 : ℝ) ^ ((q : ℝ)⁻¹))
-    nlinarith
+    nlinarith [hd₂ 1 le_rfl, h₂.2.1 1 (Set.mem_Ioi.mpr one_pos),
+      Real.exp_pos (-a₂ * (1 : ℝ) ^ ((q : ℝ)⁻¹))]
   obtain ⟨N₁, hE₁⟩ := archProfile_stretchedExp p hp (c := a₁ / 2) (by positivity)
   obtain ⟨N₂, hE₂⟩ := archProfile_stretchedExp q hq (c := a₂ / 2) (by positivity)
   set E₁ : ℝ → ℝ := fun x => Real.exp (-(a₁ / 2) * x ^ ((p : ℝ)⁻¹)) with hE₁def
@@ -8762,11 +8756,11 @@ theorem archConv_decay {p q : ℕ} {M₁ M₂ : ℂ → ℂ} {H₁ H₂ : ℝ �
   have hkeyP : (τ ^ ((p : ℝ) / N)) ^ ((p : ℝ)⁻¹) = τ ^ N⁻¹ := by
     rw [← Real.rpow_mul hτ0.le]
     congr 1
-    field_simp
+    field_simp [hPne, hNne]
   have hkeyQ : (τ ^ ((q : ℝ) / N)) ^ ((q : ℝ)⁻¹) = τ ^ N⁻¹ := by
     rw [← Real.rpow_mul hτ0.le]
     congr 1
-    field_simp
+    field_simp [hQne, hNne]
   -- the two pointwise saddle bounds
   have hstepA : ∀ u ∈ Set.Ioc (0 : ℝ) (τ ^ ((q : ℝ) / N)),
       H₁ (τ / u) * H₂ u / u
@@ -8786,7 +8780,7 @@ theorem archConv_decay {p q : ℕ} {M₁ M₂ : ℂ → ℂ} {H₁ H₂ : ℝ �
       have hstep : Real.exp (-a₁ * (τ / u) ^ ((p : ℝ)⁻¹))
           ≤ Real.exp (-(a₁ / 2) * τ ^ N⁻¹) * Real.exp (-(a₁ / 2) * (τ / u) ^ ((p : ℝ)⁻¹)) := by
         rw [← Real.exp_add]
-        exact Real.exp_le_exp.mpr (by nlinarith)
+        exact Real.exp_le_exp.mpr (by nlinarith [hxT, ha₁])
       exact mul_le_mul_of_nonneg_left hstep hA₁
     have hfac : 0 ≤ H₂ u / u := div_nonneg (h₂.2.1 u (Set.mem_Ioi.mpr hu0)) hu0.le
     calc H₁ (τ / u) * H₂ u / u = H₁ (τ / u) * (H₂ u / u) := by ring
@@ -8809,7 +8803,7 @@ theorem archConv_decay {p q : ℕ} {M₁ M₂ : ℂ → ℂ} {H₁ H₂ : ℝ �
       have hstep : Real.exp (-a₂ * u ^ ((q : ℝ)⁻¹))
           ≤ Real.exp (-(a₂ / 2) * τ ^ N⁻¹) * Real.exp (-(a₂ / 2) * u ^ ((q : ℝ)⁻¹)) := by
         rw [← Real.exp_add]
-        exact Real.exp_le_exp.mpr (by nlinarith)
+        exact Real.exp_le_exp.mpr (by nlinarith [huT, ha₂])
       exact mul_le_mul_of_nonneg_left hstep hA₂
     have hfac : 0 ≤ H₁ (τ / u) / u :=
       div_nonneg (h₁.2.1 _ (Set.mem_Ioi.mpr (div_pos hτ0 hu0))) hu0.le
@@ -8900,13 +8894,13 @@ theorem archConv_decay {p q : ℕ} {M₁ M₂ : ℂ → ℂ} {H₁ H₂ : ℝ �
     rw [show (A₁ * Real.exp (-(a₁ / 2) * τ ^ N⁻¹)) * archConv E₁ H₂ 1
         = (A₁ * archConv E₁ H₂ 1) * Real.exp (-(a₁ / 2) * τ ^ N⁻¹) by ring]
     exact mul_le_mul_of_nonneg_left
-      (Real.exp_le_exp.mpr (by nlinarith [min_le_left a₁ a₂])) (mul_nonneg hA₁ hC₁0)
+      (Real.exp_le_exp.mpr (by nlinarith [min_le_left a₁ a₂, hT0])) (mul_nonneg hA₁ hC₁0)
   have hfin2 : (A₂ * Real.exp (-(a₂ / 2) * τ ^ N⁻¹)) * archConv H₁ E₂ 1
       ≤ (A₂ * archConv H₁ E₂ 1) * Real.exp (-(min a₁ a₂ / 2) * τ ^ N⁻¹) := by
     rw [show (A₂ * Real.exp (-(a₂ / 2) * τ ^ N⁻¹)) * archConv H₁ E₂ 1
         = (A₂ * archConv H₁ E₂ 1) * Real.exp (-(a₂ / 2) * τ ^ N⁻¹) by ring]
     exact mul_le_mul_of_nonneg_left
-      (Real.exp_le_exp.mpr (by nlinarith [min_le_right a₁ a₂])) (mul_nonneg hA₂ hC₂0)
+      (Real.exp_le_exp.mpr (by nlinarith [min_le_right a₁ a₂, hT0])) (mul_nonneg hA₂ hC₂0)
   rw [hsplit, add_mul]
   linarith [hpart1, hpart2, hstep1, hstep2, hfin1, hfin2]
 
