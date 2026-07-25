@@ -63,7 +63,6 @@ them without a human. Do not re-wrap it.
 - `hasFlatProlongationAt_of_pi_surjection`
 - `isFlatAt_of_fibreProduct`
 - `isTameAtTwo_of_fibreProduct`
-- `finite_setOf_isHardlyRamified_frames_of_discreteTopology`
 - `isTameAtTwo_of_forall_isOpen_quotient`
 - `exists_ringHom_matrix_quotient_of_finite`
 - `exists_pow_comap_le_pow_maximalIdeal_traceSubring`
@@ -130,11 +129,20 @@ the surjectivity and minimality strata of the minimal presentation,
   `isHardlyRamified_pushforwardFrame` over the single flatness leaf
   `isFlatAt_baseChange` (this needed the base-change transfer block,
   formerly ~2900 lines below, to be hoisted; the hoist is a separate
-  commit) — plus `finite_setOf_isHardlyRamified_frames_of_discreteTopology`,
-  which closes a genuine gap: the raw test objects of
-  `IsStrictlyUniversalOnFrames` carry an ARBITRARY finite ring topology,
-  while the H3 leaf is stated for the discrete one, and a finite local
-  ring does admit strictly coarser ring topologies.
+  commit). A fifth leaf,
+  `finite_setOf_isHardlyRamified_frames_of_discreteTopology`, briefly sat
+  in this cut to bridge an apparent gap — the raw test objects of
+  `IsStrictlyUniversalOnFrames` carried an ARBITRARY finite ring topology
+  while the H3 leaf is stated for the discrete one. It was REFUTED and
+  DELETED on 2026-07-26: over `ZMod ℓ` with the INDISCRETE topology
+  continuity is no constraint at all, and an infinite family of abstract
+  quadratic characters killing every inertia subgroup is hardly ramified,
+  so the bridge is false. The repair was upstream and free — for a FINITE
+  topological ring `DiscreteTopology ⟺ T0Space ⟺ T2Space`, so the raw test
+  objects of `IsStrictlyUniversalOnFrames` and
+  `IsStrictlyUniversalOnFiniteFrames` now carry `[DiscreteTopology A]`,
+  excluding exactly the non-Hausdorff objects nobody constructs, and H3
+  passes straight through.
 * The two PRESENTATION leaves became proven assemblies over the four
   commutative-algebra strata of the minimal presentation and the
   arithmetic relation count: `exists_minimal_mvPowerSeries_presentation`
@@ -986,14 +994,32 @@ linear equivalence `e` — i.e. `D.ρ ⊗_{D.R} A ≅ ρA` as representations.
 Interface-side twin: `Modularity/Patching.lean`'s
 `IsStrictlyUniversalOnFramedFiniteLifts` (same statement, unbundled
 coefficient data, `IsModuleTopology` in place of the continuity
-hypothesis). -/
+hypothesis).
+
+SEPARATION AXIOM ON THE TEST OBJECTS (2026-07-26). The raw test objects
+are required to be DISCRETE. `IsTopologicalRing` carries no separation
+axiom, so without this a finite local topological `ℤ_ℓ`-algebra may be
+non-Hausdorff — e.g. `ZMod ℓ` with the indiscrete topology, over which
+continuity is no constraint at all and the hardly ramified set is
+infinite. For a FINITE topological ring the intersection of all open
+neighbourhoods of `0` is an open ideal equal to `closure {0}`, and the
+topology is its coset topology, so
+`DiscreteTopology A ⟺ T0Space A ⟺ T2Space A`: the excluded objects are
+exactly the non-Hausdorff ones. Every test object anyone constructs — a
+finite quotient of an `IsAdic` complete local ring, the dual numbers
+with their adic topology — is Hausdorff, hence discrete, so the clause
+costs the consumers nothing; see
+`isWeaklyUniversalOnIdentifiedFramesFinite_of_isStrictlyUniversalOnFiniteFrames`
+below, where it is discharged from `IsAdic` plus finiteness. The full
+counterexample that forced the clause is recorded in the commit that
+removed `finite_setOf_isHardlyRamified_frames_of_discreteTopology`. -/
 def HardlyRamifiedDeformation.IsStrictlyUniversalOnFiniteFrames
     {ρbar : GaloisRep ℚ k V}
     (D : HardlyRamifiedDeformation hℓOdd ρbar) : Prop :=
   letI := D.commRing; letI := D.topologicalSpace; letI := D.isTopologicalRing
   letI := D.isLocalRing; letI := D.algebra
   ∀ (A : Type u) [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
-    [IsLocalRing A] [Algebra ℤ_[ℓ] A] [Finite A]
+    [IsLocalRing A] [Algebra ℤ_[ℓ] A] [Finite A] [DiscreteTopology A]
     (ρA : FramedGaloisRep ℚ A (Fin 2)),
     IsHardlyRamified hℓOdd (rank_finTwoFun A) ρA →
     ∀ πA : A →+* k, Function.Surjective πA → ∀ hπA : Continuous πA,
@@ -1054,10 +1080,19 @@ reduction (`π`, `π_surjective`) — CONTINUOUS by the proven
 `HardlyRamifiedDeformation.continuous_pi`, which is exactly the datum
 the raw form takes as a hypothesis — and the residual identification is
 `IsResidualIdentified` itself, whose `letI` block is the raw form's
-verbatim. The Noetherian, adic and adic-completeness fields of the
-structure are simply not needed by the raw form: they are automatic for
-a finite ring, which is why the Artinian-level leaf is stated on raw
-test objects and does not have to build them. -/
+verbatim. The Noetherian and adic-completeness fields of the structure
+are simply not needed by the raw form: they are automatic for a finite
+ring, which is why the Artinian-level leaf is stated on raw test objects
+and does not have to build them.
+
+The one structure field that IS needed is `isAdic`, and it is what
+discharges the `[DiscreteTopology A]` clause the raw form carries
+(2026-07-26): a FINITE local ring is Artinian, so its maximal ideal is
+nilpotent (`IsArtinianRing.isNilpotent_jacobson_bot` through
+`IsLocalRing.jacobson_eq_maximalIdeal`), and an `𝔪`-adic topology with
+`𝔪ⁿ = ⊥` is the `⊥`-adic one, i.e. discrete (`is_ideal_adic_pow`,
+`is_bot_adic_iff`). This is the precise sense in which the separation
+axiom on the raw test objects costs the bundled category nothing. -/
 theorem isWeaklyUniversalOnIdentifiedFramesFinite_of_isStrictlyUniversalOnFiniteFrames
     {ρbar : GaloisRep ℚ k V} (D : HardlyRamifiedDeformation hℓOdd ρbar)
     (hD : D.IsStrictlyUniversalOnFiniteFrames) :
@@ -1069,6 +1104,17 @@ theorem isWeaklyUniversalOnIdentifiedFramesFinite_of_isStrictlyUniversalOnFinite
   letI := D'.isTopologicalRing; letI := D'.isLocalRing; letI := D'.algebra
   intro hfin hid
   letI := hfin
+  -- a FINITE local ring carrying the `𝔪`-adic topology is DISCRETE
+  haveI : DiscreteTopology D'.R := by
+    haveI : IsArtinianRing D'.R := isArtinian_of_finite
+    obtain ⟨n, hn⟩ := IsArtinianRing.isNilpotent_jacobson_bot (R := D'.R)
+    rw [IsLocalRing.jacobson_eq_maximalIdeal ⊥ bot_ne_top] at hn
+    have hn1 : IsLocalRing.maximalIdeal D'.R ^ (n + 1) = ⊥ := by
+      rw [pow_succ, hn, zero_mul, Ideal.zero_eq_bot]
+    have hbot := is_ideal_adic_pow (R := D'.R) D'.isAdic (n := n + 1)
+      (Nat.succ_pos n)
+    rw [hn1] at hbot
+    exact is_bot_adic_iff.mp hbot
   exact hD D'.R D'.ρ D'.isHardlyRamified D'.π D'.π_surjective
     D'.continuous_pi hid
 
@@ -1355,13 +1401,17 @@ assembly `exists_isStrictlyUniversalOnFiniteFrames` below exploits: the
 Schlessinger core leaf produces the raw package, and the Mazur-category
 structure fields (`isNoetherianRing`, `isAdic`, `isAdicComplete`) plus
 the `charFrob_compat` shadow of the residual identification are what turn
-it into an object of the category. -/
+it into an object of the category.
+
+Carries the same `[DiscreteTopology A]` clause on its test objects as
+`HardlyRamifiedDeformation.IsStrictlyUniversalOnFiniteFrames`, and for
+the same reason — see that definition's docstring. -/
 def IsStrictlyUniversalOnFrames
     {R : Type u} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
     [IsLocalRing R] [Algebra ℤ_[ℓ] R] (ρbar : GaloisRep ℚ k V)
     (ρuniv : FramedGaloisRep ℚ R (Fin 2)) (πuniv : R →+* k) : Prop :=
   ∀ (A : Type u) [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
-    [IsLocalRing A] [Algebra ℤ_[ℓ] A] [Finite A]
+    [IsLocalRing A] [Algebra ℤ_[ℓ] A] [Finite A] [DiscreteTopology A]
     (ρA : FramedGaloisRep ℚ A (Fin 2)),
     IsHardlyRamified hℓOdd (rank_finTwoFun A) ρA →
     ∀ πA : A →+* k, Function.Surjective πA → ∀ hπA : Continuous πA,
@@ -2353,177 +2403,6 @@ theorem isHardlyRamified_of_fibreProduct
     exact isTameAtTwo_of_fibreProduct hℓOdd f₁ f₂ hf₂ p₁ p₂ hp₁ hp₂ hcomm hemb
       hcart hdet h₁.isTameAtTwo h₂.isTameAtTwo
 
-/-- **Restricted-ramification finiteness across arbitrary FINITE ring
-topologies — Schlessinger's H3 as the Artinian category actually needs
-it** (sorry node, cut 2026-07-25: a genuine gap between the H3 leaf
-`finite_setOf_isHardlyRamified_frames` and its consumers, found while
-decomposing the Schlessinger core).
-
-**REFUTED 2026-07-26. THIS STATEMENT IS FALSE AS STATED — do not attempt
-to prove it, and do not build anything on it.** An explicit infinite
-family of counterexamples is given in the REFUTATION section below. The
-repair is the one this docstring already anticipated in its last
-paragraph, and it is UPSTREAM of this leaf: `[DiscreteTopology A]` must
-be added to the test objects of `IsStrictlyUniversalOnFrames` and
-`HardlyRamifiedDeformation.IsStrictlyUniversalOnFiniteFrames`, after
-which this leaf collapses to `finite_setOf_isHardlyRamified_frames` and
-disappears. The paragraph `WHY IT IS NEVERTHELESS TRUE` below is
-retained, struck through by the refutation that follows it, because
-naming the precise step that fails is the whole content of the finding.
-
-THE GAP. `finite_setOf_isHardlyRamified_frames` is stated for `A` with
-the DISCRETE topology, which is the only sensible topology on an Artinian
-object of Mazur's category — the maximal ideal is nilpotent, so the adic
-topology is discrete. But `IsStrictlyUniversalOnFrames` and
-`HardlyRamifiedDeformation.IsStrictlyUniversalOnFiniteFrames` quantify
-over RAW test objects: a finite local topological `ℤ_ℓ`-algebra with NO
-`IsAdic` clause, deliberately, so that a test object carries no
-`IsModuleTopology` datum. A finite ring can carry a strictly coarser ring
-topology: for `A = k[ε]` the topology whose opens are the unions of
-cosets of `(ε)` — the preimage of the discrete topology of `k` — is a
-ring topology, `A` is local and finite, and the reduction `A ↠ k` is
-continuous, so `A` is a legitimate test object that is NOT discrete.
-Over such an `A` continuity of a framed representation only constrains it
-modulo `(ε)`, so a priori there are far more hardly ramified lifts than
-the discrete count, and H3 as stated says nothing about them. The gap is
-unavoidable: Schlessinger's tangent-space step applies H3 to the dual
-numbers with the topology INDUCED FROM THE TEST OBJECT, not with the
-discrete one.
-
-WHY IT IS NEVERTHELESS TRUE (the route this leaf records). A hardly
-ramified `ρ` over such an `A` is unramified outside `{2, ℓ}`, so it kills
-every inertia subgroup away from `{2, ℓ}` and hence factors — as an
-ABSTRACT homomorphism — through the Galois group `G_S` of the maximal
-extension unramified outside `S = {2, ℓ, ∞}`. `G_S` is topologically
-finitely generated (Hermite–Minkowski: only finitely many number fields
-of bounded degree are unramified outside `S`), and by the
-Nikolov–Segal theorem every finite-index subgroup of a topologically
-finitely generated profinite group is OPEN. So every abstract
-homomorphism from `G_S` to a finite group is automatically continuous:
-the kernel of `ρ` is open, `ρ` is continuous for the DISCRETE topology on
-`A`, and the discrete count of `hdisc` bounds the coarse one. Formally
-the conclusion is a `Set.Finite` for the coarse-topology type, into which
-the discrete-topology set injects; what has to be produced is the reverse
-inclusion, i.e. exactly the automatic continuity.
-
-REFUTATION (2026-07-26). The paragraph above fails at its FIRST step,
-in exactly the way its own escape clause below predicted: an abstract
-homomorphism killing every individual inertia subgroup does NOT factor
-through `G_S`. It factors through `Γ / N` with `N` the ABSTRACT normal
-closure of the inertia subgroups, and `N` is strictly smaller than its
-closure `N̄ = ker (Γ ↠ G_S)`. Nikolov–Segal is a theorem about `G_S`,
-which this homomorphism never reaches, so it never applies.
-
-THE WITNESS. Take `A = ZMod ℓ` carrying the INDISCRETE topology `⊤`
-(only `∅` and `A` open). It is a legal test object for every quantifier
-in this statement: `IsTopologicalRing` extends only `ContinuousAdd`,
-`ContinuousMul` and `ContinuousNeg` — there is no separation axiom — and
-every map into an indiscrete space is continuous; `A` is a field, hence
-`IsLocalRing`; it is `Finite`; and it is a `ℤ_[ℓ]`-algebra. Since
-`moduleTopology A A` is `A`'s own topology
-(`IsTopologicalSemiring.toIsModuleTopology`) and the module topology of a
-finite product is the product topology (`IsModuleTopology.instPi`), the
-module topology on `Module.End A (Fin 2 → A) ≃ₗ[A] A⁴` is again
-indiscrete. So `FramedGaloisRep ℚ A (Fin 2)` is the set of ALL abstract
-monoid homomorphisms `Γ ℚ → Module.End A (Fin 2 → A)`: over this `A`,
-continuity is no constraint whatsoever.
-
-THE FAMILY. Let `q : Γ ℚ ↠ Ẑˣ = ∏_p ℤ_pˣ` be the abelianisation
-(Kronecker–Weber). For each prime `p` the image `q (I_p)` lies in the
-`p`-th factor alone, because `ℚ (μ_m) / ℚ` is unramified at `p` for
-`p ∤ m`. Compose with `Ẑˣ ↠ P := ∏_{p odd} ℤ_pˣ / (ℤ_pˣ)²  ≅ ∏_{p odd}
-𝔽₂`, and let `D := ⊕_{p odd} 𝔽₂ ⊆ P` be the direct sum. Every `q (I_p)`
-lands in `D` — including `p = 2` and `p = ℓ`, whose images die in `P`
-entirely (`p = 2`) or occupy one coordinate (`p = ℓ`). Now `P / D ≠ 0`
-(the all-ones vector is not in `D`) and in fact `dim_{𝔽₂} (P / D) = 𝔠`,
-so there are infinitely many nonzero `𝔽₂`-linear functionals
-`f : P / D → 𝔽₂`. Each gives `ψ_f : Γ ℚ ↠ {±1} ⊆ Aˣ`, an abstract
-character which kills EVERY inertia subgroup at EVERY finite place, and
-which is DISCONTINUOUS: were `ker ψ_f` open, `ψ_f` would cut out a
-quadratic field unramified at every finite prime, and Minkowski forbids
-one. Distinct `f` give distinct `ψ_f`. This is the ⊕-versus-∏ failure
-predicted below, made explicit.
-
-Set `ρ_f := diag (ψ_f, χ̄ · ψ_f)` with `χ̄` the mod-`ℓ` cyclotomic
-character. All four clauses of `IsHardlyRamified` hold:
-* `det`: `ψ_f · χ̄ · ψ_f = χ̄ · ψ_f² = χ̄`, since `ψ_f² = 1`.
-* `isUnramified` away from `{2, ℓ}`: `ψ_f` kills all inertia and `χ̄` is
-  unramified outside `ℓ`.
-* `isFlat` at `ℓ`: `GaloisRep.IsFlatAt.cond` quantifies over the OPEN
-  ideals of `A`, and the only open ideal of an indiscrete ring is `⊤`
-  (an ideal contains `0`, so it is not `∅`). The quotient `A ⧸ ⊤` is the
-  zero ring, its `Space` is a singleton, and
-  `GaloisRep.HasFlatProlongationAt` is witnessed by the trivial group
-  scheme `G = 𝒪ᵥ`: `Kᵥ ⊗[𝒪ᵥ] 𝒪ᵥ = Kᵥ` has exactly one `Kᵥ`-algebra map
-  to `Kᵥᵃˡᵍ`, so both sides are singletons. Flatness is therefore VACUOUS
-  over an indiscrete test object.
-* `isTameAtTwo`: take `π` the first coordinate projection and
-  `δ := ψ_f` restricted along `Γ ℚ_[2] → Γ ℚ`; `δ` is a `GaloisRep`
-  because continuity is free here, it is unramified because `ψ_f` kills
-  `I_2`, and `δ² = 1`.
-
-So the set in the conclusion is INFINITE while `hdisc` — the genuine H3,
-true by Hermite–Minkowski — is unaffected. The implication is false.
-
-TWO INDEPENDENT DEFECTS, and the second one matters for the repair. (i)
-Automatic continuity fails, as above. (ii) Even for CONTINUOUS `ρ`,
-`hdisc` cannot bound this set, because over an indiscrete (or any coarse)
-`A` the flatness clause is weakened — the open-ideal quantifier sees
-fewer ideals — so the coarse hardly-ramified set is not contained in the
-image of any discrete one. Bounding it needs Hermite–Minkowski applied
-directly (topological finite generation of `G_S`), which `hdisc` does not
-supply. Hence NO hypothesis short of discreteness of `A` rescues this
-statement, and in particular strengthening `hdisc` is not the repair.
-
-THE REPAIR IS ONE SEPARATION AXIOM, AND IT IS FREE. For a FINITE
-topological ring the whole phenomenon is non-separation, and nothing
-else. In a finite topological group the intersection `U` of all open
-neighbourhoods of `0` is itself open, is a subgroup (from continuity of
-`+` at `(0,0)`, using minimality of `U`), is an ideal (from continuity of
-`x ↦ a * x`), equals `closure {0}`, and the topology is exactly the coset
-topology of `U` — i.e. the pullback of the discrete topology of `A ⧸ U`.
-Hence for a finite topological ring
-
-    DiscreteTopology A  ⟺  T0Space A  ⟺  T2Space A  ⟺  closure {0} = 0.
-
-The motivating example of THE GAP above, `k[ε]` with the `(ε)`-coset
-topology, is not a subtle intermediate case: `0` and `ε` are
-topologically indistinguishable in it, so it is not even `T0`. So the
-raw test objects that this leaf was cut to cover are precisely the
-NON-HAUSDORFF ones, and every test object anyone actually constructs —
-a finite quotient of an `IsAdic` complete local ring, the dual numbers
-with their adic topology — is Hausdorff and therefore discrete. Adding
-`[T0Space A]` (equivalently `[DiscreteTopology A]`) to the raw test
-objects costs the consumers nothing and closes the gap completely.
-
-THE FIX IS UPSTREAM, NOT HERE (unchanged from the original cut, now
-mandatory rather than conditional). `IsStrictlyUniversalOnFrames` and
-`HardlyRamifiedDeformation.IsStrictlyUniversalOnFiniteFrames` are
-themselves too strong and must be narrowed by adding
-`[DiscreteTopology A]` to their test objects — which costs their
-consumers nothing, since the bundled deformations they are applied to are
-`IsAdic` and finite, hence discrete. This leaf was stated so that the
-question would be confronted once, in one place, rather than rediscovered
-inside a representability proof; that is what happened.
-
-References: Nikolov–Segal, *On finitely generated profinite groups I*,
-Ann. of Math. 165 (2007) (the theorem that does NOT apply here); Serre,
-*Galois cohomology*, I §4.2 (Hermite–Minkowski and the finite generation
-of `G_S`); Neukirch–Schmidt–Wingberg, *Cohomology of Number Fields*,
-§I.1 and §X.3 (`Ẑˣ` as the abelianisation, inertia in `ℚ (μ_∞)`);
-Minkowski's discriminant bound for the everywhere-unramified step. -/
-theorem finite_setOf_isHardlyRamified_frames_of_discreteTopology
-    (hdisc : ∀ (A : Type u) [CommRing A] [TopologicalSpace A]
-      [IsTopologicalRing A] [IsLocalRing A] [Algebra ℤ_[ℓ] A] [Finite A]
-      [DiscreteTopology A],
-      {ρ : FramedGaloisRep ℚ A (Fin 2) |
-        IsHardlyRamified hℓOdd (rank_finTwoFun A) ρ}.Finite)
-    (A : Type u) [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
-    [IsLocalRing A] [Algebra ℤ_[ℓ] A] [Finite A] :
-    {ρ : FramedGaloisRep ℚ A (Fin 2) |
-      IsHardlyRamified hℓOdd (rank_finTwoFun A) ρ}.Finite :=
-  sorry
-
 set_option backward.isDefEq.respectTransparency false in
 open scoped TensorProduct in
 /-- **Matrix entries of a pushed-forward frame** (PROVEN, elementary):
@@ -2925,9 +2804,12 @@ presentation `W(k)[[x₁,…,x_g]] ↠ R` with `g` the dimension of the framed
 tangent space, and the Mazur-category ring clauses read off it. Out:
 (i) H4, the now-PROVEN node `exists_smul_eq_of_commute_of_isIrreducible`
 (2026-07-26), supplied
-as `hschur`; (ii) H3, the leaf `finite_setOf_isHardlyRamified_frames`
-through `finite_setOf_isHardlyRamified_frames_of_discreteTopology`,
-supplied as `hfin`; (iii) the deformation-condition clauses — the PROVEN
+as `hschur`; (ii) H3, the leaf `finite_setOf_isHardlyRamified_frames`,
+supplied as `hfin` (the two statements now MATCH: the raw test objects
+of `IsStrictlyUniversalOnFrames` carry `[DiscreteTopology A]`, so the
+former bridging leaf `finite_setOf_isHardlyRamified_frames_of_discreteTopology`
+— refuted 2026-07-26 and deleted — is no longer needed);
+(iii) the deformation-condition clauses — the PROVEN
 `isHardlyRamified_pushforwardFrame` (whose own residue is the flatness
 leaf `isFlatAt_baseChange`), the leaf
 `isHardlyRamified_of_fibreProduct` and the leaf
@@ -3003,7 +2885,8 @@ theorem exists_isStrictlyUniversalOnFrames_of_deformationCondition (hℓ5 : 5 �
     (hschur : ∀ f : Module.End k V, (∀ g, Commute f (ρbar g)) →
       ∃ c : k, f = c • 1)
     (hfin : ∀ (A : Type u) [CommRing A] [TopologicalSpace A]
-      [IsTopologicalRing A] [IsLocalRing A] [Algebra ℤ_[ℓ] A] [Finite A],
+      [IsTopologicalRing A] [IsLocalRing A] [Algebra ℤ_[ℓ] A] [Finite A]
+      [DiscreteTopology A],
       {ρ : FramedGaloisRep ℚ A (Fin 2) |
         IsHardlyRamified hℓOdd (rank_finTwoFun A) ρ}.Finite)
     (hbase : ∀ {B : Type u} [CommRing B] [TopologicalSpace B]
@@ -3092,11 +2975,15 @@ cut splits the node exactly along that seam:
 * `isHardlyRamified_of_fibreProduct` — clause (ii), i.e. H1 and H2, whose
   content is Ramakrishna at `ℓ` and Conrad–Diamond–Taylor at `2`;
 * `isHardlyRamified_of_forall_isOpen_quotient` — clause (iii);
-* `finite_setOf_isHardlyRamified_frames_of_discreteTopology` — H3 for the
-  ARBITRARY finite ring topologies that the raw test objects of
-  `IsStrictlyUniversalOnFrames` allow, a gap between the H3 leaf
-  `finite_setOf_isHardlyRamified_frames` (stated for discrete `A`) and
-  this statement's quantifier; see that leaf for why it is not vacuous.
+
+H3 itself is passed straight through as `hfin`: since 2026-07-26 the raw
+test objects of `IsStrictlyUniversalOnFrames` carry `[DiscreteTopology A]`,
+so `finite_setOf_isHardlyRamified_frames` is exactly the hypothesis this
+node needs. The former bridging leaf
+`finite_setOf_isHardlyRamified_frames_of_discreteTopology`, which tried to
+cover ARBITRARY finite ring topologies, was REFUTED (an indiscrete
+`ZMod ℓ` makes continuity vacuous and the hardly ramified set infinite)
+and deleted along with the gap it named.
 
 Each of those leaves carries its own docstring; the proof below is
 nothing but the application.
@@ -3150,8 +3037,8 @@ theorem exists_isStrictlyUniversalOnFrames_of_finite_lifts (hℓ5 : 5 ≤ ℓ)
       IsStrictlyUniversalOnFrames hℓOdd ρbar ρuniv πuniv := by
   refine exists_isStrictlyUniversalOnFrames_of_deformationCondition hℓOdd hdim
     hℓ5 h hirr hschur ?_ ?_ ?_ ?_
-  · -- H3, across arbitrary finite ring topologies
-    exact finite_setOf_isHardlyRamified_frames_of_discreteTopology hℓOdd hfin
+  · -- H3, at every finite (hence discrete) Artinian level
+    exact hfin
   · -- functoriality of the deformation condition
     intro B _ _ _ _ _ A _ _ _ _ _ _ ψ hψ halg ρ hρ
     exact isHardlyRamified_pushforwardFrame hℓOdd ψ hψ halg hρ
