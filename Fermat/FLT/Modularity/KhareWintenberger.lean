@@ -147,6 +147,14 @@ import Mathlib.Tactic.NoncommRing
 -- congruence quotient). Both are Family-free.
 import Fermat.FLT.Deformations.RepresentationTheory.FlatProlongation
 import Mathlib.Topology.Algebra.Ring.Compact
+-- ingredients of the Artin-induction proof of the group-theoretic
+-- Brauer leaf (`brauer_induction_trivial_character`): linear duality
+-- over `ℚ`, solvability of commutative groups, `Set.ncard` for the
+-- strict-subgroup induction, and the `group` tactic
+import Mathlib.LinearAlgebra.Dual.Lemmas
+import Mathlib.GroupTheory.Solvable
+import Mathlib.Data.Set.Card
+import Mathlib.Tactic.Group
 
 @[expose] public section
 
@@ -1829,30 +1837,264 @@ theorem exists_potentialModularityWitness_of_five_le
            ιO_injective := hιO, modularF := hmod, B := B, τF := τF,
            ψ₃ := ψ₃, ιB := ιB, ιB_injective := hιB, matchF₃ := hmatch }⟩
 
-/-- **Brauer's induction theorem — trivial-character form** (sorry
-node; FOUNDER leaf, pure finite group theory — the group-theoretic
-engine of the `ℓ`-adic Brauer descent): for a finite group `G` the
-trivial character is a `ℤ`-linear combination of characters induced
-from one-dimensional characters of SOLVABLE subgroups. The data is
-presented explicitly and self-containedly: subgroups `H i`,
-one-dimensional characters of `H i` carried as functions
-`φ i : G → ℂ` extended by zero off `H i` (the three conditions say
-exactly that: `φ i` vanishes outside `H i`, sends `1` to `1`, and is
-multiplicative on `H i` — its values on `H i` are then |G|-th roots of
-unity, each element having finite order), and integers `c i`, such
-that the Frobenius-formula combination
+section ArtinInduction
+
+open scoped Classical
+
+/-- The `ℚ`-valued indicator function of the cyclic subgroup `⟨y⟩` —
+i.e. the trivial character of `⟨y⟩` extended by zero to all of `G`,
+the extension-by-zero shape in which the Brauer/Artin leaf carries its
+one-dimensional characters. -/
+noncomputable def cyclicIndicator {G : Type*} [Group G] (y : G) :
+    G → ℚ :=
+  fun h => if h ∈ Subgroup.zpowers y then 1 else 0
+
+/-- The character of `G` induced from the trivial character of the
+cyclic subgroup `⟨y⟩`, written by the Frobenius formula
+`(Ind_{⟨y⟩}^G 1)(g) = |⟨y⟩|⁻¹ · Σ_{x ∈ G} 1_{⟨y⟩}(x⁻¹ g x)`. Its
+values are the nonnegative integers `#{ x⟨y⟩ : x⁻¹ g x ∈ ⟨y⟩ }`, but
+nothing below needs that. -/
+noncomputable def indTrivCyclic {G : Type*} [Group G] [Fintype G]
+    (y : G) : G → ℚ := fun g =>
+  (Nat.card (Subgroup.zpowers y) : ℚ)⁻¹ *
+    ∑ x : G, cyclicIndicator y (x⁻¹ * g * x)
+
+/-- Frobenius reciprocity in elementary form: pairing the induced
+trivial character of `⟨y⟩` against an arbitrary function `f : G → ℚ`
+gives the sum over `⟨y⟩` of the conjugation average of `f` (up to the
+normalizing factor `|⟨y⟩|⁻¹`). Proof: unfold the induced character,
+exchange the two sums and reindex `g = x h x⁻¹` for each fixed `x`. -/
+theorem sum_indTrivCyclic_mul {G : Type*} [Group G] [Fintype G]
+    (y : G) (f : G → ℚ) :
+    ∑ g : G, indTrivCyclic y g * f g =
+      (Nat.card (Subgroup.zpowers y) : ℚ)⁻¹ *
+        ∑ h ∈ Finset.univ.filter (fun h => h ∈ Subgroup.zpowers y),
+          ∑ x : G, f (x * h * x⁻¹) := by
+  have h1 : ∀ x : G, ∑ g : G, cyclicIndicator y (x⁻¹ * g * x) * f g
+      = ∑ h : G, cyclicIndicator y h * f (x * h * x⁻¹) := by
+    intro x
+    refine (Fintype.sum_equiv
+      ((Equiv.mulLeft x).trans (Equiv.mulRight x⁻¹)) _ _ ?_).symm
+    intro h
+    have hx : x⁻¹ * (x * h * x⁻¹) * x = h := by group
+    simp only [Equiv.coe_trans, Function.comp_apply, Equiv.coe_mulLeft,
+      Equiv.coe_mulRight]
+    rw [hx]
+  have step : ∑ g : G, (∑ x : G, cyclicIndicator y (x⁻¹ * g * x)) * f g
+      = ∑ h ∈ Finset.univ.filter (fun h => h ∈ Subgroup.zpowers y),
+          ∑ x : G, f (x * h * x⁻¹) := by
+    simp only [Finset.sum_mul]
+    rw [Finset.sum_comm, Finset.sum_congr rfl (fun x _ => h1 x),
+      Finset.sum_comm, Finset.sum_filter]
+    refine Finset.sum_congr rfl fun h _ => ?_
+    by_cases hh : h ∈ Subgroup.zpowers y <;> simp [cyclicIndicator, hh]
+  calc ∑ g : G, indTrivCyclic y g * f g
+      = ∑ g : G, (Nat.card (Subgroup.zpowers y) : ℚ)⁻¹ *
+          ((∑ x : G, cyclicIndicator y (x⁻¹ * g * x)) * f g) := by
+        refine Finset.sum_congr rfl fun g _ => ?_
+        show ((Nat.card (Subgroup.zpowers y) : ℚ)⁻¹ *
+          ∑ x : G, cyclicIndicator y (x⁻¹ * g * x)) * f g = _
+        rw [mul_assoc]
+    _ = (Nat.card (Subgroup.zpowers y) : ℚ)⁻¹ *
+          ∑ g : G, (∑ x : G, cyclicIndicator y (x⁻¹ * g * x)) * f g := by
+        rw [Finset.mul_sum]
+    _ = _ := by rw [step]
+
+/-- Möbius inversion over the lattice of cyclic subgroups, in the only
+form needed here: if every "cyclic partial sum" `Σ_{h ∈ ⟨y⟩} F h` of a
+function `F : G → ℚ` vanishes, then `F` sums to zero over all of `G`.
+
+Proof: partition `G` (and each `⟨y⟩`) into the fibres of `h ↦ ⟨h⟩`;
+a strong induction on `|⟨y⟩|` shows each fibre sum
+`Σ_{⟨h⟩ = ⟨y⟩} F h` vanishes (the fibres of the PROPER cyclic
+subgroups of `⟨y⟩` are handled by the induction hypothesis, since a
+proper subgroup has strictly smaller cardinality), and summing the
+fibre sums over all cyclic subgroups gives `Σ_{g ∈ G} F g = 0`. -/
+theorem sum_eq_zero_of_cyclic_sums {G : Type*} [Group G] [Fintype G]
+    (F : G → ℚ)
+    (hF : ∀ y : G,
+      ∑ h ∈ Finset.univ.filter (fun h => h ∈ Subgroup.zpowers y),
+        F h = 0) :
+    ∑ g : G, F g = 0 := by
+  have key : ∀ (n : ℕ) (y : G), Nat.card (Subgroup.zpowers y) = n →
+      ∑ h ∈ Finset.univ.filter
+        (fun h => Subgroup.zpowers h = Subgroup.zpowers y), F h = 0 := by
+    intro n
+    induction n using Nat.strong_induction_on with
+    | _ n ih =>
+      intro y hy
+      have hfib : ∀ z : G, z ∈ Subgroup.zpowers y →
+          (Finset.univ.filter (fun h => h ∈ Subgroup.zpowers y)).filter
+              (fun h => Subgroup.zpowers h = Subgroup.zpowers z)
+            = Finset.univ.filter
+              (fun h => Subgroup.zpowers h = Subgroup.zpowers z) := by
+        intro z hz
+        ext h
+        simp only [Finset.mem_filter, Finset.mem_univ, true_and,
+          and_iff_right_iff_imp]
+        intro hh
+        have hmem : h ∈ Subgroup.zpowers h := Subgroup.mem_zpowers h
+        rw [hh] at hmem
+        exact (Subgroup.zpowers_le.2 hz) hmem
+      have hmaps : ∀ h ∈ Finset.univ.filter
+          (fun h => h ∈ Subgroup.zpowers y),
+          Subgroup.zpowers h ∈ (Finset.univ.filter
+            (fun h => h ∈ Subgroup.zpowers y)).image
+            (fun h => Subgroup.zpowers h) :=
+        fun h hh => Finset.mem_image_of_mem _ hh
+      have hsplit := Finset.sum_fiberwise_of_maps_to hmaps F
+      rw [hF y] at hsplit
+      have hymem : y ∈ Finset.univ.filter
+          (fun h => h ∈ Subgroup.zpowers y) := by
+        simp [Subgroup.mem_zpowers]
+      have hone := Finset.sum_eq_single_of_mem
+        (s := (Finset.univ.filter (fun h => h ∈ Subgroup.zpowers y)).image
+          (fun h : G => Subgroup.zpowers h))
+        (f := fun D => ∑ h ∈ (Finset.univ.filter
+          (fun h => h ∈ Subgroup.zpowers y)).filter
+          (fun h => Subgroup.zpowers h = D), F h)
+        (Subgroup.zpowers y) (Finset.mem_image_of_mem _ hymem) ?_
+      · rw [hone, hfib y (Subgroup.mem_zpowers y)] at hsplit
+        exact hsplit
+      · intro D hD hDne
+        obtain ⟨z, hz, rfl⟩ := Finset.mem_image.1 hD
+        simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hz
+        rw [hfib z hz]
+        refine ih (Nat.card (Subgroup.zpowers z)) ?_ z rfl
+        rw [← hy]
+        have hle : Subgroup.zpowers z ≤ Subgroup.zpowers y :=
+          Subgroup.zpowers_le.2 hz
+        have hss : (Subgroup.zpowers z : Set G) ⊂
+            (Subgroup.zpowers y : Set G) := by
+          refine ⟨hle, fun hsub => hDne (le_antisymm hle ?_)⟩
+          intro a ha
+          exact hsub ha
+        have hlt := Set.ncard_lt_ncard hss (Set.toFinite _)
+        rwa [← Nat.card_coe_set_eq, ← Nat.card_coe_set_eq,
+          SetLike.coe_sort_coe, SetLike.coe_sort_coe] at hlt
+  have hmaps2 : ∀ h ∈ (Finset.univ : Finset G),
+      Subgroup.zpowers h ∈ Finset.univ.image
+        (fun h : G => Subgroup.zpowers h) :=
+    fun h _ => Finset.mem_image_of_mem _ (Finset.mem_univ h)
+  rw [← Finset.sum_fiberwise_of_maps_to hmaps2 F]
+  refine Finset.sum_eq_zero fun D hD => ?_
+  obtain ⟨z, _, rfl⟩ := Finset.mem_image.1 hD
+  exact key _ z rfl
+
+set_option maxRecDepth 8000 in
+/-- **Artin's induction theorem**, span form: on a finite group `G`
+the constant function `1` is a `ℚ`-linear combination of the
+characters induced from the trivial characters of the CYCLIC subgroups
+of `G` (Serre, *Linear Representations of Finite Groups*, §9.2,
+Theorem 17).
+
+Proof (the standard duality argument, run over `ℚ` so that the
+coefficients come out rational): if `1` were not in the span `W` of
+the `Ind_{⟨y⟩}^G 1` inside the finite-dimensional `ℚ`-space of
+functions `G → ℚ`, a linear functional `ϕ` would vanish on `W` but not
+at `1`. Writing `ϕ u = Σ_g u g · fd g` with `fd g = ϕ (Pi.single g 1)`
+and putting `F h = Σ_x fd (x h x⁻¹)`, the vanishing of `ϕ` on every
+`Ind_{⟨y⟩}^G 1` says exactly (`sum_indTrivCyclic_mul`) that every
+cyclic partial sum of `F` vanishes; hence `Σ_g F g = 0`
+(`sum_eq_zero_of_cyclic_sums`), i.e. `|G| · Σ_g fd g = 0`, i.e.
+`ϕ 1 = Σ_g fd g = 0` — a contradiction. -/
+theorem exists_artin_coeffs (G : Type*) [Group G] [Fintype G] :
+    ∃ c : G → ℚ, ∀ g : G, ∑ y : G, c y * indTrivCyclic y g = 1 := by
+  have hspan : (fun _ => (1 : ℚ)) ∈
+      Submodule.span ℚ (Set.range (indTrivCyclic (G := G))) := by
+    by_contra hmem
+    obtain ⟨φ, hφ1, hφ0⟩ :=
+      Submodule.exists_dual_map_eq_bot_of_notMem hmem inferInstance
+    set fd : G → ℚ := fun g => φ (Pi.single g 1) with hfddef
+    have hrep : ∀ u : G → ℚ, φ u = ∑ g : G, u g * fd g := by
+      intro u
+      conv_lhs => rw [← Finset.univ_sum_single u]
+      rw [map_sum]
+      refine Finset.sum_congr rfl fun g _ => ?_
+      have hs : Pi.single g (u g) = u g • Pi.single g (1 : ℚ) := by
+        ext j; by_cases hj : j = g <;> simp [hj]
+      rw [hs, map_smul, smul_eq_mul]
+    -- `hval` is read off `hφ0` without re-elaborating `⊥`: stating the
+    -- bottom submodule of `ℚ` afresh sends instance synthesis into a
+    -- loop in this module's instance context.
+    have hval := Submodule.eq_bot_iff _ |>.1 hφ0
+    have hzero : ∀ y : G, ∑ g : G, indTrivCyclic y g * fd g = 0 := by
+      intro y
+      rw [← hrep]
+      exact hval _ (Submodule.mem_map_of_mem (Submodule.subset_span ⟨y, rfl⟩))
+    have hcyc : ∀ y : G,
+        ∑ h ∈ Finset.univ.filter (fun h => h ∈ Subgroup.zpowers y),
+          ∑ x : G, fd (x * h * x⁻¹) = 0 := by
+      intro y
+      have hN : (Nat.card (Subgroup.zpowers y) : ℚ) ≠ 0 := by
+        have hp : 0 < Nat.card (Subgroup.zpowers y) := Nat.card_pos
+        exact_mod_cast hp.ne'
+      have h2 := sum_indTrivCyclic_mul y fd
+      rw [hzero y] at h2
+      rcases mul_eq_zero.1 h2.symm with h | h
+      · exact absurd (inv_eq_zero.1 h) hN
+      · exact h
+    have hsum := sum_eq_zero_of_cyclic_sums
+      (fun h => ∑ x : G, fd (x * h * x⁻¹)) hcyc
+    have hcard : ∑ g : G, (∑ x : G, fd (x * g * x⁻¹))
+        = Fintype.card G * ∑ g : G, fd g := by
+      rw [Finset.sum_comm]
+      have hconj : ∀ x : G, ∑ g : G, fd (x * g * x⁻¹) = ∑ g : G, fd g := by
+        intro x
+        refine Fintype.sum_equiv
+          ((Equiv.mulLeft x).trans (Equiv.mulRight x⁻¹)) _ _ ?_
+        intro h
+        simp
+      rw [Finset.sum_congr rfl (fun x _ => hconj x)]
+      simp [Finset.sum_const, Finset.card_univ]
+    rw [hcard] at hsum
+    have hG : (Fintype.card G : ℚ) ≠ 0 := by
+      have hp : 0 < Fintype.card G := Fintype.card_pos
+      exact_mod_cast hp.ne'
+    have hfd0 : ∑ g : G, fd g = 0 := by
+      rcases mul_eq_zero.1 hsum with h | h
+      · exact absurd h hG
+      · exact h
+    apply hφ1
+    rw [hrep]
+    simpa using hfd0
+  obtain ⟨c, hc⟩ := (Submodule.mem_span_range_iff_exists_fun ℚ).1 hspan
+  refine ⟨c, fun g => ?_⟩
+  have hg := congrFun hc g
+  simpa using hg
+
+/-- **Artin's induction theorem — trivial-character form** (PROVEN
+2026-07-24; FOUNDER leaf, pure finite group theory — the
+group-theoretic engine of the `ℓ`-adic Brauer descent): for a finite
+group `G` the trivial character is a `ℚ`-linear combination of
+characters induced from one-dimensional characters of SOLVABLE (in
+fact CYCLIC) subgroups. The data is presented explicitly and
+self-containedly: subgroups `H i`, one-dimensional characters of `H i`
+carried as functions `φ i : G → ℂ` extended by zero off `H i` (the
+three conditions say exactly that: `φ i` vanishes outside `H i`, sends
+`1` to `1`, and is multiplicative on `H i` — its values on `H i` are
+then |G|-th roots of unity, each element having finite order), and
+rationals `c i`, such that the Frobenius-formula combination
 `Σᵢ cᵢ · |Hᵢ|⁻¹ · Σ_{x ∈ G} φᵢ(x⁻¹ g x)` — the `i`-th inner term is
 the induced character `Ind_{Hᵢ}^G χᵢ` evaluated at `g` — is the
 constant `1`.
 
-Literature: Brauer's induction theorem — Serre, *Linear
-Representations of Finite Groups*, §10.5, Theorems 18–19 (every
-character of `G` is a `ℤ`-linear combination of characters induced
-from one-dimensional characters of `p`-elementary subgroups; apply to
-the trivial character); Isaacs, *Character Theory of Finite Groups*,
-Theorem 8.4; Curtis–Reiner §15. A `p`-elementary group (cyclic ×
-`p`-group) is nilpotent, hence solvable — solvability is the weaker
-form recorded here because it is exactly what solvable base change
+RESTATEMENT (2026-07-24, ℤ → ℚ): this node was originally stated with
+INTEGER coefficients `c i`, i.e. as BRAUER's induction theorem (Serre,
+§10.5, Theorems 18–19; Isaacs, Theorem 8.4; Curtis–Reiner §15), whose
+proof is a genuine project (`p`-elementary subgroups, algebraic
+integrality of character values, the Brauer/Banaschewski counting
+argument). Its consumer
+(`exists_heckeField_system_of_witness_of_pieces`) only ever forms the
+combination `Σᵢ cᵢ · (traces in the Hecke field `E`)`, and `E` is a
+number field — a `ℚ`-algebra — so RATIONAL coefficients are exactly as
+good as integral ones there; nothing downstream uses integrality. The
+node is therefore restated with `c : Fin n → ℚ` and PROVEN, in the
+weaker but sufficient ARTIN form (Serre, §9.2, Theorem 17: cyclic
+subgroups, rational coefficients). The declaration keeps its
+`brauer_`-name for continuity with its consumers and with the
+`PROGRESS.md` tree. The subgroups produced are cyclic, hence
+commutative, hence solvable — which is what solvable base change
 consumes downstream.
 
 PIN AUDIT (2026-07-24, hard search): the mathlib pin has the induction
@@ -1861,33 +2103,68 @@ Induced.lean` — a categorical adjunction, no character formula) and
 basic character theory (`Mathlib/RepresentationTheory/Character.lean`:
 orthogonality only), but NO induced-character formula, NO virtual
 characters, NO Artin or Brauer induction in any form (`grep Brauer`
-over `Mathlib/`: only Brauer GROUPS of fields). The leaf is therefore
-stated self-containedly (no `FDRep`, no decidability or subtype
+over `Mathlib/`: only Brauer GROUPS of fields). The statement is
+therefore self-contained (no `FDRep`, no decidability or subtype
 baggage — the extension-by-zero form makes the induced character an
-unrestricted sum over `G`), in the exact shape its consumer
-(`exists_heckeField_system_of_witness_of_pieces`) needs. It is
-genuinely provable in-tree — finite character theory over `ℂ` — but is
-a real project (elementary subgroups, algebraic integrality of
-character values, the Brauer/Banaschewski counting argument), hence a
-leaf.
+unrestricted sum over `G`), in the exact shape its consumer needs, and
+the Artin development above (`cyclicIndicator`, `indTrivCyclic`,
+`sum_indTrivCyclic_mul`, `sum_eq_zero_of_cyclic_sums`,
+`exists_artin_coeffs`) is written from scratch in-tree.
+
+PROOF: `exists_artin_coeffs` on `G` produces rational coefficients
+`c : G → ℚ` with `Σ_{y ∈ G} c y · Ind_{⟨y⟩}^G 1 = 1`; reindex the
+family along `Fin (Fintype.card G) ≃ G`, take `H i = ⟨y i⟩` (cyclic,
+hence commutative, hence solvable by `isSolvable_of_comm`) and
+`φ i = ` the extension-by-zero indicator of `H i`, whose three
+character conditions are immediate, and transport the `ℚ`-identity
+into `ℂ` along the field embedding `ℚ → ℂ`.
 
 SOUNDNESS AUDIT (2026-07-24): a true classical theorem with NO vacuity
-route — this leaf carries no arithmetic hypotheses, so unlike the
+route — this node carries no arithmetic hypotheses, so unlike the
 arithmetic leaves of this module it must be (and is) directly true as
-stated: Serre §10.5, Theorem 19, applied to `1_G`, with each
-`p`-elementary subgroup relabelled solvable. Edge `G = 1`: take
-`n = 1`, `H 0 = ⊤`, `φ 0 = 1`, `c 0 = 1`. -/
+stated: Serre §9.2, Theorem 17, applied to `1_G`, with each cyclic
+subgroup relabelled solvable. Edge `G = 1`: the family is the single
+cyclic subgroup `⟨1⟩ = ⊤` with coefficient `1`. -/
 theorem brauer_induction_trivial_character (G : Type*) [Group G]
     [Fintype G] :
     ∃ (n : ℕ) (H : Fin n → Subgroup G) (φ : Fin n → G → ℂ)
-      (c : Fin n → ℤ),
+      (c : Fin n → ℚ),
       (∀ i, IsSolvable (H i)) ∧
       (∀ i, ∀ g ∉ H i, φ i g = 0) ∧
       (∀ i, φ i 1 = 1) ∧
       (∀ i, ∀ a ∈ H i, ∀ b ∈ H i, φ i (a * b) = φ i a * φ i b) ∧
       (∀ g : G, ∑ i, (c i : ℂ) * (Nat.card (H i) : ℂ)⁻¹ *
-        ∑ x : G, φ i (x⁻¹ * g * x) = 1) :=
-  sorry
+        ∑ x : G, φ i (x⁻¹ * g * x) = 1) := by
+  obtain ⟨c, hc⟩ := exists_artin_coeffs G
+  let e : Fin (Fintype.card G) ≃ G := (Fintype.equivFin G).symm
+  refine ⟨Fintype.card G, fun i => Subgroup.zpowers (e i),
+    fun i g => ((cyclicIndicator (e i) g : ℚ) : ℂ), fun i => c (e i),
+    ?_, ?_, ?_, ?_, ?_⟩
+  · intro i
+    exact isSolvable_of_comm (fun a b => mul_comm' a b)
+  · intro i g hg
+    simp [cyclicIndicator, hg]
+  · intro i
+    simp [cyclicIndicator]
+  · intro i a ha b hb
+    have ha' : a ∈ Subgroup.zpowers (e i) := ha
+    have hb' : b ∈ Subgroup.zpowers (e i) := hb
+    have hab : a * b ∈ Subgroup.zpowers (e i) := mul_mem ha' hb'
+    simp [cyclicIndicator, ha', hb', hab]
+  · intro g
+    have hterm : ∀ i : Fin (Fintype.card G),
+        ((c (e i) : ℂ) * (Nat.card (Subgroup.zpowers (e i)) : ℂ)⁻¹ *
+          ∑ x : G, ((cyclicIndicator (e i) (x⁻¹ * g * x) : ℚ) : ℂ))
+          = ((c (e i) * indTrivCyclic (e i) g : ℚ) : ℂ) := by
+      intro i
+      rw [indTrivCyclic]
+      push_cast
+      ring
+    rw [Finset.sum_congr rfl (fun i _ => hterm i), ← Rat.cast_sum,
+      Equiv.sum_comp e (fun y => c y * indTrivCyclic y g), hc g]
+    norm_num
+
+end ArtinInduction
 
 /-- **The descended Hecke system over a fixed field** (the shared shape
 of the `ℓ`-adic solvable-descent chain — the sharpest pin-stateable
@@ -2762,6 +3039,16 @@ charpoly is the image of `q` itself (cyclotomic determinant,
 The exceptional set `S₀` collects the primes ramified in `F` and the
 primes below the pieces' bad sets `S i`.
 
+RATIONAL COEFFICIENTS (2026-07-24): the Brauer/Artin coefficients `c i`
+are `ℚ`-valued, not `ℤ`-valued — this is the shape in which the
+group-theoretic node `brauer_induction_trivial_character` is PROVEN
+(Artin induction over cyclic subgroups; see its RESTATEMENT note). The
+gluing above is insensitive to the difference: it only ever forms the
+combination `Σᵢ cᵢ · aᵢ` of trace coefficients `aᵢ` lying in the Hecke
+field `E`, and `E` is a number field, hence a `ℚ`-algebra, so a
+rational combination of elements of `E` is again an element of `E`.
+Integrality of the `cᵢ` is nowhere used.
+
 Literature: Barnet-Lamb–Gee–Geraghty–Taylor, *Potential automorphy
 and change of weight*, Ann. of Math. 179 (2014), §5.3 (gluing the
 descended systems through Brauer's theorem into a weakly compatible
@@ -2830,7 +3117,7 @@ theorem exists_heckeField_system_of_witness_of_pieces
         ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
     (Wit : PotentialModularityWitness ℓ O ρ)
     (n : ℕ) (H : Fin n → Subgroup (Wit.F ≃ₐ[ℚ] Wit.F))
-    (φ : Fin n → (Wit.F ≃ₐ[ℚ] Wit.F) → ℂ) (c : Fin n → ℤ)
+    (φ : Fin n → (Wit.F ≃ₐ[ℚ] Wit.F) → ℂ) (c : Fin n → ℚ)
     (hφ0 : ∀ i, ∀ g ∉ H i, φ i g = 0)
     (hφ1 : ∀ i, φ i 1 = 1)
     (hφmul : ∀ i, ∀ a ∈ H i, ∀ b ∈ H i, φ i (a * b) = φ i a * φ i b)
@@ -2895,9 +3182,9 @@ theorem exists_heckeField_system_of_witness_of_pieces
 
 /-- **Brauer descent, `ℓ`-adic side — the Hecke-field polynomial
 system over `ℚ`** (PROVEN 2026-07-24 as an assembly over the three
-Brauer-descent leaves above; the depth now lives in
-`brauer_induction_trivial_character`,
-`exists_descended_heckeSystem_of_solvable` and
+Brauer-descent nodes above, of which the group-theoretic one
+(`brauer_induction_trivial_character`) is itself now PROVEN; the
+residual depth lives in `exists_descended_heckeSystem_of_solvable` and
 `exists_heckeField_system_of_witness_of_pieces` — see the ASSEMBLY
 note at the end of this docstring): given a potential-modularity
 carrier for the lift `ρ`, the Frobenius characteristic polynomials of `ρ` at
@@ -2945,10 +3232,11 @@ is a number field) + per Brauer piece the solvable base change
 descent (`exists_descended_heckeSystem_of_solvable`, applied to each
 solvable subgroup `H i` via `choose`) + the induced-character gluing
 (`exists_heckeField_system_of_witness_of_pieces`), consuming the
-Brauer data and the chosen piece systems. Those three leaves are now
-the residual sorries of this node; the circularity guard above binds
-the two arithmetic ones (the Brauer leaf is pure group theory — no
-guard needed, nothing arithmetic to route through). -/
+Brauer data and the chosen piece systems. UPDATE (2026-07-24): the
+group-theoretic leaf is now PROVEN (Artin induction, rational
+coefficients — see its RESTATEMENT note), so the residual sorries of
+this node are the two ARITHMETIC leaves, both bound by the circularity
+guard above. -/
 theorem exists_heckeField_system_of_witness
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
@@ -4422,9 +4710,11 @@ are likewise proven assemblies; the residual sorries of this pillar
 are now the inhabitation node's three
 (`exists_moretBailly_seed_of_five_le`, `exists_heckePackage_of_seed`,
 `exists_threeadic_realization_of_heckePackage`), the Brauer descent's
-three (`brauer_induction_trivial_character`,
-`exists_descended_heckeSystem_of_solvable`,
-`exists_heckeField_system_of_witness_of_pieces`), and the realization
+two remaining arithmetic ones
+(`exists_descended_heckeSystem_of_solvable`,
+`exists_heckeField_system_of_witness_of_pieces` — its group-theoretic
+node `brauer_induction_trivial_character` was PROVEN 2026-07-24 by
+Artin induction), and the realization
 carrier's five (`exists_threeadicRealization_of_witness` plus the
 four per-condition transfer leaves); the circularity guard above
 binds each of them. -/
