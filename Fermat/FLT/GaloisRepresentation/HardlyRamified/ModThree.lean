@@ -7623,9 +7623,362 @@ theorem classIdealCount_LSeriesSummable (K : Type*) [Field K] [NumberField K]
     (fun n => Nat.cast_nonneg _) zero_le_one hs
   simpa using h5
 
-/-- **The archimedean Γ-profile of the signature `(r₁, r₂)`** (sorry
-node, stated 2026-07-24 — stage (α), the Neukirch VII §4 archimedean
-Euler-factor computation, of the decomposition of
+/-- **Archimedean Γ-profile of formal degree `n` with Mellin factor
+`M`** (the working predicate of the stage-(α) decomposition of
+`heckeThetaKernel_exists`, 2026-07-25): `H : ℝ → ℝ` is continuous,
+nonnegative and antitone on `(0, ∞)`, decays stretched-exponentially
+like `exp(−a·τ^{1/n})` on `[1, ∞)`, and has Mellin transform exactly
+`M s` at `s/2` for every `s` with `re s > 1`.  This is verbatim the
+conjunction demanded by `archimedeanGammaProfile_exists`, with the
+degree `n` and the Mellin factor `M` abstracted so that profiles can
+be MULTIPLIED: Mellin transformation turns multiplicative convolution
+of profiles into multiplication of the factors `M`, and the degrees
+add (`archConv`, `archProfile_mul`).  The archimedean Euler product
+`Γ_ℝ(s)^{r₁}·Γ_ℂ(s)^{r₂}` is then reached from the two elementary
+one-place profiles `e^{−πτ}` (degree `1`, `archProfile_real`) and
+`e^{−2π√τ}` (degree `2`, `archProfile_complex`) by `r₁ + r₂ − 1`
+convolutions — this replaces Neukirch's norm-one-hypersurface integral
+by an iterated one-dimensional Mellin convolution, which is the same
+computation performed one place at a time. -/
+def IsArchProfile (n : ℕ) (M : ℂ → ℂ) (H : ℝ → ℝ) : Prop :=
+  ContinuousOn H (Set.Ioi 0) ∧
+  (∀ τ : ℝ, τ ∈ Set.Ioi (0 : ℝ) → 0 ≤ H τ) ∧
+  AntitoneOn H (Set.Ioi 0) ∧
+  (∃ A a : ℝ, 0 < a ∧ ∀ τ : ℝ, 1 ≤ τ →
+    H τ ≤ A * Real.exp (-a * τ ^ ((n : ℝ)⁻¹))) ∧
+  (∀ s : ℂ, 1 < s.re → HasMellin (fun τ : ℝ => (H τ : ℂ)) (s / 2) (M s))
+
+/-- Replacing the Mellin factor of a profile by one agreeing with it on
+the half-plane `re s > 1` (used to normalize `M` into the shape
+`Γ_ℝ^{r₁}·Γ_ℂ^{r₂}` along the induction of `archProfile_pow`). -/
+theorem IsArchProfile.congr_mellin {n : ℕ} {M M' : ℂ → ℂ} {H : ℝ → ℝ}
+    (h : IsArchProfile n M H) (hM : ∀ s : ℂ, 1 < s.re → M s = M' s) :
+    IsArchProfile n M' H :=
+  ⟨h.1, h.2.1, h.2.2.1, h.2.2.2.1, fun s hs => (hM s hs) ▸ h.2.2.2.2 s hs⟩
+
+/-- The Mellin transform of `t ↦ e^{−t}` is Euler's `Γ`: this is
+literally `Complex.Gamma_eq_integral` rewritten through the definition
+`mellin f s = ∫_{(0,∞)} t^{s−1}·f t`, with
+`Complex.GammaIntegral_convergent` supplying the `MellinConvergent`
+half of the `HasMellin` bundle. -/
+theorem hasMellin_ofReal_exp_neg (s : ℂ) (hs : 0 < s.re) :
+    HasMellin (fun t : ℝ => ((Real.exp (-t) : ℝ) : ℂ)) s (Complex.Gamma s) := by
+  constructor
+  · have h := Complex.GammaIntegral_convergent hs
+    rw [MellinConvergent]
+    exact h.congr_fun (fun t ht => by simp [smul_eq_mul, mul_comm]) measurableSet_Ioi
+  · rw [mellin, Complex.Gamma_eq_integral hs]
+    exact MeasureTheory.setIntegral_congr_fun measurableSet_Ioi
+      (fun t ht => by simp [smul_eq_mul, mul_comm])
+
+/-- **The real-place profile** (PROVEN): `H(τ) = e^{−πτ}` is a
+Γ-profile of degree `1` with Mellin factor
+`Γ_ℝ(s) = π^{−s/2}·Γ(s/2)`.  The Mellin identity is
+`hasMellin_ofReal_exp_neg` at `s/2` composed with the dilation
+`mellin_comp_mul_left` at `a = π`. -/
+theorem archProfile_real :
+    ∃ H : ℝ → ℝ, IsArchProfile 1
+      (fun s => (Real.pi : ℂ) ^ (-s / 2) * Complex.Gamma (s / 2)) H := by
+  refine ⟨fun τ => Real.exp (-(Real.pi * τ)), ?_, ?_, ?_, ⟨1, Real.pi, Real.pi_pos, ?_⟩, ?_⟩
+  · exact (Real.continuous_exp.comp (by continuity)).continuousOn
+  · exact fun τ _ => (Real.exp_pos _).le
+  · exact fun a _ b _ hab => Real.exp_le_exp.mpr (by nlinarith [Real.pi_pos])
+  · intro τ hτ
+    rw [Nat.cast_one, inv_one, Real.rpow_one, one_mul]
+    exact Real.exp_le_exp.mpr (by ring_nf; rfl)
+  · intro s hs
+    have hs2 : 0 < (s / 2).re := by simp; linarith
+    have h := hasMellin_ofReal_exp_neg (s / 2) hs2
+    refine ⟨(MellinConvergent.comp_mul_left Real.pi_pos).mpr h.1, ?_⟩
+    show mellin (fun τ : ℝ => ((Real.exp (-(Real.pi * τ)) : ℝ) : ℂ)) (s / 2)
+      = (Real.pi : ℂ) ^ (-s / 2) * Complex.Gamma (s / 2)
+    rw [show (-s / 2 : ℂ) = -(s / 2) by ring, ← h.2]
+    exact mellin_comp_mul_left (fun t : ℝ => ((Real.exp (-t) : ℝ) : ℂ)) (s / 2) Real.pi_pos
+
+/-- **The complex-place profile** (PROVEN): `H(τ) = e^{−2π·τ^{1/2}}` is
+a Γ-profile of degree `2` with Mellin factor
+`Γ_ℂ(s) = 2·(2π)^{−s}·Γ(s)`.  The Mellin identity is
+`hasMellin_ofReal_exp_neg` at `s`, dilated by `2π`
+(`mellin_comp_mul_left`) and then pulled back along `τ ↦ τ^{1/2}`
+(`mellin_comp_rpow`, whose Jacobian `|1/2|⁻¹ = 2` is exactly the
+factor `2` in `Γ_ℂ`) — the substitution `u = 2π√τ` of Neukirch VII
+(4.3). -/
+theorem archProfile_complex :
+    ∃ H : ℝ → ℝ, IsArchProfile 2
+      (fun s => 2 * ((2 * Real.pi : ℝ) : ℂ) ^ (-s) * Complex.Gamma s) H := by
+  have h2pi : (0:ℝ) < 2 * Real.pi := by positivity
+  refine ⟨fun τ => Real.exp (-(2 * Real.pi * τ ^ ((1:ℝ)/2))), ?_, ?_, ?_,
+    ⟨1, 2 * Real.pi, h2pi, ?_⟩, ?_⟩
+  · refine (Real.continuous_exp.comp ?_).continuousOn
+    exact (continuous_const.mul (continuous_iff_continuousAt.mpr fun x =>
+      Real.continuousAt_rpow_const x _ (Or.inr (by norm_num)))).neg
+  · exact fun τ _ => (Real.exp_pos _).le
+  · intro a ha b hb hab
+    refine Real.exp_le_exp.mpr ?_
+    have hab' : a ^ ((1:ℝ)/2) ≤ b ^ ((1:ℝ)/2) :=
+      Real.rpow_le_rpow (le_of_lt ha) hab (by norm_num)
+    nlinarith [Real.pi_pos]
+  · intro τ hτ
+    rw [one_mul]
+    refine Real.exp_le_exp.mpr ?_
+    rw [show ((2:ℕ) : ℝ)⁻¹ = (1:ℝ)/2 by norm_num]
+    ring_nf
+    rfl
+  · intro s hs
+    have hs0 : 0 < s.re := by linarith
+    have h := hasMellin_ofReal_exp_neg s hs0
+    have hg : HasMellin (fun t : ℝ => ((Real.exp (-(2 * Real.pi * t)) : ℝ) : ℂ)) s
+        (((2 * Real.pi : ℝ) : ℂ) ^ (-s) * Complex.Gamma s) := by
+      refine ⟨(MellinConvergent.comp_mul_left h2pi).mpr h.1, ?_⟩
+      rw [← h.2]
+      exact mellin_comp_mul_left (fun t : ℝ => ((Real.exp (-t) : ℝ) : ℂ)) s h2pi
+    have hdiv : (s / 2 / (((1:ℝ)/2 : ℝ) : ℂ)) = s := by push_cast; ring
+    constructor
+    · exact (MellinConvergent.comp_rpow
+        (f := fun t : ℝ => ((Real.exp (-(2 * Real.pi * t)) : ℝ) : ℂ))
+        (s := s / 2) (a := (1:ℝ)/2) (by norm_num)).mpr (by rw [hdiv]; exact hg.1)
+    · show mellin (fun τ : ℝ => ((Real.exp (-(2 * Real.pi * τ ^ ((1:ℝ)/2))) : ℝ) : ℂ)) (s / 2)
+        = 2 * ((2 * Real.pi : ℝ) : ℂ) ^ (-s) * Complex.Gamma s
+      refine (mellin_comp_rpow (fun t : ℝ => ((Real.exp (-(2 * Real.pi * t)) : ℝ) : ℂ)) (s / 2)
+        ((1:ℝ)/2)).trans ?_
+      rw [hdiv, hg.2,
+        show |(1:ℝ)/2|⁻¹ = (2:ℝ) by rw [abs_of_pos (by norm_num : (0:ℝ) < 1/2)]; norm_num,
+        Complex.real_smul]
+      push_cast
+      ring
+
+/-- **Multiplicative (Mellin) convolution of two profiles**:
+`(H₁ ⋆ H₂)(τ) = ∫_0^∞ H₁(τ/u)·H₂(u)·du/u`.  This is the
+multiplication of the multiplicative group `(0, ∞)`, under which the
+Mellin transform is the Fourier/Laplace-type character transform:
+`mellin (H₁ ⋆ H₂) z = mellin H₁ z · mellin H₂ z` (Fubini after the
+substitution `(τ, u) ↦ (τ/u, u)`).  Concretely, for the two
+elementary place-profiles this is Neukirch's norm-one-hypersurface
+integral written in the coordinates `u = the product of all but one
+coordinate`. -/
+noncomputable def archConv (H₁ H₂ : ℝ → ℝ) (τ : ℝ) : ℝ :=
+  ∫ u in Set.Ioi (0 : ℝ), H₁ (τ / u) * H₂ u / u
+
+/-- **Convergence of the convolution integral** (sorry node, stated
+2026-07-25 — stage (α₁) of the decomposition of
+`archimedeanGammaProfile_exists`): for profiles `H₁`, `H₂` of positive
+degrees `p`, `q` and every `τ > 0` the integrand
+`u ↦ H₁(τ/u)·H₂(u)/u` is integrable on `(0, ∞)`.
+
+Intended proof.  Both ends are controlled by combining the two
+non-Mellin hypotheses with the Mellin CONVERGENCE half of the bundle:
+
+* *Polynomial control at `0`.*  `MellinConvergent (H : ℝ → ℂ) (s/2)`
+  for `re s > 1` says `∫_{(0,1]} τ^{re s/2 − 1}·H τ dτ < ∞`; taking
+  `re s` slightly above `1` and using that `H` is ANTITONE on
+  `(0, ∞)` gives `H τ ≤ C·τ^{−ε}` on `(0, 1]` for every `ε > 1/2`
+  (antitone plus a finite weighted integral forces the pointwise
+  bound: `H τ·∫_{(τ,2τ]} x^{ε−1} dx ≤ ∫_{(τ,2τ]} x^{ε−1}·H x dx`).
+* *Near `u = 0`*: `H₂(u) ≤ C₂·u^{−ε}` and `τ/u ≥ 1` eventually, so
+  `H₁(τ/u) ≤ A₁·exp(−a₁·(τ/u)^{1/p})`, whose stretched-exponential
+  vanishing beats `u^{−ε−1}`.
+* *Near `u = ∞`*: `H₂(u) ≤ A₂·exp(−a₂·u^{1/q})` and
+  `H₁(τ/u) ≤ C₁·(u/τ)^{ε}`, so the integrand is
+  `O(u^{ε−1}·exp(−a₂·u^{1/q}))`, integrable
+  (`integrable_rpow_mul_exp_neg_mul_rpow`-style).
+* *On a compact middle interval*: the integrand is continuous
+  (`h₁.1`, `h₂.1`), hence integrable there.
+
+Measurability throughout comes from `ContinuousOn.aestronglyMeasurable`
+on `(0, ∞)`. -/
+theorem archConv_integrableOn {p q : ℕ} {M₁ M₂ : ℂ → ℂ} {H₁ H₂ : ℝ → ℝ}
+    (hp : 0 < p) (hq : 0 < q) (h₁ : IsArchProfile p M₁ H₁) (h₂ : IsArchProfile q M₂ H₂)
+    {τ : ℝ} (hτ : 0 < τ) :
+    MeasureTheory.IntegrableOn (fun u : ℝ => H₁ (τ / u) * H₂ u / u) (Set.Ioi 0) := by
+  sorry
+
+/-- Nonnegativity of the convolution (PROVEN): the integrand is
+nonnegative on `(0, ∞)` because `τ/u > 0` there. -/
+theorem archConv_nonneg {p q : ℕ} {M₁ M₂ : ℂ → ℂ} {H₁ H₂ : ℝ → ℝ}
+    (h₁ : IsArchProfile p M₁ H₁) (h₂ : IsArchProfile q M₂ H₂)
+    {τ : ℝ} (hτ : 0 < τ) : 0 ≤ archConv H₁ H₂ τ := by
+  refine MeasureTheory.setIntegral_nonneg measurableSet_Ioi ?_
+  intro u hu
+  rw [Set.mem_Ioi] at hu
+  exact div_nonneg (mul_nonneg (h₁.2.1 _ (Set.mem_Ioi.mpr (div_pos hτ hu)))
+    (h₂.2.1 u (Set.mem_Ioi.mpr hu))) hu.le
+
+/-- Antitonicity of the convolution (PROVEN): monotonicity of the
+integral (`MeasureTheory.setIntegral_mono_on`, with integrability from
+`archConv_integrableOn`) applied to the pointwise inequality
+`H₁(b/u)·H₂(u)/u ≤ H₁(a/u)·H₂(u)/u` for `a ≤ b`. -/
+theorem archConv_antitoneOn {p q : ℕ} {M₁ M₂ : ℂ → ℂ} {H₁ H₂ : ℝ → ℝ}
+    (hp : 0 < p) (hq : 0 < q) (h₁ : IsArchProfile p M₁ H₁) (h₂ : IsArchProfile q M₂ H₂) :
+    AntitoneOn (archConv H₁ H₂) (Set.Ioi 0) := by
+  intro a ha b hb hab
+  rw [Set.mem_Ioi] at ha hb
+  refine MeasureTheory.setIntegral_mono_on (archConv_integrableOn hp hq h₁ h₂ hb)
+    (archConv_integrableOn hp hq h₁ h₂ ha) measurableSet_Ioi ?_
+  intro u hu
+  rw [Set.mem_Ioi] at hu
+  have key : H₁ (b / u) ≤ H₁ (a / u) :=
+    h₁.2.2.1 (Set.mem_Ioi.mpr (div_pos ha hu)) (Set.mem_Ioi.mpr (div_pos hb hu)) (by gcongr)
+  exact div_le_div_of_nonneg_right
+    (mul_le_mul_of_nonneg_right key (h₂.2.1 u (Set.mem_Ioi.mpr hu))) hu.le
+
+/-- **Continuity of the convolution** (sorry node, stated 2026-07-25 —
+stage (α₂) of the decomposition of `archimedeanGammaProfile_exists`):
+`archConv H₁ H₂` is continuous on `(0, ∞)`.
+
+Intended proof: continuity of a parametrized integral by dominated
+convergence (`MeasureTheory.continuousOn_of_dominated` /
+`intervalIntegral.continuous_parametric_integral_of_dominated`-style).
+Fix `0 < τ₀` and work on `[τ₀/2, 2τ₀]`: the integrand is continuous in
+`τ` for each `u` (`h₁.1` at `τ/u > 0`), and is dominated uniformly on
+that interval by `u ↦ H₁(τ₀/(2u))·H₂(u)/u` — antitonicity of `H₁`
+turns the `τ`-interval into a single dominating profile — which is
+integrable by `archConv_integrableOn` at `τ₀/2`. -/
+theorem archConv_continuousOn {p q : ℕ} {M₁ M₂ : ℂ → ℂ} {H₁ H₂ : ℝ → ℝ}
+    (hp : 0 < p) (hq : 0 < q) (h₁ : IsArchProfile p M₁ H₁) (h₂ : IsArchProfile q M₂ H₂) :
+    ContinuousOn (archConv H₁ H₂) (Set.Ioi 0) := by
+  sorry
+
+/-- **Stretched-exponential decay of the convolution** (sorry node,
+stated 2026-07-25 — stage (α₃) of the decomposition of
+`archimedeanGammaProfile_exists`): the convolution of a degree-`p` and
+a degree-`q` profile decays like `exp(−a·τ^{1/(p+q)})`, i.e. the
+degrees ADD.
+
+Intended proof (the AM–GM/saddle-point step of Neukirch VII (4.2),
+"split the exponent in half"): with
+`H₁(x) ≤ A₁·exp(−a₁·x^{1/p})` for `x ≥ 1` and
+`H₂(u) ≤ A₂·exp(−a₂·u^{1/q})` for `u ≥ 1`, split the integral at the
+saddle `u₀ = τ^{q/(p+q)}` — where `(τ/u)^{1/p} = u^{1/q}` — whose
+common value is exactly `τ^{1/(p+q)}`:
+
+* on `(0, u₀]` one has `τ/u ≥ τ^{p/(p+q)} ≥ 1`, so
+  `exp(−a₁(τ/u)^{1/p}) ≤ exp(−½a₁τ^{1/(p+q)})·exp(−½a₁(τ/u)^{1/p})`
+  and the second factor, together with the polynomial bound
+  `H₂(u) ≤ C₂u^{−ε}` near `0` and antitonicity of `H₂` on `[1, u₀]`,
+  leaves a `τ`-uniform finite integral (the residual `log u₀` growth
+  is absorbed by halving the exponent once more);
+* on `[u₀, ∞)` one has `u ≥ 1` and
+  `exp(−a₂u^{1/q}) ≤ exp(−½a₂τ^{1/(p+q)})·exp(−½a₂u^{1/q})`, and
+  `H₁(τ/u) ≤ C₁(u/τ)^{ε} ≤ C₁u^{ε}` (the polynomial control at `0` of
+  `archConv_integrableOn`'s docstring, `τ ≥ 1`), leaving the finite
+  integral `∫ u^{ε−1}exp(−½a₂u^{1/q}) du`.
+
+The resulting exponent is `a = ½·min a₁ a₂` (after the second
+halving), which is what the statement asserts. -/
+theorem archConv_decay {p q : ℕ} {M₁ M₂ : ℂ → ℂ} {H₁ H₂ : ℝ → ℝ}
+    (hp : 0 < p) (hq : 0 < q) (h₁ : IsArchProfile p M₁ H₁) (h₂ : IsArchProfile q M₂ H₂) :
+    ∃ A a : ℝ, 0 < a ∧ ∀ τ : ℝ, 1 ≤ τ →
+      archConv H₁ H₂ τ ≤ A * Real.exp (-a * τ ^ (((p + q : ℕ) : ℝ)⁻¹)) := by
+  sorry
+
+/-- **Mellin multiplicativity of the convolution** (sorry node, stated
+2026-07-25 — stage (α₄), the analytic heart, of the decomposition of
+`archimedeanGammaProfile_exists`): the Mellin transform of
+`archConv H₁ H₂` at `s/2` is the PRODUCT `M₁ s · M₂ s` of the two
+factors, for `re s > 1`.
+
+Intended proof.  Write `z = s/2` (so `re z > 1/2`).  Then
+`mellin (H₁ ⋆ H₂) z = ∫_0^∞ τ^{z−1}(∫_0^∞ H₁(τ/u)H₂(u) du/u) dτ`;
+Tonelli (the integrand is nonnegative, so
+`MeasureTheory.lintegral_lintegral_swap` / `integral_integral_swap`
+applies once absolute convergence is known) exchanges the order, and
+the inner `τ`-integral is evaluated by the multiplicative substitution
+`τ = u·v` (`MeasureTheory.integral_comp_mul_left_Ioi`, i.e.
+`mellin_comp_mul_left` at `a = u`):
+`∫_0^∞ τ^{z−1}H₁(τ/u) dτ = u^{z}·mellin H₁ z`, whence
+`mellin (H₁ ⋆ H₂) z = mellin H₁ z · ∫_0^∞ u^{z−1}H₂(u) du
+= mellin H₁ z · mellin H₂ z = M₁ s · M₂ s`.
+Absolute convergence — which is also the `MellinConvergent` half of
+the `HasMellin` bundle — is the SAME Tonelli computation run on norms:
+`∫∫ τ^{re z−1}H₁(τ/u)H₂(u) du dτ/u = (∫ x^{re z−1}H₁ x dx)·(∫ u^{re
+z−1}H₂ u du) < ∞`, both factors finite by the `MellinConvergent`
+halves of `h₁` and `h₂` at the real point `re s` (a profile is
+nonnegative, so `MellinConvergent` at `s/2` gives convergence at
+`(re s)/2`).  Note this is exactly why the hypotheses of
+`IsArchProfile` are closed under convolution: the Mellin conjunct is
+required on a HALF-PLANE, not at a single point. -/
+theorem archConv_hasMellin {p q : ℕ} {M₁ M₂ : ℂ → ℂ} {H₁ H₂ : ℝ → ℝ}
+    (hp : 0 < p) (hq : 0 < q) (h₁ : IsArchProfile p M₁ H₁) (h₂ : IsArchProfile q M₂ H₂)
+    (s : ℂ) (hs : 1 < s.re) :
+    HasMellin (fun τ : ℝ => (archConv H₁ H₂ τ : ℂ)) (s / 2) (M₁ s * M₂ s) := by
+  sorry
+
+/-- **Profiles multiply** (assembly PROVEN over the four `archConv`
+stages): the multiplicative convolution of a degree-`p` profile with
+Mellin factor `M₁` and a degree-`q` profile with Mellin factor `M₂` is
+a degree-`(p+q)` profile with Mellin factor `M₁·M₂`. -/
+theorem archProfile_mul {p q : ℕ} {M₁ M₂ : ℂ → ℂ} {H₁ H₂ : ℝ → ℝ}
+    (hp : 0 < p) (hq : 0 < q)
+    (h₁ : IsArchProfile p M₁ H₁) (h₂ : IsArchProfile q M₂ H₂) :
+    ∃ H : ℝ → ℝ, IsArchProfile (p + q) (fun s => M₁ s * M₂ s) H :=
+  ⟨archConv H₁ H₂, archConv_continuousOn hp hq h₁ h₂,
+    fun _ hτ => archConv_nonneg h₁ h₂ (Set.mem_Ioi.mp hτ),
+    archConv_antitoneOn hp hq h₁ h₂, archConv_decay hp hq h₁ h₂,
+    fun s hs => archConv_hasMellin hp hq h₁ h₂ s hs⟩
+
+/-- Powers of the real-place profile (PROVEN, induction on `r` over
+`archProfile_mul`): a degree-`r` profile with Mellin factor
+`Γ_ℝ(s)^r`. -/
+theorem archProfile_realPow (r : ℕ) (hr : 0 < r) :
+    ∃ H : ℝ → ℝ, IsArchProfile r
+      (fun s => ((Real.pi : ℂ) ^ (-s / 2) * Complex.Gamma (s / 2)) ^ r) H := by
+  induction r with
+  | zero => exact absurd hr (by simp)
+  | succ n ih =>
+    rcases Nat.eq_zero_or_pos n with rfl | hn
+    · obtain ⟨H, h⟩ := archProfile_real
+      exact ⟨H, h.congr_mellin fun s _ => (pow_one _).symm⟩
+    · obtain ⟨H₁, h₁⟩ := ih hn
+      obtain ⟨H₂, h₂⟩ := archProfile_real
+      obtain ⟨H, hH⟩ := archProfile_mul hn Nat.one_pos h₁ h₂
+      exact ⟨H, hH.congr_mellin fun s _ => (pow_succ _ n).symm⟩
+
+/-- Powers of the complex-place profile (PROVEN, induction on `r` over
+`archProfile_mul`): a degree-`2r` profile with Mellin factor
+`Γ_ℂ(s)^r`. -/
+theorem archProfile_complexPow (r : ℕ) (hr : 0 < r) :
+    ∃ H : ℝ → ℝ, IsArchProfile (2 * r)
+      (fun s => (2 * ((2 * Real.pi : ℝ) : ℂ) ^ (-s) * Complex.Gamma s) ^ r) H := by
+  induction r with
+  | zero => exact absurd hr (by simp)
+  | succ n ih =>
+    rcases Nat.eq_zero_or_pos n with rfl | hn
+    · obtain ⟨H, h⟩ := archProfile_complex
+      exact ⟨H, h.congr_mellin fun s _ => (pow_one _).symm⟩
+    · obtain ⟨H₁, h₁⟩ := ih hn
+      obtain ⟨H₂, h₂⟩ := archProfile_complex
+      obtain ⟨H, hH⟩ := archProfile_mul (by omega : 0 < 2 * n) (by norm_num : 0 < 2) h₁ h₂
+      refine ⟨H, ?_⟩
+      rw [show 2 * n + 2 = 2 * (n + 1) from by ring] at hH
+      exact hH.congr_mellin fun s _ => (pow_succ _ n).symm
+
+/-- **The `(r₁, r₂)`-profile** (PROVEN): for any signature with
+`r₁ + r₂ > 0` there is a Γ-profile of degree `r₁ + 2r₂` whose Mellin
+factor is the archimedean Euler product
+`Γ_ℝ(s)^{r₁}·Γ_ℂ(s)^{r₂}`.  Three cases, all reduced to
+`archProfile_realPow`/`archProfile_complexPow`/`archProfile_mul`. -/
+theorem archProfile_pow (r₁ r₂ : ℕ) (h : 0 < r₁ + r₂) :
+    ∃ H : ℝ → ℝ, IsArchProfile (r₁ + 2 * r₂)
+      (fun s => ((Real.pi : ℂ) ^ (-s / 2) * Complex.Gamma (s / 2)) ^ r₁ *
+        ((2 : ℂ) * ((2 * Real.pi : ℝ) : ℂ) ^ (-s) * Complex.Gamma s) ^ r₂) H := by
+  rcases Nat.eq_zero_or_pos r₁ with rfl | h₁
+  · have h₂ : 0 < r₂ := by omega
+    obtain ⟨H, hH⟩ := archProfile_complexPow r₂ h₂
+    refine ⟨H, ?_⟩
+    rw [show 0 + 2 * r₂ = 2 * r₂ from by ring]
+    exact hH.congr_mellin fun s _ => by rw [pow_zero, one_mul]
+  · rcases Nat.eq_zero_or_pos r₂ with rfl | h₂
+    · obtain ⟨H, hH⟩ := archProfile_realPow r₁ h₁
+      refine ⟨H, ?_⟩
+      rw [show r₁ + 2 * 0 = r₁ from by ring]
+      exact hH.congr_mellin fun s _ => by rw [pow_zero, mul_one]
+    · obtain ⟨H₁, hH₁⟩ := archProfile_realPow r₁ h₁
+      obtain ⟨H₂, hH₂⟩ := archProfile_complexPow r₂ h₂
+      exact archProfile_mul h₁ (by omega : 0 < 2 * r₂) hH₁ hH₂
+
+/-- **The archimedean Γ-profile of the signature `(r₁, r₂)`**
+(DECOMPOSED 2026-07-25, assembly PROVEN — stage (α), the Neukirch VII
+§4 archimedean Euler-factor computation, of the decomposition of
 `heckeThetaKernel_exists`): there is a single profile function
 `H : ℝ → ℝ` — Neukirch's norm-one-hypersurface integral
 `H(τ) = c·∫_S exp(−π·τ^{1/n}·Σ_w d_w·x_w) dμ(x)`, where `S` is the
@@ -7650,7 +8003,32 @@ for `K` imaginary quadratic, `H(τ) = e^{−2π√τ}` with Mellin
 project instantiates, `H` is an explicit elementary function whenever
 additionally `r₂ = 1`, and this leaf is a direct `Γ`-integral
 computation (`mellin_exp_neg_rpow`-style substitution +
-`Real.Gamma_eq_integral`). -/
+`Real.Gamma_eq_integral`).
+
+DECOMPOSITION 2026-07-25 (the consumers quantify over an ARBITRARY
+number field, so the general signature is required and the elementary
+`r₁ + r₂ = 1` shortcut does not suffice).  Neukirch's
+norm-one-hypersurface integral is replaced by an ITERATED
+one-dimensional multiplicative (Mellin) convolution — the same
+computation performed one infinite place at a time — through the
+abstracted predicate `IsArchProfile n M H` ("degree-`n` profile with
+Mellin factor `M`"):
+
+* `archProfile_real` (PROVEN): `e^{−πτ}` is a degree-`1` profile with
+  factor `Γ_ℝ(s)`;
+* `archProfile_complex` (PROVEN): `e^{−2π√τ}` is a degree-`2` profile
+  with factor `Γ_ℂ(s)`;
+* `archProfile_mul` (assembly PROVEN): profiles convolve —
+  `archConv H₁ H₂ τ = ∫_0^∞ H₁(τ/u)H₂(u) du/u` is a degree-`(p+q)`
+  profile with factor `M₁·M₂`; its four conjuncts are the open leaves
+  `archConv_integrableOn`, `archConv_continuousOn`, `archConv_decay`
+  and `archConv_hasMellin` (`archConv_nonneg` and
+  `archConv_antitoneOn` are PROVEN);
+* `archProfile_pow` (PROVEN): induction gives the `(r₁, r₂)` profile of
+  degree `r₁ + 2r₂` with factor `Γ_ℝ^{r₁}·Γ_ℂ^{r₂}`;
+* this theorem: `NumberField.InfinitePlace.card_add_two_mul_card_eq_rank`
+  identifies `r₁ + 2r₂` with `[K:ℚ]`, and `Module.finrank_pos` gives
+  `r₁ + r₂ > 0`. -/
 theorem archimedeanGammaProfile_exists (K : Type*) [Field K] [NumberField K] :
     ∃ H : ℝ → ℝ,
       ContinuousOn H (Set.Ioi 0) ∧
@@ -7664,7 +8042,16 @@ theorem archimedeanGammaProfile_exists (K : Type*) [Field K] [NumberField K] :
               NumberField.InfinitePlace.nrRealPlaces K *
             ((2 : ℂ) * ((2 * Real.pi : ℝ) : ℂ) ^ (-s) * Complex.Gamma s) ^
               NumberField.InfinitePlace.nrComplexPlaces K)) := by
-  sorry
+  have hrank : NumberField.InfinitePlace.nrRealPlaces K +
+      2 * NumberField.InfinitePlace.nrComplexPlaces K = Module.finrank ℚ K :=
+    NumberField.InfinitePlace.card_add_two_mul_card_eq_rank K
+  have hfr : 0 < Module.finrank ℚ K := Module.finrank_pos
+  have hpos : 0 < NumberField.InfinitePlace.nrRealPlaces K +
+      NumberField.InfinitePlace.nrComplexPlaces K := by omega
+  obtain ⟨H, hH⟩ := archProfile_pow (NumberField.InfinitePlace.nrRealPlaces K)
+    (NumberField.InfinitePlace.nrComplexPlaces K) hpos
+  rw [hrank] at hH
+  exact ⟨H, hH.1, hH.2.1, hH.2.2.1, hH.2.2.2.1, hH.2.2.2.2⟩
 
 /-- **The unit-domain theta functional equation of the per-class Hecke
 series** (sorry node, stated 2026-07-24 — stage (β), the geometric
