@@ -66,7 +66,10 @@ them without a human. Do not re-wrap it.
 - `fg_comap_maximalIdeal_traceSubring`
 - `exists_framedGaloisRep_traceSubring`
 - `subring_closure_charFrob_coeff_eq_top`
-- `isIntegral_charFrobCoeff_quotient_of_isWeaklyUniversal_isTraceGenerated`
+- `isIntegral_charFrobTrace_quotient_of_isWeaklyUniversal_isTraceGenerated`
+  (the all-coefficients form
+  `isIntegral_charFrobCoeff_quotient_of_isWeaklyUniversal_isTraceGenerated`
+  is PROVEN over it, 2026-07-25 — do NOT dispatch at that name)
 - `exists_relations_lt_le_smul_of_minimal_mvPowerSeries_presentation`
 
 Both former strata above them were narrowed on 2026-07-25 into those
@@ -149,7 +152,14 @@ the surjectivity and minimality strata of the minimal presentation,
   form `isIntegral_charFrobCoeff_quotient_of_isWeaklyUniversal_isTraceGenerated`
   (the Frobenius traces of the mod-`ℓ` specialization are algebraic over
   `𝔽_ℓ`) and the pure commutative algebra
-  `eq_maximalIdeal_of_isPrime_of_isIntegral_quotient`.
+  `eq_maximalIdeal_of_isPrime_of_isIntegral_quotient`. That trace form
+  was in turn PROVEN the same day over the strictly smaller
+  `isIntegral_charFrobTrace_quotient_of_isWeaklyUniversal_isTraceGenerated`
+  — only the `coeff 1` (trace) coefficient — via the coefficient
+  dévissage `isIntegral_charFrob_coeff_of_isIntegral_coeff_one`, itself
+  resting on `coeff_zero_charFrob_eq_natCast_of_hardlyRamified` (the
+  determinant coefficient of a hardly ramified `charFrob` is the
+  rational integer `q`). The `coeff 1` leaf is the live one.
 
 * The CARAYOL leaf was then decomposed once more, into
   `exists_isLocalRing_traceSubring` (the ring-theoretic half of
@@ -3923,8 +3933,169 @@ theorem eq_maximalIdeal_of_isPrime_of_isIntegral_quotient {R : Type*} [CommRing 
   rw [Subring.coe_map] at hfin
   exact eq_maximalIdeal_of_isPrime_of_finite_image hadic hgen hp hfin
 
-/-- **Mod-`ℓ` fibre leaf, TRACE form** (sorry node — the arithmetic core
-of the finiteness stratum; NARROWED TWICE on 2026-07-25: first from the
+/-- **The determinant coefficient of a Frobenius charpoly is the
+rational integer `q`** (PROVEN, elementary bookkeeping): for a hardly
+ramified representation on a rank-`2` free module, the constant
+coefficient of `charFrob` at a good prime `q ≠ ℓ` is `(q : A)`.
+
+`charFrob` is by definition the characteristic polynomial of
+`τ (globalFrob q)` (`GaloisRep.charFrob_eq_charpoly_globalFrob`), whose
+constant coefficient is `(−1) ^ 2 · det` in rank `2`
+(`LinearMap.det_eq_sign_charpoly_coeff`), and the
+cyclotomic-determinant field of `IsHardlyRamified` evaluates that
+determinant through `cyclotomicCharacter_globalFrob` — the value of the
+`ℓ`-adic cyclotomic character at the global arithmetic Frobenius at `q`
+is `q` — to the image of `(q : ℤ_ℓ)`.
+
+NOT IMPORTED, DELIBERATELY: the same statement is proven independently
+in `HardlyRamified/Family.lean` (`charFrob_coeff_zero_eq_natCast`) and
+in `Modularity/KhareWintenberger.lean`
+(`charFrob_coeff_zero_eq_natCast_of_isHardlyRamified`), but both of
+those modules are DOWNSTREAM of this one — `Family.lean` imports
+`Modularity/Interface.lean`, and `KhareWintenberger.lean` imports this
+module — so consuming either would close the dependency cycle this
+module's circularity guard exists to prevent. The proof is four lines,
+and it is shorter here than in either downstream copy because
+`charFrob_eq_charpoly_globalFrob` lets it work with `globalFrob`
+directly instead of bridging the local arithmetic Frobenius to the
+global one. -/
+theorem coeff_zero_charFrob_eq_natCast_of_hardlyRamified
+    {A : Type*} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A] [IsLocalRing A]
+    [Algebra ℤ_[ℓ] A]
+    {W : Type*} [AddCommGroup W] [Module A W] [Module.Finite A W] [Module.Free A W]
+    {hrank : Module.rank A W = 2} {τ : GaloisRep ℚ A W}
+    (hτ : IsHardlyRamified hℓOdd hrank τ)
+    {q : ℕ} (hq : q.Prime) (hqℓ : q ≠ ℓ) :
+    (τ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 0 = (q : A) := by
+  have hfinrank : Module.finrank A W = 2 := Module.finrank_eq_of_rank_eq hrank
+  have hdet := LinearMap.det_eq_sign_charpoly_coeff
+    (τ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat))
+  rw [hfinrank, neg_one_sq, one_mul] at hdet
+  have hcyclo := hτ.det (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+  rw [GaloisRep.det_apply, cyclotomicCharacter_globalFrob hq hqℓ, map_natCast] at hcyclo
+  rw [GaloisRep.charFrob_eq_charpoly_globalFrob, ← hdet, hcyclo]
+
+/-- **Only the TRACE coefficient carries arithmetic content** (PROVEN,
+the coefficient dévissage): if the image under a ring homomorphism `f`
+of the trace coefficient `(charFrob q).coeff 1` of a hardly ramified
+representation is integral over `ℤ_ℓ`, then so is the image of EVERY
+coefficient. The other three families of coefficients are formal:
+
+* `coeff 0 = (q : A)` lies in the image of `ℤ_ℓ`, by
+  `coeff_zero_charFrob_eq_natCast_of_hardlyRamified` above — and a
+  `ℕ`-cast is preserved by every ring homomorphism, so no compatibility
+  between `f` and the two `ℤ_ℓ`-structures is needed;
+* `coeff 2 = 1`, the charpoly of an endomorphism of a rank-`2` free
+  module being monic of degree `2`;
+* `coeff n = 0` for `n ≥ 3`, above the degree.
+
+This is what lets the deep arithmetic leaf below be stated about the
+Frobenius TRACES alone rather than about all charpoly coefficients —
+the form in which Taylor–Wiles–Kisin patching and potential modularity
+actually produce it, and the same cut `Family.lean` makes for its own
+eigensystem stratum. -/
+theorem isIntegral_charFrob_coeff_of_isIntegral_coeff_one
+    {A : Type*} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A] [IsLocalRing A]
+    [Algebra ℤ_[ℓ] A]
+    {W : Type*} [AddCommGroup W] [Module A W] [Module.Finite A W] [Module.Free A W]
+    {hrank : Module.rank A W = 2} {τ : GaloisRep ℚ A W}
+    (hτ : IsHardlyRamified hℓOdd hrank τ)
+    {S : Type*} [CommRing S] [Algebra ℤ_[ℓ] S] (f : A →+* S)
+    {q : ℕ} (hq : q.Prime) (hqℓ : q ≠ ℓ)
+    (htr : IsIntegral ℤ_[ℓ]
+      (f ((τ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)))
+    (n : ℕ) :
+    IsIntegral ℤ_[ℓ]
+      (f ((τ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff n)) := by
+  have hcp : τ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat =
+      (τ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)).charpoly :=
+    GaloisRep.charFrob_eq_charpoly_globalFrob _ _
+  have hdeg : (τ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).natDegree = 2 := by
+    rw [hcp, LinearMap.charpoly_natDegree]
+    exact Module.finrank_eq_of_rank_eq hrank
+  rcases n with _ | _ | _ | m
+  · rw [coeff_zero_charFrob_eq_natCast_of_hardlyRamified hℓOdd hτ hq hqℓ, map_natCast,
+      show ((q : ℕ) : S) = algebraMap ℤ_[ℓ] S ((q : ℕ) : ℤ_[ℓ]) by rw [map_natCast]]
+    exact isIntegral_algebraMap
+  · exact htr
+  · have hc2 : (τ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 2 = 1 := by
+      have hmon : (τ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).Monic := by
+        rw [hcp]; exact LinearMap.charpoly_monic _
+      have := hmon.coeff_natDegree
+      rwa [hdeg] at this
+    rw [hc2, map_one]
+    exact isIntegral_one
+  · rw [Polynomial.coeff_eq_zero_of_natDegree_lt (by rw [hdeg]; omega), map_zero]
+    exact isIntegral_zero
+
+/-- **Mod-`ℓ` fibre leaf, TRACE-COEFFICIENT form** (sorry node — THE
+arithmetic core of the finiteness stratum, and the whole of what
+remains of it after the coefficient dévissage
+`isIntegral_charFrob_coeff_of_isIntegral_coeff_one` above): in the
+weakly universal, trace-generated hardly ramified deformation ring, the
+TRACE of every Frobenius at a good prime is integral over `ℤ_ℓ` modulo
+any prime `p ∋ ℓ`. Equivalently, since `ℓ ∈ p` makes `D.R ⧸ p` an
+algebra over the prime field `𝔽_ℓ`: the Frobenius traces of the mod-`ℓ`
+specialization of the universal deformation are ALGEBRAIC over `𝔽_ℓ`.
+
+NARROWED HERE on 2026-07-25 (third narrowing of this node) from the
+all-coefficients form
+`isIntegral_charFrobCoeff_quotient_of_isWeaklyUniversal_isTraceGenerated`
+just below, which is now PROVEN over this leaf. Nothing is given away:
+`charFrob` is a monic quadratic whose constant coefficient is the
+rational integer `q` by the cyclotomic-determinant condition, so the
+trace coefficient was already the only one with content, and the two
+forms are equivalent. What the cut buys is that the surviving
+obligation is literally a statement about Hecke-eigenvalue-like NUMBERS
+— the traces — which is the form the literature and this repository's
+own eigensystem strata (`Family.lean`) both use.
+
+**For the full mathematical background — why this node is where the
+Taylor–Wiles–Kisin input enters, what discharging it requires, the
+audit of `Modularity/Patching.lean`, and the CIRCULARITY GUARD
+forbidding a vacuous discharge through
+`not_isIrreducible_of_isHardlyRamified_of_five_le` — see the docstring
+of the all-coefficients form immediately below.** That docstring is the
+canonical one for this node; it is not duplicated here.
+
+FAITHFULNESS AUDIT (2026-07-25, on dispatch): this leaf is NOT circular
+and NOT vacuous, unlike its sibling `subring_closure_charFrob_coeff_eq_top`.
+Its conclusion is not stable under extension of the coefficient field in
+the way that made that one equivalent to the chapter headline: the
+statement is about a ring `D.R` whose residue field is fixed at `k`, and
+what it asserts — `dim (D.R ⧸ ℓ) = 0` — is the genuine `R = T`
+finiteness, true but deep. The `IsTraceGenerated` hypothesis is taken
+over `ℤ_ℓ` rather than over the Cohen coefficient ring `Λ ≅ W(k)`
+(see `~/.flt-design-traceSubring-coefficient-ring.md`); that makes the
+hypothesis STRONGER than intended — it forces the Frobenius-trace field
+of `ρbar` to be all of `k` — so this leaf is weaker than it should be,
+but it is not thereby false or vacuous. When that interface change is
+made, this statement and the dévissage above survive verbatim; only the
+hypothesis widens. -/
+theorem isIntegral_charFrobTrace_quotient_of_isWeaklyUniversal_isTraceGenerated
+    (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (D : HardlyRamifiedDeformation hℓOdd ρbar)
+    (hw : D.IsWeaklyUniversal) (ht : D.IsTraceGenerated) :
+    letI := D.commRing; letI := D.topologicalSpace
+    letI := D.isTopologicalRing; letI := D.algebra
+    ∀ p : Ideal D.R, p.IsPrime → ((ℓ : ℕ) : D.R) ∈ p →
+      ∀ q (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+        IsIntegral ℤ_[ℓ] (Ideal.Quotient.mk p
+          ((D.ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)) :=
+  sorry
+
+/-- **Mod-`ℓ` fibre stratum, TRACE form** (PROVEN 2026-07-25 over the
+strictly smaller trace-COEFFICIENT leaf
+`isIntegral_charFrobTrace_quotient_of_isWeaklyUniversal_isTraceGenerated`
+immediately above and the coefficient dévissage
+`isIntegral_charFrob_coeff_of_isIntegral_coeff_one`: all coefficients
+but the trace are formal. This docstring remains the CANONICAL
+mathematical account of the node — the arithmetic core
+of the finiteness stratum — but the open obligation is now the leaf
+above, and that is where a prover should be dispatched.
+NARROWED THREE TIMES on 2026-07-25: first from the
 `𝔪`-primarity form `∃ n, 𝔪 ^ n ≤ (ℓ)` to the pointwise statement "every
 prime containing `ℓ` is `𝔪`" — the dévissage being the pure commutative
 algebra `exists_maximalIdeal_pow_le_span_of_forall_isPrime` above — and
@@ -4020,7 +4191,18 @@ References: Khare–Wintenberger, *Serre's modularity conjecture (I)*,
 Thm. 4.1 and §4, and *(II)*; Taylor, *Remarks on a conjecture of
 Fontaine and Mazur* and *On the meromorphic continuation of degree two
 L-functions*; Kisin, *Moduli of finite flat group schemes, and
-modularity*; Buzzard's 2026 EPSRC course, Lecture 4. -/
+modularity*; Buzzard's 2026 EPSRC course, Lecture 4.
+
+THIRD NARROWING (2026-07-25): everything above describes the node; what
+is still OPEN is only the TRACE coefficient. `charFrob` is a monic
+quadratic, its constant coefficient is the rational integer `q` by the
+cyclotomic-determinant condition
+(`coeff_zero_charFrob_eq_natCast_of_hardlyRamified`), its `coeff 2` is
+`1`, and its higher coefficients vanish; so
+`isIntegral_charFrob_coeff_of_isIntegral_coeff_one` reduces this
+statement to the `coeff 1` leaf above with nothing given away, and the
+two forms are equivalent (the trace form is an instance of this one at
+`n = 1`). -/
 theorem isIntegral_charFrobCoeff_quotient_of_isWeaklyUniversal_isTraceGenerated
     (hℓ5 : 5 ≤ ℓ)
     {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
@@ -4032,8 +4214,14 @@ theorem isIntegral_charFrobCoeff_quotient_of_isWeaklyUniversal_isTraceGenerated
     ∀ p : Ideal D.R, p.IsPrime → ((ℓ : ℕ) : D.R) ∈ p →
       ∀ q (hq : q.Prime), q ≠ 2 → q ≠ ℓ → ∀ n : ℕ,
         IsIntegral ℤ_[ℓ] (Ideal.Quotient.mk p
-          ((D.ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff n)) :=
-  sorry
+          ((D.ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff n)) := by
+  letI := D.commRing; letI := D.topologicalSpace
+  letI := D.isTopologicalRing; letI := D.isLocalRing; letI := D.algebra
+  intro p hp hℓp q hq hq2 hqℓ n
+  exact isIntegral_charFrob_coeff_of_isIntegral_coeff_one hℓOdd D.isHardlyRamified
+    (Ideal.Quotient.mk p) hq hqℓ
+    (isIntegral_charFrobTrace_quotient_of_isWeaklyUniversal_isTraceGenerated hℓOdd
+      hdim hℓ5 h hirr D hw ht p hp hℓp q hq hq2 hqℓ) n
 
 /-- **Mod-`ℓ` fibre stratum** (PROVEN 2026-07-25 over the trace-form leaf
 `isIntegral_charFrobCoeff_quotient_of_isWeaklyUniversal_isTraceGenerated`
