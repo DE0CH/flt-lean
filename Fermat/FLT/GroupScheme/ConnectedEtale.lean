@@ -1599,65 +1599,6 @@ theorem inertia_character_trivial_or_cyclotomic
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
-/-- **The prime of `𝓞 ℚ` attached to the prime number `p` is `(p)`**
-(PROVEN): unfolding `Nat.Prime.toHeightOneSpectrumRingOfIntegersRat`,
-the ideal is the comap of `span {(p : ℤ)}` along
-`Rat.ringOfIntegersEquiv`, and a ring isomorphism carries spans of
-singletons to spans of singletons while preserving `Nat.cast`.
-
-(A local re-derivation: the identical `asIdeal_toHeightOneSpectrumRingOfIntegersRat`
-lives in `FreyCurve/MazurTorsion.lean`, which is FAR downstream of this
-neutral group-scheme file and cannot be imported here. The natural home
-for both this and `maximalIdeal_eq_span_natCast` below is the shim
-module `Fermat/FLT/Mathlib/RingTheory/DedekindDomain/Ideal/Lemmas.lean`,
-where `toHeightOneSpectrumRingOfIntegersRat` itself is defined; hoisting
-them there is a bookkeeping change that touches another owner's file and
-is deliberately NOT done here.) -/
-theorem asIdeal_toHeightOneSpectrum_eq_span :
-    (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : p.Prime)).asIdeal =
-      Ideal.span {((p : ℕ) : NumberField.RingOfIntegers ℚ)} := by
-  have h1 : (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : p.Prime)).asIdeal =
-      Ideal.comap (Rat.ringOfIntegersEquiv.symm.symm) (Ideal.span {((p : ℕ) : ℤ)}) := rfl
-  rw [h1, RingEquiv.symm_symm, ← Ideal.map_symm, Ideal.map_span, Set.image_singleton,
-    map_natCast]
-
-open IsDedekindDomain.HeightOneSpectrum in
-set_option maxHeartbeats 1000000 in
-/-- **`p` is a uniformizer of `𝒪ᵥ = ℤ_p`** (PROVEN — the ABSOLUTE
-UNRAMIFIEDNESS of the base, `e = 1`): the maximal ideal of the
-`v`-adic integer ring at the place `v = v_p` of `ℚ` is the span of `p`.
-Through `adicCompletion.maximalIdeal_eq_span_uniformizer` it suffices
-that `v(p) = ofAdd (−1)` in `ℚᵥ`, which reduces along
-`valuedAdicCompletion_eq_valuation` and `valuation_of_algebraMap` to
-the `intValuation` of `p` in `𝓞 ℚ`, computed by
-`intValuation_singleton` from `v_p = span {p}`
-(`asIdeal_toHeightOneSpectrum_eq_span`).
-
-(Local re-derivation of `maximalIdeal_adicCompletionIntegers_eq_span`
-of `FreyCurve/MazurTorsion.lean`; see the note there.) -/
-theorem maximalIdeal_eq_span_natCast :
-    IsLocalRing.maximalIdeal 𝒪ᵖᵍᵥ = Ideal.span {((p : ℕ) : 𝒪ᵖᵍᵥ)} := by
-  have hq0 : ((p : ℕ) : NumberField.RingOfIntegers ℚ) ≠ 0 :=
-    Nat.cast_ne_zero.mpr hp.out.ne_zero
-  have hval : (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
-      (Fact.out : p.Prime)).intValuation
-      ((p : ℕ) : NumberField.RingOfIntegers ℚ) = Multiplicative.ofAdd (-1 : ℤ) :=
-    (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
-      (Fact.out : p.Prime)).intValuation_singleton hq0
-      asIdeal_toHeightOneSpectrum_eq_span
-  apply adicCompletion.maximalIdeal_eq_span_uniformizer
-  have h := (valuedAdicCompletion_eq_valuation
-      (v := Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : p.Prime)) (K := ℚ)
-      ((p : ℕ) : NumberField.RingOfIntegers ℚ)).trans
-    ((valuation_of_algebraMap
-      (v := Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : p.Prime)) (K := ℚ)
-      ((p : ℕ) : NumberField.RingOfIntegers ℚ)).trans hval)
-  convert h using 2
-  norm_cast
-
-set_option backward.isDefEq.respectTransparency false in
-set_option synthInstance.maxHeartbeats 1000000 in
-set_option maxHeartbeats 2000000 in
 /-- **`𝒪ᵥ = ℤ_p` is ABSOLUTELY UNRAMIFIED: an inertia-invariant element
 of the maximal ideal is divisible by `p`** (PROVEN 2026-07-25 — the
 whole ramification input of the Oort–Tate node).
@@ -1680,7 +1621,8 @@ inertia, so `M ≤ IntermediateField.fixedField (localInertiaGroup v)` by
 `IntermediateField.adjoin_le_iff`; hence `e(M/ℚᵥ) = 1` by the PROVEN
 node `maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup` of
 `Deformations/RepresentationTheory/LocalInertiaFixedField.lean`, i.e.
-`𝔪 𝒪ᵥ` generates `𝔪 𝒪_M`, i.e. — by `maximalIdeal_eq_span_natCast` —
+`𝔪 𝒪ᵥ` generates `𝔪 𝒪_M`, i.e. — by
+`maximalIdeal_adicCompletionIntegers_eq_span` —
 `𝔪 𝒪_M = (p)`. The element `x` lifts to `y ∈ 𝒪_M` (integrality
 transfers along the injective `M ↪ ℚᵥᵃˡᵍ`), and `y` is a NONUNIT
 because its image `x` is one (`hx` and locality of `𝒪̄`), so `y ∈ 𝔪 𝒪_M`
@@ -1718,8 +1660,8 @@ theorem mem_span_natCast_of_inertia_invariant
   -- so `e(M/ℚᵥ) = 1`, i.e. `p` generates the maximal ideal of `𝒪_M`
   have hmap := maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup
     (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : p.Prime)) M hMfix
-  rw [maximalIdeal_eq_span_natCast, Ideal.map_span, Set.image_singleton,
-    map_natCast] at hmap
+  rw [maximalIdeal_adicCompletionIntegers_eq_span (Fact.out : p.Prime),
+    Ideal.map_span, Set.image_singleton, map_natCast] at hmap
   -- `x`, viewed at the finite level
   have hxint : IsIntegral 𝒪ᵖᵍᵥ (⟨xv, hxM⟩ : M) := by
     have hinj : Function.Injective
