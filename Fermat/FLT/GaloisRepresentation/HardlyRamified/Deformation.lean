@@ -51,30 +51,50 @@ The sorried leaves (all SHARED by the two consumers; the names are those
 of their historical `Lift.lean` twins — `exists_conj_of_charFrob_eq` was
 PROVEN 2026-07-24 via the shared Chebotarev–Brauer–Nesbitt node of
 `BrauerNesbittConjugacy.lean`):
-`exists_isWeaklyUniversalOnIdentifiedFrames`,
+`exists_isStrictlyUniversalOnFiniteFrames`,
+`isWeaklyUniversalOnIdentifiedFrames_of_finite`,
 `exists_isTraceGenerated_ringHom_of_forall_trace_mem`,
-`exists_maximalIdeal_pow_le_span_of_isWeaklyUniversal_isTraceGenerated`
-(these three were narrowed 2026-07-25: the universality leaf now carries
-the representation-level classifying datum rather than its `charFrob`
-shadow, the Carayol leaf receives the Chebotarev density step as a
-hypothesis, and the finiteness leaf is stated as `𝔪`-primarity of `(ℓ)`
-— the trace-shadow glue, the density step and the
-Artinian-to-finite dévissage are PROVEN here, in
-`exists_isWeaklyUniversalOnIdentified`,
-`exists_isTraceGenerated_ringHom` and
-`finite_quotient_span_of_isWeaklyUniversal_isTraceGenerated`
-respectively); and — after the presentation-stratum decomposition of
-2026-07-25, which turned the two former presentation leaves
-`exists_minimal_mvPowerSeries_presentation` and
-`exists_relations_lt_of_minimal_mvPowerSeries_presentation` into proven
-assemblies — the remaining commutative-algebra strata of the minimal
-presentation `exists_coefficientRing_ringHom`,
-`surjective_of_mvPowerSeries_ringHom` and
-`ker_le_of_minimal_mvPowerSeries_ringHom` (its fourth stratum, the
-convergent substitution
-`exists_mvPowerSeries_ringHom_of_mem_maximalIdeal`, is PROVEN) together
-with the arithmetic relation count
+`exists_maximalIdeal_pow_le_span_of_isWeaklyUniversal_isTraceGenerated`,
+`exists_coefficientRing_ringHom`, `surjective_of_mvPowerSeries_ringHom`,
+`ker_le_of_minimal_mvPowerSeries_ringHom`,
 `exists_relations_lt_le_smul_of_minimal_mvPowerSeries_presentation`.
+
+Both former strata above them were narrowed on 2026-07-25 into those
+eight, and every statement they replace is now PROVEN here.
+
+* The three UNIVERSALITY leaves were narrowed so that the universality
+  leaf carries the representation-level classifying datum rather than
+  its `charFrob` shadow, the Carayol leaf receives the Chebotarev
+  density step as a hypothesis, and the finiteness leaf is stated as
+  `𝔪`-primarity of `(ℓ)`; the trace-shadow glue, the density step and
+  the Artinian-to-finite dévissage are PROVEN, in
+  `exists_isWeaklyUniversalOnIdentified`,
+  `exists_isTraceGenerated_ringHom` and
+  `finite_quotient_span_of_isWeaklyUniversal_isTraceGenerated`
+  respectively (the last over the general lemma
+  `finite_quotient_of_maximalIdeal_pow_le`).
+* Mazur representability was then CUT AGAIN, along Schlessinger's
+  architecture, into `exists_isStrictlyUniversalOnFiniteFrames` (all of
+  the arithmetic, tested only against finite/Artinian raw framed test
+  objects) and `isWeaklyUniversalOnIdentifiedFrames_of_finite` (the pure
+  commutative-algebra/topology pro-finite limit);
+  `exists_isWeaklyUniversalOnIdentifiedFrames` is PROVEN over them, the
+  glue showing that a finite object of the bundled deformation category
+  IS a raw Schlessinger test object — which is why the leaves carry no
+  `IsModuleTopology`, Noetherian, adic or completeness burden.
+* The two PRESENTATION leaves became proven assemblies over the four
+  commutative-algebra strata of the minimal presentation and the
+  arithmetic relation count: `exists_minimal_mvPowerSeries_presentation`
+  is PROVEN over `exists_coefficientRing_ringHom`, the convergent
+  substitution `exists_mvPowerSeries_ringHom_of_mem_maximalIdeal`
+  (itself PROVEN, through mathlib's `MvPowerSeries.eval₂Hom`),
+  `surjective_of_mvPowerSeries_ringHom` and
+  `ker_le_of_minimal_mvPowerSeries_ringHom`, over the PROVEN choice of a
+  minimal generating family `exists_minimal_span_sup_of_isNoetherianRing`;
+  and `exists_relations_lt_of_minimal_mvPowerSeries_presentation` is
+  PROVEN by Nakayama over
+  `exists_relations_lt_le_smul_of_minimal_mvPowerSeries_presentation`.
+
 Everything else is proven glue, culminating in
 `exists_hardlyRamified_lift_of_five_le` — verbatim the statement of
 Khare–Wintenberger pillar α
@@ -720,62 +740,293 @@ theorem exists_conj_of_charFrob_eq
     exact hqS (Finset.mem_insert.mpr (Or.inr (Finset.mem_singleton.mpr rfl)))
   exact hcf q hq hq2 hqℓ
 
-/-- **Strict Mazur representability leaf** (sorry node — the
-representability half of the Mazur stratum, DECOMPOSED 2026-07-25 to
-the representation level: what remains sorried is this leaf, stated
-with the classifying map's REPRESENTATION-level compatibility
-`IsWeaklyUniversalOnIdentifiedFrames`, and the `charFrob`-level
-statement `exists_isWeaklyUniversalOnIdentified` below is now PROVEN
-from it): the hardly ramified deformation problem of an irreducible
-hardly ramified `ρbar` (`ℓ ≥ 5`) admits a deformation `D` that maps to
-every *residually identified* deformation `D'` — every `D'` equipped
-with a conjugation of its reduction onto `ρbar` — by a continuous
-`ℤ_ℓ`-algebra homomorphism compatible with the reduction maps along
-which `D.ρ` pushes forward to `D'.ρ` up to conjugation. The
-Chebotarev–Brauer–Nesbitt matching is NOT part of this leaf (it is
-supplied by `exists_conj_of_charFrob_eq` through the proven assembly
-`exists_isWeaklyUniversal`); this leaf is Mazur/Ramakrishna
-representability proper.
+open scoped TensorProduct in
+/-- **Strict universality on FINITE framed test objects** — Mazur's
+universal property tested against the objects of *Schlessinger's*
+category (Artinian — here equivalently finite — local `ℤ_ℓ`-algebras
+with residue field `k`), stated at the isomorphism level.
 
-WHY THE REPRESENTATION-LEVEL FORM IS THE RIGHT LEAF: the docstring
-route below ends "…its classifying map `R^{univ} → D'.R` is the
-required compatible homomorphism: compatibility with the reduction maps
-is strictness, and compatibility with `charFrob` is
-conjugation-invariance of characteristic polynomials". The last clause
-is pure glue over the conjugation datum and is exactly what the
-assembly `exists_isWeaklyUniversalOnIdentified` now discharges (through
-`charpoly_baseChange_conj`); the leaf keeps only what representability
-genuinely produces — the classifying map together with the conjugation
-of representations.
+A test object is the raw datum Schlessinger's category consists of: a
+FINITE local topological `ℤ_ℓ`-algebra `A`, a hardly ramified
+representation `ρA` on the STANDARD FRAME `Fin 2 → A`, a surjective
+reduction `πA : A →+* k`, and a residual identification of `ρA ⊗_A k`
+with `ρbar`. Continuity of `πA` is taken as a HYPOTHESIS rather than
+derived, so that a test object carries no `IsModuleTopology` datum; for
+the bundled test objects of `HardlyRamifiedDeformation` it is supplied
+by the proven `HardlyRamifiedDeformation.continuous_pi`, which is what
+`isWeaklyUniversalOnIdentifiedFramesFinite_of_isStrictlyUniversalOnFiniteFrames`
+below does.
+
+The conclusion is the classifying map in its classical strength: a
+CONTINUOUS ring homomorphism `ψ : D.R →+* A`, strict (compatible with
+the `ℤ_ℓ`-structures and with the two reductions), carrying the
+universal representation to `ρA` up to the framing ambiguity — the
+linear equivalence `e` — i.e. `D.ρ ⊗_{D.R} A ≅ ρA` as representations.
+
+Interface-side twin: `Modularity/Patching.lean`'s
+`IsStrictlyUniversalOnFramedFiniteLifts` (same statement, unbundled
+coefficient data, `IsModuleTopology` in place of the continuity
+hypothesis). -/
+def HardlyRamifiedDeformation.IsStrictlyUniversalOnFiniteFrames
+    {ρbar : GaloisRep ℚ k V}
+    (D : HardlyRamifiedDeformation hℓOdd ρbar) : Prop :=
+  letI := D.commRing; letI := D.topologicalSpace; letI := D.isTopologicalRing
+  letI := D.isLocalRing; letI := D.algebra
+  ∀ (A : Type u) [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+    [IsLocalRing A] [Algebra ℤ_[ℓ] A] [Finite A]
+    (ρA : FramedGaloisRep ℚ A (Fin 2)),
+    IsHardlyRamified hℓOdd (rank_finTwoFun A) ρA →
+    ∀ πA : A →+* k, Function.Surjective πA → ∀ hπA : Continuous πA,
+    (letI : Algebra A k := πA.toAlgebra
+     letI : ContinuousSMul A k := continuousSMul_of_algebraMap A k
+       (by rw [RingHom.algebraMap_toAlgebra]; exact hπA)
+     ∃ e : (k ⊗[A] (Fin 2 → A)) ≃ₗ[k] V, (ρA.baseChange k).conj e = ρbar) →
+    ∃ ψ : D.R →+* A, ∃ hψ : Continuous ψ,
+      ψ.comp (algebraMap ℤ_[ℓ] D.R) = algebraMap ℤ_[ℓ] A ∧
+      πA.comp ψ = D.π ∧
+      (letI : Algebra D.R A := ψ.toAlgebra
+       letI : ContinuousSMul D.R A := continuousSMul_of_algebraMap D.R A
+         (by rw [RingHom.algebraMap_toAlgebra]; exact hψ)
+       ∃ e : (A ⊗[D.R] (Fin 2 → D.R)) ≃ₗ[A] (Fin 2 → A),
+         (D.ρ.baseChange A).conj e = ρA)
+
+open scoped TensorProduct in
+/-- **Weak universality on FINITE residually identified deformations** —
+verbatim `IsWeaklyUniversalOnIdentifiedFrames`, but tested only against
+deformations whose coefficient ring is FINITE. The hypothesis side of
+the pro-finite limit leaf `isWeaklyUniversalOnIdentifiedFrames_of_finite`
+below: it is what the Artinian-level representability leaf delivers once
+its raw test objects are re-bundled as deformations, and the whole
+content of that leaf is the passage from this to the unrestricted
+property. -/
+def HardlyRamifiedDeformation.IsWeaklyUniversalOnIdentifiedFramesFinite
+    {ρbar : GaloisRep ℚ k V}
+    (D : HardlyRamifiedDeformation hℓOdd ρbar) : Prop :=
+  letI := D.commRing; letI := D.topologicalSpace; letI := D.isTopologicalRing
+  letI := D.isLocalRing; letI := D.algebra
+  ∀ D' : HardlyRamifiedDeformation hℓOdd ρbar,
+    letI := D'.commRing; letI := D'.topologicalSpace
+    letI := D'.isTopologicalRing; letI := D'.isLocalRing; letI := D'.algebra
+    Finite D'.R →
+    D'.IsResidualIdentified →
+    ∃ f : D.R →+* D'.R, ∃ hfc : Continuous f,
+      f.comp (algebraMap ℤ_[ℓ] D.R) = algebraMap ℤ_[ℓ] D'.R ∧
+      D'.π.comp f = D.π ∧
+      letI : Algebra D.R D'.R := f.toAlgebra
+      letI : ContinuousSMul D.R D'.R :=
+        continuousSMul_of_algebraMap D.R D'.R
+          (by rw [RingHom.algebraMap_toAlgebra]; exact hfc)
+      ∃ e : (D'.R ⊗[D.R] (Fin 2 → D.R)) ≃ₗ[D'.R] (Fin 2 → D'.R),
+        (D.ρ.baseChange D'.R).conj e = D'.ρ
+
+omit [Finite k] [Algebra ℤ_[ℓ] k] in
+/-- **A finite deformation IS a Schlessinger test object** (PROVEN
+2026-07-25 — the re-bundling glue of the Schlessinger cut): a
+deformation `D` classifying every finite raw framed test object
+classifies every finite deformation of the category.
+
+There is nothing to do but read the structure fields as the raw datum:
+a `HardlyRamifiedDeformation` with finite coefficient ring supplies the
+ring and its topology (`commRing`, `topologicalSpace`,
+`isTopologicalRing`, `isLocalRing`, `algebra`), the framed hardly
+ramified representation (`ρ`, `isHardlyRamified`), the surjective
+reduction (`π`, `π_surjective`) — CONTINUOUS by the proven
+`HardlyRamifiedDeformation.continuous_pi`, which is exactly the datum
+the raw form takes as a hypothesis — and the residual identification is
+`IsResidualIdentified` itself, whose `letI` block is the raw form's
+verbatim. The Noetherian, adic and adic-completeness fields of the
+structure are simply not needed by the raw form: they are automatic for
+a finite ring, which is why the Artinian-level leaf is stated on raw
+test objects and does not have to build them. -/
+theorem isWeaklyUniversalOnIdentifiedFramesFinite_of_isStrictlyUniversalOnFiniteFrames
+    {ρbar : GaloisRep ℚ k V} (D : HardlyRamifiedDeformation hℓOdd ρbar)
+    (hD : D.IsStrictlyUniversalOnFiniteFrames) :
+    D.IsWeaklyUniversalOnIdentifiedFramesFinite := by
+  letI := D.commRing; letI := D.topologicalSpace; letI := D.isTopologicalRing
+  letI := D.isLocalRing; letI := D.algebra
+  intro D'
+  letI := D'.commRing; letI := D'.topologicalSpace
+  letI := D'.isTopologicalRing; letI := D'.isLocalRing; letI := D'.algebra
+  intro hfin hid
+  letI := hfin
+  exact hD D'.R D'.ρ D'.isHardlyRamified D'.π D'.π_surjective
+    D'.continuous_pi hid
+
+/-- **Mazur/Ramakrishna representability at the ARTINIAN level** (sorry
+node — the arithmetic half of the 2026-07-25 Schlessinger cut of
+`exists_isWeaklyUniversalOnIdentifiedFrames`, which is now PROVEN over
+this leaf and the pro-finite limit leaf
+`isWeaklyUniversalOnIdentifiedFrames_of_finite`): the hardly ramified
+deformation problem of an irreducible hardly ramified `ρbar` (`ℓ ≥ 5`)
+admits an object `D` of Mazur's category that classifies every FINITE
+residually identified framed test object *strictly* — by a continuous
+`ℤ_ℓ`-algebra map compatible with the reductions along which `D.ρ`
+pushes forward to the test representation up to the framing ambiguity.
+
+WHAT IS AND IS NOT IN THIS LEAF. In: Schlessinger's criterion and the
+construction of the hull, i.e. all the arithmetic. Out: (i) the passage
+from Artinian test objects to the whole of Mazur's category — the
+separate leaf `isWeaklyUniversalOnIdentifiedFrames_of_finite`, pure
+commutative algebra and topology; (ii) the Chebotarev–Brauer–Nesbitt
+matching that manufactures the residual identification, supplied by
+`exists_conj_of_charFrob_eq` through the proven assembly
+`exists_isWeaklyUniversal`; (iii) the `charFrob` shadow of the
+conjugation clause, discharged by `exists_isWeaklyUniversalOnIdentified`
+through `charpoly_baseChange_conj`.
 
 Mathematical content: `ρbar` is odd (its determinant is the mod-`ℓ`
 cyclotomic character, which sends complex conjugation to `−1 ≠ 1` for
-odd `ℓ`), and an odd irreducible 2-dimensional representation over
-the finite field `k` of characteristic `ℓ` odd is absolutely
-irreducible. Hence by Schlessinger's criteria / Mazur's theorem the
-framed deformation functor with the hardly ramified local conditions —
-cyclotomic determinant, unramified outside `{2, ℓ}`, flat at `ℓ` (a
-deformation condition by Ramakrishna), tame quadratic quotient at `2` —
-is representable by a complete Noetherian local `ℤ_ℓ`-algebra
-`R^{univ}` with residue field `k` (the de Smit–Lenstra
-generators-and-relations construction presents `R^{univ}` as
-`W(k)[[x₁,…,x_g]]/I`). Given `D'` with a residual
-identification, conjugating the framing carries `D'.ρ` to a strict
-deformation of `ρbar`, whose classifying map `R^{univ} → D'.R` is the
-required compatible homomorphism: compatibility with the reduction
-maps is strictness, and compatibility with `charFrob` is
-conjugation-invariance of characteristic polynomials.
+odd `ℓ`), and an odd irreducible 2-dimensional representation over the
+finite field `k` of odd characteristic `ℓ` is absolutely irreducible, so
+`End_{k[Γ]}(ρbar) = k` (Schur) and the framing is a torsor. Hence by
+Schlessinger's criteria (H1/H2: fibre products of coefficient rings
+carry fibre products of framed lifts; H4 through Schur; H3 — finiteness
+of the tangent space `H¹(G_{ℚ,{2,ℓ}}, ad ρbar)` — by global Euler
+characteristic / Hermite–Minkowski finiteness of restricted-ramification
+extensions) the framed deformation functor with the hardly ramified
+local conditions — cyclotomic determinant, unramified outside `{2, ℓ}`,
+flat at `ℓ` (a deformation condition by Ramakrishna), tame quadratic
+quotient at `2` (Conrad–Diamond–Taylor) — has a hull, presented by the
+de Smit–Lenstra generators-and-relations construction as
+`W(k)[[x₁,…,x_g]]/I`; that quotient is Noetherian, local, `𝔪`-adically
+complete and carries the `𝔪`-adic topology, so it is an object of this
+file's `HardlyRamifiedDeformation` category, and the classifying map of
+a residually identified finite test object is the required `ψ`.
 
-References: Mazur, *Deforming Galois representations*; Ramakrishna,
-*On a variation of Mazur's deformation functor*; de Smit–Lenstra,
-*Explicit construction of universal deformation rings* (Prop. 2.3);
-Böckle's appendix to Khare's Serre-conjecture notes. -/
+PARALLEL COPY, NOT IMPORTABLE. `Modularity/Patching.lean` proves the
+same statement (`exists_weaklyUniversalOnIdentified_hardlyRamifiedDeformation`)
+over the same finite-tangent/finite-tests cut, its Artinian-level leaf
+being `exists_framedStrictlyUniversal_hardlyRamified_finiteTests` (whose
+`IsStrictlyUniversalOnFramedFiniteLifts` is the unbundled twin of
+`IsStrictlyUniversalOnFiniteFrames` above). It cannot be imported here:
+`Patching.lean` imports `Modularity/KhareWintenberger.lean`, which
+consumes pillar α — which is what this file proves. See
+`~/.flt-design-deformation-patching-dedup.md`: the de-duplication is a
+module split of `Patching.lean` into a KW-free upstream module, to be
+done when that file is quiet.
+
+CIRCULARITY GUARD. This leaf carries the `IsHardlyRamified` +
+`IsIrreducible` + `5 ≤ ℓ` package that the odd-prime dichotomy
+`not_isIrreducible_of_isHardlyRamified_of_five_le` refutes, and that
+dichotomy is proven over pillar α — which is what this file's cone
+proves. Discharging this leaf vacuously through it is circular and Lean
+rejects it. Likewise no import from `Family.lean`, `Lift.lean` or
+`Modularity/*` may be added to this module.
+
+References: Mazur, *Deforming Galois representations*, MSRI Publ. 16
+(1989), §1.2; Ramakrishna, *On a variation of Mazur's deformation
+functor*, Compositio 87 (1994); Conrad–Diamond–Taylor, JAMS 12 (1999),
+§2; de Smit–Lenstra, *Explicit construction of universal deformation
+rings*, Prop. 2.3; Böckle's appendix to Khare's Serre-conjecture
+notes. -/
+theorem exists_isStrictlyUniversalOnFiniteFrames (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
+    (hirr : ρbar.IsIrreducible) :
+    ∃ D : HardlyRamifiedDeformation hℓOdd ρbar,
+      D.IsStrictlyUniversalOnFiniteFrames :=
+  sorry
+
+/-- **The pro-finite limit upgrade** (sorry node — the
+commutative-algebra half of the 2026-07-25 Schlessinger cut): a
+deformation that classifies every FINITE residually identified
+deformation classifies every residually identified deformation. No
+arithmetic is involved: the hardly ramified conditions enter only
+through the fact that they are stable under quotient base change, and
+the input and output clauses are identical apart from the finiteness
+restriction.
+
+Classical route, in four steps.
+
+1. *Level-`n` test objects.* Let `D'` be residually identified and
+   `n : ℕ`. Base change `D'` along the surjection
+   `D'.R ↠ D'.R ⧸ 𝔪ⁿ`. The quotient is local (`𝔪ⁿ ≠ ⊤`), Noetherian,
+   discrete — `𝔪ⁿ` is open for the adic topology, and the induced adic
+   topology is discrete because the maximal ideal is nilpotent there, so
+   `IsAdic` and `IsAdicComplete` hold trivially — and FINITE, because
+   `D'.R` is Noetherian with the finite residue field `k`
+   (`Ideal.finite_quotient_pow`, the route already taken by
+   `finite_quotient_of_maximalIdeal_pow_le` LATER IN THIS FILE).
+   Hardly-ramifiedness pushes forward along the quotient
+   (`isHardlyRamified_baseChange_quotient`, with its ingredients
+   `isFlatAt_baseChange_quotient` and `isTameAtTwo_baseChange`), the
+   reduction map factors because `𝔪ⁿ ≤ 𝔪 = ker D'.π`, and the residual
+   identification of the quotient is that of `D'` transported through
+   the tensor cancellation `k ⊗_{D'.R ⧸ 𝔪ⁿ} ((D'.R ⧸ 𝔪ⁿ) ⊗_{D'.R} M)
+   ≅ k ⊗_{D'.R} M`. NOTE FOR THE PROVER: those three base-change lemmas
+   are stated further down this module; proving this leaf requires
+   moving them above this point (they depend on nothing between).
+2. *Level-`n` classifying data.* The finite hypothesis applied to the
+   level-`n` object gives a pair `(ψₙ, eₙ)` — a strict ring map
+   `D.R →+* D'.R ⧸ 𝔪ⁿ` together with a conjugation of the pushforward
+   of `D.ρ` onto the reduced representation.
+3. *Kőnig.* For fixed `n` there are only FINITELY many such pairs: a
+   `ψ` with `π ∘ ψ = D.π` kills `𝔪_{D.R}^c` for a `c` with
+   `𝔪ⁿ`-nilpotency, hence factors through the finite ring
+   `D.R ⧸ 𝔪_{D.R}^c` (this is `Patching.lean`'s proven
+   `finite_setOf_ringHom_comp_eq`, whose own finiteness input is
+   `finite_quotient_of_maximalIdeal_pow_le` of this file), and `e` is a
+   matrix over a finite ring. The sets are nonempty by step 2 and
+   stable under the transition maps `D'.R ⧸ 𝔪ᵐ ↠ D'.R ⧸ 𝔪ⁿ`, so
+   `nonempty_sections_of_finite_inverse_system` gives a compatible
+   system `(ψₙ, eₙ)ₙ`.
+4. *Assembly.* `D'.R` is `𝔪`-adically complete and separated
+   (`isAdicComplete`), so the compatible system assembles: `ψ = lim ψₙ`
+   is a ring homomorphism, continuous because it is local; the matrix
+   `lim eₙ` is invertible because it is invertible modulo `𝔪`; and the
+   conjugation equation, holding modulo every `𝔪ⁿ`, holds outright by
+   separatedness.
+
+Interface-side twin: `Modularity/Patching.lean`'s PROVEN
+`isWeaklyUniversalOnIdentifiedDeformation_of_finiteTests`, which
+performs exactly steps 1–4 over the leaves
+`exists_ringHom_quotient_of_finiteTests` (step 1),
+`finite_quotient_maximalIdeal_pow` (step 3 — dischargeable from this
+file's `finite_quotient_of_maximalIdeal_pow_le`) and
+`exists_ringHom_of_forall_quotient_mem` (steps 3–4). That proof carries
+only the TRACE-level clause through the limit; the extra work here is
+that the conjugation datum `e` must be carried through the Kőnig
+argument alongside `ψ`, which is why the pairs, not the ring maps
+alone, form the inverse system.
+
+CIRCULARITY GUARD: as for the Artinian leaf — the hypothesis package is
+the one the odd-prime dichotomy refutes, and the dichotomy is proven
+over pillar α, so a vacuous discharge through it is circular. -/
+theorem isWeaklyUniversalOnIdentifiedFrames_of_finite
+    {ρbar : GaloisRep ℚ k V} (D : HardlyRamifiedDeformation hℓOdd ρbar)
+    (hD : D.IsWeaklyUniversalOnIdentifiedFramesFinite) :
+    D.IsWeaklyUniversalOnIdentifiedFrames :=
+  sorry
+
+/-- **Strict Mazur representability** (PROVEN 2026-07-25 over the
+Schlessinger cut: the Artinian-level representability leaf
+`exists_isStrictlyUniversalOnFiniteFrames`, the pro-finite limit leaf
+`isWeaklyUniversalOnIdentifiedFrames_of_finite`, and the re-bundling
+glue between them): the hardly ramified deformation problem of an
+irreducible hardly ramified `ρbar` (`ℓ ≥ 5`) admits a deformation `D`
+that maps to every *residually identified* deformation `D'` — every
+`D'` equipped with a conjugation of its reduction onto `ρbar` — by a
+continuous `ℤ_ℓ`-algebra homomorphism compatible with the reduction maps
+along which `D.ρ` pushes forward to `D'.ρ` up to conjugation.
+
+The cut is the classical architecture of the representability theorem,
+and the one `Modularity/Patching.lean` uses for its (non-importable)
+parallel copy: Schlessinger's criterion produces a hull against
+ARTINIAN test objects only, and the passage to the whole of Mazur's
+category is the separate, purely commutative-algebraic pro-finite limit.
+The Chebotarev–Brauer–Nesbitt matching is in neither half (it is
+supplied by `exists_conj_of_charFrob_eq` through the proven assembly
+`exists_isWeaklyUniversal`); this stratum is Mazur/Ramakrishna
+representability proper. -/
 theorem exists_isWeaklyUniversalOnIdentifiedFrames (hℓ5 : 5 ≤ ℓ)
     {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
     (hirr : ρbar.IsIrreducible) :
     ∃ D : HardlyRamifiedDeformation hℓOdd ρbar,
-      D.IsWeaklyUniversalOnIdentifiedFrames :=
-  sorry
+      D.IsWeaklyUniversalOnIdentifiedFrames := by
+  obtain ⟨D, hD⟩ :=
+    exists_isStrictlyUniversalOnFiniteFrames hℓOdd hdim hℓ5 h hirr
+  exact ⟨D, isWeaklyUniversalOnIdentifiedFrames_of_finite hℓOdd D
+    (isWeaklyUniversalOnIdentifiedFramesFinite_of_isStrictlyUniversalOnFiniteFrames
+      hℓOdd D hD)⟩
 
 /-- **Trace shadow of strict Mazur representability** (PROVEN
 2026-07-25, glue over `exists_isWeaklyUniversalOnIdentifiedFrames`):
