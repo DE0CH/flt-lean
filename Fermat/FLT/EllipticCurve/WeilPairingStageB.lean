@@ -188,7 +188,615 @@ lemma evalEval_coordC {x y : F} (h : W.Equation x y) (d : F) :
     AdjoinRoot.evalEval h (coordC W d) = d :=
   coordEval_coordC (W := W) h d
 
-/-- **Stage B substrate leaf (SORRY): specialization of a generic
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- **The coordinate function `X` evaluates to the abscissa** (PROVEN):
+`coordEval_coordX` in the `AdjoinRoot.evalEval` spelling. -/
+lemma evalEval_coordX {x y : F} (h : W.Equation x y) :
+    AdjoinRoot.evalEval h (coordX W) = x :=
+  coordEval_coordX (W := W) h
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- **The coordinate function `Y` evaluates to the ordinate** (PROVEN):
+`coordEval_coordY` in the `AdjoinRoot.evalEval` spelling. -/
+lemma evalEval_coordY {x y : F} (h : W.Equation x y) :
+    AdjoinRoot.evalEval h (coordY W) = y :=
+  coordEval_coordY (W := W) h
+
+/-! ### Specialization at an affine point: reduction, away from its kernel
+
+`exists_pointEval_specialization` below asks for the VALUE at an affine
+point `Z` of a function `z ∘ (τ_Q ∘ [m])` that the substrate only ever
+presents as an element of the function field `K = Frac F[W]`.  There is
+no ring map `K → F` — specialization at `Z` is only partially defined —
+so everything here is organised around a RELATION rather than a map.
+
+`EvalsTo hZ w c` says "`w ∈ K` is regular at `Z` with value `c`", spelled
+without any localisation as "`w` is a fraction `n/d` of coordinate-ring
+elements with `d(Z) ≠ 0` and `n(Z) = c·d(Z)`" — literally the conclusion
+shape of the leaf.  It is a partial ring homomorphism (`EvalsTo.add`,
+`.mul`, `.div`, and uniqueness of the value), which is all that is needed
+to transport the group law: `SpecPoint hZ ω P` says the `K`-point `ω` of
+`curveK W` reduces to the `F`-point `P` of `W`, and `SpecPoint.add`
+proves the reduction of a sum is the sum of the reductions **whenever the
+sum of the reductions is affine**.
+
+That side condition is the whole design.  Silverman *AEC* VII.2.1 proves
+reduction is a homomorphism on all of `E(K)`, but its kernel `E₁` — the
+points with a pole at `Z` — is the formal group, which mathlib does not
+have (nor does mathlib connect its division polynomials to `n • P`, the
+other classical route).  Neither is needed: the induction on `m` that
+computes the reduction of `Q ⊕ m•taut` splits `Q = Q' ⊕ R`, with `Q'`
+chosen — using that `W(F)` is INFINITE, `F` being algebraically closed —
+so that BOTH partial sums `Q' ⊕ k•Z` and `R ⊕ Z` stay affine.  Only two
+points of `W(F)` are excluded per step, and there is always a third.
+
+The one substantial input is that `slope` specializes.  It does, because
+of the cleared relation `(y₁ − y₂)·A = (x₁ − x₂)·B` obtained by
+subtracting the two Weierstrass equations, where
+`A = y₁ + y₂ + a₁x₁ + a₃` and `B = x₁² + x₁x₂ + x₂² + a₂(x₁+x₂) + a₄ −
+a₁y₂`: when the two points have the SAME reduction the reductions of `A`
+and `B` are exactly the denominator `2v + a₁u + a₃` and numerator
+`3u² + 2a₂u + a₄ − a₁v` of the TANGENT slope downstairs, and `Ā ≠ 0` is
+precisely "the reduced sum is not `O`".  So the secant slope upstairs
+specializes to the tangent slope downstairs even though its own numerator
+and denominator both degenerate.  `addX` and `addY` are polynomial in the
+slope and go along for the ride. -/
+
+section Specialization
+
+variable {xZ yZ : F}
+
+/-- **Regularity with a value at an affine point**, stated without a
+partial specialization map `K → F` (which does not exist): `EvalsTo hZ w
+c` says the function-field element `w` is a fraction `n/d` of two
+coordinate-ring elements whose denominator does not vanish at
+`Z = (xZ, yZ)` and whose numerator has value `c·d(Z)` there — i.e. `w` is
+regular at `Z` with value `c`.  This is literally the conclusion shape of
+`exists_pointEval_specialization`. -/
+def EvalsTo (hZ : W.Equation xZ yZ) (w : W.FunctionField) (c : F) : Prop :=
+  ∃ n d : W.CoordinateRing,
+    AdjoinRoot.evalEval hZ d ≠ 0 ∧
+      w * algebraMap W.CoordinateRing W.FunctionField d =
+        algebraMap W.CoordinateRing W.FunctionField n ∧
+      AdjoinRoot.evalEval hZ n = c * AdjoinRoot.evalEval hZ d
+
+variable {hZ : W.Equation xZ yZ}
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- **The value of a regular element is unique** (PROVEN): two
+presentations `n/d` and `n'/d'` of the same `w` satisfy `n·d' = n'·d` in
+the coordinate ring (clear denominators and use injectivity of
+`F[W] → K`), and evaluating that at `Z` gives `c·d(Z)·d'(Z) =
+c'·d(Z)·d'(Z)` with both denominators nonzero. -/
+theorem EvalsTo.unique {w : W.FunctionField} {c c' : F}
+    (h : EvalsTo hZ w c) (h' : EvalsTo hZ w c') : c = c' := by
+  obtain ⟨n, d, hd, hK, hv⟩ := h
+  obtain ⟨n', d', hd', hK', hv'⟩ := h'
+  have hcross : n * d' = n' * d :=
+    IsFractionRing.injective W.CoordinateRing W.FunctionField (by
+      rw [map_mul, map_mul, ← hK, ← hK']; ring)
+  have hev := congrArg (AdjoinRoot.evalEval hZ) hcross
+  rw [map_mul, map_mul, hv, hv'] at hev
+  have h0 : (c - c') * (AdjoinRoot.evalEval hZ d * AdjoinRoot.evalEval hZ d') = 0 := by
+    linear_combination hev
+  rcases mul_eq_zero.mp h0 with h1 | h1
+  · exact sub_eq_zero.mp h1
+  · exact absurd h1 (mul_ne_zero hd hd')
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- **Coordinate-ring elements are regular with their own value**
+(PROVEN): take `d = 1`. -/
+theorem evalsTo_algebraMap (hZ : W.Equation xZ yZ) (a : W.CoordinateRing) :
+    EvalsTo hZ (algebraMap W.CoordinateRing W.FunctionField a)
+      (AdjoinRoot.evalEval hZ a) :=
+  ⟨a, 1, by rw [map_one]; exact one_ne_zero, by rw [map_one, mul_one],
+    by rw [map_one, mul_one]⟩
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- **Constants are regular with themselves as value** (PROVEN). -/
+theorem evalsTo_constHom (hZ : W.Equation xZ yZ) (c : F) :
+    EvalsTo hZ (constHom W c) c := by
+  have h := evalsTo_algebraMap hZ (coordC W c)
+  rwa [algebraMap_coordC, evalEval_coordC hZ c] at h
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- **`1` is regular with value `1`** (PROVEN). -/
+theorem evalsTo_one (hZ : W.Equation xZ yZ) : EvalsTo hZ 1 1 := by
+  have h := evalsTo_algebraMap hZ 1
+  rwa [map_one, map_one] at h
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- **Regularity is closed under addition** (PROVEN): common
+denominator. -/
+theorem EvalsTo.add {w₁ w₂ : W.FunctionField} {c₁ c₂ : F}
+    (h₁ : EvalsTo hZ w₁ c₁) (h₂ : EvalsTo hZ w₂ c₂) :
+    EvalsTo hZ (w₁ + w₂) (c₁ + c₂) := by
+  obtain ⟨n₁, d₁, hd₁, hK₁, hv₁⟩ := h₁
+  obtain ⟨n₂, d₂, hd₂, hK₂, hv₂⟩ := h₂
+  refine ⟨n₁ * d₂ + n₂ * d₁, d₁ * d₂, ?_, ?_, ?_⟩
+  · rw [map_mul]; exact mul_ne_zero hd₁ hd₂
+  · rw [map_mul, map_add, map_mul, map_mul]
+    linear_combination (algebraMap W.CoordinateRing W.FunctionField d₂) * hK₁ +
+      (algebraMap W.CoordinateRing W.FunctionField d₁) * hK₂
+  · rw [map_mul, map_add, map_mul, map_mul]
+    linear_combination (AdjoinRoot.evalEval hZ d₂) * hv₁ +
+      (AdjoinRoot.evalEval hZ d₁) * hv₂
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- **Regularity is closed under multiplication** (PROVEN). -/
+theorem EvalsTo.mul {w₁ w₂ : W.FunctionField} {c₁ c₂ : F}
+    (h₁ : EvalsTo hZ w₁ c₁) (h₂ : EvalsTo hZ w₂ c₂) :
+    EvalsTo hZ (w₁ * w₂) (c₁ * c₂) := by
+  obtain ⟨n₁, d₁, hd₁, hK₁, hv₁⟩ := h₁
+  obtain ⟨n₂, d₂, hd₂, hK₂, hv₂⟩ := h₂
+  refine ⟨n₁ * n₂, d₁ * d₂, ?_, ?_, ?_⟩
+  · rw [map_mul]; exact mul_ne_zero hd₁ hd₂
+  · rw [map_mul, map_mul]
+    linear_combination (w₂ * algebraMap W.CoordinateRing W.FunctionField d₂) * hK₁ +
+      (algebraMap W.CoordinateRing W.FunctionField n₁) * hK₂
+  · rw [map_mul, map_mul]
+    linear_combination (AdjoinRoot.evalEval hZ n₂) * hv₁ +
+      (c₁ * AdjoinRoot.evalEval hZ d₁) * hv₂
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- **Regularity is closed under negation** (PROVEN). -/
+theorem EvalsTo.neg {w : W.FunctionField} {c : F} (h : EvalsTo hZ w c) :
+    EvalsTo hZ (-w) (-c) := by
+  obtain ⟨n, d, hd, hK, hv⟩ := h
+  refine ⟨-n, d, hd, ?_, ?_⟩
+  · rw [map_neg]; linear_combination -hK
+  · rw [map_neg]; linear_combination -hv
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- **Regularity is closed under subtraction** (PROVEN). -/
+theorem EvalsTo.sub {w₁ w₂ : W.FunctionField} {c₁ c₂ : F}
+    (h₁ : EvalsTo hZ w₁ c₁) (h₂ : EvalsTo hZ w₂ c₂) :
+    EvalsTo hZ (w₁ - w₂) (c₁ - c₂) := by
+  simpa only [sub_eq_add_neg] using h₁.add h₂.neg
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- **Regularity is closed under powers** (PROVEN). -/
+theorem EvalsTo.pow {w : W.FunctionField} {c : F} (h : EvalsTo hZ w c) :
+    ∀ k : ℕ, EvalsTo hZ (w ^ k) (c ^ k)
+  | 0 => by simpa only [pow_zero] using evalsTo_one hZ
+  | (k + 1) => by rw [pow_succ, pow_succ]; exact (h.pow k).mul h
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- **A regular element with nonzero value is nonzero** (PROVEN): if
+`w = 0` then its numerator is `0`, so `c·d(Z) = 0` with `d(Z) ≠ 0`. -/
+theorem EvalsTo.ne_zero {w : W.FunctionField} {c : F} (h : EvalsTo hZ w c)
+    (hc : c ≠ 0) : w ≠ 0 := by
+  obtain ⟨n, d, hd, hK, hv⟩ := h
+  intro h0
+  rw [h0, zero_mul] at hK
+  have hn : n = 0 :=
+    IsFractionRing.injective W.CoordinateRing W.FunctionField
+      (hK.symm.trans (map_zero _).symm)
+  rw [hn, map_zero] at hv
+  rcases mul_eq_zero.mp hv.symm with h1 | h1
+  · exact hc h1
+  · exact hd h1
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- **Regularity is closed under division with nonvanishing
+denominator** (PROVEN): `(n₁/d₁)/(n₂/d₂) = (n₁d₂)/(d₁n₂)`, and `n₂(Z) =
+c₂·d₂(Z) ≠ 0` is what makes the new denominator survive. -/
+theorem EvalsTo.div {w₁ w₂ : W.FunctionField} {c₁ c₂ : F}
+    (h₁ : EvalsTo hZ w₁ c₁) (h₂ : EvalsTo hZ w₂ c₂) (hc₂ : c₂ ≠ 0) :
+    EvalsTo hZ (w₁ / w₂) (c₁ / c₂) := by
+  have hw₂ : w₂ ≠ 0 := h₂.ne_zero hc₂
+  obtain ⟨n₁, d₁, hd₁, hK₁, hv₁⟩ := h₁
+  obtain ⟨n₂, d₂, hd₂, hK₂, hv₂⟩ := h₂
+  have hn₂ : AdjoinRoot.evalEval hZ n₂ ≠ 0 := by
+    rw [hv₂]; exact mul_ne_zero hc₂ hd₂
+  refine ⟨n₁ * d₂, d₁ * n₂, ?_, ?_, ?_⟩
+  · rw [map_mul]; exact mul_ne_zero hd₁ hn₂
+  · rw [map_mul, map_mul, div_mul_eq_mul_div, div_eq_iff hw₂]
+    linear_combination (algebraMap W.CoordinateRing W.FunctionField n₂) * hK₁ -
+      (algebraMap W.CoordinateRing W.FunctionField n₁) * hK₂
+  · rw [map_mul, map_mul, hv₁, hv₂, div_mul_eq_mul_div, eq_div_iff hc₂]
+    ring
+
+end Specialization
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- The base-changed curve's `a₁` is the constant `a₁` (PROVEN, `rfl`). -/
+lemma curveK_a₁ (W : WeierstrassCurve.Affine F) :
+    (curveK W).a₁ = constHom W W.a₁ := rfl
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- The base-changed curve's `a₂` is the constant `a₂` (PROVEN, `rfl`). -/
+lemma curveK_a₂ (W : WeierstrassCurve.Affine F) :
+    (curveK W).a₂ = constHom W W.a₂ := rfl
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- The base-changed curve's `a₃` is the constant `a₃` (PROVEN, `rfl`). -/
+lemma curveK_a₃ (W : WeierstrassCurve.Affine F) :
+    (curveK W).a₃ = constHom W W.a₃ := rfl
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- The base-changed curve's `a₄` is the constant `a₄` (PROVEN, `rfl`). -/
+lemma curveK_a₄ (W : WeierstrassCurve.Affine F) :
+    (curveK W).a₄ = constHom W W.a₄ := rfl
+
+section Specialization2
+
+variable {xZ yZ : F} {hZ : W.Equation xZ yZ}
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- **The negation formula specializes** (PROVEN): `negY` is a
+polynomial in the coordinates and the constants. -/
+theorem evalsTo_negY {x y : W.FunctionField} {u v : F}
+    (hx : EvalsTo hZ x u) (hy : EvalsTo hZ y v) :
+    EvalsTo hZ ((curveK W).negY x y) (W.negY u v) := by
+  simp only [WeierstrassCurve.Affine.negY, curveK_a₁, curveK_a₃]
+  exact (hy.neg.sub ((evalsTo_constHom hZ W.a₁).mul hx)).sub (evalsTo_constHom hZ W.a₃)
+
+omit [IsAlgClosed F] in
+/-- **The group-law slope specializes** (PROVEN) — the one substantial
+step of the reduction argument.
+
+When the two reduced points have distinct abscissae the upstairs slope is
+the secant `(y₁ − y₂)/(x₁ − x₂)` with a denominator that does not
+degenerate, and there is nothing to do.
+
+When they coincide the secant's numerator AND denominator both vanish at
+`Z`, and the value has to be recovered from the cleared relation
+`(y₁ − y₂)·A = (x₁ − x₂)·B` obtained by subtracting the two Weierstrass
+equations, with `A = y₁ + y₂ + a₁x₁ + a₃` and
+`B = x₁² + x₁x₂ + x₂² + a₂(x₁+x₂) + a₄ − a₁y₂`.  Their reductions are
+`2v + a₁u + a₃` and `3u² + 2a₂u + a₄ − a₁v`, i.e. exactly the denominator
+and numerator of the TANGENT slope at the common reduction; and `A`'s
+reduction is nonzero precisely because the reduced sum is assumed affine
+(`hne'`).  Since `A ≠ 0` upstairs too, the slope equals `B/A` in BOTH
+upstairs configurations (`x₁ = x₂`, where it is the tangent slope
+outright, and `x₁ ≠ x₂`, by the cleared relation), so it specializes. -/
+theorem evalsTo_slope
+    {x₁ y₁ x₂ y₂ : W.FunctionField} {u₁ v₁ u₂ v₂ : F}
+    (hk₁ : (curveK W).Equation x₁ y₁) (hk₂ : (curveK W).Equation x₂ y₂)
+    (hg₁ : W.Equation u₁ v₁) (hg₂ : W.Equation u₂ v₂)
+    (hx₁ : EvalsTo hZ x₁ u₁) (hy₁ : EvalsTo hZ y₁ v₁)
+    (hx₂ : EvalsTo hZ x₂ u₂) (hy₂ : EvalsTo hZ y₂ v₂)
+    (hne' : ¬(u₁ = u₂ ∧ v₁ = W.negY u₂ v₂))
+    (hneK : ¬(x₁ = x₂ ∧ y₁ = (curveK W).negY x₂ y₂)) :
+    EvalsTo hZ ((curveK W).slope x₁ x₂ y₁ y₂) (W.slope u₁ u₂ v₁ v₂) := by
+  by_cases hu : u₁ = u₂
+  · -- the two reductions coincide: the tangent case downstairs
+    have hvne : v₁ ≠ W.negY u₂ v₂ := fun hc => hne' ⟨hu, hc⟩
+    have hv : v₁ = v₂ := Y_eq_of_Y_ne hg₁ hg₂ hu hvne
+    have hnegeq : W.negY u₁ v₁ = W.negY u₂ v₂ := by rw [hu, hv]
+    have hA0 : v₁ - W.negY u₁ v₁ ≠ 0 := sub_ne_zero.mpr (hnegeq ▸ hvne)
+    obtain ⟨AK, hAK⟩ : ∃ t : W.FunctionField,
+        t = y₁ + y₂ + (curveK W).a₁ * x₁ + (curveK W).a₃ := ⟨_, rfl⟩
+    obtain ⟨BK, hBK⟩ : ∃ t : W.FunctionField,
+        t = x₁ ^ 2 + x₁ * x₂ + x₂ ^ 2 + (curveK W).a₂ * (x₁ + x₂) + (curveK W).a₄ -
+          (curveK W).a₁ * y₂ := ⟨_, rfl⟩
+    have hAF : EvalsTo hZ AK (v₁ - W.negY u₁ v₁) := by
+      rw [hAK, curveK_a₁, curveK_a₃]
+      have he : v₁ - W.negY u₁ v₁ = v₁ + v₂ + W.a₁ * u₁ + W.a₃ := by
+        simp only [WeierstrassCurve.Affine.negY]; rw [← hv]; ring
+      rw [he]
+      exact ((hy₁.add hy₂).add ((evalsTo_constHom hZ W.a₁).mul hx₁)).add
+        (evalsTo_constHom hZ W.a₃)
+    have hBF : EvalsTo hZ BK (3 * u₁ ^ 2 + 2 * W.a₂ * u₁ + W.a₄ - W.a₁ * v₁) := by
+      rw [hBK, curveK_a₁, curveK_a₂, curveK_a₄]
+      have he : 3 * u₁ ^ 2 + 2 * W.a₂ * u₁ + W.a₄ - W.a₁ * v₁ =
+          u₁ ^ 2 + u₁ * u₂ + u₂ ^ 2 + W.a₂ * (u₁ + u₂) + W.a₄ - W.a₁ * v₂ := by
+        rw [← hu, ← hv]; ring
+      rw [he]
+      exact ((((hx₁.pow 2).add (hx₁.mul hx₂)).add (hx₂.pow 2)).add
+        ((evalsTo_constHom hZ W.a₂).mul (hx₁.add hx₂))).add
+        (evalsTo_constHom hZ W.a₄) |>.sub ((evalsTo_constHom hZ W.a₁).mul hy₂)
+    have hAK0 : AK ≠ 0 := hAF.ne_zero hA0
+    have he₁ : y₁ ^ 2 + (curveK W).a₁ * x₁ * y₁ + (curveK W).a₃ * y₁ =
+        x₁ ^ 3 + (curveK W).a₂ * x₁ ^ 2 + (curveK W).a₄ * x₁ + (curveK W).a₆ := by
+      rw [← WeierstrassCurve.Affine.equation_iff]; exact hk₁
+    have he₂ : y₂ ^ 2 + (curveK W).a₁ * x₂ * y₂ + (curveK W).a₃ * y₂ =
+        x₂ ^ 3 + (curveK W).a₂ * x₂ ^ 2 + (curveK W).a₄ * x₂ + (curveK W).a₆ := by
+      rw [← WeierstrassCurve.Affine.equation_iff]; exact hk₂
+    have hident : (y₁ - y₂) * AK = (x₁ - x₂) * BK := by
+      rw [hAK, hBK]; linear_combination he₁ - he₂
+    have hslopeK : (curveK W).slope x₁ x₂ y₁ y₂ = BK / AK := by
+      by_cases hxK : x₁ = x₂
+      · have hyK : y₁ ≠ (curveK W).negY x₂ y₂ := fun hc => hneK ⟨hxK, hc⟩
+        have hyyK : y₁ = y₂ := Y_eq_of_Y_ne hk₁ hk₂ hxK hyK
+        have hnegeqK : (curveK W).negY x₁ y₁ = (curveK W).negY x₂ y₂ := by
+          rw [hxK, hyyK]
+        have hden : y₁ - (curveK W).negY x₁ y₁ ≠ 0 :=
+          sub_ne_zero.mpr (hnegeqK ▸ hyK)
+        rw [WeierstrassCurve.Affine.slope_of_Y_ne hxK hyK,
+          div_eq_div_iff hden hAK0, hAK, hBK]
+        simp only [WeierstrassCurve.Affine.negY]
+        rw [← hxK, ← hyyK]
+        ring
+      · rw [WeierstrassCurve.Affine.slope_of_X_ne hxK,
+          div_eq_div_iff (sub_ne_zero.mpr hxK) hAK0]
+        linear_combination hident
+    rw [hslopeK, WeierstrassCurve.Affine.slope_of_Y_ne hu hvne]
+    exact hBF.div hAF hA0
+  · have hxne : x₁ ≠ x₂ := fun hc => hu ((hc ▸ hx₁).unique hx₂)
+    rw [WeierstrassCurve.Affine.slope_of_X_ne hxne,
+      WeierstrassCurve.Affine.slope_of_X_ne hu]
+    exact (hy₁.sub hy₂).div (hx₁.sub hx₂) (sub_ne_zero.mpr hu)
+
+end Specialization2
+
+section SpecPointSection
+
+variable {xZ yZ : F}
+
+/-- **Reduction of a `K`-point of `curveK W` at the affine point `Z`**:
+`SpecPoint hZ ω P` says `ω` is either the origin with `P` the origin, or
+affine with both coordinates regular at `Z` and reducing to the
+coordinates of the affine point `P`.  This is the graph of Silverman's
+reduction map `E(K) → E(F)`, RESTRICTED to the complement of its kernel
+(points with a pole at `Z` are simply not related to anything). -/
+def SpecPoint (hZ : W.Nonsingular xZ yZ) (ω : (curveK W).Point) (P : W.Point) :
+    Prop :=
+  (ω = 0 ∧ P = 0) ∨
+    ∃ (x y : W.FunctionField) (h : (curveK W).Nonsingular x y) (u v : F)
+      (g : W.Nonsingular u v),
+      ω = WeierstrassCurve.Affine.Point.some x y h ∧
+        P = WeierstrassCurve.Affine.Point.some u v g ∧
+        EvalsTo hZ.left x u ∧ EvalsTo hZ.left y v
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- **Constant points reduce to themselves** (PROVEN). -/
+theorem specPoint_constPoint (hZ : W.Nonsingular xZ yZ) (Q : W.Point) :
+    SpecPoint hZ (constPoint W Q) Q := by
+  cases Q with
+  | zero => exact Or.inl ⟨rfl, rfl⟩
+  | some u v g =>
+    exact Or.inr ⟨constHom W u, constHom W v, _, u, v, g, rfl, rfl,
+      evalsTo_constHom hZ.left u, evalsTo_constHom hZ.left v⟩
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- **The tautological point reduces to `Z`** (PROVEN): its coordinates
+are the images of the coordinate atoms `X`, `Y`, whose values at `Z` are
+`xZ`, `yZ`. -/
+theorem specPoint_tautPoint (hΔ : W.Δ ≠ 0) (hZ : W.Nonsingular xZ yZ) :
+    SpecPoint hZ (tautPoint W hΔ)
+      (WeierstrassCurve.Affine.Point.some xZ yZ hZ) := by
+  refine Or.inr ⟨tautX W, tautY W, taut_nonsingular W hΔ, xZ, yZ, hZ, rfl, rfl, ?_, ?_⟩
+  · have h := evalsTo_algebraMap hZ.left (coordX W)
+    rwa [algebraMap_coordX, evalEval_coordX hZ.left] at h
+  · have h := evalsTo_algebraMap hZ.left (coordY W)
+    rwa [algebraMap_coordY, evalEval_coordY hZ.left] at h
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- **Reduction commutes with negation** (PROVEN). -/
+theorem SpecPoint.neg {hZ : W.Nonsingular xZ yZ} {ω : (curveK W).Point}
+    {P : W.Point} (h : SpecPoint hZ ω P) : SpecPoint hZ (-ω) (-P) := by
+  rcases h with ⟨h1, h2⟩ | ⟨x, y, hk, u, v, hg, rfl, rfl, hx, hy⟩
+  · exact Or.inl ⟨by rw [h1]; exact WeierstrassCurve.Affine.Point.neg_zero,
+      by rw [h2]; exact WeierstrassCurve.Affine.Point.neg_zero⟩
+  · rw [WeierstrassCurve.Affine.Point.neg_some, WeierstrassCurve.Affine.Point.neg_some]
+    exact Or.inr ⟨x, (curveK W).negY x y, _, u, W.negY u v, _, rfl, rfl, hx,
+      evalsTo_negY hx hy⟩
+
+omit [IsAlgClosed F] in
+/-- **Reduction commutes with addition, away from the kernel** (PROVEN):
+if `ω₁`, `ω₂` reduce to `P₁`, `P₂` and `P₁ ⊕ P₂` is AFFINE, then
+`ω₁ ⊕ ω₂` reduces to `P₁ ⊕ P₂`.
+
+The affineness hypothesis does two things at once: it rules out the
+vertical configuration downstairs, and (by uniqueness of reduced values)
+the vertical configuration upstairs, so both sums are computed by
+`Point.add_some` from the slope — which specializes by
+`evalsTo_slope` — and `addX`, `addY` are polynomial in it. -/
+theorem SpecPoint.add {hZ : W.Nonsingular xZ yZ}
+    {ω₁ ω₂ : (curveK W).Point} {P₁ P₂ : W.Point}
+    (h₁ : SpecPoint hZ ω₁ P₁) (h₂ : SpecPoint hZ ω₂ P₂) (hne : P₁ + P₂ ≠ 0) :
+    SpecPoint hZ (ω₁ + ω₂) (P₁ + P₂) := by
+  rcases h₁ with ⟨hz₁, hp₁⟩ | ⟨x₁, y₁, hk₁, u₁, v₁, hg₁, rfl, rfl, hx₁, hy₁⟩
+  · rw [hz₁, hp₁, zero_add, zero_add]; exact h₂
+  rcases h₂ with ⟨hz₂, hp₂⟩ | ⟨x₂, y₂, hk₂, u₂, v₂, hg₂, rfl, rfl, hx₂, hy₂⟩
+  · rw [hz₂, hp₂, add_zero, add_zero]
+    exact Or.inr ⟨x₁, y₁, hk₁, u₁, v₁, hg₁, rfl, rfl, hx₁, hy₁⟩
+  have hne' : ¬(u₁ = u₂ ∧ v₁ = W.negY u₂ v₂) := fun hc =>
+    hne (WeierstrassCurve.Affine.Point.add_of_Y_eq hc.1 hc.2)
+  have hneK : ¬(x₁ = x₂ ∧ y₁ = (curveK W).negY x₂ y₂) := by
+    rintro ⟨hxx, hyy⟩
+    exact hne' ⟨(hxx ▸ hx₁).unique hx₂, (hyy ▸ hy₁).unique (evalsTo_negY hx₂ hy₂)⟩
+  have hslope := evalsTo_slope (hZ := hZ.left) hk₁.left hk₂.left hg₁.left hg₂.left
+    hx₁ hy₁ hx₂ hy₂ hne' hneK
+  have haddX : EvalsTo hZ.left
+      ((curveK W).addX x₁ x₂ ((curveK W).slope x₁ x₂ y₁ y₂))
+      (W.addX u₁ u₂ (W.slope u₁ u₂ v₁ v₂)) := by
+    simp only [WeierstrassCurve.Affine.addX, curveK_a₁, curveK_a₂]
+    exact ((((hslope.pow 2).add ((evalsTo_constHom hZ.left W.a₁).mul hslope)).sub
+      (evalsTo_constHom hZ.left W.a₂)).sub hx₁).sub hx₂
+  have hnegAddY : EvalsTo hZ.left
+      ((curveK W).negAddY x₁ x₂ y₁ ((curveK W).slope x₁ x₂ y₁ y₂))
+      (W.negAddY u₁ u₂ v₁ (W.slope u₁ u₂ v₁ v₂)) := by
+    simp only [WeierstrassCurve.Affine.negAddY]
+    exact (hslope.mul (haddX.sub hx₁)).add hy₁
+  rw [WeierstrassCurve.Affine.Point.add_some hneK,
+    WeierstrassCurve.Affine.Point.add_some hne']
+  refine Or.inr ⟨_, _, _, _, _, _, rfl, rfl, haddX, ?_⟩
+  simp only [WeierstrassCurve.Affine.addY]
+  exact evalsTo_negY haddX hnegAddY
+
+end SpecPointSection
+
+omit [DecidableEq F] in
+/-- **`W(F)` has a point outside any pair** (PROVEN): `F` is
+algebraically closed hence infinite, every abscissa carries a point
+(`exists_equation`, nonsingular since `Δ ≠ 0`), and distinct abscissae
+give distinct points — so `W.Point` is infinite and cannot be exhausted
+by two elements.  This is what lets the reduction induction below choose
+a splitting `Q = Q' ⊕ R` avoiding both degenerate configurations. -/
+theorem exists_point_ne_pair (hΔ : W.Δ ≠ 0) (a b : W.Point) :
+    ∃ R : W.Point, R ≠ a ∧ R ≠ b := by
+  classical
+  have hpt : ∀ x₀ : F, ∃ v : F, W.Nonsingular x₀ v := by
+    intro x₀
+    obtain ⟨v, hv⟩ := exists_equation W x₀
+    exact ⟨v, (WeierstrassCurve.Affine.equation_iff_nonsingular_of_Δ_ne_zero hΔ).mp hv⟩
+  choose vv hvv using hpt
+  by_contra hcon
+  have hsub : ∀ R : W.Point, R = a ∨ R = b := by
+    intro R
+    by_cases h : R = a
+    · exact Or.inl h
+    · by_cases h2 : R = b
+      · exact Or.inr h2
+      · exact absurd ⟨R, h, h2⟩ hcon
+  have hinj : Function.Injective
+      (fun x₀ : F =>
+        (WeierstrassCurve.Affine.Point.some x₀ (vv x₀) (hvv x₀) : W.Point)) := by
+    intro s t hst
+    have hst' := hst
+    simp only [WeierstrassCurve.Affine.Point.some.injEq] at hst'
+    exact hst'.1
+  have hs : (Set.univ : Set W.Point) ⊆ {a, b} := fun R _ => hsub R
+  haveI : Finite W.Point :=
+    Set.finite_univ_iff.mp (Set.Finite.subset ((Set.finite_singleton b).insert a) hs)
+  haveI : Finite F := Finite.of_injective _ hinj
+  exact not_finite F
+
+/-- **Reduction of `Q ⊕ k•taut`, for a natural `k`** (PROVEN, by
+induction on `k`).
+
+The step is where the kernel of reduction is dodged.  Naively
+`Q ⊕ (k+1)•taut = (Q ⊕ k•taut) ⊕ taut` needs `Q ⊕ k•Z ≠ O`, which can
+fail at intermediate `k` even when the final `Q ⊕ (k+1)•Z` is affine (it
+fails exactly when `k•Z = ⊖Q`).  Instead the constant is SPLIT,
+`Q = Q' ⊕ R`, and `Q'` is chosen by `exists_point_ne_pair` to avoid the
+only two bad values `⊖(k•Z)` and `Q ⊕ Z`; then `Q' ⊕ k•Z` and `R ⊕ Z` are
+both affine, both reduce by the induction hypothesis and the one-step
+case, and `SpecPoint.add` assembles them. -/
+theorem specPoint_natCast_zsmul (hΔ : W.Δ ≠ 0) {xZ yZ : F}
+    (hZ : W.Nonsingular xZ yZ) :
+    ∀ (k : ℕ) (Q : W.Point),
+      Q + (k : ℤ) • (WeierstrassCurve.Affine.Point.some xZ yZ hZ : W.Point) ≠ 0 →
+      SpecPoint hZ (constPoint W Q + (k : ℤ) • tautPoint W hΔ)
+        (Q + (k : ℤ) • (WeierstrassCurve.Affine.Point.some xZ yZ hZ : W.Point)) := by
+  have hcp : ∀ A B : W.Point, constPoint W (A + B) = constPoint W A + constPoint W B :=
+    fun A B => map_add (constPointHom W) A B
+  have hstep : ∀ Q : W.Point,
+      Q + (WeierstrassCurve.Affine.Point.some xZ yZ hZ : W.Point) ≠ 0 →
+      SpecPoint hZ (constPoint W Q + (1 : ℤ) • tautPoint W hΔ)
+        (Q + (WeierstrassCurve.Affine.Point.some xZ yZ hZ : W.Point)) := by
+    intro Q hQ
+    rw [one_zsmul]
+    exact (specPoint_constPoint hZ Q).add (specPoint_tautPoint hΔ hZ) hQ
+  intro k
+  induction k with
+  | zero =>
+    intro Q _
+    rw [Nat.cast_zero, zero_zsmul, add_zero, zero_zsmul, add_zero]
+    exact specPoint_constPoint hZ Q
+  | succ k ih =>
+    intro Q hQ
+    obtain ⟨Q', hQ'1, hQ'2⟩ := exists_point_ne_pair hΔ
+      (-((k : ℤ) • (WeierstrassCurve.Affine.Point.some xZ yZ hZ : W.Point)))
+      (Q + (WeierstrassCurve.Affine.Point.some xZ yZ hZ : W.Point))
+    obtain ⟨R, rfl⟩ : ∃ R : W.Point, Q = Q' + R := ⟨Q - Q', by abel⟩
+    have hA : Q' + (k : ℤ) • (WeierstrassCurve.Affine.Point.some xZ yZ hZ : W.Point) ≠ 0 :=
+      fun hc => hQ'1 (by rwa [add_eq_zero_iff_eq_neg] at hc)
+    have hB : R + (WeierstrassCurve.Affine.Point.some xZ yZ hZ : W.Point) ≠ 0 := by
+      intro hc
+      refine hQ'2 ?_
+      rw [add_assoc, hc, add_zero]
+    have hω : (constPoint W Q' + (k : ℤ) • tautPoint W hΔ) +
+        (constPoint W R + (1 : ℤ) • tautPoint W hΔ) =
+        constPoint W (Q' + R) + ((k : ℤ) + 1) • tautPoint W hΔ := by
+      rw [hcp, add_zsmul, one_zsmul]; abel
+    have hP : (Q' + (k : ℤ) • (WeierstrassCurve.Affine.Point.some xZ yZ hZ : W.Point)) +
+        (R + (WeierstrassCurve.Affine.Point.some xZ yZ hZ : W.Point)) =
+        (Q' + R) + ((k : ℤ) + 1) •
+          (WeierstrassCurve.Affine.Point.some xZ yZ hZ : W.Point) := by
+      rw [add_zsmul, one_zsmul]; abel
+    rw [Nat.cast_add, Nat.cast_one] at hQ ⊢
+    rw [← hω, ← hP]
+    exact (ih Q' hA).add (hstep R hB) (by rw [hP]; exact hQ)
+
+/-- **Reduction of `Q ⊕ m•taut` for an arbitrary integer `m`** (PROVEN):
+the natural-number case together with `SpecPoint.neg`. -/
+theorem specPoint_zsmul (hΔ : W.Δ ≠ 0) {xZ yZ : F} (hZ : W.Nonsingular xZ yZ)
+    (m : ℤ) (Q : W.Point)
+    (hQ : Q + m • (WeierstrassCurve.Affine.Point.some xZ yZ hZ : W.Point) ≠ 0) :
+    SpecPoint hZ (constPoint W Q + m • tautPoint W hΔ)
+      (Q + m • (WeierstrassCurve.Affine.Point.some xZ yZ hZ : W.Point)) := by
+  obtain ⟨k, hk | hk⟩ : ∃ k : ℕ, m = (k : ℤ) ∨ m = -(k : ℤ) :=
+    ⟨m.natAbs, by rcases Int.natAbs_eq m with h | h; exacts [Or.inl h, Or.inr h]⟩
+  · subst hk; exact specPoint_natCast_zsmul hΔ hZ k Q hQ
+  · subst hk
+    have hcpneg : ∀ A : W.Point, constPoint W (-A) = -constPoint W A :=
+      fun A => map_neg (constPointHom W) A
+    have hQ' : (-Q) + (k : ℤ) •
+        (WeierstrassCurve.Affine.Point.some xZ yZ hZ : W.Point) ≠ 0 := by
+      intro hc
+      refine hQ ?_
+      have he : Q + (-(k : ℤ)) • (WeierstrassCurve.Affine.Point.some xZ yZ hZ : W.Point) =
+          -((-Q) + (k : ℤ) • (WeierstrassCurve.Affine.Point.some xZ yZ hZ : W.Point)) := by
+        rw [neg_zsmul]; abel
+      rw [he, hc, neg_zero]
+    have h := (specPoint_natCast_zsmul hΔ hZ k (-Q) hQ').neg
+    have e1 : -(constPoint W (-Q) + (k : ℤ) • tautPoint W hΔ) =
+        constPoint W Q + (-(k : ℤ)) • tautPoint W hΔ := by
+      rw [hcpneg, neg_zsmul]; abel
+    have e2 : -((-Q) + (k : ℤ) • (WeierstrassCurve.Affine.Point.some xZ yZ hZ : W.Point)) =
+        Q + (-(k : ℤ)) • (WeierstrassCurve.Affine.Point.some xZ yZ hZ : W.Point) := by
+      rw [neg_zsmul]; abel
+    rwa [e1, e2] at h
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- **Every coordinate-ring element pulled back to `ω` is regular at `Z`
+with the expected value** (PROVEN): the set of `z` for which
+`pointEval (constHom W) hω z` is regular at `Z` with value `z(Z')` is
+closed under sums and products and contains the three generators
+(constants, `X`, `Y`) of the coordinate ring, so it is everything.  The
+induction mirrors `coordinateRing_ringHom_ext`. -/
+theorem evalsTo_pointEval {xZ yZ : F} (hZ : W.Equation xZ yZ)
+    {xω yω : W.FunctionField} (hω : (curveK W).Equation xω yω)
+    {xZ' yZ' : F} (hZ' : W.Equation xZ' yZ')
+    (hx : EvalsTo hZ xω xZ') (hy : EvalsTo hZ yω yZ') (z : W.CoordinateRing) :
+    EvalsTo hZ (pointEval (constHom W) hω z) (AdjoinRoot.evalEval hZ' z) := by
+  have hXgen : EvalsTo hZ
+      (pointEval (constHom W) hω (CoordinateRing.mk W (Polynomial.C Polynomial.X)))
+      (AdjoinRoot.evalEval hZ' (CoordinateRing.mk W (Polynomial.C Polynomial.X))) := by
+    rw [pointEval_X, show AdjoinRoot.evalEval hZ' (CoordinateRing.mk W
+      (Polynomial.C Polynomial.X)) = xZ' from evalEval_coordX hZ']
+    exact hx
+  have hYgen : EvalsTo hZ
+      (pointEval (constHom W) hω (CoordinateRing.mk W Polynomial.X))
+      (AdjoinRoot.evalEval hZ' (CoordinateRing.mk W Polynomial.X)) := by
+    rw [pointEval_Y, show AdjoinRoot.evalEval hZ' (CoordinateRing.mk W Polynomial.X) = yZ'
+      from evalEval_coordY hZ']
+    exact hy
+  have hCgen : ∀ d : F, EvalsTo hZ
+      (pointEval (constHom W) hω (CoordinateRing.mk W (Polynomial.C (Polynomial.C d))))
+      (AdjoinRoot.evalEval hZ'
+        (CoordinateRing.mk W (Polynomial.C (Polynomial.C d)))) := by
+    intro d
+    rw [pointEval_C, show AdjoinRoot.evalEval hZ' (CoordinateRing.mk W
+      (Polynomial.C (Polynomial.C d))) = d from evalEval_coordC hZ' d]
+    exact evalsTo_constHom hZ d
+  have hpoly : ∀ r : Polynomial F, EvalsTo hZ
+      (pointEval (constHom W) hω (CoordinateRing.mk W (Polynomial.C r)))
+      (AdjoinRoot.evalEval hZ' (CoordinateRing.mk W (Polynomial.C r))) := by
+    intro r
+    induction r using Polynomial.induction_on with
+    | C d => exact hCgen d
+    | add f g hf hg =>
+      simp only [map_add]
+      exact hf.add hg
+    | monomial n d _ =>
+      simp only [map_mul, map_pow]
+      exact (hCgen d).mul (hXgen.pow _)
+  obtain ⟨f, rfl⟩ := AdjoinRoot.mk_surjective z
+  induction f using Polynomial.induction_on with
+  | C r => exact hpoly r
+  | add f g hf hg =>
+    simp only [map_add]
+    exact hf.add hg
+  | monomial n r _ =>
+    simp only [map_mul, map_pow]
+    exact (hpoly r).mul (hYgen.pow _)
+
+/-- **Stage B substrate leaf (PROVEN): specialization of a generic
 evaluation at an affine point.**  This is the primitive the whole
 `WeilPairingDescent.lean` substrate is missing, and the only reason
 Stage B's two evaluation leaves cannot be finished from it: that
@@ -216,23 +824,39 @@ degenerate cases are covered: `m = 0` makes `ω` the constant point `Q`
 and both sides the constant `z(Q)`; `Q = O`, `m = 1` makes the map the
 identity and the statement `n = z`, `d = 1`.
 
-Proof route.  `pointEval` is determined by where it sends the two
-coordinate atoms (`coordinateRing_ringHom_ext`), so it suffices to
-produce `n`, `d` for `z = coordX` and `z = coordY` and close the family
-under the ring operations (a common denominator is a product of the
-individual ones).  For those two atoms `n/d` is read off the group-law
-formulas: `x(Q ⊕ m•taut)` and `y(Q ⊕ m•taut)` are the `addX`/`addY`
-expressions in `x(m•taut) = Φ_m/ΨSq_m`, `y(m•taut)`, `x(Q)`, `y(Q)` and
-the slope, all of which are fractions of coordinate-ring elements; the
-denominators are powers of `ΨSq_m(coordX)` and of the vertical
-`coordX − x(Q)` (resp. the tangent normalisation when `Z = ±Q`, the case
-already isolated by `vertNumerator_self_tangent` /
-`vertNumerator_self_vertical` in `WeilPairingDescent.lean`).  Their
-non-vanishing at `Z` is exactly the affineness of `Q ⊕ m•Z`, i.e.
-`hZ'c`, and the value identity `n(Z) = z(Z')·d(Z)` is the statement that
-the group law commutes with evaluation — the same
-`Point.some`-coordinate computation that `endoMap_add` performs one
-level up.
+Proof (PROVEN 2026-07-25; the machinery is the `EvalsTo`/`SpecPoint`
+block above).  The recorded route through the division polynomials
+`x(m•taut) = Φ_m/ΨSq_m` was NOT taken, because mathlib has division
+polynomials (`WeierstrassCurve.Φ`, `ΨSq`) but no theorem connecting them
+to `m • P` on `Point` — that link is missing machinery of its own.
+Instead:
+
+1. `pointEval` is determined by where it sends the coordinate atoms, so
+   the whole statement follows (`evalsTo_pointEval`, an induction
+   mirroring `coordinateRing_ringHom_ext`) from the two atomic cases —
+   i.e. from "`xω`, `yω` are regular at `Z` with values `xZ'`, `yZ'`".
+   The conclusion's `∃ n d` shape is packaged as the relation `EvalsTo`,
+   which is closed under `+`, `*`, `−`, `/` and has a unique value.
+2. That is exactly "the reduction of `ω = Q ⊕ m•taut` at `Z` is `Z'`",
+   i.e. Silverman *AEC* VII.2.1 for the local ring at `Z` — a genuine
+   piece of missing theory, since mathlib's `EllipticCurve/Reduction.lean`
+   reduces CURVES and never touches points.  It is proven here as
+   `specPoint_zsmul`, by induction on `m`, using only the part of the
+   reduction homomorphism that avoids its kernel: `SpecPoint.add` needs
+   the reduced sum to be AFFINE, and the induction arranges that by
+   splitting the constant `Q = Q' ⊕ R` with `Q'` dodging the two bad
+   values (possible since `W(F)` is infinite).  So the formal group,
+   which mathlib does not have, is never needed.
+3. The only real computation is that the slope specializes
+   (`evalsTo_slope`): when the two points collide after reduction the
+   secant slope `(y₁−y₂)/(x₁−x₂)` degenerates `0/0`, and its value is
+   recovered from the cleared relation `(y₁−y₂)·A = (x₁−x₂)·B` obtained
+   by subtracting the two Weierstrass equations, whose reductions are the
+   denominator and numerator of the tangent slope downstairs.  `A`'s
+   reduction is nonzero precisely because the reduced sum is affine.
+
+Non-vanishing of the denominators produced this way is exactly the
+affineness of `Q ⊕ m•Z`, i.e. `hZ'c`, as the original route predicted.
 
 Both Stage-B evaluation leaves below consume this at `(Q, m) = (0, p)`
 (the `[p]`-pullback `z ↦ z∘[p]`, specializing at a `p`-division point)
@@ -254,7 +878,17 @@ theorem exists_pointEval_specialization (hΔ : W.Δ ≠ 0) (m : ℤ) {Q : W.Poin
         algebraMap W.CoordinateRing W.FunctionField n ∧
       AdjoinRoot.evalEval hZ.left n =
         AdjoinRoot.evalEval hZ'.left z * AdjoinRoot.evalEval hZ.left d := by
-  sorry
+  have hQne : Q + m • (WeierstrassCurve.Affine.Point.some xZ yZ hZ : W.Point) ≠ 0 := by
+    rw [← hZ'c]
+    exact WeierstrassCurve.Affine.Point.some_ne_zero hZ'
+  have hspec := specPoint_zsmul hΔ hZ m Q hQne
+  rw [hpt, ← hZ'c] at hspec
+  rcases hspec with ⟨hz, -⟩ | ⟨x, y, hk, u, v, hg, hxeq, hueq, hxe, hye⟩
+  · exact absurd hz (WeierstrassCurve.Affine.Point.some_ne_zero hω)
+  · rw [WeierstrassCurve.Affine.Point.some.injEq] at hxeq hueq
+    obtain ⟨rfl, rfl⟩ := hxeq
+    obtain ⟨rfl, rfl⟩ := hueq
+    exact evalsTo_pointEval hZ.left hω.left hZ'.left hxe hye z
 
 omit [Fact p.Prime] in
 /-- **Stage B, leaf 1 (PROVEN): a generic `p`-division offset.**
