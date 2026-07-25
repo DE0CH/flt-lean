@@ -5115,7 +5115,7 @@ which — `F` being algebraically closed — are exactly the point ideals
 *Update (brick 1 proven).* No Dedekind instance turned out to be needed
 for the FACTORIZATION half of that story, and none is stated here (a
 sorried instance would be free-floating).  `section
-DedekindFactorization` below proves, outright, that every nonzero ideal
+DedekindFactorization` above proves, outright, that every nonzero ideal
 of `F[W]` is a product of point ideals at affine points
 (`exists_multiset_ideal_eq_prod_pointIdeal`), by noetherian induction
 (`isNoetherianRing_coordinateRing`) over the two facts that point
