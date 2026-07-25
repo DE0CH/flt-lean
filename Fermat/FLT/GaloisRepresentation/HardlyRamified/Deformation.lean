@@ -5370,67 +5370,242 @@ theorem frameLevels_directed (hodd : Odd ℓ) {ρbar : GaloisRep ℚ k V}
       ∃ J ∈ frameLevels ℓ k hodd ρbar e0, J ≤ J₁ ⊓ J₂ :=
   sorry
 
+/-! #### Inputs to the classification leaf (PROVEN 2026-07-26) -/
+
+/-- **Entry form of `pushforwardFrame`** (PROVEN): `pushforwardFrame ψ` applies `ψ`
+to each matrix entry.
+
+This is `toMatrix'_pushforwardFrame`, which is proven far BELOW this section and
+therefore unusable here; the entry form is a two-line consequence of
+`pushforwardFrame_apply_map`, which is proven above, applied to the basis vector
+`Pi.single j 1`. -/
+lemma entry_pushforwardFrame {B : Type u} [CommRing B] [TopologicalSpace B]
+    [IsTopologicalRing B] {A : Type u} [CommRing A] [TopologicalSpace A]
+    [IsTopologicalRing A] (ψ : B →+* A) (hψ : Continuous ψ)
+    (ρ : FramedGaloisRep ℚ B (Fin 2)) (g : Field.absoluteGaloisGroup ℚ) (i j : Fin 2) :
+    LinearMap.toMatrix' (pushforwardFrame ψ hψ ρ g) i j =
+      ψ (LinearMap.toMatrix' (ρ g) i j) := by
+  have h := pushforwardFrame_apply_map ψ hψ ρ g (Pi.single j 1) i
+  have harg : (fun m => ψ ((Pi.single j (1 : B) : Fin 2 → B) m)) =
+      (Pi.single j (1 : A) : Fin 2 → A) := by
+    funext m
+    by_cases hm : m = j <;> simp [hm]
+  rw [harg] at h
+  rw [LinearMap.toMatrix'_apply, LinearMap.toMatrix'_apply, ← h]
+
+/-- Teichmüller roots are closed under multiplication (PROVEN): if
+`x ^ ℓ ^ n = x` and `y ^ ℓ ^ m = y` then both are fixed by the `ℓ ^ (n * m)`
+power map, hence so is `x * y`. -/
+lemma mul_mem_teichmullerRoots {R : Type*} [CommRing R] {x y : R}
+    (hx : x ∈ teichmullerRoots ℓ R) (hy : y ∈ teichmullerRoots ℓ R) :
+    x * y ∈ teichmullerRoots ℓ R := by
+  obtain ⟨n, hn, hxe⟩ := hx
+  obtain ⟨m, hm, hye⟩ := hy
+  refine ⟨n * m, Nat.mul_pos hn hm, ?_⟩
+  rw [mul_pow, pow_ell_pow_mul hxe m, show n * m = m * n from Nat.mul_comm n m,
+    pow_ell_pow_mul hye n]
+
+/-- `1` is a Teichmüller root (PROVEN). -/
+lemma one_mem_teichmullerRoots {R : Type*} [CommRing R] :
+    (1 : R) ∈ teichmullerRoots ℓ R := ⟨1, one_pos, one_pow _⟩
+
+/-- `0` is a Teichmüller root (PROVEN). -/
+lemma zero_mem_teichmullerRoots {R : Type*} [CommRing R] :
+    (0 : R) ∈ teichmullerRoots ℓ R :=
+  ⟨1, one_pos, zero_pow (by simpa using (Fact.out : ℓ.Prime).pos.ne')⟩
+
+variable (ℓ) in
+/-- **A MULTIPLICATIVE TEICHMÜLLER SECTION OF A FINITE LOCAL RING OVER `k`**
+(PROVEN 2026-07-26) — the `T_x`-half of the classifying map of the
+classification leaf below.
+
+Existence of a Teichmüller root above each `x ∈ k` is
+`exists_mem_teichmullerRoots_map_eq`, whose `IsAdicComplete (𝔪 A) A` hypothesis is
+an INSTANCE here: a finite ring is Artinian, and mathlib supplies adic
+completeness for Artinian local rings. Multiplicativity, `t 0 = 0` and `t 1 = 1`
+are all instances of UNIQUENESS (`eq_of_mem_teichmullerRoots`): both sides of each
+identity are Teichmüller roots with the same residue.
+
+Surjectivity of `πA` is genuinely needed — it is what makes a Teichmüller root
+exist above EVERY element of `k`. -/
+lemma exists_teichmuller_section {A : Type u} [CommRing A] [IsLocalRing A] [Finite A]
+    (πA : A →+* k) (hπ : Function.Surjective πA) :
+    ∃ t : k → A, (∀ x, t x ∈ teichmullerRoots ℓ A) ∧ (∀ x, πA (t x) = x) ∧
+      (∀ x y : k, t x * t y = t (x * y)) ∧ t 0 = 0 ∧ t 1 = 1 := by
+  classical
+  haveI : IsArtinianRing A := inferInstance
+  haveI : IsAdicComplete (IsLocalRing.maximalIdeal A) A := inferInstance
+  have hlA : ((ℓ : ℕ) : A) ∈ IsLocalRing.maximalIdeal A := natCast_mem_maximalIdeal πA hπ
+  have hker : RingHom.ker πA = IsLocalRing.maximalIdeal A :=
+    IsLocalRing.ker_eq_maximalIdeal πA hπ
+  choose t htroot htres using fun x : k => exists_mem_teichmullerRoots_map_eq (ℓ := ℓ) πA hπ x
+  have key : ∀ a b : A, a ∈ teichmullerRoots ℓ A → b ∈ teichmullerRoots ℓ A →
+      πA a = πA b → a = b := by
+    intro a b ha hb hab
+    refine eq_of_mem_teichmullerRoots hlA ha hb ?_
+    rw [← hker, RingHom.mem_ker, map_sub, hab, sub_self]
+  refine ⟨t, htroot, htres, ?_, ?_, ?_⟩
+  · intro x y
+    refine key _ _ (mul_mem_teichmullerRoots (htroot x) (htroot y)) (htroot (x * y)) ?_
+    rw [map_mul, htres, htres, htres]
+  · exact key _ _ (htroot 0) zero_mem_teichmullerRoots (by rw [htres, map_zero])
+  · exact key _ _ (htroot 1) one_mem_teichmullerRoots (by rw [htres, map_one])
+
+/-- **A FINITE RING EMBEDDING IN A LOCAL RING IS LOCAL** (PROVEN 2026-07-26) —
+this is what makes the quotient `P ⧸ ker f` of the classification leaf a legal
+level, `P ⧸ ker f` being the image subring of `f` inside the test object `A`.
+
+The nonunits of `C` are exactly `ι ⁻¹' 𝔪 A`, hence an ideal: if `ι c ∉ 𝔪 A` then
+`ι c` is a unit, so `x ↦ c * x` is injective on `C` and therefore — `C` being
+FINITE — surjective, which produces an inverse of `c` inside `C`. Note that `ι`
+is NOT assumed surjective; this is a descent statement, and finiteness is what
+replaces the usual faithful flatness. -/
+lemma isLocalRing_of_injective_of_finite {C : Type*} [CommRing C] [Finite C] [Nontrivial C]
+    {A : Type*} [CommRing A] [IsLocalRing A] (ι : C →+* A) (hι : Function.Injective ι) :
+    IsLocalRing C := by
+  have hunit : ∀ c : C, ι c ∉ IsLocalRing.maximalIdeal A → IsUnit c := by
+    intro c hc
+    have hu : IsUnit (ι c) := by
+      by_contra hcon
+      exact hc (IsLocalRing.mem_maximalIdeal _ |>.mpr hcon)
+    have hinj : Function.Injective (fun x : C => c * x) := by
+      intro x y hxy
+      refine hι (hu.mul_left_cancel ?_)
+      simpa only [map_mul] using congrArg ι hxy
+    obtain ⟨y, hy⟩ := (Finite.injective_iff_surjective.mp hinj) 1
+    exact isUnit_iff_exists_inv.mpr ⟨y, hy⟩
+  have hnon : ∀ c : C, c ∈ nonunits C → ι c ∈ IsLocalRing.maximalIdeal A := by
+    intro c hc
+    by_contra hcon
+    exact hc (hunit c hcon)
+  refine IsLocalRing.of_nonunits_add fun a b ha hb => ?_
+  intro hcon
+  have h1 : ι (a + b) ∈ IsLocalRing.maximalIdeal A := by
+    rw [map_add]
+    exact Ideal.add_mem _ (hnon a ha) (hnon b hb)
+  exact (IsLocalRing.mem_maximalIdeal _ |>.mp h1) (hcon.map ι)
+
+variable (ℓ k) in
+/-- **SORRY LEAF: `IsHardlyRamified` DESCENDS TO THE IMAGE SUBRING**, cut
+2026-07-26 out of `frameLevels_classification` — and, as its predecessor's
+docstring predicted, the whole of its remaining content.
+
+Everything else about the classification leaf is now PROVEN below: the classifying
+map `f`, the three clauses it satisfies, and three of the four conjuncts of
+`ker f ∈ frameLevels` (`ker f ≤ ker evbar`; `P ⧸ ker f` finite, being isomorphic to
+the subring `range f` of the finite ring `A`; `P ⧸ ker f` local, by
+`isLocalRing_of_injective_of_finite`). What is left is the REPRESENTATION conjunct:
+the framed representation over `P ⧸ ker f ≃+* range f =: B` whose matrices are those
+of `ρA` — they have entries in `B` by construction — must itself be HARDLY RAMIFIED.
+
+WHY THIS IS NOT SUPPLIED BY THE HYPOTHESES. `hbase` pushes a hardly ramified
+representation FORWARD along a ring map; here the arrow points the wrong way, `B ↪ A`.
+`hglue`'s fibre-product clause forces its `B` to surject onto the fibre product,
+which for `B ↪ A` would force `B = A`, and design constraint 1 of the section
+docstring is precisely that `f` is not surjective (the test object may contain
+elements of `𝔪_A` that no matrix entry and no Teichmüller lift reaches).
+
+WHAT DESCENDS EASILY, AND THE ONE CLAUSE THAT DOES NOT:
+
+* the cyclotomic determinant and unramifiedness outside `{2, ℓ}` are identities
+  between matrices with entries in `B`, and `B ↪ A` is injective, so they descend
+  verbatim;
+* flatness at `ℓ`: `B²` is a `Γ_{ℚ_ℓ}`-stable subgroup of `A²` and a closed subgroup
+  scheme of a finite flat group scheme over the DVR `𝒪_v` is again finite flat
+  (schematic closure), so this descends too;
+* TAME AT `2` is the exposed clause. The quotient functional `π : A² → A` may be
+  normalised to a row vector `(1, c)`, and then `c ∈ A` satisfies, for every
+  `g ∈ Γ_{ℚ₂}`, the quadratic `ρ₁₂(g) + c ρ₂₂(g) − c ρ₁₁(g) − c² ρ₂₁(g) = 0` with
+  coefficients in `B`; so `c` is INTEGRAL over `B` but need not lie in `B`. One
+  clause of the datum does descend for free: the character `δ` takes values in
+  `{±1}`, because `δ g ^ 2 = 1` in a local ring in which `2` is a unit (the residue
+  characteristic is `ℓ`, odd) forces `δ g = ±1`, and `±1 ∈ B`.
+
+  A prover should either (i) show the quotient can be chosen over `B` — the residual
+  `c̄` is a stable line for `ρbar`, and if it is a SIMPLE root of one of the
+  quadratics then Hensel over the finite (hence complete) local ring `B` produces a
+  root in `B`, and uniqueness of the Hensel root in `A` forces `c` to BE it; the
+  remaining case is a residually-scalar or residually-unipotent `ρbar|_{Γ₂}` — or
+  (ii) REPORT A CUT DEFECT and redraw the seam, for instance by enlarging
+  `frameLevels` to the ideals `J` whose quotient merely EMBEDS in a level, which is
+  all that the profinite sibling actually consumes. Option (ii) touches
+  `frameLevels`, hence `frameLevels_nonempty` and `frameLevels_directed`, so it must
+  be coordinated rather than done unilaterally.
+
+The full deformation-condition package (`hℓ5`, `hirr`, `hschur`, `hfin`) is passed
+to `frameLevels_classification` and is NOT used by anything proven there, so if any
+of it is needed it is needed HERE; it is deliberately not threaded into this
+statement, because a prover who finds it necessary should say which piece and why,
+and that is information about the cut. -/
+theorem frameLevels_repClause_ker (hodd : Odd ℓ) (ρbar : GaloisRep ℚ k V)
+    (e0 : V ≃ₗ[k] (Fin 2 → k))
+    (A : Type u) [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+    [IsLocalRing A] [Algebra ℤ_[ℓ] A] [Finite A] [DiscreteTopology A]
+    (πA : A →+* k) (hπsurj : Function.Surjective πA)
+    (ρA : FramedGaloisRep ℚ A (Fin 2))
+    (hHRA : IsHardlyRamified hodd (rank_finTwoFun A) ρA)
+    (f : frameRing ℓ k →+* A)
+    (hres : πA.comp f = frameEv ℓ k ρbar e0)
+    (hmat : ∀ g : Field.absoluteGaloisGroup ℚ,
+      (frameMat ℓ k g).map ⇑f = LinearMap.toMatrix' (ρA g)) :
+    ∀ [Finite (frameRing ℓ k ⧸ RingHom.ker f)]
+      [IsLocalRing (frameRing ℓ k ⧸ RingHom.ker f)]
+      [TopologicalSpace (frameRing ℓ k ⧸ RingHom.ker f)]
+      [DiscreteTopology (frameRing ℓ k ⧸ RingHom.ker f)]
+      [IsTopologicalRing (frameRing ℓ k ⧸ RingHom.ker f)],
+      ∃ ρJ : FramedGaloisRep ℚ (frameRing ℓ k ⧸ RingHom.ker f) (Fin 2),
+        (∀ g : Field.absoluteGaloisGroup ℚ, LinearMap.toMatrix' (ρJ g) =
+          (frameMat ℓ k g).map ⇑(Ideal.Quotient.mk (RingHom.ker f))) ∧
+        IsHardlyRamified hodd
+          (rank_finTwoFun (frameRing ℓ k ⧸ RingHom.ker f)) ρJ :=
+  sorry
+
 variable (ℓ k) in
 /-- **CLASSIFICATION: EVERY STRICTLY IDENTIFIED FINITE DISCRETE TEST
-OBJECT RECEIVES A MAP FROM `P` KILLING A LEVEL** (sorry leaf, 2026-07-26
-cut of `exists_levelIdealSystem_of_deformationCondition`; this is the
-deep half of the cut).
+OBJECT RECEIVES A MAP FROM `P` KILLING A LEVEL** (PROVEN 2026-07-26 over the single
+leaf `frameLevels_repClause_ker`, after a FAITHFULNESS REPAIR — read the audit
+below before using this statement).
 
-CONSTRUCTION OF `f` — the easy half, and it is genuinely easy here.
-`frameEval` is exactly the universal property: send `X_{g,i,j}` to the
-`(i,j)` entry of `LinearMap.toMatrix' (ρA g)` and `T x` to the
-Teichmüller lift of `x` in `A`. The matrix family is multiplicative
-because `ρA` is a representation; the Teichmüller family is
-multiplicative because Teichmüller roots of a local ring in which `ℓ` is
-a nonunit are unique (`eq_of_mem_teichmullerRoots`) and their product is
-a Teichmüller root with the right residue. Existence of the lifts is
-`exists_mem_teichmullerRoots_map_eq`, which needs
-`IsAdicComplete (𝔪 A) A` — automatic for a finite local ring, `𝔪 A`
-being nilpotent. `πA.comp f = evbar` and the matrix clause are then
-`RingHom.ext` over the generators, and `f.comp (algebraMap ℤ_[ℓ] _)` is
-`framePolyEval_comp_algebraMap`.
+**FAITHFULNESS AUDIT (2026-07-26): the hypothesis `Function.Surjective πA` was
+MISSING and the statement was FALSE without it.**
 
-THE CRUX — `∃ J ∈ 𝒥, J ≤ ker f`. The natural choice is `J = ker f`,
-for which `P ⧸ J ≃+* range f =: B`, a `ℤ_ℓ`-subalgebra of `A` with the
-SAME residue field `k` (because `πA ∘ f = evbar` is surjective). Its
-membership in `𝒥` is a DESCENT statement: `IsHardlyRamified` for the
-framed representation over `B` whose pushforward along `B ↪ A` is `ρA`.
+`frameEv` is surjective onto `k` (design constraint 1), so the conclusion
+`πA.comp f = frameEv` forces `πA` to be surjective. Nothing among the old
+hypotheses forced that: take `k = 𝔽_{ℓ²}`, let `ρA` be any hardly ramified,
+absolutely irreducible framed representation over the FIELD `A = 𝔽_ℓ` (a legal test
+object: finite, local, discrete, a `ℤ_ℓ`-algebra), let `πA : 𝔽_ℓ ↪ 𝔽_{ℓ²}` be the
+inclusion and let `ρbar` be the pushforward. Then `IsHardlyRamified` for `ρA`,
+`πA.comp (algebraMap ℤ_[ℓ] A) = algebraMap ℤ_[ℓ] k` (both land in the prime field)
+and `pushforwardFrame πA hπA ρA = ρbar.conj e0` all hold, `ρbar` is irreducible and
+satisfies Schur — and yet `πA.comp f` has image inside `𝔽_ℓ ⊊ k`, so it can never
+equal the surjective `frameEv`. The old statement was therefore refutable.
 
-READ THIS BEFORE STARTING — the descent is the whole content, and it is
-NOT supplied by `hbase` (which pushes forward) or by `hglue` (whose
-fibre-product clause forces the map `B → A` to be surjective, which is
-exactly what `f` is not, by design constraint 1 of the section
-docstring). What descends easily:
+This is a TRANSCRIPTION omission rather than a design error: `IsStrictlyUniversalOnFrames`,
+the predicate this whole cut exists to establish, quantifies over test objects with
+`∀ πA : A →+* k, Function.Surjective πA → …`. The hypothesis has been added here, in
+the matching clause of `exists_levelIdealSystem_of_deformationCondition`, and in the
+matching `hclass` hypothesis of `exists_universalFrame_profinite_of_levelIdealSystem`
+(where it can only make that sorry node's job easier, and where its own docstring
+already assumes `A → k` is surjective).
 
-* the cyclotomic determinant and unramifiedness outside `{2, ℓ}` are
-  identities between matrices with entries in `B`, and `B ↪ A` is
-  injective, so they descend verbatim;
-* flatness at `ℓ`: `B²` is a `Γ_{ℚ_ℓ}`-stable subgroup of `A²`, and a
-  closed subgroup scheme of a finite flat group scheme over the DVR
-  `𝒪_v` is again finite flat (schematic closure) — so this descends,
-  though it needs the Raynaud-closure vocabulary of
-  `hasFlatProlongationAt_*`.
+CONSTRUCTION OF `f` — PROVEN. `frameEval` is the universal property: send `X_{g,i,j}`
+to the `(i,j)` entry of `LinearMap.toMatrix' (ρA g)` and `T_x` to the Teichmüller lift
+of `x` in `A` (`exists_teichmuller_section`). The matrix family is multiplicative
+because `ρA` is a representation, the Teichmüller family because Teichmüller roots are
+pinned by their residues. `πA.comp f = evbar` is `RingHom.ext` over the three generating
+families, the matrix one via `entry_pushforwardFrame` and the hypothesis
+`pushforwardFrame πA hπA ρA = ρbar.conj e0`; `f.comp (algebraMap ℤ_[ℓ] _)` is
+`framePolyEval_comp_algebraMap`; the matrix clause is a `simp` over the generators.
 
-What does NOT descend for free is the TAME-AT-`2` clause: the
-`Γ_{ℚ₂}`-stable line over `A` witnessing it is cut out by a row vector
-`v = (1, c)` with `c ∈ A` satisfying, for every `g`, the quadratic
-`ρ₁₂(g) + c ρ₂₂(g) − c ρ₁₁(g) − c² ρ₂₁(g) = 0` over `B`; so `c` is
-integral over `B` but need not lie in `B`. A prover should either
-(i) show the stable line can be chosen over `B` — plausible, since
-`A = B + 𝔪_A` (equal residue fields) and the reduction of `v` is a
-stable line for the residual representation, so a Hensel/uniqueness
-argument may pin it — or (ii) REPORT A CUT DEFECT: if it is false, the
-clause "the image is a level" of the section docstring is wrong and the
-seam has to be redrawn (for instance by enlarging `𝒥` to the ideals `J`
-for which `P ⧸ J` merely EMBEDS in a level, which is all the profinite
-sibling actually consumes).
+THE LEVEL — three of four conjuncts PROVEN with `J = ker f`. `ker f ≤ ker evbar` is
+immediate from `πA.comp f = evbar`; `P ⧸ ker f ≃+* range f` is finite because `A` is;
+and it is LOCAL by `isLocalRing_of_injective_of_finite`. The fourth conjunct — that the
+representation over `P ⧸ ker f` is hardly ramified — is the descent leaf
+`frameLevels_repClause_ker` above, which carries the analysis.
 
-THE FULL DEFORMATION-CONDITION PACKAGE IS PASSED IN DELIBERATELY.
-`hℓ5`, `hirr`, `hschur` and `hfin` are not used by any other leaf of
-this cut (rigidity is unconditional, see `frameRing_rigid`), so if they
-are needed anywhere it is here; they are handed over rather than dropped
-so that the leaf is not artificially starved. If they turn out to be
-unnecessary, say so — that is information about the cut, not a defect. -/
+THE FULL DEFORMATION-CONDITION PACKAGE IS STILL PASSED IN DELIBERATELY.
+`hℓ5`, `hirr`, `hschur` and `hfin` are used by NOTHING in the proof below; as of
+2026-07-26 the only place in this cut that could need them is the descent leaf. -/
 theorem frameLevels_classification (hodd : Odd ℓ) (hℓ5 : 5 ≤ ℓ)
     {ρbar : GaloisRep ℚ k V} (hd : Module.rank k V = 2)
     (hHR : IsHardlyRamified hodd hd ρbar) (hirr : ρbar.IsIrreducible)
@@ -5473,7 +5648,7 @@ theorem frameLevels_classification (hodd : Odd ℓ) (hℓ5 : 5 ≤ ℓ)
       IsHardlyRamified hodd (rank_finTwoFun B) ρ) :
     ∀ (A : Type u) [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
       [IsLocalRing A] [Algebra ℤ_[ℓ] A] [Finite A] [DiscreteTopology A]
-      (πA : A →+* k) (hπA : Continuous πA)
+      (πA : A →+* k) (hπA : Continuous πA) (hπsurj : Function.Surjective πA)
       (ρA : FramedGaloisRep ℚ A (Fin 2)),
       IsHardlyRamified hodd (rank_finTwoFun A) ρA →
       πA.comp (algebraMap ℤ_[ℓ] A) = algebraMap ℤ_[ℓ] k →
@@ -5483,8 +5658,83 @@ theorem frameLevels_classification (hodd : Odd ℓ) (hℓ5 : 5 ≤ ℓ)
         πA.comp f = frameEv ℓ k ρbar e0 ∧
         (∀ g : Field.absoluteGaloisGroup ℚ,
           (frameMat ℓ k g).map ⇑f = LinearMap.toMatrix' (ρA g)) ∧
-        ∃ J ∈ frameLevels ℓ k hodd ρbar e0, J ≤ RingHom.ker f :=
-  sorry
+        ∃ J ∈ frameLevels ℓ k hodd ρbar e0, J ≤ RingHom.ker f := by
+  intro A _ _ _ _ _ _ _ πA hπA hπsurj ρA hHRA halg hpush
+  classical
+  obtain ⟨t, -, htres, htmul, ht0, ht1⟩ := exists_teichmuller_section ℓ πA hπsurj
+  set N : Field.absoluteGaloisGroup ℚ → Matrix (Fin 2) (Fin 2) A :=
+    fun g => LinearMap.toMatrix' (ρA g) with hN
+  have hNmul : ∀ g h, N (g * h) = N g * N h := by
+    intro g h
+    simp only [hN, map_mul, LinearMap.toMatrix'_mul]
+  have hN1 : N 1 = 1 := by simp only [hN, map_one, LinearMap.toMatrix'_one]
+  have hrel := frameRel_le_ker_framePolyEval ℓ k N t hNmul hN1 htmul ht0 ht1
+  set f := frameEval ℓ k N t hrel with hf
+  have hc1 : f.comp (algebraMap ℤ_[ℓ] (frameRing ℓ k)) = algebraMap ℤ_[ℓ] A := by
+    ext r
+    show f (algebraMap ℤ_[ℓ] (frameRing ℓ k) r) = _
+    rw [IsScalarTower.algebraMap_apply ℤ_[ℓ] (framePoly ℓ k) (frameRing ℓ k) r]
+    show f (Ideal.Quotient.mk (frameRel ℓ k) (algebraMap ℤ_[ℓ] (framePoly ℓ k) r)) = _
+    rw [hf, frameEval_mk]
+    exact congrFun (congrArg (fun F : ℤ_[ℓ] →+* A => (F : ℤ_[ℓ] → A))
+      (framePolyEval_comp_algebraMap ℓ k N t)) r
+  have hc3 : ∀ g : Field.absoluteGaloisGroup ℚ,
+      (frameMat ℓ k g).map ⇑f = LinearMap.toMatrix' (ρA g) := by
+    intro g
+    ext i j
+    simp [frameMat, framePolyMat, hf, hN]
+  have hc2 : πA.comp f = frameEv ℓ k ρbar e0 := by
+    have hq : (πA.comp f).comp (Ideal.Quotient.mk (frameRel ℓ k)) =
+        (frameEv ℓ k ρbar e0).comp (Ideal.Quotient.mk (frameRel ℓ k)) := by
+      refine MvPolynomial.ringHom_ext ?_ ?_
+      · intro r
+        have hmk : (Ideal.Quotient.mk (frameRel ℓ k)) (MvPolynomial.C r) =
+            algebraMap ℤ_[ℓ] (frameRing ℓ k) r := rfl
+        simp only [RingHom.coe_comp, Function.comp_apply, hmk]
+        have h₁ : f (algebraMap ℤ_[ℓ] (frameRing ℓ k) r) = algebraMap ℤ_[ℓ] A r :=
+          RingHom.congr_fun hc1 r
+        have h₂ : frameEv ℓ k ρbar e0 (algebraMap ℤ_[ℓ] (frameRing ℓ k) r) =
+            algebraMap ℤ_[ℓ] k r :=
+          RingHom.congr_fun (frameEv_comp_algebraMap ℓ k ρbar e0) r
+        rw [h₁, h₂]
+        exact RingHom.congr_fun halg r
+      · rintro (⟨g, i, j⟩ | x)
+        · have hent := entry_pushforwardFrame πA hπA ρA g i j
+          rw [hpush] at hent
+          simp only [RingHom.coe_comp, Function.comp_apply, hf, frameEval_mk,
+            framePolyEval_X_inl, frameEv_mk_X_inl]
+          exact hent.symm
+        · simp only [RingHom.coe_comp, Function.comp_apply, hf, frameEval_mk,
+            framePolyEval_X_inr, frameEv_mk_X_inr]
+          exact htres x
+    refine RingHom.ext fun z => ?_
+    obtain ⟨w, rfl⟩ := Ideal.Quotient.mk_surjective z
+    exact RingHom.congr_fun hq w
+  refine ⟨f, hc1, hc2, hc3, RingHom.ker f, ⟨?_, ?_, ?_, ?_⟩, le_refl _⟩
+  · intro z hz
+    rw [RingHom.mem_ker] at hz ⊢
+    rw [← hc2, RingHom.comp_apply, hz, map_zero]
+  · haveI : Finite ↥f.range := Subtype.finite
+    exact Finite.of_equiv _ (RingHom.quotientKerEquivRange f).toEquiv.symm
+  · haveI : Finite ↥f.range := Subtype.finite
+    haveI : Finite (frameRing ℓ k ⧸ RingHom.ker f) :=
+      Finite.of_equiv _ (RingHom.quotientKerEquivRange f).toEquiv.symm
+    haveI : Nontrivial (frameRing ℓ k ⧸ RingHom.ker f) := by
+      refine ⟨⟨1, 0, fun h => one_ne_zero (?_ : (1 : A) = 0)⟩⟩
+      have h1 : (1 : frameRing ℓ k) ∈ RingHom.ker f := by
+        rw [← Ideal.Quotient.eq_zero_iff_mem, map_one]
+        exact h
+      rw [RingHom.mem_ker, map_one] at h1
+      exact h1
+    refine isLocalRing_of_injective_of_finite (C := frameRing ℓ k ⧸ RingHom.ker f) (A := A)
+      (Ideal.Quotient.lift (RingHom.ker f) f fun a ha => RingHom.mem_ker.mp ha) ?_
+    intro x y hxy
+    obtain ⟨x, rfl⟩ := Ideal.Quotient.mk_surjective x
+    obtain ⟨y, rfl⟩ := Ideal.Quotient.mk_surjective y
+    rw [Ideal.Quotient.lift_mk, Ideal.Quotient.lift_mk] at hxy
+    rw [Ideal.Quotient.eq, RingHom.mem_ker, map_sub, hxy, sub_self]
+  · intro _ _ _ _ _
+    exact frameLevels_repClause_ker ℓ k hodd ρbar e0 A πA hπsurj ρA hHRA f hc2 hc3
 
 end FrameRing
 
@@ -5614,8 +5864,8 @@ theorem exists_levelIdealSystem_of_deformationCondition (hℓ5 : 5 ≤ ℓ)
           IsHardlyRamified hℓOdd (rank_finTwoFun (P ⧸ J)) ρJ) ∧
       (∀ (A : Type u) [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
         [IsLocalRing A] [Algebra ℤ_[ℓ] A] [Finite A] [DiscreteTopology A]
-        (πA : A →+* k) (hπA : Continuous πA)
-        (ρA : FramedGaloisRep ℚ A (Fin 2)),
+        (πA : A →+* k) (hπA : Continuous πA), Function.Surjective πA →
+        ∀ (ρA : FramedGaloisRep ℚ A (Fin 2)),
         IsHardlyRamified hℓOdd (rank_finTwoFun A) ρA →
         πA.comp (algebraMap ℤ_[ℓ] A) = algebraMap ℤ_[ℓ] k →
         pushforwardFrame πA hπA ρA = ρbar.conj e0 →
@@ -5725,8 +5975,9 @@ theorem exists_universalFrame_profinite_of_levelIdealSystem
         IsHardlyRamified hℓOdd (rank_finTwoFun (P ⧸ J)) ρJ)
     (hclass : ∀ (A : Type u) [CommRing A] [TopologicalSpace A]
       [IsTopologicalRing A] [IsLocalRing A] [Algebra ℤ_[ℓ] A] [Finite A]
-      [DiscreteTopology A] (πA : A →+* k) (hπA : Continuous πA)
-      (ρA : FramedGaloisRep ℚ A (Fin 2)),
+      [DiscreteTopology A] (πA : A →+* k) (hπA : Continuous πA),
+      Function.Surjective πA →
+      ∀ (ρA : FramedGaloisRep ℚ A (Fin 2)),
       IsHardlyRamified hℓOdd (rank_finTwoFun A) ρA →
       πA.comp (algebraMap ℤ_[ℓ] A) = algebraMap ℤ_[ℓ] k →
       pushforwardFrame πA hπA ρA = ρbar.conj e0 →
