@@ -118,6 +118,18 @@ public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 -- Galois enabling hypothesis for Brauer induction) live in these:
 public import Mathlib.NumberTheory.NumberField.InfinitePlace.TotallyRealComplex
 public import Mathlib.FieldTheory.Galois.Basic
+-- the Moret–Bailly cut (2026-07-25, PIN RE-AUDIT): the scheme-theoretic
+-- vocabulary in which Moret–Bailly's existence theorem and the twisted
+-- Hilbert–Blumenthal moduli input are STATED below — `Scheme`, `Spec`,
+-- `Smooth`, `IsSeparated`, `LocallyOfFiniteType`, `QuasiCompact` and
+-- `GeometricallyIrreducible` all exist at this pin (contrary to the
+-- 2026-07-24 audit note, which is corrected in the section docstring),
+-- so these are `public import`s: the names occur in leaf statements.
+public import Mathlib.AlgebraicGeometry.Geometrically.Irreducible
+public import Mathlib.AlgebraicGeometry.Morphisms.Smooth
+public import Mathlib.AlgebraicGeometry.Morphisms.Separated
+public import Mathlib.AlgebraicGeometry.Morphisms.FiniteType
+public import Mathlib.AlgebraicGeometry.Morphisms.QuasiCompact
 -- proof-only imports: the PROVEN 3-adic classification (Family-free —
 -- see the module docstring for why `Lift.lean`/`Family.lean` must NOT
 -- be imported), the shared Family-free deformation development (the
@@ -469,7 +481,9 @@ below separates them at the literature's own joints and makes the seed
 a PROVEN assembly:
 
 * **the geometric joint** (`exists_hilbertBlumenthalPoint_of_five_le`,
-  sorried): Moret–Bailly's existence theorem for global points with
+  now itself PROVEN — SPLIT FURTHER 2026-07-25, see the section
+  docstring "The geometric joint, SPLIT at Moret–Bailly's own
+  statement"): Moret–Bailly's existence theorem for global points with
   prescribed local conditions (*Groupes de Picard et problèmes de
   Skolem II*, Ann. Sci. ÉNS 22 (1989), Thm 1.3 — a geometrically
   irreducible variety over `ℚ` with points over `ℝ` and over `ℚ_q`
@@ -483,7 +497,11 @@ a PROVEN assembly:
   `ℓ`-adic member residually `ρbar|_{G_F}` (the `ℓ`-torsion of `A` IS
   the twist datum) and the `p`-adic member residually DIHEDRAL (the
   `p`-torsion is induced from a character of a quadratic extension,
-  the second moduli condition).
+  the second moduli condition). The two are now SEPARATE leaves —
+  `exists_totallyReal_point_of_geometricallyIrreducible` (Moret–Bailly,
+  pure algebraic geometry, stated in `Scheme`/`Spec` vocabulary) and
+  `exists_twistedHilbertBlumenthalModuli_of_five_le` (the moduli input
+  alone) — glued by PROVEN Galois bookkeeping.
 * **the residual-surjectivity joint** (the same leaf's `hrestr`
   conjunct): Moret–Bailly's `F` is chosen linearly disjoint from the
   splitting field of `ρbar`, so restriction to `G_F` PRESERVES THE
@@ -666,7 +684,287 @@ attribute [instance] HilbertBlumenthalPoint.fieldD
   HilbertBlumenthalPoint.moduleFreeO₀
   HilbertBlumenthalPoint.isModuleTopologyO₀
 
-/-- **The geometric joint of Theorem B** (sorry node — Moret–Bailly
+/-! #### The geometric joint, SPLIT at Moret–Bailly's own statement
+(2026-07-25 — PIN RE-AUDIT, correcting the 2026-07-24 note)
+
+The 2026-07-24 audit recorded that "there is no algebraic-geometry
+vocabulary at this pin to state 'geometrically irreducible variety with
+local points' against", and concluded that the moduli interpretation and
+Moret–Bailly's theorem could not be separated. **That finding is wrong
+at this pin.** A re-audit of `.lake/packages/mathlib` finds:
+
+* `AlgebraicGeometry.Scheme`, `AlgebraicGeometry.Spec`,
+  `AlgebraicGeometry.Spec.map` (`Mathlib/AlgebraicGeometry/Scheme.lean`)
+  — schemes and the `Spec` functor, so `R`-valued points of a
+  `ℚ`-scheme `X` are the morphisms `Spec R ⟶ X` over `Spec ℚ`;
+* `AlgebraicGeometry.GeometricallyIrreducible`
+  (`Mathlib/AlgebraicGeometry/Geometrically/Irreducible.lean`, a
+  morphism property: every base change to a field is irreducible) —
+  exactly the hypothesis of Moret–Bailly's theorem;
+* `AlgebraicGeometry.Smooth` (`Morphisms/Smooth.lean`),
+  `IsSeparated` (`Morphisms/Separated.lean`), `LocallyOfFiniteType`
+  (`Morphisms/FiniteType.lean`), `QuasiCompact`
+  (`Morphisms/QuasiCompact.lean`) — the remaining "smooth variety"
+  hypotheses.
+
+So Moret–Bailly's theorem CAN be stated at this pin, and the cut below
+does it: the geometric leaf splits into
+
+* `exists_totallyReal_point_of_geometricallyIrreducible` — **exactly
+  Moret–Bailly's Theorem 1.3** (*Groupes de Picard et problèmes de
+  Skolem II*, Ann. Sci. ÉNS 22 (1989)), in the form recorded as
+  Proposition 3.1.1 of Barnet-Lamb–Gee–Geraghty–Taylor, *Potential
+  automorphy and change of weight* (= Taylor 2002 Theorem G / Prop.
+  2.1), specialized to `K = K₀ = ℚ`, `S = {∞}`, `L'_∞ = ℝ`,
+  `Ω_∞ = X(ℝ)`: a smooth geometrically irreducible `ℚ`-variety with a
+  real point acquires a point over a totally real field `F`, Galois
+  over `ℚ` and linearly disjoint from any prescribed finite extension.
+  This leaf contains NO arithmetic of `ρbar` at all — it is a pure
+  statement of algebraic geometry, reusable and independently citable.
+* `exists_twistedHilbertBlumenthalModuli_of_five_le` — the **moduli
+  input alone**: the twisted Hilbert–Blumenthal moduli variety attached
+  to `ρbar` and to an auxiliary dihedral mod-`p` level structure
+  (Taylor 2002 §2, via Shimura's theory of Hilbert–Blumenthal moduli)
+  exists as such a variety, and its `F`-points give
+  `HilbertBlumenthalPoint`s.
+* PROVEN glue: `forall_exists_map_eq_of_ker_sup_range_eq_top` turns
+  Moret–Bailly's linear-disjointness conclusion into the target's
+  `hrestr`, and the openness of `ρbar.ker` (needed to feed `ρbar`'s
+  splitting field to Moret–Bailly as the avoidance datum) is PROVEN
+  from discreteness of the module topology on `Module.End k W`.
+
+WHAT IS STILL NOT EXPRESSIBLE, recorded honestly. Moret–Bailly's
+theorem in full carries, at each place `v` of a finite set `S`, a
+*nonempty `v`-adically open* `Ω_v ⊆ X(K_v)` and returns a point inside
+it. There is no topology on the `R`-point set `Spec R ⟶ X` of a scheme
+at this pin, so "open subset of `X(K_v)`" cannot be said. The leaf
+below is therefore the `Ω_v = X(K_v)` case — bare local solvability —
+at `S = {∞}`, which is all the assembly needs: the moduli conditions
+that Taylor arranges by shrinking `Ω_v` are here carried by the
+*variety* (the twisted level structures), not by the local sets.
+Likewise `QuasiProjective` does not exist at this pin; the leaf uses
+the smooth/separated/finite-type/quasi-compact form in which BLGGT
+Prop. 3.1.1 records the theorem ("smooth, geometrically connected
+variety"), and the intended discharge supplies a quasi-projective `X`
+(a Hilbert–Blumenthal Shimura variety), so no soundness is bought on
+credit by the missing word.
+
+CIRCULARITY GUARD (inherited, load-bearing): none of the three
+declarations below may be discharged through `Family.lean`,
+`Lift.lean`, or `Modularity/Interface.lean`. -/
+
+/-- **The structure morphism of a `ℚ`-algebra's spectrum.** `ℚ` lives in
+`Type 0` while the number field produced by Moret–Bailly must land in
+`Type u` (the universe of the `HilbertBlumenthalPoint` interface), so the
+base of the moduli variety is `Spec` of the `Type u` copy `ULift.{u} ℚ`
+and this is the morphism `Spec F ⟶ Spec ℚ` induced by `ℚ → F`. -/
+noncomputable def specRatMap (F : Type u) [CommRing F] [Algebra ℚ F] :
+    AlgebraicGeometry.Spec (CommRingCat.of F) ⟶
+      AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)) :=
+  AlgebraicGeometry.Spec.map (CommRingCat.ofHom
+    ((algebraMap ℚ F).comp (ULift.ringEquiv : ULift.{u} ℚ ≃+* ℚ).toRingHom))
+
+/-- **`X` has an `F`-rational point** (functor of points): a morphism
+`Spec F ⟶ X` over the base `Spec ℚ`, i.e. a section of the structure
+morphism `fX` along `Spec F ⟶ Spec ℚ`. This is the `R`-point notion in
+which Moret–Bailly's local hypothesis (`R = ℝ`) and its global
+conclusion (`R = F`) are both stated. -/
+open CategoryTheory in
+def HasRationalPoint {X : AlgebraicGeometry.Scheme.{u}}
+    (fX : X ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (F : Type u) [CommRing F] [Algebra ℚ F] : Prop :=
+  ∃ x : AlgebraicGeometry.Spec (CommRingCat.of F) ⟶ X, x ≫ fX = specRatMap F
+
+/-- **Image preservation from Galois-theoretic disjointness** (PROVEN
+glue): if the kernel of `ρ` together with the image of restriction
+along `f : K →+* L` generates the whole absolute Galois group of `K`,
+then every value of `ρ` is already a value of `ρ|_{Γ L}`.
+
+This is the formal content of Moret–Bailly's avoidance condition. `F`
+is produced linearly disjoint from the splitting field of `ρbar`, i.e.
+from the fixed field of `ρbar.ker`; in Galois terms that says exactly
+`ρbar.ker ⊔ Γ F = Γ ℚ`, and since `ρbar.ker` is normal the join is the
+set product, so every `g` factors as `n · φ(h)` with `ρ n = 1` — whence
+`ρ g = ρ (φ h) = (ρ.map f) h`. Feeding this to
+`isIrreducible_map_of_range_surjective` also recovers irreducibility
+over `F`, so the whole "avoidance" package of Theorem B is formal once
+Moret–Bailly supplies the disjointness. -/
+theorem forall_exists_map_eq_of_ker_sup_range_eq_top
+    {K : Type*} [Field K] [NumberField K] {L : Type*} [Field L]
+    {A : Type*} [CommRing A] [TopologicalSpace A]
+    {M : Type*} [AddCommGroup M] [Module A M]
+    (ρ : GaloisRep K A M) (f : K →+* L)
+    (hsup : ρ.ker ⊔ (Field.absoluteGaloisGroup.map f).toMonoidHom.range = ⊤)
+    (g : Field.absoluteGaloisGroup K) :
+    ∃ h : Field.absoluteGaloisGroup L, (ρ.map f) h = ρ g := by
+  have hmem : g ∈ ρ.ker ⊔ (Field.absoluteGaloisGroup.map f).toMonoidHom.range := by
+    rw [hsup]; exact Subgroup.mem_top g
+  rw [← SetLike.mem_coe, Subgroup.normal_mul] at hmem
+  obtain ⟨n, hn, y, hy, hg⟩ := hmem
+  obtain ⟨h, rfl⟩ := SetLike.mem_coe.mp hy
+  refine ⟨h, ?_⟩
+  have hn1 : ρ n = 1 := SetLike.mem_coe.mp hn
+  rw [GaloisRep.map_apply, ← hg, map_mul, hn1, one_mul]
+  rfl
+
+/-- **Moret–Bailly's existence theorem for global points with prescribed
+local behaviour** (sorry node — pure algebraic geometry, no arithmetic of
+`ρbar`): let `X` be a smooth, separated, quasi-compact, finite-type,
+geometrically irreducible variety over `ℚ` which has a real point. Then
+for every open subgroup `N ≤ Γ ℚ` there is a number field `F`, TOTALLY
+REAL and GALOIS over `ℚ`, with
+
+* `N ⊔ (Γ F → Γ ℚ).range = ⊤` — the pin-stateable form of "`F` is
+  linearly disjoint from the fixed field of `N`"; and
+* an `F`-rational point of `X`.
+
+This is Moret–Bailly, *Groupes de Picard et problèmes de Skolem II*,
+Ann. Sci. ÉNS 22 (1989), Theorem 1.3, in the form recorded as
+Proposition 3.1.1 of Barnet-Lamb–Gee–Geraghty–Taylor, *Potential
+automorphy and change of weight* (equivalently Taylor 2002 Theorem G /
+Prop. 2.1), specialized to `K = K₀ = ℚ`, `S = {∞}`, `L'_∞ = ℝ` and
+`Ω_∞ = X(ℝ)`. In that statement the conclusion "`L_w ≅ L'_v = ℝ` for
+every `w | ∞`" IS total reality of `F`, and "`L` linearly disjoint from
+`K^(avoid)`" is the displayed join condition once `K^(avoid)` is taken
+to be the fixed field of `N` (for non-normal `N` the statement follows
+from the Galois closure, whose group is contained in `N`).
+
+FORM AUDIT (2026-07-25): the theorem is applied here with `Ω_v` the
+whole local point set, which is legitimate — `X(K_v)` is `v`-adically
+open in itself — so no shrinking refinement is assumed. Quasi-projectivity,
+present in Moret–Bailly's own hypotheses, is not expressible at this pin
+(no `QuasiProjective` morphism property); the hypotheses used are the
+ones under which BLGGT record the result, and the intended discharge
+supplies a quasi-projective `X`. See the section docstring.
+
+CIRCULARITY GUARD: this is a statement of algebraic geometry with no
+Galois-representation hypotheses, so no route through `Family.lean`,
+`Lift.lean` or `Modularity/Interface.lean` could even be relevant; it
+must be proven by the geometric argument (Picard-scheme torsors over an
+incompressible neighbourhood) recorded above. -/
+theorem exists_totallyReal_point_of_geometricallyIrreducible
+    {X : AlgebraicGeometry.Scheme.{u}}
+    (fX : X ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (hsmooth : AlgebraicGeometry.Smooth fX)
+    (hsep : AlgebraicGeometry.IsSeparated fX)
+    (hft : AlgebraicGeometry.LocallyOfFiniteType fX)
+    (hqc : AlgebraicGeometry.QuasiCompact fX)
+    (hgi : AlgebraicGeometry.GeometricallyIrreducible fX)
+    (hreal : HasRationalPoint fX (ULift.{u} ℝ))
+    (N : Subgroup (Field.absoluteGaloisGroup ℚ))
+    (hNopen : IsOpen (N : Set (Field.absoluteGaloisGroup ℚ))) :
+    ∃ (F : Type u) (_ : Field F) (_ : NumberField F)
+      (_ : NumberField.IsTotallyReal F) (_ : IsGalois ℚ F),
+      N ⊔ (Field.absoluteGaloisGroup.map (algebraMap ℚ F)).toMonoidHom.range = ⊤ ∧
+      HasRationalPoint fX F :=
+  sorry
+
+/-- **The twisted Hilbert–Blumenthal moduli variety** (sorry node — the
+MODULI INPUT ALONE, Taylor 2002 §2 via Shimura's theory of
+Hilbert–Blumenthal moduli): for the irreducible hardly ramified residual
+representation `ρbar` at `ℓ ≥ 5` there is a smooth, separated,
+quasi-compact, finite-type, geometrically irreducible variety `X` over
+`ℚ` with a real point, whose `F`-points — over any totally real Galois
+`F/ℚ` to which `ρbar` restricts with the same image — are
+`HilbertBlumenthalPoint`s.
+
+Classically `X` is the moduli variety of Hilbert–Blumenthal abelian
+varieties with real multiplication by a fixed totally real field `D`,
+carrying two twisted level structures: an `ℓ`-level structure twisted so
+that an `F`-point is an abelian variety `A/F` whose `ℓ`-torsion realizes
+`ρbar|_{G_F}` (the FIRST moduli condition of `HilbertBlumenthalPoint`),
+and an auxiliary `p`-level structure imposing that `A[p]` be induced
+from a character of a quadratic extension (the SECOND, dihedral
+condition). Geometric irreducibility of the twist is Taylor 2002 §2; the
+real point is the archimedean local condition, arranged by hand from the
+signature of the Hilbert–Blumenthal family; the `F`-point-to-package
+translation is the moduli interpretation together with the Tate-module
+construction of the two members of the compatible system.
+
+This leaf is what remains of the geometric joint after Moret–Bailly's
+theorem is split off above: it contains no existence-of-global-points
+content whatsoever, only the construction and the moduli
+interpretation of one variety.
+
+SOUNDNESS AUDIT (both ways, 2026-07-25): (i) direct — this is Taylor
+2002 §2; (ii) collapse — the hypothesis package (an irreducible hardly
+ramified mod-`ℓ` representation, `ℓ ≥ 5`) is classically unsatisfiable
+(headline below), so the statement is also vacuously sound.
+
+ROUTE AUDIT: the odd-prime dichotomy is unavailable here — see the
+`Moret–Bailly cut` section docstring above (import cycle AND declaration
+cycle).
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): must be
+discharged by the independent moduli construction — never through
+`Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+theorem exists_twistedHilbertBlumenthalModuli_of_five_le
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat) :
+    ∃ (X : AlgebraicGeometry.Scheme.{u})
+      (fX : X ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ))),
+      AlgebraicGeometry.Smooth fX ∧ AlgebraicGeometry.IsSeparated fX ∧
+      AlgebraicGeometry.LocallyOfFiniteType fX ∧
+      AlgebraicGeometry.QuasiCompact fX ∧
+      AlgebraicGeometry.GeometricallyIrreducible fX ∧
+      HasRationalPoint fX (ULift.{u} ℝ) ∧
+      ∀ (F : Type u) (_ : Field F) (_ : NumberField F)
+        (_ : NumberField.IsTotallyReal F) (_ : IsGalois ℚ F),
+        (∀ g : Field.absoluteGaloisGroup ℚ,
+          ∃ h : Field.absoluteGaloisGroup F,
+            (ρbar.map (algebraMap ℚ F)) h = ρbar g) →
+        HasRationalPoint fX F →
+        Nonempty (HilbertBlumenthalPoint ℓ F (ρbar.map (algebraMap ℚ F))) :=
+  sorry
+
+/-- **The kernel of a residual representation is open** (PROVEN): for a
+finite discrete coefficient field `k` and a finite `k`-module `W`, the
+endomorphism algebra `Module.End k W` is discrete in its module
+topology, so the kernel of the continuous `ρbar` is the preimage of an
+open singleton.
+
+This is the side condition of Moret–Bailly's avoidance datum: the
+subgroup handed to
+`exists_totallyReal_point_of_geometricallyIrreducible` must be open (it
+is the group of the splitting field of `ρbar`, a finite extension of
+`ℚ`), and openness — not merely finite index — is what makes it
+correspond to a field at all. -/
+theorem isOpen_ker_of_finite_discrete
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    (ρbar : GaloisRep ℚ k W) :
+    IsOpen ((ρbar.ker : Subgroup (Field.absoluteGaloisGroup ℚ)) :
+      Set (Field.absoluteGaloisGroup ℚ)) := by
+  letI : TopologicalSpace (Module.End k W) := moduleTopology k (Module.End k W)
+  haveI : DiscreteTopology (Module.End k W) :=
+    discreteTopology_moduleTopology _ _
+  have hcont : Continuous fun g : Field.absoluteGaloisGroup ℚ => ρbar g :=
+    ContinuousMonoidHom.continuous_toFun ρbar
+  have hset : ((ρbar.ker : Subgroup (Field.absoluteGaloisGroup ℚ)) :
+      Set (Field.absoluteGaloisGroup ℚ)) =
+      (fun g : Field.absoluteGaloisGroup ℚ => ρbar g) ⁻¹' {1} := rfl
+  rw [hset]
+  exact hcont.isOpen_preimage _ (isOpen_discrete _)
+
+/-- **The geometric joint of Theorem B** (PROVEN 2026-07-25 as the
+assembly of the Moret–Bailly split above — Moret–Bailly
 1989 + the twisted Hilbert–Blumenthal moduli interpretation, Taylor
 2002 §2): for the irreducible hardly ramified residual representation
 `ρbar` at `ℓ ≥ 5` there is a totally real number field `F`, Galois
@@ -695,13 +993,19 @@ produces the totally real `F` — Galois over `ℚ`, and linearly disjoint
 from any prescribed finite extension, whence `hrestr` — together with
 the desired `F`-point.
 
-PIN AUDIT (2026-07-24): the mathlib pin has NO Moret–Bailly material
-(no `Skolem`/`MoretBailly` declarations, no incompressible-neighborhood
-existence theorem on Picard-scheme torsors) and no number-field weak
-approximation in the required form, and no Hilbert–Blumenthal moduli;
-a further decomposition of THIS leaf would have to begin by building
-weak approximation on the twisted Hilbert modular variety, i.e. by
-building algebraic geometry that the pin does not carry.
+PIN AUDIT (2026-07-24, **SUPERSEDED 2026-07-25**): the earlier note
+recorded that the pin has no algebraic geometry to state Moret–Bailly
+against, so that the geometric existence theorem and the moduli
+interpretation could not be separated. The re-audit in the section
+docstring above shows the pin DOES carry `Scheme`, `Spec`,
+`GeometricallyIrreducible`, `Smooth`, `IsSeparated`,
+`LocallyOfFiniteType` and `QuasiCompact`, and the two inputs are now
+separate leaves. It remains true that the pin has no Moret–Bailly
+MATERIAL (no `Skolem`/`MoretBailly` declarations, no
+incompressible-neighbourhood existence theorem on Picard-scheme
+torsors), no number-field weak approximation in the required form, and
+no Hilbert–Blumenthal moduli — those are precisely the contents of the
+two sorry leaves, not of this node.
 
 SOUNDNESS AUDIT (both ways, 2026-07-24): (i) direct — this is Taylor
 2002 §2 with the Galois refinement of §1, a true nonvacuous theorem
@@ -712,6 +1016,18 @@ below), so the statement is also vacuously sound.
 
 ROUTE AUDIT: the odd-prime dichotomy is unavailable here — see the
 section docstring above (import cycle AND declaration cycle).
+
+ASSEMBLY (2026-07-25, PROVEN): the moduli input
+(`exists_twistedHilbertBlumenthalModuli_of_five_le`) supplies the
+twisted variety `X/ℚ` with its geometric properties, its real point and
+its `F`-point-to-`HilbertBlumenthalPoint` translation; the openness of
+`ρbar.ker` is PROVEN (`isOpen_ker_of_finite_discrete`) and hands the
+splitting field of `ρbar` to Moret–Bailly as the avoidance datum;
+`exists_totallyReal_point_of_geometricallyIrreducible` returns the
+totally real Galois `F` with the disjointness join and the `F`-point;
+`forall_exists_map_eq_of_ker_sup_range_eq_top` converts the join into
+`hrestr`, which is then also what the translation consumes. Nothing
+arithmetic and nothing geometric is asserted here.
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): must be
 proven by the independent Moret–Bailly construction — never through
@@ -741,8 +1057,23 @@ theorem exists_hilbertBlumenthalPoint_of_five_le
       (∀ g : Field.absoluteGaloisGroup ℚ,
         ∃ h : Field.absoluteGaloisGroup F,
           (ρbar.map (algebraMap ℚ F)) h = ρbar g) ∧
-      Nonempty (HilbertBlumenthalPoint ℓ F (ρbar.map (algebraMap ℚ F))) :=
-  sorry
+      Nonempty (HilbertBlumenthalPoint ℓ F (ρbar.map (algebraMap ℚ F))) := by
+  classical
+  -- (i) the moduli input: the twisted Hilbert–Blumenthal variety `X/ℚ`
+  obtain ⟨X, fX, hsm, hsep, hft, hqc, hgi, hreal, htrans⟩ :=
+    exists_twistedHilbertBlumenthalModuli_of_five_le hℓodd hℓ5 hZinj hrank hρ hW
+      hρbar hirr π hπsurj hπ
+  -- (ii) Moret–Bailly, with the splitting field of `ρbar` as avoidance datum
+  obtain ⟨F, hF, hNF, hFtr, hFgal, hsup, hFpt⟩ :=
+    exists_totallyReal_point_of_geometricallyIrreducible fX hsm hsep hft hqc hgi
+      hreal ρbar.ker (isOpen_ker_of_finite_discrete ρbar)
+  -- (iii) the avoidance join IS image preservation
+  have hrestr : ∀ g : Field.absoluteGaloisGroup ℚ,
+      ∃ h : Field.absoluteGaloisGroup F,
+        (ρbar.map (algebraMap ℚ F)) h = ρbar g :=
+    fun g => forall_exists_map_eq_of_ker_sup_range_eq_top ρbar (algebraMap ℚ F) hsup g
+  exact ⟨F, hF, hNF, hFtr, hFgal, hrestr,
+    htrans F hF hNF hFtr hFgal hrestr hFpt⟩
 
 /-- **Irreducibility descends along an image-preserving restriction**
 (PROVEN glue): if every value `ρbar g` of a representation of `Γ K` is
