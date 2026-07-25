@@ -12526,7 +12526,160 @@ theorem WeierstrassCurve.torsionPairSecondLaw_spec (m : ℕ) (h : Polynomial R)
           exact Affine.Point.some_ne_zero hns₃' hsum
 
 set_option backward.isDefEq.respectTransparency false in
-/-- **The formal-locus chart leaf** (sorry node — stage E3d of the
+/-- **The formal-locus chart leaf, MIXED branch** (sorry leaf, 2026-07-25 —
+split off from `exists_torsionPairLaw_formal`): the FIRST point is on the
+formal locus of `𝒪` (the origin, or an affine point of non-integral
+abscissa) and the SECOND is *not* on it in the affine sense — `hQint` says
+every affine value of `Q` has INTEGRAL abscissa, so `Q` is integral-affine
+or the origin.
+
+CONSTRUCTION (Katz–Mazur, the chord law rescaled at infinity).  Write
+`e := 1/h`, `ξ := x/h`, `η := y/h`, `w := x^d/h`, `g_{a,b} := x^a y^b/h`,
+and grade a `P`-monomial `x₁^i y₁^j/h₁^k` by its ORIGIN ORDER
+`2dk − 2i − 3j ≥ 0` (the section's value at the origin is `1` when the
+order is `0`, and `0` when it is positive).  Take
+
+* `C := δ·x₁^{d−1} = w ⊗ e − g_{d−1,0} ⊗ ξ` — origin order `0`, value
+  `(x₁ − x₂)x₁^{d−1}/(h₁h₂)` on an affine pair, degenerating at `P = 0` to
+  `e(Q) = 1/h₂`, which is a UNIT because `Q` has integral abscissa
+  (`hunit`).  Both constituents are split products of GENERATORS
+  (`x^d/h` has weight exactly `2d`, `x^{d−1}/h` weight `2d − 2`), so
+  `C ∈ M` is immediate.
+* `A := n̂·x₁^{2d−2}` and `B := m̂·x₁^{3d−3}`, whose law identities
+  `A = x₃C²`, `B = y₃C³` are then pure algebra from
+  `torsionPairChordLaw_spec`.
+
+WHAT MAKES THIS LEAF WORK (verified 2026-07-25; the obvious shortcut does
+NOT work, so do not spend time on it).  `M` IS an algebra
+(`torsionPairSpan_mul`), so one is tempted to define the rescaled sections
+as PRODUCTS of chord sections with the section `Ω := w ⊗ e` — but `Ω`
+carries a denominator `h₁h₂`, so `δ·Ω` is `δ·x₁^d/(h₁h₂)`, one power of `d`
+too heavy: its value at `P = 0` is `0`, not a unit, and the branch collapses.
+The scaling factor `x₁^{d−1}` is NOT a section, and `C` must be defined by
+the explicit two-term split-product formula above.  Consequently `A` and `B`
+must ALSO be defined by explicit split-product expansions, and their
+numerators only satisfy the generator weight bound `2i + 3j ≤ 2dk` AFTER
+the curve equation `y₁² = x₁³ + a₂x₁² + a₄x₁ + a₆ − a₁x₁y₁ − a₃y₁` is used
+to cancel `x₁³` against `y₁²` inside `n̂`: writing `N` for the multiplied
+secant numerator, the reduction is
+
+  `N = (a₄x₁ + a₆ − a₃y₁) − 2y₁y₂ + y₂² − a₁x₂y₁ − a₁x₁y₂ + a₁x₂y₂`
+      ` + 2a₂x₁x₂ − a₂x₂² + x₁²x₂ + x₁x₂² − x₂³`,
+
+after which `deg_{x₁} N ≤ 2` and every `P`-monomial of `N·x₁^{2d−2}` over
+`(h₁h₂)²` has weight `≤ 4d`, the bound being ATTAINED exactly by
+`x₁^{2d}x₂` — which is why `A(0, Q) = x₂/h₂²`, precisely the value the law
+identity `A = x(P+Q)·C²` demands at `P = 0`.  Each such monomial must then
+be split into a product of two generators (e.g. `x^{2d}/h²= (x^d/h)²`,
+`x^{2d−2}y/h² = (x^d/h)(x^{d−2}y/h)`, legal since `d ≥ 2`); the analogous
+expansion for `B` runs at level `k = 3` with bound `6d`.
+
+UNIT AT `PQ`: at `P = 0` the value is `e(Q) = 1/h₂`, a unit; at an affine
+`P` of non-integral abscissa `v(x₁) > 1` and `v(h₁) = v(x₁)^d` (monic
+dominance, `val_aeval_monic_of_notMem`), so
+`v(C) = v(x₁)^{d−1}·v(x₁ − x₂)/(v(h₁)v(h₂)) = v(x₁)^{d−1}·v(x₁)/v(x₁)^d = 1`
+using `v(x₁ − x₂) = v(x₁)` (as `v(x₂) ≤ 1 < v(x₁)`) — so the DENOMINATOR
+section is the unit throughout this branch. -/
+theorem WeierstrassCurve.exists_torsionPairLaw_formalMixed
+    (m : ℕ) (hm : (m : K) ≠ 0) (h : Polynomial R) (hmon : h.Monic)
+    (hdeg : 2 ≤ h.natDegree)
+    (hunit : ∀ 𝒪 : ValuationSubring Ksep,
+      (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range →
+      ∀ (x y : Ksep) (hns : (E⁄Ksep).toAffine.Nonsingular x y),
+        (m : ℤ) • (Affine.Point.some x y hns : (E⁄Ksep).Point) = 0 →
+        x ∈ 𝒪 → 𝒪.valuation (Polynomial.aeval x h) = 1)
+    (𝒪 : ValuationSubring Ksep)
+    (hcen : (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range)
+    (PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)))
+    (hformal : ¬WeierstrassCurve.IsIntegralAffine K E Ksep 𝒪 ↑PQ.1)
+    (hQint : ∀ (x₂ y₂ : Ksep) (hns₂ : (E⁄Ksep).toAffine.Nonsingular x₂ y₂),
+      (PQ.2 : (E⁄Ksep).Point) = Affine.Point.some x₂ y₂ hns₂ → x₂ ∈ 𝒪) :
+    ∃ A B C : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+        (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep,
+      A ∈ WeierstrassCurve.torsionPairSpan R K E Ksep m h ∧
+      B ∈ WeierstrassCurve.torsionPairSpan R K E Ksep m h ∧
+      C ∈ WeierstrassCurve.torsionPairSpan R K E Ksep m h ∧
+      (∀ (PQ' : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+          (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)))
+        (x₃ y₃ : Ksep) (hns₃ : (E⁄Ksep).toAffine.Nonsingular x₃ y₃),
+        ((PQ'.1 + PQ'.2 : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) :
+            (E⁄Ksep).Point) = Affine.Point.some x₃ y₃ hns₃ →
+        A PQ' = x₃ * C PQ' ^ 2 ∧ B PQ' = y₃ * C PQ' ^ 3) ∧
+      (∀ PQ' : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+          (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)),
+        ((PQ'.1 + PQ'.2 : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) :
+          (E⁄Ksep).Point) = Affine.Point.zero → C PQ' = 0) ∧
+      (𝒪.valuation (A PQ) = 1 ∨ 𝒪.valuation (C PQ) = 1) := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **The formal-locus chart leaf, BOTH-FORMAL branch** (sorry leaf,
+2026-07-25 — split off from `exists_torsionPairLaw_formal`): both points are
+affine with NON-INTEGRAL abscissa, i.e. both lie in the kernel of reduction.
+
+CONSTRUCTION (Katz–Mazur; Silverman *AEC* IV.1 for the formal group).  Take
+
+  `C := g_{d−2,1} ⊗ w + w ⊗ g_{d−2,1}`
+
+(origin orders `(1, 0)` and `(0, 1)`), the section-algebra avatar of the
+formal-group parameter `s₃ = s₁ + s₂ + …` for `s = x/y`: on an affine pair
+its value is `(x₁^{d−2}y₁·x₂^d + x₁^d·x₂^{d−2}y₂)/(h₁h₂)`, whose valuation
+is `v(s₁) ⊔ v(s₂)`-controlled exactly as `v(s₃) = min(v(s₁), v(s₂))`.  Both
+constituents are generators: `x^{d−2}y/h` has weight `2(d−2) + 3 = 2d − 1
+≤ 2d` (legal for `d ≥ 2`) and `x^d/h` weight `2d`.
+
+The abscissa numerator `A` must then be `x(P+Q)·C²` and the ordinate
+numerator `B` be `y(P+Q)·C³`, obtained from the chord sections by the
+matching rescaling, and the UNIT statement is `v(A) = 1`: since `P + Q` is
+again in the kernel of reduction (the kernel is a SUBGROUP — pointwise from
+`val_ordinate_sq_of_abscissa_notMem` and `kernel_add_abscissa_notMem`, both
+PROVEN in this file), `v(x₃)` is exactly the value that makes
+`v(A) = v(x₃)·v(C)² = 1`.
+
+No indicator idempotents are available (for `μ_p` over `ℤ_p` the origin
+idempotent is not integral), so the unit must come from these global
+identities; and the weight-bound discipline of the MIXED branch applies
+verbatim here as well. -/
+theorem WeierstrassCurve.exists_torsionPairLaw_formalBoth
+    (m : ℕ) (hm : (m : K) ≠ 0) (h : Polynomial R) (hmon : h.Monic)
+    (hdeg : 2 ≤ h.natDegree)
+    (hunit : ∀ 𝒪 : ValuationSubring Ksep,
+      (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range →
+      ∀ (x y : Ksep) (hns : (E⁄Ksep).toAffine.Nonsingular x y),
+        (m : ℤ) • (Affine.Point.some x y hns : (E⁄Ksep).Point) = 0 →
+        x ∈ 𝒪 → 𝒪.valuation (Polynomial.aeval x h) = 1)
+    (𝒪 : ValuationSubring Ksep)
+    (hcen : (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range)
+    (PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)))
+    (hformal : ¬WeierstrassCurve.IsIntegralAffine K E Ksep 𝒪 ↑PQ.1)
+    (x₂ y₂ : Ksep) (hns₂ : (E⁄Ksep).toAffine.Nonsingular x₂ y₂)
+    (hQ : (PQ.2 : (E⁄Ksep).Point) = Affine.Point.some x₂ y₂ hns₂)
+    (hx₂ : x₂ ∉ 𝒪) :
+    ∃ A B C : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+        (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep,
+      A ∈ WeierstrassCurve.torsionPairSpan R K E Ksep m h ∧
+      B ∈ WeierstrassCurve.torsionPairSpan R K E Ksep m h ∧
+      C ∈ WeierstrassCurve.torsionPairSpan R K E Ksep m h ∧
+      (∀ (PQ' : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+          (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)))
+        (x₃ y₃ : Ksep) (hns₃ : (E⁄Ksep).toAffine.Nonsingular x₃ y₃),
+        ((PQ'.1 + PQ'.2 : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) :
+            (E⁄Ksep).Point) = Affine.Point.some x₃ y₃ hns₃ →
+        A PQ' = x₃ * C PQ' ^ 2 ∧ B PQ' = y₃ * C PQ' ^ 3) ∧
+      (∀ PQ' : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+          (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)),
+        ((PQ'.1 + PQ'.2 : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) :
+          (E⁄Ksep).Point) = Affine.Point.zero → C PQ' = 0) ∧
+      (𝒪.valuation (A PQ) = 1 ∨ 𝒪.valuation (C PQ) = 1) := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **The formal-locus chart leaf** (DECOMPOSED 2026-07-25 into the two
+branches `exists_torsionPairLaw_formalMixed` and
+`exists_torsionPairLaw_formalBoth`, whose case split — is the second point
+affine with NON-integral abscissa, or not — is proven here; stage E3d of the
 Katz–Mazur chart analysis): an addition law in the section algebra whose
 numerator or denominator section is a valuation UNIT at a pair whose FIRST
 point is off the integral-affine locus (the origin, or an affine point of
@@ -12592,7 +12745,15 @@ theorem WeierstrassCurve.exists_torsionPairLaw_formal
         ((PQ'.1 + PQ'.2 : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) :
           (E⁄Ksep).Point) = Affine.Point.zero → C PQ' = 0) ∧
       (𝒪.valuation (A PQ) = 1 ∨ 𝒪.valuation (C PQ) = 1) := by
-  sorry
+  classical
+  by_cases hQint : ∀ (x₂ y₂ : Ksep) (hns₂ : (E⁄Ksep).toAffine.Nonsingular x₂ y₂),
+      (PQ.2 : (E⁄Ksep).Point) = Affine.Point.some x₂ y₂ hns₂ → x₂ ∈ 𝒪
+  · exact WeierstrassCurve.exists_torsionPairLaw_formalMixed R K E Ksep m hm h
+      hmon hdeg hunit 𝒪 hcen PQ hformal hQint
+  · push Not at hQint
+    obtain ⟨x₂, y₂, hns₂, hQ, hx₂⟩ := hQint
+    exact WeierstrassCurve.exists_torsionPairLaw_formalBoth R K E Ksep m hm h
+      hmon hdeg hunit 𝒪 hcen PQ hformal x₂ y₂ hns₂ hQ hx₂
 
 set_option backward.isDefEq.respectTransparency false in
 set_option maxHeartbeats 1600000 in
