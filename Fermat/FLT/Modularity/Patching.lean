@@ -2415,15 +2415,28 @@ supplied by `R ⧸ ker π ≅ k`).  The set is thus contained in the range
 of precomposition with `R ↠ R ⧸ 𝔪_R ^ c`, a map out of a finite type.
 
 MERGE NOTE (2026-07-25): the pro-finite limit upgrade below was cut
-along two different axes concurrently, and the resolution kept the
-FINER cut — one leaf (`exists_classifyingHom_of_finite_quotient`)
-rather than three.  This brick belongs to the other, coarser cut, so it
-is PROVEN but currently UNCONSUMED, as is its input
-`finite_quotient_maximalIdeal_pow`; both are retained rather than
-deleted.  `finite_quotient_maximalIdeal_pow` is a one-line consequence
-of mathlib's `Ideal.finite_quotient_pow` (see the proof of
-`finite_subtype_ringHom_local` above, which discharges exactly that
-step that way), so it is a free retirement for whoever sweeps this. -/
+along two different axes concurrently, and the merge kept the FINER
+cut — one leaf (`exists_classifyingHom_of_finite_quotient`) rather than
+three.  This brick belongs to the other, coarser cut, so it is PROVEN
+but currently UNCONSUMED; it is retained rather than deleted, as is
+everything else that cut left behind:
+
+* `finite_quotient_maximalIdeal_pow` — the sorried input of this brick,
+  and a one-line consequence of mathlib's `Ideal.finite_quotient_pow`
+  (see `finite_subtype_ringHom_local` above, which discharges exactly
+  that step that way).  A free retirement for whoever sweeps this.
+* the `padicIdeal` cluster — `padicIdeal`, `isAdicComplete_padicIdeal`,
+  `padicIdeal_ne_top`, `padicIdeal_pow_ne_top` and
+  `finite_quotient_padicIdeal_pow`, all PROVEN.
+
+Nothing is lost mathematically: `padicIdeal p A` is by definition the
+same ideal `𝔪_{ℤ_p} · A` that the kept assembly sets up inline as `Jp`,
+so the two developments run along the SAME filtration and the cluster
+is a named duplicate of what the kept proof derives on the spot.  The
+cheapest way to un-float it is to have the assembly `set Jp :=
+padicIdeal p D.A` and take its completeness and level-finiteness from
+`isAdicComplete_padicIdeal` / `finite_quotient_padicIdeal_pow`; that is
+a rewrite of a PROVEN assembly, so it is a tidying job, not a leaf. -/
 theorem finite_setOf_ringHom_comp_eq.{uR, uK, uB} {R : Type uR} [CommRing R]
     [IsLocalRing R] [IsNoetherianRing R]
     {k : Type uK} [Field k] [Finite k] {π : R →+* k}
