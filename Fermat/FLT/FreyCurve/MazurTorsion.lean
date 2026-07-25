@@ -179,15 +179,22 @@ genuinely modular-curve-theoretic inputs:
   curves `X_1(2,10)` and `X_1(2,12)` have genus ≥ 1 and no
   non-cuspidal rational points; part of the fifteen-groups list of
   Mazur 1977).
-* `not_two_torsion_and_five_point`, `not_two_four_torsion_and_three_point`
-  (sorry nodes — IRREDUCIBLE literature citations, audited 2026-07-25):
-  the same exclusions in their literature form — full rational
-  `2`-torsion plus a point of order `5`, resp. a rational
-  `ℤ/2 × ℤ/4` plus a point of order `3` (Kenku; Mazur 1977, Thm 8).
-  Both are boundary cases of the fifteen-groups list (`ℤ/2 × ℤ/10`,
-  `ℤ/2 × ℤ/12`), so neither follows from any other node here; their
-  docstrings record why the elementary halving machinery and the
+* `not_two_torsion_and_five_point` (sorry node — IRREDUCIBLE literature
+  citation, audited 2026-07-25): full rational `2`-torsion plus a point
+  of order `5` (`X_1(2,10)`; Mazur 1977, Thm 8). A boundary case of the
+  fifteen-groups list, so it follows from no other node here; its
+  docstring records why the elementary halving machinery and the
   reduction/Hasse bound both fall short.
+* `not_two_four_torsion_and_three_point` (PROVEN 2026-07-25 modulo one
+  quartic): a rational `ℤ/2 × ℤ/4` plus a point of order `3`
+  (`X_1(2,12)`; Kenku, Mazur 1977 Thm 8). Its own IRREDUCIBLE audit was
+  refuted the same day: halving one `2`-torsion point makes BOTH
+  differences of abscissae squares, not just their product
+  (`MazurTwoTwelve.halving_squares`), and the order-`3` point is an
+  inflection, so the level structure cuts down by elementary algebra to
+  the plane quartic leaf `MazurTwoTwelve.quartic_only_trivial`
+  (`v² = (j²−1)(j²+3)` has no rational point with `v ≠ 0` — the
+  conductor-`24` rank-`0` curve `24a`).
 * `not_two_cube_torsion` (PROVEN): no rational `(ℤ/2)³` — the geometric
   `2`-torsion has only `2² = 4` points.
 * `AddCommGroup.exists_rank_le_two_decomposition` (PROVEN — pure
@@ -3318,39 +3325,510 @@ theorem WeierstrassCurve.not_two_ten_torsion (E : WeierstrassCurve ℚ) [E.IsEll
   exact E.not_two_torsion_and_five_point
     (φ.comp ((AddMonoidHom.id (ZMod 2)).prodMap g)) (hφ.comp hgg) _ hQ
 
+/-! ### `X_1(2,12)`: the `ℤ/2 × ℤ/12` exclusion, cut down to one quartic
+
+The old `IRREDUCIBLE` audit on `not_two_four_torsion_and_three_point`
+(2026-07-25) claimed the node needs `X_1(2,12)` as an arithmetic curve.
+That was too pessimistic: `X_1(2,12)` admits an ELEMENTARY plane model,
+reached from the halving machinery already in this file, and the whole
+geometric-to-arithmetic passage is proven below. What is left is exactly
+one Diophantine statement over `ℚ` — `MazurTwoTwelve.quartic_only_trivial`
+— namely that the genus-`1` quartic `v² = (j² − 1)(j² + 3)` has no
+rational point with `v ≠ 0`.
+
+The route (2026-07-25), each step proven below:
+
+1. `ψ` gives full rational `2`-torsion `T = ψ(0,2)`, `U = ψ(1,0)`,
+   `V = ψ(1,2)` with `T` halved by `P = ψ(0,1)`. The abscissae `θ_T`,
+   `θ_U`, `θ_V` are the roots of the `2`-division cubic (`cubic_vieta`).
+2. The halving makes BOTH `θ_T − θ_U` and `θ_T − θ_V` rational squares,
+   `m²` and `n²` (`MazurTwoTwelve.halving_squares` — a strengthening of
+   `MazurFourTorsion.halving_square`, which only gives the PRODUCT; the
+   extra content is the classical identity
+   `x(2P) − e₂ = ((x − e₂)² − (e₂ − e₁)(e₂ − e₃))²/(2y + a₁x + a₃)²`).
+   This is where the old audit stopped: it is not one square condition
+   but two, and together with the order-`3` point they suffice.
+3. A rational point `Q` of order `3` is an inflection: `Q + Q = -Q`, so
+   its tangent slope `l` satisfies `l² + a₁l − a₂ − 2x = x`
+   (`MazurTwoTwelve.exists_order_three_coords`). Writing `μ = l + a₁/2`,
+   `w = 2y + a₁x + a₃` and `X = x_Q − θ_T`, the three identities
+   `w² = 4X(X + m²)(X + n²)`, `μ² = 3X + m² + n²` and
+   `μw = 3X² + 2(m² + n²)X + m²n²` give, by `(μw)² = μ²w²`, the
+   `3`-division equation `3X⁴ + 4(m²+n²)X³ + 6m²n²X² − m⁴n⁴ = 0`.
+4. `MazurTwoTwelve.no_rational_solution` scales `n` away and solves that
+   quadratic in `m²`: its discriminant is `16Z³(Z+1)³`, so `S² = Z² + Z`
+   is a rational conic, parametrised by `k` via `4kZ = (k−1)²`,
+   `4kS = 1 − k²`. Then `16k³M² = −(k−1)³(3k+1)` and
+   `16k³(Z + M²) = (k² − 1)²`, while `Z + M²` is a square because
+   `w² = 4Z(Z+1)(Z+M²) = 4S²(Z+M²)`. Hence `k = j²`, and eliminating
+   gives `(4jM/(j²−1))² = (J² − 1)(J² + 3)` with `J = 1/j`. The only
+   rational points have `4jM = 0`, i.e. `M = 0` — the cusp.
+
+`quartic_only_trivial` is the rank-`0` content: the smooth model of
+`v² = j⁴ + 2j² − 3` is the conductor-`24` curve `24a` (`ellfromeqn` gives
+`[0,2,0,12,24]`), of Mordell–Weil rank `0` with torsion `ℤ/4`. Its four
+rational points are the two at infinity and `(±1, 0)`, so every affine
+one has `v = 0`. Equivalently, via `u + 1 = t + 1/t` on `u = j²`, it is
+`t(t² − t + 1) = □`, i.e. `Y² = X³ − X² + X` — also conductor `24`,
+rank `0`, torsion `ℤ/4` generated by `(1,1)`. The elementary descent:
+`X = d²/e²` with `gcd(d,e) = 1` forces `d⁴ − d²e² + e⁴ = f²`, whose only
+coprime solutions are `d = 0`, `e = 0` or `d² = e²` (equivalently the
+concordant system `g² + h² = □`, `g² + 4h² = □` with `g = d² − e²`,
+`h = de`; the case `d, e` both odd descends via
+`(u,v)` with `h = u² − v²`, `g = ±2uv` to
+`u⁴ − u²v² + v⁴ = ((d²+e²)/2)²`, and `f² − ((d²+e²)/2)² = 3(d²−e²)²/4`,
+so the descent is strict unless `d² = e²`).
+-/
+
+/-- **Each halving difference is a square** (PROVEN 2026-07-25 — pure
+field algebra, strengthening `MazurFourTorsion.halving_square`): under
+the hypotheses of `halving_square` (a rational point `(x, y)` doubling
+onto the `2`-torsion abscissa `T`, with `T`, `U`, `V` the roots of the
+`2`-division cubic and pairwise distinct), BOTH `T − U` and `T − V` are
+rational squares, not merely their product.
+
+The extra ingredient over `halving_square` is the classical identity
+`x(2P) − e₂ = ((x − e₂)² − (e₂ − e₁)(e₂ − e₃))² / (2y + a₁x + a₃)²`
+evaluated at `e₁ = T`: since `x(2P) = T`, this exhibits `T − U` as a
+square. The `linear_combination` certificate is `(T − U)·hw₂` plus
+`(x² − 2Tx + T(U+V) − UV)` times the `halving_square` conclusion, the
+polynomial cofactor of `(x − T)² − (T − U)(T − V)` in
+`4(T − U)(x − T)(x − U)(x − V) − ((x − U)² − (U − T)(U − V))²`.
+
+Nonvanishing of `w = 2y + a₁x + a₃` is forced: `w = 0` would put `x` at
+one of `T`, `U`, `V`, and each case contradicts the distinctness of the
+abscissae through `halving_square`. -/
+lemma MazurTwoTwelve.halving_squares {a₁ a₂ a₃ a₄ a₆ x y l T U V : ℚ}
+    (heq : y ^ 2 + a₁ * x * y + a₃ * y = x ^ 3 + a₂ * x ^ 2 + a₄ * x + a₆)
+    (hB : a₁ ^ 2 + 4 * a₂ = -4 * (T + U + V))
+    (hC : 2 * a₁ * a₃ + 4 * a₄ = 4 * (T * U + T * V + U * V))
+    (hD : a₃ ^ 2 + 4 * a₆ = -4 * (T * U * V))
+    (hl : l * (2 * y + a₁ * x + a₃) = 3 * x ^ 2 + 2 * a₂ * x + a₄ - a₁ * y)
+    (hx : l ^ 2 + a₁ * l - a₂ - x - x = T)
+    (hTU : T ≠ U) (hTV : T ≠ V) (hUV : U ≠ V) :
+    ∃ m n : ℚ, T - U = m ^ 2 ∧ T - V = n ^ 2 := by
+  have hw2 : (2 * y + a₁ * x + a₃) ^ 2 = 4 * ((x - T) * (x - U) * (x - V)) := by
+    linear_combination 4 * heq + x ^ 2 * hB + x * hC + hD
+  have hN : (T - U) * (T - V) = (x - T) ^ 2 :=
+    MazurFourTorsion.halving_square heq hB hC hD hl hx
+  have hw0 : 2 * y + a₁ * x + a₃ ≠ 0 := by
+    intro h
+    rw [h] at hw2
+    have h3 : (x - T) * (x - U) * (x - V) = 0 := by
+      linear_combination (-1 / 4 : ℚ) * hw2
+    rcases mul_eq_zero.mp h3 with h4 | h4
+    · rcases mul_eq_zero.mp h4 with h5 | h5
+      · have h6 : (T - U) * (T - V) = 0 := by
+          linear_combination hN + (x - T) * h5
+        rcases mul_eq_zero.mp h6 with h7 | h7
+        · exact hTU (sub_eq_zero.mp h7)
+        · exact hTV (sub_eq_zero.mp h7)
+      · have h6 : (T - U) * (U - V) = 0 := by
+          linear_combination hN + (x + U - 2 * T) * h5
+        rcases mul_eq_zero.mp h6 with h7 | h7
+        · exact hTU (sub_eq_zero.mp h7)
+        · exact hUV (sub_eq_zero.mp h7)
+    · have h6 : (T - V) * (V - U) = 0 := by
+        linear_combination hN + (x + V - 2 * T) * h4
+      rcases mul_eq_zero.mp h6 with h7 | h7
+      · exact hTV (sub_eq_zero.mp h7)
+      · exact hUV (sub_eq_zero.mp h7).symm
+  have hN' : (T - V) * (T - U) = (x - T) ^ 2 := by linear_combination hN
+  refine ⟨((x - U) ^ 2 - (U - T) * (U - V)) / (2 * y + a₁ * x + a₃),
+    ((x - V) ^ 2 - (V - T) * (V - U)) / (2 * y + a₁ * x + a₃), ?_, ?_⟩
+  · rw [div_pow, eq_div_iff (pow_ne_zero 2 hw0)]
+    linear_combination (T - U) * hw2 +
+      (x ^ 2 - 2 * T * x + T * (U + V) - U * V) * hN
+  · rw [div_pow, eq_div_iff (pow_ne_zero 2 hw0)]
+    linear_combination (T - V) * hw2 +
+      (x ^ 2 - 2 * T * x + T * (V + U) - V * U) * hN'
+
+/-- **Coordinates of a nonzero `2`-torsion point** (PROVEN 2026-07-25):
+a nonzero point killed by `2` is affine, and its ordinate is the fixed
+point of `negY`. This is the part of
+`MazurFourTorsion.exists_halving_coords` that does not need a halving,
+extracted so the two UNHALVED `2`-torsion points of a `ℤ/2 × ℤ/4`
+structure can be given abscissae as well. -/
+lemma MazurTwoTwelve.exists_two_torsion_coords {W : WeierstrassCurve.Affine ℚ}
+    (T : W.Point) (hT2 : T + T = 0) (hT0 : T ≠ 0) :
+    ∃ θ u : ℚ, (∃ hns : W.Nonsingular θ u, T = Point.some θ u hns) ∧
+      W.Equation θ u ∧ u = W.negY θ u := by
+  rcases T with _ | ⟨θ, u, hns⟩
+  · exact absurd rfl hT0
+  · have hneg : -Point.some θ u hns = Point.some θ u hns :=
+      neg_eq_of_add_eq_zero_left hT2
+    rw [Point.neg_some] at hneg
+    have hu : W.negY θ u = u := (Point.some.inj hneg).2
+    exact ⟨θ, u, ⟨hns, rfl⟩, hns.1, hu.symm⟩
+
+/-- **Coordinates of a point of order `3`** (PROVEN 2026-07-25): a
+rational point of order `3` is an inflection point, `Q + Q = -Q`. It is
+affine and not `2`-torsion, so the tangent-line doubling formula applies
+and its output abscissa is `x` itself: `l² + a₁l − a₂ − 2x = x`. The
+`3`-division polynomial is exactly the resultant of that with the
+cleared slope equation, but the inflection form is what the algebra
+downstream wants, since it keeps `l` as a rational witness. -/
+lemma MazurTwoTwelve.exists_order_three_coords {W : WeierstrassCurve.Affine ℚ}
+    (Q : W.Point) (hQ0 : Q ≠ 0) (hQ3 : Q + Q = -Q) :
+    ∃ x y l : ℚ, W.Equation x y ∧ 2 * y + W.a₁ * x + W.a₃ ≠ 0 ∧
+      l * (2 * y + W.a₁ * x + W.a₃) =
+        3 * x ^ 2 + 2 * W.a₂ * x + W.a₄ - W.a₁ * y ∧
+      l ^ 2 + W.a₁ * l - W.a₂ - x - x = x := by
+  rcases Q with _ | ⟨x, y, hns⟩
+  · exact absurd rfl hQ0
+  · have hy : y ≠ W.negY x y := by
+      intro h
+      rw [Point.add_self_of_Y_eq h] at hQ3
+      exact hQ0 (neg_eq_zero.mp hQ3.symm)
+    have hsub : y - W.negY x y = 2 * y + W.a₁ * x + W.a₃ := by
+      rw [negY]; ring
+    have hw0 : 2 * y + W.a₁ * x + W.a₃ ≠ 0 := by
+      rw [← hsub]; exact sub_ne_zero.mpr hy
+    have hadd := Point.add_self_of_Y_ne (h₁ := hns) hy
+    rw [hadd, Point.neg_some] at hQ3
+    have hθ : W.addX x x (W.slope x x y y) = x := (Point.some.inj hQ3).1
+    have hlm : W.slope x x y y * (2 * y + W.a₁ * x + W.a₃) =
+        3 * x ^ 2 + 2 * W.a₂ * x + W.a₄ - W.a₁ * y := by
+      rw [← hsub, slope_of_Y_ne rfl hy,
+        div_mul_cancel₀ _ (sub_ne_zero.mpr hy)]
+    simp only [addX] at hθ
+    exact ⟨x, y, W.slope x x y y, hns.1, hw0, hlm, hθ⟩
+
+/-- **The rational points of `X_1(2,12)`, in plane-quartic form**
+(sorry node, cut 2026-07-25 out of
+`not_two_four_torsion_and_three_point`): the genus-`1` quartic
+`v² = (j² − 1)(j² + 3) = j⁴ + 2j² − 3` has no rational point with
+`v ≠ 0`.
+
+This is the ONLY arithmetic input left in the `ℤ/2 × ℤ/12` exclusion;
+everything between it and the group-theoretic statement is proven in
+this file. It is a genuine rank-`0` Mordell–Weil fact, not formal:
+`ellfromeqn` sends the quartic to `[0, 2, 0, 12, 24]`, the conductor-`24`
+curve `24a`, of rank `0` with torsion `ℤ/4`. Its four rational points are
+the two at infinity (the leading coefficient `1` is a square) and
+`(±1, 0)`, so every AFFINE rational point has `v = 0` — which is the
+statement.
+
+Equivalent forms, in case one is easier to formalise:
+
+* Substituting `u = j²` and `u + 1 = t + 1/t` turns it into
+  `t(t² − t + 1) = □`, i.e. the Weierstrass curve `Y² = X³ − X² + X`
+  (conductor `24`, rank `0`, torsion `ℤ/4` generated by `(1,1)`, so
+  `E(ℚ) = {O, (0,0), (1,±1)}`).
+* Writing `X = d²/e²` in lowest terms on that curve — the factor `X` is
+  coprime to `X² − X + 1`, so each is a square — reduces it to the
+  classical quartic `d⁴ − d²e² + e⁴ = f²` with `gcd(d, e) = 1`, whose
+  only solutions have `d = 0`, `e = 0` or `d² = e²`.
+* Setting `g = d² − e²`, `h = de` turns that into the concordant-forms
+  system `g² + h² = □` and `g² + 4h² = □` with `gcd(g, h) = 1`, forcing
+  `gh = 0`.
+
+Descent sketch for the last form, where a Lean proof would go: `g, h`
+cannot both be odd (`g² + h² ≡ 2 mod 4`). If `d, e` are both odd then
+`h` is odd, `g` even; the primitive triple `g² + h² = f²` gives
+`h = u² − v²`, `g = ±2uv`, `f = u² + v²`, and then
+`g² + 4h² = (d² + e²)²` becomes `u⁴ − u²v² + v⁴ = ((d² + e²)/2)²`, a new
+solution with `f² − ((d² + e²)/2)² = 3(d² − e²)²/4 > 0` unless
+`d² = e²` — a strict descent. The opposite-parity case still needs a
+descent step (the obvious one returns `{u, v} = {d, e}`); Mordell,
+*Diophantine Equations*, treats `x⁴ − x²y² + y⁴ = z²` in full. -/
+theorem MazurTwoTwelve.quartic_only_trivial (j v : ℚ)
+    (h : v ^ 2 = (j ^ 2 - 1) * (j ^ 2 + 3)) :
+    v = 0 :=
+  sorry
+
+/-- **The normalised `X_1(2,12)` system has no rational solution**
+(PROVEN 2026-07-25 from `quartic_only_trivial`): there is no rational
+`(M, Z, W)` with `M ≠ 0`, `W ≠ 0`,
+`3Z⁴ + 4(M² + 1)Z³ + 6M²Z² − M⁴ = 0` and
+`W² = 4Z(Z + M²)(Z + 1)`.
+
+`Z` is the abscissa of the order-`3` point, translated so that the
+halved `2`-torsion abscissa is `0` and scaled so that the second square
+difference is `1`; `M²` is the first square difference; `W` is
+`2y + a₁x + a₃` at the order-`3` point. Reading the quartic as a
+quadratic in `M²`, its discriminant is `16Z³(Z + 1)³`, so
+`S = (2M² − 4Z³ − 6Z²)/(4Z(Z+1))` satisfies `S² = Z² + Z` — a conic with
+the rational point at infinity, parametrised by `k = 2Z + 1 − 2S`
+(`4kZ = (k − 1)²`, `4kS = 1 − k²`; note the SIGN of `S` is pinned by
+this choice, which is why no case split on the two roots of the quadratic
+survives — the other root is the parameter `1/k`). Then
+`M² = 2Z³ + 3Z² + 2S³` gives `16k³M² = −(k − 1)³(3k + 1)` and hence
+`16k³(Z + M²) = (k² − 1)²`; since `Z(Z+1) = S²`, the curve equation says
+`Z + M²` is a square, so `k` is a square `j²`, and eliminating leaves
+`(4jM/(j² − 1))² = (J² − 1)(J² + 3)` with `J = 1/j`. -/
+theorem MazurTwoTwelve.no_rational_solution_normalized (M Z W : ℚ) (hM : M ≠ 0)
+    (hpsi : 3 * Z ^ 4 + 4 * (M ^ 2 + 1) * Z ^ 3 + 6 * M ^ 2 * Z ^ 2 - M ^ 4 = 0)
+    (hw : W ^ 2 = 4 * Z * (Z + M ^ 2) * (Z + 1)) (hW : W ≠ 0) : False := by
+  -- nondegeneracy of the three factors
+  have hprod : 4 * Z * (Z + M ^ 2) * (Z + 1) ≠ 0 := by
+    rw [← hw]; exact pow_ne_zero 2 hW
+  have hZ0 : Z ≠ 0 := fun h => hprod (by rw [h]; ring)
+  have hZM : Z + M ^ 2 ≠ 0 := fun h => hprod (by rw [h]; ring)
+  have hZ1 : Z + 1 ≠ 0 := fun h => hprod (by rw [h]; ring)
+  have hden : (4 : ℚ) * Z * (Z + 1) ≠ 0 :=
+    mul_ne_zero (mul_ne_zero (by norm_num) hZ0) hZ1
+  -- the square root of the discriminant of the quadratic in `M²`
+  obtain ⟨S, hS, hSD⟩ : ∃ S : ℚ, S ^ 2 = Z ^ 2 + Z ∧
+      2 * M ^ 2 - 4 * Z ^ 3 - 6 * Z ^ 2 = S * (4 * Z * (Z + 1)) := by
+    refine ⟨(2 * M ^ 2 - 4 * Z ^ 3 - 6 * Z ^ 2) / (4 * Z * (Z + 1)), ?_,
+      (div_mul_cancel₀ _ hden).symm⟩
+    rw [div_pow, div_eq_iff (pow_ne_zero 2 hden)]
+    linear_combination (-4 : ℚ) * hpsi
+  have hS0 : S ≠ 0 := by
+    intro h
+    rw [h] at hS
+    exact hZ0 (by
+      rcases mul_eq_zero.mp (show Z * (Z + 1) = 0 by linear_combination -hS) with h' | h'
+      · exact h'
+      · exact absurd h' hZ1)
+  have hM2 : M ^ 2 = 2 * Z ^ 3 + 3 * Z ^ 2 + 2 * S ^ 3 := by
+    linear_combination (1 / 2 : ℚ) * hSD - 2 * S * hS
+  -- the rational parametrisation `Z = (k−1)²/4k`, `S = (1−k²)/4k` of `S² = Z² + Z`
+  obtain ⟨k, hk0, hZk, hSk⟩ : ∃ k : ℚ, k ≠ 0 ∧ 4 * k * Z = (k - 1) ^ 2 ∧
+      4 * k * S = 1 - k ^ 2 := by
+    refine ⟨2 * Z + 1 - 2 * S, ?_, by linear_combination (-4 : ℚ) * hS,
+      by linear_combination (-4 : ℚ) * hS⟩
+    intro h
+    have hcon : (0 : ℚ) = 1 := by
+      linear_combination (-4 : ℚ) * hS - (2 * Z + 1 + 2 * S) * h
+    norm_num at hcon
+  have hk1 : k - 1 ≠ 0 := by
+    intro h
+    exact hZ0 (by
+      have hk : k = 1 := by linarith
+      rw [hk] at hZk; linarith)
+  have hkm1 : k + 1 ≠ 0 := by
+    intro h
+    exact hZ1 (by
+      have hk : k = -1 := by linarith
+      rw [hk] at hZk; linarith)
+  have hZval : Z = (k - 1) ^ 2 / (4 * k) := by
+    field_simp; linarith [hZk]
+  have hSval : S = (1 - k ^ 2) / (4 * k) := by
+    field_simp; linarith [hSk]
+  -- the two quantities in `k`
+  have hMk : 16 * k ^ 3 * M ^ 2 = -((k - 1) ^ 3 * (3 * k + 1)) := by
+    rw [hM2, hZval, hSval]; field_simp; ring
+  have hZMk : 16 * k ^ 3 * (Z + M ^ 2) = (k ^ 2 - 1) ^ 2 := by
+    linear_combination (4 * k ^ 2) * hZk + hMk
+  -- `Z + M²` is a square, hence so is `k`
+  have hsq : (Z + M ^ 2) * (2 * S) ^ 2 = W ^ 2 := by
+    linear_combination (4 * (Z + M ^ 2)) * hS - hw
+  obtain ⟨τ, hτ⟩ : ∃ τ : ℚ, τ ^ 2 = Z + M ^ 2 := by
+    refine ⟨W / (2 * S), ?_⟩
+    rw [div_pow, div_eq_iff (pow_ne_zero 2 (by simpa using hS0))]
+    linear_combination -hsq
+  have hτ0 : τ ≠ 0 := fun h => hZM (by rw [← hτ, h]; ring)
+  have hk21 : k ^ 2 - 1 ≠ 0 := by
+    intro h
+    rcases mul_eq_zero.mp (show (k - 1) * (k + 1) = 0 by linear_combination h) with h' | h'
+    · exact hk1 h'
+    · exact hkm1 h'
+  have hden2 : 4 * k * τ ≠ 0 :=
+    mul_ne_zero (mul_ne_zero (by norm_num) hk0) hτ0
+  obtain ⟨j, hj0, hjk⟩ : ∃ j : ℚ, j ≠ 0 ∧ k = j ^ 2 := by
+    refine ⟨(k ^ 2 - 1) / (4 * k * τ), div_ne_zero hk21 hden2, ?_⟩
+    rw [div_pow, eq_div_iff (pow_ne_zero 2 hden2)]
+    linear_combination (16 * k ^ 3) * hτ + hZMk
+  -- descend to the quartic
+  subst hjk
+  have hj1 : j ^ 2 - 1 ≠ 0 := hk1
+  have hcore : (4 * j * M) ^ 2 * j ^ 4 =
+      (1 - j ^ 2) * (1 + 3 * j ^ 2) * (j ^ 2 - 1) ^ 2 := by
+    linear_combination hMk
+  obtain ⟨J, hJ⟩ : ∃ J : ℚ, J * j = 1 := ⟨1 / j, by field_simp⟩
+  have h1 : (J ^ 2 - 1) * (J ^ 2 + 3) * j ^ 4 = (1 - j ^ 2) * (1 + 3 * j ^ 2) := by
+    linear_combination (J * j + 1) * ((J * j) ^ 2 + 1 + 2 * j ^ 2) * hJ
+  have hV : (4 * j * M / (j ^ 2 - 1)) ^ 2 = (J ^ 2 - 1) * (J ^ 2 + 3) := by
+    rw [div_pow, div_eq_iff (pow_ne_zero 2 hj1)]
+    refine mul_right_cancel₀ (pow_ne_zero 4 hj0) ?_
+    linear_combination hcore - (j ^ 2 - 1) ^ 2 * h1
+  have hzero := MazurTwoTwelve.quartic_only_trivial J _ hV
+  refine hM ?_
+  have h4 : 4 * j * M = 0 := (div_eq_zero_iff.mp hzero).resolve_right hj1
+  rcases mul_eq_zero.mp h4 with h' | h'
+  · exact absurd ((mul_eq_zero.mp h').resolve_left (by norm_num)) hj0
+  · exact h'
+
+/-- **The `X_1(2,12)` system has no rational solution** (PROVEN
+2026-07-25 by scaling to `no_rational_solution_normalized`): there is no
+rational `(m, n, X, w)` with `m ≠ 0`, `n ≠ 0`, `w ≠ 0`,
+`3X⁴ + 4(m² + n²)X³ + 6m²n²X² − m⁴n⁴ = 0` and
+`w² = 4X(X + m²)(X + n²)`.
+
+The hypothesis `m² ≠ n²` (the two unhalved `2`-torsion abscissae being
+distinct) is passed by the consumer but NOT used: it is `_hmn`. That is
+not a gap — the `m² = n²` locus is disposed of by the same argument
+(the quartic then factors as `(Z + 1)³(3Z − 1)` after scaling, and
+`Z = 1/3` makes `w² = 64/27`, not a rational square), so the leaf is
+simply true without it. Keeping it in the signature records what the
+geometry actually supplies. -/
+theorem MazurTwoTwelve.no_rational_solution (m n X w : ℚ) (hm : m ≠ 0) (hn : n ≠ 0)
+    (_hmn : m ^ 2 ≠ n ^ 2)
+    (hpsi : 3 * X ^ 4 + 4 * (m ^ 2 + n ^ 2) * X ^ 3 + 6 * m ^ 2 * n ^ 2 * X ^ 2
+      - m ^ 4 * n ^ 4 = 0)
+    (hw : w ^ 2 = 4 * X * (X + m ^ 2) * (X + n ^ 2)) (hw0 : w ≠ 0) :
+    False := by
+  refine MazurTwoTwelve.no_rational_solution_normalized (m / n) (X / n ^ 2) (w / n ^ 3)
+    (div_ne_zero hm hn) ?_ ?_ (div_ne_zero hw0 (pow_ne_zero 3 hn))
+  · field_simp
+    linear_combination hpsi
+  · field_simp
+    linear_combination hw
+
 /-- **No rational `ℤ/2 × ℤ/4` together with a rational point of order
-`3`** (sorry node — the `X_1(2,12)` content in its literature form):
-no elliptic curve over `ℚ` has an injective `ℤ/2 × ℤ/4 →+ E(ℚ)` and a
-rational point of order `3` simultaneously. Such a curve would carry a
-rational level structure classified by the modular curve `X_1(2,12)`,
-a genus-one curve of Mordell–Weil rank `0` over `ℚ` whose finitely
-many rational points are all cusps (Kenku; subsumed in Mazur 1977,
-Thm 8).
+`3`** (PROVEN 2026-07-25 modulo the single quartic leaf
+`MazurTwoTwelve.quartic_only_trivial`): no elliptic curve over `ℚ` has
+an injective `ℤ/2 × ℤ/4 →+ E(ℚ)` and a rational point of order `3`
+simultaneously. Such a curve carries a rational level structure
+classified by the modular curve `X_1(2,12)`, a genus-one curve of
+Mordell–Weil rank `0` over `ℚ` whose rational points are all cusps
+(Kenku; subsumed in Mazur 1977, Thm 8).
 
-IRREDUCIBLE at this mathlib pin (audit 2026-07-25). The hypotheses say
-exactly that `E(ℚ)` contains `ℤ/2 × ℤ/12` (order `24`), the second
-`ℤ/2 × ℤ/2m` beyond Mazur's list; `ℤ/12`, `ℤ/2 × ℤ/6` and
-`ℤ/2 × ℤ/8` are all permitted, so no other node here implies it.
-Routes checked and rejected:
+The hypotheses say exactly that `E(ℚ)` contains `ℤ/2 × ℤ/12` (order
+`24`), the second `ℤ/2 × ℤ/2m` beyond Mazur's list; `ℤ/12`,
+`ℤ/2 × ℤ/6` and `ℤ/2 × ℤ/8` are all permitted, so no other node here
+implies it.
 
-* *The elementary halving machinery is not enough.* The `ℤ/2 × ℤ/4`
-  gives full rational `2`-torsion with exactly ONE of the three
-  abscissae halved, hence ONE square condition
-  `(θ₂ − θ₁)(θ₂ − θ₃) = □` from `halving_square`; the sign contradiction
-  of `not_full_four_torsion_rat` needs all three, and the order-`3`
-  point contributes no square condition.
-* *Reduction plus Hasse only bounds the conductor.* `24 ∣ #Ẽ(𝔽_p)` at
-  every odd prime `p` of good reduction forces bad reduction at
-  `3, 5, 7, 11, 13` and gives nothing at `p = 2` or `p ≥ 17`.
+The 2026-07-25 `IRREDUCIBLE` audit is SUPERSEDED. It rejected the
+elementary route on the ground that "the `ℤ/2 × ℤ/4` gives ONE square
+condition `(θ_T − θ_U)(θ_T − θ_V) = □` from `halving_square`, and the
+sign contradiction of `not_full_four_torsion_rat` needs all three".
+That undercounted: halving `T` makes `θ_T − θ_U` and `θ_T − θ_V`
+SEPARATELY squares (`MazurTwoTwelve.halving_squares`), which is two
+conditions, and the order-`3` point supplies a third equation through
+the inflection identity — enough to cut `X_1(2,12)` down to a plane
+quartic without any modular machinery. The audit's second point stands:
+reduction plus Hasse only bounds the conductor.
 
-A formal proof needs `X_1(2,12)` as an arithmetic curve plus the
-determination of its rational points. -/
+Proof: full `2`-torsion `T = ψ(0,2)`, `U = ψ(1,0)`, `V = ψ(1,2)` with
+`ψ(0,1)` halving `T`; `cubic_vieta` identifies the abscissae as the
+roots of the `2`-division cubic; `halving_squares` writes
+`θ_T − θ_U = m²`, `θ_T − θ_V = n²`; `exists_order_three_coords` gives
+the inflection data of `Q`; and `(μw)² = μ²w²` produces the `3`-division
+equation, which `MazurTwoTwelve.no_rational_solution` refutes. -/
 theorem WeierstrassCurve.not_two_four_torsion_and_three_point
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (ψ : (ZMod 2 × ZMod 4) →+ (E⁄ℚ).Point) (hψ : Function.Injective ψ)
     (Q : (E⁄ℚ).Point) (hQ : addOrderOf Q = 3) :
-    False :=
-  sorry
+    False := by
+  -- the doubling relation for the order-`4` element `(0,1)`
+  have hdb : ψ (0, 1) + ψ (0, 1) = ψ (0, 2) := by
+    rw [← map_add]; exact congrArg ψ (by decide)
+  -- the three nonzero `2`-torsion points
+  have htorT : ψ (0, 2) + ψ (0, 2) = 0 := by
+    rw [← map_add, show ((0 : ZMod 2), (2 : ZMod 4)) + (0, 2) = 0 by decide, map_zero]
+  have htorU : ψ (1, 0) + ψ (1, 0) = 0 := by
+    rw [← map_add, show ((1 : ZMod 2), (0 : ZMod 4)) + (1, 0) = 0 by decide, map_zero]
+  have htorV : ψ (1, 2) + ψ (1, 2) = 0 := by
+    rw [← map_add, show ((1 : ZMod 2), (2 : ZMod 4)) + (1, 2) = 0 by decide, map_zero]
+  have hneT : ψ (0, 2) ≠ 0 := fun h =>
+    absurd (hψ (h.trans (map_zero ψ).symm)) (by decide)
+  have hneU : ψ (1, 0) ≠ 0 := fun h =>
+    absurd (hψ (h.trans (map_zero ψ).symm)) (by decide)
+  have hneV : ψ (1, 2) ≠ 0 := fun h =>
+    absurd (hψ (h.trans (map_zero ψ).symm)) (by decide)
+  have hneTU : ψ (0, 2) ≠ ψ (1, 0) := fun h => absurd (hψ h) (by decide)
+  have hneTV : ψ (0, 2) ≠ ψ (1, 2) := fun h => absurd (hψ h) (by decide)
+  have hneUV : ψ (1, 0) ≠ ψ (1, 2) := fun h => absurd (hψ h) (by decide)
+  -- coordinates of the three `2`-torsion points and of the halving
+  obtain ⟨θT, uT, xP, yP, lP, ⟨hnsT, hTeq⟩, hET, huT, hEP, hlP, hxP⟩ :=
+    MazurFourTorsion.exists_halving_coords _ _ hdb htorT hneT
+  obtain ⟨θU, uU, ⟨hnsU, hUeq⟩, hEU, huU⟩ :=
+    MazurTwoTwelve.exists_two_torsion_coords _ htorU hneU
+  obtain ⟨θV, uV, ⟨hnsV, hVeq⟩, hEV, huV⟩ :=
+    MazurTwoTwelve.exists_two_torsion_coords _ htorV hneV
+  rw [negY] at huT huU huV
+  rw [equation_iff] at hET hEU hEV hEP
+  -- distinct `2`-torsion points have distinct abscissae
+  have hdTU : θT ≠ θU := by
+    intro h; subst h
+    have huu : uT = uU := by linarith
+    subst huu
+    rw [hTeq, hUeq] at hneTU; exact hneTU rfl
+  have hdTV : θT ≠ θV := by
+    intro h; subst h
+    have huu : uT = uV := by linarith
+    subst huu
+    rw [hTeq, hVeq] at hneTV; exact hneTV rfl
+  have hdUV : θU ≠ θV := by
+    intro h; subst h
+    have huu : uU = uV := by linarith
+    subst huu
+    rw [hUeq, hVeq] at hneUV; exact hneUV rfl
+  -- the abscissae are the roots of the `2`-division cubic
+  have hrootT : 4 * θT ^ 3 + ((E⁄ℚ).a₁ ^ 2 + 4 * (E⁄ℚ).a₂) * θT ^ 2 +
+      (2 * (E⁄ℚ).a₁ * (E⁄ℚ).a₃ + 4 * (E⁄ℚ).a₄) * θT +
+      ((E⁄ℚ).a₃ ^ 2 + 4 * (E⁄ℚ).a₆) = 0 := by
+    linear_combination (2 * uT + (E⁄ℚ).a₁ * θT + (E⁄ℚ).a₃) * huT - 4 * hET
+  have hrootU : 4 * θU ^ 3 + ((E⁄ℚ).a₁ ^ 2 + 4 * (E⁄ℚ).a₂) * θU ^ 2 +
+      (2 * (E⁄ℚ).a₁ * (E⁄ℚ).a₃ + 4 * (E⁄ℚ).a₄) * θU +
+      ((E⁄ℚ).a₃ ^ 2 + 4 * (E⁄ℚ).a₆) = 0 := by
+    linear_combination (2 * uU + (E⁄ℚ).a₁ * θU + (E⁄ℚ).a₃) * huU - 4 * hEU
+  have hrootV : 4 * θV ^ 3 + ((E⁄ℚ).a₁ ^ 2 + 4 * (E⁄ℚ).a₂) * θV ^ 2 +
+      (2 * (E⁄ℚ).a₁ * (E⁄ℚ).a₃ + 4 * (E⁄ℚ).a₄) * θV +
+      ((E⁄ℚ).a₃ ^ 2 + 4 * (E⁄ℚ).a₆) = 0 := by
+    linear_combination (2 * uV + (E⁄ℚ).a₁ * θV + (E⁄ℚ).a₃) * huV - 4 * hEV
+  obtain ⟨hB, hC, hD⟩ :=
+    MazurFourTorsion.cubic_vieta hdTU hdTV hdUV hrootT hrootU hrootV
+  -- BOTH differences at the halved abscissa are squares
+  obtain ⟨m, n, hm, hn⟩ :=
+    MazurTwoTwelve.halving_squares hEP hB hC hD hlP hxP hdTU hdTV hdUV
+  -- nondegeneracy, recorded before normalising the abscissae away
+  have hm0 : m ≠ 0 := by
+    intro h
+    refine hdTU ?_
+    have h0 : θT - θU = 0 := by rw [hm, h]; ring
+    linarith
+  have hn0 : n ≠ 0 := by
+    intro h
+    refine hdTV ?_
+    have h0 : θT - θV = 0 := by rw [hn, h]; ring
+    linarith
+  have hmn : m ^ 2 ≠ n ^ 2 := by
+    intro h
+    exact hdUV (by linarith)
+  -- the order-`3` point is an inflection
+  have hQ0 : Q ≠ 0 := by
+    intro h; rw [h, addOrderOf_zero] at hQ; norm_num at hQ
+  have h3Q : (3 : ℕ) • Q = 0 := by rw [← hQ]; exact addOrderOf_nsmul_eq_zero Q
+  have hQ3 : Q + Q = -Q := by
+    have h : Q + Q + Q = 0 := by
+      rw [show (3 : ℕ) = 2 + 1 from rfl, add_nsmul, two_nsmul, one_nsmul] at h3Q
+      exact h3Q
+    exact eq_neg_of_add_eq_zero_left h
+  obtain ⟨xQ, yQ, lQ, hEQ, hwQ0, hlQ, hxQ⟩ :=
+    MazurTwoTwelve.exists_order_three_coords Q hQ0 hQ3
+  rw [equation_iff] at hEQ
+  -- normalise the two unhalved abscissae to `θT - m²`, `θT - n²`
+  have hUsub : θU = θT - m ^ 2 := by linarith
+  have hVsub : θV = θT - n ^ 2 := by linarith
+  subst hUsub
+  subst hVsub
+  -- the three identities in `X = xQ - θT`
+  have hwsq : (2 * yQ + (E⁄ℚ).a₁ * xQ + (E⁄ℚ).a₃) ^ 2 =
+      4 * (xQ - θT) * ((xQ - θT) + m ^ 2) * ((xQ - θT) + n ^ 2) := by
+    linear_combination 4 * hEQ + xQ ^ 2 * hB + xQ * hC + hD
+  have hmu : (lQ + (E⁄ℚ).a₁ / 2) ^ 2 = 3 * (xQ - θT) + m ^ 2 + n ^ 2 := by
+    linear_combination hxQ + (1 : ℚ) / 4 * hB
+  have hmuw : (lQ + (E⁄ℚ).a₁ / 2) * (2 * yQ + (E⁄ℚ).a₁ * xQ + (E⁄ℚ).a₃) =
+      3 * (xQ - θT) ^ 2 + 2 * (m ^ 2 + n ^ 2) * (xQ - θT) + m ^ 2 * n ^ 2 := by
+    linear_combination hlQ + xQ / 2 * hB + (1 : ℚ) / 4 * hC
+  -- eliminating the slope gives the `3`-division equation
+  have hsq : (3 * (xQ - θT) ^ 2 + 2 * (m ^ 2 + n ^ 2) * (xQ - θT) + m ^ 2 * n ^ 2) ^ 2 =
+      (3 * (xQ - θT) + m ^ 2 + n ^ 2) *
+        (4 * (xQ - θT) * ((xQ - θT) + m ^ 2) * ((xQ - θT) + n ^ 2)) := by
+    linear_combination
+      (-((3 * (xQ - θT) ^ 2 + 2 * (m ^ 2 + n ^ 2) * (xQ - θT) + m ^ 2 * n ^ 2) +
+          (lQ + (E⁄ℚ).a₁ / 2) * (2 * yQ + (E⁄ℚ).a₁ * xQ + (E⁄ℚ).a₃))) * hmuw +
+        (2 * yQ + (E⁄ℚ).a₁ * xQ + (E⁄ℚ).a₃) ^ 2 * hmu +
+        (3 * (xQ - θT) + m ^ 2 + n ^ 2) * hwsq
+  have hpsi : 3 * (xQ - θT) ^ 4 + 4 * (m ^ 2 + n ^ 2) * (xQ - θT) ^ 3 +
+      6 * m ^ 2 * n ^ 2 * (xQ - θT) ^ 2 - m ^ 4 * n ^ 4 = 0 := by
+    linear_combination -hsq
+  exact MazurTwoTwelve.no_rational_solution m n (xQ - θT)
+    (2 * yQ + (E⁄ℚ).a₁ * xQ + (E⁄ℚ).a₃) hm0 hn0 hmn hpsi hwsq hwQ0
 
 /-- **Exclusion of rational `ℤ/2 × ℤ/12`** (DERIVED 2026-07-23 from
 the leaf `not_two_four_torsion_and_three_point` by splitting off the
