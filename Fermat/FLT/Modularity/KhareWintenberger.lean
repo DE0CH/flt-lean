@@ -4107,13 +4107,90 @@ theorem threeadicRealization_isUnramified_of_witness
   · -- `p` is prime to the conductor and to `3`
     exact hunr p hp hp3 hdvd
 
-/-- **The Fontaine–Laffaille local shape at `3`** (sorry node — the
-literature joint of the flatness transfer, isolated 2026-07-24 out of
-`threeadicRealization_isFlat_of_witness`, whose open-ideal transport
-is PROVEN below): every NONTRIVIAL finite congruence quotient
-`(A ⧸ I) ⊗_A (Fin 2 → A)` of the Brauer-descended `3`-adic member is
-the group of `ℚ̄_3`-points of the generic fibre of a finite flat group
-scheme over `ℤ_3` — the package spelled by
+/-- **Raynaud quotient closure, in prolongation form** (sorry node, cut
+2026-07-25 for the Fontaine–Laffaille level reduction below): a
+`G_ℚ`-equivariant QUOTIENT of a Galois representation which has a flat
+prolongation at `v` again has a flat prolongation at `v`.
+Scheme-theoretically this is the closure of finite flat group schemes
+over the DVR `𝒪ᵥ` under quotients by flat closed subgroup schemes
+(Raynaud, *Schémas en groupes de type `(p, …, p)`*, Bull. SMF 102
+(1974), §1–3; Tate, *Finite flat group schemes*, in
+Cornell–Silverman–Stevens ch. V), read on `ℚ̄ᵥ`-points — the form the
+project's prolongation package takes. The equivariance hypothesis is
+stated for the GLOBAL action, as in
+`GaloisRep.HasFlatProlongationAt.of_addEquiv`; it implies the local one
+because `toLocal` is precomposition with `G_ℚᵥ → G_ℚ`.
+
+Intended proof (dual to a subobject closure, and easier — SUB-algebras
+of the witness where a subobject closure would quotient it):
+* (α) *finiteness*: the source point group is finite (the generic fibre
+  `Q := Kᵥ ⊗[𝒪ᵥ] G` of the witness is finite étale over `Kᵥ`), hence so
+  is the target through the surjection `e`.
+* (β) *étale–Galois*: the target is a finite `G_ℚᵥ`-group, hence the
+  point group of a finite étale `Kᵥ`-Hopf algebra `H` by the PROVEN
+  Gelfand-duality machinery of `KnownIn1980s/EllipticCurves/Flat.lean`
+  (`galoisEquivariantAlgebra` with `galoisEquivariantEval_injective` /
+  `_surjective` and `exists_hopfAlgebra_galoisEquivariantAlgebra`);
+  pullback of functions along the point surjection is an INJECTIVE
+  `Kᵥ`-bialgebra map `H → Q` (injective because the points of the étale
+  `H` separate its functions; a bialgebra map because the point
+  surjection is a group homomorphism).
+* (γ) *schematic closure over the DVR*: `G' := H ∩ G` (inside `Q`) is
+  an `𝒪ᵥ`-subalgebra, module-finite over the noetherian `𝒪ᵥ` and
+  torsion-free, hence finite FREE, so flat; it spans `H` over `Kᵥ`
+  (every `x ∈ H ⊆ Q = Kᵥ · G` has `cx ∈ G` for some `c ≠ 0` in `𝒪ᵥ`,
+  and `cx ∈ H` as `H` is a `Kᵥ`-subspace), so `Kᵥ ⊗[𝒪ᵥ] G' ≅ H` has
+  étale generic fibre; and `G'` is SATURATED in `G`, which makes the
+  comultiplication of `H` carry `G'` into `G' ⊗[𝒪ᵥ] G'` (counit and
+  antipode restrict likewise), i.e. `G'` is a Hopf order.
+* (δ) *conclusion*: the `ℚ̄ᵥ`-points of `Kᵥ ⊗[𝒪ᵥ] G'` are those of
+  `H`, i.e. the target, `G_ℚᵥ`-equivariantly.
+
+Unconditionally TRUE — permanent library material carrying no
+hypothesis package (for `e` bijective this is already
+`GaloisRep.HasFlatProlongationAt.of_addEquiv`, and for a subsingleton
+target `GaloisRep.hasFlatProlongationAt_of_subsingleton`).
+
+HOME AUDIT (2026-07-25, load-bearing — read before "deduplicating"
+this brick). The same Raynaud content exists in the tree ONCE more, as
+the carrier-level `IsFlatPointsGroupAt.of_surjective` of
+`Modularity/Interface.lean` (there over an abstract `G_ℚᵥ`-module
+rather than a representation). That one is IMPORT-UNREACHABLE from
+here: `Interface.lean` imports THIS module, so consuming it would be a
+literal import cycle — the very thing the pillar-β circularity guard
+forbids. The architecturally neutral home for both would be
+`Deformations/RepresentationTheory/FlatProlongation.lean` (below
+`Interface.lean` and below this module, and already the home of the
+`of_addEquiv` transport), and the intended unification is to move this
+brick there and re-prove `Interface.lean`'s carrier version from it.
+That was deliberately NOT done in this pass for two reasons: the
+carrier leaf is separately owned, and `FlatProlongation.lean` sits
+under the 30k-line `ModThree.lean` cone, so touching it forces a
+full-cone rebuild in every worktree of the fleet, while this module
+already had to be rebuilt for the decomposition below. Whoever
+performs the unification should move BOTH, not restate a third copy. -/
+theorem hasFlatProlongationAt_of_surjective
+    {v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)}
+    {A₁ : Type*} [CommRing A₁] [TopologicalSpace A₁]
+    {M₁ : Type*} [AddCommGroup M₁] [Module A₁ M₁]
+    {A₂ : Type*} [CommRing A₂] [TopologicalSpace A₂]
+    {M₂ : Type*} [AddCommGroup M₂] [Module A₂ M₂]
+    {ρ₁ : GaloisRep ℚ A₁ M₁} {ρ₂ : GaloisRep ℚ A₂ M₂}
+    (h : ρ₁.HasFlatProlongationAt v)
+    (e : M₁ →+ M₂) (hsurj : Function.Surjective e)
+    (he : ∀ (σ : Field.absoluteGaloisGroup ℚ) (x : M₁), e (ρ₁ σ x) = ρ₂ σ (e x)) :
+    ρ₂.HasFlatProlongationAt v :=
+  sorry
+
+/-- **The Fontaine–Laffaille local shape at `3`, on the `3`-power
+levels of the stable lattice** (sorry node — the LITERATURE JOINT of
+the flatness transfer, cut 2026-07-25 out of
+`threeadicRealization_hasFlatProlongationAt_of_finite_quotient` below,
+whose arbitrary-finite-quotient quantifier is now PROVEN glue over
+this cofinal subtower): for every `m ≥ 1` the `3`-power level
+`(A ⧸ 3^m) ⊗_A (Fin 2 → A)` — i.e. `T/3^m T` for the stable lattice
+`T = Fin 2 → A` — is the group of `ℚ̄_3`-points of the generic fibre
+of a finite flat group scheme over `ℤ_3`, the package spelled by
 `GaloisRep.HasFlatProlongationAt`.
 
 Classically: the compatible system attached to the descended
@@ -4122,22 +4199,22 @@ eigensystem has parallel weight `2` and conductor prime to `3`, so its
 `{0, 1}` (Carayol/Taylor local-global compatibility at `p = ℓ` for `p`
 prime to the level). Over `ℤ_3` the absolute ramification index is
 `e = 1 < 2 = p - 1`, which is exactly the Fontaine–Laffaille range:
-the crystalline lattice `Fin 2 → A` is the Tate module of a
-`3`-divisible group over `ℤ_3` (Raynaud/Fontaine–Laffaille in weight
-`2`), the Fontaine–Laffaille functor from finite flat `3`-group
-schemes over `ℤ_3` to finite `G_{ℚ_3}`-modules is exact and fully
-faithful, and its essential image is closed under subobjects and
-quotients. The finite quotient `(A ⧸ I) ⊗_A (Fin 2 → A)` of the
-stable lattice therefore prolongs — "every finite quotient of the
-stable lattice prolongs", the blueprint's "flat at 3".
+the crystalline lattice `T = Fin 2 → A` is the Tate module of a
+`3`-divisible group `𝒢` over `ℤ_3` (Fontaine–Laffaille in weight `2`;
+Raynaud, Breuil for the range-free refinement), and the levels
+`T/3^m T` are precisely the `ℚ̄_3`-points of the generic fibres of the
+finite flat group schemes `𝒢[3^m]`. This is the honest shape of the
+literature input: the statement is asserted exactly on the `3`-power
+levels, which are the levels of the `3`-divisible group, and NOT on
+arbitrary congruence quotients — those are reached from these by
+Raynaud's closure of finite flat group schemes under quotients, which
+is a separate, unconditional brick (`hasFlatProlongationAt_of_surjective`
+above) consumed by the transport below rather than smuggled in here.
 
-Only NONTRIVIAL quotients (`I ≠ ⊤`) are asserted: at `I = ⊤` the
-congruence quotient is a single point and the transport below
-discharges the case outright with the trivial Hopf algebra
-(`GaloisRep.hasFlatProlongationAt_of_subsingleton`), so the literature
-is not cited for it. Openness of `I` is likewise not assumed — the
-transport converts it into the finiteness hypothesis, which is the
-form the Fontaine–Laffaille statement takes.
+Only positive levels (`1 ≤ m`) are asserted: at `m = 0` the ideal
+`3^0 = (1)` is the unit ideal, the level is a single point, and the
+transport discharges that case outright with the trivial Hopf algebra,
+so the literature is not cited for it.
 
 Literature: Fontaine–Laffaille, *Construction de représentations
 p-adiques*, Ann. Sci. ÉNS 15 (1982); Raynaud, *Schémas en groupes de
@@ -4147,7 +4224,7 @@ at primes over `p` prime to the level); Breuil, *Groupes p-divisibles,
 groupes finis et modules filtrés*, Ann. of Math. 152 (2000) (the
 range-free refinement); BLGGT §5.5. FLT blueprint ch. 4: "flat at 3".
 
-SOUNDNESS AUDIT (both ways, 2026-07-24): (i) direct — for the
+SOUNDNESS AUDIT (both ways, 2026-07-25): (i) direct — for the
 realization produced by the construction leaf this is
 Fontaine–Laffaille/Raynaud as above; for an abstract realization the
 abstract-quantification caveat of pillar β applies, and (ii) collapse
@@ -4157,6 +4234,89 @@ so the statement is classically true for every package.
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
 discharge through `Family.lean`, `Lift.lean`, or
 `Modularity/Interface.lean`. -/
+theorem threeadicRealization_hasFlatProlongationAt_threePow
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+    {Wit : PotentialModularityWitness ℓ O ρ}
+    (Rlz : ThreeadicRealization ℓ O ρ Wit)
+    (m : ℕ) (hm : 1 ≤ m) :
+    (Rlz.τ.baseChange (Rlz.A ⧸ Ideal.span {(3 : Rlz.A) ^ m})).HasFlatProlongationAt
+      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+        (Fact.out : Nat.Prime 3)) :=
+  sorry
+
+/-- **The Fontaine–Laffaille local shape at `3`, at an arbitrary finite
+level** (DECOMPOSED 2026-07-25 — now a PROVEN transport over the
+literature joint `threeadicRealization_hasFlatProlongationAt_threePow`
+above and the unconditional Raynaud quotient brick
+`hasFlatProlongationAt_of_surjective`): every NONTRIVIAL
+finite congruence quotient `(A ⧸ I) ⊗_A (Fin 2 → A)` of the
+Brauer-descended `3`-adic member is the group of `ℚ̄_3`-points of the
+generic fibre of a finite flat group scheme over `ℤ_3`.
+
+TRANSPORT (PROVEN here — the arbitrary-finite-level quantifier reduced
+to the cofinal `3`-power subtower, exactly the reduction the E2b′
+lattice-flatness transfer of `Modularity/Interface.lean` performs for
+its own levels):
+
+* *a finite congruence quotient kills a power of `3`*: the composite
+  `ℤ_3 → A → A ⧸ I` cannot be injective, `ℤ_3` being infinite
+  (`CharZero.infinite`) and `A ⧸ I` finite, so its kernel contains
+  some `x ≠ 0`; over the discrete valuation ring `ℤ_3` such an `x`
+  factors as `u · 3^m` with `u` a unit
+  (`IsDiscreteValuationRing.eq_unit_mul_pow_irreducible` at the
+  irreducible `3`, `PadicInt.irreducible_p`), whence `3^m ∈ I` — and
+  `m ≥ 1` because `I ≠ ⊤` forbids `1 ∈ I`. Note that OPENNESS of `I`
+  is not used: finiteness of the quotient is the whole input, which is
+  also the form the Fontaine–Laffaille statement takes;
+* *the level is a quotient of the `3`-power level*: `3^m ∈ I` gives
+  `(3^m) ≤ I`, hence the transition map `A ⧸ 3^m → A ⧸ I`
+  (`Submodule.mapQ` along the identity), surjective, and tensoring
+  with the lattice (`LinearMap.rTensor`) makes the `I`-level a
+  `G_ℚ`-equivariant quotient of the `3^m`-level — equivariance because
+  both base-changed actions are `τ` on the right tensor factor
+  (`GaloisRep.baseChange_tmul`);
+* *Raynaud closure under quotients* then carries the prolongation of
+  the `3`-power level (the literature joint above) to the `I`-level.
+
+Classically the mathematical content is the joint's: the system has
+parallel weight `2` and conductor prime to `3`, so its `3`-adic member
+is crystalline at `3` with Hodge–Tate weights `{0, 1}`, and over `ℤ_3`
+(`e = 1 < p - 1 = 2`) Fontaine–Laffaille makes the stable lattice the
+Tate module of a `3`-divisible group; see that docstring for the
+literature.
+
+SOUNDNESS AUDIT (both ways, 2026-07-25): (i) direct — the transport is
+unconditional glue over the joint, so soundness is the joint's; for an
+abstract realization the abstract-quantification caveat of pillar β
+applies, and (ii) collapse — the hypothesis set is classically
+unsatisfiable (headline below), so the statement is classically true
+for every package.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
+discharge through `Family.lean`, `Lift.lean`, or
+`Modularity/Interface.lean`; in particular the Raynaud quotient brick
+consumed here is `hasFlatProlongationAt_of_surjective` of THIS module,
+NOT the carrier-level `IsFlatPointsGroupAt.of_surjective` of
+`Modularity/Interface.lean`, which is import-unreachable from here —
+see that brick's HOME AUDIT. -/
 theorem threeadicRealization_hasFlatProlongationAt_of_finite_quotient
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
@@ -4182,14 +4342,84 @@ theorem threeadicRealization_hasFlatProlongationAt_of_finite_quotient
     (I : Ideal Rlz.A) (hItop : I ≠ ⊤) (hIfin : Finite (Rlz.A ⧸ I)) :
     (Rlz.τ.baseChange (Rlz.A ⧸ I)).HasFlatProlongationAt
       (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
-        (Fact.out : Nat.Prime 3)) :=
-  sorry
+        (Fact.out : Nat.Prime 3)) := by
+  classical
+  -- a FINITE congruence quotient of the `ℤ_3`-algebra `A` kills a power
+  -- of `3`: the composite `ℤ_3 → A → A ⧸ I` is not injective, and over
+  -- the discrete valuation ring `ℤ_3` a nonzero kernel element is a
+  -- unit times a power of `3`
+  obtain ⟨a, b, hab, heq⟩ :=
+    @Finite.exists_ne_map_eq_of_infinite ℤ_[3] (Rlz.A ⧸ I) _ hIfin
+      (fun x => Ideal.Quotient.mk I (algebraMap ℤ_[3] Rlz.A x))
+  have hx0 : a - b ≠ 0 := sub_ne_zero.mpr hab
+  have hxmem : algebraMap ℤ_[3] Rlz.A (a - b) ∈ I := by
+    have h0 : Ideal.Quotient.mk I (algebraMap ℤ_[3] Rlz.A (a - b)) = 0 := by
+      rw [map_sub, map_sub]
+      exact sub_eq_zero_of_eq heq
+    exact Ideal.Quotient.eq_zero_iff_mem.mp h0
+  obtain ⟨m, u, hu⟩ :=
+    IsDiscreteValuationRing.eq_unit_mul_pow_irreducible hx0
+      (PadicInt.irreducible_p (p := 3))
+  have hm : (3 : Rlz.A) ^ m ∈ I := by
+    have hpow : algebraMap ℤ_[3] Rlz.A (((3 : ℕ) : ℤ_[3]) ^ m) ∈ I := by
+      have h3 : ((3 : ℕ) : ℤ_[3]) ^ m = ((u⁻¹ : ℤ_[3]ˣ) : ℤ_[3]) * (a - b) := by
+        rw [hu, ← mul_assoc]
+        simp
+      rw [h3, map_mul]
+      exact I.mul_mem_left _ hxmem
+    simpa using hpow
+  -- the level is a positive one: `I ≠ ⊤` forbids `1 ∈ I`
+  have hm1 : 1 ≤ m := by
+    rcases Nat.eq_zero_or_pos m with rfl | hpos
+    · rw [pow_zero] at hm
+      exact absurd ((Ideal.eq_top_iff_one I).mpr hm) hItop
+    · exact hpos
+  have hle : Ideal.span {(3 : Rlz.A) ^ m} ≤ I := by
+    rw [Ideal.span_singleton_le_iff_mem]
+    exact hm
+  -- the level-transition surjection, `A`-linearly on the left factor
+  let q : (Rlz.A ⧸ Ideal.span {(3 : Rlz.A) ^ m}) →ₗ[Rlz.A] (Rlz.A ⧸ I) :=
+    Submodule.mapQ (Ideal.span {(3 : Rlz.A) ^ m} : Submodule Rlz.A Rlz.A)
+      (I : Submodule Rlz.A Rlz.A) LinearMap.id hle
+  have hqsurj : Function.Surjective q := by
+    intro y
+    obtain ⟨x, rfl⟩ := Submodule.mkQ_surjective (I : Submodule Rlz.A Rlz.A) y
+    exact ⟨Submodule.Quotient.mk x, by simp [q]⟩
+  have hφsurj : Function.Surjective (LinearMap.rTensor (Fin 2 → Rlz.A) q) := by
+    intro z
+    induction z using TensorProduct.induction_on with
+    | zero => exact ⟨0, map_zero _⟩
+    | add c d hc hd =>
+      obtain ⟨x, rfl⟩ := hc
+      obtain ⟨y, rfl⟩ := hd
+      exact ⟨x + y, map_add _ _ _⟩
+    | tmul c w =>
+      obtain ⟨c', rfl⟩ := hqsurj c
+      exact ⟨c' ⊗ₜ w, by rw [LinearMap.rTensor_tmul]⟩
+  -- the literature joint at the `3`-power level `m`
+  have hflat := threeadicRealization_hasFlatProlongationAt_threePow hℓodd hℓ5
+    hZinj hrank hρ hW hρbar hirr π hπsurj hπ Rlz m hm1
+  -- Raynaud closure under quotients
+  refine hasFlatProlongationAt_of_surjective hflat
+    (LinearMap.rTensor (Fin 2 → Rlz.A) q).toAddMonoidHom hφsurj ?_
+  intro σ x
+  show (LinearMap.rTensor (Fin 2 → Rlz.A) q)
+      ((Rlz.τ.baseChange (Rlz.A ⧸ Ideal.span {(3 : Rlz.A) ^ m})) σ x) =
+    (Rlz.τ.baseChange (Rlz.A ⧸ I)) σ ((LinearMap.rTensor (Fin 2 → Rlz.A) q) x)
+  induction x using TensorProduct.induction_on with
+  | zero => simp
+  | add c d hc hd => simp only [map_add, hc, hd]
+  | tmul c w =>
+    rw [GaloisRep.baseChange_tmul, LinearMap.rTensor_tmul,
+      LinearMap.rTensor_tmul, GaloisRep.baseChange_tmul]
 
 /-- **Condition transfer, flatness at `3` — Fontaine–Laffaille**
-(DECOMPOSED 2026-07-24 — now a PROVEN transport over the single
-literature leaf
-`threeadicRealization_hasFlatProlongationAt_of_finite_quotient`
-above): the Brauer-descended `3`-adic member is flat at `3` in the
+(DECOMPOSED 2026-07-24 — now a PROVEN transport over
+`threeadicRealization_hasFlatProlongationAt_of_finite_quotient` above,
+itself PROVEN glue (2026-07-25) over the literature joint
+`threeadicRealization_hasFlatProlongationAt_threePow` and the Raynaud
+quotient brick `hasFlatProlongationAt_of_surjective`): the
+Brauer-descended `3`-adic member is flat at `3` in the
 project's sense `GaloisRep.IsFlatAt` — every OPEN-ideal congruence
 quotient of `τ` has a finite flat prolongation at `3`.
 
