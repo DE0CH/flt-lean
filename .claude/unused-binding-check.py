@@ -102,11 +102,67 @@ def _check(worktree_path, file_path):
     return unused
 
 
+def _false_clean_warning(payload) -> str:
+    """An empty diagnostics list is only trustworthy when the call actually
+    received the compiler's publish.
+
+    `publishDiagnostics` is a one-shot notification to whichever client
+    connection is attached at the time. A client that adopts an
+    already-elaborated document from the shared open-document map and finds
+    the content unchanged sends no notify, so `waitForDiagnostics` returns at
+    once and the client's diagnostics table for that URI is empty -- which
+    reads as "compiles clean". On 2026-07-25 an agent was told a file
+    containing five sorries had zero diagnostics this way.
+
+    report-mcp.py now returns `verified: true/false` for exactly this, but
+    only client processes started after that fix carry it. So warn whenever an
+    empty result arrives without an explicit `verified: true`."""
+    resp = payload.get("tool_response")
+    if isinstance(resp, list) and resp:
+        resp = resp[0]
+    if isinstance(resp, dict):
+        content = resp.get("content")
+        if isinstance(content, list) and content and isinstance(content[0], dict):
+            text = content[0].get("text") or ""
+            try:
+                resp = json.loads(text)
+            except Exception:
+                return ""
+    if not isinstance(resp, dict):
+        return ""
+    diags = resp.get("diagnostics")
+    if diags != []:
+        return ""
+    if resp.get("verified") is True:
+        return ""
+    return (
+        "DO NOT RECORD THIS AS A CLEAN VERIFICATION. The diagnostics list came "
+        "back empty WITHOUT `verified: true`, which means UNKNOWN, not clean: "
+        "the document may already have been elaborated in this server session, "
+        "in which case the compiler's diagnostics went to an earlier client and "
+        "cannot be replayed to yours. An agent was misled this way on "
+        "2026-07-25 -- told a file with five sorries had zero diagnostics. To "
+        "get a real answer, make an actual content change (even one docstring "
+        "line) and call again; only new content starts new work and produces a "
+        "fresh publish. Do not restart the report server -- that discards "
+        "genuine in-flight elaboration."
+    )
+
+
 def main() -> int:
     try:
         payload = json.load(sys.stdin)
         tool_name = payload.get("tool_name", "")
         if not tool_name.endswith("__diagnostics"):
+            return 0
+        warning = _false_clean_warning(payload)
+        if warning:
+            print(json.dumps({
+                "hookSpecificOutput": {
+                    "hookEventName": "PostToolUse",
+                    "additionalContext": warning,
+                }
+            }))
             return 0
         worktree_path = _worktree_path(tool_name)
         file_path = (payload.get("tool_input") or {}).get("file_path")
