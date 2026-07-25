@@ -11,13 +11,17 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Andrew Yang, Kevin Buzzard, Pietro Monticone
 -/
 
-import Fermat.FLT.Modularity.PatchingVendored.Algebra
-import Fermat.FLT.Modularity.PatchingVendored.Module
-import Fermat.FLT.Modularity.PatchingVendored.AdicTopology
-import Mathlib.Topology.Algebra.Nonarchimedean.TotallyDisconnected
-import Fermat.FLT.Modularity.PatchingVendored.InverseLimit
-import Mathlib.Topology.Algebra.Nonarchimedean.TotallyDisconnected
-import Mathlib.Topology.Algebra.Ring.Compact
+module
+
+public import Fermat.FLT.Modularity.PatchingVendored.Algebra
+public import Fermat.FLT.Modularity.PatchingVendored.Module
+public import Fermat.FLT.Modularity.PatchingVendored.AdicTopology
+public import Mathlib.Topology.Algebra.Nonarchimedean.TotallyDisconnected
+public import Fermat.FLT.Modularity.PatchingVendored.InverseLimit
+public import Mathlib.Topology.Algebra.Nonarchimedean.TotallyDisconnected
+public import Mathlib.Topology.Algebra.Ring.Compact
+
+@[expose] public section
 
 set_option autoImplicit false
 set_option relaxedAutoImplicit false
