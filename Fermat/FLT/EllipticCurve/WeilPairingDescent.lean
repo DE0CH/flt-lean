@@ -4665,7 +4665,7 @@ theorem finiteDimensional_and_finrank_le_pullback (hΔ : W.Δ ≠ 0)
     rw [hfr, hfrM]
     exact hminle
 
-/-- **L4-5/6 Galois core (PROVEN over the single remaining sub-leaf
+/-- **L4-5/6 Galois core (PROVEN, as is its degree sub-lemma
 `finiteDimensional_and_finrank_le_pullback`): every element of the
 function field fixed by all lifted translation evaluations lies in the
 range of the `[p]`-pullback embedding — `Fix E[p] ⊆ [p]^*K`.**  Let
@@ -4682,8 +4682,11 @@ realizes `h ↦ h ∘ [p]`.
 The proof (HLEG-NOTES.md §4(B), stages L4-5/6) is the degree squeeze
 `mem_range_algebraMap_of_fixed_of_finrank_le` applied to
 `L := (IsFractionRing.lift hinj).fieldRange` and the group
-`H = {σ_κ : κ ∈ E[p]}`, assembled here from three stages (the first two
-proven, the third the remaining leaf):
+`H = {σ_κ : κ ∈ E[p]}`, assembled here from three stages (all three
+now proven — the third, the degree bound, by exhibiting the generic
+point as integral over the pullback field with a monic annihilator of
+degree `p²` built from the division-polynomial relation, so that
+`K = L(tautX)` has `finrank ≤ deg (minpoly) ≤ p²`):
 
 * every translate `κ ⊕ taut` is affine (`exists_translate_some`), so
   every `σ_κ` is defined; `σ_O = id`
@@ -4695,7 +4698,8 @@ proven, the third the remaining leaf):
   `σ_κ` through `constPoint_injective` and `hval_inj`);
 * each `σ_κ` fixes `L` pointwise (`lift_pointEval_pullback_eq`), so
   `H` is a group of `L`-automorphisms;
-* `[K : L] ≤ p²` (`finiteDimensional_and_finrank_le_pullback`).
+* `[K : L] ≤ p²` (`finiteDimensional_and_finrank_le_pullback`,
+  PROVEN).
 
 The squeeze then gives `Fix H = L ∋ z`. -/
 theorem mem_range_pullback_of_translation_lift_fixed {ι : Type*}
