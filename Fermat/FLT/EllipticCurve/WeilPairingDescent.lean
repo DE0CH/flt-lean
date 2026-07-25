@@ -1073,22 +1073,6 @@ lemma coordC_eq_algebraMap (d : F) :
     coordC W d = algebraMap F W.CoordinateRing d := rfl
 
 omit [DecidableEq F] in
-/-- **The Weierstrass relation inside the affine coordinate ring.**
-`AdjoinRoot.mk_self` on `W.polynomial`, read in the coordinate atoms:
-this is the single relation modulo which every `F[W]` identity of the
-chord calculus is a polynomial identity. -/
-lemma coord_equation (W : WeierstrassCurve.Affine F) :
-    coordY W ^ 2 + (algebraMap F W.CoordinateRing W.a₁ * coordX W +
-        algebraMap F W.CoordinateRing W.a₃) * coordY W =
-      coordX W ^ 3 + algebraMap F W.CoordinateRing W.a₂ * coordX W ^ 2 +
-        algebraMap F W.CoordinateRing W.a₄ * coordX W +
-        algebraMap F W.CoordinateRing W.a₆ := by
-  have h : CoordinateRing.mk W W.polynomial = 0 := AdjoinRoot.mk_self
-  simp only [WeierstrassCurve.Affine.polynomial, map_add, map_sub, map_mul, map_pow,
-    ← coordC_eq_algebraMap, coordX, coordY, coordC] at h ⊢
-  linear_combination h
-
-omit [DecidableEq F] in
 /-- A nonzero constant is a unit of the coordinate ring, so it does not
 change the ideal it spans. -/
 lemma isUnit_coordC {c : F} (hc : c ≠ 0) : IsUnit (coordC W c) :=
@@ -1831,6 +1815,7 @@ lemma span_eq_of_mem_of_span_mul_eq {n ñ : W.CoordinateRing}
     IsUnit.of_mul_eq_one _ (mul_left_cancel₀ (mul_ne_zero hm₁0 hm₂0) hw')
   rw [← hu₁, Ideal.span_singleton_mul_left_unit (isUnit_of_mul_isUnit_left hu), hm₁]
 
+set_option maxRecDepth 40000 in
 omit [IsAlgClosed F] in
 /-- **L4-8 line-numerator sub-leaf (PROVEN): the cleared conjugate
 product.**  The two cleared line values at the translate multiply to the
@@ -1898,8 +1883,11 @@ theorem lineNumerator_mul_lineNumeratorNeg {q₁ q₂ x₁ y₁ x₂ y₂ : F}
     Cubic.prod_X_sub_C_eq] at hAP
   have hc2 := Cubic.c_of_eq hAP
   have hc3 := Cubic.d_of_eq hAP
-  -- the two relations, transported into `F[W]`
+  -- the two relations, transported into `F[W]`.  `coord_equation_coordC` is
+  -- stated in the `coordC` atoms; `ring` must see the SAME atoms as the
+  -- `algebraMap`-shaped hypotheses below, so normalize it first.
   have hcr := coord_equation_coordC W
+  simp only [coordC_eq_algebraMap] at hcr
   rw [WeierstrassCurve.Affine.equation_iff'] at hq
   have hqW := congrArg (algebraMap F W.CoordinateRing) hq
   have hc2W := congrArg (algebraMap F W.CoordinateRing) hc2
@@ -5170,6 +5158,178 @@ theorem exists_multiset_span_eq_prod_pointIdeal (hΔ : W.Δ ≠ 0)
   exists_multiset_ideal_eq_prod_pointIdeal hΔ _
     (fun h => hz (Ideal.span_singleton_eq_bot.mp h))
 
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- **The local Jacobian relation at an affine point of `W`** (PROVEN).
+With `u := coordX − x` and `v := coordY − y` the Weierstrass relation of
+`F[W]`, expanded at the point `(x, y)` of `W`, reads
+
+`v·(W_Y(x,y) + v + a₁u) = −u·(W_X(x,y) − (3x + a₂)u − u²)`,
+
+where `W_Y(x,y) = 2y + a₁x + a₃` and `W_X(x,y) = a₁y − (3x² + 2a₂x + a₄)`
+are the two partials whose non-vanishing is `Nonsingular` (mathlib's
+`nonsingular_iff'`).  This is Taylor expansion at `(x, y)` and nothing
+more: `linear_combination` of the coordinate-ring relation
+`coord_equation_coordC` against the scalar relation `W.Equation x y`,
+both read in the `algebraMap` atoms.
+
+It is the *only* geometric input to normality of `F[W]`: it exhibits one
+of `u, v` as a unit multiple of the other in the local ring at the point,
+which is what makes that local ring a discrete valuation ring. -/
+lemma jacobian_relation {x y : F} (h : W.Equation x y) :
+    (coordY W - coordC W y) *
+        (coordC W (2 * y + W.a₁ * x + W.a₃) +
+          ((coordY W - coordC W y) +
+            coordC W W.a₁ * (coordX W - coordC W x))) =
+      -((coordX W - coordC W x) *
+        (coordC W (W.a₁ * y - (3 * x ^ 2 + 2 * W.a₂ * x + W.a₄)) +
+          (-(coordC W (3 * x + W.a₂) * (coordX W - coordC W x)) -
+            (coordX W - coordC W x) ^ 2))) := by
+  have hcr := coord_equation_coordC W
+  have hpt := congrArg (algebraMap F W.CoordinateRing)
+    ((WeierstrassCurve.Affine.equation_iff ..).mp h)
+  simp only [map_add, map_mul, map_pow, ← coordC_eq_algebraMap] at hpt
+  simp only [coordC_eq_algebraMap, map_add, map_sub, map_mul, map_pow,
+    map_ofNat] at hcr hpt ⊢
+  linear_combination hcr - hpt
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- **Dividing out a local unit.**  If `a·s = −(b·t)` in `F[W]` and `t`
+avoids the prime `m`, then `t` becomes a unit in `F[W]_m`, so `b` becomes
+a multiple of `a` there.  This is the one step that turns the Jacobian
+relation into principality of the maximal ideal of the local ring. -/
+lemma mem_span_singleton_localization {m : Ideal W.CoordinateRing} [m.IsPrime]
+    {a b s t : W.CoordinateRing} (ht : t ∉ m) (h : a * s = -(b * t)) :
+    algebraMap W.CoordinateRing (Localization.AtPrime m) b ∈
+      Ideal.span {algebraMap W.CoordinateRing (Localization.AtPrime m) a} := by
+  have hut : IsUnit (algebraMap W.CoordinateRing (Localization.AtPrime m) t) :=
+    IsLocalization.map_units (M := m.primeCompl) (Localization.AtPrime m) ⟨t, ht⟩
+  obtain ⟨c, hc⟩ := hut.exists_left_inv
+  have hA : algebraMap W.CoordinateRing (Localization.AtPrime m) a *
+      algebraMap W.CoordinateRing (Localization.AtPrime m) s =
+      -(algebraMap W.CoordinateRing (Localization.AtPrime m) b *
+        algebraMap W.CoordinateRing (Localization.AtPrime m) t) := by
+    rw [← map_mul, ← map_mul, ← map_neg]
+    exact congrArg _ h
+  refine Ideal.mem_span_singleton'.mpr
+    ⟨-(algebraMap W.CoordinateRing (Localization.AtPrime m) s * c), ?_⟩
+  linear_combination (-c) * hA +
+    algebraMap W.CoordinateRing (Localization.AtPrime m) b * hc
+
+omit [DecidableEq F] in
+/-- **Normality of the smooth affine curve** (PROVEN): `F[W]` is
+integrally closed in its function field.  Together with noetherianity
+(`isNoetherianRing_coordinateRing`) and dimension one (integrality over
+the PID `F[X]`) this is exactly what `IsDedekindRing W.CoordinateRing`
+needs, an instance mathlib does not provide for `CoordinateRing`.
+
+PROOF (local, one point at a time — `IsIntegrallyClosed.of_localization_maximal`).
+Integral closedness is a local property, so it suffices to see that
+`F[W]_m` is integrally closed for every maximal `m`.  Over the
+algebraically closed `F` and with `W.Δ ≠ 0` such an `m` is the point
+ideal `⟨u, v⟩` of an affine point `(x, y)` of `W`
+(`exists_point_pointIdeal_eq`), `u = coordX − x`, `v = coordY − y`.  The
+Jacobian relation (`jacobian_relation`)
+
+`v·(W_Y + v + a₁u) = −u·(W_X − (3x + a₂)u − u²)`
+
+has, by nonsingularity of `(x, y)`, at least one of its two *cofactors*
+congruent to a nonzero constant modulo `m`, hence a unit of `F[W]_m`
+(`mem_span_singleton_localization`).  If `W_Y ≠ 0` the left cofactor is a
+unit and `v ∈ (u)`; if `W_X ≠ 0` the right cofactor is and `u ∈ (v)`.
+Either way `m·F[W]_m` is PRINCIPAL, and a noetherian local domain whose
+maximal ideal is principal is integrally closed — this is mathlib's
+`tfae_of_isNoetherianRing_of_isLocalRing_of_isDomain` (condition 4 ⇒
+condition 3), the DVR characterization. -/
+theorem isIntegrallyClosed_coordinateRing (hΔ : W.Δ ≠ 0) :
+    IsIntegrallyClosed W.CoordinateRing := by
+  haveI hnoeth : IsNoetherianRing W.CoordinateRing := isNoetherianRing_coordinateRing W
+  refine IsIntegrallyClosed.of_localization_maximal ?_
+  intro m hm0 hmMax
+  obtain ⟨R, hR0, hRm⟩ := exists_point_pointIdeal_eq hΔ hmMax
+  rcases R with _ | ⟨x, y, hns⟩
+  · exact absurd rfl hR0
+  rw [pointIdeal_some] at hRm
+  have hspan : m = Ideal.span {coordX W - coordC W x, coordY W - coordC W y} := by
+    rw [← hRm, CoordinateRing.XYIdeal, XClass_eq, YClass_C_eq]
+  have hu : coordX W - coordC W x ∈ m := by
+    rw [hspan]; exact Ideal.subset_span (Set.mem_insert _ _)
+  have hv : coordY W - coordC W y ∈ m := by
+    rw [hspan]; exact Ideal.subset_span (Set.mem_insert_of_mem _ rfl)
+  have hsq : (coordX W - coordC W x) ^ 2 ∈ m := by
+    rw [sq]; exact Ideal.mul_mem_left m _ hu
+  have hjac := jacobian_relation (W := W) hns.left
+  -- the same relation read the other way round, for the second branch
+  have hjac' : (coordX W - coordC W x) *
+        (coordC W (W.a₁ * y - (3 * x ^ 2 + 2 * W.a₂ * x + W.a₄)) +
+          (-(coordC W (3 * x + W.a₂) * (coordX W - coordC W x)) -
+            (coordX W - coordC W x) ^ 2)) =
+      -((coordY W - coordC W y) *
+        (coordC W (2 * y + W.a₁ * x + W.a₃) +
+          ((coordY W - coordC W y) +
+            coordC W W.a₁ * (coordX W - coordC W x)))) := by
+    linear_combination hjac
+  -- a nonzero constant plus an element of `m` escapes `m`, as `m ≠ ⊤`
+  have hnotmem : ∀ (c : F) (r : W.CoordinateRing), c ≠ 0 → r ∈ m →
+      coordC W c + r ∉ m := by
+    intro c r hc hr hmem
+    exact hmMax.ne_top (Ideal.eq_top_of_isUnit_mem _
+      (by simpa using sub_mem hmem hr) (isUnit_coordC (W := W) hc))
+  -- the maximal ideal of the local ring at the point is principal
+  have hprinc : ∃ g : Localization.AtPrime m,
+      IsLocalRing.maximalIdeal (Localization.AtPrime m) = Ideal.span {g} := by
+    have hmapspan : IsLocalRing.maximalIdeal (Localization.AtPrime m) =
+        Ideal.span {algebraMap W.CoordinateRing (Localization.AtPrime m)
+              (coordX W - coordC W x),
+            algebraMap W.CoordinateRing (Localization.AtPrime m)
+              (coordY W - coordC W y)} := by
+      rw [← Localization.AtPrime.map_eq_maximalIdeal, ← Set.image_pair,
+        ← Ideal.map_span, ← hspan]
+    rcases ((WeierstrassCurve.Affine.nonsingular_iff' ..).mp hns).2 with hβ | hα
+    · -- `W_X(x, y) ≠ 0`: the horizontal `v` generates
+      refine ⟨algebraMap W.CoordinateRing (Localization.AtPrime m)
+        (coordY W - coordC W y), ?_⟩
+      have hmem : algebraMap W.CoordinateRing (Localization.AtPrime m)
+          (coordX W - coordC W x) ∈
+          Ideal.span {algebraMap W.CoordinateRing (Localization.AtPrime m)
+            (coordY W - coordC W y)} :=
+        mem_span_singleton_localization
+          (hnotmem _ _ hβ (sub_mem (neg_mem (Ideal.mul_mem_left m _ hu)) hsq)) hjac
+      rw [hmapspan]
+      refine le_antisymm (Ideal.span_le.mpr ?_) (Ideal.span_le.mpr ?_)
+      · rintro z hz
+        simp only [Set.mem_insert_iff, Set.mem_singleton_iff] at hz
+        rcases hz with rfl | rfl
+        · exact hmem
+        · exact Ideal.mem_span_singleton_self _
+      · rw [Set.singleton_subset_iff]
+        exact Ideal.subset_span (Set.mem_insert_of_mem _ rfl)
+    · -- `W_Y(x, y) ≠ 0`: the vertical `u` generates
+      refine ⟨algebraMap W.CoordinateRing (Localization.AtPrime m)
+        (coordX W - coordC W x), ?_⟩
+      have hmem : algebraMap W.CoordinateRing (Localization.AtPrime m)
+          (coordY W - coordC W y) ∈
+          Ideal.span {algebraMap W.CoordinateRing (Localization.AtPrime m)
+            (coordX W - coordC W x)} :=
+        mem_span_singleton_localization
+          (hnotmem _ _ hα (add_mem hv (Ideal.mul_mem_left m _ hu))) hjac'
+      rw [hmapspan]
+      refine le_antisymm (Ideal.span_le.mpr ?_) (Ideal.span_le.mpr ?_)
+      · rintro z hz
+        simp only [Set.mem_insert_iff, Set.mem_singleton_iff] at hz
+        rcases hz with rfl | rfl
+        · exact Ideal.mem_span_singleton_self _
+        · exact hmem
+      · rw [Set.singleton_subset_iff]
+        exact Ideal.subset_span (Set.mem_insert _ _)
+  have hP : (IsLocalRing.maximalIdeal (Localization.AtPrime m)).IsPrincipal :=
+    ⟨hprinc⟩
+  have hkey : IsIntegrallyClosed (Localization.AtPrime m) ∧
+      ∀ P : Ideal (Localization.AtPrime m), P ≠ ⊥ → P.IsPrime →
+        P = IsLocalRing.maximalIdeal (Localization.AtPrime m) :=
+    ((tfae_of_isNoetherianRing_of_isLocalRing_of_isDomain
+      (Localization.AtPrime m)).out 4 3).mp hP
+  exact hkey.1
+
 /-- **L4-7 brick (sorry): the multiplicity-one `[p]`-pullback formula
 for a coordinate function.**  Let `val` enumerate `E[p]`, let
 `(xp, yp)` be the affine coordinates of the generic multiple
@@ -5205,12 +5365,12 @@ a multiset product, of an indicator sum, and of a `fiberProd` are
 computed, the point-ideal multiplicities are proven (point ideals at
 affine points are maximal, nonzero and injective in the point), and the
 weak Nullstellensatz identification of height-one primes with affine
-point ideals is proven.  Two sorried `have`s remain inside the proof:
+point ideals is proven.  Integral closedness of `F[W]` — normality of
+the smooth affine curve, the last missing ingredient of
+`IsDedekindDomain W.CoordinateRing`, which mathlib does not provide — is
+now proven too, in `isIntegrallyClosed_coordinateRing`.  ONE sorried
+`have` remains inside the proof:
 
-* `hIC`: integral closedness of `F[W]` — normality of the smooth affine
-  curve, the only place where `W.Δ ≠ 0` is needed; noetherianity and
-  dimension one are proven, so this is all that is missing for
-  `IsDedekindDomain W.CoordinateRing` (which mathlib does not provide);
 * `hcountEv`: the multiplicity-one pullback count — the order of
   `[p]^*z` at the place of an affine point `S` is the order of `z` at
   `p • S` (multiplicity one from separability of `[p]`, `(p : F) ≠ 0`,
@@ -5252,18 +5412,20 @@ theorem spanSingleton_pointEval_mul_fiberProd_pow {ι : Type*} [Fintype ι]
   haveI hDim : Ring.DimensionLEOne W.CoordinateRing :=
     Ring.DimensionLEOne.of_isIntegral (R := Polynomial F) W.CoordinateRing
   /- **Normality of the smooth affine curve** (the geometric input of the
-  Dedekind property): every element of the function field `K` integral
-  over `F[W]` already lies in `F[W]`.  With `W.Δ ≠ 0` the affine curve is
-  nonsingular, so each local ring `F[W]_m` at an affine point is regular
-  — the maximal ideal `⟨X − x, Y − y⟩` becomes principal after
-  localization, since the Jacobian criterion makes one of the two
-  generators a unit multiple of the other plus higher order — hence a
-  DVR, and a one-dimensional noetherian domain whose localizations are
-  DVRs is integrally closed. -/
+  Dedekind property, PROVEN in `isIntegrallyClosed_coordinateRing`): every
+  element of the function field `K` integral over `F[W]` already lies in
+  `F[W]`.  With `W.Δ ≠ 0` the affine curve is nonsingular, so each local
+  ring `F[W]_m` at an affine point is regular — the maximal ideal
+  `⟨X − x, Y − y⟩` becomes principal after localization, since the
+  Jacobian relation makes one of the two generators a unit multiple of
+  the other — hence a DVR, and a noetherian local domain with principal
+  maximal ideal is integrally closed. -/
   have hIC : ∀ {x : W.FunctionField}, IsIntegral W.CoordinateRing x →
       ∃ y : W.CoordinateRing,
         algebraMap W.CoordinateRing W.FunctionField y = x := by
-    sorry
+    haveI := isIntegrallyClosed_coordinateRing (W := W) hΔ
+    intro x hx
+    exact IsIntegrallyClosed.isIntegral_iff.mp hx
   haveI : IsDedekindRing W.CoordinateRing :=
     (isDedekindRing_iff (A := W.CoordinateRing) W.FunctionField).mpr
       ⟨hNoeth, hDim, hIC⟩
