@@ -201,6 +201,14 @@ import Mathlib.RingTheory.Polynomial.Cyclotomic.Eval
 -- PUBLIC because the glue lemmas' statements mention the `WithConv`
 -- convolution monoid and this file is one `@[expose] public section`
 public import Fermat.FLT.Deformations.RepresentationTheory.FlatProlongation
+-- `integralClosureInclusion`, used in the STATEMENT (not merely the proof)
+-- of `mem_maximalIdeal_of_integralClosureInclusion` below, which serves the
+-- at-`2` tame-Frobenius leaf.  It reached this file only transitively and
+-- PRIVATELY, which is enough inside a proof body but not in a signature —
+-- hence `Unknown identifier` on an otherwise sorry-free declaration, the
+-- error class that no sorry scan can see.  PUBLIC because this file is one
+-- `@[expose] public section`.
+public import Fermat.FLT.Deformations.RepresentationTheory.LocalInertiaFixedField
 import Fermat.FLT.GaloisRepresentation.HardlyRamified.Residual
 -- `IsHardlyRamified.exists_residual_odd`, discharging the residual
 -- reduction pillar `exists_residual_isHardlyRamified_odd` below
@@ -299,6 +307,14 @@ public import Mathlib.NumberTheory.NumberField.Cyclotomic.Galois
 -- `Fermat.FLT.Modularity.KhareWintenberger`; named explicitly here since
 -- a proof in this file depends on it. Non-public: proof only.
 import Mathlib.NumberTheory.Basic
+-- `GaloisRep.inertiaInvariants`, `GaloisRep.tameExponent` and
+-- `GaloisRep.HasConductorExponentAt`: the Artin conductor exponent of a
+-- Galois representation at a finite place, with the tame part computed
+-- from the inertia invariants and the Swan part an explicit input. PUBLIC:
+-- `HasConductorExponentAt` appears in the SIGNATURE of the shared Carayol
+-- conductor leaf `hasConductorExponentAt_factorization_of_isNewAtPrime`
+-- below.
+public import Fermat.FLT.Deformations.RepresentationTheory.ArtinConductor
 
 @[expose] public section
 
@@ -6349,36 +6365,51 @@ theorem IsFlatPointsGroupAt.pi {n : ℕ} {X : Fin n → Type*}
     refine Fin.cases ?_ (fun j => ?_) i <;> simp
 
 set_option backward.isDefEq.respectTransparency false in
-/-- **The étale sub-bialgebra of a point-group quotient** (sorry node —
-step (β) of the Raynaud quotient-closure cut, split off 2026-07-25 from
-`IsFlatPointsGroupAt.of_surjective`): a `Γ Kᵥ`-equivariant quotient `Y`
-of the `Kᵥᵃˡᵍ`-point group of a finite étale `Kᵥ`-Hopf algebra `Q` is
-the point group of a `Kᵥ`-sub-bialgebra `H ↪ Q`, again finite étale —
-the pullback of functions along the point surjection. Intended proof
-(Grothendieck's Galois correspondence for étale algebras carrying a
-group structure; this is the CONVERSE direction of the PROVEN
-Gelfand-duality machinery of `KnownIn1980s/EllipticCurves/Flat.lean`,
-which builds the algebra from the group):
-* *finiteness*: the point group `Q →ₐ[Kᵥ] Kᵥᵃˡᵍ` is finite — `Q` is
-  module-finite over `Kᵥ`, so an algebra map into a field is pinned by
-  its values on a finite spanning set, and `Q` étale makes those values
-  roots of separable polynomials — hence `Y` is finite through `p`;
-* *the algebra*: `Y` is then a finite `Γ Kᵥ`-group whose action factors
-  through a finite Galois quotient, so `galoisEquivariantAlgebra` (the
-  equivariant functions `Y → Kᵥᵃˡᵍ`) together with
-  `galoisEquivariantEval_injective`/`_surjective`,
-  `exists_hopfAlgebra_galoisEquivariantAlgebra` and their assembly
-  `exists_finiteQuotient_galoisModule_etale_package` yield a finite
-  étale `Kᵥ`-Hopf algebra `H` with `points(H) ≃+ Y` equivariantly;
-* *the embedding*: the same construction applied to `points(Q)`
-  identifies `Q` itself with the equivariant functions on its own
-  points (its points separate its elements — the separation lemma
-  `subalgebra_eq_top_of_algHom_separating` — and the two algebras have
-  the same `Kᵥ`-dimension), and under that identification the pullback
-  of functions along `p` is an INJECTIVE `Kᵥ`-bialgebra homomorphism
-  `ι : H → Q` (injective because `p` is surjective; a bialgebra map
-  because `p` is a group homomorphism) whose induced map on points is
-  exactly `p` — the last clause below.
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **The étale sub-bialgebra of a point-group quotient** (PROVEN
+2026-07-25 — step (β) of the Raynaud quotient-closure cut, split off
+the same day from `IsFlatPointsGroupAt.of_surjective`): a
+`Γ Kᵥ`-equivariant quotient `Y` of the `Kᵥᵃˡᵍ`-point group of a finite
+étale `Kᵥ`-Hopf algebra `Q` is the point group of a
+`Kᵥ`-sub-bialgebra `H ↪ Q`, again finite étale — the pullback of
+functions along the point surjection. This is Grothendieck's Galois
+correspondence for étale algebras carrying a group structure, i.e. the
+CONVERSE direction of the Gelfand-duality machinery of
+`KnownIn1980s/EllipticCurves/Flat.lean` (which builds the algebra from
+the group); the proof runs entirely inside that PROVEN machinery, in
+five steps:
+* *finiteness*: `Q` is module-finite over `Kᵥ`, so its `Kᵥᵃˡᵍ`-points
+  are finite (`Finite.algHom`) and `Y` is finite through the surjection
+  `p`;
+* *the finite Galois quotient*: a `Kᵥ`-basis `b` of `Q` is enough to
+  pin a point, so two automorphisms of `Kᵥᵃˡᵍ` agreeing on the FINITE
+  set `{φ (b i)}` act equally on every point of `Q` — by `Kᵥ`-linearity
+  of `σ ∘ φ` — hence, `p` being an equivariant surjection, equally on
+  `Y`. The normal closure `L` of `Kᵥ({φ (b i)})` is therefore a finite
+  Galois subextension through which the `Γ Kᵥ`-action on `Y` factors,
+  the factored action `ρ` being built from `AlgEquiv.liftNormal` (which
+  is multiplicative because lifts of equal restrictions act equally);
+* *the algebra*: `exists_finiteQuotient_galoisModule_etale_package`
+  applied to `(Y, L, ρ)` — `Small.{0} Kᵥ` is `small_self` and `Ωᵥ` is a
+  separable closure in characteristic zero — yields a finite étale
+  `Kᵥ`-Hopf algebra `H` with `points(H) ≃+ Y` equivariantly, its
+  `WithConv` convolution monoid identified with the vendored bare-hom
+  one by `vendored_mul_eq_convMul`;
+* *the embedding*: `exists_algHom_of_algHom_map` (the Gelfand transform
+  onto equivariant functions — injective by separation, surjective by
+  Speiser independence) applied to the ÉTALE algebra `Q` and the
+  equivariant point map `t := e⁻¹ ∘ p` produces `ι : H →ₐ[Kᵥ] Q` with
+  `φ ∘ ι = t φ`. It is injective because `p` is surjective, so every
+  point of `H` is some `t φ` and the points of the finite étale `H`
+  separate it (`eq_zero_of_forall_algHom_eq_zero`);
+* *the bialgebra upgrade*: points separate the finite étale
+  `Q ⊗[Kᵥ] Q` and every point of it is the `TensorProduct.lift` of its
+  two restrictions, so testing `comul ∘ ι` against `(ι ⊗ ι) ∘ comul`
+  at such a point is exactly the multiplicativity of `t` (which holds
+  because `p` and `e` are additive), and testing the counits is
+  `t 1 = 1`; `BialgHom.ofAlgHom` assembles `ι : H →ₐc[Kᵥ] Q`, and its
+  induced map on points is `p` — the last clause below.
 Unconditionally TRUE; no hypothesis package (for `p` bijective one may
 take `H = Q` and `ι = id`). -/
 theorem exists_etale_subBialgebra_of_points_surjective
@@ -6393,8 +6424,240 @@ theorem exists_etale_subBialgebra_of_points_surjective
       (_ : Function.Injective (ι : H →ₐ[Kᵥ] Q))
       (e : Additive (H →ₐ[Kᵥ] Ωᵥ) ≃+ Y),
       ∀ φ : Q →ₐ[Kᵥ] Ωᵥ,
-        e (Additive.ofMul (φ.comp (ι : H →ₐ[Kᵥ] Q))) = p (Additive.ofMul φ) :=
-  sorry
+        e (Additive.ofMul (φ.comp (ι : H →ₐ[Kᵥ] Q))) = p (Additive.ofMul φ) := by
+  classical
+  -- ### instances: `Ωᵥ` is a separable closure of `Kᵥ`, and the points are finite
+  haveI : CharZero (HeightOneSpectrum.adicCompletion ℚ v) :=
+    charZero_of_injective_algebraMap
+      ((algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ v)).injective)
+  haveI hsepcl : IsSepClosure Kᵥ Ωᵥ := ⟨inferInstance, inferInstance⟩
+  haveI hQpts : Finite (Q →ₐ[Kᵥ] Ωᵥ) := Finite.algHom Kᵥ Q Ωᵥ
+  haveI hYfin : Finite Y := Finite.of_surjective p hp
+  -- the Galois action on points is postcomposition
+  have hsm : ∀ (g : Γᵥ) (φ : Q →ₐ[Kᵥ] Ωᵥ),
+      g • φ = ((g : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ).toAlgHom).comp φ := fun _ _ => AlgHom.ext fun _ => rfl
+  -- ### (1) a finite Galois subextension through which the action on `Y` factors
+  set b := Module.finBasis Kᵥ Q
+  set Sset : Set Ωᵥ :=
+    Set.range (fun x : (Q →ₐ[Kᵥ] Ωᵥ) × Fin (Module.finrank Kᵥ Q) => x.1 (b x.2))
+  haveI hSfin : Finite ↥Sset := (Set.finite_range _).to_subtype
+  set L₀ : IntermediateField Kᵥ Ωᵥ := IntermediateField.adjoin Kᵥ Sset
+  haveI : FiniteDimensional Kᵥ ↥L₀ :=
+    IntermediateField.finiteDimensional_adjoin fun x _ =>
+      (Algebra.IsSeparable.isSeparable Kᵥ x).isIntegral
+  set L : IntermediateField Kᵥ Ωᵥ := IntermediateField.normalClosure Kᵥ ↥L₀ Ωᵥ
+  haveI : Algebra.IsSeparable Kᵥ ↥L :=
+    Algebra.isSeparable_tower_bot_of_isSeparable Kᵥ ↥L Ωᵥ
+  haveI hGalL : IsGalois Kᵥ ↥L := ⟨⟩
+  have hsub : Sset ⊆ (L : Set Ωᵥ) := fun z hz =>
+    IntermediateField.le_normalClosure L₀ (IntermediateField.subset_adjoin Kᵥ Sset hz)
+  -- automorphisms agreeing on `L` act equally on every point of `Q`
+  have keyL : ∀ (σ τ : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ), (∀ l ∈ L, σ l = τ l) →
+      ∀ φ : Q →ₐ[Kᵥ] Ωᵥ, σ.toAlgHom.comp φ = τ.toAlgHom.comp φ := by
+    intro σ τ hστ φ
+    refine AlgHom.ext fun x => ?_
+    have h2 : (σ.toAlgHom.comp φ).toLinearMap = (τ.toAlgHom.comp φ).toLinearMap :=
+      b.ext fun i => hστ _ (hsub ⟨(φ, i), rfl⟩)
+    exact LinearMap.congr_fun h2 x
+  -- hence equally on `Y`, which is a quotient of the points of `Q`
+  have hYact : ∀ σ τ : Γᵥ,
+      (∀ l ∈ L, (σ : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ) l = (τ : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ) l) →
+      ∀ y : Y, σ • y = τ • y := by
+    intro σ τ hστ y
+    obtain ⟨x, hx⟩ := hp y
+    rw [← hx, ← hpe σ x, ← hpe τ x]
+    refine congrArg p ?_
+    have h1 : (σ • x : Additive (Q →ₐ[Kᵥ] Ωᵥ)) =
+        Additive.ofMul (σ • Additive.toMul x) := rfl
+    have h2 : (τ • x : Additive (Q →ₐ[Kᵥ] Ωᵥ)) =
+        Additive.ofMul (τ • Additive.toMul x) := rfl
+    rw [h1, h2, hsm σ, hsm τ]
+    exact congrArg Additive.ofMul (keyL _ _ hστ _)
+  -- the `Γ Kᵥ`-action as additive endomorphisms
+  set act : Γᵥ → AddMonoid.End Y := fun g =>
+    { toFun := fun y => g • y
+      map_zero' := smul_zero g
+      map_add' := fun y₁ y₂ => smul_add g y₁ y₂ }
+  -- the action of `Gal(L/Kᵥ)` on `Y` through `AlgEquiv.liftNormal`
+  set ρ : (↥L ≃ₐ[Kᵥ] ↥L) →* AddMonoid.End Y :=
+    { toFun := fun σ' => act (AlgEquiv.liftNormal σ' Ωᵥ)
+      map_one' := by
+        refine AddMonoidHom.ext fun y => ?_
+        have hfix : ∀ l ∈ L, (AlgEquiv.liftNormal (1 : ↥L ≃ₐ[Kᵥ] ↥L) Ωᵥ) l
+            = (1 : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ) l := by
+          intro l hl
+          have hc := AlgEquiv.liftNormal_commutes (1 : ↥L ≃ₐ[Kᵥ] ↥L) Ωᵥ ⟨l, hl⟩
+          simpa using hc
+        show (AlgEquiv.liftNormal (1 : ↥L ≃ₐ[Kᵥ] ↥L) Ωᵥ) • y = y
+        rw [hYact _ (1 : Γᵥ) hfix y, one_smul]
+      map_mul' := by
+        intro σ' τ'
+        refine AddMonoidHom.ext fun y => ?_
+        have hfix : ∀ l ∈ L, (AlgEquiv.liftNormal (σ' * τ') Ωᵥ) l
+            = ((AlgEquiv.liftNormal σ' Ωᵥ) * (AlgEquiv.liftNormal τ' Ωᵥ) :
+              Ωᵥ ≃ₐ[Kᵥ] Ωᵥ) l := by
+          intro l hl
+          have hc := AlgEquiv.liftNormal_commutes (σ' * τ') Ωᵥ ⟨l, hl⟩
+          have hcτ := AlgEquiv.liftNormal_commutes τ' Ωᵥ ⟨l, hl⟩
+          have hcσ := AlgEquiv.liftNormal_commutes σ' Ωᵥ (τ' ⟨l, hl⟩)
+          simp only [IntermediateField.algebraMap_apply] at hc hcτ hcσ
+          show (AlgEquiv.liftNormal (σ' * τ') Ωᵥ) l
+            = (AlgEquiv.liftNormal σ' Ωᵥ) ((AlgEquiv.liftNormal τ' Ωᵥ) l)
+          rw [hc, hcτ, hcσ]
+          rfl
+        show (AlgEquiv.liftNormal (σ' * τ') Ωᵥ) • y =
+          (AlgEquiv.liftNormal σ' Ωᵥ) • ((AlgEquiv.liftNormal τ' Ωᵥ) • y)
+        rw [hYact _ _ hfix y, mul_smul] }
+  -- the restriction of a global automorphism acts on `Y` as the automorphism itself
+  have hρσ : ∀ (σ : Γᵥ) (y : Y),
+      ρ (AlgEquiv.restrictNormalHom (F := Kᵥ) (K₁ := Ωᵥ) ↥L
+        (σ : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ)) y = σ • y := by
+    intro σ y
+    show (AlgEquiv.liftNormal (AlgEquiv.restrictNormalHom (F := Kᵥ) (K₁ := Ωᵥ) ↥L
+      (σ : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ)) Ωᵥ) • y = σ • y
+    refine hYact _ _ (fun l hl => ?_) y
+    have hc := AlgEquiv.liftNormal_commutes
+      (AlgEquiv.restrictNormalHom (F := Kᵥ) (K₁ := Ωᵥ) ↥L (σ : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ)) Ωᵥ ⟨l, hl⟩
+    have hr := AlgEquiv.restrictNormalHom_apply (F := Kᵥ) (K₁ := Ωᵥ) L
+      (σ : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ) ⟨l, hl⟩
+    simp only [IntermediateField.algebraMap_apply] at hc
+    rw [hc, hr]
+  -- ### (2) the finite étale Hopf algebra with point group `Y`
+  obtain ⟨H, hCR, hHopf, hFin, hEt, f, hf⟩ :
+      ∃ (HK : Type) (_ : CommRing HK) (_ : HopfAlgebra Kᵥ HK)
+        (_ : Module.Finite Kᵥ HK) (_ : Algebra.Etale Kᵥ HK)
+        (f : Additive (WithConv (HK →ₐ[Kᵥ] Ωᵥ)) ≃+ Y),
+        ∀ (σ : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ) (φ : HK →ₐ[Kᵥ] Ωᵥ),
+          f (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) =
+            ρ (AlgEquiv.restrictNormalHom (F := Kᵥ) (K₁ := Ωᵥ) ↥L σ)
+              (f (Additive.ofMul (WithConv.toConv φ))) :=
+    exists_finiteQuotient_galoisModule_etale_package Kᵥ Ωᵥ Y L ρ
+  letI := hCR
+  letI := hHopf
+  letI := hFin
+  letI := hEt
+  -- the bare-hom convolution monoid on the points of `H` is mathlib's `WithConv` one
+  set w : Additive (H →ₐ[Kᵥ] Ωᵥ) ≃+ Additive (WithConv (H →ₐ[Kᵥ] Ωᵥ)) :=
+    { toFun := fun u => Additive.ofMul (WithConv.toConv (Additive.toMul u))
+      invFun := fun u => Additive.ofMul (WithConv.ofConv (Additive.toMul u))
+      left_inv := fun _ => rfl
+      right_inv := fun _ => rfl
+      map_add' := fun u₁ u₂ => congrArg Additive.ofMul (by
+        show WithConv.toConv (Additive.toMul u₁ * Additive.toMul u₂) =
+          WithConv.toConv (Additive.toMul u₁) * WithConv.toConv (Additive.toMul u₂)
+        rw [vendored_mul_eq_convMul, WithConv.toConv_ofConv]) }
+  set e : Additive (H →ₐ[Kᵥ] Ωᵥ) ≃+ Y := w.trans f
+  have heapply : ∀ φ : H →ₐ[Kᵥ] Ωᵥ,
+      e (Additive.ofMul φ) = f (Additive.ofMul (WithConv.toConv φ)) := fun _ => rfl
+  have hee : ∀ (g : Γᵥ) (u : Additive (H →ₐ[Kᵥ] Ωᵥ)), e (g • u) = g • e u := by
+    intro g u
+    have h1 : (g • u : Additive (H →ₐ[Kᵥ] Ωᵥ)) =
+        Additive.ofMul (((g : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ).toAlgHom).comp (Additive.toMul u)) := by
+      show Additive.ofMul (g • Additive.toMul u) = _
+      exact congrArg Additive.ofMul (AlgHom.ext fun _ => rfl)
+    have h3 : e u = f (Additive.ofMul (WithConv.toConv (Additive.toMul u))) := rfl
+    rw [h1, heapply, hf (g : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ) (Additive.toMul u), hρσ g, h3]
+  have heesymm : ∀ (g : Γᵥ) (y : Y), e.symm (g • y) = g • e.symm y := by
+    intro g y
+    apply e.injective
+    rw [e.apply_symm_apply, hee, e.apply_symm_apply]
+  -- ### (3) the induced map of point sets and the algebra homomorphism `H → Q`
+  set t : (Q →ₐ[Kᵥ] Ωᵥ) → (H →ₐ[Kᵥ] Ωᵥ) :=
+    fun φ => Additive.toMul (e.symm (p (Additive.ofMul φ)))
+  have hte : ∀ (σ : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ) (φ : Q →ₐ[Kᵥ] Ωᵥ),
+      t (σ.toAlgHom.comp φ) = σ.toAlgHom.comp (t φ) := by
+    intro σ φ
+    have h1 : (Additive.ofMul (σ.toAlgHom.comp φ) : Additive (Q →ₐ[Kᵥ] Ωᵥ)) =
+        (σ : Γᵥ) • Additive.ofMul φ := by
+      refine congrArg Additive.ofMul ?_
+      exact (AlgHom.ext fun _ => rfl : ((σ : Γᵥ) • φ) = σ.toAlgHom.comp φ).symm
+    show Additive.toMul (e.symm (p (Additive.ofMul (σ.toAlgHom.comp φ)))) = _
+    rw [h1, hpe, heesymm]
+    exact AlgHom.ext fun _ => rfl
+  obtain ⟨ι₀, hι₀⟩ := exists_algHom_of_algHom_map Kᵥ Ωᵥ Q H t hte
+  have hcompι : ∀ φ : Q →ₐ[Kᵥ] Ωᵥ, φ.comp ι₀ = t φ := fun φ =>
+    AlgHom.ext fun x => hι₀ φ x
+  -- every point of `H` is a restriction, because `p` is surjective
+  have htsurj : ∀ ψ : H →ₐ[Kᵥ] Ωᵥ, ∃ φ : Q →ₐ[Kᵥ] Ωᵥ, t φ = ψ := by
+    intro ψ
+    obtain ⟨x, hx⟩ := hp (e (Additive.ofMul ψ))
+    refine ⟨Additive.toMul x, ?_⟩
+    show Additive.toMul (e.symm (p (Additive.ofMul (Additive.toMul x)))) = ψ
+    rw [show (Additive.ofMul (Additive.toMul x) : Additive (Q →ₐ[Kᵥ] Ωᵥ)) = x from rfl,
+      hx, e.symm_apply_apply]
+    rfl
+  have hι₀inj : Function.Injective ι₀ := by
+    intro x₁ x₂ hx
+    have hzero : x₁ - x₂ = 0 := by
+      refine eq_zero_of_forall_algHom_eq_zero Kᵥ Ωᵥ H _ fun ψ => ?_
+      obtain ⟨φ, hφ⟩ := htsurj ψ
+      rw [map_sub, sub_eq_zero, ← hφ]
+      show t φ x₁ = t φ x₂
+      rw [← hι₀ φ x₁, ← hι₀ φ x₂, hx]
+    exact sub_eq_zero.mp hzero
+  -- ### (4) the bialgebra upgrade: `ι₀` respects counit and comultiplication
+  have ht1 : t 1 = 1 := by
+    show Additive.toMul (e.symm (p (Additive.ofMul (1 : Q →ₐ[Kᵥ] Ωᵥ)))) = 1
+    rw [show (Additive.ofMul (1 : Q →ₐ[Kᵥ] Ωᵥ)) = (0 : Additive (Q →ₐ[Kᵥ] Ωᵥ)) from rfl,
+      map_zero, map_zero]
+    rfl
+  have htmul : ∀ φ ψ : Q →ₐ[Kᵥ] Ωᵥ, t (φ * ψ) = t φ * t ψ := by
+    intro φ ψ
+    show Additive.toMul (e.symm (p (Additive.ofMul (φ * ψ)))) = _
+    rw [show (Additive.ofMul (φ * ψ) : Additive (Q →ₐ[Kᵥ] Ωᵥ)) =
+      Additive.ofMul φ + Additive.ofMul ψ from rfl, map_add, map_add]
+    rfl
+  have hcounit : (Bialgebra.counitAlgHom Kᵥ Q).comp ι₀ = Bialgebra.counitAlgHom Kᵥ H := by
+    refine AlgHom.ext fun x => ?_
+    refine (algebraMap Kᵥ Ωᵥ).injective ?_
+    have h1 : (1 : Q →ₐ[Kᵥ] Ωᵥ) (ι₀ x) =
+        algebraMap Kᵥ Ωᵥ (Bialgebra.counitAlgHom Kᵥ Q (ι₀ x)) := rfl
+    have h2 : (1 : H →ₐ[Kᵥ] Ωᵥ) x =
+        algebraMap Kᵥ Ωᵥ (Bialgebra.counitAlgHom Kᵥ H x) := rfl
+    rw [AlgHom.comp_apply, ← h1, ← h2, hι₀ 1 x, ht1]
+  haveI hEt2 : Algebra.Etale Kᵥ (Q ⊗[Kᵥ] Q) := Algebra.Etale.comp Kᵥ Q (Q ⊗[Kᵥ] Q)
+  have hcomul : (Algebra.TensorProduct.map ι₀ ι₀).comp (Bialgebra.comulAlgHom Kᵥ H) =
+      (Bialgebra.comulAlgHom Kᵥ Q).comp ι₀ := by
+    refine AlgHom.ext fun a => ?_
+    have hsep := eq_zero_of_forall_algHom_eq_zero Kᵥ Ωᵥ (Q ⊗[Kᵥ] Q)
+      ((Algebra.TensorProduct.map ι₀ ι₀).comp (Bialgebra.comulAlgHom Kᵥ H) a -
+        (Bialgebra.comulAlgHom Kᵥ Q).comp ι₀ a)
+    rw [sub_eq_zero] at hsep
+    apply hsep
+    intro χ
+    rw [map_sub, sub_eq_zero]
+    set φ := χ.comp Algebra.TensorProduct.includeLeft with hφ
+    set ψ := χ.comp (Algebra.TensorProduct.includeRight : Q →ₐ[Kᵥ] Q ⊗[Kᵥ] Q) with hψ
+    have hχ : χ = Algebra.TensorProduct.lift φ ψ fun _ _ => Commute.all _ _ := by
+      refine Algebra.TensorProduct.ext ?_ ?_
+      · exact AlgHom.ext fun c => by simp [hφ]
+      · exact AlgHom.ext fun c => by simp [hψ]
+    have hleft : χ ((Algebra.TensorProduct.map ι₀ ι₀)
+        (Bialgebra.comulAlgHom Kᵥ H a)) = ((t φ) * (t ψ)) a := by
+      rw [hχ]
+      have hlift : (Algebra.TensorProduct.lift φ ψ fun _ _ => Commute.all _ _).comp
+          (Algebra.TensorProduct.map ι₀ ι₀) =
+          Algebra.TensorProduct.lift (φ.comp ι₀) (ψ.comp ι₀)
+            (fun _ _ => Commute.all _ _) := by
+        refine Algebra.TensorProduct.ext ?_ ?_
+        · exact AlgHom.ext fun c => by simp
+        · exact AlgHom.ext fun c => by simp
+      rw [← AlgHom.comp_apply, hlift, hcompι, hcompι]
+      rfl
+    have hright : χ ((Bialgebra.comulAlgHom Kᵥ Q) (ι₀ a)) = (φ * ψ) (ι₀ a) := by
+      rw [hχ]; rfl
+    rw [AlgHom.comp_apply, AlgHom.comp_apply, hleft, hright,
+      show (φ * ψ) (ι₀ a) = ((φ * ψ).comp ι₀) a from rfl, hcompι, htmul]
+  -- ### (5) assembly
+  refine ⟨H, hCR, hHopf, hFin, hEt, BialgHom.ofAlgHom ι₀ hcounit hcomul, ?_, e, ?_⟩
+  · exact hι₀inj
+  · intro φ
+    show e (Additive.ofMul (φ.comp ι₀)) = p (Additive.ofMul φ)
+    rw [hcompι φ]
+    show e (Additive.ofMul (Additive.toMul (e.symm (p (Additive.ofMul φ))))) = _
+    rw [show ∀ z : Additive (H →ₐ[Kᵥ] Ωᵥ),
+      (Additive.ofMul (Additive.toMul z) : Additive (H →ₐ[Kᵥ] Ωᵥ)) = z from fun _ => rfl]
+    exact e.apply_symm_apply _
 
 set_option backward.isDefEq.respectTransparency false in
 set_option maxHeartbeats 1000000 in
@@ -6709,9 +6972,10 @@ set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
 /-- **Quotient closure** (DECOMPOSED 2026-07-25 into the two leaves
-`exists_etale_subBialgebra_of_points_surjective` (β) and
-`exists_hopfOrder_of_subBialgebra` (γ) above, with the assembly below
-PROVEN — the quotients half of Raynaud closure, added 2026-07-24 for
+`exists_etale_subBialgebra_of_points_surjective` (β, since PROVEN) and
+`exists_hopfOrder_of_subBialgebra` (γ, still open) above, with the
+assembly below PROVEN — the quotients half of Raynaud closure, added
+2026-07-24 for
 the E2b′ lattice-flatness transfer: the quotient of a finite flat group
 scheme over the DVR `𝒪ᵥ` by a flat closed subgroup scheme is finite
 flat — Raynaud, *Schémas en groupes de type `(p, …, p)`*, Bull. SMF 102
@@ -6725,11 +6989,10 @@ proven glue below:
 * (α) *finiteness* — folded into leaf (β), which needs it internally:
   the ambient point group of `Q := Kᵥ ⊗[𝒪ᵥ] G` is finite, hence so is
   `Y` through the surjection `π`.
-* (β) *étale–Galois* — the leaf
-  `exists_etale_subBialgebra_of_points_surjective`: `Y` is the point
-  group of a finite étale `Kᵥ`-Hopf algebra `H` embedded in `Q` by an
-  injective `Kᵥ`-bialgebra map `ι`, the pullback of functions along the
-  point surjection.
+* (β) *étale–Galois* — `exists_etale_subBialgebra_of_points_surjective`
+  (PROVEN 2026-07-25): `Y` is the point group of a finite étale
+  `Kᵥ`-Hopf algebra `H` embedded in `Q` by an injective `Kᵥ`-bialgebra
+  map `ι`, the pullback of functions along the point surjection.
 * (γ) *schematic closure over the DVR* — the leaf
   `exists_hopfOrder_of_subBialgebra`: `G' := H ∩ G` is a finite flat
   `𝒪ᵥ`-Hopf order with `Kᵥ ⊗[𝒪ᵥ] G' ≃ₐc[Kᵥ] H`.
@@ -12768,7 +13031,39 @@ Soundness: the hypothesis set is classically INHABITED (take `O = R`,
 over `ℤ_p`, `c = 0`, `f = g = id` works) and the conclusion holds for
 every inhabitant by the route above. Circularity guard (inherited from
 E2b′): must not route through `Family.lean` or `Reducible.lean`'s
-B5. -/
+B5.
+
+TERMINAL CITATION — audited 2026-07-25, do NOT dispatch a proof effort
+here. Three findings, recorded so the leaf is not re-attacked:
+
+1. *No substrate on this pin.* Steps 1–3 are Fontaine/Raynaud/Tate
+   `p`-adic Hodge theory, and the pin has none of it: a search of the
+   whole of mathlib for `pDivisible`, `BarsottiTate`, `IsCrystalline`
+   or `crystalline` returns only the unrelated `RingTheory.DividedPowers`
+   files — no `p`-divisible groups, no crystalline or Barsotti–Tate
+   representations, no Hodge–Tate weights. The reference project
+   `~/cs/FLT` has none either, so there is nothing to vendor.
+2. *Do not cut at commensurability instead.* With `p^κ·L ⊆ T ⊆ p^(−κ)·L`,
+   multiplication by `p^κ` embeds `L ⧸ p^m L` into `T ⧸ p^m T` with the
+   NONZERO kernel `p^(m−κ)L ⧸ p^m L`, and the transition map
+   `T ⧸ p^(m+κ)T → L ⧸ p^m L` has image only `p^κ L ⧸ p^m L`; so
+   `L ⧸ p^m L` is an EXTENSION assembled from levels of `T`, which is
+   exactly what `IsFlatPointsGroupAt.of_injective` and `.of_surjective`
+   do not provide. Cutting there would plant an unfaithful leaf.
+3. *This leaf is EQUIVALENT to its consumer, not weaker.* Granting
+   `hasFlatProlongationAt_lattice_pPow_of_generic_iso` for every `m`,
+   this statement is inhabited by `T := (Fin 2 → O)` regarded as a
+   `ℤ_p`-module (free, being finitely generated and torsion-free over
+   the PID `ℤ_p`), `ρT := ρO` with scalars restricted, `c = 0` and
+   `f = g = id`: the `ℤ_p`-level `p^k · (Fin 2 → O)` and the `O`-level
+   `(p : O)^k · (Fin 2 → O)` are the SAME subgroup, so the two level
+   representations coincide. Hence the E2b′-flat cut buys the classical
+   STATEMENT SHAPE — Tate module of a `p`-divisible group plus
+   commensurability, which is what a citation can actually supply —
+   and not a reduction in strength. Two consequences: further
+   decomposition can only relabel the content, never shrink it; and the
+   leaf is soundness-safe, being exactly as strong as the theorem it
+   serves, so it cannot be false while that theorem is true. -/
 theorem exists_flatIsogenousLattice_of_generic_iso
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
@@ -18389,12 +18684,16 @@ leaf is now a PROVEN assembly over:
   over `nonempty_modularJacobianPackage`, itself now a PROVEN
   assembly (annihilator-idempotent engine, pure finite-dimensional
   commutative algebra) over `nonempty_modularHomologyPackage`, itself
-  (2026-07-25) a PROVEN assembly over the single sorried inhabitation
-  leaf `nonempty_modularHeckeSpectrumPackage` — the `g`-independent
-  modular-homology interface carrier (Tate module, Eichler–Shimura
-  congruence, rank-2 freeness over the Hecke algebra, twisted Weil
-  pairing, eigensystem occurrence and strong multiplicity one, the
-  last two now stated on the Hecke algebra rather than the module).
+  (2026-07-25) a PROVEN assembly over
+  `nonempty_modularHeckeSpectrumPackage` — which the FIFTH
+  decomposition (2026-07-25, the `ℂ → ℚ̄_p` Eichler–Shimura seam) turned
+  into a PROVEN assembly in turn, over exactly two leaves: the
+  GEOMETRIC `nonempty_modularHeckeComparisonPackage` (Tate module,
+  Eichler–Shimura congruence, rank-2 freeness over the Hecke algebra,
+  twisted Weil pairing, Ribet irreducibility, and the comparison
+  field) and the ANALYTIC `exists_heckeOp_newform_etaleIdempotent`
+  (strong multiplicity one in `S₂(Γ₀(M))`, in idempotent form, over
+  the PROVEN complex Hecke operators `heckeOp`).
 * `charFrob_baseChange` and
   `charFrob_map_coeff_zero_of_isHardlyRamified` and
   `eq_quadratic_of_monic_natDegree_two` — PROVEN bookkeeping that
@@ -18659,10 +18958,25 @@ everything from those facts to the attachment statement is PROVEN:
   engine (powers of `Ann_A(v)` stabilize in the finite-dimensional
   commutative algebra `A`, the Cayley–Hamilton determinant trick
   produces an almost-idempotent, the iteration corrects it).
-* `nonempty_modularHeckeSpectrumPackage` — SORRY: the residual
-  geometric leaf, inhabitation of the fourth-level carrier (see its
+* `heckeOp`, `heckeOp_coe`,
+  `heckeOp_apply_eq_smul_of_isWeightTwoEigenform` — PROVEN: the Hecke
+  operator `T_q` of `heckeTransform` as a bundled endomorphism of
+  `S₂(Γ₀(M))`, and the fact that a normalized weight-2 eigenform is
+  literally an eigenvector of it. The complex side of the `ℂ → ℚ̄_p`
+  Eichler–Shimura seam.
+* `exists_heckeOp_newform_etaleIdempotent` — SORRY: strong
+  multiplicity one in `S₂(Γ₀(M))` in idempotent form (the newform's
+  local factor of the complex Hecke algebra is a LINE) — the
+  classical-analytic leaf of the seam.
+* `nonempty_modularHeckeComparisonPackage` — SORRY: the residual
+  GEOMETRIC leaf, inhabitation of the fifth-level carrier, whose one
+  non-geometric field is the `ℂ → ℚ̄_p` comparison itself (see its
   docstring for the classical construction and citations, field by
   field).
+* `nonempty_modularHeckeSpectrumPackage` — now a PROVEN assembly over
+  those two: the complex étale idempotent transported by `comparison`
+  gives `spectrum_occurs` outright and `spectrum_reduced` by
+  absorption.
 * `nonempty_modularHomologyPackage` — now a PROVEN assembly: the two
   module-level spectral fields are the coordinatewise shadows of the
   two algebra-level ones under freeness of rank two.
@@ -19348,8 +19662,8 @@ twisted Weil pairing restricts to a symplectic form on it, forcing
 inhabitation of THIS carrier is itself a PROVEN assembly over
 `ModularHomologyPackage` below; the citations for each field are in
 the docstring of the inhabitation leaf
-`nonempty_modularHeckeSpectrumPackage`, the only sorried node of this
-cut. -/
+`nonempty_modularHeckeComparisonPackage`, the sorried GEOMETRIC node of
+this cut since the 2026-07-25 fifth decomposition. -/
 structure ModularJacobianPackage (M : ℕ) where
   /-- The Galois module: intended `V_p(J₀(M)) ⊗ ℚ̄_p`. -/
   Vp : Type
@@ -19464,8 +19778,8 @@ Both are facts about the one intended inhabitant, quantified over
 abstract carriers they would be false. All other fields are verbatim
 those of `ModularJacobianPackage`; the classical citations, field by
 field, are in the docstring of the inhabitation leaf
-`nonempty_modularHeckeSpectrumPackage`, the only sorried node of this
-cut. -/
+`nonempty_modularHeckeComparisonPackage`, the sorried GEOMETRIC node of
+this cut since the 2026-07-25 fifth decomposition. -/
 structure ModularHomologyPackage (M : ℕ) where
   /-- The Galois module: intended `V_p(J₀(M)) ⊗ ℚ̄_p`. -/
   Vp : Type
@@ -19604,8 +19918,8 @@ exactly as the fields they replace — they are facts about the one
 intended inhabitant, false for arbitrary abstract carriers. All other
 fields are verbatim those of `ModularHomologyPackage`; the classical
 citations, field by field, are in the docstring of the inhabitation
-leaf `nonempty_modularHeckeSpectrumPackage`, the only sorried node of
-this cut. -/
+leaf `nonempty_modularHeckeComparisonPackage`, the sorried GEOMETRIC
+node of this cut since the 2026-07-25 fifth decomposition. -/
 structure ModularHeckeSpectrumPackage (M : ℕ) where
   /-- The Galois module: intended `V_p(J₀(M)) ⊗ ℚ̄_p`. -/
   Vp : Type
@@ -19710,11 +20024,354 @@ attribute [instance] ModularHeckeSpectrumPackage.addCommGroup
   ModularHeckeSpectrumPackage.module
   ModularHeckeSpectrumPackage.moduleFinite
 
-/-- **Inhabitation of the modular Hecke-spectrum package** (sorry node
-— THE residual geometric leaf of the Eichler–Shimura cut after the
-2026-07-25 fourth decomposition, and the only place where the modular
-curve and its Jacobian are consumed): for every level `M ≥ 1` the
-carrier `ModularHeckeSpectrumPackage M` is inhabited.
+/-! ##### The `ℂ → ℚ̄_p` Eichler–Shimura seam (FIFTH decomposition,
+2026-07-25)
+
+The fourth decomposition above left `nonempty_modularHeckeSpectrumPackage`
+carrying two ALGEBRA-level spectral assertions — `spectrum_occurs` and
+`spectrum_reduced` — about the base-changed Hecke algebra
+`A = heckeSubalgebra hecke ≅ 𝕋 ⊗ ℚ̄_p`. Both are, classically, the
+`κ`-transport of ONE object on the COMPLEX side: the idempotent cutting
+out the newform's local factor of the Hecke algebra acting on
+`S₂(Γ₀(M))`, that factor being the field of Hecke eigenvalues itself
+(strong multiplicity one). This section cuts exactly along that seam,
+which is the cut the fourth decomposition's own DECOMPOSITION POINTERS
+named:
+
+* the COMPLEX side is built here, PROVEN, out of the file's existing
+  `S₂(Γ₀(M))` theory: `heckeOp M q` is the honest Hecke operator `T_q`
+  of `heckeTransform` as a bundled element of
+  `Module.End ℂ (CuspForm (Gamma0GL M) 2)` (`exists_heckeOpLinear`,
+  from `exists_cuspForm_heckeTransform` plus `heckeTransform_add`,
+  `heckeTransform_smul` and the `q`-expansion principle), and a
+  normalized weight-2 eigenform is literally an eigenvector of it,
+  `heckeOp_apply_eq_smul_of_isWeightTwoEigenform` — the coefficient
+  identity `hecke_eigen_coeff_identity` read through
+  `qExpansion_heckeTransform_coeff` and
+  `cuspForm_eq_of_forall_qCoeff_eq`. So the Hecke algebra
+  `heckeSubalgebra (heckeOp M) ⊆ End ℂ S₂(Γ₀(M))` and the eigenform's
+  character on it are now honest Lean objects, not citations;
+* the CLASSICAL-ANALYTIC residue on the complex side is the single
+  sorried leaf `exists_heckeOp_newform_etaleIdempotent`: strong
+  multiplicity one in `S₂(Γ₀(M))` (Diamond–Shurman Theorem 5.8.2 with
+  §5.8 and Proposition 5.8.5), in its idempotent form — the newform's
+  local factor of `heckeSubalgebra (heckeOp M)` is the LINE `ℂ·e`;
+* the TRANSPORT is the `comparison` field of
+  `ModularHeckeComparisonPackage`: given that complex idempotent, the
+  Eichler–Shimura isomorphism plus the Tate-module comparison produce
+  the corresponding idempotent of `A` with the `κ`-transported
+  eigenvalues. Being a field of the carrier it is quantified over
+  `(g, κ)` INSIDE the structure, like the fields it replaces — a fact
+  about the ONE intended inhabitant, not about abstract carriers;
+* the two algebra-level spectral fields of
+  `ModularHeckeSpectrumPackage` are then PROVEN glue over these
+  (`nonempty_modularHeckeSpectrumPackage`, below, is now an assembly).
+
+What is left geometric is `nonempty_modularHeckeComparisonPackage`:
+Tate module, Galois action, Igusa/Eichler–Shimura congruence, rank-2
+freeness, twisted Weil pairing, Ribet irreducibility, and the
+comparison field. -/
+
+section ComplexHeckeAlgebra
+
+/-- **The Hecke operator `T_q` on `S₂(Γ₀(M))` as a bundled linear
+endomorphism** (PROVEN): the Hecke slash-sum `heckeTransform M q`
+preserves the weight-2 level-`M` cusp space
+(`exists_cuspForm_heckeTransform`), is additive and `ℂ`-homogeneous
+(`heckeTransform_add`, `heckeTransform_smul`), and the underlying
+function determines the cusp form, so the pointwise choice of
+preimages assembles into a `ℂ`-linear endomorphism. -/
+theorem exists_heckeOpLinear {M : ℕ} (hM : 0 < M) {q : ℕ} (hq : q.Prime) :
+    ∃ F : Module.End ℂ (CuspForm (Gamma0GL M) 2),
+      ∀ f : CuspForm (Gamma0GL M) 2, ⇑(F f) = heckeTransform M q ⇑f := by
+  classical
+  choose T hT using fun f : CuspForm (Gamma0GL M) 2 =>
+    exists_cuspForm_heckeTransform hM hq f
+  refine ⟨{ toFun := T, map_add' := ?_, map_smul' := ?_ }, hT⟩
+  · intro f₁ f₂
+    apply DFunLike.coe_injective
+    simp only [CuspForm.coe_add, hT, heckeTransform_add]
+  · intro c f
+    apply DFunLike.coe_injective
+    simp only [RingHom.id_apply, CuspForm.IsGLPos.coe_smul, hT,
+      heckeTransform_smul]
+
+/-- The unconditional form of `exists_heckeOpLinear`, so that the Hecke
+operator can be DEFINED at every pair `(M, q)` (junk — the zero
+endomorphism — outside the meaningful range `0 < M`, `q` prime, which
+is all any statement below quantifies over). -/
+theorem exists_heckeOpLinear_total (M q : ℕ) :
+    ∃ F : Module.End ℂ (CuspForm (Gamma0GL M) 2),
+      0 < M → q.Prime →
+        ∀ f : CuspForm (Gamma0GL M) 2, ⇑(F f) = heckeTransform M q ⇑f := by
+  by_cases h : 0 < M ∧ q.Prime
+  · obtain ⟨F, hF⟩ := exists_heckeOpLinear h.1 h.2
+    exact ⟨F, fun _ _ => hF⟩
+  · exact ⟨0, fun hM hq => absurd ⟨hM, hq⟩ h⟩
+
+/-- **The Hecke operator `T_q` on `S₂(Γ₀(M))`** — the complex side of
+the Eichler–Shimura seam. At `0 < M` and `q` prime it is the bundled
+`heckeTransform M q` (`heckeOp_coe`); elsewhere it is junk, which no
+statement about it looks at (all quantify over primes). -/
+noncomputable def heckeOp (M q : ℕ) : Module.End ℂ (CuspForm (Gamma0GL M) 2) :=
+  (exists_heckeOpLinear_total M q).choose
+
+/-- The Hecke operator acts by the Hecke slash-sum. -/
+theorem heckeOp_coe {M : ℕ} (hM : 0 < M) {q : ℕ} (hq : q.Prime)
+    (f : CuspForm (Gamma0GL M) 2) :
+    ⇑(heckeOp M q f) = heckeTransform M q ⇑f :=
+  (exists_heckeOpLinear_total M q).choose_spec hM hq f
+
+/-- Scalar homogeneity of the `q`-expansion coefficients (through the
+functional `qCoeffL`). -/
+theorem qCoeff_smul {N : ℕ} (c : ℂ) (f : CuspForm (Gamma0GL N) 2) (m : ℕ) :
+    qCoeff N (c • f) m = c * qCoeff N f m := by
+  simpa using (qCoeffL N m).map_smul c f
+
+/-- **A normalized weight-2 eigenform is an eigenvector of the Hecke
+operator** (PROVEN — the eigenform carrier `IsWeightTwoEigenform`,
+which on this pin is a COEFFICIENT condition, meets the honest
+operator): `T_q g = a_q(g)·g` in `S₂(Γ₀(M))`. Proof: the two sides
+have the same `q`-expansion, by `qExpansion_heckeTransform_coeff`
+(the coefficients of the slash-sum) followed by
+`hecke_eigen_coeff_identity` (the coefficient collapse
+`a_{qm} + 1_{q∤M}1_{q∣m}·q·a_{m/q} = a_q·a_m`), and a weight-2 cusp
+form is determined by its `q`-expansion
+(`cuspForm_eq_of_forall_qCoeff_eq`). -/
+theorem heckeOp_apply_eq_smul_of_isWeightTwoEigenform {M : ℕ} (hM : 0 < M)
+    {g : CuspForm (Gamma0GL M) 2} (hg : IsWeightTwoEigenform M g)
+    {q : ℕ} (hq : q.Prime) :
+    heckeOp M q g = qCoeff M g q • g := by
+  refine cuspForm_eq_of_forall_qCoeff_eq fun m => ?_
+  have h1 : qCoeff M (heckeOp M q g) m =
+      qCoeff M g (q * m) +
+        (if q ∣ M then 0
+          else if q ∣ m then (q : ℂ) * qCoeff M g (m / q) else 0) := by
+    have h2 := qExpansion_heckeTransform_coeff hM hq g m
+    rw [← heckeOp_coe hM hq g] at h2
+    exact h2
+  rw [h1, hecke_eigen_coeff_identity hg hq m, qCoeff_smul]
+
+/-- A normalized eigenform is nonzero (its first coefficient is `1`). -/
+theorem ne_zero_of_isWeightTwoEigenform {M : ℕ}
+    {g : CuspForm (Gamma0GL M) 2} (hg : IsWeightTwoEigenform M g) :
+    g ≠ 0 := by
+  intro h
+  have h1 := hg.qCoeff_one
+  rw [h, qCoeff_zero_cuspForm] at h1
+  exact zero_ne_one h1
+
+/-- **Strong multiplicity one in `S₂(Γ₀(M))`, in idempotent form**
+(sorry node — the CLASSICAL-ANALYTIC leaf of the `ℂ → ℚ̄_p`
+Eichler–Shimura seam; Diamond–Shurman Theorem 5.8.2 together with §5.8
+and Proposition 5.8.5): for a weight-2 level-`M` NEWFORM `g`, the
+newform's local factor of the complex Hecke algebra
+`A_ℂ = heckeSubalgebra (heckeOp M) ⊆ End ℂ S₂(Γ₀(M))` is the LINE
+`ℂ·e` on an idempotent `e` fixing `g`.
+
+Precisely: there is `e ∈ A_ℂ` with `e² = e`, `e g = g`, every
+prime-indexed Hecke operator acting on `e` by the eigenvalue
+`a_q(g)`, and every element of `A_ℂ` killed by a POWER of each
+`T_q − a_q(g)` a scalar multiple of `e`.
+
+CLASSICAL CONTENT, and why each clause is true of the intended
+object. `A_ℂ` is a finite-dimensional (`cuspForm_finiteDimensional`)
+commutative algebra of operators on `S₂(Γ₀(M))`, hence Artinian,
+hence a finite product of local factors; `e` is the unit of the factor
+supported at the character `T_q ↦ a_q(g)`, which exists because `g` is
+a joint eigenvector (`heckeOp_apply_eq_smul_of_isWeightTwoEigenform`,
+passed in as `hgeig`) — that much is pure algebra, the
+annihilator-idempotent engine `exists_idempotent_heckeSubalgebra_fixing`
+applied to the vector `g`, and it gives `e² = e`, `e g = g` and
+nilpotence of `a·e` for every `a ∈ A_ℂ` killing `g`. The ANALYTIC
+input, and the only reason this is a leaf, is that this local factor
+is `ℂ` itself — ÉTALE, one-dimensional:
+
+* the full prime eigensystem `{a_q(g)}` of a newform of level exactly
+  `M` occurs in `S₂(Γ₀(M))` on the line `ℂ·g` ALONE (strong
+  multiplicity one, D–S Thm 5.8.2: an oldform component would realize
+  the away-from-`M` eigensystem at a proper divisor level, which
+  `IsWeightTwoNewform.eigensystem_minimal` forbids, and the
+  `U_q`-eigenvalues at `q ∣ M` are pinned by D–S Prop. 5.8.5);
+* consequently the generalized joint eigenspace coincides with the
+  eigenspace: the newform component of `𝕋_ℂ` has no nilpotents (all
+  `U_q`-nonsemisimplicity of the Hecke algebra is carried by oldform
+  components), so an element of `A_ℂ` killed by a power of each
+  `T_q − a_q(g)` is supported on that reduced factor, i.e. is `c·e`;
+* the eigenvalue clause `T_q·e = a_q(g)·e` is then automatic and is
+  recorded here only for convenience of the consumers: `(T_q − a_q)e`
+  is nilpotent and generalized-eigen, hence `c·e` with `c` nilpotent,
+  hence `0`.
+
+The two hypotheses are PROVEN facts of this file, passed in so that the
+leaf's soundness is auditable against them: `hgeig` says `g` is a joint
+eigenvector with the eigenvalues `a_q(g)`.
+
+DECOMPOSITION POINTER: the `e² = e`, `e g = g` clauses (and the
+nilpotence of `Ann_{A_ℂ}(g)·e`) are PURE ALGEBRA over
+`exists_idempotent_heckeSubalgebra_fixing`, available as soon as the
+complex Hecke operators are known to COMMUTE
+(`T_q T_r = T_r T_q` on `S₂(Γ₀(M))`, a coefficient computation over
+`qExpansion_heckeTransform_coeff`: both iterated coefficient formulas
+expand to `a_{qrm} + r·1_{r∣m}a_{qm/r} + q·1_{q∣m}a_{rm/q} +
+qr·1_{qr∣m}a_{m/qr}`, symmetric in `q, r`). Proving that commutation
+would let this leaf shrink to the multiplicity-one clause alone, with
+the idempotent supplied as a hypothesis. -/
+theorem exists_heckeOp_newform_etaleIdempotent {M : ℕ} (hM : 0 < M)
+    {g : CuspForm (Gamma0GL M) 2} (hg : IsWeightTwoNewform M g)
+    (hgeig : ∀ q : ℕ, q.Prime → heckeOp M q g = qCoeff M g q • g) :
+    ∃ e ∈ heckeSubalgebra (heckeOp M), e * e = e ∧ e g = g ∧
+      (∀ q : ℕ, q.Prime → heckeOp M q * e = qCoeff M g q • e) ∧
+      (∀ a ∈ heckeSubalgebra (heckeOp M),
+        (∀ q : ℕ, q.Prime → ∃ n : ℕ,
+          (heckeOp M q - qCoeff M g q •
+            (1 : Module.End ℂ (CuspForm (Gamma0GL M) 2))) ^ n * a = 0) →
+        ∃ c : ℂ, a = c • e) :=
+  sorry
+
+end ComplexHeckeAlgebra
+
+/-- **The modular Hecke-COMPARISON package** (FIFTH decomposition,
+2026-07-25) — the geometric carrier of the modular-homology input,
+carrying the `ℂ → ℚ̄_p` Eichler–Shimura comparison in place of the two
+algebra-level spectral assertions of `ModularHeckeSpectrumPackage`.
+
+Sixteen fields are verbatim those of `ModularHeckeSpectrumPackage`
+(Tate module and Galois action, the Eichler–Shimura congruence,
+rank-2 freeness over the Hecke algebra, the Atkin–Lehner-twisted Weil
+pairing, Ribet irreducibility). The pair
+
+* `spectrum_occurs` — the newform eigensystem is a `ℚ̄_p`-point of
+  `A = heckeSubalgebra hecke`,
+* `spectrum_reduced` — its local factor is reduced,
+
+is replaced by the single field
+
+* `comparison` — GIVEN the newform's étale idempotent `eC` on the
+  COMPLEX side (in `heckeSubalgebra (heckeOp M) ⊆ End ℂ S₂(Γ₀(M))`,
+  supplied by `exists_heckeOp_newform_etaleIdempotent`), the Hecke
+  algebra `A` contains the corresponding idempotent `e`: nonzero, with
+  `T_q·e = κ(a_q(g))·e`, and ABSORBING every `κ`-generalized element
+  of `A` (`e·a = a`).
+
+Both replaced fields follow from `comparison` by three lines of
+algebra (`nonempty_modularHeckeSpectrumPackage` below), so this carrier
+is at least as strong; it is not stronger in any way that matters,
+since the intended inhabitant satisfies it. Like the fields it
+replaces, `comparison` is quantified over `(g, κ)` INSIDE the
+structure: it is a fact about the ONE intended inhabitant (through the
+Eichler–Shimura isomorphism of the genuine modular curve), FALSE for
+arbitrary abstract carriers, so it must not be extracted into a
+standalone lemma quantifying over packages. -/
+structure ModularHeckeComparisonPackage (M : ℕ) where
+  /-- The Galois module: intended `V_p(J₀(M)) ⊗ ℚ̄_p`. -/
+  Vp : Type
+  [addCommGroup : AddCommGroup Vp]
+  [module : Module (AlgebraicClosure ℚ_[p]) Vp]
+  [moduleFinite : Module.Finite (AlgebraicClosure ℚ_[p]) Vp]
+  /-- The continuous Galois action on the Tate module. -/
+  τJ : GaloisRep ℚ (AlgebraicClosure ℚ_[p]) Vp
+  /-- The Hecke operators, base-changed to `ℚ̄_p`. -/
+  hecke : ℕ → Module.End (AlgebraicClosure ℚ_[p]) Vp
+  /-- The exceptional set (intended: the places over `Mp`). -/
+  S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+  /-- Hecke correspondences are defined over `ℚ`, so they commute
+  with the whole Galois action. -/
+  hecke_comm : ∀ (m : ℕ) (γ : Field.absoluteGaloisGroup ℚ),
+    hecke m * τJ γ = τJ γ * hecke m
+  /-- The Hecke operators commute with each other. -/
+  hecke_mul_comm : ∀ m n : ℕ, hecke m * hecke n = hecke n * hecke m
+  /-- The Eichler–Shimura congruence relation at good primes:
+  `Frob_q² − T_q·Frob_q + q = 0` on the Tate module. -/
+  congruence : ∀ (q : ℕ) (hq : q.Prime),
+    hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+    τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) ^ 2
+      - hecke q *
+        τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+      + (q : AlgebraicClosure ℚ_[p]) • 1 = 0
+  /-- First member of a Hecke-algebra basis of the Tate module. -/
+  basis₁ : Vp
+  /-- Second member of a Hecke-algebra basis of the Tate module. -/
+  basis₂ : Vp
+  /-- Freeness, existence half: every vector has Hecke-algebra
+  coordinates in the basis. -/
+  span_free : ∀ x : Vp, ∃ a ∈ heckeSubalgebra hecke,
+    ∃ b ∈ heckeSubalgebra hecke, x = a basis₁ + b basis₂
+  /-- Freeness, uniqueness half: the coordinates are unique (stated
+  at zero). -/
+  indep_free : ∀ a ∈ heckeSubalgebra hecke, ∀ b ∈ heckeSubalgebra hecke,
+    a basis₁ + b basis₂ = 0 → a = 0 ∧ b = 0
+  /-- The Atkin–Lehner-twisted Weil pairing on the Tate module. -/
+  pair : Vp →ₗ[AlgebraicClosure ℚ_[p]]
+    Vp →ₗ[AlgebraicClosure ℚ_[p]] AlgebraicClosure ℚ_[p]
+  /-- The pairing is alternating. -/
+  pair_self : ∀ x : Vp, pair x x = 0
+  /-- The pairing is nondegenerate. -/
+  pair_nondeg : ∀ x : Vp, (∀ y : Vp, pair x y = 0) → x = 0
+  /-- The Hecke operators are self-adjoint for the twisted pairing. -/
+  pair_hecke : ∀ (q : ℕ), q.Prime → ∀ x y : Vp,
+    pair (hecke q x) y = pair x (hecke q y)
+  /-- Galois Frobenii off `S` scale the pairing by the cyclotomic
+  multiplier `q`. -/
+  pair_frob : ∀ (q : ℕ) (hq : q.Prime),
+    hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+    ∀ x y : Vp,
+      pair (τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) x)
+          (τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) y) =
+        (q : AlgebraicClosure ℚ_[p]) * pair x y
+  /-- **The `ℂ → ℚ̄_p` Eichler–Shimura comparison**: the newform's
+  étale idempotent transports from the COMPLEX Hecke algebra
+  `heckeSubalgebra (heckeOp M) ⊆ End ℂ S₂(Γ₀(M))` to the base-changed
+  Hecke algebra `A = heckeSubalgebra hecke ≅ 𝕋 ⊗ ℚ̄_p` acting on the
+  Tate module, with eigenvalues transported along `κ`. The hypothesis
+  is exactly the conclusion of
+  `exists_heckeOp_newform_etaleIdempotent`; the conclusion is the
+  newform's local factor of `A`, cut out by an idempotent `e` which
+  absorbs every `κ`-generalized element (`e·a = a`) — i.e. the factor
+  is `ℚ̄_p·e`, étale.
+
+  Quantified over `(g, κ)` INSIDE the structure, exactly like the two
+  spectral fields it replaces: a fact about the one intended
+  inhabitant, false for arbitrary abstract carriers. -/
+  comparison : ∀ (g : CuspForm (Gamma0GL M) 2), IsWeightTwoNewform M g →
+    ∀ (κ : heckeField M g →+* AlgebraicClosure ℚ_[p]),
+    ∀ eC ∈ heckeSubalgebra (heckeOp M), eC ≠ 0 → eC * eC = eC →
+      (∀ q : ℕ, q.Prime → heckeOp M q * eC = qCoeff M g q • eC) →
+      (∀ a ∈ heckeSubalgebra (heckeOp M),
+        (∀ q : ℕ, q.Prime → ∃ n : ℕ,
+          (heckeOp M q - qCoeff M g q •
+            (1 : Module.End ℂ (CuspForm (Gamma0GL M) 2))) ^ n * a = 0) →
+        ∃ c : ℂ, a = c • eC) →
+      ∃ e ∈ heckeSubalgebra hecke, e ≠ 0 ∧ e * e = e ∧
+        (∀ q : ℕ, q.Prime → hecke q * e = κ (heckeCoeff M g q) • e) ∧
+        (∀ a ∈ heckeSubalgebra hecke,
+          (∀ q : ℕ, q.Prime → ∃ n : ℕ,
+            (hecke q - κ (heckeCoeff M g q) • 1) ^ n * a = 0) →
+          e * a = a)
+  /-- Ribet irreducibility (Ribet 1977, Springer LNM 601, Thm. (2.3)):
+  for every level-`M` newform and `p`-adic embedding of its Hecke
+  field, the Galois action admits no proper nonzero stable subspace
+  inside the `κ`-eigenspace. Like `comparison` this is quantified over
+  `(g, κ)` INSIDE the structure — a fact about the one intended
+  inhabitant (through the Weil bound `|a_q| ≤ 2√q` of the genuine
+  newform), not about arbitrary abstract carriers. -/
+  irred_eigenspace : ∀ (g : CuspForm (Gamma0GL M) 2),
+    IsWeightTwoNewform M g →
+    ∀ (κ : heckeField M g →+* AlgebraicClosure ℚ_[p]),
+    ∀ U : Submodule (AlgebraicClosure ℚ_[p]) Vp,
+      U ≤ heckeEigenspace hecke (fun m => κ (heckeCoeff M g m)) →
+      (∀ γ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ U, τJ γ x ∈ U) →
+      U = ⊥ ∨ U = heckeEigenspace hecke (fun m => κ (heckeCoeff M g m))
+
+attribute [instance] ModularHeckeComparisonPackage.addCommGroup
+  ModularHeckeComparisonPackage.module
+  ModularHeckeComparisonPackage.moduleFinite
+
+/-- **Inhabitation of the modular Hecke-comparison package** (sorry
+node — THE residual GEOMETRIC leaf after the 2026-07-25 fifth
+decomposition, and the only place where the modular curve and its
+Jacobian are consumed): for every level `M ≥ 1` the carrier
+`ModularHeckeComparisonPackage M` is inhabited.
 
 Classical construction, field by field (Diamond–Shurman ch. 6, 8, 9):
 take `Vp := V_p(J₀(M)) ⊗_{ℚ_p} ℚ̄_p`, the rational `p`-adic Tate
@@ -19758,6 +20415,180 @@ module of the modular Jacobian `J₀(M) = Jac X₀(M)`, with
   equivariance of the Weil pairing with cyclotomic multiplier plus
   ℚ-rationality of `w_M` give `pair_frob`, with
   `χ_cyc(Frob_q) = q`;
+* `comparison` — THE `ℂ → ℚ̄_p` EICHLER–SHIMURA COMPARISON, the seam
+  of the fifth decomposition and the only field of this carrier that
+  mentions the complex side. Both Hecke algebras are base changes of
+  ONE rational Hecke algebra: the EICHLER–SHIMURA ISOMORPHISM (D–S
+  §6.2, `H₁(X₀(M); ℤ) ⊗ ℂ ≅ S₂(Γ₀(M)) ⊕ S₂(Γ₀(M))⁻`,
+  Hecke-equivariantly) identifies `𝕋 ⊗ ℂ` with the complex Hecke
+  algebra `heckeSubalgebra (heckeOp M)` acting on `S₂(Γ₀(M))`, while
+  the Tate-module comparison `V_p(J₀(M)) ≅ H₁(X₀(M); ℚ) ⊗ ℚ_p`
+  identifies `A = heckeSubalgebra hecke` with `𝕋 ⊗ ℚ̄_p` (prime
+  generation and faithfulness of both actions). The newform's local
+  factor is defined over the Hecke field `K_g = ℚ({a_q(g)})`, a number
+  field (`heckeField_finiteDimensional`), so the ÉTALE idempotent `eC`
+  of the hypothesis — the unit of the local factor of `𝕋 ⊗ ℂ` at the
+  character `T_q ↦ a_q(g)`, whose factor is `ℂ` by strong
+  multiplicity one — is the image of an idempotent of `𝕋 ⊗ K_g`, and
+  `e := ` its image under `𝕋 ⊗ K_g → 𝕋 ⊗ ℚ̄_p = A` along `κ` is the
+  asserted idempotent: nonzero (idempotents survive base change along
+  a field embedding), with `T_q·e = κ(a_q(g))·e` (apply `κ` to the
+  eigenvalue relation), and absorbing (`e·a = a`) every
+  `κ`-generalized `a ∈ A`, because étaleness of the local factor is
+  preserved by base change along `K_g → ℚ̄_p` and the maximal ideal
+  generated by `{T_q − κ(a_q(g))}` is therefore the kernel of a single
+  factor projection. This is the ONLY field where the two coefficient
+  worlds meet, which is the point of the cut;
+* `irred_eigenspace` — RIBET IRREDUCIBILITY (Ribet, *Galois
+  representations attached to eigenforms with Nebentypus*, Springer
+  LNM 601 (1977), Thm. (2.3), weight-2 trivial-nebentypus case; also
+  D–S §9.6 exercises and Cornell–Silverman–Stevens ch. by Rohrlich):
+  the `κ`-eigencomponent `ρ_{g,λ}` of `V_p(J₀(M))` is irreducible.
+  Were a line inside the 2-dimensional eigenspace Galois-stable, the
+  semisimplification of `ρ_{g,λ}` would be `δ₁ ⊕ δ₂` with the `δᵢ`
+  continuous characters of `Γ ℚ` unramified outside `Mp`
+  (Néron–Ogg–Shafarevich: `J₀(M)` has good reduction outside `M`, so
+  the Tate module — hence any subquotient — is unramified away from
+  `Mp`) and `δ₁δ₂ = χ_cyc` (the Weil-pairing determinant); by class
+  field theory over `ℚ` each `δᵢ` is a finite-order character times
+  an integer power `χ_cyc^{nᵢ}` with `n₁ + n₂ = 1`, so
+  `a_q = δ₁(Frob_q) + δ₂(Frob_q)` has archimedean absolute value
+  `≍ 1 + q` (under any embedding of the coefficients into `ℂ`) at all
+  primes in a positive-density set, violating the Eichler–Shimura /
+  Weil bound `|a_q| ≤ 2√q` of the cuspidal eigensystem (D–S Theorem
+  5.9.1 via Ramanujan–Petersson, or directly the Riemann hypothesis
+  for the reduced `X₀(M)` at good `q`).
+
+DECOMPOSITION POINTERS (2026-07-25, fifth cut): the SPECTRAL content
+has now left this leaf entirely — what used to be `spectrum_occurs`
+and `spectrum_reduced` is the single `comparison` field, whose complex
+side is the separate analytic leaf
+`exists_heckeOp_newform_etaleIdempotent` and whose algebra-level
+consequences are proven glue. The remaining fields
+(`τJ`/`congruence`/`pair_*`/`irred_eigenspace` and the freeness pair)
+require genuine modular-curve geometry — the Jacobian, its Tate
+module, Igusa reduction, the Weil pairing — absent from the pin, and
+are the irreducibly geometric residue. The next cut inside them, if
+one is wanted, is the rational-model layer the `comparison` field's
+citation sketches: an explicit finite-dimensional ℚ-algebra `𝕋_ℚ`
+with the two base-change identifications, which would turn
+`comparison` into base-change algebra plus the two identifications.
+
+SOUNDNESS (2026-07-25): the statement quantifies over nothing but the
+level, and the intended inhabitant witnesses every field, including
+the internally `(g, κ)`-quantified `comparison` and
+`irred_eigenspace`, for exactly the inhabitants of
+`IsWeightTwoNewform` — the classical newforms. `comparison` is an
+IMPLICATION whose hypothesis is the classically-true complex étale
+idempotent, so it is weaker than an outright assertion about `A` and
+strictly weaker than the two fields it replaces (which it implies);
+the `pair_frob` multiplier is stated only at the good Frobenii, which
+is all the determinant derivation consumes. -/
+theorem nonempty_modularHeckeComparisonPackage {M : ℕ} (hM : 0 < M) :
+    Nonempty (ModularHeckeComparisonPackage (p := p) M) :=
+  sorry
+
+/-- **Inhabitation of the modular Hecke-spectrum package** (DECOMPOSED
+2026-07-25 into the `ℂ → ℚ̄_p` Eichler–Shimura seam and now a PROVEN
+assembly over two leaves — the geometric
+`nonempty_modularHeckeComparisonPackage` and the analytic
+`exists_heckeOp_newform_etaleIdempotent`): for every level `M ≥ 1` the
+carrier `ModularHeckeSpectrumPackage M` is inhabited.
+
+ASSEMBLY (pure algebra over the two leaves of the `ℂ → ℚ̄_p` seam; no
+geometry, no analysis). Take the geometric package `H` from
+`nonempty_modularHeckeComparisonPackage`; every non-spectral field
+passes through verbatim. Fix a newform `g` and an embedding `κ`. Then
+`heckeOp_apply_eq_smul_of_isWeightTwoEigenform` exhibits `g` as a joint
+eigenvector of the COMPLEX Hecke operators, so the analytic leaf
+`exists_heckeOp_newform_etaleIdempotent` supplies the newform's étale
+idempotent `eC` of `heckeSubalgebra (heckeOp M)` — nonzero, because it
+fixes the nonzero form `g` (`ne_zero_of_isWeightTwoEigenform`) — and
+`H`'s `comparison` field transports it to an idempotent `e` of
+`A = heckeSubalgebra hecke` which is nonzero, satisfies
+`T_q·e = κ(a_q(g))·e`, and ABSORBS every `κ`-generalized element of
+`A`. The two spectral fields are then immediate:
+
+* `spectrum_occurs` is `e` itself;
+* `spectrum_reduced` is absorption composed with the eigenvalue
+  relation: for `κ`-generalized `a ∈ A`,
+  `(T_q − κ(a_q))·a = ((T_q − κ(a_q))·e)·a = 0·a = 0`.
+
+The classical citations live one level down: geometry and the
+comparison in the docstring of
+`nonempty_modularHeckeComparisonPackage`, strong multiplicity one in
+`S₂(Γ₀(M))` in that of `exists_heckeOp_newform_etaleIdempotent`.
+
+SOUNDNESS: nothing is asserted here any more — this is a theorem, and
+the audited assertions are the two leaves' statements. -/
+theorem nonempty_modularHeckeSpectrumPackage {M : ℕ} (hM : 0 < M) :
+    Nonempty (ModularHeckeSpectrumPackage (p := p) M) := by
+  obtain ⟨H⟩ := nonempty_modularHeckeComparisonPackage (p := p) hM
+  have hES : ∀ (g : CuspForm (Gamma0GL M) 2), IsWeightTwoNewform M g →
+      ∀ (κ : heckeField M g →+* AlgebraicClosure ℚ_[p]),
+      ∃ e ∈ heckeSubalgebra H.hecke, e ≠ 0 ∧
+        (∀ q : ℕ, q.Prime → H.hecke q * e = κ (heckeCoeff M g q) • e) ∧
+        (∀ a ∈ heckeSubalgebra H.hecke,
+          (∀ q : ℕ, q.Prime → ∃ n : ℕ,
+            (H.hecke q - κ (heckeCoeff M g q) • 1) ^ n * a = 0) →
+          e * a = a) := by
+    intro g hg κ
+    obtain ⟨eC, heCmem, heCidem, heCg, heCeig, heCline⟩ :=
+      exists_heckeOp_newform_etaleIdempotent hM hg fun q hq =>
+        heckeOp_apply_eq_smul_of_isWeightTwoEigenform hM
+          hg.toIsWeightTwoEigenform hq
+    have heC0 : eC ≠ 0 := by
+      intro h
+      refine ne_zero_of_isWeightTwoEigenform hg.toIsWeightTwoEigenform ?_
+      calc g = eC g := heCg.symm
+        _ = 0 := by simp [h]
+    obtain ⟨e, hemem, he0, -, heeig, heabs⟩ :=
+      H.comparison g hg κ eC heCmem heC0 heCidem heCeig heCline
+    exact ⟨e, hemem, he0, heeig, heabs⟩
+  refine ⟨{ Vp := H.Vp
+            addCommGroup := H.addCommGroup
+            module := H.module
+            moduleFinite := H.moduleFinite
+            τJ := H.τJ
+            hecke := H.hecke
+            S := H.S
+            hecke_comm := H.hecke_comm
+            hecke_mul_comm := H.hecke_mul_comm
+            congruence := H.congruence
+            basis₁ := H.basis₁
+            basis₂ := H.basis₂
+            span_free := H.span_free
+            indep_free := H.indep_free
+            pair := H.pair
+            pair_self := H.pair_self
+            pair_nondeg := H.pair_nondeg
+            pair_hecke := H.pair_hecke
+            pair_frob := H.pair_frob
+            spectrum_occurs := ?_
+            spectrum_reduced := ?_
+            irred_eigenspace := H.irred_eigenspace }⟩
+  · intro g hg κ
+    obtain ⟨e, hemem, he0, heeig, -⟩ := hES g hg κ
+    exact ⟨e, hemem, he0, heeig⟩
+  · intro g hg κ a ha hgen q hq
+    obtain ⟨e, -, -, heeig, heabs⟩ := hES g hg κ
+    have hea : e * a = a := heabs a ha hgen
+    calc (H.hecke q - κ (heckeCoeff M g q) • 1) * a
+        = (H.hecke q - κ (heckeCoeff M g q) • 1) * (e * a) := by rw [hea]
+      _ = ((H.hecke q - κ (heckeCoeff M g q) • 1) * e) * a := by
+          rw [mul_assoc]
+      _ = 0 := by
+          rw [sub_mul, heeig q hq, smul_mul_assoc, one_mul, sub_self,
+            zero_mul]
+
+/- SUPERSEDED CITATION BLOCK (2026-07-25, fifth decomposition), kept
+as the in-place audit trail: these are the citations with which the two
+spectral fields were ASSERTED by the leaf above before the `ℂ → ℚ̄_p`
+seam was cut. They are now PROVEN, and the same references live in the
+docstrings of `ModularHeckeComparisonPackage.comparison` (the
+comparison and the geometry) and of
+`exists_heckeOp_newform_etaleIdempotent` (strong multiplicity one).
+
 * `spectrum_occurs` — the EICHLER–SHIMURA ISOMORPHISM (D–S §6.2,
   `H₁(X₀(M); ℤ) ⊗ ℂ ≅ S₂(Γ₀(M)) ⊕ S₂(Γ₀(M))⁻`,
   Hecke-equivariantly) together with the comparison
@@ -19895,13 +20726,10 @@ is exactly the étaleness recorded in the previous spelling. The
 `pair_frob` multiplier is stated only at the good Frobenii, which is
 all the determinant derivation consumes and all that Chebotarev-style
 soundness requires. -/
-theorem nonempty_modularHeckeSpectrumPackage {M : ℕ} (hM : 0 < M) :
-    Nonempty (ModularHeckeSpectrumPackage (p := p) M) :=
-  sorry
 
 /-- **Inhabitation of the modular-homology package** (DECOMPOSED
 2026-07-25 into the Hecke-spectrum cut above and now a PROVEN assembly
-over the single sorried inhabitation leaf
+over the — itself now PROVEN — inhabitation assembly
 `nonempty_modularHeckeSpectrumPackage`): for every level `M ≥ 1` the
 carrier `ModularHomologyPackage M` is inhabited.
 
@@ -21732,6 +22560,287 @@ theorem isNewAtPrime_of_isWeightTwoNewform {M : ℕ}
   · exact absurd hold
       (not_exists_eigenform_level_not_dvd_of_isWeightTwoNewform hg hqM)
 
+/-- **Carayol's conductor theorem, ONE shared leaf in conductor-exponent
+form** (sorry node — the DEDUPLICATED away-from-`p` literature leaf,
+2026-07-25: Carayol, *Sur les représentations `ℓ`-adiques associées aux
+formes modulaires de Hilbert*, Ann. Sci. ÉNS 19 (1986), Théorème (A) —
+local–global compatibility at a prime `q ≠ p`; for weight 2 over `ℚ` the
+underlying input is Deligne–Rapoport's model of `X₀(M)` at `q` together
+with the Langlands/Deligne local computations at the bad primes): if `τ`
+is IRREDUCIBLE, matches the Hecke polynomials of the weight-2 eigenform
+`g` of level `M` away from a finite set, and `g` is `q`-NEW at a prime
+`q ∣ M` with `q ≠ p`, then the ARTIN CONDUCTOR EXPONENT of `τ` at `q` is
+`ord_q M`.
+
+This is the single statement the three per-place "level-lowering"
+citations of this file were each spelling in its own local dialect.
+Carayol's theorem computes the prime-to-`p` Artin conductor of the
+geometric attachment `ρ_{g₀,λ}` of the newform `g₀` behind `g` as its
+level, `ord_q (cond ρ_{g₀,λ}) = ord_q M₀` for every `q ≠ p`; through the
+dictionary
+
+  `a_q(V) = (2 − dim V^{I_q}) + Sw_q(V)`
+
+(`GaloisRep.HasConductorExponentAt`, built in
+`Fermat/FLT/Deformations/RepresentationTheory/ArtinConductor.lean`) that
+one identity yields BOTH per-place spellings mechanically:
+
+* at `q ≠ 2, p`: `ord_q M ≥ 1` makes `a_q ≥ 1`, so inertia cannot act
+  trivially — the conclusion of
+  `not_isUnramifiedAt_of_isNewAtPrime_of_isIrreducible`, which is now
+  PROVEN from this leaf;
+* at `2`: a tame fixed line caps the tame part at `1` and the wild part
+  vanishes in odd residue characteristic, so `ord₂ M = a₂ ≤ 1` — the
+  conclusion of
+  `weightTwoNewform_factorization_two_le_one_of_inertia_fixed_line_of_isIrreducible`,
+  which is now PROVEN from this leaf together with the wild-vanishing
+  leaf `hasConductorExponentAt_two_le_one_of_inertia_sq_eq_zero` below.
+
+The two classical local types behind the positivity are unchanged:
+`q ∥ M₀` gives an unramified twist of Steinberg — special Weil–Deligne
+parameter with NONZERO monodromy `N`, conductor exponent exactly `1`;
+`q² ∣ M₀` gives ramified principal series or supercuspidal, conductor
+exponent `ord_q M₀ ≥ 2`.
+
+Why the `q`-NEW hypothesis is the right one, and why the leaf keeps the
+weaker `IsWeightTwoEigenform` carrier: behind `g` lies a newform `g₀` of
+level `M₀ ∣ M` with the same away-from-`M` eigensystem (Diamond–Shurman
+Prop. 5.8.4, PROVEN here as
+`exists_weightTwoNewform_of_weightTwoEigenform`); were `q ∤ M₀`, the
+level `M₀` would be a `q`-free divisor level realizing the away-from-`M`
+eigensystem of `g`, which `IsNewAtPrime M q g` forbids — so `q ∣ M₀` and
+Carayol's formula applies to `g₀` at `q`. The rigidity identification is
+NOT part of the citation burden: `τ` is IRREDUCIBLE, so the PROVEN
+rigidity `exists_linearEquiv_of_charFrob_eq` identifies `ρ_{g₀,λ}` (the
+`κ`-eigencomponent of `V_p(J₀(M₀))`, matched to the same Hecke
+polynomials by Eichler–Shimura) with `τ`, and the conductor exponent is
+an invariant of the equivalence class.
+
+WHY THE STATED CONCLUSION IS THE WEAKENED RELATION AND NOT AN EQUATION
+BETWEEN NUMBERS. `GaloisRep.HasConductorExponentAt τ v a` unfolds to
+`∃ s, a = τ.tameExponent v + s ∧ (τ.IsUnramifiedAt v → s = 0)`: the tame
+summand is computed, the wild summand `s` — the Swan conductor — is
+existentially quantified because the Swan conductor is NOT definable on
+this pin (mathlib has `G_0` and an explicit TODO for the higher
+ramification groups; and the lower numbering collapses over `Kᵥᵃˡᵍ`,
+whose value group is divisible, so the upper numbering — Herbrand's
+function — is genuinely required; see the module docstring of
+`ArtinConductor.lean`). The relation is therefore a CONSEQUENCE of
+Carayol's identity `a_q(ρ_{g₀,λ}) = ord_q M` rather than a
+reformulation of it — witnessed by `s := Sw_q`, which does vanish for an
+unramified representation — so this leaf is a sound citation and not an
+assertion about an under-determined symbol.
+
+`v = p` IS DELIBERATELY EXCLUDED, and not for convenience: at `q = p`
+the Artin conductor of the `p`-adic representation is the WRONG
+invariant (`ρ_{g,λ}|_{I_p}` is wildly ramified even in the
+good-reduction/crystalline case, so `a_p(ρ|_{I_p})` bears no relation to
+`ord_p M`). The correct uniform statement at `p` runs through the
+Weil–Deligne parameter of `D_pst(ρ|_{G_p})`, i.e. `p`-adic Hodge theory,
+which this development does not have; that is why the at-`p` place keeps
+its own geometric Saito/flatness leaf
+`not_isFlatAt_of_weightTwoEigenform_pNew_of_isIrreducible` — it is NOT
+subsumed by this one.
+
+SOUNDNESS AUDIT (2026-07-25): non-vacuously satisfiable — take any
+classical newform `g` of level `M` divisible by a prime `q ∉ {p}`, and
+`τ := ρ_{g,λ}` (irreducible by Ribet 1977, matched to `g`'s Hecke
+polynomials away from `Mp` by Eichler–Shimura); `g` is `q`-new by the
+newform carrier audit (strong multiplicity one), and the conclusion is
+Carayol's theorem read through the conductor dictionary. Conversely
+every instance is an instance of the cited theorem: the carrier
+`IsWeightTwoEigenform` has exactly the classical normalized eigenforms
+as inhabitants, `IsNewAtPrime` pins the underlying newform to a level
+divisible by `q`, and irreducibility supplies the rigidity. -/
+theorem hasConductorExponentAt_factorization_of_isNewAtPrime
+    {M : ℕ} (hM : 0 < M) {g : CuspForm (Gamma0GL M) 2}
+    (hg : IsWeightTwoEigenform M g)
+    (κ : heckeField M g →+* AlgebraicClosure ℚ_[p])
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    {S_τ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hτ : ∀ (r : ℕ) (hr : r.Prime),
+      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ →
+      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
+        Polynomial.X ^ 2
+          - Polynomial.C (κ (heckeCoeff M g r)) * Polynomial.X
+          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
+    (hirr : τ.IsIrreducible)
+    {q : ℕ} (hq : q.Prime) (hqp : q ≠ p) (hqM : q ∣ M)
+    (hnew : IsNewAtPrime M q g) :
+    τ.HasConductorExponentAt hq.toHeightOneSpectrumRingOfIntegersRat
+      (M.factorization q) :=
+  sorry
+
+include hpodd in
+/-- **The conductor exponent at `2` of a square-zero-unipotent inertia
+action in ODD residue characteristic is at most `1`** (sorry node — the
+LOCAL half of the at-`2` conductor cut, isolated 2026-07-25; Serre,
+*Local Fields* IV §2 and VI §2, plus Kolchin's theorem): if every element
+of the inertia at `2` acts on the 2-dimensional `ℚ̄_p`-space through a
+square-zero unipotent (`(τσ − 1)² = 0`) and `p` is ODD, then any Artin
+conductor exponent of `τ` at `2` is at most `1`.
+
+This leaf carries NO automorphic input — it is a purely local statement
+about a Galois representation, and it is the piece of the former at-`2`
+citation that survives once Carayol's theorem has been factored out into
+the single shared leaf
+`hasConductorExponentAt_factorization_of_isNewAtPrime` above. Its two
+halves:
+
+* TAME part `2 − dim V^{I₂} ≤ 1`: the image `τ(I₂)` consists of
+  unipotent elements, and a unipotent subgroup of `GL₂` fixes a line
+  (Kolchin; in dimension `2` it is the elementary statement that two
+  square-zero unipotents with distinct fixed lines generate a
+  non-unipotent product — `[[1,1],[0,1]] · [[1,0],[1,1]]` has trace `3`,
+  not `2`). Hence `dim V^{I₂} ≥ 1`. The `dim V^{I_v} ≥ 1 ⟹ tame ≤ 1`
+  bookkeeping itself is PROVEN, as
+  `GaloisRep.tameExponent_add_one_le_finrank_of_fixed`; what this leaf
+  supplies is the COMMON fixed vector, which the per-place hypotheses
+  cannot hand over directly because the inertia bridge
+  `localInertia_two_eq_map_padic` is only stated up to a per-element
+  conjugacy (the two local worlds pick different embeddings of `ℚᵃˡᵍ`),
+  so the transported fixed lines a priori vary with `σ`. The square-zero
+  hypothesis of this leaf is, by contrast, conjugation-invariant, which
+  is exactly why the cut is made here.
+
+The hypothesis is stated over `Γ ℚ_[2]` (via `Z2bar`), the spelling the
+at-`2` consumers already use, while the conclusion is about the ADIC
+place `Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat`. Reconciling
+the two spellings is deliberately part of this leaf's burden rather than
+its consumers': `localInertia_two_eq_map_padic` is PROVEN, but the two
+worlds also disagree on which `Algebra ℚ (adicCompletion ℚ v₂)` instance
+they name (`DivisionRing.toRatAlgebra` vs
+`HeightOneSpectrum.instAlgebraAdicCompletion` — propositionally equal by
+`algebraRat.subsingleton`, not syntactically), and that bookkeeping
+belongs with the local computation, not in the level-lowering assembly.
+* WILD part `Sw₂ = 0`: `σ ↦ τσ − 1` is a homomorphism from `I₂` into the
+  additive group `Hom(V/L, L) ≅ (ℚ̄_p, +)` (a homomorphism precisely
+  because the elements are square-zero). The wild inertia `P₂ ≤ I₂` is
+  pro-`2`, so its continuous image is a compact subgroup of `(ℚ̄_p, +)`,
+  hence a `ℤ_p`-module and pro-`p`; with `p` ODD (`hpodd`) the
+  pro-`2`/pro-`p` clash forces the image to be trivial, so `P₂` acts
+  trivially and the Swan conductor — a sum over the wild ramification
+  breaks — vanishes.
+
+Neither half is provable on this pin: the wild half needs the higher
+ramification filtration in the upper numbering (absent from mathlib —
+see `ArtinConductor.lean`), and the tame half needs Kolchin's theorem in
+dimension `2` (also absent). Both are honest, reusable, purely local
+targets, and neither is a restatement of an automorphic theorem — that
+is the point of factoring the old at-`2` citation this way.
+
+SOUNDNESS AUDIT (2026-07-25): non-vacuously satisfiable — take `τ`
+unramified at `2` (then `τσ − 1 = 0` for `σ ∈ I₂`, the hypothesis holds,
+and `a₂ = 0 ≤ 1` by
+`GaloisRep.HasConductorExponentAt.eq_zero_of_isUnramifiedAt`), or the
+Steinberg configuration at `2` (inertia acting by a nontrivial
+transvection, `a₂ = 1`). The conclusion is sharp: `a₂ = 1` is attained,
+so `≤ 1` cannot be improved to `= 0`.
+
+FALSITY AUDIT (2026-07-25, fourth owner — **THIS LEAF IS FALSE AS
+STATED**; do not dispatch a prover at it, the repair is cut-level and is
+spelled out at the end of this audit).
+
+`GaloisRep.HasConductorExponentAt ρ v a` unfolds to
+`∃ s, a = ρ.tameExponent v + s ∧ (ρ.IsUnramifiedAt v → s = 0)`, and its
+ONLY constraint on the wild summand `s` is CONDITIONED ON
+UNRAMIFIEDNESS. So for a `ρ` that is RAMIFIED at `v` the predicate is
+UPWARD CLOSED: `HasConductorExponentAt ρ v a` holds for EVERY
+`a ≥ ρ.tameExponent v`, witnessed by `s := a − ρ.tameExponent v` with the
+implication discharged vacuously. A hypothesis-free numerical CAP on `a`
+therefore forces unramifiedness — this leaf alone proves
+
+  `τ.IsUnramifiedAt Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat`
+
+for every `τ` satisfying `hsq`, by
+`by_contra h; have : τ.tameExponent v₂ + 2 ≤ 1 := this_leaf hpodd hsq
+⟨2, rfl, fun hu => absurd hu h⟩; omega` (machine-checked).
+
+That consequence is FALSE, and the SOUNDNESS AUDIT above names its own
+counterexample. Take `E/ℚ` of conductor `14` (Weierstrass coefficients
+`[1, 0, 1, 4, −6]`; multiplicative reduction at `2`, Kodaira type `I₆`,
+`v₂(j) = −6`, `f₂ = 1` — checked in PARI/GP) and `p := 5`. On
+`V₅(E) ⊗ ℚ̄₅` the inertia at `2` acts through the Tate parametrization as
+`σ ↦ (1, t(σ); 0, 1)`, so `(τσ − 1)² = 0` for every `σ ∈ I₂` and `hsq`
+holds — split-vs-non-split multiplicative reduction differs by an
+UNRAMIFIED quadratic twist, which is invisible to inertia — while `τ` is
+RAMIFIED at `2` precisely because `5 ∤ v₂(q_E) = 6`. Hence
+`τ.tameExponent v₂ = 1`, `τ.HasConductorExponentAt v₂ 2` holds with
+`s := 1`, and the conclusion `2 ≤ 1` fails. (The classical Artin
+conductor really is `a₂ = 1` here; what is false is the leaf, because the
+predicate does not pin `a` to it.)
+
+The counterexample has to be Steinberg — i.e. unipotent on `I₂` but NOT
+globally unipotent — and that is not laziness in the choice: a globally
+unipotent `τ = (1, c; 0, 1)` needs a continuous additive character
+`c : Γ_ℚ → (ℚ̄_p, +)`, and every such factors through `ℤ̂ ^× ≅ ∏_ℓ ℤ_ℓ^×`
+with only the `ℓ = p` factor surviving (a pro-`ℓ` group has no nontrivial
+continuous map to a torsion-free pro-`p` group for `ℓ ≠ p`, and the
+finite factors die into a torsion-free target). So `c` is a multiple of
+the cyclotomic direction, ramified only at `p`, hence UNRAMIFIED at `2`
+for `p` odd — such a `τ` satisfies the leaf harmlessly. Only a
+non-abelian `τ` can be ramified at `2` with unipotent inertia there,
+which is exactly the local type Carayol's `q ∥ M₀` case produces.
+
+THE GENERALIZABLE LESSON, since the same packaging carries both leaves
+of this conductor cut: `ArtinConductor.lean`'s soundness argument — "every
+`HasConductorExponentAt ρ v a` is IMPLIED by the true conductor identity,
+so a sorried leaf asserting it can never be false" — is valid only in
+CONCLUSION position. A weakened predicate in HYPOTHESIS position
+strengthens the statement, so the same weakening that makes the Carayol
+leaf sound makes this one FALSE. Consuming `HasConductorExponentAt` as a
+hypothesis is safe only for LOWER-bound content (`a ≠ 0 → ρ` is ramified
+at `v`, via `HasConductorExponentAt.eq_zero_of_isUnramifiedAt` — which is
+exactly what the away-from-`p` sibling
+`not_isUnramifiedAt_of_isNewAtPrime_of_isIrreducible` uses, and that
+consumer is SOUND). It can never carry UPPER-bound content, which is what
+this leaf asks of it.
+
+WHY NO IN-REGION REPAIR EXISTS. The existential packaging discards the
+wild summand irreversibly at the shared Carayol leaf
+`hasConductorExponentAt_factorization_of_isNewAtPrime`, so NO statement
+whose only numeric input is `HasConductorExponentAt τ v₂ a` can bound
+`a` without proving unramifiedness. The residual mathematical content of
+this leaf is exactly `Sw₂(τ) = 0`, which the current packaging cannot
+even STATE. Repair, in dependency order:
+
+1. in `ArtinConductor.lean`, an `opaque GaloisRep.swanExponent ρ v : ℕ`
+   (nothing about its value provable — no axiom and no `sorry` is
+   introduced, `#print axioms` stays clean — but `Sw = 0` becomes a
+   STATABLE proposition) with
+   `conductorExponent ρ v := ρ.tameExponent v + ρ.swanExponent v` and
+   `HasConductorExponentAt ρ v a := a = ρ.conductorExponent v`, which
+   pins `a`;
+2. `HasConductorExponentAt.eq_zero_of_isUnramifiedAt` then needs a
+   sorried `swanExponent_eq_zero_of_isUnramifiedAt` — it is PROVEN today
+   only because the existential gives it away for free;
+3. this leaf becomes `hsq → τ.conductorExponent v₂ ≤ 1`, splitting into
+   its two honest halves: the TAME half (already available as
+   `GaloisRep.tameExponent_add_one_le_finrank_of_fixed`, fed by the
+   consumer's `hfixline` modulo the `localInertia_two_eq_map_padic`
+   spelling bridge) and the WILD half `swanExponent τ v₂ = 0` (Serre,
+   *Local Fields* IV §2 — the pro-`2`/pro-`p` clash of the second bullet
+   above), which is an honest, purely local citation leaf.
+
+Until that repair lands this `sorry` must STAY: the statement cannot be
+proven, and the consumer
+`weightTwoNewform_factorization_two_le_one_of_inertia_fixed_line_of_isIrreducible`
+below applies it verbatim, so weakening it in place would only move the
+red. -/
+theorem hasConductorExponentAt_two_le_one_of_inertia_sq_eq_zero
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    {a : ℕ}
+    (hsq : ∀ σ ∈ AddSubgroup.inertia
+        ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
+        (Field.absoluteGaloisGroup ℚ_[2]),
+      (τ.map (algebraMap ℚ ℚ_[2]) σ - 1) ^ 2 = 0)
+    (ha : τ.HasConductorExponentAt
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat a) :
+    a ≤ 1 :=
+  sorry
+
 /-- **Ramification at `q` of the representation attached to a `q`-NEW
 eigenform** (sorry node — the single residual literature leaf of the
 at-`q` conductor cut, isolated 2026-07-25: Carayol, *Sur les
@@ -21845,7 +22954,39 @@ conductor (zero hits for `ramificationGroup`, `artinConductor`,
 lower-numbering filtration upward — an independent development, not a
 step available inside this cut. The reference project `~/cs/FLT`
 carries nothing vendorable either: its single Carayol occurrence is a
-prose docstring. This leaf is terminal at this pin. -/
+prose docstring. This leaf is terminal at this pin.
+
+AUDIT SUPERSEDED (2026-07-25, third owner). The infrastructure audit
+above is right about the pin and wrong about the conclusion. Its two
+factual claims stand — mathlib has no `ramificationGroup`, no Artin and
+no Swan conductor (only `ValuationSubring.inertiaSubgroup`, i.e. `G_0`,
+plus an explicit `TODO: Define higher ramification groups in lower
+numbering`), and `~/cs/FLT` has nothing vendorable — and one more should
+be added to them: the lower numbering cannot substitute for the upper
+one here, because over `Kᵥᵃˡᵍ` the value group is divisible, so
+`𝔪 ^ (i+1) = 𝔪` and every lower ramification group collapses onto
+inertia. But NONE of that blocks the dedup, because the dedup only needs
+the TAME half of the dictionary to be computed: with the wild summand
+carried as an explicit existential input rather than a function, the
+Artin conductor exponent is definable outright
+(`Fermat/FLT/Deformations/RepresentationTheory/ArtinConductor.lean`:
+`GaloisRep.inertiaInvariants`, `GaloisRep.tameExponent`,
+`GaloisRep.HasConductorExponentAt`, all sorry-free), and the two
+away-from-`p` citations collapse onto ONE. This leaf is therefore NOT
+terminal, and is proven below.
+
+DEDUP (2026-07-25 — this leaf is now PROVEN, no longer a citation): the
+Carayol content recorded above has been factored out into the ONE shared
+conductor-exponent leaf
+`hasConductorExponentAt_factorization_of_isNewAtPrime`, and this
+statement is now a two-line COROLLARY of it: unramifiedness at `q` makes
+the conductor exponent vanish (`GaloisRep.tameExponent` vanishes because
+`V^{I_q} = V`, and the Swan clause of `GaloisRep.HasConductorExponentAt`
+kills the wild part), while `q ∣ M` with `0 < M` makes `ord_q M`
+positive. The COORDINATION note above is therefore DISCHARGED for this
+place: the Artin conductor exponent it asks for exists
+(`Fermat/FLT/Deformations/RepresentationTheory/ArtinConductor.lean`) and
+this leaf is one of its two consumers. -/
 theorem not_isUnramifiedAt_of_isNewAtPrime_of_isIrreducible
     {M : ℕ} (hM : 0 < M) {g : CuspForm (Gamma0GL M) 2}
     (hg : IsWeightTwoEigenform M g)
@@ -21862,8 +23003,15 @@ theorem not_isUnramifiedAt_of_isNewAtPrime_of_isIrreducible
     (hirr : τ.IsIrreducible)
     {q : ℕ} (hq : q.Prime) (hqp : q ≠ p) (hqM : q ∣ M)
     (hnew : IsNewAtPrime M q g) :
-    ¬ τ.IsUnramifiedAt hq.toHeightOneSpectrumRingOfIntegersRat :=
-  sorry
+    ¬ τ.IsUnramifiedAt hq.toHeightOneSpectrumRingOfIntegersRat := by
+  intro hun
+  haveI : τ.IsUnramifiedAt hq.toHeightOneSpectrumRingOfIntegersRat := hun
+  have hzero : M.factorization q = 0 :=
+    (hasConductorExponentAt_factorization_of_isNewAtPrime hM hg κ hτ hirr
+      hq hqp hqM hnew).eq_zero_of_isUnramifiedAt
+  have hpos : 0 < M.factorization q :=
+    hq.factorization_pos_of_dvd hM.ne' hqM
+  omega
 
 /-- **Carayol's conductor theorem at an unramified prime `q ≠ p`,
 irreducible form** (DECOMPOSED 2026-07-25 into the `q`-new/`q`-old
@@ -23008,9 +24156,19 @@ of the transvection coefficient is TORSION-FREE. What it deliberately
 does NOT contain is the reason the wild image has finite order in the
 first place (`GL₂(ℚ̄_p)` has no small pro-`2` subgroups for odd `p`) —
 that is a topological statement about compact subgroups of `GL₂` over
-`ℚ̄_p` and stays in the citation leaf
-`weightTwoNewform_factorization_two_le_one_of_inertia_fixed_line_of_torsion_trivial_of_isIrreducible`
-below. -/
+`ℚ̄_p` and stays in the purely local citation leaf
+`hasConductorExponentAt_two_le_one_of_inertia_sq_eq_zero` (its WILD
+half), which is where that burden now lives.
+
+UNCONSUMED AT MERGE (2026-07-25, flt-lean-61 ← main). This brick was
+carved as the formal half of the at-`2` cut whose citation leaf was
+`weightTwoNewform_factorization_two_le_one_of_inertia_fixed_line_of_torsion_trivial_of_isIrreducible`;
+that leaf lost to the FINER concurrent cut through
+`GaloisRep.HasConductorExponentAt` and was retired here, so this brick
+currently has no consumer. It is PROVEN, fully general (any field, any
+module) and is the natural formal input to the wild half of
+`hasConductorExponentAt_two_le_one_of_inertia_sq_eq_zero`, so it is kept
+rather than deleted; whoever proves that leaf should consume it. -/
 theorem transvection_apply_eq_self_of_pow_apply_eq_self
     {A : Type*} [Field A] {V : Type*} [AddCommGroup V] [Module A V]
     (F : Module.End A V) {w₀ : V}
@@ -23052,126 +24210,19 @@ theorem transvection_apply_eq_self_of_pow_apply_eq_self
     simpa [smul_smul, inv_mul_cancel₀ hn] using h2
   exact sub_eq_zero.mp hsub
 
-include hpodd in
-/-- **Carayol's conductor exponent bound at `2` under an inertia fixed
-line with torsion-free inertia image** (sorry node — the SHARPENED
-residual literature leaf of the at-`2` conductor cut, carved
-2026-07-25; it is strictly WEAKER than the `hquotline` form
-`weightTwoNewform_factorization_two_le_one_of_inertia_fixed_line_of_isIrreducible`
-below that consumes it, because the transvection hypothesis has been
-replaced by the single consequence of it that the cited argument uses):
-if an IRREDUCIBLE representation `τ` matching the Hecke polynomials of
-the weight-2 NEWFORM `g` of level `M ≥ 1` away from a finite set has a
-NONZERO vector `w₀` fixed by the whole inertia at `2` (`hfixline`), and
-no element of the inertia at `2` has NONTRIVIAL FINITE-ORDER image
-(`htorsion`), then `M.factorization 2 ≤ 1`.
-
-CITATION CONTENT, in three named pieces.
-
-* **Conductor = level** (Carayol, *Sur les représentations `ℓ`-adiques
-  associées aux formes modulaires de Hilbert*, Ann. Sci. ÉNS 19 (1986),
-  Théorème (A), completing Deligne, Ihara and Langlands): for a newform
-  `g` the Artin conductor of the attached `ℓ`-adic system equals the
-  level of `g`, place by place away from `ℓ`; in particular
-  `a₂(τ) = ord₂ M` here, `2 ≠ p` by `hpodd`. (Quoted in
-  Cornell–Silverman–Stevens, *Modular Forms and Fermat's Last
-  Theorem*, in the form "for `f` a newform the conductor of the system
-  of `ℓ`-adic representations associated to `f` is equal to the level
-  of `f`".)
-* **The Artin exponent formula** (Serre, Duke Math. J. 54 (1987) §1.2,
-  formulas (1.2.1)–(1.2.2)):
-  `n(ℓ, ρ) = Σᵢ dim(V/Vᵢ)/[G₀:Gᵢ] = dim V/V^{G₀} + b(V)` with `b(V)`
-  the *invariant sauvage* (Swan conductor), and (loc. cit. (c))
-  `n(ℓ, ρ) = dim V/V^{G₀}` exactly when `G₁ = 1`. With `dim V = 2` and
-  `hfixline` exhibiting a nonzero `I₂`-invariant vector,
-  `dim V/V^{I₂} ≤ 1`, so `a₂ ≤ 1 + b(V)`.
-* **Finiteness of the wild image** — the only genuinely TOPOLOGICAL
-  input, and the reason this leaf is not proven here: the wild inertia
-  `P₂ = G₁` is pro-`2`, its image in `GL₂(ℚ̄_p)` is a compact subgroup,
-  hence conjugate into `GL₂(𝒪_E)` for some finite `E/ℚ_p`, and the
-  kernel of reduction there is pro-`p`; with `p` odd (`hpodd`) a pro-`2`
-  subgroup meets that kernel trivially and therefore injects into a
-  FINITE group. So every element of the image of `P₂` has finite order,
-  and `htorsion` makes it trivial: `G₁ = 1`, `b(V) = 0`, `a₂ ≤ 1`.
-  Formalizing this step needs the theory of compact subgroups of
-  `GL₂` over `ℚ̄_p` (conjugation into a maximal compact, the pro-`p`
-  congruence filtration), which this pin does not carry — cf. the
-  COORDINATION note at
-  `not_isUnramifiedAt_of_isNewAtPrime_of_isIrreducible`, where the
-  same missing Artin-conductor infrastructure is recorded as the
-  cross-place dedup target.
-
-What is NOT cited, and is PROVEN below in the consumer, is the
-transvection algebra: `hquotline` is used only to produce `htorsion`,
-through the characteristic-zero brick
-`transvection_apply_eq_self_of_pow_apply_eq_self` above (a finite-order
-transvection along an invariant line is trivial, because `(ℚ̄_p, +)` is
-torsion-free). The rigidity identification is not part of the citation
-burden either (mirroring
-`weightTwoNewform_not_dvd_level_of_isUnramifiedAt_of_isIrreducible` and
-the geometric Saito cut at `p`): `τ` is IRREDUCIBLE, so the PROVEN
-rigidity `exists_linearEquiv_of_charFrob_eq` identifies `ρ_{g,λ}` (the
-`κ`-eigencomponent of `V_p(J₀(M))`, matched to the same Hecke
-polynomials by Eichler–Shimura) with `τ`, and the fixed-line data
-transports across the equivalence (`inertia_fixed_of_linearEquiv`).
-
-The inertia is spelled over `Γ ℚ_[2]` via `Z2bar` exactly as in
-`IsHardlyRamified.isTameAtTwo` (the PROVEN bridge
-`localInertia_two_eq_map_padic` of `ModThree.lean` converts to the
-adic-completion spelling up to conjugacy when needed).
-
-SOUNDNESS AUDIT (2026-07-25): non-vacuously satisfiable — for any
-classical newform `g` of ODD level `M` take `τ := ρ_{g,λ}` (irreducible
-by Ribet 1977, unramified at `2` by Eichler–Shimura good reduction of
-`J₀(M)` away from `M`) and any `w₀ ≠ 0`: `hfixline` holds because the
-inertia at `2` acts trivially, `htorsion` holds vacuously in the strong
-sense (its conclusion is the trivial action), and the conclusion
-`M.factorization 2 = 0 ≤ 1` is true. Conversely every instance is an
-instance of the cited theorems: the statement quantifies over the
-`IsWeightTwoNewform` carrier, whose inhabitants are exactly the
-classical newforms (carrier audit at `IsWeightTwoNewform`), and the
-load-bearing case is `4 ∣ M`, which the cited exponent computation
-refutes. `htorsion` is not vacuous in the load-bearing direction: it is
-exactly the input that turns "the wild image is finite" into "the wild
-image is trivial", and it is supplied by the PROVEN brick below. -/
-theorem weightTwoNewform_factorization_two_le_one_of_inertia_fixed_line_of_torsion_trivial_of_isIrreducible
-    {M : ℕ} (hM : 0 < M) {g : CuspForm (Gamma0GL M) 2}
-    (hg : IsWeightTwoNewform M g)
-    (κ : heckeField M g →+* AlgebraicClosure ℚ_[p])
-    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
-      (Fin 2 → AlgebraicClosure ℚ_[p])}
-    {S_τ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
-    (hτ : ∀ (r : ℕ) (hr : r.Prime),
-      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ →
-      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
-        Polynomial.X ^ 2
-          - Polynomial.C (κ (heckeCoeff M g r)) * Polynomial.X
-          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
-    (hirr : τ.IsIrreducible)
-    (w₀ : Fin 2 → AlgebraicClosure ℚ_[p]) (hw₀ : w₀ ≠ 0)
-    (hfixline : ∀ σ ∈ AddSubgroup.inertia
-        ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
-        (Field.absoluteGaloisGroup ℚ_[2]),
-      τ.map (algebraMap ℚ ℚ_[2]) σ w₀ = w₀)
-    (htorsion : ∀ σ ∈ AddSubgroup.inertia
-        ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
-        (Field.absoluteGaloisGroup ℚ_[2]),
-      ∀ n : ℕ, 0 < n →
-        (∀ w : Fin 2 → AlgebraicClosure ℚ_[p],
-          ((τ.map (algebraMap ℚ ℚ_[2]) σ) ^ n) w = w) →
-        ∀ w : Fin 2 → AlgebraicClosure ℚ_[p],
-          τ.map (algebraMap ℚ ℚ_[2]) σ w = w) :
-    M.factorization 2 ≤ 1 :=
-  sorry
-
+-- DROPPED AT MERGE (2026-07-25, flt-lean-61 ← main): the leaf
+-- `weightTwoNewform_factorization_two_le_one_of_inertia_fixed_line_of_torsion_trivial_of_isIrreducible`
+-- stood here. It was one of TWO concurrent cuts of the same consumer
+-- `weightTwoNewform_factorization_two_le_one_of_inertia_fixed_line_of_isIrreducible`
+-- below; the FINER cut won and this coarser one is retired. See that
+-- consumer's docstring for the full rationale.
 include hpodd in
 /-- **Carayol's conductor exponent bound at `2`, irreducible
-exponent form** (DECOMPOSED and PROVEN 2026-07-25 as a two-line
-assembly over the SHARPENED citation leaf
-`weightTwoNewform_factorization_two_le_one_of_inertia_fixed_line_of_torsion_trivial_of_isIrreducible`
-above — which drops `hquotline` entirely — using the PROVEN
-characteristic-zero brick
-`transvection_apply_eq_self_of_pow_apply_eq_self`: Carayol, *Sur les
+exponent form** (DECOMPOSED and PROVEN 2026-07-25 over the two
+conductor-exponent leaves
+`hasConductorExponentAt_factorization_of_isNewAtPrime` (shared, all
+places `q ≠ p`) and `hasConductorExponentAt_two_le_one_of_inertia_sq_eq_zero`
+(purely local at `2`): Carayol, *Sur les
 représentations `ℓ`-adiques associées aux formes modulaires de
 Hilbert*, Ann. Sci. ÉNS 19 (1986), Théorème (A), combined with the
 Artin conductor exponent formula
@@ -23190,19 +24241,33 @@ joint `not_four_dvd_of_factorization_two_le_one`.
 FORMAL/CITED SPLIT (2026-07-25). The part of the classical argument
 that is FORMAL at this pin is the transvection algebra, and it is
 PROVEN here: `hfixline` and `hquotline` make every inertia element act
-as `w ↦ w + c(σ)·w₀`, so `τσ − 1` squares to zero and
-`(τσ)^n = 1 + n·(τσ − 1)` exactly; since the coefficient field
-`ℚ̄_p` has CHARACTERISTIC ZERO, an inertia element whose image has
-finite order therefore acts trivially. That is the shareable brick
-`transvection_apply_eq_self_of_pow_apply_eq_self` above, and feeding it
-to the sharpened leaf discharges `hquotline` completely — the leaf keeps
-only `hfixline` plus the torsion-freeness of the inertia image. What
-remains genuinely CITED there is (a) Carayol's `ord₂ cond = ord₂ M`,
-(b) Serre's Artin exponent formula
-`n(2, τ) = dim V/V^{I₂} + b(V)` (Duke 54 (1987) §1.2, (1.2.1)–(1.2.2)),
-and (c) the single topological input this pin cannot supply — that the
-pro-`2` wild inertia has FINITE image in `GL₂(ℚ̄_p)` for odd `p`. See
-that leaf's docstring for the three pieces named separately.
+as `w ↦ w + c(σ)·w₀`, so `τσ − 1` squares to zero — and squaring to
+zero is CONJUGATION-INVARIANT, which is exactly why the cut is made at
+that hypothesis. What remains genuinely CITED is split across the two
+leaves this proof consumes: (a) Carayol's `ord₂ cond = ord₂ M` lives in
+the shared, all-places leaf
+`hasConductorExponentAt_factorization_of_isNewAtPrime`, and (b) Serre's
+Artin exponent formula `n(2, τ) = dim V/V^{I₂} + b(V)` (Duke 54 (1987)
+§1.2, (1.2.1)–(1.2.2)) together with (c) the single topological input
+this pin cannot supply — that the pro-`2` wild inertia has FINITE image
+in `GL₂(ℚ̄_p)` for odd `p` — live in the purely local, automorphic-input-free
+leaf `hasConductorExponentAt_two_le_one_of_inertia_sq_eq_zero`. See
+those leaves' docstrings for the pieces named separately.
+
+MERGE NOTE (2026-07-25, flt-lean-61 ← main). A CONCURRENT cut of this
+same declaration existed on `main`: a single sharpened citation leaf
+`weightTwoNewform_factorization_two_le_one_of_inertia_fixed_line_of_torsion_trivial_of_isIrreducible`
+which dropped `hquotline` in favour of a torsion-freeness hypothesis,
+fed by the PROVEN brick `transvection_apply_eq_self_of_pow_apply_eq_self`
+above. It was RETIRED at the merge in favour of the cut used here,
+which is strictly finer on both axes: its automorphic half is SHARED
+with the away-from-`2` place (the same leaf also proves
+`not_isUnramifiedAt_of_isNewAtPrime_of_isIrreducible`, retiring a second
+sorry), and its local half carries NO automorphic content at all. The
+two cuts were not inter-derivable — `htorsion` does not yield the
+square-zero hypothesis without `hquotline` — so this was a choice, not
+a composition. The brick is kept (PROVEN, fully general) and is the
+natural formal input to the wild half of the surviving local leaf.
 
 The classical narrative, for orientation. Carayol's Théorème (A)
 computes the
@@ -23273,7 +24338,44 @@ inertia `P₂`, a subgroup this development does not carry; and no such
 purely local statement can reach this leaf's conclusion, which
 mentions `M` and is tied to the local behaviour only through the cited
 Carayol formula. `~/cs/FLT` carries nothing vendorable. This leaf is
-terminal at this pin. -/
+terminal at this pin.
+
+AUDIT SUPERSEDED (2026-07-25, third owner — the cut the audit above
+looked for, found). Every factual claim above stands, including the
+sharp diagnosis that the residual obstruction is "the pro-`2`
+compactness of the WILD inertia `P₂`, a subgroup this development does
+not carry". What the audit missed is that this obstruction can be
+ISOLATED instead of dissolved. Its objection to bullets one and two —
+that they are statements about an invariant this development does not
+have — is answered by building the invariant with its wild summand
+carried as an explicit existential input
+(`GaloisRep.HasConductorExponentAt`, sorry-free, in
+`Fermat/FLT/Deformations/RepresentationTheory/ArtinConductor.lean`);
+and its objection that "no purely local statement can reach this leaf's
+conclusion, which mentions `M`" is answered by not asking one to: the
+`M`-facing half is the shared Carayol leaf
+`hasConductorExponentAt_factorization_of_isNewAtPrime`, and what is left
+for the local leaf is exactly `a₂ ≤ 1`, with no `M` in it. The audit's
+own formalizable observation — `c` is a homomorphism into a torsion-free
+abelian group — is what makes the split work, in the
+conjugation-invariant form `(τσ − 1)² = 0`, and it is PROVEN here.
+
+DEDUP (2026-07-25 — this leaf is now PROVEN, no longer a citation): the
+Carayol content recorded above has been factored out into the ONE shared
+conductor-exponent leaf
+`hasConductorExponentAt_factorization_of_isNewAtPrime`, and the local
+exponent computation at `2` into the purely local, automorphic-input-free
+leaf `hasConductorExponentAt_two_le_one_of_inertia_sq_eq_zero`. What is
+proven here is the glue: `2 ∤ M` is trivial; otherwise `2 ≠ p` (`hpodd`)
+and newform-ness gives `2`-newness
+(`isNewAtPrime_of_isWeightTwoNewform`), the shared leaf gives
+`a₂ = ord₂ M`, and the local leaf caps `a₂ ≤ 1`. The local leaf's
+square-zero hypothesis is discharged HERE, directly from
+`hfixline`/`hquotline`: every inertia displacement lands on
+`span {w₀}` and `w₀` is fixed, so a second application kills it. The
+COORDINATION note of
+`not_isUnramifiedAt_of_isNewAtPrime_of_isIrreducible` is therefore
+DISCHARGED for this place too. -/
 theorem weightTwoNewform_factorization_two_le_one_of_inertia_fixed_line_of_isIrreducible
     {M : ℕ} (hM : 0 < M) {g : CuspForm (Gamma0GL M) 2}
     (hg : IsWeightTwoNewform M g)
@@ -23300,15 +24402,32 @@ theorem weightTwoNewform_factorization_two_le_one_of_inertia_fixed_line_of_isIrr
         τ.map (algebraMap ℚ ℚ_[2]) σ w - w ∈
           Submodule.span (AlgebraicClosure ℚ_[p]) {w₀}) :
     M.factorization 2 ≤ 1 := by
-  refine weightTwoNewform_factorization_two_le_one_of_inertia_fixed_line_of_torsion_trivial_of_isIrreducible
-    hpodd hM hg κ hτ hirr w₀ hw₀ hfixline ?_
-  -- the transvection algebra: a finite-order image of an inertia element
-  -- acting along the fixed line `w₀` is trivial, `ℚ̄_p` being of
-  -- characteristic zero
-  intro σ hσ n hn hpow w
-  exact transvection_apply_eq_self_of_pow_apply_eq_self
-    (τ.map (algebraMap ℚ ℚ_[2]) σ) (hfixline σ hσ) (hquotline σ hσ)
-    (Nat.cast_ne_zero.mpr hn.ne') hpow w
+  classical
+  by_cases h2M : (2 : ℕ) ∣ M
+  · -- `2 ≠ p` because `p` is odd
+    have hp2 : (2 : ℕ) ≠ p := by
+      rintro rfl
+      simp [Nat.odd_iff] at hpodd
+    -- the ONE shared Carayol leaf at `q = 2`: `a₂ = ord₂ M`
+    have hcond := hasConductorExponentAt_factorization_of_isNewAtPrime hM
+      hg.toIsWeightTwoEigenform κ hτ hirr Nat.prime_two hp2 h2M
+      (isNewAtPrime_of_isWeightTwoNewform hg h2M)
+    -- and the purely local at-`2` bound `a₂ ≤ 1`
+    refine hasConductorExponentAt_two_le_one_of_inertia_sq_eq_zero hpodd ?_ hcond
+    -- its hypothesis: the inertia at `2` acts by SQUARE-ZERO unipotents.
+    -- `hquotline` puts every displacement on the line `span {w₀}`, which
+    -- `hfixline` says is killed by a second application.
+    intro σ hσ
+    rw [pow_two]
+    refine LinearMap.ext fun w => ?_
+    obtain ⟨k, hk⟩ := Submodule.mem_span_singleton.mp (hquotline σ hσ w)
+    have hstep : (τ.map (algebraMap ℚ ℚ_[2]) σ - 1) w = k • w₀ := by
+      simpa using hk.symm
+    have hfix0 : (τ.map (algebraMap ℚ ℚ_[2]) σ - 1) w₀ = 0 := by
+      simpa [sub_eq_zero] using hfixline σ hσ
+    rw [Module.End.mul_apply, hstep, map_smul, hfix0, smul_zero,
+      LinearMap.zero_apply]
+  · simp [Nat.factorization_eq_zero_of_not_dvd h2M]
 
 include hpodd in
 /-- **Level lowering at `2` under a tame fixed line — Carayol's
