@@ -26151,27 +26151,143 @@ theorem algEquiv_apply_eq_self_of_forall_mem_adjoin_ray_class
     IntermediateField.adjoin_le_iff.mpr hSsub
   exact hle hy ⟨h, Subgroup.mem_zpowers h⟩
 
+/-- **Any two ring embeddings of `ℚ̄` into a field differ by an element
+of `Γ ℚ`** (PROVEN 2026-07-25 — the "choice of place above `q`" half of
+the local–global inertia dictionary
+`exists_conj_image_localInertiaGroup_rat_ray_class` below, and the
+source of its conjugator `c`): if `ι₁, ι₂ : ℚ̄ →+* Ω` are ring
+homomorphisms into any field `Ω`, there is `c ∈ Γ ℚ` with
+`ι₁ (c y) = ι₂ y` for all `y`. No compatibility hypothesis over `ℚ` is
+needed: a ring hom out of a characteristic-zero field is automatically
+`ℚ`-linear (`RingHom.ext_rat`), so both maps are `ℚ`-algebra maps, and
+their common image is the algebraic closure of `ℚ` inside `Ω`. Proof:
+give `Ω` the `ℚ̄`-algebra structure defined by `ι₁`; then `ι₂`, read as
+a `ℚ`-algebra map `ℚ̄ →ₐ[ℚ] Ω`, restricts along the normal extension
+`ℚ̄/ℚ` (`AlgHom.restrictNormal'`) to an automorphism `c` of `ℚ̄`, and
+`AlgHom.restrictNormal_commutes` is exactly the stated identity. -/
+theorem exists_algEquiv_ringHom_apply_eq_ray_class
+    {Ω : Type*} [Field Ω] (ι₁ ι₂ : AlgebraicClosure ℚ →+* Ω) :
+    ∃ c : Γ ℚ, ∀ y : AlgebraicClosure ℚ, ι₁ (c y) = ι₂ y := by
+  haveI halgQ : Algebra.IsAlgebraic ℚ (AlgebraicClosure ℚ) :=
+    AlgebraicClosure.isAlgebraic ℚ
+  haveI hacQ : IsAlgClosure ℚ (AlgebraicClosure ℚ) := ⟨inferInstance, halgQ⟩
+  haveI hnormQ : Normal ℚ (AlgebraicClosure ℚ) :=
+    IsAlgClosure.normal ℚ (AlgebraicClosure ℚ)
+  letI := ι₁.toAlgebra
+  letI : Algebra ℚ Ω := (ι₁.comp (algebraMap ℚ (AlgebraicClosure ℚ))).toAlgebra
+  haveI : IsScalarTower ℚ (AlgebraicClosure ℚ) Ω :=
+    IsScalarTower.of_algebraMap_eq fun _ => rfl
+  have hcomm : ∀ r : ℚ, ι₂ (algebraMap ℚ (AlgebraicClosure ℚ) r) = algebraMap ℚ Ω r := by
+    intro r
+    exact congrFun (congrArg (fun f : ℚ →+* Ω => f.toFun)
+      (RingHom.ext_rat (ι₂.comp (algebraMap ℚ (AlgebraicClosure ℚ)))
+        (ι₁.comp (algebraMap ℚ (AlgebraicClosure ℚ))))) r
+  let ϕ : AlgebraicClosure ℚ →ₐ[ℚ] Ω := AlgHom.mk ι₂ hcomm
+  refine ⟨ϕ.restrictNormal' (AlgebraicClosure ℚ), fun y => ?_⟩
+  exact AlgHom.restrictNormal_commutes ϕ (AlgebraicClosure ℚ) y
+
+/-- **The rational prime below a finite place, with its integral
+embedding of completions** (sorry node, created 2026-07-25 as the
+place-arithmetic half of the route-(α) decomposition of
+`exists_conj_image_localInertiaGroup_rat_ray_class` below): for a
+number field `F ⊆ ℚ̄` and a finite place `w` of `F` there is a rational
+prime `q` — the residue characteristic of `w`, i.e. the prime below `w`
+under `ℤ ⊆ 𝓞 F` — together with a ring embedding
+`f : ℚ_q → F_w` of completions that carries `ℤ_q` into `𝒪_w`.
+Mathematical content: `w` restricts to the `q`-adic place of `ℚ`
+(`w.asIdeal ∩ ℤ = (q)`, nonzero because `𝓞 F/w` is a finite field of
+some prime characteristic `q`), the `q`-adic absolute value on `ℚ` is
+the restriction of the `w`-adic one up to the ramification index, and
+`f` is the induced map of completions — continuous, hence
+integrality-preserving. The integrality clause is what the inertia
+transport `exists_ringHom_algebraicClosure_mem_localInertiaGroup_rat_ray_class`
+consumes; note it forces `f` to be a LOCAL homomorphism for free
+(a unit of `ℤ_q` has its inverse in `ℤ_q` too, so its image is a unit
+of `𝒪_w`). -/
+theorem exists_prime_ringHom_adicCompletionIntegers_mem_rat_ray_class
+    (F : IntermediateField ℚ (AlgebraicClosure ℚ)) [NumberField F]
+    (w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F)) :
+    ∃ (q : ℕ) (hq : q.Prime)
+      (f : IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat →+*
+          IsDedekindDomain.HeightOneSpectrum.adicCompletion F w),
+      ∀ x : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat,
+        f x ∈ IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers F w := by
+  sorry
+
+/-- **Inertia transports along an integral embedding of completions**
+(sorry node, created 2026-07-25 as the local half of the route-(α)
+decomposition of `exists_conj_image_localInertiaGroup_rat_ray_class`
+below; UNIFORM in the number field `F`): given a rational prime `q` and
+a ring embedding `f : ℚ_q → F_w` carrying `ℤ_q` into `𝒪_w` (as supplied
+by `exists_prime_ringHom_adicCompletionIntegers_mem_rat_ray_class`),
+every `σ ∈ localInertiaGroup w` is the image of a
+`σ' ∈ localInertiaGroup q` along a compatible embedding
+`ι : ℚ_q^alg → F_w^alg` of the completed algebraic closures — i.e.
+`ι ∘ σ' = σ ∘ ι`. Intended proof: take `ι := AlgebraicClosure.map f`,
+which makes `F_w^alg` an algebra over `ℚ_q^alg` compatibly with the
+scalars `ℚ_q` (`AlgebraicClosure.map_algebraMap`), and let
+`σ' := ((σ.restrictScalars ℚ_q).toAlgHom.comp ι).restrictNormal' ℚ_q^alg`
+be the restriction of `σ` along the normal extension `ℚ_q^alg/ℚ_q` —
+the very construction of `Field.absoluteGaloisGroup.mapAux`, which
+cannot be reused verbatim here because it demands `NumberField ℚ_q`.
+The commutation identity is then `AlgHom.restrictNormal_commutes`. That
+`σ'` lies in `localInertiaGroup q` is the residual content: `f`
+integral gives `ι (IntegralClosure ℤ_q ℚ_q^alg) ⊆ IntegralClosure 𝒪_w
+F_w^alg`, and `ι` restricted to those integral closures is a LOCAL
+homomorphism of valuation rings (both are valuation rings by
+`localValuationSubring`'s spectral-norm dichotomy, and `ι` preserves
+the spectral norm because it preserves integrality in both directions),
+so the congruence `σ' x ≡ x mod 𝔪` follows from `σ (ι x) ≡ ι x mod 𝔪`
+by contracting along `ι`. -/
+theorem exists_ringHom_algebraicClosure_mem_localInertiaGroup_rat_ray_class
+    (F : Type*) [Field F] [NumberField F]
+    (w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F))
+    (q : ℕ) (hq : q.Prime)
+    (f : IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat →+*
+        IsDedekindDomain.HeightOneSpectrum.adicCompletion F w)
+    (hf : ∀ x : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat,
+      f x ∈ IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers F w)
+    (σ : Γ (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w))
+    (hσ : σ ∈ localInertiaGroup w) :
+    ∃ (ι : AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat) →+*
+           AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w))
+      (σ' : Γ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat)),
+      σ' ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat ∧
+      ∀ x, ι (σ' x) = σ (ι x) := by
+  sorry
+
 set_option maxHeartbeats 1000000 in
 /-- **Local–global inertia functoriality along `ℚ ⊆ F` — the inertia
-half of the unramified-extension dictionary** (sorry node, created
-2026-07-24 as part of the route-(α) decomposition of
-`character_sq_eq_one_of_narrow_exponent_two_ray_class` below): for a
+half of the unramified-extension dictionary** (PROVEN 2026-07-25 over
+the two local bricks
+`exists_prime_ringHom_adicCompletionIntegers_mem_rat_ray_class` and
+`exists_ringHom_algebraicClosure_mem_localInertiaGroup_rat_ray_class`,
+plus the PROVEN embedding-conjugacy lemma
+`exists_algEquiv_ringHom_apply_eq_ray_class`): for a
 number field `F ⊆ ℚ̄`, a finite place `w` of `F`, and an element `σ` of
 the local inertia group at `w`, the image of `σ` in `Γ ℚ` — through
 `Γ (F_w) → Γ F` (`Field.absoluteGaloisGroup.map` along `F → F_w`), the
 chosen `F`-identification `ψ : F̄ ≃ₐ[F] ℚ̄` of algebraic closures
 (`AlgEquiv.autCongr`), and restriction of scalars to `ℚ` — lies in a
 `Γ ℚ`-conjugate of the image of the local inertia group at some
-rational prime `q` (the prime below `w`). Intended proof: both sides
-are inertia conditions at places of `ℚ̄` over `q` — triviality mod the
-maximal ideal of the integral closure of the completed integers in the
-completed algebraic closure, which contracts along the integral-closure
-inclusions induced by a compatible embedding `ℚ_q^alg → F_w^alg`; and
-any two places of `ℚ̄` over `q` (equivalently, any two embeddings
-`ℚ̄ → ℚ_q^alg`) are `Γ ℚ`-conjugate, which produces `c` — the same
-contraction pattern as the PROVEN
-`exists_isArithFrobAt_restrictNormalHom_globalFrob` in
-`Chebotarev.lean`, run for inertia instead of Frobenius. -/
+rational prime `q` (the prime below `w`). Proof (the same contraction
+pattern as the PROVEN `exists_isArithFrobAt_restrictNormalHom_globalFrob`
+in `Chebotarev.lean`, run for inertia instead of Frobenius): both sides,
+read through embeddings of `ℚ̄` into `F_w^alg`, intertwine with the SAME
+local automorphism `σ`. Concretely, `ι₁ := ℚ̄ →[ψ⁻¹] F̄ → F_w^alg`
+satisfies `ι₁ ∘ Φ(σ) = σ ∘ ι₁` for the left-hand image `Φ(σ)`
+(`Field.absoluteGaloisGroup.lift_map`), while
+`ι₂ := ℚ̄ → ℚ_q^alg →[ι] F_w^alg` satisfies
+`ι₂ ∘ (map σ') = σ ∘ ι₂`; the two embeddings differ by
+`c ∈ Γ ℚ` (`exists_algEquiv_ringHom_apply_eq_ray_class`), so both
+`Φ(σ)` and `c · map σ' · c⁻¹` become `σ` after applying the injective
+`ι₁`, hence are equal. -/
 theorem exists_conj_image_localInertiaGroup_rat_ray_class
     (F : IntermediateField ℚ (AlgebraicClosure ℚ)) [NumberField F]
     (ψ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure ℚ)
@@ -26188,7 +26304,57 @@ theorem exists_conj_image_localInertiaGroup_rat_ray_class
         c * Field.absoluteGaloisGroup.map (algebraMap ℚ
           (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
             hq.toHeightOneSpectrumRingOfIntegersRat)) σ' * c⁻¹ := by
-  sorry
+  -- the rational prime below `w`, with its integral embedding of completions
+  obtain ⟨q, hq, f, hf⟩ := exists_prime_ringHom_adicCompletionIntegers_mem_rat_ray_class F w
+  -- the compatible embedding of completed algebraic closures, and the
+  -- inertia element of `Γ ℚ_q` it transports `σ` to
+  obtain ⟨ι, σ', hσ', hι⟩ :=
+    exists_ringHom_algebraicClosure_mem_localInertiaGroup_rat_ray_class F w q hq f hf σ hσ
+  set A : AlgebraicClosure F →+*
+      AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w) :=
+    AlgebraicClosure.map
+      (algebraMap F (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w)) with hA
+  set C : AlgebraicClosure ℚ →+*
+      AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat) :=
+    AlgebraicClosure.map (algebraMap ℚ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)) with hC
+  -- the two embeddings `ℚ̄ → F_w^alg`
+  set ι₁ : AlgebraicClosure ℚ →+*
+      AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w) :=
+    A.comp ψ.symm.toAlgHom.toRingHom with hι₁
+  obtain ⟨c, hc⟩ := exists_algEquiv_ringHom_apply_eq_ray_class ι₁ (ι.comp C)
+  refine ⟨q, hq, c, σ', hσ', ?_⟩
+  have hinj : Function.Injective ι₁ := ι₁.injective
+  refine AlgEquiv.ext fun y => hinj ?_
+  -- the left-hand image intertwines with `σ` along `ι₁`
+  have hL : ι₁ ((AlgEquiv.restrictScalars ℚ (ψ.autCongr
+      (Field.absoluteGaloisGroup.map
+        (algebraMap F (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w)) σ))) y) =
+      σ (ι₁ y) := by
+    show A (ψ.symm (ψ ((Field.absoluteGaloisGroup.map
+      (algebraMap F (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w)) σ)
+        (ψ.symm y)))) = σ (A (ψ.symm y))
+    rw [ψ.symm_apply_apply]
+    exact Field.absoluteGaloisGroup.lift_map
+      (algebraMap F (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w)) σ (ψ.symm y)
+  -- so does the conjugated right-hand image, through `ι₂ = ι ∘ C = ι₁ ∘ c`
+  have hR : ι₁ ((c * Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)) σ' * c⁻¹) y) = σ (ι₁ y) := by
+    show ι₁ (c ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)) σ') (c⁻¹ y))) = σ (ι₁ y)
+    rw [hc]
+    show ι (C ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)) σ') (c⁻¹ y))) = σ (ι₁ y)
+    rw [hC, Field.absoluteGaloisGroup.lift_map, ← hC, hι]
+    congr 1
+    have h2 : ι₁ (c (c⁻¹ y)) = ι (C (c⁻¹ y)) := hc (c⁻¹ y)
+    rw [← h2, AlgEquiv.aut_inv, c.apply_symm_apply]
+  exact hL.trans hR.symm
 
 set_option maxHeartbeats 1000000 in
 /-- **Artin reciprocity for the narrow Hilbert class field, in
