@@ -26,6 +26,7 @@ public import Fermat.FLT.EllipticCurve.FrobeniusFixedField
 public import Fermat.FLT.EllipticCurve.Torsion
 public import Fermat.FLT.EllipticCurve.WeilPairingDescent
 public import Fermat.FLT.EllipticCurve.WeilPairingRecgen
+public import Fermat.FLT.EllipticCurve.WeilPairingStageB
 public import Fermat.FLT.EllipticCurve.WeilPairingTwoLine
 public import Fermat.FLT.GaloisRepresentation.Chebotarev
 public import Fermat.FLT.KnownIn1980s.EllipticCurves.GoodReduction
@@ -4563,10 +4564,13 @@ theorem exists_weilValueSetup_avoiding (q : ℕ) [Fact q.Prime]
   sorry
 
 /-- **Stage B of the translation-character witness — the Ex. 3.16(c)
-cross-ratio evaluation** (sorry node — Silverman AEC Ex. 3.16(c), the
-genuinely deep computation core; needs the careful paper derivation
-flagged in HLEG-NOTES.md §4(B) L4-9; see Howe, *The Weil pairing and
-the Hilbert symbol*): given the nontrivial translation-character data
+cross-ratio evaluation** (PROVEN GLUE over the three stage leaves of
+`WeilPairingStageB.lean` — `exists_generic_pDivision_offset`,
+`millerRatio_eval_pow_of_pullback`,
+`exists_millerRatio_eval_translationChar` — plus the proven
+bookkeeping `crossRatio_eq_of_stages`; Silverman AEC Ex. 3.16(c),
+HLEG-NOTES.md §4(B) L4-9; see Howe, *The Weil pairing and the Hilbert
+symbol*): given the nontrivial translation-character data
 `τ_{κ₀}^*(g) = c·g` for the Miller generator `g = a/∏(X − x_κ)` of
 `[p]^*((x.val) − (O))`, there is a finite "bad" subfield `G₀` —
 computed from the character data; it should contain the coordinates of
@@ -4601,10 +4605,26 @@ mirror computation for `f_{κ₀}(D_x)` (Weil-reciprocity symmetric, the
 genericity needed at every evaluation step (avoiding zeros/poles of
 `g`, of the line words, and of their translates) is exactly what
 `G₀ ≤ F` plus the setup's `F/F'`-hierarchy provide once `G₀` is chosen
-to contain the finitely many bad abscissas of the derivation. -/
+to contain the finitely many bad abscissas of the derivation.
+
+STAGING (2026-07-25): the plan above is now IMPLEMENTED as glue.  The
+bad subfield `G₀` is CONSTRUCTED here: the finite set of coordinates
+of all `p²`-torsion translates `T'⊕κ⊕λ`, `⊖κ⊕λ`
+(`κ ∈ E[p]`, `λ ∈ E[p²]`, both finite by `TorsionCard.card_torsionBy`)
+of the divisor support of `g`, closed into a finite subfield by
+`exists_finite_subfield_containing`.  The derivation itself is
+decomposed into the three sorried leaves of `WeilPairingStageB.lean` —
+`exists_generic_pDivision_offset` (the `p`-division points `S'`, `R'`,
+`κ₀'` and the genericity of the offset pair `U = S'⊖R'`,
+`V = κ₀'⊕U`), `millerRatio_eval_pow_of_pullback`
+(`f_x(D_{κ₀}) = [g(V)/g(U)]^p`, the L4-7 pullback evaluation) and
+`exists_millerRatio_eval_translationChar`
+(`f_{κ₀}(D_x) = c^e·[g(V)/g(U)]^p`, `e ∈ {1, p−1}`, the Weil-reciprocity
+mirror side with the level-`p²` telescope) — whose ratio cancels the
+common `p`-th power through the proven `crossRatio_eq_of_stages`. -/
 theorem translationChar_setup_value (q : ℕ) [Fact q.Prime]
     (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic]
-    (p : ℕ) [Fact p.Prime] (hqp : q ≠ p)
+    (p : ℕ) [Fact p.Prime] (_hqp : q ≠ p)
     [Fintype ((Wbar.map (algebraMap (ZMod q)
       (AlgebraicClosure (ZMod q)))).nTorsion p)]
     (x : (Wbar.map (algebraMap (ZMod q)
@@ -4674,7 +4694,7 @@ theorem translationChar_setup_value (q : ℕ) [Fact q.Prime]
     (hp0 : ((p : ℕ) : AlgebraicClosure (ZMod q)) ≠ 0)
     (hcard : Fintype.card ((Wbar.map (algebraMap (ZMod q)
       (AlgebraicClosure (ZMod q)))).nTorsion p) = p ^ 2)
-    (hi₀ : i₀.val ≠ 0) (hx0 : x.val ≠ 0)
+    (_hi₀ : i₀.val ≠ 0) (_hx0 : x.val ≠ 0)
     (xP yP : AlgebraicClosure (ZMod q))
     (hP : (Wbar.map (algebraMap (ZMod q)
       (AlgebraicClosure (ZMod q)))).toAffine.Nonsingular xP yP)
@@ -4778,7 +4798,173 @@ theorem translationChar_setup_value (q : ℕ) [Fact q.Prime]
                   (Wbar.map (algebraMap (ZMod q)
                     (AlgebraicClosure (ZMod q)))).toAffine xR) ^ p) *
               AdjoinRoot.evalEval hPS.left aQ) := by
-  sorry
+  classical
+  -- ── the `p²`-torsion is finite (the bad set is built from its
+  --    translates of the divisor support of `g`)
+  have hp2 : ((p ^ 2 : ℕ) : AlgebraicClosure (ZMod q)) ≠ 0 := by
+    rw [Nat.cast_pow]
+    exact pow_ne_zero 2 hp0
+  have hcard2 : Nat.card ((Wbar.map (algebraMap (ZMod q)
+      (AlgebraicClosure (ZMod q)))).nTorsion (p ^ 2)) = (p ^ 2) ^ 2 :=
+    TorsionCard.card_torsionBy _ (p ^ 2) hp2
+  haveI : Finite ((Wbar.map (algebraMap (ZMod q)
+      (AlgebraicClosure (ZMod q)))).nTorsion (p ^ 2)) :=
+    Nat.finite_of_card_ne_zero (by
+      rw [hcard2]
+      exact pow_ne_zero 2 (pow_ne_zero 2 (Fact.out : p.Prime).ne_zero))
+  -- ── THE BAD SET: the coordinates of all `p²`-torsion translates
+  --    `T'⊕κ⊕λ`, `⊖κ⊕λ` of the divisor support of `g = a/∏(X − x_κ)`
+  let coords : (Wbar.map (algebraMap (ZMod q)
+      (AlgebraicClosure (ZMod q)))).toAffine.Point →
+      Set (AlgebraicClosure (ZMod q)) := fun Z =>
+    match Z with
+    | .zero => ∅
+    | .some x y _ => {x, y}
+  have hcoords_some : ∀ (x y : AlgebraicClosure (ZMod q))
+      (h : (Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).toAffine.Nonsingular x y),
+      coords (WeierstrassCurve.Affine.Point.some x y h) = {x, y} :=
+    fun _ _ _ => rfl
+  have hcoordsfin : ∀ Z, (coords Z).Finite := by
+    intro Z
+    cases Z with
+    | zero => exact Set.finite_empty
+    | some x y h => exact (Set.finite_singleton y).insert x
+  set B : Set (AlgebraicClosure (ZMod q)) :=
+    ⋃ (κ : (Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).nTorsion p)
+      (lam : (Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).nTorsion (p ^ 2)),
+      coords (T' + κ.val + lam.val) ∪ coords (-κ.val + lam.val) with hBdef
+  have hBfin : B.Finite :=
+    Set.finite_iUnion fun _ => Set.finite_iUnion fun _ =>
+      (hcoordsfin _).union (hcoordsfin _)
+  obtain ⟨G₀, hG₀fin, hG₀mem⟩ :=
+    exists_finite_subfield_containing q hBfin.toFinset
+  have hbadmem : ∀ κ lam : (WeierstrassCurve.Affine.baseChange
+        (Wbar.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))))
+        (AlgebraicClosure (ZMod q))).Point,
+      (p : ℤ) • κ = 0 → ((p ^ 2 : ℕ) : ℤ) • lam = 0 →
+      ∀ (x y : AlgebraicClosure (ZMod q))
+        (h : (Wbar.map (algebraMap (ZMod q)
+          (AlgebraicClosure (ZMod q)))).toAffine.Nonsingular x y),
+        WeierstrassCurve.Affine.Point.some x y h = T' + κ + lam ∨
+          WeierstrassCurve.Affine.Point.some x y h = -κ + lam →
+        x ∈ G₀ ∧ y ∈ G₀ := by
+    intro κ lam hκt hlamt x y h hcase
+    have hsub : coords (WeierstrassCurve.Affine.Point.some x y h) ⊆ B := by
+      rw [hBdef]
+      refine Set.subset_iUnion_of_subset
+        ⟨κ, (Submodule.mem_torsionBy_iff _ _).mpr hκt⟩ ?_
+      refine Set.subset_iUnion_of_subset
+        ⟨lam, (Submodule.mem_torsionBy_iff _ _).mpr hlamt⟩ ?_
+      rcases hcase with hc | hc
+      · rw [hc]
+        exact Set.subset_union_left
+      · rw [hc]
+        exact Set.subset_union_right
+    refine ⟨hG₀mem x (hBfin.mem_toFinset.mpr (hsub ?_)),
+      hG₀mem y (hBfin.mem_toFinset.mpr (hsub ?_))⟩
+    · rw [hcoords_some x y h]
+      exact Set.mem_insert _ _
+    · rw [hcoords_some x y h]
+      exact Set.mem_insert_of_mem _ rfl
+  refine ⟨G₀, hG₀fin, ?_⟩
+  intro F₁ F₂ hF₁fin hF₂fin hF₁₂ hG₀F _ _ _ _ _
+    xS yS hS hxSF₂ hySF₂ hxSF₁ xR yR hR hxRF₂
+    xPS yPS hPS hPSc hxPSF₂ hyPSF₂ hxPSF₁
+    xQR yQR hQR hQRc _ _ hxQRF₂
+    aP aQ haP haQ hAnz hBnz
+  -- ── the four Miller-generator evaluations are nonzero (components of
+  --    the setup's two nonvanishing products)
+  have hnzR : AdjoinRoot.evalEval hR.left aP ≠ 0 := by
+    intro h0
+    rw [h0] at hAnz
+    simp at hAnz
+  have hnzPS : AdjoinRoot.evalEval hPS.left aQ ≠ 0 := by
+    intro h0
+    rw [h0] at hAnz
+    simp at hAnz
+  have hnzQR : AdjoinRoot.evalEval hQR.left aP ≠ 0 := by
+    intro h0
+    rw [h0] at hBnz
+    simp at hBnz
+  have hnzS : AdjoinRoot.evalEval hS.left aQ ≠ 0 := by
+    intro h0
+    rw [h0] at hBnz
+    simp at hBnz
+  -- ── the torsion enumeration `val := κ ↦ κ.val` of `E[p]`
+  have hval_inj : Function.Injective
+      (fun κ : (Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).nTorsion p =>
+        (κ.val : (Wbar.map (algebraMap (ZMod q)
+          (AlgebraicClosure (ZMod q)))).toAffine.Point)) :=
+    fun _ _ h => Subtype.ext h
+  have hval_tor : ∀ κ : (Wbar.map (algebraMap (ZMod q)
+      (AlgebraicClosure (ZMod q)))).nTorsion p,
+      (p : ℤ) • (κ.val : (Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).toAffine.Point) = 0 :=
+    fun κ => (Submodule.mem_torsionBy_iff _ _).mp κ.property
+  have hval_surj : ∀ Z : (Wbar.map (algebraMap (ZMod q)
+      (AlgebraicClosure (ZMod q)))).toAffine.Point, (p : ℤ) • Z = 0 →
+      ∃ κ : (Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).nTorsion p, κ.val = Z :=
+    fun Z hZ => ⟨⟨Z, (Submodule.mem_torsionBy_iff _ _).mpr hZ⟩, rfl⟩
+  have hPtor : (p : ℤ) • (WeierstrassCurve.Affine.Point.some xP yP hP :
+      (Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).toAffine.Point) = 0 := by
+    rw [← hrepP]
+    exact (Submodule.mem_torsionBy_iff _ _).mp i₀.property
+  have hTQ : ((p : ℕ) : ℤ) • T' =
+      (WeierstrassCurve.Affine.Point.some xQ yQ hQ :
+        (Wbar.map (algebraMap (ZMod q)
+          (AlgebraicClosure (ZMod q)))).toAffine.Point) := hT.trans hrepQ
+  -- ── the bad coordinates lie in the setup's small field
+  have hbadF : ∀ κ lam : (WeierstrassCurve.Affine.baseChange
+        (Wbar.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))))
+        (AlgebraicClosure (ZMod q))).Point,
+      (p : ℤ) • κ = 0 → ((p ^ 2 : ℕ) : ℤ) • lam = 0 →
+      ∀ (x y : AlgebraicClosure (ZMod q))
+        (h : (Wbar.map (algebraMap (ZMod q)
+          (AlgebraicClosure (ZMod q)))).toAffine.Nonsingular x y),
+        WeierstrassCurve.Affine.Point.some x y h = T' + κ + lam ∨
+          WeierstrassCurve.Affine.Point.some x y h = -κ + lam →
+        x ∈ F₁ ∧ y ∈ F₁ := fun κ lam hκt hlamt x y h hcase =>
+    ⟨hG₀F (hbadmem κ lam hκt hlamt x y h hcase).1,
+      hG₀F (hbadmem κ lam hκt hlamt x y h hcase).2⟩
+  -- ── STAGE LEAF 1: the `p`-division points `S'`, `R'`, `κ₀'` and the
+  --    generic offset pair `U = S'⊖R'`, `V = κ₀'⊕U`
+  obtain ⟨S', R', P', hS'p, hR'p, hP'p, xU, yU, hU, xV, yV, hV, hUeq, hVeq,
+      hUa, hUv, hVa, hVv⟩ :=
+    exists_generic_pDivision_offset
+      (val := fun κ : (Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).nTorsion p =>
+        (κ.val : (Wbar.map (algebraMap (ZMod q)
+          (AlgebraicClosure (ZMod q)))).toAffine.Point))
+      hΔ hp0 hval_inj hval_tor hval_surj hcard hT hPtor ha hspan
+      hF₁fin hF₂fin hF₁₂ hbadF hS hxSF₂ hySF₂ hR hxRF₂
+  -- ── STAGE LEAF 2: `f_x(D_{κ₀}) = [g(V)/g(U)]^p`
+  have hpull := millerRatio_eval_pow_of_pullback
+      (val := fun κ : (Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).nTorsion p =>
+        (κ.val : (Wbar.map (algebraMap (ZMod q)
+          (AlgebraicClosure (ZMod q)))).toAffine.Point))
+      hΔ hp0 hval_inj hval_tor hval_surj hcard ha hspan hP hQ hTQ hPtor
+      hS hR hPS hPSc hQR hQRc haQ hnzS hnzPS hS'p hR'p hP'p hU hV hUeq hVeq
+      hUa hUv hVa hVv
+  -- ── STAGE LEAF 3: `f_{κ₀}(D_x) = c^e·[g(V)/g(U)]^p`, `e ∈ {1, p−1}`
+  obtain ⟨e, hecase, hmirror⟩ := exists_millerRatio_eval_translationChar
+      (val := fun κ : (Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).nTorsion p =>
+        (κ.val : (Wbar.map (algebraMap (ZMod q)
+          (AlgebraicClosure (ZMod q)))).toAffine.Point))
+      hΔ hp0 hval_inj hval_tor hval_surj hcard ha hspan hP hQ hTQ hrepP hpt
+      hc1 hcp hτa hτv heq hS hR hPS hPSc hQR hQRc haP hnzR hnzQR
+      hF₁fin hF₂fin hF₁₂ hbadF hxSF₂ hySF₂ hxSF₁ hxRF₂ hxPSF₂ hyPSF₂ hxPSF₁
+      hxQRF₂ hS'p hR'p hP'p hU hV hUeq hVeq hUa hUv hVa hVv
+  -- ── dividing the two stages cancels the common `p`-th power
+  exact ⟨e, hecase, crossRatio_eq_of_stages
+    (pow_ne_zero p (mul_ne_zero hUa hVv)) hpull hmirror⟩
 
 /-- **Nondegenerate translation-character witness** (PROVEN GLUE —
 Silverman AEC Ex. 3.16(c), the computation core of the bridge lemma,
