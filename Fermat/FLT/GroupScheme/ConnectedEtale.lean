@@ -1042,7 +1042,20 @@ the `μ`-type node consumes — in particular
 `(φ^k)(1 ⊗ x) = (φ(1 ⊗ x))^k` for EVERY `k`, proven by induction on
 `k` through the convolution product: the two factors of a convolution
 both kill `I`, so only the group-like part `x ⊗ x` of `Δ x`
-contributes. -/
+contributes.
+
+**CONE STATUS (2026-07-25) — DO NOT DELETE AS FREE-FLOATING.** Until
+2026-07-25 this block was in the root cone through the proof of
+`exists_muType_coordinate`, which derived the `μ`-type node's numeric
+data from an `𝒪ᵥ`-RATIONAL closure coordinate `x ∈ G`. That leaf was
+found to be FALSE — the unramified twists `μ_p ⊗ ψ` refute it, see the
+CORRECTION NOTE on `exists_muType_coordinate` — and the leaf now
+asserts only the inertia-equivariant VALUE `ζ` of the coordinate,
+which descends from `𝒪^nr` while the coordinate itself does not. The
+block therefore has no proven consumer at this instant, but it is not
+dead: it is exactly the bookkeeping the corrected leaf's intended
+proof runs over the base `𝒪^nr` (see that docstring), so it must be
+kept until that proof is written, not swept. -/
 
 section TensorIdeal
 
@@ -1378,31 +1391,57 @@ theorem galois_apply_pow_eq_pow_of_cyclotomicCharacter
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
-/-- **The Oort–Tate schematic closure of the inertia-stable cyclic
-group is `μ_p`** (sorry node, 2026-07-25 — THE classification leaf,
-the only remaining input of the shared `μ`-type node): under the
-hypotheses of
+/-- **The Oort–Tate `μ_p`-value of an inertia-stable cyclic group of
+points** (sorry node — THE classification leaf, the only remaining
+input of the shared `μ`-type node; RESTATED 2026-07-25, see the
+CORRECTION NOTE below): under the hypotheses of
 `connected_cyclic_point_smul_eq_conv_pow_cyclotomicCharacter` and with
-`φ ≠ 1`, the Hopf order `G` carries an ideal `I` which is a COIDEAL
-and is killed by `φ`, together with an element `x ∈ G` which modulo
-`I` is a group-like `p`-th root of unity — `ε x = 1`, `x^p ≡ 1 mod I`
-and `Δ x ≡ x ⊗ x mod (I ⊗ G + G ⊗ I)` — on which `φ` takes a value
-`≠ 1`.
+`φ ≠ 1`, there is a NONTRIVIAL `p`-th root of unity `ζ ∈ ℚᵥᵃˡᵍ` which
+reads the local-inertia action on the convolution-cyclic group
+`⟨φ⟩`: whenever an inertia element `σ` moves `φ` to its `m`-th
+convolution power, it moves `ζ` to `ζ^m`. Equivalently, `ζ` exhibits
+an isomorphism `⟨φ⟩ ≅ μ_p` OF INERTIA MODULES — the `μ_p`-ness of the
+schematic closure, in exactly the form the node consumes.
 
-Geometrically this is exactly the Oort–Tate output: `Spec (G/I)` is
-the schematic closure of the inertia-stable cyclic group
-`⟨φ⟩ ≅ ℤ/p` of geometric points inside the model; `I` being a coideal
-(mathlib's `Submodule.IsCoideal`: `ε I = 0` and
-`Δ I ⊆ I ⊗ G + G ⊗ I`) says that this closure is a closed subGROUP
-scheme; and the coordinate `x` exhibits it as `μ_p`, whose coordinate
-ring is `𝒪ᵥ[T]/(T^p − 1)` with `ΔT = T ⊗ T` and `εT = 1`, with `φ` a
-NONTRIVIAL point of it. The `μ_p`-coordinate statement consumed by the
-node — `φ(1 ⊗ x)` a nontrivial `p`-th root of unity read by all
-convolution powers — is derived from this by
-`pow_apply_tmul_eq_one_of_sub_mem` and
-`pow_apply_tmul_eq_pow_of_closure`, so nothing about the convolution
-monoid is left inside this leaf: what remains is purely the
-classification of the closure as a finite flat group scheme.
+Geometrically: for the vanishing ideal `I` of `⟨φ⟩` in `G`,
+`Spec (G/I)` is the schematic closure of the inertia-stable cyclic
+group `⟨φ⟩ ≅ ℤ/p` of geometric points inside the model — a finite
+flat closed subGROUP scheme of order `p` killed by `p`, connected by
+`hφe`/`hprim₀`/`hcomul₀`. Over the completed maximal unramified
+extension it is `μ_p`, whose coordinate ring is
+`𝒪^nr[T]/(T^p − 1)` with `ΔT = T ⊗ T` and `εT = 1`, and `ζ` is the
+value `φ(1 ⊗ T)` of that coordinate at `φ`.
+
+**CORRECTION NOTE (2026-07-25): the previous form of this leaf was
+FALSE and has been deleted.** It asked for the coordinate itself, over
+`𝒪ᵥ`: an ideal `I ⊆ G` which is a coideal killed by `φ`, together with
+`x ∈ G` satisfying `ε x = 1`, `x^p ≡ 1 mod I`,
+`Δ x ≡ x ⊗ x mod (I ⊗ G + G ⊗ I)` and `φ(1 ⊗ x) ≠ 1` (the deleted
+theorems `exists_muType_closure` and the deleted first form of
+`exists_muType_coordinate`). Such data forces the schematic closure
+`C` to be `μ_p` OVER `𝒪ᵥ = ℤ_p` itself: `x` is group-like modulo `I`
+with `x^p ≡ 1`, so it is a homomorphism `C → μ_p` over `ℤ_p`,
+nontrivial because `φ(1 ⊗ x) ≠ 1`; a nontrivial quotient of an
+order-`p` group scheme is everything, so `ℚ_p ⊗ I = 0`, hence `I = 0`
+by flatness of `G`, and a nontrivial homomorphism of finite flat group
+schemes of order `p` is an isomorphism. The hypotheses do NOT force
+that. By Oort–Tate the CONNECTED order-`p` group schemes over `ℤ_p`
+(`p` odd, `e = 1 < p − 1`) form a family of `p − 1` pairwise
+non-isomorphic schemes: the parameters `(a, b)` with `ab = w_p` modulo
+`(a, b) ∼ (u^{p−1} a, u^{1−p} b)` have `v(a) = 1`, and `b` ranges over
+`ℤ_p^×/(ℤ_p^×)^{p−1} ≅ ℤ/(p − 1)`. These are the twists `μ_p ⊗ ψ` of
+`μ_p` by the UNRAMIFIED characters `ψ : G_{ℚ_p} → (ℤ/p)^×` of order
+dividing `p − 1`, and every one of them satisfies ALL hypotheses of
+this leaf: its coordinate ring becomes `𝒪^nr[T]/(T^p − 1)` — a local
+ring — over `𝒪^nr`, so it has no nontrivial idempotents and `e₀ = 1`
+gives `he₀`, `hε₀`, `hprim₀`, `hcomul₀`, `hφe`; its geometric points
+are killed by `p` (`hord`); and Galois acts on them by `χ_cyc · ψ`,
+which restricted to INERTIA is `χ_cyc` because `ψ` is unramified, so
+`hstab` holds. Yet for `ψ ≠ 1` no such `x` exists. The defect is
+precisely that the coordinate lives over `𝒪^nr`, not over `𝒪ᵥ`. Its
+VALUE `ζ` at `φ` is nevertheless well defined and inertia-equivariant,
+because inertia fixes `𝒪^nr` pointwise — and that is all the node ever
+used, so the corrected statement above is what is asserted here.
 
 Intended proof (Oort–Tate, *Group schemes of prime order*, Ann. Sci.
 ÉNS 1970; Raynaud, *Schémas en groupes de type `(p, …, p)`*, Bull.
@@ -1428,65 +1467,26 @@ the connected component, so `C` lands in the local corner
 `e = 1` then leaves only `C ≅ μ_p` (the étale option `ℤ/p` is excluded
 by connectedness of the nontrivial `C`). The coordinate ring of `μ_p`
 is `𝒪^nr[T]/(T^p − 1)` with `ΔT = T ⊗ T` and `εT = 1`, so any
-preimage `x ∈ G` of `T` under `G → G/I` satisfies the three
-congruences, and `φ(1 ⊗ x) ≠ 1` because `φ` generates `C`.
+preimage `x ∈ 𝒪^nr ⊗ G` of `T` under `𝒪^nr ⊗ G → 𝒪^nr ⊗ (G/I)`
+satisfies the three congruences over `𝒪^nr`, and its value
+`ζ = φ(1 ⊗ x)` is `≠ 1` because `φ` generates `C`. That `ζ` is a
+`p`-th root of unity is then `pow_apply_tmul_eq_one_of_sub_mem`, and
+`(φ^k)(1 ⊗ x) = ζ^k` is `pow_apply_tmul_eq_pow_of_closure`, both
+applied over the base `𝒪^nr`; finally, for `σ` in local inertia with
+`σ • φ = φ^m`, evaluation at `1 ⊗ x` gives
+`σ ζ = (σ • φ)(1 ⊗ x) = (φ^m)(1 ⊗ x) = ζ^m`, the last step because
+inertia fixes `𝒪^nr` pointwise, so `x` is inertia-invariant. (The two
+helper lemmas are stated over an arbitrary base `R`, so no `𝒪ᵥ`-only
+step is involved; they are what makes the `𝒪^nr` detour invisible in
+the statement.)
 Soundness: the hypothesis set is inhabited (the nontrivial points of
-`μ_p` over `ℤ_p`, with `e₀` its connected counit idempotent, `I = 0`
-and `x = T`), and the conclusion holds for every inhabitant by the
-classification cited; `hstab` is NOT redundant — for the `p`-torsion
-of a supersingular elliptic curve over `ℤ_p` tame inertia acts through
-the level-`2` fundamental characters, no line is stable, no `μ_p` sits
-inside the model, and no such closure exists. -/
-theorem exists_muType_closure
-    (hpodd : Odd p)
-    (G : Type) [CommRing G]
-    [HopfAlgebra 𝒪ᵖᵍᵥ G] [Module.Flat 𝒪ᵖᵍᵥ G] [Module.Finite 𝒪ᵖᵍᵥ G]
-    (e₀ : G) (he₀ : IsIdempotentElem e₀)
-    (hε₀ : Coalgebra.counit (R := 𝒪ᵖᵍᵥ) e₀ = (1 : 𝒪ᵖᵍᵥ))
-    (hprim₀ : ∀ x : G, IsIdempotentElem x → x * e₀ = 0 ∨ x * e₀ = e₀)
-    (hcomul₀ : Coalgebra.comul (R := 𝒪ᵖᵍᵥ) e₀ *
-      (e₀ ⊗ₜ[𝒪ᵖᵍᵥ] e₀) = e₀ ⊗ₜ[𝒪ᵖᵍᵥ] e₀)
-    (φ : ℚᵖᵍᵥ ⊗[𝒪ᵖᵍᵥ] G →ₐ[ℚᵖᵍᵥ] ℚᵖᵍᵥᵃˡᵍ)
-    (hφe : φ ((1 : ℚᵖᵍᵥ) ⊗ₜ[𝒪ᵖᵍᵥ] e₀) = 1)
-    (hord : φ ^ p = 1)
-    (hstab : ∀ τ ∈ localInertiaGroup
-        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
-          (Fact.out : p.Prime)),
-      ∃ m : ℕ, τ • φ = φ ^ m)
-    (hφ1 : φ ≠ 1) :
-    ∃ (I : Ideal G) (x : G),
-      (I.restrictScalars 𝒪ᵖᵍᵥ).IsCoideal ∧
-      (∀ i ∈ I, φ ((1 : ℚᵖᵍᵥ) ⊗ₜ[𝒪ᵖᵍᵥ] i) = 0) ∧
-      Coalgebra.counit (R := 𝒪ᵖᵍᵥ) x = 1 ∧
-      x ^ p - 1 ∈ I ∧
-      Coalgebra.comul (R := 𝒪ᵖᵍᵥ) x - x ⊗ₜ[𝒪ᵖᵍᵥ] x ∈
-        tensorIdeal (R := 𝒪ᵖᵍᵥ) I ∧
-      φ ((1 : ℚᵖᵍᵥ) ⊗ₜ[𝒪ᵖᵍᵥ] x) ≠ 1 :=
-  sorry
-
-set_option backward.isDefEq.respectTransparency false in
-set_option synthInstance.maxHeartbeats 1000000 in
-set_option maxHeartbeats 2000000 in
-/-- **The Oort–Tate `μ_p`-coordinate** (PROVEN 2026-07-25 over the
-classification leaf `exists_muType_closure`): under the hypotheses of
-`connected_cyclic_point_smul_eq_conv_pow_cyclotomicCharacter` and with
-`φ ≠ 1`, the Hopf order `G` carries an element `x` on which `φ` takes
-a NONTRIVIAL `p`-th root of unity as value, and on which the whole
-convolution-cyclic group `⟨φ⟩` is read off by the corresponding power:
-`(φ^k)(1 ⊗ x) = (φ(1 ⊗ x))^k` for every `k`. In other words `x` is a
-`μ_p`-coordinate: it pulls the group `⟨φ⟩ ≅ ℤ/p` of geometric points
-back to the group `μ_p ⊆ ℚᵥᵃˡᵍ` compatibly with the group laws.
-
-Proof: `exists_muType_closure` — the Oort–Tate classification of the
-schematic closure of `⟨φ⟩` as `μ_p` — supplies the closure ideal `I`
-(a coideal killed by `φ`) and the coordinate `x`, group-like modulo
-`I` with `x^p ≡ 1`. Then `pow_apply_tmul_eq_one_of_sub_mem` turns
-`x^p ≡ 1 mod I` into `φ(1 ⊗ x)^p = 1`, and
-`pow_apply_tmul_eq_pow_of_closure` — the convolution induction of
-`convPow_apply_of_groupLike_mod` transported along the tensor–hom
-adjunction — turns group-likeness modulo `I` into
-`(φ^k)(1 ⊗ x) = (φ(1 ⊗ x))^k` for every `k`; the nontriviality of the
-value is the last conjunct of the leaf. -/
+`μ_p` over `ℤ_p`, with `e₀ = 1` its connected counit idempotent), and
+by the classification cited the conclusion holds for every inhabitant,
+including the unramified twists `μ_p ⊗ ψ` on which the earlier,
+`𝒪ᵥ`-rational form of this leaf failed. `hstab` is NOT redundant —
+for the `p`-torsion of a supersingular elliptic curve over `ℤ_p` tame
+inertia acts through the level-`2` fundamental characters, no line is
+stable, no `μ_p` sits inside the model, and no such `ζ` exists. -/
 theorem exists_muType_coordinate
     (hpodd : Odd p)
     (G : Type) [CommRing G]
@@ -1504,15 +1504,12 @@ theorem exists_muType_coordinate
           (Fact.out : p.Prime)),
       ∃ m : ℕ, τ • φ = φ ^ m)
     (hφ1 : φ ≠ 1) :
-    ∃ x : G,
-      (φ ((1 : ℚᵖᵍᵥ) ⊗ₜ[𝒪ᵖᵍᵥ] x)) ^ p = 1 ∧
-      φ ((1 : ℚᵖᵍᵥ) ⊗ₜ[𝒪ᵖᵍᵥ] x) ≠ 1 ∧
-      ∀ k : ℕ, (φ ^ k) ((1 : ℚᵖᵍᵥ) ⊗ₜ[𝒪ᵖᵍᵥ] x) =
-        (φ ((1 : ℚᵖᵍᵥ) ⊗ₜ[𝒪ᵖᵍᵥ] x)) ^ k := by
-  obtain ⟨I, x, hcoid, hφI, hxε, hxp, hxΔ, hx1⟩ :=
-    exists_muType_closure hpodd G e₀ he₀ hε₀ hprim₀ hcomul₀ φ hφe hord hstab hφ1
-  exact ⟨x, pow_apply_tmul_eq_one_of_sub_mem φ hφI hxp, hx1,
-    fun k => pow_apply_tmul_eq_pow_of_closure φ hcoid hφI hxε hxΔ k⟩
+    ∃ ζ : ℚᵖᵍᵥᵃˡᵍ, ζ ^ p = 1 ∧ ζ ≠ 1 ∧
+      ∀ σ ∈ localInertiaGroup
+          (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+            (Fact.out : p.Prime)),
+        ∀ m : ℕ, σ • φ = φ ^ m → σ ζ = ζ ^ m :=
+  sorry
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
@@ -1543,10 +1540,9 @@ Cornell–Silverman–Stevens): if `φ = 1` the statement is trivial
 (`σ • 1 = 1 = 1^n`, by `MulDistribMulAction`); otherwise `φ` has
 exact convolution order `p` and the CLASSIFICATION leaf
 `exists_muType_coordinate` — the `μ_p`-ness of the schematic closure
-of `⟨φ⟩`, the only remaining input — supplies a coordinate `x ∈ G` on
-which `φ` takes a nontrivial `p`-th root of unity `ζ` as value and on
-which convolution powers become powers of `ζ`. Evaluating the
-stability relation `σ • φ = φ^m` of `hstab` at `x` gives `σ ζ = ζ^m`,
+of `⟨φ⟩`, the only remaining input — supplies a nontrivial `p`-th root
+of unity `ζ` reading the inertia action on `⟨φ⟩`. Feeding the
+stability relation `σ • φ = φ^m` of `hstab` into it gives `σ ζ = ζ^m`,
 while the root-of-unity bridge
 `galois_apply_pow_eq_pow_of_cyclotomicCharacter` gives `σ ζ = ζ^n`;
 `ζ` is a primitive `p`-th root of unity, so `m ≡ n mod p`, and
@@ -1589,24 +1585,17 @@ theorem connected_cyclic_point_smul_eq_conv_pow_cyclotomicCharacter
   by_cases hφ1 : φ = 1
   · rw [hφ1, smul_one, one_pow]
   · obtain ⟨m, hm⟩ := hstab σ hσ
-    obtain ⟨x, hxp, hx1, hxpow⟩ :=
+    obtain ⟨ζ, hζp, hζ1, hζσ⟩ :=
       exists_muType_coordinate hpodd G e₀ he₀ hε₀ hprim₀ hcomul₀ φ hφe
         hord hstab hφ1
     -- the coordinate value is a primitive `p`-th root of unity
-    have hprimζ : IsPrimitiveRoot (φ ((1 : ℚᵖᵍᵥ) ⊗ₜ[𝒪ᵖᵍᵥ] x)) p :=
-      isPrimitiveRoot_of_prime_pow_eq_one hp.out hxp hx1
-    -- the inertia-stability relation, read at the coordinate
-    have hval : σ (φ ((1 : ℚᵖᵍᵥ) ⊗ₜ[𝒪ᵖᵍᵥ] x)) =
-        (φ ((1 : ℚᵖᵍᵥ) ⊗ₜ[𝒪ᵖᵍᵥ] x)) ^ m := by
-      have h := congrArg
-        (fun ψ : ℚᵖᵍᵥ ⊗[𝒪ᵖᵍᵥ] G →ₐ[ℚᵖᵍᵥ] ℚᵖᵍᵥᵃˡᵍ =>
-          ψ ((1 : ℚᵖᵍᵥ) ⊗ₜ[𝒪ᵖᵍᵥ] x)) hm
-      rw [hxpow m] at h
-      exact h
+    have hprimζ : IsPrimitiveRoot ζ p :=
+      isPrimitiveRoot_of_prime_pow_eq_one hp.out hζp hζ1
+    -- the inertia-stability relation, read through the coordinate value
+    have hval : σ ζ = ζ ^ m := hζσ σ hσ m hm
     -- and the same value through the cyclotomic character
-    have hbridge : σ (φ ((1 : ℚᵖᵍᵥ) ⊗ₜ[𝒪ᵖᵍᵥ] x)) =
-        (φ ((1 : ℚᵖᵍᵥ) ⊗ₜ[𝒪ᵖᵍᵥ] x)) ^ n :=
-      galois_apply_pow_eq_pow_of_cyclotomicCharacter σ n hn _ hxp
+    have hbridge : σ ζ = ζ ^ n :=
+      galois_apply_pow_eq_pow_of_cyclotomicCharacter σ n hn ζ hζp
     have hmn : m ≡ n [MOD p] :=
       natModEq_of_pow_eq_pow hprimζ (hval.symm.trans hbridge)
     rw [hm]
