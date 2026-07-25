@@ -58,7 +58,6 @@ each re-flowed the same prose paragraph. One name per line means two
 owners adding different leaves touch different lines, and git merges
 them without a human. Do not re-wrap it.
 
-- `finite_setOf_isHardlyRamified_frames`
 - `exists_isStrictlyUniversalOnFrames_of_deformationCondition`
 - `hasFlatProlongationAt_of_pi_surjection`
 - `isHardlyRamified_of_fibreProduct`
@@ -257,6 +256,18 @@ import Fermat.FLT.GaloisRepresentation.BrauerNesbittConjugacy
 -- the H4 Schur stratum below. Its own import cone is pure mathlib, so it
 -- cannot close the forbidden Khare–Wintenberger cycle.
 import Fermat.FLT.GaloisRepresentation.ComplexConjugation
+-- proof-only: the Hermite–Minkowski restricted-ramification finiteness
+-- `finite_setOf_isHardlyRamified`, which discharges the H3 stratum
+-- `finite_setOf_isHardlyRamified_frames` below. This is the chain that used
+-- to live inside `Modularity/Patching.lean`; it was lifted into its own
+-- module precisely so that BOTH cones can consume it, since `Patching.lean`
+-- itself is import-unreachable from here (it imports
+-- `Modularity/KhareWintenberger.lean`, which consumes pillar α — the very
+-- thing this file proves). The lifted module's own import cone is
+-- `MazurTorsion` + `Chebotarev` + mathlib discriminant theory, with no
+-- `Modularity/*`, no `Family.lean` and no `Lift.lean`, so it cannot close
+-- the forbidden Khare–Wintenberger cycle.
+import Fermat.FLT.GaloisRepresentation.HardlyRamified.HermiteMinkowski
 -- proof-only: the characteristic of a finite field, `ℤ_ℓ`-unit lemmas.
 import Mathlib.FieldTheory.Finite.Basic
 import Mathlib.NumberTheory.Padics.RingHoms
@@ -1054,8 +1065,9 @@ theorem isWeaklyUniversalOnIdentifiedFramesFinite_of_isStrictlyUniversalOnFinite
     D'.continuous_pi hid
 
 /-- **Restricted-ramification finiteness — Schlessinger's H3 at every
-Artinian level** (sorry node — the arithmetic finiteness stratum of the
-2026-07-26 Schlessinger cut of `exists_isStrictlyUniversalOnFiniteFrames`):
+Artinian level** (PROVEN 2026-07-25 by the module split described under
+DEDUPE NOTE below — the arithmetic finiteness stratum of the 2026-07-26
+Schlessinger cut of `exists_isStrictlyUniversalOnFiniteFrames`):
 over a FINITE discrete local topological `ℤ_ℓ`-algebra `A` there are only
 finitely many hardly ramified framed representations of `Γ ℚ` on `A²`.
 
@@ -1082,19 +1094,35 @@ inverse-limit construction of the hull, at every Artinian level; which is
 why it is stated uniformly over a general finite discrete coefficient
 ring rather than at the dual numbers only.
 
-DEDUPE NOTE. `Modularity/Patching.lean` PROVES this statement verbatim
-(`GaloisRepresentation.Modularity.finite_setOf_isHardlyRamified`, over
+DEDUPE NOTE — RESOLVED 2026-07-25 by the module split, not by a re-proof.
+`Modularity/Patching.lean` already proved this statement verbatim, over
 `finite_setOf_galoisRep_isUnramifiedAt`,
 `finite_setOf_subgroup_inertiaAt_le` and
-`finite_setOf_intermediateField_inertiaAt_le`), bottoming out in the
+`finite_setOf_intermediateField_inertiaAt_le`, bottoming out in the
 single sharper arithmetic leaf
 `exists_discr_factorization_le_of_finrank_le` (the discriminant-exponent
-bound by the degree). That chain uses NOTHING from Khare–Wintenberger, so
-the honest discharge of this leaf is not a re-proof but the module split
-recorded in `~/.flt-design-deformation-patching-dedup.md`: lift the
-Hermite–Minkowski block out of `Patching.lean` into a module upstream of
-this one and consume it here. It is stated as a leaf rather than moved
-because `Patching.lean` has its own concurrent owners.
+bound by the degree). That ~450-line chain uses NOTHING from
+Khare–Wintenberger, so — as recorded in
+`~/.flt-design-deformation-patching-dedup.md` — the honest discharge was
+never a re-proof but a lift: the block now lives in
+`GaloisRepresentation/HardlyRamified/HermiteMinkowski.lean`, upstream of
+this file and of `Patching.lean` alike, and this leaf is discharged by
+consuming it directly. `Patching.lean` itself remains
+import-unreachable from here (it imports `Modularity/KhareWintenberger.lean`,
+which consumes pillar α), which is exactly why the chain had to move
+rather than be imported.
+
+The single remaining sorry underneath this theorem is therefore
+`exists_discr_factorization_le_of_finrank_le`, in the lifted module — one
+sharper, purely arithmetic leaf about number fields, in place of this
+representation-theoretic one.
+
+FOLLOW-UP still open: `Patching.lean` still carries its own verbatim copy
+of the chain. Deleting it there and importing the lifted module is purely
+mechanical (every reference inside `namespace GaloisRepresentation.Modularity`
+resolves outward unchanged), but it was not done in the same change because
+`Patching.lean` was red and under repair by another owner at the time, so
+the deletion could not be build-verified.
 
 Both-ways audit: a plain classical finiteness statement about an abstract
 finite coefficient ring — true outright as cited, with no
@@ -1110,7 +1138,9 @@ theorem finite_setOf_isHardlyRamified_frames {A : Type u} [CommRing A]
     [Algebra ℤ_[ℓ] A] [Finite A] [DiscreteTopology A] :
     {ρ : FramedGaloisRep ℚ A (Fin 2) |
       IsHardlyRamified hℓOdd (rank_finTwoFun A) ρ}.Finite :=
-  sorry
+  -- `FramedGaloisRep ℚ A (Fin 2)` is an `abbrev` for `GaloisRep ℚ A (Fin 2 → A)`,
+  -- so this is the lifted statement verbatim, with no transport needed.
+  finite_setOf_isHardlyRamified hℓOdd
 
 /-- **Schur plus oddness: `End_{k[Γ]}(ρbar) = k`** (PROVEN 2026-07-26 —
 Schlessinger's H4 stratum of the 2026-07-26 cut of
