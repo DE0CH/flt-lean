@@ -33,6 +33,7 @@ public import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 public import Mathlib.FieldTheory.IsAlgClosed.Basic
 public import Mathlib.AlgebraicGeometry.EllipticCurve.DivisionPolynomial.Basic
 import Mathlib.AlgebraicGeometry.EllipticCurve.DivisionPolynomial.Degree
+import Mathlib.RingTheory.Norm.Basic
 import Fermat.FLT.EllipticCurve.TorsionCard
 
 @[expose] public section
@@ -1059,6 +1060,137 @@ theorem span_vertNumerator (hΔ : W.Δ ≠ 0) {q₁ q₂ x y : F}
           pointIdeal W (-.some x y h - .some q₁ q₂ hq)) := by
   sorry
 
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- An element of the affine coordinate ring whose relative norm over
+`F[X]` is a unit is itself a unit: multiplication by it is an
+`F[X]`-linear endomorphism of the free rank-two module `F[W]` whose
+determinant is exactly that norm, so it is invertible as a linear map
+and its inverse applied to `1` is the inverse element. -/
+lemma isUnit_of_isUnit_norm {u : W.CoordinateRing}
+    (hu : IsUnit (Algebra.norm (Polynomial F) u)) : IsUnit u := by
+  haveI : Module.Free (Polynomial F) W.CoordinateRing :=
+    Module.Free.of_basis (CoordinateRing.basis W)
+  haveI : Module.Finite (Polynomial F) W.CoordinateRing :=
+    Module.Finite.of_basis (CoordinateRing.basis W)
+  rw [Algebra.norm_apply] at hu
+  obtain ⟨g, hg⟩ := ((LinearMap.isUnit_iff_isUnit_det _).mpr hu).exists_right_inv
+  exact IsUnit.of_mul_eq_one (g 1) (by simpa using LinearMap.congr_fun hg 1)
+
+omit [IsAlgClosed F] in
+/-- **Principality of the chord-line divisor ideal.**  The multiset
+`{Q, Q, Q, P⊖Q, R⊖Q, ⊖(P⊕R)⊖Q}` sums to `O` in the group law, so by
+the proven `exists_span_eq_prod_pointIdeal` its point-ideal product —
+which is exactly the right-hand side of `span_lineNumerator` — is
+principal with a nonzero generator. -/
+theorem exists_span_eq_lineDivisor {q₁ q₂ x₁ y₁ x₂ y₂ : F}
+    (hq : W.Nonsingular q₁ q₂) (h₁ : W.Nonsingular x₁ y₁)
+    (h₂ : W.Nonsingular x₂ y₂) :
+    ∃ m : W.CoordinateRing, m ≠ 0 ∧
+      Ideal.span {m} =
+        pointIdeal W (.some q₁ q₂ hq) ^ 3 *
+          (pointIdeal W (.some x₁ y₁ h₁ - .some q₁ q₂ hq) *
+            (pointIdeal W (.some x₂ y₂ h₂ - .some q₁ q₂ hq) *
+              pointIdeal W (-(.some x₁ y₁ h₁ + .some x₂ y₂ h₂) -
+                .some q₁ q₂ hq))) := by
+  obtain ⟨m, hm0, hm⟩ := exists_span_eq_prod_pointIdeal
+    ({.some q₁ q₂ hq, .some q₁ q₂ hq, .some q₁ q₂ hq,
+        .some x₁ y₁ h₁ - .some q₁ q₂ hq,
+        .some x₂ y₂ h₂ - .some q₁ q₂ hq,
+        -(.some x₁ y₁ h₁ + .some x₂ y₂ h₂) - .some q₁ q₂ hq} :
+      Multiset W.Point)
+    (by
+      simp only [Multiset.insert_eq_cons, Multiset.sum_cons,
+        Multiset.sum_singleton]
+      abel)
+  refine ⟨m, hm0, ?_⟩
+  rw [hm]
+  simp only [Multiset.insert_eq_cons, Multiset.map_cons, Multiset.prod_cons,
+    Multiset.map_singleton, Multiset.prod_singleton]
+  ring
+
+/-- **Sub-leaf (sorry) of `span_lineNumerator`: nonvanishing of the
+line numerator.**  `lineNumerator q₁ q₂ x₁ y₁ ℓ` is a nonzero element
+of the (integral domain) coordinate ring for every slope `ℓ`: in the
+`F[X]`-basis `{1, mk Y}` it reads `pp • 1 + qq • mk Y` where the
+degree-`3` coefficient of `pp` is `q₂ − (ℓ(q₁ − x₁) + y₁)`, the value
+by which `Q` misses the chord line, and the degree-`1` coefficient of
+`qq` is `−(3q₁² + 2a₂q₁ + a₄ − a₁q₂) + ℓ(2q₂ + a₁q₁ + a₃)`, which is
+the pairing of `ℓ` against the tangent direction at `Q`; these cannot
+vanish simultaneously because `Q` is a nonsingular point of `W` (the
+two tangent partials do not both vanish at `Q`).  Nonzeroness is what
+makes the norm-degree bookkeeping of `span_lineNumerator` additive. -/
+theorem lineNumerator_ne_zero (hΔ : W.Δ ≠ 0) {q₁ q₂ x₁ y₁ ℓ : F}
+    (hq : W.Nonsingular q₁ q₂) :
+    lineNumerator W q₁ q₂ x₁ y₁ ℓ ≠ 0 := by
+  sorry
+
+/-- **Sub-leaf (sorry) of `span_lineNumerator`: membership of the line
+numerator in the chord divisor ideal.**  `lineNumerator` lies in
+`I_Q³ · I_{P⊖Q} · I_{R⊖Q} · I_{⊖(P⊕R)⊖Q}`.  Certificate-free part:
+after regrouping, `lineNumerator` is a *cubic form* in the two
+generators `X − q₁`, `Y − q₂` of `I_Q`, whence `n ∈ I_Q³`.  The three
+remaining factors are the vanishing of the translated chord at
+`P⊖Q`, `R⊖Q` and `⊖(P⊕R)⊖Q`, i.e. the addition formula
+(`field_simp`/`ring` per configuration); pairwise comaximality of
+*distinct* maximal ideals multiplies the four memberships into a
+membership of the product.  BEWARE the coincidence zoo (`P = ±Q`,
+`P = ±2Q`, `R` likewise, `P = ±R`, `2P = O`, small torsion of `Q`),
+where two or more of the four factors collapse onto the same maximal
+ideal and comaximality is unavailable: there one needs the
+higher-order certificate `n ∈ I_S^k` (up to `k = 6`) directly, and
+where a translated point is `O` the corresponding factor is `⊤` and
+drops out. -/
+theorem lineNumerator_mem_lineDivisor (hΔ : W.Δ ≠ 0) {q₁ q₂ x₁ y₁ x₂ y₂ : F}
+    (hq : W.Nonsingular q₁ q₂) (h₁ : W.Nonsingular x₁ y₁)
+    (h₂ : W.Nonsingular x₂ y₂) (hxy : ¬(x₁ = x₂ ∧ y₁ = W.negY x₂ y₂)) :
+    lineNumerator W q₁ q₂ x₁ y₁ (W.slope x₁ x₂ y₁ y₂) ∈
+      pointIdeal W (.some q₁ q₂ hq) ^ 3 *
+        (pointIdeal W (.some x₁ y₁ h₁ - .some q₁ q₂ hq) *
+          (pointIdeal W (.some x₂ y₂ h₂ - .some q₁ q₂ hq) *
+            pointIdeal W (-(.some x₁ y₁ h₁ + .some x₂ y₂ h₂) -
+              .some q₁ q₂ hq))) := by
+  sorry
+
+/-- **Sub-leaf (sorry) of `span_lineNumerator`: the colength squeeze.**
+The norm-degree of the line numerator is at most the `F`-colength of
+the chord divisor ideal.  This is the sharp arithmetic core of
+`span_lineNumerator`, and it is the *uniform* statement across the
+coincidence zoo: both sides equal `3 + #{S ∈ {P⊖Q, R⊖Q, ⊖(P⊕R)⊖Q} :
+S ≠ O}`.
+
+*Upper bound on the left.*  Write `n = pp • 1 + qq • mk Y` in the
+`F[X]`-basis of `F[W]`; then `deg pp ≤ 3`, `deg qq ≤ 1`, and
+`degree_norm_smul_basis` gives `deg (norm n) = max (2 deg pp)
+(2 deg qq + 3) ≤ 6`, with the degree dropping by exactly one for each
+translated point that escapes to infinity (the leading coefficient of
+`pp` is `q₂ − (ℓ(q₁ − x₁) + y₁)`, which vanishes precisely when `Q`
+lies on the chord, i.e. precisely when one of the three translated
+points is `O`).
+
+*Lower bound on the right.*  Each `pointIdeal` is an *invertible*
+ideal (it is the underlying ideal of the unit fractional ideal
+`pointIdeal'`), so the group of invertible fractional ideals cancels:
+if `I` is a proper invertible ideal and `K` invertible then
+`I * K ⊊ K`.  Hence the chain
+`J ⊊ I_Q² · I_A I_B I_C ⊊ I_Q · I_A I_B I_C ⊊ I_A I_B I_C ⊊ I_B I_C ⊊
+I_C ⊊ ⊤` is strict at each step whose factor is not `⊤`, and a strict
+chain of ideals of length `k` below `⊤` forces
+`k ≤ finrank F (F[W] ⧸ J)`.  No regularity, Dedekind or Nakayama input
+is needed — invertibility is already in hand. -/
+theorem natDegree_norm_lineNumerator_le (hΔ : W.Δ ≠ 0)
+    {q₁ q₂ x₁ y₁ x₂ y₂ : F}
+    (hq : W.Nonsingular q₁ q₂) (h₁ : W.Nonsingular x₁ y₁)
+    (h₂ : W.Nonsingular x₂ y₂) (hxy : ¬(x₁ = x₂ ∧ y₁ = W.negY x₂ y₂)) :
+    (Algebra.norm (Polynomial F)
+        (lineNumerator W q₁ q₂ x₁ y₁ (W.slope x₁ x₂ y₁ y₂))).natDegree ≤
+      Module.finrank F (W.CoordinateRing ⧸
+        (pointIdeal W (.some q₁ q₂ hq) ^ 3 *
+          (pointIdeal W (.some x₁ y₁ h₁ - .some q₁ q₂ hq) *
+            (pointIdeal W (.some x₂ y₂ h₂ - .some q₁ q₂ hq) *
+              pointIdeal W (-(.some x₁ y₁ h₁ + .some x₂ y₂ h₂) -
+                .some q₁ q₂ hq))))) := by
+  sorry
+
 /-- **L4-8 numerator leaf (sorry): the divisor of the line
 numerator.**  `lineNumerator q₁ q₂ x₁ y₁ ℓ` (at the group-law slope
 `ℓ` of the pair `P = (x₁,y₁)`, `R = (x₂,y₂)`) spans
@@ -1081,7 +1213,28 @@ theorem span_lineNumerator (hΔ : W.Δ ≠ 0) {q₁ q₂ x₁ y₁ x₂ y₂ : F
           (pointIdeal W (.some x₂ y₂ h₂ - .some q₁ q₂ hq) *
             pointIdeal W (-(.some x₁ y₁ h₁ + .some x₂ y₂ h₂) -
               .some q₁ q₂ hq))) := by
-  sorry
+  obtain ⟨m, hm0, hmJ⟩ := exists_span_eq_lineDivisor hq h₁ h₂
+  have hn0 : lineNumerator W q₁ q₂ x₁ y₁ (W.slope x₁ x₂ y₁ y₂) ≠ 0 :=
+    lineNumerator_ne_zero hΔ hq
+  have hmem := lineNumerator_mem_lineDivisor hΔ hq h₁ h₂ hxy
+  have hsq := natDegree_norm_lineNumerator_le hΔ hq h₁ h₂ hxy
+  rw [← hmJ] at hmem hsq ⊢
+  obtain ⟨u, hu⟩ := Ideal.mem_span_singleton'.mp hmem
+  have hu0 : u ≠ 0 := by
+    rintro rfl
+    exact hn0 (by simpa using hu.symm)
+  have hnm : Algebra.norm (Polynomial F) m ≠ 0 :=
+    (Algebra.norm_ne_zero_iff_of_basis (CoordinateRing.basis W)).mpr hm0
+  have hnu : Algebra.norm (Polynomial F) u ≠ 0 :=
+    (Algebra.norm_ne_zero_iff_of_basis (CoordinateRing.basis W)).mpr hu0
+  rw [finrank_quotient_span_eq_natDegree_norm (CoordinateRing.basis W) hm0,
+    ← hu, map_mul, Polynomial.natDegree_mul hnu hnm] at hsq
+  have hdu : (Algebra.norm (Polynomial F) u).natDegree = 0 := by omega
+  have huu : IsUnit u :=
+    isUnit_of_isUnit_norm (Polynomial.isUnit_iff_degree_eq_zero.mpr <| by
+      rw [Polynomial.degree_eq_natDegree hnu, hdu]; rfl)
+  rw [← hu, Ideal.span_singleton_eq_span_singleton]
+  exact associated_unit_mul_left m u huu
 
 /-- **L4-8 vertical brick: divisor transport of a vertical class.**
 The translated vertical `τ_Q^*(X − x)` spans
