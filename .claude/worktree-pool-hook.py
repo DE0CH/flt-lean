@@ -37,6 +37,7 @@ file. No scripts on that side.
 
 import fcntl
 import json
+import os
 import subprocess
 import sys
 import traceback
@@ -46,7 +47,14 @@ QUEUE_FILE = "/home/chend/.flt-task-queue"
 PLACEHOLDER = "{{FLT_WORKTREE}}"
 SENTINEL = "{{FLT_QUEUE_POP}}"
 DELIMITER = "=== TASK ==="
+BASE_PREFIX = "#base:"
 HOME = "/home/chend"
+# Second pool batch (Deyao, 2026-07-24): the home volume filled up (a
+# worktree costs ~5.4G, 4.6G of it mathlib oleans), so flt-lean-14..26
+# live on the local scratch disk. A pool entry is resolved by looking
+# for the worktree in each root in order, so the original 13 keep
+# resolving under $HOME exactly as before.
+ROOTS = [HOME, "/scratch/chend-flt"]
 
 
 def git(args, cwd):
@@ -98,15 +106,50 @@ def write_queue(tasks):
             fh.write(t + "\n")
 
 
+def split_base(task):
+    """Strip a leading `#base: <sha>` line if present and IGNORE it.
+
+    Pinning was tried and REVERTED (Deyao, 2026-07-25): resetting a
+    worktree backwards onto an older commit makes its `.lake` disagree
+    with its sources, so the report server rebuilds the import cone from
+    source on the agent's first diagnostics call — minutes to hours of
+    re-elaboration per dispatch, which costs far more than the stale
+    line numbers it was protecting. Worktrees now always advance to main;
+    a task whose line references have drifted is cheap for its agent to
+    re-locate by name. The header is still tolerated so queue entries
+    written while pinning was live remain dispatchable."""
+    lines = task.split("\n")
+    if lines and lines[0].startswith(BASE_PREFIX):
+        return "\n".join(lines[1:]).lstrip("\n")
+    return task
+
+
 def allocate_worktree(pool_fh):
     """Under the caller's pool-file lock: find a free worktree, verify
-    clean+ancestor, ff to main, mark claimed. Returns its path, or None
-    if the pool is exhausted. Hard-raises on unexpected state."""
-    entries = [line.split() for line in pool_fh.read().splitlines() if line.strip()]
-    free_name = next((n for n, status in entries if status == "free"), None)
+    clean+ancestor, fast-forward it to main, mark claimed. Returns its
+    path, or None if the pool is exhausted. Hard-raises on unexpected
+    state."""
+    # `<name> <status> [extra...]` — a SUSPENDED entry (Deyao, 2026-07-24)
+    # carries the stopped agent's transcript id as a third field so its work
+    # can be picked up later; it is never allocated, which is also how a
+    # reduced worker count is enforced under memory pressure. Trailing
+    # fields are preserved verbatim on rewrite.
+    entries = []
+    for line in pool_fh.read().splitlines():
+        if not line.strip():
+            continue
+        parts = line.split()
+        entries.append((parts[0], parts[1], parts[2:]))
+    free_name = next((n for n, status, _ in entries if status == "free"), None)
     if free_name is None:
         return None
-    worktree_path = f"{HOME}/{free_name}"
+    worktree_path = next(
+        (p for p in (f"{root}/{free_name}" for root in ROOTS)
+         if os.path.isdir(p)), None)
+    if worktree_path is None:
+        raise RuntimeError(
+            f"pool entry {free_name} resolves to no worktree directory "
+            f"under any of {ROOTS}")
 
     status_out = git(["status", "--porcelain"], worktree_path)
     if status_out.returncode != 0:
@@ -124,14 +167,17 @@ def allocate_worktree(pool_fh):
             "but is NOT an ancestor of main (diverged/unmerged commits) "
             "-- integration was likely skipped for this branch")
 
+    # Always advance to main, never backwards (see split_base: pinning was
+    # reverted because a backwards move invalidates `.lake` and forces a
+    # from-source rebuild of the import cone on the agent's first query).
     ff = git(["merge", "--ff-only", "main"], worktree_path)
     if ff.returncode != 0:
         raise RuntimeError(
             f"ff-only advance of {free_name} to main failed: {ff.stderr}")
 
     new_lines = [
-        f"{n} claimed" if n == free_name else f"{n} {status}"
-        for n, status in entries
+        " ".join([n, "claimed" if n == free_name else status] + extra)
+        for n, status, extra in entries
     ]
     pool_fh.seek(0)
     pool_fh.write("\n".join(new_lines) + "\n")
@@ -172,6 +218,7 @@ def main():
         if not queue:
             deny(f"the task queue ({QUEUE_FILE}) is empty — nothing to pop; "
                  f"dispatch directly with {PLACEHOLDER} in the prompt.")
+        task_body = split_base(queue[0])
         with open(POOL_FILE, "r+") as f:
             fcntl.flock(f, fcntl.LOCK_EX)
             worktree_path = allocate_worktree(f)
@@ -179,9 +226,9 @@ def main():
                 deny("no free worktree available — the queued task stays in "
                      f"{QUEUE_FILE}; retry the {SENTINEL} dispatch after "
                      "freeing a worktree (merge + hand-edit the pool file).")
-            task = queue.pop(0)
+            queue.pop(0)
             write_queue(queue)
-        tool_input["prompt"] = task.replace(PLACEHOLDER, worktree_path)
+        tool_input["prompt"] = task_body.replace(PLACEHOLDER, worktree_path)
         emit({
             "hookSpecificOutput": {
                 "hookEventName": "PreToolUse",
