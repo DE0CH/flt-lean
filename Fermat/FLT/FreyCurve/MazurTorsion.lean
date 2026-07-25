@@ -130,6 +130,10 @@ import Mathlib.GroupTheory.Coset.Card
 -- `not_fermat_42` and the classification of primitive Pythagorean triples: the two
 -- classical inputs of the `X_1(16)` descent in `MazurSixteen.not_sextic_square`.
 import Mathlib.NumberTheory.FLT.Four
+-- `TorsionCharP.exists_zsmul_eq_of_charP`: cyclicity of the geometric
+-- `p`-torsion in characteristic `p`, the inseparability input of
+-- `exists_zsmul_eq_of_mem_torsionBy_of_charP` below.
+import Fermat.FLT.EllipticCurve.TorsionCharP
 
 @[expose] public section
 
@@ -9040,7 +9044,8 @@ theorem residue_natCast_eq_zero_of_prime {p : ℕ} (hp : p.Prime) :
 
 open scoped WeierstrassCurve.Affine in
 /-- **In characteristic `p`, the geometric `p`-torsion of an elliptic
-curve is cyclic** (sorry node, cut 2026-07-25 out of
+curve is cyclic** (PROVEN 2026-07-25 from
+`TorsionCharP.exists_zsmul_eq_of_charP`; cut 2026-07-25 out of
 `card_torsionBy_dvd_of_charP` — this is ALL of that leaf's mathematical
 content, the cardinality bookkeeping around it now being proven): over an
 algebraically closed field `k` in which `p` vanishes, every `p`-torsion
@@ -9063,46 +9068,44 @@ AEC III.6.4 (the differential criterion for separability), III.4.10
 (separable degree = number of geometric points of the kernel), V.3.1
 (a)–(b) (the ordinary/supersingular dichotomy); ATAEC IV.6.
 
-WHY THIS IS STILL OPEN, and the only route visible from mathlib
-(surveyed 2026-07-25). Mathlib has NO isogenies, no degree of a map of
-curves, no separable/inseparable degree, no Frobenius on a Weierstrass
-curve, no invariant differential, and no `Finite` instance for
-`WeierstrassCurve.Affine.Point` — there is no `EllipticCurve/Isogeny`
-file at all — so the argument above cannot be transcribed as it stands.
-The reference project `~/cs/FLT` sorries even the characteristic-`0`
-companion (`WeierstrassCurve.torsion_rank_two`), so there is nothing to
-vendor either.
+HOW IT WAS CLOSED (2026-07-25). Mathlib indeed has no isogenies, no
+separable/inseparable degree, no Frobenius on a Weierstrass curve and no
+invariant differential — but this repository already had every input, in
+`Fermat/FLT/EllipticCurve/`, built for the COMPLEMENTARY case
+`(p : k) ≠ 0` (`TorsionCard.prime_torsion_card`, `#E[p] = p²`). The
+earlier survey in this docstring, which declared all three sub-atoms
+missing, was a survey of MATHLIB only; the three needed statements were
+already proven here. So the char-`p` case is a short argument, collected
+in `Fermat/FLT/EllipticCurve/TorsionCharP.lean`:
 
-What mathlib DOES have is `Mathlib/AlgebraicGeometry/EllipticCurve/`
-`DivisionPolynomial/`: `W.preΨ n`, `W.ΨSq n`, `W.Φ n`, with
-`natDegree_preΨ'_le n : (W.preΨ' n).natDegree ≤ (n² - if Even n then 4
-else 1) / 2` and `coeff_preΨ'` giving the coefficient in that degree as
-`n` (up to the even correction); likewise `natDegree_ΨSq_le n :
-(W.ΨSq n).natDegree ≤ n² - 1` with `coeff_ΨSq n : (W.ΨSq n).coeff
-(n² - 1) = n²`. That last pair is the lever: in characteristic `p` the
-leading coefficient `p²` VANISHES, which is the polynomial shadow of the
-inseparability, and correspondingly `ΨSq_ne_zero` carries the hypothesis
-`(n : R) ≠ 0` and does not apply. (By contrast `natDegree_Φ n = n²` and
-`leadingCoeff_Φ n = 1` hold over ANY nontrivial ring — the degree `p²` of
-`[p]` is still visible in characteristic `p`; it is only the *separable*
-part that collapses.) The route is then three sub-atoms, none of which is
-in mathlib:
+* BRIDGE — `TorsionCard.smul_some_eq_zero_iff` (already proven): for a
+  point `(x, y)` and `n ≠ 0`, `n • P = 0 ↔ (ΨSqₙ).eval x = 0`.
+* NONVANISHING — `TorsionCharP.ΨSq_ne_zero`: needs no characteristic
+  hypothesis at all. `IsCoprime a 0` forces `a` to be a unit, so
+  coprimality of `Φₙ` and `ΨSqₙ` (`WeierstrassCurve.isCoprime_Φ_ΨSq`,
+  proven from `Δ ≠ 0`) together with `natDegree_Φ n = n² > 0` already
+  gives `ΨSqₙ ≠ 0`. The leading-coefficient route, which does fail here
+  because `coeff_ΨSq n = n²` vanishes, is simply not needed.
+* INSEPARABILITY — `TorsionCharP.derivative_ΨSq_eq_zero_of_charP`: the
+  differential criterion `[p]* ω = p ⬝ ω = 0` is available in polynomial
+  form as the Wronskian identity
+  `Φₙ′ ⬝ ΨSqₙ − Φₙ ⬝ ΨSqₙ′ = n ⬝ preΨ₂ₙ` (`PsiSumCompanion.wronskian`,
+  proven at the tautological point of the universal curve). At `n = p`
+  in characteristic `p` the right-hand side vanishes, so
+  `ΨSqₚ ∣ Φₚ ⬝ ΨSqₚ′`; coprimality upgrades this to `ΨSqₚ ∣ ΨSqₚ′`, and
+  a nonzero polynomial cannot divide its own derivative unless that
+  derivative is `0`. Over the perfect field `k` this makes `ΨSqₚ` a
+  `p`-th power (`TorsionCharP.exists_pow_eq_ΨSq_of_charP`), so it has at
+  most `(p² − 1)/p ≤ p − 1` DISTINCT roots.
 
-* BRIDGE: for `P ≠ 0` and `n` odd, `(n : ℤ) • P = 0 ↔
-  (Y.preΨ n).eval P.x = 0`. This is characteristic-free, is needed by the
-  characteristic-`0` companion as well, and is the right thing to prove
-  first — it is the only one of the three that is pure bookkeeping over
-  the existing `DivisionPolynomial` API.
-* NONVANISHING: `Y.preΨ p ≠ 0` in characteristic `p` (`ΨSq_ne_zero`
-  needs `(n : R) ≠ 0`, so it gives nothing here).
-* INSEPARABILITY: `Y.preΨ p` is a constant times a `p`-th power in
-  `k[X]`. This is the deep one — it IS the inseparability of `[p]`.
-  Given it, the count closes for odd `p`: `preΨ p` has at most
-  `natDegree / p ≤ (p² - 1) / (2p) < p / 2` distinct roots, hence at most
-  `(p - 1) / 2` `x`-coordinates; nonzero `p`-torsion points come in pairs
-  `{P, -P}` with `P ≠ -P` (else `2P = 0 = pP` with `p` odd forces
-  `P = 0`), so there are at most `p - 1` of them, i.e. `#Y(k)[p] ≤ p`,
-  which with exponent `p` gives cyclicity.
+The count then runs on the FULL group rather than on `x`-coordinate
+pairs: if `P` were not a multiple of `Q`, the `p²` points `a • Q + b • P`
+(`0 ≤ a, b < p`) would be pairwise distinct (Bézout for `p` turns any
+coincidence into `P ∈ ℤ ⬝ Q`), giving `p² − 1` nonzero `p`-torsion
+points; each `x`-coordinate is one of at most `p − 1` roots and carries
+at most two points (`TorsionCard.pointsAt_card`), so
+`p² − 1 ≤ 2(p − 1)`, i.e. `(p − 1)² ≤ 0`. This works uniformly for
+`p = 2` as well, so no separate even case is needed.
 
 SANITY CHECK in characteristic `2`, which validates the shape of
 INSEPARABILITY: `ΨSq 2 = Ψ₂Sq = 4X³ + b₂X² + 2b₄X + b₆` collapses to
@@ -9118,7 +9121,8 @@ theorem WeierstrassCurve.exists_zsmul_eq_of_mem_torsionBy_of_charP
     (hP : P ∈ AddSubgroup.torsionBy (Y⁄k).Point ((p : ℕ) : ℤ))
     (hQ : Q ∈ AddSubgroup.torsionBy (Y⁄k).Point ((p : ℕ) : ℤ)) (hQ0 : Q ≠ 0) :
     ∃ n : ℤ, P = n • Q :=
-  sorry
+  TorsionCharP.exists_zsmul_eq_of_charP Y hp hchar P Q
+    ((Submodule.mem_torsionBy_iff _ _).mp hP) ((Submodule.mem_torsionBy_iff _ _).mp hQ) hQ0
 
 open scoped WeierstrassCurve.Affine in
 /-- **The geometric `p`-torsion of an elliptic curve in characteristic
