@@ -601,40 +601,216 @@ theorem exists_heckePackage_of_seed
           (heckeF w).map ψℓ :=
   sorry
 
-/-- **The Hilbert-modular `3`-adic realization** (sorry node —
-Carayol 1986 / Taylor 1989): a Hilbert-modular Hecke eigensystem
+/-- **Free-lattice normalization over `ℤ_p`** (PROVEN, 2026-07-24; the
+formal half of the Hilbert-modular `3`-adic realization leaf below): a
+commutative ring `B` which is an integral DOMAIN, module-finite over
+`ℤ_p`, and which receives `ℤ_p` injectively, is automatically FREE as
+a `ℤ_p`-module.
+
+This is the lattice bookkeeping that the Carayol/Taylor citation would
+otherwise have to carry. Classically `B` is the ring of integers of a
+finite extension `E_λ/ℚ_p` and its `ℤ_p`-freeness is quoted as "the
+integers of a local field form a free lattice"; formally it is a
+consequence of the structure theorem for finitely generated modules
+over a principal ideal domain:
+
+* `ℤ_p` is a discrete valuation ring
+  (`PadicInt.instIsDiscreteValuationRing`), hence a principal ideal
+  domain;
+* between domains, injectivity of `algebraMap ℤ_p B` is exactly
+  `ℤ_p`-torsion-freeness of `B`
+  (`Module.isTorsionFree_iff_algebraMap_injective`);
+* a finitely generated torsion-free module over a PID is free
+  (`Module.free_of_finite_type_torsion_free'`).
+
+Factoring this step out makes the citation leaf below STRICTLY WEAKER:
+it no longer has to assert freeness of the coefficient ring, only that
+the ring is a domain containing `ℤ_p` — which is literally what
+Carayol's construction produces (the integers of the completion
+`E_λ`). No arithmetic input, no vacuity route needed: this is a true
+theorem of commutative algebra with no hypotheses about Galois
+representations at all. -/
+theorem free_of_finite_of_algebraMap_padicInt_injective {p : ℕ}
+    [Fact p.Prime] {B : Type*} [CommRing B] [IsDomain B]
+    [Algebra ℤ_[p] B] [Module.Finite ℤ_[p] B]
+    (hinj : Function.Injective (algebraMap ℤ_[p] B)) :
+    Module.Free ℤ_[p] B := by
+  haveI : Module.IsTorsionFree ℤ_[p] B :=
+    Module.isTorsionFree_iff_algebraMap_injective.mpr hinj
+  infer_instance
+
+/-- **The Hilbert-modular `3`-adic realization, integral-domain form**
+(sorry node — Carayol 1986 / Taylor 1989; THE citation leaf of the
+`3`-adic realization node): a Hilbert-modular Hecke eigensystem
 `(E, heckeF)` over the totally real field `F` — witnessed as modular
 by the `ℓ`-adic matching clause `hmod` for the lift `ρ` — has a
 `3`-adic Galois realization: a representation `τF` of `G_F` on a
-stable lattice over a local ring `B` finite FREE over `ℤ_3`
-(classically the integers of the completion `E_λ`, `λ | 3`), with the
-same Hecke polynomials through a place `ψ₃` of `E` over `3`.
+stable lattice over a local DOMAIN `B` which is module-finite over
+`ℤ_3` and contains `ℤ_3` (classically the integers of the completion
+`E_λ`, `λ | 3`), with the same Hecke polynomials through a place `ψ₃`
+of `E` over `3`.
+
+This is the sharpest citation-only form of the node: everything here
+is produced verbatim by the construction, and the one structural
+property the consumer additionally wants — `ℤ_3`-FREENESS of `B` — is
+NOT asserted here, because it is a formal consequence of the rest
+(`free_of_finite_of_algebraMap_padicInt_injective` above). The
+consumer `exists_threeadic_realization_of_heckePackage` is therefore a
+PROVEN assembly over this single leaf.
 
 Literature: Carayol, *Sur les représentations ℓ-adiques associées aux
 formes modulaires de Hilbert*, Ann. Sci. ÉNS 19 (1986) (construction
-and local-global compatibility for `[F : ℚ]` odd or via
+and local-global compatibility for `[F : ℚ]` odd, or via
 Jacquet–Langlands at a finite place); Taylor, *On Galois
-representations associated to Hilbert modular forms*, Invent. Math.
-98 (1989) (the remaining even-degree cases, by congruences); the
-stable lattice exists because `G_F` is compact and `E_λ` is local
-(standard: Serre, *Abelian ℓ-adic representations*, I §1). The
-freeness of `B` over `ℤ_3` is the freeness of the integers of a
-finite extension of `ℚ_3`.
+representations associated to Hilbert modular forms*, Invent. Math. 98
+(1989) (the remaining even-degree cases, by congruences); the stable
+lattice exists because `G_F` is compact and `E_λ` is local (standard:
+Serre, *Abelian ℓ-adic representations*, I §1), and `B` is then the
+ring of integers of `E_λ` — a local domain, module-finite over `ℤ_3`,
+into which `ℤ_3` embeds.
 
-SOUNDNESS AUDIT (both ways, 2026-07-24): (i) direct — for the
-intended instantiation (`(E, heckeF)` the eigensystem of the Hilbert
-newform attached to `ρ|_{G_F}` by `exists_heckePackage_of_seed`) this
-is Carayol/Taylor verbatim; for an abstract eigensystem merely
-satisfying `hmod` the abstract-quantification caveat applies (the
-hypothesis that `heckeF` IS a newform eigensystem lives in this
-citation), and (ii) collapse — the hypothesis set (an irreducible
-hardly ramified mod-`ℓ` representation, `ℓ ≥ 5`) is classically
-unsatisfiable (headline below), so the statement is classically true
-for every package.
+PIN AUDIT (2026-07-24): the mathlib pin has no Hilbert modular forms,
+no Shimura curves and no automorphic Galois representations of any
+kind (`grep Hilbert.*modular`, `grep Shimura` over `Mathlib/`: nothing
+in this direction), so the construction itself is irreducibly a
+citation. What the pin DOES have is the commutative algebra of the
+lattice step, which is why that half has been split off and proven.
+
+ROUTE AUDIT (dichotomy, 2026-07-24). Two routes to the `3`-adic
+member of the compatible system were weighed at this joint:
+
+* the **Carayol/Taylor automorphic route** taken here — attach the
+  `3`-adic representation directly to the Hilbert eigensystem
+  `(E, heckeF)` recorded by the potential-modularity carrier. Its
+  input is exactly the data the carrier already carries, and its
+  output is exactly the carrier's `3`-adic block; the only depth is
+  the automorphic construction itself, which no pin material can
+  reach;
+* the **motivic/Tate-module route** — realize the eigensystem inside
+  the `3`-adic Tate module of the Moret–Bailly Hilbert–Blumenthal
+  abelian variety, avoiding automorphic forms. Rejected: it needs
+  `A/F` itself (not just its eigensystem) threaded through
+  `exists_heckePackage_of_seed`, which would widen the `MoretBailly`
+  interface with a full abelian-scheme package, and it still needs
+  Carayol's local-global compatibility to identify Frobenius
+  characteristic polynomials with the Hecke polynomials at good
+  places — i.e. the same citation plus an abelian-variety development
+  the pin also lacks. Strictly deeper at every node.
+
+SOUNDNESS AUDIT (both ways, 2026-07-24): (i) direct — for the intended
+instantiation (`(E, heckeF)` the eigensystem of the Hilbert newform
+attached to `ρ|_{G_F}` by `exists_heckePackage_of_seed`) this is
+Carayol/Taylor verbatim; for an abstract eigensystem merely satisfying
+`hmod` the abstract-quantification caveat applies (the hypothesis that
+`heckeF` IS a newform eigensystem lives in this citation), and (ii)
+collapse — the hypothesis set (an irreducible hardly ramified mod-`ℓ`
+representation, `ℓ ≥ 5`) is classically unsatisfiable (headline
+below), so the statement is classically true for every package.
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
 discharge through `Family.lean`, `Lift.lean`, or
 `Modularity/Interface.lean`. -/
+theorem exists_threeadic_realization_domain_of_heckePackage
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+    (F : Type u) [Field F] [NumberField F]
+    (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
+    (E : Type u) [Field E] [NumberField E]
+    (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
+    (heckeF : HeightOneSpectrum (NumberField.RingOfIntegers F) →
+      Polynomial E)
+    (ψℓ : E →+* AlgebraicClosure ℚ_[ℓ])
+    (ιO : O →+* AlgebraicClosure ℚ_[ℓ]) (hιO : Function.Injective ιO)
+    (hmod : ∀ w ∉ badF,
+      ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO =
+        (heckeF w).map ψℓ) :
+    ∃ (B : Type u) (_ : CommRing B) (_ : IsDomain B)
+      (_ : TopologicalSpace B)
+      (_ : IsTopologicalRing B) (_ : Algebra ℤ_[3] B) (_ : IsLocalRing B)
+      (_ : Module.Finite ℤ_[3] B) (_ : IsModuleTopology ℤ_[3] B)
+      (_ : Function.Injective (algebraMap ℤ_[3] B))
+      (τF : GaloisRep F B (Fin 2 → B))
+      (ψ₃ : E →+* AlgebraicClosure ℚ_[3])
+      (ιB : B →+* AlgebraicClosure ℚ_[3]) (_ : Function.Injective ιB),
+      ∀ w ∉ badF, (τF.charFrob w).map ιB = (heckeF w).map ψ₃ :=
+  sorry
+
+/-- **The Hilbert-modular `3`-adic realization** (PROVEN assembly,
+2026-07-24 — Carayol 1986 / Taylor 1989 at one remove): a
+Hilbert-modular Hecke eigensystem `(E, heckeF)` over the totally real
+field `F` — witnessed as modular by the `ℓ`-adic matching clause
+`hmod` for the lift `ρ` — has a `3`-adic Galois realization: a
+representation `τF` of `G_F` on a stable lattice over a local ring `B`
+finite FREE over `ℤ_3` (classically the integers of the completion
+`E_λ`, `λ | 3`), with the same Hecke polynomials through a place `ψ₃`
+of `E` over `3`.
+
+ASSEMBLY (2026-07-24, PROVEN — the literature-joint cut of this node).
+The node splits at its one genuine literature joint into
+
+* (a) the CITATION half,
+  `exists_threeadic_realization_domain_of_heckePackage` — the
+  automorphic construction of the `3`-adic representation with the
+  right Frobenius characteristic polynomials, over the coefficient
+  ring the construction literally produces: a local DOMAIN,
+  module-finite over `ℤ_3`, containing `ℤ_3`. This is the sole
+  residual sorry of the node, and it is strictly weaker than the
+  statement it replaces (it does not assert `ℤ_3`-freeness);
+* (b) the FORMAL half, `free_of_finite_of_algebraMap_padicInt_injective`
+  — the free-lattice normalization, PROVEN in-tree: `ℤ_3` is a DVR
+  hence a PID, injectivity of `algebraMap ℤ_3 B` between domains is
+  torsion-freeness, and a finitely generated torsion-free module over
+  a PID is free;
+* (c) the eigensystem-match TRANSPORT, discharged by this assembly.
+  It is an identity transport, and deliberately so: the free-lattice
+  normalization of (b) does not move the coefficient ring, it only
+  supplies the missing `Module.Free ℤ_3 B` instance on the ring (a)
+  already produced. The Hecke-polynomial matching clause, the
+  embedding `ιB` and the place `ψ₃` therefore carry over verbatim —
+  there is no lattice change, hence no charpoly to re-compute. (The
+  alternative cut, in which (a) returns the representation over the
+  local FIELD `E_λ` and (b) chooses a Galois-stable lattice inside
+  it, was rejected: the stable-lattice step is then itself a citation
+  — compactness of `G_F` plus a Bruhat–Tits/`Serre I §1` argument that
+  the pin cannot reach — so that cut would trade one citation for
+  two, and (c) would become a genuine but unprovable transport.)
+
+Literature (see the citation leaf's docstring for the full audit):
+Carayol, *Sur les représentations ℓ-adiques associées aux formes
+modulaires de Hilbert*, Ann. Sci. ÉNS 19 (1986); Taylor, *On Galois
+representations associated to Hilbert modular forms*, Invent. Math. 98
+(1989); Serre, *Abelian ℓ-adic representations*, I §1 for the stable
+lattice.
+
+SOUNDNESS AUDIT (both ways, 2026-07-24): unchanged from the citation
+leaf, since this theorem is a strict consequence of it — (i) direct,
+for the intended instantiation this is Carayol/Taylor verbatim plus
+the freeness of the integers of a `3`-adic field; (ii) collapse, the
+hypothesis set (an irreducible hardly ramified mod-`ℓ` representation,
+`ℓ ≥ 5`) is classically unsatisfiable (headline below), so the
+statement is classically true for every package.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
+discharge through `Family.lean`, `Lift.lean`, or
+`Modularity/Interface.lean`. Discharged here through the
+Carayol/Taylor citation leaf alone, which inherits the same guard. -/
 theorem exists_threeadic_realization_of_heckePackage
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
@@ -673,8 +849,23 @@ theorem exists_threeadic_realization_of_heckePackage
       (τF : GaloisRep F B (Fin 2 → B))
       (ψ₃ : E →+* AlgebraicClosure ℚ_[3])
       (ιB : B →+* AlgebraicClosure ℚ_[3]) (_ : Function.Injective ιB),
-      ∀ w ∉ badF, (τF.charFrob w).map ιB = (heckeF w).map ψ₃ :=
-  sorry
+      ∀ w ∉ badF, (τF.charFrob w).map ιB = (heckeF w).map ψ₃ := by
+  classical
+  -- (a) the Carayol/Taylor citation half: the `3`-adic realization over
+  -- the coefficient DOMAIN the construction literally produces
+  obtain ⟨B, hCR, hDom, hTS, hTR, hAlg, hLR, hFin, hMT, hBinj, τF, ψ₃,
+    ιB, hιB, hmatch⟩ :=
+    exists_threeadic_realization_domain_of_heckePackage hℓodd hℓ5 hZinj
+      hrank hρ hW hρbar hirr π hπsurj hπ F hFtr hFgal E badF heckeF ψℓ
+      ιO hιO hmod
+  -- (c) the eigensystem-match transport: the normalization below does
+  -- not move the coefficient ring, so `hmatch` is carried verbatim and
+  -- only the `Module.Free` component remains to be supplied
+  refine ⟨B, hCR, hTS, hTR, hAlg, hLR, hFin, ?_, hMT, τF, ψ₃, ιB, hιB,
+    hmatch⟩
+  -- (b) the free-lattice normalization over `ℤ_3`
+  exact @free_of_finite_of_algebraMap_padicInt_injective 3 _ B hCR hDom
+    hAlg hFin hBinj
 
 /-- **Carrier inhabitation — potential modularity of the KW lift**
 (sorry node — Taylor's theorem, the analytic core of pillar β): the
