@@ -1815,7 +1815,6 @@ lemma span_eq_of_mem_of_span_mul_eq {n ñ : W.CoordinateRing}
     IsUnit.of_mul_eq_one _ (mul_left_cancel₀ (mul_ne_zero hm₁0 hm₂0) hw')
   rw [← hu₁, Ideal.span_singleton_mul_left_unit (isUnit_of_mul_isUnit_left hu), hm₁]
 
-set_option maxRecDepth 20000 in
 omit [IsAlgClosed F] in
 /-- **L4-8 line-numerator sub-leaf (PROVEN): the cleared conjugate
 product.**  The two cleared line values at the translate multiply to the

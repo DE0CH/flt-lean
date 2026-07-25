@@ -178,6 +178,12 @@ public import Mathlib.LinearAlgebra.BilinearForm.DualLattice
 -- consumed by the PROVEN assembly of
 -- `heckeClassZeta_of_zlattice_theta` (hence public).
 public import Mathlib.NumberTheory.LSeries.AbstractFuncEq
+-- Mellin inversion (`mellinInv_mellin_eq`), the Fourier-inversion
+-- corollary that supplies the whole proof of the Mellin uniqueness
+-- leaf `eqOn_of_hasMellin_eq_of_continuousOn` (proof-only).  This is a
+-- LEAF module of mathlib — nothing else in mathlib imports it — so the
+-- import has to be made explicitly here.
+import Mathlib.Analysis.MellinInversion
 -- `Complex.Gamma_ne_zero_of_re_pos` (nonvanishing of the archimedean
 -- Euler factors) and the antiholomorphic-composition lemma
 -- `differentiableAt_conj_conj_iff` (Schwarz reflection), consumed by
@@ -5680,13 +5686,246 @@ theorem le_hopfPointsField_of_forall_smul_eq (G : Type) [CommRing G]
     (IntermediateField.subset_adjoin _ _
       (Set.mem_iUnion.mpr ⟨χ, Set.mem_range_self a⟩))
 
+/-- **Rigidity of the points of an algebra with `p`-torsion
+differentials** (PROVEN 2026-07-25 — the differentials half of the
+analytic core (ii-a), and the exact consumer of the `3`-torsion
+hypothesis `hΩ`): two `R`-algebra maps `χ₁, χ₂ : A →ₐ[R] B` into a
+Noetherian local domain `B` that agree modulo `(n)·𝔪_B` — i.e. whose
+difference has valuation STRICTLY bigger than `v(n)` when `B` is a DVR
+— are EQUAL, as soon as `Ω[A⁄R]` is killed by `n` and `n ≠ 0` in `B`.
+This is Fontaine's use of the differentials (*Il n'y a pas de variété
+abélienne sur ℤ*, Invent. Math. 81 (1985), §1): the difference
+`δ = χ₁ − χ₂` is additive and `R`-linear, and
+`δ(ab) = χ₂a·δb + χ₂b·δa + δa·δb`, so modulo the square of the ideal
+`𝔞 = (δ A)` it is an honest `R`-derivation `A → 𝔞/𝔞²` for the
+`A`-module structure given by `χ₂`; hence it factors through
+`Ω[A⁄R]` (`Derivation.liftKaehlerDifferential`) and is killed by `n`:
+`n·𝔞 ⊆ 𝔞²`.  Feeding in `𝔞 ⊆ (n)·𝔪` gives
+`n·𝔞 ⊆ 𝔞² ⊆ 𝔪·(n·𝔞)`, so Nakayama
+(`Submodule.eq_bot_of_le_smul_of_le_jacobson_bot`, with
+`𝔪 = jacobson ⊥` in a local ring) kills the finitely generated ideal
+`n·𝔞`, and `B` being a domain with `n ≠ 0` forces `𝔞 = 0`.  SHARPNESS
+of the hypothesis: `n·𝔞 ⊆ 𝔞²` alone only bounds `v(𝔞) ≤ v(n)`, so the
+threshold `v(δ) > v(n)` is exactly the least one this argument can
+consume — which is why the ramification estimate is cut precisely
+there below. -/
+theorem algHom_eq_of_forall_sub_mem_span_mul_maximalIdeal
+    {R A B : Type*} [CommRing R] [CommRing A] [Algebra R A]
+    [CommRing B] [IsDomain B] [IsLocalRing B] [IsNoetherianRing B]
+    [Algebra R B]
+    (n : ℕ) (hn : (n : B) ≠ 0)
+    (hΩ : ∀ ω : Ω[A⁄R], (n : ℕ) • ω = 0)
+    (χ₁ χ₂ : A →ₐ[R] B)
+    (h : ∀ a : A, χ₁ a - χ₂ a ∈
+      Ideal.span {(n : B)} * IsLocalRing.maximalIdeal B) :
+    χ₁ = χ₂ := by
+  classical
+  set 𝔞 : Ideal B := Ideal.span (Set.range fun a : A => χ₁ a - χ₂ a) with h𝔞
+  -- STEP 1: the difference is an `R`-derivation modulo `𝔞²`, hence killed
+  -- by `n` there
+  have hkey : ∀ a : A, (n : B) * (χ₁ a - χ₂ a) ∈ 𝔞 ^ 2 := by
+    letI : Algebra A B := χ₂.toRingHom.toAlgebra
+    haveI : IsScalarTower R A B :=
+      IsScalarTower.of_algebraMap_eq fun r => (χ₂.commutes r).symm
+    haveI : IsScalarTower R A (B ⧸ 𝔞 ^ 2) :=
+      IsScalarTower.of_algebraMap_eq fun r => by
+        show algebraMap R (B ⧸ 𝔞 ^ 2) r = _
+        rw [IsScalarTower.algebraMap_apply R B (B ⧸ 𝔞 ^ 2),
+          IsScalarTower.algebraMap_apply A B (B ⧸ 𝔞 ^ 2)]
+        congr 1
+        exact (χ₂.commutes r).symm
+    have hsmulR : ∀ (r : R) (y : B), r • (Ideal.Quotient.mk (𝔞 ^ 2) y) =
+        Ideal.Quotient.mk (𝔞 ^ 2) (algebraMap R B r * y) := fun r y => by
+      rw [Algebra.smul_def, IsScalarTower.algebraMap_apply R B (B ⧸ 𝔞 ^ 2),
+        Ideal.Quotient.algebraMap_eq, ← map_mul]
+    have hsmulA : ∀ (a : A) (y : B), a • (Ideal.Quotient.mk (𝔞 ^ 2) y) =
+        Ideal.Quotient.mk (𝔞 ^ 2) (χ₂ a * y) := fun a y => by
+      rw [Algebra.smul_def, IsScalarTower.algebraMap_apply A B (B ⧸ 𝔞 ^ 2),
+        Ideal.Quotient.algebraMap_eq, ← map_mul]
+      rfl
+    let Dl : A →ₗ[R] (B ⧸ 𝔞 ^ 2) :=
+      { toFun := fun a => Ideal.Quotient.mk _ (χ₁ a - χ₂ a)
+        map_add' := fun a b => by
+          show Ideal.Quotient.mk _ _ = Ideal.Quotient.mk _ _ + Ideal.Quotient.mk _ _
+          rw [← map_add]
+          congr 1
+          simp only [map_add]
+          ring
+        map_smul' := fun r a => by
+          show Ideal.Quotient.mk _ _ = r • Ideal.Quotient.mk _ _
+          rw [hsmulR]
+          congr 1
+          simp only [map_smul]
+          rw [Algebra.smul_def, Algebra.smul_def]
+          ring }
+    let D : Derivation R A (B ⧸ 𝔞 ^ 2) :=
+      { Dl with
+        map_one_eq_zero' := by
+          show Ideal.Quotient.mk _ (χ₁ 1 - χ₂ 1) = 0
+          simp
+        leibniz' := fun a b => by
+          show Ideal.Quotient.mk _ (χ₁ (a * b) - χ₂ (a * b)) =
+            a • Ideal.Quotient.mk _ (χ₁ b - χ₂ b) +
+              b • Ideal.Quotient.mk _ (χ₁ a - χ₂ a)
+          rw [hsmulA, hsmulA, ← map_add, Ideal.Quotient.mk_eq_mk_iff_sub_mem]
+          have hexp : χ₁ (a * b) - χ₂ (a * b) -
+              (χ₂ a * (χ₁ b - χ₂ b) + χ₂ b * (χ₁ a - χ₂ a)) =
+              (χ₁ a - χ₂ a) * (χ₁ b - χ₂ b) := by
+            simp only [map_mul]
+            ring
+          rw [hexp, pow_two]
+          exact Ideal.mul_mem_mul
+            (Ideal.subset_span ⟨a, rfl⟩) (Ideal.subset_span ⟨b, rfl⟩) }
+    intro a
+    have hDa : (n : ℕ) • D a = 0 := by
+      rw [← D.liftKaehlerDifferential_comp_D a, ← map_nsmul, hΩ, map_zero]
+    have h1 : Ideal.Quotient.mk (𝔞 ^ 2) ((n : B) * (χ₁ a - χ₂ a)) = 0 := by
+      have h2 : (n : ℕ) • (Ideal.Quotient.mk (𝔞 ^ 2) (χ₁ a - χ₂ a)) = 0 := hDa
+      rw [← map_nsmul] at h2
+      rwa [nsmul_eq_mul] at h2
+    rwa [Ideal.Quotient.eq_zero_iff_mem] at h1
+  -- STEP 2: `(n)·𝔞 ≤ 𝔞²`
+  have hna : ∀ j ∈ 𝔞, (n : B) * j ∈ 𝔞 ^ 2 := by
+    intro j hj
+    have hle : 𝔞 ≤ Submodule.comap (LinearMap.mulLeft B (n : B)) (𝔞 ^ 2) := by
+      rw [h𝔞, Ideal.span_le]
+      rintro x ⟨a, rfl⟩
+      exact hkey a
+    exact hle hj
+  set J : Ideal B := Ideal.span {(n : B)} * 𝔞 with hJ
+  have hJle : J ≤ 𝔞 ^ 2 := by
+    rw [hJ]
+    refine Ideal.mul_le.mpr fun r hr j hj => ?_
+    obtain ⟨c, rfl⟩ := Ideal.mem_span_singleton'.mp hr
+    have hcj : c * (n : B) * j = (n : B) * (c * j) := by ring
+    rw [hcj]
+    exact hna (c * j) (Ideal.mul_mem_left 𝔞 c hj)
+  -- STEP 3: `𝔞² ≤ 𝔪·J`, so Nakayama kills `J`
+  have h𝔞le : 𝔞 ≤ Ideal.span {(n : B)} * IsLocalRing.maximalIdeal B := by
+    rw [h𝔞, Ideal.span_le]
+    rintro x ⟨a, rfl⟩
+    exact h a
+  have hsq : 𝔞 ^ 2 ≤ IsLocalRing.maximalIdeal B * J := by
+    rw [pow_two, hJ]
+    calc 𝔞 * 𝔞 ≤ (Ideal.span {(n : B)} * IsLocalRing.maximalIdeal B) * 𝔞 :=
+          Ideal.mul_mono h𝔞le le_rfl
+      _ = IsLocalRing.maximalIdeal B * (Ideal.span {(n : B)} * 𝔞) := by ring
+  have hJbot : J = ⊥ := by
+    refine Submodule.eq_bot_of_le_smul_of_le_jacobson_bot
+      (IsLocalRing.maximalIdeal B) J (IsNoetherian.noetherian J) ?_ ?_
+    · rw [Ideal.smul_eq_mul]
+      exact le_trans hJle hsq
+    · exact le_of_eq (IsLocalRing.jacobson_eq_maximalIdeal ⊥ bot_ne_top).symm
+  -- STEP 4: a domain with `n ≠ 0` forces the differences to vanish
+  refine AlgHom.ext fun a => ?_
+  have hmem : (n : B) * (χ₁ a - χ₂ a) ∈ J := by
+    rw [hJ]
+    exact Ideal.mul_mem_mul (Ideal.mem_span_singleton_self _)
+      (Ideal.subset_span ⟨a, rfl⟩)
+  rw [hJbot, Ideal.mem_bot] at hmem
+  rcases mul_eq_zero.mp hmem with h0 | h0
+  · exact absurd h0 hn
+  · exact sub_eq_zero.mp h0
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **Fontaine's ramification estimate at `3`: deep substitutions move
+integral points by more than `v(3)`** (sorry node, created 2026-07-25 —
+leaf (ii-a′), THE residual analytic core of Fontaine's argument after
+the differentials have been consumed by
+`algHom_eq_of_forall_sub_mem_span_mul_maximalIdeal`; PURE local
+ramification theory, no Hopf/group-scheme vocabulary): under the
+hypotheses of `forall_point_apply_eq_of_lt_two_mul_sum_card_inertia`
+below — `A` a finite flat `𝒪₃ᵥ ≅ ℤ₃`-algebra with `Ω[A⁄𝒪₃ᵥ]` killed by
+`3`, `L/ℚ₃ᵥ` finite Galois with lower-numbering filtration
+`G_i = inertia(𝔪_L^(i+1))`, and `σ ∈ G_{m+1}` at a level of Herbrand
+value `> 1/2` (`hlt`: `#G_0 < 2·Σ_{i=1}^{m+1} #G_i`) — every
+`𝒪₃ᵥ`-point `χ : A →ₐ 𝒪_L` is moved by `σ` only inside
+`(3)·𝔪_L = {x | v_L(x) > v_L(3)}`.
+WHY THE CUT IS HERE, exactly: the estimate `v_L(σχa − χa) > v_L(3)` is
+the WEAKEST hypothesis from which the differentials brick above
+upgrades "σ almost fixes the point" to "σ fixes the point" — the
+derivation relation `3·𝔞 ⊆ 𝔞²` has `v_L(𝔞) = v_L(3)` as its fixed
+point, so nothing weaker can be consumed, and anything stronger is
+already the full statement.
+TWO SHORTCUTS THAT ARE REFUTED (established 2026-07-25 — do not retry
+them): (a) the derivation relation ALONE cannot prove this leaf, since
+`3·𝔞 ⊆ 𝔞²` only gives `v_L(𝔞) ≤ v_L(3) = #G_0`, and `hlt` does NOT
+force `m + 2 > #G_0`: for the ramified cyclic cubic subfield
+`M ⊂ ℚ₃(ζ₉)` one has `#G_0 = #G_1 = 3`, `G_2 = ⊥`, so `hlt` holds at
+`m = 0` (`3 < 6`) while `m + 2 = 2 ≤ 3` — which is why this leaf may
+NOT be weakened to a pure ideal statement about `𝔞`; (b) the
+"different bound from the annihilator of `Ω`" route is also refuted:
+for a NON-monogenic order `R = χ(A) ⊆ 𝒪_L` the annihilator of
+`Ω[R⁄𝒪₃ᵥ]` is strictly bigger than the Kähler different, so `3·Ω = 0`
+does not give `v_L(𝔡_{L/ℚ₃}) ≤ v_L(3)`: for
+`L = ℚ₃(ζ₃, 4^{1/3})` and `R = ℤ₃[ζ₃, 4^{1/3}]` the Jacobian
+presentation gives `Ω[R⁄ℤ₃] ≅ R/(√−3) ⊕ R/(3)`, killed by `3`, while
+`v_L(𝔡_{L/ℚ₃}) = 7 > 6 = v_L(3)` (this `L` is precisely the
+peu-ramifié sharpness case, upper break exactly `1/2`).
+INTENDED PROOF (Fontaine 1985, §1; modern account of the same
+machinery: M. Yoshida, *Ramification of local fields and Fontaine's
+property* `(P_m)`, arXiv:0905.1171, §§2–3): Fontaine's property
+`(P_m)` for `L/K` says that every `𝒪_K`-algebra map
+`𝒪_L → 𝒪_E/𝔞^m_{E/K}` (`𝔞^m_{E/K} = {x | v_K(x) ≥ m}`, `E/K`
+algebraic) comes from a `K`-embedding `L ↪ E`.  Fontaine's Prop. 1.5
+relates it to the ramification breaks: `m > u_{L/K}` implies `(P_m)`,
+and `(P_m)` implies `m > u_{L/K} − 1/e_{L/K}` (Yoshida sharpens this
+to `m_{L/K} = u_{L/K}`), where `u_{L/K}` is the greatest upper break
+in Fontaine's shifted numbering `G^{(u)} = G_{u−1}`.  The algebra
+input is the quantitative lifting statement: for `A` finite flat over
+`𝒪_K` with `Ω[A⁄𝒪_K]` killed by `p^n`, every
+`A → 𝒪_E/𝔞^m` with `m > e_K(n + 1/(p−1))` lifts to `A → 𝒪_E` — this
+is where the `1/(p−1)` enters — so the field generated by the points
+satisfies `(P_m)` and its upper breaks are `≤ e_K(n + 1/(p−1)) − 1`,
+which at `K = ℚ₃`, `e_K = 1`, `n = 1`, `p = 3` is the break bound
+`1/2`.  Herbrand's compatibility of the upper numbering with quotients
+(Serre, *Corps Locaux* IV §3 Lemma 5) transports the bound from the
+absolute group to `Gal(L/ℚ₃)`, and `hlt` is exactly
+`φ_{L/ℚ₃}(m+1) = (1/#G_0)·Σ_{i=1}^{m+1} #G_i > 1/2`, i.e.
+`G_{m+1} = G^{(φ(m+1))}` lies above the break — so `σ` fixes the
+points outright, a fortiori this estimate.  Formalizing that route
+needs the upper numbering and Herbrand's `φ` (absent from the tree so
+far); the sharp alternative is the Tate-style discriminant/orbit
+count: `v(disc) = Σ_j v(f'(θ_j)) = 2Σ_{i<j} v(θ_i − θ_j)` compared
+against `Σ_{σ≠1} i_G(σ) = v_L(𝔡_{L/ℚ₃}) = Σ_{i≥0}(#G_i − 1)`, where
+the factor `2` of `hlt` comes from the square in the discriminant and
+the stabilizers of the individual points must be tracked (see
+Moon–Taguchi, Doc. Math. Extra Vol. Kato (2003), §2, "Refinement of
+Tate's discriminant bound"). -/
+theorem sub_mem_span_three_mul_maximalIdeal_of_lt_two_mul_sum_card_inertia
+    (A : Type) [CommRing A] [Algebra 𝒪₃ᵥ A] [Module.Flat 𝒪₃ᵥ A]
+    [Module.Finite 𝒪₃ᵥ A]
+    (hΩ : ∀ ω : Ω[A⁄𝒪₃ᵥ], (3 : ℕ) • ω = 0)
+    (L : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ L]
+    [IsGalois ℚ₃ᵥ L]
+    (m : ℕ)
+    (hlt : Nat.card ((IsLocalRing.maximalIdeal
+        (IntegralClosure 𝒪₃ᵥ L)).inertia (L ≃ₐ[ℚ₃ᵥ] L)) <
+      2 * ∑ i ∈ Finset.range (m + 1),
+        Nat.card ((IsLocalRing.maximalIdeal
+          (IntegralClosure 𝒪₃ᵥ L) ^ (i + 2)).inertia (L ≃ₐ[ℚ₃ᵥ] L)))
+    (σ : L ≃ₐ[ℚ₃ᵥ] L)
+    (hσ : σ ∈ (IsLocalRing.maximalIdeal
+      (IntegralClosure 𝒪₃ᵥ L) ^ (m + 2)).inertia (L ≃ₐ[ℚ₃ᵥ] L))
+    (χ : A →ₐ[𝒪₃ᵥ] IntegralClosure 𝒪₃ᵥ L) (a : A) :
+    σ • χ a - χ a ∈ Ideal.span {(3 : IntegralClosure 𝒪₃ᵥ L)} *
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) := by
+  sorry
+
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
 /-- **Fontaine's ramification estimate for a finite flat algebra with
-`3`-torsion differentials** (sorry node, created 2026-07-25 — leaf
-(ii-a) of the Théorème A decomposition, THE analytic core of Fontaine's
-argument, stated with NO Hopf/group-scheme vocabulary at all; Fontaine,
+`3`-torsion differentials** (DECOMPOSED 2026-07-25 into the residual
+ramification estimate (ii-a′)
+`sub_mem_span_three_mul_maximalIdeal_of_lt_two_mul_sum_card_inertia`
+and the PROVEN differentials brick
+`algHom_eq_of_forall_sub_mem_span_mul_maximalIdeal`, with the assembly
+PROVEN here — leaf (ii-a) of the Théorème A decomposition, THE analytic
+core of Fontaine's argument, stated with NO Hopf/group-scheme
+vocabulary at all; Fontaine,
 *Il n'y a pas de variété abélienne sur ℤ*, Invent. Math. 81 (1985),
 §§1–2, Prop. 1.5 — see also Abrashkin and Moon–Taguchi §2): let `A` be
 a finite flat `𝒪₃ᵥ ≅ ℤ₃`-algebra whose module of Kähler differentials
@@ -5699,16 +5938,24 @@ exceeds `1/2`, i.e. `#G_0 < 2·Σ_{i=1}^{m+1} #G_i` (`hlt`; Serre IV §3
 `φ(m+1) = (1/#G_0)·Σ_{i=1}^{m+1} #G_i > 1/2`), then `σ` acts
 TRIVIALLY on every `𝒪₃ᵥ`-point `χ : A →ₐ 𝒪_L` of `A` — the points are
 automatically integral, since `A` is module-finite over `𝒪₃ᵥ`, so
-nothing is lost by valuing them in the field `L`.  Intended proof
-(Fontaine §1): Fontaine's estimate bounds `v_L(σ x − x)` for a
-coordinate `x = χ(a)` in terms of the invariant differentials of `A`
-(the `3`-torsion of `Ω[A⁄𝒪₃ᵥ]` is exactly what makes the bound
-`e·(n + 1/(p−1)) − 1 = 1/2` at `p = 3`, `e = 1`, `n = 1`): the upper
-ramification subgroup `Gal(ℚ₃ᵥᵃˡᵍ/ℚ₃ᵥ)^{(u)}` acts trivially on
-`Hom_{𝒪₃ᵥ}(A, 𝒪_{ℚ₃ᵥᵃˡᵍ})` for `u > 1/2`, and Herbrand's compatibility
-of the upper numbering with quotients (Serre IV §3 Lemma 5) transports
-this to `Gal(L/ℚ₃ᵥ)^{(φ(m+1))} ⊇ G_{m+1}`, whence the integer-level
-form used here.  SHARPNESS: at `A` = the `3`-torsion Hopf order of a
+nothing is lost by valuing them in the field `L`.  ASSEMBLY (proven
+here — the approximation/rigidity split of Fontaine §1): the point
+corestricts to an INTEGRAL point `χ' : A →ₐ[𝒪₃ᵥ] 𝒪_L`
+(`Algebra.IsIntegral.of_finite` from `Module.Finite 𝒪₃ᵥ A`), the
+substitution acts on `𝒪_L = IntegralClosure 𝒪₃ᵥ L` as an
+`𝒪₃ᵥ`-algebra map (`MulSemiringAction.toAlgHom`), the ramification
+estimate (ii-a′) says the two points `σ ∘ χ'` and `χ'` agree modulo
+`(3)·𝔪_L`, and the differentials brick
+`algHom_eq_of_forall_sub_mem_span_mul_maximalIdeal` — Fontaine's
+derivation argument `3·𝔞 ⊆ 𝔞²` for the difference ideal `𝔞`, plus
+Nakayama in the DVR `𝒪_L` (an instance,
+`isDiscreteValuationRing_integralClosure`) and `3 ≠ 0` in
+characteristic zero — upgrades that agreement to EQUALITY of the two
+points, which is the claim after pushing forward along the injective
+`𝒪_L → L`.  What remains sorried is exactly the ramification estimate;
+the constant `e·(n + 1/(p−1)) − 1 = 1/2` at `p = 3`, `e = 1`, `n = 1`
+and the Herbrand transport `Gal(L/ℚ₃ᵥ)^{(φ(m+1))} ⊇ G_{m+1}` live
+there.  SHARPNESS: at `A` = the `3`-torsion Hopf order of a
 peu-ramifié Tate curve, `L = ℚ₃(ζ₃, u^{1/3})` has `#G_0 = 6`,
 `#G_1 = 3`, `G_2 = ⊥`, so `hlt` fails by a hair at `m + 1 = 1`
 (`6 < 6` is false) — the estimate is exactly on the boundary — while a
@@ -5733,7 +5980,44 @@ theorem forall_point_apply_eq_of_lt_two_mul_sum_card_inertia
       (IntegralClosure 𝒪₃ᵥ L) ^ (m + 2)).inertia (L ≃ₐ[ℚ₃ᵥ] L))
     (χ : A →ₐ[𝒪₃ᵥ] L) (a : A) :
     σ (χ a) = χ a := by
-  sorry
+  haveI : Algebra.IsIntegral 𝒪₃ᵥ A := Algebra.IsIntegral.of_finite 𝒪₃ᵥ A
+  -- STEP 1: the point corestricts to an INTEGRAL point of `A`
+  have hint : ∀ b : A, IsIntegral 𝒪₃ᵥ (χ b) := fun b =>
+    (Algebra.IsIntegral.isIntegral (R := 𝒪₃ᵥ) b).map χ
+  let χ' : A →ₐ[𝒪₃ᵥ] IntegralClosure 𝒪₃ᵥ L :=
+    { toFun := fun b => (⟨χ b, hint b⟩ : IntegralClosure 𝒪₃ᵥ L)
+      map_one' := Subtype.ext (map_one χ)
+      map_mul' := fun x y => Subtype.ext (map_mul χ x y)
+      map_zero' := Subtype.ext (map_zero χ)
+      map_add' := fun x y => Subtype.ext (map_add χ x y)
+      commutes' := fun r => Subtype.ext (by
+        show χ (algebraMap 𝒪₃ᵥ A r) = _
+        rw [AlgHom.commutes]
+        rfl) }
+  have hcoe : ∀ b : A, (χ' b).1 = χ b := fun _ => rfl
+  -- STEP 2: `3` is nonzero in the integral closure (characteristic zero)
+  haveI : CharZero ℚ₃ᵥ :=
+    charZero_of_injective_algebraMap (algebraMap ℚ ℚ₃ᵥ).injective
+  haveI : CharZero L :=
+    charZero_of_injective_algebraMap (algebraMap ℚ₃ᵥ L).injective
+  have hthree : (3 : IntegralClosure 𝒪₃ᵥ L) ≠ 0 := by
+    intro h0
+    have h2 := congrArg (algebraMap (IntegralClosure 𝒪₃ᵥ L) L) h0
+    rw [map_ofNat, map_zero] at h2
+    have h3 : (3 : L) ≠ 0 := by norm_num
+    exact h3 h2
+  -- STEP 3: the ramification estimate plus the differentials brick force the
+  -- `σ`-twisted point to coincide with the point
+  have hkey : (MulSemiringAction.toAlgHom 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ L) σ).comp χ' =
+      χ' :=
+    algHom_eq_of_forall_sub_mem_span_mul_maximalIdeal 3 hthree hΩ _ _
+      (fun b => sub_mem_span_three_mul_maximalIdeal_of_lt_two_mul_sum_card_inertia
+        A hΩ L m hlt σ hσ χ' b)
+  -- STEP 4: push the equality of integral points forward into `L`
+  have hb : σ • χ' a = χ' a := AlgHom.congr_fun hkey a
+  have hb2 : (σ • χ' a).1 = (χ' a).1 := congrArg Subtype.val hb
+  rw [IntegralClosure.coe_smul, hcoe] at hb2
+  exact hb2
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
@@ -6886,15 +7170,21 @@ set_option maxHeartbeats 4000000 in
 the points-compositum finiteness/normality/placement leaves (i-a),
 (i-b), (i-c) are PROVEN, and so now are the Herbrand-transcribed
 Théorème A core (ii)
-`two_mul_sum_card_inertia_le_card_inertia_of_hopf_package` and the
-subextension estimate (iii)
+`two_mul_sum_card_inertia_le_card_inertia_of_hopf_package` — itself an
+assembly over its own leaves (ii-a), (ii-b) further up the file — and
+the subextension estimate (iii)
 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
-— neither has a `sorry` in its body, so neither is a work item;
-the depth under (iii) has moved one level down, to the two Serre
+— neither has a `sorry` in its body, so neither is a work item.
+The depth under (iii) has moved two levels down: the two Serre
 numerology leaves it consumes,
 `card_inertia_inf_fixingSubgroup_mul_add_sum_le_sum_card_inertia` and
 `card_inertia_inf_fixingSubgroup_mul_ramificationIdx'_eq_card_inertia`,
-which ARE still open;
+are PROVEN as well, the first of them over the two local
+different-formula leaves
+`le_sum_card_inertia_sub_one_of_pow_dvd_local_differentIdeal` and
+`pow_card_inertia_inf_mul_add_sum_dvd_local_differentIdeal`, which ARE
+still open; under (ii) the residual leaf is the ramification estimate
+(ii-a′) `sub_mem_span_three_mul_maximalIdeal_of_lt_two_mul_sum_card_inertia`;
 the assembly is PROVEN here: instantiate the subextension estimate at
 `L = hopfPointsField G` with the placement `M ≤ L` from `hM` and the
 break bound from the Théorème A leaf): the scheme-theoretic core of
@@ -9588,8 +9878,8 @@ theorem archimedeanGammaProfile_exists (K : Type*) [Field K] [NumberField K] :
   rw [hrank] at hH
   exact ⟨H, hH.1, hH.2.1, hH.2.2.1, hH.2.2.2.1, hH.2.2.2.2⟩
 
-/-- **Mellin uniqueness on a right half-plane** (sorry node, stated
-2026-07-25 — sub-leaf (β2), the *rigidity* half of the decomposition of
+/-- **Mellin uniqueness on a right half-plane** (PROVEN 2026-07-25 —
+sub-leaf (β2), the *rigidity* half of the decomposition of
 `heckeThetaSeries_functionalEquation`): two functions that are
 continuous on `(0, ∞)` and whose Mellin transforms both converge and
 take a COMMON value at every point of some right half-plane `Re z > σ`
@@ -9610,34 +9900,85 @@ uniquely: continuity plus the convergent Mellin identification
 determine `H` a.e. on `(0, ∞)` (Mellin/Laplace uniqueness), hence
 everywhere by continuity").
 
-Intended proof: put `h = f - g`; it is continuous on `(0, ∞)`, its
-Mellin transform converges on the half-plane (`MellinConvergent.sub`)
-and vanishes identically there (`mellin` is linear, `hasMellin_sub`).
-Substituting `τ = e^{-u}` (`mellin_comp_rpow` / the change of variables
-`Real.exp`) turns this into the vanishing of the two-sided Laplace
-transform `u ↦ ∫_ℝ e^{-z u}·h(e^{-u}) du` on a right half-plane.  Fix
-`σ' > σ` real and evaluate at `z = σ' + k`, `k : ℕ`: with the finite
-signed measure `dμ = τ^{σ'-1}·h(τ)·dτ` on `(0, ∞)` (finite by the
-convergence hypothesis) the identities say `∫ τ^k dμ = 0` for every
-`k`, i.e. all moments of `μ` vanish.  Split `(0, ∞)` at `1`: on `(0, 1]`
-the monomials `τ^k` are uniformly bounded and, by Weierstrass
-approximation on `[0, 1]`, dense in `C([0,1])`, so `μ` restricted there
-is `0`; on `[1, ∞)` apply the same argument after `τ ↦ τ⁻¹` (which
-turns the progression `σ' + k` into `σ' - k`, available by taking `σ'`
-large and using the convergence on the whole half-plane).  Hence `μ = 0`
-and, `τ^{σ'-1} > 0` on `(0, ∞)` with `h` continuous, `h` vanishes on
-`(0, ∞)`.  An alternative route already partly available in the pin:
-the transform is holomorphic on the half-plane
-(`mellin_differentiableAt_of_isBigO_rpow`) and Mellin inversion
-(`mellin_inversion`) recovers `h` at every point of continuity, so a
-vanishing transform forces `h = 0` directly. -/
+Proof (the SECOND of the two routes recorded when this leaf was
+stated — Mellin inversion, not the moment/Weierstrass route; it turned
+out to be a dozen lines, so the moment route was never needed and is
+kept below only as a record):
+
+Put `h = f - g` (as a `ℝ → ℂ` function).  For EVERY `z` in the open
+half-plane `Re z > σ` the hypothesis gives a COMMON value `m` for the
+two Mellin transforms, so `hasMellin_sub` makes `mellin h z` converge
+and equal `m - m = 0`.  Fix the vertical line `Re z = σ + 1`, which
+lies in the half-plane: `mellin h` vanishes *identically* on it.  That
+single observation discharges both remaining hypotheses of mathlib's
+`mellinInv_mellin_eq` for free —
+
+* `MellinConvergent h (σ + 1)` is the convergence half just obtained;
+* `Complex.VerticalIntegrable (mellin h) (σ + 1)`, which is the
+  genuinely restrictive hypothesis of Mellin inversion in general, is
+  here the integrability of the ZERO function;
+
+— while `ContinuousAt h x` at any `x ∈ (0, ∞)` follows from `hf`, `hg`
+and `Ioi_mem_nhds` since `(0, ∞)` is open.  Hence for every `x > 0`
+
+  `h x = mellinInv (σ+1) (mellin h) x = (2π)⁻¹ • ∫ y, x^{-(σ+1+iy)} • 0 = 0`,
+
+i.e. `f x = g x`.  Note that no holomorphy input
+(`mellin_differentiableAt_of_isBigO_rpow`) is needed: vanishing on a
+single vertical line inside the domain of convergence already suffices,
+because Mellin inversion is applied on exactly that line.
+
+Original (unused) moment route, for the record: `h`'s Mellin transform
+vanishing on the half-plane says, after `τ = e^{-u}`, that a two-sided
+Laplace transform vanishes; evaluating at `z = σ' + k`, `k : ℕ`, makes
+all moments of the finite signed measure `dμ = τ^{σ'-1}·h(τ)·dτ`
+vanish, and Weierstrass approximation on `(0,1]` plus the same argument
+after `τ ↦ τ⁻¹` on `[1, ∞)` forces `μ = 0`, hence `h = 0` by
+continuity. -/
 theorem eqOn_of_hasMellin_eq_of_continuousOn {f g : ℝ → ℝ} {σ : ℝ}
     (hf : ContinuousOn f (Set.Ioi 0)) (hg : ContinuousOn g (Set.Ioi 0))
     (hmel : ∀ z : ℂ, σ < z.re → ∃ m : ℂ,
       HasMellin (fun τ : ℝ => (f τ : ℂ)) z m ∧
         HasMellin (fun τ : ℝ => (g τ : ℂ)) z m) :
     Set.EqOn f g (Set.Ioi 0) := by
-  sorry
+  intro x hx
+  have hx0 : (0 : ℝ) < x := hx
+  set h : ℝ → ℂ := fun τ => (f τ : ℂ) - (g τ : ℂ) with hh
+  -- The difference has a convergent, identically vanishing Mellin transform on the
+  -- whole half-plane `Re z > σ`.
+  have hzero : ∀ z : ℂ, σ < z.re → MellinConvergent h z ∧ mellin h z = 0 := by
+    intro z hz
+    obtain ⟨m, hfm, hgm⟩ := hmel z hz
+    have hsub := hasMellin_sub hfm.1 hgm.1
+    rw [hh]
+    exact ⟨hsub.1, by rw [hsub.2, hfm.2, hgm.2, sub_self]⟩
+  -- In particular it vanishes identically on the vertical line `Re z = σ + 1`.
+  have hline : ∀ y : ℝ, mellin h (((σ + 1 : ℝ) : ℂ) + (y : ℂ) * Complex.I) = 0 := by
+    intro y
+    exact (hzero _ (by simp)).2
+  have hconv : MellinConvergent h ((σ + 1 : ℝ) : ℂ) := (hzero _ (by simp)).1
+  -- Vertical integrability along that line is integrability of the zero function.
+  have hVI : Complex.VerticalIntegrable (mellin h) (σ + 1) := by
+    have hfun : (fun y : ℝ => mellin h (((σ + 1 : ℝ) : ℂ) + (y : ℂ) * Complex.I))
+        = fun _ : ℝ => (0 : ℂ) := funext hline
+    show MeasureTheory.Integrable
+      (fun y : ℝ => mellin h (((σ + 1 : ℝ) : ℂ) + (y : ℂ) * Complex.I))
+      MeasureTheory.volume
+    rw [hfun]
+    exact MeasureTheory.integrable_zero _ _ _
+  have hcx : ContinuousAt h x := by
+    have h1 : ContinuousAt f x := hf.continuousAt (Ioi_mem_nhds hx0)
+    have h2 : ContinuousAt g x := hg.continuousAt (Ioi_mem_nhds hx0)
+    rw [hh]
+    exact (Complex.continuous_ofReal.continuousAt.comp h1).sub
+      (Complex.continuous_ofReal.continuousAt.comp h2)
+  -- Mellin inversion on that line recovers `h x` from the vanishing transform.
+  have key := mellinInv_mellin_eq (σ + 1) h hx0 hconv hVI hcx
+  have hLHS : mellinInv (σ + 1) (mellin h) x = 0 := by
+    simp only [mellinInv, hline, smul_zero, MeasureTheory.integral_zero]
+  rw [hLHS] at key
+  have hfg : (f x : ℂ) - (g x : ℂ) = 0 := key.symm
+  exact Complex.ofReal_inj.mp (sub_eq_zero.mp hfg)
 
 /-- **The canonical archimedean profile and its unit-domain theta
 functional equation** (sorry node, stated 2026-07-25 — sub-leaf (β1),
@@ -9677,6 +10018,21 @@ now carries the whole geometric content):
    (`mixedEmbedding.polarCoord`, `Real.Gamma_eq_integral`), one
    `π^{-s/2}Γ(s/2)` per real place and one `2(2π)^{-s}Γ(s)` per
    complex place.
+   **STEP 1 IS ALREADY DISCHARGED (2026-07-25).**
+   `archimedeanGammaProfile_exists` is PROVEN, and it produces exactly
+   a `G` with the continuity and the `s/2`-Mellin identity demanded
+   here (indeed with nonnegativity, antitonicity and stretched-
+   exponential decay on top, all four of which are useful for the
+   convergence bookkeeping of step 5).  Its `G` is the iterated
+   one-dimensional Mellin convolution of the per-place profiles rather
+   than Neukirch's hypersurface integral, but by
+   `eqOn_of_hasMellin_eq_of_continuousOn` (PROVEN just above) a
+   continuous profile is DETERMINED by its Mellin transform, so the
+   two agree on `(0, ∞)`.  A successor should therefore open with
+   `obtain ⟨G, hGcont, hGpos, hGanti, hGdec, hGmel⟩ :=
+   archimedeanGammaProfile_exists K`, discharge the first two conjuncts
+   with `hGcont`/`hGmel`, and spend ALL the work on steps 2–5, i.e. on
+   the functional equation alone.  Do NOT reconstruct the profile.
 2. *dictionary*: choose an integral ideal `𝔞 ∈ C⁻¹`; nonzero ideals
    `𝔟 ∈ C` biject with `𝒪_K^×`-orbits of nonzero `α ∈ 𝔞` via
    `𝔟𝔞 = (α)`, `N𝔟 = |N(α)|/N𝔞`
@@ -9723,11 +10079,34 @@ now carries the whole geometric content):
 Natural further decomposition, if the direct assembly resists: (3) —
 the covolume-`1` normalization and the dual-lattice/inverse-different
 identification — is a self-contained statement about ideal lattices in
-the mixed space with no analysis in it, and (1) — the profile and its
-`Γ`-factor Mellin transform — is a self-contained statement about
-Gaussian integrals in polar coordinates that does not mention ideals;
-either can be split off as its own sorried leaf and passed to this one
-as a hypothesis, exactly as `hθ` is here. -/
+the mixed space with no analysis in it; (1) is done (see above).  A
+second, orthogonal cut is the *ideal dictionary* of step 2 on its own:
+`∑' m, a_C(m)·G(m²x/|d|) = ∑' 𝔟 ∈ C, G(N𝔟²x/|d|)`, a pure
+`tsum`-refibration over the norm map (each fibre finite, `a_C(m)` its
+cardinality) with no geometry in it, leaving the ideal-indexed
+functional equation as the geometric residue.  CAUTION when splitting:
+a sorried body contributes no dependency edges, so a sub-leaf stated
+but not yet consumed is FREE-FLOATING and the Stop hook rejects it —
+the assembly consuming the new sub-leaves must be written and compiled
+in the SAME commit that states them.  This is why no split was made on
+2026-07-25: only step 1 could be discharged outright.
+
+NORMALIZATION CHECK (PARI/GP, 2026-07-25 — the statement as displayed
+below, `|d|`-placement and `x^{1/2}` weight included, is numerically
+CORRECT, so a successor should not "fix" it).  With `G` the profile of
+`archimedeanGammaProfile_exists`:
+
+* `K = ℚ` (`r₁ = 1`, `G(τ) = e^{-πτ}`, `|d| = 1`, `a_C(m) = 1`): the
+  displayed identity is Jacobi's `θ(1/x) = x^{1/2}θ(x)` and holds to
+  40 digits at `x = 0.7, 2.3` with `ρ₀ = 1/2` (and visibly fails with
+  `ρ₀ = 1/3`);
+* `K = ℚ(i)` (`r₂ = 1`, `G(τ) = e^{-2π√τ}`, `|d| = 4`,
+  `a_C(m) = r₂(m)/4`): it holds to 40 digits at `x = 0.7, 2.3` with
+  `ρ₀ = 1/4` (and fails with `ρ₀ = 1/2`).
+
+Both agree with Neukirch's `ρ₀ = 2^{r-1}·vol(𝔉)/w`, which for the
+unit-rank-`0` fields (`r = r₁ + r₂ = 1`, `vol(𝔉) = 1`) is `1/w` — `1/2`
+for `ℚ` and `1/4` for `ℚ(i)`. -/
 theorem heckeCanonicalThetaProfile_functionalEquation
     (K : Type*) [Field K] [NumberField K]
     (hθ : ∀ (E : Type) [NormedAddCommGroup E] [InnerProductSpace ℝ E]
@@ -22833,14 +23212,17 @@ theorem summable_log_absNorm_mul_rpow_neg (K : Type*) [Field K] [NumberField K]
             (inv_nonneg.mpr hδ0.le)
       _ = (δ⁻¹ * N ^ (-(σ - δ))) * ((2 : ℝ)⁻¹) ^ m := by ring
 
+open IsDedekindDomain in
 /-- **The Dirichlet series of the logarithmic derivative of `ζ_K` on
-the half-plane of absolute convergence** (sorry node, stated
-2026-07-24 — leaf (b₂ᵢᵢ·3·A·i), the LAST analytic input of the
+the half-plane of absolute convergence** (PROVEN 2026-07-25 — leaf
+(b₂ᵢᵢ·3·A·i), the LAST analytic input of the
 prime-edge decomposition): for `re s > 1`,
 `ζ_K'(s)/ζ_K(s) = −Σ_{(𝔭,m)} log N𝔭 · e^{−s·(m+1)·log N𝔭}` — the
 absolutely convergent prime-power (von Mangoldt) series over the
-nonzero primes of `𝒪_K`.  Intended proof: the project's exp-log
-Euler product
+nonzero primes of `𝒪_K`.  Proof (the recorded route, followed
+verbatim except that the termwise differentiation runs on the SHIFTED
+half-plane `re > σ₀ = (1 + re s)/2` rather than on a ball, which is
+what makes the majorant uniform): the project's exp-log Euler product
 `exp_tsum_neg_log_one_sub_dirichletCharacter_mul_cpow_neg_eq_LSeries`
 (from `Chebotarev.lean`, trivial character mod `1` — the same PROVEN
 input that closed `dedekindZeta_ne_zero_of_one_lt_re`) writes
@@ -22852,9 +23234,14 @@ via `Filter.EventuallyEq.deriv_eq` on the open set
 `isOpen_lt continuous_const Complex.continuous_re`), so
 `ζ_K'/ζ_K = deriv g` after dividing by `ζ_K = exp (g s) ≠ 0`
 (`Complex.exp_ne_zero`).  Termwise differentiation of `g`
-(`hasDerivAt_tsum` against the uniform majorant
-`Σ_P (3/2)·N𝔭^{−(1+ε)}` from `summable_rpow_neg_natCard_quotient` on
-a small closed ball around `s` inside `re > 1`) with
+(`hasDerivAt_tsum_of_isPreconnected` on the convex open half-plane
+`re > σ₀`, against the uniform majorant `Σ_P 2·log N𝔭·N𝔭^{−σ₀}`
+— the derivative bound uses `‖N𝔭^{−z}‖ ≤ N𝔭^{−σ₀} ≤ 1/2`, whence
+`‖1 − N𝔭^{−z}‖ ≥ 1/2`, and its summability is the
+`log N ≤ N^δ/δ` absorption against
+`summable_rpow_neg_natCard_quotient` at `σ₀ − δ > 1`; the
+convergence-at-a-point hypothesis is
+`Complex.norm_log_one_add_half_le_self`) with
 `(−log(1 − N𝔭^{−s}))' = (log N𝔭)·N𝔭^{−s}/(1 − N𝔭^{−s})
 = Σ_{m≥0} (log N𝔭)·N𝔭^{−(m+1)s}` (geometric series, `‖N𝔭^{−s}‖ < 1`;
 each power `N𝔭^{−(m+1)s} = e^{−s·(m+1)·log N𝔭}` via
@@ -22876,13 +23263,271 @@ theorem dedekindZeta_logDeriv_eq_neg_tsum (K : Type*) [Field K] [NumberField K]
         (Real.log (Ideal.absNorm Pm.1.1) : ℂ) *
           Complex.exp (-s *
             ((((Pm.2 : ℝ) + 1) * Real.log (Ideal.absNorm Pm.1.1) : ℝ) : ℂ)) := by
-  sorry
+  classical
+  set N : HeightOneSpectrum (NumberField.RingOfIntegers K) → ℕ :=
+    fun P => Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) with hN
+  have hN2 : ∀ P, 2 ≤ N P := fun P => two_le_natCard_quotient P
+  have hNpos : ∀ P, 0 < N P := fun P => lt_of_lt_of_le two_pos (hN2 P)
+  have hN2R : ∀ P, (2 : ℝ) ≤ (N P : ℝ) := fun P => by exact_mod_cast hN2 P
+  have hN0R : ∀ P, (0 : ℝ) < (N P : ℝ) := fun P => lt_of_lt_of_le two_pos (hN2R P)
+  have hN1R : ∀ P, (1 : ℝ) ≤ (N P : ℝ) := fun P => by linarith [hN2R P]
+  have hNc : ∀ P, ((N P : ℕ) : ℂ) ≠ 0 := by
+    intro P
+    exact_mod_cast (hNpos P).ne'
+  have hlogpos : ∀ P, 0 ≤ Real.log (N P) := fun P => Real.log_natCast_nonneg _
+  -- the shifted half-plane of uniform control
+  set σ₀ : ℝ := (1 + s.re) / 2 with hσ₀def
+  have hσ₀1 : 1 < σ₀ := by rw [hσ₀def]; linarith
+  have hσ₀s : σ₀ < s.re := by rw [hσ₀def]; linarith
+  set U : Set ℂ := {z : ℂ | σ₀ < z.re} with hUdef
+  have hUopen : IsOpen U := isOpen_lt continuous_const Complex.continuous_re
+  have hUconn : IsPreconnected U := (convex_halfSpace_re_gt σ₀).isPreconnected
+  have hsU : s ∈ U := hσ₀s
+  -- norms of the Euler factors
+  have hwnorm : ∀ (P : HeightOneSpectrum (NumberField.RingOfIntegers K)) (z : ℂ),
+      ‖((N P : ℕ) : ℂ) ^ (-z)‖ = (N P : ℝ) ^ (-z.re) := by
+    intro P z
+    rw [Complex.norm_natCast_cpow_of_pos (hNpos P), Complex.neg_re]
+  have hwle : ∀ (P : HeightOneSpectrum (NumberField.RingOfIntegers K)),
+      ∀ z ∈ U, ‖((N P : ℕ) : ℂ) ^ (-z)‖ ≤ (N P : ℝ) ^ (-σ₀) := by
+    intro P z hz
+    rw [hwnorm]
+    exact Real.rpow_le_rpow_of_exponent_le (hN1R P) (by
+      have : σ₀ < z.re := hz
+      linarith)
+  have hwhalf : ∀ (P : HeightOneSpectrum (NumberField.RingOfIntegers K)),
+      ∀ z ∈ U, ‖((N P : ℕ) : ℂ) ^ (-z)‖ ≤ 1 / 2 := by
+    intro P z hz
+    refine (hwle P z hz).trans ?_
+    calc (N P : ℝ) ^ (-σ₀) ≤ (2 : ℝ) ^ (-σ₀) :=
+          Real.rpow_le_rpow_of_nonpos two_pos (hN2R P) (by linarith)
+      _ ≤ (2 : ℝ) ^ (-1 : ℝ) :=
+          (Real.rpow_le_rpow_left_iff one_lt_two).mpr (by linarith)
+      _ = 1 / 2 := by rw [Real.rpow_neg_one]; norm_num
+  have hdenom : ∀ (P : HeightOneSpectrum (NumberField.RingOfIntegers K)),
+      ∀ z ∈ U, (1 : ℝ) / 2 ≤ ‖1 - ((N P : ℕ) : ℂ) ^ (-z)‖ := by
+    intro P z hz
+    have h := hwhalf P z hz
+    have h1 : ‖(1 : ℂ)‖ - ‖((N P : ℕ) : ℂ) ^ (-z)‖ ≤
+        ‖1 - ((N P : ℕ) : ℂ) ^ (-z)‖ := norm_sub_norm_le _ _
+    rw [norm_one] at h1
+    linarith [h, h1]
+  have hslit : ∀ (P : HeightOneSpectrum (NumberField.RingOfIntegers K)),
+      ∀ z ∈ U, 1 - ((N P : ℕ) : ℂ) ^ (-z) ∈ Complex.slitPlane := by
+    intro P z hz
+    refine Or.inl ?_
+    have h := hwhalf P z hz
+    have h2 : (((N P : ℕ) : ℂ) ^ (-z)).re ≤ ‖((N P : ℕ) : ℂ) ^ (-z)‖ :=
+      (le_abs_self _).trans (Complex.abs_re_le_norm _)
+    rw [Complex.sub_re, Complex.one_re]
+    linarith [h, h2]
+  -- the summands and their derivatives
+  set f : HeightOneSpectrum (NumberField.RingOfIntegers K) → ℂ → ℂ :=
+    fun P z => -Complex.log (1 - ((N P : ℕ) : ℂ) ^ (-z)) with hf
+  set f' : HeightOneSpectrum (NumberField.RingOfIntegers K) → ℂ → ℂ :=
+    fun P z => -((Real.log (N P) : ℂ) * ((N P : ℕ) : ℂ) ^ (-z) /
+      (1 - ((N P : ℕ) : ℂ) ^ (-z))) with hf'
+  have hfder : ∀ (P : HeightOneSpectrum (NumberField.RingOfIntegers K)),
+      ∀ z ∈ U, HasDerivAt (f P) (f' P z) z := by
+    intro P z hz
+    have hpow : HasDerivAt (fun y : ℂ => ((N P : ℕ) : ℂ) ^ (-y))
+        (((N P : ℕ) : ℂ) ^ (-z) * Complex.log ((N P : ℕ) : ℂ) * (-1)) z :=
+      (hasDerivAt_neg' z).const_cpow (Or.inl (hNc P))
+    have hone : HasDerivAt (fun y : ℂ => 1 - ((N P : ℕ) : ℂ) ^ (-y))
+        ((Real.log (N P) : ℂ) * ((N P : ℕ) : ℂ) ^ (-z)) z := by
+      have h := hpow.const_sub 1
+      have hveq : -(((N P : ℕ) : ℂ) ^ (-z) * Complex.log ((N P : ℕ) : ℂ) * (-1)) =
+          (Real.log (N P) : ℂ) * ((N P : ℕ) : ℂ) ^ (-z) := by
+        rw [Complex.natCast_log]
+        ring
+      rw [hveq] at h
+      exact h
+    exact (hone.clog (hslit P z hz)).neg
+  -- the uniform summable majorant on `U`
+  set δ : ℝ := (σ₀ - 1) / 2 with hδdef
+  have hδ0 : 0 < δ := by rw [hδdef]; linarith
+  have hσδ : 1 < σ₀ - δ := by rw [hδdef]; linarith
+  have hu : Summable (fun P : HeightOneSpectrum (NumberField.RingOfIntegers K) =>
+      2 * Real.log (N P) * (N P : ℝ) ^ (-σ₀)) := by
+    refine Summable.of_nonneg_of_le (fun P => ?_) (fun P => ?_)
+      ((summable_rpow_neg_natCard_quotient hσδ).mul_left (2 / δ))
+    · exact mul_nonneg (by positivity) (Real.rpow_nonneg (hN0R P).le _)
+    · have hlogle : Real.log (N P) ≤ (N P : ℝ) ^ δ / δ :=
+        Real.log_le_rpow_div (hN0R P).le hδ0
+      have hsplit : (N P : ℝ) ^ δ * (N P : ℝ) ^ (-σ₀) = (N P : ℝ) ^ (-(σ₀ - δ)) := by
+        rw [← Real.rpow_add (hN0R P)]
+        congr 1
+        ring
+      calc 2 * Real.log (N P) * (N P : ℝ) ^ (-σ₀)
+          ≤ 2 * ((N P : ℝ) ^ δ / δ) * (N P : ℝ) ^ (-σ₀) := by
+            have hnn := Real.rpow_nonneg (hN0R P).le (-σ₀)
+            nlinarith [hlogle, hnn]
+        _ = 2 / δ * ((N P : ℝ) ^ δ * (N P : ℝ) ^ (-σ₀)) := by ring
+        _ = 2 / δ * (N P : ℝ) ^ (-(σ₀ - δ)) := by rw [hsplit]
+  have hbound : ∀ (P : HeightOneSpectrum (NumberField.RingOfIntegers K)),
+      ∀ z ∈ U, ‖f' P z‖ ≤ 2 * Real.log (N P) * (N P : ℝ) ^ (-σ₀) := by
+    intro P z hz
+    simp only [hf']
+    rw [norm_neg, norm_div, norm_mul, Complex.norm_real, Real.norm_eq_abs,
+      abs_of_nonneg (hlogpos P)]
+    have h1 : Real.log (N P) * ‖((N P : ℕ) : ℂ) ^ (-z)‖ ≤
+        Real.log (N P) * (N P : ℝ) ^ (-σ₀) :=
+      mul_le_mul_of_nonneg_left (hwle P z hz) (hlogpos P)
+    have h2 := hdenom P z hz
+    calc Real.log (N P) * ‖((N P : ℕ) : ℂ) ^ (-z)‖ / ‖1 - ((N P : ℕ) : ℂ) ^ (-z)‖
+        ≤ (Real.log (N P) * (N P : ℝ) ^ (-σ₀)) / (1 / 2) :=
+          div_le_div₀ (mul_nonneg (hlogpos P) (Real.rpow_nonneg (hN0R P).le _))
+            h1 (by norm_num) h2
+      _ = 2 * Real.log (N P) * (N P : ℝ) ^ (-σ₀) := by ring
+  -- summability of the log-sum itself at `s`
+  have hf0 : Summable (fun P : HeightOneSpectrum (NumberField.RingOfIntegers K) =>
+      f P s) := by
+    refine Summable.of_norm_bounded (g := fun P => 3 / 2 * (N P : ℝ) ^ (-σ₀))
+      ?_ (fun P => ?_)
+    · refine ((summable_rpow_neg_natCard_quotient hσ₀1).mul_left (3 / 2)).congr
+        fun P => ?_
+      rw [hN]
+    · simp only [hf]
+      rw [norm_neg, sub_eq_add_neg]
+      calc ‖Complex.log (1 + -(((N P : ℕ) : ℂ) ^ (-s)))‖
+          ≤ 3 / 2 * ‖-(((N P : ℕ) : ℂ) ^ (-s))‖ :=
+            Complex.norm_log_one_add_half_le_self (by
+              rw [norm_neg]; exact hwhalf P s hsU)
+        _ = 3 / 2 * ‖((N P : ℕ) : ℂ) ^ (-s)‖ := by rw [norm_neg]
+        _ ≤ 3 / 2 * (N P : ℝ) ^ (-σ₀) :=
+            mul_le_mul_of_nonneg_left (hwle P s hsU) (by norm_num)
+  have hgder : HasDerivAt (fun z => ∑' P, f P z)
+      (∑' P, f' P s) s :=
+    hasDerivAt_tsum_of_isPreconnected hu hUopen hUconn hfder hbound hsU hf0 hsU
+  -- the Euler product identifies `ζ_K` with `exp` of the log-sum on `U`
+  have hzeta : ∀ z ∈ U, NumberField.dedekindZeta K z = Complex.exp (∑' P, f P z) := by
+    intro z hz
+    have hz1 : 1 < z.re := lt_trans hσ₀1 hz
+    have h := exp_tsum_neg_log_one_sub_dirichletCharacter_mul_cpow_neg_eq_LSeries
+      K (1 : DirichletCharacter ℂ 1) hz1
+    have hcoeff : (fun k : ℕ => (1 : DirichletCharacter ℂ 1) (k : ZMod 1) *
+        (Nat.card {I : Ideal (NumberField.RingOfIntegers K) //
+          Ideal.absNorm I = k} : ℂ)) =
+        fun n : ℕ => (Nat.card {I : Ideal (NumberField.RingOfIntegers K) //
+          Ideal.absNorm I = n} : ℂ) := by
+      funext k
+      rw [MulChar.one_apply (isUnit_of_subsingleton _), one_mul]
+    have hsum : (∑' P : HeightOneSpectrum (NumberField.RingOfIntegers K),
+        -Complex.log (1 - (1 : DirichletCharacter ℂ 1)
+            ((Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℕ) : ZMod 1) *
+          (Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℂ) ^ (-z))) =
+        ∑' P, f P z := by
+      refine tsum_congr fun P => ?_
+      simp only [hf, hN]
+      rw [MulChar.one_apply (isUnit_of_subsingleton _), one_mul]
+    rw [hsum] at h
+    unfold NumberField.dedekindZeta
+    rw [← hcoeff, ← h]
+  have hζs : NumberField.dedekindZeta K s = Complex.exp (∑' P, f P s) := hzeta s hsU
+  have hζder : HasDerivAt (NumberField.dedekindZeta K)
+      (Complex.exp (∑' P, f P s) * ∑' P, f' P s) s := by
+    refine (hgder.cexp).congr_of_eventuallyEq ?_
+    filter_upwards [hUopen.mem_nhds hsU] with z hz using hzeta z hz
+  have hlhs : deriv (NumberField.dedekindZeta K) s / NumberField.dedekindZeta K s =
+      ∑' P, f' P s := by
+    rw [hζder.deriv, hζs, mul_comm, mul_div_assoc,
+      div_self (Complex.exp_ne_zero _), mul_one]
+  -- the prime-power expansion of each factor
+  set F : HeightOneSpectrum (NumberField.RingOfIntegers K) × ℕ → ℂ :=
+    fun Pm => (Real.log (N Pm.1) : ℂ) *
+      Complex.exp (-s * ((((Pm.2 : ℝ) + 1) * Real.log (N Pm.1) : ℝ) : ℂ)) with hF
+  have hexp : ∀ (P : HeightOneSpectrum (NumberField.RingOfIntegers K)) (m : ℕ),
+      Complex.exp (-s * ((((m : ℝ) + 1) * Real.log (N P) : ℝ) : ℂ)) =
+        (((N P : ℕ) : ℂ) ^ (-s)) ^ (m + 1) := by
+    intro P m
+    rw [Complex.cpow_def_of_ne_zero (hNc P), ← Complex.exp_nat_mul]
+    congr 1
+    rw [← Complex.natCast_log]
+    push_cast
+    ring
+  have hterm : ∀ P : HeightOneSpectrum (NumberField.RingOfIntegers K),
+      f' P s = -∑' m : ℕ, F (P, m) := by
+    intro P
+    have hlt : ‖((N P : ℕ) : ℂ) ^ (-s)‖ < 1 :=
+      lt_of_le_of_lt (hwhalf P s hsU) (by norm_num)
+    have hgeo : (∑' m : ℕ, (((N P : ℕ) : ℂ) ^ (-s)) ^ (m + 1)) =
+        ((N P : ℕ) : ℂ) ^ (-s) / (1 - ((N P : ℕ) : ℂ) ^ (-s)) := by
+      calc (∑' m : ℕ, (((N P : ℕ) : ℂ) ^ (-s)) ^ (m + 1))
+          = ∑' m : ℕ, ((N P : ℕ) : ℂ) ^ (-s) * (((N P : ℕ) : ℂ) ^ (-s)) ^ m :=
+            tsum_congr fun m => by rw [pow_succ']
+        _ = ((N P : ℕ) : ℂ) ^ (-s) * ∑' m : ℕ, (((N P : ℕ) : ℂ) ^ (-s)) ^ m :=
+            tsum_mul_left
+        _ = ((N P : ℕ) : ℂ) ^ (-s) * (1 - ((N P : ℕ) : ℂ) ^ (-s))⁻¹ := by
+            rw [tsum_geometric_of_norm_lt_one hlt]
+        _ = ((N P : ℕ) : ℂ) ^ (-s) / (1 - ((N P : ℕ) : ℂ) ^ (-s)) :=
+            (div_eq_mul_inv _ _).symm
+    have hstep : (∑' m : ℕ, F (P, m)) =
+        (Real.log (N P) : ℂ) *
+          (((N P : ℕ) : ℂ) ^ (-s) / (1 - ((N P : ℕ) : ℂ) ^ (-s))) := by
+      simp only [hF]
+      rw [tsum_congr (fun m : ℕ => by rw [hexp P m]), tsum_mul_left, hgeo]
+    rw [hstep]
+    simp only [hf']
+    rw [mul_div_assoc]
+  -- summability of the prime-power double family
+  set e : HeightOneSpectrum (NumberField.RingOfIntegers K) ≃
+      {P : Ideal (NumberField.RingOfIntegers K) // P.IsPrime ∧ P ≠ ⊥} :=
+    ⟨fun Q => ⟨Q.asIdeal, Q.isPrime, Q.ne_bot⟩, fun P => ⟨P.1, P.2.1, P.2.2⟩,
+      fun Q => rfl, fun P => rfl⟩ with he
+  have hNabs : ∀ P : HeightOneSpectrum (NumberField.RingOfIntegers K),
+      Ideal.absNorm (e P).1 = N P := by
+    intro P
+    rw [he]
+    show Ideal.absNorm P.asIdeal = N P
+    rw [hN, Ideal.absNorm_apply, Submodule.cardQuot_apply]
+  have hFnorm : ∀ Pm : HeightOneSpectrum (NumberField.RingOfIntegers K) × ℕ,
+      ‖F Pm‖ = Real.log (N Pm.1) *
+        (N Pm.1 : ℝ) ^ (-(((Pm.2 : ℝ) + 1) * s.re)) := by
+    intro Pm
+    simp only [hF]
+    rw [norm_mul, Complex.norm_real, Real.norm_eq_abs, abs_of_nonneg (hlogpos _),
+      Complex.norm_exp]
+    congr 1
+    rw [Real.rpow_def_of_pos (hN0R Pm.1)]
+    congr 1
+    rw [Complex.mul_re, Complex.neg_re, Complex.neg_im, Complex.ofReal_re,
+      Complex.ofReal_im, mul_zero, sub_zero]
+    ring
+  have hFsummable : Summable F := by
+    refine Summable.of_norm ?_
+    refine Summable.congr ?_ (fun Pm => (hFnorm Pm).symm)
+    refine ((Equiv.summable_iff (e.prodCongr (Equiv.refl ℕ))).mpr
+      (summable_log_absNorm_mul_rpow_neg K hs)).congr fun Pm => ?_
+    show Real.log (Ideal.absNorm (e Pm.1).1) *
+        (Ideal.absNorm (e Pm.1).1 : ℝ) ^ (-(((Pm.2 : ℝ) + 1) * s.re)) =
+      Real.log (N Pm.1) * (N Pm.1 : ℝ) ^ (-(((Pm.2 : ℝ) + 1) * s.re))
+    rw [hNabs]
+  have hFfiber : ∀ P : HeightOneSpectrum (NumberField.RingOfIntegers K),
+      Summable fun m : ℕ => F (P, m) := by
+    intro P
+    exact hFsummable.prod_factor P
+  -- assemble
+  rw [hlhs, tsum_congr hterm, tsum_neg]
+  congr 1
+  rw [← hFsummable.tsum_prod' hFfiber]
+  refine (Equiv.tsum_eq (e.prodCongr (Equiv.refl ℕ))
+    (fun Pm : {P : Ideal (NumberField.RingOfIntegers K) // P.IsPrime ∧ P ≠ ⊥} × ℕ =>
+      (Real.log (Ideal.absNorm Pm.1.1) : ℂ) *
+        Complex.exp (-s *
+          ((((Pm.2 : ℝ) + 1) * Real.log (Ideal.absNorm Pm.1.1) : ℝ) : ℂ)))).symm.trans
+    ?_ |>.symm
+  refine tsum_congr fun Pm => ?_
+  show (Real.log (Ideal.absNorm (e Pm.1).1) : ℂ) *
+      Complex.exp (-s *
+        ((((Pm.2 : ℝ) + 1) * Real.log (Ideal.absNorm (e Pm.1).1) : ℝ) : ℂ)) = F Pm
+  simp only [hF]
+  rw [hNabs]
 
 /-- **The truncated prime edge as an absolutely convergent prime-power
 sum** (DECOMPOSED 2026-07-24, glue PROVEN — leaf (b₂ᵢᵢ·3·A), the
 Euler-product/Fubini bookkeeping stage of the prime-edge leaf
 `poitouPrimeEdge_tendsto`; an exact identity for EVERY `T`, no
-limits; now resting on the single sorried Dirichlet-series leaf
+limits; resting on the PROVEN Dirichlet-series leaf
 `dedekindZeta_logDeriv_eq_neg_tsum` above).  Proof structure:
 
 1. *Pointwise rearrangement.*  On the edge `s = 5/4 + it`
