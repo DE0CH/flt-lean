@@ -154,7 +154,7 @@ genuinely modular-curve-theoretic inputs:
   minimal composite orders outside the list. The content sits in the
   eleven per-level nodes `no_torsion_order_14`, …,
   `no_torsion_order_49`, one classical theorem each (Kubert, Ligozat,
-  Kenku; subsumed in Mazur 1977, Thm 8). Eight of the eleven are now
+  Kenku; subsumed in Mazur 1977, Thm 8). Nine of the eleven are now
   PROVEN (2026-07-25), along two complementary routes determined by the
   single criterion in the section note below — whether the level is
   absent from Kenku's list of rational cyclic isogeny degrees:
@@ -168,8 +168,12 @@ genuinely modular-curve-theoretic inputs:
     `not_halved_order_eight_point`,
     `not_order_two_and_order_nine_point`) stating the same
     modular-curve content in the literature's own shape.
-  The three levels `21, 25, 27` are also in Kenku's list and have no
-  level-structure sharpening yet, so they remain bare sorry nodes.
+  - *present, but sharpened through `X_0(27)` anyway*: `27`, PROVEN
+    from `j_of_stable_cyclic_subgroup_order_27` (the `j`-invariant of
+    the unique non-cuspidal rational point of `X_0(27)`) and
+    `no_torsion_order_27_of_j` (Olson's CM torsion theorem).
+  The two levels `21, 25` are in Kenku's list and have no sharpening
+  yet, so they are the only bare sorry nodes left among the eleven.
 * `torsion_finite_rat` (DERIVED from `mazur_point_order`): the
   rational torsion subgroup is finite — every rational torsion point
   is killed by `2520 = lcm(1, …, 10, 12)`, and the geometric
@@ -322,11 +326,40 @@ names the actual modular input rather than an order:
 Each derivation is pure `addOrderOf` bookkeeping (`addOrderOf_nsmul'`);
 each leaf is equivalent to the order statement it replaces, but sits
 over genus-`0` levels whose Tate normal forms are explicit, which is
-where an elementary attack would have to begin. The three remaining
-levels `21, 25, 27` are in Kenku's list AND have no such sharpening
-yet, so they are the only bare sorry nodes left among the eleven. The
-genus values listed above were recomputed from the formula on
-2026-07-25 and all agree.
+where an elementary attack would have to begin. The genus values listed
+above were recomputed from the formula on 2026-07-25 and all agree.
+
+SHARPENING (2026-07-25, later pass) of level `27` — the one level in
+Kenku's list where `X_0` still bites, because `X_0(27)` has genus `1`.
+Being IN the list means the isogeny alone is no contradiction, but it
+does not mean `X_0(27)` is useless: that curve is `27a1`, of
+Mordell–Weil rank `0` with `X_0(27)(ℚ) ≅ ℤ/3` and exactly two rational
+cusps, so it has exactly ONE non-cuspidal rational point and a rational
+cyclic `27`-subgroup therefore PINS the `j`-invariant. Level `27` is
+consequently PROVEN from two nodes,
+
+* `j_of_stable_cyclic_subgroup_order_27` — the `X_0(27)` statement: a
+  Galois-stable cyclic subgroup of order `27` forces
+  `j(E) = −12288000`, the CM value of discriminant `−27`;
+* `no_torsion_order_27_of_j` — Olson's theorem that a CM elliptic curve
+  over `ℚ` has torsion in `{ℤ/1, ℤ/2, ℤ/3, ℤ/4, ℤ/6, (ℤ/2)²}`,
+
+in place of the former `X_1(27)` citation (genus `13`). Verified with
+PARI/GP (untrusted searcher, statement check only): in the
+conductor-`27` class the unique `27`-isogeny joins `[−2430, 184437/4]`
+and `[−270, −6831/4]`, both of `j`-invariant `−12288000`; and the
+squarefree twists `y² = x³ − 2430 d² x + (184437/4) d³`, `|d| ≤ 80`,
+all have torsion trivial or `ℤ/3`.
+
+The SAME sharpening is NOT available at levels `21` and `25`, because
+there the isogeny does not pin `j`. `X_0(21)` has genus `1` but its
+non-cuspidal rational points carry MORE THAN ONE `j`-invariant: a
+PARI/GP `ellisomat` sweep over the models `[a₁,a₂,a₃,a₄,a₆]` with
+`a₁, a₃ ∈ {0,1}`, `a₂ ∈ {−1,0,1}`, `a₄, a₆ ∈ [−40,40]` exhibits the two
+values `j = −140625/8` and `j = 3375/2` with a rational cyclic
+`21`-isogeny. `X_0(25)` has genus `0`, so it carries a whole rational
+one-parameter family of them. Those two levels are therefore the only
+bare sorry nodes left among the eleven.
 
 A sweep over `≈ 4.8 · 10⁵` integral models with `|a₄|, |a₆| ≤ 100`
 found exact rational point orders only in `{1, …, 10}`, consistent with
@@ -1008,37 +1041,56 @@ theorem WeierstrassCurve.mem_cyclicIsogenyDegrees (E : WeierstrassCurve ℚ)
     · have h := E.composite_mem_cyclicIsogenyDegrees g h20 hp hg hstable
       fin_cases h <;> decide
 
+/-- **From a rational point to a Galois-stable cyclic subgroup**
+(PROVEN 2026-07-25): a rational point `Q` of exact order `n`
+base-changes to a geometric point `g` of the same order whose cyclic
+subgroup `⟨g⟩` is stable under `Gal(ℚ̄/ℚ)` — which is exactly the datum
+of a non-cuspidal rational point of `X_0(n)`.
+
+Both halves are formal: `Affine.Point.map` along an injective algebra
+map preserves the additive order (`Affine.Point.map_injective`), and
+`Affine.Point.map_baseChange` says every `ℚ`-algebra endomorphism of
+`ℚ̄` fixes the base change of a rational point, so `σ` sends `k • g` to
+`k • g` and `⟨g⟩` is in fact pointwise Galois-FIXED.
+
+This is the `X_1 → X_0` bridge for the whole section. It returns the
+witness `g`, so it serves both `mem_cyclicIsogenyDegrees_of_addOrderOf`
+just below — which needs only the resulting membership in Kenku's list
+— and the level-`27` `j`-determination further down, which needs `g`
+itself because being IN Kenku's list is no contradiction there. -/
+theorem WeierstrassCurve.exists_stable_cyclic_subgroup_of_rational_point
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {n : ℕ}
+    (Q : (E⁄ℚ).Point) (hQ : addOrderOf Q = n) :
+    ∃ g : (E⁄(AlgebraicClosure ℚ)).Point, addOrderOf g = n ∧
+      ∀ σ : Field.absoluteGaloisGroup ℚ,
+        ∀ x ∈ AddSubgroup.zmultiples g,
+          Affine.Point.map
+            (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+            AddSubgroup.zmultiples g := by
+  refine ⟨Affine.Point.baseChange ℚ (AlgebraicClosure ℚ) Q, ?_, ?_⟩
+  · rw [← hQ]
+    exact addOrderOf_injective _
+      (Affine.Point.map_injective (f := Algebra.ofId ℚ (AlgebraicClosure ℚ))) Q
+  · intro σ x hx
+    obtain ⟨k, rfl⟩ := AddSubgroup.mem_zmultiples_iff.mp hx
+    rw [map_zsmul, Affine.Point.map_baseChange
+      (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Q]
+    exact AddSubgroup.zsmul_mem _ (AddSubgroup.mem_zmultiples _) k
+
 /-- **A rational torsion point has Kenku degree** (PROVEN 2026-07-25):
 a rational point `Q` of exact order `N > 0` generates a cyclic subgroup
 of order `N` in `E(ℚ̄)` all of whose elements are base changes of
 rational points, hence pointwise Galois-FIXED and in particular
 Galois-stable; so `N` lies in Kenku's list of cyclic isogeny degrees.
-Base change `ℚ → ℚ̄` on points is an injective additive map
-(`Affine.Point.map_injective`), so `Q` and its image have the same
-order, and `Affine.Point.map_baseChange` says every `σ` fixes that
-image; stability of `⟨g⟩` then follows because `σ` acts additively, so
-it sends `k • g` to `k • g`. -/
+Immediate from the bridge above. -/
 lemma WeierstrassCurve.mem_cyclicIsogenyDegrees_of_addOrderOf
     (E : WeierstrassCurve ℚ) [E.IsElliptic] (Q : (E⁄ℚ).Point) {N : ℕ}
     (hN : 0 < N) (hQ : addOrderOf Q = N) :
     N ∈ ({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
       21, 25, 27, 37, 43, 67, 163} : Finset ℕ) := by
-  set g : (E⁄(AlgebraicClosure ℚ)).Point :=
-    Affine.Point.baseChange ℚ (AlgebraicClosure ℚ) Q with hgdef
-  have hgfix : ∀ σ : Field.absoluteGaloisGroup ℚ,
-      Affine.Point.map
-        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom g = g := fun σ =>
-    Affine.Point.map_baseChange
-      (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Q
-  have hgord : addOrderOf g = N := by
-    rw [← hQ, hgdef]
-    exact addOrderOf_injective _
-      (Affine.Point.map_injective (f := Algebra.ofId ℚ (AlgebraicClosure ℚ))) Q
-  refine E.mem_cyclicIsogenyDegrees g hN hgord ?_
-  intro σ x hx
-  obtain ⟨k, rfl⟩ := AddSubgroup.mem_zmultiples_iff.mp hx
-  rw [map_zsmul, hgfix σ]
-  exact AddSubgroup.zsmul_mem _ (AddSubgroup.mem_zmultiples g) k
+  obtain ⟨g, hgord, hstable⟩ :=
+    E.exists_stable_cyclic_subgroup_of_rational_point Q hQ
+  exact E.mem_cyclicIsogenyDegrees g hN hgord hstable
 
 /-!
 ##### The eight prime levels `≥ 11`, one node each (2026-07-25)
@@ -3475,19 +3527,134 @@ literature citation): `X_1(25)` has genus `12` and no non-cuspidal
 rational point (subsumed in Mazur 1977, Thm 8). The `X_0` shortcut is
 NOT available at this level: a rational cyclic `25`-isogeny does exist
 (the class `11a` contains one), so `X_0(25)` has non-cuspidal rational
-points and only the `X_1` statement excludes an order-`25` point. -/
+points and only the `X_1` statement excludes an order-`25` point.
+
+IRREDUCIBLE at this mathlib pin (audit 2026-07-25, re-audited the same
+day when level `27` — the other level of Kenku's list where `X_0` still
+bites — was reduced to its `X_0(27)` `j`-determination). The
+genus `12` is the standard formula
+`g(X_1(N)) = 1 + (N²/24)∏_{p ∣ N}(1 − p⁻²) − ¼ Σ_{d ∣ N} φ(d)φ(N/d)`
+evaluated at `N = 25` (recomputed 2026-07-25). Routes checked and
+rejected:
+
+* *The `X_0` route that closes `27` and `49` has no analogue here.*
+  `X_0(25)` has genus `0`, so its rational points are a rational
+  one-parameter family and a rational cyclic `25`-subgroup puts NO
+  constraint on `j(E)` — unlike level `27`, where `X_0(27)` is a
+  rank-`0` genus-`1` curve with a single non-cuspidal rational point.
+  Verified with PARI/GP: `ellisomat` on `11a1 = [0,-1,1,-10,-20]`
+  returns the degree matrix `[1,5,5; 5,1,25; 5,25,1]`, so a rational
+  cyclic `25`-isogeny genuinely exists.
+* *Divisor reduction fails by design.* The proper divisors of `25` are
+  `1` and `5`, both in Mazur's allowed set, so nothing here implies the
+  node.
+* *Reduction plus Hasse fails, even in its sharp congruence form.* A
+  rational point of order `25` makes the mod-`25` representation
+  `(1 ∗; 0 ω)` (the rational cyclic subgroup is the trivial character,
+  and the determinant is cyclotomic), so `a_p ≡ 1 + p (mod 25)` at
+  every prime `p ≠ 5` of good reduction, while `|a_p| ≤ 2√p`. That
+  congruence is strictly stronger than the bare bound `25 ≤ p+1+2√p`,
+  but at this level it forces exactly the same thing: bad reduction at
+  `p ∈ {2, 3, 7, 11, 13}` and nothing at any `p ≥ 17` (checked to
+  `p < 400` with PARI/GP). A conductor lower bound is not a
+  contradiction — curves of every such conductor exist.
+
+A formal proof needs `X_1(25)` as an arithmetic curve over `ℚ` together
+with a determination of its rational points (Chabauty/Kenku-style, or
+the Eisenstein-ideal descent). The one structural observation worth
+recording for a future attack: if `P` has order `25` then
+`E' = E/⟨5P⟩` carries the rational point `φ(P)` of order `5` AND the
+rational subgroup `ker φ̂` of order `5`, and these are independent
+(`P ∉ E[5]`), so `E'[5] ≅ ℤ/5 ⊕ μ_5` as a Galois module. That is a
+level-`25` structure again, not a simplification — but it is the shape
+in which the classical proofs proceed. -/
 theorem WeierstrassCurve.no_torsion_order_25 (E : WeierstrassCurve ℚ)
     [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 25 :=
   sorry
 
-/-- **No rational point of order `27`** (sorry node — irreducible
-literature citation): `X_1(27)` has genus `13` and no non-cuspidal
-rational point (subsumed in Mazur 1977, Thm 8). As at level `25` the
-`X_0` shortcut fails: a rational cyclic `27`-isogeny exists (the class
-`27a` contains one). -/
-theorem WeierstrassCurve.no_torsion_order_27 (E : WeierstrassCurve ℚ)
-    [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 27 :=
+/-- **`X_0(27)`: a rational cyclic `27`-subgroup forces
+`j = −12288000`** (sorry node — the `X_0(27)` content, replacing the
+former `X_1(27)` citation 2026-07-25): if the geometric points of an
+elliptic curve over `ℚ` contain a point `g` of order `27` whose cyclic
+subgroup is `Gal(ℚ̄/ℚ)`-stable, then `j(E) = −12288000`.
+
+Note that `mem_cyclicIsogenyDegrees` gives NOTHING here: `27` IS in
+Kenku's list, so the isogeny alone is consistent. What closes the level
+is that `X_0(27)` nevertheless has only ONE non-cuspidal rational point,
+so the isogeny pins the `j`-invariant.
+
+The pair `(E, ⟨g⟩)` is a non-cuspidal rational point of `X_0(27)`, a
+curve of **genus `1`** — namely the elliptic curve `27a1 : y² + y =
+x³ − 7`, of Mordell–Weil rank `0` with `X_0(27)(ℚ) ≅ ℤ/3`. Of its six
+cusps (`Σ_{d ∣ 27} φ(gcd(d, 27/d)) = 1 + 2 + 2 + 1`) exactly the two of
+denominators `1` and `27` are rational, so `X_0(27)` has exactly ONE
+non-cuspidal rational point; its image in the `j`-line is the CM value
+of discriminant `−27`, `j = −12288000`.
+
+Verified with PARI/GP (2026-07-25, untrusted searcher, statement check
+only): `ellisomat` on the conductor-`27` class returns the degree matrix
+`[1,3,9,3; 3,1,3,9; 9,3,1,27; 3,9,27,1]`, and the unique `27`-isogeny
+joins the curves `[−2430, 184437/4]` and `[−270, −6831/4]`, both of
+`j`-invariant `−12288000` — consistent with a single non-cuspidal
+rational point of `X_0(27)` realized over `ℚ` by two quadratic twists.
+
+This node is strictly shallower than the `X_1(27)` statement it
+replaces: it asks for a rank-`0` Mordell–Weil computation on a genus-`1`
+curve rather than the rational points of a genus-`13` curve. -/
+theorem WeierstrassCurve.j_of_stable_cyclic_subgroup_order_27
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 27)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) :
+    E.j = -12288000 :=
   sorry
+
+/-- **No rational point of order `27` on a curve of `j`-invariant
+`−12288000`** (sorry node — the CM torsion content, 2026-07-25): the
+second half of the level-`27` decomposition.
+
+Curves with `j = −12288000` are exactly the quadratic twists of one
+another (`j ≠ 0, 1728`), and they have complex multiplication by the
+order of discriminant `−27` in `ℚ(√−3)`. By Olson, "Torsion points on
+elliptic curves with given `j`-invariant" (Manuscripta Math. 16, 1975),
+the torsion subgroup of a CM elliptic curve over `ℚ` is one of `ℤ/1`,
+`ℤ/2`, `ℤ/3`, `ℤ/4`, `ℤ/6`, `(ℤ/2)²` — so it never contains a point of
+order `9`, let alone `27`.
+
+Verified with PARI/GP (2026-07-25, statement check only): over the
+squarefree twists `y² = x³ − 2430 d² x + (184437/4) d³` with
+`|d| ≤ 80`, the torsion subgroup is always trivial or `ℤ/3`; no twist
+has a point of order `9`.
+
+Unlike the `X_1(27)` citation it replaces, this node is a statement
+about a single explicit twist family and is elementary in Olson's
+sense (reduction at the primes of good reduction, using that the CM
+field is not contained in `ℚ`). -/
+theorem WeierstrassCurve.no_torsion_order_27_of_j (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] (hj : E.j = -12288000) (Q : (E⁄ℚ).Point) :
+    addOrderOf Q ≠ 27 :=
+  sorry
+
+/-- **No rational point of order `27`** (PROVEN 2026-07-25 from the two
+`X_0(27)`-level nodes above, via the bridge
+`exists_stable_cyclic_subgroup_of_rational_point`): a rational point of
+order `27` gives a `Gal(ℚ̄/ℚ)`-stable cyclic subgroup of order `27` of
+the geometric points, hence a non-cuspidal rational point of `X_0(27)`,
+which pins `j(E) = −12288000`; and no curve of that `j`-invariant has a
+rational point of order `27`.
+
+This replaces the former direct citation of `X_1(27)` (genus `13`,
+Mazur 1977, Thm 8) by two shallower nodes; see their docstrings. -/
+theorem WeierstrassCurve.no_torsion_order_27 (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 27 := by
+  intro hQ
+  obtain ⟨g, hgord, hstable⟩ :=
+    E.exists_stable_cyclic_subgroup_of_rational_point Q hQ
+  exact E.no_torsion_order_27_of_j
+    (E.j_of_stable_cyclic_subgroup_order_27 g hgord hstable) Q hQ
 
 /-- **No rational point of order `35`** (PROVEN 2026-07-25 along the
 route recorded for this level, from the `X_0` node
