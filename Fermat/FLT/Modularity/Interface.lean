@@ -184,6 +184,13 @@ import Mathlib.RingTheory.DiscreteValuationRing.Basic
 import Mathlib.LinearAlgebra.FreeModule.PID
 import Mathlib.Algebra.Module.Torsion.Free
 import Mathlib.NumberTheory.Padics.PadicIntegers
+-- the shared upstream `p`-adic ring-of-integers layer: the spectral-norm
+-- integrality criterion over `ℤ_p`, the density-based scalar tower, and the
+-- hull construction `exists_padicIntegers_dvr_hull_of_continuousSMul` that
+-- discharges the Ribet-cut leaf `exists_padicIntegers_dvr_hull` below.
+-- PUBLIC because `Family.lean` consumes
+-- `isIntegral_padicInt_of_spectralNorm_le_one` from it through this file.
+public import Fermat.FLT.Mathlib.RingTheory.PadicIntegralClosure
 -- `Polynomial.eval_one_cyclotomic_prime_pow` + the primitive-root product
 -- factorization: distinct `p`-power roots of unity differ by a `2`-adic
 -- unit — the arithmetic core of the at-`2` cyclotomic-inertia lemma
@@ -9034,96 +9041,99 @@ theorem exists_basis_fin_two : Nonempty (Module.Basis (Fin 2) R V) := by
     exact_mod_cast h
   exact ⟨(Module.finBasis R V).reindex (finCongr hfr)⟩
 
-/-- **The `p`-adic ring-of-integers hull** (Ribet cut E2a-i-a; sorry
-node — the ARITHMETIC half of the valuation-ring lattice, isolated
-2026-07-24 when the lattice half below was proven): a module-finite
-`ℤ_p`-domain `R` of characteristic zero, presented in `ℚ̄_p`, sits
-inside the ring of integers `O` of a finite extension of `ℚ_p`,
-compatibly with both structure maps. This is the whole `𝒪_E`-content
-of E2a-i; the lattice content is discharged by
-`exists_valuationRing_stable_lattice` below.
+omit [IsDomain R] [IsLocalRing R] in
+/-- **The `p`-adic ring-of-integers hull** (Ribet cut E2a-i-a; PROVEN
+2026-07-25, the ARITHMETIC half of the valuation-ring lattice): a
+module-finite `ℤ_p`-domain `R` of characteristic zero, presented in
+`ℚ̄_p`, sits inside the ring of integers `O` of a finite extension of
+`ℚ_p`, compatibly with both structure maps. This is the whole
+`𝒪_E`-content of E2a-i; the lattice content is discharged by
+`exists_valuationRing_stable_lattice` below, so with this leaf the
+whole of E2a-i is proven.
 
-FULLY MAPPED ROUTE (2026-07-24; every step checked against this pin's
-mathlib, no step through `Family.lean` or `Reducible.lean`, so the
-Ribet-cut circularity guard is respected — but note that
-`Family.lean` carries, DOWNSTREAM and therefore unusable here, an
-almost verbatim instance suite for the intermediate-field spelling of
-the same object: `instModuleFiniteIntegralClosurePadicInt`,
-`instValuationRingIntegralClosurePadicInt`,
-`isModuleTopology_integralClosure_padicInt`,
-`isIntegral_padicInt_of_spectralNorm_le_one`,
-`isModuleTopology_of_compactSpace_t2Space`. Discharging this leaf is
-mostly a matter of re-deriving that suite upstream — ideally by moving
-it into a new module imported by BOTH files):
+The construction is `exists_padicIntegers_dvr_hull_of_continuousSMul`
+in `Fermat/FLT/Mathlib/RingTheory/PadicIntegralClosure.lean`, a NEW
+module upstream of both this file and `Family.lean` (which carried a
+DOWNSTREAM and therefore unusable near-duplicate of the instance
+suite; its `isIntegral_padicInt_of_spectralNorm_le_one` was moved into
+the new module, so there is now exactly one copy, shared). The
+Ribet-cut circularity guard is respected: the new module imports only
+mathlib.
+
+Executed route (all of it now compiled):
 
 1. *The structure maps commute*: `ℤ_p → R → ℚ̄_p` and the canonical
    `ℤ_p → ℚ_p → ℚ̄_p` are two CONTINUOUS ring maps `ℤ_p → ℚ̄_p`
    (continuity of `R → ℚ̄_p` is `continuous_algebraMap` from the
-   `ContinuousSMul` hypothesis; continuity of `ℤ_p → R` is
-   `IsModuleTopology.continuous_of_linearMap`) agreeing on the image
-   of `ℕ`, which is DENSE (`PadicInt.denseRange_natCast`) in the
+   `ContinuousSMul` hypothesis; continuity of `ℤ_p → R` is the same
+   lemma via `IsModuleTopology.toContinuousSMul`) agreeing on the
+   image of `ℕ`, which is DENSE (`PadicInt.denseRange_natCast`) in the
    Hausdorff `ℚ̄_p`; so `Continuous.ext_on` gives
-   `IsScalarTower ℤ_[p] R (AlgebraicClosure ℚ_[p])` for free. This is
-   the step that makes the statement true without any scalar-tower
-   hypothesis, and it is where `ContinuousSMul R ℚ̄_p` is consumed.
-2. *The fraction field*: `F := FractionRing R` (which lives in
-   `Type u`, unlike any subfield of `ℚ̄_p` — this is why `F`, and not
-   an `IntermediateField ℚ_[p] (AlgebraicClosure ℚ_[p])`, is the right
-   carrier here: it avoids a `ULift` transport of the entire instance
-   bundle). `hZinj` makes `ℤ_p → R → F` injective, so
-   `IsFractionRing.lift` gives `ℚ_p →ₐ[ℤ_p] F` and hence
-   `Algebra ℚ_[p] F` with `IsScalarTower ℤ_[p] ℚ_[p] F`.
-3. *`F/ℚ_p` is finite*: the `ℚ_p`-span `W` of the image of a finite
-   `ℤ_p`-spanning set of `R` is a finite-dimensional `ℚ_p`-subalgebra
-   of `F` containing the image of `R`, and a domain, hence a field
-   (`isField_of_isIntegral_of_isField'`); every element of `F` is a
-   ratio of elements of the image of `R` (`IsFractionRing`), so
-   `W = F` and `FiniteDimensional ℚ_[p] F`.
-4. *`O := integralClosure ℤ_[p] F`* (again in `Type u`) is a domain,
-   a `ℤ_p`-algebra, and `Module.Finite ℤ_[p] O` by
+   `IsScalarTower ℤ_[p] R (AlgebraicClosure ℚ_[p])` for free
+   (`isScalarTower_padicInt_of_continuousSMul`). This is the step that
+   makes the statement true without any scalar-tower hypothesis, and
+   it is where `ContinuousSMul R ℚ̄_p` is consumed.
+2. *`R → ℚ̄_p` may be replaced by an embedding*: its kernel is a prime
+   ideal of `R` meeting `ℤ_p` only in `0` (step 1 plus injectivity of
+   `ℤ_p → ℚ_p → ℚ̄_p`), so `R ⧸ ker` is again a module-finite
+   `ℤ_p`-domain, now embedded, and `ι` factors through it
+   (`RingHom.kerLift`). This is why the route needs no separate proof
+   that `R → ℚ̄_p` is injective.
+3. *The fraction field*: `F := FractionRing R` lives in `Type u`,
+   unlike any subfield of `ℚ̄_p` — this is why `F`, and not an
+   `IntermediateField ℚ_[p] (AlgebraicClosure ℚ_[p])`, is the right
+   carrier: it avoids a `ULift` transport of the entire instance
+   bundle. `IsFractionRing.lift` gives both `Algebra ℚ_[p] F` (with
+   `IsScalarTower ℤ_[p] ℚ_[p] F`) and the embedding `Φ : F → ℚ̄_p`.
+4. *`F/ℚ_p` is finite* (`finiteDimensional_padic_fractionRing`): the
+   `ℚ_p`-algebra `A` generated by the image of a finite `ℤ_p`-spanning
+   set of `R` is module-finite over `ℚ_p`
+   (`Algebra.finite_adjoin_of_finite_of_isIntegral`) and a domain,
+   hence a FIELD (`isField_of_isIntegral_of_isField'`); every element
+   of `F` is a ratio of elements of the image of `R`
+   (`IsFractionRing.div_surjective`), so `A = F`.
+5. *`O := integralClosure ℤ_[p] F`* (again in `Type u`) is a domain, a
+   `ℤ_p`-algebra, and `Module.Finite ℤ_[p] O` by
    `IsIntegralClosure.finite ℤ_[p] ℚ_[p] F` (`ℤ_p` is Noetherian and
    integrally closed with fraction field `ℚ_p`; `F/ℚ_p` is finite and
    separable in characteristic zero).
-5. *Topology*: take `TopologicalSpace O := moduleTopology ℤ_[p] O`,
-   so `IsModuleTopology` holds by `rfl` and `IsTopologicalRing O`
-   follows from module-finiteness
-   (`IsModuleTopology.continuous_mul_of_finite`). No compactness or
-   subspace-topology argument is needed for this spelling.
-6. *The embedding*: `ℤ_p ∖ {0}` maps into the units of `ℚ̄_p`, so the
-   given `R → ℚ̄_p` extends over the localization `F` (step 3 shows
-   `F` IS that localization), giving `φ : F →+* ℚ̄_p`, injective
-   because `F` is a field. Restricting `φ` to `O` supplies
-   `Algebra O (AlgebraicClosure ℚ_[p])`, the injectivity clause, and —
-   with step 1 — both compatibility clauses; `ContinuousSMul O ℚ̄_p`
-   is `continuousSMul_of_algebraMap` applied to the `ℤ_p`-linear (hence
-   module-topology-continuous) `φ ∘ (O ⊆ F)`.
+6. *Topology*: `TopologicalSpace O := moduleTopology ℤ_[p] O`, so
+   `IsModuleTopology` holds by `rfl` and `IsTopologicalRing O` follows
+   from module-finiteness (`IsModuleTopology.isTopologicalRing`). No
+   compactness or subspace-topology argument is needed for this
+   spelling. `ContinuousSMul O ℚ̄_p` is `continuousSMul_of_algebraMap`
+   applied to the `ℤ_p`-linear (hence module-topology-continuous)
+   `Φ ∘ (O ⊆ F)`.
 7. *`O` is a valuation ring, hence LOCAL*: for `x : F`, one of
-   `φ x`, `φ x⁻¹` has spectral norm `≤ 1` over `ℚ_p`, hence is
-   integral over `ℤ_p` (the `ℤ_p`-avatar of
-   `isIntegral_of_spectralNorm_le_one`, which lifts the minimal
-   polynomial coefficientwise), and integrality descends along the
-   injective `φ` (`isIntegral_algHom_iff`); so
+   `Φ x`, `Φ x⁻¹` has spectral norm `≤ 1` over `ℚ_p` (the norm on
+   `ℚ̄_p` IS the spectral norm, `PadicAlgCl.spectralNorm_eq`), hence is
+   integral over `ℤ_p` (`isIntegral_padicInt_of_spectralNorm_le_one`,
+   which lifts the minimal polynomial coefficientwise), and
+   integrality descends along the injective `Φ`
+   (`isIntegral_algHom_iff`); so
    `ValuationSubring.instValuationRingSubtypeMem` applies and
    `IsLocalRing O` comes for free — no henselian/idempotent-lifting
    argument is required anywhere.
 8. *`O` is a DVR*: `O` is Noetherian (module-finite over the
-   Noetherian `ℤ_p`), local, a domain, and not a field (`p⁻¹` is not
-   integral over the integrally closed `ℤ_p`), so
+   Noetherian `ℤ_p`), local, a domain, and not a field (a field `O`
+   integral over `ℤ_p` would force `ℤ_p` itself to be a field,
+   `isField_of_isIntegral_of_isField`), so
    `(IsDiscreteValuationRing.TFAE O hnf).out 1 0` upgrades
    `ValuationRing O` to `IsDiscreteValuationRing O`.
 
-Soundness (audit 2026-07-24): the hypothesis set is inhabited
-(`R = ℤ_p` with its canonical presentation in `ℚ̄_p`) and the
-conclusion holds for every inhabitant by the route above. `hZinj` is
-LOAD-BEARING: without it `algebraMap ℤ_[p] R` may kill `p`, and then
-`ι (algebraMap ℤ_[p] R p) = 0` while `algebraMap ℤ_[p] O p ≠ 0` in the
-characteristic-zero `O`, so no `ι` can exist. No oddness,
+Soundness: the hypothesis set is inhabited (`R = ℤ_p` with its
+canonical presentation in `ℚ̄_p`). `_hZinj` turned out to be
+REDUNDANT, not load-bearing as the 2026-07-24 audit had guessed: step 1
+already forces `algebraMap R ℚ̄_p ∘ algebraMap ℤ_[p] R` to be the
+injective `algebraMap ℤ_[p] ℚ̄_p`, so `algebraMap ℤ_[p] R` cannot kill
+`p`. The hypothesis is kept only because the PROVEN consumer
+`exists_valuationRing_stable_lattice` supplies it. No oddness,
 irreducibility, residual or representation-theoretic input is
 consumed. -/
 theorem exists_padicIntegers_dvr_hull
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
-    (hZinj : Function.Injective (algebraMap ℤ_[p] R)) :
+    (_hZinj : Function.Injective (algebraMap ℤ_[p] R)) :
     ∃ (O : Type u) (_ : CommRing O) (_ : Algebra ℤ_[p] O)
       (_ : IsDomain O) (_ : Module.Finite ℤ_[p] O)
       (_ : TopologicalSpace O) (_ : IsTopologicalRing O)
@@ -9136,7 +9146,7 @@ theorem exists_padicIntegers_dvr_hull
       (∀ x : ℤ_[p], ι (algebraMap ℤ_[p] R x) = algebraMap ℤ_[p] O x) ∧
       (∀ r : R, algebraMap O (AlgebraicClosure ℚ_[p]) (ι r) =
         algebraMap R (AlgebraicClosure ℚ_[p]) r) :=
-  sorry
+  exists_padicIntegers_dvr_hull_of_continuousSMul
 
 include hv in
 /-- **The valuation-ring lattice** (Ribet cut E2a-i; PROVEN 2026-07-24

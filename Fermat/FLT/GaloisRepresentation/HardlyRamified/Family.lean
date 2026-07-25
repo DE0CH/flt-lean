@@ -32,6 +32,14 @@ import Fermat.FLT.Deformations.RepresentationTheory.FlatProlongation
 -- the STATEMENT of the shared brick `convPow_apply_of_comul_absorbs`
 -- below, hence public.
 public import Mathlib.RingTheory.HopfAlgebra.Convolution
+-- `isIntegral_padicInt_of_spectralNorm_le_one`, consumed by the
+-- `ValuationRing` instance of the concrete coefficient ring below. It used to
+-- be declared in this file; it moved upstream (2026-07-25) so that the
+-- Ribet-cut hull leaf `exists_padicIntegers_dvr_hull` in
+-- `Modularity/Interface.lean` — which this file imports, hence cannot be
+-- imported BY — can share it. Imported directly rather than relied on
+-- transitively through `Modularity/Interface`.
+public import Fermat.FLT.Mathlib.RingTheory.PadicIntegralClosure
 import Mathlib.Algebra.Field.ULift
 import Mathlib.Topology.Algebra.IntermediateField
 import Mathlib.LinearAlgebra.Charpoly.ToMatrix
@@ -3917,36 +3925,12 @@ instance instModuleFiniteIntegralClosurePadicInt [FiniteDimensional ℚ_[ℓ] L]
     Module.Finite ℤ_[ℓ] (IntegralClosure ℤ_[ℓ] L) :=
   IsIntegralClosure.finite ℤ_[ℓ] ℚ_[ℓ] L _
 
-/-- **Spectral-norm integrality over `ℤ_ℓ`** (PROVEN): an element of an
-algebraic extension of `ℚ_ℓ` with spectral norm at most `1` is integral
-over `ℤ_ℓ` — its monic minimal polynomial over `ℚ_ℓ` has coefficients
-of norm at most `1`, which lift termwise to `ℤ_ℓ`. (The `ℤ_ℓ`-avatar of
-`isIntegral_of_spectralNorm_le_one` in `AbsoluteGaloisGroup.lean`,
-which is stated for the `Valued.v.integer` subring of an abstractly
-valued base field and so does not directly apply to `ℤ_[ℓ]`.) -/
-lemma isIntegral_padicInt_of_spectralNorm_le_one
-    {M : Type*} [Field M] [Algebra ℚ_[ℓ] M] [Algebra.IsAlgebraic ℚ_[ℓ] M]
-    [Algebra ℤ_[ℓ] M] [IsScalarTower ℤ_[ℓ] ℚ_[ℓ] M]
-    {x : M} (hx : spectralNorm ℚ_[ℓ] M x ≤ 1) : IsIntegral ℤ_[ℓ] x := by
-  have hlift : minpoly ℚ_[ℓ] x ∈ Polynomial.lifts (algebraMap ℤ_[ℓ] ℚ_[ℓ]) := by
-    refine (Polynomial.lifts_iff_coeff_lifts _).mpr fun i => ?_
-    have hterm := (ciSup_le_iff (spectralValueTerms_bddAbove ..)).mp hx i
-    simp only [spectralValueTerms] at hterm
-    split_ifs at hterm with h
-    · conv_rhs at hterm =>
-        rw [← Real.one_rpow (1 / ((minpoly ℚ_[ℓ] x).natDegree - i : ℝ))]
-      rw [Real.rpow_le_rpow_iff (by positivity) (by positivity) (by aesop)] at hterm
-      exact ⟨⟨(minpoly ℚ_[ℓ] x).coeff i, hterm⟩, rfl⟩
-    · obtain h | h := (le_of_not_gt h).eq_or_lt
-      · refine ⟨1, ?_⟩
-        rw [map_one, ← h]
-        exact ((minpoly.monic
-          (Algebra.IsAlgebraic.isAlgebraic x).isIntegral).coeff_natDegree).symm
-      · exact ⟨0, by simp [Polynomial.coeff_eq_zero_of_natDegree_lt h]⟩
-  obtain ⟨P, hP, _, hP'⟩ := Polynomial.lifts_and_degree_eq_and_monic hlift
-    (minpoly.monic (Algebra.IsAlgebraic.isAlgebraic x).isIntegral)
-  refine ⟨P, hP', ?_⟩
-  rw [← Polynomial.aeval_def, ← Polynomial.aeval_map_algebraMap ℚ_[ℓ], hP, minpoly.aeval]
+-- `isIntegral_padicInt_of_spectralNorm_le_one` (the `ℤ_ℓ`-avatar of
+-- `isIntegral_of_spectralNorm_le_one`, consumed just below) used to live here;
+-- it moved to `Fermat/FLT/Mathlib/RingTheory/PadicIntegralClosure.lean`
+-- (2026-07-25) so that `Modularity/Interface.lean`'s Ribet-cut hull leaf
+-- `exists_padicIntegers_dvr_hull`, which is UPSTREAM of this file, can share
+-- it. It arrives here through the public import of `Modularity/Interface`.
 
 /-- The ring of integers of `L/ℚ_ℓ` is a valuation ring (PROVEN): the
 spectral-norm dichotomy — every element of `L` of spectral norm at most
