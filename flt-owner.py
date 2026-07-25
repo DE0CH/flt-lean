@@ -31,7 +31,10 @@ import re
 import sys
 
 SESSION_ROOT = "/home/chend/.claude/projects/-home-chend-flt-lean"
-WORKTREE_RE = re.compile(r"Your worktree is /home/chend/(flt-lean-\d+)\b")
+# Tolerate markdown around the path: re-own prompts written 2026-07-25 used
+# **Your worktree is `/home/chend/flt-lean-89`**, and the bare-path regex missed
+# all ten of them -- so ten claimed worktrees read as unowned for hours.
+WORKTREE_RE = re.compile(r"Your worktree is[`* ]*/home/chend/(flt-lean-\d+)\b")
 # Leaf names as the task prompts write them: `name` in backticks.
 NAME_RE = re.compile(r"`([A-Za-z_][A-Za-z0-9_.']{5,})`")
 # Only names in the TARGET block count as OWNED. Task prompts deliberately name
