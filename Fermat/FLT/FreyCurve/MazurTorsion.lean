@@ -3259,9 +3259,21 @@ seams:
   `ℤ/p` inertia-invariantly; the kernel is the formal-group line. The
   quotient is `red` corestricted to `Ẽ(𝔽̄_p)[p]`, which is cyclic of
   order `p`, hence `≅ ℤ/p` (`zmodAddEquivOfGenerator`).
-  * `exists_localReductionHom_of_good_reduction` (sorry node — the
-    GEOMETRY): an inertia-invariant reduction homomorphism from the
-    local `p`-torsion onto the `p`-torsion of the reduced curve.
+  * `exists_localReductionHom_of_good_reduction` (DERIVED 2026-07-25
+    from the two bricks below by lift-and-correct — the GEOMETRY): an
+    inertia-invariant reduction homomorphism from the local
+    `p`-torsion onto the `p`-torsion of the reduced curve.
+    * `exists_localReductionAddHom_of_good_reduction` (sorry node —
+      the reduction map itself, on ALL local points: a group
+      homomorphism, surjective onto `Ẽ(𝔽̄_p)` by Hensel, invariant
+      under inertia because inertia acts trivially on the residue
+      field, with kernel exactly the non-integral locus
+      `x ∉ localValuationSubring`). Silverman *AEC* VII.2.
+    * `exists_localKernelDivision_of_good_reduction` (sorry node —
+      the FORMAL GROUP: that kernel is `p`-divisible over `ℚ̄_p`,
+      by the Newton polygon of `[p]` over the completion; false over
+      any finite extension of `ℚ_p`). Silverman *AEC* IV.2–IV.3,
+      VII.6.
   * `card_torsion_reduction_of_good_ordinary` (DERIVED 2026-07-25 —
     the CHARACTERISTIC-`p` content): ordinarity makes `Ẽ(𝔽̄_p)[p]` of
     order exactly `p`. Its residual gap is now the single
@@ -4143,9 +4155,149 @@ noncomputable instance instDecidableEqAlgClosureResidueFieldAtPrimeRat
 open ValuativeRel IsDedekindDomain in
 open scoped WeierstrassCurve.Affine in
 set_option backward.isDefEq.respectTransparency false in
+/-- **The reduction homomorphism on ALL local points at a good prime**
+(sorry node, cut 2026-07-25 out of
+`exists_localReductionHom_of_good_reduction` — the GEOMETRY half of
+that leaf): for an elliptic curve over `ℚ` with good reduction at `p`,
+the points of the base change to the algebraic closure `ℚ̄_p` of the
+completion reduce to the geometric points of `Ẽ/𝔽̄_p` by a group
+homomorphism `red` which
+
+* is SURJECTIVE onto all of `Ẽ(𝔽̄_p)` — the valuation ring `𝒪` of
+  `ℚ̄_p` (`localValuationSubring`, the integral closure of `ℤ_p`) is
+  henselian with algebraically closed residue field and `Ẽ` is smooth,
+  so every geometric point of `Ẽ` lifts (Silverman *AEC* VII.2.1 for
+  the map, VII.3.1 / Hensel for the lift);
+* is invariant under the local INERTIA — inertia is by definition the
+  subgroup of `Gal(ℚ̄_p/ℚ_p)` acting trivially on the residue field of
+  `𝒪` (`localInertiaGroup` is `AddSubgroup.inertia` of the maximal
+  ideal of the integral closure), and reduction is by construction
+  computed in that residue field;
+* has kernel exactly the NON-INTEGRAL locus: an affine point
+  `(x, y)` reduces to `O` iff `x ∉ 𝒪`. This is Silverman *AEC* VII.2.2:
+  `v x < 0` forces `v y < v x < 0` and the point lies in the formal
+  group `Ê(𝔪)`, i.e. in `E₁`; conversely an integral abscissa forces an
+  integral ordinate and an affine reduced point, which is never `O`.
+
+The intrinsic (map-free) description of the kernel is what lets the
+`p`-divisibility of `E₁` be stated and owned SEPARATELY, in
+`exists_localKernelDivision_of_good_reduction` below; the two are
+assembled into `exists_localReductionHom_of_good_reduction` by the
+lift-and-correct argument.
+
+Supply line: `Fermat/FLT/KnownIn1980s/EllipticCurves/GoodReduction.lean`
+(`ValuationSubring.mem_of_root_of_inv_leadingCoeff_mem`, `RtoO`,
+`isLocalHom_RtoO`, `torsion_abscissa_mem`, `torsion_ordinate_mem`) and
+`Flat.lean` (`baseChange_coeff_mem`, `kernel_add_abscissa_notMem`,
+`kernel_sub_abscissa_notMem_of_residue_eq`, `val_abscissa_lt_val_ordinate`)
+already run the `(𝒪 : ValuationSubring _, h𝒪)` pattern used here, with
+`𝒪 = localValuationSubring v`. The missing analytic input is the
+comparison of residue fields: `IsLocalRing.ResidueField 𝒪` is an
+algebraic closure of `IsLocalRing.ResidueField (Localization.AtPrime
+v.asIdeal) = 𝔽_p`, so it is isomorphic to the `AlgebraicClosure` used
+in the statement. -/
+theorem WeierstrassCurve.exists_localReductionAddHom_of_good_reduction
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ} (hp : p.Prime)
+    [E.HasGoodReduction
+      (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)] :
+    ∃ red : ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+        (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat))).Point →+
+        ((E.reduction
+          (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal))⁄
+          (AlgebraicClosure (IsLocalRing.ResidueField
+            (Localization.AtPrime
+              hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)))).Point,
+      Function.Surjective red ∧
+      (∀ σ ∈ localInertiaGroup hp.toHeightOneSpectrumRingOfIntegersRat,
+        ∀ P : ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+            hp.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+            (HeightOneSpectrum.adicCompletion ℚ
+              hp.toHeightOneSpectrumRingOfIntegersRat))).Point,
+          red (WeierstrassCurve.Affine.Point.map
+            (W' := E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+              hp.toHeightOneSpectrumRingOfIntegersRat)))
+            ((σ : (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+                hp.toHeightOneSpectrumRingOfIntegersRat))
+              ≃ₐ[HeightOneSpectrum.adicCompletion ℚ
+                hp.toHeightOneSpectrumRingOfIntegersRat]
+              (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+                hp.toHeightOneSpectrumRingOfIntegersRat)))).toAlgHom P) = red P) ∧
+      (∀ (x y : AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat))
+          (h : ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+            hp.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+            (HeightOneSpectrum.adicCompletion ℚ
+              hp.toHeightOneSpectrumRingOfIntegersRat))).toAffine.Nonsingular x y),
+        red (WeierstrassCurve.Affine.Point.some x y h) = 0 ↔
+          x ∉ localValuationSubring hp.toHeightOneSpectrumRingOfIntegersRat) :=
+  sorry
+
+open ValuativeRel IsDedekindDomain in
+open scoped WeierstrassCurve.Affine in
+set_option backward.isDefEq.respectTransparency false in
+/-- **The kernel of reduction is `p`-divisible over `ℚ̄_p`** (sorry
+node, cut 2026-07-25 out of `exists_localReductionHom_of_good_reduction`
+— the FORMAL-GROUP half): every affine point of `E(ℚ̄_p)` whose
+abscissa is not integral for the valuation subring
+`localValuationSubring` — equivalently, every nonzero point of the
+kernel of reduction `E₁(ℚ̄_p) = Ê(𝔪)` — is `p` times another point of
+the same kernel.
+
+This is the `p`-divisibility of the formal group over the valuation
+ring of `ℚ̄_p`. Over a FINITE extension of `ℚ_p` it is false (`Ê(𝔪)`
+is then a finitely generated `ℤ_p`-module of positive rank plus finite
+torsion); it becomes true over `ℚ̄_p` because the value group is all of
+`ℚ` and the residue field is algebraically closed, so the Newton
+polygon of the power series `[p](T) = pT + ⋯ + (unit) T^{p^h} + ⋯`
+has all its slopes realised: `[p](T) − t` has a root in the maximal
+ideal for every `t` in the maximal ideal. Silverman *AEC* IV.2–IV.3
+(formal groups and their `[n]`), VII.2, VII.6; ATAEC IV.6.
+
+The abscissa/ordinate valuation facts needed to see that the solution
+again lies in the kernel are the `Flat.lean` kernel-of-reduction
+lemmas (`kernel_add_abscissa_notMem`,
+`val_abscissa_lt_val_ordinate`). Stated intrinsically — with no
+reference to a reduction map — precisely so that this leaf and
+`exists_localReductionAddHom_of_good_reduction` can be owned
+independently. -/
+theorem WeierstrassCurve.exists_localKernelDivision_of_good_reduction
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ} (hp : p.Prime)
+    [E.HasGoodReduction
+      (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)]
+    (x y : AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+      hp.toHeightOneSpectrumRingOfIntegersRat))
+    (h : ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+      hp.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+      (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat))).toAffine.Nonsingular x y)
+    (hx : x ∉ localValuationSubring hp.toHeightOneSpectrumRingOfIntegersRat) :
+    ∃ (x' y' : AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat))
+        (h' : ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+          (HeightOneSpectrum.adicCompletion ℚ
+            hp.toHeightOneSpectrumRingOfIntegersRat))).toAffine.Nonsingular x' y'),
+      x' ∉ localValuationSubring hp.toHeightOneSpectrumRingOfIntegersRat ∧
+      ((p : ℕ) : ℤ) • (WeierstrassCurve.Affine.Point.some x' y' h' :
+          ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+            hp.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+            (HeightOneSpectrum.adicCompletion ℚ
+              hp.toHeightOneSpectrumRingOfIntegersRat))).Point) =
+        WeierstrassCurve.Affine.Point.some x y h :=
+  sorry
+
+open ValuativeRel IsDedekindDomain in
+open scoped WeierstrassCurve.Affine in
+set_option backward.isDefEq.respectTransparency false in
 /-- **The local reduction homomorphism on the `p`-torsion at a good
-prime** (sorry node, cut 2026-07-25 out of
-`exists_localTorsionQuotient_of_good_ordinary` — the first of the two
+prime** (DERIVED 2026-07-25 from the two bricks
+`exists_localReductionAddHom_of_good_reduction` (the reduction map on
+ALL points: surjective, inertia-invariant, kernel = the non-integral
+locus) and `exists_localKernelDivision_of_good_reduction` (that kernel
+is `p`-divisible); it was cut 2026-07-25 out of
+`exists_localTorsionQuotient_of_good_ordinary` as the first of the two
 bricks of the ordinary case, and the one carrying the *geometry*): for
 an elliptic curve over `ℚ` with good reduction at `p`, the `p`-torsion
 of the completed base change over the local algebraic closure maps to
@@ -4174,17 +4326,34 @@ kernel-of-reduction lemmas of `Flat.lean`
 `kernel_sub_abscissa_notMem_of_residue_eq`) are the intended supply
 line for the valuation-theoretic half.
 
-ROUTE NOTE (2026-07-25, for whoever takes this leaf): the surjectivity
-clause need not be proved by lifting. Since the source has exactly `p²`
-elements (`TorsionCard.card_torsionBy`, as used in
-`not_local_inertia_eigenvector_of_good_of_supersingular`) and the target
-`Ẽ(𝔽̄_p)[p]` has order dividing `p`
+ROUTE TAKEN (2026-07-25). The surjectivity clause — the only one with
+content, the inertia clause being inherited verbatim from the map on
+all points — is proved by LIFT AND CORRECT, which is what splits this
+node into its two bricks. Given `y ∈ Ẽ(𝔽̄_p)[p]`, surjectivity of
+reduction on ALL points (Hensel, brick one) gives some `P ∈ E(ℚ̄_p)`
+with `red P = y`; then `red (p • P) = p • y = 0`, so `p • P` lies in
+the kernel of reduction `E₁ = Ê(𝔪)`, and `p`-divisibility of that
+kernel (Newton polygon over `𝒪_{ℚ̄_p}`, brick two) gives `Z ∈ E₁` with
+`p • Z = p • P`. Then `P − Z` is `p`-torsion and still reduces to `y`.
+
+Why the correction step cannot be avoided, and why the two bricks are
+genuinely independent: the naive attempt to prove brick two by choosing
+`Q` with `p • Q = P` and then correcting `Q` by a `p`-torsion point is
+CIRCULAR — it needs exactly the surjectivity of `red` on `E[p]` that is
+being proved here. Brick two must therefore be proved analytically, over
+the completion `ℂ_p` (where the formal group is over a complete ring, so
+Weierstrass preparation applies), and pulled back to `ℚ̄_p` by the
+observation that the solutions are algebraic over `ℚ_p`.
+
+An alternative route to the same node, recorded but NOT taken: since the
+source has exactly `p²` elements (`TorsionCard.card_torsionBy`, as used
+in `not_local_inertia_eigenvector_of_good_of_supersingular`) and the
+target `Ẽ(𝔽̄_p)[p]` has order dividing `p`
 (`card_torsionBy_dvd_of_charP`), surjectivity of `red` onto `Ẽ(𝔽̄_p)[p]`
-is EQUIVALENT to the statement that the kernel of `red` on `E[p]` has
-order `p² / #Ẽ(𝔽̄_p)[p]`, i.e. to the exactness of the connected-étale
-sequence. Whichever of the two is easier to reach from the formal-group
-side can be proved first and the other read off by counting; only one of
-them has to be done by hand. -/
+is EQUIVALENT to the kernel of `red` on `E[p]` having order
+`p² / #Ẽ(𝔽̄_p)[p]`, i.e. to the exactness of the connected-étale
+sequence; that counting route would replace both bricks by one
+order computation. -/
 theorem WeierstrassCurve.exists_localReductionHom_of_good_reduction
     (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ} (hp : p.Prime)
     [E.HasGoodReduction
@@ -4230,8 +4399,51 @@ theorem WeierstrassCurve.exists_localReductionHom_of_good_reduction
               (Localization.AtPrime
                 hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)))).Point
           ((p : ℕ) : ℤ),
-        ∃ P, red P = y :=
-  sorry
+        ∃ P, red P = y := by
+  classical
+  obtain ⟨red₀, hsurj, hinv, hker⟩ :=
+    E.exists_localReductionAddHom_of_good_reduction hp
+  -- The kernel of `red₀` is `p`-divisible: by `hker` it is exactly the
+  -- non-integral locus, on which the formal-group leaf
+  -- `exists_localKernelDivision_of_good_reduction` produces a `p`-th part
+  -- inside the same locus.
+  have hkerdiv : ∀ P : ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+      hp.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+      (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat))).Point,
+      red₀ P = 0 → ∃ Z, red₀ Z = 0 ∧ ((p : ℕ) : ℤ) • Z = P := by
+    rintro (_ | ⟨x, y, h⟩) hP
+    · exact ⟨0, map_zero red₀, zsmul_zero _⟩
+    · obtain ⟨x', y', h', hx', heq⟩ :=
+        E.exists_localKernelDivision_of_good_reduction hp x y h ((hker x y h).mp hP)
+      exact ⟨WeierstrassCurve.Affine.Point.some x' y' h',
+        (hker x' y' h').mpr hx', heq⟩
+  refine ⟨red₀.comp (AddSubgroup.subtype _), ?_, ?_⟩
+  · -- inertia invariance is inherited from `red₀` unchanged
+    intro σ hσ P Q hQ
+    show red₀ (Q : ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+        (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat))).Point) =
+      red₀ (P : ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+        (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat))).Point)
+    rw [hQ]
+    exact hinv σ hσ _
+  · -- surjectivity onto the `p`-torsion: lift along `hsurj`, then correct the
+    -- lift by a `p`-th part of `p • P` taken inside the kernel
+    intro y hy
+    obtain ⟨P, hP⟩ := hsurj y
+    have hpy : ((p : ℕ) : ℤ) • y = 0 := (Submodule.mem_torsionBy_iff _ _).mp hy
+    have h0 : red₀ (((p : ℕ) : ℤ) • P) = 0 := by
+      rw [map_zsmul, hP, hpy]
+    obtain ⟨Z, hZ0, hZ⟩ := hkerdiv _ h0
+    have hmem : ((p : ℕ) : ℤ) • (P - Z) = 0 := by
+      rw [zsmul_sub, hZ, sub_self]
+    have hval : red₀ (P - Z) = y := by
+      rw [map_sub, hP, hZ0, sub_zero]
+    exact ⟨⟨P - Z, (Submodule.mem_torsionBy_iff _ _).mpr hmem⟩, hval⟩
 
 /-- **The residue characteristic of the `p`-place of `ℚ` is `p`** (PROVEN
 2026-07-25): `p` lies in the height-one prime `v_p ⊆ 𝓞 ℚ`
