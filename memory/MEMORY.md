@@ -26,3 +26,4 @@
 - [Self-restart by forking](flt-self-restart-by-forking.md) — Deyao 2026-07-24: fork into new tmux window + refill repoint + detached kill→continue + handover note; drive autonomously when needed
 - [Machine migration](flt-machine-migration.md) — Deyao 2026-07-24: stop workers BEFORE resuming from transcript; parent stops servers + frees scratch + stops rotator; child reseeds scratch and restarts rotator/monitor on its tmux
 - [Claude is a pure function](claude-is-a-pure-function.md) — Deyao 2026-07-25: (transcript + tool output) -> next token; agents/sessions have no lifecycle, only disk has state; why the model keeps relapsing
+- [Minimal orchestration](flt-minimal-orchestration.md) — Deyao 2026-07-25: orchestrator only advances the pointer + prompts (incl. ".lake may be stale, rebuild it"); agents own their own environment; central management caused every outage

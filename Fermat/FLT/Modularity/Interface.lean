@@ -6466,36 +6466,51 @@ theorem IsFlatPointsGroupAt.pi {n : ℕ} {X : Fin n → Type*}
     refine Fin.cases ?_ (fun j => ?_) i <;> simp
 
 set_option backward.isDefEq.respectTransparency false in
-/-- **The étale sub-bialgebra of a point-group quotient** (sorry node —
-step (β) of the Raynaud quotient-closure cut, split off 2026-07-25 from
-`IsFlatPointsGroupAt.of_surjective`): a `Γ Kᵥ`-equivariant quotient `Y`
-of the `Kᵥᵃˡᵍ`-point group of a finite étale `Kᵥ`-Hopf algebra `Q` is
-the point group of a `Kᵥ`-sub-bialgebra `H ↪ Q`, again finite étale —
-the pullback of functions along the point surjection. Intended proof
-(Grothendieck's Galois correspondence for étale algebras carrying a
-group structure; this is the CONVERSE direction of the PROVEN
-Gelfand-duality machinery of `KnownIn1980s/EllipticCurves/Flat.lean`,
-which builds the algebra from the group):
-* *finiteness*: the point group `Q →ₐ[Kᵥ] Kᵥᵃˡᵍ` is finite — `Q` is
-  module-finite over `Kᵥ`, so an algebra map into a field is pinned by
-  its values on a finite spanning set, and `Q` étale makes those values
-  roots of separable polynomials — hence `Y` is finite through `p`;
-* *the algebra*: `Y` is then a finite `Γ Kᵥ`-group whose action factors
-  through a finite Galois quotient, so `galoisEquivariantAlgebra` (the
-  equivariant functions `Y → Kᵥᵃˡᵍ`) together with
-  `galoisEquivariantEval_injective`/`_surjective`,
-  `exists_hopfAlgebra_galoisEquivariantAlgebra` and their assembly
-  `exists_finiteQuotient_galoisModule_etale_package` yield a finite
-  étale `Kᵥ`-Hopf algebra `H` with `points(H) ≃+ Y` equivariantly;
-* *the embedding*: the same construction applied to `points(Q)`
-  identifies `Q` itself with the equivariant functions on its own
-  points (its points separate its elements — the separation lemma
-  `subalgebra_eq_top_of_algHom_separating` — and the two algebras have
-  the same `Kᵥ`-dimension), and under that identification the pullback
-  of functions along `p` is an INJECTIVE `Kᵥ`-bialgebra homomorphism
-  `ι : H → Q` (injective because `p` is surjective; a bialgebra map
-  because `p` is a group homomorphism) whose induced map on points is
-  exactly `p` — the last clause below.
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **The étale sub-bialgebra of a point-group quotient** (PROVEN
+2026-07-25 — step (β) of the Raynaud quotient-closure cut, split off
+the same day from `IsFlatPointsGroupAt.of_surjective`): a
+`Γ Kᵥ`-equivariant quotient `Y` of the `Kᵥᵃˡᵍ`-point group of a finite
+étale `Kᵥ`-Hopf algebra `Q` is the point group of a
+`Kᵥ`-sub-bialgebra `H ↪ Q`, again finite étale — the pullback of
+functions along the point surjection. This is Grothendieck's Galois
+correspondence for étale algebras carrying a group structure, i.e. the
+CONVERSE direction of the Gelfand-duality machinery of
+`KnownIn1980s/EllipticCurves/Flat.lean` (which builds the algebra from
+the group); the proof runs entirely inside that PROVEN machinery, in
+five steps:
+* *finiteness*: `Q` is module-finite over `Kᵥ`, so its `Kᵥᵃˡᵍ`-points
+  are finite (`Finite.algHom`) and `Y` is finite through the surjection
+  `p`;
+* *the finite Galois quotient*: a `Kᵥ`-basis `b` of `Q` is enough to
+  pin a point, so two automorphisms of `Kᵥᵃˡᵍ` agreeing on the FINITE
+  set `{φ (b i)}` act equally on every point of `Q` — by `Kᵥ`-linearity
+  of `σ ∘ φ` — hence, `p` being an equivariant surjection, equally on
+  `Y`. The normal closure `L` of `Kᵥ({φ (b i)})` is therefore a finite
+  Galois subextension through which the `Γ Kᵥ`-action on `Y` factors,
+  the factored action `ρ` being built from `AlgEquiv.liftNormal` (which
+  is multiplicative because lifts of equal restrictions act equally);
+* *the algebra*: `exists_finiteQuotient_galoisModule_etale_package`
+  applied to `(Y, L, ρ)` — `Small.{0} Kᵥ` is `small_self` and `Ωᵥ` is a
+  separable closure in characteristic zero — yields a finite étale
+  `Kᵥ`-Hopf algebra `H` with `points(H) ≃+ Y` equivariantly, its
+  `WithConv` convolution monoid identified with the vendored bare-hom
+  one by `vendored_mul_eq_convMul`;
+* *the embedding*: `exists_algHom_of_algHom_map` (the Gelfand transform
+  onto equivariant functions — injective by separation, surjective by
+  Speiser independence) applied to the ÉTALE algebra `Q` and the
+  equivariant point map `t := e⁻¹ ∘ p` produces `ι : H →ₐ[Kᵥ] Q` with
+  `φ ∘ ι = t φ`. It is injective because `p` is surjective, so every
+  point of `H` is some `t φ` and the points of the finite étale `H`
+  separate it (`eq_zero_of_forall_algHom_eq_zero`);
+* *the bialgebra upgrade*: points separate the finite étale
+  `Q ⊗[Kᵥ] Q` and every point of it is the `TensorProduct.lift` of its
+  two restrictions, so testing `comul ∘ ι` against `(ι ⊗ ι) ∘ comul`
+  at such a point is exactly the multiplicativity of `t` (which holds
+  because `p` and `e` are additive), and testing the counits is
+  `t 1 = 1`; `BialgHom.ofAlgHom` assembles `ι : H →ₐc[Kᵥ] Q`, and its
+  induced map on points is `p` — the last clause below.
 Unconditionally TRUE; no hypothesis package (for `p` bijective one may
 take `H = Q` and `ι = id`). -/
 theorem exists_etale_subBialgebra_of_points_surjective
@@ -6510,8 +6525,240 @@ theorem exists_etale_subBialgebra_of_points_surjective
       (_ : Function.Injective (ι : H →ₐ[Kᵥ] Q))
       (e : Additive (H →ₐ[Kᵥ] Ωᵥ) ≃+ Y),
       ∀ φ : Q →ₐ[Kᵥ] Ωᵥ,
-        e (Additive.ofMul (φ.comp (ι : H →ₐ[Kᵥ] Q))) = p (Additive.ofMul φ) :=
-  sorry
+        e (Additive.ofMul (φ.comp (ι : H →ₐ[Kᵥ] Q))) = p (Additive.ofMul φ) := by
+  classical
+  -- ### instances: `Ωᵥ` is a separable closure of `Kᵥ`, and the points are finite
+  haveI : CharZero (HeightOneSpectrum.adicCompletion ℚ v) :=
+    charZero_of_injective_algebraMap
+      ((algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ v)).injective)
+  haveI hsepcl : IsSepClosure Kᵥ Ωᵥ := ⟨inferInstance, inferInstance⟩
+  haveI hQpts : Finite (Q →ₐ[Kᵥ] Ωᵥ) := Finite.algHom Kᵥ Q Ωᵥ
+  haveI hYfin : Finite Y := Finite.of_surjective p hp
+  -- the Galois action on points is postcomposition
+  have hsm : ∀ (g : Γᵥ) (φ : Q →ₐ[Kᵥ] Ωᵥ),
+      g • φ = ((g : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ).toAlgHom).comp φ := fun _ _ => AlgHom.ext fun _ => rfl
+  -- ### (1) a finite Galois subextension through which the action on `Y` factors
+  set b := Module.finBasis Kᵥ Q
+  set Sset : Set Ωᵥ :=
+    Set.range (fun x : (Q →ₐ[Kᵥ] Ωᵥ) × Fin (Module.finrank Kᵥ Q) => x.1 (b x.2))
+  haveI hSfin : Finite ↥Sset := (Set.finite_range _).to_subtype
+  set L₀ : IntermediateField Kᵥ Ωᵥ := IntermediateField.adjoin Kᵥ Sset
+  haveI : FiniteDimensional Kᵥ ↥L₀ :=
+    IntermediateField.finiteDimensional_adjoin fun x _ =>
+      (Algebra.IsSeparable.isSeparable Kᵥ x).isIntegral
+  set L : IntermediateField Kᵥ Ωᵥ := IntermediateField.normalClosure Kᵥ ↥L₀ Ωᵥ
+  haveI : Algebra.IsSeparable Kᵥ ↥L :=
+    Algebra.isSeparable_tower_bot_of_isSeparable Kᵥ ↥L Ωᵥ
+  haveI hGalL : IsGalois Kᵥ ↥L := ⟨⟩
+  have hsub : Sset ⊆ (L : Set Ωᵥ) := fun z hz =>
+    IntermediateField.le_normalClosure L₀ (IntermediateField.subset_adjoin Kᵥ Sset hz)
+  -- automorphisms agreeing on `L` act equally on every point of `Q`
+  have keyL : ∀ (σ τ : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ), (∀ l ∈ L, σ l = τ l) →
+      ∀ φ : Q →ₐ[Kᵥ] Ωᵥ, σ.toAlgHom.comp φ = τ.toAlgHom.comp φ := by
+    intro σ τ hστ φ
+    refine AlgHom.ext fun x => ?_
+    have h2 : (σ.toAlgHom.comp φ).toLinearMap = (τ.toAlgHom.comp φ).toLinearMap :=
+      b.ext fun i => hστ _ (hsub ⟨(φ, i), rfl⟩)
+    exact LinearMap.congr_fun h2 x
+  -- hence equally on `Y`, which is a quotient of the points of `Q`
+  have hYact : ∀ σ τ : Γᵥ,
+      (∀ l ∈ L, (σ : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ) l = (τ : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ) l) →
+      ∀ y : Y, σ • y = τ • y := by
+    intro σ τ hστ y
+    obtain ⟨x, hx⟩ := hp y
+    rw [← hx, ← hpe σ x, ← hpe τ x]
+    refine congrArg p ?_
+    have h1 : (σ • x : Additive (Q →ₐ[Kᵥ] Ωᵥ)) =
+        Additive.ofMul (σ • Additive.toMul x) := rfl
+    have h2 : (τ • x : Additive (Q →ₐ[Kᵥ] Ωᵥ)) =
+        Additive.ofMul (τ • Additive.toMul x) := rfl
+    rw [h1, h2, hsm σ, hsm τ]
+    exact congrArg Additive.ofMul (keyL _ _ hστ _)
+  -- the `Γ Kᵥ`-action as additive endomorphisms
+  set act : Γᵥ → AddMonoid.End Y := fun g =>
+    { toFun := fun y => g • y
+      map_zero' := smul_zero g
+      map_add' := fun y₁ y₂ => smul_add g y₁ y₂ }
+  -- the action of `Gal(L/Kᵥ)` on `Y` through `AlgEquiv.liftNormal`
+  set ρ : (↥L ≃ₐ[Kᵥ] ↥L) →* AddMonoid.End Y :=
+    { toFun := fun σ' => act (AlgEquiv.liftNormal σ' Ωᵥ)
+      map_one' := by
+        refine AddMonoidHom.ext fun y => ?_
+        have hfix : ∀ l ∈ L, (AlgEquiv.liftNormal (1 : ↥L ≃ₐ[Kᵥ] ↥L) Ωᵥ) l
+            = (1 : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ) l := by
+          intro l hl
+          have hc := AlgEquiv.liftNormal_commutes (1 : ↥L ≃ₐ[Kᵥ] ↥L) Ωᵥ ⟨l, hl⟩
+          simpa using hc
+        show (AlgEquiv.liftNormal (1 : ↥L ≃ₐ[Kᵥ] ↥L) Ωᵥ) • y = y
+        rw [hYact _ (1 : Γᵥ) hfix y, one_smul]
+      map_mul' := by
+        intro σ' τ'
+        refine AddMonoidHom.ext fun y => ?_
+        have hfix : ∀ l ∈ L, (AlgEquiv.liftNormal (σ' * τ') Ωᵥ) l
+            = ((AlgEquiv.liftNormal σ' Ωᵥ) * (AlgEquiv.liftNormal τ' Ωᵥ) :
+              Ωᵥ ≃ₐ[Kᵥ] Ωᵥ) l := by
+          intro l hl
+          have hc := AlgEquiv.liftNormal_commutes (σ' * τ') Ωᵥ ⟨l, hl⟩
+          have hcτ := AlgEquiv.liftNormal_commutes τ' Ωᵥ ⟨l, hl⟩
+          have hcσ := AlgEquiv.liftNormal_commutes σ' Ωᵥ (τ' ⟨l, hl⟩)
+          simp only [IntermediateField.algebraMap_apply] at hc hcτ hcσ
+          show (AlgEquiv.liftNormal (σ' * τ') Ωᵥ) l
+            = (AlgEquiv.liftNormal σ' Ωᵥ) ((AlgEquiv.liftNormal τ' Ωᵥ) l)
+          rw [hc, hcτ, hcσ]
+          rfl
+        show (AlgEquiv.liftNormal (σ' * τ') Ωᵥ) • y =
+          (AlgEquiv.liftNormal σ' Ωᵥ) • ((AlgEquiv.liftNormal τ' Ωᵥ) • y)
+        rw [hYact _ _ hfix y, mul_smul] }
+  -- the restriction of a global automorphism acts on `Y` as the automorphism itself
+  have hρσ : ∀ (σ : Γᵥ) (y : Y),
+      ρ (AlgEquiv.restrictNormalHom (F := Kᵥ) (K₁ := Ωᵥ) ↥L
+        (σ : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ)) y = σ • y := by
+    intro σ y
+    show (AlgEquiv.liftNormal (AlgEquiv.restrictNormalHom (F := Kᵥ) (K₁ := Ωᵥ) ↥L
+      (σ : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ)) Ωᵥ) • y = σ • y
+    refine hYact _ _ (fun l hl => ?_) y
+    have hc := AlgEquiv.liftNormal_commutes
+      (AlgEquiv.restrictNormalHom (F := Kᵥ) (K₁ := Ωᵥ) ↥L (σ : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ)) Ωᵥ ⟨l, hl⟩
+    have hr := AlgEquiv.restrictNormalHom_apply (F := Kᵥ) (K₁ := Ωᵥ) L
+      (σ : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ) ⟨l, hl⟩
+    simp only [IntermediateField.algebraMap_apply] at hc
+    rw [hc, hr]
+  -- ### (2) the finite étale Hopf algebra with point group `Y`
+  obtain ⟨H, hCR, hHopf, hFin, hEt, f, hf⟩ :
+      ∃ (HK : Type) (_ : CommRing HK) (_ : HopfAlgebra Kᵥ HK)
+        (_ : Module.Finite Kᵥ HK) (_ : Algebra.Etale Kᵥ HK)
+        (f : Additive (WithConv (HK →ₐ[Kᵥ] Ωᵥ)) ≃+ Y),
+        ∀ (σ : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ) (φ : HK →ₐ[Kᵥ] Ωᵥ),
+          f (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) =
+            ρ (AlgEquiv.restrictNormalHom (F := Kᵥ) (K₁ := Ωᵥ) ↥L σ)
+              (f (Additive.ofMul (WithConv.toConv φ))) :=
+    exists_finiteQuotient_galoisModule_etale_package Kᵥ Ωᵥ Y L ρ
+  letI := hCR
+  letI := hHopf
+  letI := hFin
+  letI := hEt
+  -- the bare-hom convolution monoid on the points of `H` is mathlib's `WithConv` one
+  set w : Additive (H →ₐ[Kᵥ] Ωᵥ) ≃+ Additive (WithConv (H →ₐ[Kᵥ] Ωᵥ)) :=
+    { toFun := fun u => Additive.ofMul (WithConv.toConv (Additive.toMul u))
+      invFun := fun u => Additive.ofMul (WithConv.ofConv (Additive.toMul u))
+      left_inv := fun _ => rfl
+      right_inv := fun _ => rfl
+      map_add' := fun u₁ u₂ => congrArg Additive.ofMul (by
+        show WithConv.toConv (Additive.toMul u₁ * Additive.toMul u₂) =
+          WithConv.toConv (Additive.toMul u₁) * WithConv.toConv (Additive.toMul u₂)
+        rw [vendored_mul_eq_convMul, WithConv.toConv_ofConv]) }
+  set e : Additive (H →ₐ[Kᵥ] Ωᵥ) ≃+ Y := w.trans f
+  have heapply : ∀ φ : H →ₐ[Kᵥ] Ωᵥ,
+      e (Additive.ofMul φ) = f (Additive.ofMul (WithConv.toConv φ)) := fun _ => rfl
+  have hee : ∀ (g : Γᵥ) (u : Additive (H →ₐ[Kᵥ] Ωᵥ)), e (g • u) = g • e u := by
+    intro g u
+    have h1 : (g • u : Additive (H →ₐ[Kᵥ] Ωᵥ)) =
+        Additive.ofMul (((g : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ).toAlgHom).comp (Additive.toMul u)) := by
+      show Additive.ofMul (g • Additive.toMul u) = _
+      exact congrArg Additive.ofMul (AlgHom.ext fun _ => rfl)
+    have h3 : e u = f (Additive.ofMul (WithConv.toConv (Additive.toMul u))) := rfl
+    rw [h1, heapply, hf (g : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ) (Additive.toMul u), hρσ g, h3]
+  have heesymm : ∀ (g : Γᵥ) (y : Y), e.symm (g • y) = g • e.symm y := by
+    intro g y
+    apply e.injective
+    rw [e.apply_symm_apply, hee, e.apply_symm_apply]
+  -- ### (3) the induced map of point sets and the algebra homomorphism `H → Q`
+  set t : (Q →ₐ[Kᵥ] Ωᵥ) → (H →ₐ[Kᵥ] Ωᵥ) :=
+    fun φ => Additive.toMul (e.symm (p (Additive.ofMul φ)))
+  have hte : ∀ (σ : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ) (φ : Q →ₐ[Kᵥ] Ωᵥ),
+      t (σ.toAlgHom.comp φ) = σ.toAlgHom.comp (t φ) := by
+    intro σ φ
+    have h1 : (Additive.ofMul (σ.toAlgHom.comp φ) : Additive (Q →ₐ[Kᵥ] Ωᵥ)) =
+        (σ : Γᵥ) • Additive.ofMul φ := by
+      refine congrArg Additive.ofMul ?_
+      exact (AlgHom.ext fun _ => rfl : ((σ : Γᵥ) • φ) = σ.toAlgHom.comp φ).symm
+    show Additive.toMul (e.symm (p (Additive.ofMul (σ.toAlgHom.comp φ)))) = _
+    rw [h1, hpe, heesymm]
+    exact AlgHom.ext fun _ => rfl
+  obtain ⟨ι₀, hι₀⟩ := exists_algHom_of_algHom_map Kᵥ Ωᵥ Q H t hte
+  have hcompι : ∀ φ : Q →ₐ[Kᵥ] Ωᵥ, φ.comp ι₀ = t φ := fun φ =>
+    AlgHom.ext fun x => hι₀ φ x
+  -- every point of `H` is a restriction, because `p` is surjective
+  have htsurj : ∀ ψ : H →ₐ[Kᵥ] Ωᵥ, ∃ φ : Q →ₐ[Kᵥ] Ωᵥ, t φ = ψ := by
+    intro ψ
+    obtain ⟨x, hx⟩ := hp (e (Additive.ofMul ψ))
+    refine ⟨Additive.toMul x, ?_⟩
+    show Additive.toMul (e.symm (p (Additive.ofMul (Additive.toMul x)))) = ψ
+    rw [show (Additive.ofMul (Additive.toMul x) : Additive (Q →ₐ[Kᵥ] Ωᵥ)) = x from rfl,
+      hx, e.symm_apply_apply]
+    rfl
+  have hι₀inj : Function.Injective ι₀ := by
+    intro x₁ x₂ hx
+    have hzero : x₁ - x₂ = 0 := by
+      refine eq_zero_of_forall_algHom_eq_zero Kᵥ Ωᵥ H _ fun ψ => ?_
+      obtain ⟨φ, hφ⟩ := htsurj ψ
+      rw [map_sub, sub_eq_zero, ← hφ]
+      show t φ x₁ = t φ x₂
+      rw [← hι₀ φ x₁, ← hι₀ φ x₂, hx]
+    exact sub_eq_zero.mp hzero
+  -- ### (4) the bialgebra upgrade: `ι₀` respects counit and comultiplication
+  have ht1 : t 1 = 1 := by
+    show Additive.toMul (e.symm (p (Additive.ofMul (1 : Q →ₐ[Kᵥ] Ωᵥ)))) = 1
+    rw [show (Additive.ofMul (1 : Q →ₐ[Kᵥ] Ωᵥ)) = (0 : Additive (Q →ₐ[Kᵥ] Ωᵥ)) from rfl,
+      map_zero, map_zero]
+    rfl
+  have htmul : ∀ φ ψ : Q →ₐ[Kᵥ] Ωᵥ, t (φ * ψ) = t φ * t ψ := by
+    intro φ ψ
+    show Additive.toMul (e.symm (p (Additive.ofMul (φ * ψ)))) = _
+    rw [show (Additive.ofMul (φ * ψ) : Additive (Q →ₐ[Kᵥ] Ωᵥ)) =
+      Additive.ofMul φ + Additive.ofMul ψ from rfl, map_add, map_add]
+    rfl
+  have hcounit : (Bialgebra.counitAlgHom Kᵥ Q).comp ι₀ = Bialgebra.counitAlgHom Kᵥ H := by
+    refine AlgHom.ext fun x => ?_
+    refine (algebraMap Kᵥ Ωᵥ).injective ?_
+    have h1 : (1 : Q →ₐ[Kᵥ] Ωᵥ) (ι₀ x) =
+        algebraMap Kᵥ Ωᵥ (Bialgebra.counitAlgHom Kᵥ Q (ι₀ x)) := rfl
+    have h2 : (1 : H →ₐ[Kᵥ] Ωᵥ) x =
+        algebraMap Kᵥ Ωᵥ (Bialgebra.counitAlgHom Kᵥ H x) := rfl
+    rw [AlgHom.comp_apply, ← h1, ← h2, hι₀ 1 x, ht1]
+  haveI hEt2 : Algebra.Etale Kᵥ (Q ⊗[Kᵥ] Q) := Algebra.Etale.comp Kᵥ Q (Q ⊗[Kᵥ] Q)
+  have hcomul : (Algebra.TensorProduct.map ι₀ ι₀).comp (Bialgebra.comulAlgHom Kᵥ H) =
+      (Bialgebra.comulAlgHom Kᵥ Q).comp ι₀ := by
+    refine AlgHom.ext fun a => ?_
+    have hsep := eq_zero_of_forall_algHom_eq_zero Kᵥ Ωᵥ (Q ⊗[Kᵥ] Q)
+      ((Algebra.TensorProduct.map ι₀ ι₀).comp (Bialgebra.comulAlgHom Kᵥ H) a -
+        (Bialgebra.comulAlgHom Kᵥ Q).comp ι₀ a)
+    rw [sub_eq_zero] at hsep
+    apply hsep
+    intro χ
+    rw [map_sub, sub_eq_zero]
+    set φ := χ.comp Algebra.TensorProduct.includeLeft with hφ
+    set ψ := χ.comp (Algebra.TensorProduct.includeRight : Q →ₐ[Kᵥ] Q ⊗[Kᵥ] Q) with hψ
+    have hχ : χ = Algebra.TensorProduct.lift φ ψ fun _ _ => Commute.all _ _ := by
+      refine Algebra.TensorProduct.ext ?_ ?_
+      · exact AlgHom.ext fun c => by simp [hφ]
+      · exact AlgHom.ext fun c => by simp [hψ]
+    have hleft : χ ((Algebra.TensorProduct.map ι₀ ι₀)
+        (Bialgebra.comulAlgHom Kᵥ H a)) = ((t φ) * (t ψ)) a := by
+      rw [hχ]
+      have hlift : (Algebra.TensorProduct.lift φ ψ fun _ _ => Commute.all _ _).comp
+          (Algebra.TensorProduct.map ι₀ ι₀) =
+          Algebra.TensorProduct.lift (φ.comp ι₀) (ψ.comp ι₀)
+            (fun _ _ => Commute.all _ _) := by
+        refine Algebra.TensorProduct.ext ?_ ?_
+        · exact AlgHom.ext fun c => by simp
+        · exact AlgHom.ext fun c => by simp
+      rw [← AlgHom.comp_apply, hlift, hcompι, hcompι]
+      rfl
+    have hright : χ ((Bialgebra.comulAlgHom Kᵥ Q) (ι₀ a)) = (φ * ψ) (ι₀ a) := by
+      rw [hχ]; rfl
+    rw [AlgHom.comp_apply, AlgHom.comp_apply, hleft, hright,
+      show (φ * ψ) (ι₀ a) = ((φ * ψ).comp ι₀) a from rfl, hcompι, htmul]
+  -- ### (5) assembly
+  refine ⟨H, hCR, hHopf, hFin, hEt, BialgHom.ofAlgHom ι₀ hcounit hcomul, ?_, e, ?_⟩
+  · exact hι₀inj
+  · intro φ
+    show e (Additive.ofMul (φ.comp ι₀)) = p (Additive.ofMul φ)
+    rw [hcompι φ]
+    show e (Additive.ofMul (Additive.toMul (e.symm (p (Additive.ofMul φ))))) = _
+    rw [show ∀ z : Additive (H →ₐ[Kᵥ] Ωᵥ),
+      (Additive.ofMul (Additive.toMul z) : Additive (H →ₐ[Kᵥ] Ωᵥ)) = z from fun _ => rfl]
+    exact e.apply_symm_apply _
 
 set_option backward.isDefEq.respectTransparency false in
 set_option maxHeartbeats 1000000 in
@@ -6826,9 +7073,10 @@ set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
 /-- **Quotient closure** (DECOMPOSED 2026-07-25 into the two leaves
-`exists_etale_subBialgebra_of_points_surjective` (β) and
-`exists_hopfOrder_of_subBialgebra` (γ) above, with the assembly below
-PROVEN — the quotients half of Raynaud closure, added 2026-07-24 for
+`exists_etale_subBialgebra_of_points_surjective` (β, since PROVEN) and
+`exists_hopfOrder_of_subBialgebra` (γ, still open) above, with the
+assembly below PROVEN — the quotients half of Raynaud closure, added
+2026-07-24 for
 the E2b′ lattice-flatness transfer: the quotient of a finite flat group
 scheme over the DVR `𝒪ᵥ` by a flat closed subgroup scheme is finite
 flat — Raynaud, *Schémas en groupes de type `(p, …, p)`*, Bull. SMF 102
@@ -6842,11 +7090,10 @@ proven glue below:
 * (α) *finiteness* — folded into leaf (β), which needs it internally:
   the ambient point group of `Q := Kᵥ ⊗[𝒪ᵥ] G` is finite, hence so is
   `Y` through the surjection `π`.
-* (β) *étale–Galois* — the leaf
-  `exists_etale_subBialgebra_of_points_surjective`: `Y` is the point
-  group of a finite étale `Kᵥ`-Hopf algebra `H` embedded in `Q` by an
-  injective `Kᵥ`-bialgebra map `ι`, the pullback of functions along the
-  point surjection.
+* (β) *étale–Galois* — `exists_etale_subBialgebra_of_points_surjective`
+  (PROVEN 2026-07-25): `Y` is the point group of a finite étale
+  `Kᵥ`-Hopf algebra `H` embedded in `Q` by an injective `Kᵥ`-bialgebra
+  map `ι`, the pullback of functions along the point surjection.
 * (γ) *schematic closure over the DVR* — the leaf
   `exists_hopfOrder_of_subBialgebra`: `G' := H ∩ G` is a finite flat
   `𝒪ᵥ`-Hopf order with `Kᵥ ⊗[𝒪ᵥ] G' ≃ₐc[Kᵥ] H`.
