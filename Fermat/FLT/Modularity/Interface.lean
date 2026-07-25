@@ -201,6 +201,14 @@ import Mathlib.RingTheory.Polynomial.Cyclotomic.Eval
 -- PUBLIC because the glue lemmas' statements mention the `WithConv`
 -- convolution monoid and this file is one `@[expose] public section`
 public import Fermat.FLT.Deformations.RepresentationTheory.FlatProlongation
+-- `integralClosureInclusion`, used in the STATEMENT (not merely the proof)
+-- of `mem_maximalIdeal_of_integralClosureInclusion` below, which serves the
+-- at-`2` tame-Frobenius leaf.  It reached this file only transitively and
+-- PRIVATELY, which is enough inside a proof body but not in a signature —
+-- hence `Unknown identifier` on an otherwise sorry-free declaration, the
+-- error class that no sorry scan can see.  PUBLIC because this file is one
+-- `@[expose] public section`.
+public import Fermat.FLT.Deformations.RepresentationTheory.LocalInertiaFixedField
 import Fermat.FLT.GaloisRepresentation.HardlyRamified.Residual
 -- `IsHardlyRamified.exists_residual_odd`, discharging the residual
 -- reduction pillar `exists_residual_isHardlyRamified_odd` below
@@ -263,6 +271,14 @@ import Fermat.FLT.GroupScheme.ConnectedEtale
 -- the DVR is a finite flat Hopf form) and `antipodeAlgHom_comp_bialgHom`
 -- (bialgebra maps preserve antipodes), consumed by the schematic-closure
 -- half of the Raynaud subobject node `IsFlatPointsGroupAt.of_injective`.
+-- ALSO the Gelfand/Grothendieck layer consumed by that node's
+-- full-faithfulness leaf `exists_surjective_bialgHom_of_points_injection`
+-- (PROVEN 2026-07-25): `exists_algHom_of_algHom_map` (the algebra map
+-- induced by an equivariant map of point sets),
+-- `subalgebra_eq_top_of_algHom_separating` (a point-separating
+-- subalgebra of a finite étale algebra is everything) and
+-- `eq_zero_of_forall_algHom_eq_zero` (points separate a finite étale
+-- algebra).
 -- Non-public: proofs only.
 import Fermat.FLT.KnownIn1980s.EllipticCurves.Flat
 -- (The flat-prolongation convolution toolkit is imported PUBLICLY further
@@ -291,6 +307,11 @@ public import Mathlib.RingTheory.ClassGroup.Basic
 -- `NumberField.RingOfIntegers.mapRingEquiv`. PUBLIC: both appear in
 -- the SIGNATURES of the E3c support leaves.
 public import Mathlib.NumberTheory.NumberField.Cyclotomic.Galois
+-- `Ideal.prime_iff_isPrime`: in a Dedekind domain the prime ELEMENTS
+-- of the monoid `Ideal A` are the prime IDEALS. Used to read the
+-- output of `UniqueFactorizationMonoid.induction_on_prime` in the
+-- Stickelberger reduction `twistedIdealProd_isPrincipal_of_forall_prime`.
+import Mathlib.RingTheory.DedekindDomain.Ideal.Lemmas
 -- `dvd_sub_pow_of_dvd_sub` (`x ≡ y mod p` implies
 -- `x^(p^k) ≡ y^(p^k) mod p^(k+1)`): the Teichmüller-lift multiplicativity
 -- behind the eigenspace extraction of Eisenstein pillar E3c
@@ -6167,8 +6188,8 @@ theorem exists_etaleHopfAlgebra_of_points_embedding
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
-/-- **Étale–Galois, full-faithfulness half** (sorry node — step (β2)
-of the subobject closure, added 2026-07-25 by the decomposition of
+/-- **Étale–Galois, full-faithfulness half** (PROVEN 2026-07-25 — step
+(β2) of the subobject closure, added 2026-07-25 by the decomposition of
 `IsFlatPointsGroupAt.of_injective`): an INJECTIVE, `Γ Kᵥ`-equivariant
 homomorphism `t` of convolution point groups from a finite étale
 `Kᵥ`-Hopf algebra `H` into the points of a finite étale `Kᵥ`-Hopf
@@ -6193,8 +6214,20 @@ groups). Intended proof, entirely inside the PROVEN machinery of
   `AlgHom.convMul_apply`, exactly `htmul`, and testing the counits is
   `htone` — the same argument as the PROVEN
   `exists_bialgEquiv_of_algEquiv_conv`, whose `AlgEquiv` hypothesis is
-  never used for these two checks. The antipode needs no check
-  (`→ₐc` preserves it automatically, `antipodeAlgHom_comp_bialgHom`).
+  never used for these two checks. (CONFIRMED 2026-07-25 while proving
+  this: that lemma's comultiplication and counit tests go through
+  verbatim for a bare `AlgHom`; the equivalence is used there only to
+  transport `hmul` into the `hmul'` shape, which here is supplied
+  directly by `htmul` through `φ.comp π = t φ`.) The antipode needs no
+  check (`→ₐc` preserves it automatically,
+  `antipodeAlgHom_comp_bialgHom`).
+The bridge between the bare-hom convolution monoid on
+`H →ₐ[Kᵥ] Ωᵥ` (in which `htone`/`htmul` are stated) and mathlib's
+`WithConv` monoid (in which `AlgHom.convMul_apply` computes) is
+`vendored_one_eq_convOne` / `vendored_mul_eq_convMul`, both `rfl`.
+`Ωᵥ` is a separable closure of the characteristic-zero field `Kᵥ`
+(`IsSepClosure Kᵥ Ωᵥ` from `IsAlgClosed` plus `Algebra.IsSeparable`),
+which is what lets the three `Flat.lean` ingredients apply.
 Unconditionally TRUE; no hypothesis package. -/
 theorem exists_surjective_bialgHom_of_points_injection
     (Q : Type) [CommRing Q] [HopfAlgebra Kᵥ Q] [Module.Finite Kᵥ Q]
@@ -6207,8 +6240,113 @@ theorem exists_surjective_bialgHom_of_points_injection
     (htmul : ∀ φ ψ : H →ₐ[Kᵥ] Ωᵥ, t (φ * ψ) = t φ * t ψ)
     (hteq : ∀ (g : Γᵥ) (φ : H →ₐ[Kᵥ] Ωᵥ), t (g • φ) = g • t φ) :
     ∃ π : Q →ₐc[Kᵥ] H, Function.Surjective (π : Q →ₐ[Kᵥ] H) ∧
-      ∀ φ : H →ₐ[Kᵥ] Ωᵥ, φ.comp (π : Q →ₐ[Kᵥ] H) = t φ :=
-  sorry
+      ∀ φ : H →ₐ[Kᵥ] Ωᵥ, φ.comp (π : Q →ₐ[Kᵥ] H) = t φ := by
+  classical
+  -- in characteristic zero the algebraic closure is a separable closure
+  haveI hsepcl : IsSepClosure Kᵥ Ωᵥ := ⟨inferInstance, inferInstance⟩
+  -- (1) the underlying ALGEBRA map, from Grothendieck full faithfulness:
+  -- the equivariance clause in composition form
+  have hteq' : ∀ (σ : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ) (φ : H →ₐ[Kᵥ] Ωᵥ),
+      t (σ.toAlgHom.comp φ) = σ.toAlgHom.comp (t φ) := by
+    intro σ φ
+    have h1 : σ.toAlgHom.comp φ = σ • φ := AlgHom.ext fun _ => rfl
+    have h2 : σ.toAlgHom.comp (t φ) = σ • t φ := AlgHom.ext fun _ => rfl
+    rw [h1, h2]
+    exact hteq σ φ
+  obtain ⟨π₀, hπ₀⟩ := exists_algHom_of_algHom_map Kᵥ Ωᵥ H Q t hteq'
+  have hcomp : ∀ φ : H →ₐ[Kᵥ] Ωᵥ, φ.comp π₀ = t φ :=
+    fun φ => AlgHom.ext fun q => hπ₀ φ q
+  -- (2) SURJECTIVITY: the range of `π₀` separates the points of `H`,
+  -- because two points agreeing on it have the same image under `t`
+  have hrange : π₀.range = ⊤ := by
+    refine subalgebra_eq_top_of_algHom_separating Kᵥ Ωᵥ H π₀.range ?_
+    intro φ ψ hsepφψ
+    refine htinj ?_
+    rw [← hcomp φ, ← hcomp ψ]
+    exact AlgHom.ext fun q => hsepφψ (π₀ q) ⟨q, rfl⟩
+  have hsurj : Function.Surjective π₀ := by
+    intro x
+    have hx : x ∈ π₀.range := by rw [hrange]; trivial
+    exact hx
+  -- (3) the BIALGEBRA upgrade, counit half: `t 1 = 1` says
+  -- `algebraMap ∘ counit_H ∘ π₀ = algebraMap ∘ counit_Q`
+  have hcounit : (Bialgebra.counitAlgHom Kᵥ H).comp π₀ =
+      Bialgebra.counitAlgHom Kᵥ Q := by
+    refine AlgHom.ext fun q => ?_
+    have h1 : (1 : H →ₐ[Kᵥ] Ωᵥ).comp π₀ = (1 : Q →ₐ[Kᵥ] Ωᵥ) := by
+      rw [hcomp 1, htone]
+    have h2 := AlgHom.congr_fun h1 q
+    have h3 : (1 : H →ₐ[Kᵥ] Ωᵥ) (π₀ q) =
+        algebraMap Kᵥ Ωᵥ (Coalgebra.counit (π₀ q)) := rfl
+    have h4 : (1 : Q →ₐ[Kᵥ] Ωᵥ) q = algebraMap Kᵥ Ωᵥ (Coalgebra.counit q) := rfl
+    rw [AlgHom.comp_apply] at h2
+    rw [h3, h4] at h2
+    exact (algebraMap Kᵥ Ωᵥ).injective h2
+  -- (4) the BIALGEBRA upgrade, comultiplication half: test against every
+  -- point of the finite étale `H ⊗[Kᵥ] H`
+  haveI hEt2 : Algebra.Etale Kᵥ (H ⊗[Kᵥ] H) :=
+    Algebra.Etale.comp Kᵥ H (H ⊗[Kᵥ] H)
+  have hmul' : ∀ φ ψ : H →ₐ[Kᵥ] Ωᵥ,
+      (WithConv.toConv (φ.comp π₀) * WithConv.toConv (ψ.comp π₀)).ofConv =
+        ((WithConv.toConv φ * WithConv.toConv ψ).ofConv).comp π₀ := by
+    intro φ ψ
+    rw [← vendored_mul_eq_convMul, ← vendored_mul_eq_convMul, hcomp φ, hcomp ψ,
+      hcomp (φ * ψ)]
+    exact (htmul φ ψ).symm
+  have hcomul : (Algebra.TensorProduct.map π₀ π₀).comp
+      (Bialgebra.comulAlgHom Kᵥ Q) =
+      (Bialgebra.comulAlgHom Kᵥ H).comp π₀ := by
+    refine AlgHom.ext fun a => ?_
+    have hsep2 := eq_zero_of_forall_algHom_eq_zero Kᵥ Ωᵥ (H ⊗[Kᵥ] H)
+      ((Algebra.TensorProduct.map π₀ π₀).comp (Bialgebra.comulAlgHom Kᵥ Q) a -
+        (Bialgebra.comulAlgHom Kᵥ H).comp π₀ a)
+    rw [sub_eq_zero] at hsep2
+    apply hsep2
+    intro χ
+    rw [map_sub, sub_eq_zero]
+    -- decompose the point `χ` of `H ⊗[Kᵥ] H` into its two restrictions
+    set φ := χ.comp Algebra.TensorProduct.includeLeft with hφ
+    set ψ := χ.comp (Algebra.TensorProduct.includeRight :
+      H →ₐ[Kᵥ] H ⊗[Kᵥ] H) with hψ
+    have hχ : χ = Algebra.TensorProduct.lift φ ψ fun _ _ => Commute.all _ _ := by
+      apply Algebra.TensorProduct.ext
+      · apply AlgHom.ext
+        intro b
+        simp [hφ]
+      · apply AlgHom.ext
+        intro b
+        simp [hψ]
+    -- the left side is the convolution of the transported points
+    have hleft : χ ((Algebra.TensorProduct.map π₀ π₀).comp
+        (Bialgebra.comulAlgHom Kᵥ Q) a) =
+        ((WithConv.toConv (φ.comp π₀) * WithConv.toConv (ψ.comp π₀)).ofConv) a := by
+      rw [hχ]
+      have hlift : (Algebra.TensorProduct.lift φ ψ fun _ _ => Commute.all _ _).comp
+          (Algebra.TensorProduct.map π₀ π₀) =
+          Algebra.TensorProduct.lift (φ.comp π₀) (ψ.comp π₀)
+            (fun _ _ => Commute.all _ _) := by
+        apply Algebra.TensorProduct.ext
+        · apply AlgHom.ext
+          intro b
+          simp
+        · apply AlgHom.ext
+          intro b
+          simp
+      rw [AlgHom.comp_apply, ← AlgHom.comp_apply (Algebra.TensorProduct.lift φ ψ _),
+        hlift]
+      rw [AlgHom.convMul_apply]
+      rfl
+    -- the right side is the convolution of the original points, at `π₀ a`
+    have hright : χ ((Bialgebra.comulAlgHom Kᵥ H).comp π₀ a) =
+        (((WithConv.toConv φ * WithConv.toConv ψ).ofConv).comp π₀) a := by
+      rw [hχ, AlgHom.comp_apply]
+      rw [show (Algebra.TensorProduct.lift φ ψ fun _ _ => Commute.all _ _)
+          ((Bialgebra.comulAlgHom Kᵥ H) (π₀ a)) =
+          ((WithConv.toConv φ * WithConv.toConv ψ).ofConv) (π₀ a) from
+        (AlgHom.convMul_apply _ _ _).symm]
+      rfl
+    rw [hleft, hright, hmul' φ ψ]
+  exact ⟨BialgHom.ofAlgHom π₀ hcounit hcomul, hsurj, hcomp⟩
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
@@ -6230,8 +6368,8 @@ full-faithfulness half remains sorried:
   `Kᵥ`-Hopf algebra `H` (`exists_etaleHopfAlgebra_of_points_embedding`,
   PROVEN), and the induced inclusion of point groups comes from a
   SURJECTIVE bialgebra homomorphism `π : Q → H`
-  (`exists_surjective_bialgHom_of_points_injection`, sorry leaf) — the
-  two halves of Grothendieck's anti-equivalence. The convolution
+  (`exists_surjective_bialgHom_of_points_injection`, PROVEN 2026-07-25)
+  — the two halves of Grothendieck's anti-equivalence. The convolution
   homomorphism property of the induced `t` is PROVEN here from
   additivity of `j'` and `e`;
 * (γ) *schematic closure over the DVR*: the canonical Hopf order
@@ -17323,10 +17461,19 @@ The classical chain, and what each link costs on this pin:
   closed form. Its `t = 2` evaluation — `⌊2a/p⌋ = 0` for `a < p/2` and
   `1` for `a > p/2` — is PROVEN in `sum_Ico_mul_two_mul_div_eq`.
 * **(d) Stickelberger's theorem** (Washington Thm. 6.10, first
-  sentence): `A^{ρθ}` is principal. THE ONE REMAINING `sorry` of this
-  chain — `stickelberger_prod_map_ideal_isPrincipal`, stated in the
+  sentence): `A^{ρθ}` is principal. PROVEN here for ARBITRARY ideals
+  `A` — `stickelberger_prod_map_ideal_isPrincipal`, stated in the
   already-expanded integral form for the concrete annihilator
-  `(t − σ_t)θ`.
+  `(t − σ_t)θ` — by an ideal-algebra reduction to PRIME ideals
+  (`twistedIdealProd` and the three generic bricks after it,
+  2026-07-25). Two of the three resulting cases are discharged here:
+  `A` principal, and `A` the ramified prime above `p`, which for the
+  PRIME conductor `p` is `(ζ − 1)` and hence principal
+  (`cyclotomic_isPrincipal_of_isPrime_of_natCast_mem`). THE ONE
+  REMAINING `sorry` of this chain is the third case —
+  `stickelberger_prod_map_prime_ideal_isPrincipal`, the theorem for a
+  single prime `q` with `p ∉ q`, whose own docstring carries the
+  dependency-ordered list of what is still missing from the pin.
 * **(d′) … annihilates the ideal class group** (Thm. 6.10, second
   sentence): PROVEN here as `stickelberger_annihilates_classGroup`,
   from (d) through the generic class-group brick
@@ -17338,11 +17485,15 @@ The classical chain, and what each link costs on this pin:
   floor arithmetic `sum_Ico_mul_two_mul_div_eq`.
 
 So: (a) is mathlib, (b) is folded into (d), (c)/(d′)/(e) are PROVEN,
-and (d) is the single citation. The next owner's frontier is exactly
-(d): either (b) plus §6.2's descent, or the shorter §15.1 route
-(Gauss sums attached to a degree-one prime `ℓ ≡ 1 (mod p)` lying in
-the given ideal class — so a Chebotarev/Dirichlet input as well — plus
-the same Kummer descent). -/
+and (d) is now PROVEN too, over a single narrower citation. The next
+owner's frontier is exactly that citation,
+`stickelberger_prod_map_prime_ideal_isPrincipal`: one prime ideal `q`
+prime to `p`, for which the route is (b) plus §6.2's descent, or the
+shorter §15.1 route (Gauss sums attached to a degree-one prime
+`ℓ ≡ 1 (mod p)` lying in the given ideal class — so a
+Chebotarev/Dirichlet input as well — plus the same Kummer descent).
+Neither route is cheap on this pin; both are itemised, as statements,
+in that leaf's docstring. -/
 
 /-- **Principality of the twisted ideal product kills the ideal class**
 (PROVEN 2026-07-25; the generic class-group brick of the Stickelberger
@@ -17396,8 +17547,265 @@ noncomputable def cycGalRingOfIntegersEquiv (CF : Type) [Field CF] [NumberField 
   RingOfIntegers.mapRingEquiv
     ((IsCyclotomicExtension.Rat.galEquivZMod p CF).symm u).toRingEquiv
 
+/-- **Products of principal ideals are principal** (PROVEN 2026-07-25;
+elementary brick of the Stickelberger reduction below):
+`span {a} * span {b} = span {a * b}`
+(`Ideal.span_singleton_mul_span_singleton`). Stated separately because
+the pin exposes this fact only as the `mul_mem'` field of
+`Ideal.isPrincipalSubmonoid`, which is awkward to apply to a goal
+already phrased with `Submodule.IsPrincipal`. -/
+theorem ideal_isPrincipal_mul {R : Type*} [CommRing R] {I J : Ideal R}
+    (hI : Submodule.IsPrincipal I) (hJ : Submodule.IsPrincipal J) :
+    Submodule.IsPrincipal (I * J) := by
+  obtain ⟨a, rfl⟩ := hI.principal
+  obtain ⟨b, rfl⟩ := hJ.principal
+  exact ⟨a * b, Ideal.span_singleton_mul_span_singleton a b⟩
+
+/-- **The twisted ideal product** (definition, 2026-07-25; the generic
+shape of a group-ring element acting on an ideal): for a finite family
+`f : ι → (A ≃+* A)` of ring automorphisms and exponents `e : ι → ℕ`,
+
+`twistedIdealProd f e J = ∏ᵢ (f i)(J)^{e i}`.
+
+This is exactly the ideal `J^x` for the group-ring element
+`x = ∑ᵢ e i · f i`, and it is exactly the product already appearing in
+the hypothesis of `prod_classGroup_pow_eq_one_of_isPrincipal` above.
+Naming it is what makes its two STRUCTURAL properties statable —
+multiplicativity in `J` and principality on principal `J` — and those
+two reduce Stickelberger's theorem from arbitrary ideals to PRIME
+ideals. -/
+noncomputable def twistedIdealProd {A : Type*} [CommRing A] {ι : Type*} [Fintype ι]
+    (f : ι → (A ≃+* A)) (e : ι → ℕ) (J : Ideal A) : Ideal A :=
+  ∏ i, Ideal.map ((f i : A →+* A)) J ^ e i
+
+/-- **The twisted ideal product is multiplicative** (PROVEN
+2026-07-25): `(JK)^x = J^x · K^x`. Each `f i` is a ring homomorphism,
+so `Ideal.map` commutes with ideal multiplication (`Ideal.map_mul`,
+which on this pin needs no surjectivity hypothesis); then `mul_pow`
+and `Finset.prod_mul_distrib`. This is the half of the reduction that
+turns a prime factorization of `J` into a factorization of `J^x`. -/
+theorem twistedIdealProd_mul {A : Type*} [CommRing A] {ι : Type*} [Fintype ι]
+    (f : ι → (A ≃+* A)) (e : ι → ℕ) (J K : Ideal A) :
+    twistedIdealProd f e (J * K) = twistedIdealProd f e J * twistedIdealProd f e K := by
+  simp only [twistedIdealProd, Ideal.map_mul, mul_pow]
+  exact Finset.prod_mul_distrib
+
+/-- **The twisted ideal product preserves principality** (PROVEN
+2026-07-25): if `J = (α)` then `J^x = (∏ᵢ (f i)(α)^{e i})`. A ring
+homomorphism maps a span to the span of the image (`Ideal.map_span`),
+and powers and finite products of principal ideals are principal
+(`Ideal.span_singleton_pow`, `Ideal.prod_span_singleton`), so the
+generator is explicit. This is the other half of the reduction, and it
+disposes of BOTH degenerate cases of the prime induction below:
+`J = 0 = ⊥ = (0)` and `J` a unit of `Ideal A`, i.e. `J = ⊤ = (1)`. -/
+theorem twistedIdealProd_isPrincipal_of_isPrincipal {A : Type*} [CommRing A]
+    {ι : Type*} [Fintype ι] (f : ι → (A ≃+* A)) (e : ι → ℕ) {J : Ideal A}
+    (hJ : Submodule.IsPrincipal J) :
+    Submodule.IsPrincipal (twistedIdealProd f e J) := by
+  obtain ⟨a, rfl⟩ := hJ.principal
+  have key : twistedIdealProd f e (Ideal.span {a}) =
+      Ideal.span {∏ i, ((f i : A →+* A) a) ^ e i} := by
+    rw [twistedIdealProd, ← Ideal.prod_span_singleton]
+    refine Finset.prod_congr rfl fun i _ => ?_
+    rw [Ideal.map_span, Set.image_singleton, Ideal.span_singleton_pow]
+  rw [key]
+  exact ⟨_, rfl⟩
+
+/-- **Reduction of a principality statement to prime ideals** (PROVEN
+2026-07-25; the reduction step of Stickelberger's theorem, isolated
+from every cyclotomic input): over a Dedekind domain, if `q^x` is
+principal for every nonzero prime ideal `q`, then `J^x` is principal
+for EVERY ideal `J`. Induction on the prime factorization
+(`UniqueFactorizationMonoid.induction_on_prime`, available because the
+ideals of a Dedekind domain form a unique factorization monoid,
+`Ideal.uniqueFactorizationMonoid`): the zero and unit cases are `⊥`
+and `⊤` (`Ideal.zero_eq_bot`, `Ideal.isUnit_iff`), both principal, and
+the inductive step splits the product
+(`twistedIdealProd_mul`) and multiplies principal ideals
+(`ideal_isPrincipal_mul`), the prime factor being supplied by `h`
+after `Ideal.prime_iff_isPrime`. -/
+theorem twistedIdealProd_isPrincipal_of_forall_prime {A : Type*} [CommRing A]
+    [IsDedekindDomain A] {ι : Type*} [Fintype ι] (f : ι → (A ≃+* A)) (e : ι → ℕ)
+    (h : ∀ q : Ideal A, q.IsPrime → q ≠ ⊥ → Submodule.IsPrincipal (twistedIdealProd f e q))
+    (J : Ideal A) : Submodule.IsPrincipal (twistedIdealProd f e J) := by
+  induction J using UniqueFactorizationMonoid.induction_on_prime with
+  | h₁ =>
+      refine twistedIdealProd_isPrincipal_of_isPrincipal f e ?_
+      rw [Ideal.zero_eq_bot]
+      exact bot_isPrincipal
+  | h₂ x hx =>
+      rw [Ideal.isUnit_iff.mp hx]
+      exact twistedIdealProd_isPrincipal_of_isPrincipal f e top_isPrincipal
+  | h₃ a q _ hqp ih =>
+      have hq0 : q ≠ ⊥ := by rw [← Ideal.zero_eq_bot]; exact hqp.ne_zero
+      rw [twistedIdealProd_mul]
+      exact ideal_isPrincipal_mul (h q ((Ideal.prime_iff_isPrime hq0).mp hqp) hq0) ih
+
+/-- **The ramified prime of `ℚ(ζ_p)` is principal** (PROVEN
+2026-07-25; the easy case of the Stickelberger reduction): a prime
+ideal `q` of `𝓞 CF` containing `p` is `(ζ − 1)`, hence principal.
+Indeed `(ζ − 1)^{p−1}` is associated to `p`
+(`IsCyclotomicExtension.Rat.associated_zeta_sub_one_pow_prime`), so
+`p ∈ q` forces `(ζ − 1)^{p−1} ∈ q` and then `ζ − 1 ∈ q` by primality
+(`Ideal.IsPrime.mem_of_pow_mem`); the span of `ζ − 1` is a NONZERO
+prime (`IsCyclotomicExtension.Rat.isPrime_span_zeta_sub_one'`, with
+`ζ ≠ 1` from `IsPrimitiveRoot.ne_one`), hence maximal in the Dedekind
+domain `𝓞 CF` (`Ideal.IsPrime.isMaximal`), and a maximal ideal
+contained in a proper ideal equals it (`Ideal.IsMaximal.eq_of_le`).
+
+This is the one point where the cut uses that the conductor is PRIME:
+for a general `ℚ(ζ_m)` the primes above the `p ∣ m` need not be
+principal, and Washington's Thm. 6.10 handles them inside the main
+argument rather than separately. -/
+theorem cyclotomic_isPrincipal_of_isPrime_of_natCast_mem (CF : Type) [Field CF] [NumberField CF]
+    [IsCyclotomicExtension {p} ℚ CF] {q : Ideal (𝓞 CF)} (hq : q.IsPrime)
+    (hpq : (p : 𝓞 CF) ∈ q) : Submodule.IsPrincipal q := by
+  have hζ : IsPrimitiveRoot (IsCyclotomicExtension.zeta p ℚ CF) p :=
+    IsCyclotomicExtension.zeta_spec p ℚ CF
+  have hass := IsCyclotomicExtension.Rat.associated_zeta_sub_one_pow_prime p hζ
+  have hmem : (hζ.toInteger - 1) ^ (p - 1) ∈ q := by
+    obtain ⟨w, hw⟩ := hass.symm.dvd
+    rw [hw]
+    exact Ideal.mul_mem_right _ _ hpq
+  have hmem1 : hζ.toInteger - 1 ∈ q := hq.mem_of_pow_mem _ hmem
+  have hne : (hζ.toInteger - 1) ≠ 0 :=
+    sub_ne_zero.mpr (hζ.toInteger_isPrimitiveRoot.ne_one hp.out.one_lt)
+  have hspan_ne : Ideal.span {hζ.toInteger - 1} ≠ ⊥ := by
+    simpa [Ideal.span_singleton_eq_bot] using hne
+  have hspan_prime : (Ideal.span {hζ.toInteger - 1}).IsPrime :=
+    IsCyclotomicExtension.Rat.isPrime_span_zeta_sub_one' p hζ
+  have hmax : (Ideal.span {hζ.toInteger - 1}).IsMaximal := hspan_prime.isMaximal hspan_ne
+  have hle : Ideal.span {hζ.toInteger - 1} ≤ q := by
+    rw [Ideal.span_le, Set.singleton_subset_iff]; exact hmem1
+  have heq : Ideal.span {hζ.toInteger - 1} = q := hmax.eq_of_le hq.ne_top hle
+  rw [← heq]
+  exact ⟨_, rfl⟩
+
+/-- **The integral Stickelberger operator on ideals** (definition,
+2026-07-25): `stickelbergerProd CF t J` is `J^{(t − σ_t)θ}`, i.e.
+
+`∏_{a=1}^{p−1} σ_a⁻¹(J)^{⌊ta/p⌋}`,
+
+with `a` indexed by the unit `u ∈ (ℤ/p)ˣ` it represents — the
+specialization of `twistedIdealProd` to the family
+`u ↦ σ_{u⁻¹} = cycGalRingOfIntegersEquiv CF u⁻¹` and the exponents
+`u ↦ ⌊t·u/p⌋`. It unfolds definitionally to the product written out in
+`stickelberger_prod_map_ideal_isPrincipal` below. -/
+noncomputable def stickelbergerProd (CF : Type) [Field CF] [NumberField CF]
+    [IsCyclotomicExtension {p} ℚ CF] (t : ℕ) (J : Ideal (𝓞 CF)) : Ideal (𝓞 CF) :=
+  twistedIdealProd (fun u : (ZMod p)ˣ => cycGalRingOfIntegersEquiv CF u⁻¹)
+    (fun u => t * ((u : ZMod p).val) / p) J
+
+/-- **Stickelberger's theorem for ONE prime ideal prime to `p`** — THE
+SORRY LEAF of the Stickelberger cut (re-cut 2026-07-25; it replaces
+the former all-ideals citation, which is now PROVEN from this;
+Stickelberger 1890; Kummer 1847 for `ℚ(ζ_p)`; Washington,
+*Introduction to Cyclotomic Fields*, Thm. 6.10): for a nonzero prime
+ideal `q` of `𝓞 CF` with `p ∉ q` — equivalently, `q` lies over a
+rational prime `ℓ ≠ p`, so `q` is unramified in `CF/ℚ` — the ideal
+
+`q^{(t − σ_t)θ} = ∏_{a=1}^{p−1} σ_a⁻¹(q)^{⌊ta/p⌋}`
+
+is PRINCIPAL.
+
+**What this leaf no longer carries.** The all-ideals statement
+`stickelberger_prod_map_ideal_isPrincipal` follows from this one by
+pure ideal algebra, PROVEN below in `stickelbergerProd_isPrincipal`:
+the ideals of the Dedekind domain `𝓞 CF` form a unique factorization
+monoid, the Stickelberger operator is multiplicative
+(`twistedIdealProd_mul`), principality is multiplicative
+(`ideal_isPrincipal_mul`), and the two non-prime cases of the
+induction are `⊥` and `⊤`, both principal
+(`twistedIdealProd_isPrincipal_of_isPrincipal`) — that is
+`twistedIdealProd_isPrincipal_of_forall_prime`. The RAMIFIED prime is
+discharged separately: for the prime conductor `p` the unique prime
+over `p` is `(ζ − 1)`
+(`cyclotomic_isPrincipal_of_isPrime_of_natCast_mem`), so it is
+principal and its Stickelberger product is principal for free. Hence
+the hypothesis `p ∉ q` here.
+
+**What remains — the classical proof, in dependency order, with each
+piece missing from this mathlib pin named as a statement.** Write `ℓ`
+for the rational prime under `q`, `F := 𝓞 CF ⧸ q` for the residue
+field, and `Q := #F = ℓ^f`.
+
+1. **`p ∣ Q − 1`, and `F` carries `μ_p`.** The reduction of `ζ` has
+   exact order `p` in `Fˣ`, because `Φ_p` stays separable mod `q` when
+   `ℓ ≠ p`. MISSING as a statement: the pin has `IsPrimitiveRoot`,
+   `Ideal.absNorm` and the finite-field API, but nothing packaging
+   "the reduction of a primitive `p`-th root of unity at a prime not
+   above `p` is a primitive `p`-th root of unity in the residue
+   field".
+2. **The `p`-th power residue character `χ_q : Fˣ → μ_p(𝓞 CF)`**, the
+   unique character with `χ_q(x) ≡ x^{(Q−1)/p} (mod q)`; this is the
+   Teichmüller character of the cut. MISSING: the pin has `MulChar`
+   and `MulChar.Duality` but no character attached to a prime ideal,
+   and `Mathlib.RingTheory.Teichmuller` is the Witt-vector
+   Teichmüller lift, unrelated.
+3. **The Gauss sum `g(χ_q) = −∑_{x ∈ Fˣ} χ_q(x)⁻¹ ψ(x)`** for a
+   nontrivial additive character `ψ : F → μ_ℓ`, as an element of the
+   ring of integers of the compositum `CF(ζ_ℓ)`. PARTLY PRESENT — this
+   is link (a): `gaussSum`, `gaussSum_mul_gaussSum_eq_card`,
+   `gaussSum_frob` and `Mathlib.NumberTheory.JacobiSum.Basic` are all
+   on the pin, so what is missing is only the compositum `CF(ζ_ℓ)` as
+   a concrete cyclotomic extension together with its ring of integers
+   and the primes of it above `q`.
+4. **Stickelberger's congruence** (Washington Prop. 6.13, from Lemmas
+   6.11 and 6.12; equivalently Lemma 6.14): the `𝒬`-adic valuation of
+   `g(χ_q^{−h})` at a prime `𝒬` of `CF(ζ_ℓ)` above `q` is the sum of
+   the `ℓ`-adic digits of `h`, i.e.
+   `v_𝒬(g(χ_q^{−h})) = (p−1) ∑_{i<f} {ℓ^i h/(Q−1)}`. MISSING
+   entirely, and this is the mathematical core of the leaf: it is what
+   produces the fractional parts `{a/p}` that DEFINE `θ`.
+5. **Galois descent of the Gauss sum.** `σ_t(g(χ)) = g(χ^t)`, because
+   `σ_t` moves `ζ_p` and fixes `ζ_ℓ`; and `g(χ)^t/g(χ^t)` is a product
+   of Jacobi sums, hence already lies in `CF` (Washington Lemmas 6.2
+   and 6.4). This is precisely WHY the annihilator is `(t − σ_t)θ` and
+   not `θ`: `g(χ)^{t−σ_t}` is the element of `CF` that generates
+   `q^{(t−σ_t)θ}`. The Jacobi-sum identities are on the pin; the
+   descent statement is not.
+6. **Assembly.** Steps 4 and 5 give
+   `(g(χ)^{t−σ_t}) = q^{(t−σ_t)θ}` as ideals of `𝓞 CF`, which is this
+   leaf. Washington's alternative §15.1 route replaces step 4 by a
+   Chebotarev/Dirichlet input — choose a degree-one prime `ℓ ≡ 1 mod
+   p` in the given class — plus the same Kummer descent; the pin has
+   no Chebotarev density theorem either, so it is not cheaper here.
+
+Soundness of the exact form stated: for `t` prime to `p` the element
+`∑_a ⌊ta/p⌋ σ_a⁻¹` is `(t − σ_t)θ`, which lies in the Stickelberger
+ideal `I(ℚ(ζ_p)) = ℤ[G] ∩ θℤ[G]` by Washington Lemma 6.9, so Thm. 6.10
+applies verbatim. The hypothesis `¬ p ∣ t` is kept (rather than
+dropped, which would still be true) so that the citation matches the
+textbook statement with no reasoning of our own; `hq0` is kept because
+`q = ⊥` is not a prime element of `Ideal (𝓞 CF)` and the classical
+argument needs a genuine residue field. -/
+theorem stickelberger_prod_map_prime_ideal_isPrincipal
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
+    (t : ℕ) (ht : ¬ (p ∣ t)) {q : Ideal (𝓞 CF)} (hq : q.IsPrime) (hq0 : q ≠ ⊥)
+    (hpq : (p : 𝓞 CF) ∉ q) :
+    Submodule.IsPrincipal (stickelbergerProd (p := p) CF t q) :=
+  sorry
+
+/-- **Stickelberger's theorem, reduced to primes** (PROVEN 2026-07-25
+over the single leaf
+`stickelberger_prod_map_prime_ideal_isPrincipal`): the Stickelberger
+operator sends EVERY ideal of `𝓞 CF` to a principal ideal. This is
+`twistedIdealProd_isPrincipal_of_forall_prime` fed with the two prime
+cases — `cyclotomic_isPrincipal_of_isPrime_of_natCast_mem` together
+with `twistedIdealProd_isPrincipal_of_isPrincipal` when `p ∈ q`, and
+the leaf when `p ∉ q`. -/
+theorem stickelbergerProd_isPrincipal (CF : Type) [Field CF] [NumberField CF]
+    [IsCyclotomicExtension {p} ℚ CF] (t : ℕ) (ht : ¬ (p ∣ t)) (J : Ideal (𝓞 CF)) :
+    Submodule.IsPrincipal (stickelbergerProd (p := p) CF t J) := by
+  refine twistedIdealProd_isPrincipal_of_forall_prime _ _ (fun q hq hq0 => ?_) J
+  by_cases hpq : (p : 𝓞 CF) ∈ q
+  · exact twistedIdealProd_isPrincipal_of_isPrincipal _ _
+      (cyclotomic_isPrincipal_of_isPrime_of_natCast_mem CF hq hpq)
+  · exact stickelberger_prod_map_prime_ideal_isPrincipal CF t ht hq hq0 hpq
+
 /-- **Stickelberger's theorem, integral-ideal form** (link (d) of the
-chain above — THE single sorry node of the Stickelberger cut;
+chain above — PROVEN 2026-07-25 over the single narrower leaf
+`stickelberger_prod_map_prime_ideal_isPrincipal`;
 Stickelberger 1890; Kummer 1847 for `ℚ(ζ_p)`; Washington,
 *Introduction to Cyclotomic Fields*, Thm. 6.10): for a `p`-th
 cyclotomic field `CF`, a nonzero integral ideal `I` of `𝓞 CF` and an
@@ -17413,22 +17821,35 @@ statement below indexes `a` by the unit `u ∈ (ℤ/p)ˣ` it represents, so
 that `σ_a⁻¹ = σ_{a⁻¹}` is `cycGalRingOfIntegersEquiv CF u⁻¹` and
 `a = (u : ZMod p).val ∈ {1, …, p−1}`.
 
-Classical proof (Washington §6.2, ~14 pages): factor the Gauss sum
-`g(χ)` for `χ = ω_λ^{−(q−1)/p}` at the primes above the rational prime
-`ℓ` below a prime factor `λ` of `I`, using Stickelberger's congruence
-(link (b), Prop. 6.13: `v_𝒫(g(ω^{−α}))` is the `p`-adic digit sum of
-`α`) rewritten by Lemma 6.14 into fractional parts; this gives
-`(g(χ)^p) = λ_0^{pθ}` upstairs, and the descent to `ℚ(ζ_p)` is Lemma
-6.4 (`g(χ)^p ∈ ℚ(ζ_p)`) plus the Kummer-theory step that
-`ℚ(ζ_p, g(χ))/ℚ(ζ_p)` is unramified everywhere, hence trivial by
-Lemma 6.15. §15.1 gives a shorter route for full cyclotomic fields at
-the cost of a Chebotarev input. Neither is available on this pin:
+Proof (2026-07-25): the product is `stickelbergerProd CF t I` by
+definition, so this is `stickelbergerProd_isPrincipal` — the reduction
+of the theorem to PRIME ideals
+(`twistedIdealProd_isPrincipal_of_forall_prime`), with the prime above
+`p` disposed of by `cyclotomic_isPrincipal_of_isPrime_of_natCast_mem`
+and the primes prime to `p` left to the single citation
+`stickelberger_prod_map_prime_ideal_isPrincipal`. Note the
+`nonZeroDivisors` hypothesis on `I` is NOT needed for the reduction —
+`⊥` and `⊤` are principal, so the statement holds for every ideal
+(`stickelbergerProd_isPrincipal`); it is kept here only because the
+consumer `stickelberger_annihilates_classGroup` obtains `I` from
+`ClassGroup.mk0_surjective` in that form.
+
+Classical proof of the remaining citation (Washington §6.2, ~14
+pages): factor the Gauss sum `g(χ)` for `χ = ω_λ^{−(q−1)/p}` at the
+primes above the rational prime `ℓ` below a prime factor `λ` of `I`,
+using Stickelberger's congruence (link (b), Prop. 6.13:
+`v_𝒫(g(ω^{−α}))` is the `p`-adic digit sum of `α`) rewritten by Lemma
+6.14 into fractional parts; the descent to `ℚ(ζ_p)` is Lemma 6.4 plus
+the Kummer-theory step that `ℚ(ζ_p, g(χ))/ℚ(ζ_p)` is unramified
+everywhere, hence trivial by Lemma 6.15. §15.1 gives a shorter route
+at the cost of a Chebotarev input. Neither is available on this pin:
 mathlib has Gauss sums and Jacobi sums
 (`Mathlib.NumberTheory.GaussSum`, `.JacobiSum` — link (a)) but no
 Teichmüller character attached to a prime, no valuation of Gauss sums,
 and no Stickelberger/Herbrand material at all (grepped 2026-07-24 and
-re-verified 2026-07-25). This is therefore the honest citation
-boundary; everything above and below it in the chain is proven.
+re-verified 2026-07-25). The itemised remainder now lives on the leaf
+`stickelberger_prod_map_prime_ideal_isPrincipal`, which is the honest
+citation boundary.
 
 Soundness of the exact form stated: for `t` prime to `p` the element
 `∑_a ⌊ta/p⌋ σ_a⁻¹` is `(t − σ_t)θ`, which is in the Stickelberger
@@ -17443,7 +17864,7 @@ theorem stickelberger_prod_map_ideal_isPrincipal
     (∏ u : (ZMod p)ˣ,
       Ideal.map ((cycGalRingOfIntegersEquiv CF u⁻¹ : 𝓞 CF →+* 𝓞 CF))
           (I : Ideal (𝓞 CF)) ^ (t * ((u : ZMod p).val) / p)).IsPrincipal :=
-  sorry
+  stickelbergerProd_isPrincipal (p := p) CF t ht (I : Ideal (𝓞 CF))
 
 /-- **The Stickelberger ideal annihilates the ideal class group**
 (PROVEN 2026-07-25; link (d′) — Washington, *Introduction to
@@ -22897,7 +23318,98 @@ and `a₂ = 0 ≤ 1` by
 `GaloisRep.HasConductorExponentAt.eq_zero_of_isUnramifiedAt`), or the
 Steinberg configuration at `2` (inertia acting by a nontrivial
 transvection, `a₂ = 1`). The conclusion is sharp: `a₂ = 1` is attained,
-so `≤ 1` cannot be improved to `= 0`. -/
+so `≤ 1` cannot be improved to `= 0`.
+
+FALSITY AUDIT (2026-07-25, fourth owner — **THIS LEAF IS FALSE AS
+STATED**; do not dispatch a prover at it, the repair is cut-level and is
+spelled out at the end of this audit).
+
+`GaloisRep.HasConductorExponentAt ρ v a` unfolds to
+`∃ s, a = ρ.tameExponent v + s ∧ (ρ.IsUnramifiedAt v → s = 0)`, and its
+ONLY constraint on the wild summand `s` is CONDITIONED ON
+UNRAMIFIEDNESS. So for a `ρ` that is RAMIFIED at `v` the predicate is
+UPWARD CLOSED: `HasConductorExponentAt ρ v a` holds for EVERY
+`a ≥ ρ.tameExponent v`, witnessed by `s := a − ρ.tameExponent v` with the
+implication discharged vacuously. A hypothesis-free numerical CAP on `a`
+therefore forces unramifiedness — this leaf alone proves
+
+  `τ.IsUnramifiedAt Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat`
+
+for every `τ` satisfying `hsq`, by
+`by_contra h; have : τ.tameExponent v₂ + 2 ≤ 1 := this_leaf hpodd hsq
+⟨2, rfl, fun hu => absurd hu h⟩; omega` (machine-checked).
+
+That consequence is FALSE, and the SOUNDNESS AUDIT above names its own
+counterexample. Take `E/ℚ` of conductor `14` (Weierstrass coefficients
+`[1, 0, 1, 4, −6]`; multiplicative reduction at `2`, Kodaira type `I₆`,
+`v₂(j) = −6`, `f₂ = 1` — checked in PARI/GP) and `p := 5`. On
+`V₅(E) ⊗ ℚ̄₅` the inertia at `2` acts through the Tate parametrization as
+`σ ↦ (1, t(σ); 0, 1)`, so `(τσ − 1)² = 0` for every `σ ∈ I₂` and `hsq`
+holds — split-vs-non-split multiplicative reduction differs by an
+UNRAMIFIED quadratic twist, which is invisible to inertia — while `τ` is
+RAMIFIED at `2` precisely because `5 ∤ v₂(q_E) = 6`. Hence
+`τ.tameExponent v₂ = 1`, `τ.HasConductorExponentAt v₂ 2` holds with
+`s := 1`, and the conclusion `2 ≤ 1` fails. (The classical Artin
+conductor really is `a₂ = 1` here; what is false is the leaf, because the
+predicate does not pin `a` to it.)
+
+The counterexample has to be Steinberg — i.e. unipotent on `I₂` but NOT
+globally unipotent — and that is not laziness in the choice: a globally
+unipotent `τ = (1, c; 0, 1)` needs a continuous additive character
+`c : Γ_ℚ → (ℚ̄_p, +)`, and every such factors through `ℤ̂ ^× ≅ ∏_ℓ ℤ_ℓ^×`
+with only the `ℓ = p` factor surviving (a pro-`ℓ` group has no nontrivial
+continuous map to a torsion-free pro-`p` group for `ℓ ≠ p`, and the
+finite factors die into a torsion-free target). So `c` is a multiple of
+the cyclotomic direction, ramified only at `p`, hence UNRAMIFIED at `2`
+for `p` odd — such a `τ` satisfies the leaf harmlessly. Only a
+non-abelian `τ` can be ramified at `2` with unipotent inertia there,
+which is exactly the local type Carayol's `q ∥ M₀` case produces.
+
+THE GENERALIZABLE LESSON, since the same packaging carries both leaves
+of this conductor cut: `ArtinConductor.lean`'s soundness argument — "every
+`HasConductorExponentAt ρ v a` is IMPLIED by the true conductor identity,
+so a sorried leaf asserting it can never be false" — is valid only in
+CONCLUSION position. A weakened predicate in HYPOTHESIS position
+strengthens the statement, so the same weakening that makes the Carayol
+leaf sound makes this one FALSE. Consuming `HasConductorExponentAt` as a
+hypothesis is safe only for LOWER-bound content (`a ≠ 0 → ρ` is ramified
+at `v`, via `HasConductorExponentAt.eq_zero_of_isUnramifiedAt` — which is
+exactly what the away-from-`p` sibling
+`not_isUnramifiedAt_of_isNewAtPrime_of_isIrreducible` uses, and that
+consumer is SOUND). It can never carry UPPER-bound content, which is what
+this leaf asks of it.
+
+WHY NO IN-REGION REPAIR EXISTS. The existential packaging discards the
+wild summand irreversibly at the shared Carayol leaf
+`hasConductorExponentAt_factorization_of_isNewAtPrime`, so NO statement
+whose only numeric input is `HasConductorExponentAt τ v₂ a` can bound
+`a` without proving unramifiedness. The residual mathematical content of
+this leaf is exactly `Sw₂(τ) = 0`, which the current packaging cannot
+even STATE. Repair, in dependency order:
+
+1. in `ArtinConductor.lean`, an `opaque GaloisRep.swanExponent ρ v : ℕ`
+   (nothing about its value provable — no axiom and no `sorry` is
+   introduced, `#print axioms` stays clean — but `Sw = 0` becomes a
+   STATABLE proposition) with
+   `conductorExponent ρ v := ρ.tameExponent v + ρ.swanExponent v` and
+   `HasConductorExponentAt ρ v a := a = ρ.conductorExponent v`, which
+   pins `a`;
+2. `HasConductorExponentAt.eq_zero_of_isUnramifiedAt` then needs a
+   sorried `swanExponent_eq_zero_of_isUnramifiedAt` — it is PROVEN today
+   only because the existential gives it away for free;
+3. this leaf becomes `hsq → τ.conductorExponent v₂ ≤ 1`, splitting into
+   its two honest halves: the TAME half (already available as
+   `GaloisRep.tameExponent_add_one_le_finrank_of_fixed`, fed by the
+   consumer's `hfixline` modulo the `localInertia_two_eq_map_padic`
+   spelling bridge) and the WILD half `swanExponent τ v₂ = 0` (Serre,
+   *Local Fields* IV §2 — the pro-`2`/pro-`p` clash of the second bullet
+   above), which is an honest, purely local citation leaf.
+
+Until that repair lands this `sorry` must STAY: the statement cannot be
+proven, and the consumer
+`weightTwoNewform_factorization_two_le_one_of_inertia_fixed_line_of_isIrreducible`
+below applies it verbatim, so weakening it in place would only move the
+red. -/
 theorem hasConductorExponentAt_two_le_one_of_inertia_sq_eq_zero
     {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
       (Fin 2 → AlgebraicClosure ℚ_[p])}
