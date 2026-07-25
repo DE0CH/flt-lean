@@ -29081,7 +29081,7 @@ theorem character_ideal_span_singleton_eq_one_of_forall_pos_ray_class
     (hαpos : ∀ φ : F →+* ℝ,
       0 < φ (algebraMap (NumberField.RingOfIntegers F) F α)) :
     f (Ideal.span {α}) = 1 := by
-  -- the values of `χ` are units, hence nonzero
+  -- the values of `χ` are units of `𝔽̄₃`, hence nonzero
   have hone : χ 1 = 1 := hVker 1 V.one_mem
   have hχne : ∀ a : Γ F, χ a ≠ 0 := by
     intro a ha
