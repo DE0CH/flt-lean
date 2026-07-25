@@ -147,6 +147,41 @@ nodes into shallower ones, prove the provable ones — until the entire
 tree is written and `lake build` passes the sorry gate. `PROGRESS.md`
 is the authoritative tree.
 
+**Counting the frontier: DIRECT vs TRANSITIVE sorries, and the comment
+trap (2026-07-25 — both of these caused phantom dispatches).**
+
+Two different numbers are both called "the frontier" and they are not
+interchangeable:
+
+- *Direct*: the declaration's own body contains `sorry`. This is what
+  Lean's `declaration uses 'sorry'` warning reports, and it is the set of
+  leaves that can be WORKED ON. Currently 85.
+- *Transitive*: the declaration's proof term reaches `sorryAx`, i.e. it is
+  sorried **or consumes something sorried**. This is what
+  `ProgressCensus.lean`'s census reports. Currently 86.
+
+A consumer of a sorried leaf is transitively sorried but has NOTHING to
+prove — dispatching an agent at it wastes a worker. Two whole clusters were
+dispatched this way (`Chebotarev.lean`, and three leaves in `Flat.lean`)
+before agents reported back that their targets were already proven. **Build
+task lists from the DIRECT set; use the transitive set only for judging
+whether a subtree still blocks the root.**
+
+Second trap, same day: a naive `grep sorry` over sources counts the word
+inside DOCSTRINGS, and this development's docstrings discuss sorried leaves
+constantly. That inflated a scan to 144 "sorried declarations" against a
+true 85. Any frontier scan must strip block comments (nested `/- -/`) and
+line comments first, then attribute each surviving token to its enclosing
+declaration by walking BACKWARDS to the nearest declaration header —
+walking forwards mis-attributes a later declaration's sorry to an earlier
+proven one, which is exactly how `exists_hardlyRamifiedLift` was twice
+mislabelled open when it is proven.
+
+Related: stale `(sorry leaf)` / `(sorry node)` docstring LABELS on
+now-proven declarations are a third source of phantom work, since leaf
+lists get harvested from them. Correct them when found rather than leaving
+them to mislead the next dispatch.
+
 **Tree markers in `PROGRESS.md` (Deyao, 2026-07-17): two symbols per
 item.** Every tree item starts with exactly two symbols — first symbol
 `✓` (proven here or in mathlib) or `✗` (sorry); second symbol `·`
