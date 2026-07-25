@@ -69,7 +69,7 @@ them without a human. Do not re-wrap it.
 - `fg_comap_maximalIdeal_traceSubring`
 - `exists_framedGaloisRep_traceSubring`
 - `subring_closure_charFrob_coeff_eq_top`
-- `exists_finiteIndex_isIntegral_charpolyCoeff_quotient_of_isWeaklyUniversal_isTraceGenerated`
+- `exists_finiteIndex_isIntegral_charpolyCoeff_quotient_minimalPrime_of_isWeaklyUniversal_isTraceGenerated`
 - `exists_relations_lt_le_smul_of_minimal_mvPowerSeries_presentation`
 
 Both former strata above them were narrowed on 2026-07-25 into those
@@ -173,7 +173,7 @@ the surjectivity and minimality strata of the minimal presentation,
   (the Frobenius traces of the mod-`ℓ` specialization are algebraic over
   `𝔽_ℓ`) and the pure commutative algebra
   `eq_maximalIdeal_of_isPrime_of_isIntegral_quotient`. The TRACE form was
-  in turn PROVEN on 2026-07-26 over the potential-modularity leaf
+  in turn PROVEN on 2026-07-26 over the potential-modularity statement
   `exists_finiteIndex_isIntegral_charpolyCoeff_quotient_of_isWeaklyUniversal_isTraceGenerated`
   (there is a FINITE-INDEX `H ≤ G_ℚ` — the Galois group of the totally
   real field over which potential modularity gives `R = T` with `T` a
@@ -183,6 +183,15 @@ the surjectivity and minimality strata of the minimal presentation,
   `tr(Mᵐ) = Dₘ(tr M, det M)` with `Dₘ` monic of degree `m`) together with
   `exists_pow_mem_of_finiteIndex`; the determinant coefficient is a
   cyclotomic value, and the remaining coefficients are `1` and `0`.
+  That statement was itself PROVEN the same day, by a quantifier swap over
+  the minimal primes of `(ℓ)`, leaving the MINIMAL-PRIME form
+  `exists_finiteIndex_isIntegral_charpolyCoeff_quotient_minimalPrime_of_isWeaklyUniversal_isTraceGenerated`
+  as the open arithmetic node: `D.R` Noetherian gives `(ℓ)` finitely many
+  minimal primes, a finite intersection of finite-index subgroups still has
+  finite index, and every prime containing `ℓ` contains a minimal one — so
+  the uniformity of `H` in `p` costs nothing and the fibre's finite part is
+  free. The two forms are EQUIVALENT; see the leaf's docstring for the
+  audit and for the missing-machinery list.
 
 * The CARAYOL leaf was then decomposed once more, into
   `exists_isLocalRing_traceSubring` (the ring-theoretic half of
@@ -319,8 +328,13 @@ import Mathlib.LinearAlgebra.Charpoly.BaseChange
 import Mathlib.LinearAlgebra.TensorProduct.Pi
 import Mathlib.LinearAlgebra.Dimension.Constructions
 -- `Subgroup.FiniteIndex` and `LinearMap.charpoly`: both appear in the
--- exposed statement of the potential-modularity leaf
--- `exists_finiteIndex_isIntegral_charpolyCoeff_quotient_of_isWeaklyUniversal_isTraceGenerated`.
+-- exposed statements of the potential-modularity pair
+-- `exists_finiteIndex_isIntegral_charpolyCoeff_quotient_of_isWeaklyUniversal_isTraceGenerated`
+-- (uniform form, proven) and its MINIMAL-PRIME leaf
+-- `..._quotient_minimalPrime_...`, whose statement additionally exposes
+-- `Ideal.minimalPrimes` — publicly available through the `Ideal.Height`
+-- import above, which is where the Noetherian finiteness of the minimal
+-- primes (`Ideal.finite_minimalPrimes_of_isNoetherianRing`) also comes from.
 public import Mathlib.GroupTheory.Index
 public import Mathlib.LinearAlgebra.Charpoly.Basic
 -- the Dickson recursion `tr(Mⁿ) = Dₙ(tr M, det M)` and the 2×2 charpoly
@@ -5405,14 +5419,76 @@ theorem exists_pow_mem_of_finiteIndex {G : Type*} [Group G] (H : Subgroup G)
   · exact key i j hij heq
   · exact key j i hij heq.symm
 
-/-- **Potential-modularity leaf** (sorry node — the single genuinely deep
-arithmetic node of the lifting core, isolated on 2026-07-26 as the residue
-of the trace form after the Khare–Wintenberger DESCENT was proven): in the
-weakly universal, trace-generated hardly ramified deformation ring there is
-a FINITE-INDEX subgroup `H ≤ G_ℚ` on which the Frobenius-free traces of the
-universal deformation are already integral over `ℤ_ℓ` modulo any prime
-`p ∋ ℓ` — i.e. `−(coeff 1)` of the characteristic polynomial of `D.ρ g` is
-integral for every `g ∈ H`.
+/-- **Every element of a finite algebra is integral over its base** (PROVEN
+2026-07-26, elementary): a commutative `R`-algebra whose underlying TYPE is
+finite is spanned over `R` by `Set.univ`, hence module-finite, and every
+element of a module-finite algebra is integral (`IsIntegral.of_finite`).
+
+This is what confines the content of the potential-modularity leaf below to
+the primes with INFINITE quotient: at a prime `q ∋ ℓ` with `D.R ⧸ q` finite
+its conclusion holds with `H = ⊤` and carries no arithmetic whatever. -/
+lemma isIntegral_of_finite_algebra {R A : Type*} [CommRing R] [CommRing A]
+    [Algebra R A] [Finite A] (x : A) : IsIntegral R x := by
+  haveI : Module.Finite R A := by
+    rw [Module.finite_def, Submodule.fg_def]
+    exact ⟨Set.univ, Set.finite_univ, Submodule.span_univ⟩
+  exact IsIntegral.of_finite R x
+
+/-- **Integrality in a quotient propagates up an inclusion of ideals**
+(PROVEN 2026-07-26, functoriality): for `q ≤ p` the transition map
+`Ideal.Quotient.factor` is an `R`-algebra homomorphism `A ⧸ q → A ⧸ p` — it
+commutes with `algebraMap` by `rfl`, both structure maps being
+`Ideal.Quotient.mk` after `algebraMap R A` — and `IsIntegral` is preserved by
+algebra maps.
+
+This is the step that lets the mod-`ℓ` fibre statement be checked only at the
+MINIMAL primes over `(ℓ)`: every prime containing `ℓ` contains one of them
+(`Ideal.exists_minimalPrimes_le`), and integrality is carried up that
+inclusion by this lemma. -/
+lemma isIntegral_quotient_of_le {R A : Type*} [CommRing R] [CommRing A]
+    [Algebra R A] {q p : Ideal A} (hle : q ≤ p) {x : A}
+    (hx : IsIntegral R (Ideal.Quotient.mk q x)) :
+    IsIntegral R (Ideal.Quotient.mk p x) := by
+  have hcomm : ∀ r : R, (Ideal.Quotient.factor hle) (algebraMap R (A ⧸ q) r)
+      = algebraMap R (A ⧸ p) r := fun _ => rfl
+  let f : (A ⧸ q) →ₐ[R] (A ⧸ p) := AlgHom.mk (Ideal.Quotient.factor hle) hcomm
+  have h2 := hx.map f
+  rwa [show f (Ideal.Quotient.mk q x) = Ideal.Quotient.mk p x from
+    Ideal.Quotient.factor_mk hle x] at h2
+
+/-- **Potential-modularity leaf, MINIMAL-PRIME form** (sorry node — the single
+genuinely deep arithmetic node of the lifting core; isolated on 2026-07-26 as
+the residue of the trace form after the Khare–Wintenberger DESCENT was proven,
+and RECUT the same day from the uniform `∃ H, ∀ p ∋ ℓ` shape into the present
+per-prime `∀ q, ∃ H` one): in the weakly universal, trace-generated hardly
+ramified deformation ring, at each prime `q` MINIMAL over `(ℓ)` whose quotient
+`D.R ⧸ q` is INFINITE there is a FINITE-INDEX subgroup `H ≤ G_ℚ` on which the
+Frobenius-free traces of the universal deformation are already integral over
+`ℤ_ℓ` modulo `q` — i.e. `−(coeff 1)` of the characteristic polynomial of
+`D.ρ g` is integral for every `g ∈ H`.
+
+THE RECUT IS AN EQUIVALENCE, not a weakening in disguise (audit, 2026-07-26 —
+this is the reason it is allowed to override the predecessor's deliberate
+choice of the uniform shape). The consumer's uniform form is recovered from
+this one below, and that implication is now the entire content of
+`exists_finiteIndex_isIntegral_charpolyCoeff_quotient_of_isWeaklyUniversal_isTraceGenerated`;
+conversely this form follows from the uniform one by taking the same `H` at
+every `q` and discarding the two extra hypotheses. So nothing is given away
+and nothing is smuggled in. What the recut buys is that a prover may FIX one
+point of the mod-`ℓ` fibre and choose its own totally real field there,
+instead of having to make a single field work for the whole fibre at once —
+and that the finite part of the fibre is off the table entirely. The three
+ingredients of the equivalence are elementary and all PROVEN:
+* `Ideal.finite_minimalPrimes_of_isNoetherianRing` — `D.R` is Noetherian, so
+  `(ℓ)` has only FINITELY many minimal primes, and a finite intersection of
+  finite-index subgroups has finite index (`Subgroup.finiteIndex_iInf`). This
+  is the only place the Noetherian clause of the deformation category is used
+  here, and it is what makes the quantifier swap legal at all.
+* `Ideal.exists_minimalPrimes_le` — every prime containing `ℓ` contains a
+  minimal one, and `isIntegral_quotient_of_le` above carries integrality up
+  that inclusion.
+* `isIntegral_of_finite_algebra` above — at a `q` with FINITE quotient the
+  conclusion is free, which is why `Infinite (D.R ⧸ q)` may be assumed.
 
 WHAT `H` IS. Verbatim the potential-modularity input: `H = G_F` for the
 totally real solvable-at-the-relevant-places field `F/ℚ` produced by
@@ -5422,11 +5498,18 @@ Over `F` the Taylor–Wiles–Kisin patching method proves `R_F = T_F` with
 hence a FINITE `ℤ_ℓ`-algebra; the deformation `D.ρ|_{G_F}` is classified by
 a map `R_F → D.R`, so every trace `tr D.ρ(g)`, `g ∈ G_F`, is the image of
 an element integral over `ℤ_ℓ`. `[F : ℚ] < ∞` is exactly `H.FiniteIndex`.
-The mod-`p` quotient is kept in the statement deliberately: it is the
+The mod-`q` quotient is kept in the statement deliberately: it is the
 weakest form that still supports the consumer, and it is strictly weaker
 than `Module.Finite ℤ_[ℓ] D.R`, which is what the un-quotiented form would
 give back through the completeness bootstrap
-`moduleFinite_of_finite_quotient_span`.
+`moduleFinite_of_finite_quotient_span`. **Do NOT restate this leaf as "the
+traces on `H` lie in a module-finite `ℤ_ℓ`-subalgebra of `D.R`"** (audit,
+2026-07-26): that IS the form potential modularity produces — the image of
+the Hecke algebra `T_F` under `R_F → D.R` — but it is strictly stronger, it
+re-imports the `Module.Finite ℤ_[ℓ] D.R` the weak form was chosen to avoid,
+and it would remove a future prover's freedom to find a cheaper route. The
+recut recorded above was allowed precisely because it is an EQUIVALENCE and
+this one is not.
 
 WHY THIS JOINT (2026-07-26). The predecessor leaf — every `charFrob`
 coefficient at every good prime is integral mod `p` — contains three pieces
@@ -5469,12 +5552,93 @@ dichotomy `not_isIrreducible_of_isHardlyRamified_of_five_le` must NOT be
 used to discharge this vacuously — it is itself proven over pillar α, which
 this cluster proves.
 
+RECHECKED 2026-07-26, and the route (i) verdict is now definite: route (i)
+is CIRCULAR, not merely blocked. `Patching.lean`'s `R = T` needs a modular
+`T` attached to `ρbar` ITSELF over `ℚ`, which for a general hardly ramified
+irreducible `ρbar` with `5 ≤ ℓ` is Serre's conjecture — i.e. pillar α, i.e.
+what this cluster is proving. The KW-free module split would therefore
+deliver the patching engine and still leave the arithmetic input missing.
+Route (ii) is the only non-circular one, because potential modularity
+obtains the modular datum over an auxiliary `F` where it is a theorem
+(Moret-Bailly + Langlands base change), never over `ℚ`.
+
+MISSING MACHINERY for route (ii), in dependency order — none of it exists in
+this repository or in mathlib today, and each item is a module-sized build:
+1. **Galois groups of number fields as subgroups of `G_ℚ`**: for a finite
+   extension `F/ℚ` inside `AlgebraicClosure ℚ`, the subgroup `G_F ≤ G_ℚ`,
+   its `FiniteIndex` from `[F : ℚ] < ∞`, and restriction of a `GaloisRep`
+   and of the hardly ramified local conditions along it. This is the only
+   piece expressible in today's vocabulary, and it is what the abstract
+   `H : Subgroup (Field.absoluteGaloisGroup ℚ)` in this statement stands in
+   for — which is why the leaf is stated with `H` abstract: it does not
+   block on item 1.
+2. **Hardly ramified deformation theory over a totally real `F`**: the
+   `F`-analogue of `HardlyRamifiedDeformation`, `IsWeaklyUniversal` and
+   `IsTraceGenerated`, and the classifying map `R_F → D.R` induced by
+   `D.ρ|_{G_F}`.
+3. **Hilbert modular forms over `F`, their Hecke algebras, and finiteness**:
+   `Module.Finite ℤ_[ℓ] T_F` for fixed weight and level. This is the item
+   `Patching.lean` takes as a HYPOTHESIS and nothing in the repository
+   supplies.
+4. **Modularity lifting over `F`** (Taylor–Wiles–Kisin patching in the
+   Hilbert modular setting): `R_F = T_F`.
+5. **Potential modularity** (Taylor's Moret-Bailly argument): existence of
+   the totally real `F`, solvable at the relevant places, with `ρbar|_{G_F}`
+   modular and the local conditions preserved.
+Items 2–5 are each a multi-module formalization; item 1 alone would be
+free-floating until item 2 exists, which is why nothing of it is built here.
+
 References: Khare–Wintenberger, *Serre's modularity conjecture (I)*,
 Thm. 4.1 and §4, and *(II)*; Taylor, *Remarks on a conjecture of Fontaine
 and Mazur* and *On the meromorphic continuation of degree two L-functions*;
 Kisin, *Moduli of finite flat group schemes, and modularity*;
 Darmon–Diamond–Taylor, *Fermat's Last Theorem*, §3; Buzzard's 2026 EPSRC
 course, Lecture 4. -/
+theorem exists_finiteIndex_isIntegral_charpolyCoeff_quotient_minimalPrime_of_isWeaklyUniversal_isTraceGenerated
+    (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (D : HardlyRamifiedDeformation hℓOdd ρbar)
+    (hw : D.IsWeaklyUniversal) (ht : D.IsTraceGenerated) :
+    letI := D.commRing; letI := D.topologicalSpace
+    letI := D.isTopologicalRing; letI := D.algebra
+    ∀ q : Ideal D.R, q ∈ (Ideal.span {((ℓ : ℕ) : D.R)}).minimalPrimes →
+      Infinite (D.R ⧸ q) →
+      ∃ H : Subgroup (Field.absoluteGaloisGroup ℚ), H.FiniteIndex ∧
+        ∀ g ∈ H, IsIntegral ℤ_[ℓ]
+          (Ideal.Quotient.mk q ((D.ρ g).charpoly.coeff 1)) :=
+  sorry
+
+/-- **Potential-modularity leaf, UNIFORM form** (PROVEN 2026-07-26 over the
+minimal-prime form
+`exists_finiteIndex_isIntegral_charpolyCoeff_quotient_minimalPrime_of_isWeaklyUniversal_isTraceGenerated`
+above): in the weakly universal, trace-generated hardly ramified deformation
+ring there is ONE FINITE-INDEX subgroup `H ≤ G_ℚ` that works simultaneously
+for every prime `p ∋ ℓ` — the Frobenius-free traces of the universal
+deformation are integral over `ℤ_ℓ` modulo `p` for every `g ∈ H`.
+
+This is the shape the mod-`ℓ` fibre consumer
+`isIntegral_charFrobCoeff_quotient_of_isWeaklyUniversal_isTraceGenerated`
+below wants, because it must hand ONE subgroup to the Khare–Wintenberger
+Dickson descent before it ever sees a prime.
+
+HOW IT IS PROVEN — the quantifier swap, and why it is free. Uniformity in
+`p` looks like the substance of the statement and is not: it is bought from
+the Noetherian clause of the deformation category. `D.R` Noetherian gives
+`(ℓ)` only FINITELY many minimal primes; each of them gets its own
+finite-index subgroup (from the leaf above when its quotient is infinite,
+and from `isIntegral_of_finite_algebra` with `H = ⊤` when it is finite); the
+INTERSECTION of those finitely many subgroups still has finite index by
+`Subgroup.finiteIndex_iInf`; and an arbitrary prime `p ∋ ℓ` contains some
+minimal prime `q` over `(ℓ)` (`Ideal.exists_minimalPrimes_le`), so
+`isIntegral_quotient_of_le` carries the integrality from `D.R ⧸ q` up to
+`D.R ⧸ p`. Geometrically: the mod-`ℓ` fibre of `Spec D.R` has finitely many
+irreducible components, and it is enough to control their generic points.
+
+The converse implication is immediate (take the same `H` at every `q`), so
+the two forms are EQUIVALENT and the arithmetic content lives entirely in
+the leaf above; see its docstring for the audit of what discharging it
+requires and for the circularity guard. -/
 theorem exists_finiteIndex_isIntegral_charpolyCoeff_quotient_of_isWeaklyUniversal_isTraceGenerated
     (hℓ5 : 5 ≤ ℓ)
     {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
@@ -5486,11 +5650,40 @@ theorem exists_finiteIndex_isIntegral_charpolyCoeff_quotient_of_isWeaklyUniversa
     ∃ H : Subgroup (Field.absoluteGaloisGroup ℚ), H.FiniteIndex ∧
       ∀ p : Ideal D.R, p.IsPrime → ((ℓ : ℕ) : D.R) ∈ p →
         ∀ g ∈ H, IsIntegral ℤ_[ℓ]
-          (Ideal.Quotient.mk p ((D.ρ g).charpoly.coeff 1)) :=
-  sorry
+          (Ideal.Quotient.mk p ((D.ρ g).charpoly.coeff 1)) := by
+  letI := D.commRing; letI := D.topologicalSpace
+  letI := D.isTopologicalRing; letI := D.isLocalRing; letI := D.algebra
+  letI := D.isNoetherianRing
+  -- one finite-index subgroup per MINIMAL prime over `(ℓ)`: the leaf above
+  -- where the quotient is infinite, `⊤` where it is finite
+  have hpick : ∀ q : Ideal D.R, q ∈ (Ideal.span {((ℓ : ℕ) : D.R)}).minimalPrimes →
+      ∃ H : Subgroup (Field.absoluteGaloisGroup ℚ), H.FiniteIndex ∧
+        ∀ g ∈ H, IsIntegral ℤ_[ℓ]
+          (Ideal.Quotient.mk q ((D.ρ g).charpoly.coeff 1)) := by
+    intro q hq
+    rcases finite_or_infinite (D.R ⧸ q) with hfin | hinf
+    · haveI := hfin
+      exact ⟨⊤, inferInstance, fun g _ => isIntegral_of_finite_algebra _⟩
+    · exact exists_finiteIndex_isIntegral_charpolyCoeff_quotient_minimalPrime_of_isWeaklyUniversal_isTraceGenerated
+        hℓOdd hdim hℓ5 h hirr D hw ht q hq hinf
+  choose Hf hHfi hHint using hpick
+  -- finitely many minimal primes, so their subgroups may be intersected
+  haveI : Finite ↥(Ideal.span {((ℓ : ℕ) : D.R)}).minimalPrimes :=
+    (Ideal.finite_minimalPrimes_of_isNoetherianRing D.R _).to_subtype
+  refine ⟨⨅ q : ↥(Ideal.span {((ℓ : ℕ) : D.R)}).minimalPrimes, Hf q.1 q.2,
+    Subgroup.finiteIndex_iInf (fun q => hHfi q.1 q.2), ?_⟩
+  intro p hp hℓp g hg
+  haveI := hp
+  -- an arbitrary prime containing `ℓ` contains a minimal one, and
+  -- integrality is carried up that inclusion
+  obtain ⟨q, hq, hqp⟩ := Ideal.exists_minimalPrimes_le
+    (I := Ideal.span {((ℓ : ℕ) : D.R)}) (J := p)
+    ((Ideal.span_singleton_le_iff_mem _).2 hℓp)
+  exact isIntegral_quotient_of_le hqp
+    (hHint q hq g (Subgroup.mem_iInf.mp hg ⟨q, hq⟩))
 
 /-- **Mod-`ℓ` fibre leaf, TRACE form** (PROVEN 2026-07-26 over the
-potential-modularity leaf
+potential-modularity statement
 `exists_finiteIndex_isIntegral_charpolyCoeff_quotient_of_isWeaklyUniversal_isTraceGenerated`
 above, the Dickson descent `isIntegral_trace_of_isIntegral_trace_pow` and
 the coset counting `exists_pow_mem_of_finiteIndex`; NARROWED TWICE before
@@ -5554,8 +5747,10 @@ coefficient is the determinant of `D.ρ (globalFrob q)`, which
 hence integral for free; `coeff 2 = 1` and `coeff n = 0` for `n ≥ 3`, the
 characteristic polynomial of a rank-2 endomorphism being monic of degree
 `2`. The remaining coefficient — the TRACE — is obtained from the
-potential-modularity leaf
+potential-modularity statement
 `exists_finiteIndex_isIntegral_charpolyCoeff_quotient_of_isWeaklyUniversal_isTraceGenerated`
+(itself proven over the MINIMAL-PRIME leaf of the same name plus
+`minimalPrime`, which is where the arithmetic now lives)
 above by the Khare–Wintenberger base-change descent, which is proven here
 in two elementary pieces: `exists_pow_mem_of_finiteIndex` produces `m > 0`
 with `Frob_q^m ∈ H` (the residue degree of `q` in `F`), and
