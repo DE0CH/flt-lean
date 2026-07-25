@@ -6939,54 +6939,157 @@ theorem threeadicRealization_det_cyclotomic_of_witness
     hdense.closure_eq ▸ hclosed.closure_subset_iff.mpr hsub
   exact hall (Set.mem_univ g)
 
-/-- **Member-independence of the ramification locus away from `3`**
-(sorry node, CITATION LEAF — isolated 2026-07-25 out of
-`exists_conductor_threeadicRealization_of_witness`, whose conductor
-bookkeeping is PROVEN below over it): every prime `p ≠ 3` at which the
-Brauer-descended `3`-adic member `τ` genuinely RAMIFIES is distinct
-from `ℓ`, and is a prime at which the `ℓ`-adic member `ρ` itself
-genuinely ramifies.
+/-- **The `3`-adic member is unramified at `ℓ`** (sorry node, CITATION
+LEAF — split off 2026-07-25 from
+`threeadicRealization_ramified_transfer_of_witness` below, whose
+`p ≠ ℓ` clause is exactly this statement): the Brauer-descended
+`3`-adic member `τ` is unramified at the `ℓ`-adic member's OWN residue
+characteristic `ℓ`.
 
-This is the sharpest form of the Carayol joint: it is purely LOCAL (one
-prime at a time), carries no existential and no finiteness-of-
-ramification bookkeeping, and is exactly the conjunction of the two
-literature inputs the conductor statement needs.
+WHY THIS IS A LEAF OF ITS OWN. This is the FONTAINE–LAFFAILLE input,
+and it is a different literature theorem from the member-independence
+transfer at a place prime to both residue characteristics
+(`threeadicRealization_unramifiedTransfer_of_witness`, immediately
+below), which is why the two are now separate citations rather than one
+bundled clause. The chain is:
 
-* For `p ∤ 3ℓ` it is the member-independence half of Carayol's
-  local-global compatibility: the Weil–Deligne parameter at a place `p`
-  prime to BOTH residue characteristics is independent of the member of
-  the compatible system, so a ramified parameter on the `3`-adic member
-  `τ` is a ramified parameter on the `ℓ`-adic member `ρ`.
-* The clause `p ≠ ℓ` is the Fontaine–Laffaille/Carayol input at the
-  `ℓ`-adic member's own residue characteristic: `ρ` is FLAT at `ℓ`
-  (`hρ.isFlat`), i.e. crystalline of Hodge–Tate weights `{0, 1}`, which
-  is the local condition corresponding to level prime to `ℓ`, so `ℓ`
-  does not divide the level of the descended eigensystem and `τ` is
-  unramified at `ℓ` — hence a prime where `τ` ramifies cannot be `ℓ`.
+* `ρ` is FLAT at `ℓ` (`hρ.isFlat`) — i.e. crystalline of Hodge–Tate
+  weights `{0, 1}` in the weight-`2` normalization;
+* by Fontaine–Laffaille (the weight is small relative to `ℓ` — weight
+  `2` against `ℓ ≥ 5 > 2` — so the functor is an equivalence and
+  flatness IS the integral crystalline condition), that is the local
+  condition at `ℓ`
+  corresponding to LEVEL PRIME TO `ℓ`: the automorphic local component
+  `π_λ` at the places `λ | ℓ` of the Hilbert newform through which the
+  descent runs is unramified;
+* `ℓ ≠ 3` (indeed `ℓ ≥ 5`), so the place `ℓ` is prime to the residue
+  characteristic of the `3`-adic member, and Carayol's local-global
+  compatibility applies to `τ` there: `WD_ℓ(τ) ≅ ς(π_ℓ)`, which is
+  unramified.
 
-Note what is NOT asserted: nothing about `p = 3` (the residue
-characteristic of `τ`, where the flatness node
+Note that this is the ONLY point in the whole ramification chain at
+which `hρ.isFlat` is consumed; the transfer leaf below consumes only
+Carayol.
+
+Literature: Fontaine–Laffaille, *Construction de représentations
+p-adiques*, Ann. Sci. ÉNS 15 (1982) (flat ⟺ crystalline with
+Hodge–Tate weights `{0,1}`, and level prime to `ℓ` in weight `2`);
+Carayol, *Sur les représentations `ℓ`-adiques associées aux formes
+modulaires de Hilbert*, Ann. Sci. ÉNS 19 (1986), Théorème (A) p. 410
+(the local parameter is pinned at every finite place of residue
+characteristic different from that of `λ`); BLGGT, *Potential
+automorphy and change of weight*, Ann. of Math. 179 (2014), §5.1, §5.5.
+
+ROUTE AUDIT (2026-07-25): no formal route exists in the interface. The
+only arithmetic datum `ThreeadicRealization` carries is `compat`, which
+equates CHARACTERISTIC POLYNOMIALS OF FROBENIUS at unramified places
+away from the finite set `Rlz.S₁`; Frobenius data determines at most
+the semisimplification of `τ` and says nothing whatsoever about the
+inertia subgroup at `ℓ`. Concretely, the closure-of-Frobenius-classes
+argument that PROVES the determinant transfer
+(`threeadicRealization_det_cyclotomic_of_witness` above) cannot be
+imitated here: it works because `det τ` and the cyclotomic character
+take the SAME RATIONAL VALUE `q` at `Frob_q`, i.e. it compares two
+continuous functions that are known to agree on a dense set, whereas
+`τ|_{I_ℓ} = 1` is not the agreement of two continuous functions known
+at Frobenii. So this is cut as a literature joint.
+
+SOUNDNESS AUDIT (both ways, 2026-07-25): (i) direct — for the
+realization produced by the construction leaf this is the
+Fontaine–Laffaille/Carayol chain above, applied to the descended
+eigensystem; for an abstract realization the abstract-quantification
+caveat of pillar β applies, and (ii) collapse — the hypothesis set is
+classically unsatisfiable (headline at the end of this module), so the
+statement is classically true for every package.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
+discharge through `Family.lean`, `Lift.lean`, or
+`Modularity/Interface.lean`. -/
+theorem threeadicRealization_isUnramifiedAtEll_of_witness
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+    {Wit : PotentialModularityWitness ℓ O ρ}
+    (Rlz : ThreeadicRealization ℓ O ρ Wit) :
+    Rlz.τ.IsUnramifiedAt
+      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : ℓ.Prime)) :=
+  sorry
+
+/-- **Member-independence of the ramification locus at a place prime to
+BOTH residue characteristics** (sorry node, CITATION LEAF — split off
+2026-07-25 from `threeadicRealization_ramified_transfer_of_witness`
+below, whose `¬ ρ.IsUnramifiedAt` clause is the contrapositive of this
+statement): at a prime `p ∉ {3, ℓ}` at which the `ℓ`-adic member `ρ`
+is UNRAMIFIED, the Brauer-descended `3`-adic member `τ` is unramified
+too.
+
+This is Carayol's member-independence in its bare local form: it is
+purely LOCAL (one prime at a time), carries no existential, no
+finiteness-of-ramification bookkeeping, and no input at the two residue
+characteristics `3` and `ℓ` — the place `ℓ` is handled by the separate
+Fontaine–Laffaille leaf
+`threeadicRealization_isUnramifiedAtEll_of_witness` above, and nothing
+whatever is asserted at `p = 3` (where the flatness node
 `threeadicRealization_isFlat_of_witness` carries the local condition
-instead), and no claim that any prime ramifies. Consequently the
-statement is satisfiable by a member unramified everywhere away from
-`3`, which is precisely the classical expectation here — the conductor
-of the system divides `2`.
+instead).
+
+WHY THIS IS THE CITATION. Strict compatibility of the system through
+which the descent runs says that a single Weil–Deligne representation
+`WD_p(R)` over the coefficient field reproduces
+`WD(r_λ|_{G_{ℚ_p}})^{F-ss}` for every `λ` whose residue characteristic
+differs from `p` (BLGGT §5.1, the display
+`ς WD_p(R) ≅ WD(r_λ|G_{ℚ_p})^{F-ss}`). Here `p ∉ {3, ℓ}`, so BOTH
+`λ | ℓ` (the member `ρ`) and `λ | 3` (the member `τ`) are legitimate,
+and the two local parameters are isomorphic; an unramified
+Weil–Deligne parameter on one member is therefore unramified on the
+other. Carayol's theorem for Hilbert newforms is what pins the local
+constituent at EVERY finite place of residue characteristic `≠ λ`, not
+merely almost all.
+
+DIRECTION AUDIT: Carayol gives the parameters isomorphic, hence the
+IFF; only the direction the consumer needs is stated here, which is the
+weaker assertion. The reverse direction (`τ` unramified ⟹ `ρ`
+unramified) is nowhere used in this module and is deliberately not
+claimed.
 
 Literature: Carayol, *Sur les représentations `ℓ`-adiques associées aux
-formes modulaires de Hilbert*, Ann. Sci. ÉNS 19 (1986) (local-global
-compatibility); Khare–Wintenberger, *Serre's modularity conjecture
-(I)*, Invent. Math. 178 (2009), §5 (strict compatibility away from the
+formes modulaires de Hilbert*, Ann. Sci. ÉNS 19 (1986), Théorème (A)
+p. 410; Khare–Wintenberger, *Serre's modularity conjecture (I)*,
+Invent. Math. 178 (2009), §5 (strict compatibility away from the
 residue characteristic); BLGGT, *Potential automorphy and change of
-weight*, Ann. of Math. 179 (2014), §5.5; Fontaine–Laffaille,
-*Construction de représentations p-adiques*, Ann. Sci. ÉNS 15 (1982)
-(flat at `ℓ` ⟺ level prime to `ℓ` in weight `2`).
+weight*, Ann. of Math. 179 (2014), §5.1 and Theorem 5.5.1.
 
-ROUTE AUDIT (2026-07-25): the *charFrob cut* out of `Rlz.compat` is
-again rejected here for the reason recorded at the consumer — `compat`
-equates characteristic polynomials of Frobenius at unramified places
-away from the finite set `Rlz.S₁` and therefore carries no inertia
-information whatsoever, and `ThreeadicRealization` carries no other
-arithmetic datum. No formal route to an inertia statement exists in the
+ROUTE AUDIT (2026-07-25, re-checked at the split): the *charFrob cut*
+out of `Rlz.compat` is again rejected — `compat` equates
+characteristic polynomials of Frobenius at unramified places away from
+the finite set `Rlz.S₁` and therefore carries no inertia information
+whatsoever, and `ThreeadicRealization` carries no other arithmetic
+datum. Sharper form of the same objection, recorded here so it is not
+re-litigated: Frobenius data pins at most the SEMISIMPLIFICATION of
+`τ`, and semisimplification destroys exactly the information at stake —
+over `ℚ` the extensions of `1` by the `3`-adic cyclotomic character are
+classified by `H¹(G_ℚ, ℤ_3(1))`, i.e. by the `3`-adic completion of
+`ℚ^×` (Kummer theory), and a class whose valuation at `p` is nonzero is
+RAMIFIED at `p` while having, at every prime, the same characteristic
+polynomial of Frobenius as the split extension (any lift of Frobenius
+acts by an upper-triangular matrix with the same diagonal). So no
+formal route to an inertia statement exists in the
 interface, which is why this is cut as a literature joint.
 
 SOUNDNESS AUDIT (both ways, 2026-07-25): (i) direct — for the
@@ -6997,8 +7100,116 @@ abstract-quantification caveat of pillar β applies, and (ii) collapse —
 the hypothesis set is classically unsatisfiable (headline at the end of
 this module), so the statement is classically true for every package.
 
-CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
-through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
+discharge through `Family.lean`, `Lift.lean`, or
+`Modularity/Interface.lean`. -/
+theorem threeadicRealization_unramifiedTransfer_of_witness
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+    {Wit : PotentialModularityWitness ℓ O ρ}
+    (Rlz : ThreeadicRealization ℓ O ρ Wit) :
+    ∀ p (hp : p.Prime), p ≠ 3 → p ≠ ℓ →
+      ρ.IsUnramifiedAt hp.toHeightOneSpectrumRingOfIntegersRat →
+      Rlz.τ.IsUnramifiedAt hp.toHeightOneSpectrumRingOfIntegersRat :=
+  sorry
+
+/-- **Member-independence of the ramification locus away from `3`**
+(DECOMPOSED 2026-07-25 — now a PROVEN assembly over the two citation
+leaves above, one per literature input; previously a single bundled
+citation leaf isolated 2026-07-25 out of
+`exists_conductor_threeadicRealization_of_witness`, whose conductor
+bookkeeping is PROVEN below over it): every prime `p ≠ 3` at which the
+Brauer-descended `3`-adic member `τ` genuinely RAMIFIES is distinct
+from `ℓ`, and is a prime at which the `ℓ`-adic member `ρ` itself
+genuinely ramifies.
+
+CITATION-SPLIT AUDIT (2026-07-25). The old sorry here bundled TWO
+different literature theorems into one clause, which is why it is now
+an assembly:
+
+* the `p ≠ ℓ` clause is the FONTAINE–LAFFAILLE input at the `ℓ`-adic
+  member's own residue characteristic — `ρ` is flat at `ℓ`
+  (`hρ.isFlat`), hence the level is prime to `ℓ`, hence `τ` is
+  unramified at `ℓ`; it is now the leaf
+  `threeadicRealization_isUnramifiedAtEll_of_witness`, which is a
+  statement about `τ` ALONE and mentions `ρ` only through the
+  hypothesis set;
+* the `¬ ρ.IsUnramifiedAt p` clause is the CARAYOL member-independence
+  half, at a place prime to both residue characteristics; it is now the
+  leaf `threeadicRealization_unramifiedTransfer_of_witness`, stated in
+  its contrapositive (and weakest useful) form "`ρ` unramified at
+  `p ∉ {3, ℓ}` ⟹ `τ` unramified at `p`".
+
+Nothing is lost or smuggled by the split: the assembly below is pure
+logic, and conversely each leaf is an instance of this statement
+(`p = ℓ` for the first, the contrapositive at `p ∉ {3, ℓ}` for the
+second), so the cut is an equivalence, not a weakening.
+
+ASSEMBLY (2026-07-25, PROVEN). Let `p ≠ 3` be a prime at which `τ`
+ramifies. If `p = ℓ` then the Fontaine–Laffaille leaf says `τ` is
+unramified at `p`, a contradiction; so `p ≠ ℓ`. With `p ∉ {3, ℓ}` in
+hand, the Carayol transfer leaf applies at `p`, and its contrapositive
+turns ramification of `τ` at `p` into ramification of `ρ` at `p`.
+
+Note what is NOT asserted: nothing about `p = 3` (the residue
+characteristic of `τ`, where the flatness node
+`threeadicRealization_isFlat_of_witness` carries the local condition
+instead), and no claim that any prime ramifies. Consequently the
+statement is satisfiable by a member unramified everywhere away from
+`3`, which is precisely the classical expectation here — the conductor
+of the system divides `2`.
+
+STRENGTH AUDIT (2026-07-25): the conclusion is strictly stronger than
+anything downstream consumes. Every consumer (through
+`exists_conductor_threeadicRealization_of_witness` and
+`threeadicRealization_isUnramified_of_witness`) uses
+`¬ ρ.IsUnramifiedAt p` only to CONTRADICT `hρ.isUnramified`, so what is
+extracted downstream is just "`τ` is unramified outside `{2, 3}`"; the
+residual content — that `ρ` genuinely ramifies at `2` whenever `τ`
+does — is carried but never used. It is kept because it is what Carayol
+actually gives, and because dropping it would make this node's
+statement no longer an equivalent recut of the two leaves above.
+
+Literature (via the leaves): Carayol, *Sur les représentations
+`ℓ`-adiques associées aux formes modulaires de Hilbert*, Ann. Sci. ÉNS
+19 (1986) (local-global compatibility); Khare–Wintenberger, *Serre's
+modularity conjecture (I)*, Invent. Math. 178 (2009), §5 (strict
+compatibility away from the residue characteristic); BLGGT, *Potential
+automorphy and change of weight*, Ann. of Math. 179 (2014), §5.5;
+Fontaine–Laffaille, *Construction de représentations p-adiques*,
+Ann. Sci. ÉNS 15 (1982) (flat at `ℓ` ⟺ level prime to `ℓ` in weight
+`2`).
+
+SOUNDNESS AUDIT (both ways, 2026-07-25): inherited from the two leaves
+(see their docstrings) — (i) direct: Carayol's theorem plus the
+Fontaine–Laffaille level bound, applied to the descended eigensystem on
+both sides of the compatible family, for an abstract realization
+subject to the abstract-quantification caveat of pillar β; and (ii)
+collapse: the hypothesis set is classically unsatisfiable (headline at
+the end of this module), so the statement is classically true for every
+package. The assembly below adds nothing to audit — it is pure logic.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): respected —
+the only leaves consumed are the two above, which carry the same guard;
+nothing routes through `Family.lean`, `Lift.lean`, or
+`Modularity/Interface.lean`. -/
 theorem threeadicRealization_ramified_transfer_of_witness
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
@@ -7024,12 +7235,22 @@ theorem threeadicRealization_ramified_transfer_of_witness
     ∀ p (hp : p.Prime), p ≠ 3 →
       ¬ Rlz.τ.IsUnramifiedAt hp.toHeightOneSpectrumRingOfIntegersRat →
       p ≠ ℓ ∧
-        ¬ ρ.IsUnramifiedAt hp.toHeightOneSpectrumRingOfIntegersRat :=
-  sorry
+        ¬ ρ.IsUnramifiedAt hp.toHeightOneSpectrumRingOfIntegersRat := by
+  intro p hp hp3 hram
+  -- `p ≠ ℓ`: the Fontaine–Laffaille leaf says `τ` is unramified at `ℓ`
+  have hpℓ : p ≠ ℓ := by
+    rintro rfl
+    exact hram (threeadicRealization_isUnramifiedAtEll_of_witness hℓodd hℓ5
+      hZinj hrank hρ hW hρbar hirr π hπsurj hπ Rlz)
+  -- `ρ` ramifies at `p`: the contrapositive of the Carayol transfer leaf,
+  -- now legitimate since `p` is prime to both residue characteristics
+  exact ⟨hpℓ, fun hun => hram
+    (threeadicRealization_unramifiedTransfer_of_witness hℓodd hℓ5 hZinj
+      hrank hρ hW hρbar hirr π hπsurj hπ Rlz p hp hp3 hpℓ hun)⟩
 
 /-- **Carayol local-global compatibility away from the residue
 characteristic — the conductor of the descended system** (PROVEN
-2026-07-25 over the sharper local citation leaf
+2026-07-25 over the sharper purely local node
 `threeadicRealization_ramified_transfer_of_witness`): the
 Brauer-descended `3`-adic member `τ` has a
 conductor `N` in the usual sense, namely
@@ -7041,10 +7262,12 @@ conductor `N` in the usual sense, namely
 
 The literature content of this node — that the conductor is an
 invariant of the compatible system away from the residue characteristic
-— is now carried by ONE sharper, purely local citation leaf,
+— is now carried by the sharper, purely local node
 `threeadicRealization_ramified_transfer_of_witness` (immediately above):
 every prime `p ≠ 3` at which `τ` ramifies is a prime `≠ ℓ` at which `ρ`
-ramifies. That leaf is exactly Carayol's member-independence of the
+ramifies. That node is itself PROVEN (2026-07-25) over TWO citation
+leaves, one per literature input — see its CITATION-SPLIT AUDIT. It is
+exactly Carayol's member-independence of the
 Weil–Deligne parameter at places prime to both residue characteristics,
 together with the Fontaine–Laffaille input `p ≠ ℓ` (`ρ` is FLAT at `ℓ`
 by `hρ.isFlat`, i.e. crystalline of Hodge–Tate weights `{0, 1}`, the
@@ -7226,8 +7449,11 @@ prime with `p ≠ 2`, `p ≠ 3`. Dichotomy on `p ∣ N`.
   from `3` would be a prime of genuine ramification of `ρ`, and there
   is none.
 
-The residual sorry of this node is therefore exactly the one citation
-leaf, and the two hardly ramified inputs it is cut against
+The residual sorries of this node are therefore exactly the citation
+leaves under `threeadicRealization_ramified_transfer_of_witness` (two
+of them since the split of 2026-07-25: Carayol member-independence at
+`p ∤ 3ℓ`, and Fontaine–Laffaille at `ℓ`), and the two hardly ramified
+inputs it is cut against
 (`hρ.isUnramified` here, `hρ.isFlat` inside the leaf's `p ≠ ℓ` clause)
 are recorded at the joint rather than assumed silently.
 
