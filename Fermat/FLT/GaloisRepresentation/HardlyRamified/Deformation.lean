@@ -53,18 +53,20 @@ PROVEN 2026-07-24 via the shared Chebotarev–Brauer–Nesbitt node of
 `BrauerNesbittConjugacy.lean`):
 `exists_isWeaklyUniversalOnIdentifiedFrames`,
 `exists_isTraceGenerated_ringHom_of_forall_trace_mem`,
-`exists_maximalIdeal_pow_le_span_of_isWeaklyUniversal_isTraceGenerated`,
+`eq_maximalIdeal_of_isPrime_of_isWeaklyUniversal_isTraceGenerated`,
 `exists_minimal_mvPowerSeries_presentation`,
 `exists_relations_lt_of_minimal_mvPowerSeries_presentation` (the first
 three were narrowed 2026-07-25: the universality leaf now carries the
 representation-level classifying datum rather than its `charFrob`
 shadow, the Carayol leaf receives the Chebotarev density step as a
-hypothesis, and the finiteness leaf is stated as `𝔪`-primarity of `(ℓ)`
-— the trace-shadow glue, the density step and the
-Artinian-to-finite dévissage are PROVEN here, in
+hypothesis, and the finiteness leaf is stated as the one-point-ness of
+the mod-`ℓ` fibre of `Spec` — the trace-shadow glue, the density step,
+the `𝔪`-primarity dévissage and the Artinian-to-finite dévissage are
+PROVEN here, in
 `exists_isWeaklyUniversalOnIdentified`,
-`exists_isTraceGenerated_ringHom` and
-`finite_quotient_span_of_isWeaklyUniversal_isTraceGenerated`
+`exists_isTraceGenerated_ringHom`,
+`exists_maximalIdeal_pow_le_span_of_isWeaklyUniversal_isTraceGenerated`
+and `finite_quotient_span_of_isWeaklyUniversal_isTraceGenerated`
 respectively). Everything
 else is proven glue, culminating in
 `exists_hardlyRamified_lift_of_five_le` — verbatim the statement of
@@ -1116,54 +1118,131 @@ theorem exists_universal_hardlyRamifiedDeformation (hℓ5 : 5 ≤ ℓ)
     exists_isWeaklyUniversal_isTraceGenerated hℓOdd hdim hℓ5 h hirr
   exact ⟨D, isUniversal_of_isWeaklyUniversal_isTraceGenerated hℓOdd D hw ht⟩
 
-/-- **Mod-`ℓ` `𝔪`-primarity leaf** (sorry node — the arithmetic core of
-the finiteness stratum, DECOMPOSED 2026-07-25 into this ideal-theoretic
-statement plus the pure commutative algebra
-`finite_quotient_of_maximalIdeal_pow_le`): in the weakly universal,
-trace-generated hardly ramified deformation ring — i.e. the genuine
-universal ring, as constructed by
-`exists_isWeaklyUniversal_isTraceGenerated` — the ideal `(ℓ)` is
-`𝔪`-PRIMARY: some power of the maximal ideal is contained in `(ℓ)`.
+/-- **`𝔪`-primarity from a one-point fibre** (PROVEN 2026-07-25, pure
+commutative algebra — no arithmetic content): in a Noetherian local
+ring, if the maximal ideal is the ONLY prime containing `x`, then some
+power of the maximal ideal is contained in `(x)`.
+
+Proof: `radical (x) = ⋂ {p prime, p ∋ x}` (`Ideal.radical_eq_sInf`), and
+by hypothesis every such `p` equals `𝔪`, so `𝔪 ≤ radical (x)`; the
+radical of an ideal of a Noetherian ring is finitely generated, hence
+`radical (x) ^ n ≤ (x)` for some `n` (`Ideal.exists_radical_pow_le_of_fg`),
+and `𝔪 ^ n ≤ radical (x) ^ n` by monotonicity of powers.
+
+This is the Noetherian dévissage from the geometric form of "`R ⧸ (x)`
+is Artinian" — `Spec (R ⧸ (x))` is the single closed point — to the
+ideal-theoretic form. Note that it needs no hypothesis relating `x` to
+`𝔪`: if `x` is a unit, `(x) = ⊤` and the conclusion is trivial. -/
+theorem exists_maximalIdeal_pow_le_span_of_forall_isPrime {R : Type*}
+    [CommRing R] [IsLocalRing R] [IsNoetherianRing R] (x : R)
+    (hx : ∀ p : Ideal R, p.IsPrime → x ∈ p → p = IsLocalRing.maximalIdeal R) :
+    ∃ n : ℕ, IsLocalRing.maximalIdeal R ^ n ≤ Ideal.span {x} := by
+  obtain ⟨n, hn⟩ :=
+    (Ideal.span {x}).exists_radical_pow_le_of_fg (IsNoetherian.noetherian _)
+  refine ⟨n, le_trans (pow_le_pow_left' ?_ n) hn⟩
+  rw [Ideal.radical_eq_sInf]
+  refine le_sInf ?_
+  rintro J ⟨hJ1, hJ2⟩
+  exact (hx J hJ2 (hJ1 (Ideal.mem_span_singleton_self x))).ge
+
+/-- **Mod-`ℓ` fibre leaf** (sorry node — the arithmetic core of the
+finiteness stratum; NARROWED 2026-07-25 from the `𝔪`-primarity form
+`∃ n, 𝔪 ^ n ≤ (ℓ)` to this pointwise statement about `Spec`, the
+dévissage between the two being the pure commutative algebra
+`exists_maximalIdeal_pow_le_span_of_forall_isPrime` just above): in the
+weakly universal, trace-generated hardly ramified deformation ring —
+i.e. the genuine universal ring, as constructed by
+`exists_isWeaklyUniversal_isTraceGenerated` — the maximal ideal is the
+ONLY prime of `D.R` containing `ℓ`. Geometrically: the mod-`ℓ` fibre of
+`Spec D.R` is a single point.
 
 Equivalently (the ring being Noetherian local with finite residue
-field): `D.R ⧸ (ℓ)` is Artinian, equivalently finite — which is the
-form the statement had before the 2026-07-25 decomposition and the form
-`finite_quotient_span_of_isWeaklyUniversal_isTraceGenerated` below now
-PROVES from this leaf. The `𝔪`-primary form is the literature's: it is
-verbatim "`R/λ` is Artinian", i.e. `dim R ≤ 1` with `ℓ` a system of
+field): `(ℓ)` is `𝔪`-primary, `D.R ⧸ (ℓ)` is Artinian, `D.R ⧸ (ℓ)` is
+finite — the three forms the statement has had, related by
+`exists_maximalIdeal_pow_le_span_of_forall_isPrime` and
+`finite_quotient_of_maximalIdeal_pow_le` below. This is verbatim the
+literature's "`R/λ` is Artinian", i.e. `dim R ≤ 1` with `ℓ` a system of
 parameters, which is what the Taylor–Wiles–Kisin patching argument
 produces.
 
+WHY THE POINTWISE FORM: it is the one the repository's *specialization*
+machinery consumes. For a prime `p ∋ ℓ` the quotient `D.R ⧸ p` is a
+characteristic-`ℓ` local domain over which the deformation remains
+hardly ramified — `isFlatAt_baseChange_quotient`, `isTameAtTwo_baseChange`
+and `isHardlyRamified_baseChange_quotient` below are stated for exactly
+these PRIME quotients — so a proof may work one point of the mod-`ℓ`
+fibre at a time (show `D.R ⧸ p` is a field), instead of handling the
+whole mod-`ℓ` fibre at once. The dual bound is already available: the
+presentation stratum gives a prime strictly below `𝔪`
+(`exists_isPrime_lt_maximalIdeal_of_isWeaklyUniversal_isTraceGenerated`,
+`dim D.R ≥ 1`), so this leaf is exactly the matching upper bound
+`dim D.R ≤ 1` in the fibre-wise form.
+
 This is the potential-modularity / Taylor–Wiles–Kisin input of
 Khare–Wintenberger — the single genuinely deep arithmetic node of the
-lifting core, not decomposed further here: no principled intermediate
-statement exists in the repository's current vocabulary (stating
-"`R = T`" needs Hecke algebras; stating potential modularity needs
-Hilbert modular forms over totally real fields). The
-residual-modularity hypothesis is bypassed via potential modularity
-(Taylor's Moret-Bailly argument), which after a solvable base change
-`F/ℚ` (totally real, in which the deformation problem's conditions
-remain balanced) proves an `R = T` theorem by the Taylor–Wiles–Kisin
-patching method; `T` is a finite `ℤ_ℓ`-algebra, so `T/ℓT` — and with
-it the mod-`ℓ` fibre of the `ℚ`-level ring, by Khare–Wintenberger's
-descent — is finite. The mod-`ℓ` form is chosen over
-`Module.Finite ℤ_[ℓ] D.R` because it is what the patching literature
-produces directly (the "`R/λ` is Artinian" form of finiteness, cf. the
-Böckle presentation stratum); the lift back to `ℤ_ℓ`-module finiteness
-is the pure commutative-algebra completeness bootstrap
-`moduleFinite_of_finite_quotient_span` below. The hypotheses
-characterize `D` up to canonical isomorphism (weak universality +
-trace generation = universality, by
+lifting core. The residual-modularity hypothesis is bypassed via
+potential modularity (Taylor's Moret-Bailly argument), which after a
+solvable base change `F/ℚ` (totally real, in which the deformation
+problem's conditions remain balanced) proves an `R = T` theorem by the
+Taylor–Wiles–Kisin patching method; `T` is a finite `ℤ_ℓ`-algebra, so
+`T/ℓT` — and with it the mod-`ℓ` fibre of the `ℚ`-level ring, by
+Khare–Wintenberger's descent — is finite. The mod-`ℓ` form is chosen
+over `Module.Finite ℤ_[ℓ] D.R` because it is what the patching
+literature produces directly (cf. the Böckle presentation stratum); the
+lift back to `ℤ_ℓ`-module finiteness is the pure commutative-algebra
+completeness bootstrap `moduleFinite_of_finite_quotient_span` below.
+The hypotheses characterize `D` up to canonical isomorphism (weak
+universality + trace generation = universality, by
 `isUniversal_of_isWeaklyUniversal_isTraceGenerated` and the rigidity
 theorem `exists_ringEquiv_of_isUniversal`), so a future proof may
-construct its own universal datum, prove ITS mod-`ℓ` fibre finite, and
+construct its own universal datum, prove ITS mod-`ℓ` fibre a point, and
 transport the result along the canonical isomorphism.
+
+WHERE THE PROOF WILL HAVE TO COME FROM (audit, 2026-07-25).
+`Fermat/FLT/Modularity/Patching.lean` proves both halves of `R = T` for
+its own deformation vocabulary — `surjective_ringHom_of_charFrob_eq`
+and `injective_ringHom_of_isWeaklyUniversal`, the latter through the
+patched-module engine — but it carries `Module.Finite ℤ_[ℓ] T` as a
+HYPOTHESIS on the Hecke side and produces no finiteness of any
+deformation ring, so even the Hecke-algebra input is not yet available
+in the repository. Nor are its declarations reachable from here:
+`Patching.lean` imports `Modularity/KhareWintenberger.lean`, which
+imports THIS module, so consuming it would close the dependency cycle
+this module's circularity guard exists to prevent. Discharging this
+leaf therefore needs either (i) the KW-free module split recorded in
+`~/.flt-design-deformation-patching-dedup.md` plus genuine finiteness of
+`T`, or (ii) the Hilbert-modular potential-modularity route. CIRCULARITY
+GUARD: the odd-prime dichotomy
+`not_isIrreducible_of_isHardlyRamified_of_five_le` must NOT be used to
+discharge this vacuously — it is itself proven over pillar α, which
+this cluster proves.
 
 References: Khare–Wintenberger, *Serre's modularity conjecture (I)*,
 Thm. 4.1 and §4, and *(II)*; Taylor, *Remarks on a conjecture of
 Fontaine and Mazur* and *On the meromorphic continuation of degree two
 L-functions*; Kisin, *Moduli of finite flat group schemes, and
 modularity*; Buzzard's 2026 EPSRC course, Lecture 4. -/
+theorem eq_maximalIdeal_of_isPrime_of_isWeaklyUniversal_isTraceGenerated
+    (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (D : HardlyRamifiedDeformation hℓOdd ρbar)
+    (hw : D.IsWeaklyUniversal) (ht : D.IsTraceGenerated) :
+    letI := D.commRing; letI := D.isLocalRing
+    ∀ p : Ideal D.R, p.IsPrime → (ℓ : D.R) ∈ p →
+      p = IsLocalRing.maximalIdeal D.R :=
+  sorry
+
+/-- **Mod-`ℓ` `𝔪`-primarity stratum** (PROVEN 2026-07-25 over the
+mod-`ℓ` fibre leaf
+`eq_maximalIdeal_of_isPrime_of_isWeaklyUniversal_isTraceGenerated` and
+the pure commutative algebra
+`exists_maximalIdeal_pow_le_span_of_forall_isPrime`): in the weakly
+universal, trace-generated hardly ramified deformation ring the ideal
+`(ℓ)` is `𝔪`-PRIMARY — some power of the maximal ideal is contained in
+`(ℓ)`. This is the ideal-theoretic face of "`R/λ` is Artinian"; the
+finiteness face is
+`finite_quotient_span_of_isWeaklyUniversal_isTraceGenerated` below. -/
 theorem exists_maximalIdeal_pow_le_span_of_isWeaklyUniversal_isTraceGenerated
     (hℓ5 : 5 ≤ ℓ)
     {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
@@ -1171,8 +1250,12 @@ theorem exists_maximalIdeal_pow_le_span_of_isWeaklyUniversal_isTraceGenerated
     (D : HardlyRamifiedDeformation hℓOdd ρbar)
     (hw : D.IsWeaklyUniversal) (ht : D.IsTraceGenerated) :
     letI := D.commRing; letI := D.isLocalRing
-    ∃ n : ℕ, IsLocalRing.maximalIdeal D.R ^ n ≤ Ideal.span {(ℓ : D.R)} :=
-  sorry
+    ∃ n : ℕ, IsLocalRing.maximalIdeal D.R ^ n ≤ Ideal.span {(ℓ : D.R)} := by
+  letI := D.commRing; letI := D.isLocalRing
+  haveI := D.isNoetherianRing
+  exact exists_maximalIdeal_pow_le_span_of_forall_isPrime (ℓ : D.R)
+    (eq_maximalIdeal_of_isPrime_of_isWeaklyUniversal_isTraceGenerated hℓOdd
+      hdim hℓ5 h hirr D hw ht)
 
 omit [TopologicalSpace k] [DiscreteTopology k] [Algebra ℤ_[ℓ] k] in
 /-- **Finiteness from `𝔪`-primarity** (PROVEN 2026-07-25, pure
@@ -1209,8 +1292,10 @@ theorem finite_quotient_of_maximalIdeal_pow_le {R : Type*} [CommRing R]
     (Ideal.Quotient.factor_surjective hnle)
 
 /-- **Mod-`ℓ` finiteness stratum** (PROVEN 2026-07-25 over the
-`𝔪`-primarity leaf
+`𝔪`-primarity stratum
 `exists_maximalIdeal_pow_le_span_of_isWeaklyUniversal_isTraceGenerated`
+— itself proven over the mod-`ℓ` fibre leaf
+`eq_maximalIdeal_of_isPrime_of_isWeaklyUniversal_isTraceGenerated` —
 and the pure commutative algebra `finite_quotient_of_maximalIdeal_pow_le`):
 the weakly universal, trace-generated hardly ramified deformation ring
 is finite modulo `ℓ`. The deformation ring is Noetherian local with
@@ -1447,8 +1532,8 @@ theorem moduleFinite_of_finite_quotient_span {R : Type*} [CommRing R]
     ⟨(Set.finite_range s).toFinset, by
       rw [Set.Finite.coe_toFinset]; exact hspan⟩
 
-/-- **Finiteness leaf** (DECOMPOSED 2026-07-23 into the mod-`ℓ`
-finiteness leaf `finite_quotient_span_of_isWeaklyUniversal_isTraceGenerated`
+/-- **Finiteness stratum** (DECOMPOSED 2026-07-23 into the mod-`ℓ`
+finiteness stratum `finite_quotient_span_of_isWeaklyUniversal_isTraceGenerated`
 — the potential-modularity / Taylor–Wiles–Kisin content, producing
 finiteness of `D.R ⧸ (ℓ)` — plus the pure commutative-algebra
 completeness bootstrap `moduleFinite_of_finite_quotient_span`; the
