@@ -6534,7 +6534,11 @@ seams:
     order-`(p² − 1)` nonsplit-Cartan generator) — DERIVED 2026-07-25
     from the one-point cut
     * `exists_local_inertia_torsion_orbit_of_good_of_supersingular`
-      (sorry node): the same inertia element with a SINGLE `p`-torsion
+      (DERIVED 2026-07-25 over the two bricks
+      `spectralNorm_torsion_abscissa_of_good_of_supersingular` (the
+      Newton polygon of the `p`-division polynomial) and
+      `exists_localInertia_tameCharacter_orbit` (surjectivity of the tame
+      character of local inertia)): the same inertia element with a SINGLE `p`-torsion
       point `Q` whose `⟨σ⟩`-orbit has length divisible by `p + 1`. The
       nonsplit Cartan acts simply transitively on the `p² − 1` nonzero
       points of `E[p]`, so the orbit is everything; the module-wide
@@ -8583,12 +8587,404 @@ theorem WeierstrassCurve.point_map_pow_eq_self_of_eigenvector
   rw [hiter] at h2
   exact h2
 
+/-- **A root of unity congruent to `1` modulo an ideal is `1`** (PROVEN
+2026-07-25): in a domain, if `ζ ^ m = 1`, if `ζ − 1` lies in an ideal `I`
+and if the image of `m` does NOT lie in `I`, then `ζ = 1`. Proof:
+`(∑_{i<m} ζ^i) (ζ − 1) = ζ^m − 1 = 0`, so in a domain either `ζ = 1` or
+the geometric sum vanishes; but that sum is congruent to `m` modulo `I`
+(each `ζ^i − 1` is a multiple of `ζ − 1`), and `m ∉ I`.
+
+This is the ideal-theoretic form of "roots of unity of order prime to the
+residue characteristic inject into the residue field", which is what makes
+the tame character below well defined. -/
+theorem eq_one_of_pow_eq_one_of_sub_one_mem {S : Type*} [CommRing S] [IsDomain S]
+    {I : Ideal S} {ζ : S} {m : ℕ} (hζ : ζ ^ m = 1) (h1 : ζ - 1 ∈ I)
+    (hm : ((m : ℕ) : S) ∉ I) : ζ = 1 := by
+  have hgeom : (∑ i ∈ Finset.range m, ζ ^ i) * (ζ - 1) = 0 := by
+    rw [geom_sum_mul, hζ, sub_self]
+  rcases mul_eq_zero.mp hgeom with hsum | hsub
+  · exfalso
+    apply hm
+    have hsplit : ∑ i ∈ Finset.range m, (ζ ^ i - 1) =
+        (∑ i ∈ Finset.range m, ζ ^ i) - ((m : ℕ) : S) := by
+      rw [Finset.sum_sub_distrib]
+      simp
+    have hmem : (∑ i ∈ Finset.range m, ζ ^ i) - ((m : ℕ) : S) ∈ I := by
+      rw [← hsplit]
+      refine Ideal.sum_mem _ fun i _ => ?_
+      have hi : ζ ^ i - 1 = (∑ j ∈ Finset.range i, ζ ^ j) * (ζ - 1) := (geom_sum_mul ζ i).symm
+      rw [hi]
+      exact Ideal.mul_mem_left _ _ h1
+    rw [hsum, zero_sub] at hmem
+    simpa using (Ideal.neg_mem_iff _).mp hmem
+  · exact sub_eq_zero.mp hsub
+
+/-- **A natural number prime to `p` is a unit at the `p`-adic place**
+(PROVEN 2026-07-25): `Valued.v (n : ℚ_p) = 1` when `p ∤ n`. The chain is
+`p ∤ n → n ∈ (p)ᶜ → intValuation n = 1 → Valued.v (n : ℚ_p) = 1`, the last
+step through `valuedAdicCompletion_eq_valuation`, with the numeral/instance
+bridge pinning `instAlgebraAdicCompletion` exactly as in
+`valued_natCast_adicCompletionIntegers_eq_one` (`GaloisRep.lean`), of which
+this is the general-`n` version. -/
+theorem valued_natCast_adicCompletionIntegers_eq_one_of_not_dvd {p : ℕ} (hp : p.Prime)
+    {n : ℕ} (hpn : ¬ p ∣ n) :
+    Valued.v (((n : ℕ) :
+        IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat) :
+      IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat) = 1 := by
+  set v := hp.toHeightOneSpectrumRingOfIntegersRat
+  have hcompl : ((n : ℕ) : NumberField.RingOfIntegers ℚ) ∈ v.asIdeal.primeCompl := by
+    intro hmem
+    have hdvd := (Nat.Prime.mem_toHeightOneSpectrumRingOfIntegersRat_asIdeal hp _).mp hmem
+    rw [map_natCast] at hdvd
+    exact hpn (by exact_mod_cast hdvd)
+  have hint1 : IsDedekindDomain.HeightOneSpectrum.intValuation v
+      ((n : ℕ) : NumberField.RingOfIntegers ℚ) = 1 :=
+    (IsDedekindDomain.HeightOneSpectrum.intValuation_eq_one_iff_mem_primeCompl
+      v _).mpr hcompl
+  have hK := (IsDedekindDomain.HeightOneSpectrum.valuedAdicCompletion_eq_valuation
+      (v := v) (K := ℚ) ((n : ℕ) : NumberField.RingOfIntegers ℚ)).trans
+    ((IsDedekindDomain.HeightOneSpectrum.valuation_of_algebraMap
+      (v := v) (K := ℚ) ((n : ℕ) : NumberField.RingOfIntegers ℚ)).trans hint1)
+  have hbridge : (((n : ℕ) :
+        IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v) :
+      IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) =
+      @algebraMap _ _ _ _
+        (IsDedekindDomain.HeightOneSpectrum.instAlgebraAdicCompletion
+          (NumberField.RingOfIntegers ℚ) ℚ v)
+        ((n : ℕ) : NumberField.RingOfIntegers ℚ) := by
+    rw [map_natCast]
+    rfl
+  rw [hbridge]
+  exact hK
+
+/-- **A natural number prime to `p` avoids the maximal ideal of the
+integral closure** (PROVEN 2026-07-25): by the previous lemma it is a unit
+of `𝒪ᵥ`, hence a unit of `IntegralClosure 𝒪ᵥ ℚ̄_p`, hence outside that
+ring's maximal ideal. This is the `m ∉ I` input of
+`eq_one_of_pow_eq_one_of_sub_one_mem` in the transfer lemma below. -/
+theorem natCast_notMem_maximalIdeal_integralClosure {p : ℕ} (hp : p.Prime)
+    {n : ℕ} (hpn : ¬ p ∣ n) :
+    ((n : ℕ) : IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat))) ∉
+      IsLocalRing.maximalIdeal (IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat)
+        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat))) := by
+  set v := hp.toHeightOneSpectrumRingOfIntegersRat
+  have hunit : IsUnit ((n : ℕ) :
+      IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v) := by
+    by_contra hnu
+    have hmem := (IsLocalRing.mem_maximalIdeal _).mpr hnu
+    have hlt := (IsDedekindDomain.HeightOneSpectrum.mem_completionIdeal_iff
+      (K := ℚ) (v := v) _).mp hmem
+    have h1 := valued_natCast_adicCompletionIntegers_eq_one_of_not_dvd hp hpn
+    exact absurd (lt_of_lt_of_le hlt h1.symm.le) (lt_irrefl _)
+  have hunitIC := hunit.map (algebraMap
+    (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+    (IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))))
+  rw [map_natCast] at hunitIC
+  intro hmem
+  exact ((IsLocalRing.mem_maximalIdeal _).mp hmem) hunitIC
+
+open IsDedekindDomain in
+/-- **Surjectivity of the tame character of local inertia, in ORBIT form**
+(sorry node, cut 2026-07-25 out of
+`exists_local_inertia_torsion_orbit_of_good_of_supersingular` below — the
+LOCAL-FIELD half of that leaf, carrying no elliptic curve at all): let `p`
+be a prime, `n` a natural number prime to `p`, and `ϖ ∈ ℚ̄_p` ANY `n`-th
+root of `p`. Then some element `σ` of `localInertiaGroup p` has a
+`⟨σ⟩`-orbit of length divisible by `n` on `ϖ`: `σ ^ k` fixes `ϖ` only when
+`n ∣ k`.
+
+WHY IT IS TRUE. `X ^ n − p` is Eisenstein over the discrete valuation ring
+`𝒪^nr` (whose uniformizer is `p`), hence irreducible, so
+`ℚ_p^nr(ϖ)/ℚ_p^nr` is totally ramified of degree `n`, and TAMELY so since
+`p ∤ n`. It is Galois because `μ_n ⊂ ℚ_p^nr` (`n` is prime to `p` and the
+residue field is `𝔽̄_p`, so Hensel lifts `μ_n`), and Kummer theory
+identifies its Galois group with `μ_n`, cyclic of order `n`: a generator
+`τ` satisfies `τ ϖ = ζ ϖ` with `ζ` a PRIMITIVE `n`-th root of unity, so
+`τ ^ k ϖ = ζ ^ k ϖ = ϖ` forces `n ∣ k`. Any extension of `τ` to `ℚ̄_p`
+fixes `ℚ_p^nr` pointwise, hence acts trivially on the residue field, hence
+lies in `localInertiaGroup`. Serre, *Corps Locaux* IV §2; Neukirch II.7.7,
+II.9.
+
+Note the quantifier is over `localInertiaGroup` and must NOT be widened:
+for an element of the full decomposition group the tame character is only
+equivariant, not invariant, and the statement becomes false.
+
+ROUTE for the next owner, staying at FINITE level — which avoids
+formalising `ℚ_p^nr` itself:
+1. `ℚ_p(μ_n)/ℚ_p` is unramified (`n` prime to `p`), and `X ^ n − p` is
+   still Eisenstein over its valuation ring, so `M = ℚ_p(μ_n, ϖ)` is
+   totally ramified of degree `n` over `ℚ_p(μ_n)`. Mathlib has Eisenstein
+   irreducibility (`Polynomial.IsEisensteinAt.irreducible`).
+2. `Gal(M/ℚ_p(μ_n))` is cyclic of order `n`, generated by `τ : ϖ ↦ ζ ϖ`
+   for a primitive `ζ ∈ μ_n` (Kummer; the `IsPrimitiveRoot` API).
+3. `τ` lies in the inertia subgroup of `Gal(M/ℚ_p)`: total ramification
+   makes the residue field of `M` equal to that of `ℚ_p(μ_n)`, which `τ`
+   fixes pointwise.
+4. Lift to the full `localInertiaGroup` by the PROVEN compactness lifting
+   `exists_mem_localInertiaGroup_restrictNormalHom_eq`
+   (`Fermat/FLT/Deformations/RepresentationTheory/LocalInertiaFixedField.lean`,
+   the profinite half of Neukirch II.9.11), and read the orbit condition
+   back off `σ ^ k ϖ = ϖ ↔ ζ ^ k = 1`.
+
+MISSING FROM MATHLIB, in dependency order, as statements: (a) *a totally
+ramified extension of local fields has the same residue field* — in the
+`ValuationSubring` decomposition/inertia vocabulary already used by
+`mem_inertiaSubgroup_localValuationSubring`; (b) *Kummer theory over a
+field containing `μ_n`*: `Gal(K(a^{1/n})/K) ≃ μ_n` by `τ ↦ τ(a^{1/n})/a^{1/n}`,
+of which mathlib has the `IsPrimitiveRoot`/`X ^ n - C a` splitting pieces
+but not the Galois-group identification. -/
+theorem exists_localInertia_tameCharacter_orbit {p : ℕ} (hp : p.Prime) {n : ℕ}
+    (hpn : ¬ p ∣ n)
+    (ϖ : AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+      hp.toHeightOneSpectrumRingOfIntegersRat))
+    (hϖ : ϖ ^ n = ((p : ℕ) : AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+      hp.toHeightOneSpectrumRingOfIntegersRat))) :
+    ∃ σ ∈ localInertiaGroup hp.toHeightOneSpectrumRingOfIntegersRat,
+      ∀ k : ℕ,
+        ((σ : (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+              hp.toHeightOneSpectrumRingOfIntegersRat))
+            ≃ₐ[HeightOneSpectrum.adicCompletion ℚ
+              hp.toHeightOneSpectrumRingOfIntegersRat]
+            (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+              hp.toHeightOneSpectrumRingOfIntegersRat))) ^ k) ϖ = ϖ →
+        n ∣ k :=
+  sorry
+
+open IsDedekindDomain in
+set_option backward.isDefEq.respectTransparency false in
+/-- **The tame character does not see units: an inertia element fixing a
+value of the right valuation fixes the root** (PROVEN 2026-07-25): let
+`p ∤ n`, let `ϖ` be an `n`-th root of `p` in `ℚ̄_p`, and let `z` satisfy
+`|z ϖ| = 1` for the spectral norm — i.e. `z` has exactly the valuation of
+`ϖ⁻¹`. If `σ ∈ localInertiaGroup p` fixes `z`, then `σ` fixes `ϖ`.
+
+This is the bridge between the ARITHMETIC of a torsion point (whose
+abscissa `z` carries the Newton-polygon valuation) and the LOCAL-FIELD
+leaf above (which is about `ϖ`). Proof: `ζ = σϖ/ϖ` satisfies
+`ζ ^ n = σ(ϖ^n)/ϖ^n = σ(p)/p = 1`; writing `w = z ϖ`, a unit of the
+integral closure since `|w| = 1` (and so is `w⁻¹`), one has `σ w = ζ w`,
+whence `ζ − 1 = (σ w − w) · w⁻¹` lies in the maximal ideal precisely
+because `σ` is in INERTIA; and a root of unity of order prime to `p`
+congruent to `1` modulo the maximal ideal is `1`
+(`eq_one_of_pow_eq_one_of_sub_one_mem`, whose `n ∉ 𝔪` input is
+`natCast_notMem_maximalIdeal_integralClosure`).
+
+The hypothesis on `σ` is inertia and cannot be relaxed to the
+decomposition group: a Frobenius lift moves `μ_n`, so `ζ` need not be
+trivial modulo the maximal ideal. -/
+theorem localInertia_fixes_tame_root_of_fixes {p : ℕ} (hp : p.Prime) {n : ℕ}
+    (hpn : ¬ p ∣ n)
+    {ϖ z : AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+      hp.toHeightOneSpectrumRingOfIntegersRat)}
+    (hϖ : ϖ ^ n = ((p : ℕ) : AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+      hp.toHeightOneSpectrumRingOfIntegersRat)))
+    (hzϖ : spectralNorm (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)) (z * ϖ) = 1)
+    {σ : (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat))
+      ≃ₐ[HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat]
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat))}
+    (hσ : σ ∈ localInertiaGroup hp.toHeightOneSpectrumRingOfIntegersRat)
+    (hfix : σ z = z) :
+    σ ϖ = ϖ := by
+  classical
+  -- `n ≠ 0`, since `p ∣ 0`
+  have hn0 : n ≠ 0 := by rintro rfl; exact hpn (dvd_zero p)
+  -- nonvanishing
+  have hw0 : z * ϖ ≠ 0 := by
+    intro h
+    rw [h, spectralNorm_zero] at hzϖ
+    exact zero_ne_one hzϖ
+  have hϖ0 : ϖ ≠ 0 := right_ne_zero_of_mul hw0
+  have hz0 : z ≠ 0 := left_ne_zero_of_mul hw0
+  -- the tame character value `ζ = σ ϖ / ϖ` is an `n`-th root of unity
+  have hsp : σ ((p : ℕ) : AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+      hp.toHeightOneSpectrumRingOfIntegersRat)) =
+      ((p : ℕ) : AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)) := map_natCast σ p
+  have hϖn0 : ϖ ^ n ≠ 0 := pow_ne_zero _ hϖ0
+  have hζpow : (σ ϖ / ϖ) ^ n = 1 := by
+    rw [div_pow, ← map_pow, hϖ, hsp, ← hϖ, div_self hϖn0]
+  have hsϖ : σ ϖ = (σ ϖ / ϖ) * ϖ := (div_mul_cancel₀ _ hϖ0).symm
+  have hsw : σ (z * ϖ) = (σ ϖ / ϖ) * (z * ϖ) := by
+    rw [map_mul, hfix]
+    field_simp
+  -- integrality of the unit `w = z ϖ`, of its inverse, and of `ζ`
+  have hwint : IsIntegral (HeightOneSpectrum.adicCompletionIntegers ℚ
+      hp.toHeightOneSpectrumRingOfIntegersRat) (z * ϖ) :=
+    isIntegral_of_spectralNorm_le_one (le_of_eq hzϖ)
+  have hwinvint : IsIntegral (HeightOneSpectrum.adicCompletionIntegers ℚ
+      hp.toHeightOneSpectrumRingOfIntegersRat) (z * ϖ)⁻¹ := by
+    refine isIntegral_of_spectralNorm_le_one (le_of_eq ?_)
+    rw [spectralNorm_inv, hzϖ, inv_one]
+  have hζint : IsIntegral (HeightOneSpectrum.adicCompletionIntegers ℚ
+      hp.toHeightOneSpectrumRingOfIntegersRat) (σ ϖ / ϖ) := by
+    refine ⟨Polynomial.X ^ n - 1, ?_, ?_⟩
+    · have := Polynomial.monic_X_pow_sub_C (R := HeightOneSpectrum.adicCompletionIntegers ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat) (1 : _) (n := n) hn0
+      simpa [Polynomial.C_1] using this
+    · simp [Polynomial.eval₂_sub, hζpow]
+  -- transport to the integral closure
+  set W : IntegralClosure (HeightOneSpectrum.adicCompletionIntegers ℚ
+    hp.toHeightOneSpectrumRingOfIntegersRat)
+    (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+      hp.toHeightOneSpectrumRingOfIntegersRat)) := ⟨z * ϖ, hwint⟩ with hW
+  set Wi : IntegralClosure (HeightOneSpectrum.adicCompletionIntegers ℚ
+    hp.toHeightOneSpectrumRingOfIntegersRat)
+    (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+      hp.toHeightOneSpectrumRingOfIntegersRat)) := ⟨(z * ϖ)⁻¹, hwinvint⟩ with hWi
+  set Z : IntegralClosure (HeightOneSpectrum.adicCompletionIntegers ℚ
+    hp.toHeightOneSpectrumRingOfIntegersRat)
+    (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+      hp.toHeightOneSpectrumRingOfIntegersRat)) := ⟨σ ϖ / ϖ, hζint⟩ with hZ
+  have hinj : Function.Injective (algebraMap (IntegralClosure
+      (HeightOneSpectrum.adicCompletionIntegers ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)))
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat))) := fun _ _ h => Subtype.ext h
+  have hvZ : algebraMap _ _ Z = σ ϖ / ϖ := by rw [hZ]; rfl
+  have hvW : algebraMap _ _ W = z * ϖ := by rw [hW]; rfl
+  have hvWi : algebraMap _ _ Wi = (z * ϖ)⁻¹ := by rw [hWi]; rfl
+  have hvsW : algebraMap _ _ (σ • W) = σ (z * ϖ) := by rw [hW]; rfl
+  have hZ1 : Z - 1 ∈ IsLocalRing.maximalIdeal (IntegralClosure
+      (HeightOneSpectrum.adicCompletionIntegers ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat))) := by
+    have hmem : σ • W - W ∈ IsLocalRing.maximalIdeal (IntegralClosure
+        (HeightOneSpectrum.adicCompletionIntegers ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat)
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat))) := hσ W
+    have hEq : Z - 1 = (σ • W - W) * Wi := by
+      apply hinj
+      rw [map_sub, map_mul, map_sub, map_one, hvZ, hvW, hvWi, hvsW, hsw]
+      field_simp [hz0]
+    rw [hEq]
+    exact Ideal.mul_mem_right _ _ hmem
+  have hZpow : Z ^ n = 1 := by
+    apply hinj
+    rw [map_pow, map_one, hvZ]
+    exact hζpow
+  have hZ0 : Z = 1 :=
+    eq_one_of_pow_eq_one_of_sub_one_mem hZpow hZ1
+      (natCast_notMem_maximalIdeal_integralClosure hp hpn)
+  have hζ1 : σ ϖ / ϖ = 1 := by
+    have h := congrArg (algebraMap (IntegralClosure
+      (HeightOneSpectrum.adicCompletionIntegers ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)))
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat))) hZ0
+    rw [hvZ, map_one] at h
+    exact h
+  rw [hsϖ, hζ1, one_mul]
+
+open IsDedekindDomain in
+open scoped WeierstrassCurve.Affine in
+set_option backward.isDefEq.respectTransparency false in
+/-- **The Newton-polygon valuation of the abscissa of a local `p`-torsion
+point at a good SUPERSINGULAR prime** (sorry node, cut 2026-07-25 out of
+`exists_local_inertia_torsion_orbit_of_good_of_supersingular` below — the
+ELLIPTIC-CURVE half of that leaf): if `E/ℚ` has good supersingular
+reduction at `p` and `(x, y)` is an affine `p`-torsion point of the base
+change to `ℚ̄_p`, then `|x| ^ (p² − 1) · |p| ^ 2 = 1` for the spectral
+norm, i.e. `v(x) = −2/(p² − 1)`.
+
+WHY IT IS TRUE. Supersingularity says the reduced curve has no nonzero
+geometric `p`-torsion, so all of `E[p]` lies in the kernel of reduction,
+i.e. in the `p`-torsion of the formal group, which has height `2`. The
+Newton polygon of `[p](T) = pT + ⋯ + (unit) T^{p²} + ⋯` is then a single
+segment of slope `1/(p² − 1)`: every nonzero point of `E[p]` has formal
+parameter of valuation `1/(p² − 1)`, and since `t = −x/y` with
+`v(x) = −2 v(t)`, `v(x) = −2/(p² − 1)`. Silverman *AEC* IV.2–IV.3, VII.6;
+ATAEC IV.6.
+
+ROUTE: the DIVISION-POLYNOMIAL route avoids formal groups altogether —
+mathlib has `WeierstrassCurve.Ψ`/`preΨ`, and the content is that the
+`p`-division polynomial has Newton polygon the single segment from
+`(0, 0)` to `((p² − 1)/2, 1)`, so each root `x(Q)` has
+`v(x) = −2/(p² − 1)`. Mathlib's `RingTheory/FormalGroup/Basic.lean` is
+embryonic (group axioms only — no height, no `[p]`-series, no Newton
+polygon), so the formal-group route would need that theory built first.
+The sibling leaf `exists_localKernelDivision_of_good_reduction` (same
+file) needs the same Newton polygon and should be read alongside this one.
+
+NUMERICAL CERTIFICATE (PARI/GP, 2026-07-25 — a check of the STATEMENT,
+not a proof): for `p = 5` and `E : y² = x³ + 1` (which has `v₅(Δ) = 0` and
+`a₅ = 0`, i.e. good supersingular reduction at `5`) the `5`-division
+polynomial has degree `12` with coefficient valuations `v₅ = 0, 2, 1, 1, 1`
+at `x⁰, x³, x⁶, x⁹, x¹²`, so its Newton polygon at `5` is the SINGLE
+segment from `(0,0)` to `(12,1)`: every root has valuation
+`−1/12 = −2/(p² − 1)`, exactly as asserted. `factorpadic` moreover shows
+that polynomial is irreducible over `ℚ₅`. The same check at `p = 7` with
+`E : y² = x³ + x` gives degree `24 = (p² − 1)/2`, irreducible, with Newton
+polygon the single segment `(0,0)–(24,1)`. -/
+theorem WeierstrassCurve.spectralNorm_torsion_abscissa_of_good_of_supersingular
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ} (hp : p.Prime)
+    [E.HasGoodReduction
+      (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)]
+    (hss : ∀ P : ((E.reduction
+        (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal))⁄
+        (AlgebraicClosure (IsLocalRing.ResidueField
+          (Localization.AtPrime
+            hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)))).Point,
+      (p : ℤ) • P = 0 → P = 0)
+    (x y : AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+      hp.toHeightOneSpectrumRingOfIntegersRat))
+    (h : ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+      hp.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+      (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat))).toAffine.Nonsingular x y)
+    (htor : ((p : ℕ) : ℤ) • (WeierstrassCurve.Affine.Point.some x y h :
+        ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+          (HeightOneSpectrum.adicCompletion ℚ
+            hp.toHeightOneSpectrumRingOfIntegersRat))).Point) = 0) :
+    spectralNorm (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)) x ^ (p ^ 2 - 1) *
+      spectralNorm (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat))
+      ((p : ℕ) : AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)) ^ 2 = 1 :=
+  sorry
+
 open ValuativeRel IsDedekindDomain in
 open scoped WeierstrassCurve.Affine in
 set_option backward.isDefEq.respectTransparency false in
 /-- **Serre's level-2 fundamental character, ONE-POINT form: an inertia
 element whose orbit on some local `p`-torsion point has length divisible
-by `p + 1`** (sorry node, cut 2026-07-25 out of
+by `p + 1`** (DERIVED 2026-07-25 over two bricks —
+`WeierstrassCurve.spectralNorm_torsion_abscissa_of_good_of_supersingular`
+(the ELLIPTIC-CURVE half: the Newton-polygon valuation of the abscissa,
+steps 1–2 of the route below) and `exists_localInertia_tameCharacter_orbit`
+(the LOCAL-FIELD half: surjectivity of the tame character, steps 3–4),
+glued by the PROVEN `localInertia_fixes_tame_root_of_fixes`, which
+transports a fixed abscissa to a fixed `n`-th root of `p`; the tame
+exponent used here is `n = (p² − 1)/2`, prime to `p`, and
+`(p + 1) ∣ (p² − 1)/2` for odd `p`. Originally cut 2026-07-25 out of
 `exists_local_inertia_torsion_order_of_good_of_supersingular` below,
 whose quantifier over the whole `p`-torsion MODULE it replaces by a
 statement about a SINGLE point — that is the entire content of the cut,
@@ -8704,8 +9100,158 @@ theorem WeierstrassCurve.exists_local_inertia_torsion_orbit_of_good_of_supersing
                   hp.toHeightOneSpectrumRingOfIntegersRat]
                 (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
                   hp.toHeightOneSpectrumRingOfIntegersRat))) ^ k).toAlgHom Q = Q →
-          (p + 1) ∣ k :=
-  sorry
+          (p + 1) ∣ k := by
+  classical
+  haveI : Fact p.Prime := ⟨hp⟩
+  haveI : CharZero (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+      hp.toHeightOneSpectrumRingOfIntegersRat)) :=
+    ((algebraMap (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat))).charZero_iff
+      (algebraMap (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat))).injective).mp inferInstance
+  -- the tame exponent `n = (p² − 1)/2`
+  obtain ⟨m, hm⟩ := hp.odd_of_ne_two hodd
+  have hp2 : 2 ≤ p := hp.two_le
+  have hntwice : 2 * ((p ^ 2 - 1) / 2) = p ^ 2 - 1 := by
+    have h1 : p ^ 2 = 2 * ((p + 1) * m) + 1 := by subst hm; ring
+    omega
+  have harith : (p + 1) ∣ (p ^ 2 - 1) / 2 := by
+    refine ⟨m, ?_⟩
+    have h1 : p ^ 2 = 2 * ((p + 1) * m) + 1 := by subst hm; ring
+    omega
+  have hnpos : 0 < (p ^ 2 - 1) / 2 := by
+    have h1 : p ^ 2 = 2 * ((p + 1) * m) + 1 := by subst hm; ring
+    have h2 : 1 ≤ (p + 1) * m := Nat.one_le_iff_ne_zero.mpr
+      (Nat.mul_ne_zero (by omega) (by omega))
+    omega
+  have hpn : ¬ p ∣ (p ^ 2 - 1) / 2 := by
+    intro hdvd
+    have hone : 1 ≤ p ^ 2 := Nat.one_le_pow _ _ (by omega)
+    have h1 : p ^ 2 = 2 * ((p ^ 2 - 1) / 2) + 1 := by omega
+    have hd2 : p ∣ 2 * ((p ^ 2 - 1) / 2) := Dvd.dvd.mul_left hdvd 2
+    have hdp2 : p ∣ p ^ 2 := dvd_pow_self p (by norm_num)
+    rw [h1] at hdp2
+    have hone' : p ∣ 1 := (Nat.dvd_add_right hd2).mp hdp2
+    exact absurd (Nat.le_of_dvd one_pos hone') (by omega)
+  -- a nonzero local `p`-torsion point
+  have hcard : Nat.card (AddSubgroup.torsionBy
+      ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+        (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat))).Point ((p : ℕ) : ℤ)) = p ^ 2 :=
+    TorsionCard.card_torsionBy
+      ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat))).map
+        (algebraMap (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat)
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+            hp.toHeightOneSpectrumRingOfIntegersRat)))) p
+      (Nat.cast_ne_zero.mpr hp.ne_zero)
+  haveI hnt : Nontrivial (AddSubgroup.torsionBy
+      ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+        (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat))).Point ((p : ℕ) : ℤ)) := by
+    have hne : Nat.card (AddSubgroup.torsionBy
+        ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+          (HeightOneSpectrum.adicCompletion ℚ
+            hp.toHeightOneSpectrumRingOfIntegersRat))).Point ((p : ℕ) : ℤ)) ≠ 0 := by
+      rw [hcard]
+      exact pow_ne_zero _ hp.ne_zero
+    obtain ⟨hnonempty, hfinite⟩ := Nat.card_ne_zero.mp hne
+    rw [← not_subsingleton_iff_nontrivial]
+    intro hsub
+    have h1 := @Nat.card_unique _ hnonempty hsub
+    rw [hcard] at h1
+    nlinarith [hp.two_le]
+  obtain ⟨QT, hQne⟩ := exists_ne (0 : AddSubgroup.torsionBy
+      ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+        (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat))).Point ((p : ℕ) : ℤ))
+  obtain ⟨Q, hQmem⟩ := QT
+  have hQ0 : Q ≠ 0 := fun hh => hQne (Subtype.ext hh)
+  have hQtor : ((p : ℕ) : ℤ) • Q = 0 := (Submodule.mem_torsionBy_iff _ _).mp hQmem
+  clear hQmem hQne hnt hcard
+  rcases Q with _ | ⟨x, y, hxy⟩
+  · exact absurd rfl hQ0
+  -- the Newton-polygon value of the abscissa, and a compatible `n`-th root of `p`
+  have hval := E.spectralNorm_torsion_abscissa_of_good_of_supersingular hp hss x y hxy hQtor
+  obtain ⟨ϖ, hϖ⟩ := IsAlgClosed.exists_pow_nat_eq
+    (((p : ℕ) : AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+      hp.toHeightOneSpectrumRingOfIntegersRat))) hnpos
+  have hxϖ : spectralNorm (HeightOneSpectrum.adicCompletion ℚ
+      hp.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)) (x * ϖ) = 1 := by
+    have hmul : spectralNorm (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat)
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat)) (x * ϖ) =
+        spectralNorm (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat)
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat)) x *
+        spectralNorm (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat)
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat)) ϖ :=
+      spectralAlgNorm_mul (K := HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat) x ϖ
+    have hpow := isPowMul_spectralNorm (K := HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)
+      (L := AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)) ϖ hnpos
+    rw [hϖ] at hpow
+    have hnn : (0:ℝ) ≤ spectralNorm (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)) (x * ϖ) :=
+      spectralNorm_nonneg (K := HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat) _
+    have hval' : spectralNorm (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)) x ^ (2 * ((p ^ 2 - 1) / 2)) *
+      spectralNorm (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat))
+      ((p : ℕ) : AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)) ^ 2 = 1 := by
+      rw [hntwice]; exact hval
+    have hb : spectralNorm (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)) ϖ ^ (2 * ((p ^ 2 - 1) / 2)) =
+      (spectralNorm (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)) ϖ ^ ((p ^ 2 - 1) / 2)) ^ 2 := by
+      rw [mul_comm, pow_mul]
+    have hkey : (spectralNorm (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)) (x * ϖ)) ^ (2 * ((p ^ 2 - 1) / 2)) = 1 := by
+      rw [hmul, mul_pow, hb, ← hpow]
+      exact hval'
+    rcases pow_eq_one_iff_cases.mp hkey with h | h | h
+    · omega
+    · exact h
+    · exfalso; rw [h.1] at hnn; linarith
+  -- the tame inertia element and the transfer of its orbit
+  obtain ⟨σ, hσI, hσk⟩ := exists_localInertia_tameCharacter_orbit hp hpn ϖ hϖ
+  refine ⟨σ, hσI, WeierstrassCurve.Affine.Point.some x y hxy, hQtor, ?_⟩
+  intro k hk
+  rw [WeierstrassCurve.Affine.Point.map_some] at hk
+  simp only [WeierstrassCurve.Affine.Point.some.injEq] at hk
+  refine harith.trans (hσk k ?_)
+  exact localInertia_fixes_tame_root_of_fixes hp hpn hϖ hxϖ (pow_mem hσI k) hk.1
 
 open ValuativeRel IsDedekindDomain in
 open scoped WeierstrassCurve.Affine in
