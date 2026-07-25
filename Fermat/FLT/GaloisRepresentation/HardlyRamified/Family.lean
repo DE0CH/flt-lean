@@ -26,6 +26,12 @@ import Fermat.FLT.GroupScheme.ConnectedEtale
 -- bridges, `liftEquiv_symm_convMul`, `vendored_mul_eq_convMul`),
 -- consumed by the same assembly. Non-public: proofs only.
 import Fermat.FLT.Deformations.RepresentationTheory.FlatProlongation
+-- mathlib's convolution monoid on Hopf/bialgebra points (`WithConv`,
+-- its `Mul`/`Pow`/`Monoid` instances and the antipode as an algebra
+-- hom): `WithConv.toConv`/`ofConv` and the convolution POWER appear in
+-- the STATEMENT of the shared brick `convPow_apply_of_comul_absorbs`
+-- below, hence public.
+public import Mathlib.RingTheory.HopfAlgebra.Convolution
 import Mathlib.Algebra.Field.ULift
 import Mathlib.Topology.Algebra.IntermediateField
 import Mathlib.LinearAlgebra.Charpoly.ToMatrix
@@ -1360,9 +1366,314 @@ theorem lift_sub_lift_mem_of_localInertiaGroup_p
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
+/-- **Group-like convolution powers evaluate by ordinary powers**
+(PROVEN 2026-07-25 — brick (b) of the μ-type/Raynaud coordination
+flagged in the docstring of
+`connected_point_smul_eq_conv_pow_cyclotomicCharacter_of_hopf_package`
+below, stated generically over any commutative base ring): let `e` be
+a *connected counit idempotent* of a bialgebra `G₀` over `R₀` (counit
+value `1`, comultiplication absorbing `e ⊗ e`), and let
+`χ : G₀ →ₐ[R₀] C₀` be a point taking the value `1` on `e` — a
+CONNECTED point. Then on any element `x` that is GROUP-LIKE relative
+to the corner of `e` (`Δx · (e ⊗ e) = x ⊗ x` and `ε x = 1`) the `m`-th
+convolution power of `χ` evaluates as the `m`-th ordinary power of the
+value: `χ^{⋆ m}(x) = χ(x) ^ m`.
+
+Proof: induction on `m`. The convolution unit is `algebraMap ∘ ε`
+(`AlgHom.convOne_apply`), whose value at `x` is `1` by `ε x = 1`; and
+`(χ^{⋆ i} ⋆ χ)(x) = lift (χ^{⋆ i}) χ (Δx)` (`AlgHom.convMul_apply`)
+may be multiplied by
+`lift (χ^{⋆ i}) χ (e ⊗ e) = χ^{⋆ i}(e) · χ(e) = 1` — the connectedness
+of the convolution powers, which is this same statement at `x = e`,
+proven separately by `convMul_apply_one_of_comul_absorbs` — so it
+equals `lift (χ^{⋆ i}) χ (Δx · (e ⊗ e)) = lift (χ^{⋆ i}) χ (x ⊗ x) =
+χ^{⋆ i}(x) · χ(x)`. -/
+theorem convPow_apply_of_comul_absorbs {R₀ G₀ C₀ : Type*} [CommRing R₀]
+    [CommRing G₀] [Bialgebra R₀ G₀] [CommRing C₀] [Algebra R₀ C₀]
+    (e : G₀) (hεe : Coalgebra.counit (R := R₀) e = (1 : R₀))
+    (habs : Coalgebra.comul (R := R₀) e * (e ⊗ₜ[R₀] e) = e ⊗ₜ[R₀] e)
+    (χ : G₀ →ₐ[R₀] C₀) (hχe : χ e = 1)
+    (x : G₀) (hεx : Coalgebra.counit (R := R₀) x = (1 : R₀))
+    (hx : Coalgebra.comul (R := R₀) x * (e ⊗ₜ[R₀] e) = x ⊗ₜ[R₀] x)
+    (m : ℕ) :
+    ((toConv χ) ^ m).ofConv x = (χ x) ^ m := by
+  -- the convolution powers of a connected point are connected
+  have hpe : ∀ j : ℕ, ((toConv χ) ^ j).ofConv e = 1 := by
+    intro j
+    induction j with
+    | zero =>
+      rw [pow_zero]
+      show algebraMap R₀ C₀ (Coalgebra.counit (R := R₀) e) = 1
+      rw [hεe, map_one]
+    | succ i ih =>
+      rw [pow_succ]
+      exact convMul_apply_one_of_comul_absorbs e habs _ _ ih hχe
+  induction m with
+  | zero =>
+    rw [pow_zero, pow_zero]
+    show algebraMap R₀ C₀ (Coalgebra.counit (R := R₀) x) = 1
+    rw [hεx, map_one]
+  | succ i ih =>
+    have hone : Algebra.TensorProduct.lift (((toConv χ) ^ i).ofConv) χ
+        (fun _ _ => Commute.all _ _) (e ⊗ₜ[R₀] e) = 1 := by
+      rw [Algebra.TensorProduct.lift_tmul, hpe i, hχe, one_mul]
+    have hval : ((toConv χ) ^ (i + 1)).ofConv x =
+        Algebra.TensorProduct.lift (((toConv χ) ^ i).ofConv) χ
+          (fun _ _ => Commute.all _ _) (Coalgebra.comul (R := R₀) x) := by
+      rw [pow_succ]
+      exact AlgHom.convMul_apply _ _ x
+    rw [hval]
+    calc Algebra.TensorProduct.lift (((toConv χ) ^ i).ofConv) χ
+          (fun _ _ => Commute.all _ _) (Coalgebra.comul (R := R₀) x)
+        = Algebra.TensorProduct.lift (((toConv χ) ^ i).ofConv) χ
+            (fun _ _ => Commute.all _ _) (Coalgebra.comul (R := R₀) x) *
+          Algebra.TensorProduct.lift (((toConv χ) ^ i).ofConv) χ
+            (fun _ _ => Commute.all _ _) (e ⊗ₜ[R₀] e) := by rw [hone, mul_one]
+      _ = Algebra.TensorProduct.lift (((toConv χ) ^ i).ofConv) χ
+            (fun _ _ => Commute.all _ _)
+            (Coalgebra.comul (R := R₀) x * (e ⊗ₜ[R₀] e)) := (map_mul _ _ _).symm
+      _ = Algebra.TensorProduct.lift (((toConv χ) ^ i).ofConv) χ
+            (fun _ _ => Commute.all _ _) (x ⊗ₜ[R₀] x) := by rw [hx]
+      _ = ((toConv χ) ^ i).ofConv x * χ x :=
+          Algebra.TensorProduct.lift_tmul _ _ _ _ _
+      _ = (χ x) ^ i * χ x := by rw [ih]
+      _ = (χ x) ^ (i + 1) := (pow_succ _ _).symm
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **Convolution powers of a connected point of the generic fibre are
+connected** (PROVEN 2026-07-25): if the geometric point `φ` of the
+generic fibre `ℚᵖᵥ ⊗[𝒪ᵖᵥ] G` takes the value `1` on the base-changed
+connected counit idempotent `1 ⊗ e₀`, then so does every convolution
+power `φ ^ m` (the convolution monoid being the vendored bare-hom one
+of `Deformations/RepresentationTheory/Etale.lean`). Proof: transport
+along the tensor–hom adjunction `AlgHom.liftEquiv` to the `𝒪ᵖᵥ`-points
+(`liftEquiv_symm_convOne`/`liftEquiv_symm_convMul` turn the vendored
+powers into `WithConv` powers of `χ := φ ∘ includeRight`, whose value
+at `e₀` is `φ (1 ⊗ e₀)`), then apply
+`convPow_apply_of_comul_absorbs` at `x = e₀`. -/
+theorem convPow_apply_one_of_comul_absorbs_p
+    (G : Type) [CommRing G] [Bialgebra 𝒪ᵖᵥ G]
+    (e₀ : G) (hε₀ : Coalgebra.counit (R := 𝒪ᵖᵥ) e₀ = (1 : 𝒪ᵖᵥ))
+    (hcomul₀ : Coalgebra.comul (R := 𝒪ᵖᵥ) e₀ * (e₀ ⊗ₜ[𝒪ᵖᵥ] e₀) =
+      e₀ ⊗ₜ[𝒪ᵖᵥ] e₀)
+    (φ : ℚᵖᵥ ⊗[𝒪ᵖᵥ] G →ₐ[ℚᵖᵥ] ℚᵖᵥᵃˡᵍ)
+    (hφe : φ ((1 : ℚᵖᵥ) ⊗ₜ[𝒪ᵖᵥ] e₀) = 1) (m : ℕ) :
+    (φ ^ m) ((1 : ℚᵖᵥ) ⊗ₜ[𝒪ᵖᵥ] e₀) = 1 := by
+  have hχe : (AlgHom.liftEquiv 𝒪ᵖᵥ ℚᵖᵥ G ℚᵖᵥᵃˡᵍ).symm φ e₀ = 1 := hφe
+  have htrans : ∀ j : ℕ, (AlgHom.liftEquiv 𝒪ᵖᵥ ℚᵖᵥ G ℚᵖᵥᵃˡᵍ).symm (φ ^ j) =
+      ((toConv ((AlgHom.liftEquiv 𝒪ᵖᵥ ℚᵖᵥ G ℚᵖᵥᵃˡᵍ).symm φ)) ^ j).ofConv := by
+    intro j
+    induction j with
+    | zero =>
+      rw [pow_zero, pow_zero, vendored_one_eq_convOne, liftEquiv_symm_convOne]
+    | succ i ih =>
+      rw [pow_succ, vendored_mul_eq_convMul, liftEquiv_symm_convMul,
+        WithConv.ofConv_toConv, WithConv.ofConv_toConv, ih, pow_succ,
+        WithConv.toConv_ofConv]
+  have hval : (φ ^ m) ((1 : ℚᵖᵥ) ⊗ₜ[𝒪ᵖᵥ] e₀) =
+      (AlgHom.liftEquiv 𝒪ᵖᵥ ℚᵖᵥ G ℚᵖᵥᵃˡᵍ).symm (φ ^ m) e₀ := rfl
+  rw [hval, htrans m, convPow_apply_of_comul_absorbs e₀ hε₀ hcomul₀ _ hχe e₀
+    hε₀ hcomul₀ m, hχe, one_pow]
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **The cyclotomic root-of-unity bridge at `p`** (PROVEN 2026-07-25 —
+brick (a) of the μ-type/Raynaud coordination flagged in the docstring
+of `connected_point_smul_eq_conv_pow_cyclotomicCharacter_of_hopf_package`
+below): EVERY element `τ` of the absolute Galois group of `ℚᵖᵥ` moves
+a `p ^ k`-th root of unity `z` of `ℚᵖᵥᵃˡᵍ` to `z ^ n`, for any natural
+`n` congruent to `χ_cyc(τ̃)` modulo `p ^ k` (`τ̃` the image of `τ` in
+`Γ ℚ`). No inertia hypothesis is needed: this is the defining property
+of the cyclotomic character, transported along the chosen embedding of
+algebraic closures.
+
+Proof (mimicking the endgame of the PROVEN 2-adic
+`cyclotomicCharacter_eq_one_of_mem_inertia_two` above): the `p ^ k`-th
+roots of unity of `ℚᵖᵥᵃˡᵍ` all come from `AlgebraicClosure ℚ` — a
+primitive `p ^ k`-th root of unity `ζ` exists downstairs
+(`HasEnoughRootsOfUnity.exists_primitiveRoot`), its image stays
+primitive (`IsPrimitiveRoot.map_of_injective`), and in a domain every
+`p ^ k`-th root of unity is a power of a primitive one
+(`IsPrimitiveRoot.eq_pow_of_pow_eq_one`), so `z = ι (ζ ^ j)`.
+Downstairs `cyclotomicCharacter.spec` evaluates the action of `τ̃` as
+the `p ^ k`-truncation `PadicInt.toZModPow k` of `χ_cyc(τ̃)`, whose
+kernel is exactly `p ^ k ℤ_p` (`PadicInt.ker_toZModPow`), so the
+exponent may be replaced by `n`; and the commuting square
+`Field.absoluteGaloisGroup.lift_map` transports the identity along
+`ι = AlgebraicClosure.map (algebraMap ℚ ℚᵖᵥ)`. -/
+theorem absoluteGalois_apply_eq_pow_of_cyclotomicCharacter_sub_mem
+    (τ : Field.absoluteGaloisGroup ℚᵖᵥ) (k n : ℕ) (c : ℤ_[p])
+    (hc : c = ((cyclotomicCharacter (AlgebraicClosure ℚ) p
+      ((Field.absoluteGaloisGroup.map (algebraMap ℚ ℚᵖᵥ)
+        τ).toRingEquiv) : ℤ_[p]ˣ) : ℤ_[p]))
+    (hn : c - (n : ℤ_[p]) ∈ Ideal.span {(p : ℤ_[p]) ^ k})
+    (z : ℚᵖᵥᵃˡᵍ) (hz : z ^ (p ^ k) = 1) :
+    τ z = z ^ n := by
+  classical
+  haveI : NeZero (p ^ k) := ⟨pow_ne_zero k hp.out.ne_zero⟩
+  -- the `p ^ k`-th roots of unity of `ℚᵖᵥᵃˡᵍ` come from `AlgebraicClosure ℚ`
+  obtain ⟨ζ, hζ⟩ := HasEnoughRootsOfUnity.exists_primitiveRoot
+    (AlgebraicClosure ℚ) (p ^ k)
+  have hζ' : IsPrimitiveRoot
+      (AlgebraicClosure.map (algebraMap ℚ ℚᵖᵥ) ζ) (p ^ k) :=
+    hζ.map_of_injective (AlgebraicClosure.map (algebraMap ℚ ℚᵖᵥ)).injective
+  obtain ⟨j, -, hjz⟩ := hζ'.eq_pow_of_pow_eq_one hz
+  have hwz : AlgebraicClosure.map (algebraMap ℚ ℚᵖᵥ) (ζ ^ j) = z := by
+    rw [map_pow, hjz]
+  have hwpow : (ζ ^ j) ^ (p ^ k) = 1 := by
+    rw [← pow_mul, mul_comm j (p ^ k), pow_mul, hζ.pow_eq_one, one_pow]
+  -- the cyclotomic character reads the action downstairs
+  have hspec : (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚᵖᵥ)
+      τ).toRingEquiv (ζ ^ j) = (ζ ^ j) ^ (PadicInt.toZModPow k c).val := by
+    rw [hc]
+    exact cyclotomicCharacter.spec p _ _ hwpow
+  -- the truncation of `χ_cyc(τ̃)` agrees with `n` modulo `p ^ k`
+  have hcv : (((PadicInt.toZModPow k c).val : ℕ) : ZMod (p ^ k)) =
+      (n : ZMod (p ^ k)) := by
+    rw [ZMod.natCast_val, ZMod.cast_id]
+    have h1 := hn
+    rw [← PadicInt.ker_toZModPow k, RingHom.mem_ker, map_sub, map_natCast,
+      sub_eq_zero] at h1
+    exact h1
+  -- a `p ^ k`-th root of unity only sees its exponent modulo `p ^ k`
+  have hexp : (ζ ^ j) ^ (PadicInt.toZModPow k c).val = (ζ ^ j) ^ n := by
+    have hmn : (PadicInt.toZModPow k c).val ≡ n [MOD p ^ k] :=
+      (ZMod.natCast_eq_natCast_iff _ _ _).mp hcv
+    rcases Nat.le_total (PadicInt.toZModPow k c).val n with hle | hle
+    · obtain ⟨d, hd⟩ := (Nat.modEq_iff_dvd' hle).mp hmn
+      have hn' : n = (PadicInt.toZModPow k c).val + p ^ k * d := by
+        rw [← hd]
+        exact (Nat.add_sub_cancel' hle).symm
+      rw [hn', pow_add, pow_mul, hwpow, one_pow, mul_one]
+    · obtain ⟨d, hd⟩ := (Nat.modEq_iff_dvd' hle).mp hmn.symm
+      have hq' : (PadicInt.toZModPow k c).val = n + p ^ k * d := by
+        rw [← hd]
+        exact (Nat.add_sub_cancel' hle).symm
+      rw [hq', pow_add, pow_mul, hwpow, one_pow, mul_one]
+  -- transport the downstairs identity along the embedding
+  have hup := Field.absoluteGaloisGroup.lift_map (algebraMap ℚ ℚᵖᵥ) τ (ζ ^ j)
+  rw [hwz, show (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚᵖᵥ) τ) (ζ ^ j) =
+      (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚᵖᵥ) τ).toRingEquiv (ζ ^ j)
+      from rfl, hspec, hexp, map_pow, hwz] at hup
+  exact hup.symm
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **The connected component of a hardly-ramified Hopf package is of
+multiplicative type: its points have unramified `μ`-coordinates**
+(sorry node, isolated 2026-07-25 — brick (c) of the μ-type/Raynaud
+coordination, the CITATION content of Raynaud 1974,
+*Schémas en groupes de type `(p, …, p)`*, Bull. SMF 102, 3.3.6, with
+Oort–Tate 1970 at order `p` and Serre, Duke 1987, §4.1): the
+connected component `Spec (G·e₀)` of the finite flat Hopf order `G` at
+`p`, for a hardly-ramified `ρ` whose local Jordan–Hölder factors are
+ONE-dimensional (the `hchar`/`fG` input), is of multiplicative type
+and killed by `p ^ k`; equivalently, its geometric points admit a
+system of `μ_{p ^ k}`-valued COORDINATES `θ` on which the local
+inertia at `p` acts through the cyclotomic character alone.
+
+Concretely, the statement packages the character group `X` of the
+connected part: `X` is finite étale over `ℚᵖᵥ`, so — after the
+harmless finite unramified base change that splits it — the
+`ℚᵖᵥᵃˡᵍ`-Hopf algebra of `Spec (G·e₀)` is the group algebra of `X`,
+GENERATED by group-like elements `x` with `x ^ (p ^ k) = e₀`, and the
+`i`-th coordinate of a point `ψ` is `θ ψ i = ψ̃ (x i)`. The five
+clauses are exactly the properties that evaluation at group-likes has:
+
+* `θ 1 = 1`: the convolution unit is `algebraMap ∘ ε` and `ε x = 1`;
+* *root-of-unity values*: `(θ ψ i) ^ (p ^ k) = ψ̃ ((x i) ^ (p ^ k)) =
+  ψ̃ (e₀) = 1` for a CONNECTED `ψ`;
+* *convolution multiplicativity*: `θ (ψ₁ ⋆ ψ₂) i = θ ψ₁ i · θ ψ₂ i`,
+  by `AlgHom.convMul_apply` and the relative group-like identity
+  `Δ(x i) · (e₀ ⊗ e₀) = x i ⊗ x i` (the connectedness of `ψ₁, ψ₂`
+  supplies the value `1` of the pair on `e₀ ⊗ e₀`);
+* *separation*: the group-likes GENERATE the corner algebra, and a
+  connected point factors through the corner, so two connected points
+  agreeing on all `x i` are equal;
+* *unramifiedness*: the Galois action on `X` is UNRAMIFIED (the
+  Cartier dual of a connected multiplicative-type group is étale over
+  the henselian `ℤ_p`, and an extension of étale by étale is étale),
+  so the inertia element `σ` FIXES every `x i` and hence
+  `θ (σ • ψ) i = (σ • ψ)~ (x i) = σ (ψ̃ (x i)) = σ (θ ψ i)`.
+
+SOUNDNESS (inherited from the consumer, do NOT weaken): the
+one-dimensionality input `hchar`/`fG` is not redundant — for the
+`p`-torsion of a SUPERSINGULAR elliptic curve over `ℤ_p` (connected,
+killed by `p`, `e = 1`) tame inertia acts through `𝔽_{p²}^×`, which is
+not a power map, so no such coordinate system exists there and the
+consumer's power-conclusion is FALSE without the exclusion. That is
+also why the unramifiedness clause is stated for the SPECIFIC inertia
+element `σ` rather than as `ℚᵖᵥ`-rationality of the `x i`: the
+character group `X` may be a nonconstant unramified twist, in which
+case NO nontrivial group-like of the corner is `ℚᵖᵥ`-rational, while
+inertia still fixes all of them.
+
+Consumed by
+`connected_point_smul_eq_conv_pow_cyclotomicCharacter_of_hopf_package`
+below, together with the two PROVEN bricks
+`absoluteGalois_apply_eq_pow_of_cyclotomicCharacter_sub_mem` (a) and
+`convPow_apply_of_comul_absorbs` (b). -/
+theorem exists_grouplike_coordinates_of_connected_hopf_package
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hZinj : Function.Injective (algebraMap ℤ_[p] R))
+    (hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
+    (hρ : IsHardlyRamified hpodd hv ρ)
+    (χ₁ χ₂ : Field.absoluteGaloisGroup ℚ → AlgebraicClosure ℚ_[p])
+    (hcont₁ : Continuous χ₁) (hcont₂ : Continuous χ₂)
+    (hone₁ : χ₁ 1 = 1) (hone₂ : χ₂ 1 = 1)
+    (hmul₁ : ∀ g h, χ₁ (g * h) = χ₁ g * χ₁ h)
+    (hmul₂ : ∀ g h, χ₂ (g * h) = χ₂ g * χ₂ h)
+    (hchar : ∀ g, ((ρ g).charpoly).map (algebraMap R (AlgebraicClosure ℚ_[p])) =
+      (Polynomial.X - Polynomial.C (χ₁ g)) * (Polynomial.X - Polynomial.C (χ₂ g)))
+    (I : Ideal R) (hI : IsOpen (I : Set R))
+    (G : Type) [CommRing G]
+    [HopfAlgebra 𝒪ᵖᵥ G] [Module.Flat 𝒪ᵖᵥ G] [Module.Finite 𝒪ᵖᵥ G]
+    [Algebra.Etale ℚᵖᵥ (ℚᵖᵥ ⊗[𝒪ᵖᵥ] G)]
+    (fG : Additive (ℚᵖᵥ ⊗[𝒪ᵖᵥ] G →ₐ[ℚᵖᵥ] ℚᵖᵥᵃˡᵍ) →+[Field.absoluteGaloisGroup ℚᵖᵥ]
+      (((ρ.baseChange (R ⧸ I)).toLocal
+        hp.out.toHeightOneSpectrumRingOfIntegersRat).Space))
+    (hfG : Function.Bijective fG)
+    (e₀ : G) (he₀ : IsIdempotentElem e₀)
+    (hε₀ : Coalgebra.counit (R := 𝒪ᵖᵥ) e₀ = (1 : 𝒪ᵖᵥ))
+    (hprim₀ : ∀ x : G, IsIdempotentElem x → x * e₀ = 0 ∨ x * e₀ = e₀)
+    (hcomul₀ : Coalgebra.comul (R := 𝒪ᵖᵥ) e₀ * (e₀ ⊗ₜ[𝒪ᵖᵥ] e₀) =
+      e₀ ⊗ₜ[𝒪ᵖᵥ] e₀)
+    (k : ℕ)
+    (σ : Field.absoluteGaloisGroup ℚᵖᵥ)
+    (hσ : σ ∈ localInertiaGroup hp.out.toHeightOneSpectrumRingOfIntegersRat) :
+    ∃ (ι : Type) (θ : (ℚᵖᵥ ⊗[𝒪ᵖᵥ] G →ₐ[ℚᵖᵥ] ℚᵖᵥᵃˡᵍ) → ι → ℚᵖᵥᵃˡᵍ),
+      (∀ i, θ (1 : ℚᵖᵥ ⊗[𝒪ᵖᵥ] G →ₐ[ℚᵖᵥ] ℚᵖᵥᵃˡᵍ) i = 1) ∧
+      (∀ ψ : ℚᵖᵥ ⊗[𝒪ᵖᵥ] G →ₐ[ℚᵖᵥ] ℚᵖᵥᵃˡᵍ,
+        ψ ((1 : ℚᵖᵥ) ⊗ₜ[𝒪ᵖᵥ] e₀) = 1 → ψ ^ (p ^ k) = 1 →
+        ∀ i, (θ ψ i) ^ (p ^ k) = 1) ∧
+      (∀ ψ₁ ψ₂ : ℚᵖᵥ ⊗[𝒪ᵖᵥ] G →ₐ[ℚᵖᵥ] ℚᵖᵥᵃˡᵍ,
+        ψ₁ ((1 : ℚᵖᵥ) ⊗ₜ[𝒪ᵖᵥ] e₀) = 1 → ψ₂ ((1 : ℚᵖᵥ) ⊗ₜ[𝒪ᵖᵥ] e₀) = 1 →
+        ∀ i, θ (ψ₁ * ψ₂) i = θ ψ₁ i * θ ψ₂ i) ∧
+      (∀ ψ₁ ψ₂ : ℚᵖᵥ ⊗[𝒪ᵖᵥ] G →ₐ[ℚᵖᵥ] ℚᵖᵥᵃˡᵍ,
+        ψ₁ ((1 : ℚᵖᵥ) ⊗ₜ[𝒪ᵖᵥ] e₀) = 1 → ψ₂ ((1 : ℚᵖᵥ) ⊗ₜ[𝒪ᵖᵥ] e₀) = 1 →
+        (∀ i, θ ψ₁ i = θ ψ₂ i) → ψ₁ = ψ₂) ∧
+      (∀ ψ : ℚᵖᵥ ⊗[𝒪ᵖᵥ] G →ₐ[ℚᵖᵥ] ℚᵖᵥᵃˡᵍ, ψ ((1 : ℚᵖᵥ) ⊗ₜ[𝒪ᵖᵥ] e₀) = 1 →
+        ∀ i, θ (σ • ψ) i = σ (θ ψ i)) :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
 /-- **Inertia raises connected points to the exact cyclotomic
-convolution power at `p`** (sorry node, isolated 2026-07-24 — THE
+convolution power at `p`** (PROVEN 2026-07-25 as an assembly over the
+single sorried Raynaud-classification sub-leaf
+`exists_grouplike_coordinates_of_connected_hopf_package` above, whose
+`μ`-coordinate system is combined with the two PROVEN bricks
+`absoluteGalois_apply_eq_pow_of_cyclotomicCharacter_sub_mem` (the
+root-of-unity bridge, step 4) and `convPow_apply_of_comul_absorbs` (the
+group-like convolution evaluation, step 5, applied through
+`convPow_apply_one_of_comul_absorbs_p`); isolated 2026-07-24 — THE
 μ-type/Raynaud core, split off the transport assembly
 `connected_point_smul_eq_cyclotomicCharacter_smul_of_hopf_package`
 below, stated INTRINSICALLY on the convolution point group: no `u`,
@@ -1437,7 +1748,16 @@ level-2 branch). What IS shared and should be built ONCE, generically
 Family): (a) the step-4 root-of-unity bridge, (b) the step-5
 group-like convolution evaluation, (c) the step-2/3 Raynaud
 classification with the one-dimensionality input as an explicit
-hypothesis. -/
+hypothesis.
+
+STATUS (2026-07-25): (a) and (b) are now PROVEN, generically, as
+`absoluteGalois_apply_eq_pow_of_cyclotomicCharacter_sub_mem` and
+`convPow_apply_of_comul_absorbs` above — both are stated over abstract
+data and are ready to move verbatim into a shared `GroupScheme` file
+when ModThree and Interface are cut over. (c) is the remaining sorried
+sub-leaf `exists_grouplike_coordinates_of_connected_hopf_package`,
+which carries the one-dimensionality input as explicit hypotheses
+exactly as coordinated. -/
 theorem connected_point_smul_eq_conv_pow_cyclotomicCharacter_of_hopf_package
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
@@ -1474,8 +1794,38 @@ theorem connected_point_smul_eq_conv_pow_cyclotomicCharacter_of_hopf_package
         ((Field.absoluteGaloisGroup.map (algebraMap ℚ ℚᵖᵥ)
           σ).toRingEquiv) : ℤ_[p]ˣ) : ℤ_[p]) - (n : ℤ_[p]) ∈
       Ideal.span {(p : ℤ_[p]) ^ k}) :
-    σ • φ = φ ^ n :=
-  sorry
+    σ • φ = φ ^ n := by
+  classical
+  -- brick (c): the μ-type coordinate system on the connected component
+  obtain ⟨ι, θ, hθ1, hθroot, hθmul, hθsep, hθσ⟩ :=
+    exists_grouplike_coordinates_of_connected_hopf_package hpodd hv hZinj hRinj
+      hρ χ₁ χ₂ hcont₁ hcont₂ hone₁ hone₂ hmul₁ hmul₂ hchar I hI G fG hfG e₀ he₀
+      hε₀ hprim₀ hcomul₀ k σ hσ
+  -- brick (b): the convolution powers of a connected point stay connected
+  have hconn : ∀ m : ℕ, (φ ^ m) ((1 : ℚᵖᵥ) ⊗ₜ[𝒪ᵖᵥ] e₀) = 1 := fun m =>
+    convPow_apply_one_of_comul_absorbs_p G e₀ hε₀ hcomul₀ φ hφe m
+  -- so is the inertia translate of `φ`: `σ` fixes the value `1`
+  have hσconn : (σ • φ) ((1 : ℚᵖᵥ) ⊗ₜ[𝒪ᵖᵥ] e₀) = 1 := by
+    have h1 : (σ • φ) ((1 : ℚᵖᵥ) ⊗ₜ[𝒪ᵖᵥ] e₀) =
+        σ (φ ((1 : ℚᵖᵥ) ⊗ₜ[𝒪ᵖᵥ] e₀)) := rfl
+    rw [h1, hφe, map_one]
+  -- the coordinates of a convolution power are ordinary powers
+  have hθpow : ∀ (m : ℕ) (i : ι), θ (φ ^ m) i = (θ φ i) ^ m := by
+    intro m
+    induction m with
+    | zero =>
+      intro i
+      rw [pow_zero, pow_zero, hθ1 i]
+    | succ j ih =>
+      intro i
+      rw [pow_succ, hθmul (φ ^ j) φ (hconn j) hφe i, ih i, pow_succ]
+  -- the coordinates of `φ` are `p ^ k`-th roots of unity
+  have hroot : ∀ i, (θ φ i) ^ (p ^ k) = 1 := hθroot φ hφe hord
+  -- brick (a): on those, `σ` acts as the `n`-th power; conclude by separation
+  refine hθsep (σ • φ) (φ ^ n) hσconn (hconn n) fun i => ?_
+  rw [hθσ φ hφe i, hθpow n i]
+  exact absoluteGalois_apply_eq_pow_of_cyclotomicCharacter_sub_mem σ k n _ rfl hn
+    (θ φ i) (hroot i)
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
