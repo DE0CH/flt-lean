@@ -156,6 +156,11 @@ public import Mathlib.RingTheory.MvPowerSeries.Rename
 public import Mathlib.Data.Finsupp.Option
 public import Mathlib.RingTheory.PowerSeries.Ideal
 public import Mathlib.RingTheory.PowerSeries.Inverse
+public import Fermat.FLT.Mathlib.RingTheory.PowerSeries.AdicComplete
+-- `PowerSeriesAdicComplete.isPrecomplete_mvPowerSeries` /
+-- `isNoetherianRing_mvPowerSeries` / `isPrecomplete_of_surjective`: the
+-- Mazur-category ring clauses of the Schlessinger cut, read off the de
+-- Smit–Lenstra presentation `ℤ_p[[x₁, …, x_g]] ↠ Runiv`
 public import Mathlib.RingTheory.Regular.RegularSequence
 public import Mathlib.RingTheory.Ideal.Operations
 public import Mathlib.Data.Nat.ModEq
@@ -1897,48 +1902,88 @@ theorem exists_framedStrictlyUniversal_hardlyRamified_finiteTests.{s, uK, uW}
         ρuniv πuniv :=
   sorry
 
-/-- **Noetherianity from a power-series presentation** (sorry node —
-the first Mazur-category commutative-algebra stratum of the
-Schlessinger cut of 2026-07-25): a surjective image of
+/-- **Noetherianity from a power-series presentation** (PROVEN
+2026-07-25 — the first Mazur-category commutative-algebra stratum of
+the Schlessinger cut of 2026-07-25): a surjective image of
 `ℤ_p[[x₁, …, x_g]]` is Noetherian.  Pure commutative algebra with zero
 arithmetic content: `ℤ_p` is Noetherian (a DVR), the power-series
 Hilbert basis theorem gives `IsNoetherianRing (MvPowerSeries (Fin g)
 ℤ_[p])` by induction on `g`, and Noetherianity passes to quotients
-(`isNoetherianRing_of_surjective`).  DEDUPE NOTE: the induction is
-already carried out in this file as `isNoetherianRing_mvPowerSeries`,
-which however is declared far BELOW this point (it belongs to the
-power-series section of the Auslander–Buchsbaum endgame and depends on
-the `optionCurryEquiv` machinery developed there); discharging this
-leaf is exactly `isNoetherianRing_of_surjective pres hpres` once that
-lemma — or the currying section it rests on — is moved above the
-deformation-theoretic section. -/
+(`isNoetherianRing_of_surjective`).  DEDUPE NOTE (resolved 2026-07-25):
+the induction was carried out in this file as
+`isNoetherianRing_mvPowerSeries`, which is however declared far BELOW
+this point (it belongs to the power-series section of the
+Auslander–Buchsbaum endgame and depends on the `optionCurryEquiv`
+machinery developed there); rather than relocate another owner's
+section, the currying and the induction are now also available
+UPSTREAM, in
+`Fermat/FLT/Mathlib/RingTheory/PowerSeries/AdicComplete.lean`
+(`PowerSeriesAdicComplete.isNoetherianRing_mvPowerSeries`), which the
+adic-completeness stratum below needs anyway. -/
 theorem isNoetherianRing_of_mvPowerSeries_presentation.{uR} {p : ℕ}
     [Fact p.Prime] {g : ℕ} {R : Type uR} [CommRing R]
     (pres : MvPowerSeries (Fin g) ℤ_[p] →+* R)
-    (hpres : Function.Surjective pres) : IsNoetherianRing R :=
-  sorry
+    (hpres : Function.Surjective pres) : IsNoetherianRing R := by
+  haveI : IsNoetherianRing (MvPowerSeries (Fin g) ℤ_[p]) :=
+    PowerSeriesAdicComplete.isNoetherianRing_mvPowerSeries g
+  exact isNoetherianRing_of_surjective _ _ pres hpres
 
-/-- **Adic completeness from a power-series presentation** (sorry node —
-the second Mazur-category commutative-algebra stratum of the
-Schlessinger cut of 2026-07-25): a LOCAL ring that is a surjective
+/-- **Adic completeness from a power-series presentation** (PROVEN
+2026-07-25 — the second Mazur-category commutative-algebra stratum of
+the Schlessinger cut of 2026-07-25): a LOCAL ring that is a surjective
 image of `ℤ_p[[x₁, …, x_g]]` is `𝔪`-adically complete.  Pure
 commutative algebra with zero arithmetic content, and the classical
 reason the de Smit–Lenstra presentation lands the universal ring in
-Mazur's category: `S = ℤ_p[[x₁, …, x_g]]` is a complete Noetherian
-local ring (complete for the `(p, x₁, …, x_g)`-adic topology, its
-maximal ideal), a surjection `S ↠ R` onto a local ring is automatically
-local (the preimage of `𝔪_R` is a maximal ideal of the local `S`, hence
-`𝔪_S`), so `𝔪_R = pres(𝔪_S)` and `𝔪_R^n = pres(𝔪_S^n)`; the quotient
-`R ≅ S ⧸ ker pres` of a Noetherian `I`-adically complete ring by an
-ideal is `I`-adically complete (Artin–Rees gives the Mittag-Leffler
-condition on the induced filtration, so the inverse limit of the
-quotient tower is the quotient of the inverse limit). -/
+Mazur's category.
+
+The proof splits `IsAdicComplete` into its two halves.
+
+*Hausdorff* is the cheap half and is mathlib's, once `R` is known
+Noetherian: `IsHausdorff (maximalIdeal R) R` holds for every Noetherian
+local ring (Krull intersection through `Ideal.iInf_pow_smul_eq_bot_of_le_jacobson`),
+and `R` is Noetherian as a surjective image of the Noetherian
+`ℤ_p[[x₁, …, x_g]]` (`isNoetherianRing_of_surjective` over
+`PowerSeriesAdicComplete.isNoetherianRing_mvPowerSeries`, the
+power-series Hilbert basis theorem by induction on the number of
+variables).
+
+*Precompleteness* is the substantial half and is NOT in mathlib —
+mathlib knows only `IsAdicComplete (span (range X)) (MvPowerSeries σ R)`,
+completeness for the ideal of the VARIABLES, whereas the maximal ideal
+`(p, x₁, …, x_g)` induces a strictly finer topology.  It is developed in
+`Fermat/FLT/Mathlib/RingTheory/PowerSeries/AdicComplete.lean` around the
+exact coefficientwise description of the powers of the maximal ideal of
+`B⟦X⟧` over a local `B`,
+`f ∈ 𝔪_{B⟦X⟧}^n ↔ ∀ j < n, coeff j f ∈ 𝔪_B^(n-j)`
+(`PowerSeriesAdicComplete.mem_maximalIdeal_pow_powerSeries`): the upper
+bound is an induction on `n` over the Cauchy product, the lower bound
+splits off the polynomial part of degree `< n` and divides the rest by
+`X^n`.  Precompleteness of `B⟦X⟧` is then a coefficientwise limit
+(`isPrecomplete_powerSeries`), the number of variables is stripped by
+the currying isomorphism
+`MvPowerSeries (Option σ) A ≃+* (MvPowerSeries σ A)⟦X⟧`
+(`isPrecomplete_mvPowerSeries`), and precompleteness descends along a
+surjection with the image ideal by lifting the successive differences of
+a Cauchy sequence into `𝔪_S^n` (`isPrecomplete_of_surjective`).  Since
+`pres` is a surjection of local rings it is automatically local, so
+`𝔪_S` maps ONTO `𝔪_R` (`IsLocalRing.map_maximalIdeal_of_surjective`) and
+the image filtration is the `𝔪_R`-adic one. -/
 theorem isAdicComplete_of_mvPowerSeries_presentation.{uR} {p : ℕ}
     [Fact p.Prime] {g : ℕ} {R : Type uR} [CommRing R] [IsLocalRing R]
     (pres : MvPowerSeries (Fin g) ℤ_[p] →+* R)
     (hpres : Function.Surjective pres) :
-    IsAdicComplete (IsLocalRing.maximalIdeal R) R :=
-  sorry
+    IsAdicComplete (IsLocalRing.maximalIdeal R) R := by
+  haveI : IsNoetherianRing (MvPowerSeries (Fin g) ℤ_[p]) :=
+    PowerSeriesAdicComplete.isNoetherianRing_mvPowerSeries g
+  haveI : IsNoetherianRing R := isNoetherianRing_of_surjective _ _ pres hpres
+  haveI : IsPrecomplete (IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) ℤ_[p]))
+      (MvPowerSeries (Fin g) ℤ_[p]) :=
+    PowerSeriesAdicComplete.isPrecomplete_mvPowerSeries g
+  haveI : IsPrecomplete (IsLocalRing.maximalIdeal R) R := by
+    have h := PowerSeriesAdicComplete.isPrecomplete_of_surjective
+      (IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) ℤ_[p])) pres hpres
+    rwa [IsLocalRing.map_maximalIdeal_of_surjective pres hpres] at h
+  exact ⟨⟩
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **Schlessinger–Ramakrishna–CDT finite-level leaf** (DECOMPOSED
