@@ -18636,12 +18636,16 @@ leaf is now a PROVEN assembly over:
   over `nonempty_modularJacobianPackage`, itself now a PROVEN
   assembly (annihilator-idempotent engine, pure finite-dimensional
   commutative algebra) over `nonempty_modularHomologyPackage`, itself
-  (2026-07-25) a PROVEN assembly over the single sorried inhabitation
-  leaf `nonempty_modularHeckeSpectrumPackage` — the `g`-independent
-  modular-homology interface carrier (Tate module, Eichler–Shimura
-  congruence, rank-2 freeness over the Hecke algebra, twisted Weil
-  pairing, eigensystem occurrence and strong multiplicity one, the
-  last two now stated on the Hecke algebra rather than the module).
+  (2026-07-25) a PROVEN assembly over
+  `nonempty_modularHeckeSpectrumPackage` — which the FIFTH
+  decomposition (2026-07-25, the `ℂ → ℚ̄_p` Eichler–Shimura seam) turned
+  into a PROVEN assembly in turn, over exactly two leaves: the
+  GEOMETRIC `nonempty_modularHeckeComparisonPackage` (Tate module,
+  Eichler–Shimura congruence, rank-2 freeness over the Hecke algebra,
+  twisted Weil pairing, Ribet irreducibility, and the comparison
+  field) and the ANALYTIC `exists_heckeOp_newform_etaleIdempotent`
+  (strong multiplicity one in `S₂(Γ₀(M))`, in idempotent form, over
+  the PROVEN complex Hecke operators `heckeOp`).
 * `charFrob_baseChange` and
   `charFrob_map_coeff_zero_of_isHardlyRamified` and
   `eq_quadratic_of_monic_natDegree_two` — PROVEN bookkeeping that
@@ -18906,10 +18910,25 @@ everything from those facts to the attachment statement is PROVEN:
   engine (powers of `Ann_A(v)` stabilize in the finite-dimensional
   commutative algebra `A`, the Cayley–Hamilton determinant trick
   produces an almost-idempotent, the iteration corrects it).
-* `nonempty_modularHeckeSpectrumPackage` — SORRY: the residual
-  geometric leaf, inhabitation of the fourth-level carrier (see its
+* `heckeOp`, `heckeOp_coe`,
+  `heckeOp_apply_eq_smul_of_isWeightTwoEigenform` — PROVEN: the Hecke
+  operator `T_q` of `heckeTransform` as a bundled endomorphism of
+  `S₂(Γ₀(M))`, and the fact that a normalized weight-2 eigenform is
+  literally an eigenvector of it. The complex side of the `ℂ → ℚ̄_p`
+  Eichler–Shimura seam.
+* `exists_heckeOp_newform_etaleIdempotent` — SORRY: strong
+  multiplicity one in `S₂(Γ₀(M))` in idempotent form (the newform's
+  local factor of the complex Hecke algebra is a LINE) — the
+  classical-analytic leaf of the seam.
+* `nonempty_modularHeckeComparisonPackage` — SORRY: the residual
+  GEOMETRIC leaf, inhabitation of the fifth-level carrier, whose one
+  non-geometric field is the `ℂ → ℚ̄_p` comparison itself (see its
   docstring for the classical construction and citations, field by
   field).
+* `nonempty_modularHeckeSpectrumPackage` — now a PROVEN assembly over
+  those two: the complex étale idempotent transported by `comparison`
+  gives `spectrum_occurs` outright and `spectrum_reduced` by
+  absorption.
 * `nonempty_modularHomologyPackage` — now a PROVEN assembly: the two
   module-level spectral fields are the coordinatewise shadows of the
   two algebra-level ones under freeness of rank two.
@@ -19595,8 +19614,8 @@ twisted Weil pairing restricts to a symplectic form on it, forcing
 inhabitation of THIS carrier is itself a PROVEN assembly over
 `ModularHomologyPackage` below; the citations for each field are in
 the docstring of the inhabitation leaf
-`nonempty_modularHeckeSpectrumPackage`, the only sorried node of this
-cut. -/
+`nonempty_modularHeckeComparisonPackage`, the sorried GEOMETRIC node of
+this cut since the 2026-07-25 fifth decomposition. -/
 structure ModularJacobianPackage (M : ℕ) where
   /-- The Galois module: intended `V_p(J₀(M)) ⊗ ℚ̄_p`. -/
   Vp : Type
@@ -19711,8 +19730,8 @@ Both are facts about the one intended inhabitant, quantified over
 abstract carriers they would be false. All other fields are verbatim
 those of `ModularJacobianPackage`; the classical citations, field by
 field, are in the docstring of the inhabitation leaf
-`nonempty_modularHeckeSpectrumPackage`, the only sorried node of this
-cut. -/
+`nonempty_modularHeckeComparisonPackage`, the sorried GEOMETRIC node of
+this cut since the 2026-07-25 fifth decomposition. -/
 structure ModularHomologyPackage (M : ℕ) where
   /-- The Galois module: intended `V_p(J₀(M)) ⊗ ℚ̄_p`. -/
   Vp : Type
@@ -19851,8 +19870,8 @@ exactly as the fields they replace — they are facts about the one
 intended inhabitant, false for arbitrary abstract carriers. All other
 fields are verbatim those of `ModularHomologyPackage`; the classical
 citations, field by field, are in the docstring of the inhabitation
-leaf `nonempty_modularHeckeSpectrumPackage`, the only sorried node of
-this cut. -/
+leaf `nonempty_modularHeckeComparisonPackage`, the sorried GEOMETRIC
+node of this cut since the 2026-07-25 fifth decomposition. -/
 structure ModularHeckeSpectrumPackage (M : ℕ) where
   /-- The Galois module: intended `V_p(J₀(M)) ⊗ ℚ̄_p`. -/
   Vp : Type
@@ -19957,11 +19976,354 @@ attribute [instance] ModularHeckeSpectrumPackage.addCommGroup
   ModularHeckeSpectrumPackage.module
   ModularHeckeSpectrumPackage.moduleFinite
 
-/-- **Inhabitation of the modular Hecke-spectrum package** (sorry node
-— THE residual geometric leaf of the Eichler–Shimura cut after the
-2026-07-25 fourth decomposition, and the only place where the modular
-curve and its Jacobian are consumed): for every level `M ≥ 1` the
-carrier `ModularHeckeSpectrumPackage M` is inhabited.
+/-! ##### The `ℂ → ℚ̄_p` Eichler–Shimura seam (FIFTH decomposition,
+2026-07-25)
+
+The fourth decomposition above left `nonempty_modularHeckeSpectrumPackage`
+carrying two ALGEBRA-level spectral assertions — `spectrum_occurs` and
+`spectrum_reduced` — about the base-changed Hecke algebra
+`A = heckeSubalgebra hecke ≅ 𝕋 ⊗ ℚ̄_p`. Both are, classically, the
+`κ`-transport of ONE object on the COMPLEX side: the idempotent cutting
+out the newform's local factor of the Hecke algebra acting on
+`S₂(Γ₀(M))`, that factor being the field of Hecke eigenvalues itself
+(strong multiplicity one). This section cuts exactly along that seam,
+which is the cut the fourth decomposition's own DECOMPOSITION POINTERS
+named:
+
+* the COMPLEX side is built here, PROVEN, out of the file's existing
+  `S₂(Γ₀(M))` theory: `heckeOp M q` is the honest Hecke operator `T_q`
+  of `heckeTransform` as a bundled element of
+  `Module.End ℂ (CuspForm (Gamma0GL M) 2)` (`exists_heckeOpLinear`,
+  from `exists_cuspForm_heckeTransform` plus `heckeTransform_add`,
+  `heckeTransform_smul` and the `q`-expansion principle), and a
+  normalized weight-2 eigenform is literally an eigenvector of it,
+  `heckeOp_apply_eq_smul_of_isWeightTwoEigenform` — the coefficient
+  identity `hecke_eigen_coeff_identity` read through
+  `qExpansion_heckeTransform_coeff` and
+  `cuspForm_eq_of_forall_qCoeff_eq`. So the Hecke algebra
+  `heckeSubalgebra (heckeOp M) ⊆ End ℂ S₂(Γ₀(M))` and the eigenform's
+  character on it are now honest Lean objects, not citations;
+* the CLASSICAL-ANALYTIC residue on the complex side is the single
+  sorried leaf `exists_heckeOp_newform_etaleIdempotent`: strong
+  multiplicity one in `S₂(Γ₀(M))` (Diamond–Shurman Theorem 5.8.2 with
+  §5.8 and Proposition 5.8.5), in its idempotent form — the newform's
+  local factor of `heckeSubalgebra (heckeOp M)` is the LINE `ℂ·e`;
+* the TRANSPORT is the `comparison` field of
+  `ModularHeckeComparisonPackage`: given that complex idempotent, the
+  Eichler–Shimura isomorphism plus the Tate-module comparison produce
+  the corresponding idempotent of `A` with the `κ`-transported
+  eigenvalues. Being a field of the carrier it is quantified over
+  `(g, κ)` INSIDE the structure, like the fields it replaces — a fact
+  about the ONE intended inhabitant, not about abstract carriers;
+* the two algebra-level spectral fields of
+  `ModularHeckeSpectrumPackage` are then PROVEN glue over these
+  (`nonempty_modularHeckeSpectrumPackage`, below, is now an assembly).
+
+What is left geometric is `nonempty_modularHeckeComparisonPackage`:
+Tate module, Galois action, Igusa/Eichler–Shimura congruence, rank-2
+freeness, twisted Weil pairing, Ribet irreducibility, and the
+comparison field. -/
+
+section ComplexHeckeAlgebra
+
+/-- **The Hecke operator `T_q` on `S₂(Γ₀(M))` as a bundled linear
+endomorphism** (PROVEN): the Hecke slash-sum `heckeTransform M q`
+preserves the weight-2 level-`M` cusp space
+(`exists_cuspForm_heckeTransform`), is additive and `ℂ`-homogeneous
+(`heckeTransform_add`, `heckeTransform_smul`), and the underlying
+function determines the cusp form, so the pointwise choice of
+preimages assembles into a `ℂ`-linear endomorphism. -/
+theorem exists_heckeOpLinear {M : ℕ} (hM : 0 < M) {q : ℕ} (hq : q.Prime) :
+    ∃ F : Module.End ℂ (CuspForm (Gamma0GL M) 2),
+      ∀ f : CuspForm (Gamma0GL M) 2, ⇑(F f) = heckeTransform M q ⇑f := by
+  classical
+  choose T hT using fun f : CuspForm (Gamma0GL M) 2 =>
+    exists_cuspForm_heckeTransform hM hq f
+  refine ⟨{ toFun := T, map_add' := ?_, map_smul' := ?_ }, hT⟩
+  · intro f₁ f₂
+    apply DFunLike.coe_injective
+    simp only [CuspForm.coe_add, hT, heckeTransform_add]
+  · intro c f
+    apply DFunLike.coe_injective
+    simp only [RingHom.id_apply, CuspForm.IsGLPos.coe_smul, hT,
+      heckeTransform_smul]
+
+/-- The unconditional form of `exists_heckeOpLinear`, so that the Hecke
+operator can be DEFINED at every pair `(M, q)` (junk — the zero
+endomorphism — outside the meaningful range `0 < M`, `q` prime, which
+is all any statement below quantifies over). -/
+theorem exists_heckeOpLinear_total (M q : ℕ) :
+    ∃ F : Module.End ℂ (CuspForm (Gamma0GL M) 2),
+      0 < M → q.Prime →
+        ∀ f : CuspForm (Gamma0GL M) 2, ⇑(F f) = heckeTransform M q ⇑f := by
+  by_cases h : 0 < M ∧ q.Prime
+  · obtain ⟨F, hF⟩ := exists_heckeOpLinear h.1 h.2
+    exact ⟨F, fun _ _ => hF⟩
+  · exact ⟨0, fun hM hq => absurd ⟨hM, hq⟩ h⟩
+
+/-- **The Hecke operator `T_q` on `S₂(Γ₀(M))`** — the complex side of
+the Eichler–Shimura seam. At `0 < M` and `q` prime it is the bundled
+`heckeTransform M q` (`heckeOp_coe`); elsewhere it is junk, which no
+statement about it looks at (all quantify over primes). -/
+noncomputable def heckeOp (M q : ℕ) : Module.End ℂ (CuspForm (Gamma0GL M) 2) :=
+  (exists_heckeOpLinear_total M q).choose
+
+/-- The Hecke operator acts by the Hecke slash-sum. -/
+theorem heckeOp_coe {M : ℕ} (hM : 0 < M) {q : ℕ} (hq : q.Prime)
+    (f : CuspForm (Gamma0GL M) 2) :
+    ⇑(heckeOp M q f) = heckeTransform M q ⇑f :=
+  (exists_heckeOpLinear_total M q).choose_spec hM hq f
+
+/-- Scalar homogeneity of the `q`-expansion coefficients (through the
+functional `qCoeffL`). -/
+theorem qCoeff_smul {N : ℕ} (c : ℂ) (f : CuspForm (Gamma0GL N) 2) (m : ℕ) :
+    qCoeff N (c • f) m = c * qCoeff N f m := by
+  simpa using (qCoeffL N m).map_smul c f
+
+/-- **A normalized weight-2 eigenform is an eigenvector of the Hecke
+operator** (PROVEN — the eigenform carrier `IsWeightTwoEigenform`,
+which on this pin is a COEFFICIENT condition, meets the honest
+operator): `T_q g = a_q(g)·g` in `S₂(Γ₀(M))`. Proof: the two sides
+have the same `q`-expansion, by `qExpansion_heckeTransform_coeff`
+(the coefficients of the slash-sum) followed by
+`hecke_eigen_coeff_identity` (the coefficient collapse
+`a_{qm} + 1_{q∤M}1_{q∣m}·q·a_{m/q} = a_q·a_m`), and a weight-2 cusp
+form is determined by its `q`-expansion
+(`cuspForm_eq_of_forall_qCoeff_eq`). -/
+theorem heckeOp_apply_eq_smul_of_isWeightTwoEigenform {M : ℕ} (hM : 0 < M)
+    {g : CuspForm (Gamma0GL M) 2} (hg : IsWeightTwoEigenform M g)
+    {q : ℕ} (hq : q.Prime) :
+    heckeOp M q g = qCoeff M g q • g := by
+  refine cuspForm_eq_of_forall_qCoeff_eq fun m => ?_
+  have h1 : qCoeff M (heckeOp M q g) m =
+      qCoeff M g (q * m) +
+        (if q ∣ M then 0
+          else if q ∣ m then (q : ℂ) * qCoeff M g (m / q) else 0) := by
+    have h2 := qExpansion_heckeTransform_coeff hM hq g m
+    rw [← heckeOp_coe hM hq g] at h2
+    exact h2
+  rw [h1, hecke_eigen_coeff_identity hg hq m, qCoeff_smul]
+
+/-- A normalized eigenform is nonzero (its first coefficient is `1`). -/
+theorem ne_zero_of_isWeightTwoEigenform {M : ℕ}
+    {g : CuspForm (Gamma0GL M) 2} (hg : IsWeightTwoEigenform M g) :
+    g ≠ 0 := by
+  intro h
+  have h1 := hg.qCoeff_one
+  rw [h, qCoeff_zero_cuspForm] at h1
+  exact zero_ne_one h1
+
+/-- **Strong multiplicity one in `S₂(Γ₀(M))`, in idempotent form**
+(sorry node — the CLASSICAL-ANALYTIC leaf of the `ℂ → ℚ̄_p`
+Eichler–Shimura seam; Diamond–Shurman Theorem 5.8.2 together with §5.8
+and Proposition 5.8.5): for a weight-2 level-`M` NEWFORM `g`, the
+newform's local factor of the complex Hecke algebra
+`A_ℂ = heckeSubalgebra (heckeOp M) ⊆ End ℂ S₂(Γ₀(M))` is the LINE
+`ℂ·e` on an idempotent `e` fixing `g`.
+
+Precisely: there is `e ∈ A_ℂ` with `e² = e`, `e g = g`, every
+prime-indexed Hecke operator acting on `e` by the eigenvalue
+`a_q(g)`, and every element of `A_ℂ` killed by a POWER of each
+`T_q − a_q(g)` a scalar multiple of `e`.
+
+CLASSICAL CONTENT, and why each clause is true of the intended
+object. `A_ℂ` is a finite-dimensional (`cuspForm_finiteDimensional`)
+commutative algebra of operators on `S₂(Γ₀(M))`, hence Artinian,
+hence a finite product of local factors; `e` is the unit of the factor
+supported at the character `T_q ↦ a_q(g)`, which exists because `g` is
+a joint eigenvector (`heckeOp_apply_eq_smul_of_isWeightTwoEigenform`,
+passed in as `hgeig`) — that much is pure algebra, the
+annihilator-idempotent engine `exists_idempotent_heckeSubalgebra_fixing`
+applied to the vector `g`, and it gives `e² = e`, `e g = g` and
+nilpotence of `a·e` for every `a ∈ A_ℂ` killing `g`. The ANALYTIC
+input, and the only reason this is a leaf, is that this local factor
+is `ℂ` itself — ÉTALE, one-dimensional:
+
+* the full prime eigensystem `{a_q(g)}` of a newform of level exactly
+  `M` occurs in `S₂(Γ₀(M))` on the line `ℂ·g` ALONE (strong
+  multiplicity one, D–S Thm 5.8.2: an oldform component would realize
+  the away-from-`M` eigensystem at a proper divisor level, which
+  `IsWeightTwoNewform.eigensystem_minimal` forbids, and the
+  `U_q`-eigenvalues at `q ∣ M` are pinned by D–S Prop. 5.8.5);
+* consequently the generalized joint eigenspace coincides with the
+  eigenspace: the newform component of `𝕋_ℂ` has no nilpotents (all
+  `U_q`-nonsemisimplicity of the Hecke algebra is carried by oldform
+  components), so an element of `A_ℂ` killed by a power of each
+  `T_q − a_q(g)` is supported on that reduced factor, i.e. is `c·e`;
+* the eigenvalue clause `T_q·e = a_q(g)·e` is then automatic and is
+  recorded here only for convenience of the consumers: `(T_q − a_q)e`
+  is nilpotent and generalized-eigen, hence `c·e` with `c` nilpotent,
+  hence `0`.
+
+The two hypotheses are PROVEN facts of this file, passed in so that the
+leaf's soundness is auditable against them: `hgeig` says `g` is a joint
+eigenvector with the eigenvalues `a_q(g)`.
+
+DECOMPOSITION POINTER: the `e² = e`, `e g = g` clauses (and the
+nilpotence of `Ann_{A_ℂ}(g)·e`) are PURE ALGEBRA over
+`exists_idempotent_heckeSubalgebra_fixing`, available as soon as the
+complex Hecke operators are known to COMMUTE
+(`T_q T_r = T_r T_q` on `S₂(Γ₀(M))`, a coefficient computation over
+`qExpansion_heckeTransform_coeff`: both iterated coefficient formulas
+expand to `a_{qrm} + r·1_{r∣m}a_{qm/r} + q·1_{q∣m}a_{rm/q} +
+qr·1_{qr∣m}a_{m/qr}`, symmetric in `q, r`). Proving that commutation
+would let this leaf shrink to the multiplicity-one clause alone, with
+the idempotent supplied as a hypothesis. -/
+theorem exists_heckeOp_newform_etaleIdempotent {M : ℕ} (hM : 0 < M)
+    {g : CuspForm (Gamma0GL M) 2} (hg : IsWeightTwoNewform M g)
+    (hgeig : ∀ q : ℕ, q.Prime → heckeOp M q g = qCoeff M g q • g) :
+    ∃ e ∈ heckeSubalgebra (heckeOp M), e * e = e ∧ e g = g ∧
+      (∀ q : ℕ, q.Prime → heckeOp M q * e = qCoeff M g q • e) ∧
+      (∀ a ∈ heckeSubalgebra (heckeOp M),
+        (∀ q : ℕ, q.Prime → ∃ n : ℕ,
+          (heckeOp M q - qCoeff M g q •
+            (1 : Module.End ℂ (CuspForm (Gamma0GL M) 2))) ^ n * a = 0) →
+        ∃ c : ℂ, a = c • e) :=
+  sorry
+
+end ComplexHeckeAlgebra
+
+/-- **The modular Hecke-COMPARISON package** (FIFTH decomposition,
+2026-07-25) — the geometric carrier of the modular-homology input,
+carrying the `ℂ → ℚ̄_p` Eichler–Shimura comparison in place of the two
+algebra-level spectral assertions of `ModularHeckeSpectrumPackage`.
+
+Sixteen fields are verbatim those of `ModularHeckeSpectrumPackage`
+(Tate module and Galois action, the Eichler–Shimura congruence,
+rank-2 freeness over the Hecke algebra, the Atkin–Lehner-twisted Weil
+pairing, Ribet irreducibility). The pair
+
+* `spectrum_occurs` — the newform eigensystem is a `ℚ̄_p`-point of
+  `A = heckeSubalgebra hecke`,
+* `spectrum_reduced` — its local factor is reduced,
+
+is replaced by the single field
+
+* `comparison` — GIVEN the newform's étale idempotent `eC` on the
+  COMPLEX side (in `heckeSubalgebra (heckeOp M) ⊆ End ℂ S₂(Γ₀(M))`,
+  supplied by `exists_heckeOp_newform_etaleIdempotent`), the Hecke
+  algebra `A` contains the corresponding idempotent `e`: nonzero, with
+  `T_q·e = κ(a_q(g))·e`, and ABSORBING every `κ`-generalized element
+  of `A` (`e·a = a`).
+
+Both replaced fields follow from `comparison` by three lines of
+algebra (`nonempty_modularHeckeSpectrumPackage` below), so this carrier
+is at least as strong; it is not stronger in any way that matters,
+since the intended inhabitant satisfies it. Like the fields it
+replaces, `comparison` is quantified over `(g, κ)` INSIDE the
+structure: it is a fact about the ONE intended inhabitant (through the
+Eichler–Shimura isomorphism of the genuine modular curve), FALSE for
+arbitrary abstract carriers, so it must not be extracted into a
+standalone lemma quantifying over packages. -/
+structure ModularHeckeComparisonPackage (M : ℕ) where
+  /-- The Galois module: intended `V_p(J₀(M)) ⊗ ℚ̄_p`. -/
+  Vp : Type
+  [addCommGroup : AddCommGroup Vp]
+  [module : Module (AlgebraicClosure ℚ_[p]) Vp]
+  [moduleFinite : Module.Finite (AlgebraicClosure ℚ_[p]) Vp]
+  /-- The continuous Galois action on the Tate module. -/
+  τJ : GaloisRep ℚ (AlgebraicClosure ℚ_[p]) Vp
+  /-- The Hecke operators, base-changed to `ℚ̄_p`. -/
+  hecke : ℕ → Module.End (AlgebraicClosure ℚ_[p]) Vp
+  /-- The exceptional set (intended: the places over `Mp`). -/
+  S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+  /-- Hecke correspondences are defined over `ℚ`, so they commute
+  with the whole Galois action. -/
+  hecke_comm : ∀ (m : ℕ) (γ : Field.absoluteGaloisGroup ℚ),
+    hecke m * τJ γ = τJ γ * hecke m
+  /-- The Hecke operators commute with each other. -/
+  hecke_mul_comm : ∀ m n : ℕ, hecke m * hecke n = hecke n * hecke m
+  /-- The Eichler–Shimura congruence relation at good primes:
+  `Frob_q² − T_q·Frob_q + q = 0` on the Tate module. -/
+  congruence : ∀ (q : ℕ) (hq : q.Prime),
+    hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+    τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) ^ 2
+      - hecke q *
+        τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+      + (q : AlgebraicClosure ℚ_[p]) • 1 = 0
+  /-- First member of a Hecke-algebra basis of the Tate module. -/
+  basis₁ : Vp
+  /-- Second member of a Hecke-algebra basis of the Tate module. -/
+  basis₂ : Vp
+  /-- Freeness, existence half: every vector has Hecke-algebra
+  coordinates in the basis. -/
+  span_free : ∀ x : Vp, ∃ a ∈ heckeSubalgebra hecke,
+    ∃ b ∈ heckeSubalgebra hecke, x = a basis₁ + b basis₂
+  /-- Freeness, uniqueness half: the coordinates are unique (stated
+  at zero). -/
+  indep_free : ∀ a ∈ heckeSubalgebra hecke, ∀ b ∈ heckeSubalgebra hecke,
+    a basis₁ + b basis₂ = 0 → a = 0 ∧ b = 0
+  /-- The Atkin–Lehner-twisted Weil pairing on the Tate module. -/
+  pair : Vp →ₗ[AlgebraicClosure ℚ_[p]]
+    Vp →ₗ[AlgebraicClosure ℚ_[p]] AlgebraicClosure ℚ_[p]
+  /-- The pairing is alternating. -/
+  pair_self : ∀ x : Vp, pair x x = 0
+  /-- The pairing is nondegenerate. -/
+  pair_nondeg : ∀ x : Vp, (∀ y : Vp, pair x y = 0) → x = 0
+  /-- The Hecke operators are self-adjoint for the twisted pairing. -/
+  pair_hecke : ∀ (q : ℕ), q.Prime → ∀ x y : Vp,
+    pair (hecke q x) y = pair x (hecke q y)
+  /-- Galois Frobenii off `S` scale the pairing by the cyclotomic
+  multiplier `q`. -/
+  pair_frob : ∀ (q : ℕ) (hq : q.Prime),
+    hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+    ∀ x y : Vp,
+      pair (τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) x)
+          (τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) y) =
+        (q : AlgebraicClosure ℚ_[p]) * pair x y
+  /-- **The `ℂ → ℚ̄_p` Eichler–Shimura comparison**: the newform's
+  étale idempotent transports from the COMPLEX Hecke algebra
+  `heckeSubalgebra (heckeOp M) ⊆ End ℂ S₂(Γ₀(M))` to the base-changed
+  Hecke algebra `A = heckeSubalgebra hecke ≅ 𝕋 ⊗ ℚ̄_p` acting on the
+  Tate module, with eigenvalues transported along `κ`. The hypothesis
+  is exactly the conclusion of
+  `exists_heckeOp_newform_etaleIdempotent`; the conclusion is the
+  newform's local factor of `A`, cut out by an idempotent `e` which
+  absorbs every `κ`-generalized element (`e·a = a`) — i.e. the factor
+  is `ℚ̄_p·e`, étale.
+
+  Quantified over `(g, κ)` INSIDE the structure, exactly like the two
+  spectral fields it replaces: a fact about the one intended
+  inhabitant, false for arbitrary abstract carriers. -/
+  comparison : ∀ (g : CuspForm (Gamma0GL M) 2), IsWeightTwoNewform M g →
+    ∀ (κ : heckeField M g →+* AlgebraicClosure ℚ_[p]),
+    ∀ eC ∈ heckeSubalgebra (heckeOp M), eC ≠ 0 → eC * eC = eC →
+      (∀ q : ℕ, q.Prime → heckeOp M q * eC = qCoeff M g q • eC) →
+      (∀ a ∈ heckeSubalgebra (heckeOp M),
+        (∀ q : ℕ, q.Prime → ∃ n : ℕ,
+          (heckeOp M q - qCoeff M g q •
+            (1 : Module.End ℂ (CuspForm (Gamma0GL M) 2))) ^ n * a = 0) →
+        ∃ c : ℂ, a = c • eC) →
+      ∃ e ∈ heckeSubalgebra hecke, e ≠ 0 ∧ e * e = e ∧
+        (∀ q : ℕ, q.Prime → hecke q * e = κ (heckeCoeff M g q) • e) ∧
+        (∀ a ∈ heckeSubalgebra hecke,
+          (∀ q : ℕ, q.Prime → ∃ n : ℕ,
+            (hecke q - κ (heckeCoeff M g q) • 1) ^ n * a = 0) →
+          e * a = a)
+  /-- Ribet irreducibility (Ribet 1977, Springer LNM 601, Thm. (2.3)):
+  for every level-`M` newform and `p`-adic embedding of its Hecke
+  field, the Galois action admits no proper nonzero stable subspace
+  inside the `κ`-eigenspace. Like `comparison` this is quantified over
+  `(g, κ)` INSIDE the structure — a fact about the one intended
+  inhabitant (through the Weil bound `|a_q| ≤ 2√q` of the genuine
+  newform), not about arbitrary abstract carriers. -/
+  irred_eigenspace : ∀ (g : CuspForm (Gamma0GL M) 2),
+    IsWeightTwoNewform M g →
+    ∀ (κ : heckeField M g →+* AlgebraicClosure ℚ_[p]),
+    ∀ U : Submodule (AlgebraicClosure ℚ_[p]) Vp,
+      U ≤ heckeEigenspace hecke (fun m => κ (heckeCoeff M g m)) →
+      (∀ γ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ U, τJ γ x ∈ U) →
+      U = ⊥ ∨ U = heckeEigenspace hecke (fun m => κ (heckeCoeff M g m))
+
+attribute [instance] ModularHeckeComparisonPackage.addCommGroup
+  ModularHeckeComparisonPackage.module
+  ModularHeckeComparisonPackage.moduleFinite
+
+/-- **Inhabitation of the modular Hecke-comparison package** (sorry
+node — THE residual GEOMETRIC leaf after the 2026-07-25 fifth
+decomposition, and the only place where the modular curve and its
+Jacobian are consumed): for every level `M ≥ 1` the carrier
+`ModularHeckeComparisonPackage M` is inhabited.
 
 Classical construction, field by field (Diamond–Shurman ch. 6, 8, 9):
 take `Vp := V_p(J₀(M)) ⊗_{ℚ_p} ℚ̄_p`, the rational `p`-adic Tate
@@ -20005,6 +20367,180 @@ module of the modular Jacobian `J₀(M) = Jac X₀(M)`, with
   equivariance of the Weil pairing with cyclotomic multiplier plus
   ℚ-rationality of `w_M` give `pair_frob`, with
   `χ_cyc(Frob_q) = q`;
+* `comparison` — THE `ℂ → ℚ̄_p` EICHLER–SHIMURA COMPARISON, the seam
+  of the fifth decomposition and the only field of this carrier that
+  mentions the complex side. Both Hecke algebras are base changes of
+  ONE rational Hecke algebra: the EICHLER–SHIMURA ISOMORPHISM (D–S
+  §6.2, `H₁(X₀(M); ℤ) ⊗ ℂ ≅ S₂(Γ₀(M)) ⊕ S₂(Γ₀(M))⁻`,
+  Hecke-equivariantly) identifies `𝕋 ⊗ ℂ` with the complex Hecke
+  algebra `heckeSubalgebra (heckeOp M)` acting on `S₂(Γ₀(M))`, while
+  the Tate-module comparison `V_p(J₀(M)) ≅ H₁(X₀(M); ℚ) ⊗ ℚ_p`
+  identifies `A = heckeSubalgebra hecke` with `𝕋 ⊗ ℚ̄_p` (prime
+  generation and faithfulness of both actions). The newform's local
+  factor is defined over the Hecke field `K_g = ℚ({a_q(g)})`, a number
+  field (`heckeField_finiteDimensional`), so the ÉTALE idempotent `eC`
+  of the hypothesis — the unit of the local factor of `𝕋 ⊗ ℂ` at the
+  character `T_q ↦ a_q(g)`, whose factor is `ℂ` by strong
+  multiplicity one — is the image of an idempotent of `𝕋 ⊗ K_g`, and
+  `e := ` its image under `𝕋 ⊗ K_g → 𝕋 ⊗ ℚ̄_p = A` along `κ` is the
+  asserted idempotent: nonzero (idempotents survive base change along
+  a field embedding), with `T_q·e = κ(a_q(g))·e` (apply `κ` to the
+  eigenvalue relation), and absorbing (`e·a = a`) every
+  `κ`-generalized `a ∈ A`, because étaleness of the local factor is
+  preserved by base change along `K_g → ℚ̄_p` and the maximal ideal
+  generated by `{T_q − κ(a_q(g))}` is therefore the kernel of a single
+  factor projection. This is the ONLY field where the two coefficient
+  worlds meet, which is the point of the cut;
+* `irred_eigenspace` — RIBET IRREDUCIBILITY (Ribet, *Galois
+  representations attached to eigenforms with Nebentypus*, Springer
+  LNM 601 (1977), Thm. (2.3), weight-2 trivial-nebentypus case; also
+  D–S §9.6 exercises and Cornell–Silverman–Stevens ch. by Rohrlich):
+  the `κ`-eigencomponent `ρ_{g,λ}` of `V_p(J₀(M))` is irreducible.
+  Were a line inside the 2-dimensional eigenspace Galois-stable, the
+  semisimplification of `ρ_{g,λ}` would be `δ₁ ⊕ δ₂` with the `δᵢ`
+  continuous characters of `Γ ℚ` unramified outside `Mp`
+  (Néron–Ogg–Shafarevich: `J₀(M)` has good reduction outside `M`, so
+  the Tate module — hence any subquotient — is unramified away from
+  `Mp`) and `δ₁δ₂ = χ_cyc` (the Weil-pairing determinant); by class
+  field theory over `ℚ` each `δᵢ` is a finite-order character times
+  an integer power `χ_cyc^{nᵢ}` with `n₁ + n₂ = 1`, so
+  `a_q = δ₁(Frob_q) + δ₂(Frob_q)` has archimedean absolute value
+  `≍ 1 + q` (under any embedding of the coefficients into `ℂ`) at all
+  primes in a positive-density set, violating the Eichler–Shimura /
+  Weil bound `|a_q| ≤ 2√q` of the cuspidal eigensystem (D–S Theorem
+  5.9.1 via Ramanujan–Petersson, or directly the Riemann hypothesis
+  for the reduced `X₀(M)` at good `q`).
+
+DECOMPOSITION POINTERS (2026-07-25, fifth cut): the SPECTRAL content
+has now left this leaf entirely — what used to be `spectrum_occurs`
+and `spectrum_reduced` is the single `comparison` field, whose complex
+side is the separate analytic leaf
+`exists_heckeOp_newform_etaleIdempotent` and whose algebra-level
+consequences are proven glue. The remaining fields
+(`τJ`/`congruence`/`pair_*`/`irred_eigenspace` and the freeness pair)
+require genuine modular-curve geometry — the Jacobian, its Tate
+module, Igusa reduction, the Weil pairing — absent from the pin, and
+are the irreducibly geometric residue. The next cut inside them, if
+one is wanted, is the rational-model layer the `comparison` field's
+citation sketches: an explicit finite-dimensional ℚ-algebra `𝕋_ℚ`
+with the two base-change identifications, which would turn
+`comparison` into base-change algebra plus the two identifications.
+
+SOUNDNESS (2026-07-25): the statement quantifies over nothing but the
+level, and the intended inhabitant witnesses every field, including
+the internally `(g, κ)`-quantified `comparison` and
+`irred_eigenspace`, for exactly the inhabitants of
+`IsWeightTwoNewform` — the classical newforms. `comparison` is an
+IMPLICATION whose hypothesis is the classically-true complex étale
+idempotent, so it is weaker than an outright assertion about `A` and
+strictly weaker than the two fields it replaces (which it implies);
+the `pair_frob` multiplier is stated only at the good Frobenii, which
+is all the determinant derivation consumes. -/
+theorem nonempty_modularHeckeComparisonPackage {M : ℕ} (hM : 0 < M) :
+    Nonempty (ModularHeckeComparisonPackage (p := p) M) :=
+  sorry
+
+/-- **Inhabitation of the modular Hecke-spectrum package** (DECOMPOSED
+2026-07-25 into the `ℂ → ℚ̄_p` Eichler–Shimura seam and now a PROVEN
+assembly over two leaves — the geometric
+`nonempty_modularHeckeComparisonPackage` and the analytic
+`exists_heckeOp_newform_etaleIdempotent`): for every level `M ≥ 1` the
+carrier `ModularHeckeSpectrumPackage M` is inhabited.
+
+ASSEMBLY (pure algebra over the two leaves of the `ℂ → ℚ̄_p` seam; no
+geometry, no analysis). Take the geometric package `H` from
+`nonempty_modularHeckeComparisonPackage`; every non-spectral field
+passes through verbatim. Fix a newform `g` and an embedding `κ`. Then
+`heckeOp_apply_eq_smul_of_isWeightTwoEigenform` exhibits `g` as a joint
+eigenvector of the COMPLEX Hecke operators, so the analytic leaf
+`exists_heckeOp_newform_etaleIdempotent` supplies the newform's étale
+idempotent `eC` of `heckeSubalgebra (heckeOp M)` — nonzero, because it
+fixes the nonzero form `g` (`ne_zero_of_isWeightTwoEigenform`) — and
+`H`'s `comparison` field transports it to an idempotent `e` of
+`A = heckeSubalgebra hecke` which is nonzero, satisfies
+`T_q·e = κ(a_q(g))·e`, and ABSORBS every `κ`-generalized element of
+`A`. The two spectral fields are then immediate:
+
+* `spectrum_occurs` is `e` itself;
+* `spectrum_reduced` is absorption composed with the eigenvalue
+  relation: for `κ`-generalized `a ∈ A`,
+  `(T_q − κ(a_q))·a = ((T_q − κ(a_q))·e)·a = 0·a = 0`.
+
+The classical citations live one level down: geometry and the
+comparison in the docstring of
+`nonempty_modularHeckeComparisonPackage`, strong multiplicity one in
+`S₂(Γ₀(M))` in that of `exists_heckeOp_newform_etaleIdempotent`.
+
+SOUNDNESS: nothing is asserted here any more — this is a theorem, and
+the audited assertions are the two leaves' statements. -/
+theorem nonempty_modularHeckeSpectrumPackage {M : ℕ} (hM : 0 < M) :
+    Nonempty (ModularHeckeSpectrumPackage (p := p) M) := by
+  obtain ⟨H⟩ := nonempty_modularHeckeComparisonPackage (p := p) hM
+  have hES : ∀ (g : CuspForm (Gamma0GL M) 2), IsWeightTwoNewform M g →
+      ∀ (κ : heckeField M g →+* AlgebraicClosure ℚ_[p]),
+      ∃ e ∈ heckeSubalgebra H.hecke, e ≠ 0 ∧
+        (∀ q : ℕ, q.Prime → H.hecke q * e = κ (heckeCoeff M g q) • e) ∧
+        (∀ a ∈ heckeSubalgebra H.hecke,
+          (∀ q : ℕ, q.Prime → ∃ n : ℕ,
+            (H.hecke q - κ (heckeCoeff M g q) • 1) ^ n * a = 0) →
+          e * a = a) := by
+    intro g hg κ
+    obtain ⟨eC, heCmem, heCidem, heCg, heCeig, heCline⟩ :=
+      exists_heckeOp_newform_etaleIdempotent hM hg fun q hq =>
+        heckeOp_apply_eq_smul_of_isWeightTwoEigenform hM
+          hg.toIsWeightTwoEigenform hq
+    have heC0 : eC ≠ 0 := by
+      intro h
+      refine ne_zero_of_isWeightTwoEigenform hg.toIsWeightTwoEigenform ?_
+      calc g = eC g := heCg.symm
+        _ = 0 := by simp [h]
+    obtain ⟨e, hemem, he0, -, heeig, heabs⟩ :=
+      H.comparison g hg κ eC heCmem heC0 heCidem heCeig heCline
+    exact ⟨e, hemem, he0, heeig, heabs⟩
+  refine ⟨{ Vp := H.Vp
+            addCommGroup := H.addCommGroup
+            module := H.module
+            moduleFinite := H.moduleFinite
+            τJ := H.τJ
+            hecke := H.hecke
+            S := H.S
+            hecke_comm := H.hecke_comm
+            hecke_mul_comm := H.hecke_mul_comm
+            congruence := H.congruence
+            basis₁ := H.basis₁
+            basis₂ := H.basis₂
+            span_free := H.span_free
+            indep_free := H.indep_free
+            pair := H.pair
+            pair_self := H.pair_self
+            pair_nondeg := H.pair_nondeg
+            pair_hecke := H.pair_hecke
+            pair_frob := H.pair_frob
+            spectrum_occurs := ?_
+            spectrum_reduced := ?_
+            irred_eigenspace := H.irred_eigenspace }⟩
+  · intro g hg κ
+    obtain ⟨e, hemem, he0, heeig, -⟩ := hES g hg κ
+    exact ⟨e, hemem, he0, heeig⟩
+  · intro g hg κ a ha hgen q hq
+    obtain ⟨e, -, -, heeig, heabs⟩ := hES g hg κ
+    have hea : e * a = a := heabs a ha hgen
+    calc (H.hecke q - κ (heckeCoeff M g q) • 1) * a
+        = (H.hecke q - κ (heckeCoeff M g q) • 1) * (e * a) := by rw [hea]
+      _ = ((H.hecke q - κ (heckeCoeff M g q) • 1) * e) * a := by
+          rw [mul_assoc]
+      _ = 0 := by
+          rw [sub_mul, heeig q hq, smul_mul_assoc, one_mul, sub_self,
+            zero_mul]
+
+/- SUPERSEDED CITATION BLOCK (2026-07-25, fifth decomposition), kept
+as the in-place audit trail: these are the citations with which the two
+spectral fields were ASSERTED by the leaf above before the `ℂ → ℚ̄_p`
+seam was cut. They are now PROVEN, and the same references live in the
+docstrings of `ModularHeckeComparisonPackage.comparison` (the
+comparison and the geometry) and of
+`exists_heckeOp_newform_etaleIdempotent` (strong multiplicity one).
+
 * `spectrum_occurs` — the EICHLER–SHIMURA ISOMORPHISM (D–S §6.2,
   `H₁(X₀(M); ℤ) ⊗ ℂ ≅ S₂(Γ₀(M)) ⊕ S₂(Γ₀(M))⁻`,
   Hecke-equivariantly) together with the comparison
@@ -20142,13 +20678,10 @@ is exactly the étaleness recorded in the previous spelling. The
 `pair_frob` multiplier is stated only at the good Frobenii, which is
 all the determinant derivation consumes and all that Chebotarev-style
 soundness requires. -/
-theorem nonempty_modularHeckeSpectrumPackage {M : ℕ} (hM : 0 < M) :
-    Nonempty (ModularHeckeSpectrumPackage (p := p) M) :=
-  sorry
 
 /-- **Inhabitation of the modular-homology package** (DECOMPOSED
 2026-07-25 into the Hecke-spectrum cut above and now a PROVEN assembly
-over the single sorried inhabitation leaf
+over the — itself now PROVEN — inhabitation assembly
 `nonempty_modularHeckeSpectrumPackage`): for every level `M ≥ 1` the
 carrier `ModularHomologyPackage M` is inhabited.
 
