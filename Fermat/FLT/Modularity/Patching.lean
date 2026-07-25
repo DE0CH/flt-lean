@@ -128,6 +128,14 @@ public import Mathlib.Topology.Algebra.Algebra
 -- generation leaf `topologicalClosure_adjoin_charFrobCoeff_eq_top`
 public import Mathlib.Algebra.CharP.Basic
 public import Mathlib.RingTheory.MvPowerSeries.Inverse
+-- the power-series plumbing behind the Auslander–Buchsbaum endgame:
+-- `MvPowerSeries.renameEquiv` (reindexing along `Fin (n+1) ≃ Option (Fin n)`),
+-- `Finsupp.optionElim`/`Finsupp.some` (the exponent currying), Noetherianity
+-- of `B⟦X⟧` and the unit criterion `PowerSeries.isUnit_iff_constantCoeff`
+public import Mathlib.RingTheory.MvPowerSeries.Rename
+public import Mathlib.Data.Finsupp.Option
+public import Mathlib.RingTheory.PowerSeries.Ideal
+public import Mathlib.RingTheory.PowerSeries.Inverse
 public import Mathlib.RingTheory.Regular.RegularSequence
 public import Mathlib.RingTheory.Ideal.Operations
 public import Mathlib.Data.Nat.ModEq
@@ -3026,45 +3034,317 @@ theorem free_of_isRegular_of_ofList_eq_maximalIdeal.{u, w} (n : ℕ)
       (ts'.map (algebraMap R _)) htss (by simpa using hts'len) htssspan
       (rs₂.map (algebraMap R _)) hrs₂' (by simpa using hrs₂len') hrs₂mem'
 
-/-- **Noetherianity of `A[[x₁, …, xₙ]]`** (power-series leaf; sorry
-node): finite-variable power series over a Noetherian commutative
-ring are Noetherian.  Unconditionally true, zero arithmetic content.
-Classical route: `A⟦X⟧` is Noetherian (mathlib instance on
-`PowerSeries`, Hilbert basis for power series), and
+/-! ### The power-series plumbing: currying `A[[x₀, …, xₙ]]`
+
+Both remaining power-series facts — Noetherianity of
+`MvPowerSeries (Fin n) A` and the regular system of parameters of
+`ℤ_p[[x₁, …, x_q]]` — reduce by induction on the number of variables
+to mathlib's ONE-variable theory (`IsNoetherianRing B⟦X⟧`, regularity
+of `X`, the maximal ideal of `B⟦X⟧` over a local `B`) along the
+currying isomorphism
+
+`MvPowerSeries (Option σ) A ≃+* PowerSeries (MvPowerSeries σ A)`,
+
+which mathlib does not have (only the polynomial analogue
+`MvPolynomial.finSuccEquiv` exists).  It is built here by hand from
+the exponent equivalence `(Option σ →₀ ℕ) ≃ ℕ × (σ →₀ ℕ)`
+(`Finsupp.optionElim`/`Finsupp.some`): multiplicativity is the
+antidiagonal-splitting computation
+`antidiagonal (optionElim n d) ≃ antidiagonal n ×ˢ antidiagonal d`.
+The successor case of the induction goes through
+`MvPowerSeries.renameEquiv` along `finSuccEquiv : Fin (n+1) ≃ Option (Fin n)`.
+-/
+
+section PowerSeriesCurry
+
+open PowerSeries
+
+variable {σ : Type*} {A : Type*} [CommRing A] {B : Type*} [CommRing B]
+
+/-- Additivity of the exponent currying `Finsupp.optionElim`: splitting
+off the `none`-coordinate is an additive bijection
+`(Option σ →₀ ℕ) ≃ ℕ × (σ →₀ ℕ)`. -/
+lemma optionElim_add {α M : Type*} [AddZeroClass M] (y₁ y₂ : M) (f₁ f₂ : α →₀ M) :
+    Finsupp.optionElim (y₁ + y₂) (f₁ + f₂) =
+      Finsupp.optionElim y₁ f₁ + Finsupp.optionElim y₂ f₂ := by
+  ext a; cases a <;> simp
+
+/-- **Currying a multivariate power series** in the distinguished
+variable indexed by `none`: `A[[(xᵢ)_{i : Option σ}]] → (A[[(xᵢ)_{i : σ}]])⟦X⟧`,
+`f ↦ Σₙ (Σ_d coeff (optionElim n d) f · x^d) Xⁿ`. -/
+noncomputable def optionCurry (f : MvPowerSeries (Option σ) A) :
+    PowerSeries (MvPowerSeries σ A) :=
+  PowerSeries.mk fun n =>
+    (fun d => MvPowerSeries.coeff (Finsupp.optionElim n d) f : MvPowerSeries σ A)
+
+/-- The inverse of `optionCurry`: read the coefficient of the exponent
+`u` off the `u none`-th coefficient of the outer series. -/
+noncomputable def optionUncurry (F : PowerSeries (MvPowerSeries σ A)) :
+    MvPowerSeries (Option σ) A :=
+  fun u => MvPowerSeries.coeff u.some (PowerSeries.coeff (u none) F)
+
+lemma coeff_optionCurry (f : MvPowerSeries (Option σ) A) (n : ℕ) (d : σ →₀ ℕ) :
+    MvPowerSeries.coeff d (PowerSeries.coeff n (optionCurry f)) =
+      MvPowerSeries.coeff (Finsupp.optionElim n d) f := by
+  simp [optionCurry, MvPowerSeries.coeff_apply]
+
+lemma coeff_optionUncurry (F : PowerSeries (MvPowerSeries σ A)) (u : Option σ →₀ ℕ) :
+    MvPowerSeries.coeff u (optionUncurry F) =
+      MvPowerSeries.coeff u.some (PowerSeries.coeff (u none) F) := by
+  simp [optionUncurry, MvPowerSeries.coeff_apply]
+
+lemma optionUncurry_optionCurry (f : MvPowerSeries (Option σ) A) :
+    optionUncurry (optionCurry f) = f := by
+  ext u
+  rw [coeff_optionUncurry, coeff_optionCurry, Finsupp.optionElim_some]
+
+lemma optionCurry_optionUncurry (F : PowerSeries (MvPowerSeries σ A)) :
+    optionCurry (optionUncurry F) = F := by
+  ext n d
+  rw [coeff_optionCurry, coeff_optionUncurry, Finsupp.optionElim_apply_none,
+    Finsupp.some_optionElim]
+
+lemma optionCurry_add (f g : MvPowerSeries (Option σ) A) :
+    optionCurry (f + g) = optionCurry f + optionCurry g := by
+  ext n d
+  simp [coeff_optionCurry]
+
+/-- Multiplicativity of the currying map: the antidiagonal of
+`optionElim n d` splits as the product of the antidiagonals of `n` and
+of `d`, which is exactly the Cauchy product of the curried series. -/
+lemma optionCurry_mul (f g : MvPowerSeries (Option σ) A) :
+    optionCurry (f * g) = optionCurry f * optionCurry g := by
+  classical
+  ext n d
+  rw [coeff_optionCurry, MvPowerSeries.coeff_mul, PowerSeries.coeff_mul, map_sum]
+  simp only [MvPowerSeries.coeff_mul, coeff_optionCurry]
+  rw [← Finset.sum_product']
+  refine Finset.sum_nbij' (i := fun u => ((u.1 none, u.2 none), (u.1.some, u.2.some)))
+    (j := fun v => (Finsupp.optionElim v.1.1 v.2.1, Finsupp.optionElim v.1.2 v.2.2))
+    ?_ ?_ ?_ ?_ ?_
+  · rintro ⟨u, v⟩ hu
+    simp only [Finset.HasAntidiagonal.mem_antidiagonal] at hu
+    simp only [Finset.mem_product, Finset.HasAntidiagonal.mem_antidiagonal]
+    refine ⟨?_, ?_⟩
+    · have := congrArg (fun x => (x : Option σ →₀ ℕ) none) hu
+      simpa using this
+    · have := congrArg Finsupp.some hu
+      simpa using this
+  · rintro ⟨⟨i, j⟩, ⟨d1, d2⟩⟩ hv
+    simp only [Finset.mem_product, Finset.HasAntidiagonal.mem_antidiagonal] at hv
+    simp only [Finset.HasAntidiagonal.mem_antidiagonal]
+    rw [← optionElim_add, hv.1, hv.2]
+  · rintro ⟨u, v⟩ _
+    simp [Finsupp.optionElim_some]
+  · rintro ⟨⟨i, j⟩, ⟨d1, d2⟩⟩ _
+    simp [Finsupp.some_optionElim]
+  · rintro ⟨u, v⟩ _
+    simp [Finsupp.optionElim_some]
+
+/-- **The currying isomorphism**
+`MvPowerSeries (Option σ) A ≃+* PowerSeries (MvPowerSeries σ A)` — the
+power-series analogue of `MvPolynomial.finSuccEquiv`, the shared
+gadget behind both power-series leaves below. -/
+noncomputable def optionCurryEquiv (σ : Type*) (A : Type*) [CommRing A] :
+    MvPowerSeries (Option σ) A ≃+* PowerSeries (MvPowerSeries σ A) where
+  toFun := optionCurry
+  invFun := optionUncurry
+  left_inv := optionUncurry_optionCurry
+  right_inv := optionCurry_optionUncurry
+  map_mul' := optionCurry_mul
+  map_add' := optionCurry_add
+
+/-- Power series in an empty family of variables are just constants
+(the base case of both inductions). -/
+noncomputable def mvPowerSeriesIsEmptyRingEquiv (σ : Type*) (A : Type*) [IsEmpty σ]
+    [CommRing A] : A ≃+* MvPowerSeries σ A :=
+  RingEquiv.ofBijective MvPowerSeries.C ⟨MvPowerSeries.C_injective, MvPowerSeries.C_surjective⟩
+
+/-- `X` is a nonzerodivisor of `B⟦X⟧`: multiplication by `X` shifts
+coefficients, hence is injective. -/
+lemma isSMulRegular_powerSeries_X : IsSMulRegular (PowerSeries B) (X : PowerSeries B) := by
+  intro f g h
+  simp only [smul_eq_mul] at h
+  ext n
+  have := congrArg (PowerSeries.coeff (n + 1)) h
+  rwa [coeff_succ_X_mul, coeff_succ_X_mul] at this
+
+lemma smul_top_eq_span_powerSeries_X :
+    ((X : PowerSeries B) • ⊤ : Submodule (PowerSeries B) (PowerSeries B)) =
+      (Ideal.span {(X : PowerSeries B)} : Ideal (PowerSeries B)) := by
+  rw [← Submodule.ideal_span_singleton_smul, smul_eq_mul, Ideal.mul_top]
+
+lemma ker_powerSeries_constantCoeff :
+    RingHom.ker (constantCoeff (R := B)) = Ideal.span {(X : PowerSeries B)} := by
+  ext f
+  rw [RingHom.mem_ker, Ideal.mem_span_singleton, X_dvd_iff]
+
+lemma powerSeries_constantCoeff_surjective :
+    Function.Surjective (constantCoeff (R := B)) := fun b => ⟨C b, constantCoeff_C b⟩
+
+/-- `B⟦X⟧ / (X) ≃+* B` through the constant coefficient. -/
+noncomputable def quotXRingEquiv (B : Type*) [CommRing B] :
+    (PowerSeries B ⧸ Ideal.span {(X : PowerSeries B)}) ≃+* B :=
+  (Ideal.quotEquivOfEq ker_powerSeries_constantCoeff.symm).trans
+    (RingHom.quotientKerEquivOfSurjective powerSeries_constantCoeff_surjective)
+
+/-- The same identification, read on the module quotient
+`QuotSMulTop X B⟦X⟧` in which the regular-sequence recursion lives. -/
+noncomputable def quotXAddEquiv (B : Type*) [CommRing B] :
+    QuotSMulTop (X : PowerSeries B) (PowerSeries B) ≃+ B :=
+  ((Submodule.quotEquivOfEq _ _ smul_top_eq_span_powerSeries_X).toAddEquiv).trans
+    (quotXRingEquiv B).toAddEquiv
+
+lemma quotXAddEquiv_mk (f : PowerSeries B) :
+    quotXAddEquiv B (Submodule.Quotient.mk f :
+      QuotSMulTop (X : PowerSeries B) (PowerSeries B)) = constantCoeff f := rfl
+
+/-- Semilinearity of that identification over `C : B →+* B⟦X⟧`: the
+scalar `C t` upstairs acts as `t` downstairs. -/
+lemma quotXAddEquiv_smul (t : B) (x : QuotSMulTop (X : PowerSeries B) (PowerSeries B)) :
+    quotXAddEquiv B ((C t : PowerSeries B) • x) = t • quotXAddEquiv B x := by
+  induction x using Submodule.Quotient.induction_on with
+  | H f =>
+    rw [← Submodule.Quotient.mk_smul, quotXAddEquiv_mk, quotXAddEquiv_mk]
+    simp [smul_eq_mul]
+
+lemma mem_maximalIdeal_powerSeries [IsLocalRing B] (f : PowerSeries B) :
+    f ∈ maximalIdeal (PowerSeries B) ↔ constantCoeff f ∈ maximalIdeal B := by
+  simp [IsLocalRing.mem_maximalIdeal, mem_nonunits_iff, PowerSeries.isUnit_iff_constantCoeff]
+
+/-- The maximal ideal of `B⟦X⟧` over a local `B` is `(X) + 𝔪_B·B⟦X⟧`:
+split `f = C (constantCoeff f) + X · g`. -/
+lemma maximalIdeal_powerSeries (B : Type*) [CommRing B] [IsLocalRing B] :
+    maximalIdeal (PowerSeries B) =
+      Ideal.span {(X : PowerSeries B)} ⊔ (maximalIdeal B).map (C : B →+* PowerSeries B) := by
+  apply le_antisymm
+  · intro f hf
+    rw [mem_maximalIdeal_powerSeries] at hf
+    obtain ⟨g, hg⟩ : (X : PowerSeries B) ∣ (f - C (constantCoeff f)) := by rw [X_dvd_iff]; simp
+    have hfeq : f = C (constantCoeff f) + X * g := by rw [← hg]; ring
+    rw [hfeq]
+    exact Ideal.add_mem _ (Ideal.mem_sup_right (Ideal.mem_map_of_mem _ hf))
+      (Ideal.mem_sup_left (Ideal.mul_mem_right _ _ (Ideal.subset_span rfl)))
+  · refine sup_le ?_ ?_
+    · rw [Ideal.span_le, Set.singleton_subset_iff, SetLike.mem_coe,
+        mem_maximalIdeal_powerSeries]
+      simp
+    · rw [Ideal.map_le_iff_le_comap]
+      intro m hm
+      rw [Ideal.mem_comap, mem_maximalIdeal_powerSeries, constantCoeff_C]
+      exact hm
+
+/-- **The one-variable step**: prepending `X` to a regular sequence
+spanning `𝔪_B` gives a regular sequence spanning `𝔪_{B⟦X⟧}`.  `X` is
+regular on `B⟦X⟧`, the quotient by it is `B` (`quotXAddEquiv`), and
+the spanning statement is `maximalIdeal_powerSeries`. -/
+theorem exists_isRegular_ofList_eq_maximalIdeal_powerSeries (B : Type*) [CommRing B]
+    [IsLocalRing B] (k : ℕ)
+    (h : ∃ ts : List B, ts.length = k ∧ RingTheory.Sequence.IsRegular B ts ∧
+      Ideal.ofList ts = maximalIdeal B) :
+    ∃ ts : List (PowerSeries B), ts.length = k + 1 ∧
+      RingTheory.Sequence.IsRegular (PowerSeries B) ts ∧
+      Ideal.ofList ts = maximalIdeal (PowerSeries B) := by
+  obtain ⟨ts, hlen, hreg, hspan⟩ := h
+  refine ⟨X :: ts.map C, by simp [hlen], ?_, ?_⟩
+  · rw [isRegular_cons_iff]
+    refine ⟨isSMulRegular_powerSeries_X,
+      (AddEquiv.isRegular_congr (e := quotXAddEquiv B) ?_).mpr hreg⟩
+    exact List.forall₂_map_left_iff.mpr
+      (List.forall₂_same.mpr fun t _ x => quotXAddEquiv_smul t x)
+  · rw [Ideal.ofList_cons, ← Ideal.map_ofList, hspan]
+    exact (maximalIdeal_powerSeries B).symm
+
+/-- Transport of "the maximal ideal is spanned by a regular sequence of
+length `k`" along a ring isomorphism of local rings. -/
+theorem exists_isRegular_ofList_eq_maximalIdeal_of_ringEquiv {R S : Type*} [CommRing R]
+    [CommRing S] [IsLocalRing R] [IsLocalRing S] (e : R ≃+* S) {k : ℕ}
+    (h : ∃ ts : List R, ts.length = k ∧ RingTheory.Sequence.IsRegular R ts ∧
+      Ideal.ofList ts = maximalIdeal R) :
+    ∃ ts : List S, ts.length = k ∧ RingTheory.Sequence.IsRegular S ts ∧
+      Ideal.ofList ts = maximalIdeal S := by
+  obtain ⟨ts, hlen, hreg, hspan⟩ := h
+  refine ⟨ts.map e, by simpa using hlen, ?_, ?_⟩
+  · refine (AddEquiv.isRegular_congr (e := e.toAddEquiv) ?_).mp hreg
+    exact List.forall₂_map_right_iff.mpr
+      (List.forall₂_same.mpr fun t _ x => by simp [smul_eq_mul])
+  · have h2 : Ideal.ofList (ts.map (e : R →+* S)) = maximalIdeal S := by
+      rw [← Ideal.map_ofList, hspan]
+      exact map_maximalIdeal_of_surjective (e : R →+* S) e.surjective
+    exact h2
+
+/-- The base case: `𝔪_{ℤ_p} = (p)` is spanned by the length-one regular
+sequence `[p]` (`p` is a nonzerodivisor of the domain `ℤ_p`). -/
+theorem exists_isRegular_ofList_eq_maximalIdeal_padicInt (p : ℕ) [Fact p.Prime] :
+    ∃ ts : List ℤ_[p], ts.length = 0 + 1 ∧ RingTheory.Sequence.IsRegular ℤ_[p] ts ∧
+      Ideal.ofList ts = maximalIdeal ℤ_[p] := by
+  have hmem : ∀ r ∈ [(p : ℤ_[p])], r ∈ maximalIdeal ℤ_[p] := by
+    intro r hr
+    rw [List.mem_singleton] at hr
+    subst hr
+    rw [PadicInt.maximalIdeal_eq_span_p]
+    exact Ideal.mem_span_singleton_self _
+  have hp : IsSMulRegular ℤ_[p] (p : ℤ_[p]) := by
+    intro x y h
+    simp only [smul_eq_mul] at h
+    exact mul_left_cancel₀ (by exact_mod_cast NeZero.ne _) h
+  refine ⟨[(p : ℤ_[p])], rfl,
+    IsRegular.of_isWeaklyRegular_of_mem_maximalIdeal ℤ_[p] hmem
+      (IsWeaklyRegular.cons hp (IsWeaklyRegular.nil _ _)), ?_⟩
+  rw [Ideal.ofList_singleton, PadicInt.maximalIdeal_eq_span_p]
+
+end PowerSeriesCurry
+
+/-- **Noetherianity of `A[[x₁, …, xₙ]]`** (power-series leaf; PROVEN
+2026-07-24): finite-variable power series over a Noetherian
+commutative ring are Noetherian.  Unconditionally true, zero
+arithmetic content.  Proven by induction on the number of variables:
+the empty case is `mvPowerSeriesIsEmptyRingEquiv` (`A[[]] ≃+* A`), and
+the successor case transports mathlib's `IsNoetherianRing B⟦X⟧` (the
+power-series Hilbert basis theorem) along the currying isomorphism
 `MvPowerSeries (Fin (n+1)) A ≃+* PowerSeries (MvPowerSeries (Fin n) A)`
-(currying of the coefficient functions along
-`(Fin (n+1) →₀ ℕ) ≃ (Fin n →₀ ℕ) × ℕ` — the successor ring
-equivalence is the missing mathlib plumbing; multiplicativity is the
-antidiagonal-splitting computation), then induct.  Consumed by
-`free_of_isRegular_mvPowerSeries` to feed the Auslander–Buchsbaum
-induction. -/
+(`optionCurryEquiv` composed with `MvPowerSeries.renameEquiv` along
+`finSuccEquiv`).  Consumed by `free_of_isRegular_mvPowerSeries` to
+feed the Auslander–Buchsbaum induction. -/
 theorem isNoetherianRing_mvPowerSeries.{uA} (n : ℕ) {A : Type uA} [CommRing A]
-    [IsNoetherianRing A] : IsNoetherianRing (MvPowerSeries (Fin n) A) :=
-  sorry
+    [IsNoetherianRing A] : IsNoetherianRing (MvPowerSeries (Fin n) A) := by
+  induction n with
+  | zero => exact isNoetherianRing_of_ringEquiv A (mvPowerSeriesIsEmptyRingEquiv (Fin 0) A)
+  | succ n ih =>
+    haveI := ih
+    exact isNoetherianRing_of_ringEquiv _
+      (((MvPowerSeries.renameEquiv A (finSuccEquiv n)).toRingEquiv.trans
+        (optionCurryEquiv (Fin n) A)).symm)
 
 /-- **The regular system of parameters of `ℤ_p[[x₁, …, x_q]]`**
-(power-series leaf; sorry node): the maximal ideal of
+(power-series leaf; PROVEN 2026-07-24): the maximal ideal of
 `R_∞ = ℤ_p[[x₁, …, x_q]]` is spanned by a regular sequence of length
-`q + 1` — concretely `(C p, X 0, …, X (q-1))`.  Unconditionally true,
-zero arithmetic content.  Proof plan: (a) spanning — every `f` with
-`constantCoeff f ∈ (p)` decomposes as `C (f 0) + Σᵢ Xᵢ · gᵢ` by
-greedy monomial splitting (each monomial ≠ 1 contains some `Xᵢ`), and
-the maximal ideal of `MvPowerSeries` over the local `ℤ_p` is exactly
-`{f | constantCoeff f ∈ 𝔪_{ℤ_p}}` (`MvPowerSeries.isUnit_iff` through
-the local-ring instance); (b) regularity — `X i` and `p` are
-successively regular because each quotient
-`R_∞/(X_{i₁}, …, X_{i_k})` is identified with the power series ring
-on the remaining variables (kernel-of-substitution computation:
-`f ∈ (X_{i₁}, …, X_{i_k})` iff every monomial of `f` involves one of
-the listed variables), where multiplication by the next variable and
-by the nonzerodivisor `p` (coefficientwise, `ℤ_p` a domain) are
-injective.  Consumed by `free_of_isRegular_mvPowerSeries`. -/
+`q + 1` — concretely the image of `(x_q, …, x_1, p)` under the
+currying isomorphisms.  Unconditionally true, zero arithmetic content.
+Proven by induction on the number of variables from the one-variable
+step `exists_isRegular_ofList_eq_maximalIdeal_powerSeries` (prepending
+`X` to a regular system of parameters of the local base `B` gives one
+of `B⟦X⟧`: `X` is a nonzerodivisor, `B⟦X⟧/(X) ≃ B`, and
+`𝔪_{B⟦X⟧} = (X) + 𝔪_B·B⟦X⟧`), based at
+`𝔪_{ℤ_p} = (p)` (`exists_isRegular_ofList_eq_maximalIdeal_padicInt`)
+and transported at each step along
+`MvPowerSeries (Fin (q+1)) ℤ_p ≃+* (MvPowerSeries (Fin q) ℤ_p)⟦X⟧`.
+Consumed by `free_of_isRegular_mvPowerSeries`. -/
 theorem exists_isRegular_ofList_eq_maximalIdeal_mvPowerSeries (p : ℕ) [Fact p.Prime]
     (q : ℕ) :
     ∃ ts : List (MvPowerSeries (Fin q) ℤ_[p]), ts.length = q + 1 ∧
       RingTheory.Sequence.IsRegular (MvPowerSeries (Fin q) ℤ_[p]) ts ∧
-      Ideal.ofList ts = maximalIdeal (MvPowerSeries (Fin q) ℤ_[p]) :=
-  sorry
+      Ideal.ofList ts = maximalIdeal (MvPowerSeries (Fin q) ℤ_[p]) := by
+  induction q with
+  | zero =>
+    exact exists_isRegular_ofList_eq_maximalIdeal_of_ringEquiv
+      (mvPowerSeriesIsEmptyRingEquiv (Fin 0) ℤ_[p])
+      (exists_isRegular_ofList_eq_maximalIdeal_padicInt p)
+  | succ q ih =>
+    exact exists_isRegular_ofList_eq_maximalIdeal_of_ringEquiv
+      (((MvPowerSeries.renameEquiv ℤ_[p] (finSuccEquiv q)).toRingEquiv.trans
+        (optionCurryEquiv (Fin q) ℤ_[p])).symm)
+      (exists_isRegular_ofList_eq_maximalIdeal_powerSeries _ (q + 1) ih)
 
 /-- **The commutative-algebra endgame** (patching leaf 3; PROVEN
 2026-07-24): a finite module over the regular local ring
