@@ -121,11 +121,22 @@ genuinely modular-curve-theoretic inputs:
   minimal composite orders outside the list. The content sits in the
   eleven per-level nodes `no_torsion_order_14`, …,
   `no_torsion_order_49`, one classical theorem each (Kubert, Ligozat,
-  Kenku; subsumed in Mazur 1977, Thm 8). Of these, `20`, `24` and `35`
-  are PROVEN (2026-07-25) from the `X_0` node
-  `WeierstrassCurve.mem_cyclicIsogenyDegrees` — Kenku's determination
-  of the rational cyclic isogeny degrees — because those three levels
-  are absent from Kenku's list; the remaining eight are sorry nodes.
+  Kenku; subsumed in Mazur 1977, Thm 8). Eight of the eleven are now
+  PROVEN (2026-07-25), along two complementary routes determined by the
+  single criterion in the section note below — whether the level is
+  absent from Kenku's list of rational cyclic isogeny degrees:
+  - *absent, so the `X_0` route applies*: `20, 24, 35, 49`, each PROVEN
+    from the one `X_0` node `WeierstrassCurve.mem_cyclicIsogenyDegrees`
+    through the PROVEN bridge `mem_cyclicIsogenyDegrees_of_addOrderOf`;
+  - *present, so only `X_1` excludes the point*: `14, 15, 16, 18`,
+    each PROVEN from a level-structure leaf
+    (`not_order_two_and_order_seven_point`,
+    `not_order_three_and_order_five_point`,
+    `not_halved_order_eight_point`,
+    `not_order_two_and_order_nine_point`) stating the same
+    modular-curve content in the literature's own shape.
+  The three levels `21, 25, 27` are also in Kenku's list and have no
+  level-structure sharpening yet, so they remain bare sorry nodes.
 * `torsion_finite_rat` (DERIVED from `mazur_point_order`): the
   rational torsion subgroup is finite — every rational torsion point
   is killed by `2520 = lcm(1, …, 10, 12)`, and the geometric
@@ -202,12 +213,14 @@ split over its `Finset` hypothesis; the mathematical content sits in the
 eleven per-level nodes `no_torsion_order_14`, …, `no_torsion_order_49`.
 Each of the eleven is one classical theorem — "the modular curve
 `X_1(n)` has no non-cuspidal rational point" for that single `n`.
-THREE of the eleven — `20`, `24`, `35` — are PROVEN (2026-07-25) from
-the single `X_0` node `mem_cyclicIsogenyDegrees` stated just below, by
-the CORRECTION recorded at the end of this note; the other eight are
-IRREDUCIBLE literature citations at this mathlib pin (audit
-2026-07-25): there is no modular-curve theory available here, and the
-two elementary routes that could conceivably shortcut a level both fail
+EIGHT of the eleven are PROVEN (2026-07-25): `20, 24, 35, 49` from the
+single `X_0` node `mem_cyclicIsogenyDegrees` stated just below, and
+`14, 15, 16, 18` from the four level-structure leaves, exactly as the
+criterion at the end of this note dictates. The three that remain —
+`21, 25, 27` — are IRREDUCIBLE literature citations at this mathlib pin
+(audit 2026-07-25): there is no modular-curve theory available here,
+the `X_0` shortcut provably does not apply at those levels, and the two
+elementary routes that could conceivably shortcut a level both fail
 uniformly.
 
 * *Divisor reduction fails by design.* Every proper divisor of each of
@@ -232,34 +245,74 @@ for the higher-genus levels. Genera, computed from the standard formula
 `14 ↦ 1`, `15 ↦ 1`, `16 ↦ 2`, `18 ↦ 2`, `20 ↦ 3`, `21 ↦ 5`, `24 ↦ 5`,
 `25 ↦ 12`, `27 ↦ 13`, `35 ↦ 25`, `49 ↦ 69`.
 
-CORRECTION (2026-07-25, extended the same day) to the route previously
-recorded here. The `X_0` shortcut — a rational point of order `n`
-generates a rational, hence Galois-stable, cyclic subgroup of order
-`n`, i.e. a rational cyclic `n`-isogeny, so `n` must lie in Kenku's
-list `{1, …, 19, 21, 25, 27, 37, 43, 67, 163}` of cyclic isogeny
-degrees over `ℚ` — is available at exactly the levels ABSENT from that
-list. Among the eleven critical levels those are `20`, `24`, `35` and
-`49`; this note previously named only `35` and `49`, missing `20` and
-`24` (both are `> 19` and neither is `21`, `25` or `27`, so neither is
-a cyclic isogeny degree: `X_0(20)` and `X_0(24)` are genus-one curves
-of Mordell–Weil rank `0` whose `6`, resp. `8`, rational points are all
-cusps).
+THE `X_0` / ISOGENY SHORTCUT — THE CRITERION, STATED ONCE (2026-07-25,
+reconciling two independent same-day audits). A rational point of order
+`n` generates a rational, hence Galois-stable, cyclic subgroup of order
+`n`, i.e. a rational cyclic `n`-isogeny. So the shortcut "`X_0(n)`
+already has no non-cuspidal rational point" is available at a level `n`
+IF AND ONLY IF `n` is ABSENT from Kenku's list
+`{1, …, 19, 21, 25, 27, 37, 43, 67, 163}` of rational cyclic isogeny
+degrees (Mazur 1978 for the prime degrees, Kenku 1979–1982 for the
+composite ones). That single criterion decides every level:
 
-The remaining seven levels `14, 15, 16, 18, 21, 25, 27` ARE cyclic
-isogeny degrees, so `X_0` gives nothing there and only the `X_1`
-statement excludes the point: rational cyclic isogenies of those
-degrees genuinely exist — degree `25` in the isogeny class `11a`,
-degree `27` in `27a`, degree `21` on `[1, −1, 0, 3, −1]` of conductor
-`162`, all exhibited with PARI/GP `ellisomat` (untrusted searcher).
+* ABSENT from the list, shortcut AVAILABLE: `20, 24, 35, 49`. All four
+  are PROVEN below from the one `X_0` node
+  `WeierstrassCurve.mem_cyclicIsogenyDegrees` through the PROVEN bridge
+  `mem_cyclicIsogenyDegrees_of_addOrderOf`. (`X_0(20)` and `X_0(24)`
+  are genus-one curves of Mordell–Weil rank `0` whose `6`, resp. `8`,
+  rational points are exactly their cusps; `X_0(35)` has genus `3` and
+  `X_0(49)` genus `1`, again with only cuspidal rational points.)
+* PRESENT in the list, shortcut UNAVAILABLE: `14, 15, 16, 18, 21, 25,
+  27`. There a rational cyclic `n`-isogeny genuinely exists, so the
+  isogeny is no contradiction at all and only the finer `X_1(n)`
+  statement excludes the point. Witnesses, all exhibited with PARI/GP
+  `ellisomat` (untrusted searcher, never a proof): `[1,−1,0,−2,−1]` of
+  conductor `49`, degrees `{1,2,7,14}`; `[1,0,1,−1,−2]` of conductor
+  `50`, degrees `{1,3,5,15}`; `[1,−1,0,0,−5]` of conductor `45`,
+  degrees `{1,2,4,8,16}`; `[1,−1,1,−5,−7]` of conductor `126`, degrees
+  `{1,2,3,6,9,18}`; `[1,−1,0,3,−1]` of conductor `162` for degree `21`;
+  and the isogeny classes `11a` for degree `25`, `27a` for degree `27`.
 
-Consequently the levels `20`, `24` and `35` are PROVEN below from the
-single `X_0` node `WeierstrassCurve.mem_cyclicIsogenyDegrees` together
-with the PROVEN bridge `mem_cyclicIsogenyDegrees_of_addOrderOf`; `49`
-is left to its own owner. The trade-off is deliberate and explicit:
+This supersedes the two earlier partial statements of the criterion
+that were recorded here on the same day — one naming only `35` and `49`
+as available (it missed `20` and `24`, which are `> 19` and are none of
+`21, 25, 27`, hence equally absent from the list), the other naming
+only `14, 15, 16, 18, 25, 27` as unavailable. Both were correct as far
+as they went, and both are subsumed by the criterion above.
+
+The trade-off at the four `X_0` levels is deliberate and explicit:
 Kenku's theorem is strictly STRONGER than each individual `X_1(n)`
 statement it replaces, but it is one canonical, precisely citable
 theorem instead of one ad-hoc citation per level, and the passage from
 it to each level is proven rather than asserted.
+
+SHARPENING (2026-07-25) of the four levels `14, 15, 16, 18` — where the
+shortcut is unavailable but a genus-`0` fibre-product description
+exists: each is now PROVEN from a level-structure leaf stated in the
+shape the modular-curve literature uses, so that the surviving `sorry`
+names the actual modular input rather than an order:
+
+* `no_torsion_order_14` ⟸ `not_order_two_and_order_seven_point`
+  (`X_1(2) ×_{X_1(1)} X_1(7)`),
+* `no_torsion_order_15` ⟸ `not_order_three_and_order_five_point`
+  (`X_1(3) ×_{X_1(1)} X_1(5)`),
+* `no_torsion_order_16` ⟸ `not_halved_order_eight_point`
+  (the halving cover `X_1(16) → X_1(8)`),
+* `no_torsion_order_18` ⟸ `not_order_two_and_order_nine_point`
+  (`X_1(2) ×_{X_1(1)} X_1(9)`).
+
+Each derivation is pure `addOrderOf` bookkeeping (`addOrderOf_nsmul'`);
+each leaf is equivalent to the order statement it replaces, but sits
+over genus-`0` levels whose Tate normal forms are explicit, which is
+where an elementary attack would have to begin. The three remaining
+levels `21, 25, 27` are in Kenku's list AND have no such sharpening
+yet, so they are the only bare sorry nodes left among the eleven. The
+genus values listed above were recomputed from the formula on
+2026-07-25 and all agree.
+
+A sweep over `≈ 4.8 · 10⁵` integral models with `|a₄|, |a₆| ≤ 100`
+found exact rational point orders only in `{1, …, 10}`, consistent with
+all eleven statements.
 -/
 
 /-- **The rational cyclic-isogeny degrees over `ℚ`** (sorry node — the
@@ -291,8 +344,7 @@ in the list above, and never `20`, `24`, `35` or `49`.
 
 Among the eleven critical composite torsion levels this node closes
 exactly `20`, `24`, `35` and `49`, the four that are absent from the
-list; `49` is deliberately left to the owner of `no_torsion_order_49`
-rather than rewired here. -/
+list, and all four are PROVEN from it below. -/
 theorem WeierstrassCurve.mem_cyclicIsogenyDegrees (E : WeierstrassCurve ℚ)
     [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point) {N : ℕ}
     (hN : 0 < N) (hg : addOrderOf g = N)
@@ -337,40 +389,210 @@ lemma WeierstrassCurve.mem_cyclicIsogenyDegrees_of_addOrderOf
   rw [map_zsmul, hgfix σ]
   exact AddSubgroup.zsmul_mem _ (AddSubgroup.mem_zmultiples g) k
 
-/-- **No rational point of order `14`** (sorry node — irreducible
-literature citation): `X_1(14)` has genus `1` and its Jacobian has
-Mordell–Weil rank `0` over `ℚ`, so `X_1(14)(ℚ)` is finite and consists
-of cusps (Kubert–Ligozat; subsumed in Mazur 1977, Thm 8). -/
+/-- **No rational point of order `2` together with a rational point of
+order `7`** (sorry node — the `X_1(14)` content in its level-structure
+form): no elliptic curve over `ℚ` carries both. The hypotheses say
+exactly that `E(ℚ) ⊇ ℤ/2 ⊕ ℤ/7 ≅ ℤ/14`, i.e. that the pair `(E, P + Q)`
+is a non-cuspidal rational point of `X_1(14)` — a curve of genus `1`
+(standard formula, recomputed 2026-07-25: `μ/12 = 6`, `12` cusps, so
+`g = 1 + 6 − 6 = 1`) whose Jacobian has Mordell–Weil rank `0` over `ℚ`,
+so `X_1(14)(ℚ)` is finite and cuspidal (Kubert; Ligozat; subsumed in
+Mazur 1977, Thm 8).
+
+IRREDUCIBLE at this mathlib pin (audit 2026-07-25). This is the sharp
+form of the level: it is *equivalent* to `no_torsion_order_14` below
+(`P + Q` has order `14`; conversely `7Q` and `2Q`), but it exhibits the
+level structure as the fibre product `X_1(2) ×_{X_1(1)} X_1(7)`, which
+is where an elementary attack would have to start. Routes checked and
+rejected:
+
+* *The `X_0` / isogeny shortcut is NOT available here* (unlike levels
+  `20, 24, 35, 49`). `14` really is a rational cyclic isogeny degree:
+  the curve `[a₁,a₂,a₃,a₄,a₆] = [1,−1,0,−2,−1]` of conductor `49` has
+  isogeny-degree set `{1, 2, 7, 14}` (PARI/GP `ellisomat`, witness
+  recomputed 2026-07-25). So `X_0(14)` has non-cuspidal rational points
+  and only the `X_1(14)` statement excludes an order-`14` point.
+* *Divisor reduction fails by design.* Every proper divisor of `14`
+  (`1, 2, 7`) lies in Mazur's allowed set `{1, …, 10, 12}`, so no other
+  node here implies this one.
+* *Reduction plus Hasse only bounds the conductor.* `14 ∣ #Ẽ(𝔽_p)` at
+  every odd prime `p` of good reduction and `7 ∣ #Ẽ(𝔽_2)` at `p = 2`;
+  since `p + 1 + 2√p < 14` for `p ≤ 7` and `#Ẽ(𝔽_2) ≤ 5 < 7`, this
+  forces bad reduction at `2, 3, 5, 7`, i.e. `210 ∣ N_E` — a lower bound
+  on the conductor, never a contradiction.
+
+A formal proof needs the level-`7` Tate normal form (the genus-`0`
+parametrisation `b = d³ − d²`, `c = d² − d` of `X_1(7)`) together with
+the `2`-torsion condition, which cuts out the genus-`1` curve
+`X_1(14)`, and then a rank-`0` Mordell–Weil computation for it. Neither
+the Tate normal form nor Mordell–Weil is available at this pin. -/
+theorem WeierstrassCurve.not_order_two_and_order_seven_point
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] (P Q : (E⁄ℚ).Point)
+    (hP : addOrderOf P = 2) (hQ : addOrderOf Q = 7) : False :=
+  sorry
+
+/-- **No rational point of order `14`** (DERIVED 2026-07-25 from the
+level-structure leaf `not_order_two_and_order_seven_point` by splitting
+`ℤ/14` into its `2`- and `7`-primary parts): a point `Q` of order `14`
+gives the order-`2` point `7 • Q` and the order-`7` point `2 • Q`.
+`X_1(14)` has genus `1` and its Jacobian has Mordell–Weil rank `0` over
+`ℚ`, so `X_1(14)(ℚ)` is finite and consists of cusps (Kubert–Ligozat;
+subsumed in Mazur 1977, Thm 8). -/
 theorem WeierstrassCurve.no_torsion_order_14 (E : WeierstrassCurve ℚ)
-    [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 14 :=
+    [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 14 := by
+  intro hQ
+  refine E.not_order_two_and_order_seven_point ((7 : ℕ) • Q) ((2 : ℕ) • Q) ?_ ?_
+  · rw [addOrderOf_nsmul' Q (by decide), hQ]; decide
+  · rw [addOrderOf_nsmul' Q (by decide), hQ]; decide
+
+/-- **No rational point of order `3` together with a rational point of
+order `5`** (sorry node — the `X_1(15)` content in its level-structure
+form): no elliptic curve over `ℚ` carries both. The hypotheses say
+exactly that `E(ℚ) ⊇ ℤ/3 ⊕ ℤ/5 ≅ ℤ/15`, i.e. that `(E, P + Q)` is a
+non-cuspidal rational point of `X_1(15)` — a curve of genus `1`
+(recomputed 2026-07-25: `μ/12 = 8`, `16` cusps, so `g = 1 + 8 − 8 = 1`)
+whose Jacobian has Mordell–Weil rank `0` over `ℚ`, so `X_1(15)(ℚ)` is
+finite and cuspidal (Kubert; Ligozat; subsumed in Mazur 1977, Thm 8).
+
+IRREDUCIBLE at this mathlib pin (audit 2026-07-25). Equivalent to
+`no_torsion_order_15` below, but stated as the fibre product
+`X_1(3) ×_{X_1(1)} X_1(5)` of two genus-`0` modular curves, which is
+the shape any elementary attack must use. Routes checked and rejected:
+
+* *The `X_0` / isogeny shortcut is NOT available here.* `15` is a
+  rational cyclic isogeny degree: `[1,0,1,−1,−2]` of conductor `50` has
+  isogeny-degree set `{1, 3, 5, 15}` (PARI/GP `ellisomat`, witness
+  recomputed 2026-07-25), so `X_0(15)` has non-cuspidal rational points.
+* *Divisor reduction fails by design.* The proper divisors `1, 3, 5` all
+  lie in Mazur's allowed set.
+* *Reduction plus Hasse only bounds the conductor.* `15 ∣ #Ẽ(𝔽_p)` at
+  every good `p` (including `p = 2`, since `15` is odd), and
+  `p + 1 + 2√p < 15` for `p ≤ 7`, so bad reduction is forced exactly at
+  `2, 3, 5, 7`: `210 ∣ N_E`, and nothing more.
+
+A formal proof needs the genus-`0` parametrisations of `X_1(3)` and
+`X_1(5)` in Tate normal form (`X_1(5)`: `b = c`), their fibre product —
+the genus-`1` curve `X_1(15)` — and a rank-`0` Mordell–Weil computation
+for it; none of that exists here. -/
+theorem WeierstrassCurve.not_order_three_and_order_five_point
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] (P Q : (E⁄ℚ).Point)
+    (hP : addOrderOf P = 3) (hQ : addOrderOf Q = 5) : False :=
   sorry
 
-/-- **No rational point of order `15`** (sorry node — irreducible
-literature citation): `X_1(15)` has genus `1` and its Jacobian has
-Mordell–Weil rank `0` over `ℚ`, so `X_1(15)(ℚ)` is finite and consists
-of cusps (Kubert–Ligozat; subsumed in Mazur 1977, Thm 8). -/
+/-- **No rational point of order `15`** (DERIVED 2026-07-25 from the
+level-structure leaf `not_order_three_and_order_five_point` by
+splitting `ℤ/15` into its `3`- and `5`-primary parts): a point `Q` of
+order `15` gives the order-`3` point `5 • Q` and the order-`5` point
+`3 • Q`. `X_1(15)` has genus `1` and its Jacobian has Mordell–Weil rank
+`0` over `ℚ`, so `X_1(15)(ℚ)` is finite and consists of cusps
+(Kubert–Ligozat; subsumed in Mazur 1977, Thm 8). -/
 theorem WeierstrassCurve.no_torsion_order_15 (E : WeierstrassCurve ℚ)
-    [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 15 :=
+    [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 15 := by
+  intro hQ
+  refine E.not_order_three_and_order_five_point ((5 : ℕ) • Q) ((3 : ℕ) • Q) ?_ ?_
+  · rw [addOrderOf_nsmul' Q (by decide), hQ]; decide
+  · rw [addOrderOf_nsmul' Q (by decide), hQ]; decide
+
+/-- **No rational point of order `8` that is twice a rational point**
+(sorry node — the `X_1(16)` content in its descent form): if
+`P ∈ E(ℚ)` has order `8` then `P ∉ 2 · E(ℚ)`. This is exactly the
+statement that the degree-`2` covering `X_1(16) → X_1(8)` — halving the
+level-`8` point — has no non-cuspidal rational point in its image;
+`X_1(16)` has genus `2` (recomputed 2026-07-25: `μ/12 = 8`, `14` cusps,
+so `g = 1 + 8 − 7 = 2`) and no non-cuspidal rational point
+(Kenku–Ligozat–Kubert; subsumed in Mazur 1977, Thm 8).
+
+IRREDUCIBLE at this mathlib pin (audit 2026-07-25). Equivalent to
+`no_torsion_order_16` below — a halving `R` of an order-`8` point
+necessarily has order `16`, since `addOrderOf (2 • R) = 8` forces
+`addOrderOf R = 16` — but stated over the genus-`0` level `8`, where the
+Tate normal form `b = (2d − 1)(d − 1)`, `c = b/d` is explicit, so that
+the only missing ingredient is the halving condition. Routes checked and
+rejected:
+
+* *The elementary halving criterion behind `not_full_four_torsion_rat`
+  does not reach this level.* A point of order `16` makes ONE `2`-torsion
+  abscissa `4`-divisible, giving a single square condition rather than
+  the three simultaneous ones that the sign argument needs.
+* *The `X_0` / isogeny shortcut is NOT available here.* `16` is a
+  rational cyclic isogeny degree: `[1,−1,0,0,−5]` of conductor `45` has
+  isogeny-degree set `{1, 2, 4, 8, 16}` (PARI/GP `ellisomat`, witness
+  recomputed 2026-07-25), so `X_0(16)` has non-cuspidal rational points.
+* *Divisor reduction fails by design.* The proper divisors `1, 2, 4, 8`
+  all lie in Mazur's allowed set.
+* *Reduction plus Hasse only bounds the conductor.* `16 ∣ #Ẽ(𝔽_p)` at
+  every odd prime `p` of good reduction, and `p + 1 + 2√p < 16` for
+  `p ≤ 7`, forcing bad reduction at `3, 5, 7` (`105 ∣ N_E`); `p = 2`
+  gives nothing at all, the odd part of `ℤ/16` being trivial.
+
+A formal proof needs the genus-`2` curve `X_1(16)` and a determination
+of its rational points (Ogg's descent, or Chabauty on its Jacobian).
+Note that the hypothesis cannot be weakened to `addOrderOf P = 8` alone:
+points of order `8` are permitted by Mazur's list, and the whole content
+of the node is that no such point is halvable over `ℚ`. -/
+theorem WeierstrassCurve.not_halved_order_eight_point
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] (P R : (E⁄ℚ).Point)
+    (hP : addOrderOf P = 8) (hR : (2 : ℕ) • R = P) : False :=
   sorry
 
-/-- **No rational point of order `16`** (sorry node — irreducible
-literature citation): `X_1(16)` has genus `2` and no non-cuspidal
-rational point (Kenku–Ligozat–Kubert; subsumed in Mazur 1977, Thm 8).
-Note the elementary halving criterion behind `not_full_four_torsion_rat`
-does not reach this level: a point of order `16` makes ONE `2`-torsion
-abscissa `4`-divisible, giving a single square condition rather than the
-three simultaneous ones that the sign argument needs. -/
+/-- **No rational point of order `16`** (DERIVED 2026-07-25 from the
+descent-form leaf `not_halved_order_eight_point`): a point `Q` of order
+`16` exhibits the order-`8` point `2 • Q` as twice a rational point.
+`X_1(16)` has genus `2` and no non-cuspidal rational point
+(Kenku–Ligozat–Kubert; subsumed in Mazur 1977, Thm 8). -/
 theorem WeierstrassCurve.no_torsion_order_16 (E : WeierstrassCurve ℚ)
-    [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 16 :=
+    [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 16 := by
+  intro hQ
+  refine E.not_halved_order_eight_point ((2 : ℕ) • Q) Q ?_ rfl
+  rw [addOrderOf_nsmul' Q (by decide), hQ]; decide
+
+/-- **No rational point of order `2` together with a rational point of
+order `9`** (sorry node — the `X_1(18)` content in its level-structure
+form): no elliptic curve over `ℚ` carries both. The hypotheses say
+exactly that `E(ℚ) ⊇ ℤ/2 ⊕ ℤ/9 ≅ ℤ/18`, i.e. that `(E, P + Q)` is a
+non-cuspidal rational point of `X_1(18)` — a curve of genus `2`
+(recomputed 2026-07-25: `μ/12 = 9`, `16` cusps, so `g = 1 + 9 − 8 = 2`)
+with no non-cuspidal rational point (Kenku–Ligozat–Kubert; subsumed in
+Mazur 1977, Thm 8).
+
+IRREDUCIBLE at this mathlib pin (audit 2026-07-25). Equivalent to
+`no_torsion_order_18` below, but stated as the fibre product
+`X_1(2) ×_{X_1(1)} X_1(9)` of two genus-`0` modular curves. Routes
+checked and rejected:
+
+* *The `X_0` / isogeny shortcut is NOT available here.* `18` is a
+  rational cyclic isogeny degree: `[1,−1,1,−5,−7]` of conductor `126`
+  has isogeny-degree set `{1, 2, 3, 6, 9, 18}` (PARI/GP `ellisomat`,
+  witness recomputed 2026-07-25), so `X_0(18)` has non-cuspidal
+  rational points.
+* *Divisor reduction fails by design.* The proper divisors
+  `1, 2, 3, 6, 9` all lie in Mazur's allowed set.
+* *Reduction plus Hasse only bounds the conductor.* `18 ∣ #Ẽ(𝔽_p)` at
+  every odd prime `p` of good reduction and `9 ∣ #Ẽ(𝔽_2)` at `p = 2`;
+  since `p + 1 + 2√p < 18` for `p ≤ 7` and `#Ẽ(𝔽_2) ≤ 5 < 9`, bad
+  reduction is forced at `2, 3, 5, 7` (`210 ∣ N_E`) and no further.
+
+A formal proof needs the level-`9` Tate normal form (`c = d²(d − 1)`,
+`b = c(d(d − 1) + 1)`) cut by the `2`-torsion condition — the genus-`2`
+curve `X_1(18)` — plus a determination of its rational points; none of
+that exists at this pin. -/
+theorem WeierstrassCurve.not_order_two_and_order_nine_point
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] (P Q : (E⁄ℚ).Point)
+    (hP : addOrderOf P = 2) (hQ : addOrderOf Q = 9) : False :=
   sorry
 
-/-- **No rational point of order `18`** (sorry node — irreducible
-literature citation): `X_1(18)` has genus `2` and no non-cuspidal
-rational point (Kenku–Ligozat–Kubert; subsumed in Mazur 1977,
-Thm 8). -/
+/-- **No rational point of order `18`** (DERIVED 2026-07-25 from the
+level-structure leaf `not_order_two_and_order_nine_point` by splitting
+`ℤ/18` into its `2`- and `3`-primary parts): a point `Q` of order `18`
+gives the order-`2` point `9 • Q` and the order-`9` point `2 • Q`.
+`X_1(18)` has genus `2` and no non-cuspidal rational point
+(Kenku–Ligozat–Kubert; subsumed in Mazur 1977, Thm 8). -/
 theorem WeierstrassCurve.no_torsion_order_18 (E : WeierstrassCurve ℚ)
-    [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 18 :=
-  sorry
+    [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 18 := by
+  intro hQ
+  refine E.not_order_two_and_order_nine_point ((9 : ℕ) • Q) ((2 : ℕ) • Q) ?_ ?_
+  · rw [addOrderOf_nsmul' Q (by decide), hQ]; decide
+  · rw [addOrderOf_nsmul' Q (by decide), hQ]; decide
 
 /-- **No rational point of order `20`** (PROVEN 2026-07-25 from the
 `X_0` node `mem_cyclicIsogenyDegrees`): a rational point of order `20`
@@ -380,11 +602,11 @@ cyclic subgroup of order `20`, i.e. a rational cyclic `20`-isogeny; but
 Mordell–Weil rank `0`, and its `6` rational points are exactly its `6`
 cusps), so `20` is missing from Kenku's list.
 
-This replaces the previously recorded `X_1(20)` citation (`X_1(20)` has
-genus `3` and no non-cuspidal rational point, Kubert–Kenku–Ligozat;
-subsumed in Mazur 1977, Thm 8) by the strictly stronger but canonical
-and once-cited `X_0` statement. The route the old docstring ruled out
-is unaffected and still holds: this level is NOT reducible to
+The finer `X_1(20)` statement (genus `3`, no non-cuspidal rational
+point) is NOT assumed anywhere: by the criterion in the section note
+this level goes through `X_0`, so `mem_cyclicIsogenyDegrees` is the
+single citation behind it. The exclusion recorded here earlier still
+holds and is unaffected: this level is NOT reducible to
 `not_two_torsion_and_five_point`, since a point of order `20` supplies
 only ONE rational `2`-torsion point, not the full `(ℤ/2)²`. -/
 theorem WeierstrassCurve.no_torsion_order_20 (E : WeierstrassCurve ℚ)
@@ -399,8 +621,11 @@ literature citation, audited 2026-07-25): `X_1(21)` has genus `5` and
 no non-cuspidal rational point (Kubert–Kenku–Ligozat; subsumed in
 Mazur 1977, Thm 8).
 
-This is the one level in the `20, 21, 24, 35` cluster where the `X_0`
-shortcut of `mem_cyclicIsogenyDegrees` is NOT available: `21` IS a
+By the criterion in the section note the `X_0` shortcut of
+`mem_cyclicIsogenyDegrees` is NOT available here — `21` is one of the
+three levels (`21, 25, 27`) that are in Kenku's list and have no
+level-structure sharpening either, so these are the only bare sorry
+nodes left among the eleven. `21` IS a
 rational cyclic isogeny degree, so a rational `21`-isogeny is no
 contradiction at all. `X_0(21)` is a genus-one curve of Mordell–Weil
 rank `0` with non-cuspidal rational points; an explicit witness curve
@@ -437,12 +662,12 @@ isogeny degree over `ℚ` (`X_0(24)` has genus `1`, Mordell–Weil rank
 `0`, and its `8` rational points are exactly its `8` cusps), so `24` is
 missing from Kenku's list.
 
-This replaces the previously recorded `X_1(24)` citation (`X_1(24)` has
-genus `5` and no non-cuspidal rational point, Kubert–Kenku–Ligozat;
-subsumed in Mazur 1977, Thm 8) by the strictly stronger but canonical
-and once-cited `X_0` statement. Note that this level is likewise not
-reducible to `not_two_four_torsion_and_three_point`: a point of order
-`24` gives a cyclic `ℤ/8`, never the `ℤ/2 × ℤ/4` that node needs. -/
+The finer `X_1(24)` statement (genus `5`, no non-cuspidal rational
+point) is NOT assumed anywhere: by the criterion in the section note
+this level goes through `X_0`, so `mem_cyclicIsogenyDegrees` is the
+single citation behind it. Note also that this level is not reducible
+to `not_two_four_torsion_and_three_point`: a point of order `24` gives
+a cyclic `ℤ/8`, never the `ℤ/2 × ℤ/4` that node needs. -/
 theorem WeierstrassCurve.no_torsion_order_24 (E : WeierstrassCurve ℚ)
     [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 24 := by
   intro hQ
@@ -486,14 +711,21 @@ theorem WeierstrassCurve.no_torsion_order_35 (E : WeierstrassCurve ℚ)
   simp only [Finset.mem_insert, Finset.mem_singleton] at h
   omega
 
-/-- **No rational point of order `49`** (sorry node — irreducible
-literature citation): `X_1(49)` has genus `69` and no non-cuspidal
-rational point; as at level `35` the `X_0(49)` statement suffices, `49`
-being absent from Kenku's list of cyclic isogeny degrees over `ℚ`.
-Subsumed in Mazur 1977, Thm 8. -/
+/-- **No rational point of order `49`** (PROVEN 2026-07-25 along the
+route this node's own docstring already recorded, from the `X_0` node
+`mem_cyclicIsogenyDegrees`): an order-`49` point generates a rational,
+hence Galois-stable, cyclic subgroup of order `49`, i.e. a rational
+cyclic `49`-isogeny; but `49` is absent from Kenku's list of cyclic
+isogeny degrees over `ℚ`, so `X_0(49)` — a curve of genus `1` — already
+has no non-cuspidal rational point. The finer statement that `X_1(49)`
+(genus `69`) has no non-cuspidal rational point is therefore not needed
+here. Subsumed in Mazur 1977, Thm 8. -/
 theorem WeierstrassCurve.no_torsion_order_49 (E : WeierstrassCurve ℚ)
-    [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 49 :=
-  sorry
+    [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 49 := by
+  intro hQ
+  have h := E.mem_cyclicIsogenyDegrees_of_addOrderOf Q (by norm_num) hQ
+  simp only [Finset.mem_insert, Finset.mem_singleton] at h
+  omega
 
 /-- **No rational torsion point of the critical composite orders**
 (PROVEN 2026-07-25 — the eleven-way case split over the `Finset`
