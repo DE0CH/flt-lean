@@ -291,6 +291,14 @@ public import Mathlib.RingTheory.ClassGroup.Basic
 -- `NumberField.RingOfIntegers.mapRingEquiv`. PUBLIC: both appear in
 -- the SIGNATURES of the E3c support leaves.
 public import Mathlib.NumberTheory.NumberField.Cyclotomic.Galois
+-- `dvd_sub_pow_of_dvd_sub` (`x ≡ y mod p` implies
+-- `x^(p^k) ≡ y^(p^k) mod p^(k+1)`): the Teichmüller-lift multiplicativity
+-- behind the eigenspace extraction of Eisenstein pillar E3c
+-- (`twisted_hom_eq_zero_of_forall_omega_inv_eigenvector_trivial`). It was
+-- reaching this file only through the import closure of
+-- `Fermat.FLT.Modularity.KhareWintenberger`; named explicitly here since
+-- a proof in this file depends on it. Non-public: proof only.
+import Mathlib.NumberTheory.Basic
 
 @[expose] public section
 
@@ -15613,11 +15621,342 @@ theorem herbrand_omega_inv_classGroup_eigenspace_trivial_of_five_le
   · exact orderOf_eq_one_iff.mp h
   · exact absurd (h ▸ hordN) hnd
 
+/-- **Eigenspace extraction: an `ω^{−1}`-twisted homomorphism out of a
+finite abelian group with no `ω^{−1}`-eigenvector of order `p` vanishes**
+(E3c support leaf (ii-b); PROVEN 2026-07-25 — the group-theoretic half
+of the Artin-reciprocity node below, split off from the
+class-field-theory citation so that only global CFT stays cited): let
+`A` be a finite abelian group carrying a multiplicative action
+`α : (ℤ/p)ˣ → MulAut A` (`hαmul`), and let `ψ : A → kk'` be a
+homomorphism into
+the ADDITIVE group of a field of characteristic `p` twisted by the
+inverse of the tautological character, `ψ(α_u a) = u⁻¹ · ψ(a)`. If `A`
+has no nontrivial pointwise `ω^{−1}`-eigenvector killed by `p` — no
+`c ≠ 1` with `c ^ p = 1` and `α_u c = c ^ (u⁻¹).val` — then `ψ` is
+identically `0`.
+
+This is exactly the step that converts "the `ω^{−1}`-eigenspace of
+`Cl(ℚ(μ_p)) ⊗ 𝔽_p` vanishes" — available in the `p`-TORSION pointwise
+form supplied by Herbrand's theorem — into "there is no `ω^{−1}`-twisted
+homomorphism out of `Cl(ℚ(μ_p))`", which is the `p`-COTORSION form that
+class field theory produces (the unramified extension it cuts out has
+elementary abelian Galois group, so the hom factors through `A/A^p`, not
+through `A[p]`). Naively `A[p]^{ω^{−1}}` and `(A/A^p)^{ω^{−1}}` are
+different functors; the classical bridge is the `ℤ_p[Δ]`-decomposition
+of the `p`-Sylow subgroup into Teichmüller eigencomponents (Washington,
+*Introduction to Cyclotomic Fields*, §6.2–6.3). Proof executed here
+explicitly, with no idempotents and no `ℤ_p`-module structure: write
+`|A| = p^k · m` with `p ∤ m`; if `ψ(c₀) ≠ 0` then `a := c₀ ^ m` has
+`ψ(a) = m · ψ(c₀) ≠ 0` (as `p ∤ m` and `char kk' = p`) and is killed by
+`p^k`. The Teichmüller lift of the tautological character is realized as
+the NATURAL exponent `E(u) := (u : ℤ/p).val ^ p^(k−1)`, which satisfies
+`E(u) ≡ u (mod p)` (Fermat, iterated: `ZMod.pow_card_pow`) and is
+multiplicative MODULO `p^k`, because `x ≡ y (mod p)` implies
+`x ^ p^(k−1) ≡ y ^ p^(k−1) (mod p^k)` — this is mathlib's
+`dvd_sub_pow_of_dvd_sub`, and it is precisely the statement that
+`u ↦ E(u) mod p^k` is a character lifting `u mod p`. The eigen-projection
+`b := ∏_{u ∈ (ℤ/p)ˣ} (α_u a) ^ E(u)` then satisfies
+`α_v b = b ^ E(v⁻¹)` — reindex the product by `u ↦ v · u` and use
+multiplicativity of `E` modulo the exponent `p^k` of every factor — and
+`ψ(b) = ∑_u E(u) · (u⁻¹) · ψ(a) = (p − 1) · ψ(a) = −ψ(a) ≠ 0`, so
+`b ≠ 1`. Finally `orderOf b = p^j` with `j ≥ 1`, and `c := b ^ p^(j−1)`
+has order exactly `p`, inherits the eigen-relation by powering, and
+`c ^ p = 1` collapses the exponent `E(v⁻¹)` to `(v⁻¹).val` — the
+eigenvector whose nonexistence was assumed. Consumed by the
+Artin-reciprocity assembly below at `A = Cl(𝓞 CF)`,
+`α = classGroupGalAut CF ∘ galEquivZMod.symm`. -/
+theorem twisted_hom_eq_zero_of_forall_omega_inv_eigenvector_trivial
+    {kk' : Type u} [Field kk'] [CharP kk' p]
+    {A : Type v} [CommGroup A] [Finite A]
+    (α : (ZMod p)ˣ → MulAut A)
+    (hαmul : ∀ u v : (ZMod p)ˣ, α (u * v) = α u * α v)
+    (ψ : A → kk')
+    (hhom : ∀ c d : A, ψ (c * d) = ψ c + ψ d)
+    (htwist : ∀ (u : (ZMod p)ˣ) (c : A),
+      ψ (α u c) = ((((u⁻¹ : (ZMod p)ˣ) : ZMod p).val : ℕ) : kk') * ψ c)
+    (heig : ∀ c : A, c ^ p = 1 →
+      (∀ u : (ZMod p)ˣ, α u c = c ^ (((u⁻¹ : (ZMod p)ˣ) : ZMod p).val)) → c = 1) :
+    ∀ c : A, ψ c = 0 := by
+  classical
+  haveI : NeZero p := ⟨hp.out.ne_zero⟩
+  -- `ψ` kills the identity, scales on powers, and turns products into sums
+  have hψ1 : ψ 1 = 0 := by
+    have h := hhom 1 1
+    rw [one_mul] at h
+    linear_combination -h
+  have hψpow : ∀ (x : A) (j : ℕ), ψ (x ^ j) = (j : kk') * ψ x := by
+    intro x j
+    induction j with
+    | zero => simpa using hψ1
+    | succ j ih => rw [pow_succ, hhom, ih]; push_cast; ring
+  have hψprod : ∀ (s : Finset ((ZMod p)ˣ)) (f : (ZMod p)ˣ → A),
+      ψ (∏ u ∈ s, f u) = ∑ u ∈ s, ψ (f u) := by
+    intro s f
+    refine Finset.induction_on s (by simpa using hψ1) ?_
+    intro w s hw ih
+    rw [Finset.prod_insert hw, Finset.sum_insert hw, hhom, ih]
+  -- the residue map `ZMod p →+* kk'` through which the twist factors
+  have hFval : ∀ w : (ZMod p)ˣ, ((((w : ZMod p)).val : ℕ) : kk') =
+      ZMod.castHom (dvd_refl p) kk' (w : ZMod p) := by
+    intro w
+    rw [ZMod.castHom_apply, ZMod.natCast_val]
+  have hFunit : ∀ w : (ZMod p)ˣ,
+      ZMod.castHom (dvd_refl p) kk' (w : ZMod p) *
+        ZMod.castHom (dvd_refl p) kk' ((w⁻¹ : (ZMod p)ˣ) : ZMod p) = 1 := by
+    intro w
+    rw [← map_mul, ← Units.val_mul, mul_inv_cancel, Units.val_one, map_one]
+  intro c₀
+  by_contra hc0
+  -- split the group order into its `p`-part and its `p`-free part
+  have hn0 : Nat.card A ≠ 0 := Nat.card_pos.ne'
+  set k := (Nat.card A).factorization p
+  set m := Nat.card A / p ^ k
+  have hnk : p ^ k * m = Nat.card A := Nat.ordProj_mul_ordCompl_eq_self (Nat.card A) p
+  have hpm : ¬ p ∣ m := Nat.not_dvd_ordCompl hp.out hn0
+  -- `a` is the `p`-primary part of an element not killed by `ψ`
+  set a := c₀ ^ m with hadef
+  have hψa : ψ a ≠ 0 := by
+    rw [hadef, hψpow]
+    exact mul_ne_zero (fun h => hpm ((CharP.cast_eq_zero_iff kk' p m).mp h)) hc0
+  have hap : a ^ p ^ k = 1 := by
+    rw [hadef, ← pow_mul, mul_comm m (p ^ k), hnk]
+    exact pow_card_eq_one'
+  have hk1 : 1 ≤ k := by
+    rcases Nat.eq_zero_or_pos k with h | h
+    · exfalso
+      rw [h, pow_zero, pow_one] at hap
+      rw [hap] at hψa
+      exact hψa hψ1
+    · exact h
+  -- the Teichmüller lift of the tautological character, as a natural exponent
+  set E : (ZMod p)ˣ → ℕ := fun u => ((u : ZMod p)).val ^ p ^ (k - 1) with hE
+  have hEmod : ∀ u : (ZMod p)ˣ, ((E u : ℕ) : ZMod p) = (u : ZMod p) := by
+    intro u
+    simp only [hE, Nat.cast_pow, ZMod.natCast_val, ZMod.cast_id]
+    exact ZMod.pow_card_pow _
+  have hEmodp : ∀ u : (ZMod p)ˣ, E u ≡ ((u : ZMod p)).val [MOD p] := by
+    intro u
+    refine (ZMod.natCast_eq_natCast_iff _ _ _).mp ?_
+    simp only [hEmod u, ZMod.natCast_val, ZMod.cast_id]
+  have hEmul : ∀ u v : (ZMod p)ˣ, E (u * v) ≡ E u * E v [MOD p ^ k] := by
+    intro u v
+    have hbaseN : ((u * v : (ZMod p)ˣ) : ZMod p).val ≡
+        ((u : ZMod p)).val * ((v : ZMod p)).val [MOD p] := by
+      rw [Units.val_mul, ZMod.val_mul]
+      exact Nat.mod_modEq _ _
+    have hpow := dvd_sub_pow_of_dvd_sub (Nat.modEq_iff_dvd.mp hbaseN) (k - 1)
+    rw [Nat.sub_add_cancel hk1] at hpow
+    have hrw : ((E u * E v : ℕ) : ℤ) - ((E (u * v) : ℕ) : ℤ) =
+        ((((u : ZMod p)).val * ((v : ZMod p)).val : ℕ) : ℤ) ^ p ^ (k - 1) -
+          ((((u * v : (ZMod p)ˣ) : ZMod p)).val : ℤ) ^ p ^ (k - 1) := by
+      simp only [hE]
+      push_cast
+      ring
+    rw [Nat.modEq_iff_dvd, hrw]
+    exact_mod_cast hpow
+  -- exponents agreeing modulo `p^k` agree on `p^k`-torsion
+  have hpowmod : ∀ (x : A) (i j : ℕ), x ^ p ^ k = 1 → i ≡ j [MOD p ^ k] →
+      x ^ i = x ^ j := by
+    intro x i j hx hij
+    exact pow_eq_pow_iff_modEq.mpr (hij.of_dvd (orderOf_dvd_of_pow_eq_one hx))
+  have hαap : ∀ u : (ZMod p)ˣ, (α u a) ^ p ^ k = 1 := by
+    intro u
+    rw [← map_pow, hap, map_one]
+  -- the `ω^{−1}`-eigen-projection of `a`
+  set b := ∏ u : (ZMod p)ˣ, (α u a) ^ E u with hb
+  have hbp : b ^ p ^ k = 1 := by
+    rw [hb, ← Finset.prod_pow]
+    refine Finset.prod_eq_one ?_
+    intro u _
+    rw [← pow_mul, mul_comm (E u) (p ^ k), pow_mul, hαap u, one_pow]
+  have hψb : ψ b = - ψ a := by
+    rw [hb, hψprod]
+    have hterm : ∀ u : (ZMod p)ˣ, ψ ((α u a) ^ E u) = ψ a := by
+      intro u
+      rw [hψpow, htwist]
+      have hcoef : ((E u : ℕ) : kk') = ZMod.castHom (dvd_refl p) kk' (u : ZMod p) := by
+        rw [← hEmod u]
+        exact (map_natCast (ZMod.castHom (dvd_refl p) kk') (E u)).symm
+      rw [hcoef, hFval u⁻¹, ← mul_assoc, hFunit u, one_mul]
+    rw [Finset.sum_congr rfl (fun u _ => hterm u), Finset.sum_const,
+      Finset.card_univ, ZMod.card_units_eq_totient, Nat.totient_prime hp.out,
+      nsmul_eq_mul, Nat.cast_sub hp.out.one_lt.le, Nat.cast_one,
+      CharP.cast_eq_zero kk' p, zero_sub, neg_one_mul]
+  have hb1 : b ≠ 1 := by
+    intro h
+    rw [h, hψ1] at hψb
+    exact hψa (neg_eq_zero.mp hψb.symm)
+  have hbeig : ∀ v : (ZMod p)ˣ, α v b = b ^ E v⁻¹ := by
+    intro v
+    have h1 : α v b = ∏ u : (ZMod p)ˣ, (α (v * u) a) ^ E u := by
+      rw [hb, map_prod]
+      refine Finset.prod_congr rfl ?_
+      intro u _
+      rw [map_pow, hαmul, MulAut.mul_apply]
+    have h2 : (∏ u : (ZMod p)ˣ, (α (v * u) a) ^ E u)
+        = ∏ w : (ZMod p)ˣ, (α w a) ^ E (v⁻¹ * w) := by
+      refine Finset.prod_bijective (fun u => v * u) (Group.mulLeft_bijective v)
+        (by simp) ?_
+      intro u _
+      rw [inv_mul_cancel_left]
+    have h3 : b ^ E v⁻¹ = ∏ w : (ZMod p)ˣ, (α w a) ^ (E w * E v⁻¹) := by
+      rw [hb, ← Finset.prod_pow]
+      exact Finset.prod_congr rfl (fun w _ => (pow_mul _ _ _).symm)
+    rw [h1, h2, h3]
+    refine Finset.prod_congr rfl ?_
+    intro w _
+    have hmod := hEmul v⁻¹ w
+    rw [mul_comm (E v⁻¹) (E w)] at hmod
+    exact hpowmod _ _ _ (hαap w) hmod
+  -- cut down to an element of order exactly `p`
+  obtain ⟨j, -, hjord⟩ := (Nat.dvd_prime_pow hp.out).mp (orderOf_dvd_of_pow_eq_one hbp)
+  have hj1 : 1 ≤ j := by
+    rcases Nat.eq_zero_or_pos j with h | h
+    · exfalso
+      rw [h, pow_zero, orderOf_eq_one_iff] at hjord
+      exact hb1 hjord
+    · exact h
+  set c := b ^ p ^ (j - 1) with hcdef
+  have hcp : c ^ p = 1 := by
+    rw [hcdef, ← pow_mul, ← pow_succ, Nat.sub_add_cancel hj1, ← hjord]
+    exact pow_orderOf_eq_one b
+  have hc1 : c ≠ 1 := by
+    intro h
+    rw [hcdef] at h
+    have hdvd := orderOf_dvd_of_pow_eq_one h
+    rw [hjord] at hdvd
+    have := (Nat.pow_dvd_pow_iff_le_right hp.out.one_lt).mp hdvd
+    omega
+  have hceig : ∀ u : (ZMod p)ˣ,
+      α u c = c ^ (((u⁻¹ : (ZMod p)ˣ) : ZMod p).val) := by
+    intro u
+    have hcpow : ∀ i i' : ℕ, i ≡ i' [MOD p] → c ^ i = c ^ i' := by
+      intro i i' hii
+      exact pow_eq_pow_iff_modEq.mpr (hii.of_dvd (orderOf_dvd_of_pow_eq_one hcp))
+    rw [hcdef, map_pow, hbeig u, ← pow_mul, mul_comm (E u⁻¹) (p ^ (j - 1)),
+      pow_mul, ← hcdef]
+    exact hcpow _ _ (hEmodp u⁻¹)
+  exact hc1 (heig c hcp hceig)
+
+/-- **Class field theory: an everywhere-unramified equivariant
+homomorphism on `Γ_{ℚ(μ_p)}` is seen by the twisted homomorphisms out of
+the class group** (E3c support leaf (ii-a); sorry node — the
+IRREDUCIBLE global class-field-theory citation of the Eisenstein pillar,
+cut 2026-07-25 out of the Artin-reciprocity node below so that
+everything except global CFT itself is PROVEN): the hypotheses are those
+of `artin_reciprocity_ker_vanishing_of_unramified_equivariant_hom`
+below — `χ` is the mod-`p` cyclotomic character `ω` (`hχcyc`, so
+`ker χ = Γ_{ℚ(μ_p)}`), `cc` is continuous (`hcont`), additive on
+`ker χ` (`hhom`), conjugation-equivariant with the inverse twist
+(`hequiv`), and kills full inertia at every `ℓ ∉ {2, p}` with all
+`Γℚ`-conjugates (`hunrOut`) as well as the full decomposition groups at
+`p` and `2` on their `ker χ` part (`hsplitp`, `hsplit2`). The
+class-field-theory conclusion is stated in the CONTRAPOSITIVE, as the
+hypothesis `hvan` that no nonzero `ω^{−1}`-twisted additive homomorphism
+`ψ : Cl(𝓞 CF) → kk'` exists on the class group of ANY model `CF` of
+`ℚ(μ_p)` — the twist being `ψ(σ_u · c) = (u⁻¹).val · ψ(c)` for the
+PROVEN Galois action `classGroupGalAut` and the mod-`p` cyclotomic
+dictionary `IsCyclotomicExtension.Rat.galEquivZMod` — from which `cc`
+vanishes identically on `ker χ`.
+
+Classical proof (Neukirch, *Algebraic Number Theory*, VI (6.8), (6.9),
+(7.1)–(7.2); Mazur, Publ. Math. IHÉS 47 (1977), ch. I; Washington,
+*Introduction to Cyclotomic Fields*, ch. 10): `φ := cc|_{ker χ}` is a
+continuous homomorphism `Γ_{ℚ(μ_p)} → (kk', +)` into a finite discrete
+group, so `ker φ` is open and normal and `φ` cuts out a finite abelian
+extension `M/ℚ(μ_p)` of exponent `p`. Every inertia subgroup of
+`Γ_{ℚ(μ_p)}` is `I_w(ℚ̄/ℚ) ∩ Γ_{ℚ(μ_p)}` for a place `w`, and the
+inertia groups above a fixed rational prime `ℓ` are exactly the
+`Γℚ`-conjugates of the inertia inside one chosen decomposition group at
+`ℓ` (transitivity of the Galois action on the places above `ℓ` and
+conjugacy of decomposition groups, Neukirch I (9.1)–(9.2), in the
+valuation-theoretic form II §9) — so `hunrOut`, `hsplitp`, `hsplit2` say
+exactly that `φ` kills all of them, i.e. `M/ℚ(μ_p)` is unramified at
+every finite place; `ℚ(μ_p)` is totally complex for odd `p`, so there
+are no real places, and the big and small Hilbert class fields coincide.
+Hence `M` lies in the Hilbert class field `H` of `ℚ(μ_p)` — the maximal
+unramified abelian extension, Neukirch VI (6.8) — and the Artin symbol
+gives the canonical isomorphism `Gal(H/ℚ(μ_p)) ≅ Cl(ℚ(μ_p))` (Neukirch
+VI (6.9); ideal-theoretically the surjection `J_K/H^𝔪 ≅ Gal(L/K)` of VI
+(7.1)–(7.2)). That isomorphism is `Gal(ℚ(μ_p)/ℚ)`-EQUIVARIANT —
+conjugation on the Galois side, `classGroupGalAut` on the class side —
+because the Artin symbol satisfies `(σ𝔞, M/K) = σ (𝔞, M/K) σ⁻¹`, itself
+a restatement of the conjugacy of decomposition groups (Neukirch I
+(9.1)–(9.2)). Pushing `φ` through it produces an additive homomorphism
+`ψ : Cl(ℚ(μ_p)) → (kk', +)` with `ψ(σ_u · c) = ω(σ_u)⁻¹ ψ(c)`, nonzero
+as soon as `φ ≠ 0`; `hvan` forbids that, so `φ = 0`.
+
+THE PIN (audit RE-VERIFIED 2026-07-25 directly against the mathlib pin
+in `.lake`): mathlib has `ClassGroup`, its functoriality
+(`ClassGroup.mulEquiv`), finiteness of the class group of a number field
+(`NumberField.instFintypeClassGroup`), ideal norms, and the whole LOCAL
+ramification/inertia theory (`Mathlib/NumberTheory/RamificationInertia/`,
+including Hilbert theory, inertia and Frobenius) — but NO global class
+field theory of any kind: no Artin map and no Artin symbol (no
+`ArtinMap`/`artinSymbol`/`ArtinSymbol` anywhere), no Hilbert class
+field, no ray class groups (no `rayClass`), no idele class group, no
+Chebotarev, no "maximal unramified abelian extension". The reduction of
+an everywhere-unramified equivariant hom to the class group is therefore
+irreducibly citation-shaped here, and this leaf is cut so that it is the
+ONLY thing cited: the eigenspace half — the passage from Herbrand's
+`p`-torsion eigenspace statement to the `p`-cotorsion quotient CFT
+produces — is PROVEN in
+`twisted_hom_eq_zero_of_forall_omega_inv_eigenvector_trivial` above.
+Soundness: the hypothesis set is inhabited (`cc = 0`, `χ = ω`, and
+`hvan` is inhabited too — it is what the Herbrand leaf supplies through
+the eigenspace brick), and the conclusion holds for every inhabitant by
+the argument above. -/
+theorem hilbertClassField_ker_vanishing_of_classGroup_twisted_hom_vanishing
+    {kk' : Type u} [Field kk'] [Finite kk'] [Algebra ℤ_[p] kk']
+    [TopologicalSpace kk'] [DiscreteTopology kk']
+    (χ : Field.absoluteGaloisGroup ℚ →* kk')
+    (cc : Field.absoluteGaloisGroup ℚ → kk')
+    (hcont : Continuous cc)
+    (hχcyc : ∀ g : Field.absoluteGaloisGroup ℚ, χ g =
+      algebraMap ℤ_[p] kk'
+        (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv))
+    (hhom : ∀ g h : Field.absoluteGaloisGroup ℚ, χ g = 1 → χ h = 1 →
+      cc (g * h) = cc g + cc h)
+    (hequiv : ∀ σ n : Field.absoluteGaloisGroup ℚ, χ n = 1 →
+      cc (σ * n * σ⁻¹) = χ σ⁻¹ * cc n)
+    (hunrOut : ∀ (ℓ : ℕ) (hℓ : ℓ.Prime), ℓ ≠ 2 → ℓ ≠ p →
+      ∀ n : Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ
+        hℓ.toHeightOneSpectrumRingOfIntegersRat),
+        n ∈ localInertiaGroup hℓ.toHeightOneSpectrumRingOfIntegersRat →
+        ∀ σ : Field.absoluteGaloisGroup ℚ,
+          cc (σ * Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (HeightOneSpectrum.adicCompletion ℚ
+              hℓ.toHeightOneSpectrumRingOfIntegersRat)) n * σ⁻¹) = 0)
+    (hsplitp : ∀ (g : Field.absoluteGaloisGroup ℚ_[p])
+      (σ : Field.absoluteGaloisGroup ℚ),
+      χ (σ * Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[p]) g * σ⁻¹) = 1 →
+      cc (σ * Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[p]) g * σ⁻¹) = 0)
+    (hsplit2 : ∀ (g : Field.absoluteGaloisGroup ℚ_[2])
+      (σ : Field.absoluteGaloisGroup ℚ),
+      χ (σ * Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) g * σ⁻¹) = 1 →
+      cc (σ * Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) g * σ⁻¹) = 0)
+    (hvan : ∀ (CF : Type) [Field CF] [NumberField CF]
+      [IsCyclotomicExtension {p} ℚ CF]
+      (ψ : ClassGroup (𝓞 CF) → kk'),
+      (∀ c d : ClassGroup (𝓞 CF), ψ (c * d) = ψ c + ψ d) →
+      (∀ (u : (ZMod p)ˣ) (c : ClassGroup (𝓞 CF)),
+        ψ (classGroupGalAut CF
+            ((IsCyclotomicExtension.Rat.galEquivZMod p CF).symm u) c) =
+          ((((u⁻¹ : (ZMod p)ˣ) : ZMod p).val : ℕ) : kk') * ψ c) →
+      ∀ c : ClassGroup (𝓞 CF), ψ c = 0) :
+    ∀ g, χ g = 1 → cc g = 0 :=
+  sorry
+
 /-- **Artin reciprocity for the everywhere-unramified abelian
 `p`-elementary extension of `ℚ(μ_p)`, with the eigenspace cut**
-(E3c support leaf (ii-a); sorry node — the SHARPLY CUT
-class-field-theory citation of the Eisenstein pillar, isolated
-2026-07-24 from the assembly that surrounds it): let `χ` be the
+(E3c support leaf (ii-a); PROVEN 2026-07-25 as a two-brick assembly,
+after being isolated 2026-07-24 from the assembly that surrounds it: the
+global class-field-theory citation
+`hilbertClassField_ker_vanishing_of_classGroup_twisted_hom_vanishing`
+(the remaining sorry node — Artin reciprocity for the Hilbert class
+field, equivariantly) composed with the eigenspace extraction
+`twisted_hom_eq_zero_of_forall_omega_inv_eigenvector_trivial` (PROVEN
+above), which is what actually consumes `hcl`): let `χ` be the
 mod-`p` cyclotomic character `ω` of `Γℚ` with values in a finite
 field `kk'` of characteristic `p` (`hχcyc`, so that
 `ker χ = Γ_{ℚ(μ_p)}`), and let `cc : Γℚ → kk'` be a CONTINUOUS
@@ -15662,13 +16001,27 @@ of order `p − 1`, prime to `p`, and all its characters are
 `ψ` with that twist must be nonzero on the `ω^{−1}`-eigenspace,
 producing a `p`-torsion class `c ≠ 1` with
 `σ_u • c = c^(u⁻¹.val)` — contradicting `hcl` applied to the model of
-`ℚ(μ_p)` in play. THE PIN (audited 2026-07-24): mathlib has
-`ClassGroup`, the ideal-norm API and Hilbert-class-field-adjacent
-pieces, but NO Artin reciprocity and no Hilbert class field, so this
-statement is irreducibly citation-shaped on this pin. Soundness: the
-hypothesis set is inhabited (`cc = 0`, `χ = ω`), the conclusion holds
-for every inhabitant by the argument above, and the eigenspace
-hypothesis `hcl` is exactly the input Herbrand's theorem supplies. -/
+`ℚ(μ_p)` in play. THE PIN (audit RE-VERIFIED 2026-07-25 directly
+against the mathlib pin in `.lake`): mathlib has `ClassGroup`, its
+functoriality, class-group finiteness, ideal norms and the whole LOCAL
+ramification/inertia theory, but NO global class field theory — no Artin
+map or symbol, no Hilbert class field, no ray class groups, no ideles,
+no Chebotarev. The honest cut executed here therefore isolates exactly
+the CFT step in
+`hilbertClassField_ker_vanishing_of_classGroup_twisted_hom_vanishing`
+(stated contrapositively: "no `ω^{−1}`-twisted hom out of the class
+group" implies "`cc` dies on `ker χ`") and PROVES the rest: the
+eigenspace extraction
+`twisted_hom_eq_zero_of_forall_omega_inv_eigenvector_trivial` turns
+`hcl` — Herbrand's `p`-TORSION pointwise eigenspace vanishing — into
+the `p`-COTORSION statement that CFT consumes, by the Teichmüller
+eigen-projection `∏_u (σ_u · a)^{E(u)}`, `E(u) = u.val^{p^{k−1}}`. This
+assembly is pure application: instantiate the citation's `hvan` slot at
+`A = Cl(𝓞 CF)`, `α = classGroupGalAut CF ∘ galEquivZMod.symm`, and feed
+`hcl` to the eigenvector brick. Soundness: the hypothesis set is
+inhabited (`cc = 0`, `χ = ω`), the conclusion holds for every inhabitant
+by the argument above, and the eigenspace hypothesis `hcl` is exactly
+the input Herbrand's theorem supplies. -/
 theorem artin_reciprocity_ker_vanishing_of_unramified_equivariant_hom
     {kk' : Type u} [Field kk'] [Finite kk'] [Algebra ℤ_[p] kk']
     [TopologicalSpace kk'] [DiscreteTopology kk']
@@ -15705,8 +16058,21 @@ theorem artin_reciprocity_ker_vanishing_of_unramified_equivariant_hom
           classGroupGalAut CF
               ((IsCyclotomicExtension.Rat.galEquivZMod p CF).symm u) c =
             c ^ ((u⁻¹ : (ZMod p)ˣ) : ZMod p).val) → c = 1) :
-    ∀ g, χ g = 1 → cc g = 0 :=
-  sorry
+    ∀ g, χ g = 1 → cc g = 0 := by
+  haveI : CharP kk' p := charP_of_finite_padicInt_algebra
+  refine hilbertClassField_ker_vanishing_of_classGroup_twisted_hom_vanishing
+    χ cc hcont hχcyc hhom hequiv hunrOut hsplitp hsplit2 ?_
+  intro CF _ _ _ ψ hψhom hψtwist
+  -- the class-group action of `(ℤ/p)ˣ` through the cyclotomic dictionary
+  refine twisted_hom_eq_zero_of_forall_omega_inv_eigenvector_trivial
+    (fun u => classGroupGalAut CF
+      ((IsCyclotomicExtension.Rat.galEquivZMod p CF).symm u)) ?_ ψ hψhom ?_ ?_
+  · intro u v
+    rw [map_mul, map_mul]
+  · intro u c
+    exact hψtwist u c
+  · intro c hcp heigc
+    exact hcl CF c hcp heigc
 
 /-- **CFT localization: an everywhere-locally-split Eisenstein
 cocycle dies on the kernel, given eigenspace vanishing** (E3c support
