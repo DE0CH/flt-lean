@@ -1642,6 +1642,7 @@ theorem charpoly_baseChange_apply {A : Type*} [CommRing A]
   rw [show (ρ.baseChange B) σ = LinearMap.baseChange B (ρ σ) from rfl,
     LinearMap.charpoly_baseChange]
 
+set_option linter.unusedVariables false in
 /-- **The residual bridge over the Moret–Bailly base** (PROVEN
 2026-07-25; sub-leaf (c) of the modularity-lifting cut — Chebotarev +
 Brauer–Nesbitt + base change): the Khare–Wintenberger lift `ρ`,
@@ -1740,8 +1741,10 @@ discharge through `Family.lean`, `Lift.lean`, or
 -- interface of the three sub-leaves (a)/(b)/(c) of this cut, the consumer
 -- `exists_heckePackage_of_seed` supplies them positionally, and (a)/(b)
 -- genuinely need them.  The linter is silenced rather than the names being
--- mangled to `_`, so the docstring's references stay valid.
-set_option linter.unusedVariables false in
+-- mangled to `_`, so the docstring's references stay valid.  (The
+-- `set_option ... in` that silences it must sit BEFORE the doc comment:
+-- a doc comment has to be immediately followed by the declaration, so
+-- `/-- ... -/ set_option ... in theorem` is a parse error.)
 theorem exists_residualCongruence_over_base
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
