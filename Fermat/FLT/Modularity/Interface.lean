@@ -184,6 +184,13 @@ import Mathlib.RingTheory.DiscreteValuationRing.Basic
 import Mathlib.LinearAlgebra.FreeModule.PID
 import Mathlib.Algebra.Module.Torsion.Free
 import Mathlib.NumberTheory.Padics.PadicIntegers
+-- the shared upstream `p`-adic ring-of-integers layer: the spectral-norm
+-- integrality criterion over `ℤ_p`, the density-based scalar tower, and the
+-- hull construction `exists_padicIntegers_dvr_hull_of_continuousSMul` that
+-- discharges the Ribet-cut leaf `exists_padicIntegers_dvr_hull` below.
+-- PUBLIC because `Family.lean` consumes
+-- `isIntegral_padicInt_of_spectralNorm_le_one` from it through this file.
+public import Fermat.FLT.Mathlib.RingTheory.PadicIntegralClosure
 -- `Polynomial.eval_one_cyclotomic_prime_pow` + the primitive-root product
 -- factorization: distinct `p`-power roots of unity differ by a `2`-adic
 -- unit — the arithmetic core of the at-`2` cyclotomic-inertia lemma
@@ -6172,38 +6179,66 @@ theorem exists_etale_subBialgebra_of_points_surjective
   sorry
 
 set_option backward.isDefEq.respectTransparency false in
-/-- **Hopf orders in sub-bialgebras of a generic fibre** (sorry node —
-step (γ), the schematic-closure/saturation half of the Raynaud
-quotient-closure cut, split off 2026-07-25 from
+set_option maxHeartbeats 1000000 in
+/-- **Hopf orders in sub-bialgebras of a generic fibre** (PROVEN
+2026-07-25 — step (γ), the schematic-closure/saturation half of the
+Raynaud quotient-closure cut, split off from
 `IsFlatPointsGroupAt.of_surjective`; Raynaud, *Schémas en groupes de
 type `(p, …, p)`*, Bull. SMF 102 (1974); Tate, *Finite flat group
 schemes*, in Cornell–Silverman–Stevens): a `Kᵥ`-sub-bialgebra `H` of
 the generic fibre `Q := Kᵥ ⊗[𝒪ᵥ] G` of a finite flat `𝒪ᵥ`-Hopf algebra
 `G` carries a finite flat `𝒪ᵥ`-Hopf order — the intersection
-`G' := H ∩ G` formed inside `Q` — whose generic fibre is `H` as a
+`H ∩ G` formed inside `Q` — whose generic fibre is `H` as a
 `Kᵥ`-bialgebra. This is the DUAL, and the easier half, of the schematic
 closure `IsFlatPointsGroupAt.of_injective` needs: it takes a
-SUB-algebra of the witness where that node must quotient it. Intended
-proof:
-* `G → Q`, `g ↦ 1 ⊗ₜ g`, is injective (`G` is flat, hence
-  torsion-free, over the DVR `𝒪ᵥ`, whose fraction field is `Kᵥ`), so
-  the comap `G' := (H.restrictScalars 𝒪ᵥ).comap (includeRight)` is a
-  faithful model of the intersection;
-* `Module.Finite 𝒪ᵥ G'`: a submodule of the module-finite `G` over the
-  noetherian `𝒪ᵥ`. `Module.Flat 𝒪ᵥ G'`: finite and torsion-free over a
-  DVR, hence finite FREE;
-* `G'` spans `H` over `Kᵥ`: every `x ∈ H ⊆ Q` has `c x ∈ G` for some
-  nonzero `c ∈ 𝒪ᵥ` (since `Q = Kᵥ · G`), and `c x ∈ H` because `H` is a
-  `Kᵥ`-subspace, so `c x ∈ G'`; with torsion-freeness this makes the
-  canonical `Kᵥ ⊗[𝒪ᵥ] G' → H` a `Kᵥ`-algebra isomorphism;
-* `G'` is SATURATED in `G` (`c x ∈ G'`, `x ∈ G`, `c ≠ 0` force
-  `x ∈ H`, hence `x ∈ G'`), so `G' ⊗[𝒪ᵥ] G'` is the intersection of
-  `H ⊗[Kᵥ] H` with the image of `G ⊗[𝒪ᵥ] G` inside `Q ⊗[Kᵥ] Q`; the
-  comultiplication of `H` (the restriction of `Q`'s, which carries the
-  Hopf order `G` into `G ⊗ G`) therefore maps `G'` into `G' ⊗ G'`, and
-  the counit and antipode restrict likewise — this is the
-  `HopfAlgebra 𝒪ᵥ G'` structure, and it makes the algebra isomorphism
-  above a `Kᵥ`-bialgebra equivalence.
+SUB-algebra of the witness where that node must quotient it.
+
+The proof needs NO sub-bialgebra API (the pin has none) and builds NO
+`HopfAlgebra` structure by hand: the whole point is that the vendored
+`exists_flat_hopf_form_of_hopf_order` of
+`KnownIn1980s/EllipticCurves/Flat.lean` already turns a *Hopf ORDER* —
+a finitely generated `𝒪ᵥ`-subalgebra spanning the generic fibre and
+closed under counit, antipode and comultiplication — into a finite flat
+Hopf `𝒪ᵥ`-algebra together with the bialgebra equivalence of generic
+fibres. So all that is proven here is that the intersection
+`H₀ := ι ⁻¹' (1 ⊗ G)`, a `Subalgebra 𝒪ᵥ H` by `Subalgebra.comap`, IS
+such an order. Its five clauses:
+* *denominators* (used twice): every `q ∈ Q` has `c • q ∈ 1 ⊗ G` for
+  some `c ∈ 𝒪ᵥ⁰` — a tensor induction, the pure-tensor case being
+  `IsLocalization.exists_integer_multiple` for `Kᵥ = Frac 𝒪ᵥ`.
+* *spanning*: for `x ∈ H`, `ι (c • x) = c • ι x ∈ 1 ⊗ G` gives
+  `c • x ∈ H₀`, and `c` is invertible in `Kᵥ`
+  (`IsLocalization.map_units`), so `x ∈ span Kᵥ H₀`.
+* *the saturation retraction* — the technical core. Put
+  `A := {g : G | 1 ⊗ g ∈ ι(H)}`, a `Submodule 𝒪ᵥ G`. Then `G ⧸ A` is
+  torsion-free (`c • g ∈ A` forces `1 ⊗ g ∈ ι(H)`, dividing by the unit
+  `c` inside the `Kᵥ`-subspace `ι(H)`) and module-finite, hence FREE
+  over the DVR `𝒪ᵥ` (`Module.free_of_finite_type_torsion_free'`), hence
+  projective: the quotient map `G → G ⧸ A` splits
+  (`LinearMap.exists_rightInverse_of_surjective`), so `A` is a direct
+  summand and `ret := id − sec ∘ mkQ : G →ₗ[𝒪ᵥ] G` retracts `G` onto
+  `A`. Composing with the (Kᵥ-linear, hence 𝒪ᵥ-linear) left inverse
+  `π` of the injection `ι` gives `s := π ∘ (1 ⊗ ·) ∘ ret : G →ₗ[𝒪ᵥ] H`
+  with `ι (s g) = 1 ⊗ ret g`; its base change
+  `ρ := s.liftBaseChange Kᵥ : Q →ₗ[Kᵥ] H` satisfies `ρ (1 ⊗ G) ⊆ H₀`
+  and `ρ ∘ ι = id` (checked on `H₀`, extended by the spanning clause).
+* *finite generation*: `H₀` is exactly `range s` (`⊆` because
+  `ι (s g) = 1 ⊗ ret g`, `⊇` because for `x ∈ H₀` the `g` with
+  `1 ⊗ g = ι x` lies in `A`, so `s g = x`), the image of the
+  module-finite `G`.
+* *counit* and *antipode*: transport along the bialgebra homomorphism
+  `ι` (`BialgHomClass.counitAlgHom_comp`,
+  `antipodeAlgHom_comp_bialgHom`) and then read off the base-change
+  structure formulas at `1 ⊗ g` (`TensorProduct.counit_tmul`; the
+  antipode of the base change is definitionally `1 ⊗ antipode`).
+* *comultiplication* — the saturation step proper. `comul` of `ι x` is
+  in the `𝒪ᵥ`-span of the pure tensors of `1 ⊗ G`
+  (`TensorProduct.comul_tmul`, as in `exists_hopfOrder_baseChange`),
+  and `ρ ⊗ ρ` maps that span into the `𝒪ᵥ`-span of the pure tensors of
+  `H₀` while fixing `comul x` — because `(ρ ⊗ ρ) ∘ (ι ⊗ ι) = id`. This
+  is the Lean incarnation of "`H₀ ⊗ H₀` is the intersection of
+  `H ⊗[Kᵥ] H` with the image of `G ⊗[𝒪ᵥ] G`": saturation is what makes
+  the retraction `ρ` exist integrally.
 EXISTENCE of the order needs no `e < p − 1` bound — Raynaud's bound
 enters only for uniqueness/full-faithfulness statements.
 Unconditionally TRUE; no hypothesis package. -/
@@ -6214,8 +6249,242 @@ theorem exists_hopfOrder_of_subBialgebra
     (ι : H →ₐc[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G))
     (hι : Function.Injective (ι : H →ₐ[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G))) :
     ∃ (G' : Type) (_ : CommRing G') (_ : HopfAlgebra 𝒪ᵥ G') (_ : Module.Flat 𝒪ᵥ G')
-      (_ : Module.Finite 𝒪ᵥ G'), Nonempty ((Kᵥ ⊗[𝒪ᵥ] G') ≃ₐc[Kᵥ] H) :=
-  sorry
+      (_ : Module.Finite 𝒪ᵥ G'), Nonempty ((Kᵥ ⊗[𝒪ᵥ] G') ≃ₐc[Kᵥ] H) := by
+  classical
+  -- `H` becomes an `𝒪ᵥ`-algebra through `Kᵥ`
+  letI : Algebra 𝒪ᵥ H := ((algebraMap Kᵥ H).comp (algebraMap 𝒪ᵥ Kᵥ)).toAlgebra
+  haveI : IsScalarTower 𝒪ᵥ Kᵥ H := IsScalarTower.of_algebraMap_eq (fun _ => rfl)
+  set ιA : H →ₐ[Kᵥ] Kᵥ ⊗[𝒪ᵥ] G := (ι : H →ₐ[Kᵥ] Kᵥ ⊗[𝒪ᵥ] G)
+  -- the canonical integral model `1 ⊗ G` inside the generic fibre
+  obtain ⟨G₀, hmemG₀, hG₀mem⟩ : ∃ G₀ : Subalgebra 𝒪ᵥ (Kᵥ ⊗[𝒪ᵥ] G),
+      (∀ g : G, ((1 : Kᵥ) ⊗ₜ[𝒪ᵥ] g) ∈ G₀) ∧
+      (∀ q ∈ G₀, ∃ g : G, ((1 : Kᵥ) ⊗ₜ[𝒪ᵥ] g) = q) :=
+    ⟨(Algebra.TensorProduct.includeRight : G →ₐ[𝒪ᵥ] Kᵥ ⊗[𝒪ᵥ] G).range,
+      fun g => ⟨g, rfl⟩, fun _ hq => hq⟩
+  -- the Hopf order candidate: the intersection `H ∩ G` formed inside the generic fibre
+  obtain ⟨H₀, hmemH₀⟩ : ∃ H₀ : Subalgebra 𝒪ᵥ H, ∀ x : H, x ∈ H₀ ↔ ιA x ∈ G₀ :=
+    ⟨G₀.comap (ιA.restrictScalars 𝒪ᵥ), fun _ => Iff.rfl⟩
+  have hιsmul : ∀ (c : 𝒪ᵥ) (x : H), ιA (c • x) = c • ιA x := by
+    intro c x
+    rw [← IsScalarTower.algebraMap_smul Kᵥ c x, ← IsScalarTower.algebraMap_smul Kᵥ c (ιA x),
+      map_smul]
+  -- ### the three base-change structure formulas at `1 ⊗ g`
+  have hcounitG : ∀ g : G,
+      Bialgebra.counitAlgHom Kᵥ (Kᵥ ⊗[𝒪ᵥ] G) ((1 : Kᵥ) ⊗ₜ[𝒪ᵥ] g) ∈
+        (algebraMap 𝒪ᵥ Kᵥ).range := by
+    intro g
+    refine ⟨Coalgebra.counit (R := 𝒪ᵥ) g, ?_⟩
+    show algebraMap 𝒪ᵥ Kᵥ (Coalgebra.counit (R := 𝒪ᵥ) g) =
+      Coalgebra.counit (R := Kᵥ) ((1 : Kᵥ) ⊗ₜ[𝒪ᵥ] g)
+    rw [TensorProduct.counit_tmul]
+    simp [Algebra.smul_def]
+  have hantipodeG : ∀ g : G, HopfAlgebra.antipode Kᵥ ((1 : Kᵥ) ⊗ₜ[𝒪ᵥ] g) =
+      (1 : Kᵥ) ⊗ₜ[𝒪ᵥ] (HopfAlgebra.antipode 𝒪ᵥ g) := fun _ => rfl
+  have hcomulG : ∀ g : G, Bialgebra.comulAlgHom Kᵥ (Kᵥ ⊗[𝒪ᵥ] G) ((1 : Kᵥ) ⊗ₜ[𝒪ᵥ] g) ∈
+      Submodule.span 𝒪ᵥ {z : (Kᵥ ⊗[𝒪ᵥ] G) ⊗[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G) |
+        ∃ a ∈ G₀, ∃ b ∈ G₀, a ⊗ₜ[Kᵥ] b = z} := by
+    intro g
+    show Coalgebra.comul (R := Kᵥ) ((1 : Kᵥ) ⊗ₜ[𝒪ᵥ] g) ∈ _
+    rw [TensorProduct.comul_tmul, CommSemiring.comul_apply]
+    generalize Coalgebra.comul (R := 𝒪ᵥ) g = t
+    induction t with
+    | zero => simp
+    | tmul a b =>
+        rw [TensorProduct.AlgebraTensorModule.tensorTensorTensorComm_tmul]
+        exact Submodule.subset_span ⟨_, hmemG₀ a, _, hmemG₀ b, rfl⟩
+    | add p q hp hq =>
+        rw [TensorProduct.tmul_add, map_add]
+        exact Submodule.add_mem _ hp hq
+  -- ### denominators: every element of the generic fibre has an integral multiple
+  have hden : ∀ q : Kᵥ ⊗[𝒪ᵥ] G, ∃ c ∈ nonZeroDivisors 𝒪ᵥ, c • q ∈ G₀ := by
+    intro q
+    induction q with
+    | zero => exact ⟨1, one_mem _, by rw [one_smul]; exact zero_mem G₀⟩
+    | tmul k g =>
+        obtain ⟨⟨c, hc⟩, c', hc'⟩ :=
+          IsLocalization.exists_integer_multiple (nonZeroDivisors 𝒪ᵥ) k
+        refine ⟨c, hc, ?_⟩
+        have hc'' : algebraMap 𝒪ᵥ Kᵥ c' = c • k := hc'
+        have h1 : c • (k ⊗ₜ[𝒪ᵥ] g) = c' • ((1 : Kᵥ) ⊗ₜ[𝒪ᵥ] g) := by
+          rw [TensorProduct.smul_tmul' c k g, TensorProduct.smul_tmul' c' (1 : Kᵥ) g,
+            ← hc'', Algebra.smul_def, mul_one]
+        rw [h1]
+        exact G₀.smul_mem (hmemG₀ g) c'
+    | add p q hp hq =>
+        obtain ⟨c₁, hc₁, h₁⟩ := hp
+        obtain ⟨c₂, hc₂, h₂⟩ := hq
+        refine ⟨c₁ * c₂, mul_mem hc₁ hc₂, ?_⟩
+        have h1 : (c₁ * c₂) • (p + q) = c₂ • (c₁ • p) + c₁ • (c₂ • q) := by
+          simp only [smul_add, smul_smul]
+          rw [mul_comm c₂ c₁]
+        rw [h1]
+        exact add_mem (G₀.smul_mem h₁ c₂) (G₀.smul_mem h₂ c₁)
+  -- ### the saturated preimage lattice inside `G`
+  obtain ⟨A, hmemA⟩ : ∃ A : Submodule 𝒪ᵥ G,
+      ∀ g : G, g ∈ A ↔ ∃ x : H, ιA x = (1 : Kᵥ) ⊗ₜ[𝒪ᵥ] g :=
+    ⟨Submodule.comap
+      ((Algebra.TensorProduct.includeRight : G →ₐ[𝒪ᵥ] Kᵥ ⊗[𝒪ᵥ] G).toLinearMap)
+      (Submodule.restrictScalars 𝒪ᵥ (LinearMap.range ιA.toLinearMap)), fun _ => Iff.rfl⟩
+  haveI : Module.Finite 𝒪ᵥ (G ⧸ A) :=
+    Module.Finite.of_surjective A.mkQ (Submodule.mkQ_surjective A)
+  haveI : Module.IsTorsionFree 𝒪ᵥ (G ⧸ A) := by
+    refine ⟨fun r hr x y hxy => ?_⟩
+    obtain ⟨a, rfl⟩ := Submodule.mkQ_surjective A x
+    obtain ⟨b, rfl⟩ := Submodule.mkQ_surjective A y
+    have hr0 : r ≠ 0 := isRegular_iff_ne_zero.mp hr
+    have hrK : algebraMap 𝒪ᵥ Kᵥ r ≠ 0 := fun h0 =>
+      hr0 ((injective_iff_map_eq_zero _).mp (IsFractionRing.injective 𝒪ᵥ Kᵥ) r h0)
+    have hsub : r • (a - b) ∈ A := by
+      rw [← Submodule.Quotient.mk_eq_zero, ← Submodule.mkQ_apply, map_smul, map_sub, smul_sub,
+        sub_eq_zero]
+      exact hxy
+    have hab : a - b ∈ A := by
+      obtain ⟨w, hw⟩ := (hmemA _).mp hsub
+      refine (hmemA _).mpr ⟨(algebraMap 𝒪ᵥ Kᵥ r)⁻¹ • w, ?_⟩
+      rw [map_smul, hw, TensorProduct.tmul_smul,
+        ← IsScalarTower.algebraMap_smul Kᵥ r ((1 : Kᵥ) ⊗ₜ[𝒪ᵥ] (a - b)), inv_smul_smul₀ hrK]
+    rw [Submodule.mkQ_apply, Submodule.mkQ_apply, Submodule.Quotient.eq]
+    exact hab
+  -- the retraction of `G` onto the saturated lattice `A` (its cokernel is free)
+  obtain ⟨ret, hretmem, hretid⟩ : ∃ ret : G →ₗ[𝒪ᵥ] G,
+      (∀ g : G, ret g ∈ A) ∧ (∀ g ∈ A, ret g = g) := by
+    obtain ⟨sec, hsec⟩ :=
+      A.mkQ.exists_rightInverse_of_surjective (by rw [Submodule.range_mkQ])
+    refine ⟨LinearMap.id - sec ∘ₗ A.mkQ, fun g => ?_, fun g hg => ?_⟩
+    · have h0 : A.mkQ (g - sec (A.mkQ g)) = 0 := by
+        rw [map_sub, sub_eq_zero]
+        exact (LinearMap.congr_fun hsec (A.mkQ g)).symm
+      rw [← Submodule.Quotient.mk_eq_zero, ← Submodule.mkQ_apply]
+      exact h0
+    · have h0 : A.mkQ g = 0 := by
+        rw [Submodule.mkQ_apply, Submodule.Quotient.mk_eq_zero]
+        exact hg
+      show g - sec (A.mkQ g) = g
+      rw [h0, map_zero, sub_zero]
+  -- ### the integral retraction `G → H₀` and its base change `ρ`
+  obtain ⟨π, hπ⟩ := ιA.toLinearMap.exists_leftInverse_of_injective
+    (LinearMap.ker_eq_bot.mpr hι)
+  have hπι : ∀ x : H, π (ιA x) = x := fun x => LinearMap.congr_fun hπ x
+  obtain ⟨s, hsapp⟩ : ∃ s : G →ₗ[𝒪ᵥ] H, ∀ g : G, s g = π ((1 : Kᵥ) ⊗ₜ[𝒪ᵥ] (ret g)) :=
+    ⟨(π.restrictScalars 𝒪ᵥ) ∘ₗ
+      ((Algebra.TensorProduct.includeRight : G →ₐ[𝒪ᵥ] Kᵥ ⊗[𝒪ᵥ] G).toLinearMap ∘ₗ ret),
+      fun _ => rfl⟩
+  have hsιA : ∀ g : G, ιA (s g) = (1 : Kᵥ) ⊗ₜ[𝒪ᵥ] (ret g) := by
+    intro g
+    obtain ⟨x, hx⟩ := (hmemA _).mp (hretmem g)
+    rw [hsapp, ← hx, hπι]
+  have hsmem : ∀ g : G, s g ∈ H₀ := by
+    intro g
+    rw [hmemH₀, hsιA]
+    exact hmemG₀ _
+  have hsH₀ : ∀ x ∈ H₀, ∃ g : G, s g = x := by
+    intro x hx
+    obtain ⟨g, hg⟩ := hG₀mem _ ((hmemH₀ x).mp hx)
+    refine ⟨g, hι ?_⟩
+    rw [hsιA, hretid g ((hmemA g).mpr ⟨x, hg.symm⟩)]
+    exact hg
+  obtain ⟨ρ, hρtmul⟩ : ∃ ρ : (Kᵥ ⊗[𝒪ᵥ] G) →ₗ[Kᵥ] H,
+      ∀ (k : Kᵥ) (g : G), ρ (k ⊗ₜ[𝒪ᵥ] g) = k • s g :=
+    ⟨s.liftBaseChange Kᵥ, fun _ _ => rfl⟩
+  have hρG₀ : ∀ q ∈ G₀, ρ q ∈ H₀ := by
+    intro q hq
+    obtain ⟨g, hg⟩ := hG₀mem q hq
+    rw [← hg, hρtmul, one_smul]
+    exact hsmem g
+  -- ### clause 2: the order spans the sub-bialgebra over `Kᵥ`
+  have hspan : Submodule.span Kᵥ (H₀ : Set H) = ⊤ := by
+    rw [eq_top_iff]
+    rintro x -
+    obtain ⟨c, hc, hcq⟩ := hden (ιA x)
+    have hcx : c • x ∈ H₀ := by
+      rw [hmemH₀, hιsmul]
+      exact hcq
+    obtain ⟨u, hu⟩ := IsLocalization.map_units Kᵥ (⟨c, hc⟩ : nonZeroDivisors 𝒪ᵥ)
+    have hx : x = (↑u⁻¹ : Kᵥ) • (c • x) := by
+      rw [← IsScalarTower.algebraMap_smul Kᵥ c x]
+      show x = (↑u⁻¹ : Kᵥ) • ((algebraMap 𝒪ᵥ Kᵥ c) • x)
+      rw [← hu, smul_smul, Units.inv_mul, one_smul]
+    rw [hx]
+    exact Submodule.smul_mem _ _ (Submodule.subset_span hcx)
+  -- ### clause 1: finite generation
+  have hH₀range : (Subalgebra.toSubmodule H₀ : Submodule 𝒪ᵥ H) = LinearMap.range s := by
+    refine le_antisymm ?_ ?_
+    · intro x hx
+      obtain ⟨g, hg⟩ := hsH₀ x hx
+      exact ⟨g, hg⟩
+    · rintro x ⟨g, rfl⟩
+      exact hsmem g
+  have hfg : (Subalgebra.toSubmodule H₀).FG := by
+    rw [hH₀range, LinearMap.range_eq_map]
+    exact (Module.finite_def.mp inferInstance).map s
+  -- ### clause 3: counit integrality
+  have hcounit : ∀ x ∈ H₀, Bialgebra.counitAlgHom Kᵥ H x ∈ (algebraMap 𝒪ᵥ Kᵥ).range := by
+    intro x hx
+    obtain ⟨g, hg⟩ := hG₀mem _ ((hmemH₀ x).mp hx)
+    have hcc : Bialgebra.counitAlgHom Kᵥ (Kᵥ ⊗[𝒪ᵥ] G) (ιA x) =
+        Bialgebra.counitAlgHom Kᵥ H x :=
+      AlgHom.congr_fun (BialgHomClass.counitAlgHom_comp ι) x
+    rw [← hcc, ← hg]
+    exact hcounitG g
+  -- ### clause 4: antipode stability
+  have hantipode : ∀ x ∈ H₀, HopfAlgebra.antipode Kᵥ x ∈ H₀ := by
+    intro x hx
+    obtain ⟨g, hg⟩ := hG₀mem _ ((hmemH₀ x).mp hx)
+    have hap : HopfAlgebra.antipode Kᵥ (ιA x) = ιA (HopfAlgebra.antipode Kᵥ x) :=
+      AlgHom.congr_fun (antipodeAlgHom_comp_bialgHom ι) x
+    rw [hmemH₀, ← hap, ← hg, hantipodeG g]
+    exact hmemG₀ _
+  -- ### clause 5: comultiplication closure — the saturation step
+  have hsret : ∀ g : G, s (ret g) = s g := by
+    intro g
+    refine hι ?_
+    rw [hsιA, hsιA, hretid _ (hretmem g)]
+  have hρι : ∀ x : H, ρ (ιA x) = x := by
+    have hext : (ρ ∘ₗ ιA.toLinearMap) = LinearMap.id (R := Kᵥ) (M := H) := by
+      refine LinearMap.ext_on hspan ?_
+      intro x hx
+      obtain ⟨g, hg⟩ := hsH₀ x hx
+      show ρ (ιA x) = x
+      rw [← hg, hsιA, hρtmul, one_smul, hsret]
+    intro x
+    exact LinearMap.congr_fun hext x
+  have hmapid : ∀ t : H ⊗[Kᵥ] H,
+      TensorProduct.map ρ ρ (Algebra.TensorProduct.map ιA ιA t) = t := by
+    intro t
+    induction t with
+    | zero => simp
+    | tmul a b =>
+        rw [Algebra.TensorProduct.map_tmul, TensorProduct.map_tmul, hρι, hρι]
+    | add p q hp hq => rw [map_add, map_add, hp, hq]
+  have hcomul : ∀ x ∈ H₀, Bialgebra.comulAlgHom Kᵥ H x ∈
+      Submodule.span 𝒪ᵥ {z : H ⊗[Kᵥ] H | ∃ a ∈ H₀, ∃ b ∈ H₀, a ⊗ₜ[Kᵥ] b = z} := by
+    intro x hx
+    obtain ⟨g, hg⟩ := hG₀mem _ ((hmemH₀ x).mp hx)
+    have hcm : Bialgebra.comulAlgHom Kᵥ (Kᵥ ⊗[𝒪ᵥ] G) (ιA x) =
+        Algebra.TensorProduct.map ιA ιA (Bialgebra.comulAlgHom Kᵥ H x) :=
+      (AlgHom.congr_fun (BialgHomClass.map_comp_comulAlgHom ι) x).symm
+    have hmem0 : Bialgebra.comulAlgHom Kᵥ (Kᵥ ⊗[𝒪ᵥ] G) (ιA x) ∈
+        Submodule.span 𝒪ᵥ {z : (Kᵥ ⊗[𝒪ᵥ] G) ⊗[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G) |
+          ∃ a ∈ G₀, ∃ b ∈ G₀, a ⊗ₜ[Kᵥ] b = z} := by
+      rw [← hg]
+      exact hcomulG g
+    obtain ⟨F, hFapp⟩ : ∃ F : ((Kᵥ ⊗[𝒪ᵥ] G) ⊗[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G)) →ₗ[𝒪ᵥ] (H ⊗[Kᵥ] H),
+        ∀ z, F z = TensorProduct.map ρ ρ z :=
+      ⟨(TensorProduct.map ρ ρ).restrictScalars 𝒪ᵥ, fun _ => rfl⟩
+    have h2 := Submodule.mem_map_of_mem (f := F) hmem0
+    rw [Submodule.map_span] at h2
+    have h3 : F (Bialgebra.comulAlgHom Kᵥ (Kᵥ ⊗[𝒪ᵥ] G) (ιA x)) =
+        Bialgebra.comulAlgHom Kᵥ H x := by
+      rw [hFapp, hcm]
+      exact hmapid _
+    rw [h3] at h2
+    refine Submodule.span_mono ?_ h2
+    rintro _ ⟨z, ⟨a, ha, b, hb, rfl⟩, rfl⟩
+    exact ⟨ρ a, hρG₀ a ha, ρ b, hρG₀ b hb, by rw [hFapp, TensorProduct.map_tmul]⟩
+  -- ### assemble: the Hopf order is a finite flat Hopf form
+  obtain ⟨G', iCR, iHopf, iFin, iFlat, hequiv⟩ :=
+    exists_flat_hopf_form_of_hopf_order 𝒪ᵥ Kᵥ H H₀ hfg hspan hcounit hantipode hcomul
+  exact ⟨G', iCR, iHopf, iFlat, iFin, hequiv⟩
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
@@ -9790,96 +10059,99 @@ theorem exists_basis_fin_two : Nonempty (Module.Basis (Fin 2) R V) := by
     exact_mod_cast h
   exact ⟨(Module.finBasis R V).reindex (finCongr hfr)⟩
 
-/-- **The `p`-adic ring-of-integers hull** (Ribet cut E2a-i-a; sorry
-node — the ARITHMETIC half of the valuation-ring lattice, isolated
-2026-07-24 when the lattice half below was proven): a module-finite
-`ℤ_p`-domain `R` of characteristic zero, presented in `ℚ̄_p`, sits
-inside the ring of integers `O` of a finite extension of `ℚ_p`,
-compatibly with both structure maps. This is the whole `𝒪_E`-content
-of E2a-i; the lattice content is discharged by
-`exists_valuationRing_stable_lattice` below.
+omit [IsDomain R] [IsLocalRing R] in
+/-- **The `p`-adic ring-of-integers hull** (Ribet cut E2a-i-a; PROVEN
+2026-07-25, the ARITHMETIC half of the valuation-ring lattice): a
+module-finite `ℤ_p`-domain `R` of characteristic zero, presented in
+`ℚ̄_p`, sits inside the ring of integers `O` of a finite extension of
+`ℚ_p`, compatibly with both structure maps. This is the whole
+`𝒪_E`-content of E2a-i; the lattice content is discharged by
+`exists_valuationRing_stable_lattice` below, so with this leaf the
+whole of E2a-i is proven.
 
-FULLY MAPPED ROUTE (2026-07-24; every step checked against this pin's
-mathlib, no step through `Family.lean` or `Reducible.lean`, so the
-Ribet-cut circularity guard is respected — but note that
-`Family.lean` carries, DOWNSTREAM and therefore unusable here, an
-almost verbatim instance suite for the intermediate-field spelling of
-the same object: `instModuleFiniteIntegralClosurePadicInt`,
-`instValuationRingIntegralClosurePadicInt`,
-`isModuleTopology_integralClosure_padicInt`,
-`isIntegral_padicInt_of_spectralNorm_le_one`,
-`isModuleTopology_of_compactSpace_t2Space`. Discharging this leaf is
-mostly a matter of re-deriving that suite upstream — ideally by moving
-it into a new module imported by BOTH files):
+The construction is `exists_padicIntegers_dvr_hull_of_continuousSMul`
+in `Fermat/FLT/Mathlib/RingTheory/PadicIntegralClosure.lean`, a NEW
+module upstream of both this file and `Family.lean` (which carried a
+DOWNSTREAM and therefore unusable near-duplicate of the instance
+suite; its `isIntegral_padicInt_of_spectralNorm_le_one` was moved into
+the new module, so there is now exactly one copy, shared). The
+Ribet-cut circularity guard is respected: the new module imports only
+mathlib.
+
+Executed route (all of it now compiled):
 
 1. *The structure maps commute*: `ℤ_p → R → ℚ̄_p` and the canonical
    `ℤ_p → ℚ_p → ℚ̄_p` are two CONTINUOUS ring maps `ℤ_p → ℚ̄_p`
    (continuity of `R → ℚ̄_p` is `continuous_algebraMap` from the
-   `ContinuousSMul` hypothesis; continuity of `ℤ_p → R` is
-   `IsModuleTopology.continuous_of_linearMap`) agreeing on the image
-   of `ℕ`, which is DENSE (`PadicInt.denseRange_natCast`) in the
+   `ContinuousSMul` hypothesis; continuity of `ℤ_p → R` is the same
+   lemma via `IsModuleTopology.toContinuousSMul`) agreeing on the
+   image of `ℕ`, which is DENSE (`PadicInt.denseRange_natCast`) in the
    Hausdorff `ℚ̄_p`; so `Continuous.ext_on` gives
-   `IsScalarTower ℤ_[p] R (AlgebraicClosure ℚ_[p])` for free. This is
-   the step that makes the statement true without any scalar-tower
-   hypothesis, and it is where `ContinuousSMul R ℚ̄_p` is consumed.
-2. *The fraction field*: `F := FractionRing R` (which lives in
-   `Type u`, unlike any subfield of `ℚ̄_p` — this is why `F`, and not
-   an `IntermediateField ℚ_[p] (AlgebraicClosure ℚ_[p])`, is the right
-   carrier here: it avoids a `ULift` transport of the entire instance
-   bundle). `hZinj` makes `ℤ_p → R → F` injective, so
-   `IsFractionRing.lift` gives `ℚ_p →ₐ[ℤ_p] F` and hence
-   `Algebra ℚ_[p] F` with `IsScalarTower ℤ_[p] ℚ_[p] F`.
-3. *`F/ℚ_p` is finite*: the `ℚ_p`-span `W` of the image of a finite
-   `ℤ_p`-spanning set of `R` is a finite-dimensional `ℚ_p`-subalgebra
-   of `F` containing the image of `R`, and a domain, hence a field
-   (`isField_of_isIntegral_of_isField'`); every element of `F` is a
-   ratio of elements of the image of `R` (`IsFractionRing`), so
-   `W = F` and `FiniteDimensional ℚ_[p] F`.
-4. *`O := integralClosure ℤ_[p] F`* (again in `Type u`) is a domain,
-   a `ℤ_p`-algebra, and `Module.Finite ℤ_[p] O` by
+   `IsScalarTower ℤ_[p] R (AlgebraicClosure ℚ_[p])` for free
+   (`isScalarTower_padicInt_of_continuousSMul`). This is the step that
+   makes the statement true without any scalar-tower hypothesis, and
+   it is where `ContinuousSMul R ℚ̄_p` is consumed.
+2. *`R → ℚ̄_p` may be replaced by an embedding*: its kernel is a prime
+   ideal of `R` meeting `ℤ_p` only in `0` (step 1 plus injectivity of
+   `ℤ_p → ℚ_p → ℚ̄_p`), so `R ⧸ ker` is again a module-finite
+   `ℤ_p`-domain, now embedded, and `ι` factors through it
+   (`RingHom.kerLift`). This is why the route needs no separate proof
+   that `R → ℚ̄_p` is injective.
+3. *The fraction field*: `F := FractionRing R` lives in `Type u`,
+   unlike any subfield of `ℚ̄_p` — this is why `F`, and not an
+   `IntermediateField ℚ_[p] (AlgebraicClosure ℚ_[p])`, is the right
+   carrier: it avoids a `ULift` transport of the entire instance
+   bundle. `IsFractionRing.lift` gives both `Algebra ℚ_[p] F` (with
+   `IsScalarTower ℤ_[p] ℚ_[p] F`) and the embedding `Φ : F → ℚ̄_p`.
+4. *`F/ℚ_p` is finite* (`finiteDimensional_padic_fractionRing`): the
+   `ℚ_p`-algebra `A` generated by the image of a finite `ℤ_p`-spanning
+   set of `R` is module-finite over `ℚ_p`
+   (`Algebra.finite_adjoin_of_finite_of_isIntegral`) and a domain,
+   hence a FIELD (`isField_of_isIntegral_of_isField'`); every element
+   of `F` is a ratio of elements of the image of `R`
+   (`IsFractionRing.div_surjective`), so `A = F`.
+5. *`O := integralClosure ℤ_[p] F`* (again in `Type u`) is a domain, a
+   `ℤ_p`-algebra, and `Module.Finite ℤ_[p] O` by
    `IsIntegralClosure.finite ℤ_[p] ℚ_[p] F` (`ℤ_p` is Noetherian and
    integrally closed with fraction field `ℚ_p`; `F/ℚ_p` is finite and
    separable in characteristic zero).
-5. *Topology*: take `TopologicalSpace O := moduleTopology ℤ_[p] O`,
-   so `IsModuleTopology` holds by `rfl` and `IsTopologicalRing O`
-   follows from module-finiteness
-   (`IsModuleTopology.continuous_mul_of_finite`). No compactness or
-   subspace-topology argument is needed for this spelling.
-6. *The embedding*: `ℤ_p ∖ {0}` maps into the units of `ℚ̄_p`, so the
-   given `R → ℚ̄_p` extends over the localization `F` (step 3 shows
-   `F` IS that localization), giving `φ : F →+* ℚ̄_p`, injective
-   because `F` is a field. Restricting `φ` to `O` supplies
-   `Algebra O (AlgebraicClosure ℚ_[p])`, the injectivity clause, and —
-   with step 1 — both compatibility clauses; `ContinuousSMul O ℚ̄_p`
-   is `continuousSMul_of_algebraMap` applied to the `ℤ_p`-linear (hence
-   module-topology-continuous) `φ ∘ (O ⊆ F)`.
+6. *Topology*: `TopologicalSpace O := moduleTopology ℤ_[p] O`, so
+   `IsModuleTopology` holds by `rfl` and `IsTopologicalRing O` follows
+   from module-finiteness (`IsModuleTopology.isTopologicalRing`). No
+   compactness or subspace-topology argument is needed for this
+   spelling. `ContinuousSMul O ℚ̄_p` is `continuousSMul_of_algebraMap`
+   applied to the `ℤ_p`-linear (hence module-topology-continuous)
+   `Φ ∘ (O ⊆ F)`.
 7. *`O` is a valuation ring, hence LOCAL*: for `x : F`, one of
-   `φ x`, `φ x⁻¹` has spectral norm `≤ 1` over `ℚ_p`, hence is
-   integral over `ℤ_p` (the `ℤ_p`-avatar of
-   `isIntegral_of_spectralNorm_le_one`, which lifts the minimal
-   polynomial coefficientwise), and integrality descends along the
-   injective `φ` (`isIntegral_algHom_iff`); so
+   `Φ x`, `Φ x⁻¹` has spectral norm `≤ 1` over `ℚ_p` (the norm on
+   `ℚ̄_p` IS the spectral norm, `PadicAlgCl.spectralNorm_eq`), hence is
+   integral over `ℤ_p` (`isIntegral_padicInt_of_spectralNorm_le_one`,
+   which lifts the minimal polynomial coefficientwise), and
+   integrality descends along the injective `Φ`
+   (`isIntegral_algHom_iff`); so
    `ValuationSubring.instValuationRingSubtypeMem` applies and
    `IsLocalRing O` comes for free — no henselian/idempotent-lifting
    argument is required anywhere.
 8. *`O` is a DVR*: `O` is Noetherian (module-finite over the
-   Noetherian `ℤ_p`), local, a domain, and not a field (`p⁻¹` is not
-   integral over the integrally closed `ℤ_p`), so
+   Noetherian `ℤ_p`), local, a domain, and not a field (a field `O`
+   integral over `ℤ_p` would force `ℤ_p` itself to be a field,
+   `isField_of_isIntegral_of_isField`), so
    `(IsDiscreteValuationRing.TFAE O hnf).out 1 0` upgrades
    `ValuationRing O` to `IsDiscreteValuationRing O`.
 
-Soundness (audit 2026-07-24): the hypothesis set is inhabited
-(`R = ℤ_p` with its canonical presentation in `ℚ̄_p`) and the
-conclusion holds for every inhabitant by the route above. `hZinj` is
-LOAD-BEARING: without it `algebraMap ℤ_[p] R` may kill `p`, and then
-`ι (algebraMap ℤ_[p] R p) = 0` while `algebraMap ℤ_[p] O p ≠ 0` in the
-characteristic-zero `O`, so no `ι` can exist. No oddness,
+Soundness: the hypothesis set is inhabited (`R = ℤ_p` with its
+canonical presentation in `ℚ̄_p`). `_hZinj` turned out to be
+REDUNDANT, not load-bearing as the 2026-07-24 audit had guessed: step 1
+already forces `algebraMap R ℚ̄_p ∘ algebraMap ℤ_[p] R` to be the
+injective `algebraMap ℤ_[p] ℚ̄_p`, so `algebraMap ℤ_[p] R` cannot kill
+`p`. The hypothesis is kept only because the PROVEN consumer
+`exists_valuationRing_stable_lattice` supplies it. No oddness,
 irreducibility, residual or representation-theoretic input is
 consumed. -/
 theorem exists_padicIntegers_dvr_hull
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
-    (hZinj : Function.Injective (algebraMap ℤ_[p] R)) :
+    (_hZinj : Function.Injective (algebraMap ℤ_[p] R)) :
     ∃ (O : Type u) (_ : CommRing O) (_ : Algebra ℤ_[p] O)
       (_ : IsDomain O) (_ : Module.Finite ℤ_[p] O)
       (_ : TopologicalSpace O) (_ : IsTopologicalRing O)
@@ -9892,7 +10164,7 @@ theorem exists_padicIntegers_dvr_hull
       (∀ x : ℤ_[p], ι (algebraMap ℤ_[p] R x) = algebraMap ℤ_[p] O x) ∧
       (∀ r : R, algebraMap O (AlgebraicClosure ℚ_[p]) (ι r) =
         algebraMap R (AlgebraicClosure ℚ_[p]) r) :=
-  sorry
+  exists_padicIntegers_dvr_hull_of_continuousSMul
 
 include hv in
 /-- **The valuation-ring lattice** (Ribet cut E2a-i; PROVEN 2026-07-24
@@ -14946,34 +15218,300 @@ theorem not_dvd_stickelberger_upperHalf_sum (hp5 : 5 ≤ p) :
   have h1eq := Nat.dvd_one.mp hone
   omega
 
+/-! ##### The Stickelberger chain — the cut executed 2026-07-25
+
+Support leaf (iii-a) of the E3c cut,
+`stickelberger_upperHalf_annihilates_omega_inv_eigenvector`, was a
+single opaque `sorry` until 2026-07-25; it is now PROVEN over ONE
+sharp citation. Sources read for the cut: Washington, *Introduction to
+Cyclotomic Fields*, 2nd ed. — §6.1 (Gauss sums), §6.2 (Stickelberger's
+theorem, Thm. 6.10), §6.3 (Herbrand, Thm. 6.17) and §15.1 (the short
+Kolyvagin-style proof of Stickelberger for FULL cyclotomic fields).
+
+The classical chain, and what each link costs on this pin:
+
+* **(a) Gauss sums and their norms.** `g(χ) = −∑_a χ(a)ψ(a)` and
+  `g(χ)g(χ̄) = q` for `χ ≠ 1` (Washington Lemma 6.1(c)), plus the
+  Jacobi-sum relations (Lemma 6.2) and `g(χ^p) = g(χ)` (Lemma 6.5).
+  ALREADY IN MATHLIB — `gaussSum`, `gaussSum_mul_gaussSum_eq_card`,
+  `gaussSum_frob` in `Mathlib.NumberTheory.GaussSum`, with
+  `Mathlib.NumberTheory.JacobiSum` for Lemma 6.2 and `MulChar`/
+  `AddChar` for the characters. No new leaf: nothing to state.
+* **(b) Stickelberger's congruence.** The `𝒫`-adic valuation
+  `s(α) = v_𝒫(g(ω^{−α}))` of a Gauss sum for the Teichmüller
+  character `ω = ω_λ : 𝔽_q^× → μ_{q−1}` attached to a prime `λ ∣ p`
+  equals the sum `a₀ + ⋯ + a_{f−1}` of the `p`-adic digits of `α`
+  (Washington Prop. 6.13, from Lemmas 6.11, 6.12; equivalently
+  `s(h) = (p−1) ∑_{i<f} {p^i h/(q−1)}`, Lemma 6.14). NOT in mathlib:
+  the pin has no Teichmüller character attached to a prime and no
+  valuation of Gauss sums at a prime of `ℚ(ζ_{q−1}, ζ_p)`. Deliberately
+  NOT stated as its own leaf: it is not consumable here, because (d)
+  cannot be derived from (b) without also formalizing §6.2's descent
+  (Lemma 6.4 `g(χ)^m ∈ ℚ(ζ_m)`, the unramifiedness Lemma 6.15 and the
+  Kummer-theory `m`-th-root argument) — that is the bulk of the
+  chapter, and a stated-but-unconsumed (b) would be free-floating.
+* **(c) Integrality and the floor closed form.** For
+  `θ = ∑_{a=1}^{p−1} {a/p} σ_a⁻¹ ∈ ℚ[G]` one has `ρθ ∈ ℤ[G]` iff `ρ`
+  lies in the ideal generated by the `t − σ_t` (Washington Lemma 6.9),
+  and then `(t − σ_t)θ = ∑_{a=1}^{p−1} ⌊ta/p⌋ σ_a⁻¹`. Formalized here
+  WITHOUT building `ℚ[Gal(CF/ℚ)]` and its action on ideals: every
+  statement below carries the integral coefficient family
+  `u ↦ ⌊t·u/p⌋` already expanded, which is exactly the content of the
+  closed form. Its `t = 2` evaluation — `⌊2a/p⌋ = 0` for `a < p/2` and
+  `1` for `a > p/2` — is PROVEN in `sum_Ico_mul_two_mul_div_eq`.
+* **(d) Stickelberger's theorem** (Washington Thm. 6.10, first
+  sentence): `A^{ρθ}` is principal. THE ONE REMAINING `sorry` of this
+  chain — `stickelberger_prod_map_ideal_isPrincipal`, stated in the
+  already-expanded integral form for the concrete annihilator
+  `(t − σ_t)θ`.
+* **(d′) … annihilates the ideal class group** (Thm. 6.10, second
+  sentence): PROVEN here as `stickelberger_annihilates_classGroup`,
+  from (d) through the generic class-group brick
+  `prod_classGroup_pow_eq_one_of_isPrincipal`.
+* **(e) Specialization to `t = 2` and to an `ω^{−1}`-eigenvector.**
+  PROVEN here: the target leaf
+  `stickelberger_upperHalf_annihilates_omega_inv_eigenvector`, from
+  (d′), the index conversion `sum_units_zmod_val_eq_sum_Ico` and the
+  floor arithmetic `sum_Ico_mul_two_mul_div_eq`.
+
+So: (a) is mathlib, (b) is folded into (d), (c)/(d′)/(e) are PROVEN,
+and (d) is the single citation. The next owner's frontier is exactly
+(d): either (b) plus §6.2's descent, or the shorter §15.1 route
+(Gauss sums attached to a degree-one prime `ℓ ≡ 1 (mod p)` lying in
+the given ideal class — so a Chebotarev/Dirichlet input as well — plus
+the same Kummer descent). -/
+
+/-- **Principality of the twisted ideal product kills the ideal class**
+(PROVEN 2026-07-25; the generic class-group brick of the Stickelberger
+chain, link (d) ⇒ (d′)): let `A` be a Dedekind domain, `f : ι → A ≃+* A`
+a finite family of ring automorphisms and `e : ι → ℕ` exponents. If the
+ideal `∏ᵢ (Ideal.map (f i) I)^{e i}` is principal for a nonzero ideal
+`I`, then the corresponding product of ideal classes is trivial. This
+is precisely the passage from "`A^x` is principal" to "`x` annihilates
+the class group" in Washington's Thm. 6.10, isolated from every
+cyclotomic input: `ClassGroup.mk0` is a monoid homomorphism, so
+`map_prod`/`map_pow` turn the ideal product into the class product,
+`classGroup_mulEquiv_mk0` above rewrites `ClassGroup.mulEquiv f [I]`
+as `[Ideal.map f I]`, and `ClassGroup.mk0_eq_one_iff` converts
+principality of the resulting ideal into triviality of its class (the
+nonzeroness of the product is `Submonoid.prod_mem` over
+`ideal_map_mem_nonZeroDivisors_of_ringEquiv`). -/
+theorem prod_classGroup_pow_eq_one_of_isPrincipal
+    {A : Type*} [CommRing A] [IsDedekindDomain A]
+    {ι : Type*} [Fintype ι] (f : ι → (A ≃+* A)) (e : ι → ℕ) (I : (Ideal A)⁰)
+    (h : (∏ i, Ideal.map ((f i : A →+* A)) (I : Ideal A) ^ e i).IsPrincipal) :
+    ∏ i, (ClassGroup.mulEquiv (f i) (ClassGroup.mk0 I)) ^ e i = 1 := by
+  have key : ∏ i, (ClassGroup.mulEquiv (f i) (ClassGroup.mk0 I)) ^ e i =
+      ClassGroup.mk0 (∏ i, (⟨Ideal.map (f i : A →+* A) (I : Ideal A),
+        ideal_map_mem_nonZeroDivisors_of_ringEquiv (f i) I⟩ : (Ideal A)⁰) ^ e i) := by
+    rw [map_prod]
+    refine Finset.prod_congr rfl fun i _ => ?_
+    rw [map_pow, classGroup_mulEquiv_mk0]
+  rw [key]
+  set J : (Ideal A)⁰ := ∏ i, (⟨Ideal.map (f i : A →+* A) (I : Ideal A),
+    ideal_map_mem_nonZeroDivisors_of_ringEquiv (f i) I⟩ : (Ideal A)⁰) ^ e i with hJdef
+  refine (ClassGroup.mk0_eq_one_iff J.2).mpr ?_
+  have hcoe : (J : Ideal A) = ∏ i, Ideal.map ((f i : A →+* A)) (I : Ideal A) ^ e i := by
+    rw [hJdef]
+    simp
+  rw [hcoe]
+  exact h
+
+/-- **The ring-of-integers automorphism `σ_u`** (definition, 2026-07-25;
+notation for the Stickelberger chain): for `u ∈ (ℤ/p)ˣ`, `σ_u` is the
+automorphism of the `p`-th cyclotomic field `CF` with `σ_u(ζ) = ζ^u`
+(`IsCyclotomicExtension.Rat.galEquivZMod`), and this is its
+restriction to the ring of integers
+(`NumberField.RingOfIntegers.mapRingEquiv`) — the map that acts on
+ideals in Stickelberger's theorem. By construction
+`classGroupGalAut CF ((galEquivZMod p CF).symm u)` is
+`ClassGroup.mulEquiv (cycGalRingOfIntegersEquiv CF u)`
+DEFINITIONALLY, which is the glue between the ideal-level citation (d)
+and the class-level statement (d′) below. -/
+noncomputable def cycGalRingOfIntegersEquiv (CF : Type) [Field CF] [NumberField CF]
+    [IsCyclotomicExtension {p} ℚ CF] (u : (ZMod p)ˣ) : 𝓞 CF ≃+* 𝓞 CF :=
+  RingOfIntegers.mapRingEquiv
+    ((IsCyclotomicExtension.Rat.galEquivZMod p CF).symm u).toRingEquiv
+
+/-- **Stickelberger's theorem, integral-ideal form** (link (d) of the
+chain above — THE single sorry node of the Stickelberger cut;
+Stickelberger 1890; Kummer 1847 for `ℚ(ζ_p)`; Washington,
+*Introduction to Cyclotomic Fields*, Thm. 6.10): for a `p`-th
+cyclotomic field `CF`, a nonzero integral ideal `I` of `𝓞 CF` and an
+integer `t` prime to `p`, the ideal
+
+`I^{(t − σ_t)θ} = ∏_{a=1}^{p−1} σ_a⁻¹(I)^{⌊ta/p⌋}`
+
+is PRINCIPAL. Here `θ = ∑_{a=1}^{p−1} {a/p} σ_a⁻¹ ∈ ℚ[G]` is the
+Stickelberger element, `(t − σ_t)θ = ∑_a ⌊ta/p⌋ σ_a⁻¹` lies in `ℤ[G]`
+(Washington Lemma 6.9 and the computation before Thm. 6.10 — link (c),
+here already expanded into the exponent family `u ↦ ⌊t·u/p⌋`), and the
+statement below indexes `a` by the unit `u ∈ (ℤ/p)ˣ` it represents, so
+that `σ_a⁻¹ = σ_{a⁻¹}` is `cycGalRingOfIntegersEquiv CF u⁻¹` and
+`a = (u : ZMod p).val ∈ {1, …, p−1}`.
+
+Classical proof (Washington §6.2, ~14 pages): factor the Gauss sum
+`g(χ)` for `χ = ω_λ^{−(q−1)/p}` at the primes above the rational prime
+`ℓ` below a prime factor `λ` of `I`, using Stickelberger's congruence
+(link (b), Prop. 6.13: `v_𝒫(g(ω^{−α}))` is the `p`-adic digit sum of
+`α`) rewritten by Lemma 6.14 into fractional parts; this gives
+`(g(χ)^p) = λ_0^{pθ}` upstairs, and the descent to `ℚ(ζ_p)` is Lemma
+6.4 (`g(χ)^p ∈ ℚ(ζ_p)`) plus the Kummer-theory step that
+`ℚ(ζ_p, g(χ))/ℚ(ζ_p)` is unramified everywhere, hence trivial by
+Lemma 6.15. §15.1 gives a shorter route for full cyclotomic fields at
+the cost of a Chebotarev input. Neither is available on this pin:
+mathlib has Gauss sums and Jacobi sums
+(`Mathlib.NumberTheory.GaussSum`, `.JacobiSum` — link (a)) but no
+Teichmüller character attached to a prime, no valuation of Gauss sums,
+and no Stickelberger/Herbrand material at all (grepped 2026-07-24 and
+re-verified 2026-07-25). This is therefore the honest citation
+boundary; everything above and below it in the chain is proven.
+
+Soundness of the exact form stated: for `t` prime to `p` the element
+`∑_a ⌊ta/p⌋ σ_a⁻¹` is `(t − σ_t)θ`, which is in the Stickelberger
+ideal `I(ℚ(ζ_p)) = ℤ[G] ∩ θℤ[G]` by Lemma 6.9, so Thm. 6.10 applies
+verbatim. The hypothesis `¬ p ∣ t` is kept (rather than dropped, which
+would still be true via `p ∈ (t − σ_t : t)ℤ[G]`) so that the citation
+matches the textbook statement with no reasoning of our own. -/
+theorem stickelberger_prod_map_ideal_isPrincipal
+    (CF : Type) [Field CF] [NumberField CF]
+    [IsCyclotomicExtension {p} ℚ CF]
+    (t : ℕ) (ht : ¬ (p ∣ t)) (I : (Ideal (𝓞 CF))⁰) :
+    (∏ u : (ZMod p)ˣ,
+      Ideal.map ((cycGalRingOfIntegersEquiv CF u⁻¹ : 𝓞 CF →+* 𝓞 CF))
+          (I : Ideal (𝓞 CF)) ^ (t * ((u : ZMod p).val) / p)).IsPrincipal :=
+  sorry
+
+/-- **The Stickelberger ideal annihilates the ideal class group**
+(PROVEN 2026-07-25; link (d′) — Washington, *Introduction to
+Cyclotomic Fields*, Thm. 6.10, second sentence): for a `p`-th
+cyclotomic field `CF`, an integer `t` prime to `p` and ANY ideal class
+`c` of `𝓞 CF`,
+
+`∏_{a=1}^{p−1} (σ_a⁻¹ • c)^{⌊ta/p⌋} = 1`,
+
+i.e. the integral Stickelberger element `(t − σ_t)θ` annihilates
+`Cl(ℚ(ζ_p))`. Proof: write `c = [I]` for a nonzero integral ideal
+(`ClassGroup.mk0_surjective`), and feed the ideal-level citation
+`stickelberger_prod_map_ideal_isPrincipal` into the generic brick
+`prod_classGroup_pow_eq_one_of_isPrincipal`; the class action
+`classGroupGalAut` is definitionally `ClassGroup.mulEquiv` of
+`cycGalRingOfIntegersEquiv`, so no transport is needed. -/
+theorem stickelberger_annihilates_classGroup
+    (CF : Type) [Field CF] [NumberField CF]
+    [IsCyclotomicExtension {p} ℚ CF]
+    (t : ℕ) (ht : ¬ (p ∣ t)) (c : ClassGroup (𝓞 CF)) :
+    ∏ u : (ZMod p)ˣ,
+      (classGroupGalAut CF
+          ((IsCyclotomicExtension.Rat.galEquivZMod p CF).symm u⁻¹) c)
+        ^ (t * ((u : ZMod p).val) / p) = 1 := by
+  obtain ⟨I, rfl⟩ := ClassGroup.mk0_surjective c
+  exact prod_classGroup_pow_eq_one_of_isPrincipal
+    (fun u => cycGalRingOfIntegersEquiv CF u⁻¹)
+    (fun (u : (ZMod p)ˣ) => t * ((u : ZMod p).val) / p) I
+    (stickelberger_prod_map_ideal_isPrincipal CF t ht I)
+
+/-- **Summing over `(ℤ/p)ˣ` is summing over `{1, …, p−1}`** (PROVEN
+2026-07-25; the index-conversion brick of the Stickelberger chain):
+for `p` prime and any `f : ℕ → M` into a commutative monoid,
+`∑_{u ∈ (ℤ/p)ˣ} f(u.val) = ∑_{a = 1}^{p−1} f(a)`. The bijection is
+`u ↦ (u : ZMod p).val` with inverse `a ↦ ZMod.unitOfCoprime a`
+(`Finset.sum_bij'`): a unit has nonzero, hence positive, `val`
+(`ZMod.val_eq_zero`, `Units.ne_zero`) and `val < p`
+(`ZMod.val_lt`), while `1 ≤ a < p` with `p` prime forces
+`Nat.Coprime a p`; the two round trips are `ZMod.natCast_val`/
+`ZMod.cast_id` and `ZMod.val_cast_of_lt`. This is what turns the
+group-theoretic index set of `stickelberger_annihilates_classGroup`
+into the arithmetic range of the Stickelberger scalar. -/
+theorem sum_units_zmod_val_eq_sum_Ico
+    {M : Type*} [AddCommMonoid M] (f : ℕ → M) :
+    ∑ u : (ZMod p)ˣ, f ((u : ZMod p).val) = ∑ a ∈ Finset.Ico 1 p, f a := by
+  refine Finset.sum_bij' (fun u _ => ((u : ZMod p).val))
+    (fun a ha => ZMod.unitOfCoprime a
+      (by
+        obtain ⟨h1, h2⟩ := Finset.mem_Ico.mp ha
+        exact Nat.coprime_comm.mp ((Nat.Prime.coprime_iff_not_dvd hp.out).mpr
+          (fun hdvd => absurd (Nat.le_of_dvd (by omega) hdvd) (by omega)))))
+    ?_ ?_ ?_ ?_ ?_
+  · intro u _
+    refine Finset.mem_Ico.mpr ⟨Nat.pos_of_ne_zero fun h0 => ?_, ZMod.val_lt _⟩
+    exact u.ne_zero ((ZMod.val_eq_zero _).mp h0)
+  · intro a _
+    exact Finset.mem_univ _
+  · intro u _
+    apply Units.ext
+    rw [ZMod.coe_unitOfCoprime, ZMod.natCast_val, ZMod.cast_id]
+  · intro a ha
+    rw [ZMod.coe_unitOfCoprime, ZMod.val_cast_of_lt (Finset.mem_Ico.mp ha).2]
+  · intro u _
+    rfl
+
+omit hp in
+/-- **The `t = 2` Stickelberger coefficients** (PROVEN 2026-07-25;
+link (c) evaluated — pure `ℕ` floor arithmetic): for odd `p ≥ 3`,
+`∑_{a=1}^{p−1} a·⌊2a/p⌋ = ∑_{a = (p+1)/2}^{p−1} a`. Indeed `⌊2a/p⌋`
+is `0` on `1 ≤ a ≤ (p−1)/2` (there `2a < p`, `Nat.div_eq_of_lt`) and
+`1` on `(p+1)/2 ≤ a ≤ p−1` (there `p ≤ 2a < 2p`,
+`Nat.div_eq_of_lt_le`) — oddness of `p` is what excludes the boundary
+case `2a = p`. Split the range at `(p+1)/2`
+(`Finset.sum_Ico_consecutive`), kill the lower half and simplify the
+upper one. Combined with `two_mul_sum_Ico_succ_two_mul` above, this
+identifies the exponent produced by the integral Stickelberger element
+`(2 − σ₂)θ = ∑_{p/2 < a < p} σ_a⁻¹` on an `ω^{−1}`-eigenvector. -/
+theorem sum_Ico_mul_two_mul_div_eq (hodd : Odd p) (hp3 : 3 ≤ p) :
+    ∑ a ∈ Finset.Ico 1 p, a * (2 * a / p) = ∑ a ∈ Finset.Ico ((p + 1) / 2) p, a := by
+  obtain ⟨m, hm⟩ := hodd
+  have hsplit : (∑ a ∈ Finset.Ico 1 ((p + 1) / 2), a * (2 * a / p)) +
+      (∑ a ∈ Finset.Ico ((p + 1) / 2) p, a * (2 * a / p)) =
+      ∑ a ∈ Finset.Ico 1 p, a * (2 * a / p) :=
+    Finset.sum_Ico_consecutive _ (by omega) (by omega)
+  have hlow : ∑ a ∈ Finset.Ico 1 ((p + 1) / 2), a * (2 * a / p) = 0 := by
+    refine Finset.sum_eq_zero fun a ha => ?_
+    obtain ⟨h1, h2⟩ := Finset.mem_Ico.mp ha
+    rw [Nat.div_eq_of_lt (show 2 * a < p by omega), Nat.mul_zero]
+  have hhigh : ∑ a ∈ Finset.Ico ((p + 1) / 2) p, a * (2 * a / p) =
+      ∑ a ∈ Finset.Ico ((p + 1) / 2) p, a := by
+    refine Finset.sum_congr rfl fun a ha => ?_
+    obtain ⟨h1, h2⟩ := Finset.mem_Ico.mp ha
+    rw [show 2 * a / p = 1 from Nat.div_eq_of_lt_le (by omega) (by omega), Nat.mul_one]
+  rw [← hsplit, hlow, hhigh, zero_add]
+
 /-- **Stickelberger's theorem in `ω^{−1}`-eigenvector form** (E3c
-support leaf (iii-a); sorry node — the deep half of Herbrand's
-theorem at `B₂`; Stickelberger 1890; Washington, *Introduction to
-Cyclotomic Fields*, Thm. 6.10): for `p ≥ 5` and an abstract `p`-th
-cyclotomic field `CF`, an ideal class `c` on which `Gal(CF/ℚ)` acts
-through the INVERSE of the mod-`p` cyclotomic character —
-`σ_u • c = c^(u⁻¹.val)` for all `u ∈ (ℤ/p)ˣ`
+support leaf (iii-a); PROVEN 2026-07-25 over the single citation
+`stickelberger_prod_map_ideal_isPrincipal` — link (e) of the
+Stickelberger chain documented above; Stickelberger 1890; Washington,
+*Introduction to Cyclotomic Fields*, Thm. 6.10): for `p ≥ 5` and an
+abstract `p`-th cyclotomic field `CF`, an ideal class `c` on which
+`Gal(CF/ℚ)` acts through the INVERSE of the mod-`p` cyclotomic
+character — `σ_u • c = c^(u⁻¹.val)` for all `u ∈ (ℤ/p)ˣ`
 (`IsCyclotomicExtension.Rat.galEquivZMod`) — is killed by the
 integer `N = ∑_{a = (p+1)/2}^{p−1} a`.
 
 Derivation from Stickelberger's theorem: the Stickelberger element
 `θ = ∑_{a=1}^{p−1} (a/p) σ_a⁻¹ ∈ ℚ[G]` has the property that
-`(t − σ_t) θ ∈ ℤ[G]` for every integer `t`, with the closed form
-`(t − σ_t) θ = ∑_{a=1}^{p−1} ⌊ta/p⌋ σ_a⁻¹`; Stickelberger's theorem
-says every such element annihilates `Cl(ℚ(μ_p))`. Taking `t = 2`,
-`⌊2a/p⌋` is `0` for `a < p/2` and `1` for `a > p/2`, so the
-annihilator is the concrete group-ring element
-`β₂ = ∑_{p/2 < a < p} σ_a⁻¹`. Under the eigenvector hypothesis
-`σ_u` acts on `c` by the exponent `u⁻¹`, hence `σ_a⁻¹ = σ_{a⁻¹}`
-acts by the exponent `a`, and `β₂ • c = c^(∑_{p/2 < a < p} a) = c^N`.
-Annihilation is therefore exactly `c ^ N = 1`.
+`(t − σ_t) θ ∈ ℤ[G]` for every integer `t` prime to `p`, with the
+closed form `(t − σ_t) θ = ∑_{a=1}^{p−1} ⌊ta/p⌋ σ_a⁻¹`;
+Stickelberger's theorem says every such element annihilates
+`Cl(ℚ(μ_p))` — that is `stickelberger_annihilates_classGroup`, proven
+above from the ideal-level citation. Taking `t = 2`, `⌊2a/p⌋` is `0`
+for `a < p/2` and `1` for `a > p/2`, so the annihilator is the
+concrete group-ring element `β₂ = ∑_{p/2 < a < p} σ_a⁻¹`. Under the
+eigenvector hypothesis `σ_u` acts on `c` by the exponent `u⁻¹`, hence
+`σ_a⁻¹ = σ_{a⁻¹}` acts by the exponent `a`, and
+`β₂ • c = c^(∑_{p/2 < a < p} a) = c^N`. Annihilation is therefore
+exactly `c ^ N = 1`.
 
-Formalization status: mathlib has neither Stickelberger's theorem nor
-the Gauss-sum factorization it rests on (`Mathlib.NumberTheory.
-GaussSum` and `JacobiSum` stop well short), so this is the honest
-citation boundary of the Herbrand leaf; the complementary half — that
-the resulting exponent `N` is prime to `p`, i.e. `p ∤ num(B₂)` — is
-PROVEN in `not_dvd_stickelberger_upperHalf_sum` above. -/
+In Lean the three steps are: rewrite every factor by `heig u⁻¹`
+(with `inv_inv`) into a power of `c`, collect the powers
+(`Finset.prod_pow_eq_pow_sum`), and evaluate the resulting exponent
+`∑_{u ∈ (ℤ/p)ˣ} u·⌊2u/p⌋` by the index conversion
+`sum_units_zmod_val_eq_sum_Ico` followed by the floor arithmetic
+`sum_Ico_mul_two_mul_div_eq`. `hp5` is consumed twice: to know
+`p ∤ 2` (so that the citation applies at `t = 2`) and to know `p` is
+odd and `≥ 3` (so that `⌊2a/p⌋ ∈ {0,1}` splits at `(p+1)/2`). The
+complementary half of Herbrand's theorem at `B₂` — that the resulting
+exponent `N` is prime to `p`, i.e. `p ∤ num(B₂)` — is PROVEN in
+`not_dvd_stickelberger_upperHalf_sum` above. -/
 theorem stickelberger_upperHalf_annihilates_omega_inv_eigenvector
     (hp5 : 5 ≤ p)
     (CF : Type) [Field CF] [NumberField CF]
@@ -14982,8 +15520,27 @@ theorem stickelberger_upperHalf_annihilates_omega_inv_eigenvector
     (heig : ∀ u : (ZMod p)ˣ,
       classGroupGalAut CF ((IsCyclotomicExtension.Rat.galEquivZMod p CF).symm u) c =
         c ^ ((u⁻¹ : (ZMod p)ˣ) : ZMod p).val) :
-    c ^ (∑ a ∈ Finset.Ico ((p + 1) / 2) p, a) = 1 :=
-  sorry
+    c ^ (∑ a ∈ Finset.Ico ((p + 1) / 2) p, a) = 1 := by
+  have hann := stickelberger_annihilates_classGroup (p := p) CF 2
+    (fun hdvd => absurd (Nat.le_of_dvd (by omega) hdvd) (by omega)) c
+  have hfac : ∀ u : (ZMod p)ˣ,
+      c ^ (((u : ZMod p).val) * (2 * ((u : ZMod p).val) / p)) =
+        (classGroupGalAut CF
+            ((IsCyclotomicExtension.Rat.galEquivZMod p CF).symm u⁻¹) c)
+          ^ (2 * ((u : ZMod p).val) / p) := by
+    intro u
+    rw [heig u⁻¹, inv_inv, ← pow_mul]
+  have hann2 : c ^ (∑ u : (ZMod p)ˣ,
+      ((u : ZMod p).val) * (2 * ((u : ZMod p).val) / p)) = 1 := by
+    rw [← Finset.prod_pow_eq_pow_sum]
+    exact (Finset.prod_congr rfl (fun u _ => hfac u)).trans hann
+  have hsum : (∑ u : (ZMod p)ˣ,
+      ((u : ZMod p).val) * (2 * ((u : ZMod p).val) / p)) =
+      ∑ a ∈ Finset.Ico ((p + 1) / 2) p, a :=
+    (sum_units_zmod_val_eq_sum_Ico (fun a => a * (2 * a / p))).trans
+      (sum_Ico_mul_two_mul_div_eq (hp.out.odd_of_ne_two (by omega)) (by omega))
+  rw [hsum] at hann2
+  exact hann2
 
 /-- **Herbrand's theorem at `B₂`: the `ω^{−1}`-eigenspace of
 `Cl(ℚ(μ_p)) ⊗ 𝔽_p` vanishes** (E3c support leaf (iii); sorry node —
