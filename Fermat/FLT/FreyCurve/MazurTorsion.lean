@@ -6362,50 +6362,13 @@ theorem WeierstrassCurve.mazur_torsion_bound (E : WeierstrassCurve ℚ) [E.IsEll
       Nat.card_prod, Nat.card_zmod, Nat.card_zmod] at hcard
     omega
 
-/-- The prime of `𝓞 ℚ` attached to the prime number `q` is the span of
-`q`: unfolding `toHeightOneSpectrumRingOfIntegersRat`, the ideal is the
-comap of `span {(q : ℤ)}` along `Rat.ringOfIntegersEquiv`, and a ring
-isomorphism carries spans of singletons to spans of singletons while
-preserving the naturals. -/
-lemma asIdeal_toHeightOneSpectrumRingOfIntegersRat {q : ℕ} (hq : q.Prime) :
-    hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal =
-      Ideal.span {(q : NumberField.RingOfIntegers ℚ)} := by
-  have h1 : hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal =
-      Ideal.comap (Rat.ringOfIntegersEquiv.symm.symm) (Ideal.span {(q : ℤ)}) := rfl
-  rw [h1, RingEquiv.symm_symm, ← Ideal.map_symm, Ideal.map_span, Set.image_singleton,
-    map_natCast]
-
-open IsDedekindDomain.HeightOneSpectrum in
-set_option maxHeartbeats 1000000 in
-/-- `q` is a uniformizer of the completed integer ring `ℤ_q`: the maximal
-ideal of `(ℤ_q)ˆ = 𝒪ᵥ` (for `v = v_q` the place of `ℚ` at `q`) is the
-span of `q`. Via `maximalIdeal_eq_span_uniformizer` it suffices that the
-valuation of `q` in `ℚ_q` is exactly `ofAdd (-1)`, which reduces through
-`valuedAdicCompletion_eq_valuation` and `valuation_of_algebraMap` to the
-`intValuation` of `q` in `𝓞 ℚ`, computed by `intValuation_singleton`
-from `v_q = span {q}`. -/
-lemma maximalIdeal_adicCompletionIntegers_eq_span {q : ℕ} (hq : q.Prime) :
-    IsLocalRing.maximalIdeal
-        (adicCompletionIntegers ℚ hq.toHeightOneSpectrumRingOfIntegersRat) =
-      Ideal.span
-        {(q : adicCompletionIntegers ℚ hq.toHeightOneSpectrumRingOfIntegersRat)} := by
-  have hq0 : ((q : NumberField.RingOfIntegers ℚ)) ≠ 0 :=
-    Nat.cast_ne_zero.mpr hq.ne_zero
-  have hval : hq.toHeightOneSpectrumRingOfIntegersRat.intValuation
-      ((q : NumberField.RingOfIntegers ℚ)) = Multiplicative.ofAdd (-1 : ℤ) :=
-    hq.toHeightOneSpectrumRingOfIntegersRat.intValuation_singleton hq0
-      (asIdeal_toHeightOneSpectrumRingOfIntegersRat hq)
-  apply adicCompletion.maximalIdeal_eq_span_uniformizer
-  -- the valuation of `q` in `ℚ_q`, assembled entirely in the mathlib
-  -- lemmas' own coercion spelling (avoiding any cross-spelling defeq)
-  have h := (valuedAdicCompletion_eq_valuation
-      (v := hq.toHeightOneSpectrumRingOfIntegersRat) (K := ℚ)
-      ((q : NumberField.RingOfIntegers ℚ))).trans
-    ((valuation_of_algebraMap
-      (v := hq.toHeightOneSpectrumRingOfIntegersRat) (K := ℚ)
-      ((q : NumberField.RingOfIntegers ℚ))).trans hval)
-  convert h using 2
-  norm_cast
+-- `asIdeal_toHeightOneSpectrumRingOfIntegersRat` and
+-- `maximalIdeal_adicCompletionIntegers_eq_span` were hoisted (2026-07-25)
+-- to `Fermat/FLT/Mathlib/RingTheory/DedekindDomain/Ideal/Lemmas.lean`,
+-- the shim where `toHeightOneSpectrumRingOfIntegersRat` itself is defined,
+-- so that `GroupScheme/ConnectedEtale.lean` — far UPSTREAM of this file —
+-- can use them instead of re-deriving them locally. The names and
+-- statements are unchanged, so use sites here and downstream are unaffected.
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **Minkowski surjectivity transport** (DERIVED 2026-07-16 from the
