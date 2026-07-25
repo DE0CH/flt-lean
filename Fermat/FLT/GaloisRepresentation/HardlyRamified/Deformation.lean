@@ -52,10 +52,17 @@ of their historical `Lift.lean` twins — `exists_conj_of_charFrob_eq` was
 PROVEN 2026-07-24 via the shared Chebotarev–Brauer–Nesbitt node of
 `BrauerNesbittConjugacy.lean`):
 `exists_isWeaklyUniversalOnIdentified`, `exists_isTraceGenerated_ringHom`,
-`finite_quotient_span_of_isWeaklyUniversal_isTraceGenerated`,
-`exists_minimal_mvPowerSeries_presentation`,
-`exists_relations_lt_of_minimal_mvPowerSeries_presentation`. Everything
-else is proven glue, culminating in
+`finite_quotient_span_of_isWeaklyUniversal_isTraceGenerated`, and — after
+the presentation-stratum decomposition of 2026-07-25, which turned the
+two former presentation leaves into proven assemblies — the four
+commutative-algebra strata of the minimal presentation
+`exists_coefficientRing_ringHom`,
+`exists_mvPowerSeries_ringHom_of_mem_maximalIdeal`,
+`surjective_of_mvPowerSeries_ringHom`,
+`ker_le_of_minimal_mvPowerSeries_ringHom` together with the arithmetic
+relation count
+`exists_relations_lt_le_smul_of_minimal_mvPowerSeries_presentation`.
+Everything else is proven glue, culminating in
 `exists_hardlyRamified_lift_of_five_le` — verbatim the statement of
 Khare–Wintenberger pillar α
 (`exists_hardlyRamified_lift_residual_of_five_le`).
@@ -94,6 +101,9 @@ import Mathlib.RingTheory.Ideal.KrullsHeightTheorem
 import Mathlib.RingTheory.PowerSeries.Ideal
 import Mathlib.RingTheory.PowerSeries.NoZeroDivisors
 import Mathlib.RingTheory.MvPowerSeries.NoZeroDivisors
+-- proof-only: Nakayama's lemma, the generation step of the Böckle
+-- relation-bound assembly.
+import Mathlib.RingTheory.Nakayama
 -- proof-only imports for the topology glue
 -- `isModuleTopology_of_isAdic_maximalIdeal`.
 import Mathlib.NumberTheory.Padics.ProperSpace
@@ -1194,147 +1204,6 @@ theorem moduleFinite_of_isUniversal (hℓ5 : 5 ≤ ℓ)
         rw [Algebra.smul_def, Algebra.smul_def, map_mul, he c] }
   exact Module.Finite.equiv elin
 
-/-- **Minimal-presentation leaf** (sorry node, pure commutative algebra
-— no arithmetic content; the structure-theoretic half of the
-presentation stratum): every Noetherian local `ℤ_ℓ`-algebra which is
-maximal-adically complete and separated and has finite residue field
-`k` (it maps ONTO `k`) admits a *minimal* presentation by a power
-series ring over a coefficient ring `Λ`: a compatible surjection
-`φ : Λ[[x₁,…,x_g]] ↠ R` whose kernel lies in `𝔪² + (ℓ)` — i.e. `φ`
-induces an isomorphism of mod-`ℓ` cotangent spaces
-`𝔪_S/(𝔪_S² + ℓ) ≅ 𝔪_R/(𝔪_R² + ℓ)`, so `g` is the mod-`ℓ` cotangent
-dimension of `R`.
-
-The coefficient ring `Λ` is classically the Witt vectors `W(k)` — for
-`k = ZMod ℓ` just `ℤ_ℓ` itself — and the clauses pin it up to
-isomorphism: a local domain, Noetherian, module-finite over `ℤ_ℓ`
-(hence complete), with maximal ideal `(ℓ)` (unramified over `ℤ_ℓ`); its
-residue field is then forced to be `k` by the surjection `φ` onto the
-local ring `R` with residue field `k`. (`k`-GENERALIZATION NOTE,
-2026-07-24: over `ZMod ℓ` this leaf fixed `Λ = ℤ_ℓ`; the abstract `Λ`
-is the correct base for a general finite residue field, since a
-quotient of `ℤ_ℓ[[x₁,…,x_g]]` has residue field `𝔽_ℓ`.)
-
-Proof sketch (de Smit–Lenstra, *Explicit construction of universal
-deformation rings*, Prop. 2.3; Matsumura §29): take `Λ = W(k)` (a
-complete unramified DVR with residue field `k`, free of rank `[k:𝔽_ℓ]`
-over `ℤ_ℓ`); `R` is a `Λ`-algebra by formal étaleness of `W(k)/ℤ_ℓ`;
-`𝔪_R/(𝔪_R² + ℓR)` is a finite-dimensional `k`-vector space
-(Noetherianness); send `xᵢ` to lifts `tᵢ ∈ 𝔪_R` of a basis — the
-substitution `xᵢ ↦ tᵢ` converges on all of `Λ[[x₁,…,x_g]]` because the
-`tᵢ` are topologically nilpotent and `R` is complete; the image is a
-closed subring containing `Λ + 𝔪_R`-generators, hence everything
-(completeness again: `𝔪_S`-adic density plus closedness); the kernel
-bound restates the choice of a *basis* (not merely a spanning set). -/
-theorem exists_minimal_mvPowerSeries_presentation {R : Type*} [CommRing R]
-    [IsLocalRing R] [Algebra ℤ_[ℓ] R] [IsNoetherianRing R]
-    [IsAdicComplete (IsLocalRing.maximalIdeal R) R]
-    (π : R →+* k) (hπsurj : Function.Surjective π) :
-    ∃ (Λ : Type u) (_ : CommRing Λ) (_ : IsDomain Λ) (_ : IsLocalRing Λ)
-      (_ : IsNoetherianRing Λ) (_ : Algebra ℤ_[ℓ] Λ)
-      (_ : Module.Finite ℤ_[ℓ] Λ),
-      IsLocalRing.maximalIdeal Λ = Ideal.span {(ℓ : Λ)} ∧
-      ∃ (g : ℕ) (φ : MvPowerSeries (Fin g) Λ →+* R),
-        Function.Surjective φ ∧
-        φ.comp (algebraMap ℤ_[ℓ] (MvPowerSeries (Fin g) Λ)) =
-          algebraMap ℤ_[ℓ] R ∧
-        RingHom.ker φ ≤
-          IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) ^ 2 ⊔
-            Ideal.span {(ℓ : MvPowerSeries (Fin g) Λ)} :=
-  sorry
-
-/-- **Böckle relation-bound leaf** (sorry node — the arithmetic core of
-the presentation stratum): for EVERY minimal presentation
-`φ : Λ[[x₁,…,x_g]] ↠ D.R` of the weakly universal, trace-generated
-hardly ramified deformation ring, over ANY unramified coefficient ring
-`Λ` (the clauses — local Noetherian domain, module-finite over `ℤ_ℓ`,
-maximal ideal `(ℓ)` — pin `Λ ≅ W(k)`: the surjection `φ` onto the local
-ring `D.R` with residue field `k` forces the residue field of `Λ`;
-minimal: `ker φ ⊆ 𝔪² + (ℓ)`, so that `g` is the mod-`ℓ` tangent
-dimension `dim H¹_{HR}(G_{ℚ,S}, ad ρbar)` of the deformation functor),
-the kernel is generated by *strictly fewer than `g`* power series.
-
-Mathematical content (Böckle; Khare–Wintenberger §4): obstruction
-theory embeds the dual of the minimal relation space
-`ker φ/(𝔪_S · ker φ)` into `H²_{HR}(G_{ℚ,S}, ad ρbar)`, so `ker φ` is
-generated by `r ≤ dim H²` elements (Nakayama picks the generators); the
-global Euler characteristic formula and Poitou–Tate duality, with the
-balanced local conditions at `ℓ` (flat), `2` (tame quadratic) and `∞`
-(`ρbar` is odd, so `dim H⁰(ℝ, ad) = 2`), give
-`dim H¹ − dim H² ≥ 1`, i.e. `r < g`. The kernel is stated as the
-*span* of the `fᵢ` (not its closure): finitely generated ideals of the
-Noetherian complete local ring `Λ[[x₁,…,x_g]]` are closed. As with
-the finiteness leaf, the hypotheses pin `D` down up to canonical
-isomorphism, so a future proof may construct its own universal datum
-and transport along `exists_ringEquiv_of_isUniversal` (minimality of a
-presentation is preserved by composition with a `ℤ_ℓ`-algebra
-isomorphism).
-
-References: Böckle, *Presentations of universal deformation rings*
-(and his appendix to Khare's Serre-conjecture notes);
-Khare–Wintenberger, *Serre's modularity conjecture (I)*, §4;
-Mazur, *Deforming Galois representations*, §1.6–1.7. -/
-theorem exists_relations_lt_of_minimal_mvPowerSeries_presentation
-    (hℓ5 : 5 ≤ ℓ)
-    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
-    (hirr : ρbar.IsIrreducible)
-    (D : HardlyRamifiedDeformation hℓOdd ρbar)
-    (hw : D.IsWeaklyUniversal) (ht : D.IsTraceGenerated) :
-    letI := D.commRing; letI := D.algebra
-    ∀ (Λ : Type u) (_ : CommRing Λ) (_ : IsDomain Λ) (_ : IsLocalRing Λ)
-      (_ : IsNoetherianRing Λ) (_ : Algebra ℤ_[ℓ] Λ)
-      (_ : Module.Finite ℤ_[ℓ] Λ),
-      IsLocalRing.maximalIdeal Λ = Ideal.span {(ℓ : Λ)} →
-      ∀ (g : ℕ) (φ : MvPowerSeries (Fin g) Λ →+* D.R),
-        Function.Surjective φ →
-        φ.comp (algebraMap ℤ_[ℓ] (MvPowerSeries (Fin g) Λ)) =
-          algebraMap ℤ_[ℓ] D.R →
-        RingHom.ker φ ≤
-          IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) ^ 2 ⊔
-            Ideal.span {(ℓ : MvPowerSeries (Fin g) Λ)} →
-        ∃ (r : ℕ) (f : Fin r → MvPowerSeries (Fin g) Λ),
-          r < g ∧ RingHom.ker φ = Ideal.span (Set.range f) :=
-  sorry
-
-/-- **Böckle presentation leaf** (DECOMPOSED 2026-07-23 into the
-minimal-presentation leaf `exists_minimal_mvPowerSeries_presentation` —
-pure commutative algebra: every complete Noetherian local `ℤ_ℓ`-algebra
-with finite residue field `k` is minimally presented by a power series
-ring over the unramified coefficient ring `Λ ≅ W(k)` — and the Böckle
-relation-bound leaf
-`exists_relations_lt_of_minimal_mvPowerSeries_presentation` — the
-Galois-cohomological count `r < g` for minimal presentations; the
-assembly below is proven): the weakly universal, trace-generated hardly
-ramified deformation ring admits a presentation
-`D.R ≅ Λ[[x₁,…,x_g]]/(f₁,…,f_r)` with strictly fewer relations than
-generators, `r < g`, compatibly with the `ℤ_ℓ`-structures, over a local
-Noetherian domain `Λ` module-finite over `ℤ_ℓ`. -/
-theorem exists_mvPowerSeries_presentation_of_isWeaklyUniversal_isTraceGenerated
-    (hℓ5 : 5 ≤ ℓ)
-    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
-    (hirr : ρbar.IsIrreducible)
-    (D : HardlyRamifiedDeformation hℓOdd ρbar)
-    (hw : D.IsWeaklyUniversal) (ht : D.IsTraceGenerated) :
-    letI := D.commRing; letI := D.algebra
-    ∃ (Λ : Type u) (_ : CommRing Λ) (_ : IsDomain Λ) (_ : IsLocalRing Λ)
-      (_ : IsNoetherianRing Λ) (_ : Algebra ℤ_[ℓ] Λ)
-      (_ : Module.Finite ℤ_[ℓ] Λ)
-      (g r : ℕ) (φ : MvPowerSeries (Fin g) Λ →+* D.R)
-      (f : Fin r → MvPowerSeries (Fin g) Λ),
-      r < g ∧ Function.Surjective φ ∧
-      φ.comp (algebraMap ℤ_[ℓ] (MvPowerSeries (Fin g) Λ)) =
-        algebraMap ℤ_[ℓ] D.R ∧
-      RingHom.ker φ = Ideal.span (Set.range f) := by
-  letI := D.commRing; letI := D.isLocalRing; letI := D.algebra
-  haveI := D.isNoetherianRing
-  haveI := D.isAdicComplete
-  obtain ⟨Λ, iΛ1, iΛ2, iΛ3, iΛ4, iΛ5, iΛ6, hΛℓ, g, φ, hφs, hφc, hφmin⟩ :=
-    exists_minimal_mvPowerSeries_presentation (ℓ := ℓ) D.π D.π_surjective
-  obtain ⟨r, f, hrg, hker⟩ :=
-    exists_relations_lt_of_minimal_mvPowerSeries_presentation hℓOdd hdim hℓ5
-      h hirr D hw ht Λ iΛ1 iΛ2 iΛ3 iΛ4 iΛ5 iΛ6 hΛℓ g φ hφs hφc hφmin
-  exact ⟨Λ, iΛ1, iΛ2, iΛ3, iΛ4, iΛ5, iΛ6, g, r, φ, f, hrg, hφs, hφc, hker⟩
-
 /-- Auxiliary for the variable-splitting isomorphism: `Finsupp.tail` is
 additive. -/
 lemma finsupp_tail_add {n : ℕ} (p q : Fin (n + 1) →₀ ℕ) :
@@ -1435,7 +1304,11 @@ along `Finsupp.cons`/`Finsupp.tail` (split off the exponent of `x₀`),
 multiplicativity being the Cauchy-product rearrangement of the
 convolution over split monomials (`sum_antidiagonal_cons`). Stated over
 an arbitrary commutative base ring: both consumers below induct with a
-changing base. -/
+changing base. (MOVED 2026-07-25 above the presentation stratum: the
+Böckle relation-bound assembly needs `isNoetherianRing_mvPowerSeries`,
+and so does the sibling leaf `isNoetherianRing_of_mvPowerSeries_presentation`
+of `Modularity/Patching.lean`, whose docstring asks for exactly this
+move.) -/
 theorem nonempty_ringEquiv_mvPowerSeries_powerSeries {R : Type*}
     [CommRing R] (n : ℕ) :
     Nonempty (MvPowerSeries (Fin (n + 1)) R ≃+*
@@ -1494,6 +1367,451 @@ theorem isNoetherianRing_mvPowerSeries {R : Type*} [CommRing R]
     obtain ⟨e⟩ := nonempty_ringEquiv_mvPowerSeries_powerSeries (R := R) n
     haveI := ih
     exact isNoetherianRing_of_ringEquiv _ e.symm
+
+/-- **Minimal generating family of `𝔪` modulo an ideal** (PROVEN
+2026-07-25 — pure commutative algebra; the Lean-friendly substitute for
+"choose a BASIS of the finite-dimensional cotangent space"): in a
+Noetherian local ring, for every ideal `J ≤ 𝔪` there is a family
+`t : Fin g → 𝔪` with `𝔪 = (t) ⊔ J` whose length `g` is MINIMAL among all
+such families.
+
+Proven by well-ordering: Noetherianness makes `𝔪` finitely generated
+(`Submodule.fg_iff_exists_fin_generating_family`), so some `n` admits
+such a family — `𝔪 = 𝔪 ⊔ J` because `J ≤ 𝔪` — and `Nat.find` picks the
+least one.
+
+At `J = 𝔪² ⊔ (ℓ)` the conclusion is exactly the de Smit–Lenstra choice
+of a basis of the mod-`ℓ` cotangent space `𝔪/(𝔪² + ℓ)`: minimality of
+the CARDINALITY replaces linear independence, and is the form the
+kernel bound `ker_le_of_minimal_mvPowerSeries_ringHom` consumes — a
+relation with a unit coefficient would let one member of the family be
+dropped, producing a shorter family and contradicting minimality. The
+cardinality formulation avoids having to build the residue-field
+vector-space structure on the cotangent quotient. -/
+theorem exists_minimal_span_sup_of_isNoetherianRing {R : Type*} [CommRing R]
+    [IsLocalRing R] [IsNoetherianRing R] (J : Ideal R)
+    (hJ : J ≤ IsLocalRing.maximalIdeal R) :
+    ∃ (g : ℕ) (t : Fin g → R), (∀ i, t i ∈ IsLocalRing.maximalIdeal R) ∧
+      IsLocalRing.maximalIdeal R = Ideal.span (Set.range t) ⊔ J ∧
+      ∀ (n : ℕ) (s : Fin n → R), (∀ i, s i ∈ IsLocalRing.maximalIdeal R) →
+        IsLocalRing.maximalIdeal R = Ideal.span (Set.range s) ⊔ J → g ≤ n := by
+  classical
+  have hex : ∃ n : ℕ, ∃ s : Fin n → R,
+      (∀ i, s i ∈ IsLocalRing.maximalIdeal R) ∧
+      IsLocalRing.maximalIdeal R = Ideal.span (Set.range s) ⊔ J := by
+    obtain ⟨n, s, hs⟩ := Submodule.fg_iff_exists_fin_generating_family.mp
+      (IsNoetherian.noetherian (IsLocalRing.maximalIdeal R))
+    refine ⟨n, s, fun i => ?_, ?_⟩
+    · rw [← hs]; exact Ideal.subset_span ⟨i, rfl⟩
+    · rw [show Ideal.span (Set.range s) = IsLocalRing.maximalIdeal R from hs]
+      exact (sup_eq_left.mpr hJ).symm
+  obtain ⟨t, ht, hspan⟩ := Nat.find_spec hex
+  exact ⟨Nat.find hex, t, ht, hspan,
+    fun n s hs hspans => Nat.find_le ⟨s, hs, hspans⟩⟩
+
+/-- **Cohen coefficient-ring leaf** (sorry node — pure commutative
+algebra, the first of the four strata into which the minimal
+presentation of `exists_minimal_mvPowerSeries_presentation` was
+DECOMPOSED 2026-07-25): a complete Noetherian local `ℤ_ℓ`-algebra `R`
+with residue field `k` (it maps ONTO `k`) receives a compatible
+COEFFICIENT RING `Λ` — an unramified complete local domain,
+module-finite over `ℤ_ℓ`, with maximal ideal `(ℓ)`, mapping to `R` by a
+`ℤ_ℓ`-algebra map `ι` that is onto the residue field.
+
+Classically `Λ = W(k)`, the Witt vectors of the finite field `k` (just
+`ℤ_ℓ` when `k = 𝔽_ℓ`), and the clauses pin `Λ` up to isomorphism. Two
+distinct pieces of content: (a) `W(k)` itself — mathlib has
+`WittVector p k`, its `IsDiscreteValuationRing` instance and
+`WittVector.equiv : 𝕎 (ZMod p) ≃+* ℤ_[p]`, so `Algebra ℤ_[ℓ] (𝕎 k)` is
+assembled from `WittVector.map` applied to `ZMod ℓ →+* k`; what is NOT
+in the pin is `Module.Finite ℤ_[ℓ] (𝕎 k)` (freeness of rank `[k : 𝔽_ℓ]`)
+and `maximalIdeal (𝕎 k) = (ℓ)` (read off `WittVector.irreducible` in
+the DVR); (b) the lift `ι : Λ →+* R`, which is the coefficient-ring
+half of the COHEN STRUCTURE THEOREM: `W(k)/ℤ_ℓ` is formally étale, so
+the residue map `R ↠ k` lifts uniquely through the `ℓ`-adically
+complete `R` — concretely by Teichmüller representatives, using
+`IsAdicComplete` to sum the lifting series.
+
+References: de Smit–Lenstra, *Explicit construction of universal
+deformation rings*, Prop. 2.3 (App. to Cornell–Silverman–Stevens);
+Matsumura, *Commutative Ring Theory*, §29 (Cohen structure theorem);
+Serre, *Local Fields*, II §5 (Witt vectors as the unramified complete
+DVR with residue field `k`). -/
+theorem exists_coefficientRing_ringHom {R : Type*} [CommRing R]
+    [IsLocalRing R] [Algebra ℤ_[ℓ] R] [IsNoetherianRing R]
+    [IsAdicComplete (IsLocalRing.maximalIdeal R) R]
+    (π : R →+* k) (hπsurj : Function.Surjective π) :
+    ∃ (Λ : Type u) (_ : CommRing Λ) (_ : IsDomain Λ) (_ : IsLocalRing Λ)
+      (_ : IsNoetherianRing Λ) (_ : Algebra ℤ_[ℓ] Λ)
+      (_ : Module.Finite ℤ_[ℓ] Λ),
+      IsLocalRing.maximalIdeal Λ = Ideal.span {(ℓ : Λ)} ∧
+      ∃ ι : Λ →+* R,
+        ι.comp (algebraMap ℤ_[ℓ] Λ) = algebraMap ℤ_[ℓ] R ∧
+        Function.Surjective (π.comp ι) :=
+  sorry
+
+/-- **Convergent-substitution leaf** (sorry node — pure commutative
+algebra, the second stratum of the 2026-07-25 decomposition of
+`exists_minimal_mvPowerSeries_presentation`): substituting
+topologically nilpotent elements into a power series converges in a
+complete local ring. Given a coefficient map `ι : Λ →+* R` into a local
+ring that is `𝔪`-adically complete and separated, and elements
+`t₁, …, t_g ∈ 𝔪_R`, there is a ring homomorphism
+`φ : Λ[[x₁, …, x_g]] →+* R` with `φ ∘ C = ι` and `φ xᵢ = tᵢ`.
+
+The map is the evaluation `f ↦ ∑_m ι(coeff m f) · t^m`: each monomial
+of total degree `d` lands in `𝔪_R^d`, so the partial sums over
+`{m : |m| < d}` form a Cauchy sequence for the `𝔪_R`-adic filtration,
+`IsPrecomplete` supplies the limit and `IsHausdorff` its uniqueness —
+whence additivity and multiplicativity by passing to the limit in the
+finite truncations (the Cauchy product is a finite sum in each degree).
+
+Mathlib route worth trying before proving this by hand:
+`MvPowerSeries.eval₂` / `MvPowerSeries.substAlgHom`
+(`Mathlib/RingTheory/MvPowerSeries/Evaluation.lean`,
+`…/Substitution.lean`) already build exactly this map, but for a
+TOPOLOGICALLY stated hypothesis (`HasEval`, over a complete Hausdorff
+uniform ring). The bridge is
+`IsAdic.isAdicComplete_iff : IsAdicComplete I R ↔ CompleteSpace R ∧ T2Space R`
+in `Mathlib/RingTheory/AdicCompletion/Topology.lean`, applied to the
+`𝔪_R`-adic topology `Ideal.adicTopology`; the module already installs
+adic topologies (`t2Space_of_isAdic`,
+`isModuleTopology_of_isAdic_maximalIdeal`). -/
+theorem exists_mvPowerSeries_ringHom_of_mem_maximalIdeal {R : Type*}
+    [CommRing R] [IsLocalRing R]
+    [IsAdicComplete (IsLocalRing.maximalIdeal R) R]
+    {Λ : Type*} [CommRing Λ] (ι : Λ →+* R) {g : ℕ} (t : Fin g → R)
+    (ht : ∀ i, t i ∈ IsLocalRing.maximalIdeal R) :
+    ∃ φ : MvPowerSeries (Fin g) Λ →+* R,
+      φ.comp (MvPowerSeries.C : Λ →+* MvPowerSeries (Fin g) Λ) = ι ∧
+      ∀ i, φ (MvPowerSeries.X i) = t i :=
+  sorry
+
+/-- **Surjectivity leaf of the de Smit–Lenstra presentation** (sorry
+node — pure commutative algebra, the third stratum of the 2026-07-25
+decomposition of `exists_minimal_mvPowerSeries_presentation`): the
+substitution map `φ : Λ[[x₁, …, x_g]] → R` of
+`exists_mvPowerSeries_ringHom_of_mem_maximalIdeal` is SURJECTIVE as
+soon as `Λ` covers the residue field (`π ∘ ι` onto) and the `tᵢ`
+generate `𝔪_R` modulo `𝔪_R² + ℓR`.
+
+Proof (successive approximation): let `A` be the image of `φ`, a
+subring containing `ι(Λ)` and every `tᵢ`. Residue surjectivity gives
+`R = ι(Λ) + 𝔪_R`; the spanning hypothesis plus `ℓ = ι(ℓ) ∈ A` and
+`𝔪_Λ = (ℓ)` give `𝔪_R ⊆ A·𝔪_R + 𝔪_R²`, so by induction
+`R = A + 𝔪_R^n` for every `n`. For `r ∈ R` this produces a sequence
+`a_n ∈ A` with `r − a_n ∈ 𝔪_R^n` and `a_{n+1} − a_n ∈ 𝔪_R^n`; lifting
+the increments through `φ` and summing them in the COMPLETE power
+series ring `Λ[[x₁, …, x_g]]` (the increments lie in `𝔪_S^n`, so the
+sum converges coefficientwise) gives a preimage of `r` — `IsHausdorff`
+turning "agrees modulo every `𝔪_R^n`" into equality. Classically
+phrased: the image of a complete ring is closed, and it is dense by the
+generation hypothesis. -/
+theorem surjective_of_mvPowerSeries_ringHom {R : Type*} [CommRing R]
+    [IsLocalRing R] [IsNoetherianRing R]
+    [IsAdicComplete (IsLocalRing.maximalIdeal R) R]
+    {Λ : Type*} [CommRing Λ] [IsLocalRing Λ]
+    (hΛℓ : IsLocalRing.maximalIdeal Λ = Ideal.span {(ℓ : Λ)})
+    (π : R →+* k) (ι : Λ →+* R) (hι : Function.Surjective (π.comp ι))
+    {g : ℕ} (t : Fin g → R)
+    (hspan : IsLocalRing.maximalIdeal R = Ideal.span (Set.range t) ⊔
+      (IsLocalRing.maximalIdeal R ^ 2 ⊔ Ideal.span {(ℓ : R)}))
+    (φ : MvPowerSeries (Fin g) Λ →+* R)
+    (hφC : φ.comp (MvPowerSeries.C : Λ →+* MvPowerSeries (Fin g) Λ) = ι)
+    (hφX : ∀ i, φ (MvPowerSeries.X i) = t i) :
+    Function.Surjective φ :=
+  sorry
+
+/-- **Minimality (kernel-bound) leaf of the de Smit–Lenstra
+presentation** (sorry node — pure commutative algebra, the fourth
+stratum of the 2026-07-25 decomposition of
+`exists_minimal_mvPowerSeries_presentation`): when the `tᵢ` are a
+MINIMAL family generating `𝔪_R` modulo `𝔪_R² + ℓR` — the length `g` is
+least among all such families, as produced by
+`exists_minimal_span_sup_of_isNoetherianRing` — the substitution map
+`φ` has `ker φ ≤ 𝔪_S² + (ℓ)`, i.e. `φ` is an isomorphism on mod-`ℓ`
+cotangent spaces and the presentation is minimal.
+
+Proof: `𝔪_Λ = (ℓ)` makes `𝔪_S = (ℓ, x₁, …, x_g)`, so
+`𝔪_S² + (ℓ) = (ℓ) + (xᵢxⱼ)` and every `f ∈ S` decomposes as
+`f = C c + ∑ᵢ C aᵢ · xᵢ + h` with `h ∈ 𝔪_S²` — the power-series
+ingredient being that a series with vanishing constant term is
+`∑ᵢ xᵢ gᵢ` (split each monomial off its least variable of positive
+exponent), applied twice. Now let `f ∈ ker φ` and suppose
+`f ∉ 𝔪_S² + (ℓ)`; then some `aⱼ` is a unit of `Λ` (all `aᵢ ∈ (ℓ)` and
+`c ∈ (ℓ)` would put `f` back inside). Applying `φ` gives
+`ι(c) + ∑ᵢ ι(aᵢ) tᵢ ∈ 𝔪_R²`, and `ι(c) ∈ 𝔪_R² + ℓR` since `c ∈ 𝔪_Λ` is
+forced by `φ(f) = 0` and `tᵢ ∈ 𝔪_R`; multiplying by `ι(aⱼ)⁻¹` exhibits
+`tⱼ ∈ span {tᵢ : i ≠ j} ⊔ (𝔪_R² ⊔ ℓR)`. Hence the family with `tⱼ`
+deleted still generates `𝔪_R` modulo `𝔪_R² + ℓR`, contradicting
+minimality of `g` (`hmin` applied at `g − 1`). -/
+theorem ker_le_of_minimal_mvPowerSeries_ringHom {R : Type*} [CommRing R]
+    [IsLocalRing R] [IsNoetherianRing R] {Λ : Type*} [CommRing Λ]
+    [IsLocalRing Λ]
+    (hΛℓ : IsLocalRing.maximalIdeal Λ = Ideal.span {(ℓ : Λ)})
+    (ι : Λ →+* R) {g : ℕ} (t : Fin g → R)
+    (ht : ∀ i, t i ∈ IsLocalRing.maximalIdeal R)
+    (hspan : IsLocalRing.maximalIdeal R = Ideal.span (Set.range t) ⊔
+      (IsLocalRing.maximalIdeal R ^ 2 ⊔ Ideal.span {(ℓ : R)}))
+    (hmin : ∀ (n : ℕ) (s : Fin n → R),
+      (∀ i, s i ∈ IsLocalRing.maximalIdeal R) →
+      IsLocalRing.maximalIdeal R = Ideal.span (Set.range s) ⊔
+        (IsLocalRing.maximalIdeal R ^ 2 ⊔ Ideal.span {(ℓ : R)}) → g ≤ n)
+    (φ : MvPowerSeries (Fin g) Λ →+* R) (hφsurj : Function.Surjective φ)
+    (hφC : φ.comp (MvPowerSeries.C : Λ →+* MvPowerSeries (Fin g) Λ) = ι)
+    (hφX : ∀ i, φ (MvPowerSeries.X i) = t i) :
+    RingHom.ker φ ≤
+      IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) ^ 2 ⊔
+        Ideal.span {(ℓ : MvPowerSeries (Fin g) Λ)} :=
+  sorry
+
+/-- **Minimal-presentation stratum** (DECOMPOSED 2026-07-25 into the
+four commutative-algebra leaves `exists_coefficientRing_ringHom`
+(Cohen/Witt coefficient ring),
+`exists_mvPowerSeries_ringHom_of_mem_maximalIdeal` (convergent
+substitution), `surjective_of_mvPowerSeries_ringHom` (successive
+approximation) and `ker_le_of_minimal_mvPowerSeries_ringHom`
+(minimality), over the PROVEN choice of a minimal generating family
+`exists_minimal_span_sup_of_isNoetherianRing`; the assembly below is
+proven): every Noetherian local `ℤ_ℓ`-algebra which is
+maximal-adically complete and separated and has finite residue field
+`k` (it maps ONTO `k`) admits a *minimal* presentation by a power
+series ring over a coefficient ring `Λ`: a compatible surjection
+`φ : Λ[[x₁,…,x_g]] ↠ R` whose kernel lies in `𝔪² + (ℓ)` — i.e. `φ`
+induces an isomorphism of mod-`ℓ` cotangent spaces
+`𝔪_S/(𝔪_S² + ℓ) ≅ 𝔪_R/(𝔪_R² + ℓ)`, so `g` is the mod-`ℓ` cotangent
+dimension of `R`.
+
+The coefficient ring `Λ` is classically the Witt vectors `W(k)` — for
+`k = ZMod ℓ` just `ℤ_ℓ` itself — and the clauses pin it up to
+isomorphism: a local domain, Noetherian, module-finite over `ℤ_ℓ`
+(hence complete), with maximal ideal `(ℓ)` (unramified over `ℤ_ℓ`); its
+residue field is then forced to be `k` by the surjection `φ` onto the
+local ring `R` with residue field `k`. (`k`-GENERALIZATION NOTE,
+2026-07-24: over `ZMod ℓ` this leaf fixed `Λ = ℤ_ℓ`; the abstract `Λ`
+is the correct base for a general finite residue field, since a
+quotient of `ℤ_ℓ[[x₁,…,x_g]]` has residue field `𝔽_ℓ`.)
+
+The assembly proven here is the de Smit–Lenstra skeleton (*Explicit
+construction of universal deformation rings*, Prop. 2.3; Matsumura
+§29): the surjection `π : R ↠ k` onto a field has `ker π = 𝔪_R`
+(`IsLocalRing.ker_eq_maximalIdeal`), so `ℓ ∈ 𝔪_R` because `k` has
+characteristic `ℓ` (`natCast_self_eq_zero`) and therefore
+`J := 𝔪_R² + ℓR` is a proper ideal; a MINIMAL family `t₁, …, t_g ∈ 𝔪_R`
+generating `𝔪_R` modulo `J` exists by Noetherianness
+(`exists_minimal_span_sup_of_isNoetherianRing`) — this is the
+"finite-dimensional mod-`ℓ` cotangent space, choose a basis" step; the
+coefficient-ring leaf supplies `Λ = W(k)` and the formally étale lift
+`ι` (`R` becomes a `Λ`-algebra); the substitution leaf turns
+`xᵢ ↦ tᵢ` into `φ` — convergent because the `tᵢ` are topologically
+nilpotent and `R` is complete — whose `ℤ_ℓ`-compatibility is
+`φ ∘ C = ι` composed with `ι ∘ algebraMap = algebraMap`
+(`MvPowerSeries.algebraMap_apply`); and the last two leaves are its
+surjectivity (the image is a closed subring, dense by the generation
+hypothesis) and its kernel bound (which restates the choice of a
+*minimal* family, not merely a spanning one). -/
+theorem exists_minimal_mvPowerSeries_presentation {R : Type*} [CommRing R]
+    [IsLocalRing R] [Algebra ℤ_[ℓ] R] [IsNoetherianRing R]
+    [IsAdicComplete (IsLocalRing.maximalIdeal R) R]
+    (π : R →+* k) (hπsurj : Function.Surjective π) :
+    ∃ (Λ : Type u) (_ : CommRing Λ) (_ : IsDomain Λ) (_ : IsLocalRing Λ)
+      (_ : IsNoetherianRing Λ) (_ : Algebra ℤ_[ℓ] Λ)
+      (_ : Module.Finite ℤ_[ℓ] Λ),
+      IsLocalRing.maximalIdeal Λ = Ideal.span {(ℓ : Λ)} ∧
+      ∃ (g : ℕ) (φ : MvPowerSeries (Fin g) Λ →+* R),
+        Function.Surjective φ ∧
+        φ.comp (algebraMap ℤ_[ℓ] (MvPowerSeries (Fin g) Λ)) =
+          algebraMap ℤ_[ℓ] R ∧
+        RingHom.ker φ ≤
+          IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) ^ 2 ⊔
+            Ideal.span {(ℓ : MvPowerSeries (Fin g) Λ)} := by
+  -- `ker π = 𝔪_R`, so `ℓ ∈ 𝔪_R` and the mod-`ℓ` cotangent ideal is proper
+  have hkerπ : RingHom.ker π = IsLocalRing.maximalIdeal R :=
+    IsLocalRing.ker_eq_maximalIdeal π hπsurj
+  have hℓmem : (ℓ : R) ∈ IsLocalRing.maximalIdeal R := by
+    rw [← hkerπ, RingHom.mem_ker, map_natCast]
+    exact natCast_self_eq_zero
+  have hJ : (IsLocalRing.maximalIdeal R ^ 2 ⊔ Ideal.span {(ℓ : R)}) ≤
+      IsLocalRing.maximalIdeal R :=
+    sup_le (Ideal.pow_le_self two_ne_zero)
+      (Ideal.span_le.mpr (Set.singleton_subset_iff.mpr hℓmem))
+  -- a minimal family generating `𝔪_R` modulo `𝔪_R² + ℓR`
+  obtain ⟨g, t, ht, hspan, hmin⟩ :=
+    exists_minimal_span_sup_of_isNoetherianRing _ hJ
+  -- the coefficient ring and the substitution map
+  obtain ⟨Λ, iCR, iDom, iLoc, iNoeth, iAlg, iFin, hΛℓ, ι, hιcomp, hιsurj⟩ :=
+    exists_coefficientRing_ringHom (ℓ := ℓ) (k := k) π hπsurj
+  letI := iCR; letI := iDom; letI := iLoc; letI := iNoeth; letI := iAlg
+  letI := iFin
+  obtain ⟨φ, hφC, hφX⟩ :=
+    exists_mvPowerSeries_ringHom_of_mem_maximalIdeal ι t ht
+  have hφsurj : Function.Surjective φ :=
+    surjective_of_mvPowerSeries_ringHom hΛℓ π ι hιsurj t hspan φ hφC hφX
+  refine ⟨Λ, iCR, iDom, iLoc, iNoeth, iAlg, iFin, hΛℓ, g, φ, hφsurj, ?_,
+    ker_le_of_minimal_mvPowerSeries_ringHom hΛℓ ι t ht hspan hmin φ hφsurj
+      hφC hφX⟩
+  -- `ℤ_ℓ`-compatibility: `algebraMap` into `Λ[[x]]` is `C ∘ algebraMap`
+  refine RingHom.ext fun r => ?_
+  rw [RingHom.comp_apply, MvPowerSeries.algebraMap_apply,
+    show φ ((MvPowerSeries.C : Λ →+* MvPowerSeries (Fin g) Λ)
+        (algebraMap ℤ_[ℓ] Λ r)) = ι (algebraMap ℤ_[ℓ] Λ r) from
+      RingHom.congr_fun hφC _,
+    ← RingHom.comp_apply, hιcomp]
+
+/-- **Böckle relation-count leaf** (sorry node — the arithmetic core of
+the presentation stratum, isolated 2026-07-25 by peeling off the
+Nakayama step): for EVERY minimal presentation
+`φ : Λ[[x₁,…,x_g]] ↠ D.R` of the weakly universal, trace-generated
+hardly ramified deformation ring, over ANY unramified coefficient ring
+`Λ` (the clauses — local Noetherian domain, module-finite over `ℤ_ℓ`,
+maximal ideal `(ℓ)` — pin `Λ ≅ W(k)`: the surjection `φ` onto the local
+ring `D.R` with residue field `k` forces the residue field of `Λ`;
+minimal: `ker φ ⊆ 𝔪² + (ℓ)`, so that `g` is the mod-`ℓ` tangent
+dimension `dim H¹_{HR}(G_{ℚ,S}, ad ρbar)` of the deformation functor),
+the kernel is generated by *strictly fewer than `g`* power series
+MODULO `𝔪_S · ker φ`.
+
+This is exactly what obstruction theory delivers, and nothing more
+(Böckle; Khare–Wintenberger §4): the minimal relation space is the
+`k`-vector space `ker φ/(𝔪_S · ker φ)`, whose dual embeds into
+`H²_{HR}(G_{ℚ,S}, ad ρbar)`, so `r ≤ dim H²` elements of `ker φ` span
+it modulo `𝔪_S · ker φ`; the global Euler characteristic formula and
+Poitou–Tate duality, with the balanced local conditions at `ℓ` (flat),
+`2` (tame quadratic) and `∞` (`ρbar` is odd, so `dim H⁰(ℝ, ad) = 2`),
+give `dim H¹ − dim H² ≥ 1`, and minimality of the presentation
+identifies `g = dim H¹`, whence `r < g`. The passage from "spans
+modulo `𝔪_S · ker φ`" to "generates" is Nakayama's lemma, PROVEN in the
+assembly `exists_relations_lt_of_minimal_mvPowerSeries_presentation`
+below, so no completeness or closedness argument is needed here.
+
+As with the finiteness leaf, the hypotheses pin `D` down up to
+canonical isomorphism, so a future proof may construct its own
+universal datum and transport along `exists_ringEquiv_of_isUniversal`
+(minimality of a presentation is preserved by composition with a
+`ℤ_ℓ`-algebra isomorphism).
+
+References: Böckle, *Presentations of universal deformation rings*
+(and his appendix to Khare's Serre-conjecture notes);
+Khare–Wintenberger, *Serre's modularity conjecture (I)*, §4;
+Mazur, *Deforming Galois representations*, §1.6–1.7. -/
+theorem exists_relations_lt_le_smul_of_minimal_mvPowerSeries_presentation
+    (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (D : HardlyRamifiedDeformation hℓOdd ρbar)
+    (hw : D.IsWeaklyUniversal) (ht : D.IsTraceGenerated) :
+    letI := D.commRing; letI := D.algebra
+    ∀ (Λ : Type u) (_ : CommRing Λ) (_ : IsDomain Λ) (_ : IsLocalRing Λ)
+      (_ : IsNoetherianRing Λ) (_ : Algebra ℤ_[ℓ] Λ)
+      (_ : Module.Finite ℤ_[ℓ] Λ),
+      IsLocalRing.maximalIdeal Λ = Ideal.span {(ℓ : Λ)} →
+      ∀ (g : ℕ) (φ : MvPowerSeries (Fin g) Λ →+* D.R),
+        Function.Surjective φ →
+        φ.comp (algebraMap ℤ_[ℓ] (MvPowerSeries (Fin g) Λ)) =
+          algebraMap ℤ_[ℓ] D.R →
+        RingHom.ker φ ≤
+          IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) ^ 2 ⊔
+            Ideal.span {(ℓ : MvPowerSeries (Fin g) Λ)} →
+        ∃ (r : ℕ) (f : Fin r → MvPowerSeries (Fin g) Λ),
+          r < g ∧ (∀ i, f i ∈ RingHom.ker φ) ∧
+          RingHom.ker φ ≤ Ideal.span (Set.range f) ⊔
+            IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) •
+              RingHom.ker φ :=
+  sorry
+
+/-- **Böckle relation-bound stratum** (DECOMPOSED 2026-07-25 into the
+arithmetic leaf
+`exists_relations_lt_le_smul_of_minimal_mvPowerSeries_presentation` —
+the Galois-cohomological count `r < g` for the minimal relation space
+`ker φ/(𝔪_S · ker φ)` — plus the PROVEN Nakayama step below): for
+EVERY minimal presentation `φ : Λ[[x₁,…,x_g]] ↠ D.R` of the weakly
+universal, trace-generated hardly ramified deformation ring, over ANY
+unramified coefficient ring `Λ`, the kernel is generated by *strictly
+fewer than `g`* power series.
+
+The assembly proven here is Nakayama's lemma in the form
+`Submodule.le_of_le_smul_of_le_jacobson_bot`: `Λ[[x₁,…,x_g]]` is
+Noetherian (`isNoetherianRing_mvPowerSeries`, proven in this module),
+so `ker φ` is finitely generated, and `𝔪_S` lies in its Jacobson
+radical (`IsLocalRing.maximalIdeal_le_jacobson`); hence elements of
+`ker φ` spanning it modulo `𝔪_S · ker φ` already span it. This is also
+what makes the *span* (rather than its closure) the correct statement:
+finitely generated ideals of a Noetherian complete local ring are
+closed. -/
+theorem exists_relations_lt_of_minimal_mvPowerSeries_presentation
+    (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (D : HardlyRamifiedDeformation hℓOdd ρbar)
+    (hw : D.IsWeaklyUniversal) (ht : D.IsTraceGenerated) :
+    letI := D.commRing; letI := D.algebra
+    ∀ (Λ : Type u) (_ : CommRing Λ) (_ : IsDomain Λ) (_ : IsLocalRing Λ)
+      (_ : IsNoetherianRing Λ) (_ : Algebra ℤ_[ℓ] Λ)
+      (_ : Module.Finite ℤ_[ℓ] Λ),
+      IsLocalRing.maximalIdeal Λ = Ideal.span {(ℓ : Λ)} →
+      ∀ (g : ℕ) (φ : MvPowerSeries (Fin g) Λ →+* D.R),
+        Function.Surjective φ →
+        φ.comp (algebraMap ℤ_[ℓ] (MvPowerSeries (Fin g) Λ)) =
+          algebraMap ℤ_[ℓ] D.R →
+        RingHom.ker φ ≤
+          IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) ^ 2 ⊔
+            Ideal.span {(ℓ : MvPowerSeries (Fin g) Λ)} →
+        ∃ (r : ℕ) (f : Fin r → MvPowerSeries (Fin g) Λ),
+          r < g ∧ RingHom.ker φ = Ideal.span (Set.range f) := by
+  letI := D.commRing; letI := D.algebra
+  intro Λ iCR iDom iLoc iNoeth iAlg iFin hΛℓ g φ hφs hφc hφmin
+  letI := iCR; letI := iDom; letI := iLoc; letI := iNoeth; letI := iAlg
+  letI := iFin
+  obtain ⟨r, f, hrg, hfmem, hle⟩ :=
+    exists_relations_lt_le_smul_of_minimal_mvPowerSeries_presentation hℓOdd
+      hdim hℓ5 h hirr D hw ht Λ iCR iDom iLoc iNoeth iAlg iFin hΛℓ g φ hφs
+      hφc hφmin
+  haveI : IsNoetherianRing (MvPowerSeries (Fin g) Λ) :=
+    isNoetherianRing_mvPowerSeries g
+  refine ⟨r, f, hrg, le_antisymm ?_ ?_⟩
+  · exact Submodule.le_of_le_smul_of_le_jacobson_bot
+      (IsNoetherian.noetherian (RingHom.ker φ))
+      (IsLocalRing.maximalIdeal_le_jacobson ⊥) hle
+  · exact Ideal.span_le.mpr (Set.range_subset_iff.mpr hfmem)
+
+/-- **Böckle presentation leaf** (DECOMPOSED 2026-07-23 into the
+minimal-presentation leaf `exists_minimal_mvPowerSeries_presentation` —
+pure commutative algebra: every complete Noetherian local `ℤ_ℓ`-algebra
+with finite residue field `k` is minimally presented by a power series
+ring over the unramified coefficient ring `Λ ≅ W(k)` — and the Böckle
+relation-bound leaf
+`exists_relations_lt_of_minimal_mvPowerSeries_presentation` — the
+Galois-cohomological count `r < g` for minimal presentations; the
+assembly below is proven): the weakly universal, trace-generated hardly
+ramified deformation ring admits a presentation
+`D.R ≅ Λ[[x₁,…,x_g]]/(f₁,…,f_r)` with strictly fewer relations than
+generators, `r < g`, compatibly with the `ℤ_ℓ`-structures, over a local
+Noetherian domain `Λ` module-finite over `ℤ_ℓ`. -/
+theorem exists_mvPowerSeries_presentation_of_isWeaklyUniversal_isTraceGenerated
+    (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (D : HardlyRamifiedDeformation hℓOdd ρbar)
+    (hw : D.IsWeaklyUniversal) (ht : D.IsTraceGenerated) :
+    letI := D.commRing; letI := D.algebra
+    ∃ (Λ : Type u) (_ : CommRing Λ) (_ : IsDomain Λ) (_ : IsLocalRing Λ)
+      (_ : IsNoetherianRing Λ) (_ : Algebra ℤ_[ℓ] Λ)
+      (_ : Module.Finite ℤ_[ℓ] Λ)
+      (g r : ℕ) (φ : MvPowerSeries (Fin g) Λ →+* D.R)
+      (f : Fin r → MvPowerSeries (Fin g) Λ),
+      r < g ∧ Function.Surjective φ ∧
+      φ.comp (algebraMap ℤ_[ℓ] (MvPowerSeries (Fin g) Λ)) =
+        algebraMap ℤ_[ℓ] D.R ∧
+      RingHom.ker φ = Ideal.span (Set.range f) := by
+  letI := D.commRing; letI := D.isLocalRing; letI := D.algebra
+  haveI := D.isNoetherianRing
+  haveI := D.isAdicComplete
+  obtain ⟨Λ, iΛ1, iΛ2, iΛ3, iΛ4, iΛ5, iΛ6, hΛℓ, g, φ, hφs, hφc, hφmin⟩ :=
+    exists_minimal_mvPowerSeries_presentation (ℓ := ℓ) D.π D.π_surjective
+  obtain ⟨r, f, hrg, hker⟩ :=
+    exists_relations_lt_of_minimal_mvPowerSeries_presentation hℓOdd hdim hℓ5
+      h hirr D hw ht Λ iΛ1 iΛ2 iΛ3 iΛ4 iΛ5 iΛ6 hΛℓ g φ hφs hφc hφmin
+  exact ⟨Λ, iΛ1, iΛ2, iΛ3, iΛ4, iΛ5, iΛ6, g, r, φ, f, hrg, hφs, hφc, hker⟩
 
 /-- **Prime chain in `Λ[[x₁,…,x_g]]`, `Λ` a local domain** (PROVEN
 2026-07-23 modulo the
