@@ -1,0 +1,96 @@
+# flt-report-bridge@.service — the LOCAL half of a remote Lean worker
+# (Deyao, 2026-07-25).
+#
+# WHAT THIS IS FOR, and it is deliberately the only thing it does: let the MCP be
+# pointed at a Lean LSP on a different machine WITHOUT restarting Claude Code.
+#
+# The seam is the FIFO pair. report-mcp.py always talks to
+# ~/<instance>/.report-server/{req,resp}.fifo and knows nothing else — not which
+# machine serves it, not how it gets there. So a worker moves between machines by
+# changing only what sits on the far side of those FIFOs. report-mcp.py is
+# untouched; Claude Code keeps running; rewiring is one file edit plus one
+# `systemctl --user restart`.
+#
+# THE SPLIT, and why lake serve is NOT a child of ssh:
+#   remote  flt-report-server@<instance>  — systemd USER unit on the remote host,
+#           running `lake serve` on that host's OWN FIFOs. Being systemd-managed,
+#           it survives ssh drops, bridge restarts, and anything else stopping on
+#           either side; its warm elaboration state is not hostage to the
+#           connection.
+#   local   flt-report-bridge@<instance>  — this unit. A pure byte pump:
+#           local req.fifo -> ssh -> remote req.fifo, and
+#           remote resp.fifo -> ssh -> local resp.fifo.
+#
+# It carries no protocol knowledge whatsoever. LSP is Content-Length-framed
+# JSON-RPC over a byte stream and ssh tunnels stdio faithfully, so two `cat`s are
+# a complete and correct implementation. There is no bespoke wire format, no
+# framing logic, no state — the thinner this is, the fewer ways it can fail, and
+# anything cleverer here would be a second place for the protocol to break.
+#
+# WHY A SHARED HOME MAKES THIS CHEAP: $HOME is NFS (homes1:/tank/home/chend), so
+# every machine already sees identical worktree SOURCES at identical paths. Only
+# .lake and .report-server are symlinks into /scratch, which is machine-LOCAL —
+# so the same symlink resolves to that machine's own disk, and each host keeps
+# its own build artifacts with zero coordination. Nothing needs copying but the
+# artifacts.
+#
+# ROUTING: one line in ~/.flt-worker-host/<instance> naming the remote host.
+# To move a worker:
+#   echo nightcrawler > ~/.flt-worker-host/flt-lean-7
+#   ssh nightcrawler systemctl --user restart flt-report-server@flt-lean-7
+#   systemctl --user restart flt-report-bridge@flt-lean-7
+# To bring it home: write "local" (or delete the file), stop the bridge, and
+# start flt-report-server@flt-lean-7 here instead.
+#
+# AUTHENTICATION — the non-obvious failure, diagnosed 2026-07-25. An interactive
+# shell has SSH_AUTH_SOCK pointing at a real ssh-agent holding the key, but
+# systemd --user exports SSH_AUTH_SOCK=/run/user/<uid>/gnupg/S.gpg-agent.ssh —
+# the GPG agent's ssh socket, a DIFFERENT agent that does not hold it. With
+# BatchMode=yes ssh then cannot authenticate and exits 255, so the unit
+# restart-loops roughly every 50s and no `cat` ever appears on the remote side.
+# The symptom is maddeningly indirect: writes to the local req.fifo succeed
+# (the bridge's own fd keeps a reader alive) but nothing ever comes back, and
+# clients see "response pipe EOF". The exact same command run by hand works,
+# because the hand shell has the right agent.
+# Fix: bypass agents entirely — IdentityAgent=none plus an explicit
+# passphraseless -i key, which is deterministic regardless of what any agent
+# exports. Verified: `env -u SSH_AUTH_SOCK ssh -o BatchMode=yes <host>` succeeds
+# with this key.
+#
+# ssh options and why each: -T (a pty would mangle the byte stream);
+# BatchMode (never prompt, fail fast); ServerAlive* (hold the channel open
+# through the multi-hour silences of a single-threaded elaboration).
+# Restart=always with a short delay so a dropped connection re-establishes by
+# itself — the remote lake serve is still there, so reconnecting re-attaches to
+# the warm session rather than starting a new one.
+
+[Unit]
+Description=FLT report bridge (local FIFOs <-> remote lake serve over ssh) — instance %i
+After=network-online.target
+
+[Service]
+Type=exec
+WorkingDirectory=%h/%i
+Environment=PATH=/home/chend/.elan/bin:/home/chend/homebrew/bin:/usr/local/bin:/usr/bin:/bin
+# Own FIFOs must exist locally; clear the client-side session marker so the next
+# client performs the LSP handshake against the (possibly restarted) remote.
+# Create the local FIFOs if absent. Deliberately does NOT delete state.json:
+# the remote lake serve persists across bridge restarts and therefore stays
+# INITIALIZED, and it errors if sent `initialize` twice. Clearing the marker here
+# would make every reconnecting client re-handshake and fail. Only a restart of
+# the REMOTE flt-lake-socket@%i unit invalidates the handshake, and clearing the
+# marker then is the orchestrator's job.
+ExecStartPre=/bin/sh -c 'mkdir -p .report-server && for f in req resp; do [ -p .report-server/$f.fifo ] || { rm -f .report-server/$f.fifo; mkfifo .report-server/$f.fifo; }; done'
+# NOTE ON THE REDIRECTIONS, learned the hard way 2026-07-25: systemd does NOT
+# parse shell redirections in ExecStart — it splits the command line itself. So
+# `0<> ... 1<> ...` MUST live INSIDE the quoted `sh -c` string, where sh performs
+# them (this is exactly what flt-report-server@.service does). Putting them
+# outside the quotes silently passes them as ignored argv to sh, the ssh
+# inherits systemd's stdin/stdout, nothing ever reads the local req.fifo, and
+# every client then fails with ENXIO ("No such device or address").
+ExecStart=/usr/bin/python3 %h/flt-lean/flt-report-bridge.py %i
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=default.target
