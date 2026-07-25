@@ -3517,23 +3517,137 @@ theorem lift_pointEval_pullback_eq (hΔ : W.Δ ≠ 0) {Q : W.Point}
     exact RingHom.congr_fun hcomp2 a
   exact RingHom.congr_fun hring w
 
-/-- **L4-5/6 sub-leaf (sorry): the `[p]`-pullback subfield has index at
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- **The `2`-division polynomial is nonzero** for a curve of nonzero
+discriminant: `Ψ₂Sq = 4X³ + b₂X² + 2b₄X + b₆` vanishing identically
+forces `4 = b₂ = b₆ = 0`, hence `2 = 0` (a field), hence
+`Δ = −b₂²b₈ − 8b₄³ − 27b₆² + 9b₂b₄b₆ = 0`. -/
+theorem Ψ₂Sq_ne_zero_of_Δ_ne_zero (hΔ : W.Δ ≠ 0) : W.Ψ₂Sq ≠ 0 := by
+  intro h0
+  have h4 : (4 : F) = 0 := by
+    have h := congrArg (fun q => Polynomial.coeff q 3) h0
+    simpa [WeierstrassCurve.Ψ₂Sq, Polynomial.coeff_one] using h
+  have hb2 : W.b₂ = 0 := by
+    have h := congrArg (fun q => Polynomial.coeff q 2) h0
+    simpa [WeierstrassCurve.Ψ₂Sq, Polynomial.coeff_one] using h
+  have hb6 : W.b₆ = 0 := by
+    have h := congrArg (fun q => Polynomial.coeff q 0) h0
+    simpa [WeierstrassCurve.Ψ₂Sq, Polynomial.coeff_one] using h
+  have h2 : (2 : F) = 0 := by
+    have hsq : (2 : F) ^ 2 = 0 := by linear_combination h4
+    exact pow_eq_zero_iff two_ne_zero |>.mp hsq
+  refine hΔ ?_
+  rw [WeierstrassCurve.Δ]
+  linear_combination (-(W.b₂) * W.b₈ + 9 * W.b₄ * W.b₆) * hb2 +
+    (-27 * W.b₆) * hb6 + (-4 * W.b₄ ^ 3) * h2
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- The fraction-field lift of an evaluation fixes the constants
+(the general form of `lift_pointEval_constHom`, applied below at the
+generic multiple `p • taut` and at `⊖taut`). -/
+lemma lift_eval_constHom {x₀ y₀ : W.FunctionField}
+    (h : (curveK W).Equation x₀ y₀)
+    (hg : Function.Injective (pointEval (constHom W) h)) (d : F) :
+    IsFractionRing.lift hg (constHom W d) = constHom W d := by
+  show IsFractionRing.lift hg (algebraMap W.CoordinateRing W.FunctionField
+    (CoordinateRing.mk W (Polynomial.C (Polynomial.C d)))) = constHom W d
+  rw [IsFractionRing.lift_algebraMap, pointEval_C]
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- The fraction-field lift of an evaluation sends the tautological
+`x`-coordinate to the point's `x`-coordinate. -/
+lemma lift_eval_tautX {x₀ y₀ : W.FunctionField}
+    (h : (curveK W).Equation x₀ y₀)
+    (hg : Function.Injective (pointEval (constHom W) h)) :
+    IsFractionRing.lift hg (tautX W) = x₀ := by
+  rw [tautX, IsFractionRing.lift_algebraMap, pointEval_X]
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- The fraction-field lift of an evaluation sends the tautological
+`y`-coordinate to the point's `y`-coordinate. -/
+lemma lift_eval_tautY {x₀ y₀ : W.FunctionField}
+    (h : (curveK W).Equation x₀ y₀)
+    (hg : Function.Injective (pointEval (constHom W) h)) :
+    IsFractionRing.lift hg (tautY W) = y₀ := by
+  rw [tautY, IsFractionRing.lift_algebraMap, pointEval_Y]
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- **The canonical embedding of the coordinate ring into the function
+field is evaluation at the tautological point** — the two ring
+homomorphisms agree on the constants and on both coordinate
+functions. -/
+lemma algebraMap_eq_pointEval_taut (W : WeierstrassCurve.Affine F) :
+    (algebraMap W.CoordinateRing W.FunctionField) =
+      pointEval (constHom W) (taut_equation W) := by
+  refine coordinateRing_ringHom_ext (fun d => ?_) ?_ ?_
+  · rw [pointEval_C]; rfl
+  · rw [pointEval_X]; rfl
+  · rw [pointEval_Y]; rfl
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- `pointEval` on the `{1, Y}`-basis presentation of a coordinate-ring
+element: `pp + qq·Y ↦ pp(x₀) + qq(x₀)·y₀`. -/
+lemma pointEval_smul_basis {K' : Type*} [Field K'] (φ : F →+* K') {x₀ y₀ : K'}
+    (h : ((W.map φ).toAffine).Equation x₀ y₀) (pp qq : Polynomial F) :
+    pointEval φ h (pp • (1 : W.CoordinateRing) +
+        qq • CoordinateRing.mk W Polynomial.X) =
+      (pp.map φ).eval x₀ + (qq.map φ).eval x₀ * y₀ := by
+  rw [CoordinateRing.smul, CoordinateRing.smul, mul_one, map_add, map_mul,
+    pointEval_ofPoly, pointEval_ofPoly, pointEval_Y]
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- A polynomial in the constants evaluated at a member of an
+intermediate field of the function field stays in that field. -/
+lemma eval_map_constHom_mem {L' : Type*} [Field L']
+    [Algebra L' W.FunctionField] (M : IntermediateField L' W.FunctionField)
+    (hc : ∀ d : F, constHom W d ∈ M) {x₀ : W.FunctionField} (hx : x₀ ∈ M)
+    (r : Polynomial F) : (r.map (constHom W)).eval x₀ ∈ M := by
+  refine Polynomial.induction_on' r ?_ ?_
+  · intro f g hf hg
+    rw [Polynomial.map_add, Polynomial.eval_add]
+    exact add_mem hf hg
+  · intro n a
+    rw [Polynomial.map_monomial, Polynomial.eval_monomial]
+    exact mul_mem (hc a) (pow_mem hx n)
+
+omit [DecidableEq F] in
+/-- **L4-5/6 sub-leaf (PROVEN): the `[p]`-pullback subfield has index at
 most `p²`** — `[K : [p]^*K] ≤ p²`.  The subfield
 `L := (IsFractionRing.lift hinj).fieldRange` contains the constants
-(`[p]^*` fixes them) and the coordinates `xp, yp` of `p • taut`.
+(`[p]^*` fixes them, `lift_eval_constHom`) and the coordinates
+`xp, yp` of `p • taut` (`lift_eval_tautX`, `lift_eval_tautY`).
 
-Proof plan: `tautX` is a root of the monic degree-`p²` polynomial
-`Φ_p − xp·ΨSq_p ∈ L[T]` (that is exactly `hxrel`, with the leading
-coefficient computed as in `smul_taut_xCoord_ne_constHom`), so
-`[L(tautX) : L] ≤ p²`; and `tautY ∈ L(tautX)` by the `y`-bookkeeping
-(the nontrivial `L(tautX)`-automorphism of `K` would be the
-hyperelliptic involution, which moves `yp ∈ L` because `2p • taut ≠ 0`
-for `hp : (p : F) ≠ 0`).  Since `K = F(tautX, tautY)` — every element
-of `F[W]` is `pp(tautX) + qq(tautX)·tautY` by
-`CoordinateRing.exists_smul_basis_eq`, and `K` is its fraction field —
-the extension `K/L` is finite of degree at most `p²`. -/
+The proof runs in the intermediate field `M := L(tautX)`:
+
+* `tautX` is a root of `q := Φ_p − C xp·ΨSq_p ∈ L[T]`, which is monic
+  of degree `p²` (`coeff_Φ` gives the leading `1`, `natDegree_ΨSq_le`
+  keeps the correction below `p²`) and annihilates `tautX` by `hxrel`;
+  so `tautX` is integral over `L` with
+  `[M : L] = (minpoly L tautX).natDegree ≤ p²`
+  (`IntermediateField.adjoin.finrank`).
+* `tautY ∈ M` by the `y`-bookkeeping.  Write `yp = a/b` with
+  `a, b ∈ F[W]` (`IsFractionRing.div_surjective`) and expand both in
+  the `{1, Y}`-basis (`CoordinateRing.exists_smul_basis_eq`,
+  `algebraMap_eq_pointEval_taut`, `pointEval_smul_basis`):
+  `yp·(B₁ + B₂·tautY) = A₁ + A₂·tautY` with all `Aᵢ, Bᵢ ∈ M`
+  (`eval_map_constHom_mem`).  Applying the hyperelliptic involution
+  `ι` — the lift of evaluation at `⊖taut`, which fixes the constants
+  and `tautX`, sends `tautY ↦ negY` and hence (through `endoMap`,
+  `hsmul`) `yp ↦ negY xp yp` — gives the conjugate relation.  If
+  `yp·B₂ ≠ A₂` the first relation solves for `tautY`; otherwise the
+  two relations combine to
+  `(2yp + a₁xp + a₃)·(B₁ + B₂·negY tautX tautY) = 0`, and
+  `2yp + a₁xp + a₃ ≠ 0` because `Ψ₂Sq ≠ 0`
+  (`Ψ₂Sq_ne_zero_of_Δ_ne_zero`) does not vanish at the nonconstant
+  `xp` (`smul_taut_xCoord_ne_constHom`), so `B₁ + B₂·negY = 0` and
+  either `tautY` is solved for or `b = 0`, a contradiction.
+* `M = ⊤`, since every `z ∈ K` is a ratio of elements of `F[W]`, each
+  of which is `pp(tautX) + qq(tautX)·tautY ∈ M`.
+
+Hence `[K : L] = [M : L] ≤ p²`.  The hypothesis `hp : (p : F) ≠ 0` is
+not needed: the degree bookkeeping only uses `hxrel`. -/
 theorem finiteDimensional_and_finrank_le_pullback (hΔ : W.Δ ≠ 0)
-    (hp : (p : F) ≠ 0)
+    (_hp : (p : F) ≠ 0)
     {xp yp : W.FunctionField} {hpn : (curveK W).Nonsingular xp yp}
     (hsmul : (p : ℤ) • tautPoint W hΔ =
       WeierstrassCurve.Affine.Point.some xp yp hpn)
@@ -3546,7 +3660,210 @@ theorem finiteDimensional_and_finrank_le_pullback (hΔ : W.Δ ≠ 0)
       Module.finrank
         ↥(IsFractionRing.lift (K := W.FunctionField) hinj).fieldRange
         W.FunctionField ≤ p ^ 2 := by
-  sorry
+  classical
+  set L : Subfield W.FunctionField :=
+    (IsFractionRing.lift (K := W.FunctionField) hinj).fieldRange
+  -- the constants and the coordinates of `p • taut` lie in `L`
+  have hconstL : ∀ d : F, constHom W d ∈ L := fun d =>
+    RingHom.mem_fieldRange.mpr ⟨constHom W d, lift_eval_constHom hpn.left hinj d⟩
+  have hxpL : xp ∈ L :=
+    RingHom.mem_fieldRange.mpr ⟨tautX W, lift_eval_tautX hpn.left hinj⟩
+  have hypL : yp ∈ L :=
+    RingHom.mem_fieldRange.mpr ⟨tautY W, lift_eval_tautY hpn.left hinj⟩
+  -- the hyperelliptic involution as an endomorphism of the function field
+  have hnegns : (curveK W).Nonsingular (tautX W)
+      ((curveK W).negY (tautX W) (tautY W)) :=
+    ((curveK W).nonsingular_neg (tautX W) (tautY W)).mpr (taut_nonsingular W hΔ)
+  have hιinj := pointEval_injective_of_forall_ne_constHom hnegns tautX_ne_constHom
+  have hιconst : ∀ d : F,
+      IsFractionRing.lift hιinj (constHom W d) = constHom W d := fun d =>
+    lift_eval_constHom hnegns.left hιinj d
+  have hιX : IsFractionRing.lift hιinj (tautX W) = tautX W :=
+    lift_eval_tautX hnegns.left hιinj
+  have hιY : IsFractionRing.lift hιinj (tautY W) =
+      (curveK W).negY (tautX W) (tautY W) :=
+    lift_eval_tautY hnegns.left hιinj
+  have hcvι : (curveK W).map (IsFractionRing.lift hιinj) = W.map (constHom W) :=
+    curveK_map_eq_of_constHom hιconst
+  have hendoTaut : endoMap hcvι (tautPoint W hΔ) = -tautPoint W hΔ := by
+    rw [tautPoint, endoMap_some, Point.neg_some]
+    exact point_some_congr' hιX hιY
+  have hendoP : endoMap hcvι ((p : ℤ) • tautPoint W hΔ) =
+      -((p : ℤ) • tautPoint W hΔ) := by
+    rw [endoMap_zsmul, hendoTaut, zsmul_neg]
+  rw [hsmul, endoMap_some, Point.neg_some] at hendoP
+  injection hendoP with hιxp hιyp
+  -- `p • taut` is not a `2`-torsion point
+  have heqp := ((curveK W).equation_iff xp yp).mp hpn.left
+  have hΨmap : (curveK W).Ψ₂Sq = (W.Ψ₂Sq).map (constHom W) :=
+    W.map_Ψ₂Sq (constHom W)
+  have hΨne : ((W.Ψ₂Sq).map (constHom W)).eval xp ≠ 0 :=
+    eval_map_ne_zero_of_forall_ne_constHom (smul_taut_xCoord_ne_constHom hxrel)
+      (Ψ₂Sq_ne_zero_of_Δ_ne_zero hΔ)
+  have hval : ((W.Ψ₂Sq).map (constHom W)).eval xp =
+      (2 * yp + ((curveK W).a₁ * xp + (curveK W).a₃)) ^ 2 := by
+    rw [← hΨmap, WeierstrassCurve.Ψ₂Sq, WeierstrassCurve.b₂, WeierstrassCurve.b₄,
+      WeierstrassCurve.b₆]
+    simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_pow,
+      Polynomial.eval_C, Polynomial.eval_X]
+    linear_combination (-4 : W.FunctionField) * heqp
+  have hsne : 2 * yp + ((curveK W).a₁ * xp + (curveK W).a₃) ≠ 0 := by
+    intro hc
+    rw [hval, hc] at hΨne
+    exact hΨne (by ring)
+  -- the intermediate field generated by the tautological `x`-coordinate
+  set M : IntermediateField ↥L W.FunctionField :=
+    IntermediateField.adjoin ↥L {tautX W}
+  have hLM : ∀ {w : W.FunctionField}, w ∈ L → w ∈ M := fun {w} hw =>
+    M.algebraMap_mem ⟨w, hw⟩
+  have htXM : tautX W ∈ M :=
+    IntermediateField.subset_adjoin ↥L {tautX W} rfl
+  have hMpoly : ∀ r : Polynomial F,
+      (r.map (constHom W)).eval (tautX W) ∈ M := fun r =>
+    eval_map_constHom_mem M (fun d => hLM (hconstL d)) htXM r
+  have halg : ∀ pp qq : Polynomial F,
+      algebraMap W.CoordinateRing W.FunctionField
+          (pp • (1 : W.CoordinateRing) + qq • CoordinateRing.mk W Polynomial.X) =
+        (pp.map (constHom W)).eval (tautX W) +
+          (qq.map (constHom W)).eval (tautX W) * tautY W := by
+    intro pp qq
+    rw [algebraMap_eq_pointEval_taut]
+    exact pointEval_smul_basis (constHom W) (taut_equation W) pp qq
+  have hιalg : ∀ pp qq : Polynomial F,
+      IsFractionRing.lift hιinj (algebraMap W.CoordinateRing W.FunctionField
+          (pp • (1 : W.CoordinateRing) + qq • CoordinateRing.mk W Polynomial.X)) =
+        (pp.map (constHom W)).eval (tautX W) +
+          (qq.map (constHom W)).eval (tautX W) *
+            (-tautY W - (curveK W).a₁ * tautX W - (curveK W).a₃) := by
+    intro pp qq
+    rw [IsFractionRing.lift_algebraMap]
+    exact pointEval_smul_basis (constHom W) hnegns.left pp qq
+  -- the `y`-bookkeeping: `tautY` lies in `L(tautX)`
+  have hYM : tautY W ∈ M := by
+    obtain ⟨a, b, hb, hab⟩ := IsFractionRing.div_surjective W.CoordinateRing yp
+    obtain ⟨pa, qa, rfl⟩ := CoordinateRing.exists_smul_basis_eq a
+    obtain ⟨pb, qb, rfl⟩ := CoordinateRing.exists_smul_basis_eq b
+    have hb0 : algebraMap W.CoordinateRing W.FunctionField
+        (pb • (1 : W.CoordinateRing) + qb • CoordinateRing.mk W Polynomial.X)
+        ≠ 0 :=
+      map_ne_zero_of_mem_nonZeroDivisors _
+        (IsFractionRing.injective W.CoordinateRing W.FunctionField) hb
+    have hE1 := (div_eq_iff hb0).mp hab
+    have hE2 := congrArg (IsFractionRing.lift hιinj) hE1
+    rw [map_mul, hιyp, hιalg, hιalg] at hE2
+    rw [halg, halg] at hE1
+    simp only [Affine.negY] at hE2
+    by_cases hd : yp * (qb.map (constHom W)).eval (tautX W) -
+        (qa.map (constHom W)).eval (tautX W) = 0
+    · have hA1 : (pa.map (constHom W)).eval (tautX W) =
+          yp * (pb.map (constHom W)).eval (tautX W) := by
+        linear_combination hE1 + tautY W * hd
+      have hkey : (pb.map (constHom W)).eval (tautX W) +
+          (qb.map (constHom W)).eval (tautX W) *
+            (-tautY W - (curveK W).a₁ * tautX W - (curveK W).a₃) = 0 := by
+        have hmul : (2 * yp + ((curveK W).a₁ * xp + (curveK W).a₃)) *
+            ((pb.map (constHom W)).eval (tautX W) +
+              (qb.map (constHom W)).eval (tautX W) *
+                (-tautY W - (curveK W).a₁ * tautX W - (curveK W).a₃)) = 0 := by
+          linear_combination hE2 - hA1 +
+            (-tautY W - (curveK W).a₁ * tautX W - (curveK W).a₃) * hd
+        rcases mul_eq_zero.mp hmul with h | h
+        · exact absurd h hsne
+        · exact h
+      by_cases hB : (qb.map (constHom W)).eval (tautX W) = 0
+      · exfalso
+        refine hb0 ?_
+        rw [halg, hB]
+        rw [hB] at hkey
+        linear_combination hkey
+      · have hu : tautY W =
+            ((pb.map (constHom W)).eval (tautX W) -
+              (qb.map (constHom W)).eval (tautX W) *
+                ((curveK W).a₁ * tautX W + (curveK W).a₃)) /
+              (qb.map (constHom W)).eval (tautX W) := by
+          rw [eq_div_iff hB]
+          linear_combination -hkey
+        rw [hu]
+        exact div_mem (sub_mem (hMpoly pb) (mul_mem (hMpoly qb)
+          (add_mem (mul_mem (hLM (hconstL W.a₁)) htXM) (hLM (hconstL W.a₃)))))
+          (hMpoly qb)
+    · have hu : tautY W =
+          ((pa.map (constHom W)).eval (tautX W) -
+            yp * (pb.map (constHom W)).eval (tautX W)) /
+            (yp * (qb.map (constHom W)).eval (tautX W) -
+              (qa.map (constHom W)).eval (tautX W)) := by
+        rw [eq_div_iff hd]
+        linear_combination -hE1
+      rw [hu]
+      exact div_mem (sub_mem (hMpoly pa) (mul_mem (hLM hypL) (hMpoly pb)))
+        (sub_mem (mul_mem (hLM hypL) (hMpoly qb)) (hMpoly qa))
+  -- `K` is generated by the two tautological coordinates
+  have hMtop : M = ⊤ := by
+    refine eq_top_iff.mpr fun z _ => ?_
+    obtain ⟨a, b, -, rfl⟩ := IsFractionRing.div_surjective W.CoordinateRing z
+    obtain ⟨pa, qa, rfl⟩ := CoordinateRing.exists_smul_basis_eq a
+    obtain ⟨pb, qb, rfl⟩ := CoordinateRing.exists_smul_basis_eq b
+    rw [halg, halg]
+    exact div_mem (add_mem (hMpoly pa) (mul_mem (hMpoly qa) hYM))
+      (add_mem (hMpoly pb) (mul_mem (hMpoly qb) hYM))
+  -- the monic degree-`p²` relation for `tautX` over `L`
+  set φL : F →+* ↥L := (constHom W).codRestrict L hconstL
+  set q : Polynomial ↥L := (W.Φ (p : ℤ)).map φL -
+    Polynomial.C (⟨xp, hxpL⟩ : ↥L) * (W.ΨSq (p : ℤ)).map φL with hqdef
+  have hcomp : (algebraMap (↥L) W.FunctionField).comp φL = constHom W :=
+    RingHom.ext fun d => rfl
+  have haeval : ∀ f : Polynomial F,
+      Polynomial.aeval (tautX W) (f.map φL) =
+        (f.map (constHom W)).eval (tautX W) := by
+    intro f
+    rw [Polynomial.aeval_def, Polynomial.eval₂_eq_eval_map, Polynomial.map_map,
+      hcomp]
+  have hΦc : (W.Φ (p : ℤ)).coeff (p ^ 2) = 1 := by
+    have h1 := W.coeff_Φ (p : ℤ)
+    rwa [Int.natAbs_natCast] at h1
+  have hΨc : (W.ΨSq (p : ℤ)).coeff (p ^ 2) = 0 := by
+    apply Polynomial.coeff_eq_zero_of_natDegree_lt
+    apply lt_of_le_of_lt (W.natDegree_ΨSq_le (p : ℤ))
+    rw [Int.natAbs_natCast]
+    exact Nat.sub_lt (pow_pos (Fact.out : p.Prime).pos 2) one_pos
+  have hqcoeff : q.coeff (p ^ 2) = 1 := by
+    rw [hqdef, Polynomial.coeff_sub, Polynomial.coeff_map, Polynomial.coeff_C_mul,
+      Polynomial.coeff_map, hΦc, hΨc, map_zero, mul_zero, sub_zero, map_one]
+  have hqdegle : q.natDegree ≤ p ^ 2 := by
+    rw [hqdef]
+    refine le_trans (Polynomial.natDegree_sub_le _ _) (max_le ?_ ?_)
+    · refine le_trans (Polynomial.natDegree_map_le) ?_
+      have h1 := W.natDegree_Φ_le (p : ℤ)
+      rwa [Int.natAbs_natCast] at h1
+    · refine le_trans (Polynomial.natDegree_C_mul_le _ _) ?_
+      refine le_trans (Polynomial.natDegree_map_le) ?_
+      have h1 := W.natDegree_ΨSq_le (p : ℤ)
+      rw [Int.natAbs_natCast] at h1
+      exact le_trans h1 (Nat.sub_le _ _)
+  have hqmonic : q.Monic :=
+    Polynomial.monic_of_natDegree_le_of_coeff_eq_one _ hqdegle hqcoeff
+  have hqaeval : Polynomial.aeval (tautX W) q = 0 := by
+    rw [hqdef, map_sub, map_mul, haeval, haeval, Polynomial.aeval_C]
+    show ((W.Φ (p : ℤ)).map (constHom W)).eval (tautX W) -
+      xp * ((W.ΨSq (p : ℤ)).map (constHom W)).eval (tautX W) = 0
+    linear_combination -hxrel
+  have hint : IsIntegral (↥L) (tautX W) := ⟨q, hqmonic, hqaeval⟩
+  have hminle : (minpoly (↥L) (tautX W)).natDegree ≤ p ^ 2 := by
+    refine le_trans (Polynomial.natDegree_le_natDegree ?_) hqdegle
+    exact minpoly.degree_le_of_ne_zero (↥L) (tautX W) hqmonic.ne_zero hqaeval
+  have hfrM : Module.finrank (↥L) ↥M = (minpoly (↥L) (tautX W)).natDegree :=
+    IntermediateField.adjoin.finrank hint
+  have hfdM : FiniteDimensional (↥L) ↥M :=
+    IntermediateField.adjoin.finiteDimensional hint
+  rw [hMtop] at hfdM
+  refine ⟨?_, ?_⟩
+  · haveI := hfdM
+    exact (IntermediateField.topEquiv (F := ↥L)
+      (E := W.FunctionField)).toLinearEquiv.finiteDimensional
+  · have hfr : Module.finrank (↥L) W.FunctionField = Module.finrank (↥L) ↥M := by
+      rw [hMtop, IntermediateField.finrank_top']
+    rw [hfr, hfrM]
+    exact hminle
 
 /-- **L4-5/6 Galois core (PROVEN over the single remaining sub-leaf
 `finiteDimensional_and_finrank_le_pullback`): every element of the
