@@ -4143,8 +4143,427 @@ structure TaylorWilesTower.{a, b, c, s, uR} (p : ℕ) [Fact p.Prime]
   /-- The level-`n` datum, for every `n`. -/
   level : ∀ n, TaylorWilesLevel.{a, b, c, s, uR} p ψ q d n M0
 
-/-- **Existence of the Taylor–Wiles tower** (patching leaf 2a-i; sorry
-node — ALL of the arithmetic of the patching construction): under the
+set_option linter.checkUnivs false in
+/-- **A Taylor–Wiles level in RAW form** (2026-07-25) — the same
+finite-level datum as `TaylorWilesLevel`, with every field that the
+arithmetic does not directly produce replaced by the primitive
+statement it follows from.  Precisely, the six fields
+
+* `nontrivialQuot`, `moduleQuotM`, `isScalarTowerM`, `freeM`,
+  `finiteM`, `finrankM`
+
+of `TaylorWilesLevel` — a `Λ/𝔟_n`-module structure on `M`, its
+compatibility with the `Λ`-structure, and freeness of rank `d` over
+it — are replaced here by the SINGLE field
+
+* `coordM : Nonempty (M ≃ₗ[Λ] (Fin d → Λ/𝔟_n))`,
+
+the `Λ`-linear coordinate form of Diamond's certificate.  The two
+packages are equivalent (`nonempty_taylorWilesLevel_of_raw` below
+recovers the native one, PROVEN), but the raw one asserts strictly
+less STRUCTURE: a prover of the arithmetic leaves has to exhibit only
+`Λ`-linear data, never a quotient-ring module structure or a scalar
+tower, and the derived instances are then canonical rather than
+chosen.  Everything else is copied verbatim from `TaylorWilesLevel`,
+whose docstring documents each field.
+
+This is deliberately NOT a new mathematical carrier: it is the same
+carrier at the interface where the Taylor–Wiles arithmetic actually
+lands (Diamond 1997, Thm. 2.1 produces a `ℤ_p[Δ_{Q_n}]`-basis, i.e.
+coordinates), so that the level-wise cut of `exists_taylorWilesTower`
+below can be stated without asking its leaves for bookkeeping.
+
+Both-ways audit: pure data, as for `TaylorWilesLevel`; inhabitation is
+asserted only by the two arithmetic leaves below. -/
+structure TaylorWilesLevelRaw.{a, b, c, s, uR} (p : ℕ) [Fact p.Prime]
+    {Runiv : Type uR} [CommRing Runiv]
+    {T : Type s} [CommRing T] (ψ : Runiv →+* T) (q d n : ℕ)
+    (M0 : Type c) [AddCommGroup M0] [Module T M0] where
+  /-- The auxiliary deformation ring `R_{Q_n}`. -/
+  R : Type a
+  [commRingR : CommRing R]
+  /-- The `q`-generator power-series presentation (tangent bound). -/
+  pres : MvPowerSeries (Fin q) ℤ_[p] →+* R
+  pres_surjective : Function.Surjective pres
+  /-- The diamond-operator structure map `Λ → R`. -/
+  diamond : MvPowerSeries (Fin q) ℤ_[p] →+* R
+  /-- The control identification `R/𝔫R ≅ Runiv`: surjection part. -/
+  toRuniv : R →+* Runiv
+  toRuniv_surjective : Function.Surjective toRuniv
+  /-- The control identification `R/𝔫R ≅ Runiv`: kernel part. -/
+  ker_toRuniv : RingHom.ker toRuniv = (taylorWilesAug p q).map diamond
+  /-- The auxiliary Hecke module `H_{Q_n}`. -/
+  M : Type b
+  [addCommGroupM : AddCommGroup M]
+  [moduleRM : Module R M]
+  [moduleCoeffM : Module (MvPowerSeries (Fin q) ℤ_[p]) M]
+  /-- The `Λ`-action on `M` acts through `diamond`. -/
+  diamond_smul : ∀ (x : MvPowerSeries (Fin q) ℤ_[p]) (m : M),
+    x • m = diamond x • m
+  /-- The level ideal `𝔟_n = ker(Λ ↠ ℤ_p[Δ_{Q_n}])`. -/
+  bIdeal : Ideal (MvPowerSeries (Fin q) ℤ_[p])
+  /-- The levels shrink: `𝔟_n ⊆ 𝔪_Λ^n`. -/
+  bIdeal_le : bIdeal ≤
+    IsLocalRing.maximalIdeal (MvPowerSeries (Fin q) ℤ_[p]) ^ n
+  /-- **The Taylor–Wiles freeness certificate in coordinate form**
+  (Diamond 1997, Thm. 2.1): a `Λ`-linear identification of `M` with
+  `(Λ/𝔟_n)^d = ℤ_p[Δ_{Q_n}]^d`. -/
+  coordM : Nonempty (M ≃ₗ[MvPowerSeries (Fin q) ℤ_[p]]
+    (Fin d → MvPowerSeries (Fin q) ℤ_[p] ⧸ bIdeal))
+  /-- The bottom control map `M ↠ M₀`. -/
+  projM : M →+ M0
+  projM_surjective : Function.Surjective projM
+  /-- Action compatibility through `ψ`. -/
+  projM_smul : ∀ (x : R) (m : M),
+    projM (x • m) = ψ (toRuniv x) • projM m
+  /-- **The bottom control theorem** (only the nontrivial inclusion;
+  see `TaylorWilesLevel.projM_eq_zero`). -/
+  projM_eq_zero : ∀ m : M, projM m = 0 →
+    m ∈ (taylorWilesAug p q • ⊤ :
+      Submodule (MvPowerSeries (Fin q) ℤ_[p]) M)
+
+set_option linter.checkUnivs false in
+/-- **Raw levels are levels** (PROVEN 2026-07-25 — the structural half
+of the patching-tower assembly): a `TaylorWilesLevelRaw` over a
+NONTRIVIAL bottom module is a `TaylorWilesLevel`.
+
+Proof.  Take the coordinate model `N := (Λ/𝔟_n)^d` itself as the
+level's Hecke module, transporting the raw data along the `Λ`-linear
+coordinate equivalence `e : M ≃ₗ[Λ] N` supplied by `coordM`.  Then
+
+* `moduleQuotM`, `isScalarTowerM`, `freeM`, `finiteM` are the CANONICAL
+  instances of the coordinate model (`Λ/𝔟_n` acting on a finite
+  product of copies of itself), and `finrankM` is
+  `Module.finrank_fin_fun`, which needs `Λ/𝔟_n` to be nontrivial;
+* `nontrivialQuot` is derived rather than assumed: `M₀` is nontrivial
+  and `projM` is surjective, so `M` is nontrivial, hence so is `N`
+  through `e`, hence `Λ/𝔟_n` is nontrivial (a product of copies of a
+  subsingleton is a subsingleton);
+* the `R`-action transports along `e`
+  (`Function.Injective.module` applied to `e.symm`), and
+  `diamond_smul` transports because `e` is `Λ`-linear;
+* `projM`, its surjectivity, `projM_smul` and the control theorem
+  transport by precomposition with `e.symm`, the last one using
+  `Submodule.map_smul''` and `LinearEquiv.range` to push
+  `𝔫 · M = 𝔫 · ⊤` forward to `𝔫 · ⊤` in `N`.
+
+Unconditionally true; no hypothesis package beyond nontriviality of
+`M₀`, which the tower carries anyway (`TaylorWilesTower.nontrivialM0`). -/
+theorem nonempty_taylorWilesLevel_of_raw.{a, b, c, s, uR}
+    {p : ℕ} [Fact p.Prime]
+    {Runiv : Type uR} [CommRing Runiv]
+    {T : Type s} [CommRing T] {ψ : Runiv →+* T} {q d n : ℕ}
+    {M0 : Type c} [AddCommGroup M0] [Module T M0] (hM0 : Nontrivial M0)
+    (L : TaylorWilesLevelRaw.{a, b, c, s, uR} p ψ q d n M0) :
+    Nonempty (TaylorWilesLevel.{a, 0, c, s, uR} p ψ q d n M0) := by
+  classical
+  letI := L.commRingR
+  letI := L.addCommGroupM
+  letI := L.moduleRM
+  letI := L.moduleCoeffM
+  haveI := hM0
+  obtain ⟨e⟩ := L.coordM
+  -- the auxiliary Hecke module is nontrivial: it surjects onto `M₀`
+  have hMnt : Nontrivial L.M := by
+    obtain ⟨x, y, hxy⟩ := exists_pair_ne M0
+    obtain ⟨a', ha'⟩ := L.projM_surjective x
+    obtain ⟨b', hb'⟩ := L.projM_surjective y
+    refine ⟨a', b', fun h => hxy ?_⟩
+    rw [← ha', ← hb', h]
+  -- hence the level ring `Λ/𝔟_n` is nontrivial
+  haveI hQnt : Nontrivial (MvPowerSeries (Fin q) ℤ_[p] ⧸ L.bIdeal) := by
+    obtain ⟨x, y, hxy⟩ := hMnt.exists_pair_ne
+    by_contra hcon
+    rw [not_nontrivial_iff_subsingleton] at hcon
+    haveI := hcon
+    exact hxy (e.injective (Subsingleton.elim _ _))
+  -- transport the `R`-action to the coordinate model
+  letI : SMul L.R (Fin d → MvPowerSeries (Fin q) ℤ_[p] ⧸ L.bIdeal) :=
+    ⟨fun x v => e (x • e.symm v)⟩
+  have hsmulR : ∀ (x : L.R)
+      (v : Fin d → MvPowerSeries (Fin q) ℤ_[p] ⧸ L.bIdeal),
+      x • v = e (x • e.symm v) := fun _ _ => rfl
+  letI : Module L.R (Fin d → MvPowerSeries (Fin q) ℤ_[p] ⧸ L.bIdeal) :=
+    Function.Injective.module L.R e.symm.toLinearMap.toAddMonoidHom
+      e.symm.injective (fun c v => by
+        show e.symm (e (c • e.symm v)) = c • e.symm v
+        exact e.symm_apply_apply _)
+  refine ⟨{ R := L.R
+            commRingR := L.commRingR
+            pres := L.pres
+            pres_surjective := L.pres_surjective
+            diamond := L.diamond
+            toRuniv := L.toRuniv
+            toRuniv_surjective := L.toRuniv_surjective
+            ker_toRuniv := L.ker_toRuniv
+            M := Fin d → MvPowerSeries (Fin q) ℤ_[p] ⧸ L.bIdeal
+            addCommGroupM := inferInstance
+            moduleRM := inferInstance
+            moduleCoeffM := inferInstance
+            diamond_smul := ?_
+            bIdeal := L.bIdeal
+            bIdeal_le := L.bIdeal_le
+            nontrivialQuot := hQnt
+            moduleQuotM := inferInstance
+            isScalarTowerM := inferInstance
+            freeM := inferInstance
+            finiteM := inferInstance
+            finrankM := Module.finrank_fin_fun _
+            projM := L.projM.comp e.symm.toLinearMap.toAddMonoidHom
+            projM_surjective := ?_
+            projM_smul := ?_
+            projM_eq_zero := ?_ }⟩
+  · intro x v
+    rw [hsmulR, ← L.diamond_smul, map_smul, e.apply_symm_apply]
+  · exact L.projM_surjective.comp e.symm.surjective
+  · intro x v
+    show L.projM (e.symm (x • v)) = ψ (L.toRuniv x) • L.projM (e.symm v)
+    rw [hsmulR, e.symm_apply_apply, L.projM_smul]
+  · intro v hv
+    have hv' : L.projM (e.symm v) = 0 := hv
+    have hmap : e (e.symm v) ∈
+        Submodule.map e.toLinearMap
+          (taylorWilesAug p q • (⊤ : Submodule (MvPowerSeries (Fin q) ℤ_[p]) L.M)) :=
+      Submodule.mem_map_of_mem (L.projM_eq_zero _ hv')
+    rwa [Submodule.map_smul'', Submodule.map_top, LinearEquiv.range,
+      e.apply_symm_apply] at hmap
+
+set_option linter.checkUnivs false in
+/-- **The bottom Taylor–Wiles level** (patching leaf 2a-i-α, sorry
+node — the MODULARITY-SUBTREE PLUG POINT): under the full hypothesis
+set of pillar 3b-iii, the level-independent invariants of the
+Taylor–Wiles tower exist together with the bottom (`Q = ∅`) level
+datum.
+
+What is asserted: a Taylor–Wiles number `q`, a freeness rank `d`, and
+a NONTRIVIAL bottom Hecke module `M₀` carrying an action of the
+abstract Hecke ring `T` of the pillar, such that the level-`0` raw
+datum exists over them.  Classically `M₀ = H¹(X₀(N), ℤ_p)_𝔪` is the
+`𝔪`-localized cohomology of the modular curve at the level of the
+residual representation, `d` its `ℤ_p`-rank, and the level-`0` datum
+is the `Q = ∅` instance of the auxiliary picture: `R = R_univ` with
+`diamond` the structure map `Λ → ℤ_p → R_univ` killing `𝔫`, so that
+`toRuniv = id` has kernel `𝔫·R_univ` (ingredient 3 at the empty
+prime set), `bIdeal = 𝔫` so that `Λ/𝔟_0 = ℤ_p` and `coordM` is the
+statement that `M₀` is free of rank `d` over `ℤ_p` (ingredient 4 at
+the empty prime set — Diamond 1997, Thm. 2.1 in its bottom instance),
+and `projM = id` (ingredient 5, the bottom control map, trivially the
+identity at level `0`).
+
+The Taylor–Wiles number `q = dim_k H¹_{Q_n}(ℚ, ad⁰ρbar)` is
+level-independent by Wiles's product formula (Wiles, Ann. of Math. 141
+(1995), ch. 3; DDT §2.49), which is why it can be fixed here, before
+the auxiliary levels are built; the rank `d` is level-independent by
+Diamond 1997, Thm. 2.1 itself, which computes it at level `Q_n` as the
+`ℤ_p`-rank of the bottom module.
+
+WHY THIS IS THE CUT (design note, 2026-07-25): the tower's data is
+`(q, d, M₀)` shared plus one datum per level, so the only honest
+splitting axis is the LEVEL — splitting instead into a ring-side leaf
+and a module-side leaf would leave a nearly Cohen-structure-theoretic
+(hence near-vacuous) ring leaf and an unfaithful module leaf over an
+uncharacterized ring.  Along the level axis the natural cut is
+BOTTOM (this leaf: where the modularity subtree supplies the Hecke
+module, stated against the pillar's abstract Hecke packet
+`(T, ρT, π)` — no new carrier) versus AUXILIARY LEVELS
+(`exists_taylorWilesLevelRaw` below: ingredients 1–4).  Both leaves
+speak only the raw-level vocabulary above, and the structural
+bookkeeping between raw and native levels is discharged by the PROVEN
+`nonempty_taylorWilesLevel_of_raw`.
+
+Both-ways audit: at the intended instantiation this is the cited
+Hecke-module input; abstractly the hypothesis set contains the
+classically unsatisfiable irreducible hardly ramified `ρbar` (section
+audit of `Interface.lean`), so the statement is also classically true
+outright.  CIRCULARITY GUARD (inherited from pillar 3b): must not be
+proven through `Family.lean` or anything downstream of it. -/
+theorem exists_taylorWilesBottomLevel.{s, t, uK, uW, uR}
+    {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hpodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    {Runiv : Type uR} [CommRing Runiv] [TopologicalSpace Runiv]
+    [IsTopologicalRing Runiv] [IsLocalRing Runiv] [Algebra ℤ_[p] Runiv]
+    [IsNoetherianRing Runiv]
+    (hadic : IsAdic (IsLocalRing.maximalIdeal Runiv))
+    (hcomplete : IsAdicComplete (IsLocalRing.maximalIdeal Runiv) Runiv)
+    {ρuniv : GaloisRep ℚ Runiv (Fin 2 → Runiv)}
+    (hranku : Module.rank Runiv (Fin 2 → Runiv) = 2)
+    (hρuniv : IsHardlyRamified hpodd hranku ρuniv)
+    {πuniv : Runiv →+* k} (hπuniv : Function.Surjective πuniv)
+    {Suniv : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hunivred : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ Suniv →
+      πuniv ((ρuniv.charFrob
+          hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
+        (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
+    (hfact : IsWeaklyUniversalDeformation.{s, t, uK, uW, uR} hpodd ρbar
+      ρuniv πuniv)
+    {T : Type s} [CommRing T] [TopologicalSpace T] [IsTopologicalRing T]
+    [Algebra ℤ_[p] T] [IsLocalRing T] [Module.Finite ℤ_[p] T]
+    [Module.Free ℤ_[p] T] [IsModuleTopology ℤ_[p] T]
+    {ρT : GaloisRep ℚ T (Fin 2 → T)}
+    (hrankT : Module.rank T (Fin 2 → T) = 2)
+    (hρT : IsHardlyRamified hpodd hrankT ρT)
+    {π : T →+* k} (hπ : Function.Surjective π)
+    {S_T : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hred : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S_T →
+      π ((ρT.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
+        (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
+    (ψ : Runiv →+* T)
+    (hψalg : ψ.comp (algebraMap ℤ_[p] Runiv) = algebraMap ℤ_[p] T)
+    (hψπ : π.comp ψ = πuniv)
+    {Sψ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hψ : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ Sψ →
+      ψ ((ρuniv.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
+        (ρT.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
+    (hTWq : ∀ r n : ℕ, ∃ Q : Finset ℕ,
+      Q.card = r ∧ IsTaylorWilesPrimeSet ρbar p n Q) :
+    ∃ (q d : ℕ) (M0 : Type) (_ : AddCommGroup M0) (_ : Module T M0)
+      (_ : Nontrivial M0),
+      Nonempty (TaylorWilesLevelRaw.{0, 0, 0, s, uR} p ψ q d 0 M0) :=
+  sorry
+
+set_option linter.checkUnivs false in
+/-- **The auxiliary Taylor–Wiles levels** (patching leaf 2a-i-β, sorry
+node — ingredients 1–4 of the patching construction): given the
+level-independent invariants `(q, d, M₀)` of the bottom level, the
+raw level datum exists at EVERY level `n`.
+
+This is where the four Galois/Hecke ingredients of the tower live,
+each at the auxiliary level `Q_n` — ring and module together, since
+the auxiliary Hecke module is a module over the auxiliary deformation
+ring and neither is characterized without the other:
+
+1. **Dual-Selmer refinement of the prime supply** (Wiles, Ann. of
+   Math. 141 (1995), ch. 3; DDT §4, Thm. 2.49): refine `hTWq`'s
+   level-`n` supply to a set `Q_n` of Taylor–Wiles primes with
+   `#Q_n = q = dim_k H¹_{Q_n}(ℚ, ad⁰ρbar)` for which the DUAL Selmer
+   group `H¹_{Q_n^*}(ℚ, ad⁰ρbar(1))` vanishes; Wiles's product formula
+   then makes the level-`n` tangent space exactly `q`-dimensional,
+   which is the `q` fixed by the bottom leaf.  `hTWq` records the
+   Chebotarev skeleton of the choice (`exists_taylorWilesPrimeSet`,
+   PROVEN); the cohomological sharpening is internal to this leaf.
+2. **The auxiliary Mazur package at `Q_n`**: the hardly ramified
+   deformation problem augmented by allowed ramification at `Q_n` is
+   representable, giving `R` with the `q`-generator presentation
+   `pres` (the tangent bound of 1).  This is where THIS MODULE'S
+   PROVEN representability machinery instantiates, at the augmented
+   problem: the finite-test carrier
+   `IsWeaklyUniversalOnIdentifiedFiniteTests`, the finite-tangent
+   package `exists_weaklyUniversalOnIdentified_framed_of_finite_tangent`
+   and its pro-finite upgrade
+   `isWeaklyUniversalOnIdentifiedDeformation_of_finiteTests`,
+   together with the restricted-ramification finiteness leaves
+   (`finite_setOf_isHardlyRamified` and below) that supply
+   Schlessinger's H3 at the augmented level.
+3. **Local class field theory at the Taylor–Wiles primes**: for
+   `q ∈ Q_n`, `q ≡ 1 mod p^n` and `ρbar(Frob_q)` has distinct
+   eigenvalues (`IsTaylorWilesPrimeSet`), so the local deformations at
+   `q` are diagonal and the tame inertia character gives the
+   `Δ_{Q_n} = ∏_{q ∈ Q_n}(ℤ/q)^×(p)`-action, i.e. `diamond`,
+   `bIdeal`, `bIdeal_le` (`𝔟_n ⊆ 𝔪_Λ^n` because every `q ∈ Q_n` is
+   `≡ 1 mod p^n`) and the control identification `toRuniv` with
+   kernel `𝔫·R` — switching the diamond operators off returns the
+   original deformation problem, whose ring is the `Runiv` of the
+   pillar hypotheses.
+4. **The Taylor–Wiles freeness certificate** (Diamond, Invent. Math.
+   128 (1997), Thm. 2.1 — no multiplicity one needed): the auxiliary
+   Hecke module `M` at the level raised by `Q_n` is finite free of the
+   level-independent rank `d` over `ℤ_p[Δ_{Q_n}] = Λ/𝔟_n`, recorded
+   here in the coordinate form `coordM`.
+
+Ingredient 5 (level control at the bottom: `projM`,
+`projM_surjective`, `projM_smul`, `projM_eq_zero`) enters at each
+level as the Ihara/level-raising comparison of the auxiliary Hecke
+module with the bottom module supplied by
+`exists_taylorWilesBottomLevel`; the bottom module itself — the
+modularity-subtree plug point — is NOT re-produced here but taken as
+the hypothesis `hbot`, which is what makes the two leaves speak about
+the SAME `M₀`.  The `R`-action descends to the `T`-action through
+`ψ ∘ toRuniv` (`projM_smul`), where the pillar's `ψ` enters, pinned to
+the Hecke-side classifying map by the weak-universality certificate
+`hfact` à la Carayol (hypotheses `hψ`, `hψalg`, `hψπ`).
+
+Both-ways audit: at the intended instantiation this is the cited
+Taylor–Wiles construction; abstractly the hypothesis set contains the
+classically unsatisfiable irreducible hardly ramified `ρbar` (section
+audit of `Interface.lean`), so the statement is also classically true
+outright.  CIRCULARITY GUARD (inherited from pillar 3b): must not be
+proven through `Family.lean` or anything downstream of it. -/
+theorem exists_taylorWilesLevelRaw.{s, t, uK, uW, uR}
+    {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hpodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    {Runiv : Type uR} [CommRing Runiv] [TopologicalSpace Runiv]
+    [IsTopologicalRing Runiv] [IsLocalRing Runiv] [Algebra ℤ_[p] Runiv]
+    [IsNoetherianRing Runiv]
+    (hadic : IsAdic (IsLocalRing.maximalIdeal Runiv))
+    (hcomplete : IsAdicComplete (IsLocalRing.maximalIdeal Runiv) Runiv)
+    {ρuniv : GaloisRep ℚ Runiv (Fin 2 → Runiv)}
+    (hranku : Module.rank Runiv (Fin 2 → Runiv) = 2)
+    (hρuniv : IsHardlyRamified hpodd hranku ρuniv)
+    {πuniv : Runiv →+* k} (hπuniv : Function.Surjective πuniv)
+    {Suniv : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hunivred : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ Suniv →
+      πuniv ((ρuniv.charFrob
+          hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
+        (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
+    (hfact : IsWeaklyUniversalDeformation.{s, t, uK, uW, uR} hpodd ρbar
+      ρuniv πuniv)
+    {T : Type s} [CommRing T] [TopologicalSpace T] [IsTopologicalRing T]
+    [Algebra ℤ_[p] T] [IsLocalRing T] [Module.Finite ℤ_[p] T]
+    [Module.Free ℤ_[p] T] [IsModuleTopology ℤ_[p] T]
+    {ρT : GaloisRep ℚ T (Fin 2 → T)}
+    (hrankT : Module.rank T (Fin 2 → T) = 2)
+    (hρT : IsHardlyRamified hpodd hrankT ρT)
+    {π : T →+* k} (hπ : Function.Surjective π)
+    {S_T : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hred : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S_T →
+      π ((ρT.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
+        (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
+    (ψ : Runiv →+* T)
+    (hψalg : ψ.comp (algebraMap ℤ_[p] Runiv) = algebraMap ℤ_[p] T)
+    (hψπ : π.comp ψ = πuniv)
+    {Sψ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hψ : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ Sψ →
+      ψ ((ρuniv.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
+        (ρT.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
+    (hTWq : ∀ r n : ℕ, ∃ Q : Finset ℕ,
+      Q.card = r ∧ IsTaylorWilesPrimeSet ρbar p n Q)
+    (q d : ℕ) (M0 : Type) [AddCommGroup M0] [Module T M0]
+    (hM0 : Nontrivial M0)
+    (hbot : Nonempty (TaylorWilesLevelRaw.{0, 0, 0, s, uR} p ψ q d 0 M0))
+    (n : ℕ) :
+    Nonempty (TaylorWilesLevelRaw.{0, 0, 0, s, uR} p ψ q d n M0) :=
+  sorry
+
+/-- **Existence of the Taylor–Wiles tower** (patching leaf 2a-i;
+DECOMPOSED 2026-07-25 into a PROVEN assembly over the level-wise cut —
+the arithmetic is now carried by the two raw-level leaves
+`exists_taylorWilesBottomLevel` (the bottom level, where the
+modularity subtree supplies the Hecke module `M₀` and the
+level-independent invariants `q`, `d`) and `exists_taylorWilesLevelRaw`
+(the auxiliary levels: ingredients 1–4, dual-Selmer prime supply,
+augmented Mazur package, local class field theory at the Taylor–Wiles
+primes, Diamond's freeness certificate); what is proven here is the
+threading of the shared invariants through the levels together with
+the structural conversion `nonempty_taylorWilesLevel_of_raw` from raw
+to native levels): under the
 full hypothesis set of pillar 3b-iii, together with the exact-size
 Taylor–Wiles prime supply `hTWq`, the level-by-level auxiliary data
 exists.
@@ -4153,7 +4572,23 @@ This is `exists_taylorWilesSystem` with the tower/system transposition
 (pure bookkeeping, proven below) and the freeness-certificate
 coordinatization (`nonempty_linearEquiv_fin_of_free_over_quotient`,
 proven above) stripped away; the remaining content is exactly the five
-classical ingredients, each a natural sub-leaf of this node:
+classical ingredients listed below.  As of the 2026-07-25 cut they are
+DISTRIBUTED over the two raw-level leaves along the level axis:
+ingredients 1–4 and the level-`n` half of ingredient 5 go to
+`exists_taylorWilesLevelRaw`, and the BOTTOM instance of all five — in
+particular the production of `M₀` itself, which is ingredient 5's
+modularity-subtree plug point — goes to
+`exists_taylorWilesBottomLevel`, whose docstring also records the
+design note on why the level axis is the only faithful splitting axis
+(a ring-side/module-side split would leave a near-vacuous ring leaf
+and an unfaithful module leaf over an uncharacterized ring).  The
+shared invariants `(q, d, M₀)` are threaded by the assembly proven
+here, which then converts each raw level into the native
+`TaylorWilesLevel` by `nonempty_taylorWilesLevel_of_raw` (PROVEN
+above: the coordinate model `(Λ/𝔟_n)^d` carries the canonical
+`Λ/𝔟_n`-structure, and `nontrivialQuot` is derived from
+nontriviality of `M₀` through the surjection `projM`).  The five
+ingredients:
 
 1. **Dual-Selmer refinement of the prime supply** (Wiles, Ann. of
    Math. 141 (1995), ch. 3; DDT §4, Thm. 2.49): from `hTWq` pick, at
@@ -4259,8 +4694,25 @@ theorem exists_taylorWilesTower.{s, t, uK, uW, uR}
         (ρT.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
     (hTWq : ∀ r n : ℕ, ∃ Q : Finset ℕ,
       Q.card = r ∧ IsTaylorWilesPrimeSet ρbar p n Q) :
-    Nonempty (TaylorWilesTower.{0, 0, 0, s, uR} p ψ) :=
-  sorry
+    Nonempty (TaylorWilesTower.{0, 0, 0, s, uR} p ψ) := by
+  obtain ⟨q, d, M0, iAG, iMod, iNt, hbot⟩ :=
+    exists_taylorWilesBottomLevel.{s, t, uK, uW, uR} hpodd hW hρbar hirr
+      hadic hcomplete hranku hρuniv hπuniv hunivred hfact hrankT hρT hπ hred
+      ψ hψalg hψπ hψ hTWq
+  letI := iAG
+  letI := iMod
+  exact ⟨{ q := q
+           d := d
+           M0 := M0
+           addCommGroupM0 := iAG
+           moduleM0 := iMod
+           nontrivialM0 := iNt
+           level := fun n =>
+             (nonempty_taylorWilesLevel_of_raw iNt
+               (exists_taylorWilesLevelRaw.{s, t, uK, uW, uR} hpodd hW hρbar
+                 hirr hadic hcomplete hranku hρuniv hπuniv hunivred hfact
+                 hrankT hρT hπ hred ψ hψalg hψπ hψ hTWq q d M0 iNt
+                 hbot n).some).some }⟩
 
 /-- **Existence of the Taylor–Wiles system** (patching leaf 2a;
 ASSEMBLED 2026-07-24 as bookkeeping over the tower leaf): under the
