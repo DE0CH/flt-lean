@@ -284,6 +284,14 @@ public import Mathlib.RingTheory.ClassGroup.Basic
 -- `NumberField.RingOfIntegers.mapRingEquiv`. PUBLIC: both appear in
 -- the SIGNATURES of the E3c support leaves.
 public import Mathlib.NumberTheory.NumberField.Cyclotomic.Galois
+-- `dvd_sub_pow_of_dvd_sub` (`x ≡ y mod p` implies
+-- `x^(p^k) ≡ y^(p^k) mod p^(k+1)`): the Teichmüller-lift multiplicativity
+-- behind the eigenspace extraction of Eisenstein pillar E3c
+-- (`twisted_hom_eq_zero_of_forall_omega_inv_eigenvector_trivial`). It was
+-- reaching this file only through the import closure of
+-- `Fermat.FLT.Modularity.KhareWintenberger`; named explicitly here since
+-- a proof in this file depends on it. Non-public: proof only.
+import Mathlib.NumberTheory.Basic
 
 @[expose] public section
 
