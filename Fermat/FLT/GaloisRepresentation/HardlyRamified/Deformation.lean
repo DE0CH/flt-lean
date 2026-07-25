@@ -1381,7 +1381,7 @@ theorem isFlatAt_baseChange_quotient {R : Type u} [CommRing R]
     [TopologicalSpace R] [IsTopologicalRing R] [IsLocalRing R]
     {M : Type v} [AddCommGroup M] [Module R M] [Module.Finite R M]
     [Module.Free R M]
-    (P : Ideal R) [P.IsPrime] [IsLocalRing (R ⧸ P)]
+    (P : Ideal R) [IsLocalRing (R ⧸ P)]
     {ρ : GaloisRep ℚ R M}
     (hflat : ρ.IsFlatAt
       (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : ℓ.Prime))) :
@@ -1574,7 +1574,7 @@ lemma isHardlyRamified_baseChange_quotient {R : Type u} [CommRing R]
     [Algebra ℤ_[ℓ] R]
     {M : Type v} [AddCommGroup M] [Module R M] [Module.Finite R M]
     [Module.Free R M] {hdimM : Module.rank R M = 2}
-    (P : Ideal R) [P.IsPrime] [IsLocalRing (R ⧸ P)]
+    (P : Ideal R) [IsLocalRing (R ⧸ P)]
     (hdimQ : Module.rank (R ⧸ P) ((R ⧸ P) ⊗[R] M) = 2)
     {ρ : GaloisRep ℚ R M} (h : IsHardlyRamified hℓOdd hdimM ρ) :
     IsHardlyRamified hℓOdd hdimQ (ρ.baseChange (R ⧸ P)) := by
@@ -2729,10 +2729,349 @@ theorem exists_ringHom_matrix_of_forall_quotient_mem
   rw [hlvl, hf]
   exact (s (Opposite.op n)).2
 
+/-- **The maximal ideal of a FINITE local ring is nilpotent** (PROVEN
+2026-07-25, pure commutative algebra): a finite ring is Artinian, and the
+Jacobson radical of a commutative Artinian ring is nilpotent
+(`IsArtinianRing.isNilpotent_jacobson_bot`); over a local ring that
+radical IS the maximal ideal (`IsLocalRing.jacobson_eq_maximalIdeal`).
+
+The workhorse of the quotient-deformation construction inside
+`exists_ringHom_matrix_quotient_of_finite`: it is what makes the finite
+quotient `D'.R ⧸ I` an object of Mazur's category at all, supplying in
+one stroke its discreteness, its `IsAdic` clause and its
+`IsAdicComplete` clause (the three lemmas below). -/
+theorem exists_maximalIdeal_pow_eq_bot (A : Type*) [CommRing A] [Finite A]
+    [IsLocalRing A] : ∃ N : ℕ, IsLocalRing.maximalIdeal A ^ N = ⊥ := by
+  haveI : IsArtinianRing A := isArtinian_of_finite
+  obtain ⟨N, hN⟩ := IsArtinianRing.isNilpotent_jacobson_bot (R := A)
+  refine ⟨N, ?_⟩
+  rwa [IsLocalRing.jacobson_eq_maximalIdeal (⊥ : Ideal A) bot_ne_top,
+    Ideal.zero_eq_bot] at hN
+
+/-- **A nilpotent ideal is adically complete** (PROVEN 2026-07-25, pure
+commutative algebra): if `J ^ N = ⊥` the `J`-adic filtration is
+eventually zero, so the ring is `J`-adically separated (anything
+congruent to `0` modulo `J ^ N` IS `0`) and precomplete (a compatible
+sequence is constant from level `N` on, and its `N`-th term is a
+limit). -/
+theorem isAdicComplete_of_pow_eq_bot {A : Type*} [CommRing A] {J : Ideal A}
+    {N : ℕ} (hJ : J ^ N = ⊥) : IsAdicComplete J A := by
+  haveI : IsHausdorff J A := by
+    constructor
+    intro x hx
+    have h := hx N
+    rw [hJ] at h
+    simpa using h
+  haveI : IsPrecomplete J A := by
+    constructor
+    intro f hf
+    refine ⟨f N, fun n => ?_⟩
+    rcases le_total n N with hle | hle
+    · exact hf hle
+    · have h := hf hle
+      rw [hJ] at h
+      simp only [Submodule.bot_smul, SModEq.bot] at h
+      rw [h]
+  constructor
+
+/-- **On a DISCRETE ring a nilpotent ideal is adic** (PROVEN 2026-07-25):
+in the discrete topology every set is open, and `J ^ N = ⊥ = {0}` sits
+inside every neighbourhood of `0`, which is exactly the two clauses of
+`isAdic_iff`. (The `⊥`-case of this is mathlib's `is_bot_adic_iff`; what
+is needed here is the nilpotent case, `J` being the maximal ideal of a
+finite local ring rather than `⊥`.) -/
+theorem isAdic_of_pow_eq_bot {A : Type*} [CommRing A] [TopologicalSpace A]
+    [IsTopologicalRing A] [DiscreteTopology A] {J : Ideal A} {N : ℕ}
+    (hJ : J ^ N = ⊥) : IsAdic J := by
+  rw [isAdic_iff]
+  refine ⟨fun n => isOpen_discrete _, fun s hs => ⟨N, ?_⟩⟩
+  rw [hJ]
+  intro x hx
+  have hx0 : x = 0 := by simpa using hx
+  subst hx0
+  exact mem_of_mem_nhds hs
+
+/-- **A proper ideal with FINITE quotient is open** (PROVEN 2026-07-25,
+pure commutative algebra): in a local ring carrying the `𝔪`-adic
+topology, an ideal `I ≠ ⊤` whose quotient is finite contains a power of
+`𝔪`, hence is a union of cosets of an open ideal and is open.
+
+The power is produced by `exists_maximalIdeal_pow_eq_bot` applied to the
+finite local ring `A ⧸ I`: its maximal ideal `𝔫` satisfies `𝔫 ^ N = ⊥`,
+the quotient map is local (`isLocalHom_of_le_jacobson_bot`, `I` lying
+inside `𝔪 = jacobson ⊥`) so `𝔪` maps into `𝔫`, and `(𝔪 ^ N).map = ⊥`
+says exactly `𝔪 ^ N ≤ I`. `Ideal.isOpen_of_isOpen_subideal` finishes.
+
+This is the converse direction of the proven
+`finite_quotient_of_maximalIdeal_pow_le` above, and it is what makes the
+quotient topology on `D'.R ⧸ I` DISCRETE. -/
+theorem isOpen_of_ne_top_of_finite_quotient {A : Type*} [CommRing A]
+    [TopologicalSpace A] [IsTopologicalRing A] [IsLocalRing A]
+    (hadic : IsAdic (IsLocalRing.maximalIdeal A)) (I : Ideal A)
+    (hItop : I ≠ ⊤) (hfin : Finite (A ⧸ I)) : IsOpen (I : Set A) := by
+  haveI := hfin
+  haveI : Nontrivial (A ⧸ I) := by
+    rw [← not_subsingleton_iff_nontrivial, Ideal.Quotient.subsingleton_iff]
+    exact hItop
+  haveI : IsLocalRing (A ⧸ I) :=
+    IsLocalRing.of_surjective' (Ideal.Quotient.mk I) Ideal.Quotient.mk_surjective
+  haveI : IsLocalHom (Ideal.Quotient.mk I) :=
+    isLocalHom_of_le_jacobson_bot I (by
+      rw [IsLocalRing.jacobson_eq_maximalIdeal (⊥ : Ideal A) bot_ne_top]
+      exact IsLocalRing.le_maximalIdeal hItop)
+  obtain ⟨N, hN⟩ := exists_maximalIdeal_pow_eq_bot (A ⧸ I)
+  have hmapmono : (IsLocalRing.maximalIdeal A).map (Ideal.Quotient.mk I) ≤
+      IsLocalRing.maximalIdeal (A ⧸ I) := by
+    rw [Ideal.map_le_iff_le_comap]
+    intro y hy
+    show Ideal.Quotient.mk I y ∈ IsLocalRing.maximalIdeal (A ⧸ I)
+    rw [IsLocalRing.mem_maximalIdeal] at hy ⊢
+    exact fun hu => hy (isUnit_of_map_unit (Ideal.Quotient.mk I) y hu)
+  have hmono : ∀ n : ℕ,
+      ((IsLocalRing.maximalIdeal A).map (Ideal.Quotient.mk I)) ^ n ≤
+        IsLocalRing.maximalIdeal (A ⧸ I) ^ n := by
+    intro n
+    induction n with
+    | zero => simp
+    | succ m ih => rw [pow_succ, pow_succ]; exact Ideal.mul_mono ih hmapmono
+  have hle : IsLocalRing.maximalIdeal A ^ N ≤ I := by
+    have hpow : ((IsLocalRing.maximalIdeal A) ^ N).map (Ideal.Quotient.mk I) = ⊥ := by
+      rw [Ideal.map_pow, ← le_bot_iff, ← hN]
+      exact hmono N
+    rwa [Ideal.map_eq_bot_iff_le_ker, Ideal.mk_ker] at hpow
+  exact Ideal.isOpen_of_isOpen_subideal hle ((isAdic_iff.mp hadic).1 N)
+
 open scoped Matrix in
 open scoped TensorProduct in
+/-- **The canonical framing turns a base change into a matrix image**
+(PROVEN 2026-07-25 — the computational core shared by
+`toMatrix'_pushforwardFrame` and the matrix dictionary
+`exists_matrix_of_conj_baseChange` below): under the identification
+`B ⊗_R R² ≅ B²` of `TensorProduct.piScalarRight`, the base change of a
+standard-framed `ρ` along `ψ : R →+* B` acts as multiplication by the
+matrix `ψ(ρ(g))` obtained by applying `ψ` entrywise.
+
+On a simple tensor `b ⊗ w` both sides are `b • (ψ(ρ(g)) *ᵥ ψ∘w)`: the
+framing sends `b ⊗ w` to `b • ψ∘w`, and `ψ∘(ρ(g)w) = ψ(ρ(g)) *ᵥ ψ∘w`
+because `ψ` is a ring homomorphism (`RingHom.map_mulVec`). -/
+theorem piScalarRight_baseChange_apply {R : Type u} [CommRing R]
+    [TopologicalSpace R] [IsTopologicalRing R]
+    {B : Type u} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
+    (ψ : R →+* B) (hψ : Continuous ψ) (ρ : FramedGaloisRep ℚ R (Fin 2))
+    (g : Field.absoluteGaloisGroup ℚ) :
+    letI : Algebra R B := ψ.toAlgebra
+    letI : ContinuousSMul R B := continuousSMul_of_algebraMap R B
+      (by rw [RingHom.algebraMap_toAlgebra]; exact hψ)
+    ∀ x : B ⊗[R] (Fin 2 → R),
+      TensorProduct.piScalarRight R B B (Fin 2) ((ρ.baseChange B) g x) =
+        ((LinearMap.toMatrix' (ρ g)).map ⇑ψ) *ᵥ
+          (TensorProduct.piScalarRight R B B (Fin 2) x) := by
+  letI : Algebra R B := ψ.toAlgebra
+  letI : ContinuousSMul R B := continuousSMul_of_algebraMap R B
+    (by rw [RingHom.algebraMap_toAlgebra]; exact hψ)
+  have hsmul : ∀ (r : R) (b : B), r • b = ψ r * b := fun r b => by
+    rw [Algebra.smul_def, RingHom.algebraMap_toAlgebra]
+  have hptmul : ∀ (b : B) (w : Fin 2 → R),
+      TensorProduct.piScalarRight R B B (Fin 2) (b ⊗ₜ[R] w) =
+        b • (fun j => ψ (w j)) := by
+    intro b w
+    rw [TensorProduct.piScalarRight_apply, TensorProduct.piScalarRightHom_tmul]
+    rw [show (fun j => w j • b) = b • (fun j => ψ (w j)) from by
+      funext j
+      rw [hsmul]
+      show ψ (w j) * b = b * ψ (w j)
+      rw [mul_comm]]
+  intro x
+  induction x using TensorProduct.induction_on with
+  | zero => simp
+  | add a b ha hb => simp only [map_add, ha, hb, Matrix.mulVec_add]
+  | tmul b w =>
+    rw [GaloisRep.baseChange_tmul, hptmul, hptmul]
+    have hmap : (fun j => ψ ((ρ g w) j)) =
+        (LinearMap.toMatrix' (ρ g)).map ⇑ψ *ᵥ (fun j => ψ (w j)) := by
+      funext i
+      rw [show (ρ g w) = LinearMap.toMatrix' (ρ g) *ᵥ w from
+        (LinearMap.toMatrix'_mulVec (ρ g) w).symm]
+      exact RingHom.map_mulVec ψ (LinearMap.toMatrix' (ρ g)) w i
+    rw [hmap, Matrix.mulVec_smul]
+
+open scoped Matrix in
+/-- **The matrix of a pushed-forward frame is the entrywise image**
+(PROVEN 2026-07-25): `pushforwardFrame ψ hψ ρ` really is "apply `ψ` to
+the matrix entries of `ρ`", which is what its docstring promises and what
+makes it usable as the level-`n` datum of an inverse system of
+MATRICES. -/
+theorem toMatrix'_pushforwardFrame {B : Type u} [CommRing B]
+    [TopologicalSpace B] [IsTopologicalRing B] {A : Type u} [CommRing A]
+    [TopologicalSpace A] [IsTopologicalRing A] (ψ : B →+* A)
+    (hψ : Continuous ψ) (ρ : FramedGaloisRep ℚ B (Fin 2))
+    (g : Field.absoluteGaloisGroup ℚ) :
+    LinearMap.toMatrix' (pushforwardFrame ψ hψ ρ g) =
+      (LinearMap.toMatrix' (ρ g)).map ⇑ψ := by
+  letI : Algebra B A := ψ.toAlgebra
+  letI : ContinuousSMul B A := continuousSMul_of_algebraMap B A
+    (by rw [RingHom.algebraMap_toAlgebra]; exact hψ)
+  have happ : ∀ w : Fin 2 → A,
+      (pushforwardFrame ψ hψ ρ) g w =
+        ((LinearMap.toMatrix' (ρ g)).map ⇑ψ) *ᵥ w := by
+    intro w
+    rw [show (pushforwardFrame ψ hψ ρ) g =
+      (TensorProduct.piScalarRight B A A (Fin 2)).conj ((ρ.baseChange A) g)
+      from rfl, LinearEquiv.conj_apply_apply,
+      piScalarRight_baseChange_apply ψ hψ ρ g, LinearEquiv.apply_symm_apply]
+  have hlin : (pushforwardFrame ψ hψ ρ g : (Fin 2 → A) →ₗ[A] (Fin 2 → A)) =
+      Matrix.toLin' ((LinearMap.toMatrix' (ρ g)).map ⇑ψ) := by
+    refine LinearMap.ext fun w => ?_
+    rw [Matrix.toLin'_apply, happ]
+  rw [hlin, LinearMap.toMatrix'_toLin']
+
+/-- **Pushforward depends only on the ring map** (PROVEN 2026-07-25):
+the continuity witness is a proof, so equal maps give equal pushforwards.
+Needed because `pushforwardFrame` takes its continuity proof as an
+explicit argument, which makes the map argument occur in a
+dependently-typed position and blocks a plain `rw`. -/
+theorem pushforwardFrame_congr {B : Type u} [CommRing B] [TopologicalSpace B]
+    [IsTopologicalRing B] {A : Type u} [CommRing A] [TopologicalSpace A]
+    [IsTopologicalRing A] {ψ χ : B →+* A} (hψ : Continuous ψ)
+    (hχ : Continuous χ) (h : ψ = χ) (ρ : FramedGaloisRep ℚ B (Fin 2)) :
+    pushforwardFrame ψ hψ ρ = pushforwardFrame χ hχ ρ := by
+  subst h
+  rfl
+
+/-- **Pushforward is functorial** (PROVEN 2026-07-25): pushing forward
+along `ψ` and then along `χ` is pushing forward along `χ ∘ ψ`. Read on
+matrices (`toMatrix'_pushforwardFrame`) this is just
+`Matrix.map_map`. -/
+theorem pushforwardFrame_comp {B : Type u} [CommRing B] [TopologicalSpace B]
+    [IsTopologicalRing B] {A : Type u} [CommRing A] [TopologicalSpace A]
+    [IsTopologicalRing A] {C : Type u} [CommRing C] [TopologicalSpace C]
+    [IsTopologicalRing C] (ψ : B →+* A) (hψ : Continuous ψ) (χ : A →+* C)
+    (hχ : Continuous χ) (hcomp : Continuous ⇑(χ.comp ψ))
+    (ρ : FramedGaloisRep ℚ B (Fin 2)) :
+    pushforwardFrame χ hχ (pushforwardFrame ψ hψ ρ) =
+      pushforwardFrame (χ.comp ψ) hcomp ρ := by
+  refine GaloisRep.ext fun g => ?_
+  refine LinearMap.toMatrix'.injective ?_
+  rw [toMatrix'_pushforwardFrame χ hχ (pushforwardFrame ψ hψ ρ) g,
+    toMatrix'_pushforwardFrame ψ hψ ρ g,
+    toMatrix'_pushforwardFrame (χ.comp ψ) hcomp ρ g, Matrix.map_map]
+  rfl
+
+/-- **Conjugation composes** (PROVEN 2026-07-25): conjugating by `a` then
+by `b` is conjugating by `a.trans b`. Consumed by the residual-identity
+transport inside `exists_ringHom_matrix_quotient_of_finite`, which has to
+move an identification stated against a tensor product onto the standard
+frame. -/
+theorem GaloisRep.conj_trans {A : Type*} [CommRing A] [TopologicalSpace A]
+    {M : Type*} [AddCommGroup M] [Module A M] [Module.Finite A M]
+    [Module.Free A M]
+    {N : Type*} [AddCommGroup N] [Module A N] [Module.Finite A N]
+    [Module.Free A N]
+    {P : Type*} [AddCommGroup P] [Module A P] [Module.Finite A P]
+    [Module.Free A P]
+    (ρ : GaloisRep ℚ A M) (a : M ≃ₗ[A] N) (b : N ≃ₗ[A] P) :
+    (ρ.conj a).conj b = ρ.conj (a.trans b) := by
+  refine GaloisRep.ext fun g => ?_
+  refine LinearMap.ext fun x => ?_
+  simp only [GaloisRep.conj_apply, LinearEquiv.conj_apply_apply,
+    LinearEquiv.trans_apply, LinearEquiv.symm_trans_apply]
+
+/-- **Characteristic polynomials push forward by coefficient extension**
+(PROVEN 2026-07-25): the `pushforwardFrame` specialization of
+`charpoly_baseChange_conj`, with the algebra map read back as `ψ`. -/
+theorem charpoly_pushforwardFrame {B : Type u} [CommRing B]
+    [TopologicalSpace B] [IsTopologicalRing B] {A : Type u} [CommRing A]
+    [TopologicalSpace A] [IsTopologicalRing A] (ψ : B →+* A)
+    (hψ : Continuous ψ) (ρ : FramedGaloisRep ℚ B (Fin 2))
+    (g : Field.absoluteGaloisGroup ℚ) :
+    ((pushforwardFrame ψ hψ ρ) g).charpoly = ((ρ g).charpoly).map ψ := by
+  letI : Algebra B A := ψ.toAlgebra
+  letI : ContinuousSMul B A := continuousSMul_of_algebraMap B A
+    (by rw [RingHom.algebraMap_toAlgebra]; exact hψ)
+  have h := charpoly_baseChange_conj ρ
+    (TensorProduct.piScalarRight B A A (Fin 2)) g
+  rwa [RingHom.algebraMap_toAlgebra] at h
+
+open scoped Matrix in
+open scoped TensorProduct in
+/-- **The matrix form of a framed conjugation, CONVERSE direction**
+(PROVEN 2026-07-25 — the reading of `exists_conj_baseChange_of_matrix`
+that the level leaf actually needs): a linear equivalence
+`e : B ⊗_R R² ≃ₗ[B] B²` conjugating the `ψ`-pushforward of `ρ` onto `σ`
+is a conjugating MATRIX `E ∈ GL₂(B)`.
+
+`E` is the matrix of `u := piScalarRight⁻¹ ≫ e`, a `B`-linear
+automorphism of `B²`; its determinant is a unit because
+`toMatrix' u * toMatrix' u⁻¹ = 1` (`Matrix.isUnit_det_of_right_inverse`).
+The intertwining identity is `piScalarRight_baseChange_apply` read
+through `u`: `p` carries the base-changed action onto multiplication by
+`ψ(ρ(g))`, so `u ∘ ψ(ρ(g)) = σ(g) ∘ u` as linear maps, and
+`LinearMap.toMatrix'_comp` turns that into `E · ψ(ρ(g)) = σ(g) · E`.
+
+Deformation-theoretically this is the step that removes the DEPENDENT
+type: `e` lives in a type that depends on the algebra structure `ψ`
+induces, `E` does not — which is what lets the pro-finite limit above be
+taken over honest pairs. -/
+theorem exists_matrix_of_conj_baseChange
+    {R : Type u} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+    {B : Type u} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
+    (ψ : R →+* B) (hψ : Continuous ψ)
+    (ρ : FramedGaloisRep ℚ R (Fin 2)) (σ : FramedGaloisRep ℚ B (Fin 2))
+    (h : letI : Algebra R B := ψ.toAlgebra
+      letI : ContinuousSMul R B := continuousSMul_of_algebraMap R B
+        (by rw [RingHom.algebraMap_toAlgebra]; exact hψ)
+      ∃ e : (B ⊗[R] (Fin 2 → R)) ≃ₗ[B] (Fin 2 → B),
+        (ρ.baseChange B).conj e = σ) :
+    ∃ E : Matrix (Fin 2) (Fin 2) B, IsUnit E.det ∧
+      ∀ g : Field.absoluteGaloisGroup ℚ,
+        E * (LinearMap.toMatrix' (ρ g)).map ⇑ψ =
+          (LinearMap.toMatrix' (σ g)) * E := by
+  letI : Algebra R B := ψ.toAlgebra
+  letI : ContinuousSMul R B := continuousSMul_of_algebraMap R B
+    (by rw [RingHom.algebraMap_toAlgebra]; exact hψ)
+  obtain ⟨e, he⟩ := h
+  set p : (B ⊗[R] (Fin 2 → R)) ≃ₗ[B] (Fin 2 → B) :=
+    TensorProduct.piScalarRight R B B (Fin 2) with hp
+  set u : (Fin 2 → B) ≃ₗ[B] (Fin 2 → B) := p.symm.trans e with hu
+  refine ⟨LinearMap.toMatrix' (u : (Fin 2 → B) →ₗ[B] (Fin 2 → B)), ?_, ?_⟩
+  · refine Matrix.isUnit_det_of_right_inverse
+      (B := LinearMap.toMatrix' (u.symm : (Fin 2 → B) →ₗ[B] (Fin 2 → B))) ?_
+    rw [← LinearMap.toMatrix'_comp,
+      show (u : (Fin 2 → B) →ₗ[B] (Fin 2 → B)).comp
+          (u.symm : (Fin 2 → B) →ₗ[B] (Fin 2 → B)) = LinearMap.id from by
+        refine LinearMap.ext fun w => ?_
+        simp,
+      LinearMap.toMatrix'_id]
+  · intro g
+    have hlin : (u : (Fin 2 → B) →ₗ[B] (Fin 2 → B)).comp
+        (Matrix.toLin' ((LinearMap.toMatrix' (ρ g)).map ⇑ψ)) =
+        (σ g).comp (u : (Fin 2 → B) →ₗ[B] (Fin 2 → B)) := by
+      refine LinearMap.ext fun w => ?_
+      have hx := piScalarRight_baseChange_apply ψ hψ ρ g (p.symm w)
+      rw [hp] at hx
+      rw [LinearEquiv.apply_symm_apply] at hx
+      have hy : p.symm (((LinearMap.toMatrix' (ρ g)).map ⇑ψ) *ᵥ w) =
+          (ρ.baseChange B) g (p.symm w) := by
+        rw [← hx, LinearEquiv.symm_apply_apply]
+      have hz := congrArg
+        (fun τ : GaloisRep ℚ B (Fin 2 → B) => τ g (e (p.symm w))) he
+      simp only [GaloisRep.conj_apply, LinearEquiv.conj_apply_apply,
+        LinearEquiv.symm_apply_apply] at hz
+      show u (((LinearMap.toMatrix' (ρ g)).map ⇑ψ) *ᵥ w) = σ g (u w)
+      rw [hu]
+      show e (p.symm (((LinearMap.toMatrix' (ρ g)).map ⇑ψ) *ᵥ w)) =
+        σ g (e (p.symm w))
+      rw [hy]
+      exact hz
+    have hm := congrArg LinearMap.toMatrix' hlin
+    rwa [LinearMap.toMatrix'_comp, LinearMap.toMatrix'_comp,
+      LinearMap.toMatrix'_toLin'] at hm
+
+open scoped Matrix in
+open scoped TensorProduct in
+set_option linter.unusedSectionVars false in
 /-- **The level-`I` classifying pair of a residually identified
-deformation** (sorry node — step 1 of the pro-finite limit
+deformation** (PROVEN 2026-07-25 — step 1 of the pro-finite limit
 `isWeaklyUniversalOnIdentifiedFrames_of_finite`, its
 deformation-theoretic stratum, and the only part of that limit which is
 not pure commutative algebra): a deformation `D` classifying every
@@ -2763,11 +3102,39 @@ linear equivalence; the equivalence becomes the matrix `E` by reading it
 in the standard frames, its determinant being a unit because it is an
 isomorphism.
 
-NOTE: the three base-change transfer lemmas are stated for PRIME
-quotients (`[P.IsPrime]`); the ideals `I` of interest here — the powers
-`𝔪ⁿ` — are not prime, and primality is not used in any of the three
-proofs, so discharging this leaf will want that hypothesis dropped (a
-purely mechanical generalization: the instance is nowhere consumed).
+WHAT THE PROOF ACTUALLY DOES, and where it differs from the sketch
+above. The test object `Dq` is built with `pushforwardFrame`, the
+canonical "apply the quotient map to the matrix entries" pushforward
+introduced with the deformation-condition cut, rather than by hand as a
+base change followed by a re-framing; its hardly-ramifiedness is then
+`isHardlyRamified_pushforwardFrame` in one step. The Mazur-category
+clauses of `D'.R ⧸ I` all come from ONE fact — its maximal ideal is
+nilpotent, `exists_maximalIdeal_pow_eq_bot`, the ring being finite hence
+Artinian: that makes `I` open (`isOpen_of_ne_top_of_finite_quotient`),
+hence the quotient topology DISCRETE, hence `IsAdic`
+(`isAdic_of_pow_eq_bot`) and `IsAdicComplete`
+(`isAdicComplete_of_pow_eq_bot`).
+
+The residual identification transports WITHOUT any tensor-cancellation
+argument, which is the simplification the `pushforwardFrame` vocabulary
+buys: reading both identifications in the standard frame through
+`GaloisRep.conj_trans` turns the claim into the functoriality
+`pushforwardFrame (D'.π/I) ∘ pushforwardFrame (mk I) = pushforwardFrame
+D'.π` (`pushforwardFrame_comp` plus `pushforwardFrame_congr`), i.e. into
+`Matrix.map_map`. Likewise `charFrob_compat` is
+`charpoly_pushforwardFrame` plus `Polynomial.map_map`. Finally the
+linear equivalence delivered by `hD` becomes the matrix `E` by
+`exists_matrix_of_conj_baseChange`, the converse of
+`exists_conj_baseChange_of_matrix`.
+
+(The base-change transfer lemmas `isFlatAt_baseChange_quotient` and
+`isHardlyRamified_baseChange_quotient` were stated for PRIME quotients;
+the ideals of interest here — the powers `𝔪ⁿ` — are not prime and
+primality was nowhere consumed, so the `[P.IsPrime]` hypothesis was
+dropped from both. That generalization is no longer on this proof's
+path, `isHardlyRamified_pushforwardFrame` having replaced the hand-built
+chain, but it is a strict weakening and every call site still
+typechecks.)
 
 CIRCULARITY GUARD (inherited from the leaf): the hypothesis package is
 the one the odd-prime dichotomy
@@ -2794,8 +3161,119 @@ theorem exists_ringHom_matrix_quotient_of_finite
           ∀ g : Field.absoluteGaloisGroup ℚ,
             E * (LinearMap.toMatrix' (D.ρ g)).map ⇑ψ =
               ((LinearMap.toMatrix' (D'.ρ g)).map
-                ⇑(Ideal.Quotient.mk I)) * E :=
-  sorry
+                ⇑(Ideal.Quotient.mk I)) * E := by
+  letI := D.commRing; letI := D.topologicalSpace; letI := D.isTopologicalRing
+  letI := D.isLocalRing; letI := D.algebra
+  letI := D'.commRing; letI := D'.topologicalSpace
+  letI := D'.isTopologicalRing; letI := D'.isLocalRing; letI := D'.algebra
+  letI := D'.isNoetherianRing
+  intro I hItop hIfin hIπ
+  haveI := hIfin
+  -- `D'.R ⧸ I` is a nontrivial finite local ring: discrete, adic, complete
+  haveI hnt : Nontrivial (D'.R ⧸ I) := by
+    rw [← not_subsingleton_iff_nontrivial, Ideal.Quotient.subsingleton_iff]
+    exact hItop
+  haveI hlocQ : IsLocalRing (D'.R ⧸ I) :=
+    IsLocalRing.of_surjective' (Ideal.Quotient.mk I) Ideal.Quotient.mk_surjective
+  have hmkcont : Continuous (Ideal.Quotient.mk I) :=
+    (QuotientRing.isOpenQuotientMap_mk I).continuous
+  have hIopen : IsOpen (I : Set D'.R) :=
+    isOpen_of_ne_top_of_finite_quotient D'.isAdic I hItop hIfin
+  haveI hdiscQ : DiscreteTopology (D'.R ⧸ I) := by
+    rw [discreteTopology_iff_isOpen_singleton_zero]
+    have himg : ((Ideal.Quotient.mk I) '' (I : Set D'.R)) = {0} := by
+      ext x
+      constructor
+      · rintro ⟨y, hy, rfl⟩
+        exact Ideal.Quotient.eq_zero_iff_mem.mpr hy
+      · rintro rfl
+        exact ⟨0, I.zero_mem, map_zero _⟩
+    rw [← himg]
+    exact (QuotientRing.isOpenMap_coe I) _ hIopen
+  obtain ⟨N, hN⟩ := exists_maximalIdeal_pow_eq_bot (D'.R ⧸ I)
+  have hadicQ : IsAdic (IsLocalRing.maximalIdeal (D'.R ⧸ I)) :=
+    isAdic_of_pow_eq_bot hN
+  haveI hcompQ :
+      IsAdicComplete (IsLocalRing.maximalIdeal (D'.R ⧸ I)) (D'.R ⧸ I) :=
+    isAdicComplete_of_pow_eq_bot hN
+  -- the reduction map of the quotient deformation
+  set πQ : (D'.R ⧸ I) →+* k := Ideal.Quotient.lift I D'.π hIπ
+  have hπQmk : πQ.comp (Ideal.Quotient.mk I) = D'.π := by
+    refine RingHom.ext fun x => ?_
+    rfl
+  have hπQcont : Continuous πQ := continuous_of_discreteTopology
+  have halg : (Ideal.Quotient.mk I).comp (algebraMap ℤ_[ℓ] D'.R) =
+      algebraMap ℤ_[ℓ] (D'.R ⧸ I) := rfl
+  -- the quotient deformation: an object of Mazur's category with FINITE ring
+  set Dq : HardlyRamifiedDeformation hℓOdd ρbar :=
+    { R := D'.R ⧸ I
+      isAdic := hadicQ
+      isAdicComplete := hcompQ
+      ρ := pushforwardFrame (Ideal.Quotient.mk I) hmkcont D'.ρ
+      isHardlyRamified := isHardlyRamified_pushforwardFrame hℓOdd
+        (Ideal.Quotient.mk I) hmkcont halg D'.isHardlyRamified
+      π := πQ
+      π_surjective := by
+        intro y
+        obtain ⟨x, hx⟩ := D'.π_surjective y
+        refine ⟨Ideal.Quotient.mk I x, ?_⟩
+        have h := RingHom.congr_fun hπQmk x
+        rw [RingHom.comp_apply] at h
+        rw [h, hx]
+      charFrob_compat := by
+        intro q hq hq2 hqℓ
+        have h := D'.charFrob_compat q hq hq2 hqℓ
+        simp only [GaloisRep.charFrob_eq_charpoly_globalFrob] at h ⊢
+        rw [charpoly_pushforwardFrame (Ideal.Quotient.mk I) hmkcont D'.ρ,
+          Polynomial.map_map, hπQmk]
+        exact h }
+  -- the residual identification of `D'`, read in the standard frame
+  letI : Algebra D'.R k := D'.π.toAlgebra
+  letI : ContinuousSMul D'.R k := continuousSMul_of_algebraMap D'.R k
+    (by rw [RingHom.algebraMap_toAlgebra]; exact D'.continuous_pi)
+  obtain ⟨e₀, he₀⟩ := hid
+  have hframe : (pushforwardFrame D'.π D'.continuous_pi D'.ρ).conj
+      ((TensorProduct.piScalarRight D'.R k k (Fin 2)).symm.trans e₀) = ρbar := by
+    rw [show pushforwardFrame D'.π D'.continuous_pi D'.ρ =
+      (D'.ρ.baseChange k).conj (TensorProduct.piScalarRight D'.R k k (Fin 2))
+      from rfl, GaloisRep.conj_trans,
+      show (TensorProduct.piScalarRight D'.R k k (Fin 2)).trans
+        ((TensorProduct.piScalarRight D'.R k k (Fin 2)).symm.trans e₀) = e₀ from by
+        refine LinearEquiv.ext fun x => ?_
+        simp only [LinearEquiv.trans_apply, LinearEquiv.symm_apply_apply]]
+    exact he₀
+  -- it transports to the quotient deformation by functoriality alone
+  have hidQ : Dq.IsResidualIdentified := by
+    letI : Algebra Dq.R k := Dq.π.toAlgebra
+    letI : ContinuousSMul Dq.R k := continuousSMul_of_algebraMap Dq.R k
+      (by rw [RingHom.algebraMap_toAlgebra]; exact continuous_of_discreteTopology)
+    have hcomp : Continuous ⇑(πQ.comp (Ideal.Quotient.mk I)) := by
+      rw [hπQmk]; exact D'.continuous_pi
+    have hstep : (Dq.ρ.baseChange k).conj
+        (TensorProduct.piScalarRight Dq.R k k (Fin 2)) =
+        pushforwardFrame D'.π D'.continuous_pi D'.ρ := by
+      show pushforwardFrame πQ hπQcont
+        (pushforwardFrame (Ideal.Quotient.mk I) hmkcont D'.ρ) = _
+      rw [pushforwardFrame_comp (Ideal.Quotient.mk I) hmkcont πQ hπQcont
+        hcomp D'.ρ]
+      exact pushforwardFrame_congr hcomp D'.continuous_pi hπQmk D'.ρ
+    refine ⟨(TensorProduct.piScalarRight Dq.R k k (Fin 2)).trans
+      ((TensorProduct.piScalarRight D'.R k k (Fin 2)).symm.trans e₀), ?_⟩
+    rw [← GaloisRep.conj_trans, hstep]
+    exact hframe
+  -- feed the FINITE hypothesis, and read its conjugation as a matrix
+  obtain ⟨f, hfc, hfZ, hfπ, hex⟩ := hD Dq hIfin hidQ
+  obtain ⟨E, hEdet, hEconj⟩ :=
+    exists_matrix_of_conj_baseChange f hfc D.ρ Dq.ρ hex
+  refine ⟨f, E, ?_, ?_, hEdet, ?_⟩
+  · rw [hfZ]; exact halg.symm
+  · exact hfπ
+  · intro g
+    rw [hEconj g]
+    show LinearMap.toMatrix'
+        (pushforwardFrame (Ideal.Quotient.mk I) hmkcont D'.ρ g) * E =
+      ((LinearMap.toMatrix' (D'.ρ g)).map ⇑(Ideal.Quotient.mk I)) * E
+    rw [toMatrix'_pushforwardFrame]
 
 /-- **The pro-finite limit upgrade** (PROVEN 2026-07-25 over the single
 deformation-theoretic leaf `exists_ringHom_matrix_quotient_of_finite` —
