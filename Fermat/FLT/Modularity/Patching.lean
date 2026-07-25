@@ -6194,7 +6194,6 @@ theorem topologicallyFG_int_mvPowerSeries (p : ℕ) [Fact p.Prime] (q : ℕ)
     simp
   rw [hcoe]
   set A : Subalgebra ℤ Λ := Algebra.adjoin ℤ (Set.range (MvPowerSeries.X (σ := Fin q) (R := ℤ_[p])))
-    with hA
   set B : Subalgebra ℤ Λ := A.topologicalClosure with hB
   have hXB : ∀ i : Fin q, (MvPowerSeries.X i : Λ) ∈ B :=
     fun i => A.le_topologicalClosure (Algebra.subset_adjoin ⟨i, rfl⟩)
