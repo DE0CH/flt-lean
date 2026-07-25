@@ -70,6 +70,9 @@ public import Fermat.FLT.Deformations.RepresentationTheory.AbsoluteGaloisGroup
 -- `Nat.Prime.toHeightOneSpectrumRingOfIntegersRat`, the place of `ℚ`
 -- attached to a prime number.
 public import Fermat.FLT.Mathlib.RingTheory.DedekindDomain.Ideal.Lemmas
+-- the reduction-of-POINTS theory (`WeierstrassCurve.IsReductionAlong`, `redHom`),
+-- used in SIGNATURE position by the local reduction leaves below, hence `public`
+public import Fermat.FLT.KnownIn1980s.EllipticCurves.PointReduction
 -- Minkowski's discriminant theorem (`exists_not_isUnramifiedAt_int_of_isGalois`)
 -- and the going-up prime lifting, used in the Minkowski assembly proof.
 import Mathlib.NumberTheory.NumberField.ExistsRamified
@@ -4155,10 +4158,191 @@ noncomputable instance instDecidableEqAlgClosureResidueFieldAtPrimeRat
 open ValuativeRel IsDedekindDomain in
 open scoped WeierstrassCurve.Affine in
 set_option backward.isDefEq.respectTransparency false in
+/-- **The local reduction datum at a good prime** (sorry node, cut
+2026-07-25 out of `exists_localReductionAddHom_of_good_reduction` — the
+RESIDUE-FIELD half): for an elliptic curve over `ℚ` with good reduction
+at `p`, there is a LOCAL ring homomorphism `ρ` from the valuation
+subring `𝒪 = localValuationSubring v` of `ℚ̄_p` (the integral closure of
+`ℤ_p`) to the algebraic closure of the residue field `𝔽_p =
+IsLocalRing.ResidueField (Localization.AtPrime v.asIdeal)`, along which
+the base-changed curve `E/ℚ̄_p` reduces to the base-changed reduced
+curve `Ẽ/𝔽̄_p`, and the reduced curve is nonsingular (`Δ ≠ 0`).
+
+Content: (1) `IsLocalRing.ResidueField 𝒪` is an ALGEBRAIC CLOSURE of
+`𝔽_p` — `𝒪` is the integral closure of the complete DVR `𝒪ᵥ` in an
+algebraic closure of its fraction field, so its residue field is
+algebraic over `𝔽_p` and algebraically closed — hence isomorphic (as an
+`𝔽_p`-algebra) to `AlgebraicClosure 𝔽_p`; composing the residue map
+`𝒪 → ResidueField 𝒪` with that isomorphism gives `ρ`, and the residue
+map of a local ring is a local homomorphism.  (2) The five coefficients
+of `E/ℚ̄_p` are integral over `ℤ_p` and reduce to the coefficients of
+`Ẽ` — this is the `(𝒪, h𝒪)` pattern of
+`WeierstrassCurve.baseChange_coeff_mem` in
+`Fermat.FLT.KnownIn1980s.EllipticCurves.Flat`, applied to the minimal
+integral model that defines `E.reduction`.  (3) `Δ̄ ≠ 0` is exactly good
+reduction (`hasGoodReduction_iff_isElliptic_reduction`), transported
+along the base change to `𝔽̄_p`.
+
+Once this datum is in hand, the reduction map itself, its additivity
+and its kernel are supplied — PROVEN, characteristic-free, with no
+formal groups — by `WeierstrassCurve.IsReductionAlong.redHom` and
+`redFun_eq_zero_iff` in
+`Fermat.FLT.KnownIn1980s.EllipticCurves.PointReduction`. -/
+theorem WeierstrassCurve.exists_localReductionDatum_of_good_reduction
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ} (hp : p.Prime)
+    [E.HasGoodReduction
+      (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)] :
+    ∃ ρ : (localValuationSubring hp.toHeightOneSpectrumRingOfIntegersRat) →+*
+        AlgebraicClosure (IsLocalRing.ResidueField
+          (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)),
+      IsLocalHom ρ ∧
+      WeierstrassCurve.IsReductionAlong
+        (localValuationSubring hp.toHeightOneSpectrumRingOfIntegersRat) ρ
+        ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+          (HeightOneSpectrum.adicCompletion ℚ
+            hp.toHeightOneSpectrumRingOfIntegersRat)))
+        ((E.reduction
+          (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal))⁄
+          (AlgebraicClosure (IsLocalRing.ResidueField
+            (Localization.AtPrime
+              hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)))) ∧
+      ((E.reduction
+        (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal))⁄
+        (AlgebraicClosure (IsLocalRing.ResidueField
+          (Localization.AtPrime
+            hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)))).Δ ≠ 0 :=
+  sorry
+
+open ValuativeRel IsDedekindDomain in
+open scoped WeierstrassCurve.Affine in
+set_option backward.isDefEq.respectTransparency false in
+/-- **Reduction is surjective onto the geometric points of `Ẽ`** (sorry
+node, cut 2026-07-25 out of `exists_localReductionAddHom_of_good_reduction`
+— the HENSEL half): given the local reduction datum of
+`exists_localReductionDatum_of_good_reduction`, the point-reduction
+homomorphism `redHom` is onto `Ẽ(𝔽̄_p)`.
+
+Content (Silverman *AEC* VII.2.1, VII.3.1): the valuation subring
+`𝒪 = localValuationSubring v` of `ℚ̄_p` is HENSELIAN — it is the
+integral closure of the complete DVR `𝒪ᵥ` in an algebraic extension,
+so every finite `𝒪`-algebra is a product of local rings — and its
+residue field is algebraically closed.  Given `(x̄, ȳ)` on `Ẽ`, lift
+`x̄` to some `x ∈ 𝒪` and solve the Weierstrass equation for `y` over
+`x`: the monic quadratic `Y² + (a₁x + a₃)Y − (x³ + a₂x² + a₄x + a₆)`
+has `ȳ` as a residue root, and either that root is simple — Hensel
+lifts it — or the reduced point is `2`-torsion, in which case the
+`x`-direction derivative is a unit (`Wred.Δ ≠ 0`, exactly
+`IsReductionAlong.res_tangentNum_ne_zero`) and one instead lifts along
+`x`.  The point at infinity is the image of the point at infinity. -/
+theorem WeierstrassCurve.localReduction_surjective_of_good_reduction
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ} (hp : p.Prime)
+    [E.HasGoodReduction
+      (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)]
+    (ρ : (localValuationSubring hp.toHeightOneSpectrumRingOfIntegersRat) →+*
+      AlgebraicClosure (IsLocalRing.ResidueField
+        (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)))
+    [IsLocalHom ρ]
+    (hred : WeierstrassCurve.IsReductionAlong
+      (localValuationSubring hp.toHeightOneSpectrumRingOfIntegersRat) ρ
+      ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+        (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat)))
+      ((E.reduction
+        (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal))⁄
+        (AlgebraicClosure (IsLocalRing.ResidueField
+          (Localization.AtPrime
+            hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)))))
+    (hΔ : ((E.reduction
+      (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal))⁄
+      (AlgebraicClosure (IsLocalRing.ResidueField
+        (Localization.AtPrime
+          hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)))).Δ ≠ 0) :
+    Function.Surjective (hred.redHom hΔ) :=
+  sorry
+
+open ValuativeRel IsDedekindDomain in
+open scoped WeierstrassCurve.Affine in
+set_option backward.isDefEq.respectTransparency false in
+/-- **Reduction is invariant under the local inertia** (sorry node, cut
+2026-07-25 out of `exists_localReductionAddHom_of_good_reduction` — the
+INERTIA half): given the local reduction datum of
+`exists_localReductionDatum_of_good_reduction`, the point-reduction
+homomorphism is unchanged by transporting a point along any `σ` in
+`localInertiaGroup v`.
+
+Content: `localInertiaGroup v` is by DEFINITION
+`AddSubgroup.inertia` of the maximal ideal of the integral closure
+`𝒪 = localValuationSubring v`, i.e. the subgroup of
+`Gal(ℚ̄_p/ℚ_p)` acting trivially on `𝒪/𝔪` — see
+`AbsoluteGaloisGroup.residue_apply_eq_of_mem_localInertiaGroup`.  Each
+such `σ` preserves `𝒪` (`mem_decompositionSubgroup_localValuationSubring`),
+so it maps an integral point to an integral point and a non-integral
+one to a non-integral one, and on integral coordinates it acts
+trivially after reduction; hence `red (σ · P) = red P` coordinate by
+coordinate.  NOTE the quantifier: this is an INERTIA-only statement and
+is FALSE for a general element of the decomposition group — Frobenius
+acts on `𝔽̄_p` by `x ↦ x^p`, which moves the reduced point. -/
+theorem WeierstrassCurve.localReduction_inertia_invariant_of_good_reduction
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ} (hp : p.Prime)
+    [E.HasGoodReduction
+      (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)]
+    (ρ : (localValuationSubring hp.toHeightOneSpectrumRingOfIntegersRat) →+*
+      AlgebraicClosure (IsLocalRing.ResidueField
+        (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)))
+    [IsLocalHom ρ]
+    (hred : WeierstrassCurve.IsReductionAlong
+      (localValuationSubring hp.toHeightOneSpectrumRingOfIntegersRat) ρ
+      ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+        (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat)))
+      ((E.reduction
+        (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal))⁄
+        (AlgebraicClosure (IsLocalRing.ResidueField
+          (Localization.AtPrime
+            hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)))))
+    (hΔ : ((E.reduction
+      (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal))⁄
+      (AlgebraicClosure (IsLocalRing.ResidueField
+        (Localization.AtPrime
+          hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)))).Δ ≠ 0) :
+    ∀ σ ∈ localInertiaGroup hp.toHeightOneSpectrumRingOfIntegersRat,
+      ∀ P : ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+          (HeightOneSpectrum.adicCompletion ℚ
+            hp.toHeightOneSpectrumRingOfIntegersRat))).Point,
+        (hred.redHom hΔ) (WeierstrassCurve.Affine.Point.map
+          (W' := E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+            hp.toHeightOneSpectrumRingOfIntegersRat)))
+          ((σ : (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+              hp.toHeightOneSpectrumRingOfIntegersRat))
+            ≃ₐ[HeightOneSpectrum.adicCompletion ℚ
+              hp.toHeightOneSpectrumRingOfIntegersRat]
+            (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+              hp.toHeightOneSpectrumRingOfIntegersRat)))).toAlgHom P)
+          = (hred.redHom hΔ) P :=
+  sorry
+
+open ValuativeRel IsDedekindDomain in
+open scoped WeierstrassCurve.Affine in
+set_option backward.isDefEq.respectTransparency false in
 /-- **The reduction homomorphism on ALL local points at a good prime**
-(sorry node, cut 2026-07-25 out of
-`exists_localReductionHom_of_good_reduction` — the GEOMETRY half of
-that leaf): for an elliptic curve over `ℚ` with good reduction at `p`,
+(PROVEN 2026-07-25 over three named leaves —
+`exists_localReductionDatum_of_good_reduction` (residue field),
+`localReduction_surjective_of_good_reduction` (Hensel) and
+`localReduction_inertia_invariant_of_good_reduction` (inertia) — on top
+of the reduction-of-POINTS theory built in
+`Fermat.FLT.KnownIn1980s.EllipticCurves.PointReduction`, which supplies
+the map itself, its ADDITIVITY and its KERNEL, all proven: mathlib's
+`Reduction.lean` reduces the CURVE, not its points, so
+`WeierstrassCurve.IsReductionAlong` / `IsReductionAlong.redHom` /
+`IsReductionAlong.redFun_eq_zero_iff` are new theory.  The third clause
+of this statement is discharged outright by `redFun_eq_zero_iff`; cut
+2026-07-25 out of `exists_localReductionHom_of_good_reduction` — the
+GEOMETRY half of that leaf): for an elliptic curve over `ℚ` with good
+reduction at `p`,
 the points of the base change to the algebraic closure `ℚ̄_p` of the
 completion reduce to the geometric points of `Ẽ/𝔽̄_p` by a group
 homomorphism `red` which
@@ -4231,8 +4415,14 @@ theorem WeierstrassCurve.exists_localReductionAddHom_of_good_reduction
             (HeightOneSpectrum.adicCompletion ℚ
               hp.toHeightOneSpectrumRingOfIntegersRat))).toAffine.Nonsingular x y),
         red (WeierstrassCurve.Affine.Point.some x y h) = 0 ↔
-          x ∉ localValuationSubring hp.toHeightOneSpectrumRingOfIntegersRat) :=
-  sorry
+          x ∉ localValuationSubring hp.toHeightOneSpectrumRingOfIntegersRat) := by
+  classical
+  obtain ⟨ρ, hlocal, hred, hΔ⟩ := E.exists_localReductionDatum_of_good_reduction hp
+  haveI := hlocal
+  exact ⟨hred.redHom hΔ,
+    E.localReduction_surjective_of_good_reduction hp ρ hred hΔ,
+    E.localReduction_inertia_invariant_of_good_reduction hp ρ hred hΔ,
+    fun _ _ hxy => hred.redFun_eq_zero_iff hΔ hxy⟩
 
 open ValuativeRel IsDedekindDomain in
 open scoped WeierstrassCurve.Affine in
