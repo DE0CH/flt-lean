@@ -58,6 +58,7 @@ import Fermat.FLT.EllipticCurve.TorsionCardSep
 import Fermat.FLT.EllipticCurve.TorsionCounting
 import Fermat.FLT.EllipticCurve.UniversalCurve
 import Fermat.FLT.EllipticCurve.WeilPairing
+import Fermat.FLT.EllipticCurve.WeilPairingDescent
 import Fermat.FLT.EllipticCurve.WeilPairingRecgen
 import Fermat.FLT.EllipticCurve.WeilPairingStepR
 import Fermat.FLT.EllipticCurve.WeilPairingTwoLine
@@ -70,7 +71,9 @@ import Fermat.FLT.FreyCurve.Mazur
 import Fermat.FLT.FreyCurve.MazurTorsion
 import Fermat.FLT.FreyCurve.Semistable
 import Fermat.FLT.GaloisRepresentation.BrauerNesbitt
+import Fermat.FLT.GaloisRepresentation.BrauerNesbittConjugacy
 import Fermat.FLT.GaloisRepresentation.Chebotarev
+import Fermat.FLT.GaloisRepresentation.HardlyRamified.Deformation
 import Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs
 import Fermat.FLT.GaloisRepresentation.HardlyRamified.Family
 import Fermat.FLT.GaloisRepresentation.HardlyRamified.Frey
@@ -80,6 +83,8 @@ import Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree
 import Fermat.FLT.GaloisRepresentation.HardlyRamified.Reducible
 import Fermat.FLT.GaloisRepresentation.HardlyRamified.Residual
 import Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic
+import Fermat.FLT.GaloisRepresentation.HardlyRamified.ZLatticePoisson
+import Fermat.FLT.GroupScheme.ConnectedEtale
 import Fermat.FLT.KnownIn1980s.EllipticCurves.Flat
 import Fermat.FLT.KnownIn1980s.EllipticCurves.GoodReduction
 import Fermat.FLT.KnownIn1980s.EllipticCurves.QuadraticTwists.QuadraticTwists
@@ -114,6 +119,7 @@ import Fermat.FLT.Mathlib.NumberTheory.EDSDivisibility
 import Fermat.FLT.Mathlib.NumberTheory.EDSRank
 import Fermat.FLT.Mathlib.NumberTheory.EDSStange
 import Fermat.FLT.Mathlib.NumberTheory.Padics.LocalField
+import Fermat.FLT.Mathlib.RingTheory.AdicCompletion.Finite
 import Fermat.FLT.Mathlib.RingTheory.AdjoinRoot
 import Fermat.FLT.Mathlib.RingTheory.DedekindDomain.AdicValuation
 import Fermat.FLT.Mathlib.RingTheory.DedekindDomain.Ideal.Lemmas
@@ -133,6 +139,8 @@ import Fermat.FLT.Mathlib.Topology.Algebra.Group.Basic
 import Fermat.FLT.Mathlib.Topology.Algebra.IsUniformGroup.Basic
 import Fermat.FLT.Mathlib.Topology.Algebra.ValuativeRel.ValuativeTopology
 import Fermat.FLT.Modularity.Interface
+import Fermat.FLT.Modularity.KhareWintenberger
+import Fermat.FLT.Modularity.Patching
 import Fermat.FLT.NumberField.Completion.Finite
 import Fermat.FLT.Slop.NumberTheory.TsumDivisorsAntidiagonal
 import Fermat.FLT.Slop.PGL2.FiniteSubgroups.CyclicPartition

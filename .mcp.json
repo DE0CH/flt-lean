@@ -8,7 +8,7 @@
         "."
       ],
       "env": {
-        "LEAN_LSP_MAX_OPEN_FILES": "64"
+        "LEAN_LSP_MAX_OPEN_FILES": "100"
       }
     },
     "annas-mcp": {
