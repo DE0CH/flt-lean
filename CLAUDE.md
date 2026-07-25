@@ -397,6 +397,26 @@ registers all 14 as separate entries (`report-flt-lean`,
 `--socket-dir` at its matching worktree's `.report-server`. An agent
 working in `flt-lean-N` uses the `report-flt-lean-N` entry.
 
+**Single-flight per document (Deyao, 2026-07-25 — after the thrash).** The
+open-document map (`{uri: version, hash}`) lives in `.report-server/state.json`
+and is therefore SHARED by every client process talking to that server
+session, not held per process. It has to be: an orchestrator restart kills the
+client, and a fresh one that believed no document was open would send a second
+`didOpen`, whereupon `lake serve` starts ANOTHER `lean --worker` for that file
+while the first keeps running (nothing ever closed the document). Four restarts
+produced four rival elaborations of one file; the fleet reached 81 concurrent
+`lake setup-file` builds, all rebuilding the same olean and starving each
+other. With the map shared, a restarted client re-issues `waitForDiagnostics`
+against the version already in flight — it ATTACHES instead of racing. The
+session marker is the state file's INODE (not mtime), since the file is now
+rewritten in normal operation and `ExecStartPre` `rm -f`s it per (re)start.
+Verified 2026-07-25: fresh client attaches in 0.0s with no new worker; the
+pre-fix client spawned a third worker on the same server.
+
+**Doctrine for agents:** one blocking call, then wait. A timeout means "still
+elaborating", not "failed"; re-issuing is safe and attaches; only an edit
+starts new work.
+
 `diagnostics` syncs the file with on-disk content (`didOpen` the first
 time, `didChange` after) and blocks on `textDocument/waitForDiagnostics`
 — no polling/settle heuristics needed. The `initialize` handshake is
