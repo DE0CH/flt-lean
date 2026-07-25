@@ -1899,7 +1899,7 @@ theorem lineNumerator_mul_lineNumeratorNeg {q₁ q₂ x₁ y₁ x₂ y₂ : F}
   have hc2 := Cubic.c_of_eq hAP
   have hc3 := Cubic.d_of_eq hAP
   -- the two relations, transported into `F[W]`
-  have hcr := coord_equation_coordC W
+  have hcr := coord_equation W
   rw [WeierstrassCurve.Affine.equation_iff'] at hq
   have hqW := congrArg (algebraMap F W.CoordinateRing) hq
   have hc2W := congrArg (algebraMap F W.CoordinateRing) hc2
