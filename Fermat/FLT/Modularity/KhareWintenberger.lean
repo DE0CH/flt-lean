@@ -4508,12 +4508,75 @@ theorem exists_intermediate_of_isCyclic_quotient {G : Type*} [Group G]
   exact ⟨E, p, hp, hCE, hED, hlt, ⟨hCEnormal, hcycE⟩,
     ⟨hEDnormal, by rw [← Subgroup.index_eq_card]; exact hEDindex⟩⟩
 
-/-- **One PRIME-degree cyclic step of solvable base change** (sorry node;
-THE terminal literature citation of the `ℓ`-adic solvable descent —
-Langlands 1980, Arthur–Clozel 1989): if the eigensystem of `ρ` descends
-to the fixed field `L = F^C`, and `C ≤ D` is normal with quotient `D/C`
-of PRIME order `p` (equivalently: `L/M` is a cyclic Galois extension of
-degree `p`, where `M = F^D`), then the eigensystem descends to `M`.
+/-- **Finitely many places of a number field lie over a rational prime**
+(PROVEN, elementary bookkeeping): for a nonzero natural number `n` and a
+number field `M`, all but finitely many finite places `w` of `M` satisfy
+`n ∉ w`.
+
+Proof: the ideal `span {n}` of `𝓞 M` is nonzero, so only finitely many
+height-one primes divide it (`Ideal.finite_factors`), and in the Dedekind
+domain `𝓞 M` "divides" is "contains" (`Ideal.dvd_iff_le`), which for the
+principal ideal `span {n}` is exactly `n ∈ w`.
+
+This is the bookkeeping that turns the POINTWISE determinant lemma
+`charFrob_baseChange_coeff_zero_eq_absNorm` (whose hypothesis is
+`ℓ ∉ w`) into an "away from a finite set of places" statement — the
+shape `HeckeSystemDescendsTo` is written in. -/
+theorem exists_finset_forall_natCast_notMem_asIdeal
+    (M : Type u) [Field M] [NumberField M] (n : ℕ) (hn : n ≠ 0) :
+    ∃ S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers M)),
+      ∀ w ∉ S, (n : NumberField.RingOfIntegers M) ∉ w.asIdeal := by
+  classical
+  have hne : (Ideal.span {(n : NumberField.RingOfIntegers M)}) ≠ 0 := by
+    rw [Ne, Ideal.zero_eq_bot, Ideal.span_singleton_eq_bot]
+    exact Nat.cast_ne_zero.mpr hn
+  refine ⟨(Ideal.finite_factors hne).toFinset, fun w hw hmem => ?_⟩
+  refine hw ?_
+  rw [Set.Finite.mem_toFinset]
+  exact Ideal.dvd_iff_le.mpr (Ideal.span_le.mpr (Set.singleton_subset_iff.mpr hmem))
+
+/-- **The TRACE of one PRIME-degree cyclic step of solvable base change**
+(sorry node; THE terminal literature citation of the `ℓ`-adic solvable
+descent — Langlands 1980, Arthur–Clozel 1989): if the eigensystem of `ρ`
+descends to the fixed field `L = F^C`, and `C ≤ D` is normal with
+quotient `D/C` of PRIME order `p` (equivalently: `L/M` is a cyclic Galois
+extension of degree `p`, where `M = F^D`), then away from a finite set of
+places `w` of `M` the LINEAR coefficient of the Frobenius characteristic
+polynomial of `ρ|_{G_M}` — i.e. `−a_w`, the Hecke eigenvalue of the
+descended Hilbert newform — is algebraic and lies in the carrier's Hecke
+field `E`, read through `ψℓ`.
+
+TRACE-ONLY SHARPENING (2026-07-25).  This node used to be the FULL
+statement `HeckeSystemDescendsTo Wit C → HeckeSystemDescendsTo Wit D`.
+That is strictly more than the literature theorem is needed for: a
+rank-`2` Frobenius characteristic polynomial is `X² − tr·X + det`, and
+for a hardly ramified `ρ` the DETERMINANT is the `ℓ`-adic cyclotomic
+character, whose value at a Frobenius at `w ∤ ℓ` is the rational integer
+`Nw` — so the constant coefficient descends to `ℚ ⊆ E` with NO
+automorphic input at all (`charFrob_baseChange_coeff_zero_eq_absNorm`,
+proven earlier in this module over the pure algebraic-number-theory leaf
+`cyclotomicCharacter_adicArithFrob_base_eq_absNorm`).  Only the TRACE
+carries automorphic content, and only the trace is asked for here; the
+consumer `heckeSystemDescendsTo_of_prime_cyclic_step` below reassembles
+the polynomial formally.  This is the same trace/determinant split the
+Carayol/Shimura sub-cut of this module already makes at the base field
+`F` (`exists_heckeField_mem_range_of_eigensystem` +
+`charFrob_baseChange_coeff_zero_eq_absNorm`), now made at every stage of
+the descent tower.
+
+RANGE FORM (why this is the sharp statement, mirroring
+`exists_heckeField_mem_range_of_eigensystem`): stating the conclusion as
+`… ∈ Set.range Wit.ψℓ` rather than as the existence of a function
+`a : places → E` removes the choice-theoretic packaging from the citation
+— the packaging is discharged formally in the consumer — and leaves
+exactly the mathematical assertion "the descended Hecke eigenvalues are
+algebraic and lie in the Hecke field `E`".
+
+VACUITY AUDIT (2026-07-25): this node is NOT vacuous.  `Set.range Wit.ψℓ`
+is algebraic over `ℚ` inside `ℚ̄_ℓ` while the trace is an a priori
+arbitrary `ℚ̄_ℓ`-value, so no junk witness discharges it — exactly as for
+its base-field cousin `exists_heckeField_mem_range_of_eigensystem`, and
+exactly unlike a statement whose target is a finite field.
 
 WHY PRIME DEGREE IS THE SHARPEST JOINT (2026-07-25): the twisted trace
 formula of Langlands/Arthur–Clozel is run for a cyclic extension of
@@ -4558,14 +4621,13 @@ order:
   `p`, so with values `p`-th roots of unity.
 
 Carayol's local–global compatibility over `M` then identifies the
-Frobenius characteristic polynomials of the (twisted) `f_M`-system with
-Hecke polynomials; their coefficients — Hecke eigenvalues of `f_M`
-enlarged by the twisting-character values — lie in the carrier's `E`,
-which is, per the consumers' docstrings, the Hecke field OF THE
-DESCENDED system, the normalization that absorbs exactly these
-enlargements. The new bad set collects the places of `M` below the bad
-set of the `L`-system, the places over `2`, `3`, `ℓ`, and the places
-ramified in `L/M`.
+Frobenius TRACES of the (twisted) `f_M`-system with Hecke eigenvalues;
+those eigenvalues, enlarged by the twisting-character values, lie in the
+carrier's `E`, which is, per the consumers' docstrings, the Hecke field
+OF THE DESCENDED system, the normalization that absorbs exactly these
+enlargements. The finite exceptional set collects the places of `M`
+below the bad set of the `L`-system, the places over `2`, `3`, `ℓ`, and
+the places ramified in `L/M`.
 
 Literature: Langlands 1980 and Arthur–Clozel 1989 as above;
 Barnet-Lamb–Gee–Geraghty–Taylor, *Potential automorphy and change of
@@ -4592,9 +4654,10 @@ hypothesis package (an irreducible hardly ramified mod-`ℓ`
 representation, `ℓ ≥ 5`) is classically unsatisfiable (headline below),
 so the statement is classically true for every package. The full
 hypothesis package of the general cyclic step is retained verbatim here
-PRECISELY to keep route (ii) available: the prime-degree sharpening is a
-sharpening of the group-theoretic hypothesis only, never a weakening of
-the arithmetic one.
+PRECISELY to keep route (ii) available: the prime-degree sharpening and
+the trace-only sharpening are sharpenings of the group-theoretic and of
+the linear-algebraic hypothesis respectively, never a weakening of the
+arithmetic one.
 
 ROUTE AUDIT (2026-07-24): discharge by vacuity — `absurd hirr
 (not_isIrreducible_of_isHardlyRamified_of_five_le …)`, the route the
@@ -4603,8 +4666,92 @@ here: the headline consumes this node (headline ←
 `exists_threeadic_compatible_member_of_five_le` ←
 `exists_heckeField_system_of_witness` ←
 `exists_descended_heckeSystem_of_solvable` ←
-`heckeSystemDescendsTo_of_cyclic_step` ← this node), so the vacuity
-route would be circular. The classical route above is the one to follow.
+`heckeSystemDescendsTo_of_cyclic_step` ←
+`heckeSystemDescendsTo_of_prime_cyclic_step` ← this node), so the
+vacuity route would be circular. The classical route above is the one to
+follow.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
+through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+theorem exists_heckeTrace_of_prime_cyclic_step
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+    (Wit : PotentialModularityWitness ℓ O ρ)
+    (C D : Subgroup (Wit.F ≃ₐ[ℚ] Wit.F)) (hCD : C ≤ D)
+    (hnormal : (C.subgroupOf D).Normal)
+    (p : ℕ) (hp : p.Prime)
+    (hcard : Nat.card (D ⧸ C.subgroupOf D) = p)
+    (hC : HeckeSystemDescendsTo Wit C) :
+    ∃ S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers
+        (IntermediateField.fixedField D))),
+      ∀ w ∉ S,
+        Wit.ιO (((ρ.map (algebraMap ℚ (IntermediateField.fixedField D))).charFrob
+          w).coeff 1) ∈ Set.range Wit.ψℓ :=
+  sorry
+
+/-- **One PRIME-degree cyclic step of solvable base change** (PROVEN,
+2026-07-25, from the trace citation
+`exists_heckeTrace_of_prime_cyclic_step` and the cyclotomic determinant
+already established in this module): if the eigensystem of `ρ` descends
+to the fixed field `L = F^C`, and `C ≤ D` is normal with quotient `D/C`
+of PRIME order `p` (equivalently: `L/M` is a cyclic Galois extension of
+degree `p`, where `M = F^D`), then the eigensystem descends to `M`.
+
+ASSEMBLY (2026-07-25) — THE TRACE/DETERMINANT SPLIT.  A rank-`2`
+Frobenius characteristic polynomial is monic of degree `2`, hence
+determined by its two lower coefficients, and the two carry completely
+different arithmetic:
+
+* the CONSTANT coefficient is the determinant, and `ρ` is hardly
+  ramified, so its determinant is the `ℓ`-adic cyclotomic character; at a
+  place `w ∤ ℓ` the cyclotomic character takes the value `Nw` at
+  Frobenius, a RATIONAL INTEGER, which lies in every number field.  This
+  is `charFrob_baseChange_coeff_zero_eq_absNorm` (proven earlier in this
+  module over the pure algebraic-number-theory leaf
+  `cyclotomicCharacter_adicArithFrob_base_eq_absNorm`), applied off the
+  finite set of places over `ℓ` supplied by
+  `exists_finset_forall_natCast_notMem_asIdeal`.  NO automorphic input.
+* the LINEAR coefficient is `−a_w`, the Hecke eigenvalue of the descended
+  newform.  That is the whole automorphic content of cyclic base change
+  and descent, and it is exactly what the citation
+  `exists_heckeTrace_of_prime_cyclic_step` supplies (in range form).
+
+The assembly is then formal: choose `a w ∈ E` with
+`ψℓ (a w) = ιO (coeff 1)` off the citation's bad set, put
+`P w = X² + a w · X + Nw`, and check the required identity
+`(charFrob w).map ιO = (P w).map ψℓ` coefficientwise — degrees `0` and
+`1` are the two inputs, degree `2` is monicity
+(`LinearMap.charpoly_monic`) and everything above is zero
+(`LinearMap.charpoly_natDegree` with `finrank O (Fin 2 → O) = 2`).
+
+WHAT THIS BUYS.  Before the split, the whole quadratic was a literature
+citation at EVERY stage of the descent tower; now the determinant half is
+discharged at every stage by the cyclotomic determinant clause of `hρ`,
+and the residual citation is one scalar per place.  It is the same split
+the Carayol/Shimura sub-cut of this module makes at the base field `F`,
+propagated down the tower.
+
+The classical content of the prime step — three moves: cyclic ascent,
+`Gal(L/M)`-invariance, cyclic descent by the twisted character identity —
+is carried in full by the trace citation's docstring, together with the
+literature and the PIN, SOUNDNESS, VACUITY, ROUTE and CIRCULARITY audits.
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
 through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
@@ -4634,11 +4781,72 @@ theorem heckeSystemDescendsTo_of_prime_cyclic_step
     (p : ℕ) (hp : p.Prime)
     (hcard : Nat.card (D ⧸ C.subgroupOf D) = p)
     (hC : HeckeSystemDescendsTo Wit C) :
-    HeckeSystemDescendsTo Wit D :=
-  sorry
+    HeckeSystemDescendsTo Wit D := by
+  classical
+  -- (i) the finitely many places of `M = F^D` over `ℓ`, where the
+  -- cyclotomic determinant is ramified and carries no rationality
+  obtain ⟨Sℓ, hSℓ⟩ := exists_finset_forall_natCast_notMem_asIdeal
+    (IntermediateField.fixedField D) ℓ (Fact.out : ℓ.Prime).ne_zero
+  -- (ii) the automorphic input: the descended Hecke eigenvalues lie in `E`
+  obtain ⟨Str, htr⟩ :=
+    exists_heckeTrace_of_prime_cyclic_step hℓodd hℓ5 hZinj hrank hρ hW hρbar
+      hirr π hπsurj hπ Wit C D hCD hnormal p hp hcard hC
+  -- package the range membership as a function into the Hecke field `E`
+  have key : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers
+      (IntermediateField.fixedField D)), ∃ e : Wit.E, w ∉ Str →
+      Wit.ψℓ e =
+        Wit.ιO (((ρ.map (algebraMap ℚ (IntermediateField.fixedField D))).charFrob
+          w).coeff 1) := by
+    intro w
+    by_cases hw : w ∈ Str
+    · exact ⟨0, fun h => absurd hw h⟩
+    · obtain ⟨e, he⟩ := htr w hw
+      exact ⟨e, fun _ => he⟩
+  choose a ha using key
+  refine ⟨Sℓ ∪ Str,
+    fun w => Polynomial.X ^ 2 + Polynomial.C (a w) * Polynomial.X +
+      Polynomial.C ((Ideal.absNorm w.asIdeal : ℕ) : Wit.E),
+    fun w hw => ?_⟩
+  rw [Finset.mem_union, not_or] at hw
+  have hfin : Module.finrank O (Fin 2 → O) = 2 :=
+    Module.finrank_eq_of_rank_eq hrank
+  have hmonic :
+      ((ρ.map (algebraMap ℚ (IntermediateField.fixedField D))).charFrob w).Monic := by
+    rw [GaloisRep.charFrob_eq_charpoly_globalFrob]
+    exact LinearMap.charpoly_monic _
+  have hdeg :
+      ((ρ.map (algebraMap ℚ (IntermediateField.fixedField D))).charFrob
+        w).natDegree = 2 := by
+    rw [GaloisRep.charFrob_eq_charpoly_globalFrob, LinearMap.charpoly_natDegree,
+      hfin]
+  -- (iii) the determinant coefficient is the rational integer `Nw`
+  have hdet := charFrob_baseChange_coeff_zero_eq_absNorm hℓodd hrank hρ
+    (IntermediateField.fixedField D) w (hSℓ w hw.1)
+  refine Polynomial.ext fun n => ?_
+  rw [Polynomial.coeff_map, Polynomial.coeff_map]
+  match n with
+  | 0 =>
+    rw [hdet]
+    simp
+  | 1 =>
+    rw [← ha w hw.2]
+    congr 1
+    simp
+  | 2 =>
+    have h2 : ((ρ.map (algebraMap ℚ (IntermediateField.fixedField D))).charFrob
+        w).coeff 2 = 1 := by
+      have h := hmonic.coeff_natDegree
+      rwa [hdeg] at h
+    rw [h2]
+    simp
+  | (m + 3) =>
+    rw [Polynomial.coeff_eq_zero_of_natDegree_lt (by rw [hdeg]; omega)]
+    simp [Polynomial.coeff_X_pow]
 
 /-- **One cyclic step of solvable base change** (PROVEN, 2026-07-25, from
-the prime-degree citation `heckeSystemDescendsTo_of_prime_cyclic_step`
+the prime-degree step `heckeSystemDescendsTo_of_prime_cyclic_step` — now
+itself PROVEN, over the trace-only citation
+`exists_heckeTrace_of_prime_cyclic_step` —
 and the group-theoretic dévissage
 `exists_intermediate_of_isCyclic_quotient`): if the eigensystem of `ρ`
 descends to the fixed field `L = F^C`, and `C ≤ D` is normal with CYCLIC
@@ -4653,7 +4861,8 @@ now the SECOND dévissage of the descent, above the solvable one: the
 cyclic quotient `D/C` is refined into prime steps by
 `exists_intermediate_of_isCyclic_quotient` (pure finite group theory,
 proven here), and the eigensystem is carried up one prime step at a time
-by `heckeSystemDescendsTo_of_prime_cyclic_step` (the citation). Formally
+by `heckeSystemDescendsTo_of_prime_cyclic_step` (proven, over the
+trace-only citation `exists_heckeTrace_of_prime_cyclic_step`). Formally
 the recursion is a strong induction on `#D`: either `C = D` and the
 hypothesis `hC` already IS the conclusion, or one obtains an
 intermediate `C ≤ E ≤ D` with `#E < #D`, `E/C` cyclic and `D/E` of prime
@@ -4857,9 +5066,14 @@ circularity guard above binds the arithmetic ones (the refinement
 leaf is pure group theory — nothing arithmetic to route through).
 UPDATE (2026-07-25): the cyclic step has since been PROVEN by a second
 dévissage of the same shape — `exists_intermediate_of_isCyclic_quotient`
-refines a cyclic quotient into prime steps — so the arithmetic citation
-of the descent route is now `heckeSystemDescendsTo_of_prime_cyclic_step`,
-the prime-degree statement that the literature actually proves.
+refines a cyclic quotient into prime steps — and the prime step itself
+has since been PROVEN too, by the trace/determinant split: the
+determinant half of the descended Frobenius polynomial is the cyclotomic
+value `Nw` (`charFrob_baseChange_coeff_zero_eq_absNorm`) and needs no
+automorphic input at all.  So the arithmetic citation of the descent
+route is now `exists_heckeTrace_of_prime_cyclic_step` — one scalar per
+place, the Hecke eigenvalue of the descended newform at prime degree,
+which is exactly what Langlands/Arthur–Clozel prove.
 
 ROUTE AUDIT (2026-07-24): discharge by vacuity — `absurd hirr
 (not_isIrreducible_of_isHardlyRamified_of_five_le …)` — is NOT
