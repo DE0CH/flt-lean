@@ -4175,6 +4175,229 @@ theorem exists_taylorWilesSystem.{s, t, uK, uW, uR}
            projM_eq_zero_iff := fun n m =>
              ⟨(tw.level n).projM_eq_zero m, hzero n m⟩ }⟩
 
+/-- **Universe transport for `PatchedModule`** (PROVEN 2026-07-25):
+the patched situation is stated polymorphically in its two module
+universes `{v, w}`, but every CONSTRUCTION of one lands in the fixed
+universes of the data it is built from — the ultraproduct/inverse-limit
+extraction below produces `M_∞` in the universe of the tower's modules
+and `M₀` in the universe of the tower's bottom module.  This lemma
+closes that gap once and for all, so the extraction leaf may be stated
+at its natural universes.
+
+Two shrinkings are chained:
+
+* `M_∞` is `Module.Finite` over `Λ = ℤ_p[[x₁, …, x_q]]`, which is a
+  `Type 0`; mathlib's `Module.Finite.repr`/`reprEquiv` present any such
+  module as a quotient of `Fin n → Λ`, hence by a `Type 0` module —
+  and `ULift` then places it in the requested `Type v`.
+* `M₀` is not independently shrinkable, but it does not have to be:
+  `proj` is surjective with kernel exactly `𝔞·M_∞`
+  (`⊆` is the `mem_smul_top_of_proj_eq_zero` field, `⊇` follows from
+  `proj_smul`), so `M₀ ≅ M_∞/𝔞M_∞`, and the shrunk `M_∞` gives a
+  `Type 0` model of that quotient.  Its `T`-module structure is
+  transported along the resulting additive equivalence; the transport
+  is coherent with the `Λ`-action because on `M₀` the `Λ`-action
+  factors as `ψ ∘ toRuniv` (this is precisely `proj_smul`), which is
+  what makes the transported `proj_smul` hold. -/
+theorem PatchedModule.nonempty_transport.{v, w, x, y, s, uR} {p : ℕ}
+    [Fact p.Prime] {Runiv : Type uR} [CommRing Runiv] {T : Type s}
+    [CommRing T] {ψ : Runiv →+* T} (P : PatchedModule.{x, y, s, uR} p ψ) :
+    Nonempty (PatchedModule.{v, w, s, uR} p ψ) := by
+  classical
+  letI := P.addCommGroupMinf
+  letI := P.moduleMinf
+  letI := P.addCommGroupM0
+  letI := P.moduleM0
+  haveI : Nontrivial P.M0 := P.nontrivialM0
+  haveI : Module.Finite (MvPowerSeries (Fin P.q) ℤ_[p]) P.Minf := P.finiteMinf
+  -- The `Λ`-module structure on `M₀` through `ψ ∘ toRuniv`; `proj_smul`
+  -- says exactly that `proj` is `Λ`-linear for it.
+  letI : Module (MvPowerSeries (Fin P.q) ℤ_[p]) P.M0 :=
+    Module.compHom P.M0 (ψ.comp P.toRuniv)
+  have hsmulM0 : ∀ (x : MvPowerSeries (Fin P.q) ℤ_[p]) (z : P.M0),
+      x • z = ψ (P.toRuniv x) • z := fun _ _ => rfl
+  let projₗ : P.Minf →ₗ[MvPowerSeries (Fin P.q) ℤ_[p]] P.M0 :=
+    { toFun := P.proj
+      map_add' := P.proj.map_add
+      map_smul' := fun x m => by
+        simpa only [RingHom.id_apply, hsmulM0] using P.proj_smul x m }
+  have hker : LinearMap.ker projₗ =
+      RingHom.ker P.toRuniv •
+        (⊤ : Submodule (MvPowerSeries (Fin P.q) ℤ_[p]) P.Minf) := by
+    refine le_antisymm (fun m hm => P.mem_smul_top_of_proj_eq_zero m hm) ?_
+    rw [Submodule.smul_le]
+    intro a ha m _
+    show P.proj (a • m) = 0
+    rw [P.proj_smul, RingHom.mem_ker.mp ha, map_zero, zero_smul]
+  -- The `Type 0` model of `M_∞` and the induced `Type 0` model of `M₀`.
+  set Minf₀ := Module.Finite.repr (MvPowerSeries (Fin P.q) ℤ_[p]) P.Minf with hMinf₀
+  set e : Minf₀ ≃ₗ[MvPowerSeries (Fin P.q) ℤ_[p]] P.Minf :=
+    Module.Finite.reprEquiv (MvPowerSeries (Fin P.q) ℤ_[p]) P.Minf with he
+  set 𝔞 : Ideal (MvPowerSeries (Fin P.q) ℤ_[p]) := RingHom.ker P.toRuniv with h𝔞
+  have hmap : Submodule.map
+      (e : Minf₀ →ₗ[MvPowerSeries (Fin P.q) ℤ_[p]] P.Minf) (𝔞 • ⊤) = 𝔞 • ⊤ := by
+    rw [Submodule.map_smul'', Submodule.map_top, LinearEquiv.range]
+  set M0₀ := Minf₀ ⧸ (𝔞 • ⊤ : Submodule (MvPowerSeries (Fin P.q) ℤ_[p]) Minf₀)
+    with hM0₀
+  set g : M0₀ ≃ₗ[MvPowerSeries (Fin P.q) ℤ_[p]] P.M0 :=
+    (Submodule.Quotient.equiv _ _ e hmap).trans
+      ((Submodule.quotEquivOfEq _ _ hker.symm).trans
+        (projₗ.quotKerEquivOfSurjective P.proj_surjective)) with hg
+  have hg_mk : ∀ m : Minf₀, g (Submodule.Quotient.mk m) = P.proj (e m) := by
+    intro m; rfl
+  -- Transport the `T`-action along `g`.
+  letI : SMul T M0₀ := ⟨fun t z => g.symm (t • g z)⟩
+  have hgsmul : ∀ (t : T) (z : M0₀), g (t • z) = t • g z := by
+    intro t z; exact g.apply_symm_apply _
+  letI : Module T M0₀ :=
+    Function.Injective.module T (g.toLinearMap.toAddMonoidHom) g.injective hgsmul
+  have hΛT : ∀ (x : MvPowerSeries (Fin P.q) ℤ_[p]) (z : M0₀),
+      x • z = ψ (P.toRuniv x) • z := by
+    intro x z
+    refine g.injective ?_
+    rw [map_smul, hgsmul, hsmulM0]
+  haveI : Nontrivial M0₀ := g.toEquiv.nontrivial
+  haveI : Module.Finite (MvPowerSeries (Fin P.q) ℤ_[p]) Minf₀ :=
+    Module.Finite.equiv e.symm
+  refine ⟨{ q := P.q
+            Minf := ULift.{v} Minf₀
+            finiteMinf := Module.Finite.equiv
+              (ULift.moduleEquiv (R := MvPowerSeries (Fin P.q) ℤ_[p])
+                (M := Minf₀)).symm
+            exists_isRegular := ?_
+            toRuniv := P.toRuniv
+            toRuniv_surjective := P.toRuniv_surjective
+            M0 := ULift.{w} M0₀
+            nontrivialM0 := inferInstance
+            proj := ((AddEquiv.ulift (α := M0₀)).symm.toAddMonoidHom.comp
+              ((Submodule.mkQ _).toAddMonoidHom.comp
+                (AddEquiv.ulift (α := Minf₀)).toAddMonoidHom))
+            proj_surjective := ?_
+            proj_smul := ?_
+            mem_smul_top_of_proj_eq_zero := ?_ }⟩
+  · obtain ⟨rs, hlen, hmem, hreg⟩ := P.exists_isRegular
+    refine ⟨rs, hlen, hmem, ?_⟩
+    exact ((ULift.moduleEquiv (R := MvPowerSeries (Fin P.q) ℤ_[p])
+      (M := Minf₀)).trans e |>.isRegular_congr rs).mpr hreg
+  · intro z
+    obtain ⟨m, hm⟩ := Submodule.Quotient.mk_surjective
+      (𝔞 • ⊤ : Submodule (MvPowerSeries (Fin P.q) ℤ_[p]) Minf₀) z.down
+    exact ⟨ULift.up m, congrArg ULift.up hm⟩
+  · intro x m
+    show ULift.up (Submodule.Quotient.mk (x • m.down)) =
+      ψ (P.toRuniv x) • ULift.up (Submodule.Quotient.mk m.down)
+    rw [Submodule.Quotient.mk_smul, hΛT]
+    rfl
+  · intro m hm
+    have hm' : (Submodule.Quotient.mk m.down :
+        Minf₀ ⧸ (𝔞 • ⊤ : Submodule (MvPowerSeries (Fin P.q) ℤ_[p]) Minf₀)) = 0 :=
+      congrArg ULift.down hm
+    have hmem : m.down ∈ (𝔞 • ⊤ : Submodule (MvPowerSeries (Fin P.q) ℤ_[p]) Minf₀) := by
+      rwa [Submodule.Quotient.mk_eq_zero] at hm'
+    have hmapU : Submodule.map (ULift.moduleEquiv
+        (R := MvPowerSeries (Fin P.q) ℤ_[p]) (M := Minf₀)).symm.toLinearMap
+        (𝔞 • ⊤) = 𝔞 • ⊤ := by
+      rw [Submodule.map_smul'', Submodule.map_top, LinearEquiv.range]
+    rw [← hmapU]
+    exact ⟨m.down, hmem, rfl⟩
+
+/-- **The patching extraction at its natural universes** (patching
+leaf 2b′; sorry node, opened 2026-07-25 as the universe-monomorphic
+form of `TaylorWilesSystem.exists_patchedModule`): identical content,
+but with the patched module in the universe `b` of the tower's modules
+`S.M` and the bottom module in the universe `c` of `S.M0`.  The
+polymorphic statement follows by `PatchedModule.nonempty_transport`.
+
+This is the shape the vendored FLT patching development
+(`Fermat/FLT/Modularity/PatchingVendored/`) can actually hit: its
+`PatchingModule Λ M F` is a submodule of a product indexed by the
+`Type 0` type `OpenIdeals Λ` of components which are ultraproducts of
+quotients of the `M i`, hence lands in `Type b`, and its bottom
+identification `PatchingModule.quotientEquivOver` lands on `S.M0`
+itself, in `Type c`.
+
+HANDOFF MAP (2026-07-25) — the instantiation of the vendored
+development at `S`, worked out but not yet written:
+
+* `Λ := MvPowerSeries (Fin S.q) ℤ_[p]` in its **diamond** role, with
+  the scoped product topology `MvPowerSeries.WithPiTopology`.  The
+  topological hypotheses of the vendored files are then: `CompactSpace`
+  (a product of copies of the compact `ℤ_[p]`), `T2Space`
+  (`MvPowerSeries.WithPiTopology.instT2Space`), `IsTopologicalRing`
+  (`…instIsTopologicalRing`), `TotallyDisconnectedSpace`, and
+  `IsNoetherianRing` (the project's own leaf
+  `isNoetherianRing_mvPowerSeries`).  Crucially `IsAdicTopology Λ` is
+  then FREE: `PatchingVendored/AdicTopology.lean` carries the instance
+  "a profinite Noetherian ring has the `𝔪`-adic topology", so the
+  product topology need never be compared with the adic one by hand.
+  `Algebra.TopologicallyFG ℤ Λ` holds because `ℤ`-adjoining the
+  variables is dense (`ℤ` is dense in `ℤ_[p]`).
+* `ι := ℕ`, `F :=` any nonprincipal ultrafilter on `ℕ`;
+  `R i := S.R i` with `Algebra Λ (R i)` given by `S.diamond i`, and
+  `M i := S.M i` with `IsScalarTower Λ (R i) (M i)` given by
+  `S.diamond_smul`.  Each `R i` is topologized by the topology
+  coinduced along the surjection `S.pres i`, which makes it profinite
+  (its kernel is f.g. by Noetherianity, hence compact, hence closed),
+  so again `IsAdicTopology (R i)` is free, and
+  `Algebra.UniformlyBoundedRank R` holds because
+  `R i / 𝔪^k` is a quotient of the FIXED finite ring `Λ/𝔪^k`.
+* `Module.UniformlyBoundedRank Λ M` and
+  `Module.Free (Λ ⧸ Ann Λ (M i)) (M i)` come from `S.freeM` (rank `d`,
+  annihilator `S.bIdeal i`), and `IsPatchingSystem Λ M F` from
+  `S.bIdeal_le` (`𝔟_n ≤ 𝔪^n → 0`).  Here `1 ≤ S.d` is forced by
+  `S.nontrivialM0` through `S.projM_surjective`.
+* `Runiv` plays the vendored `R₀`: `hres` and `hcomplete` give
+  `CompactSpace` through
+  `IsLocalRing.compactSpace_of_finite_residueField`, with the adic
+  topology taken by fiat (`IsLocalRing.withIdeal`).
+* The bottom identifications `sR`/`sM` demanded by
+  `PatchingVendored/Over.lean` are `S.toRuniv i`/`S.projM i` read
+  through `S.ker_toRuniv`/`S.projM_eq_zero_iff`, with `𝔫` the
+  augmentation ideal `taylorWilesAug p S.q`.  They must be `Λ`-ALGEBRA
+  resp. `Λ`-LINEAR, which needs one compatibility NOT recorded as a
+  field of `TaylorWilesSystem`: that `(S.toRuniv i).comp (S.diamond i)`
+  is independent of `i`.  It is derivable, not an omission: both sides
+  kill `𝔫` (by `S.ker_toRuniv`) hence factor through
+  `Λ/𝔫 ≅ ℤ_[p]`, and a ring hom `ℤ_[p] →+* Runiv` is unique because
+  (i) `p` cannot map to a unit — otherwise `ℚ_p` would embed in
+  `Runiv` and its residue field, contradicting `hres` — so `p ↦ 𝔪`,
+  and (ii) `Runiv` is `𝔪`-adically separated by `hcomplete`, so the
+  value on `ℤ_[p]` is pinned by the value on the dense subring `ℤ`.
+* The `PatchedModule` fields are then read off:
+  `Minf := PatchingModule Λ M F` with the `Λ`-action taken through
+  `PatchingAlgebra.lift R F S.pres` (the **presentation** role of the
+  same ring — `lift` needs only ring homs, not `Λ`-algebra maps, so
+  the two roles of `Λ` never have to be reconciled);
+  `toRuniv := PatchingAlgebra.quotientToOver … ∘ mk ∘ lift`, surjective
+  by `PatchingAlgebra.lift_surjective` and
+  `PatchingAlgebra.surjective_quotientToOver`; `proj` and `proj_smul`
+  from `PatchingModule.quotientEquivOver` and `smul_lemma`;
+  `mem_smul_top_of_proj_eq_zero` because `ker proj` is generated by
+  the image of `𝔫`, which `toRuniv` kills.
+* `exists_isRegular` is where this project departs from FLT (whose
+  endgame goes through `Module.depth`, deliberately not vendored):
+  take the project's own
+  `exists_isRegular_ofList_eq_maximalIdeal_mvPowerSeries` sequence
+  `(p, S₁, …, S_q)` in the DIAMOND copy, push it into
+  `PatchingAlgebra` and lift it back along the surjection `lift` (the
+  lifts stay in `𝔪` because a surjection of local rings is local);
+  it is `M_∞`-regular because `M_∞` is FREE over the diamond `Λ`
+  (`instance : Module.Free Λ (PatchingModule Λ M F)`, the decisive
+  output of `PatchingVendored/Module.lean`) — the transfer lemma is
+  `RingTheory.Sequence.isWeaklyRegular_of_free` of
+  `FLT/Patching/Utils/Depth.lean`, the one declaration of that file
+  worth vendoring. -/
+theorem TaylorWilesSystem.exists_patchedModule_natural.{a, b, c, s, uR}
+    {p : ℕ} [Fact p.Prime]
+    {Runiv : Type uR} [CommRing Runiv] [IsLocalRing Runiv]
+    [IsNoetherianRing Runiv]
+    {T : Type s} [CommRing T] {ψ : Runiv →+* T}
+    (S : TaylorWilesSystem.{a, b, c, s, uR} p ψ)
+    (hcomplete : IsAdicComplete (IsLocalRing.maximalIdeal Runiv) Runiv)
+    (hres : Finite (Runiv ⧸ IsLocalRing.maximalIdeal Runiv)) :
+    Nonempty (PatchedModule.{b, c, s, uR} p ψ) :=
+  sorry
+
 /-- **The patching extraction** (patching leaf 2b; sorry node — the
 pure commutative-algebra half, the pigeonhole/inverse-limit heart): a
 `TaylorWilesSystem` for `ψ`, together with completeness and residual
@@ -4243,7 +4466,18 @@ quotient-presentation shrinking (a finite module over the `Type 0`
 ring `MvPowerSeries (Fin q) ℤ_[p]` is isomorphic to a `Type 0`
 quotient of `Fin m → MvPowerSeries (Fin q) ℤ_[p]`, and `M0` to the
 `proj`-image quotient of `M_∞` with the `T`-action transported along
-the identification) followed by `ULift`. -/
+the identification) followed by `ULift`.
+
+PROOF (glue, 2026-07-25): that universe note is now DISCHARGED —
+`PatchedModule.nonempty_transport` above carries out both shrinkings
+and the `ULift`, so this node reduces to
+`TaylorWilesSystem.exists_patchedModule_natural`, the same statement at
+the universes the vendored FLT patching development actually produces.
+The abstract patching machinery itself is vendored and verified in
+`Fermat/FLT/Modularity/PatchingVendored/` (ten modules, elaborating
+clean against this project's mathlib pin); the remaining frontier is
+the INSTANTIATION of that machinery at `S`, mapped out in the
+docstring of `exists_patchedModule_natural`. -/
 theorem TaylorWilesSystem.exists_patchedModule.{v, w, a, b, c, s, uR}
     {p : ℕ} [Fact p.Prime]
     {Runiv : Type uR} [CommRing Runiv] [IsLocalRing Runiv]
@@ -4253,7 +4487,8 @@ theorem TaylorWilesSystem.exists_patchedModule.{v, w, a, b, c, s, uR}
     (hcomplete : IsAdicComplete (IsLocalRing.maximalIdeal Runiv) Runiv)
     (hres : Finite (Runiv ⧸ IsLocalRing.maximalIdeal Runiv)) :
     Nonempty (PatchedModule.{v, w, s, uR} p ψ) :=
-  sorry
+  (S.exists_patchedModule_natural hcomplete hres).elim
+    fun P => PatchedModule.nonempty_transport P
 
 /-- **The Taylor–Wiles patching construction** (patching node 2;
 ASSEMBLED 2026-07-24 as glue over the two leaves above): under the
