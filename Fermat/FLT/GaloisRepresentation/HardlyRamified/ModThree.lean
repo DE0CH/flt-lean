@@ -16852,36 +16852,458 @@ theorem DedekindContinuation.exists_goodHeight_gap {K : Type*} [Field K]
       exact le_trans (min_le_right _ _) hlog2T
     linarith
 
-/-- **Uniform `1/t²` decay of `Φ` on the closed contour strip** (sorry
-node, stated 2026-07-24 — leaf (b₁ᵢᵢᵢ-α) of the decomposition of
+/-- **Uniform `1/t²` decay of `Φ` on the closed contour strip**
+(PROVEN 2026-07-24 — leaf (b₁ᵢᵢᵢ-α) of the decomposition of
 `DedekindContinuation.poitouHorizontal_gap_tendsto_zero`; the strip
-generalization of the PROVEN vertical-line bound
-`poitouPhi_line_decay_sq`, which lives later in this file in the
-PoitouPrimeEdgeFourier section): `‖Φ(σ + it)‖ ≤ M/t²` uniformly over
-`σ ∈ [−1/4, 5/4]`.
+generalization of the vertical-line bound `poitouPhi_line_decay_sq`,
+which lives later in this file in the PoitouPrimeEdgeFourier
+section): `‖Φ(σ + it)‖ ≤ M/t²` uniformly over `σ ∈ [−1/4, 5/4]`.
 
-Intended proof: the double integration by parts of
-`poitouPhi_line_decay_sq`, verbatim, with the fixed vertical-line
-exponent `3/4 = 5/4 − 1/2` generalized to the strip parameter
-`a = σ − 1/2 ∈ [−3/4, 3/4]`.  For `s = σ + it`,
-`Φ(s) = ∫_{−6}^{6} g_a(x)·e^{itx} dx` with
-`g_a(x) = odlyzkoTestFn x · e^{ax}/cosh(x/2)` continuous, vanishing
-at `±6`, and smooth on `[−6, 0]` and `[0, 6]` where it agrees with
-the models `(1 ± x/6)·q_a`, `q_a = e^{ax}/cosh(x/2)`; writing
-`q_a' = q_a·p_a` with `p_a = a − sinh(x/2)/(2·cosh(x/2))` and
-`p_a' = −1/(4·cosh²(x/2))` (hyperbolic Pythagoras), one
-parts-integration kills the boundary terms (`g_a(±6) = 0`, `g_a`
-continuous at the kink `0`), a second leaves the piece-endpoint
-values of the piecewise derivative and `∫ |(g_a')'|` — all bounded
-UNIFORMLY over `a ∈ [−3/4, 3/4]` because `x` ranges over the compact
-`[−6, 6]` (every coefficient is at most an `e^{9/2}`-type constant).
-For `0 < |t| < 1` the trivial strip bound
-`‖Φ(σ + it)‖ ≤ ∫_{−6}^{6} g_a ≤ 12·e^{9/2}` is absorbed by
-enlarging `M`. -/
+The proof is the SECOND integration by parts of
+`poitouPhi_line_decay_sq` grafted onto the strip setup of the proven
+`poitouPhi_strip_decay`.  Rather than absorbing the real exponential
+`e^{(σ−1/2)x}` into the profile (which would make the profile — and
+hence every boundary value and every residual integral — depend on
+`σ`), the whole complex kernel `e^{(s−1/2)x}` is kept on the kernel
+side, where it has the two antiderivatives
+`e^{(s−1/2)x}/(s−1/2)` and `e^{(s−1/2)x}/(s−1/2)²`.  The profile is
+then the `σ`-INDEPENDENT `q = cosh(x/2)⁻¹`, agreeing on `[−6, 0]` and
+`[0, 6]` with the smooth models `(1 ± x/6)·q`; writing `q' = q·p`
+with `p = −sinh(x/2)/(2·cosh(x/2))` and `p' = −1/(4·cosh²(x/2))`
+(hyperbolic Pythagoras), the piecewise first derivatives
+`rd₁ = q/6 + (1 + x/6)·q·p`, `rd₂ = −q/6 + (1 − x/6)·q·p` are
+themselves `C¹`.  The first parts-integration kills the boundary
+terms exactly as in `poitouPhi_strip_decay` (the outer endpoints
+carry the factor `1 ∓ 6/6 = 0`, the two interface values at the kink
+`0` are both `1` and cancel); the second leaves the piece-endpoint
+values of `rdᵢ` and `∫ |rdᵢ'|`, all constants, against the kernel
+`e^{(s−1/2)x}/(s−1/2)²` whose norm is
+`e^{(σ−1/2)x}/‖s−1/2‖² ≤ e^{9/2}/(Im s)²` uniformly on the support:
+`|σ − 1/2| ≤ 3/4`, `|x| ≤ 6`, and `‖s − 1/2‖ ≥ |Im s|`.  This is
+where — and the only place where — the vertical-line exponent
+`3/4 = 5/4 − 1/2` is generalized to `σ − 1/2 ∈ [−3/4, 3/4]`, turning
+the line proof's `e⁰ = 1` kernel bound into `e^{9/2}`; no separate
+small-`|t|` case is needed, since the estimate holds for every
+`t ≠ 0`. -/
 theorem poitouPhi_strip_decay_sq : ∃ M : ℝ, 0 ≤ M ∧ ∀ s : ℂ,
     -(1 / 4) ≤ s.re → s.re ≤ 5 / 4 → s.im ≠ 0 →
     ‖poitouPhi s‖ ≤ M / s.im ^ 2 := by
-  sorry
+  classical
+  set q : ℝ → ℝ := fun x => (Real.cosh (x / 2))⁻¹ with hq
+  set p : ℝ → ℝ := fun x => -(Real.sinh (x / 2) / (2 * Real.cosh (x / 2))) with hp
+  have hqder : ∀ x : ℝ, HasDerivAt q (q x * p x) x := by
+    intro x
+    have hhalf : HasDerivAt (fun y : ℝ => y / 2) ((1 : ℝ) / 2) x :=
+      (hasDerivAt_id x).div_const 2
+    have hc : HasDerivAt (fun y : ℝ => Real.cosh (y / 2))
+        (Real.sinh (x / 2) * (1 / 2)) x := by
+      simpa using hhalf.cosh
+    have h := hc.inv (Real.cosh_pos _).ne'
+    have hveq : -(Real.sinh (x / 2) * (1 / 2)) / Real.cosh (x / 2) ^ 2 =
+        q x * p x := by
+      simp only [hq, hp]
+      field_simp
+    rw [← hveq]
+    exact h
+  have hpder : ∀ x : ℝ, HasDerivAt p (-(1 / (4 * Real.cosh (x / 2) ^ 2))) x := by
+    intro x
+    have hhalf : HasDerivAt (fun y : ℝ => y / 2) ((1 : ℝ) / 2) x :=
+      (hasDerivAt_id x).div_const 2
+    have hs : HasDerivAt (fun y : ℝ => Real.sinh (y / 2))
+        (Real.cosh (x / 2) * (1 / 2)) x := by
+      simpa using hhalf.sinh
+    have hc2 : HasDerivAt (fun y : ℝ => 2 * Real.cosh (y / 2))
+        (2 * (Real.sinh (x / 2) * (1 / 2))) x := by
+      simpa using hhalf.cosh.const_mul 2
+    have hden : (2 : ℝ) * Real.cosh (x / 2) ≠ 0 := by positivity
+    have h := (hs.div hc2 hden).neg
+    have hid : Real.cosh (x / 2) ^ 2 - Real.sinh (x / 2) ^ 2 = 1 :=
+      Real.cosh_sq_sub_sinh_sq _
+    have hveq : -((Real.cosh (x / 2) * (1 / 2) * (2 * Real.cosh (x / 2)) -
+        Real.sinh (x / 2) * (2 * (Real.sinh (x / 2) * (1 / 2)))) /
+          (2 * Real.cosh (x / 2)) ^ 2) = -(1 / (4 * Real.cosh (x / 2) ^ 2)) := by
+      rw [neg_inj, div_eq_div_iff (by positivity) (by positivity)]
+      linear_combination (4 * Real.cosh (x / 2) ^ 2) * hid
+    rw [← hveq]
+    exact h
+  set rd₁ : ℝ → ℝ := fun x => 1 / 6 * q x + (1 + x / 6) * (q x * p x) with hrd₁
+  set rd₂ : ℝ → ℝ := fun x => -(1 / 6) * q x + (1 - x / 6) * (q x * p x) with hrd₂
+  set rdd₁ : ℝ → ℝ := fun x => 1 / 6 * (q x * p x) + (1 / 6 * (q x * p x) +
+    (1 + x / 6) * (q x * p x * p x + q x * -(1 / (4 * Real.cosh (x / 2) ^ 2))))
+    with hrdd₁
+  set rdd₂ : ℝ → ℝ := fun x => -(1 / 6) * (q x * p x) + (-(1 / 6) * (q x * p x) +
+    (1 - x / 6) * (q x * p x * p x + q x * -(1 / (4 * Real.cosh (x / 2) ^ 2))))
+    with hrdd₂
+  have hr₁der : ∀ x : ℝ, HasDerivAt (fun y : ℝ => (1 + y / 6) * q y) (rd₁ x) x := by
+    intro x
+    exact (((hasDerivAt_id x).div_const (6 : ℝ)).const_add 1).mul (hqder x)
+  have hr₂der : ∀ x : ℝ, HasDerivAt (fun y : ℝ => (1 - y / 6) * q y) (rd₂ x) x := by
+    intro x
+    exact (((hasDerivAt_id x).div_const (6 : ℝ)).const_sub 1).mul (hqder x)
+  have hrd₁der : ∀ x : ℝ, HasDerivAt rd₁ (rdd₁ x) x := by
+    intro x
+    have h2 : HasDerivAt (fun y : ℝ => q y * p y)
+        (q x * p x * p x + q x * -(1 / (4 * Real.cosh (x / 2) ^ 2))) x :=
+      (hqder x).mul (hpder x)
+    exact ((hqder x).const_mul (1 / 6 : ℝ)).add
+      ((((hasDerivAt_id x).div_const (6 : ℝ)).const_add 1).mul h2)
+  have hrd₂der : ∀ x : ℝ, HasDerivAt rd₂ (rdd₂ x) x := by
+    intro x
+    have h2 : HasDerivAt (fun y : ℝ => q y * p y)
+        (q x * p x * p x + q x * -(1 / (4 * Real.cosh (x / 2) ^ 2))) x :=
+      (hqder x).mul (hpder x)
+    exact ((hqder x).const_mul (-(1 / 6) : ℝ)).add
+      ((((hasDerivAt_id x).div_const (6 : ℝ)).const_sub 1).mul h2)
+  have hqcont : Continuous q := by
+    rw [hq]
+    exact Continuous.inv₀ (by fun_prop) fun x => (Real.cosh_pos _).ne'
+  have hpcont : Continuous p := by
+    simp only [hp]
+    refine Continuous.neg (Continuous.div (by fun_prop) (by fun_prop) fun x => ?_)
+    positivity
+  have hccont : Continuous fun x : ℝ => -(1 / (4 * Real.cosh (x / 2) ^ 2)) := by
+    refine Continuous.neg (Continuous.div continuous_const (by fun_prop) fun x => ?_)
+    positivity
+  have hrd₁cont : Continuous rd₁ := by
+    simp only [hrd₁]
+    exact ((hqcont.const_mul _)).add
+      ((continuous_const.add (continuous_id.div_const _)).mul (hqcont.mul hpcont))
+  have hrd₂cont : Continuous rd₂ := by
+    simp only [hrd₂]
+    exact ((hqcont.const_mul _)).add
+      ((continuous_const.sub (continuous_id.div_const _)).mul (hqcont.mul hpcont))
+  have hrdd₁cont : Continuous rdd₁ := by
+    simp only [hrdd₁]
+    exact (((hqcont.mul hpcont).const_mul _)).add
+      ((((hqcont.mul hpcont).const_mul _)).add
+        ((continuous_const.add (continuous_id.div_const _)).mul
+          (((hqcont.mul hpcont).mul hpcont).add (hqcont.mul hccont))))
+  have hrdd₂cont : Continuous rdd₂ := by
+    simp only [hrdd₂]
+    exact (((hqcont.mul hpcont).const_mul _)).add
+      ((((hqcont.mul hpcont).const_mul _)).add
+        ((continuous_const.sub (continuous_id.div_const _)).mul
+          (((hqcont.mul hpcont).mul hpcont).add (hqcont.mul hccont))))
+  refine ⟨(|rd₁ 0| + |rd₁ (-6)| + (∫ x in (-6:ℝ)..0, |rdd₁ x|) +
+    (|rd₂ 6| + |rd₂ 0| + ∫ x in (0:ℝ)..6, |rdd₂ x|)) * Real.exp (9 / 2), ?_, ?_⟩
+  · refine mul_nonneg ?_ (Real.exp_pos _).le
+    have h1 : 0 ≤ ∫ x in (-6:ℝ)..0, |rdd₁ x| :=
+      intervalIntegral.integral_nonneg (by norm_num) fun x _ => abs_nonneg _
+    have h2 : 0 ≤ ∫ x in (0:ℝ)..6, |rdd₂ x| :=
+      intervalIntegral.integral_nonneg (by norm_num) fun x _ => abs_nonneg _
+    have h3 := abs_nonneg (rd₁ 0)
+    have h4 := abs_nonneg (rd₁ (-6))
+    have h5 := abs_nonneg (rd₂ 6)
+    have h6 := abs_nonneg (rd₂ 0)
+    linarith
+  intro s h0 h1s him
+  have h12c : (1 / 2 : ℂ) = ((1 / 2 : ℝ) : ℂ) := by norm_num
+  have hsub_re : (s - 1 / 2).re = s.re - 1 / 2 := by
+    rw [h12c, Complex.sub_re, Complex.ofReal_re]
+  have hsub_im : (s - 1 / 2).im = s.im := by
+    rw [h12c, Complex.sub_im, Complex.ofReal_im, sub_zero]
+  have hwne : s - 1 / 2 ≠ 0 := by
+    intro h
+    apply him
+    have h' := congrArg Complex.im h
+    rw [hsub_im, Complex.zero_im] at h'
+    exact h'
+  have hwim : |s.im| ≤ ‖s - 1 / 2‖ := by
+    have h := Complex.abs_im_le_norm (s - 1 / 2)
+    rwa [hsub_im] at h
+  have hvder : ∀ x : ℝ, HasDerivAt
+      (fun y : ℝ => Complex.exp ((s - 1 / 2) * (y : ℂ)) / (s - 1 / 2))
+      (Complex.exp ((s - 1 / 2) * (x : ℂ))) x := by
+    intro x
+    have ha : HasDerivAt (fun y : ℝ => (s - 1 / 2) * (y : ℂ)) (s - 1 / 2) x := by
+      simpa using (Complex.ofRealCLM.hasDerivAt (x := x)).const_mul (s - 1 / 2)
+    have hb := ha.cexp.div_const (s - 1 / 2)
+    have hcancel : Complex.exp ((s - 1 / 2) * (x : ℂ)) * (s - 1 / 2) /
+        (s - 1 / 2) = Complex.exp ((s - 1 / 2) * (x : ℂ)) :=
+      mul_div_cancel_right₀ _ hwne
+    rw [hcancel] at hb
+    exact hb
+  have hv₂der : ∀ x : ℝ, HasDerivAt
+      (fun y : ℝ => Complex.exp ((s - 1 / 2) * (y : ℂ)) / (s - 1 / 2) ^ 2)
+      (Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2)) x := by
+    intro x
+    have ha : HasDerivAt (fun y : ℝ => (s - 1 / 2) * (y : ℂ)) (s - 1 / 2) x := by
+      simpa using (Complex.ofRealCLM.hasDerivAt (x := x)).const_mul (s - 1 / 2)
+    have hb := ha.cexp.div_const ((s - 1 / 2) ^ 2)
+    have hcancel : Complex.exp ((s - 1 / 2) * (x : ℂ)) * (s - 1 / 2) /
+        (s - 1 / 2) ^ 2 = Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2) := by
+      field_simp
+    rw [hcancel] at hb
+    exact hb
+  have hsupp : ∀ x : ℝ, x ∉ Set.Icc (-6:ℝ) 6 →
+      ((odlyzkoTestFn x / Real.cosh (x / 2) : ℝ) : ℂ) *
+        Complex.exp ((s - 1 / 2) * (x : ℂ)) = 0 := by
+    intro x hx
+    have h6 : 6 ≤ |x| := by
+      simp only [Set.mem_Icc, not_and_or, not_le] at hx
+      rcases hx with h | h
+      · exact le_abs.2 (Or.inr (by linarith))
+      · exact le_abs.2 (Or.inl h.le)
+    have hf0 : odlyzkoTestFn x = 0 := by
+      rw [odlyzkoTestFn, max_eq_right]
+      nlinarith [h6]
+    rw [hf0]
+    simp
+  have hstep1 : poitouPhi s = ∫ x in (-6:ℝ)..6,
+      ((odlyzkoTestFn x / Real.cosh (x / 2) : ℝ) : ℂ) *
+        Complex.exp ((s - 1 / 2) * (x : ℂ)) := by
+    rw [poitouPhi,
+      ← MeasureTheory.setIntegral_eq_integral_of_forall_compl_eq_zero hsupp,
+      MeasureTheory.integral_Icc_eq_integral_Ioc,
+      ← intervalIntegral.integral_of_le (by norm_num : (-6:ℝ) ≤ 6)]
+  have hIcont : Continuous fun x : ℝ =>
+      ((odlyzkoTestFn x / Real.cosh (x / 2) : ℝ) : ℂ) *
+        Complex.exp ((s - 1 / 2) * (x : ℂ)) := by
+    refine Continuous.mul ?_ (Complex.continuous_exp.comp (by fun_prop))
+    refine Complex.continuous_ofReal.comp ?_
+    refine Continuous.div ?_ (by fun_prop) fun x => (Real.cosh_pos _).ne'
+    unfold odlyzkoTestFn
+    fun_prop
+  have hstep2 : (∫ x in (-6:ℝ)..6,
+        ((odlyzkoTestFn x / Real.cosh (x / 2) : ℝ) : ℂ) *
+          Complex.exp ((s - 1 / 2) * (x : ℂ))) =
+      (∫ x in (-6:ℝ)..0, ((odlyzkoTestFn x / Real.cosh (x / 2) : ℝ) : ℂ) *
+        Complex.exp ((s - 1 / 2) * (x : ℂ))) +
+      ∫ x in (0:ℝ)..6, ((odlyzkoTestFn x / Real.cosh (x / 2) : ℝ) : ℂ) *
+        Complex.exp ((s - 1 / 2) * (x : ℂ)) :=
+    (intervalIntegral.integral_add_adjacent_intervals
+      (hIcont.intervalIntegrable _ _) (hIcont.intervalIntegrable _ _)).symm
+  have hcongr₁ : (∫ x in (-6:ℝ)..0,
+        ((odlyzkoTestFn x / Real.cosh (x / 2) : ℝ) : ℂ) *
+          Complex.exp ((s - 1 / 2) * (x : ℂ))) =
+      ∫ x in (-6:ℝ)..0, (((1 + x / 6) * q x : ℝ) : ℂ) *
+        Complex.exp ((s - 1 / 2) * (x : ℂ)) := by
+    refine intervalIntegral.integral_congr fun x hx => ?_
+    rw [Set.uIcc_of_le (by norm_num : (-6:ℝ) ≤ 0)] at hx
+    have hodl : odlyzkoTestFn x = 1 + x / 6 := by
+      rw [odlyzkoTestFn, abs_of_nonpos hx.2, max_eq_left (by linarith [hx.1])]
+      ring
+    rw [hodl]
+    simp only [hq]
+    rw [div_eq_mul_inv]
+  have hcongr₂ : (∫ x in (0:ℝ)..6,
+        ((odlyzkoTestFn x / Real.cosh (x / 2) : ℝ) : ℂ) *
+          Complex.exp ((s - 1 / 2) * (x : ℂ))) =
+      ∫ x in (0:ℝ)..6, (((1 - x / 6) * q x : ℝ) : ℂ) *
+        Complex.exp ((s - 1 / 2) * (x : ℂ)) := by
+    refine intervalIntegral.integral_congr fun x hx => ?_
+    rw [Set.uIcc_of_le (by norm_num : (0:ℝ) ≤ 6)] at hx
+    have hodl : odlyzkoTestFn x = 1 - x / 6 := by
+      rw [odlyzkoTestFn, abs_of_nonneg hx.1, max_eq_left (by linarith [hx.2])]
+    rw [hodl]
+    simp only [hq]
+    rw [div_eq_mul_inv]
+  have hibp₁ : (∫ x in (-6:ℝ)..0, (((1 + x / 6) * q x : ℝ) : ℂ) *
+        Complex.exp ((s - 1 / 2) * (x : ℂ))) =
+      (((1 + (0:ℝ) / 6) * q 0 : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * ((0:ℝ) : ℂ)) / (s - 1 / 2)) -
+      (((1 + (-6:ℝ) / 6) * q (-6) : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * ((-6:ℝ) : ℂ)) / (s - 1 / 2)) -
+      ∫ x in (-6:ℝ)..0, ((rd₁ x : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2)) := by
+    refine intervalIntegral.integral_mul_deriv_eq_deriv_mul_of_hasDerivAt
+      (u := fun x : ℝ => (((1 + x / 6) * q x : ℝ) : ℂ))
+      (v := fun x : ℝ => Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2))
+      (u' := fun x : ℝ => ((rd₁ x : ℝ) : ℂ))
+      (v' := fun x : ℝ => Complex.exp ((s - 1 / 2) * (x : ℂ))) ?_ ?_ ?_ ?_ ?_ ?_
+    · exact (Complex.continuous_ofReal.comp
+        ((continuous_const.add (continuous_id.div_const _)).mul hqcont)).continuousOn
+    · exact ((Complex.continuous_exp.comp (by fun_prop)).div_const _).continuousOn
+    · exact fun x _ => (hr₁der x).ofReal_comp
+    · exact fun x _ => hvder x
+    · exact (Complex.continuous_ofReal.comp hrd₁cont).intervalIntegrable _ _
+    · exact (Complex.continuous_exp.comp (by fun_prop)).intervalIntegrable _ _
+  have hibp₂ : (∫ x in (0:ℝ)..6, (((1 - x / 6) * q x : ℝ) : ℂ) *
+        Complex.exp ((s - 1 / 2) * (x : ℂ))) =
+      (((1 - (6:ℝ) / 6) * q 6 : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * ((6:ℝ) : ℂ)) / (s - 1 / 2)) -
+      (((1 - (0:ℝ) / 6) * q 0 : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * ((0:ℝ) : ℂ)) / (s - 1 / 2)) -
+      ∫ x in (0:ℝ)..6, ((rd₂ x : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2)) := by
+    refine intervalIntegral.integral_mul_deriv_eq_deriv_mul_of_hasDerivAt
+      (u := fun x : ℝ => (((1 - x / 6) * q x : ℝ) : ℂ))
+      (v := fun x : ℝ => Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2))
+      (u' := fun x : ℝ => ((rd₂ x : ℝ) : ℂ))
+      (v' := fun x : ℝ => Complex.exp ((s - 1 / 2) * (x : ℂ))) ?_ ?_ ?_ ?_ ?_ ?_
+    · exact (Complex.continuous_ofReal.comp
+        ((continuous_const.sub (continuous_id.div_const _)).mul hqcont)).continuousOn
+    · exact ((Complex.continuous_exp.comp (by fun_prop)).div_const _).continuousOn
+    · exact fun x _ => (hr₂der x).ofReal_comp
+    · exact fun x _ => hvder x
+    · exact (Complex.continuous_ofReal.comp hrd₂cont).intervalIntegrable _ _
+    · exact (Complex.continuous_exp.comp (by fun_prop)).intervalIntegrable _ _
+  have hq0 : ((1 + (0:ℝ) / 6) * q 0 : ℝ) = 1 := by
+    simp [hq]
+  have hqm6 : ((1 + (-6:ℝ) / 6) * q (-6) : ℝ) = 0 := by
+    norm_num
+  have hq6 : ((1 - (6:ℝ) / 6) * q 6 : ℝ) = 0 := by
+    norm_num
+  have hq0' : ((1 - (0:ℝ) / 6) * q 0 : ℝ) = 1 := by
+    simp [hq]
+  have hval : poitouPhi s =
+      -(∫ x in (-6:ℝ)..0, ((rd₁ x : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2)))
+      - ∫ x in (0:ℝ)..6, ((rd₂ x : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2)) := by
+    rw [hstep1, hstep2, hcongr₁, hcongr₂, hibp₁, hibp₂, hq0, hqm6, hq6, hq0']
+    push_cast
+    ring
+  have hnorm_v₂ : ∀ x ∈ Set.Icc (-6:ℝ) 6,
+      ‖Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2) ^ 2‖ ≤
+        Real.exp (9 / 2) / s.im ^ 2 := by
+    intro x hx
+    rw [norm_div, Complex.norm_exp, norm_pow]
+    have hre : ((s - 1 / 2) * (x : ℂ)).re = (s.re - 1 / 2) * x := by
+      rw [Complex.mul_re, Complex.ofReal_re, Complex.ofReal_im, mul_zero,
+        sub_zero, hsub_re]
+    rw [hre]
+    have hexp : (s.re - 1 / 2) * x ≤ 9 / 2 := by
+      have habs : |(s.re - 1 / 2) * x| ≤ 9 / 2 := by
+        rw [abs_mul]
+        have h2 : |s.re - 1 / 2| ≤ 3 / 4 := abs_le.mpr ⟨by linarith, by linarith⟩
+        have h3 : |x| ≤ 6 := abs_le.mpr ⟨hx.1, hx.2⟩
+        calc |s.re - 1 / 2| * |x| ≤ 3 / 4 * 6 :=
+              mul_le_mul h2 h3 (abs_nonneg _) (by norm_num)
+          _ = 9 / 2 := by norm_num
+      linarith [le_abs_self ((s.re - 1 / 2) * x)]
+    have hsq : s.im ^ 2 ≤ ‖s - 1 / 2‖ ^ 2 := by
+      have hab := sq_abs s.im
+      nlinarith [abs_nonneg s.im, norm_nonneg (s - 1 / 2)]
+    have hpos : (0:ℝ) < s.im ^ 2 := by positivity
+    exact div_le_div₀ (Real.exp_pos _).le (Real.exp_le_exp.mpr hexp) hpos hsq
+  have hv₂cont : Continuous fun x : ℝ =>
+      Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2) ^ 2 :=
+    (Complex.continuous_exp.comp (by fun_prop)).div_const _
+  have hibp₁₂ : (∫ x in (-6:ℝ)..0, ((rd₁ x : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2))) =
+      ((rd₁ (0:ℝ) : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * ((0:ℝ) : ℂ)) / (s - 1 / 2) ^ 2) -
+      ((rd₁ (-6:ℝ) : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * ((-6:ℝ) : ℂ)) / (s - 1 / 2) ^ 2) -
+      ∫ x in (-6:ℝ)..0, ((rdd₁ x : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2) ^ 2) := by
+    refine intervalIntegral.integral_mul_deriv_eq_deriv_mul_of_hasDerivAt
+      (u := fun x : ℝ => ((rd₁ x : ℝ) : ℂ))
+      (v := fun x : ℝ => Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2) ^ 2)
+      (u' := fun x : ℝ => ((rdd₁ x : ℝ) : ℂ))
+      (v' := fun x : ℝ =>
+        Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2)) ?_ ?_ ?_ ?_ ?_ ?_
+    · exact (Complex.continuous_ofReal.comp hrd₁cont).continuousOn
+    · exact hv₂cont.continuousOn
+    · exact fun x _ => (hrd₁der x).ofReal_comp
+    · exact fun x _ => hv₂der x
+    · exact (Complex.continuous_ofReal.comp hrdd₁cont).intervalIntegrable _ _
+    · exact ((Complex.continuous_exp.comp (by fun_prop)).div_const _).intervalIntegrable _ _
+  have hibp₂₂ : (∫ x in (0:ℝ)..6, ((rd₂ x : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2))) =
+      ((rd₂ (6:ℝ) : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * ((6:ℝ) : ℂ)) / (s - 1 / 2) ^ 2) -
+      ((rd₂ (0:ℝ) : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * ((0:ℝ) : ℂ)) / (s - 1 / 2) ^ 2) -
+      ∫ x in (0:ℝ)..6, ((rdd₂ x : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2) ^ 2) := by
+    refine intervalIntegral.integral_mul_deriv_eq_deriv_mul_of_hasDerivAt
+      (u := fun x : ℝ => ((rd₂ x : ℝ) : ℂ))
+      (v := fun x : ℝ => Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2) ^ 2)
+      (u' := fun x : ℝ => ((rdd₂ x : ℝ) : ℂ))
+      (v' := fun x : ℝ =>
+        Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2)) ?_ ?_ ?_ ?_ ?_ ?_
+    · exact (Complex.continuous_ofReal.comp hrd₂cont).continuousOn
+    · exact hv₂cont.continuousOn
+    · exact fun x _ => (hrd₂der x).ofReal_comp
+    · exact fun x _ => hv₂der x
+    · exact (Complex.continuous_ofReal.comp hrdd₂cont).intervalIntegrable _ _
+    · exact ((Complex.continuous_exp.comp (by fun_prop)).div_const _).intervalIntegrable _ _
+  have hbnd₁ : ‖∫ x in (-6:ℝ)..0, ((rd₁ x : ℝ) : ℂ) *
+      (Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2))‖ ≤
+      (|rd₁ 0| + |rd₁ (-6)| + ∫ x in (-6:ℝ)..0, |rdd₁ x|) *
+        (Real.exp (9 / 2) / s.im ^ 2) := by
+    rw [hibp₁₂]
+    have hA : ‖((rd₁ (0:ℝ) : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * ((0:ℝ) : ℂ)) / (s - 1 / 2) ^ 2)‖ ≤
+        |rd₁ 0| * (Real.exp (9 / 2) / s.im ^ 2) := by
+      rw [norm_mul, Complex.norm_real, Real.norm_eq_abs]
+      exact mul_le_mul_of_nonneg_left
+        (hnorm_v₂ 0 (Set.mem_Icc.mpr ⟨by norm_num, by norm_num⟩)) (abs_nonneg _)
+    have hB : ‖((rd₁ (-6:ℝ) : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * ((-6:ℝ) : ℂ)) / (s - 1 / 2) ^ 2)‖ ≤
+        |rd₁ (-6)| * (Real.exp (9 / 2) / s.im ^ 2) := by
+      rw [norm_mul, Complex.norm_real, Real.norm_eq_abs]
+      exact mul_le_mul_of_nonneg_left
+        (hnorm_v₂ (-6) (Set.mem_Icc.mpr ⟨by norm_num, by norm_num⟩)) (abs_nonneg _)
+    have hI : ‖∫ x in (-6:ℝ)..0, ((rdd₁ x : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2) ^ 2)‖ ≤
+        (∫ x in (-6:ℝ)..0, |rdd₁ x|) * (Real.exp (9 / 2) / s.im ^ 2) := by
+      refine (intervalIntegral.norm_integral_le_integral_norm
+        (by norm_num : (-6:ℝ) ≤ 0)).trans ?_
+      rw [← intervalIntegral.integral_mul_const]
+      refine intervalIntegral.integral_mono_on (by norm_num)
+        (((Complex.continuous_ofReal.comp hrdd₁cont).mul
+          hv₂cont).norm.intervalIntegrable _ _)
+        ((hrdd₁cont.abs.mul continuous_const).intervalIntegrable _ _) fun x hx => ?_
+      rw [norm_mul, Complex.norm_real, Real.norm_eq_abs]
+      refine mul_le_mul_of_nonneg_left ?_ (abs_nonneg _)
+      exact hnorm_v₂ x (Set.mem_Icc.mpr ⟨hx.1, by linarith [hx.2]⟩)
+    refine ((norm_sub_le _ _).trans (add_le_add ((norm_sub_le _ _).trans
+      (add_le_add hA hB)) hI)).trans (le_of_eq ?_)
+    ring
+  have hbnd₂ : ‖∫ x in (0:ℝ)..6, ((rd₂ x : ℝ) : ℂ) *
+      (Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2))‖ ≤
+      (|rd₂ 6| + |rd₂ 0| + ∫ x in (0:ℝ)..6, |rdd₂ x|) *
+        (Real.exp (9 / 2) / s.im ^ 2) := by
+    rw [hibp₂₂]
+    have hA : ‖((rd₂ (6:ℝ) : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * ((6:ℝ) : ℂ)) / (s - 1 / 2) ^ 2)‖ ≤
+        |rd₂ 6| * (Real.exp (9 / 2) / s.im ^ 2) := by
+      rw [norm_mul, Complex.norm_real, Real.norm_eq_abs]
+      exact mul_le_mul_of_nonneg_left
+        (hnorm_v₂ 6 (Set.mem_Icc.mpr ⟨by norm_num, by norm_num⟩)) (abs_nonneg _)
+    have hB : ‖((rd₂ (0:ℝ) : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * ((0:ℝ) : ℂ)) / (s - 1 / 2) ^ 2)‖ ≤
+        |rd₂ 0| * (Real.exp (9 / 2) / s.im ^ 2) := by
+      rw [norm_mul, Complex.norm_real, Real.norm_eq_abs]
+      exact mul_le_mul_of_nonneg_left
+        (hnorm_v₂ 0 (Set.mem_Icc.mpr ⟨by norm_num, by norm_num⟩)) (abs_nonneg _)
+    have hI : ‖∫ x in (0:ℝ)..6, ((rdd₂ x : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2) ^ 2)‖ ≤
+        (∫ x in (0:ℝ)..6, |rdd₂ x|) * (Real.exp (9 / 2) / s.im ^ 2) := by
+      refine (intervalIntegral.norm_integral_le_integral_norm
+        (by norm_num : (0:ℝ) ≤ 6)).trans ?_
+      rw [← intervalIntegral.integral_mul_const]
+      refine intervalIntegral.integral_mono_on (by norm_num)
+        (((Complex.continuous_ofReal.comp hrdd₂cont).mul
+          hv₂cont).norm.intervalIntegrable _ _)
+        ((hrdd₂cont.abs.mul continuous_const).intervalIntegrable _ _) fun x hx => ?_
+      rw [norm_mul, Complex.norm_real, Real.norm_eq_abs]
+      refine mul_le_mul_of_nonneg_left ?_ (abs_nonneg _)
+      exact hnorm_v₂ x (Set.mem_Icc.mpr ⟨by linarith [hx.1], hx.2⟩)
+    refine ((norm_sub_le _ _).trans (add_le_add ((norm_sub_le _ _).trans
+      (add_le_add hA hB)) hI)).trans (le_of_eq ?_)
+    ring
+  rw [hval]
+  calc ‖-(∫ x in (-6:ℝ)..0, ((rd₁ x : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2)))
+      - ∫ x in (0:ℝ)..6, ((rd₂ x : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2))‖
+      ≤ ‖∫ x in (-6:ℝ)..0, ((rd₁ x : ℝ) : ℂ) *
+          (Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2))‖ +
+        ‖∫ x in (0:ℝ)..6, ((rd₂ x : ℝ) : ℂ) *
+          (Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2))‖ :=
+      (norm_sub_le _ _).trans (by rw [norm_neg])
+    _ ≤ (|rd₁ 0| + |rd₁ (-6)| + ∫ x in (-6:ℝ)..0, |rdd₁ x|) *
+          (Real.exp (9 / 2) / s.im ^ 2) +
+        (|rd₂ 6| + |rd₂ 0| + ∫ x in (0:ℝ)..6, |rdd₂ x|) *
+          (Real.exp (9 / 2) / s.im ^ 2) := add_le_add hbnd₁ hbnd₂
+    _ = (|rd₁ 0| + |rd₁ (-6)| + (∫ x in (-6:ℝ)..0, |rdd₁ x|) +
+        (|rd₂ 6| + |rd₂ 0| + ∫ x in (0:ℝ)..6, |rdd₂ x|)) * Real.exp (9 / 2) /
+          s.im ^ 2 := by
+        ring
 
 section PoitouBridgeEstimates
 
