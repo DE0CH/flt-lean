@@ -124,12 +124,18 @@ genuinely modular-curve-theoretic inputs:
   `{11, 13, 17, 19, 37, 43, 67, 163}` is discharged outright by the
   `X_0` node `mem_cyclicIsogenyDegrees` — a point of order `ℓ`
   generates a rational cyclic `ℓ`-isogeny, and those eight are the
-  only primes `≥ 11` in Kenku's list. The content that remains sits in
-  the eight per-level nodes `no_torsion_order_11`, …,
-  `no_torsion_order_163`, all IRREDUCIBLE at this mathlib pin: all
-  eight ARE rational isogeny degrees, so the `X_0` shortcut provably
-  stops there and only `X_1(ℓ)` excludes the point. See the section
-  note before them for the witnesses and the missing-machinery list.
+  only primes `≥ 11` in Kenku's list. The eight per-level statements
+  `no_torsion_order_11`, …, `no_torsion_order_163` are PROVEN in turn
+  from the PROVEN Tate normal form `exists_tateNormalForm` (new here,
+  no mathlib counterpart), which puts a curve with a point of order
+  `≥ 4` into the shape `y² + (1 − c)xy − by = x³ − bx²` with the point
+  at the origin. So the content that remains sits in the eight
+  Tate-coordinate nodes `tateNormalForm_origin_order_ne_11`, …,
+  `_163` — plane models of `X_1(ℓ)` in the `(b, c)`-coordinates — all
+  IRREDUCIBLE at this mathlib pin: all eight `ℓ` ARE rational isogeny
+  degrees, so the `X_0` shortcut provably stops there and only
+  `X_1(ℓ)` excludes the point. See the section notes before them for
+  the witnesses, the genera and the missing-machinery list.
 * `no_composite_torsion_order` (PROVEN 2026-07-25 as the eleven-way
   case split over its `Finset` hypothesis): no rational point of
   order `n ∈ {14, 15, 16, 18, 20, 21, 24, 25, 27, 35, 49}` — the
@@ -937,7 +943,231 @@ reason already recorded: rational torsion injects into `Ẽ(𝔽_p)` at a
 prime `p` of good reduction (odd `p`, or any `p` for odd torsion), so
 `ℓ ≤ p + 1 + 2√p` there, which only forces bad reduction at the small
 primes and is a lower bound on the conductor, never a contradiction.
+
+FIRST BRICK BUILT (2026-07-25). Item 1 of the missing-machinery list is
+not reachable in one step, but its elementary prerequisite is, and it is
+now PROVEN here: `exists_tateNormalForm`, the Tate normal form for a
+point of order `≥ 4`. Consequently each of the eight nodes is stated in
+the coordinates the literature uses — about the explicit family
+`tateNormalForm b c` and the origin, i.e. about a plane model of
+`X_1(ℓ)` — and the general per-level statements `no_torsion_order_ℓ` are
+PROVEN from them. Nothing was assumed to do this and no level got
+easier; what changed is that the reduction to standard coordinates is
+now checked by the compiler instead of being left implicit. See the
+Tate-normal-form section note immediately below.
 -/
+
+/-!
+##### Tate normal form: the coordinates every `X_1(n)` computation starts in
+
+The eight nodes below are stated in the coordinates the literature
+actually uses. The passage into those coordinates is NOT assumed: it is
+the PROVEN theorem `exists_tateNormalForm` in this section, which is new
+here and has no mathlib counterpart.
+
+An elliptic curve over `ℚ` with a rational point `P` of order `≥ 4` is
+`ℚ`-isomorphic to
+
+  `y² + (1 − c) x y − b y = x³ − b x²`,
+
+by an isomorphism carrying `P` to `(0, 0)`. The derivation is three
+admissible changes of variables, and each of the two divisions it
+performs is licensed by one of the two order hypotheses — which is
+exactly why `4` is the threshold:
+
+* translate `P` to the origin (`r = X`, `t = Y`); the constant term
+  `a₆` dies because `P` lies on the curve;
+* shear by `s` to kill `a₄`. The shear needed is `s = A / a₃'` with
+  `a₃' = a₃ + X a₁ + 2Y`, and `a₃' ≠ 0` is precisely `2P ≠ 0` — it is
+  the quantity `y − negY(x, y)` at `P`, whose vanishing characterises
+  `2`-torsion;
+* rescale by `u = a₃'/a₂'` to force `a₂ = a₃`. Here `a₂' ≠ 0` is
+  precisely `3P ≠ 0`: once `a₄ = a₆ = 0`, the tangent at the origin is
+  `y = 0`, which meets `x³ + a₂' x² = 0` in the third point `x = −a₂'`,
+  so `a₂' = 0` says the origin is a flex, i.e. a point of order `3`.
+  That direction is the PROVEN `three_nsmul_origin_eq_zero` below, and
+  it is the only place any point arithmetic is needed.
+
+The transport of the Mordell–Weil group along the changes of variables
+is `Point.equivVariableChange` from the repo's mathlib shim; everything
+stays over `ℚ`, so no Galois bookkeeping is required (unlike the
+two-torsion normal form later in this file, which needs `ℚ̄`).
+
+WHAT THIS BUYS AND WHAT IT DOES NOT. It reduces each level `ℓ` from a
+statement about ALL elliptic curves to a statement about the explicit
+two-parameter family `tateNormalForm b c` and the single point `(0,0)` —
+i.e. to a plane model of `X_1(ℓ)` in the `(b, c)`-coordinates, which is
+where every classical treatment begins. It does NOT settle any level:
+what remains at each is the Diophantine content, and that still needs
+the missing machinery listed in the section note above. The same
+theorem serves levels `21, 25, 27` and the composite levels, none of
+which are touched here.
+-/
+
+namespace WeierstrassCurve
+
+/-- **Tate normal form** `y² + (1 − c) x y − b y = x³ − b x²`, the
+standard plane model in which a point of order `≥ 4` sits at the origin.
+The `(b, c)`-plane is the standard affine model of `X_1(n)` once the
+order-`n` condition on `(0,0)` is imposed. -/
+def tateNormalForm (b c : ℚ) : WeierstrassCurve ℚ := ⟨1 - c, -b, -b, 0, 0⟩
+
+/-- **The origin is a flex when `a₂` vanishes** (PROVEN): on a curve
+`y² + a₁ x y + a₃ y = x³ + a₂ x² + a₄ x` with `a₂ = a₄ = 0` and
+`a₃ ≠ 0`, the origin is a point of order dividing `3`.
+
+`a₄ = 0` makes the tangent slope at `(0,0)` equal `a₄/a₃ = 0`, so the
+tangent is the line `y = 0`; it meets the curve where `x³ + a₂ x² = 0`,
+which with `a₂ = 0` is `x³ = 0` — a triple contact. Concretely the
+doubling formulas give `addX = −a₂ = 0` and `negAddY = 0`, so
+`P + P = −P`. The hypothesis `a₃ ≠ 0` is what makes the tangent
+non-vertical, i.e. `P` not `2`-torsion. -/
+lemma three_nsmul_origin_eq_zero (V : WeierstrassCurve ℚ)
+    (h2 : V.a₂ = 0) (h4 : V.a₄ = 0) (h3 : V.a₃ ≠ 0)
+    (h00 : V.toAffine.Nonsingular 0 0) :
+    Affine.Point.some 0 0 h00 + Affine.Point.some 0 0 h00 +
+      Affine.Point.some 0 0 h00 = 0 := by
+  have hne : (0 : ℚ) ≠ V.toAffine.negY 0 0 := by
+    simp only [Affine.negY]
+    intro h
+    exact h3 (by linarith)
+  have hslope : V.toAffine.slope 0 0 0 0 = 0 := by
+    rw [Affine.slope_of_Y_ne rfl hne]
+    simp only [Affine.negY, h2, h4]
+    ring_nf
+  have key : Affine.Point.some 0 0 h00 + Affine.Point.some 0 0 h00 =
+      -Affine.Point.some 0 0 h00 := by
+    rw [Affine.Point.add_self_of_Y_ne' hne]
+    congr 1
+    refine Affine.Point.some_eq_some V ?_ ?_
+    · simp only [Affine.addX, hslope, h2]; ring
+    · simp only [Affine.negAddY, Affine.addX, hslope, h2]; ring
+  rw [key, neg_add_cancel]
+
+/-- **Tate normal form for a point of order `≥ 4`** (PROVEN 2026-07-25;
+no mathlib counterpart): an elliptic curve `W` over `ℚ` carrying a
+rational point `P` with `4 ≤ addOrderOf P` is `ℚ`-isomorphic to
+`tateNormalForm b c` for some `b, c ∈ ℚ`, by an isomorphism of
+Mordell–Weil groups carrying `P` to `(0, 0)`.
+
+See the section note above for the derivation and for which order
+hypothesis licenses which division. Silverman ATAEC / Husemöller
+"Elliptic Curves" Ch. 4; the form is due to Tate. -/
+theorem exists_tateNormalForm (W : WeierstrassCurve ℚ) [W.IsElliptic]
+    (P : W.toAffine.Point) (h4 : 4 ≤ addOrderOf P) :
+    ∃ (b c : ℚ) (_ : (tateNormalForm b c).IsElliptic)
+      (h00 : (tateNormalForm b c).toAffine.Nonsingular 0 0)
+      (Ψ : W.toAffine.Point ≃+ (tateNormalForm b c).toAffine.Point),
+      Ψ P = Affine.Point.some 0 0 h00 := by
+  have hPP : P + P ≠ 0 := by
+    intro h
+    rw [← two_nsmul] at h
+    have := Nat.le_of_dvd (by norm_num) (addOrderOf_dvd_of_nsmul_eq_zero h)
+    omega
+  have hPPP : P + P + P ≠ 0 := by
+    intro h
+    have h3 : (3 : ℕ) • P = 0 := by
+      rw [show (3 : ℕ) = 2 + 1 from rfl, add_nsmul, two_nsmul, one_nsmul]; exact h
+    have := Nat.le_of_dvd (by norm_num) (addOrderOf_dvd_of_nsmul_eq_zero h3)
+    omega
+  rcases P with _ | ⟨X, Y, hns⟩
+  · exact absurd (by simp [← Affine.Point.zero_def]) hPP
+  -- `2P ≠ 0` is exactly nonvanishing of `a₃'`, the tangent denominator at `P`.
+  have hY2 : W.a₃ + X * W.a₁ + 2 * Y ≠ 0 := by
+    intro h0
+    refine hPP (Affine.Point.add_of_Y_eq rfl ?_)
+    simp only [Affine.negY]
+    linarith
+  set s : ℚ := (W.a₄ + 2 * X * W.a₂ - Y * W.a₁ + 3 * X ^ 2) / (W.a₃ + X * W.a₁ + 2 * Y)
+    with hs
+  have hs4 : s * (W.a₃ + X * W.a₁ + 2 * Y) =
+      W.a₄ + 2 * X * W.a₂ - Y * W.a₁ + 3 * X ^ 2 := div_mul_cancel₀ _ hY2
+  set C₁ : VariableChange ℚ := ⟨1, X, s, Y⟩ with hC₁
+  set W₁ : WeierstrassCurve ℚ := C₁ • W with hW₁
+  have hE : W.toAffine.Equation X Y := hns.1
+  have h₁6 : W₁.a₆ = 0 := by
+    rw [hW₁, variableChange_a₆, hC₁]
+    rw [Affine.equation_iff] at hE
+    simp only [Units.val_one, inv_one, one_pow, one_mul]
+    linarith [hE]
+  have h₁4 : W₁.a₄ = 0 := by
+    rw [hW₁, variableChange_a₄, hC₁]
+    simp only [Units.val_one, inv_one, one_pow, one_mul]
+    linear_combination -hs4
+  have h₁3 : W₁.a₃ = W.a₃ + X * W.a₁ + 2 * Y := by
+    rw [hW₁, variableChange_a₃, hC₁]
+    simp only [Units.val_one, inv_one, one_pow, one_mul]
+  have h₁3ne : W₁.a₃ ≠ 0 := by rw [h₁3]; exact hY2
+  have h₀₁ : W₁.toAffine.Nonsingular 0 0 :=
+    Affine.equation_iff_nonsingular.mp ((Affine.equation_zero (W := W₁)).mpr h₁6)
+  have hΨ₁ : (Point.equivVariableChange W C₁).symm (Affine.Point.some X Y hns) =
+      Affine.Point.some 0 0 h₀₁ := by
+    rw [AddEquiv.symm_apply_eq, Point.equivVariableChange_some]
+    exact (Affine.Point.some_eq_some W (by simp [hC₁]) (by simp [hC₁])).symm
+  -- `3P ≠ 0` is exactly nonvanishing of `a₂'`: otherwise the origin is a flex.
+  have h₁2ne : W₁.a₂ ≠ 0 := by
+    intro h0
+    refine hPPP ?_
+    have h3 := three_nsmul_origin_eq_zero W₁ h0 h₁4 h₁3ne h₀₁
+    have hmap := congrArg (Point.equivVariableChange W C₁) h3
+    rw [map_add, map_add, ← hΨ₁] at hmap
+    simpa [AddEquiv.apply_symm_apply] using hmap
+  set u : ℚˣ := Units.mk0 (W₁.a₃ / W₁.a₂) (div_ne_zero h₁3ne h₁2ne) with hu
+  set C₂ : VariableChange ℚ := ⟨u, 0, 0, 0⟩ with hC₂
+  set W₂ : WeierstrassCurve ℚ := C₂ • W₁ with hW₂
+  set b : ℚ := -(W₁.a₂ ^ 3 / W₁.a₃ ^ 2) with hb
+  set c : ℚ := 1 - (W₁.a₂ / W₁.a₃) * W₁.a₁ with hc
+  have huinv : ((u : ℚ))⁻¹ = W₁.a₂ / W₁.a₃ := by
+    rw [hu]
+    simp only [Units.val_mk0]
+    rw [inv_div]
+  have hEq : W₂ = tateNormalForm b c := by
+    refine WeierstrassCurve.ext ?_ ?_ ?_ ?_ ?_
+    · rw [hW₂, variableChange_a₁, hC₂, tateNormalForm, hc]
+      simp only [Units.val_inv_eq_inv_val, huinv]
+      ring
+    · rw [hW₂, variableChange_a₂, hC₂, tateNormalForm, hb]
+      simp only [Units.val_inv_eq_inv_val, huinv]
+      field_simp
+      ring
+    · rw [hW₂, variableChange_a₃, hC₂, tateNormalForm, hb]
+      simp only [Units.val_inv_eq_inv_val, huinv]
+      field_simp
+      ring
+    · rw [hW₂, variableChange_a₄, hC₂, tateNormalForm, h₁4]
+      simp
+    · rw [hW₂, variableChange_a₆, hC₂, tateNormalForm, h₁6]
+      simp
+  have h₀₂ : W₂.toAffine.Nonsingular 0 0 := by
+    refine Affine.equation_iff_nonsingular.mp ((Affine.equation_zero (W := W₂)).mpr ?_)
+    rw [hW₂, variableChange_a₆, hC₂, h₁6]
+    simp
+  have hΨ₂ : (Point.equivVariableChange W₁ C₂).symm (Affine.Point.some 0 0 h₀₁) =
+      Affine.Point.some 0 0 h₀₂ := by
+    rw [AddEquiv.symm_apply_eq, Point.equivVariableChange_some]
+    exact (Affine.Point.some_eq_some W₁ (by simp [hC₂]) (by simp [hC₂])).symm
+  refine ⟨b, c, hEq ▸ (inferInstance : W₂.IsElliptic), hEq ▸ h₀₂,
+    ((Point.equivVariableChange W C₁).symm.trans
+      ((Point.equivVariableChange W₁ C₂).symm.trans (Point.equivOfEq hEq))), ?_⟩
+  rw [AddEquiv.trans_apply, AddEquiv.trans_apply, hΨ₁, hΨ₂, Point.equivOfEq_some]
+
+/-- **Passage to Tate coordinates at a level `ℓ ≥ 11`** (PROVEN): if the
+origin of every `tateNormalForm b c` fails to have order `ℓ`, then no
+rational point of any elliptic curve over `ℚ` has order `ℓ`. This is
+`exists_tateNormalForm` packaged for the eight nodes below; `4 ≤ ℓ` is
+supplied by `11 ≤ ℓ`. -/
+lemma no_torsion_order_of_tateNormalForm {ℓ : ℕ} (h4 : 4 ≤ ℓ)
+    (h : ∀ (b c : ℚ) (_ : (tateNormalForm b c).IsElliptic)
+      (h00 : (tateNormalForm b c).toAffine.Nonsingular 0 0),
+        addOrderOf (Affine.Point.some 0 0 h00) ≠ ℓ)
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] (Q : (E⁄ℚ).Point) :
+    addOrderOf Q ≠ ℓ := by
+  intro hQ
+  haveI : (E⁄ℚ).IsElliptic := inferInstanceAs ((E.map (algebraMap ℚ ℚ)).IsElliptic)
+  obtain ⟨b, c, hell, h00, Ψ, hΨ⟩ := exists_tateNormalForm (E⁄ℚ) Q (by omega)
+  exact h b c hell h00 (by rw [← hΨ, AddEquiv.addOrderOf_eq]; exact hQ)
+
+end WeierstrassCurve
 
 /-- **No rational point of order `11`** (sorry node — IRREDUCIBLE
 literature citation, audited 2026-07-25): `X_1(11)` is the elliptic
@@ -952,10 +1182,34 @@ points, `j = −32768`, `−121`, `−24729001` (PARI/GP `ellisomat`,
 untrusted searcher). So a rational cyclic `11`-isogeny is no
 contradiction, and only the finer `X_1(11)` statement excludes the
 point. A formal proof needs `X_1(11)` as an arithmetic curve together
-with a rank-`0` Mordell–Weil computation; neither exists here. -/
+with a rank-`0` Mordell–Weil computation; neither exists here. 
+STATED IN TATE COORDINATES (2026-07-25). The general form of this
+level — no rational point of order `11` on ANY elliptic curve over
+`ℚ` — is `no_torsion_order_11` just below, and is PROVEN from this
+node. Here the curve is the explicit two-parameter family
+`tateNormalForm b c` and the point is the origin, so this node IS the
+plane model of `X_1(11)` in the `(b, c)`-coordinates rather than a
+statement quantified over all curves. The passage between the two is
+the PROVEN `exists_tateNormalForm`; everything above about genus,
+witnesses and citation is unchanged by the restatement.
+-/
+theorem WeierstrassCurve.tateNormalForm_origin_order_ne_11 (b c : ℚ)
+    [(WeierstrassCurve.tateNormalForm b c).IsElliptic]
+    (h00 : (WeierstrassCurve.tateNormalForm b c).toAffine.Nonsingular 0 0) :
+    addOrderOf (Affine.Point.some 0 0 h00) ≠ 11 :=
+  sorry
+
+/-- **No rational point of order `11`** (PROVEN 2026-07-25 from the
+Tate-coordinate node above through `no_torsion_order_of_tateNormalForm`):
+a point of order `11 ≥ 4` puts its curve in Tate normal form at the
+origin, so the general statement follows from the one about the
+explicit family. All the mathematical content is in the node above,
+whose docstring carries this level's citation and audit. -/
 theorem WeierstrassCurve.no_torsion_order_11 (E : WeierstrassCurve ℚ)
     [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 11 :=
-  sorry
+  WeierstrassCurve.no_torsion_order_of_tateNormalForm (by norm_num)
+    (fun b c hell h00 =>
+      @WeierstrassCurve.tateNormalForm_origin_order_ne_11 b c hell h00) E Q
 
 /-- **No rational point of order `13`** (sorry node — IRREDUCIBLE
 literature citation, audited 2026-07-25): `X_1(13)` has genus `2` and no
@@ -967,10 +1221,34 @@ The `X_0` shortcut is NOT available: `13` is in Kenku's list, and
 abundance — `y² = x³ + 6x − 8`, of conductor `20736`, is one (PARI/GP
 `ellisomat`, untrusted searcher). A formal proof needs the rational
 points of a genus-`2` curve, i.e. Mordell–Weil on its Jacobian plus a
-Chabauty-style argument. -/
+Chabauty-style argument. 
+STATED IN TATE COORDINATES (2026-07-25). The general form of this
+level — no rational point of order `13` on ANY elliptic curve over
+`ℚ` — is `no_torsion_order_13` just below, and is PROVEN from this
+node. Here the curve is the explicit two-parameter family
+`tateNormalForm b c` and the point is the origin, so this node IS the
+plane model of `X_1(13)` in the `(b, c)`-coordinates rather than a
+statement quantified over all curves. The passage between the two is
+the PROVEN `exists_tateNormalForm`; everything above about genus,
+witnesses and citation is unchanged by the restatement.
+-/
+theorem WeierstrassCurve.tateNormalForm_origin_order_ne_13 (b c : ℚ)
+    [(WeierstrassCurve.tateNormalForm b c).IsElliptic]
+    (h00 : (WeierstrassCurve.tateNormalForm b c).toAffine.Nonsingular 0 0) :
+    addOrderOf (Affine.Point.some 0 0 h00) ≠ 13 :=
+  sorry
+
+/-- **No rational point of order `13`** (PROVEN 2026-07-25 from the
+Tate-coordinate node above through `no_torsion_order_of_tateNormalForm`):
+a point of order `13 ≥ 4` puts its curve in Tate normal form at the
+origin, so the general statement follows from the one about the
+explicit family. All the mathematical content is in the node above,
+whose docstring carries this level's citation and audit. -/
 theorem WeierstrassCurve.no_torsion_order_13 (E : WeierstrassCurve ℚ)
     [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 13 :=
-  sorry
+  WeierstrassCurve.no_torsion_order_of_tateNormalForm (by norm_num)
+    (fun b c hell h00 =>
+      @WeierstrassCurve.tateNormalForm_origin_order_ne_13 b c hell h00) E Q
 
 /-- **No rational point of order `17`** (sorry node — IRREDUCIBLE
 literature citation, audited 2026-07-25): `X_1(17)` has genus `5` and no
@@ -980,10 +1258,34 @@ The `X_0` shortcut is NOT available: `17` is in Kenku's list, and
 `X_0(17)` — a genus-`1` curve of Mordell–Weil rank `0` — has
 non-cuspidal rational points, `j = −17 · 373³ / 2¹⁷` and
 `j = −17² · 101³ / 2` (PARI/GP `ellisomat`, untrusted searcher), so a
-rational cyclic `17`-isogeny is no contradiction. -/
+rational cyclic `17`-isogeny is no contradiction. 
+STATED IN TATE COORDINATES (2026-07-25). The general form of this
+level — no rational point of order `17` on ANY elliptic curve over
+`ℚ` — is `no_torsion_order_17` just below, and is PROVEN from this
+node. Here the curve is the explicit two-parameter family
+`tateNormalForm b c` and the point is the origin, so this node IS the
+plane model of `X_1(17)` in the `(b, c)`-coordinates rather than a
+statement quantified over all curves. The passage between the two is
+the PROVEN `exists_tateNormalForm`; everything above about genus,
+witnesses and citation is unchanged by the restatement.
+-/
+theorem WeierstrassCurve.tateNormalForm_origin_order_ne_17 (b c : ℚ)
+    [(WeierstrassCurve.tateNormalForm b c).IsElliptic]
+    (h00 : (WeierstrassCurve.tateNormalForm b c).toAffine.Nonsingular 0 0) :
+    addOrderOf (Affine.Point.some 0 0 h00) ≠ 17 :=
+  sorry
+
+/-- **No rational point of order `17`** (PROVEN 2026-07-25 from the
+Tate-coordinate node above through `no_torsion_order_of_tateNormalForm`):
+a point of order `17 ≥ 4` puts its curve in Tate normal form at the
+origin, so the general statement follows from the one about the
+explicit family. All the mathematical content is in the node above,
+whose docstring carries this level's citation and audit. -/
 theorem WeierstrassCurve.no_torsion_order_17 (E : WeierstrassCurve ℚ)
     [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 17 :=
-  sorry
+  WeierstrassCurve.no_torsion_order_of_tateNormalForm (by norm_num)
+    (fun b c hell h00 =>
+      @WeierstrassCurve.tateNormalForm_origin_order_ne_17 b c hell h00) E Q
 
 /-- **No rational point of order `19`** (sorry node — IRREDUCIBLE
 literature citation, audited 2026-07-25): `X_1(19)` has genus `7` and no
@@ -993,10 +1295,34 @@ The `X_0` shortcut is NOT available: `19` is in Kenku's list. The
 witness is the CM curve of discriminant `−19`, `j = −884736`, whose
 cyclic isogeny degrees are exactly `{1, 19}` (PARI/GP `ellisomat`,
 untrusted searcher) — the class number of the order of discriminant
-`−19` is `1`, which is precisely why the `19`-isogeny is rational. -/
+`−19` is `1`, which is precisely why the `19`-isogeny is rational. 
+STATED IN TATE COORDINATES (2026-07-25). The general form of this
+level — no rational point of order `19` on ANY elliptic curve over
+`ℚ` — is `no_torsion_order_19` just below, and is PROVEN from this
+node. Here the curve is the explicit two-parameter family
+`tateNormalForm b c` and the point is the origin, so this node IS the
+plane model of `X_1(19)` in the `(b, c)`-coordinates rather than a
+statement quantified over all curves. The passage between the two is
+the PROVEN `exists_tateNormalForm`; everything above about genus,
+witnesses and citation is unchanged by the restatement.
+-/
+theorem WeierstrassCurve.tateNormalForm_origin_order_ne_19 (b c : ℚ)
+    [(WeierstrassCurve.tateNormalForm b c).IsElliptic]
+    (h00 : (WeierstrassCurve.tateNormalForm b c).toAffine.Nonsingular 0 0) :
+    addOrderOf (Affine.Point.some 0 0 h00) ≠ 19 :=
+  sorry
+
+/-- **No rational point of order `19`** (PROVEN 2026-07-25 from the
+Tate-coordinate node above through `no_torsion_order_of_tateNormalForm`):
+a point of order `19 ≥ 4` puts its curve in Tate normal form at the
+origin, so the general statement follows from the one about the
+explicit family. All the mathematical content is in the node above,
+whose docstring carries this level's citation and audit. -/
 theorem WeierstrassCurve.no_torsion_order_19 (E : WeierstrassCurve ℚ)
     [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 19 :=
-  sorry
+  WeierstrassCurve.no_torsion_order_of_tateNormalForm (by norm_num)
+    (fun b c hell h00 =>
+      @WeierstrassCurve.tateNormalForm_origin_order_ne_19 b c hell h00) E Q
 
 /-- **No rational point of order `37`** (sorry node — IRREDUCIBLE
 literature citation, audited 2026-07-25): `X_1(37)` has genus `40` and
@@ -1007,10 +1333,34 @@ The `X_0` shortcut is NOT available: `37` is in Kenku's list, and
 to have cyclic isogeny degrees exactly `{1, 37}` with PARI/GP
 `ellisomat`, untrusted searcher) and `j = −7 · 137³ · 2083³`. At this
 genus no explicit descent is available even in the literature: the
-level is settled by the Eisenstein-ideal argument itself. -/
+level is settled by the Eisenstein-ideal argument itself. 
+STATED IN TATE COORDINATES (2026-07-25). The general form of this
+level — no rational point of order `37` on ANY elliptic curve over
+`ℚ` — is `no_torsion_order_37` just below, and is PROVEN from this
+node. Here the curve is the explicit two-parameter family
+`tateNormalForm b c` and the point is the origin, so this node IS the
+plane model of `X_1(37)` in the `(b, c)`-coordinates rather than a
+statement quantified over all curves. The passage between the two is
+the PROVEN `exists_tateNormalForm`; everything above about genus,
+witnesses and citation is unchanged by the restatement.
+-/
+theorem WeierstrassCurve.tateNormalForm_origin_order_ne_37 (b c : ℚ)
+    [(WeierstrassCurve.tateNormalForm b c).IsElliptic]
+    (h00 : (WeierstrassCurve.tateNormalForm b c).toAffine.Nonsingular 0 0) :
+    addOrderOf (Affine.Point.some 0 0 h00) ≠ 37 :=
+  sorry
+
+/-- **No rational point of order `37`** (PROVEN 2026-07-25 from the
+Tate-coordinate node above through `no_torsion_order_of_tateNormalForm`):
+a point of order `37 ≥ 4` puts its curve in Tate normal form at the
+origin, so the general statement follows from the one about the
+explicit family. All the mathematical content is in the node above,
+whose docstring carries this level's citation and audit. -/
 theorem WeierstrassCurve.no_torsion_order_37 (E : WeierstrassCurve ℚ)
     [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 37 :=
-  sorry
+  WeierstrassCurve.no_torsion_order_of_tateNormalForm (by norm_num)
+    (fun b c hell h00 =>
+      @WeierstrassCurve.tateNormalForm_origin_order_ne_37 b c hell h00) E Q
 
 /-- **No rational point of order `43`** (sorry node — IRREDUCIBLE
 literature citation, audited 2026-07-25): `X_1(43)` has genus `57` and
@@ -1019,10 +1369,34 @@ no non-cuspidal rational point (Mazur 1977, Thm 7).
 The `X_0` shortcut is NOT available: `43` is in Kenku's list, the
 witness being the class-number-one CM curve of discriminant `−43`,
 `j = −884736000`, whose cyclic isogeny degrees are exactly `{1, 43}`
-(PARI/GP `ellisomat`, untrusted searcher). -/
+(PARI/GP `ellisomat`, untrusted searcher). 
+STATED IN TATE COORDINATES (2026-07-25). The general form of this
+level — no rational point of order `43` on ANY elliptic curve over
+`ℚ` — is `no_torsion_order_43` just below, and is PROVEN from this
+node. Here the curve is the explicit two-parameter family
+`tateNormalForm b c` and the point is the origin, so this node IS the
+plane model of `X_1(43)` in the `(b, c)`-coordinates rather than a
+statement quantified over all curves. The passage between the two is
+the PROVEN `exists_tateNormalForm`; everything above about genus,
+witnesses and citation is unchanged by the restatement.
+-/
+theorem WeierstrassCurve.tateNormalForm_origin_order_ne_43 (b c : ℚ)
+    [(WeierstrassCurve.tateNormalForm b c).IsElliptic]
+    (h00 : (WeierstrassCurve.tateNormalForm b c).toAffine.Nonsingular 0 0) :
+    addOrderOf (Affine.Point.some 0 0 h00) ≠ 43 :=
+  sorry
+
+/-- **No rational point of order `43`** (PROVEN 2026-07-25 from the
+Tate-coordinate node above through `no_torsion_order_of_tateNormalForm`):
+a point of order `43 ≥ 4` puts its curve in Tate normal form at the
+origin, so the general statement follows from the one about the
+explicit family. All the mathematical content is in the node above,
+whose docstring carries this level's citation and audit. -/
 theorem WeierstrassCurve.no_torsion_order_43 (E : WeierstrassCurve ℚ)
     [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 43 :=
-  sorry
+  WeierstrassCurve.no_torsion_order_of_tateNormalForm (by norm_num)
+    (fun b c hell h00 =>
+      @WeierstrassCurve.tateNormalForm_origin_order_ne_43 b c hell h00) E Q
 
 /-- **No rational point of order `67`** (sorry node — IRREDUCIBLE
 literature citation, audited 2026-07-25): `X_1(67)` has genus `155` and
@@ -1031,10 +1405,34 @@ no non-cuspidal rational point (Mazur 1977, Thm 7).
 The `X_0` shortcut is NOT available: `67` is in Kenku's list, the
 witness being the class-number-one CM curve of discriminant `−67`,
 `j = −147197952000`, whose cyclic isogeny degrees are exactly `{1, 67}`
-(PARI/GP `ellisomat`, untrusted searcher). -/
+(PARI/GP `ellisomat`, untrusted searcher). 
+STATED IN TATE COORDINATES (2026-07-25). The general form of this
+level — no rational point of order `67` on ANY elliptic curve over
+`ℚ` — is `no_torsion_order_67` just below, and is PROVEN from this
+node. Here the curve is the explicit two-parameter family
+`tateNormalForm b c` and the point is the origin, so this node IS the
+plane model of `X_1(67)` in the `(b, c)`-coordinates rather than a
+statement quantified over all curves. The passage between the two is
+the PROVEN `exists_tateNormalForm`; everything above about genus,
+witnesses and citation is unchanged by the restatement.
+-/
+theorem WeierstrassCurve.tateNormalForm_origin_order_ne_67 (b c : ℚ)
+    [(WeierstrassCurve.tateNormalForm b c).IsElliptic]
+    (h00 : (WeierstrassCurve.tateNormalForm b c).toAffine.Nonsingular 0 0) :
+    addOrderOf (Affine.Point.some 0 0 h00) ≠ 67 :=
+  sorry
+
+/-- **No rational point of order `67`** (PROVEN 2026-07-25 from the
+Tate-coordinate node above through `no_torsion_order_of_tateNormalForm`):
+a point of order `67 ≥ 4` puts its curve in Tate normal form at the
+origin, so the general statement follows from the one about the
+explicit family. All the mathematical content is in the node above,
+whose docstring carries this level's citation and audit. -/
 theorem WeierstrassCurve.no_torsion_order_67 (E : WeierstrassCurve ℚ)
     [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 67 :=
-  sorry
+  WeierstrassCurve.no_torsion_order_of_tateNormalForm (by norm_num)
+    (fun b c hell h00 =>
+      @WeierstrassCurve.tateNormalForm_origin_order_ne_67 b c hell h00) E Q
 
 /-- **No rational point of order `163`** (sorry node — IRREDUCIBLE
 literature citation, audited 2026-07-25): `X_1(163)` has genus `1027`
@@ -1045,10 +1443,34 @@ witness being the class-number-one CM curve of discriminant `−163`,
 `j = −262537412640768000`, whose cyclic isogeny degrees are exactly
 `{1, 163}` (PARI/GP `ellisomat`, untrusted searcher). This is the
 largest rational isogeny degree over `ℚ`, and the level where every
-explicit method is furthest out of reach. -/
+explicit method is furthest out of reach. 
+STATED IN TATE COORDINATES (2026-07-25). The general form of this
+level — no rational point of order `163` on ANY elliptic curve over
+`ℚ` — is `no_torsion_order_163` just below, and is PROVEN from this
+node. Here the curve is the explicit two-parameter family
+`tateNormalForm b c` and the point is the origin, so this node IS the
+plane model of `X_1(163)` in the `(b, c)`-coordinates rather than a
+statement quantified over all curves. The passage between the two is
+the PROVEN `exists_tateNormalForm`; everything above about genus,
+witnesses and citation is unchanged by the restatement.
+-/
+theorem WeierstrassCurve.tateNormalForm_origin_order_ne_163 (b c : ℚ)
+    [(WeierstrassCurve.tateNormalForm b c).IsElliptic]
+    (h00 : (WeierstrassCurve.tateNormalForm b c).toAffine.Nonsingular 0 0) :
+    addOrderOf (Affine.Point.some 0 0 h00) ≠ 163 :=
+  sorry
+
+/-- **No rational point of order `163`** (PROVEN 2026-07-25 from the
+Tate-coordinate node above through `no_torsion_order_of_tateNormalForm`):
+a point of order `163 ≥ 4` puts its curve in Tate normal form at the
+origin, so the general statement follows from the one about the
+explicit family. All the mathematical content is in the node above,
+whose docstring carries this level's citation and audit. -/
 theorem WeierstrassCurve.no_torsion_order_163 (E : WeierstrassCurve ℚ)
     [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 163 :=
-  sorry
+  WeierstrassCurve.no_torsion_order_of_tateNormalForm (by norm_num)
+    (fun b c hell h00 =>
+      @WeierstrassCurve.tateNormalForm_origin_order_ne_163 b c hell h00) E Q
 
 /-- **The eight prime levels that survive the `X_0` cut** (PROVEN
 2026-07-25 — pure arithmetic over the list): a prime `ℓ ≥ 11` lying in
