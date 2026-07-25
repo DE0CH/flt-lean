@@ -1073,22 +1073,6 @@ lemma coordC_eq_algebraMap (d : F) :
     coordC W d = algebraMap F W.CoordinateRing d := rfl
 
 omit [DecidableEq F] in
-/-- **The Weierstrass relation inside the affine coordinate ring.**
-`AdjoinRoot.mk_self` on `W.polynomial`, read in the coordinate atoms:
-this is the single relation modulo which every `F[W]` identity of the
-chord calculus is a polynomial identity. -/
-lemma coord_equation (W : WeierstrassCurve.Affine F) :
-    coordY W ^ 2 + (algebraMap F W.CoordinateRing W.a₁ * coordX W +
-        algebraMap F W.CoordinateRing W.a₃) * coordY W =
-      coordX W ^ 3 + algebraMap F W.CoordinateRing W.a₂ * coordX W ^ 2 +
-        algebraMap F W.CoordinateRing W.a₄ * coordX W +
-        algebraMap F W.CoordinateRing W.a₆ := by
-  have h : CoordinateRing.mk W W.polynomial = 0 := AdjoinRoot.mk_self
-  simp only [WeierstrassCurve.Affine.polynomial, map_add, map_sub, map_mul, map_pow,
-    ← coordC_eq_algebraMap, coordX, coordY, coordC] at h ⊢
-  linear_combination h
-
-omit [DecidableEq F] in
 /-- A nonzero constant is a unit of the coordinate ring, so it does not
 change the ideal it spans. -/
 lemma isUnit_coordC {c : F} (hc : c ≠ 0) : IsUnit (coordC W c) :=
@@ -1898,8 +1882,11 @@ theorem lineNumerator_mul_lineNumeratorNeg {q₁ q₂ x₁ y₁ x₂ y₂ : F}
     Cubic.prod_X_sub_C_eq] at hAP
   have hc2 := Cubic.c_of_eq hAP
   have hc3 := Cubic.d_of_eq hAP
-  -- the two relations, transported into `F[W]`
+  -- the two relations, transported into `F[W]`.  `coord_equation_coordC` is
+  -- stated in the `coordC` atoms; `ring` must see the SAME atoms as the
+  -- `algebraMap`-shaped hypotheses below, so normalize it first.
   have hcr := coord_equation_coordC W
+  simp only [coordC_eq_algebraMap] at hcr
   rw [WeierstrassCurve.Affine.equation_iff'] at hq
   have hqW := congrArg (algebraMap F W.CoordinateRing) hq
   have hc2W := congrArg (algebraMap F W.CoordinateRing) hc2
@@ -5256,12 +5243,13 @@ a multiset product, of an indicator sum, and of a `fiberProd` are
 computed, the point-ideal multiplicities are proven (point ideals at
 affine points are maximal, nonzero and injective in the point), and the
 weak Nullstellensatz identification of height-one primes with affine
-point ideals is proven.  Two sorried `have`s remain inside the proof:
+point ideals is proven.  The Dedekind substrate, which mathlib does not
+provide for `CoordinateRing`, is supplied by
+`isDedekindDomain_coordinateRing` — and note that it needs NO integral
+closedness and NO smoothness argument, so the normality of the affine
+curve that this proof once planned to establish is not required at all.
+ONE sorried `have` remains inside the proof:
 
-* `hIC`: integral closedness of `F[W]` — normality of the smooth affine
-  curve, the only place where `W.Δ ≠ 0` is needed; noetherianity and
-  dimension one are proven, so this is all that is missing for
-  `IsDedekindDomain W.CoordinateRing` (which mathlib does not provide);
 * `hcountEv`: the multiplicity-one pullback count — the order of
   `[p]^*z` at the place of an affine point `S` is the order of `z` at
   `p • S` (multiplicity one from separability of `[p]`, `(p : F) ≠ 0`,
@@ -5288,37 +5276,17 @@ theorem spanSingleton_pointEval_mul_fiberProd_pow {ι : Type*} [Fintype ι]
         fiberProd W val (sec 0) ^ Multiset.card D := by
   classical
   -- ── The Dedekind substrate of `F[W]`, absent from mathlib for
-  -- `CoordinateRing` and established here, where the rest of the proof
-  -- consumes it, rather than as a free-floating instance.  `F[W]` is a
-  -- free rank-two `F[X]`-module, hence integral over `F[X]`: that gives
-  -- noetherianity (a quotient of the noetherian `F[X][Y]`) and dimension
-  -- one (`Ring.DimensionLEOne.of_isIntegral` over the PID `F[X]`).  Only
-  -- integral closedness needs the geometry, and it is exactly where
-  -- `W.Δ ≠ 0` enters: the affine curve is smooth, hence normal.
+  -- `CoordinateRing`.  It is NOT the geometric fact it looks like: as
+  -- recorded at `isDedekindDomain_coordinateRing`, invertibility of the
+  -- point ideals plus the factorization brick already carry the whole
+  -- Dedekind property, with no integral-closedness and no smoothness
+  -- argument, so the instance is a one-line consumption of that lemma.
+  haveI : IsDedekindDomain W.CoordinateRing := isDedekindDomain_coordinateRing hΔ
+  -- `F[W]` is a free rank-two `F[X]`-module, hence integral over `F[X]`;
+  -- the weak Nullstellensatz step `hspec` below contracts a height-one
+  -- place along `F[X]` and needs exactly that.
   haveI : Module.Finite (Polynomial F) W.CoordinateRing :=
     Polynomial.Monic.finite_adjoinRoot WeierstrassCurve.Affine.monic_polynomial
-  haveI hNoeth : IsNoetherianRing W.CoordinateRing :=
-    isNoetherianRing_of_surjective (Polynomial (Polynomial F)) W.CoordinateRing
-      (CoordinateRing.mk W) AdjoinRoot.mk_surjective
-  haveI hDim : Ring.DimensionLEOne W.CoordinateRing :=
-    Ring.DimensionLEOne.of_isIntegral (R := Polynomial F) W.CoordinateRing
-  /- **Normality of the smooth affine curve** (the geometric input of the
-  Dedekind property): every element of the function field `K` integral
-  over `F[W]` already lies in `F[W]`.  With `W.Δ ≠ 0` the affine curve is
-  nonsingular, so each local ring `F[W]_m` at an affine point is regular
-  — the maximal ideal `⟨X − x, Y − y⟩` becomes principal after
-  localization, since the Jacobian criterion makes one of the two
-  generators a unit multiple of the other plus higher order — hence a
-  DVR, and a one-dimensional noetherian domain whose localizations are
-  DVRs is integrally closed. -/
-  have hIC : ∀ {x : W.FunctionField}, IsIntegral W.CoordinateRing x →
-      ∃ y : W.CoordinateRing,
-        algebraMap W.CoordinateRing W.FunctionField y = x := by
-    sorry
-  haveI : IsDedekindRing W.CoordinateRing :=
-    (isDedekindRing_iff (A := W.CoordinateRing) W.FunctionField).mpr
-      ⟨hNoeth, hDim, hIC⟩
-  haveI : IsDedekindDomain W.CoordinateRing := inferInstance
   -- ── Point ideals at affine points are maximal: the quotient of `F[W]`
   -- by `⟨X − x, Y − y⟩` is `F` itself
   -- (`CoordinateRing.quotientXYIdealEquiv`).
