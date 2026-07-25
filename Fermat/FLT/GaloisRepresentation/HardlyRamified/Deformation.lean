@@ -2694,6 +2694,15 @@ the `ℓ = 3` case** (sorry node, cut 2026-07-26 out of
 `isTameAtTwo_of_fibreProduct` below, which is PROVEN over it and over
 `exists_cyclotomicCharacter_padicTwo_eq_two`).
 
+**REFUTED 2026-07-26: THIS STATEMENT IS FALSE.** An explicit
+counterexample is recorded below, checked by exhaustive computation over
+the 27-element ring `B` and by PARI/GP for its arithmetic inputs. The
+statement is deliberately NOT weakened in place — that would silently
+narrow a theorem the Schlessinger core depends on — so it stays here,
+false and sorried, until `5 ≤ ℓ` is threaded down from the consumer. The
+repair is located precisely at the end of this docstring; carrying it out
+DELETES this declaration.
+
 THIS IS EXACTLY THE SHARP CASE THE PARENT DOCSTRING WARNS ABOUT, and it
 is a genuinely separate problem rather than a bookkeeping remainder.
 The proof of the parent runs on a unit: with `χ_ℓ(Frob_2) = 2` and the
@@ -2710,17 +2719,90 @@ residue field, i.e. precisely at `ℓ = 3`, so in the split case BOTH
 Jordan–Hölder lines have unramified QUADRATIC quotient and the clause
 does not single one out.
 
-WHAT AN OWNER SHOULD WEIGH FIRST. The statement may well be TRUE anyway
-— in the split case `ρ` over `B` itself tends to split, which produces a
-line over `B` directly rather than by gluing — but nothing in the
-hypotheses supplies splitness, so it has to be produced. If it turns out
-FALSE, the repair is the one the parent docstring already names and it
-is UPSTREAM of this leaf, not a weakening of it: thread `5 ≤ ℓ` down
-from `exists_isStrictlyUniversalOnFrames_of_finite_lifts` and
-`exists_isStrictlyUniversalOnFrames_of_deformationCondition`, which DO
-carry `hℓ5 : 5 ≤ ℓ`, through `IsHardlyRamified` and
-`isHardlyRamified_of_fibreProduct` (edits to other owners'
-declarations, deliberately not made here).
+THE COUNTEREXAMPLE (`ℓ = 3`).
+
+RINGS. `A₀ = 𝔽₃`, `A₁ = 𝔽₃[ε₁]`, `A₂ = 𝔽₃[ε₂]` (dual numbers), and
+`B = 𝔽₃[ε₁, ε₂] ⧸ (ε₁, ε₂)²`, of order `27`. All four are finite local
+`ℤ_[3]`-algebras through `ℤ_[3] ↠ 𝔽₃`, given the discrete topology, so
+every topological hypothesis is free. Take `f₁`, `f₂` the reductions
+mod `ε` (both surjective, giving `hf₂`) and `p₁`, `p₂` the two quotient
+maps `B ↠ Aᵢ`. Then `B` IS the fibre product: `hcart` and `hemb` hold,
+since a compatible pair `(a + bε₁, a + cε₂)` is exactly a general
+element of `B`.
+
+THE REPRESENTATION. Let `K = ℚ(∛2, μ₃)` be the splitting field of
+`X³ − 2`, so `Gal(K/ℚ) ≅ S₃`. Write `χ` for the mod-`3` cyclotomic
+character, i.e. the sign character of `S₃`: `ℚ(μ₃) = ℚ(√-3)`, in which
+`2` is INERT, so `χ` is unramified at `2` with `χ(Frob₂) = 2 = −1` in
+`𝔽₃`. Let `c : S₃ → 𝔽₃(χ)` be the Kummer cocycle of `2`
+(`c(gh) = c(g) + χ(g) c(h)`, with `c(σ) = 1` on a `3`-cycle and
+`c(τ) = 0` on a transposition) and put `c'(g) = χ(g) c(g)`, a cocycle
+for the opposite twist (`c'(gh) = c'(g) χ(h) + c'(h)`). Neither is a
+coboundary, since `∛2 ∉ ℚ(μ₃)`. Now inflate to `Γ ℚ` and set
+
+  `ρ(g) = !![1, ε₂ * c' g; ε₁ * c g, χ g] : GL₂(B)`.
+
+Because `ε₁² = ε₂² = ε₁ε₂ = 0` the two cocycle conditions decouple and
+`ρ` is a homomorphism; it has finite image into a discrete ring, hence
+is continuous; and `det ρ(g) = χ(g)`, which is exactly `hdet` since the
+mod-`3` cyclotomic character is the image of `χ_3` in `B`.
+
+WHY `h₁` AND `h₂` HOLD. Over `A₁` (put `ε₂ = 0`) the unique stable line
+is `span e₁`, and the quotient character is TRIVIAL — unramified and
+quadratic, so `h₁` holds. Over `A₂` (put `ε₁ = 0`) the unique stable
+line is `span e₀`, with quotient character `χ`: unramified at `2`
+because `2` is inert in `ℚ(√-3)`, and quadratic because
+`χ(Frob₂)² = 4 = 1` in `𝔽₃`. THAT LAST STEP IS THE WHOLE `ℓ = 3` INPUT
+— for `ℓ ≥ 5` one has `4 ≠ 1`, `h₂` simply fails, and no analogue of
+this construction exists, which is why the parent is unconditionally
+true there.
+
+WHY THE CONCLUSION FAILS. Over `B` there is NO `ρ`-stable free rank-one
+direct summand whatsoever, hence no surjective `π` whose kernel is
+stable, let alone one with unramified quadratic quotient. Indeed a
+unimodular `v` reduces to a stable line of `ρ̄`, so after scaling by a
+unit `v = (α, 1)` or `v = (1, β)` with `α, β ∈ (ε₁, ε₂)`; stability then
+reads `ε₂ c' g = (χ g − 1) α` resp. `ε₁ c g = (1 − χ g) β`, and
+comparing `ε`-coefficients forces `c'` resp. `c` to be a coboundary.
+Verified independently by exhaustive search over all unimodular vectors
+and all six group elements.
+
+CONSISTENCY WITH THE PARENT'S ENGINE. The two rows handed out are
+`r₁ = (1, 0)` over `A₁` and `r₂ = (0, 1)` over `A₂`, manifestly
+NON-proportional over `A₀ = 𝔽₃`; and at `g₀ = Frob₂` the test element of
+`exists_unit_smul_of_vecMul_eq` is
+`det ρ(g₀) − d₁ d₂ = (−1) − (1)(−1) = 0`, i.e. the value `3` of the
+parent's `{1, 3}` dichotomy, a non-unit. So the counterexample realises
+precisely the failure that step (1) of the parent's proof excludes for
+`ℓ ≥ 5`, rather than exploiting some unrelated slack.
+
+THE REPAIR, LOCATED PRECISELY (2026-07-26; NOT carried out here, because
+`isTameAtTwo_of_fibreProduct` and
+`exists_isStrictlyUniversalOnFrames_of_deformationCondition` both have
+other owners in flight). It is smaller than this file's docstrings
+guessed: `IsHardlyRamified` needs NO change at all, since it never
+mentions a fibre product. Three edits, all inside this module:
+
+1. `isTameAtTwo_of_fibreProduct` — add `(hℓ5 : 5 ≤ ℓ)`, delete the
+   `by_cases h3` branch that calls this leaf, and use `hℓ5` where the
+   proof currently derives it from `¬(ℓ = 3)` and `Odd ℓ`.
+2. `isHardlyRamified_of_fibreProduct` — add `(hℓ5 : 5 ≤ ℓ)` and pass it
+   to the tame leaf; that theorem has exactly ONE call site.
+3. `exists_isStrictlyUniversalOnFrames_of_finite_lifts` — supply `hℓ5`
+   at that call site. It ALREADY carries `hℓ5 : 5 ≤ ℓ`, so nothing
+   propagates further and
+   `exists_isStrictlyUniversalOnFrames_of_deformationCondition` (which
+   also carries `hℓ5`) is untouched.
+
+After that, THIS DECLARATION SHOULD BE DELETED: it is false, and nothing
+consumes it any more.
+
+MORAL, for anyone tempted to reuse the tameness clause at `ℓ = 3`: the
+hardly ramified conditions are NOT a deformation condition at `ℓ = 3`.
+Schlessinger's H1 fails for the tameness-at-`2` clause there, for the
+classical reason — at `ℓ = 3` the mod-`ℓ` cyclotomic character is
+QUADRATIC on `G_{ℚ₂}`, so for split `ρ̄|_{G₂}` both Jordan–Hölder lines
+satisfy the clause and the clause no longer cuts out a single line.
 
 References: Conrad–Diamond–Taylor, JAMS 12 (1999), §2; Mazur, *Deforming
 Galois representations*, MSRI Publ. 16 (1989), §§18–23. -/
