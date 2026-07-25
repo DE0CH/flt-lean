@@ -283,6 +283,23 @@ import Mathlib.RingTheory.MvPowerSeries.NoZeroDivisors
 -- proof-only: Nakayama's lemma, the generation step of the Böckle
 -- relation-bound assembly.
 import Mathlib.RingTheory.Nakayama
+-- proof-only: the residue-field linear algebra of the minimal relation
+-- space `ker φ / 𝔪 · ker φ`, consumed by
+-- `exists_fin_le_span_sup_smul_of_rank_le` (the dimension-to-generators
+-- step of the Böckle relation bound). `Torsion.Basic` supplies the
+-- `Module (S ⧸ 𝔪) (M ⧸ 𝔪 • ⊤)` instance, `Basis.VectorSpace` the
+-- freeness of a vector space, `Algebra.Tower` the
+-- `Submodule.restrictScalars_span` bridge between `S`-spans and
+-- `(S ⧸ 𝔪)`-spans.
+import Mathlib.Algebra.Module.Torsion.Basic
+import Mathlib.LinearAlgebra.Basis.VectorSpace
+import Mathlib.LinearAlgebra.Dimension.Finite
+import Mathlib.LinearAlgebra.Dimension.Free
+import Mathlib.LinearAlgebra.Dimension.Finrank
+import Mathlib.LinearAlgebra.Quotient.Basic
+import Mathlib.RingTheory.Ideal.Quotient.Operations
+import Mathlib.RingTheory.LocalRing.ResidueField.Basic
+import Mathlib.Algebra.Algebra.Tower
 -- proof-only: evaluation of multivariate power series at topologically
 -- nilpotent elements, and the bridge from `IsAdicComplete` to
 -- `CompleteSpace` + `T2Space` in the adic topology — together they give
@@ -8120,7 +8137,221 @@ theorem eq_span_of_le_span_sup_smul {S : Type*} [CommRing S]
   · rintro x ⟨i, rfl⟩
     exact hf i
 
-/-- **Böckle relation-count leaf** (sorry node — the arithmetic core of
+/-- **From the dimension of the minimal relation space to a relation
+family** (PROVEN 2026-07-26 — the formal half of the Böckle relation
+bound that faces the LINEAR ALGEBRA rather than Nakayama): in a local
+ring `S` with maximal ideal `𝔪`, if the residue-field vector space
+`I/𝔪·I` — realised as the `S ⧸ 𝔪`-module `↥I ⧸ 𝔪 • (⊤ : Submodule S ↥I)`,
+which carries that structure because `𝔪` annihilates it — has rank at
+most `g`, then `g` elements of `I` span `I` modulo `𝔪 · I`.
+
+This is the exact converse of the trivial direction and it is what makes
+`dim_k (ker φ / 𝔪 · ker φ) ≤ g` the honest Lean form of Böckle's
+`r ≤ g`: obstruction theory produces a DIMENSION bound on the minimal
+relation space, never a family of relations, and the passage from the
+one to the other is choice of a basis plus padding by zeros.
+
+The proof is: a spanning family for `I/𝔪·I` over `S ⧸ 𝔪` is a spanning
+family over `S` (`Submodule.restrictScalars_span` along the surjection
+`S ↠ S ⧸ 𝔪`), so lifting a `S ⧸ 𝔪`-basis `b₁,…,b_n` (`n ≤ g`) through
+the surjection `↥I ↠ ↥I ⧸ 𝔪 • ⊤` gives `w₁,…,w_n ∈ I` with
+`span_S {w} ⊔ 𝔪 • ⊤ = ⊤` inside `↥I` (`Submodule.map_mkQ_eq_top`);
+pushing that identity forward along `I.subtype` (`Submodule.map_smul''`
+turns `𝔪 • ⊤` into `𝔪 • I`) gives `span_S {w} ⊔ 𝔪 • I = I`, and the
+family is padded from length `n` to length `g` by zeros.
+
+Rank, not `finrank`, is used deliberately: `finrank` would silently read
+`0` for an infinite-dimensional relation space, which would make the
+consumed leaf vacuous exactly in the case where it has content. No
+finiteness hypothesis is needed — `Module.rank ≤ g` already forces it. -/
+theorem exists_fin_le_span_sup_smul_of_rank_le {S : Type*} [CommRing S]
+    [IsLocalRing S] {I : Ideal S} {g : ℕ}
+    (hrank : Module.rank (S ⧸ IsLocalRing.maximalIdeal S)
+        (↥I ⧸ (IsLocalRing.maximalIdeal S • (⊤ : Submodule S ↥I))) ≤ (g : Cardinal)) :
+    ∃ f : Fin g → S, (∀ i, f i ∈ I) ∧
+      I ≤ Ideal.span (Set.range f) ⊔ IsLocalRing.maximalIdeal S • I := by
+  classical
+  haveI : (IsLocalRing.maximalIdeal S).IsMaximal := IsLocalRing.maximalIdeal.isMaximal S
+  letI : Field (S ⧸ IsLocalRing.maximalIdeal S) := Ideal.Quotient.field _
+  haveI : Module.Finite (S ⧸ IsLocalRing.maximalIdeal S)
+      (↥I ⧸ (IsLocalRing.maximalIdeal S • (⊤ : Submodule S ↥I))) :=
+    Module.rank_lt_aleph0_iff.mp (lt_of_le_of_lt hrank (Cardinal.natCast_lt_aleph0 (n := g)))
+  have hng : Module.finrank (S ⧸ IsLocalRing.maximalIdeal S)
+      (↥I ⧸ (IsLocalRing.maximalIdeal S • (⊤ : Submodule S ↥I))) ≤ g :=
+    Module.finrank_le_of_rank_le hrank
+  have b : Module.Basis
+      (Fin (Module.finrank (S ⧸ IsLocalRing.maximalIdeal S)
+        (↥I ⧸ (IsLocalRing.maximalIdeal S • (⊤ : Submodule S ↥I)))))
+      (S ⧸ IsLocalRing.maximalIdeal S)
+      (↥I ⧸ (IsLocalRing.maximalIdeal S • (⊤ : Submodule S ↥I))) :=
+    Module.finBasis _ _
+  choose w hw using fun i => Submodule.mkQ_surjective
+    (IsLocalRing.maximalIdeal S • (⊤ : Submodule S ↥I)) (b i)
+  refine ⟨fun j => if h : (j : ℕ) < _ then ((w ⟨j, h⟩ : ↥I) : S) else 0, ?_, ?_⟩
+  · intro j
+    by_cases h : (j : ℕ) < Module.finrank (S ⧸ IsLocalRing.maximalIdeal S)
+        (↥I ⧸ (IsLocalRing.maximalIdeal S • (⊤ : Submodule S ↥I)))
+    · simpa only [dif_pos h] using (w ⟨j, h⟩).2
+    · simpa only [dif_neg h] using I.zero_mem
+  · have hspan : Submodule.span S (Set.range w) ⊔
+        (IsLocalRing.maximalIdeal S • (⊤ : Submodule S ↥I)) = ⊤ := by
+      rw [sup_comm, ← Submodule.map_mkQ_eq_top, Submodule.map_span, ← Set.range_comp]
+      have hbw : ⇑(Submodule.mkQ (IsLocalRing.maximalIdeal S • (⊤ : Submodule S ↥I))) ∘ w = ⇑b :=
+        funext hw
+      rw [hbw, ← Submodule.restrictScalars_span S (S ⧸ IsLocalRing.maximalIdeal S)
+        (by rw [Ideal.Quotient.algebraMap_eq]; exact Ideal.Quotient.mk_surjective) (Set.range ⇑b),
+        b.span_eq]
+      rfl
+    have hmap := congrArg (Submodule.map I.subtype) hspan
+    rw [Submodule.map_sup, Submodule.map_span, Submodule.map_smul'',
+      Submodule.map_subtype_top] at hmap
+    refine le_trans (le_of_eq hmap.symm) (sup_le_sup_right ?_ _)
+    rw [← Set.range_comp]
+    refine Submodule.span_le.mpr ?_
+    rintro _ ⟨i, rfl⟩
+    exact Ideal.subset_span ⟨Fin.castLE hng i, by simp [Fin.castLE]⟩
+
+/-- **Böckle's bound on the minimal relation space** (sorry node — the
+IRREDUCIBLY ARITHMETIC core of the presentation stratum, cut out
+2026-07-26 from
+`exists_relations_le_smul_of_minimal_mvPowerSeries_presentation` below
+by peeling off the linear algebra into
+`exists_fin_le_span_sup_smul_of_rank_le` above): for every minimal,
+`ℤ_ℓ`-compatible presentation `φ : Λ[[x₁,…,x_g]] ↠ D.R` of the weakly
+universal, trace-generated hardly ramified deformation ring, the
+minimal relation space `ker φ/(𝔪_S · ker φ)` — a vector space over the
+residue field `S ⧸ 𝔪_S` of `S = Λ[[x₁,…,x_g]]`, since `𝔪_S`
+annihilates it — has dimension at most `g`.
+
+This IS the classical `r ≤ g`, stated where obstruction theory actually
+proves it. Böckle's theorem bounds the minimal relation space (never a
+chosen family of relations) by `dim_k Ш²_S(ad⁰)`, and Greenberg–Wiles
+compares that with the tangent dimension `dim_k H¹_L = g`; the consumer
+below converts the dimension bound into `g` honest relations by
+choosing a basis, and Nakayama then upgrades "spans modulo `𝔪_S`" to
+"generates".
+
+**MACHINERY AUDIT (2026-07-26, moved here from the consumer and
+extended): this leaf needs a Galois-cohomology theory that neither this
+repository nor mathlib contains, and it needs ALL of it.** Recorded so
+that no further proof effort is dispatched at the leaf before the theory
+has owners.
+
+*What was ruled out first.* There is no commutative-algebra route. The
+only inequality between `r` and `g` that the ambient module supplies
+runs the WRONG WAY: `D.R` is module-finite over `ℤ_ℓ`
+(`moduleFinite_of_isWeaklyUniversal_isTraceGenerated`), hence of Krull
+dimension `≤ 1`, and `dim Λ[[x₁,…,x_g]] = g + 1`, so
+`1 ≥ dim D.R ≥ (g + 1) − r` already forces `r ≥ g`. The expected truth
+is `r = g` (a complete intersection, `dim D.R = 1`), and it is exactly
+the UPPER bound `r ≤ g` that is arithmetic. Concretely, the bound fails
+for general rings of this shape: `ℤ_ℓ[[x,y]]/(x², xy, y², ℓx, ℓy, ℓ²)`
+has tangent dimension `g = 2` and needs `6 > 2` relations, and every
+commutative-algebra hypothesis available here holds of it.
+
+*Dependency-ordered list of the missing pieces.* Writing
+`S = {2, ℓ, ∞}`, `M = ad⁰ ρbar` (trace-zero endomorphisms of `V` under
+conjugation, `dim_k M = 3` — the fixed-determinant module, since
+`IsHardlyRamified.det` pins `det ρ` to the cyclotomic character):
+
+1. **Continuous cochain cohomology** `Hⁱ_cont(G, M)` for a profinite
+   `G` acting continuously on a finite discrete `k`-module, `i ≤ 2`, as
+   `k`-vector spaces, with functoriality in `G` along a continuous
+   group homomorphism. Mathlib has only
+   `Mathlib/RepresentationTheory/Homological/ContCohomology`, which
+   stops at `H⁰`; the abstract `GroupCohomology/LowDegree` is the
+   discrete theory and does not apply to `Γ ℚ`. NOTHING downstream can
+   be stated before this exists — it is the piece to build first.
+   **VENDORABLE (found 2026-07-26):** the reference project `~/cs/FLT`
+   has a sorry-free construction of exactly this in
+   `FLT/Mathlib/RepresentationTheory/Homological/ContCohomology/`
+   (`Basic.lean`, `CupProduct.lean`; the homogeneous-cochain complex
+   `TopRep.homogeneousCochains` of a `TopRep k G`, in ALL degrees, with
+   `cohomologyIsoQuot`). Its mathlib pin has drifted from ours, so it
+   needs a pin-drift audit rather than verbatim copying.
+2. **The adjoint module** `ad⁰ ρbar` as such a continuous
+   representation of `Γ ℚ`, and finiteness of `Hⁱ_cont(Γ ℚ, ad⁰)` in
+   the restricted-ramification setting.
+3. **Restriction to the places** and the Tate–Shafarevich group
+   `Ш²_S(ad⁰) = ker(H²(G_S, ad⁰) → ⨁_{v ∈ S} H²(ℚ_v, ad⁰))`. The
+   decomposition maps are available already, as
+   `Field.absoluteGaloisGroup.map (f : ℚ →+* ℚ_v)`, which this
+   repository already knows to be CONTINUOUS. The archimedean place
+   costs nothing: `#ad⁰` is a power of the odd prime `ℓ` and
+   `Gal(ℂ/ℝ)` has order `2`, so `H²(ℝ, ad⁰) = 0` and `∞` may be
+   dropped from the intersection.
+4. **Obstruction theory / Böckle's presentation bound**: for a minimal
+   presentation of the deformation ring of a functor whose local
+   conditions are liftable, `dim_k (ker φ / 𝔪_S · ker φ) ≤ dim_k Ш²_S`.
+   This is the half that consumes weak universality.
+5. **Liftability of the four hardly ramified local conditions** (tame
+   at `2`, flat/Fontaine–Laffaille at `ℓ`, unramified outside `S`,
+   fixed determinant), which is the hypothesis of (4).
+6. **Local Tate duality and the Poitou–Tate nine-term sequence**, giving
+   `Ш²_S(ad⁰) ≅ Ш¹_S(ad⁰(1))^∨`.
+7. **The Greenberg–Wiles Euler characteristic formula**
+   `dim H¹_L − dim H¹_{L^⊥} = h⁰(ℚ, ad⁰) − h⁰(ℚ, ad⁰(1)) +
+   Σ_{v ∈ S} (dim L_v − h⁰(ℚ_v, ad⁰))`, together with the local
+   computations quoted above (`0` at `2`, `+1` at `ℓ`, `−1` at `∞`) and
+   the tangent-space identification `dim_k H¹_L = g`, which is where
+   weak universality enters again.
+
+Items (4)+(6)+(7) are what turn `dim Ш²_S ≤ dim H¹_L = g` into this
+leaf. `~/cs/FLT` was swept on 2026-07-26 for (4)–(7) and has NONE of
+them: no Tate–Shafarevich group, no Poitou–Tate, no Greenberg–Wiles, no
+obstruction theory (its `FLT/Deformations/` stops at corepresentability
+of the lifting functor). So only (1) is vendorable; (2)–(7) must be
+built.
+
+Once (1)–(3) exist the natural next cut is to replace THIS leaf by the
+two statements `dim_k (ker φ / 𝔪_S · ker φ) ≤ dim_k Ш²_S(ad⁰)` and
+`dim_k Ш²_S(ad⁰) ≤ g`; the consumer below is already insulated from
+that recut, since it consumes only the numerical bound.
+
+*Why `Module.rank` and not `Module.finrank`.* The relation space is in
+fact finite-dimensional (`S` is Noetherian, so `ker φ` is finitely
+generated), but that is a THEOREM, not a hypothesis of this leaf, and
+`finrank` reads `0` on an infinite-dimensional space — a `finrank`
+statement would therefore be discharged for free in exactly the
+situation where it has content. The cardinal-valued `Module.rank` has
+no such degenerate case, and the consumer recovers finite-dimensionality
+from the bound itself.
+
+References: Böckle, *Presentations of universal deformation rings*
+(and his appendix to Khare's Serre-conjecture notes);
+Khare–Wintenberger, *Serre's modularity conjecture (I)*, §4;
+Darmon–Diamond–Taylor, *Fermat's Last Theorem*, §2.6–2.7 (the `r ≤ g`
+count and `dim R ≥ 1 + g − r`); Mazur, *Deforming Galois
+representations*, §1.6–1.7. -/
+theorem rank_relationSpace_le_of_minimal_mvPowerSeries_presentation
+    (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (D : HardlyRamifiedDeformation hℓOdd ρbar)
+    (hw : D.IsWeaklyUniversal) (ht : D.IsTraceGenerated) :
+    letI := D.commRing; letI := D.algebra
+    ∀ (Λ : Type u) (_ : CommRing Λ) (_ : IsDomain Λ) (_ : IsLocalRing Λ)
+      (_ : IsNoetherianRing Λ) (_ : Algebra ℤ_[ℓ] Λ)
+      (_ : Module.Finite ℤ_[ℓ] Λ),
+      IsLocalRing.maximalIdeal Λ = Ideal.span {(ℓ : Λ)} →
+      ∀ (g : ℕ) (φ : MvPowerSeries (Fin g) Λ →+* D.R),
+        Function.Surjective φ →
+        φ.comp (algebraMap ℤ_[ℓ] (MvPowerSeries (Fin g) Λ)) =
+          algebraMap ℤ_[ℓ] D.R →
+        RingHom.ker φ ≤
+          IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) ^ 2 ⊔
+            Ideal.span {(ℓ : MvPowerSeries (Fin g) Λ)} →
+        Module.rank (MvPowerSeries (Fin g) Λ ⧸
+              IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ))
+            (↥(RingHom.ker φ) ⧸
+              (IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) •
+                (⊤ : Submodule (MvPowerSeries (Fin g) Λ) ↥(RingHom.ker φ)))) ≤
+          (g : Cardinal) :=
+  sorry
+
+/-- **Böckle relation-count leaf** (PROVEN 2026-07-26 over the single
+arithmetic leaf `rank_relationSpace_le_of_minimal_mvPowerSeries_presentation`
+above, which carries the whole machinery audit; the arithmetic core of
 the presentation stratum, isolated 2026-07-25 by peeling off the
 Nakayama step; **RESTATED the same day: the previous conclusion `r < g`
 was FALSE**, see the refutation below; **NARROWED 2026-07-26**, by
@@ -8200,68 +8431,18 @@ universal datum and transport along `exists_ringEquiv_of_isUniversal`
 (minimality of a presentation is preserved by composition with a
 `ℤ_ℓ`-algebra isomorphism).
 
-**MACHINERY AUDIT (2026-07-26): this leaf needs a Galois-cohomology
-theory that neither this repository nor mathlib contains, and it needs
-ALL of it.** Recorded here so that no further proof effort is dispatched
-at the leaf before the theory has owners.
-
-*What was ruled out first.* There is no commutative-algebra route. The
-only inequality between `r` and `g` that the ambient module supplies
-runs the WRONG WAY: `D.R` is module-finite over `ℤ_ℓ`
-(`moduleFinite_of_isWeaklyUniversal_isTraceGenerated`), hence of Krull
-dimension `≤ 1`, and `dim Λ[[x₁,…,x_g]] = g + 1`, so
-`1 ≥ dim D.R ≥ (g + 1) − r` already forces `r ≥ g`. The expected truth
-is `r = g` (a complete intersection, `dim D.R = 1`), and it is exactly
-the UPPER bound `r ≤ g` that is arithmetic. Concretely, the bound fails
-for general rings of this shape: `ℤ_ℓ[[x,y]]/(x², xy, y², ℓx, ℓy, ℓ²)`
-has tangent dimension `g = 2` and needs `6 > 2` relations, and every
-commutative-algebra hypothesis available here holds of it.
-
-*Dependency-ordered list of the missing pieces.* Writing
-`S = {2, ℓ, ∞}`, `M = ad⁰ ρbar` (trace-zero endomorphisms of `V` under
-conjugation, `dim_k M = 3` — the fixed-determinant module, since
-`IsHardlyRamified.det` pins `det ρ` to the cyclotomic character):
-
-1. **Continuous cochain cohomology** `Hⁱ_cont(G, M)` for a profinite
-   `G` acting continuously on a finite discrete `k`-module, `i ≤ 2`, as
-   `k`-vector spaces, with functoriality in `G` along a continuous
-   group homomorphism. Mathlib has only
-   `Mathlib/RepresentationTheory/Homological/ContCohomology`, which
-   stops at `H⁰`; the abstract `GroupCohomology/LowDegree` is the
-   discrete theory and does not apply to `Γ ℚ`. NOTHING downstream can
-   be stated before this exists — it is the piece to build first.
-2. **The adjoint module** `ad⁰ ρbar` as such a continuous
-   representation of `Γ ℚ`, and finiteness of `Hⁱ_cont(Γ ℚ, ad⁰)` in
-   the restricted-ramification setting.
-3. **Restriction to the places** and the Tate–Shafarevich group
-   `Ш²_S(ad⁰) = ker(H²(G_S, ad⁰) → ⨁_{v ∈ S} H²(ℚ_v, ad⁰))`. The
-   decomposition maps are available already, as
-   `Field.absoluteGaloisGroup.map (f : ℚ →+* ℚ_v)`, which this
-   repository already knows to be CONTINUOUS. The archimedean place
-   costs nothing: `#ad⁰` is a power of the odd prime `ℓ` and
-   `Gal(ℂ/ℝ)` has order `2`, so `H²(ℝ, ad⁰) = 0` and `∞` may be
-   dropped from the intersection.
-4. **Obstruction theory / Böckle's presentation bound**: for a minimal
-   presentation of the deformation ring of a functor whose local
-   conditions are liftable, `dim_k (ker φ / 𝔪_S · ker φ) ≤ dim_k Ш²_S`.
-   This is the half that consumes weak universality.
-5. **Liftability of the four hardly ramified local conditions** (tame
-   at `2`, flat/Fontaine–Laffaille at `ℓ`, unramified outside `S`,
-   fixed determinant), which is the hypothesis of (4).
-6. **Local Tate duality and the Poitou–Tate nine-term sequence**, giving
-   `Ш²_S(ad⁰) ≅ Ш¹_S(ad⁰(1))^∨`.
-7. **The Greenberg–Wiles Euler characteristic formula**
-   `dim H¹_L − dim H¹_{L^⊥} = h⁰(ℚ, ad⁰) − h⁰(ℚ, ad⁰(1)) +
-   Σ_{v ∈ S} (dim L_v − h⁰(ℚ_v, ad⁰))`, together with the local
-   computations quoted above (`0` at `2`, `+1` at `ℓ`, `−1` at `∞`) and
-   the tangent-space identification `dim_k H¹_L = g`, which is where
-   weak universality enters again.
-
-Items (4)+(6)+(7) are what turn `dim Ш²_S ≤ dim H¹_L = g` into this
-leaf. A natural intermediate cut, once (1)–(3) exist, is therefore to
-replace this leaf by the two statements
-`dim_k (ker φ / 𝔪_S · ker φ) ≤ dim_k Ш²_S(ad⁰)` and
-`dim_k Ш²_S(ad⁰) ≤ g`.
+**Where the arithmetic went (2026-07-26).** All of it is now in
+`rank_relationSpace_le_of_minimal_mvPowerSeries_presentation` above,
+which bounds `dim_k (ker φ / 𝔪_S · ker φ)` by `g` and carries the
+dependency-ordered MACHINERY AUDIT of the Galois cohomology that bound
+needs (continuous cochain cohomology, `ad⁰`, `Ш²_S`, obstruction
+theory, liftability of the local conditions, local Tate duality and
+Poitou–Tate, Greenberg–Wiles). What is proven HERE is only the linear
+algebra that turns a dimension bound into a family of `g` relations,
+factored out as `exists_fin_le_span_sup_smul_of_rank_le` above: choose
+a residue-field basis of the minimal relation space, lift it to
+`ker φ`, and pad by zeros. That step is why the leaf may be stated as a
+DIMENSION bound, which is the only form obstruction theory ever proves.
 
 References: Böckle, *Presentations of universal deformation rings*
 (and his appendix to Khare's Serre-conjecture notes);
@@ -8291,8 +8472,14 @@ theorem exists_relations_le_smul_of_minimal_mvPowerSeries_presentation
           (∀ i, f i ∈ RingHom.ker φ) ∧
           RingHom.ker φ ≤ Ideal.span (Set.range f) ⊔
             IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) •
-              RingHom.ker φ :=
-  sorry
+              RingHom.ker φ := by
+  letI := D.commRing; letI := D.algebra
+  intro Λ iCR iDom iLoc iNoeth iAlg iFin hΛℓ g φ hφs hφc hφmin
+  letI := iCR; letI := iDom; letI := iLoc; letI := iNoeth; letI := iAlg
+  letI := iFin
+  exact exists_fin_le_span_sup_smul_of_rank_le
+    (rank_relationSpace_le_of_minimal_mvPowerSeries_presentation hℓOdd hdim hℓ5 h hirr
+      D hw ht Λ iCR iDom iLoc iNoeth iAlg iFin hΛℓ g φ hφs hφc hφmin)
 
 /-- **Characteristic-zero conjunct of the Böckle relation count** (sorry
 node — the second, INDEPENDENT arithmetic leaf split off from
