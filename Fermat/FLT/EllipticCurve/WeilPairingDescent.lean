@@ -3721,16 +3721,6 @@ theorem spanSingleton_pointEval_mul_fiberProd_pow {ι : Type*} [Fintype ι]
   -- consumes it, rather than as a free-floating instance.
   haveI : IsDedekindDomain W.CoordinateRing := by
     sorry
-  -- ── Weak Nullstellensatz: over the algebraically closed `F`, the
-  -- maximal ideals of `F[W] = F[X, Y]/⟨W⟩` are exactly the point ideals
-  -- `⟨X − x, Y − y⟩` of the affine points of `W`.  (A maximal ideal `m`
-  -- has `F[W]/m = F` by Zariski's lemma; the images of `X`, `Y` are the
-  -- coordinates of a point of `W`, so `m ⊇ pointIdeal`, with equality
-  -- since `pointIdeal` is already maximal by
-  -- `CoordinateRing.quotientXYIdealEquiv`.)
-  have hspec : ∀ v : IsDedekindDomain.HeightOneSpectrum W.CoordinateRing,
-      ∃ S : W.Point, S ≠ 0 ∧ v.asIdeal = pointIdeal W S := by
-    sorry
   -- ── Point ideals at affine points are maximal: the quotient of `F[W]`
   -- by `⟨X − x, Y − y⟩` is `F` itself
   -- (`CoordinateRing.quotientXYIdealEquiv`).
@@ -3741,7 +3731,132 @@ theorem spanSingleton_pointEval_mul_fiberProd_pow {ι : Type*} [Fintype ι]
     exact MulEquiv.isField (Field.toIsField F)
       (CoordinateRing.quotientXYIdealEquiv (W' := W) (x := x)
         (y := Polynomial.C y) hEq).toRingEquiv.toMulEquiv
-  -- ── and they are nonzero: `X − x` is a nonzero member.
+  -- ── Weak Nullstellensatz: over the algebraically closed `F`, every
+  -- height-one prime of `F[W]` is the point ideal of an affine point.
+  -- `F[W]` is a free rank-two `F[X]`-module, so it is integral over
+  -- `F[X]` and the contraction `q = v ∩ F[X]` is maximal, i.e. `⟨X − x₀⟩`
+  -- for some `x₀ ∈ F` (`F` algebraically closed).  The Weierstrass
+  -- equation at `x₀` then splits over `F` as `(Y − y₁)(Y − y₂)` modulo
+  -- the vertical `X − x₀ ∈ v`, and `v` being prime one of the two
+  -- `Y`-classes lies in `v`; the resulting point ideal is maximal, hence
+  -- equal to `v`.
+  have hspec : ∀ v : IsDedekindDomain.HeightOneSpectrum W.CoordinateRing,
+      ∃ S : W.Point, S ≠ 0 ∧ v.asIdeal = pointIdeal W S := by
+    intro v
+    haveI hmMax : v.asIdeal.IsMaximal := v.isPrime.isMaximal v.ne_bot
+    haveI : Module.Finite (Polynomial F) W.CoordinateRing :=
+      Polynomial.Monic.finite_adjoinRoot WeierstrassCurve.Affine.monic_polynomial
+    haveI hqMax : (v.asIdeal.comap
+        (algebraMap (Polynomial F) W.CoordinateRing)).IsMaximal :=
+      Ideal.isMaximal_comap_of_isIntegral_of_isMaximal v.asIdeal
+    -- the contracted place is the vertical through some `x₀ ∈ F`
+    obtain ⟨x₀, hx₀⟩ : ∃ x₀ : F, CoordinateRing.XClass W x₀ ∈ v.asIdeal := by
+      obtain ⟨g, hgspan⟩ := Submodule.IsPrincipal.principal
+        (v.asIdeal.comap (algebraMap (Polynomial F) W.CoordinateRing))
+      have hg0 : g ≠ 0 := by
+        intro hg
+        rw [hg, Submodule.span_zero_singleton] at hgspan
+        rw [hgspan] at hqMax
+        exact Polynomial.X_ne_zero
+          (Ideal.span_singleton_eq_bot.mp
+            (hqMax.eq_of_le
+              (fun htop => Polynomial.not_isUnit_X
+                (Ideal.span_singleton_eq_top.mp htop)) bot_le).symm)
+      have hgu : ¬ IsUnit g := fun hu =>
+        hqMax.ne_top (by rw [hgspan, Ideal.span_singleton_eq_top]; exact hu)
+      obtain ⟨r, hr⟩ := IsAlgClosed.exists_root g fun hdeg =>
+        hgu (Polynomial.isUnit_iff_degree_eq_zero.mpr hdeg)
+      refine ⟨r, ?_⟩
+      have hle : v.asIdeal.comap (algebraMap (Polynomial F) W.CoordinateRing) ≤
+          Ideal.span {Polynomial.X - Polynomial.C r} := by
+        rw [hgspan]
+        exact Ideal.span_singleton_le_span_singleton.mpr
+          (Polynomial.dvd_iff_isRoot.mpr hr)
+      have hmem : (Polynomial.X - Polynomial.C r) ∈
+          v.asIdeal.comap (algebraMap (Polynomial F) W.CoordinateRing) := by
+        rw [hqMax.eq_of_le (fun htop => Polynomial.not_isUnit_X_sub_C r
+          (Ideal.span_singleton_eq_top.mp htop)) hle]
+        exact Ideal.mem_span_singleton_self _
+      exact Ideal.mem_comap.mp hmem
+    -- a root of the Weierstrass equation at `x₀` (`F` is algebraically closed)
+    obtain ⟨y₁, hy₁⟩ : ∃ y : F, y ^ 2 + (W.a₁ * x₀ + W.a₃) * y -
+        (x₀ ^ 3 + W.a₂ * x₀ ^ 2 + W.a₄ * x₀ + W.a₆) = 0 := by
+      obtain ⟨y, hy⟩ := IsAlgClosed.exists_root
+        (Polynomial.C 1 * Polynomial.X ^ 2 +
+          Polynomial.C (W.a₁ * x₀ + W.a₃) * Polynomial.X +
+          Polynomial.C (-(x₀ ^ 3 + W.a₂ * x₀ ^ 2 + W.a₄ * x₀ + W.a₆)))
+        (by rw [Polynomial.degree_quadratic one_ne_zero]; decide)
+      refine ⟨y, ?_⟩
+      simp only [Polynomial.IsRoot.def, Polynomial.eval_add, Polynomial.eval_mul,
+        Polynomial.eval_pow, Polynomial.eval_C, Polynomial.eval_X] at hy
+      linear_combination hy
+    -- the two roots give the Weierstrass equation at `x₀`
+    have hEq₁ : W.Equation x₀ y₁ :=
+      (WeierstrassCurve.Affine.equation_iff ..).mpr (by linear_combination hy₁)
+    have hEq₂ : W.Equation x₀ (-(W.a₁ * x₀ + W.a₃) - y₁) :=
+      (WeierstrassCurve.Affine.equation_iff ..).mpr (by linear_combination hy₁)
+    -- the Weierstrass polynomial vanishes in `F[W]`
+    have h0 : CoordinateRing.mk W (Polynomial.X ^ 2 +
+        Polynomial.C (Polynomial.C W.a₁ * Polynomial.X + Polynomial.C W.a₃) *
+          Polynomial.X -
+        Polynomial.C (Polynomial.X ^ 3 + Polynomial.C W.a₂ * Polynomial.X ^ 2 +
+          Polynomial.C W.a₄ * Polynomial.X + Polynomial.C W.a₆)) = 0 := by
+      show CoordinateRing.mk W W.polynomial = 0
+      exact AdjoinRoot.mk_self
+    -- the splitting identity in `F[X][Y]`, exact modulo the vertical `X − x₀`
+    have hpolyid : (Polynomial.X - Polynomial.C (Polynomial.C y₁)) *
+        (Polynomial.X - Polynomial.C (Polynomial.C
+          (-(W.a₁ * x₀ + W.a₃) - y₁))) =
+        (Polynomial.X ^ 2 + Polynomial.C (Polynomial.C W.a₁ * Polynomial.X +
+            Polynomial.C W.a₃) * Polynomial.X -
+          Polynomial.C (Polynomial.X ^ 3 + Polynomial.C W.a₂ * Polynomial.X ^ 2 +
+            Polynomial.C W.a₄ * Polynomial.X + Polynomial.C W.a₆)) +
+        Polynomial.C (Polynomial.X - Polynomial.C x₀) *
+          (-(Polynomial.C (Polynomial.C W.a₁)) * Polynomial.X +
+            Polynomial.C (Polynomial.X ^ 2 + Polynomial.C x₀ * Polynomial.X +
+              Polynomial.C (x₀ ^ 2) + Polynomial.C W.a₂ *
+                (Polynomial.X + Polynomial.C x₀) + Polynomial.C W.a₄)) := by
+      have hy₁' := congrArg (fun t : F =>
+        Polynomial.C (Polynomial.C t) : F → Polynomial (Polynomial F)) hy₁
+      simp only [map_add, map_sub, map_mul, map_pow, map_neg, map_zero] at hy₁' ⊢
+      linear_combination -hy₁'
+    -- hence the product of the two `Y`-classes lies in `v`
+    have hprodmem : CoordinateRing.YClass W (Polynomial.C y₁) *
+        CoordinateRing.YClass W (Polynomial.C (-(W.a₁ * x₀ + W.a₃) - y₁)) ∈
+        v.asIdeal := by
+      have hfac : CoordinateRing.YClass W (Polynomial.C y₁) *
+          CoordinateRing.YClass W (Polynomial.C (-(W.a₁ * x₀ + W.a₃) - y₁)) =
+          CoordinateRing.XClass W x₀ * CoordinateRing.mk W
+            (-(Polynomial.C (Polynomial.C W.a₁)) * Polynomial.X +
+              Polynomial.C (Polynomial.X ^ 2 + Polynomial.C x₀ * Polynomial.X +
+                Polynomial.C (x₀ ^ 2) + Polynomial.C W.a₂ *
+                  (Polynomial.X + Polynomial.C x₀) + Polynomial.C W.a₄)) := by
+        simp only [CoordinateRing.YClass, CoordinateRing.XClass, ← map_mul]
+        rw [hpolyid, map_add, map_mul, h0, zero_add]
+      rw [hfac]
+      exact Ideal.mul_mem_right _ _ hx₀
+    -- either `Y`-class gives an affine point whose ideal is `v`
+    have hmain : ∀ y : F, W.Equation x₀ y →
+        CoordinateRing.YClass W (Polynomial.C y) ∈ v.asIdeal →
+        ∃ S : W.Point, S ≠ 0 ∧ v.asIdeal = pointIdeal W S := by
+      intro y hEq hYmem
+      refine ⟨WeierstrassCurve.Affine.Point.some x₀ y
+        ((WeierstrassCurve.Affine.equation_iff_nonsingular_of_Δ_ne_zero
+          hΔ).mp hEq), ?_, ?_⟩
+      · exact WeierstrassCurve.Affine.Point.some_ne_zero _
+      · refine ((hptMax x₀ y hEq).eq_of_le hmMax.ne_top ?_).symm
+        simp only [CoordinateRing.XYIdeal]
+        refine Ideal.span_le.mpr ?_
+        intro t ht
+        simp only [Set.mem_insert_iff, Set.mem_singleton_iff] at ht
+        rcases ht with rfl | rfl
+        · exact hx₀
+        · exact hYmem
+    rcases v.isPrime.mem_or_mem hprodmem with hy | hy
+    · exact hmain y₁ hEq₁ hy
+    · exact hmain (-(W.a₁ * x₀ + W.a₃) - y₁) hEq₂ hy
+  -- ── Point ideals at affine points are nonzero: `X − x` is a nonzero
+  -- member.
   have hptNeBot : ∀ (x y : F),
       CoordinateRing.XYIdeal W x (Polynomial.C y) ≠ ⊥ := by
     intro x y hbot
