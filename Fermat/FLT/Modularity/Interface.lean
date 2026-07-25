@@ -291,6 +291,11 @@ public import Mathlib.RingTheory.ClassGroup.Basic
 -- `NumberField.RingOfIntegers.mapRingEquiv`. PUBLIC: both appear in
 -- the SIGNATURES of the E3c support leaves.
 public import Mathlib.NumberTheory.NumberField.Cyclotomic.Galois
+-- `Ideal.prime_iff_isPrime`: in a Dedekind domain the prime ELEMENTS
+-- of the monoid `Ideal A` are the prime IDEALS. Used to read the
+-- output of `UniqueFactorizationMonoid.induction_on_prime` in the
+-- Stickelberger reduction `twistedIdealProd_isPrincipal_of_forall_prime`.
+import Mathlib.RingTheory.DedekindDomain.Ideal.Lemmas
 -- `dvd_sub_pow_of_dvd_sub` (`x ≡ y mod p` implies
 -- `x^(p^k) ≡ y^(p^k) mod p^(k+1)`): the Teichmüller-lift multiplicativity
 -- behind the eigenspace extraction of Eisenstein pillar E3c
@@ -17323,10 +17328,19 @@ The classical chain, and what each link costs on this pin:
   closed form. Its `t = 2` evaluation — `⌊2a/p⌋ = 0` for `a < p/2` and
   `1` for `a > p/2` — is PROVEN in `sum_Ico_mul_two_mul_div_eq`.
 * **(d) Stickelberger's theorem** (Washington Thm. 6.10, first
-  sentence): `A^{ρθ}` is principal. THE ONE REMAINING `sorry` of this
-  chain — `stickelberger_prod_map_ideal_isPrincipal`, stated in the
+  sentence): `A^{ρθ}` is principal. PROVEN here for ARBITRARY ideals
+  `A` — `stickelberger_prod_map_ideal_isPrincipal`, stated in the
   already-expanded integral form for the concrete annihilator
-  `(t − σ_t)θ`.
+  `(t − σ_t)θ` — by an ideal-algebra reduction to PRIME ideals
+  (`twistedIdealProd` and the three generic bricks after it,
+  2026-07-25). Two of the three resulting cases are discharged here:
+  `A` principal, and `A` the ramified prime above `p`, which for the
+  PRIME conductor `p` is `(ζ − 1)` and hence principal
+  (`cyclotomic_isPrincipal_of_isPrime_of_natCast_mem`). THE ONE
+  REMAINING `sorry` of this chain is the third case —
+  `stickelberger_prod_map_prime_ideal_isPrincipal`, the theorem for a
+  single prime `q` with `p ∉ q`, whose own docstring carries the
+  dependency-ordered list of what is still missing from the pin.
 * **(d′) … annihilates the ideal class group** (Thm. 6.10, second
   sentence): PROVEN here as `stickelberger_annihilates_classGroup`,
   from (d) through the generic class-group brick
@@ -17338,11 +17352,15 @@ The classical chain, and what each link costs on this pin:
   floor arithmetic `sum_Ico_mul_two_mul_div_eq`.
 
 So: (a) is mathlib, (b) is folded into (d), (c)/(d′)/(e) are PROVEN,
-and (d) is the single citation. The next owner's frontier is exactly
-(d): either (b) plus §6.2's descent, or the shorter §15.1 route
-(Gauss sums attached to a degree-one prime `ℓ ≡ 1 (mod p)` lying in
-the given ideal class — so a Chebotarev/Dirichlet input as well — plus
-the same Kummer descent). -/
+and (d) is now PROVEN too, over a single narrower citation. The next
+owner's frontier is exactly that citation,
+`stickelberger_prod_map_prime_ideal_isPrincipal`: one prime ideal `q`
+prime to `p`, for which the route is (b) plus §6.2's descent, or the
+shorter §15.1 route (Gauss sums attached to a degree-one prime
+`ℓ ≡ 1 (mod p)` lying in the given ideal class — so a
+Chebotarev/Dirichlet input as well — plus the same Kummer descent).
+Neither route is cheap on this pin; both are itemised, as statements,
+in that leaf's docstring. -/
 
 /-- **Principality of the twisted ideal product kills the ideal class**
 (PROVEN 2026-07-25; the generic class-group brick of the Stickelberger
@@ -17396,8 +17414,265 @@ noncomputable def cycGalRingOfIntegersEquiv (CF : Type) [Field CF] [NumberField 
   RingOfIntegers.mapRingEquiv
     ((IsCyclotomicExtension.Rat.galEquivZMod p CF).symm u).toRingEquiv
 
+/-- **Products of principal ideals are principal** (PROVEN 2026-07-25;
+elementary brick of the Stickelberger reduction below):
+`span {a} * span {b} = span {a * b}`
+(`Ideal.span_singleton_mul_span_singleton`). Stated separately because
+the pin exposes this fact only as the `mul_mem'` field of
+`Ideal.isPrincipalSubmonoid`, which is awkward to apply to a goal
+already phrased with `Submodule.IsPrincipal`. -/
+theorem ideal_isPrincipal_mul {R : Type*} [CommRing R] {I J : Ideal R}
+    (hI : Submodule.IsPrincipal I) (hJ : Submodule.IsPrincipal J) :
+    Submodule.IsPrincipal (I * J) := by
+  obtain ⟨a, rfl⟩ := hI.principal
+  obtain ⟨b, rfl⟩ := hJ.principal
+  exact ⟨a * b, Ideal.span_singleton_mul_span_singleton a b⟩
+
+/-- **The twisted ideal product** (definition, 2026-07-25; the generic
+shape of a group-ring element acting on an ideal): for a finite family
+`f : ι → (A ≃+* A)` of ring automorphisms and exponents `e : ι → ℕ`,
+
+`twistedIdealProd f e J = ∏ᵢ (f i)(J)^{e i}`.
+
+This is exactly the ideal `J^x` for the group-ring element
+`x = ∑ᵢ e i · f i`, and it is exactly the product already appearing in
+the hypothesis of `prod_classGroup_pow_eq_one_of_isPrincipal` above.
+Naming it is what makes its two STRUCTURAL properties statable —
+multiplicativity in `J` and principality on principal `J` — and those
+two reduce Stickelberger's theorem from arbitrary ideals to PRIME
+ideals. -/
+noncomputable def twistedIdealProd {A : Type*} [CommRing A] {ι : Type*} [Fintype ι]
+    (f : ι → (A ≃+* A)) (e : ι → ℕ) (J : Ideal A) : Ideal A :=
+  ∏ i, Ideal.map ((f i : A →+* A)) J ^ e i
+
+/-- **The twisted ideal product is multiplicative** (PROVEN
+2026-07-25): `(JK)^x = J^x · K^x`. Each `f i` is a ring homomorphism,
+so `Ideal.map` commutes with ideal multiplication (`Ideal.map_mul`,
+which on this pin needs no surjectivity hypothesis); then `mul_pow`
+and `Finset.prod_mul_distrib`. This is the half of the reduction that
+turns a prime factorization of `J` into a factorization of `J^x`. -/
+theorem twistedIdealProd_mul {A : Type*} [CommRing A] {ι : Type*} [Fintype ι]
+    (f : ι → (A ≃+* A)) (e : ι → ℕ) (J K : Ideal A) :
+    twistedIdealProd f e (J * K) = twistedIdealProd f e J * twistedIdealProd f e K := by
+  simp only [twistedIdealProd, Ideal.map_mul, mul_pow]
+  exact Finset.prod_mul_distrib
+
+/-- **The twisted ideal product preserves principality** (PROVEN
+2026-07-25): if `J = (α)` then `J^x = (∏ᵢ (f i)(α)^{e i})`. A ring
+homomorphism maps a span to the span of the image (`Ideal.map_span`),
+and powers and finite products of principal ideals are principal
+(`Ideal.span_singleton_pow`, `Ideal.prod_span_singleton`), so the
+generator is explicit. This is the other half of the reduction, and it
+disposes of BOTH degenerate cases of the prime induction below:
+`J = 0 = ⊥ = (0)` and `J` a unit of `Ideal A`, i.e. `J = ⊤ = (1)`. -/
+theorem twistedIdealProd_isPrincipal_of_isPrincipal {A : Type*} [CommRing A]
+    {ι : Type*} [Fintype ι] (f : ι → (A ≃+* A)) (e : ι → ℕ) {J : Ideal A}
+    (hJ : Submodule.IsPrincipal J) :
+    Submodule.IsPrincipal (twistedIdealProd f e J) := by
+  obtain ⟨a, rfl⟩ := hJ.principal
+  have key : twistedIdealProd f e (Ideal.span {a}) =
+      Ideal.span {∏ i, ((f i : A →+* A) a) ^ e i} := by
+    rw [twistedIdealProd, ← Ideal.prod_span_singleton]
+    refine Finset.prod_congr rfl fun i _ => ?_
+    rw [Ideal.map_span, Set.image_singleton, Ideal.span_singleton_pow]
+  rw [key]
+  exact ⟨_, rfl⟩
+
+/-- **Reduction of a principality statement to prime ideals** (PROVEN
+2026-07-25; the reduction step of Stickelberger's theorem, isolated
+from every cyclotomic input): over a Dedekind domain, if `q^x` is
+principal for every nonzero prime ideal `q`, then `J^x` is principal
+for EVERY ideal `J`. Induction on the prime factorization
+(`UniqueFactorizationMonoid.induction_on_prime`, available because the
+ideals of a Dedekind domain form a unique factorization monoid,
+`Ideal.uniqueFactorizationMonoid`): the zero and unit cases are `⊥`
+and `⊤` (`Ideal.zero_eq_bot`, `Ideal.isUnit_iff`), both principal, and
+the inductive step splits the product
+(`twistedIdealProd_mul`) and multiplies principal ideals
+(`ideal_isPrincipal_mul`), the prime factor being supplied by `h`
+after `Ideal.prime_iff_isPrime`. -/
+theorem twistedIdealProd_isPrincipal_of_forall_prime {A : Type*} [CommRing A]
+    [IsDedekindDomain A] {ι : Type*} [Fintype ι] (f : ι → (A ≃+* A)) (e : ι → ℕ)
+    (h : ∀ q : Ideal A, q.IsPrime → q ≠ ⊥ → Submodule.IsPrincipal (twistedIdealProd f e q))
+    (J : Ideal A) : Submodule.IsPrincipal (twistedIdealProd f e J) := by
+  induction J using UniqueFactorizationMonoid.induction_on_prime with
+  | h₁ =>
+      refine twistedIdealProd_isPrincipal_of_isPrincipal f e ?_
+      rw [Ideal.zero_eq_bot]
+      exact bot_isPrincipal
+  | h₂ x hx =>
+      rw [Ideal.isUnit_iff.mp hx]
+      exact twistedIdealProd_isPrincipal_of_isPrincipal f e top_isPrincipal
+  | h₃ a q _ hqp ih =>
+      have hq0 : q ≠ ⊥ := by rw [← Ideal.zero_eq_bot]; exact hqp.ne_zero
+      rw [twistedIdealProd_mul]
+      exact ideal_isPrincipal_mul (h q ((Ideal.prime_iff_isPrime hq0).mp hqp) hq0) ih
+
+/-- **The ramified prime of `ℚ(ζ_p)` is principal** (PROVEN
+2026-07-25; the easy case of the Stickelberger reduction): a prime
+ideal `q` of `𝓞 CF` containing `p` is `(ζ − 1)`, hence principal.
+Indeed `(ζ − 1)^{p−1}` is associated to `p`
+(`IsCyclotomicExtension.Rat.associated_zeta_sub_one_pow_prime`), so
+`p ∈ q` forces `(ζ − 1)^{p−1} ∈ q` and then `ζ − 1 ∈ q` by primality
+(`Ideal.IsPrime.mem_of_pow_mem`); the span of `ζ − 1` is a NONZERO
+prime (`IsCyclotomicExtension.Rat.isPrime_span_zeta_sub_one'`, with
+`ζ ≠ 1` from `IsPrimitiveRoot.ne_one`), hence maximal in the Dedekind
+domain `𝓞 CF` (`Ideal.IsPrime.isMaximal`), and a maximal ideal
+contained in a proper ideal equals it (`Ideal.IsMaximal.eq_of_le`).
+
+This is the one point where the cut uses that the conductor is PRIME:
+for a general `ℚ(ζ_m)` the primes above the `p ∣ m` need not be
+principal, and Washington's Thm. 6.10 handles them inside the main
+argument rather than separately. -/
+theorem cyclotomic_isPrincipal_of_isPrime_of_natCast_mem (CF : Type) [Field CF] [NumberField CF]
+    [IsCyclotomicExtension {p} ℚ CF] {q : Ideal (𝓞 CF)} (hq : q.IsPrime)
+    (hpq : (p : 𝓞 CF) ∈ q) : Submodule.IsPrincipal q := by
+  have hζ : IsPrimitiveRoot (IsCyclotomicExtension.zeta p ℚ CF) p :=
+    IsCyclotomicExtension.zeta_spec p ℚ CF
+  have hass := IsCyclotomicExtension.Rat.associated_zeta_sub_one_pow_prime p hζ
+  have hmem : (hζ.toInteger - 1) ^ (p - 1) ∈ q := by
+    obtain ⟨w, hw⟩ := hass.symm.dvd
+    rw [hw]
+    exact Ideal.mul_mem_right _ _ hpq
+  have hmem1 : hζ.toInteger - 1 ∈ q := hq.mem_of_pow_mem _ hmem
+  have hne : (hζ.toInteger - 1) ≠ 0 :=
+    sub_ne_zero.mpr (hζ.toInteger_isPrimitiveRoot.ne_one hp.out.one_lt)
+  have hspan_ne : Ideal.span {hζ.toInteger - 1} ≠ ⊥ := by
+    simpa [Ideal.span_singleton_eq_bot] using hne
+  have hspan_prime : (Ideal.span {hζ.toInteger - 1}).IsPrime :=
+    IsCyclotomicExtension.Rat.isPrime_span_zeta_sub_one' p hζ
+  have hmax : (Ideal.span {hζ.toInteger - 1}).IsMaximal := hspan_prime.isMaximal hspan_ne
+  have hle : Ideal.span {hζ.toInteger - 1} ≤ q := by
+    rw [Ideal.span_le, Set.singleton_subset_iff]; exact hmem1
+  have heq : Ideal.span {hζ.toInteger - 1} = q := hmax.eq_of_le hq.ne_top hle
+  rw [← heq]
+  exact ⟨_, rfl⟩
+
+/-- **The integral Stickelberger operator on ideals** (definition,
+2026-07-25): `stickelbergerProd CF t J` is `J^{(t − σ_t)θ}`, i.e.
+
+`∏_{a=1}^{p−1} σ_a⁻¹(J)^{⌊ta/p⌋}`,
+
+with `a` indexed by the unit `u ∈ (ℤ/p)ˣ` it represents — the
+specialization of `twistedIdealProd` to the family
+`u ↦ σ_{u⁻¹} = cycGalRingOfIntegersEquiv CF u⁻¹` and the exponents
+`u ↦ ⌊t·u/p⌋`. It unfolds definitionally to the product written out in
+`stickelberger_prod_map_ideal_isPrincipal` below. -/
+noncomputable def stickelbergerProd (CF : Type) [Field CF] [NumberField CF]
+    [IsCyclotomicExtension {p} ℚ CF] (t : ℕ) (J : Ideal (𝓞 CF)) : Ideal (𝓞 CF) :=
+  twistedIdealProd (fun u : (ZMod p)ˣ => cycGalRingOfIntegersEquiv CF u⁻¹)
+    (fun u => t * ((u : ZMod p).val) / p) J
+
+/-- **Stickelberger's theorem for ONE prime ideal prime to `p`** — THE
+SORRY LEAF of the Stickelberger cut (re-cut 2026-07-25; it replaces
+the former all-ideals citation, which is now PROVEN from this;
+Stickelberger 1890; Kummer 1847 for `ℚ(ζ_p)`; Washington,
+*Introduction to Cyclotomic Fields*, Thm. 6.10): for a nonzero prime
+ideal `q` of `𝓞 CF` with `p ∉ q` — equivalently, `q` lies over a
+rational prime `ℓ ≠ p`, so `q` is unramified in `CF/ℚ` — the ideal
+
+`q^{(t − σ_t)θ} = ∏_{a=1}^{p−1} σ_a⁻¹(q)^{⌊ta/p⌋}`
+
+is PRINCIPAL.
+
+**What this leaf no longer carries.** The all-ideals statement
+`stickelberger_prod_map_ideal_isPrincipal` follows from this one by
+pure ideal algebra, PROVEN below in `stickelbergerProd_isPrincipal`:
+the ideals of the Dedekind domain `𝓞 CF` form a unique factorization
+monoid, the Stickelberger operator is multiplicative
+(`twistedIdealProd_mul`), principality is multiplicative
+(`ideal_isPrincipal_mul`), and the two non-prime cases of the
+induction are `⊥` and `⊤`, both principal
+(`twistedIdealProd_isPrincipal_of_isPrincipal`) — that is
+`twistedIdealProd_isPrincipal_of_forall_prime`. The RAMIFIED prime is
+discharged separately: for the prime conductor `p` the unique prime
+over `p` is `(ζ − 1)`
+(`cyclotomic_isPrincipal_of_isPrime_of_natCast_mem`), so it is
+principal and its Stickelberger product is principal for free. Hence
+the hypothesis `p ∉ q` here.
+
+**What remains — the classical proof, in dependency order, with each
+piece missing from this mathlib pin named as a statement.** Write `ℓ`
+for the rational prime under `q`, `F := 𝓞 CF ⧸ q` for the residue
+field, and `Q := #F = ℓ^f`.
+
+1. **`p ∣ Q − 1`, and `F` carries `μ_p`.** The reduction of `ζ` has
+   exact order `p` in `Fˣ`, because `Φ_p` stays separable mod `q` when
+   `ℓ ≠ p`. MISSING as a statement: the pin has `IsPrimitiveRoot`,
+   `Ideal.absNorm` and the finite-field API, but nothing packaging
+   "the reduction of a primitive `p`-th root of unity at a prime not
+   above `p` is a primitive `p`-th root of unity in the residue
+   field".
+2. **The `p`-th power residue character `χ_q : Fˣ → μ_p(𝓞 CF)`**, the
+   unique character with `χ_q(x) ≡ x^{(Q−1)/p} (mod q)`; this is the
+   Teichmüller character of the cut. MISSING: the pin has `MulChar`
+   and `MulChar.Duality` but no character attached to a prime ideal,
+   and `Mathlib.RingTheory.Teichmuller` is the Witt-vector
+   Teichmüller lift, unrelated.
+3. **The Gauss sum `g(χ_q) = −∑_{x ∈ Fˣ} χ_q(x)⁻¹ ψ(x)`** for a
+   nontrivial additive character `ψ : F → μ_ℓ`, as an element of the
+   ring of integers of the compositum `CF(ζ_ℓ)`. PARTLY PRESENT — this
+   is link (a): `gaussSum`, `gaussSum_mul_gaussSum_eq_card`,
+   `gaussSum_frob` and `Mathlib.NumberTheory.JacobiSum.Basic` are all
+   on the pin, so what is missing is only the compositum `CF(ζ_ℓ)` as
+   a concrete cyclotomic extension together with its ring of integers
+   and the primes of it above `q`.
+4. **Stickelberger's congruence** (Washington Prop. 6.13, from Lemmas
+   6.11 and 6.12; equivalently Lemma 6.14): the `𝒬`-adic valuation of
+   `g(χ_q^{−h})` at a prime `𝒬` of `CF(ζ_ℓ)` above `q` is the sum of
+   the `ℓ`-adic digits of `h`, i.e.
+   `v_𝒬(g(χ_q^{−h})) = (p−1) ∑_{i<f} {ℓ^i h/(Q−1)}`. MISSING
+   entirely, and this is the mathematical core of the leaf: it is what
+   produces the fractional parts `{a/p}` that DEFINE `θ`.
+5. **Galois descent of the Gauss sum.** `σ_t(g(χ)) = g(χ^t)`, because
+   `σ_t` moves `ζ_p` and fixes `ζ_ℓ`; and `g(χ)^t/g(χ^t)` is a product
+   of Jacobi sums, hence already lies in `CF` (Washington Lemmas 6.2
+   and 6.4). This is precisely WHY the annihilator is `(t − σ_t)θ` and
+   not `θ`: `g(χ)^{t−σ_t}` is the element of `CF` that generates
+   `q^{(t−σ_t)θ}`. The Jacobi-sum identities are on the pin; the
+   descent statement is not.
+6. **Assembly.** Steps 4 and 5 give
+   `(g(χ)^{t−σ_t}) = q^{(t−σ_t)θ}` as ideals of `𝓞 CF`, which is this
+   leaf. Washington's alternative §15.1 route replaces step 4 by a
+   Chebotarev/Dirichlet input — choose a degree-one prime `ℓ ≡ 1 mod
+   p` in the given class — plus the same Kummer descent; the pin has
+   no Chebotarev density theorem either, so it is not cheaper here.
+
+Soundness of the exact form stated: for `t` prime to `p` the element
+`∑_a ⌊ta/p⌋ σ_a⁻¹` is `(t − σ_t)θ`, which lies in the Stickelberger
+ideal `I(ℚ(ζ_p)) = ℤ[G] ∩ θℤ[G]` by Washington Lemma 6.9, so Thm. 6.10
+applies verbatim. The hypothesis `¬ p ∣ t` is kept (rather than
+dropped, which would still be true) so that the citation matches the
+textbook statement with no reasoning of our own; `hq0` is kept because
+`q = ⊥` is not a prime element of `Ideal (𝓞 CF)` and the classical
+argument needs a genuine residue field. -/
+theorem stickelberger_prod_map_prime_ideal_isPrincipal
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
+    (t : ℕ) (ht : ¬ (p ∣ t)) {q : Ideal (𝓞 CF)} (hq : q.IsPrime) (hq0 : q ≠ ⊥)
+    (hpq : (p : 𝓞 CF) ∉ q) :
+    Submodule.IsPrincipal (stickelbergerProd (p := p) CF t q) :=
+  sorry
+
+/-- **Stickelberger's theorem, reduced to primes** (PROVEN 2026-07-25
+over the single leaf
+`stickelberger_prod_map_prime_ideal_isPrincipal`): the Stickelberger
+operator sends EVERY ideal of `𝓞 CF` to a principal ideal. This is
+`twistedIdealProd_isPrincipal_of_forall_prime` fed with the two prime
+cases — `cyclotomic_isPrincipal_of_isPrime_of_natCast_mem` together
+with `twistedIdealProd_isPrincipal_of_isPrincipal` when `p ∈ q`, and
+the leaf when `p ∉ q`. -/
+theorem stickelbergerProd_isPrincipal (CF : Type) [Field CF] [NumberField CF]
+    [IsCyclotomicExtension {p} ℚ CF] (t : ℕ) (ht : ¬ (p ∣ t)) (J : Ideal (𝓞 CF)) :
+    Submodule.IsPrincipal (stickelbergerProd (p := p) CF t J) := by
+  refine twistedIdealProd_isPrincipal_of_forall_prime _ _ (fun q hq hq0 => ?_) J
+  by_cases hpq : (p : 𝓞 CF) ∈ q
+  · exact twistedIdealProd_isPrincipal_of_isPrincipal _ _
+      (cyclotomic_isPrincipal_of_isPrime_of_natCast_mem CF hq hpq)
+  · exact stickelberger_prod_map_prime_ideal_isPrincipal CF t ht hq hq0 hpq
+
 /-- **Stickelberger's theorem, integral-ideal form** (link (d) of the
-chain above — THE single sorry node of the Stickelberger cut;
+chain above — PROVEN 2026-07-25 over the single narrower leaf
+`stickelberger_prod_map_prime_ideal_isPrincipal`;
 Stickelberger 1890; Kummer 1847 for `ℚ(ζ_p)`; Washington,
 *Introduction to Cyclotomic Fields*, Thm. 6.10): for a `p`-th
 cyclotomic field `CF`, a nonzero integral ideal `I` of `𝓞 CF` and an
@@ -17413,22 +17688,35 @@ statement below indexes `a` by the unit `u ∈ (ℤ/p)ˣ` it represents, so
 that `σ_a⁻¹ = σ_{a⁻¹}` is `cycGalRingOfIntegersEquiv CF u⁻¹` and
 `a = (u : ZMod p).val ∈ {1, …, p−1}`.
 
-Classical proof (Washington §6.2, ~14 pages): factor the Gauss sum
-`g(χ)` for `χ = ω_λ^{−(q−1)/p}` at the primes above the rational prime
-`ℓ` below a prime factor `λ` of `I`, using Stickelberger's congruence
-(link (b), Prop. 6.13: `v_𝒫(g(ω^{−α}))` is the `p`-adic digit sum of
-`α`) rewritten by Lemma 6.14 into fractional parts; this gives
-`(g(χ)^p) = λ_0^{pθ}` upstairs, and the descent to `ℚ(ζ_p)` is Lemma
-6.4 (`g(χ)^p ∈ ℚ(ζ_p)`) plus the Kummer-theory step that
-`ℚ(ζ_p, g(χ))/ℚ(ζ_p)` is unramified everywhere, hence trivial by
-Lemma 6.15. §15.1 gives a shorter route for full cyclotomic fields at
-the cost of a Chebotarev input. Neither is available on this pin:
+Proof (2026-07-25): the product is `stickelbergerProd CF t I` by
+definition, so this is `stickelbergerProd_isPrincipal` — the reduction
+of the theorem to PRIME ideals
+(`twistedIdealProd_isPrincipal_of_forall_prime`), with the prime above
+`p` disposed of by `cyclotomic_isPrincipal_of_isPrime_of_natCast_mem`
+and the primes prime to `p` left to the single citation
+`stickelberger_prod_map_prime_ideal_isPrincipal`. Note the
+`nonZeroDivisors` hypothesis on `I` is NOT needed for the reduction —
+`⊥` and `⊤` are principal, so the statement holds for every ideal
+(`stickelbergerProd_isPrincipal`); it is kept here only because the
+consumer `stickelberger_annihilates_classGroup` obtains `I` from
+`ClassGroup.mk0_surjective` in that form.
+
+Classical proof of the remaining citation (Washington §6.2, ~14
+pages): factor the Gauss sum `g(χ)` for `χ = ω_λ^{−(q−1)/p}` at the
+primes above the rational prime `ℓ` below a prime factor `λ` of `I`,
+using Stickelberger's congruence (link (b), Prop. 6.13:
+`v_𝒫(g(ω^{−α}))` is the `p`-adic digit sum of `α`) rewritten by Lemma
+6.14 into fractional parts; the descent to `ℚ(ζ_p)` is Lemma 6.4 plus
+the Kummer-theory step that `ℚ(ζ_p, g(χ))/ℚ(ζ_p)` is unramified
+everywhere, hence trivial by Lemma 6.15. §15.1 gives a shorter route
+at the cost of a Chebotarev input. Neither is available on this pin:
 mathlib has Gauss sums and Jacobi sums
 (`Mathlib.NumberTheory.GaussSum`, `.JacobiSum` — link (a)) but no
 Teichmüller character attached to a prime, no valuation of Gauss sums,
 and no Stickelberger/Herbrand material at all (grepped 2026-07-24 and
-re-verified 2026-07-25). This is therefore the honest citation
-boundary; everything above and below it in the chain is proven.
+re-verified 2026-07-25). The itemised remainder now lives on the leaf
+`stickelberger_prod_map_prime_ideal_isPrincipal`, which is the honest
+citation boundary.
 
 Soundness of the exact form stated: for `t` prime to `p` the element
 `∑_a ⌊ta/p⌋ σ_a⁻¹` is `(t − σ_t)θ`, which is in the Stickelberger
@@ -17443,7 +17731,7 @@ theorem stickelberger_prod_map_ideal_isPrincipal
     (∏ u : (ZMod p)ˣ,
       Ideal.map ((cycGalRingOfIntegersEquiv CF u⁻¹ : 𝓞 CF →+* 𝓞 CF))
           (I : Ideal (𝓞 CF)) ^ (t * ((u : ZMod p).val) / p)).IsPrincipal :=
-  sorry
+  stickelbergerProd_isPrincipal (p := p) CF t ht (I : Ideal (𝓞 CF))
 
 /-- **The Stickelberger ideal annihilates the ideal class group**
 (PROVEN 2026-07-25; link (d′) — Washington, *Introduction to
