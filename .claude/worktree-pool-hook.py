@@ -220,6 +220,85 @@ def split_base(task):
     return task
 
 
+HOST_DIR = "/home/chend/.flt-worker-host"
+CORES_FILE = "/home/chend/.flt-worker-cores"
+
+
+def _host_of(name):
+    """Which machine serves this worktree, or None if unrouted."""
+    try:
+        with open(os.path.join(HOST_DIR, name), encoding="utf-8") as fh:
+            return fh.read().strip() or None
+    except OSError:
+        return None
+
+
+def _cores():
+    """host -> core count, from CORES_FILE (`<host> <n>` per line).
+
+    Missing or malformed file means every host weighs 1, which degrades to
+    even-by-count balancing. Allocation must never fail over this."""
+    out = {}
+    try:
+        with open(CORES_FILE, encoding="utf-8") as fh:
+            for line in fh:
+                parts = line.split()
+                if len(parts) >= 2 and parts[1].isdigit() and int(parts[1]) > 0:
+                    out[parts[0]] = int(parts[1])
+    except OSError:
+        pass
+    return out
+
+
+def pick_free(entries):
+    """Choose which free worktree to hand out: the one on the machine that is
+    least loaded RELATIVE TO ITS CORE COUNT (Deyao, 2026-07-25).
+
+    Why not just take the first free entry, as this did before: the pool is
+    ordered by worktree number and the numbers are grouped by machine, so
+    first-fit drains one machine before touching the next. Measured mid-run on
+    2026-07-25: dazzler held 28 claimed slots and gambit 8, on identical 96-core
+    machines, while nightcrawler and nocturne (128 cores each) sat at 27. One
+    machine was oversubscribed ~3.5x relative to another with the same capacity.
+
+    That matters because elaboration is single-threaded — one core per file — so
+    a machine's useful parallelism IS its core count. Piling workers past it
+    lengthens every verification on that host without adding throughput, while
+    cores idle elsewhere.
+
+    Ranks hosts by claimed/cores ascending, so the emptiest-per-core machine is
+    served first; ties break by pool order, keeping allocation deterministic.
+    Free worktrees whose host is unknown (no routing-table entry) sort last —
+    they are still allocatable, just not preferred, since we cannot say what
+    they would cost."""
+    free = [n for n, status, _ in entries if status == "free"]
+    if not free:
+        return None
+
+    cores = _cores()
+    # A host present in the routing table but absent from CORES_FILE (a machine
+    # added without re-measuring) must not be starved: weighting it 1 would make
+    # its ratio ~100x everyone else's after a single claim, so it would never be
+    # picked again. Assume it looks like the machines we HAVE measured.
+    default_cores = round(sum(cores.values()) / len(cores)) if cores else 1
+
+    claimed = {}
+    for name, status, _ in entries:
+        if status == "claimed":
+            h = _host_of(name)
+            if h:
+                claimed[h] = claimed.get(h, 0) + 1
+
+    def load(name):
+        h = _host_of(name)
+        if h is None:
+            return (1, 0.0)          # unrouted: allocatable, but last resort
+        return (0, claimed.get(h, 0) / cores.get(h, default_cores))
+
+    # min() is stable, so equal load keeps the original pool order.
+    return min(free, key=load)
+
+
 def allocate_worktree(pool_fh):
     """Under the caller's pool-file lock: find a free worktree, verify
     clean+ancestor, fast-forward it to main, mark claimed. Returns its
@@ -236,7 +315,7 @@ def allocate_worktree(pool_fh):
             continue
         parts = line.split()
         entries.append((parts[0], parts[1], parts[2:]))
-    free_name = next((n for n, status, _ in entries if status == "free"), None)
+    free_name = pick_free(entries)
     if free_name is None:
         return None
     worktree_path = next(
