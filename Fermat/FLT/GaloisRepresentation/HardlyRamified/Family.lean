@@ -4524,7 +4524,7 @@ member `1 ⊕ χ_cyc,ℓ` — built here over any topological `ℤ_ℓ`-algebra
 with continuous structure map, on any rank-2 carrier with a chosen
 basis. Its Frobenius characteristic polynomial at `q ≠ ℓ` is exactly
 `(X - 1)(X - q)` (PROVEN via `cyclotomicCharacter_adicArithFrob_natCast`),
-it is unramified at every `q ≠ ℓ` (sorry leaf
+it is unramified at every `q ≠ ℓ` (PROVEN, via
 `cyclotomicCharacter_eq_one_of_mem_localInertiaGroup_of_ne`:
 `μ_{ℓ^∞}/ℚ` is unramified away from `ℓ`), and over the concrete rings
 of integers it is hardly ramified (cyclotomic determinant and tameness
@@ -4807,8 +4807,9 @@ theorem isFlatAt_cycDiagRep {ℓ : ℕ} [Fact ℓ.Prime]
       (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : ℓ.Prime)) :=
   sorry
 
-/-- **The Eisenstein member is hardly ramified** (PROVEN assembly over
-the two sorry leaves): over the ring of integers of a finite extension
+/-- **The Eisenstein member is hardly ramified** (PROVEN assembly; the
+one remaining sorry leaf below it is `isFlatAt_cycDiagRep`): over the
+ring of integers of a finite extension
 `L/ℚ_ℓ`, the diagonal member `1 ⊕ χ_cyc,ℓ` has cyclotomic determinant
 (`det diag(1, χ_cyc) = χ_cyc`, PROVEN), is unramified outside `{2, ℓ}`
 (PROVEN over the arithmetic leaf), flat at `ℓ` (sorry leaf
