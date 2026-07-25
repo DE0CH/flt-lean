@@ -14234,35 +14234,395 @@ theorem eisenstein_trivial_sub_extension_cc_eq_zero_on_inertia_two_of_five_le
       (algebraMap_cyclotomicCharacter_map_adicArithFrob_two_eq_two hpodd))
     h2ne h3ne hgen hfrob
 
-/-- **Finite-level Frobenius–inertia decomposition at `2`** (sorry
-node, split off 2026-07-25 from the open-subgroup leaf below — the
-genuine FINITE-LEVEL content of that leaf, now free of every
+open scoped Pointwise in
+/-- **Every ring automorphism of a local ring stabilizes its maximal
+ideal** (PROVEN 2026-07-25): the pointwise translate `σ • 𝔪` is the
+contraction of `𝔪` along the ring isomorphism `σ⁻¹`, hence maximal,
+hence `= 𝔪` by locality. This is what makes the whole finite-level
+Galois group act on the residue field extension, i.e. what makes
+`MulAction.stabilizer G 𝔪` the full group. -/
+theorem mem_stabilizer_maximalIdeal_of_isLocalRing
+    {R G : Type*} [CommRing R] [IsLocalRing R]
+    [Group G] [MulSemiringAction G R] (σ : G) :
+    σ ∈ MulAction.stabilizer G (IsLocalRing.maximalIdeal R) := by
+  rw [MulAction.mem_stabilizer_iff, Ideal.pointwise_smul_eq_comap]
+  exact (IsLocalRing.eq_maximalIdeal
+    (Ideal.comap_isMaximal_of_surjective (K := IsLocalRing.maximalIdeal R) _
+      (MulSemiringAction.toRingAut G R σ).symm.surjective))
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **The descent of maximal-ideal membership** (PROVEN 2026-07-25;
+converse of `LocalInertiaFixedField`'s
+`integralClosureInclusion_mem_maximalIdeal`): an element of the
+finite-level integral closure `𝒪_N` whose image in the big integral
+closure lies in the big maximal ideal already lies in `𝔪_N`. Both
+rings are LOCAL, so an element outside `𝔪_N` is a unit, and units map
+to units, which are never in a proper ideal. -/
+theorem mem_maximalIdeal_of_integralClosureInclusion
+    {K : Type*} [Field K] [NumberField K]
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers K))
+    (N : IntermediateField
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+        (AlgebraicClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)))
+    [FiniteDimensional (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) N]
+    (m : IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) N)
+    (hm : integralClosureInclusion v N m ∈
+      IsLocalRing.maximalIdeal (IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+        (AlgebraicClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)))) :
+    m ∈ IsLocalRing.maximalIdeal (IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) N) := by
+  by_contra hnot
+  have hu : IsUnit m := by
+    simpa using (IsLocalRing.mem_maximalIdeal m).not.mp hnot
+  exact (IsLocalRing.maximalIdeal.isMaximal (IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+      (AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)))).ne_top
+    (Ideal.eq_top_of_isUnit_mem _ hm (hu.map (integralClosureInclusion v N)))
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **The contraction of `𝔪_N` to `𝒪ᵥ` is `𝔪ᵥ`** (PROVEN 2026-07-25):
+the pullback of a maximal ideal along an integral extension is maximal,
+and `𝒪ᵥ` is local. This pins the `IsArithFrobAt` exponent
+`Nat.card (𝒪ᵥ ⧸ Q.under 𝒪ᵥ)` at the finite level to the residue
+cardinality of `𝒪ᵥ` itself. -/
+theorem under_maximalIdeal_integralClosure_eq
+    {K : Type*} [Field K] [NumberField K]
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers K))
+    (N : IntermediateField
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+        (AlgebraicClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)))
+    [FiniteDimensional (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) N] :
+    (IsLocalRing.maximalIdeal (IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) N)).under
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) =
+      IsLocalRing.maximalIdeal
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) :=
+  IsLocalRing.eq_maximalIdeal
+    (Ideal.IsMaximal.under
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+      (IsLocalRing.maximalIdeal (IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) N)))
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **The contraction of the BIG maximal ideal to `𝒪ᵥ` is `𝔪ᵥ`**
+(PROVEN 2026-07-25): same argument as
+`under_maximalIdeal_integralClosure_eq` one level up, at the integral
+closure in the full algebraic closure. Together the two identify the
+`IsArithFrobAt` exponents at the two levels. -/
+theorem under_maximalIdeal_integralClosure_algebraicClosure_eq
+    {K : Type*} [Field K] [NumberField K]
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers K)) :
+    (IsLocalRing.maximalIdeal (IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+        (AlgebraicClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)))).under
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) =
+      IsLocalRing.maximalIdeal
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) :=
+  IsLocalRing.eq_maximalIdeal
+    (Ideal.IsMaximal.under
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+      (IsLocalRing.maximalIdeal (IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+        (AlgebraicClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)))))
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **The finite-level restriction of `adicArithFrob` is an arithmetic
+Frobenius at `𝔪_N`** (PROVEN 2026-07-25 — this is the descent step
+flagged as the fiddly one when the leaf was cut): the congruence
+`Φ x ≡ x ^ q (mod 𝔪_big)` of
+`Field.AbsoluteGaloisGroup.isArithFrobAt_adicArithFrob` is applied to
+the image `ι x` of `x ∈ 𝒪_N` in the big integral closure; the
+inclusion `ι` intertwines the two actions
+(`AlgEquiv.restrictNormalHom_apply`), the two exponents agree because
+both maximal ideals contract to `𝔪ᵥ`, and membership descends because
+`ι m ∈ 𝔪_big → m ∈ 𝔪_N`
+(`mem_maximalIdeal_of_integralClosureInclusion`). -/
+theorem isArithFrobAt_restrictNormalHom_adicArithFrob
+    {K : Type*} [Field K] [NumberField K]
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers K))
+    (N : IntermediateField
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+        (AlgebraicClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)))
+    [FiniteDimensional (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) N]
+    [IsGalois (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) N] :
+    IsArithFrobAt
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+      (AlgEquiv.restrictNormalHom N
+        (Field.AbsoluteGaloisGroup.adicArithFrob v))
+      (IsLocalRing.maximalIdeal (IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) N)) := by
+  haveI : Normal (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) N :=
+    IsGalois.to_normal
+  have hexp : Nat.card
+      ((IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) ⧸
+        (IsLocalRing.maximalIdeal (IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) N)).under
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)) =
+      Nat.card
+        ((IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) ⧸
+          (IsLocalRing.maximalIdeal (IntegralClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+            (AlgebraicClosure
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)))).under
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)) := by
+    rw [under_maximalIdeal_integralClosure_eq v N,
+      under_maximalIdeal_integralClosure_algebraicClosure_eq v]
+  have hcomm : ∀ y : IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) N,
+      integralClosureInclusion v N
+        ((MulSemiringAction.toAlgHom
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+          (IntegralClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) N)
+          (AlgEquiv.restrictNormalHom N
+            (Field.AbsoluteGaloisGroup.adicArithFrob v))) y) =
+      (MulSemiringAction.toAlgHom
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+        (IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+          (AlgebraicClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)))
+        (Field.AbsoluteGaloisGroup.adicArithFrob v))
+        (integralClosureInclusion v N y) := by
+    intro y
+    apply Subtype.ext
+    exact AlgEquiv.restrictNormalHom_apply N
+      (Field.AbsoluteGaloisGroup.adicArithFrob v)
+      (algebraMap (IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) N) N y)
+  intro x
+  refine mem_maximalIdeal_of_integralClosureInclusion v N _ ?_
+  rw [map_sub, map_pow, hcomm x, hexp]
+  exact Field.AbsoluteGaloisGroup.isArithFrobAt_adicArithFrob (v := v)
+    (integralClosureInclusion v N x)
+
+open scoped Pointwise in
+attribute [local instance] Ideal.Quotient.field in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **Finite-level Frobenius–inertia decomposition** (PROVEN
+2026-07-25; Serre, *Corps Locaux*, IV §1): at a finite Galois level `N`
+over the completion `Kᵥ` of a number field at a place `v`, the
+restriction of ANY element of the local absolute Galois group is a
+power of the restricted arithmetic Frobenius times a finite-level
+inertia element. Assembly: `Gal(N/Kᵥ)` acts on the integral closure
+`R = 𝒪_N`, whose maximal ideal `𝔪_R` is stabilized by the whole group
+(`mem_stabilizer_maximalIdeal_of_isLocalRing`, since `R` is local), so
+mathlib's `Ideal.Quotient.stabilizerHom` maps it into
+`Gal(κ_N/κᵥ)` for the residue fields `κ_N = R/𝔪_R`,
+`κᵥ = 𝒪ᵥ/𝔪ᵥ`, with kernel EXACTLY the inertia
+(`Ideal.Quotient.ker_stabilizerHom`). Both residue fields are finite
+(`Ring.HasFiniteQuotients.of_module_finite` over the finite-residue
+DVR `𝒪ᵥ`), so `Gal(κ_N/κᵥ)` is generated by the `#κᵥ`-power Frobenius
+(`FiniteField.bijective_frobeniusAlgEquivOfAlgebraic_pow`); and the
+residue image of the restricted `adicArithFrob` IS that power map
+(`isArithFrobAt_restrictNormalHom_adicArithFrob`). Hence `ḡ` and
+`Φ̄ ^ m` have the same residue image for the exponent `m` reading off
+`ḡ`'s residue class, i.e. `(Φ̄ ^ m)⁻¹ · ḡ` lies in the inertia. This is
+the standard `1 → I → Gal(N/Kᵥ) → Gal(κ_N/κᵥ)` exactness for a local
+field with finite residue field. -/
+theorem exists_restrictNormalHom_eq_adicArithFrob_pow_mul_inertia
+    {K : Type*} [Field K] [NumberField K]
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers K))
+    (N : IntermediateField
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)
+        (AlgebraicClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)))
+    [FiniteDimensional (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) N]
+    [IsGalois (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) N]
+    (g : Field.absoluteGaloisGroup
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v)) :
+    ∃ m : ℕ, ∃ τ ∈ (IsLocalRing.maximalIdeal (IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) N)).inertia
+        (N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion K v] N),
+      AlgEquiv.restrictNormalHom N g =
+        (AlgEquiv.restrictNormalHom N
+          (Field.AbsoluteGaloisGroup.adicArithFrob v)) ^ m * τ := by
+  classical
+  haveI : Normal (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) N :=
+    IsGalois.to_normal
+  haveI : (IsLocalRing.maximalIdeal
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)).IsMaximal :=
+    IsLocalRing.maximalIdeal.isMaximal _
+  haveI : (IsLocalRing.maximalIdeal (IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) N)).IsMaximal :=
+    IsLocalRing.maximalIdeal.isMaximal _
+  haveI : Finite ((IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) ⧸
+      IsLocalRing.maximalIdeal
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)) :=
+    inferInstanceAs (Finite (IsLocalRing.ResidueField
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)))
+  haveI : Fintype ((IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) ⧸
+      IsLocalRing.maximalIdeal
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)) :=
+    Fintype.ofFinite _
+  haveI : Ring.HasFiniteQuotients
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) :=
+    hasFiniteQuotients_adicCompletionIntegers v
+  haveI : Module.Finite
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+      (IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) N) :=
+    IsIntegralClosure.finite
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion K v) N
+      (IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) N)
+  haveI : Ring.HasFiniteQuotients (IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) N) :=
+    Ring.HasFiniteQuotients.of_module_finite
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+      (IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) N)
+  haveI : Finite ((IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) N) ⧸
+      IsLocalRing.maximalIdeal (IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) N)) :=
+    Ring.HasFiniteQuotients.finiteQuotient
+      (IsDiscreteValuationRing.not_a_field (IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) N))
+  -- the finite-level Frobenius, and the two stabilizer memberships
+  have hΦ : IsArithFrobAt
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+      (AlgEquiv.restrictNormalHom N
+        (Field.AbsoluteGaloisGroup.adicArithFrob v))
+      (IsLocalRing.maximalIdeal (IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) N)) :=
+    isArithFrobAt_restrictNormalHom_adicArithFrob v N
+  have hΦstab : AlgEquiv.restrictNormalHom N
+      (Field.AbsoluteGaloisGroup.adicArithFrob v) ∈
+      MulAction.stabilizer
+        (N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion K v] N)
+        (IsLocalRing.maximalIdeal (IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) N)) :=
+    mem_stabilizer_maximalIdeal_of_isLocalRing _
+  have hgstab : AlgEquiv.restrictNormalHom N g ∈
+      MulAction.stabilizer
+        (N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion K v] N)
+        (IsLocalRing.maximalIdeal (IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) N)) :=
+    mem_stabilizer_maximalIdeal_of_isLocalRing _
+  -- the residue image of the Frobenius is the `#κᵥ`-power map
+  have hq : Nat.card
+      ((IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) ⧸
+        (IsLocalRing.maximalIdeal (IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) N)).under
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)) =
+      Fintype.card
+        ((IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) ⧸
+          IsLocalRing.maximalIdeal
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)) := by
+    rw [under_maximalIdeal_integralClosure_eq v N]
+    exact Nat.card_eq_fintype_card
+  have hstabΦ : Ideal.Quotient.stabilizerHom
+      (IsLocalRing.maximalIdeal (IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) N))
+      (IsLocalRing.maximalIdeal
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v))
+      (N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion K v] N)
+      ⟨_, hΦstab⟩ =
+      FiniteField.frobeniusAlgEquivOfAlgebraic
+        ((IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) ⧸
+          IsLocalRing.maximalIdeal
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v))
+        ((IntegralClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) N) ⧸
+          IsLocalRing.maximalIdeal (IntegralClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) N)) := by
+    apply AlgEquiv.ext
+    intro y
+    obtain ⟨z, rfl⟩ := Ideal.Quotient.mk_surjective y
+    rw [Ideal.Quotient.stabilizerHom_apply,
+      FiniteField.coe_frobeniusAlgEquivOfAlgebraic]
+    show (Ideal.Quotient.mk (IsLocalRing.maximalIdeal (IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) N)))
+        ((MulSemiringAction.toAlgHom
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+          (IntegralClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) N)
+          (AlgEquiv.restrictNormalHom N
+            (Field.AbsoluteGaloisGroup.adicArithFrob v))) z) =
+      ((Ideal.Quotient.mk (IsLocalRing.maximalIdeal (IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) N))) z) ^
+        Fintype.card
+          ((IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) ⧸
+            IsLocalRing.maximalIdeal
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v))
+    rw [hΦ.mk_apply z, hq]
+  -- every residue automorphism is a power of that Frobenius
+  obtain ⟨n, hn⟩ := (FiniteField.bijective_frobeniusAlgEquivOfAlgebraic_pow
+    ((IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) ⧸
+      IsLocalRing.maximalIdeal
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v))
+    ((IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) N) ⧸
+      IsLocalRing.maximalIdeal (IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) N))).2
+    (Ideal.Quotient.stabilizerHom
+      (IsLocalRing.maximalIdeal (IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) N))
+      (IsLocalRing.maximalIdeal
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v))
+      (N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion K v] N)
+      ⟨_, hgstab⟩)
+  have hn' : FiniteField.frobeniusAlgEquivOfAlgebraic
+      ((IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) ⧸
+        IsLocalRing.maximalIdeal
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v))
+      ((IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) N) ⧸
+        IsLocalRing.maximalIdeal (IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) N)) ^
+        (n : ℕ) =
+      Ideal.Quotient.stabilizerHom
+        (IsLocalRing.maximalIdeal (IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) N))
+        (IsLocalRing.maximalIdeal
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v))
+        (N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion K v] N)
+        ⟨_, hgstab⟩ := hn
+  -- so the quotient of the two lies in the kernel, i.e. in the inertia
+  have hker : ((⟨_, hΦstab⟩ :
+        MulAction.stabilizer
+          (N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion K v] N)
+          (IsLocalRing.maximalIdeal (IntegralClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) N)))
+        ^ (n : ℕ))⁻¹ * ⟨_, hgstab⟩ ∈
+      (Ideal.Quotient.stabilizerHom
+        (IsLocalRing.maximalIdeal (IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v) N))
+        (IsLocalRing.maximalIdeal
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v))
+        (N ≃ₐ[IsDedekindDomain.HeightOneSpectrum.adicCompletion K v] N)).ker := by
+    rw [MonoidHom.mem_ker, map_mul, map_inv, map_pow, hstabΦ, hn', inv_mul_cancel]
+  rw [Ideal.Quotient.ker_stabilizerHom] at hker
+  refine ⟨(n : ℕ), ((AlgEquiv.restrictNormalHom N
+    (Field.AbsoluteGaloisGroup.adicArithFrob v)) ^ (n : ℕ))⁻¹ *
+      AlgEquiv.restrictNormalHom N g, ?_, by group⟩
+  simpa using Ideal.coe_mem_inertia.mpr hker
+
+/-- **Finite-level Frobenius–inertia decomposition at `2`** (PROVEN
+2026-07-25; split off 2026-07-25 from the open-subgroup leaf below as
+the genuine FINITE-LEVEL content of that leaf, free of every
 profinite/Krull ingredient): at a finite Galois level `N` over the
 completion at `2`, the restriction of ANY element of the local
 absolute Galois group is a power of the restricted arithmetic
-Frobenius times a finite-level inertia element. Classical proof
-(Serre, *Corps Locaux*, IV §1): the residue map
-`Ideal.Quotient.stabilizerHom` sends `Gal(N/Kv₂)` (which stabilizes
-the maximal ideal of the integral closure `R`, that ideal being the
-unique maximal ideal of the local ring `R`) onto the automorphism
-group of the residue field `κ_N = R/𝔪_R` over `κᵥ = 𝒪ᵥ/𝔪ᵥ`, and its
-kernel is EXACTLY the finite-level inertia (`Ideal.ker_stabilizerHom`).
-Now `κᵥ` has `2` elements (`natCard_residue_quotient_toHeightOneSpectrum`
-at `prime_two`) and `κ_N` is a finite extension of it, so every
-`κᵥ`-automorphism of `κ_N` is a power of the squaring Frobenius
-(mathlib: `bijective_frobeniusAlgEquivOfAlgebraic_pow`, equivalently
-the `IsCyclic Gal(L/K)` instance for finite fields, whose generator
-`frobeniusAlgEquivOfAlgebraic` is `x ↦ x ^ #κᵥ = x ^ 2`); and the
-residue image of the restricted `adicArithFrob` IS that squaring map,
-because `Field.AbsoluteGaloisGroup.isArithFrobAt_adicArithFrob` gives
-`Φ x ≡ x ^ 2 (mod 𝔪)` on the integral closure in the FULL algebraic
-closure, a congruence which descends to `R` since `𝔪_R` is the
-contraction of that maximal ideal. So `stabilizerHom (ḡ · (Φ̄ ^ m)⁻¹)
-= 1` for the exponent `m` reading off `ḡ`'s residue class, i.e.
-`ḡ = Φ̄ ^ m · τ` with `τ` in the finite-level inertia. Soundness: this
-is the standard `1 → I → Gal(N/Kv₂) → Gal(κ_N/κᵥ) → 1` exactness for a
-local field with finite residue field, whose unramified quotient is
-procyclic on the Frobenius class. -/
+Frobenius times a finite-level inertia element. This is the place `2`
+instance of the general
+`exists_restrictNormalHom_eq_adicArithFrob_pow_mul_inertia` proven
+just above; no property of the prime `2` enters — the residue
+cardinality is read off `𝒪ᵥ` itself by the `IsArithFrobAt`
+specification. -/
 theorem exists_restrictNormalHom_eq_adicArithFrob_pow_mul_inertia_two
     (N : IntermediateField
         (HeightOneSpectrum.adicCompletion ℚ
@@ -14284,7 +14644,8 @@ theorem exists_restrictNormalHom_eq_adicArithFrob_pow_mul_inertia_two
         (AlgEquiv.restrictNormalHom N
           (Field.AbsoluteGaloisGroup.adicArithFrob
             Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) ^ m * τ :=
-  sorry
+  exists_restrictNormalHom_eq_adicArithFrob_pow_mul_inertia
+    Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat N g
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
