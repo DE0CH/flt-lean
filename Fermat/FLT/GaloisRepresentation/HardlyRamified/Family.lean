@@ -1569,15 +1569,374 @@ theorem absoluteGalois_apply_eq_pow_of_cyclotomicCharacter_sub_mem
       from rfl, hspec, hexp, map_pow, hwz] at hup
   exact hup.symm
 
+/-- **The `L₀`-linear extension of a geometric point of a base-changed
+generic fibre** (PROVEN machinery, 2026-07-25): a `K₀`-point
+`ψ : K₀ ⊗[R₀] H₀ →ₐ[K₀] L₀` of the generic fibre of an `R₀`-bialgebra
+`H₀` restricts along `includeRight` to the `R₀`-point
+`ψ ∘ (1 ⊗ ·) : H₀ →ₐ[R₀] L₀`, which extends uniquely to an
+`L₀`-ALGEBRA map on the `L₀`-base change `L₀ ⊗[R₀] H₀` (both steps are
+the tensor–hom adjunction `AlgHom.liftEquiv`). This is the map written
+`ψ ↦ ψ̃` in the μ-type bookkeeping below: it is where the
+`L₀`-rational group-like coordinates of the connected corner get
+evaluated, and it is INJECTIVE (a composition of two equivalences),
+which is what turns "the group-likes separate `ψ̃`" into "they separate
+`ψ`". -/
+noncomputable def extendPoint {R₀ : Type*} [CommRing R₀] {K₀ L₀ : Type u}
+    [Field K₀] [Field L₀] [Algebra K₀ L₀] [Algebra R₀ K₀] [Algebra R₀ L₀]
+    [IsScalarTower R₀ K₀ L₀] {H₀ : Type*} [CommRing H₀] [Bialgebra R₀ H₀]
+    (ψ : K₀ ⊗[R₀] H₀ →ₐ[K₀] L₀) : L₀ ⊗[R₀] H₀ →ₐ[L₀] L₀ :=
+  AlgHom.liftEquiv R₀ L₀ H₀ L₀ ((AlgHom.liftEquiv R₀ K₀ H₀ L₀).symm ψ)
+
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
+/-- **A convolution product evaluates by the ordinary product on a
+relative group-like** (PROVEN 2026-07-25 — the two-factor companion of
+the shared brick `convPow_apply_of_comul_absorbs` above, stated
+generically over any commutative base ring): if `χ₁, χ₂` are points of
+a bialgebra `G₀` taking the value `1` on `e` — CONNECTED points for the
+counit idempotent `e` — then on any `x` that is GROUP-LIKE relative to
+the corner of `e` (`Δx · (e ⊗ e) = x ⊗ x`) the convolution product
+evaluates as the ordinary product of the values:
+`(χ₁ ⋆ χ₂)(x) = χ₁ x · χ₂ x`.
+
+Proof: `(χ₁ ⋆ χ₂)(x) = lift χ₁ χ₂ (Δx)` (`AlgHom.convMul_apply`) may be
+multiplied by `lift χ₁ χ₂ (e ⊗ e) = χ₁ e · χ₂ e = 1`, so it equals
+`lift χ₁ χ₂ (Δx · (e ⊗ e)) = lift χ₁ χ₂ (x ⊗ x) = χ₁ x · χ₂ x`. Note
+that no hypothesis on `Δe` is needed: the connectedness of `χ₁, χ₂`
+alone supplies the value `1` of the pair on `e ⊗ e`. -/
+theorem convMul_apply_of_comul_absorbs {R₀ G₀ C₀ : Type*} [CommRing R₀]
+    [CommRing G₀] [Bialgebra R₀ G₀] [CommRing C₀] [Algebra R₀ C₀]
+    (e : G₀) (χ₁ χ₂ : G₀ →ₐ[R₀] C₀) (h₁ : χ₁ e = 1) (h₂ : χ₂ e = 1)
+    (x : G₀)
+    (hx : Coalgebra.comul (R := R₀) x * (e ⊗ₜ[R₀] e) = x ⊗ₜ[R₀] x) :
+    (toConv χ₁ * toConv χ₂).ofConv x = χ₁ x * χ₂ x := by
+  have hone : Algebra.TensorProduct.lift χ₁ χ₂ (fun _ _ => Commute.all _ _)
+      (e ⊗ₜ[R₀] e) = 1 := by
+    rw [Algebra.TensorProduct.lift_tmul, h₁, h₂, one_mul]
+  have hval : (toConv χ₁ * toConv χ₂).ofConv x =
+      Algebra.TensorProduct.lift χ₁ χ₂ (fun _ _ => Commute.all _ _)
+        (Coalgebra.comul (R := R₀) x) :=
+    AlgHom.convMul_apply (toConv χ₁) (toConv χ₂) x
+  rw [hval]
+  calc Algebra.TensorProduct.lift χ₁ χ₂ (fun _ _ => Commute.all _ _)
+        (Coalgebra.comul (R := R₀) x)
+      = Algebra.TensorProduct.lift χ₁ χ₂ (fun _ _ => Commute.all _ _)
+          (Coalgebra.comul (R := R₀) x) *
+        Algebra.TensorProduct.lift χ₁ χ₂ (fun _ _ => Commute.all _ _)
+          (e ⊗ₜ[R₀] e) := by rw [hone, mul_one]
+    _ = Algebra.TensorProduct.lift χ₁ χ₂ (fun _ _ => Commute.all _ _)
+          (Coalgebra.comul (R := R₀) x * (e ⊗ₜ[R₀] e)) := (map_mul _ _ _).symm
+    _ = Algebra.TensorProduct.lift χ₁ χ₂ (fun _ _ => Commute.all _ _)
+          (x ⊗ₜ[R₀] x) := by rw [hx]
+    _ = χ₁ x * χ₂ x := Algebra.TensorProduct.lift_tmul _ _ _ _ _
+
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
+/-- **Semilinearity of the base-changed lift** (PROVEN 2026-07-25): an
+`R₀`-algebra endomorphism `s` of `L₀` moves the `L₀`-linear lift of an
+`R₀`-point `χ` of `H₀` to the lift of `s ∘ χ`, at the `s`-twisted
+argument: `s (χ̃ t) = (s ∘ χ)~ ((s ⊗ id) t)`. Proof: both sides are
+additive in `t`, and on `c ⊗ y` both are `s c · s (χ y)`.
+
+This is the transport that carries the Galois action on POINTS to the
+semilinear action on the base-changed Hopf algebra, and hence the exact
+reason why the unramifiedness clause of the μ-type package below is
+stated as `σ`-INVARIANCE OF THE GROUP-LIKES `(σ ⊗ id) x = x` rather
+than as `ℚᵖᵥ`-rationality: `σ ∘ ψ̃` is only semilinear, so `θ (σ • ψ)`
+and `σ (θ ψ)` agree exactly when `σ` fixes the coordinate `x`. -/
+theorem apply_liftEquiv_eq_liftEquiv_map {R₀ : Type*} [CommRing R₀]
+    {L₀ : Type*} [CommRing L₀] [Algebra R₀ L₀]
+    {H₀ : Type*} [CommRing H₀] [Algebra R₀ H₀]
+    (s : L₀ →ₐ[R₀] L₀) (χ : H₀ →ₐ[R₀] L₀) (t : L₀ ⊗[R₀] H₀) :
+    s (AlgHom.liftEquiv R₀ L₀ H₀ L₀ χ t) =
+      AlgHom.liftEquiv R₀ L₀ H₀ L₀ (s.comp χ)
+        (Algebra.TensorProduct.map s (AlgHom.id R₀ H₀) t) := by
+  induction t using TensorProduct.induction_on with
+  | zero => rw [map_zero, map_zero, map_zero, map_zero]
+  | add a b ha hb => rw [map_add, map_add, ha, hb, map_add, map_add]
+  | tmul c y =>
+    rw [Algebra.TensorProduct.map_tmul, AlgHom.liftEquiv_tmul,
+      AlgHom.liftEquiv_tmul, smul_eq_mul, smul_eq_mul, map_mul]
+    rfl
+
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
+/-- **The `μ`-coordinate system attached to a group-like family**
+(PROVEN 2026-07-25, generically over any base — this is the FORMAL half
+of the μ-type/Raynaud node, split off the citation): suppose the
+connected corner of `e₀` in the base change `L₀ ⊗[R₀] H₀` to a big
+field `L₀` is the GROUP ALGEBRA of a family `x : ι → L₀ ⊗[R₀] H₀` of
+elements that are
+
+* *counit-normalised*: `ε (x i) = 1`;
+* *group-like relative to the corner*:
+  `Δ (x i) · (ē₀ ⊗ ē₀) = x i ⊗ x i`, where `ē₀ = 1 ⊗ e₀`;
+* *generating the corner*: `y · ē₀ ∈ L₀[x]` for every `y` (this is what
+  "the corner is the group algebra of the character group" says: the
+  group-likes span it, so they generate it as an algebra);
+* *fixed by a given automorphism `s` of `L₀`*:
+  `(s ⊗ id) (x i) = x i`.
+
+Then the EVALUATION coordinates `θ ψ i := ψ̃ (x i)` (`extendPoint`) on
+the `K₀`-points of the generic fibre satisfy the five clauses of the
+μ-coordinate package: `θ 1 = 1`, root-of-unity values on points of
+finite convolution order, convolution-multiplicativity, separation of
+connected points, and `s`-equivariance.
+
+Proof, clause by clause. (1) The convolution unit is `algebraMap ∘ ε`
+(`AlgHom.convOne_apply`), and both `liftEquiv` transports preserve it
+(`vendored_one_eq_convOne`, `liftEquiv_symm_convOne`,
+`liftEquiv_convOne`), so `θ 1 i = ε (x i) = 1`. (3) Both transports
+preserve the convolution product (`vendored_mul_eq_convMul`,
+`liftEquiv_symm_convMul`, `liftEquiv_convMul`), and the extension of a
+connected point is connected (`ψ̃ ē₀ = ψ (1 ⊗ e₀) = 1`), so
+`convMul_apply_of_comul_absorbs` at the group-like `x i` gives
+multiplicativity. (2) With (1) and (3), `θ (ψ ^ m) i = (θ ψ i) ^ m` by
+induction on `m` — the induction needs the connectedness of the
+convolution powers, which is the hypothesis `hcp` (supplied at `p` by
+the PROVEN `convPow_apply_one_of_comul_absorbs_p`) — so `ψ ^ m = 1`
+forces `(θ ψ i) ^ m = θ 1 i = 1`. (4) The set where `ψ̃₁` and `ψ̃₂`
+agree is a subalgebra (`AlgHom.equalizer`) containing every `x i`,
+hence contains `L₀[x]` (`Algebra.adjoin_le`) and so every `y · ē₀`; for
+CONNECTED points that gives `ψ̃₁ y = ψ̃₂ y` for all `y`, and `ψ ↦ ψ̃` is
+injective. (5) `apply_liftEquiv_eq_liftEquiv_map` plus the
+`s`-invariance of `x i` and `liftEquiv_symm_comp`. -/
+theorem exists_grouplike_coordinates_of_grouplike_family
+    {R₀ : Type*} [CommRing R₀] {K₀ L₀ : Type u} [Field K₀] [Field L₀]
+    [Algebra K₀ L₀] [Algebra R₀ K₀] [Algebra R₀ L₀] [IsScalarTower R₀ K₀ L₀]
+    {H₀ : Type*} [CommRing H₀] [Bialgebra R₀ H₀]
+    (e₀ : H₀)
+    (hcp : ∀ (m : ℕ) (ψ : K₀ ⊗[R₀] H₀ →ₐ[K₀] L₀),
+      ψ ((1 : K₀) ⊗ₜ[R₀] e₀) = 1 → (ψ ^ m) ((1 : K₀) ⊗ₜ[R₀] e₀) = 1)
+    (s : L₀ ≃ₐ[K₀] L₀)
+    {ι : Type*} (x : ι → L₀ ⊗[R₀] H₀)
+    (hcount : ∀ i, Coalgebra.counit (R := L₀) (x i) = (1 : L₀))
+    (hgl : ∀ i, Coalgebra.comul (R := L₀) (x i) *
+        (((1 : L₀) ⊗ₜ[R₀] e₀) ⊗ₜ[L₀] ((1 : L₀) ⊗ₜ[R₀] e₀)) =
+      x i ⊗ₜ[L₀] x i)
+    (hgen : ∀ y : L₀ ⊗[R₀] H₀,
+      y * ((1 : L₀) ⊗ₜ[R₀] e₀) ∈ Algebra.adjoin L₀ (Set.range x))
+    (hinv : ∀ i, Algebra.TensorProduct.map (s.toAlgHom.restrictScalars R₀)
+      (AlgHom.id R₀ H₀) (x i) = x i) :
+    ∃ θ : (K₀ ⊗[R₀] H₀ →ₐ[K₀] L₀) → ι → L₀,
+      (∀ i, θ (1 : K₀ ⊗[R₀] H₀ →ₐ[K₀] L₀) i = 1) ∧
+      (∀ (m : ℕ) (ψ : K₀ ⊗[R₀] H₀ →ₐ[K₀] L₀),
+        ψ ((1 : K₀) ⊗ₜ[R₀] e₀) = 1 → ψ ^ m = 1 → ∀ i, (θ ψ i) ^ m = 1) ∧
+      (∀ ψ₁ ψ₂ : K₀ ⊗[R₀] H₀ →ₐ[K₀] L₀,
+        ψ₁ ((1 : K₀) ⊗ₜ[R₀] e₀) = 1 → ψ₂ ((1 : K₀) ⊗ₜ[R₀] e₀) = 1 →
+        ∀ i, θ (ψ₁ * ψ₂) i = θ ψ₁ i * θ ψ₂ i) ∧
+      (∀ ψ₁ ψ₂ : K₀ ⊗[R₀] H₀ →ₐ[K₀] L₀,
+        ψ₁ ((1 : K₀) ⊗ₜ[R₀] e₀) = 1 → ψ₂ ((1 : K₀) ⊗ₜ[R₀] e₀) = 1 →
+        (∀ i, θ ψ₁ i = θ ψ₂ i) → ψ₁ = ψ₂) ∧
+      (∀ ψ : K₀ ⊗[R₀] H₀ →ₐ[K₀] L₀, ψ ((1 : K₀) ⊗ₜ[R₀] e₀) = 1 →
+        ∀ i, θ (s.toAlgHom.comp ψ) i = s (θ ψ i)) := by
+  classical
+  -- the extension of a CONNECTED point stays connected
+  have hconn : ∀ ψ : K₀ ⊗[R₀] H₀ →ₐ[K₀] L₀, ψ ((1 : K₀) ⊗ₜ[R₀] e₀) = 1 →
+      extendPoint ψ ((1 : L₀) ⊗ₜ[R₀] e₀) = 1 := by
+    intro ψ hψ
+    rw [extendPoint, AlgHom.liftEquiv_tmul, one_smul]
+    exact hψ
+  -- clause 1: the coordinates of the convolution unit are `1`
+  have hone : ∀ i, extendPoint (1 : K₀ ⊗[R₀] H₀ →ₐ[K₀] L₀) (x i) = 1 := by
+    intro i
+    have h1 : (AlgHom.liftEquiv R₀ K₀ H₀ L₀).symm
+        (1 : K₀ ⊗[R₀] H₀ →ₐ[K₀] L₀) = (1 : WithConv (H₀ →ₐ[R₀] L₀)).ofConv := by
+      rw [vendored_one_eq_convOne, liftEquiv_symm_convOne]
+    rw [extendPoint, h1, liftEquiv_convOne]
+    show algebraMap L₀ L₀ (Coalgebra.counit (R := L₀) (x i)) = 1
+    rw [hcount i, map_one]
+  -- clause 3: the coordinates are convolution-multiplicative
+  have hmul : ∀ ψ₁ ψ₂ : K₀ ⊗[R₀] H₀ →ₐ[K₀] L₀,
+      ψ₁ ((1 : K₀) ⊗ₜ[R₀] e₀) = 1 → ψ₂ ((1 : K₀) ⊗ₜ[R₀] e₀) = 1 →
+      ∀ i, extendPoint (ψ₁ * ψ₂) (x i) =
+        extendPoint ψ₁ (x i) * extendPoint ψ₂ (x i) := by
+    intro ψ₁ ψ₂ h₁ h₂ i
+    have hSm : (AlgHom.liftEquiv R₀ K₀ H₀ L₀).symm (ψ₁ * ψ₂) =
+        (toConv ((AlgHom.liftEquiv R₀ K₀ H₀ L₀).symm ψ₁) *
+          toConv ((AlgHom.liftEquiv R₀ K₀ H₀ L₀).symm ψ₂)).ofConv := by
+      rw [vendored_mul_eq_convMul, liftEquiv_symm_convMul,
+        WithConv.ofConv_toConv, WithConv.ofConv_toConv]
+    rw [extendPoint, hSm, liftEquiv_convMul]
+    exact convMul_apply_of_comul_absorbs ((1 : L₀) ⊗ₜ[R₀] e₀) _ _
+      (hconn ψ₁ h₁) (hconn ψ₂ h₂) (x i) (hgl i)
+  refine ⟨fun ψ i => extendPoint ψ (x i), hone, ?_, hmul, ?_, ?_⟩
+  · -- clause 2: the coordinates of a point of order `m` are `m`-th roots of `1`
+    intro m ψ hψ hord i
+    have hpow : ∀ j : ℕ, extendPoint (ψ ^ j) (x i) =
+        (extendPoint ψ (x i)) ^ j := by
+      intro j
+      induction j with
+      | zero => rw [pow_zero, pow_zero, hone i]
+      | succ n ih => rw [pow_succ, hmul (ψ ^ n) ψ (hcp n ψ hψ) hψ i, ih, pow_succ]
+    rw [← hpow m, hord, hone i]
+  · -- clause 4: connected points are separated by the coordinates
+    intro ψ₁ ψ₂ h₁ h₂ hagree
+    have hle : Algebra.adjoin L₀ (Set.range x) ≤
+        AlgHom.equalizer (extendPoint ψ₁) (extendPoint ψ₂) := by
+      apply Algebra.adjoin_le
+      rintro y ⟨i, rfl⟩
+      exact (AlgHom.mem_equalizer _ _ _).mpr (hagree i)
+    have hall : ∀ y : L₀ ⊗[R₀] H₀, extendPoint ψ₁ y = extendPoint ψ₂ y := by
+      intro y
+      have hy := (AlgHom.mem_equalizer _ _ _).mp (hle (hgen y))
+      rw [map_mul, map_mul, hconn ψ₁ h₁, hconn ψ₂ h₂, mul_one, mul_one] at hy
+      exact hy
+    have hTeq : extendPoint ψ₁ = extendPoint ψ₂ := AlgHom.ext hall
+    rw [extendPoint, extendPoint] at hTeq
+    exact (AlgHom.liftEquiv R₀ K₀ H₀ L₀).symm.injective
+      ((AlgHom.liftEquiv R₀ L₀ H₀ L₀).injective hTeq)
+  · -- clause 5: the coordinates are equivariant for the fixed automorphism
+    intro ψ _ i
+    show extendPoint (s.toAlgHom.comp ψ) (x i) = s (extendPoint ψ (x i))
+    have h1 := apply_liftEquiv_eq_liftEquiv_map (s.toAlgHom.restrictScalars R₀)
+      ((AlgHom.liftEquiv R₀ K₀ H₀ L₀).symm ψ) (x i)
+    rw [hinv i] at h1
+    have h2 : (AlgHom.liftEquiv R₀ K₀ H₀ L₀).symm (s.toAlgHom.comp ψ) =
+        (s.toAlgHom.restrictScalars R₀).comp
+          ((AlgHom.liftEquiv R₀ K₀ H₀ L₀).symm ψ) :=
+      liftEquiv_symm_comp _ _
+    have h3 : extendPoint (s.toAlgHom.comp ψ) (x i) =
+        AlgHom.liftEquiv R₀ L₀ H₀ L₀ ((s.toAlgHom.restrictScalars R₀).comp
+          ((AlgHom.liftEquiv R₀ K₀ H₀ L₀).symm ψ)) (x i) := by
+      rw [extendPoint, h2]
+    rw [h3, ← h1]
+    rfl
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **The connected component of a hardly-ramified Hopf package is of
+multiplicative type: over `ℚᵖᵥᵃˡᵍ` its corner is the group algebra of
+an inertia-fixed character group** (SORRY NODE — the SHARPENED citation
+of the μ-type/Raynaud classification, isolated 2026-07-25 from the
+coordinate package `exists_grouplike_coordinates_of_connected_hopf_package`
+below, whose five clauses are now PROVEN over this one).
+
+Content. `G` is a finite flat Hopf order over `𝒪ᵖᵥ` with étale generic
+fibre, arising through the `Γ`-equivariant bijection `fG` from a
+hardly-ramified `ρ` whose local Jordan–Hölder factors are
+ONE-dimensional (the `hchar` input), and `e₀` is a connected counit
+idempotent, so that `Spec (G·e₀)` is the identity component `G°`. The
+claim is that `G°` is of MULTIPLICATIVE TYPE, in the concrete form that
+its base change to the algebraic closure is a group algebra: there is a
+family `x : ι → ℚᵖᵥᵃˡᵍ ⊗[𝒪ᵖᵥ] G` of elements of the corner of
+`ē₀ = 1 ⊗ e₀` which are
+
+* counit-normalised, `ε (x i) = 1`;
+* GROUP-LIKE relative to the corner,
+  `Δ (x i) · (ē₀ ⊗ ē₀) = x i ⊗ x i`;
+* GENERATING the corner, `y · ē₀ ∈ ℚᵖᵥᵃˡᵍ[x]` for every `y` — i.e. the
+  group-likes span `ℚᵖᵥᵃˡᵍ ⊗ (G·e₀)`, which is exactly the statement
+  that this corner is the group algebra `ℚᵖᵥᵃˡᵍ[X]` of the character
+  group `X = Hom(G°, 𝔾ₘ)` (the intended witness is `ι = X` with `x` its
+  inclusion, `x` at the identity of `X` being `ē₀` itself);
+* FIXED by the given inertia element, `(σ ⊗ id) (x i) = x i` — the
+  unramifiedness of `X`.
+
+Intended proof (Raynaud, *Schémas en groupes de type `(p, …, p)`*,
+Bull. SMF 102 (1974) 241–280; Oort–Tate, *Group schemes of prime
+order*, Ann. Sci. ÉNS 3 (1970) 1–21; Tate, *Finite flat group
+schemes*, in Cornell–Silverman–Stevens, §4; Serre, Duke 54 (1987)
+§4.1):
+
+1. `e = v(p) = 1 < p − 1` for `𝒪ᵖᵥ` at the odd prime `p` (`hpodd`), so
+   Raynaud's rigidity applies: the finite flat prolongation of the
+   étale generic fibre is UNIQUE (Raynaud Th. 3.3.3, Cor. 3.3.6) and,
+   after passage to the strict henselisation, `G` has a composition
+   series whose quotients are `F`-vector-space schemes for finite
+   fields `F` (Raynaud Cor. 3.3.7, dévissage of a group of type
+   `(p, …, p)`; Tate–CSS §4.3).
+2. Each such quotient is classified by the equations
+   `Xᵢ^p = δᵢ X_{i+1}` with `0 ≤ v(δᵢ) ≤ e` (Raynaud §1.4, Th. 1.4.1;
+   Tate–CSS Th. 4.4.1), and inertia acts on its geometric points
+   through the fundamental characters of level `r = [F : 𝔽ₚ]`
+   (Raynaud Th. 3.4.1, Cor. 3.4.4). The `hchar`/`fG` input forces every
+   local Jordan–Hölder factor to be ONE-dimensional, i.e. `r = 1`, so
+   only the level-one branch occurs: with `e = 1` each factor has
+   `v(δ) ∈ {0, 1}`, hence is étale (`v(δ) = 0`) or of `μ`-type
+   (`v(δ) = 1 = e`; Oort–Tate at order `p`).
+3. The connected factors are therefore all of `μ`-type, and `G°` — an
+   iterated extension of `μ`-type groups over the henselian `𝒪ᵖᵥ` — is
+   itself of multiplicative type (dually: its Cartier dual is an
+   extension of étale by étale, hence étale; Raynaud Prop. 3.3.2 2°
+   and its dual, Tate–CSS §2 on Cartier duality).
+4. A multiplicative-type `G° = D(X)` has coordinate ring the group
+   algebra of its character group `X`, and `X` is ÉTALE over `𝒪ᵖᵥ` —
+   constant over the strict henselisation — so its Galois action is
+   UNRAMIFIED and the inertia element `σ` fixes every element of `X`,
+   i.e. every group-like of the corner.
+
+SOUNDNESS (do NOT weaken; two deliberate features).
+
+(i) The one-dimensionality input `hchar`/`fG` is not redundant: for the
+`p`-torsion of a SUPERSINGULAR elliptic curve over `ℤ_p` (connected,
+killed by `p`, `e = 1`) the generic fibre is a simple `F`-vector-space
+scheme with `F = 𝔽_{p²}` and tame inertia acts through `𝔽_{p²}^×`
+(Raynaud Th. 3.4.1 at `r = 2`, and the worked example in Raynaud
+§3.4.7), which is not a power map — the corner is then NOT a group
+algebra of an inertia-fixed group, and the consumer's power-conclusion
+is FALSE. Step 2 is exactly where the input is spent.
+
+(ii) The unramifiedness clause is `σ`-INVARIANCE of the group-likes
+inside `ℚᵖᵥᵃˡᵍ ⊗[𝒪ᵖᵥ] G`, and deliberately NOT `ℚᵖᵥ`-rationality of
+the group-likes: the character group `X` may be a nonconstant
+UNRAMIFIED TWIST, in which case no nontrivial group-like of the corner
+is `ℚᵖᵥ`-rational and the rational-generators formulation would be a
+FALSE leaf. Semilinearity (`apply_liftEquiv_eq_liftEquiv_map` above) is
+what makes the invariance clause the RIGHT one: it is exactly what
+`θ (σ • ψ) = σ (θ ψ)` needs. -/
+theorem exists_grouplike_family_of_connected_hopf_package
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hZinj : Function.Injective (algebraMap ℤ_[p] R))
+    (hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
+    (hρ : IsHardlyRamified hpodd hv ρ)
+    (χ₁ χ₂ : Field.absoluteGaloisGroup ℚ → AlgebraicClosure ℚ_[p])
+    (hcont₁ : Continuous χ₁) (hcont₂ : Continuous χ₂)
+    (hone₁ : χ₁ 1 = 1) (hone₂ : χ₂ 1 = 1)
+    (hmul₁ : ∀ g h, χ₁ (g * h) = χ₁ g * χ₁ h)
+    (hmul₂ : ∀ g h, χ₂ (g * h) = χ₂ g * χ₂ h)
+    (hchar : ∀ g, ((ρ g).charpoly).map (algebraMap R (AlgebraicClosure ℚ_[p])) =
+      (Polynomial.X - Polynomial.C (χ₁ g)) * (Polynomial.X - Polynomial.C (χ₂ g)))
+    (I : Ideal R) (hI : IsOpen (I : Set R))
+    (G : Type) [CommRing G]
+    [HopfAlgebra 𝒪ᵖᵥ G] [Module.Flat 𝒪ᵖᵥ G] [Module.Finite 𝒪ᵖᵥ G]
+    [Algebra.Etale ℚᵖᵥ (ℚᵖᵥ ⊗[𝒪ᵖᵥ] G)]
+    (fG : Additive (ℚᵖᵥ ⊗[𝒪ᵖᵥ] G →ₐ[ℚᵖᵥ] ℚᵖᵥᵃˡᵍ) →+[Field.absoluteGaloisGroup ℚᵖᵥ]
+      (((ρ.baseChange (R ⧸ I)).toLocal
+        hp.out.toHeightOneSpectrumRingOfIntegersRat).Space))
+    (hfG : Function.Bijective fG)
+    (e₀ : G) (he₀ : IsIdempotentElem e₀)
+    (hε₀ : Coalgebra.counit (R := 𝒪ᵖᵥ) e₀ = (1 : 𝒪ᵖᵥ))
+    (hprim₀ : ∀ x : G, IsIdempotentElem x → x * e₀ = 0 ∨ x * e₀ = e₀)
+    (hcomul₀ : Coalgebra.comul (R := 𝒪ᵖᵥ) e₀ * (e₀ ⊗ₜ[𝒪ᵖᵥ] e₀) =
+      e₀ ⊗ₜ[𝒪ᵖᵥ] e₀)
+    (σ : Field.absoluteGaloisGroup ℚᵖᵥ)
+    (hσ : σ ∈ localInertiaGroup hp.out.toHeightOneSpectrumRingOfIntegersRat) :
+    ∃ (ι : Type) (x : ι → ℚᵖᵥᵃˡᵍ ⊗[𝒪ᵖᵥ] G),
+      (∀ i, Coalgebra.counit (R := ℚᵖᵥᵃˡᵍ) (x i) = (1 : ℚᵖᵥᵃˡᵍ)) ∧
+      (∀ i, Coalgebra.comul (R := ℚᵖᵥᵃˡᵍ) (x i) *
+          (((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀) ⊗ₜ[ℚᵖᵥᵃˡᵍ] ((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀)) =
+        x i ⊗ₜ[ℚᵖᵥᵃˡᵍ] x i) ∧
+      (∀ y : ℚᵖᵥᵃˡᵍ ⊗[𝒪ᵖᵥ] G, y * ((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀) ∈
+        Algebra.adjoin ℚᵖᵥᵃˡᵍ (Set.range x)) ∧
+      (∀ i, Algebra.TensorProduct.map (σ.toAlgHom.restrictScalars 𝒪ᵖᵥ)
+        (AlgHom.id 𝒪ᵖᵥ G) (x i) = x i) :=
+  sorry
+
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
 /-- **The connected component of a hardly-ramified Hopf package is of
 multiplicative type: its points have unramified `μ`-coordinates**
-(sorry node, isolated 2026-07-25 — brick (c) of the μ-type/Raynaud
-coordination, the CITATION content of Raynaud 1974,
-*Schémas en groupes de type `(p, …, p)`*, Bull. SMF 102, 3.3.6, with
-Oort–Tate 1970 at order `p` and Serre, Duke 1987, §4.1): the
+(PROVEN 2026-07-25 over the SHARPENED citation
+`exists_grouplike_family_of_connected_hopf_package` above — brick (c) of
+the μ-type/Raynaud coordination; the classification input is Raynaud
+1974, *Schémas en groupes de type `(p, …, p)`*, Bull. SMF 102, §1.4 +
+Prop. 3.3.2 + Th. 3.4.1/Cor. 3.4.4 + Cor. 3.3.7, with Oort–Tate 1970 at
+order `p`, Tate's chapter in Cornell–Silverman–Stevens §4 and Serre,
+Duke 1987, §4.1): the
 connected component `Spec (G·e₀)` of the finite flat Hopf order `G` at
 `p`, for a hardly-ramified `ρ` whose local Jordan–Hölder factors are
 ONE-dimensional (the `hchar`/`fG` input), is of multiplicative type
@@ -1585,29 +1944,21 @@ and killed by `p ^ k`; equivalently, its geometric points admit a
 system of `μ_{p ^ k}`-valued COORDINATES `θ` on which the local
 inertia at `p` acts through the cyclotomic character alone.
 
-Concretely, the statement packages the character group `X` of the
-connected part: `X` is finite étale over `ℚᵖᵥ`, so — after the
-harmless finite unramified base change that splits it — the
-`ℚᵖᵥᵃˡᵍ`-Hopf algebra of `Spec (G·e₀)` is the group algebra of `X`,
-GENERATED by group-like elements `x` with `x ^ (p ^ k) = e₀`, and the
-`i`-th coordinate of a point `ψ` is `θ ψ i = ψ̃ (x i)`. The five
-clauses are exactly the properties that evaluation at group-likes has:
-
-* `θ 1 = 1`: the convolution unit is `algebraMap ∘ ε` and `ε x = 1`;
-* *root-of-unity values*: `(θ ψ i) ^ (p ^ k) = ψ̃ ((x i) ^ (p ^ k)) =
-  ψ̃ (e₀) = 1` for a CONNECTED `ψ`;
-* *convolution multiplicativity*: `θ (ψ₁ ⋆ ψ₂) i = θ ψ₁ i · θ ψ₂ i`,
-  by `AlgHom.convMul_apply` and the relative group-like identity
-  `Δ(x i) · (e₀ ⊗ e₀) = x i ⊗ x i` (the connectedness of `ψ₁, ψ₂`
-  supplies the value `1` of the pair on `e₀ ⊗ e₀`);
-* *separation*: the group-likes GENERATE the corner algebra, and a
-  connected point factors through the corner, so two connected points
-  agreeing on all `x i` are equal;
-* *unramifiedness*: the Galois action on `X` is UNRAMIFIED (the
-  Cartier dual of a connected multiplicative-type group is étale over
-  the henselian `ℤ_p`, and an extension of étale by étale is étale),
-  so the inertia element `σ` FIXES every `x i` and hence
-  `θ (σ • ψ) i = (σ • ψ)~ (x i) = σ (ψ̃ (x i)) = σ (θ ψ i)`.
+PROOF (2026-07-25): the coordinates are EVALUATION at the group-like
+generators of the corner, `θ ψ i = ψ̃ (x i)` for the `ℚᵖᵥᵃˡᵍ`-linear
+extension `ψ̃ = extendPoint ψ`, and all five clauses are formal
+consequences of the four cited properties of the group-like family
+supplied by `exists_grouplike_family_of_connected_hopf_package` — see
+`exists_grouplike_coordinates_of_grouplike_family` above, which does
+the whole derivation generically. In particular the root-of-unity
+clause needs NO exponent hypothesis on the group-likes: it follows from
+`θ (ψ ^ m) i = (θ ψ i) ^ m` (convolution-multiplicativity plus the
+PROVEN connectedness of convolution powers,
+`convPow_apply_one_of_comul_absorbs_p`) applied to the point's own
+order `ψ ^ (p ^ k) = 1`; and the equivariance clause is where the
+`σ`-invariance of the group-likes is spent, semilinearity of the
+extension (`apply_liftEquiv_eq_liftEquiv_map`) being what makes the
+two sides differ by exactly `(σ ⊗ id) (x i)` vs `x i`.
 
 SOUNDNESS (inherited from the consumer, do NOT weaken): the
 one-dimensionality input `hchar`/`fG` is not redundant — for the
@@ -1652,7 +2003,9 @@ Consumed by
 `connected_point_smul_eq_conv_pow_cyclotomicCharacter_of_hopf_package`
 below, together with the two PROVEN bricks
 `absoluteGalois_apply_eq_pow_of_cyclotomicCharacter_sub_mem` (a) and
-`convPow_apply_of_comul_absorbs` (b). -/
+`convPow_apply_of_comul_absorbs` (b); proven here over the single
+remaining sorried citation
+`exists_grouplike_family_of_connected_hopf_package` (c). -/
 theorem exists_grouplike_coordinates_of_connected_hopf_package
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
@@ -1694,8 +2047,25 @@ theorem exists_grouplike_coordinates_of_connected_hopf_package
         ψ₁ ((1 : ℚᵖᵥ) ⊗ₜ[𝒪ᵖᵥ] e₀) = 1 → ψ₂ ((1 : ℚᵖᵥ) ⊗ₜ[𝒪ᵖᵥ] e₀) = 1 →
         (∀ i, θ ψ₁ i = θ ψ₂ i) → ψ₁ = ψ₂) ∧
       (∀ ψ : ℚᵖᵥ ⊗[𝒪ᵖᵥ] G →ₐ[ℚᵖᵥ] ℚᵖᵥᵃˡᵍ, ψ ((1 : ℚᵖᵥ) ⊗ₜ[𝒪ᵖᵥ] e₀) = 1 →
-        ∀ i, θ (σ • ψ) i = σ (θ ψ i)) :=
-  sorry
+        ∀ i, θ (σ • ψ) i = σ (θ ψ i)) := by
+  classical
+  -- the CITED input: over `ℚᵖᵥᵃˡᵍ` the connected corner is the group
+  -- algebra of an inertia-fixed character group
+  obtain ⟨ι, x, hcount, hgl, hgen, hinv⟩ :=
+    exists_grouplike_family_of_connected_hopf_package hpodd hv hZinj hRinj hρ
+      χ₁ χ₂ hcont₁ hcont₂ hone₁ hone₂ hmul₁ hmul₂ hchar I hI G fG hfG e₀ he₀
+      hε₀ hprim₀ hcomul₀ σ hσ
+  -- the FORMAL half: evaluation at the group-likes is a `μ`-coordinate system
+  obtain ⟨θ, h1, h2, h3, h4, h5⟩ :=
+    exists_grouplike_coordinates_of_grouplike_family (K₀ := ℚᵖᵥ)
+      (L₀ := ℚᵖᵥᵃˡᵍ) e₀
+      (fun m ψ hψ => convPow_apply_one_of_comul_absorbs_p G e₀ hε₀ hcomul₀ ψ hψ m)
+      σ x hcount hgl hgen hinv
+  refine ⟨ι, θ, h1, fun ψ hψe hord i => h2 (p ^ k) ψ hψe hord i, h3, h4,
+    fun ψ hψe i => ?_⟩
+  have hsmul : σ • ψ = σ.toAlgHom.comp ψ := AlgHom.ext fun _ => rfl
+  rw [hsmul]
+  exact h5 ψ hψe i
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
@@ -1785,14 +2155,22 @@ group-like convolution evaluation, (c) the step-2/3 Raynaud
 classification with the one-dimensionality input as an explicit
 hypothesis.
 
-STATUS (2026-07-25): (a) and (b) are now PROVEN, generically, as
-`absoluteGalois_apply_eq_pow_of_cyclotomicCharacter_sub_mem` and
+STATUS (2026-07-25, second pass): (a) and (b) are PROVEN, generically,
+as `absoluteGalois_apply_eq_pow_of_cyclotomicCharacter_sub_mem` and
 `convPow_apply_of_comul_absorbs` above — both are stated over abstract
 data and are ready to move verbatim into a shared `GroupScheme` file
-when ModThree and Interface are cut over. (c) is the remaining sorried
-sub-leaf `exists_grouplike_coordinates_of_connected_hopf_package`,
-which carries the one-dimensionality input as explicit hypotheses
-exactly as coordinated. -/
+when ModThree and Interface are cut over; so are the three further
+generic bricks `convMul_apply_of_comul_absorbs`,
+`apply_liftEquiv_eq_liftEquiv_map` and
+`exists_grouplike_coordinates_of_grouplike_family` (with the definition
+`extendPoint`), which together turn a group-like family into the whole
+μ-coordinate package. (c) has been SHRUNK: the coordinate package
+`exists_grouplike_coordinates_of_connected_hopf_package` is now PROVEN,
+and the only sorried node left in this cluster is the purely structural
+classification statement `exists_grouplike_family_of_connected_hopf_package`
+— "over `ℚᵖᵥᵃˡᵍ` the connected corner is the group algebra of an
+inertia-fixed character group" — which carries the one-dimensionality
+input as explicit hypotheses exactly as coordinated. -/
 theorem connected_point_smul_eq_conv_pow_cyclotomicCharacter_of_hopf_package
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
@@ -4535,7 +4913,7 @@ member `1 ⊕ χ_cyc,ℓ` — built here over any topological `ℤ_ℓ`-algebra
 with continuous structure map, on any rank-2 carrier with a chosen
 basis. Its Frobenius characteristic polynomial at `q ≠ ℓ` is exactly
 `(X - 1)(X - q)` (PROVEN via `cyclotomicCharacter_adicArithFrob_natCast`),
-it is unramified at every `q ≠ ℓ` (sorry leaf
+it is unramified at every `q ≠ ℓ` (PROVEN, via
 `cyclotomicCharacter_eq_one_of_mem_localInertiaGroup_of_ne`:
 `μ_{ℓ^∞}/ℚ` is unramified away from `ℓ`), and over the concrete rings
 of integers it is hardly ramified (cyclotomic determinant and tameness
@@ -4682,10 +5060,15 @@ lemma cycDiagRep_apply {ℓ : ℕ} [Fact ℓ.Prime] {A : Type*} [CommRing A]
     cycDiagRep hcont b g = cycDiagEnd b (cycUnitChar ℓ A g) := rfl
 
 /-- **The `ℓ`-adic cyclotomic character dies on inertia away from `ℓ`**
-(sorry node; the arithmetic leaf of the explicit Eisenstein member): at
+(PROVEN 2026-07-25 by delegation to
+`Modularity.cyclotomicCharacter_map_eq_one_of_mem_localInertiaGroup` of
+`Fermat/FLT/Modularity/Interface.lean`, which is this statement in the
+same place spelling with the section prime `p` playing the role of `ℓ`
+and the inequality written `p ≠ q`): at
 a rational prime `q ≠ ℓ` the `ℓ`-adic cyclotomic character kills the
 image in `G_ℚ` of the local inertia at `q` — the extensions
-`ℚ_q(μ_{ℓ^n})/ℚ_q` are unramified for `q ≠ ℓ`. Intended proof: the
+`ℚ_q(μ_{ℓ^n})/ℚ_q` are unramified for `q ≠ ℓ`. Proof there (as
+anticipated here): the
 inertia analogue of the PROVEN Frobenius computation
 `adicArithFrob_rootsOfUnity_pow_of_ne` above, sharing all its
 infrastructure: an `ℓ^n`-th root of unity `ζ` is integral over the
@@ -4699,7 +5082,7 @@ element fixes the residue field of the integral closure, so it fixes
 `ℓ`-adic continuity (`PadicInt.ext_of_toZModPow`) concludes. This is
 the general-`(q, ℓ)` place-spelled form of the at-`2` statement
 `cyclotomicCharacter_eq_one_of_mem_inertia_two` above (which is
-spelled over `ℚ_[2]`/`Z2bar` instead and stays a separate leaf). -/
+spelled over `ℚ_[2]`/`Z2bar` instead and is separately PROVEN). -/
 theorem cyclotomicCharacter_eq_one_of_mem_localInertiaGroup_of_ne
     {ℓ q : ℕ} [Fact ℓ.Prime] (hq : q.Prime) (hqℓ : q ≠ ℓ)
     (σ : Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ
@@ -4708,7 +5091,8 @@ theorem cyclotomicCharacter_eq_one_of_mem_localInertiaGroup_of_ne
     cyclotomicCharacter (AlgebraicClosure ℚ) ℓ
       ((Field.absoluteGaloisGroup.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
         hq.toHeightOneSpectrumRingOfIntegersRat)) σ).toRingEquiv) = 1 :=
-  sorry
+  Modularity.cyclotomicCharacter_map_eq_one_of_mem_localInertiaGroup
+    (p := ℓ) hq (Ne.symm hqℓ) hσ
 
 /-- The Eisenstein member is unramified at every `q ≠ ℓ` (PROVEN over
 the arithmetic leaf `cyclotomicCharacter_eq_one_of_mem_localInertiaGroup_of_ne`:
@@ -4812,8 +5196,9 @@ theorem isFlatAt_cycDiagRep {ℓ : ℕ} [Fact ℓ.Prime]
       (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : ℓ.Prime)) :=
   sorry
 
-/-- **The Eisenstein member is hardly ramified** (PROVEN assembly over
-the two sorry leaves): over the ring of integers of a finite extension
+/-- **The Eisenstein member is hardly ramified** (PROVEN assembly; the
+one remaining sorry leaf below it is `isFlatAt_cycDiagRep`): over the
+ring of integers of a finite extension
 `L/ℚ_ℓ`, the diagonal member `1 ⊕ χ_cyc,ℓ` has cyclotomic determinant
 (`det diag(1, χ_cyc) = χ_cyc`, PROVEN), is unramified outside `{2, ℓ}`
 (PROVEN over the arithmetic leaf), flat at `ℓ` (sorry leaf

@@ -45,8 +45,11 @@ here. This file provides:
   class — Dirichlet's theorem over an arbitrary number-field base),
   itself PROVEN by Deuring's-route bookkeeping from
   `exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_ne` (the
-  Dedekind-zeta half, a remaining sorry leaf: the full degree-one prime
-  sum diverges as `s → 1⁺`) and
+  Dedekind-zeta half, now PROVEN: the full degree-one prime sum
+  diverges as `s → 1⁺`, by contradiction against the simple pole of
+  `ζ_F` — a uniform bound on the degree-one sum would, through the
+  square-times-squarefree decomposition and the exponential bound,
+  bound the whole ideal sum uniformly) and
   `tsum_rpow_neg_natCard_quotient_prime_and_ne_le_mul_tsum_add` (the
   `L`-function half: the congruence class of `τ` carries the full sum
   up to `ℓ ×` and a bounded error) — the latter now itself PROVEN by
@@ -122,10 +125,12 @@ here. This file provides:
   Weber dictionary bijection
   `natCard_setOf_isNarrowRayEquiv_eq_natCard_setOf_span_dvd`
   (`I ↦ I·J₀` onto principal ideals with congruence and positivity
-  conditions), from the single sorried geometric core
+  conditions), from the geometric core
   `exists_forall_exists_abs_natCard_span_dvd_sub_mul_le_rpow`, the
   translated-lattice generator count `κ₀·n + O(n^r)` of Lang VI §2
-  Thm 2 / §3 Thm 3), the equal-fiber norm-residue fibering
+  Thm 2 / §3 Thm 3 — itself now PROVEN, from the Davenport/Lipschitz
+  lattice-point count and the unit-fundamental-domain dictionary),
+  the equal-fiber norm-residue fibering
   `exists_forall_sum_card_absNorm_residue_eq_sum_natCard_isNarrowRayEquiv`
   (now itself fully PROVEN, self-contained: residue invariance on
   classes via the mod-`ℓ` determinant congruence and positivity of
@@ -146,30 +151,37 @@ here. This file provides:
   `finrank_le_natCard_setOf_under_eq_of_map_zeta_eq_pow` — complete
   splitting via the arithmetic Frobenius pinned by its action on `ζ`,
   trivial inertia away from `ℓ`, and the fundamental identity) and the
-  two still-sorried Mertens zeta-pole bounds
+  two Mertens zeta-pole bounds
   `exists_forall_tsum_rpow_neg_natCard_quotient_prime_and_ne_le_log_add`
   and
-  `exists_forall_log_le_tsum_rpow_neg_natCard_quotient_prime_and_ne_add`))
+  `exists_forall_log_le_tsum_rpow_neg_natCard_quotient_prime_and_ne_add`
+  — both now PROVEN, in each direction by splitting `(1, 2]` at the
+  pole window `exists_forall_sub_one_mul_tsum_mem_Ioo` and converting
+  `log ζ_K(s)` into the prime sum through the Euler exp-identity, with
+  the discrepancy absorbed by the uniformly bounded square tail))
   and
   `exists_forall_le_norm_LSeries_near_one` (`L` bounded away from `0`
   just right of `1`: the `L(1,χ) ≠ 0` half — now itself DERIVED,
   through the PROVEN dominated-convergence continuation
   `tendsto_LSeries_nhdsGT_one_of_forall_norm_sum_le` and
   `lSeriesSummable_dirichletCharacter_mul_card`, from the same
-  counting core plus the sorried arithmetic core
+  counting core plus the arithmetic core
   `integral_sum_dirichletCharacter_mul_card_cpow_neg_two_ne_zero`,
-  the nonvanishing of the continued value at `1` by the classical
-  zeta-factorization argument)); the L-function half thus rests on
-  exactly SEVEN sorried leaves — the three geometric/finiteness
-  leaves behind the per-narrow-ray-class Weber count (listed above),
-  the `existsUnique` finiteness leaf behind the fibering, the two
-  Mertens leaves behind the Frobenius realization, all under the
-  Weber counting theorem
-  `exists_forall_abs_sum_card_absNorm_residue_sub_mul_le_rpow`, and
-  the arithmetic core
-  `integral_sum_dirichletCharacter_mul_card_cpow_neg_two_ne_zero`;
-  see their docstrings for the intended proofs and the exact state
-  of the mathlib pin.
+  the nonvanishing of the continued value at `1` — itself now PROVEN,
+  not by the classical zeta-factorization argument but by playing the
+  coset-cancelled upper bound
+  `exists_forall_sum_re_tsum_neg_log_le_of_integral_eq_zero` against
+  the split-class divergence
+  `exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_one`)). **The
+  whole chain above is now PROVEN: this file contains no `sorry`.**
+  Every leaf that earlier docstrings and this header once listed as
+  open — the three geometric/finiteness leaves behind the
+  per-narrow-ray-class Weber count, the `existsUnique` finiteness leaf
+  behind the fibering, the two Mertens leaves behind the Frobenius
+  realization, and the arithmetic core — has since been discharged;
+  see each declaration's own docstring for the route actually taken.
+  Do not harvest task lists from prose in this file that reads as a
+  gap: check the source.
 
 The remaining pieces of the decomposition (Brauer–Nesbitt for
 2-dimensional mod-`ℓ` representations, the mod-`ℓ` cyclotomic character as
@@ -1037,9 +1049,10 @@ theorem tsum_pow_div_factorial_ne_top (S : ℝ≥0∞) (hS : S ≠ ⊤) :
     (fun k => by positivity) (Real.summable_pow_div_factorial S.toReal)]
   exact ENNReal.ofReal_ne_top
 
-/-- **Exponential bound for sums of products over finite subsets**
-(sorry leaf): for any family `x : ι → ℝ≥0∞`,
-`∑_{T : Finset ι} ∏_{i ∈ T} x i ≤ ∑_k (∑ x)^k / k!`. Intended proof:
+/-- **Exponential bound for sums of products over finite subsets**:
+for any family `x : ι → ℝ≥0∞`,
+`∑_{T : Finset ι} ∏_{i ∈ T} x i ≤ ∑_k (∑ x)^k / k!`. PROVEN, by the
+route sketched here:
 fibre the left side over `k = #T`; each `T` with `#T = k` arises from
 exactly `k!` injections `Fin k ↪ ι` (with `∏_{j} x (f j) = ∏_{i ∈ T} x i`
 for any injection with image `T`), and the sum over ALL functions
@@ -1328,7 +1341,8 @@ theorem tsum_not_prime_natCard_rpow_neg_one_ne_top
   exact ENNReal.mul_ne_top (ENNReal.natCast_ne_top _) ENNReal.ofReal_ne_top
 
 open IsDedekindDomain in
-/-- **Square-times-squarefree decomposition** (sorry leaf): every
+/-- **Square-times-squarefree decomposition** — PROVEN, by the route
+sketched here: every
 nonzero ideal `I` of `𝓞 F` factors as `I = J ^ 2 * ∏_{P ∈ T} P.asIdeal`
 with `J ≠ ⊥` and `T` a finite set of finite places (halve each exponent
 in the prime factorization; `T` collects the odd exponents), and `I` is
@@ -1635,8 +1649,8 @@ theorem exists_one_lt_lt_tsum_rpow_neg_absNorm (F : Type*) [Field F]
   exact absurd hle (not_le.mpr (NumberField.dedekindZeta_residue_pos F))
 
 open IsDedekindDomain in
-/-- **Divergence of the degree-one prime sum of a number field** (sorry
-node) — the Dedekind-zeta half of Deuring's route: for a number field
+/-- **Divergence of the degree-one prime sum of a number field**
+(PROVEN) — the Dedekind-zeta half of Deuring's route: for a number field
 `F` and any excluded residue characteristic `ℓ`, the `ℝ≥0∞`-valued sum
 `∑ #(𝓞 F / P) ^ (-s)` over the finite places `P` of `F` with prime
 residue cardinality (degree one over `ℚ`) different from `ℓ` exceeds
@@ -3850,7 +3864,7 @@ open MeasureTheory in
 set_option maxHeartbeats 400000 in
 /-- **Translated-lattice point counting in Lipschitz-bounded dilated
 domains, with power-saving error** (DECOMPOSED 2026-07-24 into the two
-sorry leaves above — the Davenport sandwich
+lemmas above, both since PROVEN — the Davenport sandwich
 `abs_natCard_sub_measureReal_div_le_natCard_inter_frontier` (count vs
 volume, error at the boundary cells) and the Lipschitz boundary-cell
 estimate `exists_forall_natCard_inter_vadd_smul_lipschitz_le_pow`
@@ -4660,7 +4674,7 @@ theorem frontier_setOf_arg_mem_Ico_subset_union_span (α : ℝ) :
 
 open scoped Pointwise in
 open NumberField in
-/-- **Unit-coset transversal with torsion sector** (sorry leaf) — the
+/-- **Unit-coset transversal with torsion sector** (PROVEN) — the
 construction half of the unit fundamental domain: a finite set `R` of
 units, a measurable positivity/sector cut `X`, and finitely many proper
 subspaces `W i` controlling `frontier X`, such that every totally
@@ -4668,7 +4682,7 @@ positive point of the mixed space of nonzero norm has EXACTLY ONE
 multiple `u • x` inside `(⋃ c ∈ R, c • fundamentalCone F) ∩ X` by a
 totally positive unit `u ≡ 1 mod ℓ`.
 
-Intended construction (Lang VI §3). Let `G = (𝓞 F)ˣ`,
+The construction carried out below, following Lang VI §3. Let `G = (𝓞 F)ˣ`,
 `U = {u ∈ G | u totally positive, u ≡ 1 mod ℓ}` — the kernel of
 `G → {±1}^{r₁} × ((𝓞 F)/ℓ)ˣ`, hence of FINITE INDEX — `T` the torsion
 subgroup, `T_U = T ∩ U` (cyclic, of some order `m`). For any `x` with
@@ -5601,7 +5615,7 @@ theorem exists_fundamentalDomain_forall_natCard_span_dvd_eq_natCard_add_mem_smul
 open scoped Classical Pointwise nonZeroDivisors in
 open NumberField MeasureTheory in
 /-- **Weber's translated-lattice generator count** (DECOMPOSED
-2026-07-24 into the two sorry leaves above — the analytic
+2026-07-24 into the two lemmas above, both since PROVEN — the analytic
 translated-lattice count with power-saving error
 `exists_forall_abs_natCard_add_mem_smul_sub_mul_le_pow` (Lang VI §2
 Thm 2, Davenport/Lipschitz) and the unit-fundamental-domain
@@ -10123,13 +10137,13 @@ theorem exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_one
 
 open IsDedekindDomain in
 /-- **Coset-cancelled upper bound for the sum of prime log-sums under
-the assumed vanishing** (sorry leaf) — the upper-bound half of the
+the assumed vanishing** (PROVEN) — the upper-bound half of the
 zeta-factorization argument: if the continued value of `L(s, χ)` at
 `s = 1` vanishes, then `∑_{j<ℓ-1} Re 𝒮_{χ^j}(s)`, which is
 `log ∏_j ‖L(s, χ^j)‖` by the Euler identity
 `exp_tsum_neg_log_one_sub_dirichletCharacter_mul_cpow_neg_eq_LSeries`,
 is bounded above on a right neighbourhood `(1, 1 + η]` of `1`.
-Intended proof (see the section docstring): factors with `χ^j` trivial
+Proof, as carried out below (see also the section docstring): factors with `χ^j` trivial
 on the norm-residue image share the trivial character's `L`-series
 (`LSeries_dirichletCharacter_mul_card_congr`), each
 `≤ C/(s-1)` (`exists_forall_norm_LSeries_dirichletCharacter_mul_card_le_div`);
@@ -10344,20 +10358,25 @@ theorem exists_forall_sum_re_tsum_neg_log_le_of_integral_eq_zero
 
 open IsDedekindDomain in
 /-- **Nonvanishing of the continued twisted `L`-value at `s = 1`**
-(sorry leaf) — the arithmetic core of `L(1, χ) ≠ 0`, isolated from all
+(PROVEN) — the arithmetic core of `L(1, χ) ≠ 0`, isolated from all
 continuation analysis: the extended value
 `∫_{t > 1} A(⌊t⌋)·t^{-2}` of the twisted ideal `L`-series at `s = 1`
 (`A(n) = ∑_{k ≤ n} χ(k)·#{I : N(I) = k}`, the continuation supplied by
 `tendsto_LSeries_nhdsGT_one_of_forall_norm_sum_le`) is nonzero, for
-`χ mod ℓ` nontrivial on the image of `Gal(E/F)`. Intended proof: the
-classical factorization argument over the fixed field `E'` of
-`ker(χ|_{Gal(E/F)})`: `ζ_{E'}(s) = ζ_F(s)·∏_ψ L(s, ψ)·(finitely many
-ramified Euler corrections)`; were the continued value `0`, the simple
-pole of `ζ_F` at `1` (`NumberField.tendsto_sub_one_mul_dedekindZeta_nhdsGT`,
-`NumberField.dedekindZeta_residue_pos`, both in the pin) would be
-cancelled by the zero, keeping `ζ_{E'}` bounded as `s → 1⁺`,
-contradicting its own divergence (the zeta-half divergence machinery
-proven in this file: `exists_one_lt_lt_tsum_rpow_neg_absNorm`). -/
+`χ mod ℓ` nontrivial on the image of `Gal(E/F)`. PROVEN — not by the
+classical zeta-factorization over the fixed field of
+`ker(χ|_{Gal(E/F)})`, which the earlier docstring proposed, but by the
+sharper contradiction that keeps everything inside `F`. Assume the
+value is `0`. The coset-cancelled upper bound
+`exists_forall_sum_re_tsum_neg_log_le_of_integral_eq_zero` then caps
+`∑_{j<ℓ-1} Re 𝒮_{χ^j}(s)` by a constant `K` on a right window
+`(1, 1+η]`; since that total dominates `(ℓ-1)` times the real sum over
+the split class (`mul_tsum_rpow_neg_le_sum_re_tsum_neg_log`), the
+split-class sum is `≤ K/(ℓ-1)` throughout the window. But
+`exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_one` makes that
+same split-class sum exceed `K/(ℓ-1)` at some `s₀ > 1`, and shrinking
+the exponent to `s = min s₀ (1+η)` only enlarges the `ℝ≥0∞`-sum, so
+the two meet inside the window — contradiction. -/
 theorem integral_sum_dirichletCharacter_mul_card_cpow_neg_two_ne_zero
     {F : Type*} [Field F] [NumberField F] {E : Type*} [Field E] [NumberField E]
     [Algebra F E] {ℓ : ℕ} (hℓ : ℓ.Prime) [IsCyclotomicExtension {ℓ} F E]
@@ -11622,8 +11641,8 @@ the bounded error is additive — no `ENNReal` subtraction.
 
 DERIVED from the pairwise-comparison leaf
 `tsum_rpow_neg_natCard_quotient_prime_and_map_zeta_eq_pow_le_tsum_add`
-(the remaining analytic sorry node; see its docstring) by Frobenius
-bookkeeping, all proven: every degree-one `P` with `#(𝓞 F / P) ≠ ℓ`
+(itself PROVEN, by Dirichlet-character orthogonality; see its
+docstring) by Frobenius bookkeeping: every degree-one `P` with `#(𝓞 F / P) ≠ ℓ`
 lies in the congruence class of some `σ ∈ Gal(E/F)`
 (`exists_algEquiv_map_zeta_eq_pow_natCard`), so the full sum is at most
 `∑_{σ ∈ Gal(E/F)}` of the class sums (`ENNReal.tsum_iUnion_le` —
@@ -11778,10 +11797,11 @@ primes of `E`, no Galois action on ideals appear: this is pure prime
 counting in `F`, the exact content of Dirichlet's theorem for the base
 `F`.
 
-DERIVED from the Dirichlet-density divergence leaf
+DERIVED from the Dirichlet-density divergence statement
 `exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_map_zeta_eq_pow`
-(the remaining analytic sorry node; see its docstring for the state of
-the mathlib pin): a finite class would have its `ℝ≥0∞`-valued Dirichlet
+(itself PROVEN, by Deuring's-route bookkeeping from the Dedekind-zeta
+half and the `L`-function half; see its docstring): a finite class
+would have its `ℝ≥0∞`-valued Dirichlet
 sum bounded by its cardinality (every term `#(𝓞 F / P) ^ (-s)` is at
 most `1`), contradicting unboundedness. -/
 theorem infinite_setOf_natCard_quotient_prime_and_map_zeta_eq_pow

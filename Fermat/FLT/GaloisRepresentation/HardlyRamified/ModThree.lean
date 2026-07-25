@@ -6315,8 +6315,115 @@ theorem exists_local_pow_inertia_eq_bot
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
-/-- **The Serre different numerology of a subextension** (sorry node,
-created 2026-07-24 — steps (a)+(b) of the decomposition of
+/-- **The local Serre different formula, upper-bound half** (sorry
+node, created 2026-07-25 — step (a) of the decomposition of
+`card_inertia_inf_fixingSubgroup_mul_add_sum_le_sum_card_inertia`
+below; Serre, *Corps Locaux* IV §1 Prop. 4, `≤` direction, in the
+COMPLETE local setting): for a finite Galois `L/ℚ₃ᵥ` whose
+lower-numbering filtration `G_i = inertia(𝔪_L^(i+1))` is already
+trivial at level `n` (`hn : G_n = ⊥`, supplied by
+`exists_local_pow_inertia_eq_bot`), every exponent `e` with
+`𝔪_L^e ∣ 𝔡_{𝒪_L/𝒪₃ᵥ}` obeys `e ≤ Σ_{i<n}(g_i − 1)`, `g_i = #G_i` —
+i.e. `v_L(𝔡_{L/ℚ₃ᵥ}) ≤ Σ_{i≥0}(g_i − 1)`, the sum terminating at `n`
+because all higher terms are `1 − 1 = 0`.  Intended proof: the
+complete-local transplant of the PROVEN GLOBAL
+`le_sum_card_inertia_pow_of_pow_dvd_differentIdeal` of the
+`DifferentTransport` section above.  The local case is STRICTLY
+EASIER than the global one it copies: monogenicity `𝒪_L = 𝒪₃ᵥ[θ]` is
+automatic for a complete DVR with finite residue field (Hensel-lift a
+generator of the residue extension and correct by a uniformizer —
+Serre III §6 Prop. 12 without the CRT-against-conjugate-primes and
+pigeonhole-for-primitivity gymnastics the global argument needs, since
+there is only ONE prime), so the conductor is trivial and the
+different is exactly `(f'(θ))` (`conductor_mul_differentIdeal`);
+`f'(θ) = ∏_{σ≠1}(θ − σθ)` is
+`aeval_derivative_minpoly_eq_prod_sub_smul` transplanted; each factor
+lies in `𝔪_L` to order at most `#{i < n : σ ∈ G_i}` because a
+congruence `σθ ≡ θ (mod 𝔪_L^(i+1))` propagates to all of `𝒪_L`
+(`mem_inertia_pow_of_smul_sub_mem_of_dense`, whose density hypothesis
+is here the monogenicity itself) and `G_n = ⊥`; and the double count
+`sum_card_filter_inertia_eq` converts `Σ_{σ≠1} #{i<n : σ ∈ G_i}` into
+`Σ_{i<n}(g_i − 1)`. -/
+theorem le_sum_card_inertia_sub_one_of_pow_dvd_local_differentIdeal
+    (L : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ L]
+    [IsGalois ℚ₃ᵥ L]
+    (n : ℕ)
+    (hn : (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ (n + 1)).inertia
+      (L ≃ₐ[ℚ₃ᵥ] L) = ⊥)
+    (e : ℕ)
+    (he : IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ e ∣
+      differentIdeal 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ L)) :
+    e ≤ ∑ i ∈ Finset.range n,
+      (Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ (i + 1)).inertia
+        (L ≃ₐ[ℚ₃ᵥ] L)) - 1) := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **The local Serre different formula, divisibility half, through a
+subextension tower** (sorry node, created 2026-07-25 — step (b) of the
+decomposition of
+`card_inertia_inf_fixingSubgroup_mul_add_sum_le_sum_card_inertia`
+below; Serre, *Corps Locaux* IV §1 Prop. 4 (`≥` direction) together
+with III §4 Prop. 8 (transitivity of the different) and I §4 Prop. 10
+(tower multiplicativity of `e`)): writing `H = Gal(L/M)` for the
+fixing subgroup of the reified `M' = comap L.val M` inside
+`Gal(L/ℚ₃ᵥ)` and `h_i = #(G_i ⊓ H)` — by Serre IV §1 Prop. 2 this
+INTERSECTION *is* the lower filtration of `H`, no transport needed
+with the `inertia` spelling — the different of `L/ℚ₃ᵥ` is divisible by
+`𝔪_L^(h₀·d + Σ_{i<n}(h_i − 1))` as soon as `𝔪_M^d ∣ 𝔡_{𝒪_M/𝒪₃ᵥ}`.
+This packages the whole `≥` half of the numerology: (i)
+`𝔪_L^(Σ_{i<n}(h_i − 1)) ∣ 𝔡_{𝒪_L/𝒪_{M'}}`, the RELATIVE Serre formula,
+i.e. the complete-local transplant of the PROVEN global
+`pow_sum_card_inertia_dvd_differentIdeal` applied to the Galois
+extension `L/M'`, whose lower filtration is `G_i ⊓ H`; (ii)
+`𝔪_{M'}^d ∣ 𝔡_{𝒪_{M'}/𝒪₃ᵥ}`, the transport of `hd` along the
+`𝒪₃ᵥ`-algebra isomorphism `𝒪_M ≃ₐ 𝒪_{M'}` built from `reifyEquiv` (the
+same `jO` construction used in
+`maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup` of
+`LocalInertiaFixedField`, here additionally needing that `differentIdeal`
+is invariant under an algebra isomorphism of the top ring);
+(iii) `(𝔪_{M'}).map (algebraMap 𝒪_{M'} 𝒪_L) = 𝔪_L^{h₀}`, i.e.
+`e_{L/M} = h₀` — `card_inertia_intermediate` of
+`LocalInertiaFixedField` (through the `fixingSubgroupEquiv` upgrade
+already PROVEN in
+`card_inertia_inf_fixingSubgroup_mul_ramificationIdx'_eq_card_inertia`)
+plus the DVR identity `p·𝒪_L = 𝔪_L^{e(p)}` — so the extended ideal
+`(𝔡_{𝒪_{M'}/𝒪₃ᵥ}).map` is divisible by `𝔪_L^{h₀·d}`; and (iv)
+mathlib's `differentIdeal_eq_differentIdeal_mul_differentIdeal` for the
+tower `𝒪₃ᵥ ⊆ 𝒪_{M'} ⊆ 𝒪_L` multiplies (i) and (iii) into the claim. -/
+theorem pow_card_inertia_inf_mul_add_sum_dvd_local_differentIdeal
+    (L : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ L]
+    [IsGalois ℚ₃ᵥ L]
+    (M : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ M]
+    (hML : M ≤ L)
+    (n : ℕ)
+    (hn : (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ (n + 1)).inertia
+      (L ≃ₐ[ℚ₃ᵥ] L) = ⊥)
+    (d : ℕ)
+    (hd : IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M) ^ d ∣
+      differentIdeal 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ M)) :
+    IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^
+      (Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L)).inertia
+          (L ≃ₐ[ℚ₃ᵥ] L) ⊓ (IntermediateField.comap L.val M).fixingSubgroup) * d +
+        ∑ i ∈ Finset.range n,
+          (Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ (i + 1)).inertia
+            (L ≃ₐ[ℚ₃ᵥ] L) ⊓
+            (IntermediateField.comap L.val M).fixingSubgroup) - 1)) ∣
+      differentIdeal 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ L) := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **The Serre different numerology of a subextension** (DECOMPOSED
+2026-07-25 into the two sorry leaves directly above — the upper-bound
+half `le_sum_card_inertia_sub_one_of_pow_dvd_local_differentIdeal` and
+the divisibility half
+`pow_card_inertia_inf_mul_add_sum_dvd_local_differentIdeal` — with the
+`ℕ` bookkeeping that combines them PROVEN here; created 2026-07-24 as
+steps (a)+(b) of the decomposition of
 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`,
 PURE local class field theory; Serre, *Corps Locaux* IV §1 Prop. 4 and
 III §4 Prop. 8): for a finite Galois `L/ℚ₃ᵥ`, a subextension `M ≤ L`
@@ -6330,20 +6437,16 @@ reification `IntermediateField.comap L.val M`) and
 this INTERSECTION *is* the lower filtration of `H`, no transport
 needed), one has `h₀·v_M(𝔡_{M/ℚ₃}) = Σ_{i=0}^{n}(g_i − h_i)`; since
 `𝔪_M^d ∣ 𝔡_{M/ℚ₃}` gives `d ≤ v_M(𝔡_{M/ℚ₃})` in the DVR `𝒪_M`, this
-yields the truncation-free inequality stated here.  Intended proof:
-(a) the two Galois different formulas `v_L(𝔡_{L/ℚ₃}) = Σ_{i≥0}(g_i−1)`
-and `v_L(𝔡_{L/M}) = Σ_{i≥0}(h_i−1)` (Serre IV §1 Prop. 4; both sums
-terminate at `n` by `hn`, all higher terms being `1 − 1 = 0`) — prove
-them by the `DifferentTransport` master-generator technique
-(`aeval_derivative_minpoly_eq_prod_sub_smul`, `sum_card_filter_inertia_eq`,
-`pow_sum_card_inertia_dvd_differentIdeal`) transplanted to the complete
-local setting, where the monogenicity `𝒪_L = 𝒪_M[x]` is automatic
-(finite residue fields); (b) transitivity of the different
-`𝔡_{L/ℚ₃} = 𝔡_{L/M}·𝔡_{M/ℚ₃}𝒪_L` (mathlib's
-`differentIdeal_mul_differentIdeal`-style tower formula over
-`𝒪₃ᵥ ⊆ 𝒪_M ⊆ 𝒪_L`) together with `v_L = e_{L/M}·v_M` on ideals
-extended from `𝒪_M` and `e_{L/M} = h₀` (`card_inertia_intermediate` of
-`LocalInertiaFixedField`). -/
+yields the truncation-free inequality stated here.  Proof AS WRITTEN:
+the divisibility half supplies
+`𝔪_L^(h₀·d + Σ_{i<n}(h_i − 1)) ∣ 𝔡_{L/ℚ₃ᵥ}` and the upper-bound half
+turns that exponent into
+`h₀·d + Σ_{i<n}(h_i − 1) ≤ Σ_{i<n}(g_i − 1)`; the two truncated sums
+of the STATEMENT are the `(· − 1)`-shifted ones plus `n + 1`, because
+every level is nonempty (`Nat.card_pos`, whence
+`Σ_{i<n} c_i = Σ_{i<n}(c_i − 1) + n`) and the top level `i = n`
+contributes `g_n = h_n = 1` by `hn` (`⊥ ⊓ H = ⊥`,
+`Subgroup.card_bot`) — so `omega` closes the goal. -/
 theorem card_inertia_inf_fixingSubgroup_mul_add_sum_le_sum_card_inertia
     (L : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ L]
     [IsGalois ℚ₃ᵥ L]
@@ -6363,13 +6466,55 @@ theorem card_inertia_inf_fixingSubgroup_mul_add_sum_le_sum_card_inertia
       ∑ i ∈ Finset.range (n + 1),
         Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ (i + 1)).inertia
           (L ≃ₐ[ℚ₃ᵥ] L)) := by
-  sorry
+  classical
+  -- the divisibility half, then the upper-bound half applied to its exponent
+  have hdvd := pow_card_inertia_inf_mul_add_sum_dvd_local_differentIdeal
+    L M hML n hn d hd
+  have hle := le_sum_card_inertia_sub_one_of_pow_dvd_local_differentIdeal
+    L n hn _ hdvd
+  -- the top level `i = n` contributes `1` to both sums
+  have hgn : Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^
+      (n + 1)).inertia (L ≃ₐ[ℚ₃ᵥ] L)) = 1 := by rw [hn, Subgroup.card_bot]
+  have hhn : Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^
+      (n + 1)).inertia (L ≃ₐ[ℚ₃ᵥ] L) ⊓
+      (IntermediateField.comap L.val M).fixingSubgroup) = 1 := by
+    rw [hn, bot_inf_eq, Subgroup.card_bot]
+  -- a sum of positive naturals exceeds its `(· − 1)`-shift by the length
+  have key : ∀ (F : ℕ → ℕ), (∀ i, 0 < F i) → ∀ m : ℕ,
+      ∑ i ∈ Finset.range m, F i = (∑ i ∈ Finset.range m, (F i - 1)) + m := by
+    intro F hF m
+    induction m with
+    | zero => simp
+    | succ k ih =>
+      rw [Finset.sum_range_succ, Finset.sum_range_succ, ih]
+      have := hF k
+      omega
+  have hgsplit : ∑ i ∈ Finset.range n,
+      Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ (i + 1)).inertia
+        (L ≃ₐ[ℚ₃ᵥ] L)) =
+      (∑ i ∈ Finset.range n,
+        (Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ (i + 1)).inertia
+          (L ≃ₐ[ℚ₃ᵥ] L)) - 1)) + n :=
+    key _ (fun _ => Nat.card_pos) n
+  have hhsplit : ∑ i ∈ Finset.range n,
+      Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ (i + 1)).inertia
+        (L ≃ₐ[ℚ₃ᵥ] L) ⊓ (IntermediateField.comap L.val M).fixingSubgroup) =
+      (∑ i ∈ Finset.range n,
+        (Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ (i + 1)).inertia
+          (L ≃ₐ[ℚ₃ᵥ] L) ⊓
+          (IntermediateField.comap L.val M).fixingSubgroup) - 1)) + n :=
+    key _ (fun _ => Nat.card_pos) n
+  -- peel the top level off both sums and finish by linear arithmetic
+  set P : ℕ := Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L)).inertia
+    (L ≃ₐ[ℚ₃ᵥ] L) ⊓ (IntermediateField.comap L.val M).fixingSubgroup) * d with hPdef
+  rw [Finset.sum_range_succ, Finset.sum_range_succ, hgn, hhn]
+  omega
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
 /-- **Multiplicativity of the ramification index in the tower
-`ℚ₃ᵥ ⊆ M ⊆ L`, in inertia form** (sorry node, created 2026-07-24 —
+`ℚ₃ᵥ ⊆ M ⊆ L`, in inertia form** (PROVEN 2026-07-25 —
 step (b′) of the decomposition of
 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`;
 Serre, *Corps Locaux* I §4 Prop. 10 / Neukirch II (6.8)): with
@@ -6382,10 +6527,14 @@ second applied to the intermediate field
 `IntermediateField.comap L.val M` of `↥L`, whose integral closure is
 identified with `IntegralClosure 𝒪₃ᵥ M` along `reifyEquiv`); the
 identification `G_0 ⊓ H = ` (image of) `inertia(𝔪_L)` inside
-`Gal(L/M)` is `AddSubgroup.inertia_map_subtype`, and the tower
+`Gal(L/M)` is the `fixingSubgroupEquiv` upgrade of an inertia element
+(the two actions have the same underlying function), and the tower
 multiplicativity of `Ideal.ramificationIdx'` in the chain of DVRs
-`𝒪₃ᵥ ⊆ 𝒪_M ⊆ 𝒪_L` is `Ideal.ramificationIdx_algebra_tower` in the
-`ramificationIdx'` spelling. -/
+`𝒪₃ᵥ ⊆ 𝒪_{M'} ⊆ 𝒪_L` is `Ideal.ramificationIdx'_algebra_tower'`;
+the passage from the reified `M' = comap L.val M` back to `M` is the
+`jO` transport of `ramificationIdx'` along `reifyEquiv`
+(`Ideal.ramificationIdx'_comap_eq`), exactly as in
+`maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup`. -/
 theorem card_inertia_inf_fixingSubgroup_mul_ramificationIdx'_eq_card_inertia
     (L : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ L]
     [IsGalois ℚ₃ᵥ L]
@@ -6397,7 +6546,190 @@ theorem card_inertia_inf_fixingSubgroup_mul_ramificationIdx'_eq_card_inertia
         (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M)) =
       Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L)).inertia
         (L ≃ₐ[ℚ₃ᵥ] L)) := by
-  sorry
+  classical
+  -- STEP A: the intersection `G_0 ⊓ H` counts the inertia over `M'`
+  have hA : Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ ↥L)).inertia
+      (↥L ≃ₐ[ℚ₃ᵥ] ↥L) ⊓ (IntermediateField.comap L.val M).fixingSubgroup) =
+      Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ ↥L)).inertia
+        (↥L ≃ₐ[↥(IntermediateField.comap L.val M)] ↥L)) := by
+    refine Nat.card_congr ?_
+    refine
+      { toFun := fun σ =>
+          ⟨IntermediateField.fixingSubgroupEquiv (IntermediateField.comap L.val M)
+            ⟨σ.1, (Subgroup.mem_inf.mp σ.2).2⟩, ?_⟩
+        invFun := fun ρ =>
+          ⟨(((IntermediateField.fixingSubgroupEquiv
+              (IntermediateField.comap L.val M)).symm ρ.1 :
+              (IntermediateField.comap L.val M).fixingSubgroup) : ↥L ≃ₐ[ℚ₃ᵥ] ↥L),
+            Subgroup.mem_inf.mpr ⟨?_,
+              ((IntermediateField.fixingSubgroupEquiv
+                (IntermediateField.comap L.val M)).symm ρ.1).2⟩⟩
+        left_inv := ?_
+        right_inv := ?_ }
+    · refine AddSubgroup.mem_inertia.mpr fun x => ?_
+      have h1 := AddSubgroup.mem_inertia.mp (Subgroup.mem_inf.mp σ.2).1 x
+      have h2 : (IntermediateField.fixingSubgroupEquiv (IntermediateField.comap L.val M)
+          ⟨σ.1, (Subgroup.mem_inf.mp σ.2).2⟩ :
+          ↥L ≃ₐ[↥(IntermediateField.comap L.val M)] ↥L) • x = σ.1 • x := by
+        apply Subtype.ext
+        rfl
+      rw [h2]
+      exact h1
+    · refine AddSubgroup.mem_inertia.mpr fun x => ?_
+      have hρ := AddSubgroup.mem_inertia.mp ρ.2 x
+      have h2 : ((((IntermediateField.fixingSubgroupEquiv
+          (IntermediateField.comap L.val M)).symm ρ.1 :
+          (IntermediateField.comap L.val M).fixingSubgroup) : ↥L ≃ₐ[ℚ₃ᵥ] ↥L)) • x =
+          ρ.1 • x := by
+        apply Subtype.ext
+        show ((((IntermediateField.fixingSubgroupEquiv
+            (IntermediateField.comap L.val M)).symm ρ.1 :
+            (IntermediateField.comap L.val M).fixingSubgroup) : ↥L ≃ₐ[ℚ₃ᵥ] ↥L)) x.1 =
+            (ρ.1 : ↥L ≃ₐ[↥(IntermediateField.comap L.val M)] ↥L) x.1
+        have h3 := (IntermediateField.fixingSubgroupEquiv
+          (IntermediateField.comap L.val M)).apply_symm_apply ρ.1
+        exact congrFun (congrArg (fun (g : ↥L ≃ₐ[↥(IntermediateField.comap L.val M)] ↥L) =>
+          (g : ↥L → ↥L)) h3) x.1
+      rw [h2]
+      exact hρ
+    · intro σ
+      refine Subtype.ext ?_
+      have h3 := (IntermediateField.fixingSubgroupEquiv
+        (IntermediateField.comap L.val M)).symm_apply_apply
+        ⟨σ.1, (Subgroup.mem_inf.mp σ.2).2⟩
+      exact congrArg (fun (y : (IntermediateField.comap L.val M).fixingSubgroup) =>
+        (y : ↥L ≃ₐ[ℚ₃ᵥ] ↥L)) h3
+    · intro ρ
+      exact Subtype.ext ((IntermediateField.fixingSubgroupEquiv
+        (IntermediateField.comap L.val M)).apply_symm_apply ρ.1)
+  -- STEP B: `|I(𝔪_L / Gal(L/M'))| = e(𝔪_{M'} at 𝔪_L)`
+  have hB := card_inertia_intermediate
+    Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat ↥L
+    (IntermediateField.comap L.val M)
+  -- STEP C: tower multiplicativity `e(𝔪ᵥ, 𝔪_L) = e(𝔪ᵥ, 𝔪_{M'})·e(𝔪_{M'}, 𝔪_L)`
+  haveI hlies : (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ ↥L)).LiesOver
+      (IsLocalRing.maximalIdeal
+        (IntegralClosure 𝒪₃ᵥ ↥(IntermediateField.comap L.val M))) := by
+    constructor
+    haveI : Algebra.IsIntegral
+        (IntegralClosure 𝒪₃ᵥ ↥(IntermediateField.comap L.val M))
+        (IntegralClosure 𝒪₃ᵥ ↥L) :=
+      Algebra.IsIntegral.tower_top (R := 𝒪₃ᵥ)
+    have hmax : ((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ ↥L)).comap
+        (algebraMap (IntegralClosure 𝒪₃ᵥ ↥(IntermediateField.comap L.val M))
+          (IntegralClosure 𝒪₃ᵥ ↥L))).IsMaximal :=
+      Ideal.isMaximal_comap_of_isIntegral_of_isMaximal
+        (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ ↥L))
+    exact (hmax.eq_of_le
+      (IsLocalRing.maximalIdeal.isMaximal
+        (IntegralClosure 𝒪₃ᵥ ↥(IntermediateField.comap L.val M))).ne_top
+      (IsLocalRing.le_maximalIdeal hmax.ne_top)).symm
+  haveI : FaithfulSMul (IntegralClosure 𝒪₃ᵥ ↥(IntermediateField.comap L.val M))
+      (IntegralClosure 𝒪₃ᵥ ↥L) := by
+    rw [faithfulSMul_iff_algebraMap_injective]
+    intro a b hab
+    have h1 := congrArg (algebraMap (IntegralClosure 𝒪₃ᵥ ↥L) ↥L) hab
+    rw [← IsScalarTower.algebraMap_apply, ← IsScalarTower.algebraMap_apply] at h1
+    haveI : IsFractionRing (IntegralClosure 𝒪₃ᵥ ↥(IntermediateField.comap L.val M))
+        ↥(IntermediateField.comap L.val M) :=
+      IsIntegralClosure.isFractionRing_of_finite_extension 𝒪₃ᵥ ℚ₃ᵥ
+        ↥(IntermediateField.comap L.val M)
+        (IntegralClosure 𝒪₃ᵥ ↥(IntermediateField.comap L.val M))
+    have h2 : Function.Injective
+        (algebraMap (IntegralClosure 𝒪₃ᵥ ↥(IntermediateField.comap L.val M)) ↥L) := by
+      rw [IsScalarTower.algebraMap_eq
+        (IntegralClosure 𝒪₃ᵥ ↥(IntermediateField.comap L.val M))
+        ↥(IntermediateField.comap L.val M) ↥L]
+      exact (algebraMap ↥(IntermediateField.comap L.val M) ↥L).injective.comp
+        (IsFractionRing.injective
+          (IntegralClosure 𝒪₃ᵥ ↥(IntermediateField.comap L.val M))
+          ↥(IntermediateField.comap L.val M))
+    exact h2 h1
+  have hC := Ideal.ramificationIdx'_algebra_tower'
+    (IsLocalRing.maximalIdeal 𝒪₃ᵥ)
+    (IsLocalRing.maximalIdeal
+      (IntegralClosure 𝒪₃ᵥ ↥(IntermediateField.comap L.val M)))
+    (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ ↥L))
+  -- STEP D: transport the ramification index across the reification
+  have hD : Ideal.ramificationIdx' (IsLocalRing.maximalIdeal 𝒪₃ᵥ)
+      (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ ↥M)) =
+      Ideal.ramificationIdx' (IsLocalRing.maximalIdeal 𝒪₃ᵥ)
+        (IsLocalRing.maximalIdeal
+          (IntegralClosure 𝒪₃ᵥ ↥(IntermediateField.comap L.val M))) := by
+    show Ideal.ramificationIdx' (IsLocalRing.maximalIdeal 𝒪₃ᵥ)
+        (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ ↥M)) =
+      Ideal.ramificationIdx' (IsLocalRing.maximalIdeal 𝒪₃ᵥ)
+        (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ
+          ↥(reifySubextension Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L)))
+    let j := reifyEquiv Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L hML
+    let f₁ : IntegralClosure 𝒪₃ᵥ ↥M →+*
+        IntegralClosure 𝒪₃ᵥ
+          ↥(reifySubextension Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L) :=
+      RingHom.codRestrict
+        ((j.symm : ↥M →+*
+            ↥(reifySubextension
+              Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L)).comp
+          (algebraMap (IntegralClosure 𝒪₃ᵥ ↥M) ↥M))
+        (integralClosure 𝒪₃ᵥ
+          ↥(reifySubextension Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L))
+        (fun x => (Algebra.IsIntegral.isIntegral (R := 𝒪₃ᵥ) x).map
+          ((j.symm.toAlgHom.restrictScalars 𝒪₃ᵥ).comp
+            (IsScalarTower.toAlgHom 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ ↥M) ↥M)))
+    let f₂ : IntegralClosure 𝒪₃ᵥ
+        ↥(reifySubextension Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L) →+*
+        IntegralClosure 𝒪₃ᵥ ↥M :=
+      RingHom.codRestrict
+        ((j : ↥(reifySubextension
+              Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L) →+* ↥M).comp
+          (algebraMap (IntegralClosure 𝒪₃ᵥ
+              ↥(reifySubextension
+                Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L))
+            ↥(reifySubextension
+              Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L)))
+        (integralClosure 𝒪₃ᵥ ↥M)
+        (fun x => (Algebra.IsIntegral.isIntegral (R := 𝒪₃ᵥ) x).map
+          ((j.toAlgHom.restrictScalars 𝒪₃ᵥ).comp
+            (IsScalarTower.toAlgHom 𝒪₃ᵥ
+              (IntegralClosure 𝒪₃ᵥ
+                ↥(reifySubextension
+                  Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L))
+              ↥(reifySubextension
+                Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L))))
+    let jO : IntegralClosure 𝒪₃ᵥ ↥M ≃ₐ[𝒪₃ᵥ]
+        IntegralClosure 𝒪₃ᵥ
+          ↥(reifySubextension Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L) :=
+      { toFun := f₁
+        invFun := f₂
+        left_inv := fun y => Subtype.ext (j.apply_symm_apply _)
+        right_inv := fun y => Subtype.ext (j.symm_apply_apply _)
+        map_mul' := map_mul f₁
+        map_add' := map_add f₁
+        commutes' := fun r => Subtype.ext (by
+          show j.symm (algebraMap 𝒪₃ᵥ ↥M r) = algebraMap 𝒪₃ᵥ _ r
+          rw [IsScalarTower.algebraMap_apply 𝒪₃ᵥ ℚ₃ᵥ ↥M, AlgEquiv.commutes,
+            IsScalarTower.algebraMap_apply 𝒪₃ᵥ ℚ₃ᵥ
+              ↥(reifySubextension
+                Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L)]) }
+    have hcomap : (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ
+          ↥(reifySubextension
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L))).comap jO =
+        IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ ↥M) := by
+      ext z
+      rw [Ideal.mem_comap, IsLocalRing.mem_maximalIdeal, mem_nonunits_iff,
+        IsLocalRing.mem_maximalIdeal, mem_nonunits_iff]
+      constructor
+      · intro h1 h2
+        exact h1 (h2.map jO)
+      · intro h1 h2
+        have h3 := h2.map jO.symm
+        rw [AlgEquiv.symm_apply_apply] at h3
+        exact h1 h3
+    rw [← hcomap,
+      Ideal.ramificationIdx'_comap_eq (IsLocalRing.maximalIdeal 𝒪₃ᵥ) jO]
+  -- assembly
+  rw [hA, hB, hD,
+    card_inertia_finite_level Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat ↥L,
+    hC, mul_comm]
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
@@ -6552,11 +6884,17 @@ set_option maxHeartbeats 4000000 in
 /-- **Fontaine's different bound for a finite flat Hopf order over
 `ℤ₃` killed by `3`** (DECOMPOSED 2026-07-24 into the leaves above —
 the points-compositum finiteness/normality/placement leaves (i-a),
-(i-b), (i-c) are PROVEN; the two remaining sorry leaves are the
-Herbrand-transcribed Théorème A core (ii)
+(i-b), (i-c) are PROVEN, and so now are the Herbrand-transcribed
+Théorème A core (ii)
 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package` and the
 subextension estimate (iii)
-`two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`;
+`two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+— neither has a `sorry` in its body, so neither is a work item;
+the depth under (iii) has moved one level down, to the two Serre
+numerology leaves it consumes,
+`card_inertia_inf_fixingSubgroup_mul_add_sum_le_sum_card_inertia` and
+`card_inertia_inf_fixingSubgroup_mul_ramificationIdx'_eq_card_inertia`,
+which ARE still open;
 the assembly is PROVEN here: instantiate the subextension estimate at
 `L = hopfPointsField G` with the placement `M ≤ L` from `hM` and the
 break bound from the Théorème A leaf): the scheme-theoretic core of
@@ -29512,9 +29850,167 @@ theorem exists_ideal_extension_globalFrob_ray_class
     simp only [Multiset.map_singleton, Multiset.prod_singleton, hG,
       dif_pos (And.intro v.isPrime v.ne_bot)]
 
+set_option maxHeartbeats 400000 in
+/-- **A nonvanishing multiplicative ideal function takes the value `1`
+at the unit ideal** (PROVEN 2026-07-25): if `f` is multiplicative on
+NONZERO ideals of `𝓞 F` and `f` does not vanish at any prime, then
+`f ⊤ = 1`. Proof: `𝓞 F` is not a field
+(`NumberField.RingOfIntegers.not_isField`), so it has a nonzero prime
+`P` (`Ring.not_isField_iff_exists_prime`); `f P = f (⊤ * P) = f ⊤ * f P`
+and `f P ≠ 0` cancel. Isolated because multiplicativity ALONE only
+forces `f ⊤` to be idempotent, hence `0` or `1`, and the degenerate
+branch has to be excluded by hand — the same nondegeneracy bookkeeping
+that `exists_ideal_extension_globalFrob_ray_class` warns about at
+`⊥`. -/
+theorem eq_one_top_of_forall_asIdeal_ne_zero_ray_class
+    (F : Type*) [Field F] [NumberField F] (L : Type*) [Field L]
+    (f : Ideal (NumberField.RingOfIntegers F) → L)
+    (hfmul : ∀ I J : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ → J ≠ ⊥ →
+      f (I * J) = f I * f J)
+    (hne : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      f v.asIdeal ≠ 0) :
+    f ⊤ = 1 := by
+  obtain ⟨P, hP0, hPp⟩ :=
+    Ring.not_isField_iff_exists_prime.mp (NumberField.RingOfIntegers.not_isField F)
+  have hne' : f P ≠ 0 := hne ⟨P, hPp, hP0⟩
+  have h := hfmul ⊤ P top_ne_bot hP0
+  rw [Ideal.top_mul] at h
+  exact mul_right_cancel₀ hne' (h.symm.trans (one_mul (f P)).symm)
+
+set_option maxHeartbeats 400000 in
+/-- **Uniqueness of the multiplicative extension of a place-indexed
+function to the ideals** (PROVEN 2026-07-25; the converse bookkeeping to
+`exists_ideal_extension_globalFrob_ray_class`, whose docstring asserts
+this uniqueness without proving it): two functions on ideals of `𝓞 F`
+with values in a field `L`, each multiplicative on NONZERO ideals and
+agreeing at every prime `v.asIdeal`, agree at every nonzero ideal —
+provided the common value at primes never vanishes (without that, both
+could differ by an idempotent factor at `⊤`; see
+`eq_one_top_of_forall_asIdeal_ne_zero_ray_class`). Proof: unique
+factorization of ideals, run as
+`UniqueFactorizationMonoid.induction_on_prime` on the ideal monoid of
+the Dedekind domain `𝓞 F` — the zero case is excluded by hypothesis,
+the unit case is `Ideal.isUnit_iff` plus the value at `⊤`, and the
+prime step is multiplicativity together with `Ideal.isPrime_of_prime`
+packaging the prime factor as a `HeightOneSpectrum` point. This is what
+lets the Artin symbol be characterized abstractly (multiplicative,
+values `χ(Frob_v)` at primes) rather than by a chosen formula. -/
+theorem eq_of_forall_asIdeal_eq_ray_class
+    (F : Type*) [Field F] [NumberField F] (L : Type*) [Field L]
+    (f g : Ideal (NumberField.RingOfIntegers F) → L)
+    (hfmul : ∀ I J : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ → J ≠ ⊥ →
+      f (I * J) = f I * f J)
+    (hgmul : ∀ I J : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ → J ≠ ⊥ →
+      g (I * J) = g I * g J)
+    (hval : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      f v.asIdeal = g v.asIdeal)
+    (hne : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      f v.asIdeal ≠ 0)
+    (I : Ideal (NumberField.RingOfIntegers F)) (hI : I ≠ ⊥) :
+    f I = g I := by
+  have hgne : ∀ v : IsDedekindDomain.HeightOneSpectrum
+      (NumberField.RingOfIntegers F), g v.asIdeal ≠ 0 := fun v => (hval v) ▸ hne v
+  have hftop : f ⊤ = 1 :=
+    eq_one_top_of_forall_asIdeal_ne_zero_ray_class F L f hfmul hne
+  have hgtop : g ⊤ = 1 :=
+    eq_one_top_of_forall_asIdeal_ne_zero_ray_class F L g hgmul hgne
+  refine UniqueFactorizationMonoid.induction_on_prime
+    (P := fun J => J ≠ ⊥ → f J = g J) I ?_ ?_ ?_ hI
+  · intro h
+    exact absurd Ideal.zero_eq_bot h
+  · intro x hx _
+    rw [Ideal.isUnit_iff.mp hx, hftop, hgtop]
+  · intro a p ha hp ih _
+    have ha' : a ≠ ⊥ := fun h => ha (by rw [Ideal.zero_eq_bot]; exact h)
+    have hp0 : p ≠ ⊥ := fun h => hp.ne_zero (by rw [Ideal.zero_eq_bot]; exact h)
+    have hpp : p.IsPrime := Ideal.isPrime_of_prime hp
+    rw [hfmul p a hp0 ha', hgmul p a hp0 ha', ih ha', hval ⟨p, hpp, hp0⟩]
+
+set_option maxHeartbeats 1000000 in
+/-- **Artin reciprocity for the narrow Hilbert class field, in
+Artin-symbol existence form — THE class-field-theoretic leaf** (sorry
+node, created 2026-07-25 as the isolated global-CFT content of
+`character_ideal_span_singleton_eq_one_of_forall_pos_ray_class` below):
+for a multiplicative `χ : Γ F → 𝔽̄₃` (`hmul`) trivial on an open
+subgroup `V` (`hVopen`, `hVker`) and unramified at every finite place
+(`hunr`), the assignment `v ↦ χ(Frob_v)` extends to a function `c` on
+ideals that is multiplicative on nonzero ideals AND takes the value `1`
+on every nonzero NARROWLY PRINCIPAL ideal. That last clause is the
+Artin reciprocity law: `c` factors through the narrow class group
+`Cl⁺(F) = I(F)/P⁺(F)`.
+
+Why this is true (Neukirch, *ANT* VI (6.7) and VI §7; Lang, *ANT* ch. X
+§1; Janusz, *Algebraic Number Fields* V; Serre, Duke 1987 §5.3): `χ`
+takes values in the ABELIAN group `𝔽̄₃ˣ` (its values are units, since
+`χ a · χ a⁻¹ = χ 1 = 1`), so `ker χ` is an open NORMAL subgroup and `χ`
+cuts out a finite abelian extension `M/F` whose Galois group embeds in
+`𝔽̄₃ˣ` — hence is CYCLIC, the image of `χ` being a finite subgroup of a
+field's unit group. By `hunr`, `M/F` is unramified at every finite
+place. The Artin map `I(F) → Gal(M/F)`, `v ↦ Frob_v`, is multiplicative
+by construction, so `c` is its composite with `Gal(M/F) ↪ 𝔽̄₃ˣ`; the
+reciprocity law says its kernel contains `P⁺(F)`, equivalently that
+`M` lies in the narrow Hilbert class field of `F`.
+
+The hypothesis really is needed and the conclusion really is not
+vacuous — checked numerically 2026-07-25 with PARI/GP, `bnfnarrow`:
+for `F = ℚ(√3)` one has `Cl(F) = 1` but `Cl⁺(F) ≅ ℤ/2` (the
+fundamental unit `2 + √3` has norm `+1`, so it cannot flip signs), and
+the corresponding quadratic character has `c ((√3)) = −1 ≠ 1` on the
+principal — but not NARROWLY principal — ideal `(√3)`. So "narrowly
+principal" cannot be weakened to "principal", and the total positivity
+in the consumer below is load-bearing rather than decorative. (The
+companion degeneracy in the other direction, `IsNarrowRayEquiv 1`, is
+documented on `IsNarrowPrincipal`.)
+
+**The Weber-counting route previously recorded on the consumer is
+CIRCULAR as stated** (analysis 2026-07-25) and is NOT the intended
+attack any more. That route proposed to use
+`exists_forall_abs_natCard_isNarrowRayEquiv_sub_mul_le_rpow` and
+`dense_conjClasses_globalFrob` to upgrade "`c` is constant on the
+primes of a narrow class" to "`c` is trivial on the principal class".
+But "`c` is constant on the primes of a narrow class" IS the
+reciprocity law: the density statements say only that the Frobenius
+conjugacy classes are topologically dense in `Γ F` — they produce
+plenty of primes in each narrow ray class, yet nothing in them ever
+links the Galois-theoretic quantity `χ(Frob_v)` to the IDEAL-theoretic
+narrow class of `v`, and that link is exactly what is to be proven.
+The counting machinery is an INPUT to a proof of reciprocity (it is
+what powers the analytic class-number/`L`-function inequality), never
+a step that discharges it.
+
+Genuine routes, both of which are large developments absent from the
+mathlib pin: (i) Artin's original proof — reduce to `Gal(M/F)` cyclic
+(free here, see above), then Artin's cyclotomic-descent lemma reduces
+reciprocity for `M/F` to reciprocity for cyclotomic extensions, where
+the Frobenius acts by `ζ ↦ ζ^{N v}`; the in-tree
+`exists_algEquiv_map_zeta_eq_pow_absNorm` is the cyclotomic base case
+of that route. (ii) The two inequalities: the analytic one over ray
+class `L`-functions (this is where the Weber counting of
+`Chebotarev.lean` is genuinely consumed) together with the algebraic
+one via the ambiguous-class/Herbrand-quotient computation, then
+reciprocity from the index equality. -/
+theorem exists_artinSymbol_isNarrowPrincipal_ray_class
+    (F : Type*) [Field F] [NumberField F]
+    (χ : Γ F → Dickson.K 3)
+    (hmul : ∀ a b : Γ F, χ (a * b) = χ a * χ b)
+    (V : Subgroup (Γ F)) (hVopen : IsOpen (V : Set (Γ F)))
+    (hVker : ∀ a ∈ V, χ a = 1)
+    (hunr : ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      ∀ c : Γ F, ∀ σ ∈ localInertiaGroup w,
+        χ (c * Field.absoluteGaloisGroup.map
+          (algebraMap F (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w)) σ * c⁻¹) = 1) :
+    ∃ c : Ideal (NumberField.RingOfIntegers F) → Dickson.K 3,
+      (∀ I J : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ → J ≠ ⊥ →
+        c (I * J) = c I * c J) ∧
+      (∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+        c v.asIdeal = χ (globalFrob v)) ∧
+      ∀ I : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ →
+        IsNarrowPrincipal I → c I = 1 := by
+  sorry
+
 set_option maxHeartbeats 1000000 in
 /-- **A totally positive principal ideal has trivial Artin symbol — THE
-narrow-ray reciprocity input** (sorry node, created 2026-07-25 as
+narrow-ray reciprocity input** (created 2026-07-25 as
 sub-leaf (b) of
 `character_globalFrob_sq_eq_one_of_narrow_exponent_two_ray_class`
 below; the genuinely class-field-theoretic content of that leaf, now
@@ -29541,19 +30037,31 @@ extension has conductor dividing the archimedean modulus, so
 `Gal(M/F)` is a quotient of `Cl⁺(F) = I(F)/P₁⁺`. Concretely
 `f ((α)) = 1` for `α ≫ 0`.
 
-Intended formalization route: the Weber counting machinery of
-`Chebotarev.lean` —
-`exists_forall_abs_natCard_isNarrowRayEquiv_sub_mul_le_rpow` (ideal
-counts per narrow ray class with analytic error term),
-`finite_quotient_narrowRaySetoid` (finiteness of `Cl⁺`), and the
-Frobenius realizations `exists_algEquiv_map_zeta_eq_pow_absNorm` — is
-being built exactly to show that `I ↦ f I` factors through
-`narrowRaySetoid F 1`: the counting produces, in every narrow ray
-class, primes of positive density, and the density argument behind
-`dense_conjClasses_globalFrob` upgrades "`f` constant on the primes of
-a class" to "`f` trivial on the principal class". Nothing weaker will
-do: this is the single point where global class field theory (absent
-from the mathlib pin) enters the reciprocity chain. -/
+**DECOMPOSED and PROVEN as glue 2026-07-25** over the reciprocity leaf
+`exists_artinSymbol_isNarrowPrincipal_ray_class` (sorry) and the two
+bookkeeping bricks `eq_of_forall_asIdeal_eq_ray_class` /
+`eq_one_top_of_forall_asIdeal_ne_zero_ray_class` (both PROVEN just
+above). Assembly: the values of `χ` never vanish (`χ a · χ a⁻¹ = χ 1 =
+1`, and `χ 1 = 1` because `1 ∈ V`), so the hypothesized `f` and the
+Artin symbol `c` supplied by the reciprocity leaf are two
+multiplicative-on-nonzero functions agreeing at every prime with a
+nonvanishing common value there — hence equal at every nonzero ideal by
+uniqueness of the multiplicative extension. Finally `(α)` is nonzero
+and NARROWLY principal, with the multiplier witnesses `1` (totally
+positive) and `α`: `span {1} · span {α} = ⊤ · span {α} = span {α}`. So
+`f ((α)) = c ((α)) = 1`.
+
+The Weber-counting route recorded here previously — counting per narrow
+ray class plus `dense_conjClasses_globalFrob`, to upgrade "`f` constant
+on the primes of a class" to "`f` trivial on the principal class" — was
+found to be CIRCULAR on 2026-07-25 and has been retired; see the
+analysis in the docstring of
+`exists_artinSymbol_isNarrowPrincipal_ray_class`, which also records
+the two genuine routes (Artin's cyclotomic descent; the two
+inequalities) and the PARI/GP check that the total-positivity
+hypothesis is load-bearing. This remains the single point where global
+class field theory (absent from the mathlib pin) enters the reciprocity
+chain. -/
 theorem character_ideal_span_singleton_eq_one_of_forall_pos_ray_class
     (F : Type*) [Field F] [NumberField F]
     (χ : Γ F → Dickson.K 3)
@@ -29573,7 +30081,29 @@ theorem character_ideal_span_singleton_eq_one_of_forall_pos_ray_class
     (hαpos : ∀ φ : F →+* ℝ,
       0 < φ (algebraMap (NumberField.RingOfIntegers F) F α)) :
     f (Ideal.span {α}) = 1 := by
-  sorry
+  -- the values of `χ` are units of `𝔽̄₃`, hence nonzero
+  have hone : χ 1 = 1 := hVker 1 V.one_mem
+  have hχne : ∀ a : Γ F, χ a ≠ 0 := by
+    intro a ha
+    have h1 : χ a * χ a⁻¹ = 1 := by rw [← hmul, mul_inv_cancel, hone]
+    rw [ha, zero_mul] at h1
+    exact zero_ne_one h1
+  -- the Artin symbol attached to `χ`, trivial on narrowly principal ideals
+  obtain ⟨c, hcmul, hcfrob, hcnarrow⟩ :=
+    exists_artinSymbol_isNarrowPrincipal_ray_class F χ hmul V hVopen hVker hunr
+  have hspan : Ideal.span {α} ≠ ⊥ := by
+    simpa [Ideal.span_singleton_eq_bot] using hα0
+  -- `f` and `c` are two multiplicative extensions of the same prime values
+  have hagree : f (Ideal.span {α}) = c (Ideal.span {α}) :=
+    eq_of_forall_asIdeal_eq_ray_class F (Dickson.K 3) f c hfmul hcmul
+      (fun v => by rw [hfrob, hcfrob]) (fun v => by rw [hfrob]; exact hχne _)
+      _ hspan
+  -- and `(α)` is narrowly principal, with multipliers `1` and `α`
+  rw [hagree]
+  refine hcnarrow _ hspan ⟨1, α, one_ne_zero, ?_, hαpos, ?_⟩
+  · intro φ
+    simp
+  · rw [Ideal.span_singleton_one, Ideal.top_mul]
 
 set_option maxHeartbeats 1000000 in
 /-- **Artin reciprocity for the narrow Hilbert class field, in
@@ -29584,7 +30114,10 @@ and free of all `Γ ℚ`/`θ'` coding; DECOMPOSED and PROVEN as glue
 `exists_ideal_extension_globalFrob_ray_class` (PROVEN) and the
 reciprocity input
 `character_ideal_span_singleton_eq_one_of_forall_pos_ray_class`
-(sorry)): a multiplicative character `χ` of `Γ F` (values in `𝔽̄₃`)
+(itself PROVEN as glue 2026-07-25 over the single remaining
+class-field-theoretic leaf
+`exists_artinSymbol_isNarrowPrincipal_ray_class`)): a multiplicative
+character `χ` of `Γ F` (values in `𝔽̄₃`)
 that is trivial on an open subgroup `V` and everywhere unramified
 (`hunr`: trivial on every `Γ F`-conjugate of the image of the local
 inertia group at every finite place `w` of `F`) satisfies
