@@ -1897,26 +1897,202 @@ theorem exists_framedStrictlyUniversal_hardlyRamified_finiteTests.{s, uK, uW}
         ρuniv πuniv :=
   sorry
 
-/-- **Noetherianity from a power-series presentation** (sorry node —
-the first Mazur-category commutative-algebra stratum of the
-Schlessinger cut of 2026-07-25): a surjective image of
+/-! ### The power-series currying gadget
+
+MOVED HERE 2026-07-25 from the Auslander–Buchsbaum endgame below,
+executing the DEDUPE NOTE that used to sit on
+`isNoetherianRing_of_mvPowerSeries_presentation`: the currying
+isomorphism and the Noetherianity induction it powers were originally
+declared far below this point, so the Mazur-category
+commutative-algebra leaf here could not consume them.  Nothing about
+them is deformation-theoretic — they are pure power-series plumbing —
+so the whole block simply moved up; the regular-sequence half of the
+old `PowerSeriesCurry` section (which additionally needs the
+`RingTheory.Sequence` vocabulary opened by the Auslander–Buchsbaum
+section) stayed where it was, renamed `PowerSeriesRegularSequence`,
+and still consumes `optionCurryEquiv` and
+`mvPowerSeriesIsEmptyRingEquiv` from here.
+
+Both power-series facts of this file — Noetherianity of
+`MvPowerSeries (Fin n) A` and the regular system of parameters of
+`ℤ_p[[x₁, …, x_q]]` — reduce by induction on the number of variables
+to mathlib's ONE-variable theory (`IsNoetherianRing B⟦X⟧`, regularity
+of `X`, the maximal ideal of `B⟦X⟧` over a local `B`) along the
+currying isomorphism
+
+`MvPowerSeries (Option σ) A ≃+* PowerSeries (MvPowerSeries σ A)`,
+
+which mathlib does not have (only the polynomial analogue
+`MvPolynomial.finSuccEquiv` exists).  It is built here by hand from
+the exponent equivalence `(Option σ →₀ ℕ) ≃ ℕ × (σ →₀ ℕ)`
+(`Finsupp.optionElim`/`Finsupp.some`): multiplicativity is the
+antidiagonal-splitting computation
+`antidiagonal (optionElim n d) ≃ antidiagonal n ×ˢ antidiagonal d`.
+The successor case of the induction goes through
+`MvPowerSeries.renameEquiv` along `finSuccEquiv : Fin (n+1) ≃ Option (Fin n)`.
+-/
+
+section PowerSeriesCurry
+
+open PowerSeries
+
+variable {σ : Type*} {A : Type*} [CommRing A]
+
+/-- Additivity of the exponent currying `Finsupp.optionElim`: splitting
+off the `none`-coordinate is an additive bijection
+`(Option σ →₀ ℕ) ≃ ℕ × (σ →₀ ℕ)`. -/
+lemma optionElim_add {α M : Type*} [AddZeroClass M] (y₁ y₂ : M) (f₁ f₂ : α →₀ M) :
+    Finsupp.optionElim (y₁ + y₂) (f₁ + f₂) =
+      Finsupp.optionElim y₁ f₁ + Finsupp.optionElim y₂ f₂ := by
+  ext a; cases a <;> simp
+
+/-- **Currying a multivariate power series** in the distinguished
+variable indexed by `none`: `A[[(xᵢ)_{i : Option σ}]] → (A[[(xᵢ)_{i : σ}]])⟦X⟧`,
+`f ↦ Σₙ (Σ_d coeff (optionElim n d) f · x^d) Xⁿ`. -/
+noncomputable def optionCurry (f : MvPowerSeries (Option σ) A) :
+    PowerSeries (MvPowerSeries σ A) :=
+  PowerSeries.mk fun n =>
+    (fun d => MvPowerSeries.coeff (Finsupp.optionElim n d) f : MvPowerSeries σ A)
+
+/-- The inverse of `optionCurry`: read the coefficient of the exponent
+`u` off the `u none`-th coefficient of the outer series. -/
+noncomputable def optionUncurry (F : PowerSeries (MvPowerSeries σ A)) :
+    MvPowerSeries (Option σ) A :=
+  fun u => MvPowerSeries.coeff u.some (PowerSeries.coeff (u none) F)
+
+lemma coeff_optionCurry (f : MvPowerSeries (Option σ) A) (n : ℕ) (d : σ →₀ ℕ) :
+    MvPowerSeries.coeff d (PowerSeries.coeff n (optionCurry f)) =
+      MvPowerSeries.coeff (Finsupp.optionElim n d) f := by
+  simp [optionCurry, MvPowerSeries.coeff_apply]
+
+lemma coeff_optionUncurry (F : PowerSeries (MvPowerSeries σ A)) (u : Option σ →₀ ℕ) :
+    MvPowerSeries.coeff u (optionUncurry F) =
+      MvPowerSeries.coeff u.some (PowerSeries.coeff (u none) F) := by
+  simp [optionUncurry, MvPowerSeries.coeff_apply]
+
+lemma optionUncurry_optionCurry (f : MvPowerSeries (Option σ) A) :
+    optionUncurry (optionCurry f) = f := by
+  ext u
+  rw [coeff_optionUncurry, coeff_optionCurry, Finsupp.optionElim_some]
+
+lemma optionCurry_optionUncurry (F : PowerSeries (MvPowerSeries σ A)) :
+    optionCurry (optionUncurry F) = F := by
+  ext n d
+  rw [coeff_optionCurry, coeff_optionUncurry, Finsupp.optionElim_apply_none,
+    Finsupp.some_optionElim]
+
+lemma optionCurry_add (f g : MvPowerSeries (Option σ) A) :
+    optionCurry (f + g) = optionCurry f + optionCurry g := by
+  ext n d
+  simp [coeff_optionCurry]
+
+/-- Multiplicativity of the currying map: the antidiagonal of
+`optionElim n d` splits as the product of the antidiagonals of `n` and
+of `d`, which is exactly the Cauchy product of the curried series. -/
+lemma optionCurry_mul (f g : MvPowerSeries (Option σ) A) :
+    optionCurry (f * g) = optionCurry f * optionCurry g := by
+  classical
+  ext n d
+  rw [coeff_optionCurry, MvPowerSeries.coeff_mul, PowerSeries.coeff_mul, map_sum]
+  simp only [MvPowerSeries.coeff_mul, coeff_optionCurry]
+  rw [← Finset.sum_product']
+  refine Finset.sum_nbij' (i := fun u => ((u.1 none, u.2 none), (u.1.some, u.2.some)))
+    (j := fun v => (Finsupp.optionElim v.1.1 v.2.1, Finsupp.optionElim v.1.2 v.2.2))
+    ?_ ?_ ?_ ?_ ?_
+  · rintro ⟨u, v⟩ hu
+    simp only [Finset.HasAntidiagonal.mem_antidiagonal] at hu
+    simp only [Finset.mem_product, Finset.HasAntidiagonal.mem_antidiagonal]
+    refine ⟨?_, ?_⟩
+    · have := congrArg (fun x => (x : Option σ →₀ ℕ) none) hu
+      simpa using this
+    · have := congrArg Finsupp.some hu
+      simpa using this
+  · rintro ⟨⟨i, j⟩, ⟨d1, d2⟩⟩ hv
+    simp only [Finset.mem_product, Finset.HasAntidiagonal.mem_antidiagonal] at hv
+    simp only [Finset.HasAntidiagonal.mem_antidiagonal]
+    rw [← optionElim_add, hv.1, hv.2]
+  · rintro ⟨u, v⟩ _
+    simp [Finsupp.optionElim_some]
+  · rintro ⟨⟨i, j⟩, ⟨d1, d2⟩⟩ _
+    simp [Finsupp.some_optionElim]
+  · rintro ⟨u, v⟩ _
+    simp [Finsupp.optionElim_some]
+
+/-- **The currying isomorphism**
+`MvPowerSeries (Option σ) A ≃+* PowerSeries (MvPowerSeries σ A)` — the
+power-series analogue of `MvPolynomial.finSuccEquiv`, the shared
+gadget behind both power-series leaves of this file. -/
+noncomputable def optionCurryEquiv (σ : Type*) (A : Type*) [CommRing A] :
+    MvPowerSeries (Option σ) A ≃+* PowerSeries (MvPowerSeries σ A) where
+  toFun := optionCurry
+  invFun := optionUncurry
+  left_inv := optionUncurry_optionCurry
+  right_inv := optionCurry_optionUncurry
+  map_mul' := optionCurry_mul
+  map_add' := optionCurry_add
+
+/-- Power series in an empty family of variables are just constants
+(the base case of both inductions). -/
+noncomputable def mvPowerSeriesIsEmptyRingEquiv (σ : Type*) (A : Type*) [IsEmpty σ]
+    [CommRing A] : A ≃+* MvPowerSeries σ A :=
+  RingEquiv.ofBijective MvPowerSeries.C ⟨MvPowerSeries.C_injective, MvPowerSeries.C_surjective⟩
+
+end PowerSeriesCurry
+
+/-- **Noetherianity of `A[[x₁, …, xₙ]]`** (power-series leaf; PROVEN
+2026-07-24, moved above the deformation-theoretic section 2026-07-25):
+finite-variable power series over a Noetherian commutative ring are
+Noetherian.  Unconditionally true, zero arithmetic content.  Proven by
+induction on the number of variables: the empty case is
+`mvPowerSeriesIsEmptyRingEquiv` (`A[[]] ≃+* A`), and the successor case
+transports mathlib's `IsNoetherianRing B⟦X⟧` (the power-series Hilbert
+basis theorem) along the currying isomorphism
+`MvPowerSeries (Fin (n+1)) A ≃+* PowerSeries (MvPowerSeries (Fin n) A)`
+(`optionCurryEquiv` composed with `MvPowerSeries.renameEquiv` along
+`finSuccEquiv`).  Consumed by
+`isNoetherianRing_of_mvPowerSeries_presentation` just below and by
+`free_of_isRegular_mvPowerSeries` at the end of the file, which feeds
+the Auslander–Buchsbaum induction. -/
+theorem isNoetherianRing_mvPowerSeries.{uA} (n : ℕ) {A : Type uA} [CommRing A]
+    [IsNoetherianRing A] : IsNoetherianRing (MvPowerSeries (Fin n) A) := by
+  induction n with
+  | zero => exact isNoetherianRing_of_ringEquiv A (mvPowerSeriesIsEmptyRingEquiv (Fin 0) A)
+  | succ n ih =>
+    haveI := ih
+    exact isNoetherianRing_of_ringEquiv _
+      (((MvPowerSeries.renameEquiv A (finSuccEquiv n)).toRingEquiv.trans
+        (optionCurryEquiv (Fin n) A)).symm)
+
+/-- **Noetherianity from a power-series presentation** (PROVEN
+2026-07-25 — the first Mazur-category commutative-algebra stratum of
+the Schlessinger cut of 2026-07-25): a surjective image of
 `ℤ_p[[x₁, …, x_g]]` is Noetherian.  Pure commutative algebra with zero
-arithmetic content: `ℤ_p` is Noetherian (a DVR), the power-series
-Hilbert basis theorem gives `IsNoetherianRing (MvPowerSeries (Fin g)
-ℤ_[p])` by induction on `g`, and Noetherianity passes to quotients
-(`isNoetherianRing_of_surjective`).  DEDUPE NOTE: the induction is
-already carried out in this file as `isNoetherianRing_mvPowerSeries`,
-which however is declared far BELOW this point (it belongs to the
-power-series section of the Auslander–Buchsbaum endgame and depends on
-the `optionCurryEquiv` machinery developed there); discharging this
-leaf is exactly `isNoetherianRing_of_surjective pres hpres` once that
-lemma — or the currying section it rests on — is moved above the
-deformation-theoretic section. -/
+arithmetic content: `ℤ_p` is Noetherian (a discrete valuation ring,
+hence a principal ideal ring), the power-series Hilbert basis theorem
+gives `IsNoetherianRing (MvPowerSeries (Fin g) ℤ_[p])` by induction on
+`g` (`isNoetherianRing_mvPowerSeries`, just above), and Noetherianity
+passes to quotients (`isNoetherianRing_of_surjective`).
+
+The old DEDUPE NOTE on this leaf is DISCHARGED: the induction was
+already carried out in this file as `isNoetherianRing_mvPowerSeries`
+but was declared far BELOW this point, inside the power-series section
+of the Auslander–Buchsbaum endgame, because it rests on the
+`optionCurryEquiv` machinery developed there.  That machinery is pure
+power-series plumbing with no dependence on the endgame's
+`RingTheory.Sequence` vocabulary, so it — and the Noetherianity
+induction — were moved above this section; the leaf is now exactly
+`isNoetherianRing_of_surjective pres hpres`, as the note predicted.
+Universe note: the presentation source lives in `Type 0` while `R`
+lives in an arbitrary `Type uR`, which is why the transfer lemma has
+to be the universe-polymorphic `isNoetherianRing_of_surjective` rather
+than an instance search. -/
 theorem isNoetherianRing_of_mvPowerSeries_presentation.{uR} {p : ℕ}
     [Fact p.Prime] {g : ℕ} {R : Type uR} [CommRing R]
     (pres : MvPowerSeries (Fin g) ℤ_[p] →+* R)
-    (hpres : Function.Surjective pres) : IsNoetherianRing R :=
-  sorry
+    (hpres : Function.Surjective pres) : IsNoetherianRing R := by
+  haveI : IsNoetherianRing (MvPowerSeries (Fin g) ℤ_[p]) :=
+    isNoetherianRing_mvPowerSeries g
+  exact isNoetherianRing_of_surjective _ _ pres hpres
 
 /-- **Adic completeness from a power-series presentation** (sorry node —
 the second Mazur-category commutative-algebra stratum of the
@@ -4316,131 +4492,30 @@ theorem free_of_isRegular_of_ofList_eq_maximalIdeal.{u, w} (n : ℕ)
       (ts'.map (algebraMap R _)) htss (by simpa using hts'len) htssspan
       (rs₂.map (algebraMap R _)) hrs₂' (by simpa using hrs₂len') hrs₂mem'
 
-/-! ### The power-series plumbing: currying `A[[x₀, …, xₙ]]`
+/-! ### The power-series plumbing: the regular system of parameters
 
-Both remaining power-series facts — Noetherianity of
-`MvPowerSeries (Fin n) A` and the regular system of parameters of
-`ℤ_p[[x₁, …, x_q]]` — reduce by induction on the number of variables
-to mathlib's ONE-variable theory (`IsNoetherianRing B⟦X⟧`, regularity
-of `X`, the maximal ideal of `B⟦X⟧` over a local `B`) along the
-currying isomorphism
-
-`MvPowerSeries (Option σ) A ≃+* PowerSeries (MvPowerSeries σ A)`,
-
-which mathlib does not have (only the polynomial analogue
-`MvPolynomial.finSuccEquiv` exists).  It is built here by hand from
-the exponent equivalence `(Option σ →₀ ℕ) ≃ ℕ × (σ →₀ ℕ)`
-(`Finsupp.optionElim`/`Finsupp.some`): multiplicativity is the
-antidiagonal-splitting computation
-`antidiagonal (optionElim n d) ≃ antidiagonal n ×ˢ antidiagonal d`.
-The successor case of the induction goes through
-`MvPowerSeries.renameEquiv` along `finSuccEquiv : Fin (n+1) ≃ Option (Fin n)`.
+The currying isomorphism
+`MvPowerSeries (Option σ) A ≃+* PowerSeries (MvPowerSeries σ A)`
+(`optionCurryEquiv`) and the Noetherianity induction it powers
+(`isNoetherianRing_mvPowerSeries`) MOVED far above this section on
+2026-07-25, so that the Mazur-category commutative-algebra leaf
+`isNoetherianRing_of_mvPowerSeries_presentation` could consume them;
+see the section header there for what they are and how they are built.
+What remains here is the half of the old `PowerSeriesCurry` section
+that genuinely belongs to the Auslander–Buchsbaum endgame, because it
+speaks the `RingTheory.Sequence` vocabulary this section opens: the
+regular system of parameters of `ℤ_p[[x₁, …, x_q]]`, obtained by
+induction on the number of variables from mathlib's ONE-variable
+theory (regularity of `X`, `B⟦X⟧/(X) ≃ B`, and the maximal ideal of
+`B⟦X⟧` over a local `B`) transported along that same currying
+isomorphism.
 -/
 
-section PowerSeriesCurry
+section PowerSeriesRegularSequence
 
 open PowerSeries
 
-variable {σ : Type*} {A : Type*} [CommRing A] {B : Type*} [CommRing B]
-
-/-- Additivity of the exponent currying `Finsupp.optionElim`: splitting
-off the `none`-coordinate is an additive bijection
-`(Option σ →₀ ℕ) ≃ ℕ × (σ →₀ ℕ)`. -/
-lemma optionElim_add {α M : Type*} [AddZeroClass M] (y₁ y₂ : M) (f₁ f₂ : α →₀ M) :
-    Finsupp.optionElim (y₁ + y₂) (f₁ + f₂) =
-      Finsupp.optionElim y₁ f₁ + Finsupp.optionElim y₂ f₂ := by
-  ext a; cases a <;> simp
-
-/-- **Currying a multivariate power series** in the distinguished
-variable indexed by `none`: `A[[(xᵢ)_{i : Option σ}]] → (A[[(xᵢ)_{i : σ}]])⟦X⟧`,
-`f ↦ Σₙ (Σ_d coeff (optionElim n d) f · x^d) Xⁿ`. -/
-noncomputable def optionCurry (f : MvPowerSeries (Option σ) A) :
-    PowerSeries (MvPowerSeries σ A) :=
-  PowerSeries.mk fun n =>
-    (fun d => MvPowerSeries.coeff (Finsupp.optionElim n d) f : MvPowerSeries σ A)
-
-/-- The inverse of `optionCurry`: read the coefficient of the exponent
-`u` off the `u none`-th coefficient of the outer series. -/
-noncomputable def optionUncurry (F : PowerSeries (MvPowerSeries σ A)) :
-    MvPowerSeries (Option σ) A :=
-  fun u => MvPowerSeries.coeff u.some (PowerSeries.coeff (u none) F)
-
-lemma coeff_optionCurry (f : MvPowerSeries (Option σ) A) (n : ℕ) (d : σ →₀ ℕ) :
-    MvPowerSeries.coeff d (PowerSeries.coeff n (optionCurry f)) =
-      MvPowerSeries.coeff (Finsupp.optionElim n d) f := by
-  simp [optionCurry, MvPowerSeries.coeff_apply]
-
-lemma coeff_optionUncurry (F : PowerSeries (MvPowerSeries σ A)) (u : Option σ →₀ ℕ) :
-    MvPowerSeries.coeff u (optionUncurry F) =
-      MvPowerSeries.coeff u.some (PowerSeries.coeff (u none) F) := by
-  simp [optionUncurry, MvPowerSeries.coeff_apply]
-
-lemma optionUncurry_optionCurry (f : MvPowerSeries (Option σ) A) :
-    optionUncurry (optionCurry f) = f := by
-  ext u
-  rw [coeff_optionUncurry, coeff_optionCurry, Finsupp.optionElim_some]
-
-lemma optionCurry_optionUncurry (F : PowerSeries (MvPowerSeries σ A)) :
-    optionCurry (optionUncurry F) = F := by
-  ext n d
-  rw [coeff_optionCurry, coeff_optionUncurry, Finsupp.optionElim_apply_none,
-    Finsupp.some_optionElim]
-
-lemma optionCurry_add (f g : MvPowerSeries (Option σ) A) :
-    optionCurry (f + g) = optionCurry f + optionCurry g := by
-  ext n d
-  simp [coeff_optionCurry]
-
-/-- Multiplicativity of the currying map: the antidiagonal of
-`optionElim n d` splits as the product of the antidiagonals of `n` and
-of `d`, which is exactly the Cauchy product of the curried series. -/
-lemma optionCurry_mul (f g : MvPowerSeries (Option σ) A) :
-    optionCurry (f * g) = optionCurry f * optionCurry g := by
-  classical
-  ext n d
-  rw [coeff_optionCurry, MvPowerSeries.coeff_mul, PowerSeries.coeff_mul, map_sum]
-  simp only [MvPowerSeries.coeff_mul, coeff_optionCurry]
-  rw [← Finset.sum_product']
-  refine Finset.sum_nbij' (i := fun u => ((u.1 none, u.2 none), (u.1.some, u.2.some)))
-    (j := fun v => (Finsupp.optionElim v.1.1 v.2.1, Finsupp.optionElim v.1.2 v.2.2))
-    ?_ ?_ ?_ ?_ ?_
-  · rintro ⟨u, v⟩ hu
-    simp only [Finset.HasAntidiagonal.mem_antidiagonal] at hu
-    simp only [Finset.mem_product, Finset.HasAntidiagonal.mem_antidiagonal]
-    refine ⟨?_, ?_⟩
-    · have := congrArg (fun x => (x : Option σ →₀ ℕ) none) hu
-      simpa using this
-    · have := congrArg Finsupp.some hu
-      simpa using this
-  · rintro ⟨⟨i, j⟩, ⟨d1, d2⟩⟩ hv
-    simp only [Finset.mem_product, Finset.HasAntidiagonal.mem_antidiagonal] at hv
-    simp only [Finset.HasAntidiagonal.mem_antidiagonal]
-    rw [← optionElim_add, hv.1, hv.2]
-  · rintro ⟨u, v⟩ _
-    simp [Finsupp.optionElim_some]
-  · rintro ⟨⟨i, j⟩, ⟨d1, d2⟩⟩ _
-    simp [Finsupp.some_optionElim]
-  · rintro ⟨u, v⟩ _
-    simp [Finsupp.optionElim_some]
-
-/-- **The currying isomorphism**
-`MvPowerSeries (Option σ) A ≃+* PowerSeries (MvPowerSeries σ A)` — the
-power-series analogue of `MvPolynomial.finSuccEquiv`, the shared
-gadget behind both power-series leaves below. -/
-noncomputable def optionCurryEquiv (σ : Type*) (A : Type*) [CommRing A] :
-    MvPowerSeries (Option σ) A ≃+* PowerSeries (MvPowerSeries σ A) where
-  toFun := optionCurry
-  invFun := optionUncurry
-  left_inv := optionUncurry_optionCurry
-  right_inv := optionCurry_optionUncurry
-  map_mul' := optionCurry_mul
-  map_add' := optionCurry_add
-
-/-- Power series in an empty family of variables are just constants
-(the base case of both inductions). -/
-noncomputable def mvPowerSeriesIsEmptyRingEquiv (σ : Type*) (A : Type*) [IsEmpty σ]
-    [CommRing A] : A ≃+* MvPowerSeries σ A :=
-  RingEquiv.ofBijective MvPowerSeries.C ⟨MvPowerSeries.C_injective, MvPowerSeries.C_surjective⟩
+variable {B : Type*} [CommRing B]
 
 /-- `X` is a nonzerodivisor of `B⟦X⟧`: multiplication by `X` shifts
 coefficients, hence is injective. -/
@@ -4575,28 +4650,7 @@ theorem exists_isRegular_ofList_eq_maximalIdeal_padicInt (p : ℕ) [Fact p.Prime
       (IsWeaklyRegular.cons hp (IsWeaklyRegular.nil _ _)), ?_⟩
   rw [Ideal.ofList_singleton, PadicInt.maximalIdeal_eq_span_p]
 
-end PowerSeriesCurry
-
-/-- **Noetherianity of `A[[x₁, …, xₙ]]`** (power-series leaf; PROVEN
-2026-07-24): finite-variable power series over a Noetherian
-commutative ring are Noetherian.  Unconditionally true, zero
-arithmetic content.  Proven by induction on the number of variables:
-the empty case is `mvPowerSeriesIsEmptyRingEquiv` (`A[[]] ≃+* A`), and
-the successor case transports mathlib's `IsNoetherianRing B⟦X⟧` (the
-power-series Hilbert basis theorem) along the currying isomorphism
-`MvPowerSeries (Fin (n+1)) A ≃+* PowerSeries (MvPowerSeries (Fin n) A)`
-(`optionCurryEquiv` composed with `MvPowerSeries.renameEquiv` along
-`finSuccEquiv`).  Consumed by `free_of_isRegular_mvPowerSeries` to
-feed the Auslander–Buchsbaum induction. -/
-theorem isNoetherianRing_mvPowerSeries.{uA} (n : ℕ) {A : Type uA} [CommRing A]
-    [IsNoetherianRing A] : IsNoetherianRing (MvPowerSeries (Fin n) A) := by
-  induction n with
-  | zero => exact isNoetherianRing_of_ringEquiv A (mvPowerSeriesIsEmptyRingEquiv (Fin 0) A)
-  | succ n ih =>
-    haveI := ih
-    exact isNoetherianRing_of_ringEquiv _
-      (((MvPowerSeries.renameEquiv A (finSuccEquiv n)).toRingEquiv.trans
-        (optionCurryEquiv (Fin n) A)).symm)
+end PowerSeriesRegularSequence
 
 /-- **The regular system of parameters of `ℤ_p[[x₁, …, x_q]]`**
 (power-series leaf; PROVEN 2026-07-24): the maximal ideal of
