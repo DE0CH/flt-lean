@@ -1500,6 +1500,36 @@ theorem millerRatio_eval_pow_of_pullback {ι : Type*} [Fintype ι]
     (AdjoinRoot.evalEval hPS.left (CoordinateRing.XClass W xR) ^ p *
       AdjoinRoot.evalEval hV.left a ^ p) * hcS
 
+omit [IsAlgClosed F] in
+/-- **Converse of `exists_span_eq_prod_pointIdeal` (PROVEN)**: a
+point-ideal product that is PRINCIPAL has zero-sum multiset.  Indeed
+`Ideal.span {a}` with `a ≠ 0` is trivial in the class group
+(`ClassGroup.mk_eq_one_of_coe_ideal` against `coe_prod_pointIdeal'`), and
+the class of a point-ideal product is the `toClass`-sum of its points
+(`mk_prod_pointIdeal'`), which is `toClass D.sum` because `toClass` is
+additive; `toClass` has trivial kernel (mathlib's
+`Point.toClass_eq_zero`), so `D.sum = 0`.
+
+Together with `exists_span_eq_prod_pointIdeal` this makes "the affine
+divisor `D` is principal" and "`D` sums to `O` in the group law" the SAME
+condition.  Its use here is to read the torsion of a Miller generator's
+head off its span: `div a = Σ_κ (T'⊕κ) + Σ_κ (⊖κ)` sums to
+`(card E[p])·T' = p²·T'`, so such a generator exists exactly when
+`Q = [p]T'` is `p`-torsion — which is what makes the translation
+character of `g = a/v` a `p`-th root of unity, and hence what the
+alternating law below is about. -/
+theorem sum_eq_zero_of_span_eq_prod_pointIdeal {D : Multiset W.Point}
+    {a : W.CoordinateRing} (ha : a ≠ 0)
+    (hspan : Ideal.span {a} = (D.map (pointIdeal W)).prod) :
+    D.sum = 0 := by
+  have hmk : ClassGroup.mk W.FunctionField (D.map (pointIdeal' W)).prod = 1 :=
+    (ClassGroup.mk_eq_one_of_coe_ideal (coe_prod_pointIdeal' D)).mpr
+      ⟨a, ha, hspan.symm⟩
+  rw [mk_prod_pointIdeal', ← map_multiset_sum] at hmk
+  -- `Additive.toMul x = 1` is definitionally `x = 0`
+  have h0 : WeierstrassCurve.Affine.Point.toClass D.sum = 0 := hmk
+  exact (WeierstrassCurve.Affine.Point.toClass_eq_zero D.sum).mp h0
+
 /-- **Stage B, leaf 3a (SORRY): the ALTERNATING LAW of the Weil pairing,
 in Miller-value form.**  This is the one genuinely reciprocal statement
 of Stage B; everything else in leaf 3 is transport and glue.
@@ -1509,12 +1539,14 @@ hypotheses `hspan`/`hbspan` say that `g := a/v` and `g_P := b/v` are the
 level-`p²` Miller functions of `Q := [p]T'` and `P := [p]P'`:
 `div g = [p]^*((Q) − (O))`, `div g_P = [p]^*((P) − (O))` (both `a` and
 `b` have divisor `Σ_κ (·⊕κ) + Σ_κ (⊖κ)`, and `div v = Σ_κ (κ) + Σ_κ (⊖κ)`).
-Note that `hspan` together with `a ≠ 0` already FORCES `[p²]T' = 0` — a
-point-ideal product is principal exactly when its multiset sums to `O`
-(`exists_span_eq_prod_pointIdeal` and `mk_prod_pointIdeal'` with
-`Point.toClass` injective), and `Σ_κ (T'⊕κ) + Σ_κ (⊖κ) = p²·T'` — so
-`Q ∈ E[p]`; likewise `P ∈ E[p]` from `hbspan`.  Those torsion facts are
-therefore consequences of the hypotheses and are not stated separately.
+The hypotheses `hQtor`/`hPtor` say `Q, P ∈ E[p]`, which is what makes the
+translation characters of `g` and `g_P` `p`-th roots of unity.  They are
+not extra assumptions: `hspan` with `a ≠ 0` already FORCES `[p²]T' = 0`,
+since a point-ideal product is principal exactly when its multiset sums
+to `O` (`sum_eq_zero_of_span_eq_prod_pointIdeal` above) and
+`Σ_κ (T'⊕κ) + Σ_κ (⊖κ) = p²·T'`; the consumer discharges them that way,
+and they are stated here so that a prover has them without redoing the
+class-group argument.
 
 Written multiplicatively (all ten evaluations are nonzero by the
 hypotheses, so the division is legitimate), the conclusion is
@@ -1580,6 +1612,8 @@ theorem exists_millerValue_alternating {ι : Type*} [Fintype ι]
     (hbspan : Ideal.span {b} =
       ((((Finset.univ.val.map fun i => P' + val i) +
         Finset.univ.val.map fun i => -val i)).map (pointIdeal W)).prod)
+    (hQtor : (p : ℤ) • ((p : ℤ) • T') = 0)
+    (hPtor : (p : ℤ) • ((p : ℤ) • P') = 0)
     {xU yU : F} (hU : W.Nonsingular xU yU)
     {xV yV : F} (hV : W.Nonsingular xV yV)
     {xM1 yM1 : F} (hM1 : W.Nonsingular xM1 yM1)
@@ -2382,9 +2416,25 @@ theorem exists_millerRatio_eval_translationChar {ι : Type*} [Fintype ι]
   --    `f_P(D_Q) = c^e·f_Q(D_P)`, i.e. `e_p(P,Q)·e_p(Q,P) = 1` — the
   --    alternating law, the content Weil reciprocity supplies.  The
   --    `e`-ambiguity is the orientation of the pairing.
+  -- ── PROVEN: `Q = [p]T'` and `P = [p]P'` are `p`-torsion.  For `P` that
+  --    is `hPtor` transported along `hP'p`; for `Q` it is read off the
+  --    span of `a`, whose divisor sums to `(card E[p])·T' = p²·T'`.
+  have hQtor : (p : ℤ) • ((p : ℤ) • T') = 0 := by
+    have hsum := sum_eq_zero_of_span_eq_prod_pointIdeal ha hspan
+    rw [Multiset.sum_add,
+      show (Finset.univ.val.map fun i : ι => T' + val i).sum =
+        ∑ i : ι, (T' + val i) from rfl,
+      show (Finset.univ.val.map fun i : ι => -val i).sum =
+        ∑ i : ι, -val i from rfl,
+      Finset.sum_add_distrib, Finset.sum_const, Finset.sum_neg_distrib,
+      add_assoc, add_neg_cancel, add_zero, Finset.card_univ, hcard,
+      ← Nat.cast_smul_eq_nsmul ℤ, Nat.cast_pow, pow_two, mul_smul] at hsum
+    exact hsum
+  have hP'tor : (p : ℤ) • ((p : ℤ) • P') = 0 := by
+    rw [hP'p]; exact hPtor
   obtain ⟨e, hecase, hanti⟩ :=
     exists_millerValue_alternating (val := val) hΔ hp hval_inj hval_tor
-      hval_surj hcard ha hb0 hspan hbspan hU hV hM1 hM2 hPU
+      hval_surj hcard ha hb0 hspan hbspan hQtor hP'tor hU hV hM1 hM2 hPU
       (by rw [hVeq, hUeq]) (by rw [hM1eq, hUeq]; abel)
       (by rw [hM2eq, hUeq]; abel) (by rw [hPUeq, hP'p])
       hUa hUv hVa hVv hM1b hM1v hM2b hM2v hPUa hPUv
