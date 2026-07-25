@@ -4224,10 +4224,124 @@ theorem hom_vanishes_on_localInertia_at_two
   exact (hφker _).mp
     (threeTorsion_monoidHom_vanishes_on_localInertia_at_two φ hopen h3 σ hσ)
 
+/-- **The connected–étale line of the flat package at `3`** (SORRY
+LEAF, cut 2026-07-25 out of the invariant-functional node
+`invariant_functional_defect_vanishes_of_hopf_package` below. It now
+carries the WHOLE finite-flat/Fontaine content of that node, and it
+mentions no functional at all: it is a statement about `ρ` and its
+model alone, so the ω-sibling `omega_defect_coboundary_of_hopf_package`
+can consume it too. Tate, *Finite flat group schemes*, §4, in
+Cornell–Silverman–Stevens; Raynaud, *Schémas en groupes de type
+`(p, …, p)`*, Bull. SMF 102 (1974), 3.3.2–3.3.5; Fontaine, *Il n'y a
+pas de variété abélienne sur `ℤ`*, §1.)
+
+Given an EXPLICIT finite flat Hopf algebra `G` over `𝒪ᵥ ≅ ℤ₃` with
+étale generic fibre whose geometric points are `Γ ℚ₃ᵥ`-equivariantly
+identified with the space `M := (R ⧸ 𝔪ⁿ⁺²) ⊗[R] V` of the congruence
+quotient `ρ.baseChange (R ⧸ 𝔪ⁿ⁺²)`, the connected–étale sequence of
+`Spec G` splits `M` at level `𝔪ⁿ⁺²`:
+
+* a vector `w₁ ≡ w₀ mod 𝔪V` generates the connected part `M⁰`, and
+  the line `R · w₁` is `Γ ℚ`-STABLE modulo `𝔪ⁿ⁺²V`, with diagonal
+  entry `E : Γ ℚ → R`;
+* the local inertia at `3` acts TRIVIALLY on the étale quotient
+  `M/M⁰`: `ρ σ v₀ ≡ v₀` modulo `R · w₁ + 𝔪ⁿ⁺²V` for every `σ` in
+  `localInertiaGroup 3`.
+
+Intended proof. (1) `Bialgebra.exists_connected_counit_idempotent`
+(`GroupScheme/ConnectedEtale.lean`, PROVEN) produces the connected
+counit idempotent `e₀` of `G` over the complete local `𝒪ᵥ`, hence the
+subgroup `M⁰ ⊆ M` of points `φ` with `φ (1 ⊗ e₀) = 1` — the geometric
+points of the connected component of the identity — which is
+`Γ ℚ₃ᵥ`-stable because `e₀` is `𝒪ᵥ`-rational. (2)
+`displacement_point_apply_idempotent_eq_one` (ibid., PROVEN) says the
+inertia displacement `(σ ∘ φ) ⋆ φ⁻¹` of ANY point lands in `M⁰`, i.e.
+the étale quotient has unramified points; that is the second bullet
+once `M⁰` is identified with the `w₁`-line. (3) `M⁰` is an
+`R ⧸ 𝔪ⁿ⁺²`-SUBMODULE of `M`, free of rank one: multiplication by a
+scalar is an endomorphism of the generic fibre, and Raynaud's
+full faithfulness at `e = 1 < p − 1 = 2` extends it to the model, so
+it preserves the connected component. This is exactly where the
+absolute unramifiedness of `ℤ₃` is spent, as it is in
+`mem_span_natCast_of_inertia_invariant`. (4) The residual reduction of
+`M⁰` is the `w₀`-line: residually `M` is an extension of the TRIVIAL
+character (the quotient `π`, by `hπequiv`) by `ω`
+(`residual_twist_eq_cyclotomicCharacterModL`), whose tame exponents
+`0` and `1` are both `≤ e = 1`, so the model is ORDINARY — the
+supersingular alternative, whose inertia characters are the level-two
+fundamental ones, is excluded by the reducibility `hπequiv` imposes —
+and the connected part is the `μ`-type piece, carrying `ω`. Since `ω`
+is nontrivial on the inertia at `3` while the étale quotient is
+unramified, `M⁰` reduces onto the `w₀`-line and not onto anything
+meeting `v₀`, which normalises its generator to `w₁ ≡ w₀ mod 𝔪V`. -/
+theorem exists_connectedEtale_line_of_hopf_package
+    {R : Type u} [CommRing R]
+    [Algebra ℤ_[3] R] [Module.Finite ℤ_[3] R]
+    [Module.Free ℤ_[3] R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [IsModuleTopology ℤ_[3] R]
+    (V : Type v) [AddCommGroup V] [Module R V] [Module.Finite R V]
+    [Module.Free R V]
+    (hV : Module.rank R V = 2) {ρ : GaloisRep ℚ R V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (kk : Type u) [Field kk] [Finite kk] [Algebra ℤ_[3] kk]
+    [TopologicalSpace kk] [DiscreteTopology kk] [IsTopologicalRing kk]
+    [Algebra R kk] [ContinuousSMul R kk]
+    (hsurj : Function.Surjective (algebraMap R kk))
+    (π : (kk ⊗[R] V) →ₗ[kk] kk) (hπsurj : Function.Surjective π)
+    (hπequiv : ∀ g : Γ ℚ, ∀ w : kk ⊗[R] V,
+      π ((ρ.baseChange kk) g w) = π w)
+    (v₀ : V) (hv₀ : π ((1 : kk) ⊗ₜ[R] v₀) ≠ 0)
+    (w₀ : V) (hw₀π : π ((1 : kk) ⊗ₜ[R] w₀) = 0)
+    (hw₀ne : (1 : kk) ⊗ₜ[R] w₀ ≠ 0)
+    (n : ℕ)
+    (G : Type) [CommRing G]
+    [HopfAlgebra (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) G]
+    [Module.Flat (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) G]
+    [Module.Finite (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) G]
+    [Algebra.Etale (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)
+      ((IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) ⊗[
+        IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat] G)]
+    (fG : Additive ((IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) ⊗[
+        IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat] G →ₐ[
+        IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat]
+        AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) →+[
+        Γ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)]
+      (((ρ.baseChange
+          (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat).Space))
+    (hfG : Function.Bijective fG) :
+    ∃ w₁ : V,
+      w₁ - w₀ ∈ (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V) ∧
+      (∃ E : Γ ℚ → R, ∀ g : Γ ℚ,
+        ρ g w₁ - E g • w₁ ∈
+          (IsLocalRing.maximalIdeal R ^ (n + 2)) • (⊤ : Submodule R V)) ∧
+      (∀ σ : Γ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat),
+        σ ∈ localInertiaGroup
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat →
+        ∃ c : R, ρ (Field.absoluteGaloisGroup.map
+            (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ) v₀
+          - (v₀ + c • w₁) ∈
+            (IsLocalRing.maximalIdeal R ^ (n + 2)) • (⊤ : Submodule R V)) := by
+  sorry
+
 /-- **An invariant functional's `v₀`-defect is unramified at `3`**
-(sorry node, isolated 2026-07-25 out of the trivial-component
-Hopf-package core below — the finite-flat/Fontaine content, stripped
-of the `a`/`c`/`s` bookkeeping; Fontaine, Raynaud 1974, and the
+(PROVEN 2026-07-25 from the connected–étale leaf
+`exists_connectedEtale_line_of_hopf_package` above, which now holds
+all of the finite-flat content; the functional-side argument is
+PROVEN here and is short. Fontaine, Raynaud 1974, and the
 Fontaine/Raynaud material in Cornell–Silverman–Stevens): given an
 EXPLICIT finite flat Hopf algebra `G` over `𝒪ᵥ ≅ ℤ₃` with étale
 generic fibre whose geometric points are `Γ ℚ₃ᵥ`-equivariantly
@@ -4238,26 +4352,43 @@ sublattice `𝔪V` (`hΦm`) AND on the residual sub-line `R w₀` (`hΦw`),
 the `v₀`-defect `D g = Φ (ρ g v₀) - Φ v₀` vanishes at the image of a
 local inertia element at `3`.
 
-Intended proof (residue characteristic `3 > 2`): (1) transport the
-`R ⧸ 𝔪ⁿ⁺²`-module structure of `M := (R ⧸ 𝔪ⁿ⁺²) ⊗[R] V` across the
-package bijection `fG`, so `M` with its local Galois action is the
-group of geometric points of the generic fibre of the finite flat
-`ℤ₃`-group scheme `Spec G`; (2) `D` is an honest HOMOMORPHISM
-`Γ ℚ → R ⧸ 𝔪ⁿ⁺²`: writing `ρ h v₀ = v₀ + c h • w₀ + m` with `m ∈ 𝔪V`
-(the residual triangular shape, `exists_residual_matrix_entries` from
-the trivial residual quotient character `hπequiv`), the cocycle twist
-`Φ (ρ g (c h • w₀ + m)) − Φ (c h • w₀ + m)` is killed by exactly
-`hΦw` and `hΦm`; equivalently, the pair `(Φ, v₀-coordinate)` presents
-`A ⊕ A` (`A := R ⧸ 𝔪ⁿ⁺²`, trivial Galois action on each factor) with
-`g · (α, β) = (α + β · D g, β)` as a Galois QUOTIENT of `M`, i.e. an
-extension of the trivial module by the trivial module realised on the
-points of `Spec G`; (3) the corresponding finite flat group scheme is
-an extension of étale-type by étale-type over the henselian `ℤ₃`,
-hence itself étale: its connected component meets the étale sub
-trivially and maps to a connected subscheme of an étale quotient,
-so it is trivial; (4) the points of a finite étale group scheme over
-`ℤ₃` are defined over the maximal unramified extension, so inertia
-fixes them and `D` kills the local inertia at `3`. -/
+Proof (residue characteristic `3 > 2`), in three moves once the
+connected–étale leaf has produced the generator `w₁ ≡ w₀ mod 𝔪V` of
+the connected line, its diagonal entry `E`, and the unramifiedness of
+the étale quotient.
+
+(1) `E` is a residual diagonal entry along `w₀` as well: `𝔪ⁿ⁺² ≤ 𝔪`,
+and `w₁ − w₀ ∈ 𝔪V` is carried into `𝔪V` both by `ρ g`
+(`apply_mem_smul_top`) and by the scalar `E g`, so
+`ρ g w₀ − E g • w₀ ∈ 𝔪V`. Hence
+`residual_twist_eq_cyclotomicCharacterModL` applies to `E`, and at an
+element `g₀` with `ω g₀ ≠ 1` — one exists by
+`exists_cyclotomicCharacterModL_three_ne_one` — it gives
+`E g₀ + 1 ∈ 𝔪`. Since `3 ∈ 𝔪` (`three_mem_maximalIdeal`) while
+`1 ∉ 𝔪`, the residue characteristic is `3` and `2` is a UNIT; so
+`E g₀ − 1 = (E g₀ + 1) − 2` is a unit too. This is the one place the
+oddness of the residual character is spent, and it is why the argument
+is specific to `p = 3 > 2`.
+
+(2) `Φ w₁ ∈ 𝔪ⁿ⁺²`. The two invariance hypotheses combine into
+invariance along `w₁`: `Φ (ρ g₀ w₁) − Φ w₁` is the sum of
+`Φ (ρ g₀ w₀) − Φ w₀` (`hΦw`) and `Φ (ρ g₀ z) − Φ z` for
+`z = w₁ − w₀ ∈ 𝔪V` (`hΦm`), so it lies in `𝔪ⁿ⁺²`. On the other hand
+the stability of the line gives `Φ (ρ g₀ w₁) − E g₀ * Φ w₁ ∈ 𝔪ⁿ⁺²`
+(`linearMap_apply_mem_of_mem_smul_top`). Subtracting,
+`(E g₀ − 1) * Φ w₁ ∈ 𝔪ⁿ⁺²`, and `E g₀ − 1` is a unit by (1).
+
+(3) The defect follows the line into `𝔪ⁿ⁺²`: unramifiedness of the
+étale quotient gives `c` with
+`ρ σ v₀ − (v₀ + c • w₁) ∈ 𝔪ⁿ⁺²V`, so
+`Φ (ρ σ v₀) − Φ v₀ − c * Φ w₁ ∈ 𝔪ⁿ⁺²`, and `c * Φ w₁ ∈ 𝔪ⁿ⁺²` by (2).
+
+Note that the `v₀`-defect is never shown to be a homomorphism here:
+that route (presenting the trivial-by-trivial extension as a Galois
+quotient of `M` and calling it étale-by-étale) needs the quotient to
+be realised by a finite flat group scheme, i.e. Raynaud's
+subquotient-closure, whereas the route above needs only the
+connected–étale sequence of `M` itself. -/
 theorem invariant_functional_defect_vanishes_of_hopf_package
     {R : Type u} [CommRing R]
     [Algebra ℤ_[3] R] [Module.Finite ℤ_[3] R]
@@ -4318,7 +4449,88 @@ theorem invariant_functional_defect_vanishes_of_hopf_package
         (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
           Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ) v₀)
       - Φ v₀ ∈ IsLocalRing.maximalIdeal R ^ (n + 2) := by
-  sorry
+  classical
+  -- the image of `σ` in the global Galois group
+  set σ' : Γ ℚ := Field.absoluteGaloisGroup.map
+    (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ with hσ'
+  -- the connected–étale splitting of the flat package
+  obtain ⟨w₁, hw₁, ⟨E, hE⟩, hI⟩ :=
+    exists_connectedEtale_line_of_hopf_package V hV hρ kk hsurj π hπsurj
+      hπequiv v₀ hv₀ w₀ hw₀π hw₀ne n G fG hfG
+  -- (1) `E` is a residual diagonal entry along `w₀` as well as along `w₁`
+  have hEa : ∀ g : Γ ℚ, ρ g w₀ - E g • w₀ ∈
+      (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V) := by
+    intro g
+    have hle : IsLocalRing.maximalIdeal R ^ (n + 2) ≤
+        IsLocalRing.maximalIdeal R := Ideal.pow_le_self (by omega)
+    have h1 : ρ g w₁ - E g • w₁ ∈
+        (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V) :=
+      Submodule.smul_mono_left hle (hE g)
+    have h2 : ρ g (w₁ - w₀) ∈
+        (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V) :=
+      apply_mem_smul_top (ρ g) hw₁
+    have h3 : E g • (w₁ - w₀) ∈
+        (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V) :=
+      Submodule.smul_mem _ _ hw₁
+    have heq : ρ g w₀ - E g • w₀ =
+        (ρ g w₁ - E g • w₁) - (ρ g (w₁ - w₀) - E g • (w₁ - w₀)) := by
+      simp only [map_sub, smul_sub]
+      abel
+    rw [heq]
+    exact Submodule.sub_mem _ h1 (Submodule.sub_mem _ h2 h3)
+  -- an element where the mod-3 cyclotomic character is nontrivial
+  obtain ⟨g₀, hg₀⟩ := exists_cyclotomicCharacterModL_three_ne_one
+  have hE₀ : E g₀ + 1 ∈ IsLocalRing.maximalIdeal R :=
+    (residual_twist_eq_cyclotomicCharacterModL V hV hρ kk hsurj π hπsurj
+      hπequiv v₀ hv₀ w₀ hw₀π hw₀ne E hEa g₀).2 hg₀
+  -- the residue characteristic is `3`, so `2` is a unit
+  have h2R : (2 : R) ∉ IsLocalRing.maximalIdeal R := by
+    intro h2
+    have h1 : (1 : R) ∈ IsLocalRing.maximalIdeal R := by
+      have hrw : (1 : R) = 3 - 2 := by norm_num
+      rw [hrw]
+      exact Submodule.sub_mem _ three_mem_maximalIdeal h2
+    exact (IsLocalRing.notMem_maximalIdeal.mpr isUnit_one) h1
+  obtain ⟨u, hu⟩ : IsUnit (E g₀ - 1) := by
+    refine IsLocalRing.notMem_maximalIdeal.mp fun hmem => h2R ?_
+    have hrw : (2 : R) = (E g₀ + 1) - (E g₀ - 1) := by ring
+    rw [hrw]
+    exact Submodule.sub_mem _ hE₀ hmem
+  -- (2) the functional kills the connected generator at level `n + 2`
+  have hstab : Φ (ρ g₀ w₁) - E g₀ * Φ w₁ ∈
+      IsLocalRing.maximalIdeal R ^ (n + 2) := by
+    have h := linearMap_apply_mem_of_mem_smul_top Φ (hE g₀)
+    simpa only [map_sub, map_smul, smul_eq_mul] using h
+  have hinv : Φ (ρ g₀ w₁) - Φ w₁ ∈ IsLocalRing.maximalIdeal R ^ (n + 2) := by
+    have hz : Φ (ρ g₀ (w₁ - w₀)) - Φ (w₁ - w₀) ∈
+        IsLocalRing.maximalIdeal R ^ (n + 2) := hΦm g₀ (w₁ - w₀) hw₁
+    have heq : Φ (ρ g₀ w₁) - Φ w₁ =
+        (Φ (ρ g₀ w₀) - Φ w₀) + (Φ (ρ g₀ (w₁ - w₀)) - Φ (w₁ - w₀)) := by
+      simp only [map_sub]
+      ring
+    rw [heq]
+    exact Ideal.add_mem _ (hΦw g₀) hz
+  have hΦw₁ : Φ w₁ ∈ IsLocalRing.maximalIdeal R ^ (n + 2) := by
+    have hmul : (E g₀ - 1) * Φ w₁ ∈ IsLocalRing.maximalIdeal R ^ (n + 2) := by
+      have heq : (E g₀ - 1) * Φ w₁ =
+          (Φ (ρ g₀ w₁) - Φ w₁) - (Φ (ρ g₀ w₁) - E g₀ * Φ w₁) := by ring
+      rw [heq]
+      exact Ideal.sub_mem _ hinv hstab
+    have hrw : Φ w₁ = ((u⁻¹ : Rˣ) : R) * ((E g₀ - 1) * Φ w₁) := by
+      rw [← mul_assoc, ← hu, ← Units.val_mul, inv_mul_cancel, Units.val_one,
+        one_mul]
+    rw [hrw]
+    exact Ideal.mul_mem_left _ _ hmul
+  -- (3) the étale quotient is unramified, so the defect follows `Φ w₁`
+  obtain ⟨c, hc⟩ := hI σ hσ
+  rw [← hσ'] at hc
+  have hcΦ := linearMap_apply_mem_of_mem_smul_top Φ hc
+  simp only [map_sub, map_add, map_smul, smul_eq_mul] at hcΦ
+  have heq : Φ (ρ σ' v₀) - Φ v₀ =
+      (Φ (ρ σ' v₀) - (Φ v₀ + c * Φ w₁)) + c * Φ w₁ := by ring
+  rw [heq]
+  exact Ideal.add_mem _ hcΦ (Ideal.mul_mem_left _ _ hΦw₁)
 
 /-- **The trivial-component Hopf-package core at `3`** (DECOMPOSED
 2026-07-25 into the invariant-functional leaf
