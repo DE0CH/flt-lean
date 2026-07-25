@@ -5816,9 +5816,8 @@ end TwoTorsion
     `y² = x³ − 2 a x² + (a² − 4 b) x`, with kernel `{0, (0, 0)}`. Built
     from `WeierstrassCurve.twoIsogenyFun` and its properties (see the
     section "The classical `2`-isogeny in normal form" below); all of
-    them are PROVEN except the single remaining leaf
-    `WeierstrassCurve.twoIsogenyFun_add_of_ne` (the generic case of
-    additivity).
+    them are PROVEN, including the generic case of additivity
+    `WeierstrassCurve.twoIsogenyFun_add_of_ne` (PROVEN 2026-07-25).
 * `WeierstrassCurve.exists_quotient_isogeny_of_odd_prime_card` (sorry
   node) — the true Vélu core, cut at the literature statement: the
   quotient by a Galois-stable CYCLIC subgroup of ODD prime order
@@ -6172,32 +6171,228 @@ theorem twoIsogenyFun_two_torsion_add (a b : ℚ)
       twoIsogenyFun_some_of_ne_zero a b hns hx]
     refine Point.some_eq_some _ ?_ ?_ <;> · field_simp <;> ring
 
-/-- **The generic case of the additivity of the explicit `2`-isogeny** (SORRY LEAF, cut
-2026-07-25 out of `WeierstrassCurve.twoIsogenyFun_add`; the degenerate cases — a zero
-summand, a summand equal to the kernel point `(0, 0)`, and `P + Q = 0` — are PROVEN there):
-for two affine points of `y² = x³ + a x² + b x` with nonzero `x`-coordinates whose sum is
-not `0`, the explicit map `φ(x, y) = (y²/x², y (b − x²)/x²)` is additive.
+/-!
+#### Coordinate algebra for the additivity of the explicit `2`-isogeny (2026-07-25)
 
-Route (all of it pure coordinate algebra over `ℚ̄`; write `A = a`, `B = b` in `ℚ̄`, and
-`u_i = x_i² + A x_i + B`, so that `y_i² = x_i u_i` and `X_i = y_i²/x_i² = u_i/x_i`):
+Pure field identities over an arbitrary field `K`, used only by
+`WeierstrassCurve.twoIsogenyFun_add_of_ne` below. Writing `u = x² + Ax + B`
+(so `y² = x u` on `y² = x³ + Ax² + Bx`) and, for a line `y = ℓx + ν` meeting
+the curve at `(x₁,y₁), (x₂,y₂), (x₃,ŷ₃)`:
 
-* `X₁ − X₂ = (x₁ − x₂)(x₁x₂ − B)/(x₁x₂)`, so for `x₁ ≠ x₂` the images have equal
-  `x`-coordinate exactly when `x₁x₂ = B`.
-* With `d = x₁ − x₂`, `N = x₁y₂ − x₂y₁` and `ℓ = (y₁ − y₂)/d` the third intersection point
-  is `x₃ = N²/(x₁x₂d²)` (the product of the three roots of the cubic is `ν²` with
-  `ν = N/d`) and `y₃ = −(ℓx₃ + ν)`; the polynomial form
-  `((y₁ − y₂)² − (A + x₁ + x₂)d²)·x₁x₂ = N²` follows from the two curve equations with
-  cofactors `d x₂` and `−d x₁`.
-* Hence `x₃ = 0 ↔ x₁x₂ = B` (square `x₁y₂ = x₂y₁` and use the curve equations), which is
-  exactly the statement that `φP + φQ = 0` forces `P + Q ∈ ker φ` and conversely.
-* In the remaining branch `x₃ ≠ 0`, the two coordinate identities
-  `Λ² + 2A − X₁ − X₂ = y₃²/x₃²` and `−(Λ(X₃ − X₁) + Y₁) = y₃(B − x₃²)/x₃²`, with
-  `Λ` the slope on the codomain curve, are rational-function identities modulo the two
-  curve equations; they split into the secant branch (`x₁ ≠ x₂`, `Λ` given by
-  `slope_of_X_ne`) and the tangent branch (`x₁ = x₂`, `y₁ ≠ −y₂`, `Λ` given by
-  `slope_of_Y_ne`). Verified numerically in PARI/GP (2026-07-25) on `y² = x³ + 3x² + 5x`.
+* the image `X = y²/x² = x + A + B/x` (`twoIsogeny_X_eq`);
+* the images of the three collinear points are again collinear, on the line
+  `Y = ΛX + ν'` with the *closed forms*
+  `Λ = (B − ℓν)/ν` and `ν' = (Aℓν − Bℓ² − ν²)/ν` (`twoIsogeny_image_collinear`);
+* `X₁ + X₂ + X₃ = Λ² + 2A`, from Vieta `e₁ = ℓ² − A`, `e₂ = B − 2ℓν`,
+  `e₃ = ν²` (`twoIsogeny_X_sum`).
 
-Silverman AEC III.4.5, X.4.9 and Exercise 3.13; Washington, *Elliptic Curves*, ch. 8. -/
+The two `Λ` closed forms are what makes the codomain slope computable in
+*both* mathlib branches (`slope_of_X_ne`, `slope_of_Y_ne`); the tangent
+branch on the codomain needs the two extra cleared identities
+`twoIsogeny_codomainSlope_tangent` / `twoIsogeny_codomainSlope_secant`.
+All of it was checked numerically in PARI/GP on `y² = x³ + 3x² + 5x`
+before being written.
+-/
+
+section TwoIsogenyAlgebra
+
+variable {K : Type*} [Field K]
+
+theorem twoIsogeny_X_eq {A B x y : K} (hx : x ≠ 0) (hc : y ^ 2 = x ^ 3 + A * x ^ 2 + B * x) :
+    y ^ 2 / x ^ 2 = x + A + B / x := by
+  field_simp
+  linear_combination hc
+
+theorem twoIsogeny_image_collinear {A B x y l n : K} (hx : x ≠ 0) (hn : n ≠ 0) (hy : y = l * x + n)
+    (hc : y ^ 2 = x ^ 3 + A * x ^ 2 + B * x) :
+    y * (B - x ^ 2) / x ^ 2 =
+      (B - l * n) / n * (y ^ 2 / x ^ 2) + (A * l * n - B * l ^ 2 - n ^ 2) / n := by
+  have hA : A = (y ^ 2 - x ^ 3 - B * x) / x ^ 2 := by field_simp; linear_combination -hc
+  subst hA
+  subst hy
+  field_simp
+  ring
+
+theorem twoIsogeny_X_sum {A B x₁ x₂ x₃ l n : K} (hx₁ : x₁ ≠ 0) (hx₂ : x₂ ≠ 0) (hx₃ : x₃ ≠ 0) (hn : n ≠ 0)
+    (he₁ : x₁ + x₂ + x₃ = l ^ 2 - A)
+    (he₂ : x₁ * x₂ + x₁ * x₃ + x₂ * x₃ = B - 2 * l * n)
+    (he₃ : x₁ * x₂ * x₃ = n ^ 2) :
+    x₁ + A + B / x₁ + (x₂ + A + B / x₂) + (x₃ + A + B / x₃)
+      = ((B - l * n) / n) ^ 2 + 2 * A := by
+  have key : x₁ + A + B / x₁ + (x₂ + A + B / x₂) + (x₃ + A + B / x₃)
+      = x₁ + x₂ + x₃ + 3 * A + B * ((x₁ * x₂ + x₁ * x₃ + x₂ * x₃) / (x₁ * x₂ * x₃)) := by
+    field_simp
+    ring
+  rw [key, he₁, he₂, he₃]
+  field_simp
+  ring
+
+theorem twoIsogeny_vieta_secant {A B x₁ y₁ x₂ y₂ x₃ l n : K}
+    (hc₁ : y₁ ^ 2 = x₁ ^ 3 + A * x₁ ^ 2 + B * x₁)
+    (hc₂ : y₂ ^ 2 = x₂ ^ 3 + A * x₂ ^ 2 + B * x₂)
+    (h₁ : y₁ = l * x₁ + n) (h₂ : y₂ = l * x₂ + n) (hd : x₁ - x₂ ≠ 0)
+    (hx₃ : x₃ = l ^ 2 - A - x₁ - x₂) :
+    x₁ * x₂ + x₁ * x₃ + x₂ * x₃ = B - 2 * l * n ∧ x₁ * x₂ * x₃ = n ^ 2 := by
+  subst h₁; subst h₂; subst hx₃
+  have hD : (x₁ - x₂) *
+      (x₁ ^ 2 + x₁ * x₂ + x₂ ^ 2 + (A - l ^ 2) * (x₁ + x₂) + (B - 2 * l * n)) = 0 := by
+    linear_combination hc₂ - hc₁
+  have hE := (mul_eq_zero.mp hD).resolve_left hd
+  exact ⟨by linear_combination -hE, by linear_combination -hc₁ - x₁ * hE⟩
+
+theorem twoIsogeny_vieta_tangent {A B x₁ x₂ y x₃ l n : K} (hx : x₁ = x₂)
+    (hc : y ^ 2 = x₁ ^ 3 + A * x₁ ^ 2 + B * x₁)
+    (hl : 2 * y * l = 3 * x₁ ^ 2 + 2 * A * x₁ + B) (hn : n = y - l * x₁)
+    (hx₃ : x₃ = l ^ 2 - A - x₁ - x₂) :
+    x₁ * x₂ + x₁ * x₃ + x₂ * x₃ = B - 2 * l * n ∧ x₁ * x₂ * x₃ = n ^ 2 := by
+  subst hx; subst hn; subst hx₃
+  exact ⟨by linear_combination hl, by linear_combination -hc + x₁ * hl⟩
+
+theorem twoIsogeny_tangentNum {A B x y l n : K}
+    (hc : y ^ 2 = x ^ 3 + A * x ^ 2 + B * x)
+    (hl : 2 * y * l = 3 * x ^ 2 + 2 * A * x + B) (hnu : n = y - l * x) :
+    3 * (x ^ 2 + A * x + B) ^ 2 - 4 * A * x * (x ^ 2 + A * x + B) + (A ^ 2 - 4 * B) * x ^ 2
+      = 4 * (x ^ 2 + A * x + B) * (B - l * n) := by
+  subst hnu
+  linear_combination (B - x ^ 2 - 2 * l * y) * hl + 4 * l ^ 2 * hc
+
+theorem twoIsogeny_Y_tangent {A B x y l n : K} (hx : x ≠ 0)
+    (hc : y ^ 2 = x ^ 3 + A * x ^ 2 + B * x)
+    (hl : 2 * y * l = 3 * x ^ 2 + 2 * A * x + B) (hnu : n = y - l * x) :
+    y * (B - x ^ 2) = 2 * (x ^ 2 + A * x + B) * n := by
+  have h2yn : 2 * y * n = x * (B - x ^ 2) := by
+    subst hnu; linear_combination 2 * hc - x * hl
+  have hux : y ^ 2 = x * (x ^ 2 + A * x + B) := by linear_combination hc
+  refine mul_left_cancel₀ hx ?_
+  linear_combination (-y) * h2yn + (2 * n) * hux
+
+theorem twoIsogeny_codomainSlope_tangent {A B x y l n : K} (hx : x ≠ 0)
+    (hc : y ^ 2 = x ^ 3 + A * x ^ 2 + B * x)
+    (hl : 2 * y * l = 3 * x ^ 2 + 2 * A * x + B) (hnu : n = y - l * x) :
+    (3 * (y ^ 2 / x ^ 2) ^ 2 + 2 * (-2 * A) * (y ^ 2 / x ^ 2) + (A ^ 2 - 4 * B)) * n
+      = (B - l * n) * (2 * (y * (B - x ^ 2) / x ^ 2)) := by
+  have hX : y ^ 2 / x ^ 2 = (x ^ 2 + A * x + B) / x := by
+    field_simp
+    linear_combination hc
+  have hY : y * (B - x ^ 2) / x ^ 2 = 2 * (x ^ 2 + A * x + B) * n / x ^ 2 := by
+    rw [twoIsogeny_Y_tangent hx hc hl hnu]
+  have hnum : 3 * ((x ^ 2 + A * x + B) / x) ^ 2 + 2 * (-2 * A) * ((x ^ 2 + A * x + B) / x)
+      + (A ^ 2 - 4 * B) = 4 * (x ^ 2 + A * x + B) * (B - l * n) / x ^ 2 := by
+    rw [eq_div_iff (pow_ne_zero 2 hx)]
+    field_simp
+    linear_combination twoIsogeny_tangentNum hc hl hnu
+  rw [hX, hY, hnum]
+  field_simp
+  ring
+
+theorem twoIsogeny_codomainSlope_secant {A B x₁ y₁ x₂ y₂ l n : K} (hx₁ : x₁ ≠ 0) (hx₂ : x₂ ≠ 0)
+    (hd : x₁ - x₂ ≠ 0)
+    (hp : x₁ * x₂ = B) (hyy : x₂ * y₁ + x₁ * y₂ = 0)
+    (hc₁ : y₁ ^ 2 = x₁ ^ 3 + A * x₁ ^ 2 + B * x₁)
+    (hl : l * (x₁ - x₂) = y₁ - y₂) (hnu : n = y₁ - l * x₁) :
+    (3 * (y₁ ^ 2 / x₁ ^ 2) ^ 2 + 2 * (-2 * A) * (y₁ ^ 2 / x₁ ^ 2) + (A ^ 2 - 4 * B)) * n
+      = (B - l * n) * (2 * (y₁ * (B - x₁ ^ 2) / x₁ ^ 2)) := by
+  subst hp
+  have hlv : l = y₁ * (x₁ + x₂) / (x₁ * (x₁ - x₂)) := by
+    rw [eq_div_iff (mul_ne_zero hx₁ hd)]
+    linear_combination x₁ * hl - hyy
+  have hnv : n = -(2 * x₂ * y₁) / (x₁ - x₂) := by
+    rw [hnu, hlv, eq_div_iff hd]
+    field_simp
+    ring
+  have hY : y₁ * (x₁ * x₂ - x₁ ^ 2) / x₁ ^ 2 = -(y₁ * (x₁ - x₂)) / x₁ := by
+    field_simp
+    ring
+  have hA : A = (y₁ ^ 2 - x₁ ^ 3 - x₁ * x₂ * x₁) / x₁ ^ 2 := by
+    field_simp
+    linear_combination -hc₁
+  rw [hY, hlv, hnv, hA]
+  field_simp
+  ring
+
+theorem twoIsogeny_X_eq_of_lineThroughOrigin {x₁ x₂ l : K} (hx₁ : x₁ ≠ 0) (hx₂ : x₂ ≠ 0) :
+    (l * x₁) ^ 2 / x₁ ^ 2 = (l * x₂) ^ 2 / x₂ ^ 2 := by
+  field_simp
+
+theorem twoIsogeny_Y_neg_of_lineThroughOrigin {B x₁ x₂ l : K} (hx₁ : x₁ ≠ 0) (hx₂ : x₂ ≠ 0) (hp : x₁ * x₂ = B) :
+    l * x₁ * (B - x₁ ^ 2) / x₁ ^ 2 = -(l * x₂ * (B - x₂ ^ 2) / x₂ ^ 2) := by
+  subst hp
+  field_simp
+  ring
+
+theorem twoIsogeny_X_eq_cases {A B x₁ y₁ x₂ y₂ : K} (hx₁ : x₁ ≠ 0) (hx₂ : x₂ ≠ 0)
+    (hc₁ : y₁ ^ 2 = x₁ ^ 3 + A * x₁ ^ 2 + B * x₁)
+    (hc₂ : y₂ ^ 2 = x₂ ^ 3 + A * x₂ ^ 2 + B * x₂)
+    (hX : y₁ ^ 2 / x₁ ^ 2 = y₂ ^ 2 / x₂ ^ 2) : x₁ = x₂ ∨ x₁ * x₂ = B := by
+  rw [div_eq_div_iff (pow_ne_zero 2 hx₁) (pow_ne_zero 2 hx₂)] at hX
+  have h0 : x₁ * x₂ * ((x₁ - x₂) * (x₁ * x₂ - B)) = 0 := by
+    linear_combination hX - x₂ ^ 2 * hc₁ + x₁ ^ 2 * hc₂
+  rcases mul_eq_zero.mp ((mul_eq_zero.mp h0).resolve_left (mul_ne_zero hx₁ hx₂)) with h | h
+  · exact Or.inl (by linear_combination h)
+  · exact Or.inr (by linear_combination h)
+
+theorem twoIsogeny_Y_add_eq_zero_cases {B x₁ y₁ x₂ y₂ : K} (hx₁ : x₁ ≠ 0) (hx₂ : x₂ ≠ 0) (hp : x₁ * x₂ = B)
+    (hY : y₁ * (B - x₁ ^ 2) / x₁ ^ 2 = -(y₂ * (B - x₂ ^ 2) / x₂ ^ 2)) :
+    x₂ - x₁ = 0 ∨ x₂ * y₁ - x₁ * y₂ = 0 := by
+  subst hp
+  have key : y₁ * (x₁ * x₂ - x₁ ^ 2) / x₁ ^ 2 + y₂ * (x₁ * x₂ - x₂ ^ 2) / x₂ ^ 2
+      = (x₂ - x₁) * (x₂ * y₁ - x₁ * y₂) / (x₁ * x₂) := by
+    field_simp
+    ring
+  rw [hY] at key
+  have h0 : (x₂ - x₁) * (x₂ * y₁ - x₁ * y₂) / (x₁ * x₂) = 0 := by
+    rw [← key]; ring
+  exact mul_eq_zero.mp ((div_eq_zero_iff.mp h0).resolve_right (mul_ne_zero hx₁ hx₂))
+
+theorem twoIsogeny_Y_sign_cases {A B x₁ y₁ x₂ y₂ : K} (hp : x₁ * x₂ = B)
+    (hc₁ : y₁ ^ 2 = x₁ ^ 3 + A * x₁ ^ 2 + B * x₁)
+    (hc₂ : y₂ ^ 2 = x₂ ^ 3 + A * x₂ ^ 2 + B * x₂) :
+    x₂ * y₁ - x₁ * y₂ = 0 ∨ x₂ * y₁ + x₁ * y₂ = 0 :=
+  mul_eq_zero.mp (by linear_combination x₂ ^ 2 * hc₁ - x₁ ^ 2 * hc₂ + (x₁ * x₂ * (x₁ - x₂)) * hp)
+
+theorem twoIsogeny_intercept_eq_zero_tangent {A B x y l n : K} (h2y : 2 * y ≠ 0)
+    (hc : y ^ 2 = x ^ 3 + A * x ^ 2 + B * x)
+    (hl : 2 * y * l = 3 * x ^ 2 + 2 * A * x + B) (hnu : n = y - l * x)
+    (hB : B - x ^ 2 = 0) : n = 0 := by
+  have h2yn : 2 * y * n = x * (B - x ^ 2) := by
+    subst hnu; linear_combination 2 * hc - x * hl
+  rw [hB, mul_zero] at h2yn
+  rcases mul_eq_zero.mp h2yn with h | h
+  · exact absurd h h2y
+  · exact h
+
+end TwoIsogenyAlgebra
+
+/-- **The generic case of the additivity of the explicit `2`-isogeny** (PROVEN
+2026-07-25; cut the same day out of `WeierstrassCurve.twoIsogenyFun_add`, whose
+degenerate cases — a zero summand, a summand equal to the kernel point `(0, 0)`,
+and `P + Q = 0` — are proven there): for two affine points of
+`y² = x³ + a x² + b x` with nonzero `x`-coordinates whose sum is not `0`, the
+explicit map `φ(x, y) = (y²/x², y (b − x²)/x²)` is additive.
+
+Proof (all of it coordinate algebra over `ℚ̄`; write `A = a`, `B = b` in `ℚ̄`,
+`ℓ` for `slope x₁ x₂ y₁ y₂`, `ν = y₁ − ℓx₁` for the intercept of the line
+through the two points, and `(x₃, y₃)` for `P₁ + P₂`):
+
+* Vieta for the cubic `x³ + Ax² + Bx − (ℓx + ν)²`, whose roots are
+  `x₁, x₂, x₃`: `x₁+x₂+x₃ = ℓ²−A`, `x₁x₂+x₁x₃+x₂x₃ = B−2ℓν`, `x₁x₂x₃ = ν²`.
+  The last two need the shape of `ℓ` and so split into a secant branch
+  (`twoIsogeny_vieta_secant`) and a tangent branch (`twoIsogeny_vieta_tangent`);
+  everything after this point is uniform in the two.
+* `x₃ = 0 ↔ ν = 0` (from `x₁x₂x₃ = ν²`). In that degenerate case both sides
+  are `0`: the left because `φ` kills `(0,0)`, the right because `ν = 0`
+  makes the line pass through the origin, forcing `x₁x₂ = B` (from
+  `e₂` with `x₃ = 0`), hence `X₁ = X₂` and `Y₁ = −Y₂`.
+* Otherwise `φ` maps the collinear triple to a collinear triple, on the line
+  `Y = ΛX + ν'` with the closed forms `Λ = (B − ℓν)/ν` and
+  `ν' = (Aℓν − Bℓ² − ν²)/ν` — `twoIsogeny_image_collinear`, whose one-line
+  content is that `Ŷ − ΛX` evaluates to `(Aℓν − Bℓ² − ν²)/ν` at *every*
+  point of the line, independently of `x`. Combined with
+  `X₁ + X₂ + X₃ = Λ² + 2A` (`twoIsogeny_X_sum`, pure Vieta) this is exactly
+  the addition law on the codomain, in either mathlib branch.
+
+Silverman AEC III.4.5, X.4.9 and Exercise 3.13; Washington, *Elliptic Curves*,
+ch. 8. -/
 theorem twoIsogenyFun_add_of_ne (a b : ℚ)
     [(⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ).IsElliptic]
     {x₁ y₁ x₂ y₂ : AlgebraicClosure ℚ}
@@ -6208,11 +6403,213 @@ theorem twoIsogenyFun_add_of_ne (a b : ℚ)
       y₁ = ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).negY x₂ y₂)) :
     twoIsogenyFun a b (Affine.Point.some x₁ y₁ h₁ + Affine.Point.some x₂ y₂ h₂) =
       twoIsogenyFun a b (Affine.Point.some x₁ y₁ h₁) +
-        twoIsogenyFun a b (Affine.Point.some x₂ y₂ h₂) :=
-  sorry
+        twoIsogenyFun a b (Affine.Point.some x₂ y₂ h₂) := by
+  have hnegY : ∀ x y : AlgebraicClosure ℚ,
+      ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).negY x y = -y := by
+    intro x y
+    simp only [Affine.negY, WeierstrassCurve.baseChange, WeierstrassCurve.map, map_zero]
+    ring
+  have hnegY' : ∀ x y : AlgebraicClosure ℚ,
+      ((⟨0, -2 * a, 0, a ^ 2 - 4 * b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).negY x y
+        = -y := by
+    intro x y
+    simp only [Affine.negY, WeierstrassCurve.baseChange, WeierstrassCurve.map, map_zero]
+    ring
+  rw [Point.add_some hxy, twoIsogenyFun_some_of_ne_zero a b h₁ hx₁,
+    twoIsogenyFun_some_of_ne_zero a b h₂ hx₂]
+  set A := algebraMap ℚ (AlgebraicClosure ℚ) a with hA
+  set B := algebraMap ℚ (AlgebraicClosure ℚ) b with hB
+  set ℓ := ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).slope x₁ x₂ y₁ y₂
+    with hℓdef
+  set x₃ := ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).addX x₁ x₂ ℓ
+    with hx₃def
+  set y₃ := ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).addY x₁ x₂ y₁ ℓ
+    with hy₃def
+  obtain ⟨ν, hνdef⟩ : ∃ t, t = y₁ - ℓ * x₁ := ⟨_, rfl⟩
+  have h₃ : ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).Nonsingular x₃ y₃ :=
+    Affine.nonsingular_add h₁ h₂ hxy
+  have hc₁ : y₁ ^ 2 = x₁ ^ 3 + A * x₁ ^ 2 + B * x₁ := by
+    have h := h₁.1
+    rw [Affine.equation_iff] at h
+    simp only [WeierstrassCurve.baseChange, WeierstrassCurve.map, map_zero, ← hA, ← hB] at h
+    linear_combination h
+  have hc₂ : y₂ ^ 2 = x₂ ^ 3 + A * x₂ ^ 2 + B * x₂ := by
+    have h := h₂.1
+    rw [Affine.equation_iff] at h
+    simp only [WeierstrassCurve.baseChange, WeierstrassCurve.map, map_zero, ← hA, ← hB] at h
+    linear_combination h
+  have hc₃ : y₃ ^ 2 = x₃ ^ 3 + A * x₃ ^ 2 + B * x₃ := by
+    have h := h₃.1
+    rw [Affine.equation_iff] at h
+    simp only [WeierstrassCurve.baseChange, WeierstrassCurve.map, map_zero, ← hA, ← hB] at h
+    linear_combination h
+  have hx₃val : x₃ = ℓ ^ 2 - A - x₁ - x₂ := by
+    rw [hx₃def]
+    simp only [Affine.addX, WeierstrassCurve.baseChange, WeierstrassCurve.map, map_zero, ← hA]
+    ring
+  have hlin₁ : y₁ = ℓ * x₁ + ν := by rw [hνdef]; ring
+  have hy₃val : y₃ = -(ℓ * x₃ + ν) := by
+    rw [hy₃def, hx₃def, hνdef]
+    simp only [Affine.addY, Affine.negY, Affine.negAddY, Affine.addX,
+      WeierstrassCurve.baseChange, WeierstrassCurve.map, map_zero]
+    ring
+  have he₁ : x₁ + x₂ + x₃ = ℓ ^ 2 - A := by rw [hx₃val]; ring
+  have hEslope :
+      (x₁ = x₂ ∧ y₂ = y₁ ∧ 2 * y₁ ≠ 0 ∧ 2 * y₁ * ℓ = 3 * x₁ ^ 2 + 2 * A * x₁ + B) ∨
+      (x₁ ≠ x₂ ∧ ℓ * (x₁ - x₂) = y₁ - y₂) := by
+    rcases eq_or_ne x₁ x₂ with hx | hx
+    · have hyne : y₁ ≠ ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).negY x₂ y₂ :=
+        fun h => hxy ⟨hx, h⟩
+      have hy : y₁ = y₂ := Affine.Y_eq_of_Y_ne h₁.1 h₂.1 hx hyne
+      rw [hnegY] at hyne
+      have h2y : 2 * y₁ ≠ 0 := fun hcon => hyne (by linear_combination -hy + hcon)
+      refine Or.inl ⟨hx, hy.symm, h2y, ?_⟩
+      have hs := Affine.slope_of_Y_ne
+        (W := ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ))) hx
+        (by rw [hnegY]; exact hyne)
+      rw [hnegY, ← hℓdef] at hs
+      simp only [WeierstrassCurve.baseChange, WeierstrassCurve.map, map_zero, ← hA, ← hB] at hs
+      have hd2 : y₁ - -y₁ ≠ 0 := fun hcon => h2y (by linear_combination hcon)
+      have hy0 : y₁ ≠ 0 := fun hcon => h2y (by rw [hcon]; ring)
+      have hcl : ℓ * (y₁ - -y₁) = 3 * x₁ ^ 2 + 2 * A * x₁ + B - 0 * y₁ := by
+        rw [hs]; field_simp
+      linear_combination hcl
+    · refine Or.inr ⟨hx, ?_⟩
+      have hd : x₁ - x₂ ≠ 0 := sub_ne_zero_of_ne hx
+      rw [hℓdef, Affine.slope_of_X_ne hx]
+      field_simp
+  obtain ⟨hlin₂, he₂, he₃⟩ :
+      y₂ = ℓ * x₂ + ν ∧ x₁ * x₂ + x₁ * x₃ + x₂ * x₃ = B - 2 * ℓ * ν ∧
+        x₁ * x₂ * x₃ = ν ^ 2 := by
+    rcases hEslope with ⟨hx, hy, _, hs⟩ | ⟨hx, hs⟩
+    · refine ⟨by rw [hy, hνdef, ← hx]; ring, ?_, ?_⟩
+      · exact (twoIsogeny_vieta_tangent hx hc₁ hs hνdef hx₃val).1
+      · exact (twoIsogeny_vieta_tangent hx hc₁ hs hνdef hx₃val).2
+    · have hd : x₁ - x₂ ≠ 0 := sub_ne_zero_of_ne hx
+      have hlin₂ : y₂ = ℓ * x₂ + ν := by rw [hνdef]; linear_combination hs
+      refine ⟨hlin₂, ?_, ?_⟩
+      · exact (twoIsogeny_vieta_secant hc₁ hc₂ hlin₁ hlin₂ hd hx₃val).1
+      · exact (twoIsogeny_vieta_secant hc₁ hc₂ hlin₁ hlin₂ hd hx₃val).2
+  have hνlin : ν * (x₁ - x₂) = x₁ * y₂ - x₂ * y₁ := by
+    linear_combination x₂ * hlin₁ - x₁ * hlin₂
+  have hνtan : x₁ = x₂ → B - x₁ ^ 2 = 0 → ν = 0 := by
+    intro hx hB0
+    rcases hEslope with ⟨_, _, h2y, hs⟩ | ⟨hxne, _⟩
+    · exact twoIsogeny_intercept_eq_zero_tangent h2y hc₁ hs hνdef hB0
+    · exact absurd hx hxne
+  rcases eq_or_ne ν 0 with hν0 | hν0
+  · have hx₃0 : x₃ = 0 := by
+      have h : x₁ * x₂ * x₃ = 0 := by rw [he₃, hν0]; ring
+      exact (mul_eq_zero.mp h).resolve_left (mul_ne_zero hx₁ hx₂)
+    have hp : x₁ * x₂ = B := by
+      have h := he₂
+      rw [hx₃0, hν0] at h
+      linear_combination h
+    have e₁ : y₁ = ℓ * x₁ := by rw [hlin₁, hν0]; ring
+    have e₂ : y₂ = ℓ * x₂ := by rw [hlin₂, hν0]; ring
+    rw [twoIsogenyFun_some_of_eq_zero a b h₃ hx₃0]
+    refine (Point.add_of_Y_eq ?_ ?_).symm
+    · rw [e₁, e₂]
+      exact twoIsogeny_X_eq_of_lineThroughOrigin hx₁ hx₂
+    · rw [hnegY', e₁, e₂]
+      exact twoIsogeny_Y_neg_of_lineThroughOrigin hx₁ hx₂ hp
+  · have hx₃ne : x₃ ≠ 0 := by
+      intro h
+      refine hν0 ?_
+      have hsq : ν ^ 2 = 0 := by rw [← he₃, h]; ring
+      exact (pow_eq_zero_iff (n := 2) (by norm_num)).mp hsq
+    have hu₃ : ℓ * x₃ + ν = -y₃ := by rw [hy₃val]; ring
+    have hŷ : (ℓ * x₃ + ν) ^ 2 = x₃ ^ 3 + A * x₃ ^ 2 + B * x₃ := by
+      rw [hu₃]; linear_combination hc₃
+    have hL₁ : y₁ * (B - x₁ ^ 2) / x₁ ^ 2 =
+        (B - ℓ * ν) / ν * (y₁ ^ 2 / x₁ ^ 2) + (A * ℓ * ν - B * ℓ ^ 2 - ν ^ 2) / ν :=
+      twoIsogeny_image_collinear hx₁ hν0 hlin₁ hc₁
+    have hL₂ : y₂ * (B - x₂ ^ 2) / x₂ ^ 2 =
+        (B - ℓ * ν) / ν * (y₂ ^ 2 / x₂ ^ 2) + (A * ℓ * ν - B * ℓ ^ 2 - ν ^ 2) / ν :=
+      twoIsogeny_image_collinear hx₂ hν0 hlin₂ hc₂
+    have hL₃ : -(y₃ * (B - x₃ ^ 2) / x₃ ^ 2) =
+        (B - ℓ * ν) / ν * (y₃ ^ 2 / x₃ ^ 2) + (A * ℓ * ν - B * ℓ ^ 2 - ν ^ 2) / ν := by
+      have h := twoIsogeny_image_collinear hx₃ne hν0 (rfl : ℓ * x₃ + ν = ℓ * x₃ + ν) hŷ
+      rw [hu₃] at h
+      linear_combination h
+    have hXeq : y₃ ^ 2 / x₃ ^ 2
+        = ((B - ℓ * ν) / ν) ^ 2 + 2 * A - y₁ ^ 2 / x₁ ^ 2 - y₂ ^ 2 / x₂ ^ 2 := by
+      rw [twoIsogeny_X_eq hx₁ hc₁, twoIsogeny_X_eq hx₂ hc₂, twoIsogeny_X_eq hx₃ne hc₃]
+      linear_combination twoIsogeny_X_sum hx₁ hx₂ hx₃ne hν0 he₁ he₂ he₃
+    have hne' : ¬(y₁ ^ 2 / x₁ ^ 2 = y₂ ^ 2 / x₂ ^ 2 ∧
+        y₁ * (B - x₁ ^ 2) / x₁ ^ 2 =
+          ((⟨0, -2 * a, 0, a ^ 2 - 4 * b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).negY
+            (y₂ ^ 2 / x₂ ^ 2) (y₂ * (B - x₂ ^ 2) / x₂ ^ 2)) := by
+      rintro ⟨hXe, hYe⟩
+      rw [hnegY'] at hYe
+      rcases twoIsogeny_X_eq_cases hx₁ hx₂ hc₁ hc₂ hXe with hx | hp
+      · refine hν0 (hνtan hx ?_)
+        rcases hEslope with ⟨_, hy, h2y, _⟩ | ⟨hxne, _⟩
+        · rw [hy, ← hx] at hYe
+          have h2 : (2 : AlgebraicClosure ℚ) * (y₁ * (B - x₁ ^ 2) / x₁ ^ 2) = 0 := by
+            linear_combination hYe
+          have h0 : y₁ * (B - x₁ ^ 2) / x₁ ^ 2 = 0 :=
+            (mul_eq_zero.mp h2).resolve_left (by norm_num)
+          have h3 : y₁ * (B - x₁ ^ 2) = 0 :=
+            (div_eq_zero_iff.mp h0).resolve_right (pow_ne_zero 2 hx₁)
+          exact (mul_eq_zero.mp h3).resolve_left fun hy0 => h2y (by rw [hy0]; ring)
+        · exact absurd hx hxne
+      · rcases twoIsogeny_Y_add_eq_zero_cases hx₁ hx₂ hp hYe with h | h
+        · have hx : x₁ = x₂ := by linear_combination -h
+          exact hν0 (hνtan hx (by rw [← hp, ← hx]; ring))
+        · refine hν0 ?_
+          rcases eq_or_ne x₁ x₂ with hx | hxne
+          · exact hνtan hx (by rw [← hp, ← hx]; ring)
+          · have hkey : ν * (x₁ - x₂) = 0 := by rw [hνlin]; linear_combination -h
+            exact (mul_eq_zero.mp hkey).resolve_right (sub_ne_zero_of_ne hxne)
+    have hΛ : ((⟨0, -2 * a, 0, a ^ 2 - 4 * b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).slope
+        (y₁ ^ 2 / x₁ ^ 2) (y₂ ^ 2 / x₂ ^ 2) (y₁ * (B - x₁ ^ 2) / x₁ ^ 2)
+        (y₂ * (B - x₂ ^ 2) / x₂ ^ 2) = (B - ℓ * ν) / ν := by
+      rcases eq_or_ne (y₁ ^ 2 / x₁ ^ 2) (y₂ ^ 2 / x₂ ^ 2) with hXe | hXne
+      · have hYne0 : y₁ * (B - x₁ ^ 2) / x₁ ^ 2 ≠
+            ((⟨0, -2 * a, 0, a ^ 2 - 4 * b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).negY
+              (y₂ ^ 2 / x₂ ^ 2) (y₂ * (B - x₂ ^ 2) / x₂ ^ 2) := fun h => hne' ⟨hXe, h⟩
+        have hY12 : y₁ * (B - x₁ ^ 2) / x₁ ^ 2 = y₂ * (B - x₂ ^ 2) / x₂ ^ 2 := by
+          rw [hL₁, hL₂, hXe]
+        have hden : y₁ * (B - x₁ ^ 2) / x₁ ^ 2 -
+            ((⟨0, -2 * a, 0, a ^ 2 - 4 * b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).negY
+              (y₁ ^ 2 / x₁ ^ 2) (y₁ * (B - x₁ ^ 2) / x₁ ^ 2) ≠ 0 := by
+          rw [hnegY']
+          intro hcon
+          rw [hnegY'] at hYne0
+          exact hYne0 (by rw [← hY12]; linear_combination hcon)
+        rw [Affine.slope_of_Y_ne hXe hYne0, div_eq_div_iff hden hν0, hnegY']
+        simp only [WeierstrassCurve.baseChange, WeierstrassCurve.map, map_zero, map_mul,
+          map_sub, map_pow, map_neg, map_ofNat, ← hA, ← hB]
+        rcases hEslope with ⟨_, _, _, hs⟩ | ⟨hxne, hs⟩
+        · linear_combination twoIsogeny_codomainSlope_tangent hx₁ hc₁ hs hνdef
+        · have hd : x₁ - x₂ ≠ 0 := sub_ne_zero_of_ne hxne
+          have hp : x₁ * x₂ = B := by
+            rcases twoIsogeny_X_eq_cases hx₁ hx₂ hc₁ hc₂ hXe with hx | hp
+            · exact absurd hx hxne
+            · exact hp
+          have hyy : x₂ * y₁ + x₁ * y₂ = 0 := by
+            rcases twoIsogeny_Y_sign_cases hp hc₁ hc₂ with h | h
+            · exact absurd ((mul_eq_zero.mp
+                (by rw [hνlin]; linear_combination -h : ν * (x₁ - x₂) = 0)).resolve_right hd) hν0
+            · exact h
+          linear_combination twoIsogeny_codomainSlope_secant hx₁ hx₂ hd hp hyy hc₁ hs hνdef
+      · rw [Affine.slope_of_X_ne hXne, hL₁, hL₂, div_eq_iff (sub_ne_zero_of_ne hXne)]
+        ring
+    rw [twoIsogenyFun_some_of_ne_zero a b h₃ hx₃ne, Point.add_some hne']
+    refine Point.some_eq_some _ ?_ ?_
+    · rw [hΛ]
+      simp only [Affine.addX, WeierstrassCurve.baseChange, WeierstrassCurve.map, map_zero,
+        map_mul, map_sub, map_pow, map_neg, map_ofNat, ← hA, ← hB]
+      linear_combination hXeq
+    · rw [hΛ]
+      simp only [Affine.addY, Affine.negY, Affine.negAddY, Affine.addX,
+        WeierstrassCurve.baseChange, WeierstrassCurve.map, map_zero,
+        map_mul, map_sub, map_pow, map_neg, map_ofNat, ← hA, ← hB]
+      linear_combination -hL₃ + hL₁ - ((B - ℓ * ν) / ν) * hXeq
 
 /-- **Additivity of the explicit `2`-isogeny** (DERIVED 2026-07-25 from
-`twoIsogenyFun_two_torsion_add` and the generic leaf `twoIsogenyFun_add_of_ne`): the
+`twoIsogenyFun_two_torsion_add` and the generic case `twoIsogenyFun_add_of_ne`): the
 explicit map `φ(x, y) = (y²/x², y (b − x²)/x²)` from `y² = x³ + a x² + b x` to
 `y² = x³ − 2 a x² + (a² − 4 b) x` (with `0` and `(0, 0)` sent to `0`) is a group
 homomorphism. -/
@@ -6259,8 +6656,8 @@ end WeierstrassCurve
 /-- **The classical `2`-isogeny, in normal form** (DERIVED 2026-07-25 from
 the explicit machinery above — `twoIsogenyFun` with its Galois
 equivariance `twoIsogenyFun_map`, its kernel `twoIsogenyFun_eq_zero_iff`
-and its additivity `twoIsogenyFun_add`, the last of which still rests on
-the generic-case leaf `twoIsogenyFun_add_of_ne`): for
+and its additivity `twoIsogenyFun_add`, whose generic case
+`twoIsogenyFun_add_of_ne` was PROVEN 2026-07-25): for
 `E₀ : y² = x³ + a x² + b x` over `ℚ`, an elliptic curve (so
 `Δ = 16 b² (a² − 4 b) ≠ 0`), the quotient of `E₀` by the order-`2`
 subgroup `{0, (0, 0)}` is the elliptic curve
