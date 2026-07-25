@@ -355,7 +355,7 @@ rejected:
   rational point of order `25` makes the mod-`25` representation
   `(1 ∗; 0 ω)` (the rational cyclic subgroup is the trivial character,
   and the determinant is cyclotomic), so `a_p ≡ 1 + p (mod 25)` at
-  every prime `p ∤ 5·N_E` of good reduction, while `|a_p| ≤ 2√p`. That
+  every prime `p ≠ 5` of good reduction, while `|a_p| ≤ 2√p`. That
   congruence is strictly stronger than the bare bound `25 ≤ p+1+2√p`,
   but at this level it forces exactly the same thing: bad reduction at
   `p ∈ {2, 3, 7, 11, 13}` and nothing at any `p ≥ 17` (checked to
