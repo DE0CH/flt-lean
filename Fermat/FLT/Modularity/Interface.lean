@@ -15373,15 +15373,184 @@ theorem weightTwoNewform_not_dvd_level_p_of_isFlatAt
   simp only [LinearEquiv.trans_apply]
   rw [hfw, he]
 
+/-- **Transport of a pointwise-fixed vector across an equivariant
+linear equivalence** (PROVEN glue, the fixed-line analogue of
+`isUnramifiedAt_of_linearEquiv`): if `f` intertwines `τ₁` with `τ₂` and
+a subgroup `I` of the absolute Galois group of a field `L` receiving
+`ℚ` through `φ` fixes `w₀` through `τ₁` (read at `L` through
+`GaloisRep.map φ`), then `I` fixes `f w₀` through `τ₂`. Pure
+equivariance: `τ₂ σ (f w₀) = f (τ₁ σ w₀) = f w₀`. Used to carry the
+`hfixline` hypothesis across the rigidity equivalence in the at-`2`
+conductor assembly below. -/
+theorem inertia_fixed_of_linearEquiv
+    {A : Type*} [CommRing A] [TopologicalSpace A]
+    {W₁ W₂ : Type*} [AddCommGroup W₁] [Module A W₁]
+    [AddCommGroup W₂] [Module A W₂]
+    {τ₁ : GaloisRep ℚ A W₁} {τ₂ : GaloisRep ℚ A W₂}
+    (f : W₁ ≃ₗ[A] W₂)
+    (hf : ∀ (γ : Field.absoluteGaloisGroup ℚ) (w : W₁),
+      f (τ₁ γ w) = τ₂ γ (f w))
+    {L : Type*} [Field L] (φ : ℚ →+* L)
+    {I : Subgroup (Field.absoluteGaloisGroup L)} {w₀ : W₁}
+    (h : ∀ σ ∈ I, τ₁.map φ σ w₀ = w₀) :
+    ∀ σ ∈ I, τ₂.map φ σ (f w₀) = f w₀ := by
+  intro σ hσ
+  have h₀ : τ₁ (Field.absoluteGaloisGroup.map φ σ) w₀ = w₀ := by
+    rw [← GaloisRep.map_apply]
+    exact h σ hσ
+  rw [GaloisRep.map_apply, ← hf, h₀]
+
+/-- **Transport of a line-valued displacement across an equivariant
+linear equivalence** (PROVEN glue, the companion of
+`inertia_fixed_of_linearEquiv`): if `f` intertwines `τ₁` with `τ₂` and
+every `σ` in a subgroup `I` moves every `τ₁`-vector by a multiple of
+`w₀`, then every `σ ∈ I` moves every `τ₂`-vector by a multiple of
+`f w₀`. Pull the target vector back through `f.symm`, apply the
+hypothesis there, and push the coefficient forward: `f` is
+`A`-linear, so `f (c • w₀) = c • f w₀`. Used to carry the `hquotline`
+hypothesis across the rigidity equivalence below. -/
+theorem inertia_displacement_mem_span_of_linearEquiv
+    {A : Type*} [CommRing A] [TopologicalSpace A]
+    {W₁ W₂ : Type*} [AddCommGroup W₁] [Module A W₁]
+    [AddCommGroup W₂] [Module A W₂]
+    {τ₁ : GaloisRep ℚ A W₁} {τ₂ : GaloisRep ℚ A W₂}
+    (f : W₁ ≃ₗ[A] W₂)
+    (hf : ∀ (γ : Field.absoluteGaloisGroup ℚ) (w : W₁),
+      f (τ₁ γ w) = τ₂ γ (f w))
+    {L : Type*} [Field L] (φ : ℚ →+* L)
+    {I : Subgroup (Field.absoluteGaloisGroup L)} {w₀ : W₁}
+    (h : ∀ σ ∈ I, ∀ w : W₁,
+      τ₁.map φ σ w - w ∈ Submodule.span A {w₀}) :
+    ∀ σ ∈ I, ∀ w : W₂,
+      τ₂.map φ σ w - w ∈ Submodule.span A {f w₀} := by
+  intro σ hσ w
+  obtain ⟨c, hc⟩ := Submodule.mem_span_singleton.mp (h σ hσ (f.symm w))
+  refine Submodule.mem_span_singleton.mpr ⟨c, ?_⟩
+  have hfw : f (τ₁.map φ σ (f.symm w) - f.symm w) = τ₂.map φ σ w - w := by
+    rw [map_sub, GaloisRep.map_apply, GaloisRep.map_apply, hf,
+      LinearEquiv.apply_symm_apply]
+  rw [← hfw, ← hc, map_smul]
+
+/-- **The Artin-exponent-to-divisibility joint** (PROVEN glue): a
+positive natural number whose `2`-adic valuation is at most `1` is not
+divisible by `4`. Immediate from
+`Nat.Prime.pow_dvd_iff_le_factorization` at `p = 2`, `k = 2`: `4 ∣ M`
+would force `2 ≤ M.factorization 2`. This is the joint that converts
+the SHARP conductor-exponent form of Carayol's theorem at `2` (the leaf
+below states `ord₂ M ≤ 1`) into the `¬ 4 ∣ M` shape the level-lowering
+consumers use. -/
+theorem not_four_dvd_of_factorization_two_le_one {M : ℕ} (hM : 0 < M)
+    (h : M.factorization 2 ≤ 1) : ¬ (4 ∣ M) := by
+  intro h4
+  have h2 : (2 : ℕ) ^ 2 ∣ M := by
+    rwa [show (2 : ℕ) ^ 2 = 4 by norm_num]
+  have hle := (Nat.Prime.pow_dvd_iff_le_factorization Nat.prime_two
+    hM.ne').mp h2
+  omega
+
+include hpodd in
+/-- **Carayol's conductor exponent bound at `2`, irreducible
+exponent form** (sorry node — the residual literature leaf of the
+at-`2` conductor cut, carved out 2026-07-25: Carayol, *Sur les
+représentations `ℓ`-adiques associées aux formes modulaires de
+Hilbert*, Ann. Sci. ÉNS 19 (1986), Théorème (A), combined with the
+Artin conductor exponent formula
+`a₂(V) = (2 − dim V^{I₂}) + Sw₂(V)`): if an IRREDUCIBLE
+representation `τ` matching the Hecke polynomials of the weight-2
+NEWFORM `g` of level `M ≥ 1` away from a finite set has a NONZERO
+vector `w₀` fixed by every element of the inertia at `2` (`hfixline`)
+and moves every vector by a multiple of `w₀` (`hquotline`), then the
+`2`-adic valuation of the level is at most `1`:
+`M.factorization 2 ≤ 1`.
+
+This is the leaf stated AT ITS SHARPEST — the Artin exponent bound
+itself, not its `¬ 4 ∣ M` shadow; the shadow is the PROVEN arithmetic
+joint `not_four_dvd_of_factorization_two_le_one`.
+
+Residual citation content. Carayol's Théorème (A) computes the
+prime-to-`p` Artin conductor of the geometric attachment `ρ_{g,λ}` as
+the level: `ord_r (cond ρ_{g,λ}) = ord_r M` at every prime `r ≠ p`, in
+particular `a₂ = ord₂ M` (here `2 ≠ p` because `p` is odd, `hpodd`).
+The rigidity identification is NOT part of this leaf's citation burden
+(mirroring `weightTwoNewform_not_dvd_level_of_isUnramifiedAt_of_isIrreducible`
+and the geometric Saito cut at `p`): `τ` is IRREDUCIBLE, so the PROVEN
+rigidity `exists_linearEquiv_of_charFrob_eq` — with `τ` on the
+irreducible side — identifies `ρ_{g,λ}` (the `κ`-eigencomponent of
+`V_p(J₀(M))`, matched to the same Hecke polynomials by
+Eichler–Shimura) with `τ`, and the fixed-line data transports across
+the equivalence (`inertia_fixed_of_linearEquiv`,
+`inertia_displacement_mem_span_of_linearEquiv`). What remains is the
+local exponent computation at `2`:
+
+* `hfixline` exhibits a nonzero `I₂`-invariant vector, so
+  `dim V^{I₂} ≥ 1` and the tame part of the Artin exponent is
+  `2 − dim V^{I₂} ≤ 1`;
+* `hquotline` says every `σ ∈ I₂` acts as the transvection
+  `w ↦ w + c(σ)·w₀`, so the whole inertia image is a subgroup of the
+  additive group `(ℚ̄_p, +)` through `σ ↦ c(σ)`. The WILD inertia
+  `P₂ ≤ I₂` is pro-`2`, and its continuous image in `(ℚ̄_p, +)` is
+  simultaneously a pro-`2` group (continuous quotient of `P₂`) and a
+  compact subgroup of `(ℚ̄_p, +)`, hence pro-`p`; with `p` odd
+  (`hpodd`) the pro-`2`/pro-`p` clash forces the image to be trivial,
+  so `P₂` acts trivially and the Swan conductor `Sw₂(V)` — a sum over
+  the nontrivial higher ramification breaks, all of which live in the
+  wild part — vanishes;
+* hence `a₂ = (2 − dim V^{I₂}) + Sw₂ ≤ 1 + 0 = 1`, and Carayol's
+  `ord₂ M = a₂` gives `M.factorization 2 ≤ 1`.
+
+The inertia is spelled over `Γ ℚ_[2]` via `Z2bar` exactly as in
+`IsHardlyRamified.isTameAtTwo` (the PROVEN bridge
+`localInertia_two_eq_map_padic` of `ModThree.lean` converts to the
+adic-completion spelling up to conjugacy when needed).
+
+SOUNDNESS AUDIT (2026-07-25): non-vacuously satisfiable — for any
+classical newform `g` of ODD level `M` take `τ := ρ_{g,λ}`
+(irreducible by Ribet 1977, unramified at `2` by Eichler–Shimura good
+reduction of `J₀(M)` away from `M`, so the inertia at `2` acts
+trivially) and any `w₀ ≠ 0`: `hfixline` and `hquotline` hold with
+`c(σ) = 0`, and the conclusion `M.factorization 2 = 0 ≤ 1` is true.
+The statement quantifies over the `IsWeightTwoNewform` carrier, whose
+inhabitants are exactly the classical newforms (carrier audit at
+`IsWeightTwoNewform`), so every instance is an instance of the cited
+theorem; the load-bearing case is `4 ∣ M`, which the cited exponent
+computation refutes. -/
+theorem weightTwoNewform_factorization_two_le_one_of_inertia_fixed_line_of_isIrreducible
+    {M : ℕ} (hM : 0 < M) {g : CuspForm (Gamma0GL M) 2}
+    (hg : IsWeightTwoNewform M g)
+    (κ : heckeField M g →+* AlgebraicClosure ℚ_[p])
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    {S_τ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hτ : ∀ (r : ℕ) (hr : r.Prime),
+      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ →
+      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
+        Polynomial.X ^ 2
+          - Polynomial.C (κ (heckeCoeff M g r)) * Polynomial.X
+          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
+    (hirr : τ.IsIrreducible)
+    (w₀ : Fin 2 → AlgebraicClosure ℚ_[p]) (hw₀ : w₀ ≠ 0)
+    (hfixline : ∀ σ ∈ AddSubgroup.inertia
+        ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
+        (Field.absoluteGaloisGroup ℚ_[2]),
+      τ.map (algebraMap ℚ ℚ_[2]) σ w₀ = w₀)
+    (hquotline : ∀ σ ∈ AddSubgroup.inertia
+        ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
+        (Field.absoluteGaloisGroup ℚ_[2]),
+      ∀ w : Fin 2 → AlgebraicClosure ℚ_[p],
+        τ.map (algebraMap ℚ ℚ_[2]) σ w - w ∈
+          Submodule.span (AlgebraicClosure ℚ_[p]) {w₀}) :
+    M.factorization 2 ≤ 1 :=
+  sorry
+
 include hpodd in
 /-- **Level lowering at `2` under a tame fixed line — Carayol's
-conductor exponent theorem in existence form** (sorry node — Carayol,
-*Sur les représentations `ℓ`-adiques associées aux formes modulaires
-de Hilbert*, Ann. Sci. ÉNS 19 (1986), Théorème (A), combined with the
-Artin conductor exponent formula `a₂ = (2 − dim V^{I₂}) + Sw₂`; the
-same citation shape as the away-from-`p` sibling
-`exists_weightTwoEigenform_not_dvd_level_of_isUnramifiedAt`, in
-EXPONENT form at the place `2 ≠ p`): if the representation `τ`
+conductor exponent theorem in existence form** (DECOMPOSED 2026-07-25
+into the irreducible exponent-form Carayol leaf
+`weightTwoNewform_factorization_two_le_one_of_inertia_fixed_line_of_isIrreducible`
+above and now a PROVEN assembly, by the same intertwining pattern as
+the away-from-`p` sibling
+`exists_weightTwoEigenform_not_dvd_level_of_isUnramifiedAt` and the
+geometric Saito cut at `p`): if the representation `τ`
 matching the Hecke polynomials of the weight-2 EIGENFORM `g` of level
 `M ≥ 1` away from a finite set has a NONZERO vector `w₀` fixed by
 every element of the inertia at `2` (`hfixline`) with every inertia
@@ -15389,37 +15558,73 @@ displacement landing in `span {w₀}` (`hquotline`), then the
 away-from-`M` eigensystem of `g` already occurs at a level NOT
 divisible by `4`: some weight-2 eigenform `g'` of a level `M' ∣ M`
 with `4 ∤ M'` agrees with `g` at every prime not dividing `M`.
-Classical proof: behind `g` lies a newform `g₀` of level `M₀ ∣ M`
-with the same away-from-`M` eigensystem (Diamond–Shurman
-Prop. 5.8.4 — the PROVEN descent
-`exists_weightTwoNewform_of_weightTwoEigenform`); the attached
-`ρ_{g₀,λ}` is irreducible (Ribet 1977), so Chebotarev density plus
-characteristic-zero Brauer–Nesbitt (the PROVEN rigidity
-`exists_linearEquiv_of_charFrob_eq`) produce a genuine equivalence
-`τ ≅ ρ_{g₀,λ} ⊗ ℚ̄_p` from the charpoly matching away from the
-finite set `S_τ ∪ {r : r ∣ M}`; the fixed-line hypotheses transport
-across the equivalence (a fixed nonzero vector and a span-line
-membership are linear-equivalence invariants), so the inertia `I₂`
-acts on `ρ_{g₀,λ}` through the transvection group
-`{w ↦ w + c·w₀'} ≅ (ℚ̄_p, +)` fixing the line `ℚ̄_p·w₀'` pointwise,
-whence `dim V^{I₂} ≥ 1`; the wild inertia — a pro-2 group acting
-continuously with image simultaneously pro-2 (as a continuous
-quotient) and pro-`p` (as a compact subgroup of `(ℚ̄_p, +)`) with
-`p ≠ 2` (`hpodd` — the pro-2/pro-`p` clash) — acts trivially, so the
-Swan conductor vanishes; hence `a₂ ≤ (2 − 1) + 0 = 1`, and Carayol's
-`ord_2(M₀) = a₂` gives `4 ∤ M₀`; take `M' := M₀`, `g' := g₀`. The
-inertia is spelled over `Γ ℚ_[2]` via `Z2bar` exactly as in
+
+Assembly (each step PROVEN unless named as a leaf): behind `g` lies a
+newform `g₀` of level `M₀ ∣ M` with the same away-from-`M` eigensystem
+(the PROVEN newform descent
+`exists_weightTwoNewform_of_weightTwoEigenform`, Diamond–Shurman
+Prop. 5.8.4); the `p`-adic embedding `κ` transports to an embedding
+`κ₀` of the newform's Hecke field agreeing on the shared good
+coefficients (PROVEN `exists_ringHom_heckeField_of_qCoeff_eq`), so `τ`
+matches `g₀`'s Hecke polynomials away from `S_τ` together with the
+primes dividing `M`; the Ribet leaf
+`exists_irreducible_galoisRep_charFrob_of_weightTwoNewform` produces
+an IRREDUCIBLE representation `τg` matched to `g₀`, and the PROVEN
+rigidity `exists_linearEquiv_of_charFrob_eq` (Chebotarev +
+characteristic-zero Brauer–Nesbitt, consuming the irreducibility of
+`τg`) intertwines `τ` with `τg` through some `f`; the fixed-line data
+transports across `f` (PROVEN `inertia_fixed_of_linearEquiv` and
+`inertia_displacement_mem_span_of_linearEquiv`: a pointwise-fixed
+vector and a span-line displacement are equivariant-equivalence
+invariants), with `f w₀ ≠ 0` because `f` is injective; the irreducible
+exponent-form Carayol leaf then bounds the `2`-adic valuation of the
+newform's level, `M₀.factorization 2 ≤ 1`, which the PROVEN arithmetic
+joint `not_four_dvd_of_factorization_two_le_one` converts to
+`4 ∤ M₀`; and `(M₀, g₀)` witnesses the conclusion. All literature
+content now lives in the two cited sorried leaves (Ribet 1977
+irreducibility and the Carayol/Artin exponent computation at `2`); the
+newform descent, embedding transport, matching bookkeeping, rigidity,
+fixed-line transport and exponent arithmetic are PROVEN.
+
+ROUTE AUDIT (2026-07-25) — the planned "4-new/4-old dichotomy at level
+`M`" step is DISCHARGED BY EXISTING PROVEN MATERIAL and deliberately
+NOT restated. A genuine `4`-old/`4`-new dichotomy in the classical
+sense (`S₂(Γ₀(M)) = S₂(Γ₀(M))^new ⊕ S₂(Γ₀(M))^old` with the
+away-from-`M` eigensystem of an old form realized at `M/2` or `M/4`)
+requires the oldform degeneracy maps
+`α_d : S₂(Γ₀(M/d)) → S₂(Γ₀(M))` and the Petersson orthogonality that
+splits the space; this pin carries NEITHER (recorded verbatim in the
+`IsWeightTwoNewform` carrier docstring: "no newform theory, no
+Petersson product and no oldform degeneracy maps"), and the in-file
+Hecke/Sturm material — `exists_cuspForm_sturm_bound`,
+`cuspForm_finiteDimensional`, `hecke_eigen_coeff_identity`,
+`cuspForm_eq_of_forall_qCoeff_eq` — supplies finite-dimensionality and
+coefficient rigidity but no degeneracy maps, so the dichotomy is not
+formalizable in that shape here without building oldform theory. What
+IS available, and is strictly STRONGER than `4`-oldness, is the
+LEVEL-MINIMALITY dichotomy carried by the newform carrier:
+`exists_weightTwoNewform_of_weightTwoEigenform` is exactly "either the
+away-from-`M` eigensystem is minimal at `M` (new) or it already occurs
+at a strictly smaller divisor level (old)", PROVEN by strong induction
+on the level, and it descends past EVERY non-minimal divisor level
+rather than only the `2`-part. Routing the dichotomy through it
+therefore discharges step (a) while reusing the sibling's landed
+shape verbatim; the cut delivered here is the exponent leaf plus the
+descent bookkeeping.
+
+The inertia is spelled over `Γ ℚ_[2]` via `Z2bar` exactly as in
 `IsHardlyRamified.isTameAtTwo` (the PROVEN bridge
 `localInertia_two_eq_map_padic` of `ModThree.lean` converts to the
 adic-completion spelling up to conjugacy when needed). SOUNDNESS
-AUDIT (2026-07-24): non-vacuously satisfiable — for any classical
-newform `g` of odd level `M` take `τ := ρ_{g,λ}` (inertia at `2`
-acting trivially, any `w₀ ≠ 0`): the conclusion holds with `M' = M`,
-`g' = g`. The statement quantifies over the `IsWeightTwoEigenform`
-carrier, whose inhabitants are exactly the classical normalized
-eigenforms, so every instance is an instance of the cited theorems;
-the load-bearing case `4 ∣ M` is witnessed by the underlying newform,
-whose level Carayol proves to have `2`-adic valuation at most `1`. -/
+AUDIT (2026-07-24, carried over): non-vacuously satisfiable — for any
+classical newform `g` of odd level `M` take `τ := ρ_{g,λ}` (inertia at
+`2` acting trivially, any `w₀ ≠ 0`): the conclusion holds with
+`M' = M`, `g' = g`. The statement quantifies over the
+`IsWeightTwoEigenform` carrier, whose inhabitants are exactly the
+classical normalized eigenforms, so every instance is an instance of
+the cited theorems; the load-bearing case `4 ∣ M` is witnessed by the
+underlying newform, whose level the exponent leaf proves to have
+`2`-adic valuation at most `1`. -/
 theorem exists_weightTwoEigenform_not_four_dvd_level_of_inertia_fixed_line
     {M : ℕ} (hM : 0 < M) {g : CuspForm (Gamma0GL M) 2}
     (hg : IsWeightTwoEigenform M g)
@@ -15447,8 +15652,68 @@ theorem exists_weightTwoEigenform_not_four_dvd_level_of_inertia_fixed_line
     ∃ (M' : ℕ) (_ : M' ∣ M) (_ : ¬ 4 ∣ M')
       (g' : CuspForm (Gamma0GL M') 2)
       (_ : IsWeightTwoEigenform M' g'),
-      ∀ (r : ℕ), r.Prime → ¬ r ∣ M → qCoeff M' g' r = qCoeff M g r :=
-  sorry
+      ∀ (r : ℕ), r.Prime → ¬ r ∣ M → qCoeff M' g' r = qCoeff M g r := by
+  classical
+  -- step 1: the underlying newform (Diamond–Shurman Prop. 5.8.4) — this
+  -- is the level-minimality dichotomy that replaces the `4`-new/`4`-old
+  -- split (see the ROUTE AUDIT above)
+  obtain ⟨M₀, hM₀dvd, hM₀pos, g₀, hg₀, hagree⟩ :=
+    exists_weightTwoNewform_of_weightTwoEigenform hM hg
+  -- step 2: transport the `p`-adic embedding to the newform's Hecke field
+  obtain ⟨κ₀, hκ₀⟩ := exists_ringHom_heckeField_of_qCoeff_eq hM₀pos
+    hg₀.toIsWeightTwoEigenform κ hagree
+  -- step 3: `τ` matches `g₀`'s Hecke polynomials away from
+  -- `S_τ ∪ (primes dividing M)`
+  set badM : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :=
+    M.primeFactors.attach.image fun r =>
+      (Nat.prime_of_mem_primeFactors r.2).toHeightOneSpectrumRingOfIntegersRat
+  have hτ₀ : ∀ (r : ℕ) (hr : r.Prime),
+      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ ∪ badM →
+      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
+        Polynomial.X ^ 2
+          - Polynomial.C (κ₀ (heckeCoeff M₀ g₀ r)) * Polynomial.X
+          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])) := by
+    intro r hr hrS
+    have hrM : ¬ r ∣ M := by
+      intro hdvd
+      exact hrS (Finset.mem_union_right _ (Finset.mem_image.mpr
+        ⟨⟨r, Nat.mem_primeFactors.mpr ⟨hr, hdvd, hM.ne'⟩⟩,
+          Finset.mem_attach _ _, rfl⟩))
+    rw [hτ r hr fun h => hrS (Finset.mem_union_left _ h), hκ₀ r hr hrM]
+  -- step 4: Ribet — an irreducible representation matched to `g₀`
+  obtain ⟨τg, Sg, hirrg, hτg⟩ :=
+    exists_irreducible_galoisRep_charFrob_of_weightTwoNewform hM₀pos hg₀ κ₀
+  -- step 5: rigidity — `τ ≅ τg` from charpoly agreement off
+  -- `(S_τ ∪ badM) ∪ Sg`
+  have hrank2 : Module.rank (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p]) = 2 := by
+    simp
+  obtain ⟨f, hf⟩ := exists_linearEquiv_of_charFrob_eq hrank2 hrank2 hirrg
+    (S := (S_τ ∪ badM) ∪ Sg) (τ₁ := τ) fun r hr hrS => by
+      rw [hτ₀ r hr fun h => hrS (Finset.mem_union_left _ h),
+        hτg r hr fun h => hrS (Finset.mem_union_right _ h)]
+  -- step 6: the fixed-line data transports across the equivalence
+  have hfixg : ∀ σ ∈ AddSubgroup.inertia
+      ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
+      (Field.absoluteGaloisGroup ℚ_[2]),
+      τg.map (algebraMap ℚ ℚ_[2]) σ (f w₀) = f w₀ :=
+    inertia_fixed_of_linearEquiv f hf (algebraMap ℚ ℚ_[2]) hfixline
+  have hquotg : ∀ σ ∈ AddSubgroup.inertia
+      ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
+      (Field.absoluteGaloisGroup ℚ_[2]),
+      ∀ w : Fin 2 → AlgebraicClosure ℚ_[p],
+        τg.map (algebraMap ℚ ℚ_[2]) σ w - w ∈
+          Submodule.span (AlgebraicClosure ℚ_[p]) {f w₀} :=
+    inertia_displacement_mem_span_of_linearEquiv f hf
+      (algebraMap ℚ ℚ_[2]) hquotline
+  have hfw₀ : f w₀ ≠ 0 := fun h0 => hw₀ (f.injective (by rw [h0, map_zero]))
+  -- step 7: the irreducible Carayol exponent leaf, then the arithmetic
+  -- joint `ord₂ M₀ ≤ 1 → 4 ∤ M₀`
+  exact ⟨M₀, hM₀dvd,
+    not_four_dvd_of_factorization_two_le_one hM₀pos
+      (weightTwoNewform_factorization_two_le_one_of_inertia_fixed_line_of_isIrreducible
+        hpodd hM₀pos hg₀ κ₀ hτg hirrg (f w₀) hfw₀ hfixg hquotg),
+    g₀, hg₀.toIsWeightTwoEigenform, hagree⟩
 
 include hpodd in
 /-- **Carayol's conductor exponent bound at `2`, fixed-line form**
