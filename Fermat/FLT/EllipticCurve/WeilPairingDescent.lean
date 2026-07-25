@@ -3125,8 +3125,202 @@ theorem exists_pullback_of_translation_fixed {ι : Type*} [Fintype ι]
       hval_surj hcard hsmul hxrel hg₁ hg₂ hfix
   exact ⟨xp, yp, hpn, hsmul, b, c, hb, hc, hcnz, heq⟩
 
-/-- **L4-7 (sorry node): multiplicity-one `[p]^*`-comparison — a
-divisor relation between pullbacks descends to the base.**  Let
+/-!
+### L4-7 substrate: `[p]`-fibers as point-ideal products
+
+The multiplicity-one pullback comparison of stage L4-7 is organized
+around the **fiber product**
+`fiberProd val T = ∏_{κ ∈ E[p]} I'_{T ⊕ κ}`, the unit fractional ideal
+of the pullback divisor `[p]^*(R) = Σ_{p•S = R} (S)` for any preimage
+`p • T = R` — the fiber of `[p]` over `R` is the coset `T ⊕ E[p]`, and
+`[p]` being separable (`(p : F) ≠ 0`) it is reduced, so each of its
+`p²` points occurs with multiplicity one.
+
+Over this device the comparison splits into three geometric bricks —
+the affine divisor of a coordinate function
+(`exists_multiset_span_eq_prod_pointIdeal`), the pullback formula
+(`spanSingleton_pointEval_mul_fiberProd_pow`), and injectivity of the
+fiber-product map on divisors (`fiberProd_prod_inj`) — and a purely
+formal assembly, which is the proof of
+`span_eq_pointIdeal_mul_of_pullback` below.  All three bricks rest on
+the (still unformalized, in mathlib as here) Dedekind property of the
+affine coordinate ring `F[W]` of a smooth affine curve: `F[W]` is
+noetherian, one-dimensional and integrally closed when `W.Δ ≠ 0`, so
+its nonzero fractional ideals factor uniquely into maximal ideals,
+which — `F` being algebraically closed — are exactly the point ideals
+`pointIdeal W R` of the affine points `R`. -/
+
+/-- The `[p]`-fiber point-ideal product over a preimage `T`: the
+product `∏_{κ} I'_{T ⊕ κ}` of the unit fractional point ideals over the
+enumeration `val` of `E[p]`.  When `p • T = R` this is the unit
+fractional ideal of the pullback divisor `[p]^*(R)`; it depends on `T`
+only through `p • T`, because the fiber `T ⊕ E[p]` does. -/
+noncomputable def fiberProd {ι : Type*} [Fintype ι]
+    (W : WeierstrassCurve.Affine F) (val : ι → W.Point) (T : W.Point) :
+    FractionalIdeal W.CoordinateRing⁰ W.FunctionField :=
+  ((Finset.univ.val.map fun i => T + val i).map fun R =>
+    (pointIdeal' W R :
+      FractionalIdeal W.CoordinateRing⁰ W.FunctionField)).prod
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- The point ideal at `O` is the whole ring (the origin carries no
+affine divisor). -/
+@[simp] lemma pointIdeal_zero : pointIdeal W (0 : W.Point) = ⊤ := rfl
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- A product of coerced unit point ideals is a unit fractional
+ideal. -/
+lemma isUnit_prod_coe_pointIdeal' (D : Multiset W.Point) :
+    IsUnit ((D.map fun R =>
+      (pointIdeal' W R :
+        FractionalIdeal W.CoordinateRing⁰ W.FunctionField)).prod) := by
+  refine Multiset.prod_induction _ _ (fun a b ha hb => ha.mul hb) isUnit_one ?_
+  intro x hx
+  obtain ⟨R, -, rfl⟩ := Multiset.mem_map.mp hx
+  exact (pointIdeal' W R).isUnit
+
+omit [Fact p.Prime] in
+/-- **Divisibility of the point group**: `[p]` is surjective on the
+points of a nonsingular Weierstrass curve over an algebraically closed
+field of characteristic prime to `p` (`TorsionCard.smul_surjective`,
+transported along the trivial base change `W⁄F = W`). -/
+theorem exists_zsmul_eq (hΔ : W.Δ ≠ 0) (hp : (p : F) ≠ 0) (R : W.Point) :
+    ∃ T : W.Point, (p : ℤ) • T = R := by
+  haveI : W.IsElliptic := ⟨isUnit_iff_ne_zero.mpr hΔ⟩
+  have hbc : (WeierstrassCurve.Affine.baseChange W F) = W :=
+    WeierstrassCurve.map_id _
+  have hsurj := TorsionCard.smul_surjective W hp
+  rw [hbc] at hsurj
+  exact hsurj R
+
+omit [Fact p.Prime] [IsAlgClosed F] in
+/-- **The `p`-torsion enumeration is translation invariant**: for a
+`p`-torsion point `T`, translating the enumeration `val` of `E[p]` by
+`T` permutes it, so the two multisets agree. -/
+lemma map_add_torsion_eq {ι : Type*} [Fintype ι] {val : ι → W.Point}
+    (hval_inj : Function.Injective val)
+    (hval_tor : ∀ i, (p : ℤ) • val i = 0)
+    (hval_surj : ∀ Q : W.Point, (p : ℤ) • Q = 0 → ∃ i, val i = Q)
+    {T : W.Point} (hT : (p : ℤ) • T = 0) :
+    (Finset.univ.val.map fun i => T + val i) =
+      Finset.univ.val.map fun i => val i := by
+  classical
+  have hex : ∀ i : ι, ∃ j : ι, val j = T + val i := fun i =>
+    hval_surj _ (by rw [smul_add, hT, hval_tor i, add_zero])
+  choose f hf using hex
+  have hfinj : Function.Injective f := by
+    intro i j hij
+    have h1 : T + val i = T + val j := by rw [← hf i, ← hf j, hij]
+    exact hval_inj (add_left_cancel h1)
+  have hbij : Function.Bijective f := Finite.injective_iff_bijective.mp hfinj
+  have h2 : (Finset.univ.val.map
+      fun i => val (Equiv.ofBijective f hbij i)) =
+      Finset.univ.val.map fun i => val i :=
+    map_univ_comp_equiv (Equiv.ofBijective f hbij) val
+  rw [← h2]
+  exact Multiset.map_congr rfl fun i _ => (hf i).symm
+
+/-- **L4-7 brick (sorry): the affine divisor of a nonzero coordinate
+function.**  Every nonzero `z ∈ F[W]` has `Ideal.span {z}` equal to a
+product of point ideals at affine points — the affine part of `div z`,
+`Σ_R v_R(z)·(R)`, read as a multiset of affine points.
+
+Proof plan: `W.Δ ≠ 0` makes the affine curve smooth, so `F[W]` is a
+Dedekind domain (noetherian — a finite `F[X]`-algebra; dimension one;
+integrally closed at every smooth point), whence `Ideal.span {z}`
+factors uniquely into maximal ideals.  `F` being algebraically closed,
+the weak Nullstellensatz identifies the maximal ideals of
+`F[X, Y]/⟨W⟩` with the affine points of `W`: a maximal ideal `m` has
+`F[W]/m = F` (Zariski's lemma), and the images of `X`, `Y` are the
+coordinates `(x, y)` of a point of `W`, so `m ⊇ ⟨X − x, Y − y⟩` and
+equality follows since `⟨X − x, Y − y⟩ = pointIdeal W (some x y _)` is
+already maximal (`CoordinateRing.quotientXYIdealEquiv`).  The point
+`O` never occurs, `pointIdeal W 0 = ⊤` being the unit ideal. -/
+theorem exists_multiset_span_eq_prod_pointIdeal (hΔ : W.Δ ≠ 0)
+    {z : W.CoordinateRing} (hz : z ≠ 0) :
+    ∃ D : Multiset W.Point, (0 : W.Point) ∉ D ∧
+      Ideal.span {z} = (D.map (pointIdeal W)).prod := by
+  sorry
+
+/-- **L4-7 brick (sorry): the multiplicity-one `[p]`-pullback formula
+for a coordinate function.**  Let `val` enumerate `E[p]`, let
+`(xp, yp)` be the affine coordinates of the generic multiple
+`p • taut` — so that `pointEval (constHom W) hpn.left` realizes the
+pullback `z ↦ z ∘ [p]` on `F[W]` with values in `K = Frac F[W]` — and
+let `sec` be a section of `[p]` on points.  If the nonzero `z ∈ F[W]`
+has affine divisor `D` (a multiset of affine points), then
+
+`([p]^*z) · [p]^*(O)^{#D} = ∏_{R ∈ D} [p]^*(R)`
+
+as fractional ideals, with `[p]^*(R) = fiberProd val (sec R)`.
+
+Proof plan (HLEG-NOTES.md §4(B), stage L4-7): the full divisor of `z`
+is `Σ_{R ∈ D} (R) − #D·(O)` (the pole order at the unique place at
+infinity equals the affine degree, `deg div z = 0`), and pullback along
+a finite morphism is a homomorphism of divisor groups.  For the fiber
+multiplicities: the fiber of the vertical `X − x_R` under `[p]` is cut
+out by the division-polynomial pullback `Φ_p − x_R·Ψ_p²` (mathlib's
+`WeierstrassCurve.Φ` / `ΨSq`; `Φ_p` is monic of degree `p²` by
+`natDegree_Φ`/`coeff_Φ`), which is separable because `(p : F) ≠ 0` —
+so each of the `p²` fiber points occurs with multiplicity one, i.e.
+`[p]^*(R) = Σ_{S ∈ sec R ⊕ E[p]} (S)` = `fiberProd val (sec R)`; and
+the fiber over `O` is `E[p]` itself, `[p]^*(O) = Σ_κ (κ)`.  Reading
+the resulting divisor identity through the Dedekind factorization of
+`F[W]` gives the displayed fractional-ideal identity (the affine part
+is all a fractional ideal sees). -/
+theorem spanSingleton_pointEval_mul_fiberProd_pow {ι : Type*} [Fintype ι]
+    {val : ι → W.Point}
+    (hΔ : W.Δ ≠ 0) (hp : (p : F) ≠ 0)
+    (hval_inj : Function.Injective val)
+    (hval_tor : ∀ i, (p : ℤ) • val i = 0)
+    (hval_surj : ∀ Q : W.Point, (p : ℤ) • Q = 0 → ∃ i, val i = Q)
+    (hcard : Fintype.card ι = p ^ 2)
+    {xp yp : W.FunctionField} {hpn : (curveK W).Nonsingular xp yp}
+    (hptaut : (p : ℤ) • tautPoint W hΔ =
+      WeierstrassCurve.Affine.Point.some xp yp hpn)
+    {sec : W.Point → W.Point} (hsec : ∀ R : W.Point, (p : ℤ) • sec R = R)
+    {z : W.CoordinateRing} (hz : z ≠ 0)
+    (hzev : pointEval (constHom W) hpn.left z ≠ 0)
+    {D : Multiset W.Point} (hD0 : (0 : W.Point) ∉ D)
+    (hD : Ideal.span {z} = (D.map (pointIdeal W)).prod) :
+    (D.map fun R => fiberProd W val (sec R)).prod =
+      FractionalIdeal.spanSingleton W.CoordinateRing⁰
+          (pointEval (constHom W) hpn.left z) *
+        fiberProd W val (sec 0) ^ Multiset.card D := by
+  sorry
+
+/-- **L4-7 brick (sorry): the fiber-product map is injective on
+divisors.**  Distinct base points have disjoint `[p]`-fibers (if
+`p • S = R₁` and `p • S = R₂` then `R₁ = R₂`), each fiber is a set of
+`p²` distinct points, and at most one of them (the origin, in the fiber
+over `O`) has trivial point ideal; so `fiberProd val (sec R)` is a
+product of at least `p² − 1 ≥ 3` pairwise distinct maximal ideals, and
+these supports are pairwise disjoint as `R` varies.  Unique
+factorization of fractional ideals over the Dedekind domain `F[W]`
+therefore recovers the multiset `D` from `∏_{R ∈ D} fiberProd val
+(sec R)`.
+
+Proof plan: read off the multiplicity of the maximal ideal
+`pointIdeal W S` on both sides for each affine `S` (Dedekind
+factorization); it is `Multiset.count (p • S) D` on the side of `D`,
+so `count R D₁ = count R D₂` for every `R` in the image of `[p]`,
+which is every point (`exists_zsmul_eq`). -/
+theorem fiberProd_prod_inj {ι : Type*} [Fintype ι] {val : ι → W.Point}
+    (hΔ : W.Δ ≠ 0) (hp : (p : F) ≠ 0)
+    (hval_inj : Function.Injective val)
+    (hval_tor : ∀ i, (p : ℤ) • val i = 0)
+    (hval_surj : ∀ Q : W.Point, (p : ℤ) • Q = 0 → ∃ i, val i = Q)
+    (hcard : Fintype.card ι = p ^ 2)
+    {sec : W.Point → W.Point} (hsec : ∀ R : W.Point, (p : ℤ) • sec R = R)
+    {D₁ D₂ : Multiset W.Point}
+    (h : (D₁.map fun R => fiberProd W val (sec R)).prod =
+      (D₂.map fun R => fiberProd W val (sec R)).prod) :
+    D₁ = D₂ := by
+  sorry
+
+/-- **L4-7 (PROVEN over the three fiber bricks): multiplicity-one
+`[p]^*`-comparison — a divisor relation between pullbacks descends to
+the base.**  Let
 `val : ι → W.Point` enumerate the `p`-torsion subgroup
 (`card ι = p²`, `(p : F) ≠ 0`, so `[p]` is a separable isogeny whose
 fibers are the `p²` torsion translates), let `(xp, yp)` be the affine
@@ -3161,7 +3355,23 @@ exactly the point ideals, `F` being algebraically closed) — forces
 `div(b) − div(c) = (P) − (O)`, i.e. `(b) = I_P·(c)` on affine parts.
 In the degenerate case `P = O` the two fiber products coincide, the
 comparison gives `(b) = (c)`, and `I_O = ⊤` keeps the statement
-uniform.  See HLEG-NOTES.md §4(B), stage L4-7. -/
+uniform.  See HLEG-NOTES.md §4(B), stage L4-7.
+
+The formalized assembly runs over the three fiber bricks above.  Write
+`J_R := fiberProd val (sec R)` for a section `sec` of `[p]` on points
+(`exists_zsmul_eq`) normalized by `sec P = T'`, and note
+`J_0 = ∏_i I'_{val i}` because the fiber over `O` is `E[p]` whatever
+preimage is chosen (`map_add_torsion_eq`).  Cancelling the unit factor
+`∏_i I'_{⊖val i}` from `hcmp` gives `J_P·([p]^*c) = J_0·([p]^*b)`.
+The divisor brick supplies affine divisors `D_b`, `D_c` of `b`, `c`,
+the pullback brick turns them into
+`∏_{R ∈ D_z} J_R = ([p]^*z)·J_0^{#D_z}`, and multiplying the cancelled
+comparison by `J_0^{#D_b + #D_c}` yields
+`∏_{R ∈ P ::ₘ D_c + #D_b·(O)} J_R = ∏_{R ∈ D_b + (#D_c+1)·(O)} J_R`.
+Injectivity of the fiber-product map then equates the two multisets;
+counting copies of `O` gives `#D_b = #D_c + 1` (resp. `#D_b = #D_c`
+when `P = O`) and cancellation leaves `D_b = P ::ₘ D_c` (resp.
+`D_b = D_c`), which is the asserted span identity. -/
 theorem span_eq_pointIdeal_mul_of_pullback {ι : Type*} [Fintype ι]
     {val : ι → W.Point}
     (hΔ : W.Δ ≠ 0) (hp : (p : F) ≠ 0)
@@ -3189,7 +3399,88 @@ theorem span_eq_pointIdeal_mul_of_pullback {ι : Type*} [Fintype ι]
         FractionalIdeal.spanSingleton W.CoordinateRing⁰
           (pointEval (constHom W) hpn.left b)) :
     Ideal.span {b} = pointIdeal W P * Ideal.span {c} := by
-  sorry
+  classical
+  -- ── a section of `[p]` on points, normalized to send `P` to `T'`
+  obtain ⟨sec, hsec, hsecP⟩ : ∃ s : W.Point → W.Point,
+      (∀ R : W.Point, (p : ℤ) • s R = R) ∧ s P = T' := by
+    choose s hs using exists_zsmul_eq (W := W) hΔ hp
+    refine ⟨fun R => if R = P then T' else s R, fun R => ?_, by simp⟩
+    show (p : ℤ) • (if R = P then T' else s R) = R
+    by_cases h : R = P
+    · rw [if_pos h, hT]
+      exact h.symm
+    · rw [if_neg h]
+      exact hs R
+  -- ── the two fiber products occurring in `hcmp`
+  have hAfib : ((Finset.univ.val.map fun i => T' + val i).map fun R =>
+      (pointIdeal' W R :
+        FractionalIdeal W.CoordinateRing⁰ W.FunctionField)).prod =
+      fiberProd W val (sec P) := by
+    unfold fiberProd
+    rw [hsecP]
+  have hBfib : ((Finset.univ.val.map fun i => val i).map fun R =>
+      (pointIdeal' W R :
+        FractionalIdeal W.CoordinateRing⁰ W.FunctionField)).prod =
+      fiberProd W val (sec 0) := by
+    unfold fiberProd
+    rw [map_add_torsion_eq hval_inj hval_tor hval_surj (hsec 0)]
+  -- ── cancel the common unit factor `∏ I'_{⊖val i}` from `hcmp`
+  simp only [Multiset.map_add, Multiset.prod_add] at hcmp
+  rw [hAfib, hBfib] at hcmp
+  have hunitN : IsUnit (((Finset.univ.val.map fun i => -val i).map fun R =>
+      (pointIdeal' W R :
+        FractionalIdeal W.CoordinateRing⁰ W.FunctionField)).prod) :=
+    isUnit_prod_coe_pointIdeal' _
+  have hA : fiberProd W val (sec P) *
+        FractionalIdeal.spanSingleton W.CoordinateRing⁰
+          (pointEval (constHom W) hpn.left c) =
+      fiberProd W val (sec 0) *
+        FractionalIdeal.spanSingleton W.CoordinateRing⁰
+          (pointEval (constHom W) hpn.left b) := by
+    refine hunitN.mul_right_cancel ?_
+    rw [mul_right_comm, hcmp, mul_right_comm]
+  -- ── the affine divisors of `b` and `c`, and their `[p]`-pullbacks
+  obtain ⟨Db, hDb0, hDb⟩ := exists_multiset_span_eq_prod_pointIdeal hΔ hb
+  obtain ⟨Dc, hDc0, hDc⟩ := exists_multiset_span_eq_prod_pointIdeal hΔ hc
+  have hSb := spanSingleton_pointEval_mul_fiberProd_pow (val := val) hΔ hp
+    hval_inj hval_tor hval_surj hcard hptaut hsec hb hbev hDb0 hDb
+  have hSc := spanSingleton_pointEval_mul_fiberProd_pow (val := val) hΔ hp
+    hval_inj hval_tor hval_surj hcard hptaut hsec hc hcev hDc0 hDc
+  -- ── the comparison, multiplied out over the fiber products
+  have hkey : ((P ::ₘ (Dc + Multiset.replicate (Multiset.card Db) 0)).map
+        fun R => fiberProd W val (sec R)).prod =
+      ((Db + Multiset.replicate (Multiset.card Dc + 1) 0).map
+        fun R => fiberProd W val (sec R)).prod := by
+    simp only [Multiset.map_cons, Multiset.prod_cons, Multiset.map_add,
+      Multiset.prod_add, Multiset.map_replicate, Multiset.prod_replicate]
+    rw [hSb, hSc, ← mul_assoc, ← mul_assoc, hA]
+    ring
+  have hmulti := fiberProd_prod_inj (val := val) hΔ hp hval_inj hval_tor
+    hval_surj hcard hsec hkey
+  by_cases hP0 : P = 0
+  · -- ── degenerate case `P = O`: the divisors of `b` and `c` agree
+    subst hP0
+    have hcount := congrArg (Multiset.count (0 : W.Point)) hmulti
+    simp only [Multiset.count_cons_self, Multiset.count_add,
+      Multiset.count_replicate_self, Multiset.count_eq_zero_of_notMem hDc0,
+      Multiset.count_eq_zero_of_notMem hDb0, zero_add] at hcount
+    have hmn : Multiset.card Db = Multiset.card Dc := by omega
+    rw [hmn, show (0 : W.Point) ::ₘ
+        (Dc + Multiset.replicate (Multiset.card Dc) 0) =
+        Dc + Multiset.replicate (Multiset.card Dc + 1) 0 from by
+      rw [Multiset.replicate_succ, ← Multiset.singleton_add,
+        ← Multiset.singleton_add, add_left_comm]] at hmulti
+    have hDbc := add_right_cancel hmulti
+    rw [hDb, hDc, pointIdeal_zero, Ideal.top_mul, hDbc]
+  · -- ── generic case: the divisor of `b` is `(P)` plus that of `c`
+    have hcount := congrArg (Multiset.count (0 : W.Point)) hmulti
+    simp only [Multiset.count_cons_of_ne (fun h : (0 : W.Point) = P =>
+        hP0 h.symm), Multiset.count_add, Multiset.count_replicate_self,
+      Multiset.count_eq_zero_of_notMem hDc0,
+      Multiset.count_eq_zero_of_notMem hDb0, zero_add] at hcount
+    rw [← hcount, ← Multiset.cons_add] at hmulti
+    have hDbc := add_right_cancel hmulti
+    rw [hDb, hDc, ← hDbc, Multiset.map_cons, Multiset.prod_cons]
 
 /-- **L4-9 divisor comparison (PROVEN glue over the L4-7 brick
 `span_eq_pointIdeal_mul_of_pullback`): a `[p]^*`-descended Miller
