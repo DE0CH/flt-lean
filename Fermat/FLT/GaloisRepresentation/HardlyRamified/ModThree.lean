@@ -36971,13 +36971,34 @@ theorem lift_sub_lift_mem_of_localInertiaGroup_three
     rw [hkey]
     exact Submodule.smul_mem _ _ (Submodule.mem_map_of_mem hin)
 
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
 /-- **Inertia-fixed points of the connected part are trivial at `3`**
-(sorry node, 2026-07-24 — the Raynaud `e = 1 < p − 1` core): a
+(PROVEN 2026-07-25 over the shared Oort–Tate `μ`-type node of
+`GroupScheme/ConnectedEtale.lean`, which this file already imports —
+no `3`-specific argument is needed, and the deep content is NOT
+duplicated here): a
 geometric point `φ` of the generic fibre of a finite flat Hopf order
 `G` over `𝒪₃ᵥ ≅ ℤ₃` which (a) lies in the connected component (value
 `1` on the connected counit idempotent `e₀`), (b) has convolution
 order dividing `3`, and (c) is fixed by the local inertia at `3`, is
-the identity point. Intended proof (Raynaud 1974; Serre, Duke 1987,
+the identity point.
+
+Proof: this is exactly the shared `μ`-type node at `p = 3`, and both
+halves already exist base-generically in `ConnectedEtale.lean`.
+`OortTate.point_sub_counit_mem_maximalIdeal` (PROVEN) spends the
+connectedness data `e₀, he₀, hε₀, hprim₀` to give the reduction
+congruence `φ(1 ⊗ g) ≡ ε g` modulo the maximal ideal of the integral
+closure, for every `g`; `hfix` is the inertia-invariance; and
+`φ * φ * φ = 1` is the third convolution power `φ ^ 3 = 1`. Feeding
+these to `OortTate.eq_one_of_inertia_invariant_of_reduction_counit`
+(the RAMIFICATION half of the node, at the odd prime `3`) gives
+`φ = 1`. The comultiplication absorption `_hcomul₀` is retained in
+the interface — it is what the CONSUMER uses to see the connected
+part as a subgroup — but this proof does not need it.
+
+Background (Raynaud 1974; Serre, Duke 1987,
 §5.4; Tate, "Finite flat group schemes", in
 Cornell–Silverman–Stevens): an inertia-fixed point has values in the
 fixed field `(ℚ₃ᵥᵃˡᵍ)^I = ℚ₃ⁿʳ` (infinite Galois correspondence), and
@@ -37002,7 +37023,7 @@ theorem inertiaFixed_connected_point_eq_one_at_three
     (e₀ : G) (he₀ : IsIdempotentElem e₀)
     (hε₀ : Coalgebra.counit (R := 𝒪₃ᵥ) e₀ = (1 : 𝒪₃ᵥ))
     (hprim₀ : ∀ x : G, IsIdempotentElem x → x * e₀ = 0 ∨ x * e₀ = e₀)
-    (hcomul₀ : Coalgebra.comul (R := 𝒪₃ᵥ) e₀ * (e₀ ⊗ₜ[𝒪₃ᵥ] e₀) =
+    (_hcomul₀ : Coalgebra.comul (R := 𝒪₃ᵥ) e₀ * (e₀ ⊗ₜ[𝒪₃ᵥ] e₀) =
       e₀ ⊗ₜ[𝒪₃ᵥ] e₀)
     (φ : ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ)
     (hφe : φ ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1)
@@ -37010,7 +37031,27 @@ theorem inertiaFixed_connected_point_eq_one_at_three
     (hfix : ∀ σ ∈ localInertiaGroup
       Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat, σ • φ = φ) :
     φ = 1 := by
-  sorry
+  haveI h3 : Fact (Nat.Prime 3) := ⟨Nat.prime_three⟩
+  -- connectedness is spent here: a point of the connected component
+  -- reduces to the counit modulo the maximal ideal of the integral
+  -- closure, at every element of the Hopf order
+  have hred : ∀ g : G, φ ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] g) -
+      algebraMap 𝒪₃ᵥ ℚ₃ᵥᵃˡᵍ (Coalgebra.counit (R := 𝒪₃ᵥ) g) ∈
+      Submodule.map (Algebra.linearMap (IntegralClosure 𝒪₃ᵥ ℚ₃ᵥᵃˡᵍ) ℚ₃ᵥᵃˡᵍ)
+        (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ ℚ₃ᵥᵃˡᵍ)) := fun g =>
+    OortTate.point_sub_counit_mem_maximalIdeal
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat
+      G e₀ he₀ hε₀ hprim₀ φ hφe g
+  -- the triple convolution product is the third convolution power
+  have hord3 : φ ^ 3 = 1 :=
+    calc φ ^ 3 = φ ^ 2 * φ := pow_succ φ 2
+      _ = φ ^ 1 * φ * φ := by rw [pow_succ (a := φ) (n := 1)]
+      _ = φ * φ * φ := by rw [pow_one]
+      _ = 1 := hord
+  -- an inertia-invariant `𝒪^nr`-point in the kernel of reduction,
+  -- killed by the odd prime `3`, is the counit (`e = 1 < 3 − 1`)
+  exact OortTate.eq_one_of_inertia_invariant_of_reduction_counit
+    (p := 3) (by decide) G φ hord3 hfix hred
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
