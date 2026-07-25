@@ -274,7 +274,7 @@ theorem Field.absoluteGaloisGroup.exists_conj_map_comp'
           ((τ * Field.absoluteGaloisGroup.map f
             (Field.absoluteGaloisGroup.map g σ) * τ⁻¹) x) := rfl
 
-omit [IsTopologicalRing A] in
+omit [NumberField K] [NumberField L] [IsTopologicalRing A] in
 /-- **`charFrob` IS functorial along a tower** (PROVEN): although
 `GaloisRep.map` is only functorial up to conjugacy
 (`Field.absoluteGaloisGroup.exists_conj_map_comp`), the Frobenius
@@ -539,7 +539,7 @@ theorem GaloisRep.charFrob_map_ringEquiv
     = (ρ.toLocal w (Field.AbsoluteGaloisGroup.adicArithFrob w)).charpoly
   rw [hLHS, LinearEquiv.charpoly_conj]
 
-omit [IsTopologicalRing A] in
+omit [NumberField K] [IsTopologicalRing A] in
 /-- **Transport of `charFrob` along a `K`-isomorphism of number fields**
 (PROVEN, the form consumers want): if `L` and `F` are `K`-isomorphic
 number fields, then the Frobenius characteristic polynomials of the base
