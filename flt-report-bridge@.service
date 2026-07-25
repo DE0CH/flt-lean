@@ -74,7 +74,13 @@ WorkingDirectory=%h/%i
 Environment=PATH=/home/chend/.elan/bin:/home/chend/homebrew/bin:/usr/local/bin:/usr/bin:/bin
 # Own FIFOs must exist locally; clear the client-side session marker so the next
 # client performs the LSP handshake against the (possibly restarted) remote.
-ExecStartPre=/bin/sh -c 'mkdir -p .report-server && rm -f .report-server/state.json && for f in req resp; do [ -p .report-server/$f.fifo ] || { rm -f .report-server/$f.fifo; mkfifo .report-server/$f.fifo; }; done'
+# Create the local FIFOs if absent. Deliberately does NOT delete state.json:
+# the remote lake serve persists across bridge restarts and therefore stays
+# INITIALIZED, and it errors if sent `initialize` twice. Clearing the marker here
+# would make every reconnecting client re-handshake and fail. Only a restart of
+# the REMOTE flt-lake-socket@%i unit invalidates the handshake, and clearing the
+# marker then is the orchestrator's job.
+ExecStartPre=/bin/sh -c 'mkdir -p .report-server && for f in req resp; do [ -p .report-server/$f.fifo ] || { rm -f .report-server/$f.fifo; mkfifo .report-server/$f.fifo; }; done'
 # NOTE ON THE REDIRECTIONS, learned the hard way 2026-07-25: systemd does NOT
 # parse shell redirections in ExecStart — it splits the command line itself. So
 # `0<> ... 1<> ...` MUST live INSIDE the quoted `sh -c` string, where sh performs
