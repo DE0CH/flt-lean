@@ -5732,34 +5732,217 @@ theorem two_mul_sum_card_inertia_le_card_inertia_of_hopf_package
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
+/-- **Eventual triviality of the LOCAL lower-numbering ramification
+filtration** (PROVEN 2026-07-24 — the level-selection input of the
+Fontaine subextension estimate below; the complete-local analogue of
+`exists_pow_inertia_eq_bot` of the `DifferentTransport` section, with
+the number ring `𝓞 K` replaced by the complete DVR
+`𝒪_L = IntegralClosure 𝒪₃ᵥ L`): for a finite subextension `L` of
+`ℚ₃ᵥᵃˡᵍ/ℚ₃ᵥ` some level of the lower-numbering filtration
+`i ↦ G_i = inertia(𝔪_L^(i+1))` (Serre, *Corps Locaux* IV §1) is
+trivial — stated at the SHIFTED level `𝔪_L^(n+2)`, i.e. `G_{n+1} = ⊥`,
+so that the selected level is automatically `≥ 1`.  Proof: a
+nontrivial `σ ∈ Gal(L/ℚ₃ᵥ)` moves some element of `L`, hence — writing
+it as a ratio of elements of `𝒪_L` (`IsFractionRing.div_surjective`,
+available since `𝒪_L` is the integral closure in a finite extension) —
+some `x ∈ 𝒪_L`; Krull's intersection theorem
+(`Ideal.iInf_pow_eq_bot_of_isDomain` in the Noetherian domain `𝒪_L`)
+yields a level `m` with `σ • x − x ∉ 𝔪_L^(m+1)`, excluding `σ` from
+that level; the sup of these finitely many levels over the finite
+group `Gal(L/ℚ₃ᵥ)` (`AlgEquiv.fintype`) bounds the whole
+filtration. -/
+theorem exists_local_pow_inertia_eq_bot
+    (L : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ L] :
+    ∃ n : ℕ, (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ (n + 2)).inertia
+      (L ≃ₐ[ℚ₃ᵥ] L) = ⊥ := by
+  classical
+  haveI : IsFractionRing (IntegralClosure 𝒪₃ᵥ L) L :=
+    IsIntegralClosure.isFractionRing_of_finite_extension 𝒪₃ᵥ ℚ₃ᵥ L
+      (IntegralClosure 𝒪₃ᵥ L)
+  have hKrull : (⨅ m : ℕ, IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ m) = ⊥ :=
+    Ideal.iInf_pow_eq_bot_of_isDomain _
+      (IsLocalRing.maximalIdeal.isMaximal (IntegralClosure 𝒪₃ᵥ L)).ne_top
+  -- each nontrivial automorphism is excluded at some level
+  have hmove : ∀ σ : L ≃ₐ[ℚ₃ᵥ] L, σ ≠ 1 →
+      ∃ m : ℕ, σ ∉ (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ (m + 1)).inertia
+        (L ≃ₐ[ℚ₃ᵥ] L) := by
+    intro σ hσ
+    have hx : ∃ x : IntegralClosure 𝒪₃ᵥ L, σ • x ≠ x := by
+      by_contra hfix
+      push Not at hfix
+      apply hσ
+      refine AlgEquiv.ext fun y => ?_
+      obtain ⟨a, b, hb, rfl⟩ :=
+        IsFractionRing.div_surjective (A := IntegralClosure 𝒪₃ᵥ L) y
+      have ha : σ (algebraMap (IntegralClosure 𝒪₃ᵥ L) L a) =
+          algebraMap (IntegralClosure 𝒪₃ᵥ L) L a :=
+        congrArg (algebraMap (IntegralClosure 𝒪₃ᵥ L) L) (hfix a)
+      have hbfix : σ (algebraMap (IntegralClosure 𝒪₃ᵥ L) L b) =
+          algebraMap (IntegralClosure 𝒪₃ᵥ L) L b :=
+        congrArg (algebraMap (IntegralClosure 𝒪₃ᵥ L) L) (hfix b)
+      rw [AlgEquiv.one_apply, map_div₀, ha, hbfix]
+    obtain ⟨x, hxne⟩ := hx
+    have hz : σ • x - x ≠ 0 := sub_ne_zero.mpr hxne
+    have hout : ∃ m : ℕ, σ • x - x ∉
+        IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ m := by
+      by_contra hall
+      push Not at hall
+      refine hz ?_
+      have hmemi : σ • x - x ∈
+          (⨅ m : ℕ, IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ m) :=
+        (Submodule.mem_iInf _).mpr hall
+      rwa [hKrull, Ideal.mem_bot] at hmemi
+    obtain ⟨m, hm⟩ := hout
+    refine ⟨m, fun hmem' => hm ?_⟩
+    have h1 : σ • x - x ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ (m + 1) := by
+      have h2 := AddSubgroup.mem_inertia.mp hmem' x
+      rwa [Submodule.mem_toAddSubgroup] at h2
+    exact Ideal.pow_le_pow_right (Nat.le_succ m) h1
+  -- the sup of the exclusion levels over the finite group
+  choose f hf using hmove
+  set g : (L ≃ₐ[ℚ₃ᵥ] L) → ℕ := fun σ => if h : σ = 1 then 0 else f σ h with hg
+  refine ⟨Finset.univ.sup g, ?_⟩
+  rw [Subgroup.eq_bot_iff_forall]
+  intro σ hσ
+  by_contra hσ1
+  have hgσ : f σ hσ1 ≤ Finset.univ.sup g := by
+    have h1 : g σ = f σ hσ1 := dif_neg hσ1
+    exact h1 ▸ Finset.le_sup (Finset.mem_univ σ)
+  have hle : IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ (Finset.univ.sup g + 2) ≤
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ (f σ hσ1 + 1) :=
+    Ideal.pow_le_pow_right (by omega)
+  refine hf σ hσ1 (AddSubgroup.mem_inertia.mpr fun x => ?_)
+  have h2 := AddSubgroup.mem_inertia.mp hσ x
+  rw [Submodule.mem_toAddSubgroup] at h2 ⊢
+  exact hle h2
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **The Serre different numerology of a subextension** (sorry node,
+created 2026-07-24 — steps (a)+(b) of the decomposition of
+`two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`,
+PURE local class field theory; Serre, *Corps Locaux* IV §1 Prop. 4 and
+III §4 Prop. 8): for a finite Galois `L/ℚ₃ᵥ`, a subextension `M ≤ L`
+and a level `n` at which the filtration is already trivial
+(`hn : G_n = ⊥`, produced by `exists_local_pow_inertia_eq_bot`), the
+different exponent of `M/ℚ₃ᵥ` is computed by the Herbrand sums:
+writing `G_i = inertia(𝔪_L^(i+1)) ≤ Gal(L/ℚ₃ᵥ)`, `H = Gal(L/M)` (the
+fixing subgroup of `M` inside `Gal(L/ℚ₃ᵥ)`, spelled through the
+reification `IntermediateField.comap L.val M`) and
+`H_i = G_i ⊓ H` (Serre IV §1 Prop. 2 — with the `inertia` spelling
+this INTERSECTION *is* the lower filtration of `H`, no transport
+needed), one has `h₀·v_M(𝔡_{M/ℚ₃}) = Σ_{i=0}^{n}(g_i − h_i)`; since
+`𝔪_M^d ∣ 𝔡_{M/ℚ₃}` gives `d ≤ v_M(𝔡_{M/ℚ₃})` in the DVR `𝒪_M`, this
+yields the truncation-free inequality stated here.  Intended proof:
+(a) the two Galois different formulas `v_L(𝔡_{L/ℚ₃}) = Σ_{i≥0}(g_i−1)`
+and `v_L(𝔡_{L/M}) = Σ_{i≥0}(h_i−1)` (Serre IV §1 Prop. 4; both sums
+terminate at `n` by `hn`, all higher terms being `1 − 1 = 0`) — prove
+them by the `DifferentTransport` master-generator technique
+(`aeval_derivative_minpoly_eq_prod_sub_smul`, `sum_card_filter_inertia_eq`,
+`pow_sum_card_inertia_dvd_differentIdeal`) transplanted to the complete
+local setting, where the monogenicity `𝒪_L = 𝒪_M[x]` is automatic
+(finite residue fields); (b) transitivity of the different
+`𝔡_{L/ℚ₃} = 𝔡_{L/M}·𝔡_{M/ℚ₃}𝒪_L` (mathlib's
+`differentIdeal_mul_differentIdeal`-style tower formula over
+`𝒪₃ᵥ ⊆ 𝒪_M ⊆ 𝒪_L`) together with `v_L = e_{L/M}·v_M` on ideals
+extended from `𝒪_M` and `e_{L/M} = h₀` (`card_inertia_intermediate` of
+`LocalInertiaFixedField`). -/
+theorem card_inertia_inf_fixingSubgroup_mul_add_sum_le_sum_card_inertia
+    (L : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ L]
+    [IsGalois ℚ₃ᵥ L]
+    (M : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ M]
+    (hML : M ≤ L)
+    (n : ℕ)
+    (hn : (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ (n + 1)).inertia
+      (L ≃ₐ[ℚ₃ᵥ] L) = ⊥)
+    (d : ℕ)
+    (hd : IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M) ^ d ∣
+      differentIdeal 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ M)) :
+    Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L)).inertia
+        (L ≃ₐ[ℚ₃ᵥ] L) ⊓ (IntermediateField.comap L.val M).fixingSubgroup) * d
+      + ∑ i ∈ Finset.range (n + 1),
+          Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ (i + 1)).inertia
+            (L ≃ₐ[ℚ₃ᵥ] L) ⊓ (IntermediateField.comap L.val M).fixingSubgroup) ≤
+      ∑ i ∈ Finset.range (n + 1),
+        Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ (i + 1)).inertia
+          (L ≃ₐ[ℚ₃ᵥ] L)) := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **Multiplicativity of the ramification index in the tower
+`ℚ₃ᵥ ⊆ M ⊆ L`, in inertia form** (sorry node, created 2026-07-24 —
+step (b′) of the decomposition of
+`two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`;
+Serre, *Corps Locaux* I §4 Prop. 10 / Neukirch II (6.8)): with
+`G_0 = inertia(𝔪_L) ≤ Gal(L/ℚ₃ᵥ)` and `H = Gal(L/M)` the fixing
+subgroup of the reified `M`, one has `h₀·e(M/ℚ₃) = g₀`, i.e.
+`e_{L/M}·e_{M/ℚ₃} = e_{L/ℚ₃}`.  Intended proof: `g₀ = e_{L/ℚ₃}` is
+`card_inertia_finite_level` and `h₀ = e_{L/M}` is
+`card_inertia_intermediate` (both of `LocalInertiaFixedField`, the
+second applied to the intermediate field
+`IntermediateField.comap L.val M` of `↥L`, whose integral closure is
+identified with `IntegralClosure 𝒪₃ᵥ M` along `reifyEquiv`); the
+identification `G_0 ⊓ H = ` (image of) `inertia(𝔪_L)` inside
+`Gal(L/M)` is `AddSubgroup.inertia_map_subtype`, and the tower
+multiplicativity of `Ideal.ramificationIdx'` in the chain of DVRs
+`𝒪₃ᵥ ⊆ 𝒪_M ⊆ 𝒪_L` is `Ideal.ramificationIdx_algebra_tower` in the
+`ramificationIdx'` spelling. -/
+theorem card_inertia_inf_fixingSubgroup_mul_ramificationIdx'_eq_card_inertia
+    (L : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ L]
+    [IsGalois ℚ₃ᵥ L]
+    (M : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ M]
+    (hML : M ≤ L) :
+    Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L)).inertia
+        (L ≃ₐ[ℚ₃ᵥ] L) ⊓ (IntermediateField.comap L.val M).fixingSubgroup) *
+      Ideal.ramificationIdx' (IsLocalRing.maximalIdeal 𝒪₃ᵥ)
+        (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M)) =
+      Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L)).inertia
+        (L ≃ₐ[ℚ₃ᵥ] L)) := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
 /-- **The subextension different estimate under a `1/2` upper-break
-bound** (sorry node, created 2026-07-24 — leaf (iii) of the Fontaine
-different-bound decomposition, PURE local ramification theory with no
-Hopf vocabulary; Fontaine §1 Prop. 1.3; Serre, *Corps Locaux* IV
-§§1–3): let `L/ℚ₃ᵥ` be a finite Galois subextension of `ℚ₃ᵃˡᵍ` whose
-lower-numbering filtration `G_i = inertia(𝔪_L^(i+1))` satisfies the
-Herbrand-transcribed break bound `hFont`: whenever `G_{m+1} ≠ ⊥` then
-`2·Σ_{i=1}^{m+1} #G_i ≤ #G_0` (equivalently: all upper-numbering
-breaks are `≤ 1/2`).  Then EVERY subextension `M ≤ L` (not necessarily
-normal) obeys the sharp Fontaine bound: `𝔪_M^d ∣ 𝔡_{𝒪_M/𝒪₃ᵥ}` forces
-`2d + 2 ≤ 3e(M/ℚ₃)`.  Intended proof (Serre IV §§1–2 numerology, with
-`H = Gal(L/M)`, `H_i = H ∩ G_i` (Serre IV §1 Prop. 2), `g_i = #G_i`,
-`h_i = #H_i`): (a) the two Galois different formulas
-`v_L(𝔡_{L/ℚ₃}) = Σ_{i≥0}(g_i − 1)` and `v_L(𝔡_{L/M}) = Σ_{i≥0}(h_i − 1)`
-(Serre IV §1 Prop. 4 — both sums terminate by Krull intersection as in
-`exists_pow_inertia_eq_bot`; prove them by the DifferentTransport
-master-generator technique transplanted to the complete local setting,
-or transport the global proofs); (b) transitivity of the different
-`𝔡_{L/ℚ₃} = 𝔡_{L/M}·𝔡_{M/ℚ₃}𝒪_L` (mathlib
-`differentIdeal_mul_differentIdeal`-style over the DVR tower
-`𝒪₃ᵥ ⊆ 𝒪_M ⊆ 𝒪_L`) plus `v_L = e_{L/M}·v_M` on ideals from `𝒪_M` and
-`e_{L/M} = h₀` (`card_inertia_finite_level` over the base `M`) give
-`h₀·v_M(𝔡_{M/ℚ₃}) = Σ_{i≥0}(g_i − h_i)`; (c) with `e_M = g₀/h₀`
-(tower multiplicativity of `ramificationIdx'` and
-`card_inertia_finite_level`), the goal `2·v_M + 2 ≤ 3e_M` becomes
-`2·Σ_{i≥1}(g_i − h_i) ≤ g₀`, which follows from `hFont` at the last
-nontrivial level via `g_i − h_i ≤ g_i` — and is vacuous in the tame
-case (`Σ` empty, giving `2e_M ≤ 3e_M` outright). -/
+bound** (DECOMPOSED 2026-07-24 into the two sorry leaves above — the
+Serre different numerology
+`card_inertia_inf_fixingSubgroup_mul_add_sum_le_sum_card_inertia`
+(steps (a)+(b)) and the tower multiplicativity of the ramification
+index `card_inertia_inf_fixingSubgroup_mul_ramificationIdx'_eq_card_inertia`
+(step (b′)) — with the level selection
+`exists_local_pow_inertia_eq_bot` and the step-(c) arithmetic PROVEN
+here; leaf (iii) of the Fontaine different-bound decomposition, PURE
+local ramification theory with no Hopf vocabulary; Fontaine §1
+Prop. 1.3; Serre, *Corps Locaux* IV §§1–3): let `L/ℚ₃ᵥ` be a finite
+Galois subextension of `ℚ₃ᵃˡᵍ` whose lower-numbering filtration
+`G_i = inertia(𝔪_L^(i+1))` satisfies the Herbrand-transcribed break
+bound `hFont`: whenever `G_{m+1} ≠ ⊥` then `2·Σ_{i=1}^{m+1} #G_i ≤ #G_0`
+(equivalently: all upper-numbering breaks are `≤ 1/2`).  Then EVERY
+subextension `M ≤ L` (not necessarily normal) obeys the sharp Fontaine
+bound: `𝔪_M^d ∣ 𝔡_{𝒪_M/𝒪₃ᵥ}` forces `2d + 2 ≤ 3e(M/ℚ₃)`.  Proof
+(Serre IV §§1–2 numerology, with `H = Gal(L/M)`, `H_i = H ∩ G_i`
+(Serre IV §1 Prop. 2 — with the `inertia` spelling this intersection
+IS the lower filtration of `H`), `g_i = #G_i`, `h_i = #H_i`): (a) the
+two Galois different formulas `v_L(𝔡_{L/ℚ₃}) = Σ_{i≥0}(g_i − 1)` and
+`v_L(𝔡_{L/M}) = Σ_{i≥0}(h_i − 1)` (Serre IV §1 Prop. 4 — both sums
+terminate at the level supplied by `exists_local_pow_inertia_eq_bot`)
+and (b) transitivity of the different
+`𝔡_{L/ℚ₃} = 𝔡_{L/M}·𝔡_{M/ℚ₃}𝒪_L` with `v_L = e_{L/M}·v_M` and
+`e_{L/M} = h₀` give `h₀·v_M(𝔡_{M/ℚ₃}) = Σ_{i≥0}(g_i − h_i)`, i.e. the
+first sorry leaf in its `d ≤ v_M(𝔡)` truncated form; (b′) `h₀·e_M = g₀`
+is the second sorry leaf; (c) PROVEN here: choose (`Nat.find`) the
+FIRST level `n = j + 1 ≥ 1` with `G_n = ⊥`, so that `hFont` applies at
+`m = j − 1` (vacuously when `j = 0`) and gives `2·Σ_{i=1}^{j} g_i ≤ g₀`;
+splitting both Herbrand sums at their ends (`Finset.sum_range_succ'`,
+`Finset.sum_range_succ`, `g_n = h_n = 1`) and bounding `h_i ≥ 1`
+(`Nat.card_pos`) turns leaf (a)+(b) into
+`h₀·(2d + 2) ≤ 2Σ_{i=1}^{j} g_i + 2g₀ − 2j ≤ 3g₀ = h₀·3e_M`, and
+cancelling the positive factor `h₀` (`Nat.le_of_mul_le_mul_left`) is
+the goal — vacuous in the tame case `j = 0`, where it degenerates to
+`2e_M ≤ 3e_M`. -/
 theorem two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound
     (L : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ L]
     [IsGalois ℚ₃ᵥ L]
@@ -5769,9 +5952,9 @@ theorem two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound
       (IsLocalRing.maximalIdeal
           (IntegralClosure 𝒪₃ᵥ L) ^ (m + 2)).inertia (L ≃ₐ[ℚ₃ᵥ] L) ≠ ⊥ →
       2 * ∑ i ∈ Finset.range (m + 1),
-          Nat.card ((IsLocalRing.maximalIdeal
+          Nat.card ↥((IsLocalRing.maximalIdeal
             (IntegralClosure 𝒪₃ᵥ L) ^ (i + 2)).inertia (L ≃ₐ[ℚ₃ᵥ] L)) ≤
-        Nat.card ((IsLocalRing.maximalIdeal
+        Nat.card ↥((IsLocalRing.maximalIdeal
           (IntegralClosure 𝒪₃ᵥ L)).inertia (L ≃ₐ[ℚ₃ᵥ] L)))
     (d : ℕ)
     (hd : IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M) ^ d ∣
@@ -5779,7 +5962,93 @@ theorem two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound
     2 * d + 2 ≤ 3 * Ideal.ramificationIdx'
       (IsLocalRing.maximalIdeal 𝒪₃ᵥ)
       (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M)) := by
-  sorry
+  classical
+  -- the pure `ℕ` backbone of the Serre IV §§1–3 numerology
+  have harith : ∀ P B A S g₀ h₀ j : ℕ, P + B ≤ A → A = S + 1 + g₀ →
+      h₀ + (j + 1) ≤ B → 2 * S ≤ g₀ → 2 * P + 2 * h₀ ≤ 3 * g₀ := by
+    intro P B A S g₀ h₀ j h1 h2 h3 h4
+    omega
+  -- the FIRST level `n = j + 1 ≥ 1` at which the filtration is trivial
+  have hex : ∃ k : ℕ,
+      (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ (k + 2)).inertia
+        (L ≃ₐ[ℚ₃ᵥ] L) = ⊥ := exists_local_pow_inertia_eq_bot L
+  have hn : (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^
+      (Nat.find hex + 1 + 1)).inertia (L ≃ₐ[ℚ₃ᵥ] L) = ⊥ := Nat.find_spec hex
+  -- the Herbrand bound at the last nontrivial level (vacuous when `j = 0`)
+  have hK : 2 * ∑ i ∈ Finset.range (Nat.find hex),
+      Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^
+        (i + 1 + 1)).inertia (L ≃ₐ[ℚ₃ᵥ] L)) ≤
+      Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L)).inertia
+        (L ≃ₐ[ℚ₃ᵥ] L)) := by
+    rcases Nat.eq_zero_or_pos (Nat.find hex) with hj0 | hjpos
+    · rw [hj0]
+      simp
+    · obtain ⟨m, hm⟩ : ∃ m : ℕ, Nat.find hex = m + 1 := ⟨Nat.find hex - 1, by omega⟩
+      have hne : (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ (m + 2)).inertia
+          (L ≃ₐ[ℚ₃ᵥ] L) ≠ ⊥ := Nat.find_min hex (by omega)
+      rw [hm]
+      exact hFont m hne
+  -- leaf (a)+(b): the Serre different numerology, truncated at level `n`
+  have hS1 := card_inertia_inf_fixingSubgroup_mul_add_sum_le_sum_card_inertia
+    L M hML (Nat.find hex + 1) hn d hd
+  -- leaf (b′): `h₀·e_M = g₀`
+  have hS2 := card_inertia_inf_fixingSubgroup_mul_ramificationIdx'_eq_card_inertia
+    L M hML
+  -- split the `G`-sum at both ends: `A = S + g_n + g₀` with `g_n = 1`
+  have hA : ∑ i ∈ Finset.range (Nat.find hex + 1 + 1),
+      Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^
+        (i + 1)).inertia (L ≃ₐ[ℚ₃ᵥ] L)) =
+      (∑ i ∈ Finset.range (Nat.find hex),
+        Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^
+          (i + 1 + 1)).inertia (L ≃ₐ[ℚ₃ᵥ] L))) + 1 +
+      Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L)).inertia
+        (L ≃ₐ[ℚ₃ᵥ] L)) := by
+    rw [Finset.sum_range_succ', Finset.sum_range_succ, hn, Subgroup.card_bot]
+    simp
+  -- the `H`-sum is at least `h₀ + (j + 1)` since every `h_i ≥ 1`
+  have hB : Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L)).inertia
+        (L ≃ₐ[ℚ₃ᵥ] L) ⊓ (IntermediateField.comap L.val M).fixingSubgroup) +
+      (Nat.find hex + 1) ≤
+      ∑ i ∈ Finset.range (Nat.find hex + 1 + 1),
+        Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^
+          (i + 1)).inertia (L ≃ₐ[ℚ₃ᵥ] L) ⊓
+          (IntermediateField.comap L.val M).fixingSubgroup) := by
+    have hsum : Nat.find hex + 1 ≤ ∑ i ∈ Finset.range (Nat.find hex + 1),
+        Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^
+          (i + 1 + 1)).inertia (L ≃ₐ[ℚ₃ᵥ] L) ⊓
+          (IntermediateField.comap L.val M).fixingSubgroup) := by
+      calc Nat.find hex + 1 = ∑ _i ∈ Finset.range (Nat.find hex + 1), 1 := by simp
+        _ ≤ _ := Finset.sum_le_sum fun i _ => Nat.card_pos
+    rw [Finset.sum_range_succ']
+    simp only [zero_add, pow_one]
+    omega
+  -- step (c): the arithmetic, then cancel the positive factor `h₀`
+  have hmain : 2 * (Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L)).inertia
+        (L ≃ₐ[ℚ₃ᵥ] L) ⊓ (IntermediateField.comap L.val M).fixingSubgroup) * d) +
+      2 * Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L)).inertia
+        (L ≃ₐ[ℚ₃ᵥ] L) ⊓ (IntermediateField.comap L.val M).fixingSubgroup) ≤
+      3 * Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L)).inertia
+        (L ≃ₐ[ℚ₃ᵥ] L)) :=
+    harith _ _ _ _ _ _ _ hS1 hA hB hK
+  have h0pos : 0 < Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L)).inertia
+      (L ≃ₐ[ℚ₃ᵥ] L) ⊓ (IntermediateField.comap L.val M).fixingSubgroup) := Nat.card_pos
+  refine Nat.le_of_mul_le_mul_left ?_ h0pos
+  calc Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L)).inertia
+        (L ≃ₐ[ℚ₃ᵥ] L) ⊓ (IntermediateField.comap L.val M).fixingSubgroup) * (2 * d + 2)
+      = 2 * (Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L)).inertia
+          (L ≃ₐ[ℚ₃ᵥ] L) ⊓ (IntermediateField.comap L.val M).fixingSubgroup) * d) +
+        2 * Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L)).inertia
+          (L ≃ₐ[ℚ₃ᵥ] L) ⊓ (IntermediateField.comap L.val M).fixingSubgroup) := by ring
+    _ ≤ 3 * Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L)).inertia
+          (L ≃ₐ[ℚ₃ᵥ] L)) := hmain
+    _ = 3 * (Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L)).inertia
+          (L ≃ₐ[ℚ₃ᵥ] L) ⊓ (IntermediateField.comap L.val M).fixingSubgroup) *
+          Ideal.ramificationIdx' (IsLocalRing.maximalIdeal 𝒪₃ᵥ)
+            (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M))) := by rw [hS2]
+    _ = Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L)).inertia
+          (L ≃ₐ[ℚ₃ᵥ] L) ⊓ (IntermediateField.comap L.val M).fixingSubgroup) *
+        (3 * Ideal.ramificationIdx' (IsLocalRing.maximalIdeal 𝒪₃ᵥ)
+          (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M))) := by ring
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
