@@ -1270,7 +1270,38 @@ package.
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
 discharge through `Family.lean`, `Lift.lean`, or
-`Modularity/Interface.lean`. -/
+`Modularity/Interface.lean`. Respected by the proof below: its
+inputs are the `ℓ`-adic Hecke-field system
+(`exists_heckeField_system_of_witness`, this module), the
+realization's own `compat` clause, `hρ.det` (the hardly ramified
+hypothesis) and `Chebotarev.lean` — no `Family`/`Lift`/`Interface`
+route.
+
+PROVEN 2026-07-25 (no residual leaf of its own — the propagation is
+fully formalized; no automorphic input is consumed, because the
+determinant is pinned on the `ℓ`-adic side by `hρ.det` rather than by
+the Hecke eigensystem's central character). ROUTE AUDIT: two routes
+were available for pinning the constant coefficients of the shared
+Hecke polynomials `Pv q` — (a) the automorphic one, identifying the
+central character of the descended Hilbert eigensystem with
+`‖·‖·(norm)`, which would need a genuine citation sub-leaf, and (b)
+the Galois-side one, reading the constant coefficient off the
+`ℓ`-adic member, where `det ρ = χ_ℓ` is HYPOTHESIS (`hρ.det`).
+Route (b) is strictly shallower and was taken; route (a) would have
+introduced an automorphic citation leaf for no gain.
+
+ASSEMBLY: the `ℓ`-adic system `Pv` (`exists_heckeField_system_of_witness`)
+interpolates `charFrob ρ` at every prime `q` outside a finite set;
+`charpoly_eq_quadratic_of_finrank_two` reads its constant coefficient
+as `det ρ (Frob_q)`, which `hρ.det` and `cyclotomicCharacter_globalFrob`
+evaluate to `q`; injectivity of `ψℓ` on the Hecke field `E` forces
+`(Pv q).coeff 0 = q` in `E`, and the realization's `compat` clause
+plus injectivity of `ιA` transports this to
+`det τ (Frob_q) = q = χ_3(Frob_q)` in `A`. Both sides are continuous
+and conjugation-invariant, so the agreement set is closed and contains
+the dense set of Frobenius conjugates
+(`dense_conjClasses_globalFrob`); `A` is Hausdorff (finite free over
+`ℤ_3` with the module topology), so the agreement set is everything. -/
 theorem threeadicRealization_det_cyclotomic_of_witness
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
@@ -1295,8 +1326,194 @@ theorem threeadicRealization_det_cyclotomic_of_witness
     (Rlz : ThreeadicRealization ℓ O ρ Wit) :
     ∀ g : Field.absoluteGaloisGroup ℚ, Rlz.τ.det g =
       algebraMap ℤ_[3] Rlz.A
-        (cyclotomicCharacter (AlgebraicClosure ℚ) 3 g.toRingEquiv) :=
-  sorry
+        (cyclotomicCharacter (AlgebraicClosure ℚ) 3 g.toRingEquiv) := by
+  classical
+  -- the `ℓ`-adic Hecke-field interpolants of `charFrob ρ`
+  obtain ⟨S₀, Pv, hPv⟩ := exists_heckeField_system_of_witness hℓodd hℓ5
+    hZinj hrank hρ hW hρbar hirr π hπsurj hπ Wit
+  -- ranks of the two representation spaces
+  have hfrO : Module.finrank O (Fin 2 → O) = 2 :=
+    Module.finrank_eq_of_rank_eq (by exact_mod_cast hrank)
+  have hfrA : Module.finrank Rlz.A (Fin 2 → Rlz.A) = 2 := by
+    simp
+  -- `Rlz.A` is Hausdorff: transport along a `ℤ_3`-basis (linear maps
+  -- between module-topology modules are continuous both ways)
+  haveI hT2 : T2Space Rlz.A := by
+    let bA := Module.Free.chooseBasis ℤ_[3] Rlz.A
+    let eA : Rlz.A ≃ₗ[ℤ_[3]] (Module.Free.ChooseBasisIndex ℤ_[3] Rlz.A → ℤ_[3]) :=
+      bA.equivFun
+    have hc₁ : Continuous eA :=
+      IsModuleTopology.continuous_of_linearMap eA.toLinearMap
+    have hc₂ : Continuous eA.symm :=
+      IsModuleTopology.continuous_of_linearMap eA.symm.toLinearMap
+    let hom : Rlz.A ≃ₜ (Module.Free.ChooseBasisIndex ℤ_[3] Rlz.A → ℤ_[3]) :=
+      { toEquiv := eA.toEquiv
+        continuous_toFun := hc₁
+        continuous_invFun := hc₂ }
+    exact hom.isEmbedding.t2Space
+  -- the finite exceptional set: the two descent sets and the places of
+  -- `2`, `3`, `ℓ`
+  set S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :=
+    insert (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat Nat.prime_two)
+      (insert (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat Nat.prime_three)
+        (insert (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+            (Fact.out : ℓ.Prime))
+          (S₀ ∪ Rlz.S₁))) with hSdef
+  -- the determinant of `τ` at a good Frobenius is `q`
+  have hdetq : ∀ (q : ℕ) (hq : q.Prime),
+      Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq ∉ S →
+      Rlz.τ.det (globalFrob
+        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq)) = (q : Rlz.A) := by
+    intro q hq hvS
+    have hq2 : q ≠ 2 := by
+      rintro rfl; exact hvS (by rw [hSdef]; exact Finset.mem_insert_self _ _)
+    have hq3 : q ≠ 3 := by
+      rintro rfl
+      exact hvS (by
+        rw [hSdef]
+        exact Finset.mem_insert_of_mem (Finset.mem_insert_self _ _))
+    have hqℓ : q ≠ ℓ := by
+      rintro rfl
+      exact hvS (by
+        rw [hSdef]
+        exact Finset.mem_insert_of_mem (Finset.mem_insert_of_mem
+          (Finset.mem_insert_self _ _)))
+    have hvS₀ : Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq ∉ S₀ := by
+      intro hmem
+      exact hvS (by
+        rw [hSdef]
+        exact Finset.mem_insert_of_mem (Finset.mem_insert_of_mem
+          (Finset.mem_insert_of_mem (Finset.mem_union_left _ hmem))))
+    have hvS₁ : Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq ∉ Rlz.S₁ := by
+      intro hmem
+      exact hvS (by
+        rw [hSdef]
+        exact Finset.mem_insert_of_mem (Finset.mem_insert_of_mem
+          (Finset.mem_insert_of_mem (Finset.mem_union_right _ hmem))))
+    -- the `ℓ`-adic interpolation and its `3`-adic transport
+    have h1 := hPv q hq hvS₀ hq2 hq3 hqℓ
+    have h2 := Rlz.compat q hq hvS₁ hq2 hq3 hqℓ
+      (Pv (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq)) h1
+    -- constant coefficients
+    have h1' : Wit.ιO ((ρ.charFrob
+          (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq)).coeff 0) =
+        Wit.ψℓ ((Pv (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq)).coeff 0) := by
+      have := congrArg (fun p : Polynomial _ => p.coeff 0) h1
+      simpa [Polynomial.coeff_map] using this
+    have h2' : Rlz.ιA ((Rlz.τ.charFrob
+          (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq)).coeff 0) =
+        Wit.ψ₃ ((Pv (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq)).coeff 0) := by
+      have := congrArg (fun p : Polynomial _ => p.coeff 0) h2
+      simpa [Polynomial.coeff_map] using this
+    -- the `ℓ`-adic constant coefficient is `det ρ (Frob_q) = q`
+    have hdetρ : (ρ.charFrob
+        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq)).coeff 0 = (q : O) := by
+      rw [GaloisRep.charFrob_eq_charpoly_globalFrob,
+        charpoly_eq_quadratic_of_finrank_two hfrO, coeff_zero_quadratic,
+        ← GaloisRep.det_apply, hρ.det, cyclotomicCharacter_globalFrob hq hqℓ,
+        map_natCast]
+    -- hence the Hecke polynomial's constant coefficient is `q` in `E`
+    have hPvq : (Pv (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq)).coeff 0
+        = (q : Wit.E) := by
+      apply Wit.ψℓ.injective
+      rw [← h1', hdetρ, map_natCast, map_natCast]
+    -- transport to the `3`-adic side
+    have hτcoeff : (Rlz.τ.charFrob
+        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq)).coeff 0
+        = (q : Rlz.A) := by
+      apply Rlz.ιA_injective
+      rw [h2', hPvq, map_natCast, map_natCast]
+    rw [GaloisRep.charFrob_eq_charpoly_globalFrob,
+      charpoly_eq_quadratic_of_finrank_two hfrA, coeff_zero_quadratic]
+      at hτcoeff
+    rw [GaloisRep.det_apply]
+    exact hτcoeff
+  -- the `3`-adic cyclotomic character at a good Frobenius is `q`
+  have hchiq : ∀ (q : ℕ) (hq : q.Prime), q ≠ 3 →
+      algebraMap ℤ_[3] Rlz.A ((cyclotomicCharacter (AlgebraicClosure ℚ) 3
+        (globalFrob (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq)).toRingEquiv :
+          ℤ_[3]ˣ) : ℤ_[3]) = (q : Rlz.A) := by
+    intro q hq hq3
+    rw [cyclotomicCharacter_globalFrob hq hq3, map_natCast]
+  -- both sides are continuous
+  have hcont1 : Continuous fun g : Field.absoluteGaloisGroup ℚ => Rlz.τ.det g :=
+    ContinuousMonoidHom.continuous_toFun _
+  have hRA : ∀ g : Field.absoluteGaloisGroup ℚ,
+      MulSemiringAction.toRingAut (Field.absoluteGaloisGroup ℚ)
+        (AlgebraicClosure ℚ) g = g.toRingEquiv :=
+    fun _ => RingEquiv.ext fun _ => rfl
+  have hbridge : ∀ g : Field.absoluteGaloisGroup ℚ,
+      cyclotomicCharacter (AlgebraicClosure ℚ) 3 g.toRingEquiv =
+        ((cyclotomicCharacter (AlgebraicClosure ℚ) 3).comp
+          (MulSemiringAction.toRingAut (Field.absoluteGaloisGroup ℚ)
+            (AlgebraicClosure ℚ))) g := by
+    intro g
+    rw [MonoidHom.comp_apply, hRA]
+  have hcontχ : Continuous fun g : Field.absoluteGaloisGroup ℚ =>
+      ((cyclotomicCharacter (AlgebraicClosure ℚ) 3 g.toRingEquiv : ℤ_[3]ˣ) :
+        ℤ_[3]) := by
+    simp only [hbridge]
+    exact Units.continuous_val.comp
+      (cyclotomicCharacter.continuous 3 ℚ (AlgebraicClosure ℚ))
+  have hcont2 : Continuous fun g : Field.absoluteGaloisGroup ℚ =>
+      algebraMap ℤ_[3] Rlz.A
+        ((cyclotomicCharacter (AlgebraicClosure ℚ) 3 g.toRingEquiv : ℤ_[3]ˣ) :
+          ℤ_[3]) :=
+    (continuous_algebraMap ℤ_[3] Rlz.A).comp hcontχ
+  have hclosed : IsClosed {g : Field.absoluteGaloisGroup ℚ |
+      Rlz.τ.det g = algebraMap ℤ_[3] Rlz.A
+        ((cyclotomicCharacter (AlgebraicClosure ℚ) 3 g.toRingEquiv : ℤ_[3]ˣ) :
+          ℤ_[3])} :=
+    isClosed_eq hcont1 hcont2
+  -- … and the agreement set contains the dense set of Frobenius conjugates
+  have hsub : {x : Field.absoluteGaloisGroup ℚ |
+      ∃ v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ), v ∉ S ∧
+        ∃ g, x = g * globalFrob v * g⁻¹} ⊆
+      {g : Field.absoluteGaloisGroup ℚ |
+        Rlz.τ.det g = algebraMap ℤ_[3] Rlz.A
+          ((cyclotomicCharacter (AlgebraicClosure ℚ) 3 g.toRingEquiv : ℤ_[3]ˣ) :
+            ℤ_[3])} := by
+    rintro x ⟨v, hvS, g, rfl⟩
+    obtain ⟨q, hq, rfl⟩ := exists_prime_toHeightOneSpectrum v
+    have hq3 : q ≠ 3 := by
+      rintro rfl
+      exact hvS (by
+        rw [hSdef]
+        exact Finset.mem_insert_of_mem (Finset.mem_insert_self _ _))
+    -- conjugation invariance of the determinant
+    have hdetconj : Rlz.τ.det (g * globalFrob
+        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq) * g⁻¹) =
+        Rlz.τ.det (globalFrob
+          (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq)) := by
+      have hgg : Rlz.τ.det g * Rlz.τ.det g⁻¹ = 1 := by
+        rw [← map_mul, mul_inv_cancel, map_one]
+      calc Rlz.τ.det (g * globalFrob
+            (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq) * g⁻¹)
+          = Rlz.τ.det g * Rlz.τ.det (globalFrob
+              (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq)) *
+            Rlz.τ.det g⁻¹ := by rw [map_mul, map_mul]
+        _ = Rlz.τ.det (globalFrob
+              (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq)) *
+            (Rlz.τ.det g * Rlz.τ.det g⁻¹) := by ring
+        _ = Rlz.τ.det (globalFrob
+              (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq)) := by
+            rw [hgg, mul_one]
+    -- conjugation invariance of the cyclotomic character
+    have hχconj : cyclotomicCharacter (AlgebraicClosure ℚ) 3
+        (g * globalFrob (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq) *
+          g⁻¹).toRingEquiv =
+        cyclotomicCharacter (AlgebraicClosure ℚ) 3 (globalFrob
+          (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hq)).toRingEquiv := by
+      rw [hbridge, hbridge, map_mul, map_mul, map_inv, mul_right_comm,
+        mul_inv_cancel, one_mul]
+    show Rlz.τ.det _ = _
+    rw [hdetconj, hχconj, hdetq q hq hvS, hchiq q hq hq3]
+  -- density concludes
+  intro g
+  have hdense := dense_conjClasses_globalFrob (K := ℚ) S
+  have hall : (Set.univ : Set (Field.absoluteGaloisGroup ℚ)) ⊆ _ :=
+    hdense.closure_eq ▸ hclosed.closure_subset_iff.mpr hsub
+  exact hall (Set.mem_univ g)
 
 /-- **Condition transfer, ramification — unramified outside `{2, 3}`**
 (sorry node): the Brauer-descended `3`-adic member is unramified at
