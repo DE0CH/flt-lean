@@ -89,6 +89,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 import traceback
 
 POOL_FILE = "/home/chend/.flt-worktree-pool"
@@ -237,6 +238,37 @@ def split_base(task):
 
 HOST_DIR = "/home/chend/.flt-worker-host"
 CORES_FILE = "/home/chend/.flt-worker-cores"
+# Live capacity measurement (Deyao, 2026-07-25). Static core weights were wrong in
+# a way that matters: these are SHARED departmental machines, and two of them were
+# already carrying load ~100 from other tenants when seven were added to the pool.
+# Weighting by a machine's size ignores how much of it is actually ours right now.
+CAPACITY_FILE = "/home/chend/.flt-worker-capacity"
+CAPACITY_TTL = 120          # seconds; a measurement older than this is re-taken
+RAM_PER_WORKER_G = 10       # sharp, margin already included (Deyao)
+# Our self-imposed ceiling on any one machine. These are SHARED departmental
+# boxes; taking a whole idle host because it happens to be idle is how you become
+# the reason someone else's job crawls. 25% is ours, the rest is theirs.
+OUR_SHARE = 0.25
+# Fleet-wide ceiling on concurrent workers, read LIVE from this file at every
+# dispatch so it can be retuned without a restart or a code edit. The pool is
+# provisioned capacity (188 slots); this is how much of it we choose to run.
+LIMIT_FILE = "/home/chend/.flt-worker-limit"
+DEFAULT_LIMIT = 100
+
+
+def _worker_limit():
+    """The concurrency ceiling. Comments and blanks ignored; first integer wins.
+    An unreadable or malformed file falls back to DEFAULT_LIMIT rather than
+    failing open -- an accidental unbounded fleet is the worse error."""
+    try:
+        with open(LIMIT_FILE, encoding="utf-8") as fh:
+            for line in fh:
+                line = line.split("#", 1)[0].strip()
+                if line.isdigit():
+                    return int(line)
+    except OSError:
+        pass
+    return DEFAULT_LIMIT
 
 
 def _host_of(name):
@@ -248,54 +280,124 @@ def _host_of(name):
         return None
 
 
-def _cores():
-    """host -> core count, from CORES_FILE (`<host> <n>` per line).
+def _measure(hosts):
+    """host -> {free_cpu, free_ram_g}, measured in PARALLEL over ssh.
 
-    Missing or malformed file means every host weighs 1, which degrades to
-    even-by-count balancing. Allocation must never fail over this."""
-    out = {}
-    try:
-        with open(CORES_FILE, encoding="utf-8") as fh:
-            for line in fh:
-                parts = line.split()
-                if len(parts) >= 2 and parts[1].isdigit() and int(parts[1]) > 0:
-                    out[parts[0]] = int(parts[1])
-    except OSError:
-        pass
+    free_cpu is `nproc - loadavg1`, i.e. logical cores not currently being asked
+    for -- by anyone, including other tenants. free_ram_g is MemAvailable.
+    An unreachable host is simply absent from the result and is never allocated:
+    we cannot verify it has room, so we do not guess."""
+    procs, out = {}, {}
+    for h in hosts:
+        procs[h] = subprocess.Popen(
+            ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=8", h,
+             "nproc; cut -d' ' -f1 /proc/loadavg; "
+             "awk '/MemAvailable/{print int($2/1048576)}' /proc/meminfo"],
+            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+    for h, pr in procs.items():
+        try:
+            stdout, _ = pr.communicate(timeout=25)
+            n, load, ram = stdout.split()
+            out[h] = {"free_cpu": max(0.0, int(n) - float(load)),
+                      "total_cpu": int(n),
+                      "free_ram_g": int(ram)}
+        except Exception:
+            try:
+                pr.kill()
+            except Exception:
+                pass
     return out
 
 
+def _capacity(hosts):
+    """Cached {host: {free_cpu, free_ram_g}}. Re-measured when stale.
+
+    Cached rather than measured per dispatch because this runs while holding the
+    pool flock, and a wave of simultaneous spawns serialises on it."""
+    now = time.time()
+    try:
+        with open(CAPACITY_FILE, encoding="utf-8") as fh:
+            blob = json.load(fh)
+        if now - blob.get("ts", 0) < CAPACITY_TTL and blob.get("hosts"):
+            return blob["hosts"]
+    except (OSError, ValueError):
+        pass
+    hosts_cap = _measure(hosts)
+    try:
+        with open(CAPACITY_FILE, "w", encoding="utf-8") as fh:
+            json.dump({"ts": now, "hosts": hosts_cap}, fh)
+    except OSError:
+        pass
+    return hosts_cap
+
+
+def _spend(host):
+    """Charge one worker against the cached capacity, so a burst of dispatches
+    between measurements does not all pile onto the same host."""
+    try:
+        with open(CAPACITY_FILE, encoding="utf-8") as fh:
+            blob = json.load(fh)
+        h = blob.get("hosts", {}).get(host)
+        if h:
+            h["free_cpu"] = max(0.0, h["free_cpu"] - 1)
+            h["free_ram_g"] = max(0, h["free_ram_g"] - RAM_PER_WORKER_G)
+            with open(CAPACITY_FILE, "w", encoding="utf-8") as fh:
+                json.dump(blob, fh)
+    except (OSError, ValueError):
+        pass
+
+
 def pick_free(entries):
-    """Choose which free worktree to hand out: the one on the machine that is
-    least loaded RELATIVE TO ITS CORE COUNT (Deyao, 2026-07-25).
+    """Choose which free worktree to hand out: the one on the machine with the
+    most FREE CPU right now, subject to a hard RAM veto (Deyao, 2026-07-25).
 
-    Why not just take the first free entry, as this did before: the pool is
-    ordered by worktree number and the numbers are grouped by machine, so
-    first-fit drains one machine before touching the next. Measured mid-run on
-    2026-07-25: dazzler held 28 claimed slots and gambit 8, on identical 96-core
-    machines, while nightcrawler and nocturne (128 cores each) sat at 27. One
-    machine was oversubscribed ~3.5x relative to another with the same capacity.
+    Two rules, and the difference between them is the point:
 
-    That matters because elaboration is single-threaded — one core per file — so
-    a machine's useful parallelism IS its core count. Piling workers past it
-    lengthens every verification on that host without adding throughput, while
-    cores idle elsewhere.
+    * **CPU is proportional, under a ceiling.** Rank hosts by
+      `min(nproc - loadavg, 25% of nproc)`: logical cores nobody is currently
+      asking for, but never crediting a host with more than a quarter of itself.
+      These are SHARED departmental boxes, and taking a whole idle machine because
+      it happens to be idle is how you become the reason someone else's job crawls.
+      Charging one core per dispatch (`_spend`) makes a burst of allocations spread
+      across hosts rather than all landing on whichever host measured best.
+    * **That quarter is also a hard cap on our footprint.** A host already holding
+      `25% x nproc` of our workers is skipped no matter how much CPU frees up.
+    * **A fleet-wide ceiling** from `~/.flt-worker-limit` caps concurrent workers
+      regardless of how much capacity exists. Checked first, because it is free
+      and it short-circuits the ssh probe entirely.
+    * **RAM is a VETO, not a weight.** A lean worker needs 10G (margin already
+      included). A host with less than that free is skipped outright, however idle
+      its CPUs are -- an OOM kills the elaboration outright, whereas CPU contention
+      only makes it slower. Asymmetric consequences, asymmetric rule.
 
-    Ranks hosts by claimed/cores ascending, so the emptiest-per-core machine is
-    served first; ties break by pool order, keeping allocation deterministic.
-    Free worktrees whose host is unknown (no routing-table entry) sort last —
-    they are still allocatable, just not preferred, since we cannot say what
-    they would cost."""
+    Why measured rather than static: these are SHARED departmental machines. When
+    seven were added to the pool, two of them were already carrying load ~100 from
+    other tenants, and shadowcat had 1133G of RAM against a table that said 2048.
+    A static weight describes how big a machine is; only a measurement describes
+    how much of it is available to us.
+
+    An unreachable host is excluded -- we cannot verify it has room, so we do not
+    guess. If every host is vetoed the caller sees an exhausted pool and queues the
+    task, which is the correct outcome: there is nowhere to put the work yet.
+
+    Falls back to pool order if no measurement can be obtained at all; allocation
+    must never fail because a probe did."""
     free = [n for n, status, _ in entries if status == "free"]
     if not free:
         return None
 
-    cores = _cores()
-    # A host present in the routing table but absent from CORES_FILE (a machine
-    # added without re-measuring) must not be starved: weighting it 1 would make
-    # its ratio ~100x everyone else's after a single claim, so it would never be
-    # picked again. Assume it looks like the machines we HAVE measured.
-    default_cores = round(sum(cores.values()) / len(cores)) if cores else 1
+    # Global ceiling first: cheapest check, and it short-circuits the ssh probe.
+    limit = _worker_limit()
+    in_use = sum(1 for _, status, _ in entries if status == "claimed")
+    if in_use >= limit:
+        return None                           # at the ceiling: caller queues
+
+    hosts = {h for h in (_host_of(n) for n in free) if h}
+    if not hosts:
+        return free[0]
+    cap = _capacity(sorted(hosts))
+    if not cap:
+        return free[0]
 
     claimed = {}
     for name, status, _ in entries:
@@ -304,14 +406,24 @@ def pick_free(entries):
             if h:
                 claimed[h] = claimed.get(h, 0) + 1
 
-    def load(name):
+    def rank(name):
         h = _host_of(name)
-        if h is None:
-            return (1, 0.0)          # unrouted: allocatable, but last resort
-        return (0, claimed.get(h, 0) / cores.get(h, default_cores))
+        c = cap.get(h) if h else None
+        if not c or c["free_ram_g"] < RAM_PER_WORKER_G:
+            return None                       # unreachable, unrouted, or RAM veto
+        quarter = OUR_SHARE * c.get("total_cpu", 0)
+        if claimed.get(h, 0) >= quarter:
+            return None                       # our share of this machine is spent
+        return min(c["free_cpu"], quarter)
 
-    # min() is stable, so equal load keeps the original pool order.
-    return min(free, key=load)
+    viable = [(rank(n), n) for n in free]
+    viable = [(r, n) for r, n in viable if r is not None]
+    if not viable:
+        return None                           # every host vetoed: queue instead
+    # max() is stable on ties, so equal free CPU keeps the original pool order.
+    best = max(viable, key=lambda rn: rn[0])[1]
+    _spend(_host_of(best))
+    return best
 
 
 def allocate_worktree(pool_fh):
