@@ -14,6 +14,12 @@ public import Fermat.FLT.FreyCurve.MazurTorsion
 -- (`inertia_card_dvd_of_card_map_localInertiaGroup_dvd`), consumed by
 -- `inertia_card_dvd_of_map_localInertiaGroup_card_dvd`.
 import Fermat.FLT.FreyCurve.InertiaCardTransport
+-- The PROVEN general-`q` completion-invariance engine (density of the
+-- global integers in the completed integer ring, uniformizer/residue
+-- transport, the conductor computation of the local different and the
+-- root-counting cofactor unit), consumed by the two sub-leaves of the
+-- distinguished-prime passage below at `q = 3`.
+import Fermat.FLT.GaloisRepresentation.HardlyRamified.CompletionInvariance
 -- The PROVEN connected–étale counit-idempotent package (minimal
 -- counit-one idempotent, primitivity dichotomy, comultiplication
 -- absorption, and adic completeness of `adicCompletionIntegers`),
@@ -5732,14 +5738,298 @@ theorem forall_point_apply_eq_of_lt_two_mul_sum_card_inertia
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
+/-- **The invariant-differentials theorem, in torsion form** (sorry
+node, created 2026-07-25 — leaf (ii-b-1) of the Théorème A
+decomposition, the PURE Hopf-algebra half of the `3`-torsion of
+`Ω[G⁄𝒪₃ᵥ]`, with no arithmetic content whatsoever: it holds for a
+commutative Hopf algebra over ANY commutative base): if the
+augmentation ideal `I = ker ε` of a commutative Hopf algebra `A` over
+`R` satisfies `n·I ⊆ I²` — that is, the cotangent space at the
+identity `ω_A = I/I²` is killed by `n` — then the whole module of
+Kähler differentials `Ω[A⁄R]` is killed by `n`.  This is exactly the
+translation-invariance of differentials on a group scheme, in the only
+form the Fontaine estimate consumes; the underlying statement is the
+canonical isomorphism `Ω[A⁄R] ≅ A ⊗_R ω_A` (Oort–Tate 1970 §1;
+Fontaine, *Il n'y a pas de variété abélienne sur ℤ*, §2; Tate's
+*Finite flat group schemes* in Cornell–Silverman–Stevens §2), which is
+not available at this mathlib pin.  Intended proof, fully
+self-contained modulo the `I/I²` bookkeeping: write `π̄ : A → ω_A` for
+`a ↦ (a − ε a) mod I²` and `Δa = a⁽¹⁾ ⊗ a⁽²⁾` in Sweedler notation.
+(1) The map `D : A → A ⊗_R ω_A`, `D a = a⁽¹⁾ ⊗ π̄(a⁽²⁾)`, is an
+`R`-derivation: `Δa − a ⊗ 1 ∈ ker(id ⊗ ε) = A ⊗ I` by the counit
+axiom, and for `Δa = a⊗1 + u`, `Δb = b⊗1 + v` with `u, v ∈ A ⊗ I` one
+has `Δ(ab) − ab⊗1 = (a⊗1)v + (b⊗1)u + uv` with `uv ∈ A ⊗ I²`, which
+π̄ kills — so `D(ab) = a·D b + b·D a`.  Hence `D` factors as
+`θ : Ω[A⁄R] → A ⊗_R ω_A` with `θ (d a) = a⁽¹⁾ ⊗ π̄(a⁽²⁾)`.
+(2) `θ` is INJECTIVE, with explicit left inverse built from the
+antipode `S`: `ρ : A ⊗_R ω_A → Ω[A⁄R]`, `ρ (g ⊗ π̄ x) = g · S(x⁽¹⁾) d
+x⁽²⁾`.  Well-definedness on `I²` is the antipode axiom:
+for `x, y ∈ I`, `S((xy)⁽¹⁾) d((xy)⁽²⁾) = [S(x⁽¹⁾)x⁽²⁾]·S(y⁽¹⁾)d y⁽²⁾
++ [S(y⁽¹⁾)y⁽²⁾]·S(x⁽¹⁾)d x⁽²⁾ = ε(x)(…) + ε(y)(…) = 0`; and
+`ρ (θ (d a)) = a⁽¹⁾S(a⁽²⁾) d a⁽³⁾ = ε(a⁽¹⁾) d a⁽²⁾ = d a`, so
+`ρ ∘ θ = id`.
+(3) Therefore `n • ω = 0` for all `ω : Ω[A⁄R]`, because
+`n • (g ⊗ ξ) = g ⊗ (n • ξ) = 0` on `A ⊗_R ω_A` by the hypothesis
+`n·I ⊆ I²`, and `θ` is injective. -/
+theorem kaehlerDifferential_nsmul_eq_zero_of_nsmul_mem_sq_ker_counit
+    {R A : Type*} [CommRing R] [CommRing A] [HopfAlgebra R A] (n : ℕ)
+    (hn : ∀ x ∈ RingHom.ker (Bialgebra.counitAlgHom R A),
+      n • x ∈ (RingHom.ker (Bialgebra.counitAlgHom R A)) ^ 2) :
+    ∀ ω : Ω[A⁄R], n • ω = 0 := by
+  sorry
+
+set_option maxHeartbeats 1000000 in
+/-- **A bialgebra whose identity has trivial convolution cube has
+`3`-torsion cotangent space** (PROVEN 2026-07-25 — the bridge brick of
+the Théorème A leaf (ii-b), pure Sweedler bookkeeping over an
+arbitrary commutative base): if the third convolution power of the
+identity map of a commutative `R`-bialgebra `A` is the convolution
+unit — i.e. `[3] = e` as morphisms of the affine group scheme
+`Spec A` — then `3·I ⊆ I²` for `I = ker ε` the augmentation ideal;
+equivalently `3` kills the cotangent space `ω_A = I/I²` at the
+identity.  Proof (the classical `[n]^*a ≡ n·a mod I²`, specialised to
+`n = 3` so that no induction is needed): let `q a = ε(a)·1` and
+`p = id − q` be the two projections attached to the augmentation
+(`p` lands in `I` because `ε` is an algebra map splitting the unit).
+The four-term expansion `p ⊗ p = id − (id ⊗ q) − (q ⊗ id) + (q ⊗ q)`
+together with the two counit axioms `(id ⊗ ε)Δ = id = (ε ⊗ id)Δ`
+gives, for `x ∈ I`, the primitive splitting
+`Δx = (p ⊗ p)(Δx) + x ⊗ 1 + 1 ⊗ x`
+(the `q ⊗ q` term is `ε(x)·1⊗1 = 0`).  Multiplying out:
+`[2]^*x = μ(Δx) = μ((p⊗p)(Δx)) + 2x` and
+`[3]^*x = μ(([2]^* ⊗ id)(Δx)) = μ(([2]^*⊗id)((p⊗p)(Δx))) + [2]^*x + x`,
+using `[2]^*1 = 1`.  Both `μ`-terms lie in `I²`: `p` lands in `I`, and
+`[2]^*` preserves the counit (`ε ∘ [2]^* = ε`, itself the counit axiom
+again), hence preserves `I`.  Since `[3]^* = e^*` sends `I` to `0`,
+this reads `0 ≡ 3x mod I²`. -/
+theorem three_nsmul_mem_sq_ker_counit_of_convCube_eq_one
+    {R A : Type*} [CommRing R] [CommRing A] [Bialgebra R A]
+    (hcube : (WithConv.toConv (AlgHom.id R A) * WithConv.toConv (AlgHom.id R A) *
+        WithConv.toConv (AlgHom.id R A) : WithConv (A →ₐ[R] A)) = 1)
+    (x : A) (hx : x ∈ RingHom.ker (Bialgebra.counitAlgHom R A)) :
+    (3 : ℕ) • x ∈ (RingHom.ker (Bialgebra.counitAlgHom R A)) ^ 2 := by
+  have hxk : (Bialgebra.counitAlgHom R A) x = 0 := RingHom.mem_ker.mp hx
+  have hxc : Coalgebra.counit (R := R) x = 0 := hxk
+  -- the pointwise formula for a convolution product of algebra maps
+  have hconv : ∀ (f g : WithConv (A →ₐ[R] A)) (a : A),
+      (f * g).ofConv a = Algebra.TensorProduct.lmul' R
+        (Algebra.TensorProduct.map f.ofConv g.ofConv (Coalgebra.comul (R := R) a)) := by
+    intro f g a
+    rw [AlgHom.convMul_def]
+    rfl
+  -- `q` projects onto the unit line, `p = 1 - q` onto the augmentation ideal
+  obtain ⟨q, hq_apply⟩ : ∃ q : A →ₗ[R] A,
+      ∀ a : A, q a = algebraMap R A (Coalgebra.counit (R := R) a) :=
+    ⟨(Algebra.linearMap R A).comp (Coalgebra.counit (R := R) (A := A)), fun _ => rfl⟩
+  obtain ⟨p, hp_apply⟩ : ∃ p : A →ₗ[R] A,
+      ∀ a : A, p a = a - algebraMap R A (Coalgebra.counit (R := R) a) :=
+    ⟨LinearMap.id - (Algebra.linearMap R A).comp (Coalgebra.counit (R := R) (A := A)),
+      fun _ => rfl⟩
+  have hqdef : q = (Algebra.linearMap R A).comp (Coalgebra.counit (R := R) (A := A)) :=
+    LinearMap.ext fun a => hq_apply a
+  have hpc : ∀ a : A, Coalgebra.counit (R := R) (p a) = 0 := by
+    intro a
+    rw [hp_apply]
+    simp
+  -- the four-term expansion of `p ⊗ p`
+  have hexp : (TensorProduct.map p p : A ⊗[R] A →ₗ[R] A ⊗[R] A) =
+      LinearMap.id - LinearMap.lTensor A q - LinearMap.rTensor A q
+        + (LinearMap.rTensor A q).comp (LinearMap.lTensor A q) := by
+    ext a b
+    simp only [TensorProduct.AlgebraTensorModule.curry_apply, TensorProduct.curry_apply,
+      LinearMap.coe_restrictScalars, TensorProduct.map_tmul, LinearMap.sub_apply,
+      LinearMap.add_apply, LinearMap.id_apply, LinearMap.comp_apply, LinearMap.lTensor_tmul,
+      LinearMap.rTensor_tmul, hp_apply, hq_apply]
+    rw [TensorProduct.sub_tmul, TensorProduct.tmul_sub, TensorProduct.tmul_sub]
+    abel
+  -- evaluating the one-sided projections on `Δx`
+  have hL : LinearMap.lTensor A q (Coalgebra.comul (R := R) x) = x ⊗ₜ[R] (1 : A) := by
+    have h0 : LinearMap.lTensor A (Coalgebra.counit (R := R) (A := A))
+        (Coalgebra.comul (R := R) x) = x ⊗ₜ[R] (1 : R) := Coalgebra.lTensor_counit_comul x
+    have h1 : LinearMap.lTensor A q
+        = (LinearMap.lTensor A (Algebra.linearMap R A)).comp
+            (LinearMap.lTensor A (Coalgebra.counit (R := R) (A := A))) := by
+      rw [hqdef, LinearMap.lTensor_comp]
+    rw [h1, LinearMap.comp_apply, h0, LinearMap.lTensor_tmul]
+    simp
+  have hR : LinearMap.rTensor A q (Coalgebra.comul (R := R) x) = (1 : A) ⊗ₜ[R] x := by
+    have h0 : LinearMap.rTensor A (Coalgebra.counit (R := R) (A := A))
+        (Coalgebra.comul (R := R) x) = (1 : R) ⊗ₜ[R] x := Coalgebra.rTensor_counit_comul x
+    have h1 : LinearMap.rTensor A q
+        = (LinearMap.rTensor A (Algebra.linearMap R A)).comp
+            (LinearMap.rTensor A (Coalgebra.counit (R := R) (A := A))) := by
+      rw [hqdef, LinearMap.rTensor_comp]
+    rw [h1, LinearMap.comp_apply, h0, LinearMap.rTensor_tmul]
+    simp
+  have hLR : LinearMap.rTensor A q (x ⊗ₜ[R] (1 : A)) = 0 := by
+    rw [LinearMap.rTensor_tmul, hq_apply, hxc]
+    simp
+  -- the splitting of `Δx` into two primitive parts and a part in `I ⊗ I`
+  have hsplit : Coalgebra.comul (R := R) x
+      = TensorProduct.map p p (Coalgebra.comul (R := R) x)
+        + x ⊗ₜ[R] (1 : A) + (1 : A) ⊗ₜ[R] x := by
+    have h := LinearMap.congr_fun hexp (Coalgebra.comul (R := R) x)
+    simp only [LinearMap.sub_apply, LinearMap.add_apply, LinearMap.id_apply,
+      LinearMap.comp_apply, hL, hR, hLR, add_zero] at h
+    rw [h]
+    abel
+  -- the `I ⊗ I` part contributes to `I²` after any counit-preserving twist
+  have hsqmem : ∀ (f : A →ₐ[R] A),
+      (∀ a : A, Coalgebra.counit (R := R) (f a) = Coalgebra.counit (R := R) a) →
+      ∀ z : A ⊗[R] A,
+        Algebra.TensorProduct.lmul' R
+            (Algebra.TensorProduct.map f (AlgHom.id R A) (TensorProduct.map p p z)) ∈
+          (RingHom.ker (Bialgebra.counitAlgHom R A)) ^ 2 := by
+    intro f hf z
+    induction z using TensorProduct.induction_on with
+    | zero =>
+        rw [map_zero, map_zero, map_zero]
+        exact Submodule.zero_mem _
+    | tmul a b =>
+        rw [TensorProduct.map_tmul, Algebra.TensorProduct.map_tmul,
+          Algebra.TensorProduct.lmul'_apply_tmul, pow_two]
+        refine Ideal.mul_mem_mul (RingHom.mem_ker.mpr ?_) (RingHom.mem_ker.mpr ?_)
+        · show Coalgebra.counit (R := R) (f (p a)) = 0
+          rw [hf, hpc]
+        · show Coalgebra.counit (R := R) (p b) = 0
+          rw [hpc]
+    | add u v hu hv =>
+        rw [map_add, map_add, map_add]
+        exact Submodule.add_mem _ hu hv
+  -- the convolution square
+  obtain ⟨sq, hsqdef⟩ : ∃ sq : A →ₐ[R] A, sq =
+      (WithConv.toConv (AlgHom.id R A) * WithConv.toConv (AlgHom.id R A) :
+        WithConv (A →ₐ[R] A)).ofConv := ⟨_, rfl⟩
+  have hsq_apply : ∀ a : A,
+      sq a = Algebra.TensorProduct.lmul' R (Coalgebra.comul (R := R) a) := by
+    intro a
+    rw [hsqdef, hconv, WithConv.ofConv_toConv, Algebra.TensorProduct.map_id, AlgHom.id_apply]
+  -- the counit is invariant under the convolution square
+  have hcounit_lmul : ∀ z : A ⊗[R] A,
+      Coalgebra.counit (R := R) (Algebra.TensorProduct.lmul' R z)
+        = Algebra.TensorProduct.lmul' R
+            (LinearMap.rTensor R (Coalgebra.counit (R := R) (A := A))
+              (LinearMap.lTensor A (Coalgebra.counit (R := R) (A := A)) z)) := by
+    intro z
+    induction z using TensorProduct.induction_on with
+    | zero => simp
+    | tmul a b => simp [Algebra.TensorProduct.lmul'_apply_tmul]
+    | add u v hu hv => simp [hu, hv]
+  have hsqc : ∀ a : A, Coalgebra.counit (R := R) (sq a) = Coalgebra.counit (R := R) a := by
+    intro a
+    rw [hsq_apply, hcounit_lmul, Coalgebra.lTensor_counit_comul, LinearMap.rTensor_tmul,
+      Algebra.TensorProduct.lmul'_apply_tmul, mul_one]
+  -- the two members of `I²`
+  have hmem1 : Algebra.TensorProduct.lmul' R
+      (TensorProduct.map p p (Coalgebra.comul (R := R) x)) ∈
+      (RingHom.ker (Bialgebra.counitAlgHom R A)) ^ 2 := by
+    have h := hsqmem (AlgHom.id R A) (fun _ => rfl) (Coalgebra.comul (R := R) x)
+    rwa [Algebra.TensorProduct.map_id, AlgHom.id_apply] at h
+  have hmem2 : Algebra.TensorProduct.lmul' R
+      (Algebra.TensorProduct.map sq (AlgHom.id R A)
+        (TensorProduct.map p p (Coalgebra.comul (R := R) x))) ∈
+      (RingHom.ker (Bialgebra.counitAlgHom R A)) ^ 2 :=
+    hsqmem sq hsqc (Coalgebra.comul (R := R) x)
+  -- the square is `2x` modulo `I²`
+  have hsqx : sq x = Algebra.TensorProduct.lmul' R
+      (TensorProduct.map p p (Coalgebra.comul (R := R) x)) + x + x := by
+    rw [hsq_apply]
+    conv_lhs => rw [hsplit]
+    rw [map_add, map_add, Algebra.TensorProduct.lmul'_apply_tmul,
+      Algebra.TensorProduct.lmul'_apply_tmul, mul_one, one_mul]
+  -- the cube is `e`, i.e. zero on the augmentation ideal
+  have hcubex : Algebra.TensorProduct.lmul' R
+      (Algebra.TensorProduct.map sq (AlgHom.id R A) (Coalgebra.comul (R := R) x)) = 0 := by
+    have h1 := hconv (WithConv.toConv (AlgHom.id R A) * WithConv.toConv (AlgHom.id R A))
+      (WithConv.toConv (AlgHom.id R A)) x
+    rw [hcube, WithConv.ofConv_toConv, ← hsqdef] at h1
+    rw [← h1]
+    simp [hxc]
+  -- expanding the cube through the splitting
+  have hcubeexp : Algebra.TensorProduct.lmul' R
+      (Algebra.TensorProduct.map sq (AlgHom.id R A) (Coalgebra.comul (R := R) x))
+      = Algebra.TensorProduct.lmul' R
+          (Algebra.TensorProduct.map sq (AlgHom.id R A)
+            (TensorProduct.map p p (Coalgebra.comul (R := R) x))) + sq x + x := by
+    conv_lhs => rw [hsplit]
+    rw [map_add, map_add, map_add, map_add, Algebra.TensorProduct.map_tmul,
+      Algebra.TensorProduct.map_tmul, Algebra.TensorProduct.lmul'_apply_tmul,
+      Algebra.TensorProduct.lmul'_apply_tmul, AlgHom.id_apply, AlgHom.id_apply,
+      map_one, mul_one, one_mul]
+  -- conclude: `3x = -(t₂ + t₁)` with both `tᵢ ∈ I²`
+  have hfinal : x + x + x = -(Algebra.TensorProduct.lmul' R
+      (Algebra.TensorProduct.map sq (AlgHom.id R A)
+        (TensorProduct.map p p (Coalgebra.comul (R := R) x)))
+      + Algebra.TensorProduct.lmul' R
+          (TensorProduct.map p p (Coalgebra.comul (R := R) x))) := by
+    have h := hcubeexp.symm.trans hcubex
+    rw [hsqx] at h
+    linear_combination h
+  rw [show (3 : ℕ) = 2 + 1 from rfl, add_nsmul, two_nsmul, one_nsmul, hfinal]
+  exact neg_mem (Submodule.add_mem _ hmem2 hmem1)
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **`[3] = e` on a Hopf order whose geometric points are killed by
+`3`** (sorry node, created 2026-07-25 — leaf (ii-b-2) of the Théorème A
+decomposition, the DESCENT half of the `3`-torsion of `Ω[G⁄𝒪₃ᵥ]`, pure
+affine-group-scheme theory with no differentials in sight): for a
+finite flat Hopf order `G` over `𝒪₃ᵥ ≅ ℤ₃` with étale generic fibre
+whose geometric points are killed by `3` in the convolution group
+(`hkill`), the third convolution power of the IDENTITY endomorphism of
+`G` is the convolution unit `e^* = algebraMap ∘ ε` — that is,
+multiplication by `3` on the group scheme `Spec G` is the trivial
+morphism.  Intended proof, in four standard steps.  (1) The
+two spellings of the convolution product agree (mathlib's `WithConv`
+product on `A →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ` and the vendored bare-hom product of
+`Fermat.FLT.Deformations.RepresentationTheory.Etale` agree: both are
+`lmul' ∘ (f ⊗ g) ∘ Δ`), so `hkill` says
+`χ ∘ [3]^*_{ℚ₃ᵥ ⊗ G} = χ ∘ e^*` for every geometric point `χ`, by
+`AlgHom.comp_convMul_distrib` (postcomposition distributes over
+convolution) applied twice.  (2) The geometric points of the FINITE
+ÉTALE `ℚ₃ᵥ`-algebra `ℚ₃ᵥ ⊗ G` separate its elements — the Gelfand-
+duality layer already proven in
+`Fermat/FLT/KnownIn1980s/EllipticCurves/Flat.lean`
+(`eq_zero_of_forall_algHom_eq_zero`, the ingredient of
+`subalgebra_eq_top_of_algHom_separating`), applicable because `ℚ₃ᵥ` has
+characteristic zero, hence is perfect, so `ℚ₃ᵥᵃˡᵍ` is a separable
+closure and `Module.Finite ℚ₃ᵥ (ℚ₃ᵥ ⊗ G)` follows from
+`Module.Finite 𝒪₃ᵥ G` by base change.  Therefore
+`[3]^*_{ℚ₃ᵥ ⊗ G} = e^*` on the generic fibre.  (3) The bialgebra
+structure of `ℚ₃ᵥ ⊗[𝒪₃ᵥ] G` is the base change of that of `G`
+(`Mathlib.RingTheory.HopfAlgebra.TensorProduct`), so
+`[3]^*_{ℚ₃ᵥ ⊗ G} = id_{ℚ₃ᵥ} ⊗ [3]^*_G` and likewise for `e^*`.
+(4) `G → ℚ₃ᵥ ⊗ G` is INJECTIVE: `G` is flat over the domain `𝒪₃ᵥ`,
+hence torsion-free, and `ℚ₃ᵥ` is its fraction field, so the
+localization map has trivial kernel.  Hence the identity of maps
+descends from the generic fibre to `G` itself. -/
+theorem convCube_id_eq_one_of_hopf_package
+    (G : Type) [CommRing G] [HopfAlgebra 𝒪₃ᵥ G]
+    [Module.Flat 𝒪₃ᵥ G] [Module.Finite 𝒪₃ᵥ G]
+    [Algebra.Etale ℚ₃ᵥ (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G)]
+    (hkill : ∀ χ : ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ, χ * χ * χ = 1) :
+    (WithConv.toConv (AlgHom.id 𝒪₃ᵥ G) * WithConv.toConv (AlgHom.id 𝒪₃ᵥ G) *
+      WithConv.toConv (AlgHom.id 𝒪₃ᵥ G) : WithConv (G →ₐ[𝒪₃ᵥ] G)) = 1 := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
 /-- **The differentials of a Hopf order killed by `3` are `3`-torsion**
-(sorry node, created 2026-07-25 — leaf (ii-b) of the Théorème A
+(DECOMPOSED 2026-07-25 into the two leaves above — the descent leaf
+(ii-b-2) `convCube_id_eq_one_of_hopf_package` (`[3] = e` on `Spec G`
+itself) and the invariance leaf (ii-b-1)
+`kaehlerDifferential_nsmul_eq_zero_of_nsmul_mem_sq_ker_counit`
+(`Ω[A⁄R] ≅ A ⊗ ω_A`, in torsion form) — over the PROVEN Sweedler
+bridge `three_nsmul_mem_sq_ker_counit_of_convCube_eq_one`, which turns
+`[3] = e` into `3·I ⊆ I²`; leaf (ii-b) of the Théorème A
 decomposition, the ONLY Hopf-algebraic input to the estimate): for a
 finite flat Hopf order `G` over `𝒪₃ᵥ ≅ ℤ₃` with étale generic fibre
 whose geometric points are killed by `3` in the convolution group
 (`hkill`), the module of Kähler differentials `Ω[G⁄𝒪₃ᵥ]` is killed by
-`3`.  Intended proof (Fontaine §2; Oort–Tate 1970 §1): for a group
-scheme `Spec G` the differentials are free on the invariant ones,
+`3`.  Proof (Fontaine §2; Oort–Tate 1970 §1): for a group scheme
+`Spec G` the differentials are free on the invariant ones,
 `Ω[G⁄𝒪₃ᵥ] ≅ G ⊗_{𝒪₃ᵥ} ω_G` with `ω_G = I/I²` the cotangent space at
 the identity (`I = ker ε` the augmentation ideal), and multiplication
 by `n` on the group scheme induces multiplication by `n` on `ω_G`;
@@ -5755,7 +6045,10 @@ theorem kaehlerDifferential_smul_three_eq_zero_of_hopf_package
     [Algebra.Etale ℚ₃ᵥ (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G)]
     (hkill : ∀ χ : ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ, χ * χ * χ = 1) :
     ∀ ω : Ω[G⁄𝒪₃ᵥ], (3 : ℕ) • ω = 0 := by
-  sorry
+  refine kaehlerDifferential_nsmul_eq_zero_of_nsmul_mem_sq_ker_counit 3 ?_
+  intro y hy
+  exact three_nsmul_mem_sq_ker_counit_of_convCube_eq_one
+    (convCube_id_eq_one_of_hopf_package G hkill) y hy
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
@@ -5935,34 +6228,549 @@ theorem two_mul_sum_card_inertia_le_card_inertia_of_hopf_package
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
+/-- **Eventual triviality of the LOCAL lower-numbering ramification
+filtration** (PROVEN 2026-07-24 — the level-selection input of the
+Fontaine subextension estimate below; the complete-local analogue of
+`exists_pow_inertia_eq_bot` of the `DifferentTransport` section, with
+the number ring `𝓞 K` replaced by the complete DVR
+`𝒪_L = IntegralClosure 𝒪₃ᵥ L`): for a finite subextension `L` of
+`ℚ₃ᵥᵃˡᵍ/ℚ₃ᵥ` some level of the lower-numbering filtration
+`i ↦ G_i = inertia(𝔪_L^(i+1))` (Serre, *Corps Locaux* IV §1) is
+trivial — stated at the SHIFTED level `𝔪_L^(n+2)`, i.e. `G_{n+1} = ⊥`,
+so that the selected level is automatically `≥ 1`.  Proof: a
+nontrivial `σ ∈ Gal(L/ℚ₃ᵥ)` moves some element of `L`, hence — writing
+it as a ratio of elements of `𝒪_L` (`IsFractionRing.div_surjective`,
+available since `𝒪_L` is the integral closure in a finite extension) —
+some `x ∈ 𝒪_L`; Krull's intersection theorem
+(`Ideal.iInf_pow_eq_bot_of_isDomain` in the Noetherian domain `𝒪_L`)
+yields a level `m` with `σ • x − x ∉ 𝔪_L^(m+1)`, excluding `σ` from
+that level; the sup of these finitely many levels over the finite
+group `Gal(L/ℚ₃ᵥ)` (`AlgEquiv.fintype`) bounds the whole
+filtration. -/
+theorem exists_local_pow_inertia_eq_bot
+    (L : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ L] :
+    ∃ n : ℕ, (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ (n + 2)).inertia
+      (L ≃ₐ[ℚ₃ᵥ] L) = ⊥ := by
+  classical
+  haveI : IsFractionRing (IntegralClosure 𝒪₃ᵥ L) L :=
+    IsIntegralClosure.isFractionRing_of_finite_extension 𝒪₃ᵥ ℚ₃ᵥ L
+      (IntegralClosure 𝒪₃ᵥ L)
+  have hKrull : (⨅ m : ℕ, IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ m) = ⊥ :=
+    Ideal.iInf_pow_eq_bot_of_isDomain _
+      (IsLocalRing.maximalIdeal.isMaximal (IntegralClosure 𝒪₃ᵥ L)).ne_top
+  -- each nontrivial automorphism is excluded at some level
+  have hmove : ∀ σ : L ≃ₐ[ℚ₃ᵥ] L, σ ≠ 1 →
+      ∃ m : ℕ, σ ∉ (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ (m + 1)).inertia
+        (L ≃ₐ[ℚ₃ᵥ] L) := by
+    intro σ hσ
+    have hx : ∃ x : IntegralClosure 𝒪₃ᵥ L, σ • x ≠ x := by
+      by_contra hfix
+      push Not at hfix
+      apply hσ
+      refine AlgEquiv.ext fun y => ?_
+      obtain ⟨a, b, hb, rfl⟩ :=
+        IsFractionRing.div_surjective (A := IntegralClosure 𝒪₃ᵥ L) y
+      have ha : σ (algebraMap (IntegralClosure 𝒪₃ᵥ L) L a) =
+          algebraMap (IntegralClosure 𝒪₃ᵥ L) L a :=
+        congrArg (algebraMap (IntegralClosure 𝒪₃ᵥ L) L) (hfix a)
+      have hbfix : σ (algebraMap (IntegralClosure 𝒪₃ᵥ L) L b) =
+          algebraMap (IntegralClosure 𝒪₃ᵥ L) L b :=
+        congrArg (algebraMap (IntegralClosure 𝒪₃ᵥ L) L) (hfix b)
+      rw [AlgEquiv.one_apply, map_div₀, ha, hbfix]
+    obtain ⟨x, hxne⟩ := hx
+    have hz : σ • x - x ≠ 0 := sub_ne_zero.mpr hxne
+    have hout : ∃ m : ℕ, σ • x - x ∉
+        IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ m := by
+      by_contra hall
+      push Not at hall
+      refine hz ?_
+      have hmemi : σ • x - x ∈
+          (⨅ m : ℕ, IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ m) :=
+        (Submodule.mem_iInf _).mpr hall
+      rwa [hKrull, Ideal.mem_bot] at hmemi
+    obtain ⟨m, hm⟩ := hout
+    refine ⟨m, fun hmem' => hm ?_⟩
+    have h1 : σ • x - x ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ (m + 1) := by
+      have h2 := AddSubgroup.mem_inertia.mp hmem' x
+      rwa [Submodule.mem_toAddSubgroup] at h2
+    exact Ideal.pow_le_pow_right (Nat.le_succ m) h1
+  -- the sup of the exclusion levels over the finite group
+  choose f hf using hmove
+  set g : (L ≃ₐ[ℚ₃ᵥ] L) → ℕ := fun σ => if h : σ = 1 then 0 else f σ h with hg
+  refine ⟨Finset.univ.sup g, ?_⟩
+  rw [Subgroup.eq_bot_iff_forall]
+  intro σ hσ
+  by_contra hσ1
+  have hgσ : f σ hσ1 ≤ Finset.univ.sup g := by
+    have h1 : g σ = f σ hσ1 := dif_neg hσ1
+    exact h1 ▸ Finset.le_sup (Finset.mem_univ σ)
+  have hle : IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ (Finset.univ.sup g + 2) ≤
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ (f σ hσ1 + 1) :=
+    Ideal.pow_le_pow_right (by omega)
+  refine hf σ hσ1 (AddSubgroup.mem_inertia.mpr fun x => ?_)
+  have h2 := AddSubgroup.mem_inertia.mp hσ x
+  rw [Submodule.mem_toAddSubgroup] at h2 ⊢
+  exact hle h2
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **The local Serre different formula, upper-bound half** (sorry
+node, created 2026-07-25 — step (a) of the decomposition of
+`card_inertia_inf_fixingSubgroup_mul_add_sum_le_sum_card_inertia`
+below; Serre, *Corps Locaux* IV §1 Prop. 4, `≤` direction, in the
+COMPLETE local setting): for a finite Galois `L/ℚ₃ᵥ` whose
+lower-numbering filtration `G_i = inertia(𝔪_L^(i+1))` is already
+trivial at level `n` (`hn : G_n = ⊥`, supplied by
+`exists_local_pow_inertia_eq_bot`), every exponent `e` with
+`𝔪_L^e ∣ 𝔡_{𝒪_L/𝒪₃ᵥ}` obeys `e ≤ Σ_{i<n}(g_i − 1)`, `g_i = #G_i` —
+i.e. `v_L(𝔡_{L/ℚ₃ᵥ}) ≤ Σ_{i≥0}(g_i − 1)`, the sum terminating at `n`
+because all higher terms are `1 − 1 = 0`.  Intended proof: the
+complete-local transplant of the PROVEN GLOBAL
+`le_sum_card_inertia_pow_of_pow_dvd_differentIdeal` of the
+`DifferentTransport` section above.  The local case is STRICTLY
+EASIER than the global one it copies: monogenicity `𝒪_L = 𝒪₃ᵥ[θ]` is
+automatic for a complete DVR with finite residue field (Hensel-lift a
+generator of the residue extension and correct by a uniformizer —
+Serre III §6 Prop. 12 without the CRT-against-conjugate-primes and
+pigeonhole-for-primitivity gymnastics the global argument needs, since
+there is only ONE prime), so the conductor is trivial and the
+different is exactly `(f'(θ))` (`conductor_mul_differentIdeal`);
+`f'(θ) = ∏_{σ≠1}(θ − σθ)` is
+`aeval_derivative_minpoly_eq_prod_sub_smul` transplanted; each factor
+lies in `𝔪_L` to order at most `#{i < n : σ ∈ G_i}` because a
+congruence `σθ ≡ θ (mod 𝔪_L^(i+1))` propagates to all of `𝒪_L`
+(`mem_inertia_pow_of_smul_sub_mem_of_dense`, whose density hypothesis
+is here the monogenicity itself) and `G_n = ⊥`; and the double count
+`sum_card_filter_inertia_eq` converts `Σ_{σ≠1} #{i<n : σ ∈ G_i}` into
+`Σ_{i<n}(g_i − 1)`. -/
+theorem le_sum_card_inertia_sub_one_of_pow_dvd_local_differentIdeal
+    (L : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ L]
+    [IsGalois ℚ₃ᵥ L]
+    (n : ℕ)
+    (hn : (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ (n + 1)).inertia
+      (L ≃ₐ[ℚ₃ᵥ] L) = ⊥)
+    (e : ℕ)
+    (he : IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ e ∣
+      differentIdeal 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ L)) :
+    e ≤ ∑ i ∈ Finset.range n,
+      (Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ (i + 1)).inertia
+        (L ≃ₐ[ℚ₃ᵥ] L)) - 1) := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **The local Serre different formula, divisibility half, through a
+subextension tower** (sorry node, created 2026-07-25 — step (b) of the
+decomposition of
+`card_inertia_inf_fixingSubgroup_mul_add_sum_le_sum_card_inertia`
+below; Serre, *Corps Locaux* IV §1 Prop. 4 (`≥` direction) together
+with III §4 Prop. 8 (transitivity of the different) and I §4 Prop. 10
+(tower multiplicativity of `e`)): writing `H = Gal(L/M)` for the
+fixing subgroup of the reified `M' = comap L.val M` inside
+`Gal(L/ℚ₃ᵥ)` and `h_i = #(G_i ⊓ H)` — by Serre IV §1 Prop. 2 this
+INTERSECTION *is* the lower filtration of `H`, no transport needed
+with the `inertia` spelling — the different of `L/ℚ₃ᵥ` is divisible by
+`𝔪_L^(h₀·d + Σ_{i<n}(h_i − 1))` as soon as `𝔪_M^d ∣ 𝔡_{𝒪_M/𝒪₃ᵥ}`.
+This packages the whole `≥` half of the numerology: (i)
+`𝔪_L^(Σ_{i<n}(h_i − 1)) ∣ 𝔡_{𝒪_L/𝒪_{M'}}`, the RELATIVE Serre formula,
+i.e. the complete-local transplant of the PROVEN global
+`pow_sum_card_inertia_dvd_differentIdeal` applied to the Galois
+extension `L/M'`, whose lower filtration is `G_i ⊓ H`; (ii)
+`𝔪_{M'}^d ∣ 𝔡_{𝒪_{M'}/𝒪₃ᵥ}`, the transport of `hd` along the
+`𝒪₃ᵥ`-algebra isomorphism `𝒪_M ≃ₐ 𝒪_{M'}` built from `reifyEquiv` (the
+same `jO` construction used in
+`maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup` of
+`LocalInertiaFixedField`, here additionally needing that `differentIdeal`
+is invariant under an algebra isomorphism of the top ring);
+(iii) `(𝔪_{M'}).map (algebraMap 𝒪_{M'} 𝒪_L) = 𝔪_L^{h₀}`, i.e.
+`e_{L/M} = h₀` — `card_inertia_intermediate` of
+`LocalInertiaFixedField` (through the `fixingSubgroupEquiv` upgrade
+already PROVEN in
+`card_inertia_inf_fixingSubgroup_mul_ramificationIdx'_eq_card_inertia`)
+plus the DVR identity `p·𝒪_L = 𝔪_L^{e(p)}` — so the extended ideal
+`(𝔡_{𝒪_{M'}/𝒪₃ᵥ}).map` is divisible by `𝔪_L^{h₀·d}`; and (iv)
+mathlib's `differentIdeal_eq_differentIdeal_mul_differentIdeal` for the
+tower `𝒪₃ᵥ ⊆ 𝒪_{M'} ⊆ 𝒪_L` multiplies (i) and (iii) into the claim. -/
+theorem pow_card_inertia_inf_mul_add_sum_dvd_local_differentIdeal
+    (L : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ L]
+    [IsGalois ℚ₃ᵥ L]
+    (M : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ M]
+    (hML : M ≤ L)
+    (n : ℕ)
+    (hn : (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ (n + 1)).inertia
+      (L ≃ₐ[ℚ₃ᵥ] L) = ⊥)
+    (d : ℕ)
+    (hd : IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M) ^ d ∣
+      differentIdeal 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ M)) :
+    IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^
+      (Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L)).inertia
+          (L ≃ₐ[ℚ₃ᵥ] L) ⊓ (IntermediateField.comap L.val M).fixingSubgroup) * d +
+        ∑ i ∈ Finset.range n,
+          (Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ (i + 1)).inertia
+            (L ≃ₐ[ℚ₃ᵥ] L) ⊓
+            (IntermediateField.comap L.val M).fixingSubgroup) - 1)) ∣
+      differentIdeal 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ L) := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **The Serre different numerology of a subextension** (DECOMPOSED
+2026-07-25 into the two sorry leaves directly above — the upper-bound
+half `le_sum_card_inertia_sub_one_of_pow_dvd_local_differentIdeal` and
+the divisibility half
+`pow_card_inertia_inf_mul_add_sum_dvd_local_differentIdeal` — with the
+`ℕ` bookkeeping that combines them PROVEN here; created 2026-07-24 as
+steps (a)+(b) of the decomposition of
+`two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`,
+PURE local class field theory; Serre, *Corps Locaux* IV §1 Prop. 4 and
+III §4 Prop. 8): for a finite Galois `L/ℚ₃ᵥ`, a subextension `M ≤ L`
+and a level `n` at which the filtration is already trivial
+(`hn : G_n = ⊥`, produced by `exists_local_pow_inertia_eq_bot`), the
+different exponent of `M/ℚ₃ᵥ` is computed by the Herbrand sums:
+writing `G_i = inertia(𝔪_L^(i+1)) ≤ Gal(L/ℚ₃ᵥ)`, `H = Gal(L/M)` (the
+fixing subgroup of `M` inside `Gal(L/ℚ₃ᵥ)`, spelled through the
+reification `IntermediateField.comap L.val M`) and
+`H_i = G_i ⊓ H` (Serre IV §1 Prop. 2 — with the `inertia` spelling
+this INTERSECTION *is* the lower filtration of `H`, no transport
+needed), one has `h₀·v_M(𝔡_{M/ℚ₃}) = Σ_{i=0}^{n}(g_i − h_i)`; since
+`𝔪_M^d ∣ 𝔡_{M/ℚ₃}` gives `d ≤ v_M(𝔡_{M/ℚ₃})` in the DVR `𝒪_M`, this
+yields the truncation-free inequality stated here.  Proof AS WRITTEN:
+the divisibility half supplies
+`𝔪_L^(h₀·d + Σ_{i<n}(h_i − 1)) ∣ 𝔡_{L/ℚ₃ᵥ}` and the upper-bound half
+turns that exponent into
+`h₀·d + Σ_{i<n}(h_i − 1) ≤ Σ_{i<n}(g_i − 1)`; the two truncated sums
+of the STATEMENT are the `(· − 1)`-shifted ones plus `n + 1`, because
+every level is nonempty (`Nat.card_pos`, whence
+`Σ_{i<n} c_i = Σ_{i<n}(c_i − 1) + n`) and the top level `i = n`
+contributes `g_n = h_n = 1` by `hn` (`⊥ ⊓ H = ⊥`,
+`Subgroup.card_bot`) — so `omega` closes the goal. -/
+theorem card_inertia_inf_fixingSubgroup_mul_add_sum_le_sum_card_inertia
+    (L : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ L]
+    [IsGalois ℚ₃ᵥ L]
+    (M : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ M]
+    (hML : M ≤ L)
+    (n : ℕ)
+    (hn : (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ (n + 1)).inertia
+      (L ≃ₐ[ℚ₃ᵥ] L) = ⊥)
+    (d : ℕ)
+    (hd : IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M) ^ d ∣
+      differentIdeal 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ M)) :
+    Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L)).inertia
+        (L ≃ₐ[ℚ₃ᵥ] L) ⊓ (IntermediateField.comap L.val M).fixingSubgroup) * d
+      + ∑ i ∈ Finset.range (n + 1),
+          Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ (i + 1)).inertia
+            (L ≃ₐ[ℚ₃ᵥ] L) ⊓ (IntermediateField.comap L.val M).fixingSubgroup) ≤
+      ∑ i ∈ Finset.range (n + 1),
+        Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ (i + 1)).inertia
+          (L ≃ₐ[ℚ₃ᵥ] L)) := by
+  classical
+  -- the divisibility half, then the upper-bound half applied to its exponent
+  have hdvd := pow_card_inertia_inf_mul_add_sum_dvd_local_differentIdeal
+    L M hML n hn d hd
+  have hle := le_sum_card_inertia_sub_one_of_pow_dvd_local_differentIdeal
+    L n hn _ hdvd
+  -- the top level `i = n` contributes `1` to both sums
+  have hgn : Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^
+      (n + 1)).inertia (L ≃ₐ[ℚ₃ᵥ] L)) = 1 := by rw [hn, Subgroup.card_bot]
+  have hhn : Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^
+      (n + 1)).inertia (L ≃ₐ[ℚ₃ᵥ] L) ⊓
+      (IntermediateField.comap L.val M).fixingSubgroup) = 1 := by
+    rw [hn, bot_inf_eq, Subgroup.card_bot]
+  -- a sum of positive naturals exceeds its `(· − 1)`-shift by the length
+  have key : ∀ (F : ℕ → ℕ), (∀ i, 0 < F i) → ∀ m : ℕ,
+      ∑ i ∈ Finset.range m, F i = (∑ i ∈ Finset.range m, (F i - 1)) + m := by
+    intro F hF m
+    induction m with
+    | zero => simp
+    | succ k ih =>
+      rw [Finset.sum_range_succ, Finset.sum_range_succ, ih]
+      have := hF k
+      omega
+  have hgsplit : ∑ i ∈ Finset.range n,
+      Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ (i + 1)).inertia
+        (L ≃ₐ[ℚ₃ᵥ] L)) =
+      (∑ i ∈ Finset.range n,
+        (Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ (i + 1)).inertia
+          (L ≃ₐ[ℚ₃ᵥ] L)) - 1)) + n :=
+    key _ (fun _ => Nat.card_pos) n
+  have hhsplit : ∑ i ∈ Finset.range n,
+      Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ (i + 1)).inertia
+        (L ≃ₐ[ℚ₃ᵥ] L) ⊓ (IntermediateField.comap L.val M).fixingSubgroup) =
+      (∑ i ∈ Finset.range n,
+        (Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ (i + 1)).inertia
+          (L ≃ₐ[ℚ₃ᵥ] L) ⊓
+          (IntermediateField.comap L.val M).fixingSubgroup) - 1)) + n :=
+    key _ (fun _ => Nat.card_pos) n
+  -- peel the top level off both sums and finish by linear arithmetic
+  set P : ℕ := Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L)).inertia
+    (L ≃ₐ[ℚ₃ᵥ] L) ⊓ (IntermediateField.comap L.val M).fixingSubgroup) * d with hPdef
+  rw [Finset.sum_range_succ, Finset.sum_range_succ, hgn, hhn]
+  omega
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **Multiplicativity of the ramification index in the tower
+`ℚ₃ᵥ ⊆ M ⊆ L`, in inertia form** (PROVEN 2026-07-25 —
+step (b′) of the decomposition of
+`two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`;
+Serre, *Corps Locaux* I §4 Prop. 10 / Neukirch II (6.8)): with
+`G_0 = inertia(𝔪_L) ≤ Gal(L/ℚ₃ᵥ)` and `H = Gal(L/M)` the fixing
+subgroup of the reified `M`, one has `h₀·e(M/ℚ₃) = g₀`, i.e.
+`e_{L/M}·e_{M/ℚ₃} = e_{L/ℚ₃}`.  Intended proof: `g₀ = e_{L/ℚ₃}` is
+`card_inertia_finite_level` and `h₀ = e_{L/M}` is
+`card_inertia_intermediate` (both of `LocalInertiaFixedField`, the
+second applied to the intermediate field
+`IntermediateField.comap L.val M` of `↥L`, whose integral closure is
+identified with `IntegralClosure 𝒪₃ᵥ M` along `reifyEquiv`); the
+identification `G_0 ⊓ H = ` (image of) `inertia(𝔪_L)` inside
+`Gal(L/M)` is the `fixingSubgroupEquiv` upgrade of an inertia element
+(the two actions have the same underlying function), and the tower
+multiplicativity of `Ideal.ramificationIdx'` in the chain of DVRs
+`𝒪₃ᵥ ⊆ 𝒪_{M'} ⊆ 𝒪_L` is `Ideal.ramificationIdx'_algebra_tower'`;
+the passage from the reified `M' = comap L.val M` back to `M` is the
+`jO` transport of `ramificationIdx'` along `reifyEquiv`
+(`Ideal.ramificationIdx'_comap_eq`), exactly as in
+`maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup`. -/
+theorem card_inertia_inf_fixingSubgroup_mul_ramificationIdx'_eq_card_inertia
+    (L : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ L]
+    [IsGalois ℚ₃ᵥ L]
+    (M : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ M]
+    (hML : M ≤ L) :
+    Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L)).inertia
+        (L ≃ₐ[ℚ₃ᵥ] L) ⊓ (IntermediateField.comap L.val M).fixingSubgroup) *
+      Ideal.ramificationIdx' (IsLocalRing.maximalIdeal 𝒪₃ᵥ)
+        (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M)) =
+      Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L)).inertia
+        (L ≃ₐ[ℚ₃ᵥ] L)) := by
+  classical
+  -- STEP A: the intersection `G_0 ⊓ H` counts the inertia over `M'`
+  have hA : Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ ↥L)).inertia
+      (↥L ≃ₐ[ℚ₃ᵥ] ↥L) ⊓ (IntermediateField.comap L.val M).fixingSubgroup) =
+      Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ ↥L)).inertia
+        (↥L ≃ₐ[↥(IntermediateField.comap L.val M)] ↥L)) := by
+    refine Nat.card_congr ?_
+    refine
+      { toFun := fun σ =>
+          ⟨IntermediateField.fixingSubgroupEquiv (IntermediateField.comap L.val M)
+            ⟨σ.1, (Subgroup.mem_inf.mp σ.2).2⟩, ?_⟩
+        invFun := fun ρ =>
+          ⟨(((IntermediateField.fixingSubgroupEquiv
+              (IntermediateField.comap L.val M)).symm ρ.1 :
+              (IntermediateField.comap L.val M).fixingSubgroup) : ↥L ≃ₐ[ℚ₃ᵥ] ↥L),
+            Subgroup.mem_inf.mpr ⟨?_,
+              ((IntermediateField.fixingSubgroupEquiv
+                (IntermediateField.comap L.val M)).symm ρ.1).2⟩⟩
+        left_inv := ?_
+        right_inv := ?_ }
+    · refine AddSubgroup.mem_inertia.mpr fun x => ?_
+      have h1 := AddSubgroup.mem_inertia.mp (Subgroup.mem_inf.mp σ.2).1 x
+      have h2 : (IntermediateField.fixingSubgroupEquiv (IntermediateField.comap L.val M)
+          ⟨σ.1, (Subgroup.mem_inf.mp σ.2).2⟩ :
+          ↥L ≃ₐ[↥(IntermediateField.comap L.val M)] ↥L) • x = σ.1 • x := by
+        apply Subtype.ext
+        rfl
+      rw [h2]
+      exact h1
+    · refine AddSubgroup.mem_inertia.mpr fun x => ?_
+      have hρ := AddSubgroup.mem_inertia.mp ρ.2 x
+      have h2 : ((((IntermediateField.fixingSubgroupEquiv
+          (IntermediateField.comap L.val M)).symm ρ.1 :
+          (IntermediateField.comap L.val M).fixingSubgroup) : ↥L ≃ₐ[ℚ₃ᵥ] ↥L)) • x =
+          ρ.1 • x := by
+        apply Subtype.ext
+        show ((((IntermediateField.fixingSubgroupEquiv
+            (IntermediateField.comap L.val M)).symm ρ.1 :
+            (IntermediateField.comap L.val M).fixingSubgroup) : ↥L ≃ₐ[ℚ₃ᵥ] ↥L)) x.1 =
+            (ρ.1 : ↥L ≃ₐ[↥(IntermediateField.comap L.val M)] ↥L) x.1
+        have h3 := (IntermediateField.fixingSubgroupEquiv
+          (IntermediateField.comap L.val M)).apply_symm_apply ρ.1
+        exact congrFun (congrArg (fun (g : ↥L ≃ₐ[↥(IntermediateField.comap L.val M)] ↥L) =>
+          (g : ↥L → ↥L)) h3) x.1
+      rw [h2]
+      exact hρ
+    · intro σ
+      refine Subtype.ext ?_
+      have h3 := (IntermediateField.fixingSubgroupEquiv
+        (IntermediateField.comap L.val M)).symm_apply_apply
+        ⟨σ.1, (Subgroup.mem_inf.mp σ.2).2⟩
+      exact congrArg (fun (y : (IntermediateField.comap L.val M).fixingSubgroup) =>
+        (y : ↥L ≃ₐ[ℚ₃ᵥ] ↥L)) h3
+    · intro ρ
+      exact Subtype.ext ((IntermediateField.fixingSubgroupEquiv
+        (IntermediateField.comap L.val M)).apply_symm_apply ρ.1)
+  -- STEP B: `|I(𝔪_L / Gal(L/M'))| = e(𝔪_{M'} at 𝔪_L)`
+  have hB := card_inertia_intermediate
+    Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat ↥L
+    (IntermediateField.comap L.val M)
+  -- STEP C: tower multiplicativity `e(𝔪ᵥ, 𝔪_L) = e(𝔪ᵥ, 𝔪_{M'})·e(𝔪_{M'}, 𝔪_L)`
+  haveI hlies : (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ ↥L)).LiesOver
+      (IsLocalRing.maximalIdeal
+        (IntegralClosure 𝒪₃ᵥ ↥(IntermediateField.comap L.val M))) := by
+    constructor
+    haveI : Algebra.IsIntegral
+        (IntegralClosure 𝒪₃ᵥ ↥(IntermediateField.comap L.val M))
+        (IntegralClosure 𝒪₃ᵥ ↥L) :=
+      Algebra.IsIntegral.tower_top (R := 𝒪₃ᵥ)
+    have hmax : ((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ ↥L)).comap
+        (algebraMap (IntegralClosure 𝒪₃ᵥ ↥(IntermediateField.comap L.val M))
+          (IntegralClosure 𝒪₃ᵥ ↥L))).IsMaximal :=
+      Ideal.isMaximal_comap_of_isIntegral_of_isMaximal
+        (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ ↥L))
+    exact (hmax.eq_of_le
+      (IsLocalRing.maximalIdeal.isMaximal
+        (IntegralClosure 𝒪₃ᵥ ↥(IntermediateField.comap L.val M))).ne_top
+      (IsLocalRing.le_maximalIdeal hmax.ne_top)).symm
+  haveI : FaithfulSMul (IntegralClosure 𝒪₃ᵥ ↥(IntermediateField.comap L.val M))
+      (IntegralClosure 𝒪₃ᵥ ↥L) := by
+    rw [faithfulSMul_iff_algebraMap_injective]
+    intro a b hab
+    have h1 := congrArg (algebraMap (IntegralClosure 𝒪₃ᵥ ↥L) ↥L) hab
+    rw [← IsScalarTower.algebraMap_apply, ← IsScalarTower.algebraMap_apply] at h1
+    haveI : IsFractionRing (IntegralClosure 𝒪₃ᵥ ↥(IntermediateField.comap L.val M))
+        ↥(IntermediateField.comap L.val M) :=
+      IsIntegralClosure.isFractionRing_of_finite_extension 𝒪₃ᵥ ℚ₃ᵥ
+        ↥(IntermediateField.comap L.val M)
+        (IntegralClosure 𝒪₃ᵥ ↥(IntermediateField.comap L.val M))
+    have h2 : Function.Injective
+        (algebraMap (IntegralClosure 𝒪₃ᵥ ↥(IntermediateField.comap L.val M)) ↥L) := by
+      rw [IsScalarTower.algebraMap_eq
+        (IntegralClosure 𝒪₃ᵥ ↥(IntermediateField.comap L.val M))
+        ↥(IntermediateField.comap L.val M) ↥L]
+      exact (algebraMap ↥(IntermediateField.comap L.val M) ↥L).injective.comp
+        (IsFractionRing.injective
+          (IntegralClosure 𝒪₃ᵥ ↥(IntermediateField.comap L.val M))
+          ↥(IntermediateField.comap L.val M))
+    exact h2 h1
+  have hC := Ideal.ramificationIdx'_algebra_tower'
+    (IsLocalRing.maximalIdeal 𝒪₃ᵥ)
+    (IsLocalRing.maximalIdeal
+      (IntegralClosure 𝒪₃ᵥ ↥(IntermediateField.comap L.val M)))
+    (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ ↥L))
+  -- STEP D: transport the ramification index across the reification
+  have hD : Ideal.ramificationIdx' (IsLocalRing.maximalIdeal 𝒪₃ᵥ)
+      (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ ↥M)) =
+      Ideal.ramificationIdx' (IsLocalRing.maximalIdeal 𝒪₃ᵥ)
+        (IsLocalRing.maximalIdeal
+          (IntegralClosure 𝒪₃ᵥ ↥(IntermediateField.comap L.val M))) := by
+    show Ideal.ramificationIdx' (IsLocalRing.maximalIdeal 𝒪₃ᵥ)
+        (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ ↥M)) =
+      Ideal.ramificationIdx' (IsLocalRing.maximalIdeal 𝒪₃ᵥ)
+        (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ
+          ↥(reifySubextension Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L)))
+    let j := reifyEquiv Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L hML
+    let f₁ : IntegralClosure 𝒪₃ᵥ ↥M →+*
+        IntegralClosure 𝒪₃ᵥ
+          ↥(reifySubextension Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L) :=
+      RingHom.codRestrict
+        ((j.symm : ↥M →+*
+            ↥(reifySubextension
+              Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L)).comp
+          (algebraMap (IntegralClosure 𝒪₃ᵥ ↥M) ↥M))
+        (integralClosure 𝒪₃ᵥ
+          ↥(reifySubextension Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L))
+        (fun x => (Algebra.IsIntegral.isIntegral (R := 𝒪₃ᵥ) x).map
+          ((j.symm.toAlgHom.restrictScalars 𝒪₃ᵥ).comp
+            (IsScalarTower.toAlgHom 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ ↥M) ↥M)))
+    let f₂ : IntegralClosure 𝒪₃ᵥ
+        ↥(reifySubextension Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L) →+*
+        IntegralClosure 𝒪₃ᵥ ↥M :=
+      RingHom.codRestrict
+        ((j : ↥(reifySubextension
+              Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L) →+* ↥M).comp
+          (algebraMap (IntegralClosure 𝒪₃ᵥ
+              ↥(reifySubextension
+                Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L))
+            ↥(reifySubextension
+              Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L)))
+        (integralClosure 𝒪₃ᵥ ↥M)
+        (fun x => (Algebra.IsIntegral.isIntegral (R := 𝒪₃ᵥ) x).map
+          ((j.toAlgHom.restrictScalars 𝒪₃ᵥ).comp
+            (IsScalarTower.toAlgHom 𝒪₃ᵥ
+              (IntegralClosure 𝒪₃ᵥ
+                ↥(reifySubextension
+                  Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L))
+              ↥(reifySubextension
+                Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L))))
+    let jO : IntegralClosure 𝒪₃ᵥ ↥M ≃ₐ[𝒪₃ᵥ]
+        IntegralClosure 𝒪₃ᵥ
+          ↥(reifySubextension Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L) :=
+      { toFun := f₁
+        invFun := f₂
+        left_inv := fun y => Subtype.ext (j.apply_symm_apply _)
+        right_inv := fun y => Subtype.ext (j.symm_apply_apply _)
+        map_mul' := map_mul f₁
+        map_add' := map_add f₁
+        commutes' := fun r => Subtype.ext (by
+          show j.symm (algebraMap 𝒪₃ᵥ ↥M r) = algebraMap 𝒪₃ᵥ _ r
+          rw [IsScalarTower.algebraMap_apply 𝒪₃ᵥ ℚ₃ᵥ ↥M, AlgEquiv.commutes,
+            IsScalarTower.algebraMap_apply 𝒪₃ᵥ ℚ₃ᵥ
+              ↥(reifySubextension
+                Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L)]) }
+    have hcomap : (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ
+          ↥(reifySubextension
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L))).comap jO =
+        IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ ↥M) := by
+      ext z
+      rw [Ideal.mem_comap, IsLocalRing.mem_maximalIdeal, mem_nonunits_iff,
+        IsLocalRing.mem_maximalIdeal, mem_nonunits_iff]
+      constructor
+      · intro h1 h2
+        exact h1 (h2.map jO)
+      · intro h1 h2
+        have h3 := h2.map jO.symm
+        rw [AlgEquiv.symm_apply_apply] at h3
+        exact h1 h3
+    rw [← hcomap,
+      Ideal.ramificationIdx'_comap_eq (IsLocalRing.maximalIdeal 𝒪₃ᵥ) jO]
+  -- assembly
+  rw [hA, hB, hD,
+    card_inertia_finite_level Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat ↥L,
+    hC, mul_comm]
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
 /-- **The subextension different estimate under a `1/2` upper-break
-bound** (sorry node, created 2026-07-24 — leaf (iii) of the Fontaine
-different-bound decomposition, PURE local ramification theory with no
-Hopf vocabulary; Fontaine §1 Prop. 1.3; Serre, *Corps Locaux* IV
-§§1–3): let `L/ℚ₃ᵥ` be a finite Galois subextension of `ℚ₃ᵃˡᵍ` whose
-lower-numbering filtration `G_i = inertia(𝔪_L^(i+1))` satisfies the
-Herbrand-transcribed break bound `hFont`: whenever `G_{m+1} ≠ ⊥` then
-`2·Σ_{i=1}^{m+1} #G_i ≤ #G_0` (equivalently: all upper-numbering
-breaks are `≤ 1/2`).  Then EVERY subextension `M ≤ L` (not necessarily
-normal) obeys the sharp Fontaine bound: `𝔪_M^d ∣ 𝔡_{𝒪_M/𝒪₃ᵥ}` forces
-`2d + 2 ≤ 3e(M/ℚ₃)`.  Intended proof (Serre IV §§1–2 numerology, with
-`H = Gal(L/M)`, `H_i = H ∩ G_i` (Serre IV §1 Prop. 2), `g_i = #G_i`,
-`h_i = #H_i`): (a) the two Galois different formulas
-`v_L(𝔡_{L/ℚ₃}) = Σ_{i≥0}(g_i − 1)` and `v_L(𝔡_{L/M}) = Σ_{i≥0}(h_i − 1)`
-(Serre IV §1 Prop. 4 — both sums terminate by Krull intersection as in
-`exists_pow_inertia_eq_bot`; prove them by the DifferentTransport
-master-generator technique transplanted to the complete local setting,
-or transport the global proofs); (b) transitivity of the different
-`𝔡_{L/ℚ₃} = 𝔡_{L/M}·𝔡_{M/ℚ₃}𝒪_L` (mathlib
-`differentIdeal_mul_differentIdeal`-style over the DVR tower
-`𝒪₃ᵥ ⊆ 𝒪_M ⊆ 𝒪_L`) plus `v_L = e_{L/M}·v_M` on ideals from `𝒪_M` and
-`e_{L/M} = h₀` (`card_inertia_finite_level` over the base `M`) give
-`h₀·v_M(𝔡_{M/ℚ₃}) = Σ_{i≥0}(g_i − h_i)`; (c) with `e_M = g₀/h₀`
-(tower multiplicativity of `ramificationIdx'` and
-`card_inertia_finite_level`), the goal `2·v_M + 2 ≤ 3e_M` becomes
-`2·Σ_{i≥1}(g_i − h_i) ≤ g₀`, which follows from `hFont` at the last
-nontrivial level via `g_i − h_i ≤ g_i` — and is vacuous in the tame
-case (`Σ` empty, giving `2e_M ≤ 3e_M` outright). -/
+bound** (DECOMPOSED 2026-07-24 into the two sorry leaves above — the
+Serre different numerology
+`card_inertia_inf_fixingSubgroup_mul_add_sum_le_sum_card_inertia`
+(steps (a)+(b)) and the tower multiplicativity of the ramification
+index `card_inertia_inf_fixingSubgroup_mul_ramificationIdx'_eq_card_inertia`
+(step (b′)) — with the level selection
+`exists_local_pow_inertia_eq_bot` and the step-(c) arithmetic PROVEN
+here; leaf (iii) of the Fontaine different-bound decomposition, PURE
+local ramification theory with no Hopf vocabulary; Fontaine §1
+Prop. 1.3; Serre, *Corps Locaux* IV §§1–3): let `L/ℚ₃ᵥ` be a finite
+Galois subextension of `ℚ₃ᵃˡᵍ` whose lower-numbering filtration
+`G_i = inertia(𝔪_L^(i+1))` satisfies the Herbrand-transcribed break
+bound `hFont`: whenever `G_{m+1} ≠ ⊥` then `2·Σ_{i=1}^{m+1} #G_i ≤ #G_0`
+(equivalently: all upper-numbering breaks are `≤ 1/2`).  Then EVERY
+subextension `M ≤ L` (not necessarily normal) obeys the sharp Fontaine
+bound: `𝔪_M^d ∣ 𝔡_{𝒪_M/𝒪₃ᵥ}` forces `2d + 2 ≤ 3e(M/ℚ₃)`.  Proof
+(Serre IV §§1–2 numerology, with `H = Gal(L/M)`, `H_i = H ∩ G_i`
+(Serre IV §1 Prop. 2 — with the `inertia` spelling this intersection
+IS the lower filtration of `H`), `g_i = #G_i`, `h_i = #H_i`): (a) the
+two Galois different formulas `v_L(𝔡_{L/ℚ₃}) = Σ_{i≥0}(g_i − 1)` and
+`v_L(𝔡_{L/M}) = Σ_{i≥0}(h_i − 1)` (Serre IV §1 Prop. 4 — both sums
+terminate at the level supplied by `exists_local_pow_inertia_eq_bot`)
+and (b) transitivity of the different
+`𝔡_{L/ℚ₃} = 𝔡_{L/M}·𝔡_{M/ℚ₃}𝒪_L` with `v_L = e_{L/M}·v_M` and
+`e_{L/M} = h₀` give `h₀·v_M(𝔡_{M/ℚ₃}) = Σ_{i≥0}(g_i − h_i)`, i.e. the
+first sorry leaf in its `d ≤ v_M(𝔡)` truncated form; (b′) `h₀·e_M = g₀`
+is the second sorry leaf; (c) PROVEN here: choose (`Nat.find`) the
+FIRST level `n = j + 1 ≥ 1` with `G_n = ⊥`, so that `hFont` applies at
+`m = j − 1` (vacuously when `j = 0`) and gives `2·Σ_{i=1}^{j} g_i ≤ g₀`;
+splitting both Herbrand sums at their ends (`Finset.sum_range_succ'`,
+`Finset.sum_range_succ`, `g_n = h_n = 1`) and bounding `h_i ≥ 1`
+(`Nat.card_pos`) turns leaf (a)+(b) into
+`h₀·(2d + 2) ≤ 2Σ_{i=1}^{j} g_i + 2g₀ − 2j ≤ 3g₀ = h₀·3e_M`, and
+cancelling the positive factor `h₀` (`Nat.le_of_mul_le_mul_left`) is
+the goal — vacuous in the tame case `j = 0`, where it degenerates to
+`2e_M ≤ 3e_M`. -/
 theorem two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound
     (L : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ L]
     [IsGalois ℚ₃ᵥ L]
@@ -5972,9 +6780,9 @@ theorem two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound
       (IsLocalRing.maximalIdeal
           (IntegralClosure 𝒪₃ᵥ L) ^ (m + 2)).inertia (L ≃ₐ[ℚ₃ᵥ] L) ≠ ⊥ →
       2 * ∑ i ∈ Finset.range (m + 1),
-          Nat.card ((IsLocalRing.maximalIdeal
+          Nat.card ↥((IsLocalRing.maximalIdeal
             (IntegralClosure 𝒪₃ᵥ L) ^ (i + 2)).inertia (L ≃ₐ[ℚ₃ᵥ] L)) ≤
-        Nat.card ((IsLocalRing.maximalIdeal
+        Nat.card ↥((IsLocalRing.maximalIdeal
           (IntegralClosure 𝒪₃ᵥ L)).inertia (L ≃ₐ[ℚ₃ᵥ] L)))
     (d : ℕ)
     (hd : IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M) ^ d ∣
@@ -5982,7 +6790,93 @@ theorem two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound
     2 * d + 2 ≤ 3 * Ideal.ramificationIdx'
       (IsLocalRing.maximalIdeal 𝒪₃ᵥ)
       (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M)) := by
-  sorry
+  classical
+  -- the pure `ℕ` backbone of the Serre IV §§1–3 numerology
+  have harith : ∀ P B A S g₀ h₀ j : ℕ, P + B ≤ A → A = S + 1 + g₀ →
+      h₀ + (j + 1) ≤ B → 2 * S ≤ g₀ → 2 * P + 2 * h₀ ≤ 3 * g₀ := by
+    intro P B A S g₀ h₀ j h1 h2 h3 h4
+    omega
+  -- the FIRST level `n = j + 1 ≥ 1` at which the filtration is trivial
+  have hex : ∃ k : ℕ,
+      (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ (k + 2)).inertia
+        (L ≃ₐ[ℚ₃ᵥ] L) = ⊥ := exists_local_pow_inertia_eq_bot L
+  have hn : (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^
+      (Nat.find hex + 1 + 1)).inertia (L ≃ₐ[ℚ₃ᵥ] L) = ⊥ := Nat.find_spec hex
+  -- the Herbrand bound at the last nontrivial level (vacuous when `j = 0`)
+  have hK : 2 * ∑ i ∈ Finset.range (Nat.find hex),
+      Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^
+        (i + 1 + 1)).inertia (L ≃ₐ[ℚ₃ᵥ] L)) ≤
+      Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L)).inertia
+        (L ≃ₐ[ℚ₃ᵥ] L)) := by
+    rcases Nat.eq_zero_or_pos (Nat.find hex) with hj0 | hjpos
+    · rw [hj0]
+      simp
+    · obtain ⟨m, hm⟩ : ∃ m : ℕ, Nat.find hex = m + 1 := ⟨Nat.find hex - 1, by omega⟩
+      have hne : (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ (m + 2)).inertia
+          (L ≃ₐ[ℚ₃ᵥ] L) ≠ ⊥ := Nat.find_min hex (by omega)
+      rw [hm]
+      exact hFont m hne
+  -- leaf (a)+(b): the Serre different numerology, truncated at level `n`
+  have hS1 := card_inertia_inf_fixingSubgroup_mul_add_sum_le_sum_card_inertia
+    L M hML (Nat.find hex + 1) hn d hd
+  -- leaf (b′): `h₀·e_M = g₀`
+  have hS2 := card_inertia_inf_fixingSubgroup_mul_ramificationIdx'_eq_card_inertia
+    L M hML
+  -- split the `G`-sum at both ends: `A = S + g_n + g₀` with `g_n = 1`
+  have hA : ∑ i ∈ Finset.range (Nat.find hex + 1 + 1),
+      Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^
+        (i + 1)).inertia (L ≃ₐ[ℚ₃ᵥ] L)) =
+      (∑ i ∈ Finset.range (Nat.find hex),
+        Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^
+          (i + 1 + 1)).inertia (L ≃ₐ[ℚ₃ᵥ] L))) + 1 +
+      Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L)).inertia
+        (L ≃ₐ[ℚ₃ᵥ] L)) := by
+    rw [Finset.sum_range_succ', Finset.sum_range_succ, hn, Subgroup.card_bot]
+    simp
+  -- the `H`-sum is at least `h₀ + (j + 1)` since every `h_i ≥ 1`
+  have hB : Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L)).inertia
+        (L ≃ₐ[ℚ₃ᵥ] L) ⊓ (IntermediateField.comap L.val M).fixingSubgroup) +
+      (Nat.find hex + 1) ≤
+      ∑ i ∈ Finset.range (Nat.find hex + 1 + 1),
+        Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^
+          (i + 1)).inertia (L ≃ₐ[ℚ₃ᵥ] L) ⊓
+          (IntermediateField.comap L.val M).fixingSubgroup) := by
+    have hsum : Nat.find hex + 1 ≤ ∑ i ∈ Finset.range (Nat.find hex + 1),
+        Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^
+          (i + 1 + 1)).inertia (L ≃ₐ[ℚ₃ᵥ] L) ⊓
+          (IntermediateField.comap L.val M).fixingSubgroup) := by
+      calc Nat.find hex + 1 = ∑ _i ∈ Finset.range (Nat.find hex + 1), 1 := by simp
+        _ ≤ _ := Finset.sum_le_sum fun i _ => Nat.card_pos
+    rw [Finset.sum_range_succ']
+    simp only [zero_add, pow_one]
+    omega
+  -- step (c): the arithmetic, then cancel the positive factor `h₀`
+  have hmain : 2 * (Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L)).inertia
+        (L ≃ₐ[ℚ₃ᵥ] L) ⊓ (IntermediateField.comap L.val M).fixingSubgroup) * d) +
+      2 * Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L)).inertia
+        (L ≃ₐ[ℚ₃ᵥ] L) ⊓ (IntermediateField.comap L.val M).fixingSubgroup) ≤
+      3 * Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L)).inertia
+        (L ≃ₐ[ℚ₃ᵥ] L)) :=
+    harith _ _ _ _ _ _ _ hS1 hA hB hK
+  have h0pos : 0 < Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L)).inertia
+      (L ≃ₐ[ℚ₃ᵥ] L) ⊓ (IntermediateField.comap L.val M).fixingSubgroup) := Nat.card_pos
+  refine Nat.le_of_mul_le_mul_left ?_ h0pos
+  calc Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L)).inertia
+        (L ≃ₐ[ℚ₃ᵥ] L) ⊓ (IntermediateField.comap L.val M).fixingSubgroup) * (2 * d + 2)
+      = 2 * (Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L)).inertia
+          (L ≃ₐ[ℚ₃ᵥ] L) ⊓ (IntermediateField.comap L.val M).fixingSubgroup) * d) +
+        2 * Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L)).inertia
+          (L ≃ₐ[ℚ₃ᵥ] L) ⊓ (IntermediateField.comap L.val M).fixingSubgroup) := by ring
+    _ ≤ 3 * Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L)).inertia
+          (L ≃ₐ[ℚ₃ᵥ] L)) := hmain
+    _ = 3 * (Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L)).inertia
+          (L ≃ₐ[ℚ₃ᵥ] L) ⊓ (IntermediateField.comap L.val M).fixingSubgroup) *
+          Ideal.ramificationIdx' (IsLocalRing.maximalIdeal 𝒪₃ᵥ)
+            (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M))) := by rw [hS2]
+    _ = Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L)).inertia
+          (L ≃ₐ[ℚ₃ᵥ] L) ⊓ (IntermediateField.comap L.val M).fixingSubgroup) *
+        (3 * Ideal.ramificationIdx' (IsLocalRing.maximalIdeal 𝒪₃ᵥ)
+          (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M))) := by ring
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
@@ -5990,11 +6884,17 @@ set_option maxHeartbeats 4000000 in
 /-- **Fontaine's different bound for a finite flat Hopf order over
 `ℤ₃` killed by `3`** (DECOMPOSED 2026-07-24 into the leaves above —
 the points-compositum finiteness/normality/placement leaves (i-a),
-(i-b), (i-c) are PROVEN; the two remaining sorry leaves are the
-Herbrand-transcribed Théorème A core (ii)
+(i-b), (i-c) are PROVEN, and so now are the Herbrand-transcribed
+Théorème A core (ii)
 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package` and the
 subextension estimate (iii)
-`two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`;
+`two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+— neither has a `sorry` in its body, so neither is a work item;
+the depth under (iii) has moved one level down, to the two Serre
+numerology leaves it consumes,
+`card_inertia_inf_fixingSubgroup_mul_add_sum_le_sum_card_inertia` and
+`card_inertia_inf_fixingSubgroup_mul_ramificationIdx'_eq_card_inertia`,
+which ARE still open;
 the assembly is PROVEN here: instantiate the subextension estimate at
 `L = hopfPointsField G` with the placement `M ≤ L` from `hM` and the
 break bound from the Théorème A leaf): the scheme-theoretic core of
@@ -6340,8 +7240,36 @@ theorem maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd
           Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)
         (IntegralClosure
           (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
-            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) M) :=
-  sorry
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) M) := by
+  classical
+  haveI hmaxprime : (IsLocalRing.maximalIdeal (IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) M)).IsPrime :=
+    (IsLocalRing.maximalIdeal.isMaximal _).isPrime
+  haveI hQprime : (Ideal.comap φ (IsLocalRing.maximalIdeal (IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) M))).IsPrime :=
+    Ideal.IsPrime.comap φ
+  -- `3` lies in the distinguished prime, so it is nonzero
+  have h3mem : ((3 : ℕ) : NumberField.RingOfIntegers K) ∈
+      Ideal.comap φ (IsLocalRing.maximalIdeal (IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) M)) := by
+    rw [Ideal.mem_comap, map_natCast]
+    exact CompletionInvariance.natCast_mem_maximalIdeal Nat.prime_three M
+  have hQbot : Ideal.comap φ (IsLocalRing.maximalIdeal (IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) M)) ≠ ⊥ := by
+    intro h0
+    have h1 : ((3 : ℕ) : NumberField.RingOfIntegers K) = 0 := by
+      rw [← Ideal.mem_bot, ← h0]
+      exact h3mem
+    exact (Nat.cast_ne_zero.mpr Nat.prime_three.ne_zero) h1
+  -- the master generator at the distinguished prime
+  obtain ⟨θ, hθtop, hθdens, -, hθmem, hθQ⟩ :=
+    exists_dense_primitive_generator K _ hQprime hQbot
+  exact CompletionInvariance.maximalIdeal_pow_dvd_local_differentIdeal_of_dense
+    Nat.prime_three K M hMgen φ hφ hθtop hθdens hθmem hθQ d hd
 
 /-- **Completion invariance of the ramification index at the
 distinguished prime** (sorry node, created 2026-07-24 — the
@@ -6401,7 +7329,8 @@ theorem ramificationIdx'_comap_maximalIdeal_eq_local
       (IsLocalRing.maximalIdeal (IntegralClosure
         (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
           Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) M)) :=
-  sorry
+  CompletionInvariance.ramificationIdx'_comap_maximalIdeal_eq_of_dense
+    Nat.prime_three K M hMgen φ hφ
 
 set_option backward.isDefEq.respectTransparency false in
 set_option maxHeartbeats 4000000 in
@@ -7950,6 +8879,54 @@ theorem archProfile_complex :
       push_cast
       ring
 
+/-- **The elementary stretched-exponential profile** (PROVEN): for every
+`c > 0`, `x ↦ e^{−c·x^{1/n}}` is a Γ-profile of degree `n`, its Mellin
+factor being tautologically its own Mellin transform (only the
+CONVERGENCE half of `HasMellin` carries content, and that is
+`hasMellin_ofReal_exp_neg` dilated by `c` (`MellinConvergent.comp_mul_left`)
+and pulled back along `τ ↦ τ^{1/n}` (`MellinConvergent.comp_rpow`), exactly
+as in `archProfile_complex`).  These are the auxiliary "half-exponent"
+profiles `E₁`, `E₂` produced by the saddle split in `archConv_decay`. -/
+theorem archProfile_stretchedExp (n : ℕ) (hn : 0 < n) {c : ℝ} (hc : 0 < c) :
+    ∃ M : ℂ → ℂ, IsArchProfile n M (fun x : ℝ => Real.exp (-c * x ^ ((n : ℝ)⁻¹))) := by
+  have hn0 : (0 : ℝ) < (n : ℝ) := Nat.cast_pos.mpr hn
+  have hinv : (0 : ℝ) < ((n : ℝ))⁻¹ := inv_pos.mpr hn0
+  refine ⟨fun s => mellin (fun τ : ℝ => ((Real.exp (-c * τ ^ ((n : ℝ)⁻¹)) : ℝ) : ℂ)) (s / 2),
+    ?_, ?_, ?_, ⟨1, c, hc, ?_⟩, ?_⟩
+  · refine (Real.continuous_exp.comp ?_).continuousOn
+    exact continuous_const.mul (continuous_iff_continuousAt.mpr fun x =>
+      Real.continuousAt_rpow_const x _ (Or.inr hinv.le))
+  · exact fun _ _ => (Real.exp_pos _).le
+  · intro a ha b _ hab
+    refine Real.exp_le_exp.mpr ?_
+    nlinarith [Real.rpow_le_rpow (le_of_lt ha) hab hinv.le (x := a) (y := b) (z := ((n : ℝ)⁻¹))]
+  · intro τ _
+    rw [one_mul]
+  · intro s hs
+    refine ⟨?_, rfl⟩
+    have hs2 : 0 < (s / 2).re := by simp; linarith
+    have hcast : (((((n : ℝ))⁻¹ : ℝ)) : ℂ) = ((n : ℝ) : ℂ)⁻¹ := by push_cast; ring
+    have hzeq : (s / 2) / ((((n : ℝ))⁻¹ : ℝ) : ℂ) = ((n : ℝ) : ℂ) * (s / 2) := by
+      rw [hcast, div_inv_eq_mul]
+      ring
+    have hzre : 0 < ((s / 2) / ((((n : ℝ))⁻¹ : ℝ) : ℂ)).re := by
+      rw [hzeq, Complex.re_ofReal_mul]
+      exact mul_pos hn0 hs2
+    have hbase := (hasMellin_ofReal_exp_neg _ hzre).1
+    have hmul : MellinConvergent (fun t : ℝ => ((Real.exp (-c * t) : ℝ) : ℂ))
+        ((s / 2) / ((((n : ℝ))⁻¹ : ℝ) : ℂ)) := by
+      have hcm := (MellinConvergent.comp_mul_left
+        (f := fun t : ℝ => ((Real.exp (-t) : ℝ) : ℂ))
+        (s := (s / 2) / ((((n : ℝ))⁻¹ : ℝ) : ℂ)) hc).mpr hbase
+      have heq : (fun t : ℝ => ((Real.exp (-c * t) : ℝ) : ℂ))
+          = fun t : ℝ => ((Real.exp (-(c * t)) : ℝ) : ℂ) := by
+        funext t; rw [neg_mul]
+      rw [heq]
+      exact hcm
+    exact (MellinConvergent.comp_rpow
+      (f := fun t : ℝ => ((Real.exp (-c * t) : ℝ) : ℂ))
+      (s := s / 2) (a := ((n : ℝ))⁻¹) (ne_of_gt hinv)).mpr hmul
+
 /-- **Multiplicative (Mellin) convolution of two profiles**:
 `(H₁ ⋆ H₂)(τ) = ∫_0^∞ H₁(τ/u)·H₂(u)·du/u`.  This is the
 multiplication of the multiplicative group `(0, ∞)`, under which the
@@ -8041,70 +9018,424 @@ theorem archConv_continuousOn {p q : ℕ} {M₁ M₂ : ℂ → ℂ} {H₁ H₂ :
     ContinuousOn (archConv H₁ H₂) (Set.Ioi 0) := by
   sorry
 
-/-- **Stretched-exponential decay of the convolution** (sorry node,
-stated 2026-07-25 — stage (α₃) of the decomposition of
+/-- **Stretched-exponential decay of the convolution** (PROVEN
+2026-07-25 — stage (α₃) of the decomposition of
 `archimedeanGammaProfile_exists`): the convolution of a degree-`p` and
 a degree-`q` profile decays like `exp(−a·τ^{1/(p+q)})`, i.e. the
 degrees ADD.
 
-Intended proof (the AM–GM/saddle-point step of Neukirch VII (4.2),
-"split the exponent in half"): with
-`H₁(x) ≤ A₁·exp(−a₁·x^{1/p})` for `x ≥ 1` and
-`H₂(u) ≤ A₂·exp(−a₂·u^{1/q})` for `u ≥ 1`, split the integral at the
-saddle `u₀ = τ^{q/(p+q)}` — where `(τ/u)^{1/p} = u^{1/q}` — whose
-common value is exactly `τ^{1/(p+q)}`:
+Proof (the AM–GM/saddle-point step of Neukirch VII (4.2), "split the
+exponent in half").  With `H₁(x) ≤ A₁·exp(−a₁·x^{1/p})` for `x ≥ 1`
+and `H₂(u) ≤ A₂·exp(−a₂·u^{1/q})` for `u ≥ 1` (both `Aᵢ ≥ 0`, since
+profiles are nonnegative), split the integral at the saddle
+`u₀ = τ^{q/(p+q)}` — where `(τ/u)^{1/p} = u^{1/q}` — whose common value
+is exactly `T = τ^{1/(p+q)}`.  For `τ ≥ 1` one has `u₀ ≥ 1` and:
 
-* on `(0, u₀]` one has `τ/u ≥ τ^{p/(p+q)} ≥ 1`, so
-  `exp(−a₁(τ/u)^{1/p}) ≤ exp(−½a₁τ^{1/(p+q)})·exp(−½a₁(τ/u)^{1/p})`
-  and the second factor, together with the polynomial bound
-  `H₂(u) ≤ C₂u^{−ε}` near `0` and antitonicity of `H₂` on `[1, u₀]`,
-  leaves a `τ`-uniform finite integral (the residual `log u₀` growth
-  is absorbed by halving the exponent once more);
-* on `[u₀, ∞)` one has `u ≥ 1` and
-  `exp(−a₂u^{1/q}) ≤ exp(−½a₂τ^{1/(p+q)})·exp(−½a₂u^{1/q})`, and
-  `H₁(τ/u) ≤ C₁(u/τ)^{ε} ≤ C₁u^{ε}` (the polynomial control at `0` of
-  `archConv_integrableOn`'s docstring, `τ ≥ 1`), leaving the finite
-  integral `∫ u^{ε−1}exp(−½a₂u^{1/q}) du`.
+* on `(0, u₀]`: `τ/u ≥ τ/u₀ = τ^{p/(p+q)} ≥ 1`, hence
+  `(τ/u)^{1/p} ≥ T`, and halving that exponent gives
+  `H₁(τ/u) ≤ A₁·exp(−½a₁T)·E₁(τ/u)` where
+  `E₁(x) = exp(−½a₁·x^{1/p})`;
+* on `[u₀, ∞)`: `u ≥ u₀ ≥ 1`, hence `u^{1/q} ≥ T`, and likewise
+  `H₂(u) ≤ A₂·exp(−½a₂T)·E₂(u)` where `E₂(u) = exp(−½a₂·u^{1/q})`.
 
-The resulting exponent is `a = ½·min a₁ a₂` (after the second
-halving), which is what the statement asserts. -/
+Since the integrand is nonnegative, enlarging each half-line back to
+`(0, ∞)` only increases the integral, so the two residual integrals are
+the CONVOLUTIONS `archConv E₁ H₂ τ` and `archConv H₁ E₂ τ` themselves.
+Now `E₁` and `E₂` are again profiles, of degrees `p` and `q`
+(`archProfile_stretchedExp`) — so those two convolutions are finite by
+`archConv_integrableOn` and, crucially, ANTITONE in `τ`
+(`archConv_antitoneOn`), hence for `τ ≥ 1` bounded by their values at
+`τ = 1`.  That antitonicity is what replaces the delicate `τ`-uniform
+estimate (and with it the polynomial-control-at-`0` bound) of a direct
+attack.  The constants are therefore
+`A = A₁·(E₁ ⋆ H₂)(1) + A₂·(H₁ ⋆ E₂)(1)` and `a = ½·min a₁ a₂`. -/
 theorem archConv_decay {p q : ℕ} {M₁ M₂ : ℂ → ℂ} {H₁ H₂ : ℝ → ℝ}
     (hp : 0 < p) (hq : 0 < q) (h₁ : IsArchProfile p M₁ H₁) (h₂ : IsArchProfile q M₂ H₂) :
     ∃ A a : ℝ, 0 < a ∧ ∀ τ : ℝ, 1 ≤ τ →
       archConv H₁ H₂ τ ≤ A * Real.exp (-a * τ ^ (((p + q : ℕ) : ℝ)⁻¹)) := by
-  sorry
+  obtain ⟨A₁, a₁, ha₁, hd₁⟩ := h₁.2.2.2.1
+  obtain ⟨A₂, a₂, ha₂, hd₂⟩ := h₂.2.2.2.1
+  have hA₁ : 0 ≤ A₁ := by
+    nlinarith [hd₁ 1 le_rfl, h₁.2.1 1 (Set.mem_Ioi.mpr one_pos),
+      Real.exp_pos (-a₁ * (1 : ℝ) ^ ((p : ℝ)⁻¹))]
+  have hA₂ : 0 ≤ A₂ := by
+    nlinarith [hd₂ 1 le_rfl, h₂.2.1 1 (Set.mem_Ioi.mpr one_pos),
+      Real.exp_pos (-a₂ * (1 : ℝ) ^ ((q : ℝ)⁻¹))]
+  obtain ⟨N₁, hE₁⟩ := archProfile_stretchedExp p hp (c := a₁ / 2) (by positivity)
+  obtain ⟨N₂, hE₂⟩ := archProfile_stretchedExp q hq (c := a₂ / 2) (by positivity)
+  set E₁ : ℝ → ℝ := fun x => Real.exp (-(a₁ / 2) * x ^ ((p : ℝ)⁻¹)) with hE₁def
+  set E₂ : ℝ → ℝ := fun x => Real.exp (-(a₂ / 2) * x ^ ((q : ℝ)⁻¹)) with hE₂def
+  have hC₁0 : 0 ≤ archConv E₁ H₂ 1 := archConv_nonneg hE₁ h₂ one_pos
+  have hC₂0 : 0 ≤ archConv H₁ E₂ 1 := archConv_nonneg h₁ hE₂ one_pos
+  refine ⟨A₁ * archConv E₁ H₂ 1 + A₂ * archConv H₁ E₂ 1, min a₁ a₂ / 2,
+    by linarith [lt_min ha₁ ha₂], ?_⟩
+  intro τ hτ
+  have hτ0 : (0 : ℝ) < τ := lt_of_lt_of_le one_pos hτ
+  have hP0 : (0 : ℝ) < (p : ℝ) := Nat.cast_pos.mpr hp
+  have hQ0 : (0 : ℝ) < (q : ℝ) := Nat.cast_pos.mpr hq
+  have hNeq : (((p + q : ℕ)) : ℝ) = (p : ℝ) + (q : ℝ) := by push_cast; ring
+  have hN0 : (0 : ℝ) < (((p + q : ℕ)) : ℝ) := by rw [hNeq]; linarith
+  set N : ℝ := (((p + q : ℕ)) : ℝ) with hNdef
+  have hPne : (p : ℝ) ≠ 0 := ne_of_gt hP0
+  have hQne : (q : ℝ) ≠ 0 := ne_of_gt hQ0
+  have hNne : N ≠ 0 := ne_of_gt hN0
+  have hT0 : (0 : ℝ) ≤ τ ^ N⁻¹ := Real.rpow_nonneg hτ0.le _
+  have hu₀pos : (0 : ℝ) < τ ^ ((q : ℝ) / N) := Real.rpow_pos_of_pos hτ0 _
+  have hu₀ge1 : (1 : ℝ) ≤ τ ^ ((q : ℝ) / N) := by
+    calc (1 : ℝ) = (1 : ℝ) ^ ((q : ℝ) / N) := (Real.one_rpow _).symm
+      _ ≤ τ ^ ((q : ℝ) / N) := Real.rpow_le_rpow zero_le_one hτ (div_nonneg hQ0.le hN0.le)
+  have hPN : (p : ℝ) / N = 1 - (q : ℝ) / N := by
+    rw [eq_sub_iff_add_eq, ← add_div, ← hNeq, div_self hNne]
+  have hτdiv : τ ^ ((p : ℝ) / N) = τ / τ ^ ((q : ℝ) / N) := by
+    rw [hPN, Real.rpow_sub hτ0, Real.rpow_one]
+  have hone_le : (1 : ℝ) ≤ τ ^ ((p : ℝ) / N) := by
+    calc (1 : ℝ) = (1 : ℝ) ^ ((p : ℝ) / N) := (Real.one_rpow _).symm
+      _ ≤ τ ^ ((p : ℝ) / N) := Real.rpow_le_rpow zero_le_one hτ (div_nonneg hP0.le hN0.le)
+  have hkeyP : (τ ^ ((p : ℝ) / N)) ^ ((p : ℝ)⁻¹) = τ ^ N⁻¹ := by
+    rw [← Real.rpow_mul hτ0.le]
+    congr 1
+    field_simp [hPne, hNne]
+  have hkeyQ : (τ ^ ((q : ℝ) / N)) ^ ((q : ℝ)⁻¹) = τ ^ N⁻¹ := by
+    rw [← Real.rpow_mul hτ0.le]
+    congr 1
+    field_simp [hQne, hNne]
+  -- the two pointwise saddle bounds
+  have hstepA : ∀ u ∈ Set.Ioc (0 : ℝ) (τ ^ ((q : ℝ) / N)),
+      H₁ (τ / u) * H₂ u / u
+        ≤ (A₁ * Real.exp (-(a₁ / 2) * τ ^ N⁻¹)) * (E₁ (τ / u) * H₂ u / u) := by
+    intro u hu
+    obtain ⟨hu0, huu⟩ := hu
+    have hdle : τ ^ ((p : ℝ) / N) ≤ τ / u := by
+      rw [hτdiv]
+      exact div_le_div_of_nonneg_left hτ0.le hu0 huu
+    have hx1 : (1 : ℝ) ≤ τ / u := le_trans hone_le hdle
+    have hxT : τ ^ N⁻¹ ≤ (τ / u) ^ ((p : ℝ)⁻¹) := by
+      rw [← hkeyP]
+      exact Real.rpow_le_rpow (Real.rpow_nonneg hτ0.le _) hdle (inv_nonneg.mpr hP0.le)
+    have hH₁ : H₁ (τ / u) ≤ A₁ * (Real.exp (-(a₁ / 2) * τ ^ N⁻¹) * E₁ (τ / u)) := by
+      refine le_trans (hd₁ (τ / u) hx1) ?_
+      simp only [hE₁def]
+      have hstep : Real.exp (-a₁ * (τ / u) ^ ((p : ℝ)⁻¹))
+          ≤ Real.exp (-(a₁ / 2) * τ ^ N⁻¹) * Real.exp (-(a₁ / 2) * (τ / u) ^ ((p : ℝ)⁻¹)) := by
+        rw [← Real.exp_add]
+        exact Real.exp_le_exp.mpr (by nlinarith [hxT, ha₁])
+      exact mul_le_mul_of_nonneg_left hstep hA₁
+    have hfac : 0 ≤ H₂ u / u := div_nonneg (h₂.2.1 u (Set.mem_Ioi.mpr hu0)) hu0.le
+    calc H₁ (τ / u) * H₂ u / u = H₁ (τ / u) * (H₂ u / u) := by ring
+      _ ≤ (A₁ * (Real.exp (-(a₁ / 2) * τ ^ N⁻¹) * E₁ (τ / u))) * (H₂ u / u) :=
+          mul_le_mul_of_nonneg_right hH₁ hfac
+      _ = (A₁ * Real.exp (-(a₁ / 2) * τ ^ N⁻¹)) * (E₁ (τ / u) * H₂ u / u) := by ring
+  have hstepB : ∀ u ∈ Set.Ioi (τ ^ ((q : ℝ) / N)),
+      H₁ (τ / u) * H₂ u / u
+        ≤ (A₂ * Real.exp (-(a₂ / 2) * τ ^ N⁻¹)) * (H₁ (τ / u) * E₂ u / u) := by
+    intro u hu
+    rw [Set.mem_Ioi] at hu
+    have hu0 : (0 : ℝ) < u := lt_trans hu₀pos hu
+    have hu1 : (1 : ℝ) ≤ u := le_trans hu₀ge1 hu.le
+    have huT : τ ^ N⁻¹ ≤ u ^ ((q : ℝ)⁻¹) := by
+      rw [← hkeyQ]
+      exact Real.rpow_le_rpow (Real.rpow_nonneg hτ0.le _) hu.le (inv_nonneg.mpr hQ0.le)
+    have hH₂ : H₂ u ≤ A₂ * (Real.exp (-(a₂ / 2) * τ ^ N⁻¹) * E₂ u) := by
+      refine le_trans (hd₂ u hu1) ?_
+      simp only [hE₂def]
+      have hstep : Real.exp (-a₂ * u ^ ((q : ℝ)⁻¹))
+          ≤ Real.exp (-(a₂ / 2) * τ ^ N⁻¹) * Real.exp (-(a₂ / 2) * u ^ ((q : ℝ)⁻¹)) := by
+        rw [← Real.exp_add]
+        exact Real.exp_le_exp.mpr (by nlinarith [huT, ha₂])
+      exact mul_le_mul_of_nonneg_left hstep hA₂
+    have hfac : 0 ≤ H₁ (τ / u) / u :=
+      div_nonneg (h₁.2.1 _ (Set.mem_Ioi.mpr (div_pos hτ0 hu0))) hu0.le
+    calc H₁ (τ / u) * H₂ u / u = H₂ u * (H₁ (τ / u) / u) := by ring
+      _ ≤ (A₂ * (Real.exp (-(a₂ / 2) * τ ^ N⁻¹) * E₂ u)) * (H₁ (τ / u) / u) :=
+          mul_le_mul_of_nonneg_right hH₂ hfac
+      _ = (A₂ * Real.exp (-(a₂ / 2) * τ ^ N⁻¹)) * (H₁ (τ / u) * E₂ u / u) := by ring
+  -- integrability and the split at the saddle
+  have hgint : MeasureTheory.IntegrableOn (fun u : ℝ => H₁ (τ / u) * H₂ u / u) (Set.Ioi 0) :=
+    archConv_integrableOn hp hq h₁ h₂ hτ0
+  have hE1int : MeasureTheory.IntegrableOn (fun u : ℝ => E₁ (τ / u) * H₂ u / u) (Set.Ioi 0) :=
+    archConv_integrableOn hp hq hE₁ h₂ hτ0
+  have hE2int : MeasureTheory.IntegrableOn (fun u : ℝ => H₁ (τ / u) * E₂ u / u) (Set.Ioi 0) :=
+    archConv_integrableOn hp hq h₁ hE₂ hτ0
+  have hsub1 : Set.Ioc (0 : ℝ) (τ ^ ((q : ℝ) / N)) ⊆ Set.Ioi 0 := Set.Ioc_subset_Ioi_self
+  have hsub2 : Set.Ioi (τ ^ ((q : ℝ) / N)) ⊆ Set.Ioi (0 : ℝ) := Set.Ioi_subset_Ioi hu₀pos.le
+  have hsplit : archConv H₁ H₂ τ
+      = (∫ u in Set.Ioc (0 : ℝ) (τ ^ ((q : ℝ) / N)), H₁ (τ / u) * H₂ u / u)
+        + ∫ u in Set.Ioi (τ ^ ((q : ℝ) / N)), H₁ (τ / u) * H₂ u / u := by
+    rw [archConv, ← Set.Ioc_union_Ioi_eq_Ioi hu₀pos.le,
+      MeasureTheory.setIntegral_union (Set.Ioc_disjoint_Ioi le_rfl) measurableSet_Ioi
+        (hgint.mono_set hsub1) (hgint.mono_set hsub2)]
+  have hpart1 : (∫ u in Set.Ioc (0 : ℝ) (τ ^ ((q : ℝ) / N)), H₁ (τ / u) * H₂ u / u)
+      ≤ (A₁ * Real.exp (-(a₁ / 2) * τ ^ N⁻¹)) * archConv E₁ H₂ τ := by
+    have h1 : (∫ u in Set.Ioc (0 : ℝ) (τ ^ ((q : ℝ) / N)), H₁ (τ / u) * H₂ u / u)
+        ≤ ∫ u in Set.Ioc (0 : ℝ) (τ ^ ((q : ℝ) / N)),
+            (A₁ * Real.exp (-(a₁ / 2) * τ ^ N⁻¹)) * (E₁ (τ / u) * H₂ u / u) :=
+      MeasureTheory.setIntegral_mono_on (hgint.mono_set hsub1)
+        (MeasureTheory.IntegrableOn.mono_set
+          (MeasureTheory.Integrable.const_mul hE1int (A₁ * Real.exp (-(a₁ / 2) * τ ^ N⁻¹)))
+          hsub1) measurableSet_Ioc hstepA
+    have h2 : (∫ u in Set.Ioc (0 : ℝ) (τ ^ ((q : ℝ) / N)),
+            (A₁ * Real.exp (-(a₁ / 2) * τ ^ N⁻¹)) * (E₁ (τ / u) * H₂ u / u))
+        = (A₁ * Real.exp (-(a₁ / 2) * τ ^ N⁻¹)) *
+            ∫ u in Set.Ioc (0 : ℝ) (τ ^ ((q : ℝ) / N)), E₁ (τ / u) * H₂ u / u :=
+      MeasureTheory.integral_const_mul _ _
+    have h3 : (∫ u in Set.Ioc (0 : ℝ) (τ ^ ((q : ℝ) / N)), E₁ (τ / u) * H₂ u / u)
+        ≤ archConv E₁ H₂ τ := by
+      rw [archConv]
+      refine MeasureTheory.setIntegral_mono_set hE1int ?_ hsub1.eventuallyLE
+      filter_upwards [MeasureTheory.ae_restrict_mem measurableSet_Ioi] with u hu
+      exact div_nonneg (mul_nonneg (hE₁.2.1 _ (Set.mem_Ioi.mpr (div_pos hτ0 (Set.mem_Ioi.mp hu))))
+        (h₂.2.1 u hu)) (le_of_lt (Set.mem_Ioi.mp hu))
+    calc (∫ u in Set.Ioc (0 : ℝ) (τ ^ ((q : ℝ) / N)), H₁ (τ / u) * H₂ u / u)
+        ≤ _ := h1
+      _ = _ := h2
+      _ ≤ (A₁ * Real.exp (-(a₁ / 2) * τ ^ N⁻¹)) * archConv E₁ H₂ τ :=
+          mul_le_mul_of_nonneg_left h3 (mul_nonneg hA₁ (Real.exp_pos _).le)
+  have hpart2 : (∫ u in Set.Ioi (τ ^ ((q : ℝ) / N)), H₁ (τ / u) * H₂ u / u)
+      ≤ (A₂ * Real.exp (-(a₂ / 2) * τ ^ N⁻¹)) * archConv H₁ E₂ τ := by
+    have h1 : (∫ u in Set.Ioi (τ ^ ((q : ℝ) / N)), H₁ (τ / u) * H₂ u / u)
+        ≤ ∫ u in Set.Ioi (τ ^ ((q : ℝ) / N)),
+            (A₂ * Real.exp (-(a₂ / 2) * τ ^ N⁻¹)) * (H₁ (τ / u) * E₂ u / u) :=
+      MeasureTheory.setIntegral_mono_on (hgint.mono_set hsub2)
+        (MeasureTheory.IntegrableOn.mono_set
+          (MeasureTheory.Integrable.const_mul hE2int (A₂ * Real.exp (-(a₂ / 2) * τ ^ N⁻¹)))
+          hsub2) measurableSet_Ioi hstepB
+    have h2 : (∫ u in Set.Ioi (τ ^ ((q : ℝ) / N)),
+            (A₂ * Real.exp (-(a₂ / 2) * τ ^ N⁻¹)) * (H₁ (τ / u) * E₂ u / u))
+        = (A₂ * Real.exp (-(a₂ / 2) * τ ^ N⁻¹)) *
+            ∫ u in Set.Ioi (τ ^ ((q : ℝ) / N)), H₁ (τ / u) * E₂ u / u :=
+      MeasureTheory.integral_const_mul _ _
+    have h3 : (∫ u in Set.Ioi (τ ^ ((q : ℝ) / N)), H₁ (τ / u) * E₂ u / u)
+        ≤ archConv H₁ E₂ τ := by
+      rw [archConv]
+      refine MeasureTheory.setIntegral_mono_set hE2int ?_ hsub2.eventuallyLE
+      filter_upwards [MeasureTheory.ae_restrict_mem measurableSet_Ioi] with u hu
+      exact div_nonneg (mul_nonneg (h₁.2.1 _ (Set.mem_Ioi.mpr (div_pos hτ0 (Set.mem_Ioi.mp hu))))
+        (hE₂.2.1 u hu)) (le_of_lt (Set.mem_Ioi.mp hu))
+    calc (∫ u in Set.Ioi (τ ^ ((q : ℝ) / N)), H₁ (τ / u) * H₂ u / u)
+        ≤ _ := h1
+      _ = _ := h2
+      _ ≤ (A₂ * Real.exp (-(a₂ / 2) * τ ^ N⁻¹)) * archConv H₁ E₂ τ :=
+          mul_le_mul_of_nonneg_left h3 (mul_nonneg hA₂ (Real.exp_pos _).le)
+  -- antitonicity replaces the τ-dependent auxiliary convolutions by their value at 1
+  have hstep1 : (A₁ * Real.exp (-(a₁ / 2) * τ ^ N⁻¹)) * archConv E₁ H₂ τ
+      ≤ (A₁ * Real.exp (-(a₁ / 2) * τ ^ N⁻¹)) * archConv E₁ H₂ 1 :=
+    mul_le_mul_of_nonneg_left
+      (archConv_antitoneOn hp hq hE₁ h₂ (Set.mem_Ioi.mpr one_pos) (Set.mem_Ioi.mpr hτ0) hτ)
+      (mul_nonneg hA₁ (Real.exp_pos _).le)
+  have hstep2 : (A₂ * Real.exp (-(a₂ / 2) * τ ^ N⁻¹)) * archConv H₁ E₂ τ
+      ≤ (A₂ * Real.exp (-(a₂ / 2) * τ ^ N⁻¹)) * archConv H₁ E₂ 1 :=
+    mul_le_mul_of_nonneg_left
+      (archConv_antitoneOn hp hq h₁ hE₂ (Set.mem_Ioi.mpr one_pos) (Set.mem_Ioi.mpr hτ0) hτ)
+      (mul_nonneg hA₂ (Real.exp_pos _).le)
+  have hfin1 : (A₁ * Real.exp (-(a₁ / 2) * τ ^ N⁻¹)) * archConv E₁ H₂ 1
+      ≤ (A₁ * archConv E₁ H₂ 1) * Real.exp (-(min a₁ a₂ / 2) * τ ^ N⁻¹) := by
+    rw [show (A₁ * Real.exp (-(a₁ / 2) * τ ^ N⁻¹)) * archConv E₁ H₂ 1
+        = (A₁ * archConv E₁ H₂ 1) * Real.exp (-(a₁ / 2) * τ ^ N⁻¹) by ring]
+    exact mul_le_mul_of_nonneg_left
+      (Real.exp_le_exp.mpr (by nlinarith [min_le_left a₁ a₂, hT0])) (mul_nonneg hA₁ hC₁0)
+  have hfin2 : (A₂ * Real.exp (-(a₂ / 2) * τ ^ N⁻¹)) * archConv H₁ E₂ 1
+      ≤ (A₂ * archConv H₁ E₂ 1) * Real.exp (-(min a₁ a₂ / 2) * τ ^ N⁻¹) := by
+    rw [show (A₂ * Real.exp (-(a₂ / 2) * τ ^ N⁻¹)) * archConv H₁ E₂ 1
+        = (A₂ * archConv H₁ E₂ 1) * Real.exp (-(a₂ / 2) * τ ^ N⁻¹) by ring]
+    exact mul_le_mul_of_nonneg_left
+      (Real.exp_le_exp.mpr (by nlinarith [min_le_right a₁ a₂, hT0])) (mul_nonneg hA₂ hC₂0)
+  rw [hsplit, add_mul]
+  linarith [hpart1, hpart2, hstep1, hstep2, hfin1, hfin2]
 
-/-- **Mellin multiplicativity of the convolution** (sorry node, stated
-2026-07-25 — stage (α₄), the analytic heart, of the decomposition of
+open MeasureTheory Set in
+/-- **Mellin multiplicativity of the convolution** (PROVEN 2026-07-25 —
+stage (α₄), the analytic heart, of the decomposition of
 `archimedeanGammaProfile_exists`): the Mellin transform of
 `archConv H₁ H₂` at `s/2` is the PRODUCT `M₁ s · M₂ s` of the two
 factors, for `re s > 1`.
 
-Intended proof.  Write `z = s/2` (so `re z > 1/2`).  Then
-`mellin (H₁ ⋆ H₂) z = ∫_0^∞ τ^{z−1}(∫_0^∞ H₁(τ/u)H₂(u) du/u) dτ`;
-Tonelli (the integrand is nonnegative, so
-`MeasureTheory.lintegral_lintegral_swap` / `integral_integral_swap`
-applies once absolute convergence is known) exchanges the order, and
-the inner `τ`-integral is evaluated by the multiplicative substitution
-`τ = u·v` (`MeasureTheory.integral_comp_mul_left_Ioi`, i.e.
-`mellin_comp_mul_left` at `a = u`):
+Proof.  Write `z = s/2` (so `re z > 1/2`) and `σ = re z`.  The whole
+statement — BOTH halves of the `HasMellin` bundle — is extracted from a
+single fact: the two-variable integrand
+
+  `F (τ, u) = τ^{z−1}·H₁(τ/u)·H₂(u)/u`
+
+is integrable on `(0,∞) × (0,∞)` for the product measure (`hAF`).
+Indeed `MeasureTheory.Integrable.integral_prod_left` applied to `hAF`
+integrates out `u` and yields exactly `MellinConvergent` for the
+convolution, while `MeasureTheory.integral_integral_swap` applied to
+`hAF` is Fubini and yields the value.
+
+`hAF` itself is Tonelli run on norms, via
+`MeasureTheory.integrable_prod_iff'`:
+
+* the `τ`-slices are integrable because `MellinConvergent.comp_mul_left`
+  transports the `MellinConvergent` half of `h₁` along the dilation
+  `t ↦ t/u`;
+* the slice-norm function is computed in closed form: since a profile is
+  nonnegative and `‖τ^{z−1}‖ = τ^{σ−1}`, the substitution `τ = u·v`
+  (`MeasureTheory.integral_comp_mul_left_Ioi`, `hscaleR`) gives
+  `∫ ‖F(τ,u)‖ dτ = G₁·u^{σ−1}·H₂(u)` with
+  `G₁ = ∫_0^∞ x^{σ−1}H₁(x) dx`, and this is integrable in `u` by the
+  `MellinConvergent` half of `h₂` read at the real abscissa `σ`
+  (`hR₂`) — which is legitimate precisely because the Mellin conjunct
+  of `IsArchProfile` is required on a HALF-PLANE, not at a single
+  point.  This is why the hypotheses are closed under convolution.
+
+The value computation is the same substitution in complex form
+(`hscaleC`, i.e. `mellin_comp_mul_left` at `a = u⁻¹`):
 `∫_0^∞ τ^{z−1}H₁(τ/u) dτ = u^{z}·mellin H₁ z`, whence
 `mellin (H₁ ⋆ H₂) z = mellin H₁ z · ∫_0^∞ u^{z−1}H₂(u) du
-= mellin H₁ z · mellin H₂ z = M₁ s · M₂ s`.
-Absolute convergence — which is also the `MellinConvergent` half of
-the `HasMellin` bundle — is the SAME Tonelli computation run on norms:
-`∫∫ τ^{re z−1}H₁(τ/u)H₂(u) du dτ/u = (∫ x^{re z−1}H₁ x dx)·(∫ u^{re
-z−1}H₂ u du) < ∞`, both factors finite by the `MellinConvergent`
-halves of `h₁` and `h₂` at the real point `re s` (a profile is
-nonnegative, so `MellinConvergent` at `s/2` gives convergence at
-`(re s)/2`).  Note this is exactly why the hypotheses of
-`IsArchProfile` are closed under convolution: the Mellin conjunct is
-required on a HALF-PLANE, not at a single point. -/
+= M₁ s · M₂ s`.  Neukirch, *Algebraic Number Theory*, VII (4.1)–(4.3).
+
+(The positivity hypotheses `0 < p`, `0 < q` are not needed for this
+conjunct — the degrees only enter through the decay conjunct
+`archConv_decay` — so they are bound as `_hp`, `_hq`; the argument
+positions are unchanged for `archProfile_mul`.) -/
 theorem archConv_hasMellin {p q : ℕ} {M₁ M₂ : ℂ → ℂ} {H₁ H₂ : ℝ → ℝ}
-    (hp : 0 < p) (hq : 0 < q) (h₁ : IsArchProfile p M₁ H₁) (h₂ : IsArchProfile q M₂ H₂)
+    (_hp : 0 < p) (_hq : 0 < q) (h₁ : IsArchProfile p M₁ H₁) (h₂ : IsArchProfile q M₂ H₂)
     (s : ℂ) (hs : 1 < s.re) :
     HasMellin (fun τ : ℝ => (archConv H₁ H₂ τ : ℂ)) (s / 2) (M₁ s * M₂ s) := by
-  sorry
+  obtain ⟨hc₁, hnn₁, -, -, hmel₁⟩ := h₁
+  obtain ⟨hc₂, hnn₂, -, -, hmel₂⟩ := h₂
+  have hM₁ := hmel₁ s hs
+  have hM₂ := hmel₂ s hs
+  set z : ℂ := s / 2 with hz
+  set σ : ℝ := z.re with hσdef
+  have hz1re : (z - 1).re = σ - 1 := by simp [hσdef]
+  set G₁ : ℝ := ∫ x in Ioi (0:ℝ), x ^ (σ - 1) * H₁ x with hG₁
+  -- ### Step 1: the second profile converges at the REAL abscissa `σ`
+  have hR₂ : IntegrableOn (fun x : ℝ => x ^ (σ - 1) * H₂ x) (Ioi 0) := by
+    have hint : IntegrableOn
+        (fun t : ℝ => ‖(t : ℂ) ^ (z - 1) • ((H₂ t : ℝ) : ℂ)‖) (Ioi 0) :=
+      MeasureTheory.Integrable.norm hM₂.1
+    refine (integrableOn_congr_fun (fun t ht => ?_) measurableSet_Ioi).mp hint
+    rw [Set.mem_Ioi] at ht
+    rw [norm_smul, Complex.norm_cpow_eq_rpow_re_of_pos ht, hz1re, Complex.norm_real,
+      Real.norm_eq_abs, abs_of_nonneg (hnn₂ t (Set.mem_Ioi.mpr ht))]
+  -- ### Step 2: the substitution `τ = u·v`, real form
+  have hscaleR : ∀ u : ℝ, 0 < u →
+      (∫ τ in Ioi (0:ℝ), τ ^ (σ - 1) * H₁ (τ / u)) = u ^ σ * G₁ := by
+    intro u hu
+    have h := integral_comp_mul_left_Ioi (fun τ : ℝ => τ ^ (σ - 1) * H₁ (τ / u)) 0 hu
+    rw [mul_zero, smul_eq_mul] at h
+    have hL : (∫ x in Ioi (0:ℝ), (u * x) ^ (σ - 1) * H₁ (u * x / u)) = u ^ (σ - 1) * G₁ := by
+      rw [hG₁, ← MeasureTheory.integral_const_mul]
+      refine setIntegral_congr_fun measurableSet_Ioi fun x hx => ?_
+      rw [Set.mem_Ioi] at hx
+      rw [Real.mul_rpow hu.le hx.le, mul_comm u x, mul_div_assoc, div_self hu.ne', mul_one]
+      ring
+    rw [hL] at h
+    have hI : (∫ τ in Ioi (0:ℝ), τ ^ (σ - 1) * H₁ (τ / u)) = u * (u ^ (σ - 1) * G₁) := by
+      rw [h, ← mul_assoc, mul_inv_cancel₀ hu.ne', one_mul]
+    have hpow : u ^ (σ - 1) * u = u ^ σ := by
+      rw [← Real.rpow_add_one hu.ne' (σ - 1)]
+      norm_num
+    rw [hI, ← hpow]
+    ring
+  -- ### Step 3: the substitution `τ = u·v`, complex form
+  have hcast : ∀ u : ℝ, 0 < u → ((u⁻¹ : ℝ) : ℂ) ^ (-z) = (u : ℂ) ^ z := by
+    intro u hu
+    rw [Complex.ofReal_inv, Complex.inv_cpow _ _ (by
+        rw [Complex.arg_ofReal_of_nonneg hu.le]; exact Ne.symm Real.pi_ne_zero),
+      Complex.cpow_neg, inv_inv]
+  have hscaleC : ∀ u : ℝ, 0 < u →
+      (∫ τ in Ioi (0:ℝ), (τ : ℂ) ^ (z - 1) * ((H₁ (τ / u) : ℝ) : ℂ))
+        = (u : ℂ) ^ z * M₁ s := by
+    intro u hu
+    have h := mellin_comp_mul_left (fun t : ℝ => ((H₁ t : ℝ) : ℂ)) z (inv_pos.mpr hu)
+    rw [hM₁.2, hcast u hu, smul_eq_mul] at h
+    rw [← h, mellin]
+    refine setIntegral_congr_fun measurableSet_Ioi fun τ _ => ?_
+    rw [smul_eq_mul, inv_mul_eq_div]
+  -- ### Step 4: measurability of the two-variable integrand on `(0,∞)²`
+  have hmeasF : AEStronglyMeasurable
+      (fun p : ℝ × ℝ => (p.1 : ℂ) ^ (z - 1) * ((H₁ (p.1 / p.2) * H₂ p.2 / p.2 : ℝ) : ℂ))
+      ((volume.restrict (Ioi (0:ℝ))).prod (volume.restrict (Ioi (0:ℝ)))) := by
+    rw [Measure.prod_restrict]
+    refine ContinuousOn.aestronglyMeasurable ?_ (measurableSet_Ioi.prod measurableSet_Ioi)
+    have hdiv : ContinuousOn (fun p : ℝ × ℝ => p.1 / p.2) (Ioi (0:ℝ) ×ˢ Ioi (0:ℝ)) :=
+      continuousOn_fst.div continuousOn_snd fun p hp => ne_of_gt hp.2
+    refine ContinuousOn.mul ?_ ?_
+    · exact fun p hp => ((Complex.continuousAt_ofReal_cpow_const p.1 (z - 1)
+        (Or.inr (ne_of_gt hp.1))).comp continuousAt_fst).continuousWithinAt
+    · refine Complex.continuous_ofReal.comp_continuousOn ?_
+      refine ContinuousOn.div (ContinuousOn.mul ?_ ?_) continuousOn_snd
+        (fun p hp => ne_of_gt hp.2)
+      · exact hc₁.comp hdiv fun p hp => Set.mem_Ioi.mpr (div_pos hp.1 hp.2)
+      · exact hc₂.comp continuousOn_snd fun p hp => hp.2
+  -- ### Step 5: Tonelli — absolute convergence of the double integral
+  have hAF : Integrable
+      (fun p : ℝ × ℝ => (p.1 : ℂ) ^ (z - 1) * ((H₁ (p.1 / p.2) * H₂ p.2 / p.2 : ℝ) : ℂ))
+      ((volume.restrict (Ioi (0:ℝ))).prod (volume.restrict (Ioi (0:ℝ)))) := by
+    rw [integrable_prod_iff' hmeasF]
+    refine ⟨?_, ?_⟩
+    · rw [ae_restrict_iff' measurableSet_Ioi]
+      filter_upwards with u hu
+      rw [Set.mem_Ioi] at hu
+      have hmc : MellinConvergent (fun t : ℝ => ((H₁ (t / u) : ℝ) : ℂ)) z := by
+        have h := (MellinConvergent.comp_mul_left (f := fun t : ℝ => ((H₁ t : ℝ) : ℂ))
+          (s := z) (inv_pos.mpr hu)).mpr hM₁.1
+        simpa only [inv_mul_eq_div] using h
+      rw [MellinConvergent] at hmc
+      have h2 : IntegrableOn (fun t : ℝ => (t : ℂ) ^ (z - 1) * ((H₁ (t / u) : ℝ) : ℂ))
+          (Ioi 0) := by simpa only [smul_eq_mul] using hmc
+      refine (integrableOn_congr_fun (fun t _ => ?_) measurableSet_Ioi).mp
+        (h2.const_mul (((H₂ u / u : ℝ) : ℂ)))
+      push_cast
+      ring
+    · have heq : ∀ u : ℝ, u ∈ Ioi (0:ℝ) →
+          (∫ τ in Ioi (0:ℝ), ‖(τ : ℂ) ^ (z - 1) * ((H₁ (τ / u) * H₂ u / u : ℝ) : ℂ)‖)
+            = G₁ * (u ^ (σ - 1) * H₂ u) := by
+        intro u hu
+        rw [Set.mem_Ioi] at hu
+        have h1 : (∫ τ in Ioi (0:ℝ), ‖(τ : ℂ) ^ (z - 1) * ((H₁ (τ / u) * H₂ u / u : ℝ) : ℂ)‖)
+            = ∫ τ in Ioi (0:ℝ), (H₂ u / u) * (τ ^ (σ - 1) * H₁ (τ / u)) := by
+          refine setIntegral_congr_fun measurableSet_Ioi fun τ hτ => ?_
+          rw [Set.mem_Ioi] at hτ
+          have hn : 0 ≤ H₁ (τ / u) * H₂ u / u :=
+            div_nonneg (mul_nonneg (hnn₁ _ (Set.mem_Ioi.mpr (div_pos hτ hu)))
+              (hnn₂ u (Set.mem_Ioi.mpr hu))) hu.le
+          rw [norm_mul, Complex.norm_cpow_eq_rpow_re_of_pos hτ, hz1re, Complex.norm_real,
+            Real.norm_eq_abs, abs_of_nonneg hn]
+          ring
+        rw [h1, MeasureTheory.integral_const_mul, hscaleR u hu, Real.rpow_sub hu,
+          Real.rpow_one]
+        ring
+      exact (integrableOn_congr_fun heq measurableSet_Ioi).mpr (hR₂.const_mul G₁)
+  -- ### Step 6: the inner `u`-integral is the convolution
+  have hinner : ∀ τ : ℝ,
+      (∫ u in Ioi (0:ℝ), (τ : ℂ) ^ (z - 1) * ((H₁ (τ / u) * H₂ u / u : ℝ) : ℂ))
+        = (τ : ℂ) ^ (z - 1) • ((archConv H₁ H₂ τ : ℝ) : ℂ) := by
+    intro τ
+    rw [MeasureTheory.integral_const_mul, smul_eq_mul, archConv, integral_complex_ofReal]
+  -- ### Assembly: `integral_prod_left` gives convergence, Fubini gives the value
+  refine ⟨?_, ?_⟩
+  · rw [MellinConvergent]
+    exact (integrableOn_congr_fun (fun τ _ => hinner τ) measurableSet_Ioi).mp
+      hAF.integral_prod_left
+  · rw [mellin]
+    have step1 : (∫ τ in Ioi (0:ℝ), (τ : ℂ) ^ (z - 1) • ((archConv H₁ H₂ τ : ℝ) : ℂ))
+        = ∫ τ in Ioi (0:ℝ), ∫ u in Ioi (0:ℝ),
+            (τ : ℂ) ^ (z - 1) * ((H₁ (τ / u) * H₂ u / u : ℝ) : ℂ) :=
+      setIntegral_congr_fun measurableSet_Ioi fun τ _ => (hinner τ).symm
+    have step2 : ∀ u : ℝ, u ∈ Ioi (0:ℝ) →
+        (∫ τ in Ioi (0:ℝ), (τ : ℂ) ^ (z - 1) * ((H₁ (τ / u) * H₂ u / u : ℝ) : ℂ))
+          = M₁ s * ((u : ℂ) ^ (z - 1) * ((H₂ u : ℝ) : ℂ)) := by
+      intro u hu
+      rw [Set.mem_Ioi] at hu
+      have hpull : (∫ τ in Ioi (0:ℝ), (τ : ℂ) ^ (z - 1) * ((H₁ (τ / u) * H₂ u / u : ℝ) : ℂ))
+          = ((H₂ u / u : ℝ) : ℂ) *
+            ∫ τ in Ioi (0:ℝ), (τ : ℂ) ^ (z - 1) * ((H₁ (τ / u) : ℝ) : ℂ) := by
+        rw [← MeasureTheory.integral_const_mul]
+        refine setIntegral_congr_fun measurableSet_Ioi fun τ _ => ?_
+        push_cast
+        ring
+      have hu0 : ((u : ℝ) : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr hu.ne'
+      rw [hpull, hscaleC u hu, Complex.cpow_sub _ _ hu0, Complex.cpow_one]
+      push_cast
+      field_simp
+    have step3 : (∫ u in Ioi (0:ℝ), (u : ℂ) ^ (z - 1) * ((H₂ u : ℝ) : ℂ)) = M₂ s := by
+      rw [← hM₂.2, mellin]
+      simp only [smul_eq_mul]
+    rw [step1, integral_integral_swap hAF,
+      setIntegral_congr_fun measurableSet_Ioi step2,
+      MeasureTheory.integral_const_mul, step3]
 
 /-- **Profiles multiply** (assembly PROVEN over the four `archConv`
 stages): the multiplicative convolution of a degree-`p` profile with
@@ -8223,10 +9554,11 @@ Mellin factor `M`"):
   with factor `Γ_ℂ(s)`;
 * `archProfile_mul` (assembly PROVEN): profiles convolve —
   `archConv H₁ H₂ τ = ∫_0^∞ H₁(τ/u)H₂(u) du/u` is a degree-`(p+q)`
-  profile with factor `M₁·M₂`; its four conjuncts are the open leaves
-  `archConv_integrableOn`, `archConv_continuousOn`, `archConv_decay`
-  and `archConv_hasMellin` (`archConv_nonneg` and
-  `archConv_antitoneOn` are PROVEN);
+  profile with factor `M₁·M₂`; its remaining open leaves are
+  `archConv_integrableOn`, `archConv_continuousOn` and
+  `archConv_hasMellin` (`archConv_nonneg`, `archConv_antitoneOn` and
+  `archConv_decay` — the AM–GM saddle split, over the auxiliary
+  `archProfile_stretchedExp` — are PROVEN);
 * `archProfile_pow` (PROVEN): induction gives the `(r₁, r₂)` profile of
   degree `r₁ + 2r₂` with factor `Γ_ℝ^{r₁}·Γ_ℂ^{r₂}`;
 * this theorem: `NumberField.InfinitePlace.card_add_two_mul_card_eq_rank`
@@ -8256,10 +9588,179 @@ theorem archimedeanGammaProfile_exists (K : Type*) [Field K] [NumberField K] :
   rw [hrank] at hH
   exact ⟨H, hH.1, hH.2.1, hH.2.2.1, hH.2.2.2.1, hH.2.2.2.2⟩
 
+/-- **Mellin uniqueness on a right half-plane** (sorry node, stated
+2026-07-25 — sub-leaf (β2), the *rigidity* half of the decomposition of
+`heckeThetaSeries_functionalEquation`): two functions that are
+continuous on `(0, ∞)` and whose Mellin transforms both converge and
+take a COMMON value at every point of some right half-plane `Re z > σ`
+agree on `(0, ∞)`.
+
+This is the classical uniqueness theorem for the Mellin transform —
+equivalently, after `τ = e^{-u}`, for the two-sided Laplace transform.
+It is exactly the step that identifies an ABSTRACT archimedean profile
+— any `H` carrying the properties delivered by
+`archimedeanGammaProfile_exists`, which is all that
+`heckeThetaSeries_functionalEquation` is given — with the CANONICAL
+profile constructed geometrically in
+`heckeCanonicalThetaProfile_functionalEquation`, so that the geometric
+functional equation proved for the canonical profile transports to `H`.
+It is the Lean form of the parenthetical remark in the docstring of
+`heckeThetaSeries_functionalEquation` ("the hypotheses pin `H`
+uniquely: continuity plus the convergent Mellin identification
+determine `H` a.e. on `(0, ∞)` (Mellin/Laplace uniqueness), hence
+everywhere by continuity").
+
+Intended proof: put `h = f - g`; it is continuous on `(0, ∞)`, its
+Mellin transform converges on the half-plane (`MellinConvergent.sub`)
+and vanishes identically there (`mellin` is linear, `hasMellin_sub`).
+Substituting `τ = e^{-u}` (`mellin_comp_rpow` / the change of variables
+`Real.exp`) turns this into the vanishing of the two-sided Laplace
+transform `u ↦ ∫_ℝ e^{-z u}·h(e^{-u}) du` on a right half-plane.  Fix
+`σ' > σ` real and evaluate at `z = σ' + k`, `k : ℕ`: with the finite
+signed measure `dμ = τ^{σ'-1}·h(τ)·dτ` on `(0, ∞)` (finite by the
+convergence hypothesis) the identities say `∫ τ^k dμ = 0` for every
+`k`, i.e. all moments of `μ` vanish.  Split `(0, ∞)` at `1`: on `(0, 1]`
+the monomials `τ^k` are uniformly bounded and, by Weierstrass
+approximation on `[0, 1]`, dense in `C([0,1])`, so `μ` restricted there
+is `0`; on `[1, ∞)` apply the same argument after `τ ↦ τ⁻¹` (which
+turns the progression `σ' + k` into `σ' - k`, available by taking `σ'`
+large and using the convergence on the whole half-plane).  Hence `μ = 0`
+and, `τ^{σ'-1} > 0` on `(0, ∞)` with `h` continuous, `h` vanishes on
+`(0, ∞)`.  An alternative route already partly available in the pin:
+the transform is holomorphic on the half-plane
+(`mellin_differentiableAt_of_isBigO_rpow`) and Mellin inversion
+(`mellin_inversion`) recovers `h` at every point of continuity, so a
+vanishing transform forces `h = 0` directly. -/
+theorem eqOn_of_hasMellin_eq_of_continuousOn {f g : ℝ → ℝ} {σ : ℝ}
+    (hf : ContinuousOn f (Set.Ioi 0)) (hg : ContinuousOn g (Set.Ioi 0))
+    (hmel : ∀ z : ℂ, σ < z.re → ∃ m : ℂ,
+      HasMellin (fun τ : ℝ => (f τ : ℂ)) z m ∧
+        HasMellin (fun τ : ℝ => (g τ : ℂ)) z m) :
+    Set.EqOn f g (Set.Ioi 0) := by
+  sorry
+
+/-- **The canonical archimedean profile and its unit-domain theta
+functional equation** (sorry node, stated 2026-07-25 — sub-leaf (β1),
+the *geometric* half of the decomposition of
+`heckeThetaSeries_functionalEquation`; Neukirch, *Algebraic Number
+Theory*, VII §§3 + 5, (5.5)–(5.6)): Hecke's construction produces, from
+the `n`-dimensional `ZLattice` Poisson/theta law `hθ` alone, ONE shared
+constant `ρ₀` and ONE profile function `G` on `(0, ∞)` such that
+
+* `G` is continuous on `(0, ∞)`;
+* `G` has the archimedean `Γ`-factor as its Mellin transform at `s/2`
+  for `Re s > 1` — the same normalization as
+  `archimedeanGammaProfile_exists`, i.e. `G` is that leaf's profile;
+* the class-indexed theta series built from `G` satisfies the weight
+  `1/2` functional equation pairing `C` with
+  `dedekindDualClass K C`.
+
+Only continuity and the Mellin identity are asserted here (not
+nonnegativity/antitonicity/decay): they are exactly what
+`eqOn_of_hasMellin_eq_of_continuousOn` needs in order to identify `G`
+with an arbitrary abstractly given profile `H`, which is how
+`heckeThetaSeries_functionalEquation` is assembled from this leaf.
+
+Intended proof (Neukirch VII §§3, 5 — the plan recorded in the
+docstring of `heckeThetaSeries_functionalEquation`, of which this leaf
+now carries the whole geometric content):
+
+1. *the profile*: `G(τ) := ` the integral of the anisotropic Gaussian
+   `y ↦ exp(-π·τ^{1/n}·Σ_τ |y_τ|²)` over the norm-one hypersurface
+   `S = {y : N(y) = 1}` of `K_ℝ = ℝ^{r₁} × ℂ^{r₂}` against the
+   invariant measure, restricted to a fundamental domain `𝔉` for the
+   action of the squared units (Dirichlet, `NumberField.Units`;
+   `mixedEmbedding.fundamentalCone` is the pin's realization).
+   Continuity is continuity of a parametrized integral; the Mellin
+   identity at `s/2` is the polar-coordinate factorization of the
+   full `K_ℝ`-Gaussian integral into `Γ`-factors
+   (`mixedEmbedding.polarCoord`, `Real.Gamma_eq_integral`), one
+   `π^{-s/2}Γ(s/2)` per real place and one `2(2π)^{-s}Γ(s)` per
+   complex place.
+2. *dictionary*: choose an integral ideal `𝔞 ∈ C⁻¹`; nonzero ideals
+   `𝔟 ∈ C` biject with `𝒪_K^×`-orbits of nonzero `α ∈ 𝔞` via
+   `𝔟𝔞 = (α)`, `N𝔟 = |N(α)|/N𝔞`
+   (`mixedEmbedding.fundamentalCone.idealSet`,
+   `ClassGroup.mk0_eq_one_iff`, as already used in the pin's
+   `NumberField.Ideal.tendsto_norm_le_and_mk_eq_div_atTop`).
+3. *ideal lattices*: realize `𝔞` as the `ZLattice`
+   `mixedEmbedding.idealLattice K 𝔞 ⊂ K_ℝ`, transported by
+   `mixedEmbedding.euclidean.toMixed` and a linear isometry to
+   `EuclideanSpace ℝ (Fin n)` (which is what makes `hθ`'s universe-0
+   quantification over `E : Type` applicable), with the Hermitian norm
+   `‖x‖² = Σ_{τ : K → ℂ} |x_τ|²` — i.e. `Σ_real + 2·Σ_complex`, the
+   `√2`-rescaling of the pin's `euclidean.mixedSpace` metric, which is
+   the metric for which `⟪σα, σβ⟫ = Tr_{K/ℚ}(α·β̄)` — diagonally
+   rescaled by `y ∈ 𝔉` and normalized by `(N𝔞²·|d_K|)^{1/(2n)}`.
+   With this normalization the lattice has covolume `1`
+   (`ZLattice.covolume`, `mixedEmbedding.covolume_idealLattice`,
+   `ZLattice.covolume_comap`, `volumePreserving_toMixed`), and its
+   `⟪·,·⟫`-dual lattice is the coordinatewise complex conjugate — a
+   further linear isometry, so it fixes all theta sums — of the SAME
+   normalization of the trace-dual ideal `(𝔞𝔡_K)⁻¹`
+   (`FractionalIdeal.dual`, `differentIdeal`); the normalization
+   constant inverts because
+   `N((𝔞𝔡)⁻¹)²·|d| = (N𝔞²·|d|)⁻¹`, which is
+   `NumberField.absNorm_differentIdeal` (`N𝔡 = |d_K|`) plus
+   multiplicativity of `FractionalIdeal.absNorm`.  Whence the dual
+   class is exactly `dedekindDualClass K C` and the
+   functional-equation constant is exactly `1`.
+4. *anisotropic law*: `hθ` applied to each diagonally rescaled lattice
+   at `t = 1` gives `θ_𝔞(y⁻¹) = N(y)^{1/2}·θ_{(𝔞𝔡)⁻¹}(y)`.
+5. *unit-domain integration*: integrating over `𝔉`, the per-orbit
+   `𝔉`-integrals sum to `G(N𝔟²·t/|d|)` by step 1 and step 2 while the
+   `α = 0` term integrates to the shared constant `ρ₀`; the
+   anisotropic law transports `𝔉`-integrals along `y ↦ y⁻¹` (whose
+   image is again a fundamental domain) into the displayed functional
+   equation.  For the unit-rank-`0` fields — `ℚ` and imaginary
+   quadratics, in particular this project's instantiations — `𝔉` is a
+   single point and this step degenerates to the bare theta sum.
+   Convergence bookkeeping (tsum/integral interchange) is justified by
+   the Gaussian decay together with the per-class count asymptotics
+   (`NumberField.Ideal.tendsto_norm_le_and_mk_eq_div_atTop`, as
+   consumed in `classIdealCount_LSeriesSummable`).
+
+Natural further decomposition, if the direct assembly resists: (3) —
+the covolume-`1` normalization and the dual-lattice/inverse-different
+identification — is a self-contained statement about ideal lattices in
+the mixed space with no analysis in it, and (1) — the profile and its
+`Γ`-factor Mellin transform — is a self-contained statement about
+Gaussian integrals in polar coordinates that does not mention ideals;
+either can be split off as its own sorried leaf and passed to this one
+as a hypothesis, exactly as `hθ` is here. -/
+theorem heckeCanonicalThetaProfile_functionalEquation
+    (K : Type*) [Field K] [NumberField K]
+    (hθ : ∀ (E : Type) [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+      [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E]
+      (L : Submodule ℤ E) [DiscreteTopology L] [IsZLattice ℝ L]
+      (t : ℝ), 0 < t →
+      ∑' v : L, Real.exp (-Real.pi * t⁻¹ * ‖(v : E)‖ ^ 2) =
+        (ZLattice.covolume L)⁻¹ * t ^ ((Module.finrank ℝ E : ℝ) / 2) *
+          ∑' w : LinearMap.BilinForm.dualSubmodule (innerₗ E) L,
+            Real.exp (-Real.pi * t * ‖(w : E)‖ ^ 2)) :
+    ∃ ρ₀ : ℝ, ∃ G : ℝ → ℝ,
+      ContinuousOn G (Set.Ioi 0) ∧
+      (∀ s : ℂ, 1 < s.re →
+        HasMellin (fun τ : ℝ => (G τ : ℂ)) (s / 2)
+          (((Real.pi : ℂ) ^ (-s / 2) * Complex.Gamma (s / 2)) ^
+              NumberField.InfinitePlace.nrRealPlaces K *
+            ((2 : ℂ) * ((2 * Real.pi : ℝ) : ℂ) ^ (-s) * Complex.Gamma s) ^
+              NumberField.InfinitePlace.nrComplexPlaces K)) ∧
+      (∀ C : ClassGroup (NumberField.RingOfIntegers K), ∀ x : ℝ, 0 < x →
+        ρ₀ + ∑' m : ℕ, (classIdealCount K C m : ℝ) *
+            G ((m : ℝ) ^ 2 / (|(NumberField.discr K : ℝ)| * x)) =
+          x ^ ((1 : ℝ) / 2) *
+            (ρ₀ + ∑' m : ℕ, (classIdealCount K (dedekindDualClass K C) m : ℝ) *
+              G ((m : ℝ) ^ 2 * x / |(NumberField.discr K : ℝ)|))) := by
+  sorry
+
 /-- **The unit-domain theta functional equation of the per-class Hecke
-series** (sorry node, stated 2026-07-24 — stage (β), the geometric
-core — Neukirch VII §§3 + 5, (5.5)–(5.6) — of the decomposition of
-`heckeThetaKernel_exists`): for ANY profile `H` with the properties
+series** (PROVEN 2026-07-25 from the two sub-leaves
+`heckeCanonicalThetaProfile_functionalEquation` (geometry) and
+`eqOn_of_hasMellin_eq_of_continuousOn` (Mellin rigidity) — stage (β),
+the geometric core — Neukirch VII §§3 + 5, (5.5)–(5.6) — of the
+decomposition of `heckeThetaKernel_exists`): for ANY profile `H` with
+the properties
 delivered by `archimedeanGammaProfile_exists` — the hypotheses pin `H`
 uniquely: continuity plus the convergent Mellin identification
 determine `H` a.e. on `(0, ∞)` (Mellin/Laplace uniqueness), hence
@@ -8271,41 +9772,25 @@ constant `2^{r−1}·vol(𝔉)/w` in Neukirch's normalization, rescaled by
 the normalization of `H`), the weight-`1/2` functional equation
 pairing each class `C` with its dual `[𝔡]C⁻¹ = dedekindDualClass K C`.
 
-Intended proof (Neukirch VII §§3, 5): (1) *dictionary*: choose an
-integral ideal `𝔞 ∈ C⁻¹`; nonzero ideals `𝔟 ∈ C` biject with
-`𝒪_K^×`-orbits of nonzero `α ∈ 𝔞` via `𝔟𝔞 = (α)`,
-`N𝔟 = |N(α)|/N𝔞`.  (2) *ideal lattices*: realize `𝔞` as the
-`ZLattice` `σ(𝔞) ⊂ K_ℝ` with the Hermitian norm
-`‖x‖² = Σ_{τ:K→ℂ} |x_τ|²` (i.e. `Σ_real + 2·Σ_complex`), diagonally
-rescaled by `y ∈ Π_{w|∞} ℝ_{>0}` and normalized by
-`(N𝔞²·|d_K|)^{1/(2n)}`: with THIS metric the normalized lattice has
-covolume `1` (`ZLattice.covolume`; mathlib's
-`NumberField.mixedEmbedding.covolume_idealLattice` cluster transported
-along a linear isometry to `EuclideanSpace ℝ (Fin n)` — which is also
-what makes `hθ`'s universe-0 quantification over `E : Type`
-applicable), and its `⟪·,·⟫`-dual lattice is the coordinatewise
-complex conjugate — a further isometry fixing all theta sums — of the
-SAME normalization of the trace-dual ideal `(𝔞𝔡_K)⁻¹`
-(`FractionalIdeal.dual`, `differentIdeal`, `Tr(xy) = Σ_τ x_τ·y_τ`;
-`N((𝔞𝔡)⁻¹)²·|d| = (N𝔞²·|d|)⁻¹` inverts the normalization constant) —
-whence the dual class `[𝔡]C⁻¹` and functional-equation constant
-exactly `1`.  (3) *anisotropic law*: `hθ` applied to each diagonally
-rescaled lattice at `t = 1` gives
-`θ_𝔞(y⁻¹) = N(y)^{1/2}·θ_{(𝔞𝔡)⁻¹}(y)`.  (4) *unit-domain
-integration*: integrate over a fundamental domain `𝔉` of the
-squared-unit action on the norm-one hypersurface (Dirichlet,
-`NumberField.Units`; for the unit-rank-`0` fields — `ℚ` and imaginary
-quadratics, in particular this project's instantiations — `𝔉` is a
-single point and this step degenerates to the bare theta): per ideal
-orbit the `𝔉`-integrals sum to the `S`-integral, which by the
-uniqueness identification is `H(N𝔟²·t/|d|)`, while the `α = 0` term
-integrates to the shared `ρ₀`; the anisotropic law transports
-`𝔉`-integrals along `y ↦ y⁻¹` (whose image is again a fundamental
-domain) into the displayed functional equation.  Convergence
-bookkeeping (tsum/integral interchange) is justified by the decay
-hypothesis together with the per-class count asymptotics
-(`NumberField.Ideal.tendsto_norm_le_and_mk_eq_div_atTop`, as consumed
-in `classIdealCount_LSeriesSummable`). -/
+Proof (the decomposition of stage (β) into geometry + rigidity):
+`heckeCanonicalThetaProfile_functionalEquation` runs Hecke's geometric
+construction — the ideal-lattice/trace-dual/covolume-`1`/unit-domain
+argument of Neukirch VII §§3, 5, whose full plan is recorded in that
+leaf's docstring — on the `ZLattice` Poisson law `hθ`, producing a
+shared constant `ρ₀` together with its OWN canonical profile `G`: the
+norm-one-hypersurface integral, continuous on `(0, ∞)`, with the
+archimedean `Γ`-factor as its Mellin transform at `s/2`, satisfying the
+displayed functional equation.  The profile `H` this theorem is handed
+is only known abstractly, through `archimedeanGammaProfile_exists`; but
+`hHcont` and `hHmel` say `H` is continuous with exactly the SAME Mellin
+transform as `G` on `Re(s/2) > 1/2`, so
+`eqOn_of_hasMellin_eq_of_continuousOn` (Mellin/Laplace uniqueness)
+forces `H = G` on `(0, ∞)`.  All the theta arguments `m²/(|d|·x)` and
+`m²·x/|d|` are positive for `m ≠ 0` (`discr K ≠ 0`), and the `m = 0`
+terms carry the coefficient `classIdealCount K C 0 = 0` — a nonzero
+ideal has nonzero absolute norm — so the substitution is legitimate
+termwise and the functional equation transports verbatim from `G` to
+`H`. -/
 theorem heckeThetaSeries_functionalEquation (K : Type*) [Field K] [NumberField K]
     (hθ : ∀ (E : Type) [NormedAddCommGroup E] [InnerProductSpace ℝ E]
       [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E]
@@ -8317,9 +9802,9 @@ theorem heckeThetaSeries_functionalEquation (K : Type*) [Field K] [NumberField K
             Real.exp (-Real.pi * t * ‖(w : E)‖ ^ 2))
     (H : ℝ → ℝ)
     (hHcont : ContinuousOn H (Set.Ioi 0))
-    (hHpos : ∀ τ : ℝ, τ ∈ Set.Ioi (0 : ℝ) → 0 ≤ H τ)
-    (hHanti : AntitoneOn H (Set.Ioi 0))
-    (hHdec : ∃ A a : ℝ, 0 < a ∧ ∀ τ : ℝ, 1 ≤ τ →
+    (_hHpos : ∀ τ : ℝ, τ ∈ Set.Ioi (0 : ℝ) → 0 ≤ H τ)
+    (_hHanti : AntitoneOn H (Set.Ioi 0))
+    (_hHdec : ∃ A a : ℝ, 0 < a ∧ ∀ τ : ℝ, 1 ≤ τ →
       H τ ≤ A * Real.exp (-a * τ ^ ((Module.finrank ℚ K : ℝ)⁻¹)))
     (hHmel : ∀ s : ℂ, 1 < s.re →
       HasMellin (fun τ : ℝ => (H τ : ℂ)) (s / 2)
@@ -8333,11 +9818,788 @@ theorem heckeThetaSeries_functionalEquation (K : Type*) [Field K] [NumberField K
         x ^ ((1 : ℝ) / 2) *
           (ρ₀ + ∑' m : ℕ, (classIdealCount K (dedekindDualClass K C) m : ℝ) *
             H ((m : ℝ) ^ 2 * x / |(NumberField.discr K : ℝ)|)) := by
-  sorry
+  obtain ⟨ρ₀, G, hGcont, hGmel, hGfe⟩ :=
+    heckeCanonicalThetaProfile_functionalEquation K hθ
+  -- Mellin/Laplace rigidity: `H` and `G` are continuous on `(0, ∞)` and have the
+  -- same (convergent) Mellin transform on the half-plane `Re z > 1/2`.
+  have hHG : Set.EqOn H G (Set.Ioi (0 : ℝ)) := by
+    refine eqOn_of_hasMellin_eq_of_continuousOn (σ := 1 / 2) hHcont hGcont ?_
+    intro z hz
+    have hre : (1 : ℝ) < ((2 : ℂ) * z).re := by
+      have h2 : ((2 : ℂ) * z).re = 2 * z.re := by simp [Complex.mul_re]
+      rw [h2]
+      linarith
+    have h1 := hHmel ((2 : ℂ) * z) hre
+    have h2 := hGmel ((2 : ℂ) * z) hre
+    have hhalf : (2 : ℂ) * z / 2 = z := by ring
+    rw [hhalf] at h1 h2
+    exact ⟨_, h1, h2⟩
+  -- The `m = 0` coefficient vanishes: a nonzero ideal has nonzero absolute norm.
+  have hzero : ∀ C' : ClassGroup (NumberField.RingOfIntegers K),
+      classIdealCount K C' 0 = 0 := by
+    intro C'
+    unfold classIdealCount
+    rw [Nat.card_eq_zero]
+    refine Or.inl ⟨?_⟩
+    rintro ⟨I, hI, -⟩
+    exact Ideal.absNorm_ne_zero_of_nonZeroDivisors I hI
+  -- Termwise replacement of `H` by `G` inside the theta series.
+  have key : ∀ (C' : ClassGroup (NumberField.RingOfIntegers K)) (u : ℕ → ℝ),
+      (∀ m : ℕ, m ≠ 0 → 0 < u m) →
+      ∑' m : ℕ, (classIdealCount K C' m : ℝ) * H (u m) =
+        ∑' m : ℕ, (classIdealCount K C' m : ℝ) * G (u m) := by
+    intro C' u hu
+    refine tsum_congr fun m => ?_
+    rcases eq_or_ne m 0 with rfl | hm
+    · rw [hzero C']
+      simp
+    · rw [hHG (Set.mem_Ioi.mpr (hu m hm))]
+  refine ⟨ρ₀, fun C x hx => ?_⟩
+  have hd : (0 : ℝ) < |(NumberField.discr K : ℝ)| :=
+    abs_pos.mpr (Int.cast_ne_zero.mpr (NumberField.discr_ne_zero K))
+  have e1 : ∑' m : ℕ, (classIdealCount K C m : ℝ) *
+        H ((m : ℝ) ^ 2 / (|(NumberField.discr K : ℝ)| * x)) =
+      ∑' m : ℕ, (classIdealCount K C m : ℝ) *
+        G ((m : ℝ) ^ 2 / (|(NumberField.discr K : ℝ)| * x)) := by
+    refine key C _ fun m hm => ?_
+    have hm0 : (0 : ℝ) < (m : ℝ) := Nat.cast_pos.mpr (Nat.pos_of_ne_zero hm)
+    exact div_pos (pow_pos hm0 2) (mul_pos hd hx)
+  have e2 : ∑' m : ℕ, (classIdealCount K (dedekindDualClass K C) m : ℝ) *
+        H ((m : ℝ) ^ 2 * x / |(NumberField.discr K : ℝ)|) =
+      ∑' m : ℕ, (classIdealCount K (dedekindDualClass K C) m : ℝ) *
+        G ((m : ℝ) ^ 2 * x / |(NumberField.discr K : ℝ)|) := by
+    refine key (dedekindDualClass K C) _ fun m hm => ?_
+    have hm0 : (0 : ℝ) < (m : ℝ) := Nat.cast_pos.mpr (Nat.pos_of_ne_zero hm)
+    exact div_pos (mul_pos (pow_pos hm0 2) hx) hd
+  rw [e1, e2]
+  exact hGfe C x hx
 
+open Filter Topology in
+/-- **A stretched exponential beats every power** (PROVEN 2026-07-25,
+the elementary growth input of the stage-γ analysis
+`heckeThetaSeries_analysis`): for `c, b > 0` the sequence
+`m ↦ m^p·exp(−c·m^b)` is bounded on `ℕ`.  Proof: the real-variable
+function `x ↦ x^{p/b}·exp(−c·x)` tends to `0` at `∞`
+(`tendsto_rpow_mul_exp_neg_mul_atTop_nhds_zero`); composing with
+`x ↦ x^b` (`tendsto_rpow_atTop`) and with `ℕ ↪ ℝ` gives a null
+sequence, and a null sequence has bounded range
+(`Filter.Tendsto.bddAbove_range`). -/
+theorem exists_bound_nat_pow_mul_exp_neg_mul_rpow (p : ℕ) {c b : ℝ} (hc : 0 < c) (hb : 0 < b) :
+    ∃ K : ℝ, 0 < K ∧ ∀ m : ℕ, (m : ℝ) ^ p * Real.exp (-c * (m : ℝ) ^ b) ≤ K := by
+  have h0 : Tendsto (fun x : ℝ => x ^ ((p : ℝ) / b) * Real.exp (-c * x)) atTop (𝓝 0) :=
+    tendsto_rpow_mul_exp_neg_mul_atTop_nhds_zero _ c hc
+  have h1 : Tendsto (fun x : ℝ => (x ^ b) ^ ((p : ℝ) / b) * Real.exp (-c * x ^ b))
+      atTop (𝓝 0) := h0.comp (tendsto_rpow_atTop hb)
+  have h2 : Tendsto (fun m : ℕ => (m : ℝ) ^ p * Real.exp (-c * (m : ℝ) ^ b)) atTop (𝓝 0) := by
+    refine (h1.comp tendsto_natCast_atTop_atTop).congr fun m => ?_
+    simp only [Function.comp_apply]
+    congr 1
+    have hbp : b * ((p : ℝ) / b) = (p : ℝ) := by field_simp
+    rw [← Real.rpow_mul (Nat.cast_nonneg m), hbp, Real.rpow_natCast]
+  obtain ⟨K₀, hK₀⟩ := h2.bddAbove_range
+  refine ⟨max K₀ 1, lt_of_lt_of_le zero_lt_one (le_max_right _ _), fun m => ?_⟩
+  exact le_trans (hK₀ (Set.mem_range_self m)) (le_max_left _ _)
+
+/-- **Summability of `Σ_m m·exp(−c·m^b)`** (PROVEN 2026-07-25, the
+comparison series of the stage-γ analysis `heckeThetaSeries_analysis`):
+comparison with the convergent `p`-series `Σ 1/m²`, the ratio
+`m³·exp(−c·m^b)` being bounded by
+`exists_bound_nat_pow_mul_exp_neg_mul_rpow`.  This is what makes the
+per-class theta series converge: the ideal counts grow linearly while
+the archimedean profile decays like `exp(−c·τ^{1/n})`. -/
+theorem summable_nat_mul_exp_neg_mul_rpow {c b : ℝ} (hc : 0 < c) (hb : 0 < b) :
+    Summable fun m : ℕ => (m : ℝ) * Real.exp (-c * (m : ℝ) ^ b) := by
+  obtain ⟨K, hK0, hK⟩ := exists_bound_nat_pow_mul_exp_neg_mul_rpow 3 hc hb
+  have hp2 : Summable fun m : ℕ => 1 / (m : ℝ) ^ 2 :=
+    (Real.summable_one_div_nat_pow (p := 2)).mpr one_lt_two
+  have hsum : Summable fun m : ℕ => K * ((m : ℝ) ^ 2)⁻¹ := by
+    simpa [one_div] using hp2.mul_left K
+  refine hsum.of_nonneg_of_le (fun m => by positivity) fun m => ?_
+  rcases Nat.eq_zero_or_pos m with rfl | hm
+  · simp
+  · have hm0 : (0 : ℝ) < (m : ℝ) := by exact_mod_cast hm
+    have hm2 : (0 : ℝ) < (m : ℝ) ^ 2 := pow_pos hm0 2
+    rw [← div_eq_mul_inv, le_div_iff₀ hm2]
+    have h3 := hK m
+    calc (m : ℝ) * Real.exp (-c * (m : ℝ) ^ b) * (m : ℝ) ^ 2
+        = (m : ℝ) ^ 3 * Real.exp (-c * (m : ℝ) ^ b) := by ring
+      _ ≤ K := h3
+
+/-- **Pointwise summability of the theta series** (PROVEN 2026-07-25,
+part of the stage-γ analysis `heckeThetaSeries_analysis`, stated for an
+abstract coefficient sequence `a` of at most linear growth and an
+abstract profile `H` with the stretched-exponential decay): for `t > 0`
+the series `Σ_m a(m)·H(m²·t/d)` converges absolutely.  All but finitely
+many `m` have `m²·t/d ≥ 1`, where the decay hypothesis applies and
+`(m²t/d)^{1/n} = (t/d)^{1/n}·m^{2/n}` exactly, so the tail is dominated
+termwise by `const·m·exp(−c'·m^{2/n})`
+(`summable_nat_mul_exp_neg_mul_rpow`). -/
+theorem thetaSeries_summable (a : ℕ → ℕ) (H : ℝ → ℝ) {d : ℝ} (hd : 0 < d) {n : ℕ} (hn : 0 < n)
+    (B : ℝ) (hB : ∀ m : ℕ, (a m : ℝ) ≤ B * m)
+    (hHpos : ∀ τ : ℝ, τ ∈ Set.Ioi (0 : ℝ) → 0 ≤ H τ)
+    (A c : ℝ) (hc : 0 < c)
+    (hA : ∀ τ : ℝ, 1 ≤ τ → H τ ≤ A * Real.exp (-c * τ ^ ((n : ℝ)⁻¹)))
+    {t : ℝ} (ht : 0 < t) :
+    Summable fun m : ℕ => (a m : ℝ) * H ((m : ℝ) ^ 2 * t / d) := by
+  have hn' : (0 : ℝ) < (n : ℝ) := by exact_mod_cast hn
+  set b : ℝ := 2 * (n : ℝ)⁻¹ with hbdef
+  have hb0 : 0 < b := by positivity
+  set c' : ℝ := c * (t / d) ^ ((n : ℝ)⁻¹) with hc'def
+  have hc'0 : 0 < c' := by
+    have : (0 : ℝ) < (t / d) ^ ((n : ℝ)⁻¹) := Real.rpow_pos_of_pos (div_pos ht hd) _
+    positivity
+  set K : ℝ := max B 0 * max A 1 with hKdef
+  set M : ℕ := ⌈d / t⌉₊ + 1 with hMdef
+  rw [← summable_nat_add_iff M]
+  have hmaj : Summable fun j : ℕ =>
+      K * (((j + M : ℕ) : ℝ) * Real.exp (-c' * ((j + M : ℕ) : ℝ) ^ b)) :=
+    (summable_nat_add_iff M).mpr ((summable_nat_mul_exp_neg_mul_rpow hc'0 hb0).mul_left K)
+  refine hmaj.of_nonneg_of_le (fun j => ?_) fun j => ?_
+  · have h1 : (0 : ℝ) ≤ (a (j + M) : ℝ) := Nat.cast_nonneg _
+    have h2 : (0 : ℝ) ≤ H (((j + M : ℕ) : ℝ) ^ 2 * t / d) := by
+      refine hHpos _ (Set.mem_Ioi.mpr ?_)
+      have : (0 : ℝ) < ((j + M : ℕ) : ℝ) ^ 2 := by
+        have : (0 : ℝ) < ((j + M : ℕ) : ℝ) := by
+          have : 0 < j + M := by omega
+          exact_mod_cast this
+        positivity
+      positivity
+    exact mul_nonneg h1 h2
+  · -- the termwise bound
+    have hmpos : (0 : ℝ) < ((j + M : ℕ) : ℝ) := by
+      have : 0 < j + M := by omega
+      exact_mod_cast this
+    have hm1 : (1 : ℝ) ≤ ((j + M : ℕ) : ℝ) := by
+      have : 1 ≤ j + M := by omega
+      exact_mod_cast this
+    have hmd : d / t ≤ ((j + M : ℕ) : ℝ) := by
+      refine le_trans (Nat.le_ceil (d / t)) ?_
+      have : (⌈d / t⌉₊ : ℕ) ≤ j + M := by omega
+      exact_mod_cast this
+    have hsq : d / t ≤ ((j + M : ℕ) : ℝ) ^ 2 := by
+      have := mul_le_mul hmd hm1 zero_le_one (le_of_lt hmpos)
+      calc d / t = d / t * 1 := by ring
+        _ ≤ ((j + M : ℕ) : ℝ) * ((j + M : ℕ) : ℝ) := this
+        _ = ((j + M : ℕ) : ℝ) ^ 2 := by ring
+    have hτ1 : (1 : ℝ) ≤ ((j + M : ℕ) : ℝ) ^ 2 * t / d := by
+      rw [le_div_iff₀ hd, one_mul]
+      calc d = d / t * t := by field_simp
+        _ ≤ ((j + M : ℕ) : ℝ) ^ 2 * t := by
+            exact mul_le_mul_of_nonneg_right hsq (le_of_lt ht)
+    -- the exponent identity
+    have hexp : (((j + M : ℕ) : ℝ) ^ 2 * t / d) ^ ((n : ℝ)⁻¹) =
+        (t / d) ^ ((n : ℝ)⁻¹) * ((j + M : ℕ) : ℝ) ^ b := by
+      rw [mul_div_assoc, Real.mul_rpow (by positivity) (by positivity), hbdef,
+        ← Real.rpow_natCast ((j + M : ℕ) : ℝ) 2, ← Real.rpow_mul (le_of_lt hmpos)]
+      push_cast
+      ring
+    have hHb : H (((j + M : ℕ) : ℝ) ^ 2 * t / d) ≤
+        max A 1 * Real.exp (-c' * ((j + M : ℕ) : ℝ) ^ b) := by
+      refine le_trans (hA _ hτ1) ?_
+      have hone : -c * (((j + M : ℕ) : ℝ) ^ 2 * t / d) ^ ((n : ℝ)⁻¹) =
+          -c' * ((j + M : ℕ) : ℝ) ^ b := by
+        rw [hexp, hc'def]; ring
+      rw [hone]
+      exact mul_le_mul_of_nonneg_right (le_max_left _ _) (le_of_lt (Real.exp_pos _))
+    have hab : (a (j + M) : ℝ) ≤ max B 0 * ((j + M : ℕ) : ℝ) :=
+      le_trans (hB (j + M)) (mul_le_mul_of_nonneg_right (le_max_left _ _) (le_of_lt hmpos))
+    calc (a (j + M) : ℝ) * H (((j + M : ℕ) : ℝ) ^ 2 * t / d)
+        ≤ (max B 0 * ((j + M : ℕ) : ℝ)) *
+            (max A 1 * Real.exp (-c' * ((j + M : ℕ) : ℝ) ^ b)) := by
+          refine mul_le_mul hab hHb (hHpos _ (Set.mem_Ioi.mpr (by positivity))) ?_
+          exact mul_nonneg (le_max_right _ _) (le_of_lt hmpos)
+      _ = K * (((j + M : ℕ) : ℝ) * Real.exp (-c' * ((j + M : ℕ) : ℝ) ^ b)) := by
+          rw [hKdef]; ring
+
+open Filter Topology in
+/-- **Continuity of the theta series on `(0, ∞)`** (PROVEN 2026-07-25,
+conjunct (i) of the stage-γ analysis `heckeThetaSeries_analysis`, from
+which local integrability follows): on each `(α, ∞)` with `α > 0` the
+terms are dominated uniformly by their values at `α` (antitonicity of
+`H`), a summable bound by `thetaSeries_summable`, so the series
+converges uniformly there (`continuousOn_tsum`); every point of
+`(0, ∞)` lies in such an `(α, ∞)` with `α = x/2`. -/
+theorem thetaSeries_continuousOn (a : ℕ → ℕ) (H : ℝ → ℝ) {d : ℝ} (hd : 0 < d) {n : ℕ} (hn : 0 < n)
+    (ha0 : a 0 = 0) (B : ℝ) (hB : ∀ m : ℕ, (a m : ℝ) ≤ B * m)
+    (hHcont : ContinuousOn H (Set.Ioi 0))
+    (hHpos : ∀ τ : ℝ, τ ∈ Set.Ioi (0 : ℝ) → 0 ≤ H τ)
+    (hHanti : AntitoneOn H (Set.Ioi 0))
+    (A c : ℝ) (hc : 0 < c)
+    (hA : ∀ τ : ℝ, 1 ≤ τ → H τ ≤ A * Real.exp (-c * τ ^ ((n : ℝ)⁻¹))) :
+    ContinuousOn (fun t : ℝ => ∑' m : ℕ, (a m : ℝ) * H ((m : ℝ) ^ 2 * t / d)) (Set.Ioi 0) := by
+  have key : ∀ α : ℝ, 0 < α →
+      ContinuousOn (fun t : ℝ => ∑' m : ℕ, (a m : ℝ) * H ((m : ℝ) ^ 2 * t / d)) (Set.Ioi α) := by
+    intro α hα
+    refine continuousOn_tsum (u := fun m : ℕ => (a m : ℝ) * H ((m : ℝ) ^ 2 * α / d))
+      (fun m => ?_) (thetaSeries_summable a H hd hn B hB hHpos A c hc hA hα) (fun m t ht => ?_)
+    · -- each term is continuous on `Ioi α`
+      rcases Nat.eq_zero_or_pos m with rfl | hm
+      · simpa [ha0] using continuousOn_const (c := (0 : ℝ)) (s := Set.Ioi α)
+      · have hm0 : (0 : ℝ) < (m : ℝ) := by exact_mod_cast hm
+        refine continuousOn_const.mul (hHcont.comp (by fun_prop) fun t ht => ?_)
+        exact Set.mem_Ioi.mpr (by
+          have : (0 : ℝ) < t := lt_trans hα (Set.mem_Ioi.mp ht)
+          positivity)
+    · -- termwise domination by the value at `α`, using antitonicity
+      rcases Nat.eq_zero_or_pos m with rfl | hm
+      · simp [ha0]
+      · have hm0 : (0 : ℝ) < (m : ℝ) := by exact_mod_cast hm
+        have htpos : (0 : ℝ) < t := lt_trans hα (Set.mem_Ioi.mp ht)
+        have hαmem : (m : ℝ) ^ 2 * α / d ∈ Set.Ioi (0 : ℝ) := Set.mem_Ioi.mpr (by positivity)
+        have htmem : (m : ℝ) ^ 2 * t / d ∈ Set.Ioi (0 : ℝ) := Set.mem_Ioi.mpr (by positivity)
+        have hle : (m : ℝ) ^ 2 * α / d ≤ (m : ℝ) ^ 2 * t / d := by
+          have := Set.mem_Ioi.mp ht
+          gcongr
+        have h1 : H ((m : ℝ) ^ 2 * t / d) ≤ H ((m : ℝ) ^ 2 * α / d) :=
+          hHanti hαmem htmem hle
+        rw [Real.norm_eq_abs, abs_of_nonneg (mul_nonneg (Nat.cast_nonneg _) (hHpos _ htmem))]
+        exact mul_le_mul_of_nonneg_left h1 (Nat.cast_nonneg _)
+  intro x hx
+  have hx0 : 0 < x := Set.mem_Ioi.mp hx
+  refine (((key (x / 2) (by linarith)).continuousAt ?_)).continuousWithinAt
+  exact Ioi_mem_nhds (by linarith)
+
+/-- **Stretched-exponential decay of the theta series on `[1, ∞)`**
+(PROVEN 2026-07-25, conjunct (ii) of the stage-γ analysis
+`heckeThetaSeries_analysis`).  Two regimes.  For `t ≥ max(d, 1)` every
+term has argument `≥ 1`, and with `δ = (1/d)^{1/n}`,
+`(m²t/d)^{1/n} = δ·m^{2/n}·t^{1/n} ≥ ½·δ·m^{2/n} + ½·δ·t^{1/n}` (both
+factors are `≥ 1` after normalizing), which splits the bound into a
+summable `m`-series times `exp(−a'·t^{1/n})`.  For `1 ≤ t ≤ max(d, 1)`
+antitonicity gives `S(t) ≤ S(1)`, a constant, and `exp(−a'·t^{1/n})` is
+bounded below on that compact range, so enlarging the constant
+suffices. -/
+theorem thetaSeries_tail_bound (a : ℕ → ℕ) (H : ℝ → ℝ) {d : ℝ} (hd : 0 < d) {n : ℕ} (hn : 0 < n)
+    (ha0 : a 0 = 0) (B : ℝ) (hB : ∀ m : ℕ, (a m : ℝ) ≤ B * m)
+    (hHpos : ∀ τ : ℝ, τ ∈ Set.Ioi (0 : ℝ) → 0 ≤ H τ)
+    (hHanti : AntitoneOn H (Set.Ioi 0))
+    (A c : ℝ) (hc : 0 < c)
+    (hA : ∀ τ : ℝ, 1 ≤ τ → H τ ≤ A * Real.exp (-c * τ ^ ((n : ℝ)⁻¹))) :
+    ∃ A' a' : ℝ, 0 < a' ∧ ∀ t : ℝ, 1 ≤ t →
+      |∑' m : ℕ, (a m : ℝ) * H ((m : ℝ) ^ 2 * t / d)| ≤
+        A' * Real.exp (-a' * t ^ ((n : ℝ)⁻¹)) := by
+  have hn' : (0 : ℝ) < (n : ℝ) := by exact_mod_cast hn
+  set b : ℝ := 2 * (n : ℝ)⁻¹ with hbdef
+  have hb0 : 0 < b := by positivity
+  set δ : ℝ := (1 / d) ^ ((n : ℝ)⁻¹) with hδdef
+  have hδ0 : 0 < δ := Real.rpow_pos_of_pos (by positivity) _
+  set a' : ℝ := c * δ / 2 with ha'def
+  have ha'0 : 0 < a' := by positivity
+  set A₀ : ℝ := max A 1 with hA₀def
+  set B₀ : ℝ := max B 0 with hB₀def
+  have hA₀0 : (0 : ℝ) < A₀ := lt_of_lt_of_le zero_lt_one (le_max_right _ _)
+  have hB₀0 : (0 : ℝ) ≤ B₀ := le_max_right _ _
+  have hmsum : Summable (fun m : ℕ => (m : ℝ) * Real.exp (-a' * (m : ℝ) ^ b)) :=
+    summable_nat_mul_exp_neg_mul_rpow ha'0 hb0
+  set S₁ : ℝ := ∑' m : ℕ, (m : ℝ) * Real.exp (-a' * (m : ℝ) ^ b) with hS₁def
+  set D : ℝ := max d 1 with hDdef
+  have hD1 : (1 : ℝ) ≤ D := le_max_right _ _
+  have hDd : d ≤ D := le_max_left _ _
+  -- nonnegativity of the series
+  have hnonneg : ∀ t : ℝ, 0 < t → ∀ m : ℕ, 0 ≤ (a m : ℝ) * H ((m : ℝ) ^ 2 * t / d) := by
+    intro t ht m
+    rcases Nat.eq_zero_or_pos m with rfl | hm
+    · simp [ha0]
+    · have hm0 : (0 : ℝ) < (m : ℝ) := by exact_mod_cast hm
+      exact mul_nonneg (Nat.cast_nonneg _) (hHpos _ (Set.mem_Ioi.mpr (by positivity)))
+  -- the far regime `t ≥ D`
+  have hbig : ∀ t : ℝ, D ≤ t →
+      ∑' m : ℕ, (a m : ℝ) * H ((m : ℝ) ^ 2 * t / d) ≤
+        (A₀ * B₀ * S₁) * Real.exp (-a' * t ^ ((n : ℝ)⁻¹)) := by
+    intro t hDt
+    have ht1 : (1 : ℝ) ≤ t := le_trans hD1 hDt
+    have ht0 : (0 : ℝ) < t := lt_of_lt_of_le zero_lt_one ht1
+    have hv1 : (1 : ℝ) ≤ t ^ ((n : ℝ)⁻¹) := by
+      calc (1 : ℝ) = (1 : ℝ) ^ ((n : ℝ)⁻¹) := (Real.one_rpow _).symm
+        _ ≤ t ^ ((n : ℝ)⁻¹) := Real.rpow_le_rpow zero_le_one ht1 (by positivity)
+    have hterm : ∀ m : ℕ, (a m : ℝ) * H ((m : ℝ) ^ 2 * t / d) ≤
+        A₀ * B₀ * ((m : ℝ) * Real.exp (-a' * (m : ℝ) ^ b)) *
+          Real.exp (-a' * t ^ ((n : ℝ)⁻¹)) := by
+      intro m
+      rcases Nat.eq_zero_or_pos m with rfl | hm
+      · simp [ha0]
+      · have hm1 : (1 : ℝ) ≤ (m : ℝ) := by exact_mod_cast hm
+        have hm0 : (0 : ℝ) < (m : ℝ) := lt_of_lt_of_le zero_lt_one hm1
+        have hmb1 : (1 : ℝ) ≤ (m : ℝ) ^ b := by
+          calc (1 : ℝ) = (1 : ℝ) ^ b := (Real.one_rpow b).symm
+            _ ≤ (m : ℝ) ^ b := Real.rpow_le_rpow zero_le_one hm1 hb0.le
+        -- the argument is `≥ 1`
+        have hτ1 : (1 : ℝ) ≤ (m : ℝ) ^ 2 * t / d := by
+          rw [le_div_iff₀ hd, one_mul]
+          have h1 : (1 : ℝ) ≤ (m : ℝ) ^ 2 := one_le_pow₀ hm1
+          calc d ≤ t := le_trans hDd hDt
+            _ = 1 * t := (one_mul t).symm
+            _ ≤ (m : ℝ) ^ 2 * t := mul_le_mul_of_nonneg_right h1 ht0.le
+        -- factor the stretched exponent
+        have hfac : ((m : ℝ) ^ 2 * t / d) ^ ((n : ℝ)⁻¹) =
+            δ * (m : ℝ) ^ b * t ^ ((n : ℝ)⁻¹) := by
+          have h2 : (m : ℝ) ^ 2 * t / d = ((m : ℝ) ^ 2 * (1 / d)) * t := by ring
+          rw [h2, Real.mul_rpow (by positivity) ht0.le,
+            Real.mul_rpow (by positivity) (by positivity), hδdef, hbdef,
+            ← Real.rpow_natCast (m : ℝ) 2, ← Real.rpow_mul hm0.le]
+          push_cast
+          ring
+        have hsplit : -c * ((m : ℝ) ^ 2 * t / d) ^ ((n : ℝ)⁻¹) ≤
+            -a' * (m : ℝ) ^ b + -a' * t ^ ((n : ℝ)⁻¹) := by
+          rw [hfac, ha'def]
+          have h3 : (m : ℝ) ^ b ≤ (m : ℝ) ^ b * t ^ ((n : ℝ)⁻¹) := by
+            nlinarith [Real.rpow_nonneg hm0.le b]
+          have h4 : t ^ ((n : ℝ)⁻¹) ≤ (m : ℝ) ^ b * t ^ ((n : ℝ)⁻¹) := by
+            nlinarith [Real.rpow_nonneg ht0.le ((n : ℝ)⁻¹)]
+          nlinarith [hδ0, hc.le, Real.rpow_nonneg hm0.le b,
+            Real.rpow_nonneg ht0.le ((n : ℝ)⁻¹)]
+        have hHle : H ((m : ℝ) ^ 2 * t / d) ≤
+            A₀ * (Real.exp (-a' * (m : ℝ) ^ b) * Real.exp (-a' * t ^ ((n : ℝ)⁻¹))) := by
+          refine le_trans (hA _ hτ1) ?_
+          rw [← Real.exp_add]
+          exact mul_le_mul (le_max_left _ _) (Real.exp_le_exp.mpr hsplit)
+            (Real.exp_pos _).le hA₀0.le
+        have hab : (a m : ℝ) ≤ B₀ * (m : ℝ) :=
+          le_trans (hB m) (mul_le_mul_of_nonneg_right (le_max_left _ _) hm0.le)
+        calc (a m : ℝ) * H ((m : ℝ) ^ 2 * t / d)
+            ≤ (B₀ * (m : ℝ)) *
+                (A₀ * (Real.exp (-a' * (m : ℝ) ^ b) * Real.exp (-a' * t ^ ((n : ℝ)⁻¹)))) := by
+              refine mul_le_mul hab hHle (hHpos _ (Set.mem_Ioi.mpr (by positivity))) ?_
+              exact mul_nonneg hB₀0 hm0.le
+          _ = A₀ * B₀ * ((m : ℝ) * Real.exp (-a' * (m : ℝ) ^ b)) *
+                Real.exp (-a' * t ^ ((n : ℝ)⁻¹)) := by ring
+    have hsum1 : Summable (fun m : ℕ => (a m : ℝ) * H ((m : ℝ) ^ 2 * t / d)) :=
+      thetaSeries_summable a H hd hn B hB hHpos A c hc hA ht0
+    have hsum2 : Summable (fun m : ℕ => A₀ * B₀ * ((m : ℝ) * Real.exp (-a' * (m : ℝ) ^ b)) *
+        Real.exp (-a' * t ^ ((n : ℝ)⁻¹))) :=
+      ((hmsum.mul_left (A₀ * B₀)).mul_right (Real.exp (-a' * t ^ ((n : ℝ)⁻¹))))
+    calc ∑' m : ℕ, (a m : ℝ) * H ((m : ℝ) ^ 2 * t / d)
+        ≤ ∑' m : ℕ, A₀ * B₀ * ((m : ℝ) * Real.exp (-a' * (m : ℝ) ^ b)) *
+            Real.exp (-a' * t ^ ((n : ℝ)⁻¹)) := hsum1.tsum_le_tsum hterm hsum2
+      _ = (A₀ * B₀ * S₁) * Real.exp (-a' * t ^ ((n : ℝ)⁻¹)) := by
+          rw [(hmsum.mul_left (A₀ * B₀)).tsum_mul_right, hS₁def,
+            (hmsum).tsum_mul_left]
+  -- the near regime `1 ≤ t ≤ D`
+  have hsmallmono : ∀ t : ℝ, 1 ≤ t →
+      ∑' m : ℕ, (a m : ℝ) * H ((m : ℝ) ^ 2 * t / d) ≤
+        ∑' m : ℕ, (a m : ℝ) * H ((m : ℝ) ^ 2 * 1 / d) := by
+    intro t ht1
+    have ht0 : (0 : ℝ) < t := lt_of_lt_of_le zero_lt_one ht1
+    refine (thetaSeries_summable a H hd hn B hB hHpos A c hc hA ht0).tsum_le_tsum
+      (fun m => ?_) (thetaSeries_summable a H hd hn B hB hHpos A c hc hA zero_lt_one)
+    rcases Nat.eq_zero_or_pos m with rfl | hm
+    · simp [ha0]
+    · have hm0 : (0 : ℝ) < (m : ℝ) := by exact_mod_cast hm
+      refine mul_le_mul_of_nonneg_left (hHanti (Set.mem_Ioi.mpr (by positivity))
+        (Set.mem_Ioi.mpr (by positivity)) ?_) (Nat.cast_nonneg _)
+      gcongr
+  refine ⟨max (A₀ * B₀ * S₁)
+      ((∑' m : ℕ, (a m : ℝ) * H ((m : ℝ) ^ 2 * 1 / d)) * Real.exp (a' * D ^ ((n : ℝ)⁻¹))),
+    a', ha'0, fun t ht1 => ?_⟩
+  have ht0 : (0 : ℝ) < t := lt_of_lt_of_le zero_lt_one ht1
+  rw [abs_of_nonneg (tsum_nonneg (hnonneg t ht0))]
+  rcases le_total D t with hDt | htD
+  · exact le_trans (hbig t hDt)
+      (mul_le_mul_of_nonneg_right (le_max_left _ _) (Real.exp_pos _).le)
+  · refine le_trans (hsmallmono t ht1) (le_trans ?_
+      (mul_le_mul_of_nonneg_right (le_max_right _ _) (Real.exp_pos _).le))
+    have hS0 : (0 : ℝ) ≤ ∑' m : ℕ, (a m : ℝ) * H ((m : ℝ) ^ 2 * 1 / d) :=
+      tsum_nonneg (hnonneg 1 zero_lt_one)
+    have hDt' : t ^ ((n : ℝ)⁻¹) ≤ D ^ ((n : ℝ)⁻¹) :=
+      Real.rpow_le_rpow ht0.le htD (by positivity)
+    have hone : (1 : ℝ) ≤ Real.exp (a' * D ^ ((n : ℝ)⁻¹)) * Real.exp (-a' * t ^ ((n : ℝ)⁻¹)) := by
+      rw [← Real.exp_add]
+      refine Real.one_le_exp ?_
+      nlinarith [ha'0]
+    calc ∑' m : ℕ, (a m : ℝ) * H ((m : ℝ) ^ 2 * 1 / d)
+        = (∑' m : ℕ, (a m : ℝ) * H ((m : ℝ) ^ 2 * 1 / d)) * 1 := by ring
+      _ ≤ (∑' m : ℕ, (a m : ℝ) * H ((m : ℝ) ^ 2 * 1 / d)) *
+            (Real.exp (a' * D ^ ((n : ℝ)⁻¹)) * Real.exp (-a' * t ^ ((n : ℝ)⁻¹))) :=
+          mul_le_mul_of_nonneg_left hone hS0
+      _ = (∑' m : ℕ, (a m : ℝ) * H ((m : ℝ) ^ 2 * 1 / d)) *
+            Real.exp (a' * D ^ ((n : ℝ)⁻¹)) * Real.exp (-a' * t ^ ((n : ℝ)⁻¹)) := by ring
+
+open Filter MeasureTheory Topology in
+/-- **The termwise Mellin transform of the theta series** (PROVEN
+2026-07-25, conjunct (iii) — the analytic core — of the stage-γ
+analysis `heckeThetaSeries_analysis`): the Mellin transform of
+`t ↦ Σ_m a(m)·H(m²t/d)` at `s/2` converges and equals
+`d^{s/2}·(mellin H)(s/2)·L(a, s)`.
+
+The Σ/∫ interchange is Fubini–Tonelli in the form
+`hasSum_integral_of_summable_integral_norm`: each term
+`t ↦ t^{s/2−1}·a(m)·H((m²/d)·t)` is Mellin-convergent by
+`MellinConvergent.comp_mul_left`, and the integrals of the norms are
+computed exactly — the change of variables `u = (m²/d)·t`
+(`integral_comp_mul_left_Ioi`) gives
+`∫ t^{σ−1}|H(qt)| = q^{−σ}·∫ u^{σ−1}|H(u)|` at `σ = re(s/2)`, so the
+`m`-sum of the norm integrals is `d^{σ}·I₀·Σ_m a(m)/m^{re s}`, summable
+by the `LSeriesSummable` hypothesis.  The termwise values come from
+`mellin_comp_mul_left` + `mellin_const_smul`, and
+`(m²/d)^{−s/2} = d^{s/2}·(m^s)⁻¹` reassembles the Dirichlet series.
+Mellin CONVERGENCE of the sum is the same computation run through
+`lintegral_tsum` on the nonnegative integrand, with measurability from
+the continuity of the sum (`thetaSeries_continuousOn`). -/
+theorem thetaSeries_hasMellin (a : ℕ → ℕ) (H : ℝ → ℝ) {d : ℝ} (hd : 0 < d) {n : ℕ} (hn : 0 < n)
+    (ha0 : a 0 = 0) (B : ℝ) (hB : ∀ m : ℕ, (a m : ℝ) ≤ B * m)
+    (hHcont : ContinuousOn H (Set.Ioi 0))
+    (hHpos : ∀ τ : ℝ, τ ∈ Set.Ioi (0 : ℝ) → 0 ≤ H τ)
+    (hHanti : AntitoneOn H (Set.Ioi 0))
+    (A c : ℝ) (hc : 0 < c)
+    (hA : ∀ τ : ℝ, 1 ≤ τ → H τ ≤ A * Real.exp (-c * τ ^ ((n : ℝ)⁻¹)))
+    {s : ℂ} (hs : 1 < s.re) (v : ℂ)
+    (hmel : HasMellin (fun τ : ℝ => (H τ : ℂ)) (s / 2) v)
+    (hLS : LSeriesSummable (fun m : ℕ => (a m : ℂ)) s) :
+    HasMellin (fun t : ℝ => ((∑' m : ℕ, (a m : ℝ) * H ((m : ℝ) ^ 2 * t / d) : ℝ) : ℂ)) (s / 2)
+      ((d : ℂ) ^ (s / 2) * v * LSeries (fun m : ℕ => (a m : ℂ)) s) := by
+  classical
+  set c₀ : ℝ := (s / 2).re with hc₀def
+  have hc₀eq : c₀ = s.re / 2 := by rw [hc₀def, Complex.div_ofNat_re]
+  have hc₀pos : 0 < c₀ := by rw [hc₀eq]; linarith
+  have h2c₀ : 2 * c₀ = s.re := by rw [hc₀eq]; ring
+  -- the `H`-side norm integrand and its integral
+  have hmel1 : IntegrableOn
+      (fun t : ℝ => (t : ℂ) ^ (s / 2 - 1) • ((H t : ℝ) : ℂ)) (Set.Ioi 0) := hmel.1
+  have hHnorm : ∀ u : ℝ, u ∈ Set.Ioi (0 : ℝ) →
+      ‖(u : ℂ) ^ (s / 2 - 1) • ((H u : ℝ) : ℂ)‖ = u ^ (c₀ - 1) * H u := by
+    intro u hu
+    have hu0 : (0 : ℝ) < u := hu
+    rw [norm_smul, Complex.norm_cpow_eq_rpow_re_of_pos hu0, Complex.norm_real,
+      Real.norm_eq_abs, abs_of_nonneg (hHpos u hu), Complex.sub_re, Complex.one_re, hc₀def]
+  have hHint : IntegrableOn (fun u : ℝ => u ^ (c₀ - 1) * H u) (Set.Ioi 0) :=
+    IntegrableOn.congr_fun hmel1.norm (fun u hu => hHnorm u hu) measurableSet_Ioi
+  set I₀ : ℝ := ∫ u in Set.Ioi (0 : ℝ), u ^ (c₀ - 1) * H u with hI₀def
+  -- the scaling identity
+  have hscale : ∀ q : ℝ, 0 < q →
+      IntegrableOn (fun t : ℝ => t ^ (c₀ - 1) * H (q * t)) (Set.Ioi 0) ∧
+      (∫ t in Set.Ioi (0 : ℝ), t ^ (c₀ - 1) * H (q * t)) = q ^ (-c₀) * I₀ := by
+    intro q hq
+    have hcomp : ∀ t : ℝ, 0 < t →
+        q ^ (1 - c₀) * ((q * t) ^ (c₀ - 1) * H (q * t)) = t ^ (c₀ - 1) * H (q * t) := by
+      intro t ht
+      rw [Real.mul_rpow hq.le ht.le,
+        show q ^ (1 - c₀) * (q ^ (c₀ - 1) * t ^ (c₀ - 1) * H (q * t))
+          = q ^ (1 - c₀) * q ^ (c₀ - 1) * (t ^ (c₀ - 1) * H (q * t)) from by ring,
+        ← Real.rpow_add hq, show (1 - c₀) + (c₀ - 1) = 0 from by ring, Real.rpow_zero, one_mul]
+    have h3 := integral_comp_mul_left_Ioi
+      (fun u : ℝ => q ^ (1 - c₀) * (u ^ (c₀ - 1) * H u)) 0 hq
+    simp only [mul_zero, smul_eq_mul] at h3
+    have h1 : IntegrableOn
+        (fun t : ℝ => q ^ (1 - c₀) * ((q * t) ^ (c₀ - 1) * H (q * t))) (Set.Ioi 0) := by
+      have h4 := (integrableOn_Ioi_comp_mul_left_iff
+        (fun u : ℝ => q ^ (1 - c₀) * (u ^ (c₀ - 1) * H u)) 0 hq).mpr (by
+          rw [mul_zero]; exact hHint.const_mul _)
+      exact h4
+    refine ⟨h1.congr_fun (fun t ht => hcomp t ht) measurableSet_Ioi, ?_⟩
+    have h5 : (∫ t in Set.Ioi (0 : ℝ), t ^ (c₀ - 1) * H (q * t)) =
+        ∫ t in Set.Ioi (0 : ℝ), q ^ (1 - c₀) * ((q * t) ^ (c₀ - 1) * H (q * t)) :=
+      setIntegral_congr_fun measurableSet_Ioi (fun t ht => (hcomp t ht).symm)
+    rw [h5, h3, integral_const_mul, ← mul_assoc, ← hI₀def]
+    congr 1
+    rw [← Real.rpow_neg_one q, ← Real.rpow_add hq, show (-1 : ℝ) + (1 - c₀) = -c₀ from by ring]
+  -- the summable majorant of the norm integrals
+  have hLSnorm : Summable (fun m : ℕ => (a m : ℝ) / (m : ℝ) ^ s.re) := by
+    have h1 : Summable (fun m : ℕ => ‖LSeries.term (fun k : ℕ => (a k : ℂ)) s m‖) :=
+      summable_norm_iff.mpr hLS
+    refine h1.congr fun m => ?_
+    rw [LSeries.norm_term_eq]
+    rcases Nat.eq_zero_or_pos m with rfl | hm
+    · simp [ha0]
+    · rw [if_neg (by omega), Complex.norm_natCast]
+  -- the per-term real integrals
+  have hIm : ∀ m : ℕ,
+      IntegrableOn (fun t : ℝ => t ^ (c₀ - 1) * ((a m : ℝ) * H ((m : ℝ) ^ 2 * t / d)))
+        (Set.Ioi 0) ∧
+      (∫ t in Set.Ioi (0 : ℝ), t ^ (c₀ - 1) * ((a m : ℝ) * H ((m : ℝ) ^ 2 * t / d))) =
+        (d ^ c₀ * I₀) * ((a m : ℝ) / (m : ℝ) ^ s.re) := by
+    intro m
+    rcases Nat.eq_zero_or_pos m with rfl | hm
+    · refine ⟨?_, ?_⟩ <;> simp [ha0]
+    · have hm0 : (0 : ℝ) < (m : ℝ) := by exact_mod_cast hm
+      have hq : (0 : ℝ) < (m : ℝ) ^ 2 / d := by positivity
+      have hargeq : ∀ t : ℝ, (m : ℝ) ^ 2 / d * t = (m : ℝ) ^ 2 * t / d := fun t => by ring
+      have hcongr : ∀ t : ℝ, t ∈ Set.Ioi (0 : ℝ) →
+          (a m : ℝ) * (t ^ (c₀ - 1) * H ((m : ℝ) ^ 2 / d * t)) =
+            t ^ (c₀ - 1) * ((a m : ℝ) * H ((m : ℝ) ^ 2 * t / d)) := by
+        intro t _
+        rw [hargeq t]; ring
+      have e2 : ((m : ℝ) ^ 2) ^ (-c₀) = ((m : ℝ) ^ s.re)⁻¹ := by
+        rw [← Real.rpow_natCast (m : ℝ) 2, ← Real.rpow_mul hm0.le]
+        push_cast
+        rw [show (2 : ℝ) * -c₀ = -(2 * c₀) from by ring, h2c₀, Real.rpow_neg hm0.le]
+      have e1 : ((m : ℝ) ^ 2 / d) ^ (-c₀) = d ^ c₀ * ((m : ℝ) ^ s.re)⁻¹ := by
+        rw [Real.div_rpow (by positivity) hd.le, e2, Real.rpow_neg hd.le, div_eq_mul_inv,
+          inv_inv, mul_comm]
+      refine ⟨IntegrableOn.congr_fun (((hscale _ hq).1).const_mul (a m : ℝ)) hcongr
+        measurableSet_Ioi, ?_⟩
+      rw [← setIntegral_congr_fun measurableSet_Ioi hcongr, integral_const_mul,
+        (hscale _ hq).2, e1]
+      field_simp
+  -- the norms of the complex terms
+  have hnormeq : ∀ m : ℕ, (∫ t in Set.Ioi (0 : ℝ),
+      ‖(t : ℂ) ^ (s / 2 - 1) • ((a m : ℂ) * ((H ((m : ℝ) ^ 2 * t / d) : ℝ) : ℂ))‖) =
+      (d ^ c₀ * I₀) * ((a m : ℝ) / (m : ℝ) ^ s.re) := by
+    intro m
+    rcases Nat.eq_zero_or_pos m with rfl | hm
+    · simp [ha0]
+    · have hm0 : (0 : ℝ) < (m : ℝ) := by exact_mod_cast hm
+      have hpt : ∀ t : ℝ, t ∈ Set.Ioi (0 : ℝ) →
+          ‖(t : ℂ) ^ (s / 2 - 1) • ((a m : ℂ) * ((H ((m : ℝ) ^ 2 * t / d) : ℝ) : ℂ))‖ =
+            t ^ (c₀ - 1) * ((a m : ℝ) * H ((m : ℝ) ^ 2 * t / d)) := by
+        intro t ht
+        have ht0 : (0 : ℝ) < t := ht
+        have harg : (0 : ℝ) < (m : ℝ) ^ 2 * t / d := by positivity
+        rw [norm_smul, Complex.norm_cpow_eq_rpow_re_of_pos ht0, norm_mul,
+          Complex.norm_natCast, Complex.norm_real, Real.norm_eq_abs,
+          abs_of_nonneg (hHpos _ harg), Complex.sub_re, Complex.one_re, ← hc₀def]
+      rw [setIntegral_congr_fun measurableSet_Ioi hpt, (hIm m).2]
+  -- integrability of the complex terms
+  have hFint : ∀ m : ℕ, Integrable
+      (fun t : ℝ => (t : ℂ) ^ (s / 2 - 1) •
+        ((a m : ℂ) * ((H ((m : ℝ) ^ 2 * t / d) : ℝ) : ℂ)))
+      (volume.restrict (Set.Ioi 0)) := by
+    intro m
+    rcases Nat.eq_zero_or_pos m with rfl | hm
+    · simp [ha0]
+    · have hm0 : (0 : ℝ) < (m : ℝ) := by exact_mod_cast hm
+      have hq : (0 : ℝ) < (m : ℝ) ^ 2 / d := by positivity
+      have h4 : MellinConvergent (fun t : ℝ => ((H ((m : ℝ) ^ 2 / d * t) : ℝ) : ℂ)) (s / 2) :=
+        (MellinConvergent.comp_mul_left hq).mpr hmel.1
+      have h6 : IntegrableOn (fun t : ℝ => (t : ℂ) ^ (s / 2 - 1) •
+          ((a m : ℂ) • ((H ((m : ℝ) ^ 2 / d * t) : ℝ) : ℂ))) (Set.Ioi 0) :=
+        h4.const_smul ((a m : ℂ))
+      refine IntegrableOn.congr_fun h6 (fun t ht => ?_) measurableSet_Ioi
+      simp only [smul_eq_mul]
+      rw [show (m : ℝ) ^ 2 / d * t = (m : ℝ) ^ 2 * t / d from by ring]
+  have hFsum : Summable (fun m : ℕ => ∫ t in Set.Ioi (0 : ℝ),
+      ‖(t : ℂ) ^ (s / 2 - 1) • ((a m : ℂ) * ((H ((m : ℝ) ^ 2 * t / d) : ℝ) : ℂ))‖) :=
+    (hLSnorm.mul_left (d ^ c₀ * I₀)).congr fun m => (hnormeq m).symm
+  have hHasSum := hasSum_integral_of_summable_integral_norm
+    (F := fun (m : ℕ) (t : ℝ) => (t : ℂ) ^ (s / 2 - 1) •
+      ((a m : ℂ) * ((H ((m : ℝ) ^ 2 * t / d) : ℝ) : ℂ)))
+    (μ := volume.restrict (Set.Ioi 0)) hFint hFsum
+  -- the per-term Mellin values
+  have hmellinterm : ∀ m : ℕ, (∫ t in Set.Ioi (0 : ℝ), (t : ℂ) ^ (s / 2 - 1) •
+      ((a m : ℂ) * ((H ((m : ℝ) ^ 2 * t / d) : ℝ) : ℂ))) =
+      ((d : ℂ) ^ (s / 2) * v) * LSeries.term (fun k : ℕ => (a k : ℂ)) s m := by
+    intro m
+    rcases Nat.eq_zero_or_pos m with rfl | hm
+    · simp [ha0, LSeries.term]
+    · have hm0 : (0 : ℝ) < (m : ℝ) := by exact_mod_cast hm
+      have hq : (0 : ℝ) < (m : ℝ) ^ 2 / d := by positivity
+      have hargm : ((m : ℕ) : ℂ).arg = 0 := by
+        rw [show ((m : ℕ) : ℂ) = (((m : ℕ) : ℝ) : ℂ) from by push_cast; ring,
+          Complex.arg_ofReal_of_nonneg (by positivity)]
+      have hcpow : ((((m : ℝ) ^ 2 / d : ℝ)) : ℂ) ^ (-(s / 2)) =
+          (d : ℂ) ^ (s / 2) * ((m : ℂ) ^ s)⁻¹ := by
+        rw [show ((m : ℝ) ^ 2 / d : ℝ) = (m : ℝ) ^ 2 * (1 / d) from by ring,
+          Complex.ofReal_mul, Complex.mul_cpow_ofReal_nonneg (by positivity) (by positivity)]
+        have hfst : (((m : ℝ) ^ 2 : ℝ) : ℂ) ^ (-(s / 2)) = ((m : ℂ) ^ s)⁻¹ := by
+          rw [Complex.ofReal_pow, Complex.ofReal_natCast,
+            ← Complex.cpow_nat_mul' (by rw [hargm]; simp [Real.pi_pos])
+              (by rw [hargm]; simp [Real.pi_pos.le]),
+            show ((2 : ℕ) : ℂ) * -(s / 2) = -s from by push_cast; ring, Complex.cpow_neg]
+        have hsnd : (((1 / d : ℝ)) : ℂ) ^ (-(s / 2)) = (d : ℂ) ^ (s / 2) := by
+          rw [Complex.ofReal_div, Complex.ofReal_one, one_div,
+            Complex.inv_cpow _ _ (by
+              rw [Complex.arg_ofReal_of_nonneg hd.le]; exact ne_of_lt Real.pi_pos),
+            Complex.cpow_neg, inv_inv]
+        rw [hfst, hsnd]
+        ring
+      have hmel2 : mellin (fun t : ℝ => ((H ((m : ℝ) ^ 2 / d * t) : ℝ) : ℂ)) (s / 2) =
+          ((((m : ℝ) ^ 2 / d : ℝ)) : ℂ) ^ (-(s / 2)) • v := by
+        rw [mellin_comp_mul_left (fun τ : ℝ => ((H τ : ℝ) : ℂ)) (s / 2) hq, hmel.2]
+      have hgoal : (∫ t in Set.Ioi (0 : ℝ), (t : ℂ) ^ (s / 2 - 1) •
+          ((a m : ℂ) * ((H ((m : ℝ) ^ 2 * t / d) : ℝ) : ℂ))) =
+          mellin (fun t : ℝ => (a m : ℂ) * ((H ((m : ℝ) ^ 2 / d * t) : ℝ) : ℂ)) (s / 2) := by
+        rw [mellin]
+        refine setIntegral_congr_fun measurableSet_Ioi fun t ht => ?_
+        rw [show (m : ℝ) ^ 2 / d * t = (m : ℝ) ^ 2 * t / d from by ring]
+      rw [hgoal]
+      have hconstsmul : mellin (fun t : ℝ => (a m : ℂ) * ((H ((m : ℝ) ^ 2 / d * t) : ℝ) : ℂ))
+          (s / 2) = (a m : ℂ) • mellin (fun t : ℝ => ((H ((m : ℝ) ^ 2 / d * t) : ℝ) : ℂ))
+            (s / 2) := by
+        simpa only [smul_eq_mul] using
+          mellin_const_smul (fun t : ℝ => ((H ((m : ℝ) ^ 2 / d * t) : ℝ) : ℂ)) (s / 2)
+            ((a m : ℂ))
+      rw [hconstsmul, hmel2, smul_eq_mul, smul_eq_mul, hcpow, LSeries.term_of_ne_zero
+        (by omega : m ≠ 0), div_eq_mul_inv]
+      ring
+  -- the pointwise sum identity
+  have hptid : ∀ t : ℝ, t ∈ Set.Ioi (0 : ℝ) →
+      (∑' m : ℕ, (t : ℂ) ^ (s / 2 - 1) •
+        ((a m : ℂ) * ((H ((m : ℝ) ^ 2 * t / d) : ℝ) : ℂ))) =
+      (t : ℂ) ^ (s / 2 - 1) •
+        ((∑' m : ℕ, (a m : ℝ) * H ((m : ℝ) ^ 2 * t / d) : ℝ) : ℂ) := by
+    intro t ht
+    simp only [smul_eq_mul]
+    rw [tsum_mul_left, Complex.ofReal_tsum]
+    congr 1
+    exact tsum_congr fun m => by push_cast; ring
+  have hint_eq : (∫ t in Set.Ioi (0 : ℝ), ∑' m : ℕ, (t : ℂ) ^ (s / 2 - 1) •
+      ((a m : ℂ) * ((H ((m : ℝ) ^ 2 * t / d) : ℝ) : ℂ))) =
+      mellin (fun t : ℝ => ((∑' m : ℕ, (a m : ℝ) * H ((m : ℝ) ^ 2 * t / d) : ℝ) : ℂ))
+        (s / 2) := by
+    rw [mellin]
+    exact setIntegral_congr_fun measurableSet_Ioi hptid
+  -- the Mellin value
+  have hval : HasSum (fun m : ℕ => ((d : ℂ) ^ (s / 2) * v) *
+      LSeries.term (fun k : ℕ => (a k : ℂ)) s m)
+      (∫ t in Set.Ioi (0 : ℝ), ∑' m : ℕ, (t : ℂ) ^ (s / 2 - 1) •
+        ((a m : ℂ) * ((H ((m : ℝ) ^ 2 * t / d) : ℝ) : ℂ))) := by
+    simpa only [hmellinterm] using hHasSum
+  have hmellinval :
+      mellin (fun t : ℝ => ((∑' m : ℕ, (a m : ℝ) * H ((m : ℝ) ^ 2 * t / d) : ℝ) : ℂ)) (s / 2)
+        = (d : ℂ) ^ (s / 2) * v * LSeries (fun m : ℕ => (a m : ℂ)) s := by
+    rw [← hint_eq, ← hval.tsum_eq, tsum_mul_left]
+    simp only [LSeries]
+  refine ⟨?_, hmellinval⟩
+  -- Mellin convergence
+  have hScont : ContinuousOn (fun t : ℝ => ∑' m : ℕ, (a m : ℝ) * H ((m : ℝ) ^ 2 * t / d))
+      (Set.Ioi 0) := thetaSeries_continuousOn a H hd hn ha0 B hB hHcont hHpos hHanti A c hc hA
+  have hmeas : AEStronglyMeasurable
+      (fun t : ℝ => (t : ℂ) ^ (s / 2 - 1) •
+        ((∑' m : ℕ, (a m : ℝ) * H ((m : ℝ) ^ 2 * t / d) : ℝ) : ℂ))
+      (volume.restrict (Set.Ioi 0)) := by
+    refine ContinuousOn.aestronglyMeasurable ?_ measurableSet_Ioi
+    have h1 : ContinuousOn (fun t : ℝ => (t : ℂ) ^ (s / 2 - 1)) (Set.Ioi 0) := fun t ht =>
+      (Complex.continuousAt_ofReal_cpow_const t _
+        (Or.inr (ne_of_gt (ht : (0 : ℝ) < t)))).continuousWithinAt
+    exact h1.smul (Complex.continuous_ofReal.comp_continuousOn hScont)
+  have hSnonneg : ∀ t : ℝ, 0 < t →
+      0 ≤ ∑' m : ℕ, (a m : ℝ) * H ((m : ℝ) ^ 2 * t / d) := by
+    intro t ht
+    refine tsum_nonneg fun m => ?_
+    rcases Nat.eq_zero_or_pos m with rfl | hm
+    · simp [ha0]
+    · have hm0 : (0 : ℝ) < (m : ℝ) := by exact_mod_cast hm
+      exact mul_nonneg (Nat.cast_nonneg _) (hHpos _ (Set.mem_Ioi.mpr (by positivity)))
+  have hnormfun : ∀ t : ℝ, t ∈ Set.Ioi (0 : ℝ) →
+      ‖(t : ℂ) ^ (s / 2 - 1) •
+          ((∑' m : ℕ, (a m : ℝ) * H ((m : ℝ) ^ 2 * t / d) : ℝ) : ℂ)‖ =
+        t ^ (c₀ - 1) * ∑' m : ℕ, (a m : ℝ) * H ((m : ℝ) ^ 2 * t / d) := by
+    intro t ht
+    have ht0 : (0 : ℝ) < t := ht
+    rw [norm_smul, Complex.norm_cpow_eq_rpow_re_of_pos ht0, Complex.norm_real,
+      Real.norm_eq_abs, abs_of_nonneg (hSnonneg t ht0), Complex.sub_re, Complex.one_re,
+      ← hc₀def]
+  have hae : (fun t : ℝ => ‖(t : ℂ) ^ (s / 2 - 1) •
+        ((∑' m : ℕ, (a m : ℝ) * H ((m : ℝ) ^ 2 * t / d) : ℝ) : ℂ)‖) =ᵐ[volume.restrict
+        (Set.Ioi 0)] (fun t : ℝ => t ^ (c₀ - 1) * ∑' m : ℕ, (a m : ℝ) * H ((m : ℝ) ^ 2 * t / d)) :=
+    (ae_restrict_iff' measurableSet_Ioi).mpr (Filter.Eventually.of_forall hnormfun)
+  have hSint : Integrable (fun t : ℝ => t ^ (c₀ - 1) *
+      ∑' m : ℕ, (a m : ℝ) * H ((m : ℝ) ^ 2 * t / d)) (volume.restrict (Set.Ioi 0)) := by
+    refine ⟨hmeas.norm.congr hae, ?_⟩
+    rw [hasFiniteIntegral_iff_ofReal ((ae_restrict_iff' measurableSet_Ioi).mpr
+      (Filter.Eventually.of_forall fun t ht => by
+        have ht0 : (0 : ℝ) < t := ht
+        exact mul_nonneg (Real.rpow_nonneg ht0.le _) (hSnonneg t ht0)))]
+    have hlt : ∀ t : ℝ, t ∈ Set.Ioi (0 : ℝ) →
+        ENNReal.ofReal (t ^ (c₀ - 1) * ∑' m : ℕ, (a m : ℝ) * H ((m : ℝ) ^ 2 * t / d)) =
+          ∑' m : ℕ, ENNReal.ofReal (t ^ (c₀ - 1) * ((a m : ℝ) * H ((m : ℝ) ^ 2 * t / d))) := by
+      intro t ht
+      have ht0 : (0 : ℝ) < t := ht
+      have hsum := thetaSeries_summable a H hd hn B hB hHpos A c hc hA ht0
+      rw [← tsum_mul_left, ENNReal.ofReal_tsum_of_nonneg (fun m => ?_) (hsum.mul_left _)]
+      · rcases Nat.eq_zero_or_pos m with rfl | hm
+        · simp [ha0]
+        · have hm0 : (0 : ℝ) < (m : ℝ) := by exact_mod_cast hm
+          exact mul_nonneg (Real.rpow_nonneg ht0.le _)
+            (mul_nonneg (Nat.cast_nonneg _) (hHpos _ (Set.mem_Ioi.mpr (by positivity))))
+    rw [lintegral_congr_ae ((ae_restrict_iff' measurableSet_Ioi).mpr
+      (Filter.Eventually.of_forall hlt))]
+    have hmeasm : ∀ m : ℕ, AEMeasurable
+        (fun t : ℝ => ENNReal.ofReal (t ^ (c₀ - 1) * ((a m : ℝ) * H ((m : ℝ) ^ 2 * t / d))))
+        (volume.restrict (Set.Ioi 0)) := fun m =>
+      ENNReal.measurable_ofReal.comp_aemeasurable (hIm m).1.1.aemeasurable
+    rw [lintegral_tsum hmeasm]
+    have hterm : ∀ m : ℕ, (∫⁻ t in Set.Ioi (0 : ℝ),
+        ENNReal.ofReal (t ^ (c₀ - 1) * ((a m : ℝ) * H ((m : ℝ) ^ 2 * t / d)))) =
+        ENNReal.ofReal ((d ^ c₀ * I₀) * ((a m : ℝ) / (m : ℝ) ^ s.re)) := by
+      intro m
+      rw [← ofReal_integral_eq_lintegral_ofReal (hIm m).1
+        ((ae_restrict_iff' measurableSet_Ioi).mpr (Filter.Eventually.of_forall fun t ht => by
+          have ht0 : (0 : ℝ) < t := ht
+          rcases Nat.eq_zero_or_pos m with rfl | hm
+          · simp [ha0]
+          · have hm0 : (0 : ℝ) < (m : ℝ) := by exact_mod_cast hm
+            exact mul_nonneg (Real.rpow_nonneg ht0.le _)
+              (mul_nonneg (Nat.cast_nonneg _)
+                (hHpos _ (Set.mem_Ioi.mpr (by positivity)))))), (hIm m).2]
+    rw [show (fun m : ℕ => ∫⁻ t in Set.Ioi (0 : ℝ),
+        ENNReal.ofReal (t ^ (c₀ - 1) * ((a m : ℝ) * H ((m : ℝ) ^ 2 * t / d)))) =
+        (fun m : ℕ => ENNReal.ofReal ((d ^ c₀ * I₀) * ((a m : ℝ) / (m : ℝ) ^ s.re))) from
+      funext hterm, ← ENNReal.ofReal_tsum_of_nonneg]
+    · exact ENNReal.ofReal_lt_top
+    · intro m
+      have h1 : (0 : ℝ) ≤ I₀ := by
+        rw [hI₀def]
+        refine setIntegral_nonneg measurableSet_Ioi fun u hu => ?_
+        have hu0 : (0 : ℝ) < u := hu
+        exact mul_nonneg (Real.rpow_nonneg hu0.le _) (hHpos u hu)
+      have h2 : (0 : ℝ) ≤ (a m : ℝ) / (m : ℝ) ^ s.re := by positivity
+      exact mul_nonneg (mul_nonneg (Real.rpow_nonneg hd.le _) h1) h2
+    · exact hLSnorm.mul_left _
+  exact (integrable_norm_iff hmeas).mp (hSint.congr hae.symm)
+
+open scoped nonZeroDivisors in
+/-- **The norm-`0` count of an ideal class vanishes** (PROVEN
+2026-07-25): a nonzero integral ideal has positive absolute norm
+(`Ideal.absNorm_ne_zero_of_nonZeroDivisors`), so the counted subtype is
+empty.  This is what makes the `m = 0` term of the Hecke theta series
+vanish, keeping the series away from `H`'s singular point `τ = 0`. -/
+theorem classIdealCount_zero (K : Type*) [Field K] [NumberField K]
+    (C : ClassGroup (NumberField.RingOfIntegers K)) :
+    classIdealCount K C 0 = 0 := by
+  haveI : IsEmpty {I : (Ideal (NumberField.RingOfIntegers K))⁰ //
+      Ideal.absNorm (I : Ideal (NumberField.RingOfIntegers K)) = 0 ∧ ClassGroup.mk0 I = C} :=
+    ⟨fun I => Ideal.absNorm_ne_zero_of_nonZeroDivisors I.1 I.2.1⟩
+  unfold classIdealCount
+  exact Nat.card_of_isEmpty
+
+open scoped nonZeroDivisors in
+open Filter Topology in
+/-- **Linear growth of the per-class ideal counts** (PROVEN 2026-07-25):
+`classIdealCount K C m ≤ B·m` for a single constant `B`.  The count of
+norm exactly `m` is at most the cumulative count of norm `≤ m`
+(`sum_Icc_classIdealCount`, all terms nonnegative), and the pin's
+Weber/Dedekind asymptotic
+`NumberField.Ideal.tendsto_norm_le_and_mk_eq_div_atTop` makes
+`count(m)/m` a convergent — hence bounded — sequence.  This is the
+coefficient-growth input of the stage-γ analysis
+`heckeThetaSeries_analysis`. -/
+theorem classIdealCount_le_mul (K : Type*) [Field K] [NumberField K]
+    (C : ClassGroup (NumberField.RingOfIntegers K)) :
+    ∃ B : ℝ, ∀ m : ℕ, (classIdealCount K C m : ℝ) ≤ B * m := by
+  have h1 : Tendsto (fun m : ℕ =>
+      (Nat.card {I : (Ideal (NumberField.RingOfIntegers K))⁰ //
+        Ideal.absNorm (I : Ideal (NumberField.RingOfIntegers K)) ≤ (m : ℝ) ∧
+        ClassGroup.mk0 I = C} : ℝ) / (m : ℝ)) atTop _ :=
+    (NumberField.Ideal.tendsto_norm_le_and_mk_eq_div_atTop K C).comp tendsto_natCast_atTop_atTop
+  obtain ⟨B, hB⟩ := h1.bddAbove_range
+  refine ⟨B, fun m => ?_⟩
+  rcases Nat.eq_zero_or_pos m with rfl | hm
+  · simp [classIdealCount_zero K C]
+  · have hm0 : (0 : ℝ) < (m : ℝ) := by exact_mod_cast hm
+    have h2 := hB (Set.mem_range_self m)
+    rw [div_le_iff₀ hm0] at h2
+    refine le_trans ?_ h2
+    have h3 : (classIdealCount K C m : ℝ) ≤
+        ((∑ k ∈ Finset.Icc 1 m, classIdealCount K C k : ℕ) : ℝ) := by
+      exact_mod_cast Finset.single_le_sum (f := fun k => classIdealCount K C k)
+        (fun i _ => Nat.zero_le _) (Finset.mem_Icc.mpr ⟨hm, le_refl m⟩)
+    refine le_trans h3 (le_of_eq ?_)
+    have e2 : {I : (Ideal (NumberField.RingOfIntegers K))⁰ //
+        (Ideal.absNorm (I : Ideal (NumberField.RingOfIntegers K)) : ℝ) ≤ (m : ℝ) ∧
+        ClassGroup.mk0 I = C} ≃
+        {I : (Ideal (NumberField.RingOfIntegers K))⁰ //
+        Ideal.absNorm (I : Ideal (NumberField.RingOfIntegers K)) ≤ m ∧
+        ClassGroup.mk0 I = C} :=
+      Equiv.subtypeEquivRight fun I => and_congr_left' Nat.cast_le
+    rw [sum_Icc_classIdealCount K C m, ← Nat.card_congr e2]
+
+open Filter MeasureTheory Topology in
 /-- **Analysis of the per-class Hecke theta series: local
-integrability, stretched-exponential decay, termwise Mellin** (sorry
-node, stated 2026-07-24 — stage (γ), the series-side analysis, of the
+integrability, stretched-exponential decay, termwise Mellin** (PROVEN
+2026-07-25 over the abstract theta-series lemmas
+`thetaSeries_continuousOn`/`thetaSeries_tail_bound`/`thetaSeries_hasMellin`
+and the counting inputs `classIdealCount_zero`/`classIdealCount_le_mul`;
+stated 2026-07-24 — stage (γ), the series-side analysis, of the
 decomposition of `heckeThetaKernel_exists`): for ANY profile `H` with
 the properties delivered by `archimedeanGammaProfile_exists`, the
 per-class series `S_C(t) = Σ_m a_C(m)·H(m²·t/|d_K|)`
@@ -8366,9 +10628,14 @@ Fubini–Tonelli for the nonnegative double integral gives
 `mellin S_C (s/2) = |d|^{s/2}·Γ_ℝ(s)^{r₁}·Γ_ℂ(s)^{r₂}·L(a_C, s)`, the
 `|d|^{s/2}` emerging as `Σ_m (m²/|d|)^{−s/2}·m^{... } =
 |d|^{s/2}·Σ_m a_C(m)·m^{−s}`, with convergence bundled in `HasMellin`
-— the interchange justified at `∞` by (ii) and at `0⁺` by the
-monotone blow-up bound `S_C(t) ≤ S_C(t₀)` for `t ≥ t₀ → 0` against
-`t^{re(s/2)−1}`, integrable since `re s > 1 > 0`. -/
+— the interchange justified by absolute convergence of the double
+integral: the norm integral of the `m`-th term is exactly
+`a_C(m)·(m²/|d|)^{−re(s/2)}·∫ u^{re(s/2)−1}H(u) du`, whose `m`-sum is
+`|d|^{re(s/2)}·I₀·Σ_m a_C(m)/m^{re s}`, summable because
+`re s > 1` (`classIdealCount_LSeriesSummable`).  Note the earlier
+sketch's "monotone blow-up bound at `0⁺`" was NOT a proof: a constant
+bound on each `[t₀, ∞)` says nothing about integrability near `0`; the
+`0⁺` control is genuinely the termwise Tonelli computation above. -/
 theorem heckeThetaSeries_analysis (K : Type*) [Field K] [NumberField K]
     (H : ℝ → ℝ)
     (hHcont : ContinuousOn H (Set.Ioi 0))
@@ -8403,7 +10670,41 @@ theorem heckeThetaSeries_analysis (K : Type*) [Field K] [NumberField K]
           ((2 : ℂ) * ((2 * Real.pi : ℝ) : ℂ) ^ (-s) * Complex.Gamma s) ^
             NumberField.InfinitePlace.nrComplexPlaces K *
           LSeries (fun n => (classIdealCount K C n : ℂ)) s)) := by
-  sorry
+  obtain ⟨A, c, hc, hA⟩ := hHdec
+  have hd : (0 : ℝ) < |(NumberField.discr K : ℝ)| := by
+    refine abs_pos.mpr ?_
+    exact_mod_cast NumberField.discr_ne_zero K
+  have hn : 0 < Module.finrank ℚ K := Module.finrank_pos
+  refine ⟨fun C => ?_, fun C => ?_, fun C s hs => ?_⟩
+  · -- (i) local integrability, from continuity of the series
+    obtain ⟨B, hB⟩ := classIdealCount_le_mul K C
+    refine ContinuousOn.locallyIntegrableOn ?_ measurableSet_Ioi
+    exact Complex.continuous_ofReal.comp_continuousOn
+      (thetaSeries_continuousOn (classIdealCount K C) H hd hn (classIdealCount_zero K C)
+        B hB hHcont hHpos hHanti A c hc hA)
+  · -- (ii) the stretched-exponential tail bound
+    obtain ⟨B, hB⟩ := classIdealCount_le_mul K C
+    exact thetaSeries_tail_bound (classIdealCount K C) H hd hn (classIdealCount_zero K C)
+      B hB hHpos hHanti A c hc hA
+  · -- (iii) the termwise Mellin identification
+    obtain ⟨B, hB⟩ := classIdealCount_le_mul K C
+    have hmain := thetaSeries_hasMellin (classIdealCount K C) H hd hn
+      (classIdealCount_zero K C) B hB hHcont hHpos hHanti A c hc hA hs _ (hHmel s hs)
+      (classIdealCount_LSeriesSummable K C hs)
+    have hval : (Complex.ofReal |(NumberField.discr K : ℝ)| ^ (s / 2) *
+        ((Real.pi : ℂ) ^ (-s / 2) * Complex.Gamma (s / 2)) ^
+          NumberField.InfinitePlace.nrRealPlaces K *
+        ((2 : ℂ) * ((2 * Real.pi : ℝ) : ℂ) ^ (-s) * Complex.Gamma s) ^
+          NumberField.InfinitePlace.nrComplexPlaces K *
+        LSeries (fun n => (classIdealCount K C n : ℂ)) s) =
+        ((|(NumberField.discr K : ℝ)| : ℝ) : ℂ) ^ (s / 2) *
+          ((((Real.pi : ℂ) ^ (-s / 2) * Complex.Gamma (s / 2)) ^
+              NumberField.InfinitePlace.nrRealPlaces K *
+            ((2 : ℂ) * ((2 * Real.pi : ℝ) : ℂ) ^ (-s) * Complex.Gamma s) ^
+              NumberField.InfinitePlace.nrComplexPlaces K)) *
+          LSeries (fun n => (classIdealCount K C n : ℂ)) s := by ring
+    rw [hval]
+    exact hmain
 
 /-- **The Hecke theta kernel family of the class group** (DECOMPOSED
 2026-07-24, assembly PROVEN — the analytic core of the Neukirch VII
@@ -14889,226 +17190,458 @@ theorem DedekindContinuation.exists_goodHeight_gap {K : Type*} [Field K]
       exact le_trans (min_le_right _ _) hlog2T
     linarith
 
-/-- **Uniform `1/t²` decay of `Φ` on the closed contour strip** (sorry
-node, stated 2026-07-24 — leaf (b₁ᵢᵢᵢ-α) of the decomposition of
+/-- **Uniform `1/t²` decay of `Φ` on the closed contour strip**
+(PROVEN 2026-07-24 — leaf (b₁ᵢᵢᵢ-α) of the decomposition of
 `DedekindContinuation.poitouHorizontal_gap_tendsto_zero`; the strip
-generalization of the PROVEN vertical-line bound
-`poitouPhi_line_decay_sq`, which lives later in this file in the
-PoitouPrimeEdgeFourier section): `‖Φ(σ + it)‖ ≤ M/t²` uniformly over
-`σ ∈ [−1/4, 5/4]`.
+generalization of the vertical-line bound `poitouPhi_line_decay_sq`,
+which lives later in this file in the PoitouPrimeEdgeFourier
+section): `‖Φ(σ + it)‖ ≤ M/t²` uniformly over `σ ∈ [−1/4, 5/4]`.
 
-Intended proof: the double integration by parts of
-`poitouPhi_line_decay_sq`, verbatim, with the fixed vertical-line
-exponent `3/4 = 5/4 − 1/2` generalized to the strip parameter
-`a = σ − 1/2 ∈ [−3/4, 3/4]`.  For `s = σ + it`,
-`Φ(s) = ∫_{−6}^{6} g_a(x)·e^{itx} dx` with
-`g_a(x) = odlyzkoTestFn x · e^{ax}/cosh(x/2)` continuous, vanishing
-at `±6`, and smooth on `[−6, 0]` and `[0, 6]` where it agrees with
-the models `(1 ± x/6)·q_a`, `q_a = e^{ax}/cosh(x/2)`; writing
-`q_a' = q_a·p_a` with `p_a = a − sinh(x/2)/(2·cosh(x/2))` and
-`p_a' = −1/(4·cosh²(x/2))` (hyperbolic Pythagoras), one
-parts-integration kills the boundary terms (`g_a(±6) = 0`, `g_a`
-continuous at the kink `0`), a second leaves the piece-endpoint
-values of the piecewise derivative and `∫ |(g_a')'|` — all bounded
-UNIFORMLY over `a ∈ [−3/4, 3/4]` because `x` ranges over the compact
-`[−6, 6]` (every coefficient is at most an `e^{9/2}`-type constant).
-For `0 < |t| < 1` the trivial strip bound
-`‖Φ(σ + it)‖ ≤ ∫_{−6}^{6} g_a ≤ 12·e^{9/2}` is absorbed by
-enlarging `M`. -/
+The proof is the SECOND integration by parts of
+`poitouPhi_line_decay_sq` grafted onto the strip setup of the proven
+`poitouPhi_strip_decay`.  Rather than absorbing the real exponential
+`e^{(σ−1/2)x}` into the profile (which would make the profile — and
+hence every boundary value and every residual integral — depend on
+`σ`), the whole complex kernel `e^{(s−1/2)x}` is kept on the kernel
+side, where it has the two antiderivatives
+`e^{(s−1/2)x}/(s−1/2)` and `e^{(s−1/2)x}/(s−1/2)²`.  The profile is
+then the `σ`-INDEPENDENT `q = cosh(x/2)⁻¹`, agreeing on `[−6, 0]` and
+`[0, 6]` with the smooth models `(1 ± x/6)·q`; writing `q' = q·p`
+with `p = −sinh(x/2)/(2·cosh(x/2))` and `p' = −1/(4·cosh²(x/2))`
+(hyperbolic Pythagoras), the piecewise first derivatives
+`rd₁ = q/6 + (1 + x/6)·q·p`, `rd₂ = −q/6 + (1 − x/6)·q·p` are
+themselves `C¹`.  The first parts-integration kills the boundary
+terms exactly as in `poitouPhi_strip_decay` (the outer endpoints
+carry the factor `1 ∓ 6/6 = 0`, the two interface values at the kink
+`0` are both `1` and cancel); the second leaves the piece-endpoint
+values of `rdᵢ` and `∫ |rdᵢ'|`, all constants, against the kernel
+`e^{(s−1/2)x}/(s−1/2)²` whose norm is
+`e^{(σ−1/2)x}/‖s−1/2‖² ≤ e^{9/2}/(Im s)²` uniformly on the support:
+`|σ − 1/2| ≤ 3/4`, `|x| ≤ 6`, and `‖s − 1/2‖ ≥ |Im s|`.  This is
+where — and the only place where — the vertical-line exponent
+`3/4 = 5/4 − 1/2` is generalized to `σ − 1/2 ∈ [−3/4, 3/4]`, turning
+the line proof's `e⁰ = 1` kernel bound into `e^{9/2}`; no separate
+small-`|t|` case is needed, since the estimate holds for every
+`t ≠ 0`. -/
 theorem poitouPhi_strip_decay_sq : ∃ M : ℝ, 0 ≤ M ∧ ∀ s : ℂ,
     -(1 / 4) ≤ s.re → s.re ≤ 5 / 4 → s.im ≠ 0 →
     ‖poitouPhi s‖ ≤ M / s.im ^ 2 := by
-  sorry
-
-/-- **Landau's log-derivative bound at gap-protected heights** (sorry
-node, stated 2026-07-24 — leaf (b₁ᵢᵢᵢ-β) of the decomposition of
-`DedekindContinuation.poitouHorizontal_gap_tendsto_zero`; E. Landau,
-*Algebraische Zahlen*, p. 122, as cited by Poitou p. 6-02): on the
-horizontal segments `re s ∈ [−1/4, 5/4]`, `|im s| = τ(T)` of the
-Poitou contour, at heights `τ(T) ∈ [T, T + 1]` whose ordinate gap to
-every zero is `≥ c/log T`, the completed-zeta log-derivative is
-`O(T·log² T)`.
-
-Intended proof (the classical Landau lemma, manufactured from the
-pin's `Complex.borelCaratheodory`):
-
-1. *Reflect to the upper edge.*  `conj_symm` differentiates to
-   `ξ'(conj s) = conj (ξ'(s))` (Schwarz reflection of the
-   derivative: `η(s) := conj (ξ(conj s))` equals `ξ` by `conj_symm`,
-   and the chain rule computes `η'(s) = conj (ξ'(conj s))`), so
-   `‖(ξ'/ξ)(conj s)‖ = ‖(ξ'/ξ)(s)‖` and the case `im s = −τ(T)`
-   follows from the case `im s = τ(T)`.
-2. *Setup.*  Centre `s₀ = 3/2 + i·τ(T)`; the segment lies in
-   `closedBall s₀ 2` (`|σ − 3/2| ≤ 7/4 < 2`).  On `closedBall s₀ 12`
-   the `growth` field gives
-   `log ‖ξ(s)‖ ≤ C·(T + 15)·log (T + 15) = O(T·log T)`, and at the
-   centre `eq_of_one_lt_re` bounds `‖ξ(s₀)‖` BELOW by
-   `exp(−C'·T·log T)`: `‖ζ_K(s₀)‖ ≥ 1/ζ_K(3/2)` (the inverse
-   Dirichlet series is dominated coefficientwise by the Möbius-type
-   expansion, so `‖ζ_K(s₀)⁻¹‖ ≤ ζ_K(3/2)`), the `Γ`-factors obey
-   vertical-line Stirling lower bounds `≥ exp(−c₁·T·log T)`, and
-   `s₀(s₀ − 1)·|d|^{s₀/2}` is polynomially large.
-3. *Divide out the zeros.*  The zeros of `ξ` in `closedBall s₀ 6`
-   are finitely many (`finite_truncation` at `τ(T) + 7`) with total
-   multiplicity `N = O(log T)`: each has `||im ρ| − τ(T)| ≤ 6`, so
-   thirteen `hcount` windows at heights `τ(T) − 6, …, τ(T) + 6`
-   cover them (window heights `< 2` occur only for `T ≤ 13`,
-   absorbed by a compactness constant); every such zero carries
-   `mult ρ ≠ 0` — `hbnd`, `funcEq` and `ne_zero_of_one_lt_re` clear
-   `re ρ ∉ (0, 1)` exactly as in the support analysis of
-   `DedekindContinuation.mult`, and inside the open strip a zero of
-   the nontrivial entire `ξ` has `analyticOrderNatAt ≠ 0`.  Iterated
-   `dslope` division (`sub_smul_dslope_of_zero`, as in
-   `sum_analyticOrderNatAt_le_of_frontier_norm_le`) writes
-   `ξ = (∏ (· − ρ)^{mult ρ}) • g` with `g` zero-free on
-   `closedBall s₀ 6` and analytic everywhere, with
-   `log ‖g‖ = O(T·log T)` on `sphere s₀ 12` (each divided linear
-   factor has modulus `≥ 6` there) hence on the ball by the maximum
-   principle, and `log ‖g(s₀)‖ ≥ −O(T·log T) − N·log 12`.
-4. *Borel–Carathéodory.*  `g` is zero-free on `ball s₀ 6`, so a
-   holomorphic logarithm of `g/g(s₀)` exists on the ball, and the
-   pin's `Complex.borelCaratheodory`
-   (`Mathlib/Analysis/Complex/BorelCaratheodory.lean`) turns the
-   bound `Re log (g/g(s₀)) = log ‖g‖ − log ‖g(s₀)‖ ≤ O(T·log T)` on
-   `ball s₀ 6` into `‖(g'/g)(s)‖ = O(T·log T)` on `closedBall s₀ 2`.
-5. *Partial fractions.*  On the segment,
-   `(ξ'/ξ)(s) = Σ_ρ mult ρ/(s − ρ) + (g'/g)(s)`; each near-zero
-   satisfies `|s − ρ| ≥ ||im ρ| − τ(T)| ≥ c/log T` (for `im ρ > 0`
-   directly, for `im ρ < 0` even `|s − ρ| ≥ τ(T) + |im ρ|`), so the
-   near-sum is `≤ N·(log T)/c = O(log² T)` and the total is
-   `O(T·log T) + O(log² T) ≤ A·T·log² T` for `T ≥ e`; the compact
-   range `T ∈ [2, e]` is absorbed into `A` (there the segment points
-   stay at ordinate distance `≥ c/log e` from the finitely many
-   zeros of `finite_truncation 4`, so `‖ξ'/ξ‖` is uniformly bounded
-   on the corresponding compact set, and `T·log² T ≥ 2·log² 2 > 0`
-   keeps the right side bounded below). -/
-theorem DedekindContinuation.xi_logDeriv_gap_bound {K : Type*} [Field K]
-    [NumberField K] (pkg : DedekindContinuation K)
-    (hcount : ∃ C : ℝ, 0 < C ∧ ∀ T : ℝ, 2 ≤ T → ∀ s : Finset ℂ,
-      (∀ ρ ∈ s, |(|ρ.im| - T)| ≤ 1) →
-      ∑ ρ ∈ s, (pkg.mult ρ : ℝ) ≤ C * Real.log T)
-    (hbnd : ∀ t : ℝ, pkg.xi (1 + t * Complex.I) ≠ 0)
-    {c : ℝ} (hc : 0 < c) (τ : ℝ → ℝ)
-    (hτ : ∀ T : ℝ, 2 ≤ T → T ≤ τ T ∧ τ T ≤ T + 1 ∧
-      ∀ ρ : ℂ, pkg.mult ρ ≠ 0 → c / Real.log T ≤ |(|ρ.im| - τ T)|) :
-    ∃ A : ℝ, 0 < A ∧ ∀ T : ℝ, 2 ≤ T → ∀ s : ℂ,
-      -(1 / 4) ≤ s.re → s.re ≤ 5 / 4 → |s.im| = τ T →
-      ‖deriv pkg.xi s / pkg.xi s‖ ≤ A * (T * Real.log T ^ 2) := by
-  sorry
-
-/-- **Poitou's Proposition 1: the horizontal edges vanish along
-good-height selections** (ASSEMBLED 2026-07-24 over the two stage
-leaves `poitouPhi_strip_decay_sq` (uniform `1/T²` decay of `Φ` on the
-contour strip, leaf α above) and
-`DedekindContinuation.xi_logDeriv_gap_bound` (Landau's `O(T·log² T)`
-log-derivative bound at gap-protected heights, leaf β above);
-originally leaf (b₁ᵢᵢᵢ), the Borel–Carathéodory stage of the
-decomposition of
-`DedekindContinuation.zero_sum_sub_poitouEdge_tendsto_zero`; Poitou
-p. 6-02, Proposition 1, citing E. Landau, *Algebraische Zahlen*,
-p. 122).
-
-The assembly: on either horizontal segment `σ ↦ σ ± i·τ(T)`,
-`σ ∈ [−1/4, 5/4]`, the integrand of
-`DedekindContinuation.poitouHorizontal` is bounded pointwise by
-`(M/τ(T)²)·(A·T·log² T) ≤ M·A·(log² T)/T` (the two leaves and
-`τ(T) ≥ T > 0`), so each edge integral is at most
-`(3/2)·M·A·(log² T)/T` by
-`intervalIntegral.norm_integral_le_of_norm_le_const` — which needs
-NO integrability of the edge integrand for this direction — whence
-`|H(τ(T))| ≤ ‖(2πi)⁻¹‖·3·M·A·(log² T)/T`, a null sequence
-(`Real.tendsto_pow_log_div_mul_add_atTop`); conclude by
-`squeeze_zero_norm'`. -/
-theorem DedekindContinuation.poitouHorizontal_gap_tendsto_zero {K : Type*}
-    [Field K] [NumberField K] (pkg : DedekindContinuation K)
-    (hcount : ∃ C : ℝ, 0 < C ∧ ∀ T : ℝ, 2 ≤ T → ∀ s : Finset ℂ,
-      (∀ ρ ∈ s, |(|ρ.im| - T)| ≤ 1) →
-      ∑ ρ ∈ s, (pkg.mult ρ : ℝ) ≤ C * Real.log T)
-    (hbnd : ∀ t : ℝ, pkg.xi (1 + t * Complex.I) ≠ 0)
-    {c : ℝ} (hc : 0 < c) (τ : ℝ → ℝ)
-    (hτ : ∀ T : ℝ, 2 ≤ T → T ≤ τ T ∧ τ T ≤ T + 1 ∧
-      ∀ ρ : ℂ, pkg.mult ρ ≠ 0 → c / Real.log T ≤ |(|ρ.im| - τ T)|) :
-    Filter.Tendsto (fun T : ℝ => pkg.poitouHorizontal (τ T))
-      Filter.atTop (nhds 0) := by
-  obtain ⟨M, hM0, hM⟩ := poitouPhi_strip_decay_sq
-  obtain ⟨A, hA0, hA⟩ := pkg.xi_logDeriv_gap_bound hcount hbnd hc τ hτ
-  have hg : Filter.Tendsto (fun T : ℝ =>
-      ‖(2 * (Real.pi : ℂ) * Complex.I)⁻¹‖ * 3 * (M * A) *
-        (Real.log T ^ 2 / T)) Filter.atTop (nhds 0) := by
-    have h0 := (Real.tendsto_pow_log_div_mul_add_atTop 1 0 2
-      one_ne_zero).const_mul
-      (‖(2 * (Real.pi : ℂ) * Complex.I)⁻¹‖ * 3 * (M * A))
-    simpa using h0
-  refine squeeze_zero_norm' ?_ hg
-  filter_upwards [Filter.eventually_ge_atTop (2 : ℝ)] with T hT
-  obtain ⟨hτ1, -, -⟩ := hτ T hT
-  have hT0 : (0 : ℝ) < T := by linarith
-  have hτT0 : (0 : ℝ) < τ T := by linarith
-  have heq : M / T ^ 2 * (A * (T * Real.log T ^ 2)) =
-      M * A * (Real.log T ^ 2 / T) := by
-    field_simp
-  have hphi_le : M / τ T ^ 2 ≤ M / T ^ 2 := by
-    gcongr
-  have hKb : ∀ x ∈ Set.uIoc (-(1 / 4) : ℝ) (5 / 4),
-      ‖poitouPhi ((x : ℂ) - (τ T : ℂ) * Complex.I) *
-        (deriv pkg.xi ((x : ℂ) - (τ T : ℂ) * Complex.I) /
-          pkg.xi ((x : ℂ) - (τ T : ℂ) * Complex.I))‖ ≤
-      M * A * (Real.log T ^ 2 / T) := by
+  classical
+  set q : ℝ → ℝ := fun x => (Real.cosh (x / 2))⁻¹ with hq
+  set p : ℝ → ℝ := fun x => -(Real.sinh (x / 2) / (2 * Real.cosh (x / 2))) with hp
+  have hqder : ∀ x : ℝ, HasDerivAt q (q x * p x) x := by
+    intro x
+    have hhalf : HasDerivAt (fun y : ℝ => y / 2) ((1 : ℝ) / 2) x :=
+      (hasDerivAt_id x).div_const 2
+    have hc : HasDerivAt (fun y : ℝ => Real.cosh (y / 2))
+        (Real.sinh (x / 2) * (1 / 2)) x := by
+      simpa using hhalf.cosh
+    have h := hc.inv (Real.cosh_pos _).ne'
+    have hveq : -(Real.sinh (x / 2) * (1 / 2)) / Real.cosh (x / 2) ^ 2 =
+        q x * p x := by
+      simp only [hq, hp]
+      field_simp
+    rw [← hveq]
+    exact h
+  have hpder : ∀ x : ℝ, HasDerivAt p (-(1 / (4 * Real.cosh (x / 2) ^ 2))) x := by
+    intro x
+    have hhalf : HasDerivAt (fun y : ℝ => y / 2) ((1 : ℝ) / 2) x :=
+      (hasDerivAt_id x).div_const 2
+    have hs : HasDerivAt (fun y : ℝ => Real.sinh (y / 2))
+        (Real.cosh (x / 2) * (1 / 2)) x := by
+      simpa using hhalf.sinh
+    have hc2 : HasDerivAt (fun y : ℝ => 2 * Real.cosh (y / 2))
+        (2 * (Real.sinh (x / 2) * (1 / 2))) x := by
+      simpa using hhalf.cosh.const_mul 2
+    have hden : (2 : ℝ) * Real.cosh (x / 2) ≠ 0 := by positivity
+    have h := (hs.div hc2 hden).neg
+    have hid : Real.cosh (x / 2) ^ 2 - Real.sinh (x / 2) ^ 2 = 1 :=
+      Real.cosh_sq_sub_sinh_sq _
+    have hveq : -((Real.cosh (x / 2) * (1 / 2) * (2 * Real.cosh (x / 2)) -
+        Real.sinh (x / 2) * (2 * (Real.sinh (x / 2) * (1 / 2)))) /
+          (2 * Real.cosh (x / 2)) ^ 2) = -(1 / (4 * Real.cosh (x / 2) ^ 2)) := by
+      rw [neg_inj, div_eq_div_iff (by positivity) (by positivity)]
+      linear_combination (4 * Real.cosh (x / 2) ^ 2) * hid
+    rw [← hveq]
+    exact h
+  set rd₁ : ℝ → ℝ := fun x => 1 / 6 * q x + (1 + x / 6) * (q x * p x) with hrd₁
+  set rd₂ : ℝ → ℝ := fun x => -(1 / 6) * q x + (1 - x / 6) * (q x * p x) with hrd₂
+  set rdd₁ : ℝ → ℝ := fun x => 1 / 6 * (q x * p x) + (1 / 6 * (q x * p x) +
+    (1 + x / 6) * (q x * p x * p x + q x * -(1 / (4 * Real.cosh (x / 2) ^ 2))))
+    with hrdd₁
+  set rdd₂ : ℝ → ℝ := fun x => -(1 / 6) * (q x * p x) + (-(1 / 6) * (q x * p x) +
+    (1 - x / 6) * (q x * p x * p x + q x * -(1 / (4 * Real.cosh (x / 2) ^ 2))))
+    with hrdd₂
+  have hr₁der : ∀ x : ℝ, HasDerivAt (fun y : ℝ => (1 + y / 6) * q y) (rd₁ x) x := by
+    intro x
+    exact (((hasDerivAt_id x).div_const (6 : ℝ)).const_add 1).mul (hqder x)
+  have hr₂der : ∀ x : ℝ, HasDerivAt (fun y : ℝ => (1 - y / 6) * q y) (rd₂ x) x := by
+    intro x
+    exact (((hasDerivAt_id x).div_const (6 : ℝ)).const_sub 1).mul (hqder x)
+  have hrd₁der : ∀ x : ℝ, HasDerivAt rd₁ (rdd₁ x) x := by
+    intro x
+    have h2 : HasDerivAt (fun y : ℝ => q y * p y)
+        (q x * p x * p x + q x * -(1 / (4 * Real.cosh (x / 2) ^ 2))) x :=
+      (hqder x).mul (hpder x)
+    exact ((hqder x).const_mul (1 / 6 : ℝ)).add
+      ((((hasDerivAt_id x).div_const (6 : ℝ)).const_add 1).mul h2)
+  have hrd₂der : ∀ x : ℝ, HasDerivAt rd₂ (rdd₂ x) x := by
+    intro x
+    have h2 : HasDerivAt (fun y : ℝ => q y * p y)
+        (q x * p x * p x + q x * -(1 / (4 * Real.cosh (x / 2) ^ 2))) x :=
+      (hqder x).mul (hpder x)
+    exact ((hqder x).const_mul (-(1 / 6) : ℝ)).add
+      ((((hasDerivAt_id x).div_const (6 : ℝ)).const_sub 1).mul h2)
+  have hqcont : Continuous q := by
+    rw [hq]
+    exact Continuous.inv₀ (by fun_prop) fun x => (Real.cosh_pos _).ne'
+  have hpcont : Continuous p := by
+    simp only [hp]
+    refine Continuous.neg (Continuous.div (by fun_prop) (by fun_prop) fun x => ?_)
+    positivity
+  have hccont : Continuous fun x : ℝ => -(1 / (4 * Real.cosh (x / 2) ^ 2)) := by
+    refine Continuous.neg (Continuous.div continuous_const (by fun_prop) fun x => ?_)
+    positivity
+  have hrd₁cont : Continuous rd₁ := by
+    simp only [hrd₁]
+    exact ((hqcont.const_mul _)).add
+      ((continuous_const.add (continuous_id.div_const _)).mul (hqcont.mul hpcont))
+  have hrd₂cont : Continuous rd₂ := by
+    simp only [hrd₂]
+    exact ((hqcont.const_mul _)).add
+      ((continuous_const.sub (continuous_id.div_const _)).mul (hqcont.mul hpcont))
+  have hrdd₁cont : Continuous rdd₁ := by
+    simp only [hrdd₁]
+    exact (((hqcont.mul hpcont).const_mul _)).add
+      ((((hqcont.mul hpcont).const_mul _)).add
+        ((continuous_const.add (continuous_id.div_const _)).mul
+          (((hqcont.mul hpcont).mul hpcont).add (hqcont.mul hccont))))
+  have hrdd₂cont : Continuous rdd₂ := by
+    simp only [hrdd₂]
+    exact (((hqcont.mul hpcont).const_mul _)).add
+      ((((hqcont.mul hpcont).const_mul _)).add
+        ((continuous_const.sub (continuous_id.div_const _)).mul
+          (((hqcont.mul hpcont).mul hpcont).add (hqcont.mul hccont))))
+  refine ⟨(|rd₁ 0| + |rd₁ (-6)| + (∫ x in (-6:ℝ)..0, |rdd₁ x|) +
+    (|rd₂ 6| + |rd₂ 0| + ∫ x in (0:ℝ)..6, |rdd₂ x|)) * Real.exp (9 / 2), ?_, ?_⟩
+  · refine mul_nonneg ?_ (Real.exp_pos _).le
+    have h1 : 0 ≤ ∫ x in (-6:ℝ)..0, |rdd₁ x| :=
+      intervalIntegral.integral_nonneg (by norm_num) fun x _ => abs_nonneg _
+    have h2 : 0 ≤ ∫ x in (0:ℝ)..6, |rdd₂ x| :=
+      intervalIntegral.integral_nonneg (by norm_num) fun x _ => abs_nonneg _
+    have h3 := abs_nonneg (rd₁ 0)
+    have h4 := abs_nonneg (rd₁ (-6))
+    have h5 := abs_nonneg (rd₂ 6)
+    have h6 := abs_nonneg (rd₂ 0)
+    linarith
+  intro s h0 h1s him
+  have h12c : (1 / 2 : ℂ) = ((1 / 2 : ℝ) : ℂ) := by norm_num
+  have hsub_re : (s - 1 / 2).re = s.re - 1 / 2 := by
+    rw [h12c, Complex.sub_re, Complex.ofReal_re]
+  have hsub_im : (s - 1 / 2).im = s.im := by
+    rw [h12c, Complex.sub_im, Complex.ofReal_im, sub_zero]
+  have hwne : s - 1 / 2 ≠ 0 := by
+    intro h
+    apply him
+    have h' := congrArg Complex.im h
+    rw [hsub_im, Complex.zero_im] at h'
+    exact h'
+  have hwim : |s.im| ≤ ‖s - 1 / 2‖ := by
+    have h := Complex.abs_im_le_norm (s - 1 / 2)
+    rwa [hsub_im] at h
+  have hvder : ∀ x : ℝ, HasDerivAt
+      (fun y : ℝ => Complex.exp ((s - 1 / 2) * (y : ℂ)) / (s - 1 / 2))
+      (Complex.exp ((s - 1 / 2) * (x : ℂ))) x := by
+    intro x
+    have ha : HasDerivAt (fun y : ℝ => (s - 1 / 2) * (y : ℂ)) (s - 1 / 2) x := by
+      simpa using (Complex.ofRealCLM.hasDerivAt (x := x)).const_mul (s - 1 / 2)
+    have hb := ha.cexp.div_const (s - 1 / 2)
+    have hcancel : Complex.exp ((s - 1 / 2) * (x : ℂ)) * (s - 1 / 2) /
+        (s - 1 / 2) = Complex.exp ((s - 1 / 2) * (x : ℂ)) :=
+      mul_div_cancel_right₀ _ hwne
+    rw [hcancel] at hb
+    exact hb
+  have hv₂der : ∀ x : ℝ, HasDerivAt
+      (fun y : ℝ => Complex.exp ((s - 1 / 2) * (y : ℂ)) / (s - 1 / 2) ^ 2)
+      (Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2)) x := by
+    intro x
+    have ha : HasDerivAt (fun y : ℝ => (s - 1 / 2) * (y : ℂ)) (s - 1 / 2) x := by
+      simpa using (Complex.ofRealCLM.hasDerivAt (x := x)).const_mul (s - 1 / 2)
+    have hb := ha.cexp.div_const ((s - 1 / 2) ^ 2)
+    have hcancel : Complex.exp ((s - 1 / 2) * (x : ℂ)) * (s - 1 / 2) /
+        (s - 1 / 2) ^ 2 = Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2) := by
+      field_simp
+    rw [hcancel] at hb
+    exact hb
+  have hsupp : ∀ x : ℝ, x ∉ Set.Icc (-6:ℝ) 6 →
+      ((odlyzkoTestFn x / Real.cosh (x / 2) : ℝ) : ℂ) *
+        Complex.exp ((s - 1 / 2) * (x : ℂ)) = 0 := by
     intro x hx
-    rw [Set.uIoc_of_le (by norm_num : (-(1 / 4) : ℝ) ≤ 5 / 4)] at hx
-    have hre : ((x : ℂ) - (τ T : ℂ) * Complex.I).re = x := by simp
-    have him : ((x : ℂ) - (τ T : ℂ) * Complex.I).im = -(τ T) := by simp
-    have h1 : ‖poitouPhi ((x : ℂ) - (τ T : ℂ) * Complex.I)‖ ≤ M / T ^ 2 := by
-      have hb := hM ((x : ℂ) - (τ T : ℂ) * Complex.I)
-        (by rw [hre]; exact hx.1.le) (by rw [hre]; exact hx.2)
-        (by rw [him]; exact neg_ne_zero.mpr hτT0.ne')
-      rw [him, neg_sq] at hb
-      exact hb.trans hphi_le
-    have h2 : ‖deriv pkg.xi ((x : ℂ) - (τ T : ℂ) * Complex.I) /
-        pkg.xi ((x : ℂ) - (τ T : ℂ) * Complex.I)‖ ≤
-        A * (T * Real.log T ^ 2) :=
-      hA T hT ((x : ℂ) - (τ T : ℂ) * Complex.I)
-        (by rw [hre]; exact hx.1.le) (by rw [hre]; exact hx.2)
-        (by rw [him, abs_neg, abs_of_pos hτT0])
-    rw [norm_mul]
-    exact (mul_le_mul h1 h2 (norm_nonneg _)
-      (div_nonneg hM0 (sq_nonneg _))).trans_eq heq
-  have hKt : ∀ x ∈ Set.uIoc (-(1 / 4) : ℝ) (5 / 4),
-      ‖poitouPhi ((x : ℂ) + (τ T : ℂ) * Complex.I) *
-        (deriv pkg.xi ((x : ℂ) + (τ T : ℂ) * Complex.I) /
-          pkg.xi ((x : ℂ) + (τ T : ℂ) * Complex.I))‖ ≤
-      M * A * (Real.log T ^ 2 / T) := by
+    have h6 : 6 ≤ |x| := by
+      simp only [Set.mem_Icc, not_and_or, not_le] at hx
+      rcases hx with h | h
+      · exact le_abs.2 (Or.inr (by linarith))
+      · exact le_abs.2 (Or.inl h.le)
+    have hf0 : odlyzkoTestFn x = 0 := by
+      rw [odlyzkoTestFn, max_eq_right]
+      nlinarith [h6]
+    rw [hf0]
+    simp
+  have hstep1 : poitouPhi s = ∫ x in (-6:ℝ)..6,
+      ((odlyzkoTestFn x / Real.cosh (x / 2) : ℝ) : ℂ) *
+        Complex.exp ((s - 1 / 2) * (x : ℂ)) := by
+    rw [poitouPhi,
+      ← MeasureTheory.setIntegral_eq_integral_of_forall_compl_eq_zero hsupp,
+      MeasureTheory.integral_Icc_eq_integral_Ioc,
+      ← intervalIntegral.integral_of_le (by norm_num : (-6:ℝ) ≤ 6)]
+  have hIcont : Continuous fun x : ℝ =>
+      ((odlyzkoTestFn x / Real.cosh (x / 2) : ℝ) : ℂ) *
+        Complex.exp ((s - 1 / 2) * (x : ℂ)) := by
+    refine Continuous.mul ?_ (Complex.continuous_exp.comp (by fun_prop))
+    refine Complex.continuous_ofReal.comp ?_
+    refine Continuous.div ?_ (by fun_prop) fun x => (Real.cosh_pos _).ne'
+    unfold odlyzkoTestFn
+    fun_prop
+  have hstep2 : (∫ x in (-6:ℝ)..6,
+        ((odlyzkoTestFn x / Real.cosh (x / 2) : ℝ) : ℂ) *
+          Complex.exp ((s - 1 / 2) * (x : ℂ))) =
+      (∫ x in (-6:ℝ)..0, ((odlyzkoTestFn x / Real.cosh (x / 2) : ℝ) : ℂ) *
+        Complex.exp ((s - 1 / 2) * (x : ℂ))) +
+      ∫ x in (0:ℝ)..6, ((odlyzkoTestFn x / Real.cosh (x / 2) : ℝ) : ℂ) *
+        Complex.exp ((s - 1 / 2) * (x : ℂ)) :=
+    (intervalIntegral.integral_add_adjacent_intervals
+      (hIcont.intervalIntegrable _ _) (hIcont.intervalIntegrable _ _)).symm
+  have hcongr₁ : (∫ x in (-6:ℝ)..0,
+        ((odlyzkoTestFn x / Real.cosh (x / 2) : ℝ) : ℂ) *
+          Complex.exp ((s - 1 / 2) * (x : ℂ))) =
+      ∫ x in (-6:ℝ)..0, (((1 + x / 6) * q x : ℝ) : ℂ) *
+        Complex.exp ((s - 1 / 2) * (x : ℂ)) := by
+    refine intervalIntegral.integral_congr fun x hx => ?_
+    rw [Set.uIcc_of_le (by norm_num : (-6:ℝ) ≤ 0)] at hx
+    have hodl : odlyzkoTestFn x = 1 + x / 6 := by
+      rw [odlyzkoTestFn, abs_of_nonpos hx.2, max_eq_left (by linarith [hx.1])]
+      ring
+    rw [hodl]
+    simp only [hq]
+    rw [div_eq_mul_inv]
+  have hcongr₂ : (∫ x in (0:ℝ)..6,
+        ((odlyzkoTestFn x / Real.cosh (x / 2) : ℝ) : ℂ) *
+          Complex.exp ((s - 1 / 2) * (x : ℂ))) =
+      ∫ x in (0:ℝ)..6, (((1 - x / 6) * q x : ℝ) : ℂ) *
+        Complex.exp ((s - 1 / 2) * (x : ℂ)) := by
+    refine intervalIntegral.integral_congr fun x hx => ?_
+    rw [Set.uIcc_of_le (by norm_num : (0:ℝ) ≤ 6)] at hx
+    have hodl : odlyzkoTestFn x = 1 - x / 6 := by
+      rw [odlyzkoTestFn, abs_of_nonneg hx.1, max_eq_left (by linarith [hx.2])]
+    rw [hodl]
+    simp only [hq]
+    rw [div_eq_mul_inv]
+  have hibp₁ : (∫ x in (-6:ℝ)..0, (((1 + x / 6) * q x : ℝ) : ℂ) *
+        Complex.exp ((s - 1 / 2) * (x : ℂ))) =
+      (((1 + (0:ℝ) / 6) * q 0 : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * ((0:ℝ) : ℂ)) / (s - 1 / 2)) -
+      (((1 + (-6:ℝ) / 6) * q (-6) : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * ((-6:ℝ) : ℂ)) / (s - 1 / 2)) -
+      ∫ x in (-6:ℝ)..0, ((rd₁ x : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2)) := by
+    refine intervalIntegral.integral_mul_deriv_eq_deriv_mul_of_hasDerivAt
+      (u := fun x : ℝ => (((1 + x / 6) * q x : ℝ) : ℂ))
+      (v := fun x : ℝ => Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2))
+      (u' := fun x : ℝ => ((rd₁ x : ℝ) : ℂ))
+      (v' := fun x : ℝ => Complex.exp ((s - 1 / 2) * (x : ℂ))) ?_ ?_ ?_ ?_ ?_ ?_
+    · exact (Complex.continuous_ofReal.comp
+        ((continuous_const.add (continuous_id.div_const _)).mul hqcont)).continuousOn
+    · exact ((Complex.continuous_exp.comp (by fun_prop)).div_const _).continuousOn
+    · exact fun x _ => (hr₁der x).ofReal_comp
+    · exact fun x _ => hvder x
+    · exact (Complex.continuous_ofReal.comp hrd₁cont).intervalIntegrable _ _
+    · exact (Complex.continuous_exp.comp (by fun_prop)).intervalIntegrable _ _
+  have hibp₂ : (∫ x in (0:ℝ)..6, (((1 - x / 6) * q x : ℝ) : ℂ) *
+        Complex.exp ((s - 1 / 2) * (x : ℂ))) =
+      (((1 - (6:ℝ) / 6) * q 6 : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * ((6:ℝ) : ℂ)) / (s - 1 / 2)) -
+      (((1 - (0:ℝ) / 6) * q 0 : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * ((0:ℝ) : ℂ)) / (s - 1 / 2)) -
+      ∫ x in (0:ℝ)..6, ((rd₂ x : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2)) := by
+    refine intervalIntegral.integral_mul_deriv_eq_deriv_mul_of_hasDerivAt
+      (u := fun x : ℝ => (((1 - x / 6) * q x : ℝ) : ℂ))
+      (v := fun x : ℝ => Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2))
+      (u' := fun x : ℝ => ((rd₂ x : ℝ) : ℂ))
+      (v' := fun x : ℝ => Complex.exp ((s - 1 / 2) * (x : ℂ))) ?_ ?_ ?_ ?_ ?_ ?_
+    · exact (Complex.continuous_ofReal.comp
+        ((continuous_const.sub (continuous_id.div_const _)).mul hqcont)).continuousOn
+    · exact ((Complex.continuous_exp.comp (by fun_prop)).div_const _).continuousOn
+    · exact fun x _ => (hr₂der x).ofReal_comp
+    · exact fun x _ => hvder x
+    · exact (Complex.continuous_ofReal.comp hrd₂cont).intervalIntegrable _ _
+    · exact (Complex.continuous_exp.comp (by fun_prop)).intervalIntegrable _ _
+  have hq0 : ((1 + (0:ℝ) / 6) * q 0 : ℝ) = 1 := by
+    simp [hq]
+  have hqm6 : ((1 + (-6:ℝ) / 6) * q (-6) : ℝ) = 0 := by
+    norm_num
+  have hq6 : ((1 - (6:ℝ) / 6) * q 6 : ℝ) = 0 := by
+    norm_num
+  have hq0' : ((1 - (0:ℝ) / 6) * q 0 : ℝ) = 1 := by
+    simp [hq]
+  have hval : poitouPhi s =
+      -(∫ x in (-6:ℝ)..0, ((rd₁ x : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2)))
+      - ∫ x in (0:ℝ)..6, ((rd₂ x : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2)) := by
+    rw [hstep1, hstep2, hcongr₁, hcongr₂, hibp₁, hibp₂, hq0, hqm6, hq6, hq0']
+    push_cast
+    ring
+  have hnorm_v₂ : ∀ x ∈ Set.Icc (-6:ℝ) 6,
+      ‖Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2) ^ 2‖ ≤
+        Real.exp (9 / 2) / s.im ^ 2 := by
     intro x hx
-    rw [Set.uIoc_of_le (by norm_num : (-(1 / 4) : ℝ) ≤ 5 / 4)] at hx
-    have hre : ((x : ℂ) + (τ T : ℂ) * Complex.I).re = x := by simp
-    have him : ((x : ℂ) + (τ T : ℂ) * Complex.I).im = τ T := by simp
-    have h1 : ‖poitouPhi ((x : ℂ) + (τ T : ℂ) * Complex.I)‖ ≤ M / T ^ 2 := by
-      have hb := hM ((x : ℂ) + (τ T : ℂ) * Complex.I)
-        (by rw [hre]; exact hx.1.le) (by rw [hre]; exact hx.2)
-        (by rw [him]; exact hτT0.ne')
-      rw [him] at hb
-      exact hb.trans hphi_le
-    have h2 : ‖deriv pkg.xi ((x : ℂ) + (τ T : ℂ) * Complex.I) /
-        pkg.xi ((x : ℂ) + (τ T : ℂ) * Complex.I)‖ ≤
-        A * (T * Real.log T ^ 2) :=
-      hA T hT ((x : ℂ) + (τ T : ℂ) * Complex.I)
-        (by rw [hre]; exact hx.1.le) (by rw [hre]; exact hx.2)
-        (by rw [him, abs_of_pos hτT0])
-    rw [norm_mul]
-    exact (mul_le_mul h1 h2 (norm_nonneg _)
-      (div_nonneg hM0 (sq_nonneg _))).trans_eq heq
-  have hIb := intervalIntegral.norm_integral_le_of_norm_le_const hKb
-  have hIt := intervalIntegral.norm_integral_le_of_norm_le_const hKt
-  simp only [DedekindContinuation.poitouHorizontal]
-  rw [Real.norm_eq_abs]
-  refine (Complex.abs_re_le_norm _).trans ?_
-  rw [norm_mul]
-  refine (mul_le_mul_of_nonneg_left (norm_sub_le _ _)
-    (norm_nonneg _)).trans ?_
-  refine (mul_le_mul_of_nonneg_left (add_le_add hIb hIt)
-    (norm_nonneg _)).trans ?_
-  rw [show |(5 / 4 : ℝ) - -(1 / 4)| = 3 / 2 by norm_num]
-  exact le_of_eq (by ring)
+    rw [norm_div, Complex.norm_exp, norm_pow]
+    have hre : ((s - 1 / 2) * (x : ℂ)).re = (s.re - 1 / 2) * x := by
+      rw [Complex.mul_re, Complex.ofReal_re, Complex.ofReal_im, mul_zero,
+        sub_zero, hsub_re]
+    rw [hre]
+    have hexp : (s.re - 1 / 2) * x ≤ 9 / 2 := by
+      have habs : |(s.re - 1 / 2) * x| ≤ 9 / 2 := by
+        rw [abs_mul]
+        have h2 : |s.re - 1 / 2| ≤ 3 / 4 := abs_le.mpr ⟨by linarith, by linarith⟩
+        have h3 : |x| ≤ 6 := abs_le.mpr ⟨hx.1, hx.2⟩
+        calc |s.re - 1 / 2| * |x| ≤ 3 / 4 * 6 :=
+              mul_le_mul h2 h3 (abs_nonneg _) (by norm_num)
+          _ = 9 / 2 := by norm_num
+      linarith [le_abs_self ((s.re - 1 / 2) * x)]
+    have hsq : s.im ^ 2 ≤ ‖s - 1 / 2‖ ^ 2 := by
+      have hab := sq_abs s.im
+      nlinarith [abs_nonneg s.im, norm_nonneg (s - 1 / 2)]
+    have hpos : (0:ℝ) < s.im ^ 2 := by positivity
+    exact div_le_div₀ (Real.exp_pos _).le (Real.exp_le_exp.mpr hexp) hpos hsq
+  have hv₂cont : Continuous fun x : ℝ =>
+      Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2) ^ 2 :=
+    (Complex.continuous_exp.comp (by fun_prop)).div_const _
+  have hibp₁₂ : (∫ x in (-6:ℝ)..0, ((rd₁ x : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2))) =
+      ((rd₁ (0:ℝ) : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * ((0:ℝ) : ℂ)) / (s - 1 / 2) ^ 2) -
+      ((rd₁ (-6:ℝ) : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * ((-6:ℝ) : ℂ)) / (s - 1 / 2) ^ 2) -
+      ∫ x in (-6:ℝ)..0, ((rdd₁ x : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2) ^ 2) := by
+    refine intervalIntegral.integral_mul_deriv_eq_deriv_mul_of_hasDerivAt
+      (u := fun x : ℝ => ((rd₁ x : ℝ) : ℂ))
+      (v := fun x : ℝ => Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2) ^ 2)
+      (u' := fun x : ℝ => ((rdd₁ x : ℝ) : ℂ))
+      (v' := fun x : ℝ =>
+        Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2)) ?_ ?_ ?_ ?_ ?_ ?_
+    · exact (Complex.continuous_ofReal.comp hrd₁cont).continuousOn
+    · exact hv₂cont.continuousOn
+    · exact fun x _ => (hrd₁der x).ofReal_comp
+    · exact fun x _ => hv₂der x
+    · exact (Complex.continuous_ofReal.comp hrdd₁cont).intervalIntegrable _ _
+    · exact ((Complex.continuous_exp.comp (by fun_prop)).div_const _).intervalIntegrable _ _
+  have hibp₂₂ : (∫ x in (0:ℝ)..6, ((rd₂ x : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2))) =
+      ((rd₂ (6:ℝ) : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * ((6:ℝ) : ℂ)) / (s - 1 / 2) ^ 2) -
+      ((rd₂ (0:ℝ) : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * ((0:ℝ) : ℂ)) / (s - 1 / 2) ^ 2) -
+      ∫ x in (0:ℝ)..6, ((rdd₂ x : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2) ^ 2) := by
+    refine intervalIntegral.integral_mul_deriv_eq_deriv_mul_of_hasDerivAt
+      (u := fun x : ℝ => ((rd₂ x : ℝ) : ℂ))
+      (v := fun x : ℝ => Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2) ^ 2)
+      (u' := fun x : ℝ => ((rdd₂ x : ℝ) : ℂ))
+      (v' := fun x : ℝ =>
+        Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2)) ?_ ?_ ?_ ?_ ?_ ?_
+    · exact (Complex.continuous_ofReal.comp hrd₂cont).continuousOn
+    · exact hv₂cont.continuousOn
+    · exact fun x _ => (hrd₂der x).ofReal_comp
+    · exact fun x _ => hv₂der x
+    · exact (Complex.continuous_ofReal.comp hrdd₂cont).intervalIntegrable _ _
+    · exact ((Complex.continuous_exp.comp (by fun_prop)).div_const _).intervalIntegrable _ _
+  have hbnd₁ : ‖∫ x in (-6:ℝ)..0, ((rd₁ x : ℝ) : ℂ) *
+      (Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2))‖ ≤
+      (|rd₁ 0| + |rd₁ (-6)| + ∫ x in (-6:ℝ)..0, |rdd₁ x|) *
+        (Real.exp (9 / 2) / s.im ^ 2) := by
+    rw [hibp₁₂]
+    have hA : ‖((rd₁ (0:ℝ) : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * ((0:ℝ) : ℂ)) / (s - 1 / 2) ^ 2)‖ ≤
+        |rd₁ 0| * (Real.exp (9 / 2) / s.im ^ 2) := by
+      rw [norm_mul, Complex.norm_real, Real.norm_eq_abs]
+      exact mul_le_mul_of_nonneg_left
+        (hnorm_v₂ 0 (Set.mem_Icc.mpr ⟨by norm_num, by norm_num⟩)) (abs_nonneg _)
+    have hB : ‖((rd₁ (-6:ℝ) : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * ((-6:ℝ) : ℂ)) / (s - 1 / 2) ^ 2)‖ ≤
+        |rd₁ (-6)| * (Real.exp (9 / 2) / s.im ^ 2) := by
+      rw [norm_mul, Complex.norm_real, Real.norm_eq_abs]
+      exact mul_le_mul_of_nonneg_left
+        (hnorm_v₂ (-6) (Set.mem_Icc.mpr ⟨by norm_num, by norm_num⟩)) (abs_nonneg _)
+    have hI : ‖∫ x in (-6:ℝ)..0, ((rdd₁ x : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2) ^ 2)‖ ≤
+        (∫ x in (-6:ℝ)..0, |rdd₁ x|) * (Real.exp (9 / 2) / s.im ^ 2) := by
+      refine (intervalIntegral.norm_integral_le_integral_norm
+        (by norm_num : (-6:ℝ) ≤ 0)).trans ?_
+      rw [← intervalIntegral.integral_mul_const]
+      refine intervalIntegral.integral_mono_on (by norm_num)
+        (((Complex.continuous_ofReal.comp hrdd₁cont).mul
+          hv₂cont).norm.intervalIntegrable _ _)
+        ((hrdd₁cont.abs.mul continuous_const).intervalIntegrable _ _) fun x hx => ?_
+      rw [norm_mul, Complex.norm_real, Real.norm_eq_abs]
+      refine mul_le_mul_of_nonneg_left ?_ (abs_nonneg _)
+      exact hnorm_v₂ x (Set.mem_Icc.mpr ⟨hx.1, by linarith [hx.2]⟩)
+    refine ((norm_sub_le _ _).trans (add_le_add ((norm_sub_le _ _).trans
+      (add_le_add hA hB)) hI)).trans (le_of_eq ?_)
+    ring
+  have hbnd₂ : ‖∫ x in (0:ℝ)..6, ((rd₂ x : ℝ) : ℂ) *
+      (Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2))‖ ≤
+      (|rd₂ 6| + |rd₂ 0| + ∫ x in (0:ℝ)..6, |rdd₂ x|) *
+        (Real.exp (9 / 2) / s.im ^ 2) := by
+    rw [hibp₂₂]
+    have hA : ‖((rd₂ (6:ℝ) : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * ((6:ℝ) : ℂ)) / (s - 1 / 2) ^ 2)‖ ≤
+        |rd₂ 6| * (Real.exp (9 / 2) / s.im ^ 2) := by
+      rw [norm_mul, Complex.norm_real, Real.norm_eq_abs]
+      exact mul_le_mul_of_nonneg_left
+        (hnorm_v₂ 6 (Set.mem_Icc.mpr ⟨by norm_num, by norm_num⟩)) (abs_nonneg _)
+    have hB : ‖((rd₂ (0:ℝ) : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * ((0:ℝ) : ℂ)) / (s - 1 / 2) ^ 2)‖ ≤
+        |rd₂ 0| * (Real.exp (9 / 2) / s.im ^ 2) := by
+      rw [norm_mul, Complex.norm_real, Real.norm_eq_abs]
+      exact mul_le_mul_of_nonneg_left
+        (hnorm_v₂ 0 (Set.mem_Icc.mpr ⟨by norm_num, by norm_num⟩)) (abs_nonneg _)
+    have hI : ‖∫ x in (0:ℝ)..6, ((rdd₂ x : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2) ^ 2)‖ ≤
+        (∫ x in (0:ℝ)..6, |rdd₂ x|) * (Real.exp (9 / 2) / s.im ^ 2) := by
+      refine (intervalIntegral.norm_integral_le_integral_norm
+        (by norm_num : (0:ℝ) ≤ 6)).trans ?_
+      rw [← intervalIntegral.integral_mul_const]
+      refine intervalIntegral.integral_mono_on (by norm_num)
+        (((Complex.continuous_ofReal.comp hrdd₂cont).mul
+          hv₂cont).norm.intervalIntegrable _ _)
+        ((hrdd₂cont.abs.mul continuous_const).intervalIntegrable _ _) fun x hx => ?_
+      rw [norm_mul, Complex.norm_real, Real.norm_eq_abs]
+      refine mul_le_mul_of_nonneg_left ?_ (abs_nonneg _)
+      exact hnorm_v₂ x (Set.mem_Icc.mpr ⟨by linarith [hx.1], hx.2⟩)
+    refine ((norm_sub_le _ _).trans (add_le_add ((norm_sub_le _ _).trans
+      (add_le_add hA hB)) hI)).trans (le_of_eq ?_)
+    ring
+  rw [hval]
+  calc ‖-(∫ x in (-6:ℝ)..0, ((rd₁ x : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2)))
+      - ∫ x in (0:ℝ)..6, ((rd₂ x : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2))‖
+      ≤ ‖∫ x in (-6:ℝ)..0, ((rd₁ x : ℝ) : ℂ) *
+          (Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2))‖ +
+        ‖∫ x in (0:ℝ)..6, ((rd₂ x : ℝ) : ℂ) *
+          (Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2))‖ :=
+      (norm_sub_le _ _).trans (by rw [norm_neg])
+    _ ≤ (|rd₁ 0| + |rd₁ (-6)| + ∫ x in (-6:ℝ)..0, |rdd₁ x|) *
+          (Real.exp (9 / 2) / s.im ^ 2) +
+        (|rd₂ 6| + |rd₂ 0| + ∫ x in (0:ℝ)..6, |rdd₂ x|) *
+          (Real.exp (9 / 2) / s.im ^ 2) := add_le_add hbnd₁ hbnd₂
+    _ = (|rd₁ 0| + |rd₁ (-6)| + (∫ x in (-6:ℝ)..0, |rdd₁ x|) +
+        (|rd₂ 6| + |rd₂ 0| + ∫ x in (0:ℝ)..6, |rdd₂ x|)) * Real.exp (9 / 2) /
+          s.im ^ 2 := by
+        ring
 
 section PoitouBridgeEstimates
 
@@ -16200,6 +18733,899 @@ theorem DedekindContinuation.xi_logDeriv_line_bound {K : Type*} [Field K]
     _ = 32 * (2 * B + a + 1) * (7 + |t|) ^ (3 / 2 : ℝ) := by ring
 
 end PoitouBridgeEstimates
+
+/-- **The Borel–Carathéodory LOWER bound on the half-radius ball**
+(PROVEN 2026-07-24 — the companion of `norm_logDeriv_le_of_ball`
+required by `DedekindContinuation.xi_logDeriv_gap_bound`, where the
+logarithmic derivative has to be controlled at the points of the
+horizontal segment rather than at the centre of the
+Borel–Carathéodory disc): if the entire `f` has no zero on
+`ball c R` and satisfies `‖f‖ ≤ e^M·‖f c‖` there, then
+`e^{−2M}·‖f c‖ ≤ ‖f z‖` for every `‖z − c‖ ≤ R/2`.
+
+Proof: the very construction of `norm_logDeriv_le_of_ball` — a
+primitive `g` of `f'/f` on the ball (`DifferentiableOn.isExactOn_ball`,
+Morera) makes `f·e^{-g}` derivative-free hence constant on the convex
+ball, so `φ(w) = g(c+w) − g(c)` is a holomorphic logarithm of
+`f(c+·)/f(c)` vanishing at `0` with `Re φ ≤ M` — feeds
+`Complex.borelCaratheodory_zero`, which bounds `‖φ(w)‖` by
+`2M‖w‖/(R − ‖w‖) ≤ 2M` on the half-radius ball; and
+`‖f(c+w)‖ = ‖f c‖·e^{Re φ(w)} ≥ ‖f c‖·e^{−‖φ(w)‖}`. -/
+theorem norm_ge_of_ball {f : ℂ → ℂ} {c : ℂ} {R M : ℝ} (hR : 0 < R)
+    (hM : 0 < M) (hf : Differentiable ℂ f)
+    (hne : ∀ z ∈ Metric.ball c R, f z ≠ 0)
+    (hub : ∀ z ∈ Metric.ball c R, ‖f z‖ ≤ Real.exp M * ‖f c‖)
+    {z : ℂ} (hz : ‖z - c‖ ≤ R / 2) :
+    Real.exp (-(2 * M)) * ‖f c‖ ≤ ‖f z‖ := by
+  have hcball : c ∈ Metric.ball c R := Metric.mem_ball_self hR
+  have hfc : f c ≠ 0 := hne c hcball
+  have hd : Differentiable ℂ (deriv f) := by
+    have h1 : AnalyticOnNhd ℂ f Set.univ :=
+      hf.differentiableOn.analyticOnNhd isOpen_univ
+    exact fun w => (h1.deriv w (Set.mem_univ w)).differentiableAt
+  have hq : DifferentiableOn ℂ (fun w => deriv f w / f w) (Metric.ball c R) :=
+    hd.differentiableOn.div hf.differentiableOn hne
+  obtain ⟨g, hg⟩ := hq.isExactOn_ball
+  have hFder : ∀ w ∈ Metric.ball c R,
+      HasDerivAt (fun u => f u * Complex.exp (-g u)) 0 w := by
+    intro w hw
+    have h2 : HasDerivAt (fun u => Complex.exp (-g u))
+        (Complex.exp (-g w) * -(deriv f w / f w)) w := (hg w hw).neg.cexp
+    have h3 := (hf w).hasDerivAt.mul h2
+    have hval : deriv f w * Complex.exp (-g w) +
+        f w * (Complex.exp (-g w) * -(deriv f w / f w)) = 0 := by
+      have hfw : f w ≠ 0 := hne w hw
+      field_simp
+      ring
+    rw [hval] at h3
+    exact h3
+  have hFW : ∀ w ∈ Metric.ball c R,
+      HasFDerivWithinAt (fun u => f u * Complex.exp (-g u))
+        (0 : ℂ →L[ℝ] ℂ) (Metric.ball c R) w := by
+    intro w hw
+    have h1 := (hFder w hw).hasFDerivAt
+    have hz1 : ContinuousLinearMap.toSpanSingleton ℂ (0 : ℂ) =
+        (0 : ℂ →L[ℂ] ℂ) := by
+      ext
+      simp
+    rw [hz1] at h1
+    have h2 := h1.restrictScalars ℝ
+    have hz2 : ((0 : ℂ →L[ℂ] ℂ).restrictScalars ℝ) = (0 : ℂ →L[ℝ] ℂ) := by
+      ext x
+      simp
+    rw [hz2] at h2
+    exact h2.hasFDerivWithinAt
+  have hconst : ∀ w ∈ Metric.ball c R,
+      f w * Complex.exp (-g w) = f c * Complex.exp (-g c) := by
+    intro w hw
+    have hmvt := (convex_ball c R).norm_image_sub_le_of_norm_hasFDerivWithin_le
+      (C := 0) hFW (fun u _ => by simp) hcball hw
+    have h0 : ‖f w * Complex.exp (-g w) - f c * Complex.exp (-g c)‖ ≤ 0 := by
+      simpa using hmvt
+    have h1 := le_antisymm h0 (norm_nonneg _)
+    rw [norm_eq_zero] at h1
+    exact sub_eq_zero.mp h1
+  have hmem : ∀ w : ℂ, w ∈ Metric.ball (0 : ℂ) R → c + w ∈ Metric.ball c R := by
+    intro w hw
+    rw [Metric.mem_ball, dist_eq_norm] at hw ⊢
+    simpa using hw
+  have hnorm2 : ∀ w ∈ Metric.ball (0 : ℂ) R,
+      ‖f (c + w)‖ = ‖f c‖ * Real.exp ((g (c + w) - g c).re) := by
+    intro w hw
+    have h1 := hconst (c + w) (hmem w hw)
+    have h2 : f (c + w) * Complex.exp (-g (c + w)) * Complex.exp (g (c + w)) =
+        f c * Complex.exp (-g c) * Complex.exp (g (c + w)) := by
+      rw [h1]
+    rw [mul_assoc, ← Complex.exp_add, neg_add_cancel, Complex.exp_zero,
+      mul_one] at h2
+    rw [h2, norm_mul, norm_mul, Complex.norm_exp, Complex.norm_exp, mul_assoc,
+      ← Real.exp_add, Complex.sub_re, Complex.neg_re]
+    ring_nf
+  have hφdiff : DifferentiableOn ℂ (fun w => g (c + w) - g c)
+      (Metric.ball (0 : ℂ) R) := by
+    intro w hw
+    have h1 : HasDerivAt (fun u : ℂ => c + u) 1 w := by
+      simpa using (hasDerivAt_id w).const_add c
+    have h2 : HasDerivAt g (deriv f (c + w) / f (c + w)) (c + w) :=
+      hg (c + w) (hmem w hw)
+    have h3 := (h2.comp w h1).sub_const (g c)
+    exact h3.differentiableAt.differentiableWithinAt
+  have hφmaps : Set.MapsTo (fun w => g (c + w) - g c) (Metric.ball (0 : ℂ) R)
+      {u : ℂ | u.re ≤ M} := by
+    intro w hw
+    have hle := hub (c + w) (hmem w hw)
+    rw [hnorm2 w hw, mul_comm (Real.exp M) ‖f c‖] at hle
+    have hfcpos : 0 < ‖f c‖ := norm_pos_iff.mpr hfc
+    have h4 := le_of_mul_le_mul_left hle hfcpos
+    simp only [Set.mem_setOf_eq]
+    exact Real.exp_le_exp.mp h4
+  have hzc : c + (z - c) = z := by ring
+  have hwball : z - c ∈ Metric.ball (0 : ℂ) R := by
+    rw [Metric.mem_ball, dist_zero_right]
+    linarith
+  have hbc : ‖g (c + (z - c)) - g c‖ ≤ 2 * M * ‖z - c‖ / (R - ‖z - c‖) :=
+    Complex.borelCaratheodory_zero hM hφdiff hφmaps hR hwball (by simp)
+  have hle2 : 2 * M * ‖z - c‖ / (R - ‖z - c‖) ≤ 2 * M := by
+    rw [div_le_iff₀ (by linarith : (0 : ℝ) < R - ‖z - c‖)]
+    nlinarith [norm_nonneg (z - c)]
+  have hnz := hnorm2 (z - c) hwball
+  rw [hzc] at hbc hnz
+  have hre : -(2 * M) ≤ (g z - g c).re := by
+    have h1 := neg_abs_le ((g z - g c).re)
+    have h2 := Complex.abs_re_le_norm (g z - g c)
+    linarith [hbc.trans hle2]
+  rw [hnz]
+  calc Real.exp (-(2 * M)) * ‖f c‖ = ‖f c‖ * Real.exp (-(2 * M)) := by ring
+    _ ≤ ‖f c‖ * Real.exp ((g z - g c).re) :=
+        mul_le_mul_of_nonneg_left (Real.exp_le_exp.mpr hre) (norm_nonneg _)
+
+/-- **Borel–Carathéodory control of the logarithmic derivative at EVERY
+point of the quarter-radius ball** (PROVEN 2026-07-24 — the form of the
+Borel–Carathéodory estimate consumed by
+`DedekindContinuation.xi_logDeriv_gap_bound`): under the hypotheses of
+`norm_logDeriv_le_of_ball`, `‖f'(z)/f(z)‖ ≤ 48M/R` for every
+`‖z − c‖ ≤ R/4`.  The lower bound `norm_ge_of_ball` turns the
+centre-relative sup bound into a `z`-relative one with `M` replaced by
+`3M` on the ball `ball z (R/4) ⊆ ball c R`, and
+`norm_logDeriv_le_of_ball` applies at the new centre `z`. -/
+theorem norm_logDeriv_le_of_mem_ball {f : ℂ → ℂ} {c : ℂ} {R M : ℝ}
+    (hR : 0 < R) (hM : 0 < M) (hf : Differentiable ℂ f)
+    (hne : ∀ z ∈ Metric.ball c R, f z ≠ 0)
+    (hub : ∀ z ∈ Metric.ball c R, ‖f z‖ ≤ Real.exp M * ‖f c‖)
+    {z : ℂ} (hz : ‖z - c‖ ≤ R / 4) :
+    ‖deriv f z / f z‖ ≤ 48 * M / R := by
+  have hlow : Real.exp (-(2 * M)) * ‖f c‖ ≤ ‖f z‖ :=
+    norm_ge_of_ball hR hM hf hne hub (by linarith)
+  have hsub : ∀ w ∈ Metric.ball z (R / 4), w ∈ Metric.ball c R := by
+    intro w hw
+    rw [Metric.mem_ball, dist_eq_norm] at hw ⊢
+    have hsplit : w - c = (w - z) + (z - c) := by ring
+    rw [hsplit]
+    calc ‖(w - z) + (z - c)‖ ≤ ‖w - z‖ + ‖z - c‖ := norm_add_le _ _
+      _ < R := by linarith
+  have hfcle : ‖f c‖ ≤ Real.exp (2 * M) * ‖f z‖ := by
+    have h3 : Real.exp (2 * M) * (Real.exp (-(2 * M)) * ‖f c‖) = ‖f c‖ := by
+      rw [← mul_assoc, ← Real.exp_add]
+      simp
+    calc ‖f c‖ = Real.exp (2 * M) * (Real.exp (-(2 * M)) * ‖f c‖) := h3.symm
+      _ ≤ Real.exp (2 * M) * ‖f z‖ :=
+          mul_le_mul_of_nonneg_left hlow (Real.exp_pos _).le
+  have hub' : ∀ w ∈ Metric.ball z (R / 4), ‖f w‖ ≤ Real.exp (3 * M) * ‖f z‖ := by
+    intro w hw
+    calc ‖f w‖ ≤ Real.exp M * ‖f c‖ := hub w (hsub w hw)
+      _ ≤ Real.exp M * (Real.exp (2 * M) * ‖f z‖) :=
+          mul_le_mul_of_nonneg_left hfcle (Real.exp_pos _).le
+      _ = Real.exp (3 * M) * ‖f z‖ := by
+          rw [← mul_assoc, ← Real.exp_add, show M + 2 * M = 3 * M by ring]
+  have hne' : ∀ w ∈ Metric.ball z (R / 4), f w ≠ 0 :=
+    fun w hw => hne w (hsub w hw)
+  have hmain := norm_logDeriv_le_of_ball (f := f) (c := z) (R := R / 4)
+    (M := 3 * M) (by linarith) (by linarith) hf hne' hub'
+  refine hmain.trans (le_of_eq ?_)
+  field_simp
+  ring
+
+/-- **From half-width `1` to half-width `6` in the zero count** (PROVEN
+2026-07-24 — the counting input of
+`DedekindContinuation.xi_logDeriv_gap_bound`): the unit-window counting
+hypothesis `hcount` of the Poitou stage upgrades to the width of the
+Borel–Carathéodory disc.  For `U ≥ 8` the band `||ρ.im| − U| ≤ 6` is
+covered by the six unit windows centred at `U − 5, U − 3, …, U + 5` —
+all of height `≥ 3 ≥ 2`, so `hcount` applies to each — and the fibres
+of the index map `ρ ↦ min 5 ⌊(|ρ.im| − U + 6)/2⌋` partition the finset
+(`Finset.sum_fiberwise_of_maps_to`); for `2 ≤ U < 8` every counted
+point has `|ρ.im| ≤ 14`, so the whole mass is at most the CONSTANT
+total multiplicity of the finite truncation `finite_truncation 14`,
+absorbed into the constant because `log U ≥ log 2 > 0`. -/
+theorem DedekindContinuation.mult_wide_window_le {K : Type*} [Field K]
+    [NumberField K] (pkg : DedekindContinuation K)
+    (hcount : ∃ C : ℝ, 0 < C ∧ ∀ T : ℝ, 2 ≤ T → ∀ s : Finset ℂ,
+      (∀ ρ ∈ s, |(|ρ.im| - T)| ≤ 1) →
+      ∑ ρ ∈ s, (pkg.mult ρ : ℝ) ≤ C * Real.log T) :
+    ∃ C : ℝ, 0 < C ∧ ∀ U : ℝ, 2 ≤ U → ∀ w : Finset ℂ,
+      (∀ ρ ∈ w, |(|ρ.im| - U)| ≤ 6) →
+      ∑ ρ ∈ w, (pkg.mult ρ : ℝ) ≤ C * Real.log U := by
+  classical
+  obtain ⟨C₀, hC₀, hcnt⟩ := hcount
+  set Z : Finset ℂ := (pkg.finite_truncation 14).toFinset with hZ
+  set N₁ : ℝ := ∑ ρ ∈ Z, (pkg.mult ρ : ℝ) with hN₁
+  have hN₁0 : 0 ≤ N₁ := by
+    rw [hN₁]
+    exact Finset.sum_nonneg fun ρ _ => by positivity
+  have hlog2 : (0 : ℝ) < Real.log 2 := Real.log_pos (by norm_num)
+  have hCsum : 0 ≤ N₁ / Real.log 2 := div_nonneg hN₁0 hlog2.le
+  refine ⟨12 * C₀ + N₁ / Real.log 2 + 1, by linarith, ?_⟩
+  intro U hU w hw
+  have hUpos : (0 : ℝ) < U := by linarith
+  have hlogU : Real.log 2 ≤ Real.log U := Real.log_le_log (by norm_num) hU
+  have hlogU0 : 0 < Real.log U := lt_of_lt_of_le hlog2 hlogU
+  rcases lt_or_ge U 8 with hU8 | hU8
+  · have hsub : w.filter (fun ρ => pkg.mult ρ ≠ 0) ⊆ Z := by
+      intro ρ hρ
+      rw [Finset.mem_filter] at hρ
+      simp only [hZ, Set.Finite.mem_toFinset, Set.mem_setOf_eq]
+      refine ⟨hρ.2, ?_⟩
+      have h1 := abs_le.mp (hw ρ hρ.1)
+      linarith [h1.2]
+    have heq : ∑ ρ ∈ w, (pkg.mult ρ : ℝ)
+        = ∑ ρ ∈ w.filter (fun ρ => pkg.mult ρ ≠ 0), (pkg.mult ρ : ℝ) := by
+      refine (Finset.sum_subset (Finset.filter_subset _ _) ?_).symm
+      intro ρ hρ hnot
+      have hzero : pkg.mult ρ = 0 := by
+        by_contra hcon
+        exact hnot (Finset.mem_filter.mpr ⟨hρ, hcon⟩)
+      rw [hzero]
+      norm_num
+    have hle : ∑ ρ ∈ w, (pkg.mult ρ : ℝ) ≤ N₁ := by
+      rw [heq, hN₁]
+      exact Finset.sum_le_sum_of_subset_of_nonneg hsub (fun ρ _ _ => by positivity)
+    have hkey : N₁ ≤ N₁ / Real.log 2 * Real.log U := by
+      have h1 : N₁ / Real.log 2 * Real.log 2 ≤ N₁ / Real.log 2 * Real.log U :=
+        mul_le_mul_of_nonneg_left hlogU hCsum
+      have h2 : N₁ / Real.log 2 * Real.log 2 = N₁ := by
+        field_simp
+      linarith
+    have hring : (12 * C₀ + N₁ / Real.log 2 + 1) * Real.log U
+        = (12 * C₀ + 1) * Real.log U + N₁ / Real.log 2 * Real.log U := by ring
+    rw [hring]
+    have hextra : 0 ≤ (12 * C₀ + 1) * Real.log U :=
+      mul_nonneg (by linarith) hlogU0.le
+    linarith
+  · have hmaps : ∀ ρ ∈ w, (min 5 ⌊(|ρ.im| - U + 6) / 2⌋₊) ∈ Finset.range 6 := by
+      intro ρ _
+      rw [Finset.mem_range]
+      have h1 := min_le_left 5 ⌊(|ρ.im| - U + 6) / 2⌋₊
+      omega
+    have hfib := Finset.sum_fiberwise_of_maps_to hmaps (fun ρ => (pkg.mult ρ : ℝ))
+    have hbound : ∀ k ∈ Finset.range 6,
+        ∑ ρ ∈ w.filter (fun ρ => min 5 ⌊(|ρ.im| - U + 6) / 2⌋₊ = k),
+          (pkg.mult ρ : ℝ) ≤ C₀ * (2 * Real.log U) := by
+      intro k hk
+      have hk5 : k ≤ 5 := by
+        rw [Finset.mem_range] at hk
+        omega
+      have hk5R : ((k : ℕ) : ℝ) ≤ 5 := by exact_mod_cast hk5
+      have hk0R : (0 : ℝ) ≤ ((k : ℕ) : ℝ) := Nat.cast_nonneg k
+      have hHk : (2 : ℝ) ≤ U - 5 + 2 * (k : ℝ) := by linarith
+      have hwin : ∀ ρ ∈ w.filter (fun ρ => min 5 ⌊(|ρ.im| - U + 6) / 2⌋₊ = k),
+          |(|ρ.im| - (U - 5 + 2 * (k : ℝ)))| ≤ 1 := by
+        intro ρ hρ
+        rw [Finset.mem_filter] at hρ
+        obtain ⟨hρw, hρk⟩ := hρ
+        have h6 := abs_le.mp (hw ρ hρw)
+        have hu0 : (0 : ℝ) ≤ (|ρ.im| - U + 6) / 2 := by linarith [h6.1]
+        have hu12 : (|ρ.im| - U + 6) / 2 ≤ 6 := by linarith [h6.2]
+        have hfl6 : ⌊(|ρ.im| - U + 6) / 2⌋₊ ≤ 6 := by
+          have h1 := Nat.floor_mono hu12
+          simpa using h1
+        rcases le_or_gt ⌊(|ρ.im| - U + 6) / 2⌋₊ 5 with hcase | hcase
+        · have hkv : ⌊(|ρ.im| - U + 6) / 2⌋₊ = k := by omega
+          have hlo : ((k : ℕ) : ℝ) ≤ (|ρ.im| - U + 6) / 2 := by
+            rw [← hkv]
+            exact Nat.floor_le hu0
+          have hhi : (|ρ.im| - U + 6) / 2 < ((k : ℕ) : ℝ) + 1 := by
+            rw [← hkv]
+            exact Nat.lt_floor_add_one _
+          rw [abs_le]
+          constructor <;> linarith
+        · have hk6 : (6 : ℕ) ≤ ⌊(|ρ.im| - U + 6) / 2⌋₊ := hcase
+          have hge : ((6 : ℕ) : ℝ) ≤ (|ρ.im| - U + 6) / 2 :=
+            (Nat.le_floor_iff hu0).mp hk6
+          have hk5' : k = 5 := by omega
+          subst hk5'
+          push_cast at hge ⊢
+          rw [abs_le]
+          constructor <;> linarith
+      refine (hcnt (U - 5 + 2 * (k : ℝ)) hHk _ hwin).trans ?_
+      have hHle : U - 5 + 2 * (k : ℝ) ≤ 2 * U := by linarith
+      have hlogHk : Real.log (U - 5 + 2 * (k : ℝ)) ≤ 2 * Real.log U := by
+        have h1 : Real.log (U - 5 + 2 * (k : ℝ)) ≤ Real.log (2 * U) :=
+          Real.log_le_log (by linarith) hHle
+        rw [Real.log_mul (by norm_num) (by linarith)] at h1
+        linarith
+      exact mul_le_mul_of_nonneg_left hlogHk hC₀.le
+    have hsum6 : ∑ ρ ∈ w, (pkg.mult ρ : ℝ) ≤ 12 * C₀ * Real.log U := by
+      rw [← hfib]
+      calc ∑ k ∈ Finset.range 6,
+            ∑ ρ ∈ w.filter (fun ρ => min 5 ⌊(|ρ.im| - U + 6) / 2⌋₊ = k),
+              (pkg.mult ρ : ℝ)
+          ≤ ∑ _k ∈ Finset.range 6, C₀ * (2 * Real.log U) :=
+            Finset.sum_le_sum hbound
+        _ = 12 * C₀ * Real.log U := by
+            rw [Finset.sum_const, Finset.card_range]
+            ring
+    have hring : (12 * C₀ + N₁ / Real.log 2 + 1) * Real.log U
+        = 12 * C₀ * Real.log U + (N₁ / Real.log 2 + 1) * Real.log U := by ring
+    rw [hring]
+    have hextra : 0 ≤ (N₁ / Real.log 2 + 1) * Real.log U :=
+      mul_nonneg (by linarith) hlogU0.le
+    linarith
+
+set_option maxHeartbeats 1000000 in
+/-- **Landau's log-derivative estimate at ONE gap-protected point**
+(PROVEN 2026-07-24 — the analytic core of
+`DedekindContinuation.xi_logDeriv_gap_bound`; E. Landau,
+*Algebraische Zahlen*, p. 122, as cited by Poitou p. 6-02).  For a
+point `s` of the horizontal segment `re s ∈ [−1/4, 5/4]` whose
+ordinate keeps distance `≥ gp` from every zero ordinate, and with the
+zero mass of the disc of radius `6` about the centre bounded by `N`,
+the completed-zeta log-derivative obeys
+`‖(ξ'/ξ)(s)‖ ≤ 8·M + N/gp` with
+`M = B(15+|Im s|)·log(18+|Im s|) + a(1+|Im s|) + N·log 6 + 1`.
+
+The classical Landau argument, run on the centre `c = 5/4 + i·Im s`
+(the segment lies in `closedBall c (3/2) = closedBall c (6/4)`, and
+`re c > 1` puts `c` in the Euler-product zero-free half-plane):
+
+1. *Divide out the zeros.*  The points of positive multiplicity in
+   `closedBall c 6` form a finite set `t` (`finite_truncation` at
+   `|Im s| + 6`), and — `hbnd` and `xi_ne_zero_of_mult_eq_zero` making
+   `mult ρ ≠ 0` EQUIVALENT to `ξ ρ = 0` — the iterated-`dslope`
+   factorization `exists_differentiable_factorization` writes
+   `ξ = (∏_{ρ ∈ t} (· − ρ)^{ord_ρ}) · g` with `g` entire and zero-free
+   on `closedBall c 6`.
+2. *Upper bound for `g`.*  On the circle `‖z − c‖ = 12` each divided
+   linear factor has modulus `≥ 6 ≥ 1`, so `‖g‖ ≤ ‖ξ‖ ≤ e^{U}` there
+   with `U = B(15+|Im s|)·log(18+|Im s|) = O(T log T)` (the global
+   bound `hB`), and the maximum-modulus principle
+   (`Complex.norm_le_of_forall_mem_frontier_norm_le`) propagates the
+   bound to the whole disc, in particular to `ball c 6`.
+3. *Lower bound at the centre.*  `‖ξ(c)‖ ≥ e^{−a(1+|Im s|)}` (`ha`),
+   and each of the `≤ N` divided factors is `≤ 6` at `c`, so
+   `‖g(c)‖ ≥ e^{−a(1+|Im s|) − N log 6}`; hence
+   `‖g‖ ≤ e^{M}·‖g(c)‖` on `ball c 6`.
+4. *Borel–Carathéodory.*  `norm_logDeriv_le_of_mem_ball` (the
+   quarter-radius form of `Complex.borelCaratheodory`) gives
+   `‖(g'/g)(s)‖ ≤ 48M/6 = 8M` at every point of `closedBall c (6/4)`,
+   the segment included.
+5. *Partial fractions.*  `deriv_div_of_factorization` splits
+   `(ξ'/ξ)(s) = Σ_{ρ ∈ t} ord_ρ/(s − ρ) + (g'/g)(s)`, and
+   `‖s − ρ‖ ≥ |Im ρ − Im s| ≥ gp` bounds the near-sum by `N/gp`. -/
+theorem DedekindContinuation.norm_xi_logDeriv_le_of_gap {K : Type*} [Field K]
+    [NumberField K] (pkg : DedekindContinuation K)
+    (hbnd : ∀ t : ℝ, pkg.xi (1 + t * Complex.I) ≠ 0)
+    {B a N gp : ℝ} (hB0 : 0 ≤ B)
+    (hB : ∀ w : ℂ, ‖pkg.xi w‖ ≤ Real.exp (B * (1 + ‖w‖) * Real.log (4 + ‖w‖)))
+    (ha0 : 0 ≤ a)
+    (ha : ∀ t : ℝ, Real.exp (-(a * (1 + |t|))) ≤ ‖pkg.xi (5 / 4 + t * Complex.I)‖)
+    (hN0 : 0 ≤ N) (hgp : 0 < gp)
+    {s : ℂ} (hs1 : -(1 / 4) ≤ s.re) (hs2 : s.re ≤ 5 / 4)
+    (hgap : ∀ ρ : ℂ, pkg.mult ρ ≠ 0 → gp ≤ |ρ.im - s.im|)
+    (hNb : ∀ u : Finset ℂ, (∀ ρ ∈ u, |(|ρ.im| - |s.im|)| ≤ 6) →
+      ∑ ρ ∈ u, (pkg.mult ρ : ℝ) ≤ N) :
+    ‖deriv pkg.xi s / pkg.xi s‖ ≤
+      8 * (B * (15 + |s.im|) * Real.log (18 + |s.im|) + a * (1 + |s.im|) +
+        N * Real.log 6 + 1) + N / gp := by
+  classical
+  have him0 : (0 : ℝ) ≤ |s.im| := abs_nonneg s.im
+  set c : ℂ := 5 / 4 + (s.im : ℂ) * Complex.I with hcdef
+  have hsplit : c = ((5 / 4 : ℝ) : ℂ) + (s.im : ℂ) * Complex.I := by
+    rw [hcdef]
+    norm_num
+  have hc_re : c.re = 5 / 4 := by
+    rw [hsplit, Complex.add_re, Complex.ofReal_re, Complex.re_ofReal_mul,
+      Complex.I_re, mul_zero, add_zero]
+  have hc_im : c.im = s.im := by
+    rw [hsplit, Complex.add_im, Complex.ofReal_im, Complex.im_ofReal_mul,
+      Complex.I_im, mul_one, zero_add]
+  have hsc : ‖s - c‖ ≤ 3 / 2 := by
+    have him : (s - c).im = 0 := by rw [Complex.sub_im, hc_im, sub_self]
+    have hre : |(s - c).re| ≤ 3 / 2 := by
+      rw [Complex.sub_re, hc_re, abs_le]
+      constructor <;> linarith
+    have h1 := Complex.norm_le_abs_re_add_abs_im (s - c)
+    rw [him, abs_zero, add_zero] at h1
+    linarith
+  have hcnorm : ‖c‖ ≤ 5 / 4 + |s.im| := by
+    have h1 := Complex.norm_le_abs_re_add_abs_im c
+    rw [hc_re, hc_im, abs_of_pos (by norm_num : (0 : ℝ) < 5 / 4)] at h1
+    linarith
+  have hxi2 : pkg.xi 2 ≠ 0 := pkg.ne_zero_of_one_lt_re 2 (by norm_num)
+  have hfin : {ρ : ℂ | pkg.mult ρ ≠ 0 ∧ |ρ.im| ≤ |s.im| + 6}.Finite :=
+    pkg.finite_truncation (|s.im| + 6)
+  set t : Finset ℂ := hfin.toFinset.filter (fun ρ => ‖ρ - c‖ ≤ 6) with htdef
+  have htmem : ∀ ρ : ℂ, ρ ∈ t ↔ (pkg.mult ρ ≠ 0 ∧ ‖ρ - c‖ ≤ 6) := by
+    intro ρ
+    simp only [htdef, Finset.mem_filter, Set.Finite.mem_toFinset,
+      Set.mem_setOf_eq]
+    constructor
+    · rintro ⟨⟨h1, -⟩, h2⟩
+      exact ⟨h1, h2⟩
+    · rintro ⟨h1, h2⟩
+      refine ⟨⟨h1, ?_⟩, h2⟩
+      have h3 : |(ρ - c).im| ≤ ‖ρ - c‖ := Complex.abs_im_le_norm _
+      rw [Complex.sub_im, hc_im] at h3
+      have h4 : |ρ.im| ≤ |ρ.im - s.im| + |s.im| := by
+        have h5 := abs_add_le (ρ.im - s.im) s.im
+        simpa using h5
+      linarith
+  obtain ⟨g, hgdiff, hgnet, hgfac⟩ :=
+    exists_differentiable_factorization (f := pkg.xi) (c := (2 : ℂ))
+      pkg.differentiable hxi2 t
+  have hmult : ∀ ρ ∈ t, analyticOrderNatAt pkg.xi ρ = pkg.mult ρ := by
+    intro ρ hρ
+    have h1 := ((htmem ρ).mp hρ).1
+    have h2 := pkg.mult_mem_strip h1
+    simp [DedekindContinuation.mult, h2.1, h2.2]
+  have hgne : ∀ z : ℂ, ‖z - c‖ ≤ 6 → g z ≠ 0 := by
+    intro z hz
+    by_cases hmz : pkg.mult z = 0
+    · intro h0
+      exact pkg.xi_ne_zero_of_mult_eq_zero hbnd hmz
+        (by rw [hgfac z, h0, mul_zero])
+    · exact hgnet z ((htmem z).mpr ⟨hmz, hz⟩)
+  set Mtot : ℕ := ∑ ρ ∈ t, analyticOrderNatAt pkg.xi ρ with hMtot
+  have hMcast : (Mtot : ℝ)
+      = ∑ ρ ∈ t, ((analyticOrderNatAt pkg.xi ρ : ℕ) : ℝ) := by
+    rw [hMtot]
+    push_cast
+    ring
+  have hMtotN : (Mtot : ℝ) ≤ N := by
+    rw [hMcast]
+    have h1 : ∑ ρ ∈ t, ((analyticOrderNatAt pkg.xi ρ : ℕ) : ℝ)
+        = ∑ ρ ∈ t, (pkg.mult ρ : ℝ) :=
+      Finset.sum_congr rfl fun ρ hρ => by rw [hmult ρ hρ]
+    rw [h1]
+    refine hNb t (fun ρ hρ => ?_)
+    have h2 := ((htmem ρ).mp hρ).2
+    have h3 : |(ρ - c).im| ≤ ‖ρ - c‖ := Complex.abs_im_le_norm _
+    rw [Complex.sub_im, hc_im] at h3
+    have h4 : |(|ρ.im| - |s.im|)| ≤ |ρ.im - s.im| :=
+      abs_abs_sub_abs_le_abs_sub _ _
+    linarith
+  set Uu : ℝ := B * (15 + |s.im|) * Real.log (18 + |s.im|) with hUu
+  have hlog18 : 0 ≤ Real.log (18 + |s.im|) := Real.log_nonneg (by linarith)
+  have hUu0 : 0 ≤ Uu := by
+    rw [hUu]
+    exact mul_nonneg (mul_nonneg hB0 (by linarith)) hlog18
+  have hxibnd : ∀ z : ℂ, ‖z - c‖ ≤ 12 → ‖pkg.xi z‖ ≤ Real.exp Uu := by
+    intro z hz
+    have hzn : ‖z‖ ≤ 14 + |s.im| := by
+      calc ‖z‖ = ‖z - c + c‖ := by rw [sub_add_cancel]
+        _ ≤ ‖z - c‖ + ‖c‖ := norm_add_le _ _
+        _ ≤ 12 + (5 / 4 + |s.im|) := add_le_add hz hcnorm
+        _ ≤ 14 + |s.im| := by linarith
+    refine (hB z).trans (Real.exp_le_exp.mpr ?_)
+    have hl0 : 0 ≤ Real.log (4 + ‖z‖) :=
+      Real.log_nonneg (by linarith [norm_nonneg z])
+    have hl1 : Real.log (4 + ‖z‖) ≤ Real.log (18 + |s.im|) :=
+      Real.log_le_log (by linarith [norm_nonneg z]) (by linarith)
+    rw [hUu]
+    exact mul_le_mul (mul_le_mul_of_nonneg_left (by linarith) hB0) hl1 hl0
+      (mul_nonneg hB0 (by linarith))
+  have hprod_ge : ∀ z : ℂ, ‖z - c‖ = 12 →
+      (1 : ℝ) ≤ ‖∏ ρ ∈ t, (z - ρ) ^ analyticOrderNatAt pkg.xi ρ‖ := by
+    intro z hz
+    rw [norm_prod]
+    have hnp : ∀ ρ ∈ t, ‖(z - ρ) ^ analyticOrderNatAt pkg.xi ρ‖
+        = ‖z - ρ‖ ^ analyticOrderNatAt pkg.xi ρ := fun ρ _ => norm_pow _ _
+    rw [Finset.prod_congr rfl hnp]
+    have h1 : ∀ ρ ∈ t, (1 : ℝ) ≤ ‖z - ρ‖ ^ analyticOrderNatAt pkg.xi ρ := by
+      intro ρ hρ
+      refine one_le_pow₀ ?_
+      have h2 := ((htmem ρ).mp hρ).2
+      have h3 : ‖z - c‖ ≤ ‖z - ρ‖ + ‖ρ - c‖ := by
+        have h4 : z - c = (z - ρ) + (ρ - c) := by ring
+        rw [h4]
+        exact norm_add_le _ _
+      linarith
+    have h5 := Finset.prod_le_prod (s := t) (f := fun _ : ℂ => (1 : ℝ))
+      (g := fun ρ => ‖z - ρ‖ ^ analyticOrderNatAt pkg.xi ρ)
+      (fun i _ => zero_le_one) h1
+    simpa using h5
+  have hprodc : ‖∏ ρ ∈ t, (c - ρ) ^ analyticOrderNatAt pkg.xi ρ‖
+      ≤ (6 : ℝ) ^ Mtot := by
+    rw [norm_prod]
+    have hnp : ∀ ρ ∈ t, ‖(c - ρ) ^ analyticOrderNatAt pkg.xi ρ‖
+        = ‖c - ρ‖ ^ analyticOrderNatAt pkg.xi ρ := fun ρ _ => norm_pow _ _
+    rw [Finset.prod_congr rfl hnp]
+    calc ∏ ρ ∈ t, ‖c - ρ‖ ^ analyticOrderNatAt pkg.xi ρ
+        ≤ ∏ ρ ∈ t, (6 : ℝ) ^ analyticOrderNatAt pkg.xi ρ := by
+          refine Finset.prod_le_prod (fun ρ _ => by positivity) (fun ρ hρ => ?_)
+          refine pow_le_pow_left₀ (norm_nonneg _) ?_ _
+          have h2 := ((htmem ρ).mp hρ).2
+          rw [norm_sub_rev]
+          exact h2
+      _ = (6 : ℝ) ^ Mtot := by rw [hMtot, Finset.prod_pow_eq_pow_sum]
+  have hlog6 : 0 ≤ Real.log 6 := Real.log_nonneg (by norm_num)
+  have h6pow : (6 : ℝ) ^ Mtot = Real.exp ((Mtot : ℝ) * Real.log 6) := by
+    rw [Real.exp_nat_mul, Real.exp_log (by norm_num : (0 : ℝ) < 6)]
+  have hgc : Real.exp (-(a * (1 + |s.im|)) - N * Real.log 6) ≤ ‖g c‖ := by
+    have h1 : Real.exp (-(a * (1 + |s.im|))) ≤ ‖pkg.xi c‖ := by
+      have h0 := ha s.im
+      rwa [← hcdef] at h0
+    have h2 : ‖pkg.xi c‖ ≤ (6 : ℝ) ^ Mtot * ‖g c‖ := by
+      rw [hgfac c, norm_mul]
+      exact mul_le_mul_of_nonneg_right hprodc (norm_nonneg _)
+    have h3 : (6 : ℝ) ^ Mtot ≤ Real.exp (N * Real.log 6) := by
+      rw [h6pow]
+      exact Real.exp_le_exp.mpr (mul_le_mul_of_nonneg_right hMtotN hlog6)
+    have h4 : Real.exp (-(a * (1 + |s.im|)) - N * Real.log 6) *
+        Real.exp (N * Real.log 6) = Real.exp (-(a * (1 + |s.im|))) := by
+      rw [← Real.exp_add]
+      ring_nf
+    have h5 : Real.exp (N * Real.log 6) *
+        Real.exp (-(a * (1 + |s.im|)) - N * Real.log 6)
+          ≤ Real.exp (N * Real.log 6) * ‖g c‖ := by
+      rw [mul_comm (Real.exp (N * Real.log 6)), h4]
+      calc Real.exp (-(a * (1 + |s.im|))) ≤ (6 : ℝ) ^ Mtot * ‖g c‖ := h1.trans h2
+        _ ≤ Real.exp (N * Real.log 6) * ‖g c‖ :=
+            mul_le_mul_of_nonneg_right h3 (norm_nonneg _)
+    exact le_of_mul_le_mul_left h5 (Real.exp_pos _)
+  have hmax : ∀ z : ℂ, ‖z - c‖ < 6 → ‖g z‖ ≤ Real.exp Uu := by
+    intro z hz
+    have hfrontier : ∀ v ∈ frontier (Metric.ball c 12), ‖g v‖ ≤ Real.exp Uu := by
+      intro v hv
+      rw [frontier_ball c (by norm_num : (12 : ℝ) ≠ 0), Metric.mem_sphere,
+        dist_eq_norm] at hv
+      have h1 := hprod_ge v hv
+      have h2 : ‖pkg.xi v‖
+          = ‖∏ ρ ∈ t, (v - ρ) ^ analyticOrderNatAt pkg.xi ρ‖ * ‖g v‖ := by
+        rw [hgfac v, norm_mul]
+      have h3 := hxibnd v (le_of_eq hv)
+      nlinarith [norm_nonneg (g v)]
+    exact Complex.norm_le_of_forall_mem_frontier_norm_le Metric.isBounded_ball
+      hgdiff.diffContOnCl hfrontier
+      (subset_closure (by rw [Metric.mem_ball, dist_eq_norm]; linarith))
+  set Mbig : ℝ := Uu + a * (1 + |s.im|) + N * Real.log 6 + 1 with hMbig
+  have hMbig0 : 0 < Mbig := by
+    rw [hMbig]
+    have h1 : 0 ≤ a * (1 + |s.im|) := mul_nonneg ha0 (by linarith)
+    have h2 : 0 ≤ N * Real.log 6 := mul_nonneg hN0 hlog6
+    linarith
+  have hub : ∀ z ∈ Metric.ball c 6, ‖g z‖ ≤ Real.exp Mbig * ‖g c‖ := by
+    intro z hz
+    rw [Metric.mem_ball, dist_eq_norm] at hz
+    calc ‖g z‖ ≤ Real.exp Uu := hmax z hz
+      _ ≤ Real.exp Mbig * Real.exp (-(a * (1 + |s.im|)) - N * Real.log 6) := by
+          rw [← Real.exp_add]
+          refine Real.exp_le_exp.mpr ?_
+          rw [hMbig]
+          linarith
+      _ ≤ Real.exp Mbig * ‖g c‖ :=
+          mul_le_mul_of_nonneg_left hgc (Real.exp_pos _).le
+  have hgneb : ∀ z ∈ Metric.ball c 6, g z ≠ 0 := by
+    intro z hz
+    rw [Metric.mem_ball, dist_eq_norm] at hz
+    exact hgne z (by linarith)
+  have hlogderiv : ‖deriv g s / g s‖ ≤ 48 * Mbig / 6 :=
+    norm_logDeriv_le_of_mem_ball (by norm_num : (0 : ℝ) < 6) hMbig0 hgdiff
+      hgneb hub (by linarith)
+  have hsne : ∀ ρ ∈ t, s ≠ ρ := by
+    intro ρ hρ hcon
+    have h1 := hgap ρ ((htmem ρ).mp hρ).1
+    rw [← hcon] at h1
+    simp at h1
+    linarith
+  have hgs : g s ≠ 0 := hgne s (by linarith)
+  have hpf := deriv_div_of_factorization hgdiff hgfac hsne hgs
+  have hsumb : ‖∑ ρ ∈ t, ((analyticOrderNatAt pkg.xi ρ : ℕ) : ℂ) / (s - ρ)‖
+      ≤ N / gp := by
+    refine (norm_sum_le _ _).trans ?_
+    have hterm : ∀ ρ ∈ t,
+        ‖((analyticOrderNatAt pkg.xi ρ : ℕ) : ℂ) / (s - ρ)‖
+          ≤ ((analyticOrderNatAt pkg.xi ρ : ℕ) : ℝ) / gp := by
+      intro ρ hρ
+      have h1 : gp ≤ ‖s - ρ‖ := by
+        have h2 := hgap ρ ((htmem ρ).mp hρ).1
+        have h3 : |(s - ρ).im| ≤ ‖s - ρ‖ := Complex.abs_im_le_norm _
+        rw [Complex.sub_im, abs_sub_comm] at h3
+        linarith
+      rw [norm_div, Complex.norm_natCast]
+      exact div_le_div_of_nonneg_left (Nat.cast_nonneg _) hgp h1
+    calc ∑ ρ ∈ t, ‖((analyticOrderNatAt pkg.xi ρ : ℕ) : ℂ) / (s - ρ)‖
+        ≤ ∑ ρ ∈ t, ((analyticOrderNatAt pkg.xi ρ : ℕ) : ℝ) / gp :=
+          Finset.sum_le_sum hterm
+      _ = (∑ ρ ∈ t, ((analyticOrderNatAt pkg.xi ρ : ℕ) : ℝ)) / gp := by
+          rw [Finset.sum_div]
+      _ ≤ N / gp := by
+          rw [← hMcast]
+          exact div_le_div_of_nonneg_right hMtotN hgp.le
+  have harith : 48 * Mbig / 6 = 8 * Mbig := by ring
+  rw [harith] at hlogderiv
+  rw [hpf]
+  refine (norm_add_le _ _).trans ?_
+  linarith
+
+/-- **Landau's log-derivative bound at gap-protected heights** (sorry
+node, stated 2026-07-24 — leaf (b₁ᵢᵢᵢ-β) of the decomposition of
+`DedekindContinuation.poitouHorizontal_gap_tendsto_zero`; E. Landau,
+*Algebraische Zahlen*, p. 122, as cited by Poitou p. 6-02): on the
+horizontal segments `re s ∈ [−1/4, 5/4]`, `|im s| = τ(T)` of the
+Poitou contour, at heights `τ(T) ∈ [T, T + 1]` whose ordinate gap to
+every zero is `≥ c/log T`, the completed-zeta log-derivative is
+`O(T·log² T)`.
+
+Intended proof (the classical Landau lemma, manufactured from the
+pin's `Complex.borelCaratheodory`):
+
+1. *Reflect to the upper edge.*  `conj_symm` differentiates to
+   `ξ'(conj s) = conj (ξ'(s))` (Schwarz reflection of the
+   derivative: `η(s) := conj (ξ(conj s))` equals `ξ` by `conj_symm`,
+   and the chain rule computes `η'(s) = conj (ξ'(conj s))`), so
+   `‖(ξ'/ξ)(conj s)‖ = ‖(ξ'/ξ)(s)‖` and the case `im s = −τ(T)`
+   follows from the case `im s = τ(T)`.
+2. *Setup.*  Centre `s₀ = 3/2 + i·τ(T)`; the segment lies in
+   `closedBall s₀ 2` (`|σ − 3/2| ≤ 7/4 < 2`).  On `closedBall s₀ 12`
+   the `growth` field gives
+   `log ‖ξ(s)‖ ≤ C·(T + 15)·log (T + 15) = O(T·log T)`, and at the
+   centre `eq_of_one_lt_re` bounds `‖ξ(s₀)‖` BELOW by
+   `exp(−C'·T·log T)`: `‖ζ_K(s₀)‖ ≥ 1/ζ_K(3/2)` (the inverse
+   Dirichlet series is dominated coefficientwise by the Möbius-type
+   expansion, so `‖ζ_K(s₀)⁻¹‖ ≤ ζ_K(3/2)`), the `Γ`-factors obey
+   vertical-line Stirling lower bounds `≥ exp(−c₁·T·log T)`, and
+   `s₀(s₀ − 1)·|d|^{s₀/2}` is polynomially large.
+3. *Divide out the zeros.*  The zeros of `ξ` in `closedBall s₀ 6`
+   are finitely many (`finite_truncation` at `τ(T) + 7`) with total
+   multiplicity `N = O(log T)`: each has `||im ρ| − τ(T)| ≤ 6`, so
+   thirteen `hcount` windows at heights `τ(T) − 6, …, τ(T) + 6`
+   cover them (window heights `< 2` occur only for `T ≤ 13`,
+   absorbed by a compactness constant); every such zero carries
+   `mult ρ ≠ 0` — `hbnd`, `funcEq` and `ne_zero_of_one_lt_re` clear
+   `re ρ ∉ (0, 1)` exactly as in the support analysis of
+   `DedekindContinuation.mult`, and inside the open strip a zero of
+   the nontrivial entire `ξ` has `analyticOrderNatAt ≠ 0`.  Iterated
+   `dslope` division (`sub_smul_dslope_of_zero`, as in
+   `sum_analyticOrderNatAt_le_of_frontier_norm_le`) writes
+   `ξ = (∏ (· − ρ)^{mult ρ}) • g` with `g` zero-free on
+   `closedBall s₀ 6` and analytic everywhere, with
+   `log ‖g‖ = O(T·log T)` on `sphere s₀ 12` (each divided linear
+   factor has modulus `≥ 6` there) hence on the ball by the maximum
+   principle, and `log ‖g(s₀)‖ ≥ −O(T·log T) − N·log 12`.
+4. *Borel–Carathéodory.*  `g` is zero-free on `ball s₀ 6`, so a
+   holomorphic logarithm of `g/g(s₀)` exists on the ball, and the
+   pin's `Complex.borelCaratheodory`
+   (`Mathlib/Analysis/Complex/BorelCaratheodory.lean`) turns the
+   bound `Re log (g/g(s₀)) = log ‖g‖ − log ‖g(s₀)‖ ≤ O(T·log T)` on
+   `ball s₀ 6` into `‖(g'/g)(s)‖ = O(T·log T)` on `closedBall s₀ 2`.
+5. *Partial fractions.*  On the segment,
+   `(ξ'/ξ)(s) = Σ_ρ mult ρ/(s − ρ) + (g'/g)(s)`; each near-zero
+   satisfies `|s − ρ| ≥ ||im ρ| − τ(T)| ≥ c/log T` (for `im ρ > 0`
+   directly, for `im ρ < 0` even `|s − ρ| ≥ τ(T) + |im ρ|`), so the
+   near-sum is `≤ N·(log T)/c = O(log² T)` and the total is
+   `O(T·log T) + O(log² T) ≤ A·T·log² T` for `T ≥ e`; the compact
+   range `T ∈ [2, e]` is absorbed into `A` (there the segment points
+   stay at ordinate distance `≥ c/log e` from the finitely many
+   zeros of `finite_truncation 4`, so `‖ξ'/ξ‖` is uniformly bounded
+   on the corresponding compact set, and `T·log² T ≥ 2·log² 2 > 0`
+   keeps the right side bounded below). -/
+theorem DedekindContinuation.xi_logDeriv_gap_bound {K : Type*} [Field K]
+    [NumberField K] (pkg : DedekindContinuation K)
+    (hcount : ∃ C : ℝ, 0 < C ∧ ∀ T : ℝ, 2 ≤ T → ∀ s : Finset ℂ,
+      (∀ ρ ∈ s, |(|ρ.im| - T)| ≤ 1) →
+      ∑ ρ ∈ s, (pkg.mult ρ : ℝ) ≤ C * Real.log T)
+    (hbnd : ∀ t : ℝ, pkg.xi (1 + t * Complex.I) ≠ 0)
+    {c : ℝ} (hc : 0 < c) (τ : ℝ → ℝ)
+    (hτ : ∀ T : ℝ, 2 ≤ T → T ≤ τ T ∧ τ T ≤ T + 1 ∧
+      ∀ ρ : ℂ, pkg.mult ρ ≠ 0 → c / Real.log T ≤ |(|ρ.im| - τ T)|) :
+    ∃ A : ℝ, 0 < A ∧ ∀ T : ℝ, 2 ≤ T → ∀ s : ℂ,
+      -(1 / 4) ≤ s.re → s.re ≤ 5 / 4 → |s.im| = τ T →
+      ‖deriv pkg.xi s / pkg.xi s‖ ≤ A * (T * Real.log T ^ 2) := by
+  obtain ⟨C₁, hC₁, hwin⟩ := pkg.mult_wide_window_le hcount
+  obtain ⟨B, hB0, hB⟩ := pkg.norm_xi_le
+  obtain ⟨a, ha0, ha⟩ := pkg.norm_xi_line_ge
+  refine ⟨2400 * B + 40 * a + 64 * C₁ + 16 + C₁ / c, ?_, ?_⟩
+  · have h4 : 0 < C₁ / c := div_pos hC₁ hc
+    linarith
+  intro T hT s hs1 hs2 hsim
+  obtain ⟨hτ1, hτ2, hτ3⟩ := hτ T hT
+  have hT0 : (0 : ℝ) < T := by linarith
+  have hlog2 : (0.6931471803 : ℝ) < Real.log 2 := Real.log_two_gt_d9
+  have hlogT : Real.log 2 ≤ Real.log T := Real.log_le_log (by norm_num) hT
+  have hL : (0.69 : ℝ) < Real.log T := by linarith
+  have hL0 : (0 : ℝ) < Real.log T := by linarith
+  have hLne : Real.log T ≠ 0 := ne_of_gt hL0
+  have hcne : c ≠ 0 := ne_of_gt hc
+  have him0 : (0 : ℝ) ≤ |s.im| := abs_nonneg s.im
+  have hτge : T ≤ |s.im| := by rw [hsim]; exact hτ1
+  have hτle : |s.im| ≤ T + 1 := by rw [hsim]; exact hτ2
+  -- the ordinate gap, transported from `|Im ρ|` to the segment point itself
+  have hgap : ∀ ρ : ℂ, pkg.mult ρ ≠ 0 → c / Real.log T ≤ |ρ.im - s.im| := by
+    intro ρ hρ
+    have h1 := hτ3 ρ hρ
+    rw [← hsim] at h1
+    exact h1.trans (abs_abs_sub_abs_le_abs_sub _ _)
+  have hgppos : 0 < c / Real.log T := div_pos hc hL0
+  -- the zero mass of the Borel–Carathéodory disc
+  have hNb : ∀ u : Finset ℂ, (∀ ρ ∈ u, |(|ρ.im| - |s.im|)| ≤ 6) →
+      ∑ ρ ∈ u, (pkg.mult ρ : ℝ) ≤ 2 * C₁ * Real.log T := by
+    intro u hu
+    have h1 : (2 : ℝ) ≤ τ T := by linarith
+    refine (hwin (τ T) h1 u (by rw [← hsim]; exact hu)).trans ?_
+    have h3 : Real.log (τ T) ≤ 2 * Real.log T := by
+      have h4 : Real.log (τ T) ≤ Real.log (2 * T) :=
+        Real.log_le_log (by linarith) (by linarith)
+      rw [Real.log_mul (by norm_num) (by linarith)] at h4
+      linarith
+    have h5 : C₁ * Real.log (τ T) ≤ C₁ * (2 * Real.log T) :=
+      mul_le_mul_of_nonneg_left h3 hC₁.le
+    linarith
+  have hN0 : (0 : ℝ) ≤ 2 * C₁ * Real.log T := by positivity
+  have hcore := pkg.norm_xi_logDeriv_le_of_gap hbnd hB0 hB ha0 ha hN0 hgppos
+    hs1 hs2 hgap hNb
+  refine hcore.trans ?_
+  -- the numerical bookkeeping: every stage is `O(T·log² T)` for `T ≥ 2`
+  have hTL : (0 : ℝ) ≤ T * Real.log T ^ 2 := by positivity
+  have hBT : (0 : ℝ) ≤ B * (T * Real.log T ^ 2) := mul_nonneg hB0 hTL
+  have haT : (0 : ℝ) ≤ a * (T * Real.log T ^ 2) := mul_nonneg ha0 hTL
+  have hCT : (0 : ℝ) ≤ C₁ * (T * Real.log T ^ 2) := mul_nonneg hC₁.le hTL
+  have hLsq : Real.log T ≤ 1.45 * Real.log T ^ 2 := by
+    nlinarith [mul_pos hL0 (by linarith : (0 : ℝ) < 1.45 * Real.log T - 1)]
+  have hone : (1 : ℝ) ≤ 2.2 * Real.log T ^ 2 := by
+    nlinarith [mul_pos (by linarith : (0 : ℝ) < Real.log T - 0.69)
+      (by linarith : (0 : ℝ) < Real.log T + 0.69)]
+  have hTsq : Real.log T ^ 2 * 2 ≤ Real.log T ^ 2 * T := by
+    nlinarith [sq_nonneg (Real.log T)]
+  have hlog6 : Real.log 6 ≤ 5 := by
+    have h := Real.log_le_sub_one_of_pos (by norm_num : (0 : ℝ) < 6)
+    linarith
+  have hlog11 : Real.log 11 ≤ 10 := by
+    have h := Real.log_le_sub_one_of_pos (by norm_num : (0 : ℝ) < 11)
+    linarith
+  have hlogargn : (0 : ℝ) ≤ Real.log (18 + |s.im|) :=
+    Real.log_nonneg (by linarith)
+  have hlogarg : Real.log (18 + |s.im|) ≤ 16 * Real.log T := by
+    have h1 : (18 : ℝ) + |s.im| ≤ 11 * T := by linarith
+    have h2 : Real.log (18 + |s.im|) ≤ Real.log (11 * T) :=
+      Real.log_le_log (by linarith) h1
+    rw [Real.log_mul (by norm_num) (by linarith)] at h2
+    linarith
+  have hX1 : B * (15 + |s.im|) * Real.log (18 + |s.im|)
+      ≤ 210 * (B * (T * Real.log T ^ 2)) := by
+    have hb1 : B * (15 + |s.im|) ≤ B * (9 * T) :=
+      mul_le_mul_of_nonneg_left (by linarith) hB0
+    have hb3 : B * (15 + |s.im|) * Real.log (18 + |s.im|)
+        ≤ B * (9 * T) * (16 * Real.log T) :=
+      mul_le_mul hb1 hlogarg hlogargn (mul_nonneg hB0 (by linarith))
+    have hb5 : B * T * Real.log T ≤ B * T * (1.45 * Real.log T ^ 2) :=
+      mul_le_mul_of_nonneg_left hLsq (mul_nonneg hB0 hT0.le)
+    linarith
+  have hX2 : a * (1 + |s.im|) ≤ 5 * (a * (T * Real.log T ^ 2)) := by
+    have h1 : a * (1 + |s.im|) ≤ a * (2 * T) :=
+      mul_le_mul_of_nonneg_left (by linarith) ha0
+    have h2 : a * (2 * T) * 1 ≤ a * (2 * T) * (2.2 * Real.log T ^ 2) :=
+      mul_le_mul_of_nonneg_left hone (mul_nonneg ha0 (by linarith))
+    linarith
+  have hX3 : 2 * C₁ * Real.log T * Real.log 6
+      ≤ 8 * (C₁ * (T * Real.log T ^ 2)) := by
+    have h1 : 2 * C₁ * Real.log T * Real.log 6 ≤ 2 * C₁ * Real.log T * 5 :=
+      mul_le_mul_of_nonneg_left hlog6 (by positivity)
+    have h3 : C₁ * Real.log T ≤ C₁ * (1.45 * Real.log T ^ 2) :=
+      mul_le_mul_of_nonneg_left hLsq hC₁.le
+    have h4 : C₁ * (Real.log T ^ 2 * 2) ≤ C₁ * (Real.log T ^ 2 * T) :=
+      mul_le_mul_of_nonneg_left hTsq hC₁.le
+    linarith
+  have hX4 : (1 : ℝ) ≤ 2 * (T * Real.log T ^ 2) := by linarith
+  have hX5 : 2 * C₁ * Real.log T / (c / Real.log T)
+      ≤ 1 * (C₁ / c * (T * Real.log T ^ 2)) := by
+    have h1 : 2 * C₁ * Real.log T / (c / Real.log T)
+        = 2 * (C₁ / c) * Real.log T ^ 2 := by
+      field_simp
+    rw [h1]
+    have h3 : C₁ / c * (Real.log T ^ 2 * 2) ≤ C₁ / c * (Real.log T ^ 2 * T) :=
+      mul_le_mul_of_nonneg_left hTsq (div_pos hC₁ hc).le
+    linarith
+  have hgoalring : (2400 * B + 40 * a + 64 * C₁ + 16 + C₁ / c) *
+      (T * Real.log T ^ 2)
+      = 2400 * (B * (T * Real.log T ^ 2)) + 40 * (a * (T * Real.log T ^ 2)) +
+        64 * (C₁ * (T * Real.log T ^ 2)) + 16 * (T * Real.log T ^ 2) +
+        1 * (C₁ / c * (T * Real.log T ^ 2)) := by ring
+  rw [hgoalring]
+  linarith
+
+/-- **Poitou's Proposition 1: the horizontal edges vanish along
+good-height selections** (ASSEMBLED 2026-07-24 over the two stage
+leaves `poitouPhi_strip_decay_sq` (uniform `1/T²` decay of `Φ` on the
+contour strip, leaf α above) and
+`DedekindContinuation.xi_logDeriv_gap_bound` (Landau's `O(T·log² T)`
+log-derivative bound at gap-protected heights, leaf β above);
+originally leaf (b₁ᵢᵢᵢ), the Borel–Carathéodory stage of the
+decomposition of
+`DedekindContinuation.zero_sum_sub_poitouEdge_tendsto_zero`; Poitou
+p. 6-02, Proposition 1, citing E. Landau, *Algebraische Zahlen*,
+p. 122).
+
+The assembly: on either horizontal segment `σ ↦ σ ± i·τ(T)`,
+`σ ∈ [−1/4, 5/4]`, the integrand of
+`DedekindContinuation.poitouHorizontal` is bounded pointwise by
+`(M/τ(T)²)·(A·T·log² T) ≤ M·A·(log² T)/T` (the two leaves and
+`τ(T) ≥ T > 0`), so each edge integral is at most
+`(3/2)·M·A·(log² T)/T` by
+`intervalIntegral.norm_integral_le_of_norm_le_const` — which needs
+NO integrability of the edge integrand for this direction — whence
+`|H(τ(T))| ≤ ‖(2πi)⁻¹‖·3·M·A·(log² T)/T`, a null sequence
+(`Real.tendsto_pow_log_div_mul_add_atTop`); conclude by
+`squeeze_zero_norm'`. -/
+theorem DedekindContinuation.poitouHorizontal_gap_tendsto_zero {K : Type*}
+    [Field K] [NumberField K] (pkg : DedekindContinuation K)
+    (hcount : ∃ C : ℝ, 0 < C ∧ ∀ T : ℝ, 2 ≤ T → ∀ s : Finset ℂ,
+      (∀ ρ ∈ s, |(|ρ.im| - T)| ≤ 1) →
+      ∑ ρ ∈ s, (pkg.mult ρ : ℝ) ≤ C * Real.log T)
+    (hbnd : ∀ t : ℝ, pkg.xi (1 + t * Complex.I) ≠ 0)
+    {c : ℝ} (hc : 0 < c) (τ : ℝ → ℝ)
+    (hτ : ∀ T : ℝ, 2 ≤ T → T ≤ τ T ∧ τ T ≤ T + 1 ∧
+      ∀ ρ : ℂ, pkg.mult ρ ≠ 0 → c / Real.log T ≤ |(|ρ.im| - τ T)|) :
+    Filter.Tendsto (fun T : ℝ => pkg.poitouHorizontal (τ T))
+      Filter.atTop (nhds 0) := by
+  obtain ⟨M, hM0, hM⟩ := poitouPhi_strip_decay_sq
+  obtain ⟨A, hA0, hA⟩ := pkg.xi_logDeriv_gap_bound hcount hbnd hc τ hτ
+  have hg : Filter.Tendsto (fun T : ℝ =>
+      ‖(2 * (Real.pi : ℂ) * Complex.I)⁻¹‖ * 3 * (M * A) *
+        (Real.log T ^ 2 / T)) Filter.atTop (nhds 0) := by
+    have h0 := (Real.tendsto_pow_log_div_mul_add_atTop 1 0 2
+      one_ne_zero).const_mul
+      (‖(2 * (Real.pi : ℂ) * Complex.I)⁻¹‖ * 3 * (M * A))
+    simpa using h0
+  refine squeeze_zero_norm' ?_ hg
+  filter_upwards [Filter.eventually_ge_atTop (2 : ℝ)] with T hT
+  obtain ⟨hτ1, -, -⟩ := hτ T hT
+  have hT0 : (0 : ℝ) < T := by linarith
+  have hτT0 : (0 : ℝ) < τ T := by linarith
+  have heq : M / T ^ 2 * (A * (T * Real.log T ^ 2)) =
+      M * A * (Real.log T ^ 2 / T) := by
+    field_simp
+  have hphi_le : M / τ T ^ 2 ≤ M / T ^ 2 := by
+    gcongr
+  have hKb : ∀ x ∈ Set.uIoc (-(1 / 4) : ℝ) (5 / 4),
+      ‖poitouPhi ((x : ℂ) - (τ T : ℂ) * Complex.I) *
+        (deriv pkg.xi ((x : ℂ) - (τ T : ℂ) * Complex.I) /
+          pkg.xi ((x : ℂ) - (τ T : ℂ) * Complex.I))‖ ≤
+      M * A * (Real.log T ^ 2 / T) := by
+    intro x hx
+    rw [Set.uIoc_of_le (by norm_num : (-(1 / 4) : ℝ) ≤ 5 / 4)] at hx
+    have hre : ((x : ℂ) - (τ T : ℂ) * Complex.I).re = x := by simp
+    have him : ((x : ℂ) - (τ T : ℂ) * Complex.I).im = -(τ T) := by simp
+    have h1 : ‖poitouPhi ((x : ℂ) - (τ T : ℂ) * Complex.I)‖ ≤ M / T ^ 2 := by
+      have hb := hM ((x : ℂ) - (τ T : ℂ) * Complex.I)
+        (by rw [hre]; exact hx.1.le) (by rw [hre]; exact hx.2)
+        (by rw [him]; exact neg_ne_zero.mpr hτT0.ne')
+      rw [him, neg_sq] at hb
+      exact hb.trans hphi_le
+    have h2 : ‖deriv pkg.xi ((x : ℂ) - (τ T : ℂ) * Complex.I) /
+        pkg.xi ((x : ℂ) - (τ T : ℂ) * Complex.I)‖ ≤
+        A * (T * Real.log T ^ 2) :=
+      hA T hT ((x : ℂ) - (τ T : ℂ) * Complex.I)
+        (by rw [hre]; exact hx.1.le) (by rw [hre]; exact hx.2)
+        (by rw [him, abs_neg, abs_of_pos hτT0])
+    rw [norm_mul]
+    exact (mul_le_mul h1 h2 (norm_nonneg _)
+      (div_nonneg hM0 (sq_nonneg _))).trans_eq heq
+  have hKt : ∀ x ∈ Set.uIoc (-(1 / 4) : ℝ) (5 / 4),
+      ‖poitouPhi ((x : ℂ) + (τ T : ℂ) * Complex.I) *
+        (deriv pkg.xi ((x : ℂ) + (τ T : ℂ) * Complex.I) /
+          pkg.xi ((x : ℂ) + (τ T : ℂ) * Complex.I))‖ ≤
+      M * A * (Real.log T ^ 2 / T) := by
+    intro x hx
+    rw [Set.uIoc_of_le (by norm_num : (-(1 / 4) : ℝ) ≤ 5 / 4)] at hx
+    have hre : ((x : ℂ) + (τ T : ℂ) * Complex.I).re = x := by simp
+    have him : ((x : ℂ) + (τ T : ℂ) * Complex.I).im = τ T := by simp
+    have h1 : ‖poitouPhi ((x : ℂ) + (τ T : ℂ) * Complex.I)‖ ≤ M / T ^ 2 := by
+      have hb := hM ((x : ℂ) + (τ T : ℂ) * Complex.I)
+        (by rw [hre]; exact hx.1.le) (by rw [hre]; exact hx.2)
+        (by rw [him]; exact hτT0.ne')
+      rw [him] at hb
+      exact hb.trans hphi_le
+    have h2 : ‖deriv pkg.xi ((x : ℂ) + (τ T : ℂ) * Complex.I) /
+        pkg.xi ((x : ℂ) + (τ T : ℂ) * Complex.I)‖ ≤
+        A * (T * Real.log T ^ 2) :=
+      hA T hT ((x : ℂ) + (τ T : ℂ) * Complex.I)
+        (by rw [hre]; exact hx.1.le) (by rw [hre]; exact hx.2)
+        (by rw [him, abs_of_pos hτT0])
+    rw [norm_mul]
+    exact (mul_le_mul h1 h2 (norm_nonneg _)
+      (div_nonneg hM0 (sq_nonneg _))).trans_eq heq
+  have hIb := intervalIntegral.norm_integral_le_of_norm_le_const hKb
+  have hIt := intervalIntegral.norm_integral_le_of_norm_le_const hKt
+  simp only [DedekindContinuation.poitouHorizontal]
+  rw [Real.norm_eq_abs]
+  refine (Complex.abs_re_le_norm _).trans ?_
+  rw [norm_mul]
+  refine (mul_le_mul_of_nonneg_left (norm_sub_le _ _)
+    (norm_nonneg _)).trans ?_
+  refine (mul_le_mul_of_nonneg_left (add_le_add hIb hIt)
+    (norm_nonneg _)).trans ?_
+  rw [show |(5 / 4 : ℝ) - -(1 / 4)| = 3 / 2 by norm_num]
+  exact le_of_eq (by ring)
 
 /-- **The pole-pair edge functional** (definition, 2026-07-24 —
 introduced in the decomposition of
@@ -26020,26 +29446,61 @@ theorem sq_isPrincipal_ringOfIntegers_neg_six_ray_class
 
 end QuadraticClassNumberRayClass
 
+/-- **Narrow principality, with NONDEGENERATE multiplier witnesses**
+(created 2026-07-25 as the repair of the reciprocity chain below):
+`I` is narrowly principal when `(α)·I = (β)` for totally positive
+`α, β` with `α ≠ 0` — i.e. `[I] = 1` in the narrow class group
+`Cl⁺(F)`.
+
+**Why this predicate and not `IsNarrowRayEquiv 1 I ⊤` of
+`Chebotarev.lean`** (the defect this repairs, found 2026-07-25): at
+modulus `ℓ = 1` that relation DEGENERATES to `True`. Its two
+coprimality clauses read `IsCoprime (α) (1)` — vacuous, since
+`Ideal.span {(1 : 𝓞 F)} = ⊤ = 1` and `isCoprime_one_right` — and its
+congruence clause `α − β ∈ (1)` is vacuous too, so (unlike the case
+`ℓ` prime, where `ne_zero_of_isCoprime_span_natCast` applies) NOTHING
+forces the multipliers to be nonzero. For a field `F` with no real
+embedding the total-positivity clauses are vacuous as well, and
+`α = β = 0` satisfies every clause: `(0)·I = ⊥ = (0)·J` for all
+`I, J`, so `IsNarrowRayEquiv 1 I J` holds unconditionally there. The
+reciprocity leaf below is FALSE under that degenerate hypothesis:
+take `F = ℚ(√−47)`, where `Cl(F) ≅ ℤ/5` (PARI/GP `quadclassunit(-47)`
+`= [5, [5], …]`) and `Cl⁺(F) = Cl(F)` since `F` is imaginary; because
+`5 ∣ 3⁴ − 1` the group `μ₅` sits inside `𝔽̄₃ˣ = (Dickson.K 3)ˣ`, so
+an order-`5` character of `Cl(F)` gives a multiplicative
+`χ : Γ F → Dickson.K 3` with open kernel (`Gal(F̄/H(F))`), unramified
+at every finite place, and `χ(Frob_v)² ≠ 1` for any `v` whose class
+generates. Demanding `α ≠ 0` restores exactly the intended content
+`[I] = 1` in `Cl⁺(F)`; `β ≠ 0` then follows whenever `I ≠ ⊥`. -/
+def IsNarrowPrincipal {F : Type*} [Field F] [NumberField F]
+    (I : Ideal (NumberField.RingOfIntegers F)) : Prop :=
+  ∃ α β : NumberField.RingOfIntegers F, α ≠ 0 ∧
+    (∀ φ : F →+* ℝ, 0 < φ (algebraMap (NumberField.RingOfIntegers F) F α)) ∧
+    (∀ φ : F →+* ℝ, 0 < φ (algebraMap (NumberField.RingOfIntegers F) F β)) ∧
+    Ideal.span {α} * I = Ideal.span {β}
+
 set_option maxHeartbeats 400000 in
 /-- **Narrow-class exponent two for the seven quadratic fields — every
 nonzero ideal square is narrowly principal** (PROVEN glue, 2026-07-24,
 over the two per-field class-number sorry leaves
 `isPrincipalIdealRing_ringOfIntegers_quadratic_ray_class` and
-`sq_isPrincipal_ringOfIntegers_neg_six_ray_class` above): for each of
-the seven `d` and `F = ℚ(x) ⊆ ℚ̄` with `x² = d`, the square of every
-nonzero ideal of `𝓞 F` is trivial for the modulus-`1` narrow ray
-equivalence of `Chebotarev.lean` (`IsNarrowRayEquiv 1 (I²) ⊤`:
-`(α)·I² = (β)` with `α, β` totally positive — precisely narrow
-Hilbert equivalence, since coprimality and congruence mod `1` are
-vacuous). This is the `h⁺`-table `1, 1, 1, 2, 1, 2, 2` in the
-exponent form the reciprocity leaf consumes. Assembly: for the six
-class-number-one fields `I = (γ)` is principal, so `I² = (γ²)` with
-`γ²` totally positive FOR FREE (`φ(γ)² > 0` at every real embedding
-`φ` — the reason `h⁺ = 2h` for `d = 3, 6` never obstructs squares);
-for `d = −6` the field admits no real embedding at all (`φ(x)² = −6`
-is absurd in `ℝ`), total positivity is vacuous, and `I² = (γ)`
-principal from the class-group-`ℤ/2` leaf suffices. -/
-theorem isNarrowRayEquiv_sq_top_of_quadratic_ray_class
+`sq_isPrincipal_ringOfIntegers_neg_six_ray_class` above; conclusion
+CORRECTED and renamed 2026-07-25 from the degenerate
+`IsNarrowRayEquiv 1 (I²) ⊤` form to `IsNarrowPrincipal (I²)` — see
+that definition's docstring for the `ℚ(√−47)` counterexample the old
+form admitted): for each of the seven `d` and `F = ℚ(x) ⊆ ℚ̄` with
+`x² = d`, the square of every nonzero ideal of `𝓞 F` is narrowly
+principal, `(α)·I² = (β)` with `α ≠ 0` and `α, β` totally positive.
+This is the `h⁺`-table `1, 1, 1, 2, 1, 2, 2` in the exponent form the
+reciprocity leaf consumes. Assembly: for the six class-number-one
+fields `I = (γ)` is principal, so `I² = (γ²)` with `γ²` totally
+positive FOR FREE (`φ(γ)² > 0` at every real embedding `φ` — the
+reason `h⁺ = 2h` for `d = 3, 6` never obstructs squares); for
+`d = −6` the field admits no real embedding at all (`φ(x)² = −6` is
+absurd in `ℝ`), total positivity is vacuous, and `I² = (γ)` principal
+from the class-group-`ℤ/2` leaf suffices. In both branches the
+multiplier is `α = 1 ≠ 0`, so the nondegeneracy clause is free. -/
+theorem isNarrowPrincipal_sq_of_quadratic_ray_class
     (d : ℤ)
     (hd : d = -1 ∨ d = 2 ∨ d = -2 ∨ d = 3 ∨ d = -3 ∨ d = 6 ∨ d = -6)
     (x : AlgebraicClosure ℚ) (hx : x ^ 2 = (d : AlgebraicClosure ℚ))
@@ -26047,7 +29508,7 @@ theorem isNarrowRayEquiv_sq_top_of_quadratic_ray_class
     (I : Ideal (NumberField.RingOfIntegers
       (IntermediateField.adjoin ℚ {x})))
     (hI : I ≠ ⊥) :
-    IsNarrowRayEquiv 1 (I ^ 2) ⊤ := by
+    IsNarrowPrincipal (I ^ 2) := by
   by_cases h6 : d = -6
   · -- `ℚ(√−6)` is imaginary: no real embeddings, so total positivity
     -- is vacuous and square-principality suffices
@@ -26067,17 +29528,11 @@ theorem isNarrowRayEquiv_sq_top_of_quadratic_ray_class
       norm_num at h0
     obtain ⟨γ, hγ⟩ :=
       (sq_isPrincipal_ringOfIntegers_neg_six_ray_class d h6 x hx I).principal
-    refine ⟨1, γ, fun φ => (hempty φ).elim, fun φ => (hempty φ).elim,
-      ?_, ?_, ?_, ?_⟩
-    · rw [Nat.cast_one, Ideal.span_singleton_one, ← Ideal.one_eq_top]
-      exact isCoprime_one_right
-    · rw [Nat.cast_one, Ideal.span_singleton_one, ← Ideal.one_eq_top]
-      exact isCoprime_one_right
-    · rw [Nat.cast_one, Ideal.span_singleton_one]
-      exact Submodule.mem_top
-    · rw [Ideal.span_singleton_one, Ideal.top_mul, Ideal.mul_top]
-      rw [Ideal.submodule_span_eq] at hγ
-      exact hγ
+    refine ⟨1, γ, one_ne_zero, fun φ => (hempty φ).elim,
+      fun φ => (hempty φ).elim, ?_⟩
+    rw [Ideal.span_singleton_one, Ideal.top_mul]
+    rw [Ideal.submodule_span_eq] at hγ
+    exact hγ
   · -- the six class-number-one fields: `I = (γ)`, and `γ²` is totally
     -- positive at every real embedding
     have hd6 : d = -1 ∨ d = 2 ∨ d = -2 ∨ d = 3 ∨ d = -3 ∨ d = 6 := by
@@ -26089,7 +29544,7 @@ theorem isNarrowRayEquiv_sq_top_of_quadratic_ray_class
     have hγ0 : γ ≠ 0 := by
       intro h0
       exact hI (by rw [hγ, h0]; exact Ideal.span_singleton_eq_bot.mpr rfl)
-    refine ⟨1, γ ^ 2, ?_, ?_, ?_, ?_, ?_, ?_⟩
+    refine ⟨1, γ ^ 2, one_ne_zero, ?_, ?_, ?_⟩
     · intro φ
       rw [map_one, map_one]
       exact one_pos
@@ -26104,13 +29559,7 @@ theorem isNarrowRayEquiv_sq_top_of_quadratic_ray_class
         hcoe (φ.injective (by rw [h, map_zero]))
       rw [map_pow, map_pow]
       exact pow_two_pos_of_ne_zero hne
-    · rw [Nat.cast_one, Ideal.span_singleton_one, ← Ideal.one_eq_top]
-      exact isCoprime_one_right
-    · rw [Nat.cast_one, Ideal.span_singleton_one, ← Ideal.one_eq_top]
-      exact isCoprime_one_right
-    · rw [Nat.cast_one, Ideal.span_singleton_one]
-      exact Submodule.mem_top
-    · rw [Ideal.span_singleton_one, Ideal.top_mul, Ideal.mul_top, hγ,
+    · rw [Ideal.span_singleton_one, Ideal.top_mul, hγ,
         Ideal.span_singleton_pow]
 
 set_option backward.isDefEq.respectTransparency false in
@@ -26151,27 +29600,143 @@ theorem algEquiv_apply_eq_self_of_forall_mem_adjoin_ray_class
     IntermediateField.adjoin_le_iff.mpr hSsub
   exact hle hy ⟨h, Subgroup.mem_zpowers h⟩
 
+/-- **Any two ring embeddings of `ℚ̄` into a field differ by an element
+of `Γ ℚ`** (PROVEN 2026-07-25 — the "choice of place above `q`" half of
+the local–global inertia dictionary
+`exists_conj_image_localInertiaGroup_rat_ray_class` below, and the
+source of its conjugator `c`): if `ι₁, ι₂ : ℚ̄ →+* Ω` are ring
+homomorphisms into any field `Ω`, there is `c ∈ Γ ℚ` with
+`ι₁ (c y) = ι₂ y` for all `y`. No compatibility hypothesis over `ℚ` is
+needed: a ring hom out of a characteristic-zero field is automatically
+`ℚ`-linear (`RingHom.ext_rat`), so both maps are `ℚ`-algebra maps, and
+their common image is the algebraic closure of `ℚ` inside `Ω`. Proof:
+give `Ω` the `ℚ̄`-algebra structure defined by `ι₁`; then `ι₂`, read as
+a `ℚ`-algebra map `ℚ̄ →ₐ[ℚ] Ω`, restricts along the normal extension
+`ℚ̄/ℚ` (`AlgHom.restrictNormal'`) to an automorphism `c` of `ℚ̄`, and
+`AlgHom.restrictNormal_commutes` is exactly the stated identity. -/
+theorem exists_algEquiv_ringHom_apply_eq_ray_class
+    {Ω : Type*} [Field Ω] (ι₁ ι₂ : AlgebraicClosure ℚ →+* Ω) :
+    ∃ c : Γ ℚ, ∀ y : AlgebraicClosure ℚ, ι₁ (c y) = ι₂ y := by
+  haveI halgQ : Algebra.IsAlgebraic ℚ (AlgebraicClosure ℚ) :=
+    AlgebraicClosure.isAlgebraic ℚ
+  haveI hacQ : IsAlgClosure ℚ (AlgebraicClosure ℚ) := ⟨inferInstance, halgQ⟩
+  haveI hnormQ : Normal ℚ (AlgebraicClosure ℚ) :=
+    IsAlgClosure.normal ℚ (AlgebraicClosure ℚ)
+  letI := ι₁.toAlgebra
+  letI : Algebra ℚ Ω := (ι₁.comp (algebraMap ℚ (AlgebraicClosure ℚ))).toAlgebra
+  haveI : IsScalarTower ℚ (AlgebraicClosure ℚ) Ω :=
+    IsScalarTower.of_algebraMap_eq fun _ => rfl
+  have hcomm : ∀ r : ℚ, ι₂ (algebraMap ℚ (AlgebraicClosure ℚ) r) = algebraMap ℚ Ω r := by
+    intro r
+    exact congrFun (congrArg (fun f : ℚ →+* Ω => f.toFun)
+      (RingHom.ext_rat (ι₂.comp (algebraMap ℚ (AlgebraicClosure ℚ)))
+        (ι₁.comp (algebraMap ℚ (AlgebraicClosure ℚ))))) r
+  let ϕ : AlgebraicClosure ℚ →ₐ[ℚ] Ω := AlgHom.mk ι₂ hcomm
+  refine ⟨ϕ.restrictNormal' (AlgebraicClosure ℚ), fun y => ?_⟩
+  exact AlgHom.restrictNormal_commutes ϕ (AlgebraicClosure ℚ) y
+
+/-- **The rational prime below a finite place, with its integral
+embedding of completions** (sorry node, created 2026-07-25 as the
+place-arithmetic half of the route-(α) decomposition of
+`exists_conj_image_localInertiaGroup_rat_ray_class` below): for a
+number field `F ⊆ ℚ̄` and a finite place `w` of `F` there is a rational
+prime `q` — the residue characteristic of `w`, i.e. the prime below `w`
+under `ℤ ⊆ 𝓞 F` — together with a ring embedding
+`f : ℚ_q → F_w` of completions that carries `ℤ_q` into `𝒪_w`.
+Mathematical content: `w` restricts to the `q`-adic place of `ℚ`
+(`w.asIdeal ∩ ℤ = (q)`, nonzero because `𝓞 F/w` is a finite field of
+some prime characteristic `q`), the `q`-adic absolute value on `ℚ` is
+the restriction of the `w`-adic one up to the ramification index, and
+`f` is the induced map of completions — continuous, hence
+integrality-preserving. The integrality clause is what the inertia
+transport `exists_ringHom_algebraicClosure_mem_localInertiaGroup_rat_ray_class`
+consumes; note it forces `f` to be a LOCAL homomorphism for free
+(a unit of `ℤ_q` has its inverse in `ℤ_q` too, so its image is a unit
+of `𝒪_w`). -/
+theorem exists_prime_ringHom_adicCompletionIntegers_mem_rat_ray_class
+    (F : IntermediateField ℚ (AlgebraicClosure ℚ)) [NumberField F]
+    (w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F)) :
+    ∃ (q : ℕ) (hq : q.Prime)
+      (f : IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat →+*
+          IsDedekindDomain.HeightOneSpectrum.adicCompletion F w),
+      ∀ x : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat,
+        f x ∈ IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers F w := by
+  sorry
+
+/-- **Inertia transports along an integral embedding of completions**
+(sorry node, created 2026-07-25 as the local half of the route-(α)
+decomposition of `exists_conj_image_localInertiaGroup_rat_ray_class`
+below; UNIFORM in the number field `F`): given a rational prime `q` and
+a ring embedding `f : ℚ_q → F_w` carrying `ℤ_q` into `𝒪_w` (as supplied
+by `exists_prime_ringHom_adicCompletionIntegers_mem_rat_ray_class`),
+every `σ ∈ localInertiaGroup w` is the image of a
+`σ' ∈ localInertiaGroup q` along a compatible embedding
+`ι : ℚ_q^alg → F_w^alg` of the completed algebraic closures — i.e.
+`ι ∘ σ' = σ ∘ ι`. Intended proof: take `ι := AlgebraicClosure.map f`,
+which makes `F_w^alg` an algebra over `ℚ_q^alg` compatibly with the
+scalars `ℚ_q` (`AlgebraicClosure.map_algebraMap`), and let
+`σ' := ((σ.restrictScalars ℚ_q).toAlgHom.comp ι).restrictNormal' ℚ_q^alg`
+be the restriction of `σ` along the normal extension `ℚ_q^alg/ℚ_q` —
+the very construction of `Field.absoluteGaloisGroup.mapAux`, which
+cannot be reused verbatim here because it demands `NumberField ℚ_q`.
+The commutation identity is then `AlgHom.restrictNormal_commutes`. That
+`σ'` lies in `localInertiaGroup q` is the residual content: `f`
+integral gives `ι (IntegralClosure ℤ_q ℚ_q^alg) ⊆ IntegralClosure 𝒪_w
+F_w^alg`, and `ι` restricted to those integral closures is a LOCAL
+homomorphism of valuation rings (both are valuation rings by
+`localValuationSubring`'s spectral-norm dichotomy, and `ι` preserves
+the spectral norm because it preserves integrality in both directions),
+so the congruence `σ' x ≡ x mod 𝔪` follows from `σ (ι x) ≡ ι x mod 𝔪`
+by contracting along `ι`. -/
+theorem exists_ringHom_algebraicClosure_mem_localInertiaGroup_rat_ray_class
+    (F : Type*) [Field F] [NumberField F]
+    (w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F))
+    (q : ℕ) (hq : q.Prime)
+    (f : IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat →+*
+        IsDedekindDomain.HeightOneSpectrum.adicCompletion F w)
+    (hf : ∀ x : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat,
+      f x ∈ IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers F w)
+    (σ : Γ (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w))
+    (hσ : σ ∈ localInertiaGroup w) :
+    ∃ (ι : AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat) →+*
+           AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w))
+      (σ' : Γ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat)),
+      σ' ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat ∧
+      ∀ x, ι (σ' x) = σ (ι x) := by
+  sorry
+
 set_option maxHeartbeats 1000000 in
 /-- **Local–global inertia functoriality along `ℚ ⊆ F` — the inertia
-half of the unramified-extension dictionary** (sorry node, created
-2026-07-24 as part of the route-(α) decomposition of
-`character_sq_eq_one_of_narrow_exponent_two_ray_class` below): for a
+half of the unramified-extension dictionary** (PROVEN 2026-07-25 over
+the two local bricks
+`exists_prime_ringHom_adicCompletionIntegers_mem_rat_ray_class` and
+`exists_ringHom_algebraicClosure_mem_localInertiaGroup_rat_ray_class`,
+plus the PROVEN embedding-conjugacy lemma
+`exists_algEquiv_ringHom_apply_eq_ray_class`): for a
 number field `F ⊆ ℚ̄`, a finite place `w` of `F`, and an element `σ` of
 the local inertia group at `w`, the image of `σ` in `Γ ℚ` — through
 `Γ (F_w) → Γ F` (`Field.absoluteGaloisGroup.map` along `F → F_w`), the
 chosen `F`-identification `ψ : F̄ ≃ₐ[F] ℚ̄` of algebraic closures
 (`AlgEquiv.autCongr`), and restriction of scalars to `ℚ` — lies in a
 `Γ ℚ`-conjugate of the image of the local inertia group at some
-rational prime `q` (the prime below `w`). Intended proof: both sides
-are inertia conditions at places of `ℚ̄` over `q` — triviality mod the
-maximal ideal of the integral closure of the completed integers in the
-completed algebraic closure, which contracts along the integral-closure
-inclusions induced by a compatible embedding `ℚ_q^alg → F_w^alg`; and
-any two places of `ℚ̄` over `q` (equivalently, any two embeddings
-`ℚ̄ → ℚ_q^alg`) are `Γ ℚ`-conjugate, which produces `c` — the same
-contraction pattern as the PROVEN
-`exists_isArithFrobAt_restrictNormalHom_globalFrob` in
-`Chebotarev.lean`, run for inertia instead of Frobenius. -/
+rational prime `q` (the prime below `w`). Proof (the same contraction
+pattern as the PROVEN `exists_isArithFrobAt_restrictNormalHom_globalFrob`
+in `Chebotarev.lean`, run for inertia instead of Frobenius): both sides,
+read through embeddings of `ℚ̄` into `F_w^alg`, intertwine with the SAME
+local automorphism `σ`. Concretely, `ι₁ := ℚ̄ →[ψ⁻¹] F̄ → F_w^alg`
+satisfies `ι₁ ∘ Φ(σ) = σ ∘ ι₁` for the left-hand image `Φ(σ)`
+(`Field.absoluteGaloisGroup.lift_map`), while
+`ι₂ := ℚ̄ → ℚ_q^alg →[ι] F_w^alg` satisfies
+`ι₂ ∘ (map σ') = σ ∘ ι₂`; the two embeddings differ by
+`c ∈ Γ ℚ` (`exists_algEquiv_ringHom_apply_eq_ray_class`), so both
+`Φ(σ)` and `c · map σ' · c⁻¹` become `σ` after applying the injective
+`ι₁`, hence are equal. -/
 theorem exists_conj_image_localInertiaGroup_rat_ray_class
     (F : IntermediateField ℚ (AlgebraicClosure ℚ)) [NumberField F]
     (ψ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure ℚ)
@@ -26188,35 +29753,394 @@ theorem exists_conj_image_localInertiaGroup_rat_ray_class
         c * Field.absoluteGaloisGroup.map (algebraMap ℚ
           (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
             hq.toHeightOneSpectrumRingOfIntegersRat)) σ' * c⁻¹ := by
-  sorry
+  -- the rational prime below `w`, with its integral embedding of completions
+  obtain ⟨q, hq, f, hf⟩ := exists_prime_ringHom_adicCompletionIntegers_mem_rat_ray_class F w
+  -- the compatible embedding of completed algebraic closures, and the
+  -- inertia element of `Γ ℚ_q` it transports `σ` to
+  obtain ⟨ι, σ', hσ', hι⟩ :=
+    exists_ringHom_algebraicClosure_mem_localInertiaGroup_rat_ray_class F w q hq f hf σ hσ
+  set A : AlgebraicClosure F →+*
+      AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w) :=
+    AlgebraicClosure.map
+      (algebraMap F (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w)) with hA
+  set C : AlgebraicClosure ℚ →+*
+      AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat) :=
+    AlgebraicClosure.map (algebraMap ℚ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)) with hC
+  -- the two embeddings `ℚ̄ → F_w^alg`
+  set ι₁ : AlgebraicClosure ℚ →+*
+      AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w) :=
+    A.comp ψ.symm.toAlgHom.toRingHom with hι₁
+  obtain ⟨c, hc⟩ := exists_algEquiv_ringHom_apply_eq_ray_class ι₁ (ι.comp C)
+  refine ⟨q, hq, c, σ', hσ', ?_⟩
+  have hinj : Function.Injective ι₁ := ι₁.injective
+  refine AlgEquiv.ext fun y => hinj ?_
+  -- the left-hand image intertwines with `σ` along `ι₁`
+  have hL : ι₁ ((AlgEquiv.restrictScalars ℚ (ψ.autCongr
+      (Field.absoluteGaloisGroup.map
+        (algebraMap F (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w)) σ))) y) =
+      σ (ι₁ y) := by
+    show A (ψ.symm (ψ ((Field.absoluteGaloisGroup.map
+      (algebraMap F (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w)) σ)
+        (ψ.symm y)))) = σ (A (ψ.symm y))
+    rw [ψ.symm_apply_apply]
+    exact Field.absoluteGaloisGroup.lift_map
+      (algebraMap F (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w)) σ (ψ.symm y)
+  -- so does the conjugated right-hand image, through `ι₂ = ι ∘ C = ι₁ ∘ c`
+  have hR : ι₁ ((c * Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)) σ' * c⁻¹) y) = σ (ι₁ y) := by
+    show ι₁ (c ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)) σ') (c⁻¹ y))) = σ (ι₁ y)
+    rw [hc]
+    show ι (C ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)) σ') (c⁻¹ y))) = σ (ι₁ y)
+    rw [hC, Field.absoluteGaloisGroup.lift_map, ← hC, hι]
+    congr 1
+    have h2 : ι₁ (c (c⁻¹ y)) = ι (C (c⁻¹ y)) := hc (c⁻¹ y)
+    rw [← h2, AlgEquiv.aut_inv, c.apply_symm_apply]
+  exact hL.trans hR.symm
+
+set_option maxHeartbeats 400000 in
+/-- **Multiplicative extension of a place-indexed function to the ideal
+monoid — the Frobenius-at-ideals bookkeeping** (PROVEN 2026-07-25;
+sub-leaf (a) of the reciprocity core below): any function `g` on the
+finite places of a number field `F` extends to a function `f` on ideals
+that is multiplicative on NONZERO ideals and agrees with `g` at every
+prime, `f (v.asIdeal) = g v`. This is unique factorization of ideals
+and nothing else — no unramifiedness, no openness, no arithmetic:
+`f I := ∏ ((normalizedFactors I).map G)` with `G P = g ⟨P, _, _⟩` at
+nonzero primes and `G P = 1` elsewhere; multiplicativity is
+`UniqueFactorizationMonoid.normalizedFactors_mul` plus
+`Multiset.prod_add`, and the value at a prime is
+`normalizedFactors_irreducible` (via `Ideal.prime_of_isPrime`) plus
+`normalize_eq`. Multiplicativity genuinely FAILS at `⊥` (there
+`f ⊥ = 1` while `f (⊥ * I) = 1 ≠ f ⊥ * f I` in general), which is why
+every consumer carries nonvanishing side conditions. Since a nonzero
+ideal is the product of its prime factors, `f` is UNIQUELY determined
+on nonzero ideals by these two properties — so the
+hypothesis-characterized `f` of the leaf below is exactly the Artin
+symbol on ideals. -/
+theorem exists_ideal_extension_globalFrob_ray_class
+    (F : Type*) [Field F] [NumberField F]
+    (g : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) →
+      Dickson.K 3) :
+    ∃ f : Ideal (NumberField.RingOfIntegers F) → Dickson.K 3,
+      (∀ I J : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ → J ≠ ⊥ →
+        f (I * J) = f I * f J) ∧
+      ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+        f v.asIdeal = g v := by
+  classical
+  set G : Ideal (NumberField.RingOfIntegers F) → Dickson.K 3 :=
+    fun P => if h : P.IsPrime ∧ P ≠ ⊥ then g ⟨P, h.1, h.2⟩ else 1 with hG
+  refine ⟨fun I => ((UniqueFactorizationMonoid.normalizedFactors I).map G).prod,
+    ?_, ?_⟩
+  · intro I J hI hJ
+    dsimp only
+    rw [UniqueFactorizationMonoid.normalizedFactors_mul hI hJ, Multiset.map_add,
+      Multiset.prod_add]
+  · intro v
+    dsimp only
+    rw [UniqueFactorizationMonoid.normalizedFactors_irreducible
+      (Ideal.prime_of_isPrime v.ne_bot v.isPrime).irreducible, normalize_eq]
+    simp only [Multiset.map_singleton, Multiset.prod_singleton, hG,
+      dif_pos (And.intro v.isPrime v.ne_bot)]
+
+set_option maxHeartbeats 400000 in
+/-- **A nonvanishing multiplicative ideal function takes the value `1`
+at the unit ideal** (PROVEN 2026-07-25): if `f` is multiplicative on
+NONZERO ideals of `𝓞 F` and `f` does not vanish at any prime, then
+`f ⊤ = 1`. Proof: `𝓞 F` is not a field
+(`NumberField.RingOfIntegers.not_isField`), so it has a nonzero prime
+`P` (`Ring.not_isField_iff_exists_prime`); `f P = f (⊤ * P) = f ⊤ * f P`
+and `f P ≠ 0` cancel. Isolated because multiplicativity ALONE only
+forces `f ⊤` to be idempotent, hence `0` or `1`, and the degenerate
+branch has to be excluded by hand — the same nondegeneracy bookkeeping
+that `exists_ideal_extension_globalFrob_ray_class` warns about at
+`⊥`. -/
+theorem eq_one_top_of_forall_asIdeal_ne_zero_ray_class
+    (F : Type*) [Field F] [NumberField F] (L : Type*) [Field L]
+    (f : Ideal (NumberField.RingOfIntegers F) → L)
+    (hfmul : ∀ I J : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ → J ≠ ⊥ →
+      f (I * J) = f I * f J)
+    (hne : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      f v.asIdeal ≠ 0) :
+    f ⊤ = 1 := by
+  obtain ⟨P, hP0, hPp⟩ :=
+    Ring.not_isField_iff_exists_prime.mp (NumberField.RingOfIntegers.not_isField F)
+  have hne' : f P ≠ 0 := hne ⟨P, hPp, hP0⟩
+  have h := hfmul ⊤ P top_ne_bot hP0
+  rw [Ideal.top_mul] at h
+  exact mul_right_cancel₀ hne' (h.symm.trans (one_mul (f P)).symm)
+
+set_option maxHeartbeats 400000 in
+/-- **Uniqueness of the multiplicative extension of a place-indexed
+function to the ideals** (PROVEN 2026-07-25; the converse bookkeeping to
+`exists_ideal_extension_globalFrob_ray_class`, whose docstring asserts
+this uniqueness without proving it): two functions on ideals of `𝓞 F`
+with values in a field `L`, each multiplicative on NONZERO ideals and
+agreeing at every prime `v.asIdeal`, agree at every nonzero ideal —
+provided the common value at primes never vanishes (without that, both
+could differ by an idempotent factor at `⊤`; see
+`eq_one_top_of_forall_asIdeal_ne_zero_ray_class`). Proof: unique
+factorization of ideals, run as
+`UniqueFactorizationMonoid.induction_on_prime` on the ideal monoid of
+the Dedekind domain `𝓞 F` — the zero case is excluded by hypothesis,
+the unit case is `Ideal.isUnit_iff` plus the value at `⊤`, and the
+prime step is multiplicativity together with `Ideal.isPrime_of_prime`
+packaging the prime factor as a `HeightOneSpectrum` point. This is what
+lets the Artin symbol be characterized abstractly (multiplicative,
+values `χ(Frob_v)` at primes) rather than by a chosen formula. -/
+theorem eq_of_forall_asIdeal_eq_ray_class
+    (F : Type*) [Field F] [NumberField F] (L : Type*) [Field L]
+    (f g : Ideal (NumberField.RingOfIntegers F) → L)
+    (hfmul : ∀ I J : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ → J ≠ ⊥ →
+      f (I * J) = f I * f J)
+    (hgmul : ∀ I J : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ → J ≠ ⊥ →
+      g (I * J) = g I * g J)
+    (hval : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      f v.asIdeal = g v.asIdeal)
+    (hne : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      f v.asIdeal ≠ 0)
+    (I : Ideal (NumberField.RingOfIntegers F)) (hI : I ≠ ⊥) :
+    f I = g I := by
+  have hgne : ∀ v : IsDedekindDomain.HeightOneSpectrum
+      (NumberField.RingOfIntegers F), g v.asIdeal ≠ 0 := fun v => (hval v) ▸ hne v
+  have hftop : f ⊤ = 1 :=
+    eq_one_top_of_forall_asIdeal_ne_zero_ray_class F L f hfmul hne
+  have hgtop : g ⊤ = 1 :=
+    eq_one_top_of_forall_asIdeal_ne_zero_ray_class F L g hgmul hgne
+  refine UniqueFactorizationMonoid.induction_on_prime
+    (P := fun J => J ≠ ⊥ → f J = g J) I ?_ ?_ ?_ hI
+  · intro h
+    exact absurd Ideal.zero_eq_bot h
+  · intro x hx _
+    rw [Ideal.isUnit_iff.mp hx, hftop, hgtop]
+  · intro a p ha hp ih _
+    have ha' : a ≠ ⊥ := fun h => ha (by rw [Ideal.zero_eq_bot]; exact h)
+    have hp0 : p ≠ ⊥ := fun h => hp.ne_zero (by rw [Ideal.zero_eq_bot]; exact h)
+    have hpp : p.IsPrime := Ideal.isPrime_of_prime hp
+    rw [hfmul p a hp0 ha', hgmul p a hp0 ha', ih ha', hval ⟨p, hpp, hp0⟩]
 
 set_option maxHeartbeats 1000000 in
 /-- **Artin reciprocity for the narrow Hilbert class field, in
-Frobenius-square form** (sorry node, created 2026-07-24 — THE remaining
-class-field-theoretic core of the route-(α) decomposition, now UNIFORM
-in the number field `F` and free of all `Γ ℚ`/`θ'` coding): a
-multiplicative character `χ` of `Γ F` (values in `𝔽̄₃`) that is trivial
-on an open subgroup `V` and everywhere unramified (`hunr`: trivial on
-every `Γ F`-conjugate of the image of the local inertia group at every
-finite place `w` of `F`) satisfies `χ(Frob_v)² = 1` at every finite
-place `v`, provided every nonzero ideal square of `𝓞 F` is narrowly
-principal (`hexp` — `Cl⁺(F)` has exponent dividing `2`, in the
-modulus-`1` `IsNarrowRayEquiv` vocabulary of `Chebotarev.lean`).
-Mathematical content (Neukirch VI §6–§7): `χ` cuts out a finite abelian
-extension `M/F` (fixed field of `ker χ`, open and normal), everywhere
-unramified by `hunr`; the Artin map sends `v ↦ Frob_v|_M`, extends
-multiplicatively to ideals, and kills totally-positive principal
-ideals, so `Frob_v² = Frob_{v²} = Frob_{(γ)} = 1` on `M`, with `γ ≫ 0`
-a totally positive generator of `v²` supplied by `hexp`. Intended
-formalization route: the Weber counting machinery of `Chebotarev.lean`
-(`exists_forall_abs_natCard_isNarrowRayEquiv_sub_mul_le_rpow`, the
-per-residue fibering, and the `exists_algEquiv_map_zeta_eq_pow_absNorm`
-Frobenius realizations) is being built exactly for the analytic proof
-of this reciprocity law; if the pin's vocabulary resists, the natural
-sharp sub-leaves are (i) Frobenius-at-ideals multiplicativity
-(`Frob_{IJ} = Frob_I · Frob_J` on the cut-out abelian extension) and
-(ii) the principal-ideal-trivial-Frobenius law for everywhere-
-unramified abelian extensions. -/
+Artin-symbol existence form — THE class-field-theoretic leaf** (sorry
+node, created 2026-07-25 as the isolated global-CFT content of
+`character_ideal_span_singleton_eq_one_of_forall_pos_ray_class` below):
+for a multiplicative `χ : Γ F → 𝔽̄₃` (`hmul`) trivial on an open
+subgroup `V` (`hVopen`, `hVker`) and unramified at every finite place
+(`hunr`), the assignment `v ↦ χ(Frob_v)` extends to a function `c` on
+ideals that is multiplicative on nonzero ideals AND takes the value `1`
+on every nonzero NARROWLY PRINCIPAL ideal. That last clause is the
+Artin reciprocity law: `c` factors through the narrow class group
+`Cl⁺(F) = I(F)/P⁺(F)`.
+
+Why this is true (Neukirch, *ANT* VI (6.7) and VI §7; Lang, *ANT* ch. X
+§1; Janusz, *Algebraic Number Fields* V; Serre, Duke 1987 §5.3): `χ`
+takes values in the ABELIAN group `𝔽̄₃ˣ` (its values are units, since
+`χ a · χ a⁻¹ = χ 1 = 1`), so `ker χ` is an open NORMAL subgroup and `χ`
+cuts out a finite abelian extension `M/F` whose Galois group embeds in
+`𝔽̄₃ˣ` — hence is CYCLIC, the image of `χ` being a finite subgroup of a
+field's unit group. By `hunr`, `M/F` is unramified at every finite
+place. The Artin map `I(F) → Gal(M/F)`, `v ↦ Frob_v`, is multiplicative
+by construction, so `c` is its composite with `Gal(M/F) ↪ 𝔽̄₃ˣ`; the
+reciprocity law says its kernel contains `P⁺(F)`, equivalently that
+`M` lies in the narrow Hilbert class field of `F`.
+
+The hypothesis really is needed and the conclusion really is not
+vacuous — checked numerically 2026-07-25 with PARI/GP, `bnfnarrow`:
+for `F = ℚ(√3)` one has `Cl(F) = 1` but `Cl⁺(F) ≅ ℤ/2` (the
+fundamental unit `2 + √3` has norm `+1`, so it cannot flip signs), and
+the corresponding quadratic character has `c ((√3)) = −1 ≠ 1` on the
+principal — but not NARROWLY principal — ideal `(√3)`. So "narrowly
+principal" cannot be weakened to "principal", and the total positivity
+in the consumer below is load-bearing rather than decorative. (The
+companion degeneracy in the other direction, `IsNarrowRayEquiv 1`, is
+documented on `IsNarrowPrincipal`.)
+
+**The Weber-counting route previously recorded on the consumer is
+CIRCULAR as stated** (analysis 2026-07-25) and is NOT the intended
+attack any more. That route proposed to use
+`exists_forall_abs_natCard_isNarrowRayEquiv_sub_mul_le_rpow` and
+`dense_conjClasses_globalFrob` to upgrade "`c` is constant on the
+primes of a narrow class" to "`c` is trivial on the principal class".
+But "`c` is constant on the primes of a narrow class" IS the
+reciprocity law: the density statements say only that the Frobenius
+conjugacy classes are topologically dense in `Γ F` — they produce
+plenty of primes in each narrow ray class, yet nothing in them ever
+links the Galois-theoretic quantity `χ(Frob_v)` to the IDEAL-theoretic
+narrow class of `v`, and that link is exactly what is to be proven.
+The counting machinery is an INPUT to a proof of reciprocity (it is
+what powers the analytic class-number/`L`-function inequality), never
+a step that discharges it.
+
+Genuine routes, both of which are large developments absent from the
+mathlib pin: (i) Artin's original proof — reduce to `Gal(M/F)` cyclic
+(free here, see above), then Artin's cyclotomic-descent lemma reduces
+reciprocity for `M/F` to reciprocity for cyclotomic extensions, where
+the Frobenius acts by `ζ ↦ ζ^{N v}`; the in-tree
+`exists_algEquiv_map_zeta_eq_pow_absNorm` is the cyclotomic base case
+of that route. (ii) The two inequalities: the analytic one over ray
+class `L`-functions (this is where the Weber counting of
+`Chebotarev.lean` is genuinely consumed) together with the algebraic
+one via the ambiguous-class/Herbrand-quotient computation, then
+reciprocity from the index equality. -/
+theorem exists_artinSymbol_isNarrowPrincipal_ray_class
+    (F : Type*) [Field F] [NumberField F]
+    (χ : Γ F → Dickson.K 3)
+    (hmul : ∀ a b : Γ F, χ (a * b) = χ a * χ b)
+    (V : Subgroup (Γ F)) (hVopen : IsOpen (V : Set (Γ F)))
+    (hVker : ∀ a ∈ V, χ a = 1)
+    (hunr : ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      ∀ c : Γ F, ∀ σ ∈ localInertiaGroup w,
+        χ (c * Field.absoluteGaloisGroup.map
+          (algebraMap F (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w)) σ * c⁻¹) = 1) :
+    ∃ c : Ideal (NumberField.RingOfIntegers F) → Dickson.K 3,
+      (∀ I J : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ → J ≠ ⊥ →
+        c (I * J) = c I * c J) ∧
+      (∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+        c v.asIdeal = χ (globalFrob v)) ∧
+      ∀ I : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ →
+        IsNarrowPrincipal I → c I = 1 := by
+  sorry
+
+set_option maxHeartbeats 1000000 in
+/-- **A totally positive principal ideal has trivial Artin symbol — THE
+narrow-ray reciprocity input** (created 2026-07-25 as
+sub-leaf (b) of
+`character_globalFrob_sq_eq_one_of_narrow_exponent_two_ray_class`
+below; the genuinely class-field-theoretic content of that leaf, now
+isolated from all bookkeeping): let `χ : Γ F → 𝔽̄₃` be multiplicative
+(`hmul`), trivial on an open subgroup `V` (`hVopen`, `hVker`), and
+unramified at every finite place (`hunr`: trivial on every
+`Γ F`-conjugate of the image of the local inertia group at `w`); let
+`f` be the multiplicative extension of `v ↦ χ(Frob_v)` to the ideals
+(`hfmul`, `hfrob`; such an `f` exists by
+`exists_ideal_extension_globalFrob_ray_class` and is unique on nonzero
+ideals). Then `f ((α)) = 1` for every nonzero TOTALLY POSITIVE
+`α ∈ 𝓞 F`.
+
+Mathematical content — Artin reciprocity for the narrow ray class
+field of modulus `1` (Neukirch ANT VI (6.7) and VI §7; Lang ANT ch. X;
+Serre, Duke 1987 §5.3): the values of `χ` are units (`χ a · χ a⁻¹ = 1`)
+in the ABELIAN group `𝔽̄₃ˣ`, so `ker χ` is an open normal subgroup and
+`χ` cuts out a finite abelian extension `M/F`, unramified at every
+finite place by `hunr`. The Artin map on ideals sends `v ↦ Frob_v|_M`
+and is multiplicative, hence coincides with `f` under
+`Gal(M/F) ↪ 𝔽̄₃ˣ`; its kernel contains the ray `P₁⁺` of totally
+positive principal ideals, because a finite-place-unramified abelian
+extension has conductor dividing the archimedean modulus, so
+`Gal(M/F)` is a quotient of `Cl⁺(F) = I(F)/P₁⁺`. Concretely
+`f ((α)) = 1` for `α ≫ 0`.
+
+**DECOMPOSED and PROVEN as glue 2026-07-25** over the reciprocity leaf
+`exists_artinSymbol_isNarrowPrincipal_ray_class` (sorry) and the two
+bookkeeping bricks `eq_of_forall_asIdeal_eq_ray_class` /
+`eq_one_top_of_forall_asIdeal_ne_zero_ray_class` (both PROVEN just
+above). Assembly: the values of `χ` never vanish (`χ a · χ a⁻¹ = χ 1 =
+1`, and `χ 1 = 1` because `1 ∈ V`), so the hypothesized `f` and the
+Artin symbol `c` supplied by the reciprocity leaf are two
+multiplicative-on-nonzero functions agreeing at every prime with a
+nonvanishing common value there — hence equal at every nonzero ideal by
+uniqueness of the multiplicative extension. Finally `(α)` is nonzero
+and NARROWLY principal, with the multiplier witnesses `1` (totally
+positive) and `α`: `span {1} · span {α} = ⊤ · span {α} = span {α}`. So
+`f ((α)) = c ((α)) = 1`.
+
+The Weber-counting route recorded here previously — counting per narrow
+ray class plus `dense_conjClasses_globalFrob`, to upgrade "`f` constant
+on the primes of a class" to "`f` trivial on the principal class" — was
+found to be CIRCULAR on 2026-07-25 and has been retired; see the
+analysis in the docstring of
+`exists_artinSymbol_isNarrowPrincipal_ray_class`, which also records
+the two genuine routes (Artin's cyclotomic descent; the two
+inequalities) and the PARI/GP check that the total-positivity
+hypothesis is load-bearing. This remains the single point where global
+class field theory (absent from the mathlib pin) enters the reciprocity
+chain. -/
+theorem character_ideal_span_singleton_eq_one_of_forall_pos_ray_class
+    (F : Type*) [Field F] [NumberField F]
+    (χ : Γ F → Dickson.K 3)
+    (hmul : ∀ a b : Γ F, χ (a * b) = χ a * χ b)
+    (V : Subgroup (Γ F)) (hVopen : IsOpen (V : Set (Γ F)))
+    (hVker : ∀ a ∈ V, χ a = 1)
+    (hunr : ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      ∀ c : Γ F, ∀ σ ∈ localInertiaGroup w,
+        χ (c * Field.absoluteGaloisGroup.map
+          (algebraMap F (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w)) σ * c⁻¹) = 1)
+    (f : Ideal (NumberField.RingOfIntegers F) → Dickson.K 3)
+    (hfmul : ∀ I J : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ → J ≠ ⊥ →
+      f (I * J) = f I * f J)
+    (hfrob : ∀ v : IsDedekindDomain.HeightOneSpectrum
+      (NumberField.RingOfIntegers F), f v.asIdeal = χ (globalFrob v))
+    (α : NumberField.RingOfIntegers F) (hα0 : α ≠ 0)
+    (hαpos : ∀ φ : F →+* ℝ,
+      0 < φ (algebraMap (NumberField.RingOfIntegers F) F α)) :
+    f (Ideal.span {α}) = 1 := by
+  -- the values of `χ` are units of `𝔽̄₃`, hence nonzero
+  have hone : χ 1 = 1 := hVker 1 V.one_mem
+  have hχne : ∀ a : Γ F, χ a ≠ 0 := by
+    intro a ha
+    have h1 : χ a * χ a⁻¹ = 1 := by rw [← hmul, mul_inv_cancel, hone]
+    rw [ha, zero_mul] at h1
+    exact zero_ne_one h1
+  -- the Artin symbol attached to `χ`, trivial on narrowly principal ideals
+  obtain ⟨c, hcmul, hcfrob, hcnarrow⟩ :=
+    exists_artinSymbol_isNarrowPrincipal_ray_class F χ hmul V hVopen hVker hunr
+  have hspan : Ideal.span {α} ≠ ⊥ := by
+    simpa [Ideal.span_singleton_eq_bot] using hα0
+  -- `f` and `c` are two multiplicative extensions of the same prime values
+  have hagree : f (Ideal.span {α}) = c (Ideal.span {α}) :=
+    eq_of_forall_asIdeal_eq_ray_class F (Dickson.K 3) f c hfmul hcmul
+      (fun v => by rw [hfrob, hcfrob]) (fun v => by rw [hfrob]; exact hχne _)
+      _ hspan
+  -- and `(α)` is narrowly principal, with multipliers `1` and `α`
+  rw [hagree]
+  refine hcnarrow _ hspan ⟨1, α, one_ne_zero, ?_, hαpos, ?_⟩
+  · intro φ
+    simp
+  · rw [Ideal.span_singleton_one, Ideal.top_mul]
+
+set_option maxHeartbeats 1000000 in
+/-- **Artin reciprocity for the narrow Hilbert class field, in
+Frobenius-square form** (created 2026-07-24 as THE class-field-theoretic
+core of the route-(α) decomposition, uniform in the number field `F`
+and free of all `Γ ℚ`/`θ'` coding; DECOMPOSED and PROVEN as glue
+2026-07-25 over the two sub-leaves just above — the bookkeeping
+`exists_ideal_extension_globalFrob_ray_class` (PROVEN) and the
+reciprocity input
+`character_ideal_span_singleton_eq_one_of_forall_pos_ray_class`
+(itself PROVEN as glue 2026-07-25 over the single remaining
+class-field-theoretic leaf
+`exists_artinSymbol_isNarrowPrincipal_ray_class`)): a multiplicative
+character `χ` of `Γ F` (values in `𝔽̄₃`)
+that is trivial on an open subgroup `V` and everywhere unramified
+(`hunr`: trivial on every `Γ F`-conjugate of the image of the local
+inertia group at every finite place `w` of `F`) satisfies
+`χ(Frob_v)² = 1` at every finite place `v`, provided every nonzero
+ideal square of `𝓞 F` is narrowly principal (`hexp` — `Cl⁺(F)` has
+exponent dividing `2`).
+
+**Hypothesis CORRECTED 2026-07-25.** `hexp` previously read
+`IsNarrowRayEquiv 1 (I²) ⊤`, which is DEGENERATE: at modulus `1` all
+of that relation's clauses except the multiplier equation are vacuous,
+so `α = β = 0` satisfies it and, over a field with no real embedding,
+`IsNarrowRayEquiv 1 I J` holds for ALL `I, J` — making the statement
+false (counterexample `F = ℚ(√−47)`, `Cl(F) ≅ ℤ/5`, an order-`5`
+character into `μ₅ ⊆ 𝔽̄₃ˣ`; see `IsNarrowPrincipal`'s docstring). The
+hypothesis is now `IsNarrowPrincipal (I²)`, which pins the multipliers
+nonzero and says exactly `[I]² = 1` in `Cl⁺(F)`; it is supplied for
+the seven quadratic fields by `isNarrowPrincipal_sq_of_quadratic_ray_class`.
+
+Assembly proven here: extend `v ↦ χ(Frob_v)` multiplicatively to the
+nonzero ideals as `f` (sub-leaf (a)); `hexp` at `v` gives totally
+positive `α ≠ 0`, `β` with `(α)·v² = (β)`, and `β ≠ 0` follows since
+`(α)·v² ≠ ⊥` (`Ideal.mul_eq_bot`); applying `f` and using sub-leaf (b)
+twice, `1 = f((β)) = f((α))·f(v²) = f(v)² = χ(Frob_v)²`. -/
 theorem character_globalFrob_sq_eq_one_of_narrow_exponent_two_ray_class
     (F : Type*) [Field F] [NumberField F]
     (χ : Γ F → Dickson.K 3)
@@ -26228,10 +30152,36 @@ theorem character_globalFrob_sq_eq_one_of_narrow_exponent_two_ray_class
         χ (c * Field.absoluteGaloisGroup.map
           (algebraMap F (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w)) σ * c⁻¹) = 1)
     (hexp : ∀ I : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ →
-      IsNarrowRayEquiv 1 (I ^ 2) ⊤)
+      IsNarrowPrincipal (I ^ 2))
     (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F)) :
     χ (globalFrob v) ^ 2 = 1 := by
-  sorry
+  -- (a) the multiplicative extension of `v ↦ χ(Frob_v)` to the ideals
+  obtain ⟨f, hfmul, hfrob⟩ :=
+    exists_ideal_extension_globalFrob_ray_class F fun w => χ (globalFrob w)
+  -- the narrow principality of `v²`, with nonzero multipliers
+  obtain ⟨α, β, hα0, hαpos, hβpos, heq⟩ := hexp v.asIdeal v.ne_bot
+  have hspanα : Ideal.span {α} ≠ ⊥ := by
+    simpa [Ideal.span_singleton_eq_bot] using hα0
+  have hβ0 : β ≠ 0 := by
+    intro h0
+    have hbot : Ideal.span {α} * v.asIdeal ^ 2 = ⊥ := by
+      rw [heq, h0, Ideal.span_singleton_eq_bot.mpr rfl]
+    rcases Ideal.mul_eq_bot.mp hbot with h | h
+    · exact hspanα h
+    · exact pow_ne_zero 2 v.ne_bot h
+  -- (b) reciprocity kills both totally positive principal ideals
+  have hfα : f (Ideal.span {α}) = 1 :=
+    character_ideal_span_singleton_eq_one_of_forall_pos_ray_class F χ hmul V
+      hVopen hVker hunr f hfmul hfrob α hα0 hαpos
+  have hfβ : f (Ideal.span {β}) = 1 :=
+    character_ideal_span_singleton_eq_one_of_forall_pos_ray_class F χ hmul V
+      hVopen hVker hunr f hfmul hfrob β hβ0 hβpos
+  -- and multiplicativity turns the relation into the Frobenius square
+  have hstep := hfmul _ _ hspanα (pow_ne_zero 2 v.ne_bot)
+  rw [heq, hfβ, hfα, one_mul, pow_two, hfmul _ _ v.ne_bot v.ne_bot,
+    hfrob v] at hstep
+  rw [pow_two]
+  exact hstep.symm
 
 set_option maxHeartbeats 1000000 in
 /-- **Squares of characters trivial on all Frobenius conjugates are
@@ -26325,9 +30275,11 @@ unramified at every finite place of `F`). By Artin reciprocity for
 the narrow Hilbert class field `H⁺(F)/F` (Neukirch VI §6–§7; Serre,
 Duke 1987 §5.3), `ν` factors through `Gal(H⁺(F)/F) ≅ Cl⁺(F)`, and
 `hexp` — every nonzero ideal square is narrowly principal, i.e.
-`Cl⁺(F)` has exponent dividing `2`, stated on the modulus-`1`
-instance of the `Chebotarev.lean` narrow-ray vocabulary
-(`IsNarrowRayEquiv`) — forces `ν² = 1` on `H`. Suggested
+`Cl⁺(F)` has exponent dividing `2`, stated with the nondegenerate
+`IsNarrowPrincipal` predicate above (hypothesis CORRECTED 2026-07-25
+from the degenerate modulus-`1` `IsNarrowRayEquiv` form — see
+`IsNarrowPrincipal`'s docstring for the `ℚ(√−47)` counterexample the
+old form admitted) — forces `ν² = 1` on `H`. Suggested
 formalization route: realize a given `g ∈ H` modulo the open normal
 subgroup `ker(ν|_H)` as a Frobenius at a degree-one prime `𝔭` of `F`
 unramified in the finite abelian extension cut out by `ν`
@@ -26360,7 +30312,7 @@ theorem character_sq_eq_one_of_narrow_exponent_two_ray_class
     [NumberField (IntermediateField.adjoin ℚ {x})]
     (hexp : ∀ I : Ideal (NumberField.RingOfIntegers
         (IntermediateField.adjoin ℚ {x})), I ≠ ⊥ →
-      IsNarrowRayEquiv 1 (I ^ 2) ⊤) :
+      IsNarrowPrincipal (I ^ 2)) :
     ∀ g : Γ ℚ, θ' g = 1 → ν g ^ 2 = 1 := by
   classical
   -- `ℚ̄` is an algebraic closure of `F = ℚ(x)`
@@ -26536,7 +30488,7 @@ three nodes above — the pure-reciprocity sorry leaf
 `character_sq_eq_one_of_narrow_exponent_two_ray_class` (Artin
 reciprocity for the narrow Hilbert class field, THE
 class-field-theoretic gap) over the PROVEN narrow-exponent-two glue
-`isNarrowRayEquiv_sq_top_of_quadratic_ray_class` (the `h⁺`-table
+`isNarrowPrincipal_sq_of_quadratic_ray_class` (the `h⁺`-table
 `1, 1, 1, 2, 1, 2, 2` in exponent form) over the two per-field
 class-number sorry leaves
 `isPrincipalIdealRing_ringOfIntegers_quadratic_ray_class` (`h = 1`
@@ -26597,7 +30549,7 @@ theorem odd_character_eq_one_of_unramified_everywhere_ray_class
   have h2 : ν g ^ 2 = 1 :=
     character_sq_eq_one_of_narrow_exponent_two_ray_class θ' x hθ'x ν
       hνmul hνne0 U hUopen hUker hνunr
-      (fun I hI => isNarrowRayEquiv_sq_top_of_quadratic_ray_class
+      (fun I hI => isNarrowPrincipal_sq_of_quadratic_ray_class
         d hd x hx I hI) g hg
   -- the odd pointwise order, and `gcd(2, odd) = 1`
   obtain ⟨n, -, hnodd, -, hgn⟩ := hνodd g hg
