@@ -68,7 +68,6 @@ them without a human. Do not re-wrap it.
 - `exists_ringHom_matrix_quotient_of_finite`
 - `exists_uniform_span_maximalIdeal_traceSubring`
 - `exists_framedGaloisRep_baseChange_traceSubring`
-- `isFlatAt_of_baseChange_traceSubring`
 - `isTameAtTwo_of_baseChange_traceSubring`
 - `subring_closure_charFrob_coeff_eq_top`
 - `exists_finiteIndex_isIntegral_charpolyCoeff_quotient_of_isWeaklyUniversal_isTraceGenerated`
@@ -212,8 +211,9 @@ the surjectivity and minimality strata of the minimal presentation,
   over a three-way cut: `exists_framedGaloisRep_baseChange_traceSubring`
   (Rouquier–Nyssen proper — the descended `ρ'` exists, with a framing
   identifying `ρ' ⊗ D.R` with `D.ρ`), and the two local-condition descent
-  leaves `isFlatAt_of_baseChange_traceSubring` and
-  `isTameAtTwo_of_baseChange_traceSubring`. What the assembly proves is
+  leaves `isFlatAt_of_baseChange_traceSubring` (PROVEN 2026-07-26 over
+  the two Raynaud closure nodes already present here, adding no leaf)
+  and `isTameAtTwo_of_baseChange_traceSubring`. What the assembly proves is
   everything else: the cyclotomic determinant and unramifiedness outside
   `{2, ℓ}` descend by injectivity of `R' → D.R` (through the PROVEN
   `one_tmul_injective`), and the `charFrob` clause is
@@ -6345,34 +6345,290 @@ theorem exists_framedGaloisRep_baseChange_traceSubring (hℓ5 : 5 ≤ ℓ)
         (ρ'.baseChange D.R).conj e = D.ρ :=
   sorry
 
+/-- **Raynaud closure for flat prolongations, in plain SUBOBJECT form**
+(PROVEN 2026-07-26 as a two-line corollary of
+`hasFlatProlongationAt_of_prod_injection` above): if the local space of
+`ρ₂` is the geometric-point group of a finite flat group scheme over
+`𝒪ᵥ`, then so is every `Γ Kᵥ`-equivariant additive SUBGROUP of it.
+
+This is the sub-object twin of `hasFlatProlongationAt_of_pi_surjection`
+— that one is the same closure statement for equivariant QUOTIENTS of a
+finite POWER — and it is what a DESCENT along a subring inclusion needs,
+where the sub-of-a-PRODUCT form of the leaf has no second factor to
+offer.
+
+NO NEW MATHEMATICAL CONTENT, AND DELIBERATELY SO (see the duplication
+audit on `hasFlatProlongationAt_of_prod_injection`, which asks that no
+fourth copy of the schematic-closure argument be written). The plain
+subobject form is the sub-of-a-product form with the SAME object taken
+twice and the second coordinate killed: `x ↦ (j x, 0)` is injective and
+equivariant into `M₂ × M₂` because `g • 0 = 0`. So this declaration
+consumes the existing leaf rather than restating it, and closing
+`hasFlatProlongationAt_of_prod_injection` closes this too.
+
+Note there is no finiteness hypothesis on `M₁`: it is forced, since `M₁`
+injects into the finite `M₂` (a finite flat `𝒪ᵥ`-algebra has finitely
+many geometric points).
+
+References: Raynaud, *Schémas en groupes de type `(p,…,p)`*, Bull. SMF
+102 (1974), §2–3; Tate, *Finite flat group schemes*, in
+Cornell–Silverman–Stevens, §4. -/
+theorem hasFlatProlongationAt_of_injection
+    (w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    {A₁ : Type*} [CommRing A₁] [TopologicalSpace A₁]
+    {M₁ : Type*} [AddCommGroup M₁] [Module A₁ M₁]
+    {A₂ : Type*} [CommRing A₂] [TopologicalSpace A₂]
+    {M₂ : Type*} [AddCommGroup M₂] [Module A₂ M₂]
+    {ρ₁ : GaloisRep ℚ A₁ M₁} {ρ₂ : GaloisRep ℚ A₂ M₂}
+    (h : ρ₂.HasFlatProlongationAt w)
+    (j : (ρ₁.toLocal w).Space →+ (ρ₂.toLocal w).Space)
+    (hinj : Function.Injective j)
+    (hequiv : ∀ (g : Field.absoluteGaloisGroup
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ w))
+        (x : (ρ₁.toLocal w).Space), j (g • x) = g • j x) :
+    ρ₁.HasFlatProlongationAt w := by
+  refine hasFlatProlongationAt_of_prod_injection w h h (j.prod 0) ?_ ?_
+  · exact fun a b hab => hinj (congrArg Prod.fst hab)
+  · intro g x
+    show ((j (g • x), (0 : (ρ₂.toLocal w).Space)) :
+        (ρ₂.toLocal w).Space × (ρ₂.toLocal w).Space) =
+      (g • j x, g • (0 : (ρ₂.toLocal w).Space))
+    rw [hequiv g x, smul_zero]
+
+set_option backward.isDefEq.respectTransparency false in
 open scoped TensorProduct in
-/-- **Flatness at `ℓ` descends to the trace subring** (sorry leaf, cut
-2026-07-25 out of `exists_framedGaloisRep_traceSubring`): if the framed
+/-- **Flatness at `ℓ` pulls back along a conjugation identity** (PROVEN
+2026-07-26): if `ρ.conj e = τ` and `τ` is flat at `v`, then so is `ρ`.
+
+This is the direction opposite to the flatness clause of
+`isHardlyRamified_conj` above, and is what a *descent* hypothesis of the
+shape `(ρ' ⊗ R)ᵉ = ρ` gives you: the base-changed inverse framing
+`(R ⧸ I) ⊗ e⁻¹` is an equivariant additive isomorphism of the two local
+spaces, so `HasFlatProlongationAt.of_equiv` transports the Hopf-algebra
+witness at every open ideal `I`. Equivariance is checked on generators:
+`e⁻¹(τ(g) y) = ρ(g)(e⁻¹ y)`, which is `ρ.conj e = τ` read through
+`LinearEquiv.conj_apply_apply`. -/
+theorem isFlatAt_of_conj_eq
+    {v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)}
+    {R : Type*} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R]
+    {M : Type*} [AddCommGroup M] [Module R M] [Module.Finite R M]
+    [Module.Free R M]
+    {N : Type*} [AddCommGroup N] [Module R N] [Module.Finite R N]
+    [Module.Free R N]
+    {ρ : GaloisRep ℚ R M} {τ : GaloisRep ℚ R N} (e : M ≃ₗ[R] N)
+    (he : ρ.conj e = τ) (h : τ.IsFlatAt v) : ρ.IsFlatAt v := by
+  constructor
+  intro I hI
+  refine (h.cond I hI).of_equiv _
+    (LinearEquiv.baseChange R (R ⧸ I) N M e.symm).toAddEquiv ?_
+  intro g x
+  show (LinearEquiv.baseChange R (R ⧸ I) N M e.symm)
+      (((τ.baseChange (R ⧸ I)).toLocal v g) x) =
+    ((ρ.baseChange (R ⧸ I)).toLocal v g)
+      ((LinearEquiv.baseChange R (R ⧸ I) N M e.symm) x)
+  induction x using TensorProduct.induction_on with
+  | zero => simp
+  | add a b ha hb => simp only [map_add, ha, hb]
+  | tmul c m =>
+    simp only [GaloisRep.toLocal_apply, GaloisRep.baseChange_tmul,
+      LinearEquiv.baseChange_tmul]
+    congr 1
+    conv_lhs => rw [← he]
+    rw [GaloisRep.conj_apply, LinearEquiv.conj_apply_apply,
+      LinearEquiv.symm_apply_apply]
+
+set_option backward.isDefEq.respectTransparency false in
+open scoped TensorProduct in
+/-- **Flatness at `ℓ` descends from a complete local ring to a subring
+carrying the subspace topology** (PROVEN 2026-07-26 over the two Raynaud
+closure nodes `hasFlatProlongationAt_of_injection` — itself a corollary
+of the leaf `hasFlatProlongationAt_of_prod_injection` — and
+`hasFlatProlongationAt_of_pi_surjection`): if `C` is a subring of an
+`𝔪`-adic local ring `A` and the base change `τ ⊗ A` of a framed
+representation over `C` is flat at `v`, then `τ` itself is flat at `v`.
+
+This is the general form of the trace-subring descent leaf below, with
+the Carayol package stripped away: NOTHING about `C` is used except that
+its topology is the subspace topology (which is how `Subring` carries a
+topology) and that `A` is `𝔪`-adic. In particular the two open arithmetic
+leaves `exists_pow_comap_le_pow_maximalIdeal_traceSubring` (Carayol's
+Lemme 1) and `fg_comap_maximalIdeal_traceSubring` are NOT needed:
+flatness never asks for the `𝔪'`-adic filtration, only for cofinality of
+*some* family of open ideals, and the contracted ideals `𝔪ⁿ ∩ C` are
+cofinal in the open ideals of `C` by the definition of the subspace
+topology alone.
+
+ROUTE, in three steps, given an open ideal `I` of `C`.
+
+1. *Cofinality.* `I` is a neighbourhood of `0` for the subspace topology,
+   so `I ⊇ t ∩ C` for some neighbourhood `t` of `0` in `A`, and
+   `isAdic_iff` gives `n` with `𝔪ⁿ ⊆ t`. Put `J := 𝔪ⁿ` (open in `A`) and
+   `J' := J ∩ C`, so that `J' ≤ I`.
+2. *Subobject.* `C ⧸ J' → A ⧸ J` is INJECTIVE — that is exactly
+   `J' = J ∩ C` — and `N` is free, hence flat, over `C`, so
+   `(C ⧸ J') ⊗_C N → (A ⧸ J) ⊗_C N` is injective
+   (`Module.Flat.rTensor_preserves_injective_linearMap`). Composing with
+   the inverse of `TensorProduct.AlgebraTensorModule.cancelBaseChange`,
+   which identifies `(A ⧸ J) ⊗_A (A ⊗_C N)` — the space named by
+   `hflat.cond J` — with `(A ⧸ J) ⊗_C N`, this is a `Γ Kᵥ`-equivariant
+   injection of the space of `τ ⊗ C/J'` into a space with a finite flat
+   prolongation. `hasFlatProlongationAt_of_injection` then prolongs it.
+3. *Quotient.* `J' ≤ I`, so `τ ⊗ C/I` is an equivariant QUOTIENT of
+   `τ ⊗ C/J'`; `hasFlatProlongationAt_of_pi_surjection` at `n = 1`
+   finishes.
+
+Both closure steps are genuinely needed and neither subsumes the other:
+the contracted ideal `J'` is in general strictly smaller than `I`, so the
+subobject step alone lands at the wrong level, and `C ⧸ I` need not embed
+in any `A ⧸ J`. -/
+theorem isFlatAt_of_subring_baseChange
+    {v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)}
+    {A : Type*} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+    [IsLocalRing A] (hadic : IsAdic (IsLocalRing.maximalIdeal A))
+    {C : Subring A} [IsLocalRing C] [ContinuousSMul C A]
+    {N : Type*} [AddCommGroup N] [Module C N] [Module.Finite C N]
+    [Module.Free C N]
+    {τ : GaloisRep ℚ C N}
+    (hflat : (τ.baseChange A).IsFlatAt v) :
+    τ.IsFlatAt v := by
+  classical
+  constructor
+  intro I hI
+  -- STEP 1: an `𝔪`-adic open ideal of `A` contracting into `I`
+  obtain ⟨n, hn⟩ : ∃ n : ℕ,
+      Ideal.comap (algebraMap C A) ((IsLocalRing.maximalIdeal A) ^ n) ≤ I := by
+    have hs : (I : Set C) ∈ nhds (0 : C) := hI.mem_nhds I.zero_mem
+    rw [nhds_induced, Filter.mem_comap] at hs
+    obtain ⟨t, ht, hts⟩ := hs
+    obtain ⟨m, hm⟩ := (isAdic_iff.mp hadic).2 t (by simpa using ht)
+    exact ⟨m, fun z hz => hts (hm hz)⟩
+  set J : Ideal A := (IsLocalRing.maximalIdeal A) ^ n
+  have hJopen : IsOpen (J : Set A) := (isAdic_iff.mp hadic).1 n
+  set J' : Ideal C := Ideal.comap (algebraMap C A) J
+  -- STEP 2: the `Γ`-stable subobject `C ⧸ J' ↪ A ⧸ J`
+  let cmap : (C ⧸ J') →ₗ[C] (A ⧸ J) :=
+    Submodule.liftQ J' (Algebra.linearMap C (A ⧸ J)) (by
+      intro r hr
+      show algebraMap C (A ⧸ J) r = 0
+      rw [IsScalarTower.algebraMap_apply C A (A ⧸ J)]
+      exact Ideal.Quotient.eq_zero_iff_mem.mpr hr)
+  have hcmap : ∀ r : C, cmap (Ideal.Quotient.mk J' r) = algebraMap C (A ⧸ J) r :=
+    fun _ => rfl
+  have hcmapinj : Function.Injective cmap := by
+    refine (injective_iff_map_eq_zero cmap).mpr ?_
+    intro x hx
+    obtain ⟨r, rfl⟩ := Ideal.Quotient.mk_surjective x
+    rw [hcmap r, IsScalarTower.algebraMap_apply C A (A ⧸ J),
+      Ideal.Quotient.algebraMap_eq, Ideal.Quotient.eq_zero_iff_mem] at hx
+    exact Ideal.Quotient.eq_zero_iff_mem.mpr hx
+  let ι : ((C ⧸ J') ⊗[C] N) →ₗ[C] ((A ⧸ J) ⊗[C] N) := LinearMap.rTensor N cmap
+  let can := TensorProduct.AlgebraTensorModule.cancelBaseChange C A (A ⧸ J) (A ⧸ J) N
+  let jmap : ((τ.baseChange (C ⧸ J')).toLocal v).Space →+
+      (((τ.baseChange A).baseChange (A ⧸ J)).toLocal v).Space :=
+    (can.symm.toAddEquiv.toAddMonoidHom).comp (ι.toAddMonoidHom)
+  have hsmall : (τ.baseChange (C ⧸ J')).HasFlatProlongationAt v := by
+    refine hasFlatProlongationAt_of_injection v (hflat.cond J hJopen) jmap ?_ ?_
+    · exact can.symm.injective.comp
+        (Module.Flat.rTensor_preserves_injective_linearMap cmap hcmapinj)
+    · intro g x
+      show can.symm (ι (((τ.baseChange (C ⧸ J')).toLocal v) g x))
+        = (((τ.baseChange A).baseChange (A ⧸ J)).toLocal v) g (can.symm (ι x))
+      induction x using TensorProduct.induction_on with
+      | zero => simp
+      | add a b ha hb => simp only [map_add, ha, hb]
+      | tmul c m => rfl
+  -- STEP 3: the equivariant quotient `C ⧸ J' ↠ C ⧸ I`
+  let qmap : (C ⧸ J') →ₗ[C] (C ⧸ I) :=
+    Submodule.liftQ J' (Submodule.mkQ (I : Submodule C C))
+      (by rw [Submodule.ker_mkQ]; exact hn)
+  have hqsurj : Function.Surjective qmap := by
+    intro z
+    obtain ⟨r, rfl⟩ := Ideal.Quotient.mk_surjective z
+    exact ⟨Ideal.Quotient.mk J' r, rfl⟩
+  have hqkey : ∀ (g : Field.absoluteGaloisGroup
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))
+      (y : ((τ.baseChange (C ⧸ J')).toLocal v).Space),
+      LinearMap.rTensor N qmap (((τ.baseChange (C ⧸ J')).toLocal v) g y)
+        = ((τ.baseChange (C ⧸ I)).toLocal v) g (LinearMap.rTensor N qmap y) := by
+    intro g y
+    induction y using TensorProduct.induction_on with
+    | zero => simp
+    | add a b ha hb => simp only [map_add, ha, hb]
+    | tmul c m => rfl
+  let pmap : (Fin 1 → ((τ.baseChange (C ⧸ J')).toLocal v).Space) →+
+      ((τ.baseChange (C ⧸ I)).toLocal v).Space :=
+    { toFun := fun x => LinearMap.rTensor N qmap (x 0)
+      map_zero' := by simp
+      map_add' := fun x y => by simp }
+  refine hasFlatProlongationAt_of_pi_surjection v 1 hsmall pmap ?_ ?_
+  · intro z
+    obtain ⟨y, hy⟩ := LinearMap.rTensor_surjective N hqsurj z
+    exact ⟨fun _ => y, hy⟩
+  · intro g x
+    exact hqkey g (x 0)
+
+omit [Finite k] [Algebra ℤ_[ℓ] k] [DiscreteTopology k] in
+set_option backward.isDefEq.respectTransparency false in
+open scoped TensorProduct in
+/-- **Flatness at `ℓ` descends to the trace subring** (PROVEN 2026-07-26
+through the general descent `isFlatAt_of_subring_baseChange` just above,
+which adds NO new leaf: it runs on the two Raynaud closure nodes already
+present in this module, `hasFlatProlongationAt_of_pi_surjection` and
+`hasFlatProlongationAt_of_injection` — the latter proven here as a
+corollary of `hasFlatProlongationAt_of_prod_injection`. Cut 2026-07-25
+out of `exists_framedGaloisRep_traceSubring`): if the framed
 representation `ρ'` over `R' = traceSubring ℓ D.ρ` base-changes, up to
 framing, to the hardly ramified `D.ρ`, then `ρ'` is itself flat at `ℓ`.
 
 Mathematical content. `IsFlatAt` asks, for every OPEN ideal `I` of `R'`,
 that `ρ' ⊗ R'/I` be the geometric-point group of a finite flat group
 scheme over `𝒪_ℓ`. The topology of `R'` is the subspace topology — `R'`
-is by construction a topological closure inside `D.R` — so `I = J ∩ R'`
-for an open ideal `J` of `D.R`, and the induced `R'/I → D.R/J` is an
-INJECTION of finite rings. Hence `ρ' ⊗ R'/I` is a `Γ`-stable subgroup of
-`D.ρ ⊗ D.R/J`, which is flat by `D.isHardlyRamified.isFlat`, and the
-essential image of the generic-fibre functor (finite flat group schemes
-over the DVR `𝒪_ℓ`) ⟶ (finite `Γ ℚ_ℓ`-modules) is closed under
-`Γ`-stable SUBGROUPS, by schematic closure: the closure of a closed
-subgroup scheme of the generic fibre inside the finite flat model is
-again finite flat over the DVR.
+is by construction a topological closure inside `D.R` — so `I` contains
+`J ∩ R'` for an open ideal `J` of `D.R`, and the induced
+`R'/(J ∩ R') → D.R/J` is an INJECTION of finite rings. Hence
+`ρ' ⊗ R'/(J ∩ R')` is a `Γ`-stable subgroup of `D.ρ ⊗ D.R/J`, which is
+flat by `D.isHardlyRamified.isFlat`, and the essential image of the
+generic-fibre functor (finite flat group schemes over the DVR `𝒪_ℓ`) ⟶
+(finite `Γ ℚ_ℓ`-modules) is closed under `Γ`-stable SUBGROUPS, by
+schematic closure: the closure of a closed subgroup scheme of the generic
+fibre inside the finite flat model is again finite flat over the DVR.
+That subgroup closure is `hasFlatProlongationAt_of_injection`, itself the
+sub-of-a-product leaf `hasFlatProlongationAt_of_prod_injection` with the
+second factor killed; `ρ' ⊗ R'/I` is then an equivariant QUOTIENT of
+`ρ' ⊗ R'/(J ∩ R')`, which is the already-cut twin
+`hasFlatProlongationAt_of_pi_surjection` at `n = 1`.
 
-This is the sub-object twin of `hasFlatProlongationAt_of_pi_surjection`
-above, which is the same closure statement for equivariant QUOTIENTS of
-finite powers; as there, only the EXISTENCE direction is needed, so
-Raynaud's `e < ℓ − 1` bound — available here through `hℓ5` — is not.
+CORRECTION TO THE ORIGINAL CUT NOTE (2026-07-26): the contraction `J ∩ R'`
+is in general STRICTLY smaller than `I` — an open ideal of `R'` need not
+be the contraction of an open ideal of `D.R` — so the one-step reading
+"`I = J ∩ R'`" recorded here at the cut is wrong, and the descent needs
+BOTH closure properties, subobject then quotient. Only the subobject one
+was missing; that is the single new leaf.
+
+WHAT IS *NOT* NEEDED, recorded because the surrounding cluster suggests
+otherwise. Neither Carayol arithmetic leaf
+(`exists_pow_comap_le_pow_maximalIdeal_traceSubring`,
+`fg_comap_maximalIdeal_traceSubring`) is consumed, and neither is
+`hloc` beyond supplying the `IsLocalRing` instance that `IsFlatAt`'s
+class signature demands: flatness never asks for the `𝔪'`-adic
+filtration of `R'`, only that the contracted ideals `𝔪ⁿ ∩ R'` be cofinal
+among the open ideals of `R'`, which is the definition of the subspace
+topology. The proof is accordingly the general
+`isFlatAt_of_subring_baseChange` applied to `C = R'` with `D.isAdic`,
+after `isFlatAt_of_conj_eq` turns `he` into flatness of `ρ' ⊗ D.R`.
+
+`hℓ5` is UNUSED and underscore-prefixed to make that mechanically
+visible: as for the quotient twin, only the EXISTENCE direction of the
+Raynaud closure is needed, so the `e < ℓ − 1` bound the hypothesis would
+supply never enters. It is kept in the signature because the sibling
+descent leaf `isTameAtTwo_of_baseChange_traceSubring` and the consumer
+`exists_framedGaloisRep_traceSubring` pass it positionally.
 
 The `𝒪ᵥ`-descent trap does not apply: nothing here asks for a coordinate
 or a normal form over a smaller ring, the finite flat model being
 produced by a closure operation inside a model that already exists. -/
-theorem isFlatAt_of_baseChange_traceSubring (hℓ5 : 5 ≤ ℓ)
+theorem isFlatAt_of_baseChange_traceSubring (_hℓ5 : 5 ≤ ℓ)
     {ρbar : GaloisRep ℚ k V}
     (D : HardlyRamifiedDeformation hℓOdd ρbar)
     (hloc : letI := D.commRing; letI := D.topologicalSpace
@@ -6392,8 +6648,12 @@ theorem isFlatAt_of_baseChange_traceSubring (hℓ5 : 5 ≤ ℓ)
     letI := D.isTopologicalRing; letI := D.isLocalRing; letI := D.algebra
     letI := hloc
     ρ'.IsFlatAt
-      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : ℓ.Prime)) :=
-  sorry
+      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : ℓ.Prime)) := by
+  letI := D.commRing; letI := D.topologicalSpace
+  letI := D.isTopologicalRing; letI := D.isLocalRing; letI := D.algebra
+  letI := hloc
+  refine isFlatAt_of_subring_baseChange D.isAdic ?_
+  exact isFlatAt_of_conj_eq e he D.isHardlyRamified.isFlat
 
 open scoped TensorProduct in
 /-- **The tame quadratic quotient at `2` descends to the trace subring**
