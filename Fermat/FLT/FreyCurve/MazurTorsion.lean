@@ -92,6 +92,15 @@ import Mathlib.Data.ZMod.QuotientRing
 -- local torsion quotient of the nonsplit multiplicative case
 -- (`exists_localTorsionQuotient_of_nonsplit`).
 import Fermat.FLT.KnownIn1980s.EllipticCurves.QuadraticTwists.SplitMultiplicativeReduction
+-- Fermat's little theorem (`ZMod.pow_card_sub_one_eq_one`), the cyclic
+-- structure of a group of prime order (`isAddCyclic_of_prime_card`), and
+-- Lagrange for the quotient by the eigenline
+-- (`AddSubgroup.card_eq_card_quotient_mul_card_addSubgroup`): the three
+-- inputs of the Borel exponent bound `borel_bound_iterate_eq_self`.
+import Mathlib.FieldTheory.Finite.Basic
+import Mathlib.GroupTheory.SpecificGroups.Cyclic
+import Mathlib.GroupTheory.QuotientGroup.Basic
+import Mathlib.GroupTheory.Coset.Card
 
 @[expose] public section
 
@@ -2501,19 +2510,24 @@ seams:
   curve has trivial geometric `p`-torsion), no line of `E[p]` is
   inertia-stable.
 * `not_local_inertia_eigenvector_of_good_of_supersingular` (skeleton
-  written 2026-07-25 over two bricks): no nonzero local `p`-torsion
-  point is an inertia eigenvector — inertia acts through the level-2
-  fundamental character, whose eigenvalues are `𝔽_{p²}`-conjugate and
-  not `𝔽_p`-rational (Serre, Propriétés galoisiennes…, Invent. Math.
-  15 (1972), §1.11–1.12, Prop. 12). The two bricks are
+  written 2026-07-25 over two bricks; the linear-algebra brick PROVEN
+  2026-07-25, so the ONLY remaining gap is the arithmetic one): no
+  nonzero local `p`-torsion point is an inertia eigenvector — inertia
+  acts through the level-2 fundamental character, whose eigenvalues are
+  `𝔽_{p²}`-conjugate and not `𝔽_p`-rational (Serre, Propriétés
+  galoisiennes…, Invent. Math. 15 (1972), §1.11–1.12, Prop. 12). The
+  two bricks are
   * `exists_local_inertia_torsion_order_of_good_of_supersingular`
     (sorry node — the ARITHMETIC: an inertia element no power of which
     acts trivially unless `p + 1` divides the exponent, i.e. the
     order-`(p² − 1)` nonsplit-Cartan generator), and
-  * the sorried `hborel` step inside the proof (the LINEAR ALGEBRA: an
+  * the `hborel` step inside the proof (the LINEAR ALGEBRA: an
     eigenvector makes the whole inertia image upper-triangular, hence
-    of exponent dividing `p (p − 1)`), the two being contradictory
-    because `p + 1 ∤ p (p − 1)` — proven arithmetic in the same proof.
+    of exponent dividing `p (p − 1)`) — PROVEN 2026-07-25 from the
+    abstract Borel bound `borel_bound_iterate_eq_self` through the
+    curve-level `point_map_pow_eq_self_of_eigenvector`. The two bricks
+    are contradictory because `p + 1 ∤ p (p − 1)` — proven arithmetic
+    in the same proof.
 * `exists_etale_line_or_no_stable_line_of_good` (DERIVED 2026-07-23
   from the preceding leaf by the tautological fork on the existence
   of an inertia-stable line).
@@ -3594,6 +3608,265 @@ theorem WeierstrassCurve.exists_etale_line_of_good_of_ordinary
     E.exists_localTorsionQuotient_of_good_ordinary hp hodd hord
   exact E.exists_etale_line_of_localTorsionQuotient hp π hπsurj hπinv
 
+/-- **The Borel exponent bound, pure group theory** (PROVEN 2026-07-25 —
+the linear-algebra brick of the supersingular case, extracted as a
+statement about an abstract group so that it can be verified without the
+elliptic-curve plumbing): let `A` be an abelian group of exponent `p` and
+order `p²` — i.e. a `2`-dimensional `𝔽_p`-vector space — and let `f` be an
+injective endomorphism of `A` admitting an eigenvector `Q ≠ 0`, say
+`f Q = c • Q`. Then `f ^ (p (p − 1))` is the identity.
+
+Proof, in matrix language: in a basis `(Q, w)` the matrix of `f` is upper
+triangular, `[[c, *], [0, d]]` with `c, d ∈ 𝔽_pˣ`; Fermat's little theorem
+makes `τ = f ^ (p − 1)` unipotent, and a unipotent matrix in characteristic
+`p` satisfies `τ ^ p = 1`. The proof below avoids choosing `w`: the
+eigenline `L = ⟨Q⟩` is `f`-stable and has index `p`, so the quotient `A/L`
+is cyclic of order `p` and `f` acts on it as multiplication by some `d`
+prime to `p` (else `f` would not be injective). Fermat gives
+`τ Q = Q` and `τ x ≡ x mod L`, whence `τ` fixes `L` pointwise and
+`τ ^ n x = x + n • (τ x − x)`; taking `n = p` and using the exponent kills
+the correction term. -/
+theorem borel_bound_iterate_eq_self
+    {A : Type*} [AddCommGroup A] {p : ℕ} (hp : p.Prime)
+    (f : A →+ A) (hinj : Function.Injective f)
+    (hexp : ∀ a : A, (p : ℕ) • a = 0)
+    (hcard : Nat.card A = p ^ 2)
+    {Q : A} (hQ0 : Q ≠ 0) {c : ℤ} (hfQ : f Q = c • Q)
+    (a : A) : (f : A → A)^[p * (p - 1)] a = a := by
+  classical
+  haveI : Fact p.Prime := ⟨hp⟩
+  haveI hfin : Finite A := Nat.finite_of_card_ne_zero (by
+    rw [hcard]; exact pow_ne_zero 2 hp.ne_zero)
+  have hsurj : Function.Surjective f := Finite.injective_iff_surjective.mp hinj
+  -- the eigenline
+  have hQord : addOrderOf Q = p := addOrderOf_eq_prime (hexp Q) hQ0
+  have hcardL : Nat.card (AddSubgroup.zmultiples Q) = p := by
+    rw [Nat.card_zmultiples, hQord]
+  have hfL : AddSubgroup.zmultiples Q ≤ (AddSubgroup.zmultiples Q).comap f := by
+    intro x hx
+    obtain ⟨k, hk⟩ := AddSubgroup.mem_zmultiples_iff.mp hx
+    refine AddSubgroup.mem_comap.mpr ?_
+    rw [← hk, map_zsmul, hfQ, smul_smul]
+    exact AddSubgroup.mem_zmultiples_iff.mpr ⟨k * c, rfl⟩
+  -- the quotient by the eigenline has order `p`
+  have hcardB : Nat.card (A ⧸ AddSubgroup.zmultiples Q) = p := by
+    have h1 := AddSubgroup.card_eq_card_quotient_mul_card_addSubgroup
+      (AddSubgroup.zmultiples Q)
+    rw [hcard, hcardL, pow_two] at h1
+    exact (Nat.eq_of_mul_eq_mul_right hp.pos h1).symm
+  set fb : AddMonoid.End (A ⧸ AddSubgroup.zmultiples Q) :=
+    QuotientAddGroup.map _ _ f hfL with hfbdef
+  have hmkf : ∀ x : A, fb (QuotientAddGroup.mk' _ x) = QuotientAddGroup.mk' _ (f x) :=
+    fun x => QuotientAddGroup.map_mk' _ _ f hfL x
+  -- composition of endomorphisms is application
+  have hmulappA : ∀ (G H : AddMonoid.End A) (x : A), (G * H) x = G (H x) :=
+    fun _ _ _ => rfl
+  have hmulappB : ∀ (G H : AddMonoid.End (A ⧸ AddSubgroup.zmultiples Q))
+      (x : A ⧸ AddSubgroup.zmultiples Q), (G * H) x = G (H x) := fun _ _ _ => rfl
+  -- the induced map on the quotient is multiplication by a scalar `d`
+  obtain ⟨g, hg⟩ := (isAddCyclic_of_prime_card hcardB).exists_generator
+  obtain ⟨d, hd⟩ := AddSubgroup.mem_zmultiples_iff.mp (hg (fb g))
+  have hfbx : ∀ x : A ⧸ AddSubgroup.zmultiples Q, fb x = d • x := by
+    intro x
+    obtain ⟨k, hk⟩ := AddSubgroup.mem_zmultiples_iff.mp (hg x)
+    rw [← hk, map_zsmul, ← hd, smul_comm]
+  have hexpB : ∀ x : A ⧸ AddSubgroup.zmultiples Q, (p : ℕ) • x = 0 := by
+    intro x
+    obtain ⟨a', rfl⟩ := QuotientAddGroup.mk'_surjective _ x
+    rw [← map_nsmul, hexp a', map_zero]
+  -- `d` is invertible mod `p`, else `f` would not be injective
+  have hdne : ¬ ((p : ℤ) ∣ d) := by
+    intro ⟨m, hm⟩
+    have hzero : ∀ x : A ⧸ AddSubgroup.zmultiples Q, x = 0 := by
+      intro x
+      obtain ⟨y, rfl⟩ : ∃ y, fb y = x := by
+        obtain ⟨a', rfl⟩ := QuotientAddGroup.mk'_surjective _ x
+        obtain ⟨b, hb⟩ := hsurj a'
+        exact ⟨QuotientAddGroup.mk' _ b, by rw [hmkf, hb]⟩
+      rw [hfbx, hm, mul_smul, natCast_zsmul, hexpB]
+    have hone : Nat.card (A ⧸ AddSubgroup.zmultiples Q) = 1 :=
+      Nat.card_eq_one_iff_unique.mpr ⟨⟨fun x y => by rw [hzero x, hzero y]⟩, ⟨0⟩⟩
+    rw [hcardB] at hone
+    exact hp.one_lt.ne' hone
+  -- `c` is invertible mod `p`, for the same reason
+  have hcne : ¬ ((p : ℤ) ∣ c) := by
+    intro ⟨m, hm⟩
+    apply hQ0
+    apply hinj
+    rw [hfQ, hm, mul_smul, natCast_zsmul, hexp, map_zero]
+  -- Fermat's little theorem, in the divisibility form used twice below
+  have hfermat : ∀ e : ℤ, ¬ ((p : ℤ) ∣ e) → (p : ℤ) ∣ e ^ (p - 1) - 1 := by
+    intro e he
+    have h1 : ((e : ZMod p)) ≠ 0 := fun h =>
+      he ((ZMod.intCast_zmod_eq_zero_iff_dvd e p).mp h)
+    have h2 : ((e : ZMod p)) ^ (p - 1) = 1 := ZMod.pow_card_sub_one_eq_one h1
+    have h3 : ((e ^ (p - 1) - 1 : ℤ) : ZMod p) = 0 := by push_cast; rw [h2, sub_self]
+    exact (ZMod.intCast_zmod_eq_zero_iff_dvd _ p).mp h3
+  have hkillA : ∀ (e : ℤ) (x : A), (p : ℤ) ∣ e - 1 → e • x = x := by
+    intro e x hdvd
+    obtain ⟨m, hm⟩ := hdvd
+    have he : e = 1 + (p : ℤ) * m := by omega
+    rw [he, add_smul, one_smul, mul_smul, natCast_zsmul, hexp, add_zero]
+  have hkillB : ∀ (e : ℤ) (x : A ⧸ AddSubgroup.zmultiples Q),
+      (p : ℤ) ∣ e - 1 → e • x = x := by
+    intro e x hdvd
+    obtain ⟨m, hm⟩ := hdvd
+    have he : e = 1 + (p : ℤ) * m := by omega
+    rw [he, add_smul, one_smul, mul_smul, natCast_zsmul, hexpB, add_zero]
+  -- `τ = f ^ (p - 1)`
+  set F : AddMonoid.End A := f with hFdef
+  -- the two facts about `f`, restated with the `AddMonoid.End` coercion
+  have hfQF : F Q = c • Q := hfQ
+  have hmkfF : ∀ x : A,
+      fb (QuotientAddGroup.mk' (AddSubgroup.zmultiples Q) x) =
+        QuotientAddGroup.mk' (AddSubgroup.zmultiples Q) (F x) := hmkf
+  have hFQ : ∀ n : ℕ, (F ^ n) Q = (c ^ n) • Q := by
+    intro n
+    induction n with
+    | zero => simp
+    | succ n ih =>
+      rw [pow_succ', hmulappA, ih, map_zsmul, hfQF, smul_smul, pow_succ]
+  have hτQ : (F ^ (p - 1)) Q = Q := by
+    rw [hFQ]
+    exact hkillA _ _ (hfermat c hcne)
+  -- `τ` fixes the eigenline pointwise
+  have hτL : ∀ x ∈ AddSubgroup.zmultiples Q, (F ^ (p - 1)) x = x := by
+    intro x hx
+    obtain ⟨k, hk⟩ := AddSubgroup.mem_zmultiples_iff.mp hx
+    rw [← hk, map_zsmul, hτQ]
+  -- `τ` is the identity on the quotient
+  have hmkF : ∀ (n : ℕ) (x : A),
+      QuotientAddGroup.mk' (AddSubgroup.zmultiples Q) ((F ^ n) x) =
+        (fb ^ n) (QuotientAddGroup.mk' (AddSubgroup.zmultiples Q) x) := by
+    intro n
+    induction n with
+    | zero => intro x; simp
+    | succ n ih =>
+      intro x
+      rw [pow_succ', hmulappA, ← hmkfF, ih, pow_succ', hmulappB]
+  have hfbn : ∀ (n : ℕ) (x : A ⧸ AddSubgroup.zmultiples Q),
+      (fb ^ n) x = (d ^ n) • x := by
+    intro n
+    induction n with
+    | zero => intro x; simp
+    | succ n ih =>
+      intro x
+      rw [pow_succ', hmulappB, ih, map_zsmul, hfbx, smul_smul, pow_succ]
+  have hτquot : ∀ x : A, (F ^ (p - 1)) x - x ∈ AddSubgroup.zmultiples Q := by
+    intro x
+    rw [← QuotientAddGroup.eq_zero_iff]
+    have h1 : QuotientAddGroup.mk' (AddSubgroup.zmultiples Q) ((F ^ (p - 1)) x) =
+        QuotientAddGroup.mk' (AddSubgroup.zmultiples Q) x := by
+      rw [hmkF, hfbn]
+      exact hkillB _ _ (hfermat d hdne)
+    have h2 : QuotientAddGroup.mk' (AddSubgroup.zmultiples Q)
+        ((F ^ (p - 1)) x - x) = 0 := by rw [map_sub, h1, sub_self]
+    exact h2
+  -- the unipotence induction `τ ^ n x = x + n • (τ x - x)`
+  have hunip : ∀ (n : ℕ) (x : A),
+      ((F ^ (p - 1)) ^ n) x = x + n • ((F ^ (p - 1)) x - x) := by
+    intro n
+    induction n with
+    | zero => intro x; simp
+    | succ n ih =>
+      intro x
+      rw [pow_succ', hmulappA, ih, map_add, map_nsmul, hτL _ (hτquot x), succ_nsmul]
+      abel
+  have hpow : F ^ (p * (p - 1)) = (F ^ (p - 1)) ^ p := by
+    rw [mul_comm, pow_mul]
+  have hfinal : (F ^ (p * (p - 1))) a = a := by
+    rw [hpow, hunip, hexp, add_zero]
+  exact hfinal
+
+open scoped WeierstrassCurve.Affine in
+/-- **Iterating a Galois automorphism on points** (PROVEN 2026-07-25):
+the action of `σ ^ n` on the points of a Weierstrass curve over a field
+extension is the `n`-fold iterate of the action of `σ`, since
+`Point.map` is functorial (`Point.map_map`) and the monoid structure on
+`L ≃ₐ[K] L` is composition. -/
+theorem WeierstrassCurve.point_map_algEquiv_pow
+    {K : Type*} [Field K] (X : WeierstrassCurve K)
+    {L : Type*} [Field L] [Algebra K L] [DecidableEq L]
+    (σ : L ≃ₐ[K] L) (n : ℕ) (P : (X⁄L).Point) :
+    WeierstrassCurve.Affine.Point.map (W' := X) ((σ ^ n : L ≃ₐ[K] L)).toAlgHom P =
+      (fun R => WeierstrassCurve.Affine.Point.map (W' := X) σ.toAlgHom R)^[n] P := by
+  induction n generalizing P with
+  | zero => cases P <;> rfl
+  | succ n ih =>
+    rw [Function.iterate_succ_apply, ← ih, pow_succ]
+    rw [WeierstrassCurve.Affine.Point.map_map]
+    rfl
+
+open scoped WeierstrassCurve.Affine in
+/-- **The Borel bound on the `p`-torsion of a curve** (PROVEN 2026-07-25
+from `borel_bound_iterate_eq_self` and `point_map_algEquiv_pow`): if a
+nonzero `p`-torsion point `Q` of `X` over a field extension `L/K` is an
+eigenvector of `σ ∈ Aut(L/K)`, and the `p`-torsion has the expected
+cardinality `p²`, then `σ ^ (p (p − 1))` acts trivially on the WHOLE
+`p`-torsion.
+
+The `p²`-count is a hypothesis rather than an instance-derived fact so
+that the caller can supply it in whichever form its ambient field
+provides (`TorsionCard.card_torsionBy` for a separably closed `L`). -/
+theorem WeierstrassCurve.point_map_pow_eq_self_of_eigenvector
+    {K : Type*} [Field K] (X : WeierstrassCurve K)
+    {L : Type*} [Field L] [Algebra K L] [DecidableEq L]
+    {p : ℕ} (hp : p.Prime)
+    (hcard : Nat.card (AddSubgroup.torsionBy (X⁄L).Point ((p : ℕ) : ℤ)) = p ^ 2)
+    (σ : L ≃ₐ[K] L)
+    {Q : (X⁄L).Point} (hQtor : ((p : ℕ) : ℤ) • Q = 0) (hQ0 : Q ≠ 0)
+    {c : ℕ} (hc : WeierstrassCurve.Affine.Point.map (W' := X) σ.toAlgHom Q = c • Q)
+    (Q' : (X⁄L).Point) (hQ'tor : ((p : ℕ) : ℤ) • Q' = 0) :
+    WeierstrassCurve.Affine.Point.map (W' := X)
+      ((σ ^ (p * (p - 1)) : L ≃ₐ[K] L)).toAlgHom Q' = Q' := by
+  classical
+  have hmemiff : ∀ P : (X⁄L).Point,
+      P ∈ AddSubgroup.torsionBy (X⁄L).Point ((p : ℕ) : ℤ) ↔ ((p : ℕ) : ℤ) • P = 0 :=
+    fun P => Submodule.mem_torsionBy_iff _ _
+  have hstab : ∀ P : (X⁄L).Point, ((p : ℕ) : ℤ) • P = 0 →
+      WeierstrassCurve.Affine.Point.map (W' := X) σ.toAlgHom P ∈
+        AddSubgroup.torsionBy (X⁄L).Point ((p : ℕ) : ℤ) := by
+    intro P hP
+    rw [hmemiff, ← map_zsmul, hP, map_zero]
+  let ff : (AddSubgroup.torsionBy (X⁄L).Point ((p : ℕ) : ℤ)) →+
+      (AddSubgroup.torsionBy (X⁄L).Point ((p : ℕ) : ℤ)) :=
+    AddMonoidHom.mk'
+      (fun P => ⟨WeierstrassCurve.Affine.Point.map (W' := X) σ.toAlgHom P.1,
+        hstab P.1 ((hmemiff P.1).mp P.2)⟩)
+      (fun P₁ P₂ => Subtype.ext (map_add _ _ _))
+  have hffinj : Function.Injective ff := by
+    intro x y hxy
+    exact Subtype.ext (WeierstrassCurve.Affine.Point.map_injective (W' := X)
+      (f := σ.toAlgHom) (congrArg Subtype.val hxy))
+  have hexp : ∀ x : (AddSubgroup.torsionBy (X⁄L).Point ((p : ℕ) : ℤ)), (p : ℕ) • x = 0 :=
+    fun x => AddSubgroup.torsionBy.nsmul x
+  have hQ0' : (⟨Q, (hmemiff Q).mpr hQtor⟩ :
+      (AddSubgroup.torsionBy (X⁄L).Point ((p : ℕ) : ℤ))) ≠ 0 := by
+    intro h
+    exact hQ0 (congrArg Subtype.val h)
+  have hfQ : ff ⟨Q, (hmemiff Q).mpr hQtor⟩ =
+      ((c : ℤ)) • (⟨Q, (hmemiff Q).mpr hQtor⟩ :
+        (AddSubgroup.torsionBy (X⁄L).Point ((p : ℕ) : ℤ))) := by
+    apply Subtype.ext
+    show WeierstrassCurve.Affine.Point.map (W' := X) σ.toAlgHom Q = _
+    rw [hc, AddSubgroup.coe_zsmul, natCast_zsmul]
+  have hiter : ∀ (n : ℕ) (x : (AddSubgroup.torsionBy (X⁄L).Point ((p : ℕ) : ℤ))),
+      ((ff : _ → _)^[n] x : (X⁄L).Point) =
+        (fun R => WeierstrassCurve.Affine.Point.map (W' := X) σ.toAlgHom R)^[n] x.1 := by
+    intro n
+    induction n with
+    | zero => intro x; rfl
+    | succ n ih =>
+      intro x
+      rw [Function.iterate_succ_apply, Function.iterate_succ_apply, ih]
+      rfl
+  have hkey := borel_bound_iterate_eq_self hp ff hffinj hexp hcard hQ0' hfQ
+    ⟨Q', (hmemiff Q').mpr hQ'tor⟩
+  rw [WeierstrassCurve.point_map_algEquiv_pow]
+  have h2 := congrArg Subtype.val hkey
+  rw [hiter] at h2
+  exact h2
+
 open ValuativeRel IsDedekindDomain in
 open scoped WeierstrassCurve.Affine in
 set_option backward.isDefEq.respectTransparency false in
@@ -3656,8 +3929,12 @@ open ValuativeRel IsDedekindDomain in
 open scoped WeierstrassCurve.Affine in
 set_option backward.isDefEq.respectTransparency false in
 /-- **No local inertia eigenvector at a good SUPERSINGULAR prime**
-(sorry node — the local fundamental-character content, cut 2026-07-23
-at the same local seam as the multiplicative and ordinary quotients):
+(no DIRECT sorry since 2026-07-25: the linear-algebra `hborel` step
+inside the proof is now PROVEN, and the only remaining gap is the
+arithmetic brick
+`exists_local_inertia_torsion_order_of_good_of_supersingular`; cut
+2026-07-23 at the same local seam as the multiplicative and ordinary
+quotients):
 for an elliptic curve over `ℚ` with good supersingular reduction at an
 odd prime `p` (supersingularity stated as the triviality of the
 geometric `p`-torsion of the reduced curve `Ẽ/𝔽_p`), no nonzero
@@ -3697,6 +3974,31 @@ theorem WeierstrassCurve.not_local_inertia_eigenvector_of_good_of_supersingular
         c.val • Q) :
     False := by
   classical
+  haveI : Fact p.Prime := ⟨hp⟩
+  haveI : CharZero (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+      hp.toHeightOneSpectrumRingOfIntegersRat)) :=
+    ((algebraMap (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat))).charZero_iff
+      (algebraMap (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat))).injective).mp inferInstance
+  -- the `p²`-count of the local `p`-torsion, the input of the Borel bound
+  have hcard : Nat.card (AddSubgroup.torsionBy
+      ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+        (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat))).Point ((p : ℕ) : ℤ)) = p ^ 2 :=
+    TorsionCard.card_torsionBy
+      ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat))).map
+        (algebraMap (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat)
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+            hp.toHeightOneSpectrumRingOfIntegersRat)))) p
+      (Nat.cast_ne_zero.mpr hp.ne_zero)
   -- ARITHMETIC BRICK (Serre's level-2 fundamental character): an inertia element whose
   -- action on the local `p`-torsion has order divisible by `p + 1`.
   obtain ⟨σ, hσI, hσord⟩ :=
@@ -3738,7 +4040,18 @@ theorem WeierstrassCurve.not_local_inertia_eigenvector_of_good_of_supersingular
               (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
                 hp.toHeightOneSpectrumRingOfIntegersRat))) ^
             (p * (p - 1))).toAlgHom Q' = Q' := by
-    sorry
+    intro hσI' heig' hQtor' hQ0' Q' hQ'tor
+    obtain ⟨c, hc⟩ := heig' σ hσI'
+    exact WeierstrassCurve.point_map_pow_eq_self_of_eigenvector
+      (E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat))) hp hcard
+      ((σ : (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat))
+        ≃ₐ[HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat]
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat))))
+      hQtor' hQ0' hc Q' hQ'tor
   -- `p + 1` does not divide `p * (p - 1)`: the product is `2` modulo `p + 1`
   have harith : ¬ ((p + 1) ∣ p * (p - 1)) := by
     intro hdvd
