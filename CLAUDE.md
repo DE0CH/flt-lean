@@ -23,6 +23,15 @@ must never strand its remaining leaves unowned. Track the new leaves in
 progress-entries.json (wip flags at dispatch) as part of the same
 integration step.
 
+**"Merge FIRST, then dispatch" is an ordering, not a sequence of words**
+(violated 2026-07-25). A worktree fast-forwards to main at dispatch, so a
+successor dispatched at a leaf that still lives only on an unmerged branch
+fast-forwards to a main WITHOUT that leaf and finds nothing — a phantom
+dispatch manufactured out of a correct report. It happened with three
+`Deformation.lean` successors sent off the strength of an agent's report
+while its branch was still resolving a conflict. If the branch cannot be
+merged yet, the successors WAIT; queue them, do not dispatch them.
+
 Same-FILE leaves may get concurrent owners (Deyao, 2026-07-22): each
 agent works in its own git worktree on its own branch, and merging
 concurrent edits to one file is what git is designed to handle — leaves
