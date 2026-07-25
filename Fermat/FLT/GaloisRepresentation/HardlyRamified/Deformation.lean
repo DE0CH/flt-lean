@@ -60,7 +60,7 @@ them without a human. Do not re-wrap it.
 
 - `finite_setOf_isHardlyRamified_frames`
 - `exists_isStrictlyUniversalOnFrames_of_deformationCondition`
-- `isFlatAt_baseChange`
+- `hasFlatProlongationAt_of_pi_surjection`
 - `isHardlyRamified_of_fibreProduct`
 - `finite_setOf_isHardlyRamified_frames_of_discreteTopology`
 - `isHardlyRamified_of_forall_isOpen_quotient`
@@ -1674,30 +1674,96 @@ noncomputable def pushforwardFrame {B : Type u} [CommRing B]
     (by rw [RingHom.algebraMap_toAlgebra]; exact hψ)
   (ρ.baseChange A).conj (TensorProduct.piScalarRight B A A (Fin 2))
 
+/-- **Raynaud closure for flat prolongations, in surjection-from-a-finite-power
+form** (sorry node, cut 2026-07-25 out of `isFlatAt_baseChange` below): if the
+local space of `ρ₁` is the geometric-point group of a finite flat group scheme
+over `𝒪ᵥ`, then so is every `Γ Kᵥ`-equivariant additive QUOTIENT of a finite
+POWER of it.
+
+This is the only genuinely deep input to `isFlatAt_baseChange`: everything else
+in that proof is tensor plumbing, carried out below. Mathematically it is the
+statement that the essential image of the generic-fibre functor
+(finite flat group schemes over the DVR `𝒪ᵥ`) ⟶ (finite `Γ Kᵥ`-modules)
+is closed under finite products and under equivariant quotients. Products are
+represented by the tensor product of the Hopf algebras; quotients come from the
+schematic-closure construction — an equivariant surjection of point groups is
+induced by a surjection of the finite étale generic-fibre Hopf algebras, and the
+image of a Hopf order under a surjective bialgebra map is again a Hopf order.
+Note that the EXISTENCE direction used here needs no `e < ℓ − 1` bound; Raynaud's
+bound enters only for the UNIQUENESS of the prolongation, which is not asserted.
+
+DUPLICATION / HOME AUDIT (please read before restating this anywhere). Two
+other copies of this content already exist in the tree, both import-unreachable
+from this module:
+* `IsFlatPointsGroupAt.of_surjective` in `Modularity/Interface.lean`, a PROVEN
+  assembly over the single leaf `exists_etale_subBialgebra_of_points_surjective`
+  — together with `IsFlatPointsGroupAt.pi` it is exactly this statement;
+* `hasFlatProlongationAt_of_surjective` in `Modularity/KhareWintenberger.lean`,
+  a `sorry` in the `n = 1` special case of this one.
+Both live ABOVE this module (`Interface` imports `KhareWintenberger`, which
+imports this file), so neither can be consumed here — the circularity guard at
+the head of this module forbids importing `Modularity/*`. The declaration below
+is therefore the LOWEST home for the content and strictly generalizes
+KhareWintenberger's copy (take `n = 1`); whoever unifies them should redirect
+both upward copies at this one — or move this one further down still, into
+`Deformations/RepresentationTheory/FlatProlongation.lean`, which is the neutral
+home KhareWintenberger's own audit nominates — rather than adding a fourth.
+
+References: Raynaud, *Schémas en groupes de type `(p,…,p)`*, Bull. SMF 102
+(1974), §3; Tate–Oort, *A classification of group schemes of order p*, Ann.
+Sci. ÉNS 3 (1970). -/
+theorem hasFlatProlongationAt_of_pi_surjection
+    (w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    {A₁ : Type*} [CommRing A₁] [TopologicalSpace A₁]
+    {M₁ : Type*} [AddCommGroup M₁] [Module A₁ M₁]
+    {A₂ : Type*} [CommRing A₂] [TopologicalSpace A₂]
+    {M₂ : Type*} [AddCommGroup M₂] [Module A₂ M₂]
+    {ρ₁ : GaloisRep ℚ A₁ M₁} {ρ₂ : GaloisRep ℚ A₂ M₂} (n : ℕ)
+    (h : ρ₁.HasFlatProlongationAt w)
+    (π : (Fin n → (ρ₁.toLocal w).Space) →+ (ρ₂.toLocal w).Space)
+    (hsurj : Function.Surjective π)
+    (hequiv : ∀ (g : Field.absoluteGaloisGroup
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ w))
+        (x : Fin n → (ρ₁.toLocal w).Space), π (g • x) = g • π x) :
+    ρ₂.HasFlatProlongationAt w :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
 open scoped TensorProduct in
 /-- **Flatness at `ℓ` transfers along an arbitrary base change to a
-FINITE coefficient algebra** (sorry node — Ramakrishna's half of "the
-hardly ramified conditions form a deformation condition"; the QUOTIENT
-case is the PROVEN `isFlatAt_baseChange_quotient` just above, and this is
-the general-coefficient-map form that the Schlessinger cut below needs).
+FINITE coefficient algebra** (PROVEN 2026-07-25 over the single Raynaud
+leaf `hasFlatProlongationAt_of_pi_surjection` above — Ramakrishna's half
+of "the hardly ramified conditions form a deformation condition"; the
+QUOTIENT case is the PROVEN `isFlatAt_baseChange_quotient` just above,
+and this is the general-coefficient-map form that the Schlessinger cut
+below needs).
 
 Route (the quotient proof does NOT cover this: it identifies
 `((R ⧸ P) ⧸ I)` with a quotient `R ⧸ J` of `R` itself, which is exactly
 what a general coefficient map does not give you). Let `I` be an open
 ideal of `B` and put `J := (algebraMap R B)⁻¹ I`, an open ideal of `R`
-because the structure map is continuous (`ContinuousSMul R B`). Tensor
-cancellation `TensorProduct.AlgebraTensorModule.cancelBaseChange`
-identifies `(B ⧸ I) ⊗_R M` equivariantly with
-`(B ⧸ I) ⊗_{R ⧸ J} ((R ⧸ J) ⊗_R M)`, so — `hflat` supplying a finite
-flat prolongation of `(R ⧸ J) ⊗_R M` — what remains is that a finite
-flat prolongation survives a COEFFICIENT EXTENSION `R ⧸ J → B ⧸ I` of
-finite rings. `B ⧸ I` is a finitely generated `R ⧸ J`-module (it is
-finite as a set), so `(B ⧸ I) ⊗_{R ⧸ J} N` is a quotient of a finite
-direct sum of copies of `N`, and for `e = 1 < ℓ − 1` (here `ℓ` is odd)
-Raynaud's theorem makes the category of finite flat group schemes over
-`ℤ_ℓ` closed under finite direct sums, subobjects and quotients — so the
-prolongation is inherited. `HasFlatProlongationAt.of_equiv` then
-transports the Hopf-algebra witness, exactly as in the quotient case.
+because the structure map is continuous (`ContinuousSMul R B`, whence
+`continuous_algebraMap`). `hflat` then supplies a finite flat
+prolongation of `(R ⧸ J) ⊗_R M`, and what remains is that the
+prolongation survives the COEFFICIENT EXTENSION `R ⧸ J → B ⧸ I` of
+finite rings.
+
+That is done as an explicit equivariant SURJECTION rather than through a
+second tensor cancellation, which is what keeps the cut shallow: `B ⧸ I`
+is finite, so enumerating it as `b₀, …, b_{n−1}` gives an additive
+surjection
+`(Fin n → (R ⧸ J) ⊗_R M) ↠ (B ⧸ I) ⊗_R M`, `(xᵢ) ↦ Σᵢ bᵢ • ι(xᵢ)`,
+where `ι` is `id ⊗ (R ⧸ J → B ⧸ I)`; surjectivity holds already on the
+generators `c ⊗ m = b_{e(c)} • (1 ⊗ m)`, and `Γ Kᵥ`-equivariance holds
+because the Galois action lives on the `M`-factor while both `bᵢ • −`
+and `ι` act on the coefficient factor. Composing with the inverse of
+`TensorProduct.AlgebraTensorModule.cancelBaseChange`, which identifies
+`(B ⧸ I) ⊗_B (B ⊗_R M)` — the space actually named by the goal — with
+`(B ⧸ I) ⊗_R M`, this is exactly the hypothesis of
+`hasFlatProlongationAt_of_pi_surjection`. Crucially this route needs NO
+`(R ⧸ J)`-algebra structure on `B ⧸ I`, and in particular neither
+`IsScalarTower R (R ⧸ J) (B ⧸ I)` nor `ContinuousSMul (R ⧸ J) (B ⧸ I)`,
+neither of which is available as an instance.
 
 WHY `[Finite B]` IS PART OF THE STATEMENT AND NOT A CONVENIENCE (found
 2026-07-25 while cutting this leaf; the unrestricted form is FALSE).
@@ -1727,8 +1793,78 @@ theorem isFlatAt_baseChange {R : Type u} [CommRing R] [TopologicalSpace R]
     (hflat : ρ.IsFlatAt
       (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : ℓ.Prime))) :
     (ρ.baseChange B).IsFlatAt
-      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : ℓ.Prime)) :=
-  sorry
+      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : ℓ.Prime)) := by
+  classical
+  set w := Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : ℓ.Prime)
+  constructor
+  intro I hI
+  -- the contracted open ideal of `R`
+  set J : Ideal R := I.comap (algebraMap R B)
+  have hJopen : IsOpen (J : Set R) := hI.preimage (continuous_algebraMap R B)
+  have hflatJ : (ρ.baseChange (R ⧸ J)).HasFlatProlongationAt w := hflat.cond J hJopen
+  -- an enumeration of the finite ring `B ⧸ I`
+  haveI : Finite (B ⧸ I) := Finite.of_surjective _ Ideal.Quotient.mk_surjective
+  obtain ⟨n, ⟨enum⟩⟩ := Finite.exists_equiv_fin (B ⧸ I)
+  -- the coefficient map `R ⧸ J → B ⧸ I`, `R`-linearly
+  let cmap : (R ⧸ J) →ₗ[R] (B ⧸ I) :=
+    Submodule.liftQ J (Algebra.linearMap R (B ⧸ I)) (by
+      intro r hr
+      show algebraMap R (B ⧸ I) r = 0
+      rw [IsScalarTower.algebraMap_apply R B (B ⧸ I)]
+      exact Ideal.Quotient.eq_zero_iff_mem.mpr hr)
+  have hcmap : ∀ r : R, cmap (Ideal.Quotient.mk J r) = algebraMap R (B ⧸ I) r :=
+    fun _ => rfl
+  let ι : ((R ⧸ J) ⊗[R] M) →ₗ[R] ((B ⧸ I) ⊗[R] M) := LinearMap.rTensor M cmap
+  let can := TensorProduct.AlgebraTensorModule.cancelBaseChange R B (B ⧸ I) (B ⧸ I) M
+  -- the equivariant surjection out of a finite power of `(R ⧸ J) ⊗ M`
+  let π₀ : (Fin n → ((R ⧸ J) ⊗[R] M)) →+ ((B ⧸ I) ⊗[R] M) :=
+    { toFun := fun x => ∑ i, (enum.symm i) • ι (x i)
+      map_zero' := by simp
+      map_add' := fun x y => by simp [smul_add, Finset.sum_add_distrib] }
+  let π : (Fin n → ((ρ.baseChange (R ⧸ J)).toLocal w).Space) →+
+      (((ρ.baseChange B).baseChange (B ⧸ I)).toLocal w).Space :=
+    (can.symm.toAddEquiv.toAddMonoidHom).comp π₀
+  refine hasFlatProlongationAt_of_pi_surjection w n hflatJ π ?_ ?_
+  · -- surjectivity: already on the generators `c ⊗ m = b_{e c} • (1 ⊗ m)`
+    have hsurj0 : Function.Surjective π₀ := by
+      intro z
+      induction z using TensorProduct.induction_on with
+      | zero => exact ⟨0, map_zero _⟩
+      | tmul c m =>
+        refine ⟨(Pi.single (enum c) ((1 : R ⧸ J) ⊗ₜ[R] m) :
+          Fin n → ((R ⧸ J) ⊗[R] M)), ?_⟩
+        show ∑ i, (enum.symm i) • ι ((Pi.single (enum c) ((1 : R ⧸ J) ⊗ₜ[R] m) :
+          Fin n → ((R ⧸ J) ⊗[R] M)) i) = c ⊗ₜ[R] m
+        rw [Finset.sum_eq_single_of_mem (enum c) (Finset.mem_univ _)]
+        · rw [Pi.single_eq_same]
+          show (enum.symm (enum c)) • (cmap 1 ⊗ₜ[R] m) = c ⊗ₜ[R] m
+          rw [Equiv.symm_apply_apply,
+            show cmap 1 = 1 from (hcmap 1).trans (map_one _)]
+          rw [TensorProduct.smul_tmul', smul_eq_mul, mul_one]
+        · intro i _ hne
+          rw [Pi.single_eq_of_ne hne]
+          simp
+      | add a b ha hb =>
+        obtain ⟨u, hu⟩ := ha
+        obtain ⟨t, ht⟩ := hb
+        exact ⟨u + t, by rw [map_add, hu, ht]⟩
+    exact can.symm.surjective.comp hsurj0
+  · -- `Γ Kᵥ`-equivariance: the action is on the `M`-factor throughout
+    intro g x
+    have key : ∀ (i : Fin n) (y : (R ⧸ J) ⊗[R] M),
+        can.symm ((enum.symm i) • ι (((ρ.baseChange (R ⧸ J)).toLocal w) g y))
+          = (((ρ.baseChange B).baseChange (B ⧸ I)).toLocal w) g
+              (can.symm ((enum.symm i) • ι y)) := by
+      intro i y
+      induction y using TensorProduct.induction_on with
+      | zero => simp
+      | add a b ha hb => simp only [map_add, smul_add, ha, hb]
+      | tmul a m => rfl
+    show can.symm (∑ i, (enum.symm i) • ι (((ρ.baseChange (R ⧸ J)).toLocal w) g (x i)))
+        = (((ρ.baseChange B).baseChange (B ⧸ I)).toLocal w) g
+            (can.symm (∑ i, (enum.symm i) • ι (x i)))
+    rw [map_sum, map_sum, map_sum]
+    exact Finset.sum_congr rfl fun i _ => key i (x i)
 
 set_option backward.isDefEq.respectTransparency false in
 open scoped TensorProduct in
