@@ -2154,10 +2154,12 @@ theorem and not a formality: for NON-congruence subgroups it is the
 recent theorem of Calegari–Dimitrov–Tang, so no argument that ignores
 the congruence condition can prove it.
 
-SOUNDNESS: stated per form, with a positive natural denominator, and
-witnessed by `d = 1` on the (nonempty) integral part; the `g = 0` case
-and the genus-zero levels are covered since every coefficient is then
-`0`. -/
+SOUNDNESS: the hypothesis is exactly rationality of every coefficient
+and the conclusion a single positive natural denominator, so nothing is
+claimed about forms with irrational expansions; the degenerate cases
+are covered outright — for `g = 0`, hence at the genus-zero levels
+where that is the only cusp form, every coefficient is `0` and `d = 1`
+works. -/
 theorem exists_qExpansion_denominator {N : ℕ} (hN : 0 < N)
     (g : CuspForm (Gamma0GL N) 2)
     (hg : ∀ m : ℕ, ∃ r : ℚ, qCoeff N g m = (r : ℂ)) :
