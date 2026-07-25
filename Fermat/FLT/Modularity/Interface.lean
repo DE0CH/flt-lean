@@ -189,6 +189,11 @@ import Mathlib.NumberTheory.Padics.PadicIntegers
 -- unit — the arithmetic core of the at-`2` cyclotomic-inertia lemma
 -- `cyclotomicCharacter_eq_one_of_mem_inertia_two_upstream` (pillar E1a)
 import Mathlib.RingTheory.Polynomial.Cyclotomic.Eval
+-- the base-change convolution lemmas (`liftEquiv_convMul` and friends) and
+-- the bare-hom/`WithConv` bridge, used by the Raynaud product-closure glue;
+-- PUBLIC because the glue lemmas' statements mention the `WithConv`
+-- convolution monoid and this file is one `@[expose] public section`
+public import Fermat.FLT.Deformations.RepresentationTheory.FlatProlongation
 import Fermat.FLT.GaloisRepresentation.HardlyRamified.Residual
 -- `IsHardlyRamified.exists_residual_odd`, discharging the residual
 -- reduction pillar `exists_residual_isHardlyRamified_odd` below
@@ -5100,6 +5105,164 @@ material carrying no hypothesis package. This carrier is also the
 natural interface for any future finite-flat closure need (e.g. the
 E2b′ lattice transfer). -/
 
+/-! ##### Convolution glue for points of a tensor product of Hopf orders
+
+The product half of the Raynaud cut needs one general fact: the
+`Ω`-points of a tensor product of two Hopf algebras are the PAIRS of
+points, compatibly with the convolution group law. The lemmas of this
+section establish that in two steps — first over the base ring
+(`tensorPoints_convOne` / `tensorPoints_convMul` / `tensorPoints_comp`,
+the multiplicativity of `Algebra.TensorProduct.lift` for the
+convolution products of the tensor bialgebra), then transported through
+the base-change adjunction `AlgHom.liftEquiv` to the generic fibres
+(`basePointsTensorEquiv` and its `_one` / `_mul` / `_smul` laws), reusing
+the base-change convolution lemmas of `FlatProlongation.lean`. -/
+
+section TensorPointsGlue
+
+open WithConv
+
+variable {R : Type*} [CommRing R] {C : Type*} [CommRing C] [Algebra R C]
+variable {A B : Type*} [CommRing A] [CommRing B] [Bialgebra R A] [Bialgebra R B]
+
+/-- **Convolution unit of a tensor product of points** (PROVEN): the
+pair `(1, 1)` of counit-units lifts to the counit-unit of the tensor
+bialgebra `A ⊗[R] B`, because its counit is the product of the two
+counits. -/
+theorem tensorPoints_convOne :
+    Algebra.TensorProduct.lift ((1 : WithConv (A →ₐ[R] C)).ofConv)
+        ((1 : WithConv (B →ₐ[R] C)).ofConv) (fun _ _ => Commute.all _ _) =
+      (1 : WithConv (A ⊗[R] B →ₐ[R] C)).ofConv := by
+  refine AlgHom.ext fun x => ?_
+  induction x with
+  | zero => simp
+  | add x y hx hy => simp only [map_add, hx, hy]
+  | tmul a b => simp [AlgHom.convOne_apply, mul_comm]
+
+/-- **Convolution product of a tensor product of points** (PROVEN):
+`Algebra.TensorProduct.lift` is multiplicative for the convolution
+products, because the comultiplication of the tensor bialgebra is the
+componentwise one composed with the middle-four exchange — so both
+sides evaluate on `a ⊗ₜ b` to the same sum over
+`comul a ⊗ comul b`. -/
+theorem tensorPoints_convMul (f₁ g₁ : WithConv (A →ₐ[R] C))
+    (f₂ g₂ : WithConv (B →ₐ[R] C)) :
+    Algebra.TensorProduct.lift ((f₁ * g₁).ofConv) ((f₂ * g₂).ofConv)
+        (fun _ _ => Commute.all _ _) =
+      (toConv (Algebra.TensorProduct.lift f₁.ofConv f₂.ofConv (fun _ _ => Commute.all _ _)) *
+        toConv (Algebra.TensorProduct.lift g₁.ofConv g₂.ofConv
+          (fun _ _ => Commute.all _ _))).ofConv := by
+  refine AlgHom.ext fun x => ?_
+  induction x with
+  | zero => simp
+  | add x y hx hy => simp only [map_add, hx, hy]
+  | tmul a b =>
+    rw [Algebra.TensorProduct.lift_tmul, AlgHom.convMul_apply, AlgHom.convMul_apply,
+      AlgHom.convMul_apply, TensorProduct.comul_tmul]
+    induction Coalgebra.comul (R := R) a with
+    | zero => simp
+    | add x y hx hy => simp only [TensorProduct.add_tmul, map_add, add_mul, hx, hy]
+    | tmul a₁ a₂ =>
+      induction Coalgebra.comul (R := R) b with
+      | zero => simp
+      | add x y hx hy => simp only [TensorProduct.tmul_add, map_add, mul_add, hx, hy]
+      | tmul b₁ b₂ =>
+        simp only [TensorProduct.AlgebraTensorModule.tensorTensorTensorComm_tmul,
+          Algebra.TensorProduct.lift_tmul]
+        ring
+
+/-- **Postcomposition through the tensor pairing** (PROVEN): the pairing
+`Algebra.TensorProduct.lift` commutes with postcomposition by an algebra
+map, which is what makes the points identification Galois-equivariant. -/
+theorem tensorPoints_comp {D : Type*} [CommRing D] [Algebra R D] (h : C →ₐ[R] D)
+    (ψ₁ : A →ₐ[R] C) (ψ₂ : B →ₐ[R] C) :
+    Algebra.TensorProduct.lift (h.comp ψ₁) (h.comp ψ₂) (fun _ _ => Commute.all _ _) =
+      h.comp (Algebra.TensorProduct.lift ψ₁ ψ₂ (fun _ _ => Commute.all _ _)) := by
+  refine AlgHom.ext fun x => ?_
+  induction x with
+  | zero => simp
+  | add x y hx hy => simp only [map_add, hx, hy]
+  | tmul a b => simp
+
+/-- **Points of a tensor product are pairs of points** (PROVEN): for a
+COMMUTATIVE target there is no commutation side condition, so
+`Algebra.TensorProduct.lift` and restriction along the two inclusions
+are mutually inverse. -/
+noncomputable def algHomTensorProdEquiv :
+    ((A ⊗[R] B) →ₐ[R] C) ≃ ((A →ₐ[R] C) × (B →ₐ[R] C)) where
+  toFun Φ := (Φ.comp Algebra.TensorProduct.includeLeft,
+    Φ.comp (Algebra.TensorProduct.includeRight (R := R) (A := A) (B := B)))
+  invFun p := Algebra.TensorProduct.lift p.1 p.2 (fun _ _ => Commute.all _ _)
+  left_inv Φ := by ext x <;> simp
+  right_inv p := by
+    refine Prod.ext ?_ ?_ <;> refine AlgHom.ext fun x => ?_ <;> simp
+
+end TensorPointsGlue
+
+section BasePointsGlue
+
+open WithConv
+
+variable {R : Type*} [CommRing R]
+variable {S L : Type u} [Field S] [Field L] [Algebra S L] [Algebra R S] [Algebra R L]
+  [IsScalarTower R S L]
+variable {A B : Type u} [CommRing A] [CommRing B] [Bialgebra R A] [Bialgebra R B]
+
+/-- **The generic-fibre points of a tensor product of Hopf orders**
+(PROVEN): pairs of `L`-points of the base changes `S ⊗[R] A`,
+`S ⊗[R] B` are the `L`-points of the base change of `A ⊗[R] B`. Built
+from the base-change adjunction `AlgHom.liftEquiv` on each side and
+`algHomTensorProdEquiv` over the base ring. -/
+noncomputable def basePointsTensorEquiv :
+    ((S ⊗[R] A →ₐ[S] L) × (S ⊗[R] B →ₐ[S] L)) ≃ (S ⊗[R] (A ⊗[R] B) →ₐ[S] L) :=
+  ((AlgHom.liftEquiv R S A L).symm.prodCongr (AlgHom.liftEquiv R S B L).symm).trans
+    (algHomTensorProdEquiv.symm.trans (AlgHom.liftEquiv R S (A ⊗[R] B) L))
+
+/-- The defining formula of `basePointsTensorEquiv`. -/
+theorem basePointsTensorEquiv_apply (p : (S ⊗[R] A →ₐ[S] L) × (S ⊗[R] B →ₐ[S] L)) :
+    basePointsTensorEquiv p = AlgHom.liftEquiv R S (A ⊗[R] B) L
+      (Algebra.TensorProduct.lift ((AlgHom.liftEquiv R S A L).symm p.1)
+        ((AlgHom.liftEquiv R S B L).symm p.2) (fun _ _ => Commute.all _ _)) := rfl
+
+set_option maxSynthPendingDepth 4 in
+/-- `basePointsTensorEquiv` sends the pair of convolution units to the
+convolution unit (of the bare-hom monoid used by the flat-prolongation
+package). -/
+theorem basePointsTensorEquiv_one :
+    basePointsTensorEquiv ((1 : S ⊗[R] A →ₐ[S] L), (1 : S ⊗[R] B →ₐ[S] L)) = 1 := by
+  rw [basePointsTensorEquiv_apply, vendored_one_eq_convOne (A₀ := S ⊗[R] A),
+    vendored_one_eq_convOne (A₀ := S ⊗[R] B),
+    liftEquiv_symm_convOne, liftEquiv_symm_convOne, tensorPoints_convOne, liftEquiv_convOne,
+    vendored_one_eq_convOne]
+
+set_option maxSynthPendingDepth 4 in
+/-- `basePointsTensorEquiv` is multiplicative for the componentwise
+convolution product. -/
+theorem basePointsTensorEquiv_mul (p q : (S ⊗[R] A →ₐ[S] L) × (S ⊗[R] B →ₐ[S] L)) :
+    basePointsTensorEquiv (p.1 * q.1, p.2 * q.2) =
+      basePointsTensorEquiv p * basePointsTensorEquiv q := by
+  rw [basePointsTensorEquiv_apply, basePointsTensorEquiv_apply, basePointsTensorEquiv_apply,
+    vendored_mul_eq_convMul p.1 q.1, vendored_mul_eq_convMul p.2 q.2,
+    liftEquiv_symm_convMul, liftEquiv_symm_convMul, tensorPoints_convMul, liftEquiv_convMul,
+    vendored_mul_eq_convMul]
+
+set_option maxSynthPendingDepth 4 in
+/-- `basePointsTensorEquiv` is equivariant for the postcomposition
+action of `Gal(L/S)` on points. -/
+theorem basePointsTensorEquiv_smul (σ : L ≃ₐ[S] L)
+    (p : (S ⊗[R] A →ₐ[S] L) × (S ⊗[R] B →ₐ[S] L)) :
+    basePointsTensorEquiv (σ • p.1, σ • p.2) = σ • basePointsTensorEquiv p := by
+  have h1 : ∀ (φ : S ⊗[R] A →ₐ[S] L), σ • φ = (σ.toAlgHom).comp φ :=
+    fun _ => AlgHom.ext fun _ => rfl
+  have h2 : ∀ (φ : S ⊗[R] B →ₐ[S] L), σ • φ = (σ.toAlgHom).comp φ :=
+    fun _ => AlgHom.ext fun _ => rfl
+  have h3 : ∀ (φ : S ⊗[R] (A ⊗[R] B) →ₐ[S] L), σ • φ = (σ.toAlgHom).comp φ :=
+    fun _ => AlgHom.ext fun _ => rfl
+  rw [basePointsTensorEquiv_apply, basePointsTensorEquiv_apply, h1, h2, h3,
+    liftEquiv_symm_comp, liftEquiv_symm_comp, tensorPoints_comp, liftEquiv_comp]
+
+end BasePointsGlue
+
 section RaynaudClosure
 
 variable (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
@@ -5213,40 +5376,101 @@ theorem IsFlatPointsGroupAt.of_subsingleton {X : Type*}
     fun g _ => (smul_zero g).symm⟩
 
 set_option backward.isDefEq.respectTransparency false in
-/-- **Product closure** (sorry node — the products half of Raynaud
-closure: finite flat group schemes over the DVR `𝒪ᵥ` are closed
-under finite products): the binary product of two flat point-groups
-at `v` is a flat point-group at `v`. Intended proof, in the
-vocabulary already on the pin: the witness is the tensor product
-`G₁ ⊗[𝒪ᵥ] G₂` of the two witness Hopf algebras —
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+set_option maxSynthPendingDepth 4 in
+/-- **Product closure** (PROVEN 2026-07-25 — the products half of
+Raynaud closure: finite flat group schemes over the DVR `𝒪ᵥ` are
+closed under finite products): the binary product of two flat
+point-groups at `v` is a flat point-group at `v`. The witness is the
+tensor product `G₁ ⊗[𝒪ᵥ] G₂` of the two witness Hopf algebras —
 * Hopf structure: the `HopfAlgebra 𝒪ᵥ (G₁ ⊗[𝒪ᵥ] G₂)` instance of
-  `Mathlib.RingTheory.HopfAlgebra.TensorProduct` (already imported
-  by `FlatProlongation.lean`); flatness and module-finiteness of the
-  tensor product are mathlib instances.
-* Generic fibre: `Kᵥ ⊗[𝒪ᵥ] (G₁ ⊗[𝒪ᵥ] G₂) ≃ₐ[Kᵥ]
-  (Kᵥ ⊗[𝒪ᵥ] G₁) ⊗[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G₂)` (the base-change/cancel
-  algebra isomorphisms, `Algebra.TensorProduct.cancelBaseChange` and
-  friends); étaleness of a tensor product of two étale `Kᵥ`-algebras
-  follows from étale-stability under base change (`Kᵥ → Kᵥ ⊗ G₁`)
-  and composition (`Algebra.Etale.comp`), transported through the
-  isomorphism by `Algebra.Etale.of_equiv`.
-* Points: `AlgHom`s out of a tensor product over `Kᵥ` into the
-  commutative `Kᵥᵃˡᵍ` are exactly pairs of `AlgHom`s
-  (`Algebra.TensorProduct.lift` / `liftEquiv`, no commutation
-  hypothesis in a commutative target); the identification is
-  convolution-compatible — the comultiplication of the tensor
-  bialgebra is componentwise up to the middle-four exchange — by the
-  same `Coalgebra.comul`-induction style as `liftEquiv_convMul` /
-  `dvrPointsEquiv_mul` in `FlatProlongation.lean`, and
-  `Γ Kᵥ`-equivariant since postcomposition distributes over the
-  pairing. Composing with `f₁ × f₂` lands in `X × Y`.
+  `Mathlib.RingTheory.HopfAlgebra.TensorProduct`; flatness and
+  module-finiteness of the tensor product are mathlib instances.
+* Generic fibre: `(Kᵥ ⊗[𝒪ᵥ] G₁) ⊗[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G₂) ≃ₐ[Kᵥ]
+  Kᵥ ⊗[𝒪ᵥ] (G₁ ⊗[𝒪ᵥ] G₂)` (`Algebra.TensorProduct.cancelBaseChange`
+  then `Algebra.TensorProduct.assoc`); étaleness of the left side is
+  base change (`Algebra.Etale.baseChange`, `Kᵥ → Kᵥ ⊗[𝒪ᵥ] G₁`) plus
+  composition (`Algebra.Etale.comp`), and it is transported through
+  the isomorphism by `Algebra.Etale.of_equiv`.
+* Points: `basePointsTensorEquiv` identifies the `Kᵥᵃˡᵍ`-points of
+  the generic fibre with PAIRS of points (no commutation side
+  condition in the commutative target), and
+  `basePointsTensorEquiv_one` / `_mul` / `_smul` make that
+  identification an equivariant isomorphism of convolution groups.
+  Composing with `f₁ × f₂` lands in `X × Y`.
 Unconditionally TRUE; no hypothesis package. -/
 theorem IsFlatPointsGroupAt.prod {X Y : Type*}
     [AddCommGroup X] [AddCommGroup Y]
     [DistribMulAction Γᵥ X] [DistribMulAction Γᵥ Y]
     (hX : IsFlatPointsGroupAt v X) (hY : IsFlatPointsGroupAt v Y) :
-    IsFlatPointsGroupAt v (X × Y) :=
-  sorry
+    IsFlatPointsGroupAt v (X × Y) := by
+  classical
+  obtain ⟨G₁, cr₁, hopf₁, flat₁, fin₁, et₁, f₁, hbij₁, heq₁⟩ := hX
+  obtain ⟨G₂, cr₂, hopf₂, flat₂, fin₂, et₂, f₂, hbij₂, heq₂⟩ := hY
+  letI := cr₁; letI := hopf₁; letI := flat₁; letI := fin₁; letI := et₁
+  letI := cr₂; letI := hopf₂; letI := flat₂; letI := fin₂; letI := et₂
+  -- the generic fibre of the tensor witness is étale: base change then composition
+  haveI hEt : Algebra.Etale Kᵥ ((Kᵥ ⊗[𝒪ᵥ] G₁) ⊗[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G₂)) :=
+    Algebra.Etale.comp Kᵥ (Kᵥ ⊗[𝒪ᵥ] G₁) ((Kᵥ ⊗[𝒪ᵥ] G₁) ⊗[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G₂))
+  -- the points of the tensor witness are pairs of points, equivariantly and
+  -- compatibly with the convolution group law
+  obtain ⟨e, hesmul⟩ :
+      ∃ e : (Additive (Kᵥ ⊗[𝒪ᵥ] G₁ →ₐ[Kᵥ] Ωᵥ) × Additive (Kᵥ ⊗[𝒪ᵥ] G₂ →ₐ[Kᵥ] Ωᵥ)) ≃+
+          Additive (Kᵥ ⊗[𝒪ᵥ] (G₁ ⊗[𝒪ᵥ] G₂) →ₐ[Kᵥ] Ωᵥ),
+        ∀ (g : Γᵥ) (p : Additive (Kᵥ ⊗[𝒪ᵥ] G₁ →ₐ[Kᵥ] Ωᵥ) ×
+            Additive (Kᵥ ⊗[𝒪ᵥ] G₂ →ₐ[Kᵥ] Ωᵥ)),
+          e (g • p) = g • e p := by
+    refine ⟨{ toFun := fun p =>
+                Additive.ofMul (basePointsTensorEquiv (p.1.toMul, p.2.toMul))
+              invFun := fun Φ =>
+                (Additive.ofMul (basePointsTensorEquiv.symm Φ.toMul).1,
+                  Additive.ofMul (basePointsTensorEquiv.symm Φ.toMul).2)
+              left_inv := fun p => by
+                show (Additive.ofMul (basePointsTensorEquiv.symm
+                      (basePointsTensorEquiv (p.1.toMul, p.2.toMul))).1,
+                    Additive.ofMul (basePointsTensorEquiv.symm
+                      (basePointsTensorEquiv (p.1.toMul, p.2.toMul))).2) = p
+                rw [Equiv.symm_apply_apply]
+                exact rfl
+              right_inv := fun Φ => by
+                show Additive.ofMul (basePointsTensorEquiv
+                    ((basePointsTensorEquiv.symm Φ.toMul).1,
+                      (basePointsTensorEquiv.symm Φ.toMul).2)) = Φ
+                rw [Prod.mk.eta, Equiv.apply_symm_apply]
+                exact rfl
+              map_add' := fun p q => ?_ }, fun g p => ?_⟩
+    · show Additive.ofMul (basePointsTensorEquiv
+        (Additive.toMul (p.1 + q.1), Additive.toMul (p.2 + q.2))) = _
+      show Additive.ofMul (basePointsTensorEquiv
+        (p.1.toMul * q.1.toMul, p.2.toMul * q.2.toMul)) = _
+      rw [basePointsTensorEquiv_mul (p := (p.1.toMul, p.2.toMul))
+        (q := (q.1.toMul, q.2.toMul))]
+      rfl
+    · show Additive.ofMul (basePointsTensorEquiv
+        (Additive.toMul (g • p.1), Additive.toMul (g • p.2))) = _
+      show Additive.ofMul (basePointsTensorEquiv
+        (g • p.1.toMul, g • p.2.toMul)) = _
+      rw [basePointsTensorEquiv_smul (p := (p.1.toMul, p.2.toMul))]
+      rfl
+  refine ⟨G₁ ⊗[𝒪ᵥ] G₂, inferInstance, inferInstance, inferInstance, inferInstance,
+    Algebra.Etale.of_equiv
+      ((Algebra.TensorProduct.cancelBaseChange 𝒪ᵥ Kᵥ Kᵥ (Kᵥ ⊗[𝒪ᵥ] G₁) G₂).trans
+        (Algebra.TensorProduct.assoc 𝒪ᵥ 𝒪ᵥ Kᵥ Kᵥ G₁ G₂)),
+    { toFun := fun Φ => (f₁ (e.symm Φ).1, f₂ (e.symm Φ).2)
+      map_zero' := by simp
+      map_add' := fun Φ Ψ => by simp [map_add e.symm] }, ?_, ?_⟩
+  · -- bijectivity: the pair identification and both point identifications are bijective
+    exact (hbij₁.prodMap hbij₂).comp e.symm.bijective
+  · -- equivariance: `e.symm` is equivariant by `hesmul`, and so is `f₁ × f₂`
+    intro g Φ
+    have hsymm : e.symm (g • Φ) = g • e.symm Φ := by
+      apply e.injective
+      rw [e.apply_symm_apply, hesmul, e.apply_symm_apply]
+    show ((f₁ (e.symm (g • Φ)).1, f₂ (e.symm (g • Φ)).2) : X × Y) =
+      g • ((f₁ (e.symm Φ).1, f₂ (e.symm Φ).2) : X × Y)
+    rw [hsymm]
+    exact Prod.ext (heq₁ g (e.symm Φ).1) (heq₂ g (e.symm Φ).2)
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **Subobject closure** (sorry node — the subobjects half of
