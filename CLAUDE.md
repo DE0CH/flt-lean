@@ -423,12 +423,13 @@ why the scratch-module rule below matters more than ever.
 The standing agent-facing version of this lives in
 `/home/chend/.flt-agent-doctrine.md`, which every task prompt points at.
 
-**The `lean-lsp` MCP is GONE (Deyao, 2026-07-25): removed from `.mcp.json`
-entirely, because it did not work and is not needed.** The per-worktree
-`report-flt-lean-N` servers are the only Lean tooling. That means the
+**There is NO Lean MCP of any kind (Deyao, 2026-07-25).** Both the
+`lean-lsp` MCP and the per-worktree `report-flt-lean-N` servers are gone;
+`.mcp.json` holds exactly one entry, `annas-mcp`, which is for downloading
+literature and has nothing to do with Lean. So neither the
 `lean_leansearch` / `lean_loogle` / `lean_local_search` / `lean_run_code` /
-`lean_multi_attempt` tools no longer exist — task prompts must not offer
-them. Substitutes: search mathlib by reading it (`grep`/`Grep` over
+`lean_multi_attempt` tools nor `diagnostics` / `build` exist — task prompts
+must not offer them. Substitutes: search mathlib by reading it (`grep`/`Grep` over
 `.lake/packages/mathlib`) and by the names other owners have already
 recorded in docstrings; prototype in a throwaway scratch module verified
 through the report MCP, which is the same loop the performance rule already
@@ -476,9 +477,10 @@ because the file is the unit of elaboration.
   remainder, never `(by sorry)` as an application argument.
 - **Every bound `have`/`let` must be consumed** (Deyao, 2026-07-22).
   Prune unused ones before committing (verify each prune compiles).
-  Enforced by the PostToolUse hook `.claude/unused-binding-check.py`,
-  which fires after every report-MCP `diagnostics` call. (It used to be a
-  PreToolUse hook on `lean-lsp`; that MCP was removed 2026-07-25.)
+  **This is now the AGENT's own responsibility** — the enforcing hook
+  (`.claude/unused-binding-check.py`) was deleted on 2026-07-25 along with
+  the MCP it fired on. Nothing checks it for you; Lean's own
+  `unusedVariables` linter is the closest thing to a signal.
 - **Never use `private` to dodge the free-floating check** — open the
   consumer sorry first, always top-down.
 
