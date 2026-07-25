@@ -8547,6 +8547,54 @@ theorem archProfile_complex :
       push_cast
       ring
 
+/-- **The elementary stretched-exponential profile** (PROVEN): for every
+`c > 0`, `x ↦ e^{−c·x^{1/n}}` is a Γ-profile of degree `n`, its Mellin
+factor being tautologically its own Mellin transform (only the
+CONVERGENCE half of `HasMellin` carries content, and that is
+`hasMellin_ofReal_exp_neg` dilated by `c` (`MellinConvergent.comp_mul_left`)
+and pulled back along `τ ↦ τ^{1/n}` (`MellinConvergent.comp_rpow`), exactly
+as in `archProfile_complex`).  These are the auxiliary "half-exponent"
+profiles `E₁`, `E₂` produced by the saddle split in `archConv_decay`. -/
+theorem archProfile_stretchedExp (n : ℕ) (hn : 0 < n) {c : ℝ} (hc : 0 < c) :
+    ∃ M : ℂ → ℂ, IsArchProfile n M (fun x : ℝ => Real.exp (-c * x ^ ((n : ℝ)⁻¹))) := by
+  have hn0 : (0 : ℝ) < (n : ℝ) := Nat.cast_pos.mpr hn
+  have hinv : (0 : ℝ) < ((n : ℝ))⁻¹ := inv_pos.mpr hn0
+  refine ⟨fun s => mellin (fun τ : ℝ => ((Real.exp (-c * τ ^ ((n : ℝ)⁻¹)) : ℝ) : ℂ)) (s / 2),
+    ?_, ?_, ?_, ⟨1, c, hc, ?_⟩, ?_⟩
+  · refine (Real.continuous_exp.comp ?_).continuousOn
+    exact continuous_const.mul (continuous_iff_continuousAt.mpr fun x =>
+      Real.continuousAt_rpow_const x _ (Or.inr hinv.le))
+  · exact fun _ _ => (Real.exp_pos _).le
+  · intro a ha b _ hab
+    refine Real.exp_le_exp.mpr ?_
+    nlinarith [Real.rpow_le_rpow (le_of_lt ha) hab hinv.le (x := a) (y := b) (z := ((n : ℝ)⁻¹))]
+  · intro τ _
+    rw [one_mul]
+  · intro s hs
+    refine ⟨?_, rfl⟩
+    have hs2 : 0 < (s / 2).re := by simp; linarith
+    have hcast : (((((n : ℝ))⁻¹ : ℝ)) : ℂ) = ((n : ℝ) : ℂ)⁻¹ := by push_cast; ring
+    have hzeq : (s / 2) / ((((n : ℝ))⁻¹ : ℝ) : ℂ) = ((n : ℝ) : ℂ) * (s / 2) := by
+      rw [hcast, div_inv_eq_mul]
+      ring
+    have hzre : 0 < ((s / 2) / ((((n : ℝ))⁻¹ : ℝ) : ℂ)).re := by
+      rw [hzeq, Complex.re_ofReal_mul]
+      exact mul_pos hn0 hs2
+    have hbase := (hasMellin_ofReal_exp_neg _ hzre).1
+    have hmul : MellinConvergent (fun t : ℝ => ((Real.exp (-c * t) : ℝ) : ℂ))
+        ((s / 2) / ((((n : ℝ))⁻¹ : ℝ) : ℂ)) := by
+      have hcm := (MellinConvergent.comp_mul_left
+        (f := fun t : ℝ => ((Real.exp (-t) : ℝ) : ℂ))
+        (s := (s / 2) / ((((n : ℝ))⁻¹ : ℝ) : ℂ)) hc).mpr hbase
+      have heq : (fun t : ℝ => ((Real.exp (-c * t) : ℝ) : ℂ))
+          = fun t : ℝ => ((Real.exp (-(c * t)) : ℝ) : ℂ) := by
+        funext t; rw [neg_mul]
+      rw [heq]
+      exact hcm
+    exact (MellinConvergent.comp_rpow
+      (f := fun t : ℝ => ((Real.exp (-c * t) : ℝ) : ℂ))
+      (s := s / 2) (a := ((n : ℝ))⁻¹) (ne_of_gt hinv)).mpr hmul
+
 /-- **Multiplicative (Mellin) convolution of two profiles**:
 `(H₁ ⋆ H₂)(τ) = ∫_0^∞ H₁(τ/u)·H₂(u)·du/u`.  This is the
 multiplication of the multiplicative group `(0, ∞)`, under which the
@@ -8638,38 +8686,229 @@ theorem archConv_continuousOn {p q : ℕ} {M₁ M₂ : ℂ → ℂ} {H₁ H₂ :
     ContinuousOn (archConv H₁ H₂) (Set.Ioi 0) := by
   sorry
 
-/-- **Stretched-exponential decay of the convolution** (sorry node,
-stated 2026-07-25 — stage (α₃) of the decomposition of
+/-- **Stretched-exponential decay of the convolution** (PROVEN
+2026-07-25 — stage (α₃) of the decomposition of
 `archimedeanGammaProfile_exists`): the convolution of a degree-`p` and
 a degree-`q` profile decays like `exp(−a·τ^{1/(p+q)})`, i.e. the
 degrees ADD.
 
-Intended proof (the AM–GM/saddle-point step of Neukirch VII (4.2),
-"split the exponent in half"): with
-`H₁(x) ≤ A₁·exp(−a₁·x^{1/p})` for `x ≥ 1` and
-`H₂(u) ≤ A₂·exp(−a₂·u^{1/q})` for `u ≥ 1`, split the integral at the
-saddle `u₀ = τ^{q/(p+q)}` — where `(τ/u)^{1/p} = u^{1/q}` — whose
-common value is exactly `τ^{1/(p+q)}`:
+Proof (the AM–GM/saddle-point step of Neukirch VII (4.2), "split the
+exponent in half").  With `H₁(x) ≤ A₁·exp(−a₁·x^{1/p})` for `x ≥ 1`
+and `H₂(u) ≤ A₂·exp(−a₂·u^{1/q})` for `u ≥ 1` (both `Aᵢ ≥ 0`, since
+profiles are nonnegative), split the integral at the saddle
+`u₀ = τ^{q/(p+q)}` — where `(τ/u)^{1/p} = u^{1/q}` — whose common value
+is exactly `T = τ^{1/(p+q)}`.  For `τ ≥ 1` one has `u₀ ≥ 1` and:
 
-* on `(0, u₀]` one has `τ/u ≥ τ^{p/(p+q)} ≥ 1`, so
-  `exp(−a₁(τ/u)^{1/p}) ≤ exp(−½a₁τ^{1/(p+q)})·exp(−½a₁(τ/u)^{1/p})`
-  and the second factor, together with the polynomial bound
-  `H₂(u) ≤ C₂u^{−ε}` near `0` and antitonicity of `H₂` on `[1, u₀]`,
-  leaves a `τ`-uniform finite integral (the residual `log u₀` growth
-  is absorbed by halving the exponent once more);
-* on `[u₀, ∞)` one has `u ≥ 1` and
-  `exp(−a₂u^{1/q}) ≤ exp(−½a₂τ^{1/(p+q)})·exp(−½a₂u^{1/q})`, and
-  `H₁(τ/u) ≤ C₁(u/τ)^{ε} ≤ C₁u^{ε}` (the polynomial control at `0` of
-  `archConv_integrableOn`'s docstring, `τ ≥ 1`), leaving the finite
-  integral `∫ u^{ε−1}exp(−½a₂u^{1/q}) du`.
+* on `(0, u₀]`: `τ/u ≥ τ/u₀ = τ^{p/(p+q)} ≥ 1`, hence
+  `(τ/u)^{1/p} ≥ T`, and halving that exponent gives
+  `H₁(τ/u) ≤ A₁·exp(−½a₁T)·E₁(τ/u)` where
+  `E₁(x) = exp(−½a₁·x^{1/p})`;
+* on `[u₀, ∞)`: `u ≥ u₀ ≥ 1`, hence `u^{1/q} ≥ T`, and likewise
+  `H₂(u) ≤ A₂·exp(−½a₂T)·E₂(u)` where `E₂(u) = exp(−½a₂·u^{1/q})`.
 
-The resulting exponent is `a = ½·min a₁ a₂` (after the second
-halving), which is what the statement asserts. -/
+Since the integrand is nonnegative, enlarging each half-line back to
+`(0, ∞)` only increases the integral, so the two residual integrals are
+the CONVOLUTIONS `archConv E₁ H₂ τ` and `archConv H₁ E₂ τ` themselves.
+Now `E₁` and `E₂` are again profiles, of degrees `p` and `q`
+(`archProfile_stretchedExp`) — so those two convolutions are finite by
+`archConv_integrableOn` and, crucially, ANTITONE in `τ`
+(`archConv_antitoneOn`), hence for `τ ≥ 1` bounded by their values at
+`τ = 1`.  That antitonicity is what replaces the delicate `τ`-uniform
+estimate (and with it the polynomial-control-at-`0` bound) of a direct
+attack.  The constants are therefore
+`A = A₁·(E₁ ⋆ H₂)(1) + A₂·(H₁ ⋆ E₂)(1)` and `a = ½·min a₁ a₂`. -/
 theorem archConv_decay {p q : ℕ} {M₁ M₂ : ℂ → ℂ} {H₁ H₂ : ℝ → ℝ}
     (hp : 0 < p) (hq : 0 < q) (h₁ : IsArchProfile p M₁ H₁) (h₂ : IsArchProfile q M₂ H₂) :
     ∃ A a : ℝ, 0 < a ∧ ∀ τ : ℝ, 1 ≤ τ →
       archConv H₁ H₂ τ ≤ A * Real.exp (-a * τ ^ (((p + q : ℕ) : ℝ)⁻¹)) := by
-  sorry
+  obtain ⟨A₁, a₁, ha₁, hd₁⟩ := h₁.2.2.2.1
+  obtain ⟨A₂, a₂, ha₂, hd₂⟩ := h₂.2.2.2.1
+  have hA₁ : 0 ≤ A₁ := by
+    nlinarith [hd₁ 1 le_rfl, h₁.2.1 1 (Set.mem_Ioi.mpr one_pos),
+      Real.exp_pos (-a₁ * (1 : ℝ) ^ ((p : ℝ)⁻¹))]
+  have hA₂ : 0 ≤ A₂ := by
+    nlinarith [hd₂ 1 le_rfl, h₂.2.1 1 (Set.mem_Ioi.mpr one_pos),
+      Real.exp_pos (-a₂ * (1 : ℝ) ^ ((q : ℝ)⁻¹))]
+  obtain ⟨N₁, hE₁⟩ := archProfile_stretchedExp p hp (c := a₁ / 2) (by positivity)
+  obtain ⟨N₂, hE₂⟩ := archProfile_stretchedExp q hq (c := a₂ / 2) (by positivity)
+  set E₁ : ℝ → ℝ := fun x => Real.exp (-(a₁ / 2) * x ^ ((p : ℝ)⁻¹)) with hE₁def
+  set E₂ : ℝ → ℝ := fun x => Real.exp (-(a₂ / 2) * x ^ ((q : ℝ)⁻¹)) with hE₂def
+  have hC₁0 : 0 ≤ archConv E₁ H₂ 1 := archConv_nonneg hE₁ h₂ one_pos
+  have hC₂0 : 0 ≤ archConv H₁ E₂ 1 := archConv_nonneg h₁ hE₂ one_pos
+  refine ⟨A₁ * archConv E₁ H₂ 1 + A₂ * archConv H₁ E₂ 1, min a₁ a₂ / 2,
+    by linarith [lt_min ha₁ ha₂], ?_⟩
+  intro τ hτ
+  have hτ0 : (0 : ℝ) < τ := lt_of_lt_of_le one_pos hτ
+  have hP0 : (0 : ℝ) < (p : ℝ) := Nat.cast_pos.mpr hp
+  have hQ0 : (0 : ℝ) < (q : ℝ) := Nat.cast_pos.mpr hq
+  have hNeq : (((p + q : ℕ)) : ℝ) = (p : ℝ) + (q : ℝ) := by push_cast; ring
+  have hN0 : (0 : ℝ) < (((p + q : ℕ)) : ℝ) := by rw [hNeq]; linarith
+  set N : ℝ := (((p + q : ℕ)) : ℝ) with hNdef
+  have hPne : (p : ℝ) ≠ 0 := ne_of_gt hP0
+  have hQne : (q : ℝ) ≠ 0 := ne_of_gt hQ0
+  have hNne : N ≠ 0 := ne_of_gt hN0
+  have hT0 : (0 : ℝ) ≤ τ ^ N⁻¹ := Real.rpow_nonneg hτ0.le _
+  have hu₀pos : (0 : ℝ) < τ ^ ((q : ℝ) / N) := Real.rpow_pos_of_pos hτ0 _
+  have hu₀ge1 : (1 : ℝ) ≤ τ ^ ((q : ℝ) / N) := by
+    calc (1 : ℝ) = (1 : ℝ) ^ ((q : ℝ) / N) := (Real.one_rpow _).symm
+      _ ≤ τ ^ ((q : ℝ) / N) := Real.rpow_le_rpow zero_le_one hτ (div_nonneg hQ0.le hN0.le)
+  have hPN : (p : ℝ) / N = 1 - (q : ℝ) / N := by
+    rw [eq_sub_iff_add_eq, ← add_div, ← hNeq, div_self hNne]
+  have hτdiv : τ ^ ((p : ℝ) / N) = τ / τ ^ ((q : ℝ) / N) := by
+    rw [hPN, Real.rpow_sub hτ0, Real.rpow_one]
+  have hone_le : (1 : ℝ) ≤ τ ^ ((p : ℝ) / N) := by
+    calc (1 : ℝ) = (1 : ℝ) ^ ((p : ℝ) / N) := (Real.one_rpow _).symm
+      _ ≤ τ ^ ((p : ℝ) / N) := Real.rpow_le_rpow zero_le_one hτ (div_nonneg hP0.le hN0.le)
+  have hkeyP : (τ ^ ((p : ℝ) / N)) ^ ((p : ℝ)⁻¹) = τ ^ N⁻¹ := by
+    rw [← Real.rpow_mul hτ0.le]
+    congr 1
+    field_simp [hPne, hNne]
+  have hkeyQ : (τ ^ ((q : ℝ) / N)) ^ ((q : ℝ)⁻¹) = τ ^ N⁻¹ := by
+    rw [← Real.rpow_mul hτ0.le]
+    congr 1
+    field_simp [hQne, hNne]
+  -- the two pointwise saddle bounds
+  have hstepA : ∀ u ∈ Set.Ioc (0 : ℝ) (τ ^ ((q : ℝ) / N)),
+      H₁ (τ / u) * H₂ u / u
+        ≤ (A₁ * Real.exp (-(a₁ / 2) * τ ^ N⁻¹)) * (E₁ (τ / u) * H₂ u / u) := by
+    intro u hu
+    obtain ⟨hu0, huu⟩ := hu
+    have hdle : τ ^ ((p : ℝ) / N) ≤ τ / u := by
+      rw [hτdiv]
+      exact div_le_div_of_nonneg_left hτ0.le hu0 huu
+    have hx1 : (1 : ℝ) ≤ τ / u := le_trans hone_le hdle
+    have hxT : τ ^ N⁻¹ ≤ (τ / u) ^ ((p : ℝ)⁻¹) := by
+      rw [← hkeyP]
+      exact Real.rpow_le_rpow (Real.rpow_nonneg hτ0.le _) hdle (inv_nonneg.mpr hP0.le)
+    have hH₁ : H₁ (τ / u) ≤ A₁ * (Real.exp (-(a₁ / 2) * τ ^ N⁻¹) * E₁ (τ / u)) := by
+      refine le_trans (hd₁ (τ / u) hx1) ?_
+      simp only [hE₁def]
+      have hstep : Real.exp (-a₁ * (τ / u) ^ ((p : ℝ)⁻¹))
+          ≤ Real.exp (-(a₁ / 2) * τ ^ N⁻¹) * Real.exp (-(a₁ / 2) * (τ / u) ^ ((p : ℝ)⁻¹)) := by
+        rw [← Real.exp_add]
+        exact Real.exp_le_exp.mpr (by nlinarith [hxT, ha₁])
+      exact mul_le_mul_of_nonneg_left hstep hA₁
+    have hfac : 0 ≤ H₂ u / u := div_nonneg (h₂.2.1 u (Set.mem_Ioi.mpr hu0)) hu0.le
+    calc H₁ (τ / u) * H₂ u / u = H₁ (τ / u) * (H₂ u / u) := by ring
+      _ ≤ (A₁ * (Real.exp (-(a₁ / 2) * τ ^ N⁻¹) * E₁ (τ / u))) * (H₂ u / u) :=
+          mul_le_mul_of_nonneg_right hH₁ hfac
+      _ = (A₁ * Real.exp (-(a₁ / 2) * τ ^ N⁻¹)) * (E₁ (τ / u) * H₂ u / u) := by ring
+  have hstepB : ∀ u ∈ Set.Ioi (τ ^ ((q : ℝ) / N)),
+      H₁ (τ / u) * H₂ u / u
+        ≤ (A₂ * Real.exp (-(a₂ / 2) * τ ^ N⁻¹)) * (H₁ (τ / u) * E₂ u / u) := by
+    intro u hu
+    rw [Set.mem_Ioi] at hu
+    have hu0 : (0 : ℝ) < u := lt_trans hu₀pos hu
+    have hu1 : (1 : ℝ) ≤ u := le_trans hu₀ge1 hu.le
+    have huT : τ ^ N⁻¹ ≤ u ^ ((q : ℝ)⁻¹) := by
+      rw [← hkeyQ]
+      exact Real.rpow_le_rpow (Real.rpow_nonneg hτ0.le _) hu.le (inv_nonneg.mpr hQ0.le)
+    have hH₂ : H₂ u ≤ A₂ * (Real.exp (-(a₂ / 2) * τ ^ N⁻¹) * E₂ u) := by
+      refine le_trans (hd₂ u hu1) ?_
+      simp only [hE₂def]
+      have hstep : Real.exp (-a₂ * u ^ ((q : ℝ)⁻¹))
+          ≤ Real.exp (-(a₂ / 2) * τ ^ N⁻¹) * Real.exp (-(a₂ / 2) * u ^ ((q : ℝ)⁻¹)) := by
+        rw [← Real.exp_add]
+        exact Real.exp_le_exp.mpr (by nlinarith [huT, ha₂])
+      exact mul_le_mul_of_nonneg_left hstep hA₂
+    have hfac : 0 ≤ H₁ (τ / u) / u :=
+      div_nonneg (h₁.2.1 _ (Set.mem_Ioi.mpr (div_pos hτ0 hu0))) hu0.le
+    calc H₁ (τ / u) * H₂ u / u = H₂ u * (H₁ (τ / u) / u) := by ring
+      _ ≤ (A₂ * (Real.exp (-(a₂ / 2) * τ ^ N⁻¹) * E₂ u)) * (H₁ (τ / u) / u) :=
+          mul_le_mul_of_nonneg_right hH₂ hfac
+      _ = (A₂ * Real.exp (-(a₂ / 2) * τ ^ N⁻¹)) * (H₁ (τ / u) * E₂ u / u) := by ring
+  -- integrability and the split at the saddle
+  have hgint : MeasureTheory.IntegrableOn (fun u : ℝ => H₁ (τ / u) * H₂ u / u) (Set.Ioi 0) :=
+    archConv_integrableOn hp hq h₁ h₂ hτ0
+  have hE1int : MeasureTheory.IntegrableOn (fun u : ℝ => E₁ (τ / u) * H₂ u / u) (Set.Ioi 0) :=
+    archConv_integrableOn hp hq hE₁ h₂ hτ0
+  have hE2int : MeasureTheory.IntegrableOn (fun u : ℝ => H₁ (τ / u) * E₂ u / u) (Set.Ioi 0) :=
+    archConv_integrableOn hp hq h₁ hE₂ hτ0
+  have hsub1 : Set.Ioc (0 : ℝ) (τ ^ ((q : ℝ) / N)) ⊆ Set.Ioi 0 := Set.Ioc_subset_Ioi_self
+  have hsub2 : Set.Ioi (τ ^ ((q : ℝ) / N)) ⊆ Set.Ioi (0 : ℝ) := Set.Ioi_subset_Ioi hu₀pos.le
+  have hsplit : archConv H₁ H₂ τ
+      = (∫ u in Set.Ioc (0 : ℝ) (τ ^ ((q : ℝ) / N)), H₁ (τ / u) * H₂ u / u)
+        + ∫ u in Set.Ioi (τ ^ ((q : ℝ) / N)), H₁ (τ / u) * H₂ u / u := by
+    rw [archConv, ← Set.Ioc_union_Ioi_eq_Ioi hu₀pos.le,
+      MeasureTheory.setIntegral_union (Set.Ioc_disjoint_Ioi le_rfl) measurableSet_Ioi
+        (hgint.mono_set hsub1) (hgint.mono_set hsub2)]
+  have hpart1 : (∫ u in Set.Ioc (0 : ℝ) (τ ^ ((q : ℝ) / N)), H₁ (τ / u) * H₂ u / u)
+      ≤ (A₁ * Real.exp (-(a₁ / 2) * τ ^ N⁻¹)) * archConv E₁ H₂ τ := by
+    have h1 : (∫ u in Set.Ioc (0 : ℝ) (τ ^ ((q : ℝ) / N)), H₁ (τ / u) * H₂ u / u)
+        ≤ ∫ u in Set.Ioc (0 : ℝ) (τ ^ ((q : ℝ) / N)),
+            (A₁ * Real.exp (-(a₁ / 2) * τ ^ N⁻¹)) * (E₁ (τ / u) * H₂ u / u) :=
+      MeasureTheory.setIntegral_mono_on (hgint.mono_set hsub1)
+        (MeasureTheory.IntegrableOn.mono_set
+          (MeasureTheory.Integrable.const_mul hE1int (A₁ * Real.exp (-(a₁ / 2) * τ ^ N⁻¹)))
+          hsub1) measurableSet_Ioc hstepA
+    have h2 : (∫ u in Set.Ioc (0 : ℝ) (τ ^ ((q : ℝ) / N)),
+            (A₁ * Real.exp (-(a₁ / 2) * τ ^ N⁻¹)) * (E₁ (τ / u) * H₂ u / u))
+        = (A₁ * Real.exp (-(a₁ / 2) * τ ^ N⁻¹)) *
+            ∫ u in Set.Ioc (0 : ℝ) (τ ^ ((q : ℝ) / N)), E₁ (τ / u) * H₂ u / u :=
+      MeasureTheory.integral_const_mul _ _
+    have h3 : (∫ u in Set.Ioc (0 : ℝ) (τ ^ ((q : ℝ) / N)), E₁ (τ / u) * H₂ u / u)
+        ≤ archConv E₁ H₂ τ := by
+      rw [archConv]
+      refine MeasureTheory.setIntegral_mono_set hE1int ?_ hsub1.eventuallyLE
+      filter_upwards [MeasureTheory.ae_restrict_mem measurableSet_Ioi] with u hu
+      exact div_nonneg (mul_nonneg (hE₁.2.1 _ (Set.mem_Ioi.mpr (div_pos hτ0 (Set.mem_Ioi.mp hu))))
+        (h₂.2.1 u hu)) (le_of_lt (Set.mem_Ioi.mp hu))
+    calc (∫ u in Set.Ioc (0 : ℝ) (τ ^ ((q : ℝ) / N)), H₁ (τ / u) * H₂ u / u)
+        ≤ _ := h1
+      _ = _ := h2
+      _ ≤ (A₁ * Real.exp (-(a₁ / 2) * τ ^ N⁻¹)) * archConv E₁ H₂ τ :=
+          mul_le_mul_of_nonneg_left h3 (mul_nonneg hA₁ (Real.exp_pos _).le)
+  have hpart2 : (∫ u in Set.Ioi (τ ^ ((q : ℝ) / N)), H₁ (τ / u) * H₂ u / u)
+      ≤ (A₂ * Real.exp (-(a₂ / 2) * τ ^ N⁻¹)) * archConv H₁ E₂ τ := by
+    have h1 : (∫ u in Set.Ioi (τ ^ ((q : ℝ) / N)), H₁ (τ / u) * H₂ u / u)
+        ≤ ∫ u in Set.Ioi (τ ^ ((q : ℝ) / N)),
+            (A₂ * Real.exp (-(a₂ / 2) * τ ^ N⁻¹)) * (H₁ (τ / u) * E₂ u / u) :=
+      MeasureTheory.setIntegral_mono_on (hgint.mono_set hsub2)
+        (MeasureTheory.IntegrableOn.mono_set
+          (MeasureTheory.Integrable.const_mul hE2int (A₂ * Real.exp (-(a₂ / 2) * τ ^ N⁻¹)))
+          hsub2) measurableSet_Ioi hstepB
+    have h2 : (∫ u in Set.Ioi (τ ^ ((q : ℝ) / N)),
+            (A₂ * Real.exp (-(a₂ / 2) * τ ^ N⁻¹)) * (H₁ (τ / u) * E₂ u / u))
+        = (A₂ * Real.exp (-(a₂ / 2) * τ ^ N⁻¹)) *
+            ∫ u in Set.Ioi (τ ^ ((q : ℝ) / N)), H₁ (τ / u) * E₂ u / u :=
+      MeasureTheory.integral_const_mul _ _
+    have h3 : (∫ u in Set.Ioi (τ ^ ((q : ℝ) / N)), H₁ (τ / u) * E₂ u / u)
+        ≤ archConv H₁ E₂ τ := by
+      rw [archConv]
+      refine MeasureTheory.setIntegral_mono_set hE2int ?_ hsub2.eventuallyLE
+      filter_upwards [MeasureTheory.ae_restrict_mem measurableSet_Ioi] with u hu
+      exact div_nonneg (mul_nonneg (h₁.2.1 _ (Set.mem_Ioi.mpr (div_pos hτ0 (Set.mem_Ioi.mp hu))))
+        (hE₂.2.1 u hu)) (le_of_lt (Set.mem_Ioi.mp hu))
+    calc (∫ u in Set.Ioi (τ ^ ((q : ℝ) / N)), H₁ (τ / u) * H₂ u / u)
+        ≤ _ := h1
+      _ = _ := h2
+      _ ≤ (A₂ * Real.exp (-(a₂ / 2) * τ ^ N⁻¹)) * archConv H₁ E₂ τ :=
+          mul_le_mul_of_nonneg_left h3 (mul_nonneg hA₂ (Real.exp_pos _).le)
+  -- antitonicity replaces the τ-dependent auxiliary convolutions by their value at 1
+  have hstep1 : (A₁ * Real.exp (-(a₁ / 2) * τ ^ N⁻¹)) * archConv E₁ H₂ τ
+      ≤ (A₁ * Real.exp (-(a₁ / 2) * τ ^ N⁻¹)) * archConv E₁ H₂ 1 :=
+    mul_le_mul_of_nonneg_left
+      (archConv_antitoneOn hp hq hE₁ h₂ (Set.mem_Ioi.mpr one_pos) (Set.mem_Ioi.mpr hτ0) hτ)
+      (mul_nonneg hA₁ (Real.exp_pos _).le)
+  have hstep2 : (A₂ * Real.exp (-(a₂ / 2) * τ ^ N⁻¹)) * archConv H₁ E₂ τ
+      ≤ (A₂ * Real.exp (-(a₂ / 2) * τ ^ N⁻¹)) * archConv H₁ E₂ 1 :=
+    mul_le_mul_of_nonneg_left
+      (archConv_antitoneOn hp hq h₁ hE₂ (Set.mem_Ioi.mpr one_pos) (Set.mem_Ioi.mpr hτ0) hτ)
+      (mul_nonneg hA₂ (Real.exp_pos _).le)
+  have hfin1 : (A₁ * Real.exp (-(a₁ / 2) * τ ^ N⁻¹)) * archConv E₁ H₂ 1
+      ≤ (A₁ * archConv E₁ H₂ 1) * Real.exp (-(min a₁ a₂ / 2) * τ ^ N⁻¹) := by
+    rw [show (A₁ * Real.exp (-(a₁ / 2) * τ ^ N⁻¹)) * archConv E₁ H₂ 1
+        = (A₁ * archConv E₁ H₂ 1) * Real.exp (-(a₁ / 2) * τ ^ N⁻¹) by ring]
+    exact mul_le_mul_of_nonneg_left
+      (Real.exp_le_exp.mpr (by nlinarith [min_le_left a₁ a₂, hT0])) (mul_nonneg hA₁ hC₁0)
+  have hfin2 : (A₂ * Real.exp (-(a₂ / 2) * τ ^ N⁻¹)) * archConv H₁ E₂ 1
+      ≤ (A₂ * archConv H₁ E₂ 1) * Real.exp (-(min a₁ a₂ / 2) * τ ^ N⁻¹) := by
+    rw [show (A₂ * Real.exp (-(a₂ / 2) * τ ^ N⁻¹)) * archConv H₁ E₂ 1
+        = (A₂ * archConv H₁ E₂ 1) * Real.exp (-(a₂ / 2) * τ ^ N⁻¹) by ring]
+    exact mul_le_mul_of_nonneg_left
+      (Real.exp_le_exp.mpr (by nlinarith [min_le_right a₁ a₂, hT0])) (mul_nonneg hA₂ hC₂0)
+  rw [hsplit, add_mul]
+  linarith [hpart1, hpart2, hstep1, hstep2, hfin1, hfin2]
 
 open MeasureTheory Set in
 /-- **Mellin multiplicativity of the convolution** (PROVEN 2026-07-25 —
@@ -8983,10 +9222,11 @@ Mellin factor `M`"):
   with factor `Γ_ℂ(s)`;
 * `archProfile_mul` (assembly PROVEN): profiles convolve —
   `archConv H₁ H₂ τ = ∫_0^∞ H₁(τ/u)H₂(u) du/u` is a degree-`(p+q)`
-  profile with factor `M₁·M₂`; its four conjuncts are the open leaves
-  `archConv_integrableOn`, `archConv_continuousOn`, `archConv_decay`
-  and `archConv_hasMellin` (`archConv_nonneg` and
-  `archConv_antitoneOn` are PROVEN);
+  profile with factor `M₁·M₂`; its remaining open leaves are
+  `archConv_integrableOn`, `archConv_continuousOn` and
+  `archConv_hasMellin` (`archConv_nonneg`, `archConv_antitoneOn` and
+  `archConv_decay` — the AM–GM saddle split, over the auxiliary
+  `archProfile_stretchedExp` — are PROVEN);
 * `archProfile_pow` (PROVEN): induction gives the `(r₁, r₂)` profile of
   degree `r₁ + 2r₂` with factor `Γ_ℝ^{r₁}·Γ_ℂ^{r₂}`;
 * this theorem: `NumberField.InfinitePlace.card_add_two_mul_card_eq_rank`
@@ -16707,36 +16947,458 @@ theorem DedekindContinuation.exists_goodHeight_gap {K : Type*} [Field K]
       exact le_trans (min_le_right _ _) hlog2T
     linarith
 
-/-- **Uniform `1/t²` decay of `Φ` on the closed contour strip** (sorry
-node, stated 2026-07-24 — leaf (b₁ᵢᵢᵢ-α) of the decomposition of
+/-- **Uniform `1/t²` decay of `Φ` on the closed contour strip**
+(PROVEN 2026-07-24 — leaf (b₁ᵢᵢᵢ-α) of the decomposition of
 `DedekindContinuation.poitouHorizontal_gap_tendsto_zero`; the strip
-generalization of the PROVEN vertical-line bound
-`poitouPhi_line_decay_sq`, which lives later in this file in the
-PoitouPrimeEdgeFourier section): `‖Φ(σ + it)‖ ≤ M/t²` uniformly over
-`σ ∈ [−1/4, 5/4]`.
+generalization of the vertical-line bound `poitouPhi_line_decay_sq`,
+which lives later in this file in the PoitouPrimeEdgeFourier
+section): `‖Φ(σ + it)‖ ≤ M/t²` uniformly over `σ ∈ [−1/4, 5/4]`.
 
-Intended proof: the double integration by parts of
-`poitouPhi_line_decay_sq`, verbatim, with the fixed vertical-line
-exponent `3/4 = 5/4 − 1/2` generalized to the strip parameter
-`a = σ − 1/2 ∈ [−3/4, 3/4]`.  For `s = σ + it`,
-`Φ(s) = ∫_{−6}^{6} g_a(x)·e^{itx} dx` with
-`g_a(x) = odlyzkoTestFn x · e^{ax}/cosh(x/2)` continuous, vanishing
-at `±6`, and smooth on `[−6, 0]` and `[0, 6]` where it agrees with
-the models `(1 ± x/6)·q_a`, `q_a = e^{ax}/cosh(x/2)`; writing
-`q_a' = q_a·p_a` with `p_a = a − sinh(x/2)/(2·cosh(x/2))` and
-`p_a' = −1/(4·cosh²(x/2))` (hyperbolic Pythagoras), one
-parts-integration kills the boundary terms (`g_a(±6) = 0`, `g_a`
-continuous at the kink `0`), a second leaves the piece-endpoint
-values of the piecewise derivative and `∫ |(g_a')'|` — all bounded
-UNIFORMLY over `a ∈ [−3/4, 3/4]` because `x` ranges over the compact
-`[−6, 6]` (every coefficient is at most an `e^{9/2}`-type constant).
-For `0 < |t| < 1` the trivial strip bound
-`‖Φ(σ + it)‖ ≤ ∫_{−6}^{6} g_a ≤ 12·e^{9/2}` is absorbed by
-enlarging `M`. -/
+The proof is the SECOND integration by parts of
+`poitouPhi_line_decay_sq` grafted onto the strip setup of the proven
+`poitouPhi_strip_decay`.  Rather than absorbing the real exponential
+`e^{(σ−1/2)x}` into the profile (which would make the profile — and
+hence every boundary value and every residual integral — depend on
+`σ`), the whole complex kernel `e^{(s−1/2)x}` is kept on the kernel
+side, where it has the two antiderivatives
+`e^{(s−1/2)x}/(s−1/2)` and `e^{(s−1/2)x}/(s−1/2)²`.  The profile is
+then the `σ`-INDEPENDENT `q = cosh(x/2)⁻¹`, agreeing on `[−6, 0]` and
+`[0, 6]` with the smooth models `(1 ± x/6)·q`; writing `q' = q·p`
+with `p = −sinh(x/2)/(2·cosh(x/2))` and `p' = −1/(4·cosh²(x/2))`
+(hyperbolic Pythagoras), the piecewise first derivatives
+`rd₁ = q/6 + (1 + x/6)·q·p`, `rd₂ = −q/6 + (1 − x/6)·q·p` are
+themselves `C¹`.  The first parts-integration kills the boundary
+terms exactly as in `poitouPhi_strip_decay` (the outer endpoints
+carry the factor `1 ∓ 6/6 = 0`, the two interface values at the kink
+`0` are both `1` and cancel); the second leaves the piece-endpoint
+values of `rdᵢ` and `∫ |rdᵢ'|`, all constants, against the kernel
+`e^{(s−1/2)x}/(s−1/2)²` whose norm is
+`e^{(σ−1/2)x}/‖s−1/2‖² ≤ e^{9/2}/(Im s)²` uniformly on the support:
+`|σ − 1/2| ≤ 3/4`, `|x| ≤ 6`, and `‖s − 1/2‖ ≥ |Im s|`.  This is
+where — and the only place where — the vertical-line exponent
+`3/4 = 5/4 − 1/2` is generalized to `σ − 1/2 ∈ [−3/4, 3/4]`, turning
+the line proof's `e⁰ = 1` kernel bound into `e^{9/2}`; no separate
+small-`|t|` case is needed, since the estimate holds for every
+`t ≠ 0`. -/
 theorem poitouPhi_strip_decay_sq : ∃ M : ℝ, 0 ≤ M ∧ ∀ s : ℂ,
     -(1 / 4) ≤ s.re → s.re ≤ 5 / 4 → s.im ≠ 0 →
     ‖poitouPhi s‖ ≤ M / s.im ^ 2 := by
-  sorry
+  classical
+  set q : ℝ → ℝ := fun x => (Real.cosh (x / 2))⁻¹ with hq
+  set p : ℝ → ℝ := fun x => -(Real.sinh (x / 2) / (2 * Real.cosh (x / 2))) with hp
+  have hqder : ∀ x : ℝ, HasDerivAt q (q x * p x) x := by
+    intro x
+    have hhalf : HasDerivAt (fun y : ℝ => y / 2) ((1 : ℝ) / 2) x :=
+      (hasDerivAt_id x).div_const 2
+    have hc : HasDerivAt (fun y : ℝ => Real.cosh (y / 2))
+        (Real.sinh (x / 2) * (1 / 2)) x := by
+      simpa using hhalf.cosh
+    have h := hc.inv (Real.cosh_pos _).ne'
+    have hveq : -(Real.sinh (x / 2) * (1 / 2)) / Real.cosh (x / 2) ^ 2 =
+        q x * p x := by
+      simp only [hq, hp]
+      field_simp
+    rw [← hveq]
+    exact h
+  have hpder : ∀ x : ℝ, HasDerivAt p (-(1 / (4 * Real.cosh (x / 2) ^ 2))) x := by
+    intro x
+    have hhalf : HasDerivAt (fun y : ℝ => y / 2) ((1 : ℝ) / 2) x :=
+      (hasDerivAt_id x).div_const 2
+    have hs : HasDerivAt (fun y : ℝ => Real.sinh (y / 2))
+        (Real.cosh (x / 2) * (1 / 2)) x := by
+      simpa using hhalf.sinh
+    have hc2 : HasDerivAt (fun y : ℝ => 2 * Real.cosh (y / 2))
+        (2 * (Real.sinh (x / 2) * (1 / 2))) x := by
+      simpa using hhalf.cosh.const_mul 2
+    have hden : (2 : ℝ) * Real.cosh (x / 2) ≠ 0 := by positivity
+    have h := (hs.div hc2 hden).neg
+    have hid : Real.cosh (x / 2) ^ 2 - Real.sinh (x / 2) ^ 2 = 1 :=
+      Real.cosh_sq_sub_sinh_sq _
+    have hveq : -((Real.cosh (x / 2) * (1 / 2) * (2 * Real.cosh (x / 2)) -
+        Real.sinh (x / 2) * (2 * (Real.sinh (x / 2) * (1 / 2)))) /
+          (2 * Real.cosh (x / 2)) ^ 2) = -(1 / (4 * Real.cosh (x / 2) ^ 2)) := by
+      rw [neg_inj, div_eq_div_iff (by positivity) (by positivity)]
+      linear_combination (4 * Real.cosh (x / 2) ^ 2) * hid
+    rw [← hveq]
+    exact h
+  set rd₁ : ℝ → ℝ := fun x => 1 / 6 * q x + (1 + x / 6) * (q x * p x) with hrd₁
+  set rd₂ : ℝ → ℝ := fun x => -(1 / 6) * q x + (1 - x / 6) * (q x * p x) with hrd₂
+  set rdd₁ : ℝ → ℝ := fun x => 1 / 6 * (q x * p x) + (1 / 6 * (q x * p x) +
+    (1 + x / 6) * (q x * p x * p x + q x * -(1 / (4 * Real.cosh (x / 2) ^ 2))))
+    with hrdd₁
+  set rdd₂ : ℝ → ℝ := fun x => -(1 / 6) * (q x * p x) + (-(1 / 6) * (q x * p x) +
+    (1 - x / 6) * (q x * p x * p x + q x * -(1 / (4 * Real.cosh (x / 2) ^ 2))))
+    with hrdd₂
+  have hr₁der : ∀ x : ℝ, HasDerivAt (fun y : ℝ => (1 + y / 6) * q y) (rd₁ x) x := by
+    intro x
+    exact (((hasDerivAt_id x).div_const (6 : ℝ)).const_add 1).mul (hqder x)
+  have hr₂der : ∀ x : ℝ, HasDerivAt (fun y : ℝ => (1 - y / 6) * q y) (rd₂ x) x := by
+    intro x
+    exact (((hasDerivAt_id x).div_const (6 : ℝ)).const_sub 1).mul (hqder x)
+  have hrd₁der : ∀ x : ℝ, HasDerivAt rd₁ (rdd₁ x) x := by
+    intro x
+    have h2 : HasDerivAt (fun y : ℝ => q y * p y)
+        (q x * p x * p x + q x * -(1 / (4 * Real.cosh (x / 2) ^ 2))) x :=
+      (hqder x).mul (hpder x)
+    exact ((hqder x).const_mul (1 / 6 : ℝ)).add
+      ((((hasDerivAt_id x).div_const (6 : ℝ)).const_add 1).mul h2)
+  have hrd₂der : ∀ x : ℝ, HasDerivAt rd₂ (rdd₂ x) x := by
+    intro x
+    have h2 : HasDerivAt (fun y : ℝ => q y * p y)
+        (q x * p x * p x + q x * -(1 / (4 * Real.cosh (x / 2) ^ 2))) x :=
+      (hqder x).mul (hpder x)
+    exact ((hqder x).const_mul (-(1 / 6) : ℝ)).add
+      ((((hasDerivAt_id x).div_const (6 : ℝ)).const_sub 1).mul h2)
+  have hqcont : Continuous q := by
+    rw [hq]
+    exact Continuous.inv₀ (by fun_prop) fun x => (Real.cosh_pos _).ne'
+  have hpcont : Continuous p := by
+    simp only [hp]
+    refine Continuous.neg (Continuous.div (by fun_prop) (by fun_prop) fun x => ?_)
+    positivity
+  have hccont : Continuous fun x : ℝ => -(1 / (4 * Real.cosh (x / 2) ^ 2)) := by
+    refine Continuous.neg (Continuous.div continuous_const (by fun_prop) fun x => ?_)
+    positivity
+  have hrd₁cont : Continuous rd₁ := by
+    simp only [hrd₁]
+    exact ((hqcont.const_mul _)).add
+      ((continuous_const.add (continuous_id.div_const _)).mul (hqcont.mul hpcont))
+  have hrd₂cont : Continuous rd₂ := by
+    simp only [hrd₂]
+    exact ((hqcont.const_mul _)).add
+      ((continuous_const.sub (continuous_id.div_const _)).mul (hqcont.mul hpcont))
+  have hrdd₁cont : Continuous rdd₁ := by
+    simp only [hrdd₁]
+    exact (((hqcont.mul hpcont).const_mul _)).add
+      ((((hqcont.mul hpcont).const_mul _)).add
+        ((continuous_const.add (continuous_id.div_const _)).mul
+          (((hqcont.mul hpcont).mul hpcont).add (hqcont.mul hccont))))
+  have hrdd₂cont : Continuous rdd₂ := by
+    simp only [hrdd₂]
+    exact (((hqcont.mul hpcont).const_mul _)).add
+      ((((hqcont.mul hpcont).const_mul _)).add
+        ((continuous_const.sub (continuous_id.div_const _)).mul
+          (((hqcont.mul hpcont).mul hpcont).add (hqcont.mul hccont))))
+  refine ⟨(|rd₁ 0| + |rd₁ (-6)| + (∫ x in (-6:ℝ)..0, |rdd₁ x|) +
+    (|rd₂ 6| + |rd₂ 0| + ∫ x in (0:ℝ)..6, |rdd₂ x|)) * Real.exp (9 / 2), ?_, ?_⟩
+  · refine mul_nonneg ?_ (Real.exp_pos _).le
+    have h1 : 0 ≤ ∫ x in (-6:ℝ)..0, |rdd₁ x| :=
+      intervalIntegral.integral_nonneg (by norm_num) fun x _ => abs_nonneg _
+    have h2 : 0 ≤ ∫ x in (0:ℝ)..6, |rdd₂ x| :=
+      intervalIntegral.integral_nonneg (by norm_num) fun x _ => abs_nonneg _
+    have h3 := abs_nonneg (rd₁ 0)
+    have h4 := abs_nonneg (rd₁ (-6))
+    have h5 := abs_nonneg (rd₂ 6)
+    have h6 := abs_nonneg (rd₂ 0)
+    linarith
+  intro s h0 h1s him
+  have h12c : (1 / 2 : ℂ) = ((1 / 2 : ℝ) : ℂ) := by norm_num
+  have hsub_re : (s - 1 / 2).re = s.re - 1 / 2 := by
+    rw [h12c, Complex.sub_re, Complex.ofReal_re]
+  have hsub_im : (s - 1 / 2).im = s.im := by
+    rw [h12c, Complex.sub_im, Complex.ofReal_im, sub_zero]
+  have hwne : s - 1 / 2 ≠ 0 := by
+    intro h
+    apply him
+    have h' := congrArg Complex.im h
+    rw [hsub_im, Complex.zero_im] at h'
+    exact h'
+  have hwim : |s.im| ≤ ‖s - 1 / 2‖ := by
+    have h := Complex.abs_im_le_norm (s - 1 / 2)
+    rwa [hsub_im] at h
+  have hvder : ∀ x : ℝ, HasDerivAt
+      (fun y : ℝ => Complex.exp ((s - 1 / 2) * (y : ℂ)) / (s - 1 / 2))
+      (Complex.exp ((s - 1 / 2) * (x : ℂ))) x := by
+    intro x
+    have ha : HasDerivAt (fun y : ℝ => (s - 1 / 2) * (y : ℂ)) (s - 1 / 2) x := by
+      simpa using (Complex.ofRealCLM.hasDerivAt (x := x)).const_mul (s - 1 / 2)
+    have hb := ha.cexp.div_const (s - 1 / 2)
+    have hcancel : Complex.exp ((s - 1 / 2) * (x : ℂ)) * (s - 1 / 2) /
+        (s - 1 / 2) = Complex.exp ((s - 1 / 2) * (x : ℂ)) :=
+      mul_div_cancel_right₀ _ hwne
+    rw [hcancel] at hb
+    exact hb
+  have hv₂der : ∀ x : ℝ, HasDerivAt
+      (fun y : ℝ => Complex.exp ((s - 1 / 2) * (y : ℂ)) / (s - 1 / 2) ^ 2)
+      (Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2)) x := by
+    intro x
+    have ha : HasDerivAt (fun y : ℝ => (s - 1 / 2) * (y : ℂ)) (s - 1 / 2) x := by
+      simpa using (Complex.ofRealCLM.hasDerivAt (x := x)).const_mul (s - 1 / 2)
+    have hb := ha.cexp.div_const ((s - 1 / 2) ^ 2)
+    have hcancel : Complex.exp ((s - 1 / 2) * (x : ℂ)) * (s - 1 / 2) /
+        (s - 1 / 2) ^ 2 = Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2) := by
+      field_simp
+    rw [hcancel] at hb
+    exact hb
+  have hsupp : ∀ x : ℝ, x ∉ Set.Icc (-6:ℝ) 6 →
+      ((odlyzkoTestFn x / Real.cosh (x / 2) : ℝ) : ℂ) *
+        Complex.exp ((s - 1 / 2) * (x : ℂ)) = 0 := by
+    intro x hx
+    have h6 : 6 ≤ |x| := by
+      simp only [Set.mem_Icc, not_and_or, not_le] at hx
+      rcases hx with h | h
+      · exact le_abs.2 (Or.inr (by linarith))
+      · exact le_abs.2 (Or.inl h.le)
+    have hf0 : odlyzkoTestFn x = 0 := by
+      rw [odlyzkoTestFn, max_eq_right]
+      nlinarith [h6]
+    rw [hf0]
+    simp
+  have hstep1 : poitouPhi s = ∫ x in (-6:ℝ)..6,
+      ((odlyzkoTestFn x / Real.cosh (x / 2) : ℝ) : ℂ) *
+        Complex.exp ((s - 1 / 2) * (x : ℂ)) := by
+    rw [poitouPhi,
+      ← MeasureTheory.setIntegral_eq_integral_of_forall_compl_eq_zero hsupp,
+      MeasureTheory.integral_Icc_eq_integral_Ioc,
+      ← intervalIntegral.integral_of_le (by norm_num : (-6:ℝ) ≤ 6)]
+  have hIcont : Continuous fun x : ℝ =>
+      ((odlyzkoTestFn x / Real.cosh (x / 2) : ℝ) : ℂ) *
+        Complex.exp ((s - 1 / 2) * (x : ℂ)) := by
+    refine Continuous.mul ?_ (Complex.continuous_exp.comp (by fun_prop))
+    refine Complex.continuous_ofReal.comp ?_
+    refine Continuous.div ?_ (by fun_prop) fun x => (Real.cosh_pos _).ne'
+    unfold odlyzkoTestFn
+    fun_prop
+  have hstep2 : (∫ x in (-6:ℝ)..6,
+        ((odlyzkoTestFn x / Real.cosh (x / 2) : ℝ) : ℂ) *
+          Complex.exp ((s - 1 / 2) * (x : ℂ))) =
+      (∫ x in (-6:ℝ)..0, ((odlyzkoTestFn x / Real.cosh (x / 2) : ℝ) : ℂ) *
+        Complex.exp ((s - 1 / 2) * (x : ℂ))) +
+      ∫ x in (0:ℝ)..6, ((odlyzkoTestFn x / Real.cosh (x / 2) : ℝ) : ℂ) *
+        Complex.exp ((s - 1 / 2) * (x : ℂ)) :=
+    (intervalIntegral.integral_add_adjacent_intervals
+      (hIcont.intervalIntegrable _ _) (hIcont.intervalIntegrable _ _)).symm
+  have hcongr₁ : (∫ x in (-6:ℝ)..0,
+        ((odlyzkoTestFn x / Real.cosh (x / 2) : ℝ) : ℂ) *
+          Complex.exp ((s - 1 / 2) * (x : ℂ))) =
+      ∫ x in (-6:ℝ)..0, (((1 + x / 6) * q x : ℝ) : ℂ) *
+        Complex.exp ((s - 1 / 2) * (x : ℂ)) := by
+    refine intervalIntegral.integral_congr fun x hx => ?_
+    rw [Set.uIcc_of_le (by norm_num : (-6:ℝ) ≤ 0)] at hx
+    have hodl : odlyzkoTestFn x = 1 + x / 6 := by
+      rw [odlyzkoTestFn, abs_of_nonpos hx.2, max_eq_left (by linarith [hx.1])]
+      ring
+    rw [hodl]
+    simp only [hq]
+    rw [div_eq_mul_inv]
+  have hcongr₂ : (∫ x in (0:ℝ)..6,
+        ((odlyzkoTestFn x / Real.cosh (x / 2) : ℝ) : ℂ) *
+          Complex.exp ((s - 1 / 2) * (x : ℂ))) =
+      ∫ x in (0:ℝ)..6, (((1 - x / 6) * q x : ℝ) : ℂ) *
+        Complex.exp ((s - 1 / 2) * (x : ℂ)) := by
+    refine intervalIntegral.integral_congr fun x hx => ?_
+    rw [Set.uIcc_of_le (by norm_num : (0:ℝ) ≤ 6)] at hx
+    have hodl : odlyzkoTestFn x = 1 - x / 6 := by
+      rw [odlyzkoTestFn, abs_of_nonneg hx.1, max_eq_left (by linarith [hx.2])]
+    rw [hodl]
+    simp only [hq]
+    rw [div_eq_mul_inv]
+  have hibp₁ : (∫ x in (-6:ℝ)..0, (((1 + x / 6) * q x : ℝ) : ℂ) *
+        Complex.exp ((s - 1 / 2) * (x : ℂ))) =
+      (((1 + (0:ℝ) / 6) * q 0 : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * ((0:ℝ) : ℂ)) / (s - 1 / 2)) -
+      (((1 + (-6:ℝ) / 6) * q (-6) : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * ((-6:ℝ) : ℂ)) / (s - 1 / 2)) -
+      ∫ x in (-6:ℝ)..0, ((rd₁ x : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2)) := by
+    refine intervalIntegral.integral_mul_deriv_eq_deriv_mul_of_hasDerivAt
+      (u := fun x : ℝ => (((1 + x / 6) * q x : ℝ) : ℂ))
+      (v := fun x : ℝ => Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2))
+      (u' := fun x : ℝ => ((rd₁ x : ℝ) : ℂ))
+      (v' := fun x : ℝ => Complex.exp ((s - 1 / 2) * (x : ℂ))) ?_ ?_ ?_ ?_ ?_ ?_
+    · exact (Complex.continuous_ofReal.comp
+        ((continuous_const.add (continuous_id.div_const _)).mul hqcont)).continuousOn
+    · exact ((Complex.continuous_exp.comp (by fun_prop)).div_const _).continuousOn
+    · exact fun x _ => (hr₁der x).ofReal_comp
+    · exact fun x _ => hvder x
+    · exact (Complex.continuous_ofReal.comp hrd₁cont).intervalIntegrable _ _
+    · exact (Complex.continuous_exp.comp (by fun_prop)).intervalIntegrable _ _
+  have hibp₂ : (∫ x in (0:ℝ)..6, (((1 - x / 6) * q x : ℝ) : ℂ) *
+        Complex.exp ((s - 1 / 2) * (x : ℂ))) =
+      (((1 - (6:ℝ) / 6) * q 6 : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * ((6:ℝ) : ℂ)) / (s - 1 / 2)) -
+      (((1 - (0:ℝ) / 6) * q 0 : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * ((0:ℝ) : ℂ)) / (s - 1 / 2)) -
+      ∫ x in (0:ℝ)..6, ((rd₂ x : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2)) := by
+    refine intervalIntegral.integral_mul_deriv_eq_deriv_mul_of_hasDerivAt
+      (u := fun x : ℝ => (((1 - x / 6) * q x : ℝ) : ℂ))
+      (v := fun x : ℝ => Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2))
+      (u' := fun x : ℝ => ((rd₂ x : ℝ) : ℂ))
+      (v' := fun x : ℝ => Complex.exp ((s - 1 / 2) * (x : ℂ))) ?_ ?_ ?_ ?_ ?_ ?_
+    · exact (Complex.continuous_ofReal.comp
+        ((continuous_const.sub (continuous_id.div_const _)).mul hqcont)).continuousOn
+    · exact ((Complex.continuous_exp.comp (by fun_prop)).div_const _).continuousOn
+    · exact fun x _ => (hr₂der x).ofReal_comp
+    · exact fun x _ => hvder x
+    · exact (Complex.continuous_ofReal.comp hrd₂cont).intervalIntegrable _ _
+    · exact (Complex.continuous_exp.comp (by fun_prop)).intervalIntegrable _ _
+  have hq0 : ((1 + (0:ℝ) / 6) * q 0 : ℝ) = 1 := by
+    simp [hq]
+  have hqm6 : ((1 + (-6:ℝ) / 6) * q (-6) : ℝ) = 0 := by
+    norm_num
+  have hq6 : ((1 - (6:ℝ) / 6) * q 6 : ℝ) = 0 := by
+    norm_num
+  have hq0' : ((1 - (0:ℝ) / 6) * q 0 : ℝ) = 1 := by
+    simp [hq]
+  have hval : poitouPhi s =
+      -(∫ x in (-6:ℝ)..0, ((rd₁ x : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2)))
+      - ∫ x in (0:ℝ)..6, ((rd₂ x : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2)) := by
+    rw [hstep1, hstep2, hcongr₁, hcongr₂, hibp₁, hibp₂, hq0, hqm6, hq6, hq0']
+    push_cast
+    ring
+  have hnorm_v₂ : ∀ x ∈ Set.Icc (-6:ℝ) 6,
+      ‖Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2) ^ 2‖ ≤
+        Real.exp (9 / 2) / s.im ^ 2 := by
+    intro x hx
+    rw [norm_div, Complex.norm_exp, norm_pow]
+    have hre : ((s - 1 / 2) * (x : ℂ)).re = (s.re - 1 / 2) * x := by
+      rw [Complex.mul_re, Complex.ofReal_re, Complex.ofReal_im, mul_zero,
+        sub_zero, hsub_re]
+    rw [hre]
+    have hexp : (s.re - 1 / 2) * x ≤ 9 / 2 := by
+      have habs : |(s.re - 1 / 2) * x| ≤ 9 / 2 := by
+        rw [abs_mul]
+        have h2 : |s.re - 1 / 2| ≤ 3 / 4 := abs_le.mpr ⟨by linarith, by linarith⟩
+        have h3 : |x| ≤ 6 := abs_le.mpr ⟨hx.1, hx.2⟩
+        calc |s.re - 1 / 2| * |x| ≤ 3 / 4 * 6 :=
+              mul_le_mul h2 h3 (abs_nonneg _) (by norm_num)
+          _ = 9 / 2 := by norm_num
+      linarith [le_abs_self ((s.re - 1 / 2) * x)]
+    have hsq : s.im ^ 2 ≤ ‖s - 1 / 2‖ ^ 2 := by
+      have hab := sq_abs s.im
+      nlinarith [abs_nonneg s.im, norm_nonneg (s - 1 / 2)]
+    have hpos : (0:ℝ) < s.im ^ 2 := by positivity
+    exact div_le_div₀ (Real.exp_pos _).le (Real.exp_le_exp.mpr hexp) hpos hsq
+  have hv₂cont : Continuous fun x : ℝ =>
+      Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2) ^ 2 :=
+    (Complex.continuous_exp.comp (by fun_prop)).div_const _
+  have hibp₁₂ : (∫ x in (-6:ℝ)..0, ((rd₁ x : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2))) =
+      ((rd₁ (0:ℝ) : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * ((0:ℝ) : ℂ)) / (s - 1 / 2) ^ 2) -
+      ((rd₁ (-6:ℝ) : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * ((-6:ℝ) : ℂ)) / (s - 1 / 2) ^ 2) -
+      ∫ x in (-6:ℝ)..0, ((rdd₁ x : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2) ^ 2) := by
+    refine intervalIntegral.integral_mul_deriv_eq_deriv_mul_of_hasDerivAt
+      (u := fun x : ℝ => ((rd₁ x : ℝ) : ℂ))
+      (v := fun x : ℝ => Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2) ^ 2)
+      (u' := fun x : ℝ => ((rdd₁ x : ℝ) : ℂ))
+      (v' := fun x : ℝ =>
+        Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2)) ?_ ?_ ?_ ?_ ?_ ?_
+    · exact (Complex.continuous_ofReal.comp hrd₁cont).continuousOn
+    · exact hv₂cont.continuousOn
+    · exact fun x _ => (hrd₁der x).ofReal_comp
+    · exact fun x _ => hv₂der x
+    · exact (Complex.continuous_ofReal.comp hrdd₁cont).intervalIntegrable _ _
+    · exact ((Complex.continuous_exp.comp (by fun_prop)).div_const _).intervalIntegrable _ _
+  have hibp₂₂ : (∫ x in (0:ℝ)..6, ((rd₂ x : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2))) =
+      ((rd₂ (6:ℝ) : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * ((6:ℝ) : ℂ)) / (s - 1 / 2) ^ 2) -
+      ((rd₂ (0:ℝ) : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * ((0:ℝ) : ℂ)) / (s - 1 / 2) ^ 2) -
+      ∫ x in (0:ℝ)..6, ((rdd₂ x : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2) ^ 2) := by
+    refine intervalIntegral.integral_mul_deriv_eq_deriv_mul_of_hasDerivAt
+      (u := fun x : ℝ => ((rd₂ x : ℝ) : ℂ))
+      (v := fun x : ℝ => Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2) ^ 2)
+      (u' := fun x : ℝ => ((rdd₂ x : ℝ) : ℂ))
+      (v' := fun x : ℝ =>
+        Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2)) ?_ ?_ ?_ ?_ ?_ ?_
+    · exact (Complex.continuous_ofReal.comp hrd₂cont).continuousOn
+    · exact hv₂cont.continuousOn
+    · exact fun x _ => (hrd₂der x).ofReal_comp
+    · exact fun x _ => hv₂der x
+    · exact (Complex.continuous_ofReal.comp hrdd₂cont).intervalIntegrable _ _
+    · exact ((Complex.continuous_exp.comp (by fun_prop)).div_const _).intervalIntegrable _ _
+  have hbnd₁ : ‖∫ x in (-6:ℝ)..0, ((rd₁ x : ℝ) : ℂ) *
+      (Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2))‖ ≤
+      (|rd₁ 0| + |rd₁ (-6)| + ∫ x in (-6:ℝ)..0, |rdd₁ x|) *
+        (Real.exp (9 / 2) / s.im ^ 2) := by
+    rw [hibp₁₂]
+    have hA : ‖((rd₁ (0:ℝ) : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * ((0:ℝ) : ℂ)) / (s - 1 / 2) ^ 2)‖ ≤
+        |rd₁ 0| * (Real.exp (9 / 2) / s.im ^ 2) := by
+      rw [norm_mul, Complex.norm_real, Real.norm_eq_abs]
+      exact mul_le_mul_of_nonneg_left
+        (hnorm_v₂ 0 (Set.mem_Icc.mpr ⟨by norm_num, by norm_num⟩)) (abs_nonneg _)
+    have hB : ‖((rd₁ (-6:ℝ) : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * ((-6:ℝ) : ℂ)) / (s - 1 / 2) ^ 2)‖ ≤
+        |rd₁ (-6)| * (Real.exp (9 / 2) / s.im ^ 2) := by
+      rw [norm_mul, Complex.norm_real, Real.norm_eq_abs]
+      exact mul_le_mul_of_nonneg_left
+        (hnorm_v₂ (-6) (Set.mem_Icc.mpr ⟨by norm_num, by norm_num⟩)) (abs_nonneg _)
+    have hI : ‖∫ x in (-6:ℝ)..0, ((rdd₁ x : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2) ^ 2)‖ ≤
+        (∫ x in (-6:ℝ)..0, |rdd₁ x|) * (Real.exp (9 / 2) / s.im ^ 2) := by
+      refine (intervalIntegral.norm_integral_le_integral_norm
+        (by norm_num : (-6:ℝ) ≤ 0)).trans ?_
+      rw [← intervalIntegral.integral_mul_const]
+      refine intervalIntegral.integral_mono_on (by norm_num)
+        (((Complex.continuous_ofReal.comp hrdd₁cont).mul
+          hv₂cont).norm.intervalIntegrable _ _)
+        ((hrdd₁cont.abs.mul continuous_const).intervalIntegrable _ _) fun x hx => ?_
+      rw [norm_mul, Complex.norm_real, Real.norm_eq_abs]
+      refine mul_le_mul_of_nonneg_left ?_ (abs_nonneg _)
+      exact hnorm_v₂ x (Set.mem_Icc.mpr ⟨hx.1, by linarith [hx.2]⟩)
+    refine ((norm_sub_le _ _).trans (add_le_add ((norm_sub_le _ _).trans
+      (add_le_add hA hB)) hI)).trans (le_of_eq ?_)
+    ring
+  have hbnd₂ : ‖∫ x in (0:ℝ)..6, ((rd₂ x : ℝ) : ℂ) *
+      (Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2))‖ ≤
+      (|rd₂ 6| + |rd₂ 0| + ∫ x in (0:ℝ)..6, |rdd₂ x|) *
+        (Real.exp (9 / 2) / s.im ^ 2) := by
+    rw [hibp₂₂]
+    have hA : ‖((rd₂ (6:ℝ) : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * ((6:ℝ) : ℂ)) / (s - 1 / 2) ^ 2)‖ ≤
+        |rd₂ 6| * (Real.exp (9 / 2) / s.im ^ 2) := by
+      rw [norm_mul, Complex.norm_real, Real.norm_eq_abs]
+      exact mul_le_mul_of_nonneg_left
+        (hnorm_v₂ 6 (Set.mem_Icc.mpr ⟨by norm_num, by norm_num⟩)) (abs_nonneg _)
+    have hB : ‖((rd₂ (0:ℝ) : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * ((0:ℝ) : ℂ)) / (s - 1 / 2) ^ 2)‖ ≤
+        |rd₂ 0| * (Real.exp (9 / 2) / s.im ^ 2) := by
+      rw [norm_mul, Complex.norm_real, Real.norm_eq_abs]
+      exact mul_le_mul_of_nonneg_left
+        (hnorm_v₂ 0 (Set.mem_Icc.mpr ⟨by norm_num, by norm_num⟩)) (abs_nonneg _)
+    have hI : ‖∫ x in (0:ℝ)..6, ((rdd₂ x : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2) ^ 2)‖ ≤
+        (∫ x in (0:ℝ)..6, |rdd₂ x|) * (Real.exp (9 / 2) / s.im ^ 2) := by
+      refine (intervalIntegral.norm_integral_le_integral_norm
+        (by norm_num : (0:ℝ) ≤ 6)).trans ?_
+      rw [← intervalIntegral.integral_mul_const]
+      refine intervalIntegral.integral_mono_on (by norm_num)
+        (((Complex.continuous_ofReal.comp hrdd₂cont).mul
+          hv₂cont).norm.intervalIntegrable _ _)
+        ((hrdd₂cont.abs.mul continuous_const).intervalIntegrable _ _) fun x hx => ?_
+      rw [norm_mul, Complex.norm_real, Real.norm_eq_abs]
+      refine mul_le_mul_of_nonneg_left ?_ (abs_nonneg _)
+      exact hnorm_v₂ x (Set.mem_Icc.mpr ⟨by linarith [hx.1], hx.2⟩)
+    refine ((norm_sub_le _ _).trans (add_le_add ((norm_sub_le _ _).trans
+      (add_le_add hA hB)) hI)).trans (le_of_eq ?_)
+    ring
+  rw [hval]
+  calc ‖-(∫ x in (-6:ℝ)..0, ((rd₁ x : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2)))
+      - ∫ x in (0:ℝ)..6, ((rd₂ x : ℝ) : ℂ) *
+        (Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2))‖
+      ≤ ‖∫ x in (-6:ℝ)..0, ((rd₁ x : ℝ) : ℂ) *
+          (Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2))‖ +
+        ‖∫ x in (0:ℝ)..6, ((rd₂ x : ℝ) : ℂ) *
+          (Complex.exp ((s - 1 / 2) * (x : ℂ)) / (s - 1 / 2))‖ :=
+      (norm_sub_le _ _).trans (by rw [norm_neg])
+    _ ≤ (|rd₁ 0| + |rd₁ (-6)| + ∫ x in (-6:ℝ)..0, |rdd₁ x|) *
+          (Real.exp (9 / 2) / s.im ^ 2) +
+        (|rd₂ 6| + |rd₂ 0| + ∫ x in (0:ℝ)..6, |rdd₂ x|) *
+          (Real.exp (9 / 2) / s.im ^ 2) := add_le_add hbnd₁ hbnd₂
+    _ = (|rd₁ 0| + |rd₁ (-6)| + (∫ x in (-6:ℝ)..0, |rdd₁ x|) +
+        (|rd₂ 6| + |rd₂ 0| + ∫ x in (0:ℝ)..6, |rdd₂ x|)) * Real.exp (9 / 2) /
+          s.im ^ 2 := by
+        ring
 
 section PoitouBridgeEstimates
 
@@ -28945,9 +29607,167 @@ theorem exists_ideal_extension_globalFrob_ray_class
     simp only [Multiset.map_singleton, Multiset.prod_singleton, hG,
       dif_pos (And.intro v.isPrime v.ne_bot)]
 
+set_option maxHeartbeats 400000 in
+/-- **A nonvanishing multiplicative ideal function takes the value `1`
+at the unit ideal** (PROVEN 2026-07-25): if `f` is multiplicative on
+NONZERO ideals of `𝓞 F` and `f` does not vanish at any prime, then
+`f ⊤ = 1`. Proof: `𝓞 F` is not a field
+(`NumberField.RingOfIntegers.not_isField`), so it has a nonzero prime
+`P` (`Ring.not_isField_iff_exists_prime`); `f P = f (⊤ * P) = f ⊤ * f P`
+and `f P ≠ 0` cancel. Isolated because multiplicativity ALONE only
+forces `f ⊤` to be idempotent, hence `0` or `1`, and the degenerate
+branch has to be excluded by hand — the same nondegeneracy bookkeeping
+that `exists_ideal_extension_globalFrob_ray_class` warns about at
+`⊥`. -/
+theorem eq_one_top_of_forall_asIdeal_ne_zero_ray_class
+    (F : Type*) [Field F] [NumberField F] (L : Type*) [Field L]
+    (f : Ideal (NumberField.RingOfIntegers F) → L)
+    (hfmul : ∀ I J : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ → J ≠ ⊥ →
+      f (I * J) = f I * f J)
+    (hne : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      f v.asIdeal ≠ 0) :
+    f ⊤ = 1 := by
+  obtain ⟨P, hP0, hPp⟩ :=
+    Ring.not_isField_iff_exists_prime.mp (NumberField.RingOfIntegers.not_isField F)
+  have hne' : f P ≠ 0 := hne ⟨P, hPp, hP0⟩
+  have h := hfmul ⊤ P top_ne_bot hP0
+  rw [Ideal.top_mul] at h
+  exact mul_right_cancel₀ hne' (h.symm.trans (one_mul (f P)).symm)
+
+set_option maxHeartbeats 400000 in
+/-- **Uniqueness of the multiplicative extension of a place-indexed
+function to the ideals** (PROVEN 2026-07-25; the converse bookkeeping to
+`exists_ideal_extension_globalFrob_ray_class`, whose docstring asserts
+this uniqueness without proving it): two functions on ideals of `𝓞 F`
+with values in a field `L`, each multiplicative on NONZERO ideals and
+agreeing at every prime `v.asIdeal`, agree at every nonzero ideal —
+provided the common value at primes never vanishes (without that, both
+could differ by an idempotent factor at `⊤`; see
+`eq_one_top_of_forall_asIdeal_ne_zero_ray_class`). Proof: unique
+factorization of ideals, run as
+`UniqueFactorizationMonoid.induction_on_prime` on the ideal monoid of
+the Dedekind domain `𝓞 F` — the zero case is excluded by hypothesis,
+the unit case is `Ideal.isUnit_iff` plus the value at `⊤`, and the
+prime step is multiplicativity together with `Ideal.isPrime_of_prime`
+packaging the prime factor as a `HeightOneSpectrum` point. This is what
+lets the Artin symbol be characterized abstractly (multiplicative,
+values `χ(Frob_v)` at primes) rather than by a chosen formula. -/
+theorem eq_of_forall_asIdeal_eq_ray_class
+    (F : Type*) [Field F] [NumberField F] (L : Type*) [Field L]
+    (f g : Ideal (NumberField.RingOfIntegers F) → L)
+    (hfmul : ∀ I J : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ → J ≠ ⊥ →
+      f (I * J) = f I * f J)
+    (hgmul : ∀ I J : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ → J ≠ ⊥ →
+      g (I * J) = g I * g J)
+    (hval : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      f v.asIdeal = g v.asIdeal)
+    (hne : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      f v.asIdeal ≠ 0)
+    (I : Ideal (NumberField.RingOfIntegers F)) (hI : I ≠ ⊥) :
+    f I = g I := by
+  have hgne : ∀ v : IsDedekindDomain.HeightOneSpectrum
+      (NumberField.RingOfIntegers F), g v.asIdeal ≠ 0 := fun v => (hval v) ▸ hne v
+  have hftop : f ⊤ = 1 :=
+    eq_one_top_of_forall_asIdeal_ne_zero_ray_class F L f hfmul hne
+  have hgtop : g ⊤ = 1 :=
+    eq_one_top_of_forall_asIdeal_ne_zero_ray_class F L g hgmul hgne
+  refine UniqueFactorizationMonoid.induction_on_prime
+    (P := fun J => J ≠ ⊥ → f J = g J) I ?_ ?_ ?_ hI
+  · intro h
+    exact absurd Ideal.zero_eq_bot h
+  · intro x hx _
+    rw [Ideal.isUnit_iff.mp hx, hftop, hgtop]
+  · intro a p ha hp ih _
+    have ha' : a ≠ ⊥ := fun h => ha (by rw [Ideal.zero_eq_bot]; exact h)
+    have hp0 : p ≠ ⊥ := fun h => hp.ne_zero (by rw [Ideal.zero_eq_bot]; exact h)
+    have hpp : p.IsPrime := Ideal.isPrime_of_prime hp
+    rw [hfmul p a hp0 ha', hgmul p a hp0 ha', ih ha', hval ⟨p, hpp, hp0⟩]
+
+set_option maxHeartbeats 1000000 in
+/-- **Artin reciprocity for the narrow Hilbert class field, in
+Artin-symbol existence form — THE class-field-theoretic leaf** (sorry
+node, created 2026-07-25 as the isolated global-CFT content of
+`character_ideal_span_singleton_eq_one_of_forall_pos_ray_class` below):
+for a multiplicative `χ : Γ F → 𝔽̄₃` (`hmul`) trivial on an open
+subgroup `V` (`hVopen`, `hVker`) and unramified at every finite place
+(`hunr`), the assignment `v ↦ χ(Frob_v)` extends to a function `c` on
+ideals that is multiplicative on nonzero ideals AND takes the value `1`
+on every nonzero NARROWLY PRINCIPAL ideal. That last clause is the
+Artin reciprocity law: `c` factors through the narrow class group
+`Cl⁺(F) = I(F)/P⁺(F)`.
+
+Why this is true (Neukirch, *ANT* VI (6.7) and VI §7; Lang, *ANT* ch. X
+§1; Janusz, *Algebraic Number Fields* V; Serre, Duke 1987 §5.3): `χ`
+takes values in the ABELIAN group `𝔽̄₃ˣ` (its values are units, since
+`χ a · χ a⁻¹ = χ 1 = 1`), so `ker χ` is an open NORMAL subgroup and `χ`
+cuts out a finite abelian extension `M/F` whose Galois group embeds in
+`𝔽̄₃ˣ` — hence is CYCLIC, the image of `χ` being a finite subgroup of a
+field's unit group. By `hunr`, `M/F` is unramified at every finite
+place. The Artin map `I(F) → Gal(M/F)`, `v ↦ Frob_v`, is multiplicative
+by construction, so `c` is its composite with `Gal(M/F) ↪ 𝔽̄₃ˣ`; the
+reciprocity law says its kernel contains `P⁺(F)`, equivalently that
+`M` lies in the narrow Hilbert class field of `F`.
+
+The hypothesis really is needed and the conclusion really is not
+vacuous — checked numerically 2026-07-25 with PARI/GP, `bnfnarrow`:
+for `F = ℚ(√3)` one has `Cl(F) = 1` but `Cl⁺(F) ≅ ℤ/2` (the
+fundamental unit `2 + √3` has norm `+1`, so it cannot flip signs), and
+the corresponding quadratic character has `c ((√3)) = −1 ≠ 1` on the
+principal — but not NARROWLY principal — ideal `(√3)`. So "narrowly
+principal" cannot be weakened to "principal", and the total positivity
+in the consumer below is load-bearing rather than decorative. (The
+companion degeneracy in the other direction, `IsNarrowRayEquiv 1`, is
+documented on `IsNarrowPrincipal`.)
+
+**The Weber-counting route previously recorded on the consumer is
+CIRCULAR as stated** (analysis 2026-07-25) and is NOT the intended
+attack any more. That route proposed to use
+`exists_forall_abs_natCard_isNarrowRayEquiv_sub_mul_le_rpow` and
+`dense_conjClasses_globalFrob` to upgrade "`c` is constant on the
+primes of a narrow class" to "`c` is trivial on the principal class".
+But "`c` is constant on the primes of a narrow class" IS the
+reciprocity law: the density statements say only that the Frobenius
+conjugacy classes are topologically dense in `Γ F` — they produce
+plenty of primes in each narrow ray class, yet nothing in them ever
+links the Galois-theoretic quantity `χ(Frob_v)` to the IDEAL-theoretic
+narrow class of `v`, and that link is exactly what is to be proven.
+The counting machinery is an INPUT to a proof of reciprocity (it is
+what powers the analytic class-number/`L`-function inequality), never
+a step that discharges it.
+
+Genuine routes, both of which are large developments absent from the
+mathlib pin: (i) Artin's original proof — reduce to `Gal(M/F)` cyclic
+(free here, see above), then Artin's cyclotomic-descent lemma reduces
+reciprocity for `M/F` to reciprocity for cyclotomic extensions, where
+the Frobenius acts by `ζ ↦ ζ^{N v}`; the in-tree
+`exists_algEquiv_map_zeta_eq_pow_absNorm` is the cyclotomic base case
+of that route. (ii) The two inequalities: the analytic one over ray
+class `L`-functions (this is where the Weber counting of
+`Chebotarev.lean` is genuinely consumed) together with the algebraic
+one via the ambiguous-class/Herbrand-quotient computation, then
+reciprocity from the index equality. -/
+theorem exists_artinSymbol_isNarrowPrincipal_ray_class
+    (F : Type*) [Field F] [NumberField F]
+    (χ : Γ F → Dickson.K 3)
+    (hmul : ∀ a b : Γ F, χ (a * b) = χ a * χ b)
+    (V : Subgroup (Γ F)) (hVopen : IsOpen (V : Set (Γ F)))
+    (hVker : ∀ a ∈ V, χ a = 1)
+    (hunr : ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      ∀ c : Γ F, ∀ σ ∈ localInertiaGroup w,
+        χ (c * Field.absoluteGaloisGroup.map
+          (algebraMap F (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w)) σ * c⁻¹) = 1) :
+    ∃ c : Ideal (NumberField.RingOfIntegers F) → Dickson.K 3,
+      (∀ I J : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ → J ≠ ⊥ →
+        c (I * J) = c I * c J) ∧
+      (∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+        c v.asIdeal = χ (globalFrob v)) ∧
+      ∀ I : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ →
+        IsNarrowPrincipal I → c I = 1 := by
+  sorry
+
 set_option maxHeartbeats 1000000 in
 /-- **A totally positive principal ideal has trivial Artin symbol — THE
-narrow-ray reciprocity input** (sorry node, created 2026-07-25 as
+narrow-ray reciprocity input** (created 2026-07-25 as
 sub-leaf (b) of
 `character_globalFrob_sq_eq_one_of_narrow_exponent_two_ray_class`
 below; the genuinely class-field-theoretic content of that leaf, now
@@ -28974,19 +29794,31 @@ extension has conductor dividing the archimedean modulus, so
 `Gal(M/F)` is a quotient of `Cl⁺(F) = I(F)/P₁⁺`. Concretely
 `f ((α)) = 1` for `α ≫ 0`.
 
-Intended formalization route: the Weber counting machinery of
-`Chebotarev.lean` —
-`exists_forall_abs_natCard_isNarrowRayEquiv_sub_mul_le_rpow` (ideal
-counts per narrow ray class with analytic error term),
-`finite_quotient_narrowRaySetoid` (finiteness of `Cl⁺`), and the
-Frobenius realizations `exists_algEquiv_map_zeta_eq_pow_absNorm` — is
-being built exactly to show that `I ↦ f I` factors through
-`narrowRaySetoid F 1`: the counting produces, in every narrow ray
-class, primes of positive density, and the density argument behind
-`dense_conjClasses_globalFrob` upgrades "`f` constant on the primes of
-a class" to "`f` trivial on the principal class". Nothing weaker will
-do: this is the single point where global class field theory (absent
-from the mathlib pin) enters the reciprocity chain. -/
+**DECOMPOSED and PROVEN as glue 2026-07-25** over the reciprocity leaf
+`exists_artinSymbol_isNarrowPrincipal_ray_class` (sorry) and the two
+bookkeeping bricks `eq_of_forall_asIdeal_eq_ray_class` /
+`eq_one_top_of_forall_asIdeal_ne_zero_ray_class` (both PROVEN just
+above). Assembly: the values of `χ` never vanish (`χ a · χ a⁻¹ = χ 1 =
+1`, and `χ 1 = 1` because `1 ∈ V`), so the hypothesized `f` and the
+Artin symbol `c` supplied by the reciprocity leaf are two
+multiplicative-on-nonzero functions agreeing at every prime with a
+nonvanishing common value there — hence equal at every nonzero ideal by
+uniqueness of the multiplicative extension. Finally `(α)` is nonzero
+and NARROWLY principal, with the multiplier witnesses `1` (totally
+positive) and `α`: `span {1} · span {α} = ⊤ · span {α} = span {α}`. So
+`f ((α)) = c ((α)) = 1`.
+
+The Weber-counting route recorded here previously — counting per narrow
+ray class plus `dense_conjClasses_globalFrob`, to upgrade "`f` constant
+on the primes of a class" to "`f` trivial on the principal class" — was
+found to be CIRCULAR on 2026-07-25 and has been retired; see the
+analysis in the docstring of
+`exists_artinSymbol_isNarrowPrincipal_ray_class`, which also records
+the two genuine routes (Artin's cyclotomic descent; the two
+inequalities) and the PARI/GP check that the total-positivity
+hypothesis is load-bearing. This remains the single point where global
+class field theory (absent from the mathlib pin) enters the reciprocity
+chain. -/
 theorem character_ideal_span_singleton_eq_one_of_forall_pos_ray_class
     (F : Type*) [Field F] [NumberField F]
     (χ : Γ F → Dickson.K 3)
@@ -29006,7 +29838,29 @@ theorem character_ideal_span_singleton_eq_one_of_forall_pos_ray_class
     (hαpos : ∀ φ : F →+* ℝ,
       0 < φ (algebraMap (NumberField.RingOfIntegers F) F α)) :
     f (Ideal.span {α}) = 1 := by
-  sorry
+  -- the values of `χ` are units of `𝔽̄₃`, hence nonzero
+  have hone : χ 1 = 1 := hVker 1 V.one_mem
+  have hχne : ∀ a : Γ F, χ a ≠ 0 := by
+    intro a ha
+    have h1 : χ a * χ a⁻¹ = 1 := by rw [← hmul, mul_inv_cancel, hone]
+    rw [ha, zero_mul] at h1
+    exact zero_ne_one h1
+  -- the Artin symbol attached to `χ`, trivial on narrowly principal ideals
+  obtain ⟨c, hcmul, hcfrob, hcnarrow⟩ :=
+    exists_artinSymbol_isNarrowPrincipal_ray_class F χ hmul V hVopen hVker hunr
+  have hspan : Ideal.span {α} ≠ ⊥ := by
+    simpa [Ideal.span_singleton_eq_bot] using hα0
+  -- `f` and `c` are two multiplicative extensions of the same prime values
+  have hagree : f (Ideal.span {α}) = c (Ideal.span {α}) :=
+    eq_of_forall_asIdeal_eq_ray_class F (Dickson.K 3) f c hfmul hcmul
+      (fun v => by rw [hfrob, hcfrob]) (fun v => by rw [hfrob]; exact hχne _)
+      _ hspan
+  -- and `(α)` is narrowly principal, with multipliers `1` and `α`
+  rw [hagree]
+  refine hcnarrow _ hspan ⟨1, α, one_ne_zero, ?_, hαpos, ?_⟩
+  · intro φ
+    simp
+  · rw [Ideal.span_singleton_one, Ideal.top_mul]
 
 set_option maxHeartbeats 1000000 in
 /-- **Artin reciprocity for the narrow Hilbert class field, in
@@ -29017,7 +29871,10 @@ and free of all `Γ ℚ`/`θ'` coding; DECOMPOSED and PROVEN as glue
 `exists_ideal_extension_globalFrob_ray_class` (PROVEN) and the
 reciprocity input
 `character_ideal_span_singleton_eq_one_of_forall_pos_ray_class`
-(sorry)): a multiplicative character `χ` of `Γ F` (values in `𝔽̄₃`)
+(itself PROVEN as glue 2026-07-25 over the single remaining
+class-field-theoretic leaf
+`exists_artinSymbol_isNarrowPrincipal_ray_class`)): a multiplicative
+character `χ` of `Γ F` (values in `𝔽̄₃`)
 that is trivial on an open subgroup `V` and everywhere unramified
 (`hunr`: trivial on every `Γ F`-conjugate of the image of the local
 inertia group at every finite place `w` of `F`) satisfies
