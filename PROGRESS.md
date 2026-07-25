@@ -54,7 +54,15 @@ entries file). To add/remove/annotate a node, edit
                                         - ✅· `WeilPairing.det_frobeniusTorsionEnd`
                                             - ✅· `WeilPairing.exists_weilPairing_frobenius`
                                                 - ✅· `WeilPairing.exists_weilPairing_mu`
-                                                    - ❌🟪 `weilValueProp_all_one_torsion_trivial`
+                                                    - ✅· `weilValueProp_all_one_torsion_trivial`
+                                                        - ❌🟪 `exists_multiset_span_eq_prod_pointIdeal`
+                                                        - ❌🟪 `exists_weilValueSetup_avoiding`
+                                                        - ❌🟪 `fiberProd_prod_inj`
+                                                        - ❌🟪 `mem_range_pullback_of_translation_lift_fixed`
+                                                        - ❌🟪 `spanSingleton_pointEval_mul_fiberProd_pow`
+                                                        - ❌🟪 `span_lineNumerator`
+                                                        - ❌🟪 `span_vertNumerator`
+                                                        - ❌🟪 `translationChar_setup_value`
                             - ✅· `FreyPackage.exists_quotient_curve_point`
                                 - ✅· `exists_quotient_isogeny`
                                     - ❌🟪 `exists_quotient_isogeny_of_odd_prime_card`
@@ -66,7 +74,15 @@ entries file). To add/remove/annotate a node, edit
                             - ✅· `WeilPairing.det_frobeniusTorsionEnd`
                                 - ✅· `WeilPairing.exists_weilPairing_frobenius`
                                     - ✅· `WeilPairing.exists_weilPairing_mu`
-                                        - ❌🟪 `weilValueProp_all_one_torsion_trivial`
+                                        - ✅· `weilValueProp_all_one_torsion_trivial`
+                                            - ❌🟪 `exists_multiset_span_eq_prod_pointIdeal`
+                                            - ❌🟪 `exists_weilValueSetup_avoiding`
+                                            - ❌🟪 `fiberProd_prod_inj`
+                                            - ❌🟪 `mem_range_pullback_of_translation_lift_fixed`
+                                            - ❌🟪 `spanSingleton_pointEval_mul_fiberProd_pow`
+                                            - ❌🟪 `span_lineNumerator`
+                                            - ❌🟪 `span_vertNumerator`
+                                            - ❌🟪 `translationChar_setup_value`
                     - ✅· `mazur_point_order`
                         - ❌🟪 `no_composite_torsion_order`
                         - ❌🟪 `no_prime_torsion_ge_eleven`
@@ -83,7 +99,15 @@ entries file). To add/remove/annotate a node, edit
                                 - ✅· `WeilPairing.det_frobeniusTorsionEnd`
                                     - ✅· `WeilPairing.exists_weilPairing_frobenius`
                                         - ✅· `WeilPairing.exists_weilPairing_mu`
-                                            - ❌🟪 `weilValueProp_all_one_torsion_trivial`
+                                            - ✅· `weilValueProp_all_one_torsion_trivial`
+                                                - ❌🟪 `exists_multiset_span_eq_prod_pointIdeal`
+                                                - ❌🟪 `exists_weilValueSetup_avoiding`
+                                                - ❌🟪 `fiberProd_prod_inj`
+                                                - ❌🟪 `mem_range_pullback_of_translation_lift_fixed`
+                                                - ❌🟪 `spanSingleton_pointEval_mul_fiberProd_pow`
+                                                - ❌🟪 `span_lineNumerator`
+                                                - ❌🟪 `span_vertNumerator`
+                                                - ❌🟪 `translationChar_setup_value`
                 - ✅· `FreyCurve.torsion_isFlat`
                     - ✅· `FreyCurve.torsion_isFlat_of_good`
                         - ✅· `WeierstrassCurve.isFlatAt_of_hasGoodReduction`
@@ -91,13 +115,18 @@ entries file). To add/remove/annotate a node, edit
                                 - ✅· `WeierstrassCurve.torsion_flat_of_good_reduction_prime_pow`
                                     - ✅· `WeierstrassCurve.torsion_flat_prolong_of_good_reduction_prime_pow`
                                         - ✅· `exists_finite_flat_hopf_form_of_good_reduction_prime_pow`
-                                            - ❌🟪 `exists_torsion_flat_model_of_good_reduction_prime_pow`
+                                            - ✅· `exists_torsion_flat_model_of_good_reduction_prime_pow`
+                                                - ❌🟪 `WeierstrassCurve.exists_torsionKernel_formal_killer`
+                                                - ❌🟪 `WeierstrassCurve.exists_torsionKernel_hazard_killer`
+                                                - ❌🟪 `WeierstrassCurve.exists_torsionKernel_mixed_killer`
+                                                - ❌🟪 `WeierstrassCurve.exists_torsionKernel_tangent_killer`
                     - ✅· `FreyCurve.torsion_isFlat_of_multiplicative`
                         - ✅· `WeierstrassCurve.isFlatAt_of_hasMultiplicativeReduction`
                             - ✅· `torsion_flat_of_multiplicative_reduction`
                                 - ✅· `torsionFlatPackage_of_nonsplit_adic`
                                     - ✅· `torsionFlatPackage_of_quadraticCharacter_twist`
-                                        - ❌🟪 `exists_hopfModel_of_twistedPointsEquiv`
+                                        - ✅· `exists_hopfModel_of_twistedPointsEquiv`
+                                            - ❌🟪 `exists_fixedPointHopfOrder_of_algebraOrder`
             - ✅· `GaloisRepresentation.not_isIrreducible_of_isHardlyRamified`
                 - ✅· `exists_hardlyRamifiedLift`
                     - ✅· `exists_universal_hardlyRamifiedDeformation`
@@ -138,8 +167,9 @@ entries file). To add/remove/annotate a node, edit
                             - ✅· `exists_finiteDimensional_coeff_field`
                                 - ✅· `exists_finiteDimensional_trace_field`
                                     - ✅· `exists_isAlgebraic_trace_coeff_of_isIrreducible`
-                                        - ❌🟪 `exists_heckeMatrix_eigenvector`
-                                        - ❌🟪 `exists_weightTwoEigenform_residual_of_isIrreducible`
+                                        - ✅· `exists_heckeMatrix_eigenvector`
+                                            - ❌🟪 `exists_integral_qExpansion_spanning`
+                                        - ✅· `exists_weightTwoEigenform_residual_of_isIrreducible`
                                             - ✅· `GaloisRepresentation.IsHardlyRamified.mod_three_reducible`
                                                 - ✅· `not_isAbsolutelyIrreducible`
                                                     - ✅· `serre_elimination`
@@ -148,57 +178,109 @@ entries file). To add/remove/annotate a node, edit
                                                                 - ✅· `serre_elimination_dihedral`
                                                                     - ✅· `serre_elimination_dihedral_ray_class`
                                                                         - ✅· `serre_elimination_dihedral_ray_class_of_eigenvector`
-                                                                            - ❌🟪 `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                            - ✅· `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                                - ❌🟪 `character_globalFrob_sq_eq_one_of_narrow_exponent_two_ray_class`
+                                                                                - ❌🟪 `exists_conj_image_localInertiaGroup_rat_ray_class`
                                                                 - ✅· `serre_elimination_alt4`
                                                                     - ✅· `odlyzko_bound_totallyComplex`
                                                                         - ✅· `poitou_explicit_formula_bound`
-                                                                            - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                            - ❌🟪 `completedClassZeta_exists`
+                                                                            - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                            - ✅· `completedClassZeta_exists`
+                                                                                - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                     - ✅· `exists_hardlyRamified_number_field`
                                                                         - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                             - ✅· `discr_bound_of_kernel_field`
                                                                                 - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                    - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                    - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                        - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                        - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                        - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                 - ✅· `serre_elimination_sym4`
                                                                     - ✅· `odlyzko_bound_totallyComplex`
                                                                         - ✅· `poitou_explicit_formula_bound`
-                                                                            - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                            - ❌🟪 `completedClassZeta_exists`
+                                                                            - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                            - ✅· `completedClassZeta_exists`
+                                                                                - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                     - ✅· `exists_hardlyRamified_number_field`
                                                                         - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                             - ✅· `discr_bound_of_kernel_field`
                                                                                 - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                    - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                    - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                        - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                        - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                        - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                 - ✅· `serre_elimination_alt5`
                                                                     - ✅· `odlyzko_bound_totallyComplex`
                                                                         - ✅· `poitou_explicit_formula_bound`
-                                                                            - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                            - ❌🟪 `completedClassZeta_exists`
+                                                                            - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                            - ✅· `completedClassZeta_exists`
+                                                                                - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                     - ✅· `exists_hardlyRamified_number_field`
                                                                         - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                             - ✅· `discr_bound_of_kernel_field`
                                                                                 - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                    - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                    - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                        - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                        - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                        - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                 - ✅· `serre_elimination_psl`
                                                                     - ✅· `odlyzko_bound_totallyComplex`
                                                                         - ✅· `poitou_explicit_formula_bound`
-                                                                            - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                            - ❌🟪 `completedClassZeta_exists`
+                                                                            - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                            - ✅· `completedClassZeta_exists`
+                                                                                - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                     - ✅· `exists_hardlyRamified_number_field`
                                                                         - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                             - ✅· `discr_bound_of_kernel_field`
                                                                                 - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                    - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                    - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                        - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                        - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                        - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                 - ✅· `serre_elimination_pgl`
                                                                     - ✅· `odlyzko_bound_totallyComplex`
                                                                         - ✅· `poitou_explicit_formula_bound`
-                                                                            - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                            - ❌🟪 `completedClassZeta_exists`
+                                                                            - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                            - ✅· `completedClassZeta_exists`
+                                                                                - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                     - ✅· `exists_hardlyRamified_number_field`
                                                                         - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                             - ✅· `discr_bound_of_kernel_field`
                                                                                 - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                    - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                    - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                        - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                        - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                        - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                             - ✅· `GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular`
                                                 - ✅· `GaloisRepresentation.IsHardlyRamified.mod_three`
                                                     - ✅· `GaloisRepresentation.IsHardlyRamified.exists_line_with_locally_unramified_quotCharacter`
@@ -215,57 +297,109 @@ entries file). To add/remove/annotate a node, edit
                                                                         - ✅· `serre_elimination_dihedral`
                                                                             - ✅· `serre_elimination_dihedral_ray_class`
                                                                                 - ✅· `serre_elimination_dihedral_ray_class_of_eigenvector`
-                                                                                    - ❌🟪 `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                                    - ✅· `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                                        - ❌🟪 `character_globalFrob_sq_eq_one_of_narrow_exponent_two_ray_class`
+                                                                                        - ❌🟪 `exists_conj_image_localInertiaGroup_rat_ray_class`
                                                                         - ✅· `serre_elimination_alt4`
                                                                             - ✅· `odlyzko_bound_totallyComplex`
                                                                                 - ✅· `poitou_explicit_formula_bound`
-                                                                                    - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                    - ❌🟪 `completedClassZeta_exists`
+                                                                                    - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                        - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                        - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                        - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                    - ✅· `completedClassZeta_exists`
+                                                                                        - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                        - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                        - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                             - ✅· `exists_hardlyRamified_number_field`
                                                                                 - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                     - ✅· `discr_bound_of_kernel_field`
                                                                                         - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                            - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                         - ✅· `serre_elimination_sym4`
                                                                             - ✅· `odlyzko_bound_totallyComplex`
                                                                                 - ✅· `poitou_explicit_formula_bound`
-                                                                                    - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                    - ❌🟪 `completedClassZeta_exists`
+                                                                                    - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                        - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                        - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                        - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                    - ✅· `completedClassZeta_exists`
+                                                                                        - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                        - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                        - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                             - ✅· `exists_hardlyRamified_number_field`
                                                                                 - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                     - ✅· `discr_bound_of_kernel_field`
                                                                                         - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                            - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                         - ✅· `serre_elimination_alt5`
                                                                             - ✅· `odlyzko_bound_totallyComplex`
                                                                                 - ✅· `poitou_explicit_formula_bound`
-                                                                                    - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                    - ❌🟪 `completedClassZeta_exists`
+                                                                                    - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                        - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                        - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                        - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                    - ✅· `completedClassZeta_exists`
+                                                                                        - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                        - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                        - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                             - ✅· `exists_hardlyRamified_number_field`
                                                                                 - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                     - ✅· `discr_bound_of_kernel_field`
                                                                                         - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                            - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                         - ✅· `serre_elimination_psl`
                                                                             - ✅· `odlyzko_bound_totallyComplex`
                                                                                 - ✅· `poitou_explicit_formula_bound`
-                                                                                    - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                    - ❌🟪 `completedClassZeta_exists`
+                                                                                    - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                        - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                        - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                        - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                    - ✅· `completedClassZeta_exists`
+                                                                                        - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                        - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                        - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                             - ✅· `exists_hardlyRamified_number_field`
                                                                                 - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                     - ✅· `discr_bound_of_kernel_field`
                                                                                         - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                            - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                         - ✅· `serre_elimination_pgl`
                                                                             - ✅· `odlyzko_bound_totallyComplex`
                                                                                 - ✅· `poitou_explicit_formula_bound`
-                                                                                    - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                    - ❌🟪 `completedClassZeta_exists`
+                                                                                    - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                        - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                        - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                        - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                    - ✅· `completedClassZeta_exists`
+                                                                                        - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                        - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                        - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                             - ✅· `exists_hardlyRamified_number_field`
                                                                                 - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                     - ✅· `discr_bound_of_kernel_field`
                                                                                         - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                            - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                 - ✅· `GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular_of_residual_trivial_quotient`
                                                     - ✅· `GaloisRepresentation.IsHardlyRamified.exists_global_triangular_of_residual_trivial_quotient`
                                                         - ✅· `exists_equivariant_defect_coboundary`
@@ -307,7 +441,18 @@ entries file). To add/remove/annotate a node, edit
                                                     - ✅· `exists_mvPowerSeries_presentation_of_isWeaklyUniversal_isTraceGenerated`
                                                         - ❌🟪 `exists_minimal_mvPowerSeries_presentation`
                                                         - ❌🟪 `exists_relations_lt_of_minimal_mvPowerSeries_presentation`
-                                        - ❌🟪 `exists_weightTwoEigenform_trace_eq_of_matchesResidualTraces`
+                                            - ❌🟪 `brauer_induction_trivial_character`
+                                            - ❌🟪 `exists_descended_heckeSystem_of_solvable`
+                                            - ❌🟪 `exists_heckeField_system_of_witness_of_pieces`
+                                            - ❌🟪 `exists_heckePackage_of_seed`
+                                            - ❌🟪 `exists_moretBailly_seed_of_five_le`
+                                            - ❌🟪 `exists_threeadicRealization_of_witness`
+                                            - ❌🟪 `exists_threeadic_realization_of_heckePackage`
+                                            - ❌🟪 `threeadicRealization_det_cyclotomic_of_witness`
+                                            - ❌🟪 `threeadicRealization_isFlat_of_witness`
+                                            - ❌🟪 `threeadicRealization_isTameAtTwo_of_witness`
+                                            - ❌🟪 `threeadicRealization_isUnramified_of_witness`
+                                        - ✅· `exists_weightTwoEigenform_trace_eq_of_matchesResidualTraces`
                                             - ✅· `GaloisRepresentation.IsHardlyRamified.mod_three_reducible`
                                                 - ✅· `not_isAbsolutelyIrreducible`
                                                     - ✅· `serre_elimination`
@@ -316,57 +461,109 @@ entries file). To add/remove/annotate a node, edit
                                                                 - ✅· `serre_elimination_dihedral`
                                                                     - ✅· `serre_elimination_dihedral_ray_class`
                                                                         - ✅· `serre_elimination_dihedral_ray_class_of_eigenvector`
-                                                                            - ❌🟪 `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                            - ✅· `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                                - ❌🟪 `character_globalFrob_sq_eq_one_of_narrow_exponent_two_ray_class`
+                                                                                - ❌🟪 `exists_conj_image_localInertiaGroup_rat_ray_class`
                                                                 - ✅· `serre_elimination_alt4`
                                                                     - ✅· `odlyzko_bound_totallyComplex`
                                                                         - ✅· `poitou_explicit_formula_bound`
-                                                                            - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                            - ❌🟪 `completedClassZeta_exists`
+                                                                            - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                            - ✅· `completedClassZeta_exists`
+                                                                                - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                     - ✅· `exists_hardlyRamified_number_field`
                                                                         - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                             - ✅· `discr_bound_of_kernel_field`
                                                                                 - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                    - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                    - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                        - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                        - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                        - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                 - ✅· `serre_elimination_sym4`
                                                                     - ✅· `odlyzko_bound_totallyComplex`
                                                                         - ✅· `poitou_explicit_formula_bound`
-                                                                            - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                            - ❌🟪 `completedClassZeta_exists`
+                                                                            - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                            - ✅· `completedClassZeta_exists`
+                                                                                - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                     - ✅· `exists_hardlyRamified_number_field`
                                                                         - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                             - ✅· `discr_bound_of_kernel_field`
                                                                                 - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                    - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                    - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                        - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                        - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                        - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                 - ✅· `serre_elimination_alt5`
                                                                     - ✅· `odlyzko_bound_totallyComplex`
                                                                         - ✅· `poitou_explicit_formula_bound`
-                                                                            - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                            - ❌🟪 `completedClassZeta_exists`
+                                                                            - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                            - ✅· `completedClassZeta_exists`
+                                                                                - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                     - ✅· `exists_hardlyRamified_number_field`
                                                                         - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                             - ✅· `discr_bound_of_kernel_field`
                                                                                 - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                    - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                    - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                        - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                        - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                        - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                 - ✅· `serre_elimination_psl`
                                                                     - ✅· `odlyzko_bound_totallyComplex`
                                                                         - ✅· `poitou_explicit_formula_bound`
-                                                                            - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                            - ❌🟪 `completedClassZeta_exists`
+                                                                            - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                            - ✅· `completedClassZeta_exists`
+                                                                                - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                     - ✅· `exists_hardlyRamified_number_field`
                                                                         - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                             - ✅· `discr_bound_of_kernel_field`
                                                                                 - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                    - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                    - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                        - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                        - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                        - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                 - ✅· `serre_elimination_pgl`
                                                                     - ✅· `odlyzko_bound_totallyComplex`
                                                                         - ✅· `poitou_explicit_formula_bound`
-                                                                            - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                            - ❌🟪 `completedClassZeta_exists`
+                                                                            - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                            - ✅· `completedClassZeta_exists`
+                                                                                - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                     - ✅· `exists_hardlyRamified_number_field`
                                                                         - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                             - ✅· `discr_bound_of_kernel_field`
                                                                                 - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                    - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                    - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                        - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                        - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                        - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                             - ✅· `GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular`
                                                 - ✅· `GaloisRepresentation.IsHardlyRamified.mod_three`
                                                     - ✅· `GaloisRepresentation.IsHardlyRamified.exists_line_with_locally_unramified_quotCharacter`
@@ -383,57 +580,109 @@ entries file). To add/remove/annotate a node, edit
                                                                         - ✅· `serre_elimination_dihedral`
                                                                             - ✅· `serre_elimination_dihedral_ray_class`
                                                                                 - ✅· `serre_elimination_dihedral_ray_class_of_eigenvector`
-                                                                                    - ❌🟪 `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                                    - ✅· `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                                        - ❌🟪 `character_globalFrob_sq_eq_one_of_narrow_exponent_two_ray_class`
+                                                                                        - ❌🟪 `exists_conj_image_localInertiaGroup_rat_ray_class`
                                                                         - ✅· `serre_elimination_alt4`
                                                                             - ✅· `odlyzko_bound_totallyComplex`
                                                                                 - ✅· `poitou_explicit_formula_bound`
-                                                                                    - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                    - ❌🟪 `completedClassZeta_exists`
+                                                                                    - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                        - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                        - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                        - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                    - ✅· `completedClassZeta_exists`
+                                                                                        - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                        - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                        - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                             - ✅· `exists_hardlyRamified_number_field`
                                                                                 - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                     - ✅· `discr_bound_of_kernel_field`
                                                                                         - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                            - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                         - ✅· `serre_elimination_sym4`
                                                                             - ✅· `odlyzko_bound_totallyComplex`
                                                                                 - ✅· `poitou_explicit_formula_bound`
-                                                                                    - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                    - ❌🟪 `completedClassZeta_exists`
+                                                                                    - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                        - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                        - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                        - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                    - ✅· `completedClassZeta_exists`
+                                                                                        - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                        - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                        - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                             - ✅· `exists_hardlyRamified_number_field`
                                                                                 - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                     - ✅· `discr_bound_of_kernel_field`
                                                                                         - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                            - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                         - ✅· `serre_elimination_alt5`
                                                                             - ✅· `odlyzko_bound_totallyComplex`
                                                                                 - ✅· `poitou_explicit_formula_bound`
-                                                                                    - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                    - ❌🟪 `completedClassZeta_exists`
+                                                                                    - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                        - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                        - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                        - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                    - ✅· `completedClassZeta_exists`
+                                                                                        - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                        - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                        - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                             - ✅· `exists_hardlyRamified_number_field`
                                                                                 - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                     - ✅· `discr_bound_of_kernel_field`
                                                                                         - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                            - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                         - ✅· `serre_elimination_psl`
                                                                             - ✅· `odlyzko_bound_totallyComplex`
                                                                                 - ✅· `poitou_explicit_formula_bound`
-                                                                                    - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                    - ❌🟪 `completedClassZeta_exists`
+                                                                                    - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                        - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                        - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                        - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                    - ✅· `completedClassZeta_exists`
+                                                                                        - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                        - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                        - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                             - ✅· `exists_hardlyRamified_number_field`
                                                                                 - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                     - ✅· `discr_bound_of_kernel_field`
                                                                                         - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                            - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                         - ✅· `serre_elimination_pgl`
                                                                             - ✅· `odlyzko_bound_totallyComplex`
                                                                                 - ✅· `poitou_explicit_formula_bound`
-                                                                                    - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                    - ❌🟪 `completedClassZeta_exists`
+                                                                                    - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                        - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                        - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                        - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                    - ✅· `completedClassZeta_exists`
+                                                                                        - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                        - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                        - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                             - ✅· `exists_hardlyRamified_number_field`
                                                                                 - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                     - ✅· `discr_bound_of_kernel_field`
                                                                                         - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                            - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                 - ✅· `GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular_of_residual_trivial_quotient`
                                                     - ✅· `GaloisRepresentation.IsHardlyRamified.exists_global_triangular_of_residual_trivial_quotient`
                                                         - ✅· `exists_equivariant_defect_coboundary`
@@ -475,7 +724,7 @@ entries file). To add/remove/annotate a node, edit
                                                     - ✅· `exists_mvPowerSeries_presentation_of_isWeaklyUniversal_isTraceGenerated`
                                                         - ❌🟪 `exists_minimal_mvPowerSeries_presentation`
                                                         - ❌🟪 `exists_relations_lt_of_minimal_mvPowerSeries_presentation`
-                                            - ❌🟪 `exists_weightTwoEigenform_residual_of_isIrreducible`
+                                            - ✅· `exists_weightTwoEigenform_residual_of_isIrreducible`
                                                 - ✅· `GaloisRepresentation.IsHardlyRamified.mod_three_reducible`
                                                     - ✅· `not_isAbsolutelyIrreducible`
                                                         - ✅· `serre_elimination`
@@ -484,57 +733,109 @@ entries file). To add/remove/annotate a node, edit
                                                                     - ✅· `serre_elimination_dihedral`
                                                                         - ✅· `serre_elimination_dihedral_ray_class`
                                                                             - ✅· `serre_elimination_dihedral_ray_class_of_eigenvector`
-                                                                                - ❌🟪 `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                                - ✅· `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                                    - ❌🟪 `character_globalFrob_sq_eq_one_of_narrow_exponent_two_ray_class`
+                                                                                    - ❌🟪 `exists_conj_image_localInertiaGroup_rat_ray_class`
                                                                     - ✅· `serre_elimination_alt4`
                                                                         - ✅· `odlyzko_bound_totallyComplex`
                                                                             - ✅· `poitou_explicit_formula_bound`
-                                                                                - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                - ❌🟪 `completedClassZeta_exists`
+                                                                                - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                    - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                    - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                    - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                - ✅· `completedClassZeta_exists`
+                                                                                    - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                    - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                    - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                         - ✅· `exists_hardlyRamified_number_field`
                                                                             - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                 - ✅· `discr_bound_of_kernel_field`
                                                                                     - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                        - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                            - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                            - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                            - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                     - ✅· `serre_elimination_sym4`
                                                                         - ✅· `odlyzko_bound_totallyComplex`
                                                                             - ✅· `poitou_explicit_formula_bound`
-                                                                                - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                - ❌🟪 `completedClassZeta_exists`
+                                                                                - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                    - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                    - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                    - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                - ✅· `completedClassZeta_exists`
+                                                                                    - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                    - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                    - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                         - ✅· `exists_hardlyRamified_number_field`
                                                                             - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                 - ✅· `discr_bound_of_kernel_field`
                                                                                     - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                        - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                            - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                            - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                            - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                     - ✅· `serre_elimination_alt5`
                                                                         - ✅· `odlyzko_bound_totallyComplex`
                                                                             - ✅· `poitou_explicit_formula_bound`
-                                                                                - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                - ❌🟪 `completedClassZeta_exists`
+                                                                                - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                    - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                    - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                    - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                - ✅· `completedClassZeta_exists`
+                                                                                    - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                    - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                    - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                         - ✅· `exists_hardlyRamified_number_field`
                                                                             - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                 - ✅· `discr_bound_of_kernel_field`
                                                                                     - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                        - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                            - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                            - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                            - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                     - ✅· `serre_elimination_psl`
                                                                         - ✅· `odlyzko_bound_totallyComplex`
                                                                             - ✅· `poitou_explicit_formula_bound`
-                                                                                - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                - ❌🟪 `completedClassZeta_exists`
+                                                                                - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                    - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                    - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                    - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                - ✅· `completedClassZeta_exists`
+                                                                                    - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                    - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                    - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                         - ✅· `exists_hardlyRamified_number_field`
                                                                             - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                 - ✅· `discr_bound_of_kernel_field`
                                                                                     - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                        - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                            - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                            - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                            - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                     - ✅· `serre_elimination_pgl`
                                                                         - ✅· `odlyzko_bound_totallyComplex`
                                                                             - ✅· `poitou_explicit_formula_bound`
-                                                                                - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                - ❌🟪 `completedClassZeta_exists`
+                                                                                - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                    - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                    - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                    - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                - ✅· `completedClassZeta_exists`
+                                                                                    - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                    - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                    - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                         - ✅· `exists_hardlyRamified_number_field`
                                                                             - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                 - ✅· `discr_bound_of_kernel_field`
                                                                                     - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                        - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                            - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                            - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                            - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                 - ✅· `GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular`
                                                     - ✅· `GaloisRepresentation.IsHardlyRamified.mod_three`
                                                         - ✅· `GaloisRepresentation.IsHardlyRamified.exists_line_with_locally_unramified_quotCharacter`
@@ -551,57 +852,109 @@ entries file). To add/remove/annotate a node, edit
                                                                             - ✅· `serre_elimination_dihedral`
                                                                                 - ✅· `serre_elimination_dihedral_ray_class`
                                                                                     - ✅· `serre_elimination_dihedral_ray_class_of_eigenvector`
-                                                                                        - ❌🟪 `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                                        - ✅· `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                                            - ❌🟪 `character_globalFrob_sq_eq_one_of_narrow_exponent_two_ray_class`
+                                                                                            - ❌🟪 `exists_conj_image_localInertiaGroup_rat_ray_class`
                                                                             - ✅· `serre_elimination_alt4`
                                                                                 - ✅· `odlyzko_bound_totallyComplex`
                                                                                     - ✅· `poitou_explicit_formula_bound`
-                                                                                        - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                        - ❌🟪 `completedClassZeta_exists`
+                                                                                        - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                            - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                            - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                            - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                        - ✅· `completedClassZeta_exists`
+                                                                                            - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                            - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                            - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                                 - ✅· `exists_hardlyRamified_number_field`
                                                                                     - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                         - ✅· `discr_bound_of_kernel_field`
                                                                                             - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                                - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                    - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                    - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                    - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                    - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                             - ✅· `serre_elimination_sym4`
                                                                                 - ✅· `odlyzko_bound_totallyComplex`
                                                                                     - ✅· `poitou_explicit_formula_bound`
-                                                                                        - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                        - ❌🟪 `completedClassZeta_exists`
+                                                                                        - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                            - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                            - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                            - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                        - ✅· `completedClassZeta_exists`
+                                                                                            - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                            - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                            - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                                 - ✅· `exists_hardlyRamified_number_field`
                                                                                     - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                         - ✅· `discr_bound_of_kernel_field`
                                                                                             - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                                - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                    - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                    - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                    - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                    - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                             - ✅· `serre_elimination_alt5`
                                                                                 - ✅· `odlyzko_bound_totallyComplex`
                                                                                     - ✅· `poitou_explicit_formula_bound`
-                                                                                        - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                        - ❌🟪 `completedClassZeta_exists`
+                                                                                        - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                            - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                            - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                            - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                        - ✅· `completedClassZeta_exists`
+                                                                                            - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                            - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                            - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                                 - ✅· `exists_hardlyRamified_number_field`
                                                                                     - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                         - ✅· `discr_bound_of_kernel_field`
                                                                                             - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                                - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                    - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                    - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                    - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                    - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                             - ✅· `serre_elimination_psl`
                                                                                 - ✅· `odlyzko_bound_totallyComplex`
                                                                                     - ✅· `poitou_explicit_formula_bound`
-                                                                                        - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                        - ❌🟪 `completedClassZeta_exists`
+                                                                                        - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                            - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                            - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                            - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                        - ✅· `completedClassZeta_exists`
+                                                                                            - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                            - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                            - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                                 - ✅· `exists_hardlyRamified_number_field`
                                                                                     - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                         - ✅· `discr_bound_of_kernel_field`
                                                                                             - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                                - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                    - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                    - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                    - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                    - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                             - ✅· `serre_elimination_pgl`
                                                                                 - ✅· `odlyzko_bound_totallyComplex`
                                                                                     - ✅· `poitou_explicit_formula_bound`
-                                                                                        - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                        - ❌🟪 `completedClassZeta_exists`
+                                                                                        - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                            - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                            - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                            - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                        - ✅· `completedClassZeta_exists`
+                                                                                            - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                            - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                            - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                                 - ✅· `exists_hardlyRamified_number_field`
                                                                                     - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                         - ✅· `discr_bound_of_kernel_field`
                                                                                             - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                                - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                    - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                    - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                    - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                    - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                     - ✅· `GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular_of_residual_trivial_quotient`
                                                         - ✅· `GaloisRepresentation.IsHardlyRamified.exists_global_triangular_of_residual_trivial_quotient`
                                                             - ✅· `exists_equivariant_defect_coboundary`
@@ -643,7 +996,39 @@ entries file). To add/remove/annotate a node, edit
                                                         - ✅· `exists_mvPowerSeries_presentation_of_isWeaklyUniversal_isTraceGenerated`
                                                             - ❌🟪 `exists_minimal_mvPowerSeries_presentation`
                                                             - ❌🟪 `exists_relations_lt_of_minimal_mvPowerSeries_presentation`
-                                        - ❌🟪 `exists_weightTwoEigenform_trace_eq_of_residually_reducible`
+                                                - ❌🟪 `brauer_induction_trivial_character`
+                                                - ❌🟪 `exists_descended_heckeSystem_of_solvable`
+                                                - ❌🟪 `exists_heckeField_system_of_witness_of_pieces`
+                                                - ❌🟪 `exists_heckePackage_of_seed`
+                                                - ❌🟪 `exists_moretBailly_seed_of_five_le`
+                                                - ❌🟪 `exists_threeadicRealization_of_witness`
+                                                - ❌🟪 `exists_threeadic_realization_of_heckePackage`
+                                                - ❌🟪 `threeadicRealization_det_cyclotomic_of_witness`
+                                                - ❌🟪 `threeadicRealization_isFlat_of_witness`
+                                                - ❌🟪 `threeadicRealization_isTameAtTwo_of_witness`
+                                                - ❌🟪 `threeadicRealization_isUnramified_of_witness`
+                                            - ❌🟪 `IsFlatPointsGroupAt.of_injective`
+                                            - ❌🟪 `IsFlatPointsGroupAt.prod`
+                                            - ❌🟪 `TaylorWilesSystem.exists_patchedModule.`
+                                            - ❌🟪 `brauer_induction_trivial_character`
+                                            - ❌🟪 `exists_descended_heckeSystem_of_solvable`
+                                            - ❌🟪 `exists_discr_factorization_le_of_finrank_le`
+                                            - ❌🟪 `exists_heckeField_system_of_witness_of_pieces`
+                                            - ❌🟪 `exists_heckePackage_of_seed`
+                                            - ❌🟪 `exists_isRegular_ofList_eq_maximalIdeal_mvPowerSeries`
+                                            - ❌🟪 `exists_moretBailly_seed_of_five_le`
+                                            - ❌🟪 `exists_taylorWilesTower.`
+                                            - ❌🟪 `exists_threeadicRealization_of_witness`
+                                            - ❌🟪 `exists_threeadic_realization_of_heckePackage`
+                                            - ❌🟪 `exists_weaklyUniversalOnIdentified_framed_finiteTests.`
+                                            - ❌🟪 `isNoetherianRing_mvPowerSeries.`
+                                            - ❌🟪 `isWeaklyUniversalOnIdentifiedDeformation_of_finiteTests.`
+                                            - ❌🟪 `not_isIrreducible_of_charpoly_coeff_one_eq_sum_monoidHom`
+                                            - ❌🟪 `threeadicRealization_det_cyclotomic_of_witness`
+                                            - ❌🟪 `threeadicRealization_isFlat_of_witness`
+                                            - ❌🟪 `threeadicRealization_isTameAtTwo_of_witness`
+                                            - ❌🟪 `threeadicRealization_isUnramified_of_witness`
+                                        - ✅· `exists_weightTwoEigenform_trace_eq_of_residually_reducible`
                                             - ✅· `GaloisRepresentation.IsHardlyRamified.mod_three`
                                                 - ✅· `GaloisRepresentation.IsHardlyRamified.exists_line_with_locally_unramified_quotCharacter`
                                                     - ✅· `exists_line_with_unramified_quotCharacter_at_three`
@@ -659,57 +1044,109 @@ entries file). To add/remove/annotate a node, edit
                                                                     - ✅· `serre_elimination_dihedral`
                                                                         - ✅· `serre_elimination_dihedral_ray_class`
                                                                             - ✅· `serre_elimination_dihedral_ray_class_of_eigenvector`
-                                                                                - ❌🟪 `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                                - ✅· `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                                    - ❌🟪 `character_globalFrob_sq_eq_one_of_narrow_exponent_two_ray_class`
+                                                                                    - ❌🟪 `exists_conj_image_localInertiaGroup_rat_ray_class`
                                                                     - ✅· `serre_elimination_alt4`
                                                                         - ✅· `odlyzko_bound_totallyComplex`
                                                                             - ✅· `poitou_explicit_formula_bound`
-                                                                                - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                - ❌🟪 `completedClassZeta_exists`
+                                                                                - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                    - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                    - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                    - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                - ✅· `completedClassZeta_exists`
+                                                                                    - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                    - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                    - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                         - ✅· `exists_hardlyRamified_number_field`
                                                                             - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                 - ✅· `discr_bound_of_kernel_field`
                                                                                     - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                        - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                            - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                            - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                            - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                     - ✅· `serre_elimination_sym4`
                                                                         - ✅· `odlyzko_bound_totallyComplex`
                                                                             - ✅· `poitou_explicit_formula_bound`
-                                                                                - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                - ❌🟪 `completedClassZeta_exists`
+                                                                                - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                    - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                    - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                    - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                - ✅· `completedClassZeta_exists`
+                                                                                    - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                    - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                    - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                         - ✅· `exists_hardlyRamified_number_field`
                                                                             - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                 - ✅· `discr_bound_of_kernel_field`
                                                                                     - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                        - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                            - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                            - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                            - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                     - ✅· `serre_elimination_alt5`
                                                                         - ✅· `odlyzko_bound_totallyComplex`
                                                                             - ✅· `poitou_explicit_formula_bound`
-                                                                                - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                - ❌🟪 `completedClassZeta_exists`
+                                                                                - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                    - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                    - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                    - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                - ✅· `completedClassZeta_exists`
+                                                                                    - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                    - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                    - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                         - ✅· `exists_hardlyRamified_number_field`
                                                                             - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                 - ✅· `discr_bound_of_kernel_field`
                                                                                     - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                        - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                            - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                            - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                            - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                     - ✅· `serre_elimination_psl`
                                                                         - ✅· `odlyzko_bound_totallyComplex`
                                                                             - ✅· `poitou_explicit_formula_bound`
-                                                                                - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                - ❌🟪 `completedClassZeta_exists`
+                                                                                - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                    - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                    - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                    - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                - ✅· `completedClassZeta_exists`
+                                                                                    - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                    - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                    - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                         - ✅· `exists_hardlyRamified_number_field`
                                                                             - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                 - ✅· `discr_bound_of_kernel_field`
                                                                                     - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                        - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                            - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                            - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                            - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                     - ✅· `serre_elimination_pgl`
                                                                         - ✅· `odlyzko_bound_totallyComplex`
                                                                             - ✅· `poitou_explicit_formula_bound`
-                                                                                - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                - ❌🟪 `completedClassZeta_exists`
+                                                                                - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                    - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                    - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                    - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                - ✅· `completedClassZeta_exists`
+                                                                                    - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                    - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                    - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                         - ✅· `exists_hardlyRamified_number_field`
                                                                             - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                 - ✅· `discr_bound_of_kernel_field`
                                                                                     - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                        - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                            - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                            - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                            - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                             - ✅· `GaloisRepresentation.IsHardlyRamified.exists_global_triangular_of_residual_trivial_quotient`
                                                 - ✅· `exists_equivariant_defect_coboundary`
                                                     - ✅· `exists_omega_cocycle_coboundary`
@@ -718,9 +1155,26 @@ entries file). To add/remove/annotate a node, edit
                                                     - ✅· `trivial_component_hom_vanishes`
                                                         - ✅· `trivial_component_vanishes_on_localInertia_at_three`
                                                             - ❌🟪 `trivial_component_vanishes_of_hopf_package`
+                                            - ❌🟪 `IsFlatPointsGroupAt.of_surjective`
+                                            - ❌🟪 `algebraMap_cyclotomicCharacter_eq_one_of_mem_localInertiaGroup_two`
+                                            - ❌🟪 `algebraMap_cyclotomicCharacter_map_adicArithFrob_two_eq_two`
+                                            - ❌🟪 `character_eq_pow_cyclotomicCharacter_of_unramified_outside_p`
+                                            - ❌🟪 `eisenstein_trivial_sub_extension_cc_eq_zero_on_inertia_two_of_five_le`
+                                            - ❌🟪 `eisenstein_trivial_sub_extension_ker_vanishing_of_eigenspace_trivial`
+                                            - ❌🟪 `exists_conjugator_padicGalois_eq_adic_at_p`
+                                            - ❌🟪 `exists_cyclotomicCharacter_residual_ne_one`
+                                            - ❌🟪 `exists_inertia_connectedEtale_complement_of_isFlatAt`
+                                            - ❌🟪 `exists_ribet_walk_stable_line`
+                                            - ❌🟪 `exists_uniform_conj_decomposition_two_padic`
+                                            - ❌🟪 `exists_valuationRing_stable_lattice`
+                                            - ❌🟪 `hasFlatProlongationAt_lattice_pPow_of_generic_iso`
+                                            - ❌🟪 `herbrand_omega_inv_classGroup_eigenspace_trivial_of_five_le`
+                                            - ❌🟪 `mem_of_isOpen_of_localInertiaGroup_le_of_adicArithFrob_mem_two`
+                                            - ❌🟪 `exists_muType_coordinate`
                                     - ✅· `exists_linearIndependent_trace_card_le_of_isIrreducible`
-                                        - ❌🟪 `exists_heckeMatrix_eigenvector`
-                                        - ❌🟪 `exists_weightTwoEigenform_residual_of_isIrreducible`
+                                        - ✅· `exists_heckeMatrix_eigenvector`
+                                            - ❌🟪 `exists_integral_qExpansion_spanning`
+                                        - ✅· `exists_weightTwoEigenform_residual_of_isIrreducible`
                                             - ✅· `GaloisRepresentation.IsHardlyRamified.mod_three_reducible`
                                                 - ✅· `not_isAbsolutelyIrreducible`
                                                     - ✅· `serre_elimination`
@@ -729,57 +1183,109 @@ entries file). To add/remove/annotate a node, edit
                                                                 - ✅· `serre_elimination_dihedral`
                                                                     - ✅· `serre_elimination_dihedral_ray_class`
                                                                         - ✅· `serre_elimination_dihedral_ray_class_of_eigenvector`
-                                                                            - ❌🟪 `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                            - ✅· `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                                - ❌🟪 `character_globalFrob_sq_eq_one_of_narrow_exponent_two_ray_class`
+                                                                                - ❌🟪 `exists_conj_image_localInertiaGroup_rat_ray_class`
                                                                 - ✅· `serre_elimination_alt4`
                                                                     - ✅· `odlyzko_bound_totallyComplex`
                                                                         - ✅· `poitou_explicit_formula_bound`
-                                                                            - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                            - ❌🟪 `completedClassZeta_exists`
+                                                                            - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                            - ✅· `completedClassZeta_exists`
+                                                                                - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                     - ✅· `exists_hardlyRamified_number_field`
                                                                         - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                             - ✅· `discr_bound_of_kernel_field`
                                                                                 - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                    - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                    - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                        - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                        - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                        - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                 - ✅· `serre_elimination_sym4`
                                                                     - ✅· `odlyzko_bound_totallyComplex`
                                                                         - ✅· `poitou_explicit_formula_bound`
-                                                                            - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                            - ❌🟪 `completedClassZeta_exists`
+                                                                            - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                            - ✅· `completedClassZeta_exists`
+                                                                                - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                     - ✅· `exists_hardlyRamified_number_field`
                                                                         - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                             - ✅· `discr_bound_of_kernel_field`
                                                                                 - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                    - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                    - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                        - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                        - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                        - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                 - ✅· `serre_elimination_alt5`
                                                                     - ✅· `odlyzko_bound_totallyComplex`
                                                                         - ✅· `poitou_explicit_formula_bound`
-                                                                            - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                            - ❌🟪 `completedClassZeta_exists`
+                                                                            - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                            - ✅· `completedClassZeta_exists`
+                                                                                - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                     - ✅· `exists_hardlyRamified_number_field`
                                                                         - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                             - ✅· `discr_bound_of_kernel_field`
                                                                                 - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                    - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                    - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                        - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                        - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                        - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                 - ✅· `serre_elimination_psl`
                                                                     - ✅· `odlyzko_bound_totallyComplex`
                                                                         - ✅· `poitou_explicit_formula_bound`
-                                                                            - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                            - ❌🟪 `completedClassZeta_exists`
+                                                                            - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                            - ✅· `completedClassZeta_exists`
+                                                                                - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                     - ✅· `exists_hardlyRamified_number_field`
                                                                         - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                             - ✅· `discr_bound_of_kernel_field`
                                                                                 - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                    - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                    - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                        - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                        - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                        - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                 - ✅· `serre_elimination_pgl`
                                                                     - ✅· `odlyzko_bound_totallyComplex`
                                                                         - ✅· `poitou_explicit_formula_bound`
-                                                                            - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                            - ❌🟪 `completedClassZeta_exists`
+                                                                            - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                            - ✅· `completedClassZeta_exists`
+                                                                                - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                     - ✅· `exists_hardlyRamified_number_field`
                                                                         - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                             - ✅· `discr_bound_of_kernel_field`
                                                                                 - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                    - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                    - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                        - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                        - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                        - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                             - ✅· `GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular`
                                                 - ✅· `GaloisRepresentation.IsHardlyRamified.mod_three`
                                                     - ✅· `GaloisRepresentation.IsHardlyRamified.exists_line_with_locally_unramified_quotCharacter`
@@ -796,57 +1302,109 @@ entries file). To add/remove/annotate a node, edit
                                                                         - ✅· `serre_elimination_dihedral`
                                                                             - ✅· `serre_elimination_dihedral_ray_class`
                                                                                 - ✅· `serre_elimination_dihedral_ray_class_of_eigenvector`
-                                                                                    - ❌🟪 `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                                    - ✅· `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                                        - ❌🟪 `character_globalFrob_sq_eq_one_of_narrow_exponent_two_ray_class`
+                                                                                        - ❌🟪 `exists_conj_image_localInertiaGroup_rat_ray_class`
                                                                         - ✅· `serre_elimination_alt4`
                                                                             - ✅· `odlyzko_bound_totallyComplex`
                                                                                 - ✅· `poitou_explicit_formula_bound`
-                                                                                    - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                    - ❌🟪 `completedClassZeta_exists`
+                                                                                    - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                        - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                        - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                        - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                    - ✅· `completedClassZeta_exists`
+                                                                                        - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                        - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                        - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                             - ✅· `exists_hardlyRamified_number_field`
                                                                                 - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                     - ✅· `discr_bound_of_kernel_field`
                                                                                         - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                            - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                         - ✅· `serre_elimination_sym4`
                                                                             - ✅· `odlyzko_bound_totallyComplex`
                                                                                 - ✅· `poitou_explicit_formula_bound`
-                                                                                    - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                    - ❌🟪 `completedClassZeta_exists`
+                                                                                    - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                        - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                        - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                        - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                    - ✅· `completedClassZeta_exists`
+                                                                                        - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                        - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                        - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                             - ✅· `exists_hardlyRamified_number_field`
                                                                                 - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                     - ✅· `discr_bound_of_kernel_field`
                                                                                         - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                            - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                         - ✅· `serre_elimination_alt5`
                                                                             - ✅· `odlyzko_bound_totallyComplex`
                                                                                 - ✅· `poitou_explicit_formula_bound`
-                                                                                    - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                    - ❌🟪 `completedClassZeta_exists`
+                                                                                    - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                        - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                        - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                        - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                    - ✅· `completedClassZeta_exists`
+                                                                                        - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                        - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                        - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                             - ✅· `exists_hardlyRamified_number_field`
                                                                                 - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                     - ✅· `discr_bound_of_kernel_field`
                                                                                         - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                            - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                         - ✅· `serre_elimination_psl`
                                                                             - ✅· `odlyzko_bound_totallyComplex`
                                                                                 - ✅· `poitou_explicit_formula_bound`
-                                                                                    - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                    - ❌🟪 `completedClassZeta_exists`
+                                                                                    - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                        - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                        - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                        - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                    - ✅· `completedClassZeta_exists`
+                                                                                        - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                        - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                        - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                             - ✅· `exists_hardlyRamified_number_field`
                                                                                 - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                     - ✅· `discr_bound_of_kernel_field`
                                                                                         - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                            - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                         - ✅· `serre_elimination_pgl`
                                                                             - ✅· `odlyzko_bound_totallyComplex`
                                                                                 - ✅· `poitou_explicit_formula_bound`
-                                                                                    - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                    - ❌🟪 `completedClassZeta_exists`
+                                                                                    - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                        - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                        - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                        - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                    - ✅· `completedClassZeta_exists`
+                                                                                        - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                        - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                        - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                             - ✅· `exists_hardlyRamified_number_field`
                                                                                 - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                     - ✅· `discr_bound_of_kernel_field`
                                                                                         - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                            - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                 - ✅· `GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular_of_residual_trivial_quotient`
                                                     - ✅· `GaloisRepresentation.IsHardlyRamified.exists_global_triangular_of_residual_trivial_quotient`
                                                         - ✅· `exists_equivariant_defect_coboundary`
@@ -888,7 +1446,18 @@ entries file). To add/remove/annotate a node, edit
                                                     - ✅· `exists_mvPowerSeries_presentation_of_isWeaklyUniversal_isTraceGenerated`
                                                         - ❌🟪 `exists_minimal_mvPowerSeries_presentation`
                                                         - ❌🟪 `exists_relations_lt_of_minimal_mvPowerSeries_presentation`
-                                        - ❌🟪 `exists_weightTwoEigenform_trace_eq_of_matchesResidualTraces`
+                                            - ❌🟪 `brauer_induction_trivial_character`
+                                            - ❌🟪 `exists_descended_heckeSystem_of_solvable`
+                                            - ❌🟪 `exists_heckeField_system_of_witness_of_pieces`
+                                            - ❌🟪 `exists_heckePackage_of_seed`
+                                            - ❌🟪 `exists_moretBailly_seed_of_five_le`
+                                            - ❌🟪 `exists_threeadicRealization_of_witness`
+                                            - ❌🟪 `exists_threeadic_realization_of_heckePackage`
+                                            - ❌🟪 `threeadicRealization_det_cyclotomic_of_witness`
+                                            - ❌🟪 `threeadicRealization_isFlat_of_witness`
+                                            - ❌🟪 `threeadicRealization_isTameAtTwo_of_witness`
+                                            - ❌🟪 `threeadicRealization_isUnramified_of_witness`
+                                        - ✅· `exists_weightTwoEigenform_trace_eq_of_matchesResidualTraces`
                                             - ✅· `GaloisRepresentation.IsHardlyRamified.mod_three_reducible`
                                                 - ✅· `not_isAbsolutelyIrreducible`
                                                     - ✅· `serre_elimination`
@@ -897,57 +1466,109 @@ entries file). To add/remove/annotate a node, edit
                                                                 - ✅· `serre_elimination_dihedral`
                                                                     - ✅· `serre_elimination_dihedral_ray_class`
                                                                         - ✅· `serre_elimination_dihedral_ray_class_of_eigenvector`
-                                                                            - ❌🟪 `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                            - ✅· `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                                - ❌🟪 `character_globalFrob_sq_eq_one_of_narrow_exponent_two_ray_class`
+                                                                                - ❌🟪 `exists_conj_image_localInertiaGroup_rat_ray_class`
                                                                 - ✅· `serre_elimination_alt4`
                                                                     - ✅· `odlyzko_bound_totallyComplex`
                                                                         - ✅· `poitou_explicit_formula_bound`
-                                                                            - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                            - ❌🟪 `completedClassZeta_exists`
+                                                                            - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                            - ✅· `completedClassZeta_exists`
+                                                                                - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                     - ✅· `exists_hardlyRamified_number_field`
                                                                         - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                             - ✅· `discr_bound_of_kernel_field`
                                                                                 - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                    - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                    - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                        - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                        - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                        - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                 - ✅· `serre_elimination_sym4`
                                                                     - ✅· `odlyzko_bound_totallyComplex`
                                                                         - ✅· `poitou_explicit_formula_bound`
-                                                                            - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                            - ❌🟪 `completedClassZeta_exists`
+                                                                            - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                            - ✅· `completedClassZeta_exists`
+                                                                                - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                     - ✅· `exists_hardlyRamified_number_field`
                                                                         - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                             - ✅· `discr_bound_of_kernel_field`
                                                                                 - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                    - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                    - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                        - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                        - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                        - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                 - ✅· `serre_elimination_alt5`
                                                                     - ✅· `odlyzko_bound_totallyComplex`
                                                                         - ✅· `poitou_explicit_formula_bound`
-                                                                            - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                            - ❌🟪 `completedClassZeta_exists`
+                                                                            - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                            - ✅· `completedClassZeta_exists`
+                                                                                - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                     - ✅· `exists_hardlyRamified_number_field`
                                                                         - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                             - ✅· `discr_bound_of_kernel_field`
                                                                                 - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                    - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                    - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                        - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                        - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                        - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                 - ✅· `serre_elimination_psl`
                                                                     - ✅· `odlyzko_bound_totallyComplex`
                                                                         - ✅· `poitou_explicit_formula_bound`
-                                                                            - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                            - ❌🟪 `completedClassZeta_exists`
+                                                                            - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                            - ✅· `completedClassZeta_exists`
+                                                                                - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                     - ✅· `exists_hardlyRamified_number_field`
                                                                         - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                             - ✅· `discr_bound_of_kernel_field`
                                                                                 - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                    - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                    - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                        - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                        - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                        - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                 - ✅· `serre_elimination_pgl`
                                                                     - ✅· `odlyzko_bound_totallyComplex`
                                                                         - ✅· `poitou_explicit_formula_bound`
-                                                                            - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                            - ❌🟪 `completedClassZeta_exists`
+                                                                            - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                            - ✅· `completedClassZeta_exists`
+                                                                                - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                     - ✅· `exists_hardlyRamified_number_field`
                                                                         - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                             - ✅· `discr_bound_of_kernel_field`
                                                                                 - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                    - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                    - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                        - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                        - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                        - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                             - ✅· `GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular`
                                                 - ✅· `GaloisRepresentation.IsHardlyRamified.mod_three`
                                                     - ✅· `GaloisRepresentation.IsHardlyRamified.exists_line_with_locally_unramified_quotCharacter`
@@ -964,57 +1585,109 @@ entries file). To add/remove/annotate a node, edit
                                                                         - ✅· `serre_elimination_dihedral`
                                                                             - ✅· `serre_elimination_dihedral_ray_class`
                                                                                 - ✅· `serre_elimination_dihedral_ray_class_of_eigenvector`
-                                                                                    - ❌🟪 `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                                    - ✅· `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                                        - ❌🟪 `character_globalFrob_sq_eq_one_of_narrow_exponent_two_ray_class`
+                                                                                        - ❌🟪 `exists_conj_image_localInertiaGroup_rat_ray_class`
                                                                         - ✅· `serre_elimination_alt4`
                                                                             - ✅· `odlyzko_bound_totallyComplex`
                                                                                 - ✅· `poitou_explicit_formula_bound`
-                                                                                    - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                    - ❌🟪 `completedClassZeta_exists`
+                                                                                    - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                        - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                        - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                        - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                    - ✅· `completedClassZeta_exists`
+                                                                                        - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                        - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                        - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                             - ✅· `exists_hardlyRamified_number_field`
                                                                                 - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                     - ✅· `discr_bound_of_kernel_field`
                                                                                         - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                            - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                         - ✅· `serre_elimination_sym4`
                                                                             - ✅· `odlyzko_bound_totallyComplex`
                                                                                 - ✅· `poitou_explicit_formula_bound`
-                                                                                    - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                    - ❌🟪 `completedClassZeta_exists`
+                                                                                    - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                        - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                        - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                        - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                    - ✅· `completedClassZeta_exists`
+                                                                                        - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                        - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                        - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                             - ✅· `exists_hardlyRamified_number_field`
                                                                                 - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                     - ✅· `discr_bound_of_kernel_field`
                                                                                         - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                            - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                         - ✅· `serre_elimination_alt5`
                                                                             - ✅· `odlyzko_bound_totallyComplex`
                                                                                 - ✅· `poitou_explicit_formula_bound`
-                                                                                    - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                    - ❌🟪 `completedClassZeta_exists`
+                                                                                    - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                        - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                        - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                        - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                    - ✅· `completedClassZeta_exists`
+                                                                                        - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                        - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                        - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                             - ✅· `exists_hardlyRamified_number_field`
                                                                                 - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                     - ✅· `discr_bound_of_kernel_field`
                                                                                         - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                            - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                         - ✅· `serre_elimination_psl`
                                                                             - ✅· `odlyzko_bound_totallyComplex`
                                                                                 - ✅· `poitou_explicit_formula_bound`
-                                                                                    - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                    - ❌🟪 `completedClassZeta_exists`
+                                                                                    - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                        - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                        - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                        - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                    - ✅· `completedClassZeta_exists`
+                                                                                        - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                        - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                        - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                             - ✅· `exists_hardlyRamified_number_field`
                                                                                 - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                     - ✅· `discr_bound_of_kernel_field`
                                                                                         - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                            - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                         - ✅· `serre_elimination_pgl`
                                                                             - ✅· `odlyzko_bound_totallyComplex`
                                                                                 - ✅· `poitou_explicit_formula_bound`
-                                                                                    - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                    - ❌🟪 `completedClassZeta_exists`
+                                                                                    - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                        - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                        - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                        - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                    - ✅· `completedClassZeta_exists`
+                                                                                        - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                        - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                        - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                             - ✅· `exists_hardlyRamified_number_field`
                                                                                 - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                     - ✅· `discr_bound_of_kernel_field`
                                                                                         - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                            - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                 - ✅· `GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular_of_residual_trivial_quotient`
                                                     - ✅· `GaloisRepresentation.IsHardlyRamified.exists_global_triangular_of_residual_trivial_quotient`
                                                         - ✅· `exists_equivariant_defect_coboundary`
@@ -1056,7 +1729,7 @@ entries file). To add/remove/annotate a node, edit
                                                     - ✅· `exists_mvPowerSeries_presentation_of_isWeaklyUniversal_isTraceGenerated`
                                                         - ❌🟪 `exists_minimal_mvPowerSeries_presentation`
                                                         - ❌🟪 `exists_relations_lt_of_minimal_mvPowerSeries_presentation`
-                                            - ❌🟪 `exists_weightTwoEigenform_residual_of_isIrreducible`
+                                            - ✅· `exists_weightTwoEigenform_residual_of_isIrreducible`
                                                 - ✅· `GaloisRepresentation.IsHardlyRamified.mod_three_reducible`
                                                     - ✅· `not_isAbsolutelyIrreducible`
                                                         - ✅· `serre_elimination`
@@ -1065,57 +1738,109 @@ entries file). To add/remove/annotate a node, edit
                                                                     - ✅· `serre_elimination_dihedral`
                                                                         - ✅· `serre_elimination_dihedral_ray_class`
                                                                             - ✅· `serre_elimination_dihedral_ray_class_of_eigenvector`
-                                                                                - ❌🟪 `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                                - ✅· `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                                    - ❌🟪 `character_globalFrob_sq_eq_one_of_narrow_exponent_two_ray_class`
+                                                                                    - ❌🟪 `exists_conj_image_localInertiaGroup_rat_ray_class`
                                                                     - ✅· `serre_elimination_alt4`
                                                                         - ✅· `odlyzko_bound_totallyComplex`
                                                                             - ✅· `poitou_explicit_formula_bound`
-                                                                                - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                - ❌🟪 `completedClassZeta_exists`
+                                                                                - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                    - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                    - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                    - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                - ✅· `completedClassZeta_exists`
+                                                                                    - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                    - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                    - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                         - ✅· `exists_hardlyRamified_number_field`
                                                                             - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                 - ✅· `discr_bound_of_kernel_field`
                                                                                     - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                        - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                            - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                            - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                            - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                     - ✅· `serre_elimination_sym4`
                                                                         - ✅· `odlyzko_bound_totallyComplex`
                                                                             - ✅· `poitou_explicit_formula_bound`
-                                                                                - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                - ❌🟪 `completedClassZeta_exists`
+                                                                                - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                    - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                    - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                    - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                - ✅· `completedClassZeta_exists`
+                                                                                    - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                    - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                    - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                         - ✅· `exists_hardlyRamified_number_field`
                                                                             - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                 - ✅· `discr_bound_of_kernel_field`
                                                                                     - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                        - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                            - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                            - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                            - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                     - ✅· `serre_elimination_alt5`
                                                                         - ✅· `odlyzko_bound_totallyComplex`
                                                                             - ✅· `poitou_explicit_formula_bound`
-                                                                                - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                - ❌🟪 `completedClassZeta_exists`
+                                                                                - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                    - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                    - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                    - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                - ✅· `completedClassZeta_exists`
+                                                                                    - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                    - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                    - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                         - ✅· `exists_hardlyRamified_number_field`
                                                                             - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                 - ✅· `discr_bound_of_kernel_field`
                                                                                     - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                        - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                            - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                            - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                            - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                     - ✅· `serre_elimination_psl`
                                                                         - ✅· `odlyzko_bound_totallyComplex`
                                                                             - ✅· `poitou_explicit_formula_bound`
-                                                                                - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                - ❌🟪 `completedClassZeta_exists`
+                                                                                - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                    - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                    - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                    - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                - ✅· `completedClassZeta_exists`
+                                                                                    - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                    - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                    - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                         - ✅· `exists_hardlyRamified_number_field`
                                                                             - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                 - ✅· `discr_bound_of_kernel_field`
                                                                                     - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                        - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                            - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                            - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                            - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                     - ✅· `serre_elimination_pgl`
                                                                         - ✅· `odlyzko_bound_totallyComplex`
                                                                             - ✅· `poitou_explicit_formula_bound`
-                                                                                - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                - ❌🟪 `completedClassZeta_exists`
+                                                                                - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                    - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                    - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                    - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                - ✅· `completedClassZeta_exists`
+                                                                                    - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                    - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                    - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                         - ✅· `exists_hardlyRamified_number_field`
                                                                             - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                 - ✅· `discr_bound_of_kernel_field`
                                                                                     - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                        - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                            - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                            - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                            - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                 - ✅· `GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular`
                                                     - ✅· `GaloisRepresentation.IsHardlyRamified.mod_three`
                                                         - ✅· `GaloisRepresentation.IsHardlyRamified.exists_line_with_locally_unramified_quotCharacter`
@@ -1132,57 +1857,109 @@ entries file). To add/remove/annotate a node, edit
                                                                             - ✅· `serre_elimination_dihedral`
                                                                                 - ✅· `serre_elimination_dihedral_ray_class`
                                                                                     - ✅· `serre_elimination_dihedral_ray_class_of_eigenvector`
-                                                                                        - ❌🟪 `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                                        - ✅· `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                                            - ❌🟪 `character_globalFrob_sq_eq_one_of_narrow_exponent_two_ray_class`
+                                                                                            - ❌🟪 `exists_conj_image_localInertiaGroup_rat_ray_class`
                                                                             - ✅· `serre_elimination_alt4`
                                                                                 - ✅· `odlyzko_bound_totallyComplex`
                                                                                     - ✅· `poitou_explicit_formula_bound`
-                                                                                        - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                        - ❌🟪 `completedClassZeta_exists`
+                                                                                        - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                            - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                            - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                            - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                        - ✅· `completedClassZeta_exists`
+                                                                                            - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                            - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                            - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                                 - ✅· `exists_hardlyRamified_number_field`
                                                                                     - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                         - ✅· `discr_bound_of_kernel_field`
                                                                                             - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                                - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                    - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                    - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                    - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                    - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                             - ✅· `serre_elimination_sym4`
                                                                                 - ✅· `odlyzko_bound_totallyComplex`
                                                                                     - ✅· `poitou_explicit_formula_bound`
-                                                                                        - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                        - ❌🟪 `completedClassZeta_exists`
+                                                                                        - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                            - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                            - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                            - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                        - ✅· `completedClassZeta_exists`
+                                                                                            - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                            - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                            - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                                 - ✅· `exists_hardlyRamified_number_field`
                                                                                     - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                         - ✅· `discr_bound_of_kernel_field`
                                                                                             - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                                - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                    - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                    - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                    - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                    - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                             - ✅· `serre_elimination_alt5`
                                                                                 - ✅· `odlyzko_bound_totallyComplex`
                                                                                     - ✅· `poitou_explicit_formula_bound`
-                                                                                        - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                        - ❌🟪 `completedClassZeta_exists`
+                                                                                        - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                            - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                            - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                            - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                        - ✅· `completedClassZeta_exists`
+                                                                                            - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                            - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                            - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                                 - ✅· `exists_hardlyRamified_number_field`
                                                                                     - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                         - ✅· `discr_bound_of_kernel_field`
                                                                                             - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                                - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                    - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                    - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                    - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                    - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                             - ✅· `serre_elimination_psl`
                                                                                 - ✅· `odlyzko_bound_totallyComplex`
                                                                                     - ✅· `poitou_explicit_formula_bound`
-                                                                                        - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                        - ❌🟪 `completedClassZeta_exists`
+                                                                                        - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                            - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                            - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                            - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                        - ✅· `completedClassZeta_exists`
+                                                                                            - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                            - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                            - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                                 - ✅· `exists_hardlyRamified_number_field`
                                                                                     - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                         - ✅· `discr_bound_of_kernel_field`
                                                                                             - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                                - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                    - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                    - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                    - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                    - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                             - ✅· `serre_elimination_pgl`
                                                                                 - ✅· `odlyzko_bound_totallyComplex`
                                                                                     - ✅· `poitou_explicit_formula_bound`
-                                                                                        - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                        - ❌🟪 `completedClassZeta_exists`
+                                                                                        - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                            - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                            - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                            - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                        - ✅· `completedClassZeta_exists`
+                                                                                            - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                            - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                            - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                                 - ✅· `exists_hardlyRamified_number_field`
                                                                                     - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                         - ✅· `discr_bound_of_kernel_field`
                                                                                             - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                                - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                    - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                    - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                    - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                    - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                     - ✅· `GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular_of_residual_trivial_quotient`
                                                         - ✅· `GaloisRepresentation.IsHardlyRamified.exists_global_triangular_of_residual_trivial_quotient`
                                                             - ✅· `exists_equivariant_defect_coboundary`
@@ -1224,7 +2001,39 @@ entries file). To add/remove/annotate a node, edit
                                                         - ✅· `exists_mvPowerSeries_presentation_of_isWeaklyUniversal_isTraceGenerated`
                                                             - ❌🟪 `exists_minimal_mvPowerSeries_presentation`
                                                             - ❌🟪 `exists_relations_lt_of_minimal_mvPowerSeries_presentation`
-                                        - ❌🟪 `exists_weightTwoEigenform_trace_eq_of_residually_reducible`
+                                                - ❌🟪 `brauer_induction_trivial_character`
+                                                - ❌🟪 `exists_descended_heckeSystem_of_solvable`
+                                                - ❌🟪 `exists_heckeField_system_of_witness_of_pieces`
+                                                - ❌🟪 `exists_heckePackage_of_seed`
+                                                - ❌🟪 `exists_moretBailly_seed_of_five_le`
+                                                - ❌🟪 `exists_threeadicRealization_of_witness`
+                                                - ❌🟪 `exists_threeadic_realization_of_heckePackage`
+                                                - ❌🟪 `threeadicRealization_det_cyclotomic_of_witness`
+                                                - ❌🟪 `threeadicRealization_isFlat_of_witness`
+                                                - ❌🟪 `threeadicRealization_isTameAtTwo_of_witness`
+                                                - ❌🟪 `threeadicRealization_isUnramified_of_witness`
+                                            - ❌🟪 `IsFlatPointsGroupAt.of_injective`
+                                            - ❌🟪 `IsFlatPointsGroupAt.prod`
+                                            - ❌🟪 `TaylorWilesSystem.exists_patchedModule.`
+                                            - ❌🟪 `brauer_induction_trivial_character`
+                                            - ❌🟪 `exists_descended_heckeSystem_of_solvable`
+                                            - ❌🟪 `exists_discr_factorization_le_of_finrank_le`
+                                            - ❌🟪 `exists_heckeField_system_of_witness_of_pieces`
+                                            - ❌🟪 `exists_heckePackage_of_seed`
+                                            - ❌🟪 `exists_isRegular_ofList_eq_maximalIdeal_mvPowerSeries`
+                                            - ❌🟪 `exists_moretBailly_seed_of_five_le`
+                                            - ❌🟪 `exists_taylorWilesTower.`
+                                            - ❌🟪 `exists_threeadicRealization_of_witness`
+                                            - ❌🟪 `exists_threeadic_realization_of_heckePackage`
+                                            - ❌🟪 `exists_weaklyUniversalOnIdentified_framed_finiteTests.`
+                                            - ❌🟪 `isNoetherianRing_mvPowerSeries.`
+                                            - ❌🟪 `isWeaklyUniversalOnIdentifiedDeformation_of_finiteTests.`
+                                            - ❌🟪 `not_isIrreducible_of_charpoly_coeff_one_eq_sum_monoidHom`
+                                            - ❌🟪 `threeadicRealization_det_cyclotomic_of_witness`
+                                            - ❌🟪 `threeadicRealization_isFlat_of_witness`
+                                            - ❌🟪 `threeadicRealization_isTameAtTwo_of_witness`
+                                            - ❌🟪 `threeadicRealization_isUnramified_of_witness`
+                                        - ✅· `exists_weightTwoEigenform_trace_eq_of_residually_reducible`
                                             - ✅· `GaloisRepresentation.IsHardlyRamified.mod_three`
                                                 - ✅· `GaloisRepresentation.IsHardlyRamified.exists_line_with_locally_unramified_quotCharacter`
                                                     - ✅· `exists_line_with_unramified_quotCharacter_at_three`
@@ -1240,57 +2049,109 @@ entries file). To add/remove/annotate a node, edit
                                                                     - ✅· `serre_elimination_dihedral`
                                                                         - ✅· `serre_elimination_dihedral_ray_class`
                                                                             - ✅· `serre_elimination_dihedral_ray_class_of_eigenvector`
-                                                                                - ❌🟪 `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                                - ✅· `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                                    - ❌🟪 `character_globalFrob_sq_eq_one_of_narrow_exponent_two_ray_class`
+                                                                                    - ❌🟪 `exists_conj_image_localInertiaGroup_rat_ray_class`
                                                                     - ✅· `serre_elimination_alt4`
                                                                         - ✅· `odlyzko_bound_totallyComplex`
                                                                             - ✅· `poitou_explicit_formula_bound`
-                                                                                - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                - ❌🟪 `completedClassZeta_exists`
+                                                                                - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                    - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                    - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                    - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                - ✅· `completedClassZeta_exists`
+                                                                                    - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                    - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                    - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                         - ✅· `exists_hardlyRamified_number_field`
                                                                             - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                 - ✅· `discr_bound_of_kernel_field`
                                                                                     - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                        - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                            - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                            - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                            - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                     - ✅· `serre_elimination_sym4`
                                                                         - ✅· `odlyzko_bound_totallyComplex`
                                                                             - ✅· `poitou_explicit_formula_bound`
-                                                                                - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                - ❌🟪 `completedClassZeta_exists`
+                                                                                - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                    - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                    - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                    - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                - ✅· `completedClassZeta_exists`
+                                                                                    - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                    - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                    - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                         - ✅· `exists_hardlyRamified_number_field`
                                                                             - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                 - ✅· `discr_bound_of_kernel_field`
                                                                                     - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                        - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                            - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                            - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                            - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                     - ✅· `serre_elimination_alt5`
                                                                         - ✅· `odlyzko_bound_totallyComplex`
                                                                             - ✅· `poitou_explicit_formula_bound`
-                                                                                - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                - ❌🟪 `completedClassZeta_exists`
+                                                                                - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                    - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                    - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                    - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                - ✅· `completedClassZeta_exists`
+                                                                                    - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                    - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                    - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                         - ✅· `exists_hardlyRamified_number_field`
                                                                             - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                 - ✅· `discr_bound_of_kernel_field`
                                                                                     - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                        - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                            - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                            - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                            - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                     - ✅· `serre_elimination_psl`
                                                                         - ✅· `odlyzko_bound_totallyComplex`
                                                                             - ✅· `poitou_explicit_formula_bound`
-                                                                                - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                - ❌🟪 `completedClassZeta_exists`
+                                                                                - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                    - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                    - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                    - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                - ✅· `completedClassZeta_exists`
+                                                                                    - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                    - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                    - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                         - ✅· `exists_hardlyRamified_number_field`
                                                                             - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                 - ✅· `discr_bound_of_kernel_field`
                                                                                     - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                        - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                            - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                            - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                            - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                     - ✅· `serre_elimination_pgl`
                                                                         - ✅· `odlyzko_bound_totallyComplex`
                                                                             - ✅· `poitou_explicit_formula_bound`
-                                                                                - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                - ❌🟪 `completedClassZeta_exists`
+                                                                                - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                    - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                    - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                    - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                - ✅· `completedClassZeta_exists`
+                                                                                    - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                    - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                    - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                         - ✅· `exists_hardlyRamified_number_field`
                                                                             - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                 - ✅· `discr_bound_of_kernel_field`
                                                                                     - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                        - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                            - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                            - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                            - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                             - ✅· `GaloisRepresentation.IsHardlyRamified.exists_global_triangular_of_residual_trivial_quotient`
                                                 - ✅· `exists_equivariant_defect_coboundary`
                                                     - ✅· `exists_omega_cocycle_coboundary`
@@ -1299,18 +2160,41 @@ entries file). To add/remove/annotate a node, edit
                                                     - ✅· `trivial_component_hom_vanishes`
                                                         - ✅· `trivial_component_vanishes_on_localInertia_at_three`
                                                             - ❌🟪 `trivial_component_vanishes_of_hopf_package`
+                                            - ❌🟪 `IsFlatPointsGroupAt.of_surjective`
+                                            - ❌🟪 `algebraMap_cyclotomicCharacter_eq_one_of_mem_localInertiaGroup_two`
+                                            - ❌🟪 `algebraMap_cyclotomicCharacter_map_adicArithFrob_two_eq_two`
+                                            - ❌🟪 `character_eq_pow_cyclotomicCharacter_of_unramified_outside_p`
+                                            - ❌🟪 `eisenstein_trivial_sub_extension_cc_eq_zero_on_inertia_two_of_five_le`
+                                            - ❌🟪 `eisenstein_trivial_sub_extension_ker_vanishing_of_eigenspace_trivial`
+                                            - ❌🟪 `exists_conjugator_padicGalois_eq_adic_at_p`
+                                            - ❌🟪 `exists_cyclotomicCharacter_residual_ne_one`
+                                            - ❌🟪 `exists_inertia_connectedEtale_complement_of_isFlatAt`
+                                            - ❌🟪 `exists_ribet_walk_stable_line`
+                                            - ❌🟪 `exists_uniform_conj_decomposition_two_padic`
+                                            - ❌🟪 `exists_valuationRing_stable_lattice`
+                                            - ❌🟪 `hasFlatProlongationAt_lattice_pPow_of_generic_iso`
+                                            - ❌🟪 `herbrand_omega_inv_classGroup_eigenspace_trivial_of_five_le`
+                                            - ❌🟪 `mem_of_isOpen_of_localInertiaGroup_le_of_adicArithFrob_mem_two`
+                                            - ❌🟪 `exists_muType_coordinate`
                                     - ✅· `exists_rat_trace_coeff_of_not_isIrreducible`
-                                        - ❌🟪 `char_add_char_eq_one_add_cyclotomicCharacter_of_mem_localInertiaGroup_p`
+                                        - ✅· `char_add_char_eq_one_add_cyclotomicCharacter_of_mem_localInertiaGroup_p`
+                                            - ❌🟪 `connected_point_smul_eq_conv_pow_cyclotomicCharacter_of_hopf_package`
                         - ✅· `exists_family_of_eigensystem`
                             - ✅· `exists_realizations_of_eigensystem`
                                 - ✅· `exists_hardlyRamified_integral_realizations`
                                     - ✅· `exists_hardlyRamified_ringOfIntegers_realizations`
-                                        - ❌🟪 `char_add_char_eq_one_add_cyclotomicCharacter_of_mem_localInertiaGroup_p`
+                                        - ✅· `char_add_char_eq_one_add_cyclotomicCharacter_of_mem_localInertiaGroup_p`
+                                            - ❌🟪 `connected_point_smul_eq_conv_pow_cyclotomicCharacter_of_hopf_package`
                                         - ❌🟪 `cyclotomicCharacter_eq_one_of_mem_localInertiaGroup_of_ne`
                                         - ❌🟪 `isFlatAt_cycDiagRep`
-                                        - ❌🟪 `exists_eigenform_level_dvd_two_of_trace_eq`
-                                            - ❌🟪 `exists_heckeMatrix_eigenvector`
-                                        - ❌🟪 `exists_weightTwoEigenform_residual_of_isIrreducible`
+                                        - ✅· `exists_eigenform_level_dvd_two_of_trace_eq`
+                                            - ✅· `exists_heckeMatrix_eigenvector`
+                                                - ❌🟪 `exists_integral_qExpansion_spanning`
+                                            - ❌🟪 `exists_weightTwoEigenform_not_dvd_level_p_of_isFlatAt_of_isIrreducible`
+                                            - ❌🟪 `exists_weightTwoEigenform_not_four_dvd_level_of_inertia_fixed_line`
+                                            - ❌🟪 `nonempty_modularHomologyPackage`
+                                            - ❌🟪 `weightTwoNewform_not_dvd_level_of_isUnramifiedAt_of_isIrreducible`
+                                        - ✅· `exists_weightTwoEigenform_residual_of_isIrreducible`
                                             - ✅· `GaloisRepresentation.IsHardlyRamified.mod_three_reducible`
                                                 - ✅· `not_isAbsolutelyIrreducible`
                                                     - ✅· `serre_elimination`
@@ -1319,57 +2203,109 @@ entries file). To add/remove/annotate a node, edit
                                                                 - ✅· `serre_elimination_dihedral`
                                                                     - ✅· `serre_elimination_dihedral_ray_class`
                                                                         - ✅· `serre_elimination_dihedral_ray_class_of_eigenvector`
-                                                                            - ❌🟪 `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                            - ✅· `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                                - ❌🟪 `character_globalFrob_sq_eq_one_of_narrow_exponent_two_ray_class`
+                                                                                - ❌🟪 `exists_conj_image_localInertiaGroup_rat_ray_class`
                                                                 - ✅· `serre_elimination_alt4`
                                                                     - ✅· `odlyzko_bound_totallyComplex`
                                                                         - ✅· `poitou_explicit_formula_bound`
-                                                                            - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                            - ❌🟪 `completedClassZeta_exists`
+                                                                            - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                            - ✅· `completedClassZeta_exists`
+                                                                                - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                     - ✅· `exists_hardlyRamified_number_field`
                                                                         - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                             - ✅· `discr_bound_of_kernel_field`
                                                                                 - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                    - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                    - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                        - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                        - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                        - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                 - ✅· `serre_elimination_sym4`
                                                                     - ✅· `odlyzko_bound_totallyComplex`
                                                                         - ✅· `poitou_explicit_formula_bound`
-                                                                            - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                            - ❌🟪 `completedClassZeta_exists`
+                                                                            - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                            - ✅· `completedClassZeta_exists`
+                                                                                - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                     - ✅· `exists_hardlyRamified_number_field`
                                                                         - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                             - ✅· `discr_bound_of_kernel_field`
                                                                                 - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                    - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                    - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                        - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                        - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                        - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                 - ✅· `serre_elimination_alt5`
                                                                     - ✅· `odlyzko_bound_totallyComplex`
                                                                         - ✅· `poitou_explicit_formula_bound`
-                                                                            - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                            - ❌🟪 `completedClassZeta_exists`
+                                                                            - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                            - ✅· `completedClassZeta_exists`
+                                                                                - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                     - ✅· `exists_hardlyRamified_number_field`
                                                                         - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                             - ✅· `discr_bound_of_kernel_field`
                                                                                 - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                    - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                    - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                        - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                        - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                        - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                 - ✅· `serre_elimination_psl`
                                                                     - ✅· `odlyzko_bound_totallyComplex`
                                                                         - ✅· `poitou_explicit_formula_bound`
-                                                                            - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                            - ❌🟪 `completedClassZeta_exists`
+                                                                            - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                            - ✅· `completedClassZeta_exists`
+                                                                                - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                     - ✅· `exists_hardlyRamified_number_field`
                                                                         - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                             - ✅· `discr_bound_of_kernel_field`
                                                                                 - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                    - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                    - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                        - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                        - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                        - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                 - ✅· `serre_elimination_pgl`
                                                                     - ✅· `odlyzko_bound_totallyComplex`
                                                                         - ✅· `poitou_explicit_formula_bound`
-                                                                            - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                            - ❌🟪 `completedClassZeta_exists`
+                                                                            - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                            - ✅· `completedClassZeta_exists`
+                                                                                - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                     - ✅· `exists_hardlyRamified_number_field`
                                                                         - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                             - ✅· `discr_bound_of_kernel_field`
                                                                                 - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                    - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                    - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                        - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                        - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                        - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                             - ✅· `GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular`
                                                 - ✅· `GaloisRepresentation.IsHardlyRamified.mod_three`
                                                     - ✅· `GaloisRepresentation.IsHardlyRamified.exists_line_with_locally_unramified_quotCharacter`
@@ -1386,57 +2322,109 @@ entries file). To add/remove/annotate a node, edit
                                                                         - ✅· `serre_elimination_dihedral`
                                                                             - ✅· `serre_elimination_dihedral_ray_class`
                                                                                 - ✅· `serre_elimination_dihedral_ray_class_of_eigenvector`
-                                                                                    - ❌🟪 `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                                    - ✅· `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                                        - ❌🟪 `character_globalFrob_sq_eq_one_of_narrow_exponent_two_ray_class`
+                                                                                        - ❌🟪 `exists_conj_image_localInertiaGroup_rat_ray_class`
                                                                         - ✅· `serre_elimination_alt4`
                                                                             - ✅· `odlyzko_bound_totallyComplex`
                                                                                 - ✅· `poitou_explicit_formula_bound`
-                                                                                    - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                    - ❌🟪 `completedClassZeta_exists`
+                                                                                    - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                        - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                        - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                        - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                    - ✅· `completedClassZeta_exists`
+                                                                                        - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                        - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                        - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                             - ✅· `exists_hardlyRamified_number_field`
                                                                                 - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                     - ✅· `discr_bound_of_kernel_field`
                                                                                         - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                            - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                         - ✅· `serre_elimination_sym4`
                                                                             - ✅· `odlyzko_bound_totallyComplex`
                                                                                 - ✅· `poitou_explicit_formula_bound`
-                                                                                    - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                    - ❌🟪 `completedClassZeta_exists`
+                                                                                    - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                        - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                        - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                        - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                    - ✅· `completedClassZeta_exists`
+                                                                                        - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                        - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                        - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                             - ✅· `exists_hardlyRamified_number_field`
                                                                                 - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                     - ✅· `discr_bound_of_kernel_field`
                                                                                         - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                            - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                         - ✅· `serre_elimination_alt5`
                                                                             - ✅· `odlyzko_bound_totallyComplex`
                                                                                 - ✅· `poitou_explicit_formula_bound`
-                                                                                    - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                    - ❌🟪 `completedClassZeta_exists`
+                                                                                    - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                        - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                        - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                        - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                    - ✅· `completedClassZeta_exists`
+                                                                                        - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                        - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                        - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                             - ✅· `exists_hardlyRamified_number_field`
                                                                                 - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                     - ✅· `discr_bound_of_kernel_field`
                                                                                         - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                            - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                         - ✅· `serre_elimination_psl`
                                                                             - ✅· `odlyzko_bound_totallyComplex`
                                                                                 - ✅· `poitou_explicit_formula_bound`
-                                                                                    - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                    - ❌🟪 `completedClassZeta_exists`
+                                                                                    - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                        - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                        - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                        - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                    - ✅· `completedClassZeta_exists`
+                                                                                        - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                        - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                        - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                             - ✅· `exists_hardlyRamified_number_field`
                                                                                 - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                     - ✅· `discr_bound_of_kernel_field`
                                                                                         - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                            - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                         - ✅· `serre_elimination_pgl`
                                                                             - ✅· `odlyzko_bound_totallyComplex`
                                                                                 - ✅· `poitou_explicit_formula_bound`
-                                                                                    - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                    - ❌🟪 `completedClassZeta_exists`
+                                                                                    - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                        - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                        - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                        - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                    - ✅· `completedClassZeta_exists`
+                                                                                        - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                        - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                        - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                             - ✅· `exists_hardlyRamified_number_field`
                                                                                 - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                     - ✅· `discr_bound_of_kernel_field`
                                                                                         - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                            - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                 - ✅· `GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular_of_residual_trivial_quotient`
                                                     - ✅· `GaloisRepresentation.IsHardlyRamified.exists_global_triangular_of_residual_trivial_quotient`
                                                         - ✅· `exists_equivariant_defect_coboundary`
@@ -1478,7 +2466,18 @@ entries file). To add/remove/annotate a node, edit
                                                     - ✅· `exists_mvPowerSeries_presentation_of_isWeaklyUniversal_isTraceGenerated`
                                                         - ❌🟪 `exists_minimal_mvPowerSeries_presentation`
                                                         - ❌🟪 `exists_relations_lt_of_minimal_mvPowerSeries_presentation`
-                                        - ❌🟪 `exists_weightTwoEigenform_trace_eq_of_matchesResidualTraces`
+                                            - ❌🟪 `brauer_induction_trivial_character`
+                                            - ❌🟪 `exists_descended_heckeSystem_of_solvable`
+                                            - ❌🟪 `exists_heckeField_system_of_witness_of_pieces`
+                                            - ❌🟪 `exists_heckePackage_of_seed`
+                                            - ❌🟪 `exists_moretBailly_seed_of_five_le`
+                                            - ❌🟪 `exists_threeadicRealization_of_witness`
+                                            - ❌🟪 `exists_threeadic_realization_of_heckePackage`
+                                            - ❌🟪 `threeadicRealization_det_cyclotomic_of_witness`
+                                            - ❌🟪 `threeadicRealization_isFlat_of_witness`
+                                            - ❌🟪 `threeadicRealization_isTameAtTwo_of_witness`
+                                            - ❌🟪 `threeadicRealization_isUnramified_of_witness`
+                                        - ✅· `exists_weightTwoEigenform_trace_eq_of_matchesResidualTraces`
                                             - ✅· `GaloisRepresentation.IsHardlyRamified.mod_three_reducible`
                                                 - ✅· `not_isAbsolutelyIrreducible`
                                                     - ✅· `serre_elimination`
@@ -1487,57 +2486,109 @@ entries file). To add/remove/annotate a node, edit
                                                                 - ✅· `serre_elimination_dihedral`
                                                                     - ✅· `serre_elimination_dihedral_ray_class`
                                                                         - ✅· `serre_elimination_dihedral_ray_class_of_eigenvector`
-                                                                            - ❌🟪 `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                            - ✅· `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                                - ❌🟪 `character_globalFrob_sq_eq_one_of_narrow_exponent_two_ray_class`
+                                                                                - ❌🟪 `exists_conj_image_localInertiaGroup_rat_ray_class`
                                                                 - ✅· `serre_elimination_alt4`
                                                                     - ✅· `odlyzko_bound_totallyComplex`
                                                                         - ✅· `poitou_explicit_formula_bound`
-                                                                            - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                            - ❌🟪 `completedClassZeta_exists`
+                                                                            - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                            - ✅· `completedClassZeta_exists`
+                                                                                - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                     - ✅· `exists_hardlyRamified_number_field`
                                                                         - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                             - ✅· `discr_bound_of_kernel_field`
                                                                                 - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                    - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                    - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                        - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                        - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                        - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                 - ✅· `serre_elimination_sym4`
                                                                     - ✅· `odlyzko_bound_totallyComplex`
                                                                         - ✅· `poitou_explicit_formula_bound`
-                                                                            - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                            - ❌🟪 `completedClassZeta_exists`
+                                                                            - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                            - ✅· `completedClassZeta_exists`
+                                                                                - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                     - ✅· `exists_hardlyRamified_number_field`
                                                                         - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                             - ✅· `discr_bound_of_kernel_field`
                                                                                 - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                    - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                    - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                        - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                        - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                        - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                 - ✅· `serre_elimination_alt5`
                                                                     - ✅· `odlyzko_bound_totallyComplex`
                                                                         - ✅· `poitou_explicit_formula_bound`
-                                                                            - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                            - ❌🟪 `completedClassZeta_exists`
+                                                                            - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                            - ✅· `completedClassZeta_exists`
+                                                                                - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                     - ✅· `exists_hardlyRamified_number_field`
                                                                         - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                             - ✅· `discr_bound_of_kernel_field`
                                                                                 - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                    - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                    - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                        - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                        - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                        - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                 - ✅· `serre_elimination_psl`
                                                                     - ✅· `odlyzko_bound_totallyComplex`
                                                                         - ✅· `poitou_explicit_formula_bound`
-                                                                            - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                            - ❌🟪 `completedClassZeta_exists`
+                                                                            - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                            - ✅· `completedClassZeta_exists`
+                                                                                - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                     - ✅· `exists_hardlyRamified_number_field`
                                                                         - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                             - ✅· `discr_bound_of_kernel_field`
                                                                                 - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                    - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                    - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                        - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                        - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                        - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                 - ✅· `serre_elimination_pgl`
                                                                     - ✅· `odlyzko_bound_totallyComplex`
                                                                         - ✅· `poitou_explicit_formula_bound`
-                                                                            - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                            - ❌🟪 `completedClassZeta_exists`
+                                                                            - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                            - ✅· `completedClassZeta_exists`
+                                                                                - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                     - ✅· `exists_hardlyRamified_number_field`
                                                                         - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                             - ✅· `discr_bound_of_kernel_field`
                                                                                 - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                    - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                    - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                        - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                        - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                        - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                             - ✅· `GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular`
                                                 - ✅· `GaloisRepresentation.IsHardlyRamified.mod_three`
                                                     - ✅· `GaloisRepresentation.IsHardlyRamified.exists_line_with_locally_unramified_quotCharacter`
@@ -1554,57 +2605,109 @@ entries file). To add/remove/annotate a node, edit
                                                                         - ✅· `serre_elimination_dihedral`
                                                                             - ✅· `serre_elimination_dihedral_ray_class`
                                                                                 - ✅· `serre_elimination_dihedral_ray_class_of_eigenvector`
-                                                                                    - ❌🟪 `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                                    - ✅· `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                                        - ❌🟪 `character_globalFrob_sq_eq_one_of_narrow_exponent_two_ray_class`
+                                                                                        - ❌🟪 `exists_conj_image_localInertiaGroup_rat_ray_class`
                                                                         - ✅· `serre_elimination_alt4`
                                                                             - ✅· `odlyzko_bound_totallyComplex`
                                                                                 - ✅· `poitou_explicit_formula_bound`
-                                                                                    - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                    - ❌🟪 `completedClassZeta_exists`
+                                                                                    - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                        - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                        - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                        - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                    - ✅· `completedClassZeta_exists`
+                                                                                        - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                        - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                        - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                             - ✅· `exists_hardlyRamified_number_field`
                                                                                 - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                     - ✅· `discr_bound_of_kernel_field`
                                                                                         - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                            - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                         - ✅· `serre_elimination_sym4`
                                                                             - ✅· `odlyzko_bound_totallyComplex`
                                                                                 - ✅· `poitou_explicit_formula_bound`
-                                                                                    - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                    - ❌🟪 `completedClassZeta_exists`
+                                                                                    - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                        - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                        - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                        - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                    - ✅· `completedClassZeta_exists`
+                                                                                        - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                        - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                        - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                             - ✅· `exists_hardlyRamified_number_field`
                                                                                 - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                     - ✅· `discr_bound_of_kernel_field`
                                                                                         - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                            - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                         - ✅· `serre_elimination_alt5`
                                                                             - ✅· `odlyzko_bound_totallyComplex`
                                                                                 - ✅· `poitou_explicit_formula_bound`
-                                                                                    - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                    - ❌🟪 `completedClassZeta_exists`
+                                                                                    - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                        - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                        - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                        - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                    - ✅· `completedClassZeta_exists`
+                                                                                        - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                        - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                        - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                             - ✅· `exists_hardlyRamified_number_field`
                                                                                 - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                     - ✅· `discr_bound_of_kernel_field`
                                                                                         - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                            - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                         - ✅· `serre_elimination_psl`
                                                                             - ✅· `odlyzko_bound_totallyComplex`
                                                                                 - ✅· `poitou_explicit_formula_bound`
-                                                                                    - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                    - ❌🟪 `completedClassZeta_exists`
+                                                                                    - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                        - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                        - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                        - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                    - ✅· `completedClassZeta_exists`
+                                                                                        - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                        - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                        - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                             - ✅· `exists_hardlyRamified_number_field`
                                                                                 - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                     - ✅· `discr_bound_of_kernel_field`
                                                                                         - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                            - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                         - ✅· `serre_elimination_pgl`
                                                                             - ✅· `odlyzko_bound_totallyComplex`
                                                                                 - ✅· `poitou_explicit_formula_bound`
-                                                                                    - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                    - ❌🟪 `completedClassZeta_exists`
+                                                                                    - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                        - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                        - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                        - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                    - ✅· `completedClassZeta_exists`
+                                                                                        - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                        - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                        - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                             - ✅· `exists_hardlyRamified_number_field`
                                                                                 - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                     - ✅· `discr_bound_of_kernel_field`
                                                                                         - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                            - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                 - ✅· `GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular_of_residual_trivial_quotient`
                                                     - ✅· `GaloisRepresentation.IsHardlyRamified.exists_global_triangular_of_residual_trivial_quotient`
                                                         - ✅· `exists_equivariant_defect_coboundary`
@@ -1646,7 +2749,7 @@ entries file). To add/remove/annotate a node, edit
                                                     - ✅· `exists_mvPowerSeries_presentation_of_isWeaklyUniversal_isTraceGenerated`
                                                         - ❌🟪 `exists_minimal_mvPowerSeries_presentation`
                                                         - ❌🟪 `exists_relations_lt_of_minimal_mvPowerSeries_presentation`
-                                            - ❌🟪 `exists_weightTwoEigenform_residual_of_isIrreducible`
+                                            - ✅· `exists_weightTwoEigenform_residual_of_isIrreducible`
                                                 - ✅· `GaloisRepresentation.IsHardlyRamified.mod_three_reducible`
                                                     - ✅· `not_isAbsolutelyIrreducible`
                                                         - ✅· `serre_elimination`
@@ -1655,57 +2758,109 @@ entries file). To add/remove/annotate a node, edit
                                                                     - ✅· `serre_elimination_dihedral`
                                                                         - ✅· `serre_elimination_dihedral_ray_class`
                                                                             - ✅· `serre_elimination_dihedral_ray_class_of_eigenvector`
-                                                                                - ❌🟪 `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                                - ✅· `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                                    - ❌🟪 `character_globalFrob_sq_eq_one_of_narrow_exponent_two_ray_class`
+                                                                                    - ❌🟪 `exists_conj_image_localInertiaGroup_rat_ray_class`
                                                                     - ✅· `serre_elimination_alt4`
                                                                         - ✅· `odlyzko_bound_totallyComplex`
                                                                             - ✅· `poitou_explicit_formula_bound`
-                                                                                - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                - ❌🟪 `completedClassZeta_exists`
+                                                                                - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                    - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                    - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                    - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                - ✅· `completedClassZeta_exists`
+                                                                                    - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                    - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                    - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                         - ✅· `exists_hardlyRamified_number_field`
                                                                             - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                 - ✅· `discr_bound_of_kernel_field`
                                                                                     - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                        - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                            - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                            - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                            - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                     - ✅· `serre_elimination_sym4`
                                                                         - ✅· `odlyzko_bound_totallyComplex`
                                                                             - ✅· `poitou_explicit_formula_bound`
-                                                                                - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                - ❌🟪 `completedClassZeta_exists`
+                                                                                - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                    - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                    - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                    - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                - ✅· `completedClassZeta_exists`
+                                                                                    - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                    - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                    - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                         - ✅· `exists_hardlyRamified_number_field`
                                                                             - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                 - ✅· `discr_bound_of_kernel_field`
                                                                                     - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                        - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                            - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                            - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                            - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                     - ✅· `serre_elimination_alt5`
                                                                         - ✅· `odlyzko_bound_totallyComplex`
                                                                             - ✅· `poitou_explicit_formula_bound`
-                                                                                - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                - ❌🟪 `completedClassZeta_exists`
+                                                                                - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                    - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                    - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                    - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                - ✅· `completedClassZeta_exists`
+                                                                                    - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                    - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                    - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                         - ✅· `exists_hardlyRamified_number_field`
                                                                             - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                 - ✅· `discr_bound_of_kernel_field`
                                                                                     - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                        - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                            - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                            - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                            - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                     - ✅· `serre_elimination_psl`
                                                                         - ✅· `odlyzko_bound_totallyComplex`
                                                                             - ✅· `poitou_explicit_formula_bound`
-                                                                                - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                - ❌🟪 `completedClassZeta_exists`
+                                                                                - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                    - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                    - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                    - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                - ✅· `completedClassZeta_exists`
+                                                                                    - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                    - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                    - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                         - ✅· `exists_hardlyRamified_number_field`
                                                                             - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                 - ✅· `discr_bound_of_kernel_field`
                                                                                     - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                        - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                            - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                            - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                            - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                     - ✅· `serre_elimination_pgl`
                                                                         - ✅· `odlyzko_bound_totallyComplex`
                                                                             - ✅· `poitou_explicit_formula_bound`
-                                                                                - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                - ❌🟪 `completedClassZeta_exists`
+                                                                                - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                    - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                    - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                    - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                - ✅· `completedClassZeta_exists`
+                                                                                    - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                    - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                    - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                         - ✅· `exists_hardlyRamified_number_field`
                                                                             - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                 - ✅· `discr_bound_of_kernel_field`
                                                                                     - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                        - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                            - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                            - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                            - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                 - ✅· `GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular`
                                                     - ✅· `GaloisRepresentation.IsHardlyRamified.mod_three`
                                                         - ✅· `GaloisRepresentation.IsHardlyRamified.exists_line_with_locally_unramified_quotCharacter`
@@ -1722,57 +2877,109 @@ entries file). To add/remove/annotate a node, edit
                                                                             - ✅· `serre_elimination_dihedral`
                                                                                 - ✅· `serre_elimination_dihedral_ray_class`
                                                                                     - ✅· `serre_elimination_dihedral_ray_class_of_eigenvector`
-                                                                                        - ❌🟪 `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                                        - ✅· `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                                            - ❌🟪 `character_globalFrob_sq_eq_one_of_narrow_exponent_two_ray_class`
+                                                                                            - ❌🟪 `exists_conj_image_localInertiaGroup_rat_ray_class`
                                                                             - ✅· `serre_elimination_alt4`
                                                                                 - ✅· `odlyzko_bound_totallyComplex`
                                                                                     - ✅· `poitou_explicit_formula_bound`
-                                                                                        - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                        - ❌🟪 `completedClassZeta_exists`
+                                                                                        - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                            - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                            - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                            - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                        - ✅· `completedClassZeta_exists`
+                                                                                            - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                            - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                            - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                                 - ✅· `exists_hardlyRamified_number_field`
                                                                                     - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                         - ✅· `discr_bound_of_kernel_field`
                                                                                             - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                                - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                    - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                    - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                    - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                    - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                             - ✅· `serre_elimination_sym4`
                                                                                 - ✅· `odlyzko_bound_totallyComplex`
                                                                                     - ✅· `poitou_explicit_formula_bound`
-                                                                                        - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                        - ❌🟪 `completedClassZeta_exists`
+                                                                                        - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                            - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                            - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                            - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                        - ✅· `completedClassZeta_exists`
+                                                                                            - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                            - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                            - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                                 - ✅· `exists_hardlyRamified_number_field`
                                                                                     - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                         - ✅· `discr_bound_of_kernel_field`
                                                                                             - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                                - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                    - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                    - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                    - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                    - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                             - ✅· `serre_elimination_alt5`
                                                                                 - ✅· `odlyzko_bound_totallyComplex`
                                                                                     - ✅· `poitou_explicit_formula_bound`
-                                                                                        - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                        - ❌🟪 `completedClassZeta_exists`
+                                                                                        - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                            - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                            - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                            - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                        - ✅· `completedClassZeta_exists`
+                                                                                            - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                            - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                            - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                                 - ✅· `exists_hardlyRamified_number_field`
                                                                                     - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                         - ✅· `discr_bound_of_kernel_field`
                                                                                             - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                                - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                    - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                    - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                    - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                    - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                             - ✅· `serre_elimination_psl`
                                                                                 - ✅· `odlyzko_bound_totallyComplex`
                                                                                     - ✅· `poitou_explicit_formula_bound`
-                                                                                        - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                        - ❌🟪 `completedClassZeta_exists`
+                                                                                        - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                            - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                            - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                            - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                        - ✅· `completedClassZeta_exists`
+                                                                                            - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                            - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                            - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                                 - ✅· `exists_hardlyRamified_number_field`
                                                                                     - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                         - ✅· `discr_bound_of_kernel_field`
                                                                                             - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                                - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                    - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                    - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                    - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                    - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                             - ✅· `serre_elimination_pgl`
                                                                                 - ✅· `odlyzko_bound_totallyComplex`
                                                                                     - ✅· `poitou_explicit_formula_bound`
-                                                                                        - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                        - ❌🟪 `completedClassZeta_exists`
+                                                                                        - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                            - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                            - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                            - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                        - ✅· `completedClassZeta_exists`
+                                                                                            - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                            - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                            - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                                 - ✅· `exists_hardlyRamified_number_field`
                                                                                     - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                         - ✅· `discr_bound_of_kernel_field`
                                                                                             - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                                - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                    - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                    - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                    - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                    - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                     - ✅· `GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular_of_residual_trivial_quotient`
                                                         - ✅· `GaloisRepresentation.IsHardlyRamified.exists_global_triangular_of_residual_trivial_quotient`
                                                             - ✅· `exists_equivariant_defect_coboundary`
@@ -1814,7 +3021,39 @@ entries file). To add/remove/annotate a node, edit
                                                         - ✅· `exists_mvPowerSeries_presentation_of_isWeaklyUniversal_isTraceGenerated`
                                                             - ❌🟪 `exists_minimal_mvPowerSeries_presentation`
                                                             - ❌🟪 `exists_relations_lt_of_minimal_mvPowerSeries_presentation`
-                                        - ❌🟪 `exists_weightTwoEigenform_trace_eq_of_residually_reducible`
+                                                - ❌🟪 `brauer_induction_trivial_character`
+                                                - ❌🟪 `exists_descended_heckeSystem_of_solvable`
+                                                - ❌🟪 `exists_heckeField_system_of_witness_of_pieces`
+                                                - ❌🟪 `exists_heckePackage_of_seed`
+                                                - ❌🟪 `exists_moretBailly_seed_of_five_le`
+                                                - ❌🟪 `exists_threeadicRealization_of_witness`
+                                                - ❌🟪 `exists_threeadic_realization_of_heckePackage`
+                                                - ❌🟪 `threeadicRealization_det_cyclotomic_of_witness`
+                                                - ❌🟪 `threeadicRealization_isFlat_of_witness`
+                                                - ❌🟪 `threeadicRealization_isTameAtTwo_of_witness`
+                                                - ❌🟪 `threeadicRealization_isUnramified_of_witness`
+                                            - ❌🟪 `IsFlatPointsGroupAt.of_injective`
+                                            - ❌🟪 `IsFlatPointsGroupAt.prod`
+                                            - ❌🟪 `TaylorWilesSystem.exists_patchedModule.`
+                                            - ❌🟪 `brauer_induction_trivial_character`
+                                            - ❌🟪 `exists_descended_heckeSystem_of_solvable`
+                                            - ❌🟪 `exists_discr_factorization_le_of_finrank_le`
+                                            - ❌🟪 `exists_heckeField_system_of_witness_of_pieces`
+                                            - ❌🟪 `exists_heckePackage_of_seed`
+                                            - ❌🟪 `exists_isRegular_ofList_eq_maximalIdeal_mvPowerSeries`
+                                            - ❌🟪 `exists_moretBailly_seed_of_five_le`
+                                            - ❌🟪 `exists_taylorWilesTower.`
+                                            - ❌🟪 `exists_threeadicRealization_of_witness`
+                                            - ❌🟪 `exists_threeadic_realization_of_heckePackage`
+                                            - ❌🟪 `exists_weaklyUniversalOnIdentified_framed_finiteTests.`
+                                            - ❌🟪 `isNoetherianRing_mvPowerSeries.`
+                                            - ❌🟪 `isWeaklyUniversalOnIdentifiedDeformation_of_finiteTests.`
+                                            - ❌🟪 `not_isIrreducible_of_charpoly_coeff_one_eq_sum_monoidHom`
+                                            - ❌🟪 `threeadicRealization_det_cyclotomic_of_witness`
+                                            - ❌🟪 `threeadicRealization_isFlat_of_witness`
+                                            - ❌🟪 `threeadicRealization_isTameAtTwo_of_witness`
+                                            - ❌🟪 `threeadicRealization_isUnramified_of_witness`
+                                        - ✅· `exists_weightTwoEigenform_trace_eq_of_residually_reducible`
                                             - ✅· `GaloisRepresentation.IsHardlyRamified.mod_three`
                                                 - ✅· `GaloisRepresentation.IsHardlyRamified.exists_line_with_locally_unramified_quotCharacter`
                                                     - ✅· `exists_line_with_unramified_quotCharacter_at_three`
@@ -1830,57 +3069,109 @@ entries file). To add/remove/annotate a node, edit
                                                                     - ✅· `serre_elimination_dihedral`
                                                                         - ✅· `serre_elimination_dihedral_ray_class`
                                                                             - ✅· `serre_elimination_dihedral_ray_class_of_eigenvector`
-                                                                                - ❌🟪 `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                                - ✅· `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                                    - ❌🟪 `character_globalFrob_sq_eq_one_of_narrow_exponent_two_ray_class`
+                                                                                    - ❌🟪 `exists_conj_image_localInertiaGroup_rat_ray_class`
                                                                     - ✅· `serre_elimination_alt4`
                                                                         - ✅· `odlyzko_bound_totallyComplex`
                                                                             - ✅· `poitou_explicit_formula_bound`
-                                                                                - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                - ❌🟪 `completedClassZeta_exists`
+                                                                                - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                    - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                    - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                    - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                - ✅· `completedClassZeta_exists`
+                                                                                    - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                    - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                    - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                         - ✅· `exists_hardlyRamified_number_field`
                                                                             - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                 - ✅· `discr_bound_of_kernel_field`
                                                                                     - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                        - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                            - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                            - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                            - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                     - ✅· `serre_elimination_sym4`
                                                                         - ✅· `odlyzko_bound_totallyComplex`
                                                                             - ✅· `poitou_explicit_formula_bound`
-                                                                                - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                - ❌🟪 `completedClassZeta_exists`
+                                                                                - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                    - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                    - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                    - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                - ✅· `completedClassZeta_exists`
+                                                                                    - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                    - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                    - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                         - ✅· `exists_hardlyRamified_number_field`
                                                                             - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                 - ✅· `discr_bound_of_kernel_field`
                                                                                     - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                        - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                            - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                            - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                            - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                     - ✅· `serre_elimination_alt5`
                                                                         - ✅· `odlyzko_bound_totallyComplex`
                                                                             - ✅· `poitou_explicit_formula_bound`
-                                                                                - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                - ❌🟪 `completedClassZeta_exists`
+                                                                                - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                    - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                    - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                    - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                - ✅· `completedClassZeta_exists`
+                                                                                    - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                    - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                    - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                         - ✅· `exists_hardlyRamified_number_field`
                                                                             - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                 - ✅· `discr_bound_of_kernel_field`
                                                                                     - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                        - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                            - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                            - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                            - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                     - ✅· `serre_elimination_psl`
                                                                         - ✅· `odlyzko_bound_totallyComplex`
                                                                             - ✅· `poitou_explicit_formula_bound`
-                                                                                - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                - ❌🟪 `completedClassZeta_exists`
+                                                                                - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                    - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                    - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                    - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                - ✅· `completedClassZeta_exists`
+                                                                                    - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                    - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                    - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                         - ✅· `exists_hardlyRamified_number_field`
                                                                             - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                 - ✅· `discr_bound_of_kernel_field`
                                                                                     - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                        - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                            - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                            - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                            - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                     - ✅· `serre_elimination_pgl`
                                                                         - ✅· `odlyzko_bound_totallyComplex`
                                                                             - ✅· `poitou_explicit_formula_bound`
-                                                                                - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                - ❌🟪 `completedClassZeta_exists`
+                                                                                - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                    - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                    - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                    - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                - ✅· `completedClassZeta_exists`
+                                                                                    - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                    - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                    - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                         - ✅· `exists_hardlyRamified_number_field`
                                                                             - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                 - ✅· `discr_bound_of_kernel_field`
                                                                                     - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                        - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                            - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                            - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                            - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                             - ✅· `GaloisRepresentation.IsHardlyRamified.exists_global_triangular_of_residual_trivial_quotient`
                                                 - ✅· `exists_equivariant_defect_coboundary`
                                                     - ✅· `exists_omega_cocycle_coboundary`
@@ -1889,13 +3180,35 @@ entries file). To add/remove/annotate a node, edit
                                                     - ✅· `trivial_component_hom_vanishes`
                                                         - ✅· `trivial_component_vanishes_on_localInertia_at_three`
                                                             - ❌🟪 `trivial_component_vanishes_of_hopf_package`
+                                            - ❌🟪 `IsFlatPointsGroupAt.of_surjective`
+                                            - ❌🟪 `algebraMap_cyclotomicCharacter_eq_one_of_mem_localInertiaGroup_two`
+                                            - ❌🟪 `algebraMap_cyclotomicCharacter_map_adicArithFrob_two_eq_two`
+                                            - ❌🟪 `character_eq_pow_cyclotomicCharacter_of_unramified_outside_p`
+                                            - ❌🟪 `eisenstein_trivial_sub_extension_cc_eq_zero_on_inertia_two_of_five_le`
+                                            - ❌🟪 `eisenstein_trivial_sub_extension_ker_vanishing_of_eigenspace_trivial`
+                                            - ❌🟪 `exists_conjugator_padicGalois_eq_adic_at_p`
+                                            - ❌🟪 `exists_cyclotomicCharacter_residual_ne_one`
+                                            - ❌🟪 `exists_inertia_connectedEtale_complement_of_isFlatAt`
+                                            - ❌🟪 `exists_ribet_walk_stable_line`
+                                            - ❌🟪 `exists_uniform_conj_decomposition_two_padic`
+                                            - ❌🟪 `exists_valuationRing_stable_lattice`
+                                            - ❌🟪 `hasFlatProlongationAt_lattice_pPow_of_generic_iso`
+                                            - ❌🟪 `herbrand_omega_inv_classGroup_eigenspace_trivial_of_five_le`
+                                            - ❌🟪 `mem_of_isOpen_of_localInertiaGroup_le_of_adicArithFrob_mem_two`
+                                            - ❌🟪 `exists_muType_coordinate`
                                 - ✅· `exists_realizations_at_two`
                                     - ✅· `exists_realization_at_two_generated`
-                                        - ❌🟪 `char_add_char_eq_one_add_cyclotomicCharacter_of_mem_localInertiaGroup_p`
+                                        - ✅· `char_add_char_eq_one_add_cyclotomicCharacter_of_mem_localInertiaGroup_p`
+                                            - ❌🟪 `connected_point_smul_eq_conv_pow_cyclotomicCharacter_of_hopf_package`
                                         - ❌🟪 `cyclotomicCharacter_eq_one_of_mem_localInertiaGroup_of_ne`
-                                        - ❌🟪 `exists_eigenform_level_dvd_two_of_trace_eq`
-                                            - ❌🟪 `exists_heckeMatrix_eigenvector`
-                                        - ❌🟪 `exists_weightTwoEigenform_residual_of_isIrreducible`
+                                        - ✅· `exists_eigenform_level_dvd_two_of_trace_eq`
+                                            - ✅· `exists_heckeMatrix_eigenvector`
+                                                - ❌🟪 `exists_integral_qExpansion_spanning`
+                                            - ❌🟪 `exists_weightTwoEigenform_not_dvd_level_p_of_isFlatAt_of_isIrreducible`
+                                            - ❌🟪 `exists_weightTwoEigenform_not_four_dvd_level_of_inertia_fixed_line`
+                                            - ❌🟪 `nonempty_modularHomologyPackage`
+                                            - ❌🟪 `weightTwoNewform_not_dvd_level_of_isUnramifiedAt_of_isIrreducible`
+                                        - ✅· `exists_weightTwoEigenform_residual_of_isIrreducible`
                                             - ✅· `GaloisRepresentation.IsHardlyRamified.mod_three_reducible`
                                                 - ✅· `not_isAbsolutelyIrreducible`
                                                     - ✅· `serre_elimination`
@@ -1904,57 +3217,109 @@ entries file). To add/remove/annotate a node, edit
                                                                 - ✅· `serre_elimination_dihedral`
                                                                     - ✅· `serre_elimination_dihedral_ray_class`
                                                                         - ✅· `serre_elimination_dihedral_ray_class_of_eigenvector`
-                                                                            - ❌🟪 `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                            - ✅· `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                                - ❌🟪 `character_globalFrob_sq_eq_one_of_narrow_exponent_two_ray_class`
+                                                                                - ❌🟪 `exists_conj_image_localInertiaGroup_rat_ray_class`
                                                                 - ✅· `serre_elimination_alt4`
                                                                     - ✅· `odlyzko_bound_totallyComplex`
                                                                         - ✅· `poitou_explicit_formula_bound`
-                                                                            - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                            - ❌🟪 `completedClassZeta_exists`
+                                                                            - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                            - ✅· `completedClassZeta_exists`
+                                                                                - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                     - ✅· `exists_hardlyRamified_number_field`
                                                                         - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                             - ✅· `discr_bound_of_kernel_field`
                                                                                 - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                    - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                    - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                        - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                        - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                        - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                 - ✅· `serre_elimination_sym4`
                                                                     - ✅· `odlyzko_bound_totallyComplex`
                                                                         - ✅· `poitou_explicit_formula_bound`
-                                                                            - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                            - ❌🟪 `completedClassZeta_exists`
+                                                                            - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                            - ✅· `completedClassZeta_exists`
+                                                                                - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                     - ✅· `exists_hardlyRamified_number_field`
                                                                         - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                             - ✅· `discr_bound_of_kernel_field`
                                                                                 - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                    - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                    - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                        - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                        - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                        - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                 - ✅· `serre_elimination_alt5`
                                                                     - ✅· `odlyzko_bound_totallyComplex`
                                                                         - ✅· `poitou_explicit_formula_bound`
-                                                                            - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                            - ❌🟪 `completedClassZeta_exists`
+                                                                            - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                            - ✅· `completedClassZeta_exists`
+                                                                                - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                     - ✅· `exists_hardlyRamified_number_field`
                                                                         - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                             - ✅· `discr_bound_of_kernel_field`
                                                                                 - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                    - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                    - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                        - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                        - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                        - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                 - ✅· `serre_elimination_psl`
                                                                     - ✅· `odlyzko_bound_totallyComplex`
                                                                         - ✅· `poitou_explicit_formula_bound`
-                                                                            - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                            - ❌🟪 `completedClassZeta_exists`
+                                                                            - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                            - ✅· `completedClassZeta_exists`
+                                                                                - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                     - ✅· `exists_hardlyRamified_number_field`
                                                                         - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                             - ✅· `discr_bound_of_kernel_field`
                                                                                 - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                    - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                    - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                        - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                        - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                        - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                 - ✅· `serre_elimination_pgl`
                                                                     - ✅· `odlyzko_bound_totallyComplex`
                                                                         - ✅· `poitou_explicit_formula_bound`
-                                                                            - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                            - ❌🟪 `completedClassZeta_exists`
+                                                                            - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                            - ✅· `completedClassZeta_exists`
+                                                                                - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                     - ✅· `exists_hardlyRamified_number_field`
                                                                         - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                             - ✅· `discr_bound_of_kernel_field`
                                                                                 - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                    - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                    - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                        - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                        - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                        - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                             - ✅· `GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular`
                                                 - ✅· `GaloisRepresentation.IsHardlyRamified.mod_three`
                                                     - ✅· `GaloisRepresentation.IsHardlyRamified.exists_line_with_locally_unramified_quotCharacter`
@@ -1971,57 +3336,109 @@ entries file). To add/remove/annotate a node, edit
                                                                         - ✅· `serre_elimination_dihedral`
                                                                             - ✅· `serre_elimination_dihedral_ray_class`
                                                                                 - ✅· `serre_elimination_dihedral_ray_class_of_eigenvector`
-                                                                                    - ❌🟪 `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                                    - ✅· `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                                        - ❌🟪 `character_globalFrob_sq_eq_one_of_narrow_exponent_two_ray_class`
+                                                                                        - ❌🟪 `exists_conj_image_localInertiaGroup_rat_ray_class`
                                                                         - ✅· `serre_elimination_alt4`
                                                                             - ✅· `odlyzko_bound_totallyComplex`
                                                                                 - ✅· `poitou_explicit_formula_bound`
-                                                                                    - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                    - ❌🟪 `completedClassZeta_exists`
+                                                                                    - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                        - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                        - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                        - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                    - ✅· `completedClassZeta_exists`
+                                                                                        - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                        - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                        - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                             - ✅· `exists_hardlyRamified_number_field`
                                                                                 - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                     - ✅· `discr_bound_of_kernel_field`
                                                                                         - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                            - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                         - ✅· `serre_elimination_sym4`
                                                                             - ✅· `odlyzko_bound_totallyComplex`
                                                                                 - ✅· `poitou_explicit_formula_bound`
-                                                                                    - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                    - ❌🟪 `completedClassZeta_exists`
+                                                                                    - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                        - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                        - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                        - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                    - ✅· `completedClassZeta_exists`
+                                                                                        - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                        - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                        - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                             - ✅· `exists_hardlyRamified_number_field`
                                                                                 - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                     - ✅· `discr_bound_of_kernel_field`
                                                                                         - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                            - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                         - ✅· `serre_elimination_alt5`
                                                                             - ✅· `odlyzko_bound_totallyComplex`
                                                                                 - ✅· `poitou_explicit_formula_bound`
-                                                                                    - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                    - ❌🟪 `completedClassZeta_exists`
+                                                                                    - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                        - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                        - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                        - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                    - ✅· `completedClassZeta_exists`
+                                                                                        - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                        - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                        - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                             - ✅· `exists_hardlyRamified_number_field`
                                                                                 - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                     - ✅· `discr_bound_of_kernel_field`
                                                                                         - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                            - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                         - ✅· `serre_elimination_psl`
                                                                             - ✅· `odlyzko_bound_totallyComplex`
                                                                                 - ✅· `poitou_explicit_formula_bound`
-                                                                                    - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                    - ❌🟪 `completedClassZeta_exists`
+                                                                                    - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                        - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                        - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                        - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                    - ✅· `completedClassZeta_exists`
+                                                                                        - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                        - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                        - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                             - ✅· `exists_hardlyRamified_number_field`
                                                                                 - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                     - ✅· `discr_bound_of_kernel_field`
                                                                                         - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                            - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                         - ✅· `serre_elimination_pgl`
                                                                             - ✅· `odlyzko_bound_totallyComplex`
                                                                                 - ✅· `poitou_explicit_formula_bound`
-                                                                                    - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                    - ❌🟪 `completedClassZeta_exists`
+                                                                                    - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                        - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                        - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                        - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                    - ✅· `completedClassZeta_exists`
+                                                                                        - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                        - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                        - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                             - ✅· `exists_hardlyRamified_number_field`
                                                                                 - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                     - ✅· `discr_bound_of_kernel_field`
                                                                                         - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                            - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                 - ✅· `GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular_of_residual_trivial_quotient`
                                                     - ✅· `GaloisRepresentation.IsHardlyRamified.exists_global_triangular_of_residual_trivial_quotient`
                                                         - ✅· `exists_equivariant_defect_coboundary`
@@ -2063,7 +3480,18 @@ entries file). To add/remove/annotate a node, edit
                                                     - ✅· `exists_mvPowerSeries_presentation_of_isWeaklyUniversal_isTraceGenerated`
                                                         - ❌🟪 `exists_minimal_mvPowerSeries_presentation`
                                                         - ❌🟪 `exists_relations_lt_of_minimal_mvPowerSeries_presentation`
-                                        - ❌🟪 `exists_weightTwoEigenform_trace_eq_of_matchesResidualTraces`
+                                            - ❌🟪 `brauer_induction_trivial_character`
+                                            - ❌🟪 `exists_descended_heckeSystem_of_solvable`
+                                            - ❌🟪 `exists_heckeField_system_of_witness_of_pieces`
+                                            - ❌🟪 `exists_heckePackage_of_seed`
+                                            - ❌🟪 `exists_moretBailly_seed_of_five_le`
+                                            - ❌🟪 `exists_threeadicRealization_of_witness`
+                                            - ❌🟪 `exists_threeadic_realization_of_heckePackage`
+                                            - ❌🟪 `threeadicRealization_det_cyclotomic_of_witness`
+                                            - ❌🟪 `threeadicRealization_isFlat_of_witness`
+                                            - ❌🟪 `threeadicRealization_isTameAtTwo_of_witness`
+                                            - ❌🟪 `threeadicRealization_isUnramified_of_witness`
+                                        - ✅· `exists_weightTwoEigenform_trace_eq_of_matchesResidualTraces`
                                             - ✅· `GaloisRepresentation.IsHardlyRamified.mod_three_reducible`
                                                 - ✅· `not_isAbsolutelyIrreducible`
                                                     - ✅· `serre_elimination`
@@ -2072,57 +3500,109 @@ entries file). To add/remove/annotate a node, edit
                                                                 - ✅· `serre_elimination_dihedral`
                                                                     - ✅· `serre_elimination_dihedral_ray_class`
                                                                         - ✅· `serre_elimination_dihedral_ray_class_of_eigenvector`
-                                                                            - ❌🟪 `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                            - ✅· `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                                - ❌🟪 `character_globalFrob_sq_eq_one_of_narrow_exponent_two_ray_class`
+                                                                                - ❌🟪 `exists_conj_image_localInertiaGroup_rat_ray_class`
                                                                 - ✅· `serre_elimination_alt4`
                                                                     - ✅· `odlyzko_bound_totallyComplex`
                                                                         - ✅· `poitou_explicit_formula_bound`
-                                                                            - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                            - ❌🟪 `completedClassZeta_exists`
+                                                                            - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                            - ✅· `completedClassZeta_exists`
+                                                                                - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                     - ✅· `exists_hardlyRamified_number_field`
                                                                         - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                             - ✅· `discr_bound_of_kernel_field`
                                                                                 - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                    - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                    - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                        - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                        - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                        - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                 - ✅· `serre_elimination_sym4`
                                                                     - ✅· `odlyzko_bound_totallyComplex`
                                                                         - ✅· `poitou_explicit_formula_bound`
-                                                                            - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                            - ❌🟪 `completedClassZeta_exists`
+                                                                            - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                            - ✅· `completedClassZeta_exists`
+                                                                                - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                     - ✅· `exists_hardlyRamified_number_field`
                                                                         - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                             - ✅· `discr_bound_of_kernel_field`
                                                                                 - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                    - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                    - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                        - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                        - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                        - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                 - ✅· `serre_elimination_alt5`
                                                                     - ✅· `odlyzko_bound_totallyComplex`
                                                                         - ✅· `poitou_explicit_formula_bound`
-                                                                            - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                            - ❌🟪 `completedClassZeta_exists`
+                                                                            - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                            - ✅· `completedClassZeta_exists`
+                                                                                - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                     - ✅· `exists_hardlyRamified_number_field`
                                                                         - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                             - ✅· `discr_bound_of_kernel_field`
                                                                                 - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                    - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                    - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                        - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                        - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                        - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                 - ✅· `serre_elimination_psl`
                                                                     - ✅· `odlyzko_bound_totallyComplex`
                                                                         - ✅· `poitou_explicit_formula_bound`
-                                                                            - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                            - ❌🟪 `completedClassZeta_exists`
+                                                                            - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                            - ✅· `completedClassZeta_exists`
+                                                                                - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                     - ✅· `exists_hardlyRamified_number_field`
                                                                         - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                             - ✅· `discr_bound_of_kernel_field`
                                                                                 - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                    - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                    - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                        - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                        - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                        - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                 - ✅· `serre_elimination_pgl`
                                                                     - ✅· `odlyzko_bound_totallyComplex`
                                                                         - ✅· `poitou_explicit_formula_bound`
-                                                                            - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                            - ❌🟪 `completedClassZeta_exists`
+                                                                            - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                            - ✅· `completedClassZeta_exists`
+                                                                                - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                     - ✅· `exists_hardlyRamified_number_field`
                                                                         - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                             - ✅· `discr_bound_of_kernel_field`
                                                                                 - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                    - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                    - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                        - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                        - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                        - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                             - ✅· `GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular`
                                                 - ✅· `GaloisRepresentation.IsHardlyRamified.mod_three`
                                                     - ✅· `GaloisRepresentation.IsHardlyRamified.exists_line_with_locally_unramified_quotCharacter`
@@ -2139,57 +3619,109 @@ entries file). To add/remove/annotate a node, edit
                                                                         - ✅· `serre_elimination_dihedral`
                                                                             - ✅· `serre_elimination_dihedral_ray_class`
                                                                                 - ✅· `serre_elimination_dihedral_ray_class_of_eigenvector`
-                                                                                    - ❌🟪 `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                                    - ✅· `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                                        - ❌🟪 `character_globalFrob_sq_eq_one_of_narrow_exponent_two_ray_class`
+                                                                                        - ❌🟪 `exists_conj_image_localInertiaGroup_rat_ray_class`
                                                                         - ✅· `serre_elimination_alt4`
                                                                             - ✅· `odlyzko_bound_totallyComplex`
                                                                                 - ✅· `poitou_explicit_formula_bound`
-                                                                                    - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                    - ❌🟪 `completedClassZeta_exists`
+                                                                                    - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                        - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                        - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                        - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                    - ✅· `completedClassZeta_exists`
+                                                                                        - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                        - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                        - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                             - ✅· `exists_hardlyRamified_number_field`
                                                                                 - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                     - ✅· `discr_bound_of_kernel_field`
                                                                                         - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                            - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                         - ✅· `serre_elimination_sym4`
                                                                             - ✅· `odlyzko_bound_totallyComplex`
                                                                                 - ✅· `poitou_explicit_formula_bound`
-                                                                                    - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                    - ❌🟪 `completedClassZeta_exists`
+                                                                                    - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                        - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                        - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                        - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                    - ✅· `completedClassZeta_exists`
+                                                                                        - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                        - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                        - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                             - ✅· `exists_hardlyRamified_number_field`
                                                                                 - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                     - ✅· `discr_bound_of_kernel_field`
                                                                                         - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                            - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                         - ✅· `serre_elimination_alt5`
                                                                             - ✅· `odlyzko_bound_totallyComplex`
                                                                                 - ✅· `poitou_explicit_formula_bound`
-                                                                                    - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                    - ❌🟪 `completedClassZeta_exists`
+                                                                                    - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                        - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                        - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                        - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                    - ✅· `completedClassZeta_exists`
+                                                                                        - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                        - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                        - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                             - ✅· `exists_hardlyRamified_number_field`
                                                                                 - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                     - ✅· `discr_bound_of_kernel_field`
                                                                                         - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                            - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                         - ✅· `serre_elimination_psl`
                                                                             - ✅· `odlyzko_bound_totallyComplex`
                                                                                 - ✅· `poitou_explicit_formula_bound`
-                                                                                    - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                    - ❌🟪 `completedClassZeta_exists`
+                                                                                    - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                        - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                        - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                        - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                    - ✅· `completedClassZeta_exists`
+                                                                                        - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                        - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                        - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                             - ✅· `exists_hardlyRamified_number_field`
                                                                                 - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                     - ✅· `discr_bound_of_kernel_field`
                                                                                         - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                            - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                         - ✅· `serre_elimination_pgl`
                                                                             - ✅· `odlyzko_bound_totallyComplex`
                                                                                 - ✅· `poitou_explicit_formula_bound`
-                                                                                    - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                    - ❌🟪 `completedClassZeta_exists`
+                                                                                    - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                        - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                        - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                        - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                    - ✅· `completedClassZeta_exists`
+                                                                                        - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                        - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                        - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                             - ✅· `exists_hardlyRamified_number_field`
                                                                                 - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                     - ✅· `discr_bound_of_kernel_field`
                                                                                         - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                            - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                 - ✅· `GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular_of_residual_trivial_quotient`
                                                     - ✅· `GaloisRepresentation.IsHardlyRamified.exists_global_triangular_of_residual_trivial_quotient`
                                                         - ✅· `exists_equivariant_defect_coboundary`
@@ -2231,7 +3763,7 @@ entries file). To add/remove/annotate a node, edit
                                                     - ✅· `exists_mvPowerSeries_presentation_of_isWeaklyUniversal_isTraceGenerated`
                                                         - ❌🟪 `exists_minimal_mvPowerSeries_presentation`
                                                         - ❌🟪 `exists_relations_lt_of_minimal_mvPowerSeries_presentation`
-                                            - ❌🟪 `exists_weightTwoEigenform_residual_of_isIrreducible`
+                                            - ✅· `exists_weightTwoEigenform_residual_of_isIrreducible`
                                                 - ✅· `GaloisRepresentation.IsHardlyRamified.mod_three_reducible`
                                                     - ✅· `not_isAbsolutelyIrreducible`
                                                         - ✅· `serre_elimination`
@@ -2240,57 +3772,109 @@ entries file). To add/remove/annotate a node, edit
                                                                     - ✅· `serre_elimination_dihedral`
                                                                         - ✅· `serre_elimination_dihedral_ray_class`
                                                                             - ✅· `serre_elimination_dihedral_ray_class_of_eigenvector`
-                                                                                - ❌🟪 `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                                - ✅· `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                                    - ❌🟪 `character_globalFrob_sq_eq_one_of_narrow_exponent_two_ray_class`
+                                                                                    - ❌🟪 `exists_conj_image_localInertiaGroup_rat_ray_class`
                                                                     - ✅· `serre_elimination_alt4`
                                                                         - ✅· `odlyzko_bound_totallyComplex`
                                                                             - ✅· `poitou_explicit_formula_bound`
-                                                                                - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                - ❌🟪 `completedClassZeta_exists`
+                                                                                - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                    - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                    - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                    - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                - ✅· `completedClassZeta_exists`
+                                                                                    - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                    - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                    - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                         - ✅· `exists_hardlyRamified_number_field`
                                                                             - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                 - ✅· `discr_bound_of_kernel_field`
                                                                                     - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                        - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                            - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                            - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                            - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                     - ✅· `serre_elimination_sym4`
                                                                         - ✅· `odlyzko_bound_totallyComplex`
                                                                             - ✅· `poitou_explicit_formula_bound`
-                                                                                - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                - ❌🟪 `completedClassZeta_exists`
+                                                                                - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                    - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                    - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                    - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                - ✅· `completedClassZeta_exists`
+                                                                                    - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                    - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                    - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                         - ✅· `exists_hardlyRamified_number_field`
                                                                             - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                 - ✅· `discr_bound_of_kernel_field`
                                                                                     - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                        - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                            - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                            - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                            - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                     - ✅· `serre_elimination_alt5`
                                                                         - ✅· `odlyzko_bound_totallyComplex`
                                                                             - ✅· `poitou_explicit_formula_bound`
-                                                                                - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                - ❌🟪 `completedClassZeta_exists`
+                                                                                - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                    - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                    - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                    - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                - ✅· `completedClassZeta_exists`
+                                                                                    - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                    - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                    - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                         - ✅· `exists_hardlyRamified_number_field`
                                                                             - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                 - ✅· `discr_bound_of_kernel_field`
                                                                                     - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                        - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                            - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                            - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                            - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                     - ✅· `serre_elimination_psl`
                                                                         - ✅· `odlyzko_bound_totallyComplex`
                                                                             - ✅· `poitou_explicit_formula_bound`
-                                                                                - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                - ❌🟪 `completedClassZeta_exists`
+                                                                                - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                    - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                    - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                    - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                - ✅· `completedClassZeta_exists`
+                                                                                    - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                    - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                    - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                         - ✅· `exists_hardlyRamified_number_field`
                                                                             - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                 - ✅· `discr_bound_of_kernel_field`
                                                                                     - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                        - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                            - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                            - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                            - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                     - ✅· `serre_elimination_pgl`
                                                                         - ✅· `odlyzko_bound_totallyComplex`
                                                                             - ✅· `poitou_explicit_formula_bound`
-                                                                                - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                - ❌🟪 `completedClassZeta_exists`
+                                                                                - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                    - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                    - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                    - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                - ✅· `completedClassZeta_exists`
+                                                                                    - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                    - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                    - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                         - ✅· `exists_hardlyRamified_number_field`
                                                                             - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                 - ✅· `discr_bound_of_kernel_field`
                                                                                     - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                        - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                            - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                            - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                            - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                 - ✅· `GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular`
                                                     - ✅· `GaloisRepresentation.IsHardlyRamified.mod_three`
                                                         - ✅· `GaloisRepresentation.IsHardlyRamified.exists_line_with_locally_unramified_quotCharacter`
@@ -2307,57 +3891,109 @@ entries file). To add/remove/annotate a node, edit
                                                                             - ✅· `serre_elimination_dihedral`
                                                                                 - ✅· `serre_elimination_dihedral_ray_class`
                                                                                     - ✅· `serre_elimination_dihedral_ray_class_of_eigenvector`
-                                                                                        - ❌🟪 `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                                        - ✅· `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                                            - ❌🟪 `character_globalFrob_sq_eq_one_of_narrow_exponent_two_ray_class`
+                                                                                            - ❌🟪 `exists_conj_image_localInertiaGroup_rat_ray_class`
                                                                             - ✅· `serre_elimination_alt4`
                                                                                 - ✅· `odlyzko_bound_totallyComplex`
                                                                                     - ✅· `poitou_explicit_formula_bound`
-                                                                                        - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                        - ❌🟪 `completedClassZeta_exists`
+                                                                                        - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                            - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                            - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                            - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                        - ✅· `completedClassZeta_exists`
+                                                                                            - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                            - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                            - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                                 - ✅· `exists_hardlyRamified_number_field`
                                                                                     - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                         - ✅· `discr_bound_of_kernel_field`
                                                                                             - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                                - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                    - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                    - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                    - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                    - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                             - ✅· `serre_elimination_sym4`
                                                                                 - ✅· `odlyzko_bound_totallyComplex`
                                                                                     - ✅· `poitou_explicit_formula_bound`
-                                                                                        - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                        - ❌🟪 `completedClassZeta_exists`
+                                                                                        - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                            - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                            - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                            - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                        - ✅· `completedClassZeta_exists`
+                                                                                            - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                            - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                            - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                                 - ✅· `exists_hardlyRamified_number_field`
                                                                                     - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                         - ✅· `discr_bound_of_kernel_field`
                                                                                             - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                                - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                    - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                    - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                    - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                    - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                             - ✅· `serre_elimination_alt5`
                                                                                 - ✅· `odlyzko_bound_totallyComplex`
                                                                                     - ✅· `poitou_explicit_formula_bound`
-                                                                                        - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                        - ❌🟪 `completedClassZeta_exists`
+                                                                                        - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                            - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                            - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                            - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                        - ✅· `completedClassZeta_exists`
+                                                                                            - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                            - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                            - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                                 - ✅· `exists_hardlyRamified_number_field`
                                                                                     - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                         - ✅· `discr_bound_of_kernel_field`
                                                                                             - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                                - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                    - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                    - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                    - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                    - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                             - ✅· `serre_elimination_psl`
                                                                                 - ✅· `odlyzko_bound_totallyComplex`
                                                                                     - ✅· `poitou_explicit_formula_bound`
-                                                                                        - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                        - ❌🟪 `completedClassZeta_exists`
+                                                                                        - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                            - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                            - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                            - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                        - ✅· `completedClassZeta_exists`
+                                                                                            - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                            - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                            - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                                 - ✅· `exists_hardlyRamified_number_field`
                                                                                     - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                         - ✅· `discr_bound_of_kernel_field`
                                                                                             - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                                - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                    - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                    - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                    - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                    - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                             - ✅· `serre_elimination_pgl`
                                                                                 - ✅· `odlyzko_bound_totallyComplex`
                                                                                     - ✅· `poitou_explicit_formula_bound`
-                                                                                        - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                        - ❌🟪 `completedClassZeta_exists`
+                                                                                        - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                            - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                            - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                            - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                        - ✅· `completedClassZeta_exists`
+                                                                                            - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                            - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                            - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                                 - ✅· `exists_hardlyRamified_number_field`
                                                                                     - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                         - ✅· `discr_bound_of_kernel_field`
                                                                                             - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                                - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                                    - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                                    - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                                    - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                                    - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                     - ✅· `GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular_of_residual_trivial_quotient`
                                                         - ✅· `GaloisRepresentation.IsHardlyRamified.exists_global_triangular_of_residual_trivial_quotient`
                                                             - ✅· `exists_equivariant_defect_coboundary`
@@ -2399,7 +4035,39 @@ entries file). To add/remove/annotate a node, edit
                                                         - ✅· `exists_mvPowerSeries_presentation_of_isWeaklyUniversal_isTraceGenerated`
                                                             - ❌🟪 `exists_minimal_mvPowerSeries_presentation`
                                                             - ❌🟪 `exists_relations_lt_of_minimal_mvPowerSeries_presentation`
-                                        - ❌🟪 `exists_weightTwoEigenform_trace_eq_of_residually_reducible`
+                                                - ❌🟪 `brauer_induction_trivial_character`
+                                                - ❌🟪 `exists_descended_heckeSystem_of_solvable`
+                                                - ❌🟪 `exists_heckeField_system_of_witness_of_pieces`
+                                                - ❌🟪 `exists_heckePackage_of_seed`
+                                                - ❌🟪 `exists_moretBailly_seed_of_five_le`
+                                                - ❌🟪 `exists_threeadicRealization_of_witness`
+                                                - ❌🟪 `exists_threeadic_realization_of_heckePackage`
+                                                - ❌🟪 `threeadicRealization_det_cyclotomic_of_witness`
+                                                - ❌🟪 `threeadicRealization_isFlat_of_witness`
+                                                - ❌🟪 `threeadicRealization_isTameAtTwo_of_witness`
+                                                - ❌🟪 `threeadicRealization_isUnramified_of_witness`
+                                            - ❌🟪 `IsFlatPointsGroupAt.of_injective`
+                                            - ❌🟪 `IsFlatPointsGroupAt.prod`
+                                            - ❌🟪 `TaylorWilesSystem.exists_patchedModule.`
+                                            - ❌🟪 `brauer_induction_trivial_character`
+                                            - ❌🟪 `exists_descended_heckeSystem_of_solvable`
+                                            - ❌🟪 `exists_discr_factorization_le_of_finrank_le`
+                                            - ❌🟪 `exists_heckeField_system_of_witness_of_pieces`
+                                            - ❌🟪 `exists_heckePackage_of_seed`
+                                            - ❌🟪 `exists_isRegular_ofList_eq_maximalIdeal_mvPowerSeries`
+                                            - ❌🟪 `exists_moretBailly_seed_of_five_le`
+                                            - ❌🟪 `exists_taylorWilesTower.`
+                                            - ❌🟪 `exists_threeadicRealization_of_witness`
+                                            - ❌🟪 `exists_threeadic_realization_of_heckePackage`
+                                            - ❌🟪 `exists_weaklyUniversalOnIdentified_framed_finiteTests.`
+                                            - ❌🟪 `isNoetherianRing_mvPowerSeries.`
+                                            - ❌🟪 `isWeaklyUniversalOnIdentifiedDeformation_of_finiteTests.`
+                                            - ❌🟪 `not_isIrreducible_of_charpoly_coeff_one_eq_sum_monoidHom`
+                                            - ❌🟪 `threeadicRealization_det_cyclotomic_of_witness`
+                                            - ❌🟪 `threeadicRealization_isFlat_of_witness`
+                                            - ❌🟪 `threeadicRealization_isTameAtTwo_of_witness`
+                                            - ❌🟪 `threeadicRealization_isUnramified_of_witness`
+                                        - ✅· `exists_weightTwoEigenform_trace_eq_of_residually_reducible`
                                             - ✅· `GaloisRepresentation.IsHardlyRamified.mod_three`
                                                 - ✅· `GaloisRepresentation.IsHardlyRamified.exists_line_with_locally_unramified_quotCharacter`
                                                     - ✅· `exists_line_with_unramified_quotCharacter_at_three`
@@ -2415,57 +4083,109 @@ entries file). To add/remove/annotate a node, edit
                                                                     - ✅· `serre_elimination_dihedral`
                                                                         - ✅· `serre_elimination_dihedral_ray_class`
                                                                             - ✅· `serre_elimination_dihedral_ray_class_of_eigenvector`
-                                                                                - ❌🟪 `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                                - ✅· `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                                    - ❌🟪 `character_globalFrob_sq_eq_one_of_narrow_exponent_two_ray_class`
+                                                                                    - ❌🟪 `exists_conj_image_localInertiaGroup_rat_ray_class`
                                                                     - ✅· `serre_elimination_alt4`
                                                                         - ✅· `odlyzko_bound_totallyComplex`
                                                                             - ✅· `poitou_explicit_formula_bound`
-                                                                                - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                - ❌🟪 `completedClassZeta_exists`
+                                                                                - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                    - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                    - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                    - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                - ✅· `completedClassZeta_exists`
+                                                                                    - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                    - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                    - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                         - ✅· `exists_hardlyRamified_number_field`
                                                                             - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                 - ✅· `discr_bound_of_kernel_field`
                                                                                     - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                        - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                            - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                            - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                            - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                     - ✅· `serre_elimination_sym4`
                                                                         - ✅· `odlyzko_bound_totallyComplex`
                                                                             - ✅· `poitou_explicit_formula_bound`
-                                                                                - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                - ❌🟪 `completedClassZeta_exists`
+                                                                                - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                    - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                    - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                    - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                - ✅· `completedClassZeta_exists`
+                                                                                    - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                    - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                    - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                         - ✅· `exists_hardlyRamified_number_field`
                                                                             - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                 - ✅· `discr_bound_of_kernel_field`
                                                                                     - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                        - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                            - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                            - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                            - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                     - ✅· `serre_elimination_alt5`
                                                                         - ✅· `odlyzko_bound_totallyComplex`
                                                                             - ✅· `poitou_explicit_formula_bound`
-                                                                                - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                - ❌🟪 `completedClassZeta_exists`
+                                                                                - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                    - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                    - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                    - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                - ✅· `completedClassZeta_exists`
+                                                                                    - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                    - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                    - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                         - ✅· `exists_hardlyRamified_number_field`
                                                                             - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                 - ✅· `discr_bound_of_kernel_field`
                                                                                     - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                        - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                            - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                            - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                            - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                     - ✅· `serre_elimination_psl`
                                                                         - ✅· `odlyzko_bound_totallyComplex`
                                                                             - ✅· `poitou_explicit_formula_bound`
-                                                                                - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                - ❌🟪 `completedClassZeta_exists`
+                                                                                - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                    - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                    - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                    - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                - ✅· `completedClassZeta_exists`
+                                                                                    - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                    - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                    - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                         - ✅· `exists_hardlyRamified_number_field`
                                                                             - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                 - ✅· `discr_bound_of_kernel_field`
                                                                                     - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                        - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                            - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                            - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                            - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                                     - ✅· `serre_elimination_pgl`
                                                                         - ✅· `odlyzko_bound_totallyComplex`
                                                                             - ✅· `poitou_explicit_formula_bound`
-                                                                                - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                                - ❌🟪 `completedClassZeta_exists`
+                                                                                - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                                    - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                                    - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                                    - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                                - ✅· `completedClassZeta_exists`
+                                                                                    - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                                    - ❌🟪 `heckeThetaSeries_analysis`
+                                                                                    - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                                         - ✅· `exists_hardlyRamified_number_field`
                                                                             - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                                 - ✅· `discr_bound_of_kernel_field`
                                                                                     - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                                        - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                        - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                            - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                            - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                            - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                            - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                             - ✅· `GaloisRepresentation.IsHardlyRamified.exists_global_triangular_of_residual_trivial_quotient`
                                                 - ✅· `exists_equivariant_defect_coboundary`
                                                     - ✅· `exists_omega_cocycle_coboundary`
@@ -2474,6 +4194,22 @@ entries file). To add/remove/annotate a node, edit
                                                     - ✅· `trivial_component_hom_vanishes`
                                                         - ✅· `trivial_component_vanishes_on_localInertia_at_three`
                                                             - ❌🟪 `trivial_component_vanishes_of_hopf_package`
+                                            - ❌🟪 `IsFlatPointsGroupAt.of_surjective`
+                                            - ❌🟪 `algebraMap_cyclotomicCharacter_eq_one_of_mem_localInertiaGroup_two`
+                                            - ❌🟪 `algebraMap_cyclotomicCharacter_map_adicArithFrob_two_eq_two`
+                                            - ❌🟪 `character_eq_pow_cyclotomicCharacter_of_unramified_outside_p`
+                                            - ❌🟪 `eisenstein_trivial_sub_extension_cc_eq_zero_on_inertia_two_of_five_le`
+                                            - ❌🟪 `eisenstein_trivial_sub_extension_ker_vanishing_of_eigenspace_trivial`
+                                            - ❌🟪 `exists_conjugator_padicGalois_eq_adic_at_p`
+                                            - ❌🟪 `exists_cyclotomicCharacter_residual_ne_one`
+                                            - ❌🟪 `exists_inertia_connectedEtale_complement_of_isFlatAt`
+                                            - ❌🟪 `exists_ribet_walk_stable_line`
+                                            - ❌🟪 `exists_uniform_conj_decomposition_two_padic`
+                                            - ❌🟪 `exists_valuationRing_stable_lattice`
+                                            - ❌🟪 `hasFlatProlongationAt_lattice_pPow_of_generic_iso`
+                                            - ❌🟪 `herbrand_omega_inv_classGroup_eigenspace_trivial_of_five_le`
+                                            - ❌🟪 `mem_of_isOpen_of_localInertiaGroup_le_of_adicArithFrob_mem_two`
+                                            - ❌🟪 `exists_muType_coordinate`
                     - ✅· `residual_charFrob_eq_of_family`
                         - ✅· `IsHardlyRamified.three_adic`
                             - ✅· `GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular`
@@ -2492,57 +4228,109 @@ entries file). To add/remove/annotate a node, edit
                                                         - ✅· `serre_elimination_dihedral`
                                                             - ✅· `serre_elimination_dihedral_ray_class`
                                                                 - ✅· `serre_elimination_dihedral_ray_class_of_eigenvector`
-                                                                    - ❌🟪 `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                    - ✅· `anti_equivariant_ratio_character_eq_one_ray_class`
+                                                                        - ❌🟪 `character_globalFrob_sq_eq_one_of_narrow_exponent_two_ray_class`
+                                                                        - ❌🟪 `exists_conj_image_localInertiaGroup_rat_ray_class`
                                                         - ✅· `serre_elimination_alt4`
                                                             - ✅· `odlyzko_bound_totallyComplex`
                                                                 - ✅· `poitou_explicit_formula_bound`
-                                                                    - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                    - ❌🟪 `completedClassZeta_exists`
+                                                                    - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                        - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                        - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                        - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                    - ✅· `completedClassZeta_exists`
+                                                                        - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                        - ❌🟪 `heckeThetaSeries_analysis`
+                                                                        - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                             - ✅· `exists_hardlyRamified_number_field`
                                                                 - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                     - ✅· `discr_bound_of_kernel_field`
                                                                         - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                            - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                            - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                         - ✅· `serre_elimination_sym4`
                                                             - ✅· `odlyzko_bound_totallyComplex`
                                                                 - ✅· `poitou_explicit_formula_bound`
-                                                                    - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                    - ❌🟪 `completedClassZeta_exists`
+                                                                    - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                        - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                        - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                        - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                    - ✅· `completedClassZeta_exists`
+                                                                        - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                        - ❌🟪 `heckeThetaSeries_analysis`
+                                                                        - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                             - ✅· `exists_hardlyRamified_number_field`
                                                                 - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                     - ✅· `discr_bound_of_kernel_field`
                                                                         - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                            - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                            - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                         - ✅· `serre_elimination_alt5`
                                                             - ✅· `odlyzko_bound_totallyComplex`
                                                                 - ✅· `poitou_explicit_formula_bound`
-                                                                    - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                    - ❌🟪 `completedClassZeta_exists`
+                                                                    - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                        - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                        - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                        - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                    - ✅· `completedClassZeta_exists`
+                                                                        - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                        - ❌🟪 `heckeThetaSeries_analysis`
+                                                                        - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                             - ✅· `exists_hardlyRamified_number_field`
                                                                 - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                     - ✅· `discr_bound_of_kernel_field`
                                                                         - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                            - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                            - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                         - ✅· `serre_elimination_psl`
                                                             - ✅· `odlyzko_bound_totallyComplex`
                                                                 - ✅· `poitou_explicit_formula_bound`
-                                                                    - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                    - ❌🟪 `completedClassZeta_exists`
+                                                                    - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                        - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                        - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                        - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                    - ✅· `completedClassZeta_exists`
+                                                                        - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                        - ❌🟪 `heckeThetaSeries_analysis`
+                                                                        - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                             - ✅· `exists_hardlyRamified_number_field`
                                                                 - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                     - ✅· `discr_bound_of_kernel_field`
                                                                         - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                            - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                            - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                                         - ✅· `serre_elimination_pgl`
                                                             - ✅· `odlyzko_bound_totallyComplex`
                                                                 - ✅· `poitou_explicit_formula_bound`
-                                                                    - ❌🟪 `DedekindContinuation.weil_explicit_formula_F`
-                                                                    - ❌🟪 `completedClassZeta_exists`
+                                                                    - ✅· `DedekindContinuation.weil_explicit_formula_F`
+                                                                        - ❌🟪 `DedekindContinuation.xi_logDeriv_gap_bound`
+                                                                        - ❌🟪 `dedekindZeta_logDeriv_eq_neg_tsum`
+                                                                        - ❌🟪 `poitouPhi_strip_decay_sq`
+                                                                    - ✅· `completedClassZeta_exists`
+                                                                        - ❌🟪 `archimedeanGammaProfile_exists`
+                                                                        - ❌🟪 `heckeThetaSeries_analysis`
+                                                                        - ❌🟪 `heckeThetaSeries_functionalEquation`
                                                             - ✅· `exists_hardlyRamified_number_field`
                                                                 - ✅· `exists_hardlyRamified_number_field_of_card`
                                                                     - ✅· `discr_bound_of_kernel_field`
                                                                         - ✅· `kernel_field_differentIdeal_exponent_at_three`
-                                                                            - ❌🟪 `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                            - ✅· `exists_prime_over_three_differentIdeal_exponent_bound_of_wild`
+                                                                                - ❌🟪 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd`
+                                                                                - ❌🟪 `ramificationIdx'_comap_maximalIdeal_eq_local`
+                                                                                - ❌🟪 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+                                                                                - ❌🟪 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package`
                                 - ✅· `GaloisRepresentation.IsHardlyRamified.exists_frobenius_triangular_of_residual_trivial_quotient`
                                     - ✅· `GaloisRepresentation.IsHardlyRamified.exists_global_triangular_of_residual_trivial_quotient`
                                         - ✅· `exists_equivariant_defect_coboundary`

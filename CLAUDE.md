@@ -23,6 +23,15 @@ must never strand its remaining leaves unowned. Track the new leaves in
 progress-entries.json (wip flags at dispatch) as part of the same
 integration step.
 
+**"Merge FIRST, then dispatch" is an ordering, not a sequence of words**
+(violated 2026-07-25). A worktree fast-forwards to main at dispatch, so a
+successor dispatched at a leaf that still lives only on an unmerged branch
+fast-forwards to a main WITHOUT that leaf and finds nothing — a phantom
+dispatch manufactured out of a correct report. It happened with three
+`Deformation.lean` successors sent off the strength of an agent's report
+while its branch was still resolving a conflict. If the branch cannot be
+merged yet, the successors WAIT; queue them, do not dispatch them.
+
 Same-FILE leaves may get concurrent owners (Deyao, 2026-07-22): each
 agent works in its own git worktree on its own branch, and merging
 concurrent edits to one file is what git is designed to handle — leaves
@@ -146,6 +155,60 @@ fill in missing proofs, and iterate walking the tree — decompose deep
 nodes into shallower ones, prove the provable ones — until the entire
 tree is written and `lake build` passes the sorry gate. `PROGRESS.md`
 is the authoritative tree.
+
+**Counting the frontier: DIRECT vs TRANSITIVE sorries, and the comment
+trap (2026-07-25 — both of these caused phantom dispatches).**
+
+Two different numbers are both called "the frontier" and they are not
+interchangeable:
+
+- *Direct*: the declaration's own body contains `sorry`. This is what
+  Lean's `declaration uses 'sorry'` warning reports, and it is the set of
+  leaves that can be WORKED ON. Currently 85.
+- *Transitive*: the declaration's proof term reaches `sorryAx`, i.e. it is
+  sorried **or consumes something sorried**. This is what
+  `ProgressCensus.lean`'s census reports. Currently 86.
+
+A consumer of a sorried leaf is transitively sorried but has NOTHING to
+prove — dispatching an agent at it wastes a worker. Two whole clusters were
+dispatched this way (`Chebotarev.lean`, and three leaves in `Flat.lean`)
+before agents reported back that their targets were already proven. **Build
+task lists from the DIRECT set; use the transitive set only for judging
+whether a subtree still blocks the root.**
+
+**Third category, invisible to BOTH counts: an ERRORED declaration**
+(2026-07-25). A declaration whose proof fails to elaborate — `maximum
+recursion depth`, a failing tactic, anything red — is `sorryAx`-tainted and
+poisons the transitive cone, but it emits **no** `declaration uses 'sorry'`
+warning and contains no `sorry` token in its source. So it is missed by the
+direct-sorry warning set, missed by a source scan, and its `.olean` goes
+stale, silently blocking every downstream module from building. Nobody is
+ever dispatched at it, because no frontier scan can see it.
+
+Found when `lineNumerator_mul_lineNumeratorNeg` in `WeilPairingDescent.lean`
+— PROVEN and verified clean in its author's worktree — began failing after
+merge with `maximum recursion depth has been reached`, blocking the whole
+file. It surfaced only because an agent working in that file happened to
+report it. **So: errors are a separate frontier that only a build or a
+per-file `diagnostics` reveals. Treat any hard error as an immediate defect
+with a named owner (CLAUDE.md's sorry-gate rule (b)), and do not assume a
+clean direct-sorry scan means a clean tree.** A proof that verified in one
+worktree can error on main; resource-limit `set_option`s are the usual fix.
+
+Second trap, same day: a naive `grep sorry` over sources counts the word
+inside DOCSTRINGS, and this development's docstrings discuss sorried leaves
+constantly. That inflated a scan to 144 "sorried declarations" against a
+true 85. Any frontier scan must strip block comments (nested `/- -/`) and
+line comments first, then attribute each surviving token to its enclosing
+declaration by walking BACKWARDS to the nearest declaration header —
+walking forwards mis-attributes a later declaration's sorry to an earlier
+proven one, which is exactly how `exists_hardlyRamifiedLift` was twice
+mislabelled open when it is proven.
+
+Related: stale `(sorry leaf)` / `(sorry node)` docstring LABELS on
+now-proven declarations are a third source of phantom work, since leaf
+lists get harvested from them. Correct them when found rather than leaving
+them to mislead the next dispatch.
 
 **Tree markers in `PROGRESS.md` (Deyao, 2026-07-17): two symbols per
 item.** Every tree item starts with exactly two symbols — first symbol
@@ -271,9 +334,48 @@ not errors — keep the tree warning-clean by ordinary discipline.
 ## No lake build in iterations; trust the MCP diagnostics
 
 (Deyao, 2026-07-21.) Skip `lake build` inside work iterations — the
-lean-lsp MCP diagnostics are the verification gate; the Stop hook still
-builds at the endgame. (A single-module `lake build` to refresh the
+**report-MCP** `diagnostics` call is the verification gate; the Stop hook
+still builds at the endgame. (A single-module `lake build` to refresh the
 daemon's state is fine when the staleness note matters.)
+
+**The `lean-lsp` MCP is GONE (Deyao, 2026-07-25): removed from `.mcp.json`
+entirely, because it did not work and is not needed.** The per-worktree
+`report-flt-lean-N` servers are the only Lean tooling. That means the
+`lean_leansearch` / `lean_loogle` / `lean_local_search` / `lean_run_code` /
+`lean_multi_attempt` tools no longer exist — task prompts must not offer
+them. Substitutes: search mathlib by reading it (`grep`/`Grep` over
+`.lake/packages/mathlib`) and by the names other owners have already
+recorded in docstrings; prototype in a throwaway scratch module verified
+through the report MCP, which is the same loop the performance rule already
+prescribes and is what agents were mostly doing anyway.
+
+## Verify in a scratch module, not in the giant file
+
+(Deyao, 2026-07-25, from a measurement — this is the fleet's single
+biggest throughput lever.) **Develop against a throwaway scratch module
+that imports only what you need, and do exactly ONE final blocking
+verify against the real target file.** Delete the scratch before
+committing. Agents who worked this way cut their round trip from **~30
+minutes to ~1 minute**; several discovered it independently and reported
+it unprompted.
+
+Why, measured rather than assumed: **elaboration is single-threaded —
+one core per file.** Sampling every `lean --worker` on this 96-core
+machine (a `/proc` utime+stime delta, *not* `ps pcpu`, which is a
+lifetime average and misleads) found 101 workers consuming **11.1 cores
+between them**, 77 of them idle, the busiest at 1.29 cores. iowait was
+0–3%; RAM had 1.5 TB free. So the fleet is **not** disk-, CPU- or
+memory-bound, and moving `.lake` to tmpfs or deduplicating the 62
+mathlib copies would buy nothing. What costs wall-clock is that a
+15k-line file such as `Modularity/Interface.lean` re-elaborates on ONE
+core however many are idle beside it. The only way to go faster is to
+elaborate less.
+
+Corollaries: batch edits and verify once rather than per-edit; a
+client-side timeout means the server is still elaborating, so re-issuing
+attaches rather than restarting (see the single-flight section); and
+splitting oversized modules is what converts idle cores into throughput,
+because the file is the unit of elaboration.
 
 ## Sorry and have discipline (glue-first, no floating)
 
@@ -289,8 +391,9 @@ daemon's state is fine when the staleness note matters.)
   remainder, never `(by sorry)` as an application argument.
 - **Every bound `have`/`let` must be consumed** (Deyao, 2026-07-22).
   Prune unused ones before committing (verify each prune compiles).
-  Enforced by the PreToolUse hook `.claude/lean-pretool-reminder.py`,
-  which fires before every lean-lsp call.
+  Enforced by the PostToolUse hook `.claude/unused-binding-check.py`,
+  which fires after every report-MCP `diagnostics` call. (It used to be a
+  PreToolUse hook on `lean-lsp`; that MCP was removed 2026-07-25.)
 - **Never use `private` to dodge the free-floating check** — open the
   consumer sorry first, always top-down.
 

@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: feedback
   originSessionId: bc388a7e-3d6c-4f64-9f93-3ae0c1bfe511
-  modified: 2026-07-24T04:40:18.266Z
+  modified: 2026-07-25T11:50:41.989Z
 ---
 
 Deyao (2026-07-24): "remember how to restart yourself, and if you need to
@@ -30,14 +30,21 @@ f8fcb103 → 1e467fbd → bc388a7e, windows fork → fork2):**
    kill→continue pattern of [[stop-hook-tmux-restart]]): sleep 30; `tmux
    kill-window -t agent-2:<old>`; sleep 10; `tmux send-keys -t
    agent-2:<new> 'continue' Enter`.
-4. LAST message of the final turn = the handover note the fork will read:
-   (a) write its new session id into `.claude/stop-hook-session-id`
-   ([[flt-stop-hook-session-guard]]); (b) copy
-   `~/.claude/projects/-home-chend-flt-lean/<old-id>/subagents/agent-*.jsonl`
-   into its own session's `subagents/`; (c) SendMessage "continue" to every
-   live-at-handoff agent BY ID — list them all in the note with any standing
-   per-agent instructions ([[kill-recovery-just-resume]]); (d) record repo
-   HEAD / pool / queue counts.
+4. **Write NOTHING for the fork — no handover note, not even a role-
+   disambiguation line** (Deyao, 2026-07-25, correcting earlier practice twice
+   over). Claude Code is a pure function of (transcript + tool-call output) →
+   next token. The fork inherits this session's EXACT transcript, so anything
+   the parent could write down, the child can derive itself — including WHICH
+   SIDE IT IS: `tmux list-windows -t agent-2` shows the old window gone and the
+   new one active, and its own session id is in its scratchpad path. A note adds
+   zero information and costs the context it was meant to preserve.
+
+   The child therefore just resumes and re-derives state from the world: write
+   its own session id into `.claude/stop-hook-session-id`
+   ([[flt-stop-hook-session-guard]]), copy the old session's
+   `subagents/agent-*.jsonl` across, resume live agents by id
+   ([[kill-recovery-just-resume]]) — all of which is already in the inherited
+   context and in CLAUDE.md, which is why it need not be restated.
 
 **Why:** subagents and MCP servers are children of the session process —
 they die at the kill and the fork resumes them from copied transcripts;

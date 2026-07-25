@@ -1157,13 +1157,17 @@ theorem finite_setOf_natCard_quotient_eq (F : Type*) [Field F] [NumberField F]
     exact HeightOneSpectrum.ext h
 
 open IsDedekindDomain in
-/-- **Uniform tail bound for the higher-degree places** (sorry leaf): the
+/-- **Uniform tail bound for the higher-degree places**: the
 sum of `#(𝓞 F / P)⁻¹` over the finite places whose residue cardinality
-is NOT prime (residue degree `≥ 2` over `ℚ`) is finite. Intended proof:
+is NOT prime (residue degree `≥ 2` over `ℚ`) is finite. PROVEN here:
 such a place has `#(𝓞 F / P) = p ^ f ≥ p ^ 2` for `p` its residue
-characteristic; at most `[F : ℚ]` places share a residue characteristic
-(`Ideal.card_primesOverFinset_le_finrank`), so the sum is at most
-`[F : ℚ] · ∑_p p⁻²  < ⊤`. -/
+characteristic (`FiniteField.card`, with `f ≥ 2` exactly because the
+residue cardinality is not prime), so each term is at most `p⁻²`;
+fibring over the residue characteristic (`ENNReal.tsum_fiberwise`), the
+fibre over a non-prime is empty and the fibre over a prime `p` injects
+into the primes of `𝓞 F` over `(p)`, of which there are at most
+`[F : ℚ]` (`Ideal.card_primesOverFinset_le_finrank`), so the sum is at
+most `[F : ℚ] · ∑_p p⁻² < ⊤`. -/
 theorem tsum_not_prime_natCard_rpow_neg_one_ne_top
     (F : Type*) [Field F] [NumberField F] :
     ∑' P : {P : HeightOneSpectrum (𝓞 F) //
