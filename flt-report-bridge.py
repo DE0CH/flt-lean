@@ -27,10 +27,26 @@ in any other. Every direction is counted and logged.
 Local FIFOs are opened O_RDWR so this process is always its own reader/writer:
 client connect/disconnect cycles can never EOF or SIGPIPE the pump.
 
-DO NOT clear .report-server/state.json when restarting this pump. The remote
-lake serve persists across reconnects and therefore stays INITIALIZED; it errors
-if sent `initialize` twice. Only a restart of the REMOTE unit invalidates the
-handshake.
+HANDSHAKE INVALIDATION, and why this pump owns it (learned the hard way
+2026-07-25). Do NOT clear .report-server/state.json merely because this pump
+restarted: the remote lake serve persists across reconnects, stays INITIALIZED,
+and errors if sent `initialize` twice. But when the REMOTE unit restarts, the
+marker becomes a lie in the other direction — the next client skips `initialize`
+and sends `didChange` to a fresh watchdog, which dies with
+
+    Cannot read LSP request: Expected JSON-RPC request, got: {didChange...}
+
+taking lake serve with it, restarting the unit, dropping this ssh, and looping.
+That is exactly what happened to 44 instances after the machines were migrated,
+and it was invisible to clients: they saw only "response pipe EOF".
+
+The old rule made clearing the marker the ORCHESTRATOR's manual job, which is
+precisely the kind of step that gets skipped. So this pump does it instead: it
+reads the remote unit's ActiveEnterTimestamp at startup and compares it with
+`.report-server/remote-session`. Different value => a different lake serve
+process => the marker (handshake AND open-document map, both of which describe
+the old process) is deleted. Same value => the marker is kept untouched. One
+extra ssh per pump start, and the invariant becomes self-healing.
 
 Usage: flt-report-bridge.py <instance>
        (host from ~/.flt-worker-host/<instance>)
@@ -44,10 +60,62 @@ import time
 
 HOME = "/home/chend"
 
+# systemd --user exports the GPG agent's SSH_AUTH_SOCK, which does not hold the
+# key; with BatchMode that fails as exit 255 and the unit restart-loops. Bypass
+# agents entirely (diagnosed 2026-07-25).
+SSH_OPTS = [
+    "-o", "BatchMode=yes",
+    "-o", "IdentityAgent=none",
+    "-o", "IdentitiesOnly=yes",
+    "-i", os.path.join(HOME, ".ssh", "id_ed25519"),
+    "-o", "ConnectTimeout=10",
+    "-o", "StrictHostKeyChecking=accept-new",
+]
+
 
 def log(msg):
     sys.stderr.write(f"flt-report-bridge: {msg}\n")
     sys.stderr.flush()
+
+
+def sync_handshake_marker(host, inst, sockdir):
+    """Drop the client-side LSP state if the remote lake serve is a NEW process.
+
+    See the module docstring: a marker describing a dead server makes the next
+    client skip `initialize`, which kills the fresh server on its first request.
+    """
+    try:
+        r = subprocess.run(
+            ["ssh", "-T", *SSH_OPTS, host,
+             f"systemctl --user show -p ActiveEnterTimestamp --value "
+             f"flt-lake-socket@{inst}"],
+            capture_output=True, text=True, timeout=30)
+        session = r.stdout.strip()
+    except Exception as exc:
+        log(f"{inst}: cannot read remote session id ({exc!r}); leaving marker alone")
+        return
+    if not session:
+        log(f"{inst}: remote unit reports no start time; leaving marker alone")
+        return
+
+    marker = os.path.join(sockdir, "remote-session")
+    try:
+        previous = open(marker).read().strip()
+    except OSError:
+        previous = ""
+    if previous == session:
+        log(f"{inst}: remote session unchanged; keeping LSP state")
+        return
+
+    state = os.path.join(sockdir, "state.json")
+    try:
+        os.remove(state)
+        log(f"{inst}: remote session changed ({previous or 'unknown'} -> {session}); "
+            f"cleared state.json so the next client re-initializes")
+    except FileNotFoundError:
+        log(f"{inst}: remote session {session}; no state.json to clear")
+    with open(marker, "w") as fh:
+        fh.write(session + "\n")
 
 
 def main():
@@ -71,23 +139,18 @@ def main():
             log(f"{inst}: missing FIFO {p}")
             return 1
 
+    sync_handshake_marker(host, inst, sockdir)
+
     req_fd = os.open(req, os.O_RDWR)    # O_RDWR: never EOF when a client leaves
     resp_fd = os.open(resp, os.O_RDWR)
 
     remote_sock = f"{inst}/.report-server/lake.sock"
     ssh = subprocess.Popen(
-        ["ssh", "-T",
-         "-o", "BatchMode=yes",
+        ["ssh", "-T", *SSH_OPTS,
+         # Hold the channel open through the multi-hour silences of a
+         # single-threaded elaboration.
          "-o", "ServerAliveInterval=30",
          "-o", "ServerAliveCountMax=1000",
-         # systemd --user exports the GPG agent's SSH_AUTH_SOCK, which does not
-         # hold the key; with BatchMode that fails as exit 255 and the unit
-         # restart-loops. Bypass agents entirely (diagnosed 2026-07-25).
-         "-o", "IdentityAgent=none",
-         "-o", "IdentitiesOnly=yes",
-         "-i", os.path.join(HOME, ".ssh", "id_ed25519"),
-         "-o", "ConnectTimeout=10",
-         "-o", "StrictHostKeyChecking=accept-new",
          host,
          f"exec socat - UNIX-CONNECT:{remote_sock}"],
         stdin=subprocess.PIPE, stdout=subprocess.PIPE)
