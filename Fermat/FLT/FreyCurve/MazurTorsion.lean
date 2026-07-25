@@ -871,6 +871,328 @@ theorem WeierstrassCurve.no_torsion_order_15 (E : WeierstrassCurve ℚ)
   · rw [addOrderOf_nsmul' Q (by decide), hQ]; decide
   · rw [addOrderOf_nsmul' Q (by decide), hQ]; decide
 
+/-!
+### The level-`16` descent: `X_1(16)` in elementary form (2026-07-25)
+
+The docstring of `not_halved_order_eight_point` below recorded the node as
+IRREDUCIBLE, needing "the genus-`2` curve `X_1(16)` and a determination of
+its rational points (Ogg's descent, or Chabauty on its Jacobian)". That
+audit is now SUPERSEDED: the whole chain is elementary, and everything
+between the elliptic curve and a single classical Diophantine statement is
+PROVEN below.
+
+**The route.** Let `R` have order `16`, and set `P = 2R`, `Q = 4R`,
+`T = 8R`. Translate the rational `2`-torsion abscissa `θ = x(T)` to the
+origin and complete the square, putting the curve in the form
+`Y² = X³ + aX² + bX` with `T = (0,0)`. In that form the duplication
+formula collapses to a single square:
+
+  `X(2S) = ((X(S)² − b) / (2Y(S)))²`   (`doubling_short`)
+
+Running it along `R → P → Q → T` forces, in order:
+`b = X_Q²`; `X_Q = g²` (it is a double); `X_P = f²` (likewise); so
+`b = g⁴`. Scaling `(X, Y) ↦ (X/g², Y/g³)` normalises the curve to
+`η² = ξ³ + (s² − 2)ξ² + ξ` with `Q = (1, s)`, `ξ_P = n²`, `n = f/g`.
+The relation `2P = Q` then reads `4s²n⁴ = (n² − 1)⁴` (`param_sq`) — this
+is the genus-`0` level-`8` structure — and feeding it into `2R = P`
+yields, after the palindromic substitution `z = ξ + 1/ξ`, the identity
+
+  `(n(ξ²+1) − 2n³ξ)² = (ξ(n⁴−1))²`   (`param_dichotomy`)
+
+whose two sign branches are exchanged by `n ↦ −n`. Either way
+`(n²−1)(n²+1)(n²+2n−1)` is a rational square (`sextic_of_param`). That
+sextic is an affine model of `X_1(16)`; the excluded values `n ∈ {0, ±1}`
+are exactly its cusps (`n² = 1` ⟺ `x(P) = x(Q)`, impossible for orders
+`8` and `4`).
+
+Sanity-checked numerically before formalising (PARI/GP): `u = 2` gives
+`s = 1/4`, the curve `y² = x³ − (31/16)x² + x` with `P = (2, 3/2)` of
+order exactly `8`, `Q = 2P = (1, 1/4)` of order `4`, `T = 4P = (0,0)`;
+and the factorisation `(2n³+n⁴−1)² − 4n² = (n−1)(n+1)³(n²+1)(n²+2n−1)`
+underlying `sextic_of_param` was confirmed symbolically.
+
+**What is left.** Two elementary leaves, neither modular:
+`exists_chain_coords` (pure `Affine.Point` plumbing, zero arithmetic
+content) and `not_sextic_square` (a classical descent — see its
+docstring, which records the complete two-case argument and the one
+genuine mathlib gap it needs).
+-/
+
+namespace MazurSixteen
+
+/-- **Duplication in short form** (PROVEN — pure field algebra): on
+`Y² = X³ + aX² + bX` the doubled abscissa is the square
+`((X² − b)/(2Y))²`. This is the collapse that drives the whole level-`16`
+descent: it makes every doubled abscissa visibly a square, which is what
+turns the `16`-torsion chain into a sequence of square conditions. -/
+lemma doubling_short {a b X Y L X' : ℚ}
+    (heq : Y ^ 2 = X ^ 3 + a * X ^ 2 + b * X)
+    (hL : L * (2 * Y) = 3 * X ^ 2 + 2 * a * X + b)
+    (hX' : L ^ 2 - a - X - X = X') :
+    X' * (2 * Y) ^ 2 = (X ^ 2 - b) ^ 2 := by
+  linear_combination (L * (2 * Y) + (3 * X ^ 2 + 2 * a * X + b)) * hL
+    - 4 * (a + X + X) * heq - (2 * Y) ^ 2 * hX'
+
+/-- **Reduction to short form** (PROVEN — pure field algebra): completing
+the square and translating a `2`-torsion abscissa `θ` to the origin turns
+the general Weierstrass equation into `Y² = X³ + aX² + bX`. The constant
+term vanishes precisely because `θ` is a root of the `2`-division cubic. -/
+lemma shift_equation {a₁ a₂ a₃ a₄ a₆ θ x y : ℚ}
+    (heq : y ^ 2 + a₁ * x * y + a₃ * y = x ^ 3 + a₂ * x ^ 2 + a₄ * x + a₆)
+    (hθ : 4 * θ ^ 3 + (a₁ ^ 2 + 4 * a₂) * θ ^ 2 + (2 * a₁ * a₃ + 4 * a₄) * θ
+        + (a₃ ^ 2 + 4 * a₆) = 0) :
+    (y + (a₁ * x + a₃) / 2) ^ 2 =
+      (x - θ) ^ 3 + (3 * θ + (a₁ ^ 2 + 4 * a₂) / 4) * (x - θ) ^ 2
+        + (3 * θ ^ 2 + (a₁ ^ 2 + 4 * a₂) / 2 * θ + (2 * a₄ + a₁ * a₃) / 2) * (x - θ) := by
+  linear_combination heq + (1 / 4 : ℚ) * hθ
+
+/-- **The tangent slope in short form** (PROVEN — pure field algebra). -/
+lemma shift_slope {a₁ a₂ a₃ a₄ θ x y l : ℚ}
+    (hl : l * (2 * y + a₁ * x + a₃) = 3 * x ^ 2 + 2 * a₂ * x + a₄ - a₁ * y) :
+    (l + a₁ / 2) * (2 * (y + (a₁ * x + a₃) / 2)) =
+      3 * (x - θ) ^ 2 + 2 * (3 * θ + (a₁ ^ 2 + 4 * a₂) / 4) * (x - θ)
+        + (3 * θ ^ 2 + (a₁ ^ 2 + 4 * a₂) / 2 * θ + (2 * a₄ + a₁ * a₃) / 2) := by
+  linear_combination hl
+
+/-- **The doubled abscissa in short form** (PROVEN — `ring`). -/
+lemma shift_addX {a₁ a₂ θ x l : ℚ} :
+    (l + a₁ / 2) ^ 2 - (3 * θ + (a₁ ^ 2 + 4 * a₂) / 4) - (x - θ) - (x - θ) =
+      (l ^ 2 + a₁ * l - a₂ - x - x) - θ := by
+  ring
+
+/-- **The level-`8` relation** (PROVEN — pure field algebra): on the
+normalised curve `η² = ξ³ + (s²−2)ξ² + ξ`, where `Q = (1, s)` has order `4`
+and `ξ_P = n²`, the relation `2P = Q` reads `4s²n⁴ = (n²−1)⁴`. This is the
+genus-`0` structure of `X_1(8)` in the coordinates of this descent. -/
+lemma param_sq {n s ηP : ℚ}
+    (hcurveP : ηP ^ 2 = (n ^ 2) ^ 3 + (s ^ 2 - 2) * (n ^ 2) ^ 2 + n ^ 2)
+    (hdoubleP : ((n ^ 2) ^ 2 - 1) ^ 2 = 4 * ηP ^ 2) :
+    4 * s ^ 2 * n ^ 4 = (n ^ 2 - 1) ^ 4 := by
+  linear_combination -hdoubleP - 4 * hcurveP
+
+/-- **The sign dichotomy** (PROVEN — pure field algebra): feeding the
+level-`8` relation into `2R = P` pins `ξ = ξ_R` by
+`(n(ξ²+1) − 2n³ξ)² = (ξ(n⁴−1))²`. The two branches are exchanged by
+`n ↦ −n`, which is why the conclusion below may be taken with either
+sign of `n`. -/
+lemma param_dichotomy {n s ξ ηR : ℚ}
+    (hs : 4 * s ^ 2 * n ^ 4 = (n ^ 2 - 1) ^ 4)
+    (hcurve : ηR ^ 2 = ξ ^ 3 + (s ^ 2 - 2) * ξ ^ 2 + ξ)
+    (hdouble : (ξ ^ 2 - 1) ^ 2 = 4 * n ^ 2 * ηR ^ 2) :
+    (n * (ξ ^ 2 + 1) - 2 * n ^ 3 * ξ) ^ 2 = (ξ * (n ^ 4 - 1)) ^ 2 := by
+  linear_combination n ^ 2 * hdouble + 4 * n ^ 4 * hcurve + ξ ^ 2 * hs
+
+/-- **The point on the sextic** (PROVEN — pure field algebra): the `+`
+branch of the dichotomy exhibits `(n²−1)(n²+1)(n²+2n−1)` as a square. The
+underlying factorisation is
+`(2n³+n⁴−1)² − 4n² = (n−1)(n+1)³(n²+1)(n²+2n−1)`. -/
+lemma sextic_of_param {n ξ : ℚ} (hn1 : n + 1 ≠ 0) (hξ : ξ ≠ 0)
+    (h : n * (ξ ^ 2 + 1) = ξ * (2 * n ^ 3 + n ^ 4 - 1)) :
+    (n * (ξ ^ 2 - 1) / (ξ * (n + 1))) ^ 2 =
+      (n ^ 2 - 1) * (n ^ 2 + 1) * (n ^ 2 + 2 * n - 1) := by
+  field_simp
+  linear_combination (n * (ξ ^ 2 + 1) + ξ * (2 * n ^ 3 + n ^ 4 - 1)) * h
+
+/-- **The level-`16` chain in short form** (PROVEN): from a doubling chain
+`R → P → Q → T = (0,0)` on `Y² = X³ + aX² + bX`, a rational point on the
+sextic model of `X_1(16)`. The nondegeneracy hypotheses are exactly what
+the orders `16, 8, 4, 2` supply: `Y_R, Y_P ≠ 0` say `R, P` are not
+`2`-torsion, `X_R, X_P, X_Q ≠ 0` say none of them is `T`, and
+`X_P ≠ X_Q` says `P ≠ ±Q`. -/
+lemma sextic_of_short_chain {a b XR YR XP YP XQ YQ : ℚ}
+    (hcR : YR ^ 2 = XR ^ 3 + a * XR ^ 2 + b * XR)
+    (hcP : YP ^ 2 = XP ^ 3 + a * XP ^ 2 + b * XP)
+    (hcQ : YQ ^ 2 = XQ ^ 3 + a * XQ ^ 2 + b * XQ)
+    (dR : XP * (2 * YR) ^ 2 = (XR ^ 2 - b) ^ 2)
+    (dP : XQ * (2 * YP) ^ 2 = (XP ^ 2 - b) ^ 2)
+    (dQ : XQ ^ 2 = b)
+    (hYR : YR ≠ 0) (hYP : YP ≠ 0)
+    (hXR : XR ≠ 0) (hXP : XP ≠ 0) (hXQ : XQ ≠ 0) (hPQ : XP ≠ XQ) :
+    ∃ n Y : ℚ, n ≠ 0 ∧ n ≠ 1 ∧ n ≠ -1 ∧
+      Y ^ 2 = (n ^ 2 - 1) * (n ^ 2 + 1) * (n ^ 2 + 2 * n - 1) := by
+  -- `X_Q` and `X_P` are squares, by the duplication formula
+  obtain ⟨g, rfl⟩ : ∃ g, XQ = g ^ 2 :=
+    ⟨(XP ^ 2 - b) / (2 * YP), by field_simp; linear_combination dP⟩
+  obtain ⟨f, rfl⟩ : ∃ f, XP = f ^ 2 :=
+    ⟨(XR ^ 2 - b) / (2 * YR), by field_simp; linear_combination dR⟩
+  have hg0 : g ≠ 0 := by intro h; exact hXQ (by rw [h]; ring)
+  have hf0 : f ≠ 0 := by intro h; exact hXP (by rw [h]; ring)
+  -- hence `b = g⁴`
+  subst dQ
+  -- normalise: scale every coordinate by the appropriate power of `g`
+  obtain ⟨s, rfl⟩ : ∃ s, YQ = s * g ^ 3 := ⟨YQ / g ^ 3, by field_simp⟩
+  obtain ⟨n, rfl⟩ : ∃ n, f = n * g := ⟨f / g, by field_simp⟩
+  obtain ⟨ξ, rfl⟩ : ∃ ξ, XR = ξ * g ^ 2 := ⟨XR / g ^ 2, by field_simp⟩
+  obtain ⟨ηR, rfl⟩ : ∃ ηR, YR = ηR * g ^ 3 := ⟨YR / g ^ 3, by field_simp⟩
+  obtain ⟨ηP, rfl⟩ : ∃ ηP, YP = ηP * g ^ 3 := ⟨YP / g ^ 3, by field_simp⟩
+  -- the short-form coefficient `a` is `(s²−2)g²`
+  have ha : a = (s ^ 2 - 2) * g ^ 2 := by
+    have h4 : (g : ℚ) ^ 4 ≠ 0 := pow_ne_zero _ hg0
+    apply mul_left_cancel₀ h4
+    linear_combination -hcQ
+  subst ha
+  have hg6 : (g : ℚ) ^ 6 ≠ 0 := pow_ne_zero _ hg0
+  have hg8 : (g : ℚ) ^ 8 ≠ 0 := pow_ne_zero _ hg0
+  -- the four normalised relations
+  have hcP' : ηP ^ 2 = (n ^ 2) ^ 3 + (s ^ 2 - 2) * (n ^ 2) ^ 2 + n ^ 2 := by
+    apply mul_left_cancel₀ hg6; linear_combination hcP
+  have hdP' : ((n ^ 2) ^ 2 - 1) ^ 2 = 4 * ηP ^ 2 := by
+    apply mul_left_cancel₀ hg8; linear_combination -dP
+  have hcR' : ηR ^ 2 = ξ ^ 3 + (s ^ 2 - 2) * ξ ^ 2 + ξ := by
+    apply mul_left_cancel₀ hg6; linear_combination hcR
+  have hdR' : (ξ ^ 2 - 1) ^ 2 = 4 * n ^ 2 * ηR ^ 2 := by
+    apply mul_left_cancel₀ hg8; linear_combination -dR
+  -- the level-`8` relation and the sign dichotomy
+  have hs := param_sq hcP' hdP'
+  have hdich := param_dichotomy hs hcR' hdR'
+  -- nondegeneracy, transported to the normalised coordinates
+  have hn0 : n ≠ 0 := by intro h; exact hf0 (by rw [h]; ring)
+  have hξ0 : ξ ≠ 0 := by intro h; exact hXR (by rw [h]; ring)
+  have hnsq : n ^ 2 ≠ 1 := by
+    intro h
+    exact hPQ (by rw [mul_pow, h, one_mul])
+  have hn1 : n ≠ 1 := fun h => hnsq (by rw [h]; ring)
+  have hnm1 : n ≠ -1 := fun h => hnsq (by rw [h]; ring)
+  have hfac : (n * (ξ ^ 2 + 1) - 2 * n ^ 3 * ξ - ξ * (n ^ 4 - 1)) *
+      (n * (ξ ^ 2 + 1) - 2 * n ^ 3 * ξ + ξ * (n ^ 4 - 1)) = 0 := by
+    linear_combination hdich
+  rcases mul_eq_zero.mp hfac with h | h
+  · exact ⟨n, _, hn0, hn1, hnm1,
+      sextic_of_param (by intro hc; exact hnm1 (by linarith)) hξ0 (by linear_combination h)⟩
+  · exact ⟨-n, _, neg_ne_zero.mpr hn0, fun hc => hnm1 (by linarith),
+      fun hc => hn1 (by linarith),
+      sextic_of_param (by intro hc; exact hn1 (by linarith)) hξ0 (by linear_combination -h)⟩
+
+/-- **Coordinate data of the level-`16` doubling chain** (sorry leaf —
+pure mathlib `Affine.Point` plumbing, with NO arithmetic content).
+
+Given `P` of order `8` and `R` with `2R = P` (so `R` has order `16`), set
+`Q = 2P` and `T = 2Q`, of orders `4` and `2`. The leaf asserts what the
+`Affine.Point` API already knows about that chain, in coordinates: each of
+`R, P, Q` is an affine point; `θ = x(T)` is a root of the `2`-division
+cubic (because `T` is `2`-torsion); each doubling is witnessed by its
+tangent slope; `R` and `P` are not `2`-torsion; and none of
+`x(R), x(P), x(Q)` equals `θ`, with `x(P) ≠ x(Q)`.
+
+Every one of those follows from the orders alone, and the file already
+contains the pattern to prove them: `MazurFourTorsion.exists_halving_coords`
+does exactly this extraction for a `2`-torsion target, using
+`Point.add_self_of_Y_ne`, `Point.some.inj`, `slope_of_Y_ne` and
+`Point.neg_some`. The two extra ingredients are
+`WeierstrassCurve.Affine.Point.X_eq_iff` (equal abscissae ⟹ the points are
+equal or negatives — this is what converts the order bookkeeping into
+`x(R), x(P), x(Q) ≠ θ` and `x(P) ≠ x(Q)`) and the derivation
+`addOrderOf R = 16` from `2 • R = P` and `addOrderOf P = 8`. -/
+theorem exists_chain_coords (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (P R : (E⁄ℚ).Point) (hP : addOrderOf P = 8) (hR : (2 : ℕ) • R = P) :
+    ∃ θ xR yR lR xP yP lP xQ yQ lQ : ℚ,
+      4 * θ ^ 3 + ((E⁄ℚ).a₁ ^ 2 + 4 * (E⁄ℚ).a₂) * θ ^ 2
+          + (2 * (E⁄ℚ).a₁ * (E⁄ℚ).a₃ + 4 * (E⁄ℚ).a₄) * θ
+          + ((E⁄ℚ).a₃ ^ 2 + 4 * (E⁄ℚ).a₆) = 0 ∧
+      yR ^ 2 + (E⁄ℚ).a₁ * xR * yR + (E⁄ℚ).a₃ * yR
+          = xR ^ 3 + (E⁄ℚ).a₂ * xR ^ 2 + (E⁄ℚ).a₄ * xR + (E⁄ℚ).a₆ ∧
+      yP ^ 2 + (E⁄ℚ).a₁ * xP * yP + (E⁄ℚ).a₃ * yP
+          = xP ^ 3 + (E⁄ℚ).a₂ * xP ^ 2 + (E⁄ℚ).a₄ * xP + (E⁄ℚ).a₆ ∧
+      yQ ^ 2 + (E⁄ℚ).a₁ * xQ * yQ + (E⁄ℚ).a₃ * yQ
+          = xQ ^ 3 + (E⁄ℚ).a₂ * xQ ^ 2 + (E⁄ℚ).a₄ * xQ + (E⁄ℚ).a₆ ∧
+      lR * (2 * yR + (E⁄ℚ).a₁ * xR + (E⁄ℚ).a₃)
+          = 3 * xR ^ 2 + 2 * (E⁄ℚ).a₂ * xR + (E⁄ℚ).a₄ - (E⁄ℚ).a₁ * yR ∧
+      lP * (2 * yP + (E⁄ℚ).a₁ * xP + (E⁄ℚ).a₃)
+          = 3 * xP ^ 2 + 2 * (E⁄ℚ).a₂ * xP + (E⁄ℚ).a₄ - (E⁄ℚ).a₁ * yP ∧
+      lQ * (2 * yQ + (E⁄ℚ).a₁ * xQ + (E⁄ℚ).a₃)
+          = 3 * xQ ^ 2 + 2 * (E⁄ℚ).a₂ * xQ + (E⁄ℚ).a₄ - (E⁄ℚ).a₁ * yQ ∧
+      lR ^ 2 + (E⁄ℚ).a₁ * lR - (E⁄ℚ).a₂ - xR - xR = xP ∧
+      lP ^ 2 + (E⁄ℚ).a₁ * lP - (E⁄ℚ).a₂ - xP - xP = xQ ∧
+      lQ ^ 2 + (E⁄ℚ).a₁ * lQ - (E⁄ℚ).a₂ - xQ - xQ = θ ∧
+      2 * yR + (E⁄ℚ).a₁ * xR + (E⁄ℚ).a₃ ≠ 0 ∧
+      2 * yP + (E⁄ℚ).a₁ * xP + (E⁄ℚ).a₃ ≠ 0 ∧
+      xR ≠ θ ∧ xP ≠ θ ∧ xQ ≠ θ ∧ xP ≠ xQ :=
+  sorry
+
+/-- **No rational square on the sextic model of `X_1(16)`** (sorry leaf —
+a classical descent, entirely elementary, with one genuine mathlib gap).
+
+For `n ∉ {0, 1, −1}` the value `(n²−1)(n²+1)(n²+2n−1)` is not a rational
+square. Geometrically: the only rational points of `X_1(16)` are its
+cusps.
+
+**The descent, in full.** Write `n = m/k` in lowest terms and clear
+denominators: a rational square makes
+`W² = (m−k)(m+k)(m²+k²)(m²+2mk−k²)` for an integer `W` (the rational
+`W = Y·k³` is an integer because `ℤ` is integrally closed). Now split on
+the parity of `m + k`.
+
+*Case `m + k` odd.* All four factors are odd, and each pair has gcd
+dividing `2`, hence gcd `1`: they are pairwise coprime, so each is `±` a
+square (`Int.sq_of_coprime`). Say `m − k = ε₁a²`, `m + k = ε₂b²`, and
+`m² + k² = c²` (it is positive). Then
+`a⁴ + b⁴ = (m−k)² + (m+k)² = 2(m²+k²) = 2c²`, and `a² = b²` forces
+`(m−k)² = (m+k)²`, i.e. `mk = 0` — excluded.
+
+*Case `m + k` even, i.e. `m, k` both odd.* Put `p = (m+k)/2`,
+`q = (m−k)/2`, so `m = p+q`, `k = p−q`, `gcd(p,q) = 1` and `p, q` have
+opposite parity. Then `m²−k² = 4pq`, `m²+k² = 2(p²+q²)` and
+`m²+2mk−k² = 2(p²+2pq−q²)`, so `W² = 16·pq(p²+q²)(p²+2pq−q²)` and
+`4 ∣ W`. The four factors `p`, `q`, `p²+q²`, `p²+2pq−q²` are pairwise
+coprime, so `p = ε₁a²`, `q = ε₂b²`, `p²+q² = c²`, giving
+`a⁴ + b⁴ = c²`. Mathlib's `not_fermat_42` forces `ab = 0`, i.e. `p = 0`
+or `q = 0`, i.e. `m = ±k` — excluded.
+
+**The one mathlib gap**, needed only by the first case:
+
+  `a⁴ + b⁴ = 2c² → a² = b²`   (integers)
+
+This is genuinely absent from mathlib (`Mathlib/NumberTheory/FLT/Four.lean`
+has only `not_fermat_42 : a ≠ 0 → b ≠ 0 → a⁴ + b⁴ ≠ c²`). It is classical
+and reduces in turn to Fermat's *other* quartic theorem,
+`x⁴ − y⁴ = z² → xyz = 0`, also absent: from `a⁴+b⁴=2c²` with `a, b` odd
+coprime, `u = (a²+b²)/2` and `v = (a²−b²)/2` satisfy `u²+v² = c²`,
+`u+v = a²`, `u−v = b²`, hence `u² − v² = (ab)²` and so
+`u⁴ − v⁴ = (abc)²`. Mathlib's `PythagoreanTriple.coprime_classification`
+plus the descent template in `FLT/Four.lean` are the tools for it. Note
+`a⁴+b⁴=2c²` cannot be strengthened to a contradiction: `a = b` solves it,
+and that solution is exactly the pair of cusps `n = ±1` excluded by
+hypothesis. -/
+theorem not_sextic_square (n Y : ℚ) (h0 : n ≠ 0) (h1 : n ≠ 1) (hm1 : n ≠ -1) :
+    Y ^ 2 ≠ (n ^ 2 - 1) * (n ^ 2 + 1) * (n ^ 2 + 2 * n - 1) :=
+  sorry
+
+/-- **A rational point of order `16` puts a rational point on `X_1(16)`**
+(PROVEN from `exists_chain_coords` and the algebra above): the geometric
+half of the level-`16` node. -/
+theorem exists_sextic_point (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (P R : (E⁄ℚ).Point) (hP : addOrderOf P = 8) (hR : (2 : ℕ) • R = P) :
+    ∃ n Y : ℚ, n ≠ 0 ∧ n ≠ 1 ∧ n ≠ -1 ∧
+      Y ^ 2 = (n ^ 2 - 1) * (n ^ 2 + 1) * (n ^ 2 + 2 * n - 1) := by
+  obtain ⟨θ, xR, yR, lR, xP, yP, lP, xQ, yQ, lQ, hθ, eR, eP, eQ,
+    slR, slP, slQ, dxR, dxP, dxQ, wR, wP, hRθ, hPθ, hQθ, hPQ⟩ :=
+      exists_chain_coords E P R hP hR
+  -- pass to short form: complete the square, translate `θ` to the origin
+  have hcR := shift_equation (θ := θ) eR hθ
+  have hcP := shift_equation (θ := θ) eP hθ
+  have hcQ := shift_equation (θ := θ) eQ hθ
+  have dR := doubling_short hcR (shift_slope (θ := θ) slR)
+    (shift_addX.trans (by rw [dxR]))
+  have dP := doubling_short hcP (shift_slope (θ := θ) slP)
+    (shift_addX.trans (by rw [dxP]))
+  have dQ0 := doubling_short hcQ (shift_slope (θ := θ) slQ)
+    (shift_addX.trans (by rw [dxQ]))
+  -- the chain ends at the origin, so `X_Q² = b`
+  have dQ : (xQ - θ) ^ 2 =
+      3 * θ ^ 2 + ((E⁄ℚ).a₁ ^ 2 + 4 * (E⁄ℚ).a₂) / 2 * θ
+        + (2 * (E⁄ℚ).a₄ + (E⁄ℚ).a₁ * (E⁄ℚ).a₃) / 2 := by
+    have h0 : ((xQ - θ) ^ 2 - (3 * θ ^ 2 + ((E⁄ℚ).a₁ ^ 2 + 4 * (E⁄ℚ).a₂) / 2 * θ
+        + (2 * (E⁄ℚ).a₄ + (E⁄ℚ).a₁ * (E⁄ℚ).a₃) / 2)) ^ 2 = 0 := by
+      rw [← dQ0]; ring
+    have h1 := sq_eq_zero_iff.mp h0
+    linarith
+  exact sextic_of_short_chain hcR hcP hcQ dR dP dQ
+    (fun h => wR (by linarith)) (fun h => wP (by linarith))
+    (sub_ne_zero.mpr hRθ) (sub_ne_zero.mpr hPθ) (sub_ne_zero.mpr hQθ)
+    (fun h => hPQ (by linarith))
+
+end MazurSixteen
+
 /-- **No rational point of order `8` that is twice a rational point**
 (sorry node — the `X_1(16)` content in its descent form): if
 `P ∈ E(ℚ)` has order `8` then `P ∉ 2 · E(ℚ)`. This is exactly the
@@ -880,7 +1202,18 @@ level-`8` point — has no non-cuspidal rational point in its image;
 so `g = 1 + 8 − 7 = 2`) and no non-cuspidal rational point
 (Kenku–Ligozat–Kubert; subsumed in Mazur 1977, Thm 8).
 
-IRREDUCIBLE at this mathlib pin (audit 2026-07-25). Equivalent to
+**AUDIT SUPERSEDED 2026-07-25 (later the same day): this node is NOT
+irreducible, and is now DERIVED** from the two elementary leaves
+`MazurSixteen.exists_chain_coords` and `MazurSixteen.not_sextic_square`
+via `MazurSixteen.exists_sextic_point`. The "genus-`2` curve plus
+Chabauty" assessment recorded below is wrong: an explicit affine model of
+`X_1(16)` — the sextic `(n²−1)(n²+1)(n²+2n−1)` — is reachable by pure
+field algebra from the duplication formula in short Weierstrass form, and
+its rational points fall to a classical two-case descent needing only
+Fermat's quartic theorems. See the section note above this declaration for
+the full route. The paragraphs below are retained as the historical audit.
+
+Equivalent to
 `no_torsion_order_16` below — a halving `R` of an order-`8` point
 necessarily has order `16`, since `addOrderOf (2 • R) = 8` forces
 `addOrderOf R = 16` — but stated over the genus-`0` level `8`, where the
@@ -910,8 +1243,9 @@ points of order `8` are permitted by Mazur's list, and the whole content
 of the node is that no such point is halvable over `ℚ`. -/
 theorem WeierstrassCurve.not_halved_order_eight_point
     (E : WeierstrassCurve ℚ) [E.IsElliptic] (P R : (E⁄ℚ).Point)
-    (hP : addOrderOf P = 8) (hR : (2 : ℕ) • R = P) : False :=
-  sorry
+    (hP : addOrderOf P = 8) (hR : (2 : ℕ) • R = P) : False := by
+  obtain ⟨n, Y, h0, h1, hm1, hY⟩ := MazurSixteen.exists_sextic_point E P R hP hR
+  exact MazurSixteen.not_sextic_square n Y h0 h1 hm1 hY
 
 /-- **No rational point of order `16`** (DERIVED 2026-07-25 from the
 descent-form leaf `not_halved_order_eight_point`): a point `Q` of order
