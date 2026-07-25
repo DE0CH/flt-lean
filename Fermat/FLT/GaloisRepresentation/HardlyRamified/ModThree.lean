@@ -16356,196 +16356,6 @@ theorem poitouPhi_strip_decay_sq : ∃ M : ℝ, 0 ≤ M ∧ ∀ s : ℂ,
     ‖poitouPhi s‖ ≤ M / s.im ^ 2 := by
   sorry
 
-/-- **Landau's log-derivative bound at gap-protected heights** (sorry
-node, stated 2026-07-24 — leaf (b₁ᵢᵢᵢ-β) of the decomposition of
-`DedekindContinuation.poitouHorizontal_gap_tendsto_zero`; E. Landau,
-*Algebraische Zahlen*, p. 122, as cited by Poitou p. 6-02): on the
-horizontal segments `re s ∈ [−1/4, 5/4]`, `|im s| = τ(T)` of the
-Poitou contour, at heights `τ(T) ∈ [T, T + 1]` whose ordinate gap to
-every zero is `≥ c/log T`, the completed-zeta log-derivative is
-`O(T·log² T)`.
-
-Intended proof (the classical Landau lemma, manufactured from the
-pin's `Complex.borelCaratheodory`):
-
-1. *Reflect to the upper edge.*  `conj_symm` differentiates to
-   `ξ'(conj s) = conj (ξ'(s))` (Schwarz reflection of the
-   derivative: `η(s) := conj (ξ(conj s))` equals `ξ` by `conj_symm`,
-   and the chain rule computes `η'(s) = conj (ξ'(conj s))`), so
-   `‖(ξ'/ξ)(conj s)‖ = ‖(ξ'/ξ)(s)‖` and the case `im s = −τ(T)`
-   follows from the case `im s = τ(T)`.
-2. *Setup.*  Centre `s₀ = 3/2 + i·τ(T)`; the segment lies in
-   `closedBall s₀ 2` (`|σ − 3/2| ≤ 7/4 < 2`).  On `closedBall s₀ 12`
-   the `growth` field gives
-   `log ‖ξ(s)‖ ≤ C·(T + 15)·log (T + 15) = O(T·log T)`, and at the
-   centre `eq_of_one_lt_re` bounds `‖ξ(s₀)‖` BELOW by
-   `exp(−C'·T·log T)`: `‖ζ_K(s₀)‖ ≥ 1/ζ_K(3/2)` (the inverse
-   Dirichlet series is dominated coefficientwise by the Möbius-type
-   expansion, so `‖ζ_K(s₀)⁻¹‖ ≤ ζ_K(3/2)`), the `Γ`-factors obey
-   vertical-line Stirling lower bounds `≥ exp(−c₁·T·log T)`, and
-   `s₀(s₀ − 1)·|d|^{s₀/2}` is polynomially large.
-3. *Divide out the zeros.*  The zeros of `ξ` in `closedBall s₀ 6`
-   are finitely many (`finite_truncation` at `τ(T) + 7`) with total
-   multiplicity `N = O(log T)`: each has `||im ρ| − τ(T)| ≤ 6`, so
-   thirteen `hcount` windows at heights `τ(T) − 6, …, τ(T) + 6`
-   cover them (window heights `< 2` occur only for `T ≤ 13`,
-   absorbed by a compactness constant); every such zero carries
-   `mult ρ ≠ 0` — `hbnd`, `funcEq` and `ne_zero_of_one_lt_re` clear
-   `re ρ ∉ (0, 1)` exactly as in the support analysis of
-   `DedekindContinuation.mult`, and inside the open strip a zero of
-   the nontrivial entire `ξ` has `analyticOrderNatAt ≠ 0`.  Iterated
-   `dslope` division (`sub_smul_dslope_of_zero`, as in
-   `sum_analyticOrderNatAt_le_of_frontier_norm_le`) writes
-   `ξ = (∏ (· − ρ)^{mult ρ}) • g` with `g` zero-free on
-   `closedBall s₀ 6` and analytic everywhere, with
-   `log ‖g‖ = O(T·log T)` on `sphere s₀ 12` (each divided linear
-   factor has modulus `≥ 6` there) hence on the ball by the maximum
-   principle, and `log ‖g(s₀)‖ ≥ −O(T·log T) − N·log 12`.
-4. *Borel–Carathéodory.*  `g` is zero-free on `ball s₀ 6`, so a
-   holomorphic logarithm of `g/g(s₀)` exists on the ball, and the
-   pin's `Complex.borelCaratheodory`
-   (`Mathlib/Analysis/Complex/BorelCaratheodory.lean`) turns the
-   bound `Re log (g/g(s₀)) = log ‖g‖ − log ‖g(s₀)‖ ≤ O(T·log T)` on
-   `ball s₀ 6` into `‖(g'/g)(s)‖ = O(T·log T)` on `closedBall s₀ 2`.
-5. *Partial fractions.*  On the segment,
-   `(ξ'/ξ)(s) = Σ_ρ mult ρ/(s − ρ) + (g'/g)(s)`; each near-zero
-   satisfies `|s − ρ| ≥ ||im ρ| − τ(T)| ≥ c/log T` (for `im ρ > 0`
-   directly, for `im ρ < 0` even `|s − ρ| ≥ τ(T) + |im ρ|`), so the
-   near-sum is `≤ N·(log T)/c = O(log² T)` and the total is
-   `O(T·log T) + O(log² T) ≤ A·T·log² T` for `T ≥ e`; the compact
-   range `T ∈ [2, e]` is absorbed into `A` (there the segment points
-   stay at ordinate distance `≥ c/log e` from the finitely many
-   zeros of `finite_truncation 4`, so `‖ξ'/ξ‖` is uniformly bounded
-   on the corresponding compact set, and `T·log² T ≥ 2·log² 2 > 0`
-   keeps the right side bounded below). -/
-theorem DedekindContinuation.xi_logDeriv_gap_bound {K : Type*} [Field K]
-    [NumberField K] (pkg : DedekindContinuation K)
-    (hcount : ∃ C : ℝ, 0 < C ∧ ∀ T : ℝ, 2 ≤ T → ∀ s : Finset ℂ,
-      (∀ ρ ∈ s, |(|ρ.im| - T)| ≤ 1) →
-      ∑ ρ ∈ s, (pkg.mult ρ : ℝ) ≤ C * Real.log T)
-    (hbnd : ∀ t : ℝ, pkg.xi (1 + t * Complex.I) ≠ 0)
-    {c : ℝ} (hc : 0 < c) (τ : ℝ → ℝ)
-    (hτ : ∀ T : ℝ, 2 ≤ T → T ≤ τ T ∧ τ T ≤ T + 1 ∧
-      ∀ ρ : ℂ, pkg.mult ρ ≠ 0 → c / Real.log T ≤ |(|ρ.im| - τ T)|) :
-    ∃ A : ℝ, 0 < A ∧ ∀ T : ℝ, 2 ≤ T → ∀ s : ℂ,
-      -(1 / 4) ≤ s.re → s.re ≤ 5 / 4 → |s.im| = τ T →
-      ‖deriv pkg.xi s / pkg.xi s‖ ≤ A * (T * Real.log T ^ 2) := by
-  sorry
-
-/-- **Poitou's Proposition 1: the horizontal edges vanish along
-good-height selections** (ASSEMBLED 2026-07-24 over the two stage
-leaves `poitouPhi_strip_decay_sq` (uniform `1/T²` decay of `Φ` on the
-contour strip, leaf α above) and
-`DedekindContinuation.xi_logDeriv_gap_bound` (Landau's `O(T·log² T)`
-log-derivative bound at gap-protected heights, leaf β above);
-originally leaf (b₁ᵢᵢᵢ), the Borel–Carathéodory stage of the
-decomposition of
-`DedekindContinuation.zero_sum_sub_poitouEdge_tendsto_zero`; Poitou
-p. 6-02, Proposition 1, citing E. Landau, *Algebraische Zahlen*,
-p. 122).
-
-The assembly: on either horizontal segment `σ ↦ σ ± i·τ(T)`,
-`σ ∈ [−1/4, 5/4]`, the integrand of
-`DedekindContinuation.poitouHorizontal` is bounded pointwise by
-`(M/τ(T)²)·(A·T·log² T) ≤ M·A·(log² T)/T` (the two leaves and
-`τ(T) ≥ T > 0`), so each edge integral is at most
-`(3/2)·M·A·(log² T)/T` by
-`intervalIntegral.norm_integral_le_of_norm_le_const` — which needs
-NO integrability of the edge integrand for this direction — whence
-`|H(τ(T))| ≤ ‖(2πi)⁻¹‖·3·M·A·(log² T)/T`, a null sequence
-(`Real.tendsto_pow_log_div_mul_add_atTop`); conclude by
-`squeeze_zero_norm'`. -/
-theorem DedekindContinuation.poitouHorizontal_gap_tendsto_zero {K : Type*}
-    [Field K] [NumberField K] (pkg : DedekindContinuation K)
-    (hcount : ∃ C : ℝ, 0 < C ∧ ∀ T : ℝ, 2 ≤ T → ∀ s : Finset ℂ,
-      (∀ ρ ∈ s, |(|ρ.im| - T)| ≤ 1) →
-      ∑ ρ ∈ s, (pkg.mult ρ : ℝ) ≤ C * Real.log T)
-    (hbnd : ∀ t : ℝ, pkg.xi (1 + t * Complex.I) ≠ 0)
-    {c : ℝ} (hc : 0 < c) (τ : ℝ → ℝ)
-    (hτ : ∀ T : ℝ, 2 ≤ T → T ≤ τ T ∧ τ T ≤ T + 1 ∧
-      ∀ ρ : ℂ, pkg.mult ρ ≠ 0 → c / Real.log T ≤ |(|ρ.im| - τ T)|) :
-    Filter.Tendsto (fun T : ℝ => pkg.poitouHorizontal (τ T))
-      Filter.atTop (nhds 0) := by
-  obtain ⟨M, hM0, hM⟩ := poitouPhi_strip_decay_sq
-  obtain ⟨A, hA0, hA⟩ := pkg.xi_logDeriv_gap_bound hcount hbnd hc τ hτ
-  have hg : Filter.Tendsto (fun T : ℝ =>
-      ‖(2 * (Real.pi : ℂ) * Complex.I)⁻¹‖ * 3 * (M * A) *
-        (Real.log T ^ 2 / T)) Filter.atTop (nhds 0) := by
-    have h0 := (Real.tendsto_pow_log_div_mul_add_atTop 1 0 2
-      one_ne_zero).const_mul
-      (‖(2 * (Real.pi : ℂ) * Complex.I)⁻¹‖ * 3 * (M * A))
-    simpa using h0
-  refine squeeze_zero_norm' ?_ hg
-  filter_upwards [Filter.eventually_ge_atTop (2 : ℝ)] with T hT
-  obtain ⟨hτ1, -, -⟩ := hτ T hT
-  have hT0 : (0 : ℝ) < T := by linarith
-  have hτT0 : (0 : ℝ) < τ T := by linarith
-  have heq : M / T ^ 2 * (A * (T * Real.log T ^ 2)) =
-      M * A * (Real.log T ^ 2 / T) := by
-    field_simp
-  have hphi_le : M / τ T ^ 2 ≤ M / T ^ 2 := by
-    gcongr
-  have hKb : ∀ x ∈ Set.uIoc (-(1 / 4) : ℝ) (5 / 4),
-      ‖poitouPhi ((x : ℂ) - (τ T : ℂ) * Complex.I) *
-        (deriv pkg.xi ((x : ℂ) - (τ T : ℂ) * Complex.I) /
-          pkg.xi ((x : ℂ) - (τ T : ℂ) * Complex.I))‖ ≤
-      M * A * (Real.log T ^ 2 / T) := by
-    intro x hx
-    rw [Set.uIoc_of_le (by norm_num : (-(1 / 4) : ℝ) ≤ 5 / 4)] at hx
-    have hre : ((x : ℂ) - (τ T : ℂ) * Complex.I).re = x := by simp
-    have him : ((x : ℂ) - (τ T : ℂ) * Complex.I).im = -(τ T) := by simp
-    have h1 : ‖poitouPhi ((x : ℂ) - (τ T : ℂ) * Complex.I)‖ ≤ M / T ^ 2 := by
-      have hb := hM ((x : ℂ) - (τ T : ℂ) * Complex.I)
-        (by rw [hre]; exact hx.1.le) (by rw [hre]; exact hx.2)
-        (by rw [him]; exact neg_ne_zero.mpr hτT0.ne')
-      rw [him, neg_sq] at hb
-      exact hb.trans hphi_le
-    have h2 : ‖deriv pkg.xi ((x : ℂ) - (τ T : ℂ) * Complex.I) /
-        pkg.xi ((x : ℂ) - (τ T : ℂ) * Complex.I)‖ ≤
-        A * (T * Real.log T ^ 2) :=
-      hA T hT ((x : ℂ) - (τ T : ℂ) * Complex.I)
-        (by rw [hre]; exact hx.1.le) (by rw [hre]; exact hx.2)
-        (by rw [him, abs_neg, abs_of_pos hτT0])
-    rw [norm_mul]
-    exact (mul_le_mul h1 h2 (norm_nonneg _)
-      (div_nonneg hM0 (sq_nonneg _))).trans_eq heq
-  have hKt : ∀ x ∈ Set.uIoc (-(1 / 4) : ℝ) (5 / 4),
-      ‖poitouPhi ((x : ℂ) + (τ T : ℂ) * Complex.I) *
-        (deriv pkg.xi ((x : ℂ) + (τ T : ℂ) * Complex.I) /
-          pkg.xi ((x : ℂ) + (τ T : ℂ) * Complex.I))‖ ≤
-      M * A * (Real.log T ^ 2 / T) := by
-    intro x hx
-    rw [Set.uIoc_of_le (by norm_num : (-(1 / 4) : ℝ) ≤ 5 / 4)] at hx
-    have hre : ((x : ℂ) + (τ T : ℂ) * Complex.I).re = x := by simp
-    have him : ((x : ℂ) + (τ T : ℂ) * Complex.I).im = τ T := by simp
-    have h1 : ‖poitouPhi ((x : ℂ) + (τ T : ℂ) * Complex.I)‖ ≤ M / T ^ 2 := by
-      have hb := hM ((x : ℂ) + (τ T : ℂ) * Complex.I)
-        (by rw [hre]; exact hx.1.le) (by rw [hre]; exact hx.2)
-        (by rw [him]; exact hτT0.ne')
-      rw [him] at hb
-      exact hb.trans hphi_le
-    have h2 : ‖deriv pkg.xi ((x : ℂ) + (τ T : ℂ) * Complex.I) /
-        pkg.xi ((x : ℂ) + (τ T : ℂ) * Complex.I)‖ ≤
-        A * (T * Real.log T ^ 2) :=
-      hA T hT ((x : ℂ) + (τ T : ℂ) * Complex.I)
-        (by rw [hre]; exact hx.1.le) (by rw [hre]; exact hx.2)
-        (by rw [him, abs_of_pos hτT0])
-    rw [norm_mul]
-    exact (mul_le_mul h1 h2 (norm_nonneg _)
-      (div_nonneg hM0 (sq_nonneg _))).trans_eq heq
-  have hIb := intervalIntegral.norm_integral_le_of_norm_le_const hKb
-  have hIt := intervalIntegral.norm_integral_le_of_norm_le_const hKt
-  simp only [DedekindContinuation.poitouHorizontal]
-  rw [Real.norm_eq_abs]
-  refine (Complex.abs_re_le_norm _).trans ?_
-  rw [norm_mul]
-  refine (mul_le_mul_of_nonneg_left (norm_sub_le _ _)
-    (norm_nonneg _)).trans ?_
-  refine (mul_le_mul_of_nonneg_left (add_le_add hIb hIt)
-    (norm_nonneg _)).trans ?_
-  rw [show |(5 / 4 : ℝ) - -(1 / 4)| = 3 / 2 by norm_num]
-  exact le_of_eq (by ring)
-
 section PoitouBridgeEstimates
 
 open MeasureTheory Filter Set
@@ -17636,6 +17446,899 @@ theorem DedekindContinuation.xi_logDeriv_line_bound {K : Type*} [Field K]
     _ = 32 * (2 * B + a + 1) * (7 + |t|) ^ (3 / 2 : ℝ) := by ring
 
 end PoitouBridgeEstimates
+
+/-- **The Borel–Carathéodory LOWER bound on the half-radius ball**
+(PROVEN 2026-07-24 — the companion of `norm_logDeriv_le_of_ball`
+required by `DedekindContinuation.xi_logDeriv_gap_bound`, where the
+logarithmic derivative has to be controlled at the points of the
+horizontal segment rather than at the centre of the
+Borel–Carathéodory disc): if the entire `f` has no zero on
+`ball c R` and satisfies `‖f‖ ≤ e^M·‖f c‖` there, then
+`e^{−2M}·‖f c‖ ≤ ‖f z‖` for every `‖z − c‖ ≤ R/2`.
+
+Proof: the very construction of `norm_logDeriv_le_of_ball` — a
+primitive `g` of `f'/f` on the ball (`DifferentiableOn.isExactOn_ball`,
+Morera) makes `f·e^{-g}` derivative-free hence constant on the convex
+ball, so `φ(w) = g(c+w) − g(c)` is a holomorphic logarithm of
+`f(c+·)/f(c)` vanishing at `0` with `Re φ ≤ M` — feeds
+`Complex.borelCaratheodory_zero`, which bounds `‖φ(w)‖` by
+`2M‖w‖/(R − ‖w‖) ≤ 2M` on the half-radius ball; and
+`‖f(c+w)‖ = ‖f c‖·e^{Re φ(w)} ≥ ‖f c‖·e^{−‖φ(w)‖}`. -/
+theorem norm_ge_of_ball {f : ℂ → ℂ} {c : ℂ} {R M : ℝ} (hR : 0 < R)
+    (hM : 0 < M) (hf : Differentiable ℂ f)
+    (hne : ∀ z ∈ Metric.ball c R, f z ≠ 0)
+    (hub : ∀ z ∈ Metric.ball c R, ‖f z‖ ≤ Real.exp M * ‖f c‖)
+    {z : ℂ} (hz : ‖z - c‖ ≤ R / 2) :
+    Real.exp (-(2 * M)) * ‖f c‖ ≤ ‖f z‖ := by
+  have hcball : c ∈ Metric.ball c R := Metric.mem_ball_self hR
+  have hfc : f c ≠ 0 := hne c hcball
+  have hd : Differentiable ℂ (deriv f) := by
+    have h1 : AnalyticOnNhd ℂ f Set.univ :=
+      hf.differentiableOn.analyticOnNhd isOpen_univ
+    exact fun w => (h1.deriv w (Set.mem_univ w)).differentiableAt
+  have hq : DifferentiableOn ℂ (fun w => deriv f w / f w) (Metric.ball c R) :=
+    hd.differentiableOn.div hf.differentiableOn hne
+  obtain ⟨g, hg⟩ := hq.isExactOn_ball
+  have hFder : ∀ w ∈ Metric.ball c R,
+      HasDerivAt (fun u => f u * Complex.exp (-g u)) 0 w := by
+    intro w hw
+    have h2 : HasDerivAt (fun u => Complex.exp (-g u))
+        (Complex.exp (-g w) * -(deriv f w / f w)) w := (hg w hw).neg.cexp
+    have h3 := (hf w).hasDerivAt.mul h2
+    have hval : deriv f w * Complex.exp (-g w) +
+        f w * (Complex.exp (-g w) * -(deriv f w / f w)) = 0 := by
+      have hfw : f w ≠ 0 := hne w hw
+      field_simp
+      ring
+    rw [hval] at h3
+    exact h3
+  have hFW : ∀ w ∈ Metric.ball c R,
+      HasFDerivWithinAt (fun u => f u * Complex.exp (-g u))
+        (0 : ℂ →L[ℝ] ℂ) (Metric.ball c R) w := by
+    intro w hw
+    have h1 := (hFder w hw).hasFDerivAt
+    have hz1 : ContinuousLinearMap.toSpanSingleton ℂ (0 : ℂ) =
+        (0 : ℂ →L[ℂ] ℂ) := by
+      ext
+      simp
+    rw [hz1] at h1
+    have h2 := h1.restrictScalars ℝ
+    have hz2 : ((0 : ℂ →L[ℂ] ℂ).restrictScalars ℝ) = (0 : ℂ →L[ℝ] ℂ) := by
+      ext x
+      simp
+    rw [hz2] at h2
+    exact h2.hasFDerivWithinAt
+  have hconst : ∀ w ∈ Metric.ball c R,
+      f w * Complex.exp (-g w) = f c * Complex.exp (-g c) := by
+    intro w hw
+    have hmvt := (convex_ball c R).norm_image_sub_le_of_norm_hasFDerivWithin_le
+      (C := 0) hFW (fun u _ => by simp) hcball hw
+    have h0 : ‖f w * Complex.exp (-g w) - f c * Complex.exp (-g c)‖ ≤ 0 := by
+      simpa using hmvt
+    have h1 := le_antisymm h0 (norm_nonneg _)
+    rw [norm_eq_zero] at h1
+    exact sub_eq_zero.mp h1
+  have hmem : ∀ w : ℂ, w ∈ Metric.ball (0 : ℂ) R → c + w ∈ Metric.ball c R := by
+    intro w hw
+    rw [Metric.mem_ball, dist_eq_norm] at hw ⊢
+    simpa using hw
+  have hnorm2 : ∀ w ∈ Metric.ball (0 : ℂ) R,
+      ‖f (c + w)‖ = ‖f c‖ * Real.exp ((g (c + w) - g c).re) := by
+    intro w hw
+    have h1 := hconst (c + w) (hmem w hw)
+    have h2 : f (c + w) * Complex.exp (-g (c + w)) * Complex.exp (g (c + w)) =
+        f c * Complex.exp (-g c) * Complex.exp (g (c + w)) := by
+      rw [h1]
+    rw [mul_assoc, ← Complex.exp_add, neg_add_cancel, Complex.exp_zero,
+      mul_one] at h2
+    rw [h2, norm_mul, norm_mul, Complex.norm_exp, Complex.norm_exp, mul_assoc,
+      ← Real.exp_add, Complex.sub_re, Complex.neg_re]
+    ring_nf
+  have hφdiff : DifferentiableOn ℂ (fun w => g (c + w) - g c)
+      (Metric.ball (0 : ℂ) R) := by
+    intro w hw
+    have h1 : HasDerivAt (fun u : ℂ => c + u) 1 w := by
+      simpa using (hasDerivAt_id w).const_add c
+    have h2 : HasDerivAt g (deriv f (c + w) / f (c + w)) (c + w) :=
+      hg (c + w) (hmem w hw)
+    have h3 := (h2.comp w h1).sub_const (g c)
+    exact h3.differentiableAt.differentiableWithinAt
+  have hφmaps : Set.MapsTo (fun w => g (c + w) - g c) (Metric.ball (0 : ℂ) R)
+      {u : ℂ | u.re ≤ M} := by
+    intro w hw
+    have hle := hub (c + w) (hmem w hw)
+    rw [hnorm2 w hw, mul_comm (Real.exp M) ‖f c‖] at hle
+    have hfcpos : 0 < ‖f c‖ := norm_pos_iff.mpr hfc
+    have h4 := le_of_mul_le_mul_left hle hfcpos
+    simp only [Set.mem_setOf_eq]
+    exact Real.exp_le_exp.mp h4
+  have hzc : c + (z - c) = z := by ring
+  have hwball : z - c ∈ Metric.ball (0 : ℂ) R := by
+    rw [Metric.mem_ball, dist_zero_right]
+    linarith
+  have hbc : ‖g (c + (z - c)) - g c‖ ≤ 2 * M * ‖z - c‖ / (R - ‖z - c‖) :=
+    Complex.borelCaratheodory_zero hM hφdiff hφmaps hR hwball (by simp)
+  have hle2 : 2 * M * ‖z - c‖ / (R - ‖z - c‖) ≤ 2 * M := by
+    rw [div_le_iff₀ (by linarith : (0 : ℝ) < R - ‖z - c‖)]
+    nlinarith [norm_nonneg (z - c)]
+  have hnz := hnorm2 (z - c) hwball
+  rw [hzc] at hbc hnz
+  have hre : -(2 * M) ≤ (g z - g c).re := by
+    have h1 := neg_abs_le ((g z - g c).re)
+    have h2 := Complex.abs_re_le_norm (g z - g c)
+    linarith [hbc.trans hle2]
+  rw [hnz]
+  calc Real.exp (-(2 * M)) * ‖f c‖ = ‖f c‖ * Real.exp (-(2 * M)) := by ring
+    _ ≤ ‖f c‖ * Real.exp ((g z - g c).re) :=
+        mul_le_mul_of_nonneg_left (Real.exp_le_exp.mpr hre) (norm_nonneg _)
+
+/-- **Borel–Carathéodory control of the logarithmic derivative at EVERY
+point of the quarter-radius ball** (PROVEN 2026-07-24 — the form of the
+Borel–Carathéodory estimate consumed by
+`DedekindContinuation.xi_logDeriv_gap_bound`): under the hypotheses of
+`norm_logDeriv_le_of_ball`, `‖f'(z)/f(z)‖ ≤ 48M/R` for every
+`‖z − c‖ ≤ R/4`.  The lower bound `norm_ge_of_ball` turns the
+centre-relative sup bound into a `z`-relative one with `M` replaced by
+`3M` on the ball `ball z (R/4) ⊆ ball c R`, and
+`norm_logDeriv_le_of_ball` applies at the new centre `z`. -/
+theorem norm_logDeriv_le_of_mem_ball {f : ℂ → ℂ} {c : ℂ} {R M : ℝ}
+    (hR : 0 < R) (hM : 0 < M) (hf : Differentiable ℂ f)
+    (hne : ∀ z ∈ Metric.ball c R, f z ≠ 0)
+    (hub : ∀ z ∈ Metric.ball c R, ‖f z‖ ≤ Real.exp M * ‖f c‖)
+    {z : ℂ} (hz : ‖z - c‖ ≤ R / 4) :
+    ‖deriv f z / f z‖ ≤ 48 * M / R := by
+  have hlow : Real.exp (-(2 * M)) * ‖f c‖ ≤ ‖f z‖ :=
+    norm_ge_of_ball hR hM hf hne hub (by linarith)
+  have hsub : ∀ w ∈ Metric.ball z (R / 4), w ∈ Metric.ball c R := by
+    intro w hw
+    rw [Metric.mem_ball, dist_eq_norm] at hw ⊢
+    have hsplit : w - c = (w - z) + (z - c) := by ring
+    rw [hsplit]
+    calc ‖(w - z) + (z - c)‖ ≤ ‖w - z‖ + ‖z - c‖ := norm_add_le _ _
+      _ < R := by linarith
+  have hfcle : ‖f c‖ ≤ Real.exp (2 * M) * ‖f z‖ := by
+    have h3 : Real.exp (2 * M) * (Real.exp (-(2 * M)) * ‖f c‖) = ‖f c‖ := by
+      rw [← mul_assoc, ← Real.exp_add]
+      simp
+    calc ‖f c‖ = Real.exp (2 * M) * (Real.exp (-(2 * M)) * ‖f c‖) := h3.symm
+      _ ≤ Real.exp (2 * M) * ‖f z‖ :=
+          mul_le_mul_of_nonneg_left hlow (Real.exp_pos _).le
+  have hub' : ∀ w ∈ Metric.ball z (R / 4), ‖f w‖ ≤ Real.exp (3 * M) * ‖f z‖ := by
+    intro w hw
+    calc ‖f w‖ ≤ Real.exp M * ‖f c‖ := hub w (hsub w hw)
+      _ ≤ Real.exp M * (Real.exp (2 * M) * ‖f z‖) :=
+          mul_le_mul_of_nonneg_left hfcle (Real.exp_pos _).le
+      _ = Real.exp (3 * M) * ‖f z‖ := by
+          rw [← mul_assoc, ← Real.exp_add, show M + 2 * M = 3 * M by ring]
+  have hne' : ∀ w ∈ Metric.ball z (R / 4), f w ≠ 0 :=
+    fun w hw => hne w (hsub w hw)
+  have hmain := norm_logDeriv_le_of_ball (f := f) (c := z) (R := R / 4)
+    (M := 3 * M) (by linarith) (by linarith) hf hne' hub'
+  refine hmain.trans (le_of_eq ?_)
+  field_simp
+  ring
+
+/-- **From half-width `1` to half-width `6` in the zero count** (PROVEN
+2026-07-24 — the counting input of
+`DedekindContinuation.xi_logDeriv_gap_bound`): the unit-window counting
+hypothesis `hcount` of the Poitou stage upgrades to the width of the
+Borel–Carathéodory disc.  For `U ≥ 8` the band `||ρ.im| − U| ≤ 6` is
+covered by the six unit windows centred at `U − 5, U − 3, …, U + 5` —
+all of height `≥ 3 ≥ 2`, so `hcount` applies to each — and the fibres
+of the index map `ρ ↦ min 5 ⌊(|ρ.im| − U + 6)/2⌋` partition the finset
+(`Finset.sum_fiberwise_of_maps_to`); for `2 ≤ U < 8` every counted
+point has `|ρ.im| ≤ 14`, so the whole mass is at most the CONSTANT
+total multiplicity of the finite truncation `finite_truncation 14`,
+absorbed into the constant because `log U ≥ log 2 > 0`. -/
+theorem DedekindContinuation.mult_wide_window_le {K : Type*} [Field K]
+    [NumberField K] (pkg : DedekindContinuation K)
+    (hcount : ∃ C : ℝ, 0 < C ∧ ∀ T : ℝ, 2 ≤ T → ∀ s : Finset ℂ,
+      (∀ ρ ∈ s, |(|ρ.im| - T)| ≤ 1) →
+      ∑ ρ ∈ s, (pkg.mult ρ : ℝ) ≤ C * Real.log T) :
+    ∃ C : ℝ, 0 < C ∧ ∀ U : ℝ, 2 ≤ U → ∀ w : Finset ℂ,
+      (∀ ρ ∈ w, |(|ρ.im| - U)| ≤ 6) →
+      ∑ ρ ∈ w, (pkg.mult ρ : ℝ) ≤ C * Real.log U := by
+  classical
+  obtain ⟨C₀, hC₀, hcnt⟩ := hcount
+  set Z : Finset ℂ := (pkg.finite_truncation 14).toFinset with hZ
+  set N₁ : ℝ := ∑ ρ ∈ Z, (pkg.mult ρ : ℝ) with hN₁
+  have hN₁0 : 0 ≤ N₁ := by
+    rw [hN₁]
+    exact Finset.sum_nonneg fun ρ _ => by positivity
+  have hlog2 : (0 : ℝ) < Real.log 2 := Real.log_pos (by norm_num)
+  have hCsum : 0 ≤ N₁ / Real.log 2 := div_nonneg hN₁0 hlog2.le
+  refine ⟨12 * C₀ + N₁ / Real.log 2 + 1, by linarith, ?_⟩
+  intro U hU w hw
+  have hUpos : (0 : ℝ) < U := by linarith
+  have hlogU : Real.log 2 ≤ Real.log U := Real.log_le_log (by norm_num) hU
+  have hlogU0 : 0 < Real.log U := lt_of_lt_of_le hlog2 hlogU
+  rcases lt_or_ge U 8 with hU8 | hU8
+  · have hsub : w.filter (fun ρ => pkg.mult ρ ≠ 0) ⊆ Z := by
+      intro ρ hρ
+      rw [Finset.mem_filter] at hρ
+      simp only [hZ, Set.Finite.mem_toFinset, Set.mem_setOf_eq]
+      refine ⟨hρ.2, ?_⟩
+      have h1 := abs_le.mp (hw ρ hρ.1)
+      linarith [h1.2]
+    have heq : ∑ ρ ∈ w, (pkg.mult ρ : ℝ)
+        = ∑ ρ ∈ w.filter (fun ρ => pkg.mult ρ ≠ 0), (pkg.mult ρ : ℝ) := by
+      refine (Finset.sum_subset (Finset.filter_subset _ _) ?_).symm
+      intro ρ hρ hnot
+      have hzero : pkg.mult ρ = 0 := by
+        by_contra hcon
+        exact hnot (Finset.mem_filter.mpr ⟨hρ, hcon⟩)
+      rw [hzero]
+      norm_num
+    have hle : ∑ ρ ∈ w, (pkg.mult ρ : ℝ) ≤ N₁ := by
+      rw [heq, hN₁]
+      exact Finset.sum_le_sum_of_subset_of_nonneg hsub (fun ρ _ _ => by positivity)
+    have hkey : N₁ ≤ N₁ / Real.log 2 * Real.log U := by
+      have h1 : N₁ / Real.log 2 * Real.log 2 ≤ N₁ / Real.log 2 * Real.log U :=
+        mul_le_mul_of_nonneg_left hlogU hCsum
+      have h2 : N₁ / Real.log 2 * Real.log 2 = N₁ := by
+        field_simp
+      linarith
+    have hring : (12 * C₀ + N₁ / Real.log 2 + 1) * Real.log U
+        = (12 * C₀ + 1) * Real.log U + N₁ / Real.log 2 * Real.log U := by ring
+    rw [hring]
+    have hextra : 0 ≤ (12 * C₀ + 1) * Real.log U :=
+      mul_nonneg (by linarith) hlogU0.le
+    linarith
+  · have hmaps : ∀ ρ ∈ w, (min 5 ⌊(|ρ.im| - U + 6) / 2⌋₊) ∈ Finset.range 6 := by
+      intro ρ _
+      rw [Finset.mem_range]
+      have h1 := min_le_left 5 ⌊(|ρ.im| - U + 6) / 2⌋₊
+      omega
+    have hfib := Finset.sum_fiberwise_of_maps_to hmaps (fun ρ => (pkg.mult ρ : ℝ))
+    have hbound : ∀ k ∈ Finset.range 6,
+        ∑ ρ ∈ w.filter (fun ρ => min 5 ⌊(|ρ.im| - U + 6) / 2⌋₊ = k),
+          (pkg.mult ρ : ℝ) ≤ C₀ * (2 * Real.log U) := by
+      intro k hk
+      have hk5 : k ≤ 5 := by
+        rw [Finset.mem_range] at hk
+        omega
+      have hk5R : ((k : ℕ) : ℝ) ≤ 5 := by exact_mod_cast hk5
+      have hk0R : (0 : ℝ) ≤ ((k : ℕ) : ℝ) := Nat.cast_nonneg k
+      have hHk : (2 : ℝ) ≤ U - 5 + 2 * (k : ℝ) := by linarith
+      have hwin : ∀ ρ ∈ w.filter (fun ρ => min 5 ⌊(|ρ.im| - U + 6) / 2⌋₊ = k),
+          |(|ρ.im| - (U - 5 + 2 * (k : ℝ)))| ≤ 1 := by
+        intro ρ hρ
+        rw [Finset.mem_filter] at hρ
+        obtain ⟨hρw, hρk⟩ := hρ
+        have h6 := abs_le.mp (hw ρ hρw)
+        have hu0 : (0 : ℝ) ≤ (|ρ.im| - U + 6) / 2 := by linarith [h6.1]
+        have hu12 : (|ρ.im| - U + 6) / 2 ≤ 6 := by linarith [h6.2]
+        have hfl6 : ⌊(|ρ.im| - U + 6) / 2⌋₊ ≤ 6 := by
+          have h1 := Nat.floor_mono hu12
+          simpa using h1
+        rcases le_or_gt ⌊(|ρ.im| - U + 6) / 2⌋₊ 5 with hcase | hcase
+        · have hkv : ⌊(|ρ.im| - U + 6) / 2⌋₊ = k := by omega
+          have hlo : ((k : ℕ) : ℝ) ≤ (|ρ.im| - U + 6) / 2 := by
+            rw [← hkv]
+            exact Nat.floor_le hu0
+          have hhi : (|ρ.im| - U + 6) / 2 < ((k : ℕ) : ℝ) + 1 := by
+            rw [← hkv]
+            exact Nat.lt_floor_add_one _
+          rw [abs_le]
+          constructor <;> linarith
+        · have hk6 : (6 : ℕ) ≤ ⌊(|ρ.im| - U + 6) / 2⌋₊ := hcase
+          have hge : ((6 : ℕ) : ℝ) ≤ (|ρ.im| - U + 6) / 2 :=
+            (Nat.le_floor_iff hu0).mp hk6
+          have hk5' : k = 5 := by omega
+          subst hk5'
+          push_cast at hge ⊢
+          rw [abs_le]
+          constructor <;> linarith
+      refine (hcnt (U - 5 + 2 * (k : ℝ)) hHk _ hwin).trans ?_
+      have hHle : U - 5 + 2 * (k : ℝ) ≤ 2 * U := by linarith
+      have hlogHk : Real.log (U - 5 + 2 * (k : ℝ)) ≤ 2 * Real.log U := by
+        have h1 : Real.log (U - 5 + 2 * (k : ℝ)) ≤ Real.log (2 * U) :=
+          Real.log_le_log (by linarith) hHle
+        rw [Real.log_mul (by norm_num) (by linarith)] at h1
+        linarith
+      exact mul_le_mul_of_nonneg_left hlogHk hC₀.le
+    have hsum6 : ∑ ρ ∈ w, (pkg.mult ρ : ℝ) ≤ 12 * C₀ * Real.log U := by
+      rw [← hfib]
+      calc ∑ k ∈ Finset.range 6,
+            ∑ ρ ∈ w.filter (fun ρ => min 5 ⌊(|ρ.im| - U + 6) / 2⌋₊ = k),
+              (pkg.mult ρ : ℝ)
+          ≤ ∑ _k ∈ Finset.range 6, C₀ * (2 * Real.log U) :=
+            Finset.sum_le_sum hbound
+        _ = 12 * C₀ * Real.log U := by
+            rw [Finset.sum_const, Finset.card_range]
+            ring
+    have hring : (12 * C₀ + N₁ / Real.log 2 + 1) * Real.log U
+        = 12 * C₀ * Real.log U + (N₁ / Real.log 2 + 1) * Real.log U := by ring
+    rw [hring]
+    have hextra : 0 ≤ (N₁ / Real.log 2 + 1) * Real.log U :=
+      mul_nonneg (by linarith) hlogU0.le
+    linarith
+
+set_option maxHeartbeats 1000000 in
+/-- **Landau's log-derivative estimate at ONE gap-protected point**
+(PROVEN 2026-07-24 — the analytic core of
+`DedekindContinuation.xi_logDeriv_gap_bound`; E. Landau,
+*Algebraische Zahlen*, p. 122, as cited by Poitou p. 6-02).  For a
+point `s` of the horizontal segment `re s ∈ [−1/4, 5/4]` whose
+ordinate keeps distance `≥ gp` from every zero ordinate, and with the
+zero mass of the disc of radius `6` about the centre bounded by `N`,
+the completed-zeta log-derivative obeys
+`‖(ξ'/ξ)(s)‖ ≤ 8·M + N/gp` with
+`M = B(15+|Im s|)·log(18+|Im s|) + a(1+|Im s|) + N·log 6 + 1`.
+
+The classical Landau argument, run on the centre `c = 5/4 + i·Im s`
+(the segment lies in `closedBall c (3/2) = closedBall c (6/4)`, and
+`re c > 1` puts `c` in the Euler-product zero-free half-plane):
+
+1. *Divide out the zeros.*  The points of positive multiplicity in
+   `closedBall c 6` form a finite set `t` (`finite_truncation` at
+   `|Im s| + 6`), and — `hbnd` and `xi_ne_zero_of_mult_eq_zero` making
+   `mult ρ ≠ 0` EQUIVALENT to `ξ ρ = 0` — the iterated-`dslope`
+   factorization `exists_differentiable_factorization` writes
+   `ξ = (∏_{ρ ∈ t} (· − ρ)^{ord_ρ}) · g` with `g` entire and zero-free
+   on `closedBall c 6`.
+2. *Upper bound for `g`.*  On the circle `‖z − c‖ = 12` each divided
+   linear factor has modulus `≥ 6 ≥ 1`, so `‖g‖ ≤ ‖ξ‖ ≤ e^{U}` there
+   with `U = B(15+|Im s|)·log(18+|Im s|) = O(T log T)` (the global
+   bound `hB`), and the maximum-modulus principle
+   (`Complex.norm_le_of_forall_mem_frontier_norm_le`) propagates the
+   bound to the whole disc, in particular to `ball c 6`.
+3. *Lower bound at the centre.*  `‖ξ(c)‖ ≥ e^{−a(1+|Im s|)}` (`ha`),
+   and each of the `≤ N` divided factors is `≤ 6` at `c`, so
+   `‖g(c)‖ ≥ e^{−a(1+|Im s|) − N log 6}`; hence
+   `‖g‖ ≤ e^{M}·‖g(c)‖` on `ball c 6`.
+4. *Borel–Carathéodory.*  `norm_logDeriv_le_of_mem_ball` (the
+   quarter-radius form of `Complex.borelCaratheodory`) gives
+   `‖(g'/g)(s)‖ ≤ 48M/6 = 8M` at every point of `closedBall c (6/4)`,
+   the segment included.
+5. *Partial fractions.*  `deriv_div_of_factorization` splits
+   `(ξ'/ξ)(s) = Σ_{ρ ∈ t} ord_ρ/(s − ρ) + (g'/g)(s)`, and
+   `‖s − ρ‖ ≥ |Im ρ − Im s| ≥ gp` bounds the near-sum by `N/gp`. -/
+theorem DedekindContinuation.norm_xi_logDeriv_le_of_gap {K : Type*} [Field K]
+    [NumberField K] (pkg : DedekindContinuation K)
+    (hbnd : ∀ t : ℝ, pkg.xi (1 + t * Complex.I) ≠ 0)
+    {B a N gp : ℝ} (hB0 : 0 ≤ B)
+    (hB : ∀ w : ℂ, ‖pkg.xi w‖ ≤ Real.exp (B * (1 + ‖w‖) * Real.log (4 + ‖w‖)))
+    (ha0 : 0 ≤ a)
+    (ha : ∀ t : ℝ, Real.exp (-(a * (1 + |t|))) ≤ ‖pkg.xi (5 / 4 + t * Complex.I)‖)
+    (hN0 : 0 ≤ N) (hgp : 0 < gp)
+    {s : ℂ} (hs1 : -(1 / 4) ≤ s.re) (hs2 : s.re ≤ 5 / 4)
+    (hgap : ∀ ρ : ℂ, pkg.mult ρ ≠ 0 → gp ≤ |ρ.im - s.im|)
+    (hNb : ∀ u : Finset ℂ, (∀ ρ ∈ u, |(|ρ.im| - |s.im|)| ≤ 6) →
+      ∑ ρ ∈ u, (pkg.mult ρ : ℝ) ≤ N) :
+    ‖deriv pkg.xi s / pkg.xi s‖ ≤
+      8 * (B * (15 + |s.im|) * Real.log (18 + |s.im|) + a * (1 + |s.im|) +
+        N * Real.log 6 + 1) + N / gp := by
+  classical
+  have him0 : (0 : ℝ) ≤ |s.im| := abs_nonneg s.im
+  set c : ℂ := 5 / 4 + (s.im : ℂ) * Complex.I with hcdef
+  have hsplit : c = ((5 / 4 : ℝ) : ℂ) + (s.im : ℂ) * Complex.I := by
+    rw [hcdef]
+    norm_num
+  have hc_re : c.re = 5 / 4 := by
+    rw [hsplit, Complex.add_re, Complex.ofReal_re, Complex.re_ofReal_mul,
+      Complex.I_re, mul_zero, add_zero]
+  have hc_im : c.im = s.im := by
+    rw [hsplit, Complex.add_im, Complex.ofReal_im, Complex.im_ofReal_mul,
+      Complex.I_im, mul_one, zero_add]
+  have hsc : ‖s - c‖ ≤ 3 / 2 := by
+    have him : (s - c).im = 0 := by rw [Complex.sub_im, hc_im, sub_self]
+    have hre : |(s - c).re| ≤ 3 / 2 := by
+      rw [Complex.sub_re, hc_re, abs_le]
+      constructor <;> linarith
+    have h1 := Complex.norm_le_abs_re_add_abs_im (s - c)
+    rw [him, abs_zero, add_zero] at h1
+    linarith
+  have hcnorm : ‖c‖ ≤ 5 / 4 + |s.im| := by
+    have h1 := Complex.norm_le_abs_re_add_abs_im c
+    rw [hc_re, hc_im, abs_of_pos (by norm_num : (0 : ℝ) < 5 / 4)] at h1
+    linarith
+  have hxi2 : pkg.xi 2 ≠ 0 := pkg.ne_zero_of_one_lt_re 2 (by norm_num)
+  have hfin : {ρ : ℂ | pkg.mult ρ ≠ 0 ∧ |ρ.im| ≤ |s.im| + 6}.Finite :=
+    pkg.finite_truncation (|s.im| + 6)
+  set t : Finset ℂ := hfin.toFinset.filter (fun ρ => ‖ρ - c‖ ≤ 6) with htdef
+  have htmem : ∀ ρ : ℂ, ρ ∈ t ↔ (pkg.mult ρ ≠ 0 ∧ ‖ρ - c‖ ≤ 6) := by
+    intro ρ
+    simp only [htdef, Finset.mem_filter, Set.Finite.mem_toFinset,
+      Set.mem_setOf_eq]
+    constructor
+    · rintro ⟨⟨h1, -⟩, h2⟩
+      exact ⟨h1, h2⟩
+    · rintro ⟨h1, h2⟩
+      refine ⟨⟨h1, ?_⟩, h2⟩
+      have h3 : |(ρ - c).im| ≤ ‖ρ - c‖ := Complex.abs_im_le_norm _
+      rw [Complex.sub_im, hc_im] at h3
+      have h4 : |ρ.im| ≤ |ρ.im - s.im| + |s.im| := by
+        have h5 := abs_add_le (ρ.im - s.im) s.im
+        simpa using h5
+      linarith
+  obtain ⟨g, hgdiff, hgnet, hgfac⟩ :=
+    exists_differentiable_factorization (f := pkg.xi) (c := (2 : ℂ))
+      pkg.differentiable hxi2 t
+  have hmult : ∀ ρ ∈ t, analyticOrderNatAt pkg.xi ρ = pkg.mult ρ := by
+    intro ρ hρ
+    have h1 := ((htmem ρ).mp hρ).1
+    have h2 := pkg.mult_mem_strip h1
+    simp [DedekindContinuation.mult, h2.1, h2.2]
+  have hgne : ∀ z : ℂ, ‖z - c‖ ≤ 6 → g z ≠ 0 := by
+    intro z hz
+    by_cases hmz : pkg.mult z = 0
+    · intro h0
+      exact pkg.xi_ne_zero_of_mult_eq_zero hbnd hmz
+        (by rw [hgfac z, h0, mul_zero])
+    · exact hgnet z ((htmem z).mpr ⟨hmz, hz⟩)
+  set Mtot : ℕ := ∑ ρ ∈ t, analyticOrderNatAt pkg.xi ρ with hMtot
+  have hMcast : (Mtot : ℝ)
+      = ∑ ρ ∈ t, ((analyticOrderNatAt pkg.xi ρ : ℕ) : ℝ) := by
+    rw [hMtot]
+    push_cast
+    ring
+  have hMtotN : (Mtot : ℝ) ≤ N := by
+    rw [hMcast]
+    have h1 : ∑ ρ ∈ t, ((analyticOrderNatAt pkg.xi ρ : ℕ) : ℝ)
+        = ∑ ρ ∈ t, (pkg.mult ρ : ℝ) :=
+      Finset.sum_congr rfl fun ρ hρ => by rw [hmult ρ hρ]
+    rw [h1]
+    refine hNb t (fun ρ hρ => ?_)
+    have h2 := ((htmem ρ).mp hρ).2
+    have h3 : |(ρ - c).im| ≤ ‖ρ - c‖ := Complex.abs_im_le_norm _
+    rw [Complex.sub_im, hc_im] at h3
+    have h4 : |(|ρ.im| - |s.im|)| ≤ |ρ.im - s.im| :=
+      abs_abs_sub_abs_le_abs_sub _ _
+    linarith
+  set Uu : ℝ := B * (15 + |s.im|) * Real.log (18 + |s.im|) with hUu
+  have hlog18 : 0 ≤ Real.log (18 + |s.im|) := Real.log_nonneg (by linarith)
+  have hUu0 : 0 ≤ Uu := by
+    rw [hUu]
+    exact mul_nonneg (mul_nonneg hB0 (by linarith)) hlog18
+  have hxibnd : ∀ z : ℂ, ‖z - c‖ ≤ 12 → ‖pkg.xi z‖ ≤ Real.exp Uu := by
+    intro z hz
+    have hzn : ‖z‖ ≤ 14 + |s.im| := by
+      calc ‖z‖ = ‖z - c + c‖ := by rw [sub_add_cancel]
+        _ ≤ ‖z - c‖ + ‖c‖ := norm_add_le _ _
+        _ ≤ 12 + (5 / 4 + |s.im|) := add_le_add hz hcnorm
+        _ ≤ 14 + |s.im| := by linarith
+    refine (hB z).trans (Real.exp_le_exp.mpr ?_)
+    have hl0 : 0 ≤ Real.log (4 + ‖z‖) :=
+      Real.log_nonneg (by linarith [norm_nonneg z])
+    have hl1 : Real.log (4 + ‖z‖) ≤ Real.log (18 + |s.im|) :=
+      Real.log_le_log (by linarith [norm_nonneg z]) (by linarith)
+    rw [hUu]
+    exact mul_le_mul (mul_le_mul_of_nonneg_left (by linarith) hB0) hl1 hl0
+      (mul_nonneg hB0 (by linarith))
+  have hprod_ge : ∀ z : ℂ, ‖z - c‖ = 12 →
+      (1 : ℝ) ≤ ‖∏ ρ ∈ t, (z - ρ) ^ analyticOrderNatAt pkg.xi ρ‖ := by
+    intro z hz
+    rw [norm_prod]
+    have hnp : ∀ ρ ∈ t, ‖(z - ρ) ^ analyticOrderNatAt pkg.xi ρ‖
+        = ‖z - ρ‖ ^ analyticOrderNatAt pkg.xi ρ := fun ρ _ => norm_pow _ _
+    rw [Finset.prod_congr rfl hnp]
+    have h1 : ∀ ρ ∈ t, (1 : ℝ) ≤ ‖z - ρ‖ ^ analyticOrderNatAt pkg.xi ρ := by
+      intro ρ hρ
+      refine one_le_pow₀ ?_
+      have h2 := ((htmem ρ).mp hρ).2
+      have h3 : ‖z - c‖ ≤ ‖z - ρ‖ + ‖ρ - c‖ := by
+        have h4 : z - c = (z - ρ) + (ρ - c) := by ring
+        rw [h4]
+        exact norm_add_le _ _
+      linarith
+    have h5 := Finset.prod_le_prod (s := t) (f := fun _ : ℂ => (1 : ℝ))
+      (g := fun ρ => ‖z - ρ‖ ^ analyticOrderNatAt pkg.xi ρ)
+      (fun i _ => zero_le_one) h1
+    simpa using h5
+  have hprodc : ‖∏ ρ ∈ t, (c - ρ) ^ analyticOrderNatAt pkg.xi ρ‖
+      ≤ (6 : ℝ) ^ Mtot := by
+    rw [norm_prod]
+    have hnp : ∀ ρ ∈ t, ‖(c - ρ) ^ analyticOrderNatAt pkg.xi ρ‖
+        = ‖c - ρ‖ ^ analyticOrderNatAt pkg.xi ρ := fun ρ _ => norm_pow _ _
+    rw [Finset.prod_congr rfl hnp]
+    calc ∏ ρ ∈ t, ‖c - ρ‖ ^ analyticOrderNatAt pkg.xi ρ
+        ≤ ∏ ρ ∈ t, (6 : ℝ) ^ analyticOrderNatAt pkg.xi ρ := by
+          refine Finset.prod_le_prod (fun ρ _ => by positivity) (fun ρ hρ => ?_)
+          refine pow_le_pow_left₀ (norm_nonneg _) ?_ _
+          have h2 := ((htmem ρ).mp hρ).2
+          rw [norm_sub_rev]
+          exact h2
+      _ = (6 : ℝ) ^ Mtot := by rw [hMtot, Finset.prod_pow_eq_pow_sum]
+  have hlog6 : 0 ≤ Real.log 6 := Real.log_nonneg (by norm_num)
+  have h6pow : (6 : ℝ) ^ Mtot = Real.exp ((Mtot : ℝ) * Real.log 6) := by
+    rw [Real.exp_nat_mul, Real.exp_log (by norm_num : (0 : ℝ) < 6)]
+  have hgc : Real.exp (-(a * (1 + |s.im|)) - N * Real.log 6) ≤ ‖g c‖ := by
+    have h1 : Real.exp (-(a * (1 + |s.im|))) ≤ ‖pkg.xi c‖ := by
+      have h0 := ha s.im
+      rwa [← hcdef] at h0
+    have h2 : ‖pkg.xi c‖ ≤ (6 : ℝ) ^ Mtot * ‖g c‖ := by
+      rw [hgfac c, norm_mul]
+      exact mul_le_mul_of_nonneg_right hprodc (norm_nonneg _)
+    have h3 : (6 : ℝ) ^ Mtot ≤ Real.exp (N * Real.log 6) := by
+      rw [h6pow]
+      exact Real.exp_le_exp.mpr (mul_le_mul_of_nonneg_right hMtotN hlog6)
+    have h4 : Real.exp (-(a * (1 + |s.im|)) - N * Real.log 6) *
+        Real.exp (N * Real.log 6) = Real.exp (-(a * (1 + |s.im|))) := by
+      rw [← Real.exp_add]
+      ring_nf
+    have h5 : Real.exp (N * Real.log 6) *
+        Real.exp (-(a * (1 + |s.im|)) - N * Real.log 6)
+          ≤ Real.exp (N * Real.log 6) * ‖g c‖ := by
+      rw [mul_comm (Real.exp (N * Real.log 6)), h4]
+      calc Real.exp (-(a * (1 + |s.im|))) ≤ (6 : ℝ) ^ Mtot * ‖g c‖ := h1.trans h2
+        _ ≤ Real.exp (N * Real.log 6) * ‖g c‖ :=
+            mul_le_mul_of_nonneg_right h3 (norm_nonneg _)
+    exact le_of_mul_le_mul_left h5 (Real.exp_pos _)
+  have hmax : ∀ z : ℂ, ‖z - c‖ < 6 → ‖g z‖ ≤ Real.exp Uu := by
+    intro z hz
+    have hfrontier : ∀ v ∈ frontier (Metric.ball c 12), ‖g v‖ ≤ Real.exp Uu := by
+      intro v hv
+      rw [frontier_ball c (by norm_num : (12 : ℝ) ≠ 0), Metric.mem_sphere,
+        dist_eq_norm] at hv
+      have h1 := hprod_ge v hv
+      have h2 : ‖pkg.xi v‖
+          = ‖∏ ρ ∈ t, (v - ρ) ^ analyticOrderNatAt pkg.xi ρ‖ * ‖g v‖ := by
+        rw [hgfac v, norm_mul]
+      have h3 := hxibnd v (le_of_eq hv)
+      nlinarith [norm_nonneg (g v)]
+    exact Complex.norm_le_of_forall_mem_frontier_norm_le Metric.isBounded_ball
+      hgdiff.diffContOnCl hfrontier
+      (subset_closure (by rw [Metric.mem_ball, dist_eq_norm]; linarith))
+  set Mbig : ℝ := Uu + a * (1 + |s.im|) + N * Real.log 6 + 1 with hMbig
+  have hMbig0 : 0 < Mbig := by
+    rw [hMbig]
+    have h1 : 0 ≤ a * (1 + |s.im|) := mul_nonneg ha0 (by linarith)
+    have h2 : 0 ≤ N * Real.log 6 := mul_nonneg hN0 hlog6
+    linarith
+  have hub : ∀ z ∈ Metric.ball c 6, ‖g z‖ ≤ Real.exp Mbig * ‖g c‖ := by
+    intro z hz
+    rw [Metric.mem_ball, dist_eq_norm] at hz
+    calc ‖g z‖ ≤ Real.exp Uu := hmax z hz
+      _ ≤ Real.exp Mbig * Real.exp (-(a * (1 + |s.im|)) - N * Real.log 6) := by
+          rw [← Real.exp_add]
+          refine Real.exp_le_exp.mpr ?_
+          rw [hMbig]
+          linarith
+      _ ≤ Real.exp Mbig * ‖g c‖ :=
+          mul_le_mul_of_nonneg_left hgc (Real.exp_pos _).le
+  have hgneb : ∀ z ∈ Metric.ball c 6, g z ≠ 0 := by
+    intro z hz
+    rw [Metric.mem_ball, dist_eq_norm] at hz
+    exact hgne z (by linarith)
+  have hlogderiv : ‖deriv g s / g s‖ ≤ 48 * Mbig / 6 :=
+    norm_logDeriv_le_of_mem_ball (by norm_num : (0 : ℝ) < 6) hMbig0 hgdiff
+      hgneb hub (by linarith)
+  have hsne : ∀ ρ ∈ t, s ≠ ρ := by
+    intro ρ hρ hcon
+    have h1 := hgap ρ ((htmem ρ).mp hρ).1
+    rw [← hcon] at h1
+    simp at h1
+    linarith
+  have hgs : g s ≠ 0 := hgne s (by linarith)
+  have hpf := deriv_div_of_factorization hgdiff hgfac hsne hgs
+  have hsumb : ‖∑ ρ ∈ t, ((analyticOrderNatAt pkg.xi ρ : ℕ) : ℂ) / (s - ρ)‖
+      ≤ N / gp := by
+    refine (norm_sum_le _ _).trans ?_
+    have hterm : ∀ ρ ∈ t,
+        ‖((analyticOrderNatAt pkg.xi ρ : ℕ) : ℂ) / (s - ρ)‖
+          ≤ ((analyticOrderNatAt pkg.xi ρ : ℕ) : ℝ) / gp := by
+      intro ρ hρ
+      have h1 : gp ≤ ‖s - ρ‖ := by
+        have h2 := hgap ρ ((htmem ρ).mp hρ).1
+        have h3 : |(s - ρ).im| ≤ ‖s - ρ‖ := Complex.abs_im_le_norm _
+        rw [Complex.sub_im, abs_sub_comm] at h3
+        linarith
+      rw [norm_div, Complex.norm_natCast]
+      exact div_le_div_of_nonneg_left (Nat.cast_nonneg _) hgp h1
+    calc ∑ ρ ∈ t, ‖((analyticOrderNatAt pkg.xi ρ : ℕ) : ℂ) / (s - ρ)‖
+        ≤ ∑ ρ ∈ t, ((analyticOrderNatAt pkg.xi ρ : ℕ) : ℝ) / gp :=
+          Finset.sum_le_sum hterm
+      _ = (∑ ρ ∈ t, ((analyticOrderNatAt pkg.xi ρ : ℕ) : ℝ)) / gp := by
+          rw [Finset.sum_div]
+      _ ≤ N / gp := by
+          rw [← hMcast]
+          exact div_le_div_of_nonneg_right hMtotN hgp.le
+  have harith : 48 * Mbig / 6 = 8 * Mbig := by ring
+  rw [harith] at hlogderiv
+  rw [hpf]
+  refine (norm_add_le _ _).trans ?_
+  linarith
+
+/-- **Landau's log-derivative bound at gap-protected heights** (sorry
+node, stated 2026-07-24 — leaf (b₁ᵢᵢᵢ-β) of the decomposition of
+`DedekindContinuation.poitouHorizontal_gap_tendsto_zero`; E. Landau,
+*Algebraische Zahlen*, p. 122, as cited by Poitou p. 6-02): on the
+horizontal segments `re s ∈ [−1/4, 5/4]`, `|im s| = τ(T)` of the
+Poitou contour, at heights `τ(T) ∈ [T, T + 1]` whose ordinate gap to
+every zero is `≥ c/log T`, the completed-zeta log-derivative is
+`O(T·log² T)`.
+
+Intended proof (the classical Landau lemma, manufactured from the
+pin's `Complex.borelCaratheodory`):
+
+1. *Reflect to the upper edge.*  `conj_symm` differentiates to
+   `ξ'(conj s) = conj (ξ'(s))` (Schwarz reflection of the
+   derivative: `η(s) := conj (ξ(conj s))` equals `ξ` by `conj_symm`,
+   and the chain rule computes `η'(s) = conj (ξ'(conj s))`), so
+   `‖(ξ'/ξ)(conj s)‖ = ‖(ξ'/ξ)(s)‖` and the case `im s = −τ(T)`
+   follows from the case `im s = τ(T)`.
+2. *Setup.*  Centre `s₀ = 3/2 + i·τ(T)`; the segment lies in
+   `closedBall s₀ 2` (`|σ − 3/2| ≤ 7/4 < 2`).  On `closedBall s₀ 12`
+   the `growth` field gives
+   `log ‖ξ(s)‖ ≤ C·(T + 15)·log (T + 15) = O(T·log T)`, and at the
+   centre `eq_of_one_lt_re` bounds `‖ξ(s₀)‖` BELOW by
+   `exp(−C'·T·log T)`: `‖ζ_K(s₀)‖ ≥ 1/ζ_K(3/2)` (the inverse
+   Dirichlet series is dominated coefficientwise by the Möbius-type
+   expansion, so `‖ζ_K(s₀)⁻¹‖ ≤ ζ_K(3/2)`), the `Γ`-factors obey
+   vertical-line Stirling lower bounds `≥ exp(−c₁·T·log T)`, and
+   `s₀(s₀ − 1)·|d|^{s₀/2}` is polynomially large.
+3. *Divide out the zeros.*  The zeros of `ξ` in `closedBall s₀ 6`
+   are finitely many (`finite_truncation` at `τ(T) + 7`) with total
+   multiplicity `N = O(log T)`: each has `||im ρ| − τ(T)| ≤ 6`, so
+   thirteen `hcount` windows at heights `τ(T) − 6, …, τ(T) + 6`
+   cover them (window heights `< 2` occur only for `T ≤ 13`,
+   absorbed by a compactness constant); every such zero carries
+   `mult ρ ≠ 0` — `hbnd`, `funcEq` and `ne_zero_of_one_lt_re` clear
+   `re ρ ∉ (0, 1)` exactly as in the support analysis of
+   `DedekindContinuation.mult`, and inside the open strip a zero of
+   the nontrivial entire `ξ` has `analyticOrderNatAt ≠ 0`.  Iterated
+   `dslope` division (`sub_smul_dslope_of_zero`, as in
+   `sum_analyticOrderNatAt_le_of_frontier_norm_le`) writes
+   `ξ = (∏ (· − ρ)^{mult ρ}) • g` with `g` zero-free on
+   `closedBall s₀ 6` and analytic everywhere, with
+   `log ‖g‖ = O(T·log T)` on `sphere s₀ 12` (each divided linear
+   factor has modulus `≥ 6` there) hence on the ball by the maximum
+   principle, and `log ‖g(s₀)‖ ≥ −O(T·log T) − N·log 12`.
+4. *Borel–Carathéodory.*  `g` is zero-free on `ball s₀ 6`, so a
+   holomorphic logarithm of `g/g(s₀)` exists on the ball, and the
+   pin's `Complex.borelCaratheodory`
+   (`Mathlib/Analysis/Complex/BorelCaratheodory.lean`) turns the
+   bound `Re log (g/g(s₀)) = log ‖g‖ − log ‖g(s₀)‖ ≤ O(T·log T)` on
+   `ball s₀ 6` into `‖(g'/g)(s)‖ = O(T·log T)` on `closedBall s₀ 2`.
+5. *Partial fractions.*  On the segment,
+   `(ξ'/ξ)(s) = Σ_ρ mult ρ/(s − ρ) + (g'/g)(s)`; each near-zero
+   satisfies `|s − ρ| ≥ ||im ρ| − τ(T)| ≥ c/log T` (for `im ρ > 0`
+   directly, for `im ρ < 0` even `|s − ρ| ≥ τ(T) + |im ρ|`), so the
+   near-sum is `≤ N·(log T)/c = O(log² T)` and the total is
+   `O(T·log T) + O(log² T) ≤ A·T·log² T` for `T ≥ e`; the compact
+   range `T ∈ [2, e]` is absorbed into `A` (there the segment points
+   stay at ordinate distance `≥ c/log e` from the finitely many
+   zeros of `finite_truncation 4`, so `‖ξ'/ξ‖` is uniformly bounded
+   on the corresponding compact set, and `T·log² T ≥ 2·log² 2 > 0`
+   keeps the right side bounded below). -/
+theorem DedekindContinuation.xi_logDeriv_gap_bound {K : Type*} [Field K]
+    [NumberField K] (pkg : DedekindContinuation K)
+    (hcount : ∃ C : ℝ, 0 < C ∧ ∀ T : ℝ, 2 ≤ T → ∀ s : Finset ℂ,
+      (∀ ρ ∈ s, |(|ρ.im| - T)| ≤ 1) →
+      ∑ ρ ∈ s, (pkg.mult ρ : ℝ) ≤ C * Real.log T)
+    (hbnd : ∀ t : ℝ, pkg.xi (1 + t * Complex.I) ≠ 0)
+    {c : ℝ} (hc : 0 < c) (τ : ℝ → ℝ)
+    (hτ : ∀ T : ℝ, 2 ≤ T → T ≤ τ T ∧ τ T ≤ T + 1 ∧
+      ∀ ρ : ℂ, pkg.mult ρ ≠ 0 → c / Real.log T ≤ |(|ρ.im| - τ T)|) :
+    ∃ A : ℝ, 0 < A ∧ ∀ T : ℝ, 2 ≤ T → ∀ s : ℂ,
+      -(1 / 4) ≤ s.re → s.re ≤ 5 / 4 → |s.im| = τ T →
+      ‖deriv pkg.xi s / pkg.xi s‖ ≤ A * (T * Real.log T ^ 2) := by
+  obtain ⟨C₁, hC₁, hwin⟩ := pkg.mult_wide_window_le hcount
+  obtain ⟨B, hB0, hB⟩ := pkg.norm_xi_le
+  obtain ⟨a, ha0, ha⟩ := pkg.norm_xi_line_ge
+  refine ⟨2400 * B + 40 * a + 64 * C₁ + 16 + C₁ / c, ?_, ?_⟩
+  · have h4 : 0 < C₁ / c := div_pos hC₁ hc
+    linarith
+  intro T hT s hs1 hs2 hsim
+  obtain ⟨hτ1, hτ2, hτ3⟩ := hτ T hT
+  have hT0 : (0 : ℝ) < T := by linarith
+  have hlog2 : (0.6931471803 : ℝ) < Real.log 2 := Real.log_two_gt_d9
+  have hlogT : Real.log 2 ≤ Real.log T := Real.log_le_log (by norm_num) hT
+  have hL : (0.69 : ℝ) < Real.log T := by linarith
+  have hL0 : (0 : ℝ) < Real.log T := by linarith
+  have hLne : Real.log T ≠ 0 := ne_of_gt hL0
+  have hcne : c ≠ 0 := ne_of_gt hc
+  have him0 : (0 : ℝ) ≤ |s.im| := abs_nonneg s.im
+  have hτge : T ≤ |s.im| := by rw [hsim]; exact hτ1
+  have hτle : |s.im| ≤ T + 1 := by rw [hsim]; exact hτ2
+  -- the ordinate gap, transported from `|Im ρ|` to the segment point itself
+  have hgap : ∀ ρ : ℂ, pkg.mult ρ ≠ 0 → c / Real.log T ≤ |ρ.im - s.im| := by
+    intro ρ hρ
+    have h1 := hτ3 ρ hρ
+    rw [← hsim] at h1
+    exact h1.trans (abs_abs_sub_abs_le_abs_sub _ _)
+  have hgppos : 0 < c / Real.log T := div_pos hc hL0
+  -- the zero mass of the Borel–Carathéodory disc
+  have hNb : ∀ u : Finset ℂ, (∀ ρ ∈ u, |(|ρ.im| - |s.im|)| ≤ 6) →
+      ∑ ρ ∈ u, (pkg.mult ρ : ℝ) ≤ 2 * C₁ * Real.log T := by
+    intro u hu
+    have h1 : (2 : ℝ) ≤ τ T := by linarith
+    refine (hwin (τ T) h1 u (by rw [← hsim]; exact hu)).trans ?_
+    have h3 : Real.log (τ T) ≤ 2 * Real.log T := by
+      have h4 : Real.log (τ T) ≤ Real.log (2 * T) :=
+        Real.log_le_log (by linarith) (by linarith)
+      rw [Real.log_mul (by norm_num) (by linarith)] at h4
+      linarith
+    have h5 : C₁ * Real.log (τ T) ≤ C₁ * (2 * Real.log T) :=
+      mul_le_mul_of_nonneg_left h3 hC₁.le
+    linarith
+  have hN0 : (0 : ℝ) ≤ 2 * C₁ * Real.log T := by positivity
+  have hcore := pkg.norm_xi_logDeriv_le_of_gap hbnd hB0 hB ha0 ha hN0 hgppos
+    hs1 hs2 hgap hNb
+  refine hcore.trans ?_
+  -- the numerical bookkeeping: every stage is `O(T·log² T)` for `T ≥ 2`
+  have hTL : (0 : ℝ) ≤ T * Real.log T ^ 2 := by positivity
+  have hBT : (0 : ℝ) ≤ B * (T * Real.log T ^ 2) := mul_nonneg hB0 hTL
+  have haT : (0 : ℝ) ≤ a * (T * Real.log T ^ 2) := mul_nonneg ha0 hTL
+  have hCT : (0 : ℝ) ≤ C₁ * (T * Real.log T ^ 2) := mul_nonneg hC₁.le hTL
+  have hLsq : Real.log T ≤ 1.45 * Real.log T ^ 2 := by
+    nlinarith [mul_pos hL0 (by linarith : (0 : ℝ) < 1.45 * Real.log T - 1)]
+  have hone : (1 : ℝ) ≤ 2.2 * Real.log T ^ 2 := by
+    nlinarith [mul_pos (by linarith : (0 : ℝ) < Real.log T - 0.69)
+      (by linarith : (0 : ℝ) < Real.log T + 0.69)]
+  have hTsq : Real.log T ^ 2 * 2 ≤ Real.log T ^ 2 * T := by
+    nlinarith [sq_nonneg (Real.log T)]
+  have hlog6 : Real.log 6 ≤ 5 := by
+    have h := Real.log_le_sub_one_of_pos (by norm_num : (0 : ℝ) < 6)
+    linarith
+  have hlog11 : Real.log 11 ≤ 10 := by
+    have h := Real.log_le_sub_one_of_pos (by norm_num : (0 : ℝ) < 11)
+    linarith
+  have hlogargn : (0 : ℝ) ≤ Real.log (18 + |s.im|) :=
+    Real.log_nonneg (by linarith)
+  have hlogarg : Real.log (18 + |s.im|) ≤ 16 * Real.log T := by
+    have h1 : (18 : ℝ) + |s.im| ≤ 11 * T := by linarith
+    have h2 : Real.log (18 + |s.im|) ≤ Real.log (11 * T) :=
+      Real.log_le_log (by linarith) h1
+    rw [Real.log_mul (by norm_num) (by linarith)] at h2
+    linarith
+  have hX1 : B * (15 + |s.im|) * Real.log (18 + |s.im|)
+      ≤ 210 * (B * (T * Real.log T ^ 2)) := by
+    have hb1 : B * (15 + |s.im|) ≤ B * (9 * T) :=
+      mul_le_mul_of_nonneg_left (by linarith) hB0
+    have hb3 : B * (15 + |s.im|) * Real.log (18 + |s.im|)
+        ≤ B * (9 * T) * (16 * Real.log T) :=
+      mul_le_mul hb1 hlogarg hlogargn (mul_nonneg hB0 (by linarith))
+    have hb5 : B * T * Real.log T ≤ B * T * (1.45 * Real.log T ^ 2) :=
+      mul_le_mul_of_nonneg_left hLsq (mul_nonneg hB0 hT0.le)
+    linarith
+  have hX2 : a * (1 + |s.im|) ≤ 5 * (a * (T * Real.log T ^ 2)) := by
+    have h1 : a * (1 + |s.im|) ≤ a * (2 * T) :=
+      mul_le_mul_of_nonneg_left (by linarith) ha0
+    have h2 : a * (2 * T) * 1 ≤ a * (2 * T) * (2.2 * Real.log T ^ 2) :=
+      mul_le_mul_of_nonneg_left hone (mul_nonneg ha0 (by linarith))
+    linarith
+  have hX3 : 2 * C₁ * Real.log T * Real.log 6
+      ≤ 8 * (C₁ * (T * Real.log T ^ 2)) := by
+    have h1 : 2 * C₁ * Real.log T * Real.log 6 ≤ 2 * C₁ * Real.log T * 5 :=
+      mul_le_mul_of_nonneg_left hlog6 (by positivity)
+    have h3 : C₁ * Real.log T ≤ C₁ * (1.45 * Real.log T ^ 2) :=
+      mul_le_mul_of_nonneg_left hLsq hC₁.le
+    have h4 : C₁ * (Real.log T ^ 2 * 2) ≤ C₁ * (Real.log T ^ 2 * T) :=
+      mul_le_mul_of_nonneg_left hTsq hC₁.le
+    linarith
+  have hX4 : (1 : ℝ) ≤ 2 * (T * Real.log T ^ 2) := by linarith
+  have hX5 : 2 * C₁ * Real.log T / (c / Real.log T)
+      ≤ 1 * (C₁ / c * (T * Real.log T ^ 2)) := by
+    have h1 : 2 * C₁ * Real.log T / (c / Real.log T)
+        = 2 * (C₁ / c) * Real.log T ^ 2 := by
+      field_simp
+    rw [h1]
+    have h3 : C₁ / c * (Real.log T ^ 2 * 2) ≤ C₁ / c * (Real.log T ^ 2 * T) :=
+      mul_le_mul_of_nonneg_left hTsq (div_pos hC₁ hc).le
+    linarith
+  have hgoalring : (2400 * B + 40 * a + 64 * C₁ + 16 + C₁ / c) *
+      (T * Real.log T ^ 2)
+      = 2400 * (B * (T * Real.log T ^ 2)) + 40 * (a * (T * Real.log T ^ 2)) +
+        64 * (C₁ * (T * Real.log T ^ 2)) + 16 * (T * Real.log T ^ 2) +
+        1 * (C₁ / c * (T * Real.log T ^ 2)) := by ring
+  rw [hgoalring]
+  linarith
+
+/-- **Poitou's Proposition 1: the horizontal edges vanish along
+good-height selections** (ASSEMBLED 2026-07-24 over the two stage
+leaves `poitouPhi_strip_decay_sq` (uniform `1/T²` decay of `Φ` on the
+contour strip, leaf α above) and
+`DedekindContinuation.xi_logDeriv_gap_bound` (Landau's `O(T·log² T)`
+log-derivative bound at gap-protected heights, leaf β above);
+originally leaf (b₁ᵢᵢᵢ), the Borel–Carathéodory stage of the
+decomposition of
+`DedekindContinuation.zero_sum_sub_poitouEdge_tendsto_zero`; Poitou
+p. 6-02, Proposition 1, citing E. Landau, *Algebraische Zahlen*,
+p. 122).
+
+The assembly: on either horizontal segment `σ ↦ σ ± i·τ(T)`,
+`σ ∈ [−1/4, 5/4]`, the integrand of
+`DedekindContinuation.poitouHorizontal` is bounded pointwise by
+`(M/τ(T)²)·(A·T·log² T) ≤ M·A·(log² T)/T` (the two leaves and
+`τ(T) ≥ T > 0`), so each edge integral is at most
+`(3/2)·M·A·(log² T)/T` by
+`intervalIntegral.norm_integral_le_of_norm_le_const` — which needs
+NO integrability of the edge integrand for this direction — whence
+`|H(τ(T))| ≤ ‖(2πi)⁻¹‖·3·M·A·(log² T)/T`, a null sequence
+(`Real.tendsto_pow_log_div_mul_add_atTop`); conclude by
+`squeeze_zero_norm'`. -/
+theorem DedekindContinuation.poitouHorizontal_gap_tendsto_zero {K : Type*}
+    [Field K] [NumberField K] (pkg : DedekindContinuation K)
+    (hcount : ∃ C : ℝ, 0 < C ∧ ∀ T : ℝ, 2 ≤ T → ∀ s : Finset ℂ,
+      (∀ ρ ∈ s, |(|ρ.im| - T)| ≤ 1) →
+      ∑ ρ ∈ s, (pkg.mult ρ : ℝ) ≤ C * Real.log T)
+    (hbnd : ∀ t : ℝ, pkg.xi (1 + t * Complex.I) ≠ 0)
+    {c : ℝ} (hc : 0 < c) (τ : ℝ → ℝ)
+    (hτ : ∀ T : ℝ, 2 ≤ T → T ≤ τ T ∧ τ T ≤ T + 1 ∧
+      ∀ ρ : ℂ, pkg.mult ρ ≠ 0 → c / Real.log T ≤ |(|ρ.im| - τ T)|) :
+    Filter.Tendsto (fun T : ℝ => pkg.poitouHorizontal (τ T))
+      Filter.atTop (nhds 0) := by
+  obtain ⟨M, hM0, hM⟩ := poitouPhi_strip_decay_sq
+  obtain ⟨A, hA0, hA⟩ := pkg.xi_logDeriv_gap_bound hcount hbnd hc τ hτ
+  have hg : Filter.Tendsto (fun T : ℝ =>
+      ‖(2 * (Real.pi : ℂ) * Complex.I)⁻¹‖ * 3 * (M * A) *
+        (Real.log T ^ 2 / T)) Filter.atTop (nhds 0) := by
+    have h0 := (Real.tendsto_pow_log_div_mul_add_atTop 1 0 2
+      one_ne_zero).const_mul
+      (‖(2 * (Real.pi : ℂ) * Complex.I)⁻¹‖ * 3 * (M * A))
+    simpa using h0
+  refine squeeze_zero_norm' ?_ hg
+  filter_upwards [Filter.eventually_ge_atTop (2 : ℝ)] with T hT
+  obtain ⟨hτ1, -, -⟩ := hτ T hT
+  have hT0 : (0 : ℝ) < T := by linarith
+  have hτT0 : (0 : ℝ) < τ T := by linarith
+  have heq : M / T ^ 2 * (A * (T * Real.log T ^ 2)) =
+      M * A * (Real.log T ^ 2 / T) := by
+    field_simp
+  have hphi_le : M / τ T ^ 2 ≤ M / T ^ 2 := by
+    gcongr
+  have hKb : ∀ x ∈ Set.uIoc (-(1 / 4) : ℝ) (5 / 4),
+      ‖poitouPhi ((x : ℂ) - (τ T : ℂ) * Complex.I) *
+        (deriv pkg.xi ((x : ℂ) - (τ T : ℂ) * Complex.I) /
+          pkg.xi ((x : ℂ) - (τ T : ℂ) * Complex.I))‖ ≤
+      M * A * (Real.log T ^ 2 / T) := by
+    intro x hx
+    rw [Set.uIoc_of_le (by norm_num : (-(1 / 4) : ℝ) ≤ 5 / 4)] at hx
+    have hre : ((x : ℂ) - (τ T : ℂ) * Complex.I).re = x := by simp
+    have him : ((x : ℂ) - (τ T : ℂ) * Complex.I).im = -(τ T) := by simp
+    have h1 : ‖poitouPhi ((x : ℂ) - (τ T : ℂ) * Complex.I)‖ ≤ M / T ^ 2 := by
+      have hb := hM ((x : ℂ) - (τ T : ℂ) * Complex.I)
+        (by rw [hre]; exact hx.1.le) (by rw [hre]; exact hx.2)
+        (by rw [him]; exact neg_ne_zero.mpr hτT0.ne')
+      rw [him, neg_sq] at hb
+      exact hb.trans hphi_le
+    have h2 : ‖deriv pkg.xi ((x : ℂ) - (τ T : ℂ) * Complex.I) /
+        pkg.xi ((x : ℂ) - (τ T : ℂ) * Complex.I)‖ ≤
+        A * (T * Real.log T ^ 2) :=
+      hA T hT ((x : ℂ) - (τ T : ℂ) * Complex.I)
+        (by rw [hre]; exact hx.1.le) (by rw [hre]; exact hx.2)
+        (by rw [him, abs_neg, abs_of_pos hτT0])
+    rw [norm_mul]
+    exact (mul_le_mul h1 h2 (norm_nonneg _)
+      (div_nonneg hM0 (sq_nonneg _))).trans_eq heq
+  have hKt : ∀ x ∈ Set.uIoc (-(1 / 4) : ℝ) (5 / 4),
+      ‖poitouPhi ((x : ℂ) + (τ T : ℂ) * Complex.I) *
+        (deriv pkg.xi ((x : ℂ) + (τ T : ℂ) * Complex.I) /
+          pkg.xi ((x : ℂ) + (τ T : ℂ) * Complex.I))‖ ≤
+      M * A * (Real.log T ^ 2 / T) := by
+    intro x hx
+    rw [Set.uIoc_of_le (by norm_num : (-(1 / 4) : ℝ) ≤ 5 / 4)] at hx
+    have hre : ((x : ℂ) + (τ T : ℂ) * Complex.I).re = x := by simp
+    have him : ((x : ℂ) + (τ T : ℂ) * Complex.I).im = τ T := by simp
+    have h1 : ‖poitouPhi ((x : ℂ) + (τ T : ℂ) * Complex.I)‖ ≤ M / T ^ 2 := by
+      have hb := hM ((x : ℂ) + (τ T : ℂ) * Complex.I)
+        (by rw [hre]; exact hx.1.le) (by rw [hre]; exact hx.2)
+        (by rw [him]; exact hτT0.ne')
+      rw [him] at hb
+      exact hb.trans hphi_le
+    have h2 : ‖deriv pkg.xi ((x : ℂ) + (τ T : ℂ) * Complex.I) /
+        pkg.xi ((x : ℂ) + (τ T : ℂ) * Complex.I)‖ ≤
+        A * (T * Real.log T ^ 2) :=
+      hA T hT ((x : ℂ) + (τ T : ℂ) * Complex.I)
+        (by rw [hre]; exact hx.1.le) (by rw [hre]; exact hx.2)
+        (by rw [him, abs_of_pos hτT0])
+    rw [norm_mul]
+    exact (mul_le_mul h1 h2 (norm_nonneg _)
+      (div_nonneg hM0 (sq_nonneg _))).trans_eq heq
+  have hIb := intervalIntegral.norm_integral_le_of_norm_le_const hKb
+  have hIt := intervalIntegral.norm_integral_le_of_norm_le_const hKt
+  simp only [DedekindContinuation.poitouHorizontal]
+  rw [Real.norm_eq_abs]
+  refine (Complex.abs_re_le_norm _).trans ?_
+  rw [norm_mul]
+  refine (mul_le_mul_of_nonneg_left (norm_sub_le _ _)
+    (norm_nonneg _)).trans ?_
+  refine (mul_le_mul_of_nonneg_left (add_le_add hIb hIt)
+    (norm_nonneg _)).trans ?_
+  rw [show |(5 / 4 : ℝ) - -(1 / 4)| = 3 / 2 by norm_num]
+  exact le_of_eq (by ring)
 
 /-- **The pole-pair edge functional** (definition, 2026-07-24 —
 introduced in the decomposition of
