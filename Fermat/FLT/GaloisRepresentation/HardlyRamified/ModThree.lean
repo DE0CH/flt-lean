@@ -28850,9 +28850,167 @@ theorem exists_ideal_extension_globalFrob_ray_class
     simp only [Multiset.map_singleton, Multiset.prod_singleton, hG,
       dif_pos (And.intro v.isPrime v.ne_bot)]
 
+set_option maxHeartbeats 400000 in
+/-- **A nonvanishing multiplicative ideal function takes the value `1`
+at the unit ideal** (PROVEN 2026-07-25): if `f` is multiplicative on
+NONZERO ideals of `𝓞 F` and `f` does not vanish at any prime, then
+`f ⊤ = 1`. Proof: `𝓞 F` is not a field
+(`NumberField.RingOfIntegers.not_isField`), so it has a nonzero prime
+`P` (`Ring.not_isField_iff_exists_prime`); `f P = f (⊤ * P) = f ⊤ * f P`
+and `f P ≠ 0` cancel. Isolated because multiplicativity ALONE only
+forces `f ⊤` to be idempotent, hence `0` or `1`, and the degenerate
+branch has to be excluded by hand — the same nondegeneracy bookkeeping
+that `exists_ideal_extension_globalFrob_ray_class` warns about at
+`⊥`. -/
+theorem eq_one_top_of_forall_asIdeal_ne_zero_ray_class
+    (F : Type*) [Field F] [NumberField F] (L : Type*) [Field L]
+    (f : Ideal (NumberField.RingOfIntegers F) → L)
+    (hfmul : ∀ I J : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ → J ≠ ⊥ →
+      f (I * J) = f I * f J)
+    (hne : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      f v.asIdeal ≠ 0) :
+    f ⊤ = 1 := by
+  obtain ⟨P, hP0, hPp⟩ :=
+    Ring.not_isField_iff_exists_prime.mp (NumberField.RingOfIntegers.not_isField F)
+  have hne' : f P ≠ 0 := hne ⟨P, hPp, hP0⟩
+  have h := hfmul ⊤ P top_ne_bot hP0
+  rw [Ideal.top_mul] at h
+  exact mul_right_cancel₀ hne' (h.symm.trans (one_mul (f P)).symm)
+
+set_option maxHeartbeats 400000 in
+/-- **Uniqueness of the multiplicative extension of a place-indexed
+function to the ideals** (PROVEN 2026-07-25; the converse bookkeeping to
+`exists_ideal_extension_globalFrob_ray_class`, whose docstring asserts
+this uniqueness without proving it): two functions on ideals of `𝓞 F`
+with values in a field `L`, each multiplicative on NONZERO ideals and
+agreeing at every prime `v.asIdeal`, agree at every nonzero ideal —
+provided the common value at primes never vanishes (without that, both
+could differ by an idempotent factor at `⊤`; see
+`eq_one_top_of_forall_asIdeal_ne_zero_ray_class`). Proof: unique
+factorization of ideals, run as
+`UniqueFactorizationMonoid.induction_on_prime` on the ideal monoid of
+the Dedekind domain `𝓞 F` — the zero case is excluded by hypothesis,
+the unit case is `Ideal.isUnit_iff` plus the value at `⊤`, and the
+prime step is multiplicativity together with `Ideal.isPrime_of_prime`
+packaging the prime factor as a `HeightOneSpectrum` point. This is what
+lets the Artin symbol be characterized abstractly (multiplicative,
+values `χ(Frob_v)` at primes) rather than by a chosen formula. -/
+theorem eq_of_forall_asIdeal_eq_ray_class
+    (F : Type*) [Field F] [NumberField F] (L : Type*) [Field L]
+    (f g : Ideal (NumberField.RingOfIntegers F) → L)
+    (hfmul : ∀ I J : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ → J ≠ ⊥ →
+      f (I * J) = f I * f J)
+    (hgmul : ∀ I J : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ → J ≠ ⊥ →
+      g (I * J) = g I * g J)
+    (hval : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      f v.asIdeal = g v.asIdeal)
+    (hne : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      f v.asIdeal ≠ 0)
+    (I : Ideal (NumberField.RingOfIntegers F)) (hI : I ≠ ⊥) :
+    f I = g I := by
+  have hgne : ∀ v : IsDedekindDomain.HeightOneSpectrum
+      (NumberField.RingOfIntegers F), g v.asIdeal ≠ 0 := fun v => (hval v) ▸ hne v
+  have hftop : f ⊤ = 1 :=
+    eq_one_top_of_forall_asIdeal_ne_zero_ray_class F L f hfmul hne
+  have hgtop : g ⊤ = 1 :=
+    eq_one_top_of_forall_asIdeal_ne_zero_ray_class F L g hgmul hgne
+  refine UniqueFactorizationMonoid.induction_on_prime
+    (P := fun J => J ≠ ⊥ → f J = g J) I ?_ ?_ ?_ hI
+  · intro h
+    exact absurd Ideal.zero_eq_bot h
+  · intro x hx _
+    rw [Ideal.isUnit_iff.mp hx, hftop, hgtop]
+  · intro a p ha hp ih _
+    have ha' : a ≠ ⊥ := fun h => ha (by rw [Ideal.zero_eq_bot]; exact h)
+    have hp0 : p ≠ ⊥ := fun h => hp.ne_zero (by rw [Ideal.zero_eq_bot]; exact h)
+    have hpp : p.IsPrime := Ideal.isPrime_of_prime hp
+    rw [hfmul p a hp0 ha', hgmul p a hp0 ha', ih ha', hval ⟨p, hpp, hp0⟩]
+
+set_option maxHeartbeats 1000000 in
+/-- **Artin reciprocity for the narrow Hilbert class field, in
+Artin-symbol existence form — THE class-field-theoretic leaf** (sorry
+node, created 2026-07-25 as the isolated global-CFT content of
+`character_ideal_span_singleton_eq_one_of_forall_pos_ray_class` below):
+for a multiplicative `χ : Γ F → 𝔽̄₃` (`hmul`) trivial on an open
+subgroup `V` (`hVopen`, `hVker`) and unramified at every finite place
+(`hunr`), the assignment `v ↦ χ(Frob_v)` extends to a function `c` on
+ideals that is multiplicative on nonzero ideals AND takes the value `1`
+on every nonzero NARROWLY PRINCIPAL ideal. That last clause is the
+Artin reciprocity law: `c` factors through the narrow class group
+`Cl⁺(F) = I(F)/P⁺(F)`.
+
+Why this is true (Neukirch, *ANT* VI (6.7) and VI §7; Lang, *ANT* ch. X
+§1; Janusz, *Algebraic Number Fields* V; Serre, Duke 1987 §5.3): `χ`
+takes values in the ABELIAN group `𝔽̄₃ˣ` (its values are units, since
+`χ a · χ a⁻¹ = χ 1 = 1`), so `ker χ` is an open NORMAL subgroup and `χ`
+cuts out a finite abelian extension `M/F` whose Galois group embeds in
+`𝔽̄₃ˣ` — hence is CYCLIC, the image of `χ` being a finite subgroup of a
+field's unit group. By `hunr`, `M/F` is unramified at every finite
+place. The Artin map `I(F) → Gal(M/F)`, `v ↦ Frob_v`, is multiplicative
+by construction, so `c` is its composite with `Gal(M/F) ↪ 𝔽̄₃ˣ`; the
+reciprocity law says its kernel contains `P⁺(F)`, equivalently that
+`M` lies in the narrow Hilbert class field of `F`.
+
+The hypothesis really is needed and the conclusion really is not
+vacuous — checked numerically 2026-07-25 with PARI/GP, `bnfnarrow`:
+for `F = ℚ(√3)` one has `Cl(F) = 1` but `Cl⁺(F) ≅ ℤ/2` (the
+fundamental unit `2 + √3` has norm `+1`, so it cannot flip signs), and
+the corresponding quadratic character has `c ((√3)) = −1 ≠ 1` on the
+principal — but not NARROWLY principal — ideal `(√3)`. So "narrowly
+principal" cannot be weakened to "principal", and the total positivity
+in the consumer below is load-bearing rather than decorative. (The
+companion degeneracy in the other direction, `IsNarrowRayEquiv 1`, is
+documented on `IsNarrowPrincipal`.)
+
+**The Weber-counting route previously recorded on the consumer is
+CIRCULAR as stated** (analysis 2026-07-25) and is NOT the intended
+attack any more. That route proposed to use
+`exists_forall_abs_natCard_isNarrowRayEquiv_sub_mul_le_rpow` and
+`dense_conjClasses_globalFrob` to upgrade "`c` is constant on the
+primes of a narrow class" to "`c` is trivial on the principal class".
+But "`c` is constant on the primes of a narrow class" IS the
+reciprocity law: the density statements say only that the Frobenius
+conjugacy classes are topologically dense in `Γ F` — they produce
+plenty of primes in each narrow ray class, yet nothing in them ever
+links the Galois-theoretic quantity `χ(Frob_v)` to the IDEAL-theoretic
+narrow class of `v`, and that link is exactly what is to be proven.
+The counting machinery is an INPUT to a proof of reciprocity (it is
+what powers the analytic class-number/`L`-function inequality), never
+a step that discharges it.
+
+Genuine routes, both of which are large developments absent from the
+mathlib pin: (i) Artin's original proof — reduce to `Gal(M/F)` cyclic
+(free here, see above), then Artin's cyclotomic-descent lemma reduces
+reciprocity for `M/F` to reciprocity for cyclotomic extensions, where
+the Frobenius acts by `ζ ↦ ζ^{N v}`; the in-tree
+`exists_algEquiv_map_zeta_eq_pow_absNorm` is the cyclotomic base case
+of that route. (ii) The two inequalities: the analytic one over ray
+class `L`-functions (this is where the Weber counting of
+`Chebotarev.lean` is genuinely consumed) together with the algebraic
+one via the ambiguous-class/Herbrand-quotient computation, then
+reciprocity from the index equality. -/
+theorem exists_artinSymbol_isNarrowPrincipal_ray_class
+    (F : Type*) [Field F] [NumberField F]
+    (χ : Γ F → Dickson.K 3)
+    (hmul : ∀ a b : Γ F, χ (a * b) = χ a * χ b)
+    (V : Subgroup (Γ F)) (hVopen : IsOpen (V : Set (Γ F)))
+    (hVker : ∀ a ∈ V, χ a = 1)
+    (hunr : ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      ∀ c : Γ F, ∀ σ ∈ localInertiaGroup w,
+        χ (c * Field.absoluteGaloisGroup.map
+          (algebraMap F (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w)) σ * c⁻¹) = 1) :
+    ∃ c : Ideal (NumberField.RingOfIntegers F) → Dickson.K 3,
+      (∀ I J : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ → J ≠ ⊥ →
+        c (I * J) = c I * c J) ∧
+      (∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+        c v.asIdeal = χ (globalFrob v)) ∧
+      ∀ I : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ →
+        IsNarrowPrincipal I → c I = 1 := by
+  sorry
+
 set_option maxHeartbeats 1000000 in
 /-- **A totally positive principal ideal has trivial Artin symbol — THE
-narrow-ray reciprocity input** (sorry node, created 2026-07-25 as
+narrow-ray reciprocity input** (created 2026-07-25 as
 sub-leaf (b) of
 `character_globalFrob_sq_eq_one_of_narrow_exponent_two_ray_class`
 below; the genuinely class-field-theoretic content of that leaf, now
@@ -28879,19 +29037,31 @@ extension has conductor dividing the archimedean modulus, so
 `Gal(M/F)` is a quotient of `Cl⁺(F) = I(F)/P₁⁺`. Concretely
 `f ((α)) = 1` for `α ≫ 0`.
 
-Intended formalization route: the Weber counting machinery of
-`Chebotarev.lean` —
-`exists_forall_abs_natCard_isNarrowRayEquiv_sub_mul_le_rpow` (ideal
-counts per narrow ray class with analytic error term),
-`finite_quotient_narrowRaySetoid` (finiteness of `Cl⁺`), and the
-Frobenius realizations `exists_algEquiv_map_zeta_eq_pow_absNorm` — is
-being built exactly to show that `I ↦ f I` factors through
-`narrowRaySetoid F 1`: the counting produces, in every narrow ray
-class, primes of positive density, and the density argument behind
-`dense_conjClasses_globalFrob` upgrades "`f` constant on the primes of
-a class" to "`f` trivial on the principal class". Nothing weaker will
-do: this is the single point where global class field theory (absent
-from the mathlib pin) enters the reciprocity chain. -/
+**DECOMPOSED and PROVEN as glue 2026-07-25** over the reciprocity leaf
+`exists_artinSymbol_isNarrowPrincipal_ray_class` (sorry) and the two
+bookkeeping bricks `eq_of_forall_asIdeal_eq_ray_class` /
+`eq_one_top_of_forall_asIdeal_ne_zero_ray_class` (both PROVEN just
+above). Assembly: the values of `χ` never vanish (`χ a · χ a⁻¹ = χ 1 =
+1`, and `χ 1 = 1` because `1 ∈ V`), so the hypothesized `f` and the
+Artin symbol `c` supplied by the reciprocity leaf are two
+multiplicative-on-nonzero functions agreeing at every prime with a
+nonvanishing common value there — hence equal at every nonzero ideal by
+uniqueness of the multiplicative extension. Finally `(α)` is nonzero
+and NARROWLY principal, with the multiplier witnesses `1` (totally
+positive) and `α`: `span {1} · span {α} = ⊤ · span {α} = span {α}`. So
+`f ((α)) = c ((α)) = 1`.
+
+The Weber-counting route recorded here previously — counting per narrow
+ray class plus `dense_conjClasses_globalFrob`, to upgrade "`f` constant
+on the primes of a class" to "`f` trivial on the principal class" — was
+found to be CIRCULAR on 2026-07-25 and has been retired; see the
+analysis in the docstring of
+`exists_artinSymbol_isNarrowPrincipal_ray_class`, which also records
+the two genuine routes (Artin's cyclotomic descent; the two
+inequalities) and the PARI/GP check that the total-positivity
+hypothesis is load-bearing. This remains the single point where global
+class field theory (absent from the mathlib pin) enters the reciprocity
+chain. -/
 theorem character_ideal_span_singleton_eq_one_of_forall_pos_ray_class
     (F : Type*) [Field F] [NumberField F]
     (χ : Γ F → Dickson.K 3)
@@ -28911,7 +29081,29 @@ theorem character_ideal_span_singleton_eq_one_of_forall_pos_ray_class
     (hαpos : ∀ φ : F →+* ℝ,
       0 < φ (algebraMap (NumberField.RingOfIntegers F) F α)) :
     f (Ideal.span {α}) = 1 := by
-  sorry
+  -- the values of `χ` are units, hence nonzero
+  have hone : χ 1 = 1 := hVker 1 V.one_mem
+  have hχne : ∀ a : Γ F, χ a ≠ 0 := by
+    intro a ha
+    have h1 : χ a * χ a⁻¹ = 1 := by rw [← hmul, mul_inv_cancel, hone]
+    rw [ha, zero_mul] at h1
+    exact zero_ne_one h1
+  -- the Artin symbol attached to `χ`, trivial on narrowly principal ideals
+  obtain ⟨c, hcmul, hcfrob, hcnarrow⟩ :=
+    exists_artinSymbol_isNarrowPrincipal_ray_class F χ hmul V hVopen hVker hunr
+  have hspan : Ideal.span {α} ≠ ⊥ := by
+    simpa [Ideal.span_singleton_eq_bot] using hα0
+  -- `f` and `c` are two multiplicative extensions of the same prime values
+  have hagree : f (Ideal.span {α}) = c (Ideal.span {α}) :=
+    eq_of_forall_asIdeal_eq_ray_class F (Dickson.K 3) f c hfmul hcmul
+      (fun v => by rw [hfrob, hcfrob]) (fun v => by rw [hfrob]; exact hχne _)
+      _ hspan
+  -- and `(α)` is narrowly principal, with multipliers `1` and `α`
+  rw [hagree]
+  refine hcnarrow _ hspan ⟨1, α, one_ne_zero, ?_, hαpos, ?_⟩
+  · intro φ
+    simp
+  · rw [Ideal.span_singleton_one, Ideal.top_mul]
 
 set_option maxHeartbeats 1000000 in
 /-- **Artin reciprocity for the narrow Hilbert class field, in
@@ -28922,7 +29114,10 @@ and free of all `Γ ℚ`/`θ'` coding; DECOMPOSED and PROVEN as glue
 `exists_ideal_extension_globalFrob_ray_class` (PROVEN) and the
 reciprocity input
 `character_ideal_span_singleton_eq_one_of_forall_pos_ray_class`
-(sorry)): a multiplicative character `χ` of `Γ F` (values in `𝔽̄₃`)
+(itself PROVEN as glue 2026-07-25 over the single remaining
+class-field-theoretic leaf
+`exists_artinSymbol_isNarrowPrincipal_ray_class`)): a multiplicative
+character `χ` of `Γ F` (values in `𝔽̄₃`)
 that is trivial on an open subgroup `V` and everywhere unramified
 (`hunr`: trivial on every `Γ F`-conjugate of the image of the local
 inertia group at every finite place `w` of `F`) satisfies
