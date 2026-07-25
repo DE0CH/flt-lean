@@ -16666,9 +16666,197 @@ theorem isNewAtPrime_of_isWeightTwoNewform {M : ℕ}
   · exact absurd hold
       (not_exists_eigenform_level_not_dvd_of_isWeightTwoNewform hg hqM)
 
+/-- **The inertia invariants of a Galois representation at a finite
+place** (definition, 2026-07-25 — the conductor-dictionary carrier of
+the at-`q` cut): the largest submodule of the underlying space on which
+the local inertia group at `v` acts trivially, spelled as the
+intersection of the fixed subspaces `ker (τ|_{I_v}(σ) − 1)` over
+`σ ∈ localInertiaGroup v` (the pin's inertia subgroup of the local
+Galois group at `v`, read through `GaloisRep.toLocal`).
+
+This is the `V^{I_v}` of the local–global conductor dictionary
+`a_v = (2 − dim V^{I_v}) + Sw_v`: for a 2-dimensional `V` and `v ∤ p`
+the TAME part of the conductor exponent at `v` is
+`2 − finrank (inertiaInvariants τ v)`, so "the conductor exponent at
+`v` is positive" is spelled `finrank (inertiaInvariants τ v) ≤ 1`.
+Deliberately a plain `Submodule` and not a new class: the only facts
+consumed downstream are its `finrank` and the fact that it is `⊤`
+exactly when `τ` is unramified at `v`
+(`not_isUnramifiedAt_of_finrank_inertiaInvariants_le_one`). When the
+shared `GaloisRep.conductorExponent` of the dedup plan below lands,
+this is the submodule its tame summand is computed from. -/
+noncomputable def inertiaInvariants {A : Type*} [CommRing A]
+    [TopologicalSpace A] {W : Type*} [AddCommGroup W] [Module A W]
+    (τ : GaloisRep ℚ A W)
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
+    Submodule A W :=
+  ⨅ σ : localInertiaGroup v, LinearMap.ker (τ.toLocal v σ.1 - 1)
+
+/-- **Positive tame conductor exponent forces ramification** (PROVEN
+2026-07-25 — the representation-theoretic half of the at-`q` Carayol
+seam): if the inertia invariants at `v` of a Galois representation on a
+space of dimension `> 1` have dimension `≤ 1`, then the representation
+is NOT unramified at `v`.
+
+This is the bookkeeping side of the seam cut through
+`not_isUnramifiedAt_of_isNewAtPrime_of_isIrreducible` below: the
+literature input is the LOCAL TYPE at `q` in conductor form
+(`finrank (inertiaInvariants τ q) ≤ 1`, i.e. `a_q ≥ 1`), and the
+passage from that local type to "inertia acts nontrivially" is this
+lemma — no arithmetic, only the lattice/dimension identity: if every
+`σ ∈ localInertiaGroup v` acts trivially then each fixed subspace
+`ker (τ|_{I_v}(σ) − 1)` is `⊤`, so their intersection is `⊤` and its
+dimension is `finrank W > 1`.
+
+HONEST AUDIT of the seam (2026-07-25): in dimension `2` the two sides
+are logically EQUIVALENT — `finrank ≤ 1` for the invariants of a
+2-dimensional space says exactly `inertiaInvariants τ v ≠ ⊤`, i.e. some
+inertia element acts nontrivially, which is ramifiedness (only the
+direction stated here is needed, so the converse is not proven).
+So the cut buys no reduction in the STRENGTH of the citation; what it
+buys is the FORM: the sorried leaf now speaks the conductor-exponent
+dictionary `a_v = (2 − dim V^{I_v}) + Sw_v` in which the at-`2` and
+at-`p` siblings must also be phrased, so the three citations can later
+be merged into one `GaloisRep.conductorExponent` statement without
+restating any of them. The genuine shrinkage of the at-`q` citation
+happens on the other axis and is proven below: the newform descent and
+the `q ∣ M₀` bookkeeping, which remove the eigenform carrier and the
+`IsNewAtPrime` hypothesis from the leaf entirely. -/
+theorem not_isUnramifiedAt_of_finrank_inertiaInvariants_le_one
+    {F : Type*} [Field F] [TopologicalSpace F]
+    {W : Type*} [AddCommGroup W] [Module F W]
+    (hfr : 1 < Module.finrank F W) {τ : GaloisRep ℚ F W}
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    (hinv : Module.finrank F ↥(inertiaInvariants τ v) ≤ 1) :
+    ¬ τ.IsUnramifiedAt v := by
+  letI := moduleTopology F (Module.End F W)
+  intro hun
+  have htop : inertiaInvariants τ v = ⊤ := by
+    rw [inertiaInvariants]
+    refine iInf_eq_top.mpr fun σ => ?_
+    have hσ : τ.toLocal v σ.1 = 1 := by
+      have h := GaloisRep.IsUnramifiedAt.localInertiaGroup_le (ρ := τ) σ.2
+      rw [GaloisRep.ker, MonoidHom.mem_ker] at h
+      exact h
+    rw [hσ, sub_self, LinearMap.ker_zero]
+  rw [htop, finrank_top] at hinv
+  omega
+
+/-- **Carayol's conductor formula at `q ≠ p`, tame-part form** (sorry
+node — THE residual literature leaf of the at-`q` conductor cut,
+re-cut 2026-07-25 to the newform level): if `g₀` is a weight-2 NEWFORM
+of level `M₀`, `q ∣ M₀` is a prime `≠ p`, and `τ` is an IRREDUCIBLE
+2-dimensional `ℚ̄_p`-representation matching `g₀`'s Hecke polynomials
+away from a finite set, then the inertia invariants of `τ` at `q` have
+dimension at most `1` — the tame part of the conductor exponent at `q`
+is positive.
+
+CITATION, verified against the source (numdam scan read 2026-07-25):
+H. Carayol, *Sur les représentations `ℓ`-adiques associées aux formes
+modulaires de Hilbert*, Ann. Sci. École Norm. Sup. (4) **19** (1986),
+409–468, doi:10.24033/asens.1512. Théorème (A) (§0.7, proof in §12.3)
+states, for a cuspidal automorphic `π` as in its (0.3) — over a totally
+real `F`, here `F = ℚ` and weight `2` — the existence of a strictly
+compatible system `{σ_λ}` of continuous 2-dimensional `E_λ`-adic
+representations of `Gal(F̄/F)` such that at EVERY finite place `p` of
+`F` and every finite place `λ` of `E` of residue characteristic
+different from that of `p`, the restriction `σ_λ|W_p` is equivalent to
+the local Hecke/Langlands parameter `σ_λ(π_p)`. (Carayol's own
+Corollaire in §0.8 spells out the weight-2 rational case over `ℚ`: the
+geometric conductor of the attached elliptic curve equals the level
+`N`, using Ogg's computation; his Remarque in §0.7 credits Ribet
+(unpublished) for the irreducibility of `σ_λ`, which with Chebotarev
+characterizes it — precisely the rigidity used below.)
+
+Content of the citation as used here: local–global compatibility at `q`
+identifies the Artin conductor exponent of `ρ_{g₀,λ}|_{G_q}` with the
+conductor exponent of the local automorphic representation `π_q`, which
+for a NEWFORM of level `M₀` is `ord_q M₀` (Casselman, *On some results
+of Atkin and Lehner*, Math. Ann. **201** (1973) 301–314: the newvector
+level is the local conductor). Hence
+`ord_q (cond ρ_{g₀,λ}) = ord_q M₀ ≥ 1` since `q ∣ M₀`, and as
+`a_q = (2 − dim V^{I_q}) + Sw_q` with both summands non-negative,
+`dim V^{I_q} ≤ 1` — the stated conclusion. For weight 2 over `ℚ` the
+geometric input under Carayol's theorem is Deligne–Rapoport's model of
+`X₀(M₀)` at `q` together with the Langlands/Deligne local computations
+at the bad primes. The two local types behind the positivity are the
+two classical cases:
+
+* `q ∥ M₀` — the local automorphic representation at `q` is an
+  unramified twist of Steinberg and `ρ_{g₀,λ}|_{G_q}` is the
+  corresponding special Weil–Deligne parameter with NONZERO monodromy
+  `N`: inertia acts through the nontrivial unipotent
+  `σ ↦ (1, t_p(σ); 0, 1)`, so `dim V^{I_q} = 1` and `a_q = 1` exactly;
+* `q² ∣ M₀` — the local type is ramified principal series or
+  supercuspidal, with `a_q = ord_q M₀ ≥ 2`; the invariants have
+  dimension `1` (ramified principal series with an unramified
+  constituent is excluded by `q² ∣ M₀`) or `0` (supercuspidal).
+
+Why irreducibility and the matching hypothesis are the right way to
+address `τ`, and why the rigidity identification is NOT part of the
+citation burden: `τ` is IRREDUCIBLE, so the PROVEN rigidity
+`exists_linearEquiv_of_charFrob_eq` (Chebotarev + characteristic-zero
+Brauer–Nesbitt) identifies any representation matching the same Hecke
+polynomials away from a finite set with `τ` up to `ℚ̄_p`-linear
+equivalence — in particular the geometric `ρ_{g₀,λ}` (the
+`κ₀`-eigencomponent of `V_p(J₀(M₀))`, matched to those polynomials by
+Eichler–Shimura) — and both `inertiaInvariants` dimensions and
+ramifiedness are equivalence invariants (`isUnramifiedAt_of_linearEquiv`
+for the latter). So this leaf is Carayol's theorem for the geometric
+attachment, transported along machinery that is proven here.
+
+WHAT WAS SHRUNK (2026-07-25): the previous spelling of this citation
+(`not_isUnramifiedAt_of_isNewAtPrime_of_isIrreducible`, now a PROVEN
+assembly below) quantified over the weaker `IsWeightTwoEigenform`
+carrier plus `IsNewAtPrime M q g`, so the citation implicitly contained
+the newform descent as well: one had to know that behind a `q`-new
+eigenform of level `M` sits a newform whose level is divisible by `q`.
+That descent is now PROVEN in the assembly below
+(`exists_weightTwoNewform_of_weightTwoEigenform` plus the `q`-free
+divisor bookkeeping of `IsNewAtPrime`), together with the Hecke-field
+embedding transport and the matching bookkeeping, so this leaf assumes
+newform-ness and `q ∣ M₀` outright — strictly stronger hypotheses,
+hence a strictly weaker statement, than the leaf it replaces. Its
+conclusion is in the conductor-dictionary form of
+`inertiaInvariants`, which is what the planned shared
+`GaloisRep.conductorExponent` leaf will subsume.
+
+SOUNDNESS AUDIT (2026-07-25): non-vacuously satisfiable — take any
+classical newform `g₀` of level `M₀` divisible by a prime `q ∉ {p}`
+and `τ := ρ_{g₀,λ}` (irreducible by Ribet 1977, matched to `g₀`'s
+Hecke polynomials away from `M₀p` by Eichler–Shimura); the conclusion
+is then Carayol's theorem as displayed above. Conversely every
+instance is an instance of the cited theorem, by the rigidity
+paragraph. The hypothesis `q ≠ p` is load-bearing: at `q = p` the
+conductor statement is false as stated (the `p`-part of the level is
+invisible to `ρ_{g₀,λ}|_{I_p}` in the naive sense), which is exactly
+why the at-`p` place is handled by the separate Saito/flatness leaf. -/
+theorem finrank_inertiaInvariants_le_one_of_dvd_level_of_isWeightTwoNewform
+    {M₀ : ℕ} (hM₀ : 0 < M₀) {g₀ : CuspForm (Gamma0GL M₀) 2}
+    (hg₀ : IsWeightTwoNewform M₀ g₀)
+    (κ₀ : heckeField M₀ g₀ →+* AlgebraicClosure ℚ_[p])
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    {S_τ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hτ : ∀ (r : ℕ) (hr : r.Prime),
+      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ →
+      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
+        Polynomial.X ^ 2
+          - Polynomial.C (κ₀ (heckeCoeff M₀ g₀ r)) * Polynomial.X
+          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
+    (hirr : τ.IsIrreducible)
+    {q : ℕ} (hq : q.Prime) (hqp : q ≠ p) (hqM₀ : q ∣ M₀) :
+    Module.finrank (AlgebraicClosure ℚ_[p])
+      ↥(inertiaInvariants τ hq.toHeightOneSpectrumRingOfIntegersRat) ≤ 1 :=
+  sorry
+
 /-- **Ramification at `q` of the representation attached to a `q`-NEW
-eigenform** (sorry node — the single residual literature leaf of the
-at-`q` conductor cut, isolated 2026-07-25: Carayol, *Sur les
+eigenform** (PROVEN assembly 2026-07-25 — was the at-`q` citation leaf,
+now decomposed into the newform-level tame-conductor citation
+`finrank_inertiaInvariants_le_one_of_dvd_level_of_isWeightTwoNewform`
+and the invariants bookkeeping
+`not_isUnramifiedAt_of_finrank_inertiaInvariants_le_one`; the residual
+literature content is Carayol, *Sur les
 représentations `ℓ`-adiques associées aux formes modulaires de
 Hilbert*, Ann. Sci. ÉNS 19 (1986), Théorème (A) — local–global
 compatibility at a prime `q ≠ p`; for weight 2 over `ℚ` the underlying
@@ -16678,55 +16866,63 @@ IRREDUCIBLE, matches the Hecke polynomials of the weight-2 eigenform
 `g` of level `M` away from a finite set, and `g` is `q`-NEW at a prime
 `q ∣ M` with `q ≠ p`, then `τ` is RAMIFIED at `q`.
 
-Content of the citation, in conductor-exponent form: Carayol computes
-the prime-to-`p` Artin conductor of the geometric attachment
-`ρ_{g₀,λ}` of a newform `g₀` as its level,
-`ord_q (cond ρ_{g₀,λ}) = ord_q M₀` for every `q ≠ p`, so a positive
-level valuation forces a nontrivial inertia image. The two local
-types behind the positivity are the two classical cases:
+Assembly (all four steps PROVEN; the shrunken citation enters only at
+the last one):
 
-* `q ∥ M₀` — the local automorphic representation at `q` is an
-  unramified twist of Steinberg, and `ρ_{g₀,λ}|_{G_q}` is the
-  corresponding special Weil–Deligne parameter with NONZERO monodromy
-  `N`: inertia acts through the nontrivial unipotent
-  `σ ↦ (1, t_p(σ); 0, 1)`, conductor exponent exactly `1`;
-* `q² ∣ M₀` — the local type is ramified principal series or
-  supercuspidal, with conductor exponent `ord_q M₀ ≥ 2`; in
-  particular the inertia image is again nontrivial.
+1. behind `g` lies a NEWFORM `g₀` of level `M₀ ∣ M` with the same
+   away-from-`M` eigensystem (PROVEN newform descent
+   `exists_weightTwoNewform_of_weightTwoEigenform`, Diamond–Shurman
+   Prop. 5.8.4);
+2. `q ∣ M₀`: were `q ∤ M₀`, the level `M₀` would be a `q`-FREE divisor
+   level of `M` realizing the away-from-`M` eigensystem of `g`, which
+   `IsNewAtPrime M q g` forbids by definition. This is exactly what the
+   `∀ M' ∣ M, q ∤ M'` quantification of `IsNewAtPrime` is for: the
+   naive `M / q` spelling would be useless here, since nothing pushes
+   the newform `g₀` back up from `M₀ ∣ M / q` to `M / q` on a pin with
+   no degeneracy maps;
+3. the `p`-adic embedding `κ` transports to an embedding `κ₀` of the
+   newform's Hecke field agreeing on the shared good coefficients
+   (PROVEN `exists_ringHom_heckeField_of_qCoeff_eq`), so `τ` matches
+   `g₀`'s Hecke polynomials away from `S_τ` together with the primes
+   dividing `M`;
+4. the newform-level citation
+   `finrank_inertiaInvariants_le_one_of_dvd_level_of_isWeightTwoNewform`
+   gives `dim V^{I_q} ≤ 1` — the positive tame conductor exponent at
+   `q` — and the PROVEN bookkeeping
+   `not_isUnramifiedAt_of_finrank_inertiaInvariants_le_one` turns that
+   into ramifiedness.
 
-Why the `q`-NEW hypothesis is the right one, and why the leaf keeps
-the weaker `IsWeightTwoEigenform` carrier: behind `g` lies a newform
-`g₀` of level `M₀ ∣ M` with the same away-from-`M` eigensystem
-(Diamond–Shurman Prop. 5.8.4, PROVEN here as
-`exists_weightTwoNewform_of_weightTwoEigenform`); were `q ∤ M₀`, the
-level `M₀` would be a `q`-free divisor level realizing the
-away-from-`M` eigensystem of `g`, which `IsNewAtPrime M q g`
-forbids — so `q ∣ M₀` and Carayol's formula applies to `g₀` at `q`.
-The rigidity identification is NOT part of the citation burden
+Consequently the `IsWeightTwoEigenform` carrier, the `IsNewAtPrime`
+hypothesis and the Hecke-field embedding transport are all discharged
+here, and the citation that remains is Carayol's formula for a newform
+whose level is divisible by `q`, in the conductor-dictionary form. The
+rigidity identification is not part of the citation burden either
 (mirroring the geometric Saito cut at `p` below): `τ` is IRREDUCIBLE,
 so the PROVEN rigidity `exists_linearEquiv_of_charFrob_eq` — with `τ`
 on the irreducible side — identifies `ρ_{g₀,λ}` (the
-`κ`-eigencomponent of `V_p(J₀(M₀))`, matched to the same Hecke
-polynomials by Eichler–Shimura) with `τ`, and ramifiedness transports
-across the equivalence (the contrapositive of the PROVEN
-`isUnramifiedAt_of_linearEquiv`).
+`κ₀`-eigencomponent of `V_p(J₀(M₀))`, matched to the same Hecke
+polynomials by Eichler–Shimura) with `τ`, and both ramifiedness and
+`inertiaInvariants` dimensions transport across the equivalence (the
+contrapositive of the PROVEN `isUnramifiedAt_of_linearEquiv`); see the
+citation leaf's docstring.
 
-COORDINATION (2026-07-25): the three per-place conductor leaves — this
-one, the at-`2` exponent leaf
+COORDINATION (2026-07-25): the three per-place conductor leaves — the
+at-`q` citation leaf above, the at-`2` exponent leaf
 `exists_weightTwoEigenform_not_four_dvd_level_of_inertia_fixed_line`
 and the at-`p` geometric leaf
 `exists_weightTwoEigenform_not_dvd_level_p_of_isFlatAt_of_isIrreducible`
 — all cite the SAME theorem (Carayol/Saito local–global
 compatibility, "`ord_v` of the conductor is `ord_v` of the level") but
 in three different local spellings, because this development has no
-Artin conductor exponent: the conclusions are "inertia acts
-nontrivially" here, "`a_2 ≥ 2`" (no inertia-fixed line with trivial
-quotient) at `2`, and "not flat/crystalline" at `p`. A single shared
-`v`-new leaf would therefore require an Artin conductor exponent
-`GaloisRep.conductorExponent` with the local dictionary
-`a_v = (2 − dim V^{I_v}) + Sw_v` — a genuine infrastructure build, not
-a restatement — and is recorded here as the dedup target rather than
-performed inside a per-place cut.
+Artin conductor exponent: `dim V^{I_q} ≤ 1` at `q` (since 2026-07-25
+in the dictionary form `inertiaInvariants`), "`a_2 ≥ 2`" (no
+inertia-fixed line with trivial quotient) at `2`, and "not
+flat/crystalline" at `p`. A single shared `v`-new leaf would require an
+Artin conductor exponent `GaloisRep.conductorExponent` with the local
+dictionary `a_v = (2 − dim V^{I_v}) + Sw_v` — a genuine infrastructure
+build, not a restatement — and remains the recorded dedup target;
+`inertiaInvariants` above is the tame half of that dictionary, already
+factored out.
 
 SOUNDNESS AUDIT (2026-07-25): non-vacuously satisfiable — take any
 classical newform `g` of level `M` divisible by a prime `q ∉ {p}`
@@ -16735,15 +16931,10 @@ to `g`'s Hecke polynomials away from `Mp` by Eichler–Shimura); `g` is
 `q`-new in the sense above by the newform carrier audit (strong
 multiplicity one: no eigenform of a `q`-free divisor level shares its
 away-from-`M` eigensystem), and the conclusion is Carayol's theorem.
-Conversely every instance is an instance of the cited theorem: the
-carrier `IsWeightTwoEigenform` has exactly the classical normalized
-eigenforms as inhabitants, `IsNewAtPrime` pins the underlying newform
-to a level divisible by `q` (the descent argument above), and
-irreducibility supplies the rigidity. The hypothesis `q ≠ p` is
-load-bearing — at `q = p` the conductor statement is false as stated
-(the `p`-part of the conductor is invisible to `ρ_{g,λ}|_{I_p}` in the
-naive sense), which is exactly why the at-`p` place is handled by the
-separate Saito/flatness leaf. -/
+The hypothesis `q ≠ p` is load-bearing — at `q = p` the conductor
+statement is false as stated (the `p`-part of the conductor is
+invisible to `ρ_{g,λ}|_{I_p}` in the naive sense), which is exactly why
+the at-`p` place is handled by the separate Saito/flatness leaf. -/
 theorem not_isUnramifiedAt_of_isNewAtPrime_of_isIrreducible
     {M : ℕ} (hM : 0 < M) {g : CuspForm (Gamma0GL M) 2}
     (hg : IsWeightTwoEigenform M g)
@@ -16760,17 +16951,54 @@ theorem not_isUnramifiedAt_of_isNewAtPrime_of_isIrreducible
     (hirr : τ.IsIrreducible)
     {q : ℕ} (hq : q.Prime) (hqp : q ≠ p) (hqM : q ∣ M)
     (hnew : IsNewAtPrime M q g) :
-    ¬ τ.IsUnramifiedAt hq.toHeightOneSpectrumRingOfIntegersRat :=
-  sorry
+    ¬ τ.IsUnramifiedAt hq.toHeightOneSpectrumRingOfIntegersRat := by
+  classical
+  -- step 1: the underlying newform (Diamond–Shurman Prop. 5.8.4)
+  obtain ⟨M₀, hM₀dvd, hM₀pos, g₀, hg₀, hagree⟩ :=
+    exists_weightTwoNewform_of_weightTwoEigenform hM hg
+  -- step 2: `q ∣ M₀` — otherwise `M₀` is a `q`-free divisor level
+  -- realizing the away-from-`M` eigensystem, which `q`-newness forbids
+  have hqM₀ : q ∣ M₀ := by
+    by_contra hq₀
+    exact hnew M₀ hM₀dvd hq₀ g₀ hg₀.toIsWeightTwoEigenform hagree
+  -- step 3: transport the `p`-adic embedding to the newform's Hecke field
+  obtain ⟨κ₀, hκ₀⟩ := exists_ringHom_heckeField_of_qCoeff_eq hM₀pos
+    hg₀.toIsWeightTwoEigenform κ hagree
+  -- step 4: `τ` matches `g₀`'s Hecke polynomials away from
+  -- `S_τ ∪ (primes dividing M)`
+  set badM : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :=
+    M.primeFactors.attach.image fun r =>
+      (Nat.prime_of_mem_primeFactors r.2).toHeightOneSpectrumRingOfIntegersRat
+  have hτ₀ : ∀ (r : ℕ) (hr : r.Prime),
+      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ ∪ badM →
+      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
+        Polynomial.X ^ 2
+          - Polynomial.C (κ₀ (heckeCoeff M₀ g₀ r)) * Polynomial.X
+          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])) := by
+    intro r hr hrS
+    have hrM : ¬ r ∣ M := by
+      intro hdvd
+      exact hrS (Finset.mem_union_right _ (Finset.mem_image.mpr
+        ⟨⟨r, Nat.mem_primeFactors.mpr ⟨hr, hdvd, hM.ne'⟩⟩,
+          Finset.mem_attach _ _, rfl⟩))
+    rw [hτ r hr fun h => hrS (Finset.mem_union_left _ h), hκ₀ r hr hrM]
+  -- step 5: Carayol's tame-part formula at `q`, then the invariants
+  -- bookkeeping
+  refine not_isUnramifiedAt_of_finrank_inertiaInvariants_le_one ?_ _
+    (finrank_inertiaInvariants_le_one_of_dvd_level_of_isWeightTwoNewform
+      hM₀pos hg₀ κ₀ hτ₀ hirr hq hqp hqM₀)
+  simp
 
 /-- **Carayol's conductor theorem at an unramified prime `q ≠ p`,
 irreducible form** (DECOMPOSED 2026-07-25 into the `q`-new/`q`-old
 cut — the formal dichotomy
 `isNewAtPrime_or_exists_eigenform_level_not_dvd`, the minimality
 bookkeeping `not_exists_eigenform_level_not_dvd_of_isWeightTwoNewform`,
-and the residual Carayol citation leaf
-`not_isUnramifiedAt_of_isNewAtPrime_of_isIrreducible` — and now a
-PROVEN assembly): an IRREDUCIBLE representation `τ` matching the Hecke
+and the `q`-new ramification statement
+`not_isUnramifiedAt_of_isNewAtPrime_of_isIrreducible` — itself PROVEN
+since 2026-07-25 over the newform-level Carayol citation
+`finrank_inertiaInvariants_le_one_of_dvd_level_of_isWeightTwoNewform`
+— and now a PROVEN assembly): an IRREDUCIBLE representation `τ` matching the Hecke
 polynomials of the weight-2 NEWFORM `g` of level `M` away from a
 finite set and unramified at a prime `q ≠ p` forces `q ∤ M`.
 
@@ -16779,11 +17007,14 @@ away-from-`M` eigensystem of `g` is realized at a divisor level prime
 to `q`; the realized (`q`-OLD) branch contradicts the newform
 carrier's `eigensystem_minimal` (a `q`-free divisor of `M` is a proper
 divisor once `q ∣ M`), so `g` is `q`-NEW
-(`isNewAtPrime_of_isWeightTwoNewform`), and the citation leaf makes
-`τ` ramified at `q` — against `hun`. All literature content now lives
-in that one leaf, whose hypotheses are strictly weaker than this
-theorem's (the `IsWeightTwoEigenform` carrier plus `q`-newness at the
-single prime `q`, instead of newform-ness at all levels).
+(`isNewAtPrime_of_isWeightTwoNewform`), and the `q`-new ramification
+statement makes `τ` ramified at `q` — against `hun`. All literature
+content now lives in the newform-level tame-conductor citation
+`finrank_inertiaInvariants_le_one_of_dvd_level_of_isWeightTwoNewform`,
+reached from here through the `q`-new statement whose hypotheses are
+strictly weaker than this theorem's (the `IsWeightTwoEigenform` carrier
+plus `q`-newness at the single prime `q`, instead of newform-ness at all
+levels).
 
 The rigidity identification is NOT part of the citation burden
 (mirroring the geometric Saito cut at `p` below), and the leaf remains
