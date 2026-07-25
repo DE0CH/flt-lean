@@ -199,6 +199,16 @@ import Mathlib.Topology.Algebra.Module.ModuleTopology
 import Mathlib.Topology.Algebra.Algebra
 import Mathlib.LinearAlgebra.Dimension.Constructions
 public import Fermat.FLT.Modularity.AbelianScheme
+-- coefficient-ring locality (2026-07-25): the henselian-pair /
+-- idempotent-lifting bricks used by `isLocalRing_of_finite_padicInt`
+-- below, which removes `IsLocalRing A` from the `3`-adic Brauer-sum
+-- citation. Public because that brick's companion
+-- `IsLocalRing.of_henselianRing_of_isDomain` mentions `HenselianRing`
+-- in its statement.
+public import Fermat.FLT.Mathlib.RingTheory.AdicCompletion.Finite
+public import Mathlib.RingTheory.Ideal.Over
+public import Mathlib.RingTheory.Finiteness.Quotient
+public import Mathlib.RingTheory.Artinian.Module
 
 @[expose] public section
 
@@ -6512,6 +6522,107 @@ theorem module_free_padicInt_of_algebraMap_injective (p : ℕ)
     Module.isTorsionFree_iff_algebraMap_injective.mpr hinj
   Module.free_of_finite_type_torsion_free'
 
+/-- **Locality from a henselian pair with artinian quotient, over a
+domain** (PROVEN 2026-07-25; pure commutative algebra): if `A` is a
+DOMAIN, henselian at an ideal `J` whose quotient `A ⧸ J` is artinian,
+then `A` is a local ring.
+
+The argument is the standard idempotent one, assembled from the bricks
+of `Fermat.FLT.Mathlib.RingTheory.AdicCompletion.Finite`: `J` lies in
+the Jacobson radical (`HenselianRing.jac`), so units lift along
+`A → A ⧸ J` and `J` is proper; every idempotent of `A ⧸ J` lifts to an
+idempotent of `A` (`HenselianRing.exists_isIdempotentElem_mk_eq`),
+which in a DOMAIN is `0` or `1`; an artinian ring with only trivial
+idempotents is local
+(`IsLocalRing.of_isArtinianRing_isIdempotentElem`); and locality
+transfers back through the quotient because units lift. -/
+theorem IsLocalRing.of_henselianRing_of_isDomain {A : Type*} [CommRing A]
+    [IsDomain A] (J : Ideal A) [hHen : HenselianRing A J]
+    [IsArtinianRing (A ⧸ J)] :
+    IsLocalRing A := by
+  classical
+  have hjac : J ≤ Ideal.jacobson (⊥ : Ideal A) := hHen.jac
+  -- units lift along `A → A ⧸ J`, because `J` is inside the Jacobson radical
+  have hlift : ∀ a : A, IsUnit (Ideal.Quotient.mk J a) → IsUnit a := by
+    intro a ha
+    obtain ⟨u, hu⟩ := ha
+    obtain ⟨b, hb⟩ := Ideal.Quotient.mk_surjective (↑u⁻¹ : A ⧸ J)
+    have hab : Ideal.Quotient.mk J (a * b) = 1 := by
+      rw [map_mul, ← hu, hb, Units.mul_inv]
+    have hmem : a * b - 1 ∈ J := by
+      rw [← Ideal.Quotient.eq_zero_iff_mem, map_sub, hab, map_one, sub_self]
+    have hunit : IsUnit (a * b) := by
+      simpa using Ideal.mem_jacobson_bot.mp (hjac hmem) 1
+    exact isUnit_of_mul_isUnit_left hunit
+  -- `J` is proper
+  have hJne : J ≠ ⊤ := by
+    intro htop
+    have h1 : (1 : A) ∈ J := htop ▸ Submodule.mem_top
+    simpa using Ideal.mem_jacobson_bot.mp (hjac h1) (-1)
+  haveI : Nontrivial (A ⧸ J) := Ideal.Quotient.nontrivial_iff.mpr hJne
+  -- idempotents of the quotient lift to idempotents of the domain `A`
+  have hidem : ∀ x : A ⧸ J, IsIdempotentElem x → x = 0 ∨ x = 1 := by
+    intro x hx
+    obtain ⟨y, hy, hymk⟩ := HenselianRing.exists_isIdempotentElem_mk_eq hx
+    rcases hy.eq_zero_or_eq_one_of_isDomain with h | h
+    · exact Or.inl (by rw [← hymk, h, map_zero])
+    · exact Or.inr (by rw [← hymk, h, map_one])
+  haveI : IsLocalRing (A ⧸ J) :=
+    IsLocalRing.of_isArtinianRing_isIdempotentElem hidem
+  refine IsLocalRing.of_isUnit_or_isUnit_one_sub_self ?_
+  intro a
+  rcases IsLocalRing.isUnit_or_isUnit_one_sub_self (Ideal.Quotient.mk J a) with h | h
+  · exact Or.inl (hlift a h)
+  · refine Or.inr (hlift (1 - a) ?_)
+    simpa using h
+
+/-- **A domain module-finite over `ℤ_[p]` is a local ring** (PROVEN
+2026-07-25; pure commutative algebra — the coefficient-ring brick that
+removes `IsLocalRing` from the `3`-adic citations).
+
+This is the step the twin Carayol node's docstring recorded as
+"RESIDUAL BOOKKEEPING NOT YET PULLED OUT … a self-contained
+commutative-algebra project": the maximal ideals of such a ring all lie
+over `(p)` (formal), but their UNIQUENESS needs a Henselian input. That
+input now exists in-tree — `HenselianRing.of_finite_algebra` makes
+`(A, 𝔪_{ℤ_p}·A)` a henselian pair by adic completeness of the finite
+module `A` over the complete local `ℤ_[p]` — so the bridge is built:
+`A ⧸ 𝔪_{ℤ_p}·A` is a finite algebra over the residue FIELD of `ℤ_[p]`
+(`Ideal.Quotient.algebraQuotientMapQuotient` plus
+`module_finite_of_liesOver`), hence artinian, and
+`IsLocalRing.of_henselianRing_of_isDomain` applies.
+
+Note no injectivity of `algebraMap ℤ_[p] A` is needed: if `p` dies in
+`A` then `A` is a finite domain, i.e. a finite field, which is local
+too, and the proof is uniform in both cases. -/
+theorem isLocalRing_of_finite_padicInt (p : ℕ) [Fact p.Prime] (A : Type*)
+    [CommRing A] [IsDomain A] [Algebra ℤ_[p] A] [Module.Finite ℤ_[p] A] :
+    IsLocalRing A := by
+  classical
+  haveI hHen : HenselianRing A
+      ((IsLocalRing.maximalIdeal ℤ_[p]).map (algebraMap ℤ_[p] A)) :=
+    HenselianRing.of_finite_algebra ℤ_[p] A
+  haveI hlies : ((IsLocalRing.maximalIdeal ℤ_[p]).map
+      (algebraMap ℤ_[p] A)).LiesOver (IsLocalRing.maximalIdeal ℤ_[p]) := by
+    constructor
+    refine le_antisymm Ideal.le_comap_map (IsLocalRing.le_maximalIdeal ?_)
+    intro htop
+    have h1 : (1 : ℤ_[p]) ∈ Ideal.under ℤ_[p]
+        ((IsLocalRing.maximalIdeal ℤ_[p]).map (algebraMap ℤ_[p] A)) := by
+      rw [htop]; trivial
+    have h2 : (1 : A) ∈ (IsLocalRing.maximalIdeal ℤ_[p]).map
+        (algebraMap ℤ_[p] A) := by
+      simpa using h1
+    simpa using Ideal.mem_jacobson_bot.mp (hHen.jac h2) (-1)
+  letI : Field (ℤ_[p] ⧸ IsLocalRing.maximalIdeal ℤ_[p]) :=
+    Ideal.Quotient.field _
+  haveI : IsArtinianRing
+      (A ⧸ (IsLocalRing.maximalIdeal ℤ_[p]).map (algebraMap ℤ_[p] A)) :=
+    IsArtinianRing.of_finite (ℤ_[p] ⧸ IsLocalRing.maximalIdeal ℤ_[p])
+      (A ⧸ (IsLocalRing.maximalIdeal ℤ_[p]).map (algebraMap ℤ_[p] A))
+  exact IsLocalRing.of_henselianRing_of_isDomain
+    ((IsLocalRing.maximalIdeal ℤ_[p]).map (algebraMap ℤ_[p] A))
+
 /-- **Hecke-field interpolant transport** (PROVEN 2026-07-24; formal —
 the uniqueness half of the compatibility clause): a `3`-adic
 characteristic polynomial which is the `ψ₃`-image of ONE interpolant
@@ -6544,9 +6655,10 @@ the integers `O_{E_λ}` of the completion of the Hecke field at a place
 comparison embedding `ιA : A → ℚ̄_3`, with `τ`'s Frobenius
 characteristic polynomials away from `S₁` the `ψ₃`-images of `Pv`.
 
-CITATION-SHRINKING CUT (2026-07-25). This leaf replaces the earlier
-`exists_threeadicBrauerSum_of_witness` citation, which is now a PROVEN
-assembly over it. Five components of that statement were pulled out of
+CITATION-SHRINKING CUT (2026-07-25, extended the same day). This leaf
+replaces the earlier `exists_threeadicBrauerSum_of_witness` citation,
+which is now a PROVEN assembly over it. Six components of that
+statement were pulled out of
 the citation, using the coefficient-ring bricks proven above for the
 twin Carayol node (`carayol_threeadic_realization_of_heckePackage`);
 the citation now asserts strictly less:
@@ -6566,7 +6678,21 @@ the citation now asserts strictly less:
   free-lattice normalization
   (`module_free_padicInt_of_algebraMap_injective`), so `ℤ_3`-freeness
   of `A` is now two formal steps away from the citation rather than an
-  assumption plus a step.
+  assumption plus a step;
+* `IsLocalRing A` — GONE (2026-07-25), by
+  `isLocalRing_of_finite_padicInt`: a DOMAIN module-finite over `ℤ_3`
+  is automatically local. The twin's docstring recorded this as
+  "RESIDUAL BOOKKEEPING NOT YET PULLED OUT", needing a Henselian input
+  that the pin did not supply. It does now, in-tree: the bricks of
+  `Fermat.FLT.Mathlib.RingTheory.AdicCompletion.Finite` make
+  `(A, 𝔪_{ℤ_3}·A)` a henselian pair, idempotents lift into the domain
+  `A` where they are `0` or `1`, and an artinian ring with only trivial
+  idempotents is local. **The twin node
+  `carayol_threeadic_realization_of_heckePackage` can drop its own
+  `IsLocalRing B` the same way — its audit is now stale — as can
+  `ThreeadicRealization.isLocalRingA` and
+  `PotentialModularityWitness.isLocalRingB`; those are other owners'
+  declarations and are deliberately untouched here.**
 
 What remains is the genuinely automorphic/geometric core. Classically
 this is the Brauer trick at the place `λ | 3`: Brauer's induction
@@ -6624,7 +6750,21 @@ in-tree formal lemma at this pin:
   (`blueprint/src/chapter/ch04overview.tex`, "the Brauer's theorem trick
   in [BLGGT]"), with no Lean development of stable lattices, of Brauer
   induction for Galois representations, or of Hilbert-modular `3`-adic
-  realizations.
+  realizations;
+* WIDENED 2026-07-25 (the earlier audit searched only the lattice step;
+  this one swept every ingredient of the classical argument). The pin
+  ALSO has no Brauer induction and no Artin induction — the only
+  `Brauer` in `Mathlib/` is the Brauer GROUP of central simple algebras
+  — no `p`-elementary or hyperelementary subgroups, no representation
+  ring or virtual characters, no character formula for induction (the
+  algebraic `Representation.ind` and `Rep.indResAdjunction` exist, but
+  no `χ_Ind` trace formula), no INDUCTION at all for continuous
+  representations (`RepresentationTheory/Continuous/` has `coind` only),
+  and no Brauer–Nesbitt (only the forward `char_iso`; the pin has no
+  charpoly of a group element acting on a representation). So all four
+  ingredients — Brauer induction, induced-character traces, stable
+  lattices, Brauer–Nesbitt — are absent, and the leaf is irreducibly a
+  citation at this pin rather than merely lacking one step.
 
 So the leaf stays in lattice (coefficient-ring) form — the same
 conclusion, for the same reason, that the twin node reached ("that cut
@@ -6634,8 +6774,40 @@ as the trace/determinant pair. Both sides here are monic of degree `2`
 (`hPv` forces `Pv v` to be, through the injective `Wit.ψℓ`), so that
 form is EQUIVALENT, not weaker — it would relocate polynomial
 bookkeeping into this file without removing anything from the citation.
-`IsLocalRing A` likewise stays, for the Henselian-input reason recorded
-at the twin.
+(`IsLocalRing A` used to stay here for the Henselian-input reason
+recorded at the twin; as of 2026-07-25 it is GONE — see the
+citation-shrinking bullet above.)
+
+VACUITY AUDIT (2026-07-25, done before any proof effort — this family
+has a bad record, so the leaf was attacked as junk BEFORE being
+attacked as a theorem). **Result: NOT vacuous.** The three routes that
+killed sibling leaves all fail here, for reasons worth recording so
+nobody re-runs them:
+
+* *Satisfy it from the witness's own data.* `Wit` already carries a
+  `3`-adic representation `τF` with the right Hecke polynomials — but
+  over `G_F`, and the only transport available (`GaloisRep.map`) goes
+  from `Γ K` to `Γ L` along `K →+* L`, i.e. RESTRICTS `ℚ`-reps to `F`.
+  There is no formal operation carrying `τF` back to `G_ℚ`; that
+  operation IS the Brauer trick. So the leaf is not satisfiable by its
+  own inputs.
+* *Kill the conclusion with the exceptional set.* `S₁` is chosen by
+  the prover, but it is a `Finset`, and
+  `toHeightOneSpectrumRingOfIntegersRat_injective` (PROVEN, in
+  `Chebotarev.lean`) makes distinct primes distinct places, so the
+  matching clause still binds at cofinitely many `q`. `S₁ ⊇ S₀` is
+  allowed, which is exactly what keeps the statement WELL-POSED: `Pv`
+  is unconstrained by `hPv` inside `S₀`, and the conclusion never
+  reaches there.
+* *Degenerate Frobenius, or the trivial representation.* `charFrob`
+  evaluates `ρ` at `adicArithFrob v`, which is mathlib's honest
+  `arithFrobAt'` (`IsArithFrobAt`, so it is `x ↦ x^q` on the residue
+  field), not a junk choice; and the trivial `τ` is refuted
+  numerically: `hPv` plus the PROVEN
+  `charFrob_coeff_zero_eq_natCast_of_isHardlyRamified` forces
+  `(Pv q).coeff 0 = (q : E)` through the injective `ψℓ`, whereas the
+  trivial representation has `charFrob = (X − 1)²` with constant
+  coefficient `1 ≠ q`.
 
 SOUNDNESS AUDIT (both ways, 2026-07-25, inherited from the node this
 leaf replaces): (i) direct — for the carrier produced by the
@@ -6687,7 +6859,7 @@ theorem blggt_threeadicBrauerSum_of_witness
       (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map Wit.ιO =
         (Pv hq.toHeightOneSpectrumRingOfIntegersRat).map Wit.ψℓ) :
     ∃ (S₁ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
-      (A : Type u) (_ : CommRing A) (_ : IsDomain A) (_ : IsLocalRing A)
+      (A : Type u) (_ : CommRing A) (_ : IsDomain A)
       (_ : Algebra ℤ_[3] A) (_ : Module.Finite ℤ_[3] A),
       letI : TopologicalSpace A := moduleTopology ℤ_[3] A
       letI : IsTopologicalRing A :=
@@ -6844,9 +7016,13 @@ theorem exists_threeadicBrauerSum_of_witness
   -- bare local domain, module-finite over `ℤ_3`, with no topology, no
   -- `ℤ_3`-injectivity and no injectivity of the comparison embedding
   -- asserted
-  obtain ⟨S₁, A, hCR, hDom, hLR, hAlg, hFin, τ, ιA, hmatch⟩ :=
+  obtain ⟨S₁, A, hCR, hDom, hAlg, hFin, τ, ιA, hmatch⟩ :=
     blggt_threeadicBrauerSum_of_witness hℓodd hℓ5 hZinj hrank hρ hW hρbar
       hirr π hπsurj hπ Wit S₀ Pv hPv
+  -- (a') locality of the coefficient ring is no longer part of the
+  -- citation: a DOMAIN module-finite over `ℤ_3` is local, by the
+  -- henselian-pair brick proven above
+  haveI hLR : IsLocalRing A := isLocalRing_of_finite_padicInt 3 A
   -- (b) the coefficient-ring bookkeeping, all of it PROVEN above (the
   -- same bricks the twin Carayol assembly uses): the canonical module
   -- topology is a ring topology and is of course the module topology,
