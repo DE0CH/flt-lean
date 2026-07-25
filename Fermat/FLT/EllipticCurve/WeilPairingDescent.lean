@@ -6466,10 +6466,11 @@ theorem count_pointEval_of_smul_ne_zero [IsDedekindDomain W.CoordinateRing]
           (algebraMap W.CoordinateRing W.FunctionField z)) := by
   sorry
 
-/-- **L4-7 leaf (sorry): the `[p]`-pullback over the place at
-infinity.**  Same setup as `count_pointEval_of_smul_ne_zero`, but now
-the affine point `S ≠ O` is a `p`-torsion point, so it lies over the
-point at infinity: `p • S = O`.  If `z` has affine divisor `D`, then
+/-- **L4-7 leaf (PROVEN, over the affine branch): the `[p]`-pullback
+over the place at infinity.**  Same setup as
+`count_pointEval_of_smul_ne_zero`, but now the affine point `S ≠ O` is a
+`p`-torsion point, so it lies over the point at infinity: `p • S = O`.
+If `z` has affine divisor `D`, then
 
 `ord_S([p]^* z) = −#D`,
 
@@ -6480,13 +6481,44 @@ unramified over `O` exactly as over every other point (separability,
 `(p : F) ≠ 0`), with `[p]^*(O) = Σ_{κ ∈ E[p]} (κ)`; `S` is one of those
 `κ`, and it occurs once.
 
-Suggested route: as for `count_pointEval_of_smul_ne_zero` — the two
-statements are the two branches of one divisor-pullback formula and are
-naturally proven together, by the pair-peeling induction of
-`spanSingleton_pointEval_translate` over the vertical/line bricks (a
-vertical `X − x_R` has affine divisor `(R) + (⊖R)` and pole order `2` at
-infinity, a line class `Y − (λ(X − x₁) + y₁)` pole order `3`, which is
-where the `−#D` is generated). -/
+**PROOF (translation transport + a degree count).**  No division
+polynomial and no pair-peeling induction is needed: this branch is
+DERIVED from the affine branch `count_pointEval_of_smul_ne_zero`, which
+is declared above, so the dependency is mechanically acyclic (the affine
+branch cannot in turn consume this one).  The two leaves are therefore
+one leaf: what remains open is exactly the multiplicity-one statement
+over affine points.
+
+Write `u = [p]^*z = A/B` with `A, B ∈ F[W]` (`IsLocalization.surj`) of
+affine divisors `D_A, D_B` (`exists_multiset_span_eq_prod_pointIdeal`),
+and set `ord P := mult_P(D_A) − mult_P(D_B)` — the multiplicity of `u`
+at the place of `P` (`count_spanSingleton_algebraMap` on numerator and
+denominator) — and `deg := #D_A − #D_B`, the affine degree of `div u`.
+
+* *Lemma A (translation transport).*  For EVERY nonzero `p`-torsion
+  point `κ`, `ord κ = −deg`.  Since `[p] ∘ τ_κ = [p]`, the function `u`
+  is fixed by the lifted translation `σ_{⊖κ}`
+  (`lift_pointEval_pullback_eq`), so `u = (τ_{⊖κ}^*A)/(τ_{⊖κ}^*B)`; and
+  the PROVEN divisor transport `spanSingleton_pointEval_translate`,
+  `(τ_{⊖κ}^*b)·I_{κ}^{#E} = ∏_{R ∈ E} I_{R⊖(⊖κ)}`, read at the place of
+  `κ` gives `ord_κ(τ_{⊖κ}^*b) = −#E`, because `R ⊖ (⊖κ) = κ` forces
+  `R = O ∉ E`.  This is the step that makes the pole at infinity visible
+  affinely: translating by `⊖κ` moves `O` onto `κ`.
+
+* *Lemma S (affine branch).*  For `p • P ≠ O`,
+  `ord P = mult_{p•P}(D)` — this is `count_pointEval_of_smul_ne_zero`.
+
+Summing `ord` over the finite support of `div u` gives `deg`; splitting
+that sum along the torsion fiber gives `−deg·#(E[p]∖O) + #E[p]·#D`,
+since every one of the `#E[p]` preimages of an `R ∈ D` has `ord > 0` and
+so really occurs in the support, while (once `deg ≠ 0`) Lemma A puts
+every nonzero torsion point in the support too.  Hence
+`deg·#E[p] = #D·#E[p]`, so `deg = #D` and `ord S = −#D`.  (If `deg = 0`
+the same identity forces `D = 0` and the claim reads `0 = 0`.)  Note
+that `#E[p] = p²` is never used as a NUMBER — it cancels — and the
+finiteness of `E[p]` is *derived* from the finiteness of the divisor
+support rather than assumed, so no torsion enumeration has to be
+supplied. -/
 theorem count_pointEval_of_smul_eq_zero [IsDedekindDomain W.CoordinateRing]
     (hΔ : W.Δ ≠ 0) (hp : (p : F) ≠ 0)
     {xp yp : W.FunctionField} {hpn : (curveK W).Nonsingular xp yp}
@@ -6502,7 +6534,336 @@ theorem count_pointEval_of_smul_eq_zero [IsDedekindDomain W.CoordinateRing]
     FractionalIdeal.count W.FunctionField v
         (FractionalIdeal.spanSingleton W.CoordinateRing⁰
           (pointEval (constHom W) hpn.left z)) = -(Multiset.card D : ℤ) := by
-  sorry
+  classical
+  -- ── the pullback `[p]^*` is injective, so it extends to `K`
+  obtain ⟨xp', yp', hpn', hsmul', hxrel⟩ := exists_smul_tautPoint_eq (W := W) hΔ hp
+  have hxx : xp = xp' := by
+    have h := hptaut.symm.trans hsmul'
+    injection h with h1 _
+  have hxc : ∀ c : F, xp ≠ constHom W c := by
+    intro c
+    rw [hxx]
+    exact smul_taut_xCoord_ne_constHom hxrel c
+  have hinj : Function.Injective (pointEval (constHom W) hpn.left) :=
+    pointEval_injective_of_forall_ne_constHom hpn hxc
+  set u : W.FunctionField := pointEval (constHom W) hpn.left z with hudef
+  -- ── a fraction presentation `u = A / B` of the pullback
+  obtain ⟨⟨A, ⟨B, hBmem⟩⟩, hAB0⟩ := IsLocalization.surj W.CoordinateRing⁰ u
+  have hAB : u * algebraMap W.CoordinateRing W.FunctionField B =
+      algebraMap W.CoordinateRing W.FunctionField A := hAB0
+  have hB0 : B ≠ 0 := nonZeroDivisors.ne_zero hBmem
+  have halgB0 : algebraMap W.CoordinateRing W.FunctionField B ≠ 0 := fun h =>
+    hB0 ((injective_iff_map_eq_zero _).mp
+      (IsFractionRing.injective W.CoordinateRing W.FunctionField) B h)
+  have halgA0 : algebraMap W.CoordinateRing W.FunctionField A ≠ 0 := by
+    rw [← hAB]
+    exact mul_ne_zero hzev halgB0
+  have hA0 : A ≠ 0 := fun h => halgA0 (by rw [h, map_zero])
+  obtain ⟨DA, hDA0, hDAspan⟩ := exists_multiset_span_eq_prod_pointIdeal hΔ hA0
+  obtain ⟨DB, hDB0, hDBspan⟩ := exists_multiset_span_eq_prod_pointIdeal hΔ hB0
+  -- `ord P` is the multiplicity of `u` at the place of `P`, and `dgr`
+  -- the affine degree of `div u`.
+  set ord : W.Point → ℤ :=
+    fun P => (Multiset.count P DA : ℤ) - (Multiset.count P DB : ℤ) with horddef
+  have hord : ∀ P : W.Point,
+      ord P = (Multiset.count P DA : ℤ) - (Multiset.count P DB : ℤ) :=
+    fun P => congrFun horddef P
+  set dgr : ℤ := (Multiset.card DA : ℤ) - (Multiset.card DB : ℤ) with hdgref
+  have hspanmul : FractionalIdeal.spanSingleton W.CoordinateRing⁰ u *
+      FractionalIdeal.spanSingleton W.CoordinateRing⁰
+        (algebraMap W.CoordinateRing W.FunctionField B) =
+      FractionalIdeal.spanSingleton W.CoordinateRing⁰
+        (algebraMap W.CoordinateRing W.FunctionField A) := by
+    rw [FractionalIdeal.spanSingleton_mul_spanSingleton, hAB]
+  have hspanu0 : FractionalIdeal.spanSingleton W.CoordinateRing⁰ u ≠ 0 := by
+    rw [Ne, FractionalIdeal.spanSingleton_eq_zero_iff]
+    exact hzev
+  have hspanB0 : FractionalIdeal.spanSingleton W.CoordinateRing⁰
+      (algebraMap W.CoordinateRing W.FunctionField B) ≠ 0 := by
+    rw [Ne, FractionalIdeal.spanSingleton_eq_zero_iff]
+    exact halgB0
+  have hbridge : ∀ (P : W.Point) (w : IsDedekindDomain.HeightOneSpectrum
+      W.CoordinateRing), P ≠ 0 → w.asIdeal = pointIdeal W P →
+      FractionalIdeal.count W.FunctionField w
+        (FractionalIdeal.spanSingleton W.CoordinateRing⁰ u) = ord P := by
+    intro P w hP0 hwP
+    have h1 := congrArg (FractionalIdeal.count W.FunctionField w) hspanmul
+    rw [FractionalIdeal.count_mul W.FunctionField w hspanu0 hspanB0,
+      count_spanSingleton_algebraMap hP0 hwP hDAspan,
+      count_spanSingleton_algebraMap hP0 hwP hDBspan] at h1
+    rw [hord]
+    omega
+  -- ── the support of `div u`, and its affine degree as a sum
+  set Ssup : Finset W.Point := DA.toFinset ∪ DB.toFinset with hSsupdef
+  have h0not : (0 : W.Point) ∉ Ssup := by
+    rw [hSsupdef]
+    simp only [Finset.mem_union, Multiset.mem_toFinset]
+    exact fun h => h.elim hDA0 hDB0
+  have hordzero : ∀ P : W.Point, P ∉ Ssup → ord P = 0 := by
+    intro P hP
+    rw [hSsupdef] at hP
+    simp only [Finset.mem_union, Multiset.mem_toFinset, not_or] at hP
+    rw [hord, Multiset.count_eq_zero_of_notMem hP.1,
+      Multiset.count_eq_zero_of_notMem hP.2]
+    ring
+  have hsumord : ∑ P ∈ Ssup, ord P = dgr := by
+    have hsA : ∑ P ∈ Ssup, (Multiset.count P DA : ℤ) = (Multiset.card DA : ℤ) := by
+      rw [← Multiset.toFinset_sum_count_eq DA]
+      push_cast
+      refine (Finset.sum_subset (hSsupdef ▸ Finset.subset_union_left) ?_).symm
+      intro x _ hx
+      simp only [Multiset.mem_toFinset] at hx
+      simp [Multiset.count_eq_zero_of_notMem hx]
+    have hsB : ∑ P ∈ Ssup, (Multiset.count P DB : ℤ) = (Multiset.card DB : ℤ) := by
+      rw [← Multiset.toFinset_sum_count_eq DB]
+      push_cast
+      refine (Finset.sum_subset (hSsupdef ▸ Finset.subset_union_right) ?_).symm
+      intro x _ hx
+      simp only [Multiset.mem_toFinset] at hx
+      simp [Multiset.count_eq_zero_of_notMem hx]
+    rw [Finset.sum_congr rfl (fun P _ => hord P), Finset.sum_sub_distrib,
+      hsA, hsB, hdgref]
+  -- ── LEMMA A: at every nonzero `p`-torsion point the multiplicity of
+  -- the pullback is minus its affine degree.  `u` is invariant under the
+  -- lifted translation by `⊖κ`, which carries the place at infinity onto
+  -- the place of `κ`.
+  have hLemA : ∀ κ : W.Point, κ ≠ 0 → (p : ℤ) • κ = 0 → ord κ = -dgr := by
+    intro κ hκ0 hκtor
+    obtain ⟨xQ, yQ, hQn, hptQ⟩ := exists_translate_some hΔ (-κ)
+    obtain ⟨w, hw⟩ := exists_heightOneSpectrum_pointIdeal hκ0
+    have hσu : IsFractionRing.lift (pointEval_injective hΔ hptQ) u = u := by
+      have h := lift_pointEval_pullback_eq hΔ (Q := -κ)
+        (by rw [smul_neg, hκtor, neg_zero]) hptQ hptaut hinj
+        (algebraMap W.CoordinateRing W.FunctionField z)
+      rwa [IsFractionRing.lift_algebraMap] at h
+    have hABσ : u * pointEval (constHom W) hQn.left B =
+        pointEval (constHom W) hQn.left A := by
+      have h := congrArg (IsFractionRing.lift (pointEval_injective hΔ hptQ)) hAB
+      rwa [map_mul, hσu, IsFractionRing.lift_algebraMap,
+        IsFractionRing.lift_algebraMap] at h
+    -- the multiplicity at `κ` of a `(⊖κ)`-translated coordinate function
+    -- is minus the affine degree of its divisor
+    have htrans : ∀ (b : W.CoordinateRing) (E : Multiset W.Point), b ≠ 0 →
+        (0 : W.Point) ∉ E → Ideal.span {b} = (E.map (pointIdeal W)).prod →
+        FractionalIdeal.count W.FunctionField w
+          (FractionalIdeal.spanSingleton W.CoordinateRing⁰
+            (pointEval (constHom W) hQn.left b)) = -(Multiset.card E : ℤ) := by
+      intro b E hb hE0 hEspan
+      have h := spanSingleton_pointEval_translate hΔ hptQ hb hEspan
+      rw [neg_neg] at h
+      have hb0 : FractionalIdeal.spanSingleton W.CoordinateRing⁰
+          (pointEval (constHom W) hQn.left b) ≠ 0 := by
+        rw [Ne, FractionalIdeal.spanSingleton_eq_zero_iff]
+        exact fun h0 => hb ((injective_iff_map_eq_zero _).mp
+          (pointEval_injective hΔ hptQ) b h0)
+      have hpi0 : ((pointIdeal' W κ :
+          FractionalIdeal W.CoordinateRing⁰ W.FunctionField)) ^
+            Multiset.card E ≠ 0 :=
+        pow_ne_zero _ (pointIdeal' W κ).isUnit.ne_zero
+      have h2 : (E.map fun R => (pointIdeal' W (R - -κ) :
+            FractionalIdeal W.CoordinateRing⁰ W.FunctionField)).prod =
+          ((E.map fun R => R - -κ).map fun R =>
+            (pointIdeal' W R :
+              FractionalIdeal W.CoordinateRing⁰ W.FunctionField)).prod := by
+        rw [Multiset.map_map]
+        rfl
+      have h3 : Multiset.count κ (E.map fun R => R - -κ) = 0 := by
+        refine Multiset.count_eq_zero_of_notMem ?_
+        intro hmem
+        obtain ⟨R, hR, hRe⟩ := Multiset.mem_map.mp hmem
+        rw [sub_neg_eq_add] at hRe
+        exact hE0 (add_right_cancel (hRe.trans (zero_add κ).symm) ▸ hR)
+      have h1 := congrArg (FractionalIdeal.count W.FunctionField w) h
+      rw [FractionalIdeal.count_mul W.FunctionField w hb0 hpi0,
+        FractionalIdeal.count_pow, count_coe_pointIdeal' hκ0 hw κ,
+        if_pos rfl, mul_one, h2, count_prod_coe_pointIdeal' hκ0 hw, h3] at h1
+      push_cast at h1 ⊢
+      omega
+    have hcountA := htrans A DA hA0 hDA0 hDAspan
+    have hcountB := htrans B DB hB0 hDB0 hDBspan
+    have hspanmulσ : FractionalIdeal.spanSingleton W.CoordinateRing⁰ u *
+        FractionalIdeal.spanSingleton W.CoordinateRing⁰
+          (pointEval (constHom W) hQn.left B) =
+        FractionalIdeal.spanSingleton W.CoordinateRing⁰
+          (pointEval (constHom W) hQn.left A) := by
+      rw [FractionalIdeal.spanSingleton_mul_spanSingleton, hABσ]
+    have hspanBσ0 : FractionalIdeal.spanSingleton W.CoordinateRing⁰
+        (pointEval (constHom W) hQn.left B) ≠ 0 := by
+      rw [Ne, FractionalIdeal.spanSingleton_eq_zero_iff]
+      exact fun h0 => hB0 ((injective_iff_map_eq_zero _).mp
+        (pointEval_injective hΔ hptQ) B h0)
+    have h5 := congrArg (FractionalIdeal.count W.FunctionField w) hspanmulσ
+    rw [FractionalIdeal.count_mul W.FunctionField w hspanu0 hspanBσ0,
+      hcountA, hcountB, hbridge κ w hκ0 hw] at h5
+    rw [hdgref]
+    omega
+  -- ── LEMMA S: away from the torsion fiber the affine branch computes
+  -- the multiplicity of the pullback.
+  have hLemS : ∀ P : W.Point, P ≠ 0 → (p : ℤ) • P ≠ 0 →
+      ord P = (Multiset.count ((p : ℤ) • P) D : ℤ) := by
+    intro P hP0 hpP0
+    obtain ⟨w, hw⟩ := exists_heightOneSpectrum_pointIdeal hP0
+    obtain ⟨w', hw'⟩ := exists_heightOneSpectrum_pointIdeal hpP0
+    have h := count_pointEval_of_smul_ne_zero hΔ hp hptaut hz hzev hP0 hpP0 hw hw'
+    rw [count_spanSingleton_algebraMap hpP0 hw' hD, hbridge P w hP0 hw] at h
+    exact h
+  -- ── split the affine degree along the torsion fiber
+  set Stor : Finset W.Point := Ssup.filter (fun P => (p : ℤ) • P = 0) with hStordef
+  set Snon : Finset W.Point :=
+    Ssup.filter (fun P => ¬ ((p : ℤ) • P = 0)) with hSnondef
+  have hsplit : ∑ P ∈ Stor, ord P + ∑ P ∈ Snon, ord P = dgr := by
+    rw [hStordef, hSnondef, Finset.sum_filter_add_sum_filter_not, hsumord]
+  have ht : ∑ P ∈ Stor, ord P = (Stor.card : ℤ) * (-dgr) := by
+    have hc : ∀ P ∈ Stor, ord P = -dgr := by
+      intro P hP
+      rw [hStordef, Finset.mem_filter] at hP
+      exact hLemA P (fun h => h0not (h ▸ hP.1)) hP.2
+    rw [Finset.sum_congr rfl hc, Finset.sum_const, nsmul_eq_mul]
+  have hn : ∑ P ∈ Snon, ord P =
+      ∑ P ∈ Snon, (Multiset.count ((p : ℤ) • P) D : ℤ) := by
+    refine Finset.sum_congr rfl fun P hP => ?_
+    rw [hSnondef, Finset.mem_filter] at hP
+    exact hLemS P (fun h => h0not (h ▸ hP.1)) hP.2
+  rw [ht, hn] at hsplit
+  have hkey : dgr * (1 + (Stor.card : ℤ)) =
+      ∑ P ∈ Snon, (Multiset.count ((p : ℤ) • P) D : ℤ) := by
+    linear_combination -hsplit
+  -- ── every preimage of a point of `D` really occurs in `Snon`
+  have hfibmem : ∀ P : W.Point, P ≠ 0 → (p : ℤ) • P ∈ D → P ∈ Snon := by
+    intro P hP0 hmem
+    have hpP0 : (p : ℤ) • P ≠ 0 := fun h => hD0 (h ▸ hmem)
+    have hordP : ord P = (Multiset.count ((p : ℤ) • P) D : ℤ) := hLemS P hP0 hpP0
+    have hpos : 0 < Multiset.count ((p : ℤ) • P) D := Multiset.count_pos.mpr hmem
+    have hPS : P ∈ Ssup := by
+      by_contra hc
+      rw [hordzero P hc] at hordP
+      omega
+    rw [hSnondef, Finset.mem_filter]
+    exact ⟨hPS, hpP0⟩
+  -- ── conclude: the multiplicity at `S` is minus the affine degree,
+  -- and the affine degree is `#D`.
+  have hgoal : FractionalIdeal.count W.FunctionField v
+      (FractionalIdeal.spanSingleton W.CoordinateRing⁰ u) = -dgr := by
+    rw [hbridge S v hS0 hvS]
+    exact hLemA S hS0 hpS
+  rw [hgoal]
+  by_cases hdgr0 : dgr = 0
+  · -- degenerate branch: `D` is empty
+    have hDempty : D = 0 := by
+      by_contra hDne
+      obtain ⟨R, hR⟩ := Multiset.exists_mem_of_ne_zero hDne
+      have hR0 : R ≠ 0 := fun h => hD0 (h ▸ hR)
+      obtain ⟨T, hT⟩ := exists_zsmul_eq hΔ hp R
+      have hT0 : T ≠ 0 := by
+        intro h
+        rw [h, smul_zero] at hT
+        exact hR0 hT.symm
+      have hTm : T ∈ Snon := hfibmem T hT0 (by rw [hT]; exact hR)
+      have hsum0 : ∑ P ∈ Snon, (Multiset.count ((p : ℤ) • P) D : ℤ) = 0 := by
+        rw [← hkey, hdgr0, zero_mul]
+      have hnn : ∀ P ∈ Snon, (0 : ℤ) ≤ (Multiset.count ((p : ℤ) • P) D : ℤ) :=
+        fun P _ => Int.natCast_nonneg _
+      have hz0 := (Finset.sum_eq_zero_iff_of_nonneg hnn).mp hsum0 T hTm
+      rw [hT] at hz0
+      have hcp := Multiset.count_pos.mpr hR
+      omega
+    rw [hDempty, hdgr0]
+    simp
+  · -- generic branch: every fiber of `[p]` has `Stor.card + 1` points
+    have htor : ∀ Q : W.Point, (p : ℤ) • Q = 0 → Q ≠ 0 → Q ∈ Stor := by
+      intro Q hQtor hQ0
+      have hordQ := hLemA Q hQ0 hQtor
+      have hQS : Q ∈ Ssup := by
+        by_contra hc
+        rw [hordzero Q hc] at hordQ
+        exact hdgr0 (by omega)
+      rw [hStordef, Finset.mem_filter]
+      exact ⟨hQS, hQtor⟩
+    have hfibcard : ∀ R ∈ D.toFinset,
+        (Snon.filter (fun P => (p : ℤ) • P = R)).card = Stor.card + 1 := by
+      intro R hR
+      rw [Multiset.mem_toFinset] at hR
+      have hR0 : R ≠ 0 := fun h => hD0 (h ▸ hR)
+      obtain ⟨T, hT⟩ := exists_zsmul_eq hΔ hp R
+      have hcard : (insert (0 : W.Point) Stor).card = Stor.card + 1 :=
+        Finset.card_insert_of_notMem (fun h => h0not
+          (by rw [hStordef, Finset.mem_filter] at h; exact h.1))
+      rw [← hcard]
+      refine (Finset.card_nbij' (fun κ => T + κ) (fun P => P - T) ?_ ?_ ?_ ?_).symm
+      · intro κ hκ
+        simp only [Finset.mem_coe, Finset.mem_insert] at hκ
+        have hκtor : (p : ℤ) • κ = 0 := by
+          rcases hκ with rfl | hκ
+          · exact smul_zero _
+          · rw [hStordef, Finset.mem_filter] at hκ
+            exact hκ.2
+        have hpTκ : (p : ℤ) • (T + κ) = R := by
+          rw [smul_add, hT, hκtor, add_zero]
+        have hTκ0 : T + κ ≠ 0 := by
+          intro h
+          rw [h, smul_zero] at hpTκ
+          exact hR0 hpTκ.symm
+        simp only [Finset.mem_coe, Finset.mem_filter]
+        exact ⟨hfibmem (T + κ) hTκ0 (by rw [hpTκ]; exact hR), hpTκ⟩
+      · intro P hP
+        simp only [Finset.mem_coe, Finset.mem_filter] at hP
+        have hκtor : (p : ℤ) • (P - T) = 0 := by
+          rw [smul_sub, hP.2, hT, sub_self]
+        simp only [Finset.mem_coe, Finset.mem_insert]
+        by_cases hc : P - T = 0
+        · exact Or.inl hc
+        · exact Or.inr (htor (P - T) hκtor hc)
+      · intro κ _
+        simp
+      · intro P _
+        simp
+    have hsumfib : ∑ P ∈ Snon, (Multiset.count ((p : ℤ) • P) D : ℤ) =
+        (1 + (Stor.card : ℤ)) * (Multiset.card D : ℤ) := by
+      have hsub : ∑ P ∈ Snon, (Multiset.count ((p : ℤ) • P) D : ℤ) =
+          ∑ P ∈ Snon.filter (fun P => (p : ℤ) • P ∈ D),
+            (Multiset.count ((p : ℤ) • P) D : ℤ) := by
+        refine (Finset.sum_subset (Finset.filter_subset _ _) ?_).symm
+        intro x hxm hx
+        rw [Finset.mem_filter, not_and] at hx
+        rw [Multiset.count_eq_zero_of_notMem (hx hxm), Nat.cast_zero]
+      have hfw := Finset.sum_fiberwise_of_maps_to
+        (s := Snon.filter (fun P => (p : ℤ) • P ∈ D)) (t := D.toFinset)
+        (g := fun P => (p : ℤ) • P)
+        (fun x hx => by
+          rw [Finset.mem_filter] at hx
+          exact Multiset.mem_toFinset.mpr hx.2)
+        (fun P => (Multiset.count ((p : ℤ) • P) D : ℤ))
+      rw [hsub, ← hfw]
+      have hinner : ∀ R ∈ D.toFinset,
+          ∑ P ∈ (Snon.filter (fun P => (p : ℤ) • P ∈ D)).filter
+              (fun P => (p : ℤ) • P = R),
+            (Multiset.count ((p : ℤ) • P) D : ℤ) =
+          (1 + (Stor.card : ℤ)) * (Multiset.count R D : ℤ) := by
+        intro R hR
+        have hfeq : (Snon.filter (fun P => (p : ℤ) • P ∈ D)).filter
+            (fun P => (p : ℤ) • P = R) =
+            Snon.filter (fun P => (p : ℤ) • P = R) := by
+          rw [Finset.filter_filter]
+          refine Finset.filter_congr fun x _ => ?_
+          constructor
+          · exact fun h => h.2
+          · intro h
+            exact ⟨h ▸ Multiset.mem_toFinset.mp hR, h⟩
+        rw [hfeq, Finset.sum_congr rfl (fun P hP => by
+            rw [(Finset.mem_filter.mp hP).2]), Finset.sum_const, nsmul_eq_mul,
+          hfibcard R hR]
+        push_cast
+        ring
+      rw [Finset.sum_congr rfl hinner, ← Finset.mul_sum]
+      congr 1
+      rw [← Multiset.toFinset_sum_count_eq D]
+      push_cast
+      rfl
+    rw [hsumfib] at hkey
+    have hpos : (0 : ℤ) < 1 + (Stor.card : ℤ) := by positivity
+    have hfin : dgr = (Multiset.card D : ℤ) :=
+      mul_right_cancel₀ hpos.ne' (hkey.trans (by ring))
+    rw [hfin]
 
 /-- **L4-7 brick (sorry): the multiplicity-one `[p]`-pullback formula
 for a coordinate function.**  Let `val` enumerate `E[p]`, let
@@ -6545,15 +6906,18 @@ provide for `CoordinateRing`, is supplied by
 closedness and NO smoothness argument, so the normality of the affine
 curve that this proof once planned to establish is not required at all.
 NO sorried `have` remains inside the proof: the multiplicity-one
-pullback count `hcountEv` is now assembled from two sorried TOP-LEVEL
-leaves, split along the two geometrically different branches,
+pullback count `hcountEv` is now assembled from two TOP-LEVEL leaves,
+split along the two geometrically different branches (of which only the
+first is still open — the second is PROVEN over it),
 
 * `count_pointEval_of_smul_ne_zero`: for `p • S ≠ O`, the order of
   `[p]^*z` at the place of `S` is the order of `z` at `p • S`
   (multiplicity one from separability of `[p]`, `(p : F) ≠ 0`, via
   `Φ_p − x_R·Ψ_p²`);
-* `count_pointEval_of_smul_eq_zero`: for `p • S = O`, that order is the
-  pole order `−#D` of `z` at infinity;
+* `count_pointEval_of_smul_eq_zero` (PROVEN): for `p • S = O`, that
+  order is the pole order `−#D` of `z` at infinity — derived from the
+  branch above by translation transport, since translating by `⊖S`
+  carries the place at infinity onto the place of `S`;
 
 the glue between them — reading the order of `z` at `p • S` off its
 affine divisor `D` — being the proven
