@@ -1741,10 +1741,7 @@ discharge through `Family.lean`, `Lift.lean`, or
 -- interface of the three sub-leaves (a)/(b)/(c) of this cut, the consumer
 -- `exists_heckePackage_of_seed` supplies them positionally, and (a)/(b)
 -- genuinely need them.  The linter is silenced rather than the names being
--- mangled to `_`, so the docstring's references stay valid.  (The
--- `set_option ... in` that silences it must sit BEFORE the doc comment:
--- a doc comment has to be immediately followed by the declaration, so
--- `/-- ... -/ set_option ... in theorem` is a parse error.)
+-- mangled to `_`, so the docstring's references stay valid.
 theorem exists_residualCongruence_over_base
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
@@ -3086,19 +3083,10 @@ theorem exists_threeadic_realization_domain_of_heckePackage
   -- course the module topology, and both injectivity statements follow
   -- from the mere existence of the characteristic-zero comparison
   -- embedding `ιB`
-  -- the components come out of the citation as ordinary hypotheses, not as
-  -- local instances, so register them before the module topology (which
-  -- needs `Algebra ℤ_[3] B`) can even be written; `letI`, not `haveI`,
-  -- because the later components must stay definitionally on `hCR`
-  letI := hCR
-  letI := hDom
-  letI := hLR
-  letI := hAlg
-  letI := hFin
   letI : TopologicalSpace B := moduleTopology ℤ_[3] B
   exact ⟨B, hCR, hDom, moduleTopology ℤ_[3] B,
     isTopologicalRing_moduleTopology_of_finite 3 B, hAlg, hLR, hFin, ⟨rfl⟩,
-    injective_algebraMap_of_ringHom_charZero (p := 3) ιB, τF, ψ₃, ιB,
+    injective_algebraMap_of_ringHom_charZero ιB, τF, ψ₃, ιB,
     injective_of_finite_padicInt_charZero (p := 3) ιB, hmatch⟩
 
 /-- **The Hilbert-modular `3`-adic realization** (PROVEN assembly,
@@ -5520,9 +5508,10 @@ material for continuous representations of compact groups (a search over
 `Mathlib/` for stable/invariant lattices returns nothing, and there is no
 `GL_n(K)`-conjugation/orbit-lattice development), so the EXISTENCE of the
 Galois-stable lattice cannot be split off as an in-tree formal step: it
-stays inside the citation leaf `exists_threeadicBrauerSum_of_witness`
-below, which produces the Brauer sum already in coefficient-ring
-(lattice) form — classically the integers `O_{E_λ}` of the completion.
+stays inside the citation leaf `blggt_threeadicBrauerSum_of_witness`
+below (re-audited 2026-07-25, finding confirmed), which produces the
+Brauer sum already in coefficient-ring (lattice) form — classically the
+integers `O_{E_λ}` of the completion.
 What IS formal, and is discharged here, is the freeness normalization
 that the proven `3`-adic classification consumes downstream. -/
 theorem module_free_padicInt_of_algebraMap_injective (p : ℕ)
@@ -5554,9 +5543,179 @@ theorem heckePoly_transport {E : Type*} [Field E] {Lℓ : Type*}
     Polynomial.map_injective ψℓ ψℓ.injective (hPv.symm.trans hP)
   rw [hτ, hEq]
 
+/-- **Brauer descent, `3`-adic side — the geometric core of the Brauer
+sum** (sorry node — BLGGT §5.3; THE citation sub-leaf of the `3`-adic
+realization, in its narrowest form to date): given the descended
+rational Hecke system `(S₀, Pv)` produced on the `ℓ`-adic side
+(`exists_heckeField_system_of_witness`), the SAME system is realized
+`3`-adically — there are a finite exceptional set `S₁`, a coefficient
+ring `A` which is a local DOMAIN module-finite over `ℤ_3` (classically
+the integers `O_{E_λ}` of the completion of the Hecke field at a place
+`λ | 3`), a representation `τ` of `G_ℚ` on `Fin 2 → A`, and a
+comparison embedding `ιA : A → ℚ̄_3`, with `τ`'s Frobenius
+characteristic polynomials away from `S₁` the `ψ₃`-images of `Pv`.
+
+CITATION-SHRINKING CUT (2026-07-25). This leaf replaces the earlier
+`exists_threeadicBrauerSum_of_witness` citation, which is now a PROVEN
+assembly over it. Five components of that statement were pulled out of
+the citation, using the coefficient-ring bricks proven above for the
+twin Carayol node (`carayol_threeadic_realization_of_heckePackage`);
+the citation now asserts strictly less:
+
+* `TopologicalSpace A`, `IsTopologicalRing A`, `IsModuleTopology ℤ_3 A`
+  — GONE. The coefficient ring's topology is not a choice: those three
+  components together pin it to be the `ℤ_3`-module topology, so the
+  statement below simply USES that topology and
+  `isTopologicalRing_moduleTopology_of_finite` supplies the rest;
+* `Function.Injective ιA` — GONE, by
+  `injective_of_finite_padicInt_charZero`: a domain module-finite over
+  `ℤ_3` admits no nonzero prime over `(0)`, so ANY ring map of it into
+  the characteristic-zero field `ℚ̄_3` is injective;
+* `Function.Injective (algebraMap ℤ_3 A)` — GONE, by
+  `injective_algebraMap_of_ringHom_charZero`: the mere EXISTENCE of the
+  comparison embedding forces it. This is what feeds the downstream
+  free-lattice normalization
+  (`module_free_padicInt_of_algebraMap_injective`), so `ℤ_3`-freeness
+  of `A` is now two formal steps away from the citation rather than an
+  assumption plus a step.
+
+What remains is the genuinely automorphic/geometric core. Classically
+this is the Brauer trick at the place `λ | 3`: Brauer's induction
+theorem on `Gal(F/ℚ)` (`Wit.galoisF`) writes
+`1 = Σ cᵢ · Ind_{Hᵢ}^{Gal(F/ℚ)} χᵢ` with `Hᵢ` solvable and `χᵢ`
+one-dimensional; solvable base change descends the Hilbert newform to
+each `Fᵢ = F^{Hᵢ}`, and Carayol/Taylor attach to each descended form
+its `3`-adic realization (the carrier's `τF` at the base level,
+`Wit.matchF₃`). The virtual sum
+`Σ cᵢ · Ind_{G_{Fᵢ}}^{G_ℚ} (τ_{fᵢ,λ} ⊗ χᵢ)` has, by construction, the
+same trace function as the `ψ₃`-transport of the Hecke system, hence
+Frobenius characteristic polynomials `Pv` through `ψ₃`; it is a TRUE
+(not merely virtual) representation because at the place over `ℓ` the
+corresponding sum is the character of `ρ` — a genuine `2`-dimensional
+representation — and Brauer–Nesbitt pins the semisimple representation
+at every place of `E`. Finally the resulting `2`-dimensional
+`E_λ`-representation of the COMPACT group `G_ℚ` admits a stable lattice
+(the `O_{E_λ}`-span of the orbit of any lattice under the compact image
+is finitely generated and stable), which is the coefficient ring `A`
+together with `τ` and the embedding `ιA : O_{E_λ} → ℚ̄_3`. The
+exceptional set `S₁` collects `S₀`, the primes ramified in `F`, and the
+primes below the bad places of the descended forms.
+
+Literature: Barnet-Lamb–Gee–Geraghty–Taylor, *Potential automorphy and
+change of weight*, Ann. of Math. 179 (2014), §5.3 (the Brauer trick:
+the virtual sum is a true representation, and the constructed system is
+weakly compatible) and Theorem 5.5.1; Khare–Wintenberger, *Serre's
+modularity conjecture (I)*, Invent. Math. 178 (2009), §5; Taylor, *On
+Galois representations associated to Hilbert modular forms*, Invent.
+Math. 98 (1989) (the `3`-adic realizations of the descended Hilbert
+forms); Taylor, *Remarks on a conjecture of Fontaine and Mazur*, J.
+Inst. Math. Jussieu 1 (2002), §6; Carayol, Ann. Sci. ÉNS 19 (1986)
+(local-global compatibility at unramified places, fixing the Frobenius
+data); Serre, *Abelian ℓ-adic Representations*, I.1 (stable lattices
+for continuous representations of compact groups), I.2 (induced traces
+via degree-one places).
+
+PIN AUDIT (2026-07-25, RE-AUDITED from scratch — the 2026-07-24 finding
+is CONFIRMED). The stable-lattice step is still NOT separable into an
+in-tree formal lemma at this pin:
+
+* searching the pin for stable/invariant lattices of compact-group
+  representations returns only `Module.End.span_orbit_mem_invtSubmodule`
+  (`Mathlib/Algebra/Module/Submodule/Invariant.lean`) — the EASY half,
+  invariance of the span of an orbit. The hard half, FINITE GENERATION
+  of that span, needs "a compact subgroup of `GL₂(E_λ)` is bounded", and
+  the pin has no boundedness theory of that shape (no `IsCompact →
+  IsBounded` for matrix algebras over a valued field, no Bruhat–Tits or
+  maximal-order material, no `GL_n(K)`-conjugation/orbit lattice
+  development); `Mathlib/RepresentationTheory/Continuous/` carries the
+  category `TopRep` of continuous representations but no
+  integral-structure results at all;
+* the reference project `~/cs/FLT` has NOTHING vendorable here: its
+  Brauer-trick step exists only as blueprint prose
+  (`blueprint/src/chapter/ch04overview.tex`, "the Brauer's theorem trick
+  in [BLGGT]"), with no Lean development of stable lattices, of Brauer
+  induction for Galois representations, or of Hilbert-modular `3`-adic
+  realizations.
+
+So the leaf stays in lattice (coefficient-ring) form — the same
+conclusion, for the same reason, that the twin node reached ("that cut
+would trade one citation for two"). Also audited and deliberately NOT
+done, for the reason recorded at the twin: restating the matching clause
+as the trace/determinant pair. Both sides here are monic of degree `2`
+(`hPv` forces `Pv v` to be, through the injective `Wit.ψℓ`), so that
+form is EQUIVALENT, not weaker — it would relocate polynomial
+bookkeeping into this file without removing anything from the citation.
+`IsLocalRing A` likewise stays, for the Henselian-input reason recorded
+at the twin.
+
+SOUNDNESS AUDIT (both ways, 2026-07-25, inherited from the node this
+leaf replaces): (i) direct — for the carrier produced by the
+inhabitation leaf and the system produced by the `ℓ`-adic descent this
+is BLGGT §5.3 verbatim; for an abstract carrier or an abstract family
+`Pv` the abstract-quantification caveat of pillar β applies (nothing
+formal ties an arbitrary `Pv` to a Hilbert eigensystem — that
+identification is part of the citation), and (ii) collapse — the
+hypothesis set (an irreducible hardly ramified mod-`ℓ` representation,
+`ℓ ≥ 5`) is classically unsatisfiable (headline below), so the
+statement is classically true for every package. ROUTE AUDIT
+(dichotomy, 2026-07-24; unchanged): the alternative route — realizing
+the `3`-adic member directly from the base-level carrier data `Wit.τF`
+by inducing from `G_F` to `G_ℚ` without Brauer — is strictly deeper:
+`Ind_{G_F}^{G_ℚ} τF` has dimension `[F : ℚ] · 2`, so recovering a
+`2`-dimensional member from it requires precisely the Brauer virtual
+identity that this leaf cites; there is no shallower in-tree route, and
+no route through the forbidden modules.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
+through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+theorem blggt_threeadicBrauerSum_of_witness
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+    (Wit : PotentialModularityWitness ℓ O ρ)
+    (S₀ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (Pv : HeightOneSpectrum (NumberField.RingOfIntegers ℚ) →
+      Polynomial Wit.E)
+    (hPv : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S₀ →
+      q ≠ 2 → q ≠ 3 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map Wit.ιO =
+        (Pv hq.toHeightOneSpectrumRingOfIntegersRat).map Wit.ψℓ) :
+    ∃ (S₁ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+      (A : Type u) (_ : CommRing A) (_ : IsDomain A) (_ : IsLocalRing A)
+      (_ : Algebra ℤ_[3] A) (_ : Module.Finite ℤ_[3] A),
+      letI : TopologicalSpace A := moduleTopology ℤ_[3] A
+      letI : IsTopologicalRing A :=
+        isTopologicalRing_moduleTopology_of_finite 3 A
+      ∃ (τ : GaloisRep ℚ A (Fin 2 → A))
+        (ιA : A →+* AlgebraicClosure ℚ_[3]),
+        ∀ (q : ℕ) (hq : q.Prime),
+          hq.toHeightOneSpectrumRingOfIntegersRat ∉ S₁ →
+          q ≠ 2 → q ≠ 3 → q ≠ ℓ →
+          (τ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map ιA =
+            (Pv hq.toHeightOneSpectrumRingOfIntegersRat).map Wit.ψ₃ :=
+  sorry
+
 /-- **Brauer descent, `3`-adic side — the virtual sum is a true
-representation on a stable lattice** (sorry node; the citation
-sub-leaf of the `3`-adic realization, BLGGT §5.3): given the descended
+representation on a stable lattice** (PROVEN assembly, 2026-07-25 —
+BLGGT §5.3 at one remove; see the ASSEMBLY note at the end of this
+docstring): given the descended
 rational Hecke system `(S₀, Pv)` produced on the `ℓ`-adic side
 (`exists_heckeField_system_of_witness` — the family of `E`-coefficient
 polynomials interpolating `charFrob ρ` through `ιO`/`ψℓ`), the SAME
@@ -5601,14 +5760,33 @@ compatibility at unramified places, fixing the Frobenius data);
 Serre, *Abelian ℓ-adic Representations*, I.1 (stable lattices for
 continuous representations of compact groups).
 
-PIN AUDIT (2026-07-24): the lattice step is NOT separable into an
-in-tree formal lemma at this pin — mathlib carries no stable-lattice
-material for compact groups (see
-`module_free_padicInt_of_algebraMap_injective` above), so the leaf is
-stated directly in lattice (coefficient-ring) form, exactly the shape
-the realization carrier and the proven `3`-adic classification
-consume. What was split off as formal is the freeness normalization
-(that lemma) and the interpolant uniqueness (`heckePoly_transport`).
+ASSEMBLY (2026-07-25, PROVEN): this used to BE the citation; it is now
+a proven assembly over the strictly narrower geometric core
+`blggt_threeadicBrauerSum_of_witness` plus the coefficient-ring bricks
+proven above for the twin Carayol node — the `ℤ_3`-module topology is a
+ring topology and is of course the module topology
+(`isTopologicalRing_moduleTopology_of_finite`), and both injectivity
+components follow from the mere existence of the comparison embedding
+into the characteristic-zero field `ℚ̄_3`
+(`injective_of_finite_padicInt_charZero`,
+`injective_algebraMap_of_ringHom_charZero`). Nothing else changes: the
+coefficient ring, the representation, the embedding `ιA`, the
+exceptional set and the matching clause are carried verbatim from the
+core, so there is no lattice change and no charpoly to re-compute.
+
+PIN AUDIT (2026-07-24, RE-AUDITED 2026-07-25 — see the core's docstring
+for the full search record): the stable-lattice step is NOT separable
+into an in-tree formal lemma at this pin — the pin has the invariance of
+an orbit span (`Module.End.span_orbit_mem_invtSubmodule`) but nothing
+making it FINITELY GENERATED (no compactness/boundedness theory for
+valued fields, no maximal-order material), and `~/cs/FLT` has no
+vendorable Lean development of the Brauer trick at all. So the core leaf
+remains stated in lattice (coefficient-ring) form, exactly the shape the
+realization carrier and the proven `3`-adic classification consume. What
+IS split off as formal is the coefficient-ring bookkeeping listed above,
+the freeness normalization
+(`module_free_padicInt_of_algebraMap_injective`) and the interpolant
+uniqueness (`heckePoly_transport`).
 
 SOUNDNESS AUDIT (both ways, 2026-07-24): (i) direct — for the carrier
 produced by the inhabitation leaf and the system produced by the
@@ -5671,8 +5849,35 @@ theorem exists_threeadicBrauerSum_of_witness
         hq.toHeightOneSpectrumRingOfIntegersRat ∉ S₁ →
         q ≠ 2 → q ≠ 3 → q ≠ ℓ →
         (τ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map ιA =
-          (Pv hq.toHeightOneSpectrumRingOfIntegersRat).map Wit.ψ₃ :=
-  sorry
+          (Pv hq.toHeightOneSpectrumRingOfIntegersRat).map Wit.ψ₃ := by
+  classical
+  -- (a) the NARROWED BLGGT citation: the Brauer sum comes back over a
+  -- bare local domain, module-finite over `ℤ_3`, with no topology, no
+  -- `ℤ_3`-injectivity and no injectivity of the comparison embedding
+  -- asserted
+  obtain ⟨S₁, A, hCR, hDom, hLR, hAlg, hFin, τ, ιA, hmatch⟩ :=
+    blggt_threeadicBrauerSum_of_witness hℓodd hℓ5 hZinj hrank hρ hW hρbar
+      hirr π hπsurj hπ Wit S₀ Pv hPv
+  -- (b) the coefficient-ring bookkeeping, all of it PROVEN above (the
+  -- same bricks the twin Carayol assembly uses): the canonical module
+  -- topology is a ring topology and is of course the module topology,
+  -- and both injectivity statements follow from the mere existence of
+  -- the characteristic-zero comparison embedding `ιA`.
+  --
+  -- Three elaboration precautions, all forced by the fact that `p` and
+  -- the coefficient ring's topology occur in these bricks only inside
+  -- INSTANCE arguments, where unification against the goal cannot reach
+  -- them: the ring-topology brick is elaborated with no expected type
+  -- (so its `p` is fixed by the explicit `3`), `p := 3` is passed by
+  -- name to the embedding-injectivity brick, and the `IsModuleTopology`
+  -- component is given as a `refine` hole with its topology argument
+  -- spelled out — the anonymous constructor does not propagate the
+  -- topology from the positional component that supplies it
+  haveI hTR := isTopologicalRing_moduleTopology_of_finite 3 A
+  refine ⟨S₁, A, hCR, hDom, moduleTopology ℤ_[3] A, hTR, hAlg, hLR, hFin, ?_,
+    injective_algebraMap_of_ringHom_charZero ιA, τ, ιA,
+    injective_of_finite_padicInt_charZero (p := 3) ιA, hmatch⟩
+  exact @IsModuleTopology.mk ℤ_[3] _ A _ _ (moduleTopology ℤ_[3] A) rfl
 
 /-- **Brauer descent, `3`-adic side — construction of the raw
 realization** (DECOMPOSED 2026-07-24 — now a PROVEN assembly over the
@@ -5714,8 +5919,10 @@ ASSEMBLY (2026-07-24, PROVEN): the `ℓ`-adic Brauer descent supplies
 the rational Hecke system `(S₀, Pv)` interpolating `charFrob ρ`
 (`exists_heckeField_system_of_witness`, already a proven assembly over
 its own three leaves) + the `3`-adic Brauer sum realizes THAT system
-on a stable lattice (`exists_threeadicBrauerSum_of_witness`, the
-single residual citation sub-leaf of this node — BLGGT §5.3) + two
+on a stable lattice (`exists_threeadicBrauerSum_of_witness`, itself
+PROVEN 2026-07-25 over the geometric core
+`blggt_threeadicBrauerSum_of_witness`, which is the single residual
+citation sub-leaf of this node — BLGGT §5.3) + two
 formal steps: the freeness normalization
 `module_free_padicInt_of_algebraMap_injective` (a module-finite
 torsion-free algebra over the PID `ℤ_3` is free — this is what turns
@@ -6650,8 +6857,7 @@ theorem threeadicRealization_hasFlatProlongationAt_of_finite_quotient
         simp
       rw [h3, map_mul]
       exact I.mul_mem_left _ hxmem
-    rw [map_pow, map_natCast] at hpow
-    exact_mod_cast hpow
+    simpa [map_pow, map_ofNat] using hpow
   -- the level is a positive one: `I ≠ ⊤` forbids `1 ∈ I`
   have hm1 : 1 ≤ m := by
     rcases Nat.eq_zero_or_pos m with rfl | hpos
@@ -6813,51 +7019,155 @@ theorem threeadicRealization_isFlat_of_witness
     exact threeadicRealization_hasFlatProlongationAt_of_finite_quotient
       hℓodd hℓ5 hZinj hrank hρ hW hρbar hirr π hπsurj hπ Rlz I hItop hIfin
 
-/-- **The Weil–Deligne type at `2` of the `3`-adic member, in lattice
-coordinates** (sorry node — the LITERATURE JOINT of the tameness
-transfer, cut out 2026-07-24): there is an `A`-basis of the stable
-lattice `Fin 2 → A` in which the whole decomposition group at `2` acts
-through UPPER-triangular matrices, the diagonal `(1,1)`-entry being the
-scalar `δ g 1` of an unramified square-trivial character `δ` of
-`G_{ℚ_2}`.
+/-- **The Weil–Deligne type at `2` of the `3`-adic member, as a stable
+line with unramified quadratic quotient** (sorry node — the SHRUNK
+LITERATURE JOINT of the tameness transfer; cut out 2026-07-24 in matrix
+coordinates, re-cut coordinate-free 2026-07-25): there is an `A`-basis
+`b` of the stable lattice `Fin 2 → A` and an unramified square-trivial
+character `δ` of `G_{ℚ_2}` such that `G_{ℚ_2}` acts on the quotient of
+the lattice by the line `A · b 0` through `δ`:
 
-This is exactly the classical statement "the Weil–Deligne parameter of
-the compatible system at `2` is constant away from the residue
-characteristic (`2 ≠ 3`) and equals that of the hardly ramified `ρ`",
-written in the coordinates the lattice provides: `ρ`'s type at `2` is
-an extension of an unramified square-trivial character by its
-cyclotomic twist (`hρ.isTameAtTwo` together with the cyclotomic
-determinant), the type is carried across the system by strict
-compatibility (Khare–Wintenberger (I) §5; Carayol local–global
-compatibility at the bad places, applied to the descended Hilbert
-newform, whose conductor is pinned by the witness's conductor data),
-and the stable-lattice normalization of the construction leaf
+  `τ g v ≡ δ g 1 • v  (mod A · b 0)`  for all `g` and all `v`.
+
+That single clause is the whole classical content. It already forces
+the line `A · b 0` to be `G_{ℚ_2}`-STABLE (take `v = b 0`: both `τ g
+(b 0) - δ g 1 • b 0` and `δ g 1 • b 0` lie in the line), so the shape
+"extension of the unramified quadratic `δ` by something, in a basis
+adapted to the lattice" is stated without ever mentioning a matrix.
+The matrix reading — upper-triangularity with `δ g 1` on the diagonal —
+is now PROVEN from this clause in
+`threeadicRealization_weilDeligneType_two_of_witness` below; that
+bookkeeping used to be part of this citation and no longer is.
+
+WHY THIS IS THE CITATION. `ρ`'s type at `2` is an extension of an
+unramified square-trivial character by its cyclotomic twist
+(`hρ.isTameAtTwo` together with the cyclotomic determinant). The type
+is carried across the compatible system by STRICT COMPATIBILITY, which
+is exactly the property that a single Weil–Deligne representation
+`WD_v(R)` over the coefficient field reproduces `WD(r_λ|G_{F_v})^{F-ss}`
+for every `λ` whose residue characteristic differs from that of `v`
+(BLGGT §5.1, the display `ς WD_v(R) ≅ WD(r_λ|G_{F_v})^{F-ss}`; here
+`v = 2` and the two places compared are `λ | ℓ` and `λ | 3`, legitimate
+because `2 ∉ {ℓ, 3}`). Strict compatibility of the system through which
+the descent runs is Carayol's theorem for Hilbert newforms — the local
+constituent is pinned at EVERY finite place, not merely almost all —
+and the membership of `ρ` in such a system is BLGGT Theorem 5.5.1.
+Finally the stable-lattice normalization of the construction leaf
 (`exists_threeadicRealization_of_witness`) turns the `E_λ`-rational
 stable line into a saturated `A`-line, i.e. into the first vector of an
-`A`-basis. The character `δ` is handed over as a `GaloisRep` because it
-IS the quotient character of the constant type — in particular
-continuous, being the local component of the compatible system's
-nebentypus-free unramified twist.
+`A`-basis, which is why the basis `b` may be demanded here. The
+character `δ` is handed over as a `GaloisRep` because it IS the quotient
+character of the constant type — in particular continuous, being the
+local component of the compatible system's nebentypus-free unramified
+twist.
 
-Literature: Khare–Wintenberger, *Serre's modularity conjecture (I)*,
-Invent. Math. 178 (2009), §5 (strict compatibility of Weil–Deligne
-parameters away from the residue characteristic); BLGGT, *Potential
-automorphy and change of weight*, Ann. of Math. 179 (2014), §5.5;
-Carayol, *Sur les représentations ℓ-adiques associées aux formes
-modulaires de Hilbert*, Ann. Sci. ÉNS 19 (1986) (local–global
-compatibility at the bad places). FLT blueprint ch. 4: "tame at 2".
+Literature (page-level checks 2026-07-25 against the downloaded
+sources): BLGGT, *Potential automorphy and change of weight*, Ann. of
+Math. 179 (2014) — §5.1 for the definition of a strictly compatible
+system (the display quoted above) and Theorem 5.5.1 for "a potentially
+diagonalizable, totally odd, regular algebraic polarized `l`-adic
+representation with `r̄|_{G_F(ζ_l)}` irreducible is part of a strictly
+pure compatible system"; Carayol, *Sur les représentations `l`-adiques
+associées aux formes modulaires de Hilbert*, Ann. Sci. ÉNS (4) 19
+(1986) 409–468, Théorème (A) p. 410: a strictly compatible system
+`{σ_λ}` with `σ_λ|W_p ≅ σ_λ(π_p)` at EVERY finite place `p` of residue
+characteristic different from that of `λ`, `σ(π_p)` being the
+`F`-semisimple degree-`2` Weil–Deligne representation of the Hecke
+correspondence (§0.5). Khare–Wintenberger, *Serre's modularity
+conjecture (I)*, Invent. Math. 178 (2009) 485–504, for the same
+constancy inside the minimal-lifting induction (paywalled; NOT
+page-verified here — the two references above are the load-bearing
+ones). FLT blueprint ch. 4: "tame at 2".
 
-SOUNDNESS AUDIT (both ways, 2026-07-24): (i) direct — for the
-realization produced by the construction leaf this is the
-Weil–Deligne-type transfer above, read in a saturated basis; for an
-abstract realization the abstract-quantification caveat of pillar β
-applies, and (ii) collapse — the hypothesis set is classically
-unsatisfiable (the headline
+SOUNDNESS AUDIT (both ways; 2026-07-24, re-checked 2026-07-25 for the
+coordinate-free form): (i) direct — for the realization produced by the
+construction leaf this is the Weil–Deligne-type transfer above, read in
+a saturated basis; for an abstract realization the
+abstract-quantification caveat of pillar β applies, and (ii) collapse —
+the hypothesis set is classically unsatisfiable (the headline
 `not_isIrreducible_of_isHardlyRamified_of_five_le` below refutes
 `hirr`), so the statement is classically true for every package.
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
 discharge through `Family.lean`, `Lift.lean`, or
+`Modularity/Interface.lean`. In particular the odd-prime dichotomy
+`not_isIrreducible_of_isHardlyRamified_of_odd` is NOT available: it
+routes `ℓ ≥ 5` through this module's own headline, whose proof consumes
+pillar β and hence this leaf. -/
+theorem threeadicRealization_stableLineAtTwo_of_witness
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+    {Wit : PotentialModularityWitness ℓ O ρ}
+    (Rlz : ThreeadicRealization ℓ O ρ Wit) :
+    ∃ (b : Module.Basis (Fin 2) Rlz.A (Fin 2 → Rlz.A))
+      (δ : GaloisRep ℚ_[2] Rlz.A Rlz.A),
+      (AddSubgroup.inertia
+          ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup :
+            AddSubgroup Z2bar)
+          (Field.absoluteGaloisGroup ℚ_[2]) ≤ δ.ker) ∧
+      (∀ g : Field.absoluteGaloisGroup ℚ_[2], δ g * δ g = 1) ∧
+      ∀ (g : Field.absoluteGaloisGroup ℚ_[2]) (v : Fin 2 → Rlz.A),
+        Rlz.τ.map (algebraMap ℚ ℚ_[2]) g v - δ g 1 • v ∈
+          Submodule.span Rlz.A {b 0} :=
+  sorry
+
+/-- **The Weil–Deligne type at `2` of the `3`-adic member, in lattice
+coordinates** (DECOMPOSED 2026-07-25 — now a PROVEN transport over the
+shrunk literature joint `threeadicRealization_stableLineAtTwo_of_witness`
+above): there is an `A`-basis of the stable lattice `Fin 2 → A` in which
+the whole decomposition group at `2` acts through UPPER-triangular
+matrices, the diagonal `(1,1)`-entry being the scalar `δ g 1` of an
+unramified square-trivial character `δ` of `G_{ℚ_2}`.
+
+CITATION-SHRINKING AUDIT (2026-07-25). The old sorry here bundled two
+unrelated things: (a) the genuine literature input — constancy of the
+local Weil–Deligne type at `2` across the compatible system, i.e. the
+existence of a `G_{ℚ_2}`-stable saturated line in the lattice whose
+quotient carries an unramified quadratic character — and (b) the
+representation-theoretic bookkeeping turning that description into
+matrix entries in an adapted basis. (b) is FORMAL at this pin and is
+proven below; only (a) remains a citation, and it is now stated with no
+matrices in it (`threeadicRealization_stableLineAtTwo_of_witness`).
+
+ASSEMBLY (PROVEN). Both matrix clauses are the `1`-st coordinate of
+`b.repr` applied to the joint's congruence
+`τ g v ≡ δ g 1 • v (mod A · b 0)` — `LinearMap.toMatrix_apply` reads
+the `(i, j)` entry as `b.repr (f (b j)) i`, and `b.repr` kills the line
+`A · b 0` at the index `1` (`b.repr (c • b 0) 1 = c * 0`):
+
+* `j = 0`: the congruence at `v = b 0` puts `τ g (b 0)` itself in the
+  line (`δ g 1 • b 0` is in the line, and the line is a submodule), so
+  the `(1,0)` entry vanishes — this is the stability of the line;
+* `j = 1`: the congruence at `v = b 1` writes
+  `τ g (b 1) = c • b 0 + δ g 1 • b 1`, whose `b.repr … 1` is
+  `c * 0 + δ g 1 * 1 = δ g 1` — this is the diagonal clause.
+
+The unramifiedness and square-triviality clauses are the joint's own,
+`δ` being unchanged by the transport.
+
+SOUNDNESS: inherited verbatim from the joint (both the direct reading
+and the collapse reading; see its docstring).
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): respected —
+the only leaf consumed is the joint above, which carries the same
+guard; nothing routes through `Family.lean`, `Lift.lean`, or
 `Modularity/Interface.lean`. -/
 theorem threeadicRealization_weilDeligneType_two_of_witness
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
@@ -6892,8 +7202,30 @@ theorem threeadicRealization_weilDeligneType_two_of_witness
         LinearMap.toMatrix b b
             (Rlz.τ.map (algebraMap ℚ ℚ_[2]) g) 1 0 = 0 ∧
         LinearMap.toMatrix b b
-            (Rlz.τ.map (algebraMap ℚ ℚ_[2]) g) 1 1 = δ g 1 :=
-  sorry
+            (Rlz.τ.map (algebraMap ℚ ℚ_[2]) g) 1 1 = δ g 1 := by
+  classical
+  -- the shrunk literature joint: a stable line with unramified
+  -- square-trivial quotient character, stated without coordinates
+  obtain ⟨b, δ, hδur, hδsq, hquot⟩ :=
+    threeadicRealization_stableLineAtTwo_of_witness hℓodd hℓ5 hZinj
+      hrank hρ hW hρbar hirr π hπsurj hπ Rlz
+  refine ⟨b, δ, hδur, hδsq, fun g => ⟨?_, ?_⟩⟩
+  · -- `(1,0)`: the congruence at `v = b 0` puts `τ g (b 0)` in the line
+    have hstab : Rlz.τ.map (algebraMap ℚ ℚ_[2]) g (b 0) ∈
+        Submodule.span Rlz.A {b 0} := by
+      have hline : δ g 1 • b 0 ∈ Submodule.span Rlz.A ({b 0} : Set (Fin 2 → Rlz.A)) :=
+        Submodule.smul_mem _ _ (Submodule.mem_span_singleton_self _)
+      simpa using Submodule.add_mem _ (hquot g (b 0)) hline
+    obtain ⟨c, hc⟩ := Submodule.mem_span_singleton.mp hstab
+    rw [LinearMap.toMatrix_apply, ← hc]
+    simp
+  · -- `(1,1)`: the congruence at `v = b 1`, read at the index `1`
+    obtain ⟨c, hc⟩ := Submodule.mem_span_singleton.mp (hquot g (b 1))
+    have hval : Rlz.τ.map (algebraMap ℚ ℚ_[2]) g (b 1) =
+        c • b 0 + δ g 1 • b 1 := by
+      rw [hc]; abel
+    rw [LinearMap.toMatrix_apply, hval]
+    simp
 
 /-- **Condition transfer, tameness at `2` — constant Weil–Deligne
 type** (DECOMPOSED 2026-07-24 — now a PROVEN transport over the
