@@ -1881,10 +1881,13 @@ theorem exists_threeadic_realization_domain_of_heckePackage
   -- course the module topology, and both injectivity statements follow
   -- from the mere existence of the characteristic-zero comparison
   -- embedding `ιB`
-  exact ⟨B, hCR, hDom, moduleTopology ℤ_[3] B,
+  -- the topology must be FIXED before the components whose types mention it
+  -- are elaborated, so it goes in by `letI` rather than as a bare tuple slot
+  letI : TopologicalSpace B := moduleTopology ℤ_[3] B
+  exact ⟨B, hCR, hDom, inferInstance,
     isTopologicalRing_moduleTopology_of_finite 3 B, hAlg, hLR, hFin, ⟨rfl⟩,
     injective_algebraMap_of_ringHom_charZero ιB, τF, ψ₃, ιB,
-    injective_of_finite_padicInt_charZero ιB, hmatch⟩
+    injective_of_finite_padicInt_charZero (p := 3) ιB, hmatch⟩
 
 /-- **The Hilbert-modular `3`-adic realization** (PROVEN assembly,
 2026-07-24 — Carayol 1986 / Taylor 1989 at one remove): a
@@ -5435,7 +5438,7 @@ theorem threeadicRealization_hasFlatProlongationAt_of_finite_quotient
         simp
       rw [h3, map_mul]
       exact I.mul_mem_left _ hxmem
-    simpa using hpow
+    simpa [map_ofNat] using hpow
   -- the level is a positive one: `I ≠ ⊤` forbids `1 ∈ I`
   have hm1 : 1 ≤ m := by
     rcases Nat.eq_zero_or_pos m with rfl | hpos

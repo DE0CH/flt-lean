@@ -1831,6 +1831,10 @@ lemma span_eq_of_mem_of_span_mul_eq {n ñ : W.CoordinateRing}
     IsUnit.of_mul_eq_one _ (mul_left_cancel₀ (mul_ne_zero hm₁0 hm₂0) hw')
   rw [← hu₁, Ideal.span_singleton_mul_left_unit (isUnit_of_mul_isUnit_left hu), hm₁]
 
+-- The `linear_combination` certificate below normalizes a large
+-- polynomial identity in `F[W]`; its internal `ring1` call exceeds the
+-- default recursion depth (build-blocking error, 2026-07-25).
+set_option maxRecDepth 4000 in
 omit [IsAlgClosed F] in
 /-- **L4-8 line-numerator sub-leaf (PROVEN): the cleared conjugate
 product.**  The two cleared line values at the translate multiply to the
@@ -1900,6 +1904,10 @@ theorem lineNumerator_mul_lineNumeratorNeg {q₁ q₂ x₁ y₁ x₂ y₂ : F}
   have hc3 := Cubic.d_of_eq hAP
   -- the two relations, transported into `F[W]`
   have hcr := coord_equation_coordC W
+  -- the goal is normalized into `algebraMap` atoms below, so the relation must
+  -- be too: `ring` compares atoms syntactically, and `coordC W a` and
+  -- `algebraMap F W.CoordinateRing a` — equal by `rfl` — are two of them
+  simp only [coordC_eq_algebraMap] at hcr
   rw [WeierstrassCurve.Affine.equation_iff'] at hq
   have hqW := congrArg (algebraMap F W.CoordinateRing) hq
   have hc2W := congrArg (algebraMap F W.CoordinateRing) hc2
