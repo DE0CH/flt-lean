@@ -432,6 +432,38 @@ module of the Moret–Bailly Hilbert–Blumenthal abelian variety):
   `ρbar|_{G_F}` (Taylor 2002, Theorem B), so their `charFrob`s agree
   through `π₀` away from the bad set.
 
+VACUITY AUDIT (2026-07-25, cluster sweep — audit only, the structure
+was NOT changed).  Two findings, both about `hecke₀`/`modular₀`:
+
+* *The seed is currently INFORMATIONALLY DEAD.*  Repo-wide, this type
+  appears in exactly two hypothesis positions: `seed` in
+  `exists_heckePackage_of_seed`, which forwards it unchanged to
+  `exists_heckeEigensystem_of_congruentSeed`, where the binder is
+  `_seed` and is NOT CONSUMED.  Nothing else mentions it.  So dropping
+  the `Nonempty (MoretBaillySeed …)` conjunct from
+  `exists_moretBailly_seed_of_five_le`'s conclusion would break no
+  downstream proof (only `F`, `hFtr`, `hFgal`, `hirrF` are used), and
+  the whole automorphic joint below it —
+  `exists_heckeEigensystem_of_hilbertBlumenthalPoint` and its two
+  sorried sub-joints — would become free-floating.
+* *`modular₀` adds nothing to `matchℓ`.*  In the only inhabitation
+  (`exists_moretBailly_seed_of_five_le`), `E₀`, `hecke₀`, `ψ₀` come
+  from `exists_heckeEigensystem_of_hilbertBlumenthalPoint`, which is
+  `rfl`-satisfiable by the point's own `(pt.D, pt.P, pt.ψDℓ)`; so
+  `modular₀` degenerates to the point's `matchℓ` field with `hecke₀`
+  renamed.  "Modular" is not recorded by this structure in any form
+  the compiler can see.
+
+Repair (cut-level, spanning this structure, the eigensystem node above
+it and `PotentialModularityWitness` below it — NOT performed here): add
+the parallel-weight-`2` clauses that the interface does not provide, at
+minimum `∀ w ∉ bad₀, (hecke₀ w).Monic ∧ (hecke₀ w).natDegree = 2 ∧
+(hecke₀ w).coeff 0 = (Ideal.absNorm w.asIdeal : E₀)`, and one clause
+that survives the `E₀ := pt.D, hecke₀ := pt.P` junk witness — the Weil
+bound on the eigenvalues, or their integrality.  Changing `modular₀`'s
+type changes the record literal in `exists_moretBailly_seed_of_five_le`
+and nothing else, because no consumer reads the field.
+
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): this
 interface may only be inhabited by the independent Moret–Bailly
 construction — never through `Family.lean`, `Lift.lean`, or
@@ -872,6 +904,46 @@ sorry nodes, and the assembly below is genuine algebra: it descends
 the identity from `ℚ̄_p` to `D` by injectivity of `ψDp`, then pushes it
 into `ℚ̄_ℓ` along `ψDℓ`.
 
+CLUSTER VACUITY SWEEP (2026-07-25, audit only — no statement was
+changed; see the per-joint VACUITY AUDIT paragraphs below).  Clause 2
+above is NOT a second piece of content: it is DERIVABLE from the
+interface.  Take `E₀ := pt.D` and `θ := RingHom.id pt.D`; then for
+`w ∉ pt.bad` the field `matchp` gives
+`(pt.τp.charFrob w).map pt.ιC = (pt.P w).map pt.ψDp`, whose left side
+is monic of degree `2` (`charFrob_map_eq_quadratic_of_rank_two`), so
+`pt.P w` is monic of degree `2` by injectivity of `pt.ψDp`, and
+`a₀ w := −(pt.P w).coeff 1` makes joint (b)'s conclusion hold at every
+`w ∉ pt.bad` — EXCEPT for the single residual equation
+`(pt.P w).coeff 0 = (Nw : pt.D)`.  So joint (b)'s entire formal content
+is clause 1, the norm clause, and nothing of Taylor 2002 §5 is captured.
+
+Worse, joint (a) is IMPLIED by clause 1 plus the interface, so the two
+joints are one fact stated twice: from `(pt.P w).coeff 0 = (Nw : pt.D)`,
+`matchp` and injectivity of `pt.ιC` give
+`(pt.τp.charFrob w).coeff 0 = (Nw : pt.C)`, and `residualp` then gives
+`(pt.ρbarp.charFrob w).coeff 0 = (Nw : pt.kp)` — which is all joint (a)
+demands beyond `redΛ`-surjectivity onto the FINITE field `pt.kp`, itself
+free (any finite field is a residue field of a number field, so `E₁`,
+`Λ`, `jΛ` carry no algebraicity content here, unlike in the sibling
+`exists_heckeField_mem_range_of_eigensystem` where the target is
+`ℚ̄_ℓ`).  `pt.irreduciblep`, `pt.dihedralp` and `pt.L` are consumed by
+neither joint.
+
+And the conclusion of `exists_heckeEigensystem_of_hilbertBlumenthalPoint`
+itself was never restated: it is still the `rfl`-satisfiable one recorded
+in its own VACUITY AUDIT.  Adding the norm clause cannot repair it —
+`E₀ := pt.D`, `hecke₀ := pt.P`, `ψ₀ := pt.ψDℓ` satisfies it whatever
+`P` is.  A repair must change that node's CONCLUSION so that `hecke₀`
+is tied to data the point does not already carry; the cheapest
+pin-stateable clauses are the Weil bound
+`∀ ι : E₀ →+* ℂ, ‖ι (a w)‖ ≤ 2 * √(Nw)` (Weil's Riemann hypothesis for
+`A/F`, equivalently Ramanujan–Petersson at parallel weight `2`) or, more
+weakly, integrality `a w ∈ 𝓞_{E₀}` — neither derivable from the
+interface.  That is a cut-level change spanning this node,
+`MoretBaillySeed.hecke₀`/`modular₀` and
+`PotentialModularityWitness.heckeF`/`modularF`; it was NOT performed
+here.
+
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): as
 everywhere in this module, neither joint may be proven through
 `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
@@ -940,6 +1012,31 @@ force it; (ii) collapse — the hypothesis package (an irreducible
 hardly ramified mod-`ℓ` representation with `ℓ ≥ 5`) is classically
 unsatisfiable (headline below), so the statement is classically true
 for every package.
+
+VACUITY AUDIT (2026-07-25, cluster sweep — audit only, the statement
+was NOT changed).  This node is CONTENT-LITE: its entire formal content
+is the residual norm clause
+`(pt.ρbarp.charFrob w).coeff 0 = (Ideal.absNorm w.asIdeal : pt.kp)`.
+Junk witness for everything else: `pt.kp` is FINITE, so pick a number
+field `E₁` with a prime over `p` of the right residue degree, put
+`Λ := 𝓞_{E₁}`, `jΛ` the inclusion, `redΛ` the (surjective) reduction
+onto `pt.kp`, `S₁ := ∅`, and `a₁ w :=` any `redΛ`-preimage of
+`−(pt.ρbarp.charFrob w).coeff 1`; the charpoly is monic of degree `2`
+so the `X²` and `X` coefficients then match at every place, and
+`redΛ ((Nw : Λ)) = (Nw : pt.kp)` is forced, leaving exactly the constant
+coefficient.  In particular the "the eigenvalues are ALGEBRAIC" reading
+of `E₁`/`jΛ` is FORMALLY EMPTY here — algebraicity is a real constraint
+only against a characteristic-zero target such as `ℚ̄_ℓ`, not against a
+finite field.  Nothing of Hecke's theta-series construction, the
+converse theorem or Jacquet–Langlands is captured: `pt.irreduciblep`,
+`pt.dihedralp` and `pt.L` are consumed by no part of the conclusion.
+
+Moreover this node is IMPLIED by the sibling joint
+`exists_heckeSystem_of_residualModularity`'s own norm clause together
+with `pt.matchp`, `pt.residualp` and injectivity of `pt.ιC` (derivation
+in the section note above), so the two joints are one determinant fact
+stated twice.  Repair belongs at the parent's conclusion, not here —
+see the section note.
 
 ROUTE AUDIT: the odd-prime dichotomy is unavailable here — see the
 section docstring above (import cycle AND declaration cycle).
@@ -1036,6 +1133,26 @@ point's own place — neither is derivable from the
 `HilbertBlumenthalPoint` interface, in which `P`, `τp` and `ψDp` are
 unconstrained data.  Contrast the bare form of the joint discussed in
 the section note above, which the point's own data satisfies by `rfl`.
+
+VACUITY AUDIT (2026-07-25, cluster sweep — audit only, the statement
+was NOT changed).  The paragraph above is HALF WRONG and is retained
+only so the correction is visible next to it: the `θ`-descent clause IS
+derivable from the interface.  `E₀ := pt.D`, `θ := RingHom.id pt.D`,
+`S₀ := pt.bad`, `a₀ w := −(pt.P w).coeff 1` reduces the conclusion, via
+`pt.matchp` and injectivity of `pt.ψDp` (which also forces `pt.P w`
+monic of degree `2`, since `(τp.charFrob w).map ιC` is), to the single
+equation `(pt.P w).coeff 0 = (Ideal.absNorm w.asIdeal : pt.D)`.  So the
+formal content of this node is EXACTLY the norm clause — a Weil-pairing
+determinant statement about the abelian variety, belonging to the
+GEOMETRIC joint — and nothing of Taylor 2002 §5, Wiles or
+Skinner–Wiles is captured.  The honest place for that clause is a new
+field of `HilbertBlumenthalPoint` supplied by
+`exists_hilbertBlumenthalPoint_of_five_le`, after which this node and
+its sibling `exists_residualModularity_of_hilbertBlumenthalPoint`
+become fully junk-witnessable and the automorphic content has to be
+restated at the PARENT's conclusion — see the section note above for
+the two pin-stateable candidates (Weil bound, or integrality of the
+eigenvalues).  Cut-level; not performed here.
 
 SOUNDNESS AUDIT (both ways, 2026-07-25): (i) direct — for the intended
 instantiation (a point produced by
@@ -2104,6 +2221,35 @@ ramified mod-`ℓ` representation, `ℓ ≥ 5`) is classically unsatisfiable
 package.  The full hypothesis list of the parent leaf is retained
 DELIBERATELY: dropping `hρbar`/`hirr`/`hshape` would leave a statement
 about arbitrary `ℚ̄_ℓ`-valued families, which is false.
+
+VACUITY AUDIT (2026-07-25, cluster sweep — audit only, the statement
+was NOT changed).  This node is NOT vacuous: `Set.range ψℓ` is
+algebraic over `ℚ` while `aF` is a family of `ℚ̄_ℓ`-values, so no junk
+witness exists — the algebraicity clause carries real content.  (Exactly
+the opposite of the cousin
+`exists_residualModularity_of_hilbertBlumenthalPoint`, whose "number
+field" clause IS free, because its target `pt.kp` is FINITE and every
+finite field is a residue field of a number field.  Algebraicity is a
+constraint only against a characteristic-zero target.)
+
+But the content is now the WRONG content, and the RECOMMENDED DISCHARGE
+DOES NOT WORK.  Its only supplier,
+`exists_heckeEigensystem_of_congruentSeed`, is formally empty (see that
+node's FORMAL-CONTENT AUDIT) and hands this node `badF := ∅` together
+with `aF w = −ιO (((ρ.map _).charFrob w).coeff 1)`.  At that
+instantiation this leaf asserts that the Frobenius traces of
+`ρ|_{G_F}` are algebraic at EVERY place of `F` — including the places
+over `2` and `ℓ` and the level, where `charFrob` is the charpoly of a
+lift of a RAMIFIED Frobenius, is not a Hecke polynomial, and is
+classically not algebraic.  So at the instantiation that actually
+reaches it the statement is classically FALSE for the intended objects
+and survives only by the collapse route (the hypothesis package is
+unsatisfiable at `ℓ ≥ 5`); no citation of Shimura rationality can
+discharge it.  The fix is upstream — restate
+`exists_heckeEigensystem_of_congruentSeed` so that `badF` is a genuine
+level/bad set rather than `∅`, as its own audit already recommends —
+not here.  Until that happens this node should not be dispatched as a
+proof target.
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
 discharge through `Family.lean`, `Lift.lean`, or
