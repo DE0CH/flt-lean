@@ -263,6 +263,14 @@ import Fermat.FLT.GroupScheme.ConnectedEtale
 -- the DVR is a finite flat Hopf form) and `antipodeAlgHom_comp_bialgHom`
 -- (bialgebra maps preserve antipodes), consumed by the schematic-closure
 -- half of the Raynaud subobject node `IsFlatPointsGroupAt.of_injective`.
+-- ALSO the Gelfand/Grothendieck layer consumed by that node's
+-- full-faithfulness leaf `exists_surjective_bialgHom_of_points_injection`
+-- (PROVEN 2026-07-25): `exists_algHom_of_algHom_map` (the algebra map
+-- induced by an equivariant map of point sets),
+-- `subalgebra_eq_top_of_algHom_separating` (a point-separating
+-- subalgebra of a finite étale algebra is everything) and
+-- `eq_zero_of_forall_algHom_eq_zero` (points separate a finite étale
+-- algebra).
 -- Non-public: proofs only.
 import Fermat.FLT.KnownIn1980s.EllipticCurves.Flat
 -- (The flat-prolongation convolution toolkit is imported PUBLICLY further
