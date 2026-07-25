@@ -22584,10 +22584,192 @@ theorem not_four_dvd_of_factorization_two_le_one {M : ℕ} (hM : 0 < M)
     hM.ne').mp h2
   omega
 
+/-- **A finite-order transvection in characteristic zero is trivial**
+(PROVEN shareable brick, carved 2026-07-25 out of the at-`2` conductor
+cut as the FORMAL half of the "wild inertia dies" step): let `F` be an
+endomorphism of a module over a field `A` that fixes a vector `w₀` and
+moves every vector by a multiple of `w₀`. Then `N := F − 1` satisfies
+`N² = 0` (it lands in `A·w₀`, which `F` fixes), so `F^k = 1 + k·N`
+exactly; if some `F^n` is the identity with `(n : A) ≠ 0` — in
+particular for any `n > 0` when `A` has characteristic zero — then
+`n·N = 0` forces `N = 0`, i.e. `F = 1`.
+
+Note that `n` is NOT required to be the order of `F`, only to annihilate
+it: the hypothesis is that SOME positive power of `F` is the identity,
+which is what a finite-order image supplies.
+
+This is the whole of the classical "the wild inertia contributes
+nothing" step that is formalizable at this pin: an inertia element
+acting through a transvection along an invariant line, whose image has
+FINITE ORDER, acts trivially, because the additive target `(ℚ̄_p, +)`
+of the transvection coefficient is TORSION-FREE. What it deliberately
+does NOT contain is the reason the wild image has finite order in the
+first place (`GL₂(ℚ̄_p)` has no small pro-`2` subgroups for odd `p`) —
+that is a topological statement about compact subgroups of `GL₂` over
+`ℚ̄_p` and stays in the citation leaf
+`weightTwoNewform_factorization_two_le_one_of_inertia_fixed_line_of_torsion_trivial_of_isIrreducible`
+below. -/
+theorem transvection_apply_eq_self_of_pow_apply_eq_self
+    {A : Type*} [Field A] {V : Type*} [AddCommGroup V] [Module A V]
+    (F : Module.End A V) {w₀ : V}
+    (hfix : F w₀ = w₀)
+    (hquot : ∀ w : V, F w - w ∈ Submodule.span A {w₀})
+    {n : ℕ} (hn : (n : A) ≠ 0) (hFn : ∀ w : V, (F ^ n) w = w) (w : V) :
+    F w = w := by
+  -- the displacement `F v − v` is itself `F`-invariant: it is a multiple
+  -- of `w₀`, and `F` fixes `w₀`
+  have hFF : ∀ v : V, F (F v) - F v = F v - v := by
+    intro v
+    obtain ⟨c, hc⟩ := Submodule.mem_span_singleton.mp (hquot v)
+    have h1 : F v = v + c • w₀ := by rw [hc]; abel
+    have h2 : F (F v) = F v + c • w₀ := by
+      conv_lhs => rw [h1]
+      rw [map_add, map_smul, hfix]
+    rw [h2, hc]
+    abel
+  -- hence `F^k v = v + k·(F v − v)` exactly (the `N² = 0` binomial)
+  have hpow : ∀ (k : ℕ) (v : V), (F ^ k) v = v + (k : A) • (F v - v) := by
+    intro k
+    induction k with
+    | zero => intro v; simp
+    | succ k ih =>
+        intro v
+        have hstep : (F ^ (k + 1)) v = (F ^ k) (F v) := by
+          rw [pow_succ]
+          try rfl
+          try simp
+        rw [hstep, ih (F v), hFF v]
+        push_cast
+        module
+  -- `F^n = 1` kills `n·(F w − w)`, and `n` is invertible in `A`
+  have hzero : (n : A) • (F w - w) = 0 := by
+    have h : w + (n : A) • (F w - w) = w := (hpow n w).symm.trans (hFn w)
+    simpa using h
+  have hsub : F w - w = 0 := by
+    have h2 := congrArg (fun y : V => ((n : A)⁻¹) • y) hzero
+    simpa [smul_smul, inv_mul_cancel₀ hn] using h2
+  exact sub_eq_zero.mp hsub
+
+include hpodd in
+/-- **Carayol's conductor exponent bound at `2` under an inertia fixed
+line with torsion-free inertia image** (sorry node — the SHARPENED
+residual literature leaf of the at-`2` conductor cut, carved
+2026-07-25; it is strictly WEAKER than the `hquotline` form
+`weightTwoNewform_factorization_two_le_one_of_inertia_fixed_line_of_isIrreducible`
+below that consumes it, because the transvection hypothesis has been
+replaced by the single consequence of it that the cited argument uses):
+if an IRREDUCIBLE representation `τ` matching the Hecke polynomials of
+the weight-2 NEWFORM `g` of level `M ≥ 1` away from a finite set has a
+NONZERO vector `w₀` fixed by the whole inertia at `2` (`hfixline`), and
+no element of the inertia at `2` has NONTRIVIAL FINITE-ORDER image
+(`htorsion`), then `M.factorization 2 ≤ 1`.
+
+CITATION CONTENT, in three named pieces.
+
+* **Conductor = level** (Carayol, *Sur les représentations `ℓ`-adiques
+  associées aux formes modulaires de Hilbert*, Ann. Sci. ÉNS 19 (1986),
+  Théorème (A), completing Deligne, Ihara and Langlands): for a newform
+  `g` the Artin conductor of the attached `ℓ`-adic system equals the
+  level of `g`, place by place away from `ℓ`; in particular
+  `a₂(τ) = ord₂ M` here, `2 ≠ p` by `hpodd`. (Quoted in
+  Cornell–Silverman–Stevens, *Modular Forms and Fermat's Last
+  Theorem*, in the form "for `f` a newform the conductor of the system
+  of `ℓ`-adic representations associated to `f` is equal to the level
+  of `f`".)
+* **The Artin exponent formula** (Serre, Duke Math. J. 54 (1987) §1.2,
+  formulas (1.2.1)–(1.2.2)):
+  `n(ℓ, ρ) = Σᵢ dim(V/Vᵢ)/[G₀:Gᵢ] = dim V/V^{G₀} + b(V)` with `b(V)`
+  the *invariant sauvage* (Swan conductor), and (loc. cit. (c))
+  `n(ℓ, ρ) = dim V/V^{G₀}` exactly when `G₁ = 1`. With `dim V = 2` and
+  `hfixline` exhibiting a nonzero `I₂`-invariant vector,
+  `dim V/V^{I₂} ≤ 1`, so `a₂ ≤ 1 + b(V)`.
+* **Finiteness of the wild image** — the only genuinely TOPOLOGICAL
+  input, and the reason this leaf is not proven here: the wild inertia
+  `P₂ = G₁` is pro-`2`, its image in `GL₂(ℚ̄_p)` is a compact subgroup,
+  hence conjugate into `GL₂(𝒪_E)` for some finite `E/ℚ_p`, and the
+  kernel of reduction there is pro-`p`; with `p` odd (`hpodd`) a pro-`2`
+  subgroup meets that kernel trivially and therefore injects into a
+  FINITE group. So every element of the image of `P₂` has finite order,
+  and `htorsion` makes it trivial: `G₁ = 1`, `b(V) = 0`, `a₂ ≤ 1`.
+  Formalizing this step needs the theory of compact subgroups of
+  `GL₂` over `ℚ̄_p` (conjugation into a maximal compact, the pro-`p`
+  congruence filtration), which this pin does not carry — cf. the
+  COORDINATION note at
+  `not_isUnramifiedAt_of_isNewAtPrime_of_isIrreducible`, where the
+  same missing Artin-conductor infrastructure is recorded as the
+  cross-place dedup target.
+
+What is NOT cited, and is PROVEN below in the consumer, is the
+transvection algebra: `hquotline` is used only to produce `htorsion`,
+through the characteristic-zero brick
+`transvection_apply_eq_self_of_pow_apply_eq_self` above (a finite-order
+transvection along an invariant line is trivial, because `(ℚ̄_p, +)` is
+torsion-free). The rigidity identification is not part of the citation
+burden either (mirroring
+`weightTwoNewform_not_dvd_level_of_isUnramifiedAt_of_isIrreducible` and
+the geometric Saito cut at `p`): `τ` is IRREDUCIBLE, so the PROVEN
+rigidity `exists_linearEquiv_of_charFrob_eq` identifies `ρ_{g,λ}` (the
+`κ`-eigencomponent of `V_p(J₀(M))`, matched to the same Hecke
+polynomials by Eichler–Shimura) with `τ`, and the fixed-line data
+transports across the equivalence (`inertia_fixed_of_linearEquiv`).
+
+The inertia is spelled over `Γ ℚ_[2]` via `Z2bar` exactly as in
+`IsHardlyRamified.isTameAtTwo` (the PROVEN bridge
+`localInertia_two_eq_map_padic` of `ModThree.lean` converts to the
+adic-completion spelling up to conjugacy when needed).
+
+SOUNDNESS AUDIT (2026-07-25): non-vacuously satisfiable — for any
+classical newform `g` of ODD level `M` take `τ := ρ_{g,λ}` (irreducible
+by Ribet 1977, unramified at `2` by Eichler–Shimura good reduction of
+`J₀(M)` away from `M`) and any `w₀ ≠ 0`: `hfixline` holds because the
+inertia at `2` acts trivially, `htorsion` holds vacuously in the strong
+sense (its conclusion is the trivial action), and the conclusion
+`M.factorization 2 = 0 ≤ 1` is true. Conversely every instance is an
+instance of the cited theorems: the statement quantifies over the
+`IsWeightTwoNewform` carrier, whose inhabitants are exactly the
+classical newforms (carrier audit at `IsWeightTwoNewform`), and the
+load-bearing case is `4 ∣ M`, which the cited exponent computation
+refutes. `htorsion` is not vacuous in the load-bearing direction: it is
+exactly the input that turns "the wild image is finite" into "the wild
+image is trivial", and it is supplied by the PROVEN brick below. -/
+theorem weightTwoNewform_factorization_two_le_one_of_inertia_fixed_line_of_torsion_trivial_of_isIrreducible
+    {M : ℕ} (hM : 0 < M) {g : CuspForm (Gamma0GL M) 2}
+    (hg : IsWeightTwoNewform M g)
+    (κ : heckeField M g →+* AlgebraicClosure ℚ_[p])
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    {S_τ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hτ : ∀ (r : ℕ) (hr : r.Prime),
+      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ →
+      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
+        Polynomial.X ^ 2
+          - Polynomial.C (κ (heckeCoeff M g r)) * Polynomial.X
+          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
+    (hirr : τ.IsIrreducible)
+    (w₀ : Fin 2 → AlgebraicClosure ℚ_[p]) (hw₀ : w₀ ≠ 0)
+    (hfixline : ∀ σ ∈ AddSubgroup.inertia
+        ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
+        (Field.absoluteGaloisGroup ℚ_[2]),
+      τ.map (algebraMap ℚ ℚ_[2]) σ w₀ = w₀)
+    (htorsion : ∀ σ ∈ AddSubgroup.inertia
+        ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
+        (Field.absoluteGaloisGroup ℚ_[2]),
+      ∀ n : ℕ, 0 < n →
+        (∀ w : Fin 2 → AlgebraicClosure ℚ_[p],
+          ((τ.map (algebraMap ℚ ℚ_[2]) σ) ^ n) w = w) →
+        ∀ w : Fin 2 → AlgebraicClosure ℚ_[p],
+          τ.map (algebraMap ℚ ℚ_[2]) σ w = w) :
+    M.factorization 2 ≤ 1 :=
+  sorry
+
 include hpodd in
 /-- **Carayol's conductor exponent bound at `2`, irreducible
-exponent form** (sorry node — the residual literature leaf of the
-at-`2` conductor cut, carved out 2026-07-25: Carayol, *Sur les
+exponent form** (DECOMPOSED and PROVEN 2026-07-25 as a two-line
+assembly over the SHARPENED citation leaf
+`weightTwoNewform_factorization_two_le_one_of_inertia_fixed_line_of_torsion_trivial_of_isIrreducible`
+above — which drops `hquotline` entirely — using the PROVEN
+characteristic-zero brick
+`transvection_apply_eq_self_of_pow_apply_eq_self`: Carayol, *Sur les
 représentations `ℓ`-adiques associées aux formes modulaires de
 Hilbert*, Ann. Sci. ÉNS 19 (1986), Théorème (A), combined with the
 Artin conductor exponent formula
@@ -22599,11 +22781,29 @@ and moves every vector by a multiple of `w₀` (`hquotline`), then the
 `2`-adic valuation of the level is at most `1`:
 `M.factorization 2 ≤ 1`.
 
-This is the leaf stated AT ITS SHARPEST — the Artin exponent bound
+This is the statement AT ITS SHARPEST — the Artin exponent bound
 itself, not its `¬ 4 ∣ M` shadow; the shadow is the PROVEN arithmetic
 joint `not_four_dvd_of_factorization_two_le_one`.
 
-Residual citation content. Carayol's Théorème (A) computes the
+FORMAL/CITED SPLIT (2026-07-25). The part of the classical argument
+that is FORMAL at this pin is the transvection algebra, and it is
+PROVEN here: `hfixline` and `hquotline` make every inertia element act
+as `w ↦ w + c(σ)·w₀`, so `τσ − 1` squares to zero and
+`(τσ)^n = 1 + n·(τσ − 1)` exactly; since the coefficient field
+`ℚ̄_p` has CHARACTERISTIC ZERO, an inertia element whose image has
+finite order therefore acts trivially. That is the shareable brick
+`transvection_apply_eq_self_of_pow_apply_eq_self` above, and feeding it
+to the sharpened leaf discharges `hquotline` completely — the leaf keeps
+only `hfixline` plus the torsion-freeness of the inertia image. What
+remains genuinely CITED there is (a) Carayol's `ord₂ cond = ord₂ M`,
+(b) Serre's Artin exponent formula
+`n(2, τ) = dim V/V^{I₂} + b(V)` (Duke 54 (1987) §1.2, (1.2.1)–(1.2.2)),
+and (c) the single topological input this pin cannot supply — that the
+pro-`2` wild inertia has FINITE image in `GL₂(ℚ̄_p)` for odd `p`. See
+that leaf's docstring for the three pieces named separately.
+
+The classical narrative, for orientation. Carayol's Théorème (A)
+computes the
 prime-to-`p` Artin conductor of the geometric attachment `ρ_{g,λ}` as
 the level: `ord_r (cond ρ_{g,λ}) = ord_r M` at every prime `r ≠ p`, in
 particular `a₂ = ord₂ M` (here `2 ≠ p` because `p` is odd, `hpodd`).
@@ -22697,8 +22897,16 @@ theorem weightTwoNewform_factorization_two_le_one_of_inertia_fixed_line_of_isIrr
       ∀ w : Fin 2 → AlgebraicClosure ℚ_[p],
         τ.map (algebraMap ℚ ℚ_[2]) σ w - w ∈
           Submodule.span (AlgebraicClosure ℚ_[p]) {w₀}) :
-    M.factorization 2 ≤ 1 :=
-  sorry
+    M.factorization 2 ≤ 1 := by
+  refine weightTwoNewform_factorization_two_le_one_of_inertia_fixed_line_of_torsion_trivial_of_isIrreducible
+    hpodd hM hg κ hτ hirr w₀ hw₀ hfixline ?_
+  -- the transvection algebra: a finite-order image of an inertia element
+  -- acting along the fixed line `w₀` is trivial, `ℚ̄_p` being of
+  -- characteristic zero
+  intro σ hσ n hn hpow w
+  exact transvection_apply_eq_self_of_pow_apply_eq_self
+    (τ.map (algebraMap ℚ ℚ_[2]) σ) (hfixline σ hσ) (hquotline σ hσ)
+    (Nat.cast_ne_zero.mpr hn.ne') hpow w
 
 include hpodd in
 /-- **Level lowering at `2` under a tame fixed line — Carayol's
