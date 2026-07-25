@@ -29988,7 +29988,50 @@ of that route. (ii) The two inequalities: the analytic one over ray
 class `L`-functions (this is where the Weber counting of
 `Chebotarev.lean` is genuinely consumed) together with the algebraic
 one via the ambiguous-class/Herbrand-quotient computation, then
-reciprocity from the index equality. -/
+reciprocity from the index equality.
+
+**PARTIALLY DISCHARGED 2026-07-25 (glue-first).** Clauses (1) and (2) —
+existence of a multiplicative `c` with `c (v.asIdeal) = χ(Frob_v)` — are
+now PROVEN outright from `exists_ideal_extension_globalFrob_ray_class`,
+which pins `c` as the multiplicative extension of `v ↦ χ(Frob_v)`, and
+clause (3) is reduced by PROVEN ideal-theoretic bookkeeping to the single
+sorried `have hpos` inside the proof: `c ((γ)) = 1` for every nonzero
+TOTALLY POSITIVE `γ`. The reduction: narrow principality gives
+`(α)·I = (β)` with `α, β ≫ 0` and `α ≠ 0`, whence `β ≠ 0`
+(`Ideal.mul_eq_bot`), so multiplicativity gives `c ((β)) = c ((α))·c I`
+and `hpos` at both `α` and `β` leaves `c I = 1`. What remains is
+therefore exactly "the Artin symbol kills the ray `P₁⁺` of totally
+positive principal ideals" — no `∃`, no ideal bookkeeping, no
+narrow-class multipliers.
+
+**Mathlib survey 2026-07-25: there is NOTHING to build on.** Ray class
+groups, narrow class groups, the Hilbert class field, the Artin
+map/symbol, Artin reciprocity, idele class groups, totally positive
+elements and Kronecker–Weber are ALL absent from the pin. What exists is
+plain `ClassGroup`, the `HeightOneSpectrum` factorization API,
+`NumberField.InfinitePlace`, abstract Frobenius as `IsArithFrobAt`
+(`Mathlib/RingTheory/Frobenius.lean`), and abelian CFT over `ℚ` only
+(`IsCyclotomicExtension.Rat.galEquivZMod`, `galEquivZMod_stabilizer`,
+identifying Frobenius at `p` with `[p] ∈ (ℤ/nℤ)ˣ`). So `hpos` is not a
+bounded missing piece; it is global class field theory and nothing less.
+
+**But the CONSUMER may not need that strength — the cut above is
+arguably mis-placed.** This leaf is uniform in `F`, yet its only
+instantiation (through
+`character_globalFrob_sq_eq_one_of_narrow_exponent_two_ray_class`) is at
+`F = ℚ(x)`, `x² = d`, for the seven `d = −1, 2, −2, 3, −3, 6, −6`, and
+what `odd_character_eq_one_of_unramified_everywhere_ray_class` ultimately
+needs is only: *an everywhere-unramified character of `Γ F` of order
+prime to `3` is trivial*. The retired route (β) recorded on that node —
+root-discriminant bounds — proves exactly that with NO reciprocity, since
+an unramified extension preserves the root discriminant. Checked with
+PARI/GP 2026-07-25: the seven fields have `|disc| ≤ 24`, hence root
+discriminant `≤ √24 ≈ 4.899`, while the Minkowski bound
+`(Nᴺ/N!)^(2/N)·π/4` first exceeds `√24` at degree `N = 32` over `ℚ` — so
+Minkowski alone kills every unramified extension of degree `≥ 16`, and
+only the odd degrees `3, 5, …, 15` need the sharper Odlyzko bounds of the
+`poitou_explicit_formula_bound` cluster. That is a bounded,
+reciprocity-free alternative to this entire leaf. -/
 theorem exists_artinSymbol_isNarrowPrincipal_ray_class
     (F : Type*) [Field F] [NumberField F]
     (χ : Γ F → Dickson.K 3)
@@ -30006,7 +30049,32 @@ theorem exists_artinSymbol_isNarrowPrincipal_ray_class
         c v.asIdeal = χ (globalFrob v)) ∧
       ∀ I : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ →
         IsNarrowPrincipal I → c I = 1 := by
-  sorry
+  -- the Artin symbol on ideals: the multiplicative extension of `v ↦ χ(Frob_v)`,
+  -- which supplies clauses (1) and (2) outright
+  obtain ⟨c, hcmul, hcfrob⟩ :=
+    exists_ideal_extension_globalFrob_ray_class F (fun v => χ (globalFrob v))
+  refine ⟨c, hcmul, hcfrob, ?_⟩
+  -- THE remaining class-field-theoretic content, isolated to a totally positive
+  -- principal generator: the Artin symbol kills the ray `P₁⁺`.  This is Artin
+  -- reciprocity for the narrow Hilbert class field; see the docstring.
+  have hpos : ∀ γ : NumberField.RingOfIntegers F, γ ≠ 0 →
+      (∀ φ : F →+* ℝ, 0 < φ (algebraMap (NumberField.RingOfIntegers F) F γ)) →
+      c (Ideal.span {γ}) = 1 := by
+    sorry
+  -- bookkeeping: narrow principality transports `hpos` to every narrow class
+  intro I hI hnar
+  obtain ⟨α, β, hα0, hαpos, hβpos, hαI⟩ := hnar
+  have hspanα : Ideal.span {α} ≠ ⊥ := by
+    simpa [Ideal.span_singleton_eq_bot] using hα0
+  have hβ0 : β ≠ 0 := by
+    intro h
+    have hbot : Ideal.span {α} * I = ⊥ := by
+      rw [hαI, h]
+      exact Ideal.span_singleton_eq_bot.mpr rfl
+    exact (Ideal.mul_eq_bot.mp hbot).elim hspanα hI
+  have hprod := hcmul (Ideal.span {α}) I hspanα hI
+  rw [hαI, hpos β hβ0 hβpos, hpos α hα0 hαpos, one_mul] at hprod
+  exact hprod.symm
 
 set_option maxHeartbeats 1000000 in
 /-- **A totally positive principal ideal has trivial Artin symbol — THE
