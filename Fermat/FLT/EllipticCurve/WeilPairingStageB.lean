@@ -1530,7 +1530,457 @@ theorem sum_eq_zero_of_span_eq_prod_pointIdeal {D : Multiset W.Point}
   have h0 : WeierstrassCurve.Affine.Point.toClass D.sum = 0 := hmk
   exact (WeierstrassCurve.Affine.Point.toClass_eq_zero D.sum).mp h0
 
-/-- **Stage B, leaf 3a (SORRY): the ALTERNATING LAW of the Weil pairing,
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- **Membership in the divisor forces vanishing** (converse of
+`mem_of_evalEval_eq_zero`). -/
+theorem evalEval_eq_zero_of_mem {D : Multiset W.Point} {a : W.CoordinateRing}
+    (hspan : Ideal.span {a} = (D.map (pointIdeal W)).prod)
+    {x y : F} (h : W.Nonsingular x y)
+    (hmem : (WeierstrassCurve.Affine.Point.some x y h : W.Point) ∈ D) :
+    AdjoinRoot.evalEval h.left a = 0 := by
+  refine coordEval_eq_zero_of_mem h ?_
+  have hdvd : pointIdeal W (.some x y h) ∣ (D.map (pointIdeal W)).prod :=
+    Multiset.dvd_prod (Multiset.mem_map_of_mem _ hmem)
+  have hle := Ideal.le_of_dvd hdvd
+  rw [← hspan] at hle
+  exact hle (Ideal.mem_span_singleton_self a)
+
+/-- **Stage B, leaf 3a-i (SORRY): the CROSS-RATIO CONSTANT `γ` of the
+two level-`p²` Miller functions, and its `p`-th power.**
+
+Notation as in `exists_millerValue_alternating` below: `g = a/v`,
+`g_P = b/v` with `v = enumVertical W val = ∏_κ (X − x_κ)`, so that
+`div g = S(T') − S(0)` and `div g_P = S(P') − S(0)` where
+`S(A) := Σ_{κ ∈ E[p]} (A ⊕ κ) = [p]^*(([p]A))`; and `M₁ = T' ⊖ U`,
+`M₂ = ⊖U`, `V = P' ⊕ U`, `P⊕U = p•P' ⊕ U`.
+
+The two conclusions are, written multiplicatively,
+
+* `γ = [g_P(M₁)·g(U)] / [g_P(M₂)·g(V)]`  (first conjunct, denominators
+  cleared), i.e. `γ` is the value at `X = U` of
+  `Ξ(X) := [g_P(T' ⊖ X)·g(X)] / [g_P(⊖X)·g(P' ⊕ X)]`;
+* `γ^p = c^{−1}` where `c = g(P ⊕ U)/g(U)` is the translation character
+  (second conjunct, denominators cleared).
+
+**Proof (elementary; NO Weil reciprocity — see the dead-end analysis in
+the docstring of `exists_millerValue_alternating`).**
+
+1. `Ξ` has trivial divisor, hence is a nonzero constant `γ`:
+   `div Ξ = [S(T'⊖P') − S(T')] + [S(T') − S(0)] − [S(⊖P') − S(0)]
+              − [S(T'⊖P') − S(⊖P')] = 0`,
+   using `S(A) ⊕ B = S(A ⊕ B)` and `⊖S(A) = S(⊖A)` (the enumeration of
+   `E[p]` is closed under negation).  Reading it at `X = U` — legitimate
+   because the ten nonvanishing hypotheses put `U`, `V`, `M₁`, `M₂` off
+   the supports of `div a`, `div b`, `div v` — gives the first conjunct.
+   Only the `[−1]`-transport of a divisor is missing from
+   `WeilPairingDescent.lean`, whose `spanSingleton_pointEval_translate`
+   covers `constPoint Q + taut` (i.e. `m = 1`) only; the `m = −1` case
+   `z ↦ z(Q ⊖ X)` follows from it and the hyperelliptic involution
+   `σ : W.CoordinateRing ≃+* W.CoordinateRing`, `X ↦ X`,
+   `Y ↦ W.negY X Y` (`W.polynomial` is σ-invariant), which satisfies
+   `pointEval` at `−ω` `= pointEval` at `ω` `∘ σ` (both send `Y` to
+   `negY xω yω`, so `coordinateRing_ringHom_ext` applies) and
+   `σ (pointIdeal R) = pointIdeal (⊖R)`.
+2. `Θ(Y) := ∏_{j<p} g_P(Y ⊖ jP')` has TELESCOPING divisor
+   `Σ_{j<p} [S((j+1)P') − S(jP')] = S(p•P') − S(0) = S(P) − S(0) = 0`,
+   the last step by `map_add_torsion_eq` since `P = p•P' ∈ E[p]`
+   (`hPtor`).  So `Θ` is constant.  **This is where the `p`-th root
+   comes from.**
+3. Multiplying `Ξ(X ⊕ jP') = γ` over `j = 0,…,p−1` and cancelling `Θ`
+   leaves `γ^p·[g(X ⊕ p•P')/g(X)] = 1`, i.e. `γ^p·c = 1`, which is the
+   second conjunct with the denominators cleared.  Step 3 needs `Ξ` and
+   the two `g`-products only at a SINGLE auxiliary point — any point
+   generic enough that the `4p` translates `X ⊕ jP'` avoid the supports;
+   the relation `γ^p·c = 1` it yields is an identity between CONSTANTS
+   and is then transported to `U` by the first conjunct.  (Equivalently,
+   and avoiding the choice of a generic point, do step 3 in the function
+   field: it needs the translation endomorphism `τ_A^* : K →+* K`, which
+   is `IsFractionRing.lift` of the injective `pointEval` at
+   `constPoint A + taut` — injective by
+   `pointEval_injective_of_forall_ne_constHom`.)
+
+FAITHFULNESS.  All ten nonvanishing hypotheses are needed: the
+conclusion is in cleared polynomial form, so a single vanishing factor
+would falsify it, and each corresponds to a support-disjointness
+condition placing one of `U`, `V`, `M₁`, `M₂`, `P⊕U` off `div a`,
+`div b` or `div v`.  (SORRY LEAF, 2026-07-25.) -/
+theorem exists_millerValue_crossRatio_const {ι : Type*} [Fintype ι]
+    {val : ι → W.Point}
+    (hΔ : W.Δ ≠ 0) (hp : (p : F) ≠ 0)
+    (hval_inj : Function.Injective val)
+    (hval_tor : ∀ i, (p : ℤ) • val i = 0)
+    (hval_surj : ∀ Z : W.Point, (p : ℤ) • Z = 0 → ∃ i, val i = Z)
+    (hcard : Fintype.card ι = p ^ 2)
+    {a b : W.CoordinateRing} (ha : a ≠ 0) (hb : b ≠ 0)
+    {T' P' : W.Point}
+    (hspan : Ideal.span {a} =
+      ((((Finset.univ.val.map fun i => T' + val i) +
+        Finset.univ.val.map fun i => -val i)).map (pointIdeal W)).prod)
+    (hbspan : Ideal.span {b} =
+      ((((Finset.univ.val.map fun i => P' + val i) +
+        Finset.univ.val.map fun i => -val i)).map (pointIdeal W)).prod)
+    (hQtor : (p : ℤ) • ((p : ℤ) • T') = 0)
+    (hPtor : (p : ℤ) • ((p : ℤ) • P') = 0)
+    {xU yU : F} (hU : W.Nonsingular xU yU)
+    {xV yV : F} (hV : W.Nonsingular xV yV)
+    {xM1 yM1 : F} (hM1 : W.Nonsingular xM1 yM1)
+    {xM2 yM2 : F} (hM2 : W.Nonsingular xM2 yM2)
+    {xPU yPU : F} (hPU : W.Nonsingular xPU yPU)
+    (hVeq : (WeierstrassCurve.Affine.Point.some xV yV hV : W.Point) =
+      P' + WeierstrassCurve.Affine.Point.some xU yU hU)
+    (hM1eq : (WeierstrassCurve.Affine.Point.some xM1 yM1 hM1 : W.Point) =
+      T' - WeierstrassCurve.Affine.Point.some xU yU hU)
+    (hM2eq : (WeierstrassCurve.Affine.Point.some xM2 yM2 hM2 : W.Point) =
+      -(WeierstrassCurve.Affine.Point.some xU yU hU : W.Point))
+    (hPUeq : (WeierstrassCurve.Affine.Point.some xPU yPU hPU : W.Point) =
+      (p : ℤ) • P' + WeierstrassCurve.Affine.Point.some xU yU hU)
+    (hUa : AdjoinRoot.evalEval hU.left a ≠ 0)
+    (hUv : AdjoinRoot.evalEval hU.left (enumVertical W val) ≠ 0)
+    (hVa : AdjoinRoot.evalEval hV.left a ≠ 0)
+    (hVv : AdjoinRoot.evalEval hV.left (enumVertical W val) ≠ 0)
+    (hM1b : AdjoinRoot.evalEval hM1.left b ≠ 0)
+    (hM1v : AdjoinRoot.evalEval hM1.left (enumVertical W val) ≠ 0)
+    (hM2b : AdjoinRoot.evalEval hM2.left b ≠ 0)
+    (hM2v : AdjoinRoot.evalEval hM2.left (enumVertical W val) ≠ 0)
+    (hPUa : AdjoinRoot.evalEval hPU.left a ≠ 0)
+    (hPUv : AdjoinRoot.evalEval hPU.left (enumVertical W val) ≠ 0) :
+    ∃ γ : F,
+      AdjoinRoot.evalEval hM1.left b * AdjoinRoot.evalEval hU.left a *
+          AdjoinRoot.evalEval hM2.left (enumVertical W val) *
+          AdjoinRoot.evalEval hV.left (enumVertical W val) =
+        γ * (AdjoinRoot.evalEval hM2.left b * AdjoinRoot.evalEval hV.left a *
+          AdjoinRoot.evalEval hM1.left (enumVertical W val) *
+          AdjoinRoot.evalEval hU.left (enumVertical W val)) ∧
+      γ ^ p * (AdjoinRoot.evalEval hPU.left a *
+          AdjoinRoot.evalEval hU.left (enumVertical W val)) =
+        AdjoinRoot.evalEval hU.left a *
+          AdjoinRoot.evalEval hPU.left (enumVertical W val) := by
+  sorry
+
+omit [Fact p.Prime] in
+/-- **Stage B, leaf 3a-ii (PROVEN): the translation character of `g` at a
+`p`-torsion point is a `p`-th root of unity**, in cleared form.
+
+With `g = a/v` (`div g = S(T') − S(0)`, `S(A) := Σ_{κ ∈ E[p]}(A ⊕ κ)`)
+and `P := p•P' ∈ E[p]` (`hPtor`), the statement is `c^p = 1` for
+`c = g(P ⊕ U)/g(U) = [a(P⊕U)·v(U)] / [a(U)·v(P⊕U)]`, written without
+division as the equality of two `p`-th powers below.
+
+**Proof.**  `g ∘ τ_P / g` has trivial divisor:
+`div = S(T' ⊖ P) − S(⊖P) − S(T') + S(0) = 0`, because translation by the
+`p`-torsion point `P` permutes the enumeration `val` of `E[p]`
+(`map_add_torsion_eq`), so `S(A ⊖ P) = S(A)`.  Hence `g ∘ τ_P = c·g` for
+a constant `c` — this is `spanSingleton_pointEval_translate` applied to
+`a` and to `v` at `constPoint P + taut`, the two `I'_{⊖P}^{2·card ι}`
+factors cancelling between numerator and denominator, followed by
+`coordinateRing_isUnit_eq_const`.  Reading it at the `p` points
+`jP ⊕ U`, `j = 0,…,p−1` (one application of
+`exists_pointEval_specialization` at `(Q, m) = (P, 1)` each) and
+multiplying telescopes to `c^p·g(U) = g(p•P ⊕ U) = g(U)`.
+
+All `p` readings are legitimate, and this needs no hypothesis beyond
+`hUa`/`hUv`: `a(jP ⊕ U) = 0` iff `jP ⊕ U` lies in the support of
+`div a`, which is `E[p]`-translation invariant, so iff `a(U) = 0`; same
+for `v`; and `jP ⊕ U = O` would force `U ∈ E[p]`, i.e. `v(U) = 0`.
+PROVEN 2026-07-25 exactly along that route. -/
+theorem millerValue_translationChar_pow {ι : Type*} [Fintype ι]
+    {val : ι → W.Point}
+    (hΔ : W.Δ ≠ 0)
+    (hval_inj : Function.Injective val)
+    (hval_tor : ∀ i, (p : ℤ) • val i = 0)
+    (hval_surj : ∀ Z : W.Point, (p : ℤ) • Z = 0 → ∃ i, val i = Z)
+    {a : W.CoordinateRing} (ha : a ≠ 0)
+    {T' P' : W.Point}
+    (hspan : Ideal.span {a} =
+      ((((Finset.univ.val.map fun i => T' + val i) +
+        Finset.univ.val.map fun i => -val i)).map (pointIdeal W)).prod)
+    (hPtor : (p : ℤ) • ((p : ℤ) • P') = 0)
+    {xU yU : F} (hU : W.Nonsingular xU yU)
+    {xPU yPU : F} (hPU : W.Nonsingular xPU yPU)
+    (hPUeq : (WeierstrassCurve.Affine.Point.some xPU yPU hPU : W.Point) =
+      (p : ℤ) • P' + WeierstrassCurve.Affine.Point.some xU yU hU)
+    (hUa : AdjoinRoot.evalEval hU.left a ≠ 0)
+    (hUv : AdjoinRoot.evalEval hU.left (enumVertical W val) ≠ 0) :
+    (AdjoinRoot.evalEval hPU.left a *
+        AdjoinRoot.evalEval hU.left (enumVertical W val)) ^ p =
+      (AdjoinRoot.evalEval hU.left a *
+        AdjoinRoot.evalEval hPU.left (enumVertical W val)) ^ p := by
+  classical
+  have hv0 : enumVertical W val ≠ 0 := enumVertical_ne_zero W val
+  have hPt : (p : ℤ) • ((p : ℤ) • P' : W.Point) = 0 := hPtor
+  -- ── multiset translation invariance under a `p`-torsion shift
+  have hmap1 : ∀ T : W.Point, (p : ℤ) • T = 0 →
+      (Finset.univ.val.map fun i => val i - T) =
+        Finset.univ.val.map fun i => val i := by
+    intro T hT
+    have h := map_add_torsion_eq (W := W) hval_inj hval_tor hval_surj
+      (T := -T) (by rw [smul_neg, hT, neg_zero])
+    rw [← h]
+    exact Multiset.map_congr rfl fun i _ => by abel
+  have hmap2 : ∀ T : W.Point, (p : ℤ) • T = 0 →
+      (Finset.univ.val.map fun i => -val i - T) =
+        Finset.univ.val.map fun i => -val i := by
+    intro T hT
+    have h := map_add_torsion_eq (W := W) hval_inj hval_tor hval_surj (T := T) hT
+    have h2 := congrArg (Multiset.map (fun R : W.Point => -R)) h
+    simp only [Multiset.map_map, Function.comp_apply] at h2
+    rw [← h2]
+    exact Multiset.map_congr rfl fun i _ => by abel
+  have hmap3 : ∀ (A T : W.Point), (p : ℤ) • T = 0 →
+      (Finset.univ.val.map fun i => A + val i - T) =
+        Finset.univ.val.map fun i => A + val i := by
+    intro A T hT
+    have h2 := congrArg (Multiset.map (fun R : W.Point => A + R)) (hmap1 T hT)
+    simp only [Multiset.map_map, Function.comp_apply] at h2
+    rw [← h2]
+    exact Multiset.map_congr rfl fun i _ => by abel
+  have hDv : ∀ T : W.Point, (p : ℤ) • T = 0 →
+      (((Finset.univ.val.map fun i => val i) +
+        Finset.univ.val.map fun i => -val i).map fun R => R - T) =
+      ((Finset.univ.val.map fun i => val i) +
+        Finset.univ.val.map fun i => -val i) := by
+    intro T hT
+    simp only [Multiset.map_add, Multiset.map_map, Function.comp_apply]
+    rw [hmap1 T hT, hmap2 T hT]
+  have hDa : ∀ T : W.Point, (p : ℤ) • T = 0 →
+      (((Finset.univ.val.map fun i => T' + val i) +
+        Finset.univ.val.map fun i => -val i).map fun R => R - T) =
+      ((Finset.univ.val.map fun i => T' + val i) +
+        Finset.univ.val.map fun i => -val i) := by
+    intro T hT
+    simp only [Multiset.map_add, Multiset.map_map, Function.comp_apply]
+    rw [hmap3 T' T hT, hmap2 T hT]
+  -- ── `v` cannot vanish at a `p`-torsion translate of `U`
+  have hvne : ∀ (x y : F) (h : W.Nonsingular x y) (T : W.Point), (p : ℤ) • T = 0 →
+      (WeierstrassCurve.Affine.Point.some x y h : W.Point) =
+        T + WeierstrassCurve.Affine.Point.some xU yU hU →
+      AdjoinRoot.evalEval h.left (enumVertical W val) ≠ 0 := by
+    intro x y h T hT heq h0
+    have hmem := mem_of_evalEval_eq_zero (span_enumVertical (W := W) val) h h0
+    have hmem2 : (WeierstrassCurve.Affine.Point.some xU yU hU : W.Point) ∈
+        ((Finset.univ.val.map fun i => val i) +
+          Finset.univ.val.map fun i => -val i) := by
+      rw [← hDv T hT]
+      refine Multiset.mem_map.mpr ⟨_, hmem, ?_⟩
+      rw [heq]; abel
+    exact hUv (evalEval_eq_zero_of_mem (span_enumVertical (W := W) val) hU hmem2)
+  -- ── `v` vanishes at every `p`-torsion point
+  have hvtor : ∀ (x y : F) (h : W.Nonsingular x y),
+      (p : ℤ) • (WeierstrassCurve.Affine.Point.some x y h : W.Point) = 0 →
+      AdjoinRoot.evalEval h.left (enumVertical W val) = 0 := by
+    intro x y h htor
+    obtain ⟨i, hi⟩ := hval_surj _ htor
+    refine evalEval_eq_zero_of_mem (span_enumVertical (W := W) val) h ?_
+    refine Multiset.mem_add.mpr (Or.inl ?_)
+    exact Multiset.mem_map.mpr ⟨i, Finset.mem_univ_val i, hi⟩
+  have hmapcomp : ∀ (D : Multiset W.Point) (Q : W.Point),
+      (D.map fun R => (pointIdeal' W (R - Q) :
+          FractionalIdeal W.CoordinateRing⁰ W.FunctionField)) =
+        ((D.map fun R => R - Q).map fun R =>
+          (pointIdeal' W R :
+            FractionalIdeal W.CoordinateRing⁰ W.FunctionField)) := by
+    intro D Q
+    rw [Multiset.map_map]
+    exact Multiset.map_congr rfl fun _ _ => rfl
+  -- ── the GENERIC character identity `g∘τ_P = c·g`, multiplied out
+  obtain ⟨xκ, yκ, hκ, hptκ⟩ := exists_translate_some (W := W) hΔ ((p : ℤ) • P')
+  obtain ⟨c, hgen⟩ : ∃ c : F,
+      pointEval (constHom W) hκ.left a *
+          algebraMap W.CoordinateRing W.FunctionField (enumVertical W val) =
+        constHom W c * (pointEval (constHom W) hκ.left (enumVertical W val) *
+          algebraMap W.CoordinateRing W.FunctionField a) := by
+    have hCa := spanSingleton_pointEval_translate (W := W) hΔ hptκ ha hspan
+    have hCv := spanSingleton_pointEval_translate (W := W) hΔ hptκ hv0
+      (span_enumVertical (W := W) val)
+    rw [hmapcomp _ _, hDa _ hPt, prod_coe_pointIdeal'_eq_spanSingleton hspan] at hCa
+    rw [hmapcomp _ _, hDv _ hPt,
+      prod_coe_pointIdeal'_eq_spanSingleton (span_enumVertical (W := W) val)] at hCv
+    have hu : IsUnit ((pointIdeal' W (-((p : ℤ) • P')) :
+        FractionalIdeal W.CoordinateRing⁰ W.FunctionField) ^
+          Multiset.card ((Finset.univ.val.map fun i => T' + val i) +
+            Finset.univ.val.map fun i => -val i)) :=
+      (pointIdeal' W _).isUnit.pow _
+    have hcard2 : Multiset.card ((Finset.univ.val.map fun i => val i) +
+        Finset.univ.val.map fun i => -val i) =
+      Multiset.card ((Finset.univ.val.map fun i => T' + val i) +
+        Finset.univ.val.map fun i => -val i) := by
+      simp
+    rw [hcard2] at hCv
+    have hfrac : FractionalIdeal.spanSingleton W.CoordinateRing⁰
+          (pointEval (constHom W) hκ.left (enumVertical W val) *
+            algebraMap W.CoordinateRing W.FunctionField a) =
+        FractionalIdeal.spanSingleton W.CoordinateRing⁰
+          (pointEval (constHom W) hκ.left a *
+            algebraMap W.CoordinateRing W.FunctionField (enumVertical W val)) := by
+      simp only [← FractionalIdeal.spanSingleton_mul_spanSingleton]
+      refine hu.mul_right_cancel ?_
+      calc FractionalIdeal.spanSingleton W.CoordinateRing⁰
+              (pointEval (constHom W) hκ.left (enumVertical W val)) *
+            FractionalIdeal.spanSingleton W.CoordinateRing⁰
+              (algebraMap W.CoordinateRing W.FunctionField a) *
+            (pointIdeal' W (-((p : ℤ) • P')) :
+              FractionalIdeal W.CoordinateRing⁰ W.FunctionField) ^
+              Multiset.card ((Finset.univ.val.map fun i => T' + val i) +
+                Finset.univ.val.map fun i => -val i)
+          = (FractionalIdeal.spanSingleton W.CoordinateRing⁰
+              (pointEval (constHom W) hκ.left (enumVertical W val)) *
+              (pointIdeal' W (-((p : ℤ) • P')) :
+                FractionalIdeal W.CoordinateRing⁰ W.FunctionField) ^
+                Multiset.card ((Finset.univ.val.map fun i => T' + val i) +
+                  Finset.univ.val.map fun i => -val i)) *
+            FractionalIdeal.spanSingleton W.CoordinateRing⁰
+              (algebraMap W.CoordinateRing W.FunctionField a) := by ring
+        _ = FractionalIdeal.spanSingleton W.CoordinateRing⁰
+              (algebraMap W.CoordinateRing W.FunctionField (enumVertical W val)) *
+            FractionalIdeal.spanSingleton W.CoordinateRing⁰
+              (algebraMap W.CoordinateRing W.FunctionField a) := by rw [hCv]
+        _ = (FractionalIdeal.spanSingleton W.CoordinateRing⁰
+              (pointEval (constHom W) hκ.left a) *
+              (pointIdeal' W (-((p : ℤ) • P')) :
+                FractionalIdeal W.CoordinateRing⁰ W.FunctionField) ^
+                Multiset.card ((Finset.univ.val.map fun i => T' + val i) +
+                  Finset.univ.val.map fun i => -val i)) *
+            FractionalIdeal.spanSingleton W.CoordinateRing⁰
+              (algebraMap W.CoordinateRing W.FunctionField (enumVertical W val)) := by
+            rw [hCa]; ring
+        _ = FractionalIdeal.spanSingleton W.CoordinateRing⁰
+              (pointEval (constHom W) hκ.left a) *
+            FractionalIdeal.spanSingleton W.CoordinateRing⁰
+              (algebraMap W.CoordinateRing W.FunctionField (enumVertical W val)) *
+            (pointIdeal' W (-((p : ℤ) • P')) :
+              FractionalIdeal W.CoordinateRing⁰ W.FunctionField) ^
+              Multiset.card ((Finset.univ.val.map fun i => T' + val i) +
+                Finset.univ.val.map fun i => -val i) := by ring
+    obtain ⟨z, hz⟩ := FractionalIdeal.spanSingleton_eq_spanSingleton.mp hfrac
+    obtain ⟨cc, -, hcz⟩ := coordinateRing_isUnit_eq_const z.isUnit
+    refine ⟨cc, ?_⟩
+    rw [← hz, Units.smul_def, hcz, Algebra.smul_def,
+      show algebraMap W.CoordinateRing W.FunctionField
+          (CoordinateRing.mk W (Polynomial.C (Polynomial.C cc))) =
+        constHom W cc from rfl]
+  -- ── reading the generic identity at a point and its `P`-translate
+  have hptκ' : constPoint W ((p : ℤ) • P') + (1 : ℤ) • tautPoint W hΔ =
+      WeierstrassCurve.Affine.Point.some xκ yκ hκ := by
+    rw [one_zsmul]; exact hptκ
+  have hstep : ∀ (x₁ y₁ : F) (h₁ : W.Nonsingular x₁ y₁) (x₂ y₂ : F)
+      (h₂ : W.Nonsingular x₂ y₂),
+      (WeierstrassCurve.Affine.Point.some x₂ y₂ h₂ : W.Point) =
+        (p : ℤ) • P' + WeierstrassCurve.Affine.Point.some x₁ y₁ h₁ →
+      AdjoinRoot.evalEval h₂.left a *
+          AdjoinRoot.evalEval h₁.left (enumVertical W val) =
+        c * (AdjoinRoot.evalEval h₂.left (enumVertical W val) *
+          AdjoinRoot.evalEval h₁.left a) := by
+    intro x₁ y₁ h₁ x₂ y₂ h₂ heq
+    have heq' : (WeierstrassCurve.Affine.Point.some x₂ y₂ h₂ : W.Point) =
+        (p : ℤ) • P' + (1 : ℤ) • (WeierstrassCurve.Affine.Point.some x₁ y₁ h₁ : W.Point) := by
+      rw [one_zsmul]; exact heq
+    have hEa : EvalsTo h₁.left (pointEval (constHom W) hκ.left a)
+        (AdjoinRoot.evalEval h₂.left a) :=
+      exists_pointEval_specialization hΔ (1 : ℤ) hptκ' h₁ h₂ heq' a
+    have hEv : EvalsTo h₁.left (pointEval (constHom W) hκ.left (enumVertical W val))
+        (AdjoinRoot.evalEval h₂.left (enumVertical W val)) :=
+      exists_pointEval_specialization hΔ (1 : ℤ) hptκ' h₁ h₂ heq' (enumVertical W val)
+    have hL := hEa.mul (evalsTo_algebraMap h₁.left (enumVertical W val))
+    have hR := (evalsTo_constHom h₁.left c).mul
+      (hEv.mul (evalsTo_algebraMap h₁.left a))
+    rw [← hgen] at hR
+    exact hL.unique hR
+  -- ── the telescope: `g(n•P ⊕ U)/g(U) = c^n`
+  have hchain : ∀ n : ℕ, ∃ (x y : F) (h : W.Nonsingular x y),
+      (WeierstrassCurve.Affine.Point.some x y h : W.Point) =
+        (n : ℤ) • ((p : ℤ) • P' : W.Point) +
+          WeierstrassCurve.Affine.Point.some xU yU hU ∧
+      AdjoinRoot.evalEval h.left a *
+          AdjoinRoot.evalEval hU.left (enumVertical W val) =
+        c ^ n * (AdjoinRoot.evalEval hU.left a *
+          AdjoinRoot.evalEval h.left (enumVertical W val)) := by
+    intro n
+    induction n with
+    | zero =>
+      refine ⟨xU, yU, hU, by simp, by simp⟩
+    | succ n ih =>
+      obtain ⟨x, y, h, hpt, hval⟩ := ih
+      have hntor : (p : ℤ) • ((n : ℤ) • ((p : ℤ) • P' : W.Point)) = 0 := by
+        rw [smul_comm, hPt, smul_zero]
+      have hvn : AdjoinRoot.evalEval h.left (enumVertical W val) ≠ 0 :=
+        hvne x y h _ hntor hpt
+      -- the next point is affine
+      obtain ⟨x', y', h', hpt'⟩ : ∃ (x' y' : F) (h' : W.Nonsingular x' y'),
+          (WeierstrassCurve.Affine.Point.some x' y' h' : W.Point) =
+            (p : ℤ) • P' + WeierstrassCurve.Affine.Point.some x y h := by
+        cases hc : ((p : ℤ) • P' + WeierstrassCurve.Affine.Point.some x y h : W.Point) with
+        | zero =>
+          exfalso
+          have hxtor : (p : ℤ) • (WeierstrassCurve.Affine.Point.some x y h : W.Point) = 0 := by
+            have h1 : (WeierstrassCurve.Affine.Point.some x y h : W.Point) =
+                -((p : ℤ) • P') := by
+              rw [eq_neg_iff_add_eq_zero, add_comm]; exact hc
+            rw [h1, smul_neg, hPt, neg_zero]
+          exact hvn (hvtor x y h hxtor)
+        | some x' y' h' => exact ⟨x', y', h', rfl⟩
+      refine ⟨x', y', h', ?_, ?_⟩
+      · rw [hpt', hpt]
+        push_cast
+        rw [add_smul, one_smul]
+        abel
+      · have hs := hstep x y h x' y' h' hpt'
+        have hvn' : AdjoinRoot.evalEval h'.left (enumVertical W val) ≠ 0 := by
+          refine hvne x' y' h' ((n + 1 : ℤ) • ((p : ℤ) • P' : W.Point)) ?_ ?_
+          · rw [smul_comm, hPt, smul_zero]
+          · rw [hpt', hpt, add_smul, one_smul]; abel
+        refine mul_left_cancel₀ hvn ?_
+        rw [pow_succ]
+        calc AdjoinRoot.evalEval h.left (enumVertical W val) *
+              (AdjoinRoot.evalEval h'.left a *
+                AdjoinRoot.evalEval hU.left (enumVertical W val))
+            = (AdjoinRoot.evalEval h'.left a *
+                AdjoinRoot.evalEval h.left (enumVertical W val)) *
+              AdjoinRoot.evalEval hU.left (enumVertical W val) := by ring
+          _ = c * (AdjoinRoot.evalEval h'.left (enumVertical W val) *
+                AdjoinRoot.evalEval h.left a) *
+              AdjoinRoot.evalEval hU.left (enumVertical W val) := by rw [hs]
+          _ = c * AdjoinRoot.evalEval h'.left (enumVertical W val) *
+              (AdjoinRoot.evalEval h.left a *
+                AdjoinRoot.evalEval hU.left (enumVertical W val)) := by ring
+          _ = c * AdjoinRoot.evalEval h'.left (enumVertical W val) *
+              (c ^ n * (AdjoinRoot.evalEval hU.left a *
+                AdjoinRoot.evalEval h.left (enumVertical W val))) := by rw [hval]
+          _ = AdjoinRoot.evalEval h.left (enumVertical W val) *
+              (c ^ n * c * (AdjoinRoot.evalEval hU.left a *
+                AdjoinRoot.evalEval h'.left (enumVertical W val))) := by ring
+  -- ── `c^p = 1`
+  have hcp : c ^ p = 1 := by
+    obtain ⟨x, y, h, hpt, hval⟩ := hchain p
+    have hUeq : (WeierstrassCurve.Affine.Point.some x y h : W.Point) =
+        WeierstrassCurve.Affine.Point.some xU yU hU := by
+      rw [hpt, hPt, zero_add]
+    rw [WeierstrassCurve.Affine.Point.some.injEq] at hUeq
+    obtain ⟨rfl, rfl⟩ := hUeq
+    have hval' : AdjoinRoot.evalEval hU.left a *
+        AdjoinRoot.evalEval hU.left (enumVertical W val) =
+      c ^ p * (AdjoinRoot.evalEval hU.left a *
+        AdjoinRoot.evalEval hU.left (enumVertical W val)) := hval
+    have hne : AdjoinRoot.evalEval hU.left a *
+        AdjoinRoot.evalEval hU.left (enumVertical W val) ≠ 0 :=
+      mul_ne_zero hUa hUv
+    refine mul_right_cancel₀ hne ?_
+    rw [one_mul]
+    linear_combination -hval'
+  -- ── conclusion
+  have hs := hstep xU yU hU xPU yPU hPU hPUeq
+  calc (AdjoinRoot.evalEval hPU.left a *
+        AdjoinRoot.evalEval hU.left (enumVertical W val)) ^ p
+      = (c * (AdjoinRoot.evalEval hPU.left (enumVertical W val) *
+          AdjoinRoot.evalEval hU.left a)) ^ p := by rw [hs]
+    _ = c ^ p * (AdjoinRoot.evalEval hPU.left (enumVertical W val) *
+          AdjoinRoot.evalEval hU.left a) ^ p := by rw [mul_pow]
+    _ = (AdjoinRoot.evalEval hU.left a *
+          AdjoinRoot.evalEval hPU.left (enumVertical W val)) ^ p := by
+        rw [hcp, one_mul, mul_comm]
+
+
+/-- **Stage B, leaf 3a (PROVEN over two divisor-telescope leaves): the
+ALTERNATING LAW of the Weil pairing,
 in Miller-value form.**  This is the one genuinely reciprocal statement
 of Stage B; everything else in leaf 3 is transport and glue.
 
@@ -1578,25 +2028,66 @@ cross-ratio `f_P(D_Q)/f_Q(D_P)` is independent of the auxiliary points
 `exists_millerRatio_eval_translationChar` supplies, and keeping it
 avoids a needless generalisation.
 
-**MISSING MACHINERY (named for a future owner).**  The classical proof
-runs through **Weil reciprocity**, which mathlib does not have and which
-this development does not have either.  In the vocabulary of
-`WeilPairingDescent.lean` the missing brick is:
+**WEIL RECIPROCITY IS NOT NEEDED — and is a DEAD END here** (2026-07-25,
+correcting the earlier note on this leaf, which asked a future owner to
+build the tame-symbol product formula).  Every reciprocity pairing among
+the functions available at this cut is *degenerate*, i.e. gives an
+identity between `p`-th powers, which is exactly the information the
+conclusion does not carry (`e_p(P,Q)^p = 1`, so a relation among `p`-th
+powers says nothing about `e`).  Writing `S(A) := Σ_{κ ∈ E[p]} (A ⊕ κ) =
+[p]^*(([p]A))` for the fibre divisor, so that `div g = S(T') − S(0)` and
+`div g_P = S(P') − S(0)`, the four candidates all collapse:
 
-  for `f, g : W.CoordinateRing` nonzero with
-  `Ideal.span {f} = (D_f.map (pointIdeal W)).prod` and
-  `Ideal.span {g} = (D_g.map (pointIdeal W)).prod` and `D_f`, `D_g`
-  disjoint, `∏_{Z ∈ D_g} evalEval Z f = ∏_{Z ∈ D_f} evalEval Z g` up to
-  the contribution of the point at infinity (both `f` and `g` have poles
-  only there, of order `deg D_f`, `deg D_g`), i.e. the tame-symbol
-  product formula `∏_{Z} (f,g)_Z = 1` over all closed points of the
-  projective curve.
+* `f_P` against `g`: `∏_κ f_P(X ⊕ κ)` is CONSTANT, because
+  `div ∏_κ f_P(·⊕κ) = p·(Σ_κ (P ⊖ κ) − Σ_κ (⊖κ)) = 0` (`P ∈ E[p]`, so
+  `κ ↦ P ⊖ κ` permutes `E[p]`); and `g(div f_P) = c^p = 1`.  Both sides `1`.
+* `g_P` against `g` (both level `p²`): the translation character makes
+  `∏_κ g_P(X ⊕ κ) = (∏_κ e_p(κ,P))·g_P(X)^{p²}`, and reciprocity returns
+  `[g_P(M₁)/g_P(M₂)]^{p²} = [g(V)/g(U)]^{p²}` — the `p`-th POWER of the
+  goal, hence vacuous.
+* `g_P` against `f_Q`, and `f_P` against `f_Q` (via tame symbols at
+  `P`, `Q`, `O`): same, `p`-th powers throughout.
 
-Plain reciprocity between `f_P` and `g` is NOT enough by itself: both
-sides of `f_P(div g) = g(div f_P)` degenerate (the norm `N_{[p]}(f_P)` is
-constant because `[p]_*(div f_P) = 0`, and the right side is `c^p = 1`),
-so the `p`-th-root structure — the L4-7 pullback constants — has to be
-carried along.  (SORRY LEAF, 2026-07-25.) -/
+The content is therefore *not* reciprocal at all.  It is the following
+**elementary divisor telescope**, which uses only "trivial divisor ⟹
+constant" (`coordinateRing_isUnit_eq_const`) and the two transport
+bricks already in `WeilPairingDescent.lean`.  Put
+
+  `Ξ(X) := [g_P(T' ⊖ X)·g(X)] / [g_P(⊖X)·g(P' ⊕ X)]`.
+
+1. **`Ξ` is CONSTANT.**  Its divisor is
+   `[S(T'⊖P') − S(T')] + [S(T') − S(0)] − [S(⊖P') − S(0)]
+      − [S(T'⊖P') − S(⊖P')] = 0`
+   (using `S(A) ⊕ B = S(A⊕B)`, `⊖S(A) = S(⊖A)` — the enumeration `val`
+   of `E[p]` is closed under negation).  Call the constant `γ`; read at
+   `X = U` it is exactly `g_P(M₁)g(U)/(g_P(M₂)g(V))`, i.e. the
+   cross-ratio whose `p`-th power the conclusion asks about.  Note the
+   MIXED signs `M₁ = T' ⊖ U` against `V = P' ⊕ U`: they are what makes
+   this divisor cancel, and they are why the pairing is antisymmetric.
+2. **`Θ(Y) := ∏_{j<p} g_P(Y ⊖ jP')` is CONSTANT.**  Its divisor
+   TELESCOPES: `Σ_{j<p} [S((j+1)P') − S(jP')] = S(p•P') − S(0) = S(P) −
+   S(0) = 0`, the last step because `P = p•P' ∈ E[p]` translates the
+   enumeration into itself (`map_add_torsion_eq`).  **This is the one
+   place the level-`p²` structure enters**, and it is what supplies the
+   missing `p`-th root.
+3. **The telescope.**  Apply 1 at `X ⊕ jP'`, `j = 0,…,p−1`, and multiply:
+   `Θ(T'⊖X)·∏_j g(X⊕jP') = γ^p·Θ(⊖X)·∏_j g(X⊕(j+1)P')`.
+   By 2 the two `Θ`s cancel, and the two `g`-products differ exactly by
+   `g(X ⊕ p•P')/g(X) = g(P ⊕ X)/g(X) = c`.  Hence `γ^p·c = 1`.
+4. **`c^p = 1`** (the translation character of `g` at the `p`-torsion
+   point `P`): `div(g∘τ_P / g) = S(T'⊖P) − S(⊖P) − S(T') + S(0) = 0`
+   again by `map_add_torsion_eq`, so `g∘τ_P = c·g`; iterating `p` times
+   at `U` (all of `U, P⊕U, …, (p−1)P⊕U` are off `div g` because the
+   support is `E[p]`-translation invariant) gives `c^p = 1`.
+
+Then `γ^p = c^{−1} = c^{p−1}`, which is the conclusion with `e = p − 1`.
+
+STAGING (2026-07-25): DECOMPOSED over the two leaves below,
+`exists_millerValue_crossRatio_const` (steps 1–3, packaged as the two
+properties of `γ` read at `U`) and `millerValue_translationChar_pow`
+(step 4, in cleared form — PROVEN here 2026-07-25, so the only leaf left
+open is the cross-ratio constant).  Everything between them is PROVEN glue: pure
+field algebra, cancelling `β := a(P⊕U)·v(U) ≠ 0`. -/
 theorem exists_millerValue_alternating {ι : Type*} [Fintype ι]
     {val : ι → W.Point}
     (hΔ : W.Δ ≠ 0) (hp : (p : F) ≠ 0)
@@ -1650,7 +2141,51 @@ theorem exists_millerValue_alternating {ι : Type*} [Fintype ι]
           AdjoinRoot.evalEval hU.left (enumVertical W val) ^ p *
           (AdjoinRoot.evalEval hPU.left a *
             AdjoinRoot.evalEval hU.left (enumVertical W val)) ^ e := by
-  sorry
+  -- ── the two inputs: the cross-ratio constant `γ` (with `γ^p·c = 1`)
+  --    and `c^p = 1`, both read at `U`
+  obtain ⟨γ, hcross, hgamma⟩ :=
+    exists_millerValue_crossRatio_const (val := val) hΔ hp hval_inj hval_tor
+      hval_surj hcard ha hb hspan hbspan hQtor hPtor hU hV hM1 hM2 hPU hVeq
+      hM1eq hM2eq hPUeq hUa hUv hVa hVv hM1b hM1v hM2b hM2v hPUa hPUv
+  have hchar := millerValue_translationChar_pow (val := val) (P' := P') hΔ
+    hval_inj hval_tor hval_surj ha hspan hPtor hU hPU hPUeq hUa hUv
+  refine ⟨p - 1, Or.inr rfl, ?_⟩
+  -- ── PROVEN glue: pure field algebra.  With `X := b(M₁)a(U)v(M₂)v(V)`,
+  --    `Z := b(M₂)a(V)v(M₁)v(U)`, `α := a(U)v(P⊕U)`, `β := a(P⊕U)v(U)`
+  --    the two inputs read `X = γ·Z`, `γ^p·β = α`, `β^p = α^p`, and the
+  --    goal is `X^p·α^{p−1} = Z^p·β^{p−1}`; multiply by `β ≠ 0`.
+  have hp1 : p - 1 + 1 = p := Nat.succ_pred_eq_of_pos (Fact.out : p.Prime).pos
+  have halg : ∀ Xv Zv αv βv γv : F, βv ≠ 0 → Xv = γv * Zv →
+      γv ^ p * βv = αv → βv ^ p = αv ^ p →
+      Xv ^ p * αv ^ (p - 1) = Zv ^ p * βv ^ (p - 1) := by
+    intro Xv Zv αv βv γv hβ hX hγ hpow
+    have e1 : βv ^ (p - 1) * βv = βv ^ p := by rw [← pow_succ, hp1]
+    have e2 : αv ^ (p - 1) * αv = αv ^ p := by rw [← pow_succ, hp1]
+    refine mul_right_cancel₀ hβ ?_
+    calc Xv ^ p * αv ^ (p - 1) * βv
+        = (γv * Zv) ^ p * αv ^ (p - 1) * βv := by rw [hX]
+      _ = Zv ^ p * αv ^ (p - 1) * (γv ^ p * βv) := by ring
+      _ = Zv ^ p * (αv ^ (p - 1) * αv) := by rw [hγ]; ring
+      _ = Zv ^ p * αv ^ p := by rw [e2]
+      _ = Zv ^ p * βv ^ p := by rw [hpow]
+      _ = Zv ^ p * βv ^ (p - 1) * βv := by rw [← e1]; ring
+  have hβ : AdjoinRoot.evalEval hPU.left a *
+      AdjoinRoot.evalEval hU.left (enumVertical W val) ≠ 0 :=
+    mul_ne_zero hPUa hUv
+  have hmain := halg
+    (AdjoinRoot.evalEval hM1.left b * AdjoinRoot.evalEval hU.left a *
+      AdjoinRoot.evalEval hM2.left (enumVertical W val) *
+      AdjoinRoot.evalEval hV.left (enumVertical W val))
+    (AdjoinRoot.evalEval hM2.left b * AdjoinRoot.evalEval hV.left a *
+      AdjoinRoot.evalEval hM1.left (enumVertical W val) *
+      AdjoinRoot.evalEval hU.left (enumVertical W val))
+    (AdjoinRoot.evalEval hU.left a *
+      AdjoinRoot.evalEval hPU.left (enumVertical W val))
+    (AdjoinRoot.evalEval hPU.left a *
+      AdjoinRoot.evalEval hU.left (enumVertical W val))
+    γ hβ hcross hgamma hchar
+  simp only [mul_pow] at hmain ⊢
+  linear_combination hmain
 
 /-- **Stage B, leaf 3 (PROVEN over the alternating-law leaf 3a): the mirror
 side — Weil reciprocity and the level-`p²` telescope.**  With `f_P = aP/(X − x_S)^p`
