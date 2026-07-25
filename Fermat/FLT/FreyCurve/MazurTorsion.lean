@@ -9577,13 +9577,192 @@ theorem localInertia_fixes_tame_root_of_fixes {p : ℕ} (hp : p.Prime) {n : ℕ}
     exact h
   rw [hsϖ, hζ1, one_mul]
 
+open Finset in
+/-- **Newton polygon, single-segment case** (PROVEN 2026-07-26): let `f` be a
+multiplicative nonarchimedean absolute value on a field `L`, and let
+`a₀ + a₁ X + ⋯ + a_N X ^ N` be a polynomial with `f a₀ = 1`, `f a_N = c` and
+`(f aᵢ) ^ N ≤ c ^ i` for every `i` — i.e. every point `(i, v aᵢ)` of its Newton
+polygon lies on or above the segment from `(0, 0)` to `(N, v c)`, so that
+segment is the whole lower hull. Then EVERY root `x` satisfies
+`c · (f x) ^ N = 1`, i.e. `v x = − v c / N`.
+
+Proof, purely by the ultrametric "the maximum is attained twice" principle
+(`IsNonarchimedean.apply_sum_eq_of_lt`): put `t = c · (f x) ^ N`, so that
+`f (aᵢ xⁱ) ^ N ≤ t ^ i`. If `t < 1` then every `i ≥ 1` term is STRICTLY smaller
+than the constant term, so the sum has absolute value `f a₀ = 1 ≠ 0`; if `t > 1`
+then every `i < N` term is strictly smaller than the top one, so the sum has
+absolute value `t > 0`. Both contradict `f 0 = 0`, leaving `t = 1`.
+
+No hypothesis `N ≠ 0` is needed: for `N = 0` the sum is `a₀`, so `f a₀ = 0 ≠ 1`
+and the statement is vacuously reachable. -/
+theorem newtonPolygon_single_segment_root {L : Type*} [Field L] {f : L → ℝ}
+    (hna : IsNonarchimedean f) (hneg : ∀ b : L, f b = f (-b))
+    (hmul : ∀ b b' : L, f (b * b') = f b * f b')
+    (hnonneg : ∀ b : L, 0 ≤ f b) (hf0 : f 0 = 0) (hf1 : f 1 = 1)
+    {N : ℕ} {a : ℕ → L} {c : ℝ}
+    (ha0 : f (a 0) = 1) (haN : f (a N) = c)
+    (hbnd : ∀ i, f (a i) ^ N ≤ c ^ i)
+    {x : L} (hx : ∑ i ∈ Finset.range (N + 1), a i * x ^ i = 0) :
+    c * f x ^ N = 1 := by
+  have hpow : ∀ (b : L) (k : ℕ), f (b ^ k) = f b ^ k := by
+    intro b k
+    induction k with
+    | zero => simpa using hf1
+    | succ k ih => rw [pow_succ, hmul, ih, pow_succ]
+  have hc0 : 0 ≤ c := haN ▸ hnonneg _
+  have hxN : 0 ≤ f x ^ N := pow_nonneg (hnonneg x) N
+  set t : ℝ := c * f x ^ N with htdef
+  have ht0 : 0 ≤ t := mul_nonneg hc0 hxN
+  have hterm : ∀ i : ℕ, f (a i * x ^ i) = f (a i) * f x ^ i := by
+    intro i
+    rw [hmul, hpow]
+  have hbndt : ∀ i : ℕ, f (a i * x ^ i) ^ N ≤ t ^ i := by
+    intro i
+    rw [hterm, mul_pow, ← pow_mul, mul_comm i N, pow_mul, htdef, mul_pow]
+    exact mul_le_mul_of_nonneg_right (hbnd i) (pow_nonneg hxN i)
+  have hterm0 : f (a 0 * x ^ 0) = 1 := by rw [hterm, pow_zero, mul_one, ha0]
+  have htermN : f (a N * x ^ N) = t := by rw [hterm, haN, htdef]
+  have hsum0 : f (∑ i ∈ Finset.range (N + 1), a i * x ^ i) = 0 := by rw [hx, hf0]
+  rcases lt_trichotomy t 1 with hlt | heq | hgt
+  · exfalso
+    have hmax : ∀ j ∈ Finset.range (N + 1), j ≠ 0 →
+        f (a j * x ^ j) < f (a 0 * x ^ 0) := by
+      intro j _ hj0
+      rw [hterm0]
+      have h1 : f (a j * x ^ j) ^ N ≤ t ^ j := hbndt j
+      have h2 : t ^ j < 1 := pow_lt_one₀ ht0 hlt hj0
+      have h3 : f (a j * x ^ j) ^ N < 1 := lt_of_le_of_lt h1 h2
+      by_contra hcon
+      push Not at hcon
+      exact absurd h3 (not_lt.mpr (one_le_pow₀ hcon))
+    have hkey := IsNonarchimedean.apply_sum_eq_of_lt hna hneg
+      (s := Finset.range (N + 1)) (l := fun i => a i * x ^ i)
+      (k := 0) (by simp) hmax
+    rw [hsum0, hterm0] at hkey
+    exact zero_ne_one hkey
+  · rw [htdef] at heq
+    exact heq
+  · exfalso
+    have hmax : ∀ j ∈ Finset.range (N + 1), j ≠ N →
+        f (a j * x ^ j) < f (a N * x ^ N) := by
+      intro j hj hjN
+      have hjlt : j < N := by
+        have := Finset.mem_range.mp hj
+        omega
+      rw [htermN]
+      have h1 : f (a j * x ^ j) ^ N ≤ t ^ j := hbndt j
+      have h2 : t ^ j < t ^ N := pow_lt_pow_right₀ hgt hjlt
+      have h3 : f (a j * x ^ j) ^ N < t ^ N := lt_of_le_of_lt h1 h2
+      exact lt_of_pow_lt_pow_left₀ N (le_of_lt (lt_trans zero_lt_one hgt)) h3
+    have hkey := IsNonarchimedean.apply_sum_eq_of_lt hna hneg
+      (s := Finset.range (N + 1)) (l := fun i => a i * x ^ i)
+      (k := N) (by simp) hmax
+    rw [hsum0, htermN] at hkey
+    exact absurd hkey.symm (ne_of_gt (lt_trans zero_lt_one hgt))
+
 open IsDedekindDomain in
 open scoped WeierstrassCurve.Affine in
 set_option backward.isDefEq.respectTransparency false in
+/-- **The Newton polygon of the `p`-division polynomial at a good
+SUPERSINGULAR prime is the single segment from `(0, 0)` to `(p² − 1, 2)`**
+(sorry node, cut 2026-07-26 out of
+`spectralNorm_torsion_abscissa_of_good_of_supersingular` below, which is now
+DERIVED from it and from the purely ultrametric
+`newtonPolygon_single_segment_root` above): the `p`-division polynomial
+`Ψ²_p` of the base change of `E` to `ℚ̄_p` has a UNIT constant coefficient,
+and every coefficient satisfies `|aᵢ| ^ (p² − 1) ≤ (|p| ²) ^ i`.
+
+This is the ENTIRE arithmetic content of the parent leaf. The remaining data
+of that leaf are already theorems: `natDegree_ΨSq` gives
+`deg Ψ²_p = p² − 1` and `leadingCoeff_ΨSq` gives leading coefficient `p²`
+(both over the characteristic-zero field `ℚ̄_p`, where `(p : ℚ̄_p) ≠ 0`), and
+`TorsionCard.smul_some_eq_zero_iff` turns `p · (x, y) = 0` into
+`Ψ²_p(x) = 0`.
+
+WHY IT IS TRUE. Supersingularity says the reduced curve `Ẽ/𝔽̄_p` has no
+nonzero geometric `p`-torsion, so `Ψ²_p` of `Ẽ` has no root in `𝔽̄_p`; being
+nonzero (`ΨSq_ne_zero_of_isElliptic`, the characteristic-free form proven in
+this file) it must therefore be a nonzero CONSTANT. Reducing the integral
+model, that says `|a₀| = 1` and `|aᵢ| ≤ |p|` for `i ≥ 1`. The sharper bound
+`|aᵢ| ^ (p² − 1) ≤ |p| ^ (2i)`, i.e. `v(aᵢ) ≥ 2i/(p² − 1)`, is the
+single-segment shape of the Newton polygon and needs the second order of
+vanishing for `i > (p² − 1)/2`; for ODD `p` it follows formally because
+`Ψ²_p = (preΨ'_p) ²` and the polygon of `preΨ'_p` is the segment
+`(0,0)–((p²−1)/2, 1)`, so a coefficient of index `i > (p²−1)/2` is a sum of
+products `b_j b_{i−j}` with BOTH indices `≥ 1`, hence divisible by `p²`. For
+`p = 2` it is the statement `v(b₂) ≥ 2`, which holds because supersingularity
+at `2` forces `a₁ ≡ 0 mod 2` and `b₂ = a₁² + 4a₂`.
+
+MISSING FROM MATHLIB, named as statements: (a) *the reduction of the
+`n`-division polynomial is the `n`-division polynomial of the reduction* in
+the integral-model vocabulary of
+`coeff_Φ_mem_and_isUnit_coeff_ΨSq_of_hasGoodReduction` (same file — that
+lemma already extracts ONE unit coefficient of `Ψ²ₙ` this way, and the
+present leaf needs the constant one specifically); (b) *a polynomial over an
+algebraically closed field with no root is constant* (mathlib has
+`IsAlgClosed.exists_root`, so this is a short step); (c) *the `x`-coordinate
+of a nonzero `p`-torsion point of `Ẽ` is a root of `Ψ²_p(Ẽ)`* — this is
+`TorsionCard.smul_some_eq_zero_iff` again, over the residue field. `~/cs/FLT`
+has no division-polynomial material at all, so nothing is vendorable there.
+
+NOT NEEDED for this route: formal groups. Mathlib's
+`RingTheory/FormalGroup/Basic.lean` is embryonic (group axioms only — no
+height, no `[p]`-series, no Newton polygon); the division-polynomial route
+above avoids it entirely.
+
+NUMERICAL CERTIFICATE (PARI/GP, 2026-07-25 — a check of the STATEMENT, not a
+proof): for `p = 5` and `E : y² = x³ + 1` (good supersingular reduction at
+`5`) the `5`-division polynomial has degree `12` with coefficient valuations
+`v₅ = 0, 2, 1, 1, 1` at `x⁰, x³, x⁶, x⁹, x¹²`, so its Newton polygon is the
+SINGLE segment `(0,0)–(12,1)`; squaring gives the segment `(0,0)–(24,2)`
+asserted here. The same check at `p = 7` with `E : y² = x³ + x` gives degree
+`24 = (p² − 1)/2` with polygon `(0,0)–(24,1)`. -/
+theorem WeierstrassCurve.spectralNorm_coeff_ΨSq_of_good_of_supersingular
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ} (hp : p.Prime)
+    [E.HasGoodReduction
+      (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)]
+    (hss : ∀ P : ((E.reduction
+        (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal))⁄
+        (AlgebraicClosure (IsLocalRing.ResidueField
+          (Localization.AtPrime
+            hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)))).Point,
+      (p : ℤ) • P = 0 → P = 0) :
+    spectralNorm (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat))
+      ((((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+        (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat))).ΨSq
+          ((p : ℕ) : ℤ)).coeff 0) = 1 ∧
+    ∀ i : ℕ, spectralNorm (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat))
+      ((((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+        (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat))).ΨSq
+          ((p : ℕ) : ℤ)).coeff i) ^ (p ^ 2 - 1) ≤
+      (spectralNorm (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat))
+      ((p : ℕ) : AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)) ^ 2) ^ i :=
+  sorry
+
+open IsDedekindDomain in
+open scoped WeierstrassCurve.Affine in
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
 /-- **The Newton-polygon valuation of the abscissa of a local `p`-torsion
-point at a good SUPERSINGULAR prime** (sorry node, cut 2026-07-25 out of
-`exists_local_inertia_torsion_orbit_of_good_of_supersingular` below — the
-ELLIPTIC-CURVE half of that leaf): if `E/ℚ` has good supersingular
+point at a good SUPERSINGULAR prime** (DERIVED 2026-07-26 from the single
+leaf `spectralNorm_coeff_ΨSq_of_good_of_supersingular` above and the proven
+ultrametric `newtonPolygon_single_segment_root`; originally cut 2026-07-25
+out of `exists_local_inertia_torsion_orbit_of_good_of_supersingular` below —
+the ELLIPTIC-CURVE half of that leaf): if `E/ℚ` has good supersingular
 reduction at `p` and `(x, y)` is an affine `p`-torsion point of the base
 change to `ℚ̄_p`, then `|x| ^ (p² − 1) · |p| ^ 2 = 1` for the spectral
 norm, i.e. `v(x) = −2/(p² − 1)`.
@@ -9597,13 +9776,24 @@ parameter of valuation `1/(p² − 1)`, and since `t = −x/y` with
 `v(x) = −2 v(t)`, `v(x) = −2/(p² − 1)`. Silverman *AEC* IV.2–IV.3, VII.6;
 ATAEC IV.6.
 
-ROUTE: the DIVISION-POLYNOMIAL route avoids formal groups altogether —
-mathlib has `WeierstrassCurve.Ψ`/`preΨ`, and the content is that the
-`p`-division polynomial has Newton polygon the single segment from
-`(0, 0)` to `((p² − 1)/2, 1)`, so each root `x(Q)` has
-`v(x) = −2/(p² − 1)`. Mathlib's `RingTheory/FormalGroup/Basic.lean` is
-embryonic (group axioms only — no height, no `[p]`-series, no Newton
-polygon), so the formal-group route would need that theory built first.
+HOW IT IS PROVED (2026-07-26), by the DIVISION-POLYNOMIAL route, which
+avoids formal groups altogether — mathlib's
+`RingTheory/FormalGroup/Basic.lean` is embryonic (group axioms only: no
+height, no `[p]`-series, no Newton polygon), so the formal-group route
+would have needed that theory built first. Four steps, of which only the
+second is still open:
+1. `TorsionCard.smul_some_eq_zero_iff` (PROVEN, same development) turns
+   `p · (x, y) = 0` into `Ψ²_p(x) = 0`.
+2. `spectralNorm_coeff_ΨSq_of_good_of_supersingular` (the ONE remaining
+   sorry node, above) says the Newton polygon of `Ψ²_p` is the single
+   segment from `(0, 0)` to `(p² − 1, 2)`: unit constant coefficient and
+   `|aᵢ| ^ (p² − 1) ≤ (|p| ²) ^ i` throughout. This is where
+   supersingularity is consumed.
+3. `natDegree_ΨSq` and `leadingCoeff_ΨSq` (mathlib) give degree `p² − 1`
+   and leading coefficient `p²`, since `(p : ℚ̄_p) ≠ 0`.
+4. `newtonPolygon_single_segment_root` (PROVEN above, pure ultrametric
+   analysis) converts that data at a root into `|x| ^ (p²−1) · |p| ² = 1`.
+
 The sibling leaf `exists_localKernelDivision_of_good_reduction` (same
 file) needs the same Newton polygon and should be read alongside this one.
 
@@ -9647,8 +9837,99 @@ theorem WeierstrassCurve.spectralNorm_torsion_abscissa_of_good_of_supersingular
       (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
         hp.toHeightOneSpectrumRingOfIntegersRat))
       ((p : ℕ) : AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
-        hp.toHeightOneSpectrumRingOfIntegersRat)) ^ 2 = 1 :=
-  sorry
+        hp.toHeightOneSpectrumRingOfIntegersRat)) ^ 2 = 1 := by
+  classical
+  set W : WeierstrassCurve (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+      hp.toHeightOneSpectrumRingOfIntegersRat)) :=
+    (E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+      hp.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+      (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)) with hW
+  have hpZ : ((p : ℕ) : ℤ) ≠ 0 := by exact_mod_cast hp.ne_zero
+  have hpLv : (((p : ℕ) : ℤ) : AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+      hp.toHeightOneSpectrumRingOfIntegersRat)) ≠ 0 := by
+    have h1 : ((p : ℕ) : AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)) ≠ 0 := Nat.cast_ne_zero.mpr hp.ne_zero
+    simpa using h1
+  -- the abscissa is a root of the `p`-division polynomial
+  have hΨ0 : ((W.ΨSq ((p : ℕ) : ℤ)).eval x) = 0 :=
+    (TorsionCard.smul_some_eq_zero_iff W hpZ h).mp htor
+  -- degree and leading coefficient
+  have hdeg : (W.ΨSq ((p : ℕ) : ℤ)).natDegree = p ^ 2 - 1 := by
+    rw [W.natDegree_ΨSq hpLv]
+    simp
+  have hlead : (W.ΨSq ((p : ℕ) : ℤ)).coeff (p ^ 2 - 1) =
+      ((p : ℕ) : AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)) ^ 2 := by
+    have h1 : (W.ΨSq ((p : ℕ) : ℤ)).leadingCoeff =
+        (((p : ℕ) : ℤ) : AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat)) ^ 2 :=
+      W.leadingCoeff_ΨSq hpLv
+    rw [Polynomial.leadingCoeff, hdeg] at h1
+    rw [h1]
+    push_cast
+    ring
+  -- the spectral norm is a multiplicative nonarchimedean absolute value
+  have hmul : ∀ b b' : AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+      hp.toHeightOneSpectrumRingOfIntegersRat),
+      spectralNorm (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat) _ (b * b') =
+        spectralNorm (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat) _ b *
+        spectralNorm (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat) _ b' := by
+    intro b b'
+    simpa only [spectralAlgNorm_def] using spectralAlgNorm_mul
+      (K := HeightOneSpectrum.adicCompletion ℚ hp.toHeightOneSpectrumRingOfIntegersRat)
+      (L := AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)) b b'
+  have hneg : ∀ b : AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+      hp.toHeightOneSpectrumRingOfIntegersRat),
+      spectralNorm (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat) _ b =
+        spectralNorm (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat) _ (-b) :=
+    fun b => (spectralNorm_neg
+      (K := HeightOneSpectrum.adicCompletion ℚ hp.toHeightOneSpectrumRingOfIntegersRat)
+      (L := AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat))
+      (Algebra.IsAlgebraic.isAlgebraic b)).symm
+  obtain ⟨hc0, hcbnd⟩ := E.spectralNorm_coeff_ΨSq_of_good_of_supersingular hp hss
+  have hcN : spectralNorm (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat) _
+      ((W.ΨSq ((p : ℕ) : ℤ)).coeff (p ^ 2 - 1)) =
+      spectralNorm (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat) _
+      ((p : ℕ) : AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)) ^ 2 := by
+    rw [hlead, pow_two, hmul, ← pow_two]
+  have hxsum : ∑ i ∈ Finset.range ((p ^ 2 - 1) + 1),
+      (W.ΨSq ((p : ℕ) : ℤ)).coeff i * x ^ i = 0 := by
+    rw [← hdeg, ← Polynomial.eval_eq_sum_range]
+    exact hΨ0
+  have hkey := newtonPolygon_single_segment_root
+    (f := spectralNorm (HeightOneSpectrum.adicCompletion ℚ
+      hp.toHeightOneSpectrumRingOfIntegersRat) (AlgebraicClosure
+      (HeightOneSpectrum.adicCompletion ℚ hp.toHeightOneSpectrumRingOfIntegersRat)))
+    (isNonarchimedean_spectralNorm
+      (K := HeightOneSpectrum.adicCompletion ℚ hp.toHeightOneSpectrumRingOfIntegersRat)
+      (L := AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat))) hneg hmul
+    (fun b => spectralNorm_nonneg
+      (K := HeightOneSpectrum.adicCompletion ℚ hp.toHeightOneSpectrumRingOfIntegersRat)
+      (L := AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)) b)
+    (spectralNorm_zero
+      (K := HeightOneSpectrum.adicCompletion ℚ hp.toHeightOneSpectrumRingOfIntegersRat)
+      (L := AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)))
+    (spectralNorm_one
+      (K := HeightOneSpectrum.adicCompletion ℚ hp.toHeightOneSpectrumRingOfIntegersRat)
+      (L := AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)))
+    (N := p ^ 2 - 1) (a := fun i => (W.ΨSq ((p : ℕ) : ℤ)).coeff i) hc0 hcN hcbnd hxsum
+  rw [mul_comm] at hkey
+  exact hkey
 
 open ValuativeRel IsDedekindDomain in
 open scoped WeierstrassCurve.Affine in
