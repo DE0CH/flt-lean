@@ -149,11 +149,59 @@ class PipeLsp:
                 return msg.get("result")
 
     def _session_marker(self):
+        """Identity of the server session = the INODE of state.json.
+
+        Deliberately not the mtime: the file now also carries the shared
+        open-document map (see _load_docs), so it is rewritten during
+        normal operation, and an mtime-based identity would read every
+        write as a server restart and drop the map. The unit's
+        ExecStartPre `rm -f`s the file on every (re)start, so a new
+        inode is exactly "the server restarted"."""
         try:
             st = os.stat(self.state_file)
-            return (st.st_ino, st.st_mtime_ns)
+            return (st.st_dev, st.st_ino)
         except FileNotFoundError:
             return None
+
+    def _load_docs(self):
+        """Adopt the open-document map recorded by whichever client
+        opened these files in THIS server session.
+
+        Why this exists (the 2026-07-25 collapse): `doc_versions` used to
+        be per-PROCESS. Every orchestrator restart kills the client, and
+        the fresh one saw version 0 for a file the server still had open
+        — so it sent a second `didOpen`, and lake serve started a SECOND
+        `lean --worker` for that file while the first kept running,
+        undisturbed because nobody ever closed the document. Four session
+        restarts left four rival elaborations of one file, each rebuilding
+        the same olean and starving the others; the fleet reached 81
+        concurrent `lake setup-file` builds. Sharing the map through
+        state.json means a restarted client re-issues
+        `waitForDiagnostics` against the version already in flight —
+        attaching to the running elaboration instead of racing it."""
+        try:
+            with open(self.state_file, encoding="utf-8") as fh:
+                docs = (json.load(fh) or {}).get("docs") or {}
+        except (OSError, ValueError):
+            return
+        for uri, rec in docs.items():
+            self.doc_versions.setdefault(uri, rec.get("version", 0))
+            self.doc_hashes.setdefault(uri, rec.get("hash"))
+
+    def _save_docs(self):
+        """Persist the open-document map, preserving the init marker."""
+        docs = {
+            uri: {"version": v, "hash": self.doc_hashes.get(uri)}
+            for uri, v in self.doc_versions.items()
+        }
+        try:
+            with open(self.state_file, "w", encoding="utf-8") as fh:
+                json.dump({"report_mcp_initialized": True, "docs": docs}, fh)
+        except OSError:
+            return
+        # keep our own session identity in step: the inode is unchanged by
+        # a rewrite, but refresh anyway so a first write after init matches
+        self.session_stat = self._session_marker()
 
     def _ensure_initialized(self, timeout):
         """Handshake is per SERVER SESSION, not per client process: the
@@ -228,6 +276,11 @@ class PipeLsp:
             self._connect()
             self._ensure_initialized(timeout)
 
+            # adopt any document state left by a previous client process in
+            # this same server session, so a restart attaches instead of
+            # opening a rival copy of the file
+            self._load_docs()
+
             text = open(abs_path, encoding="utf-8").read()
             content_hash = hashlib.sha256(text.encode()).hexdigest()
             version = self.doc_versions.get(uri, 0)
@@ -236,6 +289,14 @@ class PipeLsp:
                 self.doc_versions[uri] = version
                 self.doc_hashes[uri] = content_hash
                 self.diags.pop(uri, None)
+                # belt-and-braces: if the shared map was lost but the server
+                # still holds this document open, didClose retires that
+                # worker so didOpen cannot produce a second one. Harmless
+                # when the document is not open.
+                self._notify(
+                    "textDocument/didClose",
+                    {"textDocument": {"uri": uri}},
+                )
                 self._notify(
                     "textDocument/didOpen",
                     {
@@ -261,6 +322,7 @@ class PipeLsp:
                 )
             # unchanged content: keep the in-flight version, no notify
 
+            self._save_docs()
             self._request(
                 "textDocument/waitForDiagnostics",
                 {"uri": uri, "version": version},
@@ -280,10 +342,19 @@ def build_mcp(socket_dir):
     def diagnostics(file_path: str, timeout_seconds: int = 1800) -> dict:
         """Compiler diagnostics (errors/warnings/infos) for a Lean file in
         this worktree, via the resident flt-report-server instance. Pass
-        an absolute path or one relative to this worktree's root. Blocks
-        until the file's current on-disk version is fully elaborated
-        (big files can take ~20 min); retrying with unchanged content is
-        cheap and does NOT restart elaboration."""
+        an absolute path or one relative to this worktree's root.
+
+        BLOCKS until the file's current on-disk version is fully
+        elaborated. Big files genuinely take tens of minutes (ModThree is
+        ~30k lines), and a cold `.lake` makes the first call rebuild the
+        whole import cone — hours, not minutes. WAIT for it; do not poll,
+        do not re-fire in parallel, and treat a client-side timeout as
+        "still elaborating", because the server keeps working after the
+        client gives up. Re-issuing after a timeout is safe and cheap: it
+        attaches to the elaboration already in flight (shared per server
+        session, so even a client restart attaches rather than starting a
+        second one) and never restarts it. Only an actual content change
+        starts new work."""
         abs_path = (
             file_path
             if os.path.isabs(file_path)
