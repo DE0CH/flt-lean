@@ -48,25 +48,38 @@ The quotient curve is `veluCurve W S`, i.e.
 PROVEN: the definitions; the coordinate and term transport lemmas; the
 reindexing of a Galois-stable sum; the descent of `t` and `w` to `ℚ`
 (`velu_t_mem_range`, `velu_w_mem_range`); Galois equivariance of the
-Vélu coordinates (`velu_coordX_map`, `velu_coordY_map`); and, since
-2026-07-26, the invariance of the Vélu coordinates under translation by the
-kernel and under negation (`veluCoordX_add_mem`, `veluCoordY_add_mem`,
-`veluCoordX_neg`, `veluCoordY_neg`, over the kernel sum `velu_sum_kernel`),
-together with the assemblies of `velu_isElliptic` and `velu_map_add` over
-the leaves below.
+Vélu coordinates (`velu_coordX_map`, `velu_coordY_map`); the invariance of
+the Vélu coordinates under translation by the kernel and under negation
+(`veluCoordX_add_mem`, `veluCoordY_add_mem`, `veluCoordX_neg`,
+`veluCoordY_neg`, over the kernel sum `velu_sum_kernel`); and the
+assemblies of `velu_isElliptic` and `velu_map_add` over the leaves below.
 
-SORRY LEAVES (four, each stated over an arbitrary field of characteristic
+Also PROVEN, 2026-07-26:
+
+* `isElliptic_of_three_twoTorsion` and its converse
+  `exists_three_twoTorsion_of_Δ_ne_zero` — general Weierstrass geometry,
+  no Vélu input: three affine `2`-torsion points with distinct `x` exist
+  exactly when `Δ ≠ 0`, because `16 Δ` is the discriminant of the
+  `2`-division cubic `4x³ + b₂x² + 2b₄x + b₆`.
+* the base change of the whole Vélu construction along `F → L`
+  (`velu_baseChange_curve` and the lemmas around it), and the parity
+  argument `velu_twoTorsion_notMem` placing `2`-torsion outside a subgroup
+  of odd order.
+* `velu_exists_three_twoTorsion`, assembled over the single leaf
+  `velu_coordX_twoTorsion_ne` below.
+
+SORRY LEAVES (three, each stated over an arbitrary field of characteristic
 zero for a finite subgroup of odd order):
 
-* `WeierstrassCurve.isElliptic_of_three_twoTorsion` — three affine
-  `2`-torsion points with distinct `x` force `Δ ≠ 0` (general Weierstrass
-  geometry, no Vélu input).
-* `WeierstrassCurve.velu_exists_three_twoTorsion` — the quotient curve has
-  three such points over the algebraic closure.
+* `WeierstrassCurve.velu_coordX_twoTorsion_ne` — the Vélu `x`-coordinates
+  of two distinct `2`-torsion points outside the kernel differ.
 * `WeierstrassCurve.velu_equation` — the image coordinates satisfy the
   quotient equation.
 * `WeierstrassCurve.velu_map_add_of_notMem` — additivity in the generic
   case, `P`, `Q`, `P + Q` all outside the kernel.
+
+The first and the last are two faces of one fact — that the Vélu map is a
+homomorphism read on coordinates — and are worth attacking together.
 
 These are the mathematical content of Vélu's theorem; none of it is in
 mathlib.
@@ -377,7 +390,12 @@ lemma veluCoordY_neg {S : Finset W.Point} (hS : IsPointSubgroup S) {P : W.Point}
 
 end Identities
 
-/-! ### The sorry leaves: Vélu's theorem -/
+/-! ### Two-torsion and the discriminant
+
+Two converse statements of general Weierstrass geometry, with no Vélu input at all: a curve
+carrying three affine points of order dividing `2` with distinct `x` has `Δ ≠ 0`, and over an
+algebraically closed field the converse holds. Both are the assertion that `16 Δ` is the
+discriminant of the `2`-division cubic `4x³ + b₂x² + 2b₄x + b₆`, read in the two directions. -/
 
 /-- **PROVEN 2026-07-26** (general Weierstrass geometry, no Vélu input). Over a field of
 characteristic zero, a Weierstrass curve carrying three affine points of order dividing `2`
@@ -452,75 +470,248 @@ theorem isElliptic_of_three_twoTorsion {K : Type*} [Field K] [CharZero K]
     (pow_ne_zero _ (mul_ne_zero (mul_ne_zero (sub_ne_zero.mpr h₁₂) (sub_ne_zero.mpr h₁₃))
       (sub_ne_zero.mpr h₂₃)))
 
+/-- **PROVEN 2026-07-26**, the converse of `isElliptic_of_three_twoTorsion` over an
+algebraically closed field: a Weierstrass curve with `Δ ≠ 0` carries three affine points of
+order dividing `2` with pairwise distinct `x`-coordinates.
+
+Proof. The `2`-division cubic `4x³ + b₂x² + 2b₄x + b₆` is mathlib's `twoTorsionPolynomial`;
+it splits because the field is algebraically closed, and its discriminant is `16 Δ ≠ 0`, so
+its three roots `e₁, e₂, e₃` are pairwise distinct (`Cubic.discr_ne_zero_iff_roots_ne`). Each
+root `e` is then paired with `y = −(a₁e + a₃)/2`, the unique `y` with `y = negY e y`; the
+Weierstrass equation at `(e, y)` is `−1/4` times the cubic, since `4·(equation) =
+(2y + a₁e + a₃)² − (4e³ + b₂e² + 2b₄e + b₆)` and the first bracket vanishes identically for
+this `y`. -/
+theorem exists_three_twoTorsion_of_Δ_ne_zero {K : Type*} [Field K] [CharZero K] [IsAlgClosed K]
+    (W' : Affine K) (hΔ : W'.Δ ≠ 0) :
+    ∃ x₁ x₂ x₃ y₁ y₂ y₃ : K,
+      W'.Equation x₁ y₁ ∧ W'.Equation x₂ y₂ ∧ W'.Equation x₃ y₃ ∧
+      y₁ = W'.negY x₁ y₁ ∧ y₂ = W'.negY x₂ y₂ ∧ y₃ = W'.negY x₃ y₃ ∧
+      x₁ ≠ x₂ ∧ x₁ ≠ x₃ ∧ x₂ ≠ x₃ := by
+  have ha : W'.twoTorsionPolynomial.a ≠ 0 := by
+    show (4 : K) ≠ 0
+    norm_num
+  have hsplits : (W'.twoTorsionPolynomial.toPoly.map (RingHom.id K)).Splits := by
+    rw [Polynomial.map_id]
+    exact IsAlgClosed.splits _
+  obtain ⟨e₁, e₂, e₃, h3⟩ := (Cubic.splits_iff_roots_eq_three ha).mp hsplits
+  have hdiscr : W'.twoTorsionPolynomial.discr ≠ 0 := by
+    rw [WeierstrassCurve.twoTorsionPolynomial_discr]
+    exact mul_ne_zero (by norm_num) hΔ
+  obtain ⟨d₁₂, d₁₃, d₂₃⟩ := (Cubic.discr_ne_zero_iff_roots_ne ha h3).mp hdiscr
+  have hb₂ : W'.b₂ = -4 * (e₁ + e₂ + e₃) := by
+    have h := Cubic.b_eq_three_roots ha h3
+    simp only [WeierstrassCurve.twoTorsionPolynomial, RingHom.id_apply] at h
+    linear_combination h
+  have hb₄ : W'.b₄ = 2 * (e₁ * e₂ + e₁ * e₃ + e₂ * e₃) := by
+    have h := Cubic.c_eq_three_roots ha h3
+    simp only [WeierstrassCurve.twoTorsionPolynomial, RingHom.id_apply] at h
+    linear_combination h / 2
+  have hb₆ : W'.b₆ = -4 * (e₁ * e₂ * e₃) := by
+    have h := Cubic.d_eq_three_roots ha h3
+    simp only [WeierstrassCurve.twoTorsionPolynomial, RingHom.id_apply] at h
+    linear_combination h
+  -- From a root of the `2`-division cubic to an affine point of order dividing `2`.
+  have E : ∀ e : K, 4 * e ^ 3 + W'.b₂ * e ^ 2 + 2 * W'.b₄ * e + W'.b₆ = 0 →
+      W'.Equation e (-(W'.a₁ * e + W'.a₃) / 2) ∧
+        (-(W'.a₁ * e + W'.a₃) / 2) = W'.negY e (-(W'.a₁ * e + W'.a₃) / 2) := by
+    intro e he
+    simp only [b₂, b₄, b₆] at he
+    refine ⟨?_, ?_⟩
+    · rw [equation_iff']
+      linear_combination (-1 / 4 : K) * he
+    · simp only [negY]
+      ring
+  have r₁ : 4 * e₁ ^ 3 + W'.b₂ * e₁ ^ 2 + 2 * W'.b₄ * e₁ + W'.b₆ = 0 := by
+    rw [hb₂, hb₄, hb₆]; ring
+  have r₂ : 4 * e₂ ^ 3 + W'.b₂ * e₂ ^ 2 + 2 * W'.b₄ * e₂ + W'.b₆ = 0 := by
+    rw [hb₂, hb₄, hb₆]; ring
+  have r₃ : 4 * e₃ ^ 3 + W'.b₂ * e₃ ^ 2 + 2 * W'.b₄ * e₃ + W'.b₆ = 0 := by
+    rw [hb₂, hb₄, hb₆]; ring
+  exact ⟨e₁, e₂, e₃, _, _, _, (E e₁ r₁).1, (E e₂ r₂).1, (E e₃ r₃).1,
+    (E e₁ r₁).2, (E e₂ r₂).2, (E e₃ r₃).2, d₁₂, d₁₃, d₂₃⟩
+
+/-! ### Base change of the Vélu construction
+
+Everything in this section is PROVEN and purely formal: the Vélu data of `W` and of a finite
+subgroup `S` transports along a field extension `F → L`, because `veluTTerm` and `veluWTerm`
+are polynomial in the coordinates and `Affine.Point.map` is injective. The content is the
+identification
+
+  `(W.veluCurve S)⁄L = (W⁄L).veluCurve (image of S)`,
+
+which is what lets `velu_exists_three_twoTorsion` produce the `2`-torsion of the quotient
+over `AlgebraicClosure F` from the `2`-torsion of `W` there. -/
+
+section BaseChangeData
+
+variable {F : Type*} [Field F] {W : Affine F} {L : Type*} [Field L] [Algebra F L]
+
+lemma velu_bc_b₂ : (W⁄L : Affine L).b₂ = algebraMap F L W.b₂ :=
+  WeierstrassCurve.map_b₂ (W := W) (f := algebraMap F L)
+
+lemma velu_bc_b₄ : (W⁄L : Affine L).b₄ = algebraMap F L W.b₄ :=
+  WeierstrassCurve.map_b₄ (W := W) (f := algebraMap F L)
+
+lemma velu_bc_a₁ : (W⁄L : Affine L).a₁ = algebraMap F L W.a₁ := rfl
+
+lemma velu_bc_a₃ : (W⁄L : Affine L).a₃ = algebraMap F L W.a₃ := rfl
+
+/-- Vélu's `t`-term at an affine point, in terms of the junk-valued coordinate. -/
+lemma veluTTerm_of_ne_zero {P : W.Point} (hP : P ≠ 0) :
+    veluTTerm W P = 6 * veluPointX P ^ 2 + W.b₂ * veluPointX P + W.b₄ := by
+  cases P with
+  | zero => exact absurd rfl hP
+  | some x y h => rfl
+
+/-- Vélu's `w`-term at an affine point, in terms of the junk-valued coordinates. -/
+lemma veluWTerm_of_ne_zero {P : W.Point} (hP : P ≠ 0) :
+    veluWTerm W P = (2 * veluPointY P + W.a₁ * veluPointX P + W.a₃) ^ 2
+      + veluPointX P * (6 * veluPointX P ^ 2 + W.b₂ * veluPointX P + W.b₄) := by
+  cases P with
+  | zero => exact absurd rfl hP
+  | some x y h => rfl
+
+end BaseChangeData
+
+section BaseChange
+
+variable {F : Type*} [Field F] [DecidableEq F] (W : Affine F)
+  (L : Type*) [Field L] [DecidableEq L] [Algebra F L]
+
+/-- Base change of points, with the source written as `W.Point` rather than as the
+propositionally — but not syntactically — equal `(W⁄F).Point`. Naming the composite is what
+keeps the rewrites below from tripping over that mismatch. -/
+noncomputable def veluBaseChangePoint : W.Point →+ (W⁄L : Affine L).Point :=
+  Affine.Point.baseChange (W' := W) F L
+
+variable {W L}
+
+lemma veluBaseChangePoint_injective :
+    Function.Injective (veluBaseChangePoint W L) :=
+  Affine.Point.map_injective _
+
+lemma veluBaseChangePoint_ne_zero {P : W.Point} (hP : P ≠ 0) :
+    veluBaseChangePoint W L P ≠ 0 := fun hc =>
+  hP (veluBaseChangePoint_injective (hc.trans (map_zero (veluBaseChangePoint W L)).symm))
+
+lemma veluBaseChangePoint_pointX (P : W.Point) :
+    veluPointX (veluBaseChangePoint W L P) = algebraMap F L (veluPointX P) := by
+  cases P with
+  | zero =>
+      show veluPointX (veluBaseChangePoint W L 0) = algebraMap F L (veluPointX (0 : W.Point))
+      rw [map_zero, veluPointX_zero, veluPointX_zero, map_zero]
+  | some x y h => rfl
+
+lemma veluBaseChangePoint_pointY (P : W.Point) :
+    veluPointY (veluBaseChangePoint W L P) = algebraMap F L (veluPointY P) := by
+  cases P with
+  | zero =>
+      show veluPointY (veluBaseChangePoint W L 0) = algebraMap F L (veluPointY (0 : W.Point))
+      rw [map_zero, veluPointY_zero, veluPointY_zero, map_zero]
+  | some x y h => rfl
+
+lemma velu_baseChange_TTerm (P : W.Point) :
+    veluTTerm (W⁄L : Affine L) (veluBaseChangePoint W L P)
+      = algebraMap F L (veluTTerm W P) := by
+  by_cases hP : P = 0
+  · subst hP
+    rw [map_zero, veluTTerm_zero, veluTTerm_zero, map_zero]
+  · rw [veluTTerm_of_ne_zero (veluBaseChangePoint_ne_zero hP), veluTTerm_of_ne_zero hP,
+      veluBaseChangePoint_pointX, velu_bc_b₂, velu_bc_b₄]
+    simp only [map_add, map_mul, map_pow, map_ofNat]
+
+lemma velu_baseChange_WTerm (P : W.Point) :
+    veluWTerm (W⁄L : Affine L) (veluBaseChangePoint W L P)
+      = algebraMap F L (veluWTerm W P) := by
+  by_cases hP : P = 0
+  · subst hP
+    rw [map_zero, veluWTerm_zero, veluWTerm_zero, map_zero]
+  · rw [veluWTerm_of_ne_zero (veluBaseChangePoint_ne_zero hP), veluWTerm_of_ne_zero hP,
+      veluBaseChangePoint_pointX, veluBaseChangePoint_pointY, velu_bc_b₂, velu_bc_b₄,
+      velu_bc_a₁, velu_bc_a₃]
+    simp only [map_add, map_mul, map_pow, map_ofNat]
+
+lemma velu_baseChange_T (S : Finset W.Point) :
+    (W⁄L : Affine L).veluT (S.image (veluBaseChangePoint W L))
+      = algebraMap F L (W.veluT S) := by
+  rw [veluT, veluT, map_mul, map_inv₀, map_ofNat, map_sum,
+    Finset.sum_image (fun a _ b _ h => veluBaseChangePoint_injective h)]
+  exact congrArg _ (Finset.sum_congr rfl fun Q _ => velu_baseChange_TTerm Q)
+
+lemma velu_baseChange_W (S : Finset W.Point) :
+    (W⁄L : Affine L).veluW (S.image (veluBaseChangePoint W L))
+      = algebraMap F L (W.veluW S) := by
+  rw [veluW, veluW, map_mul, map_inv₀, map_ofNat, map_sum,
+    Finset.sum_image (fun a _ b _ h => veluBaseChangePoint_injective h)]
+  exact congrArg _ (Finset.sum_congr rfl fun Q _ => velu_baseChange_WTerm Q)
+
+/-- **The Vélu quotient commutes with base change** (PROVEN). -/
+lemma velu_baseChange_curve (S : Finset W.Point) :
+    ((W.veluCurve S)⁄L : Affine L)
+      = (W⁄L : Affine L).veluCurve (S.image (veluBaseChangePoint W L)) := by
+  refine WeierstrassCurve.ext rfl rfl rfl ?_ ?_
+  · show algebraMap F L (W.a₄ - 5 * W.veluT S) = _
+    rw [map_sub, map_mul, map_ofNat]
+    show _ = (W⁄L : Affine L).a₄ - 5 * (W⁄L : Affine L).veluT _
+    rw [velu_baseChange_T]
+    rfl
+  · show algebraMap F L (W.a₆ - W.b₂ * W.veluT S - 7 * W.veluW S) = _
+    rw [map_sub, map_sub, map_mul, map_mul, map_ofNat]
+    show _ = (W⁄L : Affine L).a₆ - (W⁄L : Affine L).b₂ * (W⁄L : Affine L).veluT _
+      - 7 * (W⁄L : Affine L).veluW _
+    rw [velu_baseChange_T, velu_baseChange_W, velu_bc_b₂]
+    rfl
+
+/-- The image of a finite subgroup under base change is again one (PROVEN). -/
+lemma velu_baseChange_isPointSubgroup {S : Finset W.Point} (hS : IsPointSubgroup S) :
+    IsPointSubgroup (S.image (veluBaseChangePoint W L)) where
+  zero_mem := Finset.mem_image.mpr ⟨0, hS.zero_mem, map_zero _⟩
+  add_mem := by
+    rintro P hP Q hQ
+    obtain ⟨p, hp, rfl⟩ := Finset.mem_image.mp hP
+    obtain ⟨q, hq, rfl⟩ := Finset.mem_image.mp hQ
+    exact Finset.mem_image.mpr ⟨p + q, hS.add_mem p hp q hq, map_add _ _ _⟩
+  neg_mem := by
+    rintro P hP
+    obtain ⟨p, hp, rfl⟩ := Finset.mem_image.mp hP
+    exact Finset.mem_image.mpr ⟨-p, hS.neg_mem p hp, map_neg _ _⟩
+
+end BaseChange
+
+section Parity
+
+variable {F : Type*} [Field F] [DecidableEq F] {W : Affine F}
+
+/-- **A nonzero point of order dividing `2` cannot lie in a subgroup of odd order** (PROVEN).
+
+Translation by `T` is a fixed-point-free involution of `S`, so `∏_{Q ∈ S} (−1) = 1` by
+`Finset.prod_involution`, while an odd exponent makes that product `−1`. This is where the
+ODDNESS of the kernel enters `velu_exists_three_twoTorsion`. -/
+lemma velu_twoTorsion_notMem {S : Finset W.Point} (hS : IsPointSubgroup S) (hodd : Odd S.card)
+    {T : W.Point} (hT0 : T ≠ 0) (hT2 : -T = T) : T ∉ S := by
+  intro hT
+  have hTT : T + T = 0 := add_eq_zero_iff_eq_neg.mpr hT2.symm
+  have hprod : ∏ _Q ∈ S, (-1 : ℤ) = 1 :=
+    Finset.prod_involution (fun Q _ => Q + T) (fun a _ => by norm_num)
+      (fun a _ _ hc => hT0 (add_left_cancel (a := a) (by rw [add_zero]; exact hc)))
+      (fun a ha => hS.add_mem a ha T hT)
+      (fun a _ => by rw [add_assoc, hTT, add_zero])
+  rw [Finset.prod_const, hodd.neg_one_pow] at hprod
+  norm_num at hprod
+
+end Parity
+
+/-! ### Vélu's theorem -/
+
 section Velu
 
 variable {F : Type*} [Field F] [DecidableEq F] [CharZero F] (W : Affine F) [W.IsElliptic]
 
-/-- **SORRY LEAF: the Vélu quotient acquires three affine `2`-torsion points over the
-algebraic closure**, cut 2026-07-26 out of `velu_isElliptic`.
-
-The base field `F` is arbitrary, so the three `x`-coordinates cannot be asked for in `F`
-itself (a quotient curve over `ℚ` typically has a single rational `2`-torsion point); the
-statement is therefore made over `AlgebraicClosure F`, which is also the only field the
-consumer `exists_velu_quotient_isogeny` ever uses.
-
-Route (the plan `velu_isElliptic`'s old docstring described, minus the circularity — none
-of it may use `veluMap`, whose definition consumes `velu_isElliptic`):
-
-1. Base change: `veluCurve` commutes with the base change `F → L`, because Vélu's `t` and
-   `w` are sums of the `veluTTerm`/`veluWTerm` over `S` and `Affine.Point.map` is injective;
-   so the base-changed quotient is the Vélu quotient of `W⁄L` by the image of `S`.
-2. Over `L = AlgebraicClosure F` the curve `W⁄L` has exactly three nonzero points `T` with
-   `T = −T` — the roots of `4x³ + b₂x² + 2b₄x + b₆`, distinct because `Δ ≠ 0`. Each lies
-   OUTSIDE `S`: translation by a `T ∈ S` with `T ≠ 0`, `2T = 0` is a fixed-point-free
-   involution of `S`, which would make `S.card` even.
-3. Their Vélu coordinates satisfy the quotient equation by `velu_equation`, and are
-   `2`-torsion by `veluCoordY_neg` (proven above: `Y(T) = Y(−T) = negY (X T) (Y T)`).
-4. The three `x`-coordinates are pairwise distinct. This is the one genuinely hard clause
-   and it is where the ODD ORDER is finally consumed: if `X(T₁) = X(T₂)` with `T₁ ≠ T₂`
-   then, both images being `2`-torsion, the images coincide, so the image of
-   `T₃ = T₁ + T₂ ∉ S` would be the double of a `2`-torsion point, namely `0` — contradicting
-   that a point outside the kernel has an affine image. Carried out at the level of the
-   `addX`/`addY` formulas this needs no nonsingularity, hence no circularity; it is the
-   coordinate shadow of the additivity leaf `velu_map_add_of_notMem`. -/
-theorem velu_exists_three_twoTorsion (S : Finset W.Point) (_hS : IsPointSubgroup S)
-    (_hodd : Odd S.card) :
-    ∃ x₁ x₂ x₃ y₁ y₂ y₃ : AlgebraicClosure F,
-      ((W.veluCurve S)⁄(AlgebraicClosure F)).Equation x₁ y₁ ∧
-      ((W.veluCurve S)⁄(AlgebraicClosure F)).Equation x₂ y₂ ∧
-      ((W.veluCurve S)⁄(AlgebraicClosure F)).Equation x₃ y₃ ∧
-      y₁ = ((W.veluCurve S)⁄(AlgebraicClosure F)).negY x₁ y₁ ∧
-      y₂ = ((W.veluCurve S)⁄(AlgebraicClosure F)).negY x₂ y₂ ∧
-      y₃ = ((W.veluCurve S)⁄(AlgebraicClosure F)).negY x₃ y₃ ∧
-      x₁ ≠ x₂ ∧ x₁ ≠ x₃ ∧ x₂ ≠ x₃ :=
-  sorry
-
-/-- **Vélu's theorem, part 1: the quotient curve is elliptic** (PROVEN 2026-07-26 as an
-assembly over the two leaves `velu_exists_three_twoTorsion` and
-`isElliptic_of_three_twoTorsion`).
-
-For a finite subgroup `S` of odd order in `W.Point`, the Vélu model
-`y² + a₁xy + a₃y = x³ + a₂x² + (a₄ − 5t)x + (a₆ − b₂t − 7w)` is nonsingular.
-
-`Δ ≠ 0` is detected after base change to the algebraic closure, since
-`Δ (W'⁄L) = algebraMap F L (Δ W')` and `algebraMap` into a field extension is injective. -/
-theorem velu_isElliptic (S : Finset W.Point) (hS : IsPointSubgroup S)
-    (hodd : Odd S.card) : (W.veluCurve S).IsElliptic := by
-  obtain ⟨x₁, x₂, x₃, y₁, y₂, y₃, he₁, he₂, he₃, ht₁, ht₂, ht₃, d₁₂, d₁₃, d₂₃⟩ :=
-    velu_exists_three_twoTorsion W S hS hodd
-  haveI : ((W.veluCurve S)⁄(AlgebraicClosure F) : Affine (AlgebraicClosure F)).IsElliptic :=
-    isElliptic_of_three_twoTorsion he₁ he₂ he₃ ht₁ ht₂ ht₃ d₁₂ d₁₃ d₂₃
-  refine ⟨isUnit_iff_ne_zero.mpr fun h0 => ?_⟩
-  have hne := (isUnit_Δ
-    (W := ((W.veluCurve S)⁄(AlgebraicClosure F) : Affine (AlgebraicClosure F)))).ne_zero
-  rw [show ((W.veluCurve S)⁄(AlgebraicClosure F) : Affine (AlgebraicClosure F)).Δ =
-      algebraMap F (AlgebraicClosure F) (W.veluCurve S).Δ from
-    WeierstrassCurve.map_Δ (W := W.veluCurve S) (f := algebraMap F (AlgebraicClosure F)),
-    h0, map_zero] at hne
-  exact hne rfl
-
 /-- **Vélu's theorem, part 2: the image lies on the quotient curve** (SORRY
 LEAF, cut 2026-07-25 out of `exists_quotient_isogeny_of_odd_prime_card`).
+
+(Moved textually to the head of this section on 2026-07-26 — statement and proof are
+UNCHANGED — because `velu_exists_three_twoTorsion` below now consumes it.)
 
 For a finite subgroup `S` of odd order in `W.Point` and a point `P ∉ S`, the
 Vélu coordinates `X(P) = x(P) + Σ_{Q ∈ S ∖ 0} (x(P + Q) − x(Q))` and
@@ -547,6 +738,144 @@ theorem velu_equation (S : Finset W.Point) (_hS : IsPointSubgroup S)
     (_hodd : Odd S.card) {P : W.Point} (_hP : P ∉ S) :
     (W.veluCurve S).Equation (W.veluCoordX S P) (W.veluCoordY S P) :=
   sorry
+
+/-- **SORRY LEAF: the Vélu `x`-coordinates of two distinct `2`-torsion points differ**, cut
+2026-07-26 out of `velu_exists_three_twoTorsion`. This is the WHOLE remaining content of that
+node — everything else in it (base change, the existence of the three `2`-torsion points over
+the algebraic closure, their lying outside the kernel, and the quotient equation) is proven.
+
+Why it is true: by Vélu's theorem the images of the three nonzero `2`-torsion points of `W`
+are the three nonzero `2`-torsion points of the quotient, which are distinct because the
+quotient is nonsingular. That reasoning may NOT be used here, since `velu_isElliptic` is
+exactly what is being proved.
+
+Route without circularity. If `X(T₁) = X(T₂)` then, both images being `2`-torsion — their
+`Y` is forced to `negY(X, Y)` by `veluCoordY_neg`, hence to `−(a₁X + a₃)/2` — the two images
+coincide as coordinate pairs. The third `2`-torsion point `T₃ = T₁ + T₂` also lies outside
+the kernel, and the addition law of the quotient applied to the two coinciding images returns
+`0`, whereas the coordinates of `T₃` are those of an affine point. Carried out at the level of
+the `addX`/`addY` formulas this needs no nonsingularity of the quotient, hence no
+circularity; it is the coordinate shadow of the additivity leaf `velu_map_add_of_notMem`, and
+the two are worth attacking together.
+
+Hypotheses `_hS`, `_hodd`, `_hT₁`, `_hT₂`, `_hn₁`, `_hn₂`, `_hne` are all genuinely needed:
+dropping the `2`-torsion clauses makes the statement FALSE (take `T₂ = −T₁`, or
+`T₂ = T₁ + Q` for `Q ∈ S`, both of which have the same Vélu `x`-coordinate by
+`veluCoordX_neg` and `veluCoordX_add_mem`); they are underscored only because no proof
+consumes them yet. -/
+theorem velu_coordX_twoTorsion_ne (S : Finset W.Point) (_hS : IsPointSubgroup S)
+    (_hodd : Odd S.card) {T₁ T₂ : W.Point} (_hT₁ : T₁ ∉ S) (_hT₂ : T₂ ∉ S)
+    (_hn₁ : -T₁ = T₁) (_hn₂ : -T₂ = T₂) (_hne : T₁ ≠ T₂) :
+    W.veluCoordX S T₁ ≠ W.veluCoordX S T₂ :=
+  sorry
+
+/-- **PROVEN 2026-07-26 over the single leaf `velu_coordX_twoTorsion_ne`: the Vélu quotient
+acquires three affine `2`-torsion points over the algebraic closure.**
+
+The base field `F` is arbitrary, so the three `x`-coordinates cannot be asked for in `F`
+itself (a quotient curve over `ℚ` typically has a single rational `2`-torsion point); the
+statement is therefore made over `AlgebraicClosure F`, which is also the only field the
+consumer `exists_velu_quotient_isogeny` ever uses.
+
+Proof (none of it uses `veluMap`, whose definition consumes `velu_isElliptic`):
+
+1. Base change: `veluCurve` commutes with `F → L` (`velu_baseChange_curve`), so the
+   base-changed quotient is the Vélu quotient of `W⁄L` by the image `S'` of `S`, which is
+   again a subgroup (`velu_baseChange_isPointSubgroup`) of the same odd order
+   (`Affine.Point.map_injective`).
+2. Over `L = AlgebraicClosure F` the curve `W⁄L` is elliptic, so it has three nonzero points
+   `T` with `T = −T` and pairwise distinct `x` (`exists_three_twoTorsion_of_Δ_ne_zero`). Each
+   lies OUTSIDE `S'` by `velu_twoTorsion_notMem` — this is where the ODD ORDER is consumed.
+3. Their Vélu coordinates satisfy the quotient equation by `velu_equation`, and are
+   `2`-torsion by `veluCoordY_neg` (`Y(T) = Y(−T) = negY (X T) (Y T)`).
+4. Pairwise distinctness of the three `X(Tᵢ)` is the leaf `velu_coordX_twoTorsion_ne`. -/
+theorem velu_exists_three_twoTorsion (S : Finset W.Point) (hS : IsPointSubgroup S)
+    (hodd : Odd S.card) :
+    ∃ x₁ x₂ x₃ y₁ y₂ y₃ : AlgebraicClosure F,
+      ((W.veluCurve S)⁄(AlgebraicClosure F)).Equation x₁ y₁ ∧
+      ((W.veluCurve S)⁄(AlgebraicClosure F)).Equation x₂ y₂ ∧
+      ((W.veluCurve S)⁄(AlgebraicClosure F)).Equation x₃ y₃ ∧
+      y₁ = ((W.veluCurve S)⁄(AlgebraicClosure F)).negY x₁ y₁ ∧
+      y₂ = ((W.veluCurve S)⁄(AlgebraicClosure F)).negY x₂ y₂ ∧
+      y₃ = ((W.veluCurve S)⁄(AlgebraicClosure F)).negY x₃ y₃ ∧
+      x₁ ≠ x₂ ∧ x₁ ≠ x₃ ∧ x₂ ≠ x₃ := by
+  classical
+  haveI : (W⁄(AlgebraicClosure F) : Affine (AlgebraicClosure F)).IsElliptic :=
+    inferInstanceAs (W.map (algebraMap F (AlgebraicClosure F))).IsElliptic
+  rw [velu_baseChange_curve (L := AlgebraicClosure F) S]
+  set S' : Finset (W⁄(AlgebraicClosure F) : Affine (AlgebraicClosure F)).Point :=
+    S.image (veluBaseChangePoint W (AlgebraicClosure F)) with hS'def
+  have hS' : IsPointSubgroup S' := velu_baseChange_isPointSubgroup hS
+  have hodd' : Odd S'.card := by
+    rw [hS'def, Finset.card_image_of_injective _ veluBaseChangePoint_injective]
+    exact hodd
+  obtain ⟨u₁, u₂, u₃, v₁, v₂, v₃, hq₁, hq₂, hq₃, hn₁, hn₂, hn₃, hu₁₂, hu₁₃, hu₂₃⟩ :=
+    exists_three_twoTorsion_of_Δ_ne_zero (W⁄(AlgebraicClosure F) : Affine (AlgebraicClosure F))
+      (WeierstrassCurve.isUnit_Δ
+        (W := (W⁄(AlgebraicClosure F) : Affine (AlgebraicClosure F)))).ne_zero
+  have hns₁ : (W⁄(AlgebraicClosure F) : Affine (AlgebraicClosure F)).Nonsingular u₁ v₁ :=
+    Affine.equation_iff_nonsingular.mp hq₁
+  have hns₂ : (W⁄(AlgebraicClosure F) : Affine (AlgebraicClosure F)).Nonsingular u₂ v₂ :=
+    Affine.equation_iff_nonsingular.mp hq₂
+  have hns₃ : (W⁄(AlgebraicClosure F) : Affine (AlgebraicClosure F)).Nonsingular u₃ v₃ :=
+    Affine.equation_iff_nonsingular.mp hq₃
+  set T₁ : (W⁄(AlgebraicClosure F) : Affine (AlgebraicClosure F)).Point :=
+    Affine.Point.some u₁ v₁ hns₁ with hT₁def
+  set T₂ : (W⁄(AlgebraicClosure F) : Affine (AlgebraicClosure F)).Point :=
+    Affine.Point.some u₂ v₂ hns₂ with hT₂def
+  set T₃ : (W⁄(AlgebraicClosure F) : Affine (AlgebraicClosure F)).Point :=
+    Affine.Point.some u₃ v₃ hns₃ with hT₃def
+  have hneg₁ : -T₁ = T₁ := by
+    rw [hT₁def, Affine.Point.neg_some]; exact velu_point_some_eq rfl hn₁.symm
+  have hneg₂ : -T₂ = T₂ := by
+    rw [hT₂def, Affine.Point.neg_some]; exact velu_point_some_eq rfl hn₂.symm
+  have hneg₃ : -T₃ = T₃ := by
+    rw [hT₃def, Affine.Point.neg_some]; exact velu_point_some_eq rfl hn₃.symm
+  have hmem₁ : T₁ ∉ S' :=
+    velu_twoTorsion_notMem hS' hodd' (Affine.Point.some_ne_zero hns₁) hneg₁
+  have hmem₂ : T₂ ∉ S' :=
+    velu_twoTorsion_notMem hS' hodd' (Affine.Point.some_ne_zero hns₂) hneg₂
+  have hmem₃ : T₃ ∉ S' :=
+    velu_twoTorsion_notMem hS' hodd' (Affine.Point.some_ne_zero hns₃) hneg₃
+  have hTne₁₂ : T₁ ≠ T₂ := by
+    rw [hT₁def, hT₂def]; intro hc; exact hu₁₂ (Affine.Point.some.inj hc).1
+  have hTne₁₃ : T₁ ≠ T₃ := by
+    rw [hT₁def, hT₃def]; intro hc; exact hu₁₃ (Affine.Point.some.inj hc).1
+  have hTne₂₃ : T₂ ≠ T₃ := by
+    rw [hT₂def, hT₃def]; intro hc; exact hu₂₃ (Affine.Point.some.inj hc).1
+  refine ⟨_, _, _, _, _, _,
+    velu_equation _ S' hS' hodd' hmem₁, velu_equation _ S' hS' hodd' hmem₂,
+    velu_equation _ S' hS' hodd' hmem₃, ?_, ?_, ?_,
+    velu_coordX_twoTorsion_ne _ S' hS' hodd' hmem₁ hmem₂ hneg₁ hneg₂ hTne₁₂,
+    velu_coordX_twoTorsion_ne _ S' hS' hodd' hmem₁ hmem₃ hneg₁ hneg₃ hTne₁₃,
+    velu_coordX_twoTorsion_ne _ S' hS' hodd' hmem₂ hmem₃ hneg₂ hneg₃ hTne₂₃⟩
+  · rw [← veluCoordY_neg hS' hmem₁, hneg₁]
+  · rw [← veluCoordY_neg hS' hmem₂, hneg₂]
+  · rw [← veluCoordY_neg hS' hmem₃, hneg₃]
+
+/-- **Vélu's theorem, part 1: the quotient curve is elliptic** (PROVEN 2026-07-26 as an
+assembly over the two leaves `velu_exists_three_twoTorsion` and
+`isElliptic_of_three_twoTorsion`).
+
+For a finite subgroup `S` of odd order in `W.Point`, the Vélu model
+`y² + a₁xy + a₃y = x³ + a₂x² + (a₄ − 5t)x + (a₆ − b₂t − 7w)` is nonsingular.
+
+`Δ ≠ 0` is detected after base change to the algebraic closure, since
+`Δ (W'⁄L) = algebraMap F L (Δ W')` and `algebraMap` into a field extension is injective. -/
+theorem velu_isElliptic (S : Finset W.Point) (hS : IsPointSubgroup S)
+    (hodd : Odd S.card) : (W.veluCurve S).IsElliptic := by
+  obtain ⟨x₁, x₂, x₃, y₁, y₂, y₃, he₁, he₂, he₃, ht₁, ht₂, ht₃, d₁₂, d₁₃, d₂₃⟩ :=
+    velu_exists_three_twoTorsion W S hS hodd
+  haveI : ((W.veluCurve S)⁄(AlgebraicClosure F) : Affine (AlgebraicClosure F)).IsElliptic :=
+    isElliptic_of_three_twoTorsion he₁ he₂ he₃ ht₁ ht₂ ht₃ d₁₂ d₁₃ d₂₃
+  refine ⟨isUnit_iff_ne_zero.mpr fun h0 => ?_⟩
+  have hne := (isUnit_Δ
+    (W := ((W.veluCurve S)⁄(AlgebraicClosure F) : Affine (AlgebraicClosure F)))).ne_zero
+  rw [show ((W.veluCurve S)⁄(AlgebraicClosure F) : Affine (AlgebraicClosure F)).Δ =
+      algebraMap F (AlgebraicClosure F) (W.veluCurve S).Δ from
+    WeierstrassCurve.map_Δ (W := W.veluCurve S) (f := algebraMap F (AlgebraicClosure F)),
+    h0, map_zero] at hne
+  exact hne rfl
 
 /-- The Vélu image of a point as a point of the quotient curve: the points of the
 kernel `S` go to `0`, and every other point goes to its Vélu coordinates.
