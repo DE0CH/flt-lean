@@ -25,6 +25,13 @@ import Fermat.FLT.GaloisRepresentation.HardlyRamified.CompletionInvariance
 -- absorption, and adic completeness of `adicCompletionIntegers`),
 -- consumed by `exists_connected_counit_idempotent_at_three`.
 import Fermat.FLT.GroupScheme.ConnectedEtale
+-- The PROVEN Gelfand-duality separation lemma for finite étale algebras
+-- (`eq_zero_of_forall_algHom_eq_zero`: the geometric points of a finite
+-- étale algebra over a field separate its elements), consumed by the
+-- descent leaf `convCube_id_eq_one_of_hopf_package`.  The module is
+-- already in this file's build cone, but only through non-`public`
+-- imports, so its names need this direct import to be in scope.
+import Fermat.FLT.KnownIn1980s.EllipticCurves.Flat
 -- Irreducible ↔ absolutely irreducible given a 1-dimensional fixed space
 -- (complex conjugation), used by the derivation of `mod_three_reducible`.
 public import Fermat.FLT.KnownIn1980s.RepresentationTheory.OddAbsIrred
