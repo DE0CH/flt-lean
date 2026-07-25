@@ -73,6 +73,10 @@ public import Fermat.FLT.EllipticCurve.Torsion
 -- imported publicly here.
 public import Mathlib.AlgebraicGeometry.EllipticCurve.DivisionPolynomial.Degree
 public import Fermat.FLT.EllipticCurve.PhiPsiCoprime
+-- Vélu's construction of the quotient of an elliptic curve by a finite
+-- Galois-stable subgroup of odd order (`exists_velu_quotient_isogeny`), which
+-- discharges `exists_quotient_isogeny_of_odd_prime_card` below.
+public import Fermat.FLT.EllipticCurve.Velu
 -- `cyclotomicCharacterModL` and the stable-line extraction, used in the
 -- character bookkeeping of the Serre §4.1 dichotomy.
 public import Fermat.FLT.GaloisRepresentation.Chebotarev
@@ -10867,10 +10871,17 @@ end TwoTorsion
     them are PROVEN, the last of them being
     `WeierstrassCurve.twoIsogenyFun_add_of_ne` (the generic case of
     additivity, PROVEN 2026-07-25).
-* `WeierstrassCurve.exists_quotient_isogeny_of_odd_prime_card` (sorry
-  node) — the true Vélu core, cut at the literature statement: the
-  quotient by a Galois-stable CYCLIC subgroup of ODD prime order
-  (Vélu 1971; Silverman AEC III.4.12).
+* `WeierstrassCurve.exists_quotient_isogeny_of_odd_prime_card`
+  (DERIVED 2026-07-25) — the true Vélu core, the quotient by a
+  Galois-stable subgroup of ODD order (primality is not used). Built
+  in `Fermat/FLT/EllipticCurve/Velu.lean` from
+  `WeierstrassCurve.exists_velu_quotient_isogeny`, where Vélu's map is
+  written in group-law form; the Galois descent of the quotient
+  curve's coefficients, the equivariance and the kernel are PROVEN
+  there, and the three remaining leaves are
+  `WeierstrassCurve.velu_isElliptic`, `WeierstrassCurve.velu_equation`
+  and `WeierstrassCurve.velu_map_add` (Vélu 1971; Silverman AEC
+  III.4.12).
 * `FreyPackage.freyCurve_two_torsion_embedding` (PROVEN 2026-07-16,
   moved above this section) — the Frey curve's full rational
   `2`-torsion.
@@ -11747,9 +11758,12 @@ theorem WeierstrassCurve.exists_quotient_isogeny_of_rational_two_torsion
       · exact Or.inl (map_zero Ψ)
       · exact Or.inr hΨT
 
-/-- **The odd-prime-order quotient-isogeny leaf — Vélu's construction**
-(sorry node, sharpened 2026-07-23 from the general prime-order
-statement by splitting off the rational `2`-isogeny case): for a
+/-- **The odd-prime-order quotient isogeny — Vélu's construction**
+(DERIVED 2026-07-25 from `WeierstrassCurve.exists_velu_quotient_isogeny`
+in `Fermat/FLT/EllipticCurve/Velu.lean`, which performs Vélu's
+construction for an ARBITRARY finite Galois-stable subgroup of ODD order
+— primality is never used — and where the remaining sorry leaves now
+live: `velu_isElliptic`, `velu_equation`, `velu_map_add`): for a
 Galois-stable cyclic subgroup `C` of ODD prime order `ℓ` in the
 geometric points of an elliptic curve `E/ℚ` there are an elliptic
 curve `E'/ℚ` (the quotient `E/C`) and a Galois-equivariant group
@@ -11761,44 +11775,31 @@ points of `C` — rational because `C` is Galois-stable — and the
 isogeny's coordinate functions as explicit rational functions; none of
 this is in mathlib yet.
 
-**Route audit (2026-07-25).** This node did NOT decompose further at
-this level: unlike the `2`-isogeny case — now split into a
-normalisation brick and a normal-form-formula brick — the odd case has
-no coordinate normalisation to hide behind (the points of `C` are not
-individually rational), so every honest cut still has to produce the
-quotient curve and the map together, i.e. it remains a single
-construction. The recommended shape for a dedicated attack, in its own
-module (say `Fermat/FLT/EllipticCurve/Velu.lean`), over an arbitrary
-base field and an arbitrary finite subgroup, is:
+**Route audit (2026-07-25), SUPERSEDED the same day — do not dispatch
+here.** The first audit concluded that this node does not decompose
+further at this level: unlike the `2`-isogeny case (split into a
+normalisation brick and a normal-form-formula brick), the odd case has no
+coordinate normalisation to hide behind, since the points of `C` are not
+individually rational, so any honest cut must produce the quotient curve
+and the map TOGETHER. That is correct about the geometry and wrong about
+the cut. The construction was carried out in
+`Fermat/FLT/EllipticCurve/Velu.lean` by writing Vélu's map in its
+GROUP-LAW form,
 
-1. Choose a `Finset S` of representatives of `C \ {0}` modulo `±`
-   (`(ℓ − 1)/2` points, `ℓ` odd, so no point of order `2` occurs).
-2. For `Q = (x_Q, y_Q) ∈ S` set, following Vélu 1971 (p. 238; see also
-   Kohel's thesis §2.4, which transcribes them in this normalisation),
-   `gˣ_Q = 3x_Q² + 2a₂x_Q + a₄ − a₁y_Q`,
-   `gʸ_Q = −2y_Q − a₁x_Q − a₃`, `t_Q = 2gˣ_Q − a₁gʸ_Q`,
-   `u_Q = (gʸ_Q)²`, `w_Q = u_Q + t_Q x_Q`, and
-   `t = Σ_{Q ∈ S} t_Q`, `w = Σ_{Q ∈ S} w_Q`.
-3. The quotient curve is
-   `E' : y² + a₁xy + a₃y = x³ + a₂x² + (a₄ − 5t)x
-        + (a₆ − (a₁² + 4a₂)t − 7w)`,
-   and the isogeny is `x' = x + Σ_Q [t_Q/(x − x_Q) + u_Q/(x − x_Q)²]`
-   with the matching expression for `y'` (transcribe it from the
-   source; it is the `x`-derivative combination
-   `y' = y − Σ_Q [2u_Q(y + …)/(x − x_Q)³ + …]`).
-4. First sub-brick, and the natural entry point: `t, w ∈ ℚ` — each
-   summand is invariant under `Q ↦ −Q` and Galois permutes `C`, hence
-   permutes `S` up to sign, so the sums are Galois-fixed and descend by
-   `InfiniteGalois.mem_range_algebraMap_iff_fixed` (the scalar analogue
-   of `exists_point_eq_baseChange_of_fixed` above).
-5. The remaining bricks are the geometry: `E'.IsElliptic`, the
-   well-definedness (nonsingularity of the image point), ADDITIVITY,
-   and the kernel. Additivity by direct coordinate algebra is
-   prohibitive; the standard route is the function-field one — `φ`
-   corresponds to the inclusion of the `C`-invariant subfield of
-   `W.FunctionField` (mathlib's `WeierstrassCurve.Affine.FunctionField`
-   is available), under which additivity is inherited from the
-   translation action rather than computed. -/
+  `X(P) = x(P) + Σ_{Q ∈ C ∖ 0} (x(P + Q) − x(Q))`  (likewise `Y`),
+
+which needs no representatives of `C ∖ {0}` modulo `±` — Vélu's `t` and
+`w` are recovered as HALF the sums of the `±`-invariant terms over all of
+`C ∖ {0}`, which is where oddness (not primality) is used — and which
+makes Galois equivariance and the kernel immediate rather than a
+rational-function computation. Both are proven there, as is the descent of
+`t` and `w` to `ℚ` by `InfiniteGalois.mem_range_algebraMap_iff_fixed`.
+
+What survives as open is exactly the geometry, as the three leaves
+`velu_isElliptic` (the quotient curve is nonsingular), `velu_equation`
+(the image satisfies the quotient equation) and `velu_map_add`
+(additivity); see their docstrings for routes. Vélu 1971 p. 238; Kohel's
+thesis §2.4; Washington, *Elliptic Curves*, ch. 12. -/
 theorem WeierstrassCurve.exists_quotient_isogeny_of_odd_prime_card
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (C : AddSubgroup ((E⁄(AlgebraicClosure ℚ)).Point))
@@ -11814,13 +11815,19 @@ theorem WeierstrassCurve.exists_quotient_isogeny_of_odd_prime_card
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Pt) =
         Affine.Point.map
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (φ Pt)) ∧
-      (∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point, φ Pt = 0 ↔ Pt ∈ C) :=
-  sorry
+      (∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point, φ Pt = 0 ↔ Pt ∈ C) := by
+  have hfin : (C : Set ((E⁄(AlgebraicClosure ℚ)).Point)).Finite := by
+    rw [← Set.finite_coe_iff]
+    exact Nat.finite_of_card_ne_zero
+      (show Nat.card C ≠ 0 by rw [hcard]; exact hℓ.ne_zero)
+  have hoddC : Odd (Nat.card C) := hcard ▸ hodd
+  exact E.exists_velu_quotient_isogeny C hfin hoddC hCstable
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **The prime-order quotient isogeny** (DERIVED 2026-07-23 from the
 rational `2`-isogeny leaf `exists_quotient_isogeny_of_rational_two_torsion`
-and the odd-order Vélu leaf `exists_quotient_isogeny_of_odd_prime_card`):
+and the odd-order Vélu node `exists_quotient_isogeny_of_odd_prime_card`,
+itself DERIVED 2026-07-25 from `Fermat/FLT/EllipticCurve/Velu.lean`):
 for a Galois-stable cyclic subgroup `C` of prime order `ℓ` there is a
 quotient isogeny with kernel exactly `C`. For odd `ℓ` this is the Vélu
 leaf verbatim; for `ℓ = 2` the subgroup is `{0, t}` with `t` its unique

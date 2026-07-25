@@ -134,6 +134,11 @@ import Fermat.FLT.Deformations.RepresentationTheory.FlatProlongation
 -- `normalizedFactors` bookkeeping, for the discriminant-exponent
 -- norm accounting of the kernel field.
 import Mathlib.NumberTheory.RamificationInertia.Basic
+-- `IsDedekindDomain.HeightOneSpectrum.valuation_liesOver` (the adic
+-- valuation of `L` restricts to the `e`-th power of the one of `K`) and
+-- `uniformContinuous_algebraMap_liesOver`, the two inputs to the
+-- completion map of `exists_prime_ringHom_adicCompletionIntegers_mem_rat_ray_class`.
+import Mathlib.NumberTheory.RamificationInertia.Valuation
 -- `Algebra.FormallyEtale.of_isSeparable`, for the Cohen-style
 -- multiplicative section in the tame different bound.
 import Mathlib.RingTheory.Etale.Field
@@ -30567,20 +30572,39 @@ theorem exists_algEquiv_ringHom_apply_eq_ray_class
   exact AlgHom.restrictNormal_commutes ϕ (AlgebraicClosure ℚ) y
 
 /-- **The rational prime below a finite place, with its integral
-embedding of completions** (sorry node, created 2026-07-25 as the
-place-arithmetic half of the route-(α) decomposition of
+embedding of completions** (PROVEN 2026-07-25; the place-arithmetic half
+of the route-(α) decomposition of
 `exists_conj_image_localInertiaGroup_rat_ray_class` below): for a
 number field `F ⊆ ℚ̄` and a finite place `w` of `F` there is a rational
 prime `q` — the residue characteristic of `w`, i.e. the prime below `w`
 under `ℤ ⊆ 𝓞 F` — together with a ring embedding
 `f : ℚ_q → F_w` of completions that carries `ℤ_q` into `𝒪_w`.
-Mathematical content: `w` restricts to the `q`-adic place of `ℚ`
-(`w.asIdeal ∩ ℤ = (q)`, nonzero because `𝓞 F/w` is a finite field of
-some prime characteristic `q`), the `q`-adic absolute value on `ℚ` is
-the restriction of the `w`-adic one up to the ramification index, and
-`f` is the induced map of completions — continuous, hence
-integrality-preserving. The integrality clause is what the inertia
-transport `exists_ringHom_algebraicClosure_mem_localInertiaGroup_rat_ray_class`
+
+Proof. Take `v := w.under (𝓞 ℚ)`, the prime of `𝓞 ℚ` below `w`; then
+`w.asIdeal.LiesOver v.asIdeal` by `Ideal.over_under`, and `v` is the
+place of a rational prime `q` because `𝓞 ℚ ≅ ℤ` is a PID (the argument
+is the one recorded at `exists_prime_eq_toHeightOneSpectrumRingOfIntegersRat`
+in `Threeadic.lean`, inlined here because that file imports this one).
+The map itself is mathlib's
+`IsDedekindDomain.HeightOneSpectrum.uniformContinuous_algebraMap_liesOver`
+— `ℚ → F` is uniformly continuous for the two adic uniformities, since
+`w(x) = v(x)^e` on `ℚ` (`valuation_liesOver`) — pushed through
+`UniformSpace.Completion.mapRingHom` and conjugated by
+`adicCompletion.equiv` at both ends.
+
+Integrality is by density rather than by a valuation computation on the
+completion: `⇑f ⁻¹' 𝒪_w` is closed (`f` continuous, `𝒪_w` a valuation
+subring), and `𝒪_v` is contained in the closure of the image of the
+`v`-integral elements of `ℚ` (`DenseRange.subset_closure_image_preimage_of_isOpen`,
+the same step as in `closureAlgebraMapIntegers_eq_integers`), on which
+`f` is `algebraMap ℚ F` and `w(x) = v(x)^e ≤ 1`. Working with the
+`WithVal` synonym rather than with `algebraMap (𝓞 ℚ) ℚ_v` matters: the
+two available `Algebra (𝓞 ℚ) ℚ_v` instances (`RingOfIntegers.instAlgebra`
+and `instAlgebraAdicCompletion`) are propositionally but not
+syntactically equal, and `rw` cannot cross that gap.
+
+The integrality clause is what the inertia transport
+`exists_ringHom_algebraicClosure_mem_localInertiaGroup_rat_ray_class`
 consumes; note it forces `f` to be a LOCAL homomorphism for free
 (a unit of `ℤ_q` has its inverse in `ℤ_q` too, so its image is a unit
 of `𝒪_w`). -/
@@ -30594,33 +30618,157 @@ theorem exists_prime_ringHom_adicCompletionIntegers_mem_rat_ray_class
       ∀ x : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
           hq.toHeightOneSpectrumRingOfIntegersRat,
         f x ∈ IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers F w := by
-  sorry
+  classical
+  suffices key : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ),
+      w.asIdeal.LiesOver v.asIdeal →
+      ∃ f : IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v →+*
+          IsDedekindDomain.HeightOneSpectrum.adicCompletion F w,
+        ∀ x : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v,
+          f x ∈ IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers F w by
+    -- every finite place of `ℚ` is the place of a rational prime
+    set u : IsDedekindDomain.HeightOneSpectrum ℤ :=
+      (Rat.ringOfIntegersEquiv.symm.heightOneSpectrum).symm
+        (w.under (NumberField.RingOfIntegers ℚ)) with hudef
+    obtain ⟨t, ht⟩ := (IsPrincipalIdealRing.principal u.asIdeal).principal
+    have htne : t ≠ 0 := by
+      intro h0
+      refine u.ne_bot ?_
+      rw [ht, h0]
+      exact Ideal.span_singleton_eq_bot.mpr rfl
+    have htprime : Prime t := by
+      have hp := u.isPrime
+      rw [ht] at hp
+      exact (Ideal.span_singleton_prime htne).mp hp
+    have hq : (t.natAbs).Prime := Int.prime_iff_natAbs_prime.mp htprime
+    have hu : u = hq.toHeightOneSpectrumInt := by
+      ext1
+      rw [ht]
+      show Ideal.span {t} = Ideal.span {(t.natAbs : ℤ)}
+      rw [Ideal.span_singleton_eq_span_singleton]
+      exact Int.associated_natAbs t
+    have hqv : w.under (NumberField.RingOfIntegers ℚ)
+        = hq.toHeightOneSpectrumRingOfIntegersRat := by
+      calc w.under (NumberField.RingOfIntegers ℚ)
+            = (Rat.ringOfIntegersEquiv.symm.heightOneSpectrum) u :=
+          (Equiv.apply_symm_apply _ _).symm
+        _ = _ := by rw [hu]; rfl
+    refine ⟨t.natAbs, hq, key _ ?_⟩
+    rw [← hqv]
+    exact ⟨rfl⟩
+  intro v hlo
+  haveI := hlo
+  -- the integrality criterion, abstracted over the map
+  have main : ∀ f : IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v →+*
+        IsDedekindDomain.HeightOneSpectrum.adicCompletion F w,
+      Continuous ⇑f →
+      (∀ k : WithVal (IsDedekindDomain.HeightOneSpectrum.valuation ℚ v),
+        ((k : IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) ∈
+            IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v) →
+        f (k : IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) ∈
+          IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers F w) →
+      ∀ x : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v,
+        f x ∈ IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers F w := by
+    intro f hfc hfa x
+    -- `𝒪_v` sits inside the closure of the image of the `v`-integral rationals
+    have hdense : (↑(IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v) :
+          Set (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) ⊆
+        closure ((fun k : WithVal (IsDedekindDomain.HeightOneSpectrum.valuation ℚ v) =>
+            (k : IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) ''
+          ((fun k : WithVal (IsDedekindDomain.HeightOneSpectrum.valuation ℚ v) =>
+              (k : IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) ⁻¹'
+            (↑(IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v) :
+              Set (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)))) :=
+      DenseRange.subset_closure_image_preimage_of_isOpen
+        ((IsDedekindDomain.HeightOneSpectrum.adicCompletion.ofCompletion_surjective
+            ℚ v).denseRange.comp
+          UniformSpace.Completion.denseRange_coe
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion.continuous_ofCompletion ℚ v))
+        (Valued.isOpen_valuationSubring _)
+    have hmin : (fun k : WithVal (IsDedekindDomain.HeightOneSpectrum.valuation ℚ v) =>
+          (k : IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) ''
+        ((fun k : WithVal (IsDedekindDomain.HeightOneSpectrum.valuation ℚ v) =>
+            (k : IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) ⁻¹'
+          (↑(IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v) :
+            Set (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) ⊆
+        ⇑f ⁻¹' (↑(IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers F w) :
+          Set (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w)) := by
+      rintro _ ⟨k, hk, rfl⟩
+      exact hfa k hk
+    exact hdense.trans (closure_minimal hmin
+      ((Valued.isClosed_valuationSubring _).preimage hfc)) x.2
+  have hcont : Continuous
+      ⇑(algebraMap (WithVal (IsDedekindDomain.HeightOneSpectrum.valuation ℚ v))
+        (WithVal (IsDedekindDomain.HeightOneSpectrum.valuation F w))) :=
+    (IsDedekindDomain.HeightOneSpectrum.uniformContinuous_algebraMap_liesOver
+      ℚ F v w).continuous
+  refine ⟨_, main
+    ((IsDedekindDomain.HeightOneSpectrum.adicCompletion.equiv F w).symm.toRingHom.comp
+      ((UniformSpace.Completion.mapRingHom _ hcont).comp
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion.equiv ℚ v).toRingHom)) ?_ ?_⟩
+  · exact (IsDedekindDomain.HeightOneSpectrum.adicCompletion.continuous_ofCompletion F w).comp
+      (UniformSpace.Completion.continuous_map.comp
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion.continuous_toCompletion ℚ v))
+  · intro k hk
+    have hval :
+        ((IsDedekindDomain.HeightOneSpectrum.adicCompletion.equiv F w).symm.toRingHom.comp
+            ((UniformSpace.Completion.mapRingHom _ hcont).comp
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion.equiv ℚ v).toRingHom))
+          (k : IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) =
+        ((algebraMap (WithVal (IsDedekindDomain.HeightOneSpectrum.valuation ℚ v))
+            (WithVal (IsDedekindDomain.HeightOneSpectrum.valuation F w)) k :
+          WithVal (IsDedekindDomain.HeightOneSpectrum.valuation F w)) :
+          IsDedekindDomain.HeightOneSpectrum.adicCompletion F w) := by
+      apply IsDedekindDomain.HeightOneSpectrum.adicCompletion.ext
+      show (UniformSpace.Completion.mapRingHom _ hcont)
+          ((k : (IsDedekindDomain.HeightOneSpectrum.valuation ℚ v).Completion)) = _
+      rw [UniformSpace.Completion.mapRingHom_coe]
+    have hk' : IsDedekindDomain.HeightOneSpectrum.valuation ℚ v (WithVal.ofVal k) ≤ 1 := by
+      have h1 : Valued.v (k : IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) ≤ 1 := hk
+      rwa [IsDedekindDomain.HeightOneSpectrum.adicCompletion.valued_ofCompletion,
+        Valued.valuedCompletion_apply, ← WithVal.apply_ofVal] at h1
+    rw [hval,
+      IsDedekindDomain.HeightOneSpectrum.mem_adicCompletionIntegers
+        (NumberField.RingOfIntegers F),
+      IsDedekindDomain.HeightOneSpectrum.adicCompletion.valued_ofCompletion,
+      Valued.valuedCompletion_apply, ← WithVal.apply_ofVal]
+    rw [show (algebraMap (WithVal (IsDedekindDomain.HeightOneSpectrum.valuation ℚ v))
+            (WithVal (IsDedekindDomain.HeightOneSpectrum.valuation F w)) k).ofVal
+          = algebraMap ℚ F (WithVal.ofVal k) from rfl,
+      ← IsDedekindDomain.HeightOneSpectrum.valuation_liesOver F v w]
+    exact pow_le_one₀ zero_le hk'
 
 /-- **Inertia transports along an integral embedding of completions**
-(sorry node, created 2026-07-25 as the local half of the route-(α)
-decomposition of `exists_conj_image_localInertiaGroup_rat_ray_class`
-below; UNIFORM in the number field `F`): given a rational prime `q` and
-a ring embedding `f : ℚ_q → F_w` carrying `ℤ_q` into `𝒪_w` (as supplied
-by `exists_prime_ringHom_adicCompletionIntegers_mem_rat_ray_class`),
-every `σ ∈ localInertiaGroup w` is the image of a
+(PROVEN 2026-07-25; the local half of the route-(α) decomposition of
+`exists_conj_image_localInertiaGroup_rat_ray_class` below, UNIFORM in
+the number field `F`): given a rational prime `q` and a ring embedding
+`f : ℚ_q → F_w` carrying `ℤ_q` into `𝒪_w` (as supplied by
+`exists_prime_ringHom_adicCompletionIntegers_mem_rat_ray_class`), every
+`σ ∈ localInertiaGroup w` is the image of a
 `σ' ∈ localInertiaGroup q` along a compatible embedding
 `ι : ℚ_q^alg → F_w^alg` of the completed algebraic closures — i.e.
-`ι ∘ σ' = σ ∘ ι`. Intended proof: take `ι := AlgebraicClosure.map f`,
-which makes `F_w^alg` an algebra over `ℚ_q^alg` compatibly with the
-scalars `ℚ_q` (`AlgebraicClosure.map_algebraMap`), and let
-`σ' := ((σ.restrictScalars ℚ_q).toAlgHom.comp ι).restrictNormal' ℚ_q^alg`
-be the restriction of `σ` along the normal extension `ℚ_q^alg/ℚ_q` —
-the very construction of `Field.absoluteGaloisGroup.mapAux`, which
-cannot be reused verbatim here because it demands `NumberField ℚ_q`.
-The commutation identity is then `AlgHom.restrictNormal_commutes`. That
-`σ'` lies in `localInertiaGroup q` is the residual content: `f`
-integral gives `ι (IntegralClosure ℤ_q ℚ_q^alg) ⊆ IntegralClosure 𝒪_w
-F_w^alg`, and `ι` restricted to those integral closures is a LOCAL
-homomorphism of valuation rings (both are valuation rings by
-`localValuationSubring`'s spectral-norm dichotomy, and `ι` preserves
-the spectral norm because it preserves integrality in both directions),
-so the congruence `σ' x ≡ x mod 𝔪` follows from `σ (ι x) ≡ ι x mod 𝔪`
-by contracting along `ι`. -/
+`ι ∘ σ' = σ ∘ ι`.
+
+Proof. Take `ι := AlgebraicClosure.map f` and
+`σ' := ((σ.restrictScalars ℚ_q).toAlgHom.comp ι).restrictNormal' ℚ_q^alg`,
+the restriction of `σ` along the normal extension `ℚ_q^alg/ℚ_q`. This is
+the construction inside `Field.absoluteGaloisGroup.mapAux`, which cannot
+be reused here because it carries an (unnamed, hence invisible to
+`#check`) `[NumberField K]` binder inherited from its `variable` block,
+and `ℚ_q` is not a number field. Running it by hand needs the instance
+`IsScalarTower ℚ_q ℚ_q^alg F_w^alg`, supplied by
+`IsScalarTower.of_algebraMap_eq` from `AlgebraicClosure.map_algebraMap`;
+the commutation identity is then `AlgHom.restrictNormal_commutes`.
+
+That `σ'` lies in `localInertiaGroup q` is the residual content. `f`
+integral gives a ring map `g : ℤ_q → 𝒪_w`, and `IsIntegral.map_of_comp_eq`
+along the commuting square of scalars lifts `ι` to a ring homomorphism
+`ι' : IntegralClosure ℤ_q ℚ_q^alg → IntegralClosure 𝒪_w F_w^alg` with
+`ι' (σ' • y) = σ • ι' y`. Since ring homomorphisms preserve units, if
+`σ' • y - y` were a unit then so would `σ • ι' y - ι' y` be, contradicting
+its membership in the (proper) maximal ideal, which is what `hσ` gives.
+So `σ' • y - y` is a nonunit, i.e. lies in `𝔪` — the local ring being
+`IntegralClosure ℤ_q ℚ_q^alg`, whose maximal ideal is exactly its
+nonunits. -/
 theorem exists_ringHom_algebraicClosure_mem_localInertiaGroup_rat_ray_class
     (F : Type*) [Field F] [NumberField F]
     (w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F))
@@ -30640,7 +30788,81 @@ theorem exists_ringHom_algebraicClosure_mem_localInertiaGroup_rat_ray_class
               hq.toHeightOneSpectrumRingOfIntegersRat)),
       σ' ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat ∧
       ∀ x, ι (σ' x) = σ (ι x) := by
-  sorry
+  suffices key : ∀ (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+      (f : IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v →+*
+        IsDedekindDomain.HeightOneSpectrum.adicCompletion F w),
+      (∀ x : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v,
+          f x ∈ IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers F w) →
+      ∃ (ι : AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) →+*
+             AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w))
+        (σ' : Γ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)),
+        σ' ∈ localInertiaGroup v ∧ ∀ x, ι (σ' x) = σ (ι x) by
+    exact key _ f hf
+  clear hf f
+  intro v f hf
+  -- the restriction of `σ` to `ℚ_q^alg` along `AlgebraicClosure.map f`
+  obtain ⟨σ', hcomm⟩ : ∃ τ : Γ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v),
+      ∀ x, AlgebraicClosure.map f (τ x) = σ (AlgebraicClosure.map f x) := by
+    letI := f.toAlgebra
+    letI := (AlgebraicClosure.map f).toAlgebra
+    haveI : IsScalarTower (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)
+        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))
+        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w)) :=
+      IsScalarTower.of_algebraMap_eq fun x => (AlgebraicClosure.map_algebraMap f x).symm
+    refine ⟨((σ.restrictScalars
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)).toAlgHom.comp
+      (IsScalarTower.toAlgHom (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)
+        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))
+        (AlgebraicClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w)))).restrictNormal'
+        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)),
+      fun x => ?_⟩
+    exact AlgHom.restrictNormal_commutes _
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) x
+  -- `f` restricts to a ring homomorphism of the valuation rings
+  let g : IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v →+*
+      IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers F w :=
+    { toFun := fun x => ⟨f x, hf x⟩
+      map_one' := Subtype.ext (map_one f)
+      map_mul' := fun a b => Subtype.ext (map_mul f a.1 b.1)
+      map_zero' := Subtype.ext (map_zero f)
+      map_add' := fun a b => Subtype.ext (map_add f a.1 b.1) }
+  -- the square of scalars commutes
+  have hsq : (algebraMap (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers F w)
+        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w))).comp g =
+      (AlgebraicClosure.map f).comp
+        (algebraMap (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+          (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) :=
+    RingHom.ext fun x => (AlgebraicClosure.map_algebraMap f x.1).symm
+  -- hence integrality transports along `AlgebraicClosure.map f`
+  have hint : ∀ x : AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v),
+      IsIntegral (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v) x →
+      IsIntegral (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers F w)
+        (AlgebraicClosure.map f x) :=
+    fun x hx => IsIntegral.map_of_comp_eq g (AlgebraicClosure.map f) hsq hx
+  -- and therefore to a ring homomorphism of the integral closures
+  let ι' : IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) →+*
+      IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers F w)
+        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w)) :=
+    { toFun := fun x => ⟨AlgebraicClosure.map f x.1, hint x.1 x.2⟩
+      map_one' := Subtype.ext (map_one (AlgebraicClosure.map f))
+      map_mul' := fun a b => Subtype.ext (map_mul (AlgebraicClosure.map f) a.1 b.1)
+      map_zero' := Subtype.ext (map_zero (AlgebraicClosure.map f))
+      map_add' := fun a b => Subtype.ext (map_add (AlgebraicClosure.map f) a.1 b.1) }
+  refine ⟨AlgebraicClosure.map f, σ', ?_, fun x => hcomm x⟩
+  intro y
+  have hstep : ι' (σ' • y) = σ • (ι' y) := Subtype.ext (hcomm y.1)
+  have hmem : σ • (ι' y) - ι' y ∈ IsLocalRing.maximalIdeal _ := hσ (ι' y)
+  show σ' • y - y ∈ IsLocalRing.maximalIdeal _
+  rw [IsLocalRing.mem_maximalIdeal, mem_nonunits_iff]
+  intro hu
+  have hu2 := hu.map ι'
+  rw [map_sub, hstep] at hu2
+  exact (IsLocalRing.maximalIdeal.isMaximal
+      (IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers F w)
+        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w)))).ne_top
+    (Ideal.eq_top_of_isUnit_mem _ hmem hu2)
 
 set_option maxHeartbeats 1000000 in
 /-- **Local–global inertia functoriality along `ℚ ⊆ F` — the inertia
@@ -30919,7 +31141,50 @@ of that route. (ii) The two inequalities: the analytic one over ray
 class `L`-functions (this is where the Weber counting of
 `Chebotarev.lean` is genuinely consumed) together with the algebraic
 one via the ambiguous-class/Herbrand-quotient computation, then
-reciprocity from the index equality. -/
+reciprocity from the index equality.
+
+**PARTIALLY DISCHARGED 2026-07-25 (glue-first).** Clauses (1) and (2) —
+existence of a multiplicative `c` with `c (v.asIdeal) = χ(Frob_v)` — are
+now PROVEN outright from `exists_ideal_extension_globalFrob_ray_class`,
+which pins `c` as the multiplicative extension of `v ↦ χ(Frob_v)`, and
+clause (3) is reduced by PROVEN ideal-theoretic bookkeeping to the single
+sorried `have hpos` inside the proof: `c ((γ)) = 1` for every nonzero
+TOTALLY POSITIVE `γ`. The reduction: narrow principality gives
+`(α)·I = (β)` with `α, β ≫ 0` and `α ≠ 0`, whence `β ≠ 0`
+(`Ideal.mul_eq_bot`), so multiplicativity gives `c ((β)) = c ((α))·c I`
+and `hpos` at both `α` and `β` leaves `c I = 1`. What remains is
+therefore exactly "the Artin symbol kills the ray `P₁⁺` of totally
+positive principal ideals" — no `∃`, no ideal bookkeeping, no
+narrow-class multipliers.
+
+**Mathlib survey 2026-07-25: there is NOTHING to build on.** Ray class
+groups, narrow class groups, the Hilbert class field, the Artin
+map/symbol, Artin reciprocity, idele class groups, totally positive
+elements and Kronecker–Weber are ALL absent from the pin. What exists is
+plain `ClassGroup`, the `HeightOneSpectrum` factorization API,
+`NumberField.InfinitePlace`, abstract Frobenius as `IsArithFrobAt`
+(`Mathlib/RingTheory/Frobenius.lean`), and abelian CFT over `ℚ` only
+(`IsCyclotomicExtension.Rat.galEquivZMod`, `galEquivZMod_stabilizer`,
+identifying Frobenius at `p` with `[p] ∈ (ℤ/nℤ)ˣ`). So `hpos` is not a
+bounded missing piece; it is global class field theory and nothing less.
+
+**But the CONSUMER may not need that strength — the cut above is
+arguably mis-placed.** This leaf is uniform in `F`, yet its only
+instantiation (through
+`character_globalFrob_sq_eq_one_of_narrow_exponent_two_ray_class`) is at
+`F = ℚ(x)`, `x² = d`, for the seven `d = −1, 2, −2, 3, −3, 6, −6`, and
+what `odd_character_eq_one_of_unramified_everywhere_ray_class` ultimately
+needs is only: *an everywhere-unramified character of `Γ F` of order
+prime to `3` is trivial*. The retired route (β) recorded on that node —
+root-discriminant bounds — proves exactly that with NO reciprocity, since
+an unramified extension preserves the root discriminant. Checked with
+PARI/GP 2026-07-25: the seven fields have `|disc| ≤ 24`, hence root
+discriminant `≤ √24 ≈ 4.899`, while the Minkowski bound
+`(Nᴺ/N!)^(2/N)·π/4` first exceeds `√24` at degree `N = 32` over `ℚ` — so
+Minkowski alone kills every unramified extension of degree `≥ 16`, and
+only the odd degrees `3, 5, …, 15` need the sharper Odlyzko bounds of the
+`poitou_explicit_formula_bound` cluster. That is a bounded,
+reciprocity-free alternative to this entire leaf. -/
 theorem exists_artinSymbol_isNarrowPrincipal_ray_class
     (F : Type*) [Field F] [NumberField F]
     (χ : Γ F → Dickson.K 3)
@@ -30937,7 +31202,32 @@ theorem exists_artinSymbol_isNarrowPrincipal_ray_class
         c v.asIdeal = χ (globalFrob v)) ∧
       ∀ I : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ →
         IsNarrowPrincipal I → c I = 1 := by
-  sorry
+  -- the Artin symbol on ideals: the multiplicative extension of `v ↦ χ(Frob_v)`,
+  -- which supplies clauses (1) and (2) outright
+  obtain ⟨c, hcmul, hcfrob⟩ :=
+    exists_ideal_extension_globalFrob_ray_class F (fun v => χ (globalFrob v))
+  refine ⟨c, hcmul, hcfrob, ?_⟩
+  -- THE remaining class-field-theoretic content, isolated to a totally positive
+  -- principal generator: the Artin symbol kills the ray `P₁⁺`.  This is Artin
+  -- reciprocity for the narrow Hilbert class field; see the docstring.
+  have hpos : ∀ γ : NumberField.RingOfIntegers F, γ ≠ 0 →
+      (∀ φ : F →+* ℝ, 0 < φ (algebraMap (NumberField.RingOfIntegers F) F γ)) →
+      c (Ideal.span {γ}) = 1 := by
+    sorry
+  -- bookkeeping: narrow principality transports `hpos` to every narrow class
+  intro I hI hnar
+  obtain ⟨α, β, hα0, hαpos, hβpos, hαI⟩ := hnar
+  have hspanα : Ideal.span {α} ≠ ⊥ := by
+    simpa [Ideal.span_singleton_eq_bot] using hα0
+  have hβ0 : β ≠ 0 := by
+    intro h
+    have hbot : Ideal.span {α} * I = ⊥ := by
+      rw [hαI, h]
+      exact Ideal.span_singleton_eq_bot.mpr rfl
+    exact (Ideal.mul_eq_bot.mp hbot).elim hspanα hI
+  have hprod := hcmul (Ideal.span {α}) I hspanα hI
+  rw [hαI, hpos β hβ0 hβpos, hpos α hα0 hαpos, one_mul] at hprod
+  exact hprod.symm
 
 set_option maxHeartbeats 1000000 in
 /-- **A totally positive principal ideal has trivial Artin symbol — THE
@@ -36971,13 +37261,34 @@ theorem lift_sub_lift_mem_of_localInertiaGroup_three
     rw [hkey]
     exact Submodule.smul_mem _ _ (Submodule.mem_map_of_mem hin)
 
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
 /-- **Inertia-fixed points of the connected part are trivial at `3`**
-(sorry node, 2026-07-24 — the Raynaud `e = 1 < p − 1` core): a
+(PROVEN 2026-07-25 over the shared Oort–Tate `μ`-type node of
+`GroupScheme/ConnectedEtale.lean`, which this file already imports —
+no `3`-specific argument is needed, and the deep content is NOT
+duplicated here): a
 geometric point `φ` of the generic fibre of a finite flat Hopf order
 `G` over `𝒪₃ᵥ ≅ ℤ₃` which (a) lies in the connected component (value
 `1` on the connected counit idempotent `e₀`), (b) has convolution
 order dividing `3`, and (c) is fixed by the local inertia at `3`, is
-the identity point. Intended proof (Raynaud 1974; Serre, Duke 1987,
+the identity point.
+
+Proof: this is exactly the shared `μ`-type node at `p = 3`, and both
+halves already exist base-generically in `ConnectedEtale.lean`.
+`OortTate.point_sub_counit_mem_maximalIdeal` (PROVEN) spends the
+connectedness data `e₀, he₀, hε₀, hprim₀` to give the reduction
+congruence `φ(1 ⊗ g) ≡ ε g` modulo the maximal ideal of the integral
+closure, for every `g`; `hfix` is the inertia-invariance; and
+`φ * φ * φ = 1` is the third convolution power `φ ^ 3 = 1`. Feeding
+these to `OortTate.eq_one_of_inertia_invariant_of_reduction_counit`
+(the RAMIFICATION half of the node, at the odd prime `3`) gives
+`φ = 1`. The comultiplication absorption `_hcomul₀` is retained in
+the interface — it is what the CONSUMER uses to see the connected
+part as a subgroup — but this proof does not need it.
+
+Background (Raynaud 1974; Serre, Duke 1987,
 §5.4; Tate, "Finite flat group schemes", in
 Cornell–Silverman–Stevens): an inertia-fixed point has values in the
 fixed field `(ℚ₃ᵥᵃˡᵍ)^I = ℚ₃ⁿʳ` (infinite Galois correspondence), and
@@ -37002,7 +37313,7 @@ theorem inertiaFixed_connected_point_eq_one_at_three
     (e₀ : G) (he₀ : IsIdempotentElem e₀)
     (hε₀ : Coalgebra.counit (R := 𝒪₃ᵥ) e₀ = (1 : 𝒪₃ᵥ))
     (hprim₀ : ∀ x : G, IsIdempotentElem x → x * e₀ = 0 ∨ x * e₀ = e₀)
-    (hcomul₀ : Coalgebra.comul (R := 𝒪₃ᵥ) e₀ * (e₀ ⊗ₜ[𝒪₃ᵥ] e₀) =
+    (_hcomul₀ : Coalgebra.comul (R := 𝒪₃ᵥ) e₀ * (e₀ ⊗ₜ[𝒪₃ᵥ] e₀) =
       e₀ ⊗ₜ[𝒪₃ᵥ] e₀)
     (φ : ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ)
     (hφe : φ ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1)
@@ -37010,7 +37321,27 @@ theorem inertiaFixed_connected_point_eq_one_at_three
     (hfix : ∀ σ ∈ localInertiaGroup
       Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat, σ • φ = φ) :
     φ = 1 := by
-  sorry
+  haveI h3 : Fact (Nat.Prime 3) := ⟨Nat.prime_three⟩
+  -- connectedness is spent here: a point of the connected component
+  -- reduces to the counit modulo the maximal ideal of the integral
+  -- closure, at every element of the Hopf order
+  have hred : ∀ g : G, φ ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] g) -
+      algebraMap 𝒪₃ᵥ ℚ₃ᵥᵃˡᵍ (Coalgebra.counit (R := 𝒪₃ᵥ) g) ∈
+      Submodule.map (Algebra.linearMap (IntegralClosure 𝒪₃ᵥ ℚ₃ᵥᵃˡᵍ) ℚ₃ᵥᵃˡᵍ)
+        (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ ℚ₃ᵥᵃˡᵍ)) := fun g =>
+    OortTate.point_sub_counit_mem_maximalIdeal
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat
+      G e₀ he₀ hε₀ hprim₀ φ hφe g
+  -- the triple convolution product is the third convolution power
+  have hord3 : φ ^ 3 = 1 :=
+    calc φ ^ 3 = φ ^ 2 * φ := pow_succ φ 2
+      _ = φ ^ 1 * φ * φ := by rw [pow_succ (a := φ) (n := 1)]
+      _ = φ * φ * φ := by rw [pow_one]
+      _ = 1 := hord
+  -- an inertia-invariant `𝒪^nr`-point in the kernel of reduction,
+  -- killed by the odd prime `3`, is the counit (`e = 1 < 3 − 1`)
+  exact OortTate.eq_one_of_inertia_invariant_of_reduction_counit
+    (p := 3) (by decide) G φ hord3 hfix hred
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
