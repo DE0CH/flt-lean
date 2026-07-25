@@ -59,7 +59,6 @@ owners adding different leaves touch different lines, and git merges
 them without a human. Do not re-wrap it.
 
 - `finite_setOf_isHardlyRamified_frames`
-- `exists_smul_eq_of_commute_of_isIrreducible`
 - `exists_isStrictlyUniversalOnFrames_of_deformationCondition`
 - `isFlatAt_baseChange`
 - `isHardlyRamified_of_fibreProduct`
@@ -72,12 +71,13 @@ them without a human. Do not re-wrap it.
 - `exists_framedGaloisRep_traceSubring`
 - `subring_closure_charFrob_coeff_eq_top`
 - `isIntegral_charFrobCoeff_quotient_of_isWeaklyUniversal_isTraceGenerated`
-- `surjective_of_mvPowerSeries_ringHom`
-- `ker_le_of_minimal_mvPowerSeries_ringHom`
 - `exists_relations_lt_le_smul_of_minimal_mvPowerSeries_presentation`
 
 Both former strata above them were narrowed on 2026-07-25 into those
-ten, and every statement they replace is now PROVEN here.
+leaves, and every statement they replace is now PROVEN here — including
+the surjectivity and minimality strata of the minimal presentation,
+`surjective_of_mvPowerSeries_ringHom` and
+`ker_le_of_minimal_mvPowerSeries_ringHom`, PROVEN the same day.
 
 * The three UNIVERSALITY leaves were narrowed so that the universality
   leaf carries the representation-level classifying datum rather than
@@ -106,7 +106,13 @@ ten, and every statement they replace is now PROVEN here.
   deformation-theoretic core
   `exists_isStrictlyUniversalOnFrames_of_finite_lifts`, over which it is
   now PROVEN (the bundling glue, `charFrob_compat` from the residual
-  identification).
+  identification). **H4 was then PROVEN outright (2026-07-26)** over the
+  new complex-conjugation vocabulary
+  `GaloisRepresentation/ComplexConjugation.lean` — `complexConj : Γ ℚ`,
+  its involutivity, and `cyclotomicCharacter_complexConj` (the character
+  sends it to `−1`) — leaving H3 and the deformation-theoretic core as
+  the two leaves of that cut; the core has since been proven as well (the
+  next item), so **H3 is the only leaf of the 2026-07-26 cut still open**.
 * That deformation-theoretic core was CUT AGAIN (2026-07-25) along the
   seam between Schlessinger's abstract machine and the arithmetic, and is
   now PROVEN as an assembly. Everything specific to the hardly ramified
@@ -235,6 +241,12 @@ import Fermat.FLT.GaloisRepresentation.Chebotarev
 -- (`exists_conj_of_charFrob_eq_away`), from which the `{2, ℓ}` leaf
 -- below is derived.
 import Fermat.FLT.GaloisRepresentation.BrauerNesbittConjugacy
+-- proof-only: complex conjugation as an element of `Γ ℚ`
+-- (`complexConj`, `complexConj_mul_self`,
+-- `cyclotomicCharacter_complexConj`) — the oddness vocabulary consumed by
+-- the H4 Schur stratum below. Its own import cone is pure mathlib, so it
+-- cannot close the forbidden Khare–Wintenberger cycle.
+import Fermat.FLT.GaloisRepresentation.ComplexConjugation
 -- proof-only: the characteristic of a finite field, `ℤ_ℓ`-unit lemmas.
 import Mathlib.FieldTheory.Finite.Basic
 import Mathlib.NumberTheory.Padics.RingHoms
@@ -261,6 +273,17 @@ import Mathlib.RingTheory.Nakayama
 -- the substitution homomorphism of the de Smit–Lenstra presentation.
 import Mathlib.RingTheory.MvPowerSeries.Evaluation
 import Mathlib.RingTheory.AdicCompletion.Topology
+-- proof-only: the two ingredients of the PROVEN surjectivity stratum
+-- `surjective_of_mvPowerSeries_ringHom` — mathlib's complete-Nakayama
+-- criterion `surjective_of_mk_map_comp_surjective` (Functoriality), the
+-- `(x₁,…,x_g)`-adic completeness of `MvPowerSeries` over a finite
+-- variable set (Completeness), and Hausdorffness of a proper ideal in a
+-- Noetherian local ring (Noetherian); plus `IsLocalHom.of_surjective`
+-- and `map_nonunit`, used by both presentation strata.
+import Mathlib.RingTheory.AdicCompletion.Functoriality
+import Mathlib.RingTheory.AdicCompletion.Completeness
+import Mathlib.RingTheory.AdicCompletion.Noetherian
+import Mathlib.RingTheory.LocalRing.RingHom.Basic
 -- proof-only imports for the topology glue
 -- `isModuleTopology_of_isAdic_maximalIdeal`.
 import Mathlib.NumberTheory.Padics.ProperSpace
@@ -1066,7 +1089,7 @@ theorem finite_setOf_isHardlyRamified_frames {A : Type u} [CommRing A]
       IsHardlyRamified hℓOdd (rank_finTwoFun A) ρ}.Finite :=
   sorry
 
-/-- **Schur plus oddness: `End_{k[Γ]}(ρbar) = k`** (sorry node —
+/-- **Schur plus oddness: `End_{k[Γ]}(ρbar) = k`** (PROVEN 2026-07-26 —
 Schlessinger's H4 stratum of the 2026-07-26 cut of
 `exists_isStrictlyUniversalOnFiniteFrames`): every `k`-linear
 endomorphism of `V` commuting with the whole image of an irreducible
@@ -1075,31 +1098,45 @@ irreducible; equivalently the framed deformation functor is a torsor
 over the unframed one, which is Schlessinger's H4 (`dim_k t_F` finite
 and the hull unobstructed by automorphisms).
 
-Mathematical content, in two steps.
+The missing repository vocabulary — complex conjugation as an element of
+`Γ ℚ`, together with the evaluation of `cyclotomicCharacter` at it — is
+now `GaloisRepresentation/ComplexConjugation.lean`: `complexConj : Γ ℚ`,
+`complexConj_mul_self` (it is an involution) and
+`cyclotomicCharacter_complexConj` (the character sends it to `−1` for odd
+`p`). Those three facts are exactly what this proof consumes from the
+oddness side.
 
-1. *Schur.* `ρbar` is irreducible, so `V` is a simple `k[Γ]`-module
-   (`Representation.isIrreducible_iff_isSimpleModule`) and every nonzero
-   intertwiner is bijective (`Representation.IsIrreducible.bijective_or_eq_zero`);
-   hence `E := End_{k[Γ]}(V)` is a division ring, finite-dimensional over
-   the finite field `k`, so by Wedderburn's little theorem it is a finite
-   FIELD extension `k'/k` — and `V` is a `k'`-vector space with
-   `dim_k V = [k' : k] · dim_{k'} V = 2`.
-2. *Oddness kills `[k' : k] = 2`.* Suppose `[k' : k] = 2`. Then
-   `dim_{k'} V = 1`, so every `ρbar g` — which commutes with `E = k'` by
-   construction — acts as multiplication by a scalar `λ_g ∈ k'`. Complex
-   conjugation `c ∈ Γ ℚ` satisfies `c² = 1`, so `λ_c² = 1` and hence
-   `λ_c = ±1 ∈ k` (`ℓ` odd, so `k` has no other square roots of `1`);
-   therefore `ρbar c = ±id` and `det (ρbar c) = 1`. But `ρbar` is ODD:
-   `IsHardlyRamified.det` identifies `det ∘ ρbar` with the mod-`ℓ`
-   cyclotomic character, which sends complex conjugation to `−1`, and
-   `−1 ≠ 1` in `k` because `ℓ` is odd. Contradiction, so `k' = k`.
+**The proof written here is NOT the Wedderburn route** that this
+docstring previously sketched (`End_{k[Γ]}(V)` a division ring, hence by
+Wedderburn's little theorem a field extension `k'/k` with
+`[k':k] · dim_{k'} V = 2`, then oddness killing `[k':k] = 2`). That route
+needs Wedderburn plus a `k'`-module structure on `V`; in dimension two
+one can do without both. The argument used instead, with `J := ρbar c`
+for `c` complex conjugation:
+
+1. *Schur*, in the only form needed: an endomorphism commuting with the
+   whole image of the irreducible `ρbar` is an intertwiner, hence zero or
+   bijective (`Representation.IsIrreducible.bijective_or_eq_zero`, through
+   `LinearMap.intertwiningMap_of_isIntertwiningMap`).
+2. *Oddness*: `J * J = 1` since `c² = 1`, and `det J = −1` by
+   `IsHardlyRamified.det` composed with `cyclotomicCharacter_complexConj`;
+   `−1 ≠ 1` in `k` because `char k = ℓ` (`natCast_self_eq_zero`) is odd.
+   So `J ≠ 1` and `J ≠ −1` (the determinant of `±1` on a rank-two module
+   is `1`).
+3. *A `+1`-eigenvector exists*: `(J − 1)(J + 1) = J² − 1 = 0`, so if
+   `J − 1` were injective then `J + 1 = 0`, i.e. `J = −1`, excluded. Pick
+   `w ≠ 0` with `J w = w`.
+4. *`f w` is a multiple of `w`*: `f` commutes with `J`, so `J (f w) = f w`
+   too. Were `w` and `f w` independent they would be a basis of the
+   rank-two `V` (`basisOfLinearIndependentOfCardEqFinrank`), and `J`,
+   fixing both, would be `1` — excluded. So `f w = a • w` for some `a`
+   (`linearIndependent_fin2`).
+5. *Conclude*: `f − a` commutes with the image and kills `w ≠ 0`, so it is
+   not injective, so by Schur it is `0`, i.e. `f = a • 1`.
 
 The hypothesis `h : IsHardlyRamified hℓOdd hdim ρbar` is used ONLY
-through its `det` field (step 2); `hirr` only through step 1. The
-missing repository vocabulary for a proof is complex conjugation as an
-element of `Γ ℚ` together with the evaluation of `cyclotomicCharacter`
-at it — a self-contained sub-node, and the reason this is stated as a
-leaf rather than proven here.
+through its `det` field (step 2); `hirr` only through step 1; `hdim` only
+to know `finrank k V = 2` (steps 2 and 4).
 
 Both-ways audit: classically this is the standard "odd irreducible
 two-dimensional mod-`ℓ` representation is absolutely irreducible", true
@@ -1107,17 +1144,140 @@ outright for `ℓ` odd; abstractly the hypothesis package contains an
 irreducible hardly ramified `ρbar`, which the section audit of
 `Interface.lean` shows to be classically unsatisfiable, so the statement
 holds vacuously as well — but see the circularity guard: that vacuity is
-NOT available as a proof route here.
+NOT available as a proof route here, and the proof below does not use it.
 
 CIRCULARITY GUARD: `not_isIrreducible_of_isHardlyRamified_of_five_le`
 refutes exactly this hypothesis package and is itself proven over pillar
-α, which is what this file's cone proves; Lean rejects the cycle. -/
+α, which is what this file's cone proves; Lean rejects the cycle. The
+proof below imports only `ComplexConjugation.lean`, whose own cone is
+pure mathlib. -/
 theorem exists_smul_eq_of_commute_of_isIrreducible
     {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
     (hirr : ρbar.IsIrreducible) (f : Module.End k V)
     (hf : ∀ g, Commute f (ρbar g)) :
-    ∃ c : k, f = c • 1 :=
-  sorry
+    ∃ c : k, f = c • 1 := by
+  haveI : Representation.IsIrreducible ρbar.toRepresentation := hirr
+  have hfr : Module.finrank k V = 2 := Module.finrank_eq_of_rank_eq (by exact_mod_cast hdim)
+  -- **Schur's lemma**: an endomorphism commuting with the whole image is zero or bijective.
+  have schur : ∀ e : Module.End k V, (∀ g, Commute e (ρbar g)) →
+      e = 0 ∨ Function.Bijective e := by
+    intro e he
+    have hint : ∀ (g : Field.absoluteGaloisGroup ℚ) (x : V),
+        e (ρbar.toRepresentation g x) = ρbar.toRepresentation g (e x) := by
+      intro g x
+      have h9 := congrArg (fun m : Module.End k V => m x) (he g).eq
+      simp only [Module.End.mul_apply] at h9
+      exact h9
+    have hb := Representation.IsIrreducible.bijective_or_eq_zero
+      (LinearMap.intertwiningMap_of_isIntertwiningMap ρbar.toRepresentation
+        ρbar.toRepresentation e hint)
+    rcases hb with hbij | h0
+    · exact Or.inr hbij
+    · left
+      have h10 := congrArg
+        (fun F : Representation.IntertwiningMap ρbar.toRepresentation ρbar.toRepresentation =>
+          F.toLinearMap) h0
+      simp only [Representation.IntertwiningMap.zero_toLinearMap] at h10
+      exact h10
+  -- **`−1 ≠ 1` in `k`**, because `char k = ℓ` is odd.
+  have hne1 : (-1 : k) ≠ 1 := by
+    intro hcon
+    have h2 : ((2 : ℕ) : k) = 0 := by
+      push_cast
+      linear_combination -hcon
+    haveI hc : CharP k (ringChar k) := ringChar.charP k
+    have hp : (ringChar k).Prime :=
+      (CharP.char_is_prime_or_zero k (ringChar k)).resolve_right
+        (CharP.char_ne_zero_of_finite k (ringChar k))
+    have hd2 : ringChar k ∣ 2 := (CharP.cast_eq_zero_iff k (ringChar k) 2).mp h2
+    have hdl : ringChar k ∣ ℓ :=
+      (CharP.cast_eq_zero_iff k (ringChar k) ℓ).mp natCast_self_eq_zero
+    have hr2 : ringChar k = 2 := (Nat.prime_dvd_prime_iff_eq hp Nat.prime_two).mp hd2
+    rw [hr2] at hdl
+    exact (Nat.not_odd_iff_even.mpr (even_iff_two_dvd.mpr hdl)) hℓOdd
+  -- **Complex conjugation**: an involution of determinant `−1`.
+  set J : Module.End k V := ρbar complexConj with hJdef
+  have hJJ : J * J = 1 := by
+    rw [hJdef, ← map_mul ρbar]
+    convert map_one ρbar using 2
+    exact complexConj_mul_self
+  have hdetJ : LinearMap.det J = -1 := by
+    have hd := h.det complexConj
+    rw [GaloisRep.det_apply, cyclotomicCharacter_complexConj ℓ hℓOdd] at hd
+    rw [hJdef, hd]
+    simp
+  have hJnot1 : J ≠ 1 := by
+    intro hcJ
+    rw [hcJ, show LinearMap.det (1 : Module.End k V) = 1 from LinearMap.det_id] at hdetJ
+    exact hne1 hdetJ.symm
+  have hJnotneg1 : J ≠ -1 := by
+    intro hcJ
+    have h12 : LinearMap.det J = 1 := by
+      rw [hcJ, show (-1 : Module.End k V) = (-1 : k) • 1 by simp,
+        LinearMap.det_smul, hfr]
+      simp
+    rw [h12] at hdetJ
+    exact hne1 hdetJ.symm
+  -- **A `+1`-eigenvector exists**: otherwise `J − 1` is injective, forcing `J = −1`.
+  have hprod : (J - 1) * (J + 1) = 0 := by
+    have h13 : (J - 1) * (J + 1) = J * J - 1 := by noncomm_ring
+    rw [h13, hJJ, sub_self]
+  have hex : ∃ w : V, w ≠ 0 ∧ J w = w := by
+    by_contra hcon
+    push Not at hcon
+    have hinj : Function.Injective ((J - 1 : Module.End k V) : V →ₗ[k] V) := by
+      rw [← LinearMap.ker_eq_bot, Submodule.eq_bot_iff]
+      intro x hx
+      rw [LinearMap.mem_ker] at hx
+      by_contra hx0
+      refine hcon x hx0 ?_
+      have h14 : J x - x = 0 := by simpa using hx
+      linear_combination (norm := module) h14
+    have hJ1 : J + 1 = 0 := by
+      apply LinearMap.ext
+      intro x
+      have h15 : (J - 1) ((J + 1) x) = (J - 1) 0 := by
+        have h16 := congrArg (fun m : Module.End k V => m x) hprod
+        simpa [Module.End.mul_apply] using h16
+      simpa using hinj h15
+    exact hJnotneg1 (by linear_combination (norm := noncomm_ring) hJ1)
+  obtain ⟨w, hw0, hwJ⟩ := hex
+  -- `f w` lies in the same eigenspace, `f` commuting with `J`.
+  have hfwJ : J (f w) = f w := by
+    have h17 := congrArg (fun m : Module.End k V => m w) (hf complexConj).eq
+    simp only [Module.End.mul_apply] at h17
+    rw [← hJdef] at h17
+    rw [← h17, hwJ]
+  -- `w` and `f w` cannot be independent: they would span `V` and force `J = 1`.
+  have hdep : ¬ LinearIndependent k ![f w, w] := by
+    intro hli
+    have hcard : Fintype.card (Fin 2) = Module.finrank k V := by simp [hfr]
+    refine hJnot1 ?_
+    apply (basisOfLinearIndependentOfCardEqFinrank hli hcard).ext
+    intro i
+    fin_cases i <;>
+      simp [coe_basisOfLinearIndependentOfCardEqFinrank, hfwJ, hwJ]
+  have hav : ∃ a : k, f w = a • w := by
+    rw [linearIndependent_fin2] at hdep
+    push Not at hdep
+    obtain ⟨a, ha⟩ := hdep hw0
+    exact ⟨a, by simpa using ha.symm⟩
+  obtain ⟨a, ha⟩ := hav
+  -- `f − a` kills `w ≠ 0`, so Schur forces it to vanish.
+  refine ⟨a, ?_⟩
+  have hcomm : ∀ g, Commute (f - a • (1 : Module.End k V)) (ρbar g) := by
+    intro g
+    have h18 := (hf g).eq
+    unfold Commute SemiconjBy
+    rw [sub_mul, mul_sub, h18]
+    congr 1
+    simp [Algebra.smul_def, Algebra.commutes]
+  rcases schur (f - a • 1) hcomm with h0 | hbij
+  · linear_combination (norm := noncomm_ring) h0
+  · exfalso
+    have hzero : (f - a • (1 : Module.End k V)) w = (f - a • (1 : Module.End k V)) 0 := by
+      simp [ha]
+    exact hw0 (hbij.1 hzero)
 
 open scoped TensorProduct in
 /-- **Residual identification of a RAW framed package** — verbatim
@@ -1867,7 +2027,8 @@ the construction of the hull — Schlessinger's inductive small-extension
 argument over H1–H4, the de Smit–Lenstra generators-and-relations
 presentation `W(k)[[x₁,…,x_g]] ↠ R` with `g` the dimension of the framed
 tangent space, and the Mazur-category ring clauses read off it. Out:
-(i) H4, the leaf `exists_smul_eq_of_commute_of_isIrreducible`, supplied
+(i) H4, the now-PROVEN node `exists_smul_eq_of_commute_of_isIrreducible`
+(2026-07-26), supplied
 as `hschur`; (ii) H3, the leaf `finite_setOf_isHardlyRamified_frames`
 through `finite_setOf_isHardlyRamified_frames_of_discreteTopology`,
 supplied as `hfin`; (iii) the deformation-condition clauses — the PROVEN
@@ -2110,9 +2271,11 @@ theorem exists_isStrictlyUniversalOnFrames_of_finite_lifts (hℓ5 : 5 ≤ ℓ)
 set_option backward.isDefEq.respectTransparency false in
 /-- **Mazur/Ramakrishna representability at the ARTINIAN level** (PROVEN
 2026-07-26 over the Schlessinger cut — the H3 finiteness leaf
-`finite_setOf_isHardlyRamified_frames`, the H4 Schur leaf
-`exists_smul_eq_of_commute_of_isIrreducible` and the deformation-theoretic
-core leaf `exists_isStrictlyUniversalOnFrames_of_finite_lifts`): the hardly
+`finite_setOf_isHardlyRamified_frames`, the H4 Schur node
+`exists_smul_eq_of_commute_of_isIrreducible` (itself PROVEN 2026-07-26)
+and the deformation-theoretic core
+`exists_isStrictlyUniversalOnFrames_of_finite_lifts` (itself PROVEN
+2026-07-25 over the deformation-condition cut)): the hardly
 ramified deformation problem of an irreducible hardly ramified `ρbar`
 (`ℓ ≥ 5`) admits an object `D` of Mazur's category that classifies every
 FINITE residually identified framed test object *strictly* — by a
@@ -5040,6 +5203,230 @@ theorem exists_minimal_span_sup_of_isNoetherianRing {R : Type*} [CommRing R]
   exact ⟨Nat.find hex, t, ht, hspan,
     fun n s hs hspans => Nat.find_le ⟨s, hs, hspans⟩⟩
 
+/-- **The variable ideal is the kernel of the constant term** (PROVEN
+2026-07-25): a multivariate power series in FINITELY many variables
+whose constant term vanishes lies in the ideal generated by the
+variables, i.e. it can be written `∑ᵢ xᵢ gᵢ`.
+
+Mathlib has no such lemma (`MvPowerSeries.X_dvd_iff` covers divisibility
+by ONE variable), and both presentation strata below need it: the
+maximal ideal of `Λ[[x₁,…,x_g]]` is `𝔪_Λ + (x₁,…,x_g)`, which is what
+turns a kernel element into a linear form modulo `𝔪²`.
+
+Proof: split `f` into the chunks `c i` collecting the monomials whose
+LEAST variable of positive exponent is `xᵢ` — a finite decomposition
+because `Fin g` is finite and every nonzero monomial has a least such
+variable (`Finsupp.support.min'`). Each chunk has all coefficients
+supported in `{m | m i ≠ 0}`, hence is divisible by `xᵢ`
+(`MvPowerSeries.X_dvd_iff`), and the chunks sum to `f` because the
+constant term is zero. -/
+theorem mem_span_range_X_of_constantCoeff_eq_zero {Λ : Type*} [CommRing Λ] {g : ℕ}
+    {f : MvPowerSeries (Fin g) Λ} (hf : MvPowerSeries.constantCoeff f = 0) :
+    f ∈ Ideal.span (Set.range (MvPowerSeries.X : Fin g → MvPowerSeries (Fin g) Λ)) := by
+  classical
+  -- `c i` collects the monomials of `f` whose least variable of positive
+  -- exponent is `x i`; every monomial of `f` occurs in exactly one `c i`.
+  set c : Fin g → MvPowerSeries (Fin g) Λ := fun i m =>
+    if (∀ j, j < i → m j = 0) ∧ m i ≠ 0 then MvPowerSeries.coeff m f else 0 with hc
+  have hcoeff : ∀ (i : Fin g) (m : Fin g →₀ ℕ), MvPowerSeries.coeff m (c i) =
+      if (∀ j, j < i → m j = 0) ∧ m i ≠ 0 then MvPowerSeries.coeff m f else 0 :=
+    fun _ _ => rfl
+  have hdvd : ∀ i, (MvPowerSeries.X i : MvPowerSeries (Fin g) Λ) ∣ c i := by
+    intro i
+    rw [MvPowerSeries.X_dvd_iff]
+    intro m hm
+    rw [hcoeff, if_neg]
+    rintro ⟨-, h2⟩
+    exact h2 hm
+  have hsum : f = ∑ i, c i := by
+    ext m
+    rw [map_sum]
+    by_cases hm0 : m = 0
+    · subst hm0
+      rw [MvPowerSeries.coeff_zero_eq_constantCoeff_apply, hf, Finset.sum_eq_zero]
+      intro i _
+      rw [hcoeff, if_neg]
+      rintro ⟨-, h2⟩
+      exact h2 rfl
+    · have hne : m.support.Nonempty := Finsupp.support_nonempty_iff.mpr hm0
+      set i₀ := m.support.min' hne with hi₀
+      have hi₀mem : m i₀ ≠ 0 := Finsupp.mem_support_iff.mp (Finset.min'_mem _ hne)
+      have hlt : ∀ j, j < i₀ → m j = 0 := by
+        intro j hj
+        by_contra hj0
+        exact absurd (Finset.min'_le _ _ (Finsupp.mem_support_iff.mpr hj0)) (not_le.mpr hj)
+      rw [Finset.sum_eq_single i₀]
+      · rw [hcoeff, if_pos ⟨hlt, hi₀mem⟩]
+      · intro i _ hi
+        rw [hcoeff, if_neg]
+        rintro ⟨h1, h2⟩
+        rcases lt_or_gt_of_ne hi with h | h
+        · exact h2 (hlt i h)
+        · exact hi₀mem (h1 i₀ h)
+      · intro h
+        exact absurd (Finset.mem_univ i₀) h
+  rw [hsum]
+  refine Ideal.sum_mem _ fun i _ => ?_
+  obtain ⟨d, hd⟩ := hdvd i
+  rw [hd]
+  exact Ideal.mul_mem_right _ _ (Ideal.subset_span ⟨i, rfl⟩)
+
+/-- Membership in the maximal ideal of a power series ring over a local
+ring is membership of the CONSTANT TERM in the maximal ideal downstairs
+(PROVEN 2026-07-25, from `MvPowerSeries.isUnit_iff_constantCoeff`). -/
+theorem mem_maximalIdeal_mvPowerSeries_iff {Λ : Type*} [CommRing Λ] [IsLocalRing Λ]
+    {σ : Type*} (f : MvPowerSeries σ Λ) :
+    f ∈ IsLocalRing.maximalIdeal (MvPowerSeries σ Λ) ↔
+      MvPowerSeries.constantCoeff f ∈ IsLocalRing.maximalIdeal Λ := by
+  simp only [IsLocalRing.mem_maximalIdeal, mem_nonunits_iff,
+    MvPowerSeries.isUnit_iff_constantCoeff]
+
+/-- **The maximal ideal of a power series ring** (PROVEN 2026-07-25):
+`𝔪_{Λ[[x₁,…,x_g]]} = 𝔪_Λ · Λ[[x]] + (x₁, …, x_g)`. At `𝔪_Λ = (ℓ)` this
+is the `(ℓ, x₁, …, x_g)` used by the minimality bound below. -/
+theorem maximalIdeal_mvPowerSeries_eq {Λ : Type*} [CommRing Λ] [IsLocalRing Λ] {g : ℕ} :
+    IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) =
+      (IsLocalRing.maximalIdeal Λ).map
+          (MvPowerSeries.C : Λ →+* MvPowerSeries (Fin g) Λ) ⊔
+        Ideal.span (Set.range (MvPowerSeries.X : Fin g → MvPowerSeries (Fin g) Λ)) := by
+  refine le_antisymm (fun f hf => ?_) (sup_le ?_ ?_)
+  · have hcf : MvPowerSeries.constantCoeff f ∈ IsLocalRing.maximalIdeal Λ :=
+      (mem_maximalIdeal_mvPowerSeries_iff f).mp hf
+    have hsplit : f = MvPowerSeries.C (MvPowerSeries.constantCoeff f) +
+        (f - MvPowerSeries.C (MvPowerSeries.constantCoeff f)) := by ring
+    rw [hsplit]
+    exact Submodule.add_mem_sup (Ideal.mem_map_of_mem _ hcf)
+      (mem_span_range_X_of_constantCoeff_eq_zero (by simp))
+  · rw [Ideal.map_le_iff_le_comap]
+    intro a ha
+    exact (mem_maximalIdeal_mvPowerSeries_iff _).mpr (by simpa using ha)
+  · rw [Ideal.span_le]
+    rintro _ ⟨i, rfl⟩
+    exact (mem_maximalIdeal_mvPowerSeries_iff _).mpr (by simp)
+
+/-- **Precompleteness transfers along a linear equivalence** (PROVEN
+2026-07-25): `IsPrecomplete` is a property of the filtration `I^n • ⊤`,
+which a linear equivalence carries across in both directions
+(`Submodule.map_smul''` at `⊤`). -/
+theorem isPrecomplete_of_linearEquiv {A : Type*} [CommRing A] {M N : Type*}
+    [AddCommGroup M] [Module A M] [AddCommGroup N] [Module A N] {I : Ideal A}
+    [IsPrecomplete I M] (e : M ≃ₗ[A] N) : IsPrecomplete I N := by
+  have hmap : ∀ (n : ℕ) (x y : M), x ≡ y [SMOD (I ^ n • ⊤ : Submodule A M)] →
+      e x ≡ e y [SMOD (I ^ n • ⊤ : Submodule A N)] := by
+    intro n x y h
+    rw [SModEq.sub_mem] at h ⊢
+    have hx : e x - e y ∈ (I ^ n • (⊤ : Submodule A M)).map (e : M →ₗ[A] N) := by
+      rw [← map_sub]
+      exact Submodule.mem_map_of_mem h
+    rwa [Submodule.map_smul'', Submodule.map_top, LinearMap.range_eq_top.mpr
+      e.surjective] at hx
+  have hmapsymm : ∀ (n : ℕ) (x y : N), x ≡ y [SMOD (I ^ n • ⊤ : Submodule A N)] →
+      e.symm x ≡ e.symm y [SMOD (I ^ n • ⊤ : Submodule A M)] := by
+    intro n x y h
+    rw [SModEq.sub_mem] at h ⊢
+    have hx : e.symm x - e.symm y ∈ (I ^ n • (⊤ : Submodule A N)).map (e.symm : N →ₗ[A] M) := by
+      rw [← map_sub]
+      exact Submodule.mem_map_of_mem h
+    rwa [Submodule.map_smul'', Submodule.map_top, LinearMap.range_eq_top.mpr
+      e.symm.surjective] at hx
+  constructor
+  intro f hf
+  obtain ⟨L, hL⟩ := IsPrecomplete.prec' (I := I) (fun n => e.symm (f n))
+    fun {m n} hmn => hmapsymm m _ _ (hf hmn)
+  refine ⟨e L, fun n => ?_⟩
+  have := hmap n _ _ (hL n)
+  rwa [e.apply_symm_apply] at this
+
+/-- **Precompleteness passes to finite products** (PROVEN 2026-07-25):
+`J • ⊤` in `ι → A` is the coordinatewise `J` (one direction by
+`Submodule.smul_induction_on`, the other by writing `x` as the finite
+sum of its `Pi.single` components), so a Cauchy sequence is Cauchy in
+each of the finitely many coordinates and the limits assemble. -/
+theorem isPrecomplete_pi {A : Type*} [CommRing A] {ι : Type*} [Fintype ι] {I : Ideal A}
+    [IsPrecomplete I A] : IsPrecomplete I (ι → A) := by
+  classical
+  have hmem : ∀ (J : Ideal A) (x : ι → A),
+      x ∈ J • (⊤ : Submodule A (ι → A)) ↔ ∀ i, x i ∈ J := by
+    intro J x
+    constructor
+    · intro hx
+      refine Submodule.smul_induction_on hx (fun a ha y _ i => ?_) (fun p q hp hq i => ?_)
+      · simp only [Pi.smul_apply, smul_eq_mul]
+        exact Ideal.mul_mem_right _ _ ha
+      · exact Submodule.add_mem _ (hp i) (hq i)
+    · intro h
+      have hsum : x = ∑ i, Pi.single i (x i) := by
+        ext j
+        simp
+      rw [hsum]
+      refine Submodule.sum_mem _ fun i _ => ?_
+      have hsingle : (Pi.single i (x i) : ι → A) = x i • (Pi.single i 1 : ι → A) := by
+        ext j
+        by_cases hij : j = i <;> simp [hij]
+      rw [hsingle]
+      exact Submodule.smul_mem_smul (h i) Submodule.mem_top
+  have hself : ∀ (J : Ideal A) (a : A), a ∈ J • (⊤ : Submodule A A) ↔ a ∈ J := by
+    intro J a
+    rw [Ideal.smul_eq_mul, Ideal.mul_top]
+  constructor
+  intro f hf
+  have hco : ∀ i, ∃ L : A, ∀ n, f n i ≡ L [SMOD (I ^ n • ⊤ : Submodule A A)] := by
+    intro i
+    refine IsPrecomplete.prec' (I := I) (fun n => f n i) fun {m n} hmn => ?_
+    have h := hf hmn
+    rw [SModEq.sub_mem] at h ⊢
+    rw [hself]
+    have := (hmem _ _).mp h i
+    simpa using this
+  choose L hL using hco
+  refine ⟨L, fun n => ?_⟩
+  rw [SModEq.sub_mem, hmem]
+  intro i
+  have := hL i n
+  rw [SModEq.sub_mem, hself] at this
+  simpa using this
+
+/-- **A module-finite FREE module over an `I`-adically precomplete ring
+is `I`-adically precomplete** (PROVEN 2026-07-25): choose a basis, which
+is finite by module-finiteness, and transport `isPrecomplete_pi` along
+`Basis.equivFun`.
+
+Mathlib has no such statement — its `IsPrecomplete` producers are the
+trivial ideals, Artinian local rings, `PadicInt`, `WittVector`, the
+`X`-adic (Mv)PowerSeries rings, and adic completions themselves — so
+this is the missing bridge from "`ℤ_ℓ` is complete" to "a coefficient
+ring finite over `ℤ_ℓ` is complete". -/
+theorem isPrecomplete_of_free_finite {A : Type*} [CommRing A] {M : Type*}
+    [AddCommGroup M] [Module A M] [Module.Free A M] [Module.Finite A M] {I : Ideal A}
+    [IsPrecomplete I A] : IsPrecomplete I M := by
+  classical
+  haveI : IsPrecomplete I (Module.Free.ChooseBasisIndex A M → A) := isPrecomplete_pi
+  exact isPrecomplete_of_linearEquiv (Module.Free.chooseBasis A M).equivFun.symm
+
+omit [Field k] [Finite k] [Algebra ℤ_[ℓ] k] [TopologicalSpace k]
+  [DiscreteTopology k] in
+/-- **`(ℓ)`-adic precompleteness of a finite free `ℤ_ℓ`-algebra** (PROVEN
+2026-07-25): `ℤ_ℓ` is `𝔪`-adically complete (mathlib), `𝔪 = (ℓ)`
+(`PadicInt.maximalIdeal_eq_span_p`), so `isPrecomplete_of_free_finite`
+makes `A` precomplete as a `ℤ_ℓ`-MODULE, and
+`IsPrecomplete.map_algebraMap_iff` converts that into precompleteness for
+the ideal `(ℓ)` of `A` itself.
+
+This is what discharges the `IsPrecomplete` clause of
+`exists_coefficientRing_ringHom` for the `AdjoinRoot` coefficient ring:
+`AdjoinRoot G` is free over `ℤ_ℓ` on the power basis of the monic `G`. -/
+theorem isPrecomplete_span_natCast_of_free_finite (A : Type*) [CommRing A] [Algebra ℤ_[ℓ] A]
+    [Module.Free ℤ_[ℓ] A] [Module.Finite ℤ_[ℓ] A] :
+    IsPrecomplete (Ideal.span {(ℓ : A)}) A := by
+  haveI : IsPrecomplete (IsLocalRing.maximalIdeal ℤ_[ℓ]) A := isPrecomplete_of_free_finite
+  have hmap : (IsLocalRing.maximalIdeal ℤ_[ℓ]).map (algebraMap ℤ_[ℓ] A)
+      = Ideal.span {(ℓ : A)} := by
+    rw [PadicInt.maximalIdeal_eq_span_p, Ideal.map_span]
+    congr 1
+    simp
+  rw [← hmap]
+  exact IsPrecomplete.map_algebraMap_iff.mpr inferInstance
+
 omit [TopologicalSpace k] [DiscreteTopology k] in
 /-- **The residue field has characteristic `ℓ`** (PROVEN 2026-07-25):
 `natCast_self_eq_zero` says `(ℓ : k) = 0`, so `ringChar k` divides the
@@ -5272,6 +5659,17 @@ COEFFICIENT RING `Λ` — an unramified complete local domain,
 module-finite over `ℤ_ℓ`, with maximal ideal `(ℓ)`, mapping to `R` by a
 `ℤ_ℓ`-algebra map `ι` that is onto the residue field.
 
+CLAUSE ADDED 2026-07-25, after the proof below was written:
+`IsPrecomplete (𝔪_Λ) Λ`. The surjectivity stratum
+`surjective_of_mvPowerSeries_ringHom` is FALSE without it (see its
+docstring for the counterexample `Λ = ℤ_(ℓ)`, `R = ℤ_ℓ`), and the
+`AdjoinRoot` construction below delivers it with no extra arithmetic:
+`Λ` is FREE over `ℤ_ℓ` on the power basis of the monic `G`, so
+`isPrecomplete_span_natCast_of_free_finite` applies. (The clause was
+originally justified through `WittVector.isAdicCompleteIdealSpanP`; the
+proof does not go through Witt vectors, and does not need to — freeness
+over `ℤ_ℓ` is what completeness actually rests on in either route.)
+
 CAVEAT retained from the pre-proof docstring, still live: the CLAUSES do
 not by themselves pin `Λ ≅ W(k)` — a finite field satisfies every one of
 them (local Noetherian domain, module-finite over `ℤ_ℓ`, and
@@ -5331,7 +5729,8 @@ theorem exists_coefficientRing_ringHom {R : Type*} [CommRing R]
     (π : R →+* k) (hπsurj : Function.Surjective π) :
     ∃ (Λ : Type u) (_ : CommRing Λ) (_ : IsDomain Λ) (_ : IsLocalRing Λ)
       (_ : IsNoetherianRing Λ) (_ : Algebra ℤ_[ℓ] Λ)
-      (_ : Module.Finite ℤ_[ℓ] Λ),
+      (_ : Module.Finite ℤ_[ℓ] Λ)
+      (_ : IsPrecomplete (IsLocalRing.maximalIdeal Λ) Λ),
       IsLocalRing.maximalIdeal Λ = Ideal.span {(ℓ : Λ)} ∧
       ∃ ι : Λ →+* R,
         ι.comp (algebraMap ℤ_[ℓ] Λ) = algebraMap ℤ_[ℓ] R ∧
@@ -5403,8 +5802,19 @@ theorem exists_coefficientRing_ringHom {R : Type*} [CommRing R]
     hkerψ' ▸ RingHom.ker_isMaximal_of_surjective (ψ.comp E) hψ'surj
   haveI : IsLocalRing (Shrink.{u} (AdjoinRoot G)) :=
     isLocalRing_of_span_isMaximal hmaxΛ natCast_mem_jacobson
+  -- `(ℓ)`-adic precompleteness: `AdjoinRoot G` is FREE over `ℤ_ℓ` on the
+  -- power basis of the monic `G`, and `ℤ_ℓ` is `(ℓ)`-adically complete
+  haveI : Module.Free ℤ_[ℓ] (AdjoinRoot G) :=
+    Module.Free.of_basis (AdjoinRoot.powerBasis' hGm).basis
+  haveI : Module.Free ℤ_[ℓ] (Shrink.{u} (AdjoinRoot G)) :=
+    Module.Free.of_equiv e.symm.toLinearEquiv
+  haveI : IsPrecomplete (IsLocalRing.maximalIdeal (Shrink.{u} (AdjoinRoot G)))
+      (Shrink.{u} (AdjoinRoot G)) := by
+    rw [← IsLocalRing.eq_maximalIdeal hmaxΛ]
+    exact isPrecomplete_span_natCast_of_free_finite _
   refine ⟨Shrink.{u} (AdjoinRoot G), inferInstance, inferInstance, inferInstance, inferInstance,
-    inferInstance, inferInstance, (IsLocalRing.eq_maximalIdeal hmaxΛ).symm, ι₀.comp E, ?_, ?_⟩
+    inferInstance, inferInstance, inferInstance,
+    (IsLocalRing.eq_maximalIdeal hmaxΛ).symm, ι₀.comp E, ?_, ?_⟩
   · refine RingHom.ext fun x => ?_
     show ι₀ (e (algebraMap ℤ_[ℓ] (Shrink.{u} (AdjoinRoot G)) x)) = algebraMap ℤ_[ℓ] R x
     rw [AlgEquiv.commutes, AdjoinRoot.algebraMap_eq, hι₀, AdjoinRoot.lift_of]
@@ -5472,30 +5882,53 @@ theorem exists_mvPowerSeries_ringHom_of_mem_maximalIdeal {R : Type*}
     rw [RingHom.comp_apply, MvPowerSeries.coe_eval₂Hom, MvPowerSeries.eval₂_C]
   · rw [MvPowerSeries.coe_eval₂Hom, MvPowerSeries.eval₂_X]
 
-/-- **Surjectivity leaf of the de Smit–Lenstra presentation** (sorry
-node — pure commutative algebra, the third stratum of the 2026-07-25
-decomposition of `exists_minimal_mvPowerSeries_presentation`): the
-substitution map `φ : Λ[[x₁, …, x_g]] → R` of
+omit [Fact (Nat.Prime ℓ)] [Finite k] [Algebra ℤ_[ℓ] k] [TopologicalSpace k]
+  [DiscreteTopology k] in
+/-- **Surjectivity stratum of the de Smit–Lenstra presentation** (PROVEN
+2026-07-25 — pure commutative algebra, the third stratum of the
+same-day decomposition of `exists_minimal_mvPowerSeries_presentation`):
+the substitution map `φ : Λ[[x₁, …, x_g]] → R` of
 `exists_mvPowerSeries_ringHom_of_mem_maximalIdeal` is SURJECTIVE as
 soon as `Λ` covers the residue field (`π ∘ ι` onto) and the `tᵢ`
 generate `𝔪_R` modulo `𝔪_R² + ℓR`.
 
-Proof (successive approximation): let `A` be the image of `φ`, a
-subring containing `ι(Λ)` and every `tᵢ`. Residue surjectivity gives
-`R = ι(Λ) + 𝔪_R`; the spanning hypothesis plus `ℓ = ι(ℓ) ∈ A` and
-`𝔪_Λ = (ℓ)` give `𝔪_R ⊆ A·𝔪_R + 𝔪_R²`, so by induction
-`R = A + 𝔪_R^n` for every `n`. For `r ∈ R` this produces a sequence
-`a_n ∈ A` with `r − a_n ∈ 𝔪_R^n` and `a_{n+1} − a_n ∈ 𝔪_R^n`; lifting
-the increments through `φ` and summing them in the COMPLETE power
-series ring `Λ[[x₁, …, x_g]]` (the increments lie in `𝔪_S^n`, so the
-sum converges coefficientwise) gives a preimage of `r` — `IsHausdorff`
-turning "agrees modulo every `𝔪_R^n`" into equality. Classically
-phrased: the image of a complete ring is closed, and it is dense by the
-generation hypothesis. -/
+**HYPOTHESIS ADDED 2026-07-25: `Λ` must be `𝔪_Λ`-adically precomplete,
+because without it the statement is FALSE.** Counterexample at `g = 0`:
+`Λ = ℤ_(ℓ)` (the localisation of `ℤ` at `ℓ`, local with `𝔪 = (ℓ)`),
+`R = ℤ_ℓ`, `k = 𝔽_ℓ`, `t` the empty family — every hypothesis holds and
+`φ` is the inclusion `ℤ_(ℓ) ↪ ℤ_ℓ`, which is not onto. Completeness of
+the coefficient ring is what makes the successive approximation
+converge, and it is free at the point of use: the coefficient-ring leaf
+`exists_coefficientRing_ringHom` now hands out `Λ = W(k)` together with
+its `IsAdicComplete`, which mathlib proves
+(`WittVector.isAdicCompleteIdealSpanP`).
+
+Proof, in two applications of mathlib's complete-Nakayama surjectivity
+criterion `surjective_of_mk_map_comp_surjective` — a map out of an
+`I`-adically precomplete ring onto an `I·S`-adically Hausdorff ring is
+onto as soon as it is onto modulo `I·S`:
+
+* in the VARIABLE direction, with `I = (x₁, …, x_g)`, precompleteness is
+  mathlib's `IsAdicComplete (span (range X)) (MvPowerSeries σ Λ)` for
+  finite `σ`, and `I·R = (t₁, …, t_g) =: T` is Hausdorff because `R` is
+  Noetherian local (`IsHausdorff.of_isLocalRing`); so it suffices that
+  `φ` be onto `R ⧸ T`;
+* in the `ℓ` direction, with `I = 𝔪_Λ = (ℓ)`, applied to
+  `Λ → R ⧸ T`: this is where the added precompleteness of `Λ` is used,
+  and it suffices that `Λ` be onto `(R ⧸ T) ⧸ (ℓ)`.
+
+The last surjectivity is residue-field surjectivity plus NAKAYAMA:
+`hspan` says `𝔪_R = T + 𝔪_R² + ℓR`, so
+`Submodule.le_of_le_smul_of_le_jacobson_bot` (over the Noetherian `𝔪_R`,
+contained in the Jacobson radical) upgrades it to `𝔪_R = T + ℓR` on the
+nose; given `r ∈ R`, residue surjectivity of `π ∘ ι` supplies `a ∈ Λ`
+with `r − ι a ∈ ker π = 𝔪_R = T + ℓR`, which is exactly the required
+congruence. -/
 theorem surjective_of_mvPowerSeries_ringHom {R : Type*} [CommRing R]
     [IsLocalRing R] [IsNoetherianRing R]
     [IsAdicComplete (IsLocalRing.maximalIdeal R) R]
     {Λ : Type*} [CommRing Λ] [IsLocalRing Λ]
+    [IsPrecomplete (IsLocalRing.maximalIdeal Λ) Λ]
     (hΛℓ : IsLocalRing.maximalIdeal Λ = Ideal.span {(ℓ : Λ)})
     (π : R →+* k) (ι : Λ →+* R) (hι : Function.Surjective (π.comp ι))
     {g : ℕ} (t : Fin g → R)
@@ -5504,12 +5937,111 @@ theorem surjective_of_mvPowerSeries_ringHom {R : Type*} [CommRing R]
     (φ : MvPowerSeries (Fin g) Λ →+* R)
     (hφC : φ.comp (MvPowerSeries.C : Λ →+* MvPowerSeries (Fin g) Λ) = ι)
     (hφX : ∀ i, φ (MvPowerSeries.X i) = t i) :
-    Function.Surjective φ :=
-  sorry
+    Function.Surjective φ := by
+  classical
+  have hπsurj : Function.Surjective π := Function.Surjective.of_comp hι
+  have hkerπ : RingHom.ker π = IsLocalRing.maximalIdeal R :=
+    IsLocalRing.ker_eq_maximalIdeal π hπsurj
+  -- Nakayama: the `tᵢ` and `ℓ` generate `𝔪_R` on the nose
+  have hle : IsLocalRing.maximalIdeal R ≤
+      Ideal.span (Set.range t) ⊔ Ideal.span {(ℓ : R)} := by
+    refine Submodule.le_of_le_smul_of_le_jacobson_bot
+      (Ideal.fg_of_isNoetherianRing _) (IsLocalRing.maximalIdeal_le_jacobson _) ?_
+    have hsq : IsLocalRing.maximalIdeal R • IsLocalRing.maximalIdeal R
+        = IsLocalRing.maximalIdeal R ^ 2 := by
+      rw [Ideal.smul_eq_mul, ← pow_two]
+    rw [hsq]
+    conv_lhs => rw [hspan]
+    exact sup_le (le_sup_of_le_left le_sup_left)
+      (sup_le le_sup_right (le_sup_of_le_left le_sup_right))
+  set T : Ideal R := Ideal.span (Set.range t) with hTdef
+  have hmapT : Ideal.map φ
+      (Ideal.span (Set.range (MvPowerSeries.X : Fin g → MvPowerSeries (Fin g) Λ))) = T := by
+    rw [hTdef, Ideal.map_span]
+    congr 1
+    ext r
+    constructor
+    · rintro ⟨_, ⟨i, rfl⟩, rfl⟩
+      exact ⟨i, (hφX i).symm⟩
+    · rintro ⟨i, rfl⟩
+      exact ⟨MvPowerSeries.X i, ⟨i, rfl⟩, hφX i⟩
+  have hTle : T ≤ IsLocalRing.maximalIdeal R := by
+    rw [hTdef]; conv_rhs => rw [hspan]
+    exact le_sup_left
+  have hTne : T ≠ ⊤ := by
+    intro h
+    rw [h, top_le_iff] at hTle
+    exact (IsLocalRing.maximalIdeal.isMaximal R).ne_top hTle
+  haveI : Nontrivial (R ⧸ T) := Ideal.Quotient.nontrivial_iff.mpr hTne
+  haveI : IsLocalRing (R ⧸ T) :=
+    IsLocalRing.of_surjective' (Ideal.Quotient.mk T) Ideal.Quotient.mk_surjective
+  haveI : IsNoetherianRing (R ⧸ T) :=
+    isNoetherianRing_of_surjective R (R ⧸ T) (Ideal.Quotient.mk T)
+      Ideal.Quotient.mk_surjective
+  haveI : IsHausdorff (Ideal.map φ
+      (Ideal.span (Set.range (MvPowerSeries.X : Fin g → MvPowerSeries (Fin g) Λ)))) R := by
+    rw [hmapT]
+    exact IsHausdorff.of_isLocalRing T R hTne
+  refine surjective_of_mk_map_comp_surjective
+    (I := Ideal.span (Set.range (MvPowerSeries.X : Fin g → MvPowerSeries (Fin g) Λ))) φ ?_
+  rw [hmapT]
+  -- it suffices that `Λ` already surjects onto `R ⧸ T`
+  have hℓΛ : (ℓ : Λ) ∈ IsLocalRing.maximalIdeal Λ := by
+    rw [hΛℓ]; exact Ideal.subset_span rfl
+  have hbar : Function.Surjective ((Ideal.Quotient.mk T).comp ι) := by
+    haveI : IsHausdorff (Ideal.map ((Ideal.Quotient.mk T).comp ι)
+        (IsLocalRing.maximalIdeal Λ)) (R ⧸ T) := by
+      refine IsHausdorff.of_isLocalRing _ _ ?_
+      refine ne_of_lt (lt_of_le_of_lt ?_
+        (lt_top_iff_ne_top.mpr (IsLocalRing.maximalIdeal.isMaximal (R ⧸ T)).ne_top))
+      rw [Ideal.map_le_iff_le_comap]
+      intro a ha
+      simp only [Ideal.mem_comap, RingHom.comp_apply]
+      haveI : IsLocalHom (Ideal.Quotient.mk T) :=
+        IsLocalHom.of_surjective _ Ideal.Quotient.mk_surjective
+      refine map_nonunit (Ideal.Quotient.mk T) _ ?_
+      rw [← hkerπ, RingHom.mem_ker]
+      have := IsLocalRing.ker_eq_maximalIdeal (π.comp ι) hι
+      rw [← this, RingHom.mem_ker] at ha
+      exact ha
+    refine surjective_of_mk_map_comp_surjective (I := IsLocalRing.maximalIdeal Λ) _ ?_
+    intro y
+    obtain ⟨x, rfl⟩ := Ideal.Quotient.mk_surjective y
+    obtain ⟨r, rfl⟩ := Ideal.Quotient.mk_surjective x
+    obtain ⟨a, ha⟩ := hι (π r)
+    refine ⟨a, ?_⟩
+    rw [RingHom.comp_apply, Ideal.Quotient.eq]
+    have hdiff : ι a - r ∈ T ⊔ Ideal.span {(ℓ : R)} := by
+      refine hle ?_
+      rw [← hkerπ, RingHom.mem_ker, map_sub, sub_eq_zero]
+      exact ha
+    obtain ⟨x₁, hx₁, x₂, hx₂, hx⟩ := Submodule.mem_sup.mp hdiff
+    obtain ⟨s, rfl⟩ := Ideal.mem_span_singleton'.mp hx₂
+    have hkey : (Ideal.Quotient.mk T) (ι a) - (Ideal.Quotient.mk T) r
+        = (Ideal.Quotient.mk T) ((ℓ : R) * s) := by
+      rw [← map_sub, ← hx, map_add, Ideal.Quotient.eq_zero_iff_mem.mpr hx₁, zero_add,
+        mul_comm]
+    rw [RingHom.comp_apply, hkey]
+    have hmem : ((Ideal.Quotient.mk T).comp ι) (ℓ : Λ) ∈
+        Ideal.map ((Ideal.Quotient.mk T).comp ι) (IsLocalRing.maximalIdeal Λ) :=
+      Ideal.mem_map_of_mem _ hℓΛ
+    have hcast : ((Ideal.Quotient.mk T).comp ι) (ℓ : Λ)
+        = (Ideal.Quotient.mk T) ((ℓ : R)) := by
+      rw [RingHom.comp_apply, map_natCast, map_natCast]
+    rw [hcast] at hmem
+    rw [map_mul]
+    exact Ideal.mul_mem_right _ _ hmem
+  intro y
+  obtain ⟨a, ha⟩ := hbar y
+  exact ⟨MvPowerSeries.C a, by
+    rw [RingHom.comp_apply,
+      show φ (MvPowerSeries.C a) = ι a from RingHom.congr_fun hφC a]
+    exact ha⟩
 
-/-- **Minimality (kernel-bound) leaf of the de Smit–Lenstra
-presentation** (sorry node — pure commutative algebra, the fourth
-stratum of the 2026-07-25 decomposition of
+omit [Fact (Nat.Prime ℓ)] in
+/-- **Minimality (kernel-bound) stratum of the de Smit–Lenstra
+presentation** (PROVEN 2026-07-25 — pure commutative algebra, the fourth
+stratum of the same-day decomposition of
 `exists_minimal_mvPowerSeries_presentation`): when the `tᵢ` are a
 MINIMAL family generating `𝔪_R` modulo `𝔪_R² + ℓR` — the length `g` is
 least among all such families, as produced by
@@ -5517,19 +6049,21 @@ least among all such families, as produced by
 `φ` has `ker φ ≤ 𝔪_S² + (ℓ)`, i.e. `φ` is an isomorphism on mod-`ℓ`
 cotangent spaces and the presentation is minimal.
 
-Proof: `𝔪_Λ = (ℓ)` makes `𝔪_S = (ℓ, x₁, …, x_g)`, so
-`𝔪_S² + (ℓ) = (ℓ) + (xᵢxⱼ)` and every `f ∈ S` decomposes as
-`f = C c + ∑ᵢ C aᵢ · xᵢ + h` with `h ∈ 𝔪_S²` — the power-series
-ingredient being that a series with vanishing constant term is
-`∑ᵢ xᵢ gᵢ` (split each monomial off its least variable of positive
-exponent), applied twice. Now let `f ∈ ker φ` and suppose
-`f ∉ 𝔪_S² + (ℓ)`; then some `aⱼ` is a unit of `Λ` (all `aᵢ ∈ (ℓ)` and
-`c ∈ (ℓ)` would put `f` back inside). Applying `φ` gives
-`ι(c) + ∑ᵢ ι(aᵢ) tᵢ ∈ 𝔪_R²`, and `ι(c) ∈ 𝔪_R² + ℓR` since `c ∈ 𝔪_Λ` is
-forced by `φ(f) = 0` and `tᵢ ∈ 𝔪_R`; multiplying by `ι(aⱼ)⁻¹` exhibits
-`tⱼ ∈ span {tᵢ : i ≠ j} ⊔ (𝔪_R² ⊔ ℓR)`. Hence the family with `tⱼ`
-deleted still generates `𝔪_R` modulo `𝔪_R² + ℓR`, contradicting
-minimality of `g` (`hmin` applied at `g − 1`). -/
+Proof: `𝔪_Λ = (ℓ)` makes `𝔪_S = (ℓ) + (x₁, …, x_g)`
+(`maximalIdeal_mvPowerSeries_eq`, over the power-series ingredient
+`mem_span_range_X_of_constantCoeff_eq_zero`: a series with vanishing
+constant term is `∑ᵢ xᵢ gᵢ`). So a kernel element `f`, which lies in
+`𝔪_S` because `φ f = 0` is not a unit, is `f = y + ∑ᵢ cᵢ xᵢ` with
+`y ∈ (ℓ)`, and replacing each `cᵢ` by its constant term `aᵢ` costs only
+`𝔪_S²` — whence `f ≡ ∑ᵢ C(aᵢ) xᵢ` modulo `𝔪_S² + (ℓ)`.
+
+Now suppose `f ∉ 𝔪_S² + (ℓ)`; then some `aⱼ` is a unit of `Λ` (all
+`aᵢ ∈ 𝔪_Λ = (ℓ)` would put `f` back inside). Applying `φ` — a local hom,
+being surjective — sends `𝔪_S² + (ℓ)` into `𝔪_R² + ℓR =: J`, so
+`∑ᵢ ι(aᵢ) tᵢ ∈ J`; multiplying by the unit `ι(aⱼ)⁻¹` exhibits
+`tⱼ ∈ span {tᵢ : i ≠ j} ⊔ J`. Hence the family with `tⱼ` deleted (indexed
+by `Fin.succAbove j`) still generates `𝔪_R` modulo `𝔪_R² + ℓR`,
+contradicting minimality of `g` (`hmin` applied at `g − 1`). -/
 theorem ker_le_of_minimal_mvPowerSeries_ringHom {R : Type*} [CommRing R]
     [IsLocalRing R] [IsNoetherianRing R] {Λ : Type*} [CommRing Λ]
     [IsLocalRing Λ]
@@ -5547,9 +6081,130 @@ theorem ker_le_of_minimal_mvPowerSeries_ringHom {R : Type*} [CommRing R]
     (hφX : ∀ i, φ (MvPowerSeries.X i) = t i) :
     RingHom.ker φ ≤
       IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) ^ 2 ⊔
-        Ideal.span {(ℓ : MvPowerSeries (Fin g) Λ)} :=
-  sorry
+        Ideal.span {(ℓ : MvPowerSeries (Fin g) Λ)} := by
+  classical
+  intro f hf
+  by_contra hfK
+  -- `f` lies in the maximal ideal, since `φ f = 0` is not a unit
+  have hfm : f ∈ IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) := by
+    rw [IsLocalRing.mem_maximalIdeal, mem_nonunits_iff]
+    intro hu
+    have h0 : IsUnit (0 : R) := by
+      have := hu.map φ
+      rwa [RingHom.mem_ker.mp hf] at this
+    exact not_isUnit_zero h0
+  -- `𝔪_S = (ℓ) + (x₁, …, x_g)`
+  have hCℓ : (MvPowerSeries.C : Λ →+* MvPowerSeries (Fin g) Λ) '' {(ℓ : Λ)}
+      = {((ℓ : ℕ) : MvPowerSeries (Fin g) Λ)} := by
+    simp
+  rw [maximalIdeal_mvPowerSeries_eq, hΛℓ, Ideal.map_span, hCℓ] at hfm
+  obtain ⟨y, hy, z, hz, hyz⟩ := Submodule.mem_sup.mp hfm
+  obtain ⟨c, hc⟩ := (Submodule.mem_span_range_iff_exists_fun _).mp hz
+  -- the linear part of `f`, read off from the constant terms of the `cᵢ`
+  set a : Fin g → Λ := fun i => MvPowerSeries.constantCoeff (c i) with hadef
+  have hrem : f - ∑ i, MvPowerSeries.C (a i) * MvPowerSeries.X i ∈
+      IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) ^ 2 ⊔
+        Ideal.span {((ℓ : ℕ) : MvPowerSeries (Fin g) Λ)} := by
+    have hrw : f - ∑ i, MvPowerSeries.C (a i) * MvPowerSeries.X i
+        = y + ∑ i, (c i - MvPowerSeries.C (a i)) * MvPowerSeries.X i := by
+      rw [← hyz, ← hc]
+      simp only [smul_eq_mul, sub_mul, Finset.sum_sub_distrib]
+      ring
+    rw [hrw]
+    refine Submodule.add_mem _ (Ideal.mem_sup_right hy) (Ideal.sum_mem _ fun i _ => ?_)
+    refine Ideal.mem_sup_left ?_
+    rw [pow_two]
+    refine Ideal.mul_mem_mul ?_ ?_
+    · exact (mem_maximalIdeal_mvPowerSeries_iff _).mpr (by simp [hadef])
+    · exact (mem_maximalIdeal_mvPowerSeries_iff _).mpr (by simp)
+  -- minimality forces one of the `aᵢ` to be a unit
+  have hex : ∃ j, a j ∉ IsLocalRing.maximalIdeal Λ := by
+    by_contra hall
+    have hall' : ∀ i, a i ∈ IsLocalRing.maximalIdeal Λ :=
+      fun i => not_not.mp fun h => hall ⟨i, h⟩
+    refine hfK ?_
+    have hlin : ∑ i, MvPowerSeries.C (a i) * MvPowerSeries.X i ∈
+        IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) ^ 2 ⊔
+          Ideal.span {((ℓ : ℕ) : MvPowerSeries (Fin g) Λ)} := by
+      refine Ideal.sum_mem _ fun i _ => Ideal.mem_sup_right ?_
+      obtain ⟨b, hb⟩ := Ideal.mem_span_singleton'.mp (hΛℓ ▸ hall' i)
+      refine Ideal.mul_mem_right _ _ ?_
+      rw [← hb]
+      simpa using Ideal.mul_mem_left _ (MvPowerSeries.C b)
+        (Ideal.subset_span (Set.mem_singleton ((ℓ : ℕ) : MvPowerSeries (Fin g) Λ)))
+    simpa using Ideal.add_mem _ hrem hlin
+  obtain ⟨j, hj⟩ := hex
+  obtain ⟨n, rfl⟩ : ∃ n, g = n + 1 := ⟨g - 1, (Nat.succ_pred_eq_of_pos j.pos).symm⟩
+  -- the family with `t j` deleted
+  set s : Fin n → R := fun i => t (j.succAbove i) with hsdef
+  -- `φ` is a local hom, so it carries the relation down to `R`
+  haveI : IsLocalHom φ := IsLocalHom.of_surjective φ hφsurj
+  have hmapK : Ideal.map φ (IsLocalRing.maximalIdeal (MvPowerSeries (Fin (n + 1)) Λ) ^ 2 ⊔
+      Ideal.span {((ℓ : ℕ) : MvPowerSeries (Fin (n + 1)) Λ)}) ≤
+      IsLocalRing.maximalIdeal R ^ 2 ⊔ Ideal.span {(ℓ : R)} := by
+    rw [Ideal.map_sup, Ideal.map_pow, Ideal.map_span]
+    refine sup_le (le_sup_of_le_left ?_) (le_sup_of_le_right ?_)
+    · rw [pow_two, pow_two]
+      exact Ideal.mul_mono (IsLocalRing.map_maximalIdeal_le φ)
+        (IsLocalRing.map_maximalIdeal_le φ)
+    · simp
+  have hφsum : ∑ i, ι (a i) * t i ∈
+      IsLocalRing.maximalIdeal R ^ 2 ⊔ Ideal.span {(ℓ : R)} := by
+    have himg := hmapK (Ideal.mem_map_of_mem φ hrem)
+    rw [map_sub, RingHom.mem_ker.mp hf, map_sum] at himg
+    simp only [map_mul, show ∀ i, φ (MvPowerSeries.C (a i)) = ι (a i) from
+      fun i => RingHom.congr_fun hφC (a i), hφX] at himg
+    simpa using neg_mem himg
+  -- hence `t j` is redundant
+  have hkey : t j ∈ Ideal.span (Set.range s) ⊔
+      (IsLocalRing.maximalIdeal R ^ 2 ⊔ Ideal.span {(ℓ : R)}) := by
+    have hother : ∀ i ∈ Finset.univ.erase j, ι (a i) * t i ∈
+        Ideal.span (Set.range s) ⊔
+          (IsLocalRing.maximalIdeal R ^ 2 ⊔ Ideal.span {(ℓ : R)}) := by
+      intro i hi
+      obtain ⟨kk, hkk⟩ := Fin.exists_succAbove_eq (Finset.mem_erase.mp hi).1
+      exact Ideal.mem_sup_left (Ideal.mul_mem_left _ _ (Ideal.subset_span ⟨kk, by
+        rw [hsdef]; exact congrArg t hkk⟩))
+    have h1 : ι (a j) * t j ∈ Ideal.span (Set.range s) ⊔
+        (IsLocalRing.maximalIdeal R ^ 2 ⊔ Ideal.span {(ℓ : R)}) := by
+      have hsplit : ι (a j) * t j
+          = (∑ i, ι (a i) * t i) - ∑ i ∈ Finset.univ.erase j, ι (a i) * t i := by
+        rw [Finset.sum_erase_eq_sub (Finset.mem_univ j)]
+        ring
+      rw [hsplit]
+      exact Ideal.sub_mem _ (Ideal.mem_sup_right hφsum) (Ideal.sum_mem _ hother)
+    have hunit : IsUnit (ι (a j)) := by
+      refine IsUnit.map ι ?_
+      by_contra hcon
+      exact hj ((IsLocalRing.mem_maximalIdeal _).mpr (mem_nonunits_iff.mpr hcon))
+    obtain ⟨u, hu⟩ := hunit
+    have hfin : t j = (↑u⁻¹ : R) * (ι (a j) * t j) := by
+      rw [← hu, ← mul_assoc, Units.inv_mul, one_mul]
+    rw [hfin]
+    exact Ideal.mul_mem_left _ _ h1
+  -- contradiction with minimality of `g = n + 1`
+  have hgen : IsLocalRing.maximalIdeal R = Ideal.span (Set.range s) ⊔
+      (IsLocalRing.maximalIdeal R ^ 2 ⊔ Ideal.span {(ℓ : R)}) := by
+    refine le_antisymm ?_ ?_
+    · conv_lhs => rw [hspan]
+      refine sup_le ?_ le_sup_right
+      rw [Ideal.span_le]
+      rintro _ ⟨i, rfl⟩
+      by_cases hij : i = j
+      · rw [hij]; exact hkey
+      · obtain ⟨kk, hkk⟩ := Fin.exists_succAbove_eq hij
+        exact Ideal.mem_sup_left (Ideal.subset_span ⟨kk, by
+          rw [hsdef]; exact congrArg t hkk⟩)
+    · refine sup_le ?_ ?_
+      · rw [Ideal.span_le]
+        rintro _ ⟨i, rfl⟩
+        exact ht _
+      · conv_rhs => rw [hspan]
+        exact le_sup_right
+  have := hmin n s (fun i => ht _) hgen
+  omega
 
+omit [TopologicalSpace k] [DiscreteTopology k] in
 /-- **Minimal-presentation stratum** (DECOMPOSED 2026-07-25 into the
 four commutative-algebra leaves `exists_coefficientRing_ringHom`
 (Cohen/Witt coefficient ring),
@@ -5628,10 +6283,10 @@ theorem exists_minimal_mvPowerSeries_presentation {R : Type*} [CommRing R]
   obtain ⟨g, t, ht, hspan, hmin⟩ :=
     exists_minimal_span_sup_of_isNoetherianRing _ hJ
   -- the coefficient ring and the substitution map
-  obtain ⟨Λ, iCR, iDom, iLoc, iNoeth, iAlg, iFin, hΛℓ, ι, hιcomp, hιsurj⟩ :=
+  obtain ⟨Λ, iCR, iDom, iLoc, iNoeth, iAlg, iFin, iPre, hΛℓ, ι, hιcomp, hιsurj⟩ :=
     exists_coefficientRing_ringHom (ℓ := ℓ) (k := k) π hπsurj
   letI := iCR; letI := iDom; letI := iLoc; letI := iNoeth; letI := iAlg
-  letI := iFin
+  letI := iFin; letI := iPre
   obtain ⟨φ, hφC, hφX⟩ :=
     exists_mvPowerSeries_ringHom_of_mem_maximalIdeal ι t ht
   have hφsurj : Function.Surjective φ :=

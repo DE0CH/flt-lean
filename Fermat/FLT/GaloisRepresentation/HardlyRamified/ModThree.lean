@@ -6884,11 +6884,17 @@ set_option maxHeartbeats 4000000 in
 /-- **Fontaine's different bound for a finite flat Hopf order over
 `ℤ₃` killed by `3`** (DECOMPOSED 2026-07-24 into the leaves above —
 the points-compositum finiteness/normality/placement leaves (i-a),
-(i-b), (i-c) are PROVEN; the two remaining sorry leaves are the
-Herbrand-transcribed Théorème A core (ii)
+(i-b), (i-c) are PROVEN, and so now are the Herbrand-transcribed
+Théorème A core (ii)
 `two_mul_sum_card_inertia_le_card_inertia_of_hopf_package` and the
 subextension estimate (iii)
-`two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`;
+`two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`
+— neither has a `sorry` in its body, so neither is a work item;
+the depth under (iii) has moved one level down, to the two Serre
+numerology leaves it consumes,
+`card_inertia_inf_fixingSubgroup_mul_add_sum_le_sum_card_inertia` and
+`card_inertia_inf_fixingSubgroup_mul_ramificationIdx'_eq_card_inertia`,
+which ARE still open;
 the assembly is PROVEN here: instantiate the subextension estimate at
 `L = hopfPointsField G` with the placement `M ≤ L` from `hM` and the
 break bound from the Théorème A leaf): the scheme-theoretic core of
