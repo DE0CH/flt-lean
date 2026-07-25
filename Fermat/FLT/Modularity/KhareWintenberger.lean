@@ -2442,8 +2442,181 @@ attribute [instance] ThreeadicRealization.commRingA
   ThreeadicRealization.moduleFreeA
   ThreeadicRealization.isModuleTopologyA
 
+/-- **Freeness normalization of a `3`-adic coefficient lattice**
+(PROVEN 2026-07-24; pure commutative algebra — the formal half of the
+classical "stable lattice" step): a coefficient ring `A` which is a
+DOMAIN, module-finite over `ℤ_[p]` and receives `ℤ_[p]` injectively is
+FREE as a `ℤ_[p]`-module. `ℤ_[p]` is a discrete valuation ring, hence a
+principal ideal domain; injectivity of `ℤ_[p] → A` between domains makes
+`A` torsion-free (`Module.isTorsionFree_iff_algebraMap_injective`), and a
+module-finite torsion-free module over a PID is free
+(`Module.free_of_finite_type_torsion_free'`).
+
+PIN AUDIT (2026-07-24, hard search): mathlib has NO stable-lattice
+material for continuous representations of compact groups (a search over
+`Mathlib/` for stable/invariant lattices returns nothing, and there is no
+`GL_n(K)`-conjugation/orbit-lattice development), so the EXISTENCE of the
+Galois-stable lattice cannot be split off as an in-tree formal step: it
+stays inside the citation leaf `exists_threeadicBrauerSum_of_witness`
+below, which produces the Brauer sum already in coefficient-ring
+(lattice) form — classically the integers `O_{E_λ}` of the completion.
+What IS formal, and is discharged here, is the freeness normalization
+that the proven `3`-adic classification consumes downstream. -/
+theorem module_free_padicInt_of_algebraMap_injective (p : ℕ)
+    [Fact p.Prime] (A : Type*) [CommRing A] [IsDomain A] [Algebra ℤ_[p] A]
+    [Module.Finite ℤ_[p] A]
+    (hinj : Function.Injective (algebraMap ℤ_[p] A)) :
+    Module.Free ℤ_[p] A :=
+  haveI : Module.IsTorsionFree ℤ_[p] A :=
+    Module.isTorsionFree_iff_algebraMap_injective.mpr hinj
+  Module.free_of_finite_type_torsion_free'
+
+/-- **Hecke-field interpolant transport** (PROVEN 2026-07-24; formal —
+the uniqueness half of the compatibility clause): a `3`-adic
+characteristic polynomial which is the `ψ₃`-image of ONE interpolant
+`Pv ∈ E[X]` of the `ℓ`-adic characteristic polynomial is the `ψ₃`-image
+of EVERY `E`-polynomial `P` interpolating that same `ℓ`-adic polynomial
+through `ψℓ`: `ψℓ` is a ring homomorphism out of a FIELD, hence
+injective, so `P.map ψℓ = Pv.map ψℓ` forces `P = Pv`
+(`Polynomial.map_injective`). This is exactly what turns the citation
+leaf's match against the single descended family `Pv` into the
+universally quantified `compat` field of `ThreeadicRealization`. -/
+theorem heckePoly_transport {E : Type*} [Field E] {Lℓ : Type*}
+    [Semiring Lℓ] [Nontrivial Lℓ] {L₃ : Type*} [Semiring L₃]
+    (ψℓ : E →+* Lℓ) (ψ₃ : E →+* L₃) {cρ : Polynomial Lℓ}
+    {cτ : Polynomial L₃} {Pv P : Polynomial E}
+    (hPv : cρ = Pv.map ψℓ) (hτ : cτ = Pv.map ψ₃) (hP : cρ = P.map ψℓ) :
+    cτ = P.map ψ₃ := by
+  have hEq : Pv = P :=
+    Polynomial.map_injective ψℓ ψℓ.injective (hPv.symm.trans hP)
+  rw [hτ, hEq]
+
+/-- **Brauer descent, `3`-adic side — the virtual sum is a true
+representation on a stable lattice** (sorry node; the citation
+sub-leaf of the `3`-adic realization, BLGGT §5.3): given the descended
+rational Hecke system `(S₀, Pv)` produced on the `ℓ`-adic side
+(`exists_heckeField_system_of_witness` — the family of `E`-coefficient
+polynomials interpolating `charFrob ρ` through `ιO`/`ψℓ`), the SAME
+system is realized `3`-adically: there are a finite exceptional set
+`S₁`, a coefficient ring `A` — a local DOMAIN, module-finite over
+`ℤ_3` with its module topology and `ℤ_3 ↪ A` (classically the integers
+`O_{E_λ}` of the completion of the Hecke field at a place `λ | 3`) — a
+representation `τ` of `G_ℚ` on `Fin 2 → A`, and an injective
+coefficient embedding `ιA : A ↪ ℚ̄_3` such that `τ`'s Frobenius
+characteristic polynomials away from `S₁` are the `ψ₃`-images of `Pv`.
+
+Classically this is the Brauer trick at the place `λ | 3`. Brauer's
+induction theorem on `Gal(F/ℚ)` (`Wit.galoisF`) writes
+`1 = Σ cᵢ · Ind_{Hᵢ}^{Gal(F/ℚ)} χᵢ` with `Hᵢ` solvable and `χᵢ`
+one-dimensional; solvable base change descends the Hilbert newform to
+each `Fᵢ = F^{Hᵢ}`, and Carayol/Taylor attach to each descended form
+its `3`-adic realization (the carrier's `τF` at the base level,
+`Wit.matchF₃`). The virtual sum
+`Σ cᵢ · Ind_{G_{Fᵢ}}^{G_ℚ} (τ_{fᵢ,λ} ⊗ χᵢ)` has, by construction, the
+same trace function as the `ψ₃`-transport of the Hecke system, hence
+Frobenius characteristic polynomials `Pv` through `ψ₃`; it is a TRUE
+(not merely virtual) representation because at the place over `ℓ` the
+corresponding sum is the character of `ρ` — a genuine `2`-dimensional
+representation — and Brauer–Nesbitt pins the semisimple representation
+at every place of `E`. Finally the resulting `2`-dimensional
+`E_λ`-representation of the COMPACT group `G_ℚ` admits a stable
+lattice (the `O_{E_λ}`-span of the orbit of any lattice under the
+compact image is finitely generated and stable), which is the
+coefficient package `A` together with `τ` and the embedding
+`ιA : O_{E_λ} ↪ ℚ̄_3`. The exceptional set `S₁` collects `S₀`, the
+primes ramified in `F`, and the primes below the bad places of the
+descended forms.
+
+Literature: Barnet-Lamb–Gee–Geraghty–Taylor, *Potential automorphy and
+change of weight*, Ann. of Math. 179 (2014), §5.3 (the Brauer trick:
+the virtual sum is a true representation, and the constructed system
+is weakly compatible) and Theorem 5.5.1; Khare–Wintenberger, *Serre's
+modularity conjecture (I)*, Invent. Math. 178 (2009), §5; Taylor,
+*Remarks on a conjecture of Fontaine and Mazur*, J. Inst. Math.
+Jussieu 1 (2002), §6; Carayol, Ann. Sci. ÉNS 19 (1986) (local-global
+compatibility at unramified places, fixing the Frobenius data);
+Serre, *Abelian ℓ-adic Representations*, I.1 (stable lattices for
+continuous representations of compact groups).
+
+PIN AUDIT (2026-07-24): the lattice step is NOT separable into an
+in-tree formal lemma at this pin — mathlib carries no stable-lattice
+material for compact groups (see
+`module_free_padicInt_of_algebraMap_injective` above), so the leaf is
+stated directly in lattice (coefficient-ring) form, exactly the shape
+the realization carrier and the proven `3`-adic classification
+consume. What was split off as formal is the freeness normalization
+(that lemma) and the interpolant uniqueness (`heckePoly_transport`).
+
+SOUNDNESS AUDIT (both ways, 2026-07-24): (i) direct — for the carrier
+produced by the inhabitation leaf and the system produced by the
+`ℓ`-adic descent this is BLGGT §5.3 verbatim; for an abstract carrier
+or an abstract family `Pv` the abstract-quantification caveat of
+pillar β applies (nothing formal ties an arbitrary `Pv` to a
+Hilbert eigensystem — that identification is part of the citation),
+and (ii) collapse — the hypothesis set (an irreducible hardly ramified
+mod-`ℓ` representation, `ℓ ≥ 5`) is classically unsatisfiable
+(headline below), so the statement is classically true for every
+package. ROUTE AUDIT (dichotomy, 2026-07-24): the alternative route —
+realizing the `3`-adic member directly from the base-level carrier
+data `Wit.τF` by inducing from `G_F` to `G_ℚ` without Brauer — is
+strictly deeper: `Ind_{G_F}^{G_ℚ} τF` has dimension `[F : ℚ] · 2`, so
+recovering a `2`-dimensional member from it requires precisely the
+Brauer virtual identity that this leaf cites; there is no shallower
+in-tree route, and no route through the forbidden modules.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
+discharge through `Family.lean`, `Lift.lean`, or
+`Modularity/Interface.lean`. -/
+theorem exists_threeadicBrauerSum_of_witness
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+    (Wit : PotentialModularityWitness ℓ O ρ)
+    (S₀ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (Pv : HeightOneSpectrum (NumberField.RingOfIntegers ℚ) →
+      Polynomial Wit.E)
+    (hPv : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S₀ →
+      q ≠ 2 → q ≠ 3 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map Wit.ιO =
+        (Pv hq.toHeightOneSpectrumRingOfIntegersRat).map Wit.ψℓ) :
+    ∃ (S₁ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+      (A : Type u) (_ : CommRing A) (_ : IsDomain A)
+      (_ : TopologicalSpace A) (_ : IsTopologicalRing A)
+      (_ : Algebra ℤ_[3] A) (_ : IsLocalRing A)
+      (_ : Module.Finite ℤ_[3] A) (_ : IsModuleTopology ℤ_[3] A)
+      (_ : Function.Injective (algebraMap ℤ_[3] A))
+      (τ : GaloisRep ℚ A (Fin 2 → A))
+      (ιA : A →+* AlgebraicClosure ℚ_[3]) (_ : Function.Injective ιA),
+      ∀ (q : ℕ) (hq : q.Prime),
+        hq.toHeightOneSpectrumRingOfIntegersRat ∉ S₁ →
+        q ≠ 2 → q ≠ 3 → q ≠ ℓ →
+        (τ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map ιA =
+          (Pv hq.toHeightOneSpectrumRingOfIntegersRat).map Wit.ψ₃ :=
+  sorry
+
 /-- **Brauer descent, `3`-adic side — construction of the raw
-realization** (sorry node — BLGGT §5.3, the Brauer-trick
+realization** (DECOMPOSED 2026-07-24 — now a PROVEN assembly over the
+`ℓ`-adic descended system, the Brauer-sum citation sub-leaf
+`exists_threeadicBrauerSum_of_witness`, and two formal steps; see the
+ASSEMBLY note at the end of this docstring — BLGGT §5.3, the
+Brauer-trick
 construction): a potential-modularity carrier for the lift `ρ` yields
 a `3`-adic realization over `ℚ`. Classically: Brauer's induction
 theorem on `Gal(F/ℚ)` (`Wit.galoisF`) writes
@@ -2474,6 +2647,22 @@ applies, and (ii) collapse — the hypothesis set is classically
 unsatisfiable (headline below), so the statement is classically true
 for every package.
 
+ASSEMBLY (2026-07-24, PROVEN): the `ℓ`-adic Brauer descent supplies
+the rational Hecke system `(S₀, Pv)` interpolating `charFrob ρ`
+(`exists_heckeField_system_of_witness`, already a proven assembly over
+its own three leaves) + the `3`-adic Brauer sum realizes THAT system
+on a stable lattice (`exists_threeadicBrauerSum_of_witness`, the
+single residual citation sub-leaf of this node — BLGGT §5.3) + two
+formal steps: the freeness normalization
+`module_free_padicInt_of_algebraMap_injective` (a module-finite
+torsion-free algebra over the PID `ℤ_3` is free — this is what turns
+the lattice into the `Module.Free ℤ_[3] A` the classification
+consumes) and the interpolant transport `heckePoly_transport` (`ψℓ` is
+injective on the field `E`, so matching the ONE descended family `Pv`
+gives the universally quantified `compat` clause). The exceptional set
+of the realization is the union `S₁ ∪ S₀`, so that both matches are
+available at every good prime.
+
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
 discharge through `Family.lean`, `Lift.lean`, or
 `Modularity/Interface.lean`. -/
@@ -2498,8 +2687,31 @@ theorem exists_threeadicRealization_of_witness
       (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
         ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
     (Wit : PotentialModularityWitness ℓ O ρ) :
-    Nonempty (ThreeadicRealization ℓ O ρ Wit) :=
-  sorry
+    Nonempty (ThreeadicRealization ℓ O ρ Wit) := by
+  classical
+  -- (i) the `ℓ`-adic Brauer descent: the rational Hecke system
+  obtain ⟨S₀, Pv, hPv⟩ :=
+    exists_heckeField_system_of_witness hℓodd hℓ5 hZinj hrank hρ hW hρbar
+      hirr π hπsurj hπ Wit
+  -- (ii) the `3`-adic Brauer sum realizing that same system on a
+  -- stable lattice (BLGGT §5.3)
+  obtain ⟨S₁, A, hA₁, hA₂, hA₃, hA₄, hA₅, hA₆, hA₇, hA₈, hAinj, τ, ιA,
+    hιA, hmatch⟩ :=
+    exists_threeadicBrauerSum_of_witness hℓodd hℓ5 hZinj hrank hρ hW
+      hρbar hirr π hπsurj hπ Wit S₀ Pv hPv
+  -- (iii) freeness normalization of the lattice (formal, `ℤ_3` a PID)
+  haveI : Module.Free ℤ_[3] A :=
+    module_free_padicInt_of_algebraMap_injective 3 A hAinj
+  -- glue: the realization, with the two exceptional sets united, and
+  -- the compatibility clause obtained from the single descended family
+  -- by interpolant uniqueness (formal, `ψℓ` injective on the field `E`)
+  refine ⟨{ S₁ := S₁ ∪ S₀, A := A, τ := τ, ιA := ιA,
+            ιA_injective := hιA, compat := ?_ }⟩
+  intro q hq hqS hq2 hq3 hqℓ P hP
+  exact heckePoly_transport Wit.ψℓ Wit.ψ₃
+    (hPv q hq (fun h => hqS (Finset.mem_union_right _ h)) hq2 hq3 hqℓ)
+    (hmatch q hq (fun h => hqS (Finset.mem_union_left _ h)) hq2 hq3 hqℓ)
+    hP
 
 /-- **Condition transfer, determinant — cyclotomic across the system**
 (sorry node): the Brauer-descended `3`-adic member has cyclotomic
