@@ -5906,7 +5906,9 @@ theorem PatchedModule.nonempty_transport.{v, w, x, y, s, uR} {p : ℕ}
 The three helper lemmas below isolate the bookkeeping that the
 instantiation of `Fermat/FLT/Modularity/PatchingVendored/` at a
 `TaylorWilesSystem` needs, so that neither of the two `Λ`-actions on the
-patched module has to be mentioned twice.  -/
+patched module — the DIAMOND one (through `S.diamond`) and the
+PRESENTATION one (through `PatchingAlgebra.lift R F S.pres`) — has to be
+mentioned twice.  -/
 
 /-- `IsRegular` counterpart of mathlib's
 `RingTheory.Sequence.isWeaklyRegular_map_algebraMap_iff` (PROVEN
