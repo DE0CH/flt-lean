@@ -1900,6 +1900,10 @@ theorem lineNumerator_mul_lineNumeratorNeg {q₁ q₂ x₁ y₁ x₂ y₂ : F}
   have hc3 := Cubic.d_of_eq hAP
   -- the two relations, transported into `F[W]`
   have hcr := coord_equation_coordC W
+  -- `coordC` and the structure map are definitionally but not syntactically
+  -- equal, and `ring` sees them as distinct atoms: normalise the relation to
+  -- the same atoms the goal is normalised to below
+  simp only [coordC_eq_algebraMap] at hcr
   rw [WeierstrassCurve.Affine.equation_iff'] at hq
   have hqW := congrArg (algebraMap F W.CoordinateRing) hq
   have hc2W := congrArg (algebraMap F W.CoordinateRing) hc2
