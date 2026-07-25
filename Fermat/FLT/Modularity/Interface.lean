@@ -201,6 +201,14 @@ import Mathlib.RingTheory.Polynomial.Cyclotomic.Eval
 -- PUBLIC because the glue lemmas' statements mention the `WithConv`
 -- convolution monoid and this file is one `@[expose] public section`
 public import Fermat.FLT.Deformations.RepresentationTheory.FlatProlongation
+-- `integralClosureInclusion`, used in the STATEMENT (not merely the proof)
+-- of `mem_maximalIdeal_of_integralClosureInclusion` below, which serves the
+-- at-`2` tame-Frobenius leaf.  It reached this file only transitively and
+-- PRIVATELY, which is enough inside a proof body but not in a signature —
+-- hence `Unknown identifier` on an otherwise sorry-free declaration, the
+-- error class that no sorry scan can see.  PUBLIC because this file is one
+-- `@[expose] public section`.
+public import Fermat.FLT.Deformations.RepresentationTheory.LocalInertiaFixedField
 import Fermat.FLT.GaloisRepresentation.HardlyRamified.Residual
 -- `IsHardlyRamified.exists_residual_odd`, discharging the residual
 -- reduction pillar `exists_residual_isHardlyRamified_odd` below
@@ -263,6 +271,14 @@ import Fermat.FLT.GroupScheme.ConnectedEtale
 -- the DVR is a finite flat Hopf form) and `antipodeAlgHom_comp_bialgHom`
 -- (bialgebra maps preserve antipodes), consumed by the schematic-closure
 -- half of the Raynaud subobject node `IsFlatPointsGroupAt.of_injective`.
+-- ALSO the Gelfand/Grothendieck layer consumed by that node's
+-- full-faithfulness leaf `exists_surjective_bialgHom_of_points_injection`
+-- (PROVEN 2026-07-25): `exists_algHom_of_algHom_map` (the algebra map
+-- induced by an equivariant map of point sets),
+-- `subalgebra_eq_top_of_algHom_separating` (a point-separating
+-- subalgebra of a finite étale algebra is everything) and
+-- `eq_zero_of_forall_algHom_eq_zero` (points separate a finite étale
+-- algebra).
 -- Non-public: proofs only.
 import Fermat.FLT.KnownIn1980s.EllipticCurves.Flat
 -- (The flat-prolongation convolution toolkit is imported PUBLICLY further
@@ -6167,8 +6183,8 @@ theorem exists_etaleHopfAlgebra_of_points_embedding
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
-/-- **Étale–Galois, full-faithfulness half** (sorry node — step (β2)
-of the subobject closure, added 2026-07-25 by the decomposition of
+/-- **Étale–Galois, full-faithfulness half** (PROVEN 2026-07-25 — step
+(β2) of the subobject closure, added 2026-07-25 by the decomposition of
 `IsFlatPointsGroupAt.of_injective`): an INJECTIVE, `Γ Kᵥ`-equivariant
 homomorphism `t` of convolution point groups from a finite étale
 `Kᵥ`-Hopf algebra `H` into the points of a finite étale `Kᵥ`-Hopf
@@ -6193,8 +6209,20 @@ groups). Intended proof, entirely inside the PROVEN machinery of
   `AlgHom.convMul_apply`, exactly `htmul`, and testing the counits is
   `htone` — the same argument as the PROVEN
   `exists_bialgEquiv_of_algEquiv_conv`, whose `AlgEquiv` hypothesis is
-  never used for these two checks. The antipode needs no check
-  (`→ₐc` preserves it automatically, `antipodeAlgHom_comp_bialgHom`).
+  never used for these two checks. (CONFIRMED 2026-07-25 while proving
+  this: that lemma's comultiplication and counit tests go through
+  verbatim for a bare `AlgHom`; the equivalence is used there only to
+  transport `hmul` into the `hmul'` shape, which here is supplied
+  directly by `htmul` through `φ.comp π = t φ`.) The antipode needs no
+  check (`→ₐc` preserves it automatically,
+  `antipodeAlgHom_comp_bialgHom`).
+The bridge between the bare-hom convolution monoid on
+`H →ₐ[Kᵥ] Ωᵥ` (in which `htone`/`htmul` are stated) and mathlib's
+`WithConv` monoid (in which `AlgHom.convMul_apply` computes) is
+`vendored_one_eq_convOne` / `vendored_mul_eq_convMul`, both `rfl`.
+`Ωᵥ` is a separable closure of the characteristic-zero field `Kᵥ`
+(`IsSepClosure Kᵥ Ωᵥ` from `IsAlgClosed` plus `Algebra.IsSeparable`),
+which is what lets the three `Flat.lean` ingredients apply.
 Unconditionally TRUE; no hypothesis package. -/
 theorem exists_surjective_bialgHom_of_points_injection
     (Q : Type) [CommRing Q] [HopfAlgebra Kᵥ Q] [Module.Finite Kᵥ Q]
@@ -6207,8 +6235,113 @@ theorem exists_surjective_bialgHom_of_points_injection
     (htmul : ∀ φ ψ : H →ₐ[Kᵥ] Ωᵥ, t (φ * ψ) = t φ * t ψ)
     (hteq : ∀ (g : Γᵥ) (φ : H →ₐ[Kᵥ] Ωᵥ), t (g • φ) = g • t φ) :
     ∃ π : Q →ₐc[Kᵥ] H, Function.Surjective (π : Q →ₐ[Kᵥ] H) ∧
-      ∀ φ : H →ₐ[Kᵥ] Ωᵥ, φ.comp (π : Q →ₐ[Kᵥ] H) = t φ :=
-  sorry
+      ∀ φ : H →ₐ[Kᵥ] Ωᵥ, φ.comp (π : Q →ₐ[Kᵥ] H) = t φ := by
+  classical
+  -- in characteristic zero the algebraic closure is a separable closure
+  haveI hsepcl : IsSepClosure Kᵥ Ωᵥ := ⟨inferInstance, inferInstance⟩
+  -- (1) the underlying ALGEBRA map, from Grothendieck full faithfulness:
+  -- the equivariance clause in composition form
+  have hteq' : ∀ (σ : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ) (φ : H →ₐ[Kᵥ] Ωᵥ),
+      t (σ.toAlgHom.comp φ) = σ.toAlgHom.comp (t φ) := by
+    intro σ φ
+    have h1 : σ.toAlgHom.comp φ = σ • φ := AlgHom.ext fun _ => rfl
+    have h2 : σ.toAlgHom.comp (t φ) = σ • t φ := AlgHom.ext fun _ => rfl
+    rw [h1, h2]
+    exact hteq σ φ
+  obtain ⟨π₀, hπ₀⟩ := exists_algHom_of_algHom_map Kᵥ Ωᵥ H Q t hteq'
+  have hcomp : ∀ φ : H →ₐ[Kᵥ] Ωᵥ, φ.comp π₀ = t φ :=
+    fun φ => AlgHom.ext fun q => hπ₀ φ q
+  -- (2) SURJECTIVITY: the range of `π₀` separates the points of `H`,
+  -- because two points agreeing on it have the same image under `t`
+  have hrange : π₀.range = ⊤ := by
+    refine subalgebra_eq_top_of_algHom_separating Kᵥ Ωᵥ H π₀.range ?_
+    intro φ ψ hsepφψ
+    refine htinj ?_
+    rw [← hcomp φ, ← hcomp ψ]
+    exact AlgHom.ext fun q => hsepφψ (π₀ q) ⟨q, rfl⟩
+  have hsurj : Function.Surjective π₀ := by
+    intro x
+    have hx : x ∈ π₀.range := by rw [hrange]; trivial
+    exact hx
+  -- (3) the BIALGEBRA upgrade, counit half: `t 1 = 1` says
+  -- `algebraMap ∘ counit_H ∘ π₀ = algebraMap ∘ counit_Q`
+  have hcounit : (Bialgebra.counitAlgHom Kᵥ H).comp π₀ =
+      Bialgebra.counitAlgHom Kᵥ Q := by
+    refine AlgHom.ext fun q => ?_
+    have h1 : (1 : H →ₐ[Kᵥ] Ωᵥ).comp π₀ = (1 : Q →ₐ[Kᵥ] Ωᵥ) := by
+      rw [hcomp 1, htone]
+    have h2 := AlgHom.congr_fun h1 q
+    have h3 : (1 : H →ₐ[Kᵥ] Ωᵥ) (π₀ q) =
+        algebraMap Kᵥ Ωᵥ (Coalgebra.counit (π₀ q)) := rfl
+    have h4 : (1 : Q →ₐ[Kᵥ] Ωᵥ) q = algebraMap Kᵥ Ωᵥ (Coalgebra.counit q) := rfl
+    rw [AlgHom.comp_apply] at h2
+    rw [h3, h4] at h2
+    exact (algebraMap Kᵥ Ωᵥ).injective h2
+  -- (4) the BIALGEBRA upgrade, comultiplication half: test against every
+  -- point of the finite étale `H ⊗[Kᵥ] H`
+  haveI hEt2 : Algebra.Etale Kᵥ (H ⊗[Kᵥ] H) :=
+    Algebra.Etale.comp Kᵥ H (H ⊗[Kᵥ] H)
+  have hmul' : ∀ φ ψ : H →ₐ[Kᵥ] Ωᵥ,
+      (WithConv.toConv (φ.comp π₀) * WithConv.toConv (ψ.comp π₀)).ofConv =
+        ((WithConv.toConv φ * WithConv.toConv ψ).ofConv).comp π₀ := by
+    intro φ ψ
+    rw [← vendored_mul_eq_convMul, ← vendored_mul_eq_convMul, hcomp φ, hcomp ψ,
+      hcomp (φ * ψ)]
+    exact (htmul φ ψ).symm
+  have hcomul : (Algebra.TensorProduct.map π₀ π₀).comp
+      (Bialgebra.comulAlgHom Kᵥ Q) =
+      (Bialgebra.comulAlgHom Kᵥ H).comp π₀ := by
+    refine AlgHom.ext fun a => ?_
+    have hsep2 := eq_zero_of_forall_algHom_eq_zero Kᵥ Ωᵥ (H ⊗[Kᵥ] H)
+      ((Algebra.TensorProduct.map π₀ π₀).comp (Bialgebra.comulAlgHom Kᵥ Q) a -
+        (Bialgebra.comulAlgHom Kᵥ H).comp π₀ a)
+    rw [sub_eq_zero] at hsep2
+    apply hsep2
+    intro χ
+    rw [map_sub, sub_eq_zero]
+    -- decompose the point `χ` of `H ⊗[Kᵥ] H` into its two restrictions
+    set φ := χ.comp Algebra.TensorProduct.includeLeft with hφ
+    set ψ := χ.comp (Algebra.TensorProduct.includeRight :
+      H →ₐ[Kᵥ] H ⊗[Kᵥ] H) with hψ
+    have hχ : χ = Algebra.TensorProduct.lift φ ψ fun _ _ => Commute.all _ _ := by
+      apply Algebra.TensorProduct.ext
+      · apply AlgHom.ext
+        intro b
+        simp [hφ]
+      · apply AlgHom.ext
+        intro b
+        simp [hψ]
+    -- the left side is the convolution of the transported points
+    have hleft : χ ((Algebra.TensorProduct.map π₀ π₀).comp
+        (Bialgebra.comulAlgHom Kᵥ Q) a) =
+        ((WithConv.toConv (φ.comp π₀) * WithConv.toConv (ψ.comp π₀)).ofConv) a := by
+      rw [hχ]
+      have hlift : (Algebra.TensorProduct.lift φ ψ fun _ _ => Commute.all _ _).comp
+          (Algebra.TensorProduct.map π₀ π₀) =
+          Algebra.TensorProduct.lift (φ.comp π₀) (ψ.comp π₀)
+            (fun _ _ => Commute.all _ _) := by
+        apply Algebra.TensorProduct.ext
+        · apply AlgHom.ext
+          intro b
+          simp
+        · apply AlgHom.ext
+          intro b
+          simp
+      rw [AlgHom.comp_apply, ← AlgHom.comp_apply (Algebra.TensorProduct.lift φ ψ _),
+        hlift]
+      rw [AlgHom.convMul_apply]
+      rfl
+    -- the right side is the convolution of the original points, at `π₀ a`
+    have hright : χ ((Bialgebra.comulAlgHom Kᵥ H).comp π₀ a) =
+        (((WithConv.toConv φ * WithConv.toConv ψ).ofConv).comp π₀) a := by
+      rw [hχ, AlgHom.comp_apply]
+      rw [show (Algebra.TensorProduct.lift φ ψ fun _ _ => Commute.all _ _)
+          ((Bialgebra.comulAlgHom Kᵥ H) (π₀ a)) =
+          ((WithConv.toConv φ * WithConv.toConv ψ).ofConv) (π₀ a) from
+        (AlgHom.convMul_apply _ _ _).symm]
+      rfl
+    rw [hleft, hright, hmul' φ ψ]
+  exact ⟨BialgHom.ofAlgHom π₀ hcounit hcomul, hsurj, hcomp⟩
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
@@ -6230,8 +6363,8 @@ full-faithfulness half remains sorried:
   `Kᵥ`-Hopf algebra `H` (`exists_etaleHopfAlgebra_of_points_embedding`,
   PROVEN), and the induced inclusion of point groups comes from a
   SURJECTIVE bialgebra homomorphism `π : Q → H`
-  (`exists_surjective_bialgHom_of_points_injection`, sorry leaf) — the
-  two halves of Grothendieck's anti-equivalence. The convolution
+  (`exists_surjective_bialgHom_of_points_injection`, PROVEN 2026-07-25)
+  — the two halves of Grothendieck's anti-equivalence. The convolution
   homomorphism property of the induced `t` is PROVEN here from
   additivity of `j'` and `e`;
 * (γ) *schematic closure over the DVR*: the canonical Hopf order
@@ -22728,7 +22861,98 @@ and `a₂ = 0 ≤ 1` by
 `GaloisRep.HasConductorExponentAt.eq_zero_of_isUnramifiedAt`), or the
 Steinberg configuration at `2` (inertia acting by a nontrivial
 transvection, `a₂ = 1`). The conclusion is sharp: `a₂ = 1` is attained,
-so `≤ 1` cannot be improved to `= 0`. -/
+so `≤ 1` cannot be improved to `= 0`.
+
+FALSITY AUDIT (2026-07-25, fourth owner — **THIS LEAF IS FALSE AS
+STATED**; do not dispatch a prover at it, the repair is cut-level and is
+spelled out at the end of this audit).
+
+`GaloisRep.HasConductorExponentAt ρ v a` unfolds to
+`∃ s, a = ρ.tameExponent v + s ∧ (ρ.IsUnramifiedAt v → s = 0)`, and its
+ONLY constraint on the wild summand `s` is CONDITIONED ON
+UNRAMIFIEDNESS. So for a `ρ` that is RAMIFIED at `v` the predicate is
+UPWARD CLOSED: `HasConductorExponentAt ρ v a` holds for EVERY
+`a ≥ ρ.tameExponent v`, witnessed by `s := a − ρ.tameExponent v` with the
+implication discharged vacuously. A hypothesis-free numerical CAP on `a`
+therefore forces unramifiedness — this leaf alone proves
+
+  `τ.IsUnramifiedAt Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat`
+
+for every `τ` satisfying `hsq`, by
+`by_contra h; have : τ.tameExponent v₂ + 2 ≤ 1 := this_leaf hpodd hsq
+⟨2, rfl, fun hu => absurd hu h⟩; omega` (machine-checked).
+
+That consequence is FALSE, and the SOUNDNESS AUDIT above names its own
+counterexample. Take `E/ℚ` of conductor `14` (Weierstrass coefficients
+`[1, 0, 1, 4, −6]`; multiplicative reduction at `2`, Kodaira type `I₆`,
+`v₂(j) = −6`, `f₂ = 1` — checked in PARI/GP) and `p := 5`. On
+`V₅(E) ⊗ ℚ̄₅` the inertia at `2` acts through the Tate parametrization as
+`σ ↦ (1, t(σ); 0, 1)`, so `(τσ − 1)² = 0` for every `σ ∈ I₂` and `hsq`
+holds — split-vs-non-split multiplicative reduction differs by an
+UNRAMIFIED quadratic twist, which is invisible to inertia — while `τ` is
+RAMIFIED at `2` precisely because `5 ∤ v₂(q_E) = 6`. Hence
+`τ.tameExponent v₂ = 1`, `τ.HasConductorExponentAt v₂ 2` holds with
+`s := 1`, and the conclusion `2 ≤ 1` fails. (The classical Artin
+conductor really is `a₂ = 1` here; what is false is the leaf, because the
+predicate does not pin `a` to it.)
+
+The counterexample has to be Steinberg — i.e. unipotent on `I₂` but NOT
+globally unipotent — and that is not laziness in the choice: a globally
+unipotent `τ = (1, c; 0, 1)` needs a continuous additive character
+`c : Γ_ℚ → (ℚ̄_p, +)`, and every such factors through `ℤ̂ ^× ≅ ∏_ℓ ℤ_ℓ^×`
+with only the `ℓ = p` factor surviving (a pro-`ℓ` group has no nontrivial
+continuous map to a torsion-free pro-`p` group for `ℓ ≠ p`, and the
+finite factors die into a torsion-free target). So `c` is a multiple of
+the cyclotomic direction, ramified only at `p`, hence UNRAMIFIED at `2`
+for `p` odd — such a `τ` satisfies the leaf harmlessly. Only a
+non-abelian `τ` can be ramified at `2` with unipotent inertia there,
+which is exactly the local type Carayol's `q ∥ M₀` case produces.
+
+THE GENERALIZABLE LESSON, since the same packaging carries both leaves
+of this conductor cut: `ArtinConductor.lean`'s soundness argument — "every
+`HasConductorExponentAt ρ v a` is IMPLIED by the true conductor identity,
+so a sorried leaf asserting it can never be false" — is valid only in
+CONCLUSION position. A weakened predicate in HYPOTHESIS position
+strengthens the statement, so the same weakening that makes the Carayol
+leaf sound makes this one FALSE. Consuming `HasConductorExponentAt` as a
+hypothesis is safe only for LOWER-bound content (`a ≠ 0 → ρ` is ramified
+at `v`, via `HasConductorExponentAt.eq_zero_of_isUnramifiedAt` — which is
+exactly what the away-from-`p` sibling
+`not_isUnramifiedAt_of_isNewAtPrime_of_isIrreducible` uses, and that
+consumer is SOUND). It can never carry UPPER-bound content, which is what
+this leaf asks of it.
+
+WHY NO IN-REGION REPAIR EXISTS. The existential packaging discards the
+wild summand irreversibly at the shared Carayol leaf
+`hasConductorExponentAt_factorization_of_isNewAtPrime`, so NO statement
+whose only numeric input is `HasConductorExponentAt τ v₂ a` can bound
+`a` without proving unramifiedness. The residual mathematical content of
+this leaf is exactly `Sw₂(τ) = 0`, which the current packaging cannot
+even STATE. Repair, in dependency order:
+
+1. in `ArtinConductor.lean`, an `opaque GaloisRep.swanExponent ρ v : ℕ`
+   (nothing about its value provable — no axiom and no `sorry` is
+   introduced, `#print axioms` stays clean — but `Sw = 0` becomes a
+   STATABLE proposition) with
+   `conductorExponent ρ v := ρ.tameExponent v + ρ.swanExponent v` and
+   `HasConductorExponentAt ρ v a := a = ρ.conductorExponent v`, which
+   pins `a`;
+2. `HasConductorExponentAt.eq_zero_of_isUnramifiedAt` then needs a
+   sorried `swanExponent_eq_zero_of_isUnramifiedAt` — it is PROVEN today
+   only because the existential gives it away for free;
+3. this leaf becomes `hsq → τ.conductorExponent v₂ ≤ 1`, splitting into
+   its two honest halves: the TAME half (already available as
+   `GaloisRep.tameExponent_add_one_le_finrank_of_fixed`, fed by the
+   consumer's `hfixline` modulo the `localInertia_two_eq_map_padic`
+   spelling bridge) and the WILD half `swanExponent τ v₂ = 0` (Serre,
+   *Local Fields* IV §2 — the pro-`2`/pro-`p` clash of the second bullet
+   above), which is an honest, purely local citation leaf.
+
+Until that repair lands this `sorry` must STAY: the statement cannot be
+proven, and the consumer
+`weightTwoNewform_factorization_two_le_one_of_inertia_fixed_line_of_isIrreducible`
+below applies it verbatim, so weakening it in place would only move the
+red. -/
 theorem hasConductorExponentAt_two_le_one_of_inertia_sq_eq_zero
     {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
       (Fin 2 → AlgebraicClosure ℚ_[p])}
