@@ -513,8 +513,389 @@ theorem exists_moretBailly_seed_of_five_le
       Nonempty (MoretBaillySeed ℓ F (ρbar.map (algebraMap ℚ F))) :=
   sorry
 
-/-- **Modularity lifting over the totally real base** (sorry node —
-Kisin/Taylor MLT + Carayol local-global): over the Moret–Bailly base
+/-!
+## The modularity-lifting cut over `F` (2026-07-24)
+
+`exists_heckePackage_of_seed` below is the modularity-lifting stage of
+pillar β: it turns the Moret–Bailly seed (a modular `ℓ`-adic
+representation of `G_F` congruent to `ρbar|_{G_F}`) into modularity of
+the Khare–Wintenberger lift `ρ|_{G_F}` itself.  It is now PROVEN as an
+assembly over three sub-leaves cut at the literature joints:
+
+* (c) `exists_residualCongruence_over_base` — the residual-to-`ℓ`-adic
+  lifting bridge: `ρ|_{G_F}` really is a lift of `ρbar|_{G_F}`, as a
+  statement about places of `F` (the rational hypothesis `hπ` only
+  speaks about rational primes).  This is the *input datum* of the
+  MLT, and it is pure Galois theory — Chebotarev over `ℚ`,
+  Brauer–Nesbitt, and compatibility of `charFrob` with base change.
+* (a) `exists_heckeEigensystem_of_congruentSeed` — `R = 𝕋` over `F`
+  for the relevant deformation problem: the Taylor–Wiles/Kisin
+  patching argument over the totally real base, whose output is the
+  raw `ℓ`-adic Hecke eigensystem `(aF, dF)` of the Hilbert newform
+  attached to `ρ|_{G_F}`, together with the coefficient embedding
+  `ιO : O ↪ ℚ̄_ℓ`.
+* (b) `exists_heckeField_of_eigensystem` — Carayol local-global
+  normalization + Shimura rationality: the `ℚ̄_ℓ`-valued eigensystem
+  is defined over a NUMBER FIELD `E` (the Hecke field), through a
+  place `ψℓ` of `E` over `ℓ`.
+
+PATCHING-GENERALIZATION AUDIT (2026-07-24, the question this cut was
+dispatched to answer).  Can (a) be discharged by generalizing
+`Patching.lean` over a totally real base instead of citing it?  A
+declaration-by-declaration audit of `Patching.lean` splits it in three:
+
+1. *Base-field-agnostic already* — the whole commutative-algebra half
+   carries no Galois data whatsoever and would transfer to any base
+   verbatim: the coset prime-avoidance lemma
+   (`exists_add_notMem_of_forall_not_le`), the regular-element and
+   depth-descent chain (`isSMulRegular_of_forall_notMem_associatedPrimes`,
+   `not_maximalIdeal_le_of_mem_associatedPrimes`,
+   `exists_isRegular_quotSMulTop_of_isSMulRegular`), the
+   Auslander–Buchsbaum instance
+   (`free_of_isRegular_of_ofList_eq_maximalIdeal`), the power-series
+   stratum (`isNoetherianRing_mvPowerSeries`,
+   `exists_isRegular_ofList_eq_maximalIdeal_mvPowerSeries`,
+   `free_of_isRegular_mvPowerSeries`), the patching objects and their
+   payoff (`PatchedModule`, `PatchedModule.injective`, `taylorWilesAug`,
+   `TaylorWilesSystem`, `TaylorWilesLevel`, `TaylorWilesTower`,
+   `TaylorWilesSystem.exists_patchedModule`,
+   `nonempty_linearEquiv_fin_of_free_over_quotient`), and the `ℤ_p`
+   coefficient glue (`charP_of_ringHom_padicInt`, `ringHom_padicInt_eq`,
+   `continuous_ringHom_padicInt`, `t2Space_of_isModuleTopology`).
+   These consume only `ψ : Runiv →+* T` and ring/module data.
+2. *Hard-pinned to `ℚ` through `IsHardlyRamified`* — every arithmetic
+   declaration.  `IsHardlyRamified` is not merely stated for
+   `GaloisRep ℚ`: its four clauses hard-code the RATIONAL local
+   conditions (cyclotomic determinant over `ℚ̄`, unramifiedness indexed
+   by rational primes through
+   `Nat.Prime.toHeightOneSpectrumRingOfIntegersRat`, flatness at the
+   rational place `ℓ`, and a tame quotient over the decomposition
+   group `Γ ℚ_[2]` of the rational prime `2`).  So
+   `HardlyRamifiedFiniteDeformation`, `IsWeaklyUniversalDeformation`,
+   Mazur representability, the Hermite–Minkowski finiteness stratum
+   (`finite_setOf_intermediateField_inertiaAt_le` is literally about
+   `IntermediateField ℚ (AlgebraicClosure ℚ)` and absolute
+   discriminants), Taylor–Wiles prime production
+   (`IsTaylorWilesPrimeSet`, `exists_taylorWilesPrime`), Carayol trace
+   generation and `exists_conj_of_charFrob_eq_away` would each need
+   re-derivation over `F` — with genuinely different mathematics
+   (relative discriminant bounds, places over `2` and `ℓ` rather than
+   the primes themselves, Fontaine–Laffaille/Kisin local conditions at
+   `w | ℓ` in place of a single flatness clause).
+3. *Absent entirely on either base* — the Hecke side.  `Patching.lean`
+   ABSTRACTS the automorphic input into structure fields (the modules
+   `M n` of a `TaylorWilesSystem`); over `ℚ` those fields are
+   inhabited only at the pillar-3b interface, and over `F` they would
+   require Hilbert-modular Hecke modules, which the project does not
+   have in any form.
+
+Conclusion: generalizing `Patching.lean` would recycle its
+commutative-algebra half but reprove its arithmetic half and still
+leave the Hilbert-modular Hecke input open — i.e. it does not shorten
+this leaf today.  The sound cut is therefore the LITERATURE cut
+below, with (a) stated so that a future general-base patching node is
+its natural discharge (its hypothesis list is exactly the
+Taylor–Wiles input: a congruent modular seed, residual irreducibility
+over `F`, and the deformation conditions carried by `hρ`).
+-/
+
+/-- **The residual bridge over the Moret–Bailly base** (sorry node;
+sub-leaf (c) of the modularity-lifting cut — Chebotarev +
+Brauer–Nesbitt + base change): the Khare–Wintenberger lift `ρ`,
+restricted to `G_F`, is a lift of `ρbar|_{G_F}` — at all but finitely
+many places `w` of `F` its Frobenius characteristic polynomial reduces
+through `π` to that of `ρbar|_{G_F}`.
+
+This is the *residual input* the modularity lifting theorem consumes:
+combined with the seed's own congruence (`seed.residual₀`) it says
+that `ρ|_{G_F}` and the modular seed `σ` are congruent lifts of one
+and the same residual representation, which is precisely the
+hypothesis of an `R = 𝕋` theorem.
+
+Classically: the hypothesis `hπ` gives equality of the reductions'
+Frobenius characteristic polynomials at every rational prime
+`q ∉ {2, ℓ}`; by Chebotarev density those primes' Frobenius classes
+are dense in `Gal(ℚ̄/ℚ)` (the excluded primes are finite in number,
+hence of density zero), so the semisimplifications of `ρ mod π` and
+of `ρbar` have equal characteristic polynomials on all of `G_ℚ`, and
+Brauer–Nesbitt identifies them; `ρbar` is irreducible, hence
+semisimple, so `ρ mod π ≅ ρbar` as `G_ℚ`-representations (this is the
+in-tree `Patching.lean` lemma `exists_conj_of_charFrob_eq_away`, whose
+hypothesis shape is exactly `hπ`).  Restricting an isomorphism of
+`G_ℚ`-representations to the open subgroup `G_F` preserves it, and
+`charFrob` commutes with base change of the coefficient ring
+(`Patching.lean`'s `charFrob_baseChange`), so at every place `w` of
+`F` at which both sides are unramified the two characteristic
+polynomials agree.  The finite exceptional set `badρ` collects the
+places over `2` and `ℓ` and the places ramified in `F/ℚ` — the only
+places where `charFrob` is not pinned by the unramified comparison.
+
+PIN AUDIT (2026-07-24): the ingredients exist in-tree but on the
+WRONG side of the import graph for a direct discharge here —
+`exists_conj_of_charFrob_eq_away` and `charFrob_baseChange` both live
+in `Modularity/Patching.lean`, which is downstream of this module's
+consumer chain; the circularity guard below forbids importing it.  A
+future discharge extracts them into a Family-free shared module
+exactly as the 2026-07-24 pillar-α refactor did for the deformation
+development (`HardlyRamified/Deformation.lean`), then proves this leaf
+by restriction of the conjugating isomorphism plus place-by-place
+`charFrob` comparison.  That extraction is the recommended attack.
+
+SOUNDNESS AUDIT (both ways, 2026-07-24): (i) direct — the statement is
+true for ANY package satisfying its hypotheses, with no
+abstract-quantification caveat: the argument above uses only `hπ`,
+`hirr` and Chebotarev, all of which are hypotheses or theorems here,
+and the exceptional set is existentially quantified (so no claim is
+made about the ramified places); (ii) collapse — the hypothesis set
+(an irreducible hardly ramified mod-`ℓ` representation, `ℓ ≥ 5`) is
+classically unsatisfiable (headline below), so the statement is also
+vacuously sound.  This is the only one of the three sub-leaves that is
+directly true as stated, which is the reason it was cut off from (a).
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
+discharge through `Family.lean`, `Lift.lean`, or
+`Modularity/Interface.lean`. -/
+theorem exists_residualCongruence_over_base
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+    (F : Type u) [Field F] [NumberField F]
+    (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible) :
+    ∃ badρ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)),
+      ∀ w ∉ badρ,
+        ((ρ.map (algebraMap ℚ F)).charFrob w).map π =
+          (ρbar.map (algebraMap ℚ F)).charFrob w :=
+  sorry
+
+/-- **`R = 𝕋` over the totally real base** (sorry node; sub-leaf (a) of
+the modularity-lifting cut — Kisin 2009 / Taylor 2006, the
+Taylor–Wiles patching argument over `F`): given the modular seed `σ`
+over `F` and the residual congruence `hcong` identifying `ρ|_{G_F}`
+and `σ` as lifts of one irreducible residual representation, the lift
+`ρ|_{G_F}` is ITSELF modular: away from a finite bad set its Frobenius
+characteristic polynomial is the Hecke polynomial
+`X² − a_w·X + Nw` of a Hilbert newform, read inside `ℚ̄_ℓ` through a
+coefficient embedding `ιO` of the lift's coefficient ring.
+
+The conclusion is deliberately stated in the RAW `ℚ̄_ℓ`-valued form —
+the eigenvalue function `aF` (classically `a_w`, the `T_w`-eigenvalue
+of the newform) and the constant-coefficient function `dF`
+(classically the absolute norm `Nw`, forced by the cyclotomic
+determinant of `hρ`) — with no claim that these values are ALGEBRAIC.
+The algebraicity is Shimura's rationality theorem and is the content
+of the next sub-leaf (`exists_heckeField_of_eigensystem`); keeping the
+two apart is what makes this leaf exactly the `R = 𝕋` statement and
+that one exactly the Carayol/Shimura normalization.
+
+Classically: the seed `σ` is modular (`seed.modular₀`) and residually
+`ρbar|_{G_F}` (`seed.residual₀`); by `hcong` the lift `ρ|_{G_F}` has
+the same residual representation, and `hirrF` makes it irreducible, so
+both are points of one deformation problem — the minimal problem
+attached to `ρbar|_{G_F}` with the local conditions imported from
+`hρ` (cyclotomic determinant, unramified outside the places over `2`
+and `ℓ`, flat at the places over `ℓ`, tame at the places over `2`),
+which is the "`S`-good" problem of the FLT blueprint ch. 4 transported
+to `F`.  Modularity of the seed makes the corresponding Hecke algebra
+`𝕋` nonzero, and the Taylor–Wiles–Kisin patching argument identifies
+the universal deformation ring with `𝕋`; the point of `R` given by
+`ρ|_{G_F}` is therefore a point of `𝕋`, i.e. a Hilbert newform `f` of
+parallel weight `2` over `F`, and Carayol's local-global
+compatibility at the places where everything is unramified turns the
+eigenvalue system of `f` into the Frobenius characteristic
+polynomials above.  The Taylor–Wiles hypothesis
+(`ρbar|_{G_{F(ζ_ℓ)}}` absolutely irreducible) is part of the
+Moret–Bailly avoidance of leaf (i); its pin-stateable trace `hirrF` is
+carried formally, the rest lives in this citation.
+
+Literature: Kisin, *Moduli of finite flat group schemes, and
+modularity*, Ann. of Math. 170 (2009), Theorem (0.1) (the totally real
+modularity lifting theorem in the flat/low-weight case used here);
+Taylor, *On the meromorphic continuation of degree two L-functions*,
+Doc. Math. Extra Vol. (2006), Theorem 5.4 (the variant tolerating the
+small residual image left by the Moret–Bailly construction); Fujiwara,
+*Deformation rings and Hecke algebras in the totally real case*
+(1996/2006), and Skinner–Wiles for the earlier totally real `R = 𝕋`;
+Taylor's 2018 Stanford course and the FLT blueprint ch. 4 for the
+statement form used here; Carayol, Ann. Sci. ÉNS 19 (1986) for the
+identification of Frobenius data with Hecke data.
+
+PATCHING NOTE (2026-07-24): see the section audit above — the
+project's own Taylor–Wiles machinery (`Patching.lean`) is hard-pinned
+to base `ℚ` through `IsHardlyRamified`'s local conditions at the
+rational primes `2` and `ℓ`; its commutative-algebra half
+(`PatchedModule`, the Auslander–Buchsbaum/depth chain, the
+power-series stratum, `TaylorWilesSystem` and its tower) is
+base-agnostic and IS the reusable part, so if those pillars are ever
+generalized over a totally real base, THIS leaf — not its consumer —
+is the natural consumer of the generalization.
+
+SOUNDNESS AUDIT (both ways, 2026-07-24): (i) direct — for the intended
+instantiation (`F`, `seed` from `exists_moretBailly_seed_of_five_le`,
+`ρ` the KW minimal lift, `hcong` from sub-leaf (c)) this is the MLT
+chain above; for an abstract `(F, seed, badρ, hcong)` the
+abstract-quantification caveat applies (not every formally admissible
+package satisfies the unstated Taylor–Wiles conditions — in
+particular absolute irreducibility over `F(ζ_ℓ)` and the local
+conditions at the places over `2`), and (ii) collapse — the
+hypothesis set (an irreducible hardly ramified mod-`ℓ`
+representation, `ℓ ≥ 5`) is classically unsatisfiable (headline
+below), so the statement is classically true for every package.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
+discharge through `Family.lean`, `Lift.lean`, or
+`Modularity/Interface.lean`. -/
+theorem exists_heckeEigensystem_of_congruentSeed
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+    (F : Type u) [Field F] [NumberField F]
+    (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (seed : MoretBaillySeed ℓ F (ρbar.map (algebraMap ℚ F)))
+    (badρ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
+    (hcong : ∀ w ∉ badρ,
+      ((ρ.map (algebraMap ℚ F)).charFrob w).map π =
+        (ρbar.map (algebraMap ℚ F)).charFrob w) :
+    ∃ (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
+      (aF dF : HeightOneSpectrum (NumberField.RingOfIntegers F) →
+        AlgebraicClosure ℚ_[ℓ])
+      (ιO : O →+* AlgebraicClosure ℚ_[ℓ]) (_ : Function.Injective ιO),
+      ∀ w ∉ badF,
+        ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO =
+          X ^ 2 - C (aF w) * X + C (dF w) :=
+  sorry
+
+/-- **Carayol local-global normalization and Shimura rationality**
+(sorry node; sub-leaf (b) of the modularity-lifting cut — Shimura /
+Carayol 1986): the raw `ℚ̄_ℓ`-valued Hecke eigensystem `(aF, dF)` of
+the modular lift `ρ|_{G_F}` is DEFINED OVER A NUMBER FIELD: there is a
+number field `E` (the Hecke field of the attached Hilbert newform), a
+place `ψℓ : E → ℚ̄_ℓ` of `E` over `ℓ`, and functions `a, d` valued in
+`E` whose `ψℓ`-images are `aF` and `dF` away from the bad set.
+
+Classically: `aF w` is the `T_w`-eigenvalue of the Hilbert newform `f`
+of parallel weight `2` over `F` attached to `ρ|_{G_F}` by the
+`R = 𝕋` sub-leaf, and `dF w` is the absolute norm `Nw` (a rational
+integer, forced here by the cyclotomic determinant clause of `hρ`).
+Shimura's rationality theorem (the Hecke eigenvalues of a Hilbert
+newform generate a NUMBER field `E = ℚ(a_w : w)`, because the Hecke
+operators act on a finite-dimensional `ℚ`-rational space of cusp forms
+with `ℤ`-integral characteristic polynomials, and Galois conjugation
+permutes newforms) gives `E`; the chosen embedding of `E` into `ℚ̄_ℓ`
+is the place `λ | ℓ` at which the `λ`-adic realization is `ρ|_{G_F}`,
+i.e. exactly `ψℓ`; Carayol's local-global compatibility at the
+unramified places is what guarantees that the identification of
+`charFrob` with the Hecke polynomial holds place by place rather than
+merely after semisimplification.  The determinant function descends
+because `Nw` is already rational.
+
+Literature: Shimura, *The special values of the zeta functions
+associated with Hilbert modular forms*, Duke Math. J. 45 (1978), §2
+(rationality and the Hecke field of a Hilbert newform); Carayol, *Sur
+les représentations `ℓ`-adiques associées aux formes modulaires de
+Hilbert*, Ann. Sci. ÉNS 19 (1986) (local-global compatibility, the
+normalization used here); Taylor, *On Galois representations
+associated to Hilbert modular forms*, Invent. Math. 98 (1989)
+(the remaining even-degree cases); Ohta and Hida for the integral
+normalizations.
+
+PIN AUDIT (2026-07-24): the mathlib pin has no Hilbert modular forms
+and no Hecke algebras over a totally real base (`grep Hilbert` over
+`Mathlib/NumberTheory/`: only Hilbert's theorem 90 and Hilbert basis),
+so no part of this statement can be reduced to library material; it is
+a sharply-stated citation node whose only sound discharge is the
+construction of Hilbert-modular Hecke theory.
+
+SOUNDNESS AUDIT (both ways, 2026-07-24): (i) direct — for the intended
+instantiation (`(aF, dF)` produced by
+`exists_heckeEigensystem_of_congruentSeed`, hence the eigensystem of
+an actual Hilbert newform) this is Shimura rationality plus Carayol
+verbatim; for an abstract `(aF, dF)` merely satisfying `hshape` the
+abstract-quantification caveat applies IN FULL FORCE — nothing formal
+forces an abstract family of `ℚ̄_ℓ`-values to be algebraic, and the
+hypothesis that `aF` IS a newform eigensystem lives entirely in this
+citation (the same shape as the sibling leaf
+`exists_threeadic_realization_of_heckePackage`, whose `hmod`
+hypothesis carries the same unstated content); (ii) collapse — the
+hypothesis set (an irreducible hardly ramified mod-`ℓ`
+representation, `ℓ ≥ 5`) is classically unsatisfiable (headline
+below), so the statement is classically true for every package.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
+discharge through `Family.lean`, `Lift.lean`, or
+`Modularity/Interface.lean`. -/
+theorem exists_heckeField_of_eigensystem
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (F : Type u) [Field F] [NumberField F]
+    (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
+    (aF dF : HeightOneSpectrum (NumberField.RingOfIntegers F) →
+      AlgebraicClosure ℚ_[ℓ])
+    (ιO : O →+* AlgebraicClosure ℚ_[ℓ]) (hιO : Function.Injective ιO)
+    (hshape : ∀ w ∉ badF,
+      ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO =
+        X ^ 2 - C (aF w) * X + C (dF w)) :
+    ∃ (E : Type u) (_ : Field E) (_ : NumberField E)
+      (ψℓ : E →+* AlgebraicClosure ℚ_[ℓ])
+      (a d : HeightOneSpectrum (NumberField.RingOfIntegers F) → E),
+      (∀ w ∉ badF, ψℓ (a w) = aF w) ∧ ∀ w ∉ badF, ψℓ (d w) = dF w :=
+  sorry
+
+/-- **Modularity lifting over the totally real base** (PROVEN
+2026-07-24 as an assembly over the three sub-leaves of the
+modularity-lifting cut — see the section note above and the ASSEMBLY
+paragraph at the end of this docstring; the depth now lives in
+`exists_residualCongruence_over_base`,
+`exists_heckeEigensystem_of_congruentSeed` and
+`exists_heckeField_of_eigensystem`): over the Moret–Bailly base
 `F`, the Khare–Wintenberger lift `ρ|_{G_F}` is itself modular — its
 Frobenius characteristic polynomials away from a finite bad set are
 the Hecke polynomials of a Hilbert newform, recorded through a number
@@ -554,18 +935,39 @@ mod-`ℓ` representation, `ℓ ≥ 5`) is classically unsatisfiable
 (headline below), so the statement is classically true for every
 package.
 
-MLT-SHARING NOTE (2026-07-24): the project's deformation-theoretic
-patching vocabulary (`Patching.lean`: `HardlyRamifiedFiniteDeformation`,
-strict Mazur representability, `exists_conj_of_charFrob_eq_away`) is
-pinned to base field `ℚ` — `IsHardlyRamified` itself hard-codes the
-local conditions at the rational places `2` and `ℓ` — so this leaf
-cannot yet be discharged through a shared general-base MLT node; if
-`Patching.lean`'s pillars are later generalized over a totally real
-base, this leaf is the natural consumer.
+MLT-SHARING NOTE (2026-07-24, SUPERSEDED BY THE SECTION AUDIT ABOVE):
+the project's deformation-theoretic patching vocabulary
+(`Patching.lean`: `HardlyRamifiedFiniteDeformation`, strict Mazur
+representability, `exists_conj_of_charFrob_eq_away`) is pinned to base
+field `ℚ` — `IsHardlyRamified` itself hard-codes the local conditions
+at the rational places `2` and `ℓ` — so this leaf cannot yet be
+discharged through a shared general-base MLT node.  The
+PATCHING-GENERALIZATION AUDIT of the section note above refines this:
+`Patching.lean` splits into a base-agnostic commutative-algebra half
+(reusable verbatim over any base), a `ℚ`-pinned arithmetic half
+(needing genuine re-derivation over `F`), and an entirely absent
+Hilbert-modular Hecke input; and the natural consumer of any future
+general-base patching node is now the sub-leaf
+`exists_heckeEigensystem_of_congruentSeed`, not this assembly.
+
+ASSEMBLY (2026-07-24, PROVEN): the residual bridge over `F`
+(`exists_residualCongruence_over_base` — Chebotarev + Brauer–Nesbitt
++ base change, producing the bad set `badρ` and the congruence
+`hcong` that identifies `ρ|_{G_F}` and the seed `σ` as lifts of one
+residual representation) feeds `R = 𝕋` over `F`
+(`exists_heckeEigensystem_of_congruentSeed` — Kisin/Taylor patching
+over the totally real base, producing the bad set `badF`, the raw
+`ℚ̄_ℓ`-valued eigensystem `(aF, dF)` and the coefficient embedding
+`ιO`), whose output feeds the Carayol/Shimura normalization
+(`exists_heckeField_of_eigensystem` — the Hecke field `E`, the place
+`ψℓ`, and the `E`-valued descents `(a, d)`).  The glue below sets
+`heckeF w := X² − a w · X + d w` and checks that its `ψℓ`-image is
+the shape produced by `R = 𝕋`, using only that `ψℓ` is a ring
+homomorphism.
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
 discharge through `Family.lean`, `Lift.lean`, or
-`Modularity/Interface.lean`. -/
+`Modularity/Interface.lean`; it binds each of the three sub-leaves. -/
 theorem exists_heckePackage_of_seed
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
@@ -598,8 +1000,26 @@ theorem exists_heckePackage_of_seed
       (ιO : O →+* AlgebraicClosure ℚ_[ℓ]) (_ : Function.Injective ιO),
       ∀ w ∉ badF,
         ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO =
-          (heckeF w).map ψℓ :=
-  sorry
+          (heckeF w).map ψℓ := by
+  classical
+  -- (c) the residual bridge: `ρ|_{G_F}` is a lift of `ρbar|_{G_F}`
+  obtain ⟨badρ, hcong⟩ :=
+    exists_residualCongruence_over_base hℓodd hℓ5 hZinj hrank hρ hW hρbar
+      hirr π hπsurj hπ F hFtr hFgal hirrF
+  -- (a) `R = 𝕋` over `F`: the raw `ℚ̄_ℓ`-valued Hecke eigensystem
+  obtain ⟨badF, aF, dF, ιO, hιO, hshape⟩ :=
+    exists_heckeEigensystem_of_congruentSeed hℓodd hℓ5 hZinj hrank hρ hW
+      hρbar hirr π hπsurj hπ F hFtr hFgal hirrF seed badρ hcong
+  -- (b) Carayol/Shimura: the eigensystem is defined over the Hecke field
+  obtain ⟨E, hE, hNE, ψℓ, a, d, ha, hd⟩ :=
+    exists_heckeField_of_eigensystem hℓodd hℓ5 hZinj hrank hρ hW hρbar hirr
+      F hFtr hFgal hirrF badF aF dF ιO hιO hshape
+  -- glue: the Hecke polynomial `X² − a_w·X + Nw` over `E`
+  refine ⟨E, hE, hNE, badF, fun w => X ^ 2 - C (a w) * X + C (d w), ψℓ, ιO,
+    hιO, fun w hw => ?_⟩
+  rw [hshape w hw]
+  simp [Polynomial.map_add, Polynomial.map_sub, Polynomial.map_mul,
+    Polynomial.map_pow, ha w hw, hd w hw]
 
 /-- **The Hilbert-modular `3`-adic realization** (sorry node —
 Carayol 1986 / Taylor 1989): a Hilbert-modular Hecke eigensystem
