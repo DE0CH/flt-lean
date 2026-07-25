@@ -105,6 +105,22 @@ def main():
     changed, dropped = free_slot(branch)
     print(f"{branch}: ancestor confirmed; slot {'freed' if changed else 'was not claimed'}, "
           f"{dropped} inflight record(s) dropped")
+
+    # PUSH (Deyao, 2026-07-24; re-issued 2026-07-25 because the orchestrator
+    # drifted off it again). A reminder in the merge hook was not enough -- the
+    # only reliable push is one nobody has to remember. An unpushed merge lives
+    # on exactly one disk, and since every worktree fast-forwards from main at
+    # dispatch, it is also invisible to the next agent allocated.
+    #
+    # NON-FATAL: the merge already succeeded and the slot is already freed. A
+    # failed push must be loud but must not make the caller think integration
+    # failed and retry it.
+    push = git("push", check=False)
+    if push.returncode != 0:
+        print(f"{branch}: PUSH FAILED (merge stands, slot freed) -- push by hand:\n"
+              + (push.stdout + push.stderr).strip()[:400], file=sys.stderr)
+    else:
+        print(f"{branch}: pushed")
     return 0
 
 
