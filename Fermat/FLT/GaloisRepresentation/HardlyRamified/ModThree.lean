@@ -8939,38 +8939,116 @@ coordinate`. -/
 noncomputable def archConv (H₁ H₂ : ℝ → ℝ) (τ : ℝ) : ℝ :=
   ∫ u in Set.Ioi (0 : ℝ), H₁ (τ / u) * H₂ u / u
 
-/-- **Convergence of the convolution integral** (sorry node, stated
-2026-07-25 — stage (α₁) of the decomposition of
-`archimedeanGammaProfile_exists`): for profiles `H₁`, `H₂` of positive
-degrees `p`, `q` and every `τ > 0` the integrand
-`u ↦ H₁(τ/u)·H₂(u)/u` is integrable on `(0, ∞)`.
+/-- **The weighted integral `∫_0^∞ t·H t dt` of a profile is finite**
+(PROVEN): this is literally the `MellinConvergent` half of the profile
+bundle at the integer point `s = 4`, where the Mellin point `s/2 = 2`
+makes the weight `t^{s/2−1}` equal to `t` (and the norm of the complex
+integrand equal to `t·H t`, `H` being nonnegative).  It is the
+quantitative input behind both the polynomial control
+`IsArchProfile.le_const_div_sq` and the domination in
+`archConv_integrableOn`. -/
+theorem IsArchProfile.mellin_integrable {n : ℕ} {M : ℂ → ℂ} {H : ℝ → ℝ}
+    (h : IsArchProfile n M H) :
+    MeasureTheory.IntegrableOn (fun t : ℝ => t * H t) (Set.Ioi 0) := by
+  have hm : MeasureTheory.IntegrableOn
+      (fun t : ℝ => (t : ℂ) ^ ((4 : ℂ) / 2 - 1) • ((H t : ℝ) : ℂ)) (Set.Ioi 0) :=
+    (h.2.2.2.2 4 (by norm_num)).1
+  have h42 : (4 : ℂ) / 2 - 1 = 1 := by norm_num
+  rw [h42] at hm
+  refine MeasureTheory.IntegrableOn.congr_fun hm.norm ?_ measurableSet_Ioi
+  intro t ht
+  rw [Set.mem_Ioi] at ht
+  simp only [Complex.cpow_one, smul_eq_mul, norm_mul, Complex.norm_real, Real.norm_eq_abs,
+    abs_of_pos ht, abs_of_nonneg (h.2.1 t (Set.mem_Ioi.mpr ht))]
 
-Intended proof.  Both ends are controlled by combining the two
-non-Mellin hypotheses with the Mellin CONVERGENCE half of the bundle:
+/-- **Polynomial control of a profile** (PROVEN — the "antitone plus a
+finite weighted integral forces a pointwise bound" step promised by the
+plan of `archConv_integrableOn`): `H t ≤ C/t²` on all of `(0, ∞)`.
+Indeed for `x ∈ (t/2, t]` antitonicity gives `x·H x ≥ (t/2)·H t`, so
+`(t/2)·H t·(t/2) ≤ ∫_{(t/2,t]} x·H x ≤ ∫_{(0,∞)} x·H x =: C₀`
+— the integrand is nonnegative and integrable by
+`IsArchProfile.mellin_integrable` — whence `H t ≤ 4·C₀/t²`.  The
+exponent `2` is not optimal (any `ε > 1/2` would do, by running the
+same argument at a Mellin point closer to the edge `re s = 1`), but the
+integer exponent is all the convolution estimates need. -/
+theorem IsArchProfile.le_const_div_sq {n : ℕ} {M : ℂ → ℂ} {H : ℝ → ℝ}
+    (h : IsArchProfile n M H) :
+    ∃ C : ℝ, 0 ≤ C ∧ ∀ t : ℝ, 0 < t → H t ≤ C / t ^ 2 := by
+  have hI := h.mellin_integrable
+  have hnn : 0 ≤ ∫ t in Set.Ioi (0 : ℝ), t * H t :=
+    MeasureTheory.setIntegral_nonneg measurableSet_Ioi
+      (fun t ht => mul_nonneg (le_of_lt (Set.mem_Ioi.mp ht)) (h.2.1 t ht))
+  refine ⟨4 * ∫ t in Set.Ioi (0 : ℝ), t * H t, mul_nonneg (by norm_num) hnn, ?_⟩
+  intro t ht
+  have hsub : Set.Ioc (t / 2) t ⊆ Set.Ioi (0 : ℝ) := by
+    intro x hx
+    exact Set.mem_Ioi.mpr (lt_of_lt_of_le (by linarith) hx.1.le)
+  have hlow : t / 2 * H t * MeasureTheory.volume.real (Set.Ioc (t / 2) t)
+      ≤ ∫ x in Set.Ioc (t / 2) t, x * H x := by
+    refine MeasureTheory.setIntegral_ge_of_const_le_real measurableSet_Ioc ?_ ?_
+      (hI.mono_set hsub)
+    · simp [Real.volume_Ioc]
+    · intro x hx
+      have hx0 : 0 < x := hsub hx
+      refine mul_le_mul (by linarith [hx.1]) ?_ (h.2.1 t (Set.mem_Ioi.mpr ht)) (by linarith)
+      exact h.2.2.1 (Set.mem_Ioi.mpr hx0) (Set.mem_Ioi.mpr ht) hx.2
+  have hvol : MeasureTheory.volume.real (Set.Ioc (t / 2) t) = t / 2 := by
+    rw [Real.volume_real_Ioc_of_le (by linarith)]
+    ring
+  rw [hvol] at hlow
+  have hup : ∫ x in Set.Ioc (t / 2) t, x * H x ≤ ∫ x in Set.Ioi (0 : ℝ), x * H x := by
+    refine MeasureTheory.setIntegral_mono_set hI ?_ (LE.le.eventuallyLE hsub)
+    exact (MeasureTheory.ae_restrict_iff' measurableSet_Ioi).mpr
+      (Filter.Eventually.of_forall fun x hx =>
+        mul_nonneg (le_of_lt (Set.mem_Ioi.mp hx)) (h.2.1 x hx))
+  rw [le_div_iff₀ (by positivity : (0 : ℝ) < t ^ 2)]
+  have hkey : t / 2 * H t * (t / 2) = H t * t ^ 2 / 4 := by ring
+  rw [hkey] at hlow
+  linarith [hlow, hup]
 
-* *Polynomial control at `0`.*  `MellinConvergent (H : ℝ → ℂ) (s/2)`
-  for `re s > 1` says `∫_{(0,1]} τ^{re s/2 − 1}·H τ dτ < ∞`; taking
-  `re s` slightly above `1` and using that `H` is ANTITONE on
-  `(0, ∞)` gives `H τ ≤ C·τ^{−ε}` on `(0, 1]` for every `ε > 1/2`
-  (antitone plus a finite weighted integral forces the pointwise
-  bound: `H τ·∫_{(τ,2τ]} x^{ε−1} dx ≤ ∫_{(τ,2τ]} x^{ε−1}·H x dx`).
-* *Near `u = 0`*: `H₂(u) ≤ C₂·u^{−ε}` and `τ/u ≥ 1` eventually, so
-  `H₁(τ/u) ≤ A₁·exp(−a₁·(τ/u)^{1/p})`, whose stretched-exponential
-  vanishing beats `u^{−ε−1}`.
-* *Near `u = ∞`*: `H₂(u) ≤ A₂·exp(−a₂·u^{1/q})` and
-  `H₁(τ/u) ≤ C₁·(u/τ)^{ε}`, so the integrand is
-  `O(u^{ε−1}·exp(−a₂·u^{1/q}))`, integrable
-  (`integrable_rpow_mul_exp_neg_mul_rpow`-style).
-* *On a compact middle interval*: the integrand is continuous
-  (`h₁.1`, `h₂.1`), hence integrable there.
+/-- **Convergence of the convolution integral** (PROVEN 2026-07-25 —
+stage (α₁) of the decomposition of `archimedeanGammaProfile_exists`):
+for profiles `H₁`, `H₂` of positive degrees `p`, `q` and every `τ > 0`
+the integrand `u ↦ H₁(τ/u)·H₂(u)/u` is integrable on `(0, ∞)`.
 
-Measurability throughout comes from `ContinuousOn.aestronglyMeasurable`
-on `(0, ∞)`. -/
+The proof needs neither a splitting of the range nor the
+stretched-exponential decay: the polynomial control
+`H₁ x ≤ C/x²` of `IsArchProfile.le_const_div_sq` is valid on ALL of
+`(0, ∞)`, and turns the integrand into
+`H₁(τ/u)·H₂(u)/u ≤ (C/τ²)·(u·H₂ u)` for every `u > 0`,
+whose right-hand side is integrable on `(0, ∞)` by
+`IsArchProfile.mellin_integrable` applied to `H₂`.  So
+`MeasureTheory.Integrable.mono'` closes the goal, measurability coming
+from `ContinuousOn.aestronglyMeasurable` (the integrand is continuous
+on `(0, ∞)` because `u ↦ τ/u` maps `(0, ∞)` into itself). -/
 theorem archConv_integrableOn {p q : ℕ} {M₁ M₂ : ℂ → ℂ} {H₁ H₂ : ℝ → ℝ}
-    (hp : 0 < p) (hq : 0 < q) (h₁ : IsArchProfile p M₁ H₁) (h₂ : IsArchProfile q M₂ H₂)
+    (_hp : 0 < p) (_hq : 0 < q) (h₁ : IsArchProfile p M₁ H₁) (h₂ : IsArchProfile q M₂ H₂)
     {τ : ℝ} (hτ : 0 < τ) :
     MeasureTheory.IntegrableOn (fun u : ℝ => H₁ (τ / u) * H₂ u / u) (Set.Ioi 0) := by
-  sorry
+  obtain ⟨C, _hC0, hC⟩ := h₁.le_const_div_sq
+  have hI₂ := h₂.mellin_integrable
+  have hcont : ContinuousOn (fun u : ℝ => H₁ (τ / u) * H₂ u / u) (Set.Ioi 0) := by
+    have hdiv : ContinuousOn (fun u : ℝ => τ / u) (Set.Ioi 0) :=
+      continuousOn_const.div continuousOn_id fun u hu => ne_of_gt (Set.mem_Ioi.mp hu)
+    have hmaps : Set.MapsTo (fun u : ℝ => τ / u) (Set.Ioi 0) (Set.Ioi 0) :=
+      fun u hu => Set.mem_Ioi.mpr (div_pos hτ (Set.mem_Ioi.mp hu))
+    exact ((h₁.1.comp hdiv hmaps).mul h₂.1).div continuousOn_id
+      fun u hu => ne_of_gt (Set.mem_Ioi.mp hu)
+  show MeasureTheory.Integrable _ (MeasureTheory.volume.restrict (Set.Ioi 0))
+  refine MeasureTheory.Integrable.mono' (g := fun u : ℝ => C / τ ^ 2 * (u * H₂ u))
+    (hI₂.const_mul _) (hcont.aestronglyMeasurable measurableSet_Ioi) ?_
+  refine (MeasureTheory.ae_restrict_iff' measurableSet_Ioi).mpr
+    (Filter.Eventually.of_forall fun u hu => ?_)
+  rw [Set.mem_Ioi] at hu
+  have hH₂ := h₂.2.1 u (Set.mem_Ioi.mpr hu)
+  have hH₁ := h₁.2.1 (τ / u) (Set.mem_Ioi.mpr (div_pos hτ hu))
+  rw [Real.norm_eq_abs, abs_of_nonneg (div_nonneg (mul_nonneg hH₁ hH₂) hu.le)]
+  have hb : H₁ (τ / u) ≤ C / (τ / u) ^ 2 := hC _ (div_pos hτ hu)
+  have heq : C / (τ / u) ^ 2 * H₂ u / u = C / τ ^ 2 * (u * H₂ u) := by
+    field_simp
+  calc H₁ (τ / u) * H₂ u / u ≤ C / (τ / u) ^ 2 * H₂ u / u :=
+        div_le_div_of_nonneg_right (mul_le_mul_of_nonneg_right hb hH₂) hu.le
+    _ = C / τ ^ 2 * (u * H₂ u) := heq
 
 /-- Nonnegativity of the convolution (PROVEN): the integrand is
 nonnegative on `(0, ∞)` because `τ/u > 0` there. -/
@@ -9001,22 +9079,76 @@ theorem archConv_antitoneOn {p q : ℕ} {M₁ M₂ : ℂ → ℂ} {H₁ H₂ : �
   exact div_le_div_of_nonneg_right
     (mul_le_mul_of_nonneg_right key (h₂.2.1 u (Set.mem_Ioi.mpr hu))) hu.le
 
-/-- **Continuity of the convolution** (sorry node, stated 2026-07-25 —
-stage (α₂) of the decomposition of `archimedeanGammaProfile_exists`):
+/-- **Continuity of the convolution** (PROVEN 2026-07-25 — stage (α₂)
+of the decomposition of `archimedeanGammaProfile_exists`):
 `archConv H₁ H₂` is continuous on `(0, ∞)`.
 
-Intended proof: continuity of a parametrized integral by dominated
-convergence (`MeasureTheory.continuousOn_of_dominated` /
-`intervalIntegral.continuous_parametric_integral_of_dominated`-style).
-Fix `0 < τ₀` and work on `[τ₀/2, 2τ₀]`: the integrand is continuous in
-`τ` for each `u` (`h₁.1` at `τ/u > 0`), and is dominated uniformly on
-that interval by `u ↦ H₁(τ₀/(2u))·H₂(u)/u` — antitonicity of `H₁`
-turns the `τ`-interval into a single dominating profile — which is
-integrable by `archConv_integrableOn` at `τ₀/2`. -/
+Continuity of a parametrized integral by dominated convergence
+(`MeasureTheory.continuous_of_dominated`).  Fix `τ₀ > 0` and TRUNCATE
+the parameter from below at `τ₀/2`, i.e. work with the family
+`F x u = H₁(max x (τ₀/2)/u)·H₂(u)/u`: it is continuous in `x` for every
+`u > 0` (`h₁.1` at `max x (τ₀/2)/u > 0`), continuous — hence
+measurable — in `u` for every `x`, and dominated uniformly in `x` by
+the single profile `u ↦ H₁(τ₀/2/u)·H₂(u)/u`, because
+`max x (τ₀/2) ≥ τ₀/2` and `H₁` is antitone; that dominating function is
+integrable by `archConv_integrableOn` at `τ₀/2 > 0`.  Hence
+`x ↦ ∫ F x u du` is continuous on all of `ℝ`, and it agrees with
+`archConv H₁ H₂` on the neighbourhood `(τ₀/2, ∞)` of `τ₀` (there
+`max x (τ₀/2) = x`), which gives `ContinuousAt` at `τ₀`.  The
+truncation is what replaces a local hypothesis: it makes the dominated
+family globally defined so the plain `Continuous` version of dominated
+convergence applies. -/
 theorem archConv_continuousOn {p q : ℕ} {M₁ M₂ : ℂ → ℂ} {H₁ H₂ : ℝ → ℝ}
     (hp : 0 < p) (hq : 0 < q) (h₁ : IsArchProfile p M₁ H₁) (h₂ : IsArchProfile q M₂ H₂) :
     ContinuousOn (archConv H₁ H₂) (Set.Ioi 0) := by
-  sorry
+  intro τ₀ hτ₀
+  rw [Set.mem_Ioi] at hτ₀
+  have hc0 : 0 < τ₀ / 2 := by linarith
+  have hFcont : ∀ x : ℝ,
+      ContinuousOn (fun u : ℝ => H₁ (max x (τ₀ / 2) / u) * H₂ u / u) (Set.Ioi 0) := by
+    intro x
+    have hpos : 0 < max x (τ₀ / 2) := lt_of_lt_of_le hc0 (le_max_right x _)
+    have hdiv : ContinuousOn (fun u : ℝ => max x (τ₀ / 2) / u) (Set.Ioi 0) :=
+      continuousOn_const.div continuousOn_id fun u hu => ne_of_gt (Set.mem_Ioi.mp hu)
+    have hmaps : Set.MapsTo (fun u : ℝ => max x (τ₀ / 2) / u) (Set.Ioi 0) (Set.Ioi 0) :=
+      fun u hu => Set.mem_Ioi.mpr (div_pos hpos (Set.mem_Ioi.mp hu))
+    exact ((h₁.1.comp hdiv hmaps).mul h₂.1).div continuousOn_id
+      fun u hu => ne_of_gt (Set.mem_Ioi.mp hu)
+  have hcontx : ∀ u : ℝ, 0 < u →
+      Continuous fun x : ℝ => H₁ (max x (τ₀ / 2) / u) * H₂ u / u := by
+    intro u hu
+    have hnum : Continuous fun x : ℝ => max x (τ₀ / 2) / u :=
+      (continuous_id.max continuous_const).div_const u
+    have hmem : ∀ x : ℝ, max x (τ₀ / 2) / u ∈ Set.Ioi (0 : ℝ) := fun x =>
+      Set.mem_Ioi.mpr (div_pos (lt_of_lt_of_le hc0 (le_max_right x _)) hu)
+    exact ((h₁.1.comp_continuous hnum hmem).mul continuous_const).div_const u
+  have hbound : ∀ x u : ℝ, 0 < u →
+      ‖H₁ (max x (τ₀ / 2) / u) * H₂ u / u‖ ≤ H₁ (τ₀ / 2 / u) * H₂ u / u := by
+    intro x u hu
+    have hH₂ := h₂.2.1 u (Set.mem_Ioi.mpr hu)
+    have hpos : 0 < max x (τ₀ / 2) := lt_of_lt_of_le hc0 (le_max_right x _)
+    have hH₁ := h₁.2.1 _ (Set.mem_Ioi.mpr (div_pos hpos hu))
+    rw [Real.norm_eq_abs, abs_of_nonneg (div_nonneg (mul_nonneg hH₁ hH₂) hu.le)]
+    have hmono : H₁ (max x (τ₀ / 2) / u) ≤ H₁ (τ₀ / 2 / u) :=
+      h₁.2.2.1 (Set.mem_Ioi.mpr (div_pos hc0 hu)) (Set.mem_Ioi.mpr (div_pos hpos hu))
+        (by gcongr; exact le_max_right x _)
+    exact div_le_div_of_nonneg_right (mul_le_mul_of_nonneg_right hmono hH₂) hu.le
+  have hint := archConv_integrableOn hp hq h₁ h₂ hc0
+  have hcontI : Continuous fun x : ℝ =>
+      ∫ u in Set.Ioi (0 : ℝ), H₁ (max x (τ₀ / 2) / u) * H₂ u / u :=
+    MeasureTheory.continuous_of_dominated
+      (fun x => ((hFcont x).aestronglyMeasurable measurableSet_Ioi))
+      (fun x => (MeasureTheory.ae_restrict_iff' measurableSet_Ioi).mpr
+        (Filter.Eventually.of_forall fun u hu => hbound x u (Set.mem_Ioi.mp hu)))
+      hint
+      ((MeasureTheory.ae_restrict_iff' measurableSet_Ioi).mpr
+        (Filter.Eventually.of_forall fun u hu => hcontx u (Set.mem_Ioi.mp hu)))
+  have heq : Set.EqOn (fun x : ℝ => ∫ u in Set.Ioi (0 : ℝ), H₁ (max x (τ₀ / 2) / u) * H₂ u / u)
+      (archConv H₁ H₂) (Set.Ioi (τ₀ / 2)) := by
+    intro x hx
+    simp only [archConv, max_eq_left (Set.mem_Ioi.mp hx).le]
+  exact (ContinuousAt.congr hcontI.continuousAt
+    (heq.eventuallyEq_of_mem (Ioi_mem_nhds (by linarith)))).continuousWithinAt
 
 /-- **Stretched-exponential decay of the convolution** (PROVEN
 2026-07-25 — stage (α₃) of the decomposition of
@@ -9554,11 +9686,12 @@ Mellin factor `M`"):
   with factor `Γ_ℂ(s)`;
 * `archProfile_mul` (assembly PROVEN): profiles convolve —
   `archConv H₁ H₂ τ = ∫_0^∞ H₁(τ/u)H₂(u) du/u` is a degree-`(p+q)`
-  profile with factor `M₁·M₂`; its remaining open leaves are
-  `archConv_integrableOn`, `archConv_continuousOn` and
-  `archConv_hasMellin` (`archConv_nonneg`, `archConv_antitoneOn` and
-  `archConv_decay` — the AM–GM saddle split, over the auxiliary
-  `archProfile_stretchedExp` — are PROVEN);
+  profile with factor `M₁·M₂`; ALL of its conjuncts are now PROVEN —
+  `archConv_integrableOn` and `archConv_continuousOn` (2026-07-25, over
+  the polynomial control `IsArchProfile.le_const_div_sq`),
+  `archConv_nonneg` and `archConv_antitoneOn`, `archConv_decay` (the
+  AM–GM saddle split, over the auxiliary `archProfile_stretchedExp`) and
+  `archConv_hasMellin`;
 * `archProfile_pow` (PROVEN): induction gives the `(r₁, r₂)` profile of
   degree `r₁ + 2r₂` with factor `Γ_ℝ^{r₁}·Γ_ℂ^{r₂}`;
 * this theorem: `NumberField.InfinitePlace.card_add_two_mul_card_eq_rank`
