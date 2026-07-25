@@ -101,6 +101,9 @@ import Mathlib.FieldTheory.Finite.Basic
 import Mathlib.GroupTheory.SpecificGroups.Cyclic
 import Mathlib.GroupTheory.QuotientGroup.Basic
 import Mathlib.GroupTheory.Coset.Card
+-- The Tate normal form and the level-`7` parametrisation, used by
+-- `not_order_two_and_order_seven_point` below.
+public import Fermat.FLT.FreyCurve.TateNormalForm
 
 @[expose] public section
 
@@ -507,8 +510,9 @@ lemma WeierstrassCurve.mem_cyclicIsogenyDegrees_of_addOrderOf
   exact AddSubgroup.zsmul_mem _ (AddSubgroup.mem_zmultiples g) k
 
 /-- **No rational point of order `2` together with a rational point of
-order `7`** (sorry node — the `X_1(14)` content in its level-structure
-form): no elliptic curve over `ℚ` carries both. The hypotheses say
+order `7`** (DERIVED 2026-07-25 from the Tate-normal-form decomposition —
+see the RE-CUT note at the end of this docstring; the `X_1(14)` content in
+its level-structure form): no elliptic curve over `ℚ` carries both. The hypotheses say
 exactly that `E(ℚ) ⊇ ℤ/2 ⊕ ℤ/7 ≅ ℤ/14`, i.e. that the pair `(E, P + Q)`
 is a non-cuspidal rational point of `X_1(14)` — a curve of genus `1`
 (standard formula, recomputed 2026-07-25: `μ/12 = 6`, `12` cusps, so
@@ -538,15 +542,73 @@ rejected:
   forces bad reduction at `2, 3, 5, 7`, i.e. `210 ∣ N_E` — a lower bound
   on the conductor, never a contradiction.
 
-A formal proof needs the level-`7` Tate normal form (the genus-`0`
-parametrisation `b = d³ − d²`, `c = d² − d` of `X_1(7)`) together with
-the `2`-torsion condition, which cuts out the genus-`1` curve
-`X_1(14)`, and then a rank-`0` Mordell–Weil computation for it. Neither
-the Tate normal form nor Mordell–Weil is available at this pin. -/
+RE-CUT 2026-07-25 (this node is no longer a leaf). The audit above stands as
+a description of the mathematics, but its conclusion — that the statement is
+irreducible here — was a statement about missing *machinery*, not about the
+mathematics, and the machinery is now being built. The classical route is
+executed in `Fermat/FLT/FreyCurve/TateNormalForm.lean`, and this theorem is
+now DERIVED from four nodes there:
+
+* `WeierstrassCurve.exists_tateNormalForm` (PROVEN) — the normalisation
+  `(E, Q) ≅ (E(b, c), (0, 0))` for a point `Q` with `2Q ≠ 0 ≠ 3Q`. This is the
+  piece mathlib lacks, and it is SHARED with the sibling level-structure
+  leaves at `15`, `16` and `18`.
+* `WeierstrassCurve.exists_kubert_param_seven` (PROVEN) — the genus-`0`
+  parametrisation `b = d³ − d²`, `c = d² − d` of `X_1(7)`, obtained by
+  computing `2Q`, `3Q` and imposing `4Q = −3Q`.
+* `WeierstrassCurve.exists_two_division_root` (PROVEN) — a rational point of
+  order `2` is a rational root of `4x³ + b₂x² + 2b₄x + b₆`.
+* `WeierstrassCurve.x1_fourteen_no_rational_point` (sorry node) — the
+  irreducible arithmetic core, now stated with no elliptic curve and no
+  modular curve in it: the `2`-division cubic of `E(d³ − d², d² − d)` has no
+  rational root for rational `d ∉ {0, 1}`. That is the affine equation of
+  `X_1(14)`, and it is where the rank-`0` Mordell–Weil input still sits.
+
+The gain is that the surviving arithmetic obstruction is now one explicit
+polynomial equation in two rational variables, attackable by descent, instead
+of a statement about torsion of elliptic curves. -/
 theorem WeierstrassCurve.not_order_two_and_order_seven_point
     (E : WeierstrassCurve ℚ) [E.IsElliptic] (P Q : (E⁄ℚ).Point)
-    (hP : addOrderOf P = 2) (hQ : addOrderOf Q = 7) : False :=
-  sorry
+    (hP : addOrderOf P = 2) (hQ : addOrderOf Q = 7) : False := by
+  -- `Q` has order `7`, so neither `2Q` nor `3Q` vanishes: the Tate
+  -- normalisation applies to `(E, Q)`.
+  have h2 : Q + Q ≠ 0 := by
+    intro h
+    have hdvd : addOrderOf Q ∣ 2 :=
+      addOrderOf_dvd_of_nsmul_eq_zero (by rw [two_nsmul]; exact h)
+    rw [hQ] at hdvd
+    exact absurd hdvd (by decide)
+  have h3 : Q + Q + Q ≠ 0 := by
+    intro h
+    have hdvd : addOrderOf Q ∣ 3 :=
+      addOrderOf_dvd_of_nsmul_eq_zero (by
+        rw [show (3 : ℕ) = 2 + 1 from rfl, add_nsmul, two_nsmul, one_nsmul]
+        exact h)
+    rw [hQ] at hdvd
+    exact absurd hdvd (by decide)
+  -- Tate normal form: `(E, Q) ≅ (E(b, c), (0, 0))`.
+  haveI : (E⁄ℚ).IsElliptic := inferInstanceAs (E.map (algebraMap ℚ ℚ)).IsElliptic
+  obtain ⟨b, c, hb, hell, Ψ, hΨ⟩ :=
+    WeierstrassCurve.exists_tateNormalForm (E⁄ℚ) Q h2 h3
+  haveI := hell
+  have hQ' : addOrderOf (WeierstrassCurve.tateMarkedPoint b c) = 7 := by
+    rw [← hΨ, Ψ.addOrderOf_eq Q, hQ]
+  have hP' : addOrderOf (Ψ P) = 2 := by
+    rw [Ψ.addOrderOf_eq P, hP]
+  -- Level `7`: the marked point of order `7` pins the Kubert modulus `d`.
+  obtain ⟨d, hd0, hd1, hbd, hcd⟩ := WeierstrassCurve.exists_kubert_param_seven b c hQ'
+  -- Level `2`: the point of order `2` is a rational root of the `2`-division cubic.
+  obtain ⟨x₀, hx₀⟩ :=
+    WeierstrassCurve.exists_two_division_root (WeierstrassCurve.tateNormalForm b c) (Ψ P) hP'
+  -- Together they are a non-cuspidal rational point of `X_1(14)`.
+  refine WeierstrassCurve.x1_fourteen_no_rational_point d x₀ hd0 hd1 ?_
+  simp only [WeierstrassCurve.b₂, WeierstrassCurve.b₄, WeierstrassCurve.b₆,
+    WeierstrassCurve.tateNormalForm_a₁, WeierstrassCurve.tateNormalForm_a₂,
+    WeierstrassCurve.tateNormalForm_a₃, WeierstrassCurve.tateNormalForm_a₄,
+    WeierstrassCurve.tateNormalForm_a₆] at hx₀
+  subst hbd
+  subst hcd
+  linear_combination hx₀
 
 /-- **No rational point of order `14`** (DERIVED 2026-07-25 from the
 level-structure leaf `not_order_two_and_order_seven_point` by splitting
