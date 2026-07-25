@@ -407,6 +407,186 @@
         "/home/chend/flt-lean-42/.report-server"
       ],
       "timeout": 7200000
+    },
+    "report-flt-lean-43": {
+      "command": ".venv/bin/python",
+      "args": [
+        "report-mcp.py",
+        "--socket-dir",
+        "/home/chend/flt-lean-43/.report-server"
+      ],
+      "timeout": 7200000
+    },
+    "report-flt-lean-44": {
+      "command": ".venv/bin/python",
+      "args": [
+        "report-mcp.py",
+        "--socket-dir",
+        "/home/chend/flt-lean-44/.report-server"
+      ],
+      "timeout": 7200000
+    },
+    "report-flt-lean-45": {
+      "command": ".venv/bin/python",
+      "args": [
+        "report-mcp.py",
+        "--socket-dir",
+        "/home/chend/flt-lean-45/.report-server"
+      ],
+      "timeout": 7200000
+    },
+    "report-flt-lean-46": {
+      "command": ".venv/bin/python",
+      "args": [
+        "report-mcp.py",
+        "--socket-dir",
+        "/home/chend/flt-lean-46/.report-server"
+      ],
+      "timeout": 7200000
+    },
+    "report-flt-lean-47": {
+      "command": ".venv/bin/python",
+      "args": [
+        "report-mcp.py",
+        "--socket-dir",
+        "/home/chend/flt-lean-47/.report-server"
+      ],
+      "timeout": 7200000
+    },
+    "report-flt-lean-48": {
+      "command": ".venv/bin/python",
+      "args": [
+        "report-mcp.py",
+        "--socket-dir",
+        "/home/chend/flt-lean-48/.report-server"
+      ],
+      "timeout": 7200000
+    },
+    "report-flt-lean-49": {
+      "command": ".venv/bin/python",
+      "args": [
+        "report-mcp.py",
+        "--socket-dir",
+        "/home/chend/flt-lean-49/.report-server"
+      ],
+      "timeout": 7200000
+    },
+    "report-flt-lean-50": {
+      "command": ".venv/bin/python",
+      "args": [
+        "report-mcp.py",
+        "--socket-dir",
+        "/home/chend/flt-lean-50/.report-server"
+      ],
+      "timeout": 7200000
+    },
+    "report-flt-lean-51": {
+      "command": ".venv/bin/python",
+      "args": [
+        "report-mcp.py",
+        "--socket-dir",
+        "/home/chend/flt-lean-51/.report-server"
+      ],
+      "timeout": 7200000
+    },
+    "report-flt-lean-52": {
+      "command": ".venv/bin/python",
+      "args": [
+        "report-mcp.py",
+        "--socket-dir",
+        "/home/chend/flt-lean-52/.report-server"
+      ],
+      "timeout": 7200000
+    },
+    "report-flt-lean-53": {
+      "command": ".venv/bin/python",
+      "args": [
+        "report-mcp.py",
+        "--socket-dir",
+        "/home/chend/flt-lean-53/.report-server"
+      ],
+      "timeout": 7200000
+    },
+    "report-flt-lean-54": {
+      "command": ".venv/bin/python",
+      "args": [
+        "report-mcp.py",
+        "--socket-dir",
+        "/home/chend/flt-lean-54/.report-server"
+      ],
+      "timeout": 7200000
+    },
+    "report-flt-lean-55": {
+      "command": ".venv/bin/python",
+      "args": [
+        "report-mcp.py",
+        "--socket-dir",
+        "/home/chend/flt-lean-55/.report-server"
+      ],
+      "timeout": 7200000
+    },
+    "report-flt-lean-56": {
+      "command": ".venv/bin/python",
+      "args": [
+        "report-mcp.py",
+        "--socket-dir",
+        "/home/chend/flt-lean-56/.report-server"
+      ],
+      "timeout": 7200000
+    },
+    "report-flt-lean-57": {
+      "command": ".venv/bin/python",
+      "args": [
+        "report-mcp.py",
+        "--socket-dir",
+        "/home/chend/flt-lean-57/.report-server"
+      ],
+      "timeout": 7200000
+    },
+    "report-flt-lean-58": {
+      "command": ".venv/bin/python",
+      "args": [
+        "report-mcp.py",
+        "--socket-dir",
+        "/home/chend/flt-lean-58/.report-server"
+      ],
+      "timeout": 7200000
+    },
+    "report-flt-lean-59": {
+      "command": ".venv/bin/python",
+      "args": [
+        "report-mcp.py",
+        "--socket-dir",
+        "/home/chend/flt-lean-59/.report-server"
+      ],
+      "timeout": 7200000
+    },
+    "report-flt-lean-60": {
+      "command": ".venv/bin/python",
+      "args": [
+        "report-mcp.py",
+        "--socket-dir",
+        "/home/chend/flt-lean-60/.report-server"
+      ],
+      "timeout": 7200000
+    },
+    "report-flt-lean-61": {
+      "command": ".venv/bin/python",
+      "args": [
+        "report-mcp.py",
+        "--socket-dir",
+        "/home/chend/flt-lean-61/.report-server"
+      ],
+      "timeout": 7200000
+    },
+    "report-flt-lean-62": {
+      "command": ".venv/bin/python",
+      "args": [
+        "report-mcp.py",
+        "--socket-dir",
+        "/home/chend/flt-lean-62/.report-server"
+      ],
+      "timeout": 7200000
     }
   }
 }
