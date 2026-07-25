@@ -2538,29 +2538,16 @@ lemma pushforwardFrame_apply {B : Type u} [CommRing B] [TopologicalSpace B]
   rw [TensorProduct.piScalarRight_apply, TensorProduct.piScalarRightHom_tmul]
   exact hsm _
 
-set_option backward.isDefEq.respectTransparency false in
-open scoped TensorProduct in
-/-- **The determinant of a pushed-forward frame is the image of the
-determinant** (PROVEN): `LinearMap.det_baseChange` for the base change,
-`LinearMap.det_conj` for the framing identification. Same two steps as
-`isHardlyRamified_pushforwardFrame`'s determinant clause, isolated
-because the descent below needs the equation itself and not just its
-consequence. -/
-lemma det_pushforwardFrame {B : Type u} [CommRing B] [TopologicalSpace B]
-    [IsTopologicalRing B] {A : Type u} [CommRing A] [TopologicalSpace A]
-    [IsTopologicalRing A] (ψ : B →+* A) (hψ : Continuous ψ)
-    (ρ : FramedGaloisRep ℚ B (Fin 2)) (g : Field.absoluteGaloisGroup ℚ) :
-    (pushforwardFrame ψ hψ ρ).det g = ψ (ρ.det g) := by
-  letI : Algebra B A := ψ.toAlgebra
-  letI : ContinuousSMul B A := continuousSMul_of_algebraMap B A
-    (by rw [RingHom.algebraMap_toAlgebra]; exact hψ)
-  show ((ρ.baseChange A).conj (TensorProduct.piScalarRight B A A (Fin 2))).det g = _
-  rw [GaloisRep.det_apply, GaloisRep.conj_apply, LinearEquiv.conj_apply,
-    LinearMap.comp_assoc, LinearMap.det_conj]
-  show LinearMap.det ((ρ.baseChange A) g) = _
-  rw [show ((ρ.baseChange A) g : Module.End A (A ⊗[B] (Fin 2 → B))) =
-    LinearMap.baseChange A (ρ g) from rfl, LinearMap.det_baseChange]
-  rfl
+-- (2026-07-25) `det_pushforwardFrame` USED TO BE RE-DECLARED HERE.  Two
+-- branches — `isHardlyRamified_of_fibreProduct` (c443e2f) and
+-- `isHardlyRamified_of_forall_isOpen_quotient` (d8164f8) — each added a
+-- copy of the SAME statement with a different proof, and the merge kept
+-- both, so main failed to elaborate this module at all with
+-- "`GaloisRepresentation.det_pushforwardFrame` has already been
+-- declared" (an ERRORED module, invisible to every sorry scan, blocking
+-- the whole downstream cone including `Modularity/Patching.lean`).  The
+-- surviving copy is the earlier one, next to
+-- `pushforwardFrame_apply_map`; both consumers below use it unchanged.
 
 open scoped TensorProduct in
 /-- **A flat prolongation descends through the base change to `A ⧸ ⊥`**
