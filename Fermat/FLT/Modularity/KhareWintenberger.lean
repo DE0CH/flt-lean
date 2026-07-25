@@ -198,6 +198,7 @@ import Mathlib.NumberTheory.Padics.RingHoms
 import Mathlib.Topology.Algebra.Module.ModuleTopology
 import Mathlib.Topology.Algebra.Algebra
 import Mathlib.LinearAlgebra.Dimension.Constructions
+public import Fermat.FLT.Modularity.AbelianScheme
 
 @[expose] public section
 
@@ -949,8 +950,293 @@ theorem exists_totallyReal_point_of_geometricallyIrreducible
       HasRationalPoint fX F :=
   sorry
 
-/-- **The twisted Hilbert–Blumenthal moduli variety** (sorry node — the
-MODULI INPUT ALONE, Taylor 2002 §2 via Shimura's theory of
+/-! #### The moduli cut, recut over an abelian scheme (2026-07-25)
+
+`exists_twistedHilbertBlumenthalModuli_of_five_le` (below) was a single
+sorry joining two entirely different bodies of mathematics:
+
+* the **moduli-space construction** — that a twisted Hilbert–Blumenthal
+  moduli problem is representable by a smooth, separated, finite-type,
+  quasi-compact, geometrically irreducible `ℚ`-variety with a real point
+  (Shimura's theory of Hilbert–Blumenthal moduli, Rapoport,
+  Deligne–Pappas; the geometric irreducibility of the *twist* is Taylor
+  2002 §2);
+* the **Tate-module construction** — that an `F`-point of such a space,
+  i.e. a Hilbert–Blumenthal abelian variety over `F` with the two
+  prescribed level structures, has `λ`-adic and `𝔭`-adic Tate modules
+  forming a strictly compatible system with the prescribed residual
+  representations (Weil, Faltings; Carayol normalization).
+
+MACHINERY AUDIT (2026-07-25). Neither could be *stated* against the
+pin: a sweep of `.lake/packages/mathlib` found **no** `AbelianVariety`,
+`AbelianScheme`, `TateModule`, `HilbertModular`, `Blumenthal` or
+`ShimuraVariety` declaration anywhere in mathlib, and none in this
+project or in `~/cs/FLT` either. The whole theory is missing.
+`Modularity/AbelianScheme.lean` (new, PROVEN, sorry-free) supplies the
+first piece of it: abelian schemes presented by their functor of points
+(`Fermat.AbelianSchemeStruct`), the group of geometric points of a fibre
+at an `F`-point (`Fermat.GeomFibrePt`) with its `Γ_F`-action by additive
+automorphisms (`Fermat.AbelianSchemeStruct.geomFibreAction`, whose
+underlying map is `Fermat.AbelianSchemeStruct.galSMul`), and the
+real-multiplication datum (`Fermat.Mult`) with its `I`-torsion Galois
+submodules (`Fermat.Mult.torsion`, whose second component is exactly the
+Galois stability). That is exactly enough vocabulary to WRITE the
+twisted level structures down, and hence to separate the two bodies of
+mathematics above into two independently citable leaves. It is not
+enough to prove either of them; the further pieces needed, in dependency
+order, are recorded in the docstring of
+`exists_twistedHilbertBlumenthalModuliScheme_of_five_le`.
+
+The seam is `IsTwistedHilbertBlumenthalModuli`: the statement that an
+abelian scheme over `X` carries real multiplication by a totally real
+`D` of degree the relative dimension, and that at every `F`-point its
+geometric fibre has `λ`-torsion realizing `ρbar|_{G_F}` and `𝔭`-torsion
+irreducible-but-dihedral. Leaf A produces `X` together with such a
+family; leaf B turns a point of such a family into a
+`HilbertBlumenthalPoint`. The glue between them is PROVEN. -/
+
+open CategoryTheory in
+/-- **The twisted Hilbert–Blumenthal moduli condition** on an abelian
+scheme `fA : A ⟶ X` over the `ℚ`-variety `fX : X ⟶ Spec ℚ`.
+
+This is the seam of the moduli cut. It asserts the existence of
+
+* a **totally real coefficient field** `D` and a **real multiplication**
+  of `𝒪_D` on the family, with the relative dimension of `A ⟶ X` equal
+  to `[D : ℚ]` — i.e. `A ⟶ X` is a family of Hilbert–Blumenthal abelian
+  varieties with real multiplication by `𝒪_D`;
+* an **auxiliary prime** `p ≠ ℓ`, and maximal ideals `λ ∋ ℓ`, `𝔭 ∋ p` of
+  `𝒪_D`;
+* the **FIRST moduli condition** (the `ℓ`-level structure, twisted by
+  `ρbar`): at every `F`-point `x` of `X` over `ℚ`, with `F` totally real
+  and Galois over `ℚ` and restriction to `G_F` image-preserving, the
+  `λ`-torsion of the geometric fibre is isomorphic, as a `Γ_F`-module,
+  to `W` with the action `ρbar|_{G_F}`;
+* the **SECOND moduli condition** (the dihedral `p`-level structure): at
+  the same points, the `𝔭`-torsion is isomorphic as a `Γ_F`-module to a
+  two-dimensional `ρbarp` over a finite field, which is irreducible over
+  `F` but becomes reducible over a quadratic extension.
+
+Both level structures are stated as isomorphisms of *Galois modules* —
+an injective additive map onto the torsion submodule
+`(m.torsion x _).1` intertwining the scheme-theoretic Galois action
+`Fermat.AbelianSchemeStruct.galSMul` with the representation — which is
+possible only because `Modularity/AbelianScheme.lean` makes the
+geometric points of a fibre a `Γ_F`-module in the first place, and their
+`I`-torsion a Galois-stable `𝒪_D`-submodule of it.
+
+FAITHFULNESS NOTE: the quantifier over `F` carries exactly the
+hypotheses that the consumer
+`exists_twistedHilbertBlumenthalModuli_of_five_le` supplies (totally
+real, Galois, image-preserving restriction, an `F`-point over `ℚ`), so
+this condition is never stronger there than what the classical twisted
+moduli problem provides. -/
+def IsTwistedHilbertBlumenthalModuli (ℓ : ℕ) [Fact ℓ.Prime]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W]
+    (ρbar : GaloisRep ℚ k W)
+    {X : AlgebraicGeometry.Scheme.{u}}
+    (fX : X ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    {A : AlgebraicGeometry.Scheme.{u}} {fA : A ⟶ X}
+    (ab : Fermat.AbelianSchemeStruct fA) : Prop :=
+  ∃ (D : Type u) (_ : Field D) (_ : NumberField D)
+    (_ : NumberField.IsTotallyReal D)
+    (m : Fermat.Mult ab (NumberField.RingOfIntegers D))
+    (p : ℕ) (lam frp : Ideal (NumberField.RingOfIntegers D)),
+    p.Prime ∧ p ≠ ℓ ∧ lam.IsMaximal ∧ frp.IsMaximal ∧
+    (ℓ : NumberField.RingOfIntegers D) ∈ lam ∧
+    (p : NumberField.RingOfIntegers D) ∈ frp ∧
+    AlgebraicGeometry.SmoothOfRelativeDimension (Module.finrank ℚ D) fA ∧
+    ∀ (F : Type u) (_ : Field F) (_ : NumberField F)
+      (_ : NumberField.IsTotallyReal F) (_ : IsGalois ℚ F),
+      (∀ g : Field.absoluteGaloisGroup ℚ,
+        ∃ h : Field.absoluteGaloisGroup F,
+          (ρbar.map (algebraMap ℚ F)) h = ρbar g) →
+      ∀ x : (AlgebraicGeometry.Spec (CommRingCat.of F) ⟶ X), x ≫ fX = specRatMap F →
+        -- FIRST moduli condition: `A[λ]` realizes `ρbar|_{G_F}`
+        (∃ e : W → Fermat.GeomFibrePt fA x,
+          (∀ w w' : W, e (w + w') = ab.add (e w) (e w')) ∧
+          Function.Injective e ∧
+          (∀ (σ : Field.absoluteGaloisGroup F) (w : W),
+            e ((ρbar.map (algebraMap ℚ F)) σ w) = ab.galSMul x σ (e w)) ∧
+          (∀ y, y ∈ (m.torsion x lam).1 ↔ ∃ w, e w = y)) ∧
+        -- SECOND moduli condition: `A[𝔭]` is irreducible and dihedral
+        (∃ (kp : Type u) (_ : Field kp) (_ : Finite kp) (_ : TopologicalSpace kp)
+          (_ : DiscreteTopology kp) (ρbarp : GaloisRep F kp (Fin 2 → kp))
+          (e : (Fin 2 → kp) → Fermat.GeomFibrePt fA x),
+          (∀ w w' : Fin 2 → kp, e (w + w') = ab.add (e w) (e w')) ∧
+          Function.Injective e ∧
+          (∀ (σ : Field.absoluteGaloisGroup F) (w : Fin 2 → kp),
+            e (ρbarp σ w) = ab.galSMul x σ (e w)) ∧
+          (∀ y, y ∈ (m.torsion x frp).1 ↔ ∃ w, e w = y) ∧
+          ρbarp.IsIrreducible ∧
+          ∃ (L : Type u) (_ : Field L) (_ : Algebra F L),
+            Module.finrank F L = 2 ∧
+            ¬ (ρbarp.map (algebraMap F L)).IsIrreducible)
+
+/-- **The twisted Hilbert–Blumenthal moduli SPACE** (sorry node — the
+representability half of Taylor 2002 §2): for the irreducible hardly
+ramified residual representation `ρbar` at `ℓ ≥ 5` there is a smooth,
+separated, quasi-compact, finite-type, geometrically irreducible variety
+`X` over `ℚ` with a real point, carrying an abelian scheme `A ⟶ X` which
+satisfies the twisted Hilbert–Blumenthal moduli condition
+`IsTwistedHilbertBlumenthalModuli`.
+
+Classically `X` is the moduli space of Hilbert–Blumenthal abelian
+varieties with real multiplication by `𝒪_D` for a fixed totally real
+`D`, carrying an `ℓ`-level structure twisted by `ρbar` and an auxiliary
+dihedral `p`-level structure; `A ⟶ X` is the universal abelian scheme.
+Geometric irreducibility of the twist is Taylor 2002 §2 (via Shimura's
+determination of the connected components of a Hilbert–Blumenthal
+moduli space and strong approximation); the real point is the
+archimedean local condition, arranged from the signature of the
+Hilbert–Blumenthal family together with the oddness of `ρbar`.
+
+MISSING MACHINERY, IN DEPENDENCY ORDER (2026-07-25). Nothing below
+exists in mathlib or in this project; each is a theory in its own
+right, and this leaf cannot be discharged until they are built. The
+first item is supplied by `Modularity/AbelianScheme.lean` (PROVEN,
+sorry-free), which is what makes this leaf STATEABLE.
+
+1. *Abelian schemes* — group schemes over a base, proper and smooth with
+   geometrically connected fibres; the group of geometric points of a
+   fibre as a Galois module. **DONE**: `Fermat.AbelianSchemeStruct`,
+   `Fermat.GeomFibrePt`, `Fermat.AbelianSchemeStruct.geomFibreAction`,
+   `Fermat.Mult`, `Fermat.Mult.torsion`.
+2. *Torsion subgroup schemes* `A[n]` for `n` invertible on the base:
+   finite étale of rank `n ^ (2 * relative dimension)`, so that the
+   torsion Galois modules above have the right size — the statement
+   needed is `A[n]` finite étale plus `Nat.card (A[n](F̄)) = n ^ (2 * g)`.
+3. *Moduli functors and their representability*: the functor sending a
+   `ℚ`-scheme `T` to the set of isomorphism classes of Hilbert–Blumenthal
+   abelian schemes over `T` with `𝒪_D`-action and level structure is
+   representable by a quasi-projective `ℚ`-scheme, smooth of relative
+   dimension `[D : ℚ]` when the level is prime to the discriminant
+   (Rapoport; Deligne–Pappas).
+4. *Twisted forms*: given a level structure with automorphism group `G`
+   and a continuous cocycle `Γ_ℚ → G` (here the one attached to `ρbar`),
+   the twisted moduli space exists as a `ℚ`-form of the base-changed
+   moduli space — Galois descent for quasi-projective schemes.
+5. *Connected components of Hilbert–Blumenthal moduli spaces* (Shimura;
+   strong approximation for `SL₂` over a totally real field), whence the
+   geometric irreducibility of the twist — this is the actual content of
+   Taylor 2002 §2.
+6. *Real points*: `X(ℝ) ≠ ∅` from the signature computation, using
+   oddness of `ρbar` (`det ρbar(c) = -1`).
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): must be
+discharged by the independent moduli construction — never through
+`Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`.
+
+SOUNDNESS AUDIT (both ways, 2026-07-25): (i) direct — this is Taylor
+2002 §2; (ii) collapse — the hypothesis package (an irreducible hardly
+ramified mod-`ℓ` representation, `ℓ ≥ 5`) is classically unsatisfiable
+(headline of this module), so the statement is also vacuously sound. -/
+theorem exists_twistedHilbertBlumenthalModuliScheme_of_five_le
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat) :
+    ∃ (X : AlgebraicGeometry.Scheme.{u})
+      (fX : X ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+      (A : AlgebraicGeometry.Scheme.{u}) (fA : A ⟶ X)
+      (ab : Fermat.AbelianSchemeStruct fA),
+      AlgebraicGeometry.Smooth fX ∧ AlgebraicGeometry.IsSeparated fX ∧
+      AlgebraicGeometry.LocallyOfFiniteType fX ∧
+      AlgebraicGeometry.QuasiCompact fX ∧
+      AlgebraicGeometry.GeometricallyIrreducible fX ∧
+      HasRationalPoint fX (ULift.{u} ℝ) ∧
+      IsTwistedHilbertBlumenthalModuli ℓ ρbar fX ab :=
+  sorry
+
+/-- **The Tate-module construction** (sorry node — the compatible-system
+half of Taylor 2002 §2): a point of a twisted Hilbert–Blumenthal moduli
+family is a `HilbertBlumenthalPoint`.
+
+Given an abelian scheme `A ⟶ X` satisfying
+`IsTwistedHilbertBlumenthalModuli` and an `F`-point of `X` over `ℚ`, the
+fibre `A_x` is a Hilbert–Blumenthal abelian variety over `F` with real
+multiplication by `𝒪_D`, whose `λ`-torsion realizes `ρbar|_{G_F}` and
+whose `𝔭`-torsion is irreducible and dihedral. Its `λ`-adic and
+`𝔭`-adic Tate modules are then the two members of one strictly
+compatible system with coefficient field `D` — which is exactly the
+data of a `HilbertBlumenthalPoint`.
+
+This leaf contains NO moduli theory: the space, its geometry and its
+real point have all been consumed by
+`exists_twistedHilbertBlumenthalModuliScheme_of_five_le`. It also
+carries none of the arithmetic of `ρbar`: the hardly-ramified
+hypotheses and `ℓ ≥ 5` are deliberately ABSENT, because the statement is
+true for any abelian scheme with the displayed level structures. That
+makes it an independently citable statement of the theory of abelian
+varieties, reusable wherever a Tate module is needed.
+
+MISSING MACHINERY, IN DEPENDENCY ORDER (2026-07-25), continuing the list
+in the sibling leaf's docstring:
+
+7. *Tate modules*: `T_λ A = lim_n A[λ^n]` as a finitely generated free
+   `𝒪_{D,λ}`-module of rank `2` with continuous `Γ_F`-action, and
+   `T_λ A / λ = A[λ]` — the statement needed is an isomorphism of
+   `Γ_F`-modules between the reduction of the Tate module and the
+   torsion module, which is what carries the residual conditions
+   `residualℓ` and `residualp` of `HilbertBlumenthalPoint`.
+8. *Good reduction and Frobenius*: `A` has good reduction outside a
+   finite set of places `bad`, and for `w ∉ bad` the Frobenius acts on
+   `T_λ A` with characteristic polynomial in `𝒪_D[T]`.
+9. *Weil / Faltings compatibility*: that characteristic polynomial is
+   INDEPENDENT of `λ` — this is what makes the `λ`-adic and `𝔭`-adic
+   Tate modules members of ONE compatible system, i.e. the fields
+   `matchℓ` and `matchp`, and it is the deepest item in the list.
+
+BINDER NOTE (not a vacuity signal): `_hF`, `_hNF`, `_hFtr` and `_hFgal`
+carry the underscore prefix because they are the *instance-carrying*
+arguments of the `∀ F` clause of `IsTwistedHilbertBlumenthalModuli`,
+which is stated with explicit rather than instance binders (it quantifies
+over the field `F` itself). They are consumed — the proof passes them
+straight back to `hmod` in order to reach the level structures at `x` —
+and are NOT hypotheses the proof ignores.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): must be
+discharged by the Tate-module construction — never through
+`Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+theorem nonempty_hilbertBlumenthalPoint_of_isTwistedHilbertBlumenthalModuli
+    {ℓ : ℕ} [Fact ℓ.Prime]
+    {k : Type u} [Field k] [Finite k] [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] {ρbar : GaloisRep ℚ k W}
+    {X : AlgebraicGeometry.Scheme.{u}}
+    {fX : X ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ))}
+    {A : AlgebraicGeometry.Scheme.{u}} {fA : A ⟶ X}
+    {ab : Fermat.AbelianSchemeStruct fA}
+    (hmod : IsTwistedHilbertBlumenthalModuli ℓ ρbar fX ab)
+    (F : Type u) (_hF : Field F) (_hNF : NumberField F)
+    (_hFtr : NumberField.IsTotallyReal F) (_hFgal : IsGalois ℚ F)
+    (hrestr : ∀ g : Field.absoluteGaloisGroup ℚ,
+      ∃ h : Field.absoluteGaloisGroup F,
+        (ρbar.map (algebraMap ℚ F)) h = ρbar g)
+    (hpt : HasRationalPoint fX F) :
+    Nonempty (HilbertBlumenthalPoint ℓ F (ρbar.map (algebraMap ℚ F))) :=
+  sorry
+
+/-- **The twisted Hilbert–Blumenthal moduli variety** (PROVEN 2026-07-25
+as the assembly of the moduli cut above — see the section note before
+`IsTwistedHilbertBlumenthalModuli`; it was previously a single sorry
+node for Taylor 2002 §2 via Shimura's theory of
 Hilbert–Blumenthal moduli): for the irreducible hardly ramified residual
 representation `ρbar` at `ℓ ≥ 5` there is a smooth, separated,
 quasi-compact, finite-type, geometrically irreducible variety `X` over
@@ -971,10 +1257,22 @@ signature of the Hilbert–Blumenthal family; the `F`-point-to-package
 translation is the moduli interpretation together with the Tate-module
 construction of the two members of the compatible system.
 
-This leaf is what remains of the geometric joint after Moret–Bailly's
+This node is what remains of the geometric joint after Moret–Bailly's
 theorem is split off above: it contains no existence-of-global-points
 content whatsoever, only the construction and the moduli
 interpretation of one variety.
+
+ASSEMBLY (2026-07-25, PROVEN): the moduli SPACE
+(`exists_twistedHilbertBlumenthalModuliScheme_of_five_le`) supplies `X`
+together with its geometry, its real point, and an abelian scheme
+`A ⟶ X` satisfying `IsTwistedHilbertBlumenthalModuli`; the Tate-module
+construction
+(`nonempty_hilbertBlumenthalPoint_of_isTwistedHilbertBlumenthalModuli`)
+turns an `F`-point of that family into a `HilbertBlumenthalPoint`.
+Nothing geometric and nothing arithmetic is asserted here: the two
+leaves are the moduli-space theory and the abelian-variety theory
+respectively, and neither is stateable without
+`Modularity/AbelianScheme.lean`.
 
 SOUNDNESS AUDIT (both ways, 2026-07-25): (i) direct — this is Taylor
 2002 §2; (ii) collapse — the hypothesis package (an irreducible hardly
@@ -1021,8 +1319,16 @@ theorem exists_twistedHilbertBlumenthalModuli_of_five_le
           ∃ h : Field.absoluteGaloisGroup F,
             (ρbar.map (algebraMap ℚ F)) h = ρbar g) →
         HasRationalPoint fX F →
-        Nonempty (HilbertBlumenthalPoint ℓ F (ρbar.map (algebraMap ℚ F))) :=
-  sorry
+        Nonempty (HilbertBlumenthalPoint ℓ F (ρbar.map (algebraMap ℚ F))) := by
+  -- (i) the moduli SPACE, with its universal abelian scheme
+  obtain ⟨X, fX, A, fA, ab, hsm, hsep, hft, hqc, hgi, hreal, hmod⟩ :=
+    exists_twistedHilbertBlumenthalModuliScheme_of_five_le hℓodd hℓ5 hZinj hrank hρ hW
+      hρbar hirr π hπsurj hπ
+  -- (ii) the Tate-module construction at each `F`-point
+  exact ⟨X, fX, hsm, hsep, hft, hqc, hgi, hreal,
+    fun F hF hNF hFtr hFgal hrestr hpt =>
+      nonempty_hilbertBlumenthalPoint_of_isTwistedHilbertBlumenthalModuli hmod F hF hNF
+        hFtr hFgal hrestr hpt⟩
 
 /-- **The kernel of a residual representation is open** (PROVEN): for a
 finite discrete coefficient field `k` and a finite `k`-module `W`, the
@@ -7406,7 +7712,156 @@ so the statement is classically true for every package.
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
 discharge through `Family.lean`, `Lift.lean`, or
-`Modularity/Interface.lean`. -/
+`Modularity/Interface.lean`.
+
+ROUTE AUDIT (2026-07-25, a full owner pass at closing this leaf; FIVE
+candidate discharges and cuts checked, all five refuted or found
+empty — read this before spending a worker on a "cheaper route").
+The statement is FAITHFUL as written: it is not false, its conclusion
+is not satisfiable by any junk witness, and it admits NO honest
+decomposition inside the present tree. (Its hypothesis SIDE is another
+matter — see the DISCHARGEABILITY AUDIT below.) In detail:
+
+* *no subsingleton collapse*. `A ⧸ 3^m` is a NONZERO finite ring for
+  every `m ≥ 1`: `A` is a nonzero `ℤ_3`-module-finite FREE algebra, so
+  `3` cannot be a unit in `A` (else `A` would be a `ℚ_3`-algebra and a
+  finitely generated free `ℤ_3`-module at once, forcing `A = 0`),
+  i.e. `3 ∈ 𝔪_A`. Hence the level is `(A ⧸ 3^m)^2 ≠ 0` and
+  `hasFlatProlongationAt_of_subsingleton` is unavailable;
+* *no junk witness*. `GaloisRep.HasFlatProlongationAt` is a genuinely
+  RESTRICTIVE condition on a finite `Γ ℚ_3`-module, not a shape
+  condition: every finite `Γ ℚ_3`-module is the point group of a
+  finite étale `ℚ_3`-Hopf algebra (the Gelfand-duality machinery of
+  `KnownIn1980s/EllipticCurves/Flat.lean`), but only some of those
+  admit a finite FLAT `𝒪ᵥ`-model. Over `ℤ_3` (`e = 1 < p - 1 = 2`)
+  Raynaud/Oort–Tate classify the order-`3` group schemes: the generic
+  fibre of one is `ℤ/3(ω^i · ψ)` with `0 ≤ i ≤ e = 1` and `ψ`
+  UNRAMIFIED. An explicit non-example is therefore available: the
+  quadratic characters of `G_{ℚ_3}` are the unramified one, the one
+  cutting out `ℚ_3(√-3) = ℚ_3(ζ_3)` — which IS `ω` — and the one
+  cutting out `ℚ_3(√3)`; the last is ramified and is not `ω`, so
+  `ℤ/3` with that character has NO finite flat model over `ℤ_3`. So
+  the conclusion cannot be manufactured from the mere shape of the
+  level;
+* *the reduction to level `1` is FALSE* (this is the shortcut most
+  worth refuting explicitly). One is tempted to run
+  `0 → T/3^m → T/3^{m+1} → T/3 → 0` and induct, using "an extension
+  of flat by flat is flat". That extension-closure statement is FALSE
+  at the level of GALOIS MODULES: over an absolutely unramified base
+  with `e < p - 1` the comparison `Ext¹_fl → Ext¹_Γ` is INJECTIVE
+  (Fontaine's uniqueness of prolongations) but NOT surjective. The
+  standard witness is `Ext¹(ℤ/p, μ_p)`, where the flat classes are
+  `ℤ_p^× / (ℤ_p^×)^p` inside the Galois classes
+  `ℚ_p^× / (ℚ_p^×)^p` (Kummer theory) — index `p`, the missing class
+  being that of the uniformizer `p` itself, i.e. exactly the
+  Tate-curve/multiplicative-reduction extension `ℚ_p(p^{1/p})`. This
+  is the same phenomenon as the classical criterion that a
+  multiplicative-reduction curve has `E[p]` finite flat at `p` iff
+  `p ∣ v(Δ)`. So flatness of ALL levels is strictly more than
+  flatness of the first, and the induction cannot be repaired;
+* *the `p`-divisible-group cut is EQUIVALENT, not a reduction*.
+  Replacing this leaf by "`T` is the Tate module of a `3`-divisible
+  group over `ℤ_3`" relocates the same sorry: the easy direction is
+  the present statement, and the converse is a theorem (Tate; via
+  Fontaine's `e < p - 1` uniqueness the compatible system of finite
+  flat models assembles into a `3`-divisible group). Worse, the
+  cut STRENGTHENS the leaf, since a `PDivisibleGroup` interface also
+  carries the transition maps that this statement does not need.
+  Introducing that interface here would be sorry-shuffling and is
+  deliberately NOT done;
+* *the `ℤ_3`-native restatement is cosmetic*. `𝒪ᵥ ≅ ℤ_3` at `v = (3)`
+  (mathlib: `Rat.HeightOneSpectrum.adicCompletionIntegers.padicIntEquiv`,
+  with `Rat.HeightOneSpectrum.adicCompletion.padicEquiv` on the generic
+  fibre), so a finite flat Hopf `ℤ_3`-algebra base-changes to an
+  `𝒪ᵥ`-one. Restating the leaf over `ℤ_3` therefore makes it strictly
+  stronger at zero mathematical gain, and was rejected on those
+  grounds. The bridge itself is worth recording for whoever DOES
+  formalize the input: `(primesEquiv v₃ : ℕ) = 3` is available from
+  `Rat.HeightOneSpectrum.natGenerator_dvd_iff` /
+  `Rat.HeightOneSpectrum.span_natGenerator` (both stated through
+  `IsIntegralClosure.intEquiv`) together with
+  `asIdeal_toHeightOneSpectrum_eq_span` of `GroupScheme/ConnectedEtale.lean`,
+  and the `ℤ_[a] ≃+* ℤ_[b]` transport along `a = b` is a one-line
+  `subst` (`Fact` is a `Prop`, so the instance argument is
+  proof-irrelevant).
+
+DISCHARGEABILITY AUDIT (2026-07-25, the sharpest finding of the pass —
+it decides whether this leaf is worth dispatching at all). Route (i) of
+the SOUNDNESS AUDIT above is NOT a proof strategy for the statement AS
+QUANTIFIED, and no amount of Fontaine–Laffaille formalization would make
+it one. The quantifier runs over EVERY `Rlz : ThreeadicRealization`, and
+that interface constrains `τ` only through `compat`, i.e. through
+characteristic polynomials of Frobenius at almost all `q ∉ {2, 3, ℓ}`.
+Frobenius data pins `τ` at most up to SEMISIMPLIFICATION
+(Chebotarev + Brauer–Nesbitt, and only if `τ` is continuous, which the
+interface does not require), whereas flatness at `3` is a property of
+the EXTENSION CLASS, invisible to semisimplification: the two extensions
+of `ℤ/3` by `μ_3` over `ℚ_3` corresponding to `1` and to `3` in
+`ℚ_3^× / (ℚ_3^×)^3` have the SAME semisimplification and the same
+Frobenius characteristic polynomials, and exactly one of them is finite
+flat over `ℤ_3` (the Kummer computation recorded in the third bullet
+above). So `compat` cannot imply the conclusion, and `τ` is not known to
+be crystalline for an abstract `Rlz`.
+
+Consequently the ONLY discharges are: (a) the collapse — which is
+correct, since the hypothesis package is classically unsatisfiable, but
+is forbidden HERE by the circularity guard below; or (b) a CUT-LEVEL
+REPAIR: move the local shape at `3` into the `ThreeadicRealization`
+interface as a FIELD (or restrict this quantifier to realizations
+produced by the construction leaf), so that
+`exists_threeadicRealization_of_witness` — which builds `τ` by the
+actual Brauer descent and can therefore invoke Fontaine–Laffaille —
+carries it. Repair (b) is a cut-level change, not this leaf's owner's
+to make unilaterally; it is recorded here so that it is not lost. Note
+that the same analysis applies verbatim to the sibling leaf
+`threeadicRealization_stableLineAtTwo_of_witness` (the sorried leaf
+under `threeadicRealization_isTameAtTwo_of_witness`: the local shape at
+`2` is likewise invisible to Frobenius data at `q ∉ {2, 3, ℓ}`), but
+NOT to
+`threeadicRealization_det_cyclotomic_of_witness`, whose conclusion IS a
+determinant of Frobenius characteristic polynomials and is therefore
+genuinely reachable from `compat`.
+
+CONSUMPTION NOTE for whoever formalizes the input (a non-obvious
+finding of the same pass): `GaloisRep.hasFlatProlongationAt_of_hopf_package`
+of `Deformations/RepresentationTheory/FlatProlongation.lean` — the
+tree's only general producer of a flat-prolongation package — is
+UNUSABLE here. It requires a base ring `R` with `Algebra R ℚ` (its
+points comparison runs through `ℚ̄` and `algHomEquivOfFinite`), i.e. a
+group scheme over the LOCALIZATION `ℤ_(3)`, whereas Fontaine–Laffaille
+produces one over the COMPLETION `ℤ_3`, which does not map to `ℚ`. The
+input must therefore be fed either through the `padicIntEquiv` bridge
+above or straight into the definition of
+`GaloisRep.HasFlatProlongationAt` (which is purely local: the witness
+lives over `𝒪ᵥ` and the equivariance is for `Γ Kᵥ`).
+
+MISSING-MACHINERY AUDIT (2026-07-25, dependency order — none of this
+exists in mathlib or in this tree, and the leaf is blocked on all of
+it; each item named as the statement an owner would be dispatched at):
+
+1. *`p`-divisible groups over a complete DVR*: a structure carrying a
+   system of finite flat Hopf `𝒪`-algebras `H m` with the `p^m`-torsion
+   inclusions, its generic-fibre point functor, and its Tate module.
+   (Everything needed to STATE this is present — `HopfAlgebra`,
+   `Module.Flat`, `Module.Finite`, and the convolution monoid on
+   points — so this is the first buildable item, but see the audit
+   above: on its own it buys no reduction.)
+2. *Filtered `φ`-modules / strongly divisible `ℤ_p`-lattices in
+   Hodge–Tate weights `[0, p-2]` (Fontaine–Laffaille modules)*, and
+   the FL functor to finite `Γ ℚ_p`-modules.
+3. *The Fontaine–Laffaille equivalence*: the FL functor of (2) is an
+   equivalence onto the finite flat models of (1) in the range
+   `e < p - 1`. Stating the crystalline side needs the period ring
+   `B_cris` (mathlib has `WittVector` and nothing above it), which is
+   the deepest missing prerequisite of the whole chain.
+4. *Local-global compatibility at `p = ℓ`* (Carayol, Taylor): the
+   `3`-adic member of a parallel-weight-`2` compatible system of
+   conductor prime to `3` is crystalline at `3` with Hodge–Tate
+   weights `{0, 1}`. Not stateable before (3).
+
+Item 4 composed with items 3–1 IS this leaf; there is no intermediate
+at which the sorry can honestly be split, which is why it is written
+here as a single literature joint. -/
 theorem threeadicRealization_hasFlatProlongationAt_threePow
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]

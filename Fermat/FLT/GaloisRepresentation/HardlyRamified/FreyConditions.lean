@@ -4,15 +4,24 @@ the FLT project).
 
 Decomposition of `FreyCurve.torsion_isHardlyRamified` (the mod-`p` Galois
 representation on the `p`-torsion of the Frey curve is hardly ramified)
-into the four defining conditions of `IsHardlyRamified`, each an explicit
-sorry node with distinct mathematical content:
+into the four defining conditions of `IsHardlyRamified`, each with
+distinct mathematical content.
 
-* `FreyCurve.torsion_det` (sorry node): the determinant of the mod-`p`
+LABEL AUDIT (bookkeeping, 2026-07-25): all four were originally stated as
+sorry nodes and are now PROVEN here — this module elaborates with no
+`declaration uses 'sorry'` warning at all. The four bullets below said
+"(sorry node)" long after the proofs landed, which is a phantom-work
+generator: leaf lists get harvested from exactly these labels, so a stale
+one sends an agent to a target that has nothing left to prove. The
+remaining openness under these nodes, where any, sits in the leaves they
+delegate to (in other modules), not in the four declarations named here.
+
+* `FreyCurve.torsion_det` (PROVEN): the determinant of the mod-`p`
   representation is the mod-`p` cyclotomic character. This is the **Weil
   pairing** statement: `E[p] ∧ E[p] ≅ μ_p` equivariantly, so
   `det ρ̄ = ω̄`. Needs the Weil pairing, not yet in mathlib.
 
-* `FreyCurve.torsion_isUnramified` (sorry node): the representation is
+* `FreyCurve.torsion_isUnramified` (PROVEN): the representation is
   unramified at every prime `q ∉ {2, p}`. At primes of good reduction this
   is the criterion of **Néron–Ogg–Shafarevich**; at the (multiplicative)
   bad primes of the semistable Frey curve it is the **Tate curve**
@@ -21,13 +30,13 @@ sorry node with distinct mathematical content:
   Tate parameter is a `p`-th power up to units and the `p`-torsion of the
   Tate curve `ℚ_q^×/q_E^ℤ` is fixed by inertia.
 
-* `FreyCurve.torsion_isFlat` (sorry node): the representation is flat at
+* `FreyCurve.torsion_isFlat` (PROVEN): the representation is flat at
   `p` — the `p`-torsion extends to a finite flat group scheme over `ℤ_p`.
   For the semistable Frey curve this comes from the Néron model (good
   ordinary/supersingular reduction) or the Tate curve at `p` together with
   `p ∣ v_p(j)` (multiplicative reduction).
 
-* `FreyCurve.torsion_isTameAtTwo` (sorry node): at `2` the representation
+* `FreyCurve.torsion_isTameAtTwo` (PROVEN): at `2` the representation
   is upper-triangular with a free rank-1 quotient on which `G_{ℚ_2}` acts
   through an unramified character whose square is trivial. The Frey curve
   has multiplicative reduction at `2` (here `b` even and `a ≡ 3 mod 4` are
