@@ -1036,6 +1036,48 @@ that the conjugation datum `e` must be carried through the Kőnig
 argument alongside `ψ`, which is why the pairs, not the ring maps
 alone, form the inverse system.
 
+WHAT IS ALREADY PROVEN AT THE UN-FRAMED LEVEL, AND WHY IT DOES NOT
+TRANSFER (2026-07-25, recorded after a collision in which this leaf and
+an un-framed twin were cut simultaneously). Steps 3–4 in their
+TRACE-ONLY form are proven, verbatim in the shape
+
+    exists_ringHom_of_forall_quotient_mem
+      (I : Ideal A) [IsAdicComplete I A] (X : ∀ n, Set (R →+* A ⧸ I ^ n))
+      (finite) (nonempty) (stable under `Ideal.Quotient.factorPow`) :
+      ∃ f : R →+* A, ∀ n, (Ideal.Quotient.mk (I ^ n)).comp f ∈ X n
+
+— in `Modularity/Patching.lean` (its identically-stated leaf, discharged
+2026-07-25) and in this repository's history at commit `bca1902`. Two
+things in that proof are worth reusing here and one is not:
+
+* REUSE: step 4 needs no manual limit construction at all. Mathlib's
+  `IsAdicComplete.liftRingHom` (`Mathlib/RingTheory/AdicCompletion/
+  RingHom.lean`) is exactly the universal property — a compatible tower
+  `f n : R →+* A ⧸ I ^ n` assembles to `f : R →+* A` with
+  `mk_comp_liftRingHom : (mk (I ^ n)).comp (liftRingHom I f hf) = f n`.
+  "`ψ = lim ψₙ` is a ring homomorphism" above is therefore free.
+* REUSE: step 3's finiteness is `finite_setOf_ringHom_comp_eq` (proven
+  in `Patching.lean`), whose only nontrivial input is mathlib's
+  `Ideal.finite_quotient_pow` — which also discharges that file's
+  `finite_quotient_maximalIdeal_pow` outright.
+* DOES NOT TRANSFER: the Kőnig step itself. The lemma above quantifies
+  over `Set (R →+* A ⧸ I ^ n)` — a NON-dependent family — whereas here
+  the second component `e` has a type that depends on the first: the
+  algebra structure `Algebra D.R (D'.R ⧸ 𝔪ⁿ)` used to form
+  `(D'.R ⧸ 𝔪ⁿ) ⊗_{D.R} (Fin 2 → D.R)` is `ψₙ.toAlgebra`. So the
+  inverse system is one of Σ-types and the lemma cannot be applied.
+  SUGGESTED FIX for whoever proves this leaf: make the system
+  non-dependent first, by transporting `e` across the canonical
+  `TensorProduct.piScalarRight` isomorphism
+  `B ⊗_{D.R} (Fin 2 → D.R) ≅ (Fin 2 → B)` (already used in
+  `exists_hardlyRamified_lift_of_five_le` in this file) so that the
+  datum becomes an element of `GL₂(D'.R ⧸ 𝔪ⁿ)` — a type independent of
+  `ψₙ` — with the conjugation equation as a side condition. Kőnig then
+  applies to the plain product, the ring-map component assembles by
+  `IsAdicComplete.liftRingHom`, and the matrix component assembles
+  entrywise by `IsPrecomplete`, its invertibility coming from
+  invertibility modulo `𝔪` as step 4 already notes.
+
 CIRCULARITY GUARD: as for the Artinian leaf — the hypothesis package is
 the one the odd-prime dichotomy refutes, and the dichotomy is proven
 over pillar α, so a vacuous discharge through it is circular. -/
