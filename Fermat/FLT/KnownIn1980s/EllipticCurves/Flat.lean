@@ -15986,7 +15986,8 @@ lemma WeierstrassCurve.torsionPairFormalAbs_apply_zero_right (m : ℕ) (h : Poly
   ring
 
 
-set_option maxHeartbeats 4000000 in
+set_option maxRecDepth 8000 in
+set_option maxHeartbeats 40000000 in
 /-- **The `Q`-side factor of the level-three formal-chart numerator**: the generic
 `R`-combination of the twelve admissible level-three `Q`-monomial sections
 `x^{3d−6+r}y^s/h³` with `2r+3s ≤ 12`, `s ≤ 1`. -/
@@ -16042,7 +16043,8 @@ noncomputable def WeierstrassCurve.torsionPairFormalOrdQ (m : ℕ) (h : Polynomi
           WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑Q *
           WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑Q)
 
-set_option maxHeartbeats 4000000 in
+set_option maxRecDepth 8000 in
+set_option maxHeartbeats 40000000 in
 set_option backward.isDefEq.respectTransparency false in
 set_option linter.unusedSectionVars false in
 /-- The `Q`-side factor lies in the monomial-section subalgebra. -/
@@ -16157,7 +16159,8 @@ lemma WeierstrassCurve.torsionPairFormalOrdQ_mem_adjoin (m : ℕ) (h : Polynomia
             (hgen _ _ (by omega) (by omega)))
       | apply add_mem
 
-set_option maxHeartbeats 4000000 in
+set_option maxRecDepth 8000 in
+set_option maxHeartbeats 40000000 in
 set_option linter.unusedSectionVars false in
 /-- The value of the `Q`-side factor on an affine point. -/
 lemma WeierstrassCurve.torsionPairFormalOrdQ_apply_some (m : ℕ) (h : Polynomial R)
@@ -16184,7 +16187,8 @@ lemma WeierstrassCurve.torsionPairFormalOrdQ_apply_some (m : ℕ) (h : Polynomia
   field_simp
   ring
 
-set_option maxHeartbeats 4000000 in
+set_option maxRecDepth 8000 in
+set_option maxHeartbeats 40000000 in
 set_option linter.unusedSectionVars false in
 /-- The value of the `Q`-side factor at the origin: only the top-weight monomial
 survives. -/
@@ -16205,7 +16209,8 @@ lemma WeierstrassCurve.torsionPairFormalOrdQ_apply_zero (m : ℕ) (h : Polynomia
   ring
 
 
-set_option maxHeartbeats 1000000 in
+set_option maxRecDepth 8000 in
+set_option maxHeartbeats 40000000 in
 /-- **The formal-group chart ordinate numerator** `B`: the reduction of
 `y₃N³` modulo the two Weierstrass equations, read off as a
 level-three split product against the eight `P`-monomial profiles. -/
@@ -16489,7 +16494,8 @@ noncomputable def WeierstrassCurve.torsionPairFormalOrd (m : ℕ) (h : Polynomia
           (-2 * b₁ ^ 2 - 2 * b₂)
           PQ.2
 
-set_option maxHeartbeats 4000000 in
+set_option maxRecDepth 8000 in
+set_option maxHeartbeats 40000000 in
 set_option backward.isDefEq.respectTransparency false in
 set_option linter.unusedSectionVars false in
 /-- The numerator lies in the split-product span `M`. -/
@@ -16822,7 +16828,8 @@ lemma WeierstrassCurve.torsionPairFormalOrd_mem_span (m : ℕ) (h : Polynomial R
               _ _ _ _ _ _ _, rfl⟩
       | apply add_mem
 
-set_option maxHeartbeats 1000000 in
+set_option maxRecDepth 8000 in
+set_option maxHeartbeats 40000000 in
 set_option backward.isDefEq.respectTransparency false in
 set_option linter.unusedSectionVars false in
 /-- The value of the numerator on an affine pair. -/
@@ -17073,7 +17080,8 @@ lemma WeierstrassCurve.torsionPairFormalOrd_apply_some (m : ℕ) (h : Polynomial
   field_simp
   ring
 
-set_option maxHeartbeats 4000000 in
+set_option maxRecDepth 8000 in
+set_option maxHeartbeats 40000000 in
 set_option linter.unusedSectionVars false in
 /-- On the origin ROW only the top-weight `P`-profile survives. -/
 lemma WeierstrassCurve.torsionPairFormalOrd_apply_zero_left (m : ℕ) (h : Polynomial R)
@@ -17106,7 +17114,8 @@ lemma WeierstrassCurve.torsionPairFormalOrd_apply_zero_left (m : ℕ) (h : Polyn
     if_pos e4]
   ring
 
-set_option maxHeartbeats 4000000 in
+set_option maxRecDepth 8000 in
+set_option maxHeartbeats 40000000 in
 set_option linter.unusedSectionVars false in
 /-- On the origin COLUMN each `Q`-side factor collapses to its top-weight
 coefficient, and the numerator becomes a single `P`-monomial fraction. -/
@@ -17143,7 +17152,8 @@ lemma WeierstrassCurve.torsionPairFormalOrd_apply_zero_right (m : ℕ) (h : Poly
   ring
 
 
-set_option maxHeartbeats 4000000 in
+set_option maxRecDepth 8000 in
+set_option maxHeartbeats 40000000 in
 set_option backward.isDefEq.respectTransparency false in
 set_option linter.unusedSectionVars false in
 set_option linter.unusedVariables false in
