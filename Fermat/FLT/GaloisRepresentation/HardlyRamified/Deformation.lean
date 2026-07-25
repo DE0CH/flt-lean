@@ -61,9 +61,10 @@ them without a human. Do not re-wrap it.
 - `finite_setOf_isHardlyRamified_frames`
 - `exists_isStrictlyUniversalOnFrames_of_deformationCondition`
 - `hasFlatProlongationAt_of_pi_surjection`
-- `isHardlyRamified_of_fibreProduct`
+- `isFlatAt_of_fibreProduct`
+- `isTameAtTwo_of_fibreProduct`
 - `finite_setOf_isHardlyRamified_frames_of_discreteTopology`
-- `isHardlyRamified_of_forall_isOpen_quotient`
+- `isTameAtTwo_of_forall_isOpen_quotient`
 - `exists_ringHom_matrix_quotient_of_finite`
 - `exists_pow_comap_le_pow_maximalIdeal_traceSubring`
 - `fg_comap_maximalIdeal_traceSubring`
@@ -1996,10 +1997,231 @@ theorem isHardlyRamified_pushforwardFrame
     (isHardlyRamified_baseChange hℓOdd A hrank hρ)
     (TensorProduct.piScalarRight B A A (Fin 2))
 
+open scoped TensorProduct in
+/-- **`pushforwardFrame` computed on the image of a `B`-vector** (PROVEN
+2026-07-25): `pushforwardFrame ψ hψ ρ` carries `ψ ∘ v` to `ψ ∘ (ρ g v)`
+— i.e. it really is "apply `ψ` to the matrix entries of `ρ`", stated in
+the one form that needs no inverse of the framing identification.
+
+`(1 : A) ⊗ₜ v` is a preimage of `ψ ∘ v` under
+`TensorProduct.piScalarRight`, so `LinearEquiv.conj_apply_apply` moves
+the conjugation out of the way and `GaloisRep.baseChange_tmul` finishes;
+nothing has to be said about `piScalarRight.symm` on a general element,
+which is a sum.
+
+This is the handle that lets a fibre-product argument compare `ρ g` with
+`1` ENTRYWISE — which is the shape the injectivity of `b ↦ (p₁ b, p₂ b)`
+can act on. -/
+lemma pushforwardFrame_apply_map {B : Type u} [CommRing B]
+    [TopologicalSpace B] [IsTopologicalRing B] {A : Type u} [CommRing A]
+    [TopologicalSpace A] [IsTopologicalRing A] (ψ : B →+* A)
+    (hψ : Continuous ψ) (ρ : FramedGaloisRep ℚ B (Fin 2))
+    (g : Field.absoluteGaloisGroup ℚ) (v : Fin 2 → B) (i : Fin 2) :
+    pushforwardFrame ψ hψ ρ g (fun j => ψ (v j)) i = ψ (ρ g v i) := by
+  letI : Algebra B A := ψ.toAlgebra
+  letI : ContinuousSMul B A := continuousSMul_of_algebraMap B A
+    (by rw [RingHom.algebraMap_toAlgebra]; exact hψ)
+  have hsmul : ∀ (b : B) (a : A), b • a = ψ b * a := fun _ _ => rfl
+  have h1 : (fun j => ψ (v j)) =
+      (TensorProduct.piScalarRight B A A (Fin 2)) ((1 : A) ⊗ₜ[B] v) := by
+    funext j
+    rw [TensorProduct.piScalarRight_apply, TensorProduct.piScalarRightHom_tmul]
+    simp [hsmul]
+  show (((ρ.baseChange A).conj (TensorProduct.piScalarRight B A A (Fin 2))) g)
+      (fun j => ψ (v j)) i = _
+  rw [h1, GaloisRep.conj_apply, LinearEquiv.conj_apply_apply,
+    LinearEquiv.symm_apply_apply, GaloisRep.baseChange_tmul,
+    TensorProduct.piScalarRight_apply, TensorProduct.piScalarRightHom_tmul]
+  simp [hsmul]
+
+open scoped TensorProduct in
+/-- **`det` commutes with `pushforwardFrame`** (PROVEN 2026-07-25):
+`LinearMap.det_conj` absorbs the framing identification and
+`LinearMap.det_baseChange` turns the base-changed determinant into
+`algebraMap B A` of the original, which is `ψ` by
+`RingHom.algebraMap_toAlgebra`.
+
+This is the direction `isHardlyRamified_pushforwardFrame` does not need
+but a fibre-product argument does: it lets a determinant identity be
+REFLECTED BACK from the two projections to `B`. -/
+lemma det_pushforwardFrame {B : Type u} [CommRing B]
+    [TopologicalSpace B] [IsTopologicalRing B] {A : Type u} [CommRing A]
+    [TopologicalSpace A] [IsTopologicalRing A] (ψ : B →+* A)
+    (hψ : Continuous ψ) (ρ : FramedGaloisRep ℚ B (Fin 2))
+    (g : Field.absoluteGaloisGroup ℚ) :
+    (pushforwardFrame ψ hψ ρ).det g = ψ (ρ.det g) := by
+  letI : Algebra B A := ψ.toAlgebra
+  letI : ContinuousSMul B A := continuousSMul_of_algebraMap B A
+    (by rw [RingHom.algebraMap_toAlgebra]; exact hψ)
+  show LinearMap.det
+    ((((ρ.baseChange A).conj (TensorProduct.piScalarRight B A A (Fin 2))) g)) = _
+  rw [GaloisRep.conj_apply, LinearEquiv.conj_apply, LinearMap.comp_assoc,
+    LinearMap.det_conj]
+  show LinearMap.det (LinearMap.baseChange A (ρ g)) = _
+  rw [LinearMap.det_baseChange, RingHom.algebraMap_toAlgebra]
+  rfl
+
+/-- **Flatness at `ℓ` glues along a fibre product** (sorry node, cut
+2026-07-25 out of `isHardlyRamified_of_fibreProduct` — Ramakrishna's half
+of Schlessinger's H1/H2 for the hardly ramified problem).
+
+`B` is the fibre product `A₁ ×_{A₀} A₂` presented by its universal
+property (`hcart`: every compatible pair comes from `B`; `hemb`: `B`
+injects and carries the induced topology). Given that both projections of
+a framed `ρ` over `B` are flat at `ℓ`, so is `ρ`.
+
+WHY THIS IS NOT FORMAL. `GaloisRep.IsFlatAt` quantifies over the OPEN
+IDEALS of the coefficient ring, and the open ideals of a fibre product
+are not pullbacks of open ideals of the factors: for an ideal `I ⊆ B` the
+induced `B ⧸ I → (A₁ ⧸ p₁(I)A₁) × (A₂ ⧸ p₂(I)A₂)` need NOT be injective,
+so the prolongation of `ρ ⊗ B ⧸ I` cannot simply be cut out of the two
+given ones. The argument is Ramakrishna's: `ℤ_ℓ` is absolutely
+unramified, so `e = 1 < ℓ − 1` for odd `ℓ`, and by Raynaud a finite flat
+prolongation of a given generic fibre is UNIQUE. Uniqueness is what makes
+the two prolongations agree over `A₀` and hence glue over `B`; Raynaud's
+closure of the category under subobjects and quotients then descends the
+glued object along `B ↪ A₁ × A₂`.
+
+`hodd` IS LOAD-BEARING — `ℓ = 2` IS A GENUINE EXCLUSION, NOT TIDINESS. At
+`ℓ = 2` one has `e = 1 = ℓ − 1`, exactly the boundary at which Raynaud's
+uniqueness fails: `μ_2` and `ℤ/2` are non-isomorphic finite flat group
+schemes over `ℤ_2` with the SAME generic fibre (`−1 ∈ ℚ_2`), so two
+prolongations agreeing generically need not agree, and the gluing has no
+reason to hold. It is passed explicitly rather than left to a comment
+because a prover cannot use a hypothesis that is not in the statement.
+
+References: Ramakrishna, *On a variation of Mazur's deformation functor*,
+Compositio 87 (1994), §1; Raynaud, *Schémas en groupes de type
+`(p,…,p)`*, Bull. SMF 102 (1974), Thm. 3.3.1; Conrad–Diamond–Taylor,
+JAMS 12 (1999), §2. -/
+theorem isFlatAt_of_fibreProduct (hodd : Odd ℓ)
+    {A₀ : Type u} [CommRing A₀] [TopologicalSpace A₀] [IsTopologicalRing A₀]
+    [IsLocalRing A₀] [Algebra ℤ_[ℓ] A₀] [Finite A₀]
+    {A₁ : Type u} [CommRing A₁] [TopologicalSpace A₁] [IsTopologicalRing A₁]
+    [IsLocalRing A₁] [Algebra ℤ_[ℓ] A₁] [Finite A₁]
+    {A₂ : Type u} [CommRing A₂] [TopologicalSpace A₂] [IsTopologicalRing A₂]
+    [IsLocalRing A₂] [Algebra ℤ_[ℓ] A₂] [Finite A₂]
+    {B : Type u} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
+    [IsLocalRing B] [Algebra ℤ_[ℓ] B] [Finite B]
+    (f₁ : A₁ →+* A₀) (f₂ : A₂ →+* A₀) (hf₂ : Function.Surjective f₂)
+    (p₁ : B →+* A₁) (p₂ : B →+* A₂) (hp₁ : Continuous p₁) (hp₂ : Continuous p₂)
+    (hcomm : f₁.comp p₁ = f₂.comp p₂)
+    (hemb : Topology.IsEmbedding fun b : B => (p₁ b, p₂ b))
+    (hcart : ∀ (a₁ : A₁) (a₂ : A₂), f₁ a₁ = f₂ a₂ → ∃ b : B, p₁ b = a₁ ∧ p₂ b = a₂)
+    {ρ : FramedGaloisRep ℚ B (Fin 2)}
+    (h₁ : (pushforwardFrame p₁ hp₁ ρ).IsFlatAt
+      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : ℓ.Prime)))
+    (h₂ : (pushforwardFrame p₂ hp₂ ρ).IsFlatAt
+      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : ℓ.Prime))) :
+    ρ.IsFlatAt
+      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : ℓ.Prime)) :=
+  sorry
+
+/-- **The tame quadratic quotient at `2` glues along a fibre product**
+(sorry node, cut 2026-07-25 out of `isHardlyRamified_of_fibreProduct` —
+the Conrad–Diamond–Taylor half of Schlessinger's H1/H2).
+
+WHY IT IS NOT FORMAL. `IsHardlyRamified` states tameness at `2` as an
+EXISTENTIAL — SOME surjection `π : V ↠ R` and SOME unramified quadratic
+`δ`. So `h₁` and `h₂` hand you a line over `A₁` and a line over `A₂` with
+no compatibility whatever over `A₀`, and a line over the fibre product is
+exactly a compatible PAIR of lines. Everything therefore turns on a
+uniqueness statement forcing the two given choices to agree over `A₀`.
+
+THE UNIQUENESS INPUT, MADE EXPLICIT (2026-07-25; this is why `hdet` is a
+hypothesis). Write `ρ̄` for the residual representation of `ρ`. Two facts
+follow from `hdet` ALONE:
+
+* `χ_ℓ` is UNRAMIFIED on `G_{ℚ_2}` with `χ_ℓ(Frob_2) = 2`, because `ℓ` is
+  odd, so `ℚ_2(μ_{ℓⁿ})/ℚ_2` is unramified and Frobenius is the
+  `2`-power map on `ℓⁿ`-th roots of unity;
+* the image of `2` is never `1` in a residue field — `2 = 1` gives
+  `1 = 0`.
+
+Hence `ρ̄|_{G_2}` is NEVER SCALAR: were it `δ̄ · 1`, then `δ̄² = 1` would
+give `det ρ̄|_{G_2} = 1`, forcing the image of `2` to be `1`. For the same
+reason the two Jordan–Hölder characters of `ρ̄|_{G_2}`, namely `χ̄δ̄` (sub)
+and `δ̄` (quotient), are always DISTINCT — they differ by `χ̄|_{G_2}`,
+which is nontrivial on `Frob_2`. That distinctness is the uniqueness
+engine: a non-split `ρ̄|_{G_2}` has exactly ONE stable line, the given
+lines reduce to it, they agree over `A₀`, and they glue.
+
+THE SHARP EDGE IS `ℓ = 3`, AND ITS PROVER MUST NOT IGNORE IT. Uniqueness
+can fail only when `ρ̄|_{G_2}` SPLITS as `χ̄δ̄ ⊕ δ̄`. Then there are exactly
+two stable lines, with quotients `δ̄` and `χ̄δ̄`; both are unramified, and
+the second is also QUADRATIC precisely when `χ̄² = 1` on `G_2`, i.e. when
+`4 = 1` in the residue field, i.e. when `ℓ = 3`. So:
+
+* for `ℓ ≥ 5` the line with unramified quadratic quotient is UNIQUE and
+  the gluing is unconditional;
+* at `ℓ = 3` and split, BOTH lines satisfy the clause, the two
+  projections may select lines with different reductions to `A₀`, and
+  then there is nothing over `B` to glue them into.
+
+This statement carries only `hodd : Odd ℓ`, inherited from
+`isHardlyRamified_of_fibreProduct`, which inherits it from
+`IsHardlyRamified`. Its ONLY consumer chain —
+`exists_isStrictlyUniversalOnFrames_of_finite_lifts` and
+`exists_isStrictlyUniversalOnFrames_of_deformationCondition` — DOES carry
+`hℓ5 : 5 ≤ ℓ`. So if the `ℓ = 3` split case proves intractable, the
+correct repair is to thread `5 ≤ ℓ` down that chain (edits to other
+owners' declarations, deliberately not made here), NOT to weaken this
+statement. And do not discharge this leaf by assuming `ρ̄|_{G_2}` is
+non-split: nothing in the hypotheses supplies that.
+
+References: Conrad–Diamond–Taylor, JAMS 12 (1999), §2; Mazur, *Deforming
+Galois representations*, MSRI Publ. 16 (1989), §§18–23; Schlessinger,
+Trans. AMS 130 (1968), Thm. 2.11. -/
+theorem isTameAtTwo_of_fibreProduct (hodd : Odd ℓ)
+    {A₀ : Type u} [CommRing A₀] [TopologicalSpace A₀] [IsTopologicalRing A₀]
+    [IsLocalRing A₀] [Algebra ℤ_[ℓ] A₀] [Finite A₀]
+    {A₁ : Type u} [CommRing A₁] [TopologicalSpace A₁] [IsTopologicalRing A₁]
+    [IsLocalRing A₁] [Algebra ℤ_[ℓ] A₁] [Finite A₁]
+    {A₂ : Type u} [CommRing A₂] [TopologicalSpace A₂] [IsTopologicalRing A₂]
+    [IsLocalRing A₂] [Algebra ℤ_[ℓ] A₂] [Finite A₂]
+    {B : Type u} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
+    [IsLocalRing B] [Algebra ℤ_[ℓ] B] [Finite B]
+    (f₁ : A₁ →+* A₀) (f₂ : A₂ →+* A₀) (hf₂ : Function.Surjective f₂)
+    (p₁ : B →+* A₁) (p₂ : B →+* A₂) (hp₁ : Continuous p₁) (hp₂ : Continuous p₂)
+    (hcomm : f₁.comp p₁ = f₂.comp p₂)
+    (hemb : Topology.IsEmbedding fun b : B => (p₁ b, p₂ b))
+    (hcart : ∀ (a₁ : A₁) (a₂ : A₂), f₁ a₁ = f₂ a₂ → ∃ b : B, p₁ b = a₁ ∧ p₂ b = a₂)
+    {ρ : FramedGaloisRep ℚ B (Fin 2)}
+    (hdet : ∀ g, ρ.det g = algebraMap ℤ_[ℓ] B
+      (cyclotomicCharacter (AlgebraicClosure ℚ) ℓ g.toRingEquiv))
+    (h₁ : ∃ (π : (Fin 2 → A₁) →ₗ[A₁] A₁) (_ : Function.Surjective π)
+      (δ : GaloisRep ℚ_[2] A₁ A₁),
+      ∀ g : Field.absoluteGaloisGroup ℚ_[2], ∀ v : Fin 2 → A₁,
+        π ((pushforwardFrame p₁ hp₁ ρ).map (algebraMap ℚ ℚ_[2]) g v) = δ g (π v) ∧
+        (AddSubgroup.inertia
+          ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup :
+            AddSubgroup Z2bar) (Field.absoluteGaloisGroup ℚ_[2]) ≤ δ.ker) ∧
+        (∀ g' : Field.absoluteGaloisGroup ℚ_[2], δ g' * δ g' = 1))
+    (h₂ : ∃ (π : (Fin 2 → A₂) →ₗ[A₂] A₂) (_ : Function.Surjective π)
+      (δ : GaloisRep ℚ_[2] A₂ A₂),
+      ∀ g : Field.absoluteGaloisGroup ℚ_[2], ∀ v : Fin 2 → A₂,
+        π ((pushforwardFrame p₂ hp₂ ρ).map (algebraMap ℚ ℚ_[2]) g v) = δ g (π v) ∧
+        (AddSubgroup.inertia
+          ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup :
+            AddSubgroup Z2bar) (Field.absoluteGaloisGroup ℚ_[2]) ≤ δ.ker) ∧
+        (∀ g' : Field.absoluteGaloisGroup ℚ_[2], δ g' * δ g' = 1)) :
+    ∃ (π : (Fin 2 → B) →ₗ[B] B) (_ : Function.Surjective π)
+      (δ : GaloisRep ℚ_[2] B B),
+      ∀ g : Field.absoluteGaloisGroup ℚ_[2], ∀ v : Fin 2 → B,
+        π (ρ.map (algebraMap ℚ ℚ_[2]) g v) = δ g (π v) ∧
+        (AddSubgroup.inertia
+          ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup :
+            AddSubgroup Z2bar) (Field.absoluteGaloisGroup ℚ_[2]) ≤ δ.ker) ∧
+        (∀ g' : Field.absoluteGaloisGroup ℚ_[2], δ g' * δ g' = 1) :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
 /-- **Schlessinger's H1/H2 for the hardly ramified problem: the local
-conditions are checked componentwise on a fibre product** (sorry node —
-the gluing half of "the hardly ramified conditions form a deformation
-condition", the arithmetic input of the Schlessinger core leaf below).
+conditions are checked componentwise on a fibre product** (PROVEN
+2026-07-25 over the two ARITHMETIC leaves `isFlatAt_of_fibreProduct` and
+`isTameAtTwo_of_fibreProduct` cut immediately above — the gluing half of
+"the hardly ramified conditions form a deformation condition", the
+arithmetic input of the Schlessinger core leaf below).
 
 `B` is the fibre product `A₁ ×_{A₀} A₂` of finite local `ℤ_ℓ`-algebras
 along a SURJECTION `f₂` — presented not as a construction but by its
@@ -2017,28 +2239,29 @@ compatible pair, the frame removing the conjugation ambiguity that makes
 the unframed functor only *versal*. So the only content is that the four
 hardly ramified clauses descend, which is this statement.
 
-WHAT EACH CLAUSE COSTS. The determinant clause is formal: `det` commutes
-with `pushforwardFrame` (`LinearMap.det_baseChange` plus conjugation
-invariance), so `p_i (det ρ g) = p_i (algebraMap ℤ_ℓ B (χ g))` for
-`i = 1, 2` by `halg₁`/`halg₂`, and `hemb.injective` concludes.
-Unramifiedness is formal for the same reason: an endomorphism of
-`Fin 2 → B` killed by both projections is the identity. The two REAL
-clauses are the local conditions: flatness at `ℓ` glues by Ramakrishna
-(the finite flat prolongations of the two projections agree over `A₀`
-because for `e = 1 < ℓ − 1` a prolongation is unique, so they glue over
-the fibre product), and the tame quadratic quotient at `2` glues by
-Conrad–Diamond–Taylor.
+WHAT EACH CLAUSE COSTS — the measurement that produced the cut. The four
+clauses split exactly two and two.
 
-SUBTLETY IN THE TAME CLAUSE, FLAGGED FOR ITS PROVER. `IsHardlyRamified`
-states tameness at `2` as an EXISTENTIAL — some surjection
-`π : V ↠ R` and some unramified quadratic `δ`. `h₁` and `h₂` therefore
-hand you data over `A₁` and over `A₂` with no compatibility over `A₀`,
-and gluing needs them to agree there. This is not a defect of the
-statement but the reason the CDT condition is proved to be a deformation
-condition rather than observed to be one: the line is unique once the
-residual local representation at `2` is not scalar, and that uniqueness
-is what makes the two choices agree after replacing them by the induced
-ones. Any proof must go through such a uniqueness step.
+The determinant clause is FORMAL and is proven here: `det` commutes with
+`pushforwardFrame` (`det_pushforwardFrame`, above), so
+`p_i (det ρ g) = p_i (algebraMap ℤ_ℓ B (χ g))` for `i = 1, 2` by
+`halg₁`/`halg₂`, and injectivity of `b ↦ (p₁ b, p₂ b)` concludes.
+Unramifiedness is FORMAL for the same reason and is also proven here: by
+`pushforwardFrame_apply_map` an endomorphism of `Fin 2 → B` whose two
+projections are the identity is the identity, entry by entry — note that
+this is a statement about VALUES, which is exactly the kind of thing that
+descends along an injection.
+
+The two local conditions are the REAL content and are the two leaves cut
+above: flatness at `ℓ` glues by Ramakrishna and Raynaud
+(`isFlatAt_of_fibreProduct`), and the tame quadratic quotient at `2`
+glues by Conrad–Diamond–Taylor (`isTameAtTwo_of_fibreProduct`). Neither
+is a reformulation of the hypotheses: the first has to cope with open
+ideals of `B` that are not pullbacks from the factors, and the second
+with an EXISTENTIAL that hands the two projections uncoordinated lines.
+See those two docstrings — in particular the `ℓ = 3` sharpness recorded
+on the tame leaf, which is the one place this node's `Odd ℓ` may be too
+weak and where `5 ≤ ℓ` would have to be threaded down from the consumer.
 
 References: Schlessinger, *Functors of Artin rings*, Trans. AMS 130
 (1968), Thm. 2.11 (H1, H2); Mazur, *Deforming Galois representations*,
@@ -2063,14 +2286,86 @@ theorem isHardlyRamified_of_fibreProduct
     {ρ : FramedGaloisRep ℚ B (Fin 2)}
     (h₁ : IsHardlyRamified hℓOdd (rank_finTwoFun A₁) (pushforwardFrame p₁ hp₁ ρ))
     (h₂ : IsHardlyRamified hℓOdd (rank_finTwoFun A₂) (pushforwardFrame p₂ hp₂ ρ)) :
-    IsHardlyRamified hℓOdd (rank_finTwoFun B) ρ :=
-  sorry
+    IsHardlyRamified hℓOdd (rank_finTwoFun B) ρ := by
+  -- An element of `B` is determined by its two projections: this is the
+  -- only consequence of `hemb` the two formal clauses need.
+  have hinj : ∀ b b' : B, p₁ b = p₁ b' → p₂ b = p₂ b' → b = b' := by
+    intro b b' hb₁ hb₂
+    exact hemb.injective (by simp only [Prod.mk.injEq]; exact ⟨hb₁, hb₂⟩)
+  -- The determinant identity, reflected back from the two projections.
+  -- Used twice: as the `det` clause, and as `hdet` for the tame leaf.
+  have hdet : ∀ g, ρ.det g = algebraMap ℤ_[ℓ] B
+      (cyclotomicCharacter (AlgebraicClosure ℚ) ℓ g.toRingEquiv) := by
+    intro g
+    refine hinj _ _ ?_ ?_
+    · have hcompat : p₁ (algebraMap ℤ_[ℓ] B
+          (cyclotomicCharacter (AlgebraicClosure ℚ) ℓ g.toRingEquiv)) =
+          algebraMap ℤ_[ℓ] A₁
+            (cyclotomicCharacter (AlgebraicClosure ℚ) ℓ g.toRingEquiv) := by
+        rw [← halg₁]; rfl
+      rw [← det_pushforwardFrame p₁ hp₁ ρ g, h₁.det g, hcompat]
+    · have hcompat : p₂ (algebraMap ℤ_[ℓ] B
+          (cyclotomicCharacter (AlgebraicClosure ℚ) ℓ g.toRingEquiv)) =
+          algebraMap ℤ_[ℓ] A₂
+            (cyclotomicCharacter (AlgebraicClosure ℚ) ℓ g.toRingEquiv) := by
+        rw [← halg₂]; rfl
+      rw [← det_pushforwardFrame p₂ hp₂ ρ g, h₂.det g, hcompat]
+  constructor
+  · -- DETERMINANT: formal, proven above.
+    exact hdet
+  · -- UNRAMIFIEDNESS: formal. An endomorphism of `Fin 2 → B` killed by
+    -- both projections is the identity, entrywise.
+    intro p hp hpp
+    -- an element of `Γ ℚ` acting trivially through both projections acts
+    -- trivially: `pushforwardFrame_apply_map` makes this an entrywise
+    -- statement about VALUES, which `hinj` settles
+    have key : ∀ g : Field.absoluteGaloisGroup ℚ,
+        (pushforwardFrame p₁ hp₁ ρ) g = 1 → (pushforwardFrame p₂ hp₂ ρ) g = 1 →
+        ρ g = 1 := by
+      intro g hg₁ hg₂
+      refine LinearMap.ext fun w => funext fun i => ?_
+      refine hinj _ _ ?_ ?_
+      · have hw := pushforwardFrame_apply_map p₁ hp₁ ρ g w i
+        rw [hg₁] at hw
+        simpa using hw.symm
+      · have hw := pushforwardFrame_apply_map p₂ hp₂ ρ g w i
+        rw [hg₂] at hw
+        simpa using hw.symm
+    refine ⟨?_⟩
+    intro σ hσ
+    have e₁ : (pushforwardFrame p₁ hp₁ ρ).toLocal
+        hp.toHeightOneSpectrumRingOfIntegersRat σ = 1 :=
+      (h₁.isUnramified p hp hpp).localInertiaGroup_le hσ
+    have e₂ : (pushforwardFrame p₂ hp₂ ρ).toLocal
+        hp.toHeightOneSpectrumRingOfIntegersRat σ = 1 :=
+      (h₂.isUnramified p hp hpp).localInertiaGroup_le hσ
+    show ρ.toLocal hp.toHeightOneSpectrumRingOfIntegersRat σ = 1
+    rw [GaloisRep.toLocal_apply] at e₁ e₂ ⊢
+    exact key _ e₁ e₂
+  · -- FLATNESS at `ℓ`: Ramakrishna/Raynaud, the first arithmetic leaf.
+    exact isFlatAt_of_fibreProduct hℓOdd f₁ f₂ hf₂ p₁ p₂ hp₁ hp₂ hcomm hemb
+      hcart h₁.isFlat h₂.isFlat
+  · -- TAMENESS at `2`: Conrad–Diamond–Taylor, the second arithmetic leaf.
+    exact isTameAtTwo_of_fibreProduct hℓOdd f₁ f₂ hf₂ p₁ p₂ hp₁ hp₂ hcomm hemb
+      hcart hdet h₁.isTameAtTwo h₂.isTameAtTwo
 
 /-- **Restricted-ramification finiteness across arbitrary FINITE ring
 topologies — Schlessinger's H3 as the Artinian category actually needs
 it** (sorry node, cut 2026-07-25: a genuine gap between the H3 leaf
 `finite_setOf_isHardlyRamified_frames` and its consumers, found while
 decomposing the Schlessinger core).
+
+**REFUTED 2026-07-26. THIS STATEMENT IS FALSE AS STATED — do not attempt
+to prove it, and do not build anything on it.** An explicit infinite
+family of counterexamples is given in the REFUTATION section below. The
+repair is the one this docstring already anticipated in its last
+paragraph, and it is UPSTREAM of this leaf: `[DiscreteTopology A]` must
+be added to the test objects of `IsStrictlyUniversalOnFrames` and
+`HardlyRamifiedDeformation.IsStrictlyUniversalOnFiniteFrames`, after
+which this leaf collapses to `finite_setOf_isHardlyRamified_frames` and
+disappears. The paragraph `WHY IT IS NEVERTHELESS TRUE` below is
+retained, struck through by the refutation that follows it, because
+naming the precise step that fails is the whole content of the finding.
 
 THE GAP. `finite_setOf_isHardlyRamified_frames` is stated for `A` with
 the DISCRETE topology, which is the only sensible topology on an Artinian
@@ -2107,21 +2402,112 @@ the conclusion is a `Set.Finite` for the coarse-topology type, into which
 the discrete-topology set injects; what has to be produced is the reverse
 inclusion, i.e. exactly the automatic continuity.
 
-IF IT IS FALSE, THE FIX IS UPSTREAM, NOT HERE. Should automatic
-continuity fail (it would have to fail through the abstract normal
-closure of the inertia subgroups being strictly smaller than its
-closure), then `IsStrictlyUniversalOnFrames` and
+REFUTATION (2026-07-26). The paragraph above fails at its FIRST step,
+in exactly the way its own escape clause below predicted: an abstract
+homomorphism killing every individual inertia subgroup does NOT factor
+through `G_S`. It factors through `Γ / N` with `N` the ABSTRACT normal
+closure of the inertia subgroups, and `N` is strictly smaller than its
+closure `N̄ = ker (Γ ↠ G_S)`. Nikolov–Segal is a theorem about `G_S`,
+which this homomorphism never reaches, so it never applies.
+
+THE WITNESS. Take `A = ZMod ℓ` carrying the INDISCRETE topology `⊤`
+(only `∅` and `A` open). It is a legal test object for every quantifier
+in this statement: `IsTopologicalRing` extends only `ContinuousAdd`,
+`ContinuousMul` and `ContinuousNeg` — there is no separation axiom — and
+every map into an indiscrete space is continuous; `A` is a field, hence
+`IsLocalRing`; it is `Finite`; and it is a `ℤ_[ℓ]`-algebra. Since
+`moduleTopology A A` is `A`'s own topology
+(`IsTopologicalSemiring.toIsModuleTopology`) and the module topology of a
+finite product is the product topology (`IsModuleTopology.instPi`), the
+module topology on `Module.End A (Fin 2 → A) ≃ₗ[A] A⁴` is again
+indiscrete. So `FramedGaloisRep ℚ A (Fin 2)` is the set of ALL abstract
+monoid homomorphisms `Γ ℚ → Module.End A (Fin 2 → A)`: over this `A`,
+continuity is no constraint whatsoever.
+
+THE FAMILY. Let `q : Γ ℚ ↠ Ẑˣ = ∏_p ℤ_pˣ` be the abelianisation
+(Kronecker–Weber). For each prime `p` the image `q (I_p)` lies in the
+`p`-th factor alone, because `ℚ (μ_m) / ℚ` is unramified at `p` for
+`p ∤ m`. Compose with `Ẑˣ ↠ P := ∏_{p odd} ℤ_pˣ / (ℤ_pˣ)²  ≅ ∏_{p odd}
+𝔽₂`, and let `D := ⊕_{p odd} 𝔽₂ ⊆ P` be the direct sum. Every `q (I_p)`
+lands in `D` — including `p = 2` and `p = ℓ`, whose images die in `P`
+entirely (`p = 2`) or occupy one coordinate (`p = ℓ`). Now `P / D ≠ 0`
+(the all-ones vector is not in `D`) and in fact `dim_{𝔽₂} (P / D) = 𝔠`,
+so there are infinitely many nonzero `𝔽₂`-linear functionals
+`f : P / D → 𝔽₂`. Each gives `ψ_f : Γ ℚ ↠ {±1} ⊆ Aˣ`, an abstract
+character which kills EVERY inertia subgroup at EVERY finite place, and
+which is DISCONTINUOUS: were `ker ψ_f` open, `ψ_f` would cut out a
+quadratic field unramified at every finite prime, and Minkowski forbids
+one. Distinct `f` give distinct `ψ_f`. This is the ⊕-versus-∏ failure
+predicted below, made explicit.
+
+Set `ρ_f := diag (ψ_f, χ̄ · ψ_f)` with `χ̄` the mod-`ℓ` cyclotomic
+character. All four clauses of `IsHardlyRamified` hold:
+* `det`: `ψ_f · χ̄ · ψ_f = χ̄ · ψ_f² = χ̄`, since `ψ_f² = 1`.
+* `isUnramified` away from `{2, ℓ}`: `ψ_f` kills all inertia and `χ̄` is
+  unramified outside `ℓ`.
+* `isFlat` at `ℓ`: `GaloisRep.IsFlatAt.cond` quantifies over the OPEN
+  ideals of `A`, and the only open ideal of an indiscrete ring is `⊤`
+  (an ideal contains `0`, so it is not `∅`). The quotient `A ⧸ ⊤` is the
+  zero ring, its `Space` is a singleton, and
+  `GaloisRep.HasFlatProlongationAt` is witnessed by the trivial group
+  scheme `G = 𝒪ᵥ`: `Kᵥ ⊗[𝒪ᵥ] 𝒪ᵥ = Kᵥ` has exactly one `Kᵥ`-algebra map
+  to `Kᵥᵃˡᵍ`, so both sides are singletons. Flatness is therefore VACUOUS
+  over an indiscrete test object.
+* `isTameAtTwo`: take `π` the first coordinate projection and
+  `δ := ψ_f` restricted along `Γ ℚ_[2] → Γ ℚ`; `δ` is a `GaloisRep`
+  because continuity is free here, it is unramified because `ψ_f` kills
+  `I_2`, and `δ² = 1`.
+
+So the set in the conclusion is INFINITE while `hdisc` — the genuine H3,
+true by Hermite–Minkowski — is unaffected. The implication is false.
+
+TWO INDEPENDENT DEFECTS, and the second one matters for the repair. (i)
+Automatic continuity fails, as above. (ii) Even for CONTINUOUS `ρ`,
+`hdisc` cannot bound this set, because over an indiscrete (or any coarse)
+`A` the flatness clause is weakened — the open-ideal quantifier sees
+fewer ideals — so the coarse hardly-ramified set is not contained in the
+image of any discrete one. Bounding it needs Hermite–Minkowski applied
+directly (topological finite generation of `G_S`), which `hdisc` does not
+supply. Hence NO hypothesis short of discreteness of `A` rescues this
+statement, and in particular strengthening `hdisc` is not the repair.
+
+THE REPAIR IS ONE SEPARATION AXIOM, AND IT IS FREE. For a FINITE
+topological ring the whole phenomenon is non-separation, and nothing
+else. In a finite topological group the intersection `U` of all open
+neighbourhoods of `0` is itself open, is a subgroup (from continuity of
+`+` at `(0,0)`, using minimality of `U`), is an ideal (from continuity of
+`x ↦ a * x`), equals `closure {0}`, and the topology is exactly the coset
+topology of `U` — i.e. the pullback of the discrete topology of `A ⧸ U`.
+Hence for a finite topological ring
+
+    DiscreteTopology A  ⟺  T0Space A  ⟺  T2Space A  ⟺  closure {0} = 0.
+
+The motivating example of THE GAP above, `k[ε]` with the `(ε)`-coset
+topology, is not a subtle intermediate case: `0` and `ε` are
+topologically indistinguishable in it, so it is not even `T0`. So the
+raw test objects that this leaf was cut to cover are precisely the
+NON-HAUSDORFF ones, and every test object anyone actually constructs —
+a finite quotient of an `IsAdic` complete local ring, the dual numbers
+with their adic topology — is Hausdorff and therefore discrete. Adding
+`[T0Space A]` (equivalently `[DiscreteTopology A]`) to the raw test
+objects costs the consumers nothing and closes the gap completely.
+
+THE FIX IS UPSTREAM, NOT HERE (unchanged from the original cut, now
+mandatory rather than conditional). `IsStrictlyUniversalOnFrames` and
 `HardlyRamifiedDeformation.IsStrictlyUniversalOnFiniteFrames` are
 themselves too strong and must be narrowed by adding
 `[DiscreteTopology A]` to their test objects — which costs their
 consumers nothing, since the bundled deformations they are applied to are
-`IsAdic` and finite, hence discrete. This leaf is stated so that the
-question is confronted once, in one place, rather than rediscovered
-inside a representability proof.
+`IsAdic` and finite, hence discrete. This leaf was stated so that the
+question would be confronted once, in one place, rather than rediscovered
+inside a representability proof; that is what happened.
 
 References: Nikolov–Segal, *On finitely generated profinite groups I*,
-Ann. of Math. 165 (2007); Serre, *Galois cohomology*, I §4.2 (Hermite
-–Minkowski and the finite generation of `G_S`). -/
+Ann. of Math. 165 (2007) (the theorem that does NOT apply here); Serre,
+*Galois cohomology*, I §4.2 (Hermite–Minkowski and the finite generation
+of `G_S`); Neukirch–Schmidt–Wingberg, *Cohomology of Number Fields*,
+§I.1 and §X.3 (`Ẑˣ` as the abelianisation, inertia in `ℚ (μ_∞)`);
+Minkowski's discriminant bound for the everywhere-unramified step. -/
 theorem finite_setOf_isHardlyRamified_frames_of_discreteTopology
     (hdisc : ∀ (A : Type u) [CommRing A] [TopologicalSpace A]
       [IsTopologicalRing A] [IsLocalRing A] [Algebra ℤ_[ℓ] A] [Finite A]
@@ -2134,9 +2520,251 @@ theorem finite_setOf_isHardlyRamified_frames_of_discreteTopology
       IsHardlyRamified hℓOdd (rank_finTwoFun A) ρ}.Finite :=
   sorry
 
-/-- **Hardly-ramifiedness is detected on the finite levels** (sorry node
-— the pro-limit clause of the deformation-condition package, and the one
-place where the Schlessinger core has to leave the Artinian category).
+set_option backward.isDefEq.respectTransparency false in
+open scoped TensorProduct in
+/-- **Matrix entries of a pushed-forward frame** (PROVEN, elementary):
+`pushforwardFrame ψ` is "apply `ψ` to the matrix entries", so on a vector
+already in the image of `ψ` it acts entrywise through `ψ`. This is the
+dictionary that lets a statement about `pushforwardFrame` over `R ⧸ I` be
+read back as a congruence in `R`, and it is what the descent clauses of
+`isHardlyRamified_of_forall_isOpen_quotient` below run on. -/
+lemma pushforwardFrame_apply {B : Type u} [CommRing B] [TopologicalSpace B]
+    [IsTopologicalRing B] {A : Type u} [CommRing A] [TopologicalSpace A]
+    [IsTopologicalRing A] (ψ : B →+* A) (hψ : Continuous ψ)
+    (ρ : FramedGaloisRep ℚ B (Fin 2)) (g : Field.absoluteGaloisGroup ℚ)
+    (x : Fin 2 → B) :
+    (pushforwardFrame ψ hψ ρ) g (fun i => ψ (x i)) = fun j => ψ (ρ g x j) := by
+  letI : Algebra B A := ψ.toAlgebra
+  letI : ContinuousSMul B A := continuousSMul_of_algebraMap B A
+    (by rw [RingHom.algebraMap_toAlgebra]; exact hψ)
+  have hsm : ∀ b : B, b • (1 : A) = ψ b := by
+    intro b
+    rw [Algebra.smul_def, RingHom.algebraMap_toAlgebra, mul_one]
+  have hx : (fun i => ψ (x i)) =
+      (TensorProduct.piScalarRight B A A (Fin 2)) ((1 : A) ⊗ₜ[B] x) := by
+    funext i
+    rw [TensorProduct.piScalarRight_apply, TensorProduct.piScalarRightHom_tmul]
+    exact (hsm (x i)).symm
+  show ((ρ.baseChange A).conj (TensorProduct.piScalarRight B A A (Fin 2))) g _ = _
+  rw [hx, GaloisRep.conj_apply, LinearEquiv.conj_apply_apply,
+    LinearEquiv.symm_apply_apply, GaloisRep.baseChange_tmul]
+  funext j
+  rw [TensorProduct.piScalarRight_apply, TensorProduct.piScalarRightHom_tmul]
+  exact hsm _
+
+set_option backward.isDefEq.respectTransparency false in
+open scoped TensorProduct in
+/-- **The determinant of a pushed-forward frame is the image of the
+determinant** (PROVEN): `LinearMap.det_baseChange` for the base change,
+`LinearMap.det_conj` for the framing identification. Same two steps as
+`isHardlyRamified_pushforwardFrame`'s determinant clause, isolated
+because the descent below needs the equation itself and not just its
+consequence. -/
+lemma det_pushforwardFrame {B : Type u} [CommRing B] [TopologicalSpace B]
+    [IsTopologicalRing B] {A : Type u} [CommRing A] [TopologicalSpace A]
+    [IsTopologicalRing A] (ψ : B →+* A) (hψ : Continuous ψ)
+    (ρ : FramedGaloisRep ℚ B (Fin 2)) (g : Field.absoluteGaloisGroup ℚ) :
+    (pushforwardFrame ψ hψ ρ).det g = ψ (ρ.det g) := by
+  letI : Algebra B A := ψ.toAlgebra
+  letI : ContinuousSMul B A := continuousSMul_of_algebraMap B A
+    (by rw [RingHom.algebraMap_toAlgebra]; exact hψ)
+  show ((ρ.baseChange A).conj (TensorProduct.piScalarRight B A A (Fin 2))).det g = _
+  rw [GaloisRep.det_apply, GaloisRep.conj_apply, LinearEquiv.conj_apply,
+    LinearMap.comp_assoc, LinearMap.det_conj]
+  show LinearMap.det ((ρ.baseChange A) g) = _
+  rw [show ((ρ.baseChange A) g : Module.End A (A ⊗[B] (Fin 2 → B))) =
+    LinearMap.baseChange A (ρ g) from rfl, LinearMap.det_baseChange]
+  rfl
+
+open scoped TensorProduct in
+/-- **A flat prolongation descends through the base change to `A ⧸ ⊥`**
+(PROVEN): `A ⧸ ⊥ ≃ A` is `Submodule.quotEquivOfEqBot`, and tensoring it
+with the identity collapses `(A ⧸ ⊥) ⊗_A N` onto `N` equivariantly —
+the Galois action on the base change is `g ⊗ 1`, so the transport is
+`map_smul`. This is the step that turns the flatness clause of the
+level-`I` datum (which quantifies over the open ideals of `R ⧸ I`,
+evaluated at `⊥`) back into a statement about `ρ.baseChange (R ⧸ I)`. -/
+lemma hasFlatProlongationAt_of_baseChange_bot {A : Type u} [CommRing A]
+    [TopologicalSpace A] [IsTopologicalRing A]
+    {N : Type v} [AddCommGroup N] [Module A N] [Module.Finite A N]
+    [Module.Free A N] (τ : GaloisRep ℚ A N)
+    (w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    (h : (τ.baseChange (A ⧸ (⊥ : Ideal A))).HasFlatProlongationAt w) :
+    τ.HasFlatProlongationAt w := by
+  let φ : (A ⧸ (⊥ : Ideal A)) ≃ₗ[A] A := Submodule.quotEquivOfEqBot _ rfl
+  let E : ((A ⧸ (⊥ : Ideal A)) ⊗[A] N) ≃ₗ[A] N :=
+    (TensorProduct.congr φ (LinearEquiv.refl A N)).trans (TensorProduct.lid A N)
+  refine h.of_equiv _ E.toAddEquiv ?_
+  intro g x
+  show E (((τ.baseChange (A ⧸ (⊥ : Ideal A))).toLocal w g) x) =
+    (τ.toLocal w g) (E x)
+  induction x using TensorProduct.induction_on with
+  | zero => simp
+  | add a b ha hb => simp only [map_add, ha, hb]
+  | tmul c y =>
+    show E (c ⊗ₜ[A] (τ.toLocal w g) y) = (τ.toLocal w g) (E (c ⊗ₜ[A] y))
+    show φ c • ((τ.toLocal w g) y) = (τ.toLocal w g) (φ c • y)
+    rw [map_smul]
+
+/-- **A flat prolongation descends through conjugation** (PROVEN): the
+inverse of the conjugating isomorphism is itself equivariant, so
+`HasFlatProlongationAt.of_equiv` transports the Hopf-algebra witness
+back. The converse direction of the transport already used inside
+`isHardlyRamified_conj`. -/
+lemma hasFlatProlongationAt_of_conj {A : Type u} [CommRing A]
+    [TopologicalSpace A] [IsTopologicalRing A]
+    {M : Type v} [AddCommGroup M] [Module A M]
+    {N : Type v} [AddCommGroup N] [Module A N] (τ : GaloisRep ℚ A M)
+    (e : M ≃ₗ[A] N)
+    (w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    (h : (τ.conj e).HasFlatProlongationAt w) :
+    τ.HasFlatProlongationAt w := by
+  refine h.of_equiv _ e.symm.toAddEquiv ?_
+  intro g x
+  show e.symm (((τ.conj e).toLocal w g) x) = (τ.toLocal w g) (e.symm x)
+  rw [GaloisRep.toLocal_apply, GaloisRep.conj_apply, LinearEquiv.conj_apply_apply,
+    LinearEquiv.symm_apply_apply, GaloisRep.toLocal_apply]
+
+/-- **A flat prolongation is inherited by any representation on a
+subsingleton space** (PROVEN): the Hopf-algebra witness is reused and the
+geometric-points identification is composed with the unique additive
+isomorphism of one-element groups, every side condition being
+`Subsingleton.elim`. This is what discharges the `I = ⊤` case of
+`IsFlatAt`, whose quantifier runs over ALL open ideals — including the
+unit ideal, at which the coefficient ring is trivial and no level datum
+is available, since `IsLocalRing (R ⧸ ⊤)` is false. -/
+lemma hasFlatProlongationAt_of_subsingleton {A : Type u} [CommRing A]
+    [TopologicalSpace A] {M : Type v} [AddCommGroup M] [Module A M]
+    [Subsingleton M] {A' : Type u} [CommRing A'] [TopologicalSpace A']
+    {M' : Type v} [AddCommGroup M'] [Module A' M'] [Subsingleton M']
+    {τ₁ : GaloisRep ℚ A M} (τ₂ : GaloisRep ℚ A' M')
+    (w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    (h : τ₁.HasFlatProlongationAt w) :
+    τ₂.HasFlatProlongationAt w := by
+  haveI : Subsingleton (τ₁.toLocal w).Space := inferInstanceAs (Subsingleton M)
+  haveI : Subsingleton (τ₂.toLocal w).Space := inferInstanceAs (Subsingleton M')
+  exact h.of_equiv _ ⟨⟨fun _ => 0, fun _ => 0, fun _ => Subsingleton.elim _ _,
+    fun _ => Subsingleton.elim _ _⟩, fun _ _ => Subsingleton.elim _ _⟩
+    fun _ _ => Subsingleton.elim _ _
+
+open scoped TensorProduct in
+/-- A tensor product with a subsingleton left factor is a subsingleton
+(PROVEN, elementary: every pure tensor is `0 ⊗ₜ y = 0`). -/
+lemma subsingleton_tensorProduct_of_left {A : Type u} [CommRing A]
+    {X : Type v} [AddCommGroup X] [Module A X] [Subsingleton X]
+    {N : Type v} [AddCommGroup N] [Module A N] : Subsingleton (X ⊗[A] N) := by
+  have hall : ∀ z : X ⊗[A] N, z = 0 := by
+    intro z
+    induction z using TensorProduct.induction_on with
+    | zero => rfl
+    | add a b ha hb => rw [ha, hb, add_zero]
+    | tmul c y => rw [Subsingleton.elim c 0, TensorProduct.zero_tmul]
+  exact ⟨fun a b => by rw [hall a, hall b]⟩
+
+/-- **The tame quotient at `2` is detected on the finite levels** (sorry
+node — the ONE clause of `isHardlyRamified_of_forall_isOpen_quotient`
+below that is a genuine pro-limit statement rather than a congruence, cut
+out 2026-07-25 when the other three clauses were PROVEN).
+
+WHY THE OTHER THREE CLAUSES ARE NOT HERE. The determinant condition is an
+equality in `R`, unramifiedness is the vanishing of `ρ(σ) − 1`, and both
+are read off the levels by `𝔪`-adic separatedness
+(`IsAdicComplete → IsHausdorff`); flatness at `ℓ` is *literally* a
+condition on the reductions, so it transfers by re-indexing. Only the
+tame quotient asks for the EXISTENCE of an object over `R` — a rank-one
+free quotient — and existence is exactly what does not descend from a
+compatible system for free.
+
+THE STATEMENT. `hq` supplies, for every proper open ideal, a surjection
+`π_I : (R ⧸ I)² ↠ R ⧸ I` and an unramified quadratic character `δ_I`
+through which `ρ|_{G_2}` acts on the quotient. Wanted: one such pair over
+`R` itself. The `π_I` supplied at different levels are UNRELATED — `hq`
+is a family of independent existence statements, not a compatible system
+— so the whole content is manufacturing compatibility.
+
+THE ROUTE (worked out 2026-07-25; it is not the Kőnig argument the
+consumer's docstring sketches, and the difference matters).
+
+1. *The character is `±1`-valued, hence rigid.* `δ_I(g)² = 1` in the
+   local ring `R ⧸ I`, whose residue characteristic is `ℓ`, odd, so `2`
+   is a unit and `(x−1)(x+1) = 0` forces `x = ±1`. Therefore `δ_I` is the
+   image of a homomorphism `ε : Γ ℚ_2 → {±1} ⊆ ℤ`, and `ε` is determined
+   by `δ_I mod 𝔪` — reduction is injective on `{±1}`.
+
+2. *Only finitely many characters can occur.* Let `D_n` be the set of
+   `ε`'s realised at level `𝔪ⁿ`. A level-`m` datum reduces to a level-`n`
+   datum with the SAME `ε` for `m ≥ n`, so `D_n` is decreasing. And `D_1`
+   is finite: a quotient character of a rank-two representation over the
+   field `k` is a Jordan–Hölder factor, of which there are at most two —
+   three distinct stable lines `L₁, L₂, L₃` give `V = L₁ ⊕ L₃`, hence
+   `V/L₃ ≅ L₁`, collapsing the third character onto one of the first two.
+   A decreasing chain of nonempty subsets of a finite set has nonempty
+   intersection: fix `ε` in it.
+
+3. *With `ε` FIXED the fibres are MODULES, not merely sets.* Put
+   `N := {π : R² →ₗ[R] R | ∀ g, π ∘ ρ(g)|_{G_2} = ε(g) · π}`, an
+   `R`-submodule of `R²` (a `π` is its pair of values on the standard
+   basis), and `N_n` likewise over `R ⧸ 𝔪ⁿ`. This linearity is the crux,
+   and it is why the statement is TRUE WITHOUT a finiteness hypothesis on
+   the residue field — a hypothesis this leaf does not have, and which
+   the Kőnig/`nonempty_sections_of_finite_inverse_system` route would
+   need.
+
+4. *Mittag-Leffler comes free from Artinian-ness.* `R ⧸ 𝔪ⁿ` is Noetherian
+   local with nilpotent maximal ideal, hence ARTINIAN, so the descending
+   chain of images `im(N_m → N_n)` stabilises; the stabilised images have
+   surjective transition maps, so their inverse limit is nonempty. And
+   `N = lim N_n`, because `R² = lim (R ⧸ 𝔪ⁿ)²` by completeness and the
+   defining equations are closed conditions.
+
+5. *Surjectivity survives the limit.* `π ∈ N ⊆ R²` is surjective iff it
+   is unimodular iff its image in `k²` is nonzero (`R` is local). Each
+   level supplies a surjective `π_n`, so `im(N_m → N_1)` contains a
+   nonzero element for every `m`; the chain stabilises, so the stabilised
+   `N_1` contains a nonzero `u`. Lift `u` through the surjective tower and
+   assemble by `𝔪`-adic completeness: the result is unimodular, hence the
+   wanted surjection, and `δ := ε` is continuous because it is locally
+   constant (it factors through the discrete `k`).
+
+CAUTION FOR WHOEVER TAKES THIS. The inertia quantifier is inside `δ.ker`
+and must stay there: `δ` is unramified, NOT trivial, and widening the
+quantifier from `AddSubgroup.inertia …` to all of `Γ ℚ_2` makes the
+statement false for every unramified quadratic twist. Note also that step
+1 is the only place the oddness of `ℓ` is used, and it is used
+essentially.
+
+References: Mazur, *Deforming Galois representations*, MSRI Publ. 16
+(1989), §1.2 (pro-representability and the passage to the limit);
+Conrad–Diamond–Taylor, JAMS 12 (1999), §2 (the deformation-condition
+axioms); Grothendieck, EGA III 5.4.1 (the same statement read
+geometrically: sections of a proper `R`-scheme over a complete local `R`
+are the compatible systems of sections over the Artinian truncations). -/
+theorem isTameAtTwo_of_forall_isOpen_quotient
+    {R : Type u} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [Algebra ℤ_[ℓ] R] [IsNoetherianRing R]
+    (hadic : IsAdic (IsLocalRing.maximalIdeal R))
+    (hcomplete : IsAdicComplete (IsLocalRing.maximalIdeal R) R)
+    {ρ : FramedGaloisRep ℚ R (Fin 2)}
+    (hq : ∀ (I : Ideal R), IsOpen (I : Set R) → ∀ [IsLocalRing (R ⧸ I)]
+      (hmk : Continuous (Ideal.Quotient.mk I)),
+      IsHardlyRamified hℓOdd (rank_finTwoFun (R ⧸ I))
+        (pushforwardFrame (Ideal.Quotient.mk I) hmk ρ)) :
+    ∃ (π : (Fin 2 → R) →ₗ[R] R) (_ : Function.Surjective π)
+      (δ : GaloisRep ℚ_[2] R R),
+      ∀ g : Field.absoluteGaloisGroup ℚ_[2], ∀ v : Fin 2 → R,
+      π (ρ.map (algebraMap ℚ ℚ_[2]) g v) = δ g (π v) ∧
+      (AddSubgroup.inertia
+        ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
+        (Field.absoluteGaloisGroup ℚ_[2]) ≤ δ.ker) ∧
+      (∀ g : Field.absoluteGaloisGroup ℚ_[2], δ g * δ g = 1) :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Hardly-ramifiedness is detected on the finite levels** (PROVEN
+2026-07-25 over the single residual leaf
+`isTameAtTwo_of_forall_isOpen_quotient` — the pro-limit clause of the
+deformation-condition package, and the one place where the Schlessinger
+core has to leave the Artinian category).
 
 A framed representation over a complete Noetherian local `ℤ_ℓ`-algebra
 `R` with the `𝔪`-adic topology, all of whose reductions modulo the open
@@ -2163,7 +2791,10 @@ level simpler because no conjugation datum rides along.
 
 The hypothesis is stated over ALL open ideals rather than over the powers
 `𝔪ⁿ` because that is the form `IsFlatAt` consumes; `hadic` makes the two
-interchangeable. -/
+interchangeable — and note that `IsFlatAt`'s quantifier includes the UNIT
+ideal, at which no level datum exists (`R ⧸ ⊤` is not local); that case
+is discharged separately through
+`hasFlatProlongationAt_of_subsingleton`. -/
 theorem isHardlyRamified_of_forall_isOpen_quotient
     {R : Type u} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
     [IsLocalRing R] [Algebra ℤ_[ℓ] R] [IsNoetherianRing R]
@@ -2174,8 +2805,106 @@ theorem isHardlyRamified_of_forall_isOpen_quotient
       (hmk : Continuous (Ideal.Quotient.mk I)),
       IsHardlyRamified hℓOdd (rank_finTwoFun (R ⧸ I))
         (pushforwardFrame (Ideal.Quotient.mk I) hmk ρ)) :
-    IsHardlyRamified hℓOdd (rank_finTwoFun R) ρ :=
-  sorry
+    IsHardlyRamified hℓOdd (rank_finTwoFun R) ρ := by
+  classical
+  haveI := hcomplete
+  have hcont : ∀ J : Ideal R, Continuous (Ideal.Quotient.mk J) :=
+    fun _ => continuous_quot_mk
+  -- separation: the topology is `𝔪`-adic and `R` is `𝔪`-adically separated
+  have hsep : ∀ x y : R,
+      (∀ n : ℕ, x - y ∈ (IsLocalRing.maximalIdeal R ^ (n + 1) : Ideal R)) → x = y := by
+    intro x y hxy
+    have h0 : x - y = 0 := by
+      refine IsHausdorff.haus
+        (inferInstance : IsHausdorff (IsLocalRing.maximalIdeal R) R) _ fun n => ?_
+      rw [SModEq.zero, smul_eq_mul, Ideal.mul_top]
+      cases n with
+      | zero => simp
+      | succ m => exact hxy m
+    exact sub_eq_zero.mp h0
+  have hpow : ∀ n : ℕ, IsOpen ((IsLocalRing.maximalIdeal R ^ n : Ideal R) : Set R) :=
+    (isAdic_iff.mp hadic).1
+  have hnetop : ∀ n : ℕ, (IsLocalRing.maximalIdeal R ^ (n + 1) : Ideal R) ≠ ⊤ := by
+    intro n htop
+    have hle : (IsLocalRing.maximalIdeal R ^ (n + 1) : Ideal R) ≤
+        IsLocalRing.maximalIdeal R := Ideal.pow_le_self (Nat.succ_ne_zero n)
+    rw [htop, top_le_iff] at hle
+    exact (IsLocalRing.maximalIdeal.isMaximal R).ne_top hle
+  -- a proper ideal of a local ring has local quotient
+  have hlocal : ∀ J : Ideal R, J ≠ ⊤ → IsLocalRing (R ⧸ J) := by
+    intro J hJt
+    haveI : Nontrivial (R ⧸ J) := Ideal.Quotient.nontrivial_iff.mpr hJt
+    exact IsLocalRing.of_surjective' (Ideal.Quotient.mk J) Ideal.Quotient.mk_surjective
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · -- the cyclotomic determinant, level by level
+    intro g
+    refine hsep _ _ fun n => ?_
+    haveI := hlocal _ (hnetop n)
+    have hd := (hq _ (hpow (n + 1)) (hcont _)).det g
+    rw [det_pushforwardFrame,
+      IsScalarTower.algebraMap_apply ℤ_[ℓ] R (R ⧸ IsLocalRing.maximalIdeal R ^ (n + 1))] at hd
+    exact Ideal.Quotient.eq.mp hd
+  · -- unramifiedness outside `{2, ℓ}`: the entries of `ρ(σ) − 1` die at every level
+    intro p hp hpp
+    refine ⟨fun σ hσ => ?_⟩
+    show (ρ.toLocal hp.toHeightOneSpectrumRingOfIntegersRat) σ = 1
+    refine LinearMap.ext fun x => funext fun j => ?_
+    show (ρ.toLocal hp.toHeightOneSpectrumRingOfIntegersRat) σ x j = x j
+    rw [GaloisRep.toLocal_apply]
+    refine hsep _ _ fun n => ?_
+    set J : Ideal R := IsLocalRing.maximalIdeal R ^ (n + 1)
+    haveI := hlocal J (hnetop n)
+    have h1 : (pushforwardFrame (Ideal.Quotient.mk J) (hcont J) ρ).toLocal
+        hp.toHeightOneSpectrumRingOfIntegersRat σ = 1 :=
+      ((hq J (hpow (n + 1)) (hcont J)).isUnramified p hp hpp).localInertiaGroup_le hσ
+    have h2 : (pushforwardFrame (Ideal.Quotient.mk J) (hcont J) ρ).toLocal
+        hp.toHeightOneSpectrumRingOfIntegersRat σ
+        (fun i => Ideal.Quotient.mk J (x i)) = fun i => Ideal.Quotient.mk J (x i) := by
+      rw [h1]
+      rfl
+    rw [GaloisRep.toLocal_apply, pushforwardFrame_apply] at h2
+    exact Ideal.Quotient.eq.mp (congrFun h2 j)
+  · -- flatness at `ℓ`: literally a condition on the levels, re-indexed
+    constructor
+    intro I hI
+    by_cases hIt : I = ⊤
+    · -- the unit ideal carries no level datum; both spaces are trivial
+      subst hIt
+      have hmtop : IsOpen ((⊤ : Ideal (R ⧸ IsLocalRing.maximalIdeal R ^ 1)) :
+          Set (R ⧸ IsLocalRing.maximalIdeal R ^ 1)) := by
+        rw [Submodule.top_coe]
+        exact isOpen_univ
+      haveI := hlocal _ (hnetop 0)
+      have h1 := (hq _ (hpow 1) (hcont _)).isFlat.cond ⊤ hmtop
+      haveI : Subsingleton ((R ⧸ IsLocalRing.maximalIdeal R ^ 1) ⧸
+          (⊤ : Ideal (R ⧸ IsLocalRing.maximalIdeal R ^ 1))) :=
+        Ideal.Quotient.subsingleton_iff.mpr rfl
+      haveI : Subsingleton (R ⧸ (⊤ : Ideal R)) :=
+        Ideal.Quotient.subsingleton_iff.mpr rfl
+      haveI := subsingleton_tensorProduct_of_left
+        (A := R ⧸ IsLocalRing.maximalIdeal R ^ 1)
+        (X := (R ⧸ IsLocalRing.maximalIdeal R ^ 1) ⧸
+          (⊤ : Ideal (R ⧸ IsLocalRing.maximalIdeal R ^ 1)))
+        (N := Fin 2 → (R ⧸ IsLocalRing.maximalIdeal R ^ 1))
+      haveI := subsingleton_tensorProduct_of_left (A := R)
+        (X := R ⧸ (⊤ : Ideal R)) (N := Fin 2 → R)
+      exact hasFlatProlongationAt_of_subsingleton _ _ h1
+    · haveI := hlocal I hIt
+      have hbot : IsOpen (((⊥ : Ideal (R ⧸ I))) : Set (R ⧸ I)) := by
+        have hqm : Topology.IsQuotientMap (Ideal.Quotient.mk I) :=
+          (QuotientRing.isOpenQuotientMap_mk I).isQuotientMap
+        have hpre : (Ideal.Quotient.mk I) ⁻¹' ((⊥ : Ideal (R ⧸ I)) : Set (R ⧸ I)) =
+            (I : Set R) := by
+          ext z
+          simp [Ideal.Quotient.eq_zero_iff_mem]
+        rw [← hqm.isOpen_preimage, hpre]
+        exact hI
+      have h1 := (hq I hI (hcont I)).isFlat.cond ⊥ hbot
+      have h2 := hasFlatProlongationAt_of_baseChange_bot _ _ h1
+      exact hasFlatProlongationAt_of_conj _
+        (TensorProduct.piScalarRight R (R ⧸ I) (R ⧸ I) (Fin 2)) _ h2
+  · -- the tame quotient at `2`: the one genuine pro-limit clause
+    exact isTameAtTwo_of_forall_isOpen_quotient hℓOdd hadic hcomplete hq
 
 open scoped TensorProduct in
 /-- **Schlessinger's hull for the hardly ramified problem, over the
