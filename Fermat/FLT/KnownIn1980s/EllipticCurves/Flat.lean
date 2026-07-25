@@ -14060,10 +14060,354 @@ theorem WeierstrassCurve.exists_torsionPairLaw_formalRescaledChord
     exact div_self (pow_ne_zero _ hne₁)
 
 
+set_option linter.unusedSectionVars false in
+/-- **The formal-group chart denominator** `C` (2026-07-25), the
+section-algebra avatar of the formal parameter `s₃ = s₁ + s₂ + …`:
+
+  `C := g_{d−2,1} ⊗ w + w ⊗ g_{d−2,1} + a₁·g_{d−1,0} ⊗ w + a₃·g_{d−2,0} ⊗ w`
+
+for `w = g_{d,0} = x^d/h` and `g_{a,b} = x^a y^b/h`.  Its origin orders are
+`(1,0)` and `(0,1)`, so — unlike the rescaled-chord denominator of
+`exists_torsionPairLaw_formalRescaledChord`, which vanishes on the whole origin
+COLUMN — it survives on both origin lines, which is exactly what the
+formal-group branch needs.
+
+The two `a₁`, `a₃` correction terms are NOT optional: the bare two-term
+`g_{d−2,1} ⊗ w + w ⊗ g_{d−2,1}` fails the law's zero-sum clause (at `Q = ⊖P` its
+value is `−x^{2d−2}(a₁x + a₃)/h²`, not `0`).  With them, the affine numerator
+factors as `x₁^{d−2}x₂^{d−2}·(x₂²·D₂ + (x₁−x₂)·((x₁+x₂)y₂ + a₁x₂²))` for
+`D₂ = y₁ + y₂ + a₁x₂ + a₃` the second-law denominator — a combination
+`u·δ + v·D₂`, which both makes it vanish on the zero-sum locus
+(`torsionPairFormalDen_apply_eq_zero`) and makes `x₃C²`, `y₃C³` polynomial. -/
+noncomputable def WeierstrassCurve.torsionPairFormalDen (m : ℕ) (h : Polynomial R) :
+    (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep := fun PQ =>
+  WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 1 ↑PQ.1 *
+      WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.2 +
+    WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.1 *
+      WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 1 ↑PQ.2 +
+    algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₁ *
+      (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 1) 0 ↑PQ.1 *
+        WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.2) +
+    algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₃ *
+      (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.1 *
+        WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.2)
+
+set_option linter.unusedSectionVars false in
+/-- The value of the formal-group chart denominator on an affine pair. -/
+lemma WeierstrassCurve.torsionPairFormalDen_apply_some (m : ℕ) (h : Polynomial R)
+    (hdeg : 2 ≤ h.natDegree)
+    (PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)))
+    (x₁ y₁ x₂ y₂ : Ksep)
+    (hns₁ : (E⁄Ksep).toAffine.Nonsingular x₁ y₁)
+    (hns₂ : (E⁄Ksep).toAffine.Nonsingular x₂ y₂)
+    (hP : (PQ.1 : (E⁄Ksep).Point) = Affine.Point.some x₁ y₁ hns₁)
+    (hQ : (PQ.2 : (E⁄Ksep).Point) = Affine.Point.some x₂ y₂ hns₂)
+    (h₁0 : Polynomial.aeval x₁ h ≠ 0) (h₂0 : Polynomial.aeval x₂ h ≠ 0) :
+    WeierstrassCurve.torsionPairFormalDen R K E Ksep m h PQ =
+      x₁ ^ (h.natDegree - 2) * x₂ ^ (h.natDegree - 2) *
+          (x₂ ^ 2 * y₁ + x₁ ^ 2 * y₂ + (E⁄Ksep).a₁ * (x₁ * x₂ ^ 2) +
+            (E⁄Ksep).a₃ * x₂ ^ 2) /
+        (Polynomial.aeval x₁ h * Polynomial.aeval x₂ h) := by
+  obtain ⟨k, hk⟩ : ∃ k, h.natDegree = k + 2 := ⟨h.natDegree - 2, by omega⟩
+  unfold WeierstrassCurve.torsionPairFormalDen
+  rw [hP, hQ]
+  simp only [WeierstrassCurve.torsionKernelFun_some,
+    baseChange_a₁_integralModel R K E Ksep, baseChange_a₃_integralModel R K E Ksep,
+    hk]
+  simp only [show k + 2 - 1 = k + 1 from by omega, show k + 2 - 2 = k from by omega,
+    pow_zero, mul_one, one_mul, pow_succ]
+  field_simp
+
+set_option linter.unusedSectionVars false in
+set_option linter.unusedVariables false in
+/-- The formal-group chart denominator on the origin ROW: the `Q`-section
+`g_{d−2,1}`, which does NOT vanish there. -/
+lemma WeierstrassCurve.torsionPairFormalDen_apply_zero_left (m : ℕ)
+    (h : Polynomial R) (hdeg : 2 ≤ h.natDegree)
+    (PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)))
+    (hP : (PQ.1 : (E⁄Ksep).Point) = Affine.Point.zero) :
+    WeierstrassCurve.torsionPairFormalDen R K E Ksep m h PQ =
+      WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 1 ↑PQ.2 := by
+  unfold WeierstrassCurve.torsionPairFormalDen
+  rw [hP]
+  simp only [WeierstrassCurve.torsionKernelFun_zero]
+  rw [if_neg (by omega), if_pos (by omega), if_neg (by omega), if_neg (by omega)]
+  ring
+
+set_option linter.unusedSectionVars false in
+set_option linter.unusedVariables false in
+/-- The formal-group chart denominator on the origin COLUMN: the `P`-section
+`g_{d−2,1} + a₁·g_{d−1,0} + a₃·g_{d−2,0}`, i.e. `−x₁^{d−2}·negY(x₁,y₁)/h₁`. -/
+lemma WeierstrassCurve.torsionPairFormalDen_apply_zero_right (m : ℕ)
+    (h : Polynomial R) (hdeg : 2 ≤ h.natDegree)
+    (PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)))
+    (hQ : (PQ.2 : (E⁄Ksep).Point) = Affine.Point.zero) :
+    WeierstrassCurve.torsionPairFormalDen R K E Ksep m h PQ =
+      WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 1 ↑PQ.1 +
+        (E⁄Ksep).a₁ *
+          WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 1) 0 ↑PQ.1 +
+        (E⁄Ksep).a₃ *
+          WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.1 := by
+  unfold WeierstrassCurve.torsionPairFormalDen
+  rw [hQ]
+  simp only [WeierstrassCurve.torsionKernelFun_zero]
+  rw [if_pos (by omega), if_neg (by omega),
+    baseChange_a₁_integralModel R K E Ksep, baseChange_a₃_integralModel R K E Ksep]
+  ring
+
+set_option backward.isDefEq.respectTransparency false in
+set_option linter.unusedSectionVars false in
+/-- The formal-group chart denominator lies in the span `M`: all four of its
+generator weights `2(d−2)+3 = 2d−1`, `2d`, `2d−2`, `2d−4` respect the bound
+`2a + 3b ≤ 2d` with `b ≤ 1`. -/
+lemma WeierstrassCurve.torsionPairFormalDen_mem_span (m : ℕ) (h : Polynomial R)
+    (hdeg : 2 ≤ h.natDegree) :
+    WeierstrassCurve.torsionPairFormalDen R K E Ksep m h ∈
+      WeierstrassCurve.torsionPairSpan R K E Ksep m h := by
+  classical
+  have hgen : ∀ a b : ℕ, b ≤ 1 → 2 * a + 3 * b ≤ 2 * h.natDegree →
+      (fun P : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ) =>
+          WeierstrassCurve.torsionKernelFun R K E Ksep h a b ↑P) ∈
+        Algebra.adjoin R ((WeierstrassCurve.torsionKernelGens R K E Ksep m h : Set
+          ((AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep))) :=
+    fun a b hb hw => Algebra.subset_adjoin
+      ((WeierstrassCurve.mem_torsionKernelGens R K E Ksep m h _).mpr
+        ⟨a, b, by omega, hb, hw, rfl⟩)
+  have hsm : ∀ (r : R) (t : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep),
+      t ∈ WeierstrassCurve.torsionPairSpan R K E Ksep m h →
+      (fun PQ => algebraMap R Ksep r * t PQ) ∈
+        WeierstrassCurve.torsionPairSpan R K E Ksep m h :=
+    fun r _ ht =>
+      WeierstrassCurve.torsionPairSpan_algebraMap_mul R K E Ksep m h r ht
+  have heq : WeierstrassCurve.torsionPairFormalDen R K E Ksep m h =
+      (fun PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+          (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) =>
+        WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 1 ↑PQ.1 *
+          WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.2) +
+      (fun PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+          (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) =>
+        WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.1 *
+          WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 1 ↑PQ.2) +
+      (fun PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+          (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) =>
+        algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₁ *
+          (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 1) 0 ↑PQ.1 *
+            WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.2)) +
+      (fun PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+          (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) =>
+        algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₃ *
+          (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.1 *
+            WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.2)) := by
+    funext PQ
+    simp only [Pi.add_apply]
+    rfl
+  rw [heq]
+  refine add_mem (add_mem (add_mem ?_ ?_) ?_) ?_
+  · exact Submodule.subset_span
+      ⟨_, hgen (h.natDegree - 2) 1 (by omega) (by omega),
+        _, hgen h.natDegree 0 (by omega) (by omega), rfl⟩
+  · exact Submodule.subset_span
+      ⟨_, hgen h.natDegree 0 (by omega) (by omega),
+        _, hgen (h.natDegree - 2) 1 (by omega) (by omega), rfl⟩
+  · exact hsm _ _ (Submodule.subset_span
+      ⟨_, hgen (h.natDegree - 1) 0 (by omega) (by omega),
+        _, hgen h.natDegree 0 (by omega) (by omega), rfl⟩)
+  · exact hsm _ _ (Submodule.subset_span
+      ⟨_, hgen (h.natDegree - 2) 0 (by omega) (by omega),
+        _, hgen h.natDegree 0 (by omega) (by omega), rfl⟩)
+
+set_option backward.isDefEq.respectTransparency false in
+set_option linter.unusedSectionVars false in
+/-- **The zero-sum clause for the formal-group chart denominator** (PROVEN
+2026-07-25).  If `P + Q = 0` then either both points are the origin — and `C`
+restricts on the origin row to `g_{d−2,1}`, which vanishes at the origin because
+its weight `2d−1` misses `2d` — or both are affine with `x₁ = x₂` and
+`y₁ = negY(x₂,y₂)`, i.e. `D₂ = 0`, and the affine numerator
+`x₁^{d−2}x₂^{d−2}·x²·D₂` vanishes.  This is precisely the clause the bare
+two-term denominator failed. -/
+theorem WeierstrassCurve.torsionPairFormalDen_apply_eq_zero (m : ℕ)
+    (h : Polynomial R) (hmon : h.Monic) (hdeg : 2 ≤ h.natDegree)
+    (hunit : ∀ 𝒪 : ValuationSubring Ksep,
+      (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range →
+      ∀ (x y : Ksep) (hns : (E⁄Ksep).toAffine.Nonsingular x y),
+        (m : ℤ) • (Affine.Point.some x y hns : (E⁄Ksep).Point) = 0 →
+        x ∈ 𝒪 → 𝒪.valuation (Polynomial.aeval x h) = 1)
+    (PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)))
+    (hsum : ((PQ.1 + PQ.2 : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) :
+      (E⁄Ksep).Point) = Affine.Point.zero) :
+    WeierstrassCurve.torsionPairFormalDen R K E Ksep m h PQ = 0 := by
+  classical
+  have hsumeq : ((PQ.1 + PQ.2 : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) :
+      (E⁄Ksep).Point) = (PQ.1 : (E⁄Ksep).Point) + (PQ.2 : (E⁄Ksep).Point) := rfl
+  cases hc1 : ((PQ.1 : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) :
+      (E⁄Ksep).Point) with
+  | zero =>
+    have hQz : (PQ.2 : (E⁄Ksep).Point) = Affine.Point.zero := by
+      have h0 : (PQ.1 : (E⁄Ksep).Point) + (PQ.2 : (E⁄Ksep).Point) =
+          Affine.Point.zero := by rw [← hsumeq]; exact hsum
+      rw [hc1] at h0
+      have h1 : (0 : (E⁄Ksep).Point) + (PQ.2 : (E⁄Ksep).Point) = 0 := h0
+      rwa [zero_add] at h1
+    rw [WeierstrassCurve.torsionPairFormalDen_apply_zero_left R K E Ksep m h hdeg
+        PQ hc1, hQz, WeierstrassCurve.torsionKernelFun_zero, if_neg (by omega)]
+  | some x₁ y₁ hns₁ =>
+    cases hc2 : ((PQ.2 : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) :
+        (E⁄Ksep).Point) with
+    | zero =>
+      exfalso
+      have h0 : (PQ.1 : (E⁄Ksep).Point) + (PQ.2 : (E⁄Ksep).Point) =
+          Affine.Point.zero := by rw [← hsumeq]; exact hsum
+      rw [hc1, hc2] at h0
+      have h1 : (Affine.Point.some x₁ y₁ hns₁ : (E⁄Ksep).Point) + 0 = 0 := h0
+      rw [add_zero] at h1
+      exact Affine.Point.some_ne_zero hns₁ h1
+    | some x₂ y₂ hns₂ =>
+      have h0 : (Affine.Point.some x₁ y₁ hns₁ : (E⁄Ksep).Point) +
+          Affine.Point.some x₂ y₂ hns₂ = Affine.Point.zero := by
+        rw [← hc1, ← hc2, ← hsumeq]; exact hsum
+      have hxy : x₁ = x₂ ∧ y₁ = (E⁄Ksep).toAffine.negY x₂ y₂ := by
+        by_contra hc
+        rw [Affine.Point.add_some hc] at h0
+        exact Affine.Point.some_ne_zero _ h0
+      obtain ⟨hx, hy⟩ := hxy
+      have htor₁ : (m : ℤ) •
+          (Affine.Point.some x₁ y₁ hns₁ : (E⁄Ksep).Point) = 0 := by
+        rw [← hc1]; exact (Submodule.mem_torsionBy_iff _ _).mp PQ.1.2
+      have htor₂ : (m : ℤ) •
+          (Affine.Point.some x₂ y₂ hns₂ : (E⁄Ksep).Point) = 0 := by
+        rw [← hc2]; exact (Submodule.mem_torsionBy_iff _ _).mp PQ.2.2
+      have h₁0 : Polynomial.aeval x₁ h ≠ 0 :=
+        WeierstrassCurve.torsionKernel_aeval_ne_zero R K E Ksep m h hmon hunit
+          hns₁ htor₁
+      have h₂0 : Polynomial.aeval x₂ h ≠ 0 :=
+        WeierstrassCurve.torsionKernel_aeval_ne_zero R K E Ksep m h hmon hunit
+          hns₂ htor₂
+      rw [WeierstrassCurve.torsionPairFormalDen_apply_some R K E Ksep m h hdeg
+        PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hc1 hc2 h₁0 h₂0]
+      rw [WeierstrassCurve.Affine.negY] at hy
+      subst hx
+      rw [hy, div_eq_zero_iff]
+      left
+      ring
+
+set_option backward.isDefEq.respectTransparency false in
+set_option linter.unusedSectionVars false in
+/-- **The formal-group valuation identity for `C`** (sorry leaf, 2026-07-25 —
+the ONLY genuinely non-formal input of the whole chart cluster; Silverman *AEC*
+IV.1): when both points lie on the formal-group locus of `𝒪` and their sum is
+affine, `v(x₃)·v(C)² = 1`.
+
+`C` is the avatar of the formal parameter `s = x/y`: on the formal locus
+`v(y)² = v(x)³` (`val_ordinate_sq_of_abscissa_notMem`), so `v(s) = v(x)^{−1/2}`.
+The affine numerator's two leading monomials `x₂²y₁` and `x₁²y₂` have valuations
+`v₂²v₁^{3/2}` and `v₁²v₂^{3/2}`, and dividing by `v(h₁h₂) = v₁^d v₂^d` against
+the prefactor `v₁^{d−2}v₂^{d−2}` gives
+`v(C) = max(v₁^{−1/2}, v₂^{−1/2}) = v(s₃)`, which is the formal group law
+`s₃ = s₁ + s₂ + (higher order)`; and `v(x₃) = v(s₃)^{−2}` since `x = s/w` with
+`w` of order `s³`.  The delicate case is `v₁ = v₂`, where the two leading
+monomials can cancel and the integrality of the formal group law is what rules
+out a drop.
+
+The kernel of reduction being a subgroup — so that `P + Q` is again formal — is
+available from `val_ordinate_sq_of_abscissa_notMem` and
+`kernel_add_abscissa_notMem`. -/
+theorem WeierstrassCurve.torsionPairFormalDen_val_mul_eq_one (m : ℕ)
+    (h : Polynomial R) (hmon : h.Monic) (hdeg : 2 ≤ h.natDegree)
+    (hunit : ∀ 𝒪 : ValuationSubring Ksep,
+      (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range →
+      ∀ (x y : Ksep) (hns : (E⁄Ksep).toAffine.Nonsingular x y),
+        (m : ℤ) • (Affine.Point.some x y hns : (E⁄Ksep).Point) = 0 →
+        x ∈ 𝒪 → 𝒪.valuation (Polynomial.aeval x h) = 1)
+    (𝒪 : ValuationSubring Ksep)
+    (hcen : (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range)
+    (PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)))
+    (hformal₁ : ¬WeierstrassCurve.IsIntegralAffine K E Ksep 𝒪 ↑PQ.1)
+    (hformal₂ : ¬WeierstrassCurve.IsIntegralAffine K E Ksep 𝒪 ↑PQ.2)
+    (x₃ y₃ : Ksep) (hns₃ : (E⁄Ksep).toAffine.Nonsingular x₃ y₃)
+    (hsum : ((PQ.1 + PQ.2 : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) :
+      (E⁄Ksep).Point) = Affine.Point.some x₃ y₃ hns₃) :
+    𝒪.valuation x₃ *
+        𝒪.valuation (WeierstrassCurve.torsionPairFormalDen R K E Ksep m h PQ) ^ 2
+      = 1 := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option linter.unusedSectionVars false in
+/-- **The formal-group chart numerators** (sorry leaf, 2026-07-25): the
+level-two and level-three split-product sections `A`, `B` realizing
+`A = x₃·C²` and `B = y₃·C³` for the denominator
+`torsionPairFormalDen`, together with the residual unit clause on the ZERO-SUM
+locus — the one place where the law says nothing about `A` and its value must
+therefore be pinned by the construction.
+
+CONSTRUCTION.  Writing `G` for the affine numerator of `C`, the identity
+`G = x₁^{d−2}x₂^{d−2}·(x₂²·D₂ + (x₁−x₂)·U)` with `U = (x₁+x₂)y₂ + a₁x₂²`
+(`torsionPairFormalDen_apply_some`) expands `x₃G²` into
+`x₁^{2d−4}x₂^{2d−4}·(x₂⁴·x₃D₂² + 2x₂²U·x₃(x₁−x₂)D₂ + U²·x₃(x₁−x₂)²)`, whose
+three coefficients are all POLYNOMIAL:
+
+* `x₃D₂² = N₂² + a₁N₂D₂ − (a₂+x₁+x₂)D₂²` (`add_some_second`);
+* `x₃(x₁−x₂)D₂ = (y₁−y₂)N₂ + a₁(y₁−y₂)D₂ − (a₂+x₁+x₂)(x₁−x₂)D₂`, from
+  `slope_mul_secondDen`'s `(y₁−y₂)D₂ = (x₁−x₂)N₂`;
+* `x₃(x₁−x₂)² = n̂` (`add_some_ordinate`).
+
+As in the rescaled-chord chart, the expansion must be re-symmetrized after the
+curve equations of both points are used, since the naive form is not
+weight-admissible.
+
+THE ZERO-SUM CLAUSE, and why it holds.  On `P = Q = 0` the construction gives
+`A = 1`.  On the anti-diagonal (`x₁ = x₂ =: x`, `D₂ = 0`, both formal) the
+bracket collapses to a perfect square, `A = x^{4d−8}·S²/h(x)⁴` with
+`S = x²N₂ + U(y₁−y₂)`, and reducing `S` modulo the curve equation gives
+`S = −x⁴ − 2a₂x³ + (a₁y₂ − 3a₄)x² + (2a₃y₂ − 4a₆)x`.  Since `v(y) = v(x)^{3/2}`
+on the formal locus, every trailing monomial is strictly dominated and
+`v(S) = v(x)⁴` — the leading coefficient being `−1`, this holds in EVERY
+characteristic — whence `v(A) = v(x)^{4d−8}·v(x)⁸/v(x)^{4d} = 1`. -/
+theorem WeierstrassCurve.exists_torsionPairFormalNumerators (m : ℕ)
+    (hm : (m : K) ≠ 0) (h : Polynomial R) (hmon : h.Monic)
+    (hdeg : 2 ≤ h.natDegree)
+    (hunit : ∀ 𝒪 : ValuationSubring Ksep,
+      (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range →
+      ∀ (x y : Ksep) (hns : (E⁄Ksep).toAffine.Nonsingular x y),
+        (m : ℤ) • (Affine.Point.some x y hns : (E⁄Ksep).Point) = 0 →
+        x ∈ 𝒪 → 𝒪.valuation (Polynomial.aeval x h) = 1) :
+    ∃ A B : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+        (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep,
+      A ∈ WeierstrassCurve.torsionPairSpan R K E Ksep m h ∧
+      B ∈ WeierstrassCurve.torsionPairSpan R K E Ksep m h ∧
+      (∀ (PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+          (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)))
+        (x₃ y₃ : Ksep) (hns₃ : (E⁄Ksep).toAffine.Nonsingular x₃ y₃),
+        ((PQ.1 + PQ.2 : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) :
+            (E⁄Ksep).Point) = Affine.Point.some x₃ y₃ hns₃ →
+        A PQ = x₃ * WeierstrassCurve.torsionPairFormalDen R K E Ksep m h PQ ^ 2 ∧
+          B PQ =
+            y₃ * WeierstrassCurve.torsionPairFormalDen R K E Ksep m h PQ ^ 3) ∧
+      (∀ 𝒪 : ValuationSubring Ksep,
+        (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range →
+        ∀ PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+          (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)),
+          ¬WeierstrassCurve.IsIntegralAffine K E Ksep 𝒪 ↑PQ.1 →
+          ¬WeierstrassCurve.IsIntegralAffine K E Ksep 𝒪 ↑PQ.2 →
+          ((PQ.1 + PQ.2 : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) :
+            (E⁄Ksep).Point) = Affine.Point.zero →
+          𝒪.valuation (A PQ) = 1) := by
+  sorry
+
+
 set_option backward.isDefEq.respectTransparency false in
 set_option linter.unusedVariables false in
-/-- **The formal-locus chart leaf, FORMAL-GROUP branch** (sorry leaf,
-2026-07-25 — the residue of `exists_torsionPairLaw_formalMixed` and all of
+/-- **The formal-locus chart leaf, FORMAL-GROUP branch** (DECOMPOSED and
+ASSEMBLED 2026-07-25 over `torsionPairFormalDen` and the two leaves
+`torsionPairFormalDen_val_mul_eq_one` / `exists_torsionPairFormalNumerators`
+— the residue of `exists_torsionPairLaw_formalMixed` and all of
 `exists_torsionPairLaw_formalBoth`): BOTH points are on the formal-group locus
 of `𝒪`, i.e. each is either the origin or affine with non-integral abscissa.
 
@@ -14148,7 +14492,25 @@ theorem WeierstrassCurve.exists_torsionPairLaw_formalGroupChart
         ((PQ'.1 + PQ'.2 : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) :
           (E⁄Ksep).Point) = Affine.Point.zero → C PQ' = 0) ∧
       (𝒪.valuation (A PQ) = 1 ∨ 𝒪.valuation (C PQ) = 1) := by
-  sorry
+  classical
+  obtain ⟨A, B, hA, hB, hlaw, hzeroval⟩ :=
+    WeierstrassCurve.exists_torsionPairFormalNumerators R K E Ksep m hm h hmon hdeg
+      hunit
+  refine ⟨A, B, WeierstrassCurve.torsionPairFormalDen R K E Ksep m h, hA, hB,
+    WeierstrassCurve.torsionPairFormalDen_mem_span R K E Ksep m h hdeg, hlaw,
+    WeierstrassCurve.torsionPairFormalDen_apply_eq_zero R K E Ksep m h hmon hdeg
+      hunit,
+    Or.inl ?_⟩
+  -- the unit is always `A`; which fact supplies it depends on whether the sum
+  -- at `PQ` is affine (the law plus the formal-group valuation identity) or the
+  -- origin (the numerators' own zero-sum clause)
+  cases hs : ((PQ.1 + PQ.2 : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) :
+      (E⁄Ksep).Point) with
+  | zero => exact hzeroval 𝒪 hcen PQ hformal₁ hformal₂ hs
+  | some x₃ y₃ hns₃ =>
+    rw [(hlaw PQ x₃ y₃ hns₃ hs).1, map_mul, map_pow]
+    exact WeierstrassCurve.torsionPairFormalDen_val_mul_eq_one R K E Ksep m h hmon
+      hdeg hunit 𝒪 hcen PQ hformal₁ hformal₂ x₃ y₃ hns₃ hs
 
 
 set_option backward.isDefEq.respectTransparency false in
