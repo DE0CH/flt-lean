@@ -1012,9 +1012,454 @@ lemma exists_span_factor {v b : W.CoordinateRing} (hv : v ≠ 0)
   rw [← Ideal.span_singleton_mul_right_inj hv, ← h, ← hvb',
     Ideal.span_singleton_mul_span_singleton]
 
+/-!
+### The conjugate norm-degree squeeze for the numerator leaves
+
+`span_vertNumerator` is an equality of ideals whose right-hand side is
+principal (`exists_span_eq_prod_pointIdeal` at a zero-sum multiset) but
+whose generator is not explicit.  The classical way to upgrade the
+*inclusion* `⟨n⟩ ⊆ RHS` to an *equality* is a colength computation, and
+the docstring of `span_vertNumerator` sketched one (CRT over the
+distinct prime powers plus Nakayama chain-strictness).  That is not
+needed: multiplying the identity by its **hyperelliptic conjugate**
+turns the colength bound into a purely formal degree count.
+
+Write `Q = (q₁, q₂)`, `P = (x, y)`, `A = P ⊖ Q`, `B = ⊖P ⊖ Q`, and let
+`n = vertNumerator q₁ q₂ x`, `n̄ = vertNumerator q₁ (negY q₁ q₂) x` (the
+numerator at `⊖Q`, `⊖P`, which is exactly the image of `n` under the
+hyperelliptic involution).  Then
+
+* `RHS = I_Q² I_A I_B = ⟨m⟩` and `RHS = I_{⊖Q}² I_{⊖A} I_{⊖B} = ⟨m'⟩`
+  are both principal (both multisets sum to `O`);
+* `⟨m⟩⟨m'⟩ = ⟨X − q₁⟩²⟨X − x_A⟩⟨X − x_B⟩` by four applications of
+  mathlib's `XYIdeal_neg_mul` (`pointIdeal_neg_mul` below) — a *fully
+  explicit* principal ideal;
+* the `F[X]`-norm degrees of `n`, `n̄` and of that vertical product are
+  computable from the power-basis form `n = pp • 1 + qq • Y`
+  (`vertNumerator_eq_smul_basis`) via mathlib's
+  `degree_norm_smul_basis`, and they *match*: `4 + 4 = 8`, `3 + 3 = 6`,
+  `2 + 2 = 4` in the three configurations `P ≠ ±Q`, `P = ±Q` with
+  `2Q ≠ O`, and `P = Q = ⊖Q`.
+
+Writing `n = u·m`, `n̄ = u'·m'` and comparing degrees then forces
+`deg (norm u) = 0`, i.e. `u` a unit (`isUnit_of_isUnit_norm`), so
+`⟨n⟩ = ⟨m⟩ = RHS`.  Only the *membership* `n ∈ RHS` is left, which is
+the remaining sub-leaf `vertNumerator_mem`.
+-/
+
+/-- The `Y`-slack `λ_Q = 2q₂ + a₁q₁ + a₃ = q₂ − negY q₁ q₂` of a point:
+the partial derivative `W_Y(q₁, q₂)`, vanishing exactly at the
+`2`-torsion points. -/
+def negYSlack (W : WeierstrassCurve.Affine F) (q₁ q₂ : F) : F :=
+  2 * q₂ + W.a₁ * q₁ + W.a₃
+
+/-- The partial derivative `W_X(q₁, q₂) = a₁q₂ − (3q₁² + 2a₂q₁ + a₄)`
+of a point. -/
+def polarX (W : WeierstrassCurve.Affine F) (q₁ q₂ : F) : F :=
+  W.a₁ * q₂ - (3 * q₁ ^ 2 + 2 * W.a₂ * q₁ + W.a₄)
+
+/-- The `1`-coordinate of `vertNumerator q₁ q₂ x` in the power basis
+`{1, Y}` of `F[W]` over `F[X]`: a quadratic with leading coefficient
+`q₁ − x` (see `vertNumerator_eq_smul_basis`).  The `Y`-coordinate is the
+constant `−λ_Q`. -/
+noncomputable def vertNumeratorP (W : WeierstrassCurve.Affine F)
+    (q₁ q₂ x : F) : Polynomial F :=
+  Polynomial.C (q₁ - x) * Polynomial.X ^ 2 +
+    Polynomial.C (-(2 * q₁ * (q₁ - x)) - polarX W q₁ q₂) * Polynomial.X +
+    Polynomial.C (q₁ ^ 2 * (q₁ - x) + polarX W q₁ q₂ * q₁ +
+      negYSlack W q₁ q₂ * q₂)
+
+/-- The `WithBot ℕ` arithmetic behind `degree_norm_smul_basis` in the
+generic configuration: a quadratic `1`-coordinate wins over the cubic
+contribution of a constant `Y`-coordinate. -/
+theorem max_two_nsmul_of_le_zero {b : WithBot ℕ} (h : b ≤ 0) :
+    max (2 • (2 : WithBot ℕ)) (2 • b + 3) = 4 := by
+  induction b with
+  | bot => decide
+  | coe n =>
+    have hn : n = 0 := by
+      have : n ≤ 0 := by simpa using h
+      omega
+    subst hn
+    decide
+
+/-- The `WithBot ℕ` arithmetic behind `degree_norm_smul_basis` in the
+degenerate configuration `P = ±Q`: the cubic contribution of a nonzero
+constant `Y`-coordinate wins over an at most linear `1`-coordinate. -/
+theorem max_two_nsmul_of_le_one {a : WithBot ℕ} (h : a ≤ 1) :
+    max (2 • a) (2 • (0 : WithBot ℕ) + 3) = 3 := by
+  induction a with
+  | bot => decide
+  | coe n =>
+    have hn : n ≤ 1 := by simpa using h
+    rcases Nat.lt_or_ge n 1 with h1 | h1
+    · have h2 : n = 0 := by omega
+      subst h2; decide
+    · have h2 : n = 1 := by omega
+      subst h2; decide
+
+omit [DecidableEq F] in
+/-- **The power-basis form of the vertical numerator.**  Modulo the
+Weierstrass relation at `Q`, the conic `n` collapses to
+`n = −λ_Q(Y − q₂) − W_X(Q)(X − q₁) + (q₁ − x)(X − q₁)²`, i.e. to
+`vertNumeratorP • 1 + C (−λ_Q) • Y`. -/
+lemma vertNumerator_eq_smul_basis {q₁ q₂ : F} (hq : W.Equation q₁ q₂)
+    (x : F) :
+    vertNumerator W q₁ q₂ x =
+      vertNumeratorP W q₁ q₂ x • (1 : W.CoordinateRing) +
+        Polynomial.C (-negYSlack W q₁ q₂) •
+          CoordinateRing.mk W Polynomial.X := by
+  have heq := congr_arg Polynomial.C (congr_arg Polynomial.C
+    ((WeierstrassCurve.Affine.equation_iff (W := W) q₁ q₂).mp hq))
+  simp only [vertNumerator, coordX, coordY, coordC, CoordinateRing.smul,
+    mul_one, ← map_pow, ← map_mul, ← map_add, ← map_sub]
+  refine AdjoinRoot.mk_eq_mk.mpr ⟨1, ?_⟩
+  rw [WeierstrassCurve.Affine.polynomial, vertNumeratorP, negYSlack, polarX]
+  -- (kept on one line: a `;`-separated tactic sequence inside
+  -- `(norm := …)` cannot be broken across lines)
+  linear_combination (norm := (simp only [map_ofNat, Polynomial.C_neg, Polynomial.C_add, Polynomial.C_sub, Polynomial.C_mul, Polynomial.C_pow]; ring1)) -heq
+
+omit [DecidableEq F] in
+/-- Generic configuration `P ≠ ±Q`: the numerator's norm is a quartic
+(four affine zeros `2(Q) + (A) + (B)`). -/
+lemma natDegree_norm_vertNumerator_of_ne {q₁ q₂ x : F}
+    (hq : W.Equation q₁ q₂) (he : q₁ ≠ x) :
+    (Algebra.norm (Polynomial F)
+      (vertNumerator W q₁ q₂ x)).natDegree = 4 := by
+  refine Polynomial.natDegree_eq_of_degree_eq_some ?_
+  rw [vertNumerator_eq_smul_basis hq, CoordinateRing.degree_norm_smul_basis,
+    vertNumeratorP, Polynomial.degree_quadratic (sub_ne_zero.mpr he)]
+  exact max_two_nsmul_of_le_zero Polynomial.degree_C_le
+
+omit [DecidableEq F] in
+/-- Degenerate configuration `P = ±Q` with `2Q ≠ O`: one zero escapes
+to infinity and the norm is a cubic. -/
+lemma natDegree_norm_vertNumerator_of_eq {q₁ q₂ x : F}
+    (hq : W.Equation q₁ q₂) (he : q₁ = x) (hlam : negYSlack W q₁ q₂ ≠ 0) :
+    (Algebra.norm (Polynomial F)
+      (vertNumerator W q₁ q₂ x)).natDegree = 3 := by
+  refine Polynomial.natDegree_eq_of_degree_eq_some ?_
+  rw [vertNumerator_eq_smul_basis hq, CoordinateRing.degree_norm_smul_basis,
+    Polynomial.degree_C (neg_ne_zero.mpr hlam)]
+  refine max_two_nsmul_of_le_one ?_
+  rw [vertNumeratorP, ← he, sub_self, map_zero, zero_mul, zero_add]
+  exact Polynomial.degree_linear_le
+
+omit [DecidableEq F] in
+/-- The `2`-torsion configuration `P = Q = ⊖Q`: both translated zeros
+escape to infinity, the `Y`-coordinate vanishes, and the norm is the
+square of the vertical `X − q₁` (nonsingularity at `Q` forces
+`W_X(Q) ≠ 0`). -/
+lemma natDegree_norm_vertNumerator_of_two_torsion {q₁ q₂ x : F}
+    (hq : W.Equation q₁ q₂) (he : q₁ = x) (hlam : negYSlack W q₁ q₂ = 0)
+    (hd : polarX W q₁ q₂ ≠ 0) :
+    (Algebra.norm (Polynomial F)
+      (vertNumerator W q₁ q₂ x)).natDegree = 2 := by
+  refine Polynomial.natDegree_eq_of_degree_eq_some ?_
+  have hp : (vertNumeratorP W q₁ q₂ x).degree = 1 := by
+    rw [vertNumeratorP, ← he, sub_self, map_zero, zero_mul, zero_add]
+    exact Polynomial.degree_linear (by simpa using hd)
+  rw [vertNumerator_eq_smul_basis hq, CoordinateRing.degree_norm_smul_basis,
+    hp, hlam, neg_zero, map_zero, Polynomial.degree_zero]
+  decide
+
+omit [DecidableEq F] in
+/-- At a `2`-torsion point the other partial derivative cannot vanish:
+`W_Y(Q) = λ_Q = 0` forces `W_X(Q) ≠ 0` by nonsingularity. -/
+lemma polarX_ne_zero {q₁ q₂ : F} (hq : W.Nonsingular q₁ q₂)
+    (hlam : negYSlack W q₁ q₂ = 0) : polarX W q₁ q₂ ≠ 0 := by
+  rcases ((WeierstrassCurve.Affine.nonsingular_iff' (W := W) q₁ q₂).mp
+    hq).right with hX | hY
+  · simpa [polarX] using hX
+  · exact absurd hlam (by simpa [negYSlack] using hY)
+
+omit [DecidableEq F] in
+/-- The vertical numerator has nonzero norm (its degree is `4`, `3` or
+`2` according to the configuration). -/
+lemma norm_vertNumerator_ne_zero {q₁ q₂ x : F} (hq : W.Nonsingular q₁ q₂) :
+    Algebra.norm (Polynomial F) (vertNumerator W q₁ q₂ x) ≠ 0 := by
+  have hnd : (Algebra.norm (Polynomial F)
+      (vertNumerator W q₁ q₂ x)).natDegree ≠ 0 := by
+    by_cases he : q₁ = x
+    · by_cases hlam : negYSlack W q₁ q₂ = 0
+      · rw [natDegree_norm_vertNumerator_of_two_torsion hq.left he hlam
+          (polarX_ne_zero hq hlam)]
+        norm_num
+      · rw [natDegree_norm_vertNumerator_of_eq hq.left he hlam]; norm_num
+    · rw [natDegree_norm_vertNumerator_of_ne hq.left he]; norm_num
+  intro h0
+  rw [h0, Polynomial.natDegree_zero] at hnd
+  exact hnd rfl
+
+/-- The norm of a vertical coordinate function: the square of `X − x`
+at an affine point, and `1` at `O`. -/
+lemma natDegree_norm_pointXClass (R : W.Point) :
+    (Algebra.norm (Polynomial F) (pointXClass W R)).natDegree =
+      if R = 0 then 0 else 2 := by
+  cases R with
+  | zero =>
+    rw [if_pos Point.zero_def.symm]
+    show (Algebra.norm (Polynomial F) (1 : W.CoordinateRing)).natDegree = 0
+    rw [map_one, Polynomial.natDegree_one]
+  | some x y hxy =>
+    rw [if_neg (by simp)]
+    refine Polynomial.natDegree_eq_of_degree_eq_some ?_
+    have hX : pointXClass W (.some x y hxy) =
+        (Polynomial.X - Polynomial.C x) • (1 : W.CoordinateRing) +
+          (0 : Polynomial F) • CoordinateRing.mk W Polynomial.X := by
+      simp [pointXClass, CoordinateRing.XClass, CoordinateRing.smul]
+    rw [hX, CoordinateRing.degree_norm_smul_basis, Polynomial.degree_X_sub_C,
+      Polynomial.degree_zero]
+    decide
+
+/-- Vertical coordinate functions have nonzero norm. -/
+lemma norm_pointXClass_ne_zero (R : W.Point) :
+    Algebra.norm (Polynomial F) (pointXClass W R) ≠ 0 := by
+  cases R with
+  | zero =>
+    show Algebra.norm (Polynomial F) (1 : W.CoordinateRing) ≠ 0
+    rw [map_one]; exact one_ne_zero
+  | some x y hxy =>
+    intro h0
+    have hh := natDegree_norm_pointXClass (W := W) (.some x y hxy)
+    rw [h0, Polynomial.natDegree_zero, if_neg (by simp)] at hh
+    exact absurd hh (by norm_num)
+
+omit [DecidableEq F] in
+/-- **An element of the coordinate ring whose `F[X]`-norm is a unit is a
+unit**: the norm is (the image of) the product of the element with its
+hyperelliptic conjugate, by `CoordinateRing.coe_norm_smul_basis`. -/
+lemma isUnit_of_isUnit_norm {z : W.CoordinateRing}
+    (hz : IsUnit (Algebra.norm (Polynomial F) z)) : IsUnit z := by
+  obtain ⟨p, q, rfl⟩ := CoordinateRing.exists_smul_basis_eq z
+  have hcoe := CoordinateRing.coe_norm_smul_basis (W' := W) p q
+  have h1 := hz.map (AdjoinRoot.of W.polynomial)
+  rw [hcoe, map_mul] at h1
+  have h2 : CoordinateRing.mk W
+      (Polynomial.C p + Polynomial.C q * Polynomial.X) =
+      p • (1 : W.CoordinateRing) + q • CoordinateRing.mk W Polynomial.X := by
+    simp only [CoordinateRing.smul, map_add, map_mul, mul_one]
+  rw [h2] at h1
+  exact isUnit_of_mul_isUnit_left h1
+
+omit [DecidableEq F] in
+/-- **The vertical of a point**: `I_{⊖R} · I_R` is the principal ideal
+of `pointXClass R` — mathlib's `XYIdeal_neg_mul` at an affine point,
+and the trivial `⊤ · ⊤ = ⟨1⟩` at `O`. -/
+lemma pointIdeal_neg_mul (R : W.Point) :
+    pointIdeal W (-R) * pointIdeal W R = Ideal.span {pointXClass W R} := by
+  cases R with
+  | zero =>
+    rw [show -(WeierstrassCurve.Affine.Point.zero : W.Point) =
+      WeierstrassCurve.Affine.Point.zero from rfl]
+    show (⊤ : Ideal W.CoordinateRing) * ⊤ =
+      Ideal.span {(1 : W.CoordinateRing)}
+    rw [Ideal.span_singleton_one, Ideal.mul_top]
+  | some x y hxy =>
+    rw [Point.neg_some, pointIdeal_some, pointIdeal_some,
+      CoordinateRing.XYIdeal_neg_mul hxy]
+    rfl
+
+/-- Principality of a four-point zero-sum point-ideal product, in the
+association used by the numerator leaves. -/
+lemma exists_span_eq_four_pointIdeal (R S T U : W.Point)
+    (hsum : R + S + T + U = 0) :
+    ∃ z : W.CoordinateRing, z ≠ 0 ∧
+      Ideal.span {z} =
+        pointIdeal W R * pointIdeal W S *
+          (pointIdeal W T * pointIdeal W U) := by
+  obtain ⟨z, hz0, hz⟩ :=
+    exists_span_eq_prod_pointIdeal ({R, S, T, U} : Multiset W.Point) (by
+      simp only [Multiset.insert_eq_cons, Multiset.sum_cons,
+        Multiset.sum_singleton]
+      rw [← hsum]; abel)
+  refine ⟨z, hz0, ?_⟩
+  rw [hz]
+  simp only [Multiset.insert_eq_cons, Multiset.map_cons, Multiset.prod_cons,
+    Multiset.map_singleton, Multiset.prod_singleton]
+  ring
+
+omit [DecidableEq F] in
+/-- A point is its own negative exactly when its `Y`-slack vanishes
+(i.e. exactly at the `2`-torsion points). -/
+lemma neg_point_eq_self_iff {q₁ q₂ : F} (hq : W.Nonsingular q₁ q₂) :
+    (-(Point.some q₁ q₂ hq) : W.Point) = Point.some q₁ q₂ hq ↔
+      negYSlack W q₁ q₂ = 0 := by
+  rw [Point.neg_some]
+  constructor
+  · intro hc
+    injection hc with h1 h2
+    simp only [negYSlack, WeierstrassCurve.Affine.negY] at h2 ⊢
+    linear_combination -h2
+  · intro h0
+    simp only [negYSlack] at h0
+    simp only [Point.some.injEq, WeierstrassCurve.Affine.negY, true_and]
+    linear_combination -h0
+
+omit [DecidableEq F] in
+/-- **The conjugate norm-degree squeeze.**  If `a` and `a'` are
+divisible by `b` and `b'`, the product `b · b'` is *explicitly*
+principal with generator `v`, and the norm degrees of `a`, `a'` exhaust
+the norm degree of `v`, then the cofactors have norm degree `0`, hence
+are units, so `⟨a⟩ = ⟨b⟩`.  This replaces the colength/CRT/Nakayama
+computation by multiplicativity of the norm. -/
+lemma span_eq_span_of_natDegree_norm {a a' b b' v : W.CoordinateRing}
+    (hna : Algebra.norm (Polynomial F) a ≠ 0)
+    (hna' : Algebra.norm (Polynomial F) a' ≠ 0)
+    (hab : a ∈ Ideal.span {b}) (hab' : a' ∈ Ideal.span {b'})
+    (hbb' : Ideal.span {b * b'} = Ideal.span {v})
+    (hdeg : (Algebra.norm (Polynomial F) a).natDegree
+        + (Algebra.norm (Polynomial F) a').natDegree
+      = (Algebra.norm (Polynomial F) v).natDegree) :
+    Ideal.span {a} = Ideal.span {b} := by
+  obtain ⟨u, hu⟩ := Ideal.mem_span_singleton'.mp hab
+  obtain ⟨u', hu'⟩ := Ideal.mem_span_singleton'.mp hab'
+  have hNa : Algebra.norm (Polynomial F) u * Algebra.norm (Polynomial F) b
+      = Algebra.norm (Polynomial F) a := by rw [← map_mul, hu]
+  have hNa' : Algebra.norm (Polynomial F) u' * Algebra.norm (Polynomial F) b'
+      = Algebra.norm (Polynomial F) a' := by rw [← map_mul, hu']
+  have hu0 : Algebra.norm (Polynomial F) u ≠ 0 := left_ne_zero_of_mul (hNa ▸ hna)
+  have hb0 : Algebra.norm (Polynomial F) b ≠ 0 := right_ne_zero_of_mul (hNa ▸ hna)
+  have hu0' : Algebra.norm (Polynomial F) u' ≠ 0 :=
+    left_ne_zero_of_mul (hNa' ▸ hna')
+  have hb0' : Algebra.norm (Polynomial F) b' ≠ 0 :=
+    right_ne_zero_of_mul (hNa' ▸ hna')
+  have hdv : (Algebra.norm (Polynomial F) (b * b')).natDegree
+      = (Algebra.norm (Polynomial F) v).natDegree :=
+    Polynomial.natDegree_eq_of_degree_eq (Polynomial.degree_eq_degree_of_associated
+      ((Ideal.span_singleton_eq_span_singleton.mp hbb').map
+        (Algebra.norm (Polynomial F))))
+  rw [map_mul, Polynomial.natDegree_mul hb0 hb0'] at hdv
+  rw [← hNa, ← hNa', Polynomial.natDegree_mul hu0 hb0,
+    Polynomial.natDegree_mul hu0' hb0'] at hdeg
+  have hzero : (Algebra.norm (Polynomial F) u).natDegree = 0 := by omega
+  have hUu : IsUnit u := isUnit_of_isUnit_norm (Polynomial.isUnit_iff.mpr
+    ⟨(Algebra.norm (Polynomial F) u).coeff 0, isUnit_iff_ne_zero.mpr (fun hc =>
+      hu0 (by rw [Polynomial.eq_C_of_natDegree_eq_zero hzero, hc, map_zero])),
+      (Polynomial.eq_C_of_natDegree_eq_zero hzero).symm⟩)
+  rw [← hu, Ideal.span_singleton_mul_left_unit hUu]
+
+/-- **The degree count behind the squeeze.**  The norm degrees of the
+numerator at `Q` and at `⊖Q` add up to the norm degree of the vertical
+product `(X − q₁)²(X − x_A)(X − x_B)`, in all four coincidence
+configurations (`8 = 4 + 4`, `6 = 3 + 3` twice, `4 = 2 + 2`). -/
+lemma natDegree_norm_vertNumerator_add {q₁ q₂ x y : F}
+    (hq : W.Nonsingular q₁ q₂) (h : W.Nonsingular x y) :
+    (Algebra.norm (Polynomial F) (vertNumerator W q₁ q₂ x)).natDegree +
+      (Algebra.norm (Polynomial F)
+        (vertNumerator W q₁ (W.negY q₁ q₂) x)).natDegree =
+    (Algebra.norm (Polynomial F)
+        (pointXClass W (.some q₁ q₂ hq))).natDegree +
+      (Algebra.norm (Polynomial F)
+        (pointXClass W (.some q₁ q₂ hq))).natDegree +
+      ((Algebra.norm (Polynomial F)
+          (pointXClass W ((.some x y h : W.Point) -
+            .some q₁ q₂ hq))).natDegree +
+        (Algebra.norm (Polynomial F)
+          (pointXClass W (-(.some x y h : W.Point) -
+            .some q₁ q₂ hq))).natDegree) := by
+  have hq' : W.Nonsingular q₁ (W.negY q₁ q₂) :=
+    (WeierstrassCurve.Affine.nonsingular_neg ..).mpr hq
+  have hslack' : negYSlack W q₁ (W.negY q₁ q₂) = -negYSlack W q₁ q₂ := by
+    simp only [negYSlack, WeierstrassCurve.Affine.negY]; ring
+  simp only [natDegree_norm_pointXClass,
+    if_neg (show (Point.some q₁ q₂ hq : W.Point) ≠ 0 by simp)]
+  by_cases hA : ((.some x y h : W.Point) - .some q₁ q₂ hq) = 0
+  · rw [if_pos hA]
+    have hPQ : (.some x y h : W.Point) = .some q₁ q₂ hq := sub_eq_zero.mp hA
+    obtain ⟨hxq, -⟩ : x = q₁ ∧ y = q₂ := by
+      injection hPQ with h1 h2; exact ⟨h1, h2⟩
+    by_cases hB : (-(.some x y h : W.Point) - .some q₁ q₂ hq) = 0
+    · rw [if_pos hB]
+      have hnq := sub_eq_zero.mp hB
+      rw [hPQ] at hnq
+      have hlam : negYSlack W q₁ q₂ = 0 := (neg_point_eq_self_iff hq).mp hnq
+      have hd' : polarX W q₁ (W.negY q₁ q₂) ≠ 0 := by
+        have hpp : polarX W q₁ (W.negY q₁ q₂) =
+            polarX W q₁ q₂ - W.a₁ * negYSlack W q₁ q₂ := by
+          simp only [polarX, negYSlack, WeierstrassCurve.Affine.negY]; ring
+        rw [hpp, hlam, mul_zero, sub_zero]
+        exact polarX_ne_zero hq hlam
+      rw [natDegree_norm_vertNumerator_of_two_torsion hq.left hxq.symm hlam
+          (polarX_ne_zero hq hlam),
+        natDegree_norm_vertNumerator_of_two_torsion hq'.left hxq.symm
+          (by rw [hslack', hlam, neg_zero]) hd']
+    · rw [if_neg hB]
+      have hlam : negYSlack W q₁ q₂ ≠ 0 := fun h0 =>
+        hB (by rw [hPQ, (neg_point_eq_self_iff hq).mpr h0, sub_self])
+      rw [natDegree_norm_vertNumerator_of_eq hq.left hxq.symm hlam,
+        natDegree_norm_vertNumerator_of_eq hq'.left hxq.symm
+          (by rw [hslack']; exact neg_ne_zero.mpr hlam)]
+  · rw [if_neg hA]
+    by_cases hB : (-(.some x y h : W.Point) - .some q₁ q₂ hq) = 0
+    · rw [if_pos hB]
+      have hPnQ : (.some x y h : W.Point) = -(.some q₁ q₂ hq) := by
+        rw [← sub_eq_zero.mp hB, neg_neg]
+      have hxq : x = q₁ := by
+        rw [Point.neg_some] at hPnQ; injection hPnQ with h1 h2
+      have hlam : negYSlack W q₁ q₂ ≠ 0 := fun h0 =>
+        hA (by rw [hPnQ, (neg_point_eq_self_iff hq).mpr h0, sub_self])
+      rw [natDegree_norm_vertNumerator_of_eq hq.left hxq.symm hlam,
+        natDegree_norm_vertNumerator_of_eq hq'.left hxq.symm
+          (by rw [hslack']; exact neg_ne_zero.mpr hlam)]
+    · rw [if_neg hB]
+      have hne : q₁ ≠ x := by
+        intro hxq
+        by_cases hy : y = W.negY q₁ q₂
+        · exact hB (by
+            rw [show (.some x y h : W.Point) = -(.some q₁ q₂ hq) by
+              rw [Point.neg_some]
+              simp only [Point.some.injEq]
+              exact ⟨hxq.symm, hy⟩, neg_neg, sub_self])
+        · exact hA (by
+            rw [show (.some x y h : W.Point) = .some q₁ q₂ hq by
+              simp only [Point.some.injEq]
+              exact ⟨hxq.symm, WeierstrassCurve.Affine.Y_eq_of_Y_ne h.left
+                hq.left hxq.symm hy⟩, sub_self])
+      rw [natDegree_norm_vertNumerator_of_ne hq.left hne,
+        natDegree_norm_vertNumerator_of_ne hq'.left hne]
+
 variable {p : ℕ} [Fact p.Prime] [IsAlgClosed F]
 
-/-- **L4-8 numerator leaf (sorry): the divisor of the vertical
+/-- **L4-8 numerator sub-leaf (sorry): the vertical numerator lies in
+the point-ideal product.**  This is the *inclusion* half of
+`span_vertNumerator`; the reverse inclusion is supplied by the conjugate
+norm-degree squeeze `span_eq_span_of_natDegree_norm`, so this membership
+is the ONLY remaining gap of `span_vertNumerator`.
+
+Write `u = X − q₁`, `w = Y − q₂`, `A = P ⊖ Q`, `B = ⊖P ⊖ Q`.
+
+* `n ∈ I_Q²` is CERTIFICATE-FREE: literally
+  `n = w·w + (a₁w)·u − ((a₂+q₁+x+X)u)·u`, so each summand is a product
+  of two generators of `I_Q = ⟨u, w⟩` (`Ideal.mul_mem_mul` and
+  `Ideal.add_mem`); no Weierstrass rewriting is needed, the definition
+  of `vertNumerator` is already a quadratic form in `(u, w)`.
+* `n ∈ I_A` and `n ∈ I_B` are point evaluations: `I_S` at an affine
+  `S = (x_S, y_S)` is the kernel of evaluation at `S` (the quotient is
+  `F` by `CoordinateRing.quotientXYIdealEquiv`), and `n` vanishes at `A`
+  and `B` because `n = (x(Q ⊕ taut) − x)·(tautX − q₁)²` — concretely, by
+  the addition formulas `addX`/`addY` at `(q₁,q₂)` and `(x,y)` after
+  `field_simp`/`ring`.  At `A = O` (resp. `B = O`) the factor is `⊤` and
+  there is nothing to prove.
+* Combining the three memberships into the PRODUCT is the delicate part
+  (the "coincidence zoo" of the `span_vertNumerator` docstring): when
+  `Q`, `A`, `B` are pairwise distinct the maximal ideals are pairwise
+  comaximal and `I_Q² ∩ I_A ∩ I_B = I_Q² I_A I_B`, but in the
+  coincidences `P = ±2Q` (then `A = Q` or `B = Q`, needing `n ∈ I_Q³`
+  or `I_Q⁴`) and `2P = O` (then `A = B`, needing `n ∈ I_A²`) the merged
+  factors demand higher-order vanishing certificates.  CAS support: the
+  vanishing orders were checked numerically in PARI/GP on
+  `y² = x³ − x + 1` before dispatch, and `gp`/`Singular` are available
+  for producing the higher-order certificates. -/
+theorem vertNumerator_mem (hΔ : W.Δ ≠ 0) {q₁ q₂ x y : F}
+    (hq : W.Nonsingular q₁ q₂) (h : W.Nonsingular x y) :
+    vertNumerator W q₁ q₂ x ∈
+      pointIdeal W (.some q₁ q₂ hq) ^ 2 *
+        (pointIdeal W (.some x y h - .some q₁ q₂ hq) *
+          pointIdeal W (-.some x y h - .some q₁ q₂ hq)) := by
+  sorry
+
+/-- **L4-8 numerator leaf: the divisor of the vertical
 numerator.**  `vertNumerator q₁ q₂ x` spans
 `I_Q² · I_{P⊖Q} · I_{⊖P⊖Q}` for `P = (x, y)`, `Q = (q₁, q₂)` — its
 affine divisor is `2(Q) + (P⊖Q) + (⊖P⊖Q)` (which sums to `O`, so the
@@ -1050,14 +1495,81 @@ regularity needed), so `Algebra.norm F[X] u` has degree `0` and `u`
 is a unit (`degree_norm_smul_basis` again), giving `⟨n⟩ = ⟨m⟩`.
 Alternative routes: the span-pair calculus of mathlib's
 `XYIdeal_mul_XYIdeal` (Singular/PARI certificates), or valuation
-comparison after `IsDedekindDomain F[W]`. -/
+comparison after `IsDedekindDomain F[W]`.
+
+STATUS (2026-07-25): step (1) is `exists_span_eq_four_pointIdeal`,
+step (3) is REPLACED — the colength/CRT/Nakayama squeeze proposed above
+is not needed: `span_eq_span_of_natDegree_norm` runs the same squeeze
+against the *hyperelliptic conjugate*, where the product of the two
+principal generators is the explicit vertical product
+`(X − q₁)²(X − x_A)(X − x_B)` (`pointIdeal_neg_mul`, i.e. mathlib's
+`XYIdeal_neg_mul`) and the degree count is
+`natDegree_norm_vertNumerator_add`.  Only the membership of step (2)
+remains, as the sub-leaf `vertNumerator_mem` below. -/
 theorem span_vertNumerator (hΔ : W.Δ ≠ 0) {q₁ q₂ x y : F}
     (hq : W.Nonsingular q₁ q₂) (h : W.Nonsingular x y) :
     Ideal.span {vertNumerator W q₁ q₂ x} =
       pointIdeal W (.some q₁ q₂ hq) ^ 2 *
         (pointIdeal W (.some x y h - .some q₁ q₂ hq) *
           pointIdeal W (-.some x y h - .some q₁ q₂ hq)) := by
-  sorry
+  have hq' : W.Nonsingular q₁ (W.negY q₁ q₂) :=
+    (WeierstrassCurve.Affine.nonsingular_neg ..).mpr hq
+  have h' : W.Nonsingular x (W.negY x y) :=
+    (WeierstrassCurve.Affine.nonsingular_neg ..).mpr h
+  have hnQ : (Point.some q₁ (W.negY q₁ q₂) hq' : W.Point) =
+      -(Point.some q₁ q₂ hq) := (Point.neg_some ..).symm
+  have hnP : (Point.some x (W.negY x y) h' : W.Point) =
+      -(Point.some x y h) := (Point.neg_some ..).symm
+  obtain ⟨m, hm0, hm⟩ := exists_span_eq_four_pointIdeal (W := W)
+    (Point.some q₁ q₂ hq) (Point.some q₁ q₂ hq)
+    ((Point.some x y h : W.Point) - Point.some q₁ q₂ hq)
+    (-(Point.some x y h : W.Point) - Point.some q₁ q₂ hq) (by abel)
+  obtain ⟨m', hm0', hm'⟩ := exists_span_eq_four_pointIdeal (W := W)
+    (-(Point.some q₁ q₂ hq) : W.Point) (-(Point.some q₁ q₂ hq))
+    (-((Point.some x y h : W.Point) - Point.some q₁ q₂ hq))
+    (-(-(Point.some x y h : W.Point) - Point.some q₁ q₂ hq)) (by abel)
+  have hmA : Ideal.span {m} = pointIdeal W (.some q₁ q₂ hq) ^ 2 *
+      (pointIdeal W ((.some x y h : W.Point) - .some q₁ q₂ hq) *
+        pointIdeal W (-(.some x y h : W.Point) - .some q₁ q₂ hq)) := by
+    rw [hm]; ring
+  have hmA' : Ideal.span {m'} =
+      pointIdeal W (-(.some q₁ q₂ hq) : W.Point) ^ 2 *
+      (pointIdeal W (-((.some x y h : W.Point) - .some q₁ q₂ hq)) *
+        pointIdeal W (-(-(.some x y h : W.Point) - .some q₁ q₂ hq))) := by
+    rw [hm']; ring
+  rw [← hmA]
+  refine span_eq_span_of_natDegree_norm
+    (a' := vertNumerator W q₁ (W.negY q₁ q₂) x) (b' := m')
+    (v := pointXClass W (.some q₁ q₂ hq) * pointXClass W (.some q₁ q₂ hq) *
+      (pointXClass W ((.some x y h : W.Point) - .some q₁ q₂ hq) *
+        pointXClass W (-(.some x y h : W.Point) - .some q₁ q₂ hq)))
+    (norm_vertNumerator_ne_zero hq) (norm_vertNumerator_ne_zero hq')
+    ?_ ?_ ?_ ?_
+  · rw [hmA]; exact vertNumerator_mem hΔ hq h
+  · rw [hmA']
+    have hmem := vertNumerator_mem hΔ hq' h'
+    rw [hnQ, hnP,
+      show (-(Point.some x y h : W.Point) - -(Point.some q₁ q₂ hq)) =
+        -((Point.some x y h : W.Point) - Point.some q₁ q₂ hq) from by abel,
+      show (-(-(Point.some x y h : W.Point)) - -(Point.some q₁ q₂ hq)) =
+        -(-(Point.some x y h : W.Point) - Point.some q₁ q₂ hq) from by
+          abel] at hmem
+    exact hmem
+  · simp only [← Ideal.span_singleton_mul_span_singleton]
+    rw [hmA, hmA', ← pointIdeal_neg_mul (Point.some q₁ q₂ hq : W.Point),
+      ← pointIdeal_neg_mul ((Point.some x y h : W.Point) -
+        Point.some q₁ q₂ hq),
+      ← pointIdeal_neg_mul (-(Point.some x y h : W.Point) -
+        Point.some q₁ q₂ hq)]
+    ring
+  · rw [natDegree_norm_vertNumerator_add hq h, map_mul, map_mul, map_mul,
+      Polynomial.natDegree_mul
+        (mul_ne_zero (norm_pointXClass_ne_zero _) (norm_pointXClass_ne_zero _))
+        (mul_ne_zero (norm_pointXClass_ne_zero _) (norm_pointXClass_ne_zero _)),
+      Polynomial.natDegree_mul (norm_pointXClass_ne_zero _)
+        (norm_pointXClass_ne_zero _),
+      Polynomial.natDegree_mul (norm_pointXClass_ne_zero _)
+        (norm_pointXClass_ne_zero _)]
 
 /-- **L4-8 numerator leaf (sorry): the divisor of the line
 numerator.**  `lineNumerator q₁ q₂ x₁ y₁ ℓ` (at the group-law slope
