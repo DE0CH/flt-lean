@@ -1042,7 +1042,20 @@ the `μ`-type node consumes — in particular
 `(φ^k)(1 ⊗ x) = (φ(1 ⊗ x))^k` for EVERY `k`, proven by induction on
 `k` through the convolution product: the two factors of a convolution
 both kill `I`, so only the group-like part `x ⊗ x` of `Δ x`
-contributes. -/
+contributes.
+
+**CONE STATUS (2026-07-25) — DO NOT DELETE AS FREE-FLOATING.** Until
+2026-07-25 this block was in the root cone through the proof of
+`exists_muType_coordinate`, which derived the `μ`-type node's numeric
+data from an `𝒪ᵥ`-RATIONAL closure coordinate `x ∈ G`. That leaf was
+found to be FALSE — the unramified twists `μ_p ⊗ ψ` refute it, see the
+CORRECTION NOTE on `exists_muType_coordinate` — and the leaf now
+asserts only the inertia-equivariant VALUE `ζ` of the coordinate,
+which descends from `𝒪^nr` while the coordinate itself does not. The
+block therefore has no proven consumer at this instant, but it is not
+dead: it is exactly the bookkeeping the corrected leaf's intended
+proof runs over the base `𝒪^nr` (see that docstring), so it must be
+kept until that proof is written, not swept. -/
 
 section TensorIdeal
 
