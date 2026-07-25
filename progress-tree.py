@@ -76,7 +76,7 @@ stated leaf whose consumer is still sorried) may carry a provisional
 
 This module is import-safe: generation happens only under `__main__`.
 """
-import fcntl, hashlib, json, os, select, subprocess, sys, time
+import fcntl, hashlib, json, os, select, shlex, subprocess, sys, time
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 CENSUS_LEAN = os.path.join(ROOT, "ProgressCensus.lean")
@@ -322,9 +322,32 @@ def run_census(names, root="fermat_last_theorem", timeout=3600):
     del snap, text_sha, imports_sha  # staleness bookkeeping is obsolete
 
     t0 = time.time()
-    proc = subprocess.run(["lake", "env", "lean", CENSUS_LEAN],
-                          cwd=ROOT, capture_output=True, text=True,
-                          timeout=timeout)
+    # THIS MACHINE RUNS ONLY CLAUDE CODE (Deyao, 2026-07-25). Lean runs on
+    # the assigned remote host, named by the routing table, and we reach it
+    # over ssh — never locally, however tempting, because a local run drags
+    # every elaboration back onto a slice that is CPU-quota-capped at 24
+    # cores and is meant to be idle.
+    host_file = os.path.join(os.path.expanduser("~"), ".flt-worker-host",
+                             os.path.basename(ROOT))
+    try:
+        host = open(host_file, encoding="utf-8").read().strip()
+    except OSError as exc:
+        raise RuntimeError(
+            f"no routing entry for {os.path.basename(ROOT)}: {exc}. "
+            f"{host_file} must name the host that serves this worktree "
+            f"— the census cannot be run locally.") from exc
+    if host in ("local", "mystique") or not host:
+        raise RuntimeError(
+            f"routing entry {host_file} says {host!r}; this machine runs "
+            f"only Claude Code, so it must name a remote Lean host.")
+    # elan is NOT on PATH in a non-interactive ssh session (the systemd
+    # units used to supply it), so put it there explicitly — otherwise the
+    # remote dies with a bare `lake: command not found`.
+    remote = (f"export PATH=$HOME/.elan/bin:$PATH; cd {shlex.quote(ROOT)} && "
+              f"lake env lean {shlex.quote(CENSUS_LEAN)}")
+    proc = subprocess.run(
+        ["ssh", "-o", "BatchMode=yes", host, remote],
+        capture_output=True, text=True, timeout=timeout)
     # `#eval` writes the census JSON to stdout via IO.println; elaboration
     # errors go to stderr and are what a nonzero status means.
     resp = None
@@ -340,12 +363,20 @@ def run_census(names, root="fermat_last_theorem", timeout=3600):
             resp = cand
     dt = time.time() - t0
     if resp is None:
-        err = (proc.stderr or "").strip().splitlines()
-        detail = "\n".join(err[:10]) or "(no stderr)"
+        # `lake env lean` writes its DIAGNOSTICS TO STDOUT, not stderr —
+        # reporting stderr alone yields a bare "(no stderr)" that hides the
+        # real cause (observed 2026-07-25: a missing .olean read as silence).
+        blob = ((proc.stdout or "") + (proc.stderr or "")).strip()
+        detail = "\n".join(blob.splitlines()[:10]) or "(no output at all)"
         _qlog(f"census: rc={proc.returncode} {dt:.1f}s ok=False")
+        hint = ""
+        if "does not exist" in blob and ".olean" in blob:
+            hint = ("\nHINT: an .olean is missing — the build is stale. "
+                    "Run `lake build` before the census; this transport "
+                    "reads oleans, it does not elaborate the cone for you.")
         raise RuntimeError(
             f"census produced no JSON payload (rc={proc.returncode}, "
-            f"{dt:.1f}s):\n{detail}")
+            f"{dt:.1f}s):\n{detail}{hint}")
     _qlog(f"census: rc={proc.returncode} {dt:.1f}s ok=True")
     return resp
 

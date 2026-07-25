@@ -124,9 +124,13 @@ scoped to that worktree. Live allocation state:
   or no worktree is free — the hook AUTO-QUEUES it: the prompt is
   appended to `~/.flt-task-queue` by the hook itself and the call is
   denied with a message giving the queue position and the
-  `{{FLT_QUEUE_POP}}` instruction. Never touch `.lake` directly — the
-  worktree's own `lake serve` instance rebuilds incrementally on its
-  own. A claimed worktree that is dirty or not an ancestor of main is
+  `{{FLT_QUEUE_POP}}` instruction. **Agents own `.lake`** (Deyao,
+  2026-07-25, reversing the old "never touch `.lake`" rule, which
+  existed only because a systemd-managed `lake serve` owned it): the
+  orchestrator advances the pointer to main and says in the prompt that
+  the artifacts may be stale and may need rebuilding — and does nothing
+  else about them. Managing them centrally is what turned private build
+  problems into fleet-wide ones. A claimed worktree that is dirty or not an ancestor of main is
   not auto-corrected — the hook hard-crashes (traceback to stderr,
   exit 2, tool call blocked): that state means something beyond
   allocation went wrong.
