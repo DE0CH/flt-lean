@@ -757,6 +757,16 @@ CIRCULARITY GUARD (inherited, load-bearing): none of the three
 declarations below may be discharged through `Family.lean`,
 `Lift.lean`, or `Modularity/Interface.lean`. -/
 
+/-! Names introduced by this cut, for leaf harvesting:
+`specRatMap`, `HasRationalPoint` (functor-of-points vocabulary),
+`forall_exists_map_eq_of_ker_sup_range_eq_top` (PROVEN),
+`isOpen_ker_of_finite_discrete` (PROVEN),
+`exists_totallyReal_point_of_geometricallyIrreducible` (SORRY —
+Moret–Bailly 1989 Thm 1.3), and
+`exists_twistedHilbertBlumenthalModuli_of_five_le` (SORRY — Taylor
+2002 §2). `exists_hilbertBlumenthalPoint_of_five_le` itself is now
+PROVEN and is no longer a leaf. -/
+
 /-- **The structure morphism of a `ℚ`-algebra's spectrum.** `ℚ` lives in
 `Type 0` while the number field produced by Moret–Bailly must land in
 `Type u` (the universe of the `HilbertBlumenthalPoint` interface), so the
@@ -768,12 +778,12 @@ noncomputable def specRatMap (F : Type u) [CommRing F] [Algebra ℚ F] :
   AlgebraicGeometry.Spec.map (CommRingCat.ofHom
     ((algebraMap ℚ F).comp (ULift.ringEquiv : ULift.{u} ℚ ≃+* ℚ).toRingHom))
 
+open CategoryTheory in
 /-- **`X` has an `F`-rational point** (functor of points): a morphism
 `Spec F ⟶ X` over the base `Spec ℚ`, i.e. a section of the structure
 morphism `fX` along `Spec F ⟶ Spec ℚ`. This is the `R`-point notion in
 which Moret–Bailly's local hypothesis (`R = ℝ`) and its global
 conclusion (`R = F`) are both stated. -/
-open CategoryTheory in
 def HasRationalPoint {X : AlgebraicGeometry.Scheme.{u}}
     (fX : X ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
     (F : Type u) [CommRing F] [Algebra ℚ F] : Prop :=
