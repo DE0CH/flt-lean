@@ -55,6 +55,12 @@ import Mathlib.Algebra.Module.ZMod
 import Mathlib.LinearAlgebra.Dual.Lemmas
 -- `Module.forall_dual_apply_eq_zero_iff`, separating points of the
 -- graded piece by `ZMod 3`-functionals in the Kummer-core reduction
+import Fermat.FLT.GroupScheme.ConnectedEtale
+-- `OortTate.displacement_point_apply_idempotent_eq_one`, the étale half
+-- of the connected–étale dichotomy, consumed by the connected-displacement
+-- decomposition of the two Hopf-package cores below.  (`ModThree` imports
+-- this module non-publicly, so it is not re-exported and must be imported
+-- here directly.)
 
 /-!
 # 3-adic hardly ramified representations
@@ -1361,8 +1367,268 @@ theorem linearMap_apply_mem_of_mem_smul_top {R : Type u} [CommRing R]
     exact Ideal.add_mem _ hy hz
 
 
-/-- **The ω-defect Hopf-package core at `3`** (sorry node, isolated
-2026-07-24 — the finite-flat/Fontaine content of the ω-defect node
+section ConnectedDisplacementAtThree
+
+local notation "𝔭₃" => Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat
+local notation "𝒪₃ᵥ" => IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+  Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat
+local notation "ℚ₃ᵥ" => IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+  Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat
+local notation "ℚ₃ᵥᵃˡᵍ" => AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+  Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **Inertia displacements are connected, through a Hopf package**
+(PROVEN 2026-07-25 — the étale half of the connected–étale dichotomy,
+transported through an arbitrary flat-prolongation package at `3`; this
+is step (2) of the recorded route of BOTH Hopf-package cores below): if
+the geometric points of the generic fibre of a finite flat Hopf order
+`G` over `𝒪ᵥ ≅ ℤ₃` are `Γ ℚ₃ᵥ`-equivariantly identified with the space
+of a Galois representation `ρ'` by a bijection `fG`, then for every
+local inertia element `σ` at `3` and every vector `m`, the point of the
+displacement `ρ'(σ)m - m` takes the value `1` on any counit-one
+idempotent `e₀` — i.e. every inertia displacement lies in the CONNECTED
+part of the model.
+
+Proof: the identification turns the trivial rewriting
+`(ρ'(σ)m - m) + m = ρ'(σ)m` into the convolution identity
+`δ ⋆ φ = σ • φ` between the point `φ` of `m` and the point `δ` of the
+displacement (`map_add`/`map_smul` of the equivariant bijection, read
+through `Additive.toMul`), which is exactly the hypothesis of the
+PROVEN generic-place lemma
+`OortTate.displacement_point_apply_idempotent_eq_one`: the value of `δ`
+on `e₀` is an idempotent of a field congruent to `1` modulo the maximal
+ideal of the integral closure, hence `1`. Conceptually: the étale
+quotient of the model has unramified points, so inertia displacements
+die in it. -/
+theorem inertia_displacement_apply_connected_idempotent_eq_one
+    {A : Type*} [CommRing A] [TopologicalSpace A]
+    {N : Type*} [AddCommGroup N] [Module A N]
+    (ρ' : GaloisRep ℚ A N)
+    (G : Type) [CommRing G] [HopfAlgebra 𝒪₃ᵥ G] [Module.Finite 𝒪₃ᵥ G]
+    (e₀ : G) (he₀ : IsIdempotentElem e₀)
+    (hε₀ : Coalgebra.counit (R := 𝒪₃ᵥ) e₀ = (1 : 𝒪₃ᵥ))
+    (fG : Additive (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ) →+[Γ ℚ₃ᵥ]
+      ((ρ'.toLocal 𝔭₃).Space))
+    (hfG : Function.Bijective fG)
+    (σ : Γ ℚ₃ᵥ) (hσ : σ ∈ localInertiaGroup 𝔭₃)
+    (m : N) :
+    (Additive.toMul ((Equiv.ofBijective fG hfG).symm
+        ((ρ'.toLocal 𝔭₃) σ m - m))) ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 := by
+  classical
+  set g := Equiv.ofBijective fG hfG with hg
+  have hfs : ∀ x : (ρ'.toLocal 𝔭₃).Space, fG (g.symm x) = x :=
+    fun x => g.apply_symm_apply x
+  set d : N := (ρ'.toLocal 𝔭₃) σ m - m with hd
+  -- the displacement point multiplies the point of `m` into its translate
+  have hXd : g.symm d + g.symm m = σ • g.symm m := by
+    apply g.injective
+    show fG (g.symm d + g.symm m) = fG (σ • g.symm m)
+    rw [map_add fG, map_smul fG, hfs, hfs]
+    show d + m = (ρ'.toLocal 𝔭₃) σ m
+    rw [hd, sub_add_cancel]
+  have hDφ : Additive.toMul (g.symm d) * Additive.toMul (g.symm m) =
+      σ • Additive.toMul (g.symm m) := by
+    have h1 := congrArg Additive.toMul hXd
+    have h2 : Additive.toMul (σ • g.symm m) =
+        σ • Additive.toMul (g.symm m) := rfl
+    rw [toMul_add, h2] at h1
+    exact h1
+  exact OortTate.displacement_point_apply_idempotent_eq_one 𝔭₃ G e₀ he₀ hε₀ σ hσ
+    (Additive.toMul (g.symm m)) (Additive.toMul (g.symm d)) hDφ
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **The ω-defect Raynaud core at `3`** (sorry node, isolated
+2026-07-25 out of `omega_defect_vanishes_of_hopf_package` — what is
+LEFT of the finite-flat/Fontaine content once the connected–étale half
+is discharged; Fontaine, *Il n'y a pas de variété abélienne sur `ℤ`*,
+Invent. Math. 81 (1985), §1; Raynaud, *Schémas en groupes de type
+`(p, …, p)`*, Bull. SMF 102 (1974), 3.3.6/3.4.3; Tate–Oort; the
+Fontaine/Raynaud material in Cornell–Silverman–Stevens): the same
+statement as the Hopf-package core, with the connected counit
+idempotent `e₀` of the Hopf order and the PROVEN connectedness of every
+inertia displacement (`hconn`, supplied by the assembly through
+`inertia_displacement_apply_connected_idempotent_eq_one`) handed in as
+hypotheses.
+
+What remains is exactly steps (2b)–(4) of the recorded route, i.e. the
+CLASSIFICATION content: (2b) the cyclic Galois submodule of
+`M := (R ⧸ 𝔪ⁿ⁺²) ⊗[R] V` generated by the image of `w₀` — whose points
+now provably sit in the connected part by `hconn` — has a schematic
+closure inside `Spec G` that is a finite flat closed subgroup scheme
+with graded pieces of multiplicative (`μ₃`-)type: the residual
+`w₀`-character `a mod 𝔪` is the mod-3 cyclotomic `ω` (the determinant
+`hρ.det` is cyclotomic and the residual quotient character through `v₀`
+is trivial), and Raynaud's order-`3` classification over `ℤ₃`
+(`e = 1 < 2 = p - 1`) leaves only the `ℤ/3`-forms (étale, unramified
+points — excluded by `hconn`) and the `μ₃`-forms (connected, points
+ramified through `ω`); (3) for `σ ∈ ker ω ∩ inertia` the defect
+`d σ = f (ρ σ w₀) - f w₀` measures, on the graded piece
+`𝔪ⁿ⁺¹/𝔪ⁿ⁺²`, the generic-fibre class of the extension of that
+`μ₃`-type piece (the `w₀`-line) by the étale-type piece (the trivial
+`v₀`-quotient coordinate cut out by `f`); (4) every finite flat
+extension of `μ₃`-type by étale-type over `ℤ₃` splits — its connected
+component meets the étale sub trivially and maps onto the `μ₃`-part,
+so `E⁰ → μ₃` is an isomorphism providing a splitting — hence the class
+is zero and its inertia restriction on the cyclotomic kernel dies at
+level `n + 2`, i.e. `d σ ∈ 𝔪ⁿ⁺²`.
+
+The shared Oort–Tate `μ`-type node
+`OortTate.connected_cyclic_point_smul_eq_conv_pow_cyclotomicCharacter`
+of `GroupScheme/ConnectedEtale.lean` is the intended engine for
+(2b)–(3); note its `hstab` hypothesis (inertia-stability of the cyclic
+span, i.e. one-dimensionality) is NOT redundant and must be supplied
+from the residual triangular shape `ha`. -/
+theorem omega_defect_vanishes_of_connected_displacement
+    {R : Type u} [CommRing R]
+    [Algebra ℤ_[3] R] [Module.Finite ℤ_[3] R]
+    [Module.Free ℤ_[3] R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [IsModuleTopology ℤ_[3] R]
+    (V : Type v) [AddCommGroup V] [Module R V] [Module.Finite R V]
+    [Module.Free R V]
+    (hV : Module.rank R V = 2) {ρ : GaloisRep ℚ R V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (kk : Type u) [Field kk] [Finite kk] [Algebra ℤ_[3] kk]
+    [TopologicalSpace kk] [DiscreteTopology kk] [IsTopologicalRing kk]
+    [Algebra R kk] [ContinuousSMul R kk]
+    (hsurj : Function.Surjective (algebraMap R kk))
+    (π : (kk ⊗[R] V) →ₗ[kk] kk) (hπsurj : Function.Surjective π)
+    (hπequiv : ∀ g : Γ ℚ, ∀ w : kk ⊗[R] V,
+      π ((ρ.baseChange kk) g w) = π w)
+    (v₀ : V) (hv₀ : π ((1 : kk) ⊗ₜ[R] v₀) ≠ 0)
+    (w₀ : V) (hw₀π : π ((1 : kk) ⊗ₜ[R] w₀) = 0)
+    (hw₀ne : (1 : kk) ⊗ₜ[R] w₀ ≠ 0)
+    (a : Γ ℚ → R)
+    (ha : ∀ g : Γ ℚ, ρ g w₀ - a g • w₀ ∈
+      (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V))
+    (n : ℕ) (f : V →ₗ[R] R)
+    (hf : ∀ (g : Γ ℚ) (v : V),
+      f (ρ g v) - f v ∈ IsLocalRing.maximalIdeal R ^ (n + 1))
+    (hfv₀ : f v₀ ∉ IsLocalRing.maximalIdeal R)
+    (G : Type) [CommRing G]
+    [HopfAlgebra 𝒪₃ᵥ G] [Module.Flat 𝒪₃ᵥ G] [Module.Finite 𝒪₃ᵥ G]
+    [Algebra.Etale ℚ₃ᵥ (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G)]
+    (fG : Additive (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ) →+[Γ ℚ₃ᵥ]
+      (((ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal
+        𝔭₃).Space))
+    (hfG : Function.Bijective fG)
+    (σ : Γ ℚ₃ᵥ) (hσ : σ ∈ localInertiaGroup 𝔭₃)
+    (hσω : cyclotomicCharacterModL 3 (Field.absoluteGaloisGroup.map
+      (algebraMap ℚ ℚ₃ᵥ) σ) = 1)
+    (e₀ : G) (he₀ : IsIdempotentElem e₀)
+    (hε₀ : Coalgebra.counit (R := 𝒪₃ᵥ) e₀ = (1 : 𝒪₃ᵥ))
+    (hprim₀ : ∀ x : G, IsIdempotentElem x → x * e₀ = 0 ∨ x * e₀ = e₀)
+    (hcomul₀ : Coalgebra.comul (R := 𝒪₃ᵥ) e₀ * (e₀ ⊗ₜ[𝒪₃ᵥ] e₀) =
+      e₀ ⊗ₜ[𝒪₃ᵥ] e₀)
+    (hconn : ∀ m : (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2))) ⊗[R] V,
+      (Additive.toMul ((Equiv.ofBijective fG hfG).symm
+        (((ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal
+          𝔭₃) σ m - m))) ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1) :
+    f (ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) σ) w₀)
+      - f w₀ ∈ IsLocalRing.maximalIdeal R ^ (n + 2) := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **The trivial-component Raynaud core at `3`** (sorry node, isolated
+2026-07-25 out of `trivial_component_vanishes_of_hopf_package` — what
+is LEFT of the finite-flat/Fontaine content once the connected–étale
+half is discharged; Fontaine 1985 §1; Raynaud 1974; Tate–Oort; the
+Fontaine/Raynaud material in Cornell–Silverman–Stevens): the same
+statement as the Hopf-package core, with the connected counit
+idempotent `e₀` and the PROVEN connectedness of every inertia
+displacement (`hconn`, supplied by the assembly through
+`inertia_displacement_apply_connected_idempotent_eq_one`) handed in as
+hypotheses.
+
+Step (2) of the recorded route — "by left-exactness of points, every
+inertia displacement `ρ̄(σ)m - m` lies in `U := (Spec G)⁰(ℚ̄₃)`, the
+points of the connected part" — IS `hconn`, and is now proven upstream.
+What remains is steps (3)–(4), the classification content: (3)
+residually `U` is the `w₀`-line, because the `v₀`-quotient carries the
+trivial residual character (by the `hc`-shape), so the
+trivial-by-trivial graded corner is an extension of étale-type by
+étale-type finite flat group schemes over `ℤ₃`, which is again étale
+(residue characteristic `3 > 2`, `e = 1 < p - 1`), forcing the whole
+trivial corner into the étale quotient; (4) the `f`-coordinate on `U`
+is corrected exactly by `s`: `hsA` says the `f`-coordinate of the
+`w₀`-line displacement is `-(a g - 1) * s` modulo `𝔪ⁿ⁺²`, so the
+inertia displacement `ρ̄(σ)v̄₀ - v̄₀ ∈ U` — which is `c σ • w̄₀` modulo
+`𝔪·M` by `hc` — has `f`-coordinate `-c σ * s` modulo `𝔪ⁿ⁺²`; hence
+`T σ = (f (ρ σ v₀) - f v₀) + c σ * s ∈ 𝔪ⁿ⁺²`. -/
+theorem trivial_component_vanishes_of_connected_displacement
+    {R : Type u} [CommRing R]
+    [Algebra ℤ_[3] R] [Module.Finite ℤ_[3] R]
+    [Module.Free ℤ_[3] R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [IsModuleTopology ℤ_[3] R]
+    (V : Type v) [AddCommGroup V] [Module R V] [Module.Finite R V]
+    [Module.Free R V]
+    (hV : Module.rank R V = 2) {ρ : GaloisRep ℚ R V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (kk : Type u) [Field kk] [Finite kk] [Algebra ℤ_[3] kk]
+    [TopologicalSpace kk] [DiscreteTopology kk] [IsTopologicalRing kk]
+    [Algebra R kk] [ContinuousSMul R kk]
+    (hsurj : Function.Surjective (algebraMap R kk))
+    (π : (kk ⊗[R] V) →ₗ[kk] kk) (hπsurj : Function.Surjective π)
+    (hπequiv : ∀ g : Γ ℚ, ∀ w : kk ⊗[R] V,
+      π ((ρ.baseChange kk) g w) = π w)
+    (v₀ : V) (hv₀ : π ((1 : kk) ⊗ₜ[R] v₀) ≠ 0)
+    (w₀ : V) (hw₀π : π ((1 : kk) ⊗ₜ[R] w₀) = 0)
+    (hw₀ne : (1 : kk) ⊗ₜ[R] w₀ ≠ 0)
+    (a : Γ ℚ → R)
+    (ha : ∀ g : Γ ℚ, ρ g w₀ - a g • w₀ ∈
+      (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V))
+    (c : Γ ℚ → R)
+    (hc : ∀ g : Γ ℚ, ρ g v₀ - (v₀ + c g • w₀) ∈
+      (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V))
+    (n : ℕ) (f : V →ₗ[R] R)
+    (hf : ∀ (g : Γ ℚ) (v : V),
+      f (ρ g v) - f v ∈ IsLocalRing.maximalIdeal R ^ (n + 1))
+    (hfv₀ : f v₀ ∉ IsLocalRing.maximalIdeal R)
+    (s : R) (hs : s ∈ IsLocalRing.maximalIdeal R ^ (n + 1))
+    (hsA : ∀ g : Γ ℚ,
+      (f (ρ g w₀) - f w₀) + (a g - 1) * s ∈
+        IsLocalRing.maximalIdeal R ^ (n + 2))
+    (hT1 : ∀ g : Γ ℚ, (f (ρ g v₀) - f v₀) + c g * s ∈
+      IsLocalRing.maximalIdeal R ^ (n + 1))
+    (hThom : ∀ g h : Γ ℚ,
+      ((f (ρ (g * h) v₀) - f v₀) + c (g * h) * s)
+        - (((f (ρ g v₀) - f v₀) + c g * s)
+          + ((f (ρ h v₀) - f v₀) + c h * s))
+        ∈ IsLocalRing.maximalIdeal R ^ (n + 2))
+    (G : Type) [CommRing G]
+    [HopfAlgebra 𝒪₃ᵥ G] [Module.Flat 𝒪₃ᵥ G] [Module.Finite 𝒪₃ᵥ G]
+    [Algebra.Etale ℚ₃ᵥ (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G)]
+    (fG : Additive (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ) →+[Γ ℚ₃ᵥ]
+      (((ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal
+        𝔭₃).Space))
+    (hfG : Function.Bijective fG)
+    (σ : Γ ℚ₃ᵥ) (hσ : σ ∈ localInertiaGroup 𝔭₃)
+    (e₀ : G) (he₀ : IsIdempotentElem e₀)
+    (hε₀ : Coalgebra.counit (R := 𝒪₃ᵥ) e₀ = (1 : 𝒪₃ᵥ))
+    (hprim₀ : ∀ x : G, IsIdempotentElem x → x * e₀ = 0 ∨ x * e₀ = e₀)
+    (hcomul₀ : Coalgebra.comul (R := 𝒪₃ᵥ) e₀ * (e₀ ⊗ₜ[𝒪₃ᵥ] e₀) =
+      e₀ ⊗ₜ[𝒪₃ᵥ] e₀)
+    (hconn : ∀ m : (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2))) ⊗[R] V,
+      (Additive.toMul ((Equiv.ofBijective fG hfG).symm
+        (((ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal
+          𝔭₃) σ m - m))) ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1) :
+    (f (ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) σ) v₀) - f v₀)
+      + c (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) σ) * s ∈
+      IsLocalRing.maximalIdeal R ^ (n + 2) := by
+  sorry
+
+end ConnectedDisplacementAtThree
+
+/-- **The ω-defect Hopf-package core at `3`** (DECOMPOSED 2026-07-25
+into the Raynaud core `omega_defect_vanishes_of_connected_displacement`
+above — the connected–étale half is PROVEN here; formerly a bare sorry
+node, isolated 2026-07-24 — the finite-flat/Fontaine content of the ω-defect node
 below, whose flatness-to-package assembly is proven; Fontaine,
 Raynaud 1974, and the Fontaine/Raynaud material in
 Cornell–Silverman–Stevens): given an EXPLICIT finite flat Hopf
@@ -1465,7 +1731,16 @@ theorem omega_defect_vanishes_of_hopf_package
       (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
         Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ) w₀)
       - f w₀ ∈ IsLocalRing.maximalIdeal R ^ (n + 2) := by
-  sorry
+  -- the connected counit idempotent of the Hopf order
+  obtain ⟨e₀, he₀, hε₀, hprim₀, hcomul₀⟩ :=
+    exists_connected_counit_idempotent_at_three G
+  -- the connected–étale half: every inertia displacement is connected
+  exact omega_defect_vanishes_of_connected_displacement V hV hρ kk hsurj π
+    hπsurj hπequiv v₀ hv₀ w₀ hw₀π hw₀ne a ha n f hf hfv₀ G fG hfG σ hσ hσω
+    e₀ he₀ hε₀ hprim₀ hcomul₀
+    (fun m => inertia_displacement_apply_connected_idempotent_eq_one
+      (ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))) G e₀ he₀ hε₀
+      fG hfG σ hσ m)
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **The ω-defect dies on the local inertia at `3`** (DECOMPOSED
@@ -4105,7 +4380,10 @@ theorem hom_vanishes_on_localInertia_at_two
   exact (hφker _).mp
     (threeTorsion_monoidHom_vanishes_on_localInertia_at_two φ hopen h3 σ hσ)
 
-/-- **The trivial-component Hopf-package core at `3`** (sorry node,
+/-- **The trivial-component Hopf-package core at `3`** (DECOMPOSED
+2026-07-25 into the Raynaud core
+`trivial_component_vanishes_of_connected_displacement` above — the
+connected–étale half is PROVEN here; formerly a bare sorry node,
 isolated 2026-07-24 — the finite-flat/Fontaine content of the
 flat-prolongation node below, whose package-unpacking assembly is
 proven; Fontaine, Raynaud 1974, and the Fontaine/Raynaud material in
@@ -4223,7 +4501,16 @@ theorem trivial_component_vanishes_of_hopf_package
         (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
           Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)) σ) * s ∈
       IsLocalRing.maximalIdeal R ^ (n + 2) := by
-  sorry
+  -- the connected counit idempotent of the Hopf order
+  obtain ⟨e₀, he₀, hε₀, hprim₀, hcomul₀⟩ :=
+    exists_connected_counit_idempotent_at_three G
+  -- the connected–étale half: every inertia displacement is connected
+  exact trivial_component_vanishes_of_connected_displacement V hV hρ kk hsurj π
+    hπsurj hπequiv v₀ hv₀ w₀ hw₀π hw₀ne a ha c hc n f hf hfv₀ s hs hsA hT1
+    hThom G fG hfG σ hσ e₀ he₀ hε₀ hprim₀ hcomul₀
+    (fun m => inertia_displacement_apply_connected_idempotent_eq_one
+      (ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))) G e₀ he₀ hε₀
+      fG hfG σ hσ m)
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **The flat-prolongation core of the trivial component at `3`**
