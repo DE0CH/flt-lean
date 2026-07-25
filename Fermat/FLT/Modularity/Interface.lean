@@ -8409,9 +8409,18 @@ three helpers above — the at-`2` cyclotomic-inertia lemma
 `cyclotomicCharacter_eq_one_of_mem_inertia_two_upstream` (PROVEN),
 the tame unipotence lemma
 `residual_rep_sub_one_sq_eq_zero_of_inertia_two` (PROVEN), and the
-sorried Kronecker–Weber factorization node
-`character_eq_pow_cyclotomicCharacter_of_unramified_outside_p`, which
-now carries the arithmetic depth of this pillar): the sub-character
+Kronecker–Weber factorization node
+`character_eq_pow_cyclotomicCharacter_of_unramified_outside_p`, itself
+also now PROVEN — not by building Kronecker–Weber but by the tame
+Minkowski route, pinning `χ` against `ω` on inertia at `p` and
+globalizing with `minkowski_character_trivial`, so it is NOT a work
+item; the arithmetic depth of this pillar has moved one level down, to
+the two leaves that node consumes and that ARE still open: the tame
+local pinning at `p`
+`exists_pow_eq_algebraMap_cyclotomicCharacter_localInertia_p`
+(E1a-iv) and the unramifiedness of `ω` away from `p`
+`algebraMap_cyclotomicCharacter_eq_one_of_mem_localInertiaGroup_ne`
+(E1a-iii)): the sub-character
 of a triangular hardly ramified mod-`p` representation is a POWER of
 the mod-`p` cyclotomic character `ω` (the image of the `p`-adic
 cyclotomic character under `ℤ_p → k`, which factors through
@@ -12975,13 +12984,16 @@ theorem exists_conjugator_padicGalois_eq_adic_at_p :
 
 /-- **Flat local splitting at `p`** (Eisenstein pillar E3a; PROVEN
 2026-07-24 as an assembly over the E3a-i/E3a-ii cut above — the
-connected–étale/Raynaud content is the sorried complement leaf
+connected–étale/Raynaud content is the complement leaf
 `exists_inertia_connectedEtale_complement_of_isFlatAt`, the
-completion bookkeeping is the sorried fixed-conjugator bridge
+completion bookkeeping is the fixed-conjugator bridge
 `exists_conjugator_padicGalois_eq_adic_at_p`, the tame-exactness
 input is the E1b-ii leaf
 `sub_one_dvd_of_cyclotomicCharacter_residue_inertia_pow_eq_one` at
-`i = 1`; everything else — the determinant pinning `χ = ω`, the
+`i = 1` — all three of which have since been PROVEN, none has a
+`sorry` in its body, and so none is a work item; what depth remains
+under E3a-i has moved down to the shared Oort–Tate classification
+node `OortTate.exists_muType_coordinate`; everything else — the determinant pinning `χ = ω`, the
 cocycle algebra of the triangular form, the passage from the additive
 complement to a `kk'`-linear coboundary witness by AVERAGING over the
 finite prime-to-`p` image group `χ(I_p)`, the inflation step from
