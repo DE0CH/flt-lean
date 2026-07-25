@@ -2417,78 +2417,9 @@ lemma lineNumeratorNeg_notMem_pointIdeal_sub {q₁ q₂ x y α β : F}
       have := pow_eq_zero_iff (n := 3) (by norm_num) |>.mp hc
       linear_combination this)
 
-/-- **L4-8 line-numerator sub-leaf (sorry): the multiplicity of the line
-numerator at `Q` ITSELF.**  This is all that is left of the coincidence
-zoo: `n` achieves the `Q`-multiplicity of its divisor, i.e. `n ∈ I_Q^k`
-whenever `I_Q^k` divides the whole product `I_Q³ · I_{P⊖Q} · I_{R⊖Q} ·
-I_{⊖(P⊕R)⊖Q}`.  For `k ≤ 3` this is `lineNumerator_mem_pointIdeal_pow_three`
-(proven below); the open content is `k ≥ 4`, which happens exactly when
-`2Q ∈ {P, R, S}` (`S = ⊖(P ⊕ R)`), with `k = 3 + m`,
-`m = #{i : Pᵢ = 2Q} ≤ 3`.
-
-WHY THE PARTNER SQUEEZE CANNOT DO THIS (2026-07-25, correcting the
-docstring of the parent leaf).  Every *other* coincident point is handled
-by `mem_pointIdeal_pow_of_dvd_of_notMem` together with
-`lineNumeratorNeg_notMem_pointIdeal_sub`: at `Z = Pᵢ ⊖ Q ≠ Q` a
-coincidence forces `2Pᵢ ≠ O` and `Z ≠ ±Q`, so the partner `ñ` is a UNIT at
-`Z` and the whole `Z`-multiplicity of `⟨n·ñ⟩` lands on `n`.  At `Z = Q`
-that mechanism is unavailable *in principle*: the conjugate divisor
-`RHS' = 3(Q) + (⊖P⊖Q) + (⊖R⊖Q) + ((P⊕R)⊖Q)` always contains `3(Q)`, so
-`v_Q(ñ) ≥ 3 > 0` unconditionally and `ñ ∉ I_Q` is false.  The recommended
-"non-vanishing squeeze" therefore covers the zoo except at `Q`.
-
-TWO ROUTES FOR WHAT REMAINS, both CAS-checked numerically.
-
-* *Order-`k` truncated evaluation.*  With `2Q ≠ O` (automatic once
-  `2Q ∈ {P,R,S}` is affine) put `A₀ = 2q₂ + a₁q₁ + a₃ ≠ 0` and solve the
-  Weierstrass equation for a truncated branch
-  `y(t) = q₂ + c₁t + c₂t² + c₃t³` with `W(q₁ + t, y(t)) ≡ 0 mod t⁴`
-  (the `cᵢ` are explicit rational functions of `q₁, q₂, aᵢ` with
-  denominators powers of `A₀`; each coefficient identity is
-  `field_simp`/`linear_combination` against `W(q₁,q₂) = 0`).  Then
-  `AdjoinRoot.lift` gives `φ : F[W] → F[t]/(t⁴)` with `φ(I_Q) ⊆ (t)`,
-  hence `φ(I_Q⁴) = 0`, and the computation `φ(ñ) = L(⊖2Q)·t³`,
-  `φ(n) = L(2Q)·t³`.  Since `2Q ∈ {P,R,S}` and `⊖2Q ∈ {P,R,S}` together
-  force `4Q = O`, in the generic case `L(⊖2Q) ≠ 0`, so `v_Q(ñ) = 3`
-  exactly and the squeeze at `Q` closes with `k = 3 + m`.  The residual
-  `4Q = O` configuration has `m = m' = 1` and needs the same construction
-  one order further (`t⁵`).
-* *The chord-product identity* (no valuations at all, and it proves the
-  whole leaf `span_lineNumerator` outright):
-  `n · L̄ = L(Q) · ℓ(Q,⊖P) · ℓ(Q,⊖R) · ℓ(Q,⊖S)`,
-  where `L̄` is the line through `⊖P, ⊖R, ⊖S`, `ℓ(Q,V)` the chord through
-  `Q` and `V`, and `L(Q) = q₂ − ℓ(q₁ − x₁) − y₁` the line evaluated at `Q`.
-  Taking ideals and using `YIdeal_eq_prod_pointIdeal` — which is uniform in
-  ALL tangency/coincidence configurations, being mathlib's
-  `XYIdeal_mul_XYIdeal` — the factor `⟨L̄⟩ = I_{⊖P}I_{⊖R}I_{⊖S}` cancels
-  and leaves `⟨n⟩ = RHS`.  Numerically verified in PARI/GP on
-  `y² + xy + 3y = x³ − 2x² − 4x + 5` (both this identity and its mirror
-  `ñ · L = L(⊖Q) · ℓ(Q,P) · ℓ(Q,R) · ℓ(Q,S)` hold to 60 digits).  The
-  degenerate configurations are exactly `Q ∈ {P,R,S}` (then `L(Q) = 0` and
-  a chord goes vertical); the mirror identity covers those unless also
-  `⊖Q ∈ {P,R,S}`, which forces `2Q = O` with exactly one `Pᵢ = Q`.  The
-  cost is one large `linear_combination` in the coordinate ring against
-  the Weierstrass equations at `taut`, `Q`, `P`, `R` and the cleared slope
-  relations. -/
-lemma lineNumerator_mem_pointIdeal_pow_of_dvd (hΔ : W.Δ ≠ 0)
-    {q₁ q₂ x₁ y₁ x₂ y₂ : F}
-    (hq : W.Nonsingular q₁ q₂) (h₁ : W.Nonsingular x₁ y₁)
-    (h₂ : W.Nonsingular x₂ y₂) (hxy : ¬(x₁ = x₂ ∧ y₁ = W.negY x₂ y₂)) {k : ℕ}
-    (hk : pointIdeal W (.some q₁ q₂ hq) ^ k ∣
-      pointIdeal W (.some q₁ q₂ hq) ^ 3 *
-        (pointIdeal W (.some x₁ y₁ h₁ - .some q₁ q₂ hq) *
-          (pointIdeal W (.some x₂ y₂ h₂ - .some q₁ q₂ hq) *
-            pointIdeal W (-(.some x₁ y₁ h₁ + .some x₂ y₂ h₂) - .some q₁ q₂ hq)))) :
-    lineNumerator W q₁ q₂ x₁ y₁ (W.slope x₁ x₂ y₁ y₂) ∈
-      pointIdeal W (.some q₁ q₂ hq) ^ k := by
-  by_cases hk3 : k ≤ 3
-  · exact Ideal.pow_le_pow_right hk3
-      (lineNumerator_mem_pointIdeal_pow_three hq x₁ y₁ (W.slope x₁ x₂ y₁ y₂))
-  · sorry
-
 /-- **The product identity `⟨n · ñ⟩ = RHS · RHS'`** (PROVEN), hoisted out
 of `span_lineNumerator`'s proof so that it is available to the coincidence
-leaf above it.  It is `lineNumerator_mul_lineNumeratorNeg` (the cleared
+leaf below it.  It is `lineNumerator_mul_lineNumeratorNeg` (the cleared
 conjugate product) combined with the three exact vertical spans
 `span_vertNumerator`. -/
 lemma span_lineNumerator_mul_lineNumeratorNeg (hΔ : W.Δ ≠ 0)
@@ -2526,6 +2457,682 @@ lemma span_lineNumerator_mul_lineNumeratorNeg (hΔ : W.Δ ≠ 0)
     span_vertNumerator hΔ hq h₁, span_vertNumerator hΔ hq h₂, hv₃]
   ring
 
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- **The cleared branch identity at `Q`** (the whole arithmetic input of the
+order-4 local normal form).  With `T = coordX − q₁`, `U = coordY − q₂` and
+`A₀ = 2q₂ + a₁q₁ + a₃`, the Weierstrass relation shifted to `Q` reads
+`U·(A₀ + U + a₁T) = T·(EX + (3q₁ + a₂)T + T²)`, `EX = 3q₁² + 2a₂q₁ + a₄ − a₁q₂`.
+Subtracting the truncated branch `B = c₁T + c₂T² + c₃T³` — whose coefficients
+are pinned by `hc₁`, `hc₂`, `hc₃`, i.e. by `W(q₁ + t, q₂ + B(t)) ≡ 0 mod t⁴` —
+turns that into
+`(U − B)·(A₀ + U + a₁T + B) = T⁴·D`,
+`D = −(a₁c₃ + 2c₁c₃ + c₂²) − 2c₂c₃·T − c₃²·T²`,
+the point being that the left cofactor is a UNIT at `Q` (it evaluates to `A₀`).
+One `linear_combination` against `coord_equation_coordC`, `W.Equation q₁ q₂`
+and the three coefficient equations, with cofactors `1, −1, −T, −T², −T³`. -/
+lemma sub_branch_mul_eq {q₁ q₂ c₁ c₂ c₃ : F} (hq : W.Equation q₁ q₂)
+    (hc₁ : (2 * q₂ + W.a₁ * q₁ + W.a₃) * c₁ =
+      3 * q₁ ^ 2 + 2 * W.a₂ * q₁ + W.a₄ - W.a₁ * q₂)
+    (hc₂ : (2 * q₂ + W.a₁ * q₁ + W.a₃) * c₂ =
+      3 * q₁ + W.a₂ - c₁ ^ 2 - W.a₁ * c₁)
+    (hc₃ : (2 * q₂ + W.a₁ * q₁ + W.a₃) * c₃ = 1 - 2 * c₁ * c₂ - W.a₁ * c₂) :
+    (coordY W - coordC W q₂ -
+        (coordC W c₁ * (coordX W - coordC W q₁) +
+          coordC W c₂ * (coordX W - coordC W q₁) ^ 2 +
+          coordC W c₃ * (coordX W - coordC W q₁) ^ 3)) *
+      (coordC W (2 * q₂ + W.a₁ * q₁ + W.a₃) + (coordY W - coordC W q₂) +
+        coordC W W.a₁ * (coordX W - coordC W q₁) +
+        (coordC W c₁ * (coordX W - coordC W q₁) +
+          coordC W c₂ * (coordX W - coordC W q₁) ^ 2 +
+          coordC W c₃ * (coordX W - coordC W q₁) ^ 3)) =
+    (coordX W - coordC W q₁) ^ 4 *
+      (coordC W (-(W.a₁ * c₃) - 2 * c₁ * c₃ - c₂ ^ 2) +
+        coordC W (-(2 * c₂ * c₃)) * (coordX W - coordC W q₁) +
+        coordC W (-(c₃ ^ 2)) * (coordX W - coordC W q₁) ^ 2) := by
+  have hcr := coord_equation_coordC W
+  simp only [coordC_eq_algebraMap] at hcr
+  rw [WeierstrassCurve.Affine.equation_iff] at hq
+  have hqW := congrArg (algebraMap F W.CoordinateRing) hq
+  have hc₁W := congrArg (algebraMap F W.CoordinateRing) hc₁
+  have hc₂W := congrArg (algebraMap F W.CoordinateRing) hc₂
+  have hc₃W := congrArg (algebraMap F W.CoordinateRing) hc₃
+  simp only [map_add, map_sub, map_mul, map_pow, map_ofNat, map_one]
+    at hqW hc₁W hc₂W hc₃W
+  simp only [coordC_eq_algebraMap, map_add, map_sub, map_mul, map_pow, map_neg,
+    map_ofNat]
+  linear_combination hcr - hqW -
+    (coordX W - algebraMap F W.CoordinateRing q₁) * hc₁W -
+    (coordX W - algebraMap F W.CoordinateRing q₁) ^ 2 * hc₂W -
+    (coordX W - algebraMap F W.CoordinateRing q₁) ^ 3 * hc₃W
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- **The order-4 normal form of `lineNumerator`** — a pure polynomial identity
+(no curve relation is used).  Expanding `n = lineNumerator q₁ q₂ x₁ y₁ ℓ` in
+powers of `U = coordY − q₂` gives `n = n₀ + n₁U + n₂U² − U³` with
+`n₁ = (a₂ + 3q₁ − a₁² − ℓa₁)T² + T³`, `n₂ = −(2a₁ + ℓ)T`, so the divided
+difference `n(T, U) − n(T, B)` factors through `U − B`; and substituting the
+branch, `n(T, B) = L(2Q)·T³ + T⁴·K` with `L(2Q)` the value at `2Q` of the line
+through `(x₁, y₁)` of slope `ℓ` — the coefficient identity verified by `ring`
+after unfolding `addX`/`addY`.  Together: `n ≡ L(2Q)·T³ mod ⟨U − B, T⁴⟩`. -/
+lemma lineNumerator_sub_lineValue_eq {q₁ q₂ c₁ c₂ c₃ x₁ y₁ ℓ : F} :
+    lineNumerator W q₁ q₂ x₁ y₁ ℓ -
+        coordC W (W.addY q₁ q₁ q₂ c₁ - (ℓ * (W.addX q₁ q₁ c₁ - x₁) + y₁)) *
+          (coordX W - coordC W q₁) ^ 3 =
+      (coordY W - coordC W q₂ -
+          (coordC W c₁ * (coordX W - coordC W q₁) +
+            coordC W c₂ * (coordX W - coordC W q₁) ^ 2 +
+            coordC W c₃ * (coordX W - coordC W q₁) ^ 3)) *
+        (coordC W (W.a₂ + 3 * q₁ - W.a₁ ^ 2 - ℓ * W.a₁) *
+              (coordX W - coordC W q₁) ^ 2 +
+            (coordX W - coordC W q₁) ^ 3 -
+          coordC W (2 * W.a₁ + ℓ) * (coordX W - coordC W q₁) *
+            (coordY W - coordC W q₂ +
+              (coordC W c₁ * (coordX W - coordC W q₁) +
+                coordC W c₂ * (coordX W - coordC W q₁) ^ 2 +
+                coordC W c₃ * (coordX W - coordC W q₁) ^ 3)) -
+          ((coordY W - coordC W q₂) ^ 2 +
+            (coordY W - coordC W q₂) *
+              (coordC W c₁ * (coordX W - coordC W q₁) +
+                coordC W c₂ * (coordX W - coordC W q₁) ^ 2 +
+                coordC W c₃ * (coordX W - coordC W q₁) ^ 3) +
+            (coordC W c₁ * (coordX W - coordC W q₁) +
+                coordC W c₂ * (coordX W - coordC W q₁) ^ 2 +
+                coordC W c₃ * (coordX W - coordC W q₁) ^ 3) ^ 2)) +
+      (coordX W - coordC W q₁) ^ 4 *
+        ((coordC W c₂ + coordC W c₃ * (coordX W - coordC W q₁)) *
+            (-((coordC W c₁ + coordC W c₂ * (coordX W - coordC W q₁) +
+                    coordC W c₃ * (coordX W - coordC W q₁) ^ 2) ^ 2 +
+                (coordC W c₁ + coordC W c₂ * (coordX W - coordC W q₁) +
+                    coordC W c₃ * (coordX W - coordC W q₁) ^ 2) * coordC W c₁ +
+                coordC W c₁ ^ 2) -
+              coordC W (2 * W.a₁ + ℓ) *
+                ((coordC W c₁ + coordC W c₂ * (coordX W - coordC W q₁) +
+                    coordC W c₃ * (coordX W - coordC W q₁) ^ 2) + coordC W c₁) +
+              coordC W (W.a₂ + 3 * q₁ - W.a₁ ^ 2 - ℓ * W.a₁)) +
+          (coordC W c₁ + coordC W c₂ * (coordX W - coordC W q₁) +
+            coordC W c₃ * (coordX W - coordC W q₁) ^ 2) +
+          coordC W (W.a₁ + ℓ)) := by
+  simp only [lineNumerator, WeierstrassCurve.Affine.addY,
+    WeierstrassCurve.Affine.negAddY, WeierstrassCurve.Affine.negY,
+    WeierstrassCurve.Affine.addX, coordC_eq_algebraMap, map_add, map_sub,
+    map_mul, map_pow, map_neg, map_ofNat]
+  ring
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- **The order-4 normal form of `lineNumeratorNeg`**, the mirror of
+`lineNumerator_sub_lineValue_eq`: `ñ ≡ L(⊖2Q)·T³ mod ⟨U − B, T⁴⟩`, where
+`L(⊖2Q)` is the line value at `⊖2Q` (whose `y`-coordinate is `negAddY`).
+Same pure-`ring` route, with `ñ₁ = −(a₂ + 3q₁ + ℓa₁)T² − T³`,
+`ñ₂ = (a₁ − ℓ)T`, `ñ₃ = 1`. -/
+lemma lineNumeratorNeg_sub_lineValue_eq {q₁ q₂ c₁ c₂ c₃ x₁ y₁ ℓ : F} :
+    lineNumeratorNeg W q₁ q₂ x₁ y₁ ℓ -
+        coordC W (W.negAddY q₁ q₁ q₂ c₁ - (ℓ * (W.addX q₁ q₁ c₁ - x₁) + y₁)) *
+          (coordX W - coordC W q₁) ^ 3 =
+      (coordY W - coordC W q₂ -
+          (coordC W c₁ * (coordX W - coordC W q₁) +
+            coordC W c₂ * (coordX W - coordC W q₁) ^ 2 +
+            coordC W c₃ * (coordX W - coordC W q₁) ^ 3)) *
+        (-(coordC W (W.a₂ + 3 * q₁ + ℓ * W.a₁) * (coordX W - coordC W q₁) ^ 2) -
+            (coordX W - coordC W q₁) ^ 3 +
+          coordC W (W.a₁ - ℓ) * (coordX W - coordC W q₁) *
+            (coordY W - coordC W q₂ +
+              (coordC W c₁ * (coordX W - coordC W q₁) +
+                coordC W c₂ * (coordX W - coordC W q₁) ^ 2 +
+                coordC W c₃ * (coordX W - coordC W q₁) ^ 3)) +
+          ((coordY W - coordC W q₂) ^ 2 +
+            (coordY W - coordC W q₂) *
+              (coordC W c₁ * (coordX W - coordC W q₁) +
+                coordC W c₂ * (coordX W - coordC W q₁) ^ 2 +
+                coordC W c₃ * (coordX W - coordC W q₁) ^ 3) +
+            (coordC W c₁ * (coordX W - coordC W q₁) +
+                coordC W c₂ * (coordX W - coordC W q₁) ^ 2 +
+                coordC W c₃ * (coordX W - coordC W q₁) ^ 3) ^ 2)) +
+      (coordX W - coordC W q₁) ^ 4 *
+        ((coordC W c₂ + coordC W c₃ * (coordX W - coordC W q₁)) *
+            (((coordC W c₁ + coordC W c₂ * (coordX W - coordC W q₁) +
+                    coordC W c₃ * (coordX W - coordC W q₁) ^ 2) ^ 2 +
+                (coordC W c₁ + coordC W c₂ * (coordX W - coordC W q₁) +
+                    coordC W c₃ * (coordX W - coordC W q₁) ^ 2) * coordC W c₁ +
+                coordC W c₁ ^ 2) +
+              coordC W (W.a₁ - ℓ) *
+                ((coordC W c₁ + coordC W c₂ * (coordX W - coordC W q₁) +
+                    coordC W c₃ * (coordX W - coordC W q₁) ^ 2) + coordC W c₁) -
+              coordC W (W.a₂ + 3 * q₁ + ℓ * W.a₁)) -
+          (coordC W c₁ + coordC W c₂ * (coordX W - coordC W q₁) +
+            coordC W c₃ * (coordX W - coordC W q₁) ^ 2) +
+          coordC W ℓ) := by
+  simp only [lineNumeratorNeg, WeierstrassCurve.Affine.negAddY,
+    WeierstrassCurve.Affine.addX, coordC_eq_algebraMap, map_add, map_sub,
+    map_mul, map_pow, map_ofNat]
+  ring
+
+
+/-- **The generalized prime-power squeeze**: `p^(k+j) ∣ a·b` and
+`p^(j+1) ∤ b` force `p^k ∣ a`.  The `j = 0` case is
+`Prime.pow_dvd_of_dvd_mul_right`; the induction step peels one `p` off `b`
+and cancels it (the ideal monoid of a Dedekind domain is cancellative).
+This is what converts the exact product identity `⟨n·ñ⟩ = RHS·RHS'` into
+a bound on `v_Q(n)` from an UPPER bound `v_Q(ñ) ≤ 3` on the partner. -/
+lemma pow_dvd_of_pow_dvd_mul {M : Type*} [CommMonoidWithZero M] [IsCancelMulZero M]
+    {p : M} (hp : Prime p) :
+    ∀ (j k : ℕ) (a b : M), p ^ (k + j) ∣ a * b → ¬ p ^ (j + 1) ∣ b → p ^ k ∣ a := by
+  intro j
+  induction j with
+  | zero =>
+    intro k a b h hb
+    exact hp.pow_dvd_of_dvd_mul_right k (by simpa using hb) (by simpa using h)
+  | succ j ih =>
+    intro k a b h hb
+    by_cases hpb : p ∣ b
+    · obtain ⟨c, rfl⟩ := hpb
+      refine ih k a c ?_ ?_
+      · have hmul : a * (p * c) = a * c * p := by
+          rw [← mul_assoc, mul_right_comm]
+        have h2 : p ^ (k + j) * p ∣ a * c * p := by
+          rw [← pow_succ, ← hmul]; exact h
+        exact (mul_dvd_mul_iff_right hp.ne_zero).mp h2
+      · intro hc
+        exact hb (by rw [pow_succ']; exact mul_dvd_mul_left p hc)
+    · refine hp.pow_dvd_of_dvd_mul_right k hpb (dvd_trans ?_ h)
+      exact pow_dvd_pow p (Nat.le_add_right _ _)
+
+omit [DecidableEq F] in
+/-- **Point ideals are determined by their points**: if `I_Q ∣ I_V` then
+`V = Q`.  Divisibility is containment (`Ideal.dvd_iff_le`), and distinct
+points have coprime point ideals (`isCoprime_pointIdeal`), so `I_V ≤ I_Q`
+with `V ≠ Q` would make `I_Q = ⊤`, contradicting primality.  Covers `V = O`
+too, since `I_O = ⊤`. -/
+lemma eq_of_pointIdeal_dvd (hΔ : W.Δ ≠ 0) {q₁ q₂ : F} (hq : W.Nonsingular q₁ q₂)
+    {V : W.Point} (hdvd : pointIdeal W (.some q₁ q₂ hq) ∣ pointIdeal W V) :
+    V = .some q₁ q₂ hq := by
+  haveI := isDedekindDomain_coordinateRing hΔ
+  by_contra hne
+  have hcop := isCoprime_pointIdeal (W := W) hne
+  rw [Ideal.isCoprime_iff_sup_eq] at hcop
+  have hle : pointIdeal W V ≤ pointIdeal W (.some q₁ q₂ hq) := Ideal.le_of_dvd hdvd
+  have htop : pointIdeal W (.some q₁ q₂ hq) = ⊤ := by
+    rw [← hcop, sup_eq_right.mpr hle]
+  exact (prime_pointIdeal hΔ hq).not_unit (Ideal.isUnit_iff.mpr htop)
+
+omit [DecidableEq F] in
+/-- **`T³` has `Q`-multiplicity exactly 3** (when `2Q ≠ O`): no nonzero
+constant multiple of `T³ = (coordX − q₁)³` lies in `I_Q⁴`.  Indeed
+`⟨T⟩ = I_{⊖Q}·I_Q` (mathlib's `XYIdeal_neg_mul`), so `I_Q⁴ ∣ I_{⊖Q}³I_Q³`
+would give `I_Q ∣ I_{⊖Q}³` after cancelling `I_Q³`, hence `I_Q = I_{⊖Q}`,
+i.e. `Q = ⊖Q` — excluded by `2Q ≠ O`.  This is the lower half of the
+squeeze: it turns `ñ ≡ L(⊖2Q)T³` with `L(⊖2Q) ≠ 0` into `ñ ∉ I_Q⁴`. -/
+lemma smul_pow_three_notMem_pointIdeal_pow_four (hΔ : W.Δ ≠ 0) {q₁ q₂ : F}
+    (hq : W.Nonsingular q₁ q₂) (h2Q : q₂ ≠ W.negY q₁ q₂) {c : F} (hc : c ≠ 0) :
+    coordC W c * (coordX W - coordC W q₁) ^ 3 ∉
+      pointIdeal W (.some q₁ q₂ hq) ^ 4 := by
+  haveI := isDedekindDomain_coordinateRing hΔ
+  intro hmem
+  have hq' : W.Nonsingular q₁ (W.negY q₁ q₂) := (nonsingular_neg ..).mpr hq
+  have hne : (Point.some q₁ (W.negY q₁ q₂) hq' : W.Point) ≠ .some q₁ q₂ hq := by
+    simp only [ne_eq, Point.some.injEq, not_and]
+    exact fun _ => fun hcon => h2Q hcon.symm
+  have hspan : Ideal.span {(coordX W - coordC W q₁)} =
+      pointIdeal W (.some q₁ (W.negY q₁ q₂) hq') *
+        pointIdeal W (.some q₁ q₂ hq) := by
+    rw [pointIdeal_some, pointIdeal_some, CoordinateRing.XYIdeal_neg_mul hq,
+      CoordinateRing.XIdeal, XClass_eq]
+  have hT3 : (coordX W - coordC W q₁) ^ 3 ∈ pointIdeal W (.some q₁ q₂ hq) ^ 4 := by
+    have : (coordX W - coordC W q₁) ^ 3 =
+        coordC W c⁻¹ * (coordC W c * (coordX W - coordC W q₁) ^ 3) := by
+      rw [← mul_assoc, ← coordC_mul, inv_mul_cancel₀ hc, coordC_one, one_mul]
+    rw [this]
+    exact Ideal.mul_mem_left _ _ hmem
+  have hdvd : pointIdeal W (.some q₁ q₂ hq) ^ 4 ∣
+      (pointIdeal W (.some q₁ (W.negY q₁ q₂) hq') *
+        pointIdeal W (.some q₁ q₂ hq)) ^ 3 := by
+    rw [← hspan, Ideal.span_singleton_pow, Ideal.dvd_iff_le, Ideal.span_le,
+      Set.singleton_subset_iff]
+    exact hT3
+  have hne0 : pointIdeal W (.some q₁ q₂ hq) ^ 3 ≠ 0 := by
+    rw [Ideal.zero_eq_bot]
+    exact pow_ne_zero 3 (pointIdeal_ne_bot hq)
+  have hdvd' : pointIdeal W (.some q₁ q₂ hq) ∣
+      pointIdeal W (.some q₁ (W.negY q₁ q₂) hq') ^ 3 := by
+    refine (mul_dvd_mul_iff_left hne0).mp ?_
+    calc pointIdeal W (.some q₁ q₂ hq) ^ 3 * pointIdeal W (.some q₁ q₂ hq)
+        = pointIdeal W (.some q₁ q₂ hq) ^ 4 := by ring
+      _ ∣ (pointIdeal W (.some q₁ (W.negY q₁ q₂) hq') *
+            pointIdeal W (.some q₁ q₂ hq)) ^ 3 := hdvd
+      _ = pointIdeal W (.some q₁ q₂ hq) ^ 3 *
+            pointIdeal W (.some q₁ (W.negY q₁ q₂) hq') ^ 3 := by ring
+  have := eq_of_pointIdeal_dvd hΔ hq
+    ((prime_pointIdeal hΔ hq).dvd_of_dvd_pow hdvd')
+  exact hne this
+
+
+omit [DecidableEq F] in
+/-- **The branch lies in `I_Q⁴`**: `U − B ∈ I_Q⁴`.  From the cleared branch
+identity `(U − B)·V' = T⁴·D` (`sub_branch_mul_eq`), the right side is in
+`I_Q⁴` because `T ∈ I_Q`, while `V'` evaluates to `A₀ ≠ 0` at `Q`, hence
+`V' ∉ I_Q`; the prime-power squeeze `mem_pointIdeal_pow_of_dvd_of_notMem`
+puts the whole `I_Q⁴` on `U − B`.  This is the substitute for constructing
+the truncated quotient `F[t]/(t⁴)`: it says exactly that `U` agrees with
+the branch to order 3 at `Q`. -/
+lemma branch_sub_mem_pointIdeal_pow_four (hΔ : W.Δ ≠ 0) {q₁ q₂ c₁ c₂ c₃ : F}
+    (hq : W.Nonsingular q₁ q₂) (hA₀ : 2 * q₂ + W.a₁ * q₁ + W.a₃ ≠ 0)
+    (hc₁ : (2 * q₂ + W.a₁ * q₁ + W.a₃) * c₁ =
+      3 * q₁ ^ 2 + 2 * W.a₂ * q₁ + W.a₄ - W.a₁ * q₂)
+    (hc₂ : (2 * q₂ + W.a₁ * q₁ + W.a₃) * c₂ =
+      3 * q₁ + W.a₂ - c₁ ^ 2 - W.a₁ * c₁)
+    (hc₃ : (2 * q₂ + W.a₁ * q₁ + W.a₃) * c₃ = 1 - 2 * c₁ * c₂ - W.a₁ * c₂) :
+    coordY W - coordC W q₂ -
+        (coordC W c₁ * (coordX W - coordC W q₁) +
+          coordC W c₂ * (coordX W - coordC W q₁) ^ 2 +
+          coordC W c₃ * (coordX W - coordC W q₁) ^ 3) ∈
+      pointIdeal W (.some q₁ q₂ hq) ^ 4 := by
+  haveI := isDedekindDomain_coordinateRing hΔ
+  have hT4 : (coordX W - coordC W q₁) ^ 4 ∈ pointIdeal W (.some q₁ q₂ hq) ^ 4 :=
+    Ideal.pow_mem_pow (sub_coordX_mem_pointIdeal hq) 4
+  refine mem_pointIdeal_pow_of_dvd_of_notMem hΔ hq
+    (w := coordC W (2 * q₂ + W.a₁ * q₁ + W.a₃) + (coordY W - coordC W q₂) +
+      coordC W W.a₁ * (coordX W - coordC W q₁) +
+      (coordC W c₁ * (coordX W - coordC W q₁) +
+        coordC W c₂ * (coordX W - coordC W q₁) ^ 2 +
+        coordC W c₃ * (coordX W - coordC W q₁) ^ 3)) ?_ ?_
+  · rw [Ideal.dvd_iff_le, Ideal.span_le, Set.singleton_subset_iff,
+      sub_branch_mul_eq hq.left hc₁ hc₂ hc₃]
+    exact Ideal.mul_mem_right _ _ hT4
+  · intro hmem
+    have hval := coordEval_eq_zero_of_mem hq hmem
+    simp only [map_add, map_sub, map_mul, map_pow, coordEval_coordC,
+      coordEval_coordX, coordEval_coordY] at hval
+    exact hA₀ (by linear_combination hval)
+
+omit [DecidableEq F] in
+/-- **`n ≡ L(2Q)·T³ mod I_Q⁴`.**  Combines the polynomial normal form
+`lineNumerator_sub_lineValue_eq` with `branch_sub_mem_pointIdeal_pow_four`:
+the `(U − B)·H` part is in `I_Q⁴` because `U − B` is, and `T⁴·K` because
+`T ∈ I_Q`.  Consequence used below: if the line passes through `2Q`
+(`L(2Q) = 0`) then `n ∈ I_Q⁴`. -/
+lemma lineNumerator_sub_lineValue_mem_pow_four (hΔ : W.Δ ≠ 0) {q₁ q₂ c₁ c₂ c₃ : F}
+    (hq : W.Nonsingular q₁ q₂) (hA₀ : 2 * q₂ + W.a₁ * q₁ + W.a₃ ≠ 0)
+    (hc₁ : (2 * q₂ + W.a₁ * q₁ + W.a₃) * c₁ =
+      3 * q₁ ^ 2 + 2 * W.a₂ * q₁ + W.a₄ - W.a₁ * q₂)
+    (hc₂ : (2 * q₂ + W.a₁ * q₁ + W.a₃) * c₂ =
+      3 * q₁ + W.a₂ - c₁ ^ 2 - W.a₁ * c₁)
+    (hc₃ : (2 * q₂ + W.a₁ * q₁ + W.a₃) * c₃ = 1 - 2 * c₁ * c₂ - W.a₁ * c₂)
+    (x₁ y₁ ℓ : F) :
+    lineNumerator W q₁ q₂ x₁ y₁ ℓ -
+        coordC W (W.addY q₁ q₁ q₂ c₁ - (ℓ * (W.addX q₁ q₁ c₁ - x₁) + y₁)) *
+          (coordX W - coordC W q₁) ^ 3 ∈
+      pointIdeal W (.some q₁ q₂ hq) ^ 4 := by
+  have hT4 : (coordX W - coordC W q₁) ^ 4 ∈ pointIdeal W (.some q₁ q₂ hq) ^ 4 :=
+    Ideal.pow_mem_pow (sub_coordX_mem_pointIdeal hq) 4
+  rw [lineNumerator_sub_lineValue_eq]
+  exact add_mem
+    (Ideal.mul_mem_right _ _ (branch_sub_mem_pointIdeal_pow_four hΔ hq hA₀ hc₁ hc₂ hc₃))
+    (Ideal.mul_mem_right _ _ hT4)
+
+omit [DecidableEq F] in
+/-- **`ñ ≡ L(⊖2Q)·T³ mod I_Q⁴`**, the mirror of
+`lineNumerator_sub_lineValue_mem_pow_four`.  Consequence used below: if the
+line MISSES `⊖2Q` then `ñ ∉ I_Q⁴`, i.e. `v_Q(ñ) = 3` exactly. -/
+lemma lineNumeratorNeg_sub_lineValue_mem_pow_four (hΔ : W.Δ ≠ 0)
+    {q₁ q₂ c₁ c₂ c₃ : F}
+    (hq : W.Nonsingular q₁ q₂) (hA₀ : 2 * q₂ + W.a₁ * q₁ + W.a₃ ≠ 0)
+    (hc₁ : (2 * q₂ + W.a₁ * q₁ + W.a₃) * c₁ =
+      3 * q₁ ^ 2 + 2 * W.a₂ * q₁ + W.a₄ - W.a₁ * q₂)
+    (hc₂ : (2 * q₂ + W.a₁ * q₁ + W.a₃) * c₂ =
+      3 * q₁ + W.a₂ - c₁ ^ 2 - W.a₁ * c₁)
+    (hc₃ : (2 * q₂ + W.a₁ * q₁ + W.a₃) * c₃ = 1 - 2 * c₁ * c₂ - W.a₁ * c₂)
+    (x₁ y₁ ℓ : F) :
+    lineNumeratorNeg W q₁ q₂ x₁ y₁ ℓ -
+        coordC W (W.negAddY q₁ q₁ q₂ c₁ - (ℓ * (W.addX q₁ q₁ c₁ - x₁) + y₁)) *
+          (coordX W - coordC W q₁) ^ 3 ∈
+      pointIdeal W (.some q₁ q₂ hq) ^ 4 := by
+  have hT4 : (coordX W - coordC W q₁) ^ 4 ∈ pointIdeal W (.some q₁ q₂ hq) ^ 4 :=
+    Ideal.pow_mem_pow (sub_coordX_mem_pointIdeal hq) 4
+  rw [lineNumeratorNeg_sub_lineValue_eq]
+  exact add_mem
+    (Ideal.mul_mem_right _ _ (branch_sub_mem_pointIdeal_pow_four hΔ hq hA₀ hc₁ hc₂ hc₃))
+    (Ideal.mul_mem_right _ _ hT4)
+
+/-- **A point on the chord is one of its three intersection points.**  If the
+line through `P = (x₁,y₁)` and `R = (x₂,y₂)` (at the group-law slope) vanishes
+at an affine point `V`, then `V ∈ {P, R, ⊖(P ⊕ R)}`.  Read off
+`YIdeal_eq_prod_pointIdeal` — which is uniform in all tangency configurations
+— by primality of `I_V`. -/
+lemma mem_chord_of_lineValue_eq_zero (hΔ : W.Δ ≠ 0) {x₁ y₁ x₂ y₂ : F}
+    (h₁ : W.Nonsingular x₁ y₁) (h₂ : W.Nonsingular x₂ y₂)
+    (hxy : ¬(x₁ = x₂ ∧ y₁ = W.negY x₂ y₂)) {α β : F} (hαβ : W.Nonsingular α β)
+    (hval : β - (W.slope x₁ x₂ y₁ y₂ * (α - x₁) + y₁) = 0) :
+    (Point.some x₁ y₁ h₁ : W.Point) = .some α β hαβ ∨
+      (Point.some x₂ y₂ h₂ : W.Point) = .some α β hαβ ∨
+      (-(Point.some x₁ y₁ h₁ + Point.some x₂ y₂ h₂) : W.Point) = .some α β hαβ := by
+  haveI := isDedekindDomain_coordinateRing hΔ
+  have hmem : CoordinateRing.YClass W
+      (linePolynomial x₁ y₁ (W.slope x₁ x₂ y₁ y₂)) ∈
+      pointIdeal W (.some α β hαβ) := by
+    refine mem_pointIdeal_of_coordEval_eq_zero hαβ ?_
+    rw [YClass_line_eq]
+    simp only [map_sub, map_add, map_mul, coordEval_coordX, coordEval_coordY,
+      coordEval_coordC]
+    linear_combination hval
+  have hdvd : pointIdeal W (.some α β hαβ) ∣
+      pointIdeal W (.some x₁ y₁ h₁) *
+        (pointIdeal W (.some x₂ y₂ h₂) *
+          pointIdeal W (-(.some x₁ y₁ h₁ + .some x₂ y₂ h₂))) := by
+    rw [← YIdeal_eq_prod_pointIdeal h₁ h₂ hxy, CoordinateRing.YIdeal,
+      Ideal.dvd_iff_le, Ideal.span_le, Set.singleton_subset_iff]
+    exact hmem
+  have hprime := prime_pointIdeal hΔ hαβ
+  rcases hprime.dvd_or_dvd hdvd with h | h
+  · exact Or.inl (eq_of_pointIdeal_dvd hΔ hαβ h)
+  · rcases hprime.dvd_or_dvd h with h | h
+    · exact Or.inr (Or.inl (eq_of_pointIdeal_dvd hΔ hαβ h))
+    · exact Or.inr (Or.inr (eq_of_pointIdeal_dvd hΔ hαβ h))
+
+
+omit [DecidableEq F] in
+/-- **One coincidence from `I_Q⁴`**: if `I_Q⁴ ∣ I_Q³ · I_{V₁}I_{V₂}I_{V₃}`
+then some `Vᵢ = Q`.  Cancel `I_Q³`, then use that `I_Q` is prime. -/
+lemma exists_eq_of_pow_four_dvd (hΔ : W.Δ ≠ 0) {q₁ q₂ : F} (hq : W.Nonsingular q₁ q₂)
+    {V₁ V₂ V₃ : W.Point}
+    (hd : pointIdeal W (.some q₁ q₂ hq) ^ 4 ∣ pointIdeal W (.some q₁ q₂ hq) ^ 3 *
+      (pointIdeal W V₁ * (pointIdeal W V₂ * pointIdeal W V₃))) :
+    V₁ = .some q₁ q₂ hq ∨ V₂ = .some q₁ q₂ hq ∨ V₃ = .some q₁ q₂ hq := by
+  haveI := isDedekindDomain_coordinateRing hΔ
+  have hQne0 : pointIdeal W (.some q₁ q₂ hq) ≠ 0 := by
+    rw [Ideal.zero_eq_bot]; exact pointIdeal_ne_bot hq
+  have hprime := prime_pointIdeal hΔ hq
+  have h1 : pointIdeal W (.some q₁ q₂ hq) ∣
+      pointIdeal W V₁ * (pointIdeal W V₂ * pointIdeal W V₃) := by
+    refine (mul_dvd_mul_iff_left (pow_ne_zero 3 hQne0)).mp ?_
+    calc pointIdeal W (.some q₁ q₂ hq) ^ 3 * pointIdeal W (.some q₁ q₂ hq)
+        = pointIdeal W (.some q₁ q₂ hq) ^ 4 := by ring
+      _ ∣ _ := hd
+  rcases hprime.dvd_or_dvd h1 with h | h
+  · exact Or.inl (eq_of_pointIdeal_dvd hΔ hq h)
+  · rcases hprime.dvd_or_dvd h with h | h
+    · exact Or.inr (Or.inl (eq_of_pointIdeal_dvd hΔ hq h))
+    · exact Or.inr (Or.inr (eq_of_pointIdeal_dvd hΔ hq h))
+
+omit [DecidableEq F] in
+/-- **Two coincidences from `I_Q⁵`**: if `I_Q⁵ ∣ I_Q³ · I_{V₁}I_{V₂}I_{V₃}`
+then TWO of the `Vᵢ` equal `Q`.  Cancel `I_Q³` to get `I_Q² ∣ I_{V₁}I_{V₂}I_{V₃}`,
+extract one factor by primality, cancel it, and extract a second. -/
+lemma two_eq_of_pow_five_dvd (hΔ : W.Δ ≠ 0) {q₁ q₂ : F} (hq : W.Nonsingular q₁ q₂)
+    {V₁ V₂ V₃ : W.Point}
+    (hd : pointIdeal W (.some q₁ q₂ hq) ^ 5 ∣ pointIdeal W (.some q₁ q₂ hq) ^ 3 *
+      (pointIdeal W V₁ * (pointIdeal W V₂ * pointIdeal W V₃))) :
+    (V₁ = .some q₁ q₂ hq ∧ V₂ = .some q₁ q₂ hq) ∨
+      (V₁ = .some q₁ q₂ hq ∧ V₃ = .some q₁ q₂ hq) ∨
+      (V₂ = .some q₁ q₂ hq ∧ V₃ = .some q₁ q₂ hq) := by
+  haveI := isDedekindDomain_coordinateRing hΔ
+  have hQne0 : pointIdeal W (.some q₁ q₂ hq) ≠ 0 := by
+    rw [Ideal.zero_eq_bot]; exact pointIdeal_ne_bot hq
+  have hprime := prime_pointIdeal hΔ hq
+  have h2 : pointIdeal W (.some q₁ q₂ hq) ^ 2 ∣
+      pointIdeal W V₁ * (pointIdeal W V₂ * pointIdeal W V₃) := by
+    refine (mul_dvd_mul_iff_left (pow_ne_zero 3 hQne0)).mp ?_
+    calc pointIdeal W (.some q₁ q₂ hq) ^ 3 * pointIdeal W (.some q₁ q₂ hq) ^ 2
+        = pointIdeal W (.some q₁ q₂ hq) ^ 5 := by ring
+      _ ∣ _ := hd
+  have h1 : pointIdeal W (.some q₁ q₂ hq) ∣
+      pointIdeal W V₁ * (pointIdeal W V₂ * pointIdeal W V₃) :=
+    (dvd_pow_self _ two_ne_zero).trans h2
+  rcases hprime.dvd_or_dvd h1 with hA | hBC
+  · have e1 := eq_of_pointIdeal_dvd hΔ hq hA
+    rw [e1] at h2
+    have h3 : pointIdeal W (.some q₁ q₂ hq) ∣ pointIdeal W V₂ * pointIdeal W V₃ := by
+      refine (mul_dvd_mul_iff_left hQne0).mp ?_
+      calc pointIdeal W (.some q₁ q₂ hq) * pointIdeal W (.some q₁ q₂ hq)
+          = pointIdeal W (.some q₁ q₂ hq) ^ 2 := by ring
+        _ ∣ _ := h2
+    rcases hprime.dvd_or_dvd h3 with h | h
+    · exact Or.inl ⟨e1, eq_of_pointIdeal_dvd hΔ hq h⟩
+    · exact Or.inr (Or.inl ⟨e1, eq_of_pointIdeal_dvd hΔ hq h⟩)
+  · rcases hprime.dvd_or_dvd hBC with hB | hC
+    · have e2 := eq_of_pointIdeal_dvd hΔ hq hB
+      rw [e2] at h2
+      have h3 : pointIdeal W (.some q₁ q₂ hq) ∣ pointIdeal W V₁ * pointIdeal W V₃ := by
+        refine (mul_dvd_mul_iff_left hQne0).mp ?_
+        calc pointIdeal W (.some q₁ q₂ hq) * pointIdeal W (.some q₁ q₂ hq)
+            = pointIdeal W (.some q₁ q₂ hq) ^ 2 := by ring
+          _ ∣ pointIdeal W V₁ *
+                (pointIdeal W (.some q₁ q₂ hq) * pointIdeal W V₃) := h2
+          _ = pointIdeal W (.some q₁ q₂ hq) *
+                (pointIdeal W V₁ * pointIdeal W V₃) := by ring
+      rcases hprime.dvd_or_dvd h3 with h | h
+      · exact Or.inl ⟨eq_of_pointIdeal_dvd hΔ hq h, e2⟩
+      · exact Or.inr (Or.inr ⟨e2, eq_of_pointIdeal_dvd hΔ hq h⟩)
+    · have e3 := eq_of_pointIdeal_dvd hΔ hq hC
+      rw [e3] at h2
+      have h3 : pointIdeal W (.some q₁ q₂ hq) ∣ pointIdeal W V₁ * pointIdeal W V₂ := by
+        refine (mul_dvd_mul_iff_left hQne0).mp ?_
+        calc pointIdeal W (.some q₁ q₂ hq) * pointIdeal W (.some q₁ q₂ hq)
+            = pointIdeal W (.some q₁ q₂ hq) ^ 2 := by ring
+          _ ∣ pointIdeal W V₁ *
+                (pointIdeal W V₂ * pointIdeal W (.some q₁ q₂ hq)) := h2
+          _ = pointIdeal W (.some q₁ q₂ hq) *
+                (pointIdeal W V₁ * pointIdeal W V₂) := by ring
+      rcases hprime.dvd_or_dvd h3 with h | h
+      · exact Or.inr (Or.inl ⟨eq_of_pointIdeal_dvd hΔ hq h, e3⟩)
+      · exact Or.inr (Or.inr ⟨eq_of_pointIdeal_dvd hΔ hq h, e3⟩)
+
+/-- **L4-8 line-numerator sub-leaf (PROVEN 2026-07-25): the multiplicity of
+the line numerator at `Q` ITSELF.**  This was the last piece of the coincidence
+zoo: `n` achieves the `Q`-multiplicity of its divisor, i.e. `n ∈ I_Q^k`
+whenever `I_Q^k` divides the whole product `I_Q³ · I_{P⊖Q} · I_{R⊖Q} ·
+I_{⊖(P⊕R)⊖Q}`.  For `k ≤ 3` this is `lineNumerator_mem_pointIdeal_pow_three`;
+the content is `k ≥ 4`, which happens exactly when `2Q ∈ {P, R, S}`
+(`S = ⊖(P ⊕ R)`).
+
+WHY THE PARTNER SQUEEZE ALONE CANNOT DO THIS.  Every *other* coincident point
+is handled by `mem_pointIdeal_pow_of_dvd_of_notMem` together with
+`lineNumeratorNeg_notMem_pointIdeal_sub`: at `Z = Pᵢ ⊖ Q ≠ Q` the partner `ñ`
+is a UNIT at `Z`.  At `Z = Q` that is unavailable *in principle*: the conjugate
+divisor `RHS' = 3(Q) + (⊖P⊖Q) + (⊖R⊖Q) + ((P⊕R)⊖Q)` always contains `3(Q)`, so
+`v_Q(ñ) ≥ 3 > 0` unconditionally.  What IS true is that `v_Q(ñ) = 3` *exactly*
+in the generic case, and that is what the proof establishes, by a local
+expansion at `Q` — the *generalized* squeeze then needs only an UPPER bound on
+the partner, not non-vanishing.
+
+PROOF (route: order-4 local normal form; the chord-product route of the
+previous owner was rejected — see the note at the end).
+
+* Since `k ≥ 4`, cancelling `I_Q³` and using primality of `I_Q`
+  (`exists_eq_of_pow_four_dvd`) gives some `Pᵢ ⊖ Q = Q`, i.e. `Pᵢ = 2Q`; as
+  `Pᵢ` is affine this forces `2Q ≠ O`, hence `A₀ = 2q₂ + a₁q₁ + a₃ ≠ 0`.
+* With `A₀ ≠ 0` the truncated branch `B = c₁T + c₂T² + c₃T³` exists
+  (`c₁ = slope q₁ q₁ q₂ q₂`, then `c₂`, `c₃` by division by `A₀`) and
+  `U − B ∈ I_Q⁴` (`branch_sub_mem_pointIdeal_pow_four`).  Substituting it into
+  the two numerators gives the order-4 normal forms
+  `n ≡ L(2Q)·T³` and `ñ ≡ L(⊖2Q)·T³ mod I_Q⁴`,
+  where `L` is the chord through `P` and `R`.  (This replaces the
+  `AdjoinRoot.lift` into `F[t]/(t⁴)` sketched by the previous owner: the
+  membership `U − B ∈ I_Q⁴` carries all of the truncation, and needs no
+  quotient ring.)
+* GENERIC CASE `L(⊖2Q) ≠ 0`: then `ñ ∉ I_Q⁴` by
+  `smul_pow_three_notMem_pointIdeal_pow_four` (`T³ ∉ I_Q⁴` because `2Q ≠ O`),
+  i.e. `v_Q(ñ) ≤ 3`.  Since `I_Q^k ∣ RHS` and `I_Q³ ∣ RHS'`, the product
+  identity `span_lineNumerator_mul_lineNumeratorNeg` gives
+  `I_Q^(k+3) ∣ ⟨n·ñ⟩`, and `pow_dvd_of_pow_dvd_mul` (with `j = 3`) yields
+  `n ∈ I_Q^k` for EVERY `k` at once.
+* RESIDUAL CASE `L(⊖2Q) = 0`: then `⊖2Q` lies on the chord
+  (`mem_chord_of_lineValue_eq_zero`), so `⊖2Q ∈ {P, R, S}`; combined with
+  `2Q ∈ {P, R, S}` and `P ⊕ R ⊕ S = O` (with all three affine) the two must be
+  the SAME point, so `2Q = ⊖2Q`, i.e. `4Q = O`.  Then `L(2Q) = L(⊖2Q) = 0`, so
+  `n ∈ I_Q⁴` outright by the normal form; and `k ≤ 4`, since `I_Q⁵ ∣ RHS` would
+  force two of `P, R, S` to equal `2Q` (`two_eq_of_pow_five_dvd`), whence two
+  of them sum to `4Q = O` and the third would be `O`.
+
+WHY NOT THE CHORD-PRODUCT IDENTITY (route 2 of the previous owner's docstring,
+`n·L̄ = L(Q)·ℓ(Q,⊖P)·ℓ(Q,⊖R)·ℓ(Q,⊖S)`).  The identity is correct — its divisor
+bookkeeping checks out, `⟨ℓ(Q,V)⟩ = I_Q I_V I_{⊖(Q⊕V)}` — but each of the three
+chords `ℓ(Q, ⊖Pᵢ)` DEGENERATES to the tangent at `Q` when `Q = ⊖Pᵢ`, and there
+`slope_mul_sub` degenerates to `0 = 0`, so the cleared slope relation no longer
+pins the slope down: the identity then needs the tangent relation instead, and
+one gets a `2³`-way case split with a distinct large certificate in each
+branch.  (Its residual degeneracy `2Q = O ∧ Q ∈ {P,R,S}` is harmless here —
+`k ≥ 4` already forces `2Q ≠ O` — but the tangency split is not.)  The route
+taken above has NO case split of that kind: the two normal forms are single
+`ring` identities. -/
+theorem lineNumerator_mem_pointIdeal_pow_of_dvd (hΔ : W.Δ ≠ 0)
+    {q₁ q₂ x₁ y₁ x₂ y₂ : F}
+    (hq : W.Nonsingular q₁ q₂) (h₁ : W.Nonsingular x₁ y₁)
+    (h₂ : W.Nonsingular x₂ y₂) (hxy : ¬(x₁ = x₂ ∧ y₁ = W.negY x₂ y₂)) {k : ℕ}
+    (hk : pointIdeal W (.some q₁ q₂ hq) ^ k ∣
+      pointIdeal W (.some q₁ q₂ hq) ^ 3 *
+        (pointIdeal W (.some x₁ y₁ h₁ - .some q₁ q₂ hq) *
+          (pointIdeal W (.some x₂ y₂ h₂ - .some q₁ q₂ hq) *
+            pointIdeal W (-(.some x₁ y₁ h₁ + .some x₂ y₂ h₂) - .some q₁ q₂ hq)))) :
+    lineNumerator W q₁ q₂ x₁ y₁ (W.slope x₁ x₂ y₁ y₂) ∈
+      pointIdeal W (.some q₁ q₂ hq) ^ k := by
+  haveI := isDedekindDomain_coordinateRing hΔ
+  by_cases hk3 : k ≤ 3
+  · exact Ideal.pow_le_pow_right hk3
+      (lineNumerator_mem_pointIdeal_pow_three hq x₁ y₁ (W.slope x₁ x₂ y₁ y₂))
+  have hk4 : 4 ≤ k := by omega
+  have hprime := prime_pointIdeal hΔ hq
+  have hPR : (Point.some x₁ y₁ h₁ + Point.some x₂ y₂ h₂ : W.Point) ≠ 0 := by
+    rw [Point.add_some hxy]; exact Point.some_ne_zero _
+  have hPS : (Point.some x₁ y₁ h₁ : W.Point) +
+      -(Point.some x₁ y₁ h₁ + Point.some x₂ y₂ h₂) ≠ 0 := by
+    intro hc
+    refine Point.some_ne_zero h₂ (neg_eq_zero.mp ?_)
+    rw [← hc]; abel
+  have hRS : (Point.some x₂ y₂ h₂ : W.Point) +
+      -(Point.some x₁ y₁ h₁ + Point.some x₂ y₂ h₂) ≠ 0 := by
+    intro hc
+    refine Point.some_ne_zero h₁ (neg_eq_zero.mp ?_)
+    rw [← hc]; abel
+  -- one of the three translated points is `Q` itself
+  have hex := exists_eq_of_pow_four_dvd hΔ hq ((pow_dvd_pow _ hk4).trans hk)
+  -- hence `2Q ≠ O`
+  have hD0 : (Point.some q₁ q₂ hq + Point.some q₁ q₂ hq : W.Point) ≠ 0 := by
+    rcases hex with h | h | h
+    · rw [← sub_eq_iff_eq_add.mp h]; exact Point.some_ne_zero h₁
+    · rw [← sub_eq_iff_eq_add.mp h]; exact Point.some_ne_zero h₂
+    · rw [← sub_eq_iff_eq_add.mp h, neg_ne_zero]; exact hPR
+  have h2Q : q₂ ≠ W.negY q₁ q₂ := fun hc => hD0 (Point.add_of_Y_eq rfl hc)
+  have hnegYq : W.negY q₁ q₂ = -q₂ - W.a₁ * q₁ - W.a₃ := rfl
+  have hA₀ : 2 * q₂ + W.a₁ * q₁ + W.a₃ ≠ 0 := by
+    intro hc
+    exact h2Q (by rw [hnegYq]; linear_combination hc)
+  have hden : q₂ - W.negY q₁ q₂ = 2 * q₂ + W.a₁ * q₁ + W.a₃ := by rw [hnegYq]; ring
+  have hc₁ : (2 * q₂ + W.a₁ * q₁ + W.a₃) * W.slope q₁ q₁ q₂ q₂ =
+      3 * q₁ ^ 2 + 2 * W.a₂ * q₁ + W.a₄ - W.a₁ * q₂ := by
+    rw [slope_of_Y_ne rfl h2Q, hden]
+    field_simp
+  obtain ⟨c₂, hc₂⟩ : ∃ c₂ : F, (2 * q₂ + W.a₁ * q₁ + W.a₃) * c₂ =
+      3 * q₁ + W.a₂ - (W.slope q₁ q₁ q₂ q₂) ^ 2 - W.a₁ * (W.slope q₁ q₁ q₂ q₂) :=
+    ⟨(3 * q₁ + W.a₂ - (W.slope q₁ q₁ q₂ q₂) ^ 2 - W.a₁ * (W.slope q₁ q₁ q₂ q₂)) /
+      (2 * q₂ + W.a₁ * q₁ + W.a₃), by field_simp⟩
+  obtain ⟨c₃, hc₃⟩ : ∃ c₃ : F, (2 * q₂ + W.a₁ * q₁ + W.a₃) * c₃ =
+      1 - 2 * (W.slope q₁ q₁ q₂ q₂) * c₂ - W.a₁ * c₂ :=
+    ⟨(1 - 2 * (W.slope q₁ q₁ q₂ q₂) * c₂ - W.a₁ * c₂) /
+      (2 * q₂ + W.a₁ * q₁ + W.a₃), by field_simp⟩
+  -- the doubled point and its negative
+  have hDsome : (Point.some q₁ q₂ hq + Point.some q₁ q₂ hq : W.Point) =
+      Point.some (W.addX q₁ q₁ (W.slope q₁ q₁ q₂ q₂))
+        (W.addY q₁ q₁ q₂ (W.slope q₁ q₁ q₂ q₂))
+        (nonsingular_add hq hq (fun hc => h2Q hc.2)) :=
+    Point.add_some (fun hc => h2Q hc.2)
+  have hns' : W.Nonsingular (W.addX q₁ q₁ (W.slope q₁ q₁ q₂ q₂))
+      (W.negY (W.addX q₁ q₁ (W.slope q₁ q₁ q₂ q₂))
+        (W.addY q₁ q₁ q₂ (W.slope q₁ q₁ q₂ q₂))) :=
+    (nonsingular_neg ..).mpr (nonsingular_add hq hq (fun hc => h2Q hc.2))
+  have hnegD : -(Point.some q₁ q₂ hq + Point.some q₁ q₂ hq : W.Point) =
+      Point.some (W.addX q₁ q₁ (W.slope q₁ q₁ q₂ q₂))
+        (W.negY (W.addX q₁ q₁ (W.slope q₁ q₁ q₂ q₂))
+          (W.addY q₁ q₁ q₂ (W.slope q₁ q₁ q₂ q₂))) hns' := by
+    rw [hDsome, Point.neg_some]
+  have hnegAddY : W.negY (W.addX q₁ q₁ (W.slope q₁ q₁ q₂ q₂))
+      (W.addY q₁ q₁ q₂ (W.slope q₁ q₁ q₂ q₂)) =
+      W.negAddY q₁ q₁ q₂ (W.slope q₁ q₁ q₂ q₂) := by
+    simp only [WeierstrassCurve.Affine.addY, negY_negY]
+  by_cases hLn : W.negAddY q₁ q₁ q₂ (W.slope q₁ q₁ q₂ q₂) -
+      (W.slope x₁ x₂ y₁ y₂ * (W.addX q₁ q₁ (W.slope q₁ q₁ q₂ q₂) - x₁) + y₁) = 0
+  · -- residual configuration: `2Q = ⊖2Q` lies on the chord
+    have honline := mem_chord_of_lineValue_eq_zero hΔ h₁ h₂ hxy hns'
+      (by rw [hnegAddY]; exact hLn)
+    rw [← hnegD] at honline
+    have hexD : (Point.some x₁ y₁ h₁ : W.Point) =
+          Point.some q₁ q₂ hq + Point.some q₁ q₂ hq ∨
+        (Point.some x₂ y₂ h₂ : W.Point) =
+          Point.some q₁ q₂ hq + Point.some q₁ q₂ hq ∨
+        (-(Point.some x₁ y₁ h₁ + Point.some x₂ y₂ h₂) : W.Point) =
+          Point.some q₁ q₂ hq + Point.some q₁ q₂ hq := by
+      rcases hex with h | h | h
+      · exact Or.inl (sub_eq_iff_eq_add.mp h)
+      · exact Or.inr (Or.inl (sub_eq_iff_eq_add.mp h))
+      · exact Or.inr (Or.inr (sub_eq_iff_eq_add.mp h))
+    have hsumneg : ∀ {U V : W.Point},
+        U = Point.some q₁ q₂ hq + Point.some q₁ q₂ hq →
+        V = -(Point.some q₁ q₂ hq + Point.some q₁ q₂ hq) → U + V = 0 := by
+      intro U V hu hv; rw [hu, hv]; exact add_neg_cancel _
+    have hsumneg' : ∀ {U V : W.Point},
+        U = -(Point.some q₁ q₂ hq + Point.some q₁ q₂ hq) →
+        V = Point.some q₁ q₂ hq + Point.some q₁ q₂ hq → U + V = 0 := by
+      intro U V hu hv; rw [hu, hv]; exact neg_add_cancel _
+    have hDD : (Point.some q₁ q₂ hq + Point.some q₁ q₂ hq : W.Point) =
+        -(Point.some q₁ q₂ hq + Point.some q₁ q₂ hq) := by
+      rcases hexD with e1 | e1 | e1 <;> rcases honline with e2 | e2 | e2
+      · exact e1.symm.trans e2
+      · exact absurd (hsumneg e1 e2) hPR
+      · exact absurd (hsumneg e1 e2) hPS
+      · exact absurd (hsumneg' e2 e1) hPR
+      · exact e1.symm.trans e2
+      · exact absurd (hsumneg e1 e2) hRS
+      · exact absurd (hsumneg' e2 e1) hPS
+      · exact absurd (hsumneg' e2 e1) hRS
+      · exact e1.symm.trans e2
+    have hsum0 : ∀ {U V : W.Point},
+        U = Point.some q₁ q₂ hq + Point.some q₁ q₂ hq →
+        V = Point.some q₁ q₂ hq + Point.some q₁ q₂ hq → U + V = 0 := by
+      intro U V hu hv; rw [hu, hv]; nth_rewrite 2 [hDD]; exact add_neg_cancel _
+    -- the line value at `2Q` vanishes, so `n ∈ I_Q⁴`
+    have hDDcoord := hDD
+    rw [hnegD, hDsome] at hDDcoord
+    simp only [Point.some.injEq] at hDDcoord
+    have hLval : W.addY q₁ q₁ q₂ (W.slope q₁ q₁ q₂ q₂) -
+        (W.slope x₁ x₂ y₁ y₂ * (W.addX q₁ q₁ (W.slope q₁ q₁ q₂ q₂) - x₁) + y₁) = 0 := by
+      rw [hDDcoord.2, hnegAddY]; exact hLn
+    have hn4 : lineNumerator W q₁ q₂ x₁ y₁ (W.slope x₁ x₂ y₁ y₂) ∈
+        pointIdeal W (.some q₁ q₂ hq) ^ 4 := by
+      have h := lineNumerator_sub_lineValue_mem_pow_four hΔ hq hA₀ hc₁ hc₂ hc₃ x₁ y₁
+        (W.slope x₁ x₂ y₁ y₂)
+      rwa [hLval, show coordC W (0 : F) = 0 from by rw [coordC_eq_algebraMap, map_zero],
+        zero_mul, sub_zero] at h
+    -- and `k ≤ 4`
+    have hkle : k ≤ 4 := by
+      by_contra hcon
+      rw [Nat.not_le] at hcon
+      rcases two_eq_of_pow_five_dvd hΔ hq ((pow_dvd_pow _ hcon).trans hk) with
+        ⟨e1, e2⟩ | ⟨e1, e2⟩ | ⟨e1, e2⟩
+      · exact hPR (hsum0 (sub_eq_iff_eq_add.mp e1) (sub_eq_iff_eq_add.mp e2))
+      · exact hPS (hsum0 (sub_eq_iff_eq_add.mp e1) (sub_eq_iff_eq_add.mp e2))
+      · exact hRS (hsum0 (sub_eq_iff_eq_add.mp e1) (sub_eq_iff_eq_add.mp e2))
+    exact Ideal.pow_le_pow_right hkle hn4
+  · -- generic configuration: the conjugate numerator is exactly of order 3 at `Q`
+    have hnmem : lineNumeratorNeg W q₁ q₂ x₁ y₁ (W.slope x₁ x₂ y₁ y₂) ∉
+        pointIdeal W (.some q₁ q₂ hq) ^ 4 := by
+      intro hmem
+      have hsub := sub_mem hmem (lineNumeratorNeg_sub_lineValue_mem_pow_four hΔ hq hA₀
+        hc₁ hc₂ hc₃ x₁ y₁ (W.slope x₁ x₂ y₁ y₂))
+      rw [sub_sub_cancel] at hsub
+      exact smul_pow_three_notMem_pointIdeal_pow_four hΔ hq h2Q hLn hsub
+    have hdvdmul : pointIdeal W (.some q₁ q₂ hq) ^ (k + 3) ∣
+        Ideal.span {lineNumerator W q₁ q₂ x₁ y₁ (W.slope x₁ x₂ y₁ y₂)} *
+          Ideal.span {lineNumeratorNeg W q₁ q₂ x₁ y₁ (W.slope x₁ x₂ y₁ y₂)} := by
+      rw [Ideal.span_singleton_mul_span_singleton,
+        span_lineNumerator_mul_lineNumeratorNeg hΔ hq h₁ h₂ hxy, pow_add]
+      exact mul_dvd_mul hk (dvd_mul_right _ _)
+    have hnotdvd : ¬ (pointIdeal W (.some q₁ q₂ hq) ^ (3 + 1) ∣
+        Ideal.span {lineNumeratorNeg W q₁ q₂ x₁ y₁ (W.slope x₁ x₂ y₁ y₂)}) := by
+      intro hc
+      rw [Ideal.dvd_iff_le, Ideal.span_le, Set.singleton_subset_iff] at hc
+      exact hnmem hc
+    have hfin := pow_dvd_of_pow_dvd_mul hprime 3 k _ _ hdvdmul hnotdvd
+    rw [Ideal.dvd_iff_le, Ideal.span_le, Set.singleton_subset_iff] at hfin
+    exact hfin
+
 /-- **L4-8 line-numerator sub-leaf: the assembly in the COINCIDENT
 configurations — the residual coincidence zoo, now REDUCED to a single
 local statement at `Q`.**
@@ -2562,10 +3169,12 @@ EXCEPT at `Q`, where it provably cannot work.  Structure:
   squeeze `mem_pointIdeal_pow_of_dvd_of_notMem` against the product
   identity `span_lineNumerator_mul_lineNumeratorNeg` puts the WHOLE
   `Z`-multiplicity on `n`.
-* At `Z = Q` the squeeze is unavailable in principle — the conjugate
-  divisor always contains `3(Q)`, so `ñ ∈ I_Q` — and that single local
-  statement is isolated as `lineNumerator_mem_pointIdeal_pow_of_dvd`,
-  whose docstring records the two routes that can close it. -/
+* At `Z = Q` the squeeze in that form is unavailable in principle — the
+  conjugate divisor always contains `3(Q)`, so `ñ ∈ I_Q` — and that single
+  local statement is isolated as `lineNumerator_mem_pointIdeal_pow_of_dvd`,
+  now PROVEN (2026-07-25) by an order-4 local normal form at `Q` feeding a
+  *generalized* squeeze that needs only `v_Q(ñ) ≤ 3` rather than
+  `ñ ∉ I_Q`. -/
 theorem lineNumerator_mem_prod_of_mem_factors_coincident (hΔ : W.Δ ≠ 0)
     {q₁ q₂ x₁ y₁ x₂ y₂ : F}
     (hq : W.Nonsingular q₁ q₂) (h₁ : W.Nonsingular x₁ y₁)
@@ -2925,7 +3534,7 @@ theorem lineNumeratorNeg_mem_prod_pointIdeal (hΔ : W.Δ ≠ 0) {q₁ q₂ x₁ 
     map_involHom_pointIdeal, involHom_lineNumerator, e1, e2, e3, e4] at hmem
   exact hmem
 
-/-- **L4-8 numerator leaf (sorry): the divisor of the line
+/-- **L4-8 numerator leaf (PROVEN): the divisor of the line
 numerator.**  `lineNumerator q₁ q₂ x₁ y₁ ℓ` (at the group-law slope
 `ℓ` of the pair `P = (x₁,y₁)`, `R = (x₂,y₂)`) spans
 `I_Q³ · I_{P⊖Q} · I_{R⊖Q} · I_{⊖(P⊕R)⊖Q}` — its affine divisor is the
@@ -2948,17 +3557,20 @@ then force the two cofactors to be units simultaneously
 colengths, and — decisively — no coincidence zoo in the closing step:
 every degeneracy makes both factors drop in lockstep.
 
-STATUS (2026-07-25, after two owners landed concurrently): everything
-below this node is now proven except one sub-leaf.
-`lineNumerator_mul_lineNumeratorNeg` is proven outright (one cleared
-`addPolynomial` identity, discharged by a single `linear_combination`).
-Both membership leaves are proven: the plain one from its four factor
-memberships plus the comaximal assembly
-`lineNumerator_mem_prod_of_mem_factors`, and the conjugate one from the
-plain one by involution transport (`involHom`, `map_involHom_pointIdeal`,
-`involHom_lineNumerator`).  The single remaining sorry is
-`lineNumerator_mem_prod_of_mem_factors_coincident`, the coincident
-configurations of the assembly. -/
+STATUS (2026-07-25, after three owners landed): the whole subtree is now
+proven.  `lineNumerator_mul_lineNumeratorNeg` is proven outright (one
+cleared `addPolynomial` identity, discharged by a single
+`linear_combination`).  Both membership leaves are proven: the plain one
+from its four factor memberships plus the comaximal assembly
+`lineNumerator_mem_prod_of_mem_factors` and the multiplicity-wise
+coincident assembly `lineNumerator_mem_prod_of_mem_factors_coincident`,
+and the conjugate one from the plain one by involution transport
+(`involHom`, `map_involHom_pointIdeal`, `involHom_lineNumerator`).  The
+last local statement, the `Q`-multiplicity
+`lineNumerator_mem_pointIdeal_pow_of_dvd`, was closed by the order-4
+normal form of the two numerators at `Q`
+(`lineNumerator_sub_lineValue_mem_pow_four` and its mirror) feeding the
+generalized prime-power squeeze `pow_dvd_of_pow_dvd_mul`. -/
 theorem span_lineNumerator (hΔ : W.Δ ≠ 0) {q₁ q₂ x₁ y₁ x₂ y₂ : F}
     (hq : W.Nonsingular q₁ q₂) (h₁ : W.Nonsingular x₁ y₁)
     (h₂ : W.Nonsingular x₂ y₂) (hxy : ¬(x₁ = x₂ ∧ y₁ = W.negY x₂ y₂)) :
