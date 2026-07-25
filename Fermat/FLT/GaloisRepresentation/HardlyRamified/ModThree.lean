@@ -5677,9 +5677,200 @@ theorem le_hopfPointsField_of_forall_smul_eq (G : Type) [CommRing G]
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
+/-- **Fontaine's ramification estimate for a finite flat algebra with
+`3`-torsion differentials** (sorry node, created 2026-07-25 — leaf
+(ii-a) of the Théorème A decomposition, THE analytic core of Fontaine's
+argument, stated with NO Hopf/group-scheme vocabulary at all; Fontaine,
+*Il n'y a pas de variété abélienne sur ℤ*, Invent. Math. 81 (1985),
+§§1–2, Prop. 1.5 — see also Abrashkin and Moon–Taguchi §2): let `A` be
+a finite flat `𝒪₃ᵥ ≅ ℤ₃`-algebra whose module of Kähler differentials
+`Ω[A⁄𝒪₃ᵥ]` is killed by `3`, and let `L/ℚ₃ᵥ` be ANY finite Galois
+subextension of `ℚ₃ᵥᵃˡᵍ`, with lower-numbering ramification filtration
+`G_i = inertia(𝔪_L^(i+1))` (Serre, *Corps Locaux* IV §1) — so `G_0`
+is the inertia of `𝔪_L` and `G_{i+1}` that of `𝔪_L^(i+2)`.  If a
+substitution `σ` lies in `G_{m+1}` at a level whose Herbrand value
+exceeds `1/2`, i.e. `#G_0 < 2·Σ_{i=1}^{m+1} #G_i` (`hlt`; Serre IV §3
+`φ(m+1) = (1/#G_0)·Σ_{i=1}^{m+1} #G_i > 1/2`), then `σ` acts
+TRIVIALLY on every `𝒪₃ᵥ`-point `χ : A →ₐ 𝒪_L` of `A` — the points are
+automatically integral, since `A` is module-finite over `𝒪₃ᵥ`, so
+nothing is lost by valuing them in the field `L`.  Intended proof
+(Fontaine §1): Fontaine's estimate bounds `v_L(σ x − x)` for a
+coordinate `x = χ(a)` in terms of the invariant differentials of `A`
+(the `3`-torsion of `Ω[A⁄𝒪₃ᵥ]` is exactly what makes the bound
+`e·(n + 1/(p−1)) − 1 = 1/2` at `p = 3`, `e = 1`, `n = 1`): the upper
+ramification subgroup `Gal(ℚ₃ᵥᵃˡᵍ/ℚ₃ᵥ)^{(u)}` acts trivially on
+`Hom_{𝒪₃ᵥ}(A, 𝒪_{ℚ₃ᵥᵃˡᵍ})` for `u > 1/2`, and Herbrand's compatibility
+of the upper numbering with quotients (Serre IV §3 Lemma 5) transports
+this to `Gal(L/ℚ₃ᵥ)^{(φ(m+1))} ⊇ G_{m+1}`, whence the integer-level
+form used here.  SHARPNESS: at `A` = the `3`-torsion Hopf order of a
+peu-ramifié Tate curve, `L = ℚ₃(ζ₃, u^{1/3})` has `#G_0 = 6`,
+`#G_1 = 3`, `G_2 = ⊥`, so `hlt` fails by a hair at `m + 1 = 1`
+(`6 < 6` is false) — the estimate is exactly on the boundary — while a
+très-ramifié `q^{1/3}` would need `#G_1 = #G_2 = #G_3 = 3` with
+`#G_0 = 6`, where `hlt` holds at `m + 1 = 2` and this leaf then forces
+the (impossible) triviality of `σ` through the faithfulness leaf
+(ii-c). -/
+theorem forall_point_apply_eq_of_lt_two_mul_sum_card_inertia
+    (A : Type) [CommRing A] [Algebra 𝒪₃ᵥ A] [Module.Flat 𝒪₃ᵥ A]
+    [Module.Finite 𝒪₃ᵥ A]
+    (hΩ : ∀ ω : Ω[A⁄𝒪₃ᵥ], (3 : ℕ) • ω = 0)
+    (L : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ L]
+    [IsGalois ℚ₃ᵥ L]
+    (m : ℕ)
+    (hlt : Nat.card ((IsLocalRing.maximalIdeal
+        (IntegralClosure 𝒪₃ᵥ L)).inertia (L ≃ₐ[ℚ₃ᵥ] L)) <
+      2 * ∑ i ∈ Finset.range (m + 1),
+        Nat.card ((IsLocalRing.maximalIdeal
+          (IntegralClosure 𝒪₃ᵥ L) ^ (i + 2)).inertia (L ≃ₐ[ℚ₃ᵥ] L)))
+    (σ : L ≃ₐ[ℚ₃ᵥ] L)
+    (hσ : σ ∈ (IsLocalRing.maximalIdeal
+      (IntegralClosure 𝒪₃ᵥ L) ^ (m + 2)).inertia (L ≃ₐ[ℚ₃ᵥ] L))
+    (χ : A →ₐ[𝒪₃ᵥ] L) (a : A) :
+    σ (χ a) = χ a := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **The differentials of a Hopf order killed by `3` are `3`-torsion**
+(sorry node, created 2026-07-25 — leaf (ii-b) of the Théorème A
+decomposition, the ONLY Hopf-algebraic input to the estimate): for a
+finite flat Hopf order `G` over `𝒪₃ᵥ ≅ ℤ₃` with étale generic fibre
+whose geometric points are killed by `3` in the convolution group
+(`hkill`), the module of Kähler differentials `Ω[G⁄𝒪₃ᵥ]` is killed by
+`3`.  Intended proof (Fontaine §2; Oort–Tate 1970 §1): for a group
+scheme `Spec G` the differentials are free on the invariant ones,
+`Ω[G⁄𝒪₃ᵥ] ≅ G ⊗_{𝒪₃ᵥ} ω_G` with `ω_G = I/I²` the cotangent space at
+the identity (`I = ker ε` the augmentation ideal), and multiplication
+by `n` on the group scheme induces multiplication by `n` on `ω_G`;
+`hkill` says the third convolution power of every geometric point is
+the counit, so `[3] = e` on the generic fibre, hence — the generic
+fibre being étale and `G` flat over the DVR `𝒪₃ᵥ`, so that `G` embeds
+in `ℚ₃ᵥ ⊗ G` and scheme-theoretic identities descend — `[3] = e` on
+`Spec G` itself; therefore `3 = [3]^* = 0` on `ω_G` and so on
+`Ω[G⁄𝒪₃ᵥ]`. -/
+theorem kaehlerDifferential_smul_three_eq_zero_of_hopf_package
+    (G : Type) [CommRing G] [HopfAlgebra 𝒪₃ᵥ G]
+    [Module.Flat 𝒪₃ᵥ G] [Module.Finite 𝒪₃ᵥ G]
+    [Algebra.Etale ℚ₃ᵥ (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G)]
+    (hkill : ∀ χ : ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ, χ * χ * χ = 1) :
+    ∀ ω : Ω[G⁄𝒪₃ᵥ], (3 : ℕ) • ω = 0 := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **Faithfulness of `Gal(L/ℚ₃)` on the points of the package**
+(PROVEN 2026-07-25 — leaf (ii-c) of the Théorème A decomposition): a
+substitution of the points-compositum field `L = ℚ₃(G(ℚ₃ᵃˡᵍ))` that
+fixes every `𝒪₃ᵥ`-valued point `χ : G →ₐ 𝒪_L` of the Hopf order
+pointwise is the IDENTITY — the tautological faithfulness that turns
+Fontaine's "acts trivially on the points" conclusion into "is trivial
+in `Gal(L/ℚ₃)`".  Proof: each geometric point
+`χ : ℚ₃ᵥ ⊗ G →ₐ ℚ₃ᵥᵃˡᵍ` restricts along
+`Algebra.TensorProduct.includeRight` to an `𝒪₃ᵥ`-algebra map
+`G → ℚ₃ᵥᵃˡᵍ` whose values `χ (1 ⊗ a)` lie in `L` by the very
+definition of `L` as `IntermediateField.adjoin ℚ₃ᵥ (⋃ χ, range χ)`, so
+it corestricts (`AlgHom.codRestrict` over
+`(hopfPointsField G).toSubalgebra.restrictScalars 𝒪₃ᵥ`) to a point
+`G →ₐ[𝒪₃ᵥ] L` to which `hσ` applies; `ℚ₃ᵥ`-linearity of `χ` and of `σ`
+(`TensorProduct.smul_tmul'`, `AlgEquiv.commutes`) upgrades this from
+the coordinates `χ (1 ⊗ a)` to ALL values `χ x` by
+`TensorProduct.induction_on`; finally `σ` fixes each generator, so
+`Subgroup.zpowers σ` lies in the stabilizer of each, the generating set
+lies in `IntermediateField.lift (fixedField (zpowers σ))`, and
+`IntermediateField.adjoin_le_iff` gives `L ≤ lift (fixedField …)`,
+i.e. `σ` fixes every element of `L`. -/
+theorem eq_one_of_forall_point_apply_eq
+    (G : Type) [CommRing G] [Algebra 𝒪₃ᵥ G]
+    (σ : hopfPointsField G ≃ₐ[ℚ₃ᵥ] hopfPointsField G)
+    (hσ : ∀ (χ : G →ₐ[𝒪₃ᵥ] hopfPointsField G) (a : G), σ (χ a) = χ a) :
+    σ = 1 := by
+  -- the values of a geometric point are generators of `L`
+  have hmem : ∀ (χ : ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ) (x : ℚ₃ᵥ ⊗[𝒪₃ᵥ] G),
+      χ x ∈ hopfPointsField G :=
+    fun χ x => IntermediateField.subset_adjoin _ _
+      (Set.mem_iUnion.mpr ⟨χ, Set.mem_range_self x⟩)
+  -- STEP 1: `σ` fixes the coordinates `χ (1 ⊗ a)` — the values of the
+  -- integral point of `G` obtained from `χ` by corestriction
+  have hone : ∀ (χ : ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ) (a : G),
+      σ ⟨χ (1 ⊗ₜ[𝒪₃ᵥ] a), hmem χ _⟩ = ⟨χ (1 ⊗ₜ[𝒪₃ᵥ] a), hmem χ _⟩ := by
+    intro χ a
+    exact hσ (AlgHom.codRestrict ((χ.restrictScalars 𝒪₃ᵥ).comp
+        Algebra.TensorProduct.includeRight)
+      ((hopfPointsField G).toSubalgebra.restrictScalars 𝒪₃ᵥ)
+      (fun _ => IntermediateField.subset_adjoin _ _
+        (Set.mem_iUnion.mpr ⟨χ, Set.mem_range_self _⟩))) a
+  -- STEP 2: `σ` fixes every value of every geometric point, by
+  -- `ℚ₃ᵥ`-linearity in the tensor variable
+  have hall : ∀ (χ : ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ) (x : ℚ₃ᵥ ⊗[𝒪₃ᵥ] G),
+      σ ⟨χ x, hmem χ x⟩ = ⟨χ x, hmem χ x⟩ := by
+    intro χ x
+    induction x using TensorProduct.induction_on with
+    | zero =>
+      have h0 : (⟨χ 0, hmem χ 0⟩ : hopfPointsField G) = 0 :=
+        Subtype.ext (map_zero χ)
+      rw [h0, map_zero]
+    | tmul q a =>
+      have h1 : (q ⊗ₜ[𝒪₃ᵥ] a : ℚ₃ᵥ ⊗[𝒪₃ᵥ] G) = q • (1 ⊗ₜ[𝒪₃ᵥ] a) := by
+        rw [TensorProduct.smul_tmul', smul_eq_mul, mul_one]
+      have hq : (⟨χ (q ⊗ₜ[𝒪₃ᵥ] a), hmem χ _⟩ : hopfPointsField G) =
+          algebraMap ℚ₃ᵥ (hopfPointsField G) q *
+            ⟨χ (1 ⊗ₜ[𝒪₃ᵥ] a), hmem χ _⟩ := by
+        refine Subtype.ext ?_
+        show χ (q ⊗ₜ[𝒪₃ᵥ] a) = _
+        rw [h1, map_smul, Algebra.smul_def]
+        simp
+      rw [hq, map_mul, AlgEquiv.commutes, hone]
+    | add u v hu hv =>
+      have hadd : (⟨χ (u + v), hmem χ (u + v)⟩ : hopfPointsField G) =
+          ⟨χ u, hmem χ u⟩ + ⟨χ v, hmem χ v⟩ := Subtype.ext (map_add χ u v)
+      rw [hadd, map_add, hu, hv]
+  -- STEP 3: the fixed field of `σ` contains the generating set, hence
+  -- all of `L`
+  refine AlgEquiv.ext fun x => ?_
+  have hle : hopfPointsField G ≤ IntermediateField.lift
+      (IntermediateField.fixedField (Subgroup.zpowers σ)) := by
+    show IntermediateField.adjoin ℚ₃ᵥ
+        (⋃ χ : ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ, Set.range χ) ≤ _
+    rw [IntermediateField.adjoin_le_iff]
+    rintro y hy
+    obtain ⟨χ, t, rfl⟩ :
+        ∃ (χ : ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ), ∃ t, χ t = y := by
+      obtain ⟨χ, hχ⟩ := Set.mem_iUnion.mp hy
+      obtain ⟨t, ht⟩ := hχ
+      exact ⟨χ, t, ht⟩
+    refine (IntermediateField.mem_lift
+      (⟨χ t, hmem χ t⟩ : hopfPointsField G)).mpr ?_
+    rw [IntermediateField.mem_fixedField_iff]
+    intro f hf
+    have hstab : σ ∈ MulAction.stabilizer
+        (hopfPointsField G ≃ₐ[ℚ₃ᵥ] hopfPointsField G)
+        (⟨χ t, hmem χ t⟩ : hopfPointsField G) := hall χ t
+    exact Subgroup.zpowers_le.mpr hstab hf
+  exact (IntermediateField.mem_fixedField_iff _ _).mp
+    ((IntermediateField.mem_lift x).mp (hle x.2)) σ (Subgroup.mem_zpowers σ)
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
 /-- **Fontaine's Théorème A for the points field, Herbrand-transcribed
-at integer levels** (sorry node, created 2026-07-24 — leaf (ii) of the
-Fontaine different-bound decomposition, THE scheme-theoretic core;
+at integer levels** (DECOMPOSED 2026-07-25 into the three leaves above
+— the analytic core (ii-a)
+`forall_point_apply_eq_of_lt_two_mul_sum_card_inertia` and the
+Hopf-differential input (ii-b)
+`kaehlerDifferential_smul_three_eq_zero_of_hopf_package` are the two
+remaining sorry leaves, the faithfulness leaf (ii-c)
+`eq_one_of_forall_point_apply_eq` is PROVEN, and the assembly is PROVEN
+here: negate the goal to get `#G_0 < 2·Σ_{i=1}^{m+1} #G_i`, take a
+NONTRIVIAL `σ ∈ G_{m+1}` from `hm`, let (ii-a) — fed the `3`-torsion of
+`Ω[G⁄𝒪₃ᵥ]` by (ii-b) — make `σ` fix every point of the Hopf order, and
+let (ii-c) conclude `σ = 1`, contradicting the choice of `σ`); leaf
+(ii) of the Fontaine different-bound decomposition, THE
+scheme-theoretic core;
+Fontaine, *Il n'y a pas de variété abélienne sur ℤ*, Invent. Math. 81
+(1985), Thm. A and §§2–3): for the field `L = ℚ₃(G(ℚ₃ᵃˡᵍ))` generated
+by the points of a finite flat Hopf package over `𝒪₃ᵥ ≅ ℤ₃` whose
 Fontaine, *Il n'y a pas de variété abélienne sur ℤ*, Invent. Math. 81
 (1985), Thm. A and §§2–3): for the field `L = ℚ₃(G(ℚ₃ᵃˡᵍ))` generated
 by the points of a finite flat Hopf package over `𝒪₃ᵥ ≅ ℤ₃` whose
@@ -5727,7 +5918,19 @@ theorem two_mul_sum_card_inertia_le_card_inertia_of_hopf_package
       Nat.card ((IsLocalRing.maximalIdeal
         (IntegralClosure 𝒪₃ᵥ (hopfPointsField G))).inertia
         (hopfPointsField G ≃ₐ[ℚ₃ᵥ] hopfPointsField G)) := by
-  sorry
+  haveI : IsGalois ℚ₃ᵥ (hopfPointsField G) := isGalois_hopfPointsField G
+  by_contra hcon
+  -- the Herbrand value at the level `m + 1` exceeds `1/2`
+  have hlt := not_le.mp hcon
+  -- a NONTRIVIAL substitution in the deep ramification group `G_{m+1}`
+  obtain ⟨σ, hσne⟩ := Subgroup.ne_bot_iff_exists_ne_one.mp hm
+  refine hσne (Subtype.ext (eq_one_of_forall_point_apply_eq G
+    (σ : hopfPointsField G ≃ₐ[ℚ₃ᵥ] hopfPointsField G) (fun χ a => ?_)))
+  -- Fontaine's estimate makes it fix every point of the Hopf order
+  exact forall_point_apply_eq_of_lt_two_mul_sum_card_inertia G
+    (kaehlerDifferential_smul_three_eq_zero_of_hopf_package G hkill)
+    (hopfPointsField G) m hlt
+    (σ : hopfPointsField G ≃ₐ[ℚ₃ᵥ] hopfPointsField G) σ.2 χ a
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
