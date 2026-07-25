@@ -51,21 +51,60 @@ absence rather than an oversight:
   i.e. Herbrand's function `ψ` and the finite-level ramification
   filtration — a development of its own.
 
-So the wild part enters as an **explicit input**, and it enters
-*soundly*: rather than an opaque `swanExponent` function (about which
-any equation would be an unprovable, possibly false, assertion), the
-conductor exponent is packaged as the RELATION
+So the wild part enters as an **uninterpreted constant**
+`GaloisRep.swanExponentAux`, declared with Lean's `opaque` command, and
+the conductor exponent is the honest sum
 
-  `GaloisRep.HasConductorExponentAt ρ v a  ↔  ∃ s, a = tameExponent + s ∧ …`
+  `GaloisRep.conductorExponent ρ v = ρ.tameExponent v + ρ.swanExponent v`,
 
-with the wild summand `s` existentially quantified and constrained by
-the properties of the Swan conductor that are available without the
-filtration (currently: it vanishes when inertia acts trivially). Every
-statement of the form `HasConductorExponentAt ρ v a` is therefore
-*implied* by the true conductor-exponent identity `a_v(V) = a`, so a
-sorried leaf asserting it is a genuine (if weaker) consequence of the
-cited literature and can never be a false statement about an
-under-determined constant.
+with `HasConductorExponentAt ρ v a` the *equation* `a = conductorExponent ρ v`.
+
+`opaque` introduces **no axiom and no `sorry`** (`#print axioms` on
+anything using it stays empty) and the kernel will not unfold it, so
+nothing about its value is provable — which is exactly the intent: the
+symbol *denotes* the Swan conductor without computing it. The one
+property of the Swan conductor that this development actually needs,
+vanishing at an unramified place, is built into `swanExponent` by
+construction (`swanExponent ρ v = if ρ.IsUnramifiedAt v then 0 else
+swanExponentAux ρ v`), so
+`GaloisRep.swanExponent_eq_zero_of_isUnramifiedAt` is a *theorem* rather
+than a further leaf.
+
+Soundness of this packaging is model-theoretic and is the standard one
+for axiomatising an invariant that cannot yet be defined: interpret
+`swanExponentAux ρ v` as the true Swan conductor `Sw_v(V)`. Under that
+interpretation `conductorExponent ρ v` **is** `a_v(V)`, so every leaf
+stated with `HasConductorExponentAt` is precisely the corresponding
+statement of the literature — no weaker and no stronger.
+
+## HISTORY: why the previous, existential packaging was WITHDRAWN
+
+Until 2026-07-25 this file packaged the wild summand *existentially*,
+
+  `HasConductorExponentAt ρ v a  :=  ∃ s, a = tameExponent + s ∧
+                                     (ρ.IsUnramifiedAt v → s = 0)`,
+
+on the argument that every such statement is *implied* by the true
+identity `a_v(V) = a`, hence can never be false.
+
+**That argument is valid only in CONCLUSION position.** The predicate is
+UPWARD CLOSED in `a` for a representation that is ramified at `v` (take
+`s := a − tameExponent`; the only clause constraining `s` is conditioned
+on unramifiedness and is then vacuous). So in HYPOTHESIS position the
+weakening *strengthens* the statement, and a leaf consuming
+`HasConductorExponentAt ρ v a` in order to derive an UPPER bound on `a`
+is thereby asserting `ρ` is unramified at `v`. Exactly one leaf did
+this — `hasConductorExponentAt_two_le_one_of_inertia_sq_eq_zero` in
+`Fermat/FLT/Modularity/Interface.lean` — and it was consequently FALSE
+AS STATED, refuted by the curve `E/ℚ` of conductor `14` at `p = 5` (see
+that leaf's docstring for the counterexample in full).
+
+The generalizable rule: an existentially weakened invariant can carry
+LOWER-bound content (`a ≠ 0 → ρ` ramified) but never UPPER-bound
+content. Pinning `a` to a single opaque value, as is now done, restores
+both directions at the cost of an uninterpreted symbol — which is the
+right trade, since the alternative is a definition under which half the
+intended consumers are unstatable.
 
 ## Consumers
 
@@ -169,57 +208,119 @@ lemma tameExponent_add_one_le_finrank_of_fixed {k : Type*} [Field k]
       ≤ (Module.finrank k W - 1) + 1 := Nat.add_le_add_right hsub 1
     _ = Module.finrank k W := Nat.sub_add_cancel hW
 
+/-- **The Swan conductor, as an UNINTERPRETED constant.**
+
+`swanExponentAux ρ v` stands for `Sw_v(V)`, the wild part of the Artin
+conductor exponent. It is declared `opaque`: the kernel will not unfold
+it, so **nothing about its value is provable**, and — unlike an
+`axiom` — it contributes nothing to `#print axioms` (the `:= 0` is only
+the inhabitation witness Lean's `opaque` command requires; `= 0` is NOT
+derivable from it).
+
+This is deliberate, and it is the only honest option at this pin: the
+Swan conductor needs the higher ramification filtration in the UPPER
+numbering, which mathlib does not have and which the lower numbering
+cannot substitute for over `Kᵥᵃˡᵍ` (divisible value group — see the
+module docstring). Rather than pretend to define it, or existentially
+quantify it away (which cost this development a FALSE leaf — again see
+the module docstring), we name it and say nothing about it.
+
+Do not state or prove any equation about `swanExponentAux` itself.
+Facts about the Swan conductor belong on `swanExponent` below, and any
+such fact that is not a theorem is a citation leaf whose soundness is
+checked against the intended interpretation `swanExponentAux ρ v :=
+Sw_v(V)`. -/
+opaque swanExponentAux {K : Type uK} [Field K] [NumberField K]
+    {A : Type*} [CommRing A] [TopologicalSpace A]
+    {M : Type*} [AddCommGroup M] [Module A M]
+    (ρ : GaloisRep K A M) (v : HeightOneSpectrum (𝓞 K)) : ℕ := 0
+
+open scoped Classical in
+/-- **The wild part of the Artin conductor exponent** at `v`, i.e. the
+Swan conductor `Sw_v(V)`.
+
+It is `swanExponentAux` — an opaque constant — with the ONE property
+this development needs BUILT IN rather than assumed: the Swan conductor
+is supported on the wild inertia, so it vanishes when `ρ` is unramified
+at `v`. Baking that case in keeps
+`swanExponent_eq_zero_of_isUnramifiedAt` a *theorem*; it is a
+conservative move, since the true Swan conductor does vanish there, so
+the intended interpretation `swanExponentAux := Sw_v` still makes
+`swanExponent = Sw_v` on the nose. -/
+noncomputable def swanExponent (ρ : GaloisRep K A M)
+    (v : HeightOneSpectrum (𝓞 K)) : ℕ :=
+  if ρ.IsUnramifiedAt v then 0 else ρ.swanExponentAux v
+
+/-- **The Swan conductor vanishes at a place of unramifiedness** — true
+by construction of `swanExponent`, see its docstring. -/
+lemma swanExponent_eq_zero_of_isUnramifiedAt (ρ : GaloisRep K A M)
+    (v : HeightOneSpectrum (𝓞 K)) [ρ.IsUnramifiedAt v] :
+    ρ.swanExponent v = 0 := by
+  classical
+  rw [swanExponent, if_pos ‹_›]
+
+/-- **The Artin conductor exponent at a finite place**, through the
+classical dictionary (Serre, *Local Fields* VI §2)
+
+  `a_v(V) = (dim V − dim V^{I_v}) + Sw_v(V)`:
+
+the TAME part `ρ.tameExponent v`, computed here from the inertia
+invariants, plus the WILD part `ρ.swanExponent v`, an opaque constant.
+
+Because the wild summand is a FUNCTION of `(ρ, v)` rather than an
+existentially quantified witness, this number is PINNED — which is what
+lets consumers read UPPER bounds off it. See the module docstring for
+why the previous existential packaging had to be withdrawn. -/
+noncomputable def conductorExponent (ρ : GaloisRep K A M)
+    (v : HeightOneSpectrum (𝓞 K)) : ℕ :=
+  ρ.tameExponent v + ρ.swanExponent v
+
 /-- **The Artin conductor exponent at a finite place**, as a relation
-between the representation and a natural number:
-`ρ.HasConductorExponentAt v a` says that `a` decomposes according to the
-classical dictionary
+between the representation and a natural number: `a` IS the conductor
+exponent `ρ.conductorExponent v`.
 
-  `a_v(V) = (dim V − dim V^{I_v}) + Sw_v(V)`
-
-as the TAME part `ρ.tameExponent v` — computed here — plus a WILD
-summand `s` playing the role of the Swan conductor `Sw_v(V)`, subject to
-the Swan-conductor properties that are available on this pin, namely:
-
-* `s = 0` when `ρ` is unramified at `v` (the Swan conductor is supported
-  on the wild inertia, which is trivial for an unramified
-  representation).
-
-The wild summand is EXISTENTIALLY quantified rather than computed
-because the Swan conductor is not definable here: the higher
-ramification filtration in the upper numbering is absent from mathlib
-and, as explained in the module docstring, cannot be replaced by the
-lower numbering over `Kᵥᵃˡᵍ` (whose value group is divisible, collapsing
-every lower ramification group onto `localInertiaGroup v`).
-
-Soundness of this packaging: the true conductor exponent `a_v(V)`
-satisfies `HasConductorExponentAt ρ v (a_v(V))` — take `s := Sw_v(V)`,
-which does vanish for an unramified `ρ` — so a cited identity
-`a_v(V) = a` always yields `HasConductorExponentAt ρ v a`. In other
-words this relation is a WEAKENING of the conductor-exponent identity,
-never an assertion about an under-determined constant: sorried leaves
-stated with it are consequences of the literature, not conjectures about
-an opaque symbol. -/
+This is the shape in which the literature citations of
+`Fermat/FLT/Modularity/Interface.lean` are stated — Carayol's
+`ord_q(cond ρ) = ord_q M` reads
+`ρ.HasConductorExponentAt v_q (M.factorization q)` — and it is an
+EQUATION, not a weakening: a leaf stated with it asserts exactly the
+cited identity, under the interpretation of `swanExponentAux` as the
+Swan conductor. -/
 def HasConductorExponentAt (ρ : GaloisRep K A M)
     (v : HeightOneSpectrum (𝓞 K)) (a : ℕ) : Prop :=
-  ∃ s : ℕ, a = ρ.tameExponent v + s ∧ (ρ.IsUnramifiedAt v → s = 0)
+  a = ρ.conductorExponent v
+
+/-- The defining equation, in usable form. -/
+lemma HasConductorExponentAt.eq {ρ : GaloisRep K A M}
+    {v : HeightOneSpectrum (𝓞 K)} {a : ℕ} (h : ρ.HasConductorExponentAt v a) :
+    a = ρ.conductorExponent v := h
 
 /-- The tame part is a lower bound for the conductor exponent (the Swan
 conductor is nonnegative). -/
 lemma HasConductorExponentAt.tameExponent_le {ρ : GaloisRep K A M}
     {v : HeightOneSpectrum (𝓞 K)} {a : ℕ} (h : ρ.HasConductorExponentAt v a) :
     ρ.tameExponent v ≤ a := by
-  obtain ⟨s, hs, -⟩ := h
+  rw [h.eq, conductorExponent]
   omega
+
+/-- **An upper bound on the conductor exponent transfers to any `a`
+carrying it.** This is the direction the at-`2` level-lowering consumer
+needs, and the direction the previous existential packaging could not
+supply. -/
+lemma HasConductorExponentAt.le_of_conductorExponent_le {ρ : GaloisRep K A M}
+    {v : HeightOneSpectrum (𝓞 K)} {a n : ℕ} (h : ρ.HasConductorExponentAt v a)
+    (hn : ρ.conductorExponent v ≤ n) : a ≤ n := by
+  rw [h.eq]; exact hn
 
 /-- **The conductor exponent vanishes at a place of unramifiedness** —
 the full `a_v = 0` statement, tame part by
-`tameExponent_eq_zero_of_isUnramifiedAt` and wild part by the Swan
-clause of `HasConductorExponentAt`. This is the shape in which the
+`tameExponent_eq_zero_of_isUnramifiedAt` and wild part by
+`swanExponent_eq_zero_of_isUnramifiedAt`. This is the shape in which the
 away-from-`p` per-place citation consumes the shared conductor leaf. -/
 lemma HasConductorExponentAt.eq_zero_of_isUnramifiedAt {ρ : GaloisRep K A M}
     {v : HeightOneSpectrum (𝓞 K)} {a : ℕ} (h : ρ.HasConductorExponentAt v a)
     [ρ.IsUnramifiedAt v] : a = 0 := by
-  obtain ⟨s, hs, hs0⟩ := h
-  rw [hs, ρ.tameExponent_eq_zero_of_isUnramifiedAt v, hs0 ‹_›]
+  rw [h.eq, conductorExponent, ρ.tameExponent_eq_zero_of_isUnramifiedAt v,
+    ρ.swanExponent_eq_zero_of_isUnramifiedAt v]
 
 end GaloisRep
