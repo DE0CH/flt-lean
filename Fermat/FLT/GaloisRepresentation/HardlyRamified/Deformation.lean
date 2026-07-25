@@ -5294,7 +5294,7 @@ theorem exists_framedGaloisRep_toMatrix'_map_eq_of_forall_mem
     inferInstanceAs (IsModuleTopology C (Fin 2 → Fin 2 → C))
   -- entrywise corestriction of `F` to `C`
   set G : Field.absoluteGaloisGroup ℚ → Matrix (Fin 2) (Fin 2) C :=
-    fun g => Matrix.of fun i j => (⟨F g i j, hmem g i j⟩ : C) with hGdef
+    fun g => Matrix.of fun i j => (⟨F g i j, hmem g i j⟩ : C)
   have hGmap : ∀ g, (G g).map C.subtype = F g := by
     intro g; ext i j; rfl
   -- `Matrix.map` along the injective inclusion is injective
@@ -5366,11 +5366,11 @@ theorem repr_mem_subring_of_trace_mem
     ∀ M ∈ S, ∀ i : Fin 4, b.repr M i ∈ C := by
   classical
   set Gr : Matrix (Fin 4) (Fin 4) B :=
-    Matrix.of (fun i j : Fin 4 => Matrix.trace (b i * b j)) with hGr
+    Matrix.of (fun i j : Fin 4 => Matrix.trace (b i * b j))
   have hGrmem : ∀ i j, Gr i j ∈ C := fun i j =>
     htr _ (S.mul_mem (hbS i) (hbS j))
   set GrC : Matrix (Fin 4) (Fin 4) C :=
-    Matrix.of (fun i j => (⟨Gr i j, hGrmem i j⟩ : C)) with hGrC
+    Matrix.of (fun i j => (⟨Gr i j, hGrmem i j⟩ : C))
   have hGrCmap : GrC.map C.subtype = Gr := by ext i j; rfl
   have hdet : ((GrC.det : C) : B) = Gr.det := by
     have hd := RingHom.map_det C.subtype GrC
@@ -5392,7 +5392,7 @@ theorem repr_mem_subring_of_trace_mem
   intro M hM
   have htmem : ∀ j, Matrix.trace (M * b j) ∈ C := fun j =>
     htr _ (S.mul_mem hM (hbS j))
-  set tC : Fin 4 → C := fun j => ⟨Matrix.trace (M * b j), htmem j⟩ with htC
+  set tC : Fin 4 → C := fun j => ⟨Matrix.trace (M * b j), htmem j⟩
   set cC : Fin 4 → C := tC ᵥ* GrC⁻¹ with hcC
   have hcCGr : cC ᵥ* GrC = tC := by
     rw [hcC, Matrix.vecMul_vecMul, Matrix.nonsing_inv_mul GrC hGrCunit,
@@ -5450,10 +5450,13 @@ Mathematical content.
 * Nakayama over the local `D.R`: four elements of the finite free module
   `M₂(D.R)` whose reductions form a `k`-basis are themselves a
   `D.R`-basis.
-* The trace form of `M₂` is nondegenerate away from characteristic `2`,
-  and `char k = ℓ` is odd (`natCast_self_eq_zero` together with `hℓOdd`),
-  so the Gram determinant is a unit modulo `𝔪` — hence a unit, `D.R`
-  being local.
+* The trace form `(X, Y) ↦ tr (X Y)` of `M₂` is nondegenerate in EVERY
+  characteristic: its Gram matrix in the elementary basis `Eᵢⱼ` is a
+  permutation matrix, of determinant `±1`. The Gram determinant of the
+  basis `ρbar(gᵢ)` is therefore `±1` times the square of the
+  change-of-basis determinant, hence nonzero residually, hence a unit,
+  `D.R` being local. (No characteristic hypothesis enters here; oddness
+  of `ℓ` is consumed only through absolute irreducibility.)
 
 CIRCULARITY GUARD (inherited): the hypothesis package is the one
 `not_isIrreducible_of_isHardlyRamified_of_five_le` refutes, and that
@@ -5527,7 +5530,7 @@ theorem exists_basis_repr_mem_traceSubring (hℓ5 : 5 ≤ ℓ)
     { toFun := fun g => LinearMap.toMatrix' (D.ρ g)
       map_one' := by rw [map_one]; exact LinearMap.toMatrix'_one
       map_mul' := fun g hg => by
-        rw [map_mul]; exact LinearMap.toMatrix'_mul _ _ } with hΦ
+        rw [map_mul]; exact LinearMap.toMatrix'_mul _ _ }
   obtain ⟨b, hbrange, hgram⟩ :=
     exists_basis_toMatrix'_isUnit_traceGram hℓOdd hdim hℓ5 h hirr D
   refine ⟨b, hbrange, ?_⟩
@@ -5727,8 +5730,7 @@ theorem exists_framedGaloisRep_baseChange_traceSubring (hℓ5 : 5 ≤ ℓ)
     { toFun := fun g => LinearMap.toMatrix' (D.ρ g)
       map_one' := by rw [map_one]; exact LinearMap.toMatrix'_one
       map_mul' := fun g hg => by
-        rw [map_mul]; exact LinearMap.toMatrix'_mul _ _ } with hΦ
-  have hΦapp : ∀ g, Φ g = LinearMap.toMatrix' (D.ρ g) := fun _ => rfl
+        rw [map_mul]; exact LinearMap.toMatrix'_mul _ _ }
   -- its entries are continuous: they are linear functionals of `D.ρ g`
   have hΦcont : Continuous Φ := by
     refine continuous_matrix fun i j => ?_
@@ -5737,7 +5739,7 @@ theorem exists_framedGaloisRep_baseChange_traceSubring (hℓ5 : 5 ≤ ℓ)
     set ev : Module.End D.R (Fin 2 → D.R) →ₗ[D.R] D.R :=
       { toFun := fun φ => φ (Pi.single j 1) i
         map_add' := fun x y => rfl
-        map_smul' := fun c x => rfl } with hev
+        map_smul' := fun c x => rfl }
     have hevc : Continuous ev := IsModuleTopology.continuous_of_linearMap ev
     have hcomp := hevc.comp (ContinuousMonoidHom.continuous_toFun D.ρ)
     refine hcomp.congr fun g => ?_
