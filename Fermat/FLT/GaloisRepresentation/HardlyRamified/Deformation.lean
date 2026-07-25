@@ -70,7 +70,7 @@ them without a human. Do not re-wrap it.
 - `fg_comap_maximalIdeal_traceSubring`
 - `exists_framedGaloisRep_traceSubring`
 - `subring_closure_charFrob_coeff_eq_top`
-- `isIntegral_charFrobCoeff_quotient_of_isWeaklyUniversal_isTraceGenerated`
+- `exists_finiteIndex_isIntegral_charpolyCoeff_quotient_of_isWeaklyUniversal_isTraceGenerated`
 - `exists_relations_lt_le_smul_of_minimal_mvPowerSeries_presentation`
 
 Both former strata above them were narrowed on 2026-07-25 into those
@@ -173,7 +173,17 @@ the surjectivity and minimality strata of the minimal presentation,
   form `isIntegral_charFrobCoeff_quotient_of_isWeaklyUniversal_isTraceGenerated`
   (the Frobenius traces of the mod-`ℓ` specialization are algebraic over
   `𝔽_ℓ`) and the pure commutative algebra
-  `eq_maximalIdeal_of_isPrime_of_isIntegral_quotient`.
+  `eq_maximalIdeal_of_isPrime_of_isIntegral_quotient`. The TRACE form was
+  in turn PROVEN on 2026-07-26 over the potential-modularity leaf
+  `exists_finiteIndex_isIntegral_charpolyCoeff_quotient_of_isWeaklyUniversal_isTraceGenerated`
+  (there is a FINITE-INDEX `H ≤ G_ℚ` — the Galois group of the totally
+  real field over which potential modularity gives `R = T` with `T` a
+  finite `ℤ_ℓ`-algebra — on which all traces are already integral), the
+  Khare–Wintenberger descent from `H` back to `ℚ` being the elementary
+  `isIntegral_trace_of_isIntegral_trace_pow` (the Dickson identity
+  `tr(Mᵐ) = Dₘ(tr M, det M)` with `Dₘ` monic of degree `m`) together with
+  `exists_pow_mem_of_finiteIndex`; the determinant coefficient is a
+  cyclotomic value, and the remaining coefficients are `1` and `0`.
 
 * The CARAYOL leaf was then decomposed once more, into
   `exists_isLocalRing_traceSubring` (the ring-theoretic half of
@@ -304,6 +314,19 @@ import Mathlib.LinearAlgebra.Charpoly.ToMatrix
 import Mathlib.LinearAlgebra.Charpoly.BaseChange
 import Mathlib.LinearAlgebra.TensorProduct.Pi
 import Mathlib.LinearAlgebra.Dimension.Constructions
+-- `Subgroup.FiniteIndex` and `LinearMap.charpoly`: both appear in the
+-- exposed statement of the potential-modularity leaf
+-- `exists_finiteIndex_isIntegral_charpolyCoeff_quotient_of_isWeaklyUniversal_isTraceGenerated`.
+public import Mathlib.GroupTheory.Index
+public import Mathlib.LinearAlgebra.Charpoly.Basic
+-- the Dickson recursion `tr(Mⁿ) = Dₙ(tr M, det M)` and the 2×2 charpoly
+-- coefficient dictionary, the two ingredients of the descent glue
+-- `isIntegral_trace_of_isIntegral_trace_pow`; and integral transitivity
+-- through `integralClosure`. All three are exposed in the statements of
+-- that glue and of the Dickson lemmas it rests on.
+public import Mathlib.RingTheory.Polynomial.Dickson
+public import Mathlib.LinearAlgebra.Matrix.Charpoly.Coeff
+public import Mathlib.RingTheory.IntegralClosure.IsIntegralClosure.Basic
 -- proof-only: the Cohen coefficient ring `exists_coefficientRing_ringHom`
 -- is built as `AdjoinRoot` of a monic `ℤ_ℓ`-lift of the minimal
 -- polynomial of a generator of `kˣ`, so it needs the `AdjoinRoot`
@@ -4526,8 +4549,266 @@ theorem eq_maximalIdeal_of_isPrime_of_isIntegral_quotient {R : Type*} [CommRing 
   rw [Subring.coe_map] at hfin
   exact eq_maximalIdeal_of_isPrime_of_finite_image hadic hgen hp hfin
 
-/-- **Mod-`ℓ` fibre leaf, TRACE form** (sorry node — the arithmetic core
-of the finiteness stratum; NARROWED TWICE on 2026-07-25: first from the
+/-- **The Dickson polynomials are monic of the expected degree** (PROVEN
+2026-07-26, elementary; auxiliary two-step-induction form). `dickson 1 a n`
+is the polynomial family with `D₀ = 2`, `D₁ = X`,
+`D_{n+2} = X · D_{n+1} − a · D_n`, i.e. the one satisfying
+`Dₙ(x + y) = xⁿ + yⁿ` when `x y = a` — the trace of the `n`-th power of a
+2×2 matrix as a polynomial in its trace and determinant. Monicity of
+degree exactly `n` (for `n ≥ 1`) is what makes it a WITNESS OF
+INTEGRALITY: `tr M` is a root of the monic `Dₙ(X) − tr(Mⁿ)` over any
+subring containing `det M` and `tr(Mⁿ)`. -/
+lemma monic_natDegree_dickson_one_aux {R : Type*} [CommRing R] [Nontrivial R]
+    (a : R) : ∀ n : ℕ,
+    ((dickson 1 a (n + 1)).Monic ∧ (dickson 1 a (n + 1)).natDegree = n + 1) ∧
+    ((dickson 1 a (n + 2)).Monic ∧ (dickson 1 a (n + 2)).natDegree = n + 2) := by
+  intro n
+  induction n with
+  | zero =>
+    have hC2 : (C (2 : R) : R[X]) = 2 := map_ofNat C 2
+    have h2 : dickson 1 a 2 = X ^ 2 - C (2 * a) := by
+      rw [dickson_two, C_mul, hC2]
+      push_cast
+      ring
+    refine ⟨⟨?_, ?_⟩, ?_, ?_⟩
+    · rw [dickson_one]; exact monic_X
+    · rw [dickson_one]; exact natDegree_X
+    · rw [h2]; exact monic_X_pow_sub_C _ (by norm_num)
+    · rw [h2]; exact natDegree_X_pow_sub_C
+  | succ m ih =>
+    obtain ⟨⟨hm1, hd1⟩, hm2, hd2⟩ := ih
+    have hXmul : (X * dickson 1 a (m + 2)).Monic := monic_X.mul hm2
+    have hXdeg : (X * dickson 1 a (m + 2)).natDegree = m + 3 := by
+      rw [monic_X.natDegree_mul hm2, natDegree_X, hd2]; omega
+    have hCdeg : (C a * dickson 1 a (m + 1)).degree ≤ ((m + 1 : ℕ) : WithBot ℕ) := by
+      refine le_trans (degree_mul_le _ _) ?_
+      have h1 : (C a).degree ≤ 0 := degree_C_le
+      have h2 : (dickson 1 a (m + 1)).degree ≤ ((m + 1 : ℕ) : WithBot ℕ) := by
+        have hle := degree_le_natDegree (p := dickson 1 a (m + 1))
+        rwa [hd1] at hle
+      calc (C a).degree + (dickson 1 a (m + 1)).degree
+          ≤ 0 + ((m + 1 : ℕ) : WithBot ℕ) := add_le_add h1 h2
+        _ = ((m + 1 : ℕ) : WithBot ℕ) := by rw [zero_add]
+    have hCnat : (C a * dickson 1 a (m + 1)).natDegree ≤ m + 1 :=
+      natDegree_le_iff_degree_le.mpr hCdeg
+    have hrec : dickson 1 a (m + 3) =
+        X * dickson 1 a (m + 2) - C a * dickson 1 a (m + 1) := dickson_add_two 1 a (m + 1)
+    have hltN : (C a * dickson 1 a (m + 1)).natDegree <
+        (X * dickson 1 a (m + 2)).natDegree := by
+      rw [hXdeg]; exact lt_of_le_of_lt hCnat (by omega)
+    have hlt : (C a * dickson 1 a (m + 1)).degree < (X * dickson 1 a (m + 2)).degree := by
+      refine lt_of_le_of_lt hCdeg ?_
+      rw [degree_eq_natDegree hXmul.ne_zero, hXdeg]
+      exact_mod_cast (by omega : m + 1 < m + 3)
+    refine ⟨⟨hm2, hd2⟩, ?_, ?_⟩
+    · rw [hrec]; exact hXmul.sub_of_left hlt
+    · rw [hrec, natDegree_sub_eq_left_of_natDegree_lt hltN, hXdeg]
+
+/-- **The Dickson polynomials are monic of the expected degree** (PROVEN
+2026-07-26, elementary): for `n ≥ 1`, `dickson 1 a n` is monic of degree
+`n`. See `monic_natDegree_dickson_one_aux`. -/
+lemma monic_natDegree_dickson_one {R : Type*} [CommRing R] [Nontrivial R]
+    (a : R) (n : ℕ) (hn : n ≠ 0) :
+    (dickson 1 a n).Monic ∧ (dickson 1 a n).natDegree = n := by
+  obtain ⟨m, rfl⟩ : ∃ m, n = m + 1 := ⟨n - 1, by omega⟩
+  exact (monic_natDegree_dickson_one_aux a m).1
+
+/-- **Cayley–Hamilton in rank 2** (PROVEN 2026-07-26, elementary):
+`M² = (tr M)·M − (det M)·1` for a 2×2 matrix over any nontrivial
+commutative ring. This is `Matrix.aeval_self_charpoly` read through
+`Matrix.charpoly_fin_two`, and it is what makes the trace of the powers of
+`M` satisfy the Dickson recursion. -/
+lemma sq_eq_trace_smul_sub_det_smul {A : Type*} [CommRing A] [Nontrivial A]
+    (M : Matrix (Fin 2) (Fin 2) A) : M ^ 2 = M.trace • M - M.det • 1 := by
+  have h := Matrix.aeval_self_charpoly M
+  rw [Matrix.charpoly_fin_two, map_add, map_sub, map_mul, aeval_X_pow, aeval_C, aeval_X,
+    aeval_C, Algebra.algebraMap_eq_smul_one, Algebra.algebraMap_eq_smul_one, smul_mul_assoc,
+    one_mul] at h
+  have hab : M ^ 2 - (M.trace • M - M.det • 1) = M ^ 2 - M.trace • M + M.det • 1 := by abel
+  rw [← sub_eq_zero, hab, h]
+
+/-- **Traces of powers follow the Dickson recursion** (PROVEN 2026-07-26,
+elementary; auxiliary two-step-induction form):
+`tr (Mⁿ) = Dₙ(tr M)` where `Dₙ = dickson 1 (det M) n`. The recursion is
+Cayley–Hamilton `Mⁿ⁺² = (tr M)·Mⁿ⁺¹ − (det M)·Mⁿ` traced. -/
+lemma trace_pow_eq_eval_dickson_aux {A : Type*} [CommRing A] [Nontrivial A]
+    (M : Matrix (Fin 2) (Fin 2) A) : ∀ n : ℕ,
+    (M ^ n).trace = (dickson 1 M.det n).eval M.trace ∧
+    (M ^ (n + 1)).trace = (dickson 1 M.det (n + 1)).eval M.trace := by
+  have hrec : ∀ n : ℕ, M ^ (n + 2) = M.trace • M ^ (n + 1) - M.det • M ^ n := by
+    intro n
+    have hsplit : M ^ (n + 2) = M ^ n * M ^ 2 := pow_add M n 2
+    rw [hsplit, sq_eq_trace_smul_sub_det_smul, mul_sub, mul_smul_comm, mul_smul_comm,
+      mul_one, ← pow_succ]
+  intro n
+  induction n with
+  | zero =>
+    refine ⟨?_, ?_⟩
+    · rw [pow_zero, Matrix.trace_one, dickson_zero]
+      norm_num
+    · rw [pow_one, dickson_one, eval_X]
+  | succ m ih =>
+    refine ⟨ih.2, ?_⟩
+    rw [hrec m, Matrix.trace_sub, Matrix.trace_smul, Matrix.trace_smul, ih.1, ih.2,
+      dickson_add_two]
+    simp only [eval_sub, eval_mul, eval_X, eval_C]
+    ring
+
+/-- **Traces of powers follow the Dickson recursion** (PROVEN 2026-07-26,
+elementary): `tr (Mⁿ) = (dickson 1 (det M) n).eval (tr M)`. -/
+lemma trace_pow_eq_eval_dickson {A : Type*} [CommRing A] [Nontrivial A]
+    (M : Matrix (Fin 2) (Fin 2) A) (n : ℕ) :
+    (M ^ n).trace = (dickson 1 M.det n).eval M.trace :=
+  (trace_pow_eq_eval_dickson_aux M n).1
+
+/-- **Descent of integrality from a power** (PROVEN 2026-07-26, elementary
+— this is the algebraic half of the Khare–Wintenberger base-change
+descent): if the determinant of a 2×2 matrix `M` and the trace of ONE
+positive power `Mⁿ` are integral over a base ring, then so is `tr M`.
+
+Proof: `tr M` is a root of `dickson 1 (det M) n − C (tr (Mⁿ))`, which is
+MONIC of degree `n ≥ 1` with coefficients in `integralClosure R A`
+(`monic_natDegree_dickson_one`, `trace_pow_eq_eval_dickson`); so `tr M` is
+integral over the integral closure, hence over `R` by transitivity
+(`isIntegral_trans`).
+
+Arithmetic use: if `F/ℚ` is finite and `Frob_q^f` lies in `G_F`, the trace
+of `ρ(Frob_q)` is integral over anything the traces of `ρ|_{G_F}` are
+integral over — the determinant being a cyclotomic value, hence already
+defined over the base. -/
+theorem isIntegral_trace_of_isIntegral_trace_pow {Rb A : Type*} [CommRing Rb] [CommRing A]
+    [Nontrivial A] [Algebra Rb A] {n : ℕ} (hn : n ≠ 0) (M : Matrix (Fin 2) (Fin 2) A)
+    (hdet : IsIntegral Rb M.det) (htr : IsIntegral Rb (M ^ n).trace) :
+    IsIntegral Rb M.trace := by
+  set S := integralClosure Rb A with hS
+  have hd : M.det ∈ S := hdet
+  have hs : (M ^ n).trace ∈ S := htr
+  have hmon := monic_natDegree_dickson_one (⟨M.det, hd⟩ : S) n hn
+  refine isIntegral_trans (A := S) M.trace ?_
+  refine ⟨dickson 1 (⟨M.det, hd⟩ : S) n - C (⟨(M ^ n).trace, hs⟩ : S), ?_, ?_⟩
+  · refine hmon.1.sub_of_left ?_
+    refine lt_of_le_of_lt degree_C_le ?_
+    rw [degree_eq_natDegree hmon.1.ne_zero, hmon.2]
+    exact_mod_cast Nat.pos_of_ne_zero hn
+  · rw [eval₂_sub, eval₂_eq_eval_map, Polynomial.map_dickson, eval₂_C]
+    have hmapd : (algebraMap S A) (⟨M.det, hd⟩ : S) = M.det := rfl
+    rw [hmapd, ← trace_pow_eq_eval_dickson M n]
+    simp
+
+/-- **Some positive power of any element lands in a finite-index subgroup**
+(PROVEN 2026-07-26, elementary): the powers `gⁱ` cannot lie in pairwise
+distinct cosets of a finite-index `H`, so `g^{j−i} ∈ H` for some `i < j`.
+This is the group-theoretic half of the base-change descent: with `H = G_F`
+for a number field `F` of degree `d`, it produces the residue degree
+`f ≤ d` with `Frob_q^f ∈ G_F`, without needing `F/ℚ` normal or `H` open. -/
+theorem exists_pow_mem_of_finiteIndex {G : Type*} [Group G] (H : Subgroup G)
+    [H.FiniteIndex] (g : G) : ∃ m : ℕ, 0 < m ∧ g ^ m ∈ H := by
+  have key : ∀ i j : ℕ, i < j →
+      (QuotientGroup.mk (g ^ i) : G ⧸ H) = QuotientGroup.mk (g ^ j) →
+      ∃ m : ℕ, 0 < m ∧ g ^ m ∈ H := by
+    intro i j hij heq
+    refine ⟨j - i, by omega, ?_⟩
+    have hmem : (g ^ i)⁻¹ * g ^ j ∈ H := QuotientGroup.eq.mp heq
+    have hpow : g ^ i * g ^ (j - i) = g ^ j := by
+      rw [← pow_add]; congr 1; omega
+    have hrw : (g ^ i)⁻¹ * g ^ j = g ^ (j - i) := by rw [← hpow, inv_mul_cancel_left]
+    rwa [hrw] at hmem
+  obtain ⟨i, j, hne, heq⟩ :=
+    Finite.exists_ne_map_eq_of_infinite (fun i : ℕ => (QuotientGroup.mk (g ^ i) : G ⧸ H))
+  rcases lt_or_gt_of_ne hne with hij | hij
+  · exact key i j hij heq
+  · exact key j i hij heq.symm
+
+/-- **Potential-modularity leaf** (sorry node — the single genuinely deep
+arithmetic node of the lifting core, isolated on 2026-07-26 as the residue
+of the trace form after the Khare–Wintenberger DESCENT was proven): in the
+weakly universal, trace-generated hardly ramified deformation ring there is
+a FINITE-INDEX subgroup `H ≤ G_ℚ` on which the Frobenius-free traces of the
+universal deformation are already integral over `ℤ_ℓ` modulo any prime
+`p ∋ ℓ` — i.e. `−(coeff 1)` of the characteristic polynomial of `D.ρ g` is
+integral for every `g ∈ H`.
+
+WHAT `H` IS. Verbatim the potential-modularity input: `H = G_F` for the
+totally real solvable-at-the-relevant-places field `F/ℚ` produced by
+Taylor's Moret-Bailly argument, over which `ρbar|_{G_F}` becomes modular.
+Over `F` the Taylor–Wiles–Kisin patching method proves `R_F = T_F` with
+`T_F` a Hecke algebra of Hilbert modular forms of fixed weight and level,
+hence a FINITE `ℤ_ℓ`-algebra; the deformation `D.ρ|_{G_F}` is classified by
+a map `R_F → D.R`, so every trace `tr D.ρ(g)`, `g ∈ G_F`, is the image of
+an element integral over `ℤ_ℓ`. `[F : ℚ] < ∞` is exactly `H.FiniteIndex`.
+The mod-`p` quotient is kept in the statement deliberately: it is the
+weakest form that still supports the consumer, and it is strictly weaker
+than `Module.Finite ℤ_[ℓ] D.R`, which is what the un-quotiented form would
+give back through the completeness bootstrap
+`moduleFinite_of_finite_quotient_span`.
+
+WHY THIS JOINT (2026-07-26). The predecessor leaf — every `charFrob`
+coefficient at every good prime is integral mod `p` — contains three pieces
+of pure algebra that are now discharged and must never be re-proved:
+* only the coefficient `1` (the trace) has content. The constant
+  coefficient is the DETERMINANT, i.e. `algebraMap ℤ_[ℓ]` of a cyclotomic
+  value by `IsHardlyRamified.det`, so it is integral for free; the leading
+  coefficient is `1` and every coefficient above the second vanishes,
+  the charpoly being monic of degree `2`.
+* the trace at a Frobenius element descends from the trace on a
+  finite-index subgroup, by the Dickson identity `tr(Mⁿ) = Dₙ(tr M, det M)`
+  with `Dₙ` MONIC of degree `n`: this is
+  `isIntegral_trace_of_isIntegral_trace_pow`, and it is precisely
+  Khare–Wintenberger's descent of the `F`-level statement to `ℚ` (the
+  residue degree `f` of `q` in `F` being the `n`). Nothing about `q`
+  survives it — which is why the leaf is now a statement about the
+  representation, not about Frobenius elements.
+* the passage from `Frob_q` to a power in `H` is
+  `exists_pow_mem_of_finiteIndex`, elementary coset counting.
+So the surviving obligation is exactly the modularity input, with every
+piece of algebra that used to be entangled with it removed.
+
+WHERE THE PROOF WILL HAVE TO COME FROM (audit, 2026-07-25, unchanged and
+NOT to be redone). `Fermat/FLT/Modularity/Patching.lean` proves both halves
+of `R = T` for its own deformation vocabulary —
+`surjective_ringHom_of_charFrob_eq` and
+`injective_ringHom_of_isWeaklyUniversal`, the latter through the patched-
+module engine — but it carries `Module.Finite ℤ_[ℓ] T` as a HYPOTHESIS on
+the Hecke side and produces no finiteness of any deformation ring, so even
+the Hecke-algebra input is not yet available in the repository. Nor are its
+declarations reachable from here: `Patching.lean` imports
+`Modularity/KhareWintenberger.lean`, which imports THIS module, so
+consuming it would close the dependency cycle this module's circularity
+guard exists to prevent. Discharging this leaf therefore needs either
+(i) the KW-free module split recorded in
+`~/.flt-design-deformation-patching-dedup.md` plus genuine finiteness of
+`T`, or (ii) the Hilbert-modular potential-modularity route, which is the
+one the statement is now shaped for. CIRCULARITY GUARD: the odd-prime
+dichotomy `not_isIrreducible_of_isHardlyRamified_of_five_le` must NOT be
+used to discharge this vacuously — it is itself proven over pillar α, which
+this cluster proves.
+
+References: Khare–Wintenberger, *Serre's modularity conjecture (I)*,
+Thm. 4.1 and §4, and *(II)*; Taylor, *Remarks on a conjecture of Fontaine
+and Mazur* and *On the meromorphic continuation of degree two L-functions*;
+Kisin, *Moduli of finite flat group schemes, and modularity*;
+Darmon–Diamond–Taylor, *Fermat's Last Theorem*, §3; Buzzard's 2026 EPSRC
+course, Lecture 4. -/
+theorem exists_finiteIndex_isIntegral_charpolyCoeff_quotient_of_isWeaklyUniversal_isTraceGenerated
+    (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (D : HardlyRamifiedDeformation hℓOdd ρbar)
+    (hw : D.IsWeaklyUniversal) (ht : D.IsTraceGenerated) :
+    letI := D.commRing; letI := D.topologicalSpace
+    letI := D.isTopologicalRing; letI := D.algebra
+    ∃ H : Subgroup (Field.absoluteGaloisGroup ℚ), H.FiniteIndex ∧
+      ∀ p : Ideal D.R, p.IsPrime → ((ℓ : ℕ) : D.R) ∈ p →
+        ∀ g ∈ H, IsIntegral ℤ_[ℓ]
+          (Ideal.Quotient.mk p ((D.ρ g).charpoly.coeff 1)) :=
+  sorry
+
+/-- **Mod-`ℓ` fibre leaf, TRACE form** (PROVEN 2026-07-26 over the
+potential-modularity leaf
+`exists_finiteIndex_isIntegral_charpolyCoeff_quotient_of_isWeaklyUniversal_isTraceGenerated`
+above, the Dickson descent `isIntegral_trace_of_isIntegral_trace_pow` and
+the coset counting `exists_pow_mem_of_finiteIndex`; NARROWED TWICE before
+that, on 2026-07-25: first from the
 `𝔪`-primarity form `∃ n, 𝔪 ^ n ≤ (ℓ)` to the pointwise statement "every
 prime containing `ℓ` is `𝔪`" — the dévissage being the pure commutative
 algebra `exists_maximalIdeal_pow_le_span_of_forall_isPrime` above — and
@@ -4580,19 +4861,25 @@ presentation stratum gives a prime strictly below `𝔪`
 `dim D.R ≥ 1`), so this leaf is exactly the matching upper bound
 `dim D.R ≤ 1` in the fibre-wise form.
 
-This is the potential-modularity / Taylor–Wiles–Kisin input of
-Khare–Wintenberger — the single genuinely deep arithmetic node of the
-lifting core. The residual-modularity hypothesis is bypassed via
-potential modularity (Taylor's Moret-Bailly argument), which after a
-solvable base change `F/ℚ` (totally real, in which the deformation
-problem's conditions remain balanced) proves an `R = T` theorem by the
-Taylor–Wiles–Kisin patching method; `T` is a finite `ℤ_ℓ`-algebra, so
-`T/ℓT` — and with it the mod-`ℓ` fibre of the `ℚ`-level ring, by
-Khare–Wintenberger's descent — is finite. The mod-`ℓ` form is chosen
-over `Module.Finite ℤ_[ℓ] D.R` because it is what the patching
-literature produces directly (cf. the Böckle presentation stratum); the
-lift back to `ℤ_ℓ`-module finiteness is the pure commutative-algebra
-completeness bootstrap `moduleFinite_of_finite_quotient_span` below.
+HOW IT IS NOW PROVEN (2026-07-26). Three of the four coefficient cases
+carry no arithmetic at all and are discharged here: the constant
+coefficient is the determinant of `D.ρ (globalFrob q)`, which
+`IsHardlyRamified.det` pins to `algebraMap ℤ_[ℓ]` of a cyclotomic value,
+hence integral for free; `coeff 2 = 1` and `coeff n = 0` for `n ≥ 3`, the
+characteristic polynomial of a rank-2 endomorphism being monic of degree
+`2`. The remaining coefficient — the TRACE — is obtained from the
+potential-modularity leaf
+`exists_finiteIndex_isIntegral_charpolyCoeff_quotient_of_isWeaklyUniversal_isTraceGenerated`
+above by the Khare–Wintenberger base-change descent, which is proven here
+in two elementary pieces: `exists_pow_mem_of_finiteIndex` produces `m > 0`
+with `Frob_q^m ∈ H` (the residue degree of `q` in `F`), and
+`isIntegral_trace_of_isIntegral_trace_pow` — the Dickson identity
+`tr(Mᵐ) = Dₘ(tr M, det M)` with `Dₘ` MONIC of degree `m` — brings the
+integrality back down from `tr(ρ(Frob_q)^m)` to `tr ρ(Frob_q)`, the
+determinant being available as a cyclotomic value. So everything that
+remains open here is the modularity input, and it is stated in the leaf
+above; see its docstring for the audit of what discharging it requires.
+
 The hypotheses characterize `D` up to canonical isomorphism (weak
 universality + trace generation = universality, by
 `isUniversal_of_isWeaklyUniversal_isTraceGenerated` and the rigidity
@@ -4600,29 +4887,9 @@ theorem `exists_ringEquiv_of_isUniversal`), so a future proof may
 construct its own universal datum, prove ITS mod-`ℓ` fibre a point, and
 transport the result along the canonical isomorphism.
 
-WHERE THE PROOF WILL HAVE TO COME FROM (audit, 2026-07-25).
-`Fermat/FLT/Modularity/Patching.lean` proves both halves of `R = T` for
-its own deformation vocabulary — `surjective_ringHom_of_charFrob_eq`
-and `injective_ringHom_of_isWeaklyUniversal`, the latter through the
-patched-module engine — but it carries `Module.Finite ℤ_[ℓ] T` as a
-HYPOTHESIS on the Hecke side and produces no finiteness of any
-deformation ring, so even the Hecke-algebra input is not yet available
-in the repository. Nor are its declarations reachable from here:
-`Patching.lean` imports `Modularity/KhareWintenberger.lean`, which
-imports THIS module, so consuming it would close the dependency cycle
-this module's circularity guard exists to prevent. Discharging this
-leaf therefore needs either (i) the KW-free module split recorded in
-`~/.flt-design-deformation-patching-dedup.md` plus genuine finiteness of
-`T`, or (ii) the Hilbert-modular potential-modularity route. CIRCULARITY
-GUARD: the odd-prime dichotomy
-`not_isIrreducible_of_isHardlyRamified_of_five_le` must NOT be used to
-discharge this vacuously — it is itself proven over pillar α, which
-this cluster proves.
-
 References: Khare–Wintenberger, *Serre's modularity conjecture (I)*,
 Thm. 4.1 and §4, and *(II)*; Taylor, *Remarks on a conjecture of
-Fontaine and Mazur* and *On the meromorphic continuation of degree two
-L-functions*; Kisin, *Moduli of finite flat group schemes, and
+Fontaine and Mazur*; Kisin, *Moduli of finite flat group schemes, and
 modularity*; Buzzard's 2026 EPSRC course, Lecture 4. -/
 theorem isIntegral_charFrobCoeff_quotient_of_isWeaklyUniversal_isTraceGenerated
     (hℓ5 : 5 ≤ ℓ)
@@ -4635,8 +4902,118 @@ theorem isIntegral_charFrobCoeff_quotient_of_isWeaklyUniversal_isTraceGenerated
     ∀ p : Ideal D.R, p.IsPrime → ((ℓ : ℕ) : D.R) ∈ p →
       ∀ q (hq : q.Prime), q ≠ 2 → q ≠ ℓ → ∀ n : ℕ,
         IsIntegral ℤ_[ℓ] (Ideal.Quotient.mk p
-          ((D.ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff n)) :=
-  sorry
+          ((D.ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff n)) := by
+  letI := D.commRing; letI := D.topologicalSpace
+  letI := D.isTopologicalRing; letI := D.isLocalRing; letI := D.algebra
+  obtain ⟨H, hHfi, hH⟩ :=
+    exists_finiteIndex_isIntegral_charpolyCoeff_quotient_of_isWeaklyUniversal_isTraceGenerated
+      hℓOdd hdim hℓ5 h hirr D hw ht
+  intro p hp hℓp q hq hq2 hqℓ n
+  haveI := hp
+  haveI : IsDomain (D.R ⧸ p) := Ideal.Quotient.isDomain p
+  have hcard : Fintype.card (Fin 2) - 1 = 1 := by simp
+  have hcoeffR : ∀ P : Matrix (Fin 2) (Fin 2) D.R, P.charpoly.coeff 1 = -P.trace := by
+    intro P
+    have hh := Matrix.trace_eq_neg_charpoly_coeff P
+    rw [hcard] at hh
+    rw [hh, neg_neg]
+  have hcoeffQ : ∀ P : Matrix (Fin 2) (Fin 2) (D.R ⧸ p), P.charpoly.coeff 1 = -P.trace := by
+    intro P
+    have hh := Matrix.trace_eq_neg_charpoly_coeff P
+    rw [hcard] at hh
+    rw [hh, neg_neg]
+  -- the Frobenius element, and the endomorphism the deformation attaches to it
+  set g : Field.absoluteGaloisGroup ℚ :=
+    globalFrob hq.toHeightOneSpectrumRingOfIntegersRat
+  have hchar : D.ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat = (D.ρ g).charpoly :=
+    GaloisRep.charFrob_eq_charpoly_globalFrob D.ρ _
+  have hfinrank : Module.finrank D.R (Fin 2 → D.R) = 2 := by simp
+  -- the constant coefficient is the determinant: a cyclotomic value from `ℤ_ℓ`
+  have hdetR : ∀ x : Field.absoluteGaloisGroup ℚ,
+      (D.ρ x).charpoly.coeff 0 = algebraMap ℤ_[ℓ] D.R
+        (cyclotomicCharacter (AlgebraicClosure ℚ) ℓ x.toRingEquiv) := by
+    intro x
+    have hdet := LinearMap.det_eq_sign_charpoly_coeff (D.ρ x)
+    rw [hfinrank] at hdet
+    have h1 : LinearMap.det (D.ρ x) = (D.ρ x).charpoly.coeff 0 := by rw [hdet]; ring
+    rw [← h1, ← GaloisRep.det_apply, D.isHardlyRamified.det x]
+  have hintdet : ∀ x : Field.absoluteGaloisGroup ℚ,
+      IsIntegral ℤ_[ℓ] (Ideal.Quotient.mk p ((D.ρ x).charpoly.coeff 0)) := by
+    intro x
+    rw [hdetR x]
+    have hqa : Ideal.Quotient.mk p (algebraMap ℤ_[ℓ] D.R
+        (cyclotomicCharacter (AlgebraicClosure ℚ) ℓ x.toRingEquiv)) =
+        algebraMap ℤ_[ℓ] (D.R ⧸ p)
+          (cyclotomicCharacter (AlgebraicClosure ℚ) ℓ x.toRingEquiv) := rfl
+    rw [hqa]
+    exact isIntegral_algebraMap
+  rw [hchar]
+  match n with
+  | 0 => exact hintdet g
+  | 1 =>
+    -- the TRACE: descend from the finite-index subgroup by the Dickson recursion
+    obtain ⟨m, hm0, hmH⟩ := exists_pow_mem_of_finiteIndex H g
+    set Mx : Matrix (Fin 2) (Fin 2) D.R := LinearMap.toMatrixAlgEquiv' (D.ρ g) with hMx
+    set N : Matrix (Fin 2) (Fin 2) (D.R ⧸ p) := Mx.map (Ideal.Quotient.mk p) with hN
+    have hpow : ∀ j : ℕ, (LinearMap.toMatrixAlgEquiv' (D.ρ (g ^ j)) :
+        Matrix (Fin 2) (Fin 2) D.R) = Mx ^ j := by
+      intro j
+      rw [hMx, map_pow, map_pow]
+    have hcharMx : ∀ x : Field.absoluteGaloisGroup ℚ,
+        (D.ρ x).charpoly =
+          (LinearMap.toMatrixAlgEquiv' (D.ρ x) : Matrix (Fin 2) (Fin 2) D.R).charpoly := by
+      intro x
+      have hb := LinearMap.charpoly_toMatrix (D.ρ x) (Pi.basisFun D.R (Fin 2))
+      rw [LinearMap.toMatrix_eq_toMatrix'] at hb
+      rw [← hb]
+      rfl
+    have hmapcoeff : ∀ P : Matrix (Fin 2) (Fin 2) D.R,
+        Ideal.Quotient.mk p (P.charpoly.coeff 1) =
+          (P.map (Ideal.Quotient.mk p)).charpoly.coeff 1 := by
+      intro P
+      rw [Matrix.charpoly_map, Polynomial.coeff_map]
+    have hNdet : IsIntegral ℤ_[ℓ] N.det := by
+      have hd : N.det = Ideal.Quotient.mk p Mx.det := by
+        rw [hN, ← RingHom.mapMatrix_apply, ← RingHom.map_det]
+      have hMxdet : Mx.det = (D.ρ g).charpoly.coeff 0 := by
+        have h0 := hcharMx g
+        have hsign := Matrix.det_eq_sign_charpoly_coeff Mx
+        simp only [Fintype.card_fin] at hsign
+        rw [h0, ← hMx, hsign]
+        ring
+      rw [hd, hMxdet]
+      exact hintdet g
+    have hNtr : IsIntegral ℤ_[ℓ] ((N ^ m).trace) := by
+      have hNm : N ^ m = (Mx ^ m).map (Ideal.Quotient.mk p) := by
+        rw [hN, ← RingHom.mapMatrix_apply, ← map_pow, RingHom.mapMatrix_apply]
+      have htr : (N ^ m).trace = Ideal.Quotient.mk p ((Mx ^ m).trace) := by
+        rw [hNm, ← AddMonoidHom.map_trace]
+      have hMxm : (Mx ^ m).trace = -((D.ρ (g ^ m)).charpoly.coeff 1) := by
+        rw [hcharMx (g ^ m), hpow m, hcoeffR, neg_neg]
+      rw [htr, hMxm, map_neg]
+      exact (hH p hp hℓp (g ^ m) hmH).neg
+    have hNtrace := isIntegral_trace_of_isIntegral_trace_pow
+      (Rb := ℤ_[ℓ]) hm0.ne' N hNdet hNtr
+    have hfin : Ideal.Quotient.mk p ((D.ρ g).charpoly.coeff 1) = -N.trace := by
+      rw [hcharMx g, ← hMx, hmapcoeff Mx, ← hN, hcoeffQ]
+    rw [hfin]
+    exact hNtrace.neg
+  | 2 =>
+    have hmonic : (D.ρ g).charpoly.Monic := LinearMap.charpoly_monic _
+    have hdeg : (D.ρ g).charpoly.natDegree = 2 := by
+      rw [LinearMap.charpoly_natDegree, hfinrank]
+    have h1 : (D.ρ g).charpoly.coeff 2 = 1 := by
+      have hlead := hmonic.coeff_natDegree
+      rwa [hdeg] at hlead
+    rw [h1, map_one]
+    exact isIntegral_one
+  | (j + 3) =>
+    have hdeg : (D.ρ g).charpoly.natDegree = 2 := by
+      rw [LinearMap.charpoly_natDegree, hfinrank]
+    have h0 : (D.ρ g).charpoly.coeff (j + 3) = 0 :=
+      Polynomial.coeff_eq_zero_of_natDegree_lt (by rw [hdeg]; omega)
+    rw [h0, map_zero]
+    exact isIntegral_zero
 
 /-- **Mod-`ℓ` fibre stratum** (PROVEN 2026-07-25 over the trace-form leaf
 `isIntegral_charFrobCoeff_quotient_of_isWeaklyUniversal_isTraceGenerated`
