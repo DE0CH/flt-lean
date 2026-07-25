@@ -4,16 +4,20 @@ FLT project).
 
 Decomposition of `WeierstrassCurve.n_torsion_card`
 (`#E(k̄)[n] = n²` for `(n : k) ≠ 0`, `Torsion.lean`) into two faithful
-arithmetic nodes, plus the PROVEN derivation:
+arithmetic nodes, plus the derivation.  LABEL AUDIT (bookkeeping,
+2026-07-25): both nodes are now PROVEN — neither `TorsionCard.lean` nor
+`TorsionCardSep.lean` emits any `declaration uses 'sorry'` warning; the
+"(sorry node)" labels below were stale and are corrected here, since leaf
+lists get harvested from them and a stale label manufactures phantom work.
 
-* `TorsionCard.smul_surjective` (sorry node): **divisibility of the
+* `TorsionCard.smul_surjective` (PROVEN): **divisibility of the
   points group** — over a separably closed field, multiplication by
   `n` with `(n : k) ≠ 0` is surjective on the points of an elliptic
   curve. (The multiplication-by-`n` map is a finite separable isogeny of
   degree `n²`; over a separably closed field a separable isogeny is
   surjective on points.)
 
-* `TorsionCard.prime_torsion_card` (sorry node): **the prime-level
+* `TorsionCard.prime_torsion_card` (PROVEN): **the prime-level
   count** — for a prime `p` with `(p : k) ≠ 0`, the `p`-torsion of an
   elliptic curve over a separably closed field has exactly `p²`
   elements.

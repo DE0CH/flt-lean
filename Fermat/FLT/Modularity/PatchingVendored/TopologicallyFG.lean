@@ -11,8 +11,12 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Andrew Yang, Kevin Buzzard
 -/
 
-import Mathlib.RingTheory.FiniteType
-import Mathlib.Topology.Algebra.Ring.Basic
+module
+
+public import Mathlib.RingTheory.FiniteType
+public import Mathlib.Topology.Algebra.Ring.Basic
+
+@[expose] public section
 
 set_option autoImplicit false
 set_option relaxedAutoImplicit false
