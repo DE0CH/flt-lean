@@ -7640,67 +7640,190 @@ lemma isIrreducible_of_equivariant {F : Type*} [Field F]
 
 include hpodd in
 /-- **Residual nontriviality of the mod-`p` cyclotomic character**
-(Ribet cut, arithmetic mini-leaf; sorry node): for an odd prime `p`
-and any finite field `kk'` receiving `ℤ_p`, some global Galois
-element has cyclotomic-character image `≠ 1` in `kk'`. Classical
-proof: any ring map `ℤ_p → kk'` kills `p` — its kernel is a NONZERO
-prime of the discrete valuation ring `ℤ_p` (zero kernel would inject
-the infinite `ℤ_p` into the finite `kk'`), hence the maximal ideal
-`(p)` — so the map factors through an embedding `𝔽_p ↪ kk'` of
-fields, and it suffices to produce `g` with `χ_cyc(g) ≢ 1 mod p`.
-The restriction `Gal(ℚ(ζ_p)/ℚ) ≃ (ℤ/p)ˣ` (irreducibility of the
-`p`-th cyclotomic polynomial; mathlib's `IsPrimitiveRoot.autToPow` /
-`IsCyclotomicExtension.Rat` machinery) is a group of order
-`p − 1 ≥ 2` for odd `p`; a nontrivial member lifts to an
-automorphism of `AlgebraicClosure ℚ` along the normal subextension
-(`AlgEquiv.liftNormal`), and `cyclotomicCharacter.toZModPow` at
-level `1` reads the mod-`p` value of the character off the lifted
-action on `μ_p`, giving the required `≠ 1`. Soundness (audit
+(Ribet cut, arithmetic mini-leaf; PROVEN 2026-07-24): for an odd prime
+`p` and any finite field `kk'` receiving `ℤ_p`, some global Galois
+element has cyclotomic-character image `≠ 1` in `kk'`. The witness is
+the global arithmetic Frobenius at the prime `2`: `p` is odd, so
+`2 ≠ p`, and `cyclotomicCharacter_globalFrob` (`Chebotarev.lean`)
+evaluates the `p`-adic cyclotomic character there to the integer
+`(2 : ℤ_p)`; its image in `kk'` is `(2 : kk')`, and `2 = 1` in a field
+would force `1 = 0`. (This replaces the originally planned route
+through `Gal(ℚ(ζ_p)/ℚ) ≃ (ℤ/p)ˣ` and `AlgEquiv.liftNormal`: the
+Frobenius formula is already proven upstream and makes no
+`𝔽_p ↪ kk'` factorization necessary — no characteristic computation
+for `kk'` is used at all, only that it is a field.) Soundness (audit
 2026-07-24): the statement FAILS at `p = 2` (the mod-`2` cyclotomic
-character is trivial), so `hpodd` is load-bearing and consumed
-exactly once; the hypothesis set is inhabited (`kk' = 𝔽_p`). -/
+character is trivial), so `hpodd` is load-bearing and consumed exactly
+once — it is what makes `2` a prime distinct from `p`; the hypothesis
+set is inhabited (`kk' = 𝔽_p`). -/
 theorem exists_cyclotomicCharacter_residual_ne_one
     {kk' : Type*} [Field kk'] [Finite kk'] [Algebra ℤ_[p] kk'] :
     ∃ g : Field.absoluteGaloisGroup ℚ,
       algebraMap ℤ_[p] kk'
-        (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv) ≠ 1 :=
+        (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv) ≠ 1 := by
+  have hp2 : (2 : ℕ) ≠ p := by
+    rintro rfl
+    exact (Nat.not_odd_iff_even.mpr even_two) hpodd
+  refine ⟨globalFrob
+    (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat Nat.prime_two), ?_⟩
+  rw [cyclotomicCharacter_globalFrob (ℓ := p) Nat.prime_two hp2, map_natCast]
+  intro h
+  have h1 : (1 : kk') = 0 := by
+    have h2 := h
+    push_cast at h2
+    linear_combination h2
+  exact one_ne_zero h1
+
+omit [IsDomain R] [TopologicalSpace R] [IsTopologicalRing R] in
+include hv in
+/-- **A `Fin 2`-frame of the coefficient module** (PROVEN glue): `V` is
+free of rank `2` over the nontrivial commutative ring `R`, so its
+finite rank is the natural number `2` and any chosen basis reindexes to
+one indexed by `Fin 2`. -/
+theorem exists_basis_fin_two : Nonempty (Module.Basis (Fin 2) R V) := by
+  have hfr : Module.finrank R V = 2 := by
+    have h := Module.finrank_eq_rank R V
+    rw [hv] at h
+    exact_mod_cast h
+  exact ⟨(Module.finBasis R V).reindex (finCongr hfr)⟩
+
+/-- **The `p`-adic ring-of-integers hull** (Ribet cut E2a-i-a; sorry
+node — the ARITHMETIC half of the valuation-ring lattice, isolated
+2026-07-24 when the lattice half below was proven): a module-finite
+`ℤ_p`-domain `R` of characteristic zero, presented in `ℚ̄_p`, sits
+inside the ring of integers `O` of a finite extension of `ℚ_p`,
+compatibly with both structure maps. This is the whole `𝒪_E`-content
+of E2a-i; the lattice content is discharged by
+`exists_valuationRing_stable_lattice` below.
+
+FULLY MAPPED ROUTE (2026-07-24; every step checked against this pin's
+mathlib, no step through `Family.lean` or `Reducible.lean`, so the
+Ribet-cut circularity guard is respected — but note that
+`Family.lean` carries, DOWNSTREAM and therefore unusable here, an
+almost verbatim instance suite for the intermediate-field spelling of
+the same object: `instModuleFiniteIntegralClosurePadicInt`,
+`instValuationRingIntegralClosurePadicInt`,
+`isModuleTopology_integralClosure_padicInt`,
+`isIntegral_padicInt_of_spectralNorm_le_one`,
+`isModuleTopology_of_compactSpace_t2Space`. Discharging this leaf is
+mostly a matter of re-deriving that suite upstream — ideally by moving
+it into a new module imported by BOTH files):
+
+1. *The structure maps commute*: `ℤ_p → R → ℚ̄_p` and the canonical
+   `ℤ_p → ℚ_p → ℚ̄_p` are two CONTINUOUS ring maps `ℤ_p → ℚ̄_p`
+   (continuity of `R → ℚ̄_p` is `continuous_algebraMap` from the
+   `ContinuousSMul` hypothesis; continuity of `ℤ_p → R` is
+   `IsModuleTopology.continuous_of_linearMap`) agreeing on the image
+   of `ℕ`, which is DENSE (`PadicInt.denseRange_natCast`) in the
+   Hausdorff `ℚ̄_p`; so `Continuous.ext_on` gives
+   `IsScalarTower ℤ_[p] R (AlgebraicClosure ℚ_[p])` for free. This is
+   the step that makes the statement true without any scalar-tower
+   hypothesis, and it is where `ContinuousSMul R ℚ̄_p` is consumed.
+2. *The fraction field*: `F := FractionRing R` (which lives in
+   `Type u`, unlike any subfield of `ℚ̄_p` — this is why `F`, and not
+   an `IntermediateField ℚ_[p] (AlgebraicClosure ℚ_[p])`, is the right
+   carrier here: it avoids a `ULift` transport of the entire instance
+   bundle). `hZinj` makes `ℤ_p → R → F` injective, so
+   `IsFractionRing.lift` gives `ℚ_p →ₐ[ℤ_p] F` and hence
+   `Algebra ℚ_[p] F` with `IsScalarTower ℤ_[p] ℚ_[p] F`.
+3. *`F/ℚ_p` is finite*: the `ℚ_p`-span `W` of the image of a finite
+   `ℤ_p`-spanning set of `R` is a finite-dimensional `ℚ_p`-subalgebra
+   of `F` containing the image of `R`, and a domain, hence a field
+   (`isField_of_isIntegral_of_isField'`); every element of `F` is a
+   ratio of elements of the image of `R` (`IsFractionRing`), so
+   `W = F` and `FiniteDimensional ℚ_[p] F`.
+4. *`O := integralClosure ℤ_[p] F`* (again in `Type u`) is a domain,
+   a `ℤ_p`-algebra, and `Module.Finite ℤ_[p] O` by
+   `IsIntegralClosure.finite ℤ_[p] ℚ_[p] F` (`ℤ_p` is Noetherian and
+   integrally closed with fraction field `ℚ_p`; `F/ℚ_p` is finite and
+   separable in characteristic zero).
+5. *Topology*: take `TopologicalSpace O := moduleTopology ℤ_[p] O`,
+   so `IsModuleTopology` holds by `rfl` and `IsTopologicalRing O`
+   follows from module-finiteness
+   (`IsModuleTopology.continuous_mul_of_finite`). No compactness or
+   subspace-topology argument is needed for this spelling.
+6. *The embedding*: `ℤ_p ∖ {0}` maps into the units of `ℚ̄_p`, so the
+   given `R → ℚ̄_p` extends over the localization `F` (step 3 shows
+   `F` IS that localization), giving `φ : F →+* ℚ̄_p`, injective
+   because `F` is a field. Restricting `φ` to `O` supplies
+   `Algebra O (AlgebraicClosure ℚ_[p])`, the injectivity clause, and —
+   with step 1 — both compatibility clauses; `ContinuousSMul O ℚ̄_p`
+   is `continuousSMul_of_algebraMap` applied to the `ℤ_p`-linear (hence
+   module-topology-continuous) `φ ∘ (O ⊆ F)`.
+7. *`O` is a valuation ring, hence LOCAL*: for `x : F`, one of
+   `φ x`, `φ x⁻¹` has spectral norm `≤ 1` over `ℚ_p`, hence is
+   integral over `ℤ_p` (the `ℤ_p`-avatar of
+   `isIntegral_of_spectralNorm_le_one`, which lifts the minimal
+   polynomial coefficientwise), and integrality descends along the
+   injective `φ` (`isIntegral_algHom_iff`); so
+   `ValuationSubring.instValuationRingSubtypeMem` applies and
+   `IsLocalRing O` comes for free — no henselian/idempotent-lifting
+   argument is required anywhere.
+8. *`O` is a DVR*: `O` is Noetherian (module-finite over the
+   Noetherian `ℤ_p`), local, a domain, and not a field (`p⁻¹` is not
+   integral over the integrally closed `ℤ_p`), so
+   `(IsDiscreteValuationRing.TFAE O hnf).out 1 0` upgrades
+   `ValuationRing O` to `IsDiscreteValuationRing O`.
+
+Soundness (audit 2026-07-24): the hypothesis set is inhabited
+(`R = ℤ_p` with its canonical presentation in `ℚ̄_p`) and the
+conclusion holds for every inhabitant by the route above. `hZinj` is
+LOAD-BEARING: without it `algebraMap ℤ_[p] R` may kill `p`, and then
+`ι (algebraMap ℤ_[p] R p) = 0` while `algebraMap ℤ_[p] O p ≠ 0` in the
+characteristic-zero `O`, so no `ι` can exist. No oddness,
+irreducibility, residual or representation-theoretic input is
+consumed. -/
+theorem exists_padicIntegers_dvr_hull
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hZinj : Function.Injective (algebraMap ℤ_[p] R)) :
+    ∃ (O : Type u) (_ : CommRing O) (_ : Algebra ℤ_[p] O)
+      (_ : IsDomain O) (_ : Module.Finite ℤ_[p] O)
+      (_ : TopologicalSpace O) (_ : IsTopologicalRing O)
+      (_ : IsLocalRing O) (_ : IsModuleTopology ℤ_[p] O)
+      (_ : IsDiscreteValuationRing O)
+      (_ : Algebra O (AlgebraicClosure ℚ_[p]))
+      (_ : ContinuousSMul O (AlgebraicClosure ℚ_[p]))
+      (ι : R →+* O),
+      Function.Injective (algebraMap O (AlgebraicClosure ℚ_[p])) ∧
+      (∀ x : ℤ_[p], ι (algebraMap ℤ_[p] R x) = algebraMap ℤ_[p] O x) ∧
+      (∀ r : R, algebraMap O (AlgebraicClosure ℚ_[p]) (ι r) =
+        algebraMap R (AlgebraicClosure ℚ_[p]) r) :=
   sorry
 
 include hv in
-/-- **The valuation-ring lattice** (Ribet cut E2a-i; sorry node — the
-`𝒪_E`-frame of the generic representation): the coefficient ring `R`
-embeds in the valuation ring `O` of its fraction field, and `ρ`
+/-- **The valuation-ring lattice** (Ribet cut E2a-i; PROVEN 2026-07-24
+as an assembly over the arithmetic hull
+`exists_padicIntegers_dvr_hull`): the coefficient ring `R` maps to the
+ring of integers `O` of a finite extension of `ℚ_p`, and `ρ`
 stabilizes an `O`-lattice in its generic fibre, presented on the
-standard frame `Fin 2 → O` with a `ℚ̄_p`-equivariant identification
-to `ρ ⊗ ℚ̄_p`. Classical construction: `E := Frac R` is a FINITE
-extension of `ℚ_p` — `R` is a module-finite `ℤ_p`-domain and `hZinj`
-keeps it of characteristic zero, so `E` is generated over `ℚ_p` by
-finitely many algebraic elements; `O := 𝒪_E` is the integral closure
-of `ℤ_p` in `E`, a complete discrete valuation ring, module-finite
-over `ℤ_p` (finiteness of the integral closure of a complete DVR in
-a finite separable extension), local, a domain, topologized by the
-compact `ℤ_p`-module topology, and it contains `ι(R)` because `R` is
-integral over `ℤ_p`; the given continuous map `R → ℚ̄_p` is
-injective (its kernel is a prime of the one-dimensional domain `R`
-meeting `ℤ_p` trivially by `hZinj`, hence zero by going-up for the
-integral `ℤ_p ⊆ R`), so it extends along `R ⊆ O ⊆ E` to a field
-embedding `E ↪ ℚ̄_p` whose restriction to `O` gives the injectivity
-and the two compatibility equations of the conclusion. The lattice:
-the `O`-span `M` of the image of `V` in `E ⊗_R V` is finitely
-generated (`R`-generators of `V` generate), torsion-free over the
-DVR `O` hence FREE, of rank `2` (it spans the `2`-dimensional
-`E`-space `E ⊗_R V`, by `hv`), and stable under every `ρ(g) ⊗ E`
-(each `ρ(g)` is `R`-linear and the span is `O`-linear); an `O`-basis
-of `M` presents the action as `ρO : GaloisRep ℚ O (Fin 2 → O)` —
-continuous because `ρ` is continuous and the module topology of
-`End_O(M)` is induced from `End_E(E ⊗ V)` — and base-changing the
-inclusion `M ⊆ E ⊗_R V` along `O → ℚ̄_p` gives the equivariant
-generic-fibre identification `e`. Soundness (audit 2026-07-24): the
-hypothesis set is inhabited (`R = ℤ_p`, `V = ℤ_p²`, `ρ` trivial) and
-the conclusion holds for every inhabitant by the construction above;
-no oddness, irreducibility or residual input is consumed.
-Circularity guard (inherited from the Ribet cut): must not route
-through `Family.lean` or `Reducible.lean`'s B5. -/
+standard frame `Fin 2 → O` with a `ℚ̄_p`-equivariant identification to
+`ρ ⊗ ℚ̄_p`.
+
+The originally planned proof — take the `O`-span of `V` inside
+`E ⊗_R V`, prove it finitely generated and torsion-free hence free of
+rank `2`, and prove it `ρ`-stable by a continuity-plus-compactness
+argument — is UNNECESSARY on this statement: `V` is already free of
+rank `2` over `R` (`Module.Free R V` and `hv` are section
+hypotheses), so `O ⊗_R V` IS a free rank-`2` `O`-lattice, tautologically
+stable, and `exists_basis_fin_two` frames it. Concretely: `ι` makes `O`
+an `R`-algebra (continuous, because a `ℤ_p`-linear map out of a
+module-topology module is continuous, so `ContinuousSMul R O` holds and
+`GaloisRep.baseChange` applies), `ρO` is `ρ ⊗_R O` conjugated
+(`GaloisRep.conj`) by the frame `Module.Basis.baseChange`, and `e` is
+the frame undone followed by
+`TensorProduct.AlgebraTensorModule.cancelBaseChange` for the tower
+`R → O → ℚ̄_p` (whose scalar-tower instance is exactly the third
+compatibility clause of the hull). Equivariance is checked on pure
+tensors: both sides send `a ⊗ (s ⊗ v)` to `(s • a) ⊗ ρ g v`. So the
+ENTIRE remaining content of E2a-i is the arithmetic hull, and this
+theorem consumes nothing else.
+
+Soundness (audit 2026-07-24): the hypothesis set is inhabited
+(`R = ℤ_p`, `V = ℤ_p²`, `ρ` trivial); no oddness, irreducibility or
+residual input is consumed, and `hZinj` is passed straight to the
+hull. Circularity guard (inherited from the Ribet cut): must not route
+through `Family.lean` or `Reducible.lean`'s B5 — and does not. -/
 theorem exists_valuationRing_stable_lattice
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
@@ -7721,8 +7844,63 @@ theorem exists_valuationRing_stable_lattice
       (∀ r : R, algebraMap O (AlgebraicClosure ℚ_[p]) (ι r) =
         algebraMap R (AlgebraicClosure ℚ_[p]) r) ∧
       (∀ g x, e ((ρO.baseChange (AlgebraicClosure ℚ_[p])) g x) =
-        (ρ.baseChange (AlgebraicClosure ℚ_[p])) g (e x)) :=
-  sorry
+        (ρ.baseChange (AlgebraicClosure ℚ_[p])) g (e x)) := by
+  classical
+  obtain ⟨O, hCRO, hAZO, hDomO, hMFO, hTopO, hTRO, hLocO, hMTO, hDVRO,
+    hAQO, hCSQO, ι, hOinj, hιZ, hιQ⟩ :=
+    exists_padicIntegers_dvr_hull (R := R) hZinj
+  letI := hCRO
+  letI := hAZO
+  letI := hDomO
+  letI := hMFO
+  letI := hTopO
+  letI := hTRO
+  letI := hLocO
+  letI := hMTO
+  letI := hDVRO
+  letI := hAQO
+  letI := hCSQO
+  letI : Algebra R O := ι.toAlgebra
+  haveI : IsScalarTower ℤ_[p] R O :=
+    IsScalarTower.of_algebraMap_eq fun x => (hιZ x).symm
+  haveI : IsScalarTower R O (AlgebraicClosure ℚ_[p]) :=
+    IsScalarTower.of_algebraMap_eq fun r => (hιQ r).symm
+  have hιcont : Continuous (ι : R → O) :=
+    IsModuleTopology.continuous_of_linearMap
+      (IsScalarTower.toAlgHom ℤ_[p] R O).toLinearMap
+  haveI : ContinuousSMul R O :=
+    ⟨by
+      show Continuous fun x : R × O => ι x.1 * x.2
+      exact (hιcont.comp continuous_fst).mul continuous_snd⟩
+  obtain ⟨b⟩ := exists_basis_fin_two (R := R) (V := V) hv
+  let bO : Module.Basis (Fin 2) O (O ⊗[R] V) := b.baseChange O
+  let eqv : (O ⊗[R] V) ≃ₗ[O] (Fin 2 → O) := bO.equivFun
+  refine ⟨O, hCRO, hAZO, hDomO, hMFO, hTopO, hTRO, hLocO, hMTO, hDVRO,
+    hAQO, hCSQO, ι, (ρ.baseChange O).conj eqv,
+    (TensorProduct.AlgebraTensorModule.congr
+        (LinearEquiv.refl (AlgebraicClosure ℚ_[p]) (AlgebraicClosure ℚ_[p]))
+        eqv.symm).trans
+      (TensorProduct.AlgebraTensorModule.cancelBaseChange R O
+        (AlgebraicClosure ℚ_[p]) (AlgebraicClosure ℚ_[p]) V),
+    hOinj, hιZ, hιQ, ?_⟩
+  intro g x
+  induction x using TensorProduct.induction_on with
+  | zero => simp
+  | tmul a w =>
+      simp only [GaloisRep.baseChange_tmul, LinearEquiv.trans_apply,
+        TensorProduct.AlgebraTensorModule.congr_tmul, LinearEquiv.refl_apply]
+      have hcj : eqv.symm (((ρ.baseChange O).conj eqv) g w) =
+          (ρ.baseChange O) g (eqv.symm w) := by
+        rw [GaloisRep.conj_apply]
+        simp [LinearEquiv.conj_apply]
+      rw [hcj]
+      generalize eqv.symm w = y
+      induction y using TensorProduct.induction_on with
+      | zero => simp
+      | tmul s v => simp
+      | add y₁ y₂ h₁ h₂ =>
+          simp only [map_add, TensorProduct.tmul_add, h₁, h₂]
+  | add x₁ x₂ h₁ h₂ => simp only [map_add, h₁, h₂]
 
 /-- **Ribet's walk across stable lattices** (Ribet cut E2a-ii; sorry
 node — Ribet's lemma in prescribed-order form over the valuation
