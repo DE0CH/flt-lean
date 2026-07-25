@@ -12026,10 +12026,14 @@ theorem algebraMap_cyclotomicCharacter_map_adicArithFrob_two_eq_two
   rw [cyclotomicCharacter_map_adicArithFrob_eq_natCast Nat.prime_two hne]
   norm_num
 
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 8000000 in
 /-- **The profinite tame-Frobenius generator of the local inertia at
-`2`** (sorry node — the profinite packaging of the PROVEN finite-level
-tame machinery of `ModThree.lean`, in exactly the form the E3b cocycle
-computation consumes): for a homomorphism `u` of the local Galois group
+`2`** (PROVEN 2026-07-25 — the profinite packaging of the PROVEN
+finite-level tame machinery of `ModThree.lean`, in exactly the form the
+E3b cocycle computation consumes): for a homomorphism `u` of the local
+Galois group
 at the place `2` into a monoid, with OPEN kernel, there is a local
 inertia element `t` such that
 
@@ -12041,7 +12045,7 @@ inertia element `t` such that
   `t` into `t²` up to such a wild error:
   `u (F t F⁻¹) = (u t)² · u w`.
 
-Intended proof, mirroring the PROVEN
+Proof (executed exactly as mapped), mirroring the PROVEN
 `exists_localInertia_two_generator_of_cube_one` of `ModThree.lean`
 (same file, same shape — the cube-triviality hypothesis there is
 replaced here by carrying the wild errors in the conclusion, and the
@@ -12075,7 +12079,18 @@ to an inertia element `w`, and `f` turns the finite-level identities
 second error being `e' = (t̄²)⁻¹ · (φ t̄ φ⁻¹)`, the conjugate
 `(t̄²)⁻¹ · (φ t̄ φ⁻¹ · (t̄²)⁻¹) · t̄²` of the error the finite-level
 lemma provides, hence of the same `2`-power order. (Serre, *Corps
-Locaux* IV §1–2.) -/
+Locaux* IV §1–2.)
+
+The one step the map left implicit and that is discharged here in full
+is the residue-squaring hypothesis of the generic theorem at
+`φ = restrictNormalHom N F`: were `φ • x − x²` outside `𝔪(IC-N)` it
+would be a UNIT of the local ring `IC-N`, and its image under
+`integralClosureInclusion` — equal to `F • x̂ − x̂²` by
+`AlgEquiv.restrictNormal_commutes` — would be a unit lying inside
+`𝔪(IC-big)`, where `IsArithFrobAt` puts it because the exponent
+`Nat.card κᵥ` is `2`; that forces `𝔪(IC-big) = ⊤`, absurd. This is the
+argument of `restrictNormalHom_mem_inertia_of_mem_localInertiaGroup_two`
+run against the Frobenius congruence instead of against a displacement. -/
 theorem exists_localInertia_two_tame_frobenius_generator_of_isOpen_ker
     {G' : Type*} [Monoid G']
     (u : Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ
@@ -12097,8 +12112,354 @@ theorem exists_localInertia_two_tame_frobenius_generator_of_isOpen_ker
             Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat * t *
           (Field.AbsoluteGaloisGroup.adicArithFrob
             Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)⁻¹) =
-          u t ^ 2 * u w ∧ u w ^ 2 ^ j = 1) :=
-  sorry
+          u t ^ 2 * u w ∧ u w ^ 2 ^ j = 1) := by
+  classical
+  set FF := Field.AbsoluteGaloisGroup.adicArithFrob
+    Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat
+  -- (1) unitize `u`: the image of a group under a monoid hom consists of units
+  set uu := u.toHomUnits
+  have hval : ∀ g, ((uu g : G'ˣ) : G') = u g := fun g => rfl
+  -- (2) the kernel of the unitization is the kernel of `u`, hence open
+  have hkeru : ((uu.ker : Subgroup (Field.absoluteGaloisGroup
+      (HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))) :
+      Set (Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))) =
+      ((u.ker : Subgroup (Field.absoluteGaloisGroup
+        (HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))) :
+        Set (Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))) := by
+    ext g
+    simp only [SetLike.mem_coe, MonoidHom.mem_ker]
+    constructor
+    · intro h
+      rw [← hval g, h, Units.val_one]
+    · intro h
+      exact Units.ext (by rw [hval g, h, Units.val_one])
+  have hopenu : IsOpen ((uu.ker : Subgroup (Field.absoluteGaloisGroup
+      (HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))) :
+      Set (Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))) := by
+    rw [hkeru]
+    exact hopen
+  have hnhds : ((uu.ker : Subgroup (Field.absoluteGaloisGroup
+      (HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))) :
+      Set (Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))) ∈
+      nhds (1 : Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) :=
+    hopenu.mem_nhds (one_mem _)
+  obtain ⟨N, hfdN, hnormN, hle⟩ :=
+    (krullTopology_mem_nhds_one_iff_of_normal
+      (HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) _).mp hnhds
+  haveI := hfdN
+  haveI := hnormN
+  haveI : Algebra.IsSeparable (HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) N :=
+    Algebra.IsAlgebraic.isSeparable_of_perfectField
+  haveI : IsGalois (HeightOneSpectrum.adicCompletion ℚ
+    Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) N := ⟨⟩
+  -- (3) factor `uu` through the finite Galois level `N`
+  have hsurj : Function.Surjective (AlgEquiv.restrictNormalHom N :
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+        ≃ₐ[HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat]
+      AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) →*
+      (N ≃ₐ[HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat] N)) :=
+    AlgEquiv.restrictNormalHom_surjective _
+  have hkerle : (AlgEquiv.restrictNormalHom
+      (F := HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) N).ker ≤ uu.ker := by
+    rw [IntermediateField.restrictNormalHom_ker]
+    intro g hg
+    exact hle hg
+  set f := (AlgEquiv.restrictNormalHom N).liftOfSurjective hsurj ⟨uu, hkerle⟩
+  have hf : ∀ σ, f (AlgEquiv.restrictNormalHom N σ) = uu σ := fun σ =>
+    MonoidHom.liftOfRightInverse_comp_apply _ _ _ _ σ
+  -- (4) the local data at level `N`: `2` in the maximal ideal
+  have h2O : (2 : HeightOneSpectrum.adicCompletionIntegers ℚ
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) ∈
+      IsLocalRing.maximalIdeal (HeightOneSpectrum.adicCompletionIntegers ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) := by
+    rw [maximalIdeal_adicCompletionIntegers_eq_span Nat.prime_two]
+    exact_mod_cast Ideal.mem_span_singleton_self
+      ((2 : ℕ) : HeightOneSpectrum.adicCompletionIntegers ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+  have h2R : (2 : IntegralClosure (HeightOneSpectrum.adicCompletionIntegers ℚ
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) N) ∈
+      IsLocalRing.maximalIdeal (IntegralClosure
+        (HeightOneSpectrum.adicCompletionIntegers ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) N) := by
+    have h2 := (Ideal.mem_of_liesOver
+      (IsLocalRing.maximalIdeal (IntegralClosure
+        (HeightOneSpectrum.adicCompletionIntegers ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) N))
+      (IsLocalRing.maximalIdeal (HeightOneSpectrum.adicCompletionIntegers ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))
+      (2 : HeightOneSpectrum.adicCompletionIntegers ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)).mp h2O
+    rwa [map_ofNat] at h2
+  -- (5) faithfulness of the Galois action on the integral closure
+  haveI : IsFractionRing (IntegralClosure
+      (HeightOneSpectrum.adicCompletionIntegers ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) N) N :=
+    IsIntegralClosure.isFractionRing_of_finite_extension
+      (HeightOneSpectrum.adicCompletionIntegers ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+      (HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) N
+      (IntegralClosure (HeightOneSpectrum.adicCompletionIntegers ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) N)
+  have halgmapinj : Function.Injective
+      (algebraMap (HeightOneSpectrum.adicCompletionIntegers ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) N) := by
+    rw [IsScalarTower.algebraMap_eq (HeightOneSpectrum.adicCompletionIntegers ℚ
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+      (HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) N]
+    exact (algebraMap (HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) N).injective.comp
+      (IsFractionRing.injective (HeightOneSpectrum.adicCompletionIntegers ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+        (HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))
+  haveI : Module.IsTorsionFree (HeightOneSpectrum.adicCompletionIntegers ℚ
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) N :=
+    Module.isTorsionFree_iff_algebraMap_injective.mpr halgmapinj
+  have hfaith : ∀ g : N ≃ₐ[HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat] N,
+      (∀ a : IntegralClosure (HeightOneSpectrum.adicCompletionIntegers ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) N, g • a = a) →
+        g = 1 := by
+    intro g hg
+    refine AlgEquiv.ext fun x => ?_
+    have halg : IsAlgebraic (HeightOneSpectrum.adicCompletionIntegers ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) x :=
+      (IsFractionRing.isAlgebraic_iff
+        (HeightOneSpectrum.adicCompletionIntegers ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+        (HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) N).mpr
+        (Algebra.IsAlgebraic.isAlgebraic x)
+    obtain ⟨c, hc0, hcx⟩ := halg.exists_integral_multiple
+    have hfix : g • (c • x) = c • x := by
+      have h1 := congrArg Subtype.val (hg ⟨c • x, hcx⟩)
+      rwa [IntegralClosure.coe_smul] at h1
+    rw [smul_comm] at hfix
+    have hgx : g • x = x := smul_right_injective N hc0 hfix
+    simpa [AlgEquiv.smul_def] using hgx
+  -- (6) the arithmetic Frobenius squares residues: the residue field
+  -- downstairs at `2` has two elements
+  have hcard2 : Nat.card ((HeightOneSpectrum.adicCompletionIntegers ℚ
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) ⧸
+      ((IsLocalRing.maximalIdeal (IntegralClosure
+          (HeightOneSpectrum.adicCompletionIntegers ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)))).under
+        (HeightOneSpectrum.adicCompletionIntegers ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))) = 2 :=
+    natCard_residue_quotient_toHeightOneSpectrum Nat.prime_two
+  have hfrobbig : ∀ y : IntegralClosure
+      (HeightOneSpectrum.adicCompletionIntegers ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)),
+      FF • y - y ^ 2 ∈ IsLocalRing.maximalIdeal (IntegralClosure
+        (HeightOneSpectrum.adicCompletionIntegers ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))) := by
+    intro y
+    have h1 : FF • y - y ^ Nat.card
+        ((HeightOneSpectrum.adicCompletionIntegers ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) ⧸
+          ((IsLocalRing.maximalIdeal (IntegralClosure
+              (HeightOneSpectrum.adicCompletionIntegers ℚ
+                Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+              (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+                Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)))).under
+            (HeightOneSpectrum.adicCompletionIntegers ℚ
+              Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))) ∈
+        IsLocalRing.maximalIdeal (IntegralClosure
+          (HeightOneSpectrum.adicCompletionIntegers ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))) :=
+      Field.AbsoluteGaloisGroup.isArithFrobAt_adicArithFrob
+        (v := Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) y
+    rwa [hcard2] at h1
+  -- (7) the residue-squaring condition at level `N`: a displacement outside
+  -- `𝔪(IC-N)` would be a unit of `IC-N` whose image in the big integral
+  -- closure is a unit lying in `𝔪(IC-big)`
+  have hφfrob : ∀ x : IntegralClosure
+      (HeightOneSpectrum.adicCompletionIntegers ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) N,
+      (AlgEquiv.restrictNormalHom N FF) • x - x ^ 2 ∈
+        IsLocalRing.maximalIdeal (IntegralClosure
+          (HeightOneSpectrum.adicCompletionIntegers ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) N) := by
+    intro x
+    by_contra hnot
+    have hunit : IsUnit ((AlgEquiv.restrictNormalHom N FF) • x - x ^ 2) := by
+      by_contra hnu
+      exact hnot ((IsLocalRing.mem_maximalIdeal _).mpr (mem_nonunits_iff.mpr hnu))
+    have hkey : integralClosureInclusion
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat N
+        ((AlgEquiv.restrictNormalHom N FF) • x - x ^ 2) =
+        FF • (integralClosureInclusion
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat N x) -
+          (integralClosureInclusion
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat N x) ^ 2 := by
+      rw [map_sub, map_pow]
+      congr 1
+      exact Subtype.ext (AlgEquiv.restrictNormal_commutes FF N x.1)
+    have hmap := hunit.map (integralClosureInclusion
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat N)
+    rw [hkey] at hmap
+    exact (IsLocalRing.maximalIdeal.isMaximal _).ne_top
+      (Ideal.eq_top_of_isUnit_mem _
+        (hfrobbig (integralClosureInclusion
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat N x)) hmap)
+  -- (8) the finite-level tame generator with the Frobenius clause
+  obtain ⟨tbar, htbarI, htbargen, jF, hjF⟩ :=
+    IsHardlyRamified.exists_finite_level_tame_generator_of_frobenius hfaith
+      Nat.prime_two (by exact_mod_cast h2R) (AlgEquiv.restrictNormalHom N FF)
+      hφfrob
+  -- (9) conjugation stability of the finite-level inertia
+  have hconjmem : ∀ g x : N ≃ₐ[HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat] N,
+      x ∈ (IsLocalRing.maximalIdeal (IntegralClosure
+          (HeightOneSpectrum.adicCompletionIntegers ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) N)).inertia
+          (N ≃ₐ[HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat] N) →
+        g * x * g⁻¹ ∈ (IsLocalRing.maximalIdeal (IntegralClosure
+          (HeightOneSpectrum.adicCompletionIntegers ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) N)).inertia
+          (N ≃ₐ[HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat] N) := by
+    intro g x hx
+    refine AddSubgroup.mem_inertia.mpr fun a => ?_
+    have hrw : (g * x * g⁻¹) • a - a = g • (x • (g⁻¹ • a) - g⁻¹ • a) := by
+      rw [smul_sub, mul_smul, mul_smul, smul_inv_smul]
+    rw [hrw]
+    exact IsHardlyRamified.smul_mem_maximalIdeal_of_mem g
+      (AddSubgroup.mem_inertia.mp hx _)
+  -- (10) conjugation commutes with taking powers
+  have hconjpow : ∀ (c b : N ≃ₐ[HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat] N) (n : ℕ),
+      (c⁻¹ * b * c) ^ n = c⁻¹ * b ^ n * c := by
+    intro c b n
+    induction n with
+    | zero => simp
+    | succ k ih =>
+        rw [pow_succ, ih, pow_succ]
+        group
+  -- (11) lift the finite-level generator to the full local inertia
+  obtain ⟨t, htmem, htres⟩ :=
+    exists_mem_localInertiaGroup_restrictNormalHom_eq
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat N tbar htbarI
+  have hut : uu t = f tbar := by
+    rw [← htres]
+    exact (hf t).symm
+  refine ⟨t, htmem, ?_, ?_⟩
+  · -- clause (a): tame procyclicity, the wild error carried along
+    intro σ hσ
+    have hσI :=
+      IsHardlyRamified.restrictNormalHom_mem_inertia_of_mem_localInertiaGroup_two
+        N σ hσ
+    obtain ⟨m, j, hmj⟩ := htbargen (AlgEquiv.restrictNormalHom N σ) hσI
+    have hwI : (tbar ^ m)⁻¹ * AlgEquiv.restrictNormalHom N σ ∈
+        (IsLocalRing.maximalIdeal (IntegralClosure
+          (HeightOneSpectrum.adicCompletionIntegers ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) N)).inertia
+          (N ≃ₐ[HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat] N) :=
+      mul_mem (inv_mem (pow_mem htbarI m)) hσI
+    obtain ⟨w, hwmem, hwres⟩ :=
+      exists_mem_localInertiaGroup_restrictNormalHom_eq
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat N _ hwI
+    have huw : uu w = f ((tbar ^ m)⁻¹ * AlgEquiv.restrictNormalHom N σ) := by
+      rw [← hf w, hwres]
+    refine ⟨m, j, w, hwmem, ?_, ?_⟩
+    · have hdecomp : AlgEquiv.restrictNormalHom N σ =
+          tbar ^ m * ((tbar ^ m)⁻¹ * AlgEquiv.restrictNormalHom N σ) := by group
+      have hkey : uu σ = (uu t) ^ m * uu w := by
+        rw [← hf σ, hdecomp, map_mul, map_pow, huw, hut]
+      have h := congrArg (Units.val : G'ˣ → G') hkey
+      rw [Units.val_mul, Units.val_pow_eq_pow_val] at h
+      rw [← hval σ, ← hval t, ← hval w]
+      exact h
+    · have h1 : (uu w) ^ 2 ^ j = 1 := by
+        rw [huw, ← map_pow, hmj, map_one]
+      have h := congrArg (Units.val : G'ˣ → G') h1
+      rw [Units.val_pow_eq_pow_val, Units.val_one] at h
+      rw [← hval w]
+      exact h
+  · -- clause (b): the Frobenius conjugates the generator into its square
+    have hconjI : AlgEquiv.restrictNormalHom N FF * tbar *
+        (AlgEquiv.restrictNormalHom N FF)⁻¹ ∈
+        (IsLocalRing.maximalIdeal (IntegralClosure
+          (HeightOneSpectrum.adicCompletionIntegers ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) N)).inertia
+          (N ≃ₐ[HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat] N) :=
+      hconjmem _ tbar htbarI
+    have he'I : (tbar ^ 2)⁻¹ * (AlgEquiv.restrictNormalHom N FF * tbar *
+        (AlgEquiv.restrictNormalHom N FF)⁻¹) ∈
+        (IsLocalRing.maximalIdeal (IntegralClosure
+          (HeightOneSpectrum.adicCompletionIntegers ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) N)).inertia
+          (N ≃ₐ[HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat] N) :=
+      mul_mem (inv_mem (pow_mem htbarI 2)) hconjI
+    obtain ⟨w, hwmem, hwres⟩ :=
+      exists_mem_localInertiaGroup_restrictNormalHom_eq
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat N _ he'I
+    have huw : uu w = f ((tbar ^ 2)⁻¹ * (AlgEquiv.restrictNormalHom N FF * tbar *
+        (AlgEquiv.restrictNormalHom N FF)⁻¹)) := by
+      rw [← hf w, hwres]
+    have hord : ((tbar ^ 2)⁻¹ * (AlgEquiv.restrictNormalHom N FF * tbar *
+        (AlgEquiv.restrictNormalHom N FF)⁻¹)) ^ 2 ^ jF = 1 := by
+      have heq : (tbar ^ 2)⁻¹ * (AlgEquiv.restrictNormalHom N FF * tbar *
+          (AlgEquiv.restrictNormalHom N FF)⁻¹) =
+          (tbar ^ 2)⁻¹ * (AlgEquiv.restrictNormalHom N FF * tbar *
+            (AlgEquiv.restrictNormalHom N FF)⁻¹ * (tbar ^ 2)⁻¹) * (tbar ^ 2) := by
+        group
+      rw [heq, hconjpow (tbar ^ 2) (AlgEquiv.restrictNormalHom N FF * tbar *
+        (AlgEquiv.restrictNormalHom N FF)⁻¹ * (tbar ^ 2)⁻¹) (2 ^ jF), hjF,
+        mul_one, inv_mul_cancel]
+    refine ⟨jF, w, hwmem, ?_, ?_⟩
+    · have hres : AlgEquiv.restrictNormalHom N (FF * t * FF⁻¹) =
+          AlgEquiv.restrictNormalHom N FF * tbar *
+            (AlgEquiv.restrictNormalHom N FF)⁻¹ := by
+        rw [map_mul, map_mul, map_inv, htres]
+      have hdecomp : AlgEquiv.restrictNormalHom N FF * tbar *
+          (AlgEquiv.restrictNormalHom N FF)⁻¹ =
+          tbar ^ 2 * ((tbar ^ 2)⁻¹ * (AlgEquiv.restrictNormalHom N FF * tbar *
+            (AlgEquiv.restrictNormalHom N FF)⁻¹)) := by group
+      have hkey : uu (FF * t * FF⁻¹) = (uu t) ^ 2 * uu w := by
+        rw [← hf (FF * t * FF⁻¹), hres, hdecomp, map_mul, map_pow, huw, hut]
+      have h := congrArg (Units.val : G'ˣ → G') hkey
+      rw [Units.val_mul, Units.val_pow_eq_pow_val] at h
+      rw [← hval (FF * t * FF⁻¹), ← hval t, ← hval w]
+      exact h
+    · have h1 : (uu w) ^ 2 ^ jF = 1 := by
+        rw [huw, ← map_pow, hord, map_one]
+      have h := congrArg (Units.val : G'ˣ → G') h1
+      rw [Units.val_pow_eq_pow_val, Units.val_one] at h
+      rw [← hval w]
+      exact h
 
 /-- **The tame-Frobenius kill of a twisted cocycle** (PROVEN 2026-07-25;
 pure cocycle algebra over an abstract "local" group `Lg`, isolating the
@@ -12246,8 +12607,9 @@ nowhere else in the at-`2` analysis.
 
 DECOMPOSED 2026-07-25 into the profinite tame-structure leaf
 `exists_localInertia_two_tame_frobenius_generator_of_isOpen_ker` above
-(the ONLY remaining gap: the profinite packaging of ModThree.lean's
-PROVEN finite-level tame machinery) over the PROVEN cocycle-algebra
+(the profinite packaging of ModThree.lean's finite-level tame
+machinery — itself PROVEN the same day, so this declaration is now
+sorry-free) over the PROVEN cocycle-algebra
 core `cc_eq_zero_of_tame_frobenius_generator` above; the glue is proven
 here: the twisted cocycle identity from `htri`, the pinning of `χ` to
 the mod-`p` cyclotomic character by the determinant against `hρE.det`
