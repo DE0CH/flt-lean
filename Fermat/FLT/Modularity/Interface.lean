@@ -10742,30 +10742,35 @@ theorem eisenstein_trivial_sub_extension_locally_split_at_p
   rw [e1, e2, hχcinv, mul_one, hy, hccinv, h7]
   ring
 
-/-- **The uniform decomposition-group bridge at `2`** (sorry node — the
-full-group strengthening of the PROVEN inertia bridge
-`IsHardlyRamified.localInertia_two_eq_map_padic` of `ModThree.lean`):
-the images in `Γℚ` of the two local absolute Galois groups at `2` — of
-`ℚ_[2]` (mathlib's `Padic`) and of the adic completion of `ℚ` at the
-place `prime_two` (the spelling in which the whole
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 2000000 in
+/-- **The uniform decomposition-group bridge at `2`** (PROVEN
+2026-07-25 — the full-group strengthening of the PROVEN inertia bridge
+`IsHardlyRamified.localInertia_two_eq_map_padic` of `ModThree.lean`,
+obtained by re-running that construction with the valuation
+bookkeeping dropped and the conjugator named ONCE, outside the
+element): the images in `Γℚ` of the two local absolute Galois groups
+at `2` — of `ℚ_[2]` (mathlib's `Padic`) and of the adic completion of
+`ℚ` at the place `prime_two` (the spelling in which the whole
 inertia/tame/Frobenius machinery of `ModThree.lean` is developed) —
-are conjugate subgroups, by ONE UNIFORM conjugator `c`. Intended
-proof, extracted from the (per-element) inertia bridge: the continuous
-`ℚ`-algebra isomorphism `E : adicCompletion ℚ v₂ ≃A[ℚ] ℚ_[2]`
+are conjugate subgroups, by ONE UNIFORM conjugator `c`. Proof: the
+continuous `ℚ`-algebra isomorphism `E : adicCompletion ℚ v₂ ≃A[ℚ] ℚ_[2]`
 (`Rat.HeightOneSpectrum.adicCompletion.padicEquiv`, normalized through
-the `Padic`-instance cast) induces an isomorphism of algebraic
-closures, hence a group isomorphism `Γ ℚ_[2] ≃ Γ (v₂-completion)`
-`g ↦ σ_g`; the two composite embeddings `ℚᵃˡᵍ → (completions)ᵃˡᵍ`
-differ by a single automorphism `c ∈ Γ ℚ` (`IsAlgClosed.lift` plus
-uniqueness of algebraic-closure embeddings up to automorphism), and
-that `c` conjugates `map (algebraMap ℚ ℚ_[2]) g` onto
-`map (algebraMap ℚ Kv₂) σ_g` for EVERY `g` simultaneously — the
-per-element proof of `localInertia_two_eq_map_padic` already
-constructs exactly this data before adding valuation bookkeeping; this
-statement drops the inertia clauses, keeps the uniformity. Soundness:
-decomposition groups at places over a fixed rational place are
-conjugate in the global group — standard (Neukirch, *Algebraic Number
-Theory*, II §9). -/
+the `Padic`-instance cast along `natGenerator_toHeightOneSpectrum`)
+induces `ι₃ := AlgebraicClosure.map E.symm`, which is bijective (its
+composite with `AlgebraicClosure.map E` is an algebraic endomorphism
+of an algebraic closure, hence surjective), so conjugation by it
+carries `g : Γ ℚ_[2]` to `σ := ι₃ ∘ g ∘ ι₃⁻¹ ∈ Γ Kv₂` — an
+automorphism over `Kv₂` precisely because `E.symm ∘ E = id`. The
+conjugator is chosen BEFORE `g`: the two embeddings `ι₃ ∘ ι₂` and
+`ι₁` of `ℚᵃˡᵍ` into `Kv₂ᵃˡᵍ` over `ℚ` differ by the single
+automorphism `c := Normal.algHomEquivAut (ι₃ ∘ ι₂) ∈ Γ ℚ`
+(`ι₃ (ι₂ x) = ι₁ (c x)` for all `x`), and the transport square
+`ι₃ ∘ g = σ ∘ ι₃` then gives `map σ = c · map g · c⁻¹` pointwise
+through the injective `ι₁`, i.e. `map g = c⁻¹ · map σ · c` with `c⁻¹`
+serving every `g` simultaneously. Soundness: decomposition groups at
+places over a fixed rational place are conjugate in the global group —
+standard (Neukirch, *Algebraic Number Theory*, II §9). -/
 theorem exists_uniform_conj_decomposition_two_padic :
     ∃ c : Field.absoluteGaloisGroup ℚ, ∀ g : Field.absoluteGaloisGroup ℚ_[2],
       ∃ σ : Field.absoluteGaloisGroup
@@ -10774,8 +10779,164 @@ theorem exists_uniform_conj_decomposition_two_padic :
         Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) g =
           c * Field.absoluteGaloisGroup.map (algebraMap ℚ
             (HeightOneSpectrum.adicCompletion ℚ
-              Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ * c⁻¹ :=
-  sorry
+              Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ * c⁻¹ := by
+  classical
+  haveI h2f : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
+  -- (1) the completion at the place of `2` is `ℚ_[2]`
+  haveI hfp : Fact ((Rat.HeightOneSpectrum.primesEquiv
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) : ℕ).Prime :=
+    ⟨(Rat.HeightOneSpectrum.primesEquiv
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat).2⟩
+  have hprime : ((Rat.HeightOneSpectrum.primesEquiv
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) : ℕ) = 2 := by
+    show Rat.HeightOneSpectrum.natGenerator _ = 2
+    exact natGenerator_toHeightOneSpectrum Nat.prime_two
+  have hcastP : ∀ (a b : ℕ) (ha : Fact a.Prime) (hb : Fact b.Prime),
+      a = b → ((@Padic a ha) ≃A[ℚ] (@Padic b hb)) := by
+    intro a b ha hb hab
+    subst hab
+    have hinst : ha = hb := Subsingleton.elim _ _
+    subst hinst
+    exact ContinuousAlgEquiv.refl ℚ _
+  obtain ⟨E⟩ : Nonempty (HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat ≃A[ℚ] ℚ_[2]) := by
+    letI : Algebra ℚ (HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) :=
+      HeightOneSpectrum.instAlgebraAdicCompletion _ _ _
+    have hpair : Nonempty (HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat ≃A[ℚ] ℚ_[2]) :=
+      ⟨(Rat.HeightOneSpectrum.adicCompletion.padicEquiv
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat).trans
+        (hcastP _ 2 hfp h2f hprime)⟩
+    have halg : (HeightOneSpectrum.instAlgebraAdicCompletion
+        (NumberField.RingOfIntegers ℚ) ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) =
+        (DivisionRing.toRatAlgebra) := Subsingleton.elim _ _
+    exact halg ▸ hpair
+  -- (2) the induced isomorphism of the algebraic closures
+  set ι₃ : AlgebraicClosure ℚ_[2] →+*
+      AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) :=
+    AlgebraicClosure.map (E.symm : ℚ_[2] →+*
+      HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) with hι₃
+  have hι₃surj : Function.Surjective ι₃ := by
+    set ιE : AlgebraicClosure (HeightOneSpectrum.adicCompletion
+        ℚ Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) →+*
+        AlgebraicClosure ℚ_[2] :=
+      AlgebraicClosure.map (E : HeightOneSpectrum.adicCompletion
+        ℚ Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat →+* ℚ_[2]) with hιE
+    set hcomp : AlgebraicClosure (HeightOneSpectrum.adicCompletion
+        ℚ Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) →ₐ[
+          HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat]
+        AlgebraicClosure (HeightOneSpectrum.adicCompletion
+          ℚ Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) :=
+      { toRingHom := ι₃.comp ιE
+        commutes' := fun x => by
+          show ι₃ (ιE (algebraMap _ _ x)) = algebraMap _ _ x
+          rw [hιE, AlgebraicClosure.map_algebraMap, hι₃,
+            AlgebraicClosure.map_algebraMap]
+          congr 1
+          exact E.symm_apply_apply x }
+    have hbij := Algebra.IsAlgebraic.algHom_bijective hcomp
+    intro y
+    obtain ⟨x, hx⟩ := hbij.2 y
+    exact ⟨ιE x, hx⟩
+  set ι₃e : AlgebraicClosure ℚ_[2] ≃+*
+      AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) :=
+    RingEquiv.ofBijective ι₃ ⟨ι₃.injective, hι₃surj⟩
+  have hι₃e_apply : ∀ y, ι₃e y = ι₃ y := fun y => rfl
+  -- (3) the UNIFORM conjugator: the two embeddings of `ℚᵃˡᵍ` into the
+  -- algebraic closure of the completion differ by one automorphism
+  set ι₁ := AlgebraicClosure.map ((algebraMap ℚ
+    (HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)))
+  set ι₂ := AlgebraicClosure.map (algebraMap ℚ ℚ_[2])
+  obtain ⟨c, hfc⟩ : ∃ c : Field.absoluteGaloisGroup ℚ,
+      ∀ x : AlgebraicClosure ℚ, ι₃ (ι₂ x) = ι₁ (c x) := by
+    letI : Algebra (AlgebraicClosure ℚ)
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) :=
+      ι₁.toAlgebra
+    haveI : IsScalarTower ℚ (AlgebraicClosure ℚ)
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) :=
+      IsScalarTower.of_algebraMap_eq' (Subsingleton.elim _ _)
+    set f : AlgebraicClosure ℚ →ₐ[ℚ]
+        AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) :=
+      (ι₃.comp ι₂).toRatAlgHom
+    set c : Field.absoluteGaloisGroup ℚ := (Normal.algHomEquivAut (F := ℚ)
+      (K₁ := AlgebraicClosure
+        (HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))
+      (E := AlgebraicClosure ℚ)) f with hc
+    refine ⟨c, fun x => ?_⟩
+    have hfx : f x = ι₁ (c x) := by
+      have h : f = (Normal.algHomEquivAut (F := ℚ)
+          (K₁ := AlgebraicClosure
+            (HeightOneSpectrum.adicCompletion ℚ
+              Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))
+          (E := AlgebraicClosure ℚ)).symm c := by
+        rw [hc, Equiv.symm_apply_apply]
+      rw [h, Normal.algHomEquivAut_symm_apply]
+      rfl
+    exact hfx
+  refine ⟨c⁻¹, ?_⟩
+  intro g
+  -- (4) transport `g` to the completion side through `ι₃e`
+  set σ₀ : AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) ≃+*
+      AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) :=
+    (ι₃e.symm.trans g.toRingEquiv).trans ι₃e
+  set σ : Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) :=
+    AlgEquiv.ofRingEquiv (f := σ₀) (fun x => by
+      have hsy : ι₃e.symm (algebraMap (HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) x) =
+          algebraMap ℚ_[2] (AlgebraicClosure ℚ_[2]) (E x) := by
+        rw [RingEquiv.symm_apply_eq, hι₃e_apply, hι₃,
+          AlgebraicClosure.map_algebraMap]
+        congr 1
+        exact (E.symm_apply_apply x).symm
+      show ι₃e (g (ι₃e.symm (algebraMap _ _ x))) = algebraMap _ _ x
+      rw [hsy, g.commutes, hι₃e_apply, hι₃, AlgebraicClosure.map_algebraMap]
+      congr 1
+      exact E.symm_apply_apply x)
+  have hσ_apply : ∀ y, σ y = ι₃e (g (ι₃e.symm y)) := fun y => rfl
+  have hsquare : ∀ y, ι₃ (g y) = σ (ι₃ y) := by
+    intro y
+    rw [hσ_apply, ← hι₃e_apply y, RingEquiv.symm_apply_apply, hι₃e_apply]
+  refine ⟨σ, ?_⟩
+  -- (5) the conjugation identity, pointwise through the injective `ι₁`
+  have key : Field.absoluteGaloisGroup.map (algebraMap ℚ
+      (HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ =
+      c * Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) g * c⁻¹ := by
+    apply AlgEquiv.ext
+    intro x
+    apply ι₁.injective
+    rw [show ι₁ ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ) x) =
+      σ (ι₁ x) from Field.absoluteGaloisGroup.lift_map (algebraMap ℚ
+        (HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ x]
+    show σ (ι₁ x) = ι₁ (c ((Field.absoluteGaloisGroup.map
+      (algebraMap ℚ ℚ_[2]) g) (c⁻¹ x)))
+    rw [← hfc, show ι₂ ((Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) g)
+        (c⁻¹ x)) = g (ι₂ (c⁻¹ x)) from
+      Field.absoluteGaloisGroup.lift_map (algebraMap ℚ ℚ_[2]) g (c⁻¹ x),
+      hsquare, hfc, show (c : Field.absoluteGaloisGroup ℚ)
+        ((c⁻¹ : Field.absoluteGaloisGroup ℚ) x) = x from by
+      rw [← AlgEquiv.mul_apply, mul_inv_cancel, AlgEquiv.one_apply]]
+  rw [key]
+  group
 
 /-- **The mod-`p` cyclotomic character is unramified at `2`** (sorry
 node — the residue-injectivity of `μ_p` at residue characteristic
