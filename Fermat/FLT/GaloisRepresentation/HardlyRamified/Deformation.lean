@@ -4925,7 +4925,8 @@ theorem exists_universalFrame_profinite_of_deformationCondition (hℓ5 : 5 ≤ �
     (hschur : ∀ f : Module.End k V, (∀ g, Commute f (ρbar g)) →
       ∃ c : k, f = c • 1)
     (hfin : ∀ (A : Type u) [CommRing A] [TopologicalSpace A]
-      [IsTopologicalRing A] [IsLocalRing A] [Algebra ℤ_[ℓ] A] [Finite A],
+      [IsTopologicalRing A] [IsLocalRing A] [Algebra ℤ_[ℓ] A] [Finite A]
+      [DiscreteTopology A],
       {ρ : FramedGaloisRep ℚ A (Fin 2) |
         IsHardlyRamified hℓOdd (rank_finTwoFun A) ρ}.Finite)
     (hbase : ∀ {B : Type u} [CommRing B] [TopologicalSpace B]
