@@ -2410,8 +2410,10 @@ theorem heckeSystemDescendsTo_bot
   rw [Finset.mem_union, not_or] at hw
   have hbad : NumberField.finitePlaceEquiv e.toRingEquiv w ∉ Wit.badF := by
     intro hmem
-    exact hw.1 (by simpa using Finset.mem_image_of_mem
-      (NumberField.finitePlaceEquiv e.toRingEquiv).symm hmem)
+    refine hw.1 ?_
+    have himg := Finset.mem_image_of_mem
+      (NumberField.finitePlaceEquiv e.toRingEquiv).symm hmem
+    simpa using himg
   rw [← GaloisRep.charFrob_map_algEquiv ρ e w (hT w hw.2)]
   exact Wit.modularF _ hbad
 
