@@ -10113,10 +10113,13 @@ lemma toMatrix_conj_equivFun {K : Type*} [Field K] {M : Type*}
   simp only [LinearMap.comp_apply, LinearEquiv.coe_coe, hsymm j,
     Pi.basisFun_repr, Module.Basis.equivFun_apply]
 
+set_option maxHeartbeats 1000000 in
+set_option linter.unusedVariables false in
 set_option backward.isDefEq.respectTransparency false in
 /-- **Brauer–Nesbitt dichotomy for a residually reducible rank-2
-lattice** (Ribet cut E2a-ii-walk, item (a); sorry node — carved out
-2026-07-25 from `exists_ribet_walk_stable_line`): a rank-`2`
+lattice** (Ribet cut E2a-ii-walk, item (a); PROVEN 2026-07-25 exactly
+along the route recorded below — carved out 2026-07-25 from
+`exists_ribet_walk_stable_line`): a rank-`2`
 representation over `O` whose residual trace and determinant are
 `1 + ψ` and `ψ`, with `ψ ≠ 1`, has a residual `Γ ℚ`-stable LINE, and
 that line's character is either `1` — with `ψ` on the quotient — or
@@ -10151,7 +10154,26 @@ subrepresentation into a line):
 Unconditionally TRUE at the stated generality: no hypothesis package
 beyond the two trace/determinant identities (`hψ` is used only to
 make the dichotomy non-degenerate — for `ψ = 1` both disjuncts are the
-same statement and the result still holds). -/
+same statement and the result still holds).
+
+EXECUTION (2026-07-25): step 1 is `rep_exists_stable_submodule_of_charpoly_eq_units`
+of `BrauerNesbittConjugacy.lean` fed with `χ := ψ.toHomUnits` and the
+charpoly identity obtained from `charpoly_eq_quadratic_of_finrank_two`
+after transporting trace and determinant across the base change
+(`LinearMap.trace_baseChange`, `LinearMap.det_baseChange`, the
+`(ρ'.baseChange kk') g = LinearMap.baseChange kk' (ρ' g)` bridge being
+`rfl`), followed by `rep_not_isIrreducible_of_stable_submodule` and
+`rep_exists_stable_line_of_not_isIrreducible`. Step 2 reads the two
+diagonal characters `c` (the line) and `d` (the quotient) off the
+adapted frame `![v, v₁]`, so that `c + d = 1 + ψ` and `c·d = ψ`
+pointwise, hence `(c g − 1)(c g − ψ g) = 0`; multiplicativity of `c`
+then upgrades the pointwise dichotomy to a global one by the
+"a group is not the union of two proper subgroups" argument, run here
+directly on the pair `g₁` (witness of `c ≠ 1`) and `g₂` rather than
+through `Subgroup`. `hψ` is genuinely unconsumed — hence the local
+`linter.unusedVariables` option — and stays in the signature because
+the caller's dichotomy is only meaningful when the two characters
+differ. -/
 theorem exists_residual_trivialSub_or_psiSub
     {O : Type u} [CommRing O] [TopologicalSpace O] [IsTopologicalRing O]
     {kk' : Type u} [Field kk'] [Finite kk'] [TopologicalSpace kk']
@@ -10166,12 +10188,199 @@ theorem exists_residual_trivialSub_or_psiSub
         (∀ g x, ∃ c : kk', (ρ'.baseChange kk') g x - ψ g • x = c • v₀)) ∨
       (∃ v₀ : kk' ⊗[O] (Fin 2 → O), v₀ ≠ 0 ∧
         (∀ g, (ρ'.baseChange kk') g v₀ = ψ g • v₀) ∧
-        (∀ g x, ∃ c : kk', (ρ'.baseChange kk') g x - x = c • v₀)) :=
-  sorry
+        (∀ g x, ∃ c : kk', (ρ'.baseChange kk') g x - x = c • v₀)) := by
+  classical
+  -- the residual space is `2`-dimensional over `kk'`
+  have hdim : Module.finrank kk' (kk' ⊗[O] (Fin 2 → O)) = 2 := by
+    rw [Module.finrank_eq_card_basis
+      (Algebra.TensorProduct.basis kk' (Pi.basisFun O (Fin 2)))]
+    simp
+  -- the reduction, as an abstract representation
+  obtain ⟨τ, hτapp⟩ : ∃ τ : Representation kk' (Field.absoluteGaloisGroup ℚ)
+      (kk' ⊗[O] (Fin 2 → O)), ∀ g, τ g = ((ρ'.baseChange kk') g :
+        Module.End kk' (kk' ⊗[O] (Fin 2 → O))) :=
+    ⟨(ρ'.baseChange kk').toRepresentation, fun _ => rfl⟩
+  have htrace : ∀ g, LinearMap.trace kk' (kk' ⊗[O] (Fin 2 → O)) (τ g)
+      = 1 + ψ g := by
+    intro g
+    rw [hτapp g, show ((ρ'.baseChange kk') g :
+      Module.End kk' (kk' ⊗[O] (Fin 2 → O))) =
+      LinearMap.baseChange kk' (ρ' g) from rfl, LinearMap.trace_baseChange]
+    exact htr' g
+  have hdetk : ∀ g, LinearMap.det (τ g) = ψ g := by
+    intro g
+    rw [hτapp g, show ((ρ'.baseChange kk') g :
+      Module.End kk' (kk' ⊗[O] (Fin 2 → O))) =
+      LinearMap.baseChange kk' (ρ' g) from rfl, LinearMap.det_baseChange]
+    exact hdet' g
+  have hψne : ∀ g, ψ g ≠ 0 := by
+    intro g
+    rw [← MonoidHom.coe_toHomUnits]
+    exact (ψ.toHomUnits g).ne_zero
+  -- the residual characteristic polynomial is `(X − 1)(X − ψ g)`
+  have hchar : ∀ g, (τ g).charpoly =
+      Polynomial.X ^ 2
+        - Polynomial.C (((ψ.toHomUnits g : kk'ˣ) : kk') + 1) * Polynomial.X
+        + Polynomial.C ((ψ.toHomUnits g : kk'ˣ) : kk') := by
+    intro g
+    rw [charpoly_eq_quadratic_of_finrank_two hdim (τ g), htrace g, hdetk g,
+      MonoidHom.coe_toHomUnits, add_comm (1 : kk') (ψ g)]
+  -- Kolchin / common eigenvector: a nonzero proper stable submodule
+  obtain ⟨U, hUbot, hUtop, hUinv⟩ :=
+    rep_exists_stable_submodule_of_charpoly_eq_units hdim τ ψ.toHomUnits hchar
+  have hnirr : ¬ τ.IsIrreducible :=
+    rep_not_isIrreducible_of_stable_submodule τ U hUbot hUtop hUinv
+  obtain ⟨v, hv, hstab⟩ :=
+    rep_exists_stable_line_of_not_isIrreducible hdim τ hnirr
+  -- the character of the stable line
+  obtain ⟨c, hc⟩ : ∃ c : Field.absoluteGaloisGroup ℚ → kk',
+      ∀ g, τ g v = c g • v := by
+    choose c hc using fun g => Submodule.mem_span_singleton.mp (hstab g)
+    exact ⟨c, fun g => (hc g).symm⟩
+  have huniq : ∀ s t : kk', s • v = t • v → s = t := by
+    intro s t hst
+    by_contra hne
+    have h0 : (s - t) • v = 0 := by
+      linear_combination (norm := module) hst
+    rcases smul_eq_zero.mp h0 with h | h
+    · exact hne (sub_eq_zero.mp h)
+    · exact hv h
+  have hmul : ∀ g h, c (g * h) = c g * c h := by
+    intro g h
+    refine huniq _ _ ?_
+    calc c (g * h) • v = τ (g * h) v := (hc _).symm
+      _ = τ g (τ h v) := by rw [map_mul]; rfl
+      _ = τ g (c h • v) := by rw [← hc]
+      _ = c h • τ g v := map_smul _ _ _
+      _ = c h • (c g • v) := by rw [hc]
+      _ = (c g * c h) • v := by rw [smul_smul, mul_comm]
+  -- extend the line to a frame
+  have hspan : Submodule.span kk' {v} ≠ ⊤ := by
+    intro h
+    have h1 : Module.finrank kk' (Submodule.span kk' {v}) = 1 :=
+      finrank_span_singleton hv
+    rw [h, finrank_top, hdim] at h1
+    omega
+  obtain ⟨v₁, hv₁⟩ : ∃ v₁, v₁ ∉ Submodule.span kk' {v} := by
+    by_contra h
+    exact hspan (eq_top_iff.mpr fun x _ => not_not.mp fun hx => h ⟨x, hx⟩)
+  have hli : LinearIndependent kk' ![v, v₁] := by
+    rw [LinearIndependent.pair_iff]
+    intro s t hst
+    have ht : t = 0 := by
+      by_contra ht
+      refine hv₁ (Submodule.mem_span_singleton.mpr ⟨-(t⁻¹ * s), ?_⟩)
+      have h2 : t • v₁ = -(s • v) := by
+        linear_combination (norm := module) hst
+      have h3 : v₁ = t⁻¹ • (t • v₁) := by
+        rw [smul_smul, inv_mul_cancel₀ ht, one_smul]
+      rw [h3, h2, smul_neg, smul_smul, neg_smul]
+    subst ht
+    refine ⟨?_, rfl⟩
+    have h4 : s • v = 0 := by simpa using hst
+    exact (smul_eq_zero.mp h4).resolve_right hv
+  have hcard : Fintype.card (Fin 2) =
+      Module.finrank kk' (kk' ⊗[O] (Fin 2 → O)) := by simp [hdim]
+  obtain ⟨b, hb0, hb1⟩ : ∃ b : Module.Basis (Fin 2) kk'
+      (kk' ⊗[O] (Fin 2 → O)), b 0 = v ∧ b 1 = v₁ := by
+    refine ⟨basisOfLinearIndependentOfCardEqFinrank hli hcard, ?_, ?_⟩ <;>
+      rw [coe_basisOfLinearIndependentOfCardEqFinrank hli hcard] <;> rfl
+  have hxexp : ∀ x : kk' ⊗[O] (Fin 2 → O),
+      x = (b.repr x 0) • b 0 + (b.repr x 1) • b 1 := by
+    intro x
+    have h := b.sum_repr x
+    rw [Fin.sum_univ_two] at h
+    exact h.symm
+  obtain ⟨a, d, hexp1⟩ : ∃ a d : Field.absoluteGaloisGroup ℚ → kk',
+      ∀ g, τ g (b 1) = a g • b 0 + d g • b 1 :=
+    ⟨fun g => b.repr (τ g (b 1)) 0, fun g => b.repr (τ g (b 1)) 1,
+      fun g => hxexp _⟩
+  have hfix0 : ∀ g, τ g (b 0) = c g • b 0 := by
+    intro g; rw [hb0]; exact hc g
+  have hmat : ∀ g, LinearMap.toMatrix b b (τ g) = !![c g, a g; 0, d g] := by
+    intro g
+    ext i j
+    rw [LinearMap.toMatrix_apply]
+    fin_cases j
+    · rw [show ((⟨0, by omega⟩ : Fin 2)) = (0 : Fin 2) from rfl, hfix0 g]
+      fin_cases i <;> simp [Module.Basis.repr_self]
+    · rw [show ((⟨1, by omega⟩ : Fin 2)) = (1 : Fin 2) from rfl, hexp1 g]
+      fin_cases i <;> simp [Module.Basis.repr_self]
+  have htr2 : ∀ g, c g + d g = 1 + ψ g := by
+    intro g
+    have h := htrace g
+    rw [LinearMap.trace_eq_matrix_trace kk' b, hmat g] at h
+    simpa [Matrix.trace_fin_two] using h
+  have hdet2 : ∀ g, c g * d g = ψ g := by
+    intro g
+    have h := hdetk g
+    rw [← LinearMap.det_toMatrix b, hmat g] at h
+    simpa [Matrix.det_fin_two] using h
+  -- Brauer–Nesbitt: the line character is `1` or `ψ` at each `g`
+  have hroot : ∀ g, c g = 1 ∨ c g = ψ g := by
+    intro g
+    have h : (c g - 1) * (c g - ψ g) = 0 := by
+      linear_combination c g * htr2 g - hdet2 g
+    rcases mul_eq_zero.mp h with h | h
+    · exact Or.inl (sub_eq_zero.mp h)
+    · exact Or.inr (sub_eq_zero.mp h)
+  -- multiplicativity forces one of the two GLOBALLY
+  have hdich : (∀ g, c g = 1) ∨ (∀ g, c g = ψ g) := by
+    by_cases hall : ∀ g, c g = 1
+    · exact Or.inl hall
+    · obtain ⟨g₁, hg₁⟩ : ∃ g, c g ≠ 1 := not_forall.mp hall
+      have hg₁ψ : c g₁ = ψ g₁ := (hroot g₁).resolve_left hg₁
+      refine Or.inr fun g₂ => ?_
+      rcases hroot g₂ with h2 | h2
+      · rcases hroot (g₁ * g₂) with h3 | h3
+        · exact absurd (by
+            have h4 : c g₁ * c g₂ = 1 := by rw [← hmul]; exact h3
+            rwa [h2, mul_one] at h4) hg₁
+        · refine mul_left_cancel₀ (hψne g₁) ?_
+          rw [← hg₁ψ, ← hmul g₁ g₂, h3, map_mul, hg₁ψ]
+      · exact h2
+  -- the action in the frame
+  have hact : ∀ g s t, τ g (s • b 0 + t • b 1) - d g • (s • b 0 + t • b 1)
+      = (s * c g + t * a g - d g * s) • b 0 := by
+    intro g s t
+    rw [map_add, map_smul, map_smul, hfix0 g, hexp1 g]
+    module
+  have hact' : ∀ g x, ∃ e : kk', τ g x - d g • x = e • b 0 := by
+    intro g x
+    refine ⟨b.repr x 0 * c g + b.repr x 1 * a g - d g * b.repr x 0, ?_⟩
+    have h := hact g (b.repr x 0) (b.repr x 1)
+    rw [← hxexp x] at h
+    exact h
+  rcases hdich with h1 | h2
+  · -- sub-character `1`, quotient character `ψ`
+    have hdψ : ∀ g, d g = ψ g := by
+      intro g
+      have h := htr2 g
+      rw [h1 g] at h
+      linear_combination h
+    refine Or.inl ⟨v, hv, fun g => ?_, fun g x => ?_⟩
+    · rw [← hτapp g, hc g, h1 g, one_smul]
+    · obtain ⟨e, he⟩ := hact' g x
+      rw [hdψ g] at he
+      exact ⟨e, by rw [← hτapp g, ← hb0]; exact he⟩
+  · -- sub-character `ψ`, quotient character `1`
+    have hd1 : ∀ g, d g = 1 := by
+      intro g
+      have h := htr2 g
+      rw [h2 g] at h
+      linear_combination h
+    refine Or.inr ⟨v, hv, fun g => ?_, fun g x => ?_⟩
+    · rw [← hτapp g, hc g, h2 g]
+    · obtain ⟨e, he⟩ := hact' g x
+      rw [hd1 g, one_smul] at he
+      exact ⟨e, by rw [← hτapp g, ← hb0]; exact he⟩
 
+set_option linter.unusedVariables false in
 set_option backward.isDefEq.respectTransparency false in
 /-- **One step of Ribet's walk: swapping the order of the residual
-characters** (Ribet cut E2a-ii-walk, item (b); sorry node — carved out
+characters** (Ribet cut E2a-ii-walk, item (b); PARTIALLY PROVEN — the
+lattice construction and the generic identification are proven, one
+sorried `have hwalk` remains; carved out
 2026-07-25 from `exists_ribet_walk_stable_line`): if the reduction of
 the given lattice has `ψ` as its SUB-character — a residual
 `ψ`-eigenvector `v₀` whose line carries the quotient character `1` —
@@ -10202,7 +10411,31 @@ FIXED residual vector with `ψ` on the quotient. The residue package
 continuously, and `hOinj` is what makes the generic fibres of `Λ` and
 `Λ'` the same `ℚ̄_p`-space. Unconditionally TRUE given the `ψ`-sub
 hypothesis, which is exactly what makes `Λ'` a PROPER intermediate
-lattice. -/
+lattice.
+
+DECOMPOSITION (2026-07-25): the assembly below is PROVEN and the leaf
+is now the single sorried `have hwalk`. What is proven here:
+* the walked lattice itself is CONSTRUCTED as real code —
+  `Λ' = red⁻¹(kk'·u₀)` for the reduction `red : Λ →ₗ[O] kk' ⊗_O Λ`,
+  `x ↦ 1 ⊗ₜ x`, i.e. `Submodule.comap red ((kk' ∙ u₀).restrictScalars O)`
+  — together with the three properties that make it an honest
+  intermediate lattice: `Γ ℚ`-STABILITY (the residual `ψ`-line is
+  stable, and `red` intertwines `ρO` with `ρO.baseChange kk'`),
+  PROPERNESS `Λ' ≠ Λ` (otherwise the `kk'`-span of `red Λ` — all of
+  `kk' ⊗_O Λ`, since `r ⊗ₜ x = r • (1 ⊗ₜ x)` — would lie in the LINE
+  `kk'·u₀`, contradicting `finrank = 2`), and `𝔪Λ ⊆ Λ'` (for
+  `m ∈ 𝔪 = ker(O → kk')`, `1 ⊗ₜ (m • x) = (algebraMap m) ⊗ₜ x = 0`).
+* the GENERIC IDENTIFICATION: the sorried step returns the inclusion
+  `Λ' ⊆ Λ` in frame form, an `O`-linear `f` with `det f ≠ 0`
+  intertwining `ρO'` and `ρO`; base-changing `f` to `ℚ̄_p` gives
+  `det (f ⊗ ℚ̄_p) = algebraMap (det f) ≠ 0` by `hOinj`, hence an
+  isomorphism (`LinearMap.isUnit_iff_isUnit_det` + `Module.End.isUnit_iff`),
+  and its equivariance is `TensorProduct.induction_on` over `f`'s.
+The residual order swap and the freeness/framing of `Λ'` (finitely
+generated torsion-free over the DVR `O`, hence free, of rank `2`
+because it contains `𝔪Λ`) are what remains inside `hwalk`, which is
+handed exactly the three lattice properties plus the quotient-character
+hypothesis it consumes. -/
 theorem exists_ribet_walk_swap_order
     {O : Type u} [CommRing O] [Algebra ℤ_[p] O] [IsDomain O]
     [Module.Finite ℤ_[p] O] [TopologicalSpace O] [IsTopologicalRing O]
@@ -10231,12 +10464,104 @@ theorem exists_ribet_walk_swap_order
       v₀ ≠ 0 ∧
       (∀ g, (ρO'.baseChange kk') g v₀ = v₀) ∧
       (∀ g x, ∃ c : kk',
-        (ρO'.baseChange kk') g x - ψ g • x = c • v₀) :=
-  sorry
+        (ρO'.baseChange kk') g x - ψ g • x = c • v₀) := by
+  classical
+  obtain ⟨u₀, hu₀, hfixψ, hquo1⟩ := hpsi
+  have hdimk : Module.finrank kk' (kk' ⊗[O] (Fin 2 → O)) = 2 := by
+    rw [Module.finrank_eq_card_basis
+      (Algebra.TensorProduct.basis kk' (Pi.basisFun O (Fin 2)))]
+    simp
+  -- the reduction map `Λ ↠ Λ/𝔪Λ = kk' ⊗ Λ`
+  obtain ⟨red, hred⟩ : ∃ red : (Fin 2 → O) →ₗ[O] (kk' ⊗[O] (Fin 2 → O)),
+      ∀ x, red x = (1 : kk') ⊗ₜ[O] x :=
+    ⟨TensorProduct.mk O kk' (Fin 2 → O) 1, fun _ => rfl⟩
+  -- the walked lattice `Λ' = red⁻¹(kk'·u₀)`
+  obtain ⟨N, hN⟩ : ∃ N : Submodule O (Fin 2 → O),
+      ∀ x, x ∈ N ↔ red x ∈ Submodule.span kk' {u₀} :=
+    ⟨Submodule.comap red ((Submodule.span kk' {u₀}).restrictScalars O),
+      fun _ => Iff.rfl⟩
+  have hNstable : ∀ g x, x ∈ N → ρO g x ∈ N := by
+    intro g x hx
+    rw [hN] at hx ⊢
+    obtain ⟨s, hs⟩ := Submodule.mem_span_singleton.mp hx
+    have h1 : red (ρO g x) = (ρO.baseChange kk') g (red x) := by
+      rw [hred, hred]
+      exact (GaloisRep.baseChange_tmul ρO g 1 x).symm
+    rw [h1, ← hs, map_smul, hfixψ g, smul_smul]
+    exact Submodule.smul_mem _ _ (Submodule.mem_span_singleton_self u₀)
+  have hNtop : N ≠ ⊤ := by
+    intro htop
+    have hall : ∀ y : kk' ⊗[O] (Fin 2 → O), y ∈ Submodule.span kk' {u₀} := by
+      intro y
+      induction y using TensorProduct.induction_on with
+      | zero => exact Submodule.zero_mem _
+      | tmul r x =>
+          have hx : red x ∈ Submodule.span kk' {u₀} :=
+            (hN x).mp (by rw [htop]; exact Submodule.mem_top)
+          rw [hred] at hx
+          have hrx : r ⊗ₜ[O] x = r • ((1 : kk') ⊗ₜ[O] x) := by
+            rw [TensorProduct.smul_tmul', smul_eq_mul, mul_one]
+          rw [hrx]
+          exact Submodule.smul_mem _ _ hx
+      | add y₁ y₂ h₁ h₂ => exact Submodule.add_mem _ h₁ h₂
+    have hspanall : Submodule.span kk' {u₀} = ⊤ :=
+      eq_top_iff.mpr fun y _ => hall y
+    have h1 : Module.finrank kk' (Submodule.span kk' {u₀}) = 1 :=
+      finrank_span_singleton hu₀
+    rw [hspanall, finrank_top, hdimk] at h1
+    omega
+  have hNmax : ∀ m ∈ IsLocalRing.maximalIdeal O, ∀ x : Fin 2 → O, m • x ∈ N := by
+    intro m hm x
+    rw [hN, hred]
+    have hm0 : algebraMap O kk' m = 0 := by
+      rw [← RingHom.mem_ker, hker']; exact hm
+    have h2 : (1 : kk') ⊗ₜ[O] (m • x) = (algebraMap O kk' m) ⊗ₜ[O] x := by
+      rw [← TensorProduct.smul_tmul, Algebra.smul_def, mul_one]
+    rw [h2, hm0, TensorProduct.zero_tmul]
+    exact Submodule.zero_mem _
+  -- the frame of `Λ'` and the residual order swap
+  have hwalk : (∀ g x, x ∈ N → ρO g x ∈ N) → N ≠ ⊤ →
+      (∀ m ∈ IsLocalRing.maximalIdeal O, ∀ x : Fin 2 → O, m • x ∈ N) →
+      (∀ g x, ∃ c : kk', (ρO.baseChange kk') g x - x = c • u₀) →
+      ∃ (ρO' : GaloisRep ℚ O (Fin 2 → O))
+        (f : (Fin 2 → O) →ₗ[O] (Fin 2 → O)),
+        LinearMap.det f ≠ 0 ∧
+        (∀ g x, f (ρO' g x) = ρO g (f x)) ∧
+        ∃ v₀ : kk' ⊗[O] (Fin 2 → O), v₀ ≠ 0 ∧
+          (∀ g, (ρO'.baseChange kk') g v₀ = v₀) ∧
+          (∀ g x, ∃ c : kk',
+            (ρO'.baseChange kk') g x - ψ g • x = c • v₀) := by
+    sorry
+  obtain ⟨ρO', f, hfdet, hfequiv, v₀, hv₀, hfix, hquo⟩ :=
+    hwalk hNstable hNtop hNmax hquo1
+  -- the generic identification: base change `f` and invert it over `ℚ̄_p`
+  have hdetQ : LinearMap.det
+      (LinearMap.baseChange (AlgebraicClosure ℚ_[p]) f) ≠ 0 := by
+    rw [LinearMap.det_baseChange]
+    intro h
+    exact hfdet (hOinj (by rw [h, map_zero]))
+  have hbij : Function.Bijective
+      (LinearMap.baseChange (AlgebraicClosure ℚ_[p]) f) := by
+    rw [← Module.End.isUnit_iff]
+    rw [LinearMap.isUnit_iff_isUnit_det]
+    exact isUnit_iff_ne_zero.mpr hdetQ
+  refine ⟨ρO', LinearEquiv.ofBijective _ hbij, v₀, fun g x => ?_,
+    hv₀, hfix, hquo⟩
+  show LinearMap.baseChange (AlgebraicClosure ℚ_[p]) f
+      ((ρO'.baseChange (AlgebraicClosure ℚ_[p])) g x) =
+    (ρO.baseChange (AlgebraicClosure ℚ_[p])) g
+      (LinearMap.baseChange (AlgebraicClosure ℚ_[p]) f x)
+  induction x using TensorProduct.induction_on with
+  | zero => simp
+  | tmul r y => simp [hfequiv g y]
+  | add x₁ x₂ h₁ h₂ => simp only [map_add, h₁, h₂]
 
+set_option linter.unusedVariables false in
 set_option backward.isDefEq.respectTransparency false in
 /-- **Split everywhere forces a stable line in the generic fibre**
-(Ribet cut E2a-ii-walk, item (c); sorry node — carved out 2026-07-25
+(Ribet cut E2a-ii-walk, item (c); PARTIALLY PROVEN — the passage from
+a stable generic LINE to the conclusion is proven, two sorried `have`s
+(`hstep`, `hlimit`) remain; carved out 2026-07-25
 from `exists_ribet_walk_stable_line`): if EVERY stable lattice whose
 reduction has the trivial sub-character splits — carries a
 `ψ`-eigenvector outside the fixed line — then the generic fibre
@@ -10267,7 +10592,31 @@ a `2`-dimensional space is neither `⊥` nor `⊤`. Hypothesis-honest:
 `hψ` keeps the two residual characters distinct (for `ψ = 1` the
 `ψ`-eigenvector produced by `hsplit` gives no new lattice), and
 `htr`/`hdet` are what make every lattice of the walk a GOOD lattice,
-i.e. re-feedable to `hsplit`. -/
+i.e. re-feedable to `hsplit`.
+
+DECOMPOSITION (2026-07-25): the assembly below is PROVEN and the leaf
+is now the two sorried `have`s `hstep` and `hlimit`, cut exactly along
+the seam of Ribet's Prop. 2.1:
+* `hstep` — ONE step of the descent. From a good lattice it produces
+  the next one together with the inclusion in frame form: an `O`-linear
+  `f` with `det f ≠ 0` (so the generic fibres agree) and
+  `det f ∈ 𝔪` (so the step is PROPER — this is the discreteness of the
+  valuation entering, and it is what forbids stabilisation). It is the
+  same construction as `exists_ribet_walk_swap_order`'s `hwalk`, run
+  at the `ψ`-eigenvector supplied by `hsplit` instead of at the
+  residual `ψ`-line, and it is the only consumer of `hsplit`/`htr`/`hdet`.
+* `hlimit` — the INVERSE LIMIT. Given the step as an oracle and the
+  starting good lattice `(ρ₁, e₁, v₁)`, it iterates and assembles the
+  successive `ψ`-eigenlines into a single `ρO`-stable `ℚ̄_p`-LINE of
+  the generic fibre (`O` is complete, being module-finite over `ℤ_p`
+  in the module topology, and `Λ₁` is compact). The recursion lives
+  here, which is why the step is exposed as a ∀-statement rather than
+  applied once.
+What is PROVEN in the assembly is the passage from that stable line to
+the conclusion: `U := ℚ̄_p ∙ z` is `≠ ⊥` because `z ≠ 0`, `≠ ⊤` because
+`finrank (ℚ̄_p ∙ z) = 1 < 2 = finrank (ℚ̄_p ⊗_O O²)`
+(`Algebra.TensorProduct.basis` on `Pi.basisFun`), and stable because a
+span of a single stable vector is. -/
 theorem exists_stable_line_of_ribet_walk_split
     {O : Type u} [CommRing O] [Algebra ℤ_[p] O] [IsDomain O]
     [Module.Finite ℤ_[p] O] [TopologicalSpace O] [IsTopologicalRing O]
@@ -10314,8 +10663,80 @@ theorem exists_stable_line_of_ribet_walk_split
         ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O)),
       U ≠ ⊥ ∧ U ≠ ⊤ ∧
         ∀ g x, x ∈ U →
-          (ρO.baseChange (AlgebraicClosure ℚ_[p])) g x ∈ U :=
-  sorry
+          (ρO.baseChange (AlgebraicClosure ℚ_[p])) g x ∈ U := by
+  classical
+  have hdimQ : Module.finrank (AlgebraicClosure ℚ_[p])
+      ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O)) = 2 := by
+    rw [Module.finrank_eq_card_basis (Algebra.TensorProduct.basis
+      (AlgebraicClosure ℚ_[p]) (Pi.basisFun O (Fin 2)))]
+    simp
+  -- ONE step of Ribet's descent: a good lattice yields a strictly smaller
+  -- good lattice, the inclusion being an `O`-linear map of nonzero,
+  -- NON-UNIT determinant
+  have hstep : ∀ (ρ' : GaloisRep ℚ O (Fin 2 → O))
+      (e' : ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O))
+        ≃ₗ[AlgebraicClosure ℚ_[p]]
+          ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O)))
+      (v' : kk' ⊗[O] (Fin 2 → O)),
+      (∀ g x, e' ((ρ'.baseChange (AlgebraicClosure ℚ_[p])) g x) =
+        (ρO.baseChange (AlgebraicClosure ℚ_[p])) g (e' x)) →
+      v' ≠ 0 →
+      (∀ g, (ρ'.baseChange kk') g v' = v') →
+      (∀ g x, ∃ c : kk', (ρ'.baseChange kk') g x - ψ g • x = c • v') →
+      ∃ (ρ'' : GaloisRep ℚ O (Fin 2 → O))
+        (f : (Fin 2 → O) →ₗ[O] (Fin 2 → O))
+        (v'' : kk' ⊗[O] (Fin 2 → O)),
+        LinearMap.det f ≠ 0 ∧
+        LinearMap.det f ∈ IsLocalRing.maximalIdeal O ∧
+        (∀ g x, f (ρ'' g x) = ρ' g (f x)) ∧
+        v'' ≠ 0 ∧
+        (∀ g, (ρ''.baseChange kk') g v'' = v'') ∧
+        (∀ g x, ∃ c : kk',
+          (ρ''.baseChange kk') g x - ψ g • x = c • v'') := by
+    sorry
+  -- the inverse limit of the descent is a `ρO`-stable line of the generic fibre
+  have hlimit : (∀ (ρ' : GaloisRep ℚ O (Fin 2 → O))
+      (e' : ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O))
+        ≃ₗ[AlgebraicClosure ℚ_[p]]
+          ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O)))
+      (v' : kk' ⊗[O] (Fin 2 → O)),
+      (∀ g x, e' ((ρ'.baseChange (AlgebraicClosure ℚ_[p])) g x) =
+        (ρO.baseChange (AlgebraicClosure ℚ_[p])) g (e' x)) →
+      v' ≠ 0 →
+      (∀ g, (ρ'.baseChange kk') g v' = v') →
+      (∀ g x, ∃ c : kk', (ρ'.baseChange kk') g x - ψ g • x = c • v') →
+      ∃ (ρ'' : GaloisRep ℚ O (Fin 2 → O))
+        (f : (Fin 2 → O) →ₗ[O] (Fin 2 → O))
+        (v'' : kk' ⊗[O] (Fin 2 → O)),
+        LinearMap.det f ≠ 0 ∧
+        LinearMap.det f ∈ IsLocalRing.maximalIdeal O ∧
+        (∀ g x, f (ρ'' g x) = ρ' g (f x)) ∧
+        v'' ≠ 0 ∧
+        (∀ g, (ρ''.baseChange kk') g v'' = v'') ∧
+        (∀ g x, ∃ c : kk',
+          (ρ''.baseChange kk') g x - ψ g • x = c • v'')) →
+      (∀ g x, e₁ ((ρ₁.baseChange (AlgebraicClosure ℚ_[p])) g x) =
+        (ρO.baseChange (AlgebraicClosure ℚ_[p])) g (e₁ x)) →
+      v₁ ≠ 0 →
+      (∀ g, (ρ₁.baseChange kk') g v₁ = v₁) →
+      (∀ g x, ∃ c : kk', (ρ₁.baseChange kk') g x - ψ g • x = c • v₁) →
+      ∃ z : (AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O), z ≠ 0 ∧
+        ∀ g, (ρO.baseChange (AlgebraicClosure ℚ_[p])) g z ∈
+          Submodule.span (AlgebraicClosure ℚ_[p]) {z} := by
+    sorry
+  obtain ⟨z, hz, hline⟩ := hlimit hstep he₁ hv₁ hfix₁ hquo₁
+  refine ⟨Submodule.span (AlgebraicClosure ℚ_[p]) {z}, ?_, ?_, ?_⟩
+  · simpa [Submodule.span_singleton_eq_bot] using hz
+  · intro htop
+    have h1 : Module.finrank (AlgebraicClosure ℚ_[p])
+        (Submodule.span (AlgebraicClosure ℚ_[p]) {z}) = 1 :=
+      finrank_span_singleton hz
+    rw [htop, finrank_top, hdimQ] at h1
+    omega
+  · intro g x hx
+    obtain ⟨s, rfl⟩ := Submodule.mem_span_singleton.mp hx
+    rw [map_smul]
+    exact Submodule.smul_mem _ _ (hline g)
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **Ribet's walk, intrinsic form** (Ribet cut E2a-ii-walk; PROVEN
