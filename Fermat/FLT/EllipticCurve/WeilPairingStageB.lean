@@ -1500,7 +1500,159 @@ theorem millerRatio_eval_pow_of_pullback {ι : Type*} [Fintype ι]
     (AdjoinRoot.evalEval hPS.left (CoordinateRing.XClass W xR) ^ p *
       AdjoinRoot.evalEval hV.left a ^ p) * hcS
 
-/-- **Stage B, leaf 3 (ONE sorried sub-leaf + proven glue): the mirror
+omit [IsAlgClosed F] in
+/-- **Converse of `exists_span_eq_prod_pointIdeal` (PROVEN)**: a
+point-ideal product that is PRINCIPAL has zero-sum multiset.  Indeed
+`Ideal.span {a}` with `a ≠ 0` is trivial in the class group
+(`ClassGroup.mk_eq_one_of_coe_ideal` against `coe_prod_pointIdeal'`), and
+the class of a point-ideal product is the `toClass`-sum of its points
+(`mk_prod_pointIdeal'`), which is `toClass D.sum` because `toClass` is
+additive; `toClass` has trivial kernel (mathlib's
+`Point.toClass_eq_zero`), so `D.sum = 0`.
+
+Together with `exists_span_eq_prod_pointIdeal` this makes "the affine
+divisor `D` is principal" and "`D` sums to `O` in the group law" the SAME
+condition.  Its use here is to read the torsion of a Miller generator's
+head off its span: `div a = Σ_κ (T'⊕κ) + Σ_κ (⊖κ)` sums to
+`(card E[p])·T' = p²·T'`, so such a generator exists exactly when
+`Q = [p]T'` is `p`-torsion — which is what makes the translation
+character of `g = a/v` a `p`-th root of unity, and hence what the
+alternating law below is about. -/
+theorem sum_eq_zero_of_span_eq_prod_pointIdeal {D : Multiset W.Point}
+    {a : W.CoordinateRing} (ha : a ≠ 0)
+    (hspan : Ideal.span {a} = (D.map (pointIdeal W)).prod) :
+    D.sum = 0 := by
+  have hmk : ClassGroup.mk W.FunctionField (D.map (pointIdeal' W)).prod = 1 :=
+    (ClassGroup.mk_eq_one_of_coe_ideal (coe_prod_pointIdeal' D)).mpr
+      ⟨a, ha, hspan.symm⟩
+  rw [mk_prod_pointIdeal', ← map_multiset_sum] at hmk
+  -- `Additive.toMul x = 1` is definitionally `x = 0`
+  have h0 : WeierstrassCurve.Affine.Point.toClass D.sum = 0 := hmk
+  exact (WeierstrassCurve.Affine.Point.toClass_eq_zero D.sum).mp h0
+
+/-- **Stage B, leaf 3a (SORRY): the ALTERNATING LAW of the Weil pairing,
+in Miller-value form.**  This is the one genuinely reciprocal statement
+of Stage B; everything else in leaf 3 is transport and glue.
+
+Setting `v = enumVertical W val = ∏_{κ ∈ E[p]} (X − x_κ)`, the two
+hypotheses `hspan`/`hbspan` say that `g := a/v` and `g_P := b/v` are the
+level-`p²` Miller functions of `Q := [p]T'` and `P := [p]P'`:
+`div g = [p]^*((Q) − (O))`, `div g_P = [p]^*((P) − (O))` (both `a` and
+`b` have divisor `Σ_κ (·⊕κ) + Σ_κ (⊖κ)`, and `div v = Σ_κ (κ) + Σ_κ (⊖κ)`).
+The hypotheses `hQtor`/`hPtor` say `Q, P ∈ E[p]`, which is what makes the
+translation characters of `g` and `g_P` `p`-th roots of unity.  They are
+not extra assumptions: `hspan` with `a ≠ 0` already FORCES `[p²]T' = 0`,
+since a point-ideal product is principal exactly when its multiset sums
+to `O` (`sum_eq_zero_of_span_eq_prod_pointIdeal` above) and
+`Σ_κ (T'⊕κ) + Σ_κ (⊖κ) = p²·T'`; the consumer discharges them that way,
+and they are stated here so that a prover has them without redoing the
+class-group argument.
+
+Written multiplicatively (all ten evaluations are nonzero by the
+hypotheses, so the division is legitimate), the conclusion is
+
+`[g_P(M₁)/g_P(M₂)]^p = [g(V)/g(U)]^p · [g(P⊕U)/g(U)]^e`,  `e ∈ {1, p−1}`,
+
+for `M₂ = ⊖U`, `M₁ = T' ⊖ U`, `V = P' ⊕ U`.
+
+**Why this is the alternating law.**  Since `g_P^p = μ·(f_P∘[p])` for a
+constant `μ` and any `f_P` with `div f_P = p(P) − p(O)` (the two sides
+have the same divisor), the left-hand side is
+`f_P([p]M₁)/f_P([p]M₂) = f_P((Z⊕Q) − (Z))` with `Z := [p]M₂ = ⊖[p]U`;
+and `[g(V)/g(U)]^p = f_Q((Wp⊕P) − (Wp))` with `Wp := [p]U`.  So with the
+balanced divisors `D_Q := (Z⊕Q) − (Z) ∼ (Q) − (O)` and
+`D_P := (Wp⊕P) − (Wp) ∼ (P) − (O)` the conclusion reads
+
+`f_P(D_Q) / f_Q(D_P) = [g(P⊕U)/g(U)]^e = e_p(P,Q)^e`,
+
+i.e. the cross-ratio definition of the Weil pairing agrees with the
+translation-character definition `e_p(P,Q) = g(X⊕P)/g(X)` up to the
+orientation ambiguity `e ∈ {1, p−1}` (`c` versus `c^{-1} = c^{p-1}`,
+since `c^p = 1`).  Equivalently `e_p(P,Q)·e_p(Q,P) = 1`.  See Silverman
+*AEC* III.8.1 and Ex. 3.16(c), and Howe, *The Weil pairing and the
+Hilbert symbol*.
+
+**The hypothesis `hM2eq : M₂ = ⊖U` is not needed for truth** — the
+cross-ratio `f_P(D_Q)/f_Q(D_P)` is independent of the auxiliary points
+`Z`, `Wp` — but it is the shape the consumer
+`exists_millerRatio_eval_translationChar` supplies, and keeping it
+avoids a needless generalisation.
+
+**MISSING MACHINERY (named for a future owner).**  The classical proof
+runs through **Weil reciprocity**, which mathlib does not have and which
+this development does not have either.  In the vocabulary of
+`WeilPairingDescent.lean` the missing brick is:
+
+  for `f, g : W.CoordinateRing` nonzero with
+  `Ideal.span {f} = (D_f.map (pointIdeal W)).prod` and
+  `Ideal.span {g} = (D_g.map (pointIdeal W)).prod` and `D_f`, `D_g`
+  disjoint, `∏_{Z ∈ D_g} evalEval Z f = ∏_{Z ∈ D_f} evalEval Z g` up to
+  the contribution of the point at infinity (both `f` and `g` have poles
+  only there, of order `deg D_f`, `deg D_g`), i.e. the tame-symbol
+  product formula `∏_{Z} (f,g)_Z = 1` over all closed points of the
+  projective curve.
+
+Plain reciprocity between `f_P` and `g` is NOT enough by itself: both
+sides of `f_P(div g) = g(div f_P)` degenerate (the norm `N_{[p]}(f_P)` is
+constant because `[p]_*(div f_P) = 0`, and the right side is `c^p = 1`),
+so the `p`-th-root structure — the L4-7 pullback constants — has to be
+carried along.  (SORRY LEAF, 2026-07-25.) -/
+theorem exists_millerValue_alternating {ι : Type*} [Fintype ι]
+    {val : ι → W.Point}
+    (hΔ : W.Δ ≠ 0) (hp : (p : F) ≠ 0)
+    (hval_inj : Function.Injective val)
+    (hval_tor : ∀ i, (p : ℤ) • val i = 0)
+    (hval_surj : ∀ Z : W.Point, (p : ℤ) • Z = 0 → ∃ i, val i = Z)
+    (hcard : Fintype.card ι = p ^ 2)
+    {a b : W.CoordinateRing} (ha : a ≠ 0) (hb : b ≠ 0)
+    {T' P' : W.Point}
+    (hspan : Ideal.span {a} =
+      ((((Finset.univ.val.map fun i => T' + val i) +
+        Finset.univ.val.map fun i => -val i)).map (pointIdeal W)).prod)
+    (hbspan : Ideal.span {b} =
+      ((((Finset.univ.val.map fun i => P' + val i) +
+        Finset.univ.val.map fun i => -val i)).map (pointIdeal W)).prod)
+    (hQtor : (p : ℤ) • ((p : ℤ) • T') = 0)
+    (hPtor : (p : ℤ) • ((p : ℤ) • P') = 0)
+    {xU yU : F} (hU : W.Nonsingular xU yU)
+    {xV yV : F} (hV : W.Nonsingular xV yV)
+    {xM1 yM1 : F} (hM1 : W.Nonsingular xM1 yM1)
+    {xM2 yM2 : F} (hM2 : W.Nonsingular xM2 yM2)
+    {xPU yPU : F} (hPU : W.Nonsingular xPU yPU)
+    (hVeq : (WeierstrassCurve.Affine.Point.some xV yV hV : W.Point) =
+      P' + WeierstrassCurve.Affine.Point.some xU yU hU)
+    (hM1eq : (WeierstrassCurve.Affine.Point.some xM1 yM1 hM1 : W.Point) =
+      T' - WeierstrassCurve.Affine.Point.some xU yU hU)
+    (hM2eq : (WeierstrassCurve.Affine.Point.some xM2 yM2 hM2 : W.Point) =
+      -(WeierstrassCurve.Affine.Point.some xU yU hU : W.Point))
+    (hPUeq : (WeierstrassCurve.Affine.Point.some xPU yPU hPU : W.Point) =
+      (p : ℤ) • P' + WeierstrassCurve.Affine.Point.some xU yU hU)
+    (hUa : AdjoinRoot.evalEval hU.left a ≠ 0)
+    (hUv : AdjoinRoot.evalEval hU.left (enumVertical W val) ≠ 0)
+    (hVa : AdjoinRoot.evalEval hV.left a ≠ 0)
+    (hVv : AdjoinRoot.evalEval hV.left (enumVertical W val) ≠ 0)
+    (hM1b : AdjoinRoot.evalEval hM1.left b ≠ 0)
+    (hM1v : AdjoinRoot.evalEval hM1.left (enumVertical W val) ≠ 0)
+    (hM2b : AdjoinRoot.evalEval hM2.left b ≠ 0)
+    (hM2v : AdjoinRoot.evalEval hM2.left (enumVertical W val) ≠ 0)
+    (hPUa : AdjoinRoot.evalEval hPU.left a ≠ 0)
+    (hPUv : AdjoinRoot.evalEval hPU.left (enumVertical W val) ≠ 0) :
+    ∃ e : ℕ, (e = 1 ∨ e = p - 1) ∧
+      AdjoinRoot.evalEval hM1.left b ^ p *
+          AdjoinRoot.evalEval hU.left a ^ p *
+          AdjoinRoot.evalEval hM2.left (enumVertical W val) ^ p *
+          AdjoinRoot.evalEval hV.left (enumVertical W val) ^ p *
+          (AdjoinRoot.evalEval hU.left a *
+            AdjoinRoot.evalEval hPU.left (enumVertical W val)) ^ e =
+        AdjoinRoot.evalEval hM2.left b ^ p *
+          AdjoinRoot.evalEval hV.left a ^ p *
+          AdjoinRoot.evalEval hM1.left (enumVertical W val) ^ p *
+          AdjoinRoot.evalEval hU.left (enumVertical W val) ^ p *
+          (AdjoinRoot.evalEval hPU.left a *
+            AdjoinRoot.evalEval hU.left (enumVertical W val)) ^ e := by
+  sorry
+
+/-- **Stage B, leaf 3 (PROVEN over the alternating-law leaf 3a): the mirror
 side — Weil reciprocity and the level-`p²` telescope.**  With `f_P = aP/(X − x_S)^p`
 (`div f_P = p(P⊕S) − p(S)`, the span hypothesis `haP`) and the
 nontrivial translation character `g∘τ_P = c·g` of `g = a/v`
@@ -1532,9 +1684,11 @@ computation), leaving the single character factor `c^e` with
 points are the telescope points `jP'⊕U`, `P' ∈ E[p²]`, which `hbad`
 keeps off `div g`.
 
-STAGING (2026-07-25, re-cut twice): DECOMPOSED over TWO sorried inputs
-plus the SHARED specialization brick `exists_pointEval_specialization`,
-in the same balanced-halves shape as leaf 2.
+STAGING (2026-07-25, re-cut twice, then CLOSED down to ONE named leaf):
+DECOMPOSED over the SHARED specialization brick
+`exists_pointEval_specialization`, in the same balanced-halves shape as
+leaf 2, plus exactly one open input — the alternating law, now a
+top-level leaf of its own, `exists_millerValue_alternating` above.
 
 The mirror side is now run through the SAME L4-7 mechanism as leaf 2,
 one level down.  With `p•P' = P` the divisor `Σ_κ (P'⊕κ) + Σ_κ (⊖κ)`
@@ -1542,18 +1696,25 @@ sums to `p²•P' = p•P = O`, so it has a Miller generator `b` — PROVEN
 here from `exists_span_eq_prod_pointIdeal` — and `g_P := b/v` has
 divisor `[p]^*((P) − (O))`, the `P`-side twin of `g = a/v`.  Then:
 
-* the GENERIC identity, sorried inline as `hL47`: the existence of the
-  pullback constant `c₁` with `f_P∘[p] = c₁·(g_P∘τ_{⊖S'})^p` **in the
+* the GENERIC identity, PROVEN inline (2026-07-25) as `hL47`: the
+  existence of the pullback constant `c₁` with
+  `f_P∘[p] = c₁·(g_P∘τ_{⊖S'})^p` **in the
   function field `K`**, multiplied out as
   `[p]^*(aP)·τ_{⊖S'}^*(v)^p = c₁·τ_{⊖S'}^*(b)^p·[p]^*(X − x_S)^p`.
-  This is leaf 2's sorried input verbatim with `(aQ, x_R, R', a)`
+  This is leaf 2's own inline input verbatim with `(aQ, x_R, R', a)`
   replaced by `(aP, x_S, S', b)`, and like it, it mentions no point:
   `div(f_P∘[p]) = p·[p]^*((P⊕S) − (S)) = p·τ_{⊖S'}(div g_P)`, so the
-  ratio has trivial divisor and is a constant.
-* the ANTISYMMETRY of the pairing, sorried as `hanti` — the one
-  genuinely reciprocal statement left.  Writing `M₁ = ⊖S'⊕T'⊕R'` and
+  ratio has trivial divisor and is a constant; it is proven by the same
+  two divisor-transport bricks
+  (`spanSingleton_pointEval_mul_fiberProd_pow`,
+  `spanSingleton_pointEval_translate`) and
+  `coordinateRing_isUnit_eq_const`.
+* the ANTISYMMETRY of the pairing, now the SORRIED TOP-LEVEL LEAF
+  `exists_millerValue_alternating` — the one genuinely reciprocal
+  statement left.  Writing `M₁ = ⊖S'⊕T'⊕R'` and
   `M₂ = ⊖S'⊕R'` for the two points at which the `⊖S'`-translate is
-  read, it says
+  read (note `M₂ = ⊖U` and `M₁ = T' ⊖ U`, which is how the leaf is
+  stated), it says
   `[g_P(M₁)/g_P(M₂)]^p = [g(P⊕U)/g(U)]^e·[g(V)/g(U)]^p`,
   `e ∈ {1, p−1}`.  Its left side is `f_P(D_Q)` (that is what the two
   halves compute) and `[g(V)/g(U)]^p` is `f_Q(D_P)` (leaf 2), so it is
@@ -1762,7 +1923,8 @@ theorem exists_millerRatio_eval_translationChar {ι : Type*} [Fintype ι]
   -- ── the two generic points at which the substrate evaluates: the
   --    `[p]`-multiple `p•taut` (where `pointEval` realizes `z ↦ z∘[p]`)
   --    and the translate `(⊖S')⊕taut` (where it realizes `z ↦ z∘τ_{⊖S'}`)
-  obtain ⟨xpm, ypm, hpn, hptaut, -⟩ := exists_smul_tautPoint_eq (W := W) hΔ hp
+  obtain ⟨xpm, ypm, hpn, hptaut, hxrel⟩ :=
+    exists_smul_tautPoint_eq (W := W) hΔ hp
   obtain ⟨xns, yns, hns, hptns⟩ := exists_translate_some (W := W) hΔ (-S')
   have hp0 : constPoint W (0 : W.Point) + (p : ℤ) • tautPoint W hΔ =
       WeierstrassCurve.Affine.Point.some xpm ypm hpn := by
@@ -1772,14 +1934,25 @@ theorem exists_millerRatio_eval_translationChar {ι : Type*} [Fintype ι]
       WeierstrassCurve.Affine.Point.some xns yns hns := by
     rw [one_zsmul]
     exact hptns
-  -- ── THE ANALYTIC SUB-LEAF 1 (sorry), stated GENERICALLY — no point
-  --    occurs in it: the `P`-SIDE of leaf 2's L4-7 span comparison,
-  --    `f_P∘[p] = c₁·(g_P∘τ_{⊖S'})^p` in `K`, multiplied out.  Here
-  --    `g_P = b/v` is the `P`-side twin of `g = a/v`:
+  -- ── THE ANALYTIC SUB-LEAF 1 (PROVEN 2026-07-25), stated GENERICALLY —
+  --    no point occurs in it: the `P`-SIDE of leaf 2's L4-7 span
+  --    comparison, `f_P∘[p] = c₁·(g_P∘τ_{⊖S'})^p` in `K`, multiplied out.
+  --    Here `g_P = b/v` is the `P`-side twin of `g = a/v`:
   --    `div(f_P∘[p]) = p·[p]^*((P⊕S) − (S)) = p·τ_{⊖S'}(div g_P)`, so
   --    the ratio has trivial divisor and is a constant
-  --    (`coordinateRing_isUnit_eq_const`).  This is leaf 2's sorried
-  --    input with `(aQ, x_R, R', a)` replaced by `(aP, x_S, S', b)`.
+  --    (`coordinateRing_isUnit_eq_const`).  This is leaf 2's input with
+  --    `(aQ, x_R, R', a)` replaced by `(aP, x_S, S', b)`, and it is proven
+  --    by the same two transport bricks of `WeilPairingDescent.lean`:
+  --    `spanSingleton_pointEval_mul_fiberProd_pow` (the `[p]`-pullback of
+  --    a divisor is the multiplicity-one sum of its `p²`-fibres) applied
+  --    to `aP` (divisor `p(P⊕S) + p(⊖S)`) and to `X − x_S` (divisor
+  --    `(S) + (⊖S)`), and `spanSingleton_pointEval_translate` (the `τ_Q^*`
+  --    of a divisor is its `⊖Q`-translate) applied to `v = ∏(X − x_κ)`
+  --    and to `b`.  Since `p•(P'⊕S') = P⊕S` and `p•S' = S`, the
+  --    `[p]`-fibres of `P⊕S` and `S` are exactly the `S'`-translates of
+  --    the `P'⊕κ` and `κ` heads of `div b` and `div v`; the `⊖κ` tails
+  --    are common to both sides and cancel, as do the unit factors
+  --    `J_O^{2p}` and `I'_{S'}^{2p³}`.
   have hL47 : ∀ b : W.CoordinateRing, b ≠ 0 →
       Ideal.span {b} =
         ((((Finset.univ.val.map fun i => P' + val i) +
@@ -1789,7 +1962,196 @@ theorem exists_millerRatio_eval_translationChar {ι : Type*} [Fintype ι]
             pointEval (constHom W) hns.left (enumVertical W val) ^ p =
           constHom W c₁ * pointEval (constHom W) hns.left b ^ p *
             pointEval (constHom W) hpn.left (CoordinateRing.XClass W xS) ^ p := by
-    sorry
+    intro b hb0 hbspan
+    -- `[p]^*` evaluation is injective (the `x`-coordinate of `p•taut` is
+    -- transcendental over the constants), so nothing nonzero evaluates to `0`
+    have hinjp : Function.Injective (pointEval (constHom W) hpn.left) :=
+      pointEval_injective_of_forall_ne_constHom hpn
+        (smul_taut_xCoord_ne_constHom hxrel)
+    have haP0 : aP ≠ 0 := fun h0 => hnzR (by rw [h0, map_zero])
+    have hX0 : CoordinateRing.XClass W xS ≠ 0 := CoordinateRing.XClass_ne_zero xS
+    have hv0 : enumVertical W val ≠ 0 := enumVertical_ne_zero W val
+    have hevaP : pointEval (constHom W) hpn.left aP ≠ 0 := fun h0 =>
+      haP0 (hinjp (by rw [h0, map_zero]))
+    have hevX :
+        pointEval (constHom W) hpn.left (CoordinateRing.XClass W xS) ≠ 0 :=
+      fun h0 => hX0 (hinjp (by rw [h0, map_zero]))
+    -- ── a section of `[p]` on points
+    obtain ⟨sec, hsec⟩ :
+        ∃ s : W.Point → W.Point, ∀ Z : W.Point, (p : ℤ) • s Z = Z := by
+      choose s hs using exists_zsmul_eq (W := W) hΔ hp
+      exact ⟨s, hs⟩
+    -- ── the `[p]`-fiber product depends on its base point only through `[p]`
+    have hfib : ∀ T₁ T₂ : W.Point, (p : ℤ) • T₁ = (p : ℤ) • T₂ →
+        fiberProd W val T₁ = fiberProd W val T₂ := by
+      intro T₁ T₂ h
+      have hd : (p : ℤ) • (T₁ - T₂) = 0 := by rw [smul_sub, h, sub_self]
+      have h1 : (Finset.univ.val.map fun i => (T₁ - T₂) + val i) =
+          Finset.univ.val.map fun i => val i :=
+        map_add_torsion_eq hval_inj hval_tor hval_surj hd
+      have h2 := congrArg (Multiset.map (fun R : W.Point => T₂ + R)) h1
+      simp only [Multiset.map_map, Function.comp_apply] at h2
+      unfold fiberProd
+      rw [show (Finset.univ.val.map fun i => T₁ + val i) =
+        Finset.univ.val.map fun i => T₂ + (T₁ - T₂ + val i) from
+          Multiset.map_congr rfl fun i _ => by abel, h2]
+    -- ── the affine divisors `div aP = p(P⊕S) + p(⊖S)` and
+    --    `div (X − x_S) = (S) + (⊖S)` feeding the pullback brick
+    have hDaP : Ideal.span {aP} =
+        ((Multiset.replicate p (WeierstrassCurve.Affine.Point.some xPS yPS hPS) +
+          Multiset.replicate p
+            (-(WeierstrassCurve.Affine.Point.some xS yS hS) : W.Point)).map
+          (pointIdeal W)).prod := by
+      rw [Multiset.map_add, Multiset.prod_add, Multiset.map_replicate,
+        Multiset.map_replicate, Multiset.prod_replicate, Multiset.prod_replicate,
+        haP, pointIdeal_some, WeierstrassCurve.Affine.Point.neg_some,
+        pointIdeal_some]
+    have hDaP0 : (0 : W.Point) ∉
+        Multiset.replicate p (WeierstrassCurve.Affine.Point.some xPS yPS hPS) +
+          Multiset.replicate p
+            (-(WeierstrassCurve.Affine.Point.some xS yS hS) : W.Point) := by
+      intro h
+      rcases Multiset.mem_add.mp h with h | h
+      · exact WeierstrassCurve.Affine.Point.some_ne_zero hPS
+          (Multiset.eq_of_mem_replicate h).symm
+      · exact WeierstrassCurve.Affine.Point.some_ne_zero hS
+          (neg_eq_zero.mp (Multiset.eq_of_mem_replicate h).symm)
+    have hDX : Ideal.span {CoordinateRing.XClass W xS} =
+        ((WeierstrassCurve.Affine.Point.some xS yS hS ::ₘ
+          {(-(WeierstrassCurve.Affine.Point.some xS yS hS) : W.Point)}).map
+          (pointIdeal W)).prod := by
+      rw [Multiset.map_cons, Multiset.prod_cons, Multiset.map_singleton,
+        Multiset.prod_singleton, pointIdeal_some,
+        WeierstrassCurve.Affine.Point.neg_some, pointIdeal_some]
+      calc Ideal.span {CoordinateRing.XClass W xS}
+          = CoordinateRing.XIdeal W xS := rfl
+        _ = CoordinateRing.XYIdeal W xS (Polynomial.C (W.negY xS yS)) *
+            CoordinateRing.XYIdeal W xS (Polynomial.C yS) :=
+          (CoordinateRing.XYIdeal_neg_mul hS).symm
+        _ = CoordinateRing.XYIdeal W xS (Polynomial.C yS) *
+            CoordinateRing.XYIdeal W xS (Polynomial.C (W.negY xS yS)) :=
+          mul_comm _ _
+    have hDX0 : (0 : W.Point) ∉ (WeierstrassCurve.Affine.Point.some xS yS hS ::ₘ
+        {(-(WeierstrassCurve.Affine.Point.some xS yS hS) : W.Point)}) := by
+      intro h
+      rcases Multiset.mem_cons.mp h with h | h
+      · exact WeierstrassCurve.Affine.Point.some_ne_zero hS h.symm
+      · exact WeierstrassCurve.Affine.Point.some_ne_zero hS
+          (neg_eq_zero.mp (Multiset.mem_singleton.mp h).symm)
+    -- ── L4-7 multiplicity-one pullback: the divisors of `[p]^*aP` and of
+    --    `[p]^*(X − x_S)`, as fiber products over `E[p]`
+    have hA := spanSingleton_pointEval_mul_fiberProd_pow (val := val) hΔ hp
+      hval_inj hval_tor hval_surj hcard hptaut hsec haP0 hevaP hDaP0 hDaP
+    have hB := spanSingleton_pointEval_mul_fiberProd_pow (val := val) hΔ hp
+      hval_inj hval_tor hval_surj hcard hptaut hsec hX0 hevX hDX0 hDX
+    simp only [Multiset.map_add, Multiset.prod_add, Multiset.map_replicate,
+      Multiset.prod_replicate, Multiset.card_add, Multiset.card_replicate,
+      Multiset.map_cons, Multiset.prod_cons, Multiset.map_singleton,
+      Multiset.prod_singleton, Multiset.card_cons, Multiset.card_singleton]
+      at hA hB
+    -- `p•(P'⊕S') = P⊕S` and `p•S' = S`, so the two fibers are the ones the
+    -- `⊖S'`-translated `div g_P` will produce
+    rw [hfib (sec (WeierstrassCurve.Affine.Point.some xPS yPS hPS)) (P' + S')
+        (by rw [hsec, smul_add, hP'p, hS'p]; exact hPSc)] at hA
+    rw [hfib (sec (WeierstrassCurve.Affine.Point.some xS yS hS)) S'
+        (by rw [hsec, hS'p])] at hB
+    -- ── L4-8 translation transport: the divisors of `τ_{⊖S'}^*(v)` and
+    --    `τ_{⊖S'}^*(b)`, i.e. the `S'`-translates of `div v` and `div b`
+    have hC := spanSingleton_pointEval_translate (W := W) hΔ hptns hv0
+      (span_enumVertical (W := W) val)
+    have hD := spanSingleton_pointEval_translate (W := W) hΔ hptns hb0 hbspan
+    rw [neg_neg] at hC hD
+    simp only [Multiset.map_add, Multiset.prod_add, Multiset.card_add,
+      Multiset.card_map, Multiset.map_map, Function.comp_apply] at hC hD
+    -- the `P'⊕κ` and `κ` heads of those translates are exactly the fibers
+    -- of `P⊕S` and of `S`; the `⊖κ` tails are common to both and cancel
+    have hfibS' : fiberProd W val S' =
+        (Finset.univ.val.map fun i =>
+          (pointIdeal' W (val i - -S') :
+            FractionalIdeal W.CoordinateRing⁰ W.FunctionField)).prod := by
+      unfold fiberProd
+      rw [Multiset.map_map]
+      refine congrArg Multiset.prod (Multiset.map_congr rfl fun i _ => ?_)
+      show (pointIdeal' W (S' + val i) :
+          FractionalIdeal W.CoordinateRing⁰ W.FunctionField) =
+        (pointIdeal' W (val i - -S') :
+          FractionalIdeal W.CoordinateRing⁰ W.FunctionField)
+      rw [show S' + val i = val i - -S' from by abel]
+    have hfibPS' : fiberProd W val (P' + S') =
+        (Finset.univ.val.map fun i =>
+          (pointIdeal' W (P' + val i - -S') :
+            FractionalIdeal W.CoordinateRing⁰ W.FunctionField)).prod := by
+      unfold fiberProd
+      rw [Multiset.map_map]
+      refine congrArg Multiset.prod (Multiset.map_congr rfl fun i _ => ?_)
+      show (pointIdeal' W (P' + S' + val i) :
+          FractionalIdeal W.CoordinateRing⁰ W.FunctionField) =
+        (pointIdeal' W (P' + val i - -S') :
+          FractionalIdeal W.CoordinateRing⁰ W.FunctionField)
+      rw [show P' + S' + val i = P' + val i - -S' from by abel]
+    rw [← hfibS'] at hC
+    rw [← hfibPS'] at hD
+    rw [show (Finset.univ : Finset ι).val.card = Fintype.card ι from rfl] at hC hD
+    -- ── the two sides have the SAME divisor: cancelling the unit factors
+    --    `J_O^{2p}` and `I'_{S'}^{2p³}` leaves an equality of principal
+    --    fractional ideals, hence a nonzero constant ratio `c₁`
+    have hu : IsUnit ((fiberProd W val (sec 0)) ^ (p + p) *
+        ((pointIdeal' W S' :
+          FractionalIdeal W.CoordinateRing⁰ W.FunctionField) ^
+            (Fintype.card ι + Fintype.card ι)) ^ p) :=
+      ((isUnit_prod_coe_pointIdeal' _).pow _).mul
+        (((pointIdeal' W S').isUnit.pow _).pow _)
+    have hfrac : FractionalIdeal.spanSingleton W.CoordinateRing⁰
+          (pointEval (constHom W) hns.left b ^ p *
+            pointEval (constHom W) hpn.left (CoordinateRing.XClass W xS) ^ p) =
+        FractionalIdeal.spanSingleton W.CoordinateRing⁰
+          (pointEval (constHom W) hpn.left aP *
+            pointEval (constHom W) hns.left (enumVertical W val) ^ p) := by
+      simp only [← FractionalIdeal.spanSingleton_mul_spanSingleton,
+        ← FractionalIdeal.spanSingleton_pow]
+      refine hu.mul_right_cancel ?_
+      calc FractionalIdeal.spanSingleton W.CoordinateRing⁰
+              (pointEval (constHom W) hns.left b) ^ p *
+            FractionalIdeal.spanSingleton W.CoordinateRing⁰
+              (pointEval (constHom W) hpn.left (CoordinateRing.XClass W xS)) ^ p *
+            ((fiberProd W val (sec 0)) ^ (p + p) *
+              ((pointIdeal' W S' :
+                FractionalIdeal W.CoordinateRing⁰ W.FunctionField) ^
+                  (Fintype.card ι + Fintype.card ι)) ^ p)
+          = (FractionalIdeal.spanSingleton W.CoordinateRing⁰
+                (pointEval (constHom W) hns.left b) *
+              (pointIdeal' W S' :
+                FractionalIdeal W.CoordinateRing⁰ W.FunctionField) ^
+                (Fintype.card ι + Fintype.card ι)) ^ p *
+            (FractionalIdeal.spanSingleton W.CoordinateRing⁰
+                (pointEval (constHom W) hpn.left (CoordinateRing.XClass W xS)) *
+              (fiberProd W val (sec 0)) ^ (1 + 1)) ^ p := by ring
+        _ = FractionalIdeal.spanSingleton W.CoordinateRing⁰
+                (pointEval (constHom W) hpn.left aP) *
+              (fiberProd W val (sec 0)) ^ (p + p) *
+            (FractionalIdeal.spanSingleton W.CoordinateRing⁰
+                (pointEval (constHom W) hns.left (enumVertical W val)) *
+              (pointIdeal' W S' :
+                FractionalIdeal W.CoordinateRing⁰ W.FunctionField) ^
+                (Fintype.card ι + Fintype.card ι)) ^ p := by
+            rw [hD, ← hB, ← hA, hC]
+            ring
+        _ = FractionalIdeal.spanSingleton W.CoordinateRing⁰
+              (pointEval (constHom W) hpn.left aP) *
+            FractionalIdeal.spanSingleton W.CoordinateRing⁰
+              (pointEval (constHom W) hns.left (enumVertical W val)) ^ p *
+            ((fiberProd W val (sec 0)) ^ (p + p) *
+              ((pointIdeal' W S' :
+                FractionalIdeal W.CoordinateRing⁰ W.FunctionField) ^
+                  (Fintype.card ι + Fintype.card ι)) ^ p) := by ring
+    obtain ⟨z, hz⟩ := FractionalIdeal.spanSingleton_eq_spanSingleton.mp hfrac
+    obtain ⟨cc, -, hcz⟩ := coordinateRing_isUnit_eq_const z.isUnit
+    refine ⟨cc, ?_⟩
+    rw [← hz, Units.smul_def, hcz, Algebra.smul_def,
+      show algebraMap W.CoordinateRing W.FunctionField
+          (CoordinateRing.mk W (Polynomial.C (Polynomial.C cc))) =
+        constHom W cc from rfl]
+    ring
   -- ── PROVEN: the `P`-side Miller generator `b` exists, because its
   --    divisor `Σ_κ (P'⊕κ) + Σ_κ (⊖κ)` sums to `p²•P' = p•P = O`
   obtain ⟨b, hb0, hbspan⟩ : ∃ b : W.CoordinateRing, b ≠ 0 ∧
@@ -1959,30 +2321,123 @@ theorem exists_millerRatio_eval_translationChar {ι : Type*} [Fintype ι]
   have hII := hhalf xZ2 yZ2 hZ2 xR yR hR xM2 yM2 hM2
     (by rw [hZ2eq, hR'p])
     (by rw [hM2eq, hZ2eq])
-  -- ── THE ANALYTIC SUB-LEAF 2 (sorry): the ANTISYMMETRY of the pairing,
-  --    in Miller-value form — the one genuinely reciprocal statement
-  --    left.  Divided out it reads
+  -- ── PROVEN: membership in the divisor of a level-`p²` Miller generator
+  --    `z` with head `M'` forces the point to be a `[p]`-preimage of
+  --    `[p]M'` or to be `p`-torsion — the only two blocks of `div z`
+  have hdiv : ∀ (M' : W.Point) (z : W.CoordinateRing),
+      Ideal.span {z} =
+        ((((Finset.univ.val.map fun i => M' + val i) +
+          Finset.univ.val.map fun i => -val i)).map (pointIdeal W)).prod →
+      ∀ (x y : F) (h : W.Nonsingular x y),
+        AdjoinRoot.evalEval h.left z = 0 →
+        (p : ℤ) • (WeierstrassCurve.Affine.Point.some x y h : W.Point) =
+            (p : ℤ) • M' ∨
+          (p : ℤ) • (WeierstrassCurve.Affine.Point.some x y h : W.Point) = 0 := by
+    intro M' z hz x y h h0
+    have hmem := mem_of_evalEval_eq_zero hz h h0
+    rw [Multiset.mem_add] at hmem
+    rcases hmem with hm | hm
+    · obtain ⟨i, -, hi⟩ := Multiset.mem_map.mp hm
+      exact Or.inl (by rw [← hi, smul_add, hval_tor i, add_zero])
+    · obtain ⟨i, -, hi⟩ := Multiset.mem_map.mp hm
+      exact Or.inr (by rw [← hi, smul_neg, hval_tor i, neg_zero])
+  -- ── PROVEN: the three remaining nonvanishings, all from the field
+  --    separation.  `p•(P⊕U) = S ⊖ R`, `p•M₁ = (Q⊕R) ⊖ S`,
+  --    `p•M₂ = ⊖(S ⊖ R)`, and each of the two bad cases would identify
+  --    two abscissae that `F₂` separates.
+  have hpPU : (p : ℤ) • (WeierstrassCurve.Affine.Point.some xPU yPU hPU :
+      W.Point) =
+      (WeierstrassCurve.Affine.Point.some xS yS hS : W.Point) -
+        WeierstrassCurve.Affine.Point.some xR yR hR := by
+    rw [hPUeq, smul_add, hPtor, hpU, zero_add]
+  have hpM1' : (p : ℤ) • (WeierstrassCurve.Affine.Point.some xM1 yM1 hM1 :
+      W.Point) =
+      (WeierstrassCurve.Affine.Point.some xQR yQR hQR : W.Point) -
+        WeierstrassCurve.Affine.Point.some xS yS hS := by
+    rw [hM1eq]; exact hpM1
+  have hpM2' : (p : ℤ) • (WeierstrassCurve.Affine.Point.some xM2 yM2 hM2 :
+      W.Point) =
+      -((WeierstrassCurve.Affine.Point.some xS yS hS : W.Point) -
+        WeierstrassCurve.Affine.Point.some xR yR hR) := by
+    rw [hM2eq]; exact hpM2
+  have hPUa : AdjoinRoot.evalEval hPU.left a ≠ 0 := by
+    intro h0
+    rcases hdiv T' a hspan xPU yPU hPU h0 with hm | hm
+    · -- `S ⊖ R = Q` would force `S = Q⊕R`, but `x_S ∈ F₂` and `x_{Q⊕R} ∉ F₂`
+      have hSQ : (WeierstrassCurve.Affine.Point.some xS yS hS : W.Point) -
+          WeierstrassCurve.Affine.Point.some xR yR hR =
+          WeierstrassCurve.Affine.Point.some xQ yQ hQ := by
+        rw [← hpPU, hm, hT]
+      have hSeq : (WeierstrassCurve.Affine.Point.some xS yS hS : W.Point) =
+          WeierstrassCurve.Affine.Point.some xQR yQR hQR := by
+        rw [hQRc, ← hSQ]; abel
+      rw [WeierstrassCurve.Affine.Point.some.injEq] at hSeq
+      exact hxQRS hSeq.1.symm
+    · exact hSR (by rw [← hpPU]; exact hm)
+  have hM1b : AdjoinRoot.evalEval hM1.left b ≠ 0 := by
+    intro h0
+    rcases hdiv P' b hbspan xM1 yM1 hM1 h0 with hm | hm
+    · -- `(Q⊕R) ⊖ S = P` would force `Q⊕R = P⊕S`, but `x_{P⊕S} ∈ F₂`
+      have hQS : (WeierstrassCurve.Affine.Point.some xQR yQR hQR : W.Point) -
+          WeierstrassCurve.Affine.Point.some xS yS hS =
+          WeierstrassCurve.Affine.Point.some xP yP hP := by
+        rw [← hpM1', hm, hP'p]
+      have hQeq : (WeierstrassCurve.Affine.Point.some xQR yQR hQR : W.Point) =
+          WeierstrassCurve.Affine.Point.some xPS yPS hPS := by
+        rw [hPSc, ← hQS]; abel
+      rw [WeierstrassCurve.Affine.Point.some.injEq] at hQeq
+      exact hxQRF₂ (by rw [hQeq.1]; exact hxPSF₂)
+    · exact hQRS (by rw [← hpM1']; exact hm)
+  have hM2b : AdjoinRoot.evalEval hM2.left b ≠ 0 := by
+    intro h0
+    rcases hdiv P' b hbspan xM2 yM2 hM2 h0 with hm | hm
+    · -- `R ⊖ S = P` would force `R = P⊕S`, but `x_R ∉ F₂` and `x_{P⊕S} ∈ F₂`
+      have hRS : (WeierstrassCurve.Affine.Point.some xR yR hR : W.Point) -
+          WeierstrassCurve.Affine.Point.some xS yS hS =
+          WeierstrassCurve.Affine.Point.some xP yP hP := by
+        rw [← neg_sub, ← hpM2', hm]; exact hP'p
+      have hReq : (WeierstrassCurve.Affine.Point.some xR yR hR : W.Point) =
+          WeierstrassCurve.Affine.Point.some xPS yPS hPS := by
+        rw [hPSc, ← hRS]; abel
+      rw [WeierstrassCurve.Affine.Point.some.injEq] at hReq
+      exact hxRF₂ (by rw [hReq.1]; exact hxPSF₂)
+    · refine hSR ?_
+      have hz : -((WeierstrassCurve.Affine.Point.some xS yS hS : W.Point) -
+          WeierstrassCurve.Affine.Point.some xR yR hR) = 0 := by
+        rw [← hpM2']; exact hm
+      rwa [neg_eq_zero] at hz
+  -- ── THE ANALYTIC SUB-LEAF 2: the ANTISYMMETRY of the pairing, in
+  --    Miller-value form — the one genuinely reciprocal statement left,
+  --    now the named top-level leaf `exists_millerValue_alternating`.
+  --    Divided out it reads
   --    `[g_P(M₁)/g_P(M₂)]^p = [g(P⊕U)/g(U)]^e·[g(V)/g(U)]^p`,
   --    `e ∈ {1, p−1}`; since the left side is `f_P(D_Q)` (by `hI`/`hII`)
   --    and `[g(V)/g(U)]^p` is `f_Q(D_P)` (leaf 2), that is
   --    `f_P(D_Q) = c^e·f_Q(D_P)`, i.e. `e_p(P,Q)·e_p(Q,P) = 1` — the
   --    alternating law, the content Weil reciprocity supplies.  The
   --    `e`-ambiguity is the orientation of the pairing.
-  obtain ⟨e, hecase, hanti⟩ :
-      ∃ e : ℕ, (e = 1 ∨ e = p - 1) ∧
-        AdjoinRoot.evalEval hM1.left b ^ p *
-            AdjoinRoot.evalEval hU.left a ^ p *
-            AdjoinRoot.evalEval hM2.left (enumVertical W val) ^ p *
-            AdjoinRoot.evalEval hV.left (enumVertical W val) ^ p *
-            (AdjoinRoot.evalEval hU.left a *
-              AdjoinRoot.evalEval hPU.left (enumVertical W val)) ^ e =
-          AdjoinRoot.evalEval hM2.left b ^ p *
-            AdjoinRoot.evalEval hV.left a ^ p *
-            AdjoinRoot.evalEval hM1.left (enumVertical W val) ^ p *
-            AdjoinRoot.evalEval hU.left (enumVertical W val) ^ p *
-            (AdjoinRoot.evalEval hPU.left a *
-              AdjoinRoot.evalEval hU.left (enumVertical W val)) ^ e := by
-    sorry
+  -- ── PROVEN: `Q = [p]T'` and `P = [p]P'` are `p`-torsion.  For `P` that
+  --    is `hPtor` transported along `hP'p`; for `Q` it is read off the
+  --    span of `a`, whose divisor sums to `(card E[p])·T' = p²·T'`.
+  have hQtor : (p : ℤ) • ((p : ℤ) • T') = 0 := by
+    have hsum := sum_eq_zero_of_span_eq_prod_pointIdeal ha hspan
+    rw [Multiset.sum_add,
+      show (Finset.univ.val.map fun i : ι => T' + val i).sum =
+        ∑ i : ι, (T' + val i) from rfl,
+      show (Finset.univ.val.map fun i : ι => -val i).sum =
+        ∑ i : ι, -val i from rfl,
+      Finset.sum_add_distrib, Finset.sum_const, Finset.sum_neg_distrib,
+      add_assoc, add_neg_cancel, add_zero, Finset.card_univ, hcard,
+      ← Nat.cast_smul_eq_nsmul ℤ, Nat.cast_pow, pow_two, mul_smul] at hsum
+    exact hsum
+  have hP'tor : (p : ℤ) • ((p : ℤ) • P') = 0 := by
+    rw [hP'p]; exact hPtor
+  obtain ⟨e, hecase, hanti⟩ :=
+    exists_millerValue_alternating (val := val) hΔ hp hval_inj hval_tor
+      hval_surj hcard ha hb0 hspan hbspan hQtor hP'tor hU hV hM1 hM2 hPU
+      (by rw [hVeq, hUeq]) (by rw [hM1eq, hUeq]; abel)
+      (by rw [hM2eq, hUeq]; abel) (by rw [hPUeq, hP'p])
+      hUa hUv hVa hVv hM1b hM1v hM2b hM2v hPUa hPUv
   -- ── PROVEN glue: the reciprocity constant of the two halves is
   --    `c'' = c₁·g_P(M₁)^p/g(V)^p`, and against it the halves hold
   have hden : AdjoinRoot.evalEval hV.left a ^ p *
