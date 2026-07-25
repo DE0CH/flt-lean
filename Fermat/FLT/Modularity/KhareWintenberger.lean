@@ -2216,8 +2216,153 @@ def HeckeSystemDescendsTo {ℓ : ℕ} [Fact ℓ.Prime]
       ((ρ.map (algebraMap ℚ (IntermediateField.fixedField C))).charFrob
           w).map Wit.ιO = (P w).map Wit.ψℓ
 
-/-- **Cyclic refinement of a solvable subgroup** (sorry node; FOUNDER
-leaf, pure finite group theory — the group-theoretic engine of the
+/-- **Dévissage step for a finite solvable group** (proven; the engine of
+`exists_cyclicRefinement_of_isSolvable` below): a nontrivial finite
+solvable group `P` has a NORMAL subgroup `N ≠ ⊤` with CYCLIC quotient.
+
+The statement is `∀`-quantified over the group and bounded by a natural
+number `k` so that it can be proven by ordinary induction on `k` while
+the group itself changes at every step (the recursion descends through
+QUOTIENTS, which leave the original type). Normality is carried as an
+anonymous existential so that the quotient group structure — hence
+`IsCyclic` — is available inside the statement, exactly as in the
+consumer below.
+
+Proof: induction on the bound `k`.
+* If `P` is itself cyclic, take `N = ⊥` (`P ⧸ ⊥ ≃* P`, and `⊥ ≠ ⊤`
+  because `P` is nontrivial).
+* Otherwise pick a normal subgroup `Q` with `⊥ ≠ Q ≠ ⊤`: if
+  `commutator P = ⊥` then `P` is abelian, so for any `a ≠ 1` the
+  subgroup `zpowers a` is normal, nontrivial, and not `⊤` (else `P`
+  would be cyclic); if `commutator P ≠ ⊥` take `Q = commutator P`,
+  which is `≠ ⊤` by `IsSolvable.commutator_lt_top_of_nontrivial`.
+  Then `P ⧸ Q` is nontrivial, solvable, and strictly smaller
+  (`Nat.card Q * Q.index = Nat.card P` with `1 < Nat.card Q`), so the
+  inductive hypothesis gives `M ⊴ P ⧸ Q`, `M ≠ ⊤`, with cyclic
+  quotient; pull it back: `N := M.comap (QuotientGroup.mk' Q)` is
+  normal, is `≠ ⊤` because `Subgroup.comap` is injective along a
+  surjection, and `P ⧸ N → (P ⧸ Q) ⧸ M` is injective, so `P ⧸ N` is
+  cyclic by `isCyclic_of_injective`. -/
+theorem exists_normal_ne_top_isCyclic_quotient_of_card_le (k : ℕ) :
+    ∀ (P : Type*) [Group P] [Finite P] [IsSolvable P] [Nontrivial P],
+      Nat.card P ≤ k → ∃ (N : Subgroup P) (_ : N.Normal), N ≠ ⊤ ∧ IsCyclic (P ⧸ N) := by
+  induction k with
+  | zero =>
+      intro P _ _ _ _ hcard
+      have := Nat.card_pos (α := P)
+      omega
+  | succ k ih =>
+      intro P _ _ _ _ hcard
+      by_cases hcyc : IsCyclic P
+      · refine ⟨⊥, inferInstance, bot_ne_top, ?_⟩
+        exact isCyclic_of_injective (QuotientGroup.quotientBot (G := P)).toMonoidHom
+          (QuotientGroup.quotientBot (G := P)).injective
+      · obtain ⟨Q, hQn, hQb, hQt⟩ : ∃ Q : Subgroup P, Q.Normal ∧ Q ≠ ⊥ ∧ Q ≠ ⊤ := by
+          by_cases hcomm : commutator P = ⊥
+          · haveI : IsMulCommutative P := (commutator_eq_bot_iff P).mp hcomm
+            obtain ⟨a, ha⟩ := exists_ne (1 : P)
+            refine ⟨Subgroup.zpowers a, inferInstance, ?_, ?_⟩
+            · simpa [Subgroup.zpowers_eq_bot] using ha
+            · exact fun h => hcyc (isCyclic_iff_exists_zpowers_eq_top.mpr ⟨a, h⟩)
+          · exact ⟨commutator P, inferInstance, hcomm,
+              (IsSolvable.commutator_lt_top_of_nontrivial P).ne⟩
+        haveI := hQn
+        obtain ⟨x, hx⟩ : ∃ x : P, x ∉ Q := by
+          by_contra h
+          exact hQt ((Subgroup.eq_top_iff' Q).mpr fun y => not_not.mp fun hy => h ⟨y, hy⟩)
+        haveI hnt : Nontrivial (P ⧸ Q) :=
+          ⟨⟨QuotientGroup.mk x, 1, by simpa [QuotientGroup.eq_one_iff] using hx⟩⟩
+        have hcard' : Nat.card (P ⧸ Q) ≤ k := by
+          have h1 : Nat.card Q * Q.index = Nat.card P := Subgroup.card_mul_index Q
+          have h2 : 1 < Nat.card Q :=
+            not_le.mp fun h => hQb ((Subgroup.card_le_one_iff_eq_bot Q).mp h)
+          have h3 : Nat.card (P ⧸ Q) = Q.index := (Subgroup.index_eq_card Q).symm
+          have h4 : 0 < Q.index := by rw [← h3]; exact Nat.card_pos
+          rw [h3]
+          nlinarith [h1, h2, h4, hcard]
+        obtain ⟨M, hMn, hMt, hMc⟩ := ih (P ⧸ Q) hcard'
+        haveI := hMn
+        refine ⟨M.comap (QuotientGroup.mk' Q), inferInstance, ?_, ?_⟩
+        · intro h
+          exact hMt (Subgroup.comap_injective (QuotientGroup.mk'_surjective Q)
+            (h.trans (Subgroup.comap_top (QuotientGroup.mk' Q)).symm))
+        · refine isCyclic_of_injective
+            (QuotientGroup.map (M.comap (QuotientGroup.mk' Q)) M (QuotientGroup.mk' Q) le_rfl) ?_
+          intro a b hab
+          obtain ⟨a, rfl⟩ := QuotientGroup.mk_surjective a
+          obtain ⟨b, rfl⟩ := QuotientGroup.mk_surjective b
+          simp only [QuotientGroup.map_mk] at hab
+          rw [QuotientGroup.eq] at hab ⊢
+          rw [Subgroup.mem_comap, _root_.map_mul, _root_.map_inv]
+          exact hab
+
+/-- **Cyclic refinement of a solvable subgroup, bounded form** (proven;
+the induction carrying `exists_cyclicRefinement_of_isSolvable`): the
+chain is built top-down by strong induction on the order of `H`, the
+bound `k` making that induction an ordinary `Nat` induction.
+
+At each stage: if `H = ⊥` the chain is `n = 0`, `C ≡ ⊥` (the step
+condition is vacuous). Otherwise `↥H` is a nontrivial finite solvable
+group, so the dévissage step above yields `N ⊴ ↥H`, `N ≠ ⊤`, with
+cyclic quotient; `K := N.map H.subtype` is the corresponding subgroup
+of `G`, it satisfies `K ≤ H`, `K.subgroupOf H = N`
+(`Subgroup.comap_map_eq_self_of_injective`), it is solvable
+(`Subgroup.inclusion` is injective into `↥H`), and it is strictly
+smaller than `H` because `N ≠ ⊤`. The inductive hypothesis gives a
+chain `⊥ = C 0 ≤ ⋯ ≤ C n = K`, which is extended by one step to `H`;
+reindexing is by `fun i => if i < n + 1 then C i else H`. -/
+theorem exists_cyclicRefinement_of_isSolvable_of_card_le {G : Type*} [Group G] [Finite G]
+    (k : ℕ) :
+    ∀ (H : Subgroup G), IsSolvable H → Nat.card H ≤ k →
+      ∃ (n : ℕ) (C : ℕ → Subgroup G),
+        C 0 = ⊥ ∧ C n = H ∧
+        ∀ i < n, C i ≤ C (i + 1) ∧
+          ∃ _ : ((C i).subgroupOf (C (i + 1))).Normal,
+            IsCyclic (C (i + 1) ⧸ (C i).subgroupOf (C (i + 1))) := by
+  induction k with
+  | zero =>
+      intro H _ hcard
+      have := Nat.card_pos (α := (H : Type _))
+      omega
+  | succ k ih =>
+      intro H hH hcard
+      haveI := hH
+      by_cases hbot : H = ⊥
+      · exact ⟨0, fun _ => ⊥, rfl, hbot.symm, fun i hi => absurd hi (Nat.not_lt_zero i)⟩
+      · haveI : Nontrivial H := (Subgroup.nontrivial_iff_ne_bot H).mpr hbot
+        obtain ⟨N, hNn, hNt, hNc⟩ :=
+          exists_normal_ne_top_isCyclic_quotient_of_card_le (Nat.card H) H le_rfl
+        haveI := hNn
+        have hKH : N.map H.subtype ≤ H := Subgroup.map_subtype_le N
+        have hsub : (N.map H.subtype).subgroupOf H = N :=
+          Subgroup.comap_map_eq_self_of_injective H.subtype_injective N
+        have hKsolv : IsSolvable (N.map H.subtype) :=
+          solvable_of_solvable_injective (Subgroup.inclusion_injective hKH)
+        have hcardK : Nat.card (N.map H.subtype) ≤ k := by
+          have h1 : Nat.card (N.map H.subtype) = Nat.card N :=
+            (Nat.card_congr (Subgroup.equivMapOfInjective N H.subtype
+              H.subtype_injective).toEquiv).symm
+          have h2 : Nat.card N * N.index = Nat.card H := Subgroup.card_mul_index N
+          have h3 : 1 < N.index := Subgroup.one_lt_index_of_ne_top hNt
+          have h4 : 0 < Nat.card N := Nat.card_pos
+          rw [h1]
+          nlinarith [h2, h3, h4, hcard]
+        obtain ⟨n, C, hC0, hCn, hCstep⟩ := ih (N.map H.subtype) hKsolv hcardK
+        obtain ⟨D, hDlt, hDtop⟩ : ∃ D : ℕ → Subgroup G,
+            (∀ i, i < n + 1 → D i = C i) ∧ D (n + 1) = H :=
+          ⟨fun i => if i < n + 1 then C i else H, fun _ hi => if_pos hi, if_neg (by omega)⟩
+        refine ⟨n + 1, D, ?_, hDtop, ?_⟩
+        · rw [hDlt 0 (by omega), hC0]
+        · intro i hi
+          rcases lt_or_eq_of_le (Nat.lt_succ_iff.mp hi) with h | h
+          · rw [hDlt i (by omega), hDlt (i + 1) (by omega)]
+            exact hCstep i h
+          · have e2 : D (i + 1) = H := by rw [h]; exact hDtop
+            rw [hDlt i (by omega), e2, h, hCn, hsub]
+            exact ⟨hKH, hNn, hNc⟩
+
+/-- **Cyclic refinement of a solvable subgroup** (PROVEN 2026-07-25;
+FOUNDER leaf, pure finite group theory — the group-theoretic engine of the
 solvable-descent chain, as `brauer_induction_trivial_character` is the
 engine of the Brauer decomposition): a solvable subgroup `H` of a
 finite group `G` sits at the top of a finite ascending chain of
@@ -2261,7 +2406,21 @@ SOUNDNESS AUDIT (2026-07-24): a true classical theorem with NO vacuity
 route — this leaf carries no arithmetic hypotheses, so, like the Brauer
 leaf above and unlike the arithmetic leaves of this module, it must be
 (and is) directly true as stated. Edge `H = ⊥`: take `n = 0`, `C ≡ ⊥`,
-the step condition being vacuous. -/
+the step condition being vacuous.
+
+PROOF (2026-07-25): discharged in-tree, exactly as the pin audit
+predicted, but by a single dévissage induction rather than by
+"derived series, then refine each abelian quotient". The two are
+equivalent and the one-step form is much shorter to formalize: the only
+thing needed at the top is ONE normal subgroup of `↥H` with cyclic
+quotient, and that is produced by
+`exists_normal_ne_top_isCyclic_quotient_of_card_le` above (cyclic ⇒
+`N = ⊥`; otherwise descend to a proper quotient, using
+`commutator P ≠ ⊤` for nontrivial solvable `P`, or `zpowers a` when `P`
+is abelian and non-cyclic). Recursing on the resulting smaller subgroup
+(`exists_cyclicRefinement_of_isSolvable_of_card_le`) and prepending its
+chain gives the statement; no structure theorem for finite abelian
+groups is used. -/
 theorem exists_cyclicRefinement_of_isSolvable {G : Type*} [Group G]
     [Finite G] (H : Subgroup G) (hH : IsSolvable H) :
     ∃ (n : ℕ) (C : ℕ → Subgroup G),
@@ -2269,7 +2428,7 @@ theorem exists_cyclicRefinement_of_isSolvable {G : Type*} [Group G]
       ∀ i < n, C i ≤ C (i + 1) ∧
         ∃ _ : ((C i).subgroupOf (C (i + 1))).Normal,
           IsCyclic (C (i + 1) ⧸ (C i).subgroupOf (C (i + 1))) :=
-  sorry
+  exists_cyclicRefinement_of_isSolvable_of_card_le (Nat.card H) H hH le_rfl
 
 /-- **The base of the descent chain — the witness's own eigensystem,
 read over `F^⊥`** (PROVEN 2026-07-25; a pure TRANSPORT node, no
