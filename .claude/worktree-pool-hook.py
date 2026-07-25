@@ -107,26 +107,28 @@ def write_queue(tasks):
 
 
 def split_base(task):
-    """A queued task may pin the commit it was WRITTEN AGAINST with a
-    leading `#base: <sha>` line (Deyao, 2026-07-24). Task prompts cite
-    exact declaration line numbers, so advancing the worktree to a much
-    newer main invalidates them; the hook advances to the pinned commit
-    instead. Returns (base_or_None, prompt_without_the_header)."""
+    """Strip a leading `#base: <sha>` line if present and IGNORE it.
+
+    Pinning was tried and REVERTED (Deyao, 2026-07-25): resetting a
+    worktree backwards onto an older commit makes its `.lake` disagree
+    with its sources, so the report server rebuilds the import cone from
+    source on the agent's first diagnostics call — minutes to hours of
+    re-elaboration per dispatch, which costs far more than the stale
+    line numbers it was protecting. Worktrees now always advance to main;
+    a task whose line references have drifted is cheap for its agent to
+    re-locate by name. The header is still tolerated so queue entries
+    written while pinning was live remain dispatchable."""
     lines = task.split("\n")
-    if not lines or not lines[0].startswith(BASE_PREFIX):
-        raise RuntimeError(
-            f"queued task has no leading `{BASE_PREFIX} <sha>` line. Every "
-            "task must pin the commit it was written against; an unpinned "
-            "task would be dispatched against an arbitrary tree. Fix the "
-            f"queue entry by hand.\nTask head: {task[:200]!r}")
-    return lines[0][len(BASE_PREFIX):].strip(), "\n".join(lines[1:]).lstrip("\n")
+    if lines and lines[0].startswith(BASE_PREFIX):
+        return "\n".join(lines[1:]).lstrip("\n")
+    return task
 
 
-def allocate_worktree(pool_fh, target="main"):
+def allocate_worktree(pool_fh):
     """Under the caller's pool-file lock: find a free worktree, verify
-    clean+ancestor, move it EXACTLY onto `target` (the task's pinned base
-    commit) in either direction, mark claimed. Returns its path, or None
-    if the pool is exhausted. Hard-raises on unexpected state."""
+    clean+ancestor, fast-forward it to main, mark claimed. Returns its
+    path, or None if the pool is exhausted. Hard-raises on unexpected
+    state."""
     # `<name> <status> [extra...]` — a SUSPENDED entry (Deyao, 2026-07-24)
     # carries the stopped agent's transcript id as a third field so its work
     # can be picked up later; it is never allocated, which is also how a
@@ -165,31 +167,13 @@ def allocate_worktree(pool_fh, target="main"):
             "but is NOT an ancestor of main (diverged/unmerged commits) "
             "-- integration was likely skipped for this branch")
 
-    rev = git(["rev-parse", "--verify", f"{target}^{{commit}}"], worktree_path)
-    if rev.returncode != 0:
+    # Always advance to main, never backwards (see split_base: pinning was
+    # reverted because a backwards move invalidates `.lake` and forces a
+    # from-source rebuild of the import cone on the agent's first query).
+    ff = git(["merge", "--ff-only", "main"], worktree_path)
+    if ff.returncode != 0:
         raise RuntimeError(
-            f"task pins base {target}, which does not resolve in "
-            f"{worktree_path}: {rev.stderr}")
-    # A free worktree must be strictly BEHIND the pin: it was last advanced
-    # to some main, its work was merged, and the pin is a commit of main.
-    # A branch that already contains the pin means the pool/queue state is
-    # not what it should be -- crash and let the orchestrator investigate
-    # rather than silently dispatching against the wrong tree.
-    # Move the branch EXACTLY onto the pin, forwards or backwards (Deyao,
-    # 2026-07-24). Backwards is routine, not an error: pins age relative to
-    # main while a task waits in the queue, so a worktree freed after a
-    # newer-pinned task will be ahead of an older-pinned one. Resetting
-    # loses nothing -- the branch is verified above to be an ancestor of
-    # main, so its commits are already in main. `.lake` is content-hash
-    # traced, so a backwards move is seen as "these files changed" and only
-    # the differing modules re-elaborate.
-    head_sha = git(["rev-parse", "HEAD"], worktree_path).stdout.strip()
-    if head_sha != rev.stdout.strip():
-        reset = git(["reset", "--hard", target], worktree_path)
-        if reset.returncode != 0:
-            raise RuntimeError(
-                f"resetting {free_name} onto its pinned base {target} "
-                f"failed: {reset.stderr}")
+            f"ff-only advance of {free_name} to main failed: {ff.stderr}")
 
     new_lines = [
         " ".join([n, "claimed" if n == free_name else status] + extra)
@@ -212,13 +196,7 @@ def main():
     queue = read_queue()
 
     def auto_queue(reason):
-        # Stamp the commit this task was written against, so the eventual
-        # pop advances the worktree to THAT tree, not to a newer main.
-        head = git(["rev-parse", "main"], HOME + "/flt-lean")
-        stamped = prompt
-        if head.returncode == 0 and not prompt.startswith(BASE_PREFIX):
-            stamped = f"{BASE_PREFIX} {head.stdout.strip()}\n{prompt}"
-        queue.append(stamped)
+        queue.append(prompt)
         write_queue(queue)
         deny(f"{reason} — this task has been QUEUED (position "
              f"{len(queue)} in {QUEUE_FILE}). Dispatch the queue head "
@@ -240,10 +218,10 @@ def main():
         if not queue:
             deny(f"the task queue ({QUEUE_FILE}) is empty — nothing to pop; "
                  f"dispatch directly with {PLACEHOLDER} in the prompt.")
-        base, task_body = split_base(queue[0])
+        task_body = split_base(queue[0])
         with open(POOL_FILE, "r+") as f:
             fcntl.flock(f, fcntl.LOCK_EX)
-            worktree_path = allocate_worktree(f, base or "main")
+            worktree_path = allocate_worktree(f)
             if worktree_path is None:
                 deny("no free worktree available — the queued task stays in "
                      f"{QUEUE_FILE}; retry the {SENTINEL} dispatch after "
