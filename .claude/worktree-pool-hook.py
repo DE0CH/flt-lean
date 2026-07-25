@@ -104,6 +104,21 @@ QUEUE_FILE = "/home/chend/.flt-task-queue"
 INFLIGHT_FILE = "/home/chend/.flt-inflight.jsonl"
 PLACEHOLDER = "{{FLT_WORKTREE}}"
 SENTINEL = "{{FLT_QUEUE_POP}}"
+
+# The STAGING worker (Deyao, 2026-07-25) is a third kind of dispatch and must
+# bypass both of the mechanisms above.
+#
+# It lives in a FIXED worktree outside the 110-slot pool, so it must not consume
+# an allocation -- and it must not be denied when the queue is non-empty, which
+# is exactly when it is most needed: a backlog means main has not been promoted
+# in a while, and the whole point of this worker is to verify staging and promote
+# it. Making it queue behind ordinary leaf tasks would deadlock the thing that
+# unblocks them.
+#
+# Its worktree tracks `staging-worker`, NOT `staging`, so that the source cannot
+# move under it while the orchestrator keeps merging into `staging`.
+STAGING_PLACEHOLDER = "{{FLT_STAGING}}"
+STAGING_WORKTREE = "/home/chend/flt-staging"
 DELIMITER = "=== TASK ==="
 BASE_PREFIX = "#base:"
 HOME = "/home/chend"
@@ -335,11 +350,15 @@ def allocate_worktree(pool_fh):
             f"worktree {free_name} is marked free in {POOL_FILE} but has "
             f"uncommitted changes:\n{status_out.stdout}")
 
-    anc = git(["merge-base", "--is-ancestor", free_name, "main"], worktree_path)
+    # Ancestor of STAGING, not main (Deyao, 2026-07-25): integration merges into
+    # staging, so a finished branch becomes an ancestor of staging immediately and
+    # only reaches main once the staging worker has verified a green build. Testing
+    # against main here would hard-crash on every correctly-integrated worktree.
+    anc = git(["merge-base", "--is-ancestor", free_name, "staging"], worktree_path)
     if anc.returncode != 0:
         raise RuntimeError(
             f"worktree {free_name}'s branch is marked free in {POOL_FILE} "
-            "but is NOT an ancestor of main (diverged/unmerged commits) "
+            "but is NOT an ancestor of staging (diverged/unmerged commits) "
             "-- integration was likely skipped for this branch")
 
     # Always advance to main, never backwards (see split_base: pinning was
@@ -367,6 +386,30 @@ def main():
 
     is_pop = SENTINEL in prompt
     is_direct = PLACEHOLDER in prompt
+
+    # The staging worker is resolved BEFORE the pool lock is taken: it allocates
+    # nothing, pops nothing, and is never queued, so it has no business
+    # contending for the pool file. Substitute and allow.
+    if STAGING_PLACEHOLDER in prompt:
+        if not os.path.isdir(STAGING_WORKTREE):
+            deny(f"{STAGING_PLACEHOLDER} was used but {STAGING_WORKTREE} does "
+                 "not exist — create the staging worktree first "
+                 "(`git worktree add /home/chend/flt-staging staging-worker`, "
+                 "then symlink .lake into /scratch on its assigned host).")
+        tool_input["prompt"] = prompt.replace(
+            STAGING_PLACEHOLDER, STAGING_WORKTREE)
+        # Recorded in the inflight registry like any other dispatch, so the
+        # ownership scan can see that staging has a live owner -- but with its
+        # own kind, so it is never mistaken for a pool worktree to be freed.
+        record_inflight(
+            STAGING_WORKTREE, tool_input["prompt"], "staging", payload)
+        emit({
+            "hookSpecificOutput": {
+                "hookEventName": "PreToolUse",
+                "permissionDecision": "allow",
+                "updatedInput": tool_input,
+            }
+        })
 
     # ONE lock covering the WHOLE dispatch decision (fixed 2026-07-25 after
     # a wave handed FOUR agents the identical task). The queue used to be
