@@ -6141,7 +6141,8 @@ are the real frontier here:
    coordinatized module over `Λ/Ann`;
 5. `uniformlyBoundedRank_of_linearEquiv_piQuotient` — the rank bound;
 6. `subsingleton_ringHom_padicInt` — `ℤ_p`-rigidity of a complete local
-   ring with finite residue field.
+   ring with finite residue field.  **PROVEN 2026-07-25**, so only (1)–(5)
+   are still open.
 
 (1)–(3) are three independent facts about `MvPowerSeries (Fin q) ℤ_[p]`
 and could sensibly go to one owner; (4)–(5) are one owner's job (both are
@@ -6361,25 +6362,74 @@ theorem continuous_of_finite_quotient_maximalIdeal_pow {Λ S : Type*} [CommRing 
     (Ideal.comap f (maximalIdeal S ^ n))
   exact ⟨m, trivial, fun x hx => hm hx⟩
 
-/-- **`ℤ_p`-rigidity of the bottom ring** (patching-instantiation leaf 7b):
-a complete Noetherian local ring with finite residue field receives AT MOST
-ONE ring homomorphism from `ℤ_[p]`.
+/-- **`ℤ_p`-rigidity of the bottom ring** (patching-instantiation leaf 7b;
+PROVEN 2026-07-25): a complete Noetherian local ring with finite residue
+field receives AT MOST ONE ring homomorphism from `ℤ_[p]`.
 
-Two steps.  First `p` cannot map to a unit: otherwise `ℚ_p` would embed in
-`A` and hence, `A` being local with `p` invertible, the residue field would
-contain `ℚ`, contradicting `hres`.  So any `f : ℤ_[p] →+* A` sends
-`p ↦ 𝔪`, hence `p^n ↦ 𝔪^n`.  Second, `A` is `𝔪`-adically separated
-(`IsAdicComplete → IsHausdorff`), so `f` is determined by its reductions
-mod `𝔪^n`; and modulo `𝔪^n` the value of `f` on `x : ℤ_[p]` is the value on
-the natural number `x.appr n`, because `x - x.appr n ∈ (p^n)`.  Ring
-homomorphisms agree on natural-number casts, so `f = g`.
+Two steps.  First, `p` lands in `𝔪`.  This needs no unit/`ℚ_p` argument:
+ANY ring homomorphism sends the natural-number cast `(p : ℤ_[p])` to the
+natural-number cast `(p : A)` (`map_natCast`), and the existence of even
+one `f : ℤ_[p] →+* A` forces the residue field to have characteristic `p`
+— compose `f` with `IsLocalRing.residue` and apply
+`charP_of_ringHom_padicInt`, which is exactly the statement that a FINITE
+field receiving `ℤ_p` has characteristic `p` (the kernel is a nonzero
+prime of the DVR `ℤ_p`, hence `(p)`).  So `(p : A) ∈ 𝔪` by
+`IsLocalRing.residue_eq_zero_iff`, and `(p : A)^n ∈ 𝔪^n`.
+
+Second, `A` is `𝔪`-adically separated (`IsAdicComplete → IsHausdorff`),
+so it suffices to see `f x - g x ∈ 𝔪^n` for every `n`.  Writing
+`x = (x.appr n : ℕ) + p^n * c` (`PadicInt.appr_spec`) and using
+`map_natCast` again on the first summand, the two natural-number values
+cancel and `f x - g x = (p : A)^n * (f c - g c) ∈ 𝔪^n`.
+
+Note what is NOT needed: no continuity hypothesis (the conclusion is
+`Subsingleton (ℤ_[p] →+* A)` for ALL ring homs, continuity being a
+consequence of the `𝔪`-adic structure rather than an extra assumption),
+and `IsNoetherianRing A` is unused by THIS proof — it is carried only to
+match the hypothesis shape of the consumer
+`ringHom_mvPowerSeries_eq_of_taylorWilesAug_le_ker`.  The completeness
+hypothesis is `IsAdicComplete` for the MAXIMAL ideal, which is the ideal
+whose powers the `appr` estimate lands in, so the statement is the right
+one (contrast `MvPowerSeries`, where mathlib's `IsAdicComplete` is for the
+ideal of the variables and is strictly coarser).
+
+HYPOTHESIS AUDIT (recorded 2026-07-26, cross-checked against an
+independent proof of the same statement).  `hcomplete` is not logically
+necessary: `Ideal.iInf_pow_eq_bot_of_isLocalRing` (Krull intersection)
+already gives `⋂ₙ 𝔪ⁿ = ⊥` from `IsLocalRing` + `IsNoetherianRing` alone,
+so separatedness can be had without completeness — the alternative proof
+trades `hcomplete` for `IsNoetherianRing`, which this one leaves unused.
+The hypothesis is KEPT because the consumer supplies it positionally and
+because "complete local with finite residue field" is the shape the
+patching interface hands down; nobody should read its presence as a claim
+that completeness is what makes the statement true.
 
 This is the completed-coefficient analogue of `ringHom_padicInt_eq` above,
 which does the same for a finite FIELD target; the finite residue field is
-what pins `p`, and completeness is what replaces "`𝔪 = 0`". -/
+what pins `p`, and `𝔪`-adic separatedness is what replaces "`𝔪 = 0`". -/
 theorem subsingleton_ringHom_padicInt (p : ℕ) [Fact p.Prime] {A : Type*} [CommRing A]
     [IsLocalRing A] [IsNoetherianRing A] (hcomplete : IsAdicComplete (maximalIdeal A) A)
-    (hres : Finite (A ⧸ maximalIdeal A)) : Subsingleton (ℤ_[p] →+* A) := sorry
+    (hres : Finite (A ⧸ maximalIdeal A)) : Subsingleton (ℤ_[p] →+* A) := by
+  haveI : Finite (ResidueField A) := hres
+  refine ⟨fun f g => ?_⟩
+  have hchar : CharP (ResidueField A) p :=
+    charP_of_ringHom_padicInt ((residue A).comp f)
+  have hpmem : (p : A) ∈ maximalIdeal A := by
+    rw [← residue_eq_zero_iff, map_natCast]
+    exact CharP.cast_eq_zero _ p
+  ext x
+  rw [← sub_eq_zero]
+  refine IsHausdorff.haus hcomplete.toIsHausdorff _ (fun n => ?_)
+  rw [SModEq.sub_mem, smul_eq_mul, Ideal.mul_top, sub_zero]
+  obtain ⟨c, hc⟩ := Ideal.mem_span_singleton.mp (PadicInt.appr_spec n x)
+  have hx : x = ((x.appr n : ℕ) : ℤ_[p]) + (p : ℤ_[p]) ^ n * c := by
+    rw [← hc]; ring
+  have key : f x - g x = (p : A) ^ n * (f c - g c) := by
+    rw [hx]
+    simp only [map_add, map_mul, map_pow, map_natCast]
+    ring
+  rw [key]
+  exact Ideal.mul_mem_right _ _ (Ideal.pow_mem_pow hpmem n)
 
 /-- **The bottom `Λ`-algebra structure is independent of the level**
 (patching-instantiation leaf 7; PROVEN 2026-07-25 over
