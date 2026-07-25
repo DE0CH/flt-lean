@@ -11,6 +11,7 @@
 - [Stop-hook restart pattern](stop-hook-tmux-restart.md) — hook disabled as `_DISABLED_Stop`; re-enable only via detached kill→rename→continue script
 - [Orchestrator role in parallel mode](flt-orchestrator-role.md) — Deyao 2026-07-22: driver dispatches/integrates/commits only; all hands-on work goes to agents
 - [Bookkeeping cadence: one combined agent](flt-bookkeeping-cadence.md) — Deyao 2026-07-23: floating check + PROGRESS.md regen are ONE periodic dispatched agent; its runtime is the period; relaunch on completion
+- [Push after every wave](flt-push-after-every-wave.md) — Deyao 2026-07-24: git push at the end of every integration wave; gates fix forward, never hold pushes
 - [Stop hook is a nudge](flt-stop-hook-is-a-nudge.md) — Deyao 2026-07-22: automatic back-to-work prompt, not a safety net; fail open, best-effort
 - [Report blocker class](flt-report-blocker-class.md) — Deyao 2026-07-22: every wait/blockage report must name the blocker AND its class: trusted tool (fine) vs Claude automation (defect)
 - [Fleet dispatch: 13-worktree protocol](flt-fleet-13-worktree-protocol.md) — Deyao 2026-07-23: fixed pool flt-lean-1..13, ff-only before dispatch, merge-and-leave-alone on completion, no .lake seeding, no server/file lifecycle management
@@ -22,3 +23,5 @@
 - [Orchestrator sync-only; async via agents](orchestrator-sync-only-async-via-agents.md) — Deyao 2026-07-23: background Bash banned (source of bugs); slow work = a task queue dispatched to a subagent that runs it synchronously, merged later
 - [Kill recovery: just resume](kill-recovery-just-resume.md) — Deyao 2026-07-23: a kill interrupts only the in-flight call; transcript + worktree ARE the state — resume via SendMessage, never revert or pre-merge
 - [Modularity subtree approved](modularity-subtree-approved.md) — Deyao 2026-07-23: build the eigenform/attached-representation machinery, top-down from the three deferred Family atoms; 23k+ lines accepted; ~/cs/FLT as reference, textbooks via Anna's Archive
+- [Self-restart by forking](flt-self-restart-by-forking.md) — Deyao 2026-07-24: fork into new tmux window + refill repoint + detached kill→continue + handover note; drive autonomously when needed
+- [Machine migration](flt-machine-migration.md) — Deyao 2026-07-24: stop workers BEFORE resuming from transcript; parent stops servers + frees scratch + stops rotator; child reseeds scratch and restarts rotator/monitor on its tmux

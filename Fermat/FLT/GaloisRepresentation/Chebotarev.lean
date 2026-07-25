@@ -251,6 +251,15 @@ public import Mathlib.NumberTheory.NumberField.Norm
 public import Mathlib.NumberTheory.NumberField.InfinitePlace.Embeddings
 public import Mathlib.LinearAlgebra.FreeModule.IdealQuotient
 public import Mathlib.RingTheory.Norm.Basic
+-- for the unit-transversal/sector construction
+-- (`exists_finset_units_forall_existsUnique_unit_smul_mem`)
+public import Mathlib.Analysis.SpecialFunctions.Complex.Arg
+import Mathlib.RingTheory.RootsOfUnity.Complex
+import Mathlib.MeasureTheory.Function.SpecialFunctions.Basic
+import Mathlib.GroupTheory.Index
+import Mathlib.Data.Sign.Basic
+import Mathlib.LinearAlgebra.Complex.FiniteDimensional
+import Mathlib.LinearAlgebra.FiniteDimensional.Basic
 
 @[expose] public section
 
@@ -4096,37 +4105,554 @@ theorem exists_lipschitzOnWith_cover_of_isBounded_of_subset
         _ = (w : E) := by rw [LinearEquiv.symm_apply_apply]
         _ = y := rfl
 
+/-- **`C¹` implies Lipschitz on the unit cube** — mean-value bound: a `C¹` map
+on `ℝ^n` is Lipschitz on the compact convex cube `[0,1]^n`, with constant the
+sup of `‖fderiv‖` there (finite by compactness and continuity of the
+derivative). -/
+theorem exists_lipschitzOnWith_Icc_of_contDiff {n : ℕ} {E : Type*}
+    [NormedAddCommGroup E] [NormedSpace ℝ E] {f : (Fin n → ℝ) → E}
+    (hf : ContDiff ℝ 1 f) :
+    ∃ κ : NNReal, LipschitzOnWith κ f (Set.Icc 0 1) := by
+  obtain ⟨M, hM⟩ := (isCompact_Icc (a := (0 : Fin n → ℝ)) (b := 1)).exists_bound_of_continuousOn
+    (hf.continuous_fderiv one_ne_zero).continuousOn
+  refine ⟨Real.toNNReal M, (convex_Icc _ _).lipschitzOnWith_of_nnnorm_hasFDerivWithin_le
+    (f' := fderiv ℝ f)
+    (fun x _ ↦ (hf.differentiable_one x).hasFDerivAt.hasFDerivWithinAt)
+    fun x hx ↦ ?_⟩
+  rw [← NNReal.coe_le_coe, coe_nnnorm, Real.coe_toNNReal']
+  exact (hM x hx).trans (le_max_left _ _)
+
+/-- Merge finitely many Lipschitz-cube covers (each with its own finite family
+and constant) into a single `Fin`-indexed family with one common constant. -/
+theorem exists_fin_lipschitzOnWith_cover_iUnion {E : Type*} [NormedAddCommGroup E]
+    [NormedSpace ℝ E] {n : ℕ} {ι : Type*} [Fintype ι] {S : ι → Set E}
+    (h : ∀ a, ∃ (m : ℕ) (G : Fin m → (Fin n → ℝ) → E) (κ : NNReal),
+        (∀ i, LipschitzOnWith κ (G i) (Set.Icc 0 1)) ∧ S a ⊆ ⋃ i, G i '' Set.Icc 0 1) :
+    ∃ (m : ℕ) (G : Fin m → (Fin n → ℝ) → E) (κ : NNReal),
+        (∀ i, LipschitzOnWith κ (G i) (Set.Icc 0 1)) ∧
+        (⋃ a, S a) ⊆ ⋃ i, G i '' Set.Icc 0 1 := by
+  classical
+  choose m G κ hLip hCov using h
+  set e := Fintype.equivFin (Σ a : ι, Fin (m a)) with he
+  refine ⟨Fintype.card (Σ a : ι, Fin (m a)), fun j ↦ G (e.symm j).1 (e.symm j).2,
+    Finset.univ.sup κ, fun j ↦ (hLip _ _).weaken (Finset.le_sup (Finset.mem_univ _)), ?_⟩
+  intro x hx
+  obtain ⟨a, hxa⟩ := Set.mem_iUnion.mp hx
+  obtain ⟨i, hxi⟩ := Set.mem_iUnion.mp (hCov a hxa)
+  have hee : e.symm (e ⟨a, i⟩) = ⟨a, i⟩ := e.symm_apply_apply _
+  refine Set.mem_iUnion.mpr ⟨e ⟨a, i⟩, ?_⟩
+  show x ∈ G (e.symm (e ⟨a, i⟩)).1 (e.symm (e ⟨a, i⟩)).2 '' Set.Icc 0 1
+  rw [hee]
+  exact hxi
+
+open NumberField NumberField.mixedEmbedding NumberField.mixedEmbedding.fundamentalCone
+  NumberField.Units NumberField.Units.dirichletUnitTheorem in
+/-- `expMapBasis` is `C¹` (it is a composition of the continuous linear
+coordinate change `(completeBasis F).equivFunL.symm` with coordinatewise real
+exponentials). -/
+theorem contDiff_expMapBasis (F : Type*) [Field F] [NumberField F] :
+    ContDiff ℝ 1 (expMapBasis : realSpace F → realSpace F) := by
+  have h1 : ContDiff ℝ 1 (expMap : realSpace F → realSpace F) := by
+    refine contDiff_pi.mpr fun w ↦ ?_
+    simp only [expMap_apply]
+    exact Real.contDiff_exp.comp (contDiff_const.mul (contDiff_apply ℝ ℝ w))
+  change ContDiff ℝ 1 (expMap ∘ (completeBasis F).equivFunL.symm)
+  exact h1.comp (completeBasis F).equivFunL.symm.contDiff
+
+open NumberField NumberField.mixedEmbedding NumberField.mixedEmbedding.fundamentalCone
+  NumberField.Units NumberField.Units.dirichletUnitTheorem in
 open scoped Classical in
-open NumberField in
-/-- **Lipschitz parametrization of the boundary of `normLeOne`** (sorry
-leaf) — the boundary-regularity half of Lang, *Algebraic Number
+/-- The finitely many `C¹` maps `[0,1]^{rank F} → realSpace F` whose images
+cover the residue `compactSet F \ expMapBasis '' interior (paramSet F)` — the
+part of the compact parameter image not accounted for by the open interior
+chart. Index: `inl` the origin (scaling parameter `0`), `inr (inl _)` the outer
+face (scaling parameter `1`, the full compact box), `inr (inr (k, c))` the face
+of the box where the `k`-th fundamental-unit exponent is pinned to `c ∈ {0,1}`
+(the free slot `k` is recycled as the radial scaling parameter). -/
+noncomputable def boundaryFaceMap (F : Type*) [Field F] [NumberField F]
+    (a : Unit ⊕ Unit ⊕ (Fin (Units.rank F) × Bool))
+    (u : Fin (Units.rank F) → ℝ) : realSpace F :=
+  match a with
+  | .inl _ => 0
+  | .inr (.inl _) =>
+      expMapBasis fun w ↦ if h : w = w₀ then 0 else u (equivFinRank.symm ⟨w, h⟩)
+  | .inr (.inr (k, c)) =>
+      u k • expMapBasis fun w ↦ if h : w = w₀ then 0 else
+        if equivFinRank.symm ⟨w, h⟩ = k then (if c then 1 else 0)
+        else u (equivFinRank.symm ⟨w, h⟩)
+
+open NumberField NumberField.mixedEmbedding NumberField.mixedEmbedding.fundamentalCone
+  NumberField.Units NumberField.Units.dirichletUnitTheorem in
+/-- Each `boundaryFaceMap` is `C¹`: a coordinate selection (with constants)
+followed by `expMapBasis`, possibly rescaled by one further coordinate. -/
+theorem contDiff_boundaryFaceMap (F : Type*) [Field F] [NumberField F]
+    (a : Unit ⊕ Unit ⊕ (Fin (Units.rank F) × Bool)) :
+    ContDiff ℝ 1 (boundaryFaceMap F a) := by
+  classical
+  cases a with
+  | inl _ => exact contDiff_const
+  | inr a =>
+    cases a with
+    | inl _ =>
+      refine (contDiff_expMapBasis F).comp (contDiff_pi.mpr fun w ↦ ?_)
+      by_cases h : w = w₀
+      · simp only [dif_pos h]; exact contDiff_const
+      · simp only [dif_neg h]; exact contDiff_apply ℝ ℝ _
+    | inr kc =>
+      obtain ⟨k, c⟩ := kc
+      refine (contDiff_apply ℝ ℝ k).smul
+        ((contDiff_expMapBasis F).comp (contDiff_pi.mpr fun w ↦ ?_))
+      by_cases h : w = w₀
+      · simp only [dif_pos h]; exact contDiff_const
+      · simp only [dif_neg h]
+        by_cases h2 : equivFinRank.symm ⟨w, h⟩ = k
+        · simp only [if_pos h2]; exact contDiff_const
+        · simp only [if_neg h2]; exact contDiff_apply ℝ ℝ _
+
+open NumberField NumberField.mixedEmbedding NumberField.mixedEmbedding.fundamentalCone
+  NumberField.Units NumberField.Units.dirichletUnitTheorem in
+open scoped Classical Pointwise in
+/-- **Face decomposition of the parameter-space boundary residue** — every
+point of `compactSet F` outside `expMapBasis '' interior (paramSet F)` lies on
+the image of one of the `boundaryFaceMap`s: writing the point as
+`t • expMapBasis y` with `t ∈ [0,1]` and `y` in the compact box, either `t = 0`
+(the origin), or `t = 1` (the outer face), or some box coordinate of `y` sits
+at `0` or `1` (a unit-exponent face); otherwise `t • expMapBasis y =
+expMapBasis (y[w₀ ↦ log t])` exhibits the point as an interior image. -/
+theorem compactSet_diff_subset_iUnion_boundaryFaceMap (F : Type*) [Field F] [NumberField F] :
+    compactSet F \ expMapBasis '' interior (paramSet F) ⊆
+      ⋃ a, boundaryFaceMap F a '' Set.Icc 0 1 := by
+  rintro x ⟨hx1, hx2⟩
+  obtain ⟨t, ht, z, hz, rfl⟩ := Set.mem_smul.mp hx1
+  obtain ⟨y, hy, rfl⟩ := hz
+  have hy0 : y w₀ = 0 := by simpa using hy w₀ (Set.mem_univ _)
+  have hyIcc : ∀ w, w ≠ w₀ → y w ∈ Set.Icc (0 : ℝ) 1 := by
+    intro w hw
+    simpa [if_neg hw] using hy w (Set.mem_univ _)
+  have hcube : ∀ u : Fin (Units.rank F) → ℝ, (∀ j, u j ∈ Set.Icc (0 : ℝ) 1) →
+      u ∈ Set.Icc (0 : Fin (Units.rank F) → ℝ) 1 := by
+    intro u hu
+    exact Set.mem_Icc.mpr ⟨fun j ↦ (hu j).1, fun j ↦ (hu j).2⟩
+  rcases eq_or_ne t 0 with rfl | ht0
+  · -- the origin: covered by the constant face map
+    refine Set.mem_iUnion.mpr ⟨.inl (), ⟨0, ?_, ?_⟩⟩
+    · exact Set.left_mem_Icc.mpr (Pi.le_def.mpr fun _ ↦ zero_le_one)
+    · simp [boundaryFaceMap]
+  have htpos : 0 < t := lt_of_le_of_ne ht.1 (Ne.symm ht0)
+  rcases eq_or_ne t 1 with rfl | ht1
+  · -- the outer face `t = 1`
+    refine Set.mem_iUnion.mpr ⟨.inr (.inl ()), ⟨fun j ↦ y (equivFinRank j).1, ?_, ?_⟩⟩
+    · exact hcube _ fun j ↦ hyIcc _ (equivFinRank j).2
+    · simp only [boundaryFaceMap, one_smul]
+      congr 1
+      funext w
+      by_cases h : w = w₀
+      · rw [dif_pos h, h, hy0]
+      · rw [dif_neg h]
+        congr 1
+        exact congrArg Subtype.val (equivFinRank.apply_symm_apply ⟨w, h⟩)
+  by_cases hface : ∃ k : Fin (Units.rank F),
+      y (equivFinRank k).1 = 0 ∨ y (equivFinRank k).1 = 1
+  · -- a unit-exponent face
+    obtain ⟨k, hk⟩ := hface
+    set c : Bool := y (equivFinRank k).1 == 1 with hc
+    have hkc : y (equivFinRank k).1 = if c then 1 else 0 := by
+      rcases hk with hk | hk
+      · have hcf : c = false := by rw [hc, hk]; simp
+        rw [hcf, hk]; simp
+      · have hct : c = true := by rw [hc, hk]; simp
+        rw [hct, hk]; simp
+    set u : Fin (Units.rank F) → ℝ := fun j ↦ if j = k then t else y (equivFinRank j).1 with hu
+    have huk : u k = t := by simp [hu]
+    have huj : ∀ j, j ≠ k → u j = y (equivFinRank j).1 := fun j hj ↦ by simp [hu, hj]
+    refine Set.mem_iUnion.mpr ⟨.inr (.inr (k, c)), ⟨u, ?_, ?_⟩⟩
+    · refine hcube _ fun j ↦ ?_
+      by_cases hj : j = k
+      · rw [hj, huk]; exact ht
+      · rw [huj _ hj]; exact hyIcc _ (equivFinRank j).2
+    · simp only [boundaryFaceMap]
+      rw [huk]
+      congr 1
+      congr 1
+      funext w
+      by_cases h : w = w₀
+      · rw [dif_pos h, h, hy0]
+      · rw [dif_neg h]
+        have hw : (equivFinRank (equivFinRank.symm ⟨w, h⟩)).1 = w :=
+          congrArg Subtype.val (equivFinRank.apply_symm_apply ⟨w, h⟩)
+        by_cases h2 : equivFinRank.symm ⟨w, h⟩ = k
+        · rw [if_pos h2, ← hkc, ← h2, hw]
+        · rw [if_neg h2, huj _ h2, hw]
+  · -- no face: the point is an interior image, contradicting `hx2`
+    exfalso
+    push Not at hface
+    apply hx2
+    have htlt : t < 1 := lt_of_le_of_ne ht.2 ht1
+    refine ⟨Function.update y w₀ (Real.log t), ?_, ?_⟩
+    · rw [interior_paramSet]
+      refine Set.mem_univ_pi.mpr fun w ↦ ?_
+      by_cases h : w = w₀
+      · subst h
+        simpa [Function.update_self] using Real.log_neg htpos htlt
+      · have h1 := hyIcc w h
+        have h2 := hface (equivFinRank.symm ⟨w, h⟩)
+        rw [equivFinRank.apply_symm_apply] at h2
+        simp only [if_neg h, Function.update_of_ne h]
+        exact ⟨lt_of_le_of_ne h1.1 (Ne.symm h2.1), lt_of_le_of_ne h1.2 h2.2⟩
+    · rw [expMapBasis_apply'', Function.update_self, Real.exp_log htpos]
+      congr 1
+      congr 1
+      funext i
+      by_cases h : i = w₀
+      · rw [if_pos h, h, hy0]
+      · rw [if_neg h, Function.update_of_ne h]
+
+open NumberField NumberField.mixedEmbedding NumberField.mixedEmbedding.fundamentalCone
+  NumberField.Units NumberField.Units.dirichletUnitTheorem NumberField.InfinitePlace in
+open scoped Classical in
+/-- **Sign/angle lift of a cube parametrization through `normAtAllPlaces`** —
+given a `C¹` map `g` on the `rank F`-cube into `realSpace F`, the full
+`normAtAllPlaces`-preimage of its image is covered by finitely many Lipschitz
+maps on the `N`-cube (`N ≥ rank F + nrComplexPlaces F`): one map per sign
+vector at the real places, using `nrComplexPlaces F` extra cube coordinates as
+angles at the complex places (`z = ‖z‖·exp(i·arg z)` with `arg ∈ (-π, π]`
+rescaled into `[0,1]`). -/
+theorem exists_cover_preimage_normAtAllPlaces_image (F : Type*) [Field F] [NumberField F]
+    {N : ℕ} (hN : Units.rank F + nrComplexPlaces F ≤ N)
+    (g : (Fin (Units.rank F) → ℝ) → realSpace F) (hg : ContDiff ℝ 1 g) :
+    ∃ (m : ℕ) (G : Fin m → (Fin N → ℝ) → mixedSpace F) (κ : NNReal),
+      (∀ i, LipschitzOnWith κ (G i) (Set.Icc 0 1)) ∧
+      normAtAllPlaces ⁻¹' (g '' Set.Icc 0 1) ⊆ ⋃ i, G i '' Set.Icc 0 1 := by
+  classical
+  have hrank : Units.rank F ≤ N := le_trans (Nat.le_add_right _ _) hN
+  set eC : {w : InfinitePlace F // w.IsComplex} ≃ Fin (nrComplexPlaces F) :=
+    Fintype.equivFinOfCardEq rfl with heC
+  have haIdx : ∀ w : {w : InfinitePlace F // w.IsComplex},
+      Units.rank F + (eC w : ℕ) < N :=
+    fun w ↦ lt_of_lt_of_le (by have := (eC w).isLt; omega) hN
+  set front : (Fin N → ℝ) → (Fin (Units.rank F) → ℝ) :=
+    fun v j ↦ v (Fin.castLE hrank j) with hfront
+  set G : ({w : InfinitePlace F // w.IsReal} → Bool) → (Fin N → ℝ) → mixedSpace F :=
+    fun ε v ↦ (fun w ↦ (if ε w then 1 else -1) * g (front v) w.1,
+      fun w ↦ (g (front v) w.1 : ℂ) *
+        Complex.exp ((2 * Real.pi * v ⟨Units.rank F + (eC w : ℕ), haIdx w⟩ -
+          Real.pi : ℝ) * Complex.I)) with hG
+  have hfrontCD : ContDiff ℝ 1 front := contDiff_pi.mpr fun j ↦ contDiff_apply ℝ ℝ _
+  have hGCD : ∀ ε, ContDiff ℝ 1 (G ε) := by
+    intro ε
+    refine ContDiff.prodMk (contDiff_pi.mpr fun w ↦ ?_) (contDiff_pi.mpr fun w ↦ ?_)
+    · exact contDiff_const.mul ((contDiff_apply ℝ ℝ w.1).comp (hg.comp hfrontCD))
+    · refine ContDiff.mul
+        (Complex.ofRealCLM.contDiff.comp ((contDiff_apply ℝ ℝ w.1).comp (hg.comp hfrontCD))) ?_
+      refine (Complex.contDiff_exp (𝕜 := ℝ)).comp (ContDiff.mul ?_ contDiff_const)
+      exact Complex.ofRealCLM.contDiff.comp
+        ((contDiff_const.mul (contDiff_apply ℝ ℝ _)).sub contDiff_const)
+  choose κ hκ using fun ε ↦ exists_lipschitzOnWith_Icc_of_contDiff (hGCD ε)
+  set e := Fintype.equivFin ({w : InfinitePlace F // w.IsReal} → Bool) with he
+  refine ⟨Fintype.card ({w : InfinitePlace F // w.IsReal} → Bool), fun i ↦ G (e.symm i),
+    Finset.univ.sup κ,
+    fun i ↦ (hκ _).weaken (Finset.le_sup (Finset.mem_univ _)), ?_⟩
+  intro x hx
+  obtain ⟨u, hu, hgu⟩ := hx
+  set θ : {w : InfinitePlace F // w.IsComplex} → ℝ :=
+    fun w ↦ (Complex.arg (x.2 w) + Real.pi) / (2 * Real.pi) with hθ
+  have hθmem : ∀ w, θ w ∈ Set.Icc (0 : ℝ) 1 := by
+    intro w
+    constructor
+    · refine div_nonneg ?_ (by positivity)
+      linarith [Complex.neg_pi_lt_arg (x.2 w), Real.pi_pos]
+    · rw [div_le_one (by positivity)]
+      linarith [Complex.arg_le_pi (x.2 w), Real.pi_pos]
+  set v : Fin N → ℝ := fun i ↦ if h : (i : ℕ) < Units.rank F then u ⟨i, h⟩
+    else if h2 : (i : ℕ) - Units.rank F < nrComplexPlaces F then
+      θ (eC.symm ⟨(i : ℕ) - Units.rank F, h2⟩)
+    else 0 with hv
+  set ε : {w : InfinitePlace F // w.IsReal} → Bool := fun w ↦ decide (0 ≤ x.1 w) with hε
+  have hu' := Set.mem_Icc.mp hu
+  have hfrontv : front v = u := by
+    funext j
+    simp only [hfront, hv]
+    rw [dif_pos (by simp)]
+    congr 1
+  have hnorm : ∀ w : InfinitePlace F, g u w = normAtPlace w x := by
+    intro w
+    rw [hgu, normAtAllPlaces_apply]
+  refine Set.mem_iUnion.mpr ⟨e ε, ⟨v, ?_, ?_⟩⟩
+  · rw [Set.mem_Icc]
+    constructor <;> refine Pi.le_def.mpr fun i ↦ ?_ <;> simp only [hv, Pi.zero_apply, Pi.one_apply]
+    · split_ifs with h h2
+      · exact Pi.le_def.mp hu'.1 _
+      · exact (hθmem _).1
+      · exact le_rfl
+    · split_ifs with h h2
+      · exact Pi.le_def.mp hu'.2 _
+      · exact (hθmem _).2
+      · exact zero_le_one
+  · show G (e.symm (e ε)) v = x
+    rw [Equiv.symm_apply_apply]
+    refine Prod.ext (funext fun w ↦ ?_) (funext fun w ↦ ?_)
+    · show (if ε w then 1 else -1) * g (front v) w.1 = x.1 w
+      rw [hfrontv, hnorm w.1, normAtPlace_apply_of_isReal w.2]
+      by_cases hxw : 0 ≤ x.1 w
+      · simp only [hε, hxw, decide_true, if_true, one_mul]
+        exact Real.norm_of_nonneg hxw
+      · have hεw : ε w = false := by simp [hε, hxw]
+        rw [hεw, Real.norm_eq_abs, abs_of_neg (not_le.mp hxw)]
+        simp
+    · show (g (front v) w.1 : ℂ) *
+          Complex.exp ((2 * Real.pi * v ⟨Units.rank F + (eC w : ℕ), haIdx w⟩ -
+            Real.pi : ℝ) * Complex.I) = x.2 w
+      rw [hfrontv, hnorm w.1, normAtPlace_apply_of_isComplex w.2]
+      have hvIdx : v ⟨Units.rank F + (eC w : ℕ), haIdx w⟩ = θ w := by
+        simp only [hv]
+        rw [dif_neg (by omega), dif_pos (by simp)]
+        congr 1
+        rw [Equiv.symm_apply_eq]
+        apply Fin.ext
+        simp
+      rw [hvIdx]
+      have harg : 2 * Real.pi * θ w - Real.pi = Complex.arg (x.2 w) := by
+        rw [hθ]
+        field_simp
+        ring
+      rw [harg]
+      exact Complex.norm_mul_exp_arg_mul_I (x.2 w)
+
+open scoped Classical in
+open NumberField NumberField.mixedEmbedding NumberField.mixedEmbedding.fundamentalCone
+  NumberField.Units NumberField.InfinitePlace in
+/-- **Lipschitz parametrization of the boundary of `normLeOne`**
+(PROVEN) — the boundary-regularity half of Lang, *Algebraic Number
 Theory*, VI §3: the frontier of the norm-≤-1 cut `normLeOne F` of the
 fundamental cone is covered by finitely many Lipschitz images of the
 unit cube of one dimension lower.
 
-Intended proof (Lang VI §3 Theorem 3; the pin's
+Proof (Lang VI §3 Theorem 3; the pin's
 `Mathlib/NumberTheory/NumberField/CanonicalEmbedding/NormLeOne.lean`
-provides the full toolkit). `normLeOne F` is norm-stable
-(`normLeOne_eq_preimage_image`), and
-`normAtAllPlaces '' (normLeOne F) = expMapBasis '' (paramSet F)`
-(`normAtAllPlaces_normLeOne_eq_image`) where `paramSet` is the box
-`Iic 0 × [0,1)^(rank)` in `expMapBasis`-coordinates
-(`closure_paramSet`, `interior_paramSet` describe its closure and
-interior). The closure of `normLeOne F` is therefore contained in the
-image of a COMPACT box under the smooth map `expMapBasis` composed with
-the sign-choices/polar map back to the mixed space
-(`closure_normLeOne_subset`, `compactSet_eq_union`): the frontier is
-covered by the images of the FACES of that box — each face is a
-`(d-1)`-cube, and `expMapBasis` (given by exponentials and powers,
-`expMapBasis_apply'`) and the polar-coordinate map
-(`mixedEmbedding.polarCoord`, trigonometric functions scaled by radii
-bounded on the compact box) are Lipschitz on compact boxes since they
-are `C¹` (`hasFDerivAt_expMapBasis`); each face contributes one
-Lipschitz map per sign/argument chart, finitely many in total. -/
+provides the full toolkit). By `closure_normLeOne_subset` and
+`subset_interior_normLeOne`, the frontier is contained in the
+`normAtAllPlaces`-preimage of
+`compactSet F \ expMapBasis '' interior (paramSet F)`; by
+`compactSet_diff_subset_iUnion_boundaryFaceMap` that residue is covered
+by the finitely many `C¹` face maps `boundaryFaceMap` on the
+`rank F`-cube (the faces of the compact parameter box, radially
+rescaled), and by `exists_cover_preimage_normAtAllPlaces_image` each
+preimage is in turn covered by finitely many Lipschitz maps on the
+`(d-1)`-cube — signs at the real places, angles `z = ‖z‖·e^{i·arg z}`
+at the complex places (`rank F + nrComplexPlaces F = d - 1`
+coordinates in total), Lipschitz on the cube since `C¹`
+(`exists_lipschitzOnWith_Icc_of_contDiff`, the mean value inequality);
+`exists_fin_lipschitzOnWith_cover_iUnion` merges the finitely many
+families into one. -/
 theorem hasLipschitzBoundaryCover_normLeOne
     (F : Type*) [Field F] [NumberField F] :
     HasLipschitzBoundaryCover (mixedEmbedding.fundamentalCone.normLeOne F) := by
-  sorry
+  classical
+  have hN : Units.rank F + nrComplexPlaces F ≤
+      Module.finrank ℝ (mixedEmbedding.mixedSpace F) - 1 := by
+    rw [NumberField.mixedEmbedding.finrank, ← card_add_two_mul_card_eq_rank,
+      show Units.rank F = Fintype.card (InfinitePlace F) - 1 from rfl,
+      card_eq_nrRealPlaces_add_nrComplexPlaces]
+    omega
+  have hA : frontier (normLeOne F) ⊆
+      normAtAllPlaces ⁻¹' (compactSet F \ expMapBasis '' interior (paramSet F)) := by
+    intro x hx
+    refine Set.mem_preimage.mpr ⟨closure_normLeOne_subset F hx.1, fun hmem ↦ hx.2 ?_⟩
+    exact subset_interior_normLeOne F hmem
+  obtain ⟨m, G, κ, hLip, hCov⟩ := exists_fin_lipschitzOnWith_cover_iUnion
+    (S := fun a ↦ normAtAllPlaces ⁻¹' (boundaryFaceMap F a '' Set.Icc 0 1))
+    (fun a ↦ exists_cover_preimage_normAtAllPlaces_image F hN (boundaryFaceMap F a)
+      (contDiff_boundaryFaceMap F a))
+  refine ⟨m, G, κ, hLip, ?_⟩
+  refine subset_trans hA (subset_trans ?_ hCov)
+  refine subset_trans (Set.preimage_mono (compactSet_diff_subset_iUnion_boundaryFaceMap F)) ?_
+  rw [Set.preimage_iUnion]
+
+open Complex in
+/-- **Sector selection for `m`-th roots of unity.** For `m ≥ 2` and
+`z ≠ 0` there is exactly one `m`-th root of unity `ζ` rotating `z` into
+the half-open angular sector `arg ∈ [0, 2π/m)`. The proof reduces, via
+`arg (r·exp(θi)) = toIocMod (-π) θ`, to the statement that among
+`⌊arg z/(2π/m)⌋ + k`, `k < m`, exactly one value is divisible by `m`. -/
+theorem exists_unique_pow_eq_one_and_arg_mul_mem_Ico
+    (m : ℕ) (hm : 2 ≤ m) (z : ℂ) (hz : z ≠ 0) :
+    ∃! ζ : ℂ, ζ ^ m = 1 ∧ ζ * z ≠ 0 ∧
+      Complex.arg (ζ * z) ∈ Set.Ico 0 (2 * Real.pi / m) := by
+  have hmR : (0:ℝ) < m := by exact_mod_cast (by omega : 0 < m)
+  have hmR2 : (2:ℝ) ≤ m := by exact_mod_cast hm
+  set α : ℝ := 2 * Real.pi / m with hαdef
+  have hαpos : 0 < α := div_pos (by linarith [Real.pi_pos]) hmR
+  have hαle : α ≤ Real.pi := by
+    rw [hαdef, div_le_iff₀ hmR]
+    nlinarith [Real.pi_pos]
+  have h2π : 2 * Real.pi = α * m := by
+    rw [hαdef]; field_simp
+  set ζ₁ : ℂ := Complex.exp (2 * Real.pi * Complex.I / m) with hζ₁def
+  have hζ₁ : IsPrimitiveRoot ζ₁ m := Complex.isPrimitiveRoot_exp m (by omega)
+  set a : ℝ := Complex.arg z
+  set D : ℤ := ⌊a / α⌋ with hDdef
+  -- the k-th rotation lies in the sector iff `m ∣ D + k`
+  have hkey : ∀ k : ℕ, (ζ₁ ^ k * z ≠ 0 ∧ Complex.arg (ζ₁ ^ k * z) ∈ Set.Ico 0 α) ↔
+      (m:ℤ) ∣ D + k := by
+    intro k
+    have h1 : ζ₁ ^ k * z = (‖z‖ : ℂ) * Complex.exp ((a + k * α : ℝ) * Complex.I) := by
+      conv_lhs => rw [← Complex.norm_mul_exp_arg_mul_I z]
+      rw [hζ₁def, ← Complex.exp_nat_mul, mul_comm ((‖z‖:ℂ)) _, ← mul_assoc, ← Complex.exp_add,
+        mul_comm _ ((‖z‖:ℂ))]
+      congr 2
+      push_cast
+      rw [hαdef]
+      push_cast
+      field_simp
+      ring
+    have hznorm : (0:ℝ) < ‖z‖ := norm_pos_iff.mpr hz
+    have h2 : ζ₁ ^ k * z ≠ 0 :=
+      mul_ne_zero (pow_ne_zero _ (Complex.exp_ne_zero _)) hz
+    have h3 : Complex.arg (ζ₁ ^ k * z) = toIocMod Real.two_pi_pos (-Real.pi) (a + k * α) := by
+      rw [h1, Complex.exp_mul_I]
+      exact Complex.arg_mul_cos_add_sin_mul_I_eq_toIocMod hznorm _
+    have h4 : toIocMod Real.two_pi_pos (-Real.pi) (a + k * α) ∈ Set.Ico 0 α ↔
+        ∃ j : ℤ, a + k * α - 2 * Real.pi * j ∈ Set.Ico 0 α := by
+      constructor
+      · intro h
+        refine ⟨toIocDiv Real.two_pi_pos (-Real.pi) (a + k * α), ?_⟩
+        rw [toIocMod, zsmul_eq_mul] at h
+        have h' : a + ↑k * α - 2 * Real.pi *
+            (toIocDiv Real.two_pi_pos (-Real.pi) (a + ↑k * α) : ℝ) =
+            a + ↑k * α - (toIocDiv Real.two_pi_pos (-Real.pi) (a + ↑k * α) : ℝ)
+              * (2 * Real.pi) := by ring
+        rw [h']
+        exact h
+      · rintro ⟨j, hj⟩
+        have heq : toIocMod Real.two_pi_pos (-Real.pi) (a + k * α)
+            = a + k * α - 2 * Real.pi * j := by
+          rw [toIocMod_eq_iff]
+          refine ⟨⟨by linarith [hj.1, Real.pi_pos], by linarith [hj.2]⟩, ⟨j, ?_⟩⟩
+          rw [zsmul_eq_mul]; ring
+        rw [heq]; exact hj
+    have h5 : (∃ j : ℤ, a + k * α - 2 * Real.pi * j ∈ Set.Ico 0 α) ↔ (m:ℤ) ∣ D + k := by
+      constructor
+      · rintro ⟨j, hj0, hj1⟩
+        refine ⟨j, ?_⟩
+        have hv : a / α + ((k : ℤ) - (m:ℤ) * j : ℤ) = (a + k * α - 2 * Real.pi * j) / α := by
+          rw [h2π]
+          push_cast
+          field_simp
+          ring
+        have h6 : ⌊a / α + (((k : ℤ) - (m:ℤ) * j : ℤ) : ℝ)⌋ = 0 := by
+          rw [Int.floor_eq_zero_iff]
+          constructor
+          · rw [hv]; positivity
+          · rw [hv, div_lt_one hαpos]; linarith
+        rw [Int.floor_add_intCast] at h6
+        rw [← hDdef] at h6
+        omega
+      · rintro ⟨j, hjeq⟩
+        have hkD : (k : ℝ) - (m:ℝ) * j = -(D:ℝ) := by
+          have hcast : (D:ℝ) + k = (m:ℝ) * j := by exact_mod_cast hjeq
+          linarith
+        have hval : a + k * α - 2 * Real.pi * j = α * (a/α - D) := by
+          rw [h2π]
+          field_simp
+          nlinarith [hkD]
+        refine ⟨j, ?_, ?_⟩
+        · rw [hval]
+          have hfl : (0:ℝ) ≤ a/α - D := by
+            rw [hDdef]
+            have := Int.floor_le (a/α)
+            linarith
+          positivity
+        · rw [hval]
+          have hfl : a/α - D < 1 := by
+            rw [hDdef]
+            have := Int.lt_floor_add_one (a/α)
+            linarith
+          nlinarith
+    rw [h3, h4, h5]
+    tauto
+  set k₀ : ℕ := ((-D) % m).toNat
+  have hmZ : (0:ℤ) < (m:ℤ) := by exact_mod_cast (by omega : 0 < m)
+  have hk₀Z : (k₀ : ℤ) = (-D) % m := Int.toNat_of_nonneg (Int.emod_nonneg _ (by omega))
+  have hk₀m : k₀ < m := by
+    have := Int.emod_lt_of_pos (-D) hmZ
+    omega
+  have hdvd : (m:ℤ) ∣ D + k₀ := by
+    rw [hk₀Z, Int.emod_def]
+    exact ⟨-((-D)/m), by ring⟩
+  refine ⟨ζ₁ ^ k₀, ⟨by rw [← pow_mul, mul_comm k₀ m, pow_mul, hζ₁.pow_eq_one, one_pow],
+      (hkey k₀).mpr hdvd⟩, ?_⟩
+  rintro ζ' ⟨hroot', hne', hmem'⟩
+  haveI : NeZero m := ⟨by omega⟩
+  obtain ⟨i, him, hieq⟩ := hζ₁.eq_pow_of_pow_eq_one hroot'
+  rw [← hieq] at hmem' hne'
+  have hdvd' := (hkey i).mp ⟨hne', hmem'⟩
+  have hik : i = k₀ := by
+    have hd : (m:ℤ) ∣ ((i:ℤ) - (k₀:ℤ)) := by
+      have := dvd_sub hdvd' hdvd
+      simpa using this
+    have habs : |(i:ℤ) - (k₀:ℤ)| < (m:ℤ) := by
+      rw [abs_lt]; omega
+    have := Int.eq_zero_of_abs_lt_dvd hd habs
+    omega
+  rw [← hieq, hik]
+
+open Complex in
+/-- **The frontier of an angular sector lies on two lines.** The frontier
+of `{z ≠ 0, arg z ∈ [0, α)}` is contained in `ℝ·1 ∪ ℝ·exp(αi)`: away
+from those two lines `arg` is continuous and different from `0`, `π`
+and `α`, so the point is interior to the sector or to its complement. -/
+theorem frontier_setOf_arg_mem_Ico_subset_union_span (α : ℝ) :
+    frontier {z : ℂ | z ≠ 0 ∧ Complex.arg z ∈ Set.Ico 0 α} ⊆
+      (Submodule.span ℝ {(1 : ℂ)} : Set ℂ) ∪
+      (Submodule.span ℝ {Complex.exp (α * Complex.I)} : Set ℂ) := by
+  intro z hzfr
+  by_contra hnot
+  have hn1 : z ∉ (Submodule.span ℝ {(1 : ℂ)} : Set ℂ) := fun h => hnot (Or.inl h)
+  have hn2 : z ∉ (Submodule.span ℝ {Complex.exp (α * Complex.I)} : Set ℂ) :=
+    fun h => hnot (Or.inr h)
+  have him : z.im ≠ 0 := by
+    intro h
+    apply hn1
+    have hzre : z = ((z.re : ℝ) : ℂ) := Complex.ext rfl (by simpa using h)
+    refine Submodule.mem_span_singleton.mpr ⟨z.re, ?_⟩
+    rw [Complex.real_smul, mul_one]
+    exact hzre.symm
+  have harg0 : Complex.arg z ≠ 0 := fun h => him (Complex.arg_eq_zero_iff.mp h).2
+  have hargα : Complex.arg z ≠ α := by
+    intro h
+    apply hn2
+    refine Submodule.mem_span_singleton.mpr ⟨‖z‖, ?_⟩
+    rw [Complex.real_smul]
+    conv_rhs => rw [← Complex.norm_mul_exp_arg_mul_I z]
+    rw [h]
+  have hcont : ContinuousAt Complex.arg z := Complex.continuousAt_arg (Or.inr him)
+  have hclos := hzfr.1
+  have hnint : z ∉ interior {z : ℂ | z ≠ 0 ∧ Complex.arg z ∈ Set.Ico 0 α} := hzfr.2
+  rcases lt_trichotomy (Complex.arg z) 0 with hlt | heq | hgt
+  · have hnb : Complex.arg ⁻¹' Set.Iio 0 ∈ nhds z :=
+      hcont.preimage_mem_nhds (Iio_mem_nhds hlt)
+    rw [mem_closure_iff_nhds] at hclos
+    obtain ⟨w, hw1, hw2, hw3⟩ := hclos _ hnb
+    exact absurd hw3.1 (not_le.mpr hw1)
+  · exact harg0 heq
+  · rcases lt_trichotomy (Complex.arg z) α with hlt' | heq' | hgt'
+    · apply hnint
+      rw [mem_interior_iff_mem_nhds]
+      have hnb : Complex.arg ⁻¹' Set.Ioo 0 α ∈ nhds z :=
+        hcont.preimage_mem_nhds (Ioo_mem_nhds hgt hlt')
+      refine Filter.mem_of_superset hnb ?_
+      intro w hw
+      have hw' : Complex.arg w ∈ Set.Ioo 0 α := hw
+      refine ⟨?_, ⟨le_of_lt hw'.1, hw'.2⟩⟩
+      intro h0
+      rw [h0, Complex.arg_zero] at hw'
+      exact lt_irrefl _ hw'.1
+    · exact hargα heq'
+    · have hnb : Complex.arg ⁻¹' Set.Ioi α ∈ nhds z :=
+        hcont.preimage_mem_nhds (Ioi_mem_nhds hgt')
+      rw [mem_closure_iff_nhds] at hclos
+      obtain ⟨w, hw1, hw2, hw3⟩ := hclos _ hnb
+      exact absurd hw3.2 (not_lt.mpr (le_of_lt hw1))
 
 open scoped Pointwise in
 open NumberField in
@@ -4178,7 +4704,429 @@ theorem exists_finset_units_forall_existsUnique_unit_smul_mem
           (∀ φ : F →+* ℝ, 0 < φ (algebraMap (𝓞 F) F (u : 𝓞 F))) ∧
           ((u : 𝓞 F) - 1) ∈ Ideal.span {(ℓ : 𝓞 F)} ∧
           u • x ∈ (⋃ c ∈ R, c • mixedEmbedding.fundamentalCone F) ∩ X := by
-  sorry
+  classical
+  -- ============ the finite-index subgroup U of totally positive units ≡ 1 mod ℓ ============
+  let sgn : (F →+* ℝ) → ((𝓞 F)ˣ →* SignTypeˣ) := fun φ =>
+    (Units.map (signHom.toMonoidHom : ℝ →* SignType)).comp
+      (Units.map ((φ.comp (algebraMap (𝓞 F) F)).toMonoidHom))
+  let red : (𝓞 F)ˣ →* ((𝓞 F) ⧸ Ideal.span {(ℓ : 𝓞 F)})ˣ :=
+    Units.map (Ideal.Quotient.mk (Ideal.span {(ℓ : 𝓞 F)})).toMonoidHom
+  let Φ : (𝓞 F)ˣ →* ((F →+* ℝ) → SignTypeˣ) × ((𝓞 F) ⧸ Ideal.span {(ℓ : 𝓞 F)})ˣ :=
+    MonoidHom.prod (MonoidHom.mk' (fun u => fun φ => sgn φ u)
+      (fun a b => by funext φ; simp [map_mul])) red
+  set U : Subgroup (𝓞 F)ˣ := Φ.ker with hUdef
+  have hUmem : ∀ u : (𝓞 F)ˣ, u ∈ U ↔
+      ((∀ φ : F →+* ℝ, 0 < φ (algebraMap (𝓞 F) F (u : 𝓞 F))) ∧
+        ((u : 𝓞 F) - 1) ∈ Ideal.span {(ℓ : 𝓞 F)}) := by
+    intro u
+    rw [hUdef, MonoidHom.mem_ker]
+    have h1 : Φ u = (fun φ => sgn φ u, red u) := rfl
+    rw [h1, Prod.mk_eq_one]
+    constructor
+    · rintro ⟨ha, hb⟩
+      constructor
+      · intro φ
+        have hφ := congrFun ha φ
+        rw [Pi.one_apply, Units.ext_iff] at hφ
+        have h2 : ((sgn φ u : SignTypeˣ) : SignType) =
+            SignType.sign (φ (algebraMap (𝓞 F) F (u : 𝓞 F))) := by
+          simp [sgn, Units.coe_map]
+        rw [h2] at hφ
+        exact sign_eq_one_iff.mp hφ
+      · have hb' : ((red u : _ˣ) : (𝓞 F) ⧸ Ideal.span {(ℓ : 𝓞 F)}) = 1 :=
+          congrArg Units.val hb
+        have h3 : ((red u : _ˣ) : (𝓞 F) ⧸ Ideal.span {(ℓ : 𝓞 F)}) =
+            Ideal.Quotient.mk _ (u : 𝓞 F) := by
+          simp [red, Units.coe_map]
+        rw [h3] at hb'
+        rw [← map_one (Ideal.Quotient.mk (Ideal.span {(ℓ : 𝓞 F)}))] at hb'
+        exact (Ideal.Quotient.mk_eq_mk_iff_sub_mem _ _).mp hb'
+    · rintro ⟨ha, hb⟩
+      constructor
+      · funext φ
+        rw [Pi.one_apply, Units.ext_iff]
+        have h2 : ((sgn φ u : SignTypeˣ) : SignType) =
+            SignType.sign (φ (algebraMap (𝓞 F) F (u : 𝓞 F))) := by
+          simp [sgn, Units.coe_map]
+        rw [h2]
+        exact sign_eq_one_iff.mpr (ha φ)
+      · rw [Units.ext_iff]
+        have h3 : ((red u : _ˣ) : (𝓞 F) ⧸ Ideal.span {(ℓ : 𝓞 F)}) =
+            Ideal.Quotient.mk _ (u : 𝓞 F) := by
+          simp [red, Units.coe_map]
+        rw [h3]
+        rw [show (((1 : ((𝓞 F) ⧸ Ideal.span {(ℓ : 𝓞 F)})ˣ) : (𝓞 F) ⧸ Ideal.span {(ℓ : 𝓞 F)})) =
+          Ideal.Quotient.mk _ (1 : 𝓞 F) by simp]
+        exact (Ideal.Quotient.mk_eq_mk_iff_sub_mem _ _).mpr hb
+  have hspan_ne : Ideal.span {(ℓ : 𝓞 F)} ≠ ⊥ := by
+    rw [Ne, Ideal.span_singleton_eq_bot]
+    intro h
+    exact hℓ.ne_zero (by exact_mod_cast h)
+  haveI : Finite ((𝓞 F) ⧸ Ideal.span {(ℓ : 𝓞 F)}) :=
+    Ideal.finiteQuotientOfFreeOfNeBot _ hspan_ne
+  haveI hUfi : U.FiniteIndex := Subgroup.finiteIndex_ker Φ
+  set T : Subgroup (𝓞 F)ˣ := NumberField.Units.torsion F with hTdef
+  set V : Subgroup (𝓞 F)ˣ := U ⊔ T with hVdef
+  haveI hVfi : V.FiniteIndex := Subgroup.finiteIndex_of_le le_sup_left
+  haveI : Finite ((𝓞 F)ˣ ⧸ V) := Subgroup.finite_quotient_of_finiteIndex
+  haveI : Fintype ((𝓞 F)ˣ ⧸ V) := Fintype.ofFinite _
+  set R : Finset (𝓞 F)ˣ :=
+    Finset.image (fun q : (𝓞 F)ˣ ⧸ V => Quotient.out q) Finset.univ
+  have hR : ∀ g : (𝓞 F)ˣ, ∃! c : (𝓞 F)ˣ, c ∈ R ∧
+      (QuotientGroup.mk c : (𝓞 F)ˣ ⧸ V) = QuotientGroup.mk g := by
+    intro g
+    refine ⟨Quotient.out (QuotientGroup.mk g : (𝓞 F)ˣ ⧸ V),
+      ⟨Finset.mem_image_of_mem _ (Finset.mem_univ _), QuotientGroup.out_eq' _⟩, ?_⟩
+    rintro c' ⟨hc'R, hc'q⟩
+    obtain ⟨q, -, rfl⟩ := Finset.mem_image.mp hc'R
+    congr 1
+    rw [← hc'q, QuotientGroup.out_eq']
+  set UC : Set (mixedEmbedding.mixedSpace F) :=
+    ⋃ c ∈ R, c • mixedEmbedding.fundamentalCone F with hUCdef
+  -- ============ the torsor characterization: solutions in U form one (T ⊓ U)-coset ============
+  have hkey : ∀ x : mixedEmbedding.mixedSpace F, mixedEmbedding.norm x ≠ 0 →
+      ∃ u₀ : (𝓞 F)ˣ, (u₀ ∈ U ∧ u₀ • x ∈ UC) ∧
+        ∀ u : (𝓞 F)ˣ, (u ∈ U ∧ u • x ∈ UC) ↔ ∃ s ∈ T ⊓ U, u = s * u₀ := by
+    intro x hx
+    obtain ⟨g₀, hg₀⟩ := mixedEmbedding.fundamentalCone.exists_unit_smul_mem hx
+    have hcone : ∀ g : (𝓞 F)ˣ, g • x ∈ mixedEmbedding.fundamentalCone F ↔ g * g₀⁻¹ ∈ T := by
+      intro g
+      have h1 : g • x = (g * g₀⁻¹) • (g₀ • x) := by
+        rw [smul_smul, inv_mul_cancel_right]
+      rw [h1, hTdef]
+      exact mixedEmbedding.fundamentalCone.unit_smul_mem_iff_mem_torsion hg₀ _
+    have hUC_mem : ∀ u : (𝓞 F)ˣ, u • x ∈ UC ↔ ∃ c ∈ R, c⁻¹ * u * g₀⁻¹ ∈ T := by
+      intro u
+      rw [hUCdef]
+      simp only [Set.mem_iUnion₂]
+      constructor
+      · rintro ⟨c, hcR, hc⟩
+        refine ⟨c, hcR, ?_⟩
+        rw [Set.mem_smul_set_iff_inv_smul_mem, smul_smul] at hc
+        exact (hcone _).mp hc
+      · rintro ⟨c, hcR, hc⟩
+        refine ⟨c, hcR, ?_⟩
+        rw [Set.mem_smul_set_iff_inv_smul_mem, smul_smul]
+        exact (hcone _).mpr hc
+    obtain ⟨cs, ⟨hcsR, hcsq⟩, hcsuniq⟩ := hR g₀⁻¹
+    have hcsV : cs⁻¹ * g₀⁻¹ ∈ V := QuotientGroup.eq.mp hcsq
+    rw [hVdef] at hcsV
+    obtain ⟨u', hu'U, t', ht'T, hut⟩ := Subgroup.mem_sup.mp hcsV
+    have hbase : cs⁻¹ * u'⁻¹ * g₀⁻¹ = t' := by
+      rw [mul_comm cs⁻¹ u'⁻¹, mul_assoc, ← hut, inv_mul_cancel_left]
+    refine ⟨u'⁻¹, ⟨U.inv_mem hu'U, ?_⟩, ?_⟩
+    · rw [hUC_mem]
+      exact ⟨cs, hcsR, hbase ▸ ht'T⟩
+    · intro u
+      constructor
+      · rintro ⟨huU, hun⟩
+        obtain ⟨c, hcR, hct⟩ := (hUC_mem u).mp hun
+        have hcq : (QuotientGroup.mk c : (𝓞 F)ˣ ⧸ V) = QuotientGroup.mk g₀⁻¹ := by
+          rw [QuotientGroup.eq]
+          have hid : c⁻¹ * g₀⁻¹ = (c⁻¹ * u * g₀⁻¹) * u⁻¹ := by
+            rw [eq_mul_inv_iff_mul_eq]
+            simp [mul_comm, mul_left_comm]
+          rw [hid, hVdef]
+          exact Subgroup.mul_mem _ (Subgroup.mem_sup_right hct)
+            (Subgroup.mem_sup_left (Subgroup.inv_mem _ huU))
+        have hceq : c = cs := hcsuniq c ⟨hcR, hcq⟩
+        refine ⟨u * u', ?_, ?_⟩
+        · rw [Subgroup.mem_inf]
+          constructor
+          · have hid2 : u * u' = (cs⁻¹ * u * g₀⁻¹) * (cs⁻¹ * u'⁻¹ * g₀⁻¹)⁻¹ := by
+              rw [eq_mul_inv_iff_mul_eq, mul_comm cs⁻¹ u'⁻¹, mul_assoc u'⁻¹ cs⁻¹ g₀⁻¹,
+                mul_assoc u u', mul_inv_cancel_left, ← mul_assoc, mul_comm u cs⁻¹]
+            rw [hid2, hbase]
+            rw [hceq] at hct
+            exact T.mul_mem hct (T.inv_mem ht'T)
+          · exact U.mul_mem huU hu'U
+        · rw [mul_assoc, mul_inv_cancel, mul_one]
+      · rintro ⟨s, hs, rfl⟩
+        rw [Subgroup.mem_inf] at hs
+        constructor
+        · exact U.mul_mem hs.2 (U.inv_mem hu'U)
+        · rw [hUC_mem]
+          refine ⟨cs, hcsR, ?_⟩
+          have hid3 : cs⁻¹ * (s * u'⁻¹) * g₀⁻¹ = s * (cs⁻¹ * u'⁻¹ * g₀⁻¹) := by
+            simp [mul_comm, mul_left_comm]
+          rw [hid3, hbase]
+          exact T.mul_mem hs.1 ht'T
+  -- ============ case split on the torsion inside U ============
+  by_cases hbot : T ⊓ U = ⊥
+  · -- Case 1: `T ⊓ U = ⊥` — the positivity cone alone; the solution coset is a singleton
+    set P : Set (mixedEmbedding.mixedSpace F) :=
+      {y | ∀ w : {w : InfinitePlace F // w.IsReal}, 0 < y.1 w} with hPdef
+    let e := Fintype.equivFin {w : InfinitePlace F // w.IsReal}
+    set Wf : Fin (Fintype.card {w : InfinitePlace F // w.IsReal}) →
+        Submodule ℝ (mixedEmbedding.mixedSpace F) :=
+      fun i => LinearMap.ker ((LinearMap.proj (e.symm i)).comp
+        (LinearMap.fst ℝ ({w : InfinitePlace F // w.IsReal} → ℝ)
+          ({w : InfinitePlace F // w.IsComplex} → ℂ))) with hWfdef
+    have hPinter : P = ⋂ w : {w : InfinitePlace F // w.IsReal},
+        (fun y : mixedEmbedding.mixedSpace F => y.1 w) ⁻¹' Set.Ioi 0 := by
+      ext y
+      simp [hPdef, Set.mem_iInter]
+    have hPopen : IsOpen P := by
+      rw [hPinter]
+      exact isOpen_iInter_of_finite fun w =>
+        isOpen_Ioi.preimage ((continuous_apply w).comp continuous_fst)
+    refine ⟨R, P, _, Wf, ?_, fun y hy => hy, ?_, ?_, ?_, ?_⟩
+    · -- measurability
+      rw [hPinter]
+      exact MeasurableSet.iInter fun w =>
+        ((continuous_apply w).comp continuous_fst).measurable measurableSet_Ioi
+    · -- invariance under positive scaling
+      intro r hr y hy
+      rw [Set.mem_smul_set] at hy
+      obtain ⟨y₀, hy₀, rfl⟩ := hy
+      intro w
+      have h1 : (r • y₀).1 w = r * y₀.1 w := rfl
+      rw [h1]
+      exact mul_pos hr (hy₀ w)
+    · -- properness of the coordinate hyperplanes
+      intro i hitop
+      rw [hWfdef, LinearMap.ker_eq_top] at hitop
+      have h1 : ((LinearMap.proj (e.symm i)).comp
+          (LinearMap.fst ℝ ({w : InfinitePlace F // w.IsReal} → ℝ)
+            ({w : InfinitePlace F // w.IsComplex} → ℂ)))
+          (Function.update (0 : {w : InfinitePlace F // w.IsReal} → ℝ) (e.symm i) 1, 0)
+          = 1 := by
+        simp [Function.update_self]
+      rw [hitop] at h1
+      simp at h1
+    · -- the frontier lies on the coordinate hyperplanes
+      intro z hz
+      have hcl : ∀ w : {w : InfinitePlace F // w.IsReal}, 0 ≤ z.1 w := by
+        intro w
+        have h1 : closure P ⊆ {y : mixedEmbedding.mixedSpace F | 0 ≤ y.1 w} := by
+          apply closure_minimal
+          · intro y hy
+            exact (hy w).le
+          · exact isClosed_le continuous_const ((continuous_apply w).comp continuous_fst)
+        exact h1 hz.1
+      have hzP : z ∉ P := by
+        intro h
+        exact hz.2 (mem_interior_iff_mem_nhds.mpr (hPopen.mem_nhds h))
+      obtain ⟨w, hw⟩ := not_forall.mp hzP
+      have hzw : z.1 w = 0 := le_antisymm (not_lt.mp hw) (hcl w)
+      refine Set.mem_iUnion.mpr ⟨e w, ?_⟩
+      simp only [hWfdef, SetLike.mem_coe, LinearMap.mem_ker, LinearMap.comp_apply,
+        LinearMap.fst_apply, LinearMap.proj_apply, Equiv.symm_apply_apply]
+      exact hzw
+    · -- the counting statement
+      intro x hx1 hx2
+      obtain ⟨u₀, ⟨hu₀U, hu₀UC⟩, hchar⟩ := hkey x hx2
+      have hu₀pos := ((hUmem u₀).mp hu₀U).1
+      have hu₀pos' := (forall_ringHom_pos_iff_forall_mixedEmbedding_fst_pos
+        (algebraMap (𝓞 F) F (u₀ : 𝓞 F))).mp hu₀pos
+      refine ⟨u₀, ⟨hu₀pos, ((hUmem u₀).mp hu₀U).2, hu₀UC, ?_⟩, ?_⟩
+      · -- `u₀ • x` is totally positive
+        intro w
+        have hcomp : (u₀ • x).1 w =
+            (mixedEmbedding F (algebraMap (𝓞 F) F (u₀ : 𝓞 F))).1 w * x.1 w := by
+          rw [mixedEmbedding.unitSMul_smul]
+          rfl
+        rw [hcomp]
+        exact mul_pos (hu₀pos' w) (hx1 w)
+      · rintro u ⟨hupos, humod, huUC, huP⟩
+        obtain ⟨s, hs, rfl⟩ := (hchar u).mp ⟨(hUmem u).mpr ⟨hupos, humod⟩, huUC⟩
+        rw [hbot, Subgroup.mem_bot] at hs
+        rw [hs, one_mul]
+  · -- Case 2: `T ⊓ U ≠ ⊥` — `F` is totally complex; add the sector cut at one complex place
+    set TU : Subgroup (𝓞 F)ˣ := T ⊓ U with hTUdef
+    haveI hTfin : Finite T := by rw [hTdef]; infer_instance
+    haveI : Finite TU := Finite.of_injective _ (Subgroup.inclusion_injective
+      (inf_le_left : TU ≤ T))
+    haveI : Fintype TU := Fintype.ofFinite _
+    set m : ℕ := Nat.card TU with hmdef
+    have hTUne : TU ≠ ⊥ := by rw [hTUdef]; exact hbot
+    obtain ⟨s₁, hs₁⟩ := Subgroup.ne_bot_iff_exists_ne_one.mp hTUne
+    have hm2 : 2 ≤ m := by
+      rw [hmdef, Nat.card_eq_fintype_card]
+      exact Fintype.one_lt_card_iff_nontrivial.mpr ⟨s₁, 1, hs₁⟩
+    have hs₁TU : (s₁ : (𝓞 F)ˣ) ∈ T ⊓ U := s₁.2
+    haveI hnoφ : IsEmpty (F →+* ℝ) := by
+      refine ⟨fun φ => ?_⟩
+      have hsT : (s₁ : (𝓞 F)ˣ) ∈ T := (Subgroup.mem_inf.mp hs₁TU).1
+      have hsU : (s₁ : (𝓞 F)ˣ) ∈ U := (Subgroup.mem_inf.mp hs₁TU).2
+      have hford : IsOfFinOrder ((s₁ : (𝓞 F)ˣ)) := by
+        rw [hTdef] at hsT
+        exact (CommGroup.mem_torsion _).mp hsT
+      obtain ⟨n, hn0, hsn⟩ := isOfFinOrder_iff_pow_eq_one.mp hford
+      have hpos := ((hUmem _).mp hsU).1 φ
+      have hφpow : φ (algebraMap (𝓞 F) F (((s₁ : (𝓞 F)ˣ)) : 𝓞 F)) ^ n = 1 := by
+        rw [← map_pow, ← map_pow]
+        have h1 : ((((s₁ : (𝓞 F)ˣ)) : 𝓞 F)) ^ n = 1 := by
+          simpa using congrArg Units.val hsn
+        rw [h1, map_one, map_one]
+      have hφ1 : φ (algebraMap (𝓞 F) F (((s₁ : (𝓞 F)ˣ)) : 𝓞 F)) = 1 := by
+        rcases lt_trichotomy (φ (algebraMap (𝓞 F) F (((s₁ : (𝓞 F)ˣ)) : 𝓞 F))) 1 with
+          hlt | heq | hgt
+        · exfalso
+          have h2 := pow_lt_one₀ hpos.le hlt (by omega : n ≠ 0)
+          rw [hφpow] at h2
+          exact lt_irrefl _ h2
+        · exact heq
+        · exfalso
+          have h2 := one_lt_pow₀ hgt (by omega : n ≠ 0)
+          rw [hφpow] at h2
+          exact lt_irrefl _ h2
+      have hs1val : (((s₁ : (𝓞 F)ˣ)) : 𝓞 F) = 1 := by
+        apply FaithfulSMul.algebraMap_injective (𝓞 F) F
+        apply φ.injective
+        rw [map_one, map_one]
+        exact hφ1
+      exact hs₁ (Subtype.ext (Units.ext hs1val))
+    haveI hnow : IsEmpty {w : InfinitePlace F // w.IsReal} :=
+      ⟨fun w => hnoφ.false (NumberField.InfinitePlace.embedding_of_isReal w.2)⟩
+    obtain ⟨w₀⟩ := (inferInstance : Nonempty (InfinitePlace F))
+    have hw₀c : w₀.IsComplex :=
+      w₀.isReal_or_isComplex.resolve_left fun h => hnow.false ⟨w₀, h⟩
+    set w₁ : {w : InfinitePlace F // w.IsComplex} := ⟨w₀, hw₀c⟩
+    set ψ : 𝓞 F →+* ℂ := (w₁.1.embedding).comp (algebraMap (𝓞 F) F) with hψdef
+    have hψ_pow : ∀ s : TU, ψ (((s : (𝓞 F)ˣ)) : 𝓞 F) ^ m = 1 := by
+      intro s
+      have h1 : (s : (𝓞 F)ˣ) ^ m = 1 := by
+        have h2 : ((s ^ m : TU) : (𝓞 F)ˣ) = ((1 : TU) : (𝓞 F)ˣ) :=
+          congrArg _ pow_card_eq_one'
+        simpa using h2
+      rw [← map_pow]
+      have h3 : ((((s : (𝓞 F)ˣ)) : 𝓞 F)) ^ m = 1 := by
+        simpa using congrArg Units.val h1
+      rw [h3, map_one]
+    have hψ_inj : Function.Injective (fun s : TU => ψ (((s : (𝓞 F)ˣ)) : 𝓞 F)) := by
+      intro a b hab
+      have h1 : (((a : (𝓞 F)ˣ)) : 𝓞 F) = (((b : (𝓞 F)ˣ)) : 𝓞 F) := by
+        apply FaithfulSMul.algebraMap_injective (𝓞 F) F
+        apply w₁.1.embedding.injective
+        exact hab
+      exact Subtype.ext (Units.ext h1)
+    have hψ_surj : ∀ ζ : ℂ, ζ ^ m = 1 → ∃ s : TU, ψ (((s : (𝓞 F)ˣ)) : 𝓞 F) = ζ := by
+      intro ζ hζ
+      have hcard : (Finset.image (fun s : TU => ψ (((s : (𝓞 F)ˣ)) : 𝓞 F)) Finset.univ).card
+          = m := by
+        rw [Finset.card_image_of_injective _ hψ_inj, Finset.card_univ, hmdef,
+          Nat.card_eq_fintype_card]
+      have hsub : (Finset.image (fun s : TU => ψ (((s : (𝓞 F)ˣ)) : 𝓞 F)) Finset.univ) ⊆
+          Polynomial.nthRootsFinset m (1 : ℂ) := by
+        intro ζ' hζ'
+        obtain ⟨s, -, rfl⟩ := Finset.mem_image.mp hζ'
+        exact (Polynomial.mem_nthRootsFinset (by omega) 1).mpr (hψ_pow s)
+      have heq : (Finset.image (fun s : TU => ψ (((s : (𝓞 F)ˣ)) : 𝓞 F)) Finset.univ) =
+          Polynomial.nthRootsFinset m (1 : ℂ) := by
+        apply Finset.eq_of_subset_of_card_le hsub
+        rw [hcard, (Complex.isPrimitiveRoot_exp m (by omega : m ≠ 0)).card_nthRootsFinset]
+      have hζmem : ζ ∈ Polynomial.nthRootsFinset m (1 : ℂ) :=
+        (Polynomial.mem_nthRootsFinset (by omega) 1).mpr hζ
+      rw [← heq] at hζmem
+      obtain ⟨s, -, hs⟩ := Finset.mem_image.mp hζmem
+      exact ⟨s, hs⟩
+    set S : Set ℂ := {z : ℂ | z ≠ 0 ∧ Complex.arg z ∈ Set.Ico 0 (2 * Real.pi / m)} with hSdef
+    set X : Set (mixedEmbedding.mixedSpace F) :=
+      (fun y : mixedEmbedding.mixedSpace F => y.2 w₁) ⁻¹' S with hXdef
+    have hprojC : Continuous (fun y : mixedEmbedding.mixedSpace F => y.2 w₁) :=
+      (continuous_apply w₁).comp continuous_snd
+    set projL : mixedEmbedding.mixedSpace F →ₗ[ℝ] ℂ :=
+      (LinearMap.proj w₁).comp (LinearMap.snd ℝ ({w : InfinitePlace F // w.IsReal} → ℝ)
+        ({w : InfinitePlace F // w.IsComplex} → ℂ)) with hprojLdef
+    set Wa : Submodule ℝ (mixedEmbedding.mixedSpace F) :=
+      Submodule.comap projL (Submodule.span ℝ {(1:ℂ)})
+    set Wb : Submodule ℝ (mixedEmbedding.mixedSpace F) :=
+      Submodule.comap projL
+        (Submodule.span ℝ {Complex.exp ((2 * Real.pi / m : ℝ) * Complex.I)})
+    have hS : MeasurableSet S := by
+      have h1 : S = {(0:ℂ)}ᶜ ∩ Complex.arg ⁻¹' Set.Ico 0 (2*Real.pi/m) := by
+        rw [hSdef]
+        ext z
+        simp [Set.mem_inter_iff, Set.mem_compl_iff]
+      rw [h1]
+      exact ((measurableSet_singleton 0).compl).inter
+        (Complex.measurable_arg measurableSet_Ico)
+    refine ⟨R, X, 2, ![Wa, Wb], ?_, ?_, ?_, ?_, ?_, ?_⟩
+    · rw [hXdef]
+      exact hprojC.measurable hS
+    · exact fun y _ w => (hnow.false w).elim
+    · intro r hr y hy
+      rw [Set.mem_smul_set] at hy
+      obtain ⟨y₀, hy₀, rfl⟩ := hy
+      rw [hXdef, Set.mem_preimage] at hy₀ ⊢
+      have hcomp : ((r • y₀).2 w₁ : ℂ) = (r : ℂ) * y₀.2 w₁ := by
+        rw [show (r • y₀).2 w₁ = r • (y₀.2 w₁) from rfl, Complex.real_smul]
+      rw [hcomp]
+      obtain ⟨hne, harg⟩ := hy₀
+      refine ⟨mul_ne_zero (Complex.ofReal_ne_zero.mpr hr.ne') hne, ?_⟩
+      rw [Complex.arg_real_mul _ hr]
+      exact harg
+    · intro i
+      have hsurjL : Function.Surjective projL := by
+        intro z
+        refine ⟨(0, Function.update 0 w₁ z), ?_⟩
+        rw [hprojLdef]
+        simp [Function.update_self]
+      have hproper : ∀ v : ℂ, v ≠ 0 →
+          Submodule.comap projL (Submodule.span ℝ {v}) ≠ ⊤ := by
+        intro v hv htop
+        have hspan : Submodule.span ℝ {v} = ⊤ := by
+          rw [eq_top_iff]
+          rintro z -
+          obtain ⟨y, hy⟩ := hsurjL z
+          have h1 : y ∈ Submodule.comap projL (Submodule.span ℝ {v}) :=
+            htop ▸ Submodule.mem_top
+          rw [Submodule.mem_comap, hy] at h1
+          exact h1
+        have h1 : Module.finrank ℝ (Submodule.span ℝ {v}) = 1 := finrank_span_singleton hv
+        rw [hspan, finrank_top, Complex.finrank_real_complex] at h1
+        omega
+      fin_cases i
+      · exact hproper 1 one_ne_zero
+      · exact hproper _ (Complex.exp_ne_zero _)
+    · intro z hz
+      rw [hXdef] at hz
+      have h1 := hprojC.frontier_preimage_subset S hz
+      rw [hSdef] at h1
+      have h3 := frontier_setOf_arg_mem_Ico_subset_union_span (2 * Real.pi / m) h1
+      rcases h3 with h3 | h3
+      · exact Set.mem_iUnion.mpr ⟨0, h3⟩
+      · exact Set.mem_iUnion.mpr ⟨1, h3⟩
+    · intro x hx1 hx2
+      obtain ⟨u₀, ⟨hu₀U, hu₀UC⟩, hchar⟩ := hkey x hx2
+      set z₀ : ℂ := (u₀ • x).2 w₁ with hz₀def
+      have hz₀ : z₀ ≠ 0 := by
+        have h1 : mixedEmbedding.norm (u₀ • x) ≠ 0 := by
+          rw [mixedEmbedding.norm_unit_smul]
+          exact hx2
+        have h2 := mixedEmbedding.norm_ne_zero_iff.mp h1 w₁.1
+        rw [mixedEmbedding.normAtPlace_apply_of_isComplex w₁.2] at h2
+        exact norm_ne_zero_iff.mp h2
+      have hcomp : ∀ s : (𝓞 F)ˣ, ((s * u₀) • x).2 w₁ = ψ ((s : 𝓞 F)) * z₀ := by
+        intro s
+        rw [mul_smul]
+        rw [show (s • (u₀ • x)).2 w₁ =
+          (mixedEmbedding F (((s : 𝓞 F)) : F)).2 w₁ * (u₀ • x).2 w₁ from by
+          rw [mixedEmbedding.unitSMul_smul]; rfl]
+        rw [mixedEmbedding.mixedEmbedding_apply_isComplex, hz₀def, hψdef]
+        rw [RingOfIntegers.coe_eq_algebraMap]
+        rfl
+      obtain ⟨ζw, ⟨hζw_root, hζw_ne, hζw_arg⟩, hζw_uniq⟩ :=
+        exists_unique_pow_eq_one_and_arg_mul_mem_Ico m hm2 z₀ hz₀
+      obtain ⟨s₀, hs₀⟩ := hψ_surj ζw hζw_root
+      have hs₀U : ((s₀ : (𝓞 F)ˣ)) ∈ U := (Subgroup.mem_inf.mp s₀.2).2
+      have hmemU : ((s₀ : (𝓞 F)ˣ)) * u₀ ∈ U := U.mul_mem hs₀U hu₀U
+      refine ⟨(s₀ : (𝓞 F)ˣ) * u₀, ⟨fun φ => (hnoφ.false φ).elim,
+        ((hUmem _).mp hmemU).2, ?_, ?_⟩, ?_⟩
+      · exact ((hchar _).mpr ⟨(s₀ : (𝓞 F)ˣ), s₀.2, rfl⟩).2
+      · rw [hXdef, Set.mem_preimage, hcomp, hs₀]
+        exact ⟨hζw_ne, hζw_arg⟩
+      · rintro u ⟨hupos, humod, huUC, huX⟩
+        obtain ⟨s, hsTU, rfl⟩ := (hchar u).mp ⟨(hUmem u).mpr ⟨hupos, humod⟩, huUC⟩
+        rw [hXdef, Set.mem_preimage, hcomp] at huX
+        have hroot_s : (ψ ((s : 𝓞 F))) ^ m = 1 := hψ_pow ⟨s, hsTU⟩
+        have hζeq : ψ ((s : 𝓞 F)) = ζw := hζw_uniq _ ⟨hroot_s, huX.1, huX.2⟩
+        have hseq : (⟨s, hsTU⟩ : TU) = s₀ := hψ_inj (by
+          show ψ _ = ψ _
+          rw [hζeq, hs₀])
+        have hval : s = (s₀ : (𝓞 F)ˣ) := congrArg Subtype.val hseq
+        rw [hval]
 
 open scoped Classical Pointwise nonZeroDivisors in
 open NumberField MeasureTheory in

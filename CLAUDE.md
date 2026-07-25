@@ -30,17 +30,58 @@ are disjoint regions, so merges are clean or trivially resolvable at
 integration. Do not serialize a file's independent leaves behind one
 owner out of conflict fear; partition them.
 
-## Fleet dispatch: fixed pool of 13 numbered worktrees
+## Fleet dispatch: fixed pool of 26 numbered worktrees
 
-(Deyao, 2026-07-23.) Subagent dispatch runs over a FIXED pool of 13
-worktrees, `~/flt-lean-1` .. `~/flt-lean-13`, each on its own
-same-numbered branch, each with its own `flt-report-server@flt-lean-N`
-systemd instance (the template unit `flt-report-server@.service`,
-`WorkingDirectory=%h/%i`) already running — `lake serve` on FIFOs,
-scoped to that worktree. Live allocation state: `~/.flt-worktree-pool`,
-one line per worktree, `<name> free` or `<name> claimed`.
+(Deyao, 2026-07-23; extended 2026-07-24.) Subagent dispatch runs over a
+FIXED pool of 26 worktrees, each on its own same-numbered branch, each
+with its own already-running systemd instance — `lake serve` on FIFOs,
+scoped to that worktree. Live allocation state:
+`~/.flt-worktree-pool`, one line per worktree, `<name> free` or
+`<name> claimed`.
 
-- **Max 13 concurrent subagents**, one per worktree, 1:1.
+- **Batch 1, `~/flt-lean-1` .. `~/flt-lean-13`**: template unit
+  `flt-report-server@.service`, `WorkingDirectory=%h/%i`.
+- **Batch 2, `/scratch/chend-flt/flt-lean-14` ..
+  `/scratch/chend-flt/flt-lean-26`**: template unit
+  `flt-report-server-scratch@.service`, identical except
+  `WorkingDirectory=/scratch/chend-flt/%i`. They live off `$HOME`
+  because a worktree costs ~5.4G (4.6G of it mathlib oleans in
+  `.lake/packages`, 826M project build) and the 67G home volume filled
+  up; `/scratch` is a 9.7T local disk. **`/tmp` is NOT an option — it
+  is a 9.7G volume, one worktree's worth.** Batch 1 was deliberately
+  left exactly as it was (Deyao: "i don't want to touch things that
+  still work"). Note `/scratch` is not backed up and may be purged;
+  only `.lake` and uncommitted work would be lost, since branch refs
+  live in the main repo's object store.
+- `.claude/worktree-pool-hook.py` resolves a pool entry by trying each
+  root in `ROOTS` in order, so batch-1 names still resolve under
+  `$HOME`.
+- A fresh batch-2 worktree needs `lake exe cache get` run in it once
+  (with `XDG_CACHE_HOME` pointed at scratch so the ltar cache does not
+  refill `$HOME`) BEFORE its server is started — otherwise `lake serve`
+  tries to build mathlib from source.
+
+- **Batch 3, `~/flt-lean-27` .. `~/flt-lean-42`** (Deyao, 2026-07-24): same
+  layout as batch 2 — source tree in `$HOME`, `.lake` and `.report-server`
+  symlinked to `/scratch/chend-flt/flt-lean-N/`, served by the ORDINARY
+  `flt-report-server@.service` template (the worktree is under `%h`).
+  `.gitignore`'s `.lake/` patterns do not match symlinks, so `.lake` and
+  `.report-server` are listed in `.git/info/exclude` instead.
+- **Pool states**: `free`, `claimed`, and `suspended <agent-id>`. A suspended
+  entry is never allocated — that is how a reduced worker count is enforced
+  under memory pressure — and its third field is the stopped agent's
+  transcript id, so the work can be picked up later with SendMessage.
+- **RAM watchdog** (Deyao, 2026-07-24): a 10-minute cron reminds the
+  orchestrator to check free memory. Procedure lives in
+  `~/.flt-ram-watchdog-prompt.md`: below 200G free, restart a FEW worker LSPs
+  at a time (closing their open files releases memory without interrupting the
+  agents' work) and email; if that recurs 3× in an hour, suspend workers 4 at a
+  time instead. Cron jobs are session-only, so **re-create it after every
+  restart**.
+
+- **Max 42 concurrent subagents**, one per worktree, 1:1. The harness cap
+  `CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS` is fixed at launch (currently 50, set
+  in the tmux launch line) — the pool, not that number, is the real limit.
 - **FIFO task queue** (Deyao, 2026-07-23): `~/.flt-task-queue`, a
   plain text file — full agent prompts separated by lines consisting
   exactly of `=== TASK ===`. The orchestrator reorders and drops tasks
