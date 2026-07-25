@@ -11651,6 +11651,880 @@ theorem WeierstrassCurve.torsionPairChordLaw_spec (m : ℕ) (h : Polynomial R)
             hc1, hc2, hadd] at hsum
           simp at hsum
 
+/-! #### The SECOND addition law: rationalizing the slope (stage E3b/E3c, 2026-07-25)
+
+The chord law `(n̂, m̂, δ)` degenerates on the COLLISION locus `x₁ ≡ x₂`,
+where its denominator section `δ` is not a unit.  The cure recorded in the
+docstring of `exists_torsionPairLaw_collisionDiagonal` is a SECOND addition
+law, obtained by rationalizing the slope ON the curve: subtracting the two
+Weierstrass equations gives
+
+  `(y₁ − y₂)·D₂ = (x₁ − x₂)·N₂`,  `D₂ := y₁ + y₂ + a₁x₂ + a₃`,
+  `N₂ := x₁² + x₁x₂ + x₂² + a₂(x₁ + x₂) + a₄ − a₁y₁`,
+
+so the slope of the chord — AND of the tangent, the two cases collapsing
+into one formula — is `λ = N₂/D₂` (`slope_mul_secondDen`), whence the
+multiplied law identities `x₃·D₂² = Ap` and `y₃·D₂³ = Bp` of
+`add_some_second`.  `D₂` vanishes exactly when `Q = ⊖P`, i.e. exactly on
+the fibre of the origin, which is what the law's `C = 0` clause needs.
+
+Normalizing with `k₁ = k₂ = 2` — `C₂ := D₂/(h₁h₂)²`, `A₂ := Ap/(h₁h₂)⁴`,
+`B₂ := Bp/(h₁h₂)⁶` — puts every constituent in the split-product span `M`
+and makes all three sections vanish on the ORIGIN ROWS, which the law
+identities require there (the sum is then the other point).  The building
+block is `torsionPairQuad`, the split product of two monomial sections on
+each side; every atom below is an `R`-combination of those, and the extra
+`h`-power is what keeps each `P`-monomial of positive origin order.
+-/
+
+set_option linter.unusedSectionVars false in
+/-- **Rationalizing the slope on the curve**. -/
+theorem WeierstrassCurve.slope_mul_secondDen {F : Type*} [Field F]
+    [DecidableEq F] (W : WeierstrassCurve F) {x₁ y₁ x₂ y₂ : F}
+    (h₁ : W.toAffine.Equation x₁ y₁) (h₂ : W.toAffine.Equation x₂ y₂)
+    (hxy : ¬(x₁ = x₂ ∧ y₁ = W.toAffine.negY x₂ y₂)) :
+    W.toAffine.slope x₁ x₂ y₁ y₂ * (y₁ + y₂ + W.a₁ * x₂ + W.a₃) =
+      x₁ ^ 2 + x₁ * x₂ + x₂ ^ 2 + W.a₂ * (x₁ + x₂) + W.a₄ - W.a₁ * y₁ := by
+  classical
+  have he₁ := (WeierstrassCurve.Affine.equation_iff x₁ y₁).mp h₁
+  have he₂ := (WeierstrassCurve.Affine.equation_iff x₂ y₂).mp h₂
+  by_cases hx : x₁ = x₂
+  · have hy : y₁ ≠ W.toAffine.negY x₂ y₂ := fun hh => hxy ⟨hx, hh⟩
+    have hyy : y₁ = y₂ := WeierstrassCurve.Affine.Y_eq_of_Y_ne h₁ h₂ hx hy
+    subst hx
+    subst hyy
+    have hd : y₁ - W.toAffine.negY x₁ y₁ ≠ 0 := sub_ne_zero.mpr hy
+    rw [WeierstrassCurve.Affine.slope_of_Y_ne rfl hy,
+      show y₁ + y₁ + W.a₁ * x₁ + W.a₃ = y₁ - W.toAffine.negY x₁ y₁ from by
+        rw [WeierstrassCurve.Affine.negY]; ring,
+      div_mul_cancel₀ _ hd]
+    ring
+  · rw [WeierstrassCurve.Affine.slope_of_X_ne hx]
+    have hd : x₁ - x₂ ≠ 0 := sub_ne_zero.mpr hx
+    rw [div_mul_eq_mul_div, div_eq_iff hd]
+    linear_combination he₁ - he₂
+
+set_option linter.unusedSectionVars false in
+/-- **The second (rationalized-slope) addition law in coordinates**. -/
+theorem WeierstrassCurve.add_some_second {F : Type*} [Field F] [DecidableEq F]
+    (W : WeierstrassCurve F) {x₁ y₁ x₂ y₂ : F}
+    (h₁ : W.toAffine.Nonsingular x₁ y₁) (h₂ : W.toAffine.Nonsingular x₂ y₂)
+    (hxy : ¬(x₁ = x₂ ∧ y₁ = W.toAffine.negY x₂ y₂)) :
+    ∃ (x₃ y₃ : F) (h₃ : W.toAffine.Nonsingular x₃ y₃),
+      (WeierstrassCurve.Affine.Point.some x₁ y₁ h₁ : W.toAffine.Point) +
+          WeierstrassCurve.Affine.Point.some x₂ y₂ h₂ =
+        WeierstrassCurve.Affine.Point.some x₃ y₃ h₃ ∧
+      x₃ * (y₁ + y₂ + W.a₁ * x₂ + W.a₃) ^ 2 =
+        (x₁ ^ 2 + x₁ * x₂ + x₂ ^ 2 + W.a₂ * (x₁ + x₂) + W.a₄ - W.a₁ * y₁) ^ 2 +
+          W.a₁ * (x₁ ^ 2 + x₁ * x₂ + x₂ ^ 2 + W.a₂ * (x₁ + x₂) + W.a₄ - W.a₁ * y₁) *
+            (y₁ + y₂ + W.a₁ * x₂ + W.a₃) -
+          (W.a₂ + x₁ + x₂) * (y₁ + y₂ + W.a₁ * x₂ + W.a₃) ^ 2 ∧
+      y₃ * (y₁ + y₂ + W.a₁ * x₂ + W.a₃) ^ 3 =
+        -((x₁ ^ 2 + x₁ * x₂ + x₂ ^ 2 + W.a₂ * (x₁ + x₂) + W.a₄ - W.a₁ * y₁) *
+            (x₃ * (y₁ + y₂ + W.a₁ * x₂ + W.a₃) ^ 2 -
+              x₁ * (y₁ + y₂ + W.a₁ * x₂ + W.a₃) ^ 2)) -
+          y₁ * (y₁ + y₂ + W.a₁ * x₂ + W.a₃) ^ 3 -
+          W.a₁ * (x₃ * (y₁ + y₂ + W.a₁ * x₂ + W.a₃) ^ 2) *
+            (y₁ + y₂ + W.a₁ * x₂ + W.a₃) -
+          W.a₃ * (y₁ + y₂ + W.a₁ * x₂ + W.a₃) ^ 3 := by
+  classical
+  have hS := WeierstrassCurve.slope_mul_secondDen W h₁.1 h₂.1 hxy
+  refine ⟨_, _, WeierstrassCurve.Affine.nonsingular_add h₁ h₂ hxy,
+    WeierstrassCurve.Affine.Point.add_some hxy, ?_, ?_⟩
+  · simp only [WeierstrassCurve.Affine.addX]
+    linear_combination
+      (W.toAffine.slope x₁ x₂ y₁ y₂ * (y₁ + y₂ + W.a₁ * x₂ + W.a₃) +
+        (x₁ ^ 2 + x₁ * x₂ + x₂ ^ 2 + W.a₂ * (x₁ + x₂) + W.a₄ - W.a₁ * y₁) +
+        W.a₁ * (y₁ + y₂ + W.a₁ * x₂ + W.a₃)) * hS
+  · simp only [WeierstrassCurve.Affine.addY, WeierstrassCurve.Affine.negY,
+      WeierstrassCurve.Affine.negAddY, WeierstrassCurve.Affine.addX]
+    linear_combination
+      (-((W.toAffine.slope x₁ x₂ y₁ y₂ ^ 2 + W.a₁ * W.toAffine.slope x₁ x₂ y₁ y₂ -
+            W.a₂ - x₁ - x₂) - x₁) *
+        (y₁ + y₂ + W.a₁ * x₂ + W.a₃) ^ 2) * hS
+
+set_option linter.unusedSectionVars false in
+/-- The `a₄`-coefficient of the base change comes from the integral model. -/
+lemma baseChange_a₄_integralModel :
+    (E⁄Ksep).a₄ = algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₄ := by
+  rw [IsScalarTower.algebraMap_apply R K Ksep,
+    WeierstrassCurve.integralModel_a₄_eq]
+  simp [WeierstrassCurve.baseChange]
+
+set_option linter.unusedSectionVars false in
+/-- **A level-two split monomial section**. -/
+noncomputable def WeierstrassCurve.torsionPairQuad (m : ℕ) (h : Polynomial R)
+    (a₁ b₁ a₂ b₂ a₃ b₃ a₄ b₄ : ℕ) :
+    (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep := fun PQ =>
+  (WeierstrassCurve.torsionKernelFun R K E Ksep h a₁ b₁ ↑PQ.1 *
+      WeierstrassCurve.torsionKernelFun R K E Ksep h a₂ b₂ ↑PQ.1) *
+    (WeierstrassCurve.torsionKernelFun R K E Ksep h a₃ b₃ ↑PQ.2 *
+      WeierstrassCurve.torsionKernelFun R K E Ksep h a₄ b₄ ↑PQ.2)
+
+set_option linter.unusedSectionVars false in
+/-- The value of a level-two split monomial section on an affine pair. -/
+lemma WeierstrassCurve.torsionPairQuad_apply_some (m : ℕ) (h : Polynomial R)
+    (a₁ b₁ a₂ b₂ a₃ b₃ a₄ b₄ : ℕ)
+    (PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)))
+    (x₁ y₁ x₂ y₂ : Ksep)
+    (hns₁ : (E⁄Ksep).toAffine.Nonsingular x₁ y₁)
+    (hns₂ : (E⁄Ksep).toAffine.Nonsingular x₂ y₂)
+    (hP : (PQ.1 : (E⁄Ksep).Point) = Affine.Point.some x₁ y₁ hns₁)
+    (hQ : (PQ.2 : (E⁄Ksep).Point) = Affine.Point.some x₂ y₂ hns₂) :
+    WeierstrassCurve.torsionPairQuad R K E Ksep m h a₁ b₁ a₂ b₂ a₃ b₃ a₄ b₄ PQ =
+      x₁ ^ (a₁ + a₂) * y₁ ^ (b₁ + b₂) * (x₂ ^ (a₃ + a₄) * y₂ ^ (b₃ + b₄)) /
+        (Polynomial.aeval x₁ h * Polynomial.aeval x₂ h) ^ 2 := by
+  unfold WeierstrassCurve.torsionPairQuad
+  rw [hP, hQ]
+  simp only [WeierstrassCurve.torsionKernelFun_some, div_mul_div_comm]
+  congr 1
+  · simp only [pow_add]
+    ring
+  · ring
+
+set_option linter.unusedSectionVars false in
+/-- A level-two split monomial section vanishes on the origin row. -/
+lemma WeierstrassCurve.torsionPairQuad_apply_zero_left (m : ℕ) (h : Polynomial R)
+    (hdeg : 2 ≤ h.natDegree) (a₁ b₁ a₂ b₂ a₃ b₃ a₄ b₄ : ℕ) (hw : a₁ + b₁ ≤ 1)
+    (PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)))
+    (hP : (PQ.1 : (E⁄Ksep).Point) = Affine.Point.zero) :
+    WeierstrassCurve.torsionPairQuad R K E Ksep m h a₁ b₁ a₂ b₂ a₃ b₃ a₄ b₄ PQ
+      = 0 := by
+  unfold WeierstrassCurve.torsionPairQuad
+  rw [hP, WeierstrassCurve.torsionKernelFun_zero, if_neg (by omega)]
+  ring
+
+set_option linter.unusedSectionVars false in
+/-- A level-two split monomial section vanishes on the origin column. -/
+lemma WeierstrassCurve.torsionPairQuad_apply_zero_right (m : ℕ) (h : Polynomial R)
+    (hdeg : 2 ≤ h.natDegree) (a₁ b₁ a₂ b₂ a₃ b₃ a₄ b₄ : ℕ) (hw : a₃ + b₃ ≤ 1)
+    (PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)))
+    (hQ : (PQ.2 : (E⁄Ksep).Point) = Affine.Point.zero) :
+    WeierstrassCurve.torsionPairQuad R K E Ksep m h a₁ b₁ a₂ b₂ a₃ b₃ a₄ b₄ PQ
+      = 0 := by
+  unfold WeierstrassCurve.torsionPairQuad
+  rw [hQ, WeierstrassCurve.torsionKernelFun_zero, if_neg (by omega)]
+  ring
+
+set_option backward.isDefEq.respectTransparency false in
+set_option linter.unusedSectionVars false in
+/-- A level-two split monomial section lies in the span `M`. -/
+lemma WeierstrassCurve.torsionPairQuad_mem_span (m : ℕ) (h : Polynomial R)
+    (hdeg : 2 ≤ h.natDegree) (a₁ b₁ a₂ b₂ a₃ b₃ a₄ b₄ : ℕ)
+    (hw₁ : a₁ + b₁ ≤ 1) (hw₂ : a₂ + b₂ ≤ 1) (hw₃ : a₃ + b₃ ≤ 1)
+    (hw₄ : a₄ + b₄ ≤ 1) :
+    WeierstrassCurve.torsionPairQuad R K E Ksep m h a₁ b₁ a₂ b₂ a₃ b₃ a₄ b₄ ∈
+      WeierstrassCurve.torsionPairSpan R K E Ksep m h := by
+  classical
+  have hgen : ∀ a b : ℕ, a + b ≤ 1 →
+      (fun P : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ) =>
+          WeierstrassCurve.torsionKernelFun R K E Ksep h a b ↑P) ∈
+        Algebra.adjoin R ((WeierstrassCurve.torsionKernelGens R K E Ksep m h : Set
+          ((AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep))) :=
+    fun a b hab => Algebra.subset_adjoin
+      ((WeierstrassCurve.mem_torsionKernelGens R K E Ksep m h _).mpr
+        ⟨a, b, by omega, by omega, by omega, rfl⟩)
+  exact Submodule.subset_span
+    ⟨_, mul_mem (hgen a₁ b₁ hw₁) (hgen a₂ b₂ hw₂),
+      _, mul_mem (hgen a₃ b₃ hw₃) (hgen a₄ b₄ hw₄), rfl⟩
+
+set_option backward.isDefEq.respectTransparency false in
+set_option linter.unusedSectionVars false in
+/-- The span `M` is closed under multiplication. -/
+lemma WeierstrassCurve.torsionPairSpan_mul (m : ℕ) (h : Polynomial R)
+    {s t : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep}
+    (hs : s ∈ WeierstrassCurve.torsionPairSpan R K E Ksep m h)
+    (ht : t ∈ WeierstrassCurve.torsionPairSpan R K E Ksep m h) :
+    s * t ∈ WeierstrassCurve.torsionPairSpan R K E Ksep m h := by
+  unfold WeierstrassCurve.torsionPairSpan at hs ht ⊢
+  rw [mem_span_prod_sections_iff_mem_adjoin] at hs ht ⊢
+  exact mul_mem hs ht
+
+set_option backward.isDefEq.respectTransparency false in
+set_option linter.unusedSectionVars false in
+/-- The span `M` absorbs multiplication by the image of `R`. -/
+lemma WeierstrassCurve.torsionPairSpan_algebraMap_mul (m : ℕ) (h : Polynomial R)
+    (r : R) {t : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep}
+    (ht : t ∈ WeierstrassCurve.torsionPairSpan R K E Ksep m h) :
+    (fun PQ => algebraMap R Ksep r * t PQ) ∈
+      WeierstrassCurve.torsionPairSpan R K E Ksep m h := by
+  have hsm : (fun PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) =>
+        algebraMap R Ksep r * t PQ) = r • t := by
+    funext PQ
+    simp [Algebra.smul_def]
+  rw [hsm]
+  exact Submodule.smul_mem _ r ht
+
+set_option linter.unusedSectionVars false in
+/-- A monomial section of low weight vanishes at the origin. -/
+lemma WeierstrassCurve.torsionKernelFun_zero_eq_zero (h : Polynomial R)
+    (hdeg : 2 ≤ h.natDegree) (a b : ℕ) (hab : a + b ≤ 1) :
+    WeierstrassCurve.torsionKernelFun R K E Ksep h a b Affine.Point.zero = 0 := by
+  rw [WeierstrassCurve.torsionKernelFun_zero]
+  exact if_neg (by omega)
+
+set_option linter.unusedSectionVars false in
+/-- **The second-law denominator section** `C₂ = D₂/(h₁h₂)²`. -/
+noncomputable def WeierstrassCurve.torsionPairSecondDen (m : ℕ) (h : Polynomial R) :
+    (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep := fun PQ =>
+  WeierstrassCurve.torsionPairQuad R K E Ksep m h 0 1 0 0 0 0 0 0 PQ +
+    WeierstrassCurve.torsionPairQuad R K E Ksep m h 0 0 0 0 0 1 0 0 PQ +
+    algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₁ *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h 0 0 0 0 1 0 0 0 PQ +
+    algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₃ *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h 0 0 0 0 0 0 0 0 PQ
+
+set_option backward.isDefEq.respectTransparency false in
+set_option linter.unusedSectionVars false in
+/-- The value of `C₂` on an affine pair. -/
+lemma WeierstrassCurve.torsionPairSecondDen_apply_some (m : ℕ) (h : Polynomial R)
+    (PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)))
+    (x₁ y₁ x₂ y₂ : Ksep)
+    (hns₁ : (E⁄Ksep).toAffine.Nonsingular x₁ y₁)
+    (hns₂ : (E⁄Ksep).toAffine.Nonsingular x₂ y₂)
+    (hP : (PQ.1 : (E⁄Ksep).Point) = Affine.Point.some x₁ y₁ hns₁)
+    (hQ : (PQ.2 : (E⁄Ksep).Point) = Affine.Point.some x₂ y₂ hns₂) :
+    WeierstrassCurve.torsionPairSecondDen R K E Ksep m h PQ =
+      (y₁ + y₂ + (E⁄Ksep).a₁ * x₂ + (E⁄Ksep).a₃) /
+        (Polynomial.aeval x₁ h * Polynomial.aeval x₂ h) ^ 2 := by
+  unfold WeierstrassCurve.torsionPairSecondDen
+  rw [WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h 0 1 0 0 0 0 0 0
+      PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h 0 0 0 0 0 1 0 0
+      PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h 0 0 0 0 1 0 0 0
+      PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h 0 0 0 0 0 0 0 0
+      PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    baseChange_a₁_integralModel R K E Ksep,
+    baseChange_a₃_integralModel R K E Ksep]
+  simp only [Nat.add_zero, pow_zero, pow_one, one_mul, mul_one]
+  ring
+
+set_option backward.isDefEq.respectTransparency false in
+set_option linter.unusedSectionVars false in
+/-- `C₂` vanishes on the origin rows and columns. -/
+lemma WeierstrassCurve.torsionPairSecondDen_apply_zero (m : ℕ) (h : Polynomial R)
+    (hdeg : 2 ≤ h.natDegree)
+    (PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)))
+    (hz : (PQ.1 : (E⁄Ksep).Point) = Affine.Point.zero ∨
+      (PQ.2 : (E⁄Ksep).Point) = Affine.Point.zero) :
+    WeierstrassCurve.torsionPairSecondDen R K E Ksep m h PQ = 0 := by
+  unfold WeierstrassCurve.torsionPairSecondDen WeierstrassCurve.torsionPairQuad
+  rcases hz with hz | hz <;>
+    simp only [hz,
+      WeierstrassCurve.torsionKernelFun_zero_eq_zero R K E Ksep h hdeg 0 0
+        (by omega),
+      WeierstrassCurve.torsionKernelFun_zero_eq_zero R K E Ksep h hdeg 1 0
+        (by omega),
+      WeierstrassCurve.torsionKernelFun_zero_eq_zero R K E Ksep h hdeg 0 1
+        (by omega),
+      mul_zero, zero_mul, add_zero]
+
+set_option linter.unusedSectionVars false in
+/-- **The second-law abscissa numerator atom** `n = N₂/(h₁h₂)²`. -/
+noncomputable def WeierstrassCurve.torsionPairSecondNum (m : ℕ) (h : Polynomial R) :
+    (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep := fun PQ =>
+  WeierstrassCurve.torsionPairQuad R K E Ksep m h 1 0 1 0 0 0 0 0 PQ +
+    WeierstrassCurve.torsionPairQuad R K E Ksep m h 1 0 0 0 1 0 0 0 PQ +
+    WeierstrassCurve.torsionPairQuad R K E Ksep m h 0 0 0 0 1 0 1 0 PQ +
+    algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₂ *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h 1 0 0 0 0 0 0 0 PQ +
+    algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₂ *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h 0 0 0 0 1 0 0 0 PQ +
+    algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₄ *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h 0 0 0 0 0 0 0 0 PQ -
+    algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₁ *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h 0 1 0 0 0 0 0 0 PQ
+
+set_option linter.unusedSectionVars false in
+/-- **The abscissa-weighted denominator atom** `v = x₁·D₂/(h₁h₂)²`. -/
+noncomputable def WeierstrassCurve.torsionPairSecondDenX (m : ℕ) (h : Polynomial R) :
+    (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep := fun PQ =>
+  WeierstrassCurve.torsionPairQuad R K E Ksep m h 1 0 0 1 0 0 0 0 PQ +
+    WeierstrassCurve.torsionPairQuad R K E Ksep m h 1 0 0 0 0 1 0 0 PQ +
+    algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₁ *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h 1 0 0 0 1 0 0 0 PQ +
+    algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₃ *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h 1 0 0 0 0 0 0 0 PQ
+
+set_option linter.unusedSectionVars false in
+/-- **The mirror abscissa-weighted denominator atom** `v' = x₂·D₂/(h₁h₂)²`. -/
+noncomputable def WeierstrassCurve.torsionPairSecondDenX' (m : ℕ)
+    (h : Polynomial R) :
+    (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep := fun PQ =>
+  WeierstrassCurve.torsionPairQuad R K E Ksep m h 0 1 0 0 1 0 0 0 PQ +
+    WeierstrassCurve.torsionPairQuad R K E Ksep m h 0 0 0 0 1 0 0 1 PQ +
+    algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₁ *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h 0 0 0 0 1 0 1 0 PQ +
+    algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₃ *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h 0 0 0 0 1 0 0 0 PQ
+
+set_option linter.unusedSectionVars false in
+/-- **The ordinate-weighted denominator atom** `w = y₁·D₂/(h₁h₂)²`. -/
+noncomputable def WeierstrassCurve.torsionPairSecondDenY (m : ℕ) (h : Polynomial R) :
+    (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep := fun PQ =>
+  WeierstrassCurve.torsionPairQuad R K E Ksep m h 0 1 0 1 0 0 0 0 PQ +
+    WeierstrassCurve.torsionPairQuad R K E Ksep m h 0 1 0 0 0 1 0 0 PQ +
+    algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₁ *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h 0 1 0 0 1 0 0 0 PQ +
+    algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₃ *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h 0 1 0 0 0 0 0 0 PQ
+
+set_option backward.isDefEq.respectTransparency false in
+set_option linter.unusedSectionVars false in
+/-- The value of `n` on an affine pair. -/
+lemma WeierstrassCurve.torsionPairSecondNum_apply_some (m : ℕ) (h : Polynomial R)
+    (PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)))
+    (x₁ y₁ x₂ y₂ : Ksep)
+    (hns₁ : (E⁄Ksep).toAffine.Nonsingular x₁ y₁)
+    (hns₂ : (E⁄Ksep).toAffine.Nonsingular x₂ y₂)
+    (hP : (PQ.1 : (E⁄Ksep).Point) = Affine.Point.some x₁ y₁ hns₁)
+    (hQ : (PQ.2 : (E⁄Ksep).Point) = Affine.Point.some x₂ y₂ hns₂) :
+    WeierstrassCurve.torsionPairSecondNum R K E Ksep m h PQ =
+      (x₁ ^ 2 + x₁ * x₂ + x₂ ^ 2 + (E⁄Ksep).a₂ * (x₁ + x₂) + (E⁄Ksep).a₄ -
+          (E⁄Ksep).a₁ * y₁) /
+        (Polynomial.aeval x₁ h * Polynomial.aeval x₂ h) ^ 2 := by
+  unfold WeierstrassCurve.torsionPairSecondNum
+  rw [WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h 1 0 1 0 0 0 0 0
+      PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h 1 0 0 0 1 0 0 0
+      PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h 0 0 0 0 1 0 1 0
+      PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h 1 0 0 0 0 0 0 0
+      PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h 0 0 0 0 1 0 0 0
+      PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h 0 0 0 0 0 0 0 0
+      PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h 0 1 0 0 0 0 0 0
+      PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    baseChange_a₁_integralModel R K E Ksep,
+    baseChange_a₂_integralModel R K E Ksep,
+    baseChange_a₄_integralModel R K E Ksep]
+  simp only [Nat.add_zero, Nat.reduceAdd, pow_zero, pow_one,
+    one_mul, mul_one]
+  ring
+
+set_option backward.isDefEq.respectTransparency false in
+set_option linter.unusedSectionVars false in
+/-- The value of `v` on an affine pair. -/
+lemma WeierstrassCurve.torsionPairSecondDenX_apply_some (m : ℕ) (h : Polynomial R)
+    (PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)))
+    (x₁ y₁ x₂ y₂ : Ksep)
+    (hns₁ : (E⁄Ksep).toAffine.Nonsingular x₁ y₁)
+    (hns₂ : (E⁄Ksep).toAffine.Nonsingular x₂ y₂)
+    (hP : (PQ.1 : (E⁄Ksep).Point) = Affine.Point.some x₁ y₁ hns₁)
+    (hQ : (PQ.2 : (E⁄Ksep).Point) = Affine.Point.some x₂ y₂ hns₂) :
+    WeierstrassCurve.torsionPairSecondDenX R K E Ksep m h PQ =
+      x₁ * (y₁ + y₂ + (E⁄Ksep).a₁ * x₂ + (E⁄Ksep).a₃) /
+        (Polynomial.aeval x₁ h * Polynomial.aeval x₂ h) ^ 2 := by
+  unfold WeierstrassCurve.torsionPairSecondDenX
+  rw [WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h 1 0 0 1 0 0 0 0
+      PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h 1 0 0 0 0 1 0 0
+      PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h 1 0 0 0 1 0 0 0
+      PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h 1 0 0 0 0 0 0 0
+      PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    baseChange_a₁_integralModel R K E Ksep,
+    baseChange_a₃_integralModel R K E Ksep]
+  simp only [Nat.add_zero, Nat.zero_add, pow_zero, pow_one, one_mul, mul_one]
+  ring
+
+set_option backward.isDefEq.respectTransparency false in
+set_option linter.unusedSectionVars false in
+/-- The value of `v'` on an affine pair. -/
+lemma WeierstrassCurve.torsionPairSecondDenX'_apply_some (m : ℕ) (h : Polynomial R)
+    (PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)))
+    (x₁ y₁ x₂ y₂ : Ksep)
+    (hns₁ : (E⁄Ksep).toAffine.Nonsingular x₁ y₁)
+    (hns₂ : (E⁄Ksep).toAffine.Nonsingular x₂ y₂)
+    (hP : (PQ.1 : (E⁄Ksep).Point) = Affine.Point.some x₁ y₁ hns₁)
+    (hQ : (PQ.2 : (E⁄Ksep).Point) = Affine.Point.some x₂ y₂ hns₂) :
+    WeierstrassCurve.torsionPairSecondDenX' R K E Ksep m h PQ =
+      x₂ * (y₁ + y₂ + (E⁄Ksep).a₁ * x₂ + (E⁄Ksep).a₃) /
+        (Polynomial.aeval x₁ h * Polynomial.aeval x₂ h) ^ 2 := by
+  unfold WeierstrassCurve.torsionPairSecondDenX'
+  rw [WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h 0 1 0 0 1 0 0 0
+      PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h 0 0 0 0 1 0 0 1
+      PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h 0 0 0 0 1 0 1 0
+      PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h 0 0 0 0 1 0 0 0
+      PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    baseChange_a₁_integralModel R K E Ksep,
+    baseChange_a₃_integralModel R K E Ksep]
+  simp only [Nat.add_zero, Nat.reduceAdd, pow_zero, pow_one,
+    one_mul, mul_one]
+  ring
+
+set_option backward.isDefEq.respectTransparency false in
+set_option linter.unusedSectionVars false in
+/-- The value of `w` on an affine pair. -/
+lemma WeierstrassCurve.torsionPairSecondDenY_apply_some (m : ℕ) (h : Polynomial R)
+    (PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)))
+    (x₁ y₁ x₂ y₂ : Ksep)
+    (hns₁ : (E⁄Ksep).toAffine.Nonsingular x₁ y₁)
+    (hns₂ : (E⁄Ksep).toAffine.Nonsingular x₂ y₂)
+    (hP : (PQ.1 : (E⁄Ksep).Point) = Affine.Point.some x₁ y₁ hns₁)
+    (hQ : (PQ.2 : (E⁄Ksep).Point) = Affine.Point.some x₂ y₂ hns₂) :
+    WeierstrassCurve.torsionPairSecondDenY R K E Ksep m h PQ =
+      y₁ * (y₁ + y₂ + (E⁄Ksep).a₁ * x₂ + (E⁄Ksep).a₃) /
+        (Polynomial.aeval x₁ h * Polynomial.aeval x₂ h) ^ 2 := by
+  unfold WeierstrassCurve.torsionPairSecondDenY
+  rw [WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h 0 1 0 1 0 0 0 0
+      PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h 0 1 0 0 0 1 0 0
+      PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h 0 1 0 0 1 0 0 0
+      PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h 0 1 0 0 0 0 0 0
+      PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    baseChange_a₁_integralModel R K E Ksep,
+    baseChange_a₃_integralModel R K E Ksep]
+  simp only [Nat.add_zero, Nat.reduceAdd, pow_zero, pow_one,
+    one_mul, mul_one]
+  ring
+
+set_option backward.isDefEq.respectTransparency false in
+set_option linter.unusedSectionVars false in
+/-- `n`, `v`, `v'`, `w` vanish on the origin rows and columns. -/
+lemma WeierstrassCurve.torsionPairSecond_apply_zero (m : ℕ) (h : Polynomial R)
+    (hdeg : 2 ≤ h.natDegree)
+    (PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)))
+    (hz : (PQ.1 : (E⁄Ksep).Point) = Affine.Point.zero ∨
+      (PQ.2 : (E⁄Ksep).Point) = Affine.Point.zero) :
+    WeierstrassCurve.torsionPairSecondNum R K E Ksep m h PQ = 0 ∧
+      WeierstrassCurve.torsionPairSecondDenX R K E Ksep m h PQ = 0 ∧
+      WeierstrassCurve.torsionPairSecondDenX' R K E Ksep m h PQ = 0 ∧
+      WeierstrassCurve.torsionPairSecondDenY R K E Ksep m h PQ = 0 := by
+  refine ⟨?_, ?_, ?_, ?_⟩ <;>
+    rcases hz with hz | hz <;>
+    simp only [WeierstrassCurve.torsionPairSecondNum,
+      WeierstrassCurve.torsionPairSecondDenX,
+      WeierstrassCurve.torsionPairSecondDenX',
+      WeierstrassCurve.torsionPairSecondDenY, WeierstrassCurve.torsionPairQuad, hz,
+      WeierstrassCurve.torsionKernelFun_zero_eq_zero R K E Ksep h hdeg 0 0
+        (by omega),
+      WeierstrassCurve.torsionKernelFun_zero_eq_zero R K E Ksep h hdeg 1 0
+        (by omega),
+      WeierstrassCurve.torsionKernelFun_zero_eq_zero R K E Ksep h hdeg 0 1
+        (by omega),
+      mul_zero, zero_mul, add_zero, sub_zero]
+
+set_option backward.isDefEq.respectTransparency false in
+set_option linter.unusedSectionVars false in
+/-- `n`, `v`, `v'`, `w` lie in the span `M`. -/
+lemma WeierstrassCurve.torsionPairSecond_mem_span (m : ℕ) (h : Polynomial R)
+    (hdeg : 2 ≤ h.natDegree) :
+    WeierstrassCurve.torsionPairSecondNum R K E Ksep m h ∈
+        WeierstrassCurve.torsionPairSpan R K E Ksep m h ∧
+      WeierstrassCurve.torsionPairSecondDenX R K E Ksep m h ∈
+        WeierstrassCurve.torsionPairSpan R K E Ksep m h ∧
+      WeierstrassCurve.torsionPairSecondDenX' R K E Ksep m h ∈
+        WeierstrassCurve.torsionPairSpan R K E Ksep m h ∧
+      WeierstrassCurve.torsionPairSecondDenY R K E Ksep m h ∈
+        WeierstrassCurve.torsionPairSpan R K E Ksep m h := by
+  have hq : ∀ a₁ b₁ a₂ b₂ a₃ b₃ a₄ b₄ : ℕ, a₁ + b₁ ≤ 1 → a₂ + b₂ ≤ 1 →
+      a₃ + b₃ ≤ 1 → a₄ + b₄ ≤ 1 →
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h a₁ b₁ a₂ b₂ a₃ b₃ a₄ b₄ ∈
+        WeierstrassCurve.torsionPairSpan R K E Ksep m h :=
+    fun a₁ b₁ a₂ b₂ a₃ b₃ a₄ b₄ h₁ h₂ h₃ h₄ =>
+      WeierstrassCurve.torsionPairQuad_mem_span R K E Ksep m h hdeg
+        a₁ b₁ a₂ b₂ a₃ b₃ a₄ b₄ h₁ h₂ h₃ h₄
+  have hsm := WeierstrassCurve.torsionPairSpan_algebraMap_mul R K E Ksep m h
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · exact sub_mem (add_mem (add_mem (add_mem (add_mem (add_mem
+      (hq 1 0 1 0 0 0 0 0 (by omega) (by omega) (by omega) (by omega))
+      (hq 1 0 0 0 1 0 0 0 (by omega) (by omega) (by omega) (by omega)))
+      (hq 0 0 0 0 1 0 1 0 (by omega) (by omega) (by omega) (by omega)))
+      (hsm _ (hq 1 0 0 0 0 0 0 0 (by omega) (by omega) (by omega) (by omega))))
+      (hsm _ (hq 0 0 0 0 1 0 0 0 (by omega) (by omega) (by omega) (by omega))))
+      (hsm _ (hq 0 0 0 0 0 0 0 0 (by omega) (by omega) (by omega) (by omega))))
+      (hsm _ (hq 0 1 0 0 0 0 0 0 (by omega) (by omega) (by omega) (by omega)))
+  · exact add_mem (add_mem (add_mem
+      (hq 1 0 0 1 0 0 0 0 (by omega) (by omega) (by omega) (by omega))
+      (hq 1 0 0 0 0 1 0 0 (by omega) (by omega) (by omega) (by omega)))
+      (hsm _ (hq 1 0 0 0 1 0 0 0 (by omega) (by omega) (by omega) (by omega))))
+      (hsm _ (hq 1 0 0 0 0 0 0 0 (by omega) (by omega) (by omega) (by omega)))
+  · exact add_mem (add_mem (add_mem
+      (hq 0 1 0 0 1 0 0 0 (by omega) (by omega) (by omega) (by omega))
+      (hq 0 0 0 0 1 0 0 1 (by omega) (by omega) (by omega) (by omega)))
+      (hsm _ (hq 0 0 0 0 1 0 1 0 (by omega) (by omega) (by omega) (by omega))))
+      (hsm _ (hq 0 0 0 0 1 0 0 0 (by omega) (by omega) (by omega) (by omega)))
+  · exact add_mem (add_mem (add_mem
+      (hq 0 1 0 1 0 0 0 0 (by omega) (by omega) (by omega) (by omega))
+      (hq 0 1 0 0 0 1 0 0 (by omega) (by omega) (by omega) (by omega)))
+      (hsm _ (hq 0 1 0 0 1 0 0 0 (by omega) (by omega) (by omega) (by omega))))
+      (hsm _ (hq 0 1 0 0 0 0 0 0 (by omega) (by omega) (by omega) (by omega)))
+
+set_option backward.isDefEq.respectTransparency false in
+set_option linter.unusedSectionVars false in
+/-- `C₂` lies in the span `M`. -/
+lemma WeierstrassCurve.torsionPairSecondDen_mem_span (m : ℕ) (h : Polynomial R)
+    (hdeg : 2 ≤ h.natDegree) :
+    WeierstrassCurve.torsionPairSecondDen R K E Ksep m h ∈
+      WeierstrassCurve.torsionPairSpan R K E Ksep m h := by
+  refine add_mem (add_mem (add_mem
+    (WeierstrassCurve.torsionPairQuad_mem_span R K E Ksep m h hdeg 0 1 0 0 0 0 0 0
+      (by omega) (by omega) (by omega) (by omega))
+    (WeierstrassCurve.torsionPairQuad_mem_span R K E Ksep m h hdeg 0 0 0 0 0 1 0 0
+      (by omega) (by omega) (by omega) (by omega)))
+    (WeierstrassCurve.torsionPairSpan_algebraMap_mul R K E Ksep m h _
+      (WeierstrassCurve.torsionPairQuad_mem_span R K E Ksep m h hdeg 0 0 0 0 1 0 0 0
+        (by omega) (by omega) (by omega) (by omega))))
+    (WeierstrassCurve.torsionPairSpan_algebraMap_mul R K E Ksep m h _
+      (WeierstrassCurve.torsionPairQuad_mem_span R K E Ksep m h hdeg 0 0 0 0 0 0 0 0
+        (by omega) (by omega) (by omega) (by omega)))
+
+set_option linter.unusedSectionVars false in
+/-- **The second-law abscissa numerator section** `A₂ = Ap/(h₁h₂)⁴`. -/
+noncomputable def WeierstrassCurve.torsionPairSecondAbs (m : ℕ) (h : Polynomial R) :
+    (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep := fun PQ =>
+  WeierstrassCurve.torsionPairSecondNum R K E Ksep m h PQ *
+      WeierstrassCurve.torsionPairSecondNum R K E Ksep m h PQ +
+    algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₁ *
+      (WeierstrassCurve.torsionPairSecondNum R K E Ksep m h PQ *
+        WeierstrassCurve.torsionPairSecondDen R K E Ksep m h PQ) -
+    (algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₂ *
+        WeierstrassCurve.torsionPairSecondDen R K E Ksep m h PQ +
+      WeierstrassCurve.torsionPairSecondDenX R K E Ksep m h PQ +
+      WeierstrassCurve.torsionPairSecondDenX' R K E Ksep m h PQ) *
+      WeierstrassCurve.torsionPairSecondDen R K E Ksep m h PQ
+
+set_option linter.unusedSectionVars false in
+/-- **The second-law ordinate numerator section** `B₂ = Bp/(h₁h₂)⁶`. -/
+noncomputable def WeierstrassCurve.torsionPairSecondOrd (m : ℕ) (h : Polynomial R) :
+    (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep := fun PQ =>
+  -(WeierstrassCurve.torsionPairSecondNum R K E Ksep m h PQ *
+        WeierstrassCurve.torsionPairSecondAbs R K E Ksep m h PQ) +
+      WeierstrassCurve.torsionPairSecondNum R K E Ksep m h PQ *
+        (WeierstrassCurve.torsionPairSecondDen R K E Ksep m h PQ *
+          WeierstrassCurve.torsionPairSecondDenX R K E Ksep m h PQ) -
+    WeierstrassCurve.torsionPairSecondDenY R K E Ksep m h PQ *
+      (WeierstrassCurve.torsionPairSecondDen R K E Ksep m h PQ *
+        WeierstrassCurve.torsionPairSecondDen R K E Ksep m h PQ) -
+    algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₁ *
+      (WeierstrassCurve.torsionPairSecondAbs R K E Ksep m h PQ *
+        WeierstrassCurve.torsionPairSecondDen R K E Ksep m h PQ) -
+    algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₃ *
+      (WeierstrassCurve.torsionPairSecondDen R K E Ksep m h PQ *
+        (WeierstrassCurve.torsionPairSecondDen R K E Ksep m h PQ *
+          WeierstrassCurve.torsionPairSecondDen R K E Ksep m h PQ))
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 800000 in
+set_option linter.unusedSectionVars false in
+/-- The value of `A₂` on an affine pair. -/
+lemma WeierstrassCurve.torsionPairSecondAbs_apply_some (m : ℕ) (h : Polynomial R)
+    (PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)))
+    (x₁ y₁ x₂ y₂ : Ksep)
+    (hns₁ : (E⁄Ksep).toAffine.Nonsingular x₁ y₁)
+    (hns₂ : (E⁄Ksep).toAffine.Nonsingular x₂ y₂)
+    (hP : (PQ.1 : (E⁄Ksep).Point) = Affine.Point.some x₁ y₁ hns₁)
+    (hQ : (PQ.2 : (E⁄Ksep).Point) = Affine.Point.some x₂ y₂ hns₂) :
+    WeierstrassCurve.torsionPairSecondAbs R K E Ksep m h PQ =
+      ((x₁ ^ 2 + x₁ * x₂ + x₂ ^ 2 + (E⁄Ksep).a₂ * (x₁ + x₂) + (E⁄Ksep).a₄ -
+              (E⁄Ksep).a₁ * y₁) ^ 2 +
+          (E⁄Ksep).a₁ *
+            (x₁ ^ 2 + x₁ * x₂ + x₂ ^ 2 + (E⁄Ksep).a₂ * (x₁ + x₂) + (E⁄Ksep).a₄ -
+              (E⁄Ksep).a₁ * y₁) *
+            (y₁ + y₂ + (E⁄Ksep).a₁ * x₂ + (E⁄Ksep).a₃) -
+          ((E⁄Ksep).a₂ + x₁ + x₂) *
+            (y₁ + y₂ + (E⁄Ksep).a₁ * x₂ + (E⁄Ksep).a₃) ^ 2) /
+        (Polynomial.aeval x₁ h * Polynomial.aeval x₂ h) ^ 4 := by
+  unfold WeierstrassCurve.torsionPairSecondAbs
+  rw [WeierstrassCurve.torsionPairSecondNum_apply_some R K E Ksep m h PQ
+      x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSecondDen_apply_some R K E Ksep m h PQ
+      x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSecondDenX_apply_some R K E Ksep m h PQ
+      x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSecondDenX'_apply_some R K E Ksep m h PQ
+      x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    ← baseChange_a₁_integralModel R K E Ksep,
+    ← baseChange_a₂_integralModel R K E Ksep]
+  ring
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1600000 in
+set_option linter.unusedSectionVars false in
+/-- The value of `B₂` on an affine pair. -/
+lemma WeierstrassCurve.torsionPairSecondOrd_apply_some (m : ℕ) (h : Polynomial R)
+    (PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)))
+    (x₁ y₁ x₂ y₂ : Ksep)
+    (hns₁ : (E⁄Ksep).toAffine.Nonsingular x₁ y₁)
+    (hns₂ : (E⁄Ksep).toAffine.Nonsingular x₂ y₂)
+    (hP : (PQ.1 : (E⁄Ksep).Point) = Affine.Point.some x₁ y₁ hns₁)
+    (hQ : (PQ.2 : (E⁄Ksep).Point) = Affine.Point.some x₂ y₂ hns₂) :
+    WeierstrassCurve.torsionPairSecondOrd R K E Ksep m h PQ =
+      (-((x₁ ^ 2 + x₁ * x₂ + x₂ ^ 2 + (E⁄Ksep).a₂ * (x₁ + x₂) + (E⁄Ksep).a₄ -
+                (E⁄Ksep).a₁ * y₁) *
+            (((x₁ ^ 2 + x₁ * x₂ + x₂ ^ 2 + (E⁄Ksep).a₂ * (x₁ + x₂) + (E⁄Ksep).a₄ -
+                    (E⁄Ksep).a₁ * y₁) ^ 2 +
+                (E⁄Ksep).a₁ *
+                  (x₁ ^ 2 + x₁ * x₂ + x₂ ^ 2 + (E⁄Ksep).a₂ * (x₁ + x₂) +
+                    (E⁄Ksep).a₄ - (E⁄Ksep).a₁ * y₁) *
+                  (y₁ + y₂ + (E⁄Ksep).a₁ * x₂ + (E⁄Ksep).a₃) -
+                ((E⁄Ksep).a₂ + x₁ + x₂) *
+                  (y₁ + y₂ + (E⁄Ksep).a₁ * x₂ + (E⁄Ksep).a₃) ^ 2) -
+              x₁ * (y₁ + y₂ + (E⁄Ksep).a₁ * x₂ + (E⁄Ksep).a₃) ^ 2)) -
+          y₁ * (y₁ + y₂ + (E⁄Ksep).a₁ * x₂ + (E⁄Ksep).a₃) ^ 3 -
+          (E⁄Ksep).a₁ *
+            ((x₁ ^ 2 + x₁ * x₂ + x₂ ^ 2 + (E⁄Ksep).a₂ * (x₁ + x₂) + (E⁄Ksep).a₄ -
+                  (E⁄Ksep).a₁ * y₁) ^ 2 +
+              (E⁄Ksep).a₁ *
+                (x₁ ^ 2 + x₁ * x₂ + x₂ ^ 2 + (E⁄Ksep).a₂ * (x₁ + x₂) +
+                  (E⁄Ksep).a₄ - (E⁄Ksep).a₁ * y₁) *
+                (y₁ + y₂ + (E⁄Ksep).a₁ * x₂ + (E⁄Ksep).a₃) -
+              ((E⁄Ksep).a₂ + x₁ + x₂) *
+                (y₁ + y₂ + (E⁄Ksep).a₁ * x₂ + (E⁄Ksep).a₃) ^ 2) *
+            (y₁ + y₂ + (E⁄Ksep).a₁ * x₂ + (E⁄Ksep).a₃) -
+          (E⁄Ksep).a₃ * (y₁ + y₂ + (E⁄Ksep).a₁ * x₂ + (E⁄Ksep).a₃) ^ 3) /
+        (Polynomial.aeval x₁ h * Polynomial.aeval x₂ h) ^ 6 := by
+  unfold WeierstrassCurve.torsionPairSecondOrd
+  rw [WeierstrassCurve.torsionPairSecondAbs_apply_some R K E Ksep m h PQ
+      x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSecondNum_apply_some R K E Ksep m h PQ
+      x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSecondDen_apply_some R K E Ksep m h PQ
+      x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSecondDenX_apply_some R K E Ksep m h PQ
+      x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSecondDenY_apply_some R K E Ksep m h PQ
+      x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    ← baseChange_a₁_integralModel R K E Ksep,
+    ← baseChange_a₃_integralModel R K E Ksep]
+  ring
+
+set_option backward.isDefEq.respectTransparency false in
+set_option linter.unusedSectionVars false in
+/-- `A₂` and `B₂` vanish on the origin rows and columns. -/
+lemma WeierstrassCurve.torsionPairSecondAbsOrd_apply_zero (m : ℕ)
+    (h : Polynomial R) (hdeg : 2 ≤ h.natDegree)
+    (PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)))
+    (hz : (PQ.1 : (E⁄Ksep).Point) = Affine.Point.zero ∨
+      (PQ.2 : (E⁄Ksep).Point) = Affine.Point.zero) :
+    WeierstrassCurve.torsionPairSecondAbs R K E Ksep m h PQ = 0 ∧
+      WeierstrassCurve.torsionPairSecondOrd R K E Ksep m h PQ = 0 := by
+  obtain ⟨hn, hv, hv', hw⟩ :=
+    WeierstrassCurve.torsionPairSecond_apply_zero R K E Ksep m h hdeg PQ hz
+  have hc := WeierstrassCurve.torsionPairSecondDen_apply_zero R K E Ksep m h hdeg
+    PQ hz
+  have hA : WeierstrassCurve.torsionPairSecondAbs R K E Ksep m h PQ = 0 := by
+    unfold WeierstrassCurve.torsionPairSecondAbs
+    rw [hn, hc, hv, hv']
+    ring
+  refine ⟨hA, ?_⟩
+  unfold WeierstrassCurve.torsionPairSecondOrd
+  rw [hn, hc, hw, hA]
+  ring
+
+set_option backward.isDefEq.respectTransparency false in
+set_option linter.unusedSectionVars false in
+/-- `A₂` and `B₂` lie in the span `M`. -/
+lemma WeierstrassCurve.torsionPairSecondAbsOrd_mem_span (m : ℕ) (h : Polynomial R)
+    (hdeg : 2 ≤ h.natDegree) :
+    WeierstrassCurve.torsionPairSecondAbs R K E Ksep m h ∈
+        WeierstrassCurve.torsionPairSpan R K E Ksep m h ∧
+      WeierstrassCurve.torsionPairSecondOrd R K E Ksep m h ∈
+        WeierstrassCurve.torsionPairSpan R K E Ksep m h := by
+  obtain ⟨hn, hv, hv', hw⟩ :=
+    WeierstrassCurve.torsionPairSecond_mem_span R K E Ksep m h hdeg
+  have hc := WeierstrassCurve.torsionPairSecondDen_mem_span R K E Ksep m h hdeg
+  have hmul : ∀ s t : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep,
+      s ∈ WeierstrassCurve.torsionPairSpan R K E Ksep m h →
+      t ∈ WeierstrassCurve.torsionPairSpan R K E Ksep m h →
+      s * t ∈ WeierstrassCurve.torsionPairSpan R K E Ksep m h :=
+    fun _ _ hs ht => WeierstrassCurve.torsionPairSpan_mul R K E Ksep m h hs ht
+  have hsm : ∀ (r : R) (t : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep),
+      t ∈ WeierstrassCurve.torsionPairSpan R K E Ksep m h →
+      (fun PQ => algebraMap R Ksep r * t PQ) ∈
+        WeierstrassCurve.torsionPairSpan R K E Ksep m h :=
+    fun r _ ht =>
+      WeierstrassCurve.torsionPairSpan_algebraMap_mul R K E Ksep m h r ht
+  have hAeq : WeierstrassCurve.torsionPairSecondAbs R K E Ksep m h =
+      WeierstrassCurve.torsionPairSecondNum R K E Ksep m h *
+          WeierstrassCurve.torsionPairSecondNum R K E Ksep m h +
+        (fun PQ => algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₁ *
+          (WeierstrassCurve.torsionPairSecondNum R K E Ksep m h *
+            WeierstrassCurve.torsionPairSecondDen R K E Ksep m h) PQ) -
+        ((fun PQ => algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₂ *
+              WeierstrassCurve.torsionPairSecondDen R K E Ksep m h PQ) +
+            WeierstrassCurve.torsionPairSecondDenX R K E Ksep m h +
+            WeierstrassCurve.torsionPairSecondDenX' R K E Ksep m h) *
+          WeierstrassCurve.torsionPairSecondDen R K E Ksep m h := by
+    funext PQ
+    simp only [Pi.mul_apply, Pi.add_apply, Pi.sub_apply]
+    rfl
+  have hA : WeierstrassCurve.torsionPairSecondAbs R K E Ksep m h ∈
+      WeierstrassCurve.torsionPairSpan R K E Ksep m h := by
+    rw [hAeq]
+    exact sub_mem (add_mem (hmul _ _ hn hn) (hsm _ _ (hmul _ _ hn hc)))
+      (hmul _ _ (add_mem (add_mem (hsm _ _ hc) hv) hv') hc)
+  refine ⟨hA, ?_⟩
+  have hBeq : WeierstrassCurve.torsionPairSecondOrd R K E Ksep m h =
+      -(WeierstrassCurve.torsionPairSecondNum R K E Ksep m h *
+            WeierstrassCurve.torsionPairSecondAbs R K E Ksep m h) +
+          WeierstrassCurve.torsionPairSecondNum R K E Ksep m h *
+            (WeierstrassCurve.torsionPairSecondDen R K E Ksep m h *
+              WeierstrassCurve.torsionPairSecondDenX R K E Ksep m h) -
+        WeierstrassCurve.torsionPairSecondDenY R K E Ksep m h *
+          (WeierstrassCurve.torsionPairSecondDen R K E Ksep m h *
+            WeierstrassCurve.torsionPairSecondDen R K E Ksep m h) -
+        (fun PQ => algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₁ *
+          (WeierstrassCurve.torsionPairSecondAbs R K E Ksep m h *
+            WeierstrassCurve.torsionPairSecondDen R K E Ksep m h) PQ) -
+        (fun PQ => algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₃ *
+          (WeierstrassCurve.torsionPairSecondDen R K E Ksep m h *
+            (WeierstrassCurve.torsionPairSecondDen R K E Ksep m h *
+              WeierstrassCurve.torsionPairSecondDen R K E Ksep m h)) PQ) := by
+    funext PQ
+    simp only [Pi.mul_apply, Pi.add_apply, Pi.sub_apply, Pi.neg_apply]
+    rfl
+  rw [hBeq]
+  exact sub_mem (sub_mem (sub_mem (add_mem (neg_mem (hmul _ _ hn hA))
+    (hmul _ _ hn (hmul _ _ hc hv))) (hmul _ _ hw (hmul _ _ hc hc)))
+    (hsm _ _ (hmul _ _ hA hc))) (hsm _ _ (hmul _ _ hc (hmul _ _ hc hc)))
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 800000 in
+set_option linter.unusedSectionVars false in
+/-- **The second triple is an addition law**. -/
+theorem WeierstrassCurve.torsionPairSecondLaw_spec (m : ℕ) (h : Polynomial R)
+    (hdeg : 2 ≤ h.natDegree) :
+    (∀ (PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+        (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)))
+      (x₃ y₃ : Ksep) (hns₃ : (E⁄Ksep).toAffine.Nonsingular x₃ y₃),
+      ((PQ.1 + PQ.2 : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) :
+          (E⁄Ksep).Point) = Affine.Point.some x₃ y₃ hns₃ →
+      WeierstrassCurve.torsionPairSecondAbs R K E Ksep m h PQ =
+          x₃ * WeierstrassCurve.torsionPairSecondDen R K E Ksep m h PQ ^ 2 ∧
+        WeierstrassCurve.torsionPairSecondOrd R K E Ksep m h PQ =
+          y₃ * WeierstrassCurve.torsionPairSecondDen R K E Ksep m h PQ ^ 3) ∧
+    (∀ PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+        (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)),
+      ((PQ.1 + PQ.2 : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) :
+        (E⁄Ksep).Point) = Affine.Point.zero →
+      WeierstrassCurve.torsionPairSecondDen R K E Ksep m h PQ = 0) := by
+  classical
+  constructor
+  · intro PQ x₃ y₃ hns₃ hsum
+    cases hc1 : ((PQ.1 : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) :
+        (E⁄Ksep).Point) with
+    | zero =>
+      obtain ⟨hA, hB⟩ := WeierstrassCurve.torsionPairSecondAbsOrd_apply_zero
+        R K E Ksep m h hdeg PQ (Or.inl hc1)
+      have hC := WeierstrassCurve.torsionPairSecondDen_apply_zero R K E Ksep m h
+        hdeg PQ (Or.inl hc1)
+      rw [hA, hB, hC]
+      exact ⟨by ring, by ring⟩
+    | some x₁ y₁ hns₁ =>
+      cases hc2 : ((PQ.2 : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) :
+          (E⁄Ksep).Point) with
+      | zero =>
+        obtain ⟨hA, hB⟩ := WeierstrassCurve.torsionPairSecondAbsOrd_apply_zero
+          R K E Ksep m h hdeg PQ (Or.inr hc2)
+        have hC := WeierstrassCurve.torsionPairSecondDen_apply_zero R K E Ksep m h
+          hdeg PQ (Or.inr hc2)
+        rw [hA, hB, hC]
+        exact ⟨by ring, by ring⟩
+      | some x₂ y₂ hns₂ =>
+        have hxy : ¬(x₁ = x₂ ∧ y₁ = (E⁄Ksep).toAffine.negY x₂ y₂) := by
+          rintro ⟨hx, hy⟩
+          have h0 : ((PQ.1 + PQ.2 :
+              AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) :
+              (E⁄Ksep).Point) = Affine.Point.zero := by
+            rw [show ((PQ.1 + PQ.2 :
+                AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) :
+                (E⁄Ksep).Point) =
+              (PQ.1 : (E⁄Ksep).Point) + (PQ.2 : (E⁄Ksep).Point) from rfl,
+              hc1, hc2]
+            exact Affine.Point.add_of_Y_eq hx hy
+          exact Affine.Point.some_ne_zero hns₃ (hsum.symm.trans h0)
+        obtain ⟨x₃', y₃', hns₃', hadd, hX₃, hY₃⟩ :=
+          WeierstrassCurve.add_some_second (E⁄Ksep) hns₁ hns₂ hxy
+        have heq : (Affine.Point.some x₃ y₃ hns₃ : (E⁄Ksep).Point) =
+            Affine.Point.some x₃' y₃' hns₃' := by
+          rw [← hsum, show ((PQ.1 + PQ.2 :
+              AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) :
+              (E⁄Ksep).Point) =
+            (PQ.1 : (E⁄Ksep).Point) + (PQ.2 : (E⁄Ksep).Point) from rfl,
+            hc1, hc2]
+          exact hadd
+        injection heq with hX hY
+        subst hX
+        subst hY
+        refine ⟨?_, ?_⟩
+        · rw [WeierstrassCurve.torsionPairSecondAbs_apply_some R K E Ksep m h PQ
+            x₁ y₁ x₂ y₂ hns₁ hns₂ hc1 hc2,
+            WeierstrassCurve.torsionPairSecondDen_apply_some R K E Ksep m h PQ
+              x₁ y₁ x₂ y₂ hns₁ hns₂ hc1 hc2, ← hX₃]
+          ring
+        · rw [WeierstrassCurve.torsionPairSecondOrd_apply_some R K E Ksep m h PQ
+            x₁ y₁ x₂ y₂ hns₁ hns₂ hc1 hc2,
+            WeierstrassCurve.torsionPairSecondDen_apply_some R K E Ksep m h PQ
+              x₁ y₁ x₂ y₂ hns₁ hns₂ hc1 hc2, ← hX₃, ← hY₃]
+          ring
+  · intro PQ hsum
+    cases hc1 : ((PQ.1 : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) :
+        (E⁄Ksep).Point) with
+    | zero =>
+      exact WeierstrassCurve.torsionPairSecondDen_apply_zero R K E Ksep m h hdeg
+        PQ (Or.inl hc1)
+    | some x₁ y₁ hns₁ =>
+      cases hc2 : ((PQ.2 : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) :
+          (E⁄Ksep).Point) with
+      | zero =>
+        exact WeierstrassCurve.torsionPairSecondDen_apply_zero R K E Ksep m h hdeg
+          PQ (Or.inr hc2)
+      | some x₂ y₂ hns₂ =>
+        by_cases hxy : x₁ = x₂ ∧ y₁ = (E⁄Ksep).toAffine.negY x₂ y₂
+        · have hnum : y₁ + y₂ + (E⁄Ksep).a₁ * x₂ + (E⁄Ksep).a₃ = 0 := by
+            rw [hxy.2, WeierstrassCurve.Affine.negY]
+            ring
+          rw [WeierstrassCurve.torsionPairSecondDen_apply_some R K E Ksep m h PQ
+            x₁ y₁ x₂ y₂ hns₁ hns₂ hc1 hc2, hnum, zero_div]
+        · exfalso
+          obtain ⟨x₃', y₃', hns₃', hadd, -, -⟩ :=
+            WeierstrassCurve.add_some_second (E⁄Ksep) hns₁ hns₂ hxy
+          rw [show ((PQ.1 + PQ.2 :
+              AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) :
+              (E⁄Ksep).Point) =
+            (PQ.1 : (E⁄Ksep).Point) + (PQ.2 : (E⁄Ksep).Point) from rfl,
+            hc1, hc2, hadd] at hsum
+          exact Affine.Point.some_ne_zero hns₃' hsum
+
 set_option backward.isDefEq.respectTransparency false in
 /-- **The formal-locus chart leaf** (sorry node — stage E3d of the
 Katz–Mazur chart analysis): an addition law in the section algebra whose
@@ -11721,8 +12595,11 @@ theorem WeierstrassCurve.exists_torsionPairLaw_formal
   sorry
 
 set_option backward.isDefEq.respectTransparency false in
-/-- **The diagonal-collision chart leaf** (sorry node — stages E3b/E3c of
-the Katz–Mazur chart analysis): an addition law in the section algebra whose
+set_option maxHeartbeats 1600000 in
+set_option linter.unusedVariables false in
+/-- **The diagonal-collision chart leaf** (PROVEN 2026-07-25 — stages
+E3b/E3c of the Katz–Mazur chart analysis): an addition law in the section
+algebra whose
 numerator or denominator section is a valuation UNIT at a pair of
 integral-affine points with colliding abscissas AND colliding ordinates,
 `v(x₁ − x₂) < 1` and `v(y₁ − y₂) < 1` — i.e. `P̄ = Q̄` in the special
@@ -11759,7 +12636,22 @@ satisfy the split-product weight bound `i + 2j ≤ kd` for `d ≥ 2`.
   NONSINGULAR.  Valuatively: `v(Ψ₂Sq(x₁)) < 1` and `v(N₂) < 1` would put
   the discriminant in the maximal ideal.  NOTE for ODD `m` this branch is
   EMPTY (a reduced point of exact order `2` cannot be the reduction of an
-  `m`-torsion point), so `hm` suffices there. -/
+  `m`-torsion point), so `hm` suffices there.
+
+PROOF AS CARRIED OUT (2026-07-25).  The plan above is followed verbatim,
+except that the HAZARD branch needed no new geometry: the nonsingularity
+of the reduced curve is already packaged in the PROVEN
+`val_tangent_numerator_eq_one`, which says exactly that `v(Ψ₂(P)) < 1`
+forces the `X`-partial `3x₁² + 2a₂x₁ + a₄ − a₁y₁` to be a unit.  Since
+`v(x₁ − x₂) < 1`, `N₂` differs from that partial by
+`(2x₁ + x₂ + a₂)(x₂ − x₁) ∈ 𝔪`, so `v(N₂) = 1`; and `v(D₂) < 1` because
+`D₂ − Ψ₂(P) = (y₂ − y₁) + a₁(x₂ − x₁) ∈ 𝔪`.  The two remaining terms of
+`Ap = N₂² + a₁N₂D₂ − (a₂+x₁+x₂)D₂²` are then in `𝔪`, so `v(A₂) = v(Ap) = 1`.
+On the TANGENT branch `v(Ψ₂Sq(x₁)) = 1` gives `v(Ψ₂(P)) = 1` and hence
+`v(C₂) = v(D₂) = 1` by the same congruence.  The three sections and their
+law identities are `torsionPairSecondAbs`, `torsionPairSecondOrd`,
+`torsionPairSecondDen` and `torsionPairSecondLaw_spec`; `hm` and `hmon`
+are unused (kept for signature stability with the sibling leaves). -/
 theorem WeierstrassCurve.exists_torsionPairLaw_collisionDiagonal
     (m : ℕ) (hm : (m : K) ≠ 0) (h : Polynomial R) (hmon : h.Monic)
     (hdeg : 2 ≤ h.natDegree)
@@ -11797,7 +12689,164 @@ theorem WeierstrassCurve.exists_torsionPairLaw_collisionDiagonal
         ((PQ'.1 + PQ'.2 : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) :
           (E⁄Ksep).Point) = Affine.Point.zero → C PQ' = 0) ∧
       (𝒪.valuation (A PQ) = 1 ∨ 𝒪.valuation (C PQ) = 1) := by
-  sorry
+  classical
+  obtain ⟨hlaw, hzero⟩ :=
+    WeierstrassCurve.torsionPairSecondLaw_spec R K E Ksep m h hdeg
+  obtain ⟨hAmem, hBmem⟩ :=
+    WeierstrassCurve.torsionPairSecondAbsOrd_mem_span R K E Ksep m h hdeg
+  have hCmem := WeierstrassCurve.torsionPairSecondDen_mem_span R K E Ksep m h hdeg
+  refine ⟨WeierstrassCurve.torsionPairSecondAbs R K E Ksep m h,
+    WeierstrassCurve.torsionPairSecondOrd R K E Ksep m h,
+    WeierstrassCurve.torsionPairSecondDen R K E Ksep m h,
+    hAmem, hBmem, hCmem, hlaw, hzero, ?_⟩
+  -- integrality of the local data
+  obtain ⟨ha₁, ha₂, ha₃, ha₄, ha₆⟩ :=
+    baseChange_coeffs_mem_centered R K E Ksep 𝒪 hcen
+  have hy₁ : y₁ ∈ 𝒪 := WeierstrassCurve.ordinate_mem_of_abscissa_mem 𝒪 (E⁄Ksep)
+    ha₁ ha₂ ha₃ ha₄ ha₆ hns₁.1 hx₁
+  have hy₂ : y₂ ∈ 𝒪 := WeierstrassCurve.ordinate_mem_of_abscissa_mem 𝒪 (E⁄Ksep)
+    ha₁ ha₂ ha₃ ha₄ ha₆ hns₂.1 hx₂
+  have htor₁ : (m : ℤ) • (Affine.Point.some x₁ y₁ hns₁ : (E⁄Ksep).Point) = 0 := by
+    rw [← hP]
+    exact (Submodule.mem_torsionBy_iff _ _).mp PQ.1.2
+  have htor₂ : (m : ℤ) • (Affine.Point.some x₂ y₂ hns₂ : (E⁄Ksep).Point) = 0 := by
+    rw [← hQ]
+    exact (Submodule.mem_torsionBy_iff _ _).mp PQ.2.2
+  have hu₁ : 𝒪.valuation (Polynomial.aeval x₁ h) = 1 :=
+    hunit 𝒪 hcen x₁ y₁ hns₁ htor₁ hx₁
+  have hu₂ : 𝒪.valuation (Polynomial.aeval x₂ h) = 1 :=
+    hunit 𝒪 hcen x₂ y₂ hns₂ htor₂ hx₂
+  have hval : ∀ (z : Ksep) (k : ℕ),
+      𝒪.valuation
+          (z / (Polynomial.aeval x₁ h * Polynomial.aeval x₂ h) ^ k) =
+        𝒪.valuation z := by
+    intro z k
+    rw [map_div₀, map_pow, map_mul, hu₁, hu₂, one_mul, one_pow, div_one]
+  have h2 : (2 : Ksep) ∈ 𝒪 := by
+    rw [show (2 : Ksep) = 1 + 1 from by norm_num]
+    exact add_mem (one_mem _) (one_mem _)
+  -- the `ψ₂`-value at `P`
+  have hpsiSq : ((E⁄Ksep).Ψ₂Sq).eval x₁ =
+      (2 * y₁ + (E⁄Ksep).a₁ * x₁ + (E⁄Ksep).a₃) ^ 2 := by
+    have heq := (WeierstrassCurve.Affine.equation_iff x₁ y₁).mp hns₁.1
+    rw [WeierstrassCurve.Ψ₂Sq, WeierstrassCurve.b₂, WeierstrassCurve.b₄,
+      WeierstrassCurve.b₆]
+    simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_pow,
+      Polynomial.eval_C, Polynomial.eval_X]
+    linear_combination (-4 : Ksep) * heq
+  have hT2mem : (2 * y₁ + (E⁄Ksep).a₁ * x₁ + (E⁄Ksep).a₃) ∈ 𝒪 :=
+    add_mem (add_mem (mul_mem h2 hy₁) (mul_mem ha₁ hx₁)) ha₃
+  have hT2le : 𝒪.valuation (2 * y₁ + (E⁄Ksep).a₁ * x₁ + (E⁄Ksep).a₃) ≤ 1 :=
+    (𝒪.valuation_le_one_iff _).mpr hT2mem
+  -- the denominator section, rewritten
+  have hDenv : 𝒪.valuation
+      (WeierstrassCurve.torsionPairSecondDen R K E Ksep m h PQ) =
+      𝒪.valuation (y₁ + y₂ + (E⁄Ksep).a₁ * x₂ + (E⁄Ksep).a₃) := by
+    rw [WeierstrassCurve.torsionPairSecondDen_apply_some R K E Ksep m h PQ
+      x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ, hval]
+  -- the tail separating `D₂` from `ψ₂(P)`
+  have htail : 𝒪.valuation
+      ((y₂ - y₁) + (E⁄Ksep).a₁ * (x₂ - x₁)) < 1 := by
+    refine lt_of_le_of_lt (𝒪.valuation.map_add _ _) (max_lt ?_ ?_)
+    · rw [show y₂ - y₁ = -(y₁ - y₂) from by ring, Valuation.map_neg]
+      exact hdiag
+    · refine ValuationSubring.val_mul_lt_one_of_mem_of_lt 𝒪 ha₁ ?_
+      rw [show x₂ - x₁ = -(x₁ - x₂) from by ring, Valuation.map_neg]
+      exact hcol
+  have hDsplit : y₁ + y₂ + (E⁄Ksep).a₁ * x₂ + (E⁄Ksep).a₃ =
+      (2 * y₁ + (E⁄Ksep).a₁ * x₁ + (E⁄Ksep).a₃) +
+        ((y₂ - y₁) + (E⁄Ksep).a₁ * (x₂ - x₁)) := by ring
+  rcases lt_or_eq_of_le hpsi with hlt | heq1
+  · -- HAZARD branch: the reduced point is `2`-torsion; the ABSCISSA numerator is the unit
+    left
+    have hT2lt : 𝒪.valuation (2 * y₁ + (E⁄Ksep).a₁ * x₁ + (E⁄Ksep).a₃) < 1 := by
+      by_contra hcon
+      rw [hpsiSq, map_pow, le_antisymm hT2le (not_lt.mp hcon), one_pow] at hlt
+      exact lt_irrefl 1 hlt
+    have hDlt : 𝒪.valuation (y₁ + y₂ + (E⁄Ksep).a₁ * x₂ + (E⁄Ksep).a₃) < 1 := by
+      rw [hDsplit]
+      exact lt_of_le_of_lt (𝒪.valuation.map_add _ _) (max_lt hT2lt htail)
+    have hTan : 𝒪.valuation
+        (3 * x₁ ^ 2 + 2 * (E⁄Ksep).a₂ * x₁ + (E⁄Ksep).a₄ - (E⁄Ksep).a₁ * y₁)
+        = 1 :=
+      WeierstrassCurve.val_tangent_numerator_eq_one R K E Ksep 𝒪 hcen hx₁ hy₁
+        hns₁.1 hT2lt
+    have hNv : 𝒪.valuation
+        (x₁ ^ 2 + x₁ * x₂ + x₂ ^ 2 + (E⁄Ksep).a₂ * (x₁ + x₂) + (E⁄Ksep).a₄ -
+          (E⁄Ksep).a₁ * y₁) = 1 := by
+      have hsplit : x₁ ^ 2 + x₁ * x₂ + x₂ ^ 2 + (E⁄Ksep).a₂ * (x₁ + x₂) +
+            (E⁄Ksep).a₄ - (E⁄Ksep).a₁ * y₁ =
+          (3 * x₁ ^ 2 + 2 * (E⁄Ksep).a₂ * x₁ + (E⁄Ksep).a₄ - (E⁄Ksep).a₁ * y₁) +
+            (2 * x₁ + x₂ + (E⁄Ksep).a₂) * (x₂ - x₁) := by ring
+      have htl : 𝒪.valuation ((2 * x₁ + x₂ + (E⁄Ksep).a₂) * (x₂ - x₁)) <
+          𝒪.valuation
+            (3 * x₁ ^ 2 + 2 * (E⁄Ksep).a₂ * x₁ + (E⁄Ksep).a₄ -
+              (E⁄Ksep).a₁ * y₁) := by
+        rw [hTan]
+        refine ValuationSubring.val_mul_lt_one_of_mem_of_lt 𝒪
+          (add_mem (add_mem (mul_mem h2 hx₁) hx₂) ha₂) ?_
+        rw [show x₂ - x₁ = -(x₁ - x₂) from by ring, Valuation.map_neg]
+        exact hcol
+      rw [hsplit, 𝒪.valuation.map_add_eq_of_lt_left htl, hTan]
+    rw [WeierstrassCurve.torsionPairSecondAbs_apply_some R K E Ksep m h PQ
+      x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ, hval]
+    have hrest : 𝒪.valuation
+        ((E⁄Ksep).a₁ *
+            (x₁ ^ 2 + x₁ * x₂ + x₂ ^ 2 + (E⁄Ksep).a₂ * (x₁ + x₂) + (E⁄Ksep).a₄ -
+              (E⁄Ksep).a₁ * y₁) *
+            (y₁ + y₂ + (E⁄Ksep).a₁ * x₂ + (E⁄Ksep).a₃) -
+          ((E⁄Ksep).a₂ + x₁ + x₂) *
+            (y₁ + y₂ + (E⁄Ksep).a₁ * x₂ + (E⁄Ksep).a₃) ^ 2) <
+        𝒪.valuation
+          ((x₁ ^ 2 + x₁ * x₂ + x₂ ^ 2 + (E⁄Ksep).a₂ * (x₁ + x₂) + (E⁄Ksep).a₄ -
+            (E⁄Ksep).a₁ * y₁) ^ 2) := by
+      rw [map_pow, hNv, one_pow, sub_eq_add_neg]
+      refine lt_of_le_of_lt (𝒪.valuation.map_add _ _) (max_lt ?_ ?_)
+      · have hNvmem : (x₁ ^ 2 + x₁ * x₂ + x₂ ^ 2 + (E⁄Ksep).a₂ * (x₁ + x₂) +
+            (E⁄Ksep).a₄ - (E⁄Ksep).a₁ * y₁) ∈ 𝒪 :=
+          sub_mem (add_mem (add_mem (add_mem (add_mem (pow_mem hx₁ 2)
+            (mul_mem hx₁ hx₂)) (pow_mem hx₂ 2))
+            (mul_mem ha₂ (add_mem hx₁ hx₂))) ha₄) (mul_mem ha₁ hy₁)
+        exact ValuationSubring.val_mul_lt_one_of_mem_of_lt 𝒪
+          (mul_mem ha₁ hNvmem) hDlt
+      · rw [Valuation.map_neg,
+          show ((E⁄Ksep).a₂ + x₁ + x₂) *
+              (y₁ + y₂ + (E⁄Ksep).a₁ * x₂ + (E⁄Ksep).a₃) ^ 2 =
+            ((E⁄Ksep).a₂ + x₁ + x₂) *
+              (y₁ + y₂ + (E⁄Ksep).a₁ * x₂ + (E⁄Ksep).a₃) *
+              (y₁ + y₂ + (E⁄Ksep).a₁ * x₂ + (E⁄Ksep).a₃) from by ring]
+        have hmem2 : ((E⁄Ksep).a₂ + x₁ + x₂) *
+            (y₁ + y₂ + (E⁄Ksep).a₁ * x₂ + (E⁄Ksep).a₃) ∈ 𝒪 :=
+          mul_mem (add_mem (add_mem ha₂ hx₁) hx₂)
+            (add_mem (add_mem (add_mem hy₁ hy₂) (mul_mem ha₁ hx₂)) ha₃)
+        exact ValuationSubring.val_mul_lt_one_of_mem_of_lt 𝒪 hmem2 hDlt
+    rw [show (x₁ ^ 2 + x₁ * x₂ + x₂ ^ 2 + (E⁄Ksep).a₂ * (x₁ + x₂) + (E⁄Ksep).a₄ -
+            (E⁄Ksep).a₁ * y₁) ^ 2 +
+          (E⁄Ksep).a₁ *
+            (x₁ ^ 2 + x₁ * x₂ + x₂ ^ 2 + (E⁄Ksep).a₂ * (x₁ + x₂) + (E⁄Ksep).a₄ -
+              (E⁄Ksep).a₁ * y₁) *
+            (y₁ + y₂ + (E⁄Ksep).a₁ * x₂ + (E⁄Ksep).a₃) -
+          ((E⁄Ksep).a₂ + x₁ + x₂) *
+            (y₁ + y₂ + (E⁄Ksep).a₁ * x₂ + (E⁄Ksep).a₃) ^ 2 =
+        (x₁ ^ 2 + x₁ * x₂ + x₂ ^ 2 + (E⁄Ksep).a₂ * (x₁ + x₂) + (E⁄Ksep).a₄ -
+            (E⁄Ksep).a₁ * y₁) ^ 2 +
+          ((E⁄Ksep).a₁ *
+              (x₁ ^ 2 + x₁ * x₂ + x₂ ^ 2 + (E⁄Ksep).a₂ * (x₁ + x₂) +
+                (E⁄Ksep).a₄ - (E⁄Ksep).a₁ * y₁) *
+              (y₁ + y₂ + (E⁄Ksep).a₁ * x₂ + (E⁄Ksep).a₃) -
+            ((E⁄Ksep).a₂ + x₁ + x₂) *
+              (y₁ + y₂ + (E⁄Ksep).a₁ * x₂ + (E⁄Ksep).a₃) ^ 2) from by ring,
+      𝒪.valuation.map_add_eq_of_lt_left hrest, map_pow, hNv, one_pow]
+  · -- TANGENT branch: the DENOMINATOR section is the unit
+    right
+    have hT2 : 𝒪.valuation (2 * y₁ + (E⁄Ksep).a₁ * x₁ + (E⁄Ksep).a₃) = 1 := by
+      have hsq : 𝒪.valuation (2 * y₁ + (E⁄Ksep).a₁ * x₁ + (E⁄Ksep).a₃) *
+          𝒪.valuation (2 * y₁ + (E⁄Ksep).a₁ * x₁ + (E⁄Ksep).a₃) = 1 := by
+        rw [← map_mul, ← sq, ← hpsiSq]
+        exact heq1
+      exact (val_factors_eq_one_of_mul_eq_one hT2le hT2le hsq).1
+    rw [hDenv, hDsplit,
+      𝒪.valuation.map_add_eq_of_lt_left (by rw [hT2]; exact htail), hT2]
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **The residual (off-chord) Katz–Mazur chart leaf** (PROVEN 2026-07-25 on
