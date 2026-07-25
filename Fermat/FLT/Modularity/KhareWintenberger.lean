@@ -127,6 +127,10 @@ public import Mathlib.FieldTheory.Galois.Basic
 -- matrix-charpoly bridges
 import Fermat.FLT.GaloisRepresentation.HardlyRamified.Deformation
 import Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic
+-- the `charFrob` transport API (`GaloisRep.charFrob_map_algEquiv`,
+-- `GaloisRep.exists_finset_isUnramifiedAt_map`), which discharges the base
+-- of the solvable-descent chain (`heckeSystemDescendsTo_bot`)
+import Fermat.FLT.Deformations.RepresentationTheory.GaloisRepTransport
 import Mathlib.LinearAlgebra.Charpoly.ToMatrix
 -- `LinearMap.det_eq_sign_charpoly_coeff`, for the determinant coefficient
 -- of the Brauer-descent Frobenius charpolys
@@ -2268,8 +2272,8 @@ theorem exists_cyclicRefinement_of_isSolvable {G : Type*} [Group G]
   sorry
 
 /-- **The base of the descent chain — the witness's own eigensystem,
-read over `F^⊥`** (sorry node; a pure TRANSPORT leaf, no arithmetic
-content): the carrier's modularity clause `Wit.modularF` is a statement
+read over `F^⊥`** (PROVEN 2026-07-25; a pure TRANSPORT node, no
+arithmetic content): the carrier's modularity clause `Wit.modularF` is a statement
 about the number field `F`; the descent chain starts at the fixed field
 of the trivial subgroup, `F^⊥`, which is `⊤ ≤ F` — the same field in a
 different model. This leaf transports the clause across that model
@@ -2286,7 +2290,7 @@ polynomial — invariant under conjugation. Hence `S := badF` and
 `P := heckeF`, both transported along that bijection, witness the
 conclusion.
 
-WHY IT IS A LEAF (2026-07-24): the transport is not formally free on
+WHY IT WAS A LEAF (2026-07-24): the transport is not formally free on
 this pin. `GaloisRep.map` is defined through
 `Field.absoluteGaloisGroup.map`, which "relies on an arbitrarily chosen
 embedding of the algebraic closures" (`GaloisRep.lean`), and `charFrob`
@@ -2294,11 +2298,38 @@ is evaluated at `Field.AbsoluteGaloisGroup.adicArithFrob`, itself
 defined through an arbitrary choice of a valuation on the algebraic
 closure extending `v`. Independence of `charFrob` from those choices
 (equivalently: its invariance under the conjugation relating two
-choices) is exactly the missing API — `GaloisRep.charFrob` has no
+choices) was exactly the missing API — `GaloisRep.charFrob` had no
 transport lemma along an `AlgEquiv` of number fields anywhere in the
-project or in the pin. Writing that API is the content of this leaf; it
-is FORMAL work, not literature, and it is independent of everything
-else in the descent.
+project or in the pin.
+
+DISCHARGED (2026-07-25) BY THAT API, now written as the reusable module
+`Deformations/RepresentationTheory/GaloisRepTransport.lean`:
+
+* `Field.absoluteGaloisGroup.exists_conj_map_comp` (PROVEN there) —
+  `Γ` is functorial up to conjugation by a SINGLE element: the two
+  composite embeddings `Kᵃˡᵍ → Fᵃˡᵍ` of a tower differ by an
+  automorphism of `Kᵃˡᵍ` (both are isomorphisms, since `Fᵃˡᵍ` is
+  algebraic over `K`);
+* `GaloisRep.charFrob_map_comp` (PROVEN there) — hence `charFrob` IS
+  functorial along a tower, the conjugation being invisible to
+  characteristic polynomials (`LinearEquiv.charpoly_conj`);
+* `GaloisRep.charFrob_map_algEquiv` (PROVEN there) — the transport along
+  a `K`-isomorphism of number fields, at every place where the
+  restriction is unramified, over the arithmetic leaf
+  `GaloisRep.charFrob_map_ringEquiv`;
+* `GaloisRep.exists_finset_isUnramifiedAt_map` (leaf there) — the
+  ramification bookkeeping: almost-everywhere unramifiedness is
+  inherited by the restriction, which enlarges the bad set by finitely
+  many places.
+
+The residual depth therefore lives in those two general-purpose leaves
+of `GaloisRepTransport.lean` (the completion-functoriality/Frobenius
+comparison and the inertia inheritance), not in this node: HERE the
+argument is complete — `IntermediateField.fixedField_bot` and
+`IntermediateField.topEquiv` produce `e : F^⊥ ≃ₐ[ℚ] F`, the hardly
+ramified hypothesis feeds the unramifiedness bookkeeping, and `S`, `P`
+are `Wit.badF`, `Wit.heckeF` transported along the induced bijection of
+places.
 
 SOUNDNESS AUDIT (both ways, 2026-07-24): (i) direct — the statement is
 `Wit.modularF` read through a ℚ-isomorphism of number fields, true for
@@ -2341,8 +2372,50 @@ theorem heckeSystemDescendsTo_bot
       (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
         ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
     (Wit : PotentialModularityWitness ℓ O ρ) :
-    HeckeSystemDescendsTo Wit ⊥ :=
-  sorry
+    HeckeSystemDescendsTo Wit ⊥ := by
+  classical
+  -- (i) MODEL CHANGE: the base of the descent chain is the fixed field of the
+  -- trivial subgroup, `F^⊥ = ⊤ ≤ F` (`IntermediateField.fixedField_bot`),
+  -- which is `ℚ`-isomorphic to `F` itself (`IntermediateField.topEquiv`).
+  have e : (IntermediateField.fixedField (⊥ : Subgroup (Wit.F ≃ₐ[ℚ] Wit.F)))
+      ≃ₐ[ℚ] Wit.F :=
+    (IntermediateField.equivOfEq IntermediateField.fixedField_bot).trans
+      IntermediateField.topEquiv
+  -- (ii) RAMIFICATION BOOKKEEPING: `ρ` is unramified away from the places of
+  -- `2` and `ℓ` (hardly ramified), hence its restriction to `F^⊥` is
+  -- unramified away from a finite set of places `T` — which is what makes the
+  -- Frobenius characteristic polynomials transportable at all but finitely
+  -- many places.
+  have hS : ∀ v ∉ ({Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat,
+      (Fact.out : ℓ.Prime).toHeightOneSpectrumRingOfIntegersRat} :
+        Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
+      ρ.IsUnramifiedAt v := by
+    intro v hv
+    obtain ⟨p, hp, rfl⟩ :=
+      IsHardlyRamified.exists_prime_eq_toHeightOneSpectrumRingOfIntegersRat v
+    refine hρ.isUnramified p hp ⟨?_, ?_⟩
+    · rintro rfl
+      exact hv (Finset.mem_insert_self _ _)
+    · rintro rfl
+      exact hv (Finset.mem_insert_of_mem (Finset.mem_singleton_self _))
+  obtain ⟨T, hT⟩ := GaloisRep.exists_finset_isUnramifiedAt_map
+    (L := IntermediateField.fixedField (⊥ : Subgroup (Wit.F ≃ₐ[ℚ] Wit.F))) ρ _ hS
+  -- (iii) TRANSPORT: read the carrier's modularity clause `Wit.modularF`
+  -- through `e`, using `GaloisRep.charFrob_map_algEquiv`; the bad set is the
+  -- carrier's bad set pulled back along the induced bijection of places,
+  -- enlarged by the ramified places `T`.
+  refine ⟨Wit.badF.image (NumberField.finitePlaceEquiv e.toRingEquiv).symm ∪ T,
+    fun w => Wit.heckeF (NumberField.finitePlaceEquiv e.toRingEquiv w),
+    fun w hw => ?_⟩
+  rw [Finset.mem_union, not_or] at hw
+  have hbad : NumberField.finitePlaceEquiv e.toRingEquiv w ∉ Wit.badF := by
+    intro hmem
+    refine hw.1 ?_
+    have himg := Finset.mem_image_of_mem
+      (NumberField.finitePlaceEquiv e.toRingEquiv).symm hmem
+    simpa using himg
+  rw [← GaloisRep.charFrob_map_algEquiv ρ e w (hT w hw.2)]
+  exact Wit.modularF _ hbad
 
 /-- **One cyclic step of solvable base change** (sorry node; THE
 literature node of the `ℓ`-adic solvable descent — Langlands 1980,
