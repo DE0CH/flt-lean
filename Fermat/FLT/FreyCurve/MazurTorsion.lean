@@ -55,6 +55,15 @@ module
 
 public import Fermat.FLT.FreyCurve.Basic
 public import Fermat.FLT.EllipticCurve.Torsion
+-- `natDegree_Φ`, `leadingCoeff_Φ`, `natDegree_ΨSq_le` and the Bézout
+-- relation `isCoprime_Φ_ΨSq`: the division-polynomial inputs of the
+-- `p`-divisibility of the kernel of reduction
+-- (`exists_localKernelDivision_of_good_reduction`). Both modules are
+-- already in the transitive cone through `TorsionCard`, but only via
+-- PRIVATE imports there, which are not re-exported — so they must be
+-- imported publicly here.
+public import Mathlib.AlgebraicGeometry.EllipticCurve.DivisionPolynomial.Degree
+public import Fermat.FLT.EllipticCurve.PhiPsiCoprime
 -- `cyclotomicCharacterModL` and the stable-line extraction, used in the
 -- character bookkeeping of the Serre §4.1 dichotomy.
 public import Fermat.FLT.GaloisRepresentation.Chebotarev
@@ -5954,11 +5963,13 @@ seams:
       under inertia because inertia acts trivially on the residue
       field, with kernel exactly the non-integral locus
       `x ∉ localValuationSubring`). Silverman *AEC* VII.2.
-    * `exists_localKernelDivision_of_good_reduction` (sorry node —
-      the FORMAL GROUP: that kernel is `p`-divisible over `ℚ̄_p`,
-      by the Newton polygon of `[p]` over the completion; false over
-      any finite extension of `ℚ_p`). Silverman *AEC* IV.2–IV.3,
-      VII.6.
+    * `exists_localKernelDivision_of_good_reduction` (PROVEN
+      2026-07-25 — that kernel is `p`-divisible over `ℚ̄_p`; false
+      over any finite extension of `ℚ_p`). Proven not by the Newton
+      polygon of `[p]` but by a DIVISION-POLYNOMIAL argument:
+      `Φ_p − x · Ψ²_p` is monic, and good reduction makes a
+      coefficient of `Ψ²_p` a unit, which forces one of its roots to
+      be non-integral.
   * `card_torsion_reduction_of_good_ordinary` (DERIVED 2026-07-25 —
     the CHARACTERISTIC-`p` content): ordinarity makes `Ẽ(𝔽̄_p)[p]` of
     order exactly `p`. Its residual gap is now the single
@@ -6919,32 +6930,302 @@ theorem WeierstrassCurve.exists_localReductionAddHom_of_good_reduction
           x ∉ localValuationSubring hp.toHeightOneSpectrumRingOfIntegersRat) :=
   sorry
 
+/-- **`ΨSqₙ ≠ 0` for an elliptic curve over ANY field**, with no
+characteristic hypothesis (PROVEN 2026-07-25, an input of the
+`p`-divisibility of the kernel of reduction below). Mathlib's
+`WeierstrassCurve.ΨSq_ne_zero` needs `(n : R) ≠ 0`, which is exactly
+what FAILS in the application: there `n = p` and the base is the
+residue field of characteristic `p`. The characteristic-free proof
+instead uses the Bézout relation `A · Φₙ + B · Ψ²ₙ = 1`
+(`isCoprime_Φ_ΨSq`, available because `Δ` is a unit): if `Ψ²ₙ = 0`
+then `Φₙ` is a unit, hence of degree `0`, contradicting
+`natDegree_Φ n = n.natAbs ^ 2 ≠ 0`. -/
+theorem WeierstrassCurve.ΨSq_ne_zero_of_isElliptic {L : Type*} [Field L]
+    (W : WeierstrassCurve L) [W.IsElliptic] {n : ℤ} (hn : n ≠ 0) :
+    W.ΨSq n ≠ 0 := by
+  intro h0
+  obtain ⟨A, _B, hAB⟩ := WeierstrassCurve.isCoprime_Φ_ΨSq W hn W.isUnit_Δ
+  rw [h0, mul_zero, add_zero] at hAB
+  have hu : IsUnit (W.Φ n) := IsUnit.of_mul_eq_one_right A hAB
+  have hdeg : (W.Φ n).natDegree = 0 := Polynomial.natDegree_eq_zero_of_isUnit hu
+  rw [WeierstrassCurve.natDegree_Φ] at hdeg
+  exact hn (Int.natAbs_eq_zero.mp (by simpa using hdeg))
+
+/-- **The arithmetic input of the division argument: at good reduction
+the `n`-division data is integral, and `Ψ²ₙ` has a UNIT coefficient**
+(PROVEN 2026-07-25). Along any ring map `ψ : K → L` carrying the
+good-reduction model `R ⊆ K` into a subring `𝒪 ⊆ L`:
+
+* every coefficient of `Φₙ` of the base-changed curve lies in `𝒪` —
+  because `E.map ψ = (integralModel R E).map φ`, so those coefficients
+  are images of coefficients of `Φₙ` over `R`;
+* some coefficient of `Ψ²ₙ` becomes a UNIT of `𝒪` — because the
+  reduction `Ẽ/k` is again elliptic, so `Ψ²ₙ(Ẽ) ≠ 0` by
+  `ΨSq_ne_zero_of_isElliptic` (no characteristic hypothesis, and this
+  is where it is needed: `k` has characteristic `p` and `n = p`), so
+  some coefficient of `Ψ²ₙ` over `R` survives reduction, i.e. avoids
+  the maximal ideal, i.e. is a unit of the local ring `R`.
+
+The second bullet is the whole arithmetic content of the argument: it
+is what forces the auxiliary polynomial `Φₙ − x · Ψ²ₙ` to have a
+NON-INTEGRAL root once `x` is non-integral. -/
+theorem WeierstrassCurve.coeff_Φ_mem_and_isUnit_coeff_ΨSq_of_hasGoodReduction
+    {R K L : Type*} [CommRing R] [IsDomain R] [IsDiscreteValuationRing R]
+    [Field K] [Algebra R K] [IsFractionRing R K] [Field L]
+    (E : WeierstrassCurve K) [E.HasGoodReduction R]
+    (ψ : K →+* L) (𝒪 : Subring L)
+    (hφmem : ∀ r : R, ψ (algebraMap R K r) ∈ 𝒪)
+    {n : ℤ} (hn : n ≠ 0) :
+    (∀ i : ℕ, ((E.map ψ).Φ n).coeff i ∈ 𝒪) ∧
+      ∃ (j : ℕ) (c : L), c ∈ 𝒪 ∧ c * ((E.map ψ).ΨSq n).coeff j = 1 := by
+  classical
+  set φ : R →+* L := ψ.comp (algebraMap R K)
+  have hmap : E.map ψ = (integralModel R E).map φ := by
+    conv_lhs => rw [← WeierstrassCurve.baseChange_integralModel_eq R E]
+    rw [WeierstrassCurve.baseChange, WeierstrassCurve.map_map]
+  refine ⟨fun i => ?_, ?_⟩
+  · rw [hmap, WeierstrassCurve.map_Φ, Polynomial.coeff_map]
+    exact hφmem _
+  · haveI : (E.reduction R).IsElliptic :=
+      (WeierstrassCurve.hasGoodReduction_iff_isElliptic_reduction R).mp inferInstance
+    have hne : (E.reduction R).ΨSq n ≠ 0 :=
+      WeierstrassCurve.ΨSq_ne_zero_of_isElliptic _ hn
+    rw [WeierstrassCurve.reduction, WeierstrassCurve.map_ΨSq] at hne
+    obtain ⟨j, hj⟩ : ∃ j : ℕ,
+        (((integralModel R E).ΨSq n).map (IsLocalRing.residue R)).coeff j ≠ 0 := by
+      by_contra hc
+      push Not at hc
+      exact hne (Polynomial.ext fun j => by simpa using hc j)
+    rw [Polynomial.coeff_map] at hj
+    have hu : IsUnit (((integralModel R E).ΨSq n).coeff j) :=
+      IsLocalRing.notMem_maximalIdeal.mp fun hm =>
+        hj ((IsLocalRing.residue_eq_zero_iff _).mpr hm)
+    refine ⟨j, φ ((hu.unit⁻¹ : Rˣ) : R), hφmem _, ?_⟩
+    rw [hmap, WeierstrassCurve.map_ΨSq, Polynomial.coeff_map, ← map_mul,
+      hu.val_inv_mul, map_one]
+
+open Polynomial in
+/-- **The division step, over an ALGEBRAICALLY CLOSED field: a
+non-integral abscissa is `n` times a non-integral abscissa** (PROVEN
+2026-07-25). This is the geometric core of the `p`-divisibility of the
+kernel of reduction, and it is a DIVISION-POLYNOMIAL argument rather
+than a formal-group one.
+
+Given the two integrality facts of
+`coeff_Φ_mem_and_isUnit_coeff_ΨSq_of_hasGoodReduction`, consider the
+monic polynomial `F = Φₙ − x · Ψ²ₙ`, monic of degree `n²` because
+`deg Φₙ = n² > deg Ψ²ₙ`. Its roots are exactly the abscissae `r` with
+`x([n](r, ·)) = x`.
+
+* `F` has a root OUTSIDE `𝒪`. Otherwise all roots lie in `𝒪`, so (the
+  field being algebraically closed and `F` monic) all COEFFICIENTS of
+  `F` lie in `𝒪`; taking the coefficient `j` at which `Ψ²ₙ` is a unit
+  of `𝒪` gives `x · (Ψ²ₙ)ⱼ = (Φₙ)ⱼ − Fⱼ ∈ 𝒪`, hence `x ∈ 𝒪` — against
+  the hypothesis. Note this is where the non-integrality of `x` is
+  CONSUMED, and it is what makes the argument non-circular.
+* At such a root, `Ψ²ₙ(r) ≠ 0`: otherwise `Φₙ(r) = 0` too, against
+  `isCoprime_Φ_ΨSq`.
+* The field being algebraically closed, the quadratic `yQuad` has a
+  root `y₀`, giving a point `(r, y₀)` on the curve; the multiplication
+  formula `TorsionCard.exists_smul_some_eq` then gives
+  `n • (r, y₀) = (x', y')` with `x' · Ψ²ₙ(r) = Φₙ(r) = x · Ψ²ₙ(r)`, so
+  `x' = x` and `n • (r, y₀) = ±(x, y)`; replacing `y₀` by `negY r y₀`
+  in the minus case finishes.
+
+**Why not the formal group.** The route first mapped for this node was
+analytic — Weierstrass preparation and the Newton polygon of
+`[p](T) = pT + ⋯ + (unit) T^{p^h}` over `ℂ_p` — because the naive
+"pick any `Q` with `pQ = P`, then correct by a `p`-torsion point"
+presupposes the surjectivity of reduction on `E[p]`, which is what the
+parent node is proving. The argument here avoids BOTH: it never picks
+an arbitrary preimage (it picks a root of an explicit polynomial and
+proves that root non-integral), and it needs no completeness — only
+that the field is algebraically closed. -/
+theorem WeierstrassCurve.exists_zsmul_eq_of_abscissa_notMem
+    {L : Type*} [Field L] [DecidableEq L] [IsAlgClosed L]
+    (W : WeierstrassCurve L) [W.IsElliptic] (𝒪 : ValuationSubring L)
+    {n : ℤ} (hn : n ≠ 0)
+    (hΦmem : ∀ i, (W.Φ n).coeff i ∈ 𝒪)
+    (hunit : ∃ (j : ℕ) (c : L), c ∈ 𝒪 ∧ c * (W.ΨSq n).coeff j = 1)
+    {x y : L} (h : W.toAffine.Nonsingular x y) (hx : x ∉ 𝒪) :
+    ∃ (x' y' : L) (h' : W.toAffine.Nonsingular x' y'),
+      x' ∉ 𝒪 ∧
+      n • (Affine.Point.some x' y' h' : W.toAffine.Point) =
+        Affine.Point.some x y h := by
+  classical
+  have hx0 : x ≠ 0 := fun h0 => hx (h0 ▸ zero_mem 𝒪)
+  set F : L[X] := W.Φ n - C x * W.ΨSq n with hF
+  have hΦmonic : (W.Φ n).Monic := W.leadingCoeff_Φ n
+  have hdegnat : (C x * W.ΨSq n).natDegree < (W.Φ n).natDegree := by
+    rw [Polynomial.natDegree_C_mul hx0, WeierstrassCurve.natDegree_Φ]
+    have h1 : (W.ΨSq n).natDegree ≤ n.natAbs ^ 2 - 1 := W.natDegree_ΨSq_le n
+    have h2 : n.natAbs ≠ 0 := Int.natAbs_ne_zero.mpr hn
+    have h3 : 1 ≤ n.natAbs ^ 2 := Nat.one_le_iff_ne_zero.mpr (by positivity)
+    omega
+  have hFmonic : F.Monic :=
+    hΦmonic.sub_of_left (Polynomial.degree_lt_degree hdegnat)
+  have hsplits : F.Splits := IsAlgClosed.splits F
+  have hex : ∃ r ∈ F.roots, r ∉ 𝒪 := by
+    by_contra hall
+    push Not at hall
+    have hlift : F ∈ Polynomial.lifts (𝒪.toSubring.subtype) :=
+      hsplits.mem_lift_of_roots_mem_range hFmonic _
+        fun a ha => ⟨⟨a, hall a ha⟩, rfl⟩
+    have hcoeff : ∀ i, F.coeff i ∈ 𝒪 := by
+      intro i
+      obtain ⟨z, hz⟩ := (Polynomial.lifts_iff_coeff_lifts F).mp hlift i
+      exact hz ▸ z.2
+    obtain ⟨j, c, hc, hcj⟩ := hunit
+    have hFj : F.coeff j = (W.Φ n).coeff j - x * (W.ΨSq n).coeff j := by
+      rw [hF, Polynomial.coeff_sub, Polynomial.coeff_C_mul]
+    have hxc : x * (W.ΨSq n).coeff j ∈ 𝒪 := by
+      have hsub := sub_mem (hΦmem j) (hcoeff j)
+      rwa [hFj, sub_sub_cancel] at hsub
+    refine hx ?_
+    have hxeq : x = (x * (W.ΨSq n).coeff j) * c := by
+      rw [mul_assoc, mul_comm ((W.ΨSq n).coeff j) c, hcj, mul_one]
+    rw [hxeq]
+    exact mul_mem hxc hc
+  obtain ⟨r, hrroot, hr⟩ := hex
+  have hFr : F.eval r = 0 := (Polynomial.mem_roots hFmonic.ne_zero).mp hrroot
+  have hkey : (W.Φ n).eval r = x * (W.ΨSq n).eval r := by
+    have h0 : (W.Φ n).eval r - x * (W.ΨSq n).eval r = 0 := by
+      simpa [hF] using hFr
+    exact sub_eq_zero.mp h0
+  have hΨr : (W.ΨSq n).eval r ≠ 0 := by
+    intro h0
+    have hΦr : (W.Φ n).eval r = 0 := by rw [hkey, h0, mul_zero]
+    obtain ⟨A, B, hAB⟩ := WeierstrassCurve.isCoprime_Φ_ΨSq W hn W.isUnit_Δ
+    have hev := congrArg (Polynomial.eval r) hAB
+    simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_one,
+      hΦr, h0, mul_zero, add_zero] at hev
+    exact zero_ne_one hev
+  obtain ⟨y₀, hy₀⟩ : ∃ y₀ : L, (TorsionCard.yQuad W r).eval y₀ = 0 := by
+    have hdeg2 : (TorsionCard.yQuad W r).degree ≠ 0 := by
+      rw [Polynomial.degree_eq_natDegree (TorsionCard.yQuad_ne_zero W r),
+        TorsionCard.yQuad_natDegree]
+      simp
+    exact IsAlgClosed.exists_root _ hdeg2
+  have heq0 : W.toAffine.Equation r y₀ :=
+    (TorsionCard.eval_yQuad_eq_zero_iff_equation W r y₀).mp hy₀
+  have h₀ : W.toAffine.Nonsingular r y₀ :=
+    WeierstrassCurve.Affine.equation_iff_nonsingular.mp heq0
+  obtain ⟨x', y', h'', hsmul0, hxf0⟩ := TorsionCard.exists_smul_some_eq W hn h₀ hΨr
+  have h' : W.toAffine.Nonsingular x' y' := h''
+  have hxf : x' * (W.ΨSq n).eval r = (W.Φ n).eval r := hxf0
+  have hsmul : n • (Affine.Point.some r y₀ h₀ : W.toAffine.Point) =
+      Affine.Point.some x' y' h' := hsmul0
+  have hx'x : x' = x := by
+    rw [hkey] at hxf
+    exact mul_right_cancel₀ hΨr hxf
+  subst hx'x
+  rcases TorsionCard.eq_or_add_eq_zero_of_X_eq W h' h rfl with heq0' | hneg0
+  · have heq : (Affine.Point.some x' y' h' : W.toAffine.Point) =
+        Affine.Point.some x' y h := heq0'
+    exact ⟨r, y₀, h₀, hr, by rw [hsmul, heq]⟩
+  · have hneg : (Affine.Point.some x' y' h' : W.toAffine.Point) +
+        Affine.Point.some x' y h = 0 := hneg0
+    refine ⟨r, W.toAffine.negY r y₀, (Affine.nonsingular_neg ..).mpr h₀, hr, ?_⟩
+    have hopp : (Affine.Point.some x' y' h' : W.toAffine.Point) =
+        -(Affine.Point.some x' y h : W.toAffine.Point) :=
+      eq_neg_of_add_eq_zero_left hneg
+    rw [← Affine.Point.neg_some h₀, smul_neg, hsmul, hopp, neg_neg]
+
+open IsDedekindDomain in
+set_option synthInstance.maxHeartbeats 1000000 in
+/-- **`ℤ_(p) ⊆ ℚ` lands in the local valuation subring of `ℚ̄_p`**
+(PROVEN 2026-07-25, the `hφmem` hypothesis of
+`coeff_Φ_mem_and_isUnit_coeff_ΨSq_of_hasGoodReduction` at the place
+`v_p`): an element `r` of the good-reduction model
+`Localization.AtPrime v_p ⊆ ℚ` has `v_p`-adic valuation `≤ 1` — write
+`r = a/s` with `s ∉ v_p`, so `v(s) = 1` by
+`intValuation_eq_one_iff_mem_primeCompl` and `v(r) = v(a) ≤ 1` — hence
+its image in `ℚ_p` lies in `ℤ_p`, hence its image in `ℚ̄_p` is integral
+over `ℤ_p`, i.e. lies in `localValuationSubring v_p`
+(`algebraMap_mem_localValuationSubring_of_integer` of
+`Semistable.lean`). -/
+theorem mem_localValuationSubring_of_algebraMap_localizationAtPrime
+    {p : ℕ} (hp : p.Prime)
+    (r : Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal) :
+    (algebraMap (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)))
+      ((algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat))
+        (algebraMap
+          (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal) ℚ r)) ∈
+      localValuationSubring hp.toHeightOneSpectrumRingOfIntegersRat := by
+  refine algebraMap_mem_localValuationSubring_of_integer hp _ ?_
+  rw [HeightOneSpectrum.mem_adicCompletionIntegers,
+    valued_algebraMap_adicCompletion_eq hp]
+  obtain ⟨a, s, rfl⟩ := IsLocalization.exists_mk'_eq
+    hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal.primeCompl r
+  have h2 := congrArg
+    (algebraMap (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal) ℚ)
+    (IsLocalization.mk'_spec
+      (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal) a s)
+  rw [map_mul, ← IsScalarTower.algebraMap_apply, ← IsScalarTower.algebraMap_apply] at h2
+  have h3 := congrArg (hp.toHeightOneSpectrumRingOfIntegersRat.valuation ℚ) h2
+  have hs1 : hp.toHeightOneSpectrumRingOfIntegersRat.valuation ℚ
+      (algebraMap (NumberField.RingOfIntegers ℚ) ℚ
+        (s : NumberField.RingOfIntegers ℚ)) = 1 := by
+    rw [HeightOneSpectrum.valuation_of_algebraMap]
+    exact (HeightOneSpectrum.intValuation_eq_one_iff_mem_primeCompl _ _).mpr s.2
+  rw [map_mul, hs1, mul_one] at h3
+  rw [h3]
+  exact HeightOneSpectrum.valuation_le_one _ a
+
 open ValuativeRel IsDedekindDomain in
 open scoped WeierstrassCurve.Affine in
 set_option backward.isDefEq.respectTransparency false in
-/-- **The kernel of reduction is `p`-divisible over `ℚ̄_p`** (sorry
-node, cut 2026-07-25 out of `exists_localReductionHom_of_good_reduction`
-— the FORMAL-GROUP half): every affine point of `E(ℚ̄_p)` whose
+/-- **The kernel of reduction is `p`-divisible over `ℚ̄_p`** (PROVEN
+2026-07-25 by a DIVISION-POLYNOMIAL argument; cut 2026-07-25 out of
+`exists_localReductionHom_of_good_reduction` — the FORMAL-GROUP half):
+every affine point of `E(ℚ̄_p)` whose
 abscissa is not integral for the valuation subring
 `localValuationSubring` — equivalently, every nonzero point of the
 kernel of reduction `E₁(ℚ̄_p) = Ê(𝔪)` — is `p` times another point of
 the same kernel.
 
-This is the `p`-divisibility of the formal group over the valuation
-ring of `ℚ̄_p`. Over a FINITE extension of `ℚ_p` it is false (`Ê(𝔪)`
-is then a finitely generated `ℤ_p`-module of positive rank plus finite
-torsion); it becomes true over `ℚ̄_p` because the value group is all of
-`ℚ` and the residue field is algebraically closed, so the Newton
-polygon of the power series `[p](T) = pT + ⋯ + (unit) T^{p^h} + ⋯`
-has all its slopes realised: `[p](T) − t` has a root in the maximal
-ideal for every `t` in the maximal ideal. Silverman *AEC* IV.2–IV.3
-(formal groups and their `[n]`), VII.2, VII.6; ATAEC IV.6.
+Mathematically this is the `p`-divisibility of the formal group
+`Ê(𝔪)` over the valuation ring of `ℚ̄_p`. Over a FINITE extension of
+`ℚ_p` it is FALSE (`Ê(𝔪)` is then a finitely generated `ℤ_p`-module of
+positive rank plus finite torsion); it becomes true over `ℚ̄_p`.
 
-The abscissa/ordinate valuation facts needed to see that the solution
-again lies in the kernel are the `Flat.lean` kernel-of-reduction
-lemmas (`kernel_add_abscissa_notMem`,
-`val_abscissa_lt_val_ordinate`). Stated intrinsically — with no
-reference to a reduction map — precisely so that this leaf and
+**The proof taken is not the formal-group one.** The route originally
+mapped was analytic: Weierstrass preparation and the Newton polygon of
+`[p](T) = pT + ⋯ + (unit) T^{p^h} + ⋯` over a complete base
+(Silverman *AEC* IV.2–IV.3, VII.2, VII.6; ATAEC IV.6). The proof
+below is instead a three-line DIVISION-POLYNOMIAL argument, needing no
+completeness at all — only that `ℚ̄_p` is algebraically closed and
+that `E` has good reduction:
+
+1. `coeff_Φ_mem_and_isUnit_coeff_ΨSq_of_hasGoodReduction` — good
+   reduction makes every coefficient of `Φ_p` integral and SOME
+   coefficient of `Ψ²_p` a unit (the reduced curve is elliptic, so its
+   `Ψ²_p` is nonzero — which needs the characteristic-free
+   `ΨSq_ne_zero_of_isElliptic`, since `char = p` here);
+2. `mem_localValuationSubring_of_algebraMap_localizationAtPrime` —
+   the model `ℤ_(p) ⊆ ℚ` does land in `localValuationSubring`;
+3. `exists_zsmul_eq_of_abscissa_notMem` — over an algebraically closed
+   field, `F = Φ_p − x · Ψ²_p` is monic of degree `p²`, and if all its
+   roots were integral so would all its coefficients be, forcing
+   `x ∈ 𝒪` through the unit coefficient of `Ψ²_p`. So some root `r` is
+   NON-integral, and any curve point above `r` is a `p`-division point
+   of `(x, y)` lying again in the kernel.
+
+Note this also settles the circularity that blocked the obvious
+approach: one does not pick an arbitrary `Q` with `pQ = P` and correct
+it by a `p`-torsion point (which would presuppose the surjectivity of
+reduction on `E[p]` that the parent node is proving) — the division
+point is produced as an explicit root and proved non-integral
+directly. The `Flat.lean` valuation lemmas
+(`kernel_add_abscissa_notMem`, `val_abscissa_lt_val_ordinate`) are
+correspondingly NOT needed.
+
+Stated intrinsically — with no reference to a reduction map —
+precisely so that this leaf and
 `exists_localReductionAddHom_of_good_reduction` can be owned
 independently. -/
 theorem WeierstrassCurve.exists_localKernelDivision_of_good_reduction
@@ -6970,8 +7251,22 @@ theorem WeierstrassCurve.exists_localKernelDivision_of_good_reduction
             hp.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
             (HeightOneSpectrum.adicCompletion ℚ
               hp.toHeightOneSpectrumRingOfIntegersRat))).Point) =
-        WeierstrassCurve.Affine.Point.some x y h :=
-  sorry
+        WeierstrassCurve.Affine.Point.some x y h := by
+  classical
+  have hn : ((p : ℕ) : ℤ) ≠ 0 := by exact_mod_cast hp.ne_zero
+  obtain ⟨hΦmem, hunit⟩ :=
+    WeierstrassCurve.coeff_Φ_mem_and_isUnit_coeff_ΨSq_of_hasGoodReduction
+      (R := Localization.AtPrime
+        hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal) E
+      ((algebraMap (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat)
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat))).comp
+        (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat)))
+      (localValuationSubring hp.toHeightOneSpectrumRingOfIntegersRat).toSubring
+      (fun r => mem_localValuationSubring_of_algebraMap_localizationAtPrime hp r) hn
+  exact WeierstrassCurve.exists_zsmul_eq_of_abscissa_notMem _ _ hn hΦmem hunit h hx
 
 open ValuativeRel IsDedekindDomain in
 open scoped WeierstrassCurve.Affine in
