@@ -41,18 +41,20 @@ scoped to that worktree. Live allocation state:
 
 - **Batch 1, `~/flt-lean-1` .. `~/flt-lean-13`**: template unit
   `flt-report-server@.service`, `WorkingDirectory=%h/%i`.
-- **Batch 2, `/scratch/chend-flt/flt-lean-14` ..
-  `/scratch/chend-flt/flt-lean-26`**: template unit
-  `flt-report-server-scratch@.service`, identical except
-  `WorkingDirectory=/scratch/chend-flt/%i`. They live off `$HOME`
-  because a worktree costs ~5.4G (4.6G of it mathlib oleans in
-  `.lake/packages`, 826M project build) and the 67G home volume filled
-  up; `/scratch` is a 9.7T local disk. **`/tmp` is NOT an option — it
-  is a 9.7G volume, one worktree's worth.** Batch 1 was deliberately
-  left exactly as it was (Deyao: "i don't want to touch things that
-  still work"). Note `/scratch` is not backed up and may be purged;
-  only `.lake` and uncommitted work would be lost, since branch refs
-  live in the main repo's object store.
+- **Batch 2, `~/flt-lean-14` .. `~/flt-lean-26`**: same layout as batch 3 —
+  source tree in `$HOME`, only `.lake` and `.report-server` symlinked to
+  `/scratch/chend-flt/flt-lean-N/`. Artifacts live off `$HOME` because a
+  worktree costs ~5.4G (4.6G of it mathlib oleans in `.lake/packages`, 826M
+  project build) and the 67G home volume filled up; `/scratch` is a 9.7T
+  local disk. **`/tmp` is NOT an option — it is a 9.7G volume, one
+  worktree's worth.** Note `/scratch` is machine-LOCAL and not backed up;
+  only `.lake` and uncommitted work would be lost, since branch refs live in
+  the main repo's object store.
+- **ONE unit template, `flt-report-server@.service`** (`WorkingDirectory=%h/%i`),
+  serves every worktree. A second template rooted at `/scratch` existed
+  briefly while whole worktrees lived there; it was deleted 2026-07-25 once
+  the layout settled on "sources in `$HOME`, artifacts symlinked" — there is
+  deliberately only one way to run a worker.
 - `.claude/worktree-pool-hook.py` resolves a pool entry by trying each
   root in `ROOTS` in order, so batch-1 names still resolve under
   `$HOME`.
@@ -396,6 +398,26 @@ registers all 14 as separate entries (`report-flt-lean`,
 `report-flt-lean-1` .. `report-flt-lean-13`), each pointing
 `--socket-dir` at its matching worktree's `.report-server`. An agent
 working in `flt-lean-N` uses the `report-flt-lean-N` entry.
+
+**Single-flight per document (Deyao, 2026-07-25 — after the thrash).** The
+open-document map (`{uri: version, hash}`) lives in `.report-server/state.json`
+and is therefore SHARED by every client process talking to that server
+session, not held per process. It has to be: an orchestrator restart kills the
+client, and a fresh one that believed no document was open would send a second
+`didOpen`, whereupon `lake serve` starts ANOTHER `lean --worker` for that file
+while the first keeps running (nothing ever closed the document). Four restarts
+produced four rival elaborations of one file; the fleet reached 81 concurrent
+`lake setup-file` builds, all rebuilding the same olean and starving each
+other. With the map shared, a restarted client re-issues `waitForDiagnostics`
+against the version already in flight — it ATTACHES instead of racing. The
+session marker is the state file's INODE (not mtime), since the file is now
+rewritten in normal operation and `ExecStartPre` `rm -f`s it per (re)start.
+Verified 2026-07-25: fresh client attaches in 0.0s with no new worker; the
+pre-fix client spawned a third worker on the same server.
+
+**Doctrine for agents:** one blocking call, then wait. A timeout means "still
+elaborating", not "failed"; re-issuing is safe and attaches; only an edit
+starts new work.
 
 `diagnostics` syncs the file with on-disk content (`didOpen` the first
 time, `didChange` after) and blocks on `textDocument/waitForDiagnostics`
