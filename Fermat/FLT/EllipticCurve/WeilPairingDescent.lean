@@ -1304,7 +1304,7 @@ lemma coordC_sub (c d : F) : coordC W (c - d) = coordC W c - coordC W d := by
 
 omit [DecidableEq F] in
 /-- The Weierstrass relation, read inside the coordinate ring. -/
-lemma coord_equation (W : WeierstrassCurve.Affine F) :
+lemma coord_equation_coordC (W : WeierstrassCurve.Affine F) :
     coordY W ^ 2 + coordC W W.a₁ * coordX W * coordY W + coordC W W.a₃ * coordY W =
       coordX W ^ 3 + coordC W W.a₂ * coordX W ^ 2 + coordC W W.a₄ * coordX W +
         coordC W W.a₆ := by
@@ -1335,7 +1335,7 @@ noncomputable def involHom (W : WeierstrassCurve.Affine F) :
     W.CoordinateRing →+* W.CoordinateRing :=
   AdjoinRoot.lift ((CoordinateRing.mk W).comp Polynomial.C)
     (-coordY W - coordC W W.a₁ * coordX W - coordC W W.a₃) (by
-      have hR := coord_equation W
+      have hR := coord_equation_coordC W
       simp only [coordX, coordY, coordC] at hR
       show Polynomial.eval₂ ((CoordinateRing.mk W).comp Polynomial.C)
         (-coordY W - coordC W W.a₁ * coordX W - coordC W W.a₃)
@@ -1873,9 +1873,9 @@ That is exactly how it is proven below, in a *single*
 reduction (the CAS is used only as a searcher; the kernel checks the
 certificate).  Writing `EX := W_X(Q)`, `EY := W_Y(Q)`,
 `RQ := W(q₁, q₂)` and `R0` for the coordinate-ring relation
-`coord_equation`, the certificate is
+`coord_equation_coordC`, the certificate is
 
-* `−T³·(A − q₁T² − RQ)` against `coord_equation`,
+* `−T³·(A − q₁T² − RQ)` against `coord_equation_coordC`,
 * `−T³·(EY·U + EX·T + T³ + RQ)` against `W.Equation q₁ q₂` (transported
   into `F[W]` along `algebraMap`),
 * `−T⁴·A` against the `Cubic.c` coefficient of `addPolynomial_slope`
@@ -1899,7 +1899,7 @@ theorem lineNumerator_mul_lineNumeratorNeg {q₁ q₂ x₁ y₁ x₂ y₂ : F}
   have hc2 := Cubic.c_of_eq hAP
   have hc3 := Cubic.d_of_eq hAP
   -- the two relations, transported into `F[W]`
-  have hcr := coord_equation W
+  have hcr := coord_equation_coordC W
   rw [WeierstrassCurve.Affine.equation_iff'] at hq
   have hqW := congrArg (algebraMap F W.CoordinateRing) hq
   have hc2W := congrArg (algebraMap F W.CoordinateRing) hc2
