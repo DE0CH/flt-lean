@@ -53,13 +53,17 @@ PROVEN 2026-07-24 via the shared Chebotarev–Brauer–Nesbitt node of
 `BrauerNesbittConjugacy.lean`):
 `exists_isWeaklyUniversalOnIdentified`, `exists_isTraceGenerated_ringHom`,
 `finite_quotient_span_of_isWeaklyUniversal_isTraceGenerated`,
-`exists_unramified_coefficientRing`,
 `exists_minimal_mvPowerSeries_presentation_of_coefficientRing`,
 `exists_relations_lt_le_smul_of_minimal_mvPowerSeries_presentation` (the
-last three are the 2026-07-25 decomposition of the presentation stratum's
-two former leaves `exists_minimal_mvPowerSeries_presentation` and
+last two are what remains of the 2026-07-25 decomposition of the
+presentation stratum's two former leaves
+`exists_minimal_mvPowerSeries_presentation` and
 `exists_relations_lt_of_minimal_mvPowerSeries_presentation`, both now
-proven assemblies). Everything
+proven assemblies; the third piece of that decomposition,
+`exists_unramified_coefficientRing`, was PROVEN outright the same day —
+`Λ = ℤ_ℓ[x]/(F)` for a monic lift `F` of the minimal polynomial of a
+generator of `kˣ`, with `ψ` produced by Hensel's lemma in `R`).
+Everything
 else is proven glue, culminating in
 `exists_hardlyRamified_lift_of_five_le` — verbatim the statement of
 Khare–Wintenberger pillar α
@@ -91,6 +95,16 @@ import Fermat.FLT.GaloisRepresentation.BrauerNesbittConjugacy
 -- proof-only: the characteristic of a finite field, `ℤ_ℓ`-unit lemmas.
 import Mathlib.FieldTheory.Finite.Basic
 import Mathlib.NumberTheory.Padics.RingHoms
+-- proof-only: the unramified coefficient ring `Λ = ℤ_ℓ[x]/(F)` — a monogenic
+-- lift of the residue field — and the Hensel lift of its generator into `R`.
+import Mathlib.RingTheory.AdjoinRoot
+import Mathlib.RingTheory.Henselian
+import Mathlib.RingTheory.Ideal.GoingUp
+import Mathlib.Algebra.Algebra.ZMod
+import Mathlib.FieldTheory.Perfect
+import Mathlib.Algebra.Polynomial.Lifts
+import Mathlib.Algebra.Polynomial.Eval.Irreducible
+import Mathlib.RingTheory.Polynomial.Basic
 -- Krull's height theorem, consumed by the PROVEN Krull glue
 -- `exists_isPrime_lt_maximalIdeal_of_mvPowerSeries_presentation`.
 import Mathlib.RingTheory.Ideal.KrullsHeightTheorem
@@ -152,6 +166,51 @@ lemma natCast_self_eq_zero : ((ℓ : ℕ) : k) = 0 := by
     have hu := hunit.map (algebraMap ℤ_[ℓ] k)
     rw [hzero] at hu
     exact not_isUnit_zero hu
+
+/-- **`k` has characteristic `ℓ` as a `CharP` instance** (PROVEN,
+elementary): the `CharP` repackaging of `natCast_self_eq_zero`, which is
+what makes `k` an algebra over the prime field `ZMod ℓ` — the base over
+which the residue extension of the unramified coefficient ring is
+monogenic. -/
+lemma charP_of_algebra_padicInt : CharP k ℓ := by
+  have h0 : ((ℓ : ℕ) : k) = 0 := natCast_self_eq_zero
+  have hdvd : ringChar k ∣ ℓ := ringChar.dvd h0
+  have hne1 : ringChar k ≠ 1 := by
+    intro h
+    exact one_ne_zero (α := k)
+      (by simpa [h] using ringChar.Nat.cast_ringChar (R := k))
+  have heq : ringChar k = ℓ :=
+    ((Nat.Prime.eq_one_or_self_of_dvd (Fact.out : ℓ.Prime) _ hdvd).resolve_left
+      hne1)
+  exact heq ▸ ringChar.charP k
+
+/-- **There is at most one ring homomorphism `ℤ_[ℓ] → k`** (PROVEN,
+elementary): every such map kills `ℓ` (the characteristic of `k`), hence
+factors through `ℤ_[ℓ]/(ℓ) = ZMod ℓ`, on which it is forced. Consumed by
+the coefficient-ring leaf to identify `algebraMap ℤ_[ℓ] k` and
+`π ∘ algebraMap ℤ_[ℓ] R` with the canonical map through the prime field —
+which is what lets the mod-`ℓ` minimal polynomial control evaluation over
+`R`. -/
+lemma padicInt_ringHom_unique (f g : ℤ_[ℓ] →+* k) : f = g := by
+  have key : ∀ (h : ℤ_[ℓ] →+* k) (x : ℤ_[ℓ]),
+      h x = (((PadicInt.toZMod x).val : ℕ) : k) := by
+    intro h x
+    have hmem : x - (((PadicInt.toZMod x).val : ℕ) : ℤ_[ℓ]) ∈
+        Ideal.span {(ℓ : ℤ_[ℓ])} := by
+      rw [← PadicInt.maximalIdeal_eq_span_p, ← PadicInt.ker_toZMod,
+        RingHom.mem_ker, map_sub, map_natCast, sub_eq_zero]
+      exact (ZMod.natCast_rightInverse (PadicInt.toZMod x)).symm
+    obtain ⟨y, hy⟩ := Ideal.mem_span_singleton'.mp hmem
+    have hx : x = (((PadicInt.toZMod x).val : ℕ) : ℤ_[ℓ]) + y * (ℓ : ℤ_[ℓ]) := by
+      rw [hy]; ring
+    calc h x
+        = h ((((PadicInt.toZMod x).val : ℕ) : ℤ_[ℓ]) + y * (ℓ : ℤ_[ℓ])) := by
+          rw [← hx]
+      _ = (((PadicInt.toZMod x).val : ℕ) : k) := by
+          rw [map_add, map_mul, map_natCast, map_natCast,
+            show ((ℓ : ℕ) : k) = 0 from natCast_self_eq_zero, mul_zero, add_zero]
+  ext x
+  rw [key f x, key g x]
 
 variable [TopologicalSpace k] [DiscreteTopology k]
 variable {V : Type v} [AddCommGroup V] [Module k V]
@@ -1359,9 +1418,10 @@ theorem isNoetherianRing_mvPowerSeries {R : Type*} [CommRing R]
     haveI := ih
     exact isNoetherianRing_of_ringEquiv _ e.symm
 
-/-- **Unramified coefficient ring leaf** (sorry node, pure commutative
+omit [TopologicalSpace k] [DiscreteTopology k] in
+/-- **Unramified coefficient ring** (PROVEN 2026-07-25, pure commutative
 algebra — the coefficient-ring half of the minimal-presentation leaf,
-split off 2026-07-25): a maximal-adically complete local `ℤ_ℓ`-algebra
+split off and discharged the same day): a maximal-adically complete local `ℤ_ℓ`-algebra
 `R` mapping ONTO the finite field `k` receives a compatible map
 `ψ : Λ → R` from an *unramified coefficient ring* `Λ` — a local
 Noetherian domain, module-finite over `ℤ_ℓ`, with maximal ideal `(ℓ)` —
@@ -1370,9 +1430,10 @@ Classically `Λ = W(k)` (the Witt vectors) and `ψ` is the Cohen
 coefficient map; `Λ` is pinned up to isomorphism by the clauses, and
 its residue field is forced to be `k` by the surjectivity of `π ∘ ψ`.
 
-INTENDED ROUTE — no Cohen structure theorem is needed (and mathlib has
-none): the residue field is FINITE, so the unramified coefficient ring
-is a *monogenic* extension of `ℤ_ℓ` and Hensel's lemma replaces Cohen.
+ROUTE (as formalised) — no Cohen structure theorem is needed (and mathlib
+has none): the residue field is FINITE, so the unramified coefficient
+ring is a *monogenic* extension of `ℤ_ℓ` and Hensel's lemma replaces
+Cohen.
 
 1. `k` has characteristic `ℓ` (`natCast_self_eq_zero` above), so `k` is
    a `ZMod ℓ`-algebra, finite-dimensional over its prime field.
@@ -1396,17 +1457,27 @@ is a *monogenic* extension of `ℤ_ℓ` and Hensel's lemma replaces Cohen.
    and `Λ₀` is local with `𝔪_{Λ₀} = (ℓ)`.
 5. `R` is Henselian at `𝔪_R` (`IsAdicComplete.henselianRing`), and
    `RingHom.ker π = 𝔪_R` (`IsLocalRing.ker_eq_maximalIdeal`), so the
-   third clause of `HenselianLocalRing.TFAE` — stated for an arbitrary
-   surjection `φ : R →+* K` onto a field, which is exactly our `π` —
-   applied to the monic `F.map (algebraMap ℤ_[ℓ] R)` and its simple root
-   `α` produces `a : R` with `F(a) = 0` and `π a = α`. Then
+   `HenselianLocalRing.is_henselian` — applied to the monic
+   `F.map (algebraMap ℤ_[ℓ] R)` at any `π`-preimage `a₀` of `α`, whose
+   value lies in `𝔪_R` and at which the derivative is a unit precisely
+   because `p̄` is separable — produces `a : R` with `F(a) = 0` and
+   `a - a₀ ∈ 𝔪_R`, hence `π a = α`. (The universe-restricted clause 3 of
+   `HenselianLocalRing.TFAE` is NOT usable here: it forces the residue
+   field into `R`'s universe, and `k` lives in its own.) Then
    `ψ := AdjoinRoot.lift (algebraMap ℤ_[ℓ] R) a` is the required
    `ℤ_[ℓ]`-algebra map, and `π ∘ ψ` is onto because its image is a
    subring of `k` containing `α` — and every subring contains the prime
    field, so it contains `𝔽_ℓ[α] = k`.
-6. UNIVERSE: `AdjoinRoot F` lives in `Type 0` while the statement asks
-   for `Λ : Type u` (the universe of `k`); wrap it in `ULift.{u}` and
-   transport every instance along `ULift.ringEquiv`.
+6. UNIVERSE: `AdjoinRoot F` lives in `Type 0`, which is why the whole
+   presentation stratum quantifies its coefficient ring over `Type`
+   rather than over the universe of `k` — no `ULift` transport is
+   needed anywhere.
+
+Steps 4 and 5 are where the two proven auxiliaries above are consumed:
+`charP_of_algebra_padicInt` makes `k` an algebra over the prime field,
+and `padicInt_ringHom_unique` identifies both `algebraMap ℤ_[ℓ] k` and
+`π ∘ algebraMap ℤ_[ℓ] R` with the canonical map through `ZMod ℓ`, so
+that evaluation of `F` over `R` or over `k` is computed by `p̄`.
 
 References: Serre, *Local Fields* II §5 (unramified extensions are
 monogenic, obtained by lifting the residue extension); de Smit–Lenstra,
@@ -1415,14 +1486,171 @@ theorem exists_unramified_coefficientRing {R : Type*} [CommRing R]
     [IsLocalRing R] [Algebra ℤ_[ℓ] R]
     [IsAdicComplete (IsLocalRing.maximalIdeal R) R]
     (π : R →+* k) (hπsurj : Function.Surjective π) :
-    ∃ (Λ : Type u) (_ : CommRing Λ) (_ : IsDomain Λ) (_ : IsLocalRing Λ)
+    ∃ (Λ : Type) (_ : CommRing Λ) (_ : IsDomain Λ) (_ : IsLocalRing Λ)
       (_ : IsNoetherianRing Λ) (_ : Algebra ℤ_[ℓ] Λ)
       (_ : Module.Finite ℤ_[ℓ] Λ),
       IsLocalRing.maximalIdeal Λ = Ideal.span {(ℓ : Λ)} ∧
       ∃ ψ : Λ →+* R,
         ψ.comp (algebraMap ℤ_[ℓ] Λ) = algebraMap ℤ_[ℓ] R ∧
-        Function.Surjective (π.comp ψ) :=
-  sorry
+        Function.Surjective (π.comp ψ) := by
+  classical
+  letI : CharP k ℓ := charP_of_algebra_padicInt
+  letI : Algebra (ZMod ℓ) k := ZMod.algebra k ℓ
+  haveI : Module.Finite (ZMod ℓ) k := Module.Finite.of_finite
+  -- the structure map factors through the prime field
+  have hfact : (algebraMap ℤ_[ℓ] k) =
+      (algebraMap (ZMod ℓ) k).comp PadicInt.toZMod :=
+    padicInt_ringHom_unique _ _
+  -- a generator of the cyclic group `kˣ` and its minimal polynomial
+  obtain ⟨α, hα⟩ := IsCyclic.exists_generator (α := kˣ)
+  have hint : IsIntegral (ZMod ℓ) ((α : kˣ) : k) := Algebra.IsIntegral.isIntegral _
+  set p : (ZMod ℓ)[X] := minpoly (ZMod ℓ) ((α : kˣ) : k) with hpdef
+  have hpmonic : p.Monic := minpoly.monic hint
+  have hpirr : Irreducible p := minpoly.irreducible hint
+  have hpsep : p.Separable := Algebra.IsSeparable.isSeparable (ZMod ℓ) _
+  have hproot : (Polynomial.aeval ((α : kˣ) : k)) p = 0 := minpoly.aeval _ _
+  have hderiv : (Polynomial.aeval ((α : kˣ) : k)) (Polynomial.derivative p) ≠ 0 := by
+    intro h0
+    obtain ⟨u, v, huv⟩ := hpsep
+    have hcon := congrArg (Polynomial.aeval ((α : kˣ) : k)) huv
+    simp only [map_add, map_mul, hproot, h0, mul_zero, add_zero, map_one] at hcon
+    exact zero_ne_one hcon
+  -- a monic lift of the minimal polynomial to `ℤ_ℓ`
+  have htoZMod_surj : Function.Surjective (PadicInt.toZMod (p := ℓ)) := by
+    intro c
+    refine ⟨((c.val : ℕ) : ℤ_[ℓ]), ?_⟩
+    rw [map_natCast]
+    exact ZMod.natCast_rightInverse c
+  obtain ⟨F, hFmap, hFdeg, hFmonic⟩ :=
+    Polynomial.lifts_and_natDegree_eq_and_monic
+      (Polynomial.mem_lifts_of_surjective htoZMod_surj p) hpmonic
+  have hFirr : Irreducible F :=
+    Polynomial.Monic.irreducible_of_irreducible_map (φ := PadicInt.toZMod) F hFmonic
+      (by rw [hFmap]; exact hpirr)
+  have hFprime : Prime F := UniqueFactorizationMonoid.irreducible_iff_prime.mp hFirr
+  haveI hdom : IsDomain (AdjoinRoot F) := AdjoinRoot.isDomain_of_prime hFprime
+  haveI hfin : Module.Finite ℤ_[ℓ] (AdjoinRoot F) :=
+    (AdjoinRoot.powerBasis' hFmonic).finite
+  haveI hnoeth : IsNoetherianRing (AdjoinRoot F) :=
+    IsNoetherianRing.of_finite ℤ_[ℓ] (AdjoinRoot F)
+  -- evaluation over `k` factors through the prime field
+  have hkeval : ∀ q : ℤ_[ℓ][X],
+      q.eval₂ (algebraMap ℤ_[ℓ] k) ((α : kˣ) : k) =
+        (Polynomial.aeval ((α : kˣ) : k)) (q.map PadicInt.toZMod) := by
+    intro q
+    rw [Polynomial.aeval_def, Polynomial.eval₂_map, ← hfact]
+  have hroot' : F.eval₂ (algebraMap ℤ_[ℓ] k) ((α : kˣ) : k) = 0 := by
+    rw [hkeval, hFmap]; exact hproot
+  -- `(ℓ)` is a maximal ideal of `AdjoinRoot F`: it is the kernel of the
+  -- surjection onto the residue field `k` sending the root to `α`
+  have hmax : (Ideal.span {(ℓ : AdjoinRoot F)}).IsMaximal := by
+    set θ := AdjoinRoot.lift (algebraMap ℤ_[ℓ] k) ((α : kˣ) : k) hroot' with hθ
+    have hθsurj : Function.Surjective θ := by
+      intro x
+      rcases eq_or_ne x 0 with rfl | hx
+      · exact ⟨0, by simp⟩
+      · obtain ⟨n, hn⟩ := mem_powers_iff_mem_zpowers.mpr (hα (Units.mk0 x hx))
+        refine ⟨AdjoinRoot.root F ^ n, ?_⟩
+        rw [hθ, map_pow, AdjoinRoot.lift_root]
+        exact congrArg (fun u : kˣ => (u : k)) hn
+    have hkerθ : RingHom.ker θ = Ideal.span {(ℓ : AdjoinRoot F)} := by
+      refine le_antisymm (fun z hz => ?_) (Ideal.span_le.mpr ?_)
+      · obtain ⟨q, rfl⟩ := AdjoinRoot.mk_surjective z
+        rw [RingHom.mem_ker, hθ, AdjoinRoot.lift_mk, hkeval] at hz
+        obtain ⟨c, hc⟩ := minpoly.dvd (ZMod ℓ) ((α : kˣ) : k) hz
+        obtain ⟨hlift, hhlift⟩ := (Polynomial.mem_lifts _).mp
+          (Polynomial.mem_lifts_of_surjective htoZMod_surj c)
+        have hzero : Polynomial.map PadicInt.toZMod (q - F * hlift) = 0 := by
+          rw [Polynomial.map_sub, Polynomial.map_mul, hFmap, hhlift, hc, sub_self]
+        have hmemC : q - F * hlift ∈ Ideal.span {Polynomial.C (ℓ : ℤ_[ℓ])} := by
+          have hker : q - F * hlift ∈
+              RingHom.ker (Polynomial.mapRingHom PadicInt.toZMod) := hzero
+          rw [Polynomial.ker_mapRingHom, PadicInt.ker_toZMod,
+            PadicInt.maximalIdeal_eq_span_p, Ideal.map_span] at hker
+          simpa using hker
+        obtain ⟨w, hw⟩ := Ideal.mem_span_singleton'.mp hmemC
+        have hq : q = F * hlift + w * Polynomial.C (ℓ : ℤ_[ℓ]) := by
+          rw [hw]; ring
+        rw [hq, map_add, map_mul, map_mul, AdjoinRoot.mk_self, zero_mul, zero_add,
+          AdjoinRoot.mk_C]
+        refine Ideal.mem_span_singleton'.mpr ⟨AdjoinRoot.mk F w, ?_⟩
+        rw [← AdjoinRoot.algebraMap_eq, map_natCast]
+      · rintro x ⟨rfl⟩
+        rw [SetLike.mem_coe, RingHom.mem_ker, map_natCast]
+        exact natCast_self_eq_zero
+    rw [← hkerθ]
+    exact RingHom.ker_isMaximal_of_surjective θ hθsurj
+  -- hence `AdjoinRoot F` is local: integrality forces every maximal ideal to
+  -- contain `ℓ`
+  haveI hloc : IsLocalRing (AdjoinRoot F) := by
+    refine IsLocalRing.of_unique_max_ideal
+      ⟨Ideal.span {(ℓ : AdjoinRoot F)}, hmax, ?_⟩
+    intro M hM
+    haveI := hM
+    have hcomap : (M.comap (algebraMap ℤ_[ℓ] (AdjoinRoot F))).IsMaximal :=
+      Ideal.isMaximal_comap_of_isIntegral_of_isMaximal M
+    have hlmem : (ℓ : ℤ_[ℓ]) ∈ M.comap (algebraMap ℤ_[ℓ] (AdjoinRoot F)) := by
+      rw [IsLocalRing.eq_maximalIdeal hcomap, PadicInt.maximalIdeal_eq_span_p]
+      exact Ideal.mem_span_singleton_self _
+    have hlM : (ℓ : AdjoinRoot F) ∈ M := by
+      have hmem := hlmem
+      rw [Ideal.mem_comap, map_natCast] at hmem
+      exact hmem
+    exact (hmax.eq_of_le hM.ne_top
+      (Ideal.span_le.mpr (Set.singleton_subset_iff.mpr hlM))).symm
+  have hmaxeq : IsLocalRing.maximalIdeal (AdjoinRoot F) =
+      Ideal.span {(ℓ : AdjoinRoot F)} := (IsLocalRing.eq_maximalIdeal hmax).symm
+  -- Hensel's lemma in the complete local ring `R`
+  haveI hhens : HenselianLocalRing R := by
+    constructor
+    intro f hf a₀ h₁ h₂
+    exact HenselianRing.is_henselian (I := IsLocalRing.maximalIdeal R) f hf a₀ h₁
+      (h₂.map (Ideal.Quotient.mk _))
+  obtain ⟨a₀, ha₀⟩ := hπsurj ((α : kˣ) : k)
+  have hπker : RingHom.ker π = IsLocalRing.maximalIdeal R :=
+    IsLocalRing.ker_eq_maximalIdeal π hπsurj
+  have hπcomp : π.comp (algebraMap ℤ_[ℓ] R) =
+      (algebraMap (ZMod ℓ) k).comp PadicInt.toZMod := by
+    rw [← hfact]; exact padicInt_ringHom_unique _ _
+  have heval : ∀ q : ℤ_[ℓ][X],
+      π ((q.map (algebraMap ℤ_[ℓ] R)).eval a₀) =
+        (Polynomial.aeval ((α : kˣ) : k)) (q.map PadicInt.toZMod) := by
+    intro q
+    rw [Polynomial.eval_map, Polynomial.hom_eval₂, ha₀, hπcomp,
+      Polynomial.aeval_def, ← Polynomial.eval₂_map]
+  have h₁ : (F.map (algebraMap ℤ_[ℓ] R)).eval a₀ ∈ IsLocalRing.maximalIdeal R := by
+    rw [← hπker, RingHom.mem_ker, heval F, hFmap]
+    exact hproot
+  have h₂ : IsUnit ((F.map (algebraMap ℤ_[ℓ] R)).derivative.eval a₀) := by
+    rw [Polynomial.derivative_map]
+    by_contra hu
+    rw [← mem_nonunits_iff, ← IsLocalRing.mem_maximalIdeal, ← hπker, RingHom.mem_ker,
+      heval (Polynomial.derivative F), ← Polynomial.derivative_map, hFmap] at hu
+    exact hderiv hu
+  obtain ⟨a, haroot, hasub⟩ :=
+    HenselianLocalRing.is_henselian (F.map (algebraMap ℤ_[ℓ] R))
+      (hFmonic.map _) a₀ h₁ h₂
+  have hπa : π a = ((α : kˣ) : k) := by
+    have hzero : π (a - a₀) = 0 := by rw [← RingHom.mem_ker, hπker]; exact hasub
+    rw [map_sub, sub_eq_zero, ha₀] at hzero
+    exact hzero
+  have hFeval : F.eval₂ (algebraMap ℤ_[ℓ] R) a = 0 := by
+    rw [← Polynomial.eval_map]; exact haroot
+  refine ⟨AdjoinRoot F, inferInstance, inferInstance, inferInstance, inferInstance,
+    inferInstance, inferInstance, hmaxeq,
+    AdjoinRoot.lift (algebraMap ℤ_[ℓ] R) a hFeval, ?_, ?_⟩
+  · ext x
+    show AdjoinRoot.lift (algebraMap ℤ_[ℓ] R) a hFeval
+      (algebraMap ℤ_[ℓ] (AdjoinRoot F) x) = algebraMap ℤ_[ℓ] R x
+    rw [AdjoinRoot.algebraMap_eq, AdjoinRoot.lift_of]
+  · intro x
+    rcases eq_or_ne x 0 with rfl | hx
+    · exact ⟨0, by simp⟩
+    · obtain ⟨n, hn⟩ := mem_powers_iff_mem_zpowers.mpr (hα (Units.mk0 x hx))
+      refine ⟨AdjoinRoot.root F ^ n, ?_⟩
+      show π (AdjoinRoot.lift (algebraMap ℤ_[ℓ] R) a hFeval (AdjoinRoot.root F ^ n)) = x
+      rw [map_pow, AdjoinRoot.lift_root, map_pow, hπa]
+      exact congrArg (fun u : kˣ => (u : k)) hn
 
 /-- **Presentation-over-a-coefficient-ring leaf** (sorry node, pure
 commutative algebra — the power-series half of the minimal-presentation
@@ -1460,7 +1688,7 @@ INTENDED ROUTE (de Smit–Lenstra Prop. 2.3; Matsumura §29):
 `g` comes out as the mod-`ℓ` cotangent dimension of `R`, which is what
 the Böckle relation bound counts against. -/
 theorem exists_minimal_mvPowerSeries_presentation_of_coefficientRing
-    {Λ : Type u} [CommRing Λ] [IsLocalRing Λ] [IsNoetherianRing Λ]
+    {Λ : Type*} [CommRing Λ] [IsLocalRing Λ] [IsNoetherianRing Λ]
     [Algebra ℤ_[ℓ] Λ] [Module.Finite ℤ_[ℓ] Λ]
     (hΛℓ : IsLocalRing.maximalIdeal Λ = Ideal.span {(ℓ : Λ)})
     {R : Type*} [CommRing R] [IsLocalRing R] [Algebra ℤ_[ℓ] R]
@@ -1517,7 +1745,7 @@ theorem exists_minimal_mvPowerSeries_presentation {R : Type*} [CommRing R]
     [IsLocalRing R] [Algebra ℤ_[ℓ] R] [IsNoetherianRing R]
     [IsAdicComplete (IsLocalRing.maximalIdeal R) R]
     (π : R →+* k) (hπsurj : Function.Surjective π) :
-    ∃ (Λ : Type u) (_ : CommRing Λ) (_ : IsDomain Λ) (_ : IsLocalRing Λ)
+    ∃ (Λ : Type) (_ : CommRing Λ) (_ : IsDomain Λ) (_ : IsLocalRing Λ)
       (_ : IsNoetherianRing Λ) (_ : Algebra ℤ_[ℓ] Λ)
       (_ : Module.Finite ℤ_[ℓ] Λ),
       IsLocalRing.maximalIdeal Λ = Ideal.span {(ℓ : Λ)} ∧
@@ -1600,7 +1828,7 @@ theorem exists_relations_lt_le_smul_of_minimal_mvPowerSeries_presentation
     (D : HardlyRamifiedDeformation hℓOdd ρbar)
     (hw : D.IsWeaklyUniversal) (ht : D.IsTraceGenerated) :
     letI := D.commRing; letI := D.algebra
-    ∀ (Λ : Type u) (_ : CommRing Λ) (_ : IsDomain Λ) (_ : IsLocalRing Λ)
+    ∀ (Λ : Type) (_ : CommRing Λ) (_ : IsDomain Λ) (_ : IsLocalRing Λ)
       (_ : IsNoetherianRing Λ) (_ : Algebra ℤ_[ℓ] Λ)
       (_ : Module.Finite ℤ_[ℓ] Λ),
       IsLocalRing.maximalIdeal Λ = Ideal.span {(ℓ : Λ)} →
@@ -1650,7 +1878,7 @@ theorem exists_relations_lt_of_minimal_mvPowerSeries_presentation
     (D : HardlyRamifiedDeformation hℓOdd ρbar)
     (hw : D.IsWeaklyUniversal) (ht : D.IsTraceGenerated) :
     letI := D.commRing; letI := D.algebra
-    ∀ (Λ : Type u) (_ : CommRing Λ) (_ : IsDomain Λ) (_ : IsLocalRing Λ)
+    ∀ (Λ : Type) (_ : CommRing Λ) (_ : IsDomain Λ) (_ : IsLocalRing Λ)
       (_ : IsNoetherianRing Λ) (_ : Algebra ℤ_[ℓ] Λ)
       (_ : Module.Finite ℤ_[ℓ] Λ),
       IsLocalRing.maximalIdeal Λ = Ideal.span {(ℓ : Λ)} →
@@ -1694,7 +1922,7 @@ theorem exists_mvPowerSeries_presentation_of_isWeaklyUniversal_isTraceGenerated
     (D : HardlyRamifiedDeformation hℓOdd ρbar)
     (hw : D.IsWeaklyUniversal) (ht : D.IsTraceGenerated) :
     letI := D.commRing; letI := D.algebra
-    ∃ (Λ : Type u) (_ : CommRing Λ) (_ : IsDomain Λ) (_ : IsLocalRing Λ)
+    ∃ (Λ : Type) (_ : CommRing Λ) (_ : IsDomain Λ) (_ : IsLocalRing Λ)
       (_ : IsNoetherianRing Λ) (_ : Algebra ℤ_[ℓ] Λ)
       (_ : Module.Finite ℤ_[ℓ] Λ)
       (g r : ℕ) (φ : MvPowerSeries (Fin g) Λ →+* D.R)
