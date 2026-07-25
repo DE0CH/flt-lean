@@ -62,7 +62,6 @@ them without a human. Do not re-wrap it.
 - `exists_universalFrame_profinite_of_deformationCondition`
 - `hasFlatProlongationAt_of_pi_surjection`
 - `hasFlatProlongationAt_of_prod_injection`
-- `exists_cyclotomicCharacter_padicTwo_eq_two`
 - `isTameAtTwo_of_fibreProduct_three`
 - `isTameAtTwo_of_forall_isOpen_quotient`
 - `exists_ringHom_matrix_quotient_of_finite`
@@ -2568,7 +2567,7 @@ theorem isFlatAt_of_fibreProduct (_hodd : Odd ℓ)
     exact hπ₀equiv _ (x 0)
 
 /-- **A Frobenius at `2` inside `Γ ℚ_[2]`, with cyclotomic value `2`**
-(sorry node, cut 2026-07-26 out of `isTameAtTwo_of_fibreProduct` below:
+(PROVEN 2026-07-26; cut out of `isTameAtTwo_of_fibreProduct` below:
 the ARITHMETIC input of that gluing argument, and the ONLY place it uses
 `hodd`).
 
@@ -2584,33 +2583,47 @@ determinant test element `det ρ(g₀) − δ₁(g₀)δ₂(g₀) ∈ {1, 3}` a 
 character takes values in `ℤ_2ˣ` while `2 ∉ ℤ_2ˣ`, so the statement is
 outright FALSE for `ℓ = 2`.
 
-ROUTE, RECORDED FOR ITS OWNER (2026-07-26; surveyed, not carried out).
-`Chebotarev.lean` — imported here — already PROVES the global form
+ROUTE, AS CARRIED OUT (2026-07-26). `Chebotarev.lean` — imported here —
+already PROVED the global form
 `cyclotomicCharacter_globalFrob : χ_ℓ (globalFrob v_q) = q` for `q ≠ ℓ`,
 where `globalFrob v = Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_v)
-(Field.AbsoluteGaloisGroup.adicArithFrob v)`. The ONLY missing step is
+(Field.AbsoluteGaloisGroup.adicArithFrob v)`. The only missing step was
 the transport from the adic completion `ℚ_{v₂}` to mathlib's `Padic`
-`ℚ_[2]`: the continuous `ℚ`-algebra isomorphism `E : ℚ_{v₂} ≃A[ℚ] ℚ_[2]`
-(`Rat.HeightOneSpectrum.adicCompletion.padicEquiv`, cast through
-`natGenerator_toHeightOneSpectrum`) supplies the candidate
-`g₀ := Field.absoluteGaloisGroup.map (E.symm : ℚ_[2] →+* ℚ_{v₂})
-        (Field.AbsoluteGaloisGroup.adicArithFrob v₂)`,
-and two applications of `Field.absoluteGaloisGroup.lift_map` show that
-`map (algebraMap ℚ ℚ_[2]) g₀` and `globalFrob v₂` differ by CONJUGATION
-by the single element of `Γ ℚ` comparing the two `ℚ`-embeddings
-`ℚᵃˡᵍ → ℚ_{v₂}ᵃˡᵍ`. Conjugation is invisible here because `χ_ℓ` is a
-homomorphism into an ABELIAN group. `Modularity/Interface.lean`'s PROVEN
-`exists_uniform_conj_decomposition_two_padic` performs precisely that
-comparison (stated in the opposite direction), but it lives DOWNSTREAM
-of this module and the circularity guard at the head of this file
-forbids importing it — so the comparison must be redone here, or that
-declaration moved upstream into `Chebotarev.lean`. -/
+`ℚ_[2]`; that comparison is now `Chebotarev.lean`'s
+`exists_padicGalois_map_eq_conj_globalFrob`, which produces
+`g : Γ ℚ_[q]` and `c : Γ ℚ` with
+`map (algebraMap ℚ ℚ_[q]) g = c · globalFrob v_q · c⁻¹`. Conjugation is
+invisible here because `χ_ℓ` lands in the ABELIAN group `ℤ_[ℓ]ˣ`, so the
+value survives it; the rest is `cyclotomicCharacter_globalFrob` at
+`q = 2`, whose side condition `2 ≠ ℓ` is exactly `hodd`.
+
+Note that `Modularity/Interface.lean`'s
+`exists_conjugator_padicGalois_eq_adic_at_p` (and its `p = 2` instance
+`exists_uniform_conj_decomposition_two_padic`) proves the OPPOSITE
+direction, `∀ g : Γ ℚ_[p], ∃ h : Γ ℚ_{v_p}`, and therefore could NOT have
+discharged this leaf even if the circularity guard allowed importing it:
+it transports a `p`-adic element into the completion, whereas here a
+`p`-adic PREIMAGE of the given `Frobᵥ` is what is needed. -/
 theorem exists_cyclotomicCharacter_padicTwo_eq_two (hodd : Odd ℓ) :
     ∃ g : Field.absoluteGaloisGroup ℚ_[2],
       ((cyclotomicCharacter (AlgebraicClosure ℚ) ℓ
           (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) g).toRingEquiv :
-        ℤ_[ℓ]ˣ) : ℤ_[ℓ]) = 2 :=
-  sorry
+        ℤ_[ℓ]ˣ) : ℤ_[ℓ]) = 2 := by
+  have h2ne : (2 : ℕ) ≠ ℓ := by
+    rintro rfl
+    exact (Nat.not_odd_iff_even.mpr even_two) hodd
+  obtain ⟨g, c, hgc⟩ := exists_padicGalois_map_eq_conj_globalFrob (q := 2)
+  refine ⟨g, ?_⟩
+  have hglobal := cyclotomicCharacter_globalFrob (ℓ := ℓ) Nat.prime_two h2ne
+  have hmul : ∀ a b : Field.absoluteGaloisGroup ℚ,
+      (a * b).toRingEquiv = a.toRingEquiv * b.toRingEquiv := fun _ _ => rfl
+  have hinv : ∀ a : Field.absoluteGaloisGroup ℚ,
+      (a⁻¹ : Field.absoluteGaloisGroup ℚ).toRingEquiv = a.toRingEquiv⁻¹ :=
+    fun _ => rfl
+  rw [hgc, hmul, hmul, hinv, map_mul, map_mul, map_inv,
+    mul_comm ((cyclotomicCharacter (AlgebraicClosure ℚ) ℓ) c.toRingEquiv),
+    mul_assoc, mul_inv_cancel, mul_one, hglobal]
+  norm_num
 
 /-- **Two unimodular left eigenvectors of a `2 × 2` matrix over a local
 ring are proportional as soon as `det m − d d'` is a unit** (PROVEN
