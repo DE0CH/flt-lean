@@ -110,6 +110,7 @@ import Fermat.FLT.DedekindDomain.AdicValuation
 -- (`AddCommGroup.equiv_directSum_zmod_of_finite`) and the `ZMod` Chinese
 -- remainder theorem (`ZMod.prodEquivPi`), used in the PROVEN rank-`≤ 2`
 -- decomposition backing Mazur's classification.
+import Mathlib.Data.Nat.Factorization.PrimePow
 import Mathlib.GroupTheory.FiniteAbelian.Basic
 import Mathlib.Data.ZMod.QuotientRing
 -- The unramified quadratic twist to split multiplicative reduction and
@@ -669,9 +670,13 @@ become five separate literature nodes:
 * the remaining half, `notPrimePow_mem_cyclicIsogenyDegrees`: a level
   with at least two distinct prime factors lies in
   `{6, 10, 12, 14, 15, 18, 21}` — exactly the non-prime-powers of the
-  full list. This is where the bulk of Kenku's 1979–1982 work still
-  sits, and it is the one node of the five that is not a single
-  modular curve.
+  full list. This is where the bulk of Kenku's 1979–1982 work sits, and
+  it is the one node of the five that is not a single modular curve; it
+  was itself split along divisor descent on 2026-07-25 and is now PROVEN
+  from twelve further nodes (one uniform statement about products of two
+  distinct primes, and the eleven concrete levels
+  `20, 24, 28, 30, 36, 42, 45, 50, 54, 63, 75`) — see the section note
+  immediately above it.
 
 The assembly is then pure arithmetic and is proven below: for `N ≥ 20`
 non-prime a prime power `p ^ k` forces `k ≥ 2`, and `p ≥ 7` gives
@@ -869,32 +874,534 @@ theorem WeierstrassCurve.not_cyclicIsogeny_sq_of_prime_ge_seven
     False :=
   sorry
 
+/-!
+##### Kenku's non-prime-power half, split into its individual levels (2026-07-25)
+
+`notPrimePow_mem_cyclicIsogenyDegrees` is now PROVEN from twelve shallower
+nodes plus one piece of elementary arithmetic proven here
+(`kenku_notPrimePow_arithmetic`), again over divisor descent
+(`exists_stable_zmultiples_of_dvd`).
+
+Divisor descent says the rational cyclic isogeny degrees are closed under
+divisors, so a level `N` is excluded the moment ANY divisor of `N` is. What
+must therefore be supplied are the MINIMAL non-prime-power levels absent
+from the Mazur–Kenku list `{1, …, 19, 21, 25, 27, 37, 43, 67, 163}`, and
+they fall into exactly two families:
+
+* one UNIFORM family — `p * q` for distinct primes with
+  `p * q ∉ {6, 10, 14, 15, 21}` (`not_cyclicIsogeny_prod_two_primes`); the
+  five listed products are precisely the squarefree semiprimes that do
+  occur. This single node also does the work of Mazur's prime node here: it
+  forces every prime factor of a non-prime-power level into `{2, 3, 5, 7}`
+  by itself, so `prime_mem_cyclicIsogenyDegrees` is NOT needed below.
+* eleven CONCRETE levels — the minimal absent ones carrying a repeated
+  prime or a third prime: `20, 24, 28, 30, 36, 42, 45, 50, 54, 63, 75`.
+  Each has every proper divisor in the list, so none of the eleven is
+  implied by another.
+
+The reassembly, proven below in `kenku_notPrimePow_arithmetic`, is pure `ℕ`
+arithmetic: `¬ IsPrimePow N` with `2 ≤ N` gives at least two distinct prime
+factors; pairing each prime factor with a second one and applying the
+uniform node bounds every prime factor by `10` and then pins it into
+`{2, 3, 5, 7}`, and the same node excludes `{5, 7}` as a pair (`35`); three
+distinct prime factors would force `30 ∣ N` or `42 ∣ N`. So
+`N = p ^ a * q ^ b` with `{p, q} ∈ {{2,3}, {2,5}, {2,7}, {3,5}, {3,7}}`, and
+the exponents are pinned by the concrete levels: `24, 36, 54` give
+`N ∈ {6, 12, 18}`; `20, 50` give `N = 10`; `28` and `49` — the latter from
+`not_cyclicIsogeny_sq_of_prime_ge_seven` at `p = 7` — give `N = 14`;
+`45, 75` give `N = 15`; `63` and `49` give `N = 21`.
+
+Genera of the eleven concrete levels, computed from
+`g = 1 + μ/12 − ν₂/4 − ν₃/3 − ν_∞/2` and cross-checked against
+`dim S₂(Γ₀(N))` in PARI/GP (2026-07-25, both agreeing on all eleven):
+`X_0(20)`, `X_0(24)`, `X_0(36)` have genus `1`; `X_0(28)`, `X_0(50)` genus
+`2`; `X_0(30)`, `X_0(45)` genus `3`; `X_0(54)` genus `4`; `X_0(42)`,
+`X_0(63)`, `X_0(75)` genus `5`. Every one is therefore a Mordell–Weil or
+Chabauty computation on a curve of positive genus; none is elementary, and
+none is reachable at this mathlib pin. The genus-`1` levels are Ogg,
+"Rational points on certain elliptic modular curves", Proc. Sympos. Pure
+Math. 24 (1973); the higher ones run through Ogg, "Hyperelliptic modular
+curves", Bull. Soc. Math. France 102 (1974) and Kenku's series, and the
+classification is completed in Kenku, "On the number of `ℚ`-isomorphism
+classes of elliptic curves in each `ℚ`-isogeny class", J. Number Theory 15
+(1982).
+-/
+
+/-- **No rational cyclic `pq`-isogeny outside `{6, 10, 14, 15, 21}`**
+(sorry node — the uniform, squarefree part of Kenku's non-prime-power
+determination): if `⟨g⟩` is a Galois-stable cyclic subgroup of order `p * q`
+for DISTINCT primes `p, q`, then `p * q ∈ {6, 10, 14, 15, 21}`.
+
+Those five are exactly the products of two distinct primes in the
+Mazur–Kenku list `{1, …, 19, 21, 25, 27, 37, 43, 67, 163}` (the list's
+other non-prime-powers, `12 = 2² · 3` and `18 = 2 · 3²`, are not
+squarefree).
+
+The statement is uniform but its content is finite: by Mazur's prime node
+both `p` and `q` lie in `{2, 3, 5, 7, 11, 13, 17, 19, 37, 43, 67, 163}`, so
+`61` of the `66` unordered pairs have to be excluded — among them `X_0(35)`
+and `X_0(39)` (Kenku, Math. Proc. Cambridge Philos. Soc. 85, 1979),
+`X_0(65)` and `X_0(91)` (ibid. 87, 1980).
+
+IRREDUCIBLE at this mathlib pin: each excluded pair is a determination of
+`X_0(pq)(ℚ)` at a level of genus `≥ 1` (already `X_0(22)` has genus `2`),
+and neither modular curves nor their Jacobians exist in this development. -/
+theorem WeierstrassCurve.not_cyclicIsogeny_prod_two_primes (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point) {p q : ℕ}
+    (hp : p.Prime) (hq : q.Prime) (hpq : p ≠ q) (hg : addOrderOf g = p * q)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) :
+    p * q ∈ ({6, 10, 14, 15, 21} : Finset ℕ) :=
+  sorry
+
+/-- **No rational cyclic `20`-isogeny** (sorry node — the level `X_0(20)`,
+genus `1`). Minimal absent level: every proper divisor of `20`, namely
+`1, 2, 4, 5, 10`, lies in the Mazur–Kenku list. IRREDUCIBLE at this mathlib
+pin (Ogg 1973; no modular curve exists here). -/
+theorem WeierstrassCurve.not_cyclicIsogeny_twenty (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 20)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) :
+    False :=
+  sorry
+
+/-- **No rational cyclic `24`-isogeny** (sorry node — the level `X_0(24)`,
+genus `1`). Minimal absent level: every proper divisor of `24`, namely
+`1, 2, 3, 4, 6, 8, 12`, lies in the Mazur–Kenku list. IRREDUCIBLE at this
+mathlib pin (Ogg 1973; no modular curve exists here). -/
+theorem WeierstrassCurve.not_cyclicIsogeny_twentyFour (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 24)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) :
+    False :=
+  sorry
+
+/-- **No rational cyclic `28`-isogeny** (sorry node — the level `X_0(28)`,
+genus `2`). Minimal absent level: every proper divisor of `28`, namely
+`1, 2, 4, 7, 14`, lies in the Mazur–Kenku list. IRREDUCIBLE at this mathlib
+pin: a genus-`2` Jacobian/Chabauty computation (Ogg 1974; Kenku 1979–1982),
+and nothing of the kind exists in this development. -/
+theorem WeierstrassCurve.not_cyclicIsogeny_twentyEight (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 28)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) :
+    False :=
+  sorry
+
+/-- **No rational cyclic `30`-isogeny** (sorry node — the level `X_0(30)`,
+genus `3`). This is the minimal level with THREE distinct prime factors:
+every proper divisor of `30`, namely `1, 2, 3, 5, 6, 10, 15`, lies in the
+Mazur–Kenku list. Together with `not_cyclicIsogeny_fortyTwo` it is what
+rules out three distinct primes altogether, once the pair node has confined
+the primes to `{2, 3, 5, 7}` and killed `{5, 7}`. IRREDUCIBLE at this
+mathlib pin: a genus-`3` Chabauty computation. -/
+theorem WeierstrassCurve.not_cyclicIsogeny_thirty (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 30)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) :
+    False :=
+  sorry
+
+/-- **No rational cyclic `36`-isogeny** (sorry node — the level `X_0(36)`,
+genus `1`). Minimal absent level: every proper divisor of `36`, namely
+`1, 2, 3, 4, 6, 9, 12, 18`, lies in the Mazur–Kenku list. IRREDUCIBLE at
+this mathlib pin (Ogg 1973; no modular curve exists here). -/
+theorem WeierstrassCurve.not_cyclicIsogeny_thirtySix (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 36)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) :
+    False :=
+  sorry
+
+/-- **No rational cyclic `42`-isogeny** (sorry node — the level `X_0(42)`,
+genus `5`). The second minimal level with three distinct prime factors:
+every proper divisor of `42`, namely `1, 2, 3, 6, 7, 14, 21`, lies in the
+Mazur–Kenku list. IRREDUCIBLE at this mathlib pin: a genus-`5` Chabauty
+computation. -/
+theorem WeierstrassCurve.not_cyclicIsogeny_fortyTwo (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 42)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) :
+    False :=
+  sorry
+
+/-- **No rational cyclic `45`-isogeny** (sorry node — the level `X_0(45)`,
+genus `3`). Minimal absent level: every proper divisor of `45`, namely
+`1, 3, 5, 9, 15`, lies in the Mazur–Kenku list. IRREDUCIBLE at this mathlib
+pin: a genus-`3` Chabauty computation. -/
+theorem WeierstrassCurve.not_cyclicIsogeny_fortyFive (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 45)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) :
+    False :=
+  sorry
+
+/-- **No rational cyclic `50`-isogeny** (sorry node — the level `X_0(50)`,
+genus `2`). Minimal absent level: every proper divisor of `50`, namely
+`1, 2, 5, 10, 25`, lies in the Mazur–Kenku list. IRREDUCIBLE at this mathlib
+pin: a genus-`2` Jacobian/Chabauty computation (Ogg 1974). -/
+theorem WeierstrassCurve.not_cyclicIsogeny_fifty (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 50)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) :
+    False :=
+  sorry
+
+/-- **No rational cyclic `54`-isogeny** (sorry node — the level `X_0(54)`,
+genus `4`). Minimal absent level: every proper divisor of `54`, namely
+`1, 2, 3, 6, 9, 18, 27`, lies in the Mazur–Kenku list. IRREDUCIBLE at this
+mathlib pin: a genus-`4` Chabauty computation. -/
+theorem WeierstrassCurve.not_cyclicIsogeny_fiftyFour (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 54)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) :
+    False :=
+  sorry
+
+/-- **No rational cyclic `63`-isogeny** (sorry node — the level `X_0(63)`,
+genus `5`). Minimal absent level: every proper divisor of `63`, namely
+`1, 3, 7, 9, 21`, lies in the Mazur–Kenku list. IRREDUCIBLE at this mathlib
+pin: a genus-`5` Chabauty computation. -/
+theorem WeierstrassCurve.not_cyclicIsogeny_sixtyThree (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 63)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) :
+    False :=
+  sorry
+
+/-- **No rational cyclic `75`-isogeny** (sorry node — the level `X_0(75)`,
+genus `5`). Minimal absent level: every proper divisor of `75`, namely
+`1, 3, 5, 15, 25`, lies in the Mazur–Kenku list. IRREDUCIBLE at this mathlib
+pin: a genus-`5` Chabauty computation. -/
+theorem WeierstrassCurve.not_cyclicIsogeny_seventyFive (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 75)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) :
+    False :=
+  sorry
+
+/-- **The arithmetic reassembly of Kenku's non-prime-power half** (PROVEN
+2026-07-25). This is a statement about natural numbers only: no elliptic
+curve appears. It takes the twelve exclusions supplied by the nodes above —
+transported along divisor descent to every DIVISOR of `N` — and reconstructs
+the seven-element conclusion.
+
+`hpair` is `not_cyclicIsogeny_prod_two_primes` at every pair of distinct
+primes dividing `N`; `h49` is `not_cyclicIsogeny_sq_of_prime_ge_seven` at
+`p = 7`; the rest are the eleven concrete levels.
+
+The argument: `¬ IsPrimePow N` and `2 ≤ N` make `N.primeFactors` nontrivial
+(`Nat.not_isPrimePow_iff_nontrivial_of_two_le`); pairing an arbitrary prime
+factor with a second one and feeding `hpair` bounds both by `10` (from
+`p * q ≤ 21`) and then pins them into `{2, 3, 5, 7}` by decision; `hpair`
+also kills `{5, 7}`, and `h30`/`h42` kill every triple. What is left is
+`N = p ^ a * q ^ b` over five pairs — the factorisation being
+`Nat.prod_factorization_pow_eq_self` restricted to a two-element support —
+with the exponents pinned by the remaining nine exclusions through
+`Nat.ordProj_dvd` and coprime multiplication. -/
+theorem WeierstrassCurve.kenku_notPrimePow_arithmetic (N : ℕ) (hN : 2 ≤ N)
+    (hpp : ¬ IsPrimePow N)
+    (hpair : ∀ p q : ℕ, p.Prime → q.Prime → p ≠ q → p * q ∣ N →
+      p * q ∈ ({6, 10, 14, 15, 21} : Finset ℕ))
+    (h49 : ¬ (49 ∣ N)) (h20 : ¬ (20 ∣ N)) (h24 : ¬ (24 ∣ N)) (h28 : ¬ (28 ∣ N))
+    (h30 : ¬ (30 ∣ N)) (h36 : ¬ (36 ∣ N)) (h42 : ¬ (42 ∣ N)) (h45 : ¬ (45 ∣ N))
+    (h50 : ¬ (50 ∣ N)) (h54 : ¬ (54 ∣ N)) (h63 : ¬ (63 ∣ N)) (h75 : ¬ (75 ∣ N)) :
+    N ∈ ({6, 10, 12, 14, 15, 18, 21} : Finset ℕ) := by
+  have hN0 : N ≠ 0 := by omega
+  have hstruct : ∀ p q : ℕ, p ≠ q → N.primeFactors ⊆ ({p, q} : Finset ℕ) →
+      N = p ^ N.factorization p * q ^ N.factorization q := by
+    intro p q hpq hsub
+    have hsupp : N.factorization.support ⊆ ({p, q} : Finset ℕ) := by
+      rw [Nat.support_factorization]; exact hsub
+    conv_lhs => rw [← Nat.prod_factorization_pow_eq_self hN0]
+    rw [Finsupp.prod_of_support_subset _ hsupp _ (fun i _ => pow_zero i), Finset.prod_pair hpq]
+  have hmul : ∀ u v : ℕ, Nat.Coprime u v → u ∣ N → v ∣ N → u * v ∣ N :=
+    fun u v h hu hv => Nat.Coprime.mul_dvd_of_dvd_of_dvd h hu hv
+  have hcon : ∀ u v w : ℕ, Nat.Coprime u v → u * v = w → u ∣ N → v ∣ N → ¬ (w ∣ N) → False :=
+    fun u v w hc he hu hv hw => hw (he ▸ hmul u v hc hu hv)
+  have hdp : ∀ p k : ℕ, k ≤ N.factorization p → p ^ k ∣ N := fun p k hk =>
+    dvd_trans (pow_dvd_pow p hk) (Nat.ordProj_dvd N p)
+  have hd : ∀ p, p ∈ N.primeFactors → p ∣ N := fun p hp => Nat.dvd_of_mem_primeFactors hp
+  have hposfac : ∀ p, p ∈ N.primeFactors → 1 ≤ N.factorization p := by
+    intro p hp
+    have h : N.factorization p ≠ 0 := by
+      rw [← Finsupp.mem_support_iff, Nat.support_factorization]; exact hp
+    omega
+  -- the pairwise constraint, transported to prime factors
+  have key : ∀ p q : ℕ, p ∈ N.primeFactors → q ∈ N.primeFactors → p ≠ q →
+      p * q ∈ ({6, 10, 14, 15, 21} : Finset ℕ) := by
+    intro p q hp hq hne
+    have hp' := Nat.prime_of_mem_primeFactors hp
+    have hq' := Nat.prime_of_mem_primeFactors hq
+    exact hpair p q hp' hq' hne
+      (Nat.Coprime.mul_dvd_of_dvd_of_dvd ((Nat.coprime_primes hp' hq').mpr hne)
+        (Nat.dvd_of_mem_primeFactors hp) (Nat.dvd_of_mem_primeFactors hq))
+  have hnt : N.primeFactors.Nontrivial :=
+    (Nat.not_isPrimePow_iff_nontrivial_of_two_le hN).mp hpp
+  have hcard : 1 < N.primeFactors.card := Finset.one_lt_card_iff_nontrivial.mpr hnt
+  have hex : ∀ p : ℕ, ∃ q ∈ N.primeFactors, q ≠ p := by
+    intro p
+    obtain ⟨a, ha, b, hb, hab⟩ := Finset.one_lt_card.mp hcard
+    rcases eq_or_ne a p with rfl | h
+    · exact ⟨b, hb, Ne.symm hab⟩
+    · exact ⟨a, ha, h⟩
+  -- every prime factor lies in `{2, 3, 5, 7}`
+  have hsub : ∀ p, p ∈ N.primeFactors → p ∈ ({2, 3, 5, 7} : Finset ℕ) := by
+    intro p hp
+    obtain ⟨q, hq, hne⟩ := hex p
+    have hk := key q p hq hp hne
+    have hp2 : 2 ≤ p := (Nat.prime_of_mem_primeFactors hp).two_le
+    have hq2 : 2 ≤ q := (Nat.prime_of_mem_primeFactors hq).two_le
+    simp only [Finset.mem_insert, Finset.mem_singleton] at hk
+    have hple : p ≤ 10 := by
+      have h1 : 2 * p ≤ q * p := Nat.mul_le_mul_right p hq2
+      rcases hk with h | h | h | h | h <;> rw [h] at h1 <;> omega
+    have hqle : q ≤ 10 := by
+      have h1 : q * 2 ≤ q * p := Nat.mul_le_mul_left q hp2
+      rcases hk with h | h | h | h | h <;> rw [h] at h1 <;> omega
+    clear hp hq hne
+    interval_cases p <;> interval_cases q <;> revert hk <;> decide
+  by_cases b2 : 2 ∈ N.primeFactors
+  · by_cases b3 : 3 ∈ N.primeFactors
+    · -- prime factors `{2, 3}`
+      have h2 : (2:ℕ) ∣ N := hd 2 b2
+      have h3 : (3:ℕ) ∣ N := hd 3 b3
+      have h6 : (6:ℕ) ∣ N := by simpa using hmul 2 3 (by decide) h2 h3
+      have b5 : 5 ∉ N.primeFactors := fun h =>
+        hcon 6 5 30 (by decide) (by norm_num) h6 (hd 5 h) h30
+      have b7 : 7 ∉ N.primeFactors := fun h =>
+        hcon 6 7 42 (by decide) (by norm_num) h6 (hd 7 h) h42
+      have hsub23 : N.primeFactors ⊆ ({2, 3} : Finset ℕ) := by
+        intro r hr
+        have h := hsub r hr
+        simp only [Finset.mem_insert, Finset.mem_singleton] at h ⊢
+        rcases h with rfl | rfl | rfl | rfl
+        exacts [Or.inl rfl, Or.inr rfl, absurd hr b5, absurd hr b7]
+      have ha1 : 1 ≤ N.factorization 2 := hposfac 2 b2
+      have hb1 : 1 ≤ N.factorization 3 := hposfac 3 b3
+      have ha2 : N.factorization 2 ≤ 2 := by
+        by_contra hc
+        exact hcon 8 3 24 (by decide) (by norm_num)
+          (by simpa using hdp 2 3 (by omega)) h3 h24
+      have hb2 : N.factorization 3 ≤ 2 := by
+        by_contra hc
+        exact hcon 2 27 54 (by decide) (by norm_num) h2
+          (by simpa using hdp 3 3 (by omega)) h54
+      have hab : ¬ (2 ≤ N.factorization 2 ∧ 2 ≤ N.factorization 3) := by
+        rintro ⟨hx, hy⟩
+        exact hcon 4 9 36 (by decide) (by norm_num)
+          (by simpa using hdp 2 2 hx) (by simpa using hdp 3 2 hy) h36
+      have hNeq : N = 2 ^ N.factorization 2 * 3 ^ N.factorization 3 :=
+        hstruct _ _ (by decide) hsub23
+      generalize hA : N.factorization 2 = a at ha1 ha2 hab hNeq
+      generalize hB : N.factorization 3 = b at hb1 hb2 hab hNeq
+      interval_cases a <;> interval_cases b <;> rw [hNeq] <;> revert hab <;> decide
+    · by_cases b5 : 5 ∈ N.primeFactors
+      · -- prime factors `{2, 5}`
+        have h2 : (2:ℕ) ∣ N := hd 2 b2
+        have h5 : (5:ℕ) ∣ N := hd 5 b5
+        have b7 : 7 ∉ N.primeFactors := by
+          intro h
+          have := key 5 7 b5 h (by decide)
+          revert this; decide
+        have hsub25 : N.primeFactors ⊆ ({2, 5} : Finset ℕ) := by
+          intro r hr
+          have h := hsub r hr
+          simp only [Finset.mem_insert, Finset.mem_singleton] at h ⊢
+          rcases h with rfl | rfl | rfl | rfl
+          exacts [Or.inl rfl, absurd hr b3, Or.inr rfl, absurd hr b7]
+        have ha1 : 1 ≤ N.factorization 2 := hposfac 2 b2
+        have hc1 : 1 ≤ N.factorization 5 := hposfac 5 b5
+        have ha2 : N.factorization 2 ≤ 1 := by
+          by_contra hc
+          exact hcon 4 5 20 (by decide) (by norm_num)
+            (by simpa using hdp 2 2 (by omega)) h5 h20
+        have hc2 : N.factorization 5 ≤ 1 := by
+          by_contra hc
+          exact hcon 2 25 50 (by decide) (by norm_num) h2
+            (by simpa using hdp 5 2 (by omega)) h50
+        have hNeq : N = 2 ^ N.factorization 2 * 5 ^ N.factorization 5 :=
+          hstruct _ _ (by decide) hsub25
+        rw [hNeq, le_antisymm ha2 ha1, le_antisymm hc2 hc1]
+        decide
+      · -- prime factors `{2, 7}`
+        have b7 : 7 ∈ N.primeFactors := by
+          by_contra b7
+          have hs : N.primeFactors ⊆ ({2} : Finset ℕ) := by
+            intro r hr
+            have h := hsub r hr
+            simp only [Finset.mem_insert, Finset.mem_singleton] at h ⊢
+            rcases h with rfl | rfl | rfl | rfl
+            exacts [rfl, absurd hr b3, absurd hr b5, absurd hr b7]
+          have := Finset.card_le_card hs
+          simp only [Finset.card_singleton] at this
+          omega
+        have h7 : (7:ℕ) ∣ N := hd 7 b7
+        have hsub27 : N.primeFactors ⊆ ({2, 7} : Finset ℕ) := by
+          intro r hr
+          have h := hsub r hr
+          simp only [Finset.mem_insert, Finset.mem_singleton] at h ⊢
+          rcases h with rfl | rfl | rfl | rfl
+          exacts [Or.inl rfl, absurd hr b3, absurd hr b5, Or.inr rfl]
+        have ha1 : 1 ≤ N.factorization 2 := hposfac 2 b2
+        have hd1 : 1 ≤ N.factorization 7 := hposfac 7 b7
+        have ha2 : N.factorization 2 ≤ 1 := by
+          by_contra hc
+          exact hcon 4 7 28 (by decide) (by norm_num)
+            (by simpa using hdp 2 2 (by omega)) h7 h28
+        have hd2 : N.factorization 7 ≤ 1 := by
+          by_contra hc
+          exact h49 (by simpa using hdp 7 2 (by omega))
+        have hNeq : N = 2 ^ N.factorization 2 * 7 ^ N.factorization 7 :=
+          hstruct _ _ (by decide) hsub27
+        rw [hNeq, le_antisymm ha2 ha1, le_antisymm hd2 hd1]
+        decide
+  · by_cases b3 : 3 ∈ N.primeFactors
+    · by_cases b5 : 5 ∈ N.primeFactors
+      · -- prime factors `{3, 5}`
+        have h3 : (3:ℕ) ∣ N := hd 3 b3
+        have h5 : (5:ℕ) ∣ N := hd 5 b5
+        have b7 : 7 ∉ N.primeFactors := by
+          intro h
+          have := key 5 7 b5 h (by decide)
+          revert this; decide
+        have hsub35 : N.primeFactors ⊆ ({3, 5} : Finset ℕ) := by
+          intro r hr
+          have h := hsub r hr
+          simp only [Finset.mem_insert, Finset.mem_singleton] at h ⊢
+          rcases h with rfl | rfl | rfl | rfl
+          exacts [absurd hr b2, Or.inl rfl, Or.inr rfl, absurd hr b7]
+        have hb1 : 1 ≤ N.factorization 3 := hposfac 3 b3
+        have hc1 : 1 ≤ N.factorization 5 := hposfac 5 b5
+        have hb2 : N.factorization 3 ≤ 1 := by
+          by_contra hc
+          exact hcon 9 5 45 (by decide) (by norm_num)
+            (by simpa using hdp 3 2 (by omega)) h5 h45
+        have hc2 : N.factorization 5 ≤ 1 := by
+          by_contra hc
+          exact hcon 3 25 75 (by decide) (by norm_num) h3
+            (by simpa using hdp 5 2 (by omega)) h75
+        have hNeq : N = 3 ^ N.factorization 3 * 5 ^ N.factorization 5 :=
+          hstruct _ _ (by decide) hsub35
+        rw [hNeq, le_antisymm hb2 hb1, le_antisymm hc2 hc1]
+        decide
+      · -- prime factors `{3, 7}`
+        have b7 : 7 ∈ N.primeFactors := by
+          by_contra b7
+          have hs : N.primeFactors ⊆ ({3} : Finset ℕ) := by
+            intro r hr
+            have h := hsub r hr
+            simp only [Finset.mem_insert, Finset.mem_singleton] at h ⊢
+            rcases h with rfl | rfl | rfl | rfl
+            exacts [absurd hr b2, rfl, absurd hr b5, absurd hr b7]
+          have := Finset.card_le_card hs
+          simp only [Finset.card_singleton] at this
+          omega
+        have h7 : (7:ℕ) ∣ N := hd 7 b7
+        have hsub37 : N.primeFactors ⊆ ({3, 7} : Finset ℕ) := by
+          intro r hr
+          have h := hsub r hr
+          simp only [Finset.mem_insert, Finset.mem_singleton] at h ⊢
+          rcases h with rfl | rfl | rfl | rfl
+          exacts [absurd hr b2, Or.inl rfl, absurd hr b5, Or.inr rfl]
+        have hb1 : 1 ≤ N.factorization 3 := hposfac 3 b3
+        have hd1 : 1 ≤ N.factorization 7 := hposfac 7 b7
+        have hb2 : N.factorization 3 ≤ 1 := by
+          by_contra hc
+          exact hcon 9 7 63 (by decide) (by norm_num)
+            (by simpa using hdp 3 2 (by omega)) h7 h63
+        have hd2 : N.factorization 7 ≤ 1 := by
+          by_contra hc
+          exact h49 (by simpa using hdp 7 2 (by omega))
+        have hNeq : N = 3 ^ N.factorization 3 * 7 ^ N.factorization 7 :=
+          hstruct _ _ (by decide) hsub37
+        rw [hNeq, le_antisymm hb2 hb1, le_antisymm hd2 hd1]
+        decide
+    · -- `2, 3 ∉ primeFactors`: then `5` and `7` both divide `N`, contradicting `35`
+      exfalso
+      have b5 : 5 ∈ N.primeFactors := by
+        by_contra b5
+        have hs : N.primeFactors ⊆ ({7} : Finset ℕ) := by
+          intro r hr
+          have h := hsub r hr
+          simp only [Finset.mem_insert, Finset.mem_singleton] at h ⊢
+          rcases h with rfl | rfl | rfl | rfl
+          exacts [absurd hr b2, absurd hr b3, absurd hr b5, rfl]
+        have := Finset.card_le_card hs
+        simp only [Finset.card_singleton] at this
+        omega
+      have b7 : 7 ∈ N.primeFactors := by
+        by_contra b7
+        have hs : N.primeFactors ⊆ ({5} : Finset ℕ) := by
+          intro r hr
+          have h := hsub r hr
+          simp only [Finset.mem_insert, Finset.mem_singleton] at h ⊢
+          rcases h with rfl | rfl | rfl | rfl
+          exacts [absurd hr b2, absurd hr b3, rfl, absurd hr b7]
+        have := Finset.card_le_card hs
+        simp only [Finset.card_singleton] at this
+        omega
+      have := key 5 7 b5 b7 (by decide)
+      revert this; decide
+
 /-- **Kenku's cyclic-isogeny degrees with two distinct prime factors**
-(sorry node — the non-prime-power half of the `X_0` input): if the cyclic
-subgroup `⟨g⟩` generated by a geometric point `g` of an elliptic curve
-`E/ℚ` has exact order `N ≥ 2` which is NOT a prime power, and is stable
-under `Gal(ℚ̄/ℚ)`, then
+(PROVEN 2026-07-25 from the twelve nodes above, divisor descent and
+`kenku_notPrimePow_arithmetic`; the non-prime-power half of the `X_0`
+input): if the cyclic subgroup `⟨g⟩` generated by a geometric point `g` of
+an elliptic curve `E/ℚ` has exact order `N ≥ 2` which is NOT a prime power,
+and is stable under `Gal(ℚ̄/ℚ)`, then
 
   `N ∈ {6, 10, 12, 14, 15, 18, 21}`.
 
 `¬ IsPrimePow N` together with `2 ≤ N` says exactly that `N` has at least
 two distinct prime factors, and the seven listed values are exactly the
 non-prime-powers of the full Mazur–Kenku list
-`{1, …, 19, 21, 25, 27, 37, 43, 67, 163}`. So this is the complement of
-the four prime-power nodes above, and it carries the bulk of Kenku's
-1979–1982 work.
+`{1, …, 19, 21, 25, 27, 37, 43, 67, 163}`. So this is the complement of the
+four prime-power nodes above, and it carries the bulk of Kenku's 1979–1982
+work.
 
-IRREDUCIBLE at this mathlib pin: it is a case-by-case determination of
-`X_0(N)(ℚ)` for the surviving composite levels, on top of Mazur's prime
-theorem (which bounds the primes dividing `N`) and the prime-power nodes
-above (which bound the exponents), leaving explicit Mordell–Weil
-computations at the genus-one levels and Chabauty-style arguments above
-them. The individual levels are distributed over Kenku's papers —
-`X_0(39)` (Math. Proc. Cambridge Philos. Soc. 85, 1979), `X_0(65)` and
-`X_0(91)` (ibid. 87, 1980) — and the classification is completed in "On
-the number of `ℚ`-isomorphism classes of elliptic curves in each
-`ℚ`-isogeny class" (J. Number Theory 15, 1982). Nothing of this exists
-in the development. -/
+The proof here is only glue: `exists_stable_zmultiples_of_dvd` turns each
+divisor of `N` into a Galois-stable cyclic subgroup of that order, which
+feeds one of the twelve nodes; `kenku_notPrimePow_arithmetic` then does the
+`ℕ` bookkeeping. All the mathematical content sits in the twelve nodes, and
+the section note above records what each of them is. Note that Mazur's
+prime node is NOT used: the uniform pair node already confines the primes. -/
 theorem WeierstrassCurve.notPrimePow_mem_cyclicIsogenyDegrees
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (g : (E⁄(AlgebraicClosure ℚ)).Point) {N : ℕ} (hN : 2 ≤ N)
@@ -904,8 +1411,58 @@ theorem WeierstrassCurve.notPrimePow_mem_cyclicIsogenyDegrees
         Affine.Point.map
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
           AddSubgroup.zmultiples g) :
-    N ∈ ({6, 10, 12, 14, 15, 18, 21} : Finset ℕ) :=
-  sorry
+    N ∈ ({6, 10, 12, 14, 15, 18, 21} : Finset ℕ) := by
+  have hN0 : N ≠ 0 := by omega
+  have hdvd : ∀ d : ℕ, d ∣ N → ∃ g' : (E⁄(AlgebraicClosure ℚ)).Point,
+      addOrderOf g' = d ∧
+      ∀ σ : Field.absoluteGaloisGroup ℚ,
+        ∀ x ∈ AddSubgroup.zmultiples g',
+          Affine.Point.map
+            (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+            AddSubgroup.zmultiples g' :=
+    fun d hd => E.exists_stable_zmultiples_of_dvd g hN0 hd hg hstable
+  refine WeierstrassCurve.kenku_notPrimePow_arithmetic N hN hpp ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_
+    ?_ ?_ ?_
+  · intro p q hp hq hne hd
+    obtain ⟨g', hg', hs'⟩ := hdvd (p * q) hd
+    exact E.not_cyclicIsogeny_prod_two_primes g' hp hq hne hg' hs'
+  · intro hd
+    obtain ⟨g', hg', hs'⟩ := hdvd 49 hd
+    exact E.not_cyclicIsogeny_sq_of_prime_ge_seven g' (p := 7) (by decide) (le_refl 7)
+      (by simpa using hg') hs'
+  · intro hd
+    obtain ⟨g', hg', hs'⟩ := hdvd 20 hd
+    exact E.not_cyclicIsogeny_twenty g' hg' hs'
+  · intro hd
+    obtain ⟨g', hg', hs'⟩ := hdvd 24 hd
+    exact E.not_cyclicIsogeny_twentyFour g' hg' hs'
+  · intro hd
+    obtain ⟨g', hg', hs'⟩ := hdvd 28 hd
+    exact E.not_cyclicIsogeny_twentyEight g' hg' hs'
+  · intro hd
+    obtain ⟨g', hg', hs'⟩ := hdvd 30 hd
+    exact E.not_cyclicIsogeny_thirty g' hg' hs'
+  · intro hd
+    obtain ⟨g', hg', hs'⟩ := hdvd 36 hd
+    exact E.not_cyclicIsogeny_thirtySix g' hg' hs'
+  · intro hd
+    obtain ⟨g', hg', hs'⟩ := hdvd 42 hd
+    exact E.not_cyclicIsogeny_fortyTwo g' hg' hs'
+  · intro hd
+    obtain ⟨g', hg', hs'⟩ := hdvd 45 hd
+    exact E.not_cyclicIsogeny_fortyFive g' hg' hs'
+  · intro hd
+    obtain ⟨g', hg', hs'⟩ := hdvd 50 hd
+    exact E.not_cyclicIsogeny_fifty g' hg' hs'
+  · intro hd
+    obtain ⟨g', hg', hs'⟩ := hdvd 54 hd
+    exact E.not_cyclicIsogeny_fiftyFour g' hg' hs'
+  · intro hd
+    obtain ⟨g', hg', hs'⟩ := hdvd 63 hd
+    exact E.not_cyclicIsogeny_sixtyThree g' hg' hs'
+  · intro hd
+    obtain ⟨g', hg', hs'⟩ := hdvd 75 hd
+    exact E.not_cyclicIsogeny_seventyFive g' hg' hs'
 
 /-- **Kenku's composite cyclic-isogeny degrees** (PROVEN 2026-07-25 from
 the five nodes above and divisor descent; the composite half of the `X_0`
