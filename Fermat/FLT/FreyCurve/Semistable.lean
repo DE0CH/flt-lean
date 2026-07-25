@@ -8962,12 +8962,647 @@ theorem exists_fixedPointAlgebraOrder_of_descentData
   | add z₁ z₂ h₁ h₂ =>
     rw [map_add, map_add, map_add, h₁, h₂, map_add]
 
+section FixedPointHopfDescent
+
+open TensorProduct
+
+/-- The conjugation of the generic quadratic order sends the root `r` to
+`t − r` (unfolding of `quadraticOrderConj`). -/
+theorem quadraticOrderConj_root (R : Type) [CommRing R] (t n : R) :
+    quadraticOrderConj R t n (AdjoinRoot.root
+      (Polynomial.X ^ 2 - Polynomial.C t * Polynomial.X +
+        Polynomial.C n : Polynomial R)) =
+      algebraMap R (quadraticOrder R t n) t -
+        AdjoinRoot.root (Polynomial.X ^ 2 - Polynomial.C t * Polynomial.X +
+          Polynomial.C n : Polynomial R) := by
+  simp only [quadraticOrderConj, AlgEquiv.ofAlgHom_apply,
+    AdjoinRoot.liftAlgHom_root]
+
+/-- **The rank-2 basis of the generic quadratic order**: `{1, root}` is an
+`R`-basis of `R[X]/(X² − tX + n)` (the power basis of the monic quadratic,
+reindexed along `dim = 2`). -/
+theorem exists_basis_quadraticOrder (R : Type) [CommRing R] [Nontrivial R]
+    (t n : R) :
+    ∃ b : Module.Basis (Fin 2) R (quadraticOrder R t n),
+      b 0 = 1 ∧ b 1 = AdjoinRoot.root
+        (Polynomial.X ^ 2 - Polynomial.C t * Polynomial.X +
+          Polynomial.C n : Polynomial R) := by
+  classical
+  have hmono : (Polynomial.X ^ 2 - Polynomial.C t * Polynomial.X +
+      Polynomial.C n : Polynomial R).Monic :=
+    GaloisRepresentation.monic_quadratic t n
+  have hdim : (AdjoinRoot.powerBasis' hmono).dim = 2 :=
+    GaloisRepresentation.natDegree_quadratic t n
+  refine ⟨(AdjoinRoot.powerBasis' hmono).basis.reindex (finCongr hdim), ?_, ?_⟩
+  · rw [Module.Basis.reindex_apply, PowerBasis.basis_eq_pow]
+    show (AdjoinRoot.root _) ^ (((finCongr hdim).symm 0 : Fin _) : ℕ) = 1
+    norm_num
+  · rw [Module.Basis.reindex_apply, PowerBasis.basis_eq_pow]
+    show (AdjoinRoot.root _) ^ (((finCongr hdim).symm 1 : Fin _) : ℕ) = _
+    norm_num
+
+/-- **The structure map of the generic quadratic order is injective**
+(`1` belongs to an `R`-basis). -/
+theorem quadraticOrder_algebraMap_injective (R : Type) [CommRing R]
+    [Nontrivial R] (t n : R) :
+    Function.Injective (algebraMap R (quadraticOrder R t n)) := by
+  classical
+  obtain ⟨b, hb0, hb1⟩ := exists_basis_quadraticOrder R t n
+  have hval : ∀ d : R, b.coord 0 (algebraMap R (quadraticOrder R t n) d) = d := by
+    intro d
+    rw [Algebra.algebraMap_eq_smul_one, ← hb0, map_smul, Module.Basis.coord_apply,
+      Module.Basis.repr_self]
+    simp
+  intro c c' hc
+  have h : b.coord 0 (algebraMap R (quadraticOrder R t n) c) =
+      b.coord 0 (algebraMap R (quadraticOrder R t n) c') := by rw [hc]
+  rwa [hval, hval] at h
+
+/-- **The `τ`-fixed elements of the generic quadratic order are the
+scalars** (`2` a unit): if the conjugation fixes `r`, then `r` is in the
+image of `R`. -/
+theorem quadraticOrder_exists_of_conj_eq (R : Type) [CommRing R] [Nontrivial R]
+    (h2 : IsUnit (2 : R)) (t n : R) (r : quadraticOrder R t n)
+    (hr : quadraticOrderConj R t n r = r) :
+    ∃ c : R, r = algebraMap R (quadraticOrder R t n) c := by
+  classical
+  obtain ⟨b, hb0, hb1⟩ := exists_basis_quadraticOrder R t n
+  set c₀ := b.coord 0 r with hc₀
+  set c₁ := b.coord 1 r with hc₁
+  have hrepr : r = c₀ • b 0 + c₁ • b 1 := by
+    have h := b.sum_repr r
+    rw [Fin.sum_univ_two] at h
+    rw [hc₀, hc₁, Module.Basis.coord_apply, Module.Basis.coord_apply]
+    exact h.symm
+  have hτ0 : quadraticOrderConj R t n (b 0) = b 0 := by rw [hb0, map_one]
+  have hτ1 : quadraticOrderConj R t n (b 1) = (t • b 0) - b 1 := by
+    rw [hb1, quadraticOrderConj_root, hb0, Algebra.algebraMap_eq_smul_one]
+  have hconj : quadraticOrderConj R t n r =
+      (c₀ + t * c₁) • b 0 + (-c₁) • b 1 := by
+    rw [hrepr, map_add, map_smul, map_smul, hτ0, hτ1, smul_sub, smul_smul,
+      mul_comm c₁ t, add_smul, neg_smul]
+    abel
+  have hcoord := congrArg (b.coord 1) (hconj.symm.trans hr)
+  rw [hrepr] at hcoord
+  simp only [map_add, map_smul, Module.Basis.coord_apply, Module.Basis.repr_self,
+    smul_eq_mul, mul_one, Finsupp.single_eq_same, Finsupp.single_apply] at hcoord
+  norm_num at hcoord
+  have h2c : (2 : R) * c₁ = 0 := by linear_combination -hcoord
+  have hc1 : c₁ = 0 := by
+    obtain ⟨u, hu⟩ := h2
+    have h3 := congrArg (fun x => ((u⁻¹ : Rˣ) : R) * x) h2c
+    simp only [mul_zero, ← mul_assoc] at h3
+    rwa [← hu, show ((u⁻¹ : Rˣ) : R) * ((u : Rˣ) : R) = 1 from by
+      rw [← Units.val_mul, inv_mul_cancel, Units.val_one], one_mul] at h3
+  refine ⟨c₀, ?_⟩
+  rw [hrepr, hc1, zero_smul, add_zero, hb0, Algebra.algebraMap_eq_smul_one]
+
+/-- **The unit base change of a module along the quadratic order is
+injective**: `m ↦ 1 ⊗ m` is injective (`1` belongs to an `R`-basis). -/
+theorem quadraticOrder_one_tmul_injective (R : Type) [CommRing R] [Nontrivial R]
+    (t n : R) (M : Type) [AddCommGroup M] [Module R M] :
+    Function.Injective (fun m : M => (1 : quadraticOrder R t n) ⊗ₜ[R] m) := by
+  classical
+  obtain ⟨b, hb0, hb1⟩ := exists_basis_quadraticOrder R t n
+  set P : quadraticOrder R t n ⊗[R] M →ₗ[R] M :=
+    (TensorProduct.lid R M).toLinearMap ∘ₗ LinearMap.rTensor M (b.coord 0)
+    with hP
+  have hPval : ∀ m : M, P ((1 : quadraticOrder R t n) ⊗ₜ[R] m) = m := by
+    intro m
+    rw [hP]
+    simp only [LinearMap.comp_apply, LinearMap.rTensor_tmul, LinearEquiv.coe_coe,
+      TensorProduct.lid_tmul]
+    rw [← hb0, Module.Basis.coord_apply, Module.Basis.repr_self]
+    simp
+  intro m m' h
+  have h1 := congrArg P h
+  rwa [hPval, hPval] at h1
+
+/-- **The `τ`-fixed elements of a base change along the quadratic order
+are the unit tensors** (`2` a unit): if the conjugation twist `F` (acting
+as `τ ⊗ id` on pure tensors) fixes `z`, then `z = 1 ⊗ m`. -/
+theorem quadraticOrder_eq_one_tmul_of_conj_fixed (R : Type) [CommRing R]
+    [Nontrivial R] (h2 : IsUnit (2 : R)) (t n : R)
+    (M : Type) [AddCommGroup M] [Module R M]
+    (F : quadraticOrder R t n ⊗[R] M →ₗ[R] quadraticOrder R t n ⊗[R] M)
+    (hF : ∀ (r : quadraticOrder R t n) (m : M),
+      F (r ⊗ₜ[R] m) = quadraticOrderConj R t n r ⊗ₜ[R] m)
+    (z : quadraticOrder R t n ⊗[R] M) (hz : F z = z) :
+    ∃ m : M, z = (1 : quadraticOrder R t n) ⊗ₜ[R] m := by
+  classical
+  obtain ⟨b, hb0, hb1⟩ := exists_basis_quadraticOrder R t n
+  set P : Fin 2 → (quadraticOrder R t n ⊗[R] M →ₗ[R] M) := fun i =>
+    (TensorProduct.lid R M).toLinearMap ∘ₗ LinearMap.rTensor M (b.coord i)
+    with hP
+  have hPtmul : ∀ (i : Fin 2) (r : quadraticOrder R t n) (m : M),
+      P i (r ⊗ₜ[R] m) = b.coord i r • m := by
+    intro i r m
+    rw [hP]
+    simp only [LinearMap.comp_apply, LinearMap.rTensor_tmul, LinearEquiv.coe_coe,
+      TensorProduct.lid_tmul]
+  have hPb : ∀ (i j : Fin 2) (m : M),
+      P i (b j ⊗ₜ[R] m) = if i = j then m else 0 := by
+    intro i j m
+    rw [hPtmul, Module.Basis.coord_apply, Module.Basis.repr_self, Finsupp.single_apply]
+    by_cases hij : i = j
+    · subst hij; simp
+    · rw [if_neg (fun h => hij h.symm), if_neg hij, zero_smul]
+  have hrecon : ∀ w : quadraticOrder R t n ⊗[R] M,
+      w = b 0 ⊗ₜ[R] P 0 w + b 1 ⊗ₜ[R] P 1 w := by
+    intro w
+    induction w with
+    | zero => simp
+    | tmul r m =>
+      rw [hPtmul, hPtmul]
+      have hr : r = (b.coord 0 r) • b 0 + (b.coord 1 r) • b 1 := by
+        have h := b.sum_repr r
+        rw [Fin.sum_univ_two] at h
+        rw [Module.Basis.coord_apply, Module.Basis.coord_apply]
+        exact h.symm
+      conv_lhs => rw [hr]
+      rw [TensorProduct.add_tmul, TensorProduct.smul_tmul,
+        TensorProduct.smul_tmul]
+    | add w₁ w₂ h₁ h₂ =>
+      rw [map_add, map_add, TensorProduct.tmul_add, TensorProduct.tmul_add,
+        show w₁ + w₂ = (b 0 ⊗ₜ[R] P 0 w₁ + b 1 ⊗ₜ[R] P 1 w₁) +
+          (b 0 ⊗ₜ[R] P 0 w₂ + b 1 ⊗ₜ[R] P 1 w₂) from by rw [← h₁, ← h₂]]
+      abel
+  set m₀ := P 0 z with hm₀
+  set m₁ := P 1 z with hm₁
+  have hτ0 : quadraticOrderConj R t n (b 0) = b 0 := by rw [hb0, map_one]
+  have hτ1 : quadraticOrderConj R t n (b 1) = (t • b 0) - b 1 := by
+    rw [hb1, quadraticOrderConj_root, hb0, Algebra.algebraMap_eq_smul_one]
+  have hFz : F z = b 0 ⊗ₜ[R] (m₀ + t • m₁) + b 1 ⊗ₜ[R] (-m₁) := by
+    conv_lhs => rw [hrecon z]
+    rw [map_add, hF, hF, hτ0, hτ1, ← hm₀, ← hm₁, sub_tmul,
+      TensorProduct.smul_tmul, TensorProduct.tmul_add, TensorProduct.tmul_neg]
+    abel
+  have hkey : m₁ = -m₁ := by
+    have h1 := congrArg (P 1) (hFz.symm.trans hz)
+    rw [map_add, hPb, hPb] at h1
+    rw [if_neg (by decide : ¬((1 : Fin 2) = 0)), if_pos rfl, zero_add] at h1
+    conv_rhs at h1 => rw [hrecon z]
+    rw [map_add, hPb, hPb] at h1
+    rw [if_neg (by decide : ¬((1 : Fin 2) = 0)), if_pos rfl, zero_add] at h1
+    exact h1.symm
+  have hm1 : m₁ = 0 := by
+    have h2m : (2 : R) • m₁ = 0 := by
+      rw [two_smul]
+      nth_rewrite 1 [hkey]
+      abel
+    obtain ⟨u, hu⟩ := h2
+    have h3 := congrArg (fun x => ((u⁻¹ : Rˣ) : R) • x) h2m
+    simp only [smul_zero, smul_smul] at h3
+    rwa [← hu, show ((u⁻¹ : Rˣ) : R) * ((u : Rˣ) : R) = 1 from by
+      rw [← Units.val_mul, inv_mul_cancel, Units.val_one], one_smul] at h3
+  refine ⟨m₀, ?_⟩
+  rw [hrecon z, ← hm₀, ← hm₁, hm1, TensorProduct.tmul_zero, add_zero, hb0]
+
+/-! ## The base-change comparison for tensor squares -/
+
+/-- **The tensor square of a base change**: for a commutative `R`-algebra `A`
+and a commutative `R`-algebra `S`, the `S`-tensor square of `S ⊗ A` is the
+base change of the `R`-tensor square of `A` (`cancelBaseChange` followed by
+associativity), as `S`-algebras. -/
+noncomputable def baseChangeTensorSquare (R S A : Type) [CommRing R] [CommRing S]
+    [CommRing A] [Algebra R S] [Algebra R A] :
+    ((S ⊗[R] A) ⊗[S] (S ⊗[R] A)) ≃ₐ[S] S ⊗[R] (A ⊗[R] A) :=
+  (Algebra.TensorProduct.cancelBaseChange R S S (S ⊗[R] A) A).trans
+    (Algebra.TensorProduct.assoc R R S S A A)
+
+theorem baseChangeTensorSquare_tmul (R S A : Type) [CommRing R] [CommRing S]
+    [CommRing A] [Algebra R S] [Algebra R A] (r s : S) (a b : A) :
+    baseChangeTensorSquare R S A ((r ⊗ₜ[R] a) ⊗ₜ[S] (s ⊗ₜ[R] b)) =
+      (s * r) ⊗ₜ[R] (a ⊗ₜ[R] b) := by
+  rw [baseChangeTensorSquare, AlgEquiv.trans_apply,
+    Algebra.TensorProduct.cancelBaseChange_tmul]
+  rw [show s • (r ⊗ₜ[R] a) = (s * r) ⊗ₜ[R] a from by
+    rw [Algebra.smul_def, Algebra.TensorProduct.algebraMap_apply,
+      Algebra.algebraMap_self_apply, Algebra.TensorProduct.tmul_mul_tmul, one_mul]]
+  rfl
+
+theorem baseChangeTensorSquare_symm_tmul (R S A : Type) [CommRing R] [CommRing S]
+    [CommRing A] [Algebra R S] [Algebra R A] (r : S) (a b : A) :
+    (baseChangeTensorSquare R S A).symm (r ⊗ₜ[R] (a ⊗ₜ[R] b)) =
+      (r ⊗ₜ[R] a) ⊗ₜ[S] ((1 : S) ⊗ₜ[R] b) := by
+  rw [baseChangeTensorSquare, AlgEquiv.symm_trans_apply,
+    show (Algebra.TensorProduct.assoc R R S S A A).symm (r ⊗ₜ[R] (a ⊗ₜ[R] b)) =
+      (r ⊗ₜ[R] a) ⊗ₜ[R] b from rfl,
+    Algebra.TensorProduct.cancelBaseChange_symm_tmul]
+
+/-! ## Base-change formulas for the Hopf structure maps -/
+
+/-- The comultiplication of a base change, read through the tensor-square
+comparison: `Δ(r ⊗ h) = r ⊗ Δh`. -/
+theorem baseChangeTensorSquare_comul_tmul (R S H : Type) [CommRing R] [CommRing S]
+    [CommRing H] [Algebra R S] [Bialgebra R H] (r : S) (h : H) :
+    baseChangeTensorSquare R S H
+        (Bialgebra.comulAlgHom S (S ⊗[R] H) (r ⊗ₜ[R] h)) =
+      r ⊗ₜ[R] (Bialgebra.comulAlgHom R H h) := by
+  have hr : Bialgebra.comulAlgHom S S r = (1 : S) ⊗ₜ[S] r := by
+    have h1 := (Bialgebra.comulAlgHom S S).commutes r
+    rwa [Algebra.algebraMap_self_apply, Algebra.TensorProduct.algebraMap_apply',
+      Algebra.algebraMap_self_apply] at h1
+  have key : ∀ w : H ⊗[R] H,
+      baseChangeTensorSquare R S H
+        ((Algebra.TensorProduct.tensorTensorTensorComm R S R S S S H H).toAlgHom
+          (((1 : S) ⊗ₜ[S] r) ⊗ₜ[R] w)) = r ⊗ₜ[R] w := by
+    intro w
+    induction w with
+    | zero => simp
+    | tmul a b =>
+      rw [show (Algebra.TensorProduct.tensorTensorTensorComm R S R S S S H H).toAlgHom
+          (((1 : S) ⊗ₜ[S] r) ⊗ₜ[R] (a ⊗ₜ[R] b)) =
+          ((1 : S) ⊗ₜ[R] a) ⊗ₜ[S] (r ⊗ₜ[R] b) from
+        Algebra.TensorProduct.tensorTensorTensorComm_tmul _ _ _ _,
+        baseChangeTensorSquare_tmul, mul_one]
+    | add w₁ w₂ h₁ h₂ =>
+      rw [TensorProduct.tmul_add, map_add, map_add, h₁, h₂, ← TensorProduct.tmul_add]
+  rw [Bialgebra.TensorProduct.comulAlgHom_def]
+  simp only [AlgHom.comp_apply, Algebra.TensorProduct.map_tmul]
+  rw [hr]
+  exact key _
+
+/-- The counit of a base change: `ε(r ⊗ h) = ε(h)·r`. -/
+theorem baseChange_counit_tmul (R S H : Type) [CommRing R] [CommRing S]
+    [CommRing H] [Algebra R S] [Bialgebra R H] (r : S) (h : H) :
+    Bialgebra.counitAlgHom S (S ⊗[R] H) (r ⊗ₜ[R] h) =
+      algebraMap R S (Bialgebra.counitAlgHom R H h) * r := by
+  rw [Bialgebra.TensorProduct.counitAlgHom_def]
+  simp only [AlgHom.comp_apply, Algebra.TensorProduct.map_tmul,
+    Bialgebra.counitAlgHom_self, AlgHom.coe_id, id_eq]
+  show (Algebra.TensorProduct.rid R S S)
+    (r ⊗ₜ[R] (Bialgebra.counitAlgHom R H) h) = _
+  rw [Algebra.TensorProduct.rid_tmul, Algebra.smul_def]
+
+/-- The antipode of a base change: `S(r ⊗ h) = r ⊗ S h`. -/
+theorem baseChange_antipode_tmul (R S H : Type) [CommRing R] [CommRing S]
+    [CommRing H] [Algebra R S] [HopfAlgebra R H] (r : S) (h : H) :
+    HopfAlgebra.antipodeAlgHom S (S ⊗[R] H) (r ⊗ₜ[R] h) =
+      r ⊗ₜ[R] (HopfAlgebra.antipodeAlgHom R H h) := by
+  have hS : HopfAlgebra.antipode (R := S) (A := S) r = r := by
+    have h1 := (HopfAlgebra.antipodeAlgHom S S).commutes r
+    simp only [Algebra.algebraMap_self_apply] at h1
+    exact h1
+  show HopfAlgebra.antipode S (r ⊗ₜ[R] h) = _
+  rw [TensorProduct.antipode_def]
+  show (HopfAlgebra.antipode S r) ⊗ₜ[R] (HopfAlgebra.antipode R h) = _
+  rw [hS]
+  rfl
+
+/-! ## Descending an algebra map along an injective one -/
+
+/-- **Corestriction along an injective algebra map**: if every value of an
+algebra map `u : A →ₐ[R] C` lies in the image of an injective algebra map
+`j : B →ₐ[R] C`, then `u` factors as `j ∘ f` for an algebra map
+`f : A →ₐ[R] B`. -/
+theorem exists_algHom_comp_of_mem_range (R A B C : Type) [CommRing R] [CommRing A]
+    [CommRing B] [CommRing C] [Algebra R A] [Algebra R B] [Algebra R C]
+    (u : A →ₐ[R] C) (j : B →ₐ[R] C) (hj : Function.Injective j)
+    (hmem : ∀ a : A, ∃ b : B, j b = u a) :
+    ∃ f : A →ₐ[R] B, ∀ a : A, j (f a) = u a := by
+  choose g hg using hmem
+  refine ⟨{ toFun := g
+            map_one' := hj ?_
+            map_mul' := fun a b => hj ?_
+            map_zero' := hj ?_
+            map_add' := fun a b => hj ?_
+            commutes' := fun r => hj ?_ }, hg⟩
+  · rw [hg, map_one, map_one]
+  · rw [hg, map_mul, map_mul, hg, hg]
+  · rw [hg, map_zero, map_zero]
+  · rw [hg, map_add, map_add, hg, hg]
+  · rw [hg, AlgHom.commutes, AlgHom.commutes]
+
+/-! ## The descent core -/
+
+set_option maxHeartbeats 1000000 in
+/-- **The corestricted structure maps of the fixed-point order**: given the
+algebra-level identification `Φ` intertwining `τ ⊗ id` with `τ ⊗ S`, the
+comultiplication, counit and antipode of `R_L ⊗ H` corestrict along `Φ` to
+`R`-algebra maps of `H'`. -/
+theorem exists_fixedPointHopfMaps_of_algebraOrder
+    (R : Type) [CommRing R] [Nontrivial R] (h2 : IsUnit (2 : R)) (t n : R)
+    (H : Type) [CommRing H] [HopfAlgebra R H]
+    (hScomul : (Bialgebra.comulAlgHom R H).comp (HopfAlgebra.antipodeAlgHom R H) =
+      (Algebra.TensorProduct.map (HopfAlgebra.antipodeAlgHom R H)
+        (HopfAlgebra.antipodeAlgHom R H)).comp (Bialgebra.comulAlgHom R H))
+    (H' : Type) [CommRing H'] [Algebra R H']
+    (Φ : (quadraticOrder R t n ⊗[R] H') ≃ₐ[quadraticOrder R t n]
+      (quadraticOrder R t n ⊗[R] H))
+    (hΦ : ∀ x : quadraticOrder R t n ⊗[R] H',
+      Φ (Algebra.TensorProduct.map
+        (quadraticOrderConj R t n : quadraticOrder R t n →ₐ[R] quadraticOrder R t n)
+        (AlgHom.id R H') x) =
+      Algebra.TensorProduct.map
+        (quadraticOrderConj R t n : quadraticOrder R t n →ₐ[R] quadraticOrder R t n)
+        (HopfAlgebra.antipodeAlgHom R H) (Φ x)) :
+    ∃ (Δ₀ : H' →ₐ[R] H' ⊗[R] H') (ε₀ : H' →ₐ[R] R) (S₀ : H' →ₐ[R] H'),
+      (∀ x : H', Algebra.TensorProduct.congr Φ Φ
+          ((baseChangeTensorSquare R (quadraticOrder R t n) H').symm
+            ((1 : quadraticOrder R t n) ⊗ₜ[R] Δ₀ x)) =
+        Bialgebra.comulAlgHom (quadraticOrder R t n) (quadraticOrder R t n ⊗[R] H)
+          (Φ ((1 : quadraticOrder R t n) ⊗ₜ[R] x))) ∧
+      (∀ x : H', algebraMap R (quadraticOrder R t n) (ε₀ x) =
+        Bialgebra.counitAlgHom (quadraticOrder R t n) (quadraticOrder R t n ⊗[R] H)
+          (Φ ((1 : quadraticOrder R t n) ⊗ₜ[R] x))) ∧
+      (∀ x : H', Φ ((1 : quadraticOrder R t n) ⊗ₜ[R] S₀ x) =
+        HopfAlgebra.antipodeAlgHom (quadraticOrder R t n) (quadraticOrder R t n ⊗[R] H)
+          (Φ ((1 : quadraticOrder R t n) ⊗ₜ[R] x))) := by
+  classical
+  set RL := quadraticOrder R t n with hRL
+  set τ : RL →ₐ[R] RL :=
+    (quadraticOrderConj R t n : quadraticOrder R t n →ₐ[R] quadraticOrder R t n)
+    with hτ
+  set SH := HopfAlgebra.antipodeAlgHom R H with hSH
+  set ι : (RL ⊗[R] H) →ₐ[R] (RL ⊗[R] H) := Algebra.TensorProduct.map τ SH with hι
+  set ι' : (RL ⊗[R] H') →ₐ[R] (RL ⊗[R] H') :=
+    Algebra.TensorProduct.map τ (AlgHom.id R H') with hι'
+  set TwS : (RL ⊗[R] (H ⊗[R] H)) →ₐ[R] (RL ⊗[R] (H ⊗[R] H)) :=
+    Algebra.TensorProduct.map τ (Algebra.TensorProduct.map SH SH) with hTwS
+  set Tw : (RL ⊗[R] (H' ⊗[R] H')) →ₐ[R] (RL ⊗[R] (H' ⊗[R] H')) :=
+    Algebra.TensorProduct.map τ (AlgHom.id R (H' ⊗[R] H')) with hTw
+  have hτapp : ∀ r : RL, τ r = quadraticOrderConj R t n r := fun _ => rfl
+  -- `1 ⊗ x` is `ι'`-fixed, hence `Φ (1 ⊗ x)` is `ι`-fixed
+  have hιΦ : ∀ (r : RL) (x : H'),
+      ι (Φ (r ⊗ₜ[R] x)) = Φ ((quadraticOrderConj R t n r) ⊗ₜ[R] x) := by
+    intro r x
+    rw [← hΦ]
+    congr 1
+  have hfix : ∀ x : H', ι (Φ ((1 : RL) ⊗ₜ[R] x)) = Φ ((1 : RL) ⊗ₜ[R] x) := by
+    intro x
+    rw [hιΦ, map_one]
+  -- the injection `x ↦ Φ (1 ⊗ x)` and its two companions
+  have hinjH' : Function.Injective (fun x : H' => Φ ((1 : RL) ⊗ₜ[R] x)) := by
+    intro x y hxy
+    exact quadraticOrder_one_tmul_injective R t n H' (Φ.injective hxy)
+  -- ANTIPODE
+  have hιS : ∀ a : RL ⊗[R] H,
+      ι (HopfAlgebra.antipodeAlgHom RL (RL ⊗[R] H) a) =
+        HopfAlgebra.antipodeAlgHom RL (RL ⊗[R] H) (ι a) := by
+    intro a
+    induction a with
+    | zero => simp
+    | tmul r h =>
+      rw [baseChange_antipode_tmul, hι, Algebra.TensorProduct.map_tmul,
+        Algebra.TensorProduct.map_tmul, baseChange_antipode_tmul]
+    | add a b ha hb => simp only [map_add, ha, hb]
+  have hSex : ∀ x : H', ∃ y : H',
+      Φ ((1 : RL) ⊗ₜ[R] y) =
+        HopfAlgebra.antipodeAlgHom RL (RL ⊗[R] H) (Φ ((1 : RL) ⊗ₜ[R] x)) := by
+    intro x
+    have hzfix : ι' (Φ.symm (HopfAlgebra.antipodeAlgHom RL (RL ⊗[R] H)
+        (Φ ((1 : RL) ⊗ₜ[R] x)))) =
+        Φ.symm (HopfAlgebra.antipodeAlgHom RL (RL ⊗[R] H)
+          (Φ ((1 : RL) ⊗ₜ[R] x))) := by
+      apply Φ.injective
+      rw [hΦ, AlgEquiv.apply_symm_apply, hιS, hfix]
+    obtain ⟨y, hy⟩ := quadraticOrder_eq_one_tmul_of_conj_fixed R h2 t n H'
+      ι'.toLinearMap
+      (fun r m => by
+        show ι' (r ⊗ₜ[R] m) = _
+        rw [hι', Algebra.TensorProduct.map_tmul, AlgHom.id_apply, hτapp]) _ hzfix
+    exact ⟨y, by rw [← hy, AlgEquiv.apply_symm_apply]⟩
+  -- COUNIT
+  have hιε : ∀ a : RL ⊗[R] H,
+      Bialgebra.counitAlgHom RL (RL ⊗[R] H) (ι a) =
+        quadraticOrderConj R t n (Bialgebra.counitAlgHom RL (RL ⊗[R] H) a) := by
+    intro a
+    induction a with
+    | zero => simp
+    | tmul r h =>
+      rw [hι, Algebra.TensorProduct.map_tmul, baseChange_counit_tmul,
+        baseChange_counit_tmul, map_mul, ← hτapp, AlgHom.commutes, hτapp]
+      congr 2
+      exact HopfAlgebra.counit_antipode h
+    | add a b ha hb => simp only [map_add, ha, hb]
+  have hεex : ∀ x : H', ∃ c : R, algebraMap R RL c =
+      Bialgebra.counitAlgHom RL (RL ⊗[R] H) (Φ ((1 : RL) ⊗ₜ[R] x)) := by
+    intro x
+    obtain ⟨c, hc⟩ := quadraticOrder_exists_of_conj_eq R h2 t n
+      (Bialgebra.counitAlgHom RL (RL ⊗[R] H) (Φ ((1 : RL) ⊗ₜ[R] x)))
+      (by rw [← hιε, hfix])
+    exact ⟨c, hc.symm⟩
+  -- COMULTIPLICATION
+  have hιΔ : ∀ a : RL ⊗[R] H,
+      baseChangeTensorSquare R RL H (Bialgebra.comulAlgHom RL (RL ⊗[R] H) (ι a)) =
+        TwS (baseChangeTensorSquare R RL H
+          (Bialgebra.comulAlgHom RL (RL ⊗[R] H) a)) := by
+    intro a
+    induction a with
+    | zero => simp
+    | tmul r h =>
+      rw [hι, Algebra.TensorProduct.map_tmul, baseChangeTensorSquare_comul_tmul,
+        baseChangeTensorSquare_comul_tmul, hTwS, Algebra.TensorProduct.map_tmul]
+      congr 1
+      exact AlgHom.congr_fun hScomul h
+    | add a b ha hb => simp only [map_add, ha, hb]
+  have hK6 : ∀ a b : RL ⊗[R] H,
+      TwS (baseChangeTensorSquare R RL H (a ⊗ₜ[RL] b)) =
+        baseChangeTensorSquare R RL H (ι a ⊗ₜ[RL] ι b) := by
+    intro a b
+    induction a with
+    | zero => simp
+    | tmul r h =>
+      induction b with
+      | zero => simp
+      | tmul s k =>
+        simp only [hTwS, hι, baseChangeTensorSquare_tmul,
+          Algebra.TensorProduct.map_tmul, map_mul]
+      | add b₁ b₂ hb₁ hb₂ =>
+        simp only [map_add, TensorProduct.tmul_add, hb₁, hb₂]
+    | add a₁ a₂ ha₁ ha₂ =>
+      simp only [map_add, TensorProduct.add_tmul, ha₁, ha₂]
+  have hΨ : ∀ (r : RL) (v : H' ⊗[R] H'),
+      baseChangeTensorSquare R RL H (Algebra.TensorProduct.congr Φ Φ
+          ((baseChangeTensorSquare R RL H').symm ((τ r) ⊗ₜ[R] v))) =
+        TwS (baseChangeTensorSquare R RL H (Algebra.TensorProduct.congr Φ Φ
+          ((baseChangeTensorSquare R RL H').symm (r ⊗ₜ[R] v)))) := by
+    intro r v
+    induction v with
+    | zero => simp
+    | tmul x y =>
+      rw [baseChangeTensorSquare_symm_tmul, baseChangeTensorSquare_symm_tmul,
+        show Algebra.TensorProduct.congr Φ Φ
+            (((τ r) ⊗ₜ[R] x) ⊗ₜ[RL] ((1 : RL) ⊗ₜ[R] y)) =
+            Φ ((τ r) ⊗ₜ[R] x) ⊗ₜ[RL] Φ ((1 : RL) ⊗ₜ[R] y) from rfl,
+        show Algebra.TensorProduct.congr Φ Φ
+            ((r ⊗ₜ[R] x) ⊗ₜ[RL] ((1 : RL) ⊗ₜ[R] y)) =
+            Φ (r ⊗ₜ[R] x) ⊗ₜ[RL] Φ ((1 : RL) ⊗ₜ[R] y) from rfl,
+        hK6, hfix, hιΦ, hτapp]
+    | add v₁ v₂ h₁ h₂ =>
+      simp only [TensorProduct.tmul_add, map_add, h₁, h₂]
+  have hΨgen : ∀ w : RL ⊗[R] (H' ⊗[R] H'),
+      baseChangeTensorSquare R RL H (Algebra.TensorProduct.congr Φ Φ
+          ((baseChangeTensorSquare R RL H').symm (Tw w))) =
+        TwS (baseChangeTensorSquare R RL H (Algebra.TensorProduct.congr Φ Φ
+          ((baseChangeTensorSquare R RL H').symm w))) := by
+    intro w
+    induction w with
+    | zero => simp
+    | tmul r v =>
+      rw [hTw, Algebra.TensorProduct.map_tmul, AlgHom.id_apply]
+      exact hΨ r v
+    | add w₁ w₂ h₁ h₂ => simp only [map_add, h₁, h₂]
+  have hΔex : ∀ x : H', ∃ v : H' ⊗[R] H',
+      Algebra.TensorProduct.congr Φ Φ
+          ((baseChangeTensorSquare R RL H').symm ((1 : RL) ⊗ₜ[R] v)) =
+        Bialgebra.comulAlgHom RL (RL ⊗[R] H) (Φ ((1 : RL) ⊗ₜ[R] x)) := by
+    intro x
+    have hwfix : Tw (baseChangeTensorSquare R RL H'
+        ((Algebra.TensorProduct.congr Φ Φ).symm
+          (Bialgebra.comulAlgHom RL (RL ⊗[R] H) (Φ ((1 : RL) ⊗ₜ[R] x))))) =
+        baseChangeTensorSquare R RL H'
+          ((Algebra.TensorProduct.congr Φ Φ).symm
+            (Bialgebra.comulAlgHom RL (RL ⊗[R] H) (Φ ((1 : RL) ⊗ₜ[R] x)))) := by
+      have hinj : Function.Injective (fun w : RL ⊗[R] (H' ⊗[R] H') =>
+          baseChangeTensorSquare R RL H (Algebra.TensorProduct.congr Φ Φ
+            ((baseChangeTensorSquare R RL H').symm w))) := by
+        intro w₁ w₂ hw
+        exact (baseChangeTensorSquare R RL H').symm.injective
+          ((Algebra.TensorProduct.congr Φ Φ).injective
+            ((baseChangeTensorSquare R RL H).injective hw))
+      apply hinj
+      dsimp only
+      rw [hΨgen, AlgEquiv.symm_apply_apply, AlgEquiv.apply_symm_apply, ← hιΔ,
+        hfix]
+    obtain ⟨v, hv⟩ := quadraticOrder_eq_one_tmul_of_conj_fixed R h2 t n
+      (H' ⊗[R] H') Tw.toLinearMap
+      (fun r m => by
+        show Tw (r ⊗ₜ[R] m) = _
+        rw [hTw, Algebra.TensorProduct.map_tmul, AlgHom.id_apply, hτapp]) _ hwfix
+    refine ⟨v, ?_⟩
+    rw [← hv, AlgEquiv.symm_apply_apply, AlgEquiv.apply_symm_apply]
+  -- assemble the three corestricted maps
+  obtain ⟨S₀, hS₀⟩ := exists_algHom_comp_of_mem_range R H' H' (RL ⊗[R] H)
+    (((HopfAlgebra.antipodeAlgHom RL (RL ⊗[R] H)).restrictScalars R).comp
+      ((Φ.toAlgHom.restrictScalars R).comp
+        (Algebra.TensorProduct.includeRight : H' →ₐ[R] RL ⊗[R] H')))
+    ((Φ.toAlgHom.restrictScalars R).comp
+      (Algebra.TensorProduct.includeRight : H' →ₐ[R] RL ⊗[R] H'))
+    hinjH' hSex
+  obtain ⟨ε₀, hε₀⟩ := exists_algHom_comp_of_mem_range R H' R RL
+    (((Bialgebra.counitAlgHom RL (RL ⊗[R] H)).restrictScalars R).comp
+      ((Φ.toAlgHom.restrictScalars R).comp
+        (Algebra.TensorProduct.includeRight : H' →ₐ[R] RL ⊗[R] H')))
+    (Algebra.ofId R RL) (quadraticOrder_algebraMap_injective R t n) hεex
+  obtain ⟨Δ₀, hΔ₀⟩ := exists_algHom_comp_of_mem_range R H' (H' ⊗[R] H')
+    ((RL ⊗[R] H) ⊗[RL] (RL ⊗[R] H))
+    (((Bialgebra.comulAlgHom RL (RL ⊗[R] H)).restrictScalars R).comp
+      ((Φ.toAlgHom.restrictScalars R).comp
+        (Algebra.TensorProduct.includeRight : H' →ₐ[R] RL ⊗[R] H')))
+    (((Algebra.TensorProduct.congr Φ Φ).toAlgHom.restrictScalars R).comp
+      (((baseChangeTensorSquare R RL H').symm.toAlgHom.restrictScalars R).comp
+        (Algebra.TensorProduct.includeRight :
+          (H' ⊗[R] H') →ₐ[R] RL ⊗[R] (H' ⊗[R] H'))))
+    (fun v₁ v₂ hv => quadraticOrder_one_tmul_injective R t n (H' ⊗[R] H')
+      ((baseChangeTensorSquare R RL H').symm.injective
+        ((Algebra.TensorProduct.congr Φ Φ).injective hv)))
+    hΔex
+  exact ⟨Δ₀, ε₀, S₀, hΔ₀, hε₀, hS₀⟩
+
+end FixedPointHopfDescent
+
 open TensorProduct in
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
-/-- **The fixed-point order, Hopf upgrade** (sorry node — the
-costructure-corestriction stage of the integral fixed-points descent):
+/-- **The fixed-point order, structure transport** (sorry node — the
+AXIOM-TRANSPORT stage of the integral fixed-points descent, all the
+DESCENT content having been discharged by
+`exists_fixedPointHopfMaps_of_algebraOrder`): given the corestricted
+structure maps `Δ₀`, `ε₀`, `S₀` of `H'` — `R`-algebra maps whose base
+changes agree with the comultiplication, counit and antipode of
+`R_L ⊗ H` through `Φ` — assemble them into a Hopf `R`-algebra structure
+on `H'` for which `Φ` is an `R_L`-bialgebra identification.
+
+Intended route (nothing left here is descent; it is all diagram
+transport along the free base change `R_L/R`): the coalgebra axioms of
+`(Δ₀, ε₀)` and the two Hopf axioms of `S₀` are equalities of `R`-algebra
+maps out of `H'` into `H'`, `H' ⊗ H'` and `H' ⊗ H' ⊗ H'`; each becomes
+an instance of the corresponding axiom for `R_L ⊗ H` after applying the
+INJECTIVE unit base change `m ↦ 1 ⊗ m`
+(`quadraticOrder_one_tmul_injective`) followed by the comparison
+isomorphisms `baseChangeTensorSquare` and its triple-tensor analogue
+`((R_L ⊗ H') ⊗[R_L] (R_L ⊗ H')) ⊗[R_L] (R_L ⊗ H') ≃ₐ[R_L]
+R_L ⊗ ((H' ⊗ H') ⊗ H')` (built the same way — `cancelBaseChange` then
+`assoc`), under which the hypotheses `hΔ₀`, `hε₀`, `hS₀` identify the
+base changes of `Δ₀`, `ε₀`, `S₀` with `Δ`, `ε`, `S` of `R_L ⊗ H`. The
+structure is then packaged by `Bialgebra.ofAlgHom`/`HopfAlgebra.ofAlgHom`
+exactly as in `exists_hopfAlgebra_integralClosure_of_mul_bijective` of
+`KnownIn1980s/EllipticCurves/Flat.lean` (the in-tree precedent for a
+corestricted Hopf order, whose axiom transport along an injective
+tensor-square comparison is the template to follow line for line), and
+`Φ` upgrades to `≃ₐc[R_L]` by `BialgEquiv.ofAlgEquiv`, whose counit and
+comultiplication clauses are `hε₀` and `hΔ₀` read on the generators
+`r ⊗ x` of `R_L ⊗ H'` (`Algebra.TensorProduct.ext_ring`, the base-change
+formulas `baseChange_counit_tmul` and `baseChangeTensorSquare_comul_tmul`
+being available); the conjugation-intertwining clause is `hΦ` unchanged,
+since `e` and `Φ` have the same underlying map. -/
+theorem exists_fixedPointHopfOrder_of_corestrictedMaps
+    (R : Type) [CommRing R] [IsDomain R] [IsDiscreteValuationRing R]
+    (h2 : IsUnit (2 : R)) (t n : R) (hdisc : IsUnit (t * t - 4 * n))
+    (H : Type) [CommRing H] [HopfAlgebra R H] [Module.Finite R H]
+    [Module.Flat R H]
+    (hS2 : (HopfAlgebra.antipodeAlgHom R H).comp
+      (HopfAlgebra.antipodeAlgHom R H) = AlgHom.id R H)
+    (hScomul : (Bialgebra.comulAlgHom R H).comp
+      (HopfAlgebra.antipodeAlgHom R H) =
+      (Algebra.TensorProduct.map (HopfAlgebra.antipodeAlgHom R H)
+        (HopfAlgebra.antipodeAlgHom R H)).comp
+        (Bialgebra.comulAlgHom R H))
+    (H' : Type) [CommRing H'] [Algebra R H'] [Module.Finite R H']
+    [Module.Flat R H']
+    (Φ : (quadraticOrder R t n ⊗[R] H') ≃ₐ[quadraticOrder R t n]
+      (quadraticOrder R t n ⊗[R] H))
+    (hΦ : ∀ x : quadraticOrder R t n ⊗[R] H',
+      Φ (Algebra.TensorProduct.map
+        (quadraticOrderConj R t n : quadraticOrder R t n →ₐ[R]
+          quadraticOrder R t n) (AlgHom.id R H') x) =
+      Algebra.TensorProduct.map
+        (quadraticOrderConj R t n : quadraticOrder R t n →ₐ[R]
+          quadraticOrder R t n) (HopfAlgebra.antipodeAlgHom R H)
+        (Φ x))
+    (Δ₀ : H' →ₐ[R] H' ⊗[R] H') (ε₀ : H' →ₐ[R] R) (S₀ : H' →ₐ[R] H')
+    (hΔ₀ : ∀ x : H', Algebra.TensorProduct.congr Φ Φ
+        ((baseChangeTensorSquare R (quadraticOrder R t n) H').symm
+          ((1 : quadraticOrder R t n) ⊗ₜ[R] Δ₀ x)) =
+      Bialgebra.comulAlgHom (quadraticOrder R t n)
+        (quadraticOrder R t n ⊗[R] H)
+        (Φ ((1 : quadraticOrder R t n) ⊗ₜ[R] x)))
+    (hε₀ : ∀ x : H', algebraMap R (quadraticOrder R t n) (ε₀ x) =
+      Bialgebra.counitAlgHom (quadraticOrder R t n)
+        (quadraticOrder R t n ⊗[R] H)
+        (Φ ((1 : quadraticOrder R t n) ⊗ₜ[R] x)))
+    (hS₀ : ∀ x : H', Φ ((1 : quadraticOrder R t n) ⊗ₜ[R] S₀ x) =
+      HopfAlgebra.antipodeAlgHom (quadraticOrder R t n)
+        (quadraticOrder R t n ⊗[R] H)
+        (Φ ((1 : quadraticOrder R t n) ⊗ₜ[R] x))) :
+    ∃ (H'' : Type) (_ : CommRing H'') (_ : HopfAlgebra R H'')
+      (_ : Module.Finite R H'') (_ : Module.Flat R H'')
+      (e : (quadraticOrder R t n ⊗[R] H'') ≃ₐc[quadraticOrder R t n]
+        (quadraticOrder R t n ⊗[R] H)),
+      ∀ x : quadraticOrder R t n ⊗[R] H'',
+        e (Algebra.TensorProduct.map
+          (quadraticOrderConj R t n : quadraticOrder R t n →ₐ[R]
+            quadraticOrder R t n) (AlgHom.id R H'') x) =
+        Algebra.TensorProduct.map
+          (quadraticOrderConj R t n : quadraticOrder R t n →ₐ[R]
+            quadraticOrder R t n) (HopfAlgebra.antipodeAlgHom R H)
+          (e x) := by
+  sorry
+
+open TensorProduct in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **The fixed-point order, Hopf upgrade** (DECOMPOSED 2026-07-25 — the
+DESCENT content is PROVEN in `exists_fixedPointHopfMaps_of_algebraOrder`
+above, which corestricts the comultiplication, counit and antipode of
+`R_L ⊗ H` along `Φ` to `R`-algebra maps of `H'`; what remains is the
+sorried leaf `exists_fixedPointHopfOrder_of_corestrictedMaps`, the
+transport of the coalgebra and Hopf AXIOMS along the injective unit base
+change; PROVEN here is the glue chaining them):
 given the algebra-level fixed-point identification `Φ` of
 `exists_fixedPointAlgebraOrder_of_descentData` — an `R_L`-algebra
 identification `R_L ⊗ H' ≅ R_L ⊗ H` intertwining `τ ⊗ id` with
@@ -9022,7 +9657,10 @@ theorem exists_fixedPointHopfOrder_of_algebraOrder
           (quadraticOrderConj R t n : quadraticOrder R t n →ₐ[R]
             quadraticOrder R t n) (HopfAlgebra.antipodeAlgHom R H)
           (e x) := by
-  sorry
+  obtain ⟨Δ₀, ε₀, S₀, hΔ₀, hε₀, hS₀⟩ :=
+    exists_fixedPointHopfMaps_of_algebraOrder R h2 t n H hScomul H' Φ hΦ
+  exact exists_fixedPointHopfOrder_of_corestrictedMaps R h2 t n hdisc H hS2
+    hScomul H' Φ hΦ Δ₀ ε₀ S₀ hΔ₀ hε₀ hS₀
 
 open TensorProduct in
 set_option backward.isDefEq.respectTransparency false in

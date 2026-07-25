@@ -97,7 +97,167 @@ theorem crossRatio_eq_of_stages {K : Type*} [Field K]
     _ = ce * α' * β' * (γ' * δ' * Y) := by rw [← hpull]
     _ = ce * (α' * β' * γ' * δ') * Y := by ring
 
-/-- **Stage B, leaf 1 (sorry node): a generic `p`-division offset.**
+omit [IsAlgClosed F] in
+/-- **The `F₂`-rational points form a subgroup** (PROVEN): if a subfield
+`F₂` contains the curve's coefficients, the curve descends to `F₂` and
+the points with both coordinates in `F₂` are exactly the image of the
+`F₂`-points under the base-change map `pointMap F₂.subtype` — an
+additive group homomorphism, so its range is a subgroup.  This is the
+"addition formulas preserve the subfield" step of leaf 1, obtained from
+`pointMap_add` rather than from the formulas themselves. -/
+theorem exists_pointSubgroup_of_subfield {F₂ : Subfield F}
+    (ha₁ : W.a₁ ∈ F₂) (ha₂ : W.a₂ ∈ F₂) (ha₃ : W.a₃ ∈ F₂)
+    (ha₄ : W.a₄ ∈ F₂) (ha₆ : W.a₆ ∈ F₂) :
+    ∃ G : AddSubgroup W.Point,
+      (∀ (x y : F) (h : W.Nonsingular x y), x ∈ F₂ → y ∈ F₂ →
+        (WeierstrassCurve.Affine.Point.some x y h : W.Point) ∈ G) ∧
+      (∀ (x y : F) (h : W.Nonsingular x y),
+        (WeierstrassCurve.Affine.Point.some x y h : W.Point) ∈ G →
+          x ∈ F₂ ∧ y ∈ F₂) := by
+  classical
+  set W₂ : WeierstrassCurve.Affine F₂ :=
+    ⟨⟨W.a₁, ha₁⟩, ⟨W.a₂, ha₂⟩, ⟨W.a₃, ha₃⟩, ⟨W.a₄, ha₄⟩, ⟨W.a₆, ha₆⟩⟩ with hW₂
+  have hmap : (W₂.map F₂.subtype).toAffine = W := rfl
+  set f : W₂.Point →+ W.Point :=
+    { toFun := fun Z => castPoint hmap (pointMap F₂.subtype Z)
+      map_zero' := by rw [pointMap_zero, castPoint_zero]
+      map_add' := fun P R => by rw [pointMap_add, castPoint_add] } with hfdef
+  have hns' : ∀ (u v : F₂), W₂.Nonsingular u v →
+      W.Nonsingular (F₂.subtype u) (F₂.subtype v) := fun u v huv =>
+    (W₂.map_nonsingular F₂.subtype.injective u v).mpr huv
+  have hfsome : ∀ (u v : F₂) (huv : W₂.Nonsingular u v),
+      f (WeierstrassCurve.Affine.Point.some u v huv) =
+        (WeierstrassCurve.Affine.Point.some (F₂.subtype u) (F₂.subtype v)
+          (hns' u v huv) : W.Point) := by
+    intro u v huv
+    show castPoint hmap (pointMap F₂.subtype
+      (WeierstrassCurve.Affine.Point.some u v huv)) = _
+    rw [pointMap_some]
+    exact castPoint_some hmap _
+  refine ⟨AddMonoidHom.range f, ?_, ?_⟩
+  · intro x y h hx hy
+    have hns : W₂.Nonsingular ⟨x, hx⟩ ⟨y, hy⟩ :=
+      (W₂.map_nonsingular F₂.subtype.injective ⟨x, hx⟩ ⟨y, hy⟩).mp h
+    exact ⟨WeierstrassCurve.Affine.Point.some ⟨x, hx⟩ ⟨y, hy⟩ hns,
+      hfsome ⟨x, hx⟩ ⟨y, hy⟩ hns⟩
+  · rintro x y h ⟨Z, hZ⟩
+    cases Z with
+    | zero =>
+      exact absurd (hZ.symm.trans f.map_zero)
+        (WeierstrassCurve.Affine.Point.some_ne_zero h)
+    | some u v huv =>
+      rw [hfsome, WeierstrassCurve.Affine.Point.some.injEq] at hZ
+      refine ⟨?_, ?_⟩
+      · rw [← hZ.1]; exact u.2
+      · rw [← hZ.2]; exact v.2
+
+omit [IsAlgClosed F] in
+/-- **Vanishing locates a point in the divisor** (PROVEN): if a
+generator `a` of a point-ideal product `∏_{w ∈ D} I_w` vanishes at an
+affine point `ξ`, then `ξ` occurs in `D`.  Indeed `a ∈ I_ξ` gives
+`∏_{w} I_w ≤ I_ξ`, and `I_ξ` is maximal hence prime, so it contains one
+factor `I_w`; distinct points have coprime point ideals
+(`isCoprime_pointIdeal`), which would force `I_ξ = ⊤`. -/
+theorem mem_of_evalEval_eq_zero {D : Multiset W.Point} {a : W.CoordinateRing}
+    (hspan : Ideal.span {a} = (D.map (pointIdeal W)).prod)
+    {x y : F} (h : W.Nonsingular x y)
+    (hz : AdjoinRoot.evalEval h.left a = 0) :
+    (WeierstrassCurve.Affine.Point.some x y h : W.Point) ∈ D := by
+  classical
+  have hmem : a ∈ pointIdeal W (.some x y h) :=
+    mem_pointIdeal_of_coordEval_eq_zero h hz
+  have hle : (D.map (pointIdeal W)).prod ≤ pointIdeal W (.some x y h) := by
+    rw [← hspan, Ideal.span_le, Set.singleton_subset_iff]
+    exact hmem
+  have hprime : (pointIdeal W (.some x y h)).IsPrime :=
+    (xyIdeal_isMaximal h.left).isPrime
+  obtain ⟨I, hI, hIle⟩ := hprime.multiset_prod_le.mp hle
+  obtain ⟨w, hw, rfl⟩ := Multiset.mem_map.mp hI
+  by_cases hwe : w = (WeierstrassCurve.Affine.Point.some x y h : W.Point)
+  · exact hwe ▸ hw
+  · exfalso
+    have hsup := Ideal.isCoprime_iff_sup_eq.mp (isCoprime_pointIdeal hwe)
+    rw [sup_eq_right.mpr hIle] at hsup
+    exact hprime.ne_top hsup
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- **Constants evaluate to themselves** (PROVEN): `coordEval_coordC` in
+the `AdjoinRoot.evalEval` spelling the Stage-B statements use
+(`coordEval W h` is by definition `AdjoinRoot.evalEval h`). -/
+lemma evalEval_coordC {x y : F} (h : W.Equation x y) (d : F) :
+    AdjoinRoot.evalEval h (coordC W d) = d :=
+  coordEval_coordC (W := W) h d
+
+/-- **Stage B substrate leaf (SORRY): specialization of a generic
+evaluation at an affine point.**  This is the primitive the whole
+`WeilPairingDescent.lean` substrate is missing, and the only reason
+Stage B's two evaluation leaves cannot be finished from it: that
+substrate states every divisor/character identity in the FUNCTION FIELD
+`K = Frac F[W]` — identities between `pointEval`s at the generic point
+`taut` — while Stage B's conclusions are VALUES at named affine points
+(`AdjoinRoot.evalEval`).  Nothing in the substrate lets a `K`-identity
+be read at a point, because there is no ring map `K → F`: specialization
+is only partially defined.
+
+Statement.  Let `ω = Q ⊕ m•taut` be an affine point of the base-changed
+curve `curveK W` — so that `pointEval (constHom W) hω.left` realizes
+`z ↦ z ∘ (τ_Q ∘ [m])` — and let `Z` be an affine point of `W` whose
+image `Z' = Q ⊕ m•Z` under the SAME map is again affine.  Then for every
+`z ∈ F[W]` the composite `z ∘ (τ_Q ∘ [m])` is regular at `Z` with value
+`z(Z')`.  Stated without a partial specialization map: it is a fraction
+`n/d` of coordinate-ring elements whose denominator does not vanish at
+`Z` (`d(Z) ≠ 0`, the regularity), and whose numerator satisfies
+`n(Z) = z(Z')·d(Z)` (the value).
+
+Faithfulness.  `τ_Q ∘ [m] : E → E` is a morphism of curves; `z` is
+regular on `E ∖ {O}`; so `z ∘ (τ_Q ∘ [m])` is regular at every `Z` whose
+image is affine, which is exactly the hypothesis `hZ'c`.  The
+degenerate cases are covered: `m = 0` makes `ω` the constant point `Q`
+and both sides the constant `z(Q)`; `Q = O`, `m = 1` makes the map the
+identity and the statement `n = z`, `d = 1`.
+
+Proof route.  `pointEval` is determined by where it sends the two
+coordinate atoms (`coordinateRing_ringHom_ext`), so it suffices to
+produce `n`, `d` for `z = coordX` and `z = coordY` and close the family
+under the ring operations (a common denominator is a product of the
+individual ones).  For those two atoms `n/d` is read off the group-law
+formulas: `x(Q ⊕ m•taut)` and `y(Q ⊕ m•taut)` are the `addX`/`addY`
+expressions in `x(m•taut) = Φ_m/ΨSq_m`, `y(m•taut)`, `x(Q)`, `y(Q)` and
+the slope, all of which are fractions of coordinate-ring elements; the
+denominators are powers of `ΨSq_m(coordX)` and of the vertical
+`coordX − x(Q)` (resp. the tangent normalisation when `Z = ±Q`, the case
+already isolated by `vertNumerator_self_tangent` /
+`vertNumerator_self_vertical` in `WeilPairingDescent.lean`).  Their
+non-vanishing at `Z` is exactly the affineness of `Q ⊕ m•Z`, i.e.
+`hZ'c`, and the value identity `n(Z) = z(Z')·d(Z)` is the statement that
+the group law commutes with evaluation — the same
+`Point.some`-coordinate computation that `endoMap_add` performs one
+level up.
+
+Both Stage-B evaluation leaves below consume this at `(Q, m) = (0, p)`
+(the `[p]`-pullback `z ↦ z∘[p]`, specializing at a `p`-division point)
+and at `(Q, m) = (Q₀, 1)` (a translation `z ↦ z∘τ_{Q₀}`), which is why
+it is stated once, uniformly in `(Q, m)`. -/
+theorem exists_pointEval_specialization (hΔ : W.Δ ≠ 0) (m : ℤ) {Q : W.Point}
+    {xω yω : W.FunctionField} {hω : (curveK W).Nonsingular xω yω}
+    (hpt : constPoint W Q + m • tautPoint W hΔ =
+      WeierstrassCurve.Affine.Point.some xω yω hω)
+    {xZ yZ : F} (hZ : W.Nonsingular xZ yZ)
+    {xZ' yZ' : F} (hZ' : W.Nonsingular xZ' yZ')
+    (hZ'c : (WeierstrassCurve.Affine.Point.some xZ' yZ' hZ' : W.Point) =
+      Q + m • (WeierstrassCurve.Affine.Point.some xZ yZ hZ : W.Point))
+    (z : W.CoordinateRing) :
+    ∃ n d : W.CoordinateRing,
+      AdjoinRoot.evalEval hZ.left d ≠ 0 ∧
+      pointEval (constHom W) hω.left z *
+          algebraMap W.CoordinateRing W.FunctionField d =
+        algebraMap W.CoordinateRing W.FunctionField n ∧
+      AdjoinRoot.evalEval hZ.left n =
+        AdjoinRoot.evalEval hZ'.left z * AdjoinRoot.evalEval hZ.left d := by
+  sorry
+
+omit [Fact p.Prime] in
+/-- **Stage B, leaf 1 (PROVEN): a generic `p`-division offset.**
 Given the Miller data (`Q = p•T'`, `a` generating
 `∏_κ I_{T'⊕κ}·I_{⊖κ}`), a `p`-torsion point `P`, and the setup's
 `S` (abscissa and ordinate in the big field `F₂`) and `R` (abscissa
@@ -108,41 +268,58 @@ Miller generator `a` nor the vertical product
 `v = ∏_κ (X − x_κ)` vanishes — i.e. `g = a/v` is defined and nonzero
 at both, as the two evaluation stages require.
 
-Proof plan.  `p`-division points exist by
-`TorsionCard.smul_surjective` (`(p : F) ≠ 0`, `F` separably closed).
-For the genericity, note `evalEval` at an affine point `ξ` kills `a`
-exactly when `ξ` lies in the divisor support
-`{T'⊕κ} ∪ {⊖κ}` (the point ideal at `ξ` divides `span {a}` —
-`hspan` — and point ideals are the maximal ideals of the coordinate
-ring), and kills `v` exactly when `ξ = ±κ` for some `κ ∈ E[p]`.  So
-suppose `U` (resp. `V`) is bad, i.e. `U = w` (resp. `P' ⊕ U = w`) for
-one of the finitely many `w` in that support.  Applying `[p]`:
-`S ⊖ R = p•w` (resp. `S ⊖ R = p•w ⊖ P`), so
-`S = R ⊕ (p•w)` (resp. `S = R ⊕ (p•w ⊖ P)`) with the translating
-point's coordinates in `F₁ ≤ F₂` by `hbad` (`λ = O`, and `P = ⊖(⊖P)`
-is `p`-torsion, so its coordinates are covered as well) — hence
-`R = S ⊖ (that point)` would have both coordinates in the subfield
-`F₂` by the addition formulas, contradicting `xR ∉ F₂`.  The same
-argument excludes `U = O` (`S = R`) and `V = O` (`S = R ⊖ P`). -/
+Proof (the recorded route, with the two hypotheses it turned out to
+need — see below).  `p`-division points exist by
+`TorsionCard.smul_surjective` (`exists_zsmul_eq`; `(p : F) ≠ 0`, `F`
+algebraically closed).  `evalEval` at an affine point `ξ` kills `a`
+exactly when `ξ` lies in the divisor support `{T'⊕κ} ∪ {⊖κ}` and kills
+`v` exactly when `ξ = ±κ` for some `κ ∈ E[p]`
+(`mem_of_evalEval_eq_zero` applied to `hspan` and to
+`span_enumVertical`).  Every point of either support is killed by `[p]`
+or sent to `Q` by it, so a bad `U` forces `S ⊖ R ∈ {O, Q}` and a bad
+`V` forces `S ⊖ R ∈ {⊖P, Q ⊖ P}` — and the same four values are what
+`U = O`, `V = O` force.  All four are excluded at once: `Q`, `P` and
+`S` are `F₂`-rational (`P` by `hbad` with `κ = ⊖P`, `λ = O`; `Q` by
+`hxQF₁`/`hyQF₁`), the `F₂`-rational points form a SUBGROUP
+(`exists_pointSubgroup_of_subfield` — this is where the curve's
+coefficients must lie in the subfield), so `S ⊖ R = t` with `t` in that
+subgroup would put `R = S ⊖ t` in it, i.e. `xR ∈ F₂`, contradicting
+`hxRF₂`.
+
+Two hypotheses beyond the original statement are needed and are
+supplied by the Stage-B caller: the curve's coefficients lie in `F₁`
+(`ha₁`…`ha₆` — without them "the addition formulas stay in the
+subfield" is false, since `W` need not be defined over `F₁`), and `Q`'s
+coordinates lie in `F₁` (`hxQF₁`, `hyQF₁` — without them the
+configuration `S ⊖ R = Q` is not excluded and the statement is FALSE,
+every `U` then lying in `[p]^{-1}(Q)`, which is exactly the support of
+`a`).  `hbad` does not give either: it constrains the `p²`-torsion
+translates of `T'`, not `p•T' = Q`, and says nothing about the
+coefficients. -/
 theorem exists_generic_pDivision_offset {ι : Type*} [Fintype ι]
     {val : ι → W.Point}
     (hΔ : W.Δ ≠ 0) (hp : (p : F) ≠ 0)
-    (hval_inj : Function.Injective val)
+    (_hval_inj : Function.Injective val)
     (hval_tor : ∀ i, (p : ℤ) • val i = 0)
-    (hval_surj : ∀ Z : W.Point, (p : ℤ) • Z = 0 → ∃ i, val i = Z)
-    (hcard : Fintype.card ι = p ^ 2)
-    {P T' Q : W.Point} (hT : (p : ℤ) • T' = Q) (hPtor : (p : ℤ) • P = 0)
-    {a : W.CoordinateRing} (ha : a ≠ 0)
+    (_hval_surj : ∀ Z : W.Point, (p : ℤ) • Z = 0 → ∃ i, val i = Z)
+    (_hcard : Fintype.card ι = p ^ 2)
+    {P T' : W.Point} {xQ yQ : F} (hQ : W.Nonsingular xQ yQ)
+    (hT : (p : ℤ) • T' = WeierstrassCurve.Affine.Point.some xQ yQ hQ)
+    (hPtor : (p : ℤ) • P = 0)
+    {a : W.CoordinateRing} (_ha : a ≠ 0)
     (hspan : Ideal.span {a} =
       ((((Finset.univ.val.map fun i => T' + val i) +
         Finset.univ.val.map fun i => -val i)).map (pointIdeal W)).prod)
-    {F₁ F₂ : Subfield F} (hF₁fin : (F₁ : Set F).Finite)
-    (hF₂fin : (F₂ : Set F).Finite) (hF₁₂ : F₁ ≤ F₂)
+    {F₁ F₂ : Subfield F} (_hF₁fin : (F₁ : Set F).Finite)
+    (_hF₂fin : (F₂ : Set F).Finite) (hF₁₂ : F₁ ≤ F₂)
+    (ha₁ : W.a₁ ∈ F₁) (ha₂ : W.a₂ ∈ F₁) (ha₃ : W.a₃ ∈ F₁)
+    (ha₄ : W.a₄ ∈ F₁) (ha₆ : W.a₆ ∈ F₁)
     (hbad : ∀ κ lam : W.Point, (p : ℤ) • κ = 0 → ((p ^ 2 : ℕ) : ℤ) • lam = 0 →
       ∀ (x y : F) (h : W.Nonsingular x y),
         WeierstrassCurve.Affine.Point.some x y h = T' + κ + lam ∨
           WeierstrassCurve.Affine.Point.some x y h = -κ + lam →
         x ∈ F₁ ∧ y ∈ F₁)
+    (hxQF₁ : xQ ∈ F₁) (hyQF₁ : yQ ∈ F₁)
     {xS yS : F} (hS : W.Nonsingular xS yS) (hxSF₂ : xS ∈ F₂) (hySF₂ : yS ∈ F₂)
     {xR yR : F} (hR : W.Nonsingular xR yR) (hxRF₂ : xR ∉ F₂) :
     ∃ S' R' P' : W.Point,
@@ -157,10 +334,115 @@ theorem exists_generic_pDivision_offset {ι : Type*} [Fintype ι]
         AdjoinRoot.evalEval hU.left (enumVertical W val) ≠ 0 ∧
         AdjoinRoot.evalEval hV.left a ≠ 0 ∧
         AdjoinRoot.evalEval hV.left (enumVertical W val) ≠ 0 := by
-  sorry
+  classical
+  obtain ⟨G, hGin, hGout⟩ := exists_pointSubgroup_of_subfield (W := W)
+    (hF₁₂ ha₁) (hF₁₂ ha₂) (hF₁₂ ha₃) (hF₁₂ ha₄) (hF₁₂ ha₆)
+  set Sp : W.Point := WeierstrassCurve.Affine.Point.some xS yS hS with hSpdef
+  set Rp : W.Point := WeierstrassCurve.Affine.Point.some xR yR hR with hRpdef
+  set Qp : W.Point := WeierstrassCurve.Affine.Point.some xQ yQ hQ with hQpdef
+  have hSG : Sp ∈ G := hGin xS yS hS hxSF₂ hySF₂
+  have hQG : Qp ∈ G := hGin xQ yQ hQ (hF₁₂ hxQF₁) (hF₁₂ hyQF₁)
+  have hPG : P ∈ G := by
+    cases hPc : P with
+    | zero => exact zero_mem G
+    | some x y h =>
+      obtain ⟨hx, hy⟩ := hbad (-P) 0 (by rw [smul_neg, hPtor, neg_zero])
+        (by rw [smul_zero]) x y h
+        (Or.inr (by rw [neg_neg, add_zero]; exact hPc.symm))
+      exact hGin x y h (hF₁₂ hx) (hF₁₂ hy)
+  -- the contradiction engine: `S ⊖ R` cannot be `F₂`-rational
+  have hkey : ∀ t : W.Point, t ∈ G → Sp - Rp ≠ t := by
+    intro t ht hc
+    have hRG : Rp ∈ G := by
+      have hrw : Rp = Sp - t := by rw [← hc]; abel
+      rw [hrw]
+      exact sub_mem hSG ht
+    exact hxRF₂ (hGout xR yR hR hRG).1
+  obtain ⟨S', hS'⟩ := exists_zsmul_eq hΔ hp Sp
+  obtain ⟨R', hR'⟩ := exists_zsmul_eq hΔ hp Rp
+  obtain ⟨P', hP'⟩ := exists_zsmul_eq hΔ hp P
+  have hpU : (p : ℤ) • (S' - R') = Sp - Rp := by rw [smul_sub, hS', hR']
+  have hpV : (p : ℤ) • (P' + (S' - R')) = P + (Sp - Rp) := by
+    rw [smul_add, hP', hpU]
+  -- vanishing of either factor at an affine point forces `[p]ξ ∈ {O, Q}`
+  have hbadZ : ∀ (x y : F) (h : W.Nonsingular x y),
+      AdjoinRoot.evalEval h.left a = 0 ∨
+        AdjoinRoot.evalEval h.left (enumVertical W val) = 0 →
+      (p : ℤ) • (WeierstrassCurve.Affine.Point.some x y h : W.Point) = 0 ∨
+        (p : ℤ) • (WeierstrassCurve.Affine.Point.some x y h : W.Point) = Qp := by
+    intro x y h hcase
+    rcases hcase with hz | hz
+    · have hmem := mem_of_evalEval_eq_zero hspan h hz
+      rw [Multiset.mem_add] at hmem
+      rcases hmem with hm | hm
+      · obtain ⟨i, -, hi⟩ := Multiset.mem_map.mp hm
+        exact Or.inr (by rw [← hi, smul_add, hT, hval_tor i, add_zero])
+      · obtain ⟨i, -, hi⟩ := Multiset.mem_map.mp hm
+        exact Or.inl (by rw [← hi, smul_neg, hval_tor i, neg_zero])
+    · have hmem := mem_of_evalEval_eq_zero (span_enumVertical val) h hz
+      rw [Multiset.mem_add] at hmem
+      refine Or.inl ?_
+      rcases hmem with hm | hm
+      · obtain ⟨i, -, hi⟩ := Multiset.mem_map.mp hm
+        rw [← hi]
+        exact hval_tor i
+      · obtain ⟨i, -, hi⟩ := Multiset.mem_map.mp hm
+        rw [← hi, smul_neg, hval_tor i, neg_zero]
+  -- `U = S' ⊖ R'` is affine
+  obtain ⟨xU, yU, hU, hUeq⟩ : ∃ (xU yU : F) (hU : W.Nonsingular xU yU),
+      (WeierstrassCurve.Affine.Point.some xU yU hU : W.Point) = S' - R' := by
+    cases hc : (S' - R' : W.Point) with
+    | zero =>
+      refine absurd ?_ (hkey 0 (zero_mem G))
+      rw [← hpU, hc]
+      exact smul_zero _
+    | some x y h => exact ⟨x, y, h, rfl⟩
+  -- `V = P' ⊕ U` is affine
+  obtain ⟨xV, yV, hV, hVeq⟩ : ∃ (xV yV : F) (hV : W.Nonsingular xV yV),
+      (WeierstrassCurve.Affine.Point.some xV yV hV : W.Point) =
+        P' + (S' - R') := by
+    cases hc : (P' + (S' - R') : W.Point) with
+    | zero =>
+      have h1 : P + (Sp - Rp) = 0 := by
+        rw [← hpV, hc]
+        exact smul_zero _
+      refine absurd ?_ (hkey (-P) (neg_mem hPG))
+      rw [eq_neg_iff_add_eq_zero, add_comm]
+      exact h1
+    | some x y h => exact ⟨x, y, h, rfl⟩
+  refine ⟨S', R', P', hS', hR', hP', xU, yU, hU, xV, yV, hV, hUeq, hVeq,
+    ?_, ?_, ?_, ?_⟩
+  · intro h0
+    rcases hbadZ xU yU hU (Or.inl h0) with hz | hz
+    · exact hkey 0 (zero_mem G) (by rw [← hpU, ← hUeq, hz])
+    · exact hkey Qp hQG (by rw [← hpU, ← hUeq, hz])
+  · intro h0
+    rcases hbadZ xU yU hU (Or.inr h0) with hz | hz
+    · exact hkey 0 (zero_mem G) (by rw [← hpU, ← hUeq, hz])
+    · exact hkey Qp hQG (by rw [← hpU, ← hUeq, hz])
+  · intro h0
+    rcases hbadZ xV yV hV (Or.inl h0) with hz | hz
+    · refine hkey (-P) (neg_mem hPG) ?_
+      have h1 : P + (Sp - Rp) = 0 := by rw [← hpV, ← hVeq, hz]
+      rw [eq_neg_iff_add_eq_zero, add_comm]
+      exact h1
+    · refine hkey (Qp - P) (sub_mem hQG hPG) ?_
+      have h1 : P + (Sp - Rp) = Qp := by rw [← hpV, ← hVeq, hz]
+      rw [eq_sub_iff_add_eq, add_comm]
+      exact h1
+  · intro h0
+    rcases hbadZ xV yV hV (Or.inr h0) with hz | hz
+    · refine hkey (-P) (neg_mem hPG) ?_
+      have h1 : P + (Sp - Rp) = 0 := by rw [← hpV, ← hVeq, hz]
+      rw [eq_neg_iff_add_eq_zero, add_comm]
+      exact h1
+    · refine hkey (Qp - P) (sub_mem hQG hPG) ?_
+      have h1 : P + (Sp - Rp) = Qp := by rw [← hpV, ← hVeq, hz]
+      rw [eq_sub_iff_add_eq, add_comm]
+      exact h1
 
-/-- **Stage B, leaf 2 (sorry node): the `[p]`-pullback evaluation of
-the `Q`-side Miller ratio.**  With `f_Q = aQ/(X − x_R)^p`
+/-- **Stage B, leaf 2 (ONE sorried sub-leaf + proven glue): the
+`[p]`-pullback evaluation of the `Q`-side Miller ratio.**  With `f_Q = aQ/(X − x_R)^p`
 (`div f_Q = p(Q⊕R) − p(R)`, the span hypothesis `haQ`) and
 `g = a/v` as above, the balanced evaluation of `f_Q` at
 `D_P = (P⊕S) − (S)` is the `p`-th power of the `g`-ratio at the
@@ -186,7 +468,31 @@ constant `c'` cancels and the `τ_{⊖R'}`-shift turns the arguments into
 `V = P'⊕S'⊖R'` and `U = S'⊖R'`:
 `f_Q(P⊕S)/f_Q(S) = [g(V)/g(U)]^p`.  Both evaluations are legitimate:
 leaf 1 places `U`, `V` off `div g`, and the setup's nonvanishing
-hypotheses `hnzS`/`hnzPS` place `S`, `P⊕S` off `div f_Q`. -/
+hypotheses `hnzS`/`hnzPS` place `S`, `P⊕S` off `div f_Q`.
+
+STAGING (2026-07-25, re-cut): DECOMPOSED over TWO sorried inputs, both
+of them shallower than the leaf and one of them shared with leaf 3.
+
+* the GENERIC identity, sorried inline: the existence of the pullback
+  constant `c'` with `f_Q∘[p] = c'·(g∘τ_{⊖R'})^p` **in the function
+  field `K`**, multiplied out as
+  `[p]^*(aQ)·τ_{⊖R'}^*(v)^p = c'·τ_{⊖R'}^*(a)^p·[p]^*(X − x_R)^p`.
+  This is the L4-7 multiplicity-one span comparison and nothing else:
+  it is the statement whose divisor-level form
+  `span_eq_pointIdeal_mul_of_pullback` already proves, and it never
+  mentions a point.  `ha`, `hcard`, `hval_*`, `hT`, `hPtor`, `hspan`,
+  `haQ`, `hnzS`, `hnzPS`, `hQR`, `hQRc` are the inputs of THAT step.
+* the SPECIALIZATION brick `exists_pointEval_specialization` above,
+  applied eight times: at the two `p`-division points `S'` and `P'⊕S'`,
+  for each of the four functions `[p]^*(aQ)`, `[p]^*(X − x_R)`,
+  `τ_{⊖R'}^*(v)`, `τ_{⊖R'}^*(a)`.
+
+Everything between them is PROVEN glue: `S'` and `P'⊕S'` are affine
+(their `[p]`-images `S` and `P⊕S` are), their images under the two maps
+are exactly `S`/`P⊕S` and `U`/`V` (the leaf-1 offsets), clearing the
+eight denominators against the generic identity and cancelling them
+after evaluation gives the two balanced halves, and the final
+cross-multiplication cancels `c'`. -/
 theorem millerRatio_eval_pow_of_pullback {ι : Type*} [Fintype ι]
     {val : ι → W.Point}
     (hΔ : W.Δ ≠ 0) (hp : (p : F) ≠ 0)
@@ -239,10 +545,128 @@ theorem millerRatio_eval_pow_of_pullback {ι : Type*} [Fintype ι]
         AdjoinRoot.evalEval hPS.left ((CoordinateRing.XClass W xR) ^ p) *
         (AdjoinRoot.evalEval hV.left a *
           AdjoinRoot.evalEval hU.left (enumVertical W val)) ^ p := by
-  sorry
+  classical
+  -- ── the two generic points at which the substrate evaluates: the
+  --    `[p]`-multiple `p•taut` (where `pointEval` realizes `z ↦ z∘[p]`)
+  --    and the translate `(⊖R')⊕taut` (where it realizes `z ↦ z∘τ_{⊖R'}`)
+  obtain ⟨xp, yp, hpn, hptaut, -⟩ := exists_smul_tautPoint_eq (W := W) hΔ hp
+  obtain ⟨xnr, ynr, hnr, hptnr⟩ := exists_translate_some (W := W) hΔ (-R')
+  have hp0 : constPoint W (0 : W.Point) + (p : ℤ) • tautPoint W hΔ =
+      WeierstrassCurve.Affine.Point.some xp yp hpn := by
+    rw [show constPoint W (0 : W.Point) = 0 from rfl, zero_add]
+    exact hptaut
+  have hnr0 : constPoint W (-R') + (1 : ℤ) • tautPoint W hΔ =
+      WeierstrassCurve.Affine.Point.some xnr ynr hnr := by
+    rw [one_zsmul]
+    exact hptnr
+  -- ── THE ANALYTIC SUB-LEAF (sorry), now stated GENERICALLY — no point
+  --    occurs in it: `f_Q∘[p] = c'·(g∘τ_{⊖R'})^p` in `K`, multiplied out.
+  --    This is the L4-7 multiplicity-one span comparison
+  --    (`span_eq_pointIdeal_mul_of_pullback` is its divisor-level form):
+  --    `div(f_Q∘[p]) = p·[p]^*((Q⊕R) − (R)) = p·τ_{⊖R'}(div g)`, so the
+  --    ratio has trivial divisor and is a constant
+  --    (`coordinateRing_isUnit_eq_const`).
+  obtain ⟨c', hcore⟩ :
+      ∃ c' : F,
+        pointEval (constHom W) hpn.left aQ *
+            pointEval (constHom W) hnr.left (enumVertical W val) ^ p =
+          constHom W c' * pointEval (constHom W) hnr.left a ^ p *
+            pointEval (constHom W) hpn.left (CoordinateRing.XClass W xR) ^ p := by
+    sorry
+  -- ── PROVEN glue 1: reading the generic identity at a `p`-division
+  --    point `Z`, whose `[p]`-image is `Zp` and whose `⊖R'`-translate is
+  --    `Zr`.  Eight applications of the specialization brick clear the
+  --    denominators; they cancel again after evaluation.
+  have hhalf : ∀ (xZ yZ : F) (hZ : W.Nonsingular xZ yZ)
+      (xZp yZp : F) (hZp : W.Nonsingular xZp yZp)
+      (xZr yZr : F) (hZr : W.Nonsingular xZr yZr),
+      (p : ℤ) • (WeierstrassCurve.Affine.Point.some xZ yZ hZ : W.Point) =
+        WeierstrassCurve.Affine.Point.some xZp yZp hZp →
+      (WeierstrassCurve.Affine.Point.some xZr yZr hZr : W.Point) =
+        -R' + WeierstrassCurve.Affine.Point.some xZ yZ hZ →
+      AdjoinRoot.evalEval hZp.left aQ *
+          AdjoinRoot.evalEval hZr.left (enumVertical W val) ^ p =
+        c' * AdjoinRoot.evalEval hZr.left a ^ p *
+          AdjoinRoot.evalEval hZp.left (CoordinateRing.XClass W xR) ^ p := by
+    intro xZ yZ hZ xZp yZp hZp xZr yZr hZr hZpc hZrc
+    have hZpc' : (WeierstrassCurve.Affine.Point.some xZp yZp hZp : W.Point) =
+        (0 : W.Point) +
+          (p : ℤ) • (WeierstrassCurve.Affine.Point.some xZ yZ hZ : W.Point) := by
+      rw [zero_add]
+      exact hZpc.symm
+    have hZrc' : (WeierstrassCurve.Affine.Point.some xZr yZr hZr : W.Point) =
+        -R' + (1 : ℤ) • (WeierstrassCurve.Affine.Point.some xZ yZ hZ : W.Point) := by
+      rw [one_zsmul]
+      exact hZrc
+    obtain ⟨n₁, d₁, hd₁, hK₁, hv₁⟩ :=
+      exists_pointEval_specialization hΔ (p : ℤ) hp0 hZ hZp hZpc' aQ
+    obtain ⟨n₂, d₂, hd₂, hK₂, hv₂⟩ :=
+      exists_pointEval_specialization hΔ (p : ℤ) hp0 hZ hZp hZpc'
+        (CoordinateRing.XClass W xR)
+    obtain ⟨n₃, d₃, hd₃, hK₃, hv₃⟩ :=
+      exists_pointEval_specialization hΔ (1 : ℤ) hnr0 hZ hZr hZrc'
+        (enumVertical W val)
+    obtain ⟨n₄, d₄, hd₄, hK₄, hv₄⟩ :=
+      exists_pointEval_specialization hΔ (1 : ℤ) hnr0 hZ hZr hZrc' a
+    -- the generic identity with all eight denominators cleared: an
+    -- identity of COORDINATE-RING elements, so it can be evaluated
+    have hFW : n₁ * n₃ ^ p * d₄ ^ p * d₂ ^ p =
+        coordC W c' * n₄ ^ p * n₂ ^ p * d₁ * d₃ ^ p := by
+      refine IsFractionRing.injective W.CoordinateRing W.FunctionField ?_
+      simp only [map_mul, map_pow, algebraMap_coordC]
+      rw [← hK₁, ← hK₂, ← hK₃, ← hK₄]
+      linear_combination (algebraMap W.CoordinateRing W.FunctionField d₁ *
+        algebraMap W.CoordinateRing W.FunctionField d₃ ^ p *
+        algebraMap W.CoordinateRing W.FunctionField d₄ ^ p *
+        algebraMap W.CoordinateRing W.FunctionField d₂ ^ p) * hcore
+    have hval := congrArg (AdjoinRoot.evalEval hZ.left) hFW
+    simp only [map_mul, map_pow, evalEval_coordC] at hval
+    rw [hv₁, hv₂, hv₃, hv₄] at hval
+    have hden : AdjoinRoot.evalEval hZ.left d₁ * AdjoinRoot.evalEval hZ.left d₂ ^ p *
+        AdjoinRoot.evalEval hZ.left d₃ ^ p *
+        AdjoinRoot.evalEval hZ.left d₄ ^ p ≠ 0 :=
+      mul_ne_zero (mul_ne_zero (mul_ne_zero hd₁ (pow_ne_zero _ hd₂))
+        (pow_ne_zero _ hd₃)) (pow_ne_zero _ hd₄)
+    refine mul_right_cancel₀ hden ?_
+    linear_combination hval
+  -- ── PROVEN glue 2: the two `p`-division points `S'` and `P'⊕S'` are
+  --    affine, since their `[p]`-images `S` and `P⊕S` are
+  obtain ⟨xS', yS', hS'n, hS'eq⟩ : ∃ (x y : F) (h : W.Nonsingular x y),
+      (WeierstrassCurve.Affine.Point.some x y h : W.Point) = S' := by
+    cases hc : (S' : W.Point) with
+    | zero =>
+      exfalso
+      refine WeierstrassCurve.Affine.Point.some_ne_zero hS ?_
+      rw [← hS'p, hc]
+      exact smul_zero _
+    | some x y h => exact ⟨x, y, h, rfl⟩
+  obtain ⟨xW', yW', hW'n, hW'eq⟩ : ∃ (x y : F) (h : W.Nonsingular x y),
+      (WeierstrassCurve.Affine.Point.some x y h : W.Point) = P' + S' := by
+    cases hc : (P' + S' : W.Point) with
+    | zero =>
+      exfalso
+      refine WeierstrassCurve.Affine.Point.some_ne_zero hPS ?_
+      rw [hPSc, ← hP'p, ← hS'p, ← smul_add, hc]
+      exact smul_zero _
+    | some x y h => exact ⟨x, y, h, rfl⟩
+  -- ── PROVEN glue 3: the two balanced halves
+  have hcS := hhalf xS' yS' hS'n xS yS hS xU yU hU
+    (by rw [hS'eq]; exact hS'p)
+    (by rw [hUeq, hS'eq]; abel)
+  have hcPS := hhalf xW' yW' hW'n xPS yPS hPS xV yV hV
+    (by rw [hW'eq, smul_add, hP'p, hS'p]; exact hPSc.symm)
+    (by rw [hVeq, hW'eq]; abel)
+  -- ── the ratio: `c'` cancels (PROVEN glue)
+  simp only [map_pow]
+  rw [mul_pow, mul_pow]
+  linear_combination
+    (AdjoinRoot.evalEval hS.left (CoordinateRing.XClass W xR) ^ p *
+      AdjoinRoot.evalEval hU.left a ^ p) * hcPS -
+    (AdjoinRoot.evalEval hPS.left (CoordinateRing.XClass W xR) ^ p *
+      AdjoinRoot.evalEval hV.left a ^ p) * hcS
 
-/-- **Stage B, leaf 3 (sorry node): the mirror side — Weil reciprocity
-and the level-`p²` telescope.**  With `f_P = aP/(X − x_S)^p`
+/-- **Stage B, leaf 3 (ONE sorried sub-leaf + proven glue): the mirror
+side — Weil reciprocity and the level-`p²` telescope.**  With `f_P = aP/(X − x_S)^p`
 (`div f_P = p(P⊕S) − p(S)`, the span hypothesis `haP`) and the
 nontrivial translation character `g∘τ_P = c·g` of `g = a/v`
 (the multiplied-out equation `heq` at the generic translate
@@ -271,7 +695,32 @@ computation), leaving the single character factor `c^e` with
 `e ∈ {1, p−1}` — the ambiguity is the orientation of the pairing
 (`c` versus `c^{-1} = c^{p-1}`).  All the intermediate evaluation
 points are the telescope points `jP'⊕U`, `P' ∈ E[p²]`, which `hbad`
-keeps off `div g`. -/
+keeps off `div g`.
+
+STAGING (2026-07-25, re-cut): DECOMPOSED, in the same balanced-halves
+shape as leaf 2, over the sorried reciprocity output plus the SHARED
+specialization brick `exists_pointEval_specialization`.
+
+What is left sorried is the existence of the reciprocity constant `c''`
+and of the exponent `e ∈ {1, p−1}` such that the two half-evaluations of
+`f_P` — at `Q⊕R` and at `R` — hold against that one constant, the whole
+discrepancy between them being the `e`-th power of the `g`-RATIO
+`g(P⊕U)/g(U)`.  Writing the discrepancy that way rather than as `c^e` is
+what makes the telescope proven glue rather than part of the sorry: the
+level-`p²` telescope
+`∏_{j<p} g((j+1)P'⊕U)/g(jP'⊕U) = g(P⊕U)/g(U)` is a formal cancellation,
+and its value `c` is the CHARACTER equation `heq` read at the point `U`
+— which is exactly one application of the specialization brick, proven
+below.  Unlike leaf 2 the two halves are NOT a pullback comparison —
+`div f_P = p(P⊕S) − p(S)` pulls back to translates of the `[p]`-fibres
+of `P⊕S` and `S`, not to a translate of `div g` — which is why a
+character factor appears between them at all.
+
+Also proven here, from the field separation `xS ∈ F₂`, `xR ∉ F₂`: the
+telescope's base point `P⊕U` is affine and off `div g`
+(`p•(P⊕U) = S ⊖ R ≠ O`, so it is not `p`-torsion and the vertical
+product does not vanish there), which is what lets the character
+equation be read at `U` at all. -/
 theorem exists_millerRatio_eval_translationChar {ι : Type*} [Fintype ι]
     {val : ι → W.Point}
     (hΔ : W.Δ ≠ 0) (hp : (p : F) ≠ 0)
@@ -346,6 +795,148 @@ theorem exists_millerRatio_eval_translationChar {ι : Type*} [Fintype ι]
             AdjoinRoot.evalEval hR.left aP *
             (AdjoinRoot.evalEval hV.left a *
               AdjoinRoot.evalEval hU.left (enumVertical W val)) ^ p) := by
-  sorry
+  classical
+  -- ── PROVEN: `S ≠ R`, since `F₂` separates their abscissae
+  have hxSR : xS ≠ xR := fun h => hxRF₂ (h ▸ hxSF₂)
+  have hSR : (WeierstrassCurve.Affine.Point.some xS yS hS : W.Point) -
+      WeierstrassCurve.Affine.Point.some xR yR hR ≠ 0 := by
+    intro h0
+    refine hxSR ?_
+    have hEq : (WeierstrassCurve.Affine.Point.some xS yS hS : W.Point) =
+        WeierstrassCurve.Affine.Point.some xR yR hR := sub_eq_zero.mp h0
+    rw [WeierstrassCurve.Affine.Point.some.injEq] at hEq
+    exact hEq.1
+  -- ── PROVEN: `p•U = S ⊖ R` and `P` is `p`-torsion
+  have hpU : (p : ℤ) • (WeierstrassCurve.Affine.Point.some xU yU hU : W.Point) =
+      (WeierstrassCurve.Affine.Point.some xS yS hS : W.Point) -
+        WeierstrassCurve.Affine.Point.some xR yR hR := by
+    rw [hUeq, smul_sub, hS'p, hR'p]
+  have hPtor : (p : ℤ) •
+      (WeierstrassCurve.Affine.Point.some xP yP hP : W.Point) = 0 := by
+    rw [← hPval]
+    exact hval_tor i₀
+  -- ── PROVEN: the telescope's base point `P⊕U` is affine
+  have hPU0 : (WeierstrassCurve.Affine.Point.some xP yP hP : W.Point) +
+      WeierstrassCurve.Affine.Point.some xU yU hU ≠ 0 := by
+    intro h0
+    refine hSR ?_
+    have hUP : (WeierstrassCurve.Affine.Point.some xU yU hU : W.Point) =
+        -(WeierstrassCurve.Affine.Point.some xP yP hP : W.Point) := by
+      rw [eq_neg_iff_add_eq_zero, add_comm]
+      exact h0
+    rw [← hpU, hUP, smul_neg, hPtor, neg_zero]
+  obtain ⟨xPU, yPU, hPU, hPUeq⟩ : ∃ (x y : F) (h : W.Nonsingular x y),
+      (WeierstrassCurve.Affine.Point.some x y h : W.Point) =
+        WeierstrassCurve.Affine.Point.some xP yP hP +
+          WeierstrassCurve.Affine.Point.some xU yU hU := by
+    cases hc : ((WeierstrassCurve.Affine.Point.some xP yP hP : W.Point) +
+        WeierstrassCurve.Affine.Point.some xU yU hU) with
+    | zero => exact absurd hc hPU0
+    | some x y h => exact ⟨x, y, h, rfl⟩
+  -- ── PROVEN: `P⊕U` is off `div g`: it is not `p`-torsion, since
+  --    `p•(P⊕U) = S ⊖ R ≠ O`
+  have hPUv : AdjoinRoot.evalEval hPU.left (enumVertical W val) ≠ 0 := by
+    intro h0
+    have hmem := mem_of_evalEval_eq_zero (span_enumVertical val) hPU h0
+    rw [Multiset.mem_add] at hmem
+    have htor : (p : ℤ) •
+        (WeierstrassCurve.Affine.Point.some xPU yPU hPU : W.Point) = 0 := by
+      rcases hmem with hm | hm
+      · obtain ⟨i, -, hi⟩ := Multiset.mem_map.mp hm
+        rw [← hi]
+        exact hval_tor i
+      · obtain ⟨i, -, hi⟩ := Multiset.mem_map.mp hm
+        rw [← hi, smul_neg, hval_tor i, neg_zero]
+    refine hSR ?_
+    rw [← hpU]
+    have hsplit : (p : ℤ) •
+        (WeierstrassCurve.Affine.Point.some xPU yPU hPU : W.Point) =
+        (p : ℤ) • (WeierstrassCurve.Affine.Point.some xP yP hP : W.Point) +
+          (p : ℤ) • (WeierstrassCurve.Affine.Point.some xU yU hU : W.Point) := by
+      rw [hPUeq, smul_add]
+    rw [htor, hPtor, zero_add] at hsplit
+    exact hsplit.symm
+  -- ── PROVEN: the character equation `heq` read at the point `U`.  This
+  --    is the value of the level-`p²` telescope
+  --    `∏_{j<p} g((j+1)P'⊕U)/g(jP'⊕U) = g(P⊕U)/g(U) = c`, and it is one
+  --    application of the specialization brick to the translation
+  --    `z ↦ z∘τ_P` at `U`, whose image is `P⊕U`.
+  have hpt1 : constPoint W (val i₀) + (1 : ℤ) • tautPoint W hΔ =
+      WeierstrassCurve.Affine.Point.some xκ yκ hκ := by
+    rw [one_zsmul]
+    exact hpt
+  have hPUc : (WeierstrassCurve.Affine.Point.some xPU yPU hPU : W.Point) =
+      val i₀ + (1 : ℤ) •
+        (WeierstrassCurve.Affine.Point.some xU yU hU : W.Point) := by
+    rw [one_zsmul, hPval]
+    exact hPUeq
+  have hchar : AdjoinRoot.evalEval hPU.left a *
+      AdjoinRoot.evalEval hU.left (enumVertical W val) =
+      c * AdjoinRoot.evalEval hU.left a *
+        AdjoinRoot.evalEval hPU.left (enumVertical W val) := by
+    obtain ⟨n₄, d₄, hd₄, hK₄, hv₄⟩ :=
+      exists_pointEval_specialization hΔ (1 : ℤ) hpt1 hU hPU hPUc a
+    obtain ⟨n₅, d₅, hd₅, hK₅, hv₅⟩ :=
+      exists_pointEval_specialization hΔ (1 : ℤ) hpt1 hU hPU hPUc
+        (enumVertical W val)
+    have hFW : n₄ * enumVertical W val * d₅ = coordC W c * a * n₅ * d₄ := by
+      refine IsFractionRing.injective W.CoordinateRing W.FunctionField ?_
+      simp only [map_mul, algebraMap_coordC]
+      rw [← hK₄, ← hK₅]
+      linear_combination (algebraMap W.CoordinateRing W.FunctionField d₄ *
+        algebraMap W.CoordinateRing W.FunctionField d₅) * heq
+    have hval := congrArg (AdjoinRoot.evalEval hU.left) hFW
+    simp only [map_mul, evalEval_coordC] at hval
+    rw [hv₄, hv₅] at hval
+    refine mul_right_cancel₀ (mul_ne_zero hd₄ hd₅) ?_
+    linear_combination hval
+  -- ── THE ANALYTIC SUB-LEAF (sorry): the mirror side, in the same
+  --    balanced-halves form as leaf 2.  Weil reciprocity between `f_P`
+  --    and `g` produces the two evaluations of `f_P` at `Q⊕R` and at `R`
+  --    against ONE common constant `c''` — the reciprocity constant —
+  --    with the whole discrepancy between the halves carried by the
+  --    `e`-th power of the `g`-ratio `g(P⊕U)/g(U)`, `e ∈ {1, p−1}` (the
+  --    orientation ambiguity of the pairing).  Cleared of denominators
+  --    that is exactly the pair below; `hchar` identifies that ratio with
+  --    the character value `c`, and `c''` cancels in the ratio, leaving
+  --    `c^e` — both of which are the glue after it.
+  obtain ⟨e, hecase, c'', hcQR, hcR⟩ :
+      ∃ (e : ℕ), (e = 1 ∨ e = p - 1) ∧ ∃ c'' : F,
+        AdjoinRoot.evalEval hQR.left aP *
+            AdjoinRoot.evalEval hV.left (enumVertical W val) ^ p =
+          c'' * AdjoinRoot.evalEval hV.left a ^ p *
+            AdjoinRoot.evalEval hQR.left ((CoordinateRing.XClass W xS) ^ p) ∧
+        AdjoinRoot.evalEval hR.left aP *
+            AdjoinRoot.evalEval hU.left (enumVertical W val) ^ p *
+            (AdjoinRoot.evalEval hPU.left a *
+              AdjoinRoot.evalEval hU.left (enumVertical W val)) ^ e =
+          c'' * AdjoinRoot.evalEval hU.left a ^ p *
+            AdjoinRoot.evalEval hR.left ((CoordinateRing.XClass W xS) ^ p) *
+            (AdjoinRoot.evalEval hU.left a *
+              AdjoinRoot.evalEval hPU.left (enumVertical W val)) ^ e := by
+    sorry
+  -- ── PROVEN glue: the telescope factor IS `c^e` (the character
+  --    equation at `U`, raised to the `e`-th power), and it cancels
+  refine ⟨e, hecase, ?_⟩
+  have hpow : (AdjoinRoot.evalEval hPU.left a *
+        AdjoinRoot.evalEval hU.left (enumVertical W val)) ^ e =
+      c ^ e * (AdjoinRoot.evalEval hU.left a *
+        AdjoinRoot.evalEval hPU.left (enumVertical W val)) ^ e := by
+    rw [hchar, mul_assoc, mul_pow]
+  rw [hpow] at hcR
+  have hcR' : AdjoinRoot.evalEval hR.left aP *
+        AdjoinRoot.evalEval hU.left (enumVertical W val) ^ p * c ^ e =
+      c'' * AdjoinRoot.evalEval hU.left a ^ p *
+        AdjoinRoot.evalEval hR.left ((CoordinateRing.XClass W xS) ^ p) := by
+    refine mul_right_cancel₀
+      (pow_ne_zero e (mul_ne_zero hUa hPUv)) ?_
+    linear_combination hcR
+  -- ── the ratio: `c''` cancels and leaves `c^e` (PROVEN glue)
+  rw [mul_pow, mul_pow]
+  linear_combination
+    (AdjoinRoot.evalEval hR.left ((CoordinateRing.XClass W xS) ^ p) *
+      AdjoinRoot.evalEval hU.left a ^ p) * hcQR -
+    (AdjoinRoot.evalEval hQR.left ((CoordinateRing.XClass W xS) ^ p) *
+      AdjoinRoot.evalEval hV.left a ^ p) * hcR'
 
 end WeilPairing
