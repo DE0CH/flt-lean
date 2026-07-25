@@ -1069,7 +1069,24 @@ This is the `X_1 → X_0` bridge for the whole section. It returns the
 witness `g`, so it serves both `mem_cyclicIsogenyDegrees_of_addOrderOf`
 just below — which needs only the resulting membership in Kenku's list
 — and the level-`27` `j`-determination further down, which needs `g`
-itself because being IN Kenku's list is no contradiction there. -/
+itself because being IN Kenku's list is no contradiction there.
+
+INSTANCE-DIAMOND NOTE (repaired 2026-07-25 — do NOT "simplify" the
+`convert` back into a `rw`): `CommRing (AlgebraicClosure ℚ)` has two
+syntactically distinct terms in this file's environment,
+`AlgebraicClosure.instCommRing ℚ` and
+`Field.toCommRing _ (AlgebraicClosure.instField ℚ)`.  They are defeq,
+but the statement mixes them: the `⁄`-notation in the binder
+`g : (E⁄(AlgebraicClosure ℚ)).Point` synthesises `CommRing` directly
+and gets the former, while mathlib's `Affine.Point.map` /
+`Affine.Point.baseChange` take `[Field K]` and build the latter.  So
+`rw [Affine.Point.map_baseChange …]` cannot key-match its own LHS
+against this goal — it fails with "did not find an occurrence" on a
+pattern that pretty-prints IDENTICALLY to the target, which is what
+makes the failure so confusing.  `convert … using 2` discharges the
+two instance positions by defeq and leaves exactly the intended
+equation.  `simpa only [Affine.Point.map_baseChange]` does NOT work
+here, for the same keyed-matching reason. -/
 theorem WeierstrassCurve.exists_stable_cyclic_subgroup_of_rational_point
     (E : WeierstrassCurve ℚ) [E.IsElliptic] {n : ℕ}
     (Q : (E⁄ℚ).Point) (hQ : addOrderOf Q = n) :
@@ -1085,9 +1102,11 @@ theorem WeierstrassCurve.exists_stable_cyclic_subgroup_of_rational_point
       (Affine.Point.map_injective (f := Algebra.ofId ℚ (AlgebraicClosure ℚ))) Q
   · intro σ x hx
     obtain ⟨k, rfl⟩ := AddSubgroup.mem_zmultiples_iff.mp hx
-    rw [map_zsmul, Affine.Point.map_baseChange
-      (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Q]
-    exact AddSubgroup.zsmul_mem _ (AddSubgroup.mem_zmultiples _) k
+    rw [map_zsmul]
+    convert AddSubgroup.zsmul_mem
+      (AddSubgroup.zmultiples (Affine.Point.baseChange ℚ (AlgebraicClosure ℚ) Q))
+      (AddSubgroup.mem_zmultiples _) k using 2
+    exact Affine.Point.map_baseChange _ Q
 
 /-- **A rational torsion point has Kenku degree** (PROVEN 2026-07-25):
 a rational point `Q` of exact order `N > 0` generates a cyclic subgroup
