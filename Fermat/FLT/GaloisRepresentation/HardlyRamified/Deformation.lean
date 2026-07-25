@@ -2341,6 +2341,18 @@ it** (sorry node, cut 2026-07-25: a genuine gap between the H3 leaf
 `finite_setOf_isHardlyRamified_frames` and its consumers, found while
 decomposing the Schlessinger core).
 
+**REFUTED 2026-07-26. THIS STATEMENT IS FALSE AS STATED — do not attempt
+to prove it, and do not build anything on it.** An explicit infinite
+family of counterexamples is given in the REFUTATION section below. The
+repair is the one this docstring already anticipated in its last
+paragraph, and it is UPSTREAM of this leaf: `[DiscreteTopology A]` must
+be added to the test objects of `IsStrictlyUniversalOnFrames` and
+`HardlyRamifiedDeformation.IsStrictlyUniversalOnFiniteFrames`, after
+which this leaf collapses to `finite_setOf_isHardlyRamified_frames` and
+disappears. The paragraph `WHY IT IS NEVERTHELESS TRUE` below is
+retained, struck through by the refutation that follows it, because
+naming the precise step that fails is the whole content of the finding.
+
 THE GAP. `finite_setOf_isHardlyRamified_frames` is stated for `A` with
 the DISCRETE topology, which is the only sensible topology on an Artinian
 object of Mazur's category — the maximal ideal is nilpotent, so the adic
@@ -2376,21 +2388,112 @@ the conclusion is a `Set.Finite` for the coarse-topology type, into which
 the discrete-topology set injects; what has to be produced is the reverse
 inclusion, i.e. exactly the automatic continuity.
 
-IF IT IS FALSE, THE FIX IS UPSTREAM, NOT HERE. Should automatic
-continuity fail (it would have to fail through the abstract normal
-closure of the inertia subgroups being strictly smaller than its
-closure), then `IsStrictlyUniversalOnFrames` and
+REFUTATION (2026-07-26). The paragraph above fails at its FIRST step,
+in exactly the way its own escape clause below predicted: an abstract
+homomorphism killing every individual inertia subgroup does NOT factor
+through `G_S`. It factors through `Γ / N` with `N` the ABSTRACT normal
+closure of the inertia subgroups, and `N` is strictly smaller than its
+closure `N̄ = ker (Γ ↠ G_S)`. Nikolov–Segal is a theorem about `G_S`,
+which this homomorphism never reaches, so it never applies.
+
+THE WITNESS. Take `A = ZMod ℓ` carrying the INDISCRETE topology `⊤`
+(only `∅` and `A` open). It is a legal test object for every quantifier
+in this statement: `IsTopologicalRing` extends only `ContinuousAdd`,
+`ContinuousMul` and `ContinuousNeg` — there is no separation axiom — and
+every map into an indiscrete space is continuous; `A` is a field, hence
+`IsLocalRing`; it is `Finite`; and it is a `ℤ_[ℓ]`-algebra. Since
+`moduleTopology A A` is `A`'s own topology
+(`IsTopologicalSemiring.toIsModuleTopology`) and the module topology of a
+finite product is the product topology (`IsModuleTopology.instPi`), the
+module topology on `Module.End A (Fin 2 → A) ≃ₗ[A] A⁴` is again
+indiscrete. So `FramedGaloisRep ℚ A (Fin 2)` is the set of ALL abstract
+monoid homomorphisms `Γ ℚ → Module.End A (Fin 2 → A)`: over this `A`,
+continuity is no constraint whatsoever.
+
+THE FAMILY. Let `q : Γ ℚ ↠ Ẑˣ = ∏_p ℤ_pˣ` be the abelianisation
+(Kronecker–Weber). For each prime `p` the image `q (I_p)` lies in the
+`p`-th factor alone, because `ℚ (μ_m) / ℚ` is unramified at `p` for
+`p ∤ m`. Compose with `Ẑˣ ↠ P := ∏_{p odd} ℤ_pˣ / (ℤ_pˣ)²  ≅ ∏_{p odd}
+𝔽₂`, and let `D := ⊕_{p odd} 𝔽₂ ⊆ P` be the direct sum. Every `q (I_p)`
+lands in `D` — including `p = 2` and `p = ℓ`, whose images die in `P`
+entirely (`p = 2`) or occupy one coordinate (`p = ℓ`). Now `P / D ≠ 0`
+(the all-ones vector is not in `D`) and in fact `dim_{𝔽₂} (P / D) = 𝔠`,
+so there are infinitely many nonzero `𝔽₂`-linear functionals
+`f : P / D → 𝔽₂`. Each gives `ψ_f : Γ ℚ ↠ {±1} ⊆ Aˣ`, an abstract
+character which kills EVERY inertia subgroup at EVERY finite place, and
+which is DISCONTINUOUS: were `ker ψ_f` open, `ψ_f` would cut out a
+quadratic field unramified at every finite prime, and Minkowski forbids
+one. Distinct `f` give distinct `ψ_f`. This is the ⊕-versus-∏ failure
+predicted below, made explicit.
+
+Set `ρ_f := diag (ψ_f, χ̄ · ψ_f)` with `χ̄` the mod-`ℓ` cyclotomic
+character. All four clauses of `IsHardlyRamified` hold:
+* `det`: `ψ_f · χ̄ · ψ_f = χ̄ · ψ_f² = χ̄`, since `ψ_f² = 1`.
+* `isUnramified` away from `{2, ℓ}`: `ψ_f` kills all inertia and `χ̄` is
+  unramified outside `ℓ`.
+* `isFlat` at `ℓ`: `GaloisRep.IsFlatAt.cond` quantifies over the OPEN
+  ideals of `A`, and the only open ideal of an indiscrete ring is `⊤`
+  (an ideal contains `0`, so it is not `∅`). The quotient `A ⧸ ⊤` is the
+  zero ring, its `Space` is a singleton, and
+  `GaloisRep.HasFlatProlongationAt` is witnessed by the trivial group
+  scheme `G = 𝒪ᵥ`: `Kᵥ ⊗[𝒪ᵥ] 𝒪ᵥ = Kᵥ` has exactly one `Kᵥ`-algebra map
+  to `Kᵥᵃˡᵍ`, so both sides are singletons. Flatness is therefore VACUOUS
+  over an indiscrete test object.
+* `isTameAtTwo`: take `π` the first coordinate projection and
+  `δ := ψ_f` restricted along `Γ ℚ_[2] → Γ ℚ`; `δ` is a `GaloisRep`
+  because continuity is free here, it is unramified because `ψ_f` kills
+  `I_2`, and `δ² = 1`.
+
+So the set in the conclusion is INFINITE while `hdisc` — the genuine H3,
+true by Hermite–Minkowski — is unaffected. The implication is false.
+
+TWO INDEPENDENT DEFECTS, and the second one matters for the repair. (i)
+Automatic continuity fails, as above. (ii) Even for CONTINUOUS `ρ`,
+`hdisc` cannot bound this set, because over an indiscrete (or any coarse)
+`A` the flatness clause is weakened — the open-ideal quantifier sees
+fewer ideals — so the coarse hardly-ramified set is not contained in the
+image of any discrete one. Bounding it needs Hermite–Minkowski applied
+directly (topological finite generation of `G_S`), which `hdisc` does not
+supply. Hence NO hypothesis short of discreteness of `A` rescues this
+statement, and in particular strengthening `hdisc` is not the repair.
+
+THE REPAIR IS ONE SEPARATION AXIOM, AND IT IS FREE. For a FINITE
+topological ring the whole phenomenon is non-separation, and nothing
+else. In a finite topological group the intersection `U` of all open
+neighbourhoods of `0` is itself open, is a subgroup (from continuity of
+`+` at `(0,0)`, using minimality of `U`), is an ideal (from continuity of
+`x ↦ a * x`), equals `closure {0}`, and the topology is exactly the coset
+topology of `U` — i.e. the pullback of the discrete topology of `A ⧸ U`.
+Hence for a finite topological ring
+
+    DiscreteTopology A  ⟺  T0Space A  ⟺  T2Space A  ⟺  closure {0} = 0.
+
+The motivating example of THE GAP above, `k[ε]` with the `(ε)`-coset
+topology, is not a subtle intermediate case: `0` and `ε` are
+topologically indistinguishable in it, so it is not even `T0`. So the
+raw test objects that this leaf was cut to cover are precisely the
+NON-HAUSDORFF ones, and every test object anyone actually constructs —
+a finite quotient of an `IsAdic` complete local ring, the dual numbers
+with their adic topology — is Hausdorff and therefore discrete. Adding
+`[T0Space A]` (equivalently `[DiscreteTopology A]`) to the raw test
+objects costs the consumers nothing and closes the gap completely.
+
+THE FIX IS UPSTREAM, NOT HERE (unchanged from the original cut, now
+mandatory rather than conditional). `IsStrictlyUniversalOnFrames` and
 `HardlyRamifiedDeformation.IsStrictlyUniversalOnFiniteFrames` are
 themselves too strong and must be narrowed by adding
 `[DiscreteTopology A]` to their test objects — which costs their
 consumers nothing, since the bundled deformations they are applied to are
-`IsAdic` and finite, hence discrete. This leaf is stated so that the
-question is confronted once, in one place, rather than rediscovered
-inside a representability proof.
+`IsAdic` and finite, hence discrete. This leaf was stated so that the
+question would be confronted once, in one place, rather than rediscovered
+inside a representability proof; that is what happened.
 
 References: Nikolov–Segal, *On finitely generated profinite groups I*,
-Ann. of Math. 165 (2007); Serre, *Galois cohomology*, I §4.2 (Hermite
-–Minkowski and the finite generation of `G_S`). -/
+Ann. of Math. 165 (2007) (the theorem that does NOT apply here); Serre,
+*Galois cohomology*, I §4.2 (Hermite–Minkowski and the finite generation
+of `G_S`); Neukirch–Schmidt–Wingberg, *Cohomology of Number Fields*,
+§I.1 and §X.3 (`Ẑˣ` as the abelianisation, inertia in `ℚ (μ_∞)`);
+Minkowski's discriminant bound for the everywhere-unramified step. -/
 theorem finite_setOf_isHardlyRamified_frames_of_discreteTopology
     (hdisc : ∀ (A : Type u) [CommRing A] [TopologicalSpace A]
       [IsTopologicalRing A] [IsLocalRing A] [Algebra ℤ_[ℓ] A] [Finite A]
