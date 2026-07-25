@@ -60,7 +60,9 @@ them without a human. Do not re-wrap it.
 
 - `exists_isStrictlyUniversalOnFiniteFrames`
 - `isWeaklyUniversalOnIdentifiedFrames_of_finite`
-- `exists_isLocalRing_traceSubring`
+- `isNoetherianRing_of_fg_maximalIdeal`
+- `exists_pow_comap_le_pow_maximalIdeal_traceSubring`
+- `fg_comap_maximalIdeal_traceSubring`
 - `exists_framedGaloisRep_traceSubring`
 - `subring_closure_charFrob_coeff_eq_top`
 - `eq_maximalIdeal_of_isPrime_of_isWeaklyUniversal_isTraceGenerated`
@@ -210,6 +212,10 @@ import Mathlib.RingTheory.Noetherian.Basic
 -- two ingredients of the finiteness glue
 -- `finite_quotient_of_maximalIdeal_pow_le`.
 import Mathlib.RingTheory.Ideal.Quotient.Index
+-- proof-only: `mul_neg_geom_sum`, the geometric series that inverts a
+-- unit of a CLOSED subring inside the ambient local ring
+-- (`isUnit_of_isClosed_of_notMem_maximalIdeal`).
+import Mathlib.Algebra.Ring.GeomSum
 -- proof-only: charpoly bridges and base-change linear algebra.
 import Mathlib.LinearAlgebra.FreeModule.Finite.Matrix
 import Mathlib.LinearAlgebra.Charpoly.ToMatrix
@@ -1360,41 +1366,449 @@ lemma traceSubring_eq_top_of_charFrob_map (ℓ : ℕ) [Fact ℓ.Prime]
       simp only [← hcf q hq hq2 hqℓ, Polynomial.coeff_map, Subring.coe_subtype]
   rw [RingHom.map_closure, Set.image_union, h1, h2]
 
+/-- **The induced filtration dominates the adic one** (PROVEN
+2026-07-25, one line of ideal algebra; the EASY half of the comparison
+whose hard half is Carayol's Lemme 1): for a subring `C` of a local ring
+`A`, `(𝔪 ∩ C)^n ⊆ 𝔪^n ∩ C`. -/
+theorem pow_comap_maximalIdeal_le {A : Type*} [CommRing A] [IsLocalRing A]
+    (C : Subring A) (n : ℕ) :
+    (Ideal.comap C.subtype (IsLocalRing.maximalIdeal A)) ^ n ≤
+      Ideal.comap C.subtype ((IsLocalRing.maximalIdeal A) ^ n) := by
+  intro x hx
+  have h1 : Ideal.map C.subtype
+      ((Ideal.comap C.subtype (IsLocalRing.maximalIdeal A)) ^ n) ≤
+      (IsLocalRing.maximalIdeal A) ^ n := by
+    rw [Ideal.map_pow]
+    exact Ideal.pow_right_mono Ideal.map_comap_le n
+  exact h1 (Ideal.mem_map_of_mem _ hx)
+
+open Filter Topology in
+/-- **A closed subring of a complete local ring with FINITE residue
+field inverts its own units** (PROVEN 2026-07-25 — the engine of the
+soft half of Carayol's Théorème 1): if `A` is local, its topology is
+the `𝔪`-adic one, and `A/𝔪` is finite, then for a closed subring
+`C ⊆ A` every `x ∈ C` with `x ∉ 𝔪` is already a unit OF `C`.
+
+The classical argument writes `x⁻¹` as a limit of a geometric series in
+`1 − x/a` for a lift `a ∈ C` of the residue of `x`, and therefore needs
+`C ↠ A/𝔪`. FINITENESS of the residue field removes that hypothesis
+entirely: the residue of `x` is a nonzero element of the finite field
+`A/𝔪`, so `x^(q−1) ∈ 1 + 𝔪` for `q = |A/𝔪|`, and the geometric series
+`∑ (1 − x^(q−1))^n` — all of whose partial sums lie in `C`, the argument
+`y = 1 − x^(q−1)` lying in `𝔪 ∩ C` — converges in `A` to the inverse of
+`x^(q−1)`, because `y^N ∈ 𝔪^N → 0` for the adic topology. `C` is closed,
+so that inverse lies in `C`, and `x⁻¹ = x^(q−2) · (x^(q−1))⁻¹`.
+
+Note that no completeness of `A` is used: the limit is exhibited
+explicitly as the inverse that already exists in the LOCAL ring `A`;
+only closedness of `C` and the adic topology are consumed. -/
+theorem isUnit_of_isClosed_of_notMem_maximalIdeal {A : Type*} [CommRing A]
+    [TopologicalSpace A] [IsLocalRing A] [Finite (IsLocalRing.ResidueField A)]
+    (hadic : IsAdic (IsLocalRing.maximalIdeal A))
+    {C : Subring A} (hC : IsClosed (C : Set A)) (x : C)
+    (hx : (x : A) ∉ IsLocalRing.maximalIdeal A) : IsUnit x := by
+  classical
+  haveI : Fintype (IsLocalRing.ResidueField A) := Fintype.ofFinite _
+  set q := Fintype.card (IsLocalRing.ResidueField A)
+  have hq1 : 0 < q - 1 := Nat.sub_pos_of_lt Fintype.one_lt_card
+  -- `x ^ (q - 1) = 1 - y` with `y ∈ 𝔪 ∩ C`
+  have hres : IsLocalRing.residue A ((x : A) ^ (q - 1)) = 1 := by
+    rw [map_pow]
+    exact FiniteField.pow_card_sub_one_eq_one _
+      (fun hz => hx ((IsLocalRing.residue_eq_zero_iff _).mp hz))
+  set y : C := 1 - x ^ (q - 1) with hy
+  have hyc : ((y : C) : A) = 1 - (x : A) ^ (q - 1) := by rw [hy]; push_cast; ring
+  have hyR : (y : A) ∈ IsLocalRing.maximalIdeal A := by
+    rw [← IsLocalRing.residue_eq_zero_iff, hyc, map_sub, hres, map_one, sub_self]
+  have hone : (1 : A) - (y : A) = (x : A) ^ (q - 1) := by rw [hyc]; ring
+  -- the inverse of `1 - y` in `A`
+  have hu : IsUnit ((1 : A) - (y : A)) := by
+    rw [← IsLocalRing.notMem_maximalIdeal, hone]
+    intro hmem
+    exact hx ((Ideal.IsPrime.pow_mem_iff_mem
+      ((IsLocalRing.maximalIdeal.isMaximal A).isPrime) _ hq1).mp hmem)
+  set u := hu.unit
+  set L : A := ((u⁻¹ : Aˣ) : A) with hL
+  have huL : ((1 : A) - (y : A)) * L = 1 := by
+    rw [hL, show ((1 : A) - (y : A)) = (u : A) from (hu.unit_spec).symm]
+    exact u.mul_inv
+  -- the partial sums of the geometric series lie in `C`
+  set s : ℕ → C := fun N => ∑ i ∈ Finset.range N, y ^ i with hs
+  have hsc : ∀ N, ((s N : C) : A) = ∑ i ∈ Finset.range N, (y : A) ^ i := by
+    intro N
+    rw [hs]
+    push_cast
+    rfl
+  have hsL : ∀ N, L - ((s N : C) : A) = L * (y : A) ^ N := by
+    intro N
+    have h1 : ((1 : A) - (y : A)) * ((s N : C) : A) = 1 - (y : A) ^ N := by
+      rw [hsc]; exact mul_neg_geom_sum _ _
+    have h2 : ((s N : C) : A) = L * (1 - (y : A) ^ N) := by
+      calc ((s N : C) : A) = (L * ((1 : A) - (y : A))) * ((s N : C) : A) := by
+            rw [mul_comm L, huL, one_mul]
+        _ = L * (((1 : A) - (y : A)) * ((s N : C) : A)) := by ring
+        _ = L * (1 - (y : A) ^ N) := by rw [h1]
+    rw [h2]; ring
+  -- so their limit `L` lies in `C`
+  have htend : Tendsto (fun N => ((s N : C) : A)) atTop (𝓝 L) := by
+    rw [(hadic.hasBasis_nhds L).tendsto_right_iff]
+    intro n _
+    filter_upwards [eventually_ge_atTop n] with N hN
+    refine ⟨-(L * (y : A) ^ N), ?_, ?_⟩
+    · refine Ideal.pow_le_pow_right hN ?_
+      exact neg_mem (Ideal.mul_mem_left _ _ (Ideal.pow_mem_pow hyR N))
+    · rw [← hsL N]; ring
+  have hLC : L ∈ C := hC.mem_of_tendsto htend (.of_forall fun N => (s N).2)
+  -- hence `1 - y = x ^ (q - 1)` is a unit of `C`, and therefore so is `x`
+  have hunit : IsUnit (1 - y : C) := by
+    refine ⟨⟨1 - y, ⟨L, hLC⟩, ?_, ?_⟩, rfl⟩
+    · ext
+      push_cast
+      exact huL
+    · ext
+      push_cast
+      rw [mul_comm]
+      exact huL
+  have hxq : IsUnit (x ^ (q - 1) : C) := by
+    have hxy : (1 - y : C) = x ^ (q - 1) := by rw [hy]; ring
+    rwa [hxy] at hunit
+  refine isUnit_of_mul_isUnit_left (y := x ^ (q - 1 - 1)) ?_
+  have hpow : x * x ^ (q - 1 - 1) = x ^ (q - 1) := by
+    rw [← pow_succ']
+    congr 1
+    omega
+  rw [hpow]
+  exact hxq
+
+/-- **A closed subring of a local ring with finite residue field and
+adic topology is LOCAL** (PROVEN 2026-07-25): the nonunits of `C` are
+exactly `𝔪 ∩ C` by `isUnit_of_isClosed_of_notMem_maximalIdeal`, and that
+is an ideal. -/
+theorem isLocalRing_of_isClosed_subring {A : Type*} [CommRing A]
+    [TopologicalSpace A] [IsLocalRing A] [Finite (IsLocalRing.ResidueField A)]
+    (hadic : IsAdic (IsLocalRing.maximalIdeal A))
+    {C : Subring A} (hC : IsClosed (C : Set A)) : IsLocalRing C := by
+  haveI : Nontrivial C := ⟨⟨0, 1, fun hz => zero_ne_one (congrArg Subtype.val hz)⟩⟩
+  refine IsLocalRing.of_nonunits_add ?_
+  intro a b ha hb
+  have hmem : ∀ c : C, c ∈ nonunits C → (c : A) ∈ IsLocalRing.maximalIdeal A := by
+    intro c hc
+    by_contra hcm
+    exact hc (isUnit_of_isClosed_of_notMem_maximalIdeal hadic hC c hcm)
+  intro hab
+  have hsum : ((a : A) + (b : A)) ∈ IsLocalRing.maximalIdeal A :=
+    Ideal.add_mem _ (hmem a ha) (hmem b hb)
+  have hunit : IsUnit ((a : A) + (b : A)) := by simpa using hab.map C.subtype
+  exact IsLocalRing.notMem_maximalIdeal.mpr hunit hsum
+
+/-- **The maximal ideal of such a closed subring is `𝔪 ∩ C`** (PROVEN
+2026-07-25), the companion of `isLocalRing_of_isClosed_subring`. -/
+theorem maximalIdeal_eq_comap_of_isClosed_subring {A : Type*} [CommRing A]
+    [TopologicalSpace A] [IsLocalRing A] [Finite (IsLocalRing.ResidueField A)]
+    (hadic : IsAdic (IsLocalRing.maximalIdeal A))
+    {C : Subring A} (hC : IsClosed (C : Set A)) [IsLocalRing C] :
+    IsLocalRing.maximalIdeal C =
+      Ideal.comap C.subtype (IsLocalRing.maximalIdeal A) := by
+  ext a
+  rw [IsLocalRing.mem_maximalIdeal, Ideal.mem_comap]
+  constructor
+  · intro ha
+    by_contra hcm
+    exact ha (isUnit_of_isClosed_of_notMem_maximalIdeal hadic hC a hcm)
+  · intro ha hu
+    have hunit : IsUnit (a : A) := by simpa using hu.map C.subtype
+    exact IsLocalRing.notMem_maximalIdeal.mpr hunit ha
+
+open Filter Topology in
+/-- **Carayol's Lemme 1 gives the subring its adic topology** (PROVEN
+2026-07-25 as glue over the cofinality hypothesis): if for every `n`
+some `𝔪^m ∩ C` is contained in `(𝔪 ∩ C)^n`, then the SUBSPACE topology
+on `C` is the `(𝔪 ∩ C)`-adic topology.
+
+Both clauses of `isAdic_iff`. The powers `(𝔪 ∩ C)^n` are open because
+they are additive subgroups containing the neighbourhood
+`C ∩ 𝔪^m` of `0` — this is exactly the cofinality hypothesis; and every
+neighbourhood of `0` in `C` contains some `(𝔪 ∩ C)^n`, by the easy
+inclusion `pow_comap_maximalIdeal_le` and adicness upstairs. -/
+theorem isAdic_comap_maximalIdeal_of_forall_exists_le {A : Type*} [CommRing A]
+    [TopologicalSpace A] [IsTopologicalRing A] [IsLocalRing A]
+    (hadic : IsAdic (IsLocalRing.maximalIdeal A)) {C : Subring A}
+    (hlem : ∀ n : ℕ, ∃ m : ℕ,
+      Ideal.comap C.subtype ((IsLocalRing.maximalIdeal A) ^ m) ≤
+        (Ideal.comap C.subtype (IsLocalRing.maximalIdeal A)) ^ n) :
+    IsAdic (Ideal.comap C.subtype (IsLocalRing.maximalIdeal A)) := by
+  rw [isAdic_iff]
+  constructor
+  · intro n
+    obtain ⟨m, hm⟩ := hlem n
+    refine AddSubgroup.isOpen_of_mem_nhds
+      ((Ideal.comap C.subtype (IsLocalRing.maximalIdeal A) ^ n).toAddSubgroup)
+      (g := 0) ?_
+    have h0 : (((IsLocalRing.maximalIdeal A) ^ m : Ideal A) : Set A) ∈ 𝓝 (0 : A) :=
+      hadic.hasBasis_nhds_zero.mem_of_mem (i := m) trivial
+    have h1 : ((C.subtype : C → A) ⁻¹'
+        (((IsLocalRing.maximalIdeal A) ^ m : Ideal A) : Set A)) ∈ 𝓝 (0 : C) := by
+      rw [nhds_induced]
+      exact Filter.mem_comap.mpr ⟨_, by simpa using h0, subset_rfl⟩
+    exact Filter.mem_of_superset h1 (fun z hz => hm hz)
+  · intro s hs
+    rw [nhds_induced, Filter.mem_comap] at hs
+    obtain ⟨t, ht, hts⟩ := hs
+    obtain ⟨n, hn⟩ := (isAdic_iff.mp hadic).2 t (by simpa using ht)
+    exact ⟨n, fun z hz => hts (hn (pow_comap_maximalIdeal_le C n hz))⟩
+
+open Filter Topology in
+/-- **Closedness plus Carayol's Lemme 1 give adic completeness of the
+subring** (PROVEN 2026-07-25).
+
+Separatedness is free: `(𝔪 ∩ C)^n ⊆ 𝔪^n` and `A` is separated.
+Precompleteness is the closedness argument: a sequence Cauchy for the
+`(𝔪 ∩ C)`-filtration is Cauchy for the `𝔪`-filtration, hence converges
+to some `L ∈ A`; the convergence is topological (the `𝔪^n` are a
+neighbourhood basis), so `L ∈ C` because `C` is closed; and Carayol's
+Lemme 1 upgrades "`L ≡ f m` mod `𝔪^m`" to "`L ≡ f n` mod `(𝔪 ∩ C)^n`",
+by picking `m` with `𝔪^m ∩ C ⊆ (𝔪 ∩ C)^n` and going through `f (max m n)`. -/
+theorem isAdicComplete_comap_maximalIdeal_of_forall_exists_le {A : Type*}
+    [CommRing A] [TopologicalSpace A] [IsLocalRing A]
+    [IsAdicComplete (IsLocalRing.maximalIdeal A) A]
+    (hadic : IsAdic (IsLocalRing.maximalIdeal A)) {C : Subring A}
+    (hC : IsClosed (C : Set A))
+    (hlem : ∀ n : ℕ, ∃ m : ℕ,
+      Ideal.comap C.subtype ((IsLocalRing.maximalIdeal A) ^ m) ≤
+        (Ideal.comap C.subtype (IsLocalRing.maximalIdeal A)) ^ n) :
+    IsAdicComplete (Ideal.comap C.subtype (IsLocalRing.maximalIdeal A)) C := by
+  set I : Ideal C := Ideal.comap C.subtype (IsLocalRing.maximalIdeal A)
+  have key : ∀ (n : ℕ) (z : C), z ∈ I ^ n → (z : A) ∈ (IsLocalRing.maximalIdeal A) ^ n :=
+    fun n z hz => pow_comap_maximalIdeal_le C n hz
+  rw [isAdicComplete_iff]
+  refine ⟨⟨?_⟩, ⟨?_⟩⟩
+  · -- separatedness
+    intro x hx
+    simp only [SModEq.zero, smul_eq_mul, Ideal.mul_top] at hx
+    have hxR : (x : A) = 0 :=
+      IsHausdorff.haus (inferInstance : IsHausdorff (IsLocalRing.maximalIdeal A) A) _
+        (fun n => by simpa [SModEq.zero, smul_eq_mul, Ideal.mul_top] using key n x (hx n))
+    exact Subtype.ext hxR
+  · -- precompleteness
+    intro f hf
+    simp only [SModEq.sub_mem, smul_eq_mul, Ideal.mul_top] at hf
+    obtain ⟨L, hL⟩ :=
+      IsPrecomplete.prec (inferInstance : IsPrecomplete (IsLocalRing.maximalIdeal A) A)
+        (f := fun n => ((f n : C) : A))
+        (fun {m n} hmn => by
+          simpa [SModEq.sub_mem, smul_eq_mul, Ideal.mul_top] using key m _ (hf hmn))
+    simp only [SModEq.sub_mem, smul_eq_mul, Ideal.mul_top] at hL
+    have htend : Tendsto (fun n => ((f n : C) : A)) atTop (𝓝 L) := by
+      rw [(hadic.hasBasis_nhds L).tendsto_right_iff]
+      intro n _
+      filter_upwards [eventually_ge_atTop n] with N hN
+      refine ⟨((f N : C) : A) - L, Ideal.pow_le_pow_right hN ?_, by ring⟩
+      exact hL N
+    have hLC : L ∈ C := hC.mem_of_tendsto htend (.of_forall fun n => (f n).2)
+    refine ⟨⟨L, hLC⟩, fun n => ?_⟩
+    simp only [SModEq.sub_mem, smul_eq_mul, Ideal.mul_top]
+    obtain ⟨m, hm⟩ := hlem n
+    have hmem : (⟨L, hLC⟩ : C) - f (max m n) ∈ I ^ n := by
+      refine hm ?_
+      show ((⟨L, hLC⟩ : C) - f (max m n) : C).val ∈ (IsLocalRing.maximalIdeal A) ^ m
+      have hval : (((⟨L, hLC⟩ : C) - f (max m n) : C) : A) =
+          -(((f (max m n) : C) : A) - L) := by push_cast; ring
+      rw [hval]
+      exact neg_mem (Ideal.pow_le_pow_right (le_max_left m n) (hL (max m n)))
+    have hstep : f n - f (max m n) ∈ I ^ n := hf (le_max_right m n)
+    have hsplit : f n - ⟨L, hLC⟩ =
+        (f n - f (max m n)) - ((⟨L, hLC⟩ : C) - f (max m n)) := by ring
+    rw [hsplit]
+    exact sub_mem hstep hmem
+
+/-- **A complete local ring with finitely generated maximal ideal is
+Noetherian** (sorry leaf — pure commutative algebra, a mathlib gap;
+isolated 2026-07-25 as the "then apply Cohen" half of Carayol's
+Noetherianity argument): if `A` is local, `𝔪`-adically complete and
+separated, and `𝔪` is finitely generated, then `A` is Noetherian.
+
+This is Stacks 05GH / Matsumura *Commutative Ring Theory* Thm 8.4 (also
+Bourbaki, *Algèbre commutative* III §2 no 9 Cor. 2) in the case
+`I = 𝔪`, `A/I` a field: the associated graded ring
+`gr_𝔪(A) = ⊕ 𝔪^n/𝔪^{n+1}` is generated over the field `A/𝔪` by the
+images of a finite generating set of `𝔪`, hence is a quotient of a
+polynomial ring in finitely many variables and so Noetherian by the
+Hilbert basis theorem; and a filtered ring that is complete and
+separated for its filtration and has Noetherian associated graded ring
+is Noetherian (lift a generating set of `in(J)` for an ideal `J`, and
+successive approximation converges by completeness).
+
+Equivalently — and this is the form Carayol quotes — the Cohen
+structure theorem presents such an `A` as a quotient of
+`Λ[[x₁, …, x_g]]` for a coefficient ring `Λ`, `g = ` the number of
+generators of `𝔪`; note that route is NOT available inside this module
+without circularity, because `exists_coefficientRing_ringHom` and
+`surjective_of_mvPowerSeries_ringHom` both already ASSUME
+`IsNoetherianRing`.
+
+Mathlib has the ingredients (`Ideal.Filtration`, the Artin–Rees
+machinery, `IsAdicComplete`) but not this implication: the search for
+`IsNoetherianRing` in `Mathlib/RingTheory/AdicCompletion/` and
+`Mathlib/RingTheory/Filtration.lean` (2026-07-25) finds only statements
+that ASSUME Noetherianity. -/
+theorem isNoetherianRing_of_fg_maximalIdeal {A : Type*} [CommRing A]
+    [IsLocalRing A] (hcomp : IsAdicComplete (IsLocalRing.maximalIdeal A) A)
+    (hfg : (IsLocalRing.maximalIdeal A).FG) : IsNoetherianRing A :=
+  sorry
+
+/-- **Carayol's Lemme 1 for the trace subring** (sorry leaf — the first
+of the two ARITHMETIC halves into which
+`exists_isLocalRing_traceSubring` was decomposed on 2026-07-25): the
+filtration induced on `R' = traceSubring ℓ D.ρ` by the `𝔪`-adic
+filtration of `D.R` is cofinal with the `𝔪'`-adic filtration of `R'`
+itself, where `𝔪' = 𝔪 ∩ R'`. One inclusion, `𝔪'^n ⊆ 𝔪^n ∩ R'`, is
+formal (`pow_comap_maximalIdeal_le`); THIS is the other one.
+
+WHY IT IS NOT FORMAL. For a general closed subring `C` of a complete
+Noetherian local ring the statement FAILS, and it fails for the same
+reason Noetherianity does: take `A = k[[x, y]]` with `k` finite and `C`
+the closed subring topologically generated by `x, xy, xy², xy³, …`.
+Every `A/𝔪^N` is finite, so `C` is a closed (indeed profinite) local
+subring with residue field `k`; but `𝔪'/𝔪'²` is infinite-dimensional
+(the `xyⁿ` are independent modulo `𝔪'² ⊆ (x²)`), so no power of `𝔪'`
+can absorb `𝔪^2 ∩ C ∋ xyⁿ` uniformly. The arithmetic hypotheses of the
+Carayol package are therefore load-bearing here, exactly as for
+`fg_comap_maximalIdeal_traceSubring` below.
+
+Carayol's own route (Contemp. Math. 165, Lemme 1) derives this from the
+finite generation of `𝔪'` together with the profiniteness of `D.R` —
+`D.R/𝔪^N` is finite because `k` is finite and `D.R` is Noetherian — so
+that `R'` is compact for the induced topology; the `𝔪'`-adic topology is
+finer, `R'` is Hausdorff for the induced one, and once `𝔪'` is finitely
+generated and `R'` is `𝔪'`-adically complete the identity map from the
+`𝔪'`-adic to the induced topology is a continuous bijection from a
+compact space to a Hausdorff space, hence a homeomorphism. A future
+owner may prefer to prove the two arithmetic leaves TOGETHER by that
+compactness route rather than separately.
+
+NOTE (2026-07-25): the primary source could not be obtained in this
+session — the Anna's Archive copy of Contemp. Math. 165 is a DjVu served
+over a plain-HTTP mirror, which the download tool refuses (and rightly:
+its https mirror presents a self-signed chain). The route above is
+reconstructed, not transcribed; treat the reference as a pointer. -/
+theorem exists_pow_comap_le_pow_maximalIdeal_traceSubring (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (D : HardlyRamifiedDeformation hℓOdd ρbar)
+    (htr : letI := D.commRing; letI := D.topologicalSpace
+      letI := D.isTopologicalRing; letI := D.algebra
+      ∀ g : Field.absoluteGaloisGroup ℚ,
+        ((D.ρ g).charpoly).coeff 1 ∈ traceSubring ℓ D.ρ) :
+    letI := D.commRing; letI := D.topologicalSpace
+    letI := D.isTopologicalRing; letI := D.isLocalRing; letI := D.algebra
+    ∀ n : ℕ, ∃ m : ℕ,
+      Ideal.comap (traceSubring ℓ D.ρ).subtype
+          ((IsLocalRing.maximalIdeal D.R) ^ m) ≤
+        (Ideal.comap (traceSubring ℓ D.ρ).subtype
+          (IsLocalRing.maximalIdeal D.R)) ^ n :=
+  sorry
+
+/-- **Finite generation of `𝔪' = 𝔪 ∩ R'`** (sorry leaf — the second
+ARITHMETIC half of `exists_isLocalRing_traceSubring`, and the REAL
+content of Carayol's Théorème 1 on the ring-theoretic side; isolated
+2026-07-25): the maximal ideal of the closed trace subring
+`R' = traceSubring ℓ D.ρ` is finitely generated.
+
+Together with adic completeness (`isAdicComplete_comap_maximalIdeal_of_forall_exists_le`,
+proven, over the Lemme 1 leaf above) this yields Noetherianity through
+`isNoetherianRing_of_fg_maximalIdeal`, which is the "then apply Cohen"
+step of the docstring route on `exists_isLocalRing_traceSubring`.
+
+WHY IT IS NOT FORMAL: `k[[x, xy, xy², …]] ⊆ k[[x,y]]` (see
+`exists_pow_comap_le_pow_maximalIdeal_traceSubring`) is a closed local
+subring of a complete Noetherian local ring with the same finite residue
+field whose maximal ideal is NOT finitely generated. So no argument that
+uses only closedness can work: the hypotheses `hℓ5`, `h`, `hirr` and
+`htr` must be consumed. Carayol consumes them through the ABSOLUTE
+irreducibility of `ρbar` (odd + irreducible + `ℓ` odd), which is what
+makes `R'` the image of a deformation ring with finite-dimensional
+tangent space rather than an arbitrary closed subring: the mod-`ℓ`
+cotangent space `𝔪'/(𝔪'² + ℓ)` is dual to a Selmer group cut out by the
+hardly ramified conditions, and that Selmer group is finite. Concretely
+one may take the finite generating set to be lifts of a `k`-basis of
+that cotangent space; finiteness of the tangent space is the same input
+that the universality stratum
+`exists_isStrictlyUniversalOnFiniteFrames` consumes.
+
+Note that this module already proves the analogous finiteness for the
+FULL coefficient ring in
+`finite_quotient_span_of_isWeaklyUniversal_isTraceGenerated` /
+`moduleFinite_of_finite_quotient_span`; those are stated for a WEAKLY
+UNIVERSAL trace-generated datum, and are not applicable to the arbitrary
+`D` of this leaf, but they are the closest existing template.
+
+References: Carayol, Contemp. Math. 165, Théorème 1 and Lemme 1;
+Mazur, *Deforming Galois representations*, §1.6 (finiteness of the
+tangent space of the deformation functor); Matsumura, §29 (Cohen). -/
+theorem fg_comap_maximalIdeal_traceSubring (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (D : HardlyRamifiedDeformation hℓOdd ρbar)
+    (htr : letI := D.commRing; letI := D.topologicalSpace
+      letI := D.isTopologicalRing; letI := D.algebra
+      ∀ g : Field.absoluteGaloisGroup ℚ,
+        ((D.ρ g).charpoly).coeff 1 ∈ traceSubring ℓ D.ρ) :
+    letI := D.commRing; letI := D.topologicalSpace
+    letI := D.isTopologicalRing; letI := D.isLocalRing; letI := D.algebra
+    (Ideal.comap (traceSubring ℓ D.ρ).subtype
+      (IsLocalRing.maximalIdeal D.R)).FG :=
+  sorry
+
 /-- **Coefficient-ring structure of Carayol's trace subring `R'`**
-(sorry leaf — the ring-theoretic half of Carayol's Théorème 1, split
-off 2026-07-25): the closed `ℤ_ℓ`-subalgebra `R' = traceSubring ℓ D.ρ`
-of the coefficient ring of a hardly ramified deformation is itself a
-coefficient ring: local, Noetherian, with the subspace topology equal
-to its own maximal-adic topology, and maximal-adically complete and
-separated.
+(PROVEN 2026-07-25 as an assembly over three sharper leaves — the
+ring-theoretic half of Carayol's Théorème 1, split off 2026-07-25 and
+DECOMPOSED the same day): the closed `ℤ_ℓ`-subalgebra
+`R' = traceSubring ℓ D.ρ` of the coefficient ring of a hardly ramified
+deformation is itself a coefficient ring: local, Noetherian, with the
+subspace topology equal to its own maximal-adic topology, and
+maximal-adically complete and separated.
 
-Mathematical content. Locality and completeness are the soft half: `R'`
-is a CLOSED subring of the complete local ring `D.R` (it is a
-topological closure by construction), `𝔪' = 𝔪 ∩ R'` is a maximal ideal
-of `R'` because `R'` surjects onto the residue field `k` (that
-surjectivity is `subring_closure_charFrob_coeff_eq_top` below), and any
-`x ∈ R' \ 𝔪'` is invertible already in `R'`: its inverse in `D.R` is
-the limit of the geometric series in `1 − x/a` for a lift `a` of the
-residue of `x`, and `R'` is closed. Closedness in a complete separated
-ring also gives completeness and separatedness for the induced
-filtration, and the induced filtration is the `𝔪'`-adic one because
-`𝔪'^n ⊆ 𝔪^n ∩ R'` and, in the other direction, Carayol's Lemme 1
-bounds `𝔪^n ∩ R'` by a power of `𝔪'`.
+WHAT IS PROVEN HERE, and it is the whole soft half of the docstring
+route this node used to record:
 
-NOETHERIANITY is the genuine content and is FALSE for a general closed
-subring of a complete Noetherian local ring: it holds here because
-Carayol's argument produces a finite set of topological generators of
-`𝔪'` (equivalently `𝔪'/(𝔪'^2 + ℓ)` is finite-dimensional over `k`),
-after which the complete local ring `R'` with finite residue field is
-Noetherian by the Cohen structure theorem — a quotient of a power
-series ring `W(k)[[x₁, …, x_g]]`.
+* **Locality**, outright and without any hypothesis on the trace data:
+  `isLocalRing_of_isClosed_subring`, over
+  `isUnit_of_isClosed_of_notMem_maximalIdeal`. The route recorded here
+  before ("`R'` surjects onto `k`, so `x ∈ R' \ 𝔪'` has a residue that
+  lifts to `R'`, and the geometric series in `1 − x/a` converges")
+  needed `subring_closure_charFrob_coeff_eq_top`, a SIBLING sorry leaf.
+  It is not needed: the residue field `k` is FINITE, so `x ∉ 𝔪` already
+  gives `x^(q−1) ∈ 1 + 𝔪` with `q = |k|`, and the geometric series in
+  `1 − x^(q−1)` — whose partial sums are polynomials in an element of
+  `𝔪 ∩ R'`, hence lie in `R'` — converges to `(x^(q−1))⁻¹`. So this
+  node no longer depends on the residual-trace-field leaf at all.
+* **The maximal ideal is `𝔪' = 𝔪 ∩ R'`**:
+  `maximalIdeal_eq_comap_of_isClosed_subring`.
+* **The subspace topology is `𝔪'`-adic**, and **`R'` is `𝔪'`-adically
+  complete and separated**: `isAdic_comap_maximalIdeal_of_forall_exists_le`
+  and `isAdicComplete_comap_maximalIdeal_of_forall_exists_le`, both
+  proven, over the single comparison input below. Separatedness is free
+  from `𝔪'^n ⊆ 𝔪^n`; precompleteness is closedness of `R'` in the
+  complete `D.R`.
 
-The hypotheses of the Carayol package (`hℓ5`, hard ramification,
-irreducibility of `ρbar`, and the trace hypothesis `htr`) are carried
-even though the soft half does not consume them: they are what Carayol's
-Théorème 1 assumes, and the finiteness of the generating set of `𝔪'`
-uses them through the absolute irreducibility of the residual
-representation.
+WHAT REMAINS, in three sharply stated leaves:
+
+* `exists_pow_comap_le_pow_maximalIdeal_traceSubring` — Carayol's
+  **Lemme 1**: `∀ n, ∃ m, 𝔪^m ∩ R' ⊆ 𝔪'^n`.
+* `fg_comap_maximalIdeal_traceSubring` — **`𝔪'` is finitely generated**.
+* `isNoetherianRing_of_fg_maximalIdeal` — the general commutative
+  algebra "complete + `𝔪` f.g. ⟹ Noetherian" (a mathlib gap), i.e. the
+  "then apply Cohen" step.
+
+NOETHERIANITY remains the genuine content and is FALSE for a general
+closed subring of a complete Noetherian local ring — `k[[x, xy, xy², …]]`
+inside `k[[x,y]]` is a closed local subring with the same finite residue
+field and a non-finitely-generated maximal ideal, and it also refutes
+Lemme 1. That counterexample is recorded on the two arithmetic leaves,
+and it is why the hypotheses of the Carayol package (`hℓ5`, hard
+ramification, irreducibility of `ρbar`, the trace hypothesis `htr`) are
+carried on them even though the soft half proven here consumes none of
+them.
 
 References: Carayol, *Formes modulaires et représentations galoisiennes
 à valeurs dans un anneau local complet* (Contemp. Math. 165), Théorème 1
@@ -1415,8 +1829,39 @@ theorem exists_isLocalRing_traceSubring (hℓ5 : 5 ≤ ℓ)
       IsNoetherianRing (traceSubring ℓ D.ρ) ∧
       IsAdic (IsLocalRing.maximalIdeal (traceSubring ℓ D.ρ)) ∧
       IsAdicComplete (IsLocalRing.maximalIdeal (traceSubring ℓ D.ρ))
-        (traceSubring ℓ D.ρ) :=
-  sorry
+        (traceSubring ℓ D.ρ) := by
+  letI := D.commRing; letI := D.topologicalSpace
+  letI := D.isTopologicalRing; letI := D.isLocalRing; letI := D.algebra
+  letI := D.isNoetherianRing
+  haveI : IsAdicComplete (IsLocalRing.maximalIdeal D.R) D.R := D.isAdicComplete
+  -- the residue field of `D.R` is `k`, hence finite
+  haveI : Finite (IsLocalRing.ResidueField D.R) := by
+    have hker : RingHom.ker D.π = IsLocalRing.maximalIdeal D.R :=
+      IsLocalRing.ker_eq_maximalIdeal D.π D.π_surjective
+    have hlift : IsLocalRing.ResidueField D.R →+* k :=
+      Ideal.Quotient.lift (IsLocalRing.maximalIdeal D.R) D.π
+        (fun a ha => by rwa [← RingHom.mem_ker, hker])
+    exact Finite.of_injective hlift hlift.injective
+  -- `R'` is closed, being a topological closure
+  have hclosed : IsClosed ((traceSubring ℓ D.ρ : Subring D.R) : Set D.R) :=
+    Subring.isClosed_topologicalClosure _
+  have hlem := exists_pow_comap_le_pow_maximalIdeal_traceSubring hℓOdd hdim hℓ5 h hirr D htr
+  haveI hloc : IsLocalRing (traceSubring ℓ D.ρ) :=
+    isLocalRing_of_isClosed_subring D.isAdic hclosed
+  have hmax : IsLocalRing.maximalIdeal (traceSubring ℓ D.ρ) =
+      Ideal.comap (traceSubring ℓ D.ρ).subtype (IsLocalRing.maximalIdeal D.R) :=
+    maximalIdeal_eq_comap_of_isClosed_subring D.isAdic hclosed
+  have hadicC : IsAdic (IsLocalRing.maximalIdeal (traceSubring ℓ D.ρ)) := by
+    rw [hmax]
+    exact isAdic_comap_maximalIdeal_of_forall_exists_le D.isAdic hlem
+  have hcomplC : IsAdicComplete (IsLocalRing.maximalIdeal (traceSubring ℓ D.ρ))
+      (traceSubring ℓ D.ρ) := by
+    rw [hmax]
+    exact isAdicComplete_comap_maximalIdeal_of_forall_exists_le D.isAdic hclosed hlem
+  refine ⟨hloc, ?_, hadicC, hcomplC⟩
+  refine isNoetherianRing_of_fg_maximalIdeal hcomplC ?_
+  rw [hmax]
+  exact fg_comap_maximalIdeal_traceSubring hℓOdd hdim hℓ5 h hirr D htr
 
 /-- **Carayol's Théorème 1 proper: the conjugation into `GL₂(R')`**
 (sorry leaf — the representation-theoretic half, split off 2026-07-25):
