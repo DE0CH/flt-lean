@@ -23,6 +23,26 @@ must never strand its remaining leaves unowned. Track the new leaves in
 progress-entries.json (wip flags at dispatch) as part of the same
 integration step.
 
+**Check overlap by grepping the PROMPT, not the `targets` field** (2026-07-25).
+`~/.flt-inflight.jsonl`'s `targets` is harvested by a regex for bold
+`**\`name\`**`, so tasks not written in that style get junk targets (one batch
+recorded `['diagnostics', 'lean_leansearch', …]`). Before dispatching at a leaf,
+grep the full `prompt` of every in-flight record for the leaf NAME. Skipping
+this let two agents cut the SAME node — `exists_isWeaklyUniversalOnIdentified`
+— along Schlessinger in two incompatible ways, producing an eight-hunk
+mathematical conflict that had to go back to an author to reconcile. Noticing
+that another worktree is merely "in the same file" is not enough; the file is
+not the unit of ownership, the declaration is.
+
+**"Merge FIRST, then dispatch" is an ordering, not a sequence of words**
+(violated 2026-07-25). A worktree fast-forwards to main at dispatch, so a
+successor dispatched at a leaf that still lives only on an unmerged branch
+fast-forwards to a main WITHOUT that leaf and finds nothing — a phantom
+dispatch manufactured out of a correct report. It happened with three
+`Deformation.lean` successors sent off the strength of an agent's report
+while its branch was still resolving a conflict. If the branch cannot be
+merged yet, the successors WAIT; queue them, do not dispatch them.
+
 Same-FILE leaves may get concurrent owners (Deyao, 2026-07-22): each
 agent works in its own git worktree on its own branch, and merging
 concurrent edits to one file is what git is designed to handle — leaves
@@ -166,6 +186,25 @@ dispatched this way (`Chebotarev.lean`, and three leaves in `Flat.lean`)
 before agents reported back that their targets were already proven. **Build
 task lists from the DIRECT set; use the transitive set only for judging
 whether a subtree still blocks the root.**
+
+**Third category, invisible to BOTH counts: an ERRORED declaration**
+(2026-07-25). A declaration whose proof fails to elaborate — `maximum
+recursion depth`, a failing tactic, anything red — is `sorryAx`-tainted and
+poisons the transitive cone, but it emits **no** `declaration uses 'sorry'`
+warning and contains no `sorry` token in its source. So it is missed by the
+direct-sorry warning set, missed by a source scan, and its `.olean` goes
+stale, silently blocking every downstream module from building. Nobody is
+ever dispatched at it, because no frontier scan can see it.
+
+Found when `lineNumerator_mul_lineNumeratorNeg` in `WeilPairingDescent.lean`
+— PROVEN and verified clean in its author's worktree — began failing after
+merge with `maximum recursion depth has been reached`, blocking the whole
+file. It surfaced only because an agent working in that file happened to
+report it. **So: errors are a separate frontier that only a build or a
+per-file `diagnostics` reveals. Treat any hard error as an immediate defect
+with a named owner (CLAUDE.md's sorry-gate rule (b)), and do not assume a
+clean direct-sorry scan means a clean tree.** A proof that verified in one
+worktree can error on main; resource-limit `set_option`s are the usual fix.
 
 Second trap, same day: a naive `grep sorry` over sources counts the word
 inside DOCSTRINGS, and this development's docstrings discuss sorried leaves

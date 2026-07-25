@@ -1073,22 +1073,6 @@ lemma coordC_eq_algebraMap (d : F) :
     coordC W d = algebraMap F W.CoordinateRing d := rfl
 
 omit [DecidableEq F] in
-/-- **The Weierstrass relation inside the affine coordinate ring.**
-`AdjoinRoot.mk_self` on `W.polynomial`, read in the coordinate atoms:
-this is the single relation modulo which every `F[W]` identity of the
-chord calculus is a polynomial identity. -/
-lemma coord_equation (W : WeierstrassCurve.Affine F) :
-    coordY W ^ 2 + (algebraMap F W.CoordinateRing W.a₁ * coordX W +
-        algebraMap F W.CoordinateRing W.a₃) * coordY W =
-      coordX W ^ 3 + algebraMap F W.CoordinateRing W.a₂ * coordX W ^ 2 +
-        algebraMap F W.CoordinateRing W.a₄ * coordX W +
-        algebraMap F W.CoordinateRing W.a₆ := by
-  have h : CoordinateRing.mk W W.polynomial = 0 := AdjoinRoot.mk_self
-  simp only [WeierstrassCurve.Affine.polynomial, map_add, map_sub, map_mul, map_pow,
-    ← coordC_eq_algebraMap, coordX, coordY, coordC] at h ⊢
-  linear_combination h
-
-omit [DecidableEq F] in
 /-- A nonzero constant is a unit of the coordinate ring, so it does not
 change the ideal it spans. -/
 lemma isUnit_coordC {c : F} (hc : c ≠ 0) : IsUnit (coordC W c) :=
@@ -1898,8 +1882,11 @@ theorem lineNumerator_mul_lineNumeratorNeg {q₁ q₂ x₁ y₁ x₂ y₂ : F}
     Cubic.prod_X_sub_C_eq] at hAP
   have hc2 := Cubic.c_of_eq hAP
   have hc3 := Cubic.d_of_eq hAP
-  -- the two relations, transported into `F[W]`
+  -- the two relations, transported into `F[W]`.  `coord_equation_coordC` is
+  -- stated in the `coordC` atoms; `ring` must see the SAME atoms as the
+  -- `algebraMap`-shaped hypotheses below, so normalize it first.
   have hcr := coord_equation_coordC W
+  simp only [coordC_eq_algebraMap] at hcr
   rw [WeierstrassCurve.Affine.equation_iff'] at hq
   have hqW := congrArg (algebraMap F W.CoordinateRing) hq
   have hc2W := congrArg (algebraMap F W.CoordinateRing) hc2
@@ -5170,6 +5157,57 @@ theorem exists_multiset_span_eq_prod_pointIdeal (hΔ : W.Δ ≠ 0)
   exists_multiset_ideal_eq_prod_pointIdeal hΔ _
     (fun h => hz (Ideal.span_singleton_eq_bot.mp h))
 
+omit [DecidableEq F] in
+/-- **L4-7 substrate brick (PROVEN): the affine coordinate ring of a
+nonsingular Weierstrass curve over an algebraically closed field is a
+Dedekind domain.**
+
+The point of the exercise is that the instance comes for free from the
+point-ideal factorization proven above, and needs NO integral-closedness
+and NO smoothness argument: by `isDedekindDomain_iff_isDedekindDomainInv`
+it suffices that every nonzero fractional ideal be invertible, and
+writing `I = a⁻¹·J` (`FractionalIdeal.exists_eq_spanSingleton_mul`)
+reduces that to the integral `J`, which
+`exists_multiset_ideal_eq_prod_pointIdeal` factors into point ideals —
+each invertible (`pointIdeal'`), so `↑J` is a unit
+(`isUnit_prod_coe_pointIdeal'`), and so is the principal factor.  Thus
+noetherianity plus invertibility of the point ideals, the two inputs of
+the factorization brick, already carry the whole Dedekind property. -/
+lemma isDedekindDomain_coordinateRing (hΔ : W.Δ ≠ 0) :
+    IsDedekindDomain W.CoordinateRing := by
+  classical
+  -- every nonzero fractional ideal of `F[W]` is invertible: reduce to an
+  -- integral ideal and factor it into (invertible) point ideals
+  have hcancel : ∀ I : FractionalIdeal W.CoordinateRing⁰ W.FunctionField,
+      I ≠ 0 → I * I⁻¹ = 1 := by
+    intro I hI
+    obtain ⟨a, J, ha, haJ⟩ := FractionalIdeal.exists_eq_spanSingleton_mul I
+    have hane : (algebraMap W.CoordinateRing W.FunctionField) a ≠ 0 := fun hc =>
+      ha ((injective_iff_map_eq_zero _).mp
+        (IsFractionRing.injective W.CoordinateRing W.FunctionField) a hc)
+    have hJ : J ≠ ⊥ := by
+      rintro rfl
+      rw [FractionalIdeal.coeIdeal_bot, mul_zero] at haJ
+      exact hI haJ
+    obtain ⟨D, -, hD⟩ := exists_multiset_ideal_eq_prod_pointIdeal hΔ J hJ
+    have huJ : IsUnit ((J : FractionalIdeal W.CoordinateRing⁰ W.FunctionField)) := by
+      rw [hD, ← prod_coe_pointIdeal' D]
+      exact isUnit_prod_coe_pointIdeal' D
+    have hmul : FractionalIdeal.spanSingleton W.CoordinateRing⁰
+          ((algebraMap W.CoordinateRing W.FunctionField a)⁻¹) *
+        FractionalIdeal.spanSingleton W.CoordinateRing⁰
+          ((algebraMap W.CoordinateRing W.FunctionField) a) = 1 := by
+      rw [FractionalIdeal.spanSingleton_mul_spanSingleton, inv_mul_cancel₀ hane,
+        FractionalIdeal.spanSingleton_one]
+    have husp : IsUnit (FractionalIdeal.spanSingleton W.CoordinateRing⁰
+        ((algebraMap W.CoordinateRing W.FunctionField a)⁻¹)) :=
+      ⟨⟨_, _, hmul, by rw [mul_comm]; exact hmul⟩, rfl⟩
+    rw [FractionalIdeal.mul_inv_cancel_iff_isUnit W.FunctionField, haJ]
+    exact husp.mul huJ
+  exact isDedekindDomain_iff_isDedekindDomainInv.mpr
+    ((isDedekindDomainInv_iff (K := W.FunctionField)).mpr fun I hI =>
+      hcancel I (by rwa [← FractionalIdeal.bot_eq_zero]))
+
 /-- **L4-7 brick (sorry): the multiplicity-one `[p]`-pullback formula
 for a coordinate function.**  Let `val` enumerate `E[p]`, let
 `(xp, yp)` be the affine coordinates of the generic multiple
@@ -5205,12 +5243,13 @@ a multiset product, of an indicator sum, and of a `fiberProd` are
 computed, the point-ideal multiplicities are proven (point ideals at
 affine points are maximal, nonzero and injective in the point), and the
 weak Nullstellensatz identification of height-one primes with affine
-point ideals is proven.  Two sorried `have`s remain inside the proof:
+point ideals is proven.  The Dedekind substrate, which mathlib does not
+provide for `CoordinateRing`, is supplied by
+`isDedekindDomain_coordinateRing` — and note that it needs NO integral
+closedness and NO smoothness argument, so the normality of the affine
+curve that this proof once planned to establish is not required at all.
+ONE sorried `have` remains inside the proof:
 
-* `hIC`: integral closedness of `F[W]` — normality of the smooth affine
-  curve, the only place where `W.Δ ≠ 0` is needed; noetherianity and
-  dimension one are proven, so this is all that is missing for
-  `IsDedekindDomain W.CoordinateRing` (which mathlib does not provide);
 * `hcountEv`: the multiplicity-one pullback count — the order of
   `[p]^*z` at the place of an affine point `S` is the order of `z` at
   `p • S` (multiplicity one from separability of `[p]`, `(p : F) ≠ 0`,
@@ -5237,37 +5276,17 @@ theorem spanSingleton_pointEval_mul_fiberProd_pow {ι : Type*} [Fintype ι]
         fiberProd W val (sec 0) ^ Multiset.card D := by
   classical
   -- ── The Dedekind substrate of `F[W]`, absent from mathlib for
-  -- `CoordinateRing` and established here, where the rest of the proof
-  -- consumes it, rather than as a free-floating instance.  `F[W]` is a
-  -- free rank-two `F[X]`-module, hence integral over `F[X]`: that gives
-  -- noetherianity (a quotient of the noetherian `F[X][Y]`) and dimension
-  -- one (`Ring.DimensionLEOne.of_isIntegral` over the PID `F[X]`).  Only
-  -- integral closedness needs the geometry, and it is exactly where
-  -- `W.Δ ≠ 0` enters: the affine curve is smooth, hence normal.
+  -- `CoordinateRing`.  It is NOT the geometric fact it looks like: as
+  -- recorded at `isDedekindDomain_coordinateRing`, invertibility of the
+  -- point ideals plus the factorization brick already carry the whole
+  -- Dedekind property, with no integral-closedness and no smoothness
+  -- argument, so the instance is a one-line consumption of that lemma.
+  haveI : IsDedekindDomain W.CoordinateRing := isDedekindDomain_coordinateRing hΔ
+  -- `F[W]` is a free rank-two `F[X]`-module, hence integral over `F[X]`;
+  -- the weak Nullstellensatz step `hspec` below contracts a height-one
+  -- place along `F[X]` and needs exactly that.
   haveI : Module.Finite (Polynomial F) W.CoordinateRing :=
     Polynomial.Monic.finite_adjoinRoot WeierstrassCurve.Affine.monic_polynomial
-  haveI hNoeth : IsNoetherianRing W.CoordinateRing :=
-    isNoetherianRing_of_surjective (Polynomial (Polynomial F)) W.CoordinateRing
-      (CoordinateRing.mk W) AdjoinRoot.mk_surjective
-  haveI hDim : Ring.DimensionLEOne W.CoordinateRing :=
-    Ring.DimensionLEOne.of_isIntegral (R := Polynomial F) W.CoordinateRing
-  /- **Normality of the smooth affine curve** (the geometric input of the
-  Dedekind property): every element of the function field `K` integral
-  over `F[W]` already lies in `F[W]`.  With `W.Δ ≠ 0` the affine curve is
-  nonsingular, so each local ring `F[W]_m` at an affine point is regular
-  — the maximal ideal `⟨X − x, Y − y⟩` becomes principal after
-  localization, since the Jacobian criterion makes one of the two
-  generators a unit multiple of the other plus higher order — hence a
-  DVR, and a one-dimensional noetherian domain whose localizations are
-  DVRs is integrally closed. -/
-  have hIC : ∀ {x : W.FunctionField}, IsIntegral W.CoordinateRing x →
-      ∃ y : W.CoordinateRing,
-        algebraMap W.CoordinateRing W.FunctionField y = x := by
-    sorry
-  haveI : IsDedekindRing W.CoordinateRing :=
-    (isDedekindRing_iff (A := W.CoordinateRing) W.FunctionField).mpr
-      ⟨hNoeth, hDim, hIC⟩
-  haveI : IsDedekindDomain W.CoordinateRing := inferInstance
   -- ── Point ideals at affine points are maximal: the quotient of `F[W]`
   -- by `⟨X − x, Y − y⟩` is `F` itself
   -- (`CoordinateRing.quotientXYIdealEquiv`).
@@ -5698,18 +5717,10 @@ because it contains the nonzero vertical `CoordinateRing.XClass W x`.
 `S` from `R`: equal point ideals give equal unit fractional ideals
 (`coe_pointIdeal'`), hence equal ideal classes, hence equal
 `Point.toClass` values (`mk_pointIdeal'`), and `toClass` is injective.
-(iii) `F[W]` IS a Dedekind domain, and — the point of the exercise —
-the instance comes for free from the factorization already proven
-above rather than from smoothness/integral closedness: by
-`isDedekindDomain_iff_isDedekindDomainInv` it suffices that every
-nonzero fractional ideal be invertible, and writing `I = a⁻¹·J`
-(`FractionalIdeal.exists_eq_spanSingleton_mul`) reduces that to the
-integral `J`, which `exists_multiset_ideal_eq_prod_pointIdeal` factors
-into point ideals — each invertible (`pointIdeal'`), so `↑J` is a unit
-(`isUnit_prod_coe_pointIdeal'`), and so is the principal factor.  Thus
-noetherianity plus invertibility of the point ideals, the two inputs of
-the factorization brick, already carry the whole Dedekind property; no
-separate integral-closedness argument is needed. -/
+(iii) `F[W]` IS a Dedekind domain — `isDedekindDomain_coordinateRing`,
+hoisted out of this proof so the other consumers of the instance can
+share it; as recorded there, it comes for free from the factorization
+brick rather than from smoothness/integral closedness. -/
 theorem exists_pointMult (hΔ : W.Δ ≠ 0) :
     ∃ mult : W.Point → FractionalIdeal W.CoordinateRing⁰ W.FunctionField → ℤ,
       (∀ (S : W.Point)
@@ -5748,38 +5759,8 @@ theorem exists_pointMult (hΔ : W.Δ ≠ 0) :
     have h3 : Additive.toMul (Point.toClass R) = Additive.toMul (Point.toClass S) := by
       rw [← mk_pointIdeal', ← mk_pointIdeal', h2]
     exact Point.toClass_injective (Additive.toMul.injective h3)
-  -- ── every nonzero fractional ideal of `F[W]` is invertible: reduce to an
-  -- integral ideal and factor it into (invertible) point ideals
-  have hcancel : ∀ I : FractionalIdeal W.CoordinateRing⁰ W.FunctionField,
-      I ≠ 0 → I * I⁻¹ = 1 := by
-    intro I hI
-    obtain ⟨a, J, ha, haJ⟩ := FractionalIdeal.exists_eq_spanSingleton_mul I
-    have hane : (algebraMap W.CoordinateRing W.FunctionField) a ≠ 0 := fun hc =>
-      ha ((injective_iff_map_eq_zero _).mp
-        (IsFractionRing.injective W.CoordinateRing W.FunctionField) a hc)
-    have hJ : J ≠ ⊥ := by
-      rintro rfl
-      rw [FractionalIdeal.coeIdeal_bot, mul_zero] at haJ
-      exact hI haJ
-    obtain ⟨D, -, hD⟩ := exists_multiset_ideal_eq_prod_pointIdeal hΔ J hJ
-    have huJ : IsUnit ((J : FractionalIdeal W.CoordinateRing⁰ W.FunctionField)) := by
-      rw [hD, ← prod_coe_pointIdeal' D]
-      exact isUnit_prod_coe_pointIdeal' D
-    have hmul : FractionalIdeal.spanSingleton W.CoordinateRing⁰
-          ((algebraMap W.CoordinateRing W.FunctionField a)⁻¹) *
-        FractionalIdeal.spanSingleton W.CoordinateRing⁰
-          ((algebraMap W.CoordinateRing W.FunctionField) a) = 1 := by
-      rw [FractionalIdeal.spanSingleton_mul_spanSingleton, inv_mul_cancel₀ hane,
-        FractionalIdeal.spanSingleton_one]
-    have husp : IsUnit (FractionalIdeal.spanSingleton W.CoordinateRing⁰
-        ((algebraMap W.CoordinateRing W.FunctionField a)⁻¹)) :=
-      ⟨⟨_, _, hmul, by rw [mul_comm]; exact hmul⟩, rfl⟩
-    rw [FractionalIdeal.mul_inv_cancel_iff_isUnit W.FunctionField, haJ]
-    exact husp.mul huJ
-  haveI hdd : IsDedekindDomain W.CoordinateRing :=
-    isDedekindDomain_iff_isDedekindDomainInv.mpr
-      ((isDedekindDomainInv_iff (K := W.FunctionField)).mpr fun I hI =>
-        hcancel I (by rwa [← FractionalIdeal.bot_eq_zero]))
+  -- ── `F[W]` is a Dedekind domain (the factorization brick, hoisted)
+  haveI := isDedekindDomain_coordinateRing hΔ
   -- ── the multiplicity: the `(pointIdeal W S)`-adic count
   refine ⟨fun S I => if hS : S = 0 then 0 else
     FractionalIdeal.count W.FunctionField
@@ -5802,6 +5783,102 @@ theorem exists_pointMult (hΔ : W.Δ ≠ 0) :
         (w := ⟨pointIdeal W R, (hmax R hR).isPrime, hbot R hR⟩) ?_
       intro hc
       exact hRS (hinj S R (congrArg IsDedekindDomain.HeightOneSpectrum.asIdeal hc))
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- **L4-7 substrate brick (PROVEN): a point-adic multiplicity of a
+product of point ideals counts the copies of the point.**  Stated over
+an abstract multiplicity `mult` with exactly the three properties
+`exists_pointMult` supplies, so that it transfers unchanged to
+`FractionalIdeal.count`.  Induction on the multiset: the point ideals
+are units (`pointIdeal'`), so `mult S` is additive across the product
+(`hmul`), and each factor contributes `1` or `0` by `hself`/`hother`. -/
+lemma mult_prod_pointIdeal' [DecidableEq W.Point]
+    {mult : W.Point → FractionalIdeal W.CoordinateRing⁰ W.FunctionField → ℤ}
+    (hmul : ∀ (S : W.Point)
+      (I J : FractionalIdeal W.CoordinateRing⁰ W.FunctionField),
+      IsUnit I → IsUnit J → mult S (I * J) = mult S I + mult S J)
+    (hself : ∀ S : W.Point, S ≠ 0 →
+      mult S (pointIdeal' W S :
+        FractionalIdeal W.CoordinateRing⁰ W.FunctionField) = 1)
+    (hother : ∀ S R : W.Point, S ≠ 0 → R ≠ S →
+      mult S (pointIdeal' W R :
+        FractionalIdeal W.CoordinateRing⁰ W.FunctionField) = 0)
+    {S : W.Point} (hS : S ≠ 0) (M : Multiset W.Point) :
+    mult S ((M.map fun R =>
+      (pointIdeal' W R :
+        FractionalIdeal W.CoordinateRing⁰ W.FunctionField)).prod) =
+      (Multiset.count S M : ℤ) := by
+  have hone : mult S 1 = 0 := by
+    have h1 := hmul S 1 1 isUnit_one isUnit_one
+    rw [one_mul] at h1
+    omega
+  induction M using Multiset.induction with
+  | empty => simpa using hone
+  | cons R M ih =>
+    have hR : mult S (pointIdeal' W R :
+          FractionalIdeal W.CoordinateRing⁰ W.FunctionField) =
+        (if S = R then (1 : ℤ) else 0) := by
+      by_cases hRS : S = R
+      · subst hRS
+        rw [hself S hS, if_pos rfl]
+      · rw [hother S R hS fun hc => hRS hc.symm, if_neg hRS]
+    rw [Multiset.map_cons, Multiset.prod_cons,
+      hmul S _ _ (pointIdeal' W R).isUnit (isUnit_prod_coe_pointIdeal' M),
+      ih, Multiset.count_cons, hR]
+    split_ifs with hRS
+    · push_cast
+      ring
+    · push_cast
+      ring
+
+omit [Fact p.Prime] [IsAlgClosed F] in
+/-- **L4-7 substrate brick (PROVEN): a point-adic multiplicity of a
+`[p]`-fiber product is `1` exactly on the fiber through the point.**
+Stated over the same abstract multiplicity as `mult_prod_pointIdeal'`.
+Since `i ↦ T + val i` is injective with image the whole `[p]`-fiber
+through `T`, the point `S` occurs in the fiber multiset exactly once
+when `p • S = p • T` and not at all otherwise; `mult_prod_pointIdeal'`
+converts that count into the multiplicity. -/
+lemma mult_fiberProd {ι : Type*} [Fintype ι] {val : ι → W.Point}
+    (hval_inj : Function.Injective val)
+    (hval_tor : ∀ i, (p : ℤ) • val i = 0)
+    (hval_surj : ∀ Q : W.Point, (p : ℤ) • Q = 0 → ∃ i, val i = Q)
+    {mult : W.Point → FractionalIdeal W.CoordinateRing⁰ W.FunctionField → ℤ}
+    (hmul : ∀ (S : W.Point)
+      (I J : FractionalIdeal W.CoordinateRing⁰ W.FunctionField),
+      IsUnit I → IsUnit J → mult S (I * J) = mult S I + mult S J)
+    (hself : ∀ S : W.Point, S ≠ 0 →
+      mult S (pointIdeal' W S :
+        FractionalIdeal W.CoordinateRing⁰ W.FunctionField) = 1)
+    (hother : ∀ S R : W.Point, S ≠ 0 → R ≠ S →
+      mult S (pointIdeal' W R :
+        FractionalIdeal W.CoordinateRing⁰ W.FunctionField) = 0)
+    {S T : W.Point} [Decidable ((p : ℤ) • S = (p : ℤ) • T)] (hS : S ≠ 0) :
+    mult S (fiberProd W val T) =
+      (if (p : ℤ) • S = (p : ℤ) • T then (1 : ℤ) else 0) := by
+  classical
+  have hmem : S ∈ (Finset.univ.val.map fun i => T + val i) ↔
+      (p : ℤ) • S = (p : ℤ) • T := by
+    constructor
+    · intro hin
+      obtain ⟨i, -, hi⟩ := Multiset.mem_map.mp hin
+      rw [← hi, smul_add, hval_tor i, add_zero]
+    · intro hpS
+      obtain ⟨i, hi⟩ := hval_surj (S - T) (by rw [smul_sub, hpS, sub_self])
+      exact Multiset.mem_map.mpr
+        ⟨i, Finset.mem_val.mpr (Finset.mem_univ i), by rw [hi]; abel⟩
+  have hunf : fiberProd W val T =
+      ((Finset.univ.val.map fun i => T + val i).map fun R =>
+        (pointIdeal' W R :
+          FractionalIdeal W.CoordinateRing⁰ W.FunctionField)).prod := rfl
+  rw [hunf, mult_prod_pointIdeal' hmul hself hother hS]
+  by_cases hpST : (p : ℤ) • S = (p : ℤ) • T
+  · have hnd : (Finset.univ.val.map fun i => T + val i).Nodup :=
+      Multiset.Nodup.map (fun i j hij => hval_inj (add_left_cancel hij))
+        Finset.univ.nodup
+    simp [hpST, Multiset.count_eq_one_of_mem hnd (hmem.mpr hpST)]
+  · rw [if_neg hpST]
+    exact_mod_cast Multiset.count_eq_zero_of_notMem fun hc => hpST (hmem.mp hc)
 
 /-- **L4-7 brick (PROVEN over `exists_pointMult`): the fiber-product
 map is injective on divisors.**  Distinct base points have disjoint
@@ -5844,31 +5921,6 @@ theorem fiberProd_prod_inj {ι : Type*} [Fintype ι] {val : ι → W.Point}
     have h1 := hmul S 1 1 isUnit_one isUnit_one
     rw [one_mul] at h1
     omega
-  -- ── `mult S` of a point-ideal product counts the copies of `S`
-  have hcountM : ∀ S : W.Point, S ≠ 0 → ∀ M : Multiset W.Point,
-      mult S ((M.map fun R =>
-        (pointIdeal' W R :
-          FractionalIdeal W.CoordinateRing⁰ W.FunctionField)).prod) =
-        (Multiset.count S M : ℤ) := by
-    intro S hS M
-    induction M using Multiset.induction with
-    | empty => simpa using hone S
-    | cons R M ih =>
-      have hR : mult S (pointIdeal' W R :
-            FractionalIdeal W.CoordinateRing⁰ W.FunctionField) =
-          (if S = R then (1 : ℤ) else 0) := by
-        by_cases hRS : S = R
-        · subst hRS
-          rw [hself S hS, if_pos rfl]
-        · rw [hother S R hS fun hc => hRS hc.symm, if_neg hRS]
-      rw [Multiset.map_cons, Multiset.prod_cons,
-        hmul S _ _ (pointIdeal' W R).isUnit (isUnit_prod_coe_pointIdeal' M),
-        ih, Multiset.count_cons, hR]
-      split_ifs with hRS
-      · push_cast
-        ring
-      · push_cast
-        ring
   -- ── the fiber products are unit fractional ideals
   have hufib : ∀ T : W.Point, IsUnit (fiberProd W val T) := by
     intro T
@@ -5883,30 +5935,8 @@ theorem fiberProd_prod_inj {ι : Type*} [Fintype ι] {val : ι → W.Point}
   -- ── `mult S` of a fiber product: `1` exactly on the fiber through `S`
   have hfib : ∀ S T : W.Point, S ≠ 0 →
       mult S (fiberProd W val T) =
-        (if (p : ℤ) • S = (p : ℤ) • T then (1 : ℤ) else 0) := by
-    intro S T hS
-    have hmem : S ∈ (Finset.univ.val.map fun i => T + val i) ↔
-        (p : ℤ) • S = (p : ℤ) • T := by
-      constructor
-      · intro hin
-        obtain ⟨i, -, hi⟩ := Multiset.mem_map.mp hin
-        rw [← hi, smul_add, hval_tor i, add_zero]
-      · intro hpS
-        obtain ⟨i, hi⟩ := hval_surj (S - T) (by rw [smul_sub, hpS, sub_self])
-        exact Multiset.mem_map.mpr
-          ⟨i, Finset.mem_val.mpr (Finset.mem_univ i), by rw [hi]; abel⟩
-    have hunf : fiberProd W val T =
-        ((Finset.univ.val.map fun i => T + val i).map fun R =>
-          (pointIdeal' W R :
-            FractionalIdeal W.CoordinateRing⁰ W.FunctionField)).prod := rfl
-    rw [hunf, hcountM S hS]
-    by_cases hpST : (p : ℤ) • S = (p : ℤ) • T
-    · have hnd : (Finset.univ.val.map fun i => T + val i).Nodup :=
-        Multiset.Nodup.map (fun i j hij => hval_inj (add_left_cancel hij))
-          Finset.univ.nodup
-      simp [hpST, Multiset.count_eq_one_of_mem hnd (hmem.mpr hpST)]
-    · rw [if_neg hpST]
-      exact_mod_cast Multiset.count_eq_zero_of_notMem fun hc => hpST (hmem.mp hc)
+        (if (p : ℤ) • S = (p : ℤ) • T then (1 : ℤ) else 0) :=
+    fun S T hS => mult_fiberProd hval_inj hval_tor hval_surj hmul hself hother hS
   -- ── `mult S` of the whole product counts the copies of `p • S`
   have hbig : ∀ S : W.Point, S ≠ 0 → ∀ D : Multiset W.Point,
       mult S ((D.map fun R => fiberProd W val (sec R)).prod) =
