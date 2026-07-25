@@ -1859,7 +1859,26 @@ certificate).  Writing `EX := W_X(Q)`, `EY := W_Y(Q)`,
 `RQ := W(q₁, q₂)` and `R0` for the coordinate-ring relation
 `coord_equation_coordC`, the certificate is
 
-* `−T³·(A − q₁T² − RQ)` against `coord_equation_coordC`,
+* `−T³·(A − q₁T² − RQ)` against `coord_equation_coordC`, *after* it has
+  been normalized by `simp only [coordC_eq_algebraMap]`.  ATOM
+  CONSTRAINT, and the one thing to preserve when touching this proof:
+  the certificate's atoms are `algebraMap F W.CoordinateRing`
+  applications, and `ring` does NOT identify `coordC W c` with
+  `algebraMap F W.CoordinateRing c` — the two are `rfl`-equal, yet
+  `ring`'s normalizer treats them as *distinct atoms*, so a `coordC`-
+  spelled hypothesis leaves unconvertible `coordC W W.a₂/a₄/a₆` in the
+  residual and the `linear_combination` fails.  This bit once: a
+  de-duplication of the two same-content `coord_equation` lemmas
+  repointed `hcr` across spellings and broke the build.  Normalizing the
+  hypothesis at the point of use (rather than depending on *which*
+  spelling the name `coord_equation` happens to resolve to) is what
+  makes this robust to the eventual collapse of the two lemmas,
+  whichever spelling survives.  Note the failure does not present as a
+  `ring` error: the certificate is large enough that the mismatched
+  normal form exhausts the default `maxRecDepth` first, so it surfaces
+  as "maximum recursion depth has been reached" inside `simp`.  Raising
+  the depth is a diagnostic step only — it reveals the real `ring`
+  failure and must not be left in as a fix,
 * `−T³·(EY·U + EX·T + T³ + RQ)` against `W.Equation q₁ q₂` (transported
   into `F[W]` along `algebraMap`),
 * `−T⁴·A` against the `Cubic.c` coefficient of `addPolynomial_slope`
