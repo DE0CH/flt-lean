@@ -58,7 +58,7 @@ quota lengthen every verification instead of adding throughput.
 
 Worktree allocation is unchanged: find a `free` entry in
 ~/.flt-worktree-pool, check it is git-clean and its branch is an
-ancestor of main, fast-forward it to main (--ff-only), mark it
+ancestor of staging, fast-forward it to staging (--ff-only), mark it
 `claimed`. A worktree marked free but dirty/diverged is NOT a normal
 condition and is NOT auto-corrected — hard crash (traceback, exit 2,
 tool call blocked): something beyond allocation went wrong.
@@ -361,13 +361,28 @@ def allocate_worktree(pool_fh):
             "but is NOT an ancestor of staging (diverged/unmerged commits) "
             "-- integration was likely skipped for this branch")
 
-    # Always advance to main, never backwards (see split_base: pinning was
-    # reverted because a backwards move invalidates `.lake` and forces a
-    # from-source rebuild of the import cone on the agent's first query).
-    ff = git(["merge", "--ff-only", "main"], worktree_path)
+    # Advance to STAGING, not main (Deyao, 2026-07-25). This reverses the
+    # first cut of the staging design, which had workers branch off the green
+    # main. The reason is dispatch, not cleanliness: almost every completion
+    # proves its target over a finer cut and leaves NEW leaves behind, and those
+    # leaves exist only on staging until a green build promotes them. A worker
+    # dispatched at one of them while fast-forwarding to main would land on a
+    # tree where the declaration does not exist yet -- a phantom dispatch
+    # manufactured out of a correct report, which is a failure mode this fleet
+    # has already hit once from a different cause.
+    #
+    # The cost is that a worker may start from a tree with a known red in it.
+    # That is strictly the lesser evil: a red is visible and owned, whereas a
+    # worker hunting a leaf that is not there wastes a whole cycle and reports
+    # the leaf as missing.
+    #
+    # Always advance, never backwards (see split_base: pinning was reverted
+    # because a backwards move invalidates `.lake` and forces a from-source
+    # rebuild of the import cone on the agent's first query).
+    ff = git(["merge", "--ff-only", "staging"], worktree_path)
     if ff.returncode != 0:
         raise RuntimeError(
-            f"ff-only advance of {free_name} to main failed: {ff.stderr}")
+            f"ff-only advance of {free_name} to staging failed: {ff.stderr}")
 
     new_lines = [
         " ".join([n, "claimed" if n == free_name else status] + extra)
