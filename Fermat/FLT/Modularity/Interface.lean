@@ -11013,6 +11013,195 @@ theorem algebraMap_cyclotomicCharacter_map_adicArithFrob_two_eq_two
       2 :=
   sorry
 
+/-- **The profinite tame-Frobenius generator of the local inertia at
+`2`** (sorry node — the profinite packaging of the PROVEN finite-level
+tame machinery of `ModThree.lean`, in exactly the form the E3b cocycle
+computation consumes): for a homomorphism `u` of the local Galois group
+at the place `2` into a monoid, with OPEN kernel, there is a local
+inertia element `t` such that
+
+* (tame procyclicity) every inertia element `σ` satisfies
+  `u σ = (u t)^m · u w` for some `m : ℕ` and some INERTIA element `w`
+  whose value `u w` has `2`-power order — the tame quotient of the
+  inertia is procyclic on the image of `t`, the error being wild; and
+* (Frobenius conjugation) the chosen arithmetic Frobenius conjugates
+  `t` into `t²` up to such a wild error:
+  `u (F t F⁻¹) = (u t)² · u w`.
+
+Intended proof, mirroring the PROVEN
+`exists_localInertia_two_generator_of_cube_one` of `ModThree.lean`
+(same file, same shape — the cube-triviality hypothesis there is
+replaced here by carrying the wild errors in the conclusion, and the
+Frobenius clause is added): the open kernel of `u` contains
+(Krull topology, `krullTopology_mem_nhds_one_iff_of_normal`) the fixing
+subgroup of a finite Galois level `N`, so `u` factors as
+`f ∘ restrictNormalHom N` — through `MonoidHom.toHomUnits` (the image
+of a group under a monoid hom consists of units) and
+`MonoidHom.liftOfSurjective` over `AlgEquiv.restrictNormalHom_surjective`.
+The GENERIC finite-level tame theorem
+`exists_finite_level_tame_generator_of_frobenius` (`ModThree.lean`,
+PROVEN) applied at residue characteristic `2` — with the local data
+assembled exactly as in the PROVEN
+`exists_finite_level_tame_frobenius_generator_two` (faithfulness of the
+Galois action on `IntegralClosure Ov₂ N` by denominator clearing,
+`2 ∈ 𝔪` by lying over `𝔪ᵥ = (2)`), but with
+`φ := restrictNormalHom N F` in place of the anonymous Frobenius lift,
+which is legitimate because the arithmetic Frobenius acts as squaring
+on residues (`Field.AbsoluteGaloisGroup.isArithFrobAt_adicArithFrob`,
+whose exponent `Nat.card κᵥ` is `2` by
+`natCard_residue_quotient_toHeightOneSpectrum` at `prime_two`,
+transported down to level `N` along `AlgEquiv.restrictNormal_commutes`
+by the unit/maximality argument of the PROVEN
+`restrictNormalHom_mem_inertia_of_mem_localInertiaGroup_two`) — hands a
+finite-level tame generator `t̄` with both clauses. The compactness
+lifting `exists_mem_localInertiaGroup_restrictNormalHom_eq` lifts `t̄`
+to the sought `t` and every finite-level wild error (which lies in the
+finite-level inertia, `restrictNormalHom_mem_inertia_of_mem_localInertiaGroup_two`)
+to an inertia element `w`, and `f` turns the finite-level identities
+`σ̄ = t̄^m · e` and `φ t̄ φ⁻¹ = t̄² · e'` into the two clauses — the
+second error being `e' = (t̄²)⁻¹ · (φ t̄ φ⁻¹)`, the conjugate
+`(t̄²)⁻¹ · (φ t̄ φ⁻¹ · (t̄²)⁻¹) · t̄²` of the error the finite-level
+lemma provides, hence of the same `2`-power order. (Serre, *Corps
+Locaux* IV §1–2.) -/
+theorem exists_localInertia_two_tame_frobenius_generator_of_isOpen_ker
+    {G' : Type*} [Monoid G']
+    (u : Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) →* G')
+    (hopen : IsOpen ((u.ker : Subgroup (Field.absoluteGaloisGroup
+      (HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))) :
+      Set (Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)))) :
+    ∃ t ∈ localInertiaGroup Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat,
+      (∀ σ ∈ localInertiaGroup
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat,
+        ∃ m j : ℕ, ∃ w ∈ localInertiaGroup
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat,
+          u σ = u t ^ m * u w ∧ u w ^ 2 ^ j = 1) ∧
+      (∃ j : ℕ, ∃ w ∈ localInertiaGroup
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat,
+        u (Field.AbsoluteGaloisGroup.adicArithFrob
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat * t *
+          (Field.AbsoluteGaloisGroup.adicArithFrob
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)⁻¹) =
+          u t ^ 2 * u w ∧ u w ^ 2 ^ j = 1) :=
+  sorry
+
+/-- **The tame-Frobenius kill of a twisted cocycle** (PROVEN 2026-07-25;
+pure cocycle algebra over an abstract "local" group `Lg`, isolating the
+`3 ≠ 0` stroke of pillar E3b from all Galois-theoretic spelling): let
+`cc` be a `χ`-twisted cocycle on `Γ ℚ` (`cc(gh) = cc(h) + cc(g)·χ(h)`,
+the shape of the upper-right entry of `!![1, cc; 0, χ]`), let
+`E : Lg →* Γ ℚ` be a homomorphism, and let `u : Lg →* G'` be a
+homomorphism into a monoid whose values SEPARATE the cocycle
+(`u a = u b → cc (E a) = cc (E b)`; for `u` induced by the
+representation itself this is reading off a matrix entry). Suppose that
+on a subgroup `I ≤ Lg` — the inertia — the character `χ ∘ E` is
+trivial, that `χ (E F) = 2` at a distinguished element `F` — the
+Frobenius — and that `2 ≠ 0`, `3 ≠ 0` in `kk'`. Then a tame generator
+`t ∈ I` for `u` (every `σ ∈ I` has `u σ = (u t)^m · u w` with `w ∈ I`
+of `2`-power-order value) satisfying the Frobenius conjugation relation
+`u (F t F⁻¹) = (u t)² · u w` forces `cc ∘ E` to VANISH on `I`.
+Proof: on `I` the character is trivial, so `cc ∘ E` is additive there
+and `cc (E (w^{2^j})) = 2^j · cc (E w)`; a wild error has
+`u`-value of `2`-power order, hence `cc (E w) = 0` because `2 ≠ 0`.
+Therefore the Frobenius relation reads `cc (E (F t F⁻¹)) = 2·x` for
+`x := cc (E t)`, while the cocycle conjugation identity
+`cc(dyd⁻¹) = χ(d⁻¹)·(cc(y) + cc(d)·(χ(y) − 1))` reads it as
+`χ(F⁻¹)·x`; multiplying by `χ(F) = 2` gives `4x = x`, i.e. `3x = 0`,
+so `x = 0` since `3 ≠ 0`. Every `σ ∈ I` is then a power of `t` times a
+wild error, and both contributions vanish. (Serre, Duke Math. J. 54
+(1987), §4.1: the at-`2` tame weight computation; `3 ≠ 0` is exactly
+`p ∤ 2² − 1`, the tame escape ridden by `p = 3`.) -/
+theorem cc_eq_zero_of_tame_frobenius_generator {kk' : Type*} [Field kk']
+    {Lg : Type*} [Group Lg] {G' : Type*} [Monoid G']
+    (E : Lg →* Field.absoluteGaloisGroup ℚ)
+    (χ : Field.absoluteGaloisGroup ℚ →* kk')
+    (cc : Field.absoluteGaloisGroup ℚ → kk')
+    (u : Lg →* G')
+    (hcoc : ∀ g h, cc (g * h) = cc h + cc g * χ h)
+    (hu : ∀ a b : Lg, u a = u b → cc (E a) = cc (E b))
+    (I : Subgroup Lg) (F t : Lg) (htI : t ∈ I)
+    (hχI : ∀ σ ∈ I, χ (E σ) = 1) (hχF : χ (E F) = 2)
+    (h2ne : (2 : kk') ≠ 0) (h3ne : (3 : kk') ≠ 0)
+    (hgen : ∀ σ ∈ I, ∃ m j : ℕ, ∃ w ∈ I,
+      u σ = u t ^ m * u w ∧ u w ^ 2 ^ j = 1)
+    (hfrob : ∃ j : ℕ, ∃ w ∈ I,
+      u (F * t * F⁻¹) = u t ^ 2 * u w ∧ u w ^ 2 ^ j = 1) :
+    ∀ σ ∈ I, cc (E σ) = 0 := by
+  -- `cc` vanishes at the identity
+  have hcc1 : cc 1 = 0 := by
+    have h := hcoc 1 1
+    rw [mul_one, map_one, mul_one] at h
+    linear_combination -h
+  -- `χ` inverts multiplicatively
+  have hunit : ∀ d : Field.absoluteGaloisGroup ℚ, χ d * χ d⁻¹ = 1 := by
+    intro d
+    rw [← map_mul, mul_inv_cancel, map_one]
+  -- the conjugation identity for the cocycle
+  have hconj : ∀ d y : Field.absoluteGaloisGroup ℚ,
+      cc (d * y * d⁻¹) = χ d⁻¹ * (cc y + cc d * (χ y - 1)) := by
+    intro d y
+    have h1 := hcoc d (y * d⁻¹)
+    rw [← mul_assoc] at h1
+    have h2 := hcoc y d⁻¹
+    have h3 := hcoc d d⁻¹
+    rw [mul_inv_cancel, hcc1] at h3
+    rw [h1, h2, map_mul]
+    linear_combination -h3
+  -- where `χ` is trivial the cocycle is additive along powers
+  have hccpow : ∀ g : Field.absoluteGaloisGroup ℚ, χ g = 1 →
+      ∀ n : ℕ, cc (g ^ n) = (n : kk') * cc g := by
+    intro g hg n
+    induction n with
+    | zero => simpa using hcc1
+    | succ n ih =>
+        rw [pow_succ, hcoc, ih, hg, mul_one]
+        push_cast
+        ring
+  -- the wild kill: an inertia element of `2`-power-order value is invisible
+  have hwild : ∀ w ∈ I, ∀ j : ℕ, u w ^ 2 ^ j = 1 → cc (E w) = 0 := by
+    intro w hw j hj
+    have h1 : u (w ^ 2 ^ j) = u 1 := by rw [map_pow, hj, map_one]
+    have h2 : cc (E (w ^ 2 ^ j)) = 0 := by
+      have h4 := hu _ _ h1
+      rw [map_one, hcc1] at h4
+      exact h4
+    rw [map_pow, hccpow _ (hχI w hw)] at h2
+    have h5 : ((2 ^ j : ℕ) : kk') ≠ 0 := by
+      push_cast
+      exact pow_ne_zero j h2ne
+    exact (mul_eq_zero.mp h2).resolve_left h5
+  -- the tame value dies: `2·x = χ(F⁻¹)·x`, i.e. `3·x = 0`
+  obtain ⟨jF, wF, hwFI, hrelF, hordF⟩ := hfrob
+  have hx : cc (E t) = 0 := by
+    have hccwF : cc (E wF) = 0 := hwild wF hwFI jF hordF
+    have hlhs : cc (E (F * t * F⁻¹)) = χ ((E F)⁻¹) * cc (E t) := by
+      rw [map_mul, map_mul, map_inv, hconj, hχI t htI]
+      ring
+    have hrhs : cc (E (F * t * F⁻¹)) = 2 * cc (E t) := by
+      have h1 : u (F * t * F⁻¹) = u (t ^ 2 * wF) := by
+        rw [hrelF, map_mul, map_pow]
+      rw [hu _ _ h1, map_mul, map_pow, hcoc, hccpow _ (hχI t htI),
+        hχI wF hwFI, hccwF]
+      push_cast
+      ring
+    have hFu : (2 : kk') * χ ((E F)⁻¹) = 1 := by
+      rw [← hχF]
+      exact hunit _
+    have h30 : (3 : kk') * cc (E t) = 0 := by
+      linear_combination 2 * (hrhs.symm.trans hlhs) + cc (E t) * hFu
+    exact (mul_eq_zero.mp h30).resolve_left h3ne
+  -- every inertia element is a power of the tame generator times a wild error
+  intro σ hσ
+  obtain ⟨m, jw, w, hwI, hrel, hord⟩ := hgen σ hσ
+  have hccw : cc (E w) = 0 := hwild w hwI jw hord
+  have h1 : u σ = u (t ^ m * w) := by rw [hrel, map_mul, map_pow]
+  rw [hu _ _ h1, map_mul, map_pow, hcoc, hccpow _ (hχI t htI), hχI w hwI,
+    hccw, hx]
+  ring
+
+set_option maxHeartbeats 800000 in
 /-- **Tame killing of the cocycle on inertia at `2`** (sorry node — the
 genuine tame-Frobenius stroke of pillar E3b, the FIRST consumption
 point of `hp5`): for a hardly ramified mod-`p` extension with TRIVIAL
@@ -11040,7 +11229,20 @@ conjugation identity `cc(σnσ⁻¹) = χ(σ)⁻¹·cc(n)` (cocycle algebra, wit
 `3 ≠ 0` in characteristic `p ≥ 5`, so `x = 0`. This is exactly the
 tame escape ridden by the `p = 3` Kummer-of-2 counterexample
 (`v_2(2) = 1 ≢ 0 mod 3`), which is why `hp5` is load-bearing here and
-nowhere else in the at-`2` analysis. -/
+nowhere else in the at-`2` analysis.
+
+DECOMPOSED 2026-07-25 into the profinite tame-structure leaf
+`exists_localInertia_two_tame_frobenius_generator_of_isOpen_ker` above
+(the ONLY remaining gap: the profinite packaging of ModThree.lean's
+PROVEN finite-level tame machinery) over the PROVEN cocycle-algebra
+core `cc_eq_zero_of_tame_frobenius_generator` above; the glue is proven
+here: the twisted cocycle identity from `htri`, the pinning of `χ` to
+the mod-`p` cyclotomic character by the determinant against `hρE.det`
+(hence `χ = 1` on inertia and `χ(F) = 2`), the openness of the kernel
+of the representation (`isOpen_setOf_galoisRep_eq_one`, pulled back
+along the continuous embedding of local Galois groups), and the
+consumption of `hp5`: `CharP kk' p` with `p ≥ 5` gives `2 ≠ 0` and
+`3 ≠ 0`, the latter being exactly the tame escape `p ∤ 2² − 1`. -/
 theorem eisenstein_trivial_sub_extension_cc_eq_zero_on_inertia_two_of_five_le
     (hp5 : 5 ≤ p)
     {kk' : Type u} [Field kk'] [Finite kk'] [Algebra ℤ_[p] kk']
@@ -11056,8 +11258,113 @@ theorem eisenstein_trivial_sub_extension_cc_eq_zero_on_inertia_two_of_five_le
       Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat,
       cc (Field.absoluteGaloisGroup.map (algebraMap ℚ
         (HeightOneSpectrum.adicCompletion ℚ
-          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ) = 0 :=
-  sorry
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ) = 0 := by
+  classical
+  -- the χ-twisted cocycle identity, from multiplicativity of `ρE`
+  -- through the triangular form
+  have hcoc : ∀ g h, cc (g * h) = cc h + cc g * χ h := by
+    intro g h
+    have h1 : LinearMap.toMatrix (Pi.basisFun kk' (Fin 2))
+        (Pi.basisFun kk' (Fin 2)) (ρE (g * h)) =
+        !![1, cc g; 0, χ g] * !![1, cc h; 0, χ h] := by
+      rw [map_mul, LinearMap.toMatrix_mul, htri g, htri h]
+    rw [htri (g * h), Matrix.mul_fin_two] at h1
+    simpa using congrFun (congrFun h1 0) 1
+  -- equal representation values carry equal cocycle values (the
+  -- upper-right matrix entry)
+  have hccof : ∀ a b : Field.absoluteGaloisGroup ℚ, ρE a = ρE b →
+      cc a = cc b := by
+    intro a b hab
+    have h1 : (!![1, cc a; 0, χ a] : Matrix (Fin 2) (Fin 2) kk') =
+        !![1, cc b; 0, χ b] := by
+      rw [← htri a, ← htri b, hab]
+    simpa using congrFun (congrFun h1 0) 1
+  -- `χ` is pinned to the mod-`p` cyclotomic character by the determinant
+  have hχdet : ∀ g : Field.absoluteGaloisGroup ℚ, χ g =
+      algebraMap ℤ_[p] kk' (cyclotomicCharacter (AlgebraicClosure ℚ) p
+        g.toRingEquiv) := by
+    intro g
+    have h5 : LinearMap.det (ρE g) = Matrix.det (LinearMap.toMatrix
+        (Pi.basisFun kk' (Fin 2)) (Pi.basisFun kk' (Fin 2)) (ρE g)) :=
+      (LinearMap.det_toMatrix _ _).symm
+    have h4 : χ g = ρE.det g := by
+      rw [ρE.det_apply g, h5, htri g, Matrix.det_fin_two_of]
+      ring
+    rw [h4, hρE.det g]
+  -- the residue characteristic is `p ≥ 5`: this is where `hp5` enters
+  haveI hchar : CharP kk' p :=
+    (CharP.charP_iff_prime_eq_zero hp.out).mpr
+      prime_eq_zero_of_finite_padicInt_algebra
+  have h2ne : (2 : kk') ≠ 0 := by
+    intro h0
+    have h1 : ((2 : ℕ) : kk') = 0 := by exact_mod_cast h0
+    have h6 := Nat.le_of_dvd (by norm_num)
+      ((CharP.cast_eq_zero_iff kk' p 2).mp h1)
+    omega
+  have h3ne : (3 : kk') ≠ 0 := by
+    intro h0
+    have h1 : ((3 : ℕ) : kk') = 0 := by exact_mod_cast h0
+    have h6 := Nat.le_of_dvd (by norm_num)
+      ((CharP.cast_eq_zero_iff kk' p 3).mp h1)
+    omega
+  -- the kernel of the representation, pulled back to the local Galois
+  -- group at `2`, is open
+  have hUopen : IsOpen ((((MonoidHomClass.toMonoidHom ρE).comp
+      (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom).ker :
+      Subgroup (Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))) :
+      Set (Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))) := by
+    have hpre : ((((MonoidHomClass.toMonoidHom ρE).comp
+        (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom).ker :
+        Subgroup (Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))) :
+        Set (Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))) =
+        (fun σ : Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) =>
+          Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (HeightOneSpectrum.adicCompletion ℚ
+              Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ) ⁻¹'
+          {g : Field.absoluteGaloisGroup ℚ | ρE g = 1} := rfl
+    rw [hpre]
+    exact (isOpen_setOf_galoisRep_eq_one ρE inferInstance).preimage
+      (ContinuousMonoidHom.continuous_toFun
+        (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))))
+  -- the profinite tame generator with the Frobenius conjugation clause
+  obtain ⟨t, htI, hgen, hfrob⟩ :=
+    exists_localInertia_two_tame_frobenius_generator_of_isOpen_ker
+      ((MonoidHomClass.toMonoidHom ρE).comp
+        (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom)
+      hUopen
+  exact cc_eq_zero_of_tame_frobenius_generator
+    (Field.absoluteGaloisGroup.map (algebraMap ℚ
+      (HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom
+    χ cc
+    ((MonoidHomClass.toMonoidHom ρE).comp
+      (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom)
+    hcoc (fun a b hab => hccof _ _ hab)
+    (localInertiaGroup Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+    (Field.AbsoluteGaloisGroup.adicArithFrob
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+    t htI
+    (fun σ hσ => (hχdet _).trans
+      (algebraMap_cyclotomicCharacter_eq_one_of_mem_localInertiaGroup_two
+        hpodd hσ))
+    ((hχdet _).trans
+      (algebraMap_cyclotomicCharacter_map_adicArithFrob_two_eq_two hpodd))
+    h2ne h3ne hgen hfrob
 
 /-- **Inertia and one Frobenius generate the local Galois group at `2`
 against open subgroups** (sorry node — the procyclic-unramified-
