@@ -169,7 +169,18 @@ approximation, converging by compactness and Hausdorffness) finishes.
 
 This is the exact point at which Mazur's `Φ_ℓ` condition is consumed; the
 counterexample in the module header (a compact local ring with square-zero
-maximal ideal `∏_{i ∈ ℕ} 𝔽_ℓ`) shows the hypothesis cannot be dropped. -/
+maximal ideal `∏_{i ∈ ℕ} 𝔽_ℓ`) shows the hypothesis cannot be dropped.
+
+`hhom` QUANTIFIES ONLY OVER DISCRETE TEST RINGS (`[DiscreteTopology A]`,
+added 2026-07-26 in alignment with `Deformation.lean`'s
+`exists_isStrictlyUniversalOnFrames_of_deformationCondition`, whose `hfin`
+carries the same binder). This costs the prover nothing: `hhom` is spent at
+`A = k[ε]` with `k` FINITE, and a finite topological ring in the Mazur
+category is discrete, so the instance is available at the only point of use.
+The narrowing is mathematically necessary rather than cosmetic — over a
+finite ring carrying the INDISCRETE topology, continuity of `φ` is no
+constraint at all and the finiteness hypothesis would be asserting something
+false about the abstract (non-topological) point set. -/
 theorem fg_maximalIdeal_of_finite_ringHom
     {ℓ : ℕ} [Fact ℓ.Prime] {k : Type u} [Field k] [Finite k]
     [Algebra ℤ_[ℓ] k] [TopologicalSpace k] [DiscreteTopology k]
@@ -180,6 +191,7 @@ theorem fg_maximalIdeal_of_finite_ringHom
     (π : R →+* k) (hπsurj : Function.Surjective π) (hπcont : Continuous π)
     (hhom : ∀ (A : Type u) [CommRing A] [TopologicalSpace A]
       [IsTopologicalRing A] [IsLocalRing A] [Algebra ℤ_[ℓ] A] [Finite A]
+      [DiscreteTopology A]
       (πA : A →+* k),
       {φ : R →+* A | Continuous φ ∧ πA.comp φ = π ∧
         φ.comp (algebraMap ℤ_[ℓ] R) = algebraMap ℤ_[ℓ] A}.Finite) :
@@ -375,6 +387,12 @@ universal ring in `A` inject into the hardly ramified framed
 representations over `A` (the injection being the minimality clause of
 the hull, the target being finite by H3).
 
+`hhom` QUANTIFIES ONLY OVER DISCRETE TEST RINGS (`[DiscreteTopology A]`,
+added 2026-07-26): see `fg_maximalIdeal_of_finite_ringHom` above, which is
+where the hypothesis is spent and which carries the identical binder. The
+consumer's own `hfin` in `Deformation.lean` carries it too, so the three
+statements are now aligned.
+
 References: Mazur, *Deforming Galois representations*, MSRI Publ. 16
 (1989), §1.2; Schlessinger, *Functors of Artin rings*, Trans. AMS 130
 (1968), Thm 2.11; Stacks 05GH (the Noetherianity criterion, proven in
@@ -389,6 +407,7 @@ theorem isNoetherianRing_isAdic_of_profinite_of_finite_ringHom
     (π : R →+* k) (hπsurj : Function.Surjective π) (hπcont : Continuous π)
     (hhom : ∀ (A : Type u) [CommRing A] [TopologicalSpace A]
       [IsTopologicalRing A] [IsLocalRing A] [Algebra ℤ_[ℓ] A] [Finite A]
+      [DiscreteTopology A]
       (πA : A →+* k),
       {φ : R →+* A | Continuous φ ∧ πA.comp φ = π ∧
         φ.comp (algebraMap ℤ_[ℓ] R) = algebraMap ℤ_[ℓ] A}.Finite) :

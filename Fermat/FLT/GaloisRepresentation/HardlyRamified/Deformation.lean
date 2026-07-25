@@ -5178,15 +5178,20 @@ theorem exists_isStrictlyUniversalOnFrames_of_deformationCondition (hℓ5 : 5 �
       hπcont, hbasis, hres, hquot, hinj, huniv⟩ :=
     exists_universalFrame_profinite_of_deformationCondition hℓOdd hdim hℓ5 h
       hirr hschur hfin hbase hglue
-  -- **The continuous points of `R` in a finite test ring are finite in
-  -- number**: they inject, by the minimality clause `hinj`, into the hardly
+  -- **The continuous points of `R` in a finite DISCRETE test ring are finite
+  -- in number**: they inject, by the minimality clause `hinj`, into the hardly
   -- ramified frames over that ring, of which `hfin` gives finitely many.
+  -- The `[DiscreteTopology A]` binder is exactly the one `hfin` carries, and
+  -- it is passed straight through to
+  -- `isNoetherianRing_isAdic_of_profinite_of_finite_ringHom`, which now
+  -- carries it too; the criterion is spent at `A = k[ε]`, which is discrete.
   have hhom : ∀ (A : Type u) [CommRing A] [TopologicalSpace A]
       [IsTopologicalRing A] [IsLocalRing A] [Algebra ℤ_[ℓ] A] [Finite A]
+      [DiscreteTopology A]
       (πA : A →+* k),
       {φ : R →+* A | Continuous φ ∧ πA.comp φ = πuniv ∧
         φ.comp (algebraMap ℤ_[ℓ] R) = algebraMap ℤ_[ℓ] A}.Finite := by
-    intro A _ _ _ _ _ _ πA
+    intro A _ _ _ _ _ _ _ πA
     rw [← Set.finite_coe_iff]
     haveI : Finite {ρ : FramedGaloisRep ℚ A (Fin 2) |
         IsHardlyRamified hℓOdd (rank_finTwoFun A) ρ} := (hfin A).to_subtype
