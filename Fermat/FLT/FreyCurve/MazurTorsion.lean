@@ -287,7 +287,12 @@ Sanity-checked with PARI/GP (2026-07-25; untrusted searcher, never a
 proof): `ellisomat` over the 20143 nonsingular curves `[a₁,a₂,a₃,a₄,a₆]`
 with `a₁, a₃ ∈ {0,1}`, `a₂ ∈ {−1,0,1}`, `a₄, a₆ ∈ [−20,20]` yields the
 cyclic isogeny degrees `{1, …, 16, 18, 21, 25, 37}` — every one of them
-in the list above, and never `20`, `24`, `35` or `49`. -/
+in the list above, and never `20`, `24`, `35` or `49`.
+
+Among the eleven critical composite torsion levels this node closes
+exactly `20`, `24`, `35` and `49`, the four that are absent from the
+list; `49` is deliberately left to the owner of `no_torsion_order_49`
+rather than rewired here. -/
 theorem WeierstrassCurve.mem_cyclicIsogenyDegrees (E : WeierstrassCurve ℚ)
     [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point) {N : ℕ}
     (hN : 0 < N) (hg : addOrderOf g = N)
