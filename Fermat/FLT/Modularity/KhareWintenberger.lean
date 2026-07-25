@@ -125,11 +125,6 @@ public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 -- Galois enabling hypothesis for Brauer induction) live in these:
 public import Mathlib.NumberTheory.NumberField.InfinitePlace.TotallyRealComplex
 public import Mathlib.FieldTheory.Galois.Basic
--- `Ideal.absNorm`, the residue cardinality `Nw` of a place of the
--- Moret–Bailly base `F`: it appears in the STATEMENTS of the
--- Carayol/Shimura sub-cut (the cyclotomic normalization leaf and the
--- determinant-coefficient bridge), hence a public import
-public import Mathlib.RingTheory.Ideal.Norm.AbsNorm
 -- the Moret–Bailly cut (2026-07-25, PIN RE-AUDIT): the scheme-theoretic
 -- vocabulary in which Moret–Bailly's existence theorem and the twisted
 -- Hilbert–Blumenthal moduli input are STATED below — `Scheme`, `Spec`,
@@ -142,6 +137,13 @@ public import Mathlib.AlgebraicGeometry.Morphisms.Smooth
 public import Mathlib.AlgebraicGeometry.Morphisms.Separated
 public import Mathlib.AlgebraicGeometry.Morphisms.FiniteType
 public import Mathlib.AlgebraicGeometry.Morphisms.QuasiCompact
+-- (`Mathlib.RingTheory.Ideal.Norm.AbsNorm` is imported once, above:
+-- `Ideal.absNorm` is the residue cardinality `Nw` of a place of the
+-- Moret–Bailly base `F`, and appears in the STATEMENTS both of the two
+-- joints of the automorphic cut and of the Carayol/Shimura sub-cut —
+-- the cyclotomic normalization leaf and the determinant-coefficient
+-- bridge. Two concurrent owners added the same public import
+-- independently; deduplicated at the 2026-07-25 merge.)
 -- proof-only imports: the PROVEN 3-adic classification (Family-free —
 -- see the module docstring for why `Lift.lean`/`Family.lean` must NOT
 -- be imported), the shared Family-free deformation development (the
