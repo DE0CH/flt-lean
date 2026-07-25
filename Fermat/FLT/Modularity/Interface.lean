@@ -9133,9 +9133,218 @@ lemma toMatrix_conj_equivFun {K : Type*} [Field K] {M : Type*}
   simp only [LinearMap.comp_apply, LinearEquiv.coe_coe, hsymm j,
     Pi.basisFun_repr, Module.Basis.equivFun_apply]
 
-/-- **Ribet's walk, intrinsic form** (Ribet cut E2a-ii-walk; sorry
-node — the whole arithmetic content of Ribet's lemma, stated WITHOUT
-any frame bookkeeping): under the hypotheses of
+set_option backward.isDefEq.respectTransparency false in
+/-- **Brauer–Nesbitt dichotomy for a residually reducible rank-2
+lattice** (Ribet cut E2a-ii-walk, item (a); sorry node — carved out
+2026-07-25 from `exists_ribet_walk_stable_line`): a rank-`2`
+representation over `O` whose residual trace and determinant are
+`1 + ψ` and `ψ`, with `ψ ≠ 1`, has a residual `Γ ℚ`-stable LINE, and
+that line's character is either `1` — with `ψ` on the quotient — or
+`ψ` — with `1` on the quotient. The two orderings of the two DISTINCT
+residual characters, no third possibility; this is the whole content
+of item (a) of the recorded cut, and it is the ONLY place where the
+trace/determinant hypotheses are consumed.
+
+Classical proof (Brauer–Nesbitt; Curtis–Reiner, *Methods of
+Representation Theory* §30.16; Diamond–Darmon–Taylor, *Fermat's Last
+Theorem* (1995), Lemma 3.27 — the in-tree substrate is the
+sorry-free `BrauerNesbittConjugacy.lean`, whose
+`rep_exists_stable_submodule_of_charpoly_eq_units` IS the
+common-eigenvector step, and whose
+`rep_exists_stable_line_of_not_isIrreducible` turns a
+subrepresentation into a line):
+1. the residual space `kk' ⊗_O O²` is `2`-dimensional over `kk'`
+   (`Algebra.TensorProduct.basis` on `Pi.basisFun`), so the
+   characteristic polynomial of the reduction at `g` is
+   `X² − (1 + ψ g) X + ψ g = (X − 1)(X − ψ g)`: it splits with roots
+   in `kk'` at every `g`, and the Kolchin/common-eigenvector argument
+   over the FINITE field `kk'` produces a `Γ ℚ`-stable line;
+2. write `α` for the character on that line and `β` for the character
+   on the quotient, so `α + β = 1 + ψ` and `α · β = ψ` pointwise.
+   Then `(α g − 1)(α g − ψ g) = α g² − (α g + β g)·α g + α g·β g = 0`
+   for EVERY `g`, i.e. `G = {g | α g = 1} ∪ {g | α g = ψ g}`; both
+   sets are SUBGROUPS (`α` and `α·ψ⁻¹` are homomorphisms into the
+   abelian group `kk'ˣ`), and a group is never the union of two
+   PROPER subgroups, so `α = 1` globally or `α = ψ` globally. This is
+   the "forced globally by multiplicativity" step, and it is exactly
+   where `ψ ≠ 1` makes the two cases distinct.
+Unconditionally TRUE at the stated generality: no hypothesis package
+beyond the two trace/determinant identities (`hψ` is used only to
+make the dichotomy non-degenerate — for `ψ = 1` both disjuncts are the
+same statement and the result still holds). -/
+theorem exists_residual_trivialSub_or_psiSub
+    {O : Type u} [CommRing O] [TopologicalSpace O] [IsTopologicalRing O]
+    {kk' : Type u} [Field kk'] [Finite kk'] [TopologicalSpace kk']
+    [IsTopologicalRing kk'] [Algebra O kk'] [ContinuousSMul O kk']
+    (ρ' : GaloisRep ℚ O (Fin 2 → O))
+    (ψ : Field.absoluteGaloisGroup ℚ →* kk') (hψ : ∃ g, ψ g ≠ 1)
+    (htr' : ∀ g, algebraMap O kk'
+      (LinearMap.trace O (Fin 2 → O) (ρ' g)) = 1 + ψ g)
+    (hdet' : ∀ g, algebraMap O kk' (LinearMap.det (ρ' g)) = ψ g) :
+    (∃ v₀ : kk' ⊗[O] (Fin 2 → O), v₀ ≠ 0 ∧
+        (∀ g, (ρ'.baseChange kk') g v₀ = v₀) ∧
+        (∀ g x, ∃ c : kk', (ρ'.baseChange kk') g x - ψ g • x = c • v₀)) ∨
+      (∃ v₀ : kk' ⊗[O] (Fin 2 → O), v₀ ≠ 0 ∧
+        (∀ g, (ρ'.baseChange kk') g v₀ = ψ g • v₀) ∧
+        (∀ g x, ∃ c : kk', (ρ'.baseChange kk') g x - x = c • v₀)) :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **One step of Ribet's walk: swapping the order of the residual
+characters** (Ribet cut E2a-ii-walk, item (b); sorry node — carved out
+2026-07-25 from `exists_ribet_walk_stable_line`): if the reduction of
+the given lattice has `ψ` as its SUB-character — a residual
+`ψ`-eigenvector `v₀` whose line carries the quotient character `1` —
+then some commensurable stable lattice, again presented on
+`Fin 2 → O` with a `ℚ̄_p`-equivariant generic identification `e'` to
+the original, realizes the OTHER order: a Galois-FIXED nonzero
+residual vector, with `ψ` acting on the quotient by its line.
+
+Classical proof (Ribet, *A modular construction of unramified
+`p`-extensions of `ℚ(μ_p)`*, Invent. Math. 34 (1976), Prop. 2.1;
+Bellaïche–Chenevier, *Families of Galois representations and Selmer
+groups*, Astérisque 324 (2009), ch. 1 — this is one step down the tree
+of lattices): let `Λ = O²` and let `Λ'` be the preimage in `Λ` of the
+residual `ψ`-line `kk'·v₀` under the reduction `Λ ↠ Λ/𝔪Λ`. Then
+`𝔪Λ ⊆ Λ' ⊆ Λ`, `Λ'` is `Γ ℚ`-stable (the `ψ`-line is stable and `𝔪Λ`
+is), and `Λ'` is again free of rank `2` over the discrete valuation
+ring `O` — it is finitely generated (between `𝔪Λ` and `Λ`, both
+finite) and torsion-free, hence free, of the same rank because it
+contains `𝔪Λ`. Choosing a frame of `Λ'` presents the walked lattice on
+`Fin 2 → O` again, and the inclusion `Λ' ⊆ Λ` becomes an isomorphism
+after inverting `p`, giving the `ℚ̄_p`-equivariant `e'`. Its reduction
+`Λ'/𝔪Λ'` has the two characters in the OPPOSITE order: `𝔪Λ/𝔪Λ'` is a
+Galois-stable line on which the action is the one on `Λ/Λ' ≅ 1`
+(twisted by the uniformiser, which is Galois-invariant), while
+`Λ'/𝔪Λ ≅ kk'·v₀ ≅ ψ` is the quotient. So the walked lattice has a
+FIXED residual vector with `ψ` on the quotient. The residue package
+`hsurj'`/`hopen'`/`hker'` identifies `Λ/𝔪Λ` with `kk' ⊗_O Λ`
+continuously, and `hOinj` is what makes the generic fibres of `Λ` and
+`Λ'` the same `ℚ̄_p`-space. Unconditionally TRUE given the `ψ`-sub
+hypothesis, which is exactly what makes `Λ'` a PROPER intermediate
+lattice. -/
+theorem exists_ribet_walk_swap_order
+    {O : Type u} [CommRing O] [Algebra ℤ_[p] O] [IsDomain O]
+    [Module.Finite ℤ_[p] O] [TopologicalSpace O] [IsTopologicalRing O]
+    [IsModuleTopology ℤ_[p] O] [IsDiscreteValuationRing O]
+    [Algebra O (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul O (AlgebraicClosure ℚ_[p])]
+    (hOinj : Function.Injective (algebraMap O (AlgebraicClosure ℚ_[p])))
+    {kk' : Type u} [Field kk'] [Finite kk'] [Algebra ℤ_[p] kk']
+    [TopologicalSpace kk'] [DiscreteTopology kk'] [IsTopologicalRing kk']
+    [Algebra O kk'] [ContinuousSMul O kk']
+    (hsurj' : Function.Surjective (algebraMap O kk'))
+    (hopen' : IsOpen ((IsLocalRing.maximalIdeal O : Ideal O) : Set O))
+    (hker' : RingHom.ker (algebraMap O kk') = IsLocalRing.maximalIdeal O)
+    {ρO : GaloisRep ℚ O (Fin 2 → O)}
+    (ψ : Field.absoluteGaloisGroup ℚ →* kk')
+    (hpsi : ∃ v₀ : kk' ⊗[O] (Fin 2 → O), v₀ ≠ 0 ∧
+      (∀ g, (ρO.baseChange kk') g v₀ = ψ g • v₀) ∧
+      (∀ g x, ∃ c : kk', (ρO.baseChange kk') g x - x = c • v₀)) :
+    ∃ (ρO' : GaloisRep ℚ O (Fin 2 → O))
+      (e' : ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O))
+        ≃ₗ[AlgebraicClosure ℚ_[p]]
+          ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O)))
+      (v₀ : kk' ⊗[O] (Fin 2 → O)),
+      (∀ g x, e' ((ρO'.baseChange (AlgebraicClosure ℚ_[p])) g x) =
+        (ρO.baseChange (AlgebraicClosure ℚ_[p])) g (e' x)) ∧
+      v₀ ≠ 0 ∧
+      (∀ g, (ρO'.baseChange kk') g v₀ = v₀) ∧
+      (∀ g x, ∃ c : kk',
+        (ρO'.baseChange kk') g x - ψ g • x = c • v₀) :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Split everywhere forces a stable line in the generic fibre**
+(Ribet cut E2a-ii-walk, item (c); sorry node — carved out 2026-07-25
+from `exists_ribet_walk_stable_line`): if EVERY stable lattice whose
+reduction has the trivial sub-character splits — carries a
+`ψ`-eigenvector outside the fixed line — then the generic fibre
+`ℚ̄_p ⊗_O O²` has a `Γ ℚ`-stable subspace that is neither `⊥` nor `⊤`.
+Together with generic irreducibility this is the contradiction that
+ends Ribet's argument, and it is the only item of the cut that
+consumes the walk's descent.
+
+Classical proof (Ribet, Invent. Math. 34 (1976), Prop. 2.1, the
+inverse-limit step; Bellaïche–Chenevier, Astérisque 324 (2009),
+ch. 1): start from the good lattice `Λ₁ = ρ₁` supplied by `ρ₁`/`v₁`.
+By `hsplit` its reduction contains a `ψ`-eigenvector `w` outside the
+fixed line, so the preimage `Λ₂ ⊆ Λ₁` of `kk'·w` is a stable lattice
+with `𝔪Λ₁ ⊆ Λ₂ ⊊ Λ₁`, whose residual characters are again `{1, ψ}` in
+the trivial-sub order (Brauer–Nesbitt through the generic
+identification: trace and determinant are conjugation- and
+base-change-invariant, so `htr`/`hdet` hold for every lattice in the
+walk). Iterating produces a descending chain
+`Λ₁ ⊋ Λ₂ ⊋ Λ₃ ⊋ …` of stable lattices, each containing `𝔪Λᵢ₋₁`, whose
+successive `ψ`-eigenlines assemble — the valuation of `O` being
+DISCRETE, the chain cannot stabilise and its intersection scaled back
+by the uniformiser converges — into a `ρO`-stable `ℚ̄_p`-line of the
+generic fibre: at each stage the chosen eigenvector lifts to a vector
+of `Λ₁ ⊗ ℚ̄_p` whose `Γ ℚ`-translates stay in a line modulo `𝔪ⁿ`, and
+the limit (compactness of `Λ₁`, `O` complete because module-finite
+over `ℤ_p` in the module topology) is an honest stable line. A line in
+a `2`-dimensional space is neither `⊥` nor `⊤`. Hypothesis-honest:
+`hψ` keeps the two residual characters distinct (for `ψ = 1` the
+`ψ`-eigenvector produced by `hsplit` gives no new lattice), and
+`htr`/`hdet` are what make every lattice of the walk a GOOD lattice,
+i.e. re-feedable to `hsplit`. -/
+theorem exists_stable_line_of_ribet_walk_split
+    {O : Type u} [CommRing O] [Algebra ℤ_[p] O] [IsDomain O]
+    [Module.Finite ℤ_[p] O] [TopologicalSpace O] [IsTopologicalRing O]
+    [IsModuleTopology ℤ_[p] O] [IsDiscreteValuationRing O]
+    [Algebra O (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul O (AlgebraicClosure ℚ_[p])]
+    (hOinj : Function.Injective (algebraMap O (AlgebraicClosure ℚ_[p])))
+    {kk' : Type u} [Field kk'] [Finite kk'] [Algebra ℤ_[p] kk']
+    [TopologicalSpace kk'] [DiscreteTopology kk'] [IsTopologicalRing kk']
+    [Algebra O kk'] [ContinuousSMul O kk']
+    (hsurj' : Function.Surjective (algebraMap O kk'))
+    (hopen' : IsOpen ((IsLocalRing.maximalIdeal O : Ideal O) : Set O))
+    (hker' : RingHom.ker (algebraMap O kk') = IsLocalRing.maximalIdeal O)
+    {ρO : GaloisRep ℚ O (Fin 2 → O)}
+    (ψ : Field.absoluteGaloisGroup ℚ →* kk') (hψ : ∃ g, ψ g ≠ 1)
+    (htr : ∀ g, algebraMap O kk'
+      (LinearMap.trace O (Fin 2 → O) (ρO g)) = 1 + ψ g)
+    (hdet : ∀ g, algebraMap O kk' (LinearMap.det (ρO g)) = ψ g)
+    (ρ₁ : GaloisRep ℚ O (Fin 2 → O))
+    (e₁ : ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O))
+      ≃ₗ[AlgebraicClosure ℚ_[p]]
+        ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O)))
+    (v₁ : kk' ⊗[O] (Fin 2 → O))
+    (he₁ : ∀ g x, e₁ ((ρ₁.baseChange (AlgebraicClosure ℚ_[p])) g x) =
+      (ρO.baseChange (AlgebraicClosure ℚ_[p])) g (e₁ x))
+    (hv₁ : v₁ ≠ 0)
+    (hfix₁ : ∀ g, (ρ₁.baseChange kk') g v₁ = v₁)
+    (hquo₁ : ∀ g x, ∃ c : kk', (ρ₁.baseChange kk') g x - ψ g • x = c • v₁)
+    (hsplit : ∀ (ρO' : GaloisRep ℚ O (Fin 2 → O))
+      (e' : ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O))
+        ≃ₗ[AlgebraicClosure ℚ_[p]]
+          ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O)))
+      (v₀ : kk' ⊗[O] (Fin 2 → O)),
+      (∀ g x, e' ((ρO'.baseChange (AlgebraicClosure ℚ_[p])) g x) =
+        (ρO.baseChange (AlgebraicClosure ℚ_[p])) g (e' x)) →
+      v₀ ≠ 0 →
+      (∀ g, (ρO'.baseChange kk') g v₀ = v₀) →
+      (∀ g x, ∃ c : kk',
+        (ρO'.baseChange kk') g x - ψ g • x = c • v₀) →
+      ∃ w : kk' ⊗[O] (Fin 2 → O),
+        w ∉ Submodule.span kk' {v₀} ∧
+          ∀ g, (ρO'.baseChange kk') g w = ψ g • w) :
+    ∃ U : Submodule (AlgebraicClosure ℚ_[p])
+        ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O)),
+      U ≠ ⊥ ∧ U ≠ ⊤ ∧
+        ∀ g x, x ∈ U →
+          (ρO.baseChange (AlgebraicClosure ℚ_[p])) g x ∈ U :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Ribet's walk, intrinsic form** (Ribet cut E2a-ii-walk; PROVEN
+2026-07-25 as the assembly of the recorded three-way cut — the whole
+arithmetic content of Ribet's lemma is now in the three leaves
+`exists_residual_trivialSub_or_psiSub` (a),
+`exists_ribet_walk_swap_order` (b) and
+`exists_stable_line_of_ribet_walk_split` (c), stated WITHOUT any frame
+bookkeeping): under the hypotheses of
 `exists_ribet_walk_nonsplit_lattice` there is a commensurable stable
 lattice — again presented on `Fin 2 → O`, with a `ℚ̄_p`-equivariant
 generic identification `e'` to the original — whose reduction has a
@@ -9168,10 +9377,31 @@ hypothesis-honest — `hψ` (multiplicity-freeness) and `hirrO` are each
 load-bearing (a scalar-residual or split-generic situation admits only
 split reductions). Circularity guard (inherited from the Ribet cut):
 must not route through `Family.lean` or `Reducible.lean`'s B5.
-Suggested further cut if this resists: (a) the Brauer–Nesbitt pinning
-of the residual characters of an ARBITRARY stable lattice to `{1, ψ}`,
-(b) the prescribed-order realization (one step of the walk), (c) the
-split-everywhere ⇒ generic stable line contradiction. -/
+
+DECOMPOSITION (2026-07-25 — the further cut recorded here on
+2026-07-24, now executed; what is PROVEN below is the assembly, which
+carries no arithmetic of its own):
+* (a) `exists_residual_trivialSub_or_psiSub` — the Brauer–Nesbitt
+  pinning of the residual characters of ONE lattice to `{1, ψ}`,
+  returning the DICHOTOMY "sub-character `1`, quotient `ψ`" versus
+  "sub-character `ψ`, quotient `1`". It is applied here to `ρO`
+  itself, and it is the only consumer of `htr`/`hdet` in the
+  assembly.
+* (b) `exists_ribet_walk_swap_order` — one step of the walk: from the
+  `ψ`-sub order to the trivial-sub order. It turns the second
+  disjunct of (a) into a GOOD lattice (Galois-fixed nonzero residual
+  vector, `ψ` on the quotient), so that both branches of the
+  dichotomy supply one.
+* (c) `exists_stable_line_of_ribet_walk_split` — the descent: given a
+  good lattice and the hypothesis that EVERY good lattice splits, a
+  `Γ ℚ`-stable subspace of the generic fibre that is neither `⊥` nor
+  `⊤`.
+The assembly is then: negate the goal to obtain exactly the
+split-everywhere hypothesis of (c); produce a good lattice from (a)
+(+(b) in the `ψ`-sub branch); feed both to (c); and read the resulting
+proper nonzero stable subspace against `hirrO` through
+`Subrepresentation`, whose order is simple precisely when no such
+subspace exists. -/
 theorem exists_ribet_walk_stable_line
     {O : Type u} [CommRing O] [Algebra ℤ_[p] O] [IsDomain O]
     [Module.Finite ℤ_[p] O] [TopologicalSpace O] [IsTopologicalRing O]
@@ -9204,8 +9434,56 @@ theorem exists_ribet_walk_stable_line
         (ρO'.baseChange kk') g x - ψ g • x = c • v₀) ∧
       ¬ ∃ w : kk' ⊗[O] (Fin 2 → O),
           w ∉ Submodule.span kk' {v₀} ∧
-            ∀ g, (ρO'.baseChange kk') g w = ψ g • w :=
-  sorry
+            ∀ g, (ρO'.baseChange kk') g w = ψ g • w := by
+  classical
+  by_contra hcon
+  -- the negated goal IS the "every good lattice splits" hypothesis of (c)
+  have hsplit : ∀ (ρO' : GaloisRep ℚ O (Fin 2 → O))
+      (e' : ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O))
+        ≃ₗ[AlgebraicClosure ℚ_[p]]
+          ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O)))
+      (v₀ : kk' ⊗[O] (Fin 2 → O)),
+      (∀ g x, e' ((ρO'.baseChange (AlgebraicClosure ℚ_[p])) g x) =
+        (ρO.baseChange (AlgebraicClosure ℚ_[p])) g (e' x)) →
+      v₀ ≠ 0 →
+      (∀ g, (ρO'.baseChange kk') g v₀ = v₀) →
+      (∀ g x, ∃ c : kk',
+        (ρO'.baseChange kk') g x - ψ g • x = c • v₀) →
+      ∃ w : kk' ⊗[O] (Fin 2 → O),
+        w ∉ Submodule.span kk' {v₀} ∧
+          ∀ g, (ρO'.baseChange kk') g w = ψ g • w := by
+    intro ρO' e' v₀ h1 h2 h3 h4
+    by_contra hw
+    exact hcon ⟨ρO', e', v₀, h1, h2, h3, h4, hw⟩
+  -- a GOOD lattice: trivial sub-character, `ψ` on the quotient
+  obtain ⟨ρ₁, e₁, v₁, he₁, hv₁, hfix₁, hquo₁⟩ :
+      ∃ (ρ₁ : GaloisRep ℚ O (Fin 2 → O))
+        (e₁ : ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O))
+          ≃ₗ[AlgebraicClosure ℚ_[p]]
+            ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O)))
+        (v₁ : kk' ⊗[O] (Fin 2 → O)),
+        (∀ g x, e₁ ((ρ₁.baseChange (AlgebraicClosure ℚ_[p])) g x) =
+          (ρO.baseChange (AlgebraicClosure ℚ_[p])) g (e₁ x)) ∧
+        v₁ ≠ 0 ∧
+        (∀ g, (ρ₁.baseChange kk') g v₁ = v₁) ∧
+        (∀ g x, ∃ c : kk',
+          (ρ₁.baseChange kk') g x - ψ g • x = c • v₁) := by
+    rcases exists_residual_trivialSub_or_psiSub ρO ψ hψ htr hdet with
+      ⟨v₀, hv₀, hfix, hquo⟩ | hpsi
+    · exact ⟨ρO, LinearEquiv.refl _ _, v₀, fun _ _ => rfl, hv₀, hfix, hquo⟩
+    · exact exists_ribet_walk_swap_order hOinj hsurj' hopen' hker' ψ hpsi
+  -- the descent turns "split everywhere" into a generic stable subspace
+  obtain ⟨U, hUbot, hUtop, hUinv⟩ :=
+    exists_stable_line_of_ribet_walk_split hOinj hsurj' hopen' hker' ψ hψ
+      htr hdet ρ₁ e₁ v₁ he₁ hv₁ hfix₁ hquo₁ hsplit
+  -- which contradicts generic irreducibility
+  haveI : IsSimpleOrder (Subrepresentation
+      (ρO.baseChange (AlgebraicClosure ℚ_[p])).toRepresentation) := hirrO
+  rcases eq_bot_or_eq_top (⟨U, fun g x hx => hUinv g x hx⟩ :
+      Subrepresentation
+        (ρO.baseChange (AlgebraicClosure ℚ_[p])).toRepresentation) with h | h
+  · exact hUbot (congrArg Subrepresentation.toSubmodule h)
+  · exact hUtop (congrArg Subrepresentation.toSubmodule h)
 
 /-- **Ribet's walk across stable lattices** (Ribet cut E2a-ii; PROVEN
 2026-07-24 as the frame presentation over the intrinsic walk leaf
