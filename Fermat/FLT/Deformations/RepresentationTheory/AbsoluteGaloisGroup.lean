@@ -280,4 +280,3 @@ local notation "Frobᵥ" => Field.AbsoluteGaloisGroup.adicArithFrob v
 lemma Field.AbsoluteGaloisGroup.isArithFrobAt_adicArithFrob :
     IsArithFrobAt 𝒪ᵥ Frobᵥ (𝔪 (IntegralClosure 𝒪ᵥ (Kᵥᵃˡᵍ))) :=
   .arithFrobAt' 𝒪ᵥ (Γ Kᵥ) (𝔪 (IntegralClosure 𝒪ᵥ (Kᵥᵃˡᵍ)))
-
