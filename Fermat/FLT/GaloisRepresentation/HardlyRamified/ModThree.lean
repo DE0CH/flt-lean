@@ -23212,14 +23212,17 @@ theorem summable_log_absNorm_mul_rpow_neg (K : Type*) [Field K] [NumberField K]
             (inv_nonneg.mpr hδ0.le)
       _ = (δ⁻¹ * N ^ (-(σ - δ))) * ((2 : ℝ)⁻¹) ^ m := by ring
 
+open IsDedekindDomain in
 /-- **The Dirichlet series of the logarithmic derivative of `ζ_K` on
-the half-plane of absolute convergence** (sorry node, stated
-2026-07-24 — leaf (b₂ᵢᵢ·3·A·i), the LAST analytic input of the
+the half-plane of absolute convergence** (PROVEN 2026-07-25 — leaf
+(b₂ᵢᵢ·3·A·i), the LAST analytic input of the
 prime-edge decomposition): for `re s > 1`,
 `ζ_K'(s)/ζ_K(s) = −Σ_{(𝔭,m)} log N𝔭 · e^{−s·(m+1)·log N𝔭}` — the
 absolutely convergent prime-power (von Mangoldt) series over the
-nonzero primes of `𝒪_K`.  Intended proof: the project's exp-log
-Euler product
+nonzero primes of `𝒪_K`.  Proof (the recorded route, followed
+verbatim except that the termwise differentiation runs on the SHIFTED
+half-plane `re > σ₀ = (1 + re s)/2` rather than on a ball, which is
+what makes the majorant uniform): the project's exp-log Euler product
 `exp_tsum_neg_log_one_sub_dirichletCharacter_mul_cpow_neg_eq_LSeries`
 (from `Chebotarev.lean`, trivial character mod `1` — the same PROVEN
 input that closed `dedekindZeta_ne_zero_of_one_lt_re`) writes
@@ -23231,9 +23234,14 @@ via `Filter.EventuallyEq.deriv_eq` on the open set
 `isOpen_lt continuous_const Complex.continuous_re`), so
 `ζ_K'/ζ_K = deriv g` after dividing by `ζ_K = exp (g s) ≠ 0`
 (`Complex.exp_ne_zero`).  Termwise differentiation of `g`
-(`hasDerivAt_tsum` against the uniform majorant
-`Σ_P (3/2)·N𝔭^{−(1+ε)}` from `summable_rpow_neg_natCard_quotient` on
-a small closed ball around `s` inside `re > 1`) with
+(`hasDerivAt_tsum_of_isPreconnected` on the convex open half-plane
+`re > σ₀`, against the uniform majorant `Σ_P 2·log N𝔭·N𝔭^{−σ₀}`
+— the derivative bound uses `‖N𝔭^{−z}‖ ≤ N𝔭^{−σ₀} ≤ 1/2`, whence
+`‖1 − N𝔭^{−z}‖ ≥ 1/2`, and its summability is the
+`log N ≤ N^δ/δ` absorption against
+`summable_rpow_neg_natCard_quotient` at `σ₀ − δ > 1`; the
+convergence-at-a-point hypothesis is
+`Complex.norm_log_one_add_half_le_self`) with
 `(−log(1 − N𝔭^{−s}))' = (log N𝔭)·N𝔭^{−s}/(1 − N𝔭^{−s})
 = Σ_{m≥0} (log N𝔭)·N𝔭^{−(m+1)s}` (geometric series, `‖N𝔭^{−s}‖ < 1`;
 each power `N𝔭^{−(m+1)s} = e^{−s·(m+1)·log N𝔭}` via
@@ -23255,13 +23263,271 @@ theorem dedekindZeta_logDeriv_eq_neg_tsum (K : Type*) [Field K] [NumberField K]
         (Real.log (Ideal.absNorm Pm.1.1) : ℂ) *
           Complex.exp (-s *
             ((((Pm.2 : ℝ) + 1) * Real.log (Ideal.absNorm Pm.1.1) : ℝ) : ℂ)) := by
-  sorry
+  classical
+  set N : HeightOneSpectrum (NumberField.RingOfIntegers K) → ℕ :=
+    fun P => Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) with hN
+  have hN2 : ∀ P, 2 ≤ N P := fun P => two_le_natCard_quotient P
+  have hNpos : ∀ P, 0 < N P := fun P => lt_of_lt_of_le two_pos (hN2 P)
+  have hN2R : ∀ P, (2 : ℝ) ≤ (N P : ℝ) := fun P => by exact_mod_cast hN2 P
+  have hN0R : ∀ P, (0 : ℝ) < (N P : ℝ) := fun P => lt_of_lt_of_le two_pos (hN2R P)
+  have hN1R : ∀ P, (1 : ℝ) ≤ (N P : ℝ) := fun P => by linarith [hN2R P]
+  have hNc : ∀ P, ((N P : ℕ) : ℂ) ≠ 0 := by
+    intro P
+    exact_mod_cast (hNpos P).ne'
+  have hlogpos : ∀ P, 0 ≤ Real.log (N P) := fun P => Real.log_natCast_nonneg _
+  -- the shifted half-plane of uniform control
+  set σ₀ : ℝ := (1 + s.re) / 2 with hσ₀def
+  have hσ₀1 : 1 < σ₀ := by rw [hσ₀def]; linarith
+  have hσ₀s : σ₀ < s.re := by rw [hσ₀def]; linarith
+  set U : Set ℂ := {z : ℂ | σ₀ < z.re} with hUdef
+  have hUopen : IsOpen U := isOpen_lt continuous_const Complex.continuous_re
+  have hUconn : IsPreconnected U := (convex_halfSpace_re_gt σ₀).isPreconnected
+  have hsU : s ∈ U := hσ₀s
+  -- norms of the Euler factors
+  have hwnorm : ∀ (P : HeightOneSpectrum (NumberField.RingOfIntegers K)) (z : ℂ),
+      ‖((N P : ℕ) : ℂ) ^ (-z)‖ = (N P : ℝ) ^ (-z.re) := by
+    intro P z
+    rw [Complex.norm_natCast_cpow_of_pos (hNpos P), Complex.neg_re]
+  have hwle : ∀ (P : HeightOneSpectrum (NumberField.RingOfIntegers K)),
+      ∀ z ∈ U, ‖((N P : ℕ) : ℂ) ^ (-z)‖ ≤ (N P : ℝ) ^ (-σ₀) := by
+    intro P z hz
+    rw [hwnorm]
+    exact Real.rpow_le_rpow_of_exponent_le (hN1R P) (by
+      have : σ₀ < z.re := hz
+      linarith)
+  have hwhalf : ∀ (P : HeightOneSpectrum (NumberField.RingOfIntegers K)),
+      ∀ z ∈ U, ‖((N P : ℕ) : ℂ) ^ (-z)‖ ≤ 1 / 2 := by
+    intro P z hz
+    refine (hwle P z hz).trans ?_
+    calc (N P : ℝ) ^ (-σ₀) ≤ (2 : ℝ) ^ (-σ₀) :=
+          Real.rpow_le_rpow_of_nonpos two_pos (hN2R P) (by linarith)
+      _ ≤ (2 : ℝ) ^ (-1 : ℝ) :=
+          (Real.rpow_le_rpow_left_iff one_lt_two).mpr (by linarith)
+      _ = 1 / 2 := by rw [Real.rpow_neg_one]; norm_num
+  have hdenom : ∀ (P : HeightOneSpectrum (NumberField.RingOfIntegers K)),
+      ∀ z ∈ U, (1 : ℝ) / 2 ≤ ‖1 - ((N P : ℕ) : ℂ) ^ (-z)‖ := by
+    intro P z hz
+    have h := hwhalf P z hz
+    have h1 : ‖(1 : ℂ)‖ - ‖((N P : ℕ) : ℂ) ^ (-z)‖ ≤
+        ‖1 - ((N P : ℕ) : ℂ) ^ (-z)‖ := norm_sub_norm_le _ _
+    rw [norm_one] at h1
+    linarith [h, h1]
+  have hslit : ∀ (P : HeightOneSpectrum (NumberField.RingOfIntegers K)),
+      ∀ z ∈ U, 1 - ((N P : ℕ) : ℂ) ^ (-z) ∈ Complex.slitPlane := by
+    intro P z hz
+    refine Or.inl ?_
+    have h := hwhalf P z hz
+    have h2 : (((N P : ℕ) : ℂ) ^ (-z)).re ≤ ‖((N P : ℕ) : ℂ) ^ (-z)‖ :=
+      (le_abs_self _).trans (Complex.abs_re_le_norm _)
+    rw [Complex.sub_re, Complex.one_re]
+    linarith [h, h2]
+  -- the summands and their derivatives
+  set f : HeightOneSpectrum (NumberField.RingOfIntegers K) → ℂ → ℂ :=
+    fun P z => -Complex.log (1 - ((N P : ℕ) : ℂ) ^ (-z)) with hf
+  set f' : HeightOneSpectrum (NumberField.RingOfIntegers K) → ℂ → ℂ :=
+    fun P z => -((Real.log (N P) : ℂ) * ((N P : ℕ) : ℂ) ^ (-z) /
+      (1 - ((N P : ℕ) : ℂ) ^ (-z))) with hf'
+  have hfder : ∀ (P : HeightOneSpectrum (NumberField.RingOfIntegers K)),
+      ∀ z ∈ U, HasDerivAt (f P) (f' P z) z := by
+    intro P z hz
+    have hpow : HasDerivAt (fun y : ℂ => ((N P : ℕ) : ℂ) ^ (-y))
+        (((N P : ℕ) : ℂ) ^ (-z) * Complex.log ((N P : ℕ) : ℂ) * (-1)) z :=
+      (hasDerivAt_neg' z).const_cpow (Or.inl (hNc P))
+    have hone : HasDerivAt (fun y : ℂ => 1 - ((N P : ℕ) : ℂ) ^ (-y))
+        ((Real.log (N P) : ℂ) * ((N P : ℕ) : ℂ) ^ (-z)) z := by
+      have h := hpow.const_sub 1
+      have hveq : -(((N P : ℕ) : ℂ) ^ (-z) * Complex.log ((N P : ℕ) : ℂ) * (-1)) =
+          (Real.log (N P) : ℂ) * ((N P : ℕ) : ℂ) ^ (-z) := by
+        rw [Complex.natCast_log]
+        ring
+      rw [hveq] at h
+      exact h
+    exact (hone.clog (hslit P z hz)).neg
+  -- the uniform summable majorant on `U`
+  set δ : ℝ := (σ₀ - 1) / 2 with hδdef
+  have hδ0 : 0 < δ := by rw [hδdef]; linarith
+  have hσδ : 1 < σ₀ - δ := by rw [hδdef]; linarith
+  have hu : Summable (fun P : HeightOneSpectrum (NumberField.RingOfIntegers K) =>
+      2 * Real.log (N P) * (N P : ℝ) ^ (-σ₀)) := by
+    refine Summable.of_nonneg_of_le (fun P => ?_) (fun P => ?_)
+      ((summable_rpow_neg_natCard_quotient hσδ).mul_left (2 / δ))
+    · exact mul_nonneg (by positivity) (Real.rpow_nonneg (hN0R P).le _)
+    · have hlogle : Real.log (N P) ≤ (N P : ℝ) ^ δ / δ :=
+        Real.log_le_rpow_div (hN0R P).le hδ0
+      have hsplit : (N P : ℝ) ^ δ * (N P : ℝ) ^ (-σ₀) = (N P : ℝ) ^ (-(σ₀ - δ)) := by
+        rw [← Real.rpow_add (hN0R P)]
+        congr 1
+        ring
+      calc 2 * Real.log (N P) * (N P : ℝ) ^ (-σ₀)
+          ≤ 2 * ((N P : ℝ) ^ δ / δ) * (N P : ℝ) ^ (-σ₀) := by
+            have hnn := Real.rpow_nonneg (hN0R P).le (-σ₀)
+            nlinarith [hlogle, hnn]
+        _ = 2 / δ * ((N P : ℝ) ^ δ * (N P : ℝ) ^ (-σ₀)) := by ring
+        _ = 2 / δ * (N P : ℝ) ^ (-(σ₀ - δ)) := by rw [hsplit]
+  have hbound : ∀ (P : HeightOneSpectrum (NumberField.RingOfIntegers K)),
+      ∀ z ∈ U, ‖f' P z‖ ≤ 2 * Real.log (N P) * (N P : ℝ) ^ (-σ₀) := by
+    intro P z hz
+    simp only [hf']
+    rw [norm_neg, norm_div, norm_mul, Complex.norm_real, Real.norm_eq_abs,
+      abs_of_nonneg (hlogpos P)]
+    have h1 : Real.log (N P) * ‖((N P : ℕ) : ℂ) ^ (-z)‖ ≤
+        Real.log (N P) * (N P : ℝ) ^ (-σ₀) :=
+      mul_le_mul_of_nonneg_left (hwle P z hz) (hlogpos P)
+    have h2 := hdenom P z hz
+    calc Real.log (N P) * ‖((N P : ℕ) : ℂ) ^ (-z)‖ / ‖1 - ((N P : ℕ) : ℂ) ^ (-z)‖
+        ≤ (Real.log (N P) * (N P : ℝ) ^ (-σ₀)) / (1 / 2) :=
+          div_le_div₀ (mul_nonneg (hlogpos P) (Real.rpow_nonneg (hN0R P).le _))
+            h1 (by norm_num) h2
+      _ = 2 * Real.log (N P) * (N P : ℝ) ^ (-σ₀) := by ring
+  -- summability of the log-sum itself at `s`
+  have hf0 : Summable (fun P : HeightOneSpectrum (NumberField.RingOfIntegers K) =>
+      f P s) := by
+    refine Summable.of_norm_bounded (g := fun P => 3 / 2 * (N P : ℝ) ^ (-σ₀))
+      ?_ (fun P => ?_)
+    · refine ((summable_rpow_neg_natCard_quotient hσ₀1).mul_left (3 / 2)).congr
+        fun P => ?_
+      rw [hN]
+    · simp only [hf]
+      rw [norm_neg, sub_eq_add_neg]
+      calc ‖Complex.log (1 + -(((N P : ℕ) : ℂ) ^ (-s)))‖
+          ≤ 3 / 2 * ‖-(((N P : ℕ) : ℂ) ^ (-s))‖ :=
+            Complex.norm_log_one_add_half_le_self (by
+              rw [norm_neg]; exact hwhalf P s hsU)
+        _ = 3 / 2 * ‖((N P : ℕ) : ℂ) ^ (-s)‖ := by rw [norm_neg]
+        _ ≤ 3 / 2 * (N P : ℝ) ^ (-σ₀) :=
+            mul_le_mul_of_nonneg_left (hwle P s hsU) (by norm_num)
+  have hgder : HasDerivAt (fun z => ∑' P, f P z)
+      (∑' P, f' P s) s :=
+    hasDerivAt_tsum_of_isPreconnected hu hUopen hUconn hfder hbound hsU hf0 hsU
+  -- the Euler product identifies `ζ_K` with `exp` of the log-sum on `U`
+  have hzeta : ∀ z ∈ U, NumberField.dedekindZeta K z = Complex.exp (∑' P, f P z) := by
+    intro z hz
+    have hz1 : 1 < z.re := lt_trans hσ₀1 hz
+    have h := exp_tsum_neg_log_one_sub_dirichletCharacter_mul_cpow_neg_eq_LSeries
+      K (1 : DirichletCharacter ℂ 1) hz1
+    have hcoeff : (fun k : ℕ => (1 : DirichletCharacter ℂ 1) (k : ZMod 1) *
+        (Nat.card {I : Ideal (NumberField.RingOfIntegers K) //
+          Ideal.absNorm I = k} : ℂ)) =
+        fun n : ℕ => (Nat.card {I : Ideal (NumberField.RingOfIntegers K) //
+          Ideal.absNorm I = n} : ℂ) := by
+      funext k
+      rw [MulChar.one_apply (isUnit_of_subsingleton _), one_mul]
+    have hsum : (∑' P : HeightOneSpectrum (NumberField.RingOfIntegers K),
+        -Complex.log (1 - (1 : DirichletCharacter ℂ 1)
+            ((Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℕ) : ZMod 1) *
+          (Nat.card (NumberField.RingOfIntegers K ⧸ P.asIdeal) : ℂ) ^ (-z))) =
+        ∑' P, f P z := by
+      refine tsum_congr fun P => ?_
+      simp only [hf, hN]
+      rw [MulChar.one_apply (isUnit_of_subsingleton _), one_mul]
+    rw [hsum] at h
+    unfold NumberField.dedekindZeta
+    rw [← hcoeff, ← h]
+  have hζs : NumberField.dedekindZeta K s = Complex.exp (∑' P, f P s) := hzeta s hsU
+  have hζder : HasDerivAt (NumberField.dedekindZeta K)
+      (Complex.exp (∑' P, f P s) * ∑' P, f' P s) s := by
+    refine (hgder.cexp).congr_of_eventuallyEq ?_
+    filter_upwards [hUopen.mem_nhds hsU] with z hz using hzeta z hz
+  have hlhs : deriv (NumberField.dedekindZeta K) s / NumberField.dedekindZeta K s =
+      ∑' P, f' P s := by
+    rw [hζder.deriv, hζs, mul_comm, mul_div_assoc,
+      div_self (Complex.exp_ne_zero _), mul_one]
+  -- the prime-power expansion of each factor
+  set F : HeightOneSpectrum (NumberField.RingOfIntegers K) × ℕ → ℂ :=
+    fun Pm => (Real.log (N Pm.1) : ℂ) *
+      Complex.exp (-s * ((((Pm.2 : ℝ) + 1) * Real.log (N Pm.1) : ℝ) : ℂ)) with hF
+  have hexp : ∀ (P : HeightOneSpectrum (NumberField.RingOfIntegers K)) (m : ℕ),
+      Complex.exp (-s * ((((m : ℝ) + 1) * Real.log (N P) : ℝ) : ℂ)) =
+        (((N P : ℕ) : ℂ) ^ (-s)) ^ (m + 1) := by
+    intro P m
+    rw [Complex.cpow_def_of_ne_zero (hNc P), ← Complex.exp_nat_mul]
+    congr 1
+    rw [← Complex.natCast_log]
+    push_cast
+    ring
+  have hterm : ∀ P : HeightOneSpectrum (NumberField.RingOfIntegers K),
+      f' P s = -∑' m : ℕ, F (P, m) := by
+    intro P
+    have hlt : ‖((N P : ℕ) : ℂ) ^ (-s)‖ < 1 :=
+      lt_of_le_of_lt (hwhalf P s hsU) (by norm_num)
+    have hgeo : (∑' m : ℕ, (((N P : ℕ) : ℂ) ^ (-s)) ^ (m + 1)) =
+        ((N P : ℕ) : ℂ) ^ (-s) / (1 - ((N P : ℕ) : ℂ) ^ (-s)) := by
+      calc (∑' m : ℕ, (((N P : ℕ) : ℂ) ^ (-s)) ^ (m + 1))
+          = ∑' m : ℕ, ((N P : ℕ) : ℂ) ^ (-s) * (((N P : ℕ) : ℂ) ^ (-s)) ^ m :=
+            tsum_congr fun m => by rw [pow_succ']
+        _ = ((N P : ℕ) : ℂ) ^ (-s) * ∑' m : ℕ, (((N P : ℕ) : ℂ) ^ (-s)) ^ m :=
+            tsum_mul_left
+        _ = ((N P : ℕ) : ℂ) ^ (-s) * (1 - ((N P : ℕ) : ℂ) ^ (-s))⁻¹ := by
+            rw [tsum_geometric_of_norm_lt_one hlt]
+        _ = ((N P : ℕ) : ℂ) ^ (-s) / (1 - ((N P : ℕ) : ℂ) ^ (-s)) :=
+            (div_eq_mul_inv _ _).symm
+    have hstep : (∑' m : ℕ, F (P, m)) =
+        (Real.log (N P) : ℂ) *
+          (((N P : ℕ) : ℂ) ^ (-s) / (1 - ((N P : ℕ) : ℂ) ^ (-s))) := by
+      simp only [hF]
+      rw [tsum_congr (fun m : ℕ => by rw [hexp P m]), tsum_mul_left, hgeo]
+    rw [hstep]
+    simp only [hf']
+    rw [mul_div_assoc]
+  -- summability of the prime-power double family
+  set e : HeightOneSpectrum (NumberField.RingOfIntegers K) ≃
+      {P : Ideal (NumberField.RingOfIntegers K) // P.IsPrime ∧ P ≠ ⊥} :=
+    ⟨fun Q => ⟨Q.asIdeal, Q.isPrime, Q.ne_bot⟩, fun P => ⟨P.1, P.2.1, P.2.2⟩,
+      fun Q => rfl, fun P => rfl⟩ with he
+  have hNabs : ∀ P : HeightOneSpectrum (NumberField.RingOfIntegers K),
+      Ideal.absNorm (e P).1 = N P := by
+    intro P
+    rw [he]
+    show Ideal.absNorm P.asIdeal = N P
+    rw [hN, Ideal.absNorm_apply, Submodule.cardQuot_apply]
+  have hFnorm : ∀ Pm : HeightOneSpectrum (NumberField.RingOfIntegers K) × ℕ,
+      ‖F Pm‖ = Real.log (N Pm.1) *
+        (N Pm.1 : ℝ) ^ (-(((Pm.2 : ℝ) + 1) * s.re)) := by
+    intro Pm
+    simp only [hF]
+    rw [norm_mul, Complex.norm_real, Real.norm_eq_abs, abs_of_nonneg (hlogpos _),
+      Complex.norm_exp]
+    congr 1
+    rw [Real.rpow_def_of_pos (hN0R Pm.1)]
+    congr 1
+    rw [Complex.mul_re, Complex.neg_re, Complex.neg_im, Complex.ofReal_re,
+      Complex.ofReal_im, mul_zero, sub_zero]
+    ring
+  have hFsummable : Summable F := by
+    refine Summable.of_norm ?_
+    refine Summable.congr ?_ (fun Pm => (hFnorm Pm).symm)
+    refine ((Equiv.summable_iff (e.prodCongr (Equiv.refl ℕ))).mpr
+      (summable_log_absNorm_mul_rpow_neg K hs)).congr fun Pm => ?_
+    show Real.log (Ideal.absNorm (e Pm.1).1) *
+        (Ideal.absNorm (e Pm.1).1 : ℝ) ^ (-(((Pm.2 : ℝ) + 1) * s.re)) =
+      Real.log (N Pm.1) * (N Pm.1 : ℝ) ^ (-(((Pm.2 : ℝ) + 1) * s.re))
+    rw [hNabs]
+  have hFfiber : ∀ P : HeightOneSpectrum (NumberField.RingOfIntegers K),
+      Summable fun m : ℕ => F (P, m) := by
+    intro P
+    exact hFsummable.prod_factor P
+  -- assemble
+  rw [hlhs, tsum_congr hterm, tsum_neg]
+  congr 1
+  rw [← hFsummable.tsum_prod' hFfiber]
+  refine (Equiv.tsum_eq (e.prodCongr (Equiv.refl ℕ))
+    (fun Pm : {P : Ideal (NumberField.RingOfIntegers K) // P.IsPrime ∧ P ≠ ⊥} × ℕ =>
+      (Real.log (Ideal.absNorm Pm.1.1) : ℂ) *
+        Complex.exp (-s *
+          ((((Pm.2 : ℝ) + 1) * Real.log (Ideal.absNorm Pm.1.1) : ℝ) : ℂ)))).symm.trans
+    ?_ |>.symm
+  refine tsum_congr fun Pm => ?_
+  show (Real.log (Ideal.absNorm (e Pm.1).1) : ℂ) *
+      Complex.exp (-s *
+        ((((Pm.2 : ℝ) + 1) * Real.log (Ideal.absNorm (e Pm.1).1) : ℝ) : ℂ)) = F Pm
+  simp only [hF]
+  rw [hNabs]
 
 /-- **The truncated prime edge as an absolutely convergent prime-power
 sum** (DECOMPOSED 2026-07-24, glue PROVEN — leaf (b₂ᵢᵢ·3·A), the
 Euler-product/Fubini bookkeeping stage of the prime-edge leaf
 `poitouPrimeEdge_tendsto`; an exact identity for EVERY `T`, no
-limits; now resting on the single sorried Dirichlet-series leaf
+limits; resting on the PROVEN Dirichlet-series leaf
 `dedekindZeta_logDeriv_eq_neg_tsum` above).  Proof structure:
 
 1. *Pointwise rearrangement.*  On the edge `s = 5/4 + it`
