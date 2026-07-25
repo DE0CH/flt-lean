@@ -135,6 +135,15 @@ import Mathlib.LinearAlgebra.Matrix.Charpoly.Coeff
 import Fermat.FLT.GaloisRepresentation.Chebotarev
 import Fermat.FLT.GaloisRepresentation.BrauerNesbitt
 import Mathlib.Tactic.NoncommRing
+-- flatness-transfer proof-only imports (2026-07-24, the open-ideal
+-- transport of `threeadicRealization_isFlat_of_witness`): the
+-- finite-flat prolongation transport layer
+-- (`GaloisRep.hasFlatProlongationAt_of_subsingleton`, the `I = ⊤`
+-- case) and the compact-Hausdorff-ring API
+-- (`IsLocalRing.isOpen_iff_finite_quotient`, openness ⇒ finite
+-- congruence quotient). Both are Family-free.
+import Fermat.FLT.Deformations.RepresentationTheory.FlatProlongation
+import Mathlib.Topology.Algebra.Ring.Compact
 
 @[expose] public section
 
@@ -1354,24 +1363,45 @@ theorem threeadicRealization_isUnramified_of_witness
       Rlz.τ.IsUnramifiedAt hp.toHeightOneSpectrumRingOfIntegersRat :=
   sorry
 
-/-- **Condition transfer, flatness at `3` — Fontaine–Laffaille**
-(sorry node): the Brauer-descended `3`-adic member is flat at `3`.
-Classically: the system has parallel weight `2` and conductor prime
-to `3`, so its `3`-adic member is crystalline at `3` with
-Hodge–Tate weights `{0, 1}` (Carayol/Taylor local-global
-compatibility at `p = ℓ` for `p` prime to the level, via
-Fontaine–Laffaille theory in weight `2` — equivalently Raynaud: a
-lattice in a crystalline representation with weights in `{0, 1}` is
-the generic fiber of a finite flat group scheme over `ℤ_3`, and every
-finite quotient of the stable lattice prolongs); this is the
-blueprint's "flat at 3".
+/-- **The Fontaine–Laffaille local shape at `3`** (sorry node — the
+literature joint of the flatness transfer, isolated 2026-07-24 out of
+`threeadicRealization_isFlat_of_witness`, whose open-ideal transport
+is PROVEN below): every NONTRIVIAL finite congruence quotient
+`(A ⧸ I) ⊗_A (Fin 2 → A)` of the Brauer-descended `3`-adic member is
+the group of `ℚ̄_3`-points of the generic fibre of a finite flat group
+scheme over `ℤ_3` — the package spelled by
+`GaloisRep.HasFlatProlongationAt`.
+
+Classically: the compatible system attached to the descended
+eigensystem has parallel weight `2` and conductor prime to `3`, so its
+`3`-adic member `τ` is crystalline at `3` with Hodge–Tate weights
+`{0, 1}` (Carayol/Taylor local-global compatibility at `p = ℓ` for `p`
+prime to the level). Over `ℤ_3` the absolute ramification index is
+`e = 1 < 2 = p - 1`, which is exactly the Fontaine–Laffaille range:
+the crystalline lattice `Fin 2 → A` is the Tate module of a
+`3`-divisible group over `ℤ_3` (Raynaud/Fontaine–Laffaille in weight
+`2`), the Fontaine–Laffaille functor from finite flat `3`-group
+schemes over `ℤ_3` to finite `G_{ℚ_3}`-modules is exact and fully
+faithful, and its essential image is closed under subobjects and
+quotients. The finite quotient `(A ⧸ I) ⊗_A (Fin 2 → A)` of the
+stable lattice therefore prolongs — "every finite quotient of the
+stable lattice prolongs", the blueprint's "flat at 3".
+
+Only NONTRIVIAL quotients (`I ≠ ⊤`) are asserted: at `I = ⊤` the
+congruence quotient is a single point and the transport below
+discharges the case outright with the trivial Hopf algebra
+(`GaloisRep.hasFlatProlongationAt_of_subsingleton`), so the literature
+is not cited for it. Openness of `I` is likewise not assumed — the
+transport converts it into the finiteness hypothesis, which is the
+form the Fontaine–Laffaille statement takes.
 
 Literature: Fontaine–Laffaille, *Construction de représentations
 p-adiques*, Ann. Sci. ÉNS 15 (1982); Raynaud, *Schémas en groupes de
 type (p, …, p)*, Bull. SMF 102 (1974); Carayol, Ann. Sci. ÉNS 19
 (1986) and Taylor, Invent. Math. 98 (1989) (the weight-2 local shape
-at primes over `p` prime to the level); BLGGT §5.5. FLT blueprint
-ch. 4: "flat at 3".
+at primes over `p` prime to the level); Breuil, *Groupes p-divisibles,
+groupes finis et modules filtrés*, Ann. of Math. 152 (2000) (the
+range-free refinement); BLGGT §5.5. FLT blueprint ch. 4: "flat at 3".
 
 SOUNDNESS AUDIT (both ways, 2026-07-24): (i) direct — for the
 realization produced by the construction leaf this is
@@ -1383,6 +1413,90 @@ so the statement is classically true for every package.
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
 discharge through `Family.lean`, `Lift.lean`, or
 `Modularity/Interface.lean`. -/
+theorem threeadicRealization_hasFlatProlongationAt_of_finite_quotient
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+    {Wit : PotentialModularityWitness ℓ O ρ}
+    (Rlz : ThreeadicRealization ℓ O ρ Wit)
+    (I : Ideal Rlz.A) (hItop : I ≠ ⊤) (hIfin : Finite (Rlz.A ⧸ I)) :
+    (Rlz.τ.baseChange (Rlz.A ⧸ I)).HasFlatProlongationAt
+      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+        (Fact.out : Nat.Prime 3)) :=
+  sorry
+
+/-- **Condition transfer, flatness at `3` — Fontaine–Laffaille**
+(DECOMPOSED 2026-07-24 — now a PROVEN transport over the single
+literature leaf
+`threeadicRealization_hasFlatProlongationAt_of_finite_quotient`
+above): the Brauer-descended `3`-adic member is flat at `3` in the
+project's sense `GaloisRep.IsFlatAt` — every OPEN-ideal congruence
+quotient of `τ` has a finite flat prolongation at `3`.
+
+TRANSPORT (PROVEN here — the open-ideal quantifier of
+`GaloisRep.IsFlatAt.cond` reduced to the literature's finite-quotient
+form):
+
+* `I = ⊤`: the congruence quotient `(A ⧸ ⊤) ⊗_A (Fin 2 → A)` is a
+  module over the zero ring, hence a single point, and
+  `GaloisRep.hasFlatProlongationAt_of_subsingleton` provides the
+  prolongation with the trivial Hopf algebra `𝒪ᵥ` — no literature
+  input;
+* `I ≠ ⊤`: the coefficient ring `A` is finite FREE over `ℤ_3` with its
+  module topology, so a `ℤ_3`-basis is a homeomorphism `A ≃ₜ ℤ_3ⁿ`
+  (`IsModuleTopology.continuous_of_linearMap` both ways), making `A` a
+  COMPACT HAUSDORFF Noetherian local topological ring
+  (`IsNoetherianRing.of_finite`). For such a ring an ideal is open iff
+  its quotient is finite (`IsLocalRing.isOpen_iff_finite_quotient`),
+  which is exactly the hypothesis of the local-shape leaf.
+
+Classically the mathematical content is: the system has parallel
+weight `2` and conductor prime to `3`, so its `3`-adic member is
+crystalline at `3` with Hodge–Tate weights `{0, 1}`, and over `ℤ_3`
+(`e = 1 < p - 1 = 2`) Fontaine–Laffaille/Raynaud make every finite
+quotient of the stable lattice the generic fibre of a finite flat
+group scheme; see the leaf's docstring for the literature.
+
+ROUTE AUDIT (2026-07-24, the dichotomy route): the collapse route that
+discharges pillar 2's interface leaf — `absurd hirr` against the
+headline `not_isIrreducible_of_isHardlyRamified_of_five_le` — is NOT
+available here and must not be used. The headline is PROVEN over
+pillar β, pillar β over `exists_threeadic_member_of_witness`, and that
+assembly consumes THIS node; discharging this node by the headline
+would close a literal dependency cycle (and is rejected by Lean, the
+headline being declared below). The same audit applies to the three
+sibling condition-transfer leaves. The only sound discharge is the
+direct one — the Fontaine–Laffaille local shape, cut above.
+
+SOUNDNESS AUDIT (both ways, 2026-07-24): (i) direct — for the
+realization produced by the construction leaf this is
+Fontaine–Laffaille/Raynaud plus the transport proven here; for an
+abstract realization the abstract-quantification caveat of pillar β
+applies, and (ii) collapse — the hypothesis set is classically
+unsatisfiable (headline below), so the statement is classically true
+for every package.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
+discharge through `Family.lean`, `Lift.lean`, or
+`Modularity/Interface.lean`. The two proof-only imports this transport
+adds (`FlatProlongation`, `Mathlib.Topology.Algebra.Ring.Compact`) are
+Family-free. -/
 theorem threeadicRealization_isFlat_of_witness
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
@@ -1407,8 +1521,39 @@ theorem threeadicRealization_isFlat_of_witness
     (Rlz : ThreeadicRealization ℓ O ρ Wit) :
     Rlz.τ.IsFlatAt
       (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
-        (Fact.out : Nat.Prime 3)) :=
-  sorry
+        (Fact.out : Nat.Prime 3)) := by
+  classical
+  constructor
+  intro I hIopen
+  rcases eq_or_ne I ⊤ with rfl | hItop
+  · -- `I = ⊤`: the congruence quotient is a single point
+    haveI : Subsingleton (Rlz.A ⧸ (⊤ : Ideal Rlz.A)) :=
+      Ideal.Quotient.subsingleton_iff.mpr rfl
+    haveI : Subsingleton
+        (TensorProduct Rlz.A (Rlz.A ⧸ (⊤ : Ideal Rlz.A)) (Fin 2 → Rlz.A)) :=
+      Module.subsingleton (Rlz.A ⧸ (⊤ : Ideal Rlz.A)) _
+    exact GaloisRep.hasFlatProlongationAt_of_subsingleton _
+      (Rlz.τ.baseChange (Rlz.A ⧸ (⊤ : Ideal Rlz.A)))
+  · -- `I ≠ ⊤`: openness upgrades to finiteness of the quotient, the
+    -- form the Fontaine–Laffaille leaf consumes
+    haveI hNoeth : IsNoetherianRing Rlz.A := IsNoetherianRing.of_finite ℤ_[3] Rlz.A
+    -- a `ℤ_3`-basis is a homeomorphism `A ≃ₜ ℤ_3ⁿ`
+    let eA : Rlz.A ≃ₗ[ℤ_[3]] (Module.Free.ChooseBasisIndex ℤ_[3] Rlz.A → ℤ_[3]) :=
+      (Module.Free.chooseBasis ℤ_[3] Rlz.A).equivFun
+    have hcont₁ : Continuous eA :=
+      IsModuleTopology.continuous_of_linearMap eA.toLinearMap
+    have hcont₂ : Continuous eA.symm :=
+      IsModuleTopology.continuous_of_linearMap eA.symm.toLinearMap
+    let homA : Rlz.A ≃ₜ (Module.Free.ChooseBasisIndex ℤ_[3] Rlz.A → ℤ_[3]) :=
+      { toEquiv := eA.toEquiv
+        continuous_toFun := hcont₁
+        continuous_invFun := hcont₂ }
+    haveI : CompactSpace Rlz.A := homA.symm.compactSpace
+    haveI : T2Space Rlz.A := homA.symm.symm.isEmbedding.t2Space
+    have hIfin : Finite (Rlz.A ⧸ I) :=
+      IsLocalRing.isOpen_iff_finite_quotient.mp hIopen
+    exact threeadicRealization_hasFlatProlongationAt_of_finite_quotient
+      hℓodd hℓ5 hZinj hrank hρ hW hρbar hirr π hπsurj hπ Rlz I hItop hIfin
 
 /-- **Condition transfer, tameness at `2` — constant Weil–Deligne
 type** (sorry node): the Brauer-descended `3`-adic member is tame at
