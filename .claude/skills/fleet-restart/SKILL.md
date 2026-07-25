@@ -23,6 +23,22 @@ Executed successfully multiple times; session chain f8fcb103 → 1e467fbd →
 bc388a7e, windows fork → fork2 → … (current window is discoverable with
 `tmux list-windows -t agent-2`).
 
+**0. STOP THE AGENTS FIRST — before forking anything** (Deyao, 2026-07-25,
+after I got this wrong). `TaskStop` every running subagent and let them come to
+rest, *then* fork.
+
+Skipping this does not merely lose their in-process state — it leaves them
+RUNNING while the fork starts, so two orchestrators briefly share one fleet, the
+old process's exit is not clean, and the child inherits agents whose actual state
+no longer matches any transcript. When I skipped it, 60 agents were reported as
+"no completion record … their in-process state was lost", their remote builds
+died with the foreground `ssh` sessions that the terminated turns were holding
+open, and ten worktrees ended up `claimed` with uncommitted work but no
+resolvable owner — which then took a recovery pass of its own.
+
+Stopping first makes the fork's job mechanical: every agent is at rest, every
+transcript is final, and the child resumes them from a consistent snapshot.
+
 **1. Open the new window.** Fresh name, next in the fork sequence, cwd at the
 repo root:
 
