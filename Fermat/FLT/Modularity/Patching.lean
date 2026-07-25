@@ -123,6 +123,26 @@ public import Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs
 public import Mathlib.Topology.Algebra.Nonarchimedean.AdicTopology
 public import Mathlib.RingTheory.AdicCompletion.Basic
 public import Mathlib.RingTheory.Noetherian.Basic
+public import Fermat.FLT.Mathlib.RingTheory.AdicCompletion.Finite
+-- `IsAdicComplete.of_finite_module`: the `p`-adic completeness of a
+-- module-finite `ℤ_p`-algebra, the assembly step of the pro-finite
+-- upgrade `isWeaklyUniversalOnIdentifiedDeformation_of_finiteTests`
+public import Mathlib.RingTheory.Ideal.Quotient.Index
+-- `Ideal.finite_quotient_pow`: finiteness of `R/𝔪ⁿ` for a Noetherian
+-- local ring with finite residue field — the finiteness of the
+-- classifying sets of that upgrade
+public import Mathlib.RingTheory.Ideal.Quotient.Operations
+public import Mathlib.RingTheory.Nakayama
+-- `Submodule.eq_bot_of_le_smul_of_le_jacobson_bot`: properness of the
+-- tower ideals `pⁿ⁺¹A`
+public import Mathlib.RingTheory.Artinian.Module
+-- `isArtinian_of_finite`, whence nilpotence of the maximal ideal of a
+-- finite local ring
+public import Mathlib.NumberTheory.Padics.RingHoms
+-- `PadicInt.toZModPow`/`ker_toZModPow`: finiteness of `ℤ_p/pⁿ`
+public import Mathlib.CategoryTheory.CofilteredSystem
+-- `nonempty_sections_of_finite_inverse_system`: König's lemma, the
+-- compactness step of the pro-finite upgrade
 public import Mathlib.Topology.Algebra.Algebra
 -- `Subalgebra.topologicalClosure`, in the statement of the Carayol
 -- generation leaf `topologicalClosure_adjoin_charFrobCoeff_eq_top`
@@ -215,17 +235,35 @@ public import Mathlib.NumberTheory.NumberField.Discriminant.Basic
 import Mathlib.NumberTheory.NumberField.Discriminant.Different
 -- proof-only: `NumberField.not_dvd_discr_iff_forall_mem`, the
 -- unramified-implies-coprime-to-discriminant dictionary
-import Mathlib.RingTheory.Ideal.Quotient.Index
--- proof-only: `Submodule.finite_quotient_smul` / `Ideal.finite_quotient_pow`,
--- the finiteness of the steps of the `p`-adic tower in the pro-finite
--- limit upgrade
-import Mathlib.CategoryTheory.CofilteredSystem
--- proof-only: `nonempty_sections_of_finite_inverse_system` (Kőnig), the
--- compatible system of classifying maps of the limit upgrade
+public import Mathlib.RingTheory.Ideal.Quotient.PowTransition
+-- `Ideal.Quotient.factorPow`: the transition maps `R ⧸ I ^ m → R ⧸ I ^ n`
+-- of the `p`-adic quotient tower in the pro-finite limit upgrade
 public import Fermat.FLT.Mathlib.RingTheory.AdicCompletion.Finite
 -- `IsAdicComplete.of_finite_module`: `𝔪`-adic completeness of a
 -- module-finite algebra over `ℤ_p`, the completeness half of the
 -- pro-finite limit upgrade
+import Mathlib.CategoryTheory.CofilteredSystem
+-- proof-only: `nonempty_sections_of_finite_inverse_system` (Kőnig), the
+-- compactness step assembling a compatible system of level-`n`
+-- classifying maps
+import Fermat.FLT.Modularity.PatchingVendored.System
+-- the vendored FLT abstract patching development (`PatchingAlgebra`,
+-- `PatchingModule`, `quotientToOver`, `quotientEquivOver`, `smulData`,
+-- `smul_lemma`), instantiated by `exists_patchedModule_of_fields` below
+import Mathlib.RingTheory.MvPowerSeries.PiTopology
+-- the scoped product topology on `MvPowerSeries`, in which
+-- `Λ = ℤ_p[[x₁, …, x_q]]` is profinite (hence `IsAdicTopology` is free)
+import Mathlib.RingTheory.MvPowerSeries.Inverse
+-- `IsLocalRing (MvPowerSeries σ R)` for a local coefficient ring
+import Mathlib.RingTheory.Regular.Flat
+-- `IsWeaklyRegular.isWeaklyRegular_rTensor`: a `Λ`-regular sequence is
+-- `M`-regular for flat (in particular free) `M`
+import Mathlib.Topology.MetricSpace.Ultra.TotallySeparated
+import Mathlib.Topology.Connected.TotallyDisconnected
+-- proof-only, and easy to miss: without these two the route
+-- `IsUltrametricDist ℤ_[p] → TotallySeparatedSpace → TotallyDisconnectedSpace`
+-- is unavailable and `TotallyDisconnectedSpace ℤ_[p]` fails to synthesize
+-- with no hint of the cause
 
 @[expose] public section
 
@@ -2043,518 +2081,373 @@ theorem exists_weaklyUniversalOnIdentified_framed_finiteTests.{s, uK, uW}
     rw [htr, RingHom.algebraMap_toAlgebra]
 
 /-!
-## The `p`-adic quotient tower (PROVEN)
+## The `p`-adic tower of a module-finite local `ℤ_p`-algebra
 
-The pro-finite limit upgrade `isWeaklyUniversalOnIdentifiedDeformation_of_finiteTests`
-below tests a module-finite coefficient ring `A` against the FINITE
-test category by cutting it into the levels of a tower of finite
-quotients.  The classical write-up (Mazur §1.2) uses the `𝔪_A`-adic
-tower; this development uses the `p`-adic one — `A ⧸ pⁿA` — which is
-cofinal with it (`𝔪_A ⊇ pA` always, and `pA ⊇ 𝔪_A^c` for some `c`
-because `𝔪_A/pA` is the nilpotent maximal ideal of the artinian
-`A/pA`) and markedly cheaper to run in Lean:
+The pro-finite upgrade
+`isWeaklyUniversalOnIdentifiedDeformation_of_finiteTests` below runs the
+classical "continuity of the deformation functor" argument (Mazur §1.2)
+over the `p`-adic filtration `pⁿ⁺¹A` of the coefficient ring `A = D.A`
+of a test deformation, rather than over its `𝔪`-adic filtration: for a
+module-finite `ℤ_p`-algebra the two are cofinal, and the `p`-adic one
+comes with its completeness for free from `IsAdicComplete.of_finite_module`
+over the complete discrete valuation ring `ℤ_p`.  This block develops
+what the upgrade consumes, all of it pure commutative algebra:
 
-* completeness is `IsAdicComplete.of_finite_module` over the complete
-  DVR `ℤ_p`, transported along the extension of ideals
-  (`IsAdicComplete.map_algebraMap_iff`) — no Krull intersection
-  theorem for `A` itself is needed;
-* each level is finite because `A` is a finite `ℤ_p`-module and
-  `ℤ_p ⧸ pⁿ` is finite, so a `p^n`-bounded system of `ℤ_p`-coordinates
-  already exhausts `A ⧸ pⁿA` — no filtration of `𝔪_A` by its powers
-  and no finiteness of the residue field are needed at this step.
+* `padicTowerIdeal p A n = pⁿ⁺¹A` (indexed from `1` so that every step
+  is a PROPER ideal — `padicTowerIdeal_ne_top`, Nakayama), with its
+  antitonicity and its identification with the adic filtration
+  `(𝔪_{ℤ_p})ⁿ⁺¹ • ⊤` in which mathlib phrases completeness;
+* finiteness (`finite_quotient_padicTowerIdeal`) and locality
+  (`isLocalRing_quotient_padicTowerIdeal`) of the quotients `A/pⁿ⁺¹A`,
+  so that they are legitimate ARTINIAN test objects;
+* Krull separatedness (`eq_zero_of_forall_mem_padicTowerIdeal`,
+  `eq_of_forall_mk_padicTowerIdeal_eq`) and completeness
+  (`exists_forall_sub_mem_padicTowerIdeal`) of the tower;
+* finiteness of the classifying sets
+  (`finite_setOf_ringHom_comp_eq`): a ring map out of a Noetherian
+  local ring compatible with the residue maps kills `𝔪ᶜ` for the
+  nilpotence exponent `c` of the finite target, hence factors through
+  the FINITE ring `R/𝔪ᶜ`;
+* König (`exists_tower_of_forall_nonempty_finite`) and the adic
+  assembly (`exists_ringHom_of_tower`).
 -/
 
-/-- **The `p`-adic ideal `pA`** of a `ℤ_p`-algebra: the extension of
-the maximal ideal of `ℤ_p` along the structure map.  The filtration
-`A ⊇ pA ⊇ p²A ⊇ ⋯` is the tower along which the pro-finite limit
-upgrade runs. -/
-noncomputable def padicIdeal (p : ℕ) [Fact p.Prime] (A : Type*) [CommRing A]
-    [Algebra ℤ_[p] A] : Ideal A :=
-  (IsLocalRing.maximalIdeal ℤ_[p]).map (algebraMap ℤ_[p] A)
+section ProfinitePadicTower
 
-/-- **`p`-adic completeness of a module-finite `ℤ_p`-algebra**
-(PROVEN): a `ℤ_p`-algebra that is module-finite over `ℤ_p` is complete
-and separated for the `pA`-adic filtration.  Completeness of `A` as a
-`ℤ_p`-module for the `(p)`-adic filtration is
-`IsAdicComplete.of_finite_module` over the complete Noetherian local
-`ℤ_p`; `IsAdicComplete.map_algebraMap_iff` rewrites the filtration by
-the extended ideal `pA`. -/
-theorem isAdicComplete_padicIdeal (p : ℕ) [Fact p.Prime] (A : Type*)
-    [CommRing A] [Algebra ℤ_[p] A] [Module.Finite ℤ_[p] A] :
-    IsAdicComplete (padicIdeal p A) A := by
-  have hA : IsAdicComplete (IsLocalRing.maximalIdeal ℤ_[p]) A :=
-    IsAdicComplete.of_finite_module
-  exact (IsAdicComplete.map_algebraMap_iff (R := ℤ_[p]) (S := A) (M := A)
-    (I := IsLocalRing.maximalIdeal ℤ_[p])).mpr hA
+open IsLocalRing
 
-/-- **The `p`-adic ideal of a nontrivial module-finite `ℤ_p`-algebra is
-proper** (PROVEN): were `pA = A`, the `pA`-adic filtration would be
-constantly `A` and separatedness (`IsAdicComplete.subsingleton`) would
-force `A = 0`.  This is Nakayama's lemma, read off the completeness
-statement rather than proven again. -/
-theorem padicIdeal_ne_top (p : ℕ) [Fact p.Prime] (A : Type*) [CommRing A]
-    [Nontrivial A] [Algebra ℤ_[p] A] [Module.Finite ℤ_[p] A] :
-    padicIdeal p A ≠ ⊤ := by
+universe uTA uTR
+
+/-- **The `p`-adic tower ideal** `pⁿ⁺¹·A` of a `ℤ_p`-algebra `A`,
+presented as the extension of `(𝔪_{ℤ_p})ⁿ⁺¹` — the shape in which
+mathlib's adic filtration `I ^ n • ⊤` appears, so that the
+completeness of `A` as a `ℤ_p`-module transfers to the tower without
+any translation.  The index is shifted by one so that EVERY step of
+the tower is a proper ideal (`padicTowerIdeal_ne_top`): the `0`-th
+unshifted step would be `⊤`, whose quotient is the zero ring and
+carries no residue map to `k`. -/
+noncomputable def padicTowerIdeal (p : ℕ) [Fact p.Prime] (A : Type uTA)
+    [CommRing A] [Algebra ℤ_[p] A] (n : ℕ) : Ideal A :=
+  Ideal.map (algebraMap ℤ_[p] A) (maximalIdeal ℤ_[p] ^ (n + 1))
+
+variable {p : ℕ} [Fact p.Prime] {A : Type uTA} [CommRing A] [Algebra ℤ_[p] A]
+
+/-- The tower is antitone: `pⁿ⁺¹A ⊆ pᵐ⁺¹A` for `m ≤ n`. -/
+theorem padicTowerIdeal_antitone {m n : ℕ} (h : m ≤ n) :
+    padicTowerIdeal p A n ≤ padicTowerIdeal p A m :=
+  Ideal.map_mono (Ideal.pow_le_pow_right (by omega))
+
+/-- The tower ideal is the adic filtration step `(𝔪_{ℤ_p})ⁿ⁺¹ • ⊤`
+of `A` as a `ℤ_p`-module (`Ideal.smul_top_eq_map`). -/
+theorem mem_padicTowerIdeal_iff {n : ℕ} {x : A} :
+    x ∈ padicTowerIdeal p A n ↔
+      x ∈ (maximalIdeal ℤ_[p] ^ (n + 1)) • (⊤ : Submodule ℤ_[p] A) := by
+  rw [Ideal.smul_top_eq_map]; exact Iff.rfl
+
+/-- Membership in a tower ideal gives membership in every coarser
+adic filtration step. -/
+theorem mem_smul_top_of_mem_padicTowerIdeal {m n : ℕ} (h : m ≤ n + 1) {x : A}
+    (hx : x ∈ padicTowerIdeal p A n) :
+    x ∈ (maximalIdeal ℤ_[p] ^ m) • (⊤ : Submodule ℤ_[p] A) :=
+  Submodule.smul_mono_left (Ideal.pow_le_pow_right h) (mem_padicTowerIdeal_iff.mp hx)
+
+/-- **`ℤ_p/pᵐ` is finite**: it is the image of the surjection
+`PadicInt.toZModPow m` onto `ZMod (pᵐ)`, whose kernel is `(p^m)`
+(`PadicInt.ker_toZModPow`) and `𝔪_{ℤ_p} = (p)`. -/
+theorem finite_quotient_padicInt_maximalIdeal_pow (p : ℕ) [Fact p.Prime] (m : ℕ) :
+    Finite (ℤ_[p] ⧸ (maximalIdeal ℤ_[p]) ^ m) := by
+  have h1 : (maximalIdeal ℤ_[p]) ^ m = RingHom.ker (PadicInt.toZModPow m) := by
+    rw [PadicInt.ker_toZModPow, PadicInt.maximalIdeal_eq_span_p, ← Ideal.span_singleton_pow]
+  rw [h1]
+  exact Finite.of_equiv _ (RingHom.quotientKerEquivOfSurjective
+    (ZMod.ringHom_surjective (PadicInt.toZModPow m))).symm.toEquiv
+
+/-- **The tower quotients are finite**: `A/pⁿ⁺¹A` is a module-finite
+algebra over the finite ring `ℤ_p/(comap of pⁿ⁺¹A)`, a quotient of the
+finite `ℤ_p/pⁿ⁺¹`.  This is what makes each `A/pⁿ⁺¹A` an ARTINIAN test
+object of Schlessinger's category. -/
+instance finite_quotient_padicTowerIdeal [Module.Finite ℤ_[p] A] (n : ℕ) :
+    Finite (A ⧸ padicTowerIdeal p A n) := by
+  haveI := finite_quotient_padicInt_maximalIdeal_pow p (n + 1)
+  set C : Ideal ℤ_[p] := Ideal.comap (algebraMap ℤ_[p] A) (padicTowerIdeal p A n)
+  have hle : (maximalIdeal ℤ_[p]) ^ (n + 1) ≤ C := Ideal.le_comap_map
+  haveI : Finite (ℤ_[p] ⧸ C) :=
+    Finite.of_surjective (Ideal.Quotient.factor hle)
+      (Ideal.Quotient.factor_surjective hle)
+  haveI : Module.Finite ℤ_[p] (A ⧸ padicTowerIdeal p A n) :=
+    Module.Finite.of_surjective (Ideal.Quotient.mkₐ ℤ_[p] _).toLinearMap
+      Ideal.Quotient.mk_surjective
+  haveI : Module.Finite (ℤ_[p] ⧸ C) (A ⧸ padicTowerIdeal p A n) :=
+    Module.Finite.of_restrictScalars_finite ℤ_[p] _ _
+  exact Module.finite_of_finite (ℤ_[p] ⧸ C)
+
+/-- **The tower ideals are proper** — Nakayama over the local ring
+`ℤ_p`: if `pA = A` then the finite `ℤ_p`-module `A` vanishes,
+contradicting nontriviality. -/
+theorem padicTowerIdeal_ne_top [Module.Finite ℤ_[p] A] [Nontrivial A] (n : ℕ) :
+    padicTowerIdeal p A n ≠ ⊤ := by
   intro htop
-  have hc := isAdicComplete_padicIdeal p A
-  rw [htop] at hc
-  exact (not_subsingleton A) (IsAdicComplete.subsingleton _ hc)
+  have hsm : (⊤ : Submodule ℤ_[p] A) ≤ (maximalIdeal ℤ_[p]) • (⊤ : Submodule ℤ_[p] A) := by
+    intro x _
+    have hx : x ∈ padicTowerIdeal p A n := by rw [htop]; trivial
+    exact Submodule.smul_mono_left (Ideal.pow_le_self (by omega))
+      (mem_padicTowerIdeal_iff.mp hx)
+  have hbot : (⊤ : Submodule ℤ_[p] A) = ⊥ :=
+    Submodule.eq_bot_of_le_smul_of_le_jacobson_bot (maximalIdeal ℤ_[p]) ⊤
+      Module.Finite.fg_top hsm
+      (le_of_eq (jacobson_eq_maximalIdeal (⊥ : Ideal ℤ_[p]) bot_ne_top).symm)
+  have h1 : (1 : A) ∈ (⊥ : Submodule ℤ_[p] A) := hbot ▸ Submodule.mem_top
+  rw [Submodule.mem_bot] at h1
+  exact one_ne_zero h1
 
-/-- **Positive powers of the `p`-adic ideal are proper** (PROVEN): in a
-local ring a proper ideal lies in the maximal ideal, and so do its
-positive powers. -/
-theorem padicIdeal_pow_ne_top (p : ℕ) [Fact p.Prime] (A : Type*) [CommRing A]
-    [IsLocalRing A] [Algebra ℤ_[p] A] [Module.Finite ℤ_[p] A] {n : ℕ}
-    (hn : n ≠ 0) : (padicIdeal p A) ^ n ≠ ⊤ := by
-  intro htop
-  have hle : (padicIdeal p A) ^ n ≤ IsLocalRing.maximalIdeal A :=
-    le_trans (Ideal.pow_le_self hn)
-      (IsLocalRing.le_maximalIdeal (padicIdeal_ne_top p A))
-  rw [htop] at hle
-  exact (IsLocalRing.maximalIdeal.isMaximal A).ne_top (top_le_iff.mp hle)
+/-- **The tower quotients are local rings**: quotients of a local ring
+by a proper ideal. -/
+instance isLocalRing_quotient_padicTowerIdeal [Module.Finite ℤ_[p] A] [IsLocalRing A]
+    (n : ℕ) : IsLocalRing (A ⧸ padicTowerIdeal p A n) :=
+  haveI : Nontrivial (A ⧸ padicTowerIdeal p A n) :=
+    Ideal.Quotient.nontrivial_iff.mpr (padicTowerIdeal_ne_top n)
+  IsLocalRing.of_surjective' _ Ideal.Quotient.mk_surjective
 
-/-- **Every level of the `p`-adic tower is finite** (PROVEN): choose a
-`ℤ_p`-linear surjection `ℤ_pᵐ ↠ A` (module-finiteness); every element
-of `A ⧸ pⁿA` is then hit by a coordinate vector whose entries are the
-`n`-th `p`-adic approximations `PadicInt.appr`, all of which are
-natural numbers `< pⁿ` — a finite index set.  The correction term
-`x - appr x` has all coordinates in `(pⁿ)` and is therefore carried
-into `pⁿA` by the surjection (expand it over `Pi.single`). -/
-theorem finite_quotient_padicIdeal_pow (p : ℕ) [Fact p.Prime] (A : Type*)
-    [CommRing A] [Algebra ℤ_[p] A] [Module.Finite ℤ_[p] A] (n : ℕ) :
-    Finite (A ⧸ (padicIdeal p A) ^ n) := by
+section Complete
+
+variable [Module.Finite ℤ_[p] A]
+
+/-- **Krull separatedness of the tower**: `⋂ₙ pⁿA = 0`, by the
+Hausdorffness half of `IsAdicComplete.of_finite_module`. -/
+theorem eq_zero_of_forall_mem_padicTowerIdeal {x : A}
+    (hx : ∀ n, x ∈ padicTowerIdeal p A n) : x = 0 := by
+  haveI : IsAdicComplete (maximalIdeal ℤ_[p]) A := IsAdicComplete.of_finite_module
+  refine IsHausdorff.haus (inferInstance : IsHausdorff (maximalIdeal ℤ_[p]) A) x fun n => ?_
+  rw [SModEq.sub_mem, sub_zero]
+  exact mem_smul_top_of_mem_padicTowerIdeal (Nat.le_succ n) (hx n)
+
+/-- Separatedness in the form the assembly uses: two elements with the
+same image at every level of the tower are equal. -/
+theorem eq_of_forall_mk_padicTowerIdeal_eq {x y : A}
+    (h : ∀ n, Ideal.Quotient.mk (padicTowerIdeal p A n) x
+      = Ideal.Quotient.mk (padicTowerIdeal p A n) y) : x = y :=
+  sub_eq_zero.mp (eq_zero_of_forall_mem_padicTowerIdeal fun n =>
+    (Ideal.Quotient.mk_eq_mk_iff_sub_mem _ _).mp (h n))
+
+/-- **Completeness of the tower**: a sequence that is compatible along
+the tower converges, by the precompleteness half of
+`IsAdicComplete.of_finite_module`.  (The index shift between the tower
+`pⁿ⁺¹A` and mathlib's filtration `(𝔪_{ℤ_p})ⁿ • ⊤` is absorbed by
+reading the limit off one level further down.) -/
+theorem exists_forall_sub_mem_padicTowerIdeal (f : ℕ → A)
+    (hf : ∀ m n : ℕ, m ≤ n → f n - f m ∈ padicTowerIdeal p A m) :
+    ∃ L : A, ∀ n, L - f n ∈ padicTowerIdeal p A n := by
+  haveI : IsAdicComplete (maximalIdeal ℤ_[p]) A := IsAdicComplete.of_finite_module
+  obtain ⟨L, hL⟩ := IsPrecomplete.prec (I := maximalIdeal ℤ_[p]) (M := A) inferInstance
+    (f := f) (fun {m n} hmn => by
+      rw [SModEq.sub_mem, ← neg_sub]
+      exact Submodule.neg_mem _
+        (mem_smul_top_of_mem_padicTowerIdeal (Nat.le_succ m) (hf m n hmn)))
+  refine ⟨L, fun n => ?_⟩
+  have h1 : f (n + 1) - L ∈ (maximalIdeal ℤ_[p] ^ (n + 1)) • (⊤ : Submodule ℤ_[p] A) :=
+    (SModEq.sub_mem).mp (hL (n + 1))
+  have h2 : f (n + 1) - f n ∈ padicTowerIdeal p A n := hf n (n + 1) (Nat.le_succ n)
+  have h3 : L - f n = (f (n + 1) - f n) - (f (n + 1) - L) := by ring
+  rw [h3, mem_padicTowerIdeal_iff]
+  exact Submodule.sub_mem _ (mem_padicTowerIdeal_iff.mp h2) h1
+
+end Complete
+
+/-- **Finiteness of the classifying sets** — the König input: for a
+NOETHERIAN local `R` and a FINITE local `S` with a common residue
+field `k`, only finitely many ring maps `R →+* S` are compatible with
+the two residue maps.  Indeed such a `ψ` is local (`πS ∘ ψ = πR` forces
+`ψ(𝔪_R) ⊆ ker πS = 𝔪_S`), and `𝔪_S` is nilpotent (`S` is finite, hence
+artinian), so `ψ` kills `𝔪_R ^ c` and factors through `R/𝔪_R^c`, which
+is FINITE (`Ideal.finite_quotient_pow`, `R` Noetherian with finite
+residue field). -/
+theorem finite_setOf_ringHom_comp_eq {R : Type uTR} {S : Type uTA} {k : Type*} [CommRing R]
+    [IsLocalRing R] [IsNoetherianRing R] [CommRing S] [Finite S] [IsLocalRing S] [Field k]
+    {πR : R →+* k} (hπR : Function.Surjective πR) {πS : S →+* k}
+    (hπS : Function.Surjective πS) :
+    {ψ : R →+* S | πS.comp ψ = πR}.Finite := by
   classical
-  obtain ⟨m, f, hf⟩ := Module.Finite.exists_fin' ℤ_[p] A
-  -- an element of `(pⁿ)` is carried into `pⁿA`
-  have hmemJ : ∀ c : ℤ_[p], c ∈ (IsLocalRing.maximalIdeal ℤ_[p]) ^ n →
-      ∀ x : A, algebraMap ℤ_[p] A c * x ∈ (padicIdeal p A) ^ n := by
-    intro c hc x
-    have hcmem : algebraMap ℤ_[p] A c ∈ (padicIdeal p A) ^ n := by
-      rw [padicIdeal, ← Ideal.map_pow]
-      exact Ideal.mem_map_of_mem _ hc
-    exact Ideal.mul_mem_right _ _ hcmem
-  -- a coordinate vector with all entries in `(pⁿ)` maps into `pⁿA`
-  have hpi : ∀ v : Fin m → ℤ_[p],
-      (∀ i, v i ∈ (IsLocalRing.maximalIdeal ℤ_[p]) ^ n) →
-      f v ∈ (padicIdeal p A) ^ n := by
-    intro v hv
-    have hsum : v = ∑ i, Pi.single i (v i) := by
-      simpa using (Finset.univ_sum_single v).symm
-    rw [hsum, map_sum]
-    refine Ideal.sum_mem _ fun i _ => ?_
-    have hsingle : Pi.single i (v i) = v i • (Pi.single i (1 : ℤ_[p])) := by
-      rw [← Pi.single_smul]
-      simp
-    rw [hsingle, map_smul, Algebra.smul_def]
-    exact hmemJ _ (hv i) _
-  -- the finite index set of `p`-adic approximations
-  have hspan : (IsLocalRing.maximalIdeal ℤ_[p]) ^ n =
-      Ideal.span {(p : ℤ_[p]) ^ n} := by
-    rw [PadicInt.maximalIdeal_eq_span_p, Ideal.span_singleton_pow]
-  have hsurj : Function.Surjective
-      (fun v : Fin m → Fin (p ^ n) =>
-        Ideal.Quotient.mk ((padicIdeal p A) ^ n)
-          (f (fun i => (((v i : ℕ) : ℤ_[p]))))) := by
-    intro y
-    obtain ⟨a, rfl⟩ := Ideal.Quotient.mk_surjective y
-    obtain ⟨x, rfl⟩ := hf a
-    refine ⟨fun i => ⟨(x i).appr n, PadicInt.appr_lt _ _⟩, ?_⟩
-    show Ideal.Quotient.mk ((padicIdeal p A) ^ n)
-        (f (fun i => (((x i).appr n : ℕ) : ℤ_[p]))) =
-      Ideal.Quotient.mk ((padicIdeal p A) ^ n) (f x)
-    refine (Ideal.Quotient.eq).mpr ?_
-    rw [← map_sub]
-    refine hpi _ fun i => ?_
-    rw [hspan]
-    have happr := PadicInt.appr_spec n (x i)
-    have hneg := neg_mem happr
-    simpa [Pi.sub_apply, neg_sub] using hneg
-  exact Finite.of_surjective _ hsurj
+  haveI : IsArtinianRing S := isArtinian_of_finite
+  have hkR : RingHom.ker πR = maximalIdeal R :=
+    IsLocalRing.eq_maximalIdeal (RingHom.ker_isMaximal_of_surjective πR hπR)
+  have hkS : RingHom.ker πS = maximalIdeal S :=
+    IsLocalRing.eq_maximalIdeal (RingHom.ker_isMaximal_of_surjective πS hπS)
+  haveI : Finite k := Finite.of_surjective πS hπS
+  haveI : Finite (R ⧸ maximalIdeal R) := by
+    rw [← hkR]
+    exact Finite.of_equiv _ (RingHom.quotientKerEquivOfSurjective hπR).symm.toEquiv
+  obtain ⟨c, hc⟩ : IsNilpotent (maximalIdeal S) := by
+    have h := IsArtinianRing.isNilpotent_jacobson_bot (R := S)
+    rwa [jacobson_eq_maximalIdeal (⊥ : Ideal S) bot_ne_top] at h
+  haveI : Finite (R ⧸ (maximalIdeal R) ^ c) :=
+    Ideal.finite_quotient_pow (IsNoetherian.noetherian (maximalIdeal R)) c
+  haveI : Finite ((R ⧸ (maximalIdeal R) ^ c) →+* S) :=
+    Finite.of_injective (fun f => (f : (R ⧸ (maximalIdeal R) ^ c) → S))
+      fun _ _ h => DFunLike.coe_injective h
+  have hkill : ∀ ψ : R →+* S, πS.comp ψ = πR → ∀ a ∈ (maximalIdeal R) ^ c, ψ a = 0 := by
+    intro ψ hψ a ha
+    have hmaple : Ideal.map ψ (maximalIdeal R) ≤ maximalIdeal S := by
+      rw [Ideal.map_le_iff_le_comap]
+      intro x hx
+      rw [Ideal.mem_comap, ← hkS, RingHom.mem_ker, ← RingHom.comp_apply, hψ, ← RingHom.mem_ker,
+        hkR]
+      exact hx
+    have h2 : (Ideal.map ψ (maximalIdeal R)) ^ c ≤ (maximalIdeal S) ^ c :=
+      pow_le_pow_left' hmaple c
+    have h4 : ψ a ∈ (maximalIdeal S) ^ c := by
+      refine h2 ?_
+      rw [← Ideal.map_pow]
+      exact Ideal.mem_map_of_mem _ ha
+    rw [hc] at h4
+    simpa using h4
+  have hinj : Function.Injective (fun ψ : {ψ : R →+* S | πS.comp ψ = πR} =>
+      Ideal.Quotient.lift ((maximalIdeal R) ^ c) ψ.1 (hkill ψ.1 ψ.2)) := by
+    intro ψ₁ ψ₂ h
+    refine Subtype.ext (RingHom.ext fun r => ?_)
+    have h' := RingHom.congr_fun h (Ideal.Quotient.mk ((maximalIdeal R) ^ c) r)
+    simpa using h'
+  haveI : Finite ↥{ψ : R →+* S | πS.comp ψ = πR} := Finite.of_injective _ hinj
+  exact Set.toFinite _
 
-/-- **Finite quotients by the powers of the maximal ideal** (sorry node
-— the finiteness half of step (2) of the pro-finite limit upgrade,
-pure commutative algebra): a Noetherian local ring with FINITE residue
-field has finite quotients by every power of its maximal ideal.
+/-- The transition map of the tower at a level is the identity. -/
+theorem padicTowerIdeal_factor_self {n : ℕ}
+    (H : padicTowerIdeal p A n ≤ padicTowerIdeal p A n) (y : A ⧸ padicTowerIdeal p A n) :
+    Ideal.Quotient.factor H y = y := by
+  obtain ⟨x, hx⟩ := Ideal.Quotient.mk_surjective y
+  rw [← hx, Ideal.Quotient.factor_mk]
 
-Classical proof: induct on `c`.  For `c = 0` the quotient is the zero
-ring.  For the step, the transition map `R ⧸ 𝔪^{c+1} ↠ R ⧸ 𝔪^c` is a
-surjection of additive groups with finite target (induction) whose
-kernel `𝔪^c/𝔪^{c+1}` is a finitely generated `R`-module (Noetherianity)
-annihilated by `𝔪`, hence a finite-dimensional vector space over the
-finite residue field `R ⧸ 𝔪`, hence finite; an extension of a finite
-group by a finite group is finite (the fibres of the transition map
-are cosets of its kernel).
+/-- The transition maps of the tower compose. -/
+theorem padicTowerIdeal_factor_factor {l m n : ℕ}
+    (H1 : padicTowerIdeal p A m ≤ padicTowerIdeal p A l)
+    (H2 : padicTowerIdeal p A n ≤ padicTowerIdeal p A m)
+    (H3 : padicTowerIdeal p A n ≤ padicTowerIdeal p A l)
+    (y : A ⧸ padicTowerIdeal p A n) :
+    Ideal.Quotient.factor H1 (Ideal.Quotient.factor H2 y) = Ideal.Quotient.factor H3 y := by
+  obtain ⟨x, hx⟩ := Ideal.Quotient.mk_surjective y
+  rw [← hx, Ideal.Quotient.factor_mk, Ideal.Quotient.factor_mk, Ideal.Quotient.factor_mk]
 
-Both-ways audit: a plain finiteness statement of commutative algebra,
-true outright as stated; no arithmetic input. -/
-theorem finite_quotient_maximalIdeal_pow.{uR} (R : Type uR) [CommRing R]
-    [IsLocalRing R] [IsNoetherianRing R]
-    (hres : Finite (R ⧸ IsLocalRing.maximalIdeal R)) (c : ℕ) :
-    Finite (R ⧸ (IsLocalRing.maximalIdeal R) ^ c) :=
-  sorry
+section Tower
 
-/-! ### Pro-finite bookkeeping for the limit upgrade
+variable {R : Type uTR} [CommRing R]
 
-The commutative-algebra bricks on which the pro-finite limit upgrade
-`isWeaklyUniversalOnIdentifiedDeformation_of_finiteTests` below runs:
-finiteness of the residue ring of the `p`-adic filtration of a
-module-finite `ℤ_p`-algebra, Krull separatedness, `p`-adic assembly of
-a compatible system of ring homomorphisms, finiteness of the
-classifying sets, and Kőnig's lemma for the resulting inverse system.
-All five are plain commutative algebra — no Galois arithmetic, no
-deformation theory — and all five are PROVEN.
+open CategoryTheory in
+/-- **König's lemma along the tower**: an inverse system of NONEMPTY
+FINITE sets of level-wise ring maps, stable under the transition maps,
+has a compatible section (`nonempty_sections_of_finite_inverse_system`
+applied to the evident functor `ℕᵒᵖ ⥤ Type`). -/
+theorem exists_tower_of_forall_nonempty_finite
+    (X : ∀ n : ℕ, Set (R →+* A ⧸ padicTowerIdeal p A n))
+    (hne : ∀ n, (X n).Nonempty) (hfin : ∀ n, (X n).Finite)
+    (hstab : ∀ (m n : ℕ) (h : m ≤ n) (ψ : R →+* A ⧸ padicTowerIdeal p A n), ψ ∈ X n →
+      (Ideal.Quotient.factor (padicTowerIdeal_antitone h)).comp ψ ∈ X m) :
+    ∃ ψ : (n : ℕ) → (R →+* A ⧸ padicTowerIdeal p A n), (∀ n, ψ n ∈ X n) ∧
+      ∀ (m n : ℕ) (h : m ≤ n),
+        (Ideal.Quotient.factor (padicTowerIdeal_antitone h)).comp (ψ n) = ψ m := by
+  let F : ℕᵒᵖ ⥤ Type (max uTA uTR) :=
+    { obj := fun n => ↥(X n.unop)
+      map := fun {m n} f => ↾ (fun ψ =>
+        ⟨(Ideal.Quotient.factor (padicTowerIdeal_antitone (le_of_op_hom f))).comp ψ.1,
+          hstab _ _ (le_of_op_hom f) ψ.1 ψ.2⟩)
+      map_id := fun n => by
+        ext ψ r
+        exact padicTowerIdeal_factor_self (le_refl _) (ψ.1 r)
+      map_comp := fun {l m n} f g => by
+        ext ψ r
+        exact (padicTowerIdeal_factor_factor (padicTowerIdeal_antitone (le_of_op_hom g))
+          (padicTowerIdeal_antitone (le_of_op_hom f))
+          (padicTowerIdeal_antitone ((le_of_op_hom g).trans (le_of_op_hom f)))
+          (ψ.1 r)).symm }
+  haveI : ∀ j : ℕᵒᵖ, Finite (F.obj j) := fun j => (hfin j.unop).to_subtype
+  haveI : ∀ j : ℕᵒᵖ, Nonempty (F.obj j) := fun j => (hne j.unop).to_subtype
+  obtain ⟨s, hs⟩ := nonempty_sections_of_finite_inverse_system F
+  exact ⟨fun n => (s (Opposite.op n)).1, fun n => (s (Opposite.op n)).2,
+    fun m n h => congrArg Subtype.val (hs (Quiver.Hom.op (homOfLE h)))⟩
 
-The filtration used throughout is the `p`-adic one, `Jp ^ n` with
-`Jp = 𝔪_{ℤ_p} · A`, rather than the `𝔪_A`-adic one of the classical
-account: the two define the same topology on a module-finite
-`ℤ_p`-algebra (`𝔪_A ⊇ Jp`, and `𝔪_A^N ⊆ Jp` because `A/Jp` is finite),
-and the `p`-adic filtration is the one along which completeness is
-inherited from `ℤ_p` (`IsAdicComplete.of_finite_module` plus
-`IsAdicComplete.map_algebraMap_iff`), so it makes both halves — finite
-quotients and completeness — immediate. -/
-
-/-- **Finiteness of the `p`-adic residue ring** (PROVEN): for a
-module-finite `ℤ_p`-algebra `A`, the quotient of `A` by the extension
-`𝔪_{ℤ_p} · A` of the maximal ideal of `ℤ_p` is a finite ring.  Indeed
-`A/𝔪_{ℤ_p}A` is the quotient of `A` by the finite-index `ℤ_p`-submodule
-`𝔪_{ℤ_p} • ⊤` (`Submodule.finite_quotient_smul`, whose inputs are the
-finiteness of the residue field `ℤ_p/𝔪 ≅ 𝔽_p` — `PadicInt.residueField`
-— and the finite generation of `⊤`), and `Ideal.smul_top_eq_map`
-identifies that submodule with the extended ideal.  Combined with
-`Ideal.finite_quotient_pow` this makes every step `A/(𝔪_{ℤ_p}A)^n` of
-the `p`-adic tower a FINITE ring — the test objects of the finite-tests
-hypothesis. -/
-theorem finite_quotient_map_maximalIdeal_padicInt {p : ℕ} [Fact p.Prime]
-    (A : Type*) [CommRing A] [Algebra ℤ_[p] A] [Module.Finite ℤ_[p] A] :
-    Finite (A ⧸ (IsLocalRing.maximalIdeal ℤ_[p]).map (algebraMap ℤ_[p] A)) := by
-  haveI : Finite (ℤ_[p] ⧸ IsLocalRing.maximalIdeal ℤ_[p]) :=
-    Finite.of_equiv _ (PadicInt.residueField (p := p)).symm.toEquiv
-  have hfg : (⊤ : Submodule ℤ_[p] A).FG := Module.finite_def.mp inferInstance
-  have h := Submodule.finite_quotient_smul (M := A) (IsLocalRing.maximalIdeal ℤ_[p])
-    (N := ⊤) hfg
-  rw [Ideal.smul_top_eq_map] at h
-  exact h
-
-/-- **Krull separatedness along a filtration** (PROVEN): in a ring that
-is `J`-adically Hausdorff, two elements agreeing modulo every `J^(n+1)`
-are equal.  This is the uniqueness half of the pro-finite upgrade: the
-clauses of the universality statement are proven for the assembled `ψ`
-by checking them modulo every step of the tower. -/
-theorem eq_of_mk_pow_succ_eq {A : Type*} [CommRing A] (J : Ideal A)
-    [IsHausdorff J A] {x y : A}
-    (h : ∀ n : ℕ, Ideal.Quotient.mk (J ^ (n + 1)) x =
-      Ideal.Quotient.mk (J ^ (n + 1)) y) : x = y := by
-  have hsmul : ∀ n : ℕ, J ^ n • (⊤ : Submodule A A) = J ^ n := by intro n; simp
-  have hz : x - y = 0 := by
-    refine IsHausdorff.haus (inferInstance : IsHausdorff J A) _ ?_
-    intro n
-    rw [SModEq.sub_mem, hsmul, sub_zero]
-    cases n with
-    | zero => simp
-    | succ m => exact Ideal.Quotient.eq.mp (h m)
-  exact sub_eq_zero.mp hz
-
-/-- **`J`-adic assembly of a compatible system of ring homomorphisms**
-(PROVEN): a system of ring homomorphisms `f n : R →+* A/J^(n+1)` that
-is compatible — in the sense that a representative of `f n r` also
-represents `f m r` for `m ≤ n` — assembles, over a `J`-adically
-complete `A`, into a single ring homomorphism `F : R →+* A` reducing to
-every `f n`.  Precompleteness produces the limit `F r` of the
-representatives of the `f n r` elementwise (`IsPrecomplete.prec`), and
-separatedness (`eq_of_mk_pow_succ_eq`) upgrades the elementwise limit
-to a ring homomorphism: each ring-hom axiom holds modulo every
-`J^(n+1)` because it holds for each `f n`, hence holds in `A`. -/
-theorem exists_ringHom_of_compatible_mod_pow {R A : Type*} [CommRing R] [CommRing A]
-    (J : Ideal A) [IsAdicComplete J A]
-    (f : ∀ n : ℕ, R →+* A ⧸ J ^ (n + 1))
-    (hf : ∀ (m n : ℕ), m ≤ n → ∀ (r : R) (a : A),
-      f n r = Ideal.Quotient.mk _ a → f m r = Ideal.Quotient.mk _ a) :
-    ∃ F : R →+* A, ∀ (n : ℕ) (r : R),
-      Ideal.Quotient.mk (J ^ (n + 1)) (F r) = f n r := by
+/-- **`p`-adic assembly of a compatible tower of ring maps**: a
+compatible system of ring maps into the tower quotients comes from a
+single ring map into `A`, by completeness (existence of the limit
+value) and separatedness (its uniqueness, whence multiplicativity and
+additivity of the assembled map). -/
+theorem exists_ringHom_of_tower [Module.Finite ℤ_[p] A]
+    (ψ : (n : ℕ) → (R →+* A ⧸ padicTowerIdeal p A n))
+    (hcomp : ∀ (m n : ℕ) (h : m ≤ n),
+      (Ideal.Quotient.factor (padicTowerIdeal_antitone h)).comp (ψ n) = ψ m) :
+    ∃ Ψ : R →+* A, ∀ (n : ℕ) (r : R),
+      Ideal.Quotient.mk (padicTowerIdeal p A n) (Ψ r) = ψ n r := by
   classical
-  have hsmul : ∀ n : ℕ, J ^ n • (⊤ : Submodule A A) = J ^ n := by intro n; simp
-  choose a ha using fun (r : R) (n : ℕ) =>
-    Ideal.Quotient.mk_surjective (I := J ^ (n + 1)) (f n r)
-  have hcomp : ∀ (r : R) {m n : ℕ}, m ≤ n →
-      a r m ≡ a r n [SMOD (J ^ m • ⊤ : Submodule A A)] := by
-    intro r m n hmn
-    rw [SModEq.sub_mem, hsmul]
-    have h1 : (Ideal.Quotient.mk (J ^ (m + 1))) (a r m) =
-        (Ideal.Quotient.mk (J ^ (m + 1))) (a r n) := by
-      rw [ha r m, hf m n hmn r (a r n) (ha r n).symm]
-    exact Ideal.pow_le_pow_right (Nat.le_succ m) (Ideal.Quotient.eq.mp h1)
-  choose L hL using fun r : R =>
-    IsPrecomplete.prec (inferInstance : IsPrecomplete J A) (f := fun n => a r n)
-      (fun {m n} h => hcomp r h)
-  have hmk : ∀ (r : R) (n : ℕ), Ideal.Quotient.mk (J ^ (n + 1)) (L r) = f n r := by
+  have huniq : ∀ x y : A, (∀ n, Ideal.Quotient.mk (padicTowerIdeal p A n) x
+      = Ideal.Quotient.mk (padicTowerIdeal p A n) y) → x = y :=
+    fun _ _ h => eq_of_forall_mk_padicTowerIdeal_eq h
+  choose g hg using fun (r : R) (n : ℕ) =>
+    Ideal.Quotient.mk_surjective (I := padicTowerIdeal p A n) (ψ n r)
+  have hgstep : ∀ (r : R) (m n : ℕ), m ≤ n → g r n - g r m ∈ padicTowerIdeal p A m := by
+    intro r m n h
+    rw [← Ideal.Quotient.mk_eq_mk_iff_sub_mem]
+    have h1 : Ideal.Quotient.mk (padicTowerIdeal p A m) (g r n)
+        = Ideal.Quotient.factor (padicTowerIdeal_antitone h)
+            (Ideal.Quotient.mk (padicTowerIdeal p A n) (g r n)) :=
+      (Ideal.Quotient.factor_mk _ _).symm
+    rw [h1, hg r n, hg r m, ← RingHom.comp_apply, hcomp m n h]
+  choose L hL using fun r : R => exists_forall_sub_mem_padicTowerIdeal (g r) (hgstep r)
+  have hLmk : ∀ (r : R) (n : ℕ),
+      Ideal.Quotient.mk (padicTowerIdeal p A n) (L r) = ψ n r := by
     intro r n
-    have h1 : a r (n + 1) - L r ∈ J ^ (n + 1) := by
-      have h := hL r (n + 1)
-      rw [SModEq.sub_mem, hsmul] at h
-      exact h
-    have h2 : f n r = Ideal.Quotient.mk (J ^ (n + 1)) (a r (n + 1)) :=
-      hf n (n + 1) (Nat.le_succ n) r _ (ha r (n + 1)).symm
-    rw [h2]
-    exact (Ideal.Quotient.eq.mpr h1).symm
+    rw [(Ideal.Quotient.mk_eq_mk_iff_sub_mem _ _).mpr (hL r n), hg r n]
   exact ⟨{ toFun := L
-           map_one' := eq_of_mk_pow_succ_eq J (fun n => by rw [hmk]; simp)
-           map_mul' := fun x y => eq_of_mk_pow_succ_eq J (fun n => by rw [hmk]; simp [hmk])
-           map_zero' := eq_of_mk_pow_succ_eq J (fun n => by rw [hmk]; simp)
-           map_add' := fun x y => eq_of_mk_pow_succ_eq J (fun n => by rw [hmk]; simp [hmk]) },
-    fun n r => hmk r n⟩
+           map_one' := huniq _ _ fun n => by rw [hLmk, map_one, map_one]
+           map_mul' := fun a b => huniq _ _ fun n => by
+             rw [hLmk, map_mul, map_mul, hLmk, hLmk]
+           map_zero' := huniq _ _ fun n => by rw [hLmk, map_zero, map_zero]
+           map_add' := fun a b => huniq _ _ fun n => by
+             rw [hLmk, map_add, map_add, hLmk, hLmk] }, fun n r => hLmk r n⟩
 
-/-- **Finiteness of the classifying sets** (PROVEN): over a Noetherian
-local ring `R` with finite residue field, the ring homomorphisms into a
-FINITE local ring `B` that are local (in the weak sense that they carry
-`𝔪_R` into `𝔪_B`, which is all the universality clauses provide) form a
-finite set.  `B` is artinian, so `𝔪_B` is nilpotent
-(`IsArtinianRing.isNilpotent_jacobson_bot` plus
-`IsLocalRing.jacobson_eq_maximalIdeal`), say `𝔪_B^c = 0`; a local `ψ`
-therefore kills `𝔪_R^c`, hence factors through the finite ring
-`R/𝔪_R^c` (`Ideal.finite_quotient_pow`), and there are only finitely
-many functions between two finite types. -/
-theorem finite_subtype_ringHom_local {R B : Type*} [CommRing R] [IsNoetherianRing R]
-    [IsLocalRing R] [Finite (R ⧸ IsLocalRing.maximalIdeal R)] [CommRing B] [Finite B]
-    [IsLocalRing B] (P : (R →+* B) → Prop)
-    (hP : ∀ ψ : R →+* B, P ψ → ∀ x ∈ IsLocalRing.maximalIdeal R,
-      ψ x ∈ IsLocalRing.maximalIdeal B) :
-    Finite {ψ : R →+* B // P ψ} := by
-  classical
-  haveI : IsArtinianRing B := isArtinian_of_finite
-  obtain ⟨c, hc⟩ : IsNilpotent (⊥ : Ideal B).jacobson :=
-    IsArtinianRing.isNilpotent_jacobson_bot
-  rw [IsLocalRing.jacobson_eq_maximalIdeal ⊥ bot_ne_top] at hc
-  have hker : ∀ ψ : {ψ : R →+* B // P ψ},
-      ∀ x ∈ (IsLocalRing.maximalIdeal R) ^ c, ψ.1 x = 0 := by
-    intro ψ
-    have h1 : Ideal.map ψ.1 (IsLocalRing.maximalIdeal R) ≤ IsLocalRing.maximalIdeal B :=
-      Ideal.map_le_iff_le_comap.mpr (fun x hx => hP ψ.1 ψ.2 x hx)
-    have h2 : Ideal.map ψ.1 ((IsLocalRing.maximalIdeal R) ^ c) ≤ ⊥ := by
-      rw [Ideal.map_pow]
-      refine le_trans (Ideal.pow_right_mono h1 c) ?_
-      simp [hc]
-    intro x hx
-    have h3 := h2 (Ideal.mem_map_of_mem ψ.1 hx)
-    simpa using h3
-  haveI : Finite (R ⧸ (IsLocalRing.maximalIdeal R) ^ c) :=
-    Ideal.finite_quotient_pow (IsNoetherian.noetherian _) c
-  refine Finite.of_injective (β := (R ⧸ (IsLocalRing.maximalIdeal R) ^ c) → B)
-    (fun ψ => fun x => Ideal.Quotient.lift _ ψ.1 (hker ψ) x) ?_
-  intro ψ₁ ψ₂ h
-  refine Subtype.ext (RingHom.ext fun r => ?_)
-  have h2 := congrFun h (Ideal.Quotient.mk _ r)
-  simpa using h2
+end Tower
 
-/-- **Kőnig's lemma for the tower of classifying sets** (PROVEN): if at
-every level `n` of the `J`-adic tower the set of ring homomorphisms
-`R →+* A/J^(n+1)` satisfying a property `P n` is nonempty and finite,
-and `P` is stable under postcomposition with the tower's transition
-maps `Ideal.Quotient.factor`, then there is a COMPATIBLE system — one
-homomorphism per level, each the reduction of the next.  This is
-`nonempty_sections_of_finite_inverse_system` (mathlib's Kőnig lemma)
-applied to the inverse system `ℕᵒᵖ ⥤ Type` of the classifying sets;
-functoriality is `Ideal.Quotient.factor_eq` / `factor_comp` read off on
-representatives. -/
-theorem exists_compatible_ringHom_system {R A : Type*} [CommRing R] [CommRing A]
-    (J : Ideal A) (P : ∀ n : ℕ, (R →+* A ⧸ J ^ (n + 1)) → Prop)
-    (hne : ∀ n, ∃ ψ, P n ψ)
-    (hfin : ∀ n, Finite {ψ : R →+* A ⧸ J ^ (n + 1) // P n ψ})
-    (hst : ∀ (m n : ℕ) (hmn : m ≤ n) (ψ : R →+* A ⧸ J ^ (n + 1)), P n ψ →
-      P m ((Ideal.Quotient.factor (Ideal.pow_le_pow_right (Nat.succ_le_succ hmn))).comp ψ)) :
-    ∃ f : ∀ n : ℕ, R →+* A ⧸ J ^ (n + 1), (∀ n, P n (f n)) ∧
-      ∀ (m n : ℕ), m ≤ n → ∀ (r : R) (a : A),
-        f n r = Ideal.Quotient.mk _ a → f m r = Ideal.Quotient.mk _ a := by
-  classical
-  let F : CategoryTheory.Functor ℕᵒᵖ (Type _) :=
-    { obj := fun n => {ψ : R →+* A ⧸ J ^ (n.unop + 1) // P n.unop ψ}
-      map := fun {X Y} g => TypeCat.ofHom
-        (fun ψ : {ψ : R →+* A ⧸ J ^ (X.unop + 1) // P X.unop ψ} =>
-          (⟨(Ideal.Quotient.factor (Ideal.pow_le_pow_right
-                (Nat.succ_le_succ (CategoryTheory.leOfHom g.unop)))).comp ψ.1,
-            hst _ _ (CategoryTheory.leOfHom g.unop) ψ.1 ψ.2⟩ :
-              {ψ : R →+* A ⧸ J ^ (Y.unop + 1) // P Y.unop ψ}))
-      map_id := by
-        intro X
-        ext ψ r
-        obtain ⟨x, hx⟩ := Ideal.Quotient.mk_surjective (ψ.1 r)
-        simp [← hx]
-      map_comp := by
-        intro X Y Z g h
-        ext ψ r
-        obtain ⟨x, hx⟩ := Ideal.Quotient.mk_surjective (ψ.1 r)
-        simp [← hx] }
-  haveI : ∀ j : ℕᵒᵖ, Finite (F.obj j) := fun j => hfin j.unop
-  haveI : ∀ j : ℕᵒᵖ, Nonempty (F.obj j) :=
-    fun j => ⟨⟨(hne j.unop).choose, (hne j.unop).choose_spec⟩⟩
-  obtain ⟨u, hu⟩ := nonempty_sections_of_finite_inverse_system F
-  have hcompat : ∀ (m n : ℕ) (hmn : m ≤ n),
-      (Ideal.Quotient.factor (Ideal.pow_le_pow_right (Nat.succ_le_succ hmn))).comp
-        (u (Opposite.op n)).1 = (u (Opposite.op m)).1 := by
-    intro m n hmn
-    exact congrArg Subtype.val (hu (CategoryTheory.homOfLE hmn).op)
-  refine ⟨fun n => (u (Opposite.op n)).1, fun n => (u (Opposite.op n)).2, ?_⟩
-  intro m n hmn r x hx
-  have h2 := congrArg (fun z : R →+* A ⧸ J ^ (m + 1) => z r) (hcompat m n hmn)
-  simp only [RingHom.comp_apply] at h2
-  rw [← h2, hx, Ideal.Quotient.factor_mk]
+end ProfinitePadicTower
 
-/-- **Finitely many classifying maps into an artinian test object**
-(PROVEN — step (2) of the pro-finite limit upgrade): for a Noetherian
-local `R` with a surjection `π` onto a finite field `k`, and a FINITE
-local ring `B` equipped with any ring map `πB : B →+* k`, only finitely
-many ring homomorphisms `ψ : R →+* B` satisfy `πB ∘ ψ = π`.
+/-- **Quotient-tower classifying maps** (sorry node — the ONLY
+remaining stratum of the pro-finite upgrade
+`isWeaklyUniversalOnIdentifiedDeformation_of_finiteTests` below, whose
+other three strata — finiteness of the classifying sets, König, and
+the `p`-adic assembly with its clause passage — are PROVEN over the
+tower vocabulary above): the finite-tests universality of
+`(Runiv, ρuniv, πuniv)` produces a classifying map at every level of
+the `p`-adic tower of a residually identified test deformation `D`,
+compatible with the `ℤ_p`-structures, with the level-`n` reduction map
+`A/pⁿ⁺¹A →+* k` induced by `D.π`, and with the linear `charFrob`
+coefficients at EVERY prime.
 
-Proof: `ker π` is a maximal ideal of the local ring `R`, hence `𝔪_R`;
-`ker πB` is a proper ideal of the local ring `B`, hence contained in
-`𝔪_B`.  So `ψ (𝔪_R) ⊆ 𝔪_B` for every `ψ` in the set.  The finite ring
-`B` is artinian, so `𝔪_B` is nilpotent, say `𝔪_B ^ c = 0`
-(`isArtinianRing_iff_isNilpotent_maximalIdeal`); therefore `ψ` kills
-`𝔪_R ^ c` and factors through the FINITE ring `R ⧸ 𝔪_R ^ c`
-(`finite_quotient_maximalIdeal_pow`, whose residue-field hypothesis is
-supplied by `R ⧸ ker π ≅ k`).  The set is thus contained in the range
-of precomposition with `R ↠ R ⧸ 𝔪_R ^ c`, a map out of a finite type.
+Classical proof (step (1) of the upgrade's docstring, QUOTIENT TOWER,
+together with the nonemptiness half of step (2)): base-change `D`
+along the surjection `D.A ↠ D.A/pⁿ⁺¹D.A` onto a FINITE local
+`ℤ_p`-algebra (finite by `finite_quotient_padicTowerIdeal`, local by
+`isLocalRing_quotient_padicTowerIdeal`, and carrying the discrete
+topology, which is its `ℤ_p`-module topology since it is finite and
+`p`-power torsion).  The hardly ramified conditions push forward along
+this surjective base change: the determinant clause and the tame
+quotient at `2` transport by functoriality of `baseChange`
+(`LinearMap.det_baseChange`, base change of the quotient character),
+unramifiedness outside `2p` is the existing base-change instance
+`GaloisRep.IsUnramifiedAt` of `baseChange`, and flatness at `p` is
+preserved because the open ideals of the finite discrete quotient pull
+back to open ideals of `D.A` — `IsFlatAt` is a condition on ALL
+Artinian quotients, so it is inherited by any further quotient.  The
+residual identification composes with the canonical isomorphism
+`k ⊗_{A/pⁿ⁺¹A} ((A/pⁿ⁺¹A) ⊗_A V) ≅ k ⊗_A V`, and the residual
+`charFrob` datum transports by `charFrob_baseChange`.  Applying the
+finite-tests hypothesis `h` to the resulting Artinian test deformation
+gives the classifying map, whose three clauses are exactly the three
+clauses below (the trace clause holds at every prime with no
+exceptional set, which is why
+`IsWeaklyUniversalOnIdentifiedFiniteTests` is stated with that
+strengthening).
 
-MERGE NOTE (2026-07-25): the pro-finite limit upgrade below was cut
-along two different axes concurrently, and the merge kept the FINER
-cut — one leaf (`exists_classifyingHom_of_finite_quotient`) rather than
-three.  This brick belongs to the other, coarser cut, so it is PROVEN
-but currently UNCONSUMED; it is retained rather than deleted, as is
-everything else that cut left behind:
-
-* `finite_quotient_maximalIdeal_pow` — the sorried input of this brick,
-  and a one-line consequence of mathlib's `Ideal.finite_quotient_pow`
-  (see `finite_subtype_ringHom_local` above, which discharges exactly
-  that step that way).  A free retirement for whoever sweeps this.
-* the `padicIdeal` cluster — `padicIdeal`, `isAdicComplete_padicIdeal`,
-  `padicIdeal_ne_top`, `padicIdeal_pow_ne_top` and
-  `finite_quotient_padicIdeal_pow`, all PROVEN.
-
-Nothing is lost mathematically: `padicIdeal p A` is by definition the
-same ideal `𝔪_{ℤ_p} · A` that the kept assembly sets up inline as `Jp`,
-so the two developments run along the SAME filtration and the cluster
-is a named duplicate of what the kept proof derives on the spot.  The
-cheapest way to un-float it is to have the assembly `set Jp :=
-padicIdeal p D.A` and take its completeness and level-finiteness from
-`isAdicComplete_padicIdeal` / `finite_quotient_padicIdeal_pow`; that is
-a rewrite of a PROVEN assembly, so it is a tidying job, not a leaf. -/
-theorem finite_setOf_ringHom_comp_eq.{uR, uK, uB} {R : Type uR} [CommRing R]
-    [IsLocalRing R] [IsNoetherianRing R]
-    {k : Type uK} [Field k] [Finite k] {π : R →+* k}
-    (hπ : Function.Surjective π)
-    {B : Type uB} [CommRing B] [Finite B] [IsLocalRing B] (πB : B →+* k) :
-    {ψ : R →+* B | πB.comp ψ = π}.Finite := by
-  classical
-  have hker : RingHom.ker π = IsLocalRing.maximalIdeal R :=
-    IsLocalRing.eq_maximalIdeal (RingHom.ker_isMaximal_of_surjective π hπ)
-  have hres : Finite (R ⧸ IsLocalRing.maximalIdeal R) :=
-    Finite.of_equiv k
-      ((RingHom.quotientKerEquivOfSurjective hπ).symm.trans
-        (Ideal.quotEquivOfEq hker)).toEquiv
-  haveI : IsArtinianRing B := isArtinian_of_finite
-  obtain ⟨c, hc⟩ :=
-    (isArtinianRing_iff_isNilpotent_maximalIdeal B).mp inferInstance
-  have hcb : (IsLocalRing.maximalIdeal B) ^ c = ⊥ := by
-    rw [← Submodule.zero_eq_bot]
-    exact hc
-  -- the kernel of `πB` is proper, hence inside the maximal ideal of `B`
-  have hkerB : RingHom.ker πB ≤ IsLocalRing.maximalIdeal B := by
-    refine IsLocalRing.le_maximalIdeal ?_
-    intro htop
-    have hone : (1 : B) ∈ RingHom.ker πB := by
-      rw [htop]
-      exact Submodule.mem_top
-    rw [RingHom.mem_ker, map_one] at hone
-    exact one_ne_zero hone
-  -- every admissible `ψ` kills `𝔪_R ^ c`
-  have hkill : ∀ ψ : R →+* B, πB.comp ψ = π →
-      ∀ x ∈ (IsLocalRing.maximalIdeal R) ^ c, ψ x = 0 := by
-    intro ψ hψ x hx
-    have hmR : IsLocalRing.maximalIdeal R ≤
-        Ideal.comap ψ (IsLocalRing.maximalIdeal B) := by
-      intro y hy
-      have hy0 : π y = 0 := by
-        rw [← hker] at hy
-        exact hy
-      refine hkerB ?_
-      rw [RingHom.mem_ker, ← RingHom.comp_apply, hψ]
-      exact hy0
-    have hpow : ∀ j : ℕ, (IsLocalRing.maximalIdeal R) ^ j ≤
-        Ideal.comap ψ ((IsLocalRing.maximalIdeal B) ^ j) := by
-      intro j
-      induction j with
-      | zero => simp
-      | succ j ih =>
-        rw [pow_succ, pow_succ]
-        refine le_trans (Ideal.mul_mono ih hmR) ?_
-        rw [Ideal.mul_le]
-        intro r hr s hs
-        have hr' : ψ r ∈ (IsLocalRing.maximalIdeal B) ^ j := hr
-        have hs' : ψ s ∈ IsLocalRing.maximalIdeal B := hs
-        show ψ (r * s) ∈
-          (IsLocalRing.maximalIdeal B) ^ j * IsLocalRing.maximalIdeal B
-        rw [map_mul]
-        exact Ideal.mul_mem_mul hr' hs'
-    have hmem : ψ x ∈ (IsLocalRing.maximalIdeal B) ^ c := hpow c hx
-    rw [hcb] at hmem
-    first
-      | exact hmem
-      | simpa using hmem
-  haveI := finite_quotient_maximalIdeal_pow R hres c
-  haveI : Finite ((R ⧸ (IsLocalRing.maximalIdeal R) ^ c) →+* B) :=
-    Finite.of_injective
-      (fun g : (R ⧸ (IsLocalRing.maximalIdeal R) ^ c) →+* B =>
-        (g : (R ⧸ (IsLocalRing.maximalIdeal R) ^ c) → B))
-      DFunLike.coe_injective
-  refine Set.Finite.subset (Set.finite_range
-    (fun g : (R ⧸ (IsLocalRing.maximalIdeal R) ^ c) →+* B =>
-      g.comp (Ideal.Quotient.mk ((IsLocalRing.maximalIdeal R) ^ c)))) ?_
-  intro ψ hψ
-  exact ⟨Ideal.Quotient.lift _ ψ (hkill ψ hψ), RingHom.ext fun _ => rfl⟩
-
-/-- **Quotient-tower leaf** (sorry node — the deformation-theoretic
-stratum of the pro-finite limit upgrade, after the TOWER cut of
-2026-07-25): a package that factors residually identified
-standard-framed test deformations with FINITE coefficient ring factors
-each module-finite one THROUGH EVERY FINITE QUOTIENT of its coefficient
-ring.  Given a test deformation `D` with a residual identification and
-an ideal `J ⊆ ker D.π` of `D.A` with finite quotient, there is a
-classifying map `ψ : Runiv →+* D.A/J` compatible with the `ℤ_p`-algebra
-structures, with the two reductions to `k`, and with the linear
-`charFrob` coefficients at EVERY prime.
-
-Classical construction: `A/J` is a FINITE local `ℤ_p`-algebra — local
-because `J ⊆ ker D.π = 𝔪_A` is proper, module-finite over `ℤ_p` as a
-quotient of `A`, discrete because finite, and carrying the `ℤ_p`-module
-topology for the same reason — with residue field `k` through the
-induced reduction `π_J : A/J →+* k`.  Base-changing `D` along the
-surjection `A →+* A/J` gives a deformation over it: the module
-`(A/J) ⊗_A Vd` is free of rank 2, the base-changed representation is
-hardly ramified because each hardly ramified condition (cyclotomic
-determinant, unramifiedness outside `2p`, Ramakrishna flatness at `p`,
-the tame condition at `2`) pushes forward along a surjective base
-change of coefficient rings, and the residual identification transports
-along the canonical isomorphism `k ⊗_{A/J} ((A/J) ⊗_A Vd) ≅ k ⊗_A Vd`.
-That base change is a legitimate object of the finite-tests category,
-so the finite-tests hypothesis `h` supplies the classifying map, whose
-clauses are exactly the ones stated here — the trace clause with NO
-exceptional set, which is the strengthening the finite-tests carrier
-`IsWeaklyUniversalOnIdentifiedFiniteTests` was cut with precisely so
-that the inverse-limit trace argument of the upgrade goes through.  The
-translation of that clause into the form stated here (the right-hand
-side is the image of `D.ρ`'s own `charFrob` coefficient under the
-quotient map, not the base change's) is the proven brick
-`charFrob_baseChange` of this module.
-
-Both-ways audit: the statement is the finite-tests hypothesis
-transported along one surjective base change, quantified over abstract
-packages; it carries no arithmetic beyond the (classical) stability of
-the hardly ramified conditions under surjective base change, and the
-hypothesis set contains a hardly ramified `ρbar` with a hardly ramified
-deformation, which the section audit of `Interface.lean` shows to be
-classically unsatisfiable, so the statement is also classically true
-outright.  CIRCULARITY GUARD (inherited): must not be proven through
-`Family.lean` or anything downstream of it (`Lift.lean` included). -/
-theorem exists_classifyingHom_of_finite_quotient.{s, uK, uW, uR}
+Both-ways audit: a base-change statement about abstract packages, with
+no arithmetic content beyond that of the finite-tests hypothesis it
+consumes; classically true outright as stated.  CIRCULARITY GUARD
+(inherited): must not be proven through `Family.lean` or anything
+downstream of it (`Lift.lean` included). -/
+theorem exists_ringHom_quotient_padicTower_of_finiteTests.{s, uK, uW, uR}
     {p : ℕ} {hpodd : Odd p} [Fact p.Prime]
     {k : Type uK} [Field k] [Finite k] [TopologicalSpace k]
     [DiscreteTopology k] [IsTopologicalRing k]
@@ -2566,7 +2459,7 @@ theorem exists_classifyingHom_of_finite_quotient.{s, uK, uW, uR}
     (h : IsWeaklyUniversalOnIdentifiedFiniteTests.{s, uK, uW, uR} hpodd ρbar
       ρuniv πuniv)
     (D : HardlyRamifiedFiniteDeformation.{s, s, uK, uW} hpodd ρbar)
-    (hDid : D.IsResidualIdentified) :
+    (hDid : D.IsResidualIdentified) (n : ℕ) :
     letI := D.commRing
     letI := D.topologicalSpace
     letI := D.isTopologicalRing
@@ -2576,23 +2469,21 @@ theorem exists_classifyingHom_of_finite_quotient.{s, uK, uW, uR}
     letI := D.module
     letI := D.moduleFiniteVd
     letI := D.moduleFreeVd
-    ∀ (J : Ideal D.A), Finite (D.A ⧸ J) → (∀ a ∈ J, D.π a = 0) →
-      ∃ ψ : Runiv →+* D.A ⧸ J,
+    ∀ hker : ∀ a ∈ padicTowerIdeal p D.A n, D.π a = 0,
+      ∃ ψ : Runiv →+* (D.A ⧸ padicTowerIdeal p D.A n),
         ψ.comp (algebraMap ℤ_[p] Runiv) =
-          (Ideal.Quotient.mk J).comp (algebraMap ℤ_[p] D.A) ∧
-        (∀ (r : Runiv) (a : D.A), ψ r = Ideal.Quotient.mk J a →
-          D.π a = πuniv r) ∧
-        ∀ (q : ℕ) (hq : q.Prime),
-          ψ ((ρuniv.charFrob
-              hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
-            Ideal.Quotient.mk J
-              ((D.ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) :=
+            algebraMap ℤ_[p] (D.A ⧸ padicTowerIdeal p D.A n) ∧
+          (Ideal.Quotient.lift (padicTowerIdeal p D.A n) D.π hker).comp ψ = πuniv ∧
+          ∀ (q : ℕ) (hq : q.Prime),
+            ψ ((ρuniv.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
+              Ideal.Quotient.mk (padicTowerIdeal p D.A n)
+                ((D.ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) :=
   sorry
 
-/-- **Pro-finite limit upgrade** (PROVEN 2026-07-25 over the
-quotient-tower leaf `exists_classifyingHom_of_finite_quotient` — the
-limit stratum of the strict Mazur core, after the LEVEL cut of
-2026-07-24 and the TOWER cut of 2026-07-25): a
+/-- **Pro-finite limit upgrade** (PROVEN 2026-07-25 over the single
+quotient-tower leaf `exists_ringHom_quotient_padicTower_of_finiteTests`
+— the limit stratum of the strict Mazur core, after the LEVEL cut of
+2026-07-24): a
 Noetherian package that factors every residually identified
 standard-framed test deformation with FINITE coefficient ring factors
 every one with module-finite coefficient ring.  This is the
@@ -2601,33 +2492,48 @@ representability proof (Mazur §1.2; Schlessinger's functors are
 extended from Artinian test rings to complete local ones by passage to
 the limit), isolated from the Artinian-level combinatorics.
 
-Proof, stratum by stratum (the quotient tower is taken along the
-`p`-adic filtration `Jp = 𝔪_{ℤ_p}A`, cofinal with the `𝔪_A`-adic one on
-a module-finite `ℤ_p`-algebra — see the section docstring above).
-(1) QUOTIENT TOWER: `ker D.π` is the maximal ideal of `A = D.A` (it is
-maximal, `A` local) and `Jp ⊆ 𝔪_A` is proper (Nakayama over `ℤ_p`), so
-each `A/Jp^(n+1)` is a FINITE local ring
-(`finite_quotient_map_maximalIdeal_padicInt` and
-`Ideal.finite_quotient_pow`; local as a quotient by a proper ideal),
-and the tower leaf `exists_classifyingHom_of_finite_quotient` supplies
-at every level a classifying map `ψₙ : Runiv →+* A/Jp^(n+1)` satisfying
-the three clauses.  (2) FINITENESS OF CLASSIFYING SETS: any such `ψₙ`
-is local — the reduction clause forces
-`ψₙ(𝔪_Runiv) ⊆ ker πₙ = 𝔪_{A/Jp^(n+1)}` — and `Runiv` is Noetherian
-local with finite residue field `k` (through the surjection `πuniv`),
-so `finite_subtype_ringHom_local` makes the level-`n` classifying set
-finite.  (3) KŐNIG: the clauses are stable under postcomposition with
-the transition maps — the trace clause because it holds at EVERY prime,
-uniformly in `n` — so `exists_compatible_ringHom_system` produces a
-COMPATIBLE system.  (4) ASSEMBLY AND CLAUSE PASSAGE: `A` is
-`Jp`-adically complete (`IsAdicComplete.of_finite_module` over the
-complete `ℤ_p`, transported along `IsAdicComplete.map_algebraMap_iff`),
-so the compatible system assembles into `ψ : Runiv →+* A`
-(`exists_ringHom_of_compatible_mod_pow`); the `ℤ_p`-clause and the
-trace clause hold modulo every `Jp^(n+1)`, hence hold in `A` by Krull
-separatedness (`eq_of_mk_pow_succ_eq`), and the reduction clause is
-read off at level `0`.  The exceptional set of the conclusion's trace
-clause is `∅`.
+Proof, stratum by stratum — run over the `p`-ADIC tower `pⁿ⁺¹A`
+(`padicTowerIdeal`) rather than the `𝔪`-adic one: for a module-finite
+`ℤ_p`-algebra the two filtrations are cofinal, and the `p`-adic one is
+complete and separated for free, by `IsAdicComplete.of_finite_module`
+over the complete discrete valuation ring `ℤ_p`.  Each quotient
+`A/pⁿ⁺¹A` is a FINITE local ring (`finite_quotient_padicTowerIdeal`,
+`isLocalRing_quotient_padicTowerIdeal`; properness of the tower ideals
+is Nakayama), i.e. an Artinian test object, and the kernel of the
+surjective `D.π` onto the field `k` is a maximal ideal, hence THE
+maximal ideal, so every tower ideal is killed by `D.π` and induces a
+level reduction map `πₙ : A/pⁿ⁺¹A →+* k`.
+
+(1) QUOTIENT TOWER — the one remaining leaf,
+`exists_ringHom_quotient_padicTower_of_finiteTests`: base-changing `D`
+along `A →+* A/pⁿ⁺¹A` yields residually identified test deformations
+`Dₙ` with finite coefficient rings (the hardly ramified conditions
+push forward along surjective base change, and the residual
+identification composes with the canonical isomorphism
+`k ⊗[A] ((A/pⁿ⁺¹A) ⊗_{A/pⁿ⁺¹A} –) ≅ k ⊗[A] –`), whence by the
+finite-tests hypothesis a level-`n` classifying map.  (2) FINITENESS
+OF CLASSIFYING SETS (PROVEN, `finite_setOf_ringHom_comp_eq`): let `Xₙ`
+be the set of `ψₙ : Runiv →+* A/pⁿ⁺¹A` satisfying the three clauses at
+level `n`; each is nonempty by (1) and FINITE — any such `ψₙ` is local
+(`πₙ ∘ ψₙ = πuniv` forces `ψₙ(𝔪_R) ⊆ ker πₙ = 𝔪_{A/pⁿ⁺¹A}`), and that
+maximal ideal is nilpotent (a finite ring is artinian), so `ψₙ`
+factors through `Runiv/𝔪_Runiv^c` — a FINITE ring by
+`Ideal.finite_quotient_pow`, `Runiv` being Noetherian local with
+finite residue field `k` via the surjective `πuniv` — and there are
+only finitely many maps out of a finite ring.  (3) KÖNIG (PROVEN,
+`exists_tower_of_forall_nonempty_finite`): the `Xₙ` with the
+postcomposition transition maps form an inverse system of nonempty
+finite sets (each clause is preserved by postcomposition — the trace
+clause because it holds at EVERY prime, uniformly in `n`), so its
+limit is nonempty (`nonempty_sections_of_finite_inverse_system`); a
+compatible system `(ψₙ)` assembles to `Ψ : Runiv →+* A` by
+completeness (`exists_ringHom_of_tower`), its ring-map axioms being
+forced by separatedness.  (4) CLAUSE PASSAGE TO THE LIMIT (PROVEN):
+the `ℤ_p`-clause and the trace clause for `Ψ` hold modulo `pⁿ⁺¹` for
+every `n`, hence hold in `A` by Krull separatedness (`⋂ₙ pⁿA = 0`,
+`eq_of_forall_mk_padicTowerIdeal_eq`), while the reduction clause is
+read off a single level through `πₙ ∘ mk = D.π`; the exceptional set
+of the conclusion's trace clause is `∅`.
 
 Both-ways audit: the statement is a plain pro-finite extension
 principle quantified over abstract packages, with no arithmetic
@@ -2657,175 +2563,84 @@ theorem isWeaklyUniversalOnIdentifiedDeformation_of_finiteTests.{s, uK, uW, uR}
   letI := D.isLocalRing
   letI := D.algebra
   letI := D.moduleFinite
+  letI := D.isModuleTopology
   letI := D.addCommGroup
   letI := D.module
   letI := D.moduleFiniteVd
   letI := D.moduleFreeVd
-  -- the `p`-adic ideal of the coefficient ring, and its basic properties
-  set Jp : Ideal D.A := (IsLocalRing.maximalIdeal ℤ_[p]).map (algebraMap ℤ_[p] D.A)
+  -- the reduction map has the maximal ideal as kernel, so it kills every
+  -- tower ideal (a proper ideal of the local ring `D.A`) and induces the
+  -- level reduction maps `πₙ`
   have hkerπ : RingHom.ker D.π = IsLocalRing.maximalIdeal D.A :=
     IsLocalRing.eq_maximalIdeal (RingHom.ker_isMaximal_of_surjective D.π D.π_surjective)
-  -- `p` dies in the residue field (`charP_of_ringHom_padicInt`), so the
-  -- `p`-adic ideal sits inside `ker D.π`
-  have hJpker : Jp ≤ RingHom.ker D.π := by
-    have hg : ∀ c ∈ IsLocalRing.maximalIdeal ℤ_[p],
-        D.π (algebraMap ℤ_[p] D.A c) = 0 := by
-      haveI := charP_of_ringHom_padicInt (D.π.comp (algebraMap ℤ_[p] D.A))
-      intro c hc
-      rw [PadicInt.maximalIdeal_eq_span_p, Ideal.mem_span_singleton] at hc
-      obtain ⟨d, rfl⟩ := hc
-      have hz : (D.π.comp (algebraMap ℤ_[p] D.A)) ((p : ℤ_[p]) * d) = 0 := by
-        rw [map_mul]
-        have hp0 : (D.π.comp (algebraMap ℤ_[p] D.A)) (p : ℤ_[p]) = 0 := by
-          rw [map_natCast]
-          exact CharP.cast_eq_zero k p
-        rw [hp0, zero_mul]
-      rw [RingHom.comp_apply] at hz
-      exact hz
-    show (IsLocalRing.maximalIdeal ℤ_[p]).map (algebraMap ℤ_[p] D.A) ≤ RingHom.ker D.π
-    rw [Ideal.map_le_iff_le_comap]
-    intro c hc
-    rw [Ideal.mem_comap, RingHom.mem_ker]
-    exact hg c hc
-  have hpow_le : ∀ n : ℕ, Jp ^ (n + 1) ≤ IsLocalRing.maximalIdeal D.A := by
-    intro n
-    rw [← hkerπ]
-    exact le_trans (Ideal.pow_le_self (Nat.succ_ne_zero n)) hJpker
-  have hπker : ∀ (n : ℕ), ∀ a ∈ Jp ^ (n + 1), D.π a = 0 := fun n a ha =>
-    RingHom.mem_ker.mp (hJpker (Ideal.pow_le_self (Nat.succ_ne_zero n) ha))
-  -- the tower is a tower of FINITE local rings
-  haveI : Finite (D.A ⧸ Jp) := finite_quotient_map_maximalIdeal_padicInt D.A
-  haveI : IsNoetherianRing D.A := IsNoetherianRing.of_finite ℤ_[p] D.A
-  have hfinQ : ∀ n : ℕ, Finite (D.A ⧸ Jp ^ n) := fun n =>
-    Ideal.finite_quotient_pow (IsNoetherian.noetherian Jp) n
-  haveI : ∀ n : ℕ, Finite (D.A ⧸ Jp ^ (n + 1)) := fun n => hfinQ (n + 1)
-  haveI : ∀ n : ℕ, Nontrivial (D.A ⧸ Jp ^ (n + 1)) := fun n =>
-    Ideal.Quotient.nontrivial_iff.mpr
-      (ne_top_of_le_ne_top (IsLocalRing.maximalIdeal.isMaximal D.A).ne_top (hpow_le n))
-  haveI : ∀ n : ℕ, IsLocalRing (D.A ⧸ Jp ^ (n + 1)) := fun n =>
-    IsLocalRing.of_surjective' (Ideal.Quotient.mk _) Ideal.Quotient.mk_surjective
-  -- `A` is `Jp`-adically complete
-  haveI : IsAdicComplete (IsLocalRing.maximalIdeal ℤ_[p]) D.A :=
-    IsAdicComplete.of_finite_module
-  haveI : IsAdicComplete Jp D.A :=
-    (IsAdicComplete.map_algebraMap_iff (IsLocalRing.maximalIdeal ℤ_[p]) D.A).mpr
-      inferInstance
-  -- the level-`n` reduction map to `k` has the maximal ideal as kernel
-  have hkerπn : ∀ n : ℕ,
-      RingHom.ker (Ideal.Quotient.lift (Jp ^ (n + 1)) D.π (hπker n)) =
-        IsLocalRing.maximalIdeal (D.A ⧸ Jp ^ (n + 1)) := by
-    intro n
-    refine IsLocalRing.eq_maximalIdeal (RingHom.ker_isMaximal_of_surjective _ ?_)
-    intro y
+  have hker : ∀ (n : ℕ), ∀ a ∈ padicTowerIdeal p D.A n, D.π a = 0 := by
+    intro n a ha
+    rw [← RingHom.mem_ker, hkerπ]
+    exact IsLocalRing.le_maximalIdeal (padicTowerIdeal_ne_top n) ha
+  have hπnsurj : ∀ n : ℕ, Function.Surjective
+      (Ideal.Quotient.lift (padicTowerIdeal p D.A n) D.π (hker n)) := by
+    intro n y
     obtain ⟨a, ha⟩ := D.π_surjective y
     exact ⟨Ideal.Quotient.mk _ a, by rw [Ideal.Quotient.lift_mk]; exact ha⟩
-  -- `Runiv` is Noetherian local with finite residue field
-  have hkerπuniv : RingHom.ker πuniv = IsLocalRing.maximalIdeal Runiv :=
-    IsLocalRing.eq_maximalIdeal (RingHom.ker_isMaximal_of_surjective πuniv hπsurj)
-  haveI : Finite (Runiv ⧸ IsLocalRing.maximalIdeal Runiv) := by
-    have e : Runiv ⧸ RingHom.ker πuniv ≃+* k := RingHom.quotientKerEquivOfSurjective hπsurj
-    rw [hkerπuniv] at e
-    exact Finite.of_equiv _ e.symm.toEquiv
-  -- (1) the tower leaf: every level has a classifying map
-  have hne : ∀ n : ℕ, ∃ ψ : Runiv →+* D.A ⧸ Jp ^ (n + 1),
-      ψ.comp (algebraMap ℤ_[p] Runiv) =
-          (Ideal.Quotient.mk (Jp ^ (n + 1))).comp (algebraMap ℤ_[p] D.A) ∧
-      (∀ (r : Runiv) (a : D.A), ψ r = Ideal.Quotient.mk (Jp ^ (n + 1)) a →
-        D.π a = πuniv r) ∧
+  -- the level-`n` classifying sets
+  set X : (n : ℕ) → Set (Runiv →+* D.A ⧸ padicTowerIdeal p D.A n) := fun n =>
+    {ψ | ψ.comp (algebraMap ℤ_[p] Runiv) =
+        algebraMap ℤ_[p] (D.A ⧸ padicTowerIdeal p D.A n) ∧
+      (Ideal.Quotient.lift (padicTowerIdeal p D.A n) D.π (hker n)).comp ψ = πuniv ∧
       ∀ (q : ℕ) (hq : q.Prime),
         ψ ((ρuniv.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
-          Ideal.Quotient.mk (Jp ^ (n + 1))
-            ((D.ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) := fun n =>
-    exists_classifyingHom_of_finite_quotient h D hDid (Jp ^ (n + 1)) (hfinQ (n + 1))
-      (hπker n)
-  -- (2) each level's classifying set is finite
-  have hfin : ∀ n : ℕ, Finite {ψ : Runiv →+* D.A ⧸ Jp ^ (n + 1) //
-      ψ.comp (algebraMap ℤ_[p] Runiv) =
-          (Ideal.Quotient.mk (Jp ^ (n + 1))).comp (algebraMap ℤ_[p] D.A) ∧
-      (∀ (r : Runiv) (a : D.A), ψ r = Ideal.Quotient.mk (Jp ^ (n + 1)) a →
-        D.π a = πuniv r) ∧
-      ∀ (q : ℕ) (hq : q.Prime),
-        ψ ((ρuniv.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
-          Ideal.Quotient.mk (Jp ^ (n + 1))
-            ((D.ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)} := by
+          Ideal.Quotient.mk (padicTowerIdeal p D.A n)
+            ((D.ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)} with hX
+  -- (1) nonempty, by the quotient-tower leaf
+  have hne : ∀ n, (X n).Nonempty := by
     intro n
-    refine finite_subtype_ringHom_local _ ?_
-    rintro ψ ⟨-, h2, -⟩ x hx
-    obtain ⟨a, ha⟩ := Ideal.Quotient.mk_surjective (I := Jp ^ (n + 1)) (ψ x)
-    have hxa : D.π a = πuniv x := h2 x a ha.symm
-    have hx0 : πuniv x = 0 :=
-      RingHom.mem_ker.mp (by rw [hkerπuniv]; exact hx)
-    rw [← hkerπn n, RingHom.mem_ker, ← ha, Ideal.Quotient.lift_mk, hxa, hx0]
-  -- (3) the clauses are stable along the tower, so Kőnig applies
-  have hst : ∀ (m n : ℕ) (hmn : m ≤ n) (ψ : Runiv →+* D.A ⧸ Jp ^ (n + 1)),
-      (ψ.comp (algebraMap ℤ_[p] Runiv) =
-          (Ideal.Quotient.mk (Jp ^ (n + 1))).comp (algebraMap ℤ_[p] D.A) ∧
-        (∀ (r : Runiv) (a : D.A), ψ r = Ideal.Quotient.mk (Jp ^ (n + 1)) a →
-          D.π a = πuniv r) ∧
-        ∀ (q : ℕ) (hq : q.Prime),
-          ψ ((ρuniv.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
-            Ideal.Quotient.mk (Jp ^ (n + 1))
-              ((D.ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)) →
-      (((Ideal.Quotient.factor (Ideal.pow_le_pow_right (Nat.succ_le_succ hmn))).comp
-            ψ).comp (algebraMap ℤ_[p] Runiv) =
-          (Ideal.Quotient.mk (Jp ^ (m + 1))).comp (algebraMap ℤ_[p] D.A) ∧
-        (∀ (r : Runiv) (a : D.A),
-          ((Ideal.Quotient.factor (Ideal.pow_le_pow_right (Nat.succ_le_succ hmn))).comp ψ) r =
-            Ideal.Quotient.mk (Jp ^ (m + 1)) a → D.π a = πuniv r) ∧
-        ∀ (q : ℕ) (hq : q.Prime),
-          ((Ideal.Quotient.factor (Ideal.pow_le_pow_right (Nat.succ_le_succ hmn))).comp ψ)
-              ((ρuniv.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
-            Ideal.Quotient.mk (Jp ^ (m + 1))
-              ((D.ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)) := by
+    obtain ⟨ψ, h1, h2, h3⟩ :=
+      exists_ringHom_quotient_padicTower_of_finiteTests h D hDid n (hker n)
+    exact ⟨ψ, by rw [hX]; exact ⟨h1, h2, h3⟩⟩
+  -- (2) finite, since a map compatible with the residue maps factors
+  -- through the finite ring `Runiv/𝔪ᶜ`
+  have hfin : ∀ n, (X n).Finite := by
+    intro n
+    rw [hX]
+    exact (finite_setOf_ringHom_comp_eq hπsurj (hπnsurj n)).subset fun ψ hψ => hψ.2.1
+  -- the three clauses survive postcomposition with the transition maps
+  have hstab : ∀ (m n : ℕ) (hmn : m ≤ n)
+      (ψ : Runiv →+* D.A ⧸ padicTowerIdeal p D.A n), ψ ∈ X n →
+      (Ideal.Quotient.factor (padicTowerIdeal_antitone hmn)).comp ψ ∈ X m := by
     intro m n hmn ψ hψ
+    rw [hX] at hψ ⊢
     obtain ⟨h1, h2, h3⟩ := hψ
-    refine ⟨?_, ?_, ?_⟩
-    · refine RingHom.ext fun c => ?_
-      have hc := congrArg (fun z : ℤ_[p] →+* D.A ⧸ Jp ^ (n + 1) => z c) h1
-      simp only [RingHom.comp_apply] at hc ⊢
-      rw [hc, Ideal.Quotient.factor_mk]
-    · intro r a hra
-      obtain ⟨b, hb⟩ := Ideal.Quotient.mk_surjective (I := Jp ^ (n + 1)) (ψ r)
-      have hπb : D.π b = πuniv r := h2 r b hb.symm
-      have hmm : Ideal.Quotient.mk (Jp ^ (m + 1)) b =
-          Ideal.Quotient.mk (Jp ^ (m + 1)) a := by
-        rw [← hra]
-        simp only [RingHom.comp_apply]
-        rw [← hb, Ideal.Quotient.factor_mk]
-      have hsub : D.π (b - a) = 0 := hπker m _ (Ideal.Quotient.eq.mp hmm)
-      rw [map_sub, sub_eq_zero] at hsub
-      rw [← hsub]
-      exact hπb
-    · intro q hq
+    refine ⟨RingHom.ext fun r => ?_, RingHom.ext fun r => ?_, fun q hq => ?_⟩
+    · have e := RingHom.congr_fun h1 r
+      simp only [RingHom.comp_apply] at e ⊢
+      rw [e]
+      exact Ideal.Quotient.factor_mk _ (algebraMap ℤ_[p] D.A r)
+    · have e := RingHom.congr_fun h2 r
+      obtain ⟨x, hx⟩ := Ideal.Quotient.mk_surjective (ψ r)
+      simp only [RingHom.comp_apply] at e ⊢
+      rw [← hx] at e ⊢
+      rw [Ideal.Quotient.factor_mk, Ideal.Quotient.lift_mk]
+      rwa [Ideal.Quotient.lift_mk] at e
+    · have e := h3 q hq
       simp only [RingHom.comp_apply]
-      rw [h3 q hq, Ideal.Quotient.factor_mk]
-  obtain ⟨f, hfP, hfcomp⟩ :=
-    exists_compatible_ringHom_system (R := Runiv) Jp
-      (fun n ψ =>
-        ψ.comp (algebraMap ℤ_[p] Runiv) =
-            (Ideal.Quotient.mk (Jp ^ (n + 1))).comp (algebraMap ℤ_[p] D.A) ∧
-        (∀ (r : Runiv) (a : D.A), ψ r = Ideal.Quotient.mk (Jp ^ (n + 1)) a →
-          D.π a = πuniv r) ∧
-        ∀ (q : ℕ) (hq : q.Prime),
-          ψ ((ρuniv.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
-            Ideal.Quotient.mk (Jp ^ (n + 1))
-              ((D.ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1))
-      hne hfin hst
-  -- (4) assembly and passage of the clauses to the limit
-  obtain ⟨F, hF⟩ := exists_ringHom_of_compatible_mod_pow (R := Runiv) Jp f hfcomp
-  refine ⟨F, ?_, ?_, ∅, ?_⟩
-  · refine RingHom.ext fun c => ?_
-    refine eq_of_mk_pow_succ_eq Jp fun n => ?_
-    rw [RingHom.comp_apply, hF n (algebraMap ℤ_[p] Runiv c)]
-    have hc := congrArg (fun z : ℤ_[p] →+* D.A ⧸ Jp ^ (n + 1) => z c) (hfP n).1
-    simp only [RingHom.comp_apply] at hc
-    exact hc
-  · refine RingHom.ext fun r => ?_
-    exact (hfP 0).2.1 r (F r) (hF 0 r).symm
-  · intro q hq _
-    refine eq_of_mk_pow_succ_eq Jp fun n => ?_
-    rw [hF n]
-    exact (hfP n).2.2 q hq
+      rw [e, Ideal.Quotient.factor_mk]
+  -- (3) König, then the `p`-adic assembly
+  obtain ⟨ψ, hψX, hψcomp⟩ := exists_tower_of_forall_nonempty_finite X hne hfin hstab
+  obtain ⟨Ψ, hΨ⟩ := exists_ringHom_of_tower ψ hψcomp
+  rw [hX] at hψX
+  -- (4) the clauses pass to the limit by separatedness
+  refine ⟨Ψ, RingHom.ext fun r => ?_, RingHom.ext fun r => ?_, ∅, fun q hq _ => ?_⟩
+  · refine eq_of_forall_mk_padicTowerIdeal_eq (p := p) fun n => ?_
+    have e := RingHom.congr_fun (hψX n).1 r
+    simp only [RingHom.comp_apply] at e ⊢
+    rw [hΨ n, e]
+    rfl
+  · have e := RingHom.congr_fun (hψX 0).2.1 r
+    simp only [RingHom.comp_apply] at e ⊢
+    rw [← hΨ 0 r, Ideal.Quotient.lift_mk] at e
+    exact e
+  · refine eq_of_forall_mk_padicTowerIdeal_eq (p := p) fun n => ?_
+    rw [hΨ n, (hψX n).2.2 q hq]
 
 /-- **Schlessinger–Ramakrishna–CDT core leaf** (DECOMPOSED 2026-07-24,
 LEVEL cut — the assembly below is PROVEN over the finite-level leaf
@@ -2833,9 +2648,11 @@ LEVEL cut — the assembly below is PROVEN over the finite-level leaf
 H1/H2/H4, Schur via oddness, Ramakrishna's flat condition at `p`,
 CDT's tame condition at `2`, de Smit–Lenstra presentation — tested
 against FINITE coefficient rings only) and the pro-finite limit
-upgrade leaf `isWeaklyUniversalOnIdentifiedDeformation_of_finiteTests`
-(quotient tower, König finiteness of classifying sets, `𝔪`-adic
-assembly)): GIVEN the finiteness of the dual-number tangent space
+upgrade `isWeaklyUniversalOnIdentifiedDeformation_of_finiteTests`
+(itself PROVEN 2026-07-25 over its own quotient-tower leaf
+`exists_ringHom_quotient_padicTower_of_finiteTests`: König finiteness
+of the classifying sets, and the `p`-adic assembly, are proven
+there)): GIVEN the finiteness of the dual-number tangent space
 (Schlessinger's H3, supplied by the restricted-ramification finiteness
 leaf through the proven glue of the pillar assembly), the hardly
 ramified deformation problem of an irreducible hardly ramified `ρbar`
@@ -6079,8 +5896,414 @@ theorem PatchedModule.nonempty_transport.{v, w, x, y, s, uR} {p : ℕ}
     rw [← hmapU]
     exact ⟨m.down, hmem, rfl⟩
 
+/-! #### Instantiating the vendored patching development
+
+The three helper lemmas below isolate the bookkeeping that the
+instantiation of `Fermat/FLT/Modularity/PatchingVendored/` at a
+`TaylorWilesSystem` needs, so that neither of the two `Λ`-actions on the
+patched module — the DIAMOND one (through `S.diamond`) and the
+PRESENTATION one (through `PatchingAlgebra.lift R F S.pres`) — has to be
+mentioned twice.  -/
+
+/-- `IsRegular` counterpart of mathlib's
+`RingTheory.Sequence.isWeaklyRegular_map_algebraMap_iff` (PROVEN
+2026-07-25, same one-line proof through `AddEquiv.isRegular_congr`;
+mathlib carries only the weakly-regular version). -/
+theorem isRegular_map_algebraMap_iff_of_tower
+    {A B N : Type*} [CommRing A] [CommRing B] [Algebra A B]
+    [AddCommGroup N] [Module A N] [Module B N] [IsScalarTower A B N] (rs : List A) :
+    RingTheory.Sequence.IsRegular N (rs.map (algebraMap A B)) ↔
+      RingTheory.Sequence.IsRegular N rs :=
+  (AddEquiv.refl N).isRegular_congr <| List.forall₂_map_left_iff.mpr <|
+    List.forall₂_same.mpr fun r _ => algebraMap_smul B r
+
+/-- Regularity of a sequence transfers along `Module.compHom` (PROVEN
+2026-07-25): if the image sequence `rs.map f` is `N`-regular for the
+`B`-action, then `rs` is `N`-regular for the `A`-action through `f`. -/
+theorem isRegular_compHom {A B N : Type*} [CommRing A] [CommRing B]
+    [AddCommGroup N] [Module B N] (f : A →+* B) (rs : List A)
+    (h : RingTheory.Sequence.IsRegular N (rs.map f)) :
+    letI := Module.compHom N f
+    RingTheory.Sequence.IsRegular N rs := by
+  letI : Algebra A B := f.toAlgebra
+  letI := Module.compHom N f
+  haveI : IsScalarTower A B N := .of_algebraMap_smul fun _ _ => rfl
+  exact (isRegular_map_algebraMap_iff_of_tower (B := B) (N := N) rs).mp h
+
+/-- Module-finiteness transfers along a SURJECTIVE ring homomorphism
+(PROVEN 2026-07-25): a `B`-module finite over `B` is finite over `A`
+when `A ↠ B`, because `B` is then a cyclic `A`-algebra. -/
+theorem moduleFinite_compHom {A B N : Type*} [CommRing A] [CommRing B]
+    [AddCommGroup N] [Module B N] (f : A →+* B) (hf : Function.Surjective f)
+    (h : Module.Finite B N) :
+    letI := Module.compHom N f
+    Module.Finite A N := by
+  letI : Algebra A B := f.toAlgebra
+  letI := Module.compHom N f
+  haveI : IsScalarTower A B N := .of_algebraMap_smul fun _ _ => rfl
+  haveI := h
+  haveI : Module.Finite A B := Module.Finite.of_surjective (Algebra.linearMap A B) hf
+  exact Module.Finite.trans B N
+
+/-- **The packaging step of the patching extraction** (PROVEN
+2026-07-25): every `PatchedModule` field, read off from data living over
+an auxiliary local ring `R_∞` presented by `Λ = ℤ_p[[x₁, …, x_q]]`.
+
+This is where the `Λ`-versus-`R_∞` bookkeeping happens, once:
+
+* the `Λ`-action on `M_∞` is the one through the presentation `lift`
+  (`Module.compHom`), which is what makes `toRuniv := θ ∘ lift`
+  surjective — the DIAMOND `Λ`-action would not give a surjection,
+  since the diamond variables die in `Runiv`;
+* `finiteMinf` is `moduleFinite_compHom`;
+* `exists_isRegular` lifts the given `R_∞`-regular sequence back along
+  the surjection `lift`, and the lifts may be chosen in `𝔪_Λ` because a
+  surjection of local rings is local (`IsLocalHom.of_surjective`), so a
+  lift of a non-unit is a non-unit;
+* `mem_smul_top_of_proj_eq_zero` converts `ker θ ·M_∞` (over `R_∞`) into
+  `ker (θ ∘ lift) ·M_∞` (over `Λ`) elementwise, again along `lift`. -/
+theorem nonempty_patchedModule_of_patchingData.{v, w, s, uR, u}
+    {p : ℕ} [Fact p.Prime] {q : ℕ}
+    {Runiv : Type uR} [CommRing Runiv] {T : Type s} [CommRing T] (ψ : Runiv →+* T)
+    {Rinf : Type u} [CommRing Rinf] [IsLocalRing Rinf]
+    (lift : MvPowerSeries (Fin q) ℤ_[p] →+* Rinf) (hlift : Function.Surjective lift)
+    (θ : Rinf →+* Runiv) (hθ : Function.Surjective θ)
+    {Minf : Type v} [AddCommGroup Minf] [Module Rinf Minf]
+    (hfin : Module.Finite Rinf Minf)
+    (rs : List Rinf) (hlen : rs.length = q + 1)
+    (hmem : ∀ x ∈ rs, x ∈ IsLocalRing.maximalIdeal Rinf)
+    (hreg : RingTheory.Sequence.IsRegular Minf rs)
+    {M0 : Type w} [AddCommGroup M0] [Module T M0] (hM0 : Nontrivial M0)
+    (proj : Minf →+ M0) (hprojsurj : Function.Surjective proj)
+    (hprojsmul : ∀ (a : Rinf) (m : Minf), proj (a • m) = ψ (θ a) • proj m)
+    (hprojker : ∀ m : Minf, proj m = 0 →
+      m ∈ RingHom.ker θ • (⊤ : Submodule Rinf Minf)) :
+    Nonempty (PatchedModule.{v, w, s, uR} p ψ) := by
+  classical
+  letI : Module (MvPowerSeries (Fin q) ℤ_[p]) Minf := Module.compHom Minf lift
+  haveI hlh : IsLocalHom lift := .of_surjective lift hlift
+  obtain ⟨g, hg⟩ : ∃ g : Rinf → MvPowerSeries (Fin q) ℤ_[p], ∀ b, lift (g b) = b :=
+    ⟨fun b => (hlift b).choose, fun b => (hlift b).choose_spec⟩
+  have hgmem : ∀ a ∈ rs, g a ∈ IsLocalRing.maximalIdeal (MvPowerSeries (Fin q) ℤ_[p]) := by
+    intro a ha
+    rw [IsLocalRing.mem_maximalIdeal]
+    intro hu
+    exact (IsLocalRing.mem_maximalIdeal a).mp (hmem a ha) (hg a ▸ hu.map lift)
+  have hmaplift : (rs.map g).map lift = rs := by
+    simp [List.map_map, Function.comp_def, hg]
+  refine ⟨{ q := q
+            Minf := Minf
+            moduleMinf := inferInstance
+            finiteMinf := moduleFinite_compHom lift hlift hfin
+            exists_isRegular := ⟨rs.map g, by simpa using hlen, ?_, ?_⟩
+            toRuniv := θ.comp lift
+            toRuniv_surjective := hθ.comp hlift
+            M0 := M0
+            nontrivialM0 := hM0
+            proj := proj
+            proj_surjective := hprojsurj
+            proj_smul := ?_
+            mem_smul_top_of_proj_eq_zero := ?_ }⟩
+  · intro x hx
+    obtain ⟨a, ha, rfl⟩ := List.mem_map.mp hx
+    exact hgmem a ha
+  · exact isRegular_compHom lift (rs.map g) (by rw [hmaplift]; exact hreg)
+  · intro x m
+    show proj (lift x • m) = ψ (θ (lift x)) • proj m
+    exact hprojsmul (lift x) m
+  · intro m hm
+    refine Submodule.smul_induction_on (hprojker m hm) ?_ ?_
+    · intro a ha n _
+      have h1 : (g a) • n = a • n := by
+        show lift (g a) • n = a • n
+        rw [hg a]
+      rw [← h1]
+      refine Submodule.smul_mem_smul ?_ trivial
+      rw [RingHom.mem_ker] at ha ⊢
+      show θ (lift (g a)) = 0
+      rw [hg a]; exact ha
+    · intro x y hx hy
+      exact add_mem hx hy
+
+section PatchingInstantiation
+
+open IsLocalRing
+open scoped MvPowerSeries.WithPiTopology
+
+attribute [local instance] Module.quotientAnnihilator
+
+set_option maxHeartbeats 1000000 in
+/-- **The instantiation of the vendored patching development at a
+Taylor–Wiles system** (ASSEMBLED 2026-07-25; the glue is written and
+compiles, seven stated leaves remain sorried inside), stated in terms of
+the raw fields of `TaylorWilesSystem` so that the field-access noise
+stays out of the proof.
+
+The instantiation follows the handoff map in the docstring of
+`TaylorWilesSystem.exists_patchedModule_natural`:
+
+* `Λ := MvPowerSeries (Fin q) ℤ_[p]` carries the scoped product topology,
+  in which it is compact, Hausdorff, totally disconnected and (by the
+  project's own leaf `isNoetherianRing_mvPowerSeries`) Noetherian — so
+  `IsLocalRing.IsAdicTopology Λ` and `NonarchimedeanRing Λ` are FREE
+  through `PatchingVendored/AdicTopology.lean`'s "profinite + Noetherian
+  ⟹ adic" instance, and the product topology never has to be compared
+  with the adic one by hand.
+* Each level ring `R n` is topologized by fiat with its own
+  `𝔪`-adic topology (`IsLocalRing.withIdeal`); it is local and
+  Noetherian as a quotient of `Λ`, Hausdorff for free, and COMPACT
+  because `pres n` is a continuous surjection from the compact `Λ` —
+  continuity being `IsLocalRing.Continuous.of_isLocalHom`, which applies
+  precisely because both topologies are adic.
+* `Runiv` likewise gets the adic topology by fiat and is compact by
+  `IsLocalRing.compactSpace_of_finite_residueField`, fed by `hres` and
+  `hcomplete`.
+* `F` is an ultrafilter refining `atTop` on `ℕ` (so that the shrinking
+  level ideals `bIdeal n ≤ 𝔪^n` make `M` a patching system).
+* The patched objects are `R_∞ := PatchingAlgebra R F` with
+  `lift := PatchingAlgebra.lift R F pres` (surjective by
+  `lift_surjective`) and `M_∞ := PatchingModule Λ M F`, with
+  `θ := quotientToOver ∘ mk` surjective by
+  `surjective_quotientToOver`; `nonempty_patchedModule_of_patchingData`
+  above turns that data into the `PatchedModule`.
+* The regular sequence is produced in the DIAMOND copy — `M_∞` is FREE
+  over the diamond `Λ` (the decisive output of
+  `PatchingVendored/Module.lean`), hence flat, so the maximal regular
+  system of parameters of `Λ`
+  (`exists_isRegular_ofList_eq_maximalIdeal_mvPowerSeries`) stays
+  weakly regular on `M_∞` by `isWeaklyRegular_rTensor`, and upgrades to
+  regular by `IsLocalRing.isRegular_iff_isWeaklyRegular_of_subset_maximalIdeal`
+  (this is the Nakayama half) — then transported to `R_∞` by
+  `isRegular_map_algebraMap_iff_of_tower`.  No `Module.depth` layer is
+  needed, which is why `FLT/Patching/Utils/Depth.lean` was not
+  vendored. -/
+theorem exists_patchedModule_of_fields.{a, b, c, s, uR} {p : ℕ} [Fact p.Prime]
+    {Runiv : Type uR} [CommRing Runiv] [IsLocalRing Runiv] [IsNoetherianRing Runiv]
+    {T : Type s} [CommRing T] {ψ : Runiv →+* T}
+    (q d : ℕ) (R : ℕ → Type a) [iR : ∀ n, CommRing (R n)]
+    (pres : ∀ n, MvPowerSeries (Fin q) ℤ_[p] →+* R n)
+    (hpres : ∀ n, Function.Surjective (pres n))
+    (dia : ∀ n, MvPowerSeries (Fin q) ℤ_[p] →+* R n)
+    (tR : ∀ n, R n →+* Runiv) (htR : ∀ n, Function.Surjective (tR n))
+    (hkertR : ∀ n, RingHom.ker (tR n) = (taylorWilesAug p q).map (dia n))
+    (M : ℕ → Type b) [iMg : ∀ n, AddCommGroup (M n)] [iMR : ∀ n, Module (R n) (M n)]
+    [iMΛ : ∀ n, Module (MvPowerSeries (Fin q) ℤ_[p]) (M n)]
+    (hdia : ∀ (n : ℕ) (x : MvPowerSeries (Fin q) ℤ_[p]) (m : M n), x • m = dia n x • m)
+    (bI : ℕ → Ideal (MvPowerSeries (Fin q) ℤ_[p]))
+    (hbI : ∀ n, bI n ≤ maximalIdeal (MvPowerSeries (Fin q) ℤ_[p]) ^ n)
+    (fM : ∀ n, M n ≃ₗ[MvPowerSeries (Fin q) ℤ_[p]]
+      (Fin d → MvPowerSeries (Fin q) ℤ_[p] ⧸ bI n))
+    (M0 : Type c) [iM0g : AddCommGroup M0] [iM0T : Module T M0] (hM0 : Nontrivial M0)
+    (prM : ∀ n, M n →+ M0) (hprM : ∀ n, Function.Surjective (prM n))
+    (hprMsmul : ∀ (n : ℕ) (x : R n) (m : M n), prM n (x • m) = ψ (tR n x) • prM n m)
+    (hprMzero : ∀ (n : ℕ) (m : M n), prM n m = 0 ↔
+      m ∈ (taylorWilesAug p q • ⊤ :
+        Submodule (MvPowerSeries (Fin q) ℤ_[p]) (M n)))
+    (hcomplete : IsAdicComplete (maximalIdeal Runiv) Runiv)
+    (hres : Finite (Runiv ⧸ maximalIdeal Runiv)) :
+    Nonempty (PatchedModule.{b, c, s, uR} p ψ) := by
+  classical
+  -- ### the coefficient ring `Λ = ℤ_p[[x₁, …, x_q]]` in its diamond role
+  haveI : IsNoetherianRing (MvPowerSeries (Fin q) ℤ_[p]) :=
+    isNoetherianRing_mvPowerSeries q
+  haveI : CompactSpace (MvPowerSeries (Fin q) ℤ_[p]) :=
+    inferInstanceAs (CompactSpace ((Fin q →₀ ℕ) → ℤ_[p]))
+  haveI : TotallyDisconnectedSpace (MvPowerSeries (Fin q) ℤ_[p]) :=
+    inferInstanceAs (TotallyDisconnectedSpace ((Fin q →₀ ℕ) → ℤ_[p]))
+  haveI hadicΛ : IsAdicTopology (MvPowerSeries (Fin q) ℤ_[p]) := inferInstance
+  -- LEAF 1 (`Λ` is topologically finitely generated over `ℤ`): the
+  -- `ℤ`-subalgebra generated by the variables `X i` is dense, because `ℤ`
+  -- is dense in `ℤ_[p]` and the topology is the product topology, so a
+  -- basic neighbourhood only constrains finitely many coefficients.
+  -- Stated for an arbitrary `Algebra ℤ Λ` instance because the vendored
+  -- use site fixes that instance to `algebraInt`.
+  haveI hTFG : ∀ [inst : Algebra ℤ (MvPowerSeries (Fin q) ℤ_[p])],
+      Algebra.TopologicallyFG ℤ (MvPowerSeries (Fin q) ℤ_[p]) := sorry
+  -- ### nontriviality of the levels
+  haveI hMnt : ∀ n, Nontrivial (M n) := fun n => (hprM n).nontrivial
+  -- LEAF 2 (`Λ`-freeness over the annihilator): `Ann_Λ (M n) = bI n`
+  -- because `M n ≃ₗ[Λ] (Λ/𝔟_n)^d` with `d ≥ 1` (forced by
+  -- `nontrivialM0` through `projM_surjective`), and the coordinate
+  -- equivalence is automatically `Λ/Ann`-semilinear since both actions
+  -- restrict from `Λ`; conclude with `Module.Free.of_equiv` along
+  -- `Ideal.quotEquivOfEq`.
+  haveI hfree : ∀ n, Module.Free (MvPowerSeries (Fin q) ℤ_[p] ⧸
+      Module.annihilator (MvPowerSeries (Fin q) ℤ_[p]) (M n)) (M n) := sorry
+  -- LEAF 3 (uniformly bounded rank): the same coordinate equivalence
+  -- gives `rank_{Λ/𝔟_n} (M n) = d < d + 1`, a bound independent of `n`.
+  haveI hubr : Module.UniformlyBoundedRank (MvPowerSeries (Fin q) ℤ_[p]) M := sorry
+  -- ### the ultrafilter: any nonprincipal one, here a refinement of `atTop`
+  letI F : Ultrafilter ℕ := Ultrafilter.of Filter.atTop
+  -- LEAF 4 (patching system): an open ideal `α` of the compact `Λ`
+  -- contains some `𝔪^k` (`exists_maximalIdeal_pow_le_of_isArtinianRing_quotient`),
+  -- and `Ann_Λ (M n) = bI n ≤ 𝔪^n ≤ 𝔪^k` for `n ≥ k`, a set in `F`
+  -- because `F ≤ atTop`.
+  haveI hps : IsPatchingSystem (MvPowerSeries (Fin q) ℤ_[p]) M F := sorry
+  -- ### the level rings, with their `𝔪`-adic topologies
+  haveI iRnt : ∀ n, Nontrivial (R n) := fun n => (tR n).domain_nontrivial
+  haveI iRloc : ∀ n, IsLocalRing (R n) := fun n => .of_surjective' (pres n) (hpres n)
+  haveI iRnoeth : ∀ n, IsNoetherianRing (R n) :=
+    fun n => isNoetherianRing_of_surjective _ _ (pres n) (hpres n)
+  letI iRwi : ∀ n, WithIdeal (R n) := fun n => IsLocalRing.withIdeal
+  haveI iRadic : ∀ n, IsAdicTopology (R n) := fun n => inferInstance
+  haveI iRt2 : ∀ n, T2Space (R n) := fun n => inferInstance
+  haveI iRlh : ∀ n, IsLocalHom (pres n) := fun n => .of_surjective _ (hpres n)
+  have hprescont : ∀ n, Continuous (pres n) := fun n => Continuous.of_isLocalHom _
+  haveI iRcpt : ∀ n, CompactSpace (R n) := fun n =>
+    ⟨by
+      rw [← Set.range_eq_univ.mpr (hpres n)]
+      exact isCompact_range (hprescont n)⟩
+  letI iRalg : ∀ n, Algebra (MvPowerSeries (Fin q) ℤ_[p]) (R n) := fun n => (dia n).toAlgebra
+  -- LEAF 5 (continuity of the diamond structure map): `R n / 𝔪^k` is
+  -- FINITE (a quotient of the finite `Λ/𝔪^k`), so
+  -- `RingHom.continuous_of_finite_of_compact` makes each
+  -- `Λ → R n/𝔪^k` continuous, i.e. each `dia n ⁻¹' 𝔪^k` open; the
+  -- adic basis then gives continuity of `dia n`, hence `ContinuousSMul`.
+  haveI iRcsmul : ∀ n, ContinuousSMul (MvPowerSeries (Fin q) ℤ_[p]) (R n) := sorry
+  -- LEAF 6 (uniformly bounded rank of the level rings): the same
+  -- finiteness — `Nat.card (R n ⧸ 𝔪^k) ≤ Nat.card (Λ ⧸ 𝔪_Λ^k)` for every
+  -- `n`, since `pres n` is a surjective local hom.
+  haveI hRubr : Algebra.UniformlyBoundedRank R := sorry
+  haveI iRtower : ∀ n, IsScalarTower (MvPowerSeries (Fin q) ℤ_[p]) (R n) (M n) :=
+    fun n => .of_algebraMap_smul fun r m => (hdia n r m).symm
+  -- ### the bottom ring
+  letI iRunivwi : WithIdeal Runiv := IsLocalRing.withIdeal
+  haveI : IsAdicTopology Runiv := inferInstance
+  haveI : Finite (ResidueField Runiv) := hres
+  haveI : IsAdicComplete (maximalIdeal Runiv) Runiv := hcomplete
+  haveI : CompactSpace Runiv := IsLocalRing.compactSpace_of_finite_residueField
+  -- LEAF 7 (the `Λ`-algebra bottom identification, the one compatibility
+  -- `TaylorWilesSystem` does not record): both `toRuniv i ∘ diamond i`
+  -- kill `𝔫` (by `ker_toRuniv`) hence factor through `Λ/𝔫 ≅ ℤ_[p]`, and a
+  -- ring hom `ℤ_[p] →+* Runiv` is unique because `p` cannot be a unit
+  -- (else `ℚ_p` would embed in the finite residue field, contradicting
+  -- `hres`) and `Runiv` is `𝔪`-adically separated by `hcomplete`, so the
+  -- value is pinned by the value on the dense subring `ℤ`.
+  have hcompat : ∀ n, (tR n).comp (dia n) = (tR 0).comp (dia 0) := sorry
+  letI iRunivalg : Algebra (MvPowerSeries (Fin q) ℤ_[p]) Runiv :=
+    ((tR 0).comp (dia 0)).toAlgebra
+  letI iM0Runiv : Module Runiv M0 := Module.compHom M0 ψ
+  letI iM0Λ : Module (MvPowerSeries (Fin q) ℤ_[p]) M0 :=
+    Module.compHom M0 (ψ.comp ((tR 0).comp (dia 0)))
+  haveI iM0tower : IsScalarTower (MvPowerSeries (Fin q) ℤ_[p]) Runiv M0 :=
+    .of_algebraMap_smul fun _ _ => rfl
+  -- ### `projM` is `Λ`-linear, and `M₀` is `Λ`-finite
+  let prMₗ : ∀ n, M n →ₗ[MvPowerSeries (Fin q) ℤ_[p]] M0 := fun n =>
+    { toFun := prM n
+      map_add' := (prM n).map_add
+      map_smul' := fun r m => by
+        show prM n (r • m) = _
+        rw [hdia n r m, hprMsmul n (dia n r) m]
+        show ψ (tR n (dia n r)) • prM n m = ψ (((tR 0).comp (dia 0)) r) • prM n m
+        rw [← hcompat n]; rfl }
+  have hkerprM : ∀ n, LinearMap.ker (prMₗ n) =
+      (taylorWilesAug p q • ⊤ :
+        Submodule (MvPowerSeries (Fin q) ℤ_[p]) (M n)) :=
+    fun n => Submodule.ext fun m => (hprMzero n m)
+  haveI hM0finΛ : Module.Finite (MvPowerSeries (Fin q) ℤ_[p]) M0 := by
+    haveI : Module.Finite (MvPowerSeries (Fin q) ℤ_[p]) (M 0) :=
+      Module.Finite.equiv (fM 0).symm
+    exact Module.Finite.of_surjective (prMₗ 0) (hprM 0)
+  haveI hM0finR : Module.Finite Runiv M0 :=
+    Module.Finite.of_restrictScalars_finite (MvPowerSeries (Fin q) ℤ_[p]) Runiv M0
+  -- ### the bottom identifications demanded by `PatchingVendored/Over.lean`
+  let sR : ∀ n, (R n ⧸ (taylorWilesAug p q).map
+        (algebraMap (MvPowerSeries (Fin q) ℤ_[p]) (R n)))
+      ≃ₐ[MvPowerSeries (Fin q) ℤ_[p]] Runiv := fun n =>
+    AlgEquiv.ofRingEquiv (f := (Ideal.quotEquivOfEq (hkertR n).symm).trans
+      (RingHom.quotientKerEquivOfSurjective (htR n))) (fun x => by
+        show tR n (dia n x) = ((tR 0).comp (dia 0)) x
+        rw [← hcompat n]; rfl)
+  let sM : ∀ n, (M n ⧸ (taylorWilesAug p q • ⊤ :
+        Submodule (MvPowerSeries (Fin q) ℤ_[p]) (M n)))
+      ≃ₗ[MvPowerSeries (Fin q) ℤ_[p]] M0 := fun n =>
+    (Submodule.quotEquivOfEq _ _ (hkerprM n).symm).trans
+      ((prMₗ n).quotKerEquivOfSurjective (hprM n))
+  -- ### the patched objects
+  let lift : MvPowerSeries (Fin q) ℤ_[p] →+* PatchingAlgebra R F :=
+    PatchingAlgebra.lift R F pres
+  have hliftsurj : Function.Surjective lift :=
+    PatchingAlgebra.lift_surjective R F pres hprescont hpres
+  let θ : PatchingAlgebra R F →+* Runiv :=
+    (PatchingAlgebra.quotientToOver (MvPowerSeries (Fin q) ℤ_[p]) R F
+      (taylorWilesAug p q) sR).comp (Ideal.Quotient.mk _)
+  have hθsurj : Function.Surjective θ :=
+    (PatchingAlgebra.surjective_quotientToOver (MvPowerSeries (Fin q) ℤ_[p]) R F
+      (taylorWilesAug p q) sR).comp Ideal.Quotient.mk_surjective
+  let projQ := PatchingModule.quotientEquivOver (MvPowerSeries (Fin q) ℤ_[p]) M F
+    (taylorWilesAug p q) sM
+  -- ### the regular sequence, produced in the diamond copy and pushed forward
+  obtain ⟨ts, htslen, htsreg, htsspan⟩ :=
+    exists_isRegular_ofList_eq_maximalIdeal_mvPowerSeries p q
+  have htsmem : ∀ x ∈ ts, x ∈ maximalIdeal (MvPowerSeries (Fin q) ℤ_[p]) := by
+    intro x hx
+    rw [← htsspan]
+    exact Ideal.subset_span hx
+  haveI hM0' : Nontrivial M0 := hM0
+  haveI hQnt : Nontrivial (PatchingModule (MvPowerSeries (Fin q) ℤ_[p]) M F ⧸
+      (taylorWilesAug p q • ⊤ : Submodule (MvPowerSeries (Fin q) ℤ_[p])
+        (PatchingModule (MvPowerSeries (Fin q) ℤ_[p]) M F))) := projQ.toEquiv.nontrivial
+  haveI hMinfnt : Nontrivial (PatchingModule (MvPowerSeries (Fin q) ℤ_[p]) M F) :=
+    Function.Surjective.nontrivial (Submodule.mkQ_surjective
+      ((taylorWilesAug p q • ⊤ : Submodule (MvPowerSeries (Fin q) ℤ_[p])
+        (PatchingModule (MvPowerSeries (Fin q) ℤ_[p]) M F))))
+  have hregdia : RingTheory.Sequence.IsRegular
+      (PatchingModule (MvPowerSeries (Fin q) ℤ_[p]) M F) ts := by
+    refine (IsLocalRing.isRegular_iff_isWeaklyRegular_of_subset_maximalIdeal htsmem).mpr ?_
+    exact ((TensorProduct.lid (MvPowerSeries (Fin q) ℤ_[p])
+      (PatchingModule (MvPowerSeries (Fin q) ℤ_[p]) M F)).isWeaklyRegular_congr ts).mp
+      (htsreg.1.isWeaklyRegular_rTensor
+        (M₂ := PatchingModule (MvPowerSeries (Fin q) ℤ_[p]) M F))
+  have hregRinf : RingTheory.Sequence.IsRegular
+      (PatchingModule (MvPowerSeries (Fin q) ℤ_[p]) M F)
+      (ts.map (algebraMap (MvPowerSeries (Fin q) ℤ_[p]) (PatchingAlgebra R F))) :=
+    (isRegular_map_algebraMap_iff_of_tower
+      (B := PatchingAlgebra R F) ts).mpr hregdia
+  -- LEAF 8 (the pushed-forward sequence lies in the maximal ideal): a
+  -- proper ideal of the local `R_∞` is contained in `𝔪`, and
+  -- `Ideal.ofList` of the pushed sequence IS proper — otherwise
+  -- `hregRinf`'s second component `⊤ ≠ ofList · ⊤` fails.
+  have hmemRinf : ∀ x ∈ ts.map (algebraMap (MvPowerSeries (Fin q) ℤ_[p])
+        (PatchingAlgebra R F)),
+      x ∈ maximalIdeal (PatchingAlgebra R F) := sorry
+  -- ### the bottom identification of the patched module
+  let projA : PatchingModule (MvPowerSeries (Fin q) ℤ_[p]) M F →+ M0 :=
+    (projQ.toLinearMap.toAddMonoidHom).comp
+      (Submodule.mkQ (taylorWilesAug p q • ⊤ :
+        Submodule (MvPowerSeries (Fin q) ℤ_[p])
+        (PatchingModule (MvPowerSeries (Fin q) ℤ_[p]) M F))).toAddMonoidHom
+  have hprojAsurj : Function.Surjective projA :=
+    projQ.surjective.comp (Submodule.mkQ_surjective _)
+  -- LEAF 9 (action compatibility of the bottom identification): this is
+  -- exactly `smul_lemma` of `PatchingVendored/System.lean`, whose
+  -- hypothesis `HCompat` — `sM n (mk (r • m)) = sR n (mk r) • sM n (mk m)`
+  -- — holds because `sM n ∘ mk = projM n` and `sR n ∘ mk = toRuniv n` by
+  -- construction, so both sides are `ψ (toRuniv n r) • projM n m` by
+  -- `projM_smul`.  What remains is the identification of the two
+  -- quotients `M_∞/𝔫M_∞` (over `Λ`, and over `R_∞`), which have the same
+  -- carrier; `Submodule.map_algebraMap_smul` is the vendored bridge.
+  have hprojAsmul : ∀ (a : PatchingAlgebra R F)
+      (m : PatchingModule (MvPowerSeries (Fin q) ℤ_[p]) M F),
+      projA (a • m) = ψ (θ a) • projA m := sorry
+  -- LEAF 10 (kernel of the bottom identification): `projQ` is injective,
+  -- so `projA m = 0` gives `m ∈ 𝔫 ·M_∞` over `Λ`; and `𝔫 ·M_∞ ≤ ker θ ·M_∞`
+  -- over `R_∞` because `θ` kills `𝔫.map (algebraMap Λ R_∞)` by
+  -- construction (it factors through the quotient by that ideal).
+  have hprojAker : ∀ m : PatchingModule (MvPowerSeries (Fin q) ℤ_[p]) M F, projA m = 0 →
+      m ∈ RingHom.ker θ •
+        (⊤ : Submodule (PatchingAlgebra R F)
+          (PatchingModule (MvPowerSeries (Fin q) ℤ_[p]) M F)) := sorry
+  exact nonempty_patchedModule_of_patchingData ψ lift hliftsurj θ hθsurj inferInstance
+    (ts.map (algebraMap (MvPowerSeries (Fin q) ℤ_[p]) (PatchingAlgebra R F)))
+    (by simpa using htslen) hmemRinf hregRinf hM0 projA hprojAsurj hprojAsmul hprojAker
+
+end PatchingInstantiation
+
 /-- **The patching extraction at its natural universes** (patching
-leaf 2b′; sorry node, opened 2026-07-25 as the universe-monomorphic
+leaf 2b′; ASSEMBLED 2026-07-25 — this declaration is now GLUE over
+`exists_patchedModule_of_fields` above, which instantiates the vendored
+development and carries the ten remaining stated leaves; opened
+2026-07-25 as the universe-monomorphic
 form of `TaylorWilesSystem.exists_patchedModule`): identical content,
 but with the patched module in the universe `b` of the tower's modules
 `S.M` and the bottom module in the universe `c` of `S.M0`.  The
@@ -6185,8 +6408,20 @@ theorem TaylorWilesSystem.exists_patchedModule_natural.{a, b, c, s, uR}
     (S : TaylorWilesSystem.{a, b, c, s, uR} p ψ)
     (hcomplete : IsAdicComplete (IsLocalRing.maximalIdeal Runiv) Runiv)
     (hres : Finite (Runiv ⧸ IsLocalRing.maximalIdeal Runiv)) :
-    Nonempty (PatchedModule.{b, c, s, uR} p ψ) :=
-  sorry
+    Nonempty (PatchedModule.{b, c, s, uR} p ψ) := by
+  -- the structure's instance FIELDS are not in scope as instances once the
+  -- data fields are passed one by one, so install them first
+  letI := S.commRingR
+  letI := S.addCommGroupM
+  letI := S.moduleRM
+  letI := S.moduleCoeffM
+  letI := S.addCommGroupM0
+  letI := S.moduleM0
+  exact exists_patchedModule_of_fields S.q S.d S.R S.pres S.pres_surjective S.diamond
+    S.toRuniv S.toRuniv_surjective S.ker_toRuniv S.M S.diamond_smul S.bIdeal
+    S.bIdeal_le S.freeM S.M0 S.nontrivialM0 S.projM S.projM_surjective S.projM_smul
+    (fun n m => ⟨(S.projM_eq_zero_iff n m).mp, (S.projM_eq_zero_iff n m).mpr⟩)
+    hcomplete hres
 
 /-- **The patching extraction** (patching leaf 2b; sorry node — the
 pure commutative-algebra half, the pigeonhole/inverse-limit heart): a
