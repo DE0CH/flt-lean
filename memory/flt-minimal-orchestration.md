@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: feedback
   originSessionId: eda93c26-088c-4639-b0f3-bf5ee7a16ed8
-  modified: 2026-07-25T17:17:31.259Z
+  modified: 2026-07-25T18:06:56.905Z
 ---
 
 Deyao, 2026-07-25: "basically before we are managing too many things and it's
@@ -44,6 +44,13 @@ one.**
 - If a daemon is genuinely wanted (a warm REPL/LSP for turn-by-turn work), the
   AGENT starts and stops it, and it carries an idle timeout so forgetting costs
   bounded memory rather than unbounded.
+- **Iterating? Start your own LSP** (Deyao, 2026-07-25 — "remember that
+  yourself too"). `lake env lean` re-imports the whole cone every run, which is
+  fine for ONE final check and miserable for a tight edit/verify loop. For more
+  than two or three checks, start `lake serve` behind `flt-sock.py` and speak
+  LSP to it: the cone loads once, later checks re-elaborate only what changed.
+  This applies to ME as much as to agents. Stop it when done — the idle timeout
+  is a backstop, not the plan.
 - Before building any coordination mechanism, ask whether the agent could just
   do it itself. Usually yes ([[dont-invent-delegate-to-existing-tools]]).
 - Warn in the prompt instead of pre-solving: "your `.lake` may be stale" beats
