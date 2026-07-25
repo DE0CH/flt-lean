@@ -2634,6 +2634,7 @@ theorem exists_heckeField_mem_range_of_eigensystem
         dF w ∈ Set.range ψℓ :=
   sorry
 
+set_option backward.isDefEq.respectTransparency false in
 /-- **The arithmetic Frobenius at a place `w ∤ ℓ` of the base `F` raises
 `ℓ`-power roots of unity to the `Nw`-th power** (PROVEN; the
 roots-of-unity input of sub-leaf (b-ii)): for a root of unity `t` of
@@ -2662,7 +2663,6 @@ is the side condition of `AlgHom.IsArithFrobAt.apply_of_pow_eq_one`.
 Here it is used through the `LiesOver` instance identifying `w.asIdeal`
 with the contraction of the maximal ideal of `𝒪_w`, which is cleaner
 than the rational route's valuation computation. -/
-set_option backward.isDefEq.respectTransparency false in
 theorem adicArithFrob_rootsOfUnity_pow_base
     {ℓ : ℕ} [hℓ : Fact ℓ.Prime] (F : Type u) [Field F] [NumberField F]
     (w : HeightOneSpectrum (NumberField.RingOfIntegers F))
