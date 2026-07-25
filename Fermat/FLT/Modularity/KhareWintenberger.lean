@@ -1516,45 +1516,201 @@ theorem free_of_finite_of_algebraMap_padicInt_injective {p : ℕ}
     Module.isTorsionFree_iff_algebraMap_injective.mpr hinj
   infer_instance
 
-/-- **The Hilbert-modular `3`-adic realization, integral-domain form**
-(sorry node — Carayol 1986 / Taylor 1989; THE citation leaf of the
-`3`-adic realization node): a Hilbert-modular Hecke eigensystem
-`(E, heckeF)` over the totally real field `F` — witnessed as modular
-by the `ℓ`-adic matching clause `hmod` for the lift `ρ` — has a
-`3`-adic Galois realization: a representation `τF` of `G_F` on a
-stable lattice over a local DOMAIN `B` which is module-finite over
-`ℤ_3` and contains `ℤ_3` (classically the integers of the completion
-`E_λ`, `λ | 3`), with the same Hecke polynomials through a place `ψ₃`
-of `E` over `3`.
+/-- **`ℤ_p` embeds into every characteristic-zero field it maps to**
+(PROVEN, 2026-07-25; first of the four coefficient-ring bricks that
+shrink the Carayol/Taylor citation below): any ring homomorphism
+`ℤ_p → C` with `C` a field of characteristic zero is injective.
 
-This is the sharpest citation-only form of the node: everything here
-is produced verbatim by the construction, and the one structural
-property the consumer additionally wants — `ℤ_3`-FREENESS of `B` — is
-NOT asserted here, because it is a formal consequence of the rest
-(`free_of_finite_of_algebraMap_padicInt_injective` above). The
-consumer `exists_threeadic_realization_of_heckePackage` is therefore a
-PROVEN assembly over this single leaf.
+`ℤ_p` is a discrete valuation ring, so a nonzero `x` factors as
+`unit * p ^ n` (`PadicInt.unitCoeff_spec`); its image is then a unit
+times `(p : C) ^ n`, and both factors are nonzero in a
+characteristic-zero field. No completeness or valuation theory is
+needed beyond that factorization. -/
+theorem injective_of_padicInt_ringHom_charZero {p : ℕ} [Fact p.Prime]
+    {C : Type*} [Field C] [CharZero C] (g : ℤ_[p] →+* C) :
+    Function.Injective g := by
+  rw [injective_iff_map_eq_zero g]
+  intro x hx
+  by_contra hx0
+  rw [PadicInt.unitCoeff_spec hx0, map_mul, map_pow, map_natCast] at hx
+  rcases mul_eq_zero.mp hx with h | h
+  · exact (IsUnit.map g (PadicInt.unitCoeff hx0).isUnit).ne_zero h
+  · exact (Nat.cast_ne_zero.mpr (Fact.out (p := p.Prime)).ne_zero)
+      (pow_eq_zero_iff'.mp h).1
 
-Literature: Carayol, *Sur les représentations ℓ-adiques associées aux
-formes modulaires de Hilbert*, Ann. Sci. ÉNS 19 (1986) (construction
-and local-global compatibility for `[F : ℚ]` odd, or via
-Jacquet–Langlands at a finite place); Taylor, *On Galois
-representations associated to Hilbert modular forms*, Invent. Math. 98
-(1989) (the remaining even-degree cases, by congruences); the stable
-lattice exists because `G_F` is compact and `E_λ` is local (standard:
-Serre, *Abelian ℓ-adic representations*, I §1), and `B` is then the
-ring of integers of `E_λ` — a local domain, module-finite over `ℤ_3`,
-into which `ℤ_3` embeds.
+/-- **The comparison map out of a `3`-adic coefficient ring is
+automatically injective** (PROVEN, 2026-07-25; second coefficient-ring
+brick): if `B` is an integral domain, module-finite over `ℤ_p`, then
+EVERY ring homomorphism `B → C` into a characteristic-zero field is
+injective.
 
-PIN AUDIT (2026-07-24): the mathlib pin has no Hilbert modular forms,
-no Shimura curves and no automorphic Galois representations of any
-kind (`grep Hilbert.*modular`, `grep Shimura` over `Mathlib/`: nothing
-in this direction), so the construction itself is irreducibly a
-citation. What the pin DOES have is the commutative algebra of the
-lattice step, which is why that half has been split off and proven.
+Proof: `RingHom.ker f` contracts to `⊥` in `ℤ_p`, because
+`f ∘ algebraMap ℤ_p B` is injective by
+`injective_of_padicInt_ringHom_charZero`; and an ideal of an integral
+extension of a domain lying over `⊥` IS `⊥`
+(`Ideal.eq_bot_of_comap_eq_bot`, using `Algebra.IsIntegral ℤ_p B` from
+module-finiteness — a nonzero element of the ideal contributes a
+nonzero element of the contraction through its integral equation).
 
-ROUTE AUDIT (dichotomy, 2026-07-24). Two routes to the `3`-adic
-member of the compatible system were weighed at this joint:
+This is why the citation leaf below no longer has to assert
+`Function.Injective ιB`: for the coefficient rings the construction
+produces, injectivity of the comparison embedding is a THEOREM, not a
+piece of input data. -/
+theorem injective_of_finite_padicInt_charZero {p : ℕ} [Fact p.Prime]
+    {B : Type*} [CommRing B] [IsDomain B] [Algebra ℤ_[p] B]
+    [Module.Finite ℤ_[p] B] {C : Type*} [Field C] [CharZero C]
+    (f : B →+* C) : Function.Injective f := by
+  rw [RingHom.injective_iff_ker_eq_bot]
+  refine Ideal.eq_bot_of_comap_eq_bot (R := ℤ_[p]) ?_
+  rw [RingHom.comap_ker, ← RingHom.injective_iff_ker_eq_bot]
+  exact injective_of_padicInt_ringHom_charZero (f.comp (algebraMap ℤ_[p] B))
+
+/-- **`ℤ_p → B` is automatically injective once `B` maps to a
+characteristic-zero field** (PROVEN, 2026-07-25; the same brick read on
+the structure map): the composite `ℤ_p → B → C` is injective by
+`injective_of_padicInt_ringHom_charZero`, hence so is its first factor.
+
+Consequence for the cut below: the citation leaf need not assert
+`Function.Injective (algebraMap ℤ_3 B)` either — the comparison
+embedding `ιB` it produces already forces it, and the downstream
+free-lattice normalization
+(`free_of_finite_of_algebraMap_padicInt_injective`) is fed from here. -/
+theorem injective_algebraMap_of_ringHom_charZero {p : ℕ} [Fact p.Prime]
+    {B : Type*} [CommRing B] [Algebra ℤ_[p] B] {C : Type*} [Field C]
+    [CharZero C] (f : B →+* C) :
+    Function.Injective (algebraMap ℤ_[p] B) := by
+  have h := injective_of_padicInt_ringHom_charZero (f.comp (algebraMap ℤ_[p] B))
+  exact fun x y hxy => h (by simp only [RingHom.coe_comp, Function.comp_apply, hxy])
+
+/-- **The module topology on a module-finite `ℤ_p`-algebra is a ring
+topology** (PROVEN, 2026-07-25; third coefficient-ring brick): a
+commutative ring `B` which is a `ℤ_p`-algebra and module-finite over
+`ℤ_p` becomes a topological ring when given the `ℤ_p`-module topology,
+which of course satisfies `IsModuleTopology ℤ_p B` by construction.
+
+This is `IsModuleTopology.isTopologicalRing` (multiplication on a
+module-finite algebra is `ℤ_p`-bilinear, and bilinear maps out of
+finite modules with the module topology are continuous) applied to
+`R = ℤ_p`.
+
+Consequence for the cut below: the citation leaf need not produce a
+topology on its coefficient ring at all — the topology is CANONICAL
+(the module topology, which `IsModuleTopology` pins uniquely anyway),
+and both `IsTopologicalRing` and `IsModuleTopology` are theorems here
+rather than asserted components of the citation. -/
+theorem isTopologicalRing_moduleTopology_of_finite (p : ℕ) [Fact p.Prime]
+    (B : Type*) [CommRing B] [Algebra ℤ_[p] B] [Module.Finite ℤ_[p] B] :
+    letI := moduleTopology ℤ_[p] B
+    IsTopologicalRing B :=
+  letI := moduleTopology ℤ_[p] B
+  IsModuleTopology.isTopologicalRing ℤ_[p] B
+
+/-- **The Hilbert-modular `3`-adic realization, geometric core**
+(sorry node — Carayol 1986, Théorème (A)/(B) / Taylor 1989; THE
+citation leaf of the `3`-adic realization node, in its narrowest form
+to date): a Hilbert-modular Hecke eigensystem `(E, heckeF)` over the
+totally real field `F` — witnessed as modular by the `ℓ`-adic matching
+clause `hmod` for the lift `ρ` — has a `3`-adic Galois realization: a
+representation `τF` of `G_F` on a rank-`2` lattice over a local DOMAIN
+`B` module-finite over `ℤ_3` (classically the integers of the
+completion `E_λ`, `λ | 3`), matching the Hecke polynomials through a
+place `ψ₃` of `E` over `3` and a comparison embedding `ιB`.
+
+CITATION-SHRINKING CUT (2026-07-25). This leaf replaces the earlier
+`exists_threeadic_realization_domain_of_heckePackage` citation, which
+is now a PROVEN assembly over it. Five of that statement's components
+were pulled out of the citation and proven in-tree as the four bricks
+above; the citation now asserts strictly less:
+
+* `TopologicalSpace B`, `IsTopologicalRing B`, `IsModuleTopology ℤ_3 B`
+  — GONE. The coefficient ring's topology is not a choice: the three
+  components together pin it to be the `ℤ_3`-module topology, so the
+  statement below simply USES that topology, and
+  `isTopologicalRing_moduleTopology_of_finite` supplies the ring-topology
+  and module-topology facts. The citation no longer has to know that its
+  coefficient ring is a topological ring at all;
+* `Function.Injective ιB` — GONE, by
+  `injective_of_finite_padicInt_charZero`: a domain module-finite over
+  `ℤ_p` has NO nonzero prime lying over `(0)`, so any ring map of it into
+  a characteristic-zero field is injective;
+* `Function.Injective (algebraMap ℤ_3 B)` — GONE, by
+  `injective_algebraMap_of_ringHom_charZero`: the mere EXISTENCE of the
+  comparison embedding `ιB` into `ℚ̄_3` forces it, since
+  `ιB ∘ algebraMap` is a map of `ℤ_3` into a characteristic-zero field.
+  This is the hypothesis that feeds the downstream free-lattice
+  normalization `free_of_finite_of_algebraMap_padicInt_injective`, so
+  `ℤ_3`-freeness of `B` is now TWO formal steps away from the citation
+  rather than one assumption plus one step.
+
+What remains is the genuinely geometric core: the automorphic
+construction of a `2`-dimensional `3`-adic representation of `G_F` with
+prescribed Frobenius characteristic polynomials, over the ring of
+integers of the coefficient field's completion. Carayol builds the
+compatible system by decomposing the `ℓ`-adic cohomology
+`H¹(M_K ⊗_F F̄, ℱ_λ)` of the Shimura curves attached to a quaternion
+algebra over `F` under the Hecke action (op. cit. §0.10–0.11), using
+his earlier analysis of their bad reduction; that is what no pin
+material can reach.
+
+Literature (verified against the source, 2026-07-25): Carayol, *Sur
+les représentations ℓ-adiques associées aux formes modulaires de
+Hilbert*, Ann. Sci. ÉNS (4) **19** (1986) 409–468 —
+Théorème (A) (§0.7, p. 410): for `π` a cuspidal automorphic
+representation of `GL₂` over the totally real `F` of the relevant
+weight, there is a finite extension `E` of the field of definition
+`ℚ(π)` and a STRICTLY COMPATIBLE system `{σ_λ}` of continuous
+`2`-dimensional `E_λ`-adic representations of `Gal(F̄/F)` whose
+restriction to every local Weil group `W_𝔭` is the local Langlands
+image `σ_λ(π_𝔭)` — in particular the Frobenius characteristic
+polynomial at each good place is the Hecke polynomial;
+Théorème (B) (§0.9) is the weaker version proven first, over a
+quaternion algebra ramified at a chosen finite place when `[F : ℚ]` is
+even, with (A) deduced from (B) by cyclic base change for `GL(2)`;
+Taylor, *On Galois representations associated to Hilbert modular
+forms*, Invent. Math. **98** (1989) (the remaining cases, by
+congruences). The passage from Carayol's `E_λ`-adic representation to
+the lattice model over the local ring `B = O_{E_λ}` used here is the
+standard compactness argument (Serre, *Abelian ℓ-adic
+representations*, I §1); by the ROUTE AUDIT below it is deliberately
+NOT split off as a separate leaf.
+
+PIN AUDIT (2026-07-24, re-checked 2026-07-25): the mathlib pin has no
+Hilbert modular forms, no Shimura curves and no automorphic Galois
+representations of any kind (`grep Hilbert.*modular`, `grep Shimura`
+over `Mathlib/`: nothing in this direction), so the construction
+itself is irreducibly a citation. What the pin DOES have is the
+coefficient-ring commutative algebra and the module-topology layer,
+which is why those have been split off and proven (four bricks above,
+plus `free_of_finite_of_algebraMap_padicInt_injective`).
+
+RESIDUAL BOOKKEEPING NOT YET PULLED OUT (audited 2026-07-25, recorded
+so it is not re-scanned from scratch): `IsLocalRing B` stays in the
+citation. It is TRUE for the produced ring but its formal proof from
+"domain, module-finite over `ℤ_3`" needs a Henselian/completeness
+input — the maximal ideals of such a `B` all lie over `(3)` (that part
+is formal, `Algebra.IsIntegral.isField_iff_isField`), but their
+UNIQUENESS is exactly uniqueness of the extension of the `3`-adic
+valuation to `Frac B`. The pin has `HenselianRing` and
+`IsAdicComplete.henselianRing` but no instance connecting them to
+module-finite algebras (no `HenselianLocalRing` use anywhere outside
+its defining file), no `IsNonarchimedeanLocalField` instance for finite
+extensions of `ℚ_p`, and only the unbundled `spectralNorm` layer — so
+the bridge would have to be built (idempotent lifting along
+`3`-adic completeness of a finite free `ℤ_3`-module, then
+"connected finite ring is local"). That is a self-contained
+commutative-algebra project, not a shrinking of the geometry.
+
+Also audited and deliberately NOT done: restating the matching clause
+as the pair `ιB (tr τF(Frob_w)) = ψ₃ a_w`, `ιB (det τF(Frob_w)) =
+ψ₃ d_w` (the "eigenvalue-to-trace dictionary"). Both sides of the
+present clause are monic of degree `2` (`hmod` forces `heckeF w` to be
+one), so the trace/determinant form is EQUIVALENT, not weaker: it
+would relocate polynomial bookkeeping into this file without removing
+anything from the citation.
+
+ROUTE AUDIT (dichotomy, 2026-07-24; unchanged — do not re-litigate
+without new evidence). Two routes to the `3`-adic member of the
+compatible system were weighed at this joint:
 
 * the **Carayol/Taylor automorphic route** taken here — attach the
   `3`-adic representation directly to the Hilbert eigensystem
@@ -1574,19 +1730,100 @@ member of the compatible system were weighed at this joint:
   places — i.e. the same citation plus an abelian-variety development
   the pin also lacks. Strictly deeper at every node.
 
-SOUNDNESS AUDIT (both ways, 2026-07-24): (i) direct — for the intended
-instantiation (`(E, heckeF)` the eigensystem of the Hilbert newform
-attached to `ρ|_{G_F}` by `exists_heckePackage_of_seed`) this is
-Carayol/Taylor verbatim; for an abstract eigensystem merely satisfying
-`hmod` the abstract-quantification caveat applies (the hypothesis that
-`heckeF` IS a newform eigensystem lives in this citation), and (ii)
-collapse — the hypothesis set (an irreducible hardly ramified mod-`ℓ`
+A third cut — this leaf returning the representation over the local
+FIELD `E_λ`, with a Galois-stable lattice chosen afterwards — was
+rejected earlier for the same reason: the stable-lattice step is
+itself a citation (compactness of `G_F` plus Serre I §1), so the cut
+trades one citation for two.
+
+SOUNDNESS AUDIT (both ways, 2026-07-24, inherited): (i) direct — for
+the intended instantiation (`(E, heckeF)` the eigensystem of the
+Hilbert newform attached to `ρ|_{G_F}` by
+`exists_heckePackage_of_seed`) this is Carayol/Taylor verbatim; for an
+abstract eigensystem merely satisfying `hmod` the
+abstract-quantification caveat applies (the hypothesis that `heckeF`
+IS a newform eigensystem lives in this citation), and (ii) collapse —
+the hypothesis set (an irreducible hardly ramified mod-`ℓ`
 representation, `ℓ ≥ 5`) is classically unsatisfiable (headline
 below), so the statement is classically true for every package.
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
 discharge through `Family.lean`, `Lift.lean`, or
 `Modularity/Interface.lean`. -/
+theorem carayol_threeadic_realization_of_heckePackage
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+    (F : Type u) [Field F] [NumberField F]
+    (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
+    (E : Type u) [Field E] [NumberField E]
+    (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
+    (heckeF : HeightOneSpectrum (NumberField.RingOfIntegers F) →
+      Polynomial E)
+    (ψℓ : E →+* AlgebraicClosure ℚ_[ℓ])
+    (ιO : O →+* AlgebraicClosure ℚ_[ℓ]) (hιO : Function.Injective ιO)
+    (hmod : ∀ w ∉ badF,
+      ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO =
+        (heckeF w).map ψℓ) :
+    ∃ (B : Type u) (_ : CommRing B) (_ : IsDomain B) (_ : IsLocalRing B)
+      (_ : Algebra ℤ_[3] B) (_ : Module.Finite ℤ_[3] B),
+      letI : TopologicalSpace B := moduleTopology ℤ_[3] B
+      letI : IsTopologicalRing B :=
+        isTopologicalRing_moduleTopology_of_finite 3 B
+      ∃ (τF : GaloisRep F B (Fin 2 → B))
+        (ψ₃ : E →+* AlgebraicClosure ℚ_[3])
+        (ιB : B →+* AlgebraicClosure ℚ_[3]),
+        ∀ w ∉ badF, (τF.charFrob w).map ιB = (heckeF w).map ψ₃ :=
+  sorry
+
+/-- **The Hilbert-modular `3`-adic realization, integral-domain form**
+(PROVEN assembly, 2026-07-25 — Carayol 1986 / Taylor 1989 at one
+remove): a Hilbert-modular Hecke eigensystem `(E, heckeF)` over the
+totally real field `F` — witnessed as modular by the `ℓ`-adic matching
+clause `hmod` for the lift `ρ` — has a `3`-adic Galois realization
+over a local DOMAIN `B` which is module-finite over `ℤ_3`, carries the
+`ℤ_3`-module topology, receives `ℤ_3` injectively, and embeds into
+`ℚ̄_3`.
+
+ASSEMBLY (2026-07-25): this used to BE the citation; it is now a
+proven assembly over the strictly narrower geometric core
+`carayol_threeadic_realization_of_heckePackage` plus the four
+coefficient-ring bricks proven above — the module topology is a ring
+topology and is the module topology
+(`isTopologicalRing_moduleTopology_of_finite`), and both injectivity
+components follow from the existence of the comparison embedding into
+the characteristic-zero field `ℚ̄_3`
+(`injective_of_finite_padicInt_charZero`,
+`injective_algebraMap_of_ringHom_charZero`). Nothing else changes: the
+coefficient ring, the representation, the place `ψ₃`, the embedding
+`ιB` and the Hecke-polynomial matching clause are carried verbatim
+from the citation, so there is no lattice change and no charpoly to
+re-compute.
+
+See `carayol_threeadic_realization_of_heckePackage` for the full
+literature, pin, route and soundness audits (including what was
+deliberately NOT pulled out of the citation, and why).
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
+discharge through `Family.lean`, `Lift.lean`, or
+`Modularity/Interface.lean`; discharged here through the Carayol
+geometric core alone, which inherits the same guard. -/
 theorem exists_threeadic_realization_domain_of_heckePackage
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
@@ -1626,8 +1863,24 @@ theorem exists_threeadic_realization_domain_of_heckePackage
       (τF : GaloisRep F B (Fin 2 → B))
       (ψ₃ : E →+* AlgebraicClosure ℚ_[3])
       (ιB : B →+* AlgebraicClosure ℚ_[3]) (_ : Function.Injective ιB),
-      ∀ w ∉ badF, (τF.charFrob w).map ιB = (heckeF w).map ψ₃ :=
-  sorry
+      ∀ w ∉ badF, (τF.charFrob w).map ιB = (heckeF w).map ψ₃ := by
+  classical
+  -- (a) the NARROWED Carayol/Taylor citation: the coefficient ring comes
+  -- back as a bare local domain, module-finite over `ℤ_3`, with no
+  -- topology, no `ℤ_3`-injectivity and no injectivity of the comparison
+  -- embedding asserted
+  obtain ⟨B, hCR, hDom, hLR, hAlg, hFin, τF, ψ₃, ιB, hmatch⟩ :=
+    carayol_threeadic_realization_of_heckePackage hℓodd hℓ5 hZinj hrank hρ hW
+      hρbar hirr π hπsurj hπ F hFtr hFgal E badF heckeF ψℓ ιO hιO hmod
+  -- (b) the coefficient-ring bookkeeping, all four components PROVEN
+  -- above: the canonical module topology is a ring topology and is of
+  -- course the module topology, and both injectivity statements follow
+  -- from the mere existence of the characteristic-zero comparison
+  -- embedding `ιB`
+  exact ⟨B, hCR, hDom, moduleTopology ℤ_[3] B,
+    isTopologicalRing_moduleTopology_of_finite 3 B, hAlg, hLR, hFin, ⟨rfl⟩,
+    injective_algebraMap_of_ringHom_charZero ιB, τF, ψ₃, ιB,
+    injective_of_finite_padicInt_charZero ιB, hmatch⟩
 
 /-- **The Hilbert-modular `3`-adic realization** (PROVEN assembly,
 2026-07-24 — Carayol 1986 / Taylor 1989 at one remove): a
@@ -1642,14 +1895,15 @@ of `E` over `3`.
 ASSEMBLY (2026-07-24, PROVEN — the literature-joint cut of this node).
 The node splits at its one genuine literature joint into
 
-* (a) the CITATION half,
-  `exists_threeadic_realization_domain_of_heckePackage` — the
-  automorphic construction of the `3`-adic representation with the
+* (a) the CITATION half, `exists_threeadic_realization_domain_of_heckePackage`
+  — the automorphic construction of the `3`-adic representation with the
   right Frobenius characteristic polynomials, over the coefficient
   ring the construction literally produces: a local DOMAIN,
-  module-finite over `ℤ_3`, containing `ℤ_3`. This is the sole
-  residual sorry of the node, and it is strictly weaker than the
-  statement it replaces (it does not assert `ℤ_3`-freeness);
+  module-finite over `ℤ_3`, containing `ℤ_3`. Since 2026-07-25 that
+  half is itself PROVEN, over the strictly narrower geometric core
+  `carayol_threeadic_realization_of_heckePackage` (which no longer
+  asserts the topology on the coefficient ring, nor either injectivity
+  component) — the sole residual sorry of the node is now that core;
 * (b) the FORMAL half, `free_of_finite_of_algebraMap_padicInt_injective`
   — the free-lattice normalization, PROVEN in-tree: `ℤ_3` is a DVR
   hence a PID, injectivity of `algebraMap ℤ_3 B` between domains is
