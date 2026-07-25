@@ -9819,11 +9819,11 @@ lemma WeierstrassCurve.adjoin_torsionKernelGens_isIntegral_values
   exact hle hg
 
 set_option linter.unusedSectionVars false in
-/-- **Chevalley extension with center control** (sorry node — stage E2a of
+/-- **Chevalley extension with center control** (PROVEN — stage E2a of
 the Katz–Mazur addition-closure cut `torsionKernelFun_add_mem_span`): every
 maximal ideal of a subalgebra `C` of `Kˢᵉᵖ` consisting of elements integral
 over `R` is dominated by a valuation subring of `Kˢᵉᵖ` centered on `R`.
-PROOF PLAN (the argument of `exists_valuationSubring_integralClosure_center`
+PROOF (the argument of `exists_valuationSubring_integralClosure_center`
 with `C` in place of the integral closure and the identity in place of `φ`):
 transport `𝔫` to the `Subring`-subtype, dominate the localization
 `LocalSubring.ofPrime C.toSubring 𝔫` by Chevalley's extension theorem
