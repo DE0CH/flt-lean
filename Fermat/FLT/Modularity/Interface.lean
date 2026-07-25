@@ -11807,30 +11807,35 @@ theorem eisenstein_trivial_sub_extension_locally_split_at_p
   rw [e1, e2, hχcinv, mul_one, hy, hccinv, h7]
   ring
 
-/-- **The uniform decomposition-group bridge at `2`** (sorry node — the
-full-group strengthening of the PROVEN inertia bridge
-`IsHardlyRamified.localInertia_two_eq_map_padic` of `ModThree.lean`):
-the images in `Γℚ` of the two local absolute Galois groups at `2` — of
-`ℚ_[2]` (mathlib's `Padic`) and of the adic completion of `ℚ` at the
-place `prime_two` (the spelling in which the whole
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 2000000 in
+/-- **The uniform decomposition-group bridge at `2`** (PROVEN
+2026-07-25 — the full-group strengthening of the PROVEN inertia bridge
+`IsHardlyRamified.localInertia_two_eq_map_padic` of `ModThree.lean`,
+obtained by re-running that construction with the valuation
+bookkeeping dropped and the conjugator named ONCE, outside the
+element): the images in `Γℚ` of the two local absolute Galois groups
+at `2` — of `ℚ_[2]` (mathlib's `Padic`) and of the adic completion of
+`ℚ` at the place `prime_two` (the spelling in which the whole
 inertia/tame/Frobenius machinery of `ModThree.lean` is developed) —
-are conjugate subgroups, by ONE UNIFORM conjugator `c`. Intended
-proof, extracted from the (per-element) inertia bridge: the continuous
-`ℚ`-algebra isomorphism `E : adicCompletion ℚ v₂ ≃A[ℚ] ℚ_[2]`
+are conjugate subgroups, by ONE UNIFORM conjugator `c`. Proof: the
+continuous `ℚ`-algebra isomorphism `E : adicCompletion ℚ v₂ ≃A[ℚ] ℚ_[2]`
 (`Rat.HeightOneSpectrum.adicCompletion.padicEquiv`, normalized through
-the `Padic`-instance cast) induces an isomorphism of algebraic
-closures, hence a group isomorphism `Γ ℚ_[2] ≃ Γ (v₂-completion)`
-`g ↦ σ_g`; the two composite embeddings `ℚᵃˡᵍ → (completions)ᵃˡᵍ`
-differ by a single automorphism `c ∈ Γ ℚ` (`IsAlgClosed.lift` plus
-uniqueness of algebraic-closure embeddings up to automorphism), and
-that `c` conjugates `map (algebraMap ℚ ℚ_[2]) g` onto
-`map (algebraMap ℚ Kv₂) σ_g` for EVERY `g` simultaneously — the
-per-element proof of `localInertia_two_eq_map_padic` already
-constructs exactly this data before adding valuation bookkeeping; this
-statement drops the inertia clauses, keeps the uniformity. Soundness:
-decomposition groups at places over a fixed rational place are
-conjugate in the global group — standard (Neukirch, *Algebraic Number
-Theory*, II §9). -/
+the `Padic`-instance cast along `natGenerator_toHeightOneSpectrum`)
+induces `ι₃ := AlgebraicClosure.map E.symm`, which is bijective (its
+composite with `AlgebraicClosure.map E` is an algebraic endomorphism
+of an algebraic closure, hence surjective), so conjugation by it
+carries `g : Γ ℚ_[2]` to `σ := ι₃ ∘ g ∘ ι₃⁻¹ ∈ Γ Kv₂` — an
+automorphism over `Kv₂` precisely because `E.symm ∘ E = id`. The
+conjugator is chosen BEFORE `g`: the two embeddings `ι₃ ∘ ι₂` and
+`ι₁` of `ℚᵃˡᵍ` into `Kv₂ᵃˡᵍ` over `ℚ` differ by the single
+automorphism `c := Normal.algHomEquivAut (ι₃ ∘ ι₂) ∈ Γ ℚ`
+(`ι₃ (ι₂ x) = ι₁ (c x)` for all `x`), and the transport square
+`ι₃ ∘ g = σ ∘ ι₃` then gives `map σ = c · map g · c⁻¹` pointwise
+through the injective `ι₁`, i.e. `map g = c⁻¹ · map σ · c` with `c⁻¹`
+serving every `g` simultaneously. Soundness: decomposition groups at
+places over a fixed rational place are conjugate in the global group —
+standard (Neukirch, *Algebraic Number Theory*, II §9). -/
 theorem exists_uniform_conj_decomposition_two_padic :
     ∃ c : Field.absoluteGaloisGroup ℚ, ∀ g : Field.absoluteGaloisGroup ℚ_[2],
       ∃ σ : Field.absoluteGaloisGroup
@@ -11839,8 +11844,164 @@ theorem exists_uniform_conj_decomposition_two_padic :
         Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) g =
           c * Field.absoluteGaloisGroup.map (algebraMap ℚ
             (HeightOneSpectrum.adicCompletion ℚ
-              Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ * c⁻¹ :=
-  sorry
+              Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ * c⁻¹ := by
+  classical
+  haveI h2f : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
+  -- (1) the completion at the place of `2` is `ℚ_[2]`
+  haveI hfp : Fact ((Rat.HeightOneSpectrum.primesEquiv
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) : ℕ).Prime :=
+    ⟨(Rat.HeightOneSpectrum.primesEquiv
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat).2⟩
+  have hprime : ((Rat.HeightOneSpectrum.primesEquiv
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) : ℕ) = 2 := by
+    show Rat.HeightOneSpectrum.natGenerator _ = 2
+    exact natGenerator_toHeightOneSpectrum Nat.prime_two
+  have hcastP : ∀ (a b : ℕ) (ha : Fact a.Prime) (hb : Fact b.Prime),
+      a = b → ((@Padic a ha) ≃A[ℚ] (@Padic b hb)) := by
+    intro a b ha hb hab
+    subst hab
+    have hinst : ha = hb := Subsingleton.elim _ _
+    subst hinst
+    exact ContinuousAlgEquiv.refl ℚ _
+  obtain ⟨E⟩ : Nonempty (HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat ≃A[ℚ] ℚ_[2]) := by
+    letI : Algebra ℚ (HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) :=
+      HeightOneSpectrum.instAlgebraAdicCompletion _ _ _
+    have hpair : Nonempty (HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat ≃A[ℚ] ℚ_[2]) :=
+      ⟨(Rat.HeightOneSpectrum.adicCompletion.padicEquiv
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat).trans
+        (hcastP _ 2 hfp h2f hprime)⟩
+    have halg : (HeightOneSpectrum.instAlgebraAdicCompletion
+        (NumberField.RingOfIntegers ℚ) ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) =
+        (DivisionRing.toRatAlgebra) := Subsingleton.elim _ _
+    exact halg ▸ hpair
+  -- (2) the induced isomorphism of the algebraic closures
+  set ι₃ : AlgebraicClosure ℚ_[2] →+*
+      AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) :=
+    AlgebraicClosure.map (E.symm : ℚ_[2] →+*
+      HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) with hι₃
+  have hι₃surj : Function.Surjective ι₃ := by
+    set ιE : AlgebraicClosure (HeightOneSpectrum.adicCompletion
+        ℚ Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) →+*
+        AlgebraicClosure ℚ_[2] :=
+      AlgebraicClosure.map (E : HeightOneSpectrum.adicCompletion
+        ℚ Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat →+* ℚ_[2]) with hιE
+    set hcomp : AlgebraicClosure (HeightOneSpectrum.adicCompletion
+        ℚ Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) →ₐ[
+          HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat]
+        AlgebraicClosure (HeightOneSpectrum.adicCompletion
+          ℚ Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) :=
+      { toRingHom := ι₃.comp ιE
+        commutes' := fun x => by
+          show ι₃ (ιE (algebraMap _ _ x)) = algebraMap _ _ x
+          rw [hιE, AlgebraicClosure.map_algebraMap, hι₃,
+            AlgebraicClosure.map_algebraMap]
+          congr 1
+          exact E.symm_apply_apply x }
+    have hbij := Algebra.IsAlgebraic.algHom_bijective hcomp
+    intro y
+    obtain ⟨x, hx⟩ := hbij.2 y
+    exact ⟨ιE x, hx⟩
+  set ι₃e : AlgebraicClosure ℚ_[2] ≃+*
+      AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) :=
+    RingEquiv.ofBijective ι₃ ⟨ι₃.injective, hι₃surj⟩
+  have hι₃e_apply : ∀ y, ι₃e y = ι₃ y := fun y => rfl
+  -- (3) the UNIFORM conjugator: the two embeddings of `ℚᵃˡᵍ` into the
+  -- algebraic closure of the completion differ by one automorphism
+  set ι₁ := AlgebraicClosure.map ((algebraMap ℚ
+    (HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)))
+  set ι₂ := AlgebraicClosure.map (algebraMap ℚ ℚ_[2])
+  obtain ⟨c, hfc⟩ : ∃ c : Field.absoluteGaloisGroup ℚ,
+      ∀ x : AlgebraicClosure ℚ, ι₃ (ι₂ x) = ι₁ (c x) := by
+    letI : Algebra (AlgebraicClosure ℚ)
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) :=
+      ι₁.toAlgebra
+    haveI : IsScalarTower ℚ (AlgebraicClosure ℚ)
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) :=
+      IsScalarTower.of_algebraMap_eq' (Subsingleton.elim _ _)
+    set f : AlgebraicClosure ℚ →ₐ[ℚ]
+        AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) :=
+      (ι₃.comp ι₂).toRatAlgHom
+    set c : Field.absoluteGaloisGroup ℚ := (Normal.algHomEquivAut (F := ℚ)
+      (K₁ := AlgebraicClosure
+        (HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))
+      (E := AlgebraicClosure ℚ)) f with hc
+    refine ⟨c, fun x => ?_⟩
+    have hfx : f x = ι₁ (c x) := by
+      have h : f = (Normal.algHomEquivAut (F := ℚ)
+          (K₁ := AlgebraicClosure
+            (HeightOneSpectrum.adicCompletion ℚ
+              Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))
+          (E := AlgebraicClosure ℚ)).symm c := by
+        rw [hc, Equiv.symm_apply_apply]
+      rw [h, Normal.algHomEquivAut_symm_apply]
+      rfl
+    exact hfx
+  refine ⟨c⁻¹, ?_⟩
+  intro g
+  -- (4) transport `g` to the completion side through `ι₃e`
+  set σ₀ : AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) ≃+*
+      AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) :=
+    (ι₃e.symm.trans g.toRingEquiv).trans ι₃e
+  set σ : Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) :=
+    AlgEquiv.ofRingEquiv (f := σ₀) (fun x => by
+      have hsy : ι₃e.symm (algebraMap (HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) x) =
+          algebraMap ℚ_[2] (AlgebraicClosure ℚ_[2]) (E x) := by
+        rw [RingEquiv.symm_apply_eq, hι₃e_apply, hι₃,
+          AlgebraicClosure.map_algebraMap]
+        congr 1
+        exact (E.symm_apply_apply x).symm
+      show ι₃e (g (ι₃e.symm (algebraMap _ _ x))) = algebraMap _ _ x
+      rw [hsy, g.commutes, hι₃e_apply, hι₃, AlgebraicClosure.map_algebraMap]
+      congr 1
+      exact E.symm_apply_apply x)
+  have hσ_apply : ∀ y, σ y = ι₃e (g (ι₃e.symm y)) := fun y => rfl
+  have hsquare : ∀ y, ι₃ (g y) = σ (ι₃ y) := by
+    intro y
+    rw [hσ_apply, ← hι₃e_apply y, RingEquiv.symm_apply_apply, hι₃e_apply]
+  refine ⟨σ, ?_⟩
+  -- (5) the conjugation identity, pointwise through the injective `ι₁`
+  have key : Field.absoluteGaloisGroup.map (algebraMap ℚ
+      (HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ =
+      c * Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) g * c⁻¹ := by
+    apply AlgEquiv.ext
+    intro x
+    apply ι₁.injective
+    rw [show ι₁ ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ) x) =
+      σ (ι₁ x) from Field.absoluteGaloisGroup.lift_map (algebraMap ℚ
+        (HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) σ x]
+    show σ (ι₁ x) = ι₁ (c ((Field.absoluteGaloisGroup.map
+      (algebraMap ℚ ℚ_[2]) g) (c⁻¹ x)))
+    rw [← hfc, show ι₂ ((Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) g)
+        (c⁻¹ x)) = g (ι₂ (c⁻¹ x)) from
+      Field.absoluteGaloisGroup.lift_map (algebraMap ℚ ℚ_[2]) g (c⁻¹ x),
+      hsquare, hfc, show (c : Field.absoluteGaloisGroup ℚ)
+        ((c⁻¹ : Field.absoluteGaloisGroup ℚ) x) = x from by
+      rw [← AlgEquiv.mul_apply, mul_inv_cancel, AlgEquiv.one_apply]]
+  rw [key]
+  group
 
 /-! #### The at-`2` cyclotomic bridge: reduction-injectivity on `μ_{pⁿ}`
 
@@ -12573,28 +12734,80 @@ theorem eisenstein_trivial_sub_extension_cc_eq_zero_on_inertia_two_of_five_le
       (algebraMap_cyclotomicCharacter_map_adicArithFrob_two_eq_two hpodd))
     h2ne h3ne hgen hfrob
 
+/-- **Finite-level Frobenius–inertia decomposition at `2`** (sorry
+node, split off 2026-07-25 from the open-subgroup leaf below — the
+genuine FINITE-LEVEL content of that leaf, now free of every
+profinite/Krull ingredient): at a finite Galois level `N` over the
+completion at `2`, the restriction of ANY element of the local
+absolute Galois group is a power of the restricted arithmetic
+Frobenius times a finite-level inertia element. Classical proof
+(Serre, *Corps Locaux*, IV §1): the residue map
+`Ideal.Quotient.stabilizerHom` sends `Gal(N/Kv₂)` (which stabilizes
+the maximal ideal of the integral closure `R`, that ideal being the
+unique maximal ideal of the local ring `R`) onto the automorphism
+group of the residue field `κ_N = R/𝔪_R` over `κᵥ = 𝒪ᵥ/𝔪ᵥ`, and its
+kernel is EXACTLY the finite-level inertia (`Ideal.ker_stabilizerHom`).
+Now `κᵥ` has `2` elements (`natCard_residue_quotient_toHeightOneSpectrum`
+at `prime_two`) and `κ_N` is a finite extension of it, so every
+`κᵥ`-automorphism of `κ_N` is a power of the squaring Frobenius
+(mathlib: `bijective_frobeniusAlgEquivOfAlgebraic_pow`, equivalently
+the `IsCyclic Gal(L/K)` instance for finite fields, whose generator
+`frobeniusAlgEquivOfAlgebraic` is `x ↦ x ^ #κᵥ = x ^ 2`); and the
+residue image of the restricted `adicArithFrob` IS that squaring map,
+because `Field.AbsoluteGaloisGroup.isArithFrobAt_adicArithFrob` gives
+`Φ x ≡ x ^ 2 (mod 𝔪)` on the integral closure in the FULL algebraic
+closure, a congruence which descends to `R` since `𝔪_R` is the
+contraction of that maximal ideal. So `stabilizerHom (ḡ · (Φ̄ ^ m)⁻¹)
+= 1` for the exponent `m` reading off `ḡ`'s residue class, i.e.
+`ḡ = Φ̄ ^ m · τ` with `τ` in the finite-level inertia. Soundness: this
+is the standard `1 → I → Gal(N/Kv₂) → Gal(κ_N/κᵥ) → 1` exactness for a
+local field with finite residue field, whose unramified quotient is
+procyclic on the Frobenius class. -/
+theorem exists_restrictNormalHom_eq_adicArithFrob_pow_mul_inertia_two
+    (N : IntermediateField
+        (HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)))
+    [FiniteDimensional (HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) N]
+    [IsGalois (HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) N]
+    (g : Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) :
+    ∃ m : ℕ, ∃ τ ∈ (IsLocalRing.maximalIdeal (IntegralClosure
+        (HeightOneSpectrum.adicCompletionIntegers ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) N)).inertia
+        (N ≃ₐ[HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat] N),
+      AlgEquiv.restrictNormalHom N g =
+        (AlgEquiv.restrictNormalHom N
+          (Field.AbsoluteGaloisGroup.adicArithFrob
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) ^ m * τ :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
 /-- **Inertia and one Frobenius generate the local Galois group at `2`
-against open subgroups** (sorry node — the procyclic-unramified-
-quotient density, finite-level Galois theory of finite fields): an
-OPEN subgroup of the local absolute Galois group at the place `2`
-containing the full local inertia and the chosen arithmetic Frobenius
-`adicArithFrob` is everything. Classical proof: an open subgroup
-contains (Krull topology, `krullTopology_mem_nhds_one_iff_of_normal`)
-the fixing subgroup of a finite Galois level `N`, so it suffices to
-generate each finite quotient `Gal(N/Kv₂)`: there the inertia
-subgroup is the kernel of the surjection onto the residue-field
-automorphism group (`Ideal.Quotient.stabilizerHom`), the residue
-extension of a finite field with `2` elements
-(`natCard_residue_quotient_toHeightOneSpectrum` at `prime_two`) has
-automorphism group cyclic generated by the squaring Frobenius, and
-`IsArithFrobAt` (via
-`Field.AbsoluteGaloisGroup.isArithFrobAt_adicArithFrob`) says the
-image of `adicArithFrob` acts as squaring on residues — so its class
-generates `Gal(N/Kv₂)/inertia` and every element of `Gal(N/Kv₂)` is
-(image of Frobenius)^m · (finite-level inertia), the latter hit by the
-full inertia through the restriction lemma
-`restrictNormalHom_mem_inertia_of_mem_localInertiaGroup_two`
-(`ModThree.lean`, PROVEN). (Serre, *Corps Locaux*, IV §1; the same
+against open subgroups** (DECOMPOSED 2026-07-25 into the finite-level
+leaf `exists_restrictNormalHom_eq_adicArithFrob_pow_mul_inertia_two`
+above; the profinite assembly is PROVEN here): an OPEN subgroup of the
+local absolute Galois group at the place `2` containing the full local
+inertia and the chosen arithmetic Frobenius `adicArithFrob` is
+everything. Assembly: an open subgroup is a neighbourhood of `1`, so
+by the Krull topology
+(`krullTopology_mem_nhds_one_iff_of_normal`) it contains the fixing
+subgroup of a finite Galois level `N`, which is the kernel of
+`AlgEquiv.restrictNormalHom N` (`IntermediateField.restrictNormalHom_ker`);
+the finite-level leaf writes the restriction of a given `g` as
+`Φ̄ ^ m · τ` with `τ` in the finite-level inertia; the compactness
+lifting `exists_mem_localInertiaGroup_restrictNormalHom_eq`
+(`LocalInertiaFixedField.lean`, PROVEN) realises `τ` as the
+restriction of an honest element `w` of the FULL local inertia; then
+`g · (Φ ^ m · w)⁻¹` restricts to `1`, hence lies in the fixing
+subgroup and so in `H`, while `Φ ^ m · w ∈ H` by `hfrob` and
+`hinertia` — so `g ∈ H`. (Serre, *Corps Locaux*, IV §1; the same
 assembly shape as the PROVEN
 `exists_localInertia_two_generator_of_cube_one` of `ModThree.lean`.) -/
 theorem mem_of_isOpen_of_localInertiaGroup_le_of_adicArithFrob_mem_two
@@ -12608,8 +12821,59 @@ theorem mem_of_isOpen_of_localInertiaGroup_le_of_adicArithFrob_mem_two
       Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat ≤ H)
     (hfrob : Field.AbsoluteGaloisGroup.adicArithFrob
       Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat ∈ H) :
-    ∀ g, g ∈ H :=
-  sorry
+    ∀ g, g ∈ H := by
+  classical
+  intro g
+  -- an open subgroup is a neighbourhood of `1`, hence contains the
+  -- fixing subgroup of a finite Galois level `N`
+  have hnhds : (H : Set (Field.absoluteGaloisGroup
+      (HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))) ∈
+      nhds (1 : Field.absoluteGaloisGroup
+        (HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) :=
+    hopen.mem_nhds (one_mem H)
+  obtain ⟨N, hfdN, hnormN, hle⟩ :=
+    (krullTopology_mem_nhds_one_iff_of_normal
+      (HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) _).mp hnhds
+  haveI := hfdN
+  haveI := hnormN
+  haveI : Algebra.IsSeparable (HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) N :=
+    Algebra.IsAlgebraic.isSeparable_of_perfectField
+  haveI : IsGalois (HeightOneSpectrum.adicCompletion ℚ
+    Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) N := ⟨⟩
+  -- the finite-level decomposition of `g`, and the profinite lift of its
+  -- inertia part
+  obtain ⟨m, τ, hτI, hτ⟩ :=
+    exists_restrictNormalHom_eq_adicArithFrob_pow_mul_inertia_two N g
+  obtain ⟨w, hwmem, hwres⟩ :=
+    exists_mem_localInertiaGroup_restrictNormalHom_eq
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat N τ hτI
+  -- `g` and `Φ ^ m * w` restrict to the same automorphism of `N`
+  set Φ : Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) :=
+    Field.AbsoluteGaloisGroup.adicArithFrob
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat with hΦ
+  have hker : g * (Φ ^ m * w)⁻¹ ∈
+      (AlgEquiv.restrictNormalHom (F := HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) N).ker := by
+    rw [MonoidHom.mem_ker, map_mul, map_inv, map_mul, map_pow, hτ, hwres, hΦ]
+    rw [mul_inv_rev, ← mul_assoc]
+    rw [mul_assoc _ τ τ⁻¹, mul_inv_cancel, mul_one]
+    rw [mul_inv_cancel]
+  rw [IntermediateField.restrictNormalHom_ker] at hker
+  -- both factors lie in `H`
+  have hmemfix : g * (Φ ^ m * w)⁻¹ ∈ H := hle hker
+  have hmemfrob : Φ ^ m * w ∈ H :=
+    mul_mem (pow_mem hfrob m) (hinertia hwmem)
+  have hg : g = (g * (Φ ^ m * w)⁻¹) * (Φ ^ m * w) := by
+    rw [inv_mul_cancel_right]
+  rw [hg]
+  exact mul_mem hmemfix hmemfrob
 
 /-- **The coboundary-agreement locus is a subgroup** (PROVEN
 2026-07-24; pure cocycle algebra): for a character `χ` and a
