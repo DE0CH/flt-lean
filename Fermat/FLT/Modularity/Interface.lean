@@ -271,6 +271,14 @@ import Fermat.FLT.GroupScheme.ConnectedEtale
 -- the DVR is a finite flat Hopf form) and `antipodeAlgHom_comp_bialgHom`
 -- (bialgebra maps preserve antipodes), consumed by the schematic-closure
 -- half of the Raynaud subobject node `IsFlatPointsGroupAt.of_injective`.
+-- ALSO the Gelfand/Grothendieck layer consumed by that node's
+-- full-faithfulness leaf `exists_surjective_bialgHom_of_points_injection`
+-- (PROVEN 2026-07-25): `exists_algHom_of_algHom_map` (the algebra map
+-- induced by an equivariant map of point sets),
+-- `subalgebra_eq_top_of_algHom_separating` (a point-separating
+-- subalgebra of a finite étale algebra is everything) and
+-- `eq_zero_of_forall_algHom_eq_zero` (points separate a finite étale
+-- algebra).
 -- Non-public: proofs only.
 import Fermat.FLT.KnownIn1980s.EllipticCurves.Flat
 -- (The flat-prolongation convolution toolkit is imported PUBLICLY further
@@ -6175,8 +6183,8 @@ theorem exists_etaleHopfAlgebra_of_points_embedding
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
-/-- **Étale–Galois, full-faithfulness half** (sorry node — step (β2)
-of the subobject closure, added 2026-07-25 by the decomposition of
+/-- **Étale–Galois, full-faithfulness half** (PROVEN 2026-07-25 — step
+(β2) of the subobject closure, added 2026-07-25 by the decomposition of
 `IsFlatPointsGroupAt.of_injective`): an INJECTIVE, `Γ Kᵥ`-equivariant
 homomorphism `t` of convolution point groups from a finite étale
 `Kᵥ`-Hopf algebra `H` into the points of a finite étale `Kᵥ`-Hopf
@@ -6201,8 +6209,20 @@ groups). Intended proof, entirely inside the PROVEN machinery of
   `AlgHom.convMul_apply`, exactly `htmul`, and testing the counits is
   `htone` — the same argument as the PROVEN
   `exists_bialgEquiv_of_algEquiv_conv`, whose `AlgEquiv` hypothesis is
-  never used for these two checks. The antipode needs no check
-  (`→ₐc` preserves it automatically, `antipodeAlgHom_comp_bialgHom`).
+  never used for these two checks. (CONFIRMED 2026-07-25 while proving
+  this: that lemma's comultiplication and counit tests go through
+  verbatim for a bare `AlgHom`; the equivalence is used there only to
+  transport `hmul` into the `hmul'` shape, which here is supplied
+  directly by `htmul` through `φ.comp π = t φ`.) The antipode needs no
+  check (`→ₐc` preserves it automatically,
+  `antipodeAlgHom_comp_bialgHom`).
+The bridge between the bare-hom convolution monoid on
+`H →ₐ[Kᵥ] Ωᵥ` (in which `htone`/`htmul` are stated) and mathlib's
+`WithConv` monoid (in which `AlgHom.convMul_apply` computes) is
+`vendored_one_eq_convOne` / `vendored_mul_eq_convMul`, both `rfl`.
+`Ωᵥ` is a separable closure of the characteristic-zero field `Kᵥ`
+(`IsSepClosure Kᵥ Ωᵥ` from `IsAlgClosed` plus `Algebra.IsSeparable`),
+which is what lets the three `Flat.lean` ingredients apply.
 Unconditionally TRUE; no hypothesis package. -/
 theorem exists_surjective_bialgHom_of_points_injection
     (Q : Type) [CommRing Q] [HopfAlgebra Kᵥ Q] [Module.Finite Kᵥ Q]
@@ -6215,8 +6235,113 @@ theorem exists_surjective_bialgHom_of_points_injection
     (htmul : ∀ φ ψ : H →ₐ[Kᵥ] Ωᵥ, t (φ * ψ) = t φ * t ψ)
     (hteq : ∀ (g : Γᵥ) (φ : H →ₐ[Kᵥ] Ωᵥ), t (g • φ) = g • t φ) :
     ∃ π : Q →ₐc[Kᵥ] H, Function.Surjective (π : Q →ₐ[Kᵥ] H) ∧
-      ∀ φ : H →ₐ[Kᵥ] Ωᵥ, φ.comp (π : Q →ₐ[Kᵥ] H) = t φ :=
-  sorry
+      ∀ φ : H →ₐ[Kᵥ] Ωᵥ, φ.comp (π : Q →ₐ[Kᵥ] H) = t φ := by
+  classical
+  -- in characteristic zero the algebraic closure is a separable closure
+  haveI hsepcl : IsSepClosure Kᵥ Ωᵥ := ⟨inferInstance, inferInstance⟩
+  -- (1) the underlying ALGEBRA map, from Grothendieck full faithfulness:
+  -- the equivariance clause in composition form
+  have hteq' : ∀ (σ : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ) (φ : H →ₐ[Kᵥ] Ωᵥ),
+      t (σ.toAlgHom.comp φ) = σ.toAlgHom.comp (t φ) := by
+    intro σ φ
+    have h1 : σ.toAlgHom.comp φ = σ • φ := AlgHom.ext fun _ => rfl
+    have h2 : σ.toAlgHom.comp (t φ) = σ • t φ := AlgHom.ext fun _ => rfl
+    rw [h1, h2]
+    exact hteq σ φ
+  obtain ⟨π₀, hπ₀⟩ := exists_algHom_of_algHom_map Kᵥ Ωᵥ H Q t hteq'
+  have hcomp : ∀ φ : H →ₐ[Kᵥ] Ωᵥ, φ.comp π₀ = t φ :=
+    fun φ => AlgHom.ext fun q => hπ₀ φ q
+  -- (2) SURJECTIVITY: the range of `π₀` separates the points of `H`,
+  -- because two points agreeing on it have the same image under `t`
+  have hrange : π₀.range = ⊤ := by
+    refine subalgebra_eq_top_of_algHom_separating Kᵥ Ωᵥ H π₀.range ?_
+    intro φ ψ hsepφψ
+    refine htinj ?_
+    rw [← hcomp φ, ← hcomp ψ]
+    exact AlgHom.ext fun q => hsepφψ (π₀ q) ⟨q, rfl⟩
+  have hsurj : Function.Surjective π₀ := by
+    intro x
+    have hx : x ∈ π₀.range := by rw [hrange]; trivial
+    exact hx
+  -- (3) the BIALGEBRA upgrade, counit half: `t 1 = 1` says
+  -- `algebraMap ∘ counit_H ∘ π₀ = algebraMap ∘ counit_Q`
+  have hcounit : (Bialgebra.counitAlgHom Kᵥ H).comp π₀ =
+      Bialgebra.counitAlgHom Kᵥ Q := by
+    refine AlgHom.ext fun q => ?_
+    have h1 : (1 : H →ₐ[Kᵥ] Ωᵥ).comp π₀ = (1 : Q →ₐ[Kᵥ] Ωᵥ) := by
+      rw [hcomp 1, htone]
+    have h2 := AlgHom.congr_fun h1 q
+    have h3 : (1 : H →ₐ[Kᵥ] Ωᵥ) (π₀ q) =
+        algebraMap Kᵥ Ωᵥ (Coalgebra.counit (π₀ q)) := rfl
+    have h4 : (1 : Q →ₐ[Kᵥ] Ωᵥ) q = algebraMap Kᵥ Ωᵥ (Coalgebra.counit q) := rfl
+    rw [AlgHom.comp_apply] at h2
+    rw [h3, h4] at h2
+    exact (algebraMap Kᵥ Ωᵥ).injective h2
+  -- (4) the BIALGEBRA upgrade, comultiplication half: test against every
+  -- point of the finite étale `H ⊗[Kᵥ] H`
+  haveI hEt2 : Algebra.Etale Kᵥ (H ⊗[Kᵥ] H) :=
+    Algebra.Etale.comp Kᵥ H (H ⊗[Kᵥ] H)
+  have hmul' : ∀ φ ψ : H →ₐ[Kᵥ] Ωᵥ,
+      (WithConv.toConv (φ.comp π₀) * WithConv.toConv (ψ.comp π₀)).ofConv =
+        ((WithConv.toConv φ * WithConv.toConv ψ).ofConv).comp π₀ := by
+    intro φ ψ
+    rw [← vendored_mul_eq_convMul, ← vendored_mul_eq_convMul, hcomp φ, hcomp ψ,
+      hcomp (φ * ψ)]
+    exact (htmul φ ψ).symm
+  have hcomul : (Algebra.TensorProduct.map π₀ π₀).comp
+      (Bialgebra.comulAlgHom Kᵥ Q) =
+      (Bialgebra.comulAlgHom Kᵥ H).comp π₀ := by
+    refine AlgHom.ext fun a => ?_
+    have hsep2 := eq_zero_of_forall_algHom_eq_zero Kᵥ Ωᵥ (H ⊗[Kᵥ] H)
+      ((Algebra.TensorProduct.map π₀ π₀).comp (Bialgebra.comulAlgHom Kᵥ Q) a -
+        (Bialgebra.comulAlgHom Kᵥ H).comp π₀ a)
+    rw [sub_eq_zero] at hsep2
+    apply hsep2
+    intro χ
+    rw [map_sub, sub_eq_zero]
+    -- decompose the point `χ` of `H ⊗[Kᵥ] H` into its two restrictions
+    set φ := χ.comp Algebra.TensorProduct.includeLeft with hφ
+    set ψ := χ.comp (Algebra.TensorProduct.includeRight :
+      H →ₐ[Kᵥ] H ⊗[Kᵥ] H) with hψ
+    have hχ : χ = Algebra.TensorProduct.lift φ ψ fun _ _ => Commute.all _ _ := by
+      apply Algebra.TensorProduct.ext
+      · apply AlgHom.ext
+        intro b
+        simp [hφ]
+      · apply AlgHom.ext
+        intro b
+        simp [hψ]
+    -- the left side is the convolution of the transported points
+    have hleft : χ ((Algebra.TensorProduct.map π₀ π₀).comp
+        (Bialgebra.comulAlgHom Kᵥ Q) a) =
+        ((WithConv.toConv (φ.comp π₀) * WithConv.toConv (ψ.comp π₀)).ofConv) a := by
+      rw [hχ]
+      have hlift : (Algebra.TensorProduct.lift φ ψ fun _ _ => Commute.all _ _).comp
+          (Algebra.TensorProduct.map π₀ π₀) =
+          Algebra.TensorProduct.lift (φ.comp π₀) (ψ.comp π₀)
+            (fun _ _ => Commute.all _ _) := by
+        apply Algebra.TensorProduct.ext
+        · apply AlgHom.ext
+          intro b
+          simp
+        · apply AlgHom.ext
+          intro b
+          simp
+      rw [AlgHom.comp_apply, ← AlgHom.comp_apply (Algebra.TensorProduct.lift φ ψ _),
+        hlift]
+      rw [AlgHom.convMul_apply]
+      rfl
+    -- the right side is the convolution of the original points, at `π₀ a`
+    have hright : χ ((Bialgebra.comulAlgHom Kᵥ H).comp π₀ a) =
+        (((WithConv.toConv φ * WithConv.toConv ψ).ofConv).comp π₀) a := by
+      rw [hχ, AlgHom.comp_apply]
+      rw [show (Algebra.TensorProduct.lift φ ψ fun _ _ => Commute.all _ _)
+          ((Bialgebra.comulAlgHom Kᵥ H) (π₀ a)) =
+          ((WithConv.toConv φ * WithConv.toConv ψ).ofConv) (π₀ a) from
+        (AlgHom.convMul_apply _ _ _).symm]
+      rfl
+    rw [hleft, hright, hmul' φ ψ]
+  exact ⟨BialgHom.ofAlgHom π₀ hcounit hcomul, hsurj, hcomp⟩
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
@@ -6238,8 +6363,8 @@ full-faithfulness half remains sorried:
   `Kᵥ`-Hopf algebra `H` (`exists_etaleHopfAlgebra_of_points_embedding`,
   PROVEN), and the induced inclusion of point groups comes from a
   SURJECTIVE bialgebra homomorphism `π : Q → H`
-  (`exists_surjective_bialgHom_of_points_injection`, sorry leaf) — the
-  two halves of Grothendieck's anti-equivalence. The convolution
+  (`exists_surjective_bialgHom_of_points_injection`, PROVEN 2026-07-25)
+  — the two halves of Grothendieck's anti-equivalence. The convolution
   homomorphism property of the induced `t` is PROVEN here from
   additivity of `j'` and `e`;
 * (γ) *schematic closure over the DVR*: the canonical Hopf order
