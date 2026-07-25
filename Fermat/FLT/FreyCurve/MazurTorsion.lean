@@ -3878,8 +3878,92 @@ theorem residue_natCast_eq_zero_of_prime {p : ℕ} (hp : p.Prime) :
   exact (IsLocalRing.residue_eq_zero_iff _).mpr hmem
 
 open scoped WeierstrassCurve.Affine in
+/-- **In characteristic `p`, the geometric `p`-torsion of an elliptic
+curve is cyclic** (sorry node, cut 2026-07-25 out of
+`card_torsionBy_dvd_of_charP` — this is ALL of that leaf's mathematical
+content, the cardinality bookkeeping around it now being proven): over an
+algebraically closed field `k` in which `p` vanishes, every `p`-torsion
+point of `Y` is a `ℤ`-multiple of every NONZERO `p`-torsion point. Since
+the group is killed by `p`, that is exactly `dim_{𝔽ₚ} Y(k)[p] ≤ 1`, and
+`card_torsionBy_dvd_of_charP` follows from it by taking a generator.
+
+FAITHFULNESS CHECK: both cases of the classical dichotomy satisfy this.
+Ordinary, `Y(k)[p] ≅ ℤ/p`: any nonzero point generates. Supersingular,
+`Y(k)[p] = 0`: the hypothesis `Q ≠ 0` is unsatisfiable. Note that the
+statement is NOT vacuous — in the ordinary case it has real content, and
+it is exactly what fails for `p` invertible in `k`, where the torsion is
+`(ℤ/p)²` and two independent points exist.
+
+CONTENT. In characteristic `p` the multiplication-by-`p` isogeny has
+degree `p²` but is never separable — it acts as multiplication by
+`p = 0` on invariant differentials — so its separable degree, which is
+the number of geometric points of its kernel, is `p` or `1`. Silverman
+AEC III.6.4 (the differential criterion for separability), III.4.10
+(separable degree = number of geometric points of the kernel), V.3.1
+(a)–(b) (the ordinary/supersingular dichotomy); ATAEC IV.6.
+
+WHY THIS IS STILL OPEN, and the only route visible from mathlib
+(surveyed 2026-07-25). Mathlib has NO isogenies, no degree of a map of
+curves, no separable/inseparable degree, no Frobenius on a Weierstrass
+curve, no invariant differential, and no `Finite` instance for
+`WeierstrassCurve.Affine.Point` — there is no `EllipticCurve/Isogeny`
+file at all — so the argument above cannot be transcribed as it stands.
+The reference project `~/cs/FLT` sorries even the characteristic-`0`
+companion (`WeierstrassCurve.torsion_rank_two`), so there is nothing to
+vendor either.
+
+What mathlib DOES have is `Mathlib/AlgebraicGeometry/EllipticCurve/`
+`DivisionPolynomial/`: `W.preΨ n`, `W.ΨSq n`, `W.Φ n`, with
+`natDegree_preΨ'_le n : (W.preΨ' n).natDegree ≤ (n² - if Even n then 4
+else 1) / 2` and `coeff_preΨ'` giving the coefficient in that degree as
+`n` (up to the even correction); likewise `natDegree_ΨSq_le n :
+(W.ΨSq n).natDegree ≤ n² - 1` with `coeff_ΨSq n : (W.ΨSq n).coeff
+(n² - 1) = n²`. That last pair is the lever: in characteristic `p` the
+leading coefficient `p²` VANISHES, which is the polynomial shadow of the
+inseparability, and correspondingly `ΨSq_ne_zero` carries the hypothesis
+`(n : R) ≠ 0` and does not apply. (By contrast `natDegree_Φ n = n²` and
+`leadingCoeff_Φ n = 1` hold over ANY nontrivial ring — the degree `p²` of
+`[p]` is still visible in characteristic `p`; it is only the *separable*
+part that collapses.) The route is then three sub-atoms, none of which is
+in mathlib:
+
+* BRIDGE: for `P ≠ 0` and `n` odd, `(n : ℤ) • P = 0 ↔
+  (Y.preΨ n).eval P.x = 0`. This is characteristic-free, is needed by the
+  characteristic-`0` companion as well, and is the right thing to prove
+  first — it is the only one of the three that is pure bookkeeping over
+  the existing `DivisionPolynomial` API.
+* NONVANISHING: `Y.preΨ p ≠ 0` in characteristic `p` (`ΨSq_ne_zero`
+  needs `(n : R) ≠ 0`, so it gives nothing here).
+* INSEPARABILITY: `Y.preΨ p` is a constant times a `p`-th power in
+  `k[X]`. This is the deep one — it IS the inseparability of `[p]`.
+  Given it, the count closes for odd `p`: `preΨ p` has at most
+  `natDegree / p ≤ (p² - 1) / (2p) < p / 2` distinct roots, hence at most
+  `(p - 1) / 2` `x`-coordinates; nonzero `p`-torsion points come in pairs
+  `{P, -P}` with `P ≠ -P` (else `2P = 0 = pP` with `p` odd forces
+  `P = 0`), so there are at most `p - 1` of them, i.e. `#Y(k)[p] ≤ p`,
+  which with exponent `p` gives cyclicity.
+
+SANITY CHECK in characteristic `2`, which validates the shape of
+INSEPARABILITY: `ΨSq 2 = Ψ₂Sq = 4X³ + b₂X² + 2b₄X + b₆` collapses to
+`b₂X² + b₆ = a₁²X² + a₃² = (a₁X + a₃)²`, a perfect square exactly as
+predicted. It is a nonzero constant precisely when `a₁ = 0`, which in
+characteristic `2` is precisely the supersingular case, and then
+`a₃ ≠ 0` because `Δ ≠ 0`. Both predictions hold. -/
+theorem WeierstrassCurve.exists_zsmul_eq_of_mem_torsionBy_of_charP
+    {k : Type*} [Field k] [IsAlgClosed k] [DecidableEq k]
+    (Y : WeierstrassCurve k) [Y.IsElliptic]
+    {p : ℕ} (hp : p.Prime) (hchar : ((p : ℕ) : k) = 0)
+    (P Q : (Y⁄k).Point)
+    (hP : P ∈ AddSubgroup.torsionBy (Y⁄k).Point ((p : ℕ) : ℤ))
+    (hQ : Q ∈ AddSubgroup.torsionBy (Y⁄k).Point ((p : ℕ) : ℤ)) (hQ0 : Q ≠ 0) :
+    ∃ n : ℤ, P = n • Q :=
+  sorry
+
+open scoped WeierstrassCurve.Affine in
 /-- **The geometric `p`-torsion of an elliptic curve in characteristic
-`p` has order dividing `p`** (sorry node, cut 2026-07-25 out of
+`p` has order dividing `p`** (DERIVED 2026-07-25 from the cyclicity atom
+`exists_zsmul_eq_of_mem_torsionBy_of_charP`, which now carries all of the
+mathematical content; itself cut 2026-07-25 out of
 `card_torsion_reduction_of_good_ordinary` — ALL of that leaf's
 characteristic-`p` content, now stated free of every local-field and
 Frey-curve encumbrance): for an elliptic curve `Y` over an algebraically
@@ -3899,13 +3983,42 @@ the kernel); Silverman ATAEC IV.6.
 Note the hypothesis is only that `p` vanishes in `k` — `p` need not be
 the characteristic exponent in any stronger sense, and `k` is only
 required to be algebraically closed, so this statement is a candidate for
-mathlib once the isogeny-degree machinery exists there. -/
+mathlib once the isogeny-degree machinery exists there.
+
+The derivation from cyclicity is the whole proof below: a generator of
+the torsion subgroup exists (take `0` when the subgroup is trivial, and
+any nonzero element otherwise, the atom promoting it to a generator), so
+the subgroup coincides with the `zmultiples` of that generator, whence
+its cardinality is the additive order of the generator, which divides `p`
+because the subgroup is `p`-torsion. No finiteness input is needed: being
+generated by an element of order dividing `p` supplies it. -/
 theorem WeierstrassCurve.card_torsionBy_dvd_of_charP
     {k : Type*} [Field k] [IsAlgClosed k] [DecidableEq k]
     (Y : WeierstrassCurve k) [Y.IsElliptic]
     {p : ℕ} (hp : p.Prime) (hchar : ((p : ℕ) : k) = 0) :
-    Nat.card (AddSubgroup.torsionBy (Y⁄k).Point ((p : ℕ) : ℤ)) ∣ p :=
-  sorry
+    Nat.card (AddSubgroup.torsionBy (Y⁄k).Point ((p : ℕ) : ℤ)) ∣ p := by
+  -- a generator of the `p`-torsion, uniformly in the trivial and nontrivial cases
+  have hgen : ∃ Q ∈ AddSubgroup.torsionBy (Y⁄k).Point ((p : ℕ) : ℤ),
+      ∀ P ∈ AddSubgroup.torsionBy (Y⁄k).Point ((p : ℕ) : ℤ), ∃ n : ℤ, P = n • Q := by
+    by_cases hex : ∃ Q ∈ AddSubgroup.torsionBy (Y⁄k).Point ((p : ℕ) : ℤ), Q ≠ 0
+    · obtain ⟨Q, hQT, hQ0⟩ := hex
+      exact ⟨Q, hQT, fun P hP =>
+        WeierstrassCurve.exists_zsmul_eq_of_mem_torsionBy_of_charP Y hp hchar P Q hP hQT hQ0⟩
+    · refine ⟨0, zero_mem _, fun P hP => ⟨0, ?_⟩⟩
+      have hP0 : P = 0 := by by_contra h; exact hex ⟨P, hP, h⟩
+      simp [hP0]
+  obtain ⟨Q, hQT, hQgen⟩ := hgen
+  set T := AddSubgroup.torsionBy (Y⁄k).Point ((p : ℕ) : ℤ)
+  set q : T := ⟨Q, hQT⟩
+  -- the generator generates, so the subgroup is its group of multiples
+  have htop : AddSubgroup.zmultiples q = ⊤ := by
+    refine eq_top_iff.mpr fun x _ => ?_
+    obtain ⟨n, hn⟩ := hQgen (x : (Y⁄k).Point) x.2
+    exact AddSubgroup.mem_zmultiples_iff.mpr ⟨n, Subtype.ext (by simpa using hn.symm)⟩
+  have hcard : Nat.card T = addOrderOf q := by
+    rw [← Nat.card_zmultiples q, htop, AddSubgroup.card_top]
+  rw [hcard]
+  exact addOrderOf_dvd_of_nsmul_eq_zero (AddSubgroup.torsionBy.nsmul q)
 
 open ValuativeRel IsDedekindDomain in
 open scoped WeierstrassCurve.Affine in
