@@ -7745,9 +7745,732 @@ theorem heckeThetaSeries_functionalEquation (K : Type*) [Field K] [NumberField K
             H ((m : ℝ) ^ 2 * x / |(NumberField.discr K : ℝ)|)) := by
   sorry
 
+open Filter Topology in
+/-- **A stretched exponential beats every power** (PROVEN 2026-07-25,
+the elementary growth input of the stage-γ analysis
+`heckeThetaSeries_analysis`): for `c, b > 0` the sequence
+`m ↦ m^p·exp(−c·m^b)` is bounded on `ℕ`.  Proof: the real-variable
+function `x ↦ x^{p/b}·exp(−c·x)` tends to `0` at `∞`
+(`tendsto_rpow_mul_exp_neg_mul_atTop_nhds_zero`); composing with
+`x ↦ x^b` (`tendsto_rpow_atTop`) and with `ℕ ↪ ℝ` gives a null
+sequence, and a null sequence has bounded range
+(`Filter.Tendsto.bddAbove_range`). -/
+theorem exists_bound_nat_pow_mul_exp_neg_mul_rpow (p : ℕ) {c b : ℝ} (hc : 0 < c) (hb : 0 < b) :
+    ∃ K : ℝ, 0 < K ∧ ∀ m : ℕ, (m : ℝ) ^ p * Real.exp (-c * (m : ℝ) ^ b) ≤ K := by
+  have h0 : Tendsto (fun x : ℝ => x ^ ((p : ℝ) / b) * Real.exp (-c * x)) atTop (𝓝 0) :=
+    tendsto_rpow_mul_exp_neg_mul_atTop_nhds_zero _ c hc
+  have h1 : Tendsto (fun x : ℝ => (x ^ b) ^ ((p : ℝ) / b) * Real.exp (-c * x ^ b))
+      atTop (𝓝 0) := h0.comp (tendsto_rpow_atTop hb)
+  have h2 : Tendsto (fun m : ℕ => (m : ℝ) ^ p * Real.exp (-c * (m : ℝ) ^ b)) atTop (𝓝 0) := by
+    refine (h1.comp tendsto_natCast_atTop_atTop).congr fun m => ?_
+    simp only [Function.comp_apply]
+    congr 1
+    have hbp : b * ((p : ℝ) / b) = (p : ℝ) := by field_simp
+    rw [← Real.rpow_mul (Nat.cast_nonneg m), hbp, Real.rpow_natCast]
+  obtain ⟨K₀, hK₀⟩ := h2.bddAbove_range
+  refine ⟨max K₀ 1, lt_of_lt_of_le zero_lt_one (le_max_right _ _), fun m => ?_⟩
+  exact le_trans (hK₀ (Set.mem_range_self m)) (le_max_left _ _)
+
+/-- **Summability of `Σ_m m·exp(−c·m^b)`** (PROVEN 2026-07-25, the
+comparison series of the stage-γ analysis `heckeThetaSeries_analysis`):
+comparison with the convergent `p`-series `Σ 1/m²`, the ratio
+`m³·exp(−c·m^b)` being bounded by
+`exists_bound_nat_pow_mul_exp_neg_mul_rpow`.  This is what makes the
+per-class theta series converge: the ideal counts grow linearly while
+the archimedean profile decays like `exp(−c·τ^{1/n})`. -/
+theorem summable_nat_mul_exp_neg_mul_rpow {c b : ℝ} (hc : 0 < c) (hb : 0 < b) :
+    Summable fun m : ℕ => (m : ℝ) * Real.exp (-c * (m : ℝ) ^ b) := by
+  obtain ⟨K, hK0, hK⟩ := exists_bound_nat_pow_mul_exp_neg_mul_rpow 3 hc hb
+  have hp2 : Summable fun m : ℕ => 1 / (m : ℝ) ^ 2 :=
+    (Real.summable_one_div_nat_pow (p := 2)).mpr one_lt_two
+  have hsum : Summable fun m : ℕ => K * ((m : ℝ) ^ 2)⁻¹ := by
+    simpa [one_div] using hp2.mul_left K
+  refine hsum.of_nonneg_of_le (fun m => by positivity) fun m => ?_
+  rcases Nat.eq_zero_or_pos m with rfl | hm
+  · simp
+  · have hm0 : (0 : ℝ) < (m : ℝ) := by exact_mod_cast hm
+    have hm2 : (0 : ℝ) < (m : ℝ) ^ 2 := pow_pos hm0 2
+    rw [← div_eq_mul_inv, le_div_iff₀ hm2]
+    have h3 := hK m
+    calc (m : ℝ) * Real.exp (-c * (m : ℝ) ^ b) * (m : ℝ) ^ 2
+        = (m : ℝ) ^ 3 * Real.exp (-c * (m : ℝ) ^ b) := by ring
+      _ ≤ K := h3
+
+/-- **Pointwise summability of the theta series** (PROVEN 2026-07-25,
+part of the stage-γ analysis `heckeThetaSeries_analysis`, stated for an
+abstract coefficient sequence `a` of at most linear growth and an
+abstract profile `H` with the stretched-exponential decay): for `t > 0`
+the series `Σ_m a(m)·H(m²·t/d)` converges absolutely.  All but finitely
+many `m` have `m²·t/d ≥ 1`, where the decay hypothesis applies and
+`(m²t/d)^{1/n} = (t/d)^{1/n}·m^{2/n}` exactly, so the tail is dominated
+termwise by `const·m·exp(−c'·m^{2/n})`
+(`summable_nat_mul_exp_neg_mul_rpow`). -/
+theorem thetaSeries_summable (a : ℕ → ℕ) (H : ℝ → ℝ) {d : ℝ} (hd : 0 < d) {n : ℕ} (hn : 0 < n)
+    (B : ℝ) (hB : ∀ m : ℕ, (a m : ℝ) ≤ B * m)
+    (hHpos : ∀ τ : ℝ, τ ∈ Set.Ioi (0 : ℝ) → 0 ≤ H τ)
+    (A c : ℝ) (hc : 0 < c)
+    (hA : ∀ τ : ℝ, 1 ≤ τ → H τ ≤ A * Real.exp (-c * τ ^ ((n : ℝ)⁻¹)))
+    {t : ℝ} (ht : 0 < t) :
+    Summable fun m : ℕ => (a m : ℝ) * H ((m : ℝ) ^ 2 * t / d) := by
+  have hn' : (0 : ℝ) < (n : ℝ) := by exact_mod_cast hn
+  set b : ℝ := 2 * (n : ℝ)⁻¹ with hbdef
+  have hb0 : 0 < b := by positivity
+  set c' : ℝ := c * (t / d) ^ ((n : ℝ)⁻¹) with hc'def
+  have hc'0 : 0 < c' := by
+    have : (0 : ℝ) < (t / d) ^ ((n : ℝ)⁻¹) := Real.rpow_pos_of_pos (div_pos ht hd) _
+    positivity
+  set K : ℝ := max B 0 * max A 1 with hKdef
+  set M : ℕ := ⌈d / t⌉₊ + 1 with hMdef
+  rw [← summable_nat_add_iff M]
+  have hmaj : Summable fun j : ℕ =>
+      K * (((j + M : ℕ) : ℝ) * Real.exp (-c' * ((j + M : ℕ) : ℝ) ^ b)) :=
+    (summable_nat_add_iff M).mpr ((summable_nat_mul_exp_neg_mul_rpow hc'0 hb0).mul_left K)
+  refine hmaj.of_nonneg_of_le (fun j => ?_) fun j => ?_
+  · have h1 : (0 : ℝ) ≤ (a (j + M) : ℝ) := Nat.cast_nonneg _
+    have h2 : (0 : ℝ) ≤ H (((j + M : ℕ) : ℝ) ^ 2 * t / d) := by
+      refine hHpos _ (Set.mem_Ioi.mpr ?_)
+      have : (0 : ℝ) < ((j + M : ℕ) : ℝ) ^ 2 := by
+        have : (0 : ℝ) < ((j + M : ℕ) : ℝ) := by
+          have : 0 < j + M := by omega
+          exact_mod_cast this
+        positivity
+      positivity
+    exact mul_nonneg h1 h2
+  · -- the termwise bound
+    have hmpos : (0 : ℝ) < ((j + M : ℕ) : ℝ) := by
+      have : 0 < j + M := by omega
+      exact_mod_cast this
+    have hm1 : (1 : ℝ) ≤ ((j + M : ℕ) : ℝ) := by
+      have : 1 ≤ j + M := by omega
+      exact_mod_cast this
+    have hmd : d / t ≤ ((j + M : ℕ) : ℝ) := by
+      refine le_trans (Nat.le_ceil (d / t)) ?_
+      have : (⌈d / t⌉₊ : ℕ) ≤ j + M := by omega
+      exact_mod_cast this
+    have hsq : d / t ≤ ((j + M : ℕ) : ℝ) ^ 2 := by
+      have := mul_le_mul hmd hm1 zero_le_one (le_of_lt hmpos)
+      calc d / t = d / t * 1 := by ring
+        _ ≤ ((j + M : ℕ) : ℝ) * ((j + M : ℕ) : ℝ) := this
+        _ = ((j + M : ℕ) : ℝ) ^ 2 := by ring
+    have hτ1 : (1 : ℝ) ≤ ((j + M : ℕ) : ℝ) ^ 2 * t / d := by
+      rw [le_div_iff₀ hd, one_mul]
+      calc d = d / t * t := by field_simp
+        _ ≤ ((j + M : ℕ) : ℝ) ^ 2 * t := by
+            exact mul_le_mul_of_nonneg_right hsq (le_of_lt ht)
+    -- the exponent identity
+    have hexp : (((j + M : ℕ) : ℝ) ^ 2 * t / d) ^ ((n : ℝ)⁻¹) =
+        (t / d) ^ ((n : ℝ)⁻¹) * ((j + M : ℕ) : ℝ) ^ b := by
+      rw [mul_div_assoc, Real.mul_rpow (by positivity) (by positivity), hbdef,
+        ← Real.rpow_natCast ((j + M : ℕ) : ℝ) 2, ← Real.rpow_mul (le_of_lt hmpos)]
+      push_cast
+      ring
+    have hHb : H (((j + M : ℕ) : ℝ) ^ 2 * t / d) ≤
+        max A 1 * Real.exp (-c' * ((j + M : ℕ) : ℝ) ^ b) := by
+      refine le_trans (hA _ hτ1) ?_
+      have hone : -c * (((j + M : ℕ) : ℝ) ^ 2 * t / d) ^ ((n : ℝ)⁻¹) =
+          -c' * ((j + M : ℕ) : ℝ) ^ b := by
+        rw [hexp, hc'def]; ring
+      rw [hone]
+      exact mul_le_mul_of_nonneg_right (le_max_left _ _) (le_of_lt (Real.exp_pos _))
+    have hab : (a (j + M) : ℝ) ≤ max B 0 * ((j + M : ℕ) : ℝ) :=
+      le_trans (hB (j + M)) (mul_le_mul_of_nonneg_right (le_max_left _ _) (le_of_lt hmpos))
+    calc (a (j + M) : ℝ) * H (((j + M : ℕ) : ℝ) ^ 2 * t / d)
+        ≤ (max B 0 * ((j + M : ℕ) : ℝ)) *
+            (max A 1 * Real.exp (-c' * ((j + M : ℕ) : ℝ) ^ b)) := by
+          refine mul_le_mul hab hHb (hHpos _ (Set.mem_Ioi.mpr (by positivity))) ?_
+          exact mul_nonneg (le_max_right _ _) (le_of_lt hmpos)
+      _ = K * (((j + M : ℕ) : ℝ) * Real.exp (-c' * ((j + M : ℕ) : ℝ) ^ b)) := by
+          rw [hKdef]; ring
+
+open Filter Topology in
+/-- **Continuity of the theta series on `(0, ∞)`** (PROVEN 2026-07-25,
+conjunct (i) of the stage-γ analysis `heckeThetaSeries_analysis`, from
+which local integrability follows): on each `(α, ∞)` with `α > 0` the
+terms are dominated uniformly by their values at `α` (antitonicity of
+`H`), a summable bound by `thetaSeries_summable`, so the series
+converges uniformly there (`continuousOn_tsum`); every point of
+`(0, ∞)` lies in such an `(α, ∞)` with `α = x/2`. -/
+theorem thetaSeries_continuousOn (a : ℕ → ℕ) (H : ℝ → ℝ) {d : ℝ} (hd : 0 < d) {n : ℕ} (hn : 0 < n)
+    (ha0 : a 0 = 0) (B : ℝ) (hB : ∀ m : ℕ, (a m : ℝ) ≤ B * m)
+    (hHcont : ContinuousOn H (Set.Ioi 0))
+    (hHpos : ∀ τ : ℝ, τ ∈ Set.Ioi (0 : ℝ) → 0 ≤ H τ)
+    (hHanti : AntitoneOn H (Set.Ioi 0))
+    (A c : ℝ) (hc : 0 < c)
+    (hA : ∀ τ : ℝ, 1 ≤ τ → H τ ≤ A * Real.exp (-c * τ ^ ((n : ℝ)⁻¹))) :
+    ContinuousOn (fun t : ℝ => ∑' m : ℕ, (a m : ℝ) * H ((m : ℝ) ^ 2 * t / d)) (Set.Ioi 0) := by
+  have key : ∀ α : ℝ, 0 < α →
+      ContinuousOn (fun t : ℝ => ∑' m : ℕ, (a m : ℝ) * H ((m : ℝ) ^ 2 * t / d)) (Set.Ioi α) := by
+    intro α hα
+    refine continuousOn_tsum (u := fun m : ℕ => (a m : ℝ) * H ((m : ℝ) ^ 2 * α / d))
+      (fun m => ?_) (thetaSeries_summable a H hd hn B hB hHpos A c hc hA hα) (fun m t ht => ?_)
+    · -- each term is continuous on `Ioi α`
+      rcases Nat.eq_zero_or_pos m with rfl | hm
+      · simpa [ha0] using continuousOn_const (c := (0 : ℝ)) (s := Set.Ioi α)
+      · have hm0 : (0 : ℝ) < (m : ℝ) := by exact_mod_cast hm
+        refine continuousOn_const.mul (hHcont.comp (by fun_prop) fun t ht => ?_)
+        exact Set.mem_Ioi.mpr (by
+          have : (0 : ℝ) < t := lt_trans hα (Set.mem_Ioi.mp ht)
+          positivity)
+    · -- termwise domination by the value at `α`, using antitonicity
+      rcases Nat.eq_zero_or_pos m with rfl | hm
+      · simp [ha0]
+      · have hm0 : (0 : ℝ) < (m : ℝ) := by exact_mod_cast hm
+        have htpos : (0 : ℝ) < t := lt_trans hα (Set.mem_Ioi.mp ht)
+        have hαmem : (m : ℝ) ^ 2 * α / d ∈ Set.Ioi (0 : ℝ) := Set.mem_Ioi.mpr (by positivity)
+        have htmem : (m : ℝ) ^ 2 * t / d ∈ Set.Ioi (0 : ℝ) := Set.mem_Ioi.mpr (by positivity)
+        have hle : (m : ℝ) ^ 2 * α / d ≤ (m : ℝ) ^ 2 * t / d := by
+          have := Set.mem_Ioi.mp ht
+          gcongr
+        have h1 : H ((m : ℝ) ^ 2 * t / d) ≤ H ((m : ℝ) ^ 2 * α / d) :=
+          hHanti hαmem htmem hle
+        rw [Real.norm_eq_abs, abs_of_nonneg (mul_nonneg (Nat.cast_nonneg _) (hHpos _ htmem))]
+        exact mul_le_mul_of_nonneg_left h1 (Nat.cast_nonneg _)
+  intro x hx
+  have hx0 : 0 < x := Set.mem_Ioi.mp hx
+  refine (((key (x / 2) (by linarith)).continuousAt ?_)).continuousWithinAt
+  exact Ioi_mem_nhds (by linarith)
+
+/-- **Stretched-exponential decay of the theta series on `[1, ∞)`**
+(PROVEN 2026-07-25, conjunct (ii) of the stage-γ analysis
+`heckeThetaSeries_analysis`).  Two regimes.  For `t ≥ max(d, 1)` every
+term has argument `≥ 1`, and with `δ = (1/d)^{1/n}`,
+`(m²t/d)^{1/n} = δ·m^{2/n}·t^{1/n} ≥ ½·δ·m^{2/n} + ½·δ·t^{1/n}` (both
+factors are `≥ 1` after normalizing), which splits the bound into a
+summable `m`-series times `exp(−a'·t^{1/n})`.  For `1 ≤ t ≤ max(d, 1)`
+antitonicity gives `S(t) ≤ S(1)`, a constant, and `exp(−a'·t^{1/n})` is
+bounded below on that compact range, so enlarging the constant
+suffices. -/
+theorem thetaSeries_tail_bound (a : ℕ → ℕ) (H : ℝ → ℝ) {d : ℝ} (hd : 0 < d) {n : ℕ} (hn : 0 < n)
+    (ha0 : a 0 = 0) (B : ℝ) (hB : ∀ m : ℕ, (a m : ℝ) ≤ B * m)
+    (hHpos : ∀ τ : ℝ, τ ∈ Set.Ioi (0 : ℝ) → 0 ≤ H τ)
+    (hHanti : AntitoneOn H (Set.Ioi 0))
+    (A c : ℝ) (hc : 0 < c)
+    (hA : ∀ τ : ℝ, 1 ≤ τ → H τ ≤ A * Real.exp (-c * τ ^ ((n : ℝ)⁻¹))) :
+    ∃ A' a' : ℝ, 0 < a' ∧ ∀ t : ℝ, 1 ≤ t →
+      |∑' m : ℕ, (a m : ℝ) * H ((m : ℝ) ^ 2 * t / d)| ≤
+        A' * Real.exp (-a' * t ^ ((n : ℝ)⁻¹)) := by
+  have hn' : (0 : ℝ) < (n : ℝ) := by exact_mod_cast hn
+  set b : ℝ := 2 * (n : ℝ)⁻¹ with hbdef
+  have hb0 : 0 < b := by positivity
+  set δ : ℝ := (1 / d) ^ ((n : ℝ)⁻¹) with hδdef
+  have hδ0 : 0 < δ := Real.rpow_pos_of_pos (by positivity) _
+  set a' : ℝ := c * δ / 2 with ha'def
+  have ha'0 : 0 < a' := by positivity
+  set A₀ : ℝ := max A 1 with hA₀def
+  set B₀ : ℝ := max B 0 with hB₀def
+  have hA₀0 : (0 : ℝ) < A₀ := lt_of_lt_of_le zero_lt_one (le_max_right _ _)
+  have hB₀0 : (0 : ℝ) ≤ B₀ := le_max_right _ _
+  have hmsum : Summable (fun m : ℕ => (m : ℝ) * Real.exp (-a' * (m : ℝ) ^ b)) :=
+    summable_nat_mul_exp_neg_mul_rpow ha'0 hb0
+  set S₁ : ℝ := ∑' m : ℕ, (m : ℝ) * Real.exp (-a' * (m : ℝ) ^ b) with hS₁def
+  set D : ℝ := max d 1 with hDdef
+  have hD1 : (1 : ℝ) ≤ D := le_max_right _ _
+  have hDd : d ≤ D := le_max_left _ _
+  -- nonnegativity of the series
+  have hnonneg : ∀ t : ℝ, 0 < t → ∀ m : ℕ, 0 ≤ (a m : ℝ) * H ((m : ℝ) ^ 2 * t / d) := by
+    intro t ht m
+    rcases Nat.eq_zero_or_pos m with rfl | hm
+    · simp [ha0]
+    · have hm0 : (0 : ℝ) < (m : ℝ) := by exact_mod_cast hm
+      exact mul_nonneg (Nat.cast_nonneg _) (hHpos _ (Set.mem_Ioi.mpr (by positivity)))
+  -- the far regime `t ≥ D`
+  have hbig : ∀ t : ℝ, D ≤ t →
+      ∑' m : ℕ, (a m : ℝ) * H ((m : ℝ) ^ 2 * t / d) ≤
+        (A₀ * B₀ * S₁) * Real.exp (-a' * t ^ ((n : ℝ)⁻¹)) := by
+    intro t hDt
+    have ht1 : (1 : ℝ) ≤ t := le_trans hD1 hDt
+    have ht0 : (0 : ℝ) < t := lt_of_lt_of_le zero_lt_one ht1
+    have hv1 : (1 : ℝ) ≤ t ^ ((n : ℝ)⁻¹) := by
+      calc (1 : ℝ) = (1 : ℝ) ^ ((n : ℝ)⁻¹) := (Real.one_rpow _).symm
+        _ ≤ t ^ ((n : ℝ)⁻¹) := Real.rpow_le_rpow zero_le_one ht1 (by positivity)
+    have hterm : ∀ m : ℕ, (a m : ℝ) * H ((m : ℝ) ^ 2 * t / d) ≤
+        A₀ * B₀ * ((m : ℝ) * Real.exp (-a' * (m : ℝ) ^ b)) *
+          Real.exp (-a' * t ^ ((n : ℝ)⁻¹)) := by
+      intro m
+      rcases Nat.eq_zero_or_pos m with rfl | hm
+      · simp [ha0]
+      · have hm1 : (1 : ℝ) ≤ (m : ℝ) := by exact_mod_cast hm
+        have hm0 : (0 : ℝ) < (m : ℝ) := lt_of_lt_of_le zero_lt_one hm1
+        have hmb1 : (1 : ℝ) ≤ (m : ℝ) ^ b := by
+          calc (1 : ℝ) = (1 : ℝ) ^ b := (Real.one_rpow b).symm
+            _ ≤ (m : ℝ) ^ b := Real.rpow_le_rpow zero_le_one hm1 hb0.le
+        -- the argument is `≥ 1`
+        have hτ1 : (1 : ℝ) ≤ (m : ℝ) ^ 2 * t / d := by
+          rw [le_div_iff₀ hd, one_mul]
+          have h1 : (1 : ℝ) ≤ (m : ℝ) ^ 2 := one_le_pow₀ hm1
+          calc d ≤ t := le_trans hDd hDt
+            _ = 1 * t := (one_mul t).symm
+            _ ≤ (m : ℝ) ^ 2 * t := mul_le_mul_of_nonneg_right h1 ht0.le
+        -- factor the stretched exponent
+        have hfac : ((m : ℝ) ^ 2 * t / d) ^ ((n : ℝ)⁻¹) =
+            δ * (m : ℝ) ^ b * t ^ ((n : ℝ)⁻¹) := by
+          have h2 : (m : ℝ) ^ 2 * t / d = ((m : ℝ) ^ 2 * (1 / d)) * t := by ring
+          rw [h2, Real.mul_rpow (by positivity) ht0.le,
+            Real.mul_rpow (by positivity) (by positivity), hδdef, hbdef,
+            ← Real.rpow_natCast (m : ℝ) 2, ← Real.rpow_mul hm0.le]
+          push_cast
+          ring
+        have hsplit : -c * ((m : ℝ) ^ 2 * t / d) ^ ((n : ℝ)⁻¹) ≤
+            -a' * (m : ℝ) ^ b + -a' * t ^ ((n : ℝ)⁻¹) := by
+          rw [hfac, ha'def]
+          have h3 : (m : ℝ) ^ b ≤ (m : ℝ) ^ b * t ^ ((n : ℝ)⁻¹) := by
+            nlinarith [Real.rpow_nonneg hm0.le b]
+          have h4 : t ^ ((n : ℝ)⁻¹) ≤ (m : ℝ) ^ b * t ^ ((n : ℝ)⁻¹) := by
+            nlinarith [Real.rpow_nonneg ht0.le ((n : ℝ)⁻¹)]
+          nlinarith [hδ0, hc.le, Real.rpow_nonneg hm0.le b,
+            Real.rpow_nonneg ht0.le ((n : ℝ)⁻¹)]
+        have hHle : H ((m : ℝ) ^ 2 * t / d) ≤
+            A₀ * (Real.exp (-a' * (m : ℝ) ^ b) * Real.exp (-a' * t ^ ((n : ℝ)⁻¹))) := by
+          refine le_trans (hA _ hτ1) ?_
+          rw [← Real.exp_add]
+          exact mul_le_mul (le_max_left _ _) (Real.exp_le_exp.mpr hsplit)
+            (Real.exp_pos _).le hA₀0.le
+        have hab : (a m : ℝ) ≤ B₀ * (m : ℝ) :=
+          le_trans (hB m) (mul_le_mul_of_nonneg_right (le_max_left _ _) hm0.le)
+        calc (a m : ℝ) * H ((m : ℝ) ^ 2 * t / d)
+            ≤ (B₀ * (m : ℝ)) *
+                (A₀ * (Real.exp (-a' * (m : ℝ) ^ b) * Real.exp (-a' * t ^ ((n : ℝ)⁻¹)))) := by
+              refine mul_le_mul hab hHle (hHpos _ (Set.mem_Ioi.mpr (by positivity))) ?_
+              exact mul_nonneg hB₀0 hm0.le
+          _ = A₀ * B₀ * ((m : ℝ) * Real.exp (-a' * (m : ℝ) ^ b)) *
+                Real.exp (-a' * t ^ ((n : ℝ)⁻¹)) := by ring
+    have hsum1 : Summable (fun m : ℕ => (a m : ℝ) * H ((m : ℝ) ^ 2 * t / d)) :=
+      thetaSeries_summable a H hd hn B hB hHpos A c hc hA ht0
+    have hsum2 : Summable (fun m : ℕ => A₀ * B₀ * ((m : ℝ) * Real.exp (-a' * (m : ℝ) ^ b)) *
+        Real.exp (-a' * t ^ ((n : ℝ)⁻¹))) :=
+      ((hmsum.mul_left (A₀ * B₀)).mul_right (Real.exp (-a' * t ^ ((n : ℝ)⁻¹))))
+    calc ∑' m : ℕ, (a m : ℝ) * H ((m : ℝ) ^ 2 * t / d)
+        ≤ ∑' m : ℕ, A₀ * B₀ * ((m : ℝ) * Real.exp (-a' * (m : ℝ) ^ b)) *
+            Real.exp (-a' * t ^ ((n : ℝ)⁻¹)) := hsum1.tsum_le_tsum hterm hsum2
+      _ = (A₀ * B₀ * S₁) * Real.exp (-a' * t ^ ((n : ℝ)⁻¹)) := by
+          rw [(hmsum.mul_left (A₀ * B₀)).tsum_mul_right, hS₁def,
+            (hmsum).tsum_mul_left]
+  -- the near regime `1 ≤ t ≤ D`
+  have hsmallmono : ∀ t : ℝ, 1 ≤ t →
+      ∑' m : ℕ, (a m : ℝ) * H ((m : ℝ) ^ 2 * t / d) ≤
+        ∑' m : ℕ, (a m : ℝ) * H ((m : ℝ) ^ 2 * 1 / d) := by
+    intro t ht1
+    have ht0 : (0 : ℝ) < t := lt_of_lt_of_le zero_lt_one ht1
+    refine (thetaSeries_summable a H hd hn B hB hHpos A c hc hA ht0).tsum_le_tsum
+      (fun m => ?_) (thetaSeries_summable a H hd hn B hB hHpos A c hc hA zero_lt_one)
+    rcases Nat.eq_zero_or_pos m with rfl | hm
+    · simp [ha0]
+    · have hm0 : (0 : ℝ) < (m : ℝ) := by exact_mod_cast hm
+      refine mul_le_mul_of_nonneg_left (hHanti (Set.mem_Ioi.mpr (by positivity))
+        (Set.mem_Ioi.mpr (by positivity)) ?_) (Nat.cast_nonneg _)
+      gcongr
+  refine ⟨max (A₀ * B₀ * S₁)
+      ((∑' m : ℕ, (a m : ℝ) * H ((m : ℝ) ^ 2 * 1 / d)) * Real.exp (a' * D ^ ((n : ℝ)⁻¹))),
+    a', ha'0, fun t ht1 => ?_⟩
+  have ht0 : (0 : ℝ) < t := lt_of_lt_of_le zero_lt_one ht1
+  rw [abs_of_nonneg (tsum_nonneg (hnonneg t ht0))]
+  rcases le_total D t with hDt | htD
+  · exact le_trans (hbig t hDt)
+      (mul_le_mul_of_nonneg_right (le_max_left _ _) (Real.exp_pos _).le)
+  · refine le_trans (hsmallmono t ht1) (le_trans ?_
+      (mul_le_mul_of_nonneg_right (le_max_right _ _) (Real.exp_pos _).le))
+    have hS0 : (0 : ℝ) ≤ ∑' m : ℕ, (a m : ℝ) * H ((m : ℝ) ^ 2 * 1 / d) :=
+      tsum_nonneg (hnonneg 1 zero_lt_one)
+    have hDt' : t ^ ((n : ℝ)⁻¹) ≤ D ^ ((n : ℝ)⁻¹) :=
+      Real.rpow_le_rpow ht0.le htD (by positivity)
+    have hone : (1 : ℝ) ≤ Real.exp (a' * D ^ ((n : ℝ)⁻¹)) * Real.exp (-a' * t ^ ((n : ℝ)⁻¹)) := by
+      rw [← Real.exp_add]
+      refine Real.one_le_exp ?_
+      nlinarith [ha'0]
+    calc ∑' m : ℕ, (a m : ℝ) * H ((m : ℝ) ^ 2 * 1 / d)
+        = (∑' m : ℕ, (a m : ℝ) * H ((m : ℝ) ^ 2 * 1 / d)) * 1 := by ring
+      _ ≤ (∑' m : ℕ, (a m : ℝ) * H ((m : ℝ) ^ 2 * 1 / d)) *
+            (Real.exp (a' * D ^ ((n : ℝ)⁻¹)) * Real.exp (-a' * t ^ ((n : ℝ)⁻¹))) :=
+          mul_le_mul_of_nonneg_left hone hS0
+      _ = (∑' m : ℕ, (a m : ℝ) * H ((m : ℝ) ^ 2 * 1 / d)) *
+            Real.exp (a' * D ^ ((n : ℝ)⁻¹)) * Real.exp (-a' * t ^ ((n : ℝ)⁻¹)) := by ring
+
+open Filter MeasureTheory Topology in
+/-- **The termwise Mellin transform of the theta series** (PROVEN
+2026-07-25, conjunct (iii) — the analytic core — of the stage-γ
+analysis `heckeThetaSeries_analysis`): the Mellin transform of
+`t ↦ Σ_m a(m)·H(m²t/d)` at `s/2` converges and equals
+`d^{s/2}·(mellin H)(s/2)·L(a, s)`.
+
+The Σ/∫ interchange is Fubini–Tonelli in the form
+`hasSum_integral_of_summable_integral_norm`: each term
+`t ↦ t^{s/2−1}·a(m)·H((m²/d)·t)` is Mellin-convergent by
+`MellinConvergent.comp_mul_left`, and the integrals of the norms are
+computed exactly — the change of variables `u = (m²/d)·t`
+(`integral_comp_mul_left_Ioi`) gives
+`∫ t^{σ−1}|H(qt)| = q^{−σ}·∫ u^{σ−1}|H(u)|` at `σ = re(s/2)`, so the
+`m`-sum of the norm integrals is `d^{σ}·I₀·Σ_m a(m)/m^{re s}`, summable
+by the `LSeriesSummable` hypothesis.  The termwise values come from
+`mellin_comp_mul_left` + `mellin_const_smul`, and
+`(m²/d)^{−s/2} = d^{s/2}·(m^s)⁻¹` reassembles the Dirichlet series.
+Mellin CONVERGENCE of the sum is the same computation run through
+`lintegral_tsum` on the nonnegative integrand, with measurability from
+the continuity of the sum (`thetaSeries_continuousOn`). -/
+theorem thetaSeries_hasMellin (a : ℕ → ℕ) (H : ℝ → ℝ) {d : ℝ} (hd : 0 < d) {n : ℕ} (hn : 0 < n)
+    (ha0 : a 0 = 0) (B : ℝ) (hB : ∀ m : ℕ, (a m : ℝ) ≤ B * m)
+    (hHcont : ContinuousOn H (Set.Ioi 0))
+    (hHpos : ∀ τ : ℝ, τ ∈ Set.Ioi (0 : ℝ) → 0 ≤ H τ)
+    (hHanti : AntitoneOn H (Set.Ioi 0))
+    (A c : ℝ) (hc : 0 < c)
+    (hA : ∀ τ : ℝ, 1 ≤ τ → H τ ≤ A * Real.exp (-c * τ ^ ((n : ℝ)⁻¹)))
+    {s : ℂ} (hs : 1 < s.re) (v : ℂ)
+    (hmel : HasMellin (fun τ : ℝ => (H τ : ℂ)) (s / 2) v)
+    (hLS : LSeriesSummable (fun m : ℕ => (a m : ℂ)) s) :
+    HasMellin (fun t : ℝ => ((∑' m : ℕ, (a m : ℝ) * H ((m : ℝ) ^ 2 * t / d) : ℝ) : ℂ)) (s / 2)
+      ((d : ℂ) ^ (s / 2) * v * LSeries (fun m : ℕ => (a m : ℂ)) s) := by
+  classical
+  set c₀ : ℝ := (s / 2).re with hc₀def
+  have hc₀eq : c₀ = s.re / 2 := by rw [hc₀def, Complex.div_ofNat_re]
+  have hc₀pos : 0 < c₀ := by rw [hc₀eq]; linarith
+  have h2c₀ : 2 * c₀ = s.re := by rw [hc₀eq]; ring
+  -- the `H`-side norm integrand and its integral
+  have hmel1 : IntegrableOn
+      (fun t : ℝ => (t : ℂ) ^ (s / 2 - 1) • ((H t : ℝ) : ℂ)) (Set.Ioi 0) := hmel.1
+  have hHnorm : ∀ u : ℝ, u ∈ Set.Ioi (0 : ℝ) →
+      ‖(u : ℂ) ^ (s / 2 - 1) • ((H u : ℝ) : ℂ)‖ = u ^ (c₀ - 1) * H u := by
+    intro u hu
+    have hu0 : (0 : ℝ) < u := hu
+    rw [norm_smul, Complex.norm_cpow_eq_rpow_re_of_pos hu0, Complex.norm_real,
+      Real.norm_eq_abs, abs_of_nonneg (hHpos u hu), Complex.sub_re, Complex.one_re, hc₀def]
+  have hHint : IntegrableOn (fun u : ℝ => u ^ (c₀ - 1) * H u) (Set.Ioi 0) :=
+    IntegrableOn.congr_fun hmel1.norm (fun u hu => hHnorm u hu) measurableSet_Ioi
+  set I₀ : ℝ := ∫ u in Set.Ioi (0 : ℝ), u ^ (c₀ - 1) * H u with hI₀def
+  -- the scaling identity
+  have hscale : ∀ q : ℝ, 0 < q →
+      IntegrableOn (fun t : ℝ => t ^ (c₀ - 1) * H (q * t)) (Set.Ioi 0) ∧
+      (∫ t in Set.Ioi (0 : ℝ), t ^ (c₀ - 1) * H (q * t)) = q ^ (-c₀) * I₀ := by
+    intro q hq
+    have hcomp : ∀ t : ℝ, 0 < t →
+        q ^ (1 - c₀) * ((q * t) ^ (c₀ - 1) * H (q * t)) = t ^ (c₀ - 1) * H (q * t) := by
+      intro t ht
+      rw [Real.mul_rpow hq.le ht.le,
+        show q ^ (1 - c₀) * (q ^ (c₀ - 1) * t ^ (c₀ - 1) * H (q * t))
+          = q ^ (1 - c₀) * q ^ (c₀ - 1) * (t ^ (c₀ - 1) * H (q * t)) from by ring,
+        ← Real.rpow_add hq, show (1 - c₀) + (c₀ - 1) = 0 from by ring, Real.rpow_zero, one_mul]
+    have h3 := integral_comp_mul_left_Ioi
+      (fun u : ℝ => q ^ (1 - c₀) * (u ^ (c₀ - 1) * H u)) 0 hq
+    simp only [mul_zero, smul_eq_mul] at h3
+    have h1 : IntegrableOn
+        (fun t : ℝ => q ^ (1 - c₀) * ((q * t) ^ (c₀ - 1) * H (q * t))) (Set.Ioi 0) := by
+      have h4 := (integrableOn_Ioi_comp_mul_left_iff
+        (fun u : ℝ => q ^ (1 - c₀) * (u ^ (c₀ - 1) * H u)) 0 hq).mpr (by
+          rw [mul_zero]; exact hHint.const_mul _)
+      exact h4
+    refine ⟨h1.congr_fun (fun t ht => hcomp t ht) measurableSet_Ioi, ?_⟩
+    have h5 : (∫ t in Set.Ioi (0 : ℝ), t ^ (c₀ - 1) * H (q * t)) =
+        ∫ t in Set.Ioi (0 : ℝ), q ^ (1 - c₀) * ((q * t) ^ (c₀ - 1) * H (q * t)) :=
+      setIntegral_congr_fun measurableSet_Ioi (fun t ht => (hcomp t ht).symm)
+    rw [h5, h3, integral_const_mul, ← mul_assoc, ← hI₀def]
+    congr 1
+    rw [← Real.rpow_neg_one q, ← Real.rpow_add hq, show (-1 : ℝ) + (1 - c₀) = -c₀ from by ring]
+  -- the summable majorant of the norm integrals
+  have hLSnorm : Summable (fun m : ℕ => (a m : ℝ) / (m : ℝ) ^ s.re) := by
+    have h1 : Summable (fun m : ℕ => ‖LSeries.term (fun k : ℕ => (a k : ℂ)) s m‖) :=
+      summable_norm_iff.mpr hLS
+    refine h1.congr fun m => ?_
+    rw [LSeries.norm_term_eq]
+    rcases Nat.eq_zero_or_pos m with rfl | hm
+    · simp [ha0]
+    · rw [if_neg (by omega), Complex.norm_natCast]
+  -- the per-term real integrals
+  have hIm : ∀ m : ℕ,
+      IntegrableOn (fun t : ℝ => t ^ (c₀ - 1) * ((a m : ℝ) * H ((m : ℝ) ^ 2 * t / d)))
+        (Set.Ioi 0) ∧
+      (∫ t in Set.Ioi (0 : ℝ), t ^ (c₀ - 1) * ((a m : ℝ) * H ((m : ℝ) ^ 2 * t / d))) =
+        (d ^ c₀ * I₀) * ((a m : ℝ) / (m : ℝ) ^ s.re) := by
+    intro m
+    rcases Nat.eq_zero_or_pos m with rfl | hm
+    · refine ⟨?_, ?_⟩ <;> simp [ha0]
+    · have hm0 : (0 : ℝ) < (m : ℝ) := by exact_mod_cast hm
+      have hq : (0 : ℝ) < (m : ℝ) ^ 2 / d := by positivity
+      have hargeq : ∀ t : ℝ, (m : ℝ) ^ 2 / d * t = (m : ℝ) ^ 2 * t / d := fun t => by ring
+      have hcongr : ∀ t : ℝ, t ∈ Set.Ioi (0 : ℝ) →
+          (a m : ℝ) * (t ^ (c₀ - 1) * H ((m : ℝ) ^ 2 / d * t)) =
+            t ^ (c₀ - 1) * ((a m : ℝ) * H ((m : ℝ) ^ 2 * t / d)) := by
+        intro t _
+        rw [hargeq t]; ring
+      have e2 : ((m : ℝ) ^ 2) ^ (-c₀) = ((m : ℝ) ^ s.re)⁻¹ := by
+        rw [← Real.rpow_natCast (m : ℝ) 2, ← Real.rpow_mul hm0.le]
+        push_cast
+        rw [show (2 : ℝ) * -c₀ = -(2 * c₀) from by ring, h2c₀, Real.rpow_neg hm0.le]
+      have e1 : ((m : ℝ) ^ 2 / d) ^ (-c₀) = d ^ c₀ * ((m : ℝ) ^ s.re)⁻¹ := by
+        rw [Real.div_rpow (by positivity) hd.le, e2, Real.rpow_neg hd.le, div_eq_mul_inv,
+          inv_inv, mul_comm]
+      refine ⟨IntegrableOn.congr_fun (((hscale _ hq).1).const_mul (a m : ℝ)) hcongr
+        measurableSet_Ioi, ?_⟩
+      rw [← setIntegral_congr_fun measurableSet_Ioi hcongr, integral_const_mul,
+        (hscale _ hq).2, e1]
+      field_simp
+  -- the norms of the complex terms
+  have hnormeq : ∀ m : ℕ, (∫ t in Set.Ioi (0 : ℝ),
+      ‖(t : ℂ) ^ (s / 2 - 1) • ((a m : ℂ) * ((H ((m : ℝ) ^ 2 * t / d) : ℝ) : ℂ))‖) =
+      (d ^ c₀ * I₀) * ((a m : ℝ) / (m : ℝ) ^ s.re) := by
+    intro m
+    rcases Nat.eq_zero_or_pos m with rfl | hm
+    · simp [ha0]
+    · have hm0 : (0 : ℝ) < (m : ℝ) := by exact_mod_cast hm
+      have hpt : ∀ t : ℝ, t ∈ Set.Ioi (0 : ℝ) →
+          ‖(t : ℂ) ^ (s / 2 - 1) • ((a m : ℂ) * ((H ((m : ℝ) ^ 2 * t / d) : ℝ) : ℂ))‖ =
+            t ^ (c₀ - 1) * ((a m : ℝ) * H ((m : ℝ) ^ 2 * t / d)) := by
+        intro t ht
+        have ht0 : (0 : ℝ) < t := ht
+        have harg : (0 : ℝ) < (m : ℝ) ^ 2 * t / d := by positivity
+        rw [norm_smul, Complex.norm_cpow_eq_rpow_re_of_pos ht0, norm_mul,
+          Complex.norm_natCast, Complex.norm_real, Real.norm_eq_abs,
+          abs_of_nonneg (hHpos _ harg), Complex.sub_re, Complex.one_re, ← hc₀def]
+      rw [setIntegral_congr_fun measurableSet_Ioi hpt, (hIm m).2]
+  -- integrability of the complex terms
+  have hFint : ∀ m : ℕ, Integrable
+      (fun t : ℝ => (t : ℂ) ^ (s / 2 - 1) •
+        ((a m : ℂ) * ((H ((m : ℝ) ^ 2 * t / d) : ℝ) : ℂ)))
+      (volume.restrict (Set.Ioi 0)) := by
+    intro m
+    rcases Nat.eq_zero_or_pos m with rfl | hm
+    · simp [ha0]
+    · have hm0 : (0 : ℝ) < (m : ℝ) := by exact_mod_cast hm
+      have hq : (0 : ℝ) < (m : ℝ) ^ 2 / d := by positivity
+      have h4 : MellinConvergent (fun t : ℝ => ((H ((m : ℝ) ^ 2 / d * t) : ℝ) : ℂ)) (s / 2) :=
+        (MellinConvergent.comp_mul_left hq).mpr hmel.1
+      have h6 : IntegrableOn (fun t : ℝ => (t : ℂ) ^ (s / 2 - 1) •
+          ((a m : ℂ) • ((H ((m : ℝ) ^ 2 / d * t) : ℝ) : ℂ))) (Set.Ioi 0) :=
+        h4.const_smul ((a m : ℂ))
+      refine IntegrableOn.congr_fun h6 (fun t ht => ?_) measurableSet_Ioi
+      simp only [smul_eq_mul]
+      rw [show (m : ℝ) ^ 2 / d * t = (m : ℝ) ^ 2 * t / d from by ring]
+  have hFsum : Summable (fun m : ℕ => ∫ t in Set.Ioi (0 : ℝ),
+      ‖(t : ℂ) ^ (s / 2 - 1) • ((a m : ℂ) * ((H ((m : ℝ) ^ 2 * t / d) : ℝ) : ℂ))‖) :=
+    (hLSnorm.mul_left (d ^ c₀ * I₀)).congr fun m => (hnormeq m).symm
+  have hHasSum := hasSum_integral_of_summable_integral_norm
+    (F := fun (m : ℕ) (t : ℝ) => (t : ℂ) ^ (s / 2 - 1) •
+      ((a m : ℂ) * ((H ((m : ℝ) ^ 2 * t / d) : ℝ) : ℂ)))
+    (μ := volume.restrict (Set.Ioi 0)) hFint hFsum
+  -- the per-term Mellin values
+  have hmellinterm : ∀ m : ℕ, (∫ t in Set.Ioi (0 : ℝ), (t : ℂ) ^ (s / 2 - 1) •
+      ((a m : ℂ) * ((H ((m : ℝ) ^ 2 * t / d) : ℝ) : ℂ))) =
+      ((d : ℂ) ^ (s / 2) * v) * LSeries.term (fun k : ℕ => (a k : ℂ)) s m := by
+    intro m
+    rcases Nat.eq_zero_or_pos m with rfl | hm
+    · simp [ha0, LSeries.term]
+    · have hm0 : (0 : ℝ) < (m : ℝ) := by exact_mod_cast hm
+      have hq : (0 : ℝ) < (m : ℝ) ^ 2 / d := by positivity
+      have hargm : ((m : ℕ) : ℂ).arg = 0 := by
+        rw [show ((m : ℕ) : ℂ) = (((m : ℕ) : ℝ) : ℂ) from by push_cast; ring,
+          Complex.arg_ofReal_of_nonneg (by positivity)]
+      have hcpow : ((((m : ℝ) ^ 2 / d : ℝ)) : ℂ) ^ (-(s / 2)) =
+          (d : ℂ) ^ (s / 2) * ((m : ℂ) ^ s)⁻¹ := by
+        rw [show ((m : ℝ) ^ 2 / d : ℝ) = (m : ℝ) ^ 2 * (1 / d) from by ring,
+          Complex.ofReal_mul, Complex.mul_cpow_ofReal_nonneg (by positivity) (by positivity)]
+        have hfst : (((m : ℝ) ^ 2 : ℝ) : ℂ) ^ (-(s / 2)) = ((m : ℂ) ^ s)⁻¹ := by
+          rw [Complex.ofReal_pow, Complex.ofReal_natCast,
+            ← Complex.cpow_nat_mul' (by rw [hargm]; simp [Real.pi_pos])
+              (by rw [hargm]; simp [Real.pi_pos.le]),
+            show ((2 : ℕ) : ℂ) * -(s / 2) = -s from by push_cast; ring, Complex.cpow_neg]
+        have hsnd : (((1 / d : ℝ)) : ℂ) ^ (-(s / 2)) = (d : ℂ) ^ (s / 2) := by
+          rw [Complex.ofReal_div, Complex.ofReal_one, one_div,
+            Complex.inv_cpow _ _ (by
+              rw [Complex.arg_ofReal_of_nonneg hd.le]; exact ne_of_lt Real.pi_pos),
+            Complex.cpow_neg, inv_inv]
+        rw [hfst, hsnd]
+        ring
+      have hmel2 : mellin (fun t : ℝ => ((H ((m : ℝ) ^ 2 / d * t) : ℝ) : ℂ)) (s / 2) =
+          ((((m : ℝ) ^ 2 / d : ℝ)) : ℂ) ^ (-(s / 2)) • v := by
+        rw [mellin_comp_mul_left (fun τ : ℝ => ((H τ : ℝ) : ℂ)) (s / 2) hq, hmel.2]
+      have hgoal : (∫ t in Set.Ioi (0 : ℝ), (t : ℂ) ^ (s / 2 - 1) •
+          ((a m : ℂ) * ((H ((m : ℝ) ^ 2 * t / d) : ℝ) : ℂ))) =
+          mellin (fun t : ℝ => (a m : ℂ) * ((H ((m : ℝ) ^ 2 / d * t) : ℝ) : ℂ)) (s / 2) := by
+        rw [mellin]
+        refine setIntegral_congr_fun measurableSet_Ioi fun t ht => ?_
+        rw [show (m : ℝ) ^ 2 / d * t = (m : ℝ) ^ 2 * t / d from by ring]
+      rw [hgoal]
+      have hconstsmul : mellin (fun t : ℝ => (a m : ℂ) * ((H ((m : ℝ) ^ 2 / d * t) : ℝ) : ℂ))
+          (s / 2) = (a m : ℂ) • mellin (fun t : ℝ => ((H ((m : ℝ) ^ 2 / d * t) : ℝ) : ℂ))
+            (s / 2) := by
+        simpa only [smul_eq_mul] using
+          mellin_const_smul (fun t : ℝ => ((H ((m : ℝ) ^ 2 / d * t) : ℝ) : ℂ)) (s / 2)
+            ((a m : ℂ))
+      rw [hconstsmul, hmel2, smul_eq_mul, smul_eq_mul, hcpow, LSeries.term_of_ne_zero
+        (by omega : m ≠ 0), div_eq_mul_inv]
+      ring
+  -- the pointwise sum identity
+  have hptid : ∀ t : ℝ, t ∈ Set.Ioi (0 : ℝ) →
+      (∑' m : ℕ, (t : ℂ) ^ (s / 2 - 1) •
+        ((a m : ℂ) * ((H ((m : ℝ) ^ 2 * t / d) : ℝ) : ℂ))) =
+      (t : ℂ) ^ (s / 2 - 1) •
+        ((∑' m : ℕ, (a m : ℝ) * H ((m : ℝ) ^ 2 * t / d) : ℝ) : ℂ) := by
+    intro t ht
+    simp only [smul_eq_mul]
+    rw [tsum_mul_left, Complex.ofReal_tsum]
+    congr 1
+    exact tsum_congr fun m => by push_cast; ring
+  have hint_eq : (∫ t in Set.Ioi (0 : ℝ), ∑' m : ℕ, (t : ℂ) ^ (s / 2 - 1) •
+      ((a m : ℂ) * ((H ((m : ℝ) ^ 2 * t / d) : ℝ) : ℂ))) =
+      mellin (fun t : ℝ => ((∑' m : ℕ, (a m : ℝ) * H ((m : ℝ) ^ 2 * t / d) : ℝ) : ℂ))
+        (s / 2) := by
+    rw [mellin]
+    exact setIntegral_congr_fun measurableSet_Ioi hptid
+  -- the Mellin value
+  have hval : HasSum (fun m : ℕ => ((d : ℂ) ^ (s / 2) * v) *
+      LSeries.term (fun k : ℕ => (a k : ℂ)) s m)
+      (∫ t in Set.Ioi (0 : ℝ), ∑' m : ℕ, (t : ℂ) ^ (s / 2 - 1) •
+        ((a m : ℂ) * ((H ((m : ℝ) ^ 2 * t / d) : ℝ) : ℂ))) := by
+    simpa only [hmellinterm] using hHasSum
+  have hmellinval :
+      mellin (fun t : ℝ => ((∑' m : ℕ, (a m : ℝ) * H ((m : ℝ) ^ 2 * t / d) : ℝ) : ℂ)) (s / 2)
+        = (d : ℂ) ^ (s / 2) * v * LSeries (fun m : ℕ => (a m : ℂ)) s := by
+    rw [← hint_eq, ← hval.tsum_eq, tsum_mul_left]
+    simp only [LSeries]
+  refine ⟨?_, hmellinval⟩
+  -- Mellin convergence
+  have hScont : ContinuousOn (fun t : ℝ => ∑' m : ℕ, (a m : ℝ) * H ((m : ℝ) ^ 2 * t / d))
+      (Set.Ioi 0) := thetaSeries_continuousOn a H hd hn ha0 B hB hHcont hHpos hHanti A c hc hA
+  have hmeas : AEStronglyMeasurable
+      (fun t : ℝ => (t : ℂ) ^ (s / 2 - 1) •
+        ((∑' m : ℕ, (a m : ℝ) * H ((m : ℝ) ^ 2 * t / d) : ℝ) : ℂ))
+      (volume.restrict (Set.Ioi 0)) := by
+    refine ContinuousOn.aestronglyMeasurable ?_ measurableSet_Ioi
+    have h1 : ContinuousOn (fun t : ℝ => (t : ℂ) ^ (s / 2 - 1)) (Set.Ioi 0) := fun t ht =>
+      (Complex.continuousAt_ofReal_cpow_const t _
+        (Or.inr (ne_of_gt (ht : (0 : ℝ) < t)))).continuousWithinAt
+    exact h1.smul (Complex.continuous_ofReal.comp_continuousOn hScont)
+  have hSnonneg : ∀ t : ℝ, 0 < t →
+      0 ≤ ∑' m : ℕ, (a m : ℝ) * H ((m : ℝ) ^ 2 * t / d) := by
+    intro t ht
+    refine tsum_nonneg fun m => ?_
+    rcases Nat.eq_zero_or_pos m with rfl | hm
+    · simp [ha0]
+    · have hm0 : (0 : ℝ) < (m : ℝ) := by exact_mod_cast hm
+      exact mul_nonneg (Nat.cast_nonneg _) (hHpos _ (Set.mem_Ioi.mpr (by positivity)))
+  have hnormfun : ∀ t : ℝ, t ∈ Set.Ioi (0 : ℝ) →
+      ‖(t : ℂ) ^ (s / 2 - 1) •
+          ((∑' m : ℕ, (a m : ℝ) * H ((m : ℝ) ^ 2 * t / d) : ℝ) : ℂ)‖ =
+        t ^ (c₀ - 1) * ∑' m : ℕ, (a m : ℝ) * H ((m : ℝ) ^ 2 * t / d) := by
+    intro t ht
+    have ht0 : (0 : ℝ) < t := ht
+    rw [norm_smul, Complex.norm_cpow_eq_rpow_re_of_pos ht0, Complex.norm_real,
+      Real.norm_eq_abs, abs_of_nonneg (hSnonneg t ht0), Complex.sub_re, Complex.one_re,
+      ← hc₀def]
+  have hae : (fun t : ℝ => ‖(t : ℂ) ^ (s / 2 - 1) •
+        ((∑' m : ℕ, (a m : ℝ) * H ((m : ℝ) ^ 2 * t / d) : ℝ) : ℂ)‖) =ᵐ[volume.restrict
+        (Set.Ioi 0)] (fun t : ℝ => t ^ (c₀ - 1) * ∑' m : ℕ, (a m : ℝ) * H ((m : ℝ) ^ 2 * t / d)) :=
+    (ae_restrict_iff' measurableSet_Ioi).mpr (Filter.Eventually.of_forall hnormfun)
+  have hSint : Integrable (fun t : ℝ => t ^ (c₀ - 1) *
+      ∑' m : ℕ, (a m : ℝ) * H ((m : ℝ) ^ 2 * t / d)) (volume.restrict (Set.Ioi 0)) := by
+    refine ⟨hmeas.norm.congr hae, ?_⟩
+    rw [hasFiniteIntegral_iff_ofReal ((ae_restrict_iff' measurableSet_Ioi).mpr
+      (Filter.Eventually.of_forall fun t ht => by
+        have ht0 : (0 : ℝ) < t := ht
+        exact mul_nonneg (Real.rpow_nonneg ht0.le _) (hSnonneg t ht0)))]
+    have hlt : ∀ t : ℝ, t ∈ Set.Ioi (0 : ℝ) →
+        ENNReal.ofReal (t ^ (c₀ - 1) * ∑' m : ℕ, (a m : ℝ) * H ((m : ℝ) ^ 2 * t / d)) =
+          ∑' m : ℕ, ENNReal.ofReal (t ^ (c₀ - 1) * ((a m : ℝ) * H ((m : ℝ) ^ 2 * t / d))) := by
+      intro t ht
+      have ht0 : (0 : ℝ) < t := ht
+      have hsum := thetaSeries_summable a H hd hn B hB hHpos A c hc hA ht0
+      rw [← tsum_mul_left, ENNReal.ofReal_tsum_of_nonneg (fun m => ?_) (hsum.mul_left _)]
+      · rcases Nat.eq_zero_or_pos m with rfl | hm
+        · simp [ha0]
+        · have hm0 : (0 : ℝ) < (m : ℝ) := by exact_mod_cast hm
+          exact mul_nonneg (Real.rpow_nonneg ht0.le _)
+            (mul_nonneg (Nat.cast_nonneg _) (hHpos _ (Set.mem_Ioi.mpr (by positivity))))
+    rw [lintegral_congr_ae ((ae_restrict_iff' measurableSet_Ioi).mpr
+      (Filter.Eventually.of_forall hlt))]
+    have hmeasm : ∀ m : ℕ, AEMeasurable
+        (fun t : ℝ => ENNReal.ofReal (t ^ (c₀ - 1) * ((a m : ℝ) * H ((m : ℝ) ^ 2 * t / d))))
+        (volume.restrict (Set.Ioi 0)) := fun m =>
+      ENNReal.measurable_ofReal.comp_aemeasurable (hIm m).1.1.aemeasurable
+    rw [lintegral_tsum hmeasm]
+    have hterm : ∀ m : ℕ, (∫⁻ t in Set.Ioi (0 : ℝ),
+        ENNReal.ofReal (t ^ (c₀ - 1) * ((a m : ℝ) * H ((m : ℝ) ^ 2 * t / d)))) =
+        ENNReal.ofReal ((d ^ c₀ * I₀) * ((a m : ℝ) / (m : ℝ) ^ s.re)) := by
+      intro m
+      rw [← ofReal_integral_eq_lintegral_ofReal (hIm m).1
+        ((ae_restrict_iff' measurableSet_Ioi).mpr (Filter.Eventually.of_forall fun t ht => by
+          have ht0 : (0 : ℝ) < t := ht
+          rcases Nat.eq_zero_or_pos m with rfl | hm
+          · simp [ha0]
+          · have hm0 : (0 : ℝ) < (m : ℝ) := by exact_mod_cast hm
+            exact mul_nonneg (Real.rpow_nonneg ht0.le _)
+              (mul_nonneg (Nat.cast_nonneg _)
+                (hHpos _ (Set.mem_Ioi.mpr (by positivity)))))), (hIm m).2]
+    rw [show (fun m : ℕ => ∫⁻ t in Set.Ioi (0 : ℝ),
+        ENNReal.ofReal (t ^ (c₀ - 1) * ((a m : ℝ) * H ((m : ℝ) ^ 2 * t / d)))) =
+        (fun m : ℕ => ENNReal.ofReal ((d ^ c₀ * I₀) * ((a m : ℝ) / (m : ℝ) ^ s.re))) from
+      funext hterm, ← ENNReal.ofReal_tsum_of_nonneg]
+    · exact ENNReal.ofReal_lt_top
+    · intro m
+      have h1 : (0 : ℝ) ≤ I₀ := by
+        rw [hI₀def]
+        refine setIntegral_nonneg measurableSet_Ioi fun u hu => ?_
+        have hu0 : (0 : ℝ) < u := hu
+        exact mul_nonneg (Real.rpow_nonneg hu0.le _) (hHpos u hu)
+      have h2 : (0 : ℝ) ≤ (a m : ℝ) / (m : ℝ) ^ s.re := by positivity
+      exact mul_nonneg (mul_nonneg (Real.rpow_nonneg hd.le _) h1) h2
+    · exact hLSnorm.mul_left _
+  exact (integrable_norm_iff hmeas).mp (hSint.congr hae.symm)
+
+open scoped nonZeroDivisors in
+/-- **The norm-`0` count of an ideal class vanishes** (PROVEN
+2026-07-25): a nonzero integral ideal has positive absolute norm
+(`Ideal.absNorm_ne_zero_of_nonZeroDivisors`), so the counted subtype is
+empty.  This is what makes the `m = 0` term of the Hecke theta series
+vanish, keeping the series away from `H`'s singular point `τ = 0`. -/
+theorem classIdealCount_zero (K : Type*) [Field K] [NumberField K]
+    (C : ClassGroup (NumberField.RingOfIntegers K)) :
+    classIdealCount K C 0 = 0 := by
+  haveI : IsEmpty {I : (Ideal (NumberField.RingOfIntegers K))⁰ //
+      Ideal.absNorm (I : Ideal (NumberField.RingOfIntegers K)) = 0 ∧ ClassGroup.mk0 I = C} :=
+    ⟨fun I => Ideal.absNorm_ne_zero_of_nonZeroDivisors I.1 I.2.1⟩
+  unfold classIdealCount
+  exact Nat.card_of_isEmpty
+
+open scoped nonZeroDivisors in
+open Filter Topology in
+/-- **Linear growth of the per-class ideal counts** (PROVEN 2026-07-25):
+`classIdealCount K C m ≤ B·m` for a single constant `B`.  The count of
+norm exactly `m` is at most the cumulative count of norm `≤ m`
+(`sum_Icc_classIdealCount`, all terms nonnegative), and the pin's
+Weber/Dedekind asymptotic
+`NumberField.Ideal.tendsto_norm_le_and_mk_eq_div_atTop` makes
+`count(m)/m` a convergent — hence bounded — sequence.  This is the
+coefficient-growth input of the stage-γ analysis
+`heckeThetaSeries_analysis`. -/
+theorem classIdealCount_le_mul (K : Type*) [Field K] [NumberField K]
+    (C : ClassGroup (NumberField.RingOfIntegers K)) :
+    ∃ B : ℝ, ∀ m : ℕ, (classIdealCount K C m : ℝ) ≤ B * m := by
+  have h1 : Tendsto (fun m : ℕ =>
+      (Nat.card {I : (Ideal (NumberField.RingOfIntegers K))⁰ //
+        Ideal.absNorm (I : Ideal (NumberField.RingOfIntegers K)) ≤ (m : ℝ) ∧
+        ClassGroup.mk0 I = C} : ℝ) / (m : ℝ)) atTop _ :=
+    (NumberField.Ideal.tendsto_norm_le_and_mk_eq_div_atTop K C).comp tendsto_natCast_atTop_atTop
+  obtain ⟨B, hB⟩ := h1.bddAbove_range
+  refine ⟨B, fun m => ?_⟩
+  rcases Nat.eq_zero_or_pos m with rfl | hm
+  · simp [classIdealCount_zero K C]
+  · have hm0 : (0 : ℝ) < (m : ℝ) := by exact_mod_cast hm
+    have h2 := hB (Set.mem_range_self m)
+    rw [div_le_iff₀ hm0] at h2
+    refine le_trans ?_ h2
+    have h3 : (classIdealCount K C m : ℝ) ≤
+        ((∑ k ∈ Finset.Icc 1 m, classIdealCount K C k : ℕ) : ℝ) := by
+      exact_mod_cast Finset.single_le_sum (f := fun k => classIdealCount K C k)
+        (fun i _ => Nat.zero_le _) (Finset.mem_Icc.mpr ⟨hm, le_refl m⟩)
+    refine le_trans h3 (le_of_eq ?_)
+    have e2 : {I : (Ideal (NumberField.RingOfIntegers K))⁰ //
+        (Ideal.absNorm (I : Ideal (NumberField.RingOfIntegers K)) : ℝ) ≤ (m : ℝ) ∧
+        ClassGroup.mk0 I = C} ≃
+        {I : (Ideal (NumberField.RingOfIntegers K))⁰ //
+        Ideal.absNorm (I : Ideal (NumberField.RingOfIntegers K)) ≤ m ∧
+        ClassGroup.mk0 I = C} :=
+      Equiv.subtypeEquivRight fun I => and_congr_left' Nat.cast_le
+    rw [sum_Icc_classIdealCount K C m, ← Nat.card_congr e2]
+
+open Filter MeasureTheory Topology in
 /-- **Analysis of the per-class Hecke theta series: local
-integrability, stretched-exponential decay, termwise Mellin** (sorry
-node, stated 2026-07-24 — stage (γ), the series-side analysis, of the
+integrability, stretched-exponential decay, termwise Mellin** (PROVEN
+2026-07-25 over the abstract theta-series lemmas
+`thetaSeries_continuousOn`/`thetaSeries_tail_bound`/`thetaSeries_hasMellin`
+and the counting inputs `classIdealCount_zero`/`classIdealCount_le_mul`;
+stated 2026-07-24 — stage (γ), the series-side analysis, of the
 decomposition of `heckeThetaKernel_exists`): for ANY profile `H` with
 the properties delivered by `archimedeanGammaProfile_exists`, the
 per-class series `S_C(t) = Σ_m a_C(m)·H(m²·t/|d_K|)`
@@ -7776,9 +8499,14 @@ Fubini–Tonelli for the nonnegative double integral gives
 `mellin S_C (s/2) = |d|^{s/2}·Γ_ℝ(s)^{r₁}·Γ_ℂ(s)^{r₂}·L(a_C, s)`, the
 `|d|^{s/2}` emerging as `Σ_m (m²/|d|)^{−s/2}·m^{... } =
 |d|^{s/2}·Σ_m a_C(m)·m^{−s}`, with convergence bundled in `HasMellin`
-— the interchange justified at `∞` by (ii) and at `0⁺` by the
-monotone blow-up bound `S_C(t) ≤ S_C(t₀)` for `t ≥ t₀ → 0` against
-`t^{re(s/2)−1}`, integrable since `re s > 1 > 0`. -/
+— the interchange justified by absolute convergence of the double
+integral: the norm integral of the `m`-th term is exactly
+`a_C(m)·(m²/|d|)^{−re(s/2)}·∫ u^{re(s/2)−1}H(u) du`, whose `m`-sum is
+`|d|^{re(s/2)}·I₀·Σ_m a_C(m)/m^{re s}`, summable because
+`re s > 1` (`classIdealCount_LSeriesSummable`).  Note the earlier
+sketch's "monotone blow-up bound at `0⁺`" was NOT a proof: a constant
+bound on each `[t₀, ∞)` says nothing about integrability near `0`; the
+`0⁺` control is genuinely the termwise Tonelli computation above. -/
 theorem heckeThetaSeries_analysis (K : Type*) [Field K] [NumberField K]
     (H : ℝ → ℝ)
     (hHcont : ContinuousOn H (Set.Ioi 0))
@@ -7813,7 +8541,41 @@ theorem heckeThetaSeries_analysis (K : Type*) [Field K] [NumberField K]
           ((2 : ℂ) * ((2 * Real.pi : ℝ) : ℂ) ^ (-s) * Complex.Gamma s) ^
             NumberField.InfinitePlace.nrComplexPlaces K *
           LSeries (fun n => (classIdealCount K C n : ℂ)) s)) := by
-  sorry
+  obtain ⟨A, c, hc, hA⟩ := hHdec
+  have hd : (0 : ℝ) < |(NumberField.discr K : ℝ)| := by
+    refine abs_pos.mpr ?_
+    exact_mod_cast NumberField.discr_ne_zero K
+  have hn : 0 < Module.finrank ℚ K := Module.finrank_pos
+  refine ⟨fun C => ?_, fun C => ?_, fun C s hs => ?_⟩
+  · -- (i) local integrability, from continuity of the series
+    obtain ⟨B, hB⟩ := classIdealCount_le_mul K C
+    refine ContinuousOn.locallyIntegrableOn ?_ measurableSet_Ioi
+    exact Complex.continuous_ofReal.comp_continuousOn
+      (thetaSeries_continuousOn (classIdealCount K C) H hd hn (classIdealCount_zero K C)
+        B hB hHcont hHpos hHanti A c hc hA)
+  · -- (ii) the stretched-exponential tail bound
+    obtain ⟨B, hB⟩ := classIdealCount_le_mul K C
+    exact thetaSeries_tail_bound (classIdealCount K C) H hd hn (classIdealCount_zero K C)
+      B hB hHpos hHanti A c hc hA
+  · -- (iii) the termwise Mellin identification
+    obtain ⟨B, hB⟩ := classIdealCount_le_mul K C
+    have hmain := thetaSeries_hasMellin (classIdealCount K C) H hd hn
+      (classIdealCount_zero K C) B hB hHcont hHpos hHanti A c hc hA hs _ (hHmel s hs)
+      (classIdealCount_LSeriesSummable K C hs)
+    have hval : (Complex.ofReal |(NumberField.discr K : ℝ)| ^ (s / 2) *
+        ((Real.pi : ℂ) ^ (-s / 2) * Complex.Gamma (s / 2)) ^
+          NumberField.InfinitePlace.nrRealPlaces K *
+        ((2 : ℂ) * ((2 * Real.pi : ℝ) : ℂ) ^ (-s) * Complex.Gamma s) ^
+          NumberField.InfinitePlace.nrComplexPlaces K *
+        LSeries (fun n => (classIdealCount K C n : ℂ)) s) =
+        ((|(NumberField.discr K : ℝ)| : ℝ) : ℂ) ^ (s / 2) *
+          ((((Real.pi : ℂ) ^ (-s / 2) * Complex.Gamma (s / 2)) ^
+              NumberField.InfinitePlace.nrRealPlaces K *
+            ((2 : ℂ) * ((2 * Real.pi : ℝ) : ℂ) ^ (-s) * Complex.Gamma s) ^
+              NumberField.InfinitePlace.nrComplexPlaces K)) *
+          LSeries (fun n => (classIdealCount K C n : ℂ)) s := by ring
+    rw [hval]
+    exact hmain
 
 /-- **The Hecke theta kernel family of the class group** (DECOMPOSED
 2026-07-24, assembly PROVEN — the analytic core of the Neukirch VII
