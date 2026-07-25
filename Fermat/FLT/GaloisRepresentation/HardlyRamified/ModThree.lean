@@ -8074,37 +8074,200 @@ theorem archConv_decay {p q : ℕ} {M₁ M₂ : ℂ → ℂ} {H₁ H₂ : ℝ �
       archConv H₁ H₂ τ ≤ A * Real.exp (-a * τ ^ (((p + q : ℕ) : ℝ)⁻¹)) := by
   sorry
 
-/-- **Mellin multiplicativity of the convolution** (sorry node, stated
-2026-07-25 — stage (α₄), the analytic heart, of the decomposition of
+open MeasureTheory Set in
+/-- **Mellin multiplicativity of the convolution** (PROVEN 2026-07-25 —
+stage (α₄), the analytic heart, of the decomposition of
 `archimedeanGammaProfile_exists`): the Mellin transform of
 `archConv H₁ H₂` at `s/2` is the PRODUCT `M₁ s · M₂ s` of the two
 factors, for `re s > 1`.
 
-Intended proof.  Write `z = s/2` (so `re z > 1/2`).  Then
-`mellin (H₁ ⋆ H₂) z = ∫_0^∞ τ^{z−1}(∫_0^∞ H₁(τ/u)H₂(u) du/u) dτ`;
-Tonelli (the integrand is nonnegative, so
-`MeasureTheory.lintegral_lintegral_swap` / `integral_integral_swap`
-applies once absolute convergence is known) exchanges the order, and
-the inner `τ`-integral is evaluated by the multiplicative substitution
-`τ = u·v` (`MeasureTheory.integral_comp_mul_left_Ioi`, i.e.
-`mellin_comp_mul_left` at `a = u`):
+Proof.  Write `z = s/2` (so `re z > 1/2`) and `σ = re z`.  The whole
+statement — BOTH halves of the `HasMellin` bundle — is extracted from a
+single fact: the two-variable integrand
+
+  `F (τ, u) = τ^{z−1}·H₁(τ/u)·H₂(u)/u`
+
+is integrable on `(0,∞) × (0,∞)` for the product measure (`hAF`).
+Indeed `MeasureTheory.Integrable.integral_prod_left` applied to `hAF`
+integrates out `u` and yields exactly `MellinConvergent` for the
+convolution, while `MeasureTheory.integral_integral_swap` applied to
+`hAF` is Fubini and yields the value.
+
+`hAF` itself is Tonelli run on norms, via
+`MeasureTheory.integrable_prod_iff'`:
+
+* the `τ`-slices are integrable because `MellinConvergent.comp_mul_left`
+  transports the `MellinConvergent` half of `h₁` along the dilation
+  `t ↦ t/u`;
+* the slice-norm function is computed in closed form: since a profile is
+  nonnegative and `‖τ^{z−1}‖ = τ^{σ−1}`, the substitution `τ = u·v`
+  (`MeasureTheory.integral_comp_mul_left_Ioi`, `hscaleR`) gives
+  `∫ ‖F(τ,u)‖ dτ = G₁·u^{σ−1}·H₂(u)` with
+  `G₁ = ∫_0^∞ x^{σ−1}H₁(x) dx`, and this is integrable in `u` by the
+  `MellinConvergent` half of `h₂` read at the real abscissa `σ`
+  (`hR₂`) — which is legitimate precisely because the Mellin conjunct
+  of `IsArchProfile` is required on a HALF-PLANE, not at a single
+  point.  This is why the hypotheses are closed under convolution.
+
+The value computation is the same substitution in complex form
+(`hscaleC`, i.e. `mellin_comp_mul_left` at `a = u⁻¹`):
 `∫_0^∞ τ^{z−1}H₁(τ/u) dτ = u^{z}·mellin H₁ z`, whence
 `mellin (H₁ ⋆ H₂) z = mellin H₁ z · ∫_0^∞ u^{z−1}H₂(u) du
-= mellin H₁ z · mellin H₂ z = M₁ s · M₂ s`.
-Absolute convergence — which is also the `MellinConvergent` half of
-the `HasMellin` bundle — is the SAME Tonelli computation run on norms:
-`∫∫ τ^{re z−1}H₁(τ/u)H₂(u) du dτ/u = (∫ x^{re z−1}H₁ x dx)·(∫ u^{re
-z−1}H₂ u du) < ∞`, both factors finite by the `MellinConvergent`
-halves of `h₁` and `h₂` at the real point `re s` (a profile is
-nonnegative, so `MellinConvergent` at `s/2` gives convergence at
-`(re s)/2`).  Note this is exactly why the hypotheses of
-`IsArchProfile` are closed under convolution: the Mellin conjunct is
-required on a HALF-PLANE, not at a single point. -/
+= M₁ s · M₂ s`.  Neukirch, *Algebraic Number Theory*, VII (4.1)–(4.3).
+
+(The positivity hypotheses `0 < p`, `0 < q` are not needed for this
+conjunct — the degrees only enter through the decay conjunct
+`archConv_decay` — so they are bound as `_hp`, `_hq`; the argument
+positions are unchanged for `archProfile_mul`.) -/
 theorem archConv_hasMellin {p q : ℕ} {M₁ M₂ : ℂ → ℂ} {H₁ H₂ : ℝ → ℝ}
-    (hp : 0 < p) (hq : 0 < q) (h₁ : IsArchProfile p M₁ H₁) (h₂ : IsArchProfile q M₂ H₂)
+    (_hp : 0 < p) (_hq : 0 < q) (h₁ : IsArchProfile p M₁ H₁) (h₂ : IsArchProfile q M₂ H₂)
     (s : ℂ) (hs : 1 < s.re) :
     HasMellin (fun τ : ℝ => (archConv H₁ H₂ τ : ℂ)) (s / 2) (M₁ s * M₂ s) := by
-  sorry
+  obtain ⟨hc₁, hnn₁, -, -, hmel₁⟩ := h₁
+  obtain ⟨hc₂, hnn₂, -, -, hmel₂⟩ := h₂
+  have hM₁ := hmel₁ s hs
+  have hM₂ := hmel₂ s hs
+  set z : ℂ := s / 2 with hz
+  set σ : ℝ := z.re with hσdef
+  have hz1re : (z - 1).re = σ - 1 := by simp [hσdef]
+  set G₁ : ℝ := ∫ x in Ioi (0:ℝ), x ^ (σ - 1) * H₁ x with hG₁
+  -- ### Step 1: the second profile converges at the REAL abscissa `σ`
+  have hR₂ : IntegrableOn (fun x : ℝ => x ^ (σ - 1) * H₂ x) (Ioi 0) := by
+    have hint : IntegrableOn
+        (fun t : ℝ => ‖(t : ℂ) ^ (z - 1) • ((H₂ t : ℝ) : ℂ)‖) (Ioi 0) :=
+      MeasureTheory.Integrable.norm hM₂.1
+    refine (integrableOn_congr_fun (fun t ht => ?_) measurableSet_Ioi).mp hint
+    rw [Set.mem_Ioi] at ht
+    rw [norm_smul, Complex.norm_cpow_eq_rpow_re_of_pos ht, hz1re, Complex.norm_real,
+      Real.norm_eq_abs, abs_of_nonneg (hnn₂ t (Set.mem_Ioi.mpr ht))]
+  -- ### Step 2: the substitution `τ = u·v`, real form
+  have hscaleR : ∀ u : ℝ, 0 < u →
+      (∫ τ in Ioi (0:ℝ), τ ^ (σ - 1) * H₁ (τ / u)) = u ^ σ * G₁ := by
+    intro u hu
+    have h := integral_comp_mul_left_Ioi (fun τ : ℝ => τ ^ (σ - 1) * H₁ (τ / u)) 0 hu
+    rw [mul_zero, smul_eq_mul] at h
+    have hL : (∫ x in Ioi (0:ℝ), (u * x) ^ (σ - 1) * H₁ (u * x / u)) = u ^ (σ - 1) * G₁ := by
+      rw [hG₁, ← MeasureTheory.integral_const_mul]
+      refine setIntegral_congr_fun measurableSet_Ioi fun x hx => ?_
+      rw [Set.mem_Ioi] at hx
+      rw [Real.mul_rpow hu.le hx.le, mul_comm u x, mul_div_assoc, div_self hu.ne', mul_one]
+      ring
+    rw [hL] at h
+    have hI : (∫ τ in Ioi (0:ℝ), τ ^ (σ - 1) * H₁ (τ / u)) = u * (u ^ (σ - 1) * G₁) := by
+      rw [h, ← mul_assoc, mul_inv_cancel₀ hu.ne', one_mul]
+    have hpow : u ^ (σ - 1) * u = u ^ σ := by
+      rw [← Real.rpow_add_one hu.ne' (σ - 1)]
+      norm_num
+    rw [hI, ← hpow]
+    ring
+  -- ### Step 3: the substitution `τ = u·v`, complex form
+  have hcast : ∀ u : ℝ, 0 < u → ((u⁻¹ : ℝ) : ℂ) ^ (-z) = (u : ℂ) ^ z := by
+    intro u hu
+    rw [Complex.ofReal_inv, Complex.inv_cpow _ _ (by
+        rw [Complex.arg_ofReal_of_nonneg hu.le]; exact Ne.symm Real.pi_ne_zero),
+      Complex.cpow_neg, inv_inv]
+  have hscaleC : ∀ u : ℝ, 0 < u →
+      (∫ τ in Ioi (0:ℝ), (τ : ℂ) ^ (z - 1) * ((H₁ (τ / u) : ℝ) : ℂ))
+        = (u : ℂ) ^ z * M₁ s := by
+    intro u hu
+    have h := mellin_comp_mul_left (fun t : ℝ => ((H₁ t : ℝ) : ℂ)) z (inv_pos.mpr hu)
+    rw [hM₁.2, hcast u hu, smul_eq_mul] at h
+    rw [← h, mellin]
+    refine setIntegral_congr_fun measurableSet_Ioi fun τ _ => ?_
+    rw [smul_eq_mul, inv_mul_eq_div]
+  -- ### Step 4: measurability of the two-variable integrand on `(0,∞)²`
+  have hmeasF : AEStronglyMeasurable
+      (fun p : ℝ × ℝ => (p.1 : ℂ) ^ (z - 1) * ((H₁ (p.1 / p.2) * H₂ p.2 / p.2 : ℝ) : ℂ))
+      ((volume.restrict (Ioi (0:ℝ))).prod (volume.restrict (Ioi (0:ℝ)))) := by
+    rw [Measure.prod_restrict]
+    refine ContinuousOn.aestronglyMeasurable ?_ (measurableSet_Ioi.prod measurableSet_Ioi)
+    have hdiv : ContinuousOn (fun p : ℝ × ℝ => p.1 / p.2) (Ioi (0:ℝ) ×ˢ Ioi (0:ℝ)) :=
+      continuousOn_fst.div continuousOn_snd fun p hp => ne_of_gt hp.2
+    refine ContinuousOn.mul ?_ ?_
+    · exact fun p hp => ((Complex.continuousAt_ofReal_cpow_const p.1 (z - 1)
+        (Or.inr (ne_of_gt hp.1))).comp continuousAt_fst).continuousWithinAt
+    · refine Complex.continuous_ofReal.comp_continuousOn ?_
+      refine ContinuousOn.div (ContinuousOn.mul ?_ ?_) continuousOn_snd
+        (fun p hp => ne_of_gt hp.2)
+      · exact hc₁.comp hdiv fun p hp => Set.mem_Ioi.mpr (div_pos hp.1 hp.2)
+      · exact hc₂.comp continuousOn_snd fun p hp => hp.2
+  -- ### Step 5: Tonelli — absolute convergence of the double integral
+  have hAF : Integrable
+      (fun p : ℝ × ℝ => (p.1 : ℂ) ^ (z - 1) * ((H₁ (p.1 / p.2) * H₂ p.2 / p.2 : ℝ) : ℂ))
+      ((volume.restrict (Ioi (0:ℝ))).prod (volume.restrict (Ioi (0:ℝ)))) := by
+    rw [integrable_prod_iff' hmeasF]
+    refine ⟨?_, ?_⟩
+    · rw [ae_restrict_iff' measurableSet_Ioi]
+      filter_upwards with u hu
+      rw [Set.mem_Ioi] at hu
+      have hmc : MellinConvergent (fun t : ℝ => ((H₁ (t / u) : ℝ) : ℂ)) z := by
+        have h := (MellinConvergent.comp_mul_left (f := fun t : ℝ => ((H₁ t : ℝ) : ℂ))
+          (s := z) (inv_pos.mpr hu)).mpr hM₁.1
+        simpa only [inv_mul_eq_div] using h
+      rw [MellinConvergent] at hmc
+      have h2 : IntegrableOn (fun t : ℝ => (t : ℂ) ^ (z - 1) * ((H₁ (t / u) : ℝ) : ℂ))
+          (Ioi 0) := by simpa only [smul_eq_mul] using hmc
+      refine (integrableOn_congr_fun (fun t _ => ?_) measurableSet_Ioi).mp
+        (h2.const_mul (((H₂ u / u : ℝ) : ℂ)))
+      push_cast
+      ring
+    · have heq : ∀ u : ℝ, u ∈ Ioi (0:ℝ) →
+          (∫ τ in Ioi (0:ℝ), ‖(τ : ℂ) ^ (z - 1) * ((H₁ (τ / u) * H₂ u / u : ℝ) : ℂ)‖)
+            = G₁ * (u ^ (σ - 1) * H₂ u) := by
+        intro u hu
+        rw [Set.mem_Ioi] at hu
+        have h1 : (∫ τ in Ioi (0:ℝ), ‖(τ : ℂ) ^ (z - 1) * ((H₁ (τ / u) * H₂ u / u : ℝ) : ℂ)‖)
+            = ∫ τ in Ioi (0:ℝ), (H₂ u / u) * (τ ^ (σ - 1) * H₁ (τ / u)) := by
+          refine setIntegral_congr_fun measurableSet_Ioi fun τ hτ => ?_
+          rw [Set.mem_Ioi] at hτ
+          have hn : 0 ≤ H₁ (τ / u) * H₂ u / u :=
+            div_nonneg (mul_nonneg (hnn₁ _ (Set.mem_Ioi.mpr (div_pos hτ hu)))
+              (hnn₂ u (Set.mem_Ioi.mpr hu))) hu.le
+          rw [norm_mul, Complex.norm_cpow_eq_rpow_re_of_pos hτ, hz1re, Complex.norm_real,
+            Real.norm_eq_abs, abs_of_nonneg hn]
+          ring
+        rw [h1, MeasureTheory.integral_const_mul, hscaleR u hu, Real.rpow_sub hu,
+          Real.rpow_one]
+        ring
+      exact (integrableOn_congr_fun heq measurableSet_Ioi).mpr (hR₂.const_mul G₁)
+  -- ### Step 6: the inner `u`-integral is the convolution
+  have hinner : ∀ τ : ℝ,
+      (∫ u in Ioi (0:ℝ), (τ : ℂ) ^ (z - 1) * ((H₁ (τ / u) * H₂ u / u : ℝ) : ℂ))
+        = (τ : ℂ) ^ (z - 1) • ((archConv H₁ H₂ τ : ℝ) : ℂ) := by
+    intro τ
+    rw [MeasureTheory.integral_const_mul, smul_eq_mul, archConv, integral_complex_ofReal]
+  -- ### Assembly: `integral_prod_left` gives convergence, Fubini gives the value
+  refine ⟨?_, ?_⟩
+  · rw [MellinConvergent]
+    exact (integrableOn_congr_fun (fun τ _ => hinner τ) measurableSet_Ioi).mp
+      hAF.integral_prod_left
+  · rw [mellin]
+    have step1 : (∫ τ in Ioi (0:ℝ), (τ : ℂ) ^ (z - 1) • ((archConv H₁ H₂ τ : ℝ) : ℂ))
+        = ∫ τ in Ioi (0:ℝ), ∫ u in Ioi (0:ℝ),
+            (τ : ℂ) ^ (z - 1) * ((H₁ (τ / u) * H₂ u / u : ℝ) : ℂ) :=
+      setIntegral_congr_fun measurableSet_Ioi fun τ _ => (hinner τ).symm
+    have step2 : ∀ u : ℝ, u ∈ Ioi (0:ℝ) →
+        (∫ τ in Ioi (0:ℝ), (τ : ℂ) ^ (z - 1) * ((H₁ (τ / u) * H₂ u / u : ℝ) : ℂ))
+          = M₁ s * ((u : ℂ) ^ (z - 1) * ((H₂ u : ℝ) : ℂ)) := by
+      intro u hu
+      rw [Set.mem_Ioi] at hu
+      have hpull : (∫ τ in Ioi (0:ℝ), (τ : ℂ) ^ (z - 1) * ((H₁ (τ / u) * H₂ u / u : ℝ) : ℂ))
+          = ((H₂ u / u : ℝ) : ℂ) *
+            ∫ τ in Ioi (0:ℝ), (τ : ℂ) ^ (z - 1) * ((H₁ (τ / u) : ℝ) : ℂ) := by
+        rw [← MeasureTheory.integral_const_mul]
+        refine setIntegral_congr_fun measurableSet_Ioi fun τ _ => ?_
+        push_cast
+        ring
+      have hu0 : ((u : ℝ) : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr hu.ne'
+      rw [hpull, hscaleC u hu, Complex.cpow_sub _ _ hu0, Complex.cpow_one]
+      push_cast
+      field_simp
+    have step3 : (∫ u in Ioi (0:ℝ), (u : ℂ) ^ (z - 1) * ((H₂ u : ℝ) : ℂ)) = M₂ s := by
+      rw [← hM₂.2, mellin]
+      simp only [smul_eq_mul]
+    rw [step1, integral_integral_swap hAF,
+      setIntegral_congr_fun measurableSet_Ioi step2,
+      MeasureTheory.integral_const_mul, step3]
 
 /-- **Profiles multiply** (assembly PROVEN over the four `archConv`
 stages): the multiplicative convolution of a degree-`p` profile with
