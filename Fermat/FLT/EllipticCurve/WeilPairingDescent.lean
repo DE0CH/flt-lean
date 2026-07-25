@@ -1063,6 +1063,30 @@ lemma coordC_one : coordC W (1 : F) = 1 := by
   rw [coordC, Polynomial.C_1, Polynomial.C_1, map_one]
 
 omit [DecidableEq F] in
+/-- The constants embedding is the structure map of the `F`-algebra
+`F[W]`; through it `map_add`/`map_mul`/`map_pow`/`map_ofNat` expand a
+`coordC` of a composite scalar into the coordinate-ring atoms, which is
+what `ring`/`linear_combination` need. -/
+lemma coordC_eq_algebraMap (d : F) :
+    coordC W d = algebraMap F W.CoordinateRing d := rfl
+
+omit [DecidableEq F] in
+/-- **The Weierstrass relation inside the affine coordinate ring.**
+`AdjoinRoot.mk_self` on `W.polynomial`, read in the coordinate atoms:
+this is the single relation modulo which every `F[W]` identity of the
+chord calculus is a polynomial identity. -/
+lemma coord_equation (W : WeierstrassCurve.Affine F) :
+    coordY W ^ 2 + (algebraMap F W.CoordinateRing W.a₁ * coordX W +
+        algebraMap F W.CoordinateRing W.a₃) * coordY W =
+      coordX W ^ 3 + algebraMap F W.CoordinateRing W.a₂ * coordX W ^ 2 +
+        algebraMap F W.CoordinateRing W.a₄ * coordX W +
+        algebraMap F W.CoordinateRing W.a₆ := by
+  have h : CoordinateRing.mk W W.polynomial = 0 := AdjoinRoot.mk_self
+  simp only [WeierstrassCurve.Affine.polynomial, map_add, map_sub, map_mul, map_pow,
+    ← coordC_eq_algebraMap, coordX, coordY, coordC] at h ⊢
+  linear_combination h
+
+omit [DecidableEq F] in
 /-- A nonzero constant is a unit of the coordinate ring, so it does not
 change the ideal it spans. -/
 lemma isUnit_coordC {c : F} (hc : c ≠ 0) : IsUnit (coordC W c) :=
@@ -1446,7 +1470,7 @@ lemma span_eq_of_mem_of_span_mul_eq {n ñ : W.CoordinateRing}
   rw [← hu₁, Ideal.span_singleton_mul_left_unit (isUnit_of_mul_isUnit_left hu), hm₁]
 
 omit [IsAlgClosed F] in
-/-- **L4-8 line-numerator sub-leaf (sorry): the cleared conjugate
+/-- **L4-8 line-numerator sub-leaf (PROVEN): the cleared conjugate
 product.**  The two cleared line values at the translate multiply to the
 product of the three vertical numerators at the three `X`-coordinates
 cut out by the chord:
@@ -1480,7 +1504,24 @@ factored form is exactly `−(A − x₁T²)(A − x₂T²)(A − x₃T²)`.  Pr
 recipe: take `addPolynomial_slope h₁ h₂ hxy`, read off its four `X`-
 coefficients with `Polynomial.coeff`/`Cubic`, and feed them to
 `linear_combination` with the cofactors `T⁰, T², T⁴, T⁶` against the
-expanded goal.  CAS-checkable in one `Singular`/`gp` line. -/
+expanded goal.
+
+That is exactly how it is proven below, in a *single*
+`linear_combination`, with the four cofactors read off a PARI/GP
+reduction (the CAS is used only as a searcher; the kernel checks the
+certificate).  Writing `EX := W_X(Q)`, `EY := W_Y(Q)`,
+`RQ := W(q₁, q₂)` and `R0` for the coordinate-ring relation
+`coord_equation`, the certificate is
+
+* `−T³·(A − q₁T² − RQ)` against `coord_equation`,
+* `−T³·(EY·U + EX·T + T³ + RQ)` against `W.Equation q₁ q₂` (transported
+  into `F[W]` along `algebraMap`),
+* `−T⁴·A` against the `Cubic.c` coefficient of `addPolynomial_slope`
+  (the identity `Σ xᵢxⱼ = a₄ − a₁c − a₃ℓ − 2ℓc`, `c = y₁ − ℓx₁`),
+* `−T⁶` against its `Cubic.d` coefficient (`x₁x₂x₃ = c² + a₃c − a₆`).
+
+The `Cubic.b` coefficient (`x₁ + x₂ + x₃ = ℓ² + a₁ℓ − a₂`) needs no
+cofactor: it is `ring`-true once `W.addX` is unfolded. -/
 theorem lineNumerator_mul_lineNumeratorNeg {q₁ q₂ x₁ y₁ x₂ y₂ : F}
     (hq : W.Equation q₁ q₂) (h₁ : W.Equation x₁ y₁) (h₂ : W.Equation x₂ y₂)
     (hxy : ¬(x₁ = x₂ ∧ y₁ = W.negY x₂ y₂)) :
@@ -1489,7 +1530,80 @@ theorem lineNumerator_mul_lineNumeratorNeg {q₁ q₂ x₁ y₁ x₂ y₂ : F}
       -(vertNumerator W q₁ q₂ x₁ *
         (vertNumerator W q₁ q₂ x₂ *
           vertNumerator W q₁ q₂ (W.addX x₁ x₂ (W.slope x₁ x₂ y₁ y₂)))) := by
-  sorry
+  -- the three symmetric-function identities of the chord cubic
+  have hAP := WeierstrassCurve.Affine.addPolynomial_slope h₁ h₂ hxy
+  rw [WeierstrassCurve.Affine.addPolynomial_eq, neg_inj,
+    Cubic.prod_X_sub_C_eq] at hAP
+  have hc2 := Cubic.c_of_eq hAP
+  have hc3 := Cubic.d_of_eq hAP
+  -- the two relations, transported into `F[W]`
+  have hcr := coord_equation W
+  rw [WeierstrassCurve.Affine.equation_iff'] at hq
+  have hqW := congrArg (algebraMap F W.CoordinateRing) hq
+  have hc2W := congrArg (algebraMap F W.CoordinateRing) hc2
+  have hc3W := congrArg (algebraMap F W.CoordinateRing) hc3
+  simp only [map_add, map_sub, map_mul, map_pow, map_neg, map_ofNat, map_zero,
+    WeierstrassCurve.Affine.addX] at hqW hc2W hc3W
+  simp only [lineNumerator, lineNumeratorNeg, vertNumerator, coordC_eq_algebraMap,
+    WeierstrassCurve.Affine.addX, map_add, map_sub, map_mul, map_pow]
+  linear_combination
+    (-((coordX W - algebraMap F W.CoordinateRing q₁) ^ 3 *
+        (((coordY W - algebraMap F W.CoordinateRing q₂) ^ 2 +
+              algebraMap F W.CoordinateRing W.a₁ *
+                (coordY W - algebraMap F W.CoordinateRing q₂) *
+                (coordX W - algebraMap F W.CoordinateRing q₁) -
+              (algebraMap F W.CoordinateRing W.a₂ +
+                  algebraMap F W.CoordinateRing q₁ + coordX W) *
+                (coordX W - algebraMap F W.CoordinateRing q₁) ^ 2) -
+          algebraMap F W.CoordinateRing q₁ *
+            (coordX W - algebraMap F W.CoordinateRing q₁) ^ 2 -
+          (algebraMap F W.CoordinateRing q₂ ^ 2 +
+              algebraMap F W.CoordinateRing W.a₁ *
+                algebraMap F W.CoordinateRing q₁ *
+                algebraMap F W.CoordinateRing q₂ +
+              algebraMap F W.CoordinateRing W.a₃ *
+                algebraMap F W.CoordinateRing q₂ -
+            (algebraMap F W.CoordinateRing q₁ ^ 3 +
+              algebraMap F W.CoordinateRing W.a₂ *
+                algebraMap F W.CoordinateRing q₁ ^ 2 +
+              algebraMap F W.CoordinateRing W.a₄ *
+                algebraMap F W.CoordinateRing q₁ +
+              algebraMap F W.CoordinateRing W.a₆))))) * hcr +
+    (-((coordX W - algebraMap F W.CoordinateRing q₁) ^ 3 *
+        ((2 * algebraMap F W.CoordinateRing q₂ +
+              algebraMap F W.CoordinateRing W.a₁ *
+                algebraMap F W.CoordinateRing q₁ +
+              algebraMap F W.CoordinateRing W.a₃) *
+            (coordY W - algebraMap F W.CoordinateRing q₂) +
+          (algebraMap F W.CoordinateRing W.a₁ *
+                algebraMap F W.CoordinateRing q₂ -
+              (3 * algebraMap F W.CoordinateRing q₁ ^ 2 +
+                2 * algebraMap F W.CoordinateRing W.a₂ *
+                  algebraMap F W.CoordinateRing q₁ +
+                algebraMap F W.CoordinateRing W.a₄)) *
+            (coordX W - algebraMap F W.CoordinateRing q₁) +
+          (coordX W - algebraMap F W.CoordinateRing q₁) ^ 3 +
+          (algebraMap F W.CoordinateRing q₂ ^ 2 +
+              algebraMap F W.CoordinateRing W.a₁ *
+                algebraMap F W.CoordinateRing q₁ *
+                algebraMap F W.CoordinateRing q₂ +
+              algebraMap F W.CoordinateRing W.a₃ *
+                algebraMap F W.CoordinateRing q₂ -
+            (algebraMap F W.CoordinateRing q₁ ^ 3 +
+              algebraMap F W.CoordinateRing W.a₂ *
+                algebraMap F W.CoordinateRing q₁ ^ 2 +
+              algebraMap F W.CoordinateRing W.a₄ *
+                algebraMap F W.CoordinateRing q₁ +
+              algebraMap F W.CoordinateRing W.a₆))))) * hqW +
+    (-((coordX W - algebraMap F W.CoordinateRing q₁) ^ 4 *
+        ((coordY W - algebraMap F W.CoordinateRing q₂) ^ 2 +
+          algebraMap F W.CoordinateRing W.a₁ *
+            (coordY W - algebraMap F W.CoordinateRing q₂) *
+            (coordX W - algebraMap F W.CoordinateRing q₁) -
+          (algebraMap F W.CoordinateRing W.a₂ +
+              algebraMap F W.CoordinateRing q₁ + coordX W) *
+            (coordX W - algebraMap F W.CoordinateRing q₁) ^ 2))) * hc2W +
+    (-((coordX W - algebraMap F W.CoordinateRing q₁) ^ 6)) * hc3W
 
 /-- **L4-8 line-numerator sub-leaf (sorry): membership of the line
 numerator in its divisor ideal.**  `lineNumerator q₁ q₂ x₁ y₁ ℓ` lies in
@@ -1589,9 +1703,10 @@ multisets have zero sum), and the two memberships `n ∈ RHS`, `ñ ∈ RHS'`
 then force the two cofactors to be units simultaneously
 (`span_eq_of_mem_of_span_mul_eq`).  No norm degrees, no quotient
 colengths, and — decisively — no coincidence zoo in the closing step:
-every degeneracy makes both factors drop in lockstep.  The remaining
-sorries are `lineNumerator_mul_lineNumeratorNeg` (one cleared
-`addPolynomial` identity) and the two membership leaves. -/
+every degeneracy makes both factors drop in lockstep.
+`lineNumerator_mul_lineNumeratorNeg` is now proven outright (one cleared
+`addPolynomial` identity, discharged by a single `linear_combination`),
+so the only remaining sorries below it are the two membership leaves. -/
 theorem span_lineNumerator (hΔ : W.Δ ≠ 0) {q₁ q₂ x₁ y₁ x₂ y₂ : F}
     (hq : W.Nonsingular q₁ q₂) (h₁ : W.Nonsingular x₁ y₁)
     (h₂ : W.Nonsingular x₂ y₂) (hxy : ¬(x₁ = x₂ ∧ y₁ = W.negY x₂ y₂)) :
