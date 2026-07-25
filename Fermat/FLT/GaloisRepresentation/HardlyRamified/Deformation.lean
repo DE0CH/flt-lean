@@ -11431,6 +11431,74 @@ this repository or in mathlib today, and each item is a module-sized build:
 Items 2–5 are each a multi-module formalization; item 1 alone would be
 free-floating until item 2 exists, which is why nothing of it is built here.
 
+AUDIT 2026-07-26 (third pass, from a fresh dispatch at this leaf) — three
+findings, none of which changes the statement, recorded so that the next
+owner does not spend a cycle rediscovering them.
+
+* **THERE IS NO WEAKER FORM IN THIS VOCABULARY, and the `Infinite`
+  hypothesis is self-refuting.** The conclusion at the SINGLE prime `q`
+  already contradicts the hypothesis at that same `q`, through two steps
+  both PROVEN above. First the Dickson descent
+  (`exists_pow_mem_of_finiteIndex` together with
+  `isIntegral_trace_of_isIntegral_trace_pow` — the argument of
+  `isIntegral_charFrobCoeff_quotient_of_isWeaklyUniversal_isTraceGenerated`
+  below) ERASES `H`: `∃ H` of finite index with integral traces on `H` is
+  equivalent to "every trace is integral mod `q`", since `g^m ∈ H` for
+  some `m > 0` and `tr(Mᵐ) = Dₘ(tr M, det M)` is monic in `tr M`. Then
+  `eq_maximalIdeal_of_isPrime_of_isIntegral_quotient` at `p = q` makes
+  `q = 𝔪`, i.e. `D.R ⧸ q ≃ k`, which is FINITE. So — given only PROVEN
+  siblings — this leaf is equivalent to `Finite (D.R ⧸ q)`, and a prover
+  may derive `False` from `Infinite (D.R ⧸ q)` instead of producing any
+  `H` at all. Two consequences. (i) The conclusion cannot be weakened
+  further: modulo `q` the three candidate forms "integral over `ℤ_ℓ`",
+  "algebraic over `𝔽_ℓ`" and "contained in a module-finite
+  `ℤ_ℓ`-subalgebra" COINCIDE, because the `𝔽_ℓ`-algebraic elements of the
+  DOMAIN `D.R ⧸ q` form a finite field (`finite_subring_of_forall_isIntegral`
+  above: an integral subring of a domain admitting a map to the finite
+  residue field is finite). In particular the mod-`q` analogue of the
+  module-finite-subalgebra shape forbidden above is not a strengthening,
+  and not an improvement either. (ii) The cut that produced this leaf buys
+  SHAPE — Hecke-eigenvalue-like numbers — and not strength, exactly as the
+  recut audit above states.
+
+* **DO NOT COLLAPSE THE FINITENESS STRATUM INTO "`ℓ` is not nilpotent in
+  `D.R`".** The collapse is tempting and it is a mis-cut. The only consumer
+  of `moduleFinite_of_isUniversal` is `exists_finite_lift`, whose own
+  consumer `exists_hardlyRamified_lift_of_five_le` needs only the QUOTIENT
+  `O = D.R ⧸ P` to be module-finite over `ℤ_ℓ`; so one might hope to
+  replace BOTH deep leaves of pillar α — this one and Böckle's `r ≤ g`
+  presentation bound — by the strictly weaker "some prime of `D.R` avoids
+  `ℓ`", plus commutative algebra (a coheight-one characteristic-zero prime
+  and the Cohen structure theorem, neither of which is in mathlib). But a
+  characteristic-zero point of the universal ring IS a hardly ramified
+  characteristic-zero lift, so that "weaker leaf" is
+  `exists_hardlyRamified_lift_of_five_le` restated and the cut degenerates
+  to the identity. The present factorisation — finiteness of the mod-`ℓ`
+  fibre (this leaf, from `R = T`) AND Krull dimension `≥ 1` (Böckle's
+  bound) — is the literature's, and it is what gives the two halves
+  independent literature routes at all.
+
+* **ROUTE (ii) INVENTORY, CORRECTED: item 5's interface already EXISTS.**
+  The missing-machinery list above says none of items 1–5 exists in this
+  repository; that is no longer accurate for item 5.
+  `Modularity/KhareWintenberger.lean` carries the interface structures
+  `PotentialModularityWitness` (a totally real Galois `F`, the Hecke field
+  of the attached Hilbert newform, its Hecke polynomials, and `modularF`
+  identifying them with `charFrob` of `ρ|_{G_F}`) and `MoretBaillySeed`,
+  whose production leaves (`exists_moretBailly_seed_of_five_le`,
+  `exists_heckePackage_of_seed`) are sorried but STATED. Their fields
+  mention only `GaloisRep`/`charFrob` and number-field vocabulary from
+  `HardlyRamified/Defs` — nothing from this module, and indeed KW's import
+  of this file is PROOF-ONLY (non-public), used for the pillar-α delegation
+  and not for those statements — so hoisting that block into a KW-free
+  upstream module is a FILE SPLIT, not new mathematics, and
+  it would make the vocabulary importable here; the cycle recorded above
+  blocks only the current file layout. What the hoist would NOT do is
+  discharge this leaf: a witness supplies ONE modular lift over `F`,
+  whereas this leaf needs the whole universal family over `F` to be Hecke,
+  i.e. items 2–4 (`R_F`, `Module.Finite ℤ_[ℓ] T_F`, and `R_F = T_F`), which
+  genuinely do not exist anywhere in the repository.
+
 References: Khare–Wintenberger, *Serre's modularity conjecture (I)*,
 Thm. 4.1 and §4, and *(II)*; Taylor, *Remarks on a conjecture of Fontaine
 and Mazur* and *On the meromorphic continuation of degree two L-functions*;
