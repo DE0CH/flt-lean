@@ -11,9 +11,13 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Andrew Yang, Kevin Buzzard, Ruben Van de Velde
 -/
 
-import Fermat.FLT.Modularity.PatchingVendored.Over
+module
+
+public import Fermat.FLT.Modularity.PatchingVendored.Over
 -- VENDOR-DROP: import FLT.Patching.Utils.Depth
-import Mathlib.RingTheory.Length
+public import Mathlib.RingTheory.Length
+
+@[expose] public section
 
 set_option autoImplicit false
 set_option relaxedAutoImplicit false

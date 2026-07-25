@@ -39,6 +39,7 @@ import Fermat.FLT.DedekindDomain.AdicValuation
 import Fermat.FLT.DedekindDomain.ResidueCardinality
 import Fermat.FLT.Deformations.Lemmas
 import Fermat.FLT.Deformations.RepresentationTheory.AbsoluteGaloisGroup
+import Fermat.FLT.Deformations.RepresentationTheory.ArtinConductor
 import Fermat.FLT.Deformations.RepresentationTheory.CompletionTransport
 import Fermat.FLT.Deformations.RepresentationTheory.Etale
 import Fermat.FLT.Deformations.RepresentationTheory.FlatProlongation
@@ -77,6 +78,7 @@ import Fermat.FLT.GaloisRepresentation.BrauerNesbitt
 import Fermat.FLT.GaloisRepresentation.BrauerNesbittConjugacy
 import Fermat.FLT.GaloisRepresentation.Chebotarev
 import Fermat.FLT.GaloisRepresentation.ComplexConjugation
+import Fermat.FLT.GaloisRepresentation.HardlyRamified.CompleteLocalNoetherian
 import Fermat.FLT.GaloisRepresentation.HardlyRamified.CompletionInvariance
 import Fermat.FLT.GaloisRepresentation.HardlyRamified.Deformation
 import Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs
@@ -175,7 +177,7 @@ import Fermat.FLT.Slop.RepresentationTheory.OddAbsIrredSlop
 import Fermat.PrimeFive
 import Fermat.SorryGate
 def censusInputPath : System.FilePath := "progress-census-input.json"
--- census-input fingerprint: 428c3d0b88bfbd3d19b52da923c3bb69697f2782
+-- census-input fingerprint: a889bc978195559381e534206fd39e4fe00165c3
 -- END GENERATED IMPORTS
 
 open Lean
