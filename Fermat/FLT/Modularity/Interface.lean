@@ -248,17 +248,15 @@ import Fermat.FLT.GroupScheme.ConnectedEtale
 -- half of the Raynaud subobject node `IsFlatPointsGroupAt.of_injective`.
 -- Non-public: proofs only.
 import Fermat.FLT.KnownIn1980s.EllipticCurves.Flat
--- The convolution/points transport toolkit of the flat-prolongation
--- package. TWO independent consumers arrived at this import at the same
--- time (2026-07-25), so both rationales are recorded: (a)
--- `vendored_mul_eq_convMul` / `vendored_one_eq_convOne` bridge the
--- bare-hom convolution monoid on `A →ₐ[K] L` used by
--- `GaloisRep.HasFlatProlongationAt` (hence by `IsFlatPointsGroupAt`) to
--- mathlib's `WithConv` convolution, for the Raynaud subobject node; and
--- (b) `liftEquiv_symm_convOne` / `liftEquiv_symm_convMul` are consumed by
--- the connected-part subgroup construction of Eisenstein pillar E3a-i.
--- Non-public: proofs only.
-import Fermat.FLT.Deformations.RepresentationTheory.FlatProlongation
+-- (The flat-prolongation convolution toolkit is imported PUBLICLY further
+-- up, and that single import serves all of its consumers here: the
+-- bare-hom/`WithConv` bridge `vendored_mul_eq_convMul` /
+-- `vendored_one_eq_convOne` for the Raynaud subobject node, and
+-- `liftEquiv_symm_convOne` / `liftEquiv_symm_convMul` for the
+-- connected-part subgroup construction of Eisenstein pillar E3a-i. Three
+-- owners independently added a second, non-public copy of it on
+-- 2026-07-25; a duplicate import is redundant, and a non-public duplicate
+-- of a public import is actively misleading about visibility.)
 -- The Hopf-algebra structure on a base change `S ⊗[R] G` and its
 -- structure formulas (`TensorProduct.counit_tmul`,
 -- `TensorProduct.comul_tmul`). PUBLIC: the instance
