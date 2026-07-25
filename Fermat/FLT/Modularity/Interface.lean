@@ -2078,47 +2078,137 @@ theorem cuspForm_finiteDimensional (N : ℕ) (hN : 0 < N) :
   refine hB f fun m hm => ?_
   simpa [LinearMap.pi_apply] using congrFun hf ⟨m, hm⟩
 
-/-- **The integral structure of `S₂(Γ₀(N))`** (sorry node — the
-arithmetic-model citation interface, isolated 2026-07-24 as the
-sharpest satisfiable carrier of the former sorried leaf
-`exists_cuspForm_ringEquiv_conj`, which is now PROVEN from it by the
-coordinate-transport glue below): the weight-2 level-`N` cusp space
-is spanned over `ℂ` by finitely many cusp forms ALL of whose
-`q`-expansion coefficients are INTEGERS — equivalently,
-`S₂(Γ₀(N); ℤ) ⊗_ℤ ℂ = S₂(Γ₀(N))`. This is the standard `ℤ`-structure
-of the cusp space: the `ℚ`-form is Shimura's rationality theorem
-(*Introduction to the Arithmetic Theory of Automorphic Functions*,
-Theorem 3.52; Diamond–Shurman §6.5), and the integral refinement —
-full `ℤ`-rank plus bounded denominators — is classical (Diamond–Im,
-*Modular forms and modular curves*, §12.3; Darmon–Diamond–Taylor,
-*Fermat's Last Theorem*, §1.6). The classical proofs go through
-arithmetic geometry absent from this pin: either (i) the
-`q`-expansion principle (Katz, Deligne–Rapoport) on the integral
-model of the modular curve `X₀(N)/ℤ`, where cusp forms are global
-sections of a line bundle whose formal expansion at the cusp `∞` has
-`ℤ`-coefficients and cohomological flatness gives full rank; or
-(ii) the Eichler–Shimura isomorphism onto `H¹(X₀(N), ℂ)` carrying the
-Hecke-stable lattice `H¹(X₀(N), ℤ)`, transferred to `q`-expansions
-through the perfect duality `𝕋 × S₂ → ℤ`, `(T, f) ↦ a₁(Tf)`. Neither
-modular curves, their integral models, nor Eichler–Shimura exist on
-this pin, and the elementary substitutes fail structurally: Victor
-Miller's constructive echelon basis needs the level-1 generation of
-the graded ring by `E₄, E₆` (no analogue for `Γ₀(N)`), and the
-integral Hecke-duality route needs the Eichler–Selberg trace formula
-— both audited 2026-07-24 and found beyond leaf scope, hence the
-interface shape. Note the statement is sound for every `N ≥ 1`:
-spanning is claimed only over `ℂ` (no independence, no echelon
-normalization), and at genus-zero levels `n = 0` works. The in-file
-consumers of the sharper `ℤ`-form (vs the `ℚ`-form it implies through
-`cuspForm_mem_span_rational`): coefficientwise `Aut(ℂ)`-transport
-(`exists_cuspForm_ringEquiv_conj` below, since `σ` fixes `ℤ`
-pointwise), with the mod-`p` congruence pillars as anticipated future
-consumers. -/
+/-- **The rational structure of `S₂(Γ₀(N))`** (sorry node — SHIMURA'S
+RATIONALITY THEOREM, isolated 2026-07-25 as the first of the two
+genuinely different classical inputs of the former single integral
+node `exists_integral_qExpansion_spanning`, which is now a PROVEN
+denominator-clearing assembly over this leaf and
+`exists_qExpansion_denominator` below): the weight-2 level-`N` cusp
+space is spanned over `ℂ` by finitely many cusp forms ALL of whose
+`q`-expansion coefficients are RATIONAL — equivalently
+`S₂(Γ₀(N); ℚ) ⊗_ℚ ℂ = S₂(Γ₀(N))`.
+
+This is Shimura, *Introduction to the Arithmetic Theory of Automorphic
+Functions*, Theorem 3.52 (equivalently Diamond–Shurman §6.5, where the
+`ℚ`-structure is what defines the `Aut(ℂ)`-action `f ↦ f^σ`). The
+classical proof is the `q`-expansion principle on the `ℚ`-model of the
+modular curve `X₀(N)`: cusp forms of weight 2 are global differentials,
+`X₀(N)` and its cusp `∞` are defined over `ℚ`, and the formal expansion
+of a `ℚ`-rational differential in the `ℚ`-rational uniformizer `q` has
+`ℚ`-coefficients, while flat base change gives
+`H⁰(X₀(N)_ℚ, Ω) ⊗_ℚ ℂ = H⁰(X₀(N)_ℂ, Ω)`. No modular curve exists on
+this pin, hence the interface shape.
+
+WHY THIS IS THE RIGHT CUT (2026-07-25). The `ℤ`-statement below bundles
+two inputs that the literature also keeps apart — rationality (this
+leaf) and BOUNDED DENOMINATORS (`exists_qExpansion_denominator`) — and
+only the second needs an INTEGRAL model of the curve; the first needs
+only the `ℚ`-model. The separation also isolates what the in-file
+consumers actually use: the `Aut(ℂ)`-transport
+`exists_cuspForm_ringEquiv_conj` (and hence the whole
+`cuspForm_mem_span_rational` cluster) consumes only `σ`-invariance of
+the spanning coefficients, which `map_ratCast` already supplies from
+THIS leaf — the integral refinement is needed there not at all, and is
+kept for the mod-`p` congruence pillars, the anticipated consumers of
+the sharper form. (Those consumers are not rewired here: this owner's
+mandate is the two leaves only; the shortening of
+`exists_cuspForm_ringEquiv_conj`'s dependency from the `ℤ`-node to this
+`ℚ`-node is a one-line change for that declaration's owner —
+`map_intCast` becomes `map_ratCast`.)
+
+SOUNDNESS: the statement is sound for every `N ≥ 1` — spanning is
+claimed only over `ℂ` (no independence, no echelon normalization, no
+`ℚ`-rank claim), so at genus-zero levels `n = 0` witnesses it. -/
+theorem exists_rational_qExpansion_spanning {N : ℕ} (hN : 0 < N) :
+    ∃ (n : ℕ) (g : Fin n → CuspForm (Gamma0GL N) 2),
+      (∀ f : CuspForm (Gamma0GL N) 2, ∃ c : Fin n → ℂ, f = ∑ i, c i • g i) ∧
+      (∀ i m, ∃ r : ℚ, qCoeff N (g i) m = (r : ℂ)) :=
+  sorry
+
+/-- **Bounded denominators for rational `q`-expansions** (sorry node —
+the INTEGRAL refinement, isolated 2026-07-25 as the second of the two
+classical inputs of `exists_integral_qExpansion_spanning`): a weight-2
+level-`N` cusp form whose `q`-expansion coefficients are all rational
+has a single denominator clearing ALL of them at once — there is
+`d ≥ 1` with `d·a_m(g) ∈ ℤ` for every `m`.
+
+This is the arithmetic content beyond rationality: `S₂(Γ₀(N); ℚ)`
+carries a `ℤ`-lattice of full rank whose members have integral
+expansions (Diamond–Im, *Modular forms and modular curves*, §12.3;
+Darmon–Diamond–Taylor, *Fermat's Last Theorem*, §1.6). Classically it
+comes from the INTEGRAL model: either (i) the `q`-expansion principle
+of Katz and Deligne–Rapoport on `X₀(N)/ℤ`, where a cusp form is a
+global section of a line bundle whose formal expansion at the
+`ℤ`-rational cusp `∞` has `ℤ`-coefficients and cohomological flatness
+gives full rank; or (ii) the Eichler–Shimura isomorphism onto
+`H¹(X₀(N), ℂ)` carrying the Hecke-stable lattice `H¹(X₀(N), ℤ)`,
+transferred to `q`-expansions through the perfect duality
+`𝕋 × S₂ → ℤ`, `(T, f) ↦ a₁(Tf)`. Neither integral models nor
+Eichler–Shimura exist on this pin, and the elementary substitutes fail
+structurally: Victor Miller's constructive echelon basis needs the
+level-1 generation of the graded ring by `E₄, E₆` (no analogue for
+`Γ₀(N)`), and the integral Hecke-duality route needs the
+Eichler–Selberg trace formula — both audited 2026-07-24 and found
+beyond leaf scope. Note also that "bounded denominators" is genuinely a
+theorem and not a formality: for NON-congruence subgroups it is the
+recent theorem of Calegari–Dimitrov–Tang, so no argument that ignores
+the congruence condition can prove it.
+
+SOUNDNESS: the hypothesis is exactly rationality of every coefficient
+and the conclusion a single positive natural denominator, so nothing is
+claimed about forms with irrational expansions; the degenerate cases
+are covered outright — for `g = 0`, hence at the genus-zero levels
+where that is the only cusp form, every coefficient is `0` and `d = 1`
+works. -/
+theorem exists_qExpansion_denominator {N : ℕ} (hN : 0 < N)
+    (g : CuspForm (Gamma0GL N) 2)
+    (hg : ∀ m : ℕ, ∃ r : ℚ, qCoeff N g m = (r : ℂ)) :
+    ∃ d : ℕ, 0 < d ∧ ∀ m : ℕ, ∃ z : ℤ, (d : ℂ) * qCoeff N g m = (z : ℂ) :=
+  sorry
+
+/-- **The integral structure of `S₂(Γ₀(N))`** (PROVEN assembly,
+2026-07-25, over the two classical citation leaves
+`exists_rational_qExpansion_spanning` (Shimura's rationality theorem)
+and `exists_qExpansion_denominator` (bounded denominators); formerly
+itself the single sorried carrier, isolated 2026-07-24 as the sharpest
+satisfiable form of the leaf `exists_cuspForm_ringEquiv_conj`, which is
+PROVEN from it by the coordinate-transport glue below): the weight-2
+level-`N` cusp space is spanned over `ℂ` by finitely many cusp forms
+ALL of whose `q`-expansion coefficients are INTEGERS — equivalently,
+`S₂(Γ₀(N); ℤ) ⊗_ℤ ℂ = S₂(Γ₀(N))`.
+
+Assembly (denominator clearing, pure linear algebra): take the
+rational spanning family `g`, clear the denominators of each member
+separately — `dᵢ ≥ 1` with `dᵢ·a_m(gᵢ) ∈ ℤ` for all `m` — and pass to
+`gᵢ' := dᵢ • gᵢ`. Integrality of `gᵢ'` is `qCoeffL`-linearity plus the
+denominator property; spanning survives because each `dᵢ` is a nonzero
+scalar, so `f = ∑ cᵢ • gᵢ = ∑ (cᵢ/dᵢ) • gᵢ'`.
+
+The two leaves are the two genuinely different classical inputs: the
+`ℚ`-form needs only the `ℚ`-model of `X₀(N)`, the denominator bound
+needs its INTEGRAL model — see each docstring for the citations and for
+which in-file consumers actually need which. -/
 theorem exists_integral_qExpansion_spanning {N : ℕ} (hN : 0 < N) :
     ∃ (n : ℕ) (g : Fin n → CuspForm (Gamma0GL N) 2),
       (∀ f : CuspForm (Gamma0GL N) 2, ∃ c : Fin n → ℂ, f = ∑ i, c i • g i) ∧
-      (∀ i m, ∃ z : ℤ, qCoeff N (g i) m = (z : ℂ)) :=
-  sorry
+      (∀ i m, ∃ z : ℤ, qCoeff N (g i) m = (z : ℂ)) := by
+  classical
+  obtain ⟨n, g, hspan, hrat⟩ := exists_rational_qExpansion_spanning hN
+  choose d hdpos hdint using fun i => exists_qExpansion_denominator hN (g i) (hrat i)
+  have hdne : ∀ i, ((d i : ℂ)) ≠ 0 := fun i => Nat.cast_ne_zero.mpr (hdpos i).ne'
+  refine ⟨n, fun i => (d i : ℂ) • g i, fun f => ?_, fun i m => ?_⟩
+  · obtain ⟨c, hc⟩ := hspan f
+    refine ⟨fun i => c i / (d i : ℂ), ?_⟩
+    rw [hc]
+    refine Finset.sum_congr rfl fun i _ => ?_
+    rw [smul_smul, div_mul_cancel₀ _ (hdne i)]
+  · obtain ⟨z, hz⟩ := hdint i m
+    refine ⟨z, ?_⟩
+    have hlin : qCoeff N ((d i : ℂ) • g i) m = (d i : ℂ) * qCoeff N (g i) m := by
+      have hs := (qCoeffL N m).map_smul ((d i : ℂ)) (g i)
+      simp only [smul_eq_mul, qCoeffL_apply] at hs
+      exact hs
+    rw [hlin, hz]
 
 /-- **`Aut(ℂ)`-stability of `S₂(Γ₀(N))` on `q`-expansions** (PROVEN
 glue, 2026-07-24, over the integral-structure citation node
@@ -19334,6 +19424,62 @@ carry the Hecke action itself). The Galois fields
 fields require genuine modular-curve geometry absent from the pin and
 are the irreducibly geometric residue.
 
+FIFTH-CUT AUDIT (2026-07-25) — three further cuts were examined and
+REJECTED; recorded here so they are not re-attempted:
+
+* *Assume the local idempotent.* Replacing `spectrum_occurs` and
+  `spectrum_reduced` by the single field "there is a nonzero idempotent
+  `e ∈ heckeSubalgebra hecke` with `hecke q * e = κ(a_q)·e` spanning
+  the generalized eigenspace of the algebra" is sound and merges two
+  fields into one, but it is a REGRESSION: `nonempty_modularJacobianPackage`
+  already PROVES exactly that idempotent from the present two fields
+  through the Artinian engine `exists_idempotent_heckeSubalgebra_fixing`
+  (stabilization of the powers of `Ann_A(v)`, the Cayley–Hamilton
+  determinant trick, Newton idempotent iteration). Assuming it would
+  move proven content back into the sorried leaf and strand that engine
+  as free-floating.
+* *Respell `spectrum_occurs` as a character.* The classical statement
+  is "the eigensystem is a `ℚ̄_p`-point of the Hecke algebra", i.e. a
+  `ℚ̄_p`-algebra hom `χ` on `heckeSubalgebra hecke` with
+  `χ(hecke q) = κ(a_q(g))`; the present field is the eigenvector form
+  of the same thing. The two are EQUIVALENT over the finite-dimensional
+  commutative algebra `heckeSubalgebra hecke` (character ⇒ eigenvector:
+  stabilize the powers of `ker χ`, then take a nonzero element of the
+  last nonvanishing power inside the local factor), so the respelling
+  changes the geometric burden by nothing while costing another copy of
+  the Artinian dance above. Not a decomposition.
+* *Pull `irred_eigenspace` out as a standalone lemma over abstract
+  packages.* Forbidden by the carrier design recorded above: the field
+  is FALSE for arbitrary abstract carriers — it holds for the intended
+  one only through the Weil bound `|a_q| ≤ 2√q` of a genuine newform.
+  A true standalone version would first need inertia/ramification for
+  an abstract `τJ`, class field theory over `ℚ` and Chebotarev — a
+  development strictly larger than this leaf.
+
+So the recorded route above remains the only cut that genuinely
+REDUCES the geometric burden, and its true cost is the coefficient
+transport: the eigenform theory of this file lives over `ℂ`, the
+package over `ℚ̄_p`, and for each embedding `κ : K_g → ℚ̄_p` the
+comparison needs a field isomorphism `ℂ ≃ ℚ̄_p` compatible with `κ`.
+That is available in principle — both fields are algebraically closed
+of characteristic `0` and cardinality continuum
+(`IsAlgClosed.ringEquiv_of_equiv_of_charZero`, with
+`IsAlgClosed.equivOfTranscendenceBasis` for the relative form
+extending a prescribed embedding, and this file's PROVEN
+`exists_complex_ringEquiv_extension` as the `ℂ`-side precedent) — but
+it is a genuine layer to build, not glue.
+
+RELATION TO `exists_integral_qExpansion_spanning` (audited 2026-07-25):
+the two remaining geometric leaves of this file share a classical
+SOURCE — the Eichler–Shimura isomorphism and the Hecke-stable lattice
+`H¹(X₀(N), ℤ)` appear in the standard proof of both — but no Lean
+substrate: that leaf is a statement about `ℂ`-valued `q`-expansion
+coefficients of `CuspForm (Gamma0GL N) 2`, this one about a
+`ℚ̄_p`-linear Galois module with a Hecke action, and nothing short of
+building the full Eichler–Shimura comparison (the transport layer just
+described) would let one lemma serve both. They are therefore kept as
+independent leaves.
+
 SOUNDNESS (2026-07-24, re-audited 2026-07-25 for the two replaced
 fields): the statement quantifies over nothing but the level, and the
 intended inhabitant witnesses every field, including the internally
@@ -22438,10 +22584,192 @@ theorem not_four_dvd_of_factorization_two_le_one {M : ℕ} (hM : 0 < M)
     hM.ne').mp h2
   omega
 
+/-- **A finite-order transvection in characteristic zero is trivial**
+(PROVEN shareable brick, carved 2026-07-25 out of the at-`2` conductor
+cut as the FORMAL half of the "wild inertia dies" step): let `F` be an
+endomorphism of a module over a field `A` that fixes a vector `w₀` and
+moves every vector by a multiple of `w₀`. Then `N := F − 1` satisfies
+`N² = 0` (it lands in `A·w₀`, which `F` fixes), so `F^k = 1 + k·N`
+exactly; if some `F^n` is the identity with `(n : A) ≠ 0` — in
+particular for any `n > 0` when `A` has characteristic zero — then
+`n·N = 0` forces `N = 0`, i.e. `F = 1`.
+
+Note that `n` is NOT required to be the order of `F`, only to annihilate
+it: the hypothesis is that SOME positive power of `F` is the identity,
+which is what a finite-order image supplies.
+
+This is the whole of the classical "the wild inertia contributes
+nothing" step that is formalizable at this pin: an inertia element
+acting through a transvection along an invariant line, whose image has
+FINITE ORDER, acts trivially, because the additive target `(ℚ̄_p, +)`
+of the transvection coefficient is TORSION-FREE. What it deliberately
+does NOT contain is the reason the wild image has finite order in the
+first place (`GL₂(ℚ̄_p)` has no small pro-`2` subgroups for odd `p`) —
+that is a topological statement about compact subgroups of `GL₂` over
+`ℚ̄_p` and stays in the citation leaf
+`weightTwoNewform_factorization_two_le_one_of_inertia_fixed_line_of_torsion_trivial_of_isIrreducible`
+below. -/
+theorem transvection_apply_eq_self_of_pow_apply_eq_self
+    {A : Type*} [Field A] {V : Type*} [AddCommGroup V] [Module A V]
+    (F : Module.End A V) {w₀ : V}
+    (hfix : F w₀ = w₀)
+    (hquot : ∀ w : V, F w - w ∈ Submodule.span A {w₀})
+    {n : ℕ} (hn : (n : A) ≠ 0) (hFn : ∀ w : V, (F ^ n) w = w) (w : V) :
+    F w = w := by
+  -- the displacement `F v − v` is itself `F`-invariant: it is a multiple
+  -- of `w₀`, and `F` fixes `w₀`
+  have hFF : ∀ v : V, F (F v) - F v = F v - v := by
+    intro v
+    obtain ⟨c, hc⟩ := Submodule.mem_span_singleton.mp (hquot v)
+    have h1 : F v = v + c • w₀ := by rw [hc]; abel
+    have h2 : F (F v) = F v + c • w₀ := by
+      conv_lhs => rw [h1]
+      rw [map_add, map_smul, hfix]
+    rw [h2, hc]
+    abel
+  -- hence `F^k v = v + k·(F v − v)` exactly (the `N² = 0` binomial)
+  have hpow : ∀ (k : ℕ) (v : V), (F ^ k) v = v + (k : A) • (F v - v) := by
+    intro k
+    induction k with
+    | zero => intro v; simp
+    | succ k ih =>
+        intro v
+        have hstep : (F ^ (k + 1)) v = (F ^ k) (F v) := by
+          rw [pow_succ]
+          try rfl
+          try simp
+        rw [hstep, ih (F v), hFF v]
+        push_cast
+        module
+  -- `F^n = 1` kills `n·(F w − w)`, and `n` is invertible in `A`
+  have hzero : (n : A) • (F w - w) = 0 := by
+    have h : w + (n : A) • (F w - w) = w := (hpow n w).symm.trans (hFn w)
+    simpa using h
+  have hsub : F w - w = 0 := by
+    have h2 := congrArg (fun y : V => ((n : A)⁻¹) • y) hzero
+    simpa [smul_smul, inv_mul_cancel₀ hn] using h2
+  exact sub_eq_zero.mp hsub
+
+include hpodd in
+/-- **Carayol's conductor exponent bound at `2` under an inertia fixed
+line with torsion-free inertia image** (sorry node — the SHARPENED
+residual literature leaf of the at-`2` conductor cut, carved
+2026-07-25; it is strictly WEAKER than the `hquotline` form
+`weightTwoNewform_factorization_two_le_one_of_inertia_fixed_line_of_isIrreducible`
+below that consumes it, because the transvection hypothesis has been
+replaced by the single consequence of it that the cited argument uses):
+if an IRREDUCIBLE representation `τ` matching the Hecke polynomials of
+the weight-2 NEWFORM `g` of level `M ≥ 1` away from a finite set has a
+NONZERO vector `w₀` fixed by the whole inertia at `2` (`hfixline`), and
+no element of the inertia at `2` has NONTRIVIAL FINITE-ORDER image
+(`htorsion`), then `M.factorization 2 ≤ 1`.
+
+CITATION CONTENT, in three named pieces.
+
+* **Conductor = level** (Carayol, *Sur les représentations `ℓ`-adiques
+  associées aux formes modulaires de Hilbert*, Ann. Sci. ÉNS 19 (1986),
+  Théorème (A), completing Deligne, Ihara and Langlands): for a newform
+  `g` the Artin conductor of the attached `ℓ`-adic system equals the
+  level of `g`, place by place away from `ℓ`; in particular
+  `a₂(τ) = ord₂ M` here, `2 ≠ p` by `hpodd`. (Quoted in
+  Cornell–Silverman–Stevens, *Modular Forms and Fermat's Last
+  Theorem*, in the form "for `f` a newform the conductor of the system
+  of `ℓ`-adic representations associated to `f` is equal to the level
+  of `f`".)
+* **The Artin exponent formula** (Serre, Duke Math. J. 54 (1987) §1.2,
+  formulas (1.2.1)–(1.2.2)):
+  `n(ℓ, ρ) = Σᵢ dim(V/Vᵢ)/[G₀:Gᵢ] = dim V/V^{G₀} + b(V)` with `b(V)`
+  the *invariant sauvage* (Swan conductor), and (loc. cit. (c))
+  `n(ℓ, ρ) = dim V/V^{G₀}` exactly when `G₁ = 1`. With `dim V = 2` and
+  `hfixline` exhibiting a nonzero `I₂`-invariant vector,
+  `dim V/V^{I₂} ≤ 1`, so `a₂ ≤ 1 + b(V)`.
+* **Finiteness of the wild image** — the only genuinely TOPOLOGICAL
+  input, and the reason this leaf is not proven here: the wild inertia
+  `P₂ = G₁` is pro-`2`, its image in `GL₂(ℚ̄_p)` is a compact subgroup,
+  hence conjugate into `GL₂(𝒪_E)` for some finite `E/ℚ_p`, and the
+  kernel of reduction there is pro-`p`; with `p` odd (`hpodd`) a pro-`2`
+  subgroup meets that kernel trivially and therefore injects into a
+  FINITE group. So every element of the image of `P₂` has finite order,
+  and `htorsion` makes it trivial: `G₁ = 1`, `b(V) = 0`, `a₂ ≤ 1`.
+  Formalizing this step needs the theory of compact subgroups of
+  `GL₂` over `ℚ̄_p` (conjugation into a maximal compact, the pro-`p`
+  congruence filtration), which this pin does not carry — cf. the
+  COORDINATION note at
+  `not_isUnramifiedAt_of_isNewAtPrime_of_isIrreducible`, where the
+  same missing Artin-conductor infrastructure is recorded as the
+  cross-place dedup target.
+
+What is NOT cited, and is PROVEN below in the consumer, is the
+transvection algebra: `hquotline` is used only to produce `htorsion`,
+through the characteristic-zero brick
+`transvection_apply_eq_self_of_pow_apply_eq_self` above (a finite-order
+transvection along an invariant line is trivial, because `(ℚ̄_p, +)` is
+torsion-free). The rigidity identification is not part of the citation
+burden either (mirroring
+`weightTwoNewform_not_dvd_level_of_isUnramifiedAt_of_isIrreducible` and
+the geometric Saito cut at `p`): `τ` is IRREDUCIBLE, so the PROVEN
+rigidity `exists_linearEquiv_of_charFrob_eq` identifies `ρ_{g,λ}` (the
+`κ`-eigencomponent of `V_p(J₀(M))`, matched to the same Hecke
+polynomials by Eichler–Shimura) with `τ`, and the fixed-line data
+transports across the equivalence (`inertia_fixed_of_linearEquiv`).
+
+The inertia is spelled over `Γ ℚ_[2]` via `Z2bar` exactly as in
+`IsHardlyRamified.isTameAtTwo` (the PROVEN bridge
+`localInertia_two_eq_map_padic` of `ModThree.lean` converts to the
+adic-completion spelling up to conjugacy when needed).
+
+SOUNDNESS AUDIT (2026-07-25): non-vacuously satisfiable — for any
+classical newform `g` of ODD level `M` take `τ := ρ_{g,λ}` (irreducible
+by Ribet 1977, unramified at `2` by Eichler–Shimura good reduction of
+`J₀(M)` away from `M`) and any `w₀ ≠ 0`: `hfixline` holds because the
+inertia at `2` acts trivially, `htorsion` holds vacuously in the strong
+sense (its conclusion is the trivial action), and the conclusion
+`M.factorization 2 = 0 ≤ 1` is true. Conversely every instance is an
+instance of the cited theorems: the statement quantifies over the
+`IsWeightTwoNewform` carrier, whose inhabitants are exactly the
+classical newforms (carrier audit at `IsWeightTwoNewform`), and the
+load-bearing case is `4 ∣ M`, which the cited exponent computation
+refutes. `htorsion` is not vacuous in the load-bearing direction: it is
+exactly the input that turns "the wild image is finite" into "the wild
+image is trivial", and it is supplied by the PROVEN brick below. -/
+theorem weightTwoNewform_factorization_two_le_one_of_inertia_fixed_line_of_torsion_trivial_of_isIrreducible
+    {M : ℕ} (hM : 0 < M) {g : CuspForm (Gamma0GL M) 2}
+    (hg : IsWeightTwoNewform M g)
+    (κ : heckeField M g →+* AlgebraicClosure ℚ_[p])
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    {S_τ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hτ : ∀ (r : ℕ) (hr : r.Prime),
+      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ →
+      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
+        Polynomial.X ^ 2
+          - Polynomial.C (κ (heckeCoeff M g r)) * Polynomial.X
+          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
+    (hirr : τ.IsIrreducible)
+    (w₀ : Fin 2 → AlgebraicClosure ℚ_[p]) (hw₀ : w₀ ≠ 0)
+    (hfixline : ∀ σ ∈ AddSubgroup.inertia
+        ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
+        (Field.absoluteGaloisGroup ℚ_[2]),
+      τ.map (algebraMap ℚ ℚ_[2]) σ w₀ = w₀)
+    (htorsion : ∀ σ ∈ AddSubgroup.inertia
+        ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
+        (Field.absoluteGaloisGroup ℚ_[2]),
+      ∀ n : ℕ, 0 < n →
+        (∀ w : Fin 2 → AlgebraicClosure ℚ_[p],
+          ((τ.map (algebraMap ℚ ℚ_[2]) σ) ^ n) w = w) →
+        ∀ w : Fin 2 → AlgebraicClosure ℚ_[p],
+          τ.map (algebraMap ℚ ℚ_[2]) σ w = w) :
+    M.factorization 2 ≤ 1 :=
+  sorry
+
 include hpodd in
 /-- **Carayol's conductor exponent bound at `2`, irreducible
-exponent form** (sorry node — the residual literature leaf of the
-at-`2` conductor cut, carved out 2026-07-25: Carayol, *Sur les
+exponent form** (DECOMPOSED and PROVEN 2026-07-25 as a two-line
+assembly over the SHARPENED citation leaf
+`weightTwoNewform_factorization_two_le_one_of_inertia_fixed_line_of_torsion_trivial_of_isIrreducible`
+above — which drops `hquotline` entirely — using the PROVEN
+characteristic-zero brick
+`transvection_apply_eq_self_of_pow_apply_eq_self`: Carayol, *Sur les
 représentations `ℓ`-adiques associées aux formes modulaires de
 Hilbert*, Ann. Sci. ÉNS 19 (1986), Théorème (A), combined with the
 Artin conductor exponent formula
@@ -22453,11 +22781,29 @@ and moves every vector by a multiple of `w₀` (`hquotline`), then the
 `2`-adic valuation of the level is at most `1`:
 `M.factorization 2 ≤ 1`.
 
-This is the leaf stated AT ITS SHARPEST — the Artin exponent bound
+This is the statement AT ITS SHARPEST — the Artin exponent bound
 itself, not its `¬ 4 ∣ M` shadow; the shadow is the PROVEN arithmetic
 joint `not_four_dvd_of_factorization_two_le_one`.
 
-Residual citation content. Carayol's Théorème (A) computes the
+FORMAL/CITED SPLIT (2026-07-25). The part of the classical argument
+that is FORMAL at this pin is the transvection algebra, and it is
+PROVEN here: `hfixline` and `hquotline` make every inertia element act
+as `w ↦ w + c(σ)·w₀`, so `τσ − 1` squares to zero and
+`(τσ)^n = 1 + n·(τσ − 1)` exactly; since the coefficient field
+`ℚ̄_p` has CHARACTERISTIC ZERO, an inertia element whose image has
+finite order therefore acts trivially. That is the shareable brick
+`transvection_apply_eq_self_of_pow_apply_eq_self` above, and feeding it
+to the sharpened leaf discharges `hquotline` completely — the leaf keeps
+only `hfixline` plus the torsion-freeness of the inertia image. What
+remains genuinely CITED there is (a) Carayol's `ord₂ cond = ord₂ M`,
+(b) Serre's Artin exponent formula
+`n(2, τ) = dim V/V^{I₂} + b(V)` (Duke 54 (1987) §1.2, (1.2.1)–(1.2.2)),
+and (c) the single topological input this pin cannot supply — that the
+pro-`2` wild inertia has FINITE image in `GL₂(ℚ̄_p)` for odd `p`. See
+that leaf's docstring for the three pieces named separately.
+
+The classical narrative, for orientation. Carayol's Théorème (A)
+computes the
 prime-to-`p` Artin conductor of the geometric attachment `ρ_{g,λ}` as
 the level: `ord_r (cond ρ_{g,λ}) = ord_r M` at every prime `r ≠ p`, in
 particular `a₂ = ord₂ M` (here `2 ≠ p` because `p` is odd, `hpodd`).
@@ -22551,8 +22897,16 @@ theorem weightTwoNewform_factorization_two_le_one_of_inertia_fixed_line_of_isIrr
       ∀ w : Fin 2 → AlgebraicClosure ℚ_[p],
         τ.map (algebraMap ℚ ℚ_[2]) σ w - w ∈
           Submodule.span (AlgebraicClosure ℚ_[p]) {w₀}) :
-    M.factorization 2 ≤ 1 :=
-  sorry
+    M.factorization 2 ≤ 1 := by
+  refine weightTwoNewform_factorization_two_le_one_of_inertia_fixed_line_of_torsion_trivial_of_isIrreducible
+    hpodd hM hg κ hτ hirr w₀ hw₀ hfixline ?_
+  -- the transvection algebra: a finite-order image of an inertia element
+  -- acting along the fixed line `w₀` is trivial, `ℚ̄_p` being of
+  -- characteristic zero
+  intro σ hσ n hn hpow w
+  exact transvection_apply_eq_self_of_pow_apply_eq_self
+    (τ.map (algebraMap ℚ ℚ_[2]) σ) (hfixline σ hσ) (hquotline σ hσ)
+    (Nat.cast_ne_zero.mpr hn.ne') hpow w
 
 include hpodd in
 /-- **Level lowering at `2` under a tame fixed line — Carayol's
