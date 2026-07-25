@@ -23240,12 +23240,193 @@ theorem exists_irreducible_galoisRep_charFrob_of_weightTwoNewform
       exact P.det_frob q hq hqS (hstab _)
     exact charpoly_eq_quadratic_of_sq_rel hinv hQ hdet
 
+/-- **The maximal-ideal powers of the coefficient ring are OPEN** (PROVEN
+2026-07-25 — the tower bookkeeping of the at-`p` flatness cut below, and
+the step that makes the hypothesis `hpne` of that cut mechanically
+load-bearing instead of merely documentary): for a coefficient ring `R`
+of the standard package — a local DOMAIN, module-finite over `ℤ_p`,
+carrying the `ℤ_p`-module topology — in which `p` is NOT zero, every
+power `𝔪 ^ k` of the maximal ideal is an OPEN ideal, hence a legitimate
+level of the flat tower quantified over by `GaloisRep.IsFlatAt.cond`.
+
+Proof: `R` is a domain, so `(p : R) ≠ 0` forces `ℤ_p → R` to be
+INJECTIVE — a nonzero kernel element is a unit times `p ^ n` in the DVR
+`ℤ_p` (`IsDiscreteValuationRing.eq_unit_mul_pow_irreducible`), which
+would make `(p : R) ^ n = 0` and hence `(p : R) = 0`. So `R` is
+torsion-free and module-finite over the PID `ℤ_p`, therefore FREE
+(`Module.free_of_finite_type_torsion_free'`), therefore — reading the
+module topology through a basis — homeomorphic to `ℤ_p ^ d`, hence
+compact and Hausdorff; module-finiteness makes it Noetherian, and
+mathlib's `IsLocalRing.isOpen_maximalIdeal_pow` applies.
+
+Where `hpne` really enters: without it `R` may be a finite field, and
+then the powers `𝔪 ^ k` are all `⊥` and open for a DEGENERATE reason —
+the flat tower collapses to a single level, which is exactly the
+situation in which the leaf below is FALSE (see its TOWER AUDIT). So
+this lemma is not merely a technical convenience: it is the formal
+content of "the tower is infinite". -/
+theorem isOpen_maximalIdeal_pow_of_natCast_ne_zero
+    (hpne : (p : R) ≠ 0) (k : ℕ) :
+    IsOpen ((IsLocalRing.maximalIdeal R ^ k : Ideal R) : Set R) := by
+  -- `ℤ_p → R` is injective: a nonzero kernel element is a unit times
+  -- `p ^ n` in the DVR `ℤ_p`, so it would force `(p : R) ^ n = 0`
+  have hZinj : Function.Injective (algebraMap ℤ_[p] R) := by
+    rw [injective_iff_map_eq_zero]
+    intro z hz
+    by_contra hzne
+    obtain ⟨n, u, rfl⟩ :=
+      IsDiscreteValuationRing.eq_unit_mul_pow_irreducible hzne
+        (PadicInt.irreducible_p (p := p))
+    rw [map_mul, map_pow, map_natCast] at hz
+    have hunit : IsUnit (algebraMap ℤ_[p] R (u : ℤ_[p])) := u.isUnit.map _
+    have hp0 : ((p : R)) ^ n = 0 := by
+      rcases mul_eq_zero.mp hz with h | h
+      · exact absurd h hunit.ne_zero
+      · exact h
+    refine hpne ?_
+    rcases Nat.eq_zero_or_pos n with rfl | hn
+    · simp at hp0
+    · exact (pow_eq_zero_iff hn.ne').mp hp0
+  -- torsion-free and module-finite over the PID `ℤ_p`, hence free, hence
+  -- compact Hausdorff for the module topology; Noetherian by finiteness
+  haveI : Module.IsTorsionFree ℤ_[p] R :=
+    Module.isTorsionFree_iff_algebraMap_injective.mpr hZinj
+  haveI : Module.Free ℤ_[p] R := Module.free_of_finite_type_torsion_free'
+  haveI : IsNoetherianRing R := IsNoetherianRing.of_finite ℤ_[p] R
+  let eR : R ≃ₗ[ℤ_[p]] (Module.Free.ChooseBasisIndex ℤ_[p] R → ℤ_[p]) :=
+    (Module.Free.chooseBasis ℤ_[p] R).equivFun
+  have hcontR₁ : Continuous eR :=
+    IsModuleTopology.continuous_of_linearMap eR.toLinearMap
+  have hcontR₂ : Continuous eR.symm :=
+    IsModuleTopology.continuous_of_linearMap eR.symm.toLinearMap
+  let homR : R ≃ₜ (Module.Free.ChooseBasisIndex ℤ_[p] R → ℤ_[p]) :=
+    { toEquiv := eR.toEquiv
+      continuous_toFun := hcontR₁
+      continuous_invFun := hcontR₂ }
+  haveI : CompactSpace R := homR.symm.compactSpace
+  haveI : T2Space R := homR.isEmbedding.t2Space
+  exact IsLocalRing.isOpen_maximalIdeal_pow R k
+
+include hpodd in
+/-- **Serre's flat-level criterion for a `p`-new eigensystem: SOME FINITE
+LEVEL of the `p`-adic tower admits no flat prolongation** (sorry node —
+the residual literature leaf of the at-`p` conductor cut after the
+2026-07-25 TOWER CUT. The sharpened citations, the TOWER audit, the
+SPLIT audit and the two INFRASTRUCTURE audits all live in the docstring
+of the consumer
+`not_isFlatAt_of_weightTwoEigenform_pNew_of_isIrreducible_of_pNeZero`
+below, which is now PROVEN from this leaf; they are not repeated here).
+
+Under exactly the consumer's hypotheses — `g` a weight-2 eigenform of
+level `M ≥ 1` with `p ∣ M`, `p`-NEW in the degeneracy-level spelling
+`hpnew`; `τ` IRREDUCIBLE and matching `g`'s Hecke polynomials away from
+a finite set; `ρ` an `R`-lattice model of `τ` through `e`, `he`; and
+`(p : R) ≠ 0` — there is a LEVEL `k` at which the reduction
+`ρ ⊗ R ⧸ 𝔪 ^ k` has NO finite flat prolongation at `p`.
+
+WHY THE PIN MOVED HERE (the TOWER CUT, 2026-07-25, fourth owner). The
+consumer's TOWER AUDIT records that flatness at a SINGLE level is
+compatible with the Steinberg configuration — Serre, Duke 1987 §2.9
+Prop. 5(ii) makes the `p`-division points of a Tate curve flat exactly
+when `p ∣ v_p(q_E)`, and the in-tree PROVEN
+`WeierstrassCurve.isFlatAt_of_hasMultiplicativeReduction` exhibits an
+instance — so the content lives in the INFINITE tower and in nothing
+less. But Serre's criterion is itself LEVEL-BY-LEVEL: at level `p ^ k` it
+reads `p ^ k ∣ v_p(q_E)`, and a toric reduction has `v_p(q_E) ≠ 0`, so
+only FINITELY many levels can be flat. This leaf is that statement in
+existence form. It is also the shape the tree's own flat-obstruction
+idiom consumes: every in-tree consequence of flatness is extracted ONE
+LEVEL AT A TIME out of the Hopf-algebra package delivered by
+`GaloisRep.IsFlatAt.cond (𝔪 ^ k)` — see `Family.lean`'s per-level
+Raynaud trace congruence `trace_sub_one_add_cyclotomicCharacter_mem_of_hopf_package`
+— and never from the tower as a whole.
+
+WHAT THE CUT BUYS, AND WHAT IT DOES NOT (stated plainly so that no
+reader over-reads it). It BUYS the tower bookkeeping: the openness of
+the level ideals, proven just above out of `hpne` — a hypothesis that
+was otherwise UNUSED by the consumer and justified only in prose — so
+the passage from "some finite level fails" to "the representation is not
+flat" is now a proof term. It does NOT reduce the literature burden by
+one line: this leaf and its consumer are in fact EQUIVALENT, since every
+open ideal of `R` contains some `𝔪 ^ k` (mathlib's
+`IsLocalRing.isOpen_iff_finite_quotient`), so the citation — Saito 1997
+local–global compatibility at `p`, plus Raynaud/Fontaine through Serre's
+Kummer-class criterion — is carried over undiminished. The cut relocates
+that citation to the finite level at which the criterion is actually
+stated in the source, which is where any future proof must start.
+
+TERMINALITY, RE-AUDITED (2026-07-25, fourth owner, independently of the
+two INFRASTRUCTURE audits below). Those audits are confirmed: there is
+no crystalline/Barsotti–Tate predicate, no Fontaine functor and no
+higher ramification filtration on this pin. Two further findings, both
+new. FIRST: the tree contains NO flatness obstruction of any kind —
+every in-tree lemma about `GaloisRep.IsFlatAt` is a CONSTRUCTOR
+(`isFlatAt_of_dvr_package`, `hasFlatProlongationAt_of_hopf_package`,
+`hasFlatProlongationAt_of_subsingleton`, the base-change and `ULift`
+transports), and the one lemma that extracts arithmetic from a flat
+prolongation, `Family.lean`'s per-level Raynaud trace congruence, yields
+`tr ρ(σ) = 1 + χ_cyc(σ)` on inertia — which the STEINBERG configuration
+`(χ_cyc c, ∗ ; 0, c)` SATISFIES. So the sharpest obstruction the tree
+owns cannot refute flatness here, confirming the SPLIT AUDIT's claim by
+computation rather than by search. SECOND, and decisive: this leaf's
+hypothesis is AUTOMORPHIC (`hpnew`, a statement about `q`-expansions of
+modular forms) while its conclusion is GALOIS-THEORETIC, so the bridge
+is local–global compatibility at `p` — a theorem about the étale
+cohomology of modular curves (Deligne–Rapoport models of `X₀(Mp)`,
+Tilouine's toric-reduction computation, Saito 1997), NOT a piece of
+missing infrastructure that a deformation-theory owner could supply.
+Building crystalline theory would therefore NOT close this leaf; the
+missing dependency is the geometry of modular curves at `p`. It is
+recorded here so that no fifth owner spends the cycle rediscovering it.
+
+SOUNDNESS: inherited verbatim from the consumer's SOUNDNESS AUDIT
+(`p = 11`, `M = 11`, the weight-2 newform of level `11`), whose witness
+has `v_p(q_E) = 1`, not divisible by `11`, and therefore already fails
+at the FIRST level `k = 1`. -/
+theorem exists_level_not_hasFlatProlongationAt_of_weightTwoEigenform_pNew
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    {M : ℕ} (hM : 0 < M) (hpM : p ∣ M) {g : CuspForm (Gamma0GL M) 2}
+    (hg : IsWeightTwoEigenform M g)
+    (hpnew : ∀ M₁ : ℕ, M₁ ∣ M / p →
+      ∀ g₁ : CuspForm (Gamma0GL M₁) 2, IsWeightTwoEigenform M₁ g₁ →
+      ¬ ∀ (r : ℕ), r.Prime → ¬ r ∣ M → qCoeff M₁ g₁ r = qCoeff M g r)
+    (κ : heckeField M g →+* AlgebraicClosure ℚ_[p])
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    {S_τ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hτ : ∀ (r : ℕ) (hr : r.Prime),
+      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ →
+      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
+        Polynomial.X ^ 2
+          - Polynomial.C (κ (heckeCoeff M g r)) * Polynomial.X
+          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
+    (hirr : τ.IsIrreducible)
+    (e : (Fin 2 → AlgebraicClosure ℚ_[p]) ≃ₗ[AlgebraicClosure ℚ_[p]]
+      (AlgebraicClosure ℚ_[p] ⊗[R] V))
+    (he : ∀ (γ : Field.absoluteGaloisGroup ℚ)
+        (w : Fin 2 → AlgebraicClosure ℚ_[p]),
+      e (τ γ w) = ρ.baseChange (AlgebraicClosure ℚ_[p]) γ (e w))
+    (hpne : (p : R) ≠ 0) :
+    ∃ k : ℕ,
+      ¬ (ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ k))).HasFlatProlongationAt
+        (Fact.out : p.Prime).toHeightOneSpectrumRingOfIntegersRat :=
+  sorry
+
 include hpodd in
 /-- **The `p`-new exclusion over an INFINITE `p`-adic flat tower**
-(sorry node — the single residual literature leaf of the at-`p`
-conductor cut, NARROWED 2026-07-25 by the derivable hypothesis
-`hpne : (p : R) ≠ 0`; the assembly below discharges `hpne` and is what
-the level-lowering consumers call): let `g` be a weight-2 eigenform of
+(PROVEN 2026-07-25 by the TOWER CUT — a one-step assembly over the
+finite-level literature leaf
+`exists_level_not_hasFlatProlongationAt_of_weightTwoEigenform_pNew`
+above, whose docstring carries the cut's rationale and a fourth
+terminality audit; the citations and audits below are UNCHANGED and
+remain the authority on this node's literature content. This node WAS
+itself the single residual literature leaf of the at-`p` conductor cut,
+NARROWED 2026-07-25 by the derivable hypothesis `hpne : (p : R) ≠ 0` —
+which the TOWER CUT then turned from a documented caveat into a
+consumed hypothesis, since `hpne` is exactly what makes the level
+ideals `𝔪 ^ k` open; the assembly further below discharges `hpne` and
+is what the level-lowering consumers call): let `g` be a weight-2 eigenform of
 level `M ≥ 1` with `p ∣ M` that is `p`-NEW (`hpnew`, spelled through
 the `p`-old degeneracy levels `M₁ ∣ M / p`); if the IRREDUCIBLE
 representation `τ` matches the Hecke polynomials of `g` away from a
@@ -23390,8 +23571,14 @@ theorem not_isFlatAt_of_weightTwoEigenform_pNew_of_isIrreducible_of_pNeZero
       e (τ γ w) = ρ.baseChange (AlgebraicClosure ℚ_[p]) γ (e w))
     (hpne : (p : R) ≠ 0) :
     ¬ ρ.IsFlatAt
-      (Fact.out : p.Prime).toHeightOneSpectrumRingOfIntegersRat :=
-  sorry
+      (Fact.out : p.Prime).toHeightOneSpectrumRingOfIntegersRat := by
+  -- the finite level supplied by Serre's level-by-level criterion …
+  intro hflat
+  obtain ⟨k, hk⟩ :=
+    exists_level_not_hasFlatProlongationAt_of_weightTwoEigenform_pNew hpodd
+      hM hpM hg hpnew κ hτ hirr e he hpne
+  -- … is a genuine level of the flat tower, because `hpne` makes `𝔪 ^ k` open
+  exact hk (hflat.cond _ (isOpen_maximalIdeal_pow_of_natCast_ne_zero hpne k))
 
 include hpodd in
 /-- **The `p`-new exclusion: a `p`-new weight-2 eigensystem carries no
