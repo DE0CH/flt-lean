@@ -63,7 +63,6 @@ them without a human. Do not re-wrap it.
 - `hasFlatProlongationAt_of_pi_surjection`
 - `hasFlatProlongationAt_of_prod_injection`
 - `exists_cyclotomicCharacter_padicTwo_eq_two`
-- `isTameAtTwo_of_fibreProduct_three`
 - `exists_ringHom_matrix_quotient_of_finite`
 - `exists_uniform_span_maximalIdeal_traceSubring`
 - `exists_framedGaloisRep_baseChange_traceSubring`
@@ -2957,91 +2956,78 @@ theorem exists_unit_smul_of_vecMul_eq {A : Type*} [CommRing A] [IsLocalRing A]
       r' 1 * s * r 0 * x' 0 + r' 1 * s * r 1 * x' 1 by ring, ← key0, ← key1]
     exact hx'
 
-/-- **The tame quadratic quotient at `2` glues along a fibre product —
-the `ℓ = 3` case** (sorry node, cut 2026-07-26 out of
-`isTameAtTwo_of_fibreProduct` below, which is PROVEN over it and over
-`exists_cyclotomicCharacter_padicTwo_eq_two`).
+/-
+**REFUTED AND DELETED, 2026-07-26: `isTameAtTwo_of_fibreProduct_three`.**
 
-THIS IS EXACTLY THE SHARP CASE THE PARENT DOCSTRING WARNS ABOUT, and it
-is a genuinely separate problem rather than a bookkeeping remainder.
-The proof of the parent runs on a unit: with `χ_ℓ(Frob_2) = 2` and the
-two quotient characters quadratic, the determinant test element is
+A leaf `isTameAtTwo_of_fibreProduct_three (hthree : ℓ = 3) …` stood here,
+stating the `ℓ = 3` case of `isTameAtTwo_of_fibreProduct` below with
+exactly that theorem's hypotheses and conclusion. **It is FALSE**, and it
+is recorded here — statement gone, refutation kept — so that nobody
+re-states it from the parent's docstring.
 
-  `det ρ(g₀) − δ₁(g₀)δ₂(g₀) = 2 ∓ 1 ∈ {1, 3}`,
+DO NOT RE-STATE IT. THE COUNTEREXAMPLE.
 
-and in a local `ℤ_ℓ`-algebra `A₀` (residue characteristic `ℓ`) both `1`
-and `3` are units EXACTLY WHEN `ℓ ≠ 3`. At `ℓ = 3` the value `3` sits in
-the maximal ideal, the cross determinant of the two eigen-rows is no
-longer forced to vanish, and the two projections may genuinely select
-DIFFERENT stable lines: `χ̄²= 1` on `G_2` precisely when `4 = 1` in the
-residue field, i.e. precisely at `ℓ = 3`, so in the split case BOTH
-Jordan–Hölder lines have unramified QUADRATIC quotient and the clause
-does not single one out.
+Take `ℓ = 3` and, over `K = ℚ(∛2, μ₃)`, the square-zero extensions
 
-WHAT AN OWNER SHOULD WEIGH FIRST. The statement may well be TRUE anyway
-— in the split case `ρ` over `B` itself tends to split, which produces a
-line over `B` directly rather than by gluing — but nothing in the
-hypotheses supplies splitness, so it has to be produced. If it turns out
-FALSE, the repair is the one the parent docstring already names and it
-is UPSTREAM of this leaf, not a weakening of it: thread `5 ≤ ℓ` down
-from `exists_isStrictlyUniversalOnFrames_of_finite_lifts` and
-`exists_isStrictlyUniversalOnFrames_of_deformationCondition`, which DO
-carry `hℓ5 : 5 ≤ ℓ`, through `IsHardlyRamified` and
-`isHardlyRamified_of_fibreProduct` (edits to other owners'
-declarations, deliberately not made here).
+  `A₀ = 𝔽₃`,  `A₁ = 𝔽₃[ε₁]`,  `A₂ = 𝔽₃[ε₂]`,
+  `B  = 𝔽₃[ε₁, ε₂] / (ε₁, ε₂)²`,
 
-References: Conrad–Diamond–Taylor, JAMS 12 (1999), §2; Mazur, *Deforming
-Galois representations*, MSRI Publ. 16 (1989), §§18–23. -/
-theorem isTameAtTwo_of_fibreProduct_three (hthree : ℓ = 3)
-    {A₀ : Type u} [CommRing A₀] [TopologicalSpace A₀] [IsTopologicalRing A₀]
-    [IsLocalRing A₀] [Algebra ℤ_[ℓ] A₀] [Finite A₀]
-    {A₁ : Type u} [CommRing A₁] [TopologicalSpace A₁] [IsTopologicalRing A₁]
-    [IsLocalRing A₁] [Algebra ℤ_[ℓ] A₁] [Finite A₁]
-    {A₂ : Type u} [CommRing A₂] [TopologicalSpace A₂] [IsTopologicalRing A₂]
-    [IsLocalRing A₂] [Algebra ℤ_[ℓ] A₂] [Finite A₂]
-    {B : Type u} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
-    [IsLocalRing B] [Algebra ℤ_[ℓ] B] [Finite B]
-    (f₁ : A₁ →+* A₀) (f₂ : A₂ →+* A₀) (hf₂ : Function.Surjective f₂)
-    (p₁ : B →+* A₁) (p₂ : B →+* A₂) (hp₁ : Continuous p₁) (hp₂ : Continuous p₂)
-    (hcomm : f₁.comp p₁ = f₂.comp p₂)
-    (hemb : Topology.IsEmbedding fun b : B => (p₁ b, p₂ b))
-    (hcart : ∀ (a₁ : A₁) (a₂ : A₂), f₁ a₁ = f₂ a₂ → ∃ b : B, p₁ b = a₁ ∧ p₂ b = a₂)
-    {ρ : FramedGaloisRep ℚ B (Fin 2)}
-    (hdet : ∀ g, ρ.det g = algebraMap ℤ_[ℓ] B
-      (cyclotomicCharacter (AlgebraicClosure ℚ) ℓ g.toRingEquiv))
-    (h₁ : ∃ (π : (Fin 2 → A₁) →ₗ[A₁] A₁) (_ : Function.Surjective π)
-      (δ : GaloisRep ℚ_[2] A₁ A₁),
-      ∀ g : Field.absoluteGaloisGroup ℚ_[2], ∀ v : Fin 2 → A₁,
-        π ((pushforwardFrame p₁ hp₁ ρ).map (algebraMap ℚ ℚ_[2]) g v) = δ g (π v) ∧
-        (AddSubgroup.inertia
-          ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup :
-            AddSubgroup Z2bar) (Field.absoluteGaloisGroup ℚ_[2]) ≤ δ.ker) ∧
-        (∀ g' : Field.absoluteGaloisGroup ℚ_[2], δ g' * δ g' = 1))
-    (h₂ : ∃ (π : (Fin 2 → A₂) →ₗ[A₂] A₂) (_ : Function.Surjective π)
-      (δ : GaloisRep ℚ_[2] A₂ A₂),
-      ∀ g : Field.absoluteGaloisGroup ℚ_[2], ∀ v : Fin 2 → A₂,
-        π ((pushforwardFrame p₂ hp₂ ρ).map (algebraMap ℚ ℚ_[2]) g v) = δ g (π v) ∧
-        (AddSubgroup.inertia
-          ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup :
-            AddSubgroup Z2bar) (Field.absoluteGaloisGroup ℚ_[2]) ≤ δ.ker) ∧
-        (∀ g' : Field.absoluteGaloisGroup ℚ_[2], δ g' * δ g' = 1)) :
-    ∃ (π : (Fin 2 → B) →ₗ[B] B) (_ : Function.Surjective π)
-      (δ : GaloisRep ℚ_[2] B B),
-      ∀ g : Field.absoluteGaloisGroup ℚ_[2], ∀ v : Fin 2 → B,
-        π (ρ.map (algebraMap ℚ ℚ_[2]) g v) = δ g (π v) ∧
-        (AddSubgroup.inertia
-          ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup :
-            AddSubgroup Z2bar) (Field.absoluteGaloisGroup ℚ_[2]) ≤ δ.ker) ∧
-        (∀ g' : Field.absoluteGaloisGroup ℚ_[2], δ g' * δ g' = 1) :=
-  sorry
+so that `B = A₁ ×_{A₀} A₂` with the two projections killing `ε₂`, `ε₁`
+respectively; every hypothesis of the deleted leaf holds for the framed
+representation
+
+  `ρ(g) = !![1, ε₂ · c'(g); ε₁ · c(g), χ(g)]`,
+
+where `χ = χ₃` is the mod-`3` cyclotomic character, `c` is the Kummer
+cocycle of `2` (i.e. `g ↦ g(∛2)/∛2` read in `𝔽₃`) and `c' = χ · c`.
+
+* `h₁` holds: over `A₁ = 𝔽₃[ε₁]` the top row `(1, 0)` is `ρ`-stable with
+  quotient character the trivial one, which is unramified and quadratic.
+* `h₂` holds: over `A₂ = 𝔽₃[ε₂]` the bottom row `(0, 1)` is `ρ`-stable
+  with quotient character `χ|_{G_2}`, which is unramified, and which is
+  QUADRATIC **only because** `χ(Frob₂)² = 2² = 4 = 1` in `𝔽₃`. This is
+  precisely the `ℓ = 3` degeneracy the parent docstring names: at `ℓ ≥ 5`
+  the clause singles out one line and `h₂` would fail for this `ρ`.
+* The conclusion FAILS: over `B` there is **no `ρ`-stable free rank-one
+  summand at all**. The two lines that work over `A₁` and `A₂` are the
+  two DIFFERENT Jordan–Hölder lines of the split residual
+  representation, and neither lifts to `B`, because `c` and `c' = χ·c`
+  are both non-coboundaries.
+
+VERIFIED TWO WAYS. (i) Exhaustively over the 27-element ring `B`: the
+homomorphism law on all 36 pairs, `det ρ = χ`, a search for a stable line
+over EVERY unimodular vector, and the non-coboundary checks for `c` and
+`c'`. (ii) PARI/GP for the splitting behaviour at `2` in `K`, which is
+what makes `c` unramified-but-nontrivial there.
+
+THE REPAIR, PERFORMED 2026-07-26 (this is what the parent's docstring had
+already predicted). The correct fix is UPSTREAM, not a weakening of any
+statement: `5 ≤ ℓ` is threaded down from
+`exists_isStrictlyUniversalOnFrames_of_finite_lifts` (which already
+carries `hℓ5 : 5 ≤ ℓ`, as does
+`exists_isStrictlyUniversalOnFrames_of_deformationCondition`) through
+`isHardlyRamified_of_fibreProduct` into `isTameAtTwo_of_fibreProduct`,
+where it replaces the `by_cases ℓ = 3` split that used to call this leaf.
+`IsHardlyRamified` itself needs no change: the narrowing lives entirely
+in the three gluing statements, which are the only ones that need it.
+-/
 
 /-- **The tame quadratic quotient at `2` glues along a fibre product**
-(PROVEN 2026-07-26 for every `ℓ ≥ 5`, over the arithmetic leaf
+(PROVEN 2026-07-26 over the arithmetic leaf
 `exists_cyclotomicCharacter_padicTwo_eq_two` and the linear-algebra
-brick `exists_unit_smul_of_vecMul_eq` immediately above; the remaining
-case `ℓ = 3` is the separate leaf `isTameAtTwo_of_fibreProduct_three`.
-Cut 2026-07-25 out of `isHardlyRamified_of_fibreProduct` — the
-Conrad–Diamond–Taylor half of Schlessinger's H1/H2).
+brick `exists_unit_smul_of_vecMul_eq` immediately above. Cut 2026-07-25
+out of `isHardlyRamified_of_fibreProduct` — the Conrad–Diamond–Taylor
+half of Schlessinger's H1/H2).
+
+**THIS STATEMENT CARRIES `hℓ5 : 5 ≤ ℓ`, AND MUST.** The complementary
+case `ℓ = 3` was briefly a separate leaf,
+`isTameAtTwo_of_fibreProduct_three`; that leaf was **REFUTED** on
+2026-07-26 with an explicit counterexample, which is recorded in the
+block comment immediately above where it stood. `5 ≤ ℓ` is therefore not
+a convenience: it is the exact hypothesis under which this statement is
+true, and it is threaded in from
+`exists_isStrictlyUniversalOnFrames_of_finite_lifts` through
+`isHardlyRamified_of_fibreProduct`, both of which now carry it too.
 
 WHY IT IS NOT FORMAL. `IsHardlyRamified` states tameness at `2` as an
 EXISTENTIAL — SOME surjection `π : V ↠ R` and SOME unramified quadratic
@@ -3068,11 +3054,11 @@ which is nontrivial on `Frob_2`. That distinctness is the uniqueness
 engine: a non-split `ρ̄|_{G_2}` has exactly ONE stable line, the given
 lines reduce to it, they agree over `A₀`, and they glue.
 
-THE SHARP EDGE IS `ℓ = 3`, AND ITS PROVER MUST NOT IGNORE IT. Uniqueness
-can fail only when `ρ̄|_{G_2}` SPLITS as `χ̄δ̄ ⊕ δ̄`. Then there are exactly
-two stable lines, with quotients `δ̄` and `χ̄δ̄`; both are unramified, and
-the second is also QUADRATIC precisely when `χ̄² = 1` on `G_2`, i.e. when
-`4 = 1` in the residue field, i.e. when `ℓ = 3`. So:
+THE SHARP EDGE IS `ℓ = 3`, AND IT IS WHY `hℓ5` IS A HYPOTHESIS.
+Uniqueness can fail only when `ρ̄|_{G_2}` SPLITS as `χ̄δ̄ ⊕ δ̄`. Then there
+are exactly two stable lines, with quotients `δ̄` and `χ̄δ̄`; both are
+unramified, and the second is also QUADRATIC precisely when `χ̄² = 1` on
+`G_2`, i.e. when `4 = 1` in the residue field, i.e. when `ℓ = 3`. So:
 
 * for `ℓ ≥ 5` the line with unramified quadratic quotient is UNIQUE and
   the gluing is unconditional;
@@ -3080,24 +3066,20 @@ the second is also QUADRATIC precisely when `χ̄² = 1` on `G_2`, i.e. when
   projections may select lines with different reductions to `A₀`, and
   then there is nothing over `B` to glue them into.
 
-This statement carries only `hodd : Odd ℓ`, inherited from
-`isHardlyRamified_of_fibreProduct`, which inherits it from
-`IsHardlyRamified`. Its ONLY consumer chain —
-`exists_isStrictlyUniversalOnFrames_of_finite_lifts` and
-`exists_isStrictlyUniversalOnFrames_of_deformationCondition` — DOES carry
-`hℓ5 : 5 ≤ ℓ`. So if the `ℓ = 3` split case proves intractable, the
-correct repair is to thread `5 ≤ ℓ` down that chain (edits to other
-owners' declarations, deliberately not made here), NOT to weaken this
-statement. And do not discharge this leaf by assuming `ρ̄|_{G_2}` is
-non-split: nothing in the hypotheses supplies that.
+The second bullet is not a gap but a genuine COUNTEREXAMPLE — see the
+refutation block above, over `K = ℚ(∛2, μ₃)` with `B = 𝔽₃[ε₁,ε₂]/(ε₁,ε₂)²`
+— which is why the `ℓ = 3` case is not stated anywhere and why `5 ≤ ℓ` is
+carried here rather than derived. Do not discharge this statement by
+assuming `ρ̄|_{G_2}` is non-split: nothing in the hypotheses supplies that,
+and `hℓ5` is what makes it unnecessary.
 
-HOW THE `ℓ ≥ 5` HALF IS PROVEN HERE (2026-07-26), with the uniqueness
+HOW IT IS PROVEN HERE (2026-07-26), with the uniqueness
 argument above carried out at the level of ROWS rather than of
 Jordan–Hölder factors, so that no semisimplification or residual
 reduction is needed.
 
-1. `ℓ ≠ 3` and `Odd ℓ` give `ℓ ≥ 5`, hence `2` and `3` are units in the
-   local `ℤ_ℓ`-algebra `A₀` (`PadicInt.isUnit_iff` plus coprimality).
+1. `hℓ5 : 5 ≤ ℓ` makes `2` and `3` units in the local `ℤ_ℓ`-algebra `A₀`
+   (`PadicInt.isUnit_iff` plus coprimality).
 2. Each of `h₁`, `h₂` is a SURJECTIVE functional, i.e. a UNIMODULAR row
    `rᵢ = (πᵢ e₀, πᵢ e₁)`, and the equivariance clause says exactly that
    this row is a LEFT EIGENVECTOR of the matrix of `ρ(g₀)` with
@@ -3119,14 +3101,14 @@ reduction is needed.
    `IsModuleTopology.continuous_of_linearMap` applied to
    `π ∘ₗ LinearMap.applyₗ x₀`.
 
-Step (1) is the ONLY place `ℓ ≠ 3` enters, and it enters as invertibility
-of `3`; that is exactly the boundary recorded above, and the complementary
-case is `isTameAtTwo_of_fibreProduct_three`.
+Step (1) is the ONLY place `hℓ5` enters, and it enters as invertibility
+of `3`; that is exactly the boundary recorded above, and the
+complementary case is the refuted statement recorded there.
 
 References: Conrad–Diamond–Taylor, JAMS 12 (1999), §2; Mazur, *Deforming
 Galois representations*, MSRI Publ. 16 (1989), §§18–23; Schlessinger,
 Trans. AMS 130 (1968), Thm. 2.11. -/
-theorem isTameAtTwo_of_fibreProduct (hodd : Odd ℓ)
+theorem isTameAtTwo_of_fibreProduct (hodd : Odd ℓ) (hℓ5 : 5 ≤ ℓ)
     {A₀ : Type u} [CommRing A₀] [TopologicalSpace A₀] [IsTopologicalRing A₀]
     [IsLocalRing A₀] [Algebra ℤ_[ℓ] A₀] [Finite A₀]
     {A₁ : Type u} [CommRing A₁] [TopologicalSpace A₁] [IsTopologicalRing A₁]
@@ -3168,14 +3150,6 @@ theorem isTameAtTwo_of_fibreProduct (hodd : Odd ℓ)
             AddSubgroup Z2bar) (Field.absoluteGaloisGroup ℚ_[2]) ≤ δ.ker) ∧
         (∀ g' : Field.absoluteGaloisGroup ℚ_[2], δ g' * δ g' = 1) := by
   classical
-  by_cases h3 : ℓ = 3
-  · exact isTameAtTwo_of_fibreProduct_three h3 f₁ f₂ hf₂ p₁ p₂ hp₁ hp₂
-      hcomm hemb hcart hdet h₁ h₂
-  have hℓ5 : 5 ≤ ℓ := by
-    have hp : ℓ.Prime := Fact.out
-    have h2 : 2 ≤ ℓ := hp.two_le
-    have hodd' : ℓ % 2 = 1 := Nat.odd_iff.mp hodd
-    omega
   -- `2` and `3` are units in `A₀`, because `ℓ ≥ 5`
   have hu2 : IsUnit ((2 : ℕ) : A₀) := by
     have hp : ℓ.Prime := Fact.out
@@ -3550,15 +3524,25 @@ glues by Conrad–Diamond–Taylor (`isTameAtTwo_of_fibreProduct`). Neither
 is a reformulation of the hypotheses: the first has to cope with open
 ideals of `B` that are not pullbacks from the factors, and the second
 with an EXISTENTIAL that hands the two projections uncoordinated lines.
-See those two docstrings — in particular the `ℓ = 3` sharpness recorded
-on the tame leaf, which is the one place this node's `Odd ℓ` may be too
-weak and where `5 ≤ ℓ` would have to be threaded down from the consumer.
+
+**`hℓ5 : 5 ≤ ℓ` (added 2026-07-26) IS LOAD-BEARING AND IS SPENT ON THE
+TAME CLAUSE.** The `ℓ = 3` case of `isTameAtTwo_of_fibreProduct` is not
+merely open, it is FALSE — refuted with an explicit counterexample over
+`ℚ(∛2, μ₃)`, recorded in the block comment above that theorem. So the
+sharpness the previous version of this docstring flagged as "the one
+place `Odd ℓ` may be too weak" has been resolved in the direction it
+predicted: `5 ≤ ℓ` is now threaded down from the consumer
+`exists_isStrictlyUniversalOnFrames_of_finite_lifts`, which already
+carried it. Nothing else here needs it — the determinant and
+unramifiedness clauses are formal, and the flatness leaf
+`isFlatAt_of_fibreProduct` takes only `Odd ℓ`. `IsHardlyRamified` itself
+is UNCHANGED; the narrowing lives in the gluing statements alone.
 
 References: Schlessinger, *Functors of Artin rings*, Trans. AMS 130
 (1968), Thm. 2.11 (H1, H2); Mazur, *Deforming Galois representations*,
 MSRI Publ. 16 (1989), §§18–23 (deformation conditions); Ramakrishna,
 Compositio 87 (1994), §1; Conrad–Diamond–Taylor, JAMS 12 (1999), §2. -/
-theorem isHardlyRamified_of_fibreProduct
+theorem isHardlyRamified_of_fibreProduct (hℓ5 : 5 ≤ ℓ)
     {A₀ : Type u} [CommRing A₀] [TopologicalSpace A₀] [IsTopologicalRing A₀]
     [IsLocalRing A₀] [Algebra ℤ_[ℓ] A₀] [Finite A₀]
     {A₁ : Type u} [CommRing A₁] [TopologicalSpace A₁] [IsTopologicalRing A₁]
@@ -3637,7 +3621,7 @@ theorem isHardlyRamified_of_fibreProduct
     exact isFlatAt_of_fibreProduct hℓOdd f₁ f₂ hf₂ p₁ p₂ hp₁ hp₂ hcomm hemb
       hcart h₁.isFlat h₂.isFlat
   · -- TAMENESS at `2`: Conrad–Diamond–Taylor, the second arithmetic leaf.
-    exact isTameAtTwo_of_fibreProduct hℓOdd f₁ f₂ hf₂ p₁ p₂ hp₁ hp₂ hcomm hemb
+    exact isTameAtTwo_of_fibreProduct hℓOdd hℓ5 f₁ f₂ hf₂ p₁ p₂ hp₁ hp₂ hcomm hemb
       hcart hdet h₁.isTameAtTwo h₂.isTameAtTwo
 
 set_option backward.isDefEq.respectTransparency false in
@@ -5177,15 +5161,20 @@ theorem exists_isStrictlyUniversalOnFrames_of_deformationCondition (hℓ5 : 5 �
       hπcont, hbasis, hres, hquot, hinj, huniv⟩ :=
     exists_universalFrame_profinite_of_deformationCondition hℓOdd hdim hℓ5 h
       hirr hschur hfin hbase hglue
-  -- **The continuous points of `R` in a finite test ring are finite in
-  -- number**: they inject, by the minimality clause `hinj`, into the hardly
+  -- **The continuous points of `R` in a finite DISCRETE test ring are finite
+  -- in number**: they inject, by the minimality clause `hinj`, into the hardly
   -- ramified frames over that ring, of which `hfin` gives finitely many.
+  -- The `[DiscreteTopology A]` binder is exactly the one `hfin` carries, and
+  -- it is passed straight through to
+  -- `isNoetherianRing_isAdic_of_profinite_of_finite_ringHom`, which now
+  -- carries it too; the criterion is spent at `A = k[ε]`, which is discrete.
   have hhom : ∀ (A : Type u) [CommRing A] [TopologicalSpace A]
       [IsTopologicalRing A] [IsLocalRing A] [Algebra ℤ_[ℓ] A] [Finite A]
+      [DiscreteTopology A]
       (πA : A →+* k),
       {φ : R →+* A | Continuous φ ∧ πA.comp φ = πuniv ∧
         φ.comp (algebraMap ℤ_[ℓ] R) = algebraMap ℤ_[ℓ] A}.Finite := by
-    intro A _ _ _ _ _ _ πA
+    intro A _ _ _ _ _ _ _ πA
     rw [← Set.finite_coe_iff]
     haveI : Finite {ρ : FramedGaloisRep ℚ A (Fin 2) |
         IsHardlyRamified hℓOdd (rank_finTwoFun A) ρ} := (hfin A).to_subtype
@@ -5259,7 +5248,11 @@ cut splits the node exactly along that seam:
   only residue being the flatness leaf `isFlatAt_baseChange`
   (Ramakrishna, Raynaud);
 * `isHardlyRamified_of_fibreProduct` — clause (ii), i.e. H1 and H2, whose
-  content is Ramakrishna at `ℓ` and Conrad–Diamond–Taylor at `2`;
+  content is Ramakrishna at `ℓ` and Conrad–Diamond–Taylor at `2`; since
+  2026-07-26 it takes this node's `hℓ5 : 5 ≤ ℓ`, because the `ℓ = 3` case
+  of its tame half was REFUTED (counterexample recorded above
+  `isTameAtTwo_of_fibreProduct`) — this node is where the propagation
+  stops, `hℓ5` being already present here;
 * `isHardlyRamified_of_forall_isOpen_quotient` — clause (iii);
 
 H3 itself is passed straight through as `hfin`: since 2026-07-26 the raw
@@ -5328,10 +5321,12 @@ theorem exists_isStrictlyUniversalOnFrames_of_finite_lifts (hℓ5 : 5 ≤ ℓ)
   · -- functoriality of the deformation condition
     intro B _ _ _ _ _ A _ _ _ _ _ _ ψ hψ halg ρ hρ
     exact isHardlyRamified_pushforwardFrame hℓOdd ψ hψ halg hρ
-  · -- H1 and H2: gluing along a fibre product
+  · -- H1 and H2: gluing along a fibre product. `hℓ5` is spent on the tame
+    -- clause at `2`, whose `ℓ = 3` case is false; see the refutation block
+    -- above `isTameAtTwo_of_fibreProduct`.
     intro A₀ _ _ _ _ _ _ A₁ _ _ _ _ _ _ A₂ _ _ _ _ _ _ B _ _ _ _ _ _
       f₁ f₂ hf₂ p₁ p₂ hp₁ hp₂ halg₁ halg₂ hcomm hemb hcart ρ h₁ h₂
-    exact isHardlyRamified_of_fibreProduct hℓOdd f₁ f₂ hf₂ p₁ p₂ hp₁ hp₂
+    exact isHardlyRamified_of_fibreProduct hℓOdd hℓ5 f₁ f₂ hf₂ p₁ p₂ hp₁ hp₂
       halg₁ halg₂ hcomm hemb hcart h₁ h₂
   · -- detection on the finite levels
     intro R _ _ _ _ _ _ hadic hcomplete ρ hq
