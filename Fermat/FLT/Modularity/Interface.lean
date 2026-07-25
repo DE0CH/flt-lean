@@ -15014,51 +15014,180 @@ theorem exists_irreducible_galoisRep_charFrob_of_weightTwoNewform
     exact charpoly_eq_quadratic_of_sq_rel hinv hQ hdet
 
 include hpodd in
+/-- **The `p`-new exclusion: a `p`-new weight-2 eigensystem carries no
+FLAT attached representation** (sorry node — the single residual
+literature leaf of the at-`p` conductor cut after the 2026-07-25
+dichotomy cut of
+`exists_weightTwoEigenform_not_dvd_level_p_of_isFlatAt_of_isIrreducible`
+below: Saito, *Modular forms and `p`-adic Hodge theory*, Invent.
+Math. 129 (1997) — local–global compatibility at `p`, for the
+weight-2 `p ∥ M` Steinberg case already Deligne–Rapoport/Langlands,
+and in the flat setting the shape of "Mazur's principle" — combined
+with Raynaud, *Schémas en groupes de type `(p, …, p)`*, Bull. SMF 102
+(1974), and Fontaine for the flatness-to-crystalline dictionary): let
+`g` be a weight-2 eigenform of level `M ≥ 1` with `p ∣ M` that is
+`p`-NEW, i.e. its away-from-`M` eigensystem is realized by NO
+eigenform of a level dividing `M / p` (`hpnew` — the classical
+`p`-old/`p`-new dichotomy spelled through the `p`-old degeneracy
+levels, the only spelling available on a pin with no degeneracy maps).
+If the IRREDUCIBLE representation `τ` matches the Hecke polynomials of
+`g` away from a finite set and is equivalent, through `e`, to the base
+change of the integral representation `ρ`, then `ρ` is NOT flat at `p`.
+
+Classical proof: behind `g` lies a newform `g₀` of level `M₀ ∣ M`
+with the same away-from-`M` eigensystem (Diamond–Shurman
+Prop. 5.8.4 — PROVEN here as
+`exists_weightTwoNewform_of_weightTwoEigenform`), and `hpnew` forces
+`ord_p M₀ = ord_p M ≥ 1`: any `M₀ ∣ M` of strictly smaller
+`p`-valuation divides `M / p`, and `g₀` — an eigenform of that level,
+sharing the away-from-`M` coefficients — would be exactly the
+realization `hpnew` excludes. So `p ∣ M₀`, and `g₀` is a `p`-new
+newform. Chebotarev density plus characteristic-zero Brauer–Nesbitt
+identify `τ` with the semisimplification of the geometric attachment
+`ρ_{g₀,λ}` from the charpoly matching, and the IRREDUCIBILITY of `τ`
+upgrades this to `τ ≅ ρ_{g₀,λ}` itself (were `ρ_{g₀,λ}` reducible,
+its semisimplification would be a sum of characters, not irreducible).
+This is where `hirr` is load-bearing, and why this leaf keeps it while
+the unramified sibling
+`weightTwoNewform_not_dvd_level_of_isUnramifiedAt_of_isIrreducible`
+needs no such care: unramifiedness passes to the semisimplification,
+flatness does NOT — the local semisimplification of the Steinberg
+configuration is crystalline, so only the honest equivalence
+`τ ≅ ρ_{g₀,λ}` transports the flat model. Were `ρ` flat at `p`, then
+through `e` the flat integral model would land on `ρ_{g₀,λ}`: the
+finite flat prolongations demanded by `IsFlatAt` at every finite level
+glue to a `p`-divisible group over `ℤ_p` whose generic fibre is
+`ρ_{g₀,λ}|_{G_p}`, hence the latter is crystalline with Hodge–Tate
+weights in `{0, 1}` (Raynaud/Fontaine; odd `p` keeps the dictionary in
+its classical range `e = 1 < p − 1`, and at `p = 2` the flat/Steinberg
+boundary needs the finer Fontaine–Laffaille/Breuil theory — this is
+what `hpodd` buys). But Saito's local–global compatibility identifies
+the Weil–Deligne parameter of `ρ_{g₀,λ}|_{G_p}` with the local
+automorphic parameter of `g₀` at `p`, and for a `p`-new `g₀` that
+parameter is never crystalline: for `p ∥ M₀` it is an unramified twist
+of Steinberg — semistable with NONZERO monodromy
+(Deligne–Rapoport/Langlands at weight 2) — and for `p² ∣ M₀` it is
+ramified principal series or supercuspidal, not even semistable.
+Contradiction, so `ρ` is not flat at `p`.
+
+ROUTE AUDIT (2026-07-25, the dichotomy cut). The obvious mirror of
+the away-from-`p` sibling — cutting at the NEWFORM level, as
+`weightTwoNewform_not_dvd_level_of_isUnramifiedAt_of_isIrreducible`
+does at `q ≠ p` — is NOT available at `p`: the at-`p` architecture
+already carries its newform-level statement
+`weightTwoNewform_not_dvd_level_p_of_isFlatAt_of_isIrreducible`
+DOWNSTREAM of the existence form (it is PROVEN from it through
+`eigensystem_minimal`), so a newform-level leaf would restate
+verbatim a theorem this file already proves — a duplicated sorry, not
+a cut. The cut is therefore made one hypothesis WEAKER than newform
+minimality: `hpnew` demands minimality only against the levels
+dividing `M / p` — the classical `p`-old degeneracy levels — instead
+of against all proper divisor levels, so this leaf is STRICTLY
+STRONGER than the downstream newform statement (which recovers it by
+the descent above) and is a genuine literature node rather than a
+re-derivation. Both local cases of Saito's computation deliberately
+stay inside this ONE leaf: `p ∥ M₀` (Steinberg) and `p² ∣ M₀`
+(ramified principal series or supercuspidal) are two instances of the
+SAME cited local–global compatibility theorem, so splitting the leaf
+along `ord_p M` would duplicate one citation behind a formal
+`by_cases` carrying no mathematical content. What the cut does buy,
+formally, is everything else: the dichotomy, the newform descent, the
+`p`-adic embedding transport, the charpoly bookkeeping and the
+`p`-newness derivation from minimality are all PROVEN in the assembly
+below.
+
+SOUNDNESS AUDIT (2026-07-25, both directions): non-vacuously
+satisfiable — take `p = 11`, `M = 11` and `g` the weight-2 newform of
+level `11` (the form of `X₀(11)`), `τ := ρ_{g,λ}` (irreducible by
+Ribet) with a stable lattice over `R = 𝒪_λ`. Then `p ∣ M`, and
+`hpnew` holds because `M / p = 1` and there is no weight-2 eigenform
+of level `1` at all (PROVEN in this file:
+`weightTwoEigenform_level_one_false`), so the only candidate level
+`M₁ ∣ 1` is uninhabited; the conclusion also holds, `X₀(11)` having
+multiplicative reduction at `11` (Tate curve, nonzero monodromy: no
+finite flat prolongation of the `11`-power torsion). Conversely every
+instance is an instance of the cited theorems: the statement
+quantifies over the `IsWeightTwoEigenform` carrier, whose inhabitants
+are exactly the classical normalized eigenforms (carrier audit at
+`IsWeightTwoNewform`), and `hpnew` pins the underlying newform's
+level to have the same `p`-valuation as `M`, which is precisely the
+classical hypothesis "`g` lies in the `p`-new part at level `M`" under
+which Saito's local computation applies. -/
+theorem not_isFlatAt_of_weightTwoEigenform_pNew_of_isIrreducible
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    {M : ℕ} (hM : 0 < M) (hpM : p ∣ M) {g : CuspForm (Gamma0GL M) 2}
+    (hg : IsWeightTwoEigenform M g)
+    (hpnew : ∀ M₁ : ℕ, M₁ ∣ M / p →
+      ∀ g₁ : CuspForm (Gamma0GL M₁) 2, IsWeightTwoEigenform M₁ g₁ →
+      ¬ ∀ (r : ℕ), r.Prime → ¬ r ∣ M → qCoeff M₁ g₁ r = qCoeff M g r)
+    (κ : heckeField M g →+* AlgebraicClosure ℚ_[p])
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    {S_τ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hτ : ∀ (r : ℕ) (hr : r.Prime),
+      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ →
+      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
+        Polynomial.X ^ 2
+          - Polynomial.C (κ (heckeCoeff M g r)) * Polynomial.X
+          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
+    (hirr : τ.IsIrreducible)
+    (e : (Fin 2 → AlgebraicClosure ℚ_[p]) ≃ₗ[AlgebraicClosure ℚ_[p]]
+      (AlgebraicClosure ℚ_[p] ⊗[R] V))
+    (he : ∀ (γ : Field.absoluteGaloisGroup ℚ)
+        (w : Fin 2 → AlgebraicClosure ℚ_[p]),
+      e (τ γ w) = ρ.baseChange (AlgebraicClosure ℚ_[p]) γ (e w)) :
+    ¬ ρ.IsFlatAt
+      (Fact.out : p.Prime).toHeightOneSpectrumRingOfIntegersRat :=
+  sorry
+
+include hpodd in
 /-- **Level lowering at `p` for flat representations — Saito's
-local–global compatibility in existence form** (sorry node — the
-single residual literature leaf of the at-`p` conductor cut: Saito,
-*Modular forms and `p`-adic Hodge theory*, Invent. Math. 129 (1997)
-— for the weight-2 `p ∥ M` Steinberg case already
-Deligne–Rapoport/Langlands, and in the flat setting the shape of
-"Mazur's principle" — combined with Raynaud, *Schémas en groupes de
-type `(p, …, p)`*, Bull. SMF 102 (1974), and Fontaine for the
-flatness-to-crystalline dictionary): if the IRREDUCIBLE
-representation `τ` matches the Hecke polynomials of the weight-2
-EIGENFORM `g` of level `M ≥ 1` away from a finite set and is
+local–global compatibility in existence form** (DECOMPOSED 2026-07-25
+into the `p`-new literature leaf
+`not_isFlatAt_of_weightTwoEigenform_pNew_of_isIrreducible` above and
+now a PROVEN assembly over the `p`-old/`p`-new dichotomy): if the
+IRREDUCIBLE representation `τ` matches the Hecke polynomials of the
+weight-2 EIGENFORM `g` of level `M ≥ 1` away from a finite set and is
 equivalent, through `e`, to the base change of an integral
 representation `ρ` FLAT at `p`, then the away-from-`M` eigensystem
 of `g` already occurs at a level PRIME TO `p`: some weight-2
 eigenform `g'` of a level `M' ∣ M` with `p ∤ M'` agrees with `g` at
 every prime not dividing `M`.
 
-Classical proof: behind `g` lies a newform `g₀` of level `M₀ ∣ M`
-with the same away-from-`M` eigensystem (Diamond–Shurman
-Prop. 5.8.4 — PROVEN here as
-`exists_weightTwoNewform_of_weightTwoEigenform`); Chebotarev density
-plus characteristic-zero Brauer–Nesbitt identify `τ` with the
-semisimplification of the geometric attachment `ρ_{g₀,λ}` from the
-charpoly matching, and the IRREDUCIBILITY of `τ` upgrades this to
-`τ ≅ ρ_{g₀,λ}` itself (were `ρ_{g₀,λ}` reducible, its
-semisimplification would be a sum of characters, not irreducible).
-This is where `hirr` is load-bearing, and why this leaf keeps it
-while the unramified sibling
-`exists_weightTwoEigenform_not_dvd_level_of_isUnramifiedAt` does
-not: unramifiedness passes to the semisimplification, flatness does
-NOT — the local semisimplification of the Steinberg configuration is
-crystalline, so only the honest equivalence `τ ≅ ρ_{g₀,λ}`
-transports the flat model. Through `e` the flat integral model now
-lands on `ρ_{g₀,λ}`: the finite flat prolongations demanded by
-`IsFlatAt` at every finite level glue to a `p`-divisible group over
-`ℤ_p` whose generic fiber is `ρ_{g₀,λ}|_{G_p}`, hence the latter is
-crystalline with Hodge–Tate weights in `{0, 1}` (Raynaud/Fontaine;
-odd `p` keeps the dictionary in its classical range `e = 1 < p − 1`).
-But Saito's local–global compatibility identifies the Weil–Deligne
-parameter of `ρ_{g₀,λ}|_{G_p}` with the local automorphic parameter
-of `g₀` at `p`: for `p ∥ M₀` the latter is an unramified twist of
-Steinberg — semistable with NONZERO monodromy, never crystalline
-(Deligne–Rapoport/Langlands at weight 2) — and for `p² ∣ M₀` it is
-ramified principal series or supercuspidal, not even semistable.
-Hence `p ∤ M₀`; take `M' := M₀`, `g' := g₀`.
+Assembly (the dichotomy, all four steps PROVEN):
+* `p ∤ M`: nothing to lower — `(M, g)` itself witnesses the
+  conclusion, with `rfl` agreement.
+* Otherwise, behind `g` lies a newform `g₀` of level `M₀ ∣ M` with the
+  same away-from-`M` eigensystem (PROVEN newform descent
+  `exists_weightTwoNewform_of_weightTwoEigenform`, Diamond–Shurman
+  Prop. 5.8.4), and the `p`-adic embedding `κ` transports to an
+  embedding `κ₀` of `g₀`'s Hecke field agreeing on the shared good
+  coefficients (PROVEN `exists_ringHom_heckeField_of_qCoeff_eq`), so
+  `τ` matches `g₀`'s Hecke polynomials away from `S_τ` together with
+  the primes dividing `M`.
+* `p ∤ M₀` — the `p`-OLD case: `(M₀, g₀)` witnesses the conclusion.
+  This is where the level lowering actually happens, and it is pure
+  degeneracy-level bookkeeping: the descent already lowered the level,
+  the dichotomy only observes that the new level is prime to `p`.
+* `p ∣ M₀` — the `p`-NEW case: `g₀`'s newform minimality
+  `eigensystem_minimal` gives exactly the `p`-newness hypothesis of
+  the leaf (a level dividing `M₀ / p` is a proper divisor of `M₀`,
+  because `M₀ / p < M₀`), and the leaf then contradicts the flatness
+  of `ρ`.
+
+All literature content now lives in that single sorried leaf (Saito
+1997 local–global compatibility at `p`, plus Raynaud/Fontaine for the
+flat side); the dichotomy, the newform descent, the embedding
+transport, the charpoly matching bookkeeping and the `p`-newness
+derivation are PROVEN. `hirr` remains LOAD-BEARING and is handed to
+the leaf untouched: flatness does not pass to the semisimplification
+(the local semisimplification of the Steinberg configuration is
+crystalline), so only the honest equivalence `τ ≅ ρ_{g₀,λ}` — which
+needs the irreducibility of `τ` — transports the flat model, whereas
+the unramified sibling
+`exists_weightTwoEigenform_not_dvd_level_of_isUnramifiedAt` can do
+without it.
 
 COORDINATION (2026-07-24): this leaf is deliberately the exact
 at-`p` mirror of the away-from-`p` sibling
@@ -15111,8 +15240,55 @@ theorem exists_weightTwoEigenform_not_dvd_level_p_of_isFlatAt_of_isIrreducible
     ∃ (M' : ℕ) (_ : M' ∣ M) (_ : ¬ p ∣ M')
       (g' : CuspForm (Gamma0GL M') 2)
       (_ : IsWeightTwoEigenform M' g'),
-      ∀ (r : ℕ), r.Prime → ¬ r ∣ M → qCoeff M' g' r = qCoeff M g r :=
-  sorry
+      ∀ (r : ℕ), r.Prime → ¬ r ∣ M → qCoeff M' g' r = qCoeff M g r := by
+  classical
+  -- step 0: if `p ∤ M` there is nothing to lower
+  by_cases hpM : p ∣ M
+  swap
+  · exact ⟨M, dvd_rfl, hpM, g, hg, fun r _ _ => rfl⟩
+  -- step 1: the underlying newform (Diamond–Shurman Prop. 5.8.4)
+  obtain ⟨M₀, hM₀dvd, hM₀pos, g₀, hg₀, hagree⟩ :=
+    exists_weightTwoNewform_of_weightTwoEigenform hM hg
+  -- step 2: the `p`-old case — the descended level is already prime to `p`
+  by_cases hpM₀ : p ∣ M₀
+  swap
+  · exact ⟨M₀, hM₀dvd, hpM₀, g₀, hg₀.toIsWeightTwoEigenform, hagree⟩
+  -- step 3: the `p`-new case is excluded by flatness
+  exfalso
+  -- transport the `p`-adic embedding to the newform's Hecke field
+  obtain ⟨κ₀, hκ₀⟩ := exists_ringHom_heckeField_of_qCoeff_eq hM₀pos
+    hg₀.toIsWeightTwoEigenform κ hagree
+  -- `τ` matches `g₀`'s Hecke polynomials away from `S_τ ∪ (primes ∣ M)`
+  set badM : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :=
+    M.primeFactors.attach.image fun r =>
+      (Nat.prime_of_mem_primeFactors r.2).toHeightOneSpectrumRingOfIntegersRat
+  have hτ₀ : ∀ (r : ℕ) (hr : r.Prime),
+      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ ∪ badM →
+      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
+        Polynomial.X ^ 2
+          - Polynomial.C (κ₀ (heckeCoeff M₀ g₀ r)) * Polynomial.X
+          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])) := by
+    intro r hr hrS
+    have hrM : ¬ r ∣ M := by
+      intro hdvd
+      exact hrS (Finset.mem_union_right _ (Finset.mem_image.mpr
+        ⟨⟨r, Nat.mem_primeFactors.mpr ⟨hr, hdvd, hM.ne'⟩⟩,
+          Finset.mem_attach _ _, rfl⟩))
+    rw [hτ r hr fun h => hrS (Finset.mem_union_left _ h), hκ₀ r hr hrM]
+  -- newform minimality at `M₀` IS the `p`-newness the leaf demands
+  have hpnew : ∀ M₁ : ℕ, M₁ ∣ M₀ / p →
+      ∀ g₁ : CuspForm (Gamma0GL M₁) 2, IsWeightTwoEigenform M₁ g₁ →
+      ¬ ∀ (r : ℕ), r.Prime → ¬ r ∣ M₀ → qCoeff M₁ g₁ r = qCoeff M₀ g₀ r := by
+    intro M₁ hM₁dvd g₁ hg₁
+    have hdvd₀ : M₀ / p ∣ M₀ := ⟨p, (Nat.div_mul_cancel hpM₀).symm⟩
+    have hlt : M₁ < M₀ :=
+      lt_of_le_of_lt
+        (Nat.le_of_dvd (Nat.div_pos (Nat.le_of_dvd hM₀pos hpM₀) hp.out.pos)
+          hM₁dvd)
+        (Nat.div_lt_self hM₀pos hp.out.one_lt)
+    exact hg₀.eigensystem_minimal M₁ (hM₁dvd.trans hdvd₀) hlt.ne g₁ hg₁
+  exact not_isFlatAt_of_weightTwoEigenform_pNew_of_isIrreducible hpodd hM₀pos
+    hpM₀ hg₀.toIsWeightTwoEigenform hpnew κ₀ hτ₀ hirr e he hflat
 
 /-- **Level lowering at an unramified prime — Carayol's conductor
 theorem in existence form** (DECOMPOSED 2026-07-24 into the
