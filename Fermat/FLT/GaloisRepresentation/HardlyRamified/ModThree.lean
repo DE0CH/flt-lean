@@ -1773,7 +1773,7 @@ theorem card_matrixRange_ge_of_exceptional {k : Type u} [Finite k] [Field k]
   have hval := congrArg (fun w : u.range => (w : GL (Fin 2) (Dickson.K 3))) hcontra
   simpa using hval
 
-/-- **The kernel field of the matrix image** (sorry node — the
+/-- **The kernel field of the matrix image** (PROVEN — the
 Galois-correspondence bookkeeping of the field cut, isolated
 2026-07-23): the matrix form `u` of a mod-3 hardly ramified
 representation cuts out a finite Galois number field `K` inside
@@ -2162,7 +2162,7 @@ theorem kernel_field_not_dvd_discr {k : Type u} [Finite k] [Field k]
 
 open UniqueFactorizationMonoid in
 /-- **The discriminant exponent from per-prime different-exponent
-bounds** (sorry node, isolated 2026-07-23 from the two discriminant
+bounds** (PROVEN, isolated 2026-07-23 from the two discriminant
 exponent leaves below): for a number field `K`, a rational prime `p`
 and weights `a, b`, if every prime `Q` of `𝓞 K` over `p` satisfies
 `a·d_Q ≤ b·e_Q` for its different exponent `d_Q` — stated
@@ -7465,7 +7465,7 @@ theorem two_mul_local_differentIdeal_exponent_add_two_le_of_flat_at_three
 end FontaineHopfBound
 
 /-- **Completion invariance of the different ideal, divisibility
-direction** (sorry node, created 2026-07-24 — the
+direction** (PROVEN, created 2026-07-24 — the
 localize-the-different sub-leaf of the distinguished-prime passage
 `exists_prime_over_three_of_local_different_bound` below; Serre,
 *Corps Locaux* III §4 Prop. 10, or Neukirch III §2): let `K` be a
@@ -7562,7 +7562,7 @@ theorem maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd
     Nat.prime_three K M hMgen φ hφ hθtop hθdens hθmem hθQ d hd
 
 /-- **Completion invariance of the ramification index at the
-distinguished prime** (sorry node, created 2026-07-24 — the
+distinguished prime** (PROVEN, created 2026-07-24 — the
 localize-the-ramification-index sub-leaf of the distinguished-prime
 passage `exists_prime_over_three_of_local_different_bound` below;
 same dense-embedding data as the different sub-leaf
@@ -17671,7 +17671,7 @@ theorem DedekindContinuation.zero_sum_eq_poitouEdge_add_poitouHorizontal
   linarith [him]
 
 /-- **Good heights exist: a pigeonhole gap to the zero ordinates**
-(sorry node, stated 2026-07-24 — leaf (b₁ᵢᵢ) of the decomposition of
+(PROVEN, stated 2026-07-24 — leaf (b₁ᵢᵢ) of the decomposition of
 `DedekindContinuation.zero_sum_sub_poitouEdge_tendsto_zero`; the
 height-selection half of Poitou's Proposition 1, p. 6-02).  For every
 `T ≥ 2` some height `T' ∈ [T, T + 1]` keeps distance `≥ c/log T`
@@ -24728,7 +24728,7 @@ theorem poitouConstEdge_tendsto (K : Type*) [Field K] [NumberField K] :
 
 end PoitouEdgeSplitArithmetic
 /-- **Bridging the folded vertical edge from good heights to all
-heights** (sorry node, stated 2026-07-24 — leaf (b₁ᵥ) of the
+heights** (PROVEN, stated 2026-07-24 — leaf (b₁ᵥ) of the
 decomposition of
 `DedekindContinuation.zero_sum_sub_poitouEdge_tendsto_zero`; Poitou
 p. 6-02).  `poitouEdge (τ T) − poitouEdge T
@@ -27047,7 +27047,7 @@ theorem exists_smul_eq_of_mulVec_eq_zero {F : Type*} [Field F]
           (Matrix.of ![![v 0, w 0], ![v 1, w 1]])⁻¹ := by rw [mul_assoc]
       _ = 0 := by rw [hMN, zero_mul]
 
-/-- **The Klein-four pivot** (sorry node, isolated 2026-07-23 — the
+/-- **The Klein-four pivot** (PROVEN, isolated 2026-07-23 — the
 group/matrix-theoretic core of the dihedral dichotomy, needing no
 Galois-theoretic context): let `u : G → GL₂(F)` (`F` algebraically
 closed, `2 ≠ 0`) be a representation whose composition with the
@@ -32081,7 +32081,7 @@ theorem minkowski_octic_discr_bound (K : Type*) [Field K] [NumberField K]
 
 set_option maxHeartbeats 1600000 in
 /-- **A square root over `ℚ(√-3)` unramified outside `3` is rational
-over `ℚ(√-3)` — the `d = -3` ray-class-triviality leaf** (sorry node,
+over `ℚ(√-3)` — the `d = -3` ray-class-triviality leaf** (PROVEN,
 created 2026-07-24 as leaf (ii) of the decomposition of
 `quadratic_character_eq_one_ray_class_neg_three` below, and the
 genuinely arithmetic input — the concrete form of the triviality of
@@ -33739,7 +33739,7 @@ theorem anti_equivariant_ratio_character_eq_one_ray_class {k : Type u}
 
 set_option maxHeartbeats 1000000 in
 /-- **The induced eigenvalue character is conjugation-symmetric — the
-per-quadratic-field ray-class computation** (sorry node, isolated
+per-quadratic-field ray-class computation** (PROVEN, isolated
 2026-07-23 from `dihedral_induced_ray_class_of_two_unramified` below,
 whose linear-algebra layer — the second eigenline and the determinant
 identity — is PROVEN glue there): the eigenvalue character `χ₀` of
@@ -35788,7 +35788,7 @@ set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
 /-- **The ramified quadratic extension `ℚ₃ᵥ(ζ₃)` at finite level**
-(sorry node, isolated 2026-07-23 — the finite-level content of the
+(PROVEN, isolated 2026-07-23 — the finite-level content of the
 ramification witness below; everything profinite is already assembled
 on top of it): there are a finite Galois subextension `N` of the
 algebraic closure of the `3`-adic completion, a primitive cube root
@@ -36881,7 +36881,7 @@ theorem convMul_apply_one_of_comul_absorbs
     _ = 1 := by rw [hcomul, hμe]
 
 /-- **The connected counit idempotent of a finite flat Hopf order over
-`ℤ₃`** (sorry node, 2026-07-24 — the henselian idempotent theory of
+`ℤ₃`** (PROVEN, 2026-07-24 — the henselian idempotent theory of
 the connected–étale decomposition): a finite flat Hopf algebra `G`
 over `𝒪₃ᵥ ≅ ℤ₃` carries a PRIMITIVE idempotent `e₀` with counit value
 `1` whose comultiplication absorbs `e₀ ⊗ e₀`. Intended proof: `𝒪₃ᵥ` is

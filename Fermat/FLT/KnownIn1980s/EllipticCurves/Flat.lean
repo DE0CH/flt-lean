@@ -16103,7 +16103,7 @@ theorem WeierstrassCurve.torsionKernelFun_add_mem_span
 end TorsionKernelFunctions
 
 set_option backward.isDefEq.respectTransparency false in
-/-- **The Katz–Mazur kernel functions** (sorry node; the pointwise curve core
+/-- **The Katz–Mazur kernel functions** (PROVEN; the pointwise curve core
 of the Katz–Mazur order cut, freed 2026-07-24 of ALL Hopf-algebra content by
 the proven Gelfand bridge `exists_hopf_order_generators_of_good_reduction`
 below — this statement mentions only the `m`-torsion Galois module of the

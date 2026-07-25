@@ -3,100 +3,97 @@
 
 The flat entries file lists the Lean declarations we track (name, defining
 module, prose, work-in-progress flag).  This driver:
-  1. runs the census through the RESIDENT REPORT SERVER (Deyao's final
-     design, 2026-07-23): `lake serve` run as the systemd user unit
-     `flt-report-server.service`, its stdin/stdout wired to two FIFOs
-     under `.report-server/` — no resident Python process, no wrapper
-     scripts; the unit is the sole lifecycle mechanism. run_census()
-     opens the FIFOs, speaks Content-Length-framed JSON-RPC, performs
-     the LSP handshake itself when the session is fresh (the unit's
-     ExecStartPre clears the state.json marker on every start, so the
-     first client after a start/respawn sends initialize/initialized +
-     didOpen — handshake is protocol, not lifecycle), refreshes
-     `ProgressCensus.lean` in the live session (bumped-version
-     didChange, or didClose+didOpen when sources changed), waits for
-     diagnostics, and extracts the `#eval` census JSON. It reports each entry's status: missing /
-     own-cone sorry / whole-cone sorry / dependency edges to other
-     listed entries (BFS over used constants, stopping at listed
-     names), plus the compiler-verified sorried-declaration list and
-     root status, in ONE response;
+  1. runs the census as ONE COMMAND-LINE INVOCATION over ssh (Deyao,
+     2026-07-25): `lake env lean ProgressCensus.lean`, on the host
+     named by `~/.flt-worker-host/<worktree>`. See run_census().
+     ProgressCensus.lean ends in an `#eval` that prints the census as
+     one JSON line on stdout; run_census() scans stdout for it. The
+     census reports each entry's status: missing / own-cone sorry /
+     whole-cone sorry / dependency edges to other listed entries (BFS
+     over used constants, stopping at listed names), plus the
+     compiler-verified sorried-declaration list and root status;
   2. decides the mark for each entry:
        cross      — a `sorry` lives in the entry's exclusive cone;
        double     — no `sorryAx` anywhere in the cone (compiler-verified);
        single     — otherwise (own content complete, sorries behind
                     tracked children);
   3. renders the tree (roots = entries nobody else depends on) and splices
-     it into the `## Tree` section of PROGRESS.md.
+     it into the `## Tree` section of PROGRESS.md, stamped with the commit
+     it describes (see stamp_line()).
 
-The census route is the ONLY route: `python3 progress-tree.py
---census` runs the same run_census() and prints the raw census JSON —
-consumed by the Stop hook (`.claude/check-sorries.py`, which needs
-sorried/root but not the tree render) and available to humans/Claude
-for debugging. The census file's generated import header (every module
-under Fermat/ except the root aggregator) and its baked-in input path
-are REGENERATED on every run of this script, so newly added modules
-are picked up automatically.
+`python3 progress-tree.py --census` runs the same run_census() and
+prints the raw census JSON — consumed by the Stop hook
+(`.claude/check-sorries.py`, which needs sorried/root but not the tree
+render) and available to humans/Claude for debugging. The census
+file's generated import header (every module under Fermat/ except the
+root aggregator) and its baked-in input path are REGENERATED on every
+run of this script, so newly added modules are picked up
+automatically.
 
-CONTRACT (Deyao, 2026-07-22/23, final): NO fallbacks, NO auto-spawn.
+THERE IS NO RESIDENT SERVER. The report MCP, the `flt-report-server@`
+/ `flt-lake-socket@` systemd units, the FIFOs under `.report-server/`
+and its `state.json` staleness marker were all DELETED on 2026-07-25,
+along with the LSP client and the file-watching/staleness bookkeeping
+that used to live in this file. Every persistent-server failure this
+project hit came from documents opened and never closed and from state
+shared between clients — a stale `lake setup-file` failure replayed
+with `verified: true`, a false clean from an unheard publish, four
+rival elaborations of one file. A command-line invocation is a fresh
+process that exits and returns its memory, so none of those can occur;
+the fix is structural, not disciplinary.
+
+Two consequences of that transport, both of which bite:
+  * COST. Each run pays the IMPORT LOAD of the whole project cone
+    (minutes). There is no warm/didChange fast path. Run the census
+    once per bookkeeping cycle, never in a loop.
+  * THE TREE MUST BE BUILT. This transport READS OLEANS; it does not
+    elaborate the cone for you. A stale or broken build dies with
+    `object file '….olean' does not exist`, and run_census() adds a
+    hint saying to `lake build` first. A module that fails to build
+    contributes NO declarations, so a partial census would also give a
+    wrong floating answer — which is why there is no degraded mode.
+
+CONTRACT (Deyao, 2026-07-22/23, reaffirmed 2026-07-25): NO fallbacks.
 Either the census answers fully — every tracked entry reported,
 sorried list and root status present — and PROGRESS.md is rendered
 from that answer alone, or this script RAISES with the real error
-(server not running: the message says to `systemctl --user start
-flt-report-server` and the CALLER decides; missing entries; compiler
-error diagnostics naming the module that does not compile), exits
-nonzero, and leaves PROGRESS.md untouched. A broken repo must surface as a loud crash at
-generation time, never as a silently rearranged tree.
+(lake's own output, naming the module that does not compile; missing
+entries), exits nonzero, and leaves PROGRESS.md untouched. A broken
+repo must surface as a loud crash at generation time, never as a
+silently rearranged tree.
 
-STALENESS (investigated against the toolchain server source,
-Lean/Server/Watchdog.lean + FileWorker*.lean, v4.32.0-rc1): the
-language server CANNOT itself detect that dependencies of an open file
-changed — `lake setup-file` (which rebuilds stale imports) runs only
-at file-worker startup (didOpen / worker restart), imports are never
-reloaded in a running worker, and the "imports out of date" diagnostic
-is only emitted when a CLIENT notifies the watchdog (didSave of an
-open dependency or workspace/didChangeWatchedFiles); the watchdog even
-registers a **/*.lean file watcher WITH the client — file watching is
-the client's job in this protocol. So run_census() does exactly that
-client job, statelessly: it snapshots Fermat/**/*.lean (mtime+size;
-sources only, NEVER .lake artifacts) into .report-server/state.json
-and didClose+didOpens the census file when the snapshot (or the import
-block) changed — making lake rebuild exactly the changed cones —
-while an unchanged snapshot gets a bumped-version identity didChange,
-which re-publishes diagnostics from cached elaboration snapshots in
-seconds. A names/root input change alone changes the census file BODY
-(the input fingerprint line in the generated block), so a didChange
-re-elaborates the census against the new input without an import
-reload.
+Choosing WHICH COMMIT to census is not a fallback and is the caller's
+business: when HEAD does not build, checking out the newest ancestor
+that does and censusing THAT is honest — it describes a state of the
+repository that actually existed. What the generated tree must never
+do is describe one commit while claiming to be another, so the render
+carries a stamp naming the commit it was computed from (stamp_line()),
+and flags it when that is not the checked-out HEAD.
+
+A caution learned the hard way (2026-07-25): this docstring described
+the deleted FIFO design for a full day after the code stopped
+implementing it, and that staleness is exactly how a reference to the
+deleted `.report-server/` survived into a fatal code path — `_qlog`
+was called on BOTH the success and the failure path of run_census(),
+so its FileNotFoundError both killed successful runs and replaced the
+RuntimeError carrying lake's real output. Keep this text describing
+what the code below actually does.
 
 Placement: dependency edges come from the compiled proof terms; an
-entry the server reports but that no proof term places yet (a freshly
+entry the census reports but that no proof term places yet (a freshly
 stated leaf whose consumer is still sorried) may carry a provisional
 "parent" field in progress-entries.json (precedence: live edges >
 "parent" > root). See main() for the exact rules.
 
 This module is import-safe: generation happens only under `__main__`.
 """
-import fcntl, hashlib, json, os, select, shlex, subprocess, sys, time
+import hashlib, json, os, shlex, subprocess, sys, time
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 CENSUS_LEAN = os.path.join(ROOT, "ProgressCensus.lean")
 CENSUS_INPUT = os.path.join(ROOT, "progress-census-input.json")
 _BEGIN = "-- BEGIN GENERATED IMPORTS"
 _END = "-- END GENERATED IMPORTS"
-
-# --- resident report server (systemd user unit flt-report-server) --------
-SERVER_DIR = os.path.join(ROOT, ".report-server")
-REQ_FIFO = os.path.join(SERVER_DIR, "req.fifo")
-RESP_FIFO = os.path.join(SERVER_DIR, "resp.fifo")
-STATE_FILE = os.path.join(SERVER_DIR, "state.json")
-LOCK_FILE = os.path.join(SERVER_DIR, "lock")
-QUERY_LOG = os.path.join(SERVER_DIR, "query.log")
-CENSUS_URI = "file://" + CENSUS_LEAN
-START_HINT = ("the report server is not running (or died) — it is the "
-              "systemd user unit `flt-report-server`: start it with "
-              "`systemctl --user start flt-report-server` (unit file "
-              "flt-report-server.service at the repo root; logs: "
-              "`journalctl --user -u flt-report-server`)")
 
 
 # ------------------------------------------------------- the census runner
@@ -154,156 +151,48 @@ def regenerate_census_header():
             fh.write(new)
 
 
-# ---------------------------------------------- report-server LSP client
-
-class _PipeLsp:
-    """Content-Length-framed JSON-RPC over the report server's FIFOs.
-
-    One instance per client run; request ids are `<pid>.<seq>` — ids
-    only need to be unique among IN-FLIGHT requests (the server keeps
-    no memory of answered ids), so sequential client runs may reuse
-    numbers freely. The server holds both FIFO ends O_RDWR (see
-    flt-report-server.service), so opening/closing our ends never EOFs
-    or SIGPIPEs it; the response stream position always sits on a
-    message boundary because every client reads whole framed messages.
-    Liveness probe: the O_WRONLY|O_NONBLOCK open of req.fifo fails with
-    ENXIO exactly when no process holds a read end — i.e. the server is
-    gone — and raises the systemctl start hint (no auto-spawn — the
-    caller decides; Deyao, 2026-07-23)."""
-
-    def __init__(self, timeout=3600):
-        self.timeout = timeout
-        try:
-            self.wfd = os.open(REQ_FIFO, os.O_WRONLY | os.O_NONBLOCK)
-        except OSError as exc:
-            raise RuntimeError(f"{START_HINT} (request pipe: {exc})") from exc
-        os.set_blocking(self.wfd, True)
-        self.rfd = os.open(RESP_FIFO, os.O_RDONLY)
-        self.buf = b""
-        self.seq = 0
-        self.diags = {}   # uri -> latest published diagnostics
-
-    def close(self):
-        for fd in (self.wfd, self.rfd):
-            try:
-                os.close(fd)
-            except OSError:
-                pass
-
-    def _send(self, obj):
-        data = json.dumps(obj).encode()
-        msg = b"Content-Length: " + str(len(data)).encode() + b"\r\n\r\n" + data
-        while msg:
-            n = os.write(self.wfd, msg)
-            msg = msg[n:]
-
-    def _fill(self, deadline):
-        wait = deadline - time.time()
-        if wait <= 0:
-            raise RuntimeError(
-                f"report server did not respond within {self.timeout}s")
-        r, _, _ = select.select([self.rfd], [], [], wait)
-        if not r:
-            raise RuntimeError(
-                f"report server did not respond within {self.timeout}s")
-        chunk = os.read(self.rfd, 1 << 16)
-        if chunk == b"":
-            raise RuntimeError(f"{START_HINT} (response pipe EOF)")
-        self.buf += chunk
-
-    def _read_msg(self, deadline):
-        while b"\r\n\r\n" not in self.buf:
-            self._fill(deadline)
-        head, _, self.buf = self.buf.partition(b"\r\n\r\n")
-        length = None
-        for line in head.decode("ascii", "replace").split("\r\n"):
-            if line.lower().startswith("content-length:"):
-                length = int(line.split(":", 1)[1].strip())
-        if length is None:
-            raise RuntimeError(f"malformed LSP header from report server: "
-                               f"{head!r}")
-        while len(self.buf) < length:
-            self._fill(deadline)
-        body, self.buf = self.buf[:length], self.buf[length:]
-        return json.loads(body)
-
-    def _dispatch(self, msg):
-        method = msg.get("method")
-        if method == "textDocument/publishDiagnostics":
-            p = msg["params"]
-            self.diags[p["uri"]] = p["diagnostics"]
-        elif method is not None and "id" in msg:
-            # server->client request (e.g. client/registerCapability for
-            # its **/*.lean file watcher): a minimal client answers null
-            self._send({"jsonrpc": "2.0", "id": msg["id"], "result": None})
-
-    def notify(self, method, params):
-        self._send({"jsonrpc": "2.0", "method": method, "params": params})
-
-    def request(self, method, params):
-        self.seq += 1
-        rid = f"{os.getpid()}.{self.seq}"
-        self._send({"jsonrpc": "2.0", "id": rid,
-                    "method": method, "params": params})
-        deadline = time.time() + self.timeout
-        while True:
-            msg = self._read_msg(deadline)
-            self._dispatch(msg)
-            if msg.get("id") == rid and "method" not in msg:
-                if "error" in msg:
-                    raise RuntimeError(
-                        f"report server: {method}: {msg['error']}")
-                return msg.get("result")
-
-
-def _source_snapshot():
-    """mtime+size of every SOURCE the census depends on (Fermat/**/*.lean
-    and the lake project files) — never anything under .lake. This is
-    the client-side half of the LSP file-watching contract; see the
-    module docstring's STALENESS section for why the server cannot
-    answer this itself."""
-    snap = {}
-    for dirpath, _dirs, files in os.walk(os.path.join(ROOT, "Fermat")):
-        for name in files:
-            if name.endswith(".lean"):
-                p = os.path.join(dirpath, name)
-                st = os.stat(p)
-                snap[os.path.relpath(p, ROOT)] = [st.st_mtime_ns, st.st_size]
-    for name in ("lakefile.toml", "lakefile.lean", "lake-manifest.json",
-                 "lean-toolchain"):
-        p = os.path.join(ROOT, name)
-        if os.path.exists(p):
-            st = os.stat(p)
-            snap[name] = [st.st_mtime_ns, st.st_size]
-    return snap
-
-
-def _imports_sha(text):
-    return hashlib.sha1("\n".join(
-        l for l in text.splitlines() if l.startswith("import ")
-    ).encode()).hexdigest()
-
-
-def _qlog(line):
-    """Best-effort timing log. NEVER raises.
-
-    QUERY_LOG lives under `.report-server/`, which was DELETED with the
-    report server and the MCP on 2026-07-25 — so this open() fails on
-    every run. It is called on BOTH the success and the failure path of
-    run_census(), which made the whole census unrunnable: on failure the
-    FileNotFoundError replaced the RuntimeError carrying lake's real
-    output (the module that does not compile), and on success it killed
-    the run after the census had already answered correctly.
-
-    A diagnostic side-channel must never become the failure, and must
-    never mask the error it was meant to annotate. The no-fallback
-    contract governs the census RESULT, not this log — so swallow OSError
-    here and keep the caller's own loud crash intact."""
+def _git(*args):
+    """Read-only git query in ROOT. Returns stripped stdout, or "" on any
+    failure — this is used only to LABEL the output, never to decide
+    anything, so it must not be able to break a census run."""
     try:
-        with open(QUERY_LOG, "a", encoding="utf-8") as fh:
-            fh.write(f"[{time.strftime('%F %T')}] {line}\n")
-    except OSError:
-        pass
+        p = subprocess.run(["git", "-C", ROOT, *args],
+                           capture_output=True, text=True, timeout=30)
+    except (OSError, subprocess.SubprocessError):
+        return ""
+    return p.stdout.strip() if p.returncode == 0 else ""
+
+
+def stamp_line():
+    """One line naming the commit this tree was computed from.
+
+    WHY (Deyao's orchestrator, 2026-07-25). The census reads OLEANS, so it
+    describes whatever source state was last BUILT — which need not be the
+    checked-out HEAD, and when HEAD does not compile the honest move is to
+    census the newest ancestor that does. That is a legitimate choice of
+    input, not a fallback. What is NOT acceptable is a generated artifact
+    that silently describes a different commit than the one checked out:
+    the next reader has no way to tell. So the render always carries the
+    commit it came from, and says so loudly when that is not HEAD.
+
+    A dirty worktree is flagged too — an uncommitted edit means the tree
+    describes something with no commit name at all."""
+    head = _git("rev-parse", "--short", "HEAD")
+    if not head:
+        return "_Generated from an unknown commit (git unavailable)._"
+    subj = _git("log", "-1", "--format=%s", head)
+    when = _git("log", "-1", "--format=%cI", head)
+    dirty = bool(_git("status", "--porcelain"))
+    line = f"_Generated from `{head}`"
+    if when:
+        line += f" ({when})"
+    if subj:
+        line += f" — {subj}"
+    line += "._"
+    if dirty:
+        line += ("\n\n_The worktree was DIRTY when this ran: uncommitted edits "
+                 "are not described by the commit named above._")
+    return line
 
 
 def run_census(names, root="fermat_last_theorem", timeout=3600):
@@ -331,13 +220,6 @@ def run_census(names, root="fermat_last_theorem", timeout=3600):
     with open(CENSUS_INPUT, "w", encoding="utf-8") as fh:
         json.dump({"names": list(names), "root": root}, fh)
     regenerate_census_header()
-    text = open(CENSUS_LEAN, encoding="utf-8").read()
-    snap = _source_snapshot()
-    text_sha = hashlib.sha1(text.encode()).hexdigest()
-    imports_sha = _imports_sha(text)
-
-    del snap, text_sha, imports_sha  # staleness bookkeeping is obsolete
-
     t0 = time.time()
     # THIS MACHINE RUNS ONLY CLAUDE CODE (Deyao, 2026-07-25). Lean runs on
     # the assigned remote host, named by the routing table, and we reach it
@@ -385,7 +267,6 @@ def run_census(names, root="fermat_last_theorem", timeout=3600):
         # real cause (observed 2026-07-25: a missing .olean read as silence).
         blob = ((proc.stdout or "") + (proc.stderr or "")).strip()
         detail = "\n".join(blob.splitlines()[:10]) or "(no output at all)"
-        _qlog(f"census: rc={proc.returncode} {dt:.1f}s ok=False")
         hint = ""
         if "does not exist" in blob and ".olean" in blob:
             hint = ("\nHINT: an .olean is missing — the build is stale. "
@@ -394,7 +275,7 @@ def run_census(names, root="fermat_last_theorem", timeout=3600):
         raise RuntimeError(
             f"census produced no JSON payload (rc={proc.returncode}, "
             f"{dt:.1f}s):\n{detail}{hint}")
-    _qlog(f"census: rc={proc.returncode} {dt:.1f}s ok=True")
+    print(f"census: rc={proc.returncode} {dt:.1f}s ok", file=sys.stderr)
     return resp
 
 
@@ -598,6 +479,8 @@ def main():
         "Second symbol: `·` normal, `🟪` currently being worked on (from the",
         "entries file). To add/remove/annotate a node, edit",
         "`progress-entries.json` and re-run the generator.",
+        "",
+        stamp_line(),
         "",
     ]
     if sorry_count is not None:

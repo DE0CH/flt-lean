@@ -16176,7 +16176,7 @@ theorem cc_eq_zero_of_tame_frobenius_generator {kk' : Type*} [Field kk']
   ring
 
 set_option maxHeartbeats 800000 in
-/-- **Tame killing of the cocycle on inertia at `2`** (sorry node — the
+/-- **Tame killing of the cocycle on inertia at `2`** (PROVEN — the
 genuine tame-Frobenius stroke of pillar E3b, the FIRST consumption
 point of `hp5`): for a hardly ramified mod-`p` extension with TRIVIAL
 sub-character and `p ≥ 5`, the upper-right entry `cc` vanishes on the
@@ -22967,7 +22967,7 @@ theorem hasConductorExponentAt_two_le_one_of_inertia_sq_eq_zero
   sorry
 
 /-- **Ramification at `q` of the representation attached to a `q`-NEW
-eigenform** (sorry node — the single residual literature leaf of the
+eigenform** (PROVEN — the single residual literature leaf of the
 at-`q` conductor cut, isolated 2026-07-25: Carayol, *Sur les
 représentations `ℓ`-adiques associées aux formes modulaires de
 Hilbert*, Ann. Sci. ÉNS 19 (1986), Théorème (A) — local–global

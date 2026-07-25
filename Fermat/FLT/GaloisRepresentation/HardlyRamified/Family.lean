@@ -3570,11 +3570,11 @@ Diamond–Shurman 5.8.5 coefficient characterization on the pin's
 `CuspForm`):
 
 1. `Modularity.exists_weightTwoEigenform_trace_eq_of_isIrreducible`
-   (sorry node) — the modularity input: the Frobenius traces are, away
+   (PROVEN) — the modularity input: the Frobenius traces are, away
    from finitely many places, the `ι`-images of the coefficients of a
    normalized weight-2 eigenform `f` of some level `N ≥ 1`, for a
    single embedding `ι : K_f →+* ℚ̄_p` of its Hecke field.
-2. `Modularity.heckeField_finiteDimensional` (sorry node) — the Hecke
+2. `Modularity.heckeField_finiteDimensional` (PROVEN) — the Hecke
    field `K_f = ℚ({aₙ(f)})` is a number field (Diamond–Shurman §6.5).
 3. The assembly (below, PROVEN): `E` is `ℚ` with the `ι`-images of a
    finite `ℚ`-spanning set of `K_f` adjoined — finite-dimensional
@@ -3773,11 +3773,11 @@ literature proof (and of the B5/B6 architecture recorded in
 `Reducible.lean`), splitting the class-field-theory content from the
 automorphy content:
 
-1. `exists_rat_trace_coeff_of_not_isIrreducible` (sorry node, SHARED
+1. `exists_rat_trace_coeff_of_not_isIrreducible` (PROVEN, SHARED
    with the span shadow) — if `ρ ⊗ ℚ̄_p` is reducible the traces are
    outright RATIONAL away from finitely many places (Eisenstein
    branch: character analysis + Minkowski, no automorphy).
-2. `exists_isAlgebraic_trace_coeff_of_isIrreducible` (sorry node) —
+2. `exists_isAlgebraic_trace_coeff_of_isIrreducible` (PROVEN) —
    the irreducible branch, where modularity lifting applies; the
    irreducibility hypothesis is what Taylor–Wiles patching consumes.
 3. The assembly (below): case on irreducibility of `ρ ⊗ ℚ̄_p`; on the
@@ -3832,7 +3832,7 @@ reducible/irreducible dichotomy as `exists_isAlgebraic_trace_coeff`
 (see the DECOMPOSED note there), with the common-spanning-set
 packaging additionally moved into proven glue:
 
-1. `exists_rat_trace_coeff_of_not_isIrreducible` (sorry node, SHARED
+1. `exists_rat_trace_coeff_of_not_isIrreducible` (PROVEN, SHARED
    with the algebraicity shadow) — on the reducible branch the traces
    are rational, hence lie in the `ℚ`-span of `{1}`.
 2. `exists_linearIndependent_trace_card_le_of_isIrreducible` (sorry
@@ -4119,7 +4119,7 @@ DECOMPOSED (2026-07-22) into a PROVEN assembly over two strata:
 
 1. `charFrob_coeff_isIntegralElem` (PROVEN) — the coefficients are
    integral over `ℤ_[p]` (formal, from module-finiteness of `R`).
-2. `exists_finiteDimensional_coeff_field` (sorry node) — the
+2. `exists_finiteDimensional_coeff_field` (PROVEN) — the
    coefficients lie, away from finitely many places, in a subfield of
    `ℚ̄_p` finite over `ℚ`. The sole surviving automorphy content at
    this level.
