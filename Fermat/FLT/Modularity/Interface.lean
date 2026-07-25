@@ -19062,7 +19062,43 @@ irreducibility supplies the rigidity. The hypothesis `q ≠ p` is
 load-bearing — at `q = p` the conductor statement is false as stated
 (the `p`-part of the conductor is invisible to `ρ_{g,λ}|_{I_p}` in the
 naive sense), which is exactly why the at-`p` place is handled by the
-separate Saito/flatness leaf. -/
+separate Saito/flatness leaf.
+
+ROUTE AUDIT (2026-07-25, second owner — the NEWFORM RE-PIN was
+examined and REJECTED). The only formalizable content in this
+docstring is the descent paragraph above ("were `q ∤ M₀`, the level
+`M₀` would be a `q`-free divisor level…"): formalizing it means
+re-pinning the sorry at the NEWFORM level, as a leaf "`g` a newform of
+level `M`, `q ∣ M`, `q ≠ p`, `τ` irreducible and matched ⟹ `τ`
+ramified at `q`", with this theorem then proven from it by
+`exists_weightTwoNewform_of_weightTwoEigenform` (giving `q ∣ M₀` out
+of `IsNewAtPrime`) plus `exists_ringHom_heckeField_of_qCoeff_eq` — the
+step sequence is available verbatim from
+`exists_weightTwoEigenform_not_dvd_level_p_of_isFlatAt_of_isIrreducible`,
+which already runs it. The re-pin is rejected because the
+newform-level statement is the exact CONTRAPOSITIVE of the
+already-proven
+`weightTwoNewform_not_dvd_level_of_isUnramifiedAt_of_isIrreducible`
+below — the "duplicated sorry, not a cut" pattern that the at-`p`
+sibling's ROUTE AUDIT names and rejects — the sorry count is
+unchanged, and the `q`-new dichotomy above would survive only as a
+detour kept inside the root cone by routing its consumer through it.
+The pin therefore stays at the `IsNewAtPrime` carrier, matching the
+at-`p` leaf
+`not_isFlatAt_of_weightTwoEigenform_pNew_of_isIrreducible_of_pNeZero`,
+which is pinned at its `hpnew` carrier for the same reason.
+
+INFRASTRUCTURE AUDIT (2026-07-25, verified by search rather than
+recalled): the dedup target `GaloisRep.conductorExponent` named above
+has nothing to build on. The mathlib pin in `.lake/packages` contains
+NO higher ramification filtration, NO Artin conductor and NO Swan
+conductor (zero hits for `ramificationGroup`, `artinConductor`,
+`swanConductor` across `Mathlib/`), so the local dictionary
+`a_v = (2 − dim V^{I_v}) + Sw_v` would have to be developed from the
+lower-numbering filtration upward — an independent development, not a
+step available inside this cut. The reference project `~/cs/FLT`
+carries nothing vendorable either: its single Carayol occurrence is a
+prose docstring. This leaf is terminal at this pin. -/
 theorem not_isUnramifiedAt_of_isNewAtPrime_of_isIrreducible
     {M : ℕ} (hM : 0 < M) {g : CuspForm (Gamma0GL M) 2}
     (hg : IsWeightTwoEigenform M g)
@@ -19512,7 +19548,26 @@ SOUNDNESS (2026-07-25): the hypothesis set is the assembly's plus a
 hypothesis the assembly PROVES, so inhabitation is inherited verbatim
 from the assembly's audit below (`p = 11`, `M = 11`, the weight-2
 newform of level `11`, `τ := ρ_{g,λ}`), and the conclusion is the cited
-theorem for every inhabitant. -/
+theorem for every inhabitant.
+
+INFRASTRUCTURE AUDIT (2026-07-25, second owner, verified by search
+rather than recalled — the SPLIT AUDIT's recorded target has nothing
+to build on): the mathlib pin in `.lake/packages` carries NO
+crystalline or Barsotti–Tate predicate and no Fontaine functor (zero
+hits for `Crystalline`, `BarsottiTate`, `FontaineFunctor` across
+`Mathlib/`), and no higher ramification filtration, Artin conductor or
+Swan conductor either, so the separating invariant the SPLIT AUDIT
+names — Serre's Kummer class `u`, intrinsically Fontaine's
+`H¹_f ⊆ H¹(G_p, −)` — would have to be developed from nothing; the
+reference project `~/cs/FLT` carries no vendorable material for it.
+The remaining conceivable move, re-pinning the sorry from the `hpnew`
+carrier onto a newform-level statement, is the one the ROUTE AUDIT
+above already rejects as a restatement of the downstream PROVEN
+`weightTwoNewform_not_dvd_level_p_of_isFlatAt_of_isIrreducible`; the
+away-from-`p` sibling
+`not_isUnramifiedAt_of_isNewAtPrime_of_isIrreducible` was re-examined
+on the same question and pinned the same way. This leaf is terminal at
+this pin. -/
 theorem not_isFlatAt_of_weightTwoEigenform_pNew_of_isIrreducible_of_pNeZero
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
@@ -20249,7 +20304,29 @@ The statement quantifies over the `IsWeightTwoNewform` carrier, whose
 inhabitants are exactly the classical newforms (carrier audit at
 `IsWeightTwoNewform`), so every instance is an instance of the cited
 theorem; the load-bearing case is `4 ∣ M`, which the cited exponent
-computation refutes. -/
+computation refutes.
+
+ROUTE AUDIT (2026-07-25, second owner — the three bullets above do NOT
+admit a formal cut at this pin). Bullets one and two are statements
+ABOUT the Artin exponent `a₂`, an invariant this development does not
+carry, so neither can be stated — let alone proven — before
+`GaloisRep.conductorExponent` exists; and, verified by search rather
+than recalled, the mathlib pin in `.lake/packages` has NO higher
+ramification filtration, NO Artin conductor and NO Swan conductor
+(zero hits for `ramificationGroup`, `artinConductor`, `swanConductor`
+across `Mathlib/`), so that build would start from the lower-numbering
+filtration. The one piece of the local computation that IS formalizable
+at this pin falls short of bullet two: `hquotline` gives
+`τ(σ) w = w + c(σ)(w) · w₀` with `c(σ)` a functional, and `hfixline`
+gives `c(σ)(w₀) = 0`, whence `c(σσ') = c(σ) + c(σ')` — so `c` is a
+group homomorphism of the inertia at `2` into a torsion-free abelian
+group and every FINITE-order element of `I₂` acts trivially. Bullet
+two needs strictly more, namely the pro-`2` compactness of the WILD
+inertia `P₂`, a subgroup this development does not carry; and no such
+purely local statement can reach this leaf's conclusion, which
+mentions `M` and is tied to the local behaviour only through the cited
+Carayol formula. `~/cs/FLT` carries nothing vendorable. This leaf is
+terminal at this pin. -/
 theorem weightTwoNewform_factorization_two_le_one_of_inertia_fixed_line_of_isIrreducible
     {M : ℕ} (hM : 0 < M) {g : CuspForm (Gamma0GL M) 2}
     (hg : IsWeightTwoNewform M g)
