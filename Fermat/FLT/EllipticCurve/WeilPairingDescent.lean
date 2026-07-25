@@ -1397,6 +1397,39 @@ lemma sub_coordY_mem_pointIdeal {q₁ q₂ : F} (hq : W.Nonsingular q₁ q₂) :
   exact Ideal.subset_span (Set.mem_insert_of_mem _ rfl)
 
 omit [DecidableEq F] in
+/-- **Distinct points have coprime point ideals.**  No maximality input
+is needed: if the `x`-coordinates differ, the difference of the two
+`X`-classes is a nonzero constant, hence a unit of `F[W]`; if they agree,
+the `y`-coordinates differ and the difference of the two `Y`-classes is.
+The convention `I_O = ⊤` settles the cases involving `O`. -/
+lemma isCoprime_pointIdeal {S T : W.Point} (hST : S ≠ T) :
+    IsCoprime (pointIdeal W S) (pointIdeal W T) := by
+  rw [Ideal.isCoprime_iff_sup_eq]
+  cases S with
+  | zero => rw [show pointIdeal W (Point.zero : W.Point) = ⊤ from rfl, top_sup_eq]
+  | some x₁ y₁ h₁ =>
+    cases T with
+    | zero => rw [show pointIdeal W (Point.zero : W.Point) = ⊤ from rfl, sup_top_eq]
+    | some x₂ y₂ h₂ =>
+      by_cases hx : x₁ = x₂
+      · subst hx
+        have hy : y₂ - y₁ ≠ 0 := by
+          refine sub_ne_zero.mpr fun hc => hST ?_
+          subst hc
+          rfl
+        refine Ideal.eq_top_of_isUnit_mem _ ?_ (isUnit_coordC (W := W) hy)
+        rw [coordC_sub, show coordC W y₂ - coordC W y₁ =
+          (coordY W - coordC W y₁) - (coordY W - coordC W y₂) from by ring]
+        exact sub_mem (Submodule.mem_sup_left (sub_coordY_mem_pointIdeal h₁))
+          (Submodule.mem_sup_right (sub_coordY_mem_pointIdeal h₂))
+      · refine Ideal.eq_top_of_isUnit_mem _ ?_
+          (isUnit_coordC (W := W) (sub_ne_zero.mpr (Ne.symm hx)))
+        rw [coordC_sub, show coordC W x₂ - coordC W x₁ =
+          (coordX W - coordC W x₁) - (coordX W - coordC W x₂) from by ring]
+        exact sub_mem (Submodule.mem_sup_left (sub_coordX_mem_pointIdeal h₁))
+          (Submodule.mem_sup_right (sub_coordX_mem_pointIdeal h₂))
+
+omit [DecidableEq F] in
 /-- **The certificate-free half of the line-numerator membership**:
 `lineNumerator` lies in `I_Q³`.  With `T = coordX − q₁`, `U = coordY − q₂`
 the cleared `addX` is `A = U² + a₁UT − (a₂ + 2q₁)T² − T³ ∈ ⟨T, U⟩²`, and
@@ -1818,31 +1851,21 @@ theorem lineNumerator_mul_lineNumeratorNeg {q₁ q₂ x₁ y₁ x₂ y₂ : F}
           vertNumerator W q₁ q₂ (W.addX x₁ x₂ (W.slope x₁ x₂ y₁ y₂)))) := by
   sorry
 
-/-- **L4-8 line-numerator sub-leaf (sorry): the comaximal assembly — THE
-COINCIDENCE ZOO.**  The four separate memberships of `lineNumerator` in
-`I_Q³`, `I_{P⊖Q}`, `I_{R⊖Q}`, `I_{⊖(P⊕R)⊖Q}` (all four supplied as
-hypotheses, all four PROVEN in
-`lineNumerator_mem_prod_pointIdeal` below) have to be combined into
-membership in the *product*.
+/-- **L4-8 line-numerator sub-leaf (sorry): the comaximal assembly in the
+COINCIDENT configurations — the whole residual coincidence zoo.**
 
-WHAT IS LEFT.  In *general position* — the three translated points
-pairwise distinct and distinct from `Q` (a translated point equal to `O`
-is harmless: its factor is `⊤`) — this is pure comaximality: distinct
-affine points give distinct maximal ideals of `F[W]` (the quotient by
-`XYIdeal W x (C y)` is `F`, so each is maximal; two of them agree only if
-the coordinates do), distinct maximal ideals are coprime
-(`Ideal.isCoprime_iff_sup_eq`), coprimality is inherited by powers
-(`IsCoprime.pow`), and `IsCoprime.mul_dvd` in the commutative semiring
-`Ideal F[W]` turns the four divisibilities `I ∣ ⟨n⟩` into
-`I_Q³·I_A·I_B·I_C ∣ ⟨n⟩`, i.e. the claim
-(`Ideal.span_singleton_le_iff_mem`).
-
-The residue is the COINCIDENCE ZOO, i.e. the configurations where two of
-the four factors are supported at the same point and separate
-memberships no longer suffice: `P = R` (then `A = B` and `n ∈ I_A²` is
-needed), `R = ⊖2P` / `P = ⊖2R` (a translated point equals the third one),
-and `P = 2Q`, `R = 2Q`, `P ⊕ R = ⊖2Q` (a translated point equals `Q`, so
-`n ∈ I_Q⁴` is needed).
+The four separate memberships of `lineNumerator` in `I_Q³`, `I_{P⊖Q}`,
+`I_{R⊖Q}`, `I_{⊖(P⊕R)⊖Q}` are all PROVEN (see
+`lineNumerator_mem_prod_pointIdeal`), and in *general position* they
+assemble into the product by pure comaximality
+(`lineNumerator_mem_prod_of_mem_factors`).  What is left is exactly the
+configurations where two of the four factors are supported at the SAME
+point, so that separate memberships no longer suffice: `P = 2Q`,
+`R = 2Q`, `⊖(P ⊕ R) = 2Q` (a translated point equals `Q`, so `n ∈ I_Q⁴`
+is needed), `P = R` (then `P⊖Q = R⊖Q` and `n ∈ I_{P⊖Q}²` is needed),
+`P = ⊖(P ⊕ R)`, `R = ⊖(P ⊕ R)`.  Note a translated point equal to `O`
+is NOT a coincidence: its factor is `⊤`, and `isCoprime_pointIdeal`
+covers it.
 
 TWO ROUTES FOR THE ZOO.
 * *Higher-order vanishing directly.*  `n ∈ I_S²` is a Taylor condition at
@@ -1856,11 +1879,55 @@ TWO ROUTES FOR THE ZOO.
   vanishing orders SUM to the known total.  Hence `v_𝔭(n) = v_𝔭(RHS)`
   follows from `v_𝔭(ñ) = v_𝔭(RHS')`, and in every coincidence case the
   partner order is `0`, i.e. what has to be proven is a *non-vanishing*
-  statement `ñ ∉ I_𝔭` — a single evaluation `≠ 0`, not a higher-order
-  vanishing.  E.g. at `A = P ⊖ Q` one computes
+  statement `ñ ∉ I_𝔭` — a single evaluation `≠ 0` (available through
+  `coordEval` / `mem_pointIdeal_of_coordEval_eq_zero`), not a
+  higher-order vanishing.  E.g. at `A = P ⊖ Q` one computes
   `ñ(A) = −(2y₁ + a₁x₁ + a₃)·(α − q₁)³`, nonzero exactly when `2P ≠ O`
   and `A ≠ ±Q`.  The cost is the valuation/unique-factorization layer for
   ideals of the Dedekind domain `F[W]`. -/
+theorem lineNumerator_mem_prod_of_mem_factors_coincident (hΔ : W.Δ ≠ 0)
+    {q₁ q₂ x₁ y₁ x₂ y₂ : F}
+    (hq : W.Nonsingular q₁ q₂) (h₁ : W.Nonsingular x₁ y₁)
+    (h₂ : W.Nonsingular x₂ y₂) (hxy : ¬(x₁ = x₂ ∧ y₁ = W.negY x₂ y₂))
+    (hcoin :
+      (Point.some x₁ y₁ h₁ : W.Point) = .some q₁ q₂ hq + .some q₁ q₂ hq ∨
+      (Point.some x₂ y₂ h₂ : W.Point) = .some q₁ q₂ hq + .some q₁ q₂ hq ∨
+      (-(Point.some x₁ y₁ h₁ + Point.some x₂ y₂ h₂) : W.Point) =
+        .some q₁ q₂ hq + .some q₁ q₂ hq ∨
+      (Point.some x₁ y₁ h₁ : W.Point) = .some x₂ y₂ h₂ ∨
+      (Point.some x₁ y₁ h₁ : W.Point) =
+        -(Point.some x₁ y₁ h₁ + Point.some x₂ y₂ h₂) ∨
+      (Point.some x₂ y₂ h₂ : W.Point) =
+        -(Point.some x₁ y₁ h₁ + Point.some x₂ y₂ h₂))
+    (hQ3 : lineNumerator W q₁ q₂ x₁ y₁ (W.slope x₁ x₂ y₁ y₂) ∈
+      pointIdeal W (.some q₁ q₂ hq) ^ 3)
+    (hA : lineNumerator W q₁ q₂ x₁ y₁ (W.slope x₁ x₂ y₁ y₂) ∈
+      pointIdeal W (.some x₁ y₁ h₁ - .some q₁ q₂ hq))
+    (hB : lineNumerator W q₁ q₂ x₁ y₁ (W.slope x₁ x₂ y₁ y₂) ∈
+      pointIdeal W (.some x₂ y₂ h₂ - .some q₁ q₂ hq))
+    (hC : lineNumerator W q₁ q₂ x₁ y₁ (W.slope x₁ x₂ y₁ y₂) ∈
+      pointIdeal W (-(.some x₁ y₁ h₁ + .some x₂ y₂ h₂) - .some q₁ q₂ hq)) :
+    lineNumerator W q₁ q₂ x₁ y₁ (W.slope x₁ x₂ y₁ y₂) ∈
+      pointIdeal W (.some q₁ q₂ hq) ^ 3 *
+        (pointIdeal W (.some x₁ y₁ h₁ - .some q₁ q₂ hq) *
+          (pointIdeal W (.some x₂ y₂ h₂ - .some q₁ q₂ hq) *
+            pointIdeal W (-(.some x₁ y₁ h₁ + .some x₂ y₂ h₂) -
+              .some q₁ q₂ hq))) := by
+  sorry
+
+/-- **L4-8 line-numerator sub-leaf: the comaximal assembly.**  The four
+separate memberships of `lineNumerator` in `I_Q³`, `I_{P⊖Q}`, `I_{R⊖Q}`,
+`I_{⊖(P⊕R)⊖Q}` combine into membership in the *product*.
+
+In general position this is pure comaximality: distinct points have
+coprime point ideals (`isCoprime_pointIdeal` — elementary, a difference
+of `X`- or `Y`-classes is a nonzero constant, hence a unit), coprimality
+passes to products and powers (`IsCoprime.mul_right`, `IsCoprime.pow_left`),
+and for coprime ideals the product IS the intersection
+(`Ideal.mul_eq_inf_of_isCoprime`), so the four memberships intersect into
+the product membership.  The coincident configurations — where two
+factors share a support point — are isolated in
+`lineNumerator_mem_prod_of_mem_factors_coincident`. -/
 theorem lineNumerator_mem_prod_of_mem_factors (hΔ : W.Δ ≠ 0)
     {q₁ q₂ x₁ y₁ x₂ y₂ : F}
     (hq : W.Nonsingular q₁ q₂) (h₁ : W.Nonsingular x₁ y₁)
@@ -1879,7 +1946,62 @@ theorem lineNumerator_mem_prod_of_mem_factors (hΔ : W.Δ ≠ 0)
           (pointIdeal W (.some x₂ y₂ h₂ - .some q₁ q₂ hq) *
             pointIdeal W (-(.some x₁ y₁ h₁ + .some x₂ y₂ h₂) -
               .some q₁ q₂ hq))) := by
-  sorry
+  by_cases hcoin :
+      (Point.some x₁ y₁ h₁ : W.Point) = .some q₁ q₂ hq + .some q₁ q₂ hq ∨
+      (Point.some x₂ y₂ h₂ : W.Point) = .some q₁ q₂ hq + .some q₁ q₂ hq ∨
+      (-(Point.some x₁ y₁ h₁ + Point.some x₂ y₂ h₂) : W.Point) =
+        .some q₁ q₂ hq + .some q₁ q₂ hq ∨
+      (Point.some x₁ y₁ h₁ : W.Point) = .some x₂ y₂ h₂ ∨
+      (Point.some x₁ y₁ h₁ : W.Point) =
+        -(Point.some x₁ y₁ h₁ + Point.some x₂ y₂ h₂) ∨
+      (Point.some x₂ y₂ h₂ : W.Point) =
+        -(Point.some x₁ y₁ h₁ + Point.some x₂ y₂ h₂)
+  · exact lineNumerator_mem_prod_of_mem_factors_coincident hΔ hq h₁ h₂ hxy hcoin
+      hQ3 hA hB hC
+  · have cQA := isCoprime_pointIdeal (W := W)
+      (S := Point.some q₁ q₂ hq) (T := Point.some x₁ y₁ h₁ - Point.some q₁ q₂ hq)
+      (by intro hc; rw [eq_comm, sub_eq_iff_eq_add] at hc
+          exact hcoin (Or.inl hc))
+    have cQB := isCoprime_pointIdeal (W := W)
+      (S := Point.some q₁ q₂ hq) (T := Point.some x₂ y₂ h₂ - Point.some q₁ q₂ hq)
+      (by intro hc; rw [eq_comm, sub_eq_iff_eq_add] at hc
+          exact hcoin (Or.inr (Or.inl hc)))
+    have cQC := isCoprime_pointIdeal (W := W)
+      (S := Point.some q₁ q₂ hq)
+      (T := -(Point.some x₁ y₁ h₁ + Point.some x₂ y₂ h₂) - Point.some q₁ q₂ hq)
+      (by intro hc; rw [eq_comm, sub_eq_iff_eq_add] at hc
+          exact hcoin (Or.inr (Or.inr (Or.inl hc))))
+    have cAB := isCoprime_pointIdeal (W := W)
+      (S := Point.some x₁ y₁ h₁ - Point.some q₁ q₂ hq)
+      (T := Point.some x₂ y₂ h₂ - Point.some q₁ q₂ hq)
+      (by intro hc; rw [sub_left_inj] at hc
+          exact hcoin (Or.inr (Or.inr (Or.inr (Or.inl hc)))))
+    have cAC := isCoprime_pointIdeal (W := W)
+      (S := Point.some x₁ y₁ h₁ - Point.some q₁ q₂ hq)
+      (T := -(Point.some x₁ y₁ h₁ + Point.some x₂ y₂ h₂) - Point.some q₁ q₂ hq)
+      (by intro hc; rw [sub_left_inj] at hc
+          exact hcoin (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl hc))))))
+    have cBC := isCoprime_pointIdeal (W := W)
+      (S := Point.some x₂ y₂ h₂ - Point.some q₁ q₂ hq)
+      (T := -(Point.some x₁ y₁ h₁ + Point.some x₂ y₂ h₂) - Point.some q₁ q₂ hq)
+      (by intro hc; rw [sub_left_inj] at hc
+          exact hcoin (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr hc))))))
+    have hBC : lineNumerator W q₁ q₂ x₁ y₁ (W.slope x₁ x₂ y₁ y₂) ∈
+        pointIdeal W (.some x₂ y₂ h₂ - .some q₁ q₂ hq) *
+          pointIdeal W (-(.some x₁ y₁ h₁ + .some x₂ y₂ h₂) -
+            .some q₁ q₂ hq) := by
+      rw [Ideal.mul_eq_inf_of_isCoprime cBC]
+      exact ⟨hB, hC⟩
+    have hABC : lineNumerator W q₁ q₂ x₁ y₁ (W.slope x₁ x₂ y₁ y₂) ∈
+        pointIdeal W (.some x₁ y₁ h₁ - .some q₁ q₂ hq) *
+          (pointIdeal W (.some x₂ y₂ h₂ - .some q₁ q₂ hq) *
+            pointIdeal W (-(.some x₁ y₁ h₁ + .some x₂ y₂ h₂) -
+              .some q₁ q₂ hq)) := by
+      rw [Ideal.mul_eq_inf_of_isCoprime (cAB.mul_right cAC)]
+      exact ⟨hA, hBC⟩
+    rw [Ideal.mul_eq_inf_of_isCoprime
+      (cQA.mul_right (cQB.mul_right cQC)).pow_left]
+    exact ⟨hQ3, hABC⟩
 
 /-- **L4-8 line-numerator sub-leaf: membership of the line numerator in
 its divisor ideal.**  `lineNumerator q₁ q₂ x₁ y₁ ℓ` lies in
