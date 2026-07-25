@@ -18,21 +18,10 @@
       "Bash(git push -f:*)",
       "Bash(git push*--force*)",
       "Bash(git push*-f)",
-      "Bash(git push*-f *)",
-      "Bash(lake:*)",
-      "Bash(lake *)",
-      "Bash(*lake build*)",
-      "Bash(* lake *)",
-      "Bash(*&& lake*)",
-      "Bash(*; lake*)",
-      "Bash(*| lake*)",
-      "Bash(lean:*)",
-      "Bash(lean *)",
-      "Bash(elan:*)",
-      "Bash(elan *)"
+      "Bash(git push*-f *)"
     ],
     "denyExplanations": {
-      "lake": "BANNED (Deyao, 2026-07-22): all lake/lean/elan CLI invocations are denied except `lake exe cache get` (mathlib artifact fetch for a fresh worktree). Please use the MCP (lean-lsp) — its diagnostics are the trusted verification gate for everything; per-worktree servers exist and compile imports on demand. Headless scripts use the detached report server."
+      "lake": "BANNED (Deyao, 2026-07-22): all lake/lean/elan CLI invocations are denied except `lake exe cache get` (mathlib artifact fetch for a fresh worktree). Use the per-worktree report MCP (`report-flt-lean-N`: `diagnostics`, `build`) \u2014 its diagnostics are the trusted verification gate for everything, and the servers compile imports on demand. The `lean-lsp` MCP was REMOVED 2026-07-25 (it did not work and was not needed), so it is no longer an alternative. Headless scripts use the detached report server."
     },
     "additionalDirectories": [
       "/tmp"
@@ -50,7 +39,7 @@
           {
             "type": "command",
             "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/worktree-pool-hook.py\"",
-            "timeout": 30
+            "timeout": 300
           }
         ]
       }
@@ -63,16 +52,6 @@
             "type": "command",
             "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/post-merge-reminder.py\"",
             "timeout": 10
-          }
-        ]
-      },
-      {
-        "matcher": "mcp__report-flt-lean.*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/unused-binding-check.py\"",
-            "timeout": 120
           }
         ]
       }

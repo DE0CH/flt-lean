@@ -23,6 +23,26 @@ must never strand its remaining leaves unowned. Track the new leaves in
 progress-entries.json (wip flags at dispatch) as part of the same
 integration step.
 
+**Check overlap by grepping the PROMPT, not the `targets` field** (2026-07-25).
+`~/.flt-inflight.jsonl`'s `targets` is harvested by a regex for bold
+`**\`name\`**`, so tasks not written in that style get junk targets (one batch
+recorded `['diagnostics', 'lean_leansearch', …]`). Before dispatching at a leaf,
+grep the full `prompt` of every in-flight record for the leaf NAME. Skipping
+this let two agents cut the SAME node — `exists_isWeaklyUniversalOnIdentified`
+— along Schlessinger in two incompatible ways, producing an eight-hunk
+mathematical conflict that had to go back to an author to reconcile. Noticing
+that another worktree is merely "in the same file" is not enough; the file is
+not the unit of ownership, the declaration is.
+
+**"Merge FIRST, then dispatch" is an ordering, not a sequence of words**
+(violated 2026-07-25). A worktree fast-forwards to main at dispatch, so a
+successor dispatched at a leaf that still lives only on an unmerged branch
+fast-forwards to a main WITHOUT that leaf and finds nothing — a phantom
+dispatch manufactured out of a correct report. It happened with three
+`Deformation.lean` successors sent off the strength of an agent's report
+while its branch was still resolving a conflict. If the branch cannot be
+merged yet, the successors WAIT; queue them, do not dispatch them.
+
 Same-FILE leaves may get concurrent owners (Deyao, 2026-07-22): each
 agent works in its own git worktree on its own branch, and merging
 concurrent edits to one file is what git is designed to handle — leaves
@@ -38,6 +58,14 @@ with its own already-running systemd instance — `lake serve` on FIFOs,
 scoped to that worktree. Live allocation state:
 `~/.flt-worktree-pool`, one line per worktree, `<name> free` or
 `<name> claimed`.
+
+**STALE BELOW (2026-07-25): the systemd units are DELETED.** The batch
+descriptions survive only for the `.lake`-on-`/scratch` layout, which is
+still true and still the reason `lake` must run on the assigned host. Every
+mention of `flt-report-server@` / `flt-lake-socket@` / `.report-server` is
+historical — those unit files were removed from `~/.config/systemd/user`
+so nothing can start them, and `.report-server` no longer exists in any
+worktree.
 
 - **Batch 1, `~/flt-lean-1` .. `~/flt-lean-13`**: template unit
   `flt-report-server@.service`, `WorkingDirectory=%h/%i`.
@@ -104,9 +132,13 @@ scoped to that worktree. Live allocation state:
   or no worktree is free — the hook AUTO-QUEUES it: the prompt is
   appended to `~/.flt-task-queue` by the hook itself and the call is
   denied with a message giving the queue position and the
-  `{{FLT_QUEUE_POP}}` instruction. Never touch `.lake` directly — the
-  worktree's own `lake serve` instance rebuilds incrementally on its
-  own. A claimed worktree that is dirty or not an ancestor of main is
+  `{{FLT_QUEUE_POP}}` instruction. **Agents own `.lake`** (Deyao,
+  2026-07-25, reversing the old "never touch `.lake`" rule, which
+  existed only because a systemd-managed `lake serve` owned it): the
+  orchestrator advances the pointer to main and says in the prompt that
+  the artifacts may be stale and may need rebuilding — and does nothing
+  else about them. Managing them centrally is what turned private build
+  problems into fleet-wide ones. A claimed worktree that is dirty or not an ancestor of main is
   not auto-corrected — the hook hard-crashes (traceback to stderr,
   exit 2, tool call blocked): that state means something beyond
   allocation went wrong.
@@ -146,6 +178,105 @@ fill in missing proofs, and iterate walking the tree — decompose deep
 nodes into shallower ones, prove the provable ones — until the entire
 tree is written and `lake build` passes the sorry gate. `PROGRESS.md`
 is the authoritative tree.
+
+**Counting the frontier: DIRECT vs TRANSITIVE sorries, and the comment
+trap (2026-07-25 — both of these caused phantom dispatches).**
+
+Two different numbers are both called "the frontier" and they are not
+interchangeable:
+
+- *Direct*: the declaration's own body contains `sorry`. This is what
+  Lean's `declaration uses 'sorry'` warning reports, and it is the set of
+  leaves that can be WORKED ON. Currently 85.
+- *Transitive*: the declaration's proof term reaches `sorryAx`, i.e. it is
+  sorried **or consumes something sorried**. This is what
+  `ProgressCensus.lean`'s census reports. Currently 86.
+
+A consumer of a sorried leaf is transitively sorried but has NOTHING to
+prove — dispatching an agent at it wastes a worker. Two whole clusters were
+dispatched this way (`Chebotarev.lean`, and three leaves in `Flat.lean`)
+before agents reported back that their targets were already proven. **Build
+task lists from the DIRECT set; use the transitive set only for judging
+whether a subtree still blocks the root.**
+
+**`verified: true` does NOT mean the import cone is current** (2026-07-25, hit
+independently by two agents). Lean's LSP caches the `lake setup-file` result per
+HEADER SNAPSHOT and replays a failed one verbatim until the IMPORT LIST changes.
+So when an upstream file is broken and then fixed, `diagnostics` keeps returning
+the stale build failure — with `verified: true`, because the call really did
+receive that (stale) diagnostic. Meanwhile `build` in the same session compiles
+the file fine. A false negative carrying a truth claim is the worst shape of
+wrong answer, and it cost two agents a verification cycle each.
+
+Symptom: `diagnostics` reports an error inside an IMPORTED file rather than in
+the file you asked about. Remedy: perturb the IMPORT LIST (add or remove an
+`import`) to force a re-run, or cross-check with `build`. **A content change is
+NOT enough** — a third agent hit this after a real edit and got four successive
+byte-identical stale replies, including identical build timings and an error
+line whose `simp` no longer existed; only `build` plus lake's `.trace` log told
+the truth. Do NOT restart the report server — that discards genuine in-flight
+elaboration; and do not conclude the upstream is still broken without checking
+`git log` for a fix.
+
+**FAITHFULNESS: a leaf can be FALSE AS STATED, and that is worse than open.**
+Three were found and corrected on 2026-07-25 alone. A false leaf can never be
+proven, and anything derived from it is worthless — so when a leaf resists,
+seriously consider that it may be false rather than merely hard. Refuting one
+with an explicit counterexample and restating it correctly is a FULLY successful
+outcome; say so in task prompts.
+
+The discriminating rule for the commonest trap in this development, from a sweep
+of every `𝒪ᵥ`-rational group-scheme leaf (2026-07-25): **over `𝒪ᵥ`, identities
+and VALUES descend from `𝒪^nr` (flatness/torsion-freeness, and inertia fixes
+`𝒪^nr` pointwise); the EXISTENCE of a coordinate or a normal form does not.** A
+leaf is faithful exactly when it asks for a value or an inertia-only
+equivariance, and false exactly when it asks for an element of `G` or for
+`Γ`-wide rationality. Two corollaries: unramified twists are invisible to
+inertia, so inertia-only conclusions are twist-blind; and étale-by-étale is
+étale, so the dual/Selmer arguments are twist-blind too. `exists_muType_closure`
+died on precisely this — it demanded the μ_p-coordinate over `ℤ_p`, but the
+connected order-`p` schemes there are the `p−1` unramified twists `μ_p ⊗ ψ`,
+each satisfying every hypothesis with no such coordinate when `ψ ≠ 1`.
+
+Corollary for REVIEWERS: watch for a quantifier over `localInertiaGroup` being
+"generalized" to all of `Γ`. `exists_localTorsionQuotient_of_good_ordinary` is
+true only because `σ` ranges over inertia — the étale quotient at good ordinary
+reduction carries the *unramified* character `α`, trivial on inertia but not on
+Frobenius — and widening it makes the leaf false for every curve with `α ≠ 1`.
+
+**Third category, invisible to BOTH counts: an ERRORED declaration**
+(2026-07-25). A declaration whose proof fails to elaborate — `maximum
+recursion depth`, a failing tactic, anything red — is `sorryAx`-tainted and
+poisons the transitive cone, but it emits **no** `declaration uses 'sorry'`
+warning and contains no `sorry` token in its source. So it is missed by the
+direct-sorry warning set, missed by a source scan, and its `.olean` goes
+stale, silently blocking every downstream module from building. Nobody is
+ever dispatched at it, because no frontier scan can see it.
+
+Found when `lineNumerator_mul_lineNumeratorNeg` in `WeilPairingDescent.lean`
+— PROVEN and verified clean in its author's worktree — began failing after
+merge with `maximum recursion depth has been reached`, blocking the whole
+file. It surfaced only because an agent working in that file happened to
+report it. **So: errors are a separate frontier that only a build or a
+per-file `diagnostics` reveals. Treat any hard error as an immediate defect
+with a named owner (CLAUDE.md's sorry-gate rule (b)), and do not assume a
+clean direct-sorry scan means a clean tree.** A proof that verified in one
+worktree can error on main; resource-limit `set_option`s are the usual fix.
+
+Second trap, same day: a naive `grep sorry` over sources counts the word
+inside DOCSTRINGS, and this development's docstrings discuss sorried leaves
+constantly. That inflated a scan to 144 "sorried declarations" against a
+true 85. Any frontier scan must strip block comments (nested `/- -/`) and
+line comments first, then attribute each surviving token to its enclosing
+declaration by walking BACKWARDS to the nearest declaration header —
+walking forwards mis-attributes a later declaration's sorry to an earlier
+proven one, which is exactly how `exists_hardlyRamifiedLift` was twice
+mislabelled open when it is proven.
+
+Related: stale `(sorry leaf)` / `(sorry node)` docstring LABELS on
+now-proven declarations are a third source of phantom work, since leaf
+lists get harvested from them. Correct them when found rather than leaving
+them to mislead the next dispatch.
 
 **Tree markers in `PROGRESS.md` (Deyao, 2026-07-17): two symbols per
 item.** Every tree item starts with exactly two symbols — first symbol
@@ -268,12 +399,77 @@ immediately; (c) scratch axiom-audit files must `import Fermat.Basic`
 and specific leaf modules, never the root `Fermat`; (d) warnings are
 not errors — keep the tree warning-clean by ordinary discipline.
 
-## No lake build in iterations; trust the MCP diagnostics
+## Verification is the COMMAND LINE. No MCP, no LSP, no servers.
 
-(Deyao, 2026-07-21.) Skip `lake build` inside work iterations — the
-lean-lsp MCP diagnostics are the verification gate; the Stop hook still
-builds at the endgame. (A single-module `lake build` to refresh the
-daemon's state is fine when the staleness note matters.)
+(Deyao, 2026-07-25 — supersedes every "trust the MCP diagnostics" rule
+below.) The report-MCP, the `flt-lake-socket@` / `flt-report-server@`
+units, the local bridges, `.report-server/`, and `state.json` are all
+DELETED. `report-mcp.py`, `flt-report-bridge.py`, `flt-lake-socket.py`
+and `.claude/unused-binding-check.py` are removed from the repo.
+
+Agents verify with `lake env lean <file>` and `lake build <Module>`,
+run ON THE HOST THAT OWNS THE WORKTREE'S `.lake`:
+
+    H=$(cat ~/.flt-worker-host/flt-lean-N)
+    ssh $H 'cd ~/flt-lean-N && lake env lean Fermat/FLT/.../File.lean'
+
+`.lake` is a symlink into machine-local `/scratch` on that host, so
+running `lake` anywhere else finds no artifacts. `lake`/`lean`/`elan`
+are no longer in `permissions.deny`.
+
+**Why the change.** Every persistent-server failure mode this project
+hit came from documents that were opened and never closed, and from
+state shared between client processes: a stale `lake setup-file`
+failure replayed with `verified: true`, a false clean from an unheard
+publish, four rival elaborations of one file, clients wedged on dead
+FIFO handles after a server restart. A command-line invocation is a
+fresh process that exits and returns its memory, so none of those can
+occur — the fix is structural, not disciplinary. The cost is that each
+run pays the import load (minutes for a large cone), which is exactly
+why the scratch-module rule below matters more than ever.
+
+The standing agent-facing version of this lives in
+`/home/chend/.flt-agent-doctrine.md`, which every task prompt points at.
+
+**There is NO Lean MCP of any kind (Deyao, 2026-07-25).** Both the
+`lean-lsp` MCP and the per-worktree `report-flt-lean-N` servers are gone;
+`.mcp.json` holds exactly one entry, `annas-mcp`, which is for downloading
+literature and has nothing to do with Lean. So neither the
+`lean_leansearch` / `lean_loogle` / `lean_local_search` / `lean_run_code` /
+`lean_multi_attempt` tools nor `diagnostics` / `build` exist — task prompts
+must not offer them. Substitutes: search mathlib by reading it (`grep`/`Grep` over
+`.lake/packages/mathlib`) and by the names other owners have already
+recorded in docstrings; prototype in a throwaway scratch module verified
+through the report MCP, which is the same loop the performance rule already
+prescribes and is what agents were mostly doing anyway.
+
+## Verify in a scratch module, not in the giant file
+
+(Deyao, 2026-07-25, from a measurement — this is the fleet's single
+biggest throughput lever.) **Develop against a throwaway scratch module
+that imports only what you need, and do exactly ONE final blocking
+verify against the real target file.** Delete the scratch before
+committing. Agents who worked this way cut their round trip from **~30
+minutes to ~1 minute**; several discovered it independently and reported
+it unprompted.
+
+Why, measured rather than assumed: **elaboration is single-threaded —
+one core per file.** Sampling every `lean --worker` on this 96-core
+machine (a `/proc` utime+stime delta, *not* `ps pcpu`, which is a
+lifetime average and misleads) found 101 workers consuming **11.1 cores
+between them**, 77 of them idle, the busiest at 1.29 cores. iowait was
+0–3%; RAM had 1.5 TB free. So the fleet is **not** disk-, CPU- or
+memory-bound, and moving `.lake` to tmpfs or deduplicating the 62
+mathlib copies would buy nothing. What costs wall-clock is that a
+15k-line file such as `Modularity/Interface.lean` re-elaborates on ONE
+core however many are idle beside it. The only way to go faster is to
+elaborate less.
+
+Corollaries: batch edits and verify once rather than per-edit; a
+client-side timeout means the server is still elaborating, so re-issuing
+attaches rather than restarting (see the single-flight section); and
+splitting oversized modules is what converts idle cores into throughput,
+because the file is the unit of elaboration.
 
 ## Sorry and have discipline (glue-first, no floating)
 
@@ -289,8 +485,10 @@ daemon's state is fine when the staleness note matters.)
   remainder, never `(by sorry)` as an application argument.
 - **Every bound `have`/`let` must be consumed** (Deyao, 2026-07-22).
   Prune unused ones before committing (verify each prune compiles).
-  Enforced by the PreToolUse hook `.claude/lean-pretool-reminder.py`,
-  which fires before every lean-lsp call.
+  **This is now the AGENT's own responsibility** — the enforcing hook
+  (`.claude/unused-binding-check.py`) was deleted on 2026-07-25 along with
+  the MCP it fired on. Nothing checks it for you; Lean's own
+  `unusedVariables` linter is the closest thing to a signal.
 - **Never use `private` to dodge the free-floating check** — open the
   consumer sorry first, always top-down.
 
@@ -308,11 +506,13 @@ cone itself is computed inside `ProgressCensus.lean`'s `runCensus` (the
 `"floating"` field of its JSON output, via ImportGraph's
 `Name.transitivelyUsedConstants` — already a vendored transitive
 dependency through mathlib's own lakefile, not a hand-rolled BFS),
-queried through the same resident `flt-report-server` session
-`progress-tree.py`'s census already uses — no separate subprocess, no
-cache file; the language server's own incremental elaboration is the
-cache (warm re-query: fractions of a second; after a real source edit:
-tens of seconds, dominated by re-elaborating what changed).
+obtained through `progress-tree.py`'s census, which since 2026-07-25 runs
+as ONE `lake env lean ProgressCensus.lean` over ssh on the worktree's
+assigned host — no resident server, no cache file. Each run pays the
+import load of the project cone (minutes), so run it once per bookkeeping
+cycle rather than in a loop, and keep the tree BUILT: the census reads
+oleans and dies with `object file '….olean' does not exist` if they are
+stale.
 `free-floating.py` is a thin standalone entry point over the same
 query, applying only the keep-list filter below. Blocks with
 instructions to commit and delete. Work top-down.
@@ -373,60 +573,6 @@ blocks all variants. Plain `git commit` (ssh-signing is automatic via
 Deyao's agent; if signing fails with "No private key found", the
 agent — Bitwarden — is locked: ask Deyao). Commit trailers: the
 standard Co-Authored-By and Claude-Session lines.
-
-## Report-lsp MCP (report-mcp.py): diagnostics + build per worktree
-
-(Deyao, 2026-07-23.) `report-mcp.py` at the repo root is a minimal MCP
-server exposing exactly two tools — `diagnostics(file_path)` and
-`build(clean=False)` — talking directly over one `flt-report-server`
-instance's FIFOs (the same Content-Length-framed JSON-RPC protocol as
-`progress-tree.py`'s report-server client). It takes `--socket-dir` —
-the target instance's `.report-server` directory (holding
-`req.fifo`/`resp.fifo`/`lock`/`state.json`) — as an argument rather than
-doing any root-detection: the argument IS the routing, not a project
-path to derive it from (the project path, needed for `build`'s cwd and
-for resolving relative `file_path` args, is just `--socket-dir`'s
-parent).
-
-`lake serve` is single-rooted for its whole process lifetime (verified
-empirically via an isolated toy-project test) — a server rooted at one
-directory cannot correctly open or elaborate a file living under a
-different worktree. So there is one `report-mcp.py` process, and one
-`flt-report-server@<name>` systemd instance, PER worktree — 14 total
-(main + `flt-lean-1..13`), each independently rooted. `.mcp.json`
-registers all 14 as separate entries (`report-flt-lean`,
-`report-flt-lean-1` .. `report-flt-lean-13`), each pointing
-`--socket-dir` at its matching worktree's `.report-server`. An agent
-working in `flt-lean-N` uses the `report-flt-lean-N` entry.
-
-**Single-flight per document (Deyao, 2026-07-25 — after the thrash).** The
-open-document map (`{uri: version, hash}`) lives in `.report-server/state.json`
-and is therefore SHARED by every client process talking to that server
-session, not held per process. It has to be: an orchestrator restart kills the
-client, and a fresh one that believed no document was open would send a second
-`didOpen`, whereupon `lake serve` starts ANOTHER `lean --worker` for that file
-while the first keeps running (nothing ever closed the document). Four restarts
-produced four rival elaborations of one file; the fleet reached 81 concurrent
-`lake setup-file` builds, all rebuilding the same olean and starving each
-other. With the map shared, a restarted client re-issues `waitForDiagnostics`
-against the version already in flight — it ATTACHES instead of racing. The
-session marker is the state file's INODE (not mtime), since the file is now
-rewritten in normal operation and `ExecStartPre` `rm -f`s it per (re)start.
-Verified 2026-07-25: fresh client attaches in 0.0s with no new worker; the
-pre-fix client spawned a third worker on the same server.
-
-**Doctrine for agents:** one blocking call, then wait. A timeout means "still
-elaborating", not "failed"; re-issuing is safe and attaches; only an edit
-starts new work.
-
-`diagnostics` syncs the file with on-disk content (`didOpen` the first
-time, `didChange` after) and blocks on `textDocument/waitForDiagnostics`
-— no polling/settle heuristics needed. The `initialize` handshake is
-shared per SERVER SESSION via `.report-server/state.json` (the unit's
-`ExecStartPre` clears it on every (re)start): its presence means some
-earlier client already initialized this session (`lake serve` errors
-if sent `initialize` twice), so a client only sends it when the file is
-absent, then writes a marker.
 
 ## Anna's Archive MCP (annas-mcp)
 
