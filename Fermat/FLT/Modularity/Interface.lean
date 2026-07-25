@@ -7035,9 +7035,208 @@ theorem residual_rep_sub_one_sq_eq_zero_of_inertia_two
   · show (((e - 1) ^ 2 : Module.End k W)) (b2 1) = (0 : Module.End k W) (b2 1)
     rw [pow_two, Module.End.mul_apply, hsub1, map_zero, LinearMap.zero_apply]
 
+/-- **Characteristic `p` of a finite `ℤ_[p]`-algebra field** (PROVEN —
+the general-`p` analogue of ModThree's PROVEN
+`charP_three_of_finite_padicIntThree_algebra`): a finite field carrying
+a `ℤ_[p]`-algebra structure has characteristic `p`. Its characteristic
+`q` is a prime with `(q : k) = 0`; were `q ≠ p`, then `p ∤ q` would make
+`(q : ℤ_[p])` a `p`-adic unit whose image in `k` cannot vanish.
+(DECLARATION-ORDER NOTE, 2026-07-24: the cast form
+`prime_eq_zero_of_finite_padicInt_algebra` of this fact already lives in
+this file, but BELOW the Kronecker–Weber assembly that needs it — the
+assembly must know that `algebraMap ℤ_[p] k` factors through
+`ℤ_[p]/(p)`. The `CharP` form is therefore proven here, upstream of the
+assembly; the two can be merged at a later reorganization.) -/
+theorem charP_of_finite_padicInt_algebra {k : Type*} [Field k] [Finite k]
+    [Algebra ℤ_[p] k] : CharP k p := by
+  obtain ⟨q, hchar⟩ := CharP.exists k
+  haveI := hchar
+  haveI hq : Fact q.Prime := ⟨CharP.char_is_prime k q⟩
+  rcases eq_or_ne q p with rfl | hqp
+  · exact hchar
+  · exfalso
+    have hunit : IsUnit ((q : ℕ) : ℤ_[p]) := by
+      by_contra hnu
+      have hlt : ‖((q : ℕ) : ℤ_[p])‖ < 1 := PadicInt.not_isUnit_iff.mp hnu
+      rw [show ‖((q : ℕ) : ℤ_[p])‖ = ‖((q : ℕ) : ℚ_[p])‖ from by
+        rw [PadicInt.norm_def]; norm_cast] at hlt
+      have hdvd : p ∣ q := Padic.norm_natCast_lt_one_iff.mp hlt
+      exact hqp ((Nat.prime_dvd_prime_iff_eq hp.out hq.out).mp hdvd).symm
+    have hzero : algebraMap ℤ_[p] k ((q : ℕ) : ℤ_[p]) = 0 := by
+      rw [map_natCast]
+      exact CharP.cast_eq_zero k q
+    exact (hunit.map (algebraMap ℤ_[p] k)).ne_zero hzero
+
+/-- **Level-one triviality of the residual cyclotomic character**
+(PROVEN 2026-07-24 — the `ω`-side dictionary of the Kronecker–Weber
+assembly below): if `τ ∈ G_ℚ` fixes every `p`-th root of unity of `ℚ̄`,
+then the reduction `ω(τ) = algebraMap ℤ_[p] k (χ_cyc τ)` of the
+`p`-adic cyclotomic character in a finite `ℤ_[p]`-algebra field `k`
+is `1`. Proof: `cyclotomicCharacter.spec` at level `n = 1` reads the
+action on a primitive `p`-th root `ζ` as `τ ζ = ζ ^ (χ_cyc(τ) mod p)`;
+primitivity (`IsPrimitiveRoot.pow_inj`) turns `τ ζ = ζ` into
+`χ_cyc(τ) ≡ 1 (mod p)`, i.e.
+`χ_cyc(τ) − 1 ∈ ker (toZModPow 1) = (p)` (`PadicInt.ker_toZModPow`),
+and `p` dies in `k` (`charP_of_finite_padicInt_algebra`). This is what
+makes `ω` a character with OPEN kernel: it kills the fixing subgroup of
+the finite extension `ℚ(μ_p)/ℚ`. -/
+theorem algebraMap_cyclotomicCharacter_eq_one_of_fixes_rootsOfUnity
+    {k : Type*} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    {τ : Field.absoluteGaloisGroup ℚ}
+    (hτ : ∀ t : AlgebraicClosure ℚ, t ^ p = 1 → τ t = t) :
+    algebraMap ℤ_[p] k
+      (cyclotomicCharacter (AlgebraicClosure ℚ) p τ.toRingEquiv) = 1 := by
+  classical
+  haveI : CharP k p := charP_of_finite_padicInt_algebra
+  haveI hnz : NeZero (p ^ 1) := ⟨by simpa using hp.out.ne_zero⟩
+  haveI hgt : Fact (1 < p ^ 1) := ⟨by simpa using hp.out.one_lt⟩
+  have hlev : (((cyclotomicCharacter (AlgebraicClosure ℚ) p τ.toRingEquiv :
+      ℤ_[p]ˣ) : ℤ_[p]).toZModPow 1) = 1 := by
+    obtain ⟨ζ, hζ⟩ :=
+      HasEnoughRootsOfUnity.exists_primitiveRoot (AlgebraicClosure ℚ) p
+    have hζp : ζ ^ p ^ 1 = 1 := by
+      rw [pow_one]
+      exact hζ.pow_eq_one
+    have hspec := cyclotomicCharacter.spec (L := AlgebraicClosure ℚ) p
+      (n := 1) τ.toRingEquiv ζ hζp
+    have hfix : τ.toRingEquiv ζ = ζ := by
+      simpa using hτ ζ hζ.pow_eq_one
+    rw [hfix] at hspec
+    have hvlt : (((cyclotomicCharacter (AlgebraicClosure ℚ) p τ.toRingEquiv :
+        ℤ_[p]ˣ) : ℤ_[p]).toZModPow 1).val < p := by
+      simpa using ZMod.val_lt (((cyclotomicCharacter (AlgebraicClosure ℚ) p
+        τ.toRingEquiv : ℤ_[p]ˣ) : ℤ_[p]).toZModPow 1)
+    have hval1 : (1 : ℕ) = (((cyclotomicCharacter (AlgebraicClosure ℚ) p
+        τ.toRingEquiv : ℤ_[p]ˣ) : ℤ_[p]).toZModPow 1).val :=
+      hζ.pow_inj hp.out.one_lt hvlt (by rw [pow_one]; exact hspec)
+    refine ZMod.val_injective _ ?_
+    rw [ZMod.val_one]
+    exact hval1.symm
+  have hmem : ((cyclotomicCharacter (AlgebraicClosure ℚ) p τ.toRingEquiv :
+      ℤ_[p]ˣ) : ℤ_[p]) - 1 ∈ Ideal.span {((p : ℕ) : ℤ_[p]) ^ 1} := by
+    rw [← PadicInt.ker_toZModPow, RingHom.mem_ker, map_sub, map_one, hlev,
+      sub_self]
+  obtain ⟨t, ht⟩ := Ideal.mem_span_singleton'.mp hmem
+  rw [pow_one] at ht
+  have hp0 : algebraMap ℤ_[p] k ((p : ℕ) : ℤ_[p]) = 0 := by
+    rw [map_natCast]
+    exact CharP.cast_eq_zero k p
+  have hfin := congrArg (algebraMap ℤ_[p] k) ht
+  rw [map_mul, hp0, mul_zero, map_sub, map_one] at hfin
+  exact sub_eq_zero.mp hfin.symm
+
+/-- **The mod-`p` cyclotomic character is unramified outside `p`**
+(pillar E1a-iii; sorry node — the `ω`-side arithmetic input of the
+Kronecker–Weber assembly below): for a prime `q ≠ p`, the reduction in
+a finite `ℤ_[p]`-algebra field `k` of the `p`-adic cyclotomic character
+kills the image in `G_ℚ` of the local inertia at `q`. Classical
+content: `ℚ(μ_p)/ℚ` is unramified at every `q ≠ p` — `X^p − 1` is
+separable over the residue field at `q`, so reduction is INJECTIVE on
+`μ_p` and an inertia element, which fixes residues, fixes `μ_p`
+elementwise; level `1` of `cyclotomicCharacter.toZModPow` then reads
+the value `1`, and only level `1` survives in characteristic `p`
+(`algebraMap_cyclotomicCharacter_eq_one_of_fixes_rootsOfUnity` above).
+
+PROJECT TEMPLATE (2026-07-24): this is the general-`p` analogue of the
+PROVEN `ℓ = 3` leaf
+`IsHardlyRamified.cyclotomicCharacterModL_eq_one_of_mem_localInertiaGroup`
+(`Threeadic.lean`), whose proof transports a primitive root along the
+embedding `ι : ℚ̄ →ₐ ℚ̄ᵥ` underlying `Field.absoluteGaloisGroup.map`,
+observes that `σ (ι ζ) = (ι ζ)^j` puts `(ι ζ)^{j−1} − 1` in the maximal
+ideal `𝔪` of the integral closure, and contradicts this with
+`(1 − ζ)(1 − ζ²)⋯(1 − ζ^{p−1}) = p`, a `v`-adic unit for `q ≠ p`
+(`isUnit_natCast_adicCompletionIntegers`) — verbatim generalizable
+from `p = 3` to any `p` by replacing the `interval_cases` over cube
+roots with the cyclotomic-evaluation product
+(`Polynomial.eval_one_cyclotomic_prime`). It also SUBSUMES the file's
+later sorried `q = 2` instance
+`algebraMap_cyclotomicCharacter_eq_one_of_mem_localInertiaGroup_two`
+(different owner; to be rewired at integration, not touched here).
+Soundness (audit 2026-07-24): the hypothesis set is inhabited (every
+prime `q ≠ p` and every inertia element, e.g. `σ = 1`), and the
+conclusion holds for every inhabitant by the unramifiedness cited;
+neither `hpodd` nor `p ≥ 5` is consumed. CIRCULARITY GUARD (inherited
+from pillar E1a): must not be proven through `Family.lean` or
+`Reducible.lean`'s B5. -/
+theorem algebraMap_cyclotomicCharacter_eq_one_of_mem_localInertiaGroup_ne
+    {k : Type*} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    {q : ℕ} (hq : q.Prime) (hqp : q ≠ p)
+    {σ : Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)}
+    (hσ : σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat) :
+    algebraMap ℤ_[p] k (cyclotomicCharacter (AlgebraicClosure ℚ) p
+      ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)) σ).toRingEquiv)) = 1 :=
+  sorry
+
+/-- **Tame pinning of a mod-`p` character on the inertia at `p`**
+(pillar E1a-iv; sorry node — the LOCAL class-field-theoretic core of
+the Kronecker–Weber assembly below, and the only genuinely deep
+ingredient of it): a character `χ` of `G_ℚ` with values in the units of
+a finite field `k` of characteristic `p` and with OPEN kernel agrees,
+on the image of the local inertia group at `p`, with a POWER of the
+mod-`p` cyclotomic character `ω`.
+
+Classical proof (Serre, Duke Math. J. 54 (1987), §1.3 and 1.7;
+Neukirch, *Algebraic Number Theory*, V §1; Washington, ch. 14): the
+open kernel makes the image of `χ` finite, and a finite subgroup of
+`kˣ` has order PRIME TO `p` (`k` has characteristic `p`), so
+`χ|_{I_p}` is TAME — it factors through the tame quotient
+`I_p^t = lim μ_{p^f−1}`, on which the decomposition group acts through
+Frobenius by `t ↦ t^p`. Because `χ` extends to the whole local group
+`G_{ℚ_p}` (it is the restriction of a global character), that action
+must fix `χ`, i.e. `χ(t)^p = χ(t)` on tame inertia, so `χ^{p−1} = 1`
+there and `χ|_{I_p}` factors through the LEVEL-ONE tame quotient
+`μ_{p−1} ≅ 𝔽_p^×`. The level-one fundamental character of tame inertia
+is exactly `ω|_{I_p}`, which maps `I_p` ONTO `𝔽_p^× ⊆ kˣ` (total
+ramification of `ℚ_p(μ_p)/ℚ_p`), so every character of that cyclic
+quotient of order dividing `p − 1` is a power of it — whence
+`χ = ω^i` on `I_p`.
+
+This is the LOCAL half of the Kronecker–Weber factorization: it
+replaces the global ray-class/`ℚ(μ_{p^∞})` argument (route α of the
+consumer's docstring) by Serre's tame-character analysis at `p` (route
+β), which the project's PROVEN tame machinery already models — the
+conductor-descent engine
+`IsHardlyRamified.character_pow_eight_localInertia_three_eq_one_ray_class`
+(`ModThree.lean`) and the finite-level tame-Frobenius generator
+`exists_finite_level_tame_frobenius_generator_two` run the same
+`φ t φ⁻¹ = t^{q}` bookkeeping at the residual prime. Note the
+companion leaf
+`sub_one_dvd_of_cyclotomicCharacter_residue_inertia_pow_eq_one` (pillar
+E1b-ii, below) is the SURJECTIVITY half of the same §1.3 statement; a
+single "tame inertia at `p` is cyclic of order `p − 1`, detected by
+`ω`" development would discharge both.
+
+Soundness (audit 2026-07-24): the hypothesis set is inhabited (`χ = 1`
+with `i = 0`, and the `toHomUnits` lift of `ω` itself with `i = 1`),
+and the conclusion holds for every inhabitant by the argument cited;
+the statement is true at `p = 2` as well (`p − 1 = 1` forces
+`χ|_{I_2} = 1 = ω^0|_{I_2}`), so neither `hpodd` nor `p ≥ 5` is
+consumed. CIRCULARITY GUARD (inherited from pillar E1a): must not be
+proven through `Family.lean` or `Reducible.lean`'s B5. -/
+theorem exists_pow_eq_algebraMap_cyclotomicCharacter_localInertia_p
+    {k : Type*} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    (χ : Field.absoluteGaloisGroup ℚ →* kˣ)
+    (hker : IsOpen ((χ.ker : Subgroup (Field.absoluteGaloisGroup ℚ)) :
+      Set (Field.absoluteGaloisGroup ℚ)))
+    (hp' : p.Prime) :
+    ∃ i : ℕ, ∀ σ ∈ localInertiaGroup hp'.toHeightOneSpectrumRingOfIntegersRat,
+      ((χ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)) σ) : kˣ) : k) =
+      (algebraMap ℤ_[p] k (cyclotomicCharacter (AlgebraicClosure ℚ) p
+        ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat))
+          σ).toRingEquiv))) ^ i :=
+  sorry
+
 include hpodd in
 /-- **Kronecker–Weber pinning of characters unramified outside `p`**
-(sorry node — the ray-class/cyclotomic factorization core of pillar
+(PROVEN 2026-07-24 as an assembly over the E1a-iii/E1a-iv cut —
+formerly the ray-class/cyclotomic factorization core of pillar
 E1a): a character `χ` of `G_ℚ` with values in the units of a finite
 field `k` of characteristic `p`, with OPEN kernel, that kills the
 local inertia at EVERY prime `q ≠ p` (one embedding per prime
@@ -7047,42 +7246,41 @@ of the mod-`p` cyclotomic character `ω` (the composite of the `p`-adic
 cyclotomic character with `algebraMap ℤ_[p] k`, which factors through
 `𝔽_p ⊆ k` since `k` has characteristic `p`).
 
-Classical proof (Neukirch, *Algebraic Number Theory*, V §1 and
-VI §6–7; Washington, *Introduction to Cyclotomic Fields*, ch. 14):
-the open kernel makes the image finite, and a finite subgroup of `kˣ`
-has order prime to `p`; the fixed field `K` of `ker χ` is a finite
-ABELIAN extension of `ℚ` unramified outside `p` (all inertia
-subgroups at `q ≠ p` die, by conjugation-invariance), so by
-Kronecker–Weber `K ⊆ ℚ(μ_{p^r})` for some `r` — equivalently `χ`
-factors through the ray class group of conductor `p^r∞`, i.e. through
-`Gal(ℚ(μ_{p^∞})/ℚ) ≅ ℤ_p^×`; the prime-to-`p` order kills the pro-`p`
-factor `1 + pℤ_p`, so `χ` factors through
-`Gal(ℚ(μ_p)/ℚ) ≅ (ℤ/p)^×`, a cyclic group of order `p − 1`; the
-mod-`p` cyclotomic character `ω` realizes an ISOMORPHISM of that
-quotient onto `μ_{p−1}(k) = 𝔽_p^× ⊆ k^×` (level-one detection:
-`cyclotomicCharacter.toZModPow` at `n = 1` plus `CharP k p`;
-surjectivity is `Gal(ℚ(μ_p)/ℚ) ≅ (ℤ/p)^×`), and every homomorphism
-`(ℤ/p)^× → kˣ` lands in the unique cyclic subgroup of order dividing
-`p − 1`, i.e. is a power of that isomorphism — so `χ = ω^i`.
+ROUTE TAKEN (2026-07-24): NOT the classical global Kronecker–Weber
+factorization (route α: `χ` factors through the ray class group of
+conductor `p^r∞`, i.e. through `Gal(ℚ(μ_{p^∞})/ℚ) ≅ ℤ_p^×`, whose
+prime-to-`p` quotient is `Gal(ℚ(μ_p)/ℚ) ≅ (ℤ/p)^×` — Neukirch VI §6–7,
+Washington ch. 14; mathlib has NO Kronecker–Weber theorem, so route α
+would have to build it), but the TAME MINKOWSKI route β: it is enough
+to pin `χ` against `ω` on the local inertia at `p` and then let
+Minkowski do the globalization. Concretely, the assembly here is
 
-Project machinery for the attack: the conductor-descent ray-class
-engine at the residual prime,
-`IsHardlyRamified.character_pow_eight_localInertia_three_eq_one_ray_class`
-(`ModThree.lean`, PROVEN — tame-generator/Frobenius-conjugation
-analysis of local inertia, generalized past its quadratic data), the
-odd-order and quadratic ray-class leaves' shared skeleton
-(`odd_order_character_eq_one_ray_class` and companions), the
-Minkowski core `open_normal_subgroup_eq_top_of_inertia_le` /
-`minkowski_character_trivial` (`MazurTorsion.lean`, PROVEN — the same
-fixed-field bookkeeping specialized to "unramified everywhere ⇒
-trivial"; THIS node is its conductor-`p^∞` refinement), and the
-`InertiaCardTransport` toolkit for moving inertia orders between the
-local and number-field worlds. An alternative tame route avoiding
-full Kronecker–Weber: `Gal(K/ℚ)` is generated by its inertia at `p`
-(Minkowski, as in `open_normal_subgroup_eq_top_of_inertia_le`), which
-is cyclic of order dividing `p − 1` (tame, since the degree is prime
-to `p`), and the eigenvalue of a tame totally ramified abelian
-extension on inertia is detected by `ω` (Serre, Duke 1987, §1.3).
+* `ω := Units.map (algebraMap ℤ_[p] k) ∘ χ_cyc` is a `kˣ`-valued
+  character of `G_ℚ` with OPEN kernel — it kills the fixing subgroup
+  of the finite extension `ℚ(μ_p)/ℚ`, by the level-one dictionary
+  `algebraMap_cyclotomicCharacter_eq_one_of_fixes_rootsOfUnity`
+  (PROVEN above) and `IntermediateField.fixingSubgroup_isOpen`;
+* the LOCAL pinning at `p`,
+  `exists_pow_eq_algebraMap_cyclotomicCharacter_localInertia_p`
+  (pillar E1a-iv, sorried — Serre's tame-character analysis §1.3),
+  produces the exponent `i` with `χ = ω^i` on the image of `I_p`;
+* `ω` is unramified outside `p`,
+  `algebraMap_cyclotomicCharacter_eq_one_of_mem_localInertiaGroup_ne`
+  (pillar E1a-iii, sorried — `ℚ(μ_p)/ℚ` is unramified at `q ≠ p`);
+* hence the twist `ψ := χ · ω^{−i}` — a character with open kernel,
+  since `ker ψ ⊇ ker χ ⊓ ker ω` — kills the local inertia at EVERY
+  prime: at `q ≠ p` both factors die (`hunram` and E1a-iii), at `p`
+  they cancel (E1a-iv);
+* so `minkowski_character_trivial` (`MazurTorsion.lean`, PROVEN — an
+  everywhere-unramified character of `G_ℚ` with open kernel is
+  trivial, via `open_normal_subgroup_eq_top_of_inertia_le` and the
+  discriminant bound) gives `ψ = 1`, i.e. `χ = ω^i` GLOBALLY.
+
+The arithmetic depth of the node therefore now sits in exactly two
+leaves: the tame local pinning at `p` (E1a-iv) and the unramifiedness
+of `ω` away from `p` (E1a-iii), the latter being the general-`p`
+version of the PROVEN `ℓ = 3` leaf
+`IsHardlyRamified.cyclotomicCharacterModL_eq_one_of_mem_localInertiaGroup`.
 
 Soundness (audit 2026-07-24): the hypothesis set is inhabited (`χ = 1`
 with `i = 0`, and the `toHomUnits` lift of `ω` itself, unramified
@@ -7104,8 +7302,124 @@ theorem character_eq_pow_cyclotomicCharacter_of_unramified_outside_p
             hq.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1) :
     ∃ i : ℕ, ∀ g, (χ g : k) =
       (algebraMap ℤ_[p] k
-        (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv)) ^ i :=
-  sorry
+        (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv)) ^ i := by
+  classical
+  -- the mod-`p` cyclotomic character as a `kˣ`-valued character of `G_ℚ`
+  set ω : Field.absoluteGaloisGroup ℚ →* kˣ :=
+    (Units.map (algebraMap ℤ_[p] k).toMonoidHom).comp
+      ((cyclotomicCharacter (AlgebraicClosure ℚ) p).comp
+        (MulSemiringAction.toRingAut (Field.absoluteGaloisGroup ℚ)
+          (AlgebraicClosure ℚ))) with hωdef
+  have hωval : ∀ g : Field.absoluteGaloisGroup ℚ, ((ω g : kˣ) : k) =
+      algebraMap ℤ_[p] k
+        (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv) := by
+    intro g
+    have hR : MulSemiringAction.toRingAut (Field.absoluteGaloisGroup ℚ)
+        (AlgebraicClosure ℚ) g = g.toRingEquiv := RingEquiv.ext fun _ => rfl
+    rw [hωdef]
+    simp only [MonoidHom.comp_apply, Units.coe_map, RingHom.toMonoidHom_eq_coe,
+      MonoidHom.coe_coe, hR]
+  -- `ω` has open kernel: it kills the fixing subgroup of `ℚ(μ_p)`
+  have hωker : IsOpen ((ω.ker : Subgroup (Field.absoluteGaloisGroup ℚ)) :
+      Set (Field.absoluteGaloisGroup ℚ)) := by
+    haveI : NeZero p := ⟨hp.out.ne_zero⟩
+    haveI : Finite ((rootsOfUnity p (AlgebraicClosure ℚ) :
+        Set (AlgebraicClosure ℚ)ˣ)) :=
+      inferInstanceAs (Finite (rootsOfUnity p (AlgebraicClosure ℚ)))
+    have hSfin : (((↑) : (AlgebraicClosure ℚ)ˣ → AlgebraicClosure ℚ) ''
+        (rootsOfUnity p (AlgebraicClosure ℚ) :
+          Set (AlgebraicClosure ℚ)ˣ)).Finite :=
+      Set.Finite.image _ (Set.toFinite _)
+    haveI := hSfin.to_subtype
+    haveI halg : Algebra.IsAlgebraic ℚ (AlgebraicClosure ℚ) :=
+      AlgebraicClosure.isAlgebraic ℚ
+    haveI : FiniteDimensional ℚ (IntermediateField.adjoin ℚ
+        (((↑) : (AlgebraicClosure ℚ)ˣ → AlgebraicClosure ℚ) ''
+          (rootsOfUnity p (AlgebraicClosure ℚ) :
+            Set (AlgebraicClosure ℚ)ˣ))) :=
+      IntermediateField.finiteDimensional_adjoin fun x _ =>
+        (Algebra.IsAlgebraic.isAlgebraic (R := ℚ) x).isIntegral
+    refine Subgroup.isOpen_mono (H₁ := (IntermediateField.adjoin ℚ
+      (((↑) : (AlgebraicClosure ℚ)ˣ → AlgebraicClosure ℚ) ''
+        (rootsOfUnity p (AlgebraicClosure ℚ) :
+          Set (AlgebraicClosure ℚ)ˣ))).fixingSubgroup) ?_
+      ((IntermediateField.adjoin ℚ _).fixingSubgroup_isOpen)
+    intro τ hτmem
+    refine MonoidHom.mem_ker.mpr (Units.ext ((hωval τ).trans ?_))
+    refine algebraMap_cyclotomicCharacter_eq_one_of_fixes_rootsOfUnity
+      (fun t ht => ?_)
+    have htne : t ≠ 0 := by
+      intro h
+      rw [h, zero_pow hp.out.ne_zero] at ht
+      exact zero_ne_one ht
+    have hmemS : t ∈ (((↑) : (AlgebraicClosure ℚ)ˣ → AlgebraicClosure ℚ) ''
+        (rootsOfUnity p (AlgebraicClosure ℚ) :
+          Set (AlgebraicClosure ℚ)ˣ)) :=
+      ⟨Units.mk0 t htne, (mem_rootsOfUnity' p _).mpr (by simpa using ht), rfl⟩
+    exact ((IntermediateField.mem_fixingSubgroup_iff _ _).mp hτmem) t
+      (IntermediateField.subset_adjoin ℚ _ hmemS)
+  -- the tame local pinning at `p` produces the exponent
+  obtain ⟨i, hi⟩ :=
+    exists_pow_eq_algebraMap_cyclotomicCharacter_localInertia_p χ hker hp.out
+  refine ⟨i, fun g => ?_⟩
+  -- the twist `ψ = χ · ω⁻ⁱ` is unramified at EVERY prime, hence trivial
+  set ψ : Field.absoluteGaloisGroup ℚ →* kˣ :=
+    MonoidHom.mk' (fun g => χ g * (ω g ^ i)⁻¹) (by
+      intro a b
+      rw [map_mul, map_mul, mul_pow, mul_inv, mul_mul_mul_comm]) with hψdef
+  have hψval : ∀ g : Field.absoluteGaloisGroup ℚ, ψ g = χ g * (ω g ^ i)⁻¹ := by
+    intro g
+    rw [hψdef]
+    rfl
+  have hψker : IsOpen ((ψ.ker : Subgroup (Field.absoluteGaloisGroup ℚ)) :
+      Set (Field.absoluteGaloisGroup ℚ)) := by
+    refine Subgroup.isOpen_mono (H₁ := χ.ker ⊓ ω.ker) ?_ ?_
+    · intro x hx
+      rw [MonoidHom.mem_ker, hψval,
+        MonoidHom.mem_ker.mp (Subgroup.mem_inf.mp hx).1,
+        MonoidHom.mem_ker.mp (Subgroup.mem_inf.mp hx).2, one_pow, inv_one,
+        mul_one]
+    · rw [Subgroup.coe_inf]
+      exact hker.inter hωker
+  have hψunram : ∀ (q : ℕ) (hq : q.Prime),
+      localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat ≤
+        (ψ.comp (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat))).toMonoidHom).ker := by
+    intro q hq σ hσ
+    have hkey : ψ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1 := by
+      rw [hψval]
+      by_cases hqp : q = p
+      · -- at `p`: the tame pinning makes the two factors cancel
+        subst hqp
+        have hcoe : χ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat)) σ) =
+            ω (Field.absoluteGaloisGroup.map (algebraMap ℚ
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat)) σ) ^ i := by
+          refine Units.ext ?_
+          rw [Units.val_pow_eq_pow_val, hωval]
+          exact hi σ hσ
+        rw [hcoe, mul_inv_cancel]
+      · -- away from `p`: both factors die
+        have hω1 : ω (Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1 := by
+          refine Units.ext ?_
+          rw [Units.val_one, hωval]
+          exact algebraMap_cyclotomicCharacter_eq_one_of_mem_localInertiaGroup_ne
+            hq hqp hσ
+        rw [hunram q hq hqp σ hσ, hω1, one_pow, inv_one, mul_one]
+    exact MonoidHom.mem_ker.mpr hkey
+  have hψ1 : ψ = 1 := minkowski_character_trivial ψ hψker hψunram
+  have hg : χ g * (ω g ^ i)⁻¹ = 1 := by
+    rw [← hψval]
+    rw [hψ1]
+    rfl
+  rw [mul_inv_eq_one.mp hg, Units.val_pow_eq_pow_val, hωval]
 
 set_option backward.isDefEq.respectTransparency false in
 set_option maxHeartbeats 1000000 in
