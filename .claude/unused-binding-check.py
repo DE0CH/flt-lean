@@ -102,6 +102,43 @@ def _check(worktree_path, file_path):
     return unused
 
 
+def _parsed_response(payload):
+    """The report-MCP `diagnostics` result as a dict, or None."""
+    resp = payload.get("tool_response")
+    if isinstance(resp, list) and resp:
+        resp = resp[0]
+    if isinstance(resp, dict):
+        content = resp.get("content")
+        if isinstance(content, list) and content and isinstance(content[0], dict):
+            text = content[0].get("text") or ""
+            try:
+                resp = json.loads(text)
+            except Exception:
+                return None
+    return resp if isinstance(resp, dict) else None
+
+
+def _has_error(payload) -> bool:
+    """True if the file failed to elaborate.
+
+    When elaboration fails, `documentHighlight` has no semantic information to
+    return and falls back to at most the definition occurrence -- which this
+    check would read as "exactly 1 highlight, therefore unused". That is a FALSE
+    POSITIVE, and it fires precisely when an agent is already dealing with a
+    broken build, i.e. at the worst moment. Observed 2026-07-25: `hN0` in
+    `archConv_decay` was flagged unused while being consumed three times
+    (`hN0.le` twice, `ne_of_gt hN0`), because the worktree's import cone was red
+    from an unrelated file. So: no elaboration, no verdict."""
+    resp = _parsed_response(payload)
+    if not resp:
+        return False
+    diags = resp.get("diagnostics")
+    if not isinstance(diags, list):
+        return False
+    # LSP DiagnosticSeverity: 1 = Error.
+    return any(isinstance(d, dict) and d.get("severity") == 1 for d in diags)
+
+
 def _false_clean_warning(payload) -> str:
     """An empty diagnostics list is only trustworthy when the call actually
     received the compiler's publish.
@@ -164,6 +201,8 @@ def main() -> int:
                 }
             }))
             return 0
+        if _has_error(payload):
+            return 0  # see _has_error: highlights are meaningless on a red file
         worktree_path = _worktree_path(tool_name)
         file_path = (payload.get("tool_input") or {}).get("file_path")
         if not worktree_path or not file_path:
