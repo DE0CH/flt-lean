@@ -117,6 +117,9 @@ public import Mathlib.NumberTheory.NumberField.Basic
 -- the parallel-weight-`2` Hecke polynomials in the STATEMENTS of the two
 -- joints of the automorphic cut, so this import must be public
 public import Mathlib.RingTheory.Ideal.Norm.AbsNorm
+-- proof-only: `RingHom.injective` (a ring hom out of a field is
+-- injective), the descent step of the automorphic joint's transport
+import Mathlib.RingTheory.SimpleRing.Basic
 public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 -- the potential-modularity carrier's fields (totally real base field,
 -- Galois enabling hypothesis for Brauer induction) live in these:
