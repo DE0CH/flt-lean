@@ -1,0 +1,47 @@
+# flt-lake-socket@.service — the REMOTE half of a Lean worker (Deyao, 2026-07-25).
+#
+# Runs on the machine where Lean actually executes. Owns ONE persistent
+# `lake serve` for the worktree ~/%i and exposes it on the unix socket
+# ~/%i/.report-server/lake.sock, accepting one client at a time.
+#
+# WHY IT IS A SYSTEMD UNIT AND NOT AN SSH CHILD: `lake serve` holds hours of warm
+# import-cone elaboration. If it were a child of the ssh session it would die with
+# the connection and that state would be lost on every hiccup. As a systemd user
+# unit it survives ssh drops, bridge restarts, and anything else stopping on the
+# client side — clients come and go around it.
+#
+# WHY A SOCKET AND NOT FIFOs: a FIFO hands each byte to exactly one reader, and
+# keeping a FIFO from EOF-ing requires holding it O_RDWR, which makes the writer a
+# reader too — so a request can be delivered back to the writer instead of to
+# lake serve. Chaining FIFO -> pipe -> FIFO across two hosts gave that ambiguity
+# four chances to bite and it bit twice, silently. Sockets are point-to-point.
+#
+# HANDSHAKE NOTE: because lake serve persists across client reconnects it stays
+# INITIALIZED, and it errors if sent `initialize` twice. So the LOCAL bridge must
+# NOT clear .report-server/state.json on restart. Only a restart of THIS unit
+# invalidates the handshake; clearing the marker then is the orchestrator's job.
+#
+# Install on a Lean host (once):
+#   scp flt-lake-socket.py flt-lake-socket@.service <host>:...
+#   ssh <host> systemctl --user daemon-reload
+# Manage:
+#   ssh <host> systemctl --user start|stop|restart flt-lake-socket@<instance>
+#   ssh <host> journalctl --user -u flt-lake-socket@<instance>
+# The journal carries per-direction BYTE COUNTERS on every client disconnect —
+# they exist because the FIFO relay this replaced failed silently and could not be
+# diagnosed without them.
+
+[Unit]
+Description=FLT Lean worker (persistent lake serve on a unix socket) — instance %i
+
+[Service]
+Type=exec
+WorkingDirectory=%h/%i
+Environment=PATH=/home/chend/.elan/bin:/usr/local/bin:/usr/bin:/bin
+ExecStartPre=/bin/sh -c 'mkdir -p .report-server'
+ExecStart=/usr/bin/python3 %h/flt-lean/flt-lake-socket.py %i
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target
