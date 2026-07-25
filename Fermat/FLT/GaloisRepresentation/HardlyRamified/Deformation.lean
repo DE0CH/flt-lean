@@ -62,7 +62,8 @@ them without a human. Do not re-wrap it.
 - `exists_isStrictlyUniversalOnFrames_of_deformationCondition`
 - `hasFlatProlongationAt_of_pi_surjection`
 - `isFlatAt_of_fibreProduct`
-- `isTameAtTwo_of_fibreProduct`
+- `exists_cyclotomicCharacter_padicTwo_eq_two`
+- `isTameAtTwo_of_fibreProduct_three`
 - `isTameAtTwo_of_forall_isOpen_quotient`
 - `exists_ringHom_matrix_quotient_of_finite`
 - `exists_pow_comap_le_pow_maximalIdeal_traceSubring`
@@ -2171,9 +2172,213 @@ theorem isFlatAt_of_fibreProduct (hodd : Odd ℓ)
       (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : ℓ.Prime)) :=
   sorry
 
+/-- **A Frobenius at `2` inside `Γ ℚ_[2]`, with cyclotomic value `2`**
+(sorry node, cut 2026-07-26 out of `isTameAtTwo_of_fibreProduct` below:
+the ARITHMETIC input of that gluing argument, and the ONLY place it uses
+`hodd`).
+
+For odd `ℓ` the tower `ℚ_2(μ_{ℓⁿ})/ℚ_2` is UNRAMIFIED and its Frobenius
+acts on `ℓⁿ`-th roots of unity by `ζ ↦ ζ²`. So the `ℓ`-adic cyclotomic
+character of `Γ ℚ` takes the value `2` on the image in `Γ ℚ` of a
+Frobenius at `2`. This is exactly what pins `det ρ(g₀) = 2` in the
+consumer, and `2` — rather than an unknown unit — is what makes the
+determinant test element `det ρ(g₀) − δ₁(g₀)δ₂(g₀) ∈ {1, 3}` a unit for
+`ℓ ≥ 5`, hence what forces the two given lines to agree over `A₀`.
+
+`hodd` IS LOAD-BEARING, and its failure is not tidiness: at `ℓ = 2` the
+character takes values in `ℤ_2ˣ` while `2 ∉ ℤ_2ˣ`, so the statement is
+outright FALSE for `ℓ = 2`.
+
+ROUTE, RECORDED FOR ITS OWNER (2026-07-26; surveyed, not carried out).
+`Chebotarev.lean` — imported here — already PROVES the global form
+`cyclotomicCharacter_globalFrob : χ_ℓ (globalFrob v_q) = q` for `q ≠ ℓ`,
+where `globalFrob v = Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_v)
+(Field.AbsoluteGaloisGroup.adicArithFrob v)`. The ONLY missing step is
+the transport from the adic completion `ℚ_{v₂}` to mathlib's `Padic`
+`ℚ_[2]`: the continuous `ℚ`-algebra isomorphism `E : ℚ_{v₂} ≃A[ℚ] ℚ_[2]`
+(`Rat.HeightOneSpectrum.adicCompletion.padicEquiv`, cast through
+`natGenerator_toHeightOneSpectrum`) supplies the candidate
+`g₀ := Field.absoluteGaloisGroup.map (E.symm : ℚ_[2] →+* ℚ_{v₂})
+        (Field.AbsoluteGaloisGroup.adicArithFrob v₂)`,
+and two applications of `Field.absoluteGaloisGroup.lift_map` show that
+`map (algebraMap ℚ ℚ_[2]) g₀` and `globalFrob v₂` differ by CONJUGATION
+by the single element of `Γ ℚ` comparing the two `ℚ`-embeddings
+`ℚᵃˡᵍ → ℚ_{v₂}ᵃˡᵍ`. Conjugation is invisible here because `χ_ℓ` is a
+homomorphism into an ABELIAN group. `Modularity/Interface.lean`'s PROVEN
+`exists_uniform_conj_decomposition_two_padic` performs precisely that
+comparison (stated in the opposite direction), but it lives DOWNSTREAM
+of this module and the circularity guard at the head of this file
+forbids importing it — so the comparison must be redone here, or that
+declaration moved upstream into `Chebotarev.lean`. -/
+theorem exists_cyclotomicCharacter_padicTwo_eq_two (hodd : Odd ℓ) :
+    ∃ g : Field.absoluteGaloisGroup ℚ_[2],
+      ((cyclotomicCharacter (AlgebraicClosure ℚ) ℓ
+          (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) g).toRingEquiv :
+        ℤ_[ℓ]ˣ) : ℤ_[ℓ]) = 2 :=
+  sorry
+
+/-- **Two unimodular left eigenvectors of a `2 × 2` matrix over a local
+ring are proportional as soon as `det m − d d'` is a unit** (PROVEN
+2026-07-26; pure commutative algebra, the uniqueness engine of
+`isTameAtTwo_of_fibreProduct` below).
+
+`r` and `r'` are rows with `r m = d r` and `r' m = d' r'`, each
+UNIMODULAR (`hx`, `hx'`: some `A`-combination of the entries is `1`,
+i.e. each is the coordinate vector of a SURJECTIVE functional). The
+`2 × 2` identity
+
+  `(r₀ r'₁ − r₁ r'₀) · (det m − d d') = 0`
+
+— a `linear_combination` of the four eigen-equations — says that if the
+two rows were independent then `m` would be diagonalised by them and
+`det m` would be `d d'`. With `det m − d d'` a unit the cross
+determinant vanishes, and over a LOCAL ring unimodularity makes one
+entry of `r` invertible, which turns the vanishing into `r' = u · r`
+with `u` a unit (unit because `r'` is unimodular in turn).
+
+This is the statement that makes the two lines handed out by the two
+projections in `isTameAtTwo_of_fibreProduct` AGREE over `A₀`, which is
+the whole content of that gluing. -/
+theorem exists_unit_smul_of_vecMul_eq {A : Type*} [CommRing A] [IsLocalRing A]
+    (m : Matrix (Fin 2) (Fin 2) A) (r r' : Fin 2 → A) (d d' : A)
+    (hr : ∀ j, ∑ i, r i * m i j = d * r j)
+    (hr' : ∀ j, ∑ i, r' i * m i j = d' * r' j)
+    (hx : ∃ x : Fin 2 → A, ∑ i, r i * x i = 1)
+    (hx' : ∃ x : Fin 2 → A, ∑ i, r' i * x i = 1)
+    (hunit : IsUnit (m.det - d * d')) :
+    ∃ u : A, IsUnit u ∧ ∀ i, r' i = u * r i := by
+  obtain ⟨x, hx⟩ := hx
+  obtain ⟨x', hx'⟩ := hx'
+  have e00 := hr 0
+  have e01 := hr 1
+  have e10 := hr' 0
+  have e11 := hr' 1
+  rw [Fin.sum_univ_two] at e00 e01 e10 e11 hx hx'
+  rw [Matrix.det_fin_two] at hunit
+  have hcross : (r 0 * r' 1 - r 1 * r' 0) *
+      (m 0 0 * m 1 1 - m 0 1 * m 1 0 - d * d') = 0 := by
+    linear_combination (r' 0 * m 0 1 + r' 1 * m 1 1) * e00 -
+      (r' 0 * m 0 0 + r' 1 * m 1 0) * e01 - (d * r 1) * e10 + (d * r 0) * e11
+  have hzero : r 0 * r' 1 - r 1 * r' 0 = 0 := by
+    obtain ⟨w, hw⟩ := hunit
+    have h1 : (r 0 * r' 1 - r 1 * r' 0) * ((w : A) * ((w⁻¹ : Aˣ) : A)) = 0 := by
+      rw [hw, ← mul_assoc, hcross, zero_mul]
+    simpa using h1
+  have hcases : IsUnit (r 0) ∨ IsUnit (r 1) := by
+    have h1 : IsUnit (r 0 * x 0 + r 1 * x 1) := by rw [hx]; exact isUnit_one
+    exact (IsLocalRing.isUnit_or_isUnit_of_isUnit_add h1).imp
+      isUnit_of_mul_isUnit_left isUnit_of_mul_isUnit_left
+  rcases hcases with h | h
+  · obtain ⟨s, hs⟩ := h.exists_right_inv
+    have key0 : r' 0 = r' 0 * s * r 0 := by linear_combination (-(r' 0)) * hs
+    have key1 : r' 1 = r' 0 * s * r 1 := by
+      linear_combination (-(r' 1)) * hs + s * hzero
+    have key : ∀ i, r' i = r' 0 * s * r i := by
+      intro i; fin_cases i
+      · exact key0
+      · exact key1
+    refine ⟨r' 0 * s, IsUnit.of_mul_eq_one (r 0 * x' 0 + r 1 * x' 1) ?_, key⟩
+    rw [show r' 0 * s * (r 0 * x' 0 + r 1 * x' 1) =
+      r' 0 * s * r 0 * x' 0 + r' 0 * s * r 1 * x' 1 by ring, ← key0, ← key1]
+    exact hx'
+  · obtain ⟨s, hs⟩ := h.exists_right_inv
+    have key1 : r' 1 = r' 1 * s * r 1 := by linear_combination (-(r' 1)) * hs
+    have key0 : r' 0 = r' 1 * s * r 0 := by
+      linear_combination (-(r' 0)) * hs - s * hzero
+    have key : ∀ i, r' i = r' 1 * s * r i := by
+      intro i; fin_cases i
+      · exact key0
+      · exact key1
+    refine ⟨r' 1 * s, IsUnit.of_mul_eq_one (r 0 * x' 0 + r 1 * x' 1) ?_, key⟩
+    rw [show r' 1 * s * (r 0 * x' 0 + r 1 * x' 1) =
+      r' 1 * s * r 0 * x' 0 + r' 1 * s * r 1 * x' 1 by ring, ← key0, ← key1]
+    exact hx'
+
+/-- **The tame quadratic quotient at `2` glues along a fibre product —
+the `ℓ = 3` case** (sorry node, cut 2026-07-26 out of
+`isTameAtTwo_of_fibreProduct` below, which is PROVEN over it and over
+`exists_cyclotomicCharacter_padicTwo_eq_two`).
+
+THIS IS EXACTLY THE SHARP CASE THE PARENT DOCSTRING WARNS ABOUT, and it
+is a genuinely separate problem rather than a bookkeeping remainder.
+The proof of the parent runs on a unit: with `χ_ℓ(Frob_2) = 2` and the
+two quotient characters quadratic, the determinant test element is
+
+  `det ρ(g₀) − δ₁(g₀)δ₂(g₀) = 2 ∓ 1 ∈ {1, 3}`,
+
+and in a local `ℤ_ℓ`-algebra `A₀` (residue characteristic `ℓ`) both `1`
+and `3` are units EXACTLY WHEN `ℓ ≠ 3`. At `ℓ = 3` the value `3` sits in
+the maximal ideal, the cross determinant of the two eigen-rows is no
+longer forced to vanish, and the two projections may genuinely select
+DIFFERENT stable lines: `χ̄²= 1` on `G_2` precisely when `4 = 1` in the
+residue field, i.e. precisely at `ℓ = 3`, so in the split case BOTH
+Jordan–Hölder lines have unramified QUADRATIC quotient and the clause
+does not single one out.
+
+WHAT AN OWNER SHOULD WEIGH FIRST. The statement may well be TRUE anyway
+— in the split case `ρ` over `B` itself tends to split, which produces a
+line over `B` directly rather than by gluing — but nothing in the
+hypotheses supplies splitness, so it has to be produced. If it turns out
+FALSE, the repair is the one the parent docstring already names and it
+is UPSTREAM of this leaf, not a weakening of it: thread `5 ≤ ℓ` down
+from `exists_isStrictlyUniversalOnFrames_of_finite_lifts` and
+`exists_isStrictlyUniversalOnFrames_of_deformationCondition`, which DO
+carry `hℓ5 : 5 ≤ ℓ`, through `IsHardlyRamified` and
+`isHardlyRamified_of_fibreProduct` (edits to other owners'
+declarations, deliberately not made here).
+
+References: Conrad–Diamond–Taylor, JAMS 12 (1999), §2; Mazur, *Deforming
+Galois representations*, MSRI Publ. 16 (1989), §§18–23. -/
+theorem isTameAtTwo_of_fibreProduct_three (hthree : ℓ = 3)
+    {A₀ : Type u} [CommRing A₀] [TopologicalSpace A₀] [IsTopologicalRing A₀]
+    [IsLocalRing A₀] [Algebra ℤ_[ℓ] A₀] [Finite A₀]
+    {A₁ : Type u} [CommRing A₁] [TopologicalSpace A₁] [IsTopologicalRing A₁]
+    [IsLocalRing A₁] [Algebra ℤ_[ℓ] A₁] [Finite A₁]
+    {A₂ : Type u} [CommRing A₂] [TopologicalSpace A₂] [IsTopologicalRing A₂]
+    [IsLocalRing A₂] [Algebra ℤ_[ℓ] A₂] [Finite A₂]
+    {B : Type u} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
+    [IsLocalRing B] [Algebra ℤ_[ℓ] B] [Finite B]
+    (f₁ : A₁ →+* A₀) (f₂ : A₂ →+* A₀) (hf₂ : Function.Surjective f₂)
+    (p₁ : B →+* A₁) (p₂ : B →+* A₂) (hp₁ : Continuous p₁) (hp₂ : Continuous p₂)
+    (hcomm : f₁.comp p₁ = f₂.comp p₂)
+    (hemb : Topology.IsEmbedding fun b : B => (p₁ b, p₂ b))
+    (hcart : ∀ (a₁ : A₁) (a₂ : A₂), f₁ a₁ = f₂ a₂ → ∃ b : B, p₁ b = a₁ ∧ p₂ b = a₂)
+    {ρ : FramedGaloisRep ℚ B (Fin 2)}
+    (hdet : ∀ g, ρ.det g = algebraMap ℤ_[ℓ] B
+      (cyclotomicCharacter (AlgebraicClosure ℚ) ℓ g.toRingEquiv))
+    (h₁ : ∃ (π : (Fin 2 → A₁) →ₗ[A₁] A₁) (_ : Function.Surjective π)
+      (δ : GaloisRep ℚ_[2] A₁ A₁),
+      ∀ g : Field.absoluteGaloisGroup ℚ_[2], ∀ v : Fin 2 → A₁,
+        π ((pushforwardFrame p₁ hp₁ ρ).map (algebraMap ℚ ℚ_[2]) g v) = δ g (π v) ∧
+        (AddSubgroup.inertia
+          ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup :
+            AddSubgroup Z2bar) (Field.absoluteGaloisGroup ℚ_[2]) ≤ δ.ker) ∧
+        (∀ g' : Field.absoluteGaloisGroup ℚ_[2], δ g' * δ g' = 1))
+    (h₂ : ∃ (π : (Fin 2 → A₂) →ₗ[A₂] A₂) (_ : Function.Surjective π)
+      (δ : GaloisRep ℚ_[2] A₂ A₂),
+      ∀ g : Field.absoluteGaloisGroup ℚ_[2], ∀ v : Fin 2 → A₂,
+        π ((pushforwardFrame p₂ hp₂ ρ).map (algebraMap ℚ ℚ_[2]) g v) = δ g (π v) ∧
+        (AddSubgroup.inertia
+          ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup :
+            AddSubgroup Z2bar) (Field.absoluteGaloisGroup ℚ_[2]) ≤ δ.ker) ∧
+        (∀ g' : Field.absoluteGaloisGroup ℚ_[2], δ g' * δ g' = 1)) :
+    ∃ (π : (Fin 2 → B) →ₗ[B] B) (_ : Function.Surjective π)
+      (δ : GaloisRep ℚ_[2] B B),
+      ∀ g : Field.absoluteGaloisGroup ℚ_[2], ∀ v : Fin 2 → B,
+        π (ρ.map (algebraMap ℚ ℚ_[2]) g v) = δ g (π v) ∧
+        (AddSubgroup.inertia
+          ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup :
+            AddSubgroup Z2bar) (Field.absoluteGaloisGroup ℚ_[2]) ≤ δ.ker) ∧
+        (∀ g' : Field.absoluteGaloisGroup ℚ_[2], δ g' * δ g' = 1) :=
+  sorry
+
 /-- **The tame quadratic quotient at `2` glues along a fibre product**
-(sorry node, cut 2026-07-25 out of `isHardlyRamified_of_fibreProduct` —
-the Conrad–Diamond–Taylor half of Schlessinger's H1/H2).
+(PROVEN 2026-07-26 for every `ℓ ≥ 5`, over the arithmetic leaf
+`exists_cyclotomicCharacter_padicTwo_eq_two` and the linear-algebra
+brick `exists_unit_smul_of_vecMul_eq` immediately above; the remaining
+case `ℓ = 3` is the separate leaf `isTameAtTwo_of_fibreProduct_three`.
+Cut 2026-07-25 out of `isHardlyRamified_of_fibreProduct` — the
+Conrad–Diamond–Taylor half of Schlessinger's H1/H2).
 
 WHY IT IS NOT FORMAL. `IsHardlyRamified` states tameness at `2` as an
 EXISTENTIAL — SOME surjection `π : V ↠ R` and SOME unramified quadratic
@@ -2223,6 +2428,38 @@ owners' declarations, deliberately not made here), NOT to weaken this
 statement. And do not discharge this leaf by assuming `ρ̄|_{G_2}` is
 non-split: nothing in the hypotheses supplies that.
 
+HOW THE `ℓ ≥ 5` HALF IS PROVEN HERE (2026-07-26), with the uniqueness
+argument above carried out at the level of ROWS rather than of
+Jordan–Hölder factors, so that no semisimplification or residual
+reduction is needed.
+
+1. `ℓ ≠ 3` and `Odd ℓ` give `ℓ ≥ 5`, hence `2` and `3` are units in the
+   local `ℤ_ℓ`-algebra `A₀` (`PadicInt.isUnit_iff` plus coprimality).
+2. Each of `h₁`, `h₂` is a SURJECTIVE functional, i.e. a UNIMODULAR row
+   `rᵢ = (πᵢ e₀, πᵢ e₁)`, and the equivariance clause says exactly that
+   this row is a LEFT EIGENVECTOR of the matrix of `ρ(g₀)` with
+   eigenvalue `δᵢ(g₀)`, for `g₀` the Frobenius at `2` supplied by
+   `exists_cyclotomicCharacter_padicTwo_eq_two`.
+3. `hdet` at `g₀` gives `det ρ(g₀) = 2`, and the quadratic clause gives
+   `δ₁(g₀)δ₂(g₀) = ±1`, so the test element `det − d₁d₂` is `1` or `3`
+   — a unit by (1). `exists_unit_smul_of_vecMul_eq` then forces the two
+   rows to be proportional over `A₀` by a unit `u`.
+4. Lifting `u` through the SURJECTION `f₂` and rescaling `π₂` by its
+   inverse makes the two rows literally EQUAL over `A₀`, so `hcart`
+   glues them entrywise into a row over `B`; the glued functional is
+   surjective because `p₁` is a surjection of local rings (`IsLocalHom`)
+   and one entry of `r₁` is a unit.
+5. The character is then `ε g := π (ρ(g) x₀)` for any `π x₀ = 1`: it is
+   multiplicative, unramified and quadratic because `hemb` makes `B` inject
+   into `A₁ × A₂` and each of those statements is an identity of VALUES,
+   which descends along an injection. Continuity is
+   `IsModuleTopology.continuous_of_linearMap` applied to
+   `π ∘ₗ LinearMap.applyₗ x₀`.
+
+Step (1) is the ONLY place `ℓ ≠ 3` enters, and it enters as invertibility
+of `3`; that is exactly the boundary recorded above, and the complementary
+case is `isTameAtTwo_of_fibreProduct_three`.
+
 References: Conrad–Diamond–Taylor, JAMS 12 (1999), §2; Mazur, *Deforming
 Galois representations*, MSRI Publ. 16 (1989), §§18–23; Schlessinger,
 Trans. AMS 130 (1968), Thm. 2.11. -/
@@ -2266,8 +2503,345 @@ theorem isTameAtTwo_of_fibreProduct (hodd : Odd ℓ)
         (AddSubgroup.inertia
           ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup :
             AddSubgroup Z2bar) (Field.absoluteGaloisGroup ℚ_[2]) ≤ δ.ker) ∧
-        (∀ g' : Field.absoluteGaloisGroup ℚ_[2], δ g' * δ g' = 1) :=
-  sorry
+        (∀ g' : Field.absoluteGaloisGroup ℚ_[2], δ g' * δ g' = 1) := by
+  classical
+  by_cases h3 : ℓ = 3
+  · exact isTameAtTwo_of_fibreProduct_three h3 f₁ f₂ hf₂ p₁ p₂ hp₁ hp₂
+      hcomm hemb hcart hdet h₁ h₂
+  have hℓ5 : 5 ≤ ℓ := by
+    have hp : ℓ.Prime := Fact.out
+    have h2 : 2 ≤ ℓ := hp.two_le
+    have hodd' : ℓ % 2 = 1 := Nat.odd_iff.mp hodd
+    omega
+  -- `2` and `3` are units in `A₀`, because `ℓ ≥ 5`
+  have hu2 : IsUnit ((2 : ℕ) : A₀) := by
+    have hp : ℓ.Prime := Fact.out
+    have h : IsUnit ((2 : ℕ) : ℤ_[ℓ]) := PadicInt.isUnit_iff.mpr
+      (PadicInt.norm_natCast_eq_one_iff.mpr
+        ((Nat.coprime_primes hp Nat.prime_two).mpr (by omega)))
+    have h2 := h.map (algebraMap ℤ_[ℓ] A₀)
+    rwa [map_natCast] at h2
+  have hu3 : IsUnit ((3 : ℕ) : A₀) := by
+    have hp : ℓ.Prime := Fact.out
+    have h : IsUnit ((3 : ℕ) : ℤ_[ℓ]) := PadicInt.isUnit_iff.mpr
+      (PadicInt.norm_natCast_eq_one_iff.mpr
+        ((Nat.coprime_primes hp Nat.prime_three).mpr (by omega)))
+    have h2 := h.map (algebraMap ℤ_[ℓ] A₀)
+    rwa [map_natCast] at h2
+  obtain ⟨π₁, hπ₁surj, δ₁, hδ₁⟩ := h₁
+  obtain ⟨π₂, hπ₂surj, δ₂, hδ₂⟩ := h₂
+  have hinj : ∀ b b' : B, p₁ b = p₁ b' → p₂ b = p₂ b' → b = b' := by
+    intro b b' hb₁ hb₂
+    exact hemb.injective (by simp only [Prod.mk.injEq]; exact ⟨hb₁, hb₂⟩)
+  -- the two projections as row vectors, the two characters as scalars
+  have hπ₁val : ∀ v : Fin 2 → A₁, π₁ v = ∑ i, π₁ (Pi.single i 1) * v i := by
+    intro v
+    conv_lhs => rw [pi_eq_sum_univ' v]
+    rw [map_sum]
+    exact Finset.sum_congr rfl fun i _ => by rw [map_smul, smul_eq_mul, mul_comm]
+  have hπ₂val : ∀ v : Fin 2 → A₂, π₂ v = ∑ i, π₂ (Pi.single i 1) * v i := by
+    intro v
+    conv_lhs => rw [pi_eq_sum_univ' v]
+    rw [map_sum]
+    exact Finset.sum_congr rfl fun i _ => by rw [map_smul, smul_eq_mul, mul_comm]
+  have hδ₁val : ∀ (g : Field.absoluteGaloisGroup ℚ_[2]) (x : A₁),
+      δ₁ g x = δ₁ g 1 * x := by
+    intro g x
+    conv_lhs => rw [show x = x • (1 : A₁) by rw [smul_eq_mul, mul_one]]
+    rw [map_smul, smul_eq_mul, mul_comm]
+  have hδ₂val : ∀ (g : Field.absoluteGaloisGroup ℚ_[2]) (x : A₂),
+      δ₂ g x = δ₂ g 1 * x := by
+    intro g x
+    conv_lhs => rw [show x = x • (1 : A₂) by rw [smul_eq_mul, mul_one]]
+    rw [map_smul, smul_eq_mul, mul_comm]
+  -- the projections intertwine the pushforwards entrywise
+  have htr₁ : ∀ (g : Field.absoluteGaloisGroup ℚ_[2]) (v : Fin 2 → B),
+      (fun i => p₁ (ρ.map (algebraMap ℚ ℚ_[2]) g v i)) =
+      (pushforwardFrame p₁ hp₁ ρ).map (algebraMap ℚ ℚ_[2]) g
+        (fun i => p₁ (v i)) := by
+    intro g v
+    funext i
+    rw [GaloisRep.map_apply, GaloisRep.map_apply]
+    exact (pushforwardFrame_apply_map p₁ hp₁ ρ _ v i).symm
+  have htr₂ : ∀ (g : Field.absoluteGaloisGroup ℚ_[2]) (v : Fin 2 → B),
+      (fun i => p₂ (ρ.map (algebraMap ℚ ℚ_[2]) g v i)) =
+      (pushforwardFrame p₂ hp₂ ρ).map (algebraMap ℚ ℚ_[2]) g
+        (fun i => p₂ (v i)) := by
+    intro g v
+    funext i
+    rw [GaloisRep.map_apply, GaloisRep.map_apply]
+    exact (pushforwardFrame_apply_map p₂ hp₂ ρ _ v i).symm
+  have hrel₁ : ∀ (g : Field.absoluteGaloisGroup ℚ_[2]) (v : Fin 2 → B),
+      π₁ (fun i => p₁ (ρ.map (algebraMap ℚ ℚ_[2]) g v i)) =
+      δ₁ g 1 * π₁ (fun i => p₁ (v i)) := by
+    intro g v
+    rw [htr₁ g v, (hδ₁ g (fun i => p₁ (v i))).1, hδ₁val]
+  have hrel₂ : ∀ (g : Field.absoluteGaloisGroup ℚ_[2]) (v : Fin 2 → B),
+      π₂ (fun i => p₂ (ρ.map (algebraMap ℚ ℚ_[2]) g v i)) =
+      δ₂ g 1 * π₂ (fun i => p₂ (v i)) := by
+    intro g v
+    rw [htr₂ g v, (hδ₂ g (fun i => p₂ (v i))).1, hδ₂val]
+  -- the two characters are quadratic
+  have hsq₁ : ∀ g, δ₁ g 1 * δ₁ g 1 = 1 := by
+    intro g
+    have h := (hδ₁ 1 0).2.2 g
+    have h2 : (δ₁ g * δ₁ g) (1 : A₁) = (1 : Module.End A₁ A₁) 1 := by rw [h]
+    rwa [Module.End.mul_apply, Module.End.one_apply, hδ₁val] at h2
+  have hsq₂ : ∀ g, δ₂ g 1 * δ₂ g 1 = 1 := by
+    intro g
+    have h := (hδ₂ 1 0).2.2 g
+    have h2 : (δ₂ g * δ₂ g) (1 : A₂) = (1 : Module.End A₂ A₂) 1 := by rw [h]
+    rwa [Module.End.mul_apply, Module.End.one_apply, hδ₂val] at h2
+  -- a Frobenius at `2`, and the matrix of `ρ` there
+  obtain ⟨g₀, hg₀⟩ := exists_cyclotomicCharacter_padicTwo_eq_two (ℓ := ℓ) hodd
+  set φ₀ : B →+* A₀ := f₁.comp p₁ with hφ₀def
+  have hφ₀' : ∀ b : B, φ₀ b = f₂ (p₂ b) := by
+    intro b
+    rw [hφ₀def]
+    exact congrArg (fun F : B →+* A₀ => F b) hcomm
+  set M : Matrix (Fin 2) (Fin 2) B :=
+    LinearMap.toMatrix' (ρ.map (algebraMap ℚ ℚ_[2]) g₀) with hMdef
+  have hdetM : M.det = ((2 : ℕ) : B) := by
+    rw [hMdef, LinearMap.det_toMatrix', GaloisRep.map_apply,
+      ← GaloisRep.det_apply, hdet, hg₀, Nat.cast_ofNat]
+    exact map_ofNat _ 2
+  have hsingle₁ : ∀ j : Fin 2,
+      (fun i => p₁ ((Pi.single j (1 : B) : Fin 2 → B) i)) =
+      (Pi.single j (1 : A₁) : Fin 2 → A₁) := by
+    intro j
+    funext i
+    by_cases hij : i = j <;> simp [hij]
+  have hsingle₂ : ∀ j : Fin 2,
+      (fun i => p₂ ((Pi.single j (1 : B) : Fin 2 → B) i)) =
+      (Pi.single j (1 : A₂) : Fin 2 → A₂) := by
+    intro j
+    funext i
+    by_cases hij : i = j <;> simp [hij]
+  -- the two eigen-row relations over `A₀`
+  have hrow₁ : ∀ j, ∑ i, f₁ (π₁ (Pi.single i 1)) * (M.map φ₀) i j =
+      f₁ (δ₁ g₀ 1) * f₁ (π₁ (Pi.single j 1)) := by
+    intro j
+    have h := hrel₁ g₀ (Pi.single j 1)
+    rw [hsingle₁ j] at h
+    rw [hπ₁val] at h
+    have h2 := congrArg f₁ h
+    simp only [map_sum, map_mul] at h2
+    exact h2
+  have hrow₂ : ∀ j, ∑ i, f₂ (π₂ (Pi.single i 1)) * (M.map φ₀) i j =
+      f₂ (δ₂ g₀ 1) * f₂ (π₂ (Pi.single j 1)) := by
+    intro j
+    have h := hrel₂ g₀ (Pi.single j 1)
+    rw [hsingle₂ j] at h
+    rw [hπ₂val] at h
+    have h2 := congrArg f₂ h
+    simp only [map_sum, map_mul] at h2
+    simp only [Matrix.map_apply, hφ₀']
+    exact h2
+  -- unimodularity of the two rows over `A₀`
+  obtain ⟨w₁, hw₁⟩ := hπ₁surj 1
+  obtain ⟨w₂, hw₂⟩ := hπ₂surj 1
+  have huni₁ : ∑ i, f₁ (π₁ (Pi.single i 1)) * f₁ (w₁ i) = 1 := by
+    have h := congrArg f₁ (hπ₁val w₁)
+    rw [hw₁, map_one] at h
+    simp only [map_sum, map_mul] at h
+    exact h.symm
+  have huni₂ : ∑ i, f₂ (π₂ (Pi.single i 1)) * f₂ (w₂ i) = 1 := by
+    have h := congrArg f₂ (hπ₂val w₂)
+    rw [hw₂, map_one] at h
+    simp only [map_sum, map_mul] at h
+    exact h.symm
+  -- the eigenvalue product is `± 1`, so the determinant test element is a unit
+  have hprod : (f₁ (δ₁ g₀ 1) * f₂ (δ₂ g₀ 1)) * (f₁ (δ₁ g₀ 1) * f₂ (δ₂ g₀ 1)) = 1 := by
+    have e1 := congrArg f₁ (hsq₁ g₀)
+    have e2 := congrArg f₂ (hsq₂ g₀)
+    rw [map_mul, map_one f₁] at e1
+    rw [map_mul, map_one f₂] at e2
+    calc (f₁ (δ₁ g₀ 1) * f₂ (δ₂ g₀ 1)) * (f₁ (δ₁ g₀ 1) * f₂ (δ₂ g₀ 1))
+        = (f₁ (δ₁ g₀ 1) * f₁ (δ₁ g₀ 1)) * (f₂ (δ₂ g₀ 1) * f₂ (δ₂ g₀ 1)) := by ring
+      _ = 1 := by rw [e1, e2, one_mul]
+  have hpm : f₁ (δ₁ g₀ 1) * f₂ (δ₂ g₀ 1) = 1 ∨ f₁ (δ₁ g₀ 1) * f₂ (δ₂ g₀ 1) = -1 := by
+    set e := f₁ (δ₁ g₀ 1) * f₂ (δ₂ g₀ 1) with hedef
+    have hfac : (e - 1) * (e + 1) = 0 := by linear_combination hprod
+    have hsum : IsUnit ((1 + e) + (1 - e)) := by
+      have h : (1 + e) + (1 - e) = ((2 : ℕ) : A₀) := by push_cast; ring
+      rw [h]; exact hu2
+    rcases IsLocalRing.isUnit_or_isUnit_of_isUnit_add hsum with h | h
+    · left
+      obtain ⟨t, ht⟩ := h.exists_right_inv
+      have h0 : e - 1 = 0 := by
+        have h1 : (e - 1) * ((1 + e) * t) = 0 := by
+          rw [show (e - 1) * ((1 + e) * t) = ((e - 1) * (e + 1)) * t by ring,
+            hfac, zero_mul]
+        rwa [ht, mul_one] at h1
+      exact sub_eq_zero.mp h0
+    · right
+      obtain ⟨t, ht⟩ := h.exists_right_inv
+      have h0 : e + 1 = 0 := by
+        have h1 : (e + 1) * ((1 - e) * t) = 0 := by
+          rw [show (e + 1) * ((1 - e) * t) = (-((e - 1) * (e + 1))) * t by ring,
+            hfac, neg_zero, zero_mul]
+        rwa [ht, mul_one] at h1
+      exact eq_neg_of_add_eq_zero_left h0
+  have hunitdet : IsUnit ((M.map φ₀).det - f₁ (δ₁ g₀ 1) * f₂ (δ₂ g₀ 1)) := by
+    have hdet0 : (M.map φ₀).det = ((2 : ℕ) : A₀) := by
+      show (φ₀.mapMatrix M).det = _
+      rw [← RingHom.map_det, hdetM, map_natCast]
+    rw [hdet0]
+    rcases hpm with h | h
+    · rw [h, show ((2 : ℕ) : A₀) - 1 = 1 by push_cast; ring]
+      exact isUnit_one
+    · rw [h, show ((2 : ℕ) : A₀) - (-1) = ((3 : ℕ) : A₀) by push_cast; ring]
+      exact hu3
+  -- the two lines agree over `A₀`
+  obtain ⟨u, huunit, hu⟩ := exists_unit_smul_of_vecMul_eq (M.map φ₀)
+    (fun i => f₁ (π₁ (Pi.single i 1))) (fun i => f₂ (π₂ (Pi.single i 1)))
+    (f₁ (δ₁ g₀ 1)) (f₂ (δ₂ g₀ 1)) hrow₁ hrow₂ ⟨_, huni₁⟩ ⟨_, huni₂⟩ hunitdet
+  -- lift the unit to `A₂` and normalize the second projection
+  obtain ⟨ū, hū⟩ := hf₂ u
+  haveI : IsLocalHom f₂ := IsLocalHom.of_surjective f₂ hf₂
+  have hūunit : IsUnit ū := IsLocalHom.map_nonunit ū (by rw [hū]; exact huunit)
+  obtain ⟨s, hs⟩ := hūunit.exists_right_inv
+  have hfs : f₂ s * u = 1 := by
+    have h := congrArg f₂ hs
+    rw [map_mul, map_one, hū] at h
+    rw [mul_comm]; exact h
+  have hcompat : ∀ i, f₁ (π₁ (Pi.single i 1)) = f₂ (s * π₂ (Pi.single i 1)) := by
+    intro i
+    rw [map_mul, hu i, ← mul_assoc, hfs, one_mul]
+  choose rB hrB₁ hrB₂ using fun i =>
+    hcart (π₁ (Pi.single i 1)) (s * π₂ (Pi.single i 1)) (hcompat i)
+  -- the glued projection
+  set π : (Fin 2 → B) →ₗ[B] B :=
+    ∑ i, (rB i) • (LinearMap.proj i : (Fin 2 → B) →ₗ[B] B) with hπdef
+  have hπval : ∀ v : Fin 2 → B, π v = ∑ i, rB i * v i := by
+    intro v
+    rw [hπdef]
+    simp [smul_eq_mul]
+  have hpush₁ : ∀ v : Fin 2 → B, p₁ (π v) = π₁ (fun i => p₁ (v i)) := by
+    intro v
+    rw [hπval, hπ₁val, map_sum]
+    exact Finset.sum_congr rfl fun i _ => by rw [map_mul, hrB₁]
+  have hpush₂ : ∀ v : Fin 2 → B, p₂ (π v) = s * π₂ (fun i => p₂ (v i)) := by
+    intro v
+    rw [hπval, hπ₂val, map_sum, Finset.mul_sum]
+    exact Finset.sum_congr rfl fun i _ => by rw [map_mul, hrB₂, mul_assoc]
+  -- surjectivity of the glued projection
+  have hp₁surj : Function.Surjective p₁ := by
+    intro a₁
+    obtain ⟨a₂, ha₂⟩ := hf₂ (f₁ a₁)
+    obtain ⟨b, hb₁, _⟩ := hcart a₁ a₂ ha₂.symm
+    exact ⟨b, hb₁⟩
+  haveI : IsLocalHom p₁ := IsLocalHom.of_surjective p₁ hp₁surj
+  have hrBunit : ∃ i, IsUnit (rB i) := by
+    have h1 : IsUnit (π₁ (Pi.single 0 1) * w₁ 0 + π₁ (Pi.single 1 1) * w₁ 1) := by
+      have h := hπ₁val w₁
+      rw [hw₁, Fin.sum_univ_two] at h
+      rw [← h]; exact isUnit_one
+    rcases IsLocalRing.isUnit_or_isUnit_of_isUnit_add h1 with h | h
+    · exact ⟨0, IsLocalHom.map_nonunit (f := p₁) _
+        (by rw [hrB₁]; exact isUnit_of_mul_isUnit_left h)⟩
+    · exact ⟨1, IsLocalHom.map_nonunit (f := p₁) _
+        (by rw [hrB₁]; exact isUnit_of_mul_isUnit_left h)⟩
+  obtain ⟨i₀, hi₀⟩ := hrBunit
+  obtain ⟨t₀, ht₀⟩ := hi₀.exists_right_inv
+  have hπsurj : Function.Surjective π := by
+    intro c
+    refine ⟨Pi.single i₀ (t₀ * c), ?_⟩
+    rw [hπval, Finset.sum_eq_single i₀]
+    · rw [Pi.single_eq_same, ← mul_assoc, ht₀, one_mul]
+    · intro j _ hj; rw [Pi.single_eq_of_ne hj, mul_zero]
+    · intro h; exact absurd (Finset.mem_univ i₀) h
+  obtain ⟨x₀, hx₀⟩ := hπsurj 1
+  -- the glued character
+  set ε : Field.absoluteGaloisGroup ℚ_[2] → B :=
+    fun g => π (ρ.map (algebraMap ℚ ℚ_[2]) g x₀) with hεdef
+  have hone₁ : π₁ (fun i => p₁ (x₀ i)) = 1 := by
+    rw [← hpush₁, hx₀, map_one]
+  have hone₂ : s * π₂ (fun i => p₂ (x₀ i)) = 1 := by
+    rw [← hpush₂, hx₀, map_one]
+  have hp₁ε : ∀ g, p₁ (ε g) = δ₁ g 1 := by
+    intro g
+    rw [hεdef]
+    show p₁ (π (ρ.map (algebraMap ℚ ℚ_[2]) g x₀)) = δ₁ g 1
+    rw [hpush₁, hrel₁ g x₀, hone₁, mul_one]
+  have hp₂ε : ∀ g, p₂ (ε g) = δ₂ g 1 := by
+    intro g
+    rw [hεdef]
+    show p₂ (π (ρ.map (algebraMap ℚ ℚ_[2]) g x₀)) = δ₂ g 1
+    rw [hpush₂, hrel₂ g x₀, show s * (δ₂ g 1 * π₂ (fun i => p₂ (x₀ i))) =
+      δ₂ g 1 * (s * π₂ (fun i => p₂ (x₀ i))) by ring, hone₂, mul_one]
+  have hequiv : ∀ (g : Field.absoluteGaloisGroup ℚ_[2]) (v : Fin 2 → B),
+      π (ρ.map (algebraMap ℚ ℚ_[2]) g v) = ε g * π v := by
+    intro g v
+    refine hinj _ _ ?_ ?_
+    · rw [hpush₁, hrel₁ g v, map_mul, hp₁ε, hpush₁]
+    · rw [hpush₂, hrel₂ g v, map_mul, hp₂ε, hpush₂]; ring
+  have hεone : ε 1 = 1 := by
+    rw [hεdef]
+    show π (ρ.map (algebraMap ℚ ℚ_[2]) 1 x₀) = 1
+    rw [map_one]
+    exact hx₀
+  have hεmul : ∀ g h, ε (g * h) = ε g * ε h := by
+    intro g h
+    have hcomp : (ρ.map (algebraMap ℚ ℚ_[2])) (g * h) x₀ =
+        (ρ.map (algebraMap ℚ ℚ_[2])) g ((ρ.map (algebraMap ℚ ℚ_[2])) h x₀) := by
+      rw [map_mul]; rfl
+    rw [hεdef]
+    show π ((ρ.map (algebraMap ℚ ℚ_[2])) (g * h) x₀) =
+      π ((ρ.map (algebraMap ℚ ℚ_[2])) g x₀) * π ((ρ.map (algebraMap ℚ ℚ_[2])) h x₀)
+    rw [hcomp, hequiv g _]
+  -- continuity of the glued character
+  letI := moduleTopology B (Module.End B (Fin 2 → B))
+  letI := moduleTopology B (Module.End B B)
+  haveI : ContinuousAdd (Module.End B B) := ModuleTopology.continuousAdd B _
+  haveI : ContinuousSMul B (Module.End B B) := ModuleTopology.continuousSMul B _
+  have hεcont : Continuous ε := by
+    have h1 : ε = fun g => (π ∘ₗ (LinearMap.applyₗ x₀ :
+        Module.End B (Fin 2 → B) →ₗ[B] (Fin 2 → B)))
+        ((ρ.map (algebraMap ℚ ℚ_[2])) g) := rfl
+    rw [h1]
+    exact (IsModuleTopology.continuous_of_linearMap _).comp
+      (ρ.map (algebraMap ℚ ℚ_[2])).continuous_toFun
+  set δ : GaloisRep ℚ_[2] B B :=
+    { toFun := fun g => ε g • (1 : Module.End B B)
+      map_one' := by rw [hεone, one_smul]
+      map_mul' := fun g h => by
+        refine LinearMap.ext fun c => ?_
+        simp only [hεmul, LinearMap.smul_apply, Module.End.one_apply,
+          Module.End.mul_apply, smul_eq_mul]
+        ring
+      continuous_toFun := hεcont.smul continuous_const } with hδdef
+  have hδapp : ∀ (g : Field.absoluteGaloisGroup ℚ_[2]) (c : B), δ g c = ε g * c := by
+    intro g c
+    show (ε g • (1 : Module.End B B)) c = ε g * c
+    rw [LinearMap.smul_apply, Module.End.one_apply, smul_eq_mul]
+  refine ⟨π, hπsurj, δ, fun g v => ⟨?_, ?_, ?_⟩⟩
+  · rw [hequiv g v, hδapp]
+  · intro σ hσ
+    have h1 : δ₁ σ 1 = 1 := by
+      have h := (hδ₁ 1 0).2.1 hσ
+      have h2 : δ₁ σ = 1 := h
+      rw [h2]; rfl
+    have h2 : δ₂ σ 1 = 1 := by
+      have h := (hδ₂ 1 0).2.1 hσ
+      have h3 : δ₂ σ = 1 := h
+      rw [h3]; rfl
+    have hε1 : ε σ = 1 := by
+      refine hinj _ _ ?_ ?_
+      · rw [hp₁ε, h1, map_one]
+      · rw [hp₂ε, h2, map_one]
+    show δ σ = 1
+    rw [hδdef]
+    show ε σ • (1 : Module.End B B) = 1
+    rw [hε1, one_smul]
+  · intro g'
+    have hεsq : ε g' * ε g' = 1 := by
+      refine hinj _ _ ?_ ?_
+      · rw [map_mul, hp₁ε, hsq₁, map_one]
+      · rw [map_mul, hp₂ε, hsq₂, map_one]
+    refine LinearMap.ext fun c => ?_
+    show (δ g') ((δ g') c) = c
+    rw [hδapp, hδapp, ← mul_assoc, hεsq, one_mul]
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **Schlessinger's H1/H2 for the hardly ramified problem: the local
