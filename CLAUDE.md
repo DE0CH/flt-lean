@@ -59,6 +59,14 @@ scoped to that worktree. Live allocation state:
 `~/.flt-worktree-pool`, one line per worktree, `<name> free` or
 `<name> claimed`.
 
+**STALE BELOW (2026-07-25): the systemd units are DELETED.** The batch
+descriptions survive only for the `.lake`-on-`/scratch` layout, which is
+still true and still the reason `lake` must run on the assigned host. Every
+mention of `flt-report-server@` / `flt-lake-socket@` / `.report-server` is
+historical — those unit files were removed from `~/.config/systemd/user`
+so nothing can start them, and `.report-server` no longer exists in any
+worktree.
+
 - **Batch 1, `~/flt-lean-1` .. `~/flt-lean-13`**: template unit
   `flt-report-server@.service`, `WorkingDirectory=%h/%i`.
 - **Batch 2, `~/flt-lean-14` .. `~/flt-lean-26`**: same layout as batch 3 —
@@ -498,11 +506,13 @@ cone itself is computed inside `ProgressCensus.lean`'s `runCensus` (the
 `"floating"` field of its JSON output, via ImportGraph's
 `Name.transitivelyUsedConstants` — already a vendored transitive
 dependency through mathlib's own lakefile, not a hand-rolled BFS),
-queried through the same resident `flt-report-server` session
-`progress-tree.py`'s census already uses — no separate subprocess, no
-cache file; the language server's own incremental elaboration is the
-cache (warm re-query: fractions of a second; after a real source edit:
-tens of seconds, dominated by re-elaborating what changed).
+obtained through `progress-tree.py`'s census, which since 2026-07-25 runs
+as ONE `lake env lean ProgressCensus.lean` over ssh on the worktree's
+assigned host — no resident server, no cache file. Each run pays the
+import load of the project cone (minutes), so run it once per bookkeeping
+cycle rather than in a loop, and keep the tree BUILT: the census reads
+oleans and dies with `object file '….olean' does not exist` if they are
+stale.
 `free-floating.py` is a thin standalone entry point over the same
 query, applying only the keep-list filter below. Blocks with
 instructions to commit and delete. Work top-down.
@@ -563,60 +573,6 @@ blocks all variants. Plain `git commit` (ssh-signing is automatic via
 Deyao's agent; if signing fails with "No private key found", the
 agent — Bitwarden — is locked: ask Deyao). Commit trailers: the
 standard Co-Authored-By and Claude-Session lines.
-
-## Report-lsp MCP (report-mcp.py): diagnostics + build per worktree
-
-(Deyao, 2026-07-23.) `report-mcp.py` at the repo root is a minimal MCP
-server exposing exactly two tools — `diagnostics(file_path)` and
-`build(clean=False)` — talking directly over one `flt-report-server`
-instance's FIFOs (the same Content-Length-framed JSON-RPC protocol as
-`progress-tree.py`'s report-server client). It takes `--socket-dir` —
-the target instance's `.report-server` directory (holding
-`req.fifo`/`resp.fifo`/`lock`/`state.json`) — as an argument rather than
-doing any root-detection: the argument IS the routing, not a project
-path to derive it from (the project path, needed for `build`'s cwd and
-for resolving relative `file_path` args, is just `--socket-dir`'s
-parent).
-
-`lake serve` is single-rooted for its whole process lifetime (verified
-empirically via an isolated toy-project test) — a server rooted at one
-directory cannot correctly open or elaborate a file living under a
-different worktree. So there is one `report-mcp.py` process, and one
-`flt-report-server@<name>` systemd instance, PER worktree — 14 total
-(main + `flt-lean-1..13`), each independently rooted. `.mcp.json`
-registers all 14 as separate entries (`report-flt-lean`,
-`report-flt-lean-1` .. `report-flt-lean-13`), each pointing
-`--socket-dir` at its matching worktree's `.report-server`. An agent
-working in `flt-lean-N` uses the `report-flt-lean-N` entry.
-
-**Single-flight per document (Deyao, 2026-07-25 — after the thrash).** The
-open-document map (`{uri: version, hash}`) lives in `.report-server/state.json`
-and is therefore SHARED by every client process talking to that server
-session, not held per process. It has to be: an orchestrator restart kills the
-client, and a fresh one that believed no document was open would send a second
-`didOpen`, whereupon `lake serve` starts ANOTHER `lean --worker` for that file
-while the first keeps running (nothing ever closed the document). Four restarts
-produced four rival elaborations of one file; the fleet reached 81 concurrent
-`lake setup-file` builds, all rebuilding the same olean and starving each
-other. With the map shared, a restarted client re-issues `waitForDiagnostics`
-against the version already in flight — it ATTACHES instead of racing. The
-session marker is the state file's INODE (not mtime), since the file is now
-rewritten in normal operation and `ExecStartPre` `rm -f`s it per (re)start.
-Verified 2026-07-25: fresh client attaches in 0.0s with no new worker; the
-pre-fix client spawned a third worker on the same server.
-
-**Doctrine for agents:** one blocking call, then wait. A timeout means "still
-elaborating", not "failed"; re-issuing is safe and attaches; only an edit
-starts new work.
-
-`diagnostics` syncs the file with on-disk content (`didOpen` the first
-time, `didChange` after) and blocks on `textDocument/waitForDiagnostics`
-— no polling/settle heuristics needed. The `initialize` handshake is
-shared per SERVER SESSION via `.report-server/state.json` (the unit's
-`ExecStartPre` clears it on every (re)start): its presence means some
-earlier client already initialized this session (`lake serve` errors
-if sent `initialize` twice), so a client only sends it when the file is
-absent, then writes a marker.
 
 ## Anna's Archive MCP (annas-mcp)
 
