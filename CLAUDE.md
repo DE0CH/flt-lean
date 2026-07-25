@@ -23,6 +23,17 @@ must never strand its remaining leaves unowned. Track the new leaves in
 progress-entries.json (wip flags at dispatch) as part of the same
 integration step.
 
+**Check overlap by grepping the PROMPT, not the `targets` field** (2026-07-25).
+`~/.flt-inflight.jsonl`'s `targets` is harvested by a regex for bold
+`**\`name\`**`, so tasks not written in that style get junk targets (one batch
+recorded `['diagnostics', 'lean_leansearch', …]`). Before dispatching at a leaf,
+grep the full `prompt` of every in-flight record for the leaf NAME. Skipping
+this let two agents cut the SAME node — `exists_isWeaklyUniversalOnIdentified`
+— along Schlessinger in two incompatible ways, producing an eight-hunk
+mathematical conflict that had to go back to an author to reconcile. Noticing
+that another worktree is merely "in the same file" is not enough; the file is
+not the unit of ownership, the declaration is.
+
 **"Merge FIRST, then dispatch" is an ordering, not a sequence of words**
 (violated 2026-07-25). A worktree fast-forwards to main at dispatch, so a
 successor dispatched at a leaf that still lives only on an unmerged branch
