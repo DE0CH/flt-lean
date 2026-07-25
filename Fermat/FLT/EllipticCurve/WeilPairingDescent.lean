@@ -3692,7 +3692,27 @@ so each of the `p²` fiber points occurs with multiplicity one, i.e.
 the fiber over `O` is `E[p]` itself, `[p]^*(O) = Σ_κ (κ)`.  Reading
 the resulting divisor identity through the Dedekind factorization of
 `F[W]` gives the displayed fractional-ideal identity (the affine part
-is all a fractional ideal sees). -/
+is all a fractional ideal sees).
+
+**State of the proof.**  The skeleton below is written out and the whole
+divisor bookkeeping is proven: the identity is reduced to an equality of
+`FractionalIdeal.count`s at every height-one place of `F[W]` (closed by
+`FractionalIdeal.finprod_heightOneSpectrum_factorization'`), the count of
+a multiset product, of an indicator sum, and of a `fiberProd` are
+computed, the point-ideal multiplicities are proven (point ideals at
+affine points are maximal, nonzero and injective in the point), and the
+weak Nullstellensatz identification of height-one primes with affine
+point ideals is proven.  Two sorried `have`s remain inside the proof:
+
+* `hIC`: integral closedness of `F[W]` — normality of the smooth affine
+  curve, the only place where `W.Δ ≠ 0` is needed; noetherianity and
+  dimension one are proven, so this is all that is missing for
+  `IsDedekindDomain W.CoordinateRing` (which mathlib does not provide);
+* `hcountEv`: the multiplicity-one pullback count — the order of
+  `[p]^*z` at the place of an affine point `S` is the order of `z` at
+  `p • S` (multiplicity one from separability of `[p]`, `(p : F) ≠ 0`,
+  via `Φ_p − x_R·Ψ_p²`), the case `p • S = O` reading off the
+  pole order `−#D` at infinity. -/
 theorem spanSingleton_pointEval_mul_fiberProd_pow {ι : Type*} [Fintype ι]
     {val : ι → W.Point}
     (hΔ : W.Δ ≠ 0) (hp : (p : F) ≠ 0)
