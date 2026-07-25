@@ -11425,6 +11425,110 @@ noncomputable def classGroupGalAut (K : Type*) [Field K] [NumberField K] :
     rw [Ideal.map_map]
     congr 1
 
+/-- **Gauss's formula on the upper half-range** (PROVEN 2026-07-24;
+pure `ℕ` arithmetic supporting the Stickelberger scalar below): for
+every `m`, `∑_{a = m+1}^{2m} a = (3m² + m)/2`, stated multiplied
+through by `2` so as to stay inside `ℕ`. Proof: split
+`Ico 0 (2m+1)` at `m + 1` (`Finset.sum_Ico_consecutive`), apply
+Gauss's formula (`Finset.sum_range_id_mul_two`) to each half, and
+close the remaining identity with `omega` after abstracting the one
+nonlinear atom `m * m`. With `p = 2m + 1` this sum is exactly the
+exponent that the integral Stickelberger element
+`(2 − σ₂)θ = ∑_{a > p/2} σ_a⁻¹` produces on an `ω^{−1}`-eigenvector
+of the class group. -/
+theorem two_mul_sum_Ico_succ_two_mul (m : ℕ) :
+    2 * (∑ a ∈ Finset.Ico (m + 1) (2 * m + 1), a) = 3 * (m * m) + m := by
+  have h1 : (∑ a ∈ Finset.Ico 0 (m + 1), a) +
+      (∑ a ∈ Finset.Ico (m + 1) (2 * m + 1), a) =
+      ∑ a ∈ Finset.Ico 0 (2 * m + 1), a :=
+    Finset.sum_Ico_consecutive _ (Nat.zero_le _) (by omega)
+  have h2 : (∑ i ∈ Finset.range (m + 1), i) * 2 = m * m + m := by
+    have hg := Finset.sum_range_id_mul_two (m + 1)
+    simp only [Nat.add_sub_cancel] at hg
+    rw [hg]; ring
+  have h3 : (∑ i ∈ Finset.range (2 * m + 1), i) * 2 = 4 * (m * m) + 2 * m := by
+    have hg := Finset.sum_range_id_mul_two (2 * m + 1)
+    simp only [Nat.add_sub_cancel] at hg
+    rw [hg]; ring
+  rw [← Finset.range_eq_Ico, ← Finset.range_eq_Ico] at h1
+  generalize m * m = q at h2 h3 ⊢
+  omega
+
+/-- **The Stickelberger scalar `∑_{p/2 < a < p} a` is a unit mod `p`**
+(PROVEN 2026-07-24; the `B₂`-unit half of Herbrand's theorem at
+`k = 2`): for `p ≥ 5` prime, `p` does not divide
+`N := ∑_{a = (p+1)/2}^{p−1} a`. Quantitatively `8N ≡ 1 (mod p)` — the
+witness identity proved here is the subtraction-free
+`8N + p = 6mp + 1` for `p = 2m + 1` — so `N ≡ 1/8 (mod p)`. This is
+the arithmetic content of "`p ∤ num(B₂)`": the scalar by which the
+integral Stickelberger element `(2 − σ₂)θ` acts on the
+`ω^{−1}`-eigenspace is `(2 − 2⁻¹) · B_{1,ω} ≡ (3/2)(B₂/2) = 1/8`
+(Washington, *Introduction to Cyclotomic Fields*, Cor. 5.15 for the
+congruence `B_{1,ω^{k−1}} ≡ B_k/k`, here at `k = 2`,
+`B₂/2 = 1/12`), and `1/8` is a `p`-adic unit for every odd `p` —
+`num(B₂) = num(1/6) = 1` is divisible by no prime. Verified
+numerically (PARI/GP, untrusted searcher) for all odd `p < 200`. -/
+theorem not_dvd_stickelberger_upperHalf_sum (hp5 : 5 ≤ p) :
+    ¬ (p ∣ ∑ a ∈ Finset.Ico ((p + 1) / 2) p, a) := by
+  obtain ⟨m, hm⟩ : Odd p := hp.out.odd_of_ne_two (by omega)
+  have hhalf : (p + 1) / 2 = m + 1 := by omega
+  have hp' : p = 2 * m + 1 := by omega
+  have key : 2 * (∑ a ∈ Finset.Ico ((p + 1) / 2) p, a) = 3 * (m * m) + m := by
+    rw [hhalf, hp']; exact two_mul_sum_Ico_succ_two_mul m
+  intro hdvd
+  obtain ⟨k, hk⟩ := hdvd
+  have h8 : 8 * (p * k) + p = 6 * m * p + 1 := by
+    rw [← hk]
+    have h4 : 8 * (∑ a ∈ Finset.Ico ((p + 1) / 2) p, a) =
+        4 * (2 * (∑ a ∈ Finset.Ico ((p + 1) / 2) p, a)) := by ring
+    rw [h4, key, hp']; ring
+  have hone : p ∣ 1 := by
+    have hd1 : p ∣ 8 * (p * k) + p := Dvd.dvd.add ⟨8 * k, by ring⟩ dvd_rfl
+    have hd2 : p ∣ 6 * m * p := ⟨6 * m, by ring⟩
+    have hsub := Nat.dvd_sub hd1 hd2
+    rwa [h8, Nat.add_sub_cancel_left] at hsub
+  have h1eq := Nat.dvd_one.mp hone
+  omega
+
+/-- **Stickelberger's theorem in `ω^{−1}`-eigenvector form** (E3c
+support leaf (iii-a); sorry node — the deep half of Herbrand's
+theorem at `B₂`; Stickelberger 1890; Washington, *Introduction to
+Cyclotomic Fields*, Thm. 6.10): for `p ≥ 5` and an abstract `p`-th
+cyclotomic field `CF`, an ideal class `c` on which `Gal(CF/ℚ)` acts
+through the INVERSE of the mod-`p` cyclotomic character —
+`σ_u • c = c^(u⁻¹.val)` for all `u ∈ (ℤ/p)ˣ`
+(`IsCyclotomicExtension.Rat.galEquivZMod`) — is killed by the
+integer `N = ∑_{a = (p+1)/2}^{p−1} a`.
+
+Derivation from Stickelberger's theorem: the Stickelberger element
+`θ = ∑_{a=1}^{p−1} (a/p) σ_a⁻¹ ∈ ℚ[G]` has the property that
+`(t − σ_t) θ ∈ ℤ[G]` for every integer `t`, with the closed form
+`(t − σ_t) θ = ∑_{a=1}^{p−1} ⌊ta/p⌋ σ_a⁻¹`; Stickelberger's theorem
+says every such element annihilates `Cl(ℚ(μ_p))`. Taking `t = 2`,
+`⌊2a/p⌋` is `0` for `a < p/2` and `1` for `a > p/2`, so the
+annihilator is the concrete group-ring element
+`β₂ = ∑_{p/2 < a < p} σ_a⁻¹`. Under the eigenvector hypothesis
+`σ_u` acts on `c` by the exponent `u⁻¹`, hence `σ_a⁻¹ = σ_{a⁻¹}`
+acts by the exponent `a`, and `β₂ • c = c^(∑_{p/2 < a < p} a) = c^N`.
+Annihilation is therefore exactly `c ^ N = 1`.
+
+Formalization status: mathlib has neither Stickelberger's theorem nor
+the Gauss-sum factorization it rests on (`Mathlib.NumberTheory.
+GaussSum` and `JacobiSum` stop well short), so this is the honest
+citation boundary of the Herbrand leaf; the complementary half — that
+the resulting exponent `N` is prime to `p`, i.e. `p ∤ num(B₂)` — is
+PROVEN in `not_dvd_stickelberger_upperHalf_sum` above. -/
+theorem stickelberger_upperHalf_annihilates_omega_inv_eigenvector
+    (hp5 : 5 ≤ p)
+    (CF : Type) [Field CF] [NumberField CF]
+    [IsCyclotomicExtension {p} ℚ CF]
+    (c : ClassGroup (𝓞 CF))
+    (heig : ∀ u : (ZMod p)ˣ,
+      classGroupGalAut CF ((IsCyclotomicExtension.Rat.galEquivZMod p CF).symm u) c =
+        c ^ ((u⁻¹ : (ZMod p)ˣ) : ZMod p).val) :
+    c ^ (∑ a ∈ Finset.Ico ((p + 1) / 2) p, a) = 1 :=
+  sorry
+
 /-- **Herbrand's theorem at `B₂`: the `ω^{−1}`-eigenspace of
 `Cl(ℚ(μ_p)) ⊗ 𝔽_p` vanishes** (E3c support leaf (iii); sorry node —
 the citation-shaped arithmetic input of the Eisenstein cut;
@@ -11463,7 +11567,19 @@ field, any `c` with the equivariance — e.g. `c = 1`) and the
 conclusion is exactly Herbrand's vanishing, quantified over abstract
 `CF` in `Type` so that the CFT localization leaf below can
 instantiate it on whatever model of `ℚ(μ_p)` its argument
-constructs. -/
+constructs.
+
+PROVEN 2026-07-24 over the single Stickelberger leaf: the docstring's
+classical argument is now executed in Lean in its concrete
+`t = 2` form. `stickelberger_upperHalf_annihilates_omega_inv_eigenvector`
+(the remaining sorry node) supplies `c ^ N = 1` for
+`N = ∑_{p/2 < a < p} a` — the integral Stickelberger element
+`(2 − σ₂)θ = ∑_{p/2 < a < p} σ_a⁻¹` evaluated on the eigenvector —
+and `not_dvd_stickelberger_upperHalf_sum` (PROVEN) supplies `p ∤ N`,
+which is precisely the `B₂`-unit statement `8N ≡ 1 (mod p)`,
+`(2 − 2⁻¹)·B₂/2 = 1/8`. Then `orderOf c` divides both the prime `p`
+and `N`, hence is `1`. Note `hc : c ^ p = 1` is consumed exactly
+here — it is what turns "killed by a unit scalar" into triviality. -/
 theorem herbrand_omega_inv_classGroup_eigenspace_trivial_of_five_le
     (hp5 : 5 ≤ p)
     (CF : Type) [Field CF] [NumberField CF]
@@ -11472,8 +11588,17 @@ theorem herbrand_omega_inv_classGroup_eigenspace_trivial_of_five_le
     (heig : ∀ u : (ZMod p)ˣ,
       classGroupGalAut CF ((IsCyclotomicExtension.Rat.galEquivZMod p CF).symm u) c =
         c ^ ((u⁻¹ : (ZMod p)ˣ) : ZMod p).val) :
-    c = 1 :=
-  sorry
+    c = 1 := by
+  have hstick : c ^ (∑ a ∈ Finset.Ico ((p + 1) / 2) p, a) = 1 :=
+    stickelberger_upperHalf_annihilates_omega_inv_eigenvector hp5 CF c heig
+  have hnd : ¬ (p ∣ ∑ a ∈ Finset.Ico ((p + 1) / 2) p, a) :=
+    not_dvd_stickelberger_upperHalf_sum hp5
+  have hordp : orderOf c ∣ p := orderOf_dvd_of_pow_eq_one hc
+  have hordN : orderOf c ∣ ∑ a ∈ Finset.Ico ((p + 1) / 2) p, a :=
+    orderOf_dvd_of_pow_eq_one hstick
+  rcases hp.out.eq_one_or_self_of_dvd _ hordp with h | h
+  · exact orderOf_eq_one_iff.mp h
+  · exact absurd (h ▸ hordN) hnd
 
 /-- **CFT localization: an everywhere-locally-split Eisenstein
 cocycle dies on the kernel, given eigenspace vanishing** (E3c support
