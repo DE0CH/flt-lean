@@ -41,18 +41,20 @@ scoped to that worktree. Live allocation state:
 
 - **Batch 1, `~/flt-lean-1` .. `~/flt-lean-13`**: template unit
   `flt-report-server@.service`, `WorkingDirectory=%h/%i`.
-- **Batch 2, `/scratch/chend-flt/flt-lean-14` ..
-  `/scratch/chend-flt/flt-lean-26`**: template unit
-  `flt-report-server-scratch@.service`, identical except
-  `WorkingDirectory=/scratch/chend-flt/%i`. They live off `$HOME`
-  because a worktree costs ~5.4G (4.6G of it mathlib oleans in
-  `.lake/packages`, 826M project build) and the 67G home volume filled
-  up; `/scratch` is a 9.7T local disk. **`/tmp` is NOT an option — it
-  is a 9.7G volume, one worktree's worth.** Batch 1 was deliberately
-  left exactly as it was (Deyao: "i don't want to touch things that
-  still work"). Note `/scratch` is not backed up and may be purged;
-  only `.lake` and uncommitted work would be lost, since branch refs
-  live in the main repo's object store.
+- **Batch 2, `~/flt-lean-14` .. `~/flt-lean-26`**: same layout as batch 3 —
+  source tree in `$HOME`, only `.lake` and `.report-server` symlinked to
+  `/scratch/chend-flt/flt-lean-N/`. Artifacts live off `$HOME` because a
+  worktree costs ~5.4G (4.6G of it mathlib oleans in `.lake/packages`, 826M
+  project build) and the 67G home volume filled up; `/scratch` is a 9.7T
+  local disk. **`/tmp` is NOT an option — it is a 9.7G volume, one
+  worktree's worth.** Note `/scratch` is machine-LOCAL and not backed up;
+  only `.lake` and uncommitted work would be lost, since branch refs live in
+  the main repo's object store.
+- **ONE unit template, `flt-report-server@.service`** (`WorkingDirectory=%h/%i`),
+  serves every worktree. A second template rooted at `/scratch` existed
+  briefly while whole worktrees lived there; it was deleted 2026-07-25 once
+  the layout settled on "sources in `$HOME`, artifacts symlinked" — there is
+  deliberately only one way to run a worker.
 - `.claude/worktree-pool-hook.py` resolves a pool entry by trying each
   root in `ROOTS` in order, so batch-1 names still resolve under
   `$HOME`.
