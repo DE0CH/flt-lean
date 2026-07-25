@@ -14296,27 +14296,419 @@ theorem WeierstrassCurve.torsionPairFormalDen_apply_eq_zero (m : ℕ)
       left
       ring
 
+section FormalChartValuation
+
+/-! ### Valuation core of the formal-group chart (2026-07-25)
+
+The four lemmas below are the whole content of
+`torsionPairFormalDen_val_mul_eq_one`, isolated as statements about a bare
+`Valuation` on a field so that the elliptic-curve bookkeeping and the
+valuation estimates do not have to be done at the same time. -/
+
+theorem val_lt_iff_sq_lt {Γ₀ : Type*} [LinearOrderedCommGroupWithZero Γ₀]
+    {a b : Γ₀} : a < b ↔ a ^ 2 < b ^ 2 :=
+  (pow_lt_pow_iff_left₀ zero_le zero_le (by norm_num)).symm
+
+theorem val_le_iff_sq_le {Γ₀ : Type*} [LinearOrderedCommGroupWithZero Γ₀]
+    {a b : Γ₀} : a ≤ b ↔ a ^ 2 ≤ b ^ 2 :=
+  (pow_le_pow_iff_left₀ zero_le zero_le (by norm_num)).symm
+
+set_option linter.unusedSectionVars false in
+/-- **The chord-case formal valuation identity** (PROVEN 2026-07-25): for two
+points of the formal locus (`v(xᵢ) > 1`, `v(yᵢ)² = v(xᵢ)³`) with DISTINCT
+abscissas, the chart numerator `N = x₂²y₁ + x₁²y₂ + a₁x₁x₂² + a₃x₂²` satisfies
+`v(N)²·v(x₃) = v(x₁)⁴v(x₂)⁴`.
+
+THE ARGUMENT, and why no formal-group power series is needed.  Write
+`M = y₁x₂ − y₂x₁` and `δ = x₂ − x₁`, so that the intercept of the chord is
+`ν = M/δ`.  Two polynomial identities modulo the two curve equations do all the
+work:
+
+* `N·M = δ·G` with
+  `G = a₂x₁²x₂² + a₄x₁x₂(x₁+x₂) + a₆(x₁²+x₁x₂+x₂²) − x₁y₂(x₂y₁ + a₁x₁x₂ +
+  a₃(x₁+x₂))`
+  (cofactors `x₂³` and `−x₁³` on the two curve equations) — i.e. `N·ν = G`;
+* `x₁x₂x₃·δ² = M² + a₃Mδ − a₆δ²` — the PRODUCT of the three roots of the
+  chord cubic, `x₁x₂x₃ = ν² + a₃ν − a₆`.
+
+`G`'s dominant monomial is `−x₁x₂y₁y₂`, every other one being strictly smaller
+(checked on squares, where `v(yᵢ)² = v(xᵢ)³` is available), so
+`v(G)² = v(x₁)⁵v(x₂)⁵` — with NO case split on `v(x₁)` versus `v(x₂)`, which is
+exactly the delicacy that the formal-group law was expected to be needed for.
+From `v(N) ≤ v(x₁)²v(x₂)² < v(G)` the first identity forces `v(δ) < v(M)`,
+whence `v(M² + a₃Mδ − a₆δ²) = v(M)²`, and the two identities combine to the
+claim after cancelling `v(δ)²·v(x₁)v(x₂)`. -/
+theorem val_formal_chord_core {F Γ₀ : Type*} [Field F]
+    [LinearOrderedCommGroupWithZero Γ₀] (v : Valuation F Γ₀)
+    (a₁ a₂ a₃ a₄ a₆ x₁ y₁ x₂ y₂ x₃ : F)
+    (ha₁ : v a₁ ≤ 1) (ha₂ : v a₂ ≤ 1) (ha₃ : v a₃ ≤ 1) (ha₄ : v a₄ ≤ 1)
+    (ha₆ : v a₆ ≤ 1)
+    (hx₁ : 1 < v x₁) (hx₂ : 1 < v x₂)
+    (hy₁ : v y₁ ^ 2 = v x₁ ^ 3) (hy₂ : v y₂ ^ 2 = v x₂ ^ 3)
+    (hne : x₁ ≠ x₂)
+    (hE₁ : y₁ ^ 2 + a₁ * x₁ * y₁ + a₃ * y₁ = x₁ ^ 3 + a₂ * x₁ ^ 2 + a₄ * x₁ + a₆)
+    (hE₂ : y₂ ^ 2 + a₁ * x₂ * y₂ + a₃ * y₂ = x₂ ^ 3 + a₂ * x₂ ^ 2 + a₄ * x₂ + a₆)
+    (hE₃ : x₃ * (x₁ - x₂) ^ 2 =
+      (y₁ - y₂) ^ 2 + a₁ * (y₁ - y₂) * (x₁ - x₂) - (a₂ + x₁ + x₂) * (x₁ - x₂) ^ 2) :
+    v (x₂ ^ 2 * y₁ + x₁ ^ 2 * y₂ + a₁ * (x₁ * x₂ ^ 2) + a₃ * x₂ ^ 2) ^ 2 * v x₃
+      = v x₁ ^ 4 * v x₂ ^ 4 := by
+  set N : F := x₂ ^ 2 * y₁ + x₁ ^ 2 * y₂ + a₁ * (x₁ * x₂ ^ 2) + a₃ * x₂ ^ 2 with hNdef
+  set M : F := y₁ * x₂ - y₂ * x₁ with hMdef
+  set d : F := x₂ - x₁ with hddef
+  set G : F := -(x₁ * x₂ * y₁ * y₂) +
+    (a₂ * (x₁ ^ 2 * x₂ ^ 2) + a₄ * (x₁ * x₂ * (x₁ + x₂)) +
+      a₆ * (x₁ ^ 2 + x₁ * x₂ + x₂ ^ 2) - a₁ * (x₁ ^ 2 * x₂ * y₂) -
+      a₃ * (x₁ * y₂ * (x₁ + x₂))) with hGdef
+  -- the two algebraic identities
+  have hid1 : N * M = d * G := by
+    rw [hNdef, hMdef, hddef, hGdef]; linear_combination x₂ ^ 3 * hE₁ - x₁ ^ 3 * hE₂
+  have hid2 : x₁ * x₂ * x₃ * d ^ 2 = M ^ 2 + (a₃ * M * d - a₆ * d ^ 2) := by
+    rw [hMdef, hddef]
+    linear_combination (x₁ * x₂ - x₂ ^ 2) * hE₁ + (-x₁ ^ 2 + x₁ * x₂) * hE₂ +
+      x₁ * x₂ * hE₃
+  -- basic valuation facts
+  have hx₁0 : v x₁ ≠ 0 := ne_of_gt (zero_lt_one.trans hx₁)
+  have hx₂0 : v x₂ ≠ 0 := ne_of_gt (zero_lt_one.trans hx₂)
+  have hy₁lt : v x₁ < v y₁ :=
+    val_lt_iff_sq_lt.mpr (by rw [hy₁]; exact pow_lt_pow_right₀ hx₁ (by omega))
+  have hy₂lt : v x₂ < v y₂ :=
+    val_lt_iff_sq_lt.mpr (by rw [hy₂]; exact pow_lt_pow_right₀ hx₂ (by omega))
+  have hy₁0 : v y₁ ≠ 0 := ne_of_gt (lt_trans (zero_lt_one.trans hx₁) hy₁lt)
+  have hy₂0 : v y₂ ≠ 0 := ne_of_gt (lt_trans (zero_lt_one.trans hx₂) hy₂lt)
+  have hy₁le : v y₁ ≤ v x₁ ^ 2 := by
+    refine val_le_iff_sq_le.mpr ?_
+    rw [hy₁, ← pow_mul]
+    exact pow_le_pow_right₀ hx₁.le (by omega)
+  have hy₂le : v y₂ ≤ v x₂ ^ 2 := by
+    refine val_le_iff_sq_le.mpr ?_
+    rw [hy₂, ← pow_mul]
+    exact pow_le_pow_right₀ hx₂.le (by omega)
+  have hx₁le : v x₁ ≤ v x₁ ^ 2 := le_self_pow₀ hx₁.le (by norm_num)
+  have hx₂le : v x₂ ≤ v x₂ ^ 2 := le_self_pow₀ hx₂.le (by norm_num)
+  have hone₁ : (1 : Γ₀) ≤ v x₁ ^ 2 := le_trans hx₁.le hx₁le
+  have hone₂ : (1 : Γ₀) ≤ v x₂ ^ 2 := le_trans hx₂.le hx₂le
+  have hsum12 : v (x₁ + x₂) ≤ v x₁ * v x₂ :=
+    v.map_add_le (le_mul_of_one_le_right' hx₂.le) (le_mul_of_one_le_left' hx₁.le)
+  have hquad : v (x₁ ^ 2 + x₁ * x₂ + x₂ ^ 2) ≤ v x₁ ^ 2 * v x₂ ^ 2 := by
+    refine v.map_add_le (v.map_add_le ?_ ?_) ?_
+    · rw [map_pow]; exact le_mul_of_one_le_right' hone₂
+    · rw [map_mul]; exact mul_le_mul' hx₁le hx₂le
+    · rw [map_pow]; exact le_mul_of_one_le_left' hone₁
+  -- powers of the two abscissa valuations
+  have hp₁ : v x₁ ^ 2 * v x₁ ^ 3 = v x₁ ^ 5 := by rw [← pow_add]
+  have hp₂ : v x₂ ^ 2 * v x₂ ^ 3 = v x₂ ^ 5 := by rw [← pow_add]
+  -- the bound on N
+  have hNle : v N ≤ v x₁ ^ 2 * v x₂ ^ 2 := by
+    rw [hNdef]
+    refine v.map_add_le (v.map_add_le (v.map_add_le ?_ ?_) ?_) ?_
+    · rw [map_mul, map_pow]
+      calc v x₂ ^ 2 * v y₁ ≤ v x₂ ^ 2 * v x₁ ^ 2 := mul_le_mul' le_rfl hy₁le
+        _ = v x₁ ^ 2 * v x₂ ^ 2 := mul_comm _ _
+    · rw [map_mul, map_pow]
+      exact mul_le_mul' le_rfl hy₂le
+    · rw [map_mul, map_mul, map_pow]
+      calc v a₁ * (v x₁ * v x₂ ^ 2) ≤ 1 * (v x₁ ^ 2 * v x₂ ^ 2) :=
+            mul_le_mul' ha₁ (mul_le_mul' hx₁le le_rfl)
+        _ = v x₁ ^ 2 * v x₂ ^ 2 := one_mul _
+    · rw [map_mul, map_pow]
+      calc v a₃ * v x₂ ^ 2 ≤ 1 * v x₂ ^ 2 := mul_le_mul' ha₃ le_rfl
+        _ = v x₂ ^ 2 := one_mul _
+        _ ≤ v x₁ ^ 2 * v x₂ ^ 2 := le_mul_of_one_le_left' hone₁
+  -- the exact value of G
+  have hdomG : v x₁ ^ 2 * v x₂ * v y₂ < v (x₁ * x₂ * y₁ * y₂) := by
+    refine val_lt_iff_sq_lt.mpr ?_
+    rw [map_mul, map_mul, map_mul, mul_pow, mul_pow, mul_pow, mul_pow, mul_pow,
+      hy₁, hy₂, ← pow_mul]
+    calc v x₁ ^ (2 * 2) * v x₂ ^ 2 * v x₂ ^ 3
+        = v x₁ ^ 4 * v x₂ ^ 5 := by rw [mul_assoc, hp₂]
+      _ < v x₁ ^ 5 * v x₂ ^ 5 :=
+          mul_lt_mul_of_pos_right (pow_lt_pow_right₀ hx₁ (by omega))
+            (lt_of_le_of_ne zero_le (Ne.symm (pow_ne_zero _ hx₂0)))
+      _ = v x₁ ^ 2 * v x₁ ^ 3 * (v x₂ ^ 2 * v x₂ ^ 3) := by rw [hp₁, hp₂]
+      _ = v x₁ ^ 2 * v x₂ ^ 2 * v x₁ ^ 3 * v x₂ ^ 3 := by ac_rfl
+  have hbase : v x₁ ^ 2 * v x₂ ^ 2 ≤ v x₁ ^ 2 * v x₂ * v y₂ := by
+    calc v x₁ ^ 2 * v x₂ ^ 2 = v x₁ ^ 2 * v x₂ * v x₂ := by rw [mul_assoc, ← pow_two]
+      _ ≤ v x₁ ^ 2 * v x₂ * v y₂ := mul_le_mul' le_rfl hy₂lt.le
+  have hGval : v G = v (x₁ * x₂ * y₁ * y₂) := by
+    have hrest : v (a₂ * (x₁ ^ 2 * x₂ ^ 2) + a₄ * (x₁ * x₂ * (x₁ + x₂)) +
+        a₆ * (x₁ ^ 2 + x₁ * x₂ + x₂ ^ 2) - a₁ * (x₁ ^ 2 * x₂ * y₂) -
+        a₃ * (x₁ * y₂ * (x₁ + x₂))) ≤ v x₁ ^ 2 * v x₂ * v y₂ := by
+      refine v.map_sub_le (v.map_sub_le (v.map_add_le (v.map_add_le ?_ ?_) ?_) ?_) ?_
+      · rw [map_mul, map_mul, map_pow, map_pow]
+        calc v a₂ * (v x₁ ^ 2 * v x₂ ^ 2) ≤ 1 * (v x₁ ^ 2 * v x₂ ^ 2) :=
+              mul_le_mul' ha₂ le_rfl
+          _ = v x₁ ^ 2 * v x₂ ^ 2 := one_mul _
+          _ ≤ v x₁ ^ 2 * v x₂ * v y₂ := hbase
+      · rw [map_mul, map_mul, map_mul]
+        calc v a₄ * (v x₁ * v x₂ * v (x₁ + x₂)) ≤ 1 * (v x₁ * v x₂ * (v x₁ * v x₂)) :=
+              mul_le_mul' ha₄ (mul_le_mul' le_rfl hsum12)
+          _ = v x₁ ^ 2 * v x₂ ^ 2 := by
+              rw [one_mul, pow_two, pow_two]; ac_rfl
+          _ ≤ v x₁ ^ 2 * v x₂ * v y₂ := hbase
+      · rw [map_mul]
+        calc v a₆ * v (x₁ ^ 2 + x₁ * x₂ + x₂ ^ 2) ≤ 1 * (v x₁ ^ 2 * v x₂ ^ 2) :=
+              mul_le_mul' ha₆ hquad
+          _ = v x₁ ^ 2 * v x₂ ^ 2 := one_mul _
+          _ ≤ v x₁ ^ 2 * v x₂ * v y₂ := hbase
+      · rw [map_mul, map_mul, map_mul, map_pow]
+        calc v a₁ * (v x₁ ^ 2 * v x₂ * v y₂) ≤ 1 * (v x₁ ^ 2 * v x₂ * v y₂) :=
+              mul_le_mul' ha₁ le_rfl
+          _ = v x₁ ^ 2 * v x₂ * v y₂ := one_mul _
+      · rw [map_mul, map_mul, map_mul]
+        calc v a₃ * (v x₁ * v y₂ * v (x₁ + x₂)) ≤ 1 * (v x₁ * v y₂ * (v x₁ * v x₂)) :=
+              mul_le_mul' ha₃ (mul_le_mul' le_rfl hsum12)
+          _ = v x₁ ^ 2 * v x₂ * v y₂ := by rw [one_mul, pow_two]; ac_rfl
+    rw [hGdef, v.map_add_eq_of_lt_left
+      (lt_of_le_of_lt hrest (by rwa [v.map_neg])), v.map_neg]
+  -- N is dominated by G
+  have hNltG : v N < v G := by
+    refine lt_of_le_of_lt hNle ?_
+    rw [hGval]
+    refine val_lt_iff_sq_lt.mpr ?_
+    rw [map_mul, map_mul, map_mul, mul_pow, mul_pow, mul_pow, mul_pow,
+      hy₁, hy₂]
+    calc (v x₁ ^ 2) ^ 2 * (v x₂ ^ 2) ^ 2 = v x₁ ^ 4 * v x₂ ^ 4 := by
+          rw [← pow_mul, ← pow_mul]
+      _ < v x₁ ^ 5 * v x₂ ^ 4 :=
+          mul_lt_mul_of_pos_right (pow_lt_pow_right₀ hx₁ (by omega))
+            (lt_of_le_of_ne zero_le (Ne.symm (pow_ne_zero _ hx₂0)))
+      _ ≤ v x₁ ^ 5 * v x₂ ^ 5 :=
+          mul_le_mul' le_rfl (pow_le_pow_right₀ hx₂.le (by omega))
+      _ = v x₁ ^ 2 * v x₁ ^ 3 * (v x₂ ^ 2 * v x₂ ^ 3) := by rw [hp₁, hp₂]
+      _ = v x₁ ^ 2 * v x₂ ^ 2 * v x₁ ^ 3 * v x₂ ^ 3 := by ac_rfl
+  -- nonvanishing
+  have hdne : d ≠ 0 := sub_ne_zero.mpr (Ne.symm hne)
+  have hvd0 : v d ≠ 0 := by
+    simpa using (Valuation.ne_zero_iff v).mpr hdne
+  have hG0 : v G ≠ 0 := by
+    rw [hGval, map_mul, map_mul, map_mul]
+    exact mul_ne_zero (mul_ne_zero (mul_ne_zero hx₁0 hx₂0) hy₁0) hy₂0
+  have hNM : v N * v M = v d * v G := by rw [← map_mul, ← map_mul, hid1]
+  have hNM0 : v N * v M ≠ 0 := by rw [hNM]; exact mul_ne_zero hvd0 hG0
+  have hM0 : v M ≠ 0 := right_ne_zero_of_mul hNM0
+  -- the intercept dominates the abscissa difference
+  have hdM : v d < v M := by
+    by_contra hc
+    rw [not_lt] at hc
+    have h1 : v N * v M ≤ v N * v d := mul_le_mul' le_rfl hc
+    have h2 : v N * v d < v G * v d :=
+      mul_lt_mul_of_pos_right hNltG (lt_of_le_of_ne zero_le (Ne.symm hvd0))
+    have h3 : v d * v G < v d * v G :=
+      calc v d * v G = v N * v M := hNM.symm
+        _ ≤ v N * v d := h1
+        _ < v G * v d := h2
+        _ = v d * v G := mul_comm _ _
+    exact lt_irrefl _ h3
+  -- the exact value of the intercept-squared expression
+  have hMsq : v (M ^ 2 + (a₃ * M * d - a₆ * d ^ 2)) = v M ^ 2 := by
+    have hb : v (a₃ * M * d - a₆ * d ^ 2) ≤ v M * v d := by
+      refine v.map_sub_le ?_ ?_
+      · rw [map_mul, map_mul]
+        calc v a₃ * v M * v d ≤ 1 * v M * v d := mul_le_mul' (mul_le_mul' ha₃ le_rfl) le_rfl
+          _ = v M * v d := by rw [one_mul]
+      · rw [map_mul, map_pow]
+        calc v a₆ * v d ^ 2 ≤ 1 * (v d * v d) := by rw [pow_two]; exact mul_le_mul' ha₆ le_rfl
+          _ = v d * v d := one_mul _
+          _ ≤ v M * v d := mul_le_mul' hdM.le le_rfl
+    have hs : v M * v d < v (M ^ 2) := by
+      rw [map_pow, pow_two]
+      exact mul_lt_mul_of_pos_left hdM (lt_of_le_of_ne zero_le (Ne.symm hM0))
+    rw [v.map_add_eq_of_lt_left (lt_of_le_of_lt hb hs), map_pow]
+  have hMM : v (x₁ * x₂ * x₃ * d ^ 2) = v M ^ 2 := by rw [hid2, hMsq]
+  -- assembly
+  have hcancel : v N ^ 2 * v x₃ * (v d ^ 2 * (v x₁ * v x₂))
+      = v x₁ ^ 4 * v x₂ ^ 4 * (v d ^ 2 * (v x₁ * v x₂)) := by
+    have e1 : v N ^ 2 * v x₃ * (v d ^ 2 * (v x₁ * v x₂))
+        = v N ^ 2 * v (x₁ * x₂ * x₃ * d ^ 2) := by
+      rw [map_mul, map_mul, map_mul, map_pow]
+      simp only [mul_comm, mul_assoc, mul_left_comm]
+    have e2 : v x₁ ^ 4 * v x₂ ^ 4 * (v d ^ 2 * (v x₁ * v x₂))
+        = v d ^ 2 * (v x₁ ^ 5 * v x₂ ^ 5) := by
+      rw [show (5 : ℕ) = 4 + 1 from rfl, pow_add, pow_add, pow_one, pow_one]
+      simp only [mul_comm, mul_assoc, mul_left_comm]
+    rw [e1, e2, hMM, ← mul_pow, hNM, mul_pow, hGval, map_mul, map_mul, map_mul,
+      mul_pow, mul_pow, mul_pow, hy₁, hy₂]
+    rw [show v x₁ ^ 2 * v x₂ ^ 2 * v x₁ ^ 3 * v x₂ ^ 3
+        = v x₁ ^ 2 * v x₁ ^ 3 * (v x₂ ^ 2 * v x₂ ^ 3) from by
+        simp only [mul_comm, mul_assoc, mul_left_comm], hp₁, hp₂]
+  refine mul_right_cancel₀ ?_ hcancel
+  exact mul_ne_zero (pow_ne_zero _ hvd0) (mul_ne_zero hx₁0 hx₂0)
+
+set_option linter.unusedSectionVars false in
+/-- **The doubling-case formal valuation identity** (PROVEN 2026-07-25): the
+same conclusion at `P = Q` on the formal locus, where the chord rationalization
+degenerates and the tangent one (`add_some_second`, denominator
+`D = 2y + a₁x + a₃`) takes over.  Here `N = x²·D` outright, and the product of
+the roots is `x²x₃·D² = W² + a₃WD − a₆D²` with `W = −x³ + a₄x + 2a₆ − a₃y`,
+whose dominant monomial is `−x³`; `v(D) ≤ v(y) < v(x)³ = v(W)` gives
+`v(W² + a₃WD − a₆D²) = v(W)²` and the claim follows without any cancellation.
+Note `D` may equal `a₁x + a₃` in characteristic `2` — the proof never divides
+by `2` and never assumes `v(D) = v(y)`.  `D ≠ 0` is NOT a hypothesis: it is
+forced, since `D = 0` would make the product-of-roots identity read `W = 0`
+against `v(W) = v(x)³ ≠ 0`. -/
+theorem val_formal_double_core {F Γ₀ : Type*} [Field F]
+    [LinearOrderedCommGroupWithZero Γ₀] (v : Valuation F Γ₀)
+    (a₁ a₂ a₃ a₄ a₆ x y x₃ : F)
+    (ha₁ : v a₁ ≤ 1) (ha₃ : v a₃ ≤ 1) (ha₄ : v a₄ ≤ 1) (ha₆ : v a₆ ≤ 1)
+    (hx : 1 < v x) (hy : v y ^ 2 = v x ^ 3)
+    (hE : y ^ 2 + a₁ * x * y + a₃ * y = x ^ 3 + a₂ * x ^ 2 + a₄ * x + a₆)
+    (hE₃ : x₃ * (y + y + a₁ * x + a₃) ^ 2 =
+      (x ^ 2 + x * x + x ^ 2 + a₂ * (x + x) + a₄ - a₁ * y) ^ 2 +
+        a₁ * (x ^ 2 + x * x + x ^ 2 + a₂ * (x + x) + a₄ - a₁ * y) *
+          (y + y + a₁ * x + a₃) -
+        (a₂ + x + x) * (y + y + a₁ * x + a₃) ^ 2) :
+    v (x ^ 2 * y + x ^ 2 * y + a₁ * (x * x ^ 2) + a₃ * x ^ 2) ^ 2 * v x₃
+      = v x ^ 4 * v x ^ 4 := by
+  set D : F := y + y + a₁ * x + a₃ with hDdef
+  set W : F := -x ^ 3 + (a₄ * x + (a₆ + a₆) - a₃ * y) with hWdef
+  have hylt : v x < v y :=
+    val_lt_iff_sq_lt.mpr (by rw [hy]; exact pow_lt_pow_right₀ hx (by omega))
+  have hy1 : (1 : Γ₀) ≤ v y := le_of_lt (lt_trans hx hylt)
+  have hyW : v y < v (x ^ 3) := by
+    rw [map_pow]
+    refine val_lt_iff_sq_lt.mpr ?_
+    rw [hy, ← pow_mul]
+    exact pow_lt_pow_right₀ hx (by omega)
+  have hDle : v D ≤ v y := by
+    rw [hDdef]
+    refine v.map_add_le (v.map_add_le (v.map_add_le le_rfl le_rfl) ?_) (le_trans ha₃ hy1)
+    rw [map_mul]
+    calc v a₁ * v x ≤ 1 * v x := mul_le_mul' ha₁ le_rfl
+      _ = v x := one_mul _
+      _ ≤ v y := hylt.le
+  have h2 : v (a₆ + a₆) ≤ 1 := v.map_add_le ha₆ ha₆
+  have hWval : v W = v (x ^ 3) := by
+    rw [hWdef]
+    refine (v.map_add_eq_of_lt_left ?_).trans (by rw [v.map_neg])
+    refine lt_of_le_of_lt ?_ (by rwa [v.map_neg] : v y < v (-x ^ 3))
+    refine v.map_sub_le (v.map_add_le ?_ (h2.trans hy1)) ?_
+    · rw [map_mul]
+      calc v a₄ * v x ≤ 1 * v x := mul_le_mul' ha₄ le_rfl
+        _ = v x := one_mul _
+        _ ≤ v y := hylt.le
+    · rw [map_mul]
+      calc v a₃ * v y ≤ 1 * v y := mul_le_mul' ha₃ le_rfl
+        _ = v y := one_mul _
+  have hid : x ^ 2 * x₃ * D ^ 2 = W ^ 2 + (a₃ * W * D - a₆ * D ^ 2) := by
+    rw [hDdef, hWdef]
+    linear_combination (-8 * x ^ 3 - a₁ ^ 2 * x ^ 2 - 4 * a₂ * x ^ 2 + a₃ ^ 2 +
+      4 * a₆) * hE + x ^ 2 * hE₃
+  have hWsq : v (W ^ 2 + (a₃ * W * D - a₆ * D ^ 2)) = v W ^ 2 := by
+    have hDW : v D < v W := by rw [hWval]; exact lt_of_le_of_lt hDle hyW
+    have hW0 : v W ≠ 0 := ne_of_gt (lt_of_le_of_lt (zero_le) hDW)
+    have hb : v (a₃ * W * D - a₆ * D ^ 2) ≤ v W * v D := by
+      refine v.map_sub_le ?_ ?_
+      · rw [map_mul, map_mul]
+        calc v a₃ * v W * v D ≤ 1 * v W * v D :=
+              mul_le_mul' (mul_le_mul' ha₃ le_rfl) le_rfl
+          _ = v W * v D := by rw [one_mul]
+      · rw [map_mul, map_pow]
+        calc v a₆ * v D ^ 2 ≤ 1 * (v D * v D) := by
+              rw [pow_two]; exact mul_le_mul' ha₆ le_rfl
+          _ = v D * v D := one_mul _
+          _ ≤ v W * v D := mul_le_mul' hDW.le le_rfl
+    have hs : v W * v D < v (W ^ 2) := by
+      rw [map_pow, pow_two]
+      exact mul_lt_mul_of_pos_left hDW (lt_of_le_of_ne zero_le (Ne.symm hW0))
+    rw [v.map_add_eq_of_lt_left (lt_of_le_of_lt hb hs), map_pow]
+  have hkey : v x ^ 2 * v x₃ * v D ^ 2 = v x ^ 6 := by
+    have := congrArg v hid
+    rw [hWsq, map_mul, map_mul, map_pow, map_pow, hWval, map_pow] at this
+    rw [this, ← pow_mul]
+  have hNeq : x ^ 2 * y + x ^ 2 * y + a₁ * (x * x ^ 2) + a₃ * x ^ 2 = x ^ 2 * D := by
+    rw [hDdef]; ring
+  rw [hNeq, map_mul, map_pow, mul_pow, ← pow_mul]
+  calc (v x ^ (2 * 2)) * v D ^ 2 * v x₃ = v x ^ 2 * (v x ^ 2 * v x₃ * v D ^ 2) := by
+        rw [show 2 * 2 = 2 + 2 from rfl, pow_add]
+        simp only [mul_comm, mul_assoc, mul_left_comm]
+    _ = v x ^ 2 * v x ^ 6 := by rw [hkey]
+    _ = v x ^ 4 * v x ^ 4 := by rw [← pow_add, ← pow_add]
+
+set_option linter.unusedSectionVars false in
+/-- **The origin-line formal valuation identity** (PROVEN 2026-07-25): on the
+two origin lines the chart denominator is the single monomial section
+`x^{d−2}·y/h`, and `v(x)·v(x^{d−2}y/h)² = v(x)^{2d}/v(x)^{2d} = 1` is pure
+bookkeeping once `v(h(x)) = v(x)^d` and `v(y)² = v(x)³` are known. -/
+theorem val_formal_origin_core {F Γ₀ : Type*} [Field F]
+    [LinearOrderedCommGroupWithZero Γ₀] (v : Valuation F Γ₀) (x yy hp : F)
+    (dd : ℕ) (hdd : 2 ≤ dd) (hx : 1 < v x) (hy : v yy ^ 2 = v x ^ 3)
+    (hhv : v hp = v x ^ dd) :
+    v x * v (x ^ (dd - 2) * yy / hp) ^ 2 = 1 := by
+  have hx0 : v x ≠ 0 := ne_of_gt (zero_lt_one.trans hx)
+  obtain ⟨k, rfl⟩ : ∃ k, dd = k + 2 := ⟨dd - 2, by omega⟩
+  rw [show k + 2 - 2 = k from by omega, map_div₀, map_mul, map_pow, hhv, div_pow,
+    mul_pow, hy, ← pow_mul, ← pow_mul, ← pow_add, ← mul_div_assoc, ← pow_succ',
+    show k * 2 + 3 + 1 = (k + 2) * 2 from by ring]
+  exact div_self (pow_ne_zero _ hx0)
+
+set_option linter.unusedSectionVars false in
+/-- **Assembling the chart-denominator valuation from the core identity**
+(PROVEN 2026-07-25): dividing the affine numerator by `h₁h₂` against the
+prefactor `(x₁x₂)^{d−2}` turns `v(N)²·v(x₃) = v(x₁)⁴v(x₂)⁴` into
+`v(x₃)·v(C)² = 1`. -/
+theorem val_formal_assemble {F Γ₀ : Type*} [Field F]
+    [LinearOrderedCommGroupWithZero Γ₀] (v : Valuation F Γ₀)
+    (x₁ x₂ x₃ Nn p₁ p₂ : F) (dd : ℕ)
+    (hdd : 2 ≤ dd) (hx₁ : v x₁ ≠ 0) (hx₂ : v x₂ ≠ 0)
+    (hh₁ : v p₁ = v x₁ ^ dd) (hh₂ : v p₂ = v x₂ ^ dd)
+    (hcore : v Nn ^ 2 * v x₃ = v x₁ ^ 4 * v x₂ ^ 4) :
+    v x₃ * v (x₁ ^ (dd - 2) * x₂ ^ (dd - 2) * Nn / (p₁ * p₂)) ^ 2 = 1 := by
+  obtain ⟨k, rfl⟩ : ∃ k, dd = k + 2 := ⟨dd - 2, by omega⟩
+  have hB : (v x₁ ^ (k + 2) * v x₂ ^ (k + 2)) ^ 2 ≠ 0 :=
+    pow_ne_zero _ (mul_ne_zero (pow_ne_zero _ hx₁) (pow_ne_zero _ hx₂))
+  rw [show k + 2 - 2 = k from by omega, map_div₀, map_mul, map_mul, map_mul,
+    map_pow, map_pow, hh₁, hh₂, div_pow, ← mul_div_assoc, div_eq_iff hB, one_mul,
+    mul_pow, mul_pow, mul_pow, ← pow_mul, ← pow_mul, ← pow_mul, ← pow_mul]
+  calc v x₃ * (v x₁ ^ (k * 2) * v x₂ ^ (k * 2) * v Nn ^ 2)
+      = v x₁ ^ (k * 2) * v x₂ ^ (k * 2) * (v Nn ^ 2 * v x₃) := by
+        simp only [mul_comm, mul_assoc, mul_left_comm]
+    _ = v x₁ ^ (k * 2) * v x₂ ^ (k * 2) * (v x₁ ^ 4 * v x₂ ^ 4) := by rw [hcore]
+    _ = v x₁ ^ ((k + 2) * 2) * v x₂ ^ ((k + 2) * 2) := by
+        rw [show (k + 2) * 2 = k * 2 + 4 from by ring, pow_add, pow_add]
+        simp only [mul_assoc, mul_left_comm]
+
+end FormalChartValuation
+
 set_option backward.isDefEq.respectTransparency false in
 set_option linter.unusedSectionVars false in
-/-- **The formal-group valuation identity for `C`** (sorry leaf, 2026-07-25 —
-the ONLY genuinely non-formal input of the whole chart cluster; Silverman *AEC*
-IV.1): when both points lie on the formal-group locus of `𝒪` and their sum is
-affine, `v(x₃)·v(C)² = 1`.
+set_option linter.unusedVariables false in
+/-- **The formal-group valuation identity for `C`** (PROVEN 2026-07-25 — the
+node that was expected to be the ONLY genuinely non-formal input of the whole
+chart cluster; it turned out NOT to need the formal group law at all): when
+both points lie on the formal-group locus of `𝒪` and their sum is affine,
+`v(x₃)·v(C)² = 1`.
 
-`C` is the avatar of the formal parameter `s = x/y`: on the formal locus
-`v(y)² = v(x)³` (`val_ordinate_sq_of_abscissa_notMem`), so `v(s) = v(x)^{−1/2}`.
-The affine numerator's two leading monomials `x₂²y₁` and `x₁²y₂` have valuations
-`v₂²v₁^{3/2}` and `v₁²v₂^{3/2}`, and dividing by `v(h₁h₂) = v₁^d v₂^d` against
-the prefactor `v₁^{d−2}v₂^{d−2}` gives
-`v(C) = max(v₁^{−1/2}, v₂^{−1/2}) = v(s₃)`, which is the formal group law
-`s₃ = s₁ + s₂ + (higher order)`; and `v(x₃) = v(s₃)^{−2}` since `x = s/w` with
-`w` of order `s³`.  The delicate case is `v₁ = v₂`, where the two leading
-monomials can cancel and the integrality of the formal group law is what rules
-out a drop.
+WHAT THE ARGUMENT ACTUALLY IS.  The heuristic recorded here before — `C` is the
+avatar of `s = x/y`, so `v(C) = v(s₃)` by the formal group law
+`s₃ = s₁ + s₂ + (higher order)`, with the delicate case `v₁ = v₂` where the two
+leading monomials `x₂²y₁`, `x₁²y₂` cancel — is correct but is NOT the cheapest
+route, and the "delicate case" turns out to be an artefact of grading by the
+leading monomials of the NUMERATOR alone.  Multiplying the numerator by the
+chord intercept `ν` removes it: modulo the two curve equations,
 
-The kernel of reduction being a subgroup — so that `P + Q` is again formal — is
-available from `val_ordinate_sq_of_abscissa_notMem` and
-`kernel_add_abscissa_notMem`. -/
+  `N·ν = a₂x₁²x₂² + a₄x₁x₂(x₁+x₂) + a₆(x₁²+x₁x₂+x₂²)
+        − x₁y₂(x₂y₁ + a₁x₁x₂ + a₃(x₁+x₂))`,
+
+whose dominant monomial `−x₁x₂y₁y₂` dominates UNIFORMLY in `v₁, v₂` — no case
+split, no cancellation.  Together with the product-of-roots relation
+`x₁x₂x₃ = ν² + a₃ν − a₆` this gives `v(N)²v(x₃) = v₁⁴v₂⁴` directly.  The
+formal group law is thereby avoided entirely, and with it any need to build
+`Mathlib`-side formal-group machinery for elliptic curves.
+
+The four configurations are handled by `val_formal_chord_core` (both points
+affine with distinct abscissas), `val_formal_double_core` (both affine with
+`P = Q`, where the chord rationalization degenerates and `add_some_second`'s
+tangent one is used instead), and `val_formal_origin_core` twice (one point the
+origin — then the sum is the other point and `C` restricts to a single monomial
+section).  `P = Q = 0` is impossible here since the sum is affine.
+
+NOTE ON HYPOTHESES: `hunit` is NOT used.  Nonvanishing of `h(xᵢ)` on the formal
+locus is free from `val_aeval_monic_of_notMem` (`v(h(x)) = v(x)^d ≠ 0` when
+`x ∉ 𝒪`), so the unit hypothesis, which is about INTEGRAL torsion abscissas, has
+nothing to contribute on the formal locus.  It is kept in the signature because
+the consumer `exists_torsionPairLaw_formalGroupChart` supplies it positionally
+alongside its sibling `exists_torsionPairFormalNumerators`, which does need
+it. -/
 theorem WeierstrassCurve.torsionPairFormalDen_val_mul_eq_one (m : ℕ)
     (h : Polynomial R) (hmon : h.Monic) (hdeg : 2 ≤ h.natDegree)
     (hunit : ∀ 𝒪 : ValuationSubring Ksep,
@@ -14336,7 +14728,173 @@ theorem WeierstrassCurve.torsionPairFormalDen_val_mul_eq_one (m : ℕ)
     𝒪.valuation x₃ *
         𝒪.valuation (WeierstrassCurve.torsionPairFormalDen R K E Ksep m h PQ) ^ 2
       = 1 := by
-  sorry
+  classical
+  obtain ⟨ha₁m, ha₂m, ha₃m, ha₄m, ha₆m⟩ :=
+    baseChange_coeffs_mem_centered R K E Ksep 𝒪 hcen
+  have ha₁ : 𝒪.valuation (E⁄Ksep).a₁ ≤ 1 := (𝒪.valuation_le_one_iff _).mpr ha₁m
+  have ha₂ : 𝒪.valuation (E⁄Ksep).a₂ ≤ 1 := (𝒪.valuation_le_one_iff _).mpr ha₂m
+  have ha₃ : 𝒪.valuation (E⁄Ksep).a₃ ≤ 1 := (𝒪.valuation_le_one_iff _).mpr ha₃m
+  have ha₄ : 𝒪.valuation (E⁄Ksep).a₄ ≤ 1 := (𝒪.valuation_le_one_iff _).mpr ha₄m
+  have ha₆ : 𝒪.valuation (E⁄Ksep).a₆ ≤ 1 := (𝒪.valuation_le_one_iff _).mpr ha₆m
+  have hR : ∀ r : R, algebraMap R Ksep r ∈ 𝒪 :=
+    mem_centered_algebraMap R K Ksep 𝒪 hcen
+  have hsumeq : ((PQ.1 + PQ.2 : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) :
+      (E⁄Ksep).Point) = (PQ.1 : (E⁄Ksep).Point) + (PQ.2 : (E⁄Ksep).Point) := rfl
+  cases hc1 : ((PQ.1 : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) :
+      (E⁄Ksep).Point) with
+  | zero =>
+    cases hc2 : ((PQ.2 : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) :
+        (E⁄Ksep).Point) with
+    | zero =>
+      exfalso
+      have h0 : (Affine.Point.some x₃ y₃ hns₃ : (E⁄Ksep).Point) =
+          Affine.Point.zero := by
+        rw [← hsum, hsumeq, hc1, hc2]
+        exact add_zero _
+      exact Affine.Point.some_ne_zero hns₃ h0
+    | some x₂ y₂ hns₂ =>
+      have hx₂ : x₂ ∉ 𝒪 := fun hm => hformal₂ ⟨x₂, y₂, hns₂, hc2, hm⟩
+      have hvx₂ : 1 < 𝒪.valuation x₂ := by
+        rwa [← 𝒪.valuation_le_one_iff, not_le] at hx₂
+      have hy₂ : 𝒪.valuation y₂ ^ 2 = 𝒪.valuation x₂ ^ 3 :=
+        WeierstrassCurve.val_ordinate_sq_of_abscissa_notMem R K E Ksep 𝒪 hcen
+          hns₂.1 hx₂
+      have hh₂ : 𝒪.valuation (Polynomial.aeval x₂ h)
+          = 𝒪.valuation x₂ ^ h.natDegree :=
+        val_aeval_monic_of_notMem R Ksep 𝒪 hR h hmon hx₂
+      have heq : (Affine.Point.some x₃ y₃ hns₃ : (E⁄Ksep).Point) =
+          Affine.Point.some x₂ y₂ hns₂ := by
+        rw [← hsum, hsumeq, hc1, hc2]
+        exact zero_add _
+      injection heq with hX hY
+      subst hX
+      subst hY
+      rw [WeierstrassCurve.torsionPairFormalDen_apply_zero_left R K E Ksep m h
+        hdeg PQ hc1, hc2, WeierstrassCurve.torsionKernelFun_some, pow_one]
+      exact val_formal_origin_core 𝒪.valuation x₃ y₃ (Polynomial.aeval x₃ h)
+        h.natDegree hdeg hvx₂ hy₂ hh₂
+  | some x₁ y₁ hns₁ =>
+    have hx₁ : x₁ ∉ 𝒪 := fun hm => hformal₁ ⟨x₁, y₁, hns₁, hc1, hm⟩
+    have hvx₁ : 1 < 𝒪.valuation x₁ := by
+      rwa [← 𝒪.valuation_le_one_iff, not_le] at hx₁
+    have hy₁ : 𝒪.valuation y₁ ^ 2 = 𝒪.valuation x₁ ^ 3 :=
+      WeierstrassCurve.val_ordinate_sq_of_abscissa_notMem R K E Ksep 𝒪 hcen
+        hns₁.1 hx₁
+    have hh₁ : 𝒪.valuation (Polynomial.aeval x₁ h)
+        = 𝒪.valuation x₁ ^ h.natDegree :=
+      val_aeval_monic_of_notMem R Ksep 𝒪 hR h hmon hx₁
+    have hx₁0 : 𝒪.valuation x₁ ≠ 0 := ne_of_gt (zero_lt_one.trans hvx₁)
+    have h₁0 : Polynomial.aeval x₁ h ≠ 0 := by
+      intro h0
+      rw [h0, map_zero] at hh₁
+      exact pow_ne_zero _ hx₁0 hh₁.symm
+    have hy₁lt : 𝒪.valuation x₁ < 𝒪.valuation y₁ :=
+      val_lt_iff_sq_lt.mpr (by rw [hy₁]; exact pow_lt_pow_right₀ hvx₁ (by omega))
+    cases hc2 : ((PQ.2 : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) :
+        (E⁄Ksep).Point) with
+    | zero =>
+      have heq : (Affine.Point.some x₃ y₃ hns₃ : (E⁄Ksep).Point) =
+          Affine.Point.some x₁ y₁ hns₁ := by
+        rw [← hsum, hsumeq, hc1, hc2]
+        exact add_zero _
+      injection heq with hX hY
+      subst hX
+      subst hY
+      have hyhat : 𝒪.valuation (y₃ + (E⁄Ksep).a₁ * x₃ + (E⁄Ksep).a₃)
+          = 𝒪.valuation y₃ := by
+        have hb1 : 𝒪.valuation ((E⁄Ksep).a₁ * x₃) < 𝒪.valuation y₃ := by
+          rw [map_mul]
+          calc 𝒪.valuation (E⁄Ksep).a₁ * 𝒪.valuation x₃
+              ≤ 1 * 𝒪.valuation x₃ := mul_le_mul' ha₁ le_rfl
+            _ = 𝒪.valuation x₃ := one_mul _
+            _ < 𝒪.valuation y₃ := hy₁lt
+        have hstep : 𝒪.valuation (y₃ + (E⁄Ksep).a₁ * x₃) = 𝒪.valuation y₃ :=
+          𝒪.valuation.map_add_eq_of_lt_left hb1
+        have hb2 : 𝒪.valuation (E⁄Ksep).a₃
+            < 𝒪.valuation (y₃ + (E⁄Ksep).a₁ * x₃) := by
+          rw [hstep]
+          exact lt_of_le_of_lt ha₃ (lt_trans hvx₁ hy₁lt)
+        rw [𝒪.valuation.map_add_eq_of_lt_left hb2, hstep]
+      have hC : WeierstrassCurve.torsionKernelFun R K E Ksep h
+              (h.natDegree - 2) 1 ↑PQ.1 +
+            (E⁄Ksep).a₁ * WeierstrassCurve.torsionKernelFun R K E Ksep h
+              (h.natDegree - 1) 0 ↑PQ.1 +
+            (E⁄Ksep).a₃ * WeierstrassCurve.torsionKernelFun R K E Ksep h
+              (h.natDegree - 2) 0 ↑PQ.1
+          = x₃ ^ (h.natDegree - 2) * (y₃ + (E⁄Ksep).a₁ * x₃ + (E⁄Ksep).a₃) /
+              Polynomial.aeval x₃ h := by
+        obtain ⟨k, hk⟩ : ∃ k, h.natDegree = k + 2 := ⟨h.natDegree - 2, by omega⟩
+        rw [hc1, WeierstrassCurve.torsionKernelFun_some,
+          WeierstrassCurve.torsionKernelFun_some,
+          WeierstrassCurve.torsionKernelFun_some, hk]
+        simp only [show k + 2 - 1 = k + 1 from by omega,
+          show k + 2 - 2 = k from by omega, pow_one, pow_zero, mul_one]
+        field_simp
+        ring
+      rw [WeierstrassCurve.torsionPairFormalDen_apply_zero_right R K E Ksep m h
+        hdeg PQ hc2, hC]
+      exact val_formal_origin_core 𝒪.valuation x₃
+        (y₃ + (E⁄Ksep).a₁ * x₃ + (E⁄Ksep).a₃) (Polynomial.aeval x₃ h)
+        h.natDegree hdeg hvx₁ (by rw [hyhat]; exact hy₁) hh₁
+    | some x₂ y₂ hns₂ =>
+      have hx₂ : x₂ ∉ 𝒪 := fun hm => hformal₂ ⟨x₂, y₂, hns₂, hc2, hm⟩
+      have hvx₂ : 1 < 𝒪.valuation x₂ := by
+        rwa [← 𝒪.valuation_le_one_iff, not_le] at hx₂
+      have hy₂ : 𝒪.valuation y₂ ^ 2 = 𝒪.valuation x₂ ^ 3 :=
+        WeierstrassCurve.val_ordinate_sq_of_abscissa_notMem R K E Ksep 𝒪 hcen
+          hns₂.1 hx₂
+      have hh₂ : 𝒪.valuation (Polynomial.aeval x₂ h)
+          = 𝒪.valuation x₂ ^ h.natDegree :=
+        val_aeval_monic_of_notMem R Ksep 𝒪 hR h hmon hx₂
+      have hx₂0 : 𝒪.valuation x₂ ≠ 0 := ne_of_gt (zero_lt_one.trans hvx₂)
+      have h₂0 : Polynomial.aeval x₂ h ≠ 0 := by
+        intro h0
+        rw [h0, map_zero] at hh₂
+        exact pow_ne_zero _ hx₂0 hh₂.symm
+      have hE₁ := (WeierstrassCurve.Affine.equation_iff x₁ y₁).mp hns₁.1
+      have hE₂ := (WeierstrassCurve.Affine.equation_iff x₂ y₂).mp hns₂.1
+      have hxy : ¬(x₁ = x₂ ∧ y₁ = (E⁄Ksep).toAffine.negY x₂ y₂) := by
+        rintro ⟨hxe, hye⟩
+        have h0 : (Affine.Point.some x₃ y₃ hns₃ : (E⁄Ksep).Point) =
+            Affine.Point.zero := by
+          rw [← hsum, hsumeq, hc1, hc2]
+          exact Affine.Point.add_of_Y_eq hxe hye
+        exact Affine.Point.some_ne_zero hns₃ h0
+      rw [WeierstrassCurve.torsionPairFormalDen_apply_some R K E Ksep m h hdeg PQ
+        x₁ y₁ x₂ y₂ hns₁ hns₂ hc1 hc2 h₁0 h₂0]
+      refine val_formal_assemble 𝒪.valuation x₁ x₂ x₃ _ (Polynomial.aeval x₁ h)
+        (Polynomial.aeval x₂ h) h.natDegree hdeg hx₁0 hx₂0 hh₁ hh₂ ?_
+      by_cases hxe : x₁ = x₂
+      · subst hxe
+        have hye : y₁ = y₂ :=
+          WeierstrassCurve.Affine.Y_eq_of_Y_ne hns₁.1 hns₂.1 rfl
+            (fun hh => hxy ⟨rfl, hh⟩)
+        subst hye
+        obtain ⟨x₃', y₃', hns₃', hadd, hX₃, -⟩ :=
+          WeierstrassCurve.add_some_second (E⁄Ksep) hns₁ hns₂ hxy
+        have heq : (Affine.Point.some x₃ y₃ hns₃ : (E⁄Ksep).Point) =
+            Affine.Point.some x₃' y₃' hns₃' := by
+          rw [← hsum, hsumeq, hc1, hc2]
+          exact hadd
+        injection heq with hX hY
+        subst hX
+        subst hY
+        exact val_formal_double_core 𝒪.valuation (E⁄Ksep).a₁ (E⁄Ksep).a₂
+          (E⁄Ksep).a₃ (E⁄Ksep).a₄ (E⁄Ksep).a₆ x₁ y₁ x₃ ha₁ ha₃ ha₄ ha₆ hvx₁ hy₁
+          hE₁ hX₃
+      · obtain ⟨x₃', y₃', hns₃', hadd, hX₃, -⟩ :=
+          WeierstrassCurve.add_some_ordinate (K := K) (E := E) (Ksep := Ksep)
+            hns₁ hns₂ hxe
+        have heq : (Affine.Point.some x₃ y₃ hns₃ : (E⁄Ksep).Point) =
+            Affine.Point.some x₃' y₃' hns₃' := by
+          rw [← hsum, hsumeq, hc1, hc2]
+          exact hadd
+        injection heq with hX hY
+        subst hX
+        subst hY
+        exact val_formal_chord_core 𝒪.valuation (E⁄Ksep).a₁ (E⁄Ksep).a₂
+          (E⁄Ksep).a₃ (E⁄Ksep).a₄ (E⁄Ksep).a₆ x₁ y₁ x₂ y₂ x₃ ha₁ ha₂ ha₃ ha₄ ha₆
+          hvx₁ hvx₂ hy₁ hy₂ hxe hE₁ hE₂ hX₃
 
 set_option backward.isDefEq.respectTransparency false in
 set_option linter.unusedSectionVars false in

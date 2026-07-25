@@ -285,8 +285,25 @@ def _imports_sha(text):
 
 
 def _qlog(line):
-    with open(QUERY_LOG, "a", encoding="utf-8") as fh:
-        fh.write(f"[{time.strftime('%F %T')}] {line}\n")
+    """Best-effort timing log. NEVER raises.
+
+    QUERY_LOG lives under `.report-server/`, which was DELETED with the
+    report server and the MCP on 2026-07-25 — so this open() fails on
+    every run. It is called on BOTH the success and the failure path of
+    run_census(), which made the whole census unrunnable: on failure the
+    FileNotFoundError replaced the RuntimeError carrying lake's real
+    output (the module that does not compile), and on success it killed
+    the run after the census had already answered correctly.
+
+    A diagnostic side-channel must never become the failure, and must
+    never mask the error it was meant to annotate. The no-fallback
+    contract governs the census RESULT, not this log — so swallow OSError
+    here and keep the caller's own loud crash intact."""
+    try:
+        with open(QUERY_LOG, "a", encoding="utf-8") as fh:
+            fh.write(f"[{time.strftime('%F %T')}] {line}\n")
+    except OSError:
+        pass
 
 
 def run_census(names, root="fermat_last_theorem", timeout=3600):
