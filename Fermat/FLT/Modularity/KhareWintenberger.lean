@@ -159,6 +159,19 @@ import Mathlib.LinearAlgebra.Dual.Lemmas
 import Mathlib.GroupTheory.Solvable
 import Mathlib.Data.Set.Card
 import Mathlib.Tactic.Group
+-- residual-bridge proof-only imports (2026-07-25, the discharge of
+-- `exists_residualCongruence_over_base`): the SHARED Family-free
+-- Chebotarev–Brauer–Nesbitt conjugacy node (`Patching.lean`'s
+-- `exists_conj_of_charFrob_eq_away` is a verbatim delegation to it, so no
+-- extraction from that downstream module was needed), the `ℤ_[ℓ]` ideal
+-- classification behind automatic continuity of the reduction map, the
+-- module-topology automatic-continuity criterion, the topological-algebra
+-- `ContinuousSMul` criterion, and base-change of ranks
+import Fermat.FLT.GaloisRepresentation.BrauerNesbittConjugacy
+import Mathlib.NumberTheory.Padics.RingHoms
+import Mathlib.Topology.Algebra.Module.ModuleTopology
+import Mathlib.Topology.Algebra.Algebra
+import Mathlib.LinearAlgebra.Dimension.Constructions
 
 @[expose] public section
 
@@ -1060,9 +1073,91 @@ Taylor–Wiles input: a congruent modular seed, residual irreducibility
 over `F`, and the deformation conditions carried by `hρ`).
 -/
 
-/-- **The residual bridge over the Moret–Bailly base** (sorry node;
-sub-leaf (c) of the modularity-lifting cut — Chebotarev +
+/-- **Automatic continuity of a ring homomorphism `ℤ_[ℓ] →+* k` into a
+finite discrete field** (PROVEN helper for the residual bridge below):
+the kernel of `f` is nonzero (`ℤ_[ℓ]` is infinite, `k` is finite) and
+prime (`k` is a domain), hence — by the DVR ideal classification of
+`ℤ_[ℓ]` (`PadicInt.ideal_eq_span_pow_p`) — contains `ℓ`; and the ideal
+`(ℓ)` is the open unit ball of `ℤ_[ℓ]`
+(`PadicInt.norm_lt_one_iff_dvd`), so `f` vanishes on a neighbourhood of
+`0` and is therefore continuous.
+
+(Downstream twin: `Modularity/Patching.lean`'s
+`continuous_ringHom_padicInt`; that module IMPORTS this one, so the
+lemma is restated here under a distinct name rather than imported — the
+same convention as `charFrob_monic_of_free` below.  It is stated for a
+bare homomorphism rather than for an `Algebra` instance — unlike this
+module's own `charP_of_algebra_padicInt`, which is also declared below
+the residual bridge and hence unavailable to it — because it is applied
+to `π.comp (algebraMap ℤ_[ℓ] O)`, which is not an `algebraMap`.) -/
+theorem continuous_ringHom_padicInt_of_finite {ℓ : ℕ} [Fact ℓ.Prime]
+    {k : Type*} [Field k] [Finite k] [TopologicalSpace k]
+    [DiscreteTopology k] (f : ℤ_[ℓ] →+* k) : Continuous f := by
+  -- `f` kills `ℓ`: its kernel is a nonzero prime of the DVR `ℤ_[ℓ]`
+  have hker : RingHom.ker f ≠ ⊥ := by
+    intro hbot
+    have hinj : Function.Injective f := by
+      rw [RingHom.injective_iff_ker_eq_bot]
+      exact hbot
+    haveI := Finite.of_injective f hinj
+    exact not_finite ℤ_[ℓ]
+  obtain ⟨n, hn⟩ := PadicInt.ideal_eq_span_pow_p hker
+  have hzero : f (ℓ : ℤ_[ℓ]) = 0 := by
+    have hpow : (ℓ : ℤ_[ℓ]) ^ n ∈ RingHom.ker f := by
+      rw [hn]
+      exact Ideal.mem_span_singleton_self _
+    exact RingHom.mem_ker.mp
+      ((RingHom.ker_isPrime f).mem_of_pow_mem n hpow)
+  -- the ideal `(ℓ)` is the open unit ball of `ℤ_[ℓ]`
+  have hopen : IsOpen ((Ideal.span {(ℓ : ℤ_[ℓ])} : Ideal ℤ_[ℓ]) : Set ℤ_[ℓ]) := by
+    have hball : ((Ideal.span {(ℓ : ℤ_[ℓ])} : Ideal ℤ_[ℓ]) : Set ℤ_[ℓ]) =
+        Metric.ball (0 : ℤ_[ℓ]) 1 := by
+      ext x
+      simp only [SetLike.mem_coe, Ideal.mem_span_singleton, Metric.mem_ball,
+        dist_zero_right]
+      exact (PadicInt.norm_lt_one_iff_dvd x).symm
+    rw [hball]
+    exact Metric.isOpen_ball
+  apply continuous_of_continuousAt_zero f
+  unfold ContinuousAt
+  rw [map_zero, nhds_discrete k, Filter.tendsto_pure]
+  filter_upwards [hopen.mem_nhds (Submodule.zero_mem _)] with x hx
+  obtain ⟨c, hc⟩ := Ideal.mem_span_singleton.mp hx
+  rw [hc, map_mul, hzero, zero_mul]
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Elementwise base change of the characteristic polynomial**
+(PROVEN helper for the residual bridge below): at EVERY element `σ` of
+`Gal(ℚ̄/ℚ)` the characteristic polynomial of the base-changed
+representation `ρ.baseChange B` is the `algebraMap`-image of that of
+`ρ`.  `(ρ.baseChange B) σ` is definitionally `LinearMap.baseChange B
+(ρ σ)` (through the exposed module exports), so this is mathlib's
+`LinearMap.charpoly_baseChange`.
+
+(Downstream twin: `Modularity/Patching.lean`'s `charFrob_baseChange`,
+which is this statement specialized to the arithmetic Frobenius at a
+place of `ℚ`; that module imports this one, so the lemma is restated
+here.  The ELEMENTWISE form is what the residual bridge needs: it must
+compare the two representations at the Frobenius elements of the places
+of `F`, which are elements of `G_ℚ` but not Frobenius elements of
+places of `ℚ`.) -/
+theorem charpoly_baseChange_apply {A : Type*} [CommRing A]
+    [TopologicalSpace A] [IsTopologicalRing A] {B : Type*} [CommRing B]
+    [TopologicalSpace B] [IsTopologicalRing B] [Algebra A B]
+    [ContinuousSMul A B] {M : Type*} [AddCommGroup M] [Module A M]
+    [Module.Finite A M] [Module.Free A M] (ρ : GaloisRep ℚ A M)
+    (σ : Field.absoluteGaloisGroup ℚ) :
+    ((ρ.baseChange B) σ).charpoly =
+      ((ρ σ).charpoly).map (algebraMap A B) := by
+  rw [show (ρ.baseChange B) σ = LinearMap.baseChange B (ρ σ) from rfl,
+    LinearMap.charpoly_baseChange]
+
+/-- **The residual bridge over the Moret–Bailly base** (PROVEN
+2026-07-25; sub-leaf (c) of the modularity-lifting cut — Chebotarev +
 Brauer–Nesbitt + base change): the Khare–Wintenberger lift `ρ`,
+restricted to `G_F`, is a lift of `ρbar|_{G_F}` — at all but finitely
+many places `w` of `F` its Frobenius characteristic polynomial reduces
+through `π` to that of `ρbar|_{G_F}`.
 restricted to `G_F`, is a lift of `ρbar|_{G_F}` — at all but finitely
 many places `w` of `F` its Frobenius characteristic polynomial reduces
 through `π` to that of `ρbar|_{G_F}`.
@@ -1091,16 +1186,50 @@ polynomials agree.  The finite exceptional set `badρ` collects the
 places over `2` and `ℓ` and the places ramified in `F/ℚ` — the only
 places where `charFrob` is not pinned by the unramified comparison.
 
-PIN AUDIT (2026-07-24): the ingredients exist in-tree but on the
-WRONG side of the import graph for a direct discharge here —
-`exists_conj_of_charFrob_eq_away` and `charFrob_baseChange` both live
-in `Modularity/Patching.lean`, which is downstream of this module's
-consumer chain; the circularity guard below forbids importing it.  A
-future discharge extracts them into a Family-free shared module
-exactly as the 2026-07-24 pillar-α refactor did for the deformation
-development (`HardlyRamified/Deformation.lean`), then proves this leaf
-by restriction of the conjugating isomorphism plus place-by-place
-`charFrob` comparison.  That extraction is the recommended attack.
+PIN AUDIT (2026-07-24, RESOLVED 2026-07-25 — NO EXTRACTION WAS
+NEEDED): the audit read the two ingredients as living only in the
+downstream `Modularity/Patching.lean` and recommended extracting them
+into a Family-free shared module (as the pillar-α refactor did for
+`HardlyRamified/Deformation.lean`).  Re-auditing the import graph
+showed that the extraction had ALREADY happened for the load-bearing
+half: `Patching.lean`'s `exists_conj_of_charFrob_eq_away` is a verbatim
+delegation to the shared Family-free node
+`GaloisRepresentation.exists_conj_of_charFrob_eq_away` in
+`BrauerNesbittConjugacy.lean` (whose only imports are `Chebotarev.lean`
+and `BrauerNesbitt.lean`, both already imported here), so it is
+consumed directly by a proof-only import, with no cycle.  The
+remaining two bricks are elementary and are restated ABOVE under
+distinct names, following the convention already used in this module
+for `charFrob_monic_of_free`/`charFrob_natDegree_of_rank_two`:
+`continuous_ringHom_padicInt_of_finite` (the twin of `Patching.lean`'s
+`continuous_ringHom_padicInt`) and `charpoly_baseChange_apply` (the
+ELEMENTWISE strengthening of `Patching.lean`'s `charFrob_baseChange`,
+which is what the comparison at places of `F` actually needs).
+
+PROOF (2026-07-25).  `O` carries the `ℤ_[ℓ]`-module topology and `k` is
+finite discrete, so the reduction `π` is automatically continuous
+(`IsModuleTopology.continuous_of_ringHom` over
+`continuous_ringHom_padicInt_of_finite`); `k` is therefore a
+topological `O`-algebra via `π.toAlgebra` and the reduction
+`τ := ρ.baseChange k` of the lift exists as a genuine
+`k`-representation of `G_ℚ`, of rank `2` (`Module.rank_baseChange`).
+`hπ` says exactly that `τ.charFrob = ρbar.charFrob` at every rational
+prime outside `{2, ℓ}` (through `charpoly_baseChange_apply` and
+`GaloisRep.charFrob_eq_charpoly_globalFrob`), so the shared
+Chebotarev–Brauer–Nesbitt node produces `e` with `τ.conj e = ρbar`.
+Conjugation does not change characteristic polynomials
+(`LinearEquiv.charpoly_conj`), so `((ρ σ).charpoly).map π =
+(ρbar σ).charpoly` at EVERY `σ ∈ G_ℚ` — not merely at Frobenius
+elements.  Since `charFrob` of a restricted representation at a place
+`w` of `F` is by definition `charpoly` of `ρ` at the `G_ℚ`-element
+`ι_{F}(globalFrob w)` (`GaloisRep.map_apply`), the congruence holds at
+EVERY place `w` of `F` and the exceptional set is `∅` — a
+strengthening of the statement's `∃ badρ`, which the classical
+argument above bounded only by the ramified places.  The hypotheses
+`hℓodd`, `hℓ5`, `hZinj`, `hρ`, `hρbar`, `hπsurj`, `hFtr`, `hFgal` and
+`hirrF` are consequently not consumed; they are retained because the
+consumer `exists_heckePackage_of_seed` supplies them and because
+sub-leaves (a)/(b) of the same cut genuinely need them.
 
 SOUNDNESS AUDIT (both ways, 2026-07-24): (i) direct — the statement is
 true for ANY package satisfying its hypotheses, with no
@@ -1116,6 +1245,13 @@ directly true as stated, which is the reason it was cut off from (a).
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
 discharge through `Family.lean`, `Lift.lean`, or
 `Modularity/Interface.lean`. -/
+-- `hπsurj`, `hFtr`, `hFgal` and `hirrF` are not consumed by the proof (see
+-- the PROOF paragraph above) but are KEPT: the hypothesis list is the shared
+-- interface of the three sub-leaves (a)/(b)/(c) of this cut, the consumer
+-- `exists_heckePackage_of_seed` supplies them positionally, and (a)/(b)
+-- genuinely need them.  The linter is silenced rather than the names being
+-- mangled to `_`, so the docstring's references stay valid.
+set_option linter.unusedVariables false in
 theorem exists_residualCongruence_over_base
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
@@ -1142,8 +1278,61 @@ theorem exists_residualCongruence_over_base
     ∃ badρ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)),
       ∀ w ∉ badρ,
         ((ρ.map (algebraMap ℚ F)).charFrob w).map π =
-          (ρbar.map (algebraMap ℚ F)).charFrob w :=
-  sorry
+          (ρbar.map (algebraMap ℚ F)).charFrob w := by
+  classical
+  -- the reduction map `π` is automatically continuous: `O` carries the
+  -- `ℤ_[ℓ]`-module topology and `π ∘ algebraMap` lands in a finite discrete
+  -- field
+  have hcontπ : Continuous π :=
+    IsModuleTopology.continuous_of_ringHom (R := ℤ_[ℓ]) π
+      (continuous_ringHom_padicInt_of_finite (π.comp (algebraMap ℤ_[ℓ] O)))
+  letI : Algebra O k := π.toAlgebra
+  haveI : ContinuousSMul O k := continuousSMul_of_algebraMap O k
+    (by rw [RingHom.algebraMap_toAlgebra]; exact hcontπ)
+  -- the reduction `τ := ρ.baseChange k` of the lift, and its charpoly
+  -- bookkeeping: at every Galois element its charpoly is the `π`-image
+  have hbc : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ((ρ.baseChange k) σ).charpoly = ((ρ σ).charpoly).map π := by
+    intro σ
+    rw [charpoly_baseChange_apply ρ σ, RingHom.algebraMap_toAlgebra]
+  have hrankτ : Module.rank k (TensorProduct O k (Fin 2 → O)) = 2 := by
+    rw [Module.rank_baseChange, hrank]
+    simp
+  -- `hπ` is exactly the Frobenius charpoly matching of `τ` with `ρbar`
+  -- away from the two rational primes `2` and `ℓ`
+  have hcf : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉
+        ({Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat,
+          (Fact.out : Nat.Prime ℓ).toHeightOneSpectrumRingOfIntegersRat} :
+            Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))) →
+      (ρ.baseChange k).charFrob hq.toHeightOneSpectrumRingOfIntegersRat =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat := by
+    intro q hq hqS
+    have hq2 : q ≠ 2 := by
+      rintro rfl
+      exact hqS (Finset.mem_insert_self _ _)
+    have hqℓ : q ≠ ℓ := by
+      rintro rfl
+      exact hqS (Finset.mem_insert_of_mem (Finset.mem_singleton_self _))
+    rw [GaloisRep.charFrob_eq_charpoly_globalFrob, hbc,
+      ← GaloisRep.charFrob_eq_charpoly_globalFrob]
+    exact hπ q hq hq2 hqℓ
+  -- Chebotarev + Brauer–Nesbitt: the reduction IS `ρbar`, up to conjugation
+  obtain ⟨e, he⟩ := GaloisRepresentation.exists_conj_of_charFrob_eq_away hW
+    hirr hrankτ (ρ.baseChange k) _ hcf
+  -- hence the charpoly congruence holds at EVERY element of `G_ℚ`,
+  -- conjugation leaving characteristic polynomials unchanged
+  have hall : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ((ρ σ).charpoly).map π = (ρbar σ).charpoly := by
+    intro σ
+    rw [← hbc σ, ← he, GaloisRep.conj_apply, LinearEquiv.charpoly_conj]
+  -- in particular at the Frobenius elements of the places of `F`, which are
+  -- the images in `G_ℚ` of the global Frobenii of `F`: the bad set is EMPTY
+  refine ⟨∅, fun w _ => ?_⟩
+  rw [GaloisRep.charFrob_eq_charpoly_globalFrob,
+    GaloisRep.charFrob_eq_charpoly_globalFrob, GaloisRep.map_apply,
+    GaloisRep.map_apply]
+  exact hall _
 
 /-- **`R = 𝕋` over the totally real base** (sorry node; sub-leaf (a) of
 the modularity-lifting cut — Kisin 2009 / Taylor 2006, the
