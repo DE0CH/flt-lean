@@ -5738,14 +5738,298 @@ theorem forall_point_apply_eq_of_lt_two_mul_sum_card_inertia
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
+/-- **The invariant-differentials theorem, in torsion form** (sorry
+node, created 2026-07-25 — leaf (ii-b-1) of the Théorème A
+decomposition, the PURE Hopf-algebra half of the `3`-torsion of
+`Ω[G⁄𝒪₃ᵥ]`, with no arithmetic content whatsoever: it holds for a
+commutative Hopf algebra over ANY commutative base): if the
+augmentation ideal `I = ker ε` of a commutative Hopf algebra `A` over
+`R` satisfies `n·I ⊆ I²` — that is, the cotangent space at the
+identity `ω_A = I/I²` is killed by `n` — then the whole module of
+Kähler differentials `Ω[A⁄R]` is killed by `n`.  This is exactly the
+translation-invariance of differentials on a group scheme, in the only
+form the Fontaine estimate consumes; the underlying statement is the
+canonical isomorphism `Ω[A⁄R] ≅ A ⊗_R ω_A` (Oort–Tate 1970 §1;
+Fontaine, *Il n'y a pas de variété abélienne sur ℤ*, §2; Tate's
+*Finite flat group schemes* in Cornell–Silverman–Stevens §2), which is
+not available at this mathlib pin.  Intended proof, fully
+self-contained modulo the `I/I²` bookkeeping: write `π̄ : A → ω_A` for
+`a ↦ (a − ε a) mod I²` and `Δa = a⁽¹⁾ ⊗ a⁽²⁾` in Sweedler notation.
+(1) The map `D : A → A ⊗_R ω_A`, `D a = a⁽¹⁾ ⊗ π̄(a⁽²⁾)`, is an
+`R`-derivation: `Δa − a ⊗ 1 ∈ ker(id ⊗ ε) = A ⊗ I` by the counit
+axiom, and for `Δa = a⊗1 + u`, `Δb = b⊗1 + v` with `u, v ∈ A ⊗ I` one
+has `Δ(ab) − ab⊗1 = (a⊗1)v + (b⊗1)u + uv` with `uv ∈ A ⊗ I²`, which
+π̄ kills — so `D(ab) = a·D b + b·D a`.  Hence `D` factors as
+`θ : Ω[A⁄R] → A ⊗_R ω_A` with `θ (d a) = a⁽¹⁾ ⊗ π̄(a⁽²⁾)`.
+(2) `θ` is INJECTIVE, with explicit left inverse built from the
+antipode `S`: `ρ : A ⊗_R ω_A → Ω[A⁄R]`, `ρ (g ⊗ π̄ x) = g · S(x⁽¹⁾) d
+x⁽²⁾`.  Well-definedness on `I²` is the antipode axiom:
+for `x, y ∈ I`, `S((xy)⁽¹⁾) d((xy)⁽²⁾) = [S(x⁽¹⁾)x⁽²⁾]·S(y⁽¹⁾)d y⁽²⁾
++ [S(y⁽¹⁾)y⁽²⁾]·S(x⁽¹⁾)d x⁽²⁾ = ε(x)(…) + ε(y)(…) = 0`; and
+`ρ (θ (d a)) = a⁽¹⁾S(a⁽²⁾) d a⁽³⁾ = ε(a⁽¹⁾) d a⁽²⁾ = d a`, so
+`ρ ∘ θ = id`.
+(3) Therefore `n • ω = 0` for all `ω : Ω[A⁄R]`, because
+`n • (g ⊗ ξ) = g ⊗ (n • ξ) = 0` on `A ⊗_R ω_A` by the hypothesis
+`n·I ⊆ I²`, and `θ` is injective. -/
+theorem kaehlerDifferential_nsmul_eq_zero_of_nsmul_mem_sq_ker_counit
+    {R A : Type*} [CommRing R] [CommRing A] [HopfAlgebra R A] (n : ℕ)
+    (hn : ∀ x ∈ RingHom.ker (Bialgebra.counitAlgHom R A),
+      n • x ∈ (RingHom.ker (Bialgebra.counitAlgHom R A)) ^ 2) :
+    ∀ ω : Ω[A⁄R], n • ω = 0 := by
+  sorry
+
+set_option maxHeartbeats 1000000 in
+/-- **A bialgebra whose identity has trivial convolution cube has
+`3`-torsion cotangent space** (PROVEN 2026-07-25 — the bridge brick of
+the Théorème A leaf (ii-b), pure Sweedler bookkeeping over an
+arbitrary commutative base): if the third convolution power of the
+identity map of a commutative `R`-bialgebra `A` is the convolution
+unit — i.e. `[3] = e` as morphisms of the affine group scheme
+`Spec A` — then `3·I ⊆ I²` for `I = ker ε` the augmentation ideal;
+equivalently `3` kills the cotangent space `ω_A = I/I²` at the
+identity.  Proof (the classical `[n]^*a ≡ n·a mod I²`, specialised to
+`n = 3` so that no induction is needed): let `q a = ε(a)·1` and
+`p = id − q` be the two projections attached to the augmentation
+(`p` lands in `I` because `ε` is an algebra map splitting the unit).
+The four-term expansion `p ⊗ p = id − (id ⊗ q) − (q ⊗ id) + (q ⊗ q)`
+together with the two counit axioms `(id ⊗ ε)Δ = id = (ε ⊗ id)Δ`
+gives, for `x ∈ I`, the primitive splitting
+`Δx = (p ⊗ p)(Δx) + x ⊗ 1 + 1 ⊗ x`
+(the `q ⊗ q` term is `ε(x)·1⊗1 = 0`).  Multiplying out:
+`[2]^*x = μ(Δx) = μ((p⊗p)(Δx)) + 2x` and
+`[3]^*x = μ(([2]^* ⊗ id)(Δx)) = μ(([2]^*⊗id)((p⊗p)(Δx))) + [2]^*x + x`,
+using `[2]^*1 = 1`.  Both `μ`-terms lie in `I²`: `p` lands in `I`, and
+`[2]^*` preserves the counit (`ε ∘ [2]^* = ε`, itself the counit axiom
+again), hence preserves `I`.  Since `[3]^* = e^*` sends `I` to `0`,
+this reads `0 ≡ 3x mod I²`. -/
+theorem three_nsmul_mem_sq_ker_counit_of_convCube_eq_one
+    {R A : Type*} [CommRing R] [CommRing A] [Bialgebra R A]
+    (hcube : (WithConv.toConv (AlgHom.id R A) * WithConv.toConv (AlgHom.id R A) *
+        WithConv.toConv (AlgHom.id R A) : WithConv (A →ₐ[R] A)) = 1)
+    (x : A) (hx : x ∈ RingHom.ker (Bialgebra.counitAlgHom R A)) :
+    (3 : ℕ) • x ∈ (RingHom.ker (Bialgebra.counitAlgHom R A)) ^ 2 := by
+  have hxk : (Bialgebra.counitAlgHom R A) x = 0 := RingHom.mem_ker.mp hx
+  have hxc : Coalgebra.counit (R := R) x = 0 := hxk
+  -- the pointwise formula for a convolution product of algebra maps
+  have hconv : ∀ (f g : WithConv (A →ₐ[R] A)) (a : A),
+      (f * g).ofConv a = Algebra.TensorProduct.lmul' R
+        (Algebra.TensorProduct.map f.ofConv g.ofConv (Coalgebra.comul (R := R) a)) := by
+    intro f g a
+    rw [AlgHom.convMul_def]
+    rfl
+  -- `q` projects onto the unit line, `p = 1 - q` onto the augmentation ideal
+  obtain ⟨q, hq_apply⟩ : ∃ q : A →ₗ[R] A,
+      ∀ a : A, q a = algebraMap R A (Coalgebra.counit (R := R) a) :=
+    ⟨(Algebra.linearMap R A).comp (Coalgebra.counit (R := R) (A := A)), fun _ => rfl⟩
+  obtain ⟨p, hp_apply⟩ : ∃ p : A →ₗ[R] A,
+      ∀ a : A, p a = a - algebraMap R A (Coalgebra.counit (R := R) a) :=
+    ⟨LinearMap.id - (Algebra.linearMap R A).comp (Coalgebra.counit (R := R) (A := A)),
+      fun _ => rfl⟩
+  have hqdef : q = (Algebra.linearMap R A).comp (Coalgebra.counit (R := R) (A := A)) :=
+    LinearMap.ext fun a => hq_apply a
+  have hpc : ∀ a : A, Coalgebra.counit (R := R) (p a) = 0 := by
+    intro a
+    rw [hp_apply]
+    simp
+  -- the four-term expansion of `p ⊗ p`
+  have hexp : (TensorProduct.map p p : A ⊗[R] A →ₗ[R] A ⊗[R] A) =
+      LinearMap.id - LinearMap.lTensor A q - LinearMap.rTensor A q
+        + (LinearMap.rTensor A q).comp (LinearMap.lTensor A q) := by
+    ext a b
+    simp only [TensorProduct.AlgebraTensorModule.curry_apply, TensorProduct.curry_apply,
+      LinearMap.coe_restrictScalars, TensorProduct.map_tmul, LinearMap.sub_apply,
+      LinearMap.add_apply, LinearMap.id_apply, LinearMap.comp_apply, LinearMap.lTensor_tmul,
+      LinearMap.rTensor_tmul, hp_apply, hq_apply]
+    rw [TensorProduct.sub_tmul, TensorProduct.tmul_sub, TensorProduct.tmul_sub]
+    abel
+  -- evaluating the one-sided projections on `Δx`
+  have hL : LinearMap.lTensor A q (Coalgebra.comul (R := R) x) = x ⊗ₜ[R] (1 : A) := by
+    have h0 : LinearMap.lTensor A (Coalgebra.counit (R := R) (A := A))
+        (Coalgebra.comul (R := R) x) = x ⊗ₜ[R] (1 : R) := Coalgebra.lTensor_counit_comul x
+    have h1 : LinearMap.lTensor A q
+        = (LinearMap.lTensor A (Algebra.linearMap R A)).comp
+            (LinearMap.lTensor A (Coalgebra.counit (R := R) (A := A))) := by
+      rw [hqdef, LinearMap.lTensor_comp]
+    rw [h1, LinearMap.comp_apply, h0, LinearMap.lTensor_tmul]
+    simp
+  have hR : LinearMap.rTensor A q (Coalgebra.comul (R := R) x) = (1 : A) ⊗ₜ[R] x := by
+    have h0 : LinearMap.rTensor A (Coalgebra.counit (R := R) (A := A))
+        (Coalgebra.comul (R := R) x) = (1 : R) ⊗ₜ[R] x := Coalgebra.rTensor_counit_comul x
+    have h1 : LinearMap.rTensor A q
+        = (LinearMap.rTensor A (Algebra.linearMap R A)).comp
+            (LinearMap.rTensor A (Coalgebra.counit (R := R) (A := A))) := by
+      rw [hqdef, LinearMap.rTensor_comp]
+    rw [h1, LinearMap.comp_apply, h0, LinearMap.rTensor_tmul]
+    simp
+  have hLR : LinearMap.rTensor A q (x ⊗ₜ[R] (1 : A)) = 0 := by
+    rw [LinearMap.rTensor_tmul, hq_apply, hxc]
+    simp
+  -- the splitting of `Δx` into two primitive parts and a part in `I ⊗ I`
+  have hsplit : Coalgebra.comul (R := R) x
+      = TensorProduct.map p p (Coalgebra.comul (R := R) x)
+        + x ⊗ₜ[R] (1 : A) + (1 : A) ⊗ₜ[R] x := by
+    have h := LinearMap.congr_fun hexp (Coalgebra.comul (R := R) x)
+    simp only [LinearMap.sub_apply, LinearMap.add_apply, LinearMap.id_apply,
+      LinearMap.comp_apply, hL, hR, hLR, add_zero] at h
+    rw [h]
+    abel
+  -- the `I ⊗ I` part contributes to `I²` after any counit-preserving twist
+  have hsqmem : ∀ (f : A →ₐ[R] A),
+      (∀ a : A, Coalgebra.counit (R := R) (f a) = Coalgebra.counit (R := R) a) →
+      ∀ z : A ⊗[R] A,
+        Algebra.TensorProduct.lmul' R
+            (Algebra.TensorProduct.map f (AlgHom.id R A) (TensorProduct.map p p z)) ∈
+          (RingHom.ker (Bialgebra.counitAlgHom R A)) ^ 2 := by
+    intro f hf z
+    induction z using TensorProduct.induction_on with
+    | zero =>
+        rw [map_zero, map_zero, map_zero]
+        exact Submodule.zero_mem _
+    | tmul a b =>
+        rw [TensorProduct.map_tmul, Algebra.TensorProduct.map_tmul,
+          Algebra.TensorProduct.lmul'_apply_tmul, pow_two]
+        refine Ideal.mul_mem_mul (RingHom.mem_ker.mpr ?_) (RingHom.mem_ker.mpr ?_)
+        · show Coalgebra.counit (R := R) (f (p a)) = 0
+          rw [hf, hpc]
+        · show Coalgebra.counit (R := R) (p b) = 0
+          rw [hpc]
+    | add u v hu hv =>
+        rw [map_add, map_add, map_add]
+        exact Submodule.add_mem _ hu hv
+  -- the convolution square
+  obtain ⟨sq, hsqdef⟩ : ∃ sq : A →ₐ[R] A, sq =
+      (WithConv.toConv (AlgHom.id R A) * WithConv.toConv (AlgHom.id R A) :
+        WithConv (A →ₐ[R] A)).ofConv := ⟨_, rfl⟩
+  have hsq_apply : ∀ a : A,
+      sq a = Algebra.TensorProduct.lmul' R (Coalgebra.comul (R := R) a) := by
+    intro a
+    rw [hsqdef, hconv, WithConv.ofConv_toConv, Algebra.TensorProduct.map_id, AlgHom.id_apply]
+  -- the counit is invariant under the convolution square
+  have hcounit_lmul : ∀ z : A ⊗[R] A,
+      Coalgebra.counit (R := R) (Algebra.TensorProduct.lmul' R z)
+        = Algebra.TensorProduct.lmul' R
+            (LinearMap.rTensor R (Coalgebra.counit (R := R) (A := A))
+              (LinearMap.lTensor A (Coalgebra.counit (R := R) (A := A)) z)) := by
+    intro z
+    induction z using TensorProduct.induction_on with
+    | zero => simp
+    | tmul a b => simp [Algebra.TensorProduct.lmul'_apply_tmul]
+    | add u v hu hv => simp [hu, hv]
+  have hsqc : ∀ a : A, Coalgebra.counit (R := R) (sq a) = Coalgebra.counit (R := R) a := by
+    intro a
+    rw [hsq_apply, hcounit_lmul, Coalgebra.lTensor_counit_comul, LinearMap.rTensor_tmul,
+      Algebra.TensorProduct.lmul'_apply_tmul, mul_one]
+  -- the two members of `I²`
+  have hmem1 : Algebra.TensorProduct.lmul' R
+      (TensorProduct.map p p (Coalgebra.comul (R := R) x)) ∈
+      (RingHom.ker (Bialgebra.counitAlgHom R A)) ^ 2 := by
+    have h := hsqmem (AlgHom.id R A) (fun _ => rfl) (Coalgebra.comul (R := R) x)
+    rwa [Algebra.TensorProduct.map_id, AlgHom.id_apply] at h
+  have hmem2 : Algebra.TensorProduct.lmul' R
+      (Algebra.TensorProduct.map sq (AlgHom.id R A)
+        (TensorProduct.map p p (Coalgebra.comul (R := R) x))) ∈
+      (RingHom.ker (Bialgebra.counitAlgHom R A)) ^ 2 :=
+    hsqmem sq hsqc (Coalgebra.comul (R := R) x)
+  -- the square is `2x` modulo `I²`
+  have hsqx : sq x = Algebra.TensorProduct.lmul' R
+      (TensorProduct.map p p (Coalgebra.comul (R := R) x)) + x + x := by
+    rw [hsq_apply]
+    conv_lhs => rw [hsplit]
+    rw [map_add, map_add, Algebra.TensorProduct.lmul'_apply_tmul,
+      Algebra.TensorProduct.lmul'_apply_tmul, mul_one, one_mul]
+  -- the cube is `e`, i.e. zero on the augmentation ideal
+  have hcubex : Algebra.TensorProduct.lmul' R
+      (Algebra.TensorProduct.map sq (AlgHom.id R A) (Coalgebra.comul (R := R) x)) = 0 := by
+    have h1 := hconv (WithConv.toConv (AlgHom.id R A) * WithConv.toConv (AlgHom.id R A))
+      (WithConv.toConv (AlgHom.id R A)) x
+    rw [hcube, WithConv.ofConv_toConv, ← hsqdef] at h1
+    rw [← h1]
+    simp [hxc]
+  -- expanding the cube through the splitting
+  have hcubeexp : Algebra.TensorProduct.lmul' R
+      (Algebra.TensorProduct.map sq (AlgHom.id R A) (Coalgebra.comul (R := R) x))
+      = Algebra.TensorProduct.lmul' R
+          (Algebra.TensorProduct.map sq (AlgHom.id R A)
+            (TensorProduct.map p p (Coalgebra.comul (R := R) x))) + sq x + x := by
+    conv_lhs => rw [hsplit]
+    rw [map_add, map_add, map_add, map_add, Algebra.TensorProduct.map_tmul,
+      Algebra.TensorProduct.map_tmul, Algebra.TensorProduct.lmul'_apply_tmul,
+      Algebra.TensorProduct.lmul'_apply_tmul, AlgHom.id_apply, AlgHom.id_apply,
+      map_one, mul_one, one_mul]
+  -- conclude: `3x = -(t₂ + t₁)` with both `tᵢ ∈ I²`
+  have hfinal : x + x + x = -(Algebra.TensorProduct.lmul' R
+      (Algebra.TensorProduct.map sq (AlgHom.id R A)
+        (TensorProduct.map p p (Coalgebra.comul (R := R) x)))
+      + Algebra.TensorProduct.lmul' R
+          (TensorProduct.map p p (Coalgebra.comul (R := R) x))) := by
+    have h := hcubeexp.symm.trans hcubex
+    rw [hsqx] at h
+    linear_combination h
+  rw [show (3 : ℕ) = 2 + 1 from rfl, add_nsmul, two_nsmul, one_nsmul, hfinal]
+  exact neg_mem (Submodule.add_mem _ hmem2 hmem1)
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **`[3] = e` on a Hopf order whose geometric points are killed by
+`3`** (sorry node, created 2026-07-25 — leaf (ii-b-2) of the Théorème A
+decomposition, the DESCENT half of the `3`-torsion of `Ω[G⁄𝒪₃ᵥ]`, pure
+affine-group-scheme theory with no differentials in sight): for a
+finite flat Hopf order `G` over `𝒪₃ᵥ ≅ ℤ₃` with étale generic fibre
+whose geometric points are killed by `3` in the convolution group
+(`hkill`), the third convolution power of the IDENTITY endomorphism of
+`G` is the convolution unit `e^* = algebraMap ∘ ε` — that is,
+multiplication by `3` on the group scheme `Spec G` is the trivial
+morphism.  Intended proof, in four standard steps.  (1) The
+two spellings of the convolution product agree (mathlib's `WithConv`
+product on `A →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ` and the vendored bare-hom product of
+`Fermat.FLT.Deformations.RepresentationTheory.Etale` agree: both are
+`lmul' ∘ (f ⊗ g) ∘ Δ`), so `hkill` says
+`χ ∘ [3]^*_{ℚ₃ᵥ ⊗ G} = χ ∘ e^*` for every geometric point `χ`, by
+`AlgHom.comp_convMul_distrib` (postcomposition distributes over
+convolution) applied twice.  (2) The geometric points of the FINITE
+ÉTALE `ℚ₃ᵥ`-algebra `ℚ₃ᵥ ⊗ G` separate its elements — the Gelfand-
+duality layer already proven in
+`Fermat/FLT/KnownIn1980s/EllipticCurves/Flat.lean`
+(`eq_zero_of_forall_algHom_eq_zero`, the ingredient of
+`subalgebra_eq_top_of_algHom_separating`), applicable because `ℚ₃ᵥ` has
+characteristic zero, hence is perfect, so `ℚ₃ᵥᵃˡᵍ` is a separable
+closure and `Module.Finite ℚ₃ᵥ (ℚ₃ᵥ ⊗ G)` follows from
+`Module.Finite 𝒪₃ᵥ G` by base change.  Therefore
+`[3]^*_{ℚ₃ᵥ ⊗ G} = e^*` on the generic fibre.  (3) The bialgebra
+structure of `ℚ₃ᵥ ⊗[𝒪₃ᵥ] G` is the base change of that of `G`
+(`Mathlib.RingTheory.HopfAlgebra.TensorProduct`), so
+`[3]^*_{ℚ₃ᵥ ⊗ G} = id_{ℚ₃ᵥ} ⊗ [3]^*_G` and likewise for `e^*`.
+(4) `G → ℚ₃ᵥ ⊗ G` is INJECTIVE: `G` is flat over the domain `𝒪₃ᵥ`,
+hence torsion-free, and `ℚ₃ᵥ` is its fraction field, so the
+localization map has trivial kernel.  Hence the identity of maps
+descends from the generic fibre to `G` itself. -/
+theorem convCube_id_eq_one_of_hopf_package
+    (G : Type) [CommRing G] [HopfAlgebra 𝒪₃ᵥ G]
+    [Module.Flat 𝒪₃ᵥ G] [Module.Finite 𝒪₃ᵥ G]
+    [Algebra.Etale ℚ₃ᵥ (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G)]
+    (hkill : ∀ χ : ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ, χ * χ * χ = 1) :
+    (WithConv.toConv (AlgHom.id 𝒪₃ᵥ G) * WithConv.toConv (AlgHom.id 𝒪₃ᵥ G) *
+      WithConv.toConv (AlgHom.id 𝒪₃ᵥ G) : WithConv (G →ₐ[𝒪₃ᵥ] G)) = 1 := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
 /-- **The differentials of a Hopf order killed by `3` are `3`-torsion**
-(sorry node, created 2026-07-25 — leaf (ii-b) of the Théorème A
+(DECOMPOSED 2026-07-25 into the two leaves above — the descent leaf
+(ii-b-2) `convCube_id_eq_one_of_hopf_package` (`[3] = e` on `Spec G`
+itself) and the invariance leaf (ii-b-1)
+`kaehlerDifferential_nsmul_eq_zero_of_nsmul_mem_sq_ker_counit`
+(`Ω[A⁄R] ≅ A ⊗ ω_A`, in torsion form) — over the PROVEN Sweedler
+bridge `three_nsmul_mem_sq_ker_counit_of_convCube_eq_one`, which turns
+`[3] = e` into `3·I ⊆ I²`; leaf (ii-b) of the Théorème A
 decomposition, the ONLY Hopf-algebraic input to the estimate): for a
 finite flat Hopf order `G` over `𝒪₃ᵥ ≅ ℤ₃` with étale generic fibre
 whose geometric points are killed by `3` in the convolution group
 (`hkill`), the module of Kähler differentials `Ω[G⁄𝒪₃ᵥ]` is killed by
-`3`.  Intended proof (Fontaine §2; Oort–Tate 1970 §1): for a group
-scheme `Spec G` the differentials are free on the invariant ones,
+`3`.  Proof (Fontaine §2; Oort–Tate 1970 §1): for a group scheme
+`Spec G` the differentials are free on the invariant ones,
 `Ω[G⁄𝒪₃ᵥ] ≅ G ⊗_{𝒪₃ᵥ} ω_G` with `ω_G = I/I²` the cotangent space at
 the identity (`I = ker ε` the augmentation ideal), and multiplication
 by `n` on the group scheme induces multiplication by `n` on `ω_G`;
@@ -5761,7 +6045,10 @@ theorem kaehlerDifferential_smul_three_eq_zero_of_hopf_package
     [Algebra.Etale ℚ₃ᵥ (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G)]
     (hkill : ∀ χ : ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ, χ * χ * χ = 1) :
     ∀ ω : Ω[G⁄𝒪₃ᵥ], (3 : ℕ) • ω = 0 := by
-  sorry
+  refine kaehlerDifferential_nsmul_eq_zero_of_nsmul_mem_sq_ker_counit 3 ?_
+  intro y hy
+  exact three_nsmul_mem_sq_ker_counit_of_convCube_eq_one
+    (convCube_id_eq_one_of_hopf_package G hkill) y hy
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
