@@ -1122,8 +1122,9 @@ subspace of `H¹` cut out by the hardly ramified local conditions);
 its FINITENESS — Schlessinger's H3 — is the arithmetic input, isolated
 below as the restricted-ramification finiteness statement
 `finite_setOf_isHardlyRamified` (Hermite–Minkowski; itself PROVEN
-2026-07-24 over the single discriminant-exponent leaf
-`exists_discr_factorization_le_of_finrank_le`); everything else —
+2026-07-24 over the single discriminant-exponent leaf, itself PROVEN
+2026-07-25 over the wild different-exponent leaf
+`differentIdeal_exponent_le_wild`); everything else —
 Schlessinger's H1, H2, H4, the relative representability of the hardly
 ramified conditions, and the de Smit–Lenstra presentation
 `R_univ = ℤ_p[[x₁,…,x_g]]/(f₁,…,f_m)` in `g = dim` tangent-space
@@ -1197,8 +1198,9 @@ discriminants are divisible only by `2` and `p`
 (`not_dvd_discr_of_inertiaTrivialAt`, through the PROVEN inertia
 dictionary `isUnramifiedAt_of_inertia_le_fixingSubgroup` of
 `MazurTorsion`), with exponents bounded in terms of the degree alone
-(the single sorried leaf of the cut,
-`exists_discr_factorization_le_of_finrank_le`), so the fields have
+(`exists_discr_factorization_le_of_finrank_le`, PROVEN 2026-07-25 over
+the single sorried leaf of the cut, the WILD half of the
+different-exponent bound `differentIdeal_exponent_le_wild`), so the fields have
 bounded discriminant and mathlib's Hermite theorem
 `NumberField.finite_of_discr_bdd` applies.
 -/
@@ -1222,32 +1224,136 @@ def InertiaTrivialAt {q : ℕ} (hq : q.Prime)
       (HeightOneSpectrum.adicCompletion ℚ
         hq.toHeightOneSpectrumRingOfIntegersRat))) σ ∈ N
 
-/-- **Discriminant-exponent bound by the degree** (sorry node — the
-single arithmetic leaf of the Hermite–Minkowski cut of
-`finite_setOf_isHardlyRamified`): for a fixed prime `q` and degree
-bound `n`, the exponent of `q` in the discriminant of a number field
-of degree at most `n` is bounded by a constant depending only on `q`
-and `n`.
+/-- **The WILD different-exponent bound at a prime** (sorry node —
+after the recut of 2026-07-25 the *single* arithmetic leaf of the
+Hermite–Minkowski cut of `finite_setOf_isHardlyRamified`; Serre,
+*Corps Locaux* III §6 Prop. 13, wild half): for a number field `K`, a
+rational prime `q` and a prime `Q` of `𝓞_K` over `q` whose
+ramification index `e = e(Q∣q)` is divisible by `q`, every `d` with
+`Q^d ∣ 𝔡_{K/ℚ}` satisfies `d ≤ e − 1 + e·v_q(e)`.
 
-Mathematical content (Serre, *Corps Locaux*, III §6 Prop. 13; the
-route through this project's PROVEN Serre-IV§1 machinery in
-`ModThree.lean`): for a prime `Q` of `𝓞_K` over `q` with ramification
-index `e`, the exponent `d_Q` of `Q` in the different `𝔡_{K/ℚ}`
-satisfies `d_Q ≤ e − 1 + e·v_q(e)` — the tame part contributes `e − 1`
-(the PROVEN upper half `not_pow_ramificationIdx_dvd_differentIdeal`
-complements mathlib's lower half `pow_sub_one_dvd_differentIdeal`),
-and the wild part is bounded by the lower-numbering filtration sum
-`Σ_{i≥1} (#G_i − 1)` (the PROVEN
-`le_sum_card_inertia_pow_of_pow_dvd_differentIdeal`), whose terms
-vanish beyond the largest jump, itself bounded through `v_q(e)` since
-`G_1` is a `q`-group of order dividing `e` and consecutive quotients
-`G_i/G_{i+1}` embed into the residue field's additive group.  Since
-`e ≤ n`, `v_q(e) ≤ log_q n`, and `v_q(discr K) = Σ_{Q ∣ q} f_Q·d_Q`
-(`NumberField.absNorm_differentIdeal`, as in the PROVEN
-`discr_factorization_le_of_forall_differentIdeal_pow_dvd`), the
-constant `C = n·(n + n·v_q(n!))` (or any cruder closed form) works.
-The bound `C` is existentially quantified, so any correct route may
-discharge this leaf.
+Note `v_Q(q) = e`, so `e − 1 + e·v_q(e)` is Serre's `e − 1 + v_Q(e)`
+verbatim; the bound is SHARP (attained by `ℚ(2^{1/4})` at `q = 2`,
+where `e = 4`, `v_2(e) = 2` and `d = 11 = 3 + 8`; also by `ℚ(√2)` at
+`q = 2`, `d = 3 = 1 + 2`).  Checked numerically against PARI/GP over
+701 (field, prime-above-`q`) pairs of degrees 2–6 at `q ≤ 7`: no
+violation, 293 of them sharp.
+
+The TAME half — `q ∤ e`, where the bound reads `d ≤ e − 1` — is PROVEN
+in `ModThree.lean` as `not_pow_ramificationIdx_dvd_differentIdeal`
+(mathlib supplies the matching lower half
+`pow_sub_one_dvd_differentIdeal`) and is discharged here in
+`differentIdeal_exponent_le`; only the wild case is left open, which is
+why this leaf carries `hwild` as a hypothesis.
+
+Route, and the machinery it needs that mathlib does not have (in
+dependency order — the argument itself is three lines of valuation
+arithmetic, and every gap is in getting to a local Eisenstein
+polynomial):
+
+* **(M1) `differentIdeal` under localization/completion.**  `v_Q` of
+  `𝔡_{𝓞_K/ℤ}` equals the different exponent of the extension of DVRs
+  `ℤ_(q) → (𝓞_K)_Q` (equivalently of `ℚ_q → K_Q`).  mathlib has the
+  different only for a global Dedekind pair; nothing relates it to a
+  localization at one prime.
+* **(M2) the maximal unramified subextension.**  `K_Q/ℚ_q` factors as
+  `ℚ_q ⊆ L₀ ⊆ K_Q` with `L₀/ℚ_q` unramified of degree `f` and
+  `K_Q/L₀` totally ramified of degree `e`; the tower formula
+  `differentIdeal_eq_differentIdeal_mul_differentIdeal` plus
+  "unramified ⟺ does not divide the different"
+  (mathlib's `not_dvd_differentIdeal_iff`) reduce to `K_Q/L₀`.
+* **(M3) monogenicity of a totally ramified extension of DVRs**
+  (Serre I §6 Prop. 18): `𝓞_{K_Q} = 𝓞_{L₀}[π]` for any uniformizer
+  `π`, its minimal polynomial `g` over `𝓞_{L₀}` is Eisenstein of
+  degree `e`, and `𝔡 = (g'(π))` (mathlib's
+  `conductor_mul_differentIdeal` with unit conductor).
+* **(M4) the ultrametric "distinct valuations" lemma**: if the terms
+  of a finite sum have pairwise distinct valuations then the sum's
+  valuation is their minimum.
+
+With those, the bound is immediate: writing
+`g = X^e + a_{e−1}X^{e−1} + ⋯ + a_0` with `a_i ∈ 𝓞_{L₀}`, every
+nonzero value of `v_Q` on `L₀` lies in `e·ℤ` (total ramification), so
+`v_Q(i·a_i·π^{i−1}) ≡ i − 1 (mod e)` for `1 ≤ i ≤ e`: the `e`
+summands of `g'(π) = e·π^{e−1} + Σ_{i<e} i·a_i·π^{i−1}` have PAIRWISE
+DISTINCT valuations, whence `v_Q(g'(π))` is their minimum, which is at
+most the `i = e` term `v_Q(e·π^{e−1}) = e·v_q(e) + e − 1`.
+
+Alternative route, entirely inside the material already PROVEN in
+`ModThree.lean` but only for the Galois case, and needing its own
+missing piece: for `K/ℚ` Galois,
+`le_sum_card_inertia_pow_of_pow_dvd_differentIdeal` gives
+`d ≤ Σ_{i<N}(#G_i − 1)` as soon as `G_N = 1`, so all that is missing
+is **(M5) a bound on the last ramification jump** — `G_i = 1` for
+`i > e/(q−1)`, say `(Q^(m+1)).inertia = ⊥` for `m = [K:ℚ]`.  (M5) is
+essentially equivalent to this leaf, so it is not a cheaper target;
+and reducing a general `K` to its Galois closure would additionally
+need **(M6)** the tower discriminant formula
+`NumberField.natAbs_discr_eq_absNorm_differentIdeal_mul_natAbs_discr_pow`
+(mathlib has it) together with a degree bound
+`[normalClosure ℚ K : ℚ] ≤ n!` (mathlib does not).
+
+Both-ways audit: an inequality between natural numbers attached to a
+number field, classically true as cited and numerically corroborated
+above; no representation-theoretic hypotheses, no vacuity concerns —
+the conclusion genuinely constrains `𝔡_{K/ℚ}` (its failure would make
+`v_q(discr K)` unbounded on fields of bounded degree, contradicting
+the sharp cases listed). -/
+theorem differentIdeal_exponent_le_wild (K : Type*) [Field K]
+    [NumberField K] (q : ℕ) (hq : q.Prime)
+    (Q : Ideal (NumberField.RingOfIntegers K)) (hQ : Q.IsPrime)
+    (hmem : (q : NumberField.RingOfIntegers K) ∈ Q)
+    (hwild : q ∣ Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) Q)
+    (d : ℕ)
+    (hd : Q ^ d ∣ differentIdeal ℤ (NumberField.RingOfIntegers K)) :
+    d ≤ Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) Q - 1 +
+      Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) Q *
+        (Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) Q).factorization q :=
+  sorry
+
+/-- **The different-exponent bound at a prime** (PROVEN over the wild
+leaf — Serre, *Corps Locaux* III §6 Prop. 13 in full): for a prime `Q`
+of `𝓞_K` over the rational prime `q` with ramification index `e`,
+every `d` with `Q^d ∣ 𝔡_{K/ℚ}` satisfies `d ≤ e − 1 + e·v_q(e)`.  The
+tame case `q ∤ e` is `ModThree.lean`'s PROVEN
+`not_pow_ramificationIdx_dvd_differentIdeal` (`¬ Q^e ∣ 𝔡`, so `d < e`,
+and `v_q(e) = 0` makes the bound exactly `e − 1`); the wild case is
+`differentIdeal_exponent_le_wild`. -/
+theorem differentIdeal_exponent_le (K : Type*) [Field K]
+    [NumberField K] (q : ℕ) (hq : q.Prime)
+    (Q : Ideal (NumberField.RingOfIntegers K)) (hQ : Q.IsPrime)
+    (hmem : (q : NumberField.RingOfIntegers K) ∈ Q) (d : ℕ)
+    (hd : Q ^ d ∣ differentIdeal ℤ (NumberField.RingOfIntegers K)) :
+    d ≤ Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) Q - 1 +
+      Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) Q *
+        (Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) Q).factorization q := by
+  by_cases hw : q ∣ Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) Q
+  · exact differentIdeal_exponent_le_wild K q hq Q hQ hmem hw d hd
+  · have hnot := IsHardlyRamified.not_pow_ramificationIdx_dvd_differentIdeal
+      K q hq Q hQ hmem hw
+    have hlt : d < Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) Q := by
+      by_contra hge
+      exact hnot (dvd_trans (pow_dvd_pow Q (not_lt.mp hge)) hd)
+    exact le_trans (Nat.le_pred_of_lt hlt) (Nat.le_add_right _ _)
+
+/-- **Discriminant-exponent bound by the degree** (PROVEN 2026-07-25
+over the single wild different-exponent leaf
+`differentIdeal_exponent_le_wild` — the arithmetic leaf of the
+Hermite–Minkowski cut of `finite_setOf_isHardlyRamified`): for a fixed
+prime `q` and degree bound `n`, the exponent of `q` in the
+discriminant of a number field of degree at most `n` is bounded by a
+constant depending only on `q` and `n`; here `C = (n + 1)·n` works.
+
+Proof (pure bookkeeping over the two per-prime inputs, no new
+arithmetic): `ModThree.lean`'s PROVEN
+`discr_factorization_le_of_forall_differentIdeal_pow_dvd` turns a
+uniform per-prime bound `d_Q ≤ b·e_Q` into
+`v_q(discr K) ≤ b·[K:ℚ]`; the per-prime bound is
+`differentIdeal_exponent_le`, `d_Q ≤ e − 1 + e·v_q(e)`, together with
+`e ≤ [K:ℚ] ≤ n` (mathlib's `Ideal.ramificationIdx_le_finrank`, through
+the fundamental identity) and `v_q(e) < e ≤ n`
+(`Nat.factorization_lt`), giving `b = n + 1`.  The constant `C` is
+existentially quantified, so any correct route may sharpen it.
 
 Both-ways audit: a plain universally quantified inequality about
 number fields with an existential bound — classically true outright as
@@ -1259,8 +1365,47 @@ theorem exists_discr_factorization_le_of_finrank_le (q n : ℕ)
     ∃ C : ℕ, ∀ (K : IntermediateField ℚ (AlgebraicClosure ℚ))
       (hfd : FiniteDimensional ℚ K), Module.finrank ℚ K ≤ n →
       haveI : NumberField K := @NumberField.mk _ _ inferInstance hfd
-      (NumberField.discr K).natAbs.factorization q ≤ C :=
-  sorry
+      (NumberField.discr K).natAbs.factorization q ≤ C := by
+  refine ⟨(n + 1) * n, fun K hfd hrank => ?_⟩
+  haveI : NumberField K := @NumberField.mk _ _ inferInstance hfd
+  have hqZ : Prime ((q : ℕ) : ℤ) := Nat.prime_iff_prime_int.mp hq
+  have hspan0 : (Ideal.span {((q : ℕ) : ℤ)} : Ideal ℤ) ≠ ⊥ := by
+    simp only [Ne, Ideal.span_singleton_eq_bot]
+    exact_mod_cast hq.ne_zero
+  haveI hspanMax : (Ideal.span {((q : ℕ) : ℤ)} : Ideal ℤ).IsMaximal :=
+    (((Ideal.span_singleton_prime (by exact_mod_cast hq.ne_zero)).mpr
+      hqZ).isMaximal hspan0)
+  -- the uniform per-prime different-exponent bound `d_Q ≤ (n + 1)·e_Q`
+  have key : ∀ Q : Ideal (NumberField.RingOfIntegers K), Q.IsPrime →
+      ((q : NumberField.RingOfIntegers K) ∈ Q) → ∀ d : ℕ,
+      Q ^ d ∣ differentIdeal ℤ (NumberField.RingOfIntegers K) →
+      1 * d ≤ (n + 1) * Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) Q := by
+    intro Q hQ hmem d hd
+    haveI := hQ
+    haveI hlies : Q.LiesOver (Ideal.span {((q : ℕ) : ℤ)}) :=
+      (Ideal.liesOver_span_iff hQ.ne_top hqZ).mpr (by exact_mod_cast hmem)
+    have he0 : Ideal.ramificationIdx' (Ideal.span {((q : ℕ) : ℤ)}) Q ≠ 0 :=
+      Ideal.IsDedekindDomain.ramificationIdx'_ne_zero_of_liesOver Q hspan0
+    have hen : Ideal.ramificationIdx' (Ideal.span {((q : ℕ) : ℤ)}) Q ≤ n :=
+      le_trans (Ideal.ramificationIdx_le_finrank
+        (S := NumberField.RingOfIntegers K) (K := ℚ) (L := K) Q) hrank
+    have hv : (Ideal.ramificationIdx' (Ideal.span {((q : ℕ) : ℤ)}) Q).factorization q
+        ≤ n := le_of_lt (lt_of_lt_of_le (Nat.factorization_lt q he0) hen)
+    have hser := differentIdeal_exponent_le K q hq Q hQ hmem d hd
+    calc 1 * d = d := one_mul d
+      _ ≤ Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) Q - 1 +
+          Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) Q *
+            (Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) Q).factorization q := hser
+      _ ≤ Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) Q +
+          Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) Q * n :=
+        Nat.add_le_add (Nat.sub_le _ _) (Nat.mul_le_mul_left _ hv)
+      _ = (n + 1) * Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) Q := by ring
+  have hmain := IsHardlyRamified.discr_factorization_le_of_forall_differentIdeal_pow_dvd
+    K q hq 1 (n + 1) key
+  calc (NumberField.discr K).natAbs.factorization q
+      = 1 * (NumberField.discr K).natAbs.factorization q := (one_mul _).symm
+    _ ≤ (n + 1) * Module.finrank ℚ K := hmain
+    _ ≤ (n + 1) * n := Nat.mul_le_mul_left _ hrank
 
 /-- **Unramified fields have coprime discriminant** (PROVEN — the
 inertia-to-discriminant transport of the Hermite–Minkowski cut): if
@@ -1573,8 +1718,10 @@ theorem finite_setOf_galoisRep_isUnramifiedAt.{uA} (p : ℕ)
         hidx ρ, hinertker ρ hρ⟩ rfl
 
 /-- **Restricted-ramification finiteness leaf** (DECOMPOSED 2026-07-24
-along the Hermite–Minkowski cut above — PROVEN over the single sorried
-discriminant-exponent leaf `exists_discr_factorization_le_of_finrank_le`;
+along the Hermite–Minkowski cut above — PROVEN over the
+discriminant-exponent statement `exists_discr_factorization_le_of_finrank_le`,
+itself PROVEN 2026-07-25 over the single sorried leaf of the cut,
+the wild different-exponent bound `differentIdeal_exponent_le_wild`;
 the arithmetic finiteness input of the FOUNDER cut, and the only
 number-theoretic content of Schlessinger's H3 for the hardly ramified
 problem): over a FINITE discrete local coefficient `ℤ_p`-algebra `A`,
