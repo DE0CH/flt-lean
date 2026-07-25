@@ -64,7 +64,6 @@ them without a human. Do not re-wrap it.
 - `isFlatAt_of_fibreProduct`
 - `isTameAtTwo_of_fibreProduct`
 - `finite_setOf_isHardlyRamified_frames_of_discreteTopology`
-- `isTameAtTwo_of_forall_isOpen_quotient`
 - `exists_ringHom_matrix_quotient_of_finite`
 - `exists_pow_comap_le_pow_maximalIdeal_traceSubring`
 - `fg_comap_maximalIdeal_traceSubring`
@@ -257,6 +256,13 @@ public import Mathlib.RingTheory.Ideal.Height
 -- single-variable power series: the variable-splitting leaf
 -- `nonempty_ringEquiv_mvPowerSeries_powerSeries` is stated on them.
 public import Mathlib.RingTheory.PowerSeries.Basic
+-- the Artinian/Mittag-Leffler bricks of the tame-at-two pro-limit proof;
+-- `IsArtinian` appears in the SIGNATURES of `isArtinian_pi_quotient_maximalIdeal_pow`
+-- and `exists_stabilizes_sup_piIdeal`, so these must be public.
+public import Mathlib.RingTheory.HopkinsLevitzki
+public import Mathlib.RingTheory.Artinian.Ring
+public import Mathlib.RingTheory.Ideal.Quotient.Noetherian
+public import Mathlib.LinearAlgebra.Pi
 -- proof-only: `globalFrob` (the Frobenius transport of
 -- `charpoly_baseChange_conj`'s consumers) — Family-free, see the module
 -- docstring.
@@ -2651,10 +2657,578 @@ lemma subsingleton_tensorProduct_of_left {A : Type u} [CommRing A]
     | tmul c y => rw [Subsingleton.elim c 0, TensorProduct.zero_tmul]
   exact ⟨fun a b => by rw [hall a, hall b]⟩
 
-/-- **The tame quotient at `2` is detected on the finite levels** (sorry
-node — the ONE clause of `isHardlyRamified_of_forall_isOpen_quotient`
-below that is a genuine pro-limit statement rather than a congruence, cut
-out 2026-07-25 when the other three clauses were PROVEN).
+/-! ### Pro-limit machinery for the tame-at-two clause
+
+Commutative-algebra and linear-algebra bricks consumed ONLY by
+`isTameAtTwo_of_forall_isOpen_quotient` below (added 2026-07-26 with its
+proof). Nothing else in this module uses them.
+-/
+
+/-! ### `±1` in a `ℤ_[ℓ]`-algebra, `ℓ` odd -/
+
+/-- `2` is a unit in every `ℤ_[ℓ]`-algebra when `ℓ` is an odd prime. -/
+lemma isUnit_two_of_oddPrime (hodd : Odd ℓ) {A : Type*} [CommRing A] [Algebra ℤ_[ℓ] A] :
+    IsUnit (2 : A) := by
+  have hp : ℓ.Prime := Fact.out
+  have hne : ℓ ≠ 2 := by
+    rintro rfl
+    rw [Nat.odd_iff] at hodd
+    omega
+  have hcop : Nat.Coprime ℓ 2 := (Nat.coprime_primes hp Nat.prime_two).mpr hne
+  have h2 : IsUnit ((2 : ℕ) : ℤ_[ℓ]) :=
+    PadicInt.isUnit_iff.mpr (PadicInt.norm_natCast_eq_one_iff.mpr hcop)
+  have h3 := h2.map (algebraMap ℤ_[ℓ] A)
+  rw [map_natCast] at h3
+  simpa using h3
+
+/-- In a nontrivial commutative ring in which `2` is a unit, `1 ≠ -1`. -/
+lemma one_ne_neg_one_of_isUnit_two {A : Type*} [CommRing A] [Nontrivial A]
+    (h2 : IsUnit (2 : A)) : (1 : A) ≠ -1 := by
+  intro h
+  have h0 : (2 : A) = 0 := by linear_combination h
+  rw [h0] at h2
+  exact not_isUnit_zero h2
+
+/-- A unit lying in an ideal forces the ideal to be everything. -/
+lemma eq_top_of_mem_of_isUnit {A : Type*} [CommRing A] (I : Ideal A) {x : A}
+    (hx : x ∈ I) (hu : IsUnit x) : I = ⊤ := by
+  obtain ⟨u, rfl⟩ := hu
+  refine (Ideal.eq_top_iff_one I).mpr ?_
+  have := I.mul_mem_left (↑u⁻¹ : A) hx
+  simpa using this
+
+/-- A square root of `1` in a local ring in which `2` is a unit is `±1`. -/
+lemma eq_one_or_eq_neg_one_of_mul_self_eq_one {A : Type*} [CommRing A] [IsLocalRing A]
+    (h2 : IsUnit (2 : A)) {x : A} (hx : x * x = 1) : x = 1 ∨ x = -1 := by
+  have hfac : (x - 1) * (x + 1) = 0 := by linear_combination hx
+  have hsum : IsUnit ((-(x - 1)) + (x + 1)) := by
+    have he : (-(x - 1)) + (x + 1) = 2 := by ring
+    rw [he]; exact h2
+  rcases IsLocalRing.isUnit_or_isUnit_of_isUnit_add hsum with h | h
+  · right
+    have hu : IsUnit (x - 1) := (IsUnit.neg_iff _).mp h
+    obtain ⟨u, hu'⟩ := hu
+    have h1 : (↑u⁻¹ : A) * ((x - 1) * (x + 1)) = 0 := by rw [hfac, mul_zero]
+    rw [← hu', ← mul_assoc, ← Units.val_mul, inv_mul_cancel, Units.val_one, one_mul] at h1
+    linear_combination h1
+  · left
+    obtain ⟨u, hu'⟩ := h
+    have h1 : (↑u⁻¹ : A) * ((x + 1) * (x - 1)) = 0 := by
+      rw [mul_comm (x + 1) (x - 1), hfac, mul_zero]
+    rw [← hu', ← mul_assoc, ← Units.val_mul, inv_mul_cancel, Units.val_one, one_mul] at h1
+    linear_combination h1
+
+/-- A `±1`-valued element of a commutative ring in which `2` is a unit is
+determined by its class modulo any proper ideal. -/
+lemma eq_of_sub_mem_of_pm {A : Type*} [CommRing A] (h2 : IsUnit (2 : A))
+    {I : Ideal A} (hI : I ≠ ⊤) {x y : A}
+    (hx : x = 1 ∨ x = -1) (hy : y = 1 ∨ y = -1) (h : x - y ∈ I) : x = y := by
+  rcases hx with rfl | rfl <;> rcases hy with rfl | rfl
+  · rfl
+  · refine absurd (eq_top_of_mem_of_isUnit I ?_ h2) hI
+    have he : (1 : A) - -1 = 2 := by ring
+    rwa [he] at h
+  · refine absurd (eq_top_of_mem_of_isUnit I ?_ h2.neg) hI
+    have he : (-1 : A) - 1 = -2 := by ring
+    rwa [he] at h
+  · rfl
+
+/-- Two distinct `±1`-values stay distinct under a ring map to a nontrivial ring
+in which `2` is a unit. -/
+lemma map_ne_map_of_pm {A B : Type*} [CommRing A] [CommRing B] [Nontrivial B]
+    (f : A →+* B) (h2 : IsUnit (2 : B)) {x y : A}
+    (hx : x = 1 ∨ x = -1) (hy : y = 1 ∨ y = -1) (hxy : x ≠ y) : f x ≠ f y := by
+  have hone := one_ne_neg_one_of_isUnit_two h2
+  rcases hx with rfl | rfl <;> rcases hy with rfl | rfl
+  · exact absurd rfl hxy
+  · simpa using hone
+  · simpa using fun h => hone h.symm
+  · exact absurd rfl hxy
+
+/-! ### At most two quotient characters of a rank-two space -/
+
+section ThreeCharacters
+
+variable {F : Type*} [Field F] {G : Type*}
+
+/-- A nonzero vector of `F²` has a nonzero coordinate. -/
+lemma ne_zero_coord {a : Fin 2 → F} (ha : a ≠ 0) : a 0 ≠ 0 ∨ a 1 ≠ 0 := by
+  by_cases h0 : a 0 = 0
+  · refine Or.inr fun h1 => ha (funext fun j => ?_)
+    fin_cases j
+    · simpa using h0
+    · simpa using h1
+  · exact Or.inl h0
+
+/-- Cramer: a nonzero `2 × 2` determinant kills the coefficients of a vanishing
+linear combination. -/
+lemma coeff_eq_zero_of_det_ne_zero {a₁ a₂ : Fin 2 → F}
+    (hD : a₁ 0 * a₂ 1 - a₁ 1 * a₂ 0 ≠ 0) {u w : F}
+    (h0 : u * a₁ 0 + w * a₂ 0 = 0) (h1 : u * a₁ 1 + w * a₂ 1 = 0) :
+    u = 0 ∧ w = 0 := by
+  constructor
+  · have huD : u * (a₁ 0 * a₂ 1 - a₁ 1 * a₂ 0) = 0 := by
+      linear_combination a₂ 1 * h0 - a₂ 0 * h1
+    exact (mul_eq_zero.mp huD).resolve_right hD
+  · have hwD : w * (a₁ 0 * a₂ 1 - a₁ 1 * a₂ 0) = 0 := by
+      linear_combination a₁ 0 * h1 - a₁ 1 * h0
+    exact (mul_eq_zero.mp hwD).resolve_right hD
+
+/-- **Two eigenvectors with somewhere-different eigenvalue functions span**. -/
+lemma det_ne_zero_of_eigen_ne (m : G → Fin 2 → Fin 2 → F) (s t : G → F)
+    (a b : Fin 2 → F)
+    (ha : ∀ g j, ∑ i, m g j i * a i = s g * a j)
+    (hb : ∀ g j, ∑ i, m g j i * b i = t g * b j)
+    (ha0 : a ≠ 0) (hb0 : b ≠ 0) (g : G) (hst : s g ≠ t g) :
+    a 0 * b 1 - a 1 * b 0 ≠ 0 := by
+  intro hD
+  simp only [Fin.sum_univ_two] at ha hb
+  have key0 : ∀ j, b 0 * (s g * a j) - a 0 * (t g * b j) = 0 := by
+    intro j
+    linear_combination (-(b 0)) * ha g j + (a 0) * hb g j - (m g j 1) * hD
+  have key1 : ∀ j, b 1 * (s g * a j) - a 1 * (t g * b j) = 0 := by
+    intro j
+    linear_combination (-(b 1)) * ha g j + (a 1) * hb g j + (m g j 0) * hD
+  have hsub : s g - t g ≠ 0 := sub_ne_zero.mpr hst
+  have h00 : a 0 * b 0 = 0 := by
+    have hk := key0 0
+    have h : (s g - t g) * (a 0 * b 0) = 0 := by linear_combination hk
+    exact (mul_eq_zero.mp h).resolve_left hsub
+  have h11 : a 1 * b 1 = 0 := by
+    have hk := key1 1
+    have h : (s g - t g) * (a 1 * b 1) = 0 := by linear_combination hk
+    exact (mul_eq_zero.mp h).resolve_left hsub
+  rcases ne_zero_coord ha0 with ha0' | ha1'
+  · have hb0z : b 0 = 0 := (mul_eq_zero.mp h00).resolve_left ha0'
+    have hb1 : b 1 ≠ 0 := by
+      intro h
+      refine hb0 (funext fun j => ?_)
+      fin_cases j
+      · simpa using hb0z
+      · simpa using h
+    have ha1z : a 1 = 0 := (mul_eq_zero.mp h11).resolve_right hb1
+    refine mul_ne_zero ha0' hb1 ?_
+    linear_combination hD + b 0 * ha1z
+  · have hb1z : b 1 = 0 := (mul_eq_zero.mp h11).resolve_left ha1'
+    have hb0' : b 0 ≠ 0 := by
+      intro h
+      refine hb0 (funext fun j => ?_)
+      fin_cases j
+      · simpa using h
+      · simpa using hb1z
+    have ha0z : a 0 = 0 := (mul_eq_zero.mp h00).resolve_right hb0'
+    refine mul_ne_zero ha1' hb0' ?_
+    linear_combination -hD + b 1 * ha0z
+
+/-- **At most two characters can occur as one-dimensional quotients of a
+rank-two space** (elementary linear algebra over a field). -/
+theorem false_of_three_quotient_characters (m : G → Fin 2 → Fin 2 → F)
+    (s₁ s₂ s₃ : G → F) (a₁ a₂ a₃ : Fin 2 → F)
+    (h₁ : ∀ g j, ∑ i, m g j i * a₁ i = s₁ g * a₁ j)
+    (h₂ : ∀ g j, ∑ i, m g j i * a₂ i = s₂ g * a₂ j)
+    (h₃ : ∀ g j, ∑ i, m g j i * a₃ i = s₃ g * a₃ j)
+    (ha₁ : a₁ ≠ 0) (ha₂ : a₂ ≠ 0) (ha₃ : a₃ ≠ 0)
+    (h12 : ∃ g, s₁ g ≠ s₂ g) (h13 : ∃ g, s₁ g ≠ s₃ g) (h23 : ∃ g, s₂ g ≠ s₃ g) :
+    False := by
+  obtain ⟨g₁₂, hg₁₂⟩ := h12
+  obtain ⟨g₁₃, hg₁₃⟩ := h13
+  obtain ⟨g₂₃, hg₂₃⟩ := h23
+  have hD : a₁ 0 * a₂ 1 - a₁ 1 * a₂ 0 ≠ 0 :=
+    det_ne_zero_of_eigen_ne m s₁ s₂ a₁ a₂ h₁ h₂ ha₁ ha₂ g₁₂ hg₁₂
+  set α : F := a₃ 0 * a₂ 1 - a₃ 1 * a₂ 0 with hα
+  set β : F := a₁ 0 * a₃ 1 - a₁ 1 * a₃ 0 with hβ
+  set D : F := a₁ 0 * a₂ 1 - a₁ 1 * a₂ 0 with hDdef
+  have hexp0 : D * a₃ 0 = α * a₁ 0 + β * a₂ 0 := by
+    simp only [hα, hβ, hDdef]; ring
+  have hexp1 : D * a₃ 1 = α * a₁ 1 + β * a₂ 1 := by
+    simp only [hα, hβ, hDdef]; ring
+  have hexp : ∀ j, D * a₃ j = α * a₁ j + β * a₂ j := by
+    intro j
+    fin_cases j
+    · exact hexp0
+    · exact hexp1
+  have hzero : ∀ g j, (α * (s₁ g - s₃ g)) * a₁ j + (β * (s₂ g - s₃ g)) * a₂ j = 0 := by
+    intro g j
+    have e₃ := h₃ g j
+    have e₁ := h₁ g j
+    have e₂ := h₂ g j
+    simp only [Fin.sum_univ_two] at e₁ e₂ e₃
+    have hx0 := hexp 0
+    have hx1 := hexp 1
+    have hxj := hexp j
+    linear_combination D * e₃ - α * e₁ - β * e₂ - m g j 0 * hx0 - m g j 1 * hx1 +
+      s₃ g * hxj
+  have hcoef : ∀ g, α * (s₁ g - s₃ g) = 0 ∧ β * (s₂ g - s₃ g) = 0 := fun g =>
+    coeff_eq_zero_of_det_ne_zero hD (hzero g 0) (hzero g 1)
+  have hα0 : α = 0 :=
+    (mul_eq_zero.mp (hcoef g₁₃).1).resolve_right (sub_ne_zero.mpr hg₁₃)
+  have hβ0 : β = 0 :=
+    (mul_eq_zero.mp (hcoef g₂₃).2).resolve_right (sub_ne_zero.mpr hg₂₃)
+  refine ha₃ (funext fun j => ?_)
+  have hj := hexp j
+  rw [hα0, hβ0] at hj
+  simp only [zero_mul, add_zero] at hj
+  simpa using (mul_eq_zero.mp hj).resolve_left hD
+
+end ThreeCharacters
+
+/-! ### Artinian truncations and Mittag-Leffler -/
+
+section MittagLeffler
+
+variable {R : Type u} [CommRing R]
+
+/-- The quotient of a local ring by a power of its maximal ideal is local. -/
+lemma isLocalRing_quotient_maximalIdeal_pow [IsLocalRing R] (n : ℕ) :
+    IsLocalRing (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 1))) := by
+  have hle : (IsLocalRing.maximalIdeal R ^ (n + 1) : Ideal R) ≤ IsLocalRing.maximalIdeal R :=
+    Ideal.pow_le_self (Nat.succ_ne_zero n)
+  have hne : (IsLocalRing.maximalIdeal R ^ (n + 1) : Ideal R) ≠ ⊤ := by
+    intro h
+    rw [h, top_le_iff] at hle
+    exact (IsLocalRing.maximalIdeal.isMaximal R).ne_top hle
+  haveI : Nontrivial (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 1))) :=
+    Ideal.Quotient.nontrivial_iff.mpr hne
+  exact IsLocalRing.of_surjective' (Ideal.Quotient.mk _) Ideal.Quotient.mk_surjective
+
+/-- The maximal ideal of `R ⧸ 𝔪ⁿ` is nilpotent. -/
+lemma isNilpotent_maximalIdeal_quotient_pow [IsLocalRing R] (n : ℕ) :
+    letI := isLocalRing_quotient_maximalIdeal_pow (R := R) n
+    IsNilpotent (IsLocalRing.maximalIdeal (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 1)))) := by
+  letI := isLocalRing_quotient_maximalIdeal_pow (R := R) n
+  refine ⟨n + 1, ?_⟩
+  have h1 : IsLocalRing.maximalIdeal (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 1))) ≤
+      Ideal.map (Ideal.Quotient.mk (IsLocalRing.maximalIdeal R ^ (n + 1)))
+        (IsLocalRing.maximalIdeal R) := by
+    intro x hx
+    obtain ⟨y, rfl⟩ := Ideal.Quotient.mk_surjective x
+    by_cases hy : y ∈ IsLocalRing.maximalIdeal R
+    · exact Ideal.mem_map_of_mem _ hy
+    · have hu : IsUnit (Ideal.Quotient.mk (IsLocalRing.maximalIdeal R ^ (n + 1)) y) :=
+        (IsLocalRing.notMem_maximalIdeal.mp hy).map _
+      exact absurd hx (IsLocalRing.notMem_maximalIdeal.mpr hu)
+  have h2 : (Ideal.map (Ideal.Quotient.mk (IsLocalRing.maximalIdeal R ^ (n + 1)))
+      (IsLocalRing.maximalIdeal R)) ^ (n + 1) = ⊥ := by
+    rw [← Ideal.map_pow, Ideal.map_quotient_self]
+  have h3 := Ideal.pow_right_mono h1 (n + 1)
+  rw [h2] at h3
+  simpa using le_bot_iff.mp h3
+
+/-- `R ⧸ 𝔪ⁿ` is an Artinian ring. -/
+lemma isArtinianRing_quotient_maximalIdeal_pow [IsLocalRing R] [IsNoetherianRing R] (n : ℕ) :
+    IsArtinianRing (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 1))) := by
+  letI := isLocalRing_quotient_maximalIdeal_pow (R := R) n
+  rw [isArtinianRing_iff_isNilpotent_maximalIdeal]
+  exact isNilpotent_maximalIdeal_quotient_pow n
+
+/-- A finite power of `R ⧸ 𝔪ⁿ` is Artinian as an `R`-module. -/
+lemma isArtinian_pi_quotient_maximalIdeal_pow [IsLocalRing R] [IsNoetherianRing R]
+    {ι : Type*} [Finite ι] (n : ℕ) :
+    IsArtinian R (ι → (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 1)))) := by
+  haveI := isArtinianRing_quotient_maximalIdeal_pow (R := R) n
+  haveI : IsArtinian R (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 1))) := by
+    refine isArtinian_of_surjective_algebraMap
+      (R := R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 1)))
+      (M := R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 1))) (S := R) ?_
+    rw [Ideal.Quotient.algebraMap_eq]
+    exact Ideal.Quotient.mk_surjective
+  infer_instance
+
+variable {ι : Type*} [Fintype ι]
+
+/-- The submodule of vectors all of whose coordinates lie in `J`. -/
+def piIdeal (J : Ideal R) : Submodule R (ι → R) :=
+  ⨅ i : ι, Submodule.comap (LinearMap.proj i : (ι → R) →ₗ[R] R) (J : Submodule R R)
+
+omit [Fintype ι] in
+lemma mem_piIdeal {J : Ideal R} {a : ι → R} :
+    a ∈ (piIdeal J : Submodule R (ι → R)) ↔ ∀ i, a i ∈ J := by
+  simp [piIdeal, Submodule.mem_iInf]
+
+omit [Fintype ι] in
+/-- **Mittag-Leffler stabilisation at one level**. -/
+lemma exists_stabilizes_sup_piIdeal (J : Ideal R)
+    (hart : IsArtinian R (ι → (R ⧸ J)))
+    (N : ℕ → Submodule R (ι → R)) (hanti : Antitone N) :
+    ∃ m₀ : ℕ, ∀ m, m₀ ≤ m → N m ⊔ piIdeal J = N m₀ ⊔ piIdeal J := by
+  haveI := hart
+  set q : (ι → R) →ₗ[R] (ι → (R ⧸ J)) :=
+    LinearMap.pi (fun i => (J : Submodule R R).mkQ.comp (LinearMap.proj i)) with hq
+  have hker : LinearMap.ker q = piIdeal J := by
+    ext a
+    simp only [hq, LinearMap.mem_ker, funext_iff, LinearMap.pi_apply, LinearMap.comp_apply,
+      LinearMap.proj_apply, Submodule.mkQ_apply, Pi.zero_apply,
+      Submodule.Quotient.mk_eq_zero, mem_piIdeal]
+  have hmono : Monotone (fun m => OrderDual.toDual (Submodule.map q (N m))) := by
+    intro p r hpr
+    exact Submodule.map_mono (hanti hpr)
+  obtain ⟨m₀, hm₀⟩ := IsArtinian.monotone_stabilizes ⟨_, hmono⟩
+  refine ⟨m₀, fun m hm => ?_⟩
+  have h : Submodule.map q (N m) = Submodule.map q (N m₀) := by
+    have := (hm₀ m hm).symm
+    simpa using this
+  have h2 := congrArg (Submodule.comap q) h
+  rwa [Submodule.comap_map_eq, Submodule.comap_map_eq, hker] at h2
+
+/-- **The pro-limit step**: an antitone chain `N n` of submodules of `ι → R`,
+each containing the vectors with coordinates in `𝔪ⁿ⁺¹` and each containing a
+unimodular vector, has a unimodular vector in its intersection. -/
+theorem exists_unimodular_mem_iInf [IsLocalRing R] [IsNoetherianRing R]
+    (hcomp : IsAdicComplete (IsLocalRing.maximalIdeal R) R)
+    (N : ℕ → Submodule R (ι → R)) (hanti : Antitone N)
+    (hP : ∀ (n : ℕ) (x : ι → R),
+      (∀ i, x i ∈ IsLocalRing.maximalIdeal R ^ (n + 1)) → x ∈ N n)
+    (hne : ∀ n : ℕ, ∃ a ∈ N n, ∃ i, a i ∉ IsLocalRing.maximalIdeal R) :
+    ∃ a : ι → R, (∀ n, a ∈ N n) ∧ ∃ i, a i ∉ IsLocalRing.maximalIdeal R := by
+  classical
+  set 𝔪 : Ideal R := IsLocalRing.maximalIdeal R with h𝔪
+  have hstab : ∀ n : ℕ, ∃ m₀ : ℕ, n ≤ m₀ ∧
+      ∀ m, m₀ ≤ m → N m ⊔ piIdeal (𝔪 ^ (n + 1)) = N m₀ ⊔ piIdeal (𝔪 ^ (n + 1)) := by
+    intro n
+    obtain ⟨m₀, hm₀⟩ := exists_stabilizes_sup_piIdeal (𝔪 ^ (n + 1))
+      (isArtinian_pi_quotient_maximalIdeal_pow (R := R) (ι := ι) n) N hanti
+    refine ⟨max m₀ n, le_max_right _ _, fun m hm => ?_⟩
+    rw [hm₀ m (le_trans (le_max_left _ _) hm), hm₀ _ (le_max_left _ _)]
+  choose M hMge hMst using hstab
+  set k : ℕ → ℕ := fun j => (Finset.range (j + 1)).sup M with hk
+  have hkM : ∀ j, M j ≤ k j := fun j =>
+    Finset.le_sup (f := M) (Finset.self_mem_range_succ j)
+  have hkmono : Monotone k := by
+    intro p r hpr
+    have hsub : Finset.range (p + 1) ⊆ Finset.range (r + 1) := by
+      intro x hx
+      simp only [Finset.mem_range] at hx ⊢
+      omega
+    exact Finset.sup_mono hsub
+  have hkge : ∀ j, j ≤ k j := fun j => le_trans (hMge j) (hkM j)
+  have step : ∀ (j : ℕ) (x : ι → R), ∃ y : ι → R,
+      x ∈ N (k j) → (y ∈ N (k (j + 1)) ∧ ∀ i, y i - x i ∈ 𝔪 ^ (j + 1)) := by
+    intro j x
+    by_cases hx : x ∈ N (k j)
+    · have h1 : N (k j) ⊔ piIdeal (𝔪 ^ (j + 1)) = N (M j) ⊔ piIdeal (𝔪 ^ (j + 1)) :=
+        hMst j (k j) (hkM j)
+      have h2 : N (k (j + 1)) ⊔ piIdeal (𝔪 ^ (j + 1)) = N (M j) ⊔ piIdeal (𝔪 ^ (j + 1)) :=
+        hMst j (k (j + 1)) (le_trans (hkM j) (hkmono (Nat.le_succ j)))
+      have hxmem : x ∈ N (k (j + 1)) ⊔ piIdeal (𝔪 ^ (j + 1)) := by
+        rw [h2, ← h1]
+        exact Submodule.mem_sup_left hx
+      obtain ⟨y, hy, z, hz, hyz⟩ := Submodule.mem_sup.mp hxmem
+      refine ⟨y, fun _ => ⟨hy, fun i => ?_⟩⟩
+      have hzi : z i ∈ 𝔪 ^ (j + 1) := mem_piIdeal.mp hz i
+      have hyx : y i - x i = -(z i) := by
+        rw [← hyz]
+        simp
+      rw [hyx]
+      exact neg_mem hzi
+    · exact ⟨x, fun hx' => absurd hx' hx⟩
+  choose f hf using step
+  obtain ⟨a₀, ha₀N, i₀, hi₀⟩ := hne (k 0)
+  set v : ℕ → (ι → R) := fun j => Nat.rec a₀ (fun j x => f j x) j with hv
+  have hv0 : v 0 = a₀ := rfl
+  have hvsucc : ∀ j, v (j + 1) = f j (v j) := fun _ => rfl
+  have hvN : ∀ j, v j ∈ N (k j) := by
+    intro j
+    induction j with
+    | zero => exact ha₀N
+    | succ j ih => rw [hvsucc j]; exact (hf j (v j) ih).1
+  have hvstep : ∀ j i, v (j + 1) i - v j i ∈ 𝔪 ^ (j + 1) := by
+    intro j i
+    rw [hvsucc j]
+    exact (hf j (v j) (hvN j)).2 i
+  have hdiff : ∀ (i : ι) (p r : ℕ), p ≤ r → v r i - v p i ∈ 𝔪 ^ p := by
+    intro i p r hpr
+    induction r, hpr using Nat.le_induction with
+    | base =>
+      have hz : v p i - v p i = 0 := by ring
+      rw [hz]
+      exact Submodule.zero_mem _
+    | succ r hpr ih =>
+      have h1 : v (r + 1) i - v r i ∈ 𝔪 ^ p :=
+        Ideal.pow_le_pow_right (le_trans hpr (Nat.le_succ r)) (hvstep r i)
+      have hsplit : v (r + 1) i - v p i = (v (r + 1) i - v r i) + (v r i - v p i) := by ring
+      rw [hsplit]
+      exact Submodule.add_mem _ h1 ih
+  have hprec : ∀ i : ι, ∃ L : R, ∀ n, v n i - L ∈ 𝔪 ^ n := by
+    intro i
+    have hc : ∀ {p r : ℕ}, p ≤ r →
+        (fun n => v n i) p ≡ (fun n => v n i) r [SMOD (𝔪 ^ p • ⊤ : Submodule R R)] := by
+      intro p r hpr
+      rw [SModEq.sub_mem, smul_eq_mul, Ideal.mul_top]
+      have h := hdiff i p r hpr
+      have hneg : v p i - v r i = -(v r i - v p i) := by ring
+      rw [hneg]
+      exact neg_mem h
+    obtain ⟨L, hL⟩ := IsPrecomplete.prec hcomp.toIsPrecomplete hc
+    refine ⟨L, fun n => ?_⟩
+    have h := (SModEq.sub_mem).mp (hL n)
+    rwa [smul_eq_mul, Ideal.mul_top] at h
+  choose L hL using hprec
+  refine ⟨L, fun n => ?_, i₀, ?_⟩
+  · have h1 : L - v (n + 1) ∈ N n := by
+      refine hP n _ fun i => ?_
+      have h := hL i (n + 1)
+      have h2 : (L - v (n + 1)) i = -(v (n + 1) i - L i) := by
+        simp only [Pi.sub_apply]
+        ring
+      rw [h2]
+      exact neg_mem h
+    have h2 : v (n + 1) ∈ N n :=
+      hanti (le_trans (Nat.le_succ n) (hkge (n + 1))) (hvN (n + 1))
+    have h3 : L = (L - v (n + 1)) + v (n + 1) := by ring
+    rw [h3]
+    exact Submodule.add_mem _ h1 h2
+  · intro hLm
+    refine hi₀ ?_
+    have h1 : v 1 i₀ - L i₀ ∈ 𝔪 ^ 1 := hL i₀ 1
+    rw [pow_one] at h1
+    have h2 : v 1 i₀ - v 0 i₀ ∈ 𝔪 ^ 1 := hvstep 0 i₀
+    rw [pow_one] at h2
+    have h3 : a₀ i₀ = L i₀ + (v 1 i₀ - L i₀) - (v 1 i₀ - v 0 i₀) := by
+      rw [hv0]
+      ring
+    rw [h3]
+    exact Submodule.sub_mem _ (Submodule.add_mem _ hLm h1) h2
+
+end MittagLeffler
+
+/-! ### Extraction of the sign character at one finite level -/
+
+/-- **The tame-at-two datum at one finite level, in coordinates.** -/
+lemma exists_signChar_of_quotient_isTameAtTwo
+    {R : Type u} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [Algebra ℤ_[ℓ] R]
+    {ρ : FramedGaloisRep ℚ R (Fin 2)}
+    {J : Ideal R} (hJm : J ≤ IsLocalRing.maximalIdeal R)
+    [IsLocalRing (R ⧸ J)] (hmk : Continuous (Ideal.Quotient.mk J))
+    (h : IsHardlyRamified hℓOdd (rank_finTwoFun (R ⧸ J))
+      (pushforwardFrame (Ideal.Quotient.mk J) hmk ρ)) :
+    ∃ ε : Field.absoluteGaloisGroup ℚ_[2] → R,
+      (∀ g, ε g = 1 ∨ ε g = -1) ∧
+      (∀ g₁ g₂, ε (g₁ * g₂) = ε g₁ * ε g₂) ∧
+      (∀ g ∈ AddSubgroup.inertia
+        ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
+        (Field.absoluteGaloisGroup ℚ_[2]), ε g = 1) ∧
+      ∃ a : Fin 2 → R, (∃ i, a i ∉ IsLocalRing.maximalIdeal R) ∧
+        ∀ (g : Field.absoluteGaloisGroup ℚ_[2]) (j : Fin 2),
+          (∑ i, (ρ.map (algebraMap ℚ ℚ_[2]) g (Pi.single j 1)) i * a i) - ε g * a j ∈ J := by
+  classical
+  have h2R : IsUnit (2 : R) := isUnit_two_of_oddPrime hℓOdd
+  have hJtop : J ≠ ⊤ := by
+    intro ht
+    rw [ht, top_le_iff] at hJm
+    exact (IsLocalRing.maximalIdeal.isMaximal R).ne_top hJm
+  have h2Q : IsUnit (2 : R ⧸ J) := by
+    have hh := h2R.map (Ideal.Quotient.mk J)
+    rwa [map_ofNat] at hh
+  obtain ⟨π', hπ'surj, δ', hδ'⟩ := h.isTameAtTwo
+  -- `π'` in coordinates
+  obtain ⟨b, hb⟩ : ∃ b : Fin 2 → (R ⧸ J), ∀ i, b i = π' (Pi.single i 1) :=
+    ⟨_, fun _ => rfl⟩
+  have hπ'exp : ∀ v : Fin 2 → (R ⧸ J), π' v = ∑ i, v i * b i := by
+    intro v
+    have hv : v = ∑ i, v i • (Pi.single i 1 : Fin 2 → (R ⧸ J)) := by
+      funext t
+      simp [Finset.sum_apply, Pi.single_apply]
+    conv_lhs => rw [hv]
+    rw [map_sum]
+    simp only [map_smul, smul_eq_mul, hb]
+  -- `δ'` in coordinates
+  obtain ⟨u, hu⟩ : ∃ u : Field.absoluteGaloisGroup ℚ_[2] → (R ⧸ J), ∀ g, u g = δ' g 1 :=
+    ⟨_, fun _ => rfl⟩
+  have hδ'exp : ∀ g x, δ' g x = x * u g := by
+    intro g x
+    have hx : (δ' g) (x • (1 : R ⧸ J)) = x • (δ' g) 1 := map_smul _ _ _
+    rw [smul_eq_mul, mul_one, smul_eq_mul] at hx
+    rw [hx, hu]
+  have hsq : ∀ g, δ' g * δ' g = 1 := fun g => (hδ' 1 0).2.2 g
+  have hu2 : ∀ g, u g * u g = 1 := by
+    intro g
+    have h1 : (δ' g * δ' g) 1 = (1 : Module.End (R ⧸ J) (R ⧸ J)) 1 := by rw [hsq g]
+    rw [Module.End.mul_apply, hδ'exp, hδ'exp, Module.End.one_apply] at h1
+    linear_combination h1
+  have humul : ∀ g₁ g₂, u (g₁ * g₂) = u g₁ * u g₂ := by
+    intro g₁ g₂
+    have h1 : δ' (g₁ * g₂) = δ' g₁ * δ' g₂ := map_mul _ _ _
+    have h2 : δ' (g₁ * g₂) 1 = (δ' g₁ * δ' g₂) 1 := by rw [h1]
+    rw [Module.End.mul_apply, hδ'exp, hδ'exp, hδ'exp] at h2
+    linear_combination h2
+  have hupm : ∀ g, u g = 1 ∨ u g = -1 := fun g =>
+    eq_one_or_eq_neg_one_of_mul_self_eq_one h2Q (hu2 g)
+  -- the `±1`-valued lift
+  obtain ⟨ε, hεdef⟩ : ∃ ε : Field.absoluteGaloisGroup ℚ_[2] → R,
+      ∀ g, ε g = if u g = 1 then 1 else -1 := ⟨_, fun _ => rfl⟩
+  have hεpm : ∀ g, ε g = 1 ∨ ε g = -1 := by
+    intro g
+    rw [hεdef]
+    by_cases hg : u g = 1
+    · exact Or.inl (if_pos hg)
+    · exact Or.inr (if_neg hg)
+  have hεmk : ∀ g, Ideal.Quotient.mk J (ε g) = u g := by
+    intro g
+    rw [hεdef]
+    by_cases hg : u g = 1
+    · rw [if_pos hg, map_one, hg]
+    · rw [if_neg hg, map_neg, map_one, (hupm g).resolve_left hg]
+  have hεmul : ∀ g₁ g₂, ε (g₁ * g₂) = ε g₁ * ε g₂ := by
+    intro g₁ g₂
+    have hprod : ε g₁ * ε g₂ = 1 ∨ ε g₁ * ε g₂ = -1 := by
+      rcases hεpm g₁ with h1 | h1 <;> rcases hεpm g₂ with h2 | h2 <;> simp [h1, h2]
+    refine eq_of_sub_mem_of_pm h2R hJtop (hεpm _) hprod ?_
+    rw [← Ideal.Quotient.eq]
+    rw [map_mul, hεmk, hεmk, hεmk, humul]
+  have hεiner : ∀ g ∈ AddSubgroup.inertia
+      ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
+      (Field.absoluteGaloisGroup ℚ_[2]), ε g = 1 := by
+    intro g hg
+    have hd : δ' g = 1 := (hδ' 1 0).2.1 hg
+    have hug : u g = 1 := by rw [hu, hd]; rfl
+    rw [hεdef, if_pos hug]
+  -- the lifted vector
+  choose a ha using fun i => Ideal.Quotient.mk_surjective (b i)
+  have haunim : ∃ i, a i ∉ IsLocalRing.maximalIdeal R := by
+    by_contra hcon
+    have hall : ∀ i, a i ∈ IsLocalRing.maximalIdeal R := fun i => by
+      by_contra hi
+      exact hcon ⟨i, hi⟩
+    obtain ⟨w, hw⟩ := hπ'surj 1
+    choose w' hw' using fun i => Ideal.Quotient.mk_surjective (w i)
+    have h1 : Ideal.Quotient.mk J (∑ i, w' i * a i) = 1 := by
+      rw [map_sum]
+      simp only [map_mul, hw', ha]
+      rw [← hw]
+      rw [hπ'exp w]
+    have h2 : (1 : R) - (∑ i, w' i * a i) ∈ J := by
+      rw [← Ideal.Quotient.eq, map_one, h1]
+    have h3 : (∑ i, w' i * a i) ∈ IsLocalRing.maximalIdeal R :=
+      Submodule.sum_mem _ fun i _ => Ideal.mul_mem_left _ _ (hall i)
+    have h4 : (1 : R) ∈ IsLocalRing.maximalIdeal R := by
+      have h5 := Submodule.add_mem (IsLocalRing.maximalIdeal R) (hJm h2) h3
+      have h6 : (1 : R) - (∑ i, w' i * a i) + (∑ i, w' i * a i) = 1 := by ring
+      rwa [h6] at h5
+    exact (IsLocalRing.maximalIdeal.isMaximal R).ne_top ((Ideal.eq_top_iff_one _).mpr h4)
+  refine ⟨ε, hεpm, hεmul, hεiner, a, haunim, ?_⟩
+  intro g j
+  have hsingle : (fun i => Ideal.Quotient.mk J ((Pi.single j 1 : Fin 2 → R) i)) =
+      (Pi.single j 1 : Fin 2 → R ⧸ J) := by
+    funext i
+    simp [Pi.single_apply, apply_ite (Ideal.Quotient.mk J)]
+  have hpf : (pushforwardFrame (Ideal.Quotient.mk J) hmk ρ).map (algebraMap ℚ ℚ_[2]) g
+      (Pi.single j 1 : Fin 2 → R ⧸ J) =
+      fun i => Ideal.Quotient.mk J (ρ.map (algebraMap ℚ ℚ_[2]) g (Pi.single j 1) i) := by
+    rw [GaloisRep.map_apply, ← hsingle, pushforwardFrame_apply, GaloisRep.map_apply]
+  have heq := (hδ' g (Pi.single j 1 : Fin 2 → R ⧸ J)).1
+  rw [hpf, hπ'exp, hπ'exp, hδ'exp] at heq
+  have hsingsum : (∑ i, (Pi.single j 1 : Fin 2 → R ⧸ J) i * b i) = b j := by
+    simp [Pi.single_apply, Finset.sum_ite_eq']
+  rw [hsingsum] at heq
+  rw [← Ideal.Quotient.eq, map_sum]
+  simp only [map_mul, ha, hεmk]
+  rw [heq, hb]
+  ring
+
+/-- **The tame quotient at `2` is detected on the finite levels** (PROVEN
+2026-07-25/26 — the ONE clause of `isHardlyRamified_of_forall_isOpen_quotient`
+below that is a genuine pro-limit statement rather than a congruence).
 
 WHY THE OTHER THREE CLAUSES ARE NOT HERE. The determinant condition is an
 equality in `R`, unramifiedness is the vanishing of `ρ(σ) − 1`, and both
@@ -2672,51 +3246,67 @@ through which `ρ|_{G_2}` acts on the quotient. Wanted: one such pair over
 is a family of independent existence statements, not a compatible system
 — so the whole content is manufacturing compatibility.
 
-THE ROUTE (worked out 2026-07-25; it is not the Kőnig argument the
-consumer's docstring sketches, and the difference matters).
+THE ROUTE AS CARRIED OUT (it is not the Kőnig argument the consumer's
+docstring sketches, and the difference matters: no finiteness of the
+residue field is used anywhere below).
 
 1. *The character is `±1`-valued, hence rigid.* `δ_I(g)² = 1` in the
-   local ring `R ⧸ I`, whose residue characteristic is `ℓ`, odd, so `2`
-   is a unit and `(x−1)(x+1) = 0` forces `x = ±1`. Therefore `δ_I` is the
-   image of a homomorphism `ε : Γ ℚ_2 → {±1} ⊆ ℤ`, and `ε` is determined
-   by `δ_I mod 𝔪` — reduction is injective on `{±1}`.
+   local ring `R ⧸ I`, in which `2` is a unit — not because the residue
+   characteristic is `ℓ`, which this statement does not know, but because
+   `R` is a `ℤ_[ℓ]`-ALGEBRA and `2` is already a unit of `ℤ_[ℓ]` for odd
+   `ℓ` (`isUnit_two_of_oddPrime`). So `(x−1)(x+1) = 0` forces `x = ±1`
+   (`eq_one_or_eq_neg_one_of_mul_self_eq_one`), and the sign lifts to a
+   multiplicative `ε : Γ ℚ_2 → {±1} ⊆ R`, uniquely because `1 ≠ −1`
+   modulo any proper ideal (`eq_of_sub_mem_of_pm`). This is
+   `exists_signChar_of_quotient_isTameAtTwo`, which also reads off the
+   defining relation `∑ᵢ ρ(g)_{ji} aᵢ ≡ ε(g) a_j (mod I)` on the lifted
+   coordinate vector `a` of `π_I`, and its unimodularity.
 
-2. *Only finitely many characters can occur.* Let `D_n` be the set of
-   `ε`'s realised at level `𝔪ⁿ`. A level-`m` datum reduces to a level-`n`
-   datum with the SAME `ε` for `m ≥ n`, so `D_n` is decreasing. And `D_1`
-   is finite: a quotient character of a rank-two representation over the
-   field `k` is a Jordan–Hölder factor, of which there are at most two —
-   three distinct stable lines `L₁, L₂, L₃` give `V = L₁ ⊕ L₃`, hence
-   `V/L₃ ≅ L₁`, collapsing the third character onto one of the first two.
-   A decreasing chain of nonempty subsets of a finite set has nonempty
-   intersection: fix `ε` in it.
+2. *Only two characters can occur, so some `ε` occurs at EVERY level.*
+   Realisability at level `𝔪ⁿ⁺¹` is antitone in `n` — the SAME `ε` and
+   `a` witness every coarser level — so it suffices to intersect a
+   decreasing family of nonempty sets inside the level-one set, and the
+   level-one set has at most two elements: three distinct quotient
+   characters of a rank-two space over the field `R ⧸ 𝔪` give three
+   pairwise independent lines in a plane
+   (`false_of_three_quotient_characters`, proved by an explicit
+   division-free Cramer expansion). Three probes — a level-one witness,
+   a level where it fails, and a level where THAT one fails — then
+   produce three distinct realised characters unless the intersection is
+   nonempty.
 
-3. *With `ε` FIXED the fibres are MODULES, not merely sets.* Put
-   `N := {π : R² →ₗ[R] R | ∀ g, π ∘ ρ(g)|_{G_2} = ε(g) · π}`, an
-   `R`-submodule of `R²` (a `π` is its pair of values on the standard
-   basis), and `N_n` likewise over `R ⧸ 𝔪ⁿ`. This linearity is the crux,
-   and it is why the statement is TRUE WITHOUT a finiteness hypothesis on
+3. *With `ε` FIXED the fibres are MODULES, not merely sets.* `N n ⊆ R²`
+   is cut out of `R²` by the `R`-LINEAR conditions
+   `∑ᵢ ρ(g)_{ji} xᵢ − ε(g) x_j ∈ 𝔪ⁿ⁺¹`, so it is a submodule (built here
+   as an `iInf` of `comap`s of the `Φ g j`). This linearity is the crux,
+   and it is why the statement is true WITHOUT a finiteness hypothesis on
    the residue field — a hypothesis this leaf does not have, and which
    the Kőnig/`nonempty_sections_of_finite_inverse_system` route would
    need.
 
-4. *Mittag-Leffler comes free from Artinian-ness.* `R ⧸ 𝔪ⁿ` is Noetherian
-   local with nilpotent maximal ideal, hence ARTINIAN, so the descending
-   chain of images `im(N_m → N_n)` stabilises; the stabilised images have
-   surjective transition maps, so their inverse limit is nonempty. And
-   `N = lim N_n`, because `R² = lim (R ⧸ 𝔪ⁿ)²` by completeness and the
-   defining equations are closed conditions.
+4. *Mittag-Leffler comes free from Artinian-ness*
+   (`exists_unimodular_mem_iInf`). `R ⧸ 𝔪ⁿ⁺¹` is Noetherian local with
+   nilpotent maximal ideal, hence ARTINIAN
+   (`isArtinianRing_quotient_maximalIdeal_pow`, over mathlib's
+   Hopkins–Levitzki `isArtinianRing_iff_isNilpotent_maximalIdeal`), so
+   `(Fin 2 → R ⧸ 𝔪ⁿ⁺¹)` is an Artinian `R`-module and the descending
+   chain `m ↦ N m ⊔ (𝔪ⁿ⁺¹)²` stabilises
+   (`exists_stabilizes_sup_piIdeal`). Choosing the stabilisation indices
+   and correcting term by term builds a sequence `v j ∈ N (k j)` with
+   `v (j+1) ≡ v j mod 𝔪ʲ⁺¹`; `IsPrecomplete` assembles it coordinatewise
+   and `IsHausdorff` identifies the limit.
 
-5. *Surjectivity survives the limit.* `π ∈ N ⊆ R²` is surjective iff it
-   is unimodular iff its image in `k²` is nonzero (`R` is local). Each
-   level supplies a surjective `π_n`, so `im(N_m → N_1)` contains a
-   nonzero element for every `m`; the chain stabilises, so the stabilised
-   `N_1` contains a nonzero `u`. Lift `u` through the surjective tower and
-   assemble by `𝔪`-adic completeness: the result is unimodular, hence the
-   wanted surjection, and `δ := ε` is continuous because it is locally
-   constant (it factors through the discrete `k`).
+5. *Surjectivity survives the limit.* Each level supplies a UNIMODULAR
+   witness, so the correction sequence can start at one, and the limit is
+   congruent to it modulo `𝔪`, hence unimodular; over the local ring `R`
+   that is exactly surjectivity of `π = ∑ᵢ aᵢ · projᵢ`. Finally `δ` is
+   `g ↦ algebraMap R (Module.End R R) (ε g)`, a monoid hom because `ε`
+   is, and CONTINUOUS because `ε` itself is: `ε g = π(ρ(g) e_{i₀}) ·
+   a_{i₀}⁻¹` is the composite of the continuous `ρ` with the `R`-LINEAR
+   evaluation `f ↦ π (f e_{i₀})`, which is automatically continuous out
+   of the module topology (`IsModuleTopology.continuous_of_linearMap`).
 
-CAUTION FOR WHOEVER TAKES THIS. The inertia quantifier is inside `δ.ker`
+CAUTION FOR WHOEVER READS THIS. The inertia quantifier is inside `δ.ker`
 and must stay there: `δ` is unramified, NOT trivial, and widening the
 quantifier from `AddSubgroup.inertia …` to all of `Γ ℚ_2` makes the
 statement false for every unramified quadratic twist. Note also that step
@@ -2746,8 +3336,259 @@ theorem isTameAtTwo_of_forall_isOpen_quotient
       (AddSubgroup.inertia
         ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
         (Field.absoluteGaloisGroup ℚ_[2]) ≤ δ.ker) ∧
-      (∀ g : Field.absoluteGaloisGroup ℚ_[2], δ g * δ g = 1) :=
-  sorry
+      (∀ g : Field.absoluteGaloisGroup ℚ_[2], δ g * δ g = 1) := by
+  classical
+  haveI := hcomplete
+  have h2R : IsUnit (2 : R) := isUnit_two_of_oddPrime hℓOdd
+  have hcont : ∀ Jd : Ideal R, Continuous (Ideal.Quotient.mk Jd) :=
+    fun _ => continuous_quot_mk
+  have hpow : ∀ n : ℕ, IsOpen ((IsLocalRing.maximalIdeal R ^ n : Ideal R) : Set R) :=
+    (isAdic_iff.mp hadic).1
+  have hle : ∀ n : ℕ, (IsLocalRing.maximalIdeal R ^ (n + 1) : Ideal R) ≤
+      IsLocalRing.maximalIdeal R := fun n => Ideal.pow_le_self (Nat.succ_ne_zero n)
+  have hsep : ∀ x : R,
+      (∀ n : ℕ, x ∈ (IsLocalRing.maximalIdeal R ^ (n + 1) : Ideal R)) → x = 0 := by
+    intro x hx
+    refine IsHausdorff.haus
+      (inferInstance : IsHausdorff (IsLocalRing.maximalIdeal R) R) _ fun n => ?_
+    rw [SModEq.zero, smul_eq_mul, Ideal.mul_top]
+    cases n with
+    | zero => simp
+    | succ m => exact hx m
+  -- the matrix entries of `ρ` at `2`
+  obtain ⟨mat, hmatdef⟩ : ∃ mat : Field.absoluteGaloisGroup ℚ_[2] → Fin 2 → Fin 2 → R,
+      ∀ g j i, mat g j i =
+        (ρ.map (algebraMap ℚ ℚ_[2]) g (Pi.single j 1 : Fin 2 → R)) i :=
+    ⟨_, fun _ _ _ => rfl⟩
+  have hcoord : ∀ (g : Field.absoluteGaloisGroup ℚ_[2]) (v : Fin 2 → R) (i : Fin 2),
+      (ρ.map (algebraMap ℚ ℚ_[2]) g v) i = ∑ j, v j * mat g j i := by
+    intro g v i
+    have hv : v = ∑ j, v j • (Pi.single j 1 : Fin 2 → R) := by
+      funext t
+      simp [Finset.sum_apply, Pi.single_apply]
+    conv_lhs => rw [hv]
+    rw [map_sum]
+    simp only [Finset.sum_apply, map_smul, Pi.smul_apply, smul_eq_mul, hmatdef]
+  -- the set of sign characters realised at each level
+  obtain ⟨Real, hReal⟩ : ∃ Real : ℕ → (Field.absoluteGaloisGroup ℚ_[2] → R) → Prop,
+      ∀ n ε, Real n ε ↔
+        ((∀ g, ε g = 1 ∨ ε g = -1) ∧
+         (∀ g₁ g₂, ε (g₁ * g₂) = ε g₁ * ε g₂) ∧
+         (∀ g ∈ AddSubgroup.inertia
+            ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
+            (Field.absoluteGaloisGroup ℚ_[2]), ε g = 1) ∧
+         ∃ a : Fin 2 → R, (∃ i, a i ∉ IsLocalRing.maximalIdeal R) ∧
+           ∀ g j, (∑ i, mat g j i * a i) - ε g * a j ∈
+             (IsLocalRing.maximalIdeal R ^ (n + 1) : Ideal R)) :=
+    ⟨_, fun _ _ => Iff.rfl⟩
+  have hlevel : ∀ n : ℕ, ∃ ε, Real n ε := by
+    intro n
+    haveI := isLocalRing_quotient_maximalIdeal_pow (R := R) n
+    obtain ⟨ε, h1, h2, h3, a, h4, h5⟩ :=
+      exists_signChar_of_quotient_isTameAtTwo hℓOdd (hle n) (hcont _)
+        (hq _ (hpow (n + 1)) (hcont _))
+    refine ⟨ε, (hReal n ε).mpr ⟨h1, h2, h3, a, h4, ?_⟩⟩
+    intro g j
+    simpa only [hmatdef] using h5 g j
+  have hReal_anti : ∀ {p r : ℕ}, p ≤ r → ∀ ε, Real r ε → Real p ε := by
+    intro p r hpr ε hε
+    obtain ⟨h1, h2, h3, a, h4, h5⟩ := (hReal r ε).mp hε
+    exact (hReal p ε).mpr ⟨h1, h2, h3, a, h4, fun g j =>
+      Ideal.pow_le_pow_right (by omega) (h5 g j)⟩
+  -- at most two characters occur at level one
+  have hthree : ∀ ε₁ ε₂ ε₃, Real 0 ε₁ → Real 0 ε₂ → Real 0 ε₃ →
+      ε₁ ≠ ε₂ → ε₁ ≠ ε₃ → ε₂ ≠ ε₃ → False := by
+    intro ε₁ ε₂ ε₃ hr₁ hr₂ hr₃ n12 n13 n23
+    haveI : (IsLocalRing.maximalIdeal R).IsMaximal := IsLocalRing.maximalIdeal.isMaximal R
+    letI : Field (R ⧸ IsLocalRing.maximalIdeal R) := Ideal.Quotient.field _
+    have h2F : IsUnit (2 : R ⧸ IsLocalRing.maximalIdeal R) := by
+      have hh := h2R.map (Ideal.Quotient.mk (IsLocalRing.maximalIdeal R))
+      rwa [map_ofNat] at hh
+    have hrel : ∀ (ε : Field.absoluteGaloisGroup ℚ_[2] → R) (a : Fin 2 → R),
+        (∀ g j, (∑ i, mat g j i * a i) - ε g * a j ∈
+          (IsLocalRing.maximalIdeal R ^ (0 + 1) : Ideal R)) →
+        ∀ g j, ∑ i, Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) (mat g j i) *
+            Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) (a i) =
+          Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) (ε g) *
+            Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) (a j) := by
+      intro ε a he g j
+      have hm := he g j
+      rw [pow_one] at hm
+      have h0 : Ideal.Quotient.mk (IsLocalRing.maximalIdeal R)
+          ((∑ i, mat g j i * a i) - ε g * a j) = 0 :=
+        (Ideal.Quotient.eq_zero_iff_mem).mpr hm
+      rw [map_sub, map_sum] at h0
+      simp only [map_mul] at h0
+      exact sub_eq_zero.mp h0
+    have hnz : ∀ (a : Fin 2 → R), (∃ i, a i ∉ IsLocalRing.maximalIdeal R) →
+        (fun i => Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) (a i)) ≠ 0 := by
+      rintro a ⟨i, hi⟩ hcon
+      exact hi ((Ideal.Quotient.eq_zero_iff_mem).mp (congrFun hcon i))
+    have hdist : ∀ (ε ε' : Field.absoluteGaloisGroup ℚ_[2] → R),
+        (∀ g, ε g = 1 ∨ ε g = -1) → (∀ g, ε' g = 1 ∨ ε' g = -1) → ε ≠ ε' →
+        ∃ g, Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) (ε g) ≠
+          Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) (ε' g) := by
+      intro ε ε' hp hp' hne
+      obtain ⟨g, hg⟩ := Function.ne_iff.mp hne
+      exact ⟨g, map_ne_map_of_pm _ h2F (hp g) (hp' g) hg⟩
+    obtain ⟨p₁, -, -, a₁, hu₁, e₁⟩ := (hReal 0 ε₁).mp hr₁
+    obtain ⟨p₂, -, -, a₂, hu₂, e₂⟩ := (hReal 0 ε₂).mp hr₂
+    obtain ⟨p₃, -, -, a₃, hu₃, e₃⟩ := (hReal 0 ε₃).mp hr₃
+    exact false_of_three_quotient_characters
+      (fun g j i => Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) (mat g j i))
+      (fun g => Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) (ε₁ g))
+      (fun g => Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) (ε₂ g))
+      (fun g => Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) (ε₃ g))
+      (fun i => Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) (a₁ i))
+      (fun i => Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) (a₂ i))
+      (fun i => Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) (a₃ i))
+      (hrel ε₁ a₁ e₁) (hrel ε₂ a₂ e₂) (hrel ε₃ a₃ e₃)
+      (hnz a₁ hu₁) (hnz a₂ hu₂) (hnz a₃ hu₃)
+      (hdist ε₁ ε₂ p₁ p₂ n12) (hdist ε₁ ε₃ p₁ p₃ n13) (hdist ε₂ ε₃ p₂ p₃ n23)
+  -- one character is realised at EVERY level
+  have hexistsEps : ∃ ε, ∀ n, Real n ε := by
+    by_contra hcon
+    have hfail : ∀ ε, ∃ n, ¬ Real n ε := by
+      intro ε
+      by_contra hε2
+      refine hcon ⟨ε, fun n => ?_⟩
+      by_contra hn
+      exact hε2 ⟨n, hn⟩
+    choose e he using hlevel
+    obtain ⟨n₁, hn₁⟩ := hfail (e 0)
+    obtain ⟨n₂, hn₂⟩ := hfail (e n₁)
+    have hc1 : Real n₁ (e (max n₁ n₂)) := hReal_anti (le_max_left n₁ n₂) _ (he _)
+    have hc2 : Real n₂ (e (max n₁ n₂)) := hReal_anti (le_max_right n₁ n₂) _ (he _)
+    have hne1 : e 0 ≠ e n₁ := fun h => hn₁ (by rw [h]; exact he n₁)
+    have hne2 : e 0 ≠ e (max n₁ n₂) := fun h => hn₁ (by rw [h]; exact hc1)
+    have hne3 : e n₁ ≠ e (max n₁ n₂) := fun h => hn₂ (by rw [h]; exact hc2)
+    exact hthree (e 0) (e n₁) (e (max n₁ n₂))
+      (hReal_anti (Nat.zero_le _) _ (he 0)) (hReal_anti (Nat.zero_le _) _ (he n₁))
+      (hReal_anti (Nat.zero_le _) _ (he _)) hne1 hne2 hne3
+  obtain ⟨ε, hεall⟩ := hexistsEps
+  obtain ⟨hεpm, hεmul, hεiner, -⟩ := (hReal 0 ε).mp (hεall 0)
+  -- the eigenvector modules
+  obtain ⟨Φ, hΦdef⟩ :
+      ∃ Φ : Field.absoluteGaloisGroup ℚ_[2] → Fin 2 → ((Fin 2 → R) →ₗ[R] R),
+      ∀ g j, Φ g j = (∑ i, (mat g j i) • (LinearMap.proj i : (Fin 2 → R) →ₗ[R] R))
+        - (ε g) • (LinearMap.proj j : (Fin 2 → R) →ₗ[R] R) := ⟨_, fun _ _ => rfl⟩
+  have hΦapp : ∀ g j (x : Fin 2 → R), Φ g j x = (∑ i, mat g j i * x i) - ε g * x j := by
+    intro g j x
+    rw [hΦdef]
+    simp [LinearMap.sub_apply, LinearMap.smul_apply,
+      LinearMap.proj_apply, smul_eq_mul]
+  obtain ⟨N, hNdef⟩ : ∃ N : ℕ → Submodule R (Fin 2 → R), ∀ n, N n =
+      ⨅ (g : Field.absoluteGaloisGroup ℚ_[2]) (j : Fin 2), Submodule.comap (Φ g j)
+        ((IsLocalRing.maximalIdeal R ^ (n + 1) : Ideal R) : Submodule R R) :=
+    ⟨_, fun _ => rfl⟩
+  have hNmem : ∀ (n : ℕ) (x : Fin 2 → R), x ∈ N n ↔
+      ∀ g j, (∑ i, mat g j i * x i) - ε g * x j ∈
+        (IsLocalRing.maximalIdeal R ^ (n + 1) : Ideal R) := by
+    intro n x
+    rw [hNdef]
+    simp only [Submodule.mem_iInf, Submodule.mem_comap, hΦapp]
+  have hNanti : Antitone N := by
+    intro p r hpr x hx
+    rw [hNmem] at hx ⊢
+    exact fun g j => Ideal.pow_le_pow_right (by omega) (hx g j)
+  have hNP : ∀ (n : ℕ) (x : Fin 2 → R),
+      (∀ i, x i ∈ IsLocalRing.maximalIdeal R ^ (n + 1)) → x ∈ N n := by
+    intro n x hx
+    rw [hNmem]
+    intro g j
+    exact Submodule.sub_mem _
+      (Submodule.sum_mem _ fun i _ => Ideal.mul_mem_left _ _ (hx i))
+      (Ideal.mul_mem_left _ _ (hx j))
+  have hNne : ∀ n : ℕ, ∃ a ∈ N n, ∃ i, a i ∉ IsLocalRing.maximalIdeal R := by
+    intro n
+    obtain ⟨-, -, -, a, hua, hra⟩ := (hReal n ε).mp (hεall n)
+    exact ⟨a, (hNmem n a).mpr hra, hua⟩
+  obtain ⟨a, haN, i₀, hi₀⟩ := exists_unimodular_mem_iInf hcomplete N hNanti hNP hNne
+  have hrel : ∀ g j, (∑ i, mat g j i * a i) = ε g * a j := by
+    intro g j
+    exact sub_eq_zero.mp (hsep _ fun n => (hNmem n a).mp (haN n) g j)
+  obtain ⟨u₀, hu₀⟩ : IsUnit (a i₀) := IsLocalRing.notMem_maximalIdeal.mp hi₀
+  have hu₀inv : (↑u₀ : R) * ↑u₀⁻¹ = 1 := u₀.mul_inv
+  -- the projection
+  obtain ⟨π, hπdef⟩ : ∃ π : (Fin 2 → R) →ₗ[R] R,
+      π = ∑ i, (a i) • (LinearMap.proj i : (Fin 2 → R) →ₗ[R] R) := ⟨_, rfl⟩
+  have hπapp : ∀ v : Fin 2 → R, π v = ∑ i, a i * v i := by
+    intro v
+    rw [hπdef]
+    simp [LinearMap.smul_apply, LinearMap.proj_apply, smul_eq_mul]
+  have hπsurj : Function.Surjective π := by
+    intro c
+    refine ⟨Pi.single i₀ (c * ↑u₀⁻¹), ?_⟩
+    rw [hπapp]
+    have hs : ∑ i, a i * (Pi.single i₀ (c * ↑u₀⁻¹) : Fin 2 → R) i
+        = a i₀ * (c * ↑u₀⁻¹) := by
+      simp [Pi.single_apply, mul_ite, mul_zero, Finset.sum_ite_eq']
+    rw [hs, ← hu₀]
+    linear_combination c * hu₀inv
+  -- the sign character is continuous
+  have hεval : ∀ g, ε g = (∑ i, mat g i₀ i * a i) * ↑u₀⁻¹ := by
+    intro g
+    rw [hrel g i₀, ← hu₀]
+    linear_combination (-(ε g)) * hu₀inv
+  letI := moduleTopology R (Module.End R (Fin 2 → R))
+  letI := IsModuleTopology.toContinuousAdd R (Module.End R (Fin 2 → R))
+  have hevcont : Continuous (fun f : Module.End R (Fin 2 → R) =>
+      π (f (Pi.single i₀ 1))) := by
+    refine IsModuleTopology.continuous_of_linearMap
+      ({ toFun := fun f : Module.End R (Fin 2 → R) => π (f (Pi.single i₀ 1))
+         map_add' := by intro f₁ f₂; simp
+         map_smul' := by intro c f; simp } : Module.End R (Fin 2 → R) →ₗ[R] R)
+  have hρcont : Continuous (fun g : Field.absoluteGaloisGroup ℚ_[2] =>
+      (ρ.map (algebraMap ℚ ℚ_[2]) g : Module.End R (Fin 2 → R))) :=
+    ContinuousMonoidHom.continuous_toFun _
+  have hεcont : Continuous ε := by
+    have h1 : Continuous (fun g : Field.absoluteGaloisGroup ℚ_[2] =>
+        π (ρ.map (algebraMap ℚ ℚ_[2]) g (Pi.single i₀ 1))) := hevcont.comp hρcont
+    have h2 : Continuous (fun g : Field.absoluteGaloisGroup ℚ_[2] =>
+        π (ρ.map (algebraMap ℚ ℚ_[2]) g (Pi.single i₀ 1)) * (↑u₀⁻¹ : R)) :=
+      h1.mul continuous_const
+    refine h2.congr fun g => ?_
+    rw [hεval g, hπapp]
+    congr 1
+    exact Finset.sum_congr rfl fun i _ => by rw [hmatdef]; ring
+  have hε1 : ε 1 = 1 := by
+    have h := hεmul 1 1
+    rw [mul_one] at h
+    rcases hεpm 1 with h1 | h1
+    · exact h1
+    · rw [h1] at h
+      exact absurd (by linear_combination -h : (1 : R) = -1)
+        (one_ne_neg_one_of_isUnit_two h2R)
+  -- assembly
+  letI := moduleTopology R (Module.End R R)
+  letI := IsModuleTopology.toContinuousAdd R (Module.End R R)
+  refine ⟨π, hπsurj,
+    { toMonoidHom :=
+        { toFun := fun g => algebraMap R (Module.End R R) (ε g)
+          map_one' := by rw [hε1, map_one]
+          map_mul' := fun g₁ g₂ => by rw [hεmul, map_mul] }
+      continuous_toFun := (IsModuleTopology.continuous_of_linearMap
+        (Algebra.linearMap R (Module.End R R))).comp hεcont }, ?_⟩
+  intro g v
+  refine ⟨?_, ?_, ?_⟩
+  · show π (ρ.map (algebraMap ℚ ℚ_[2]) g v) = algebraMap R (Module.End R R) (ε g) (π v)
+    rw [Module.algebraMap_end_apply, smul_eq_mul, hπapp, hπapp]
+    have hc0 := hcoord g v 0
+    have hc1 := hcoord g v 1
+    have hr0 := hrel g 0
+    have hr1 := hrel g 1
+    simp only [Fin.sum_univ_two] at hc0 hc1 hr0 hr1 ⊢
+    rw [hc0, hc1]
+    linear_combination (v 0) * hr0 + (v 1) * hr1
+  · intro σ hσ
+    have hs : algebraMap R (Module.End R R) (ε σ) = 1 := by
+      rw [hεiner σ hσ, map_one]
+    exact hs
+  · intro g'
+    show algebraMap R (Module.End R R) (ε g') * algebraMap R (Module.End R R) (ε g') = 1
+    rw [← map_mul]
+    rcases hεpm g' with h | h <;> rw [h] <;> simp
+
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **Hardly-ramifiedness is detected on the finite levels** (PROVEN
