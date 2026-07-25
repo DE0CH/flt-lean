@@ -33,21 +33,19 @@ variable {n : Type*} [Fintype n] [DecidableEq n]
 
 open NumberField
 
-variable [NumberField K]
-
-variable (v : IsDedekindDomain.HeightOneSpectrum (𝓞 K))
-
 local notation3 "Γ" K:max => Field.absoluteGaloisGroup K
 local notation3 K:max "ᵃˡᵍ" => AlgebraicClosure K
 local notation3 "𝔪" => IsLocalRing.maximalIdeal
 local notation3 "κ" => IsLocalRing.ResidueField
-local notation "Ω" K => IsDedekindDomain.HeightOneSpectrum (𝓞 K)
-local notation "Kᵥ" => IsDedekindDomain.HeightOneSpectrum.adicCompletion K v
-local notation "𝒪ᵥ" => IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v
 
 set_option backward.isDefEq.respectTransparency false in
 /-- Given a field extension, this is a map between its absolute galois group.
-Note that this relies on an arbitrarily chosen embedding of the algebraic closures -/
+Note that this relies on an arbitrarily chosen embedding of the algebraic closures.
+
+This declaration is deliberately placed BEFORE the `[NumberField K]` variable
+of this file: the construction is pure field theory, and the transport lemmas
+of `GaloisRepTransport.lean` need `Γ L_w → Γ K_v` for a map of COMPLETIONS,
+whose source is not a number field. -/
 noncomputable
 def Field.absoluteGaloisGroup.mapAux (f : K →+* L) : Γ L →* Γ K where
   toFun σ :=
@@ -71,7 +69,10 @@ def Field.absoluteGaloisGroup.mapAux (f : K →+* L) : Γ L →* Γ K where
     simpa [absoluteGaloisGroup] using! AlgHom.restrictNormal_commutes _ _ _
 
 /-- Given a field extension, this is a continuous map between its absolute galois group.
-Note that this relies on an arbitrarily chosen embedding of the algebraic closures -/
+Note that this relies on an arbitrarily chosen embedding of the algebraic closures.
+
+As for `mapAux`, this is stated before `[NumberField K]` enters the file: the
+Krull-topology continuity argument only uses that `Kᵃˡᵍ/K` is algebraic. -/
 noncomputable
 def Field.absoluteGaloisGroup.map (f : K →+* L) : Γ L →ₜ* Γ K where
   __ := Field.absoluteGaloisGroup.mapAux f
@@ -105,6 +106,17 @@ lemma Field.absoluteGaloisGroup.lift_map (f : K →+* L) (σ : Γ L) (x : Kᵃˡ
   letI := (AlgebraicClosure.map f).toAlgebra
   exact AlgHom.restrictNormal_commutes _ _ _
 
+-- Everything ABOVE this line is pure field theory and deliberately free of the ambient
+-- `[NumberField K]` of the rest of the file: the transport lemmas of
+-- `GaloisRepTransport.lean` need `Γ L_w → Γ K_v` for a map of COMPLETIONS, whose source
+-- is not a number field.  Everything BELOW is number-field-specific.
+variable [NumberField K]
+
+variable (v : IsDedekindDomain.HeightOneSpectrum (𝓞 K))
+
+local notation "Ω" K => IsDedekindDomain.HeightOneSpectrum (𝓞 K)
+local notation "Kᵥ" => IsDedekindDomain.HeightOneSpectrum.adicCompletion K v
+local notation "𝒪ᵥ" => IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v
 
 attribute [local instance 100000]
   instAlgebraSubtypeMemValuationSubringVendored IntermediateField.algebra'
@@ -268,3 +280,4 @@ local notation "Frobᵥ" => Field.AbsoluteGaloisGroup.adicArithFrob v
 lemma Field.AbsoluteGaloisGroup.isArithFrobAt_adicArithFrob :
     IsArithFrobAt 𝒪ᵥ Frobᵥ (𝔪 (IntegralClosure 𝒪ᵥ (Kᵥᵃˡᵍ))) :=
   .arithFrobAt' 𝒪ᵥ (Γ Kᵥ) (𝔪 (IntegralClosure 𝒪ᵥ (Kᵥᵃˡᵍ)))
+

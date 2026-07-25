@@ -5,6 +5,7 @@ Fermat project (not vendored from the FLT project).
 module
 
 public import Fermat.FLT.Deformations.RepresentationTheory.GaloisRep
+public import Fermat.FLT.Deformations.RepresentationTheory.CompletionTransport
 public import Mathlib.NumberTheory.NumberField.Basic
 import Mathlib.LinearAlgebra.Charpoly.ToMatrix
 import Mathlib.FieldTheory.IsAlgClosed.Basic
@@ -55,11 +56,15 @@ API that makes that precise:
   arithmetic leaf
   `Field.absoluteGaloisGroup.exists_finset_conj_localInertiaGroup_le`.
 
-The two remaining sorried leaves of this module are exactly those two
-arithmetic statements: both need the functoriality of
-`HeightOneSpectrum.adicCompletion` (along an isomorphism of number
-fields, resp. along `w | v`), which this mathlib pin does not have.
-Neither mentions representations any more.
+The module is now sorry-free. The last two leaves were the purely
+arithmetic statements
+`Field.absoluteGaloisGroup.exists_conj_map_adicArithFrob_ringEquiv` and
+`Field.absoluteGaloisGroup.exists_finset_conj_localInertiaGroup_le`; both
+needed the functoriality of `HeightOneSpectrum.adicCompletion` (along an
+isomorphism of number fields, resp. along `w | v`), which this mathlib pin
+does not have. That functoriality, and the transport of inertia and
+Frobenius along it, is built in
+`Fermat.FLT.Deformations.RepresentationTheory.CompletionTransport`.
 
 The unramifiedness hypothesis in the transport lemma is NOT removable:
 at a place where the representation is ramified, `charFrob` genuinely
@@ -95,7 +100,7 @@ noncomputable def NumberField.finitePlaceEquiv (e : L ≃+* F) :
       HeightOneSpectrum (NumberField.RingOfIntegers F) :=
   (NumberField.RingOfIntegers.mapRingEquiv e).heightOneSpectrum
 
-omit [NumberField F] in
+omit [NumberField K] [NumberField L] [NumberField F] in
 /-- **Functoriality of the absolute Galois group, up to one conjugation**
 (PROVEN): `Field.absoluteGaloisGroup.map` is defined through an
 arbitrarily chosen embedding of algebraic closures, so it is not
@@ -187,7 +192,7 @@ theorem Field.absoluteGaloisGroup.exists_conj_map_comp
           ((τ * Field.absoluteGaloisGroup.map f
             (Field.absoluteGaloisGroup.map g σ) * τ⁻¹) x) := rfl
 
-omit [NumberField F] in
+omit [NumberField K] [NumberField L] [NumberField F] in
 /-- **Functoriality up to one conjugation, with NO algebraicity
 hypothesis** (PROVEN): the general form of
 `Field.absoluteGaloisGroup.exists_conj_map_comp`, for an arbitrary
@@ -208,7 +213,13 @@ first to an automorphism `τ` of `Kᵃˡᵍ` with
 as in the special case.
 
 This is what makes the transport lemmas below usable: their intermediate
-field is a COMPLETION `Kᵥ`, which is very far from algebraic over `K`. -/
+field is a COMPLETION `Kᵥ`, which is very far from algebraic over `K`.
+
+All three `[NumberField]` hypotheses are `omit`ted, for the same reason:
+the two leaves below instantiate `L` and `F` at COMPLETIONS. That is legal
+because `Field.absoluteGaloisGroup.map` itself no longer carries a
+`[NumberField]` hypothesis on its source — see the note in
+`AbsoluteGaloisGroup.lean`. -/
 theorem Field.absoluteGaloisGroup.exists_conj_map_comp'
     (f : K →+* L) (g : L →+* F) (h : K →+* F) (hgf : g.comp f = h) :
     ∃ τ : Field.absoluteGaloisGroup K, ∀ σ : Field.absoluteGaloisGroup F,
@@ -304,47 +315,43 @@ theorem GaloisRep.charFrob_map_comp [Algebra K F] [Algebra.IsAlgebraic K F]
   rfl
 
 /-- **The two Frobenii of an isomorphism of number fields differ by
-inertia and one conjugation** (sorry leaf; the purely arithmetic core of
+inertia and one conjugation** (PROVEN; the purely arithmetic core of
 `GaloisRep.charFrob_map_ringEquiv`, no representation theory left in
 it): reading the arithmetic Frobenius at `e w` back into `Γ L` along the
 composite `L →(e) F → F_{e w}` gives the arithmetic Frobenius at `w`
 read along `L → L_w`, up to (i) multiplication by ONE inertia element
 `ι ∈ localInertiaGroup w` and (ii) conjugation by ONE `τ ∈ Γ L`.
 
-INTENDED PROOF. `e` is valuation-preserving from `w` to `e w` (that is
-exactly what `NumberField.finitePlaceEquiv` says: the ideal of `e w` is
-the image of the ideal of `w`), so it completes to a ring isomorphism
-`ê : L_w ≃+* F_{e w}` with `ê ∘ algebraMap = algebraMap ∘ e` and
-`Valued.v ∘ ê = Valued.v` — build it as
-`UniformSpace.Completion.mapRingEquiv (WithVal.congr _ _ e) _ _`, whose
-two continuity side goals are the valuation identity. Then:
+PROOF. `e` matches the ideal of `w` with the ideal of `e w` — that is
+exactly what `NumberField.finitePlaceEquiv` says — so
+`IsDedekindDomain.HeightOneSpectrum.valuation_map_le_of_le_one` applies
+and, by `WithVal.uniformContinuous_map_of_le`, `e` extends to a
+continuous ring hom `ê : L_w →+* F_{e w}`
+(`IsDedekindDomain.HeightOneSpectrum.adicCompletionMap`) which is LOCAL:
+it maps `𝒪_w` into `𝒪_{e w}` (`…adicCompletionMap_mem_integers`, via the
+description of `𝒪_w` as the closure of `𝓞_L`). Then:
 
 * `algebraMap F F_{e w} ∘ e = ê ∘ algebraMap L L_w` as ring homs
-  `L →+* F_{e w}`, so by `Field.absoluteGaloisGroup.exists_conj_map_comp'`
-  (applied twice, once to each factorisation — this is where the
-  algebraicity-free form is needed, `F_{e w}` being a completion) both
-  sides of the goal are conjugates in `Γ L` of
-  `Field.absoluteGaloisGroup.map (algebraMap L L_w)` applied to,
-  respectively, `Field.absoluteGaloisGroup.map ê (adicArithFrob (e w))`
-  and `adicArithFrob w`; the two conjugators combine into the single `τ`.
+  `L →+* F_{e w}`, so `Field.absoluteGaloisGroup.exists_conj_map_comp'`
+  — this is where the algebraicity-free form is needed, `F_{e w}` being a
+  completion — produces the single argument-independent `τ`;
 * `Field.absoluteGaloisGroup.map ê (adicArithFrob (e w))` is again an
-  ARITHMETIC FROBENIUS at `𝔪 (IntegralClosure 𝒪_w L_wᵃˡᵍ)`: the chosen
-  embedding `L_wᵃˡᵍ → F_{e w}ᵃˡᵍ` is bijective (both are algebraic
-  closures of isomorphic fields), it carries `IntegralClosure 𝒪_w` onto
-  `IntegralClosure 𝒪_{e w}` and `𝔪` onto `𝔪` because `ê` preserves the
-  valuation, and the residue cardinalities agree. Two arithmetic Frobenii
-  at the same prime differ by an inertia element
-  (`IsArithFrobAt.mul_inv_mem_inertia`), which is `ι`.
+  ARITHMETIC FROBENIUS at `𝔪 (IntegralClosure 𝒪_w L_wᵃˡᵍ)`
+  (`Field.absoluteGaloisGroup.isArithFrobAt_map`); its residue-cardinality
+  side condition is discharged by
+  `IsDedekindDomain.HeightOneSpectrum.natCard_under_maximalIdeal`, which
+  identifies each exponent with `#(𝓞 ⧸ place)`, and those agree because
+  `e` carries `w.asIdeal` onto `(e w).asIdeal`. Two arithmetic Frobenii at
+  the same prime differ by an inertia element
+  (`IsArithFrobAt.mul_inv_mem_inertia`), and `localInertiaGroup` is normal
+  (`Field.absoluteGaloisGroup.conj_mem_localInertiaGroup`), which turns
+  `X · Frob⁻¹ ∈ I` into the required `ι := Frob⁻¹ · X ∈ I`.
 
-Note the statement cannot be split at `Field.absoluteGaloisGroup.map ê`:
-that map needs `[NumberField (w.adicCompletion L)]`, which is false —
-only the composites out of the number field `L` are expressible.
-
-REFERENCE MATERIAL: the reference project `~/cs/FLT` has the completion
-functoriality this needs, in `FLT/DedekindDomain/Completion/BaseChange.lean`
-(`adicCompletionSemialgHom`, `valued_adicCompletionSemialgHom`,
-`adicCompletionSemialgHom_image_adicCompletionIntegers`); vendoring
-requires the pin-drift audit described in `CLAUDE.md`.
+Note the statement cannot be split at `Field.absoluteGaloisGroup.map ê`
+as a map of number fields: only the composites out of the number field
+`L` are expressible that way. What makes `map ê` itself legal is that
+`Field.absoluteGaloisGroup.map` no longer carries a `[NumberField]`
+hypothesis on its source — see the note in `AbsoluteGaloisGroup.lean`.
 
 SOUNDNESS AUDIT: no hypotheses beyond a ring isomorphism of number
 fields and a finite place; nothing is vacuous (`ι` may be taken to be
@@ -359,8 +366,85 @@ theorem Field.absoluteGaloisGroup.exists_conj_map_adicArithFrob_ringEquiv
             (e : L →+* F))
           (Field.AbsoluteGaloisGroup.adicArithFrob (NumberField.finitePlaceEquiv e w)) =
         τ * Field.absoluteGaloisGroup.map (algebraMap L (w.adicCompletion L))
-          (Field.AbsoluteGaloisGroup.adicArithFrob w * ι) * τ⁻¹ :=
-  sorry
+          (Field.AbsoluteGaloisGroup.adicArithFrob w * ι) * τ⁻¹ := by
+  classical
+  set w' : HeightOneSpectrum (NumberField.RingOfIntegers F) :=
+    NumberField.finitePlaceEquiv e w with hw'def
+  set φ₀ : NumberField.RingOfIntegers L →+* NumberField.RingOfIntegers F :=
+    (NumberField.RingOfIntegers.mapRingEquiv e).toRingHom with hφ₀def
+  -- the two ideals correspond under `e`
+  have hiff : ∀ a : NumberField.RingOfIntegers L, φ₀ a ∈ w'.asIdeal ↔ a ∈ w.asIdeal := by
+    intro a
+    show (NumberField.RingOfIntegers.mapRingEquiv e) a ∈
+        Ideal.comap ((NumberField.RingOfIntegers.mapRingEquiv e).symm :
+          NumberField.RingOfIntegers F →+* NumberField.RingOfIntegers L) w.asIdeal ↔ _
+    rw [Ideal.mem_comap]
+    simp
+  have hmem : w.asIdeal ≤ Ideal.comap φ₀ w'.asIdeal := fun a ha => (hiff a).mpr ha
+  have hcompl : ∀ s : NumberField.RingOfIntegers L, s ∉ w.asIdeal → φ₀ s ∉ w'.asIdeal :=
+    fun s hs h => hs ((hiff s).mp h)
+  have hcomm : ∀ a : NumberField.RingOfIntegers L,
+      (e : L →+* F) (algebraMap (NumberField.RingOfIntegers L) L a)
+        = algebraMap (NumberField.RingOfIntegers F) F (φ₀ a) := fun _ => rfl
+  -- hence `e` completes to a LOCAL map `L_w → F_{e w}`
+  have hψ : UniformContinuous
+      (WithVal.map (w.valuation L) (w'.valuation F) (e : L →+* F)) :=
+    WithVal.uniformContinuous_map_of_le _ _
+      (IsDedekindDomain.HeightOneSpectrum.valuation_surjective L w) _
+      (fun x hx => IsDedekindDomain.HeightOneSpectrum.valuation_map_le_of_le_one w w' _ _
+        hcomm hmem hcompl x hx)
+  have hint : ∀ x ∈ w.adicCompletionIntegers L,
+      IsDedekindDomain.HeightOneSpectrum.adicCompletionMap w w' (e : L →+* F) hψ x
+        ∈ w'.adicCompletionIntegers F :=
+    fun x hx => IsDedekindDomain.HeightOneSpectrum.adicCompletionMap_mem_integers w w' _ hψ
+      _ hcomm hx
+  -- the residue cardinalities of `w` and `e w` agree, because `e` matches the ideals
+  have hmapIdeal : w'.asIdeal = Ideal.map φ₀ w.asIdeal := by
+    show Ideal.comap ((NumberField.RingOfIntegers.mapRingEquiv e).symm :
+      NumberField.RingOfIntegers F →+* NumberField.RingOfIntegers L) w.asIdeal = _
+    exact Ideal.comap_symm _
+  have hq : Nat.card (↥(w.adicCompletionIntegers L) ⧸
+        (IsLocalRing.maximalIdeal (IntegralClosure ↥(w.adicCompletionIntegers L)
+          (AlgebraicClosure (w.adicCompletion L)))).under ↥(w.adicCompletionIntegers L)) =
+      Nat.card (↥(w'.adicCompletionIntegers F) ⧸
+        (IsLocalRing.maximalIdeal (IntegralClosure ↥(w'.adicCompletionIntegers F)
+          (AlgebraicClosure (w'.adicCompletion F)))).under ↥(w'.adicCompletionIntegers F)) := by
+    rw [IsDedekindDomain.HeightOneSpectrum.natCard_under_maximalIdeal,
+      IsDedekindDomain.HeightOneSpectrum.natCard_under_maximalIdeal]
+    exact Nat.card_congr (Ideal.quotientEquiv w.asIdeal w'.asIdeal
+      (NumberField.RingOfIntegers.mapRingEquiv e) hmapIdeal).toEquiv
+  -- so the transported Frobenius is again an arithmetic Frobenius at `w`
+  set X : Field.absoluteGaloisGroup (w.adicCompletion L) :=
+    Field.absoluteGaloisGroup.map
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionMap w w' (e : L →+* F) hψ)
+      (Field.AbsoluteGaloisGroup.adicArithFrob w') with hXdef
+  have hX : IsArithFrobAt ↥(w.adicCompletionIntegers L) X
+      (IsLocalRing.maximalIdeal (IntegralClosure ↥(w.adicCompletionIntegers L)
+        (AlgebraicClosure (w.adicCompletion L)))) :=
+    Field.absoluteGaloisGroup.isArithFrobAt_map w w' _ hint hq
+  -- two arithmetic Frobenii differ by an inertia element
+  have h1 : X * (Field.AbsoluteGaloisGroup.adicArithFrob w)⁻¹ ∈ localInertiaGroup w :=
+    IsArithFrobAt.mul_inv_mem_inertia hX
+      (Field.AbsoluteGaloisGroup.isArithFrobAt_adicArithFrob w)
+  have h2 : (Field.AbsoluteGaloisGroup.adicArithFrob w)⁻¹ * X ∈ localInertiaGroup w := by
+    have h3 := Field.absoluteGaloisGroup.conj_mem_localInertiaGroup w
+      (Field.AbsoluteGaloisGroup.adicArithFrob w)⁻¹
+      (X * (Field.AbsoluteGaloisGroup.adicArithFrob w)⁻¹) h1
+    rwa [show (Field.AbsoluteGaloisGroup.adicArithFrob w)⁻¹ *
+        (X * (Field.AbsoluteGaloisGroup.adicArithFrob w)⁻¹) *
+        ((Field.AbsoluteGaloisGroup.adicArithFrob w)⁻¹)⁻¹
+        = (Field.AbsoluteGaloisGroup.adicArithFrob w)⁻¹ * X from by group] at h3
+  -- the single conjugator comparing the two factorisations of `L → F_{e w}`
+  obtain ⟨τ, hτ⟩ := Field.absoluteGaloisGroup.exists_conj_map_comp'
+    (algebraMap L (w.adicCompletion L))
+    (IsDedekindDomain.HeightOneSpectrum.adicCompletionMap w w' (e : L →+* F) hψ)
+    ((algebraMap F (w'.adicCompletion F)).comp (e : L →+* F))
+    (RingHom.ext fun x =>
+      IsDedekindDomain.HeightOneSpectrum.adicCompletionMap_coe w w' (e : L →+* F) hψ x)
+  refine ⟨τ, (Field.AbsoluteGaloisGroup.adicArithFrob w)⁻¹ * X, h2, ?_⟩
+  rw [show Field.AbsoluteGaloisGroup.adicArithFrob w *
+      ((Field.AbsoluteGaloisGroup.adicArithFrob w)⁻¹ * X) = X from by group]
+  exact hτ (Field.AbsoluteGaloisGroup.adicArithFrob w')
 
 omit [IsTopologicalRing A] in
 /-- **Transport of the Frobenius characteristic polynomials along an
@@ -479,7 +563,7 @@ theorem GaloisRep.charFrob_map_algEquiv
   exact GaloisRep.charFrob_map_ringEquiv (ρ.map (algebraMap K L)) e.toRingEquiv w hw
 
 /-- **Local inertia over a finite extension comes, almost everywhere,
-from local inertia over a place outside `S`** (sorry leaf; the purely
+from local inertia over a place outside `S`** (PROVEN; the purely
 arithmetic core of `GaloisRep.exists_finset_isUnramifiedAt_map`, no
 representation theory left in it): outside a finite set `T` of places of
 `L`, every `w` admits a place `v ∉ S` of `K` and ONE conjugator
@@ -487,20 +571,27 @@ representation theory left in it): outside a finite set `T` of places of
 `K → L → L_w`, is the `τ`-conjugate of an inertia element at `v` read
 into `Γ K` along `K → K_v`.
 
-INTENDED PROOF. Take `T` to be the places of `L` lying over `S` and,
-for `w ∉ T`, take `v := w.under (𝓞 K)`, the place below `w`; then
-`v ∉ S`. Finiteness of `T` is the statement that
-`w ↦ w.under (𝓞 K)` pulls finite sets back to finite sets, i.e.
-tends to `cofinite` along `cofinite` (this is `tendsTo_comap_cofinite`
-in the reference project, see below). Then:
+PROOF. Take `T` to be the places of `L` lying over `S`, which is finite
+(`IsDedekindDomain.HeightOneSpectrum.finite_setOf_under_mem`: over each
+`v` the places inject into the finite `Ideal.primesOver v.asIdeal`), and
+for `w ∉ T` take `v := w.under (𝓞 K)`; then `v ∉ S`. Then:
 
-* `w | v` gives an embedding of completions `φ : K_v →+* L_w` with
+* `v.asIdeal` is by definition the contraction of `w.asIdeal`, so
+  `IsDedekindDomain.HeightOneSpectrum.valuation_map_le_of_le_one` gives
+  `w (x) ≤ v (x)` on the valuation ring of `v`, hence (via
+  `WithVal.uniformContinuous_map_of_le`) `K → L` extends to a continuous
+  `φ : K_v →+* L_w`
+  (`IsDedekindDomain.HeightOneSpectrum.adicCompletionMap`) with
   `φ ∘ algebraMap K K_v = algebraMap K L_w`;
-* `φ` is local (it maps `𝒪_v` into `𝒪_w` and `𝔪_v` into `𝔪_w`), so the
+* `φ` is LOCAL — it maps `𝒪_v` into `𝒪_w`, because `𝒪_v` is the closure
+  of `𝓞_K` in `K_v` (`closureAlgebraMapIntegers_eq_integers`) — so the
   induced `Field.absoluteGaloisGroup.map φ : Γ L_w → Γ K_v` carries
-  `localInertiaGroup w` into `localInertiaGroup v`: an automorphism
-  trivial modulo `𝔪` on `IntegralClosure 𝒪_w L_wᵃˡᵍ` is trivial modulo
-  `𝔪` on the smaller `IntegralClosure 𝒪_v K_vᵃˡᵍ`. That gives `κ`;
+  `localInertiaGroup w` into `localInertiaGroup v`
+  (`Field.absoluteGaloisGroup.map_mem_localInertiaGroup`): an
+  automorphism trivial modulo `𝔪` on `IntegralClosure 𝒪_w L_wᵃˡᵍ` is
+  trivial modulo `𝔪` on `IntegralClosure 𝒪_v K_vᵃˡᵍ`, because the latter
+  is a LOCAL ring and the transported element is a non-unit. That gives
+  `κ`;
 * `Field.absoluteGaloisGroup.exists_conj_map_comp'` applied to the
   factorisations `algebraMap K L_w = φ ∘ algebraMap K K_v` and
   `algebraMap K L_w = algebraMap L L_w ∘ algebraMap K L` supplies the
@@ -508,18 +599,10 @@ in the reference project, see below). Then:
   essential: completions are not algebraic over `K`).
 
 As in the `ringEquiv` leaf, the statement is phrased through the
-composites out of the number field `K` only: `Γ L_w → Γ K_v` is not
-expressible, because `Field.absoluteGaloisGroup.map` demands
-`[NumberField]` on the SOURCE field of its ring hom and `K_v` is not one.
-
-REFERENCE MATERIAL: `~/cs/FLT` has both halves —
-`FLT/DedekindDomain/Completion/BaseChange.lean` for
-`adicCompletionSemialgHom` (the embedding `K_v →ₛₐ L_w` for `w | v`),
-`valued_adicCompletionSemialgHom` and
-`adicCompletionSemialgHom_image_adicCompletionIntegers` (its locality),
-and `FLT/DedekindDomain/FiniteAdeleRing/BaseChange.lean` for
-`tendsTo_comap_cofinite` (the finiteness of `T`). Vendoring requires the
-pin-drift audit described in `CLAUDE.md`.
+composites out of the number field `K` only; `Γ L_w → Γ K_v` is used
+inside the proof, which is legal because
+`Field.absoluteGaloisGroup.map` no longer demands `[NumberField]` on the
+SOURCE field of its ring hom (see `AbsoluteGaloisGroup.lean`).
 
 SOUNDNESS AUDIT: no hypotheses beyond a finite extension of number
 fields and a finite set of places; no vacuity route — the conclusion is
@@ -533,8 +616,49 @@ theorem Field.absoluteGaloisGroup.exists_finset_conj_localInertiaGroup_le [Algeb
           Field.absoluteGaloisGroup.map
               ((algebraMap L (w.adicCompletion L)).comp (algebraMap K L)) ι =
             τ * Field.absoluteGaloisGroup.map
-              (algebraMap K (v.adicCompletion K)) κ * τ⁻¹ :=
-  sorry
+              (algebraMap K (v.adicCompletion K)) κ * τ⁻¹ := by
+  classical
+  -- outside the (finitely many) places above `S`, take `v := w.under (𝓞 K)`
+  refine ⟨(IsDedekindDomain.HeightOneSpectrum.finite_setOf_under_mem
+    (K := K) (L := L) S).toFinset, fun w hw => ?_⟩
+  set v : HeightOneSpectrum (NumberField.RingOfIntegers K) :=
+    w.under (NumberField.RingOfIntegers K) with hvdef
+  have hvS : v ∉ S := fun h => hw ((Set.Finite.mem_toFinset _).mpr h)
+  -- `K → L` is compatible with the rings of integers, and `v` pulls back from `w`
+  have hcomm : ∀ a : NumberField.RingOfIntegers K,
+      (algebraMap K L) (algebraMap (NumberField.RingOfIntegers K) K a)
+        = algebraMap (NumberField.RingOfIntegers L) L
+            (algebraMap (NumberField.RingOfIntegers K) (NumberField.RingOfIntegers L) a) := by
+    intro a
+    rw [← IsScalarTower.algebraMap_apply, ← IsScalarTower.algebraMap_apply]
+  have hmem : v.asIdeal ≤ Ideal.comap
+      (algebraMap (NumberField.RingOfIntegers K) (NumberField.RingOfIntegers L))
+      w.asIdeal := le_rfl
+  have hcompl : ∀ s : NumberField.RingOfIntegers K, s ∉ v.asIdeal →
+      algebraMap (NumberField.RingOfIntegers K) (NumberField.RingOfIntegers L) s
+        ∉ w.asIdeal := fun _ hs => hs
+  -- hence `K → L` completes to a LOCAL map `K_v → L_w`
+  have hψ : UniformContinuous
+      (WithVal.map (v.valuation K) (w.valuation L) (algebraMap K L)) :=
+    WithVal.uniformContinuous_map_of_le _ _
+      (IsDedekindDomain.HeightOneSpectrum.valuation_surjective K v) _
+      (fun x hx => IsDedekindDomain.HeightOneSpectrum.valuation_map_le_of_le_one v w _ _
+        hcomm hmem hcompl x hx)
+  have hint : ∀ x ∈ v.adicCompletionIntegers K,
+      IsDedekindDomain.HeightOneSpectrum.adicCompletionMap v w (algebraMap K L) hψ x
+        ∈ w.adicCompletionIntegers L :=
+    fun x hx => IsDedekindDomain.HeightOneSpectrum.adicCompletionMap_mem_integers v w _ hψ
+      _ hcomm hx
+  -- the single conjugator comparing the two factorisations of `K → L_w`
+  obtain ⟨τ, hτ⟩ := Field.absoluteGaloisGroup.exists_conj_map_comp'
+    (algebraMap K (v.adicCompletion K))
+    (IsDedekindDomain.HeightOneSpectrum.adicCompletionMap v w (algebraMap K L) hψ)
+    ((algebraMap L (w.adicCompletion L)).comp (algebraMap K L))
+    (RingHom.ext fun x =>
+      IsDedekindDomain.HeightOneSpectrum.adicCompletionMap_coe v w (algebraMap K L) hψ x)
+  exact ⟨v, hvS, τ, fun ι hι =>
+    ⟨Field.absoluteGaloisGroup.map _ ι,
+      Field.absoluteGaloisGroup.map_mem_localInertiaGroup v w _ hint ι hι, hτ ι⟩⟩
 
 omit [IsTopologicalRing A] [Module.Finite A M] [Module.Free A M] in
 /-- **Almost-everywhere unramifiedness is inherited by base change to a
