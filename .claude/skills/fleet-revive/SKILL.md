@@ -36,12 +36,23 @@ waiting on nothing.
 
 ## Finding them
 
-```bash
-TaskList          # every agent and its status
-```
+**The notification stream is the ground truth.** The harness sends a
+task-notification whenever an agent stops. An agent you have received no
+notification about is still live — possibly sitting inside a two-hour
+`lake build`, which looks identical to death from outside. So the candidate set
+is exactly: agents that notified you, minus the ones you integrated.
 
-Cross-check against the pool — any `claimed` worktree whose agent is stopped is
-a candidate:
+`TaskList` does NOT list agents — it is the unrelated TODO list, and returns
+"No tasks found" on this project. Do not reach for it here.
+
+**Do not sweep by output-file mtime.** Tried 2026-07-25: it reported 70 of 82
+agents "stale" and 12 live, because an agent inside any long tool call appends
+nothing for as long as that call runs. Acting on it would have injected messages
+into ~60 healthy agents mid-build. Staleness cannot distinguish working from
+dead, and no disk-side signal can.
+
+To reconcile which stopped agents were never integrated, map worktrees to their
+current agent and check them against the notifications you have handled:
 
 ```bash
 grep ' claimed$' ~/.flt-worktree-pool
