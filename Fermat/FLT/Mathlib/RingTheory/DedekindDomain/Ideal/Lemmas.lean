@@ -7,6 +7,7 @@ module
 
 public import Mathlib.RingTheory.DedekindDomain.Ideal.Lemmas
 public import Mathlib.NumberTheory.NumberField.Basic
+public import Fermat.FLT.DedekindDomain.AdicValuation
 import Mathlib.Algebra.Order.Algebra
 import Mathlib.Analysis.SpecialFunctions.Pow.NNReal
 import Mathlib.Data.Nat.Prime.Int
@@ -69,3 +70,50 @@ lemma Nat.Prime.mem_toHeightOneSpectrumRingOfIntegersRat_asIdeal {p : ℕ}
   show x ∈ Ideal.comap _ (Ideal.span {(p : ℤ)}) ↔ _
   rw [Ideal.mem_comap, Ideal.mem_span_singleton]
   rfl
+
+/-- **The prime of `𝓞 ℚ` attached to the prime number `q` is `(q)`**
+(PROVEN): unfolding `Nat.Prime.toHeightOneSpectrumRingOfIntegersRat`,
+the ideal is the comap of `span {(q : ℤ)}` along
+`Rat.ringOfIntegersEquiv`, and a ring isomorphism carries spans of
+singletons to spans of singletons while preserving `Nat.cast`. -/
+lemma asIdeal_toHeightOneSpectrumRingOfIntegersRat {q : ℕ} (hq : q.Prime) :
+    hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal =
+      Ideal.span {(q : NumberField.RingOfIntegers ℚ)} := by
+  have h1 : hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal =
+      Ideal.comap (Rat.ringOfIntegersEquiv.symm.symm) (Ideal.span {(q : ℤ)}) := rfl
+  rw [h1, RingEquiv.symm_symm, ← Ideal.map_symm, Ideal.map_span, Set.image_singleton,
+    map_natCast]
+
+open IsDedekindDomain.HeightOneSpectrum in
+set_option maxHeartbeats 1000000 in
+/-- **`q` is a uniformizer of `𝒪ᵥ = ℤ_q`** (PROVEN — this expresses the
+ABSOLUTE UNRAMIFIEDNESS of the base, `e = 1`): the maximal ideal of the
+`v`-adic integer ring at the place `v = v_q` of `ℚ` is the span of `q`.
+Through `adicCompletion.maximalIdeal_eq_span_uniformizer` it suffices
+that the valuation of `q` in `ℚ_q` is exactly `ofAdd (−1)`, which
+reduces along `valuedAdicCompletion_eq_valuation` and
+`valuation_of_algebraMap` to the `intValuation` of `q` in `𝓞 ℚ`,
+computed by `intValuation_singleton` from `v_q = span {q}`
+(`asIdeal_toHeightOneSpectrumRingOfIntegersRat`). -/
+lemma maximalIdeal_adicCompletionIntegers_eq_span {q : ℕ} (hq : q.Prime) :
+    IsLocalRing.maximalIdeal
+        (adicCompletionIntegers ℚ hq.toHeightOneSpectrumRingOfIntegersRat) =
+      Ideal.span
+        {(q : adicCompletionIntegers ℚ hq.toHeightOneSpectrumRingOfIntegersRat)} := by
+  have hq0 : ((q : NumberField.RingOfIntegers ℚ)) ≠ 0 :=
+    Nat.cast_ne_zero.mpr hq.ne_zero
+  have hval : hq.toHeightOneSpectrumRingOfIntegersRat.intValuation
+      ((q : NumberField.RingOfIntegers ℚ)) = Multiplicative.ofAdd (-1 : ℤ) :=
+    hq.toHeightOneSpectrumRingOfIntegersRat.intValuation_singleton hq0
+      (asIdeal_toHeightOneSpectrumRingOfIntegersRat hq)
+  apply adicCompletion.maximalIdeal_eq_span_uniformizer
+  -- the valuation of `q` in `ℚ_q`, assembled entirely in the mathlib
+  -- lemmas' own coercion spelling (avoiding any cross-spelling defeq)
+  have h := (valuedAdicCompletion_eq_valuation
+      (v := hq.toHeightOneSpectrumRingOfIntegersRat) (K := ℚ)
+      ((q : NumberField.RingOfIntegers ℚ))).trans
+    ((valuation_of_algebraMap
+      (v := hq.toHeightOneSpectrumRingOfIntegersRat) (K := ℚ)
+      ((q : NumberField.RingOfIntegers ℚ))).trans hval)
+  convert h using 2
+  norm_cast

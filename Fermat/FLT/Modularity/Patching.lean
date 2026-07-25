@@ -6293,7 +6293,7 @@ bound and the patching-system condition) and
 continuity of the diamond action and the uniform rank bound on the level
 rings).
 
-STATUS after the decomposition (2026-07-25).  Ten of the sixteen are
+STATUS after the decomposition (2026-07-25).  Twelve of the sixteen are
 PROVEN outright — the cut turned out to be most of the work:
 `annihilator_eq_of_linearEquiv_piQuotient`,
 `mem_maximalIdeal_of_isRegular`,
@@ -6303,24 +6303,24 @@ PROVEN outright — the cut turned out to be most of the work:
 `ringHom_mvPowerSeries_eq_of_taylorWilesAug_le_ker`,
 `algebra_uniformlyBoundedRank_of_surjective`,
 `isPatchingSystem_of_annihilator_le_maximalIdeal_pow`,
-`quotientEquivOver_mkQ_smul` and
-`mem_ker_smul_top_of_quotientEquivOver_mkQ_eq_zero`.  SIX remain open and
-are the real frontier here:
+`quotientEquivOver_mkQ_smul`,
+`mem_ker_smul_top_of_quotientEquivOver_mkQ_eq_zero`, and — added
+2026-07-25 — `free_quotientAnnihilator_of_linearEquiv_piQuotient` and
+`uniformlyBoundedRank_of_linearEquiv_piQuotient`, both over the new shared
+brick `linearEquivPiQuotientAnnihilator`.  FOUR remain open and are the
+real frontier here:
 
 1. `topologicallyFG_int_mvPowerSeries` — density of `ℤ[x₁,…,x_q]` in `Λ`;
 2. `finite_quotient_maximalIdeal_pow_mvPowerSeries` — `|Λ/𝔪^k| < ∞`,
    which needs `Λ`'s residue field identified as `𝔽_p`;
 3. `ker_constantCoeff_mvPowerSeries` — `ker (constantCoeff) = (X₁,…,X_q)`
    in finitely many variables;
-4. `free_quotientAnnihilator_of_linearEquiv_piQuotient` — freeness of a
-   coordinatized module over `Λ/Ann`;
-5. `uniformlyBoundedRank_of_linearEquiv_piQuotient` — the rank bound;
-6. `subsingleton_ringHom_padicInt` — `ℤ_p`-rigidity of a complete local
+4. `subsingleton_ringHom_padicInt` — `ℤ_p`-rigidity of a complete local
    ring with finite residue field.
 
 (1)–(3) are three independent facts about `MvPowerSeries (Fin q) ℤ_[p]`
-and could sensibly go to one owner; (4)–(5) are one owner's job (both are
-the same coordinate transport); (6) is independent of everything else. -/
+and could sensibly go to one owner; (4) is independent of everything
+else. -/
 
 /-- **`Λ = ℤ_p[[x₁, …, x_q]]` is topologically finitely generated over
 `ℤ`** (patching-instantiation leaf 1), for the scoped product topology
@@ -6413,34 +6413,83 @@ theorem annihilator_eq_of_linearEquiv_piQuotient {Λ : Type*} [CommRing Λ]
       Ideal.Quotient.eq_zero_iff_mem]
     exact Ideal.mul_mem_right _ _ hr
 
+/-- **The coordinatization, read over `Λ/Ann` instead of over `Λ`**
+(patching-instantiation shared brick, consumed by leaves 2 and 3; PROVEN
+2026-07-25).
+
+This is the whole content of both leaves and the reason they were given a
+single owner.  Given `f : N ≃ₗ[Λ] (Λ/𝔟)^d` with `N` nontrivial,
+`annihilator_eq_of_linearEquiv_piQuotient` says `Ann_Λ N = 𝔟`, so the
+codomain may be rewritten as `(Λ/Ann_Λ N)^d` by
+`Ideal.quotientEquivAlgOfEq` — which is a `Λ`-algebra equivalence, hence
+`Λ`-linear componentwise.  That produces a `Λ`-linear equivalence
+`N ≃ₗ[Λ] (Λ/Ann_Λ N)^d`; and since `Λ → Λ/Ann_Λ N` is SURJECTIVE, a
+`Λ`-linear map between two `Λ/Ann_Λ N`-modules is automatically
+`Λ/Ann_Λ N`-linear (`LinearEquiv.extendScalarsOfSurjective`).  No
+semilinear algebra and no `RingHomInvPair` bookkeeping is needed.
+
+The `Λ/Ann_Λ N`-module structure on `N` here is the local instance
+`Module.quotientAnnihilator` declared at the top of this section, i.e. the
+one the vendored `Module.UniformlyBoundedRank` and `Module.Free`
+hypotheses are stated over. -/
+noncomputable def linearEquivPiQuotientAnnihilator {Λ : Type*} [CommRing Λ]
+    {N : Type*} [AddCommGroup N] [Module Λ N] [Nontrivial N]
+    {d : ℕ} {b : Ideal Λ} (f : N ≃ₗ[Λ] (Fin d → Λ ⧸ b)) :
+    N ≃ₗ[Λ ⧸ Module.annihilator Λ N] (Fin d → Λ ⧸ Module.annihilator Λ N) :=
+  LinearEquiv.extendScalarsOfSurjective
+    (R := Λ) (S := Λ ⧸ Module.annihilator Λ N)
+    (by
+      rw [Ideal.Quotient.algebraMap_eq]
+      exact Ideal.Quotient.mk_surjective)
+    (f ≪≫ₗ LinearEquiv.piCongrRight fun _ =>
+      (Ideal.quotientEquivAlgOfEq Λ
+        (annihilator_eq_of_linearEquiv_piQuotient f).symm).toLinearEquiv)
+
 /-- **A coordinatized level module is free over `Λ/Ann`**
-(patching-instantiation leaf 2), the hypothesis
+(patching-instantiation leaf 2; PROVEN 2026-07-25), the hypothesis
 `[∀ i, Module.Free (Λ ⧸ Ann Λ (M i)) (M i)]` of the vendored development.
 
 By `annihilator_eq_of_linearEquiv_piQuotient` the base ring `Λ ⧸ Ann_Λ N`
-IS `Λ ⧸ 𝔟` (transport along `Ideal.quotEquivOfEq`), over which
-`(Λ/𝔟)^d` is free of rank `d`.  The only wrinkle is that `f` is stated
-`Λ`-linearly while freeness is asked over the quotient: the two actions
-restrict from the same `Λ`-action, so `f` is automatically
-`Λ/Ann`-semilinear and `Module.Free.of_equiv` applies. -/
+IS `Λ ⧸ 𝔟`, over which `(Λ/𝔟)^d` is free of rank `d`.  The only wrinkle is
+that `f` is stated `Λ`-linearly while freeness is asked over the quotient;
+that is exactly what `linearEquivPiQuotientAnnihilator` above removes, after
+which this is `Module.Free.of_equiv` against the free module `(Λ/Ann)^d`. -/
 theorem free_quotientAnnihilator_of_linearEquiv_piQuotient {Λ : Type*} [CommRing Λ]
     {N : Type*} [AddCommGroup N] [Module Λ N] [Nontrivial N]
     {d : ℕ} {b : Ideal Λ} (f : N ≃ₗ[Λ] (Fin d → Λ ⧸ b)) :
-    Module.Free (Λ ⧸ Module.annihilator Λ N) N := sorry
+    Module.Free (Λ ⧸ Module.annihilator Λ N) N :=
+  Module.Free.of_equiv (linearEquivPiQuotientAnnihilator f).symm
 
 /-- **Uniformly bounded rank of the level modules** (patching-instantiation
-leaf 3): the SAME coordinate rank `d` at every level bounds the rank
-uniformly, which is the whole point of the `freeM` field of
+leaf 3; PROVEN 2026-07-25): the SAME coordinate rank `d` at every level
+bounds the rank uniformly, which is the whole point of the `freeM` field of
 `TaylorWilesSystem`.
 
 `rank_{Λ/Ann (M i)} (M i) = rank_{Λ/𝔟ᵢ} ((Λ/𝔟ᵢ)^d) = d` whenever `M i` is
-nontrivial, by `annihilator_eq_of_linearEquiv_piQuotient`; and when `M i`
-IS trivial the rank is at most `1` over the zero ring.  So `d + 2` is a
-bound valid at every `i` with no nontriviality hypothesis needed. -/
+nontrivial, by `linearEquivPiQuotientAnnihilator`; and when `M i` IS trivial
+the base ring `Λ/Ann (M i) = Λ/⊤` is the ZERO ring, over which mathlib's
+`rank_subsingleton` gives rank `1` — not `0`.  So the bound really is
+`d + 2` and not `d + 1`: at `d = 0` a trivial `M i` still has rank `1`.
+The case split is made on `Λ ⧸ Ann_Λ (M i)` rather than on `M i`, since
+`Ideal.Quotient.nontrivial_iff` plus `Module.annihilator_eq_top_iff` turn
+nontriviality of the quotient ring into the nontriviality of `M i` that
+`linearEquivPiQuotientAnnihilator` needs. -/
 theorem uniformlyBoundedRank_of_linearEquiv_piQuotient {Λ : Type*} [CommRing Λ]
     {ι : Type*} (M : ι → Type*) [∀ i, AddCommGroup (M i)] [∀ i, Module Λ (M i)]
     (d : ℕ) (b : ι → Ideal Λ) (f : ∀ i, M i ≃ₗ[Λ] (Fin d → Λ ⧸ b i)) :
-    Module.UniformlyBoundedRank Λ M := sorry
+    Module.UniformlyBoundedRank Λ M := by
+  refine ⟨d + 2, fun i => ?_⟩
+  rcases subsingleton_or_nontrivial (Λ ⧸ Module.annihilator Λ (M i)) with hs | hs
+  · rw [rank_subsingleton]
+    exact_mod_cast (by omega : (1 : ℕ) < d + 2)
+  · have hne : Module.annihilator Λ (M i) ≠ ⊤ := Ideal.Quotient.nontrivial_iff.mp hs
+    haveI : Nontrivial (M i) := not_subsingleton_iff_nontrivial.mp
+      fun h => hne (Module.annihilator_eq_top_iff.mpr h)
+    haveI : Module.Finite (Λ ⧸ Module.annihilator Λ (M i)) (M i) :=
+      Module.Finite.equiv (linearEquivPiQuotientAnnihilator (f i)).symm
+    rw [← Module.finrank_eq_rank, (linearEquivPiQuotientAnnihilator (f i)).finrank_eq,
+      Module.finrank_fin_fun]
+    exact_mod_cast (by omega : d < d + 2)
 
 /-- **A regular sequence lies in the maximal ideal** (patching-instantiation
 leaf 8; PROVEN 2026-07-25), over any local ring.
