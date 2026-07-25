@@ -3574,8 +3574,92 @@ theorem threeadicRealization_isFlat_of_witness
     exact threeadicRealization_hasFlatProlongationAt_of_finite_quotient
       hℓodd hℓ5 hZinj hrank hρ hW hρbar hirr π hπsurj hπ Rlz I hItop hIfin
 
+/-- **The Weil–Deligne type at `2` of the `3`-adic member, in lattice
+coordinates** (sorry node — the LITERATURE JOINT of the tameness
+transfer, cut out 2026-07-24): there is an `A`-basis of the stable
+lattice `Fin 2 → A` in which the whole decomposition group at `2` acts
+through UPPER-triangular matrices, the diagonal `(1,1)`-entry being the
+scalar `δ g 1` of an unramified square-trivial character `δ` of
+`G_{ℚ_2}`.
+
+This is exactly the classical statement "the Weil–Deligne parameter of
+the compatible system at `2` is constant away from the residue
+characteristic (`2 ≠ 3`) and equals that of the hardly ramified `ρ`",
+written in the coordinates the lattice provides: `ρ`'s type at `2` is
+an extension of an unramified square-trivial character by its
+cyclotomic twist (`hρ.isTameAtTwo` together with the cyclotomic
+determinant), the type is carried across the system by strict
+compatibility (Khare–Wintenberger (I) §5; Carayol local–global
+compatibility at the bad places, applied to the descended Hilbert
+newform, whose conductor is pinned by the witness's conductor data),
+and the stable-lattice normalization of the construction leaf
+(`exists_threeadicRealization_of_witness`) turns the `E_λ`-rational
+stable line into a saturated `A`-line, i.e. into the first vector of an
+`A`-basis. The character `δ` is handed over as a `GaloisRep` because it
+IS the quotient character of the constant type — in particular
+continuous, being the local component of the compatible system's
+nebentypus-free unramified twist.
+
+Literature: Khare–Wintenberger, *Serre's modularity conjecture (I)*,
+Invent. Math. 178 (2009), §5 (strict compatibility of Weil–Deligne
+parameters away from the residue characteristic); BLGGT, *Potential
+automorphy and change of weight*, Ann. of Math. 179 (2014), §5.5;
+Carayol, *Sur les représentations ℓ-adiques associées aux formes
+modulaires de Hilbert*, Ann. Sci. ÉNS 19 (1986) (local–global
+compatibility at the bad places). FLT blueprint ch. 4: "tame at 2".
+
+SOUNDNESS AUDIT (both ways, 2026-07-24): (i) direct — for the
+realization produced by the construction leaf this is the
+Weil–Deligne-type transfer above, read in a saturated basis; for an
+abstract realization the abstract-quantification caveat of pillar β
+applies, and (ii) collapse — the hypothesis set is classically
+unsatisfiable (the headline
+`not_isIrreducible_of_isHardlyRamified_of_five_le` below refutes
+`hirr`), so the statement is classically true for every package.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
+discharge through `Family.lean`, `Lift.lean`, or
+`Modularity/Interface.lean`. -/
+theorem threeadicRealization_weilDeligneType_two_of_witness
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+    {Wit : PotentialModularityWitness ℓ O ρ}
+    (Rlz : ThreeadicRealization ℓ O ρ Wit) :
+    ∃ (b : Module.Basis (Fin 2) Rlz.A (Fin 2 → Rlz.A))
+      (δ : GaloisRep ℚ_[2] Rlz.A Rlz.A),
+      (AddSubgroup.inertia
+          ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup :
+            AddSubgroup Z2bar)
+          (Field.absoluteGaloisGroup ℚ_[2]) ≤ δ.ker) ∧
+      (∀ g : Field.absoluteGaloisGroup ℚ_[2], δ g * δ g = 1) ∧
+      ∀ g : Field.absoluteGaloisGroup ℚ_[2],
+        LinearMap.toMatrix b b
+            (Rlz.τ.map (algebraMap ℚ ℚ_[2]) g) 1 0 = 0 ∧
+        LinearMap.toMatrix b b
+            (Rlz.τ.map (algebraMap ℚ ℚ_[2]) g) 1 1 = δ g 1 :=
+  sorry
+
 /-- **Condition transfer, tameness at `2` — constant Weil–Deligne
-type** (sorry node): the Brauer-descended `3`-adic member is tame at
+type** (DECOMPOSED 2026-07-24 — now a PROVEN transport over the
+literature joint `threeadicRealization_weilDeligneType_two_of_witness`
+above): the Brauer-descended `3`-adic member is tame at
 `2` in the hardly ramified sense: it has a surjective rank-1 quotient
 on which `G_{ℚ_2}` acts through an unramified square-trivial
 character. Classically: the Weil–Deligne parameter at `2` is constant
@@ -3602,8 +3686,45 @@ abstract-quantification caveat of pillar β applies, and (ii) collapse
 — the hypothesis set is classically unsatisfiable (headline below),
 so the statement is classically true for every package.
 
-CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
-discharge through `Family.lean`, `Lift.lean`, or
+ROUTE AUDIT (2026-07-24). Two routes were weighed for this leaf.
+
+* The **shared odd-prime dichotomy** — the route discharging the
+  sibling transfer leaves of `Modularity/Interface.lean`
+  (`isTameAtTwo_of_isRealizationCompatible` and friends, all of the
+  form `absurd hirr (not_isIrreducible_of_isHardlyRamified_of_odd …)`)
+  — is NOT available here, and the obstruction is circularity, not
+  taste: `not_isIrreducible_of_isHardlyRamified_of_odd` routes `ℓ ≥ 5`
+  through the headline `not_isIrreducible_of_isHardlyRamified_of_five_le`
+  of THIS module, whose proof consumes pillar β
+  (`exists_threeadic_compatible_member_of_five_le` →
+  `exists_threeadic_member_of_witness`) and hence consumes this very
+  leaf. Discharging the leaf by the dichotomy would close the loop
+  `isTameAtTwo → threeadic member → pillar β → headline → isTameAtTwo`;
+  Lean rejects it outright (the headline is declared below), and it
+  would be vicious even if it were not. The vacuity of the hypothesis
+  package therefore records the leaf's soundness but cannot be spent
+  as its proof.
+* The **literature-joint cut** taken here: keep the mathematical
+  content in the citation `threeadicRealization_weilDeligneType_two_of_witness`
+  (the constancy of the Weil–Deligne type at `2` across the system,
+  read in lattice coordinates) and PROVE the transport from that type
+  description to this in-tree tame-at-`2` predicate.
+
+ASSEMBLY (2026-07-24, PROVEN transport): the joint supplies a basis
+`b` of the lattice in which every `g ∈ G_{ℚ_2}` acts by an
+upper-triangular matrix with `(1,1)`-entry `δ g 1`. The quotient
+functional is the second coordinate `b.coord 1` — surjective because
+`b.coord 1 (a • b 1) = a` — and the equivariance clause is the
+`(1,·)`-row of `LinearMap.toMatrix_mulVec_repr`: the vanishing of the
+lower-left entry kills the `b 0`-contribution, leaving
+`b.repr (τ g v) 1 = (δ g 1) * b.repr v 1 = δ g (b.repr v 1)` (a
+`Rlz.A`-endomorphism of `Rlz.A` is multiplication by its value at
+`1`). The unramifiedness and square-triviality clauses are the joint's
+own, `δ` being unchanged by the transport.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): respected —
+the only leaf consumed is the literature joint above, which carries the
+same guard; nothing routes through `Family.lean`, `Lift.lean`, or
 `Modularity/Interface.lean`. -/
 theorem threeadicRealization_isTameAtTwo_of_witness
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
@@ -3635,8 +3756,29 @@ theorem threeadicRealization_isTameAtTwo_of_witness
             ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup :
               AddSubgroup Z2bar)
             (Field.absoluteGaloisGroup ℚ_[2]) ≤ δ.ker) ∧
-        (∀ g' : Field.absoluteGaloisGroup ℚ_[2], δ g' * δ g' = 1) :=
-  sorry
+        (∀ g' : Field.absoluteGaloisGroup ℚ_[2], δ g' * δ g' = 1) := by
+  classical
+  -- the literature joint: the constant Weil–Deligne type at `2`, read
+  -- in a basis of the stable lattice
+  obtain ⟨b, δ, hδur, hδsq, hshape⟩ :=
+    threeadicRealization_weilDeligneType_two_of_witness hℓodd hℓ5 hZinj
+      hrank hρ hW hρbar hirr π hπsurj hπ Rlz
+  refine ⟨b.coord 1, fun a => ⟨a • b 1, by simp⟩, δ, fun g v => ⟨?_, hδur, hδsq⟩⟩
+  -- the `(1,·)`-row of the matrix identity `M *ᵥ b.repr v = b.repr (τ g v)`
+  have hM := LinearMap.toMatrix_mulVec_repr b b
+    (Rlz.τ.map (algebraMap ℚ ℚ_[2]) g) v
+  have hrow : b.repr (Rlz.τ.map (algebraMap ℚ ℚ_[2]) g v) 1 =
+      b.repr v 1 * δ g 1 := by
+    rw [← hM]
+    simp only [Matrix.mulVec_apply_eq_sum, Fin.sum_univ_two, (hshape g).1,
+      (hshape g).2, zero_mul, zero_add]
+    exact mul_comm _ _
+  -- an `A`-endomorphism of `A` is multiplication by its value at `1`
+  have hscal : δ g (b.repr v 1) = b.repr v 1 * δ g 1 := by
+    conv_lhs => rw [show (b.repr v 1 : Rlz.A) = b.repr v 1 • (1 : Rlz.A) by
+      rw [smul_eq_mul, mul_one]]
+    rw [map_smul, smul_eq_mul]
+  rw [Module.Basis.coord_apply, Module.Basis.coord_apply, hrow, hscal]
 
 /-- **Brauer descent, `3`-adic side — the hardly ramified `3`-adic
 member over `ℚ`** (DECOMPOSED 2026-07-24 — now a PROVEN assembly over
