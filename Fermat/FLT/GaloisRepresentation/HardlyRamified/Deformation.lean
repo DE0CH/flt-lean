@@ -8844,11 +8844,15 @@ This is the SPLITTING of the order, and every hypothesis is load-bearing.
 Write `A' := ∑ᵢ C·bᵢ`. It is a subring of `M₂(B)` — it is the `C`-span of
 the multiplicative `S`, and `1 ∈ S` — free of rank `4` over `C`; and
 because `C` is closed, `𝔪_C = 𝔪 ∩ C`
-(`maximalIdeal_eq_comap_of_isClosed_subring`), so
-`A' / 𝔪_C A' ↪ M₂(k)` is a `k'`-subalgebra of `k'`-dimension `4` whose
-`k`-span is everything, i.e. a `k'`-FORM of `M₂(k)` for
-`k' = C/𝔪_C ⊆ k`. That is a quaternion algebra over the FINITE field
-`k'`, hence SPLIT by Wedderburn: `A'/𝔪_C A' ≅ M₂(k')`.
+(`maximalIdeal_eq_comap_of_isClosed_subring`), so `A' / 𝔪_C A' ↪ M₂(k)`
+is a `k'`-subalgebra of `k'`-dimension `4`, where `k' = C/𝔪_C ⊆ k`.
+
+The hypothesis `hres` — `C` meets every residue class of `B`, i.e. `C`
+surjects onto the residue field — says exactly `k' = k`. So the image is
+a `k`-subspace of `M₂(k)` of `k`-dimension `4`, hence ALL of `M₂(k)`:
+`A'/𝔪_C A' ≅ M₂(k)` with nothing to prove. **`hres` is what makes this
+leaf elementary**, and it is why no Brauer-group input is needed — see
+the note below on what its absence would cost.
 
 So `A'` contains an element whose reduction is a rank-one idempotent. The
 Newton iteration `z ↦ 3z² − 2z³` converges `𝔪`-adically in the complete
@@ -8863,20 +8867,42 @@ then `a₁₂a₂₁` generates `A₁₁ = C`, so it is a unit of `C`, and the
 further conjugation by `diag(1, a₁₂⁻¹)` turns `A'` into exactly `M₂(C)`.
 
 WHY THE HYPOTHESES CANNOT BE DROPPED. Completeness and closedness are
-both needed to lift the idempotent INSIDE `A'`. Finiteness of the residue
-field is needed too: over an infinite `k'` the algebra `A'/𝔪_C A'` may be
-a DIVISION quaternion algebra, and then `A'` is a maximal order in a
-division algebra — not `M₂(C)` — and the statement is FALSE.
+both needed to lift the idempotent INSIDE `A'`.
+
+WITHOUT `hres` THE LEAF IS STRICTLY HARDER, AND WITHOUT IT *AND*
+FINITENESS IT IS FALSE. If `k'` is a proper subfield of `k`, then
+`A'/𝔪_C A'` is only a `k'`-FORM of `M₂(k)` — a quaternion algebra over
+`k'` — and one needs Wedderburn's little theorem (`k'` finite ⟹ the form
+is split) to find the rank-one idempotent at all. Over an INFINITE `k'`
+that form may be a DIVISION algebra, and then `A'` is a maximal order in
+a division algebra, not `M₂(C)`, and the statement is FALSE. `hres`
+removes that entire branch of the argument, together with its
+missing-from-mathlib input (forms of `M₂` and Wedderburn); finiteness of
+the residue field is retained only because the surrounding subring API
+(`isUnit_of_isClosed_of_notMem_maximalIdeal`,
+`maximalIdeal_eq_comap_of_isClosed_subring`) is stated with it.
+
+`hres` is not an extra burden on the caller: for `C = traceSubring ℓ D.ρ`
+it is exactly the Teichmüller-root clause of the generating set — every
+residue class of `D.R` contains a Teichmüller root
+(`exists_mem_teichmullerRoots_map_eq`, Hensel), and every Teichmüller
+root lies in the trace subring
+(`mem_traceSubring_of_mem_teichmullerRoots`). This is the repair that
+also killed `subring_closure_charFrob_coeff_eq_top`; the residue field of
+`R'` is `k` ON THE NOSE, not the Frobenius-trace subfield, so no descent
+of `ρbar` to a trace field is needed anywhere in this cluster.
 
 References: Carayol, Contemp. Math. 165, Théorème 1; Nyssen, Math. Ann.
 306; Auslander–Goldman, *The Brauer group of a commutative ring*
-(Azumaya algebras over local rings are split when residually split). -/
+(Azumaya algebras over local rings are split when residually split) — the
+last needed only in the `hres`-free form of the statement. -/
 theorem exists_conj_entries_mem_of_basis_repr_mem
     {B : Type u} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
     [IsLocalRing B] [Finite (IsLocalRing.ResidueField B)]
     (hadic : IsAdic (IsLocalRing.maximalIdeal B))
     (hcompl : IsAdicComplete (IsLocalRing.maximalIdeal B) B)
     (C : Subring B) (hclosed : IsClosed ((C : Subring B) : Set B))
+    (hres : ∀ y : B, ∃ x : C, (x : B) - y ∈ IsLocalRing.maximalIdeal B)
     (S : Submonoid (Matrix (Fin 2) (Fin 2) B))
     (b : Module.Basis (Fin 4) B (Matrix (Fin 2) (Fin 2) B))
     (hbS : ∀ i : Fin 4, b i ∈ S)
@@ -8947,8 +8973,11 @@ isolated into two leaves and everything else discharged:
   `exists_basis_repr_mem_traceSubring` (PROVEN).
 * `exists_conj_entries_mem_of_basis_repr_mem` (leaf) — the pure algebra
   splitting that order: a single conjugation carries every `D.ρ(g)` into
-  `M₂(R')` (residual Wedderburn plus idempotent lifting in the complete
-  `M₂(D.R)`, staying inside the closed order).
+  `M₂(R')` (idempotent lifting in the complete `M₂(D.R)`, staying inside
+  the closed order). Its residue-field hypothesis is discharged here from
+  the Teichmüller-root clause of `traceSubring`, which is what makes the
+  residual algebra `M₂(k)` outright and removes any Wedderburn/Brauer
+  input from that leaf.
 * `exists_framedGaloisRep_toMatrix'_map_eq_of_forall_mem` (PROVEN) — the
   plumbing rebuilding a `FramedGaloisRep` over `R'` out of the resulting
   matrices, continuity included; `exists_conj_baseChange_of_matrix` then
@@ -9021,7 +9050,15 @@ theorem exists_framedGaloisRep_baseChange_traceSubring (hℓ5 : 5 ≤ ℓ)
     exists_basis_repr_mem_traceSubring hℓOdd hdim hℓ5 h hirr D htr
   obtain ⟨E, hEdet, hEmem⟩ :=
     exists_conj_entries_mem_of_basis_repr_mem D.isAdic D.isAdicComplete
-      (traceSubring ℓ D.ρ) hclosed (MonoidHom.mrange Φ) b
+      (traceSubring ℓ D.ρ) hclosed
+      (fun y => by
+        obtain ⟨x, hx, hxπ⟩ :=
+          exists_mem_teichmullerRoots_map_eq (ℓ := ℓ) D.π D.π_surjective (D.π y)
+        refine ⟨⟨x, mem_traceSubring_of_mem_teichmullerRoots ℓ D.ρ hx⟩, ?_⟩
+        have hker : RingHom.ker D.π = IsLocalRing.maximalIdeal D.R :=
+          IsLocalRing.ker_eq_maximalIdeal D.π D.π_surjective
+        rw [← hker, RingHom.mem_ker, map_sub, hxπ, sub_self])
+      (MonoidHom.mrange Φ) b
       (fun i => by
         obtain ⟨g, hg⟩ := hbrange i
         exact ⟨g, hg.symm⟩)
