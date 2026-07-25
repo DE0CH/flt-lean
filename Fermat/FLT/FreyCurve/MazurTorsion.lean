@@ -1085,8 +1085,27 @@ theorem WeierstrassCurve.exists_stable_cyclic_subgroup_of_rational_point
       (Affine.Point.map_injective (f := Algebra.ofId ℚ (AlgebraicClosure ℚ))) Q
   · intro σ x hx
     obtain ⟨k, rfl⟩ := AddSubgroup.mem_zmultiples_iff.mp hx
-    rw [map_zsmul, Affine.Point.map_baseChange
-      (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Q]
+    -- REPAIRED 2026-07-25 (flt-lean-88, while verifying an unrelated leaf in
+    -- `Modularity/Patching.lean`, which imports this module).  The previous
+    -- `rw [map_zsmul, Affine.Point.map_baseChange …]` was failing on `main`
+    -- with "did not find an occurrence of the pattern" on a pattern that is
+    -- VISIBLY present in the goal: mathlib's `Affine.Point.map_baseChange`
+    -- elaborates its `Point.map` over the curve `W'⁄F` (base-changed to the
+    -- intermediate field), whereas the goal here carries `Point.map` over `E`
+    -- itself.  Those are DEFEQ but not syntactically equal, so neither `rw`
+    -- nor `simp only` can match — `simp only [Affine.Point.map_baseChange]`
+    -- reports the lemma as an unused argument.  Restating the equation with
+    -- the goal's own elaboration and letting `exact` bridge the two by
+    -- definitional unfolding is what closes it.  Nothing about the statement
+    -- or the mathematics changed; this was a hard error blocking the whole
+    -- downstream cone.
+    have hfix : Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom
+          (Affine.Point.baseChange ℚ (AlgebraicClosure ℚ) Q)
+        = Affine.Point.baseChange ℚ (AlgebraicClosure ℚ) Q :=
+      Affine.Point.map_baseChange
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Q
+    rw [map_zsmul, hfix]
     exact AddSubgroup.zsmul_mem _ (AddSubgroup.mem_zmultiples _) k
 
 /-- **A rational torsion point has Kenku degree** (PROVEN 2026-07-25):
