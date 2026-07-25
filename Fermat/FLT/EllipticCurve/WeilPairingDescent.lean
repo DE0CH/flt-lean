@@ -987,6 +987,46 @@ noncomputable def lineNumerator (W : WeierstrassCurve.Affine F)
       (coordX W - coordC W q₁) -
     coordC W y₁ * (coordX W - coordC W q₁) ^ 3
 
+/-- The **conjugate line numerator**: the same cleared line value taken
+at the *hyperelliptic conjugate* `⊖Q ⊖ taut` of `Q ⊕ taut` instead of at
+`Q ⊕ taut`, i.e. equal to
+`(y(⊖Q ⊖ taut) − (ℓ·(x(Q ⊕ taut) − x₁) + y₁)) · (tautX − q₁)³`
+in the function field (note `x(⊖Q ⊖ taut) = x(Q ⊕ taut)`).  Writing
+`A := (Y − q₂)² + a₁(Y − q₂)(X − q₁) − (a₂ + q₁ + X)(X − q₁)²` for the
+cleared `addX` and `T := X − q₁`, the two `Y`-values of the translate
+have cleared forms
+`y(Q ⊕ taut)·T³ = −(Y − q₂)(A − q₁T²) − q₂T³ − a₁AT − a₃T³` (this is the
+first half of `lineNumerator`) and
+`y(⊖Q ⊖ taut)·T³ = (Y − q₂)(A − q₁T²) + q₂T³` (used here), their sum
+being `−a₁AT − a₃T³ = (−a₁x(Q ⊕ taut) − a₃)T³` as it must be.
+
+Its affine divisor is the mirror image of `lineNumerator`'s:
+`3(Q) + (⊖P ⊖ Q) + (⊖R ⊖ Q) + ((P ⊕ R) ⊖ Q)`.  It is introduced solely
+so that the product `lineNumerator · lineNumeratorNeg` collapses, by the
+`addPolynomial` factorization, to the product of the three vertical
+numerators (`lineNumerator_mul_lineNumeratorNeg`) — which turns the
+divisor identity for the line into a *cancellation* against the already
+available `span_vertNumerator`, with no colength or valuation input. -/
+noncomputable def lineNumeratorNeg (W : WeierstrassCurve.Affine F)
+    (q₁ q₂ x₁ y₁ ℓ : F) : W.CoordinateRing :=
+  (coordY W - coordC W q₂) *
+      ((coordY W - coordC W q₂) ^ 2 +
+        coordC W W.a₁ * (coordY W - coordC W q₂) *
+          (coordX W - coordC W q₁) -
+        (coordC W W.a₂ + coordC W q₁ + coordX W) *
+          (coordX W - coordC W q₁) ^ 2 -
+        coordC W q₁ * (coordX W - coordC W q₁) ^ 2) +
+    coordC W q₂ * (coordX W - coordC W q₁) ^ 3 -
+    coordC W ℓ *
+      ((coordY W - coordC W q₂) ^ 2 +
+        coordC W W.a₁ * (coordY W - coordC W q₂) *
+          (coordX W - coordC W q₁) -
+        (coordC W W.a₂ + coordC W q₁ + coordX W) *
+          (coordX W - coordC W q₁) ^ 2 -
+        coordC W x₁ * (coordX W - coordC W q₁) ^ 2) *
+      (coordX W - coordC W q₁) -
+    coordC W y₁ * (coordX W - coordC W q₁) ^ 3
+
 omit [DecidableEq F] in
 /-- A nonzero element of the function field spans an invertible
 fractional ideal. -/
@@ -1059,6 +1099,171 @@ theorem span_vertNumerator (hΔ : W.Δ ≠ 0) {q₁ q₂ x y : F}
           pointIdeal W (-.some x y h - .some q₁ q₂ hq)) := by
   sorry
 
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- **The cancellation squeeze** (PROVEN): the elementary replacement of
+the colength/norm-degree argument for divisor identities of the shape
+"`n` spans the point-ideal product `I`".
+
+Suppose `I` and `J` are principal with nonzero generators (as the
+point-ideal product of *any* zero-sum multiset is, by
+`exists_span_eq_prod_pointIdeal`), that `n ∈ I` and `ñ ∈ J`, and that
+the *product* identity `⟨n · ñ⟩ = I · J` is already known.  Then
+`⟨n⟩ = I` exactly — no sharp degree count, no case analysis on
+degenerate configurations.
+
+Indeed `n = u₁m₁` and `ñ = u₂m₂`, so `⟨m₁m₂ · u₁u₂⟩ = ⟨n·ñ⟩ = ⟨m₁m₂⟩`;
+in a domain that makes `u₁u₂` — hence `u₁` — a unit, and `⟨n⟩ = ⟨m₁⟩`.
+
+This is the workhorse behind `span_lineNumerator`: the "conjugate"
+partner `ñ = lineNumeratorNeg` supplies the second membership, and the
+product identity comes for free from `span_vertNumerator` through
+`lineNumerator_mul_lineNumeratorNeg`.  The virtue over the colength
+route is uniformity: the degenerate configurations (`P = ±Q`, `P = ±2Q`,
+`2P = O`, small torsion) make *both* sides drop in lockstep, so nothing
+in this argument has to see them. -/
+lemma span_eq_of_mem_of_span_mul_eq {n ñ : W.CoordinateRing}
+    {I J : Ideal W.CoordinateRing}
+    (hI : ∃ a : W.CoordinateRing, a ≠ 0 ∧ Ideal.span {a} = I)
+    (hJ : ∃ a : W.CoordinateRing, a ≠ 0 ∧ Ideal.span {a} = J)
+    (hn : n ∈ I) (hñ : ñ ∈ J) (hmul : Ideal.span {n * ñ} = I * J) :
+    Ideal.span {n} = I := by
+  obtain ⟨m₁, hm₁0, hm₁⟩ := hI
+  obtain ⟨m₂, hm₂0, hm₂⟩ := hJ
+  obtain ⟨u₁, hu₁⟩ := Ideal.mem_span_singleton'.mp (show n ∈ Ideal.span {m₁} by rwa [hm₁])
+  obtain ⟨u₂, hu₂⟩ := Ideal.mem_span_singleton'.mp (show ñ ∈ Ideal.span {m₂} by rwa [hm₂])
+  have hkey : Ideal.span {m₁ * m₂ * (u₁ * u₂)} = Ideal.span {m₁ * m₂} := by
+    rw [show m₁ * m₂ * (u₁ * u₂) = u₁ * m₁ * (u₂ * m₂) from by ring, hu₁, hu₂, hmul,
+      ← hm₁, ← hm₂, Ideal.span_singleton_mul_span_singleton]
+  obtain ⟨w, hw⟩ := Ideal.span_singleton_eq_span_singleton.mp hkey
+  have hw' : m₁ * m₂ * (u₁ * u₂ * (w : W.CoordinateRing)) = m₁ * m₂ * 1 := by
+    rw [mul_one]; linear_combination hw
+  have hu : IsUnit (u₁ * u₂) :=
+    IsUnit.of_mul_eq_one _ (mul_left_cancel₀ (mul_ne_zero hm₁0 hm₂0) hw')
+  rw [← hu₁, Ideal.span_singleton_mul_left_unit (isUnit_of_mul_isUnit_left hu), hm₁]
+
+omit [IsAlgClosed F] in
+/-- **L4-8 line-numerator sub-leaf (sorry): the cleared conjugate
+product.**  The two cleared line values at the translate multiply to the
+product of the three vertical numerators at the three `X`-coordinates
+cut out by the chord:
+
+`lineNumerator · lineNumeratorNeg = −(vertNum x₁ · vertNum x₂ · vertNum x₃)`,
+`x₃ = addX x₁ x₂ ℓ`.
+
+ROUTE (certificate-free, no case analysis).  Write `T := X − q₁`,
+`U := Y − q₂`, `A := U² + a₁UT − (a₂ + q₁ + X)T²` (so `A = x(Q ⊕ taut)T²`
+and `vertNumerator W q₁ q₂ x = A − xT²` by `ring`), and
+`Λ := ℓ(A − x₁T²)T + y₁T³` (the cleared line value `L(x(Q ⊕ taut))T³`).
+By construction
+`lineNumerator = 𝔶 − Λ` and `lineNumeratorNeg = 𝔶' − Λ`, where
+`𝔶 := −U(A − q₁T²) − q₂T³ − a₁AT − a₃T³` and `𝔶' := U(A − q₁T²) + q₂T³`,
+so `𝔶 + 𝔶' = −a₁AT − a₃T³` is formal.  The whole content is therefore
+the single identity
+`𝔶 · 𝔶' = −(A³ + a₂A²T² + a₄AT⁴ + a₆T⁶)`,
+which is the Weierstrass relation `y·negY y = −(x³ + a₂x² + a₄x + a₆)`
+at the point `Q ⊕ taut`, cleared by `T⁶`; in the coordinate ring it
+follows from the two scalar relations
+`coordY² + a₁·coordX·coordY + a₃·coordY = coordX³ + a₂coordX² + a₄coordX + a₆`
+(from `AdjoinRoot.mk_self` on `W.polynomial`) and `W.Equation q₁ q₂`,
+by `linear_combination` with polynomial cofactors.  Granting it,
+`lineNumerator · lineNumeratorNeg = 𝔶𝔶' − Λ(𝔶 + 𝔶') + Λ²`
+`= −(A³ + a₂A²T² + a₄AT⁴ + a₆T⁶) + Λ(a₁AT + a₃T³) + Λ²`,
+which is precisely the `T`-homogenization (in `A`, `T²`) of
+`W.addPolynomial x₁ y₁ ℓ = L² + (a₁X + a₃)L − (X³ + a₂X² + a₄X + a₆)`
+evaluated at `X = A/T²`; mathlib's `addPolynomial_slope` factors that
+cubic as `−(X − x₁)(X − x₂)(X − x₃)`, and the homogenization of the
+factored form is exactly `−(A − x₁T²)(A − x₂T²)(A − x₃T²)`.  Practical
+recipe: take `addPolynomial_slope h₁ h₂ hxy`, read off its four `X`-
+coefficients with `Polynomial.coeff`/`Cubic`, and feed them to
+`linear_combination` with the cofactors `T⁰, T², T⁴, T⁶` against the
+expanded goal.  CAS-checkable in one `Singular`/`gp` line. -/
+theorem lineNumerator_mul_lineNumeratorNeg {q₁ q₂ x₁ y₁ x₂ y₂ : F}
+    (hq : W.Equation q₁ q₂) (h₁ : W.Equation x₁ y₁) (h₂ : W.Equation x₂ y₂)
+    (hxy : ¬(x₁ = x₂ ∧ y₁ = W.negY x₂ y₂)) :
+    lineNumerator W q₁ q₂ x₁ y₁ (W.slope x₁ x₂ y₁ y₂) *
+        lineNumeratorNeg W q₁ q₂ x₁ y₁ (W.slope x₁ x₂ y₁ y₂) =
+      -(vertNumerator W q₁ q₂ x₁ *
+        (vertNumerator W q₁ q₂ x₂ *
+          vertNumerator W q₁ q₂ (W.addX x₁ x₂ (W.slope x₁ x₂ y₁ y₂)))) := by
+  sorry
+
+/-- **L4-8 line-numerator sub-leaf (sorry): membership of the line
+numerator in its divisor ideal.**  `lineNumerator q₁ q₂ x₁ y₁ ℓ` lies in
+`I_Q³ · I_{P⊖Q} · I_{R⊖Q} · I_{⊖(P⊕R)⊖Q}`.
+
+This is the *inclusion* half of `span_lineNumerator`; the reverse is
+supplied by the cancellation squeeze `span_eq_of_mem_of_span_mul_eq`, so
+only membership has to be established here.
+
+ROUTE.  (1) `I_Q = ⟨T, U⟩` with `T = coordX − q₁`, `U = coordY − q₂`
+(`XClass_eq` / `YClass_line_eq` with `ℓ = 0`, or unfolding
+`CoordinateRing.XYIdeal`).  Since `coordX = T + q₁`, the cleared `addX`
+is `A = U² + a₁UT − (a₂ + 2q₁)T² − T³`, manifestly in `⟨T, U⟩²`, and
+every summand of `lineNumerator` is one of `U·(A − q₁T²)`, `T³`,
+`A·T`, `(A − x₁T²)·T` — all in `⟨T, U⟩³`.  So `n ∈ I_Q³` is
+*certificate-free*: rewrite `n` as an explicit `F[W]`-combination of
+`T³, T²U, TU², U³` by `ring` and close with `Ideal.mul_mem_mul` /
+`Ideal.pow_mem_pow`.
+(2) `n ∈ I_S` for each of the three translated points `S` is the
+statement that `n` vanishes at `S`, i.e. that the chord through `P` and
+`R` passes through `Q ⊕ S`; membership in the maximal ideal
+`XYIdeal W x (C y)` is decided by the evaluation
+`CoordinateRing.quotientXYIdealEquiv`, and the vanishing is the addition
+formula (`field_simp`/`ring` per configuration).
+(3) Multiplying the memberships: distinct maximal ideals of `F[W]` are
+comaximal, so for pairwise distinct points the product of the four
+factors is their intersection.  BEWARE the coincidence zoo — `P = Q`,
+`R = Q`, `P ⊕ R = ⊖Q` (a factor becomes `⊤`, harmless), `P = R`,
+`P = ⊖(P ⊕ R)` (two factors merge into `I_S²`), `P = 2Q` and its
+siblings (a factor merges into `I_Q⁴`) — where higher-order vanishing
+certificates are needed.  The bookkeeping is easiest by *first* reducing
+to the multiset of affine points with multiplicity and *then* proving
+`n ∈ 𝔪^k` for each distinct maximal ideal separately, since the
+`sup`-comaximality argument only ever needs distinctness of the
+underlying points. -/
+theorem lineNumerator_mem_prod_pointIdeal (hΔ : W.Δ ≠ 0) {q₁ q₂ x₁ y₁ x₂ y₂ : F}
+    (hq : W.Nonsingular q₁ q₂) (h₁ : W.Nonsingular x₁ y₁)
+    (h₂ : W.Nonsingular x₂ y₂) (hxy : ¬(x₁ = x₂ ∧ y₁ = W.negY x₂ y₂)) :
+    lineNumerator W q₁ q₂ x₁ y₁ (W.slope x₁ x₂ y₁ y₂) ∈
+      pointIdeal W (.some q₁ q₂ hq) ^ 3 *
+        (pointIdeal W (.some x₁ y₁ h₁ - .some q₁ q₂ hq) *
+          (pointIdeal W (.some x₂ y₂ h₂ - .some q₁ q₂ hq) *
+            pointIdeal W (-(.some x₁ y₁ h₁ + .some x₂ y₂ h₂) -
+              .some q₁ q₂ hq))) := by
+  sorry
+
+/-- **L4-8 line-numerator sub-leaf (sorry): membership of the conjugate
+line numerator in its divisor ideal.**  The mirror image of
+`lineNumerator_mem_prod_pointIdeal`: `lineNumeratorNeg q₁ q₂ x₁ y₁ ℓ`
+lies in `I_Q³ · I_{⊖P⊖Q} · I_{⊖R⊖Q} · I_{(P⊕R)⊖Q}`.
+
+Same route as `lineNumerator_mem_prod_pointIdeal` (see its docstring):
+the `I_Q³` part is again certificate-free — `lineNumeratorNeg` is built
+from the same `⟨T, U⟩`-homogeneous pieces `U(A − q₁T²)`, `T³`,
+`(A − x₁T²)T` — and the three simple factors are the vanishing of the
+chord value at the points `⊖P ⊖ Q`, `⊖R ⊖ Q`, `(P ⊕ R) ⊖ Q`, i.e. at
+the `⊖Q`-translates of the *negatives* of the three collinear points,
+which is where `y(⊖Q ⊖ taut)` meets the line.
+
+Alternatively this leaf follows from `lineNumerator_mem_prod_pointIdeal`
+applied at `⊖Q = (q₁, negY q₁ q₂)` by transporting along the
+hyperelliptic involution `σ : F[W] ≃+* F[W]`, `coordY ↦ negY`, which
+fixes `F[X]` and satisfies `σ (pointIdeal W S) = pointIdeal W (⊖S)`:
+one checks `lineNumeratorNeg W q₁ q₂ x₁ y₁ ℓ =
+σ (lineNumerator W q₁ (W.negY q₁ q₂) x₁ y₁ ℓ)`.  Whether the involution
+transport is cheaper than redoing the case analysis is for the owner to
+judge. -/
+theorem lineNumeratorNeg_mem_prod_pointIdeal (hΔ : W.Δ ≠ 0) {q₁ q₂ x₁ y₁ x₂ y₂ : F}
+    (hq : W.Nonsingular q₁ q₂) (h₁ : W.Nonsingular x₁ y₁)
+    (h₂ : W.Nonsingular x₂ y₂) (hxy : ¬(x₁ = x₂ ∧ y₁ = W.negY x₂ y₂)) :
+    lineNumeratorNeg W q₁ q₂ x₁ y₁ (W.slope x₁ x₂ y₁ y₂) ∈
+      pointIdeal W (.some q₁ q₂ hq) ^ 3 *
+        (pointIdeal W (-.some x₁ y₁ h₁ - .some q₁ q₂ hq) *
+          (pointIdeal W (-.some x₂ y₂ h₂ - .some q₁ q₂ hq) *
+            pointIdeal W (.some x₁ y₁ h₁ + .some x₂ y₂ h₂ -
+              .some q₁ q₂ hq))) := by
+  sorry
+
 /-- **L4-8 numerator leaf (sorry): the divisor of the line
 numerator.**  `lineNumerator q₁ q₂ x₁ y₁ ℓ` (at the group-law slope
 `ℓ` of the pair `P = (x₁,y₁)`, `R = (x₂,y₂)`) spans
@@ -1067,11 +1272,22 @@ numerator.**  `lineNumerator q₁ q₂ x₁ y₁ ℓ` (at the group-law slope
 line through `P` and `R`, cleared by `3(Q)`.  CAS-checked numerically
 (PARI/GP: `y² = x³ − x + 1`, `Q = (1,1)`, `P = (3,5)`, `R = (0,1)`:
 vanishing at `Q` to third order and at the three translated points).
-Same proof routes as `span_vertNumerator` (see its docstring for the
-worked-out inclusion + colength recipe); here the total multiplicity
-is `6`, the numerator is a *cubic* form in `(X − q₁, Y − q₂)` (so
-`n ∈ I_Q³` should again be certificate-free after regrouping), and
-the basis form has `pp` of degree ≤ 3 and `qq` of degree ≤ 1. -/
+PROVEN, over three sub-leaves, by the **cancellation squeeze** rather
+than by the colength recipe of `span_vertNumerator`'s docstring: the
+partner element `lineNumeratorNeg` (the same cleared line value read at
+the hyperelliptic conjugate `⊖Q ⊖ taut`) has the mirror divisor
+`3(Q) + (⊖P⊖Q) + (⊖R⊖Q) + ((P⊕R)⊖Q)`, and the two numerators multiply to
+minus the product of the three vertical numerators
+(`lineNumerator_mul_lineNumeratorNeg`), whose spans are already known
+from `span_vertNumerator`.  So `⟨n·ñ⟩ = (RHS)·(RHS')` *exactly*, both
+`RHS` and `RHS'` are principal by `exists_span_eq_prod_pointIdeal` (both
+multisets have zero sum), and the two memberships `n ∈ RHS`, `ñ ∈ RHS'`
+then force the two cofactors to be units simultaneously
+(`span_eq_of_mem_of_span_mul_eq`).  No norm degrees, no quotient
+colengths, and — decisively — no coincidence zoo in the closing step:
+every degeneracy makes both factors drop in lockstep.  The remaining
+sorries are `lineNumerator_mul_lineNumeratorNeg` (one cleared
+`addPolynomial` identity) and the two membership leaves. -/
 theorem span_lineNumerator (hΔ : W.Δ ≠ 0) {q₁ q₂ x₁ y₁ x₂ y₂ : F}
     (hq : W.Nonsingular q₁ q₂) (h₁ : W.Nonsingular x₁ y₁)
     (h₂ : W.Nonsingular x₂ y₂) (hxy : ¬(x₁ = x₂ ∧ y₁ = W.negY x₂ y₂)) :
@@ -1081,7 +1297,85 @@ theorem span_lineNumerator (hΔ : W.Δ ≠ 0) {q₁ q₂ x₁ y₁ x₂ y₂ : F
           (pointIdeal W (.some x₂ y₂ h₂ - .some q₁ q₂ hq) *
             pointIdeal W (-(.some x₁ y₁ h₁ + .some x₂ y₂ h₂) -
               .some q₁ q₂ hq))) := by
-  sorry
+  classical
+  -- the third intersection point of the chord, `S = ⊖(P ⊕ R)`, is affine
+  have h₃ : W.Nonsingular (W.addX x₁ x₂ (W.slope x₁ x₂ y₁ y₂))
+      (W.negY (W.addX x₁ x₂ (W.slope x₁ x₂ y₁ y₂))
+        (W.addY x₁ x₂ y₁ (W.slope x₁ x₂ y₁ y₂))) :=
+    (nonsingular_neg ..).mpr (nonsingular_add h₁ h₂ hxy)
+  have hS : -(Point.some x₁ y₁ h₁ + Point.some x₂ y₂ h₂) =
+      Point.some _ _ h₃ := by
+    rw [Point.add_some hxy, Point.neg_some]
+  -- the two zero-sum divisors and their principal generators
+  have hprod : ∃ a : W.CoordinateRing, a ≠ 0 ∧
+      Ideal.span {a} =
+        pointIdeal W (.some q₁ q₂ hq) ^ 3 *
+          (pointIdeal W (.some x₁ y₁ h₁ - .some q₁ q₂ hq) *
+            (pointIdeal W (.some x₂ y₂ h₂ - .some q₁ q₂ hq) *
+              pointIdeal W (-(.some x₁ y₁ h₁ + .some x₂ y₂ h₂) -
+                .some q₁ q₂ hq))) := by
+    obtain ⟨a, ha0, ha⟩ := exists_span_eq_prod_pointIdeal
+      ((.some q₁ q₂ hq) ::ₘ (.some q₁ q₂ hq) ::ₘ (.some q₁ q₂ hq) ::ₘ
+        (.some x₁ y₁ h₁ - .some q₁ q₂ hq) ::ₘ
+        (.some x₂ y₂ h₂ - .some q₁ q₂ hq) ::ₘ
+        ({-(.some x₁ y₁ h₁ + .some x₂ y₂ h₂) - .some q₁ q₂ hq} :
+          Multiset W.Point))
+      (by simp only [Multiset.sum_cons, Multiset.sum_singleton]; abel)
+    refine ⟨a, ha0, ?_⟩
+    rw [ha]
+    simp only [Multiset.map_cons, Multiset.prod_cons, Multiset.map_singleton,
+      Multiset.prod_singleton]
+    ring
+  have hprod' : ∃ a : W.CoordinateRing, a ≠ 0 ∧
+      Ideal.span {a} =
+        pointIdeal W (.some q₁ q₂ hq) ^ 3 *
+          (pointIdeal W (-.some x₁ y₁ h₁ - .some q₁ q₂ hq) *
+            (pointIdeal W (-.some x₂ y₂ h₂ - .some q₁ q₂ hq) *
+              pointIdeal W (.some x₁ y₁ h₁ + .some x₂ y₂ h₂ -
+                .some q₁ q₂ hq))) := by
+    obtain ⟨a, ha0, ha⟩ := exists_span_eq_prod_pointIdeal
+      ((.some q₁ q₂ hq) ::ₘ (.some q₁ q₂ hq) ::ₘ (.some q₁ q₂ hq) ::ₘ
+        (-.some x₁ y₁ h₁ - .some q₁ q₂ hq) ::ₘ
+        (-.some x₂ y₂ h₂ - .some q₁ q₂ hq) ::ₘ
+        ({.some x₁ y₁ h₁ + .some x₂ y₂ h₂ - .some q₁ q₂ hq} :
+          Multiset W.Point))
+      (by simp only [Multiset.sum_cons, Multiset.sum_singleton]; abel)
+    refine ⟨a, ha0, ?_⟩
+    rw [ha]
+    simp only [Multiset.map_cons, Multiset.prod_cons, Multiset.map_singleton,
+      Multiset.prod_singleton]
+    ring
+  -- the vertical numerator at the third intersection point
+  have hv₃ : Ideal.span {vertNumerator W q₁ q₂
+        (W.addX x₁ x₂ (W.slope x₁ x₂ y₁ y₂))} =
+      pointIdeal W (.some q₁ q₂ hq) ^ 2 *
+        (pointIdeal W (-(.some x₁ y₁ h₁ + .some x₂ y₂ h₂) -
+            .some q₁ q₂ hq) *
+          pointIdeal W (.some x₁ y₁ h₁ + .some x₂ y₂ h₂ -
+            .some q₁ q₂ hq)) := by
+    have hv := span_vertNumerator hΔ hq h₃
+    rwa [← hS, neg_neg] at hv
+  -- the product of the two numerators is the product of the two divisors
+  have hmul : Ideal.span {lineNumerator W q₁ q₂ x₁ y₁ (W.slope x₁ x₂ y₁ y₂) *
+        lineNumeratorNeg W q₁ q₂ x₁ y₁ (W.slope x₁ x₂ y₁ y₂)} =
+      (pointIdeal W (.some q₁ q₂ hq) ^ 3 *
+          (pointIdeal W (.some x₁ y₁ h₁ - .some q₁ q₂ hq) *
+            (pointIdeal W (.some x₂ y₂ h₂ - .some q₁ q₂ hq) *
+              pointIdeal W (-(.some x₁ y₁ h₁ + .some x₂ y₂ h₂) -
+                .some q₁ q₂ hq)))) *
+        (pointIdeal W (.some q₁ q₂ hq) ^ 3 *
+          (pointIdeal W (-.some x₁ y₁ h₁ - .some q₁ q₂ hq) *
+            (pointIdeal W (-.some x₂ y₂ h₂ - .some q₁ q₂ hq) *
+              pointIdeal W (.some x₁ y₁ h₁ + .some x₂ y₂ h₂ -
+                .some q₁ q₂ hq)))) := by
+    rw [lineNumerator_mul_lineNumeratorNeg hq.left h₁.left h₂.left hxy,
+      Ideal.span_singleton_neg, ← Ideal.span_singleton_mul_span_singleton,
+      ← Ideal.span_singleton_mul_span_singleton,
+      span_vertNumerator hΔ hq h₁, span_vertNumerator hΔ hq h₂, hv₃]
+    ring
+  exact span_eq_of_mem_of_span_mul_eq hprod hprod'
+    (lineNumerator_mem_prod_pointIdeal hΔ hq h₁ h₂ hxy)
+    (lineNumeratorNeg_mem_prod_pointIdeal hΔ hq h₁ h₂ hxy) hmul
 
 /-- **L4-8 vertical brick: divisor transport of a vertical class.**
 The translated vertical `τ_Q^*(X − x)` spans
