@@ -5,7 +5,7 @@ metadata:
   node_type: memory
   type: feedback
   originSessionId: 3ddea302-1047-412e-8959-4dd4f0948fa8
-  modified: 2026-07-25T12:01:24.914Z
+  modified: 2026-07-25T12:52:18.250Z
 ---
 
 Deyao, 2026-07-25, after having to teach it repeatedly ("i don't know why it
@@ -82,3 +82,13 @@ Same schema, opposite verdict, decided mechanically rather than by judgment.
   was lost.
 - Do not build lifecycle/liveness machinery around agents
   ([[dont-invent-delegate-to-existing-tools]]). Track what is on disk instead.
+- *Agent identity is DISK state, never inference.* Which worktree an agent owns
+  is written in its transcript's first user message (`Your worktree is
+  /home/chend/flt-lean-N`). Resolve it by reading that — never from dispatch
+  ORDER, queue position, or recollection of what was sent where. Twice on
+  2026-07-25 the orchestrator inferred it from order and misrouted: six resume
+  messages went to prior occupants of slots (one of whom deleted the real
+  owner's scratch files), and two mid-task corrections went to agents with
+  unrelated assignments. Both times an agent caught it and refused; that is luck,
+  not a control. Same root cause as everything else here — treating an ordering
+  in my own context as state, when the state was on disk all along.
