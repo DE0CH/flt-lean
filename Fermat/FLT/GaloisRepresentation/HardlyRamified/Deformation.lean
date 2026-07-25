@@ -1505,7 +1505,7 @@ theorem isFlatAt_baseChange_quotient {R : Type u} [CommRing R]
     [TopologicalSpace R] [IsTopologicalRing R] [IsLocalRing R]
     {M : Type v} [AddCommGroup M] [Module R M] [Module.Finite R M]
     [Module.Free R M]
-    (P : Ideal R) [P.IsPrime] [IsLocalRing (R ⧸ P)]
+    (P : Ideal R) [IsLocalRing (R ⧸ P)]
     {ρ : GaloisRep ℚ R M}
     (hflat : ρ.IsFlatAt
       (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : ℓ.Prime))) :
@@ -1698,7 +1698,7 @@ lemma isHardlyRamified_baseChange_quotient {R : Type u} [CommRing R]
     [Algebra ℤ_[ℓ] R]
     {M : Type v} [AddCommGroup M] [Module R M] [Module.Finite R M]
     [Module.Free R M] {hdimM : Module.rank R M = 2}
-    (P : Ideal R) [P.IsPrime] [IsLocalRing (R ⧸ P)]
+    (P : Ideal R) [IsLocalRing (R ⧸ P)]
     (hdimQ : Module.rank (R ⧸ P) ((R ⧸ P) ⊗[R] M) = 2)
     {ρ : GaloisRep ℚ R M} (h : IsHardlyRamified hℓOdd hdimM ρ) :
     IsHardlyRamified hℓOdd hdimQ (ρ.baseChange (R ⧸ P)) := by
@@ -1723,6 +1723,84 @@ lemma isHardlyRamified_baseChange_quotient {R : Type u} [CommRing R]
     exact isFlatAt_baseChange_quotient P h.isFlat
   · -- tameness at 2 (proven transfer)
     exact isTameAtTwo_baseChange (R ⧸ P) h.isTameAtTwo
+
+set_option backward.isDefEq.respectTransparency false in
+open scoped TensorProduct in
+/-- **Hardly-ramifiedness transfers along conjugation** by a linear
+isomorphism of the representation space (PROVEN 2026-07-22): the
+determinant is conjugation-invariant, the kernels of the local
+representations only grow, flatness transports through
+`HasFlatProlongationAt.of_equiv` along the base-changed isomorphism, and
+the tame quadratic quotient is composed with the inverse isomorphism.
+
+(HOISTED 2026-07-25 from its original position far below, next to its
+sibling transfers: the quotient-deformation construction inside
+`exists_ringHom_matrix_quotient_of_finite` needs it to re-frame a
+base-changed representation onto the standard frame `Fin 2 → R ⧸ I`,
+and that leaf lives above the old site. A pure move; the statement and
+proof are unchanged.) -/
+lemma isHardlyRamified_conj {R : Type u} [CommRing R] [TopologicalSpace R]
+    [IsTopologicalRing R] [IsLocalRing R] [Algebra ℤ_[ℓ] R]
+    {M : Type v} [AddCommGroup M] [Module R M] [Module.Finite R M]
+    [Module.Free R M]
+    {N : Type v} [AddCommGroup N] [Module R N] [Module.Finite R N]
+    [Module.Free R N]
+    {hdimM : Module.rank R M = 2} (hdimN : Module.rank R N = 2)
+    {ρ : GaloisRep ℚ R M} (h : IsHardlyRamified hℓOdd hdimM ρ)
+    (e : M ≃ₗ[R] N) :
+    IsHardlyRamified hℓOdd hdimN (ρ.conj e) := by
+  constructor
+  · -- determinant: conjugation-invariant
+    intro g
+    rw [GaloisRep.det_apply, GaloisRep.conj_apply, LinearEquiv.conj_apply,
+      LinearMap.comp_assoc, LinearMap.det_conj]
+    exact h.det g
+  · -- unramifiedness: the kernel of the local representation only grows
+    intro p hp hpp
+    have hun := h.isUnramified p hp hpp
+    refine ⟨le_trans hun.localInertiaGroup_le ?_⟩
+    intro σ hσ
+    have h1 : ρ.toLocal hp.toHeightOneSpectrumRingOfIntegersRat σ = 1 := hσ
+    show (ρ.conj e).toLocal hp.toHeightOneSpectrumRingOfIntegersRat σ = 1
+    rw [GaloisRep.toLocal_apply, GaloisRep.conj_apply,
+      ← GaloisRep.toLocal_apply, h1]
+    refine LinearMap.ext fun w => ?_
+    simp
+  · -- flatness: transport along the base-changed equivariant isomorphism
+    constructor
+    intro I hI
+    refine (h.isFlat.cond I hI).of_equiv _
+      (LinearEquiv.baseChange R (R ⧸ I) M N e).toAddEquiv ?_
+    intro g x
+    show (LinearEquiv.baseChange R (R ⧸ I) M N e)
+        (((ρ.baseChange (R ⧸ I)).toLocal
+          (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+            (Fact.out : ℓ.Prime)) g) x) =
+      (((ρ.conj e).baseChange (R ⧸ I)).toLocal
+          (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+            (Fact.out : ℓ.Prime)) g)
+        ((LinearEquiv.baseChange R (R ⧸ I) M N e) x)
+    induction x using TensorProduct.induction_on with
+    | zero => simp
+    | add a b ha hb => simp only [map_add, ha, hb]
+    | tmul c m =>
+      simp only [GaloisRep.toLocal_apply, GaloisRep.baseChange_tmul,
+        LinearEquiv.baseChange_tmul, GaloisRep.conj_apply,
+        LinearEquiv.conj_apply_apply, LinearEquiv.symm_apply_apply]
+  · -- tameness at 2: compose the quotient with the inverse isomorphism
+    obtain ⟨π, hπsurj, δ, hδ⟩ := h.isTameAtTwo
+    refine ⟨π.comp (e.symm : N →ₗ[R] M), ?_, δ, ?_⟩
+    · intro r
+      obtain ⟨m, hm⟩ := hπsurj r
+      exact ⟨e m, by simp [hm]⟩
+    · intro g w
+      refine ⟨?_, (hδ 1 0).2.1, (hδ 1 0).2.2⟩
+      have h1 := (hδ g (e.symm w)).1
+      show π (e.symm ((ρ.conj e).map (algebraMap ℚ ℚ_[2]) g w)) =
+        δ g (π (e.symm w))
+      rw [GaloisRep.map_apply, GaloisRep.conj_apply,
+        LinearEquiv.conj_apply_apply, LinearEquiv.symm_apply_apply,
+        ← GaloisRep.map_apply, h1]
 
 omit [TopologicalSpace k] [DiscreteTopology k] [Algebra ℤ_[ℓ] k] in
 /-- **Finiteness from `𝔪`-primarity** (PROVEN 2026-07-25, pure
@@ -6586,77 +6664,6 @@ theorem exists_finite_lift (hℓ5 : 5 ≤ ℓ)
   exact ⟨D.R, D.commRing, D.topologicalSpace, D.isTopologicalRing,
     D.isLocalRing, D.algebra, hfin, hmt, hinj, D.ρ, D.isHardlyRamified,
     D.π, D.π_surjective, D.charFrob_compat⟩
-
-set_option backward.isDefEq.respectTransparency false in
-open scoped TensorProduct in
-/-- **Hardly-ramifiedness transfers along conjugation** by a linear
-isomorphism of the representation space (PROVEN 2026-07-22): the
-determinant is conjugation-invariant, the kernels of the local
-representations only grow, flatness transports through
-`HasFlatProlongationAt.of_equiv` along the base-changed isomorphism, and
-the tame quadratic quotient is composed with the inverse isomorphism. -/
-lemma isHardlyRamified_conj {R : Type u} [CommRing R] [TopologicalSpace R]
-    [IsTopologicalRing R] [IsLocalRing R] [Algebra ℤ_[ℓ] R]
-    {M : Type v} [AddCommGroup M] [Module R M] [Module.Finite R M]
-    [Module.Free R M]
-    {N : Type v} [AddCommGroup N] [Module R N] [Module.Finite R N]
-    [Module.Free R N]
-    {hdimM : Module.rank R M = 2} (hdimN : Module.rank R N = 2)
-    {ρ : GaloisRep ℚ R M} (h : IsHardlyRamified hℓOdd hdimM ρ)
-    (e : M ≃ₗ[R] N) :
-    IsHardlyRamified hℓOdd hdimN (ρ.conj e) := by
-  constructor
-  · -- determinant: conjugation-invariant
-    intro g
-    rw [GaloisRep.det_apply, GaloisRep.conj_apply, LinearEquiv.conj_apply,
-      LinearMap.comp_assoc, LinearMap.det_conj]
-    exact h.det g
-  · -- unramifiedness: the kernel of the local representation only grows
-    intro p hp hpp
-    have hun := h.isUnramified p hp hpp
-    refine ⟨le_trans hun.localInertiaGroup_le ?_⟩
-    intro σ hσ
-    have h1 : ρ.toLocal hp.toHeightOneSpectrumRingOfIntegersRat σ = 1 := hσ
-    show (ρ.conj e).toLocal hp.toHeightOneSpectrumRingOfIntegersRat σ = 1
-    rw [GaloisRep.toLocal_apply, GaloisRep.conj_apply,
-      ← GaloisRep.toLocal_apply, h1]
-    refine LinearMap.ext fun w => ?_
-    simp
-  · -- flatness: transport along the base-changed equivariant isomorphism
-    constructor
-    intro I hI
-    refine (h.isFlat.cond I hI).of_equiv _
-      (LinearEquiv.baseChange R (R ⧸ I) M N e).toAddEquiv ?_
-    intro g x
-    show (LinearEquiv.baseChange R (R ⧸ I) M N e)
-        (((ρ.baseChange (R ⧸ I)).toLocal
-          (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
-            (Fact.out : ℓ.Prime)) g) x) =
-      (((ρ.conj e).baseChange (R ⧸ I)).toLocal
-          (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
-            (Fact.out : ℓ.Prime)) g)
-        ((LinearEquiv.baseChange R (R ⧸ I) M N e) x)
-    induction x using TensorProduct.induction_on with
-    | zero => simp
-    | add a b ha hb => simp only [map_add, ha, hb]
-    | tmul c m =>
-      simp only [GaloisRep.toLocal_apply, GaloisRep.baseChange_tmul,
-        LinearEquiv.baseChange_tmul, GaloisRep.conj_apply,
-        LinearEquiv.conj_apply_apply, LinearEquiv.symm_apply_apply]
-  · -- tameness at 2: compose the quotient with the inverse isomorphism
-    obtain ⟨π, hπsurj, δ, hδ⟩ := h.isTameAtTwo
-    refine ⟨π.comp (e.symm : N →ₗ[R] M), ?_, δ, ?_⟩
-    · intro r
-      obtain ⟨m, hm⟩ := hπsurj r
-      exact ⟨e m, by simp [hm]⟩
-    · intro g w
-      refine ⟨?_, (hδ 1 0).2.1, (hδ 1 0).2.2⟩
-      have h1 := (hδ g (e.symm w)).1
-      show π (e.symm ((ρ.conj e).map (algebraMap ℚ ℚ_[2]) g w)) =
-        δ g (π (e.symm w))
-      rw [GaloisRep.map_apply, GaloisRep.conj_apply,
-        LinearEquiv.conj_apply_apply, LinearEquiv.symm_apply_apply,
-        ← GaloisRep.map_apply, h1]
 
 set_option backward.isDefEq.respectTransparency false in
 open scoped TensorProduct in
