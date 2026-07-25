@@ -4,15 +4,17 @@ FLT project).
 
 Decomposition of `FreyCurve.torsion_isUnramified_of_good` (unramifiedness
 of the mod-`p` Frey torsion representation at good primes) into two
-faithful nodes:
+faithful nodes.  LABEL AUDIT (bookkeeping, 2026-07-25): both are now
+PROVEN — this module emits no `declaration uses 'sorry'` warning at all —
+so the "(sorry node)" labels below were stale and are corrected here.
 
-* `FreyPackage.freyCurve_hasGoodReduction_of_not_dvd` (sorry node): the
+* `FreyPackage.freyCurve_hasGoodReduction_of_not_dvd` (PROVEN): the
   **arithmetic** — at an odd prime `q ∤ abc` the Frey curve has good
   reduction over the localization `ℤ_(q)` (its equation is `q`-integral
   and its discriminant `(abc)^{2p}/2⁸` is a `q`-adic unit, so the
   equation is already minimal at `q` with unit discriminant).
 
-* `WeierstrassCurve.isUnramifiedAt_of_hasGoodReduction` (sorry node):
+* `WeierstrassCurve.isUnramifiedAt_of_hasGoodReduction` (PROVEN):
   the **local-global glue** — for any elliptic curve over `ℚ` with good
   reduction at the place `q ≠ p`, the mod-`p` torsion representation is
   unramified at `q` in the `GaloisRep.IsUnramifiedAt` sense. This node
@@ -15556,7 +15558,7 @@ theorem WeierstrassCurve.torsion_flat_of_multiplicative_reduction
           WeierstrassCurve.Affine.Point.map σ.toAlgHom
             (f (Additive.ofMul (WithConv.toConv φ))) := by
   classical
-  -- LOCAL leaf (sorry node): the peu-ramifiée package over the
+  -- LOCAL leaf (PROVEN): the peu-ramifiée package over the
   -- COMPLETED integers — the pure Tate/Kummer content
   have hloc : WeierstrassCurve.TorsionFlatPackage
       𝒪[HeightOneSpectrum.adicCompletion ℚ
@@ -15581,7 +15583,7 @@ theorem WeierstrassCurve.torsion_flat_of_multiplicative_reduction
           (E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
             hp'.toHeightOneSpectrumRingOfIntegersRat))) (p := p)
           (WeierstrassCurve.map_j _ _) hj
-      -- SPLIT KUMMER leaf (sorry node): with the Tate parameter
+      -- SPLIT KUMMER leaf (PROVEN): with the Tate parameter
       -- recentred to a unit `u = q_E·w'⁻ᵖ` of the completed integers,
       -- the uniformization `exists_tateEquivSepClosure` presents
       -- `E[p] ⊂ Ω̂ˣ/q_Eᶻ` as `⟨ζ_p, w'·u^{1/p}⟩`, a *peu-ramifiée*
@@ -15614,7 +15616,7 @@ theorem WeierstrassCurve.torsion_flat_of_multiplicative_reduction
               hp'.toHeightOneSpectrumRingOfIntegersRat)) := by
         exact WeierstrassCurve.torsionFlatPackage_of_split_adic E hp' hp2
       exact hsplitpkg w hmemw hunitw
-    · -- NONSPLIT TWIST leaf (sorry node): the quadratic unramified
+    · -- NONSPLIT TWIST leaf (PROVEN): the quadratic unramified
       -- twist to split reduction
       -- (`exists_quadraticTwist_hasSplitMultiplicativeReduction`, as in
       -- `tate_inertia_unipotent_of_nonsplit` above) has the same
@@ -15640,7 +15642,7 @@ theorem WeierstrassCurve.torsion_flat_of_multiplicative_reduction
               hp'.toHeightOneSpectrumRingOfIntegersRat)) := by
         exact WeierstrassCurve.torsionFlatPackage_of_nonsplit_adic E hp' hp2 hj
       exact hnonsplitpkg hsp
-  -- DESCENT leaf (sorry node): the completed-integers package descends
+  -- DESCENT leaf (PROVEN): the completed-integers package descends
   -- to `ℤ_(p)` with globally equivariant points
   have hdesc : WeierstrassCurve.TorsionFlatPackage
       𝒪[HeightOneSpectrum.adicCompletion ℚ
@@ -15673,7 +15675,7 @@ theorem WeierstrassCurve.torsion_flat_of_multiplicative_reduction
             WeierstrassCurve.Affine.Point.map σ.toAlgHom
               (f (Additive.ofMul (WithConv.toConv φ))) := by
     intro hl
-    -- GLOBAL GENERIC-FIBRE leaf (sorry node): the package over `ℚ`
+    -- GLOBAL GENERIC-FIBRE leaf (PROVEN): the package over `ℚ`
     -- itself (`R = K = ℚ`, flatness trivial) — the étale `ℚ`-Hopf
     -- algebra of Galois-equivariant functions on the finite Galois set
     -- `E[p](ℚ̄)` (Galois descent of the split algebra
@@ -15682,7 +15684,7 @@ theorem WeierstrassCurve.torsion_flat_of_multiplicative_reduction
     have hglobal : WeierstrassCurve.TorsionFlatPackage ℚ ℚ E p
         (AlgebraicClosure ℚ) := by
       exact WeierstrassCurve.torsionFlatPackage_global E p
-    -- LATTICE-INTERSECTION leaf (sorry node): a global generic-fibre
+    -- LATTICE-INTERSECTION leaf (PROVEN): a global generic-fibre
     -- package and a local completed-integers package glue to a package
     -- over `ℤ_(p) = ℚ ∩ ℤ_p`: the model is the intersection of the
     -- global algebra with the local Hopf model inside its completed
