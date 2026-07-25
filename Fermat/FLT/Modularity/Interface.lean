@@ -196,6 +196,20 @@ public import Fermat.FLT.Mathlib.RingTheory.PadicIntegralClosure
 -- unit — the arithmetic core of the at-`2` cyclotomic-inertia lemma
 -- `cyclotomicCharacter_eq_one_of_mem_inertia_two_upstream` (pillar E1a)
 import Mathlib.RingTheory.Polynomial.Cyclotomic.Eval
+-- the `p`-th power residue character of the Stickelberger cut lives in
+-- `MulChar (𝓞 CF ⧸ q) (𝓞 CF)`, which occurs in SIGNATURE position in
+-- `exists_powerResidueChar_of_prime_notMem` and
+-- `stickelbergerProd_isPrincipal_of_powerResidueChar`, so the defining
+-- module must be imported publicly rather than reached transitively.
+public import Mathlib.NumberTheory.MulChar.Basic
+-- `Ideal.finiteQuotientOfFreeOfNeBot` (the residue field at a nonzero prime
+-- of a number ring is finite) and the finite-field API behind
+-- `prime_dvd_card_residueField_sub_one`.
+public import Mathlib.LinearAlgebra.FreeModule.IdealQuotient
+public import Mathlib.FieldTheory.Finite.Basic
+-- `Polynomial.isRoot_cyclotomic_iff`, the separability input behind
+-- `residueField_isPrimitiveRoot_of_notMem`.
+public import Mathlib.RingTheory.Polynomial.Cyclotomic.Roots
 -- the base-change convolution lemmas (`liftEquiv_convMul` and friends) and
 -- the bare-hom/`WithConv` bridge, used by the Raynaud product-closure glue;
 -- PUBLIC because the glue lemmas' statements mention the `WithConv`
@@ -17469,11 +17483,13 @@ The classical chain, and what each link costs on this pin:
   2026-07-25). Two of the three resulting cases are discharged here:
   `A` principal, and `A` the ramified prime above `p`, which for the
   PRIME conductor `p` is `(ζ − 1)` and hence principal
-  (`cyclotomic_isPrincipal_of_isPrime_of_natCast_mem`). THE ONE
-  REMAINING `sorry` of this chain is the third case —
-  `stickelberger_prod_map_prime_ideal_isPrincipal`, the theorem for a
-  single prime `q` with `p ∉ q`, whose own docstring carries the
-  dependency-ordered list of what is still missing from the pin.
+  (`cyclotomic_isPrincipal_of_isPrime_of_natCast_mem`). The third case
+  — a single prime `q` with `p ∉ q` — is
+  `stickelberger_prod_map_prime_ideal_isPrincipal`, itself PROVEN
+  (2026-07-25) over the character-fed leaf
+  `stickelbergerProd_isPrincipal_of_powerResidueChar`, whose docstring
+  carries the dependency-ordered list of what is still missing from
+  the pin. THE ONE REMAINING `sorry` of this chain is that leaf.
 * **(d′) … annihilates the ideal class group** (Thm. 6.10, second
   sentence): PROVEN here as `stickelberger_annihilates_classGroup`,
   from (d) through the generic class-group brick
@@ -17485,15 +17501,15 @@ The classical chain, and what each link costs on this pin:
   floor arithmetic `sum_Ico_mul_two_mul_div_eq`.
 
 So: (a) is mathlib, (b) is folded into (d), (c)/(d′)/(e) are PROVEN,
-and (d) is now PROVEN too, over a single narrower citation. The next
-owner's frontier is exactly that citation,
-`stickelberger_prod_map_prime_ideal_isPrincipal`: one prime ideal `q`
-prime to `p`, for which the route is (b) plus §6.2's descent, or the
-shorter §15.1 route (Gauss sums attached to a degree-one prime
-`ℓ ≡ 1 (mod p)` lying in the given ideal class — so a
-Chebotarev/Dirichlet input as well — plus the same Kummer descent).
-Neither route is cheap on this pin; both are itemised, as statements,
-in that leaf's docstring. -/
+and (d) is now PROVEN too, over a single narrower citation which is
+itself PROVEN over the still narrower leaf
+`stickelbergerProd_isPrincipal_of_powerResidueChar` (2026-07-25). The
+next owner's frontier is exactly that leaf: one prime ideal `q` prime
+to `p`, together with a `p`-th power residue character at `q` supplied
+as a hypothesis (`exists_powerResidueChar_of_prime_notMem`, PROVEN),
+for which the route is (b) plus §6.2's Jacobi-sum descent — the §15.1
+route needs a Chebotarev/Dirichlet input this pin does not have. What
+remains is itemised, as statements, in that leaf's docstring. -/
 
 /-- **Principality of the twisted ideal product kills the ideal class**
 (PROVEN 2026-07-25; the generic class-group brick of the Stickelberger
@@ -17696,6 +17712,307 @@ noncomputable def stickelbergerProd (CF : Type) [Field CF] [NumberField CF]
   twistedIdealProd (fun u : (ZMod p)ˣ => cycGalRingOfIntegersEquiv CF u⁻¹)
     (fun u => t * ((u : ZMod p).val) / p) J
 
+/-- **The residue field of an unramified prime carries `μ_p`** (PROVEN
+2026-07-25; step 1 of the Stickelberger cut, item 1 of the list in
+`stickelberger_prod_map_prime_ideal_isPrincipal` below): if `q` is a
+prime ideal of `𝓞 CF` with `p ∉ q` — equivalently `q` lies over a
+rational prime `ℓ ≠ p` — then the reduction mod `q` of a primitive
+`p`-th root of unity `ζ ∈ 𝓞 CF` is again a primitive `p`-th root of
+unity in the residue ring `𝓞 CF ⧸ q`.
+
+This is the statement Washington uses silently at the top of the proof
+of Thm. 6.10 ("since the `(q−1)`st roots of unity are distinct mod
+`𝔭`"), and the pin has no packaged form of it. The proof is the
+separability of `Φ_p` away from `p`: `ζ` is a root of
+`cyclotomic p (𝓞 CF)` (`IsPrimitiveRoot.isRoot_cyclotomic`), the
+quotient map carries that to a root of `cyclotomic p (𝓞 CF ⧸ q)`
+(`Polynomial.map_cyclotomic`), and over a domain in which `p` is
+invertible — which is exactly `p ∉ q` — being a root of the `p`-th
+cyclotomic polynomial IS being a primitive `p`-th root of unity
+(`Polynomial.isRoot_cyclotomic_iff`, whose `NeZero (p : 𝓞 CF ⧸ q)`
+hypothesis is `Ideal.Quotient.eq_zero_iff_mem` applied to `hpq`).
+
+Note that `q ≠ ⊥` is NOT needed here: for `q = ⊥` the quotient is
+`𝓞 CF` itself and the statement is the hypothesis. -/
+theorem residueField_isPrimitiveRoot_of_notMem
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
+    {q : Ideal (𝓞 CF)} (hq : q.IsPrime) (hpq : (p : 𝓞 CF) ∉ q)
+    {ζ : 𝓞 CF} (hζ : IsPrimitiveRoot ζ p) :
+    IsPrimitiveRoot (Ideal.Quotient.mk q ζ) p := by
+  haveI : q.IsPrime := hq
+  haveI : NeZero ((p : ℕ) : 𝓞 CF ⧸ q) := by
+    refine ⟨fun h => hpq ?_⟩
+    rw [← map_natCast (Ideal.Quotient.mk q) p, Ideal.Quotient.eq_zero_iff_mem] at h
+    exact h
+  rw [← Polynomial.isRoot_cyclotomic_iff]
+  have h1 : Polynomial.IsRoot (Polynomial.cyclotomic p (𝓞 CF)) ζ :=
+    hζ.isRoot_cyclotomic hp.out.pos
+  have h2 := h1.map (f := (Ideal.Quotient.mk q))
+  rwa [Polynomial.map_cyclotomic] at h2
+
+/-- **`p ∣ Q − 1` at a prime not above `p`** (PROVEN 2026-07-25; the
+numerical half of item 1 of the list in
+`stickelberger_prod_map_prime_ideal_isPrincipal`): writing
+`Q := #(𝓞 CF ⧸ q)` for the norm of a nonzero prime `q` of `𝓞 CF` with
+`p ∉ q`, the prime `p` divides `Q − 1`.
+
+This is what makes the exponent `(Q−1)/p` of the `p`-th power residue
+character an integer, and it is the reason `μ_p ⊆ F^×`. Proof: the
+residue ring is a finite field (`Ideal.IsPrime.isMaximal` in the
+Dedekind domain `𝓞 CF`, plus `Ideal.finiteQuotientOfFreeOfNeBot`), the
+reduction of `ζ` is a primitive `p`-th root of unity there
+(`residueField_isPrimitiveRoot_of_notMem`), so `p` is its order
+(`IsPrimitiveRoot.eq_orderOf`), and the order of a nonzero element of
+a finite field divides `Q − 1`
+(`FiniteField.pow_card_sub_one_eq_one`). -/
+theorem prime_dvd_card_residueField_sub_one
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
+    {q : Ideal (𝓞 CF)} (hq : q.IsPrime) (hq0 : q ≠ ⊥) (hpq : (p : 𝓞 CF) ∉ q) :
+    p ∣ Nat.card (𝓞 CF ⧸ q) - 1 := by
+  haveI : q.IsPrime := hq
+  haveI : q.IsMaximal := hq.isMaximal hq0
+  letI : Field (𝓞 CF ⧸ q) := Ideal.Quotient.field q
+  haveI : Finite (𝓞 CF ⧸ q) := Ideal.finiteQuotientOfFreeOfNeBot q hq0
+  haveI : Fintype (𝓞 CF ⧸ q) := Fintype.ofFinite _
+  have hζ : IsPrimitiveRoot (IsCyclotomicExtension.zeta p ℚ CF) p :=
+    IsCyclotomicExtension.zeta_spec p ℚ CF
+  have hprim : IsPrimitiveRoot (Ideal.Quotient.mk q hζ.toInteger) p :=
+    residueField_isPrimitiveRoot_of_notMem CF hq hpq hζ.toInteger_isPrimitiveRoot
+  have hz0 : (Ideal.Quotient.mk q hζ.toInteger) ≠ 0 := by
+    intro h
+    have h1 := hprim.pow_eq_one
+    rw [h, zero_pow hp.out.ne_zero] at h1
+    exact zero_ne_one h1
+  have hord : orderOf (Ideal.Quotient.mk q hζ.toInteger) = p := hprim.eq_orderOf.symm
+  have hcard : (Ideal.Quotient.mk q hζ.toInteger) ^ (Fintype.card (𝓞 CF ⧸ q) - 1) = 1 := by
+    refine FiniteField.pow_card_sub_one_eq_one (K := 𝓞 CF ⧸ q) _ ?_
+    intro h
+    exact hz0 h
+  rw [Nat.card_eq_fintype_card, ← hord]
+  exact orderOf_dvd_of_pow_eq_one hcard
+
+/-- **The `p`-th power residue character at a prime `q ∤ p`** (PROVEN
+2026-07-25; item 2 of the list in
+`stickelberger_prod_map_prime_ideal_isPrincipal` below, which recorded
+it as MISSING from this pin): for a nonzero prime `q` of `𝓞 CF` with
+`p ∉ q`, there is a multiplicative character
+
+`χ_q : (𝓞 CF ⧸ q) → 𝓞 CF`
+
+taking values in `μ_p(𝓞 CF)` and characterised by the congruence
+
+`χ_q(x) ≡ x^{(Q−1)/p}  (mod q)`,  `Q := #(𝓞 CF ⧸ q)`,
+
+together with nontriviality. This is Washington's `ω^{−d}` (§6.2,
+`d = (Q−1)/m`) written multiplicatively as a `MulChar`, i.e. the
+arithmetic Teichmüller character at `q`; it is the character whose
+Gauss sum factors as the Stickelberger divisor. (**Not** the
+Witt-vector Teichmüller lift of `Mathlib.RingTheory.Teichmuller`,
+which is unrelated.) The convention here is the reciprocal of
+Washington's `ω^{−d}`; the two differ by inversion, which changes
+`θ` into its complex conjugate and nothing else.
+
+Construction. The residue ring is a finite field with `p ∣ Q − 1`
+(`prime_dvd_card_residueField_sub_one`), so for `x ≠ 0` the element
+`x^{(Q−1)/p}` satisfies `(x^{(Q−1)/p})^p = x^{Q−1} = 1` and hence is a
+power of the reduction of `ζ`
+(`residueField_isPrimitiveRoot_of_notMem` and
+`IsPrimitiveRoot.eq_pow_of_pow_eq_one`); choosing such an exponent `k`
+and setting `χ_q(x) := ζ^k` (and `χ_q(0) := 0`) gives a well-defined
+map because reduction is INJECTIVE on `μ_p(𝓞 CF)`: `ζ` and its
+reduction both have exact order `p`, so `ζ^i ≡ ζ^j (mod q)` forces
+`i ≡ j (mod p)`. Multiplicativity is that same injectivity applied to
+`χ_q(xy)` and `χ_q(x)χ_q(y)`, both powers of `ζ` with the same
+reduction `(xy)^{(Q−1)/p}`. Nontriviality is `g^{(Q−1)/p} ≠ 1` for a
+generator `g` of the cyclic group `(𝓞 CF ⧸ q)ˣ`, which holds because
+`0 < (Q−1)/p < Q − 1`. -/
+theorem exists_powerResidueChar_of_prime_notMem
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
+    {q : Ideal (𝓞 CF)} (hq : q.IsPrime) (hq0 : q ≠ ⊥) (hpq : (p : 𝓞 CF) ∉ q)
+    (hQ : p ∣ Nat.card (𝓞 CF ⧸ q) - 1) :
+    ∃ χ : MulChar (𝓞 CF ⧸ q) (𝓞 CF),
+      χ ≠ 1 ∧ (∀ x : 𝓞 CF ⧸ q, x ≠ 0 → χ x ^ p = 1) ∧
+      (∀ x : 𝓞 CF ⧸ q,
+        Ideal.Quotient.mk q (χ x) = x ^ ((Nat.card (𝓞 CF ⧸ q) - 1) / p)) := by
+  classical
+  haveI : q.IsPrime := hq
+  haveI : q.IsMaximal := hq.isMaximal hq0
+  letI : Field (𝓞 CF ⧸ q) := Ideal.Quotient.field q
+  haveI : Finite (𝓞 CF ⧸ q) := Ideal.finiteQuotientOfFreeOfNeBot q hq0
+  haveI : Fintype (𝓞 CF ⧸ q) := Fintype.ofFinite _
+  haveI : NeZero p := ⟨hp.out.ne_zero⟩
+  have hcard : Nat.card (𝓞 CF ⧸ q) = Fintype.card (𝓞 CF ⧸ q) := Nat.card_eq_fintype_card
+  have hQ2 : 2 ≤ Fintype.card (𝓞 CF ⧸ q) := Fintype.one_lt_card
+  have hQ' : p ∣ Fintype.card (𝓞 CF ⧸ q) - 1 := by rwa [hcard] at hQ
+  set d : ℕ := (Fintype.card (𝓞 CF ⧸ q) - 1) / p
+  have hdp : d * p = Fintype.card (𝓞 CF ⧸ q) - 1 := Nat.div_mul_cancel hQ'
+  have hd0 : 0 < d := by
+    rcases Nat.eq_zero_or_pos d with h | h
+    · rw [h, zero_mul] at hdp; omega
+    · exact h
+  have hdlt : d < Fintype.card (𝓞 CF ⧸ q) - 1 := by
+    have h2 : 2 ≤ p := hp.out.two_le
+    have hkey : d * 2 ≤ d * p := Nat.mul_le_mul (le_refl d) h2
+    rw [hdp] at hkey
+    omega
+  have hζ := IsCyclotomicExtension.zeta_spec p ℚ CF
+  set ζ : 𝓞 CF := hζ.toInteger
+  have hζp : IsPrimitiveRoot ζ p := hζ.toInteger_isPrimitiveRoot
+  have hzp : IsPrimitiveRoot (Ideal.Quotient.mk q ζ) p :=
+    residueField_isPrimitiveRoot_of_notMem CF hq hpq hζp
+  have hpowmodR : ∀ i : ℕ, ζ ^ i = ζ ^ (i % p) := by
+    intro i
+    conv_lhs => rw [← Nat.div_add_mod i p]
+    rw [pow_add, pow_mul, hζp.pow_eq_one, one_pow, one_mul]
+  have hpowmodF : ∀ i : ℕ, (Ideal.Quotient.mk q ζ) ^ i = (Ideal.Quotient.mk q ζ) ^ (i % p) := by
+    intro i
+    conv_lhs => rw [← Nat.div_add_mod i p]
+    rw [pow_add, pow_mul, hzp.pow_eq_one, one_pow, one_mul]
+  have hinj : ∀ i j : ℕ,
+      Ideal.Quotient.mk q (ζ ^ i) = Ideal.Quotient.mk q (ζ ^ j) → ζ ^ i = ζ ^ j := by
+    intro i j hij
+    rw [map_pow, map_pow, hpowmodF i, hpowmodF j] at hij
+    have h1 : i % p = j % p :=
+      hzp.pow_inj (Nat.mod_lt _ hp.out.pos) (Nat.mod_lt _ hp.out.pos) hij
+    rw [hpowmodR i, hpowmodR j, h1]
+  have hex : ∀ x : 𝓞 CF ⧸ q, ∃ k : ℕ, x ≠ 0 → (Ideal.Quotient.mk q ζ) ^ k = x ^ d := by
+    intro x
+    by_cases hx : x = 0
+    · exact ⟨0, fun h => absurd hx h⟩
+    · have hroot : (x ^ d) ^ p = 1 := by
+        rw [← pow_mul, hdp]
+        exact FiniteField.pow_card_sub_one_eq_one (K := 𝓞 CF ⧸ q) x hx
+      obtain ⟨i, -, hi⟩ := hzp.eq_pow_of_pow_eq_one hroot
+      exact ⟨i, fun _ => hi⟩
+  choose kf hkf using hex
+  set L : (𝓞 CF ⧸ q) → 𝓞 CF := fun x => if x = 0 then 0 else ζ ^ kf x with hLdef
+  have hLne : ∀ x : 𝓞 CF ⧸ q, x ≠ 0 → L x = ζ ^ kf x := by
+    intro x hx; simp [hLdef, hx]
+  have hLred : ∀ x : 𝓞 CF ⧸ q, Ideal.Quotient.mk q (L x) = x ^ d := by
+    intro x
+    by_cases hx : x = 0
+    · subst hx; simp [hLdef, zero_pow hd0.ne']
+    · rw [hLne x hx, map_pow, hkf x hx]
+  have hmul : ∀ x y : 𝓞 CF ⧸ q, L (x * y) = L x * L y := by
+    intro x y
+    by_cases hx : x = 0
+    · subst hx; simp [hLdef]
+    by_cases hy : y = 0
+    · subst hy; simp [hLdef]
+    have hxy : x * y ≠ 0 := mul_ne_zero hx hy
+    rw [hLne _ hxy, hLne x hx, hLne y hy, ← pow_add]
+    refine hinj _ _ ?_
+    rw [map_pow, map_pow, hkf _ hxy, pow_add, hkf x hx, hkf y hy, mul_pow]
+  have hone : L 1 = 1 := by
+    have h1 : (1 : 𝓞 CF ⧸ q) ≠ 0 := one_ne_zero
+    rw [hLne 1 h1]
+    have hz : ζ ^ kf 1 = ζ ^ 0 := by
+      refine hinj _ _ ?_
+      rw [map_pow, map_pow, hkf 1 h1, one_pow, pow_zero]
+    rw [hz, pow_zero]
+  refine ⟨{ toFun := L, map_one' := hone, map_mul' := hmul, map_nonunit' := ?_ }, ?_, ?_, ?_⟩
+  · intro a ha
+    have ha0 : a = 0 := by
+      by_contra h
+      exact ha (isUnit_iff_ne_zero.mpr h)
+    simp [hLdef, ha0]
+  · intro hone'
+    obtain ⟨g, hg⟩ := IsCyclic.exists_generator (α := (𝓞 CF ⧸ q)ˣ)
+    have hord : orderOf g = Fintype.card (𝓞 CF ⧸ q)ˣ := by
+      rw [orderOf_eq_card_of_forall_mem_zpowers hg, Nat.card_eq_fintype_card]
+    have hcu : Fintype.card (𝓞 CF ⧸ q)ˣ = Fintype.card (𝓞 CF ⧸ q) - 1 :=
+      Fintype.card_units (𝓞 CF ⧸ q)
+    have hgd : g ^ d ≠ 1 := by
+      intro h
+      have hdvd := orderOf_dvd_of_pow_eq_one h
+      rw [hord, hcu] at hdvd
+      exact absurd (Nat.le_of_dvd hd0 hdvd) (by omega)
+    have hval : ((g : 𝓞 CF ⧸ q)) ^ d ≠ 1 := by
+      intro h
+      apply hgd
+      ext
+      rw [Units.val_pow_eq_pow_val, h, Units.val_one]
+    apply hval
+    have hL1 : L (g : 𝓞 CF ⧸ q) = 1 := by
+      have hc := congrArg (fun (c : MulChar (𝓞 CF ⧸ q) (𝓞 CF)) => c (g : 𝓞 CF ⧸ q)) hone'
+      simpa [MulChar.one_apply_coe] using hc
+    have hr := hLred (g : 𝓞 CF ⧸ q)
+    rw [hL1, map_one] at hr
+    exact hr.symm
+  · intro x hx
+    show L x ^ p = 1
+    rw [hLne x hx, ← pow_mul, mul_comm, pow_mul, hζp.pow_eq_one, one_pow]
+  · intro x
+    show Ideal.Quotient.mk q (L x) = _
+    rw [hLred x, hcard]
+
+/-- **Stickelberger's theorem for one prime, GIVEN the `p`-th power
+residue character** — THE SORRY LEAF of the Stickelberger cut as of
+2026-07-25 (Stickelberger 1890; Kummer 1847; Washington,
+*Introduction to Cyclotomic Fields*, Thm. 6.10, §6.1–§6.2): for a
+nonzero prime `q` of `𝓞 CF` with `p ∉ q` and a `p`-th power residue
+character `χ` at `q` — supplied by
+`exists_powerResidueChar_of_prime_notMem` — the ideal
+
+`q^{(t − σ_t)θ} = ∏_{a=1}^{p−1} σ_a⁻¹(q)^{⌊ta/p⌋}`
+
+is PRINCIPAL.
+
+**What this leaf carries, and what it no longer carries.** Items 1
+and 2 of the classical proof — the reduction of `μ_p` at `q` and the
+existence of the character `χ_q` with `χ_q(x) ≡ x^{(Q−1)/p} (mod q)` —
+are now PROVEN above (`residueField_isPrimitiveRoot_of_notMem`,
+`prime_dvd_card_residueField_sub_one`,
+`exists_powerResidueChar_of_prime_notMem`), and `χ` reaches this leaf
+as a hypothesis rather than something to be built. What remains is the
+Gauss-sum core, items 3–6, in dependency order. Write `ℓ` for the
+rational prime under `q`, `F := 𝓞 CF ⧸ q`, `Q := #F = ℓ^f`.
+
+3. **The Gauss sum `g(χ) = −∑_{x ∈ F^×} χ(x)⁻¹ ψ(x)`** for a
+   nontrivial additive character `ψ : F → μ_ℓ`, as an element of the
+   ring of integers of the compositum `L := CF(ζ_ℓ)`. PARTLY PRESENT:
+   `gaussSum`, `gaussSum_mul_gaussSum_eq_card`, `gaussSum_frob` and
+   `Mathlib.NumberTheory.JacobiSum.Basic` are on this pin, and
+   `gaussSum` takes exactly a `MulChar F R'` and an `AddChar F R'`, so
+   `χ` above is already in the shape mathlib wants. MISSING: the
+   compositum `L` as a concrete cyclotomic extension, its ring of
+   integers, and its primes `𝒬` above `q`.
+4. **Stickelberger's congruence** (Washington Lemmas 6.11–6.12,
+   Prop. 6.13, Lemma 6.14): `v_𝒬(g(χ^{−h}))` is the `ℓ`-adic digit sum
+   of `h`, equivalently `v_𝒬(g(χ^{−h})) = (p−1) ∑_{i<f} {ℓ^i h/(Q−1)}`.
+   MISSING entirely, and it is the mathematical core: it is what
+   produces the fractional parts `{a/p}` that DEFINE `θ`.
+5. **The Jacobi descent.** `σ_t(g(χ)) = g(χ^t)`, because `σ_t` moves
+   `ζ_p` and fixes `ζ_ℓ`; and `g(χ)^t / g(χ^t)` is a product of Jacobi
+   sums `∏_{a<t} J(χ, χ^a)` (Washington Lemmas 6.2, 6.4), hence
+   already lies in `CF`. This is precisely WHY the annihilator is
+   `(t − σ_t)θ` and not `θ`, and — for THIS `ρ = t − σ_t`, unlike
+   Washington's general `ρ ∈ I'` — it makes the Kummer/unramifiedness
+   descent of Washington Lemma 6.15 UNNECESSARY: the generator is
+   manifestly in `CF` from the start.
+6. **Assembly.** Items 4 and 5 give `(g(χ)^{t−σ_t}) = q^{(t−σ_t)θ}` as
+   ideals of `𝓞 CF`, which is this leaf.
+
+Washington's §15.1 route replaces item 4 by a Chebotarev/Dirichlet
+input; this pin has no Chebotarev density theorem, so it is not
+cheaper here.
+
+Soundness of the exact form stated: for `t` prime to `p` the element
+`∑_a ⌊ta/p⌋ σ_a⁻¹` is `(t − σ_t)θ`, which lies in the Stickelberger
+ideal `I(ℚ(ζ_p)) = ℤ[G] ∩ θℤ[G]` by Washington Lemma 6.9, so Thm. 6.10
+applies verbatim. `hq0` is kept because `q = ⊥` has no residue field;
+`hpq` is what makes `q` unramified and gives `μ_p ⊆ F^×`. -/
+theorem stickelbergerProd_isPrincipal_of_powerResidueChar
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
+    (t : ℕ) (ht : ¬ (p ∣ t)) {q : Ideal (𝓞 CF)} (hq : q.IsPrime) (hq0 : q ≠ ⊥)
+    (hpq : (p : 𝓞 CF) ∉ q)
+    (χ : MulChar (𝓞 CF ⧸ q) (𝓞 CF)) (hχ1 : χ ≠ 1)
+    (hχp : ∀ x : 𝓞 CF ⧸ q, x ≠ 0 → χ x ^ p = 1)
+    (hχcong : ∀ x : 𝓞 CF ⧸ q,
+      Ideal.Quotient.mk q (χ x) = x ^ ((Nat.card (𝓞 CF ⧸ q) - 1) / p)) :
+    Submodule.IsPrincipal (stickelbergerProd (p := p) CF t q) :=
+  sorry
+
 /-- **Stickelberger's theorem for ONE prime ideal prime to `p`** — THE
 SORRY LEAF of the Stickelberger cut (re-cut 2026-07-25; it replaces
 the former all-ideals citation, which is now PROVEN from this;
@@ -17724,52 +18041,22 @@ over `p` is `(ζ − 1)`
 principal and its Stickelberger product is principal for free. Hence
 the hypothesis `p ∉ q` here.
 
-**What remains — the classical proof, in dependency order, with each
-piece missing from this mathlib pin named as a statement.** Write `ℓ`
-for the rational prime under `q`, `F := 𝓞 CF ⧸ q` for the residue
-field, and `Q := #F = ℓ^f`.
+**PROVEN 2026-07-25 over a finer cut; this is no longer a leaf.** The
+classical proof was listed here in six steps; steps 1 and 2 — the
+reduction of `μ_p` at an unramified prime and the `p`-th power residue
+character `χ_q` with `χ_q(x) ≡ x^{(Q−1)/p} (mod q)`, both of which
+that list recorded as MISSING from this pin — are now theorems above:
 
-1. **`p ∣ Q − 1`, and `F` carries `μ_p`.** The reduction of `ζ` has
-   exact order `p` in `Fˣ`, because `Φ_p` stays separable mod `q` when
-   `ℓ ≠ p`. MISSING as a statement: the pin has `IsPrimitiveRoot`,
-   `Ideal.absNorm` and the finite-field API, but nothing packaging
-   "the reduction of a primitive `p`-th root of unity at a prime not
-   above `p` is a primitive `p`-th root of unity in the residue
-   field".
-2. **The `p`-th power residue character `χ_q : Fˣ → μ_p(𝓞 CF)`**, the
-   unique character with `χ_q(x) ≡ x^{(Q−1)/p} (mod q)`; this is the
-   Teichmüller character of the cut. MISSING: the pin has `MulChar`
-   and `MulChar.Duality` but no character attached to a prime ideal,
-   and `Mathlib.RingTheory.Teichmuller` is the Witt-vector
-   Teichmüller lift, unrelated.
-3. **The Gauss sum `g(χ_q) = −∑_{x ∈ Fˣ} χ_q(x)⁻¹ ψ(x)`** for a
-   nontrivial additive character `ψ : F → μ_ℓ`, as an element of the
-   ring of integers of the compositum `CF(ζ_ℓ)`. PARTLY PRESENT — this
-   is link (a): `gaussSum`, `gaussSum_mul_gaussSum_eq_card`,
-   `gaussSum_frob` and `Mathlib.NumberTheory.JacobiSum.Basic` are all
-   on the pin, so what is missing is only the compositum `CF(ζ_ℓ)` as
-   a concrete cyclotomic extension together with its ring of integers
-   and the primes of it above `q`.
-4. **Stickelberger's congruence** (Washington Prop. 6.13, from Lemmas
-   6.11 and 6.12; equivalently Lemma 6.14): the `𝒬`-adic valuation of
-   `g(χ_q^{−h})` at a prime `𝒬` of `CF(ζ_ℓ)` above `q` is the sum of
-   the `ℓ`-adic digits of `h`, i.e.
-   `v_𝒬(g(χ_q^{−h})) = (p−1) ∑_{i<f} {ℓ^i h/(Q−1)}`. MISSING
-   entirely, and this is the mathematical core of the leaf: it is what
-   produces the fractional parts `{a/p}` that DEFINE `θ`.
-5. **Galois descent of the Gauss sum.** `σ_t(g(χ)) = g(χ^t)`, because
-   `σ_t` moves `ζ_p` and fixes `ζ_ℓ`; and `g(χ)^t/g(χ^t)` is a product
-   of Jacobi sums, hence already lies in `CF` (Washington Lemmas 6.2
-   and 6.4). This is precisely WHY the annihilator is `(t − σ_t)θ` and
-   not `θ`: `g(χ)^{t−σ_t}` is the element of `CF` that generates
-   `q^{(t−σ_t)θ}`. The Jacobi-sum identities are on the pin; the
-   descent statement is not.
-6. **Assembly.** Steps 4 and 5 give
-   `(g(χ)^{t−σ_t}) = q^{(t−σ_t)θ}` as ideals of `𝓞 CF`, which is this
-   leaf. Washington's alternative §15.1 route replaces step 4 by a
-   Chebotarev/Dirichlet input — choose a degree-one prime `ℓ ≡ 1 mod
-   p` in the given class — plus the same Kummer descent; the pin has
-   no Chebotarev density theorem either, so it is not cheaper here.
+* `residueField_isPrimitiveRoot_of_notMem`,
+* `prime_dvd_card_residueField_sub_one`,
+* `exists_powerResidueChar_of_prime_notMem`.
+
+What is left, steps 3–6 (the Gauss sum `g(χ_q)` in the compositum
+`CF(ζ_ℓ)`, Stickelberger's congruence, the Jacobi descent, and the
+assembly), is the single leaf
+`stickelbergerProd_isPrincipal_of_powerResidueChar` above, which takes
+the character as a HYPOTHESIS. Its docstring itemises what remains;
+this theorem is now just the two of them composed.
 
 Soundness of the exact form stated: for `t` prime to `p` the element
 `∑_a ⌊ta/p⌋ σ_a⁻¹` is `(t − σ_t)θ`, which lies in the Stickelberger
@@ -17783,12 +18070,15 @@ theorem stickelberger_prod_map_prime_ideal_isPrincipal
     (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
     (t : ℕ) (ht : ¬ (p ∣ t)) {q : Ideal (𝓞 CF)} (hq : q.IsPrime) (hq0 : q ≠ ⊥)
     (hpq : (p : 𝓞 CF) ∉ q) :
-    Submodule.IsPrincipal (stickelbergerProd (p := p) CF t q) :=
-  sorry
+    Submodule.IsPrincipal (stickelbergerProd (p := p) CF t q) := by
+  obtain ⟨χ, hχ1, hχp, hχcong⟩ :=
+    exists_powerResidueChar_of_prime_notMem CF hq hq0 hpq
+      (prime_dvd_card_residueField_sub_one CF hq hq0 hpq)
+  exact stickelbergerProd_isPrincipal_of_powerResidueChar CF t ht hq hq0 hpq χ hχ1 hχp hχcong
 
 /-- **Stickelberger's theorem, reduced to primes** (PROVEN 2026-07-25
-over the single leaf
-`stickelberger_prod_map_prime_ideal_isPrincipal`): the Stickelberger
+over `stickelberger_prod_map_prime_ideal_isPrincipal`, itself proven
+over `stickelbergerProd_isPrincipal_of_powerResidueChar`): the Stickelberger
 operator sends EVERY ideal of `𝓞 CF` to a principal ideal. This is
 `twistedIdealProd_isPrincipal_of_forall_prime` fed with the two prime
 cases — `cyclotomic_isPrincipal_of_isPrime_of_natCast_mem` together
@@ -17845,11 +18135,13 @@ everywhere, hence trivial by Lemma 6.15. §15.1 gives a shorter route
 at the cost of a Chebotarev input. Neither is available on this pin:
 mathlib has Gauss sums and Jacobi sums
 (`Mathlib.NumberTheory.GaussSum`, `.JacobiSum` — link (a)) but no
-Teichmüller character attached to a prime, no valuation of Gauss sums,
-and no Stickelberger/Herbrand material at all (grepped 2026-07-24 and
-re-verified 2026-07-25). The itemised remainder now lives on the leaf
-`stickelberger_prod_map_prime_ideal_isPrincipal`, which is the honest
-citation boundary.
+valuation of Gauss sums and no Stickelberger/Herbrand material at all
+(grepped 2026-07-24, re-verified 2026-07-25). The Teichmüller
+character at a prime, which the pin also lacked, is now PROVEN here
+(`exists_powerResidueChar_of_prime_notMem`), and the itemised
+remainder lives on the leaf
+`stickelbergerProd_isPrincipal_of_powerResidueChar`, which is the
+honest citation boundary.
 
 Soundness of the exact form stated: for `t` prime to `p` the element
 `∑_a ⌊ta/p⌋ σ_a⁻¹` is `(t − σ_t)θ`, which is in the Stickelberger
