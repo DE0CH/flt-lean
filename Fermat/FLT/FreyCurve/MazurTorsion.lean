@@ -55,6 +55,10 @@ module
 
 public import Fermat.FLT.FreyCurve.Basic
 public import Fermat.FLT.EllipticCurve.Torsion
+-- The Mordell–Weil theorem (`mordellWeil`, absent from mathlib) and the
+-- modular curve `X_1(11)` as the elliptic curve `curve11a3`; consumed by
+-- `tateNormalForm_origin_order_ne_11` below.
+public import Fermat.FLT.EllipticCurve.MordellWeil
 -- `cyclotomicCharacterModL` and the stable-line extraction, used in the
 -- character bookkeeping of the Serre §4.1 dichotomy.
 public import Fermat.FLT.GaloisRepresentation.Chebotarev
@@ -918,20 +922,36 @@ genus-`1` resp. genus-`2` curve; the remaining six are Mazur 1977,
 Thm 7 itself, and for `ℓ = 37, 43, 67, 163` the genus is far beyond any
 explicit descent.
 
-MISSING MACHINERY, IN DEPENDENCY ORDER (none of it exists here, and
-mathlib has none of it either):
+MISSING MACHINERY, IN DEPENDENCY ORDER (progress marked; mathlib still
+has none of it, and neither does the reference project `~/cs/FLT`):
 
-1. `X_1(N)` and `X_0(N)` as smooth projective curves over `ℚ`, with the
-   moduli interpretation — a non-cuspidal point of `X_1(N)(ℚ)`
-   corresponds to a pair `(E, P)` with `P ∈ E(ℚ)` of exact order `N`,
-   up to `ℚ`-isomorphism. This is the piece that would let any of the
-   eight nodes even be RESTATED geometrically; everything below needs
-   it first.
+1. `X_1(N)` and `X_0(N)` with the moduli interpretation — a non-cuspidal
+   point of `X_1(N)(ℚ)` corresponds to a pair `(E, P)` with `P ∈ E(ℚ)` of
+   exact order `N`, up to `ℚ`-isomorphism.
+   **DONE in coordinates for all eight levels**: the PROVEN
+   `exists_tateNormalForm` above makes the two-parameter family
+   `tateNormalForm b c` with its marked origin a fine moduli space for
+   pairs `(E, P)` with `ord P ≥ 4`, which is what the eight
+   `tateNormalForm_origin_order_ne_ℓ` nodes are stated over. What is still
+   missing is `X_1(N)`/`X_0(N)` as smooth PROJECTIVE curves with their
+   cusps, needed for any genus-theoretic argument.
+   **At level `11` specifically**, the remaining piece is the birational
+   passage from that plane model to the elliptic curve `11a3`, isolated as
+   the leaf `exists_curve11a3_extra_point_of_order_eleven` below. It is
+   elementary algebra over `ℚ` — the explicit multiples `4·(0,0)`,
+   `5·(0,0)`, `6·(0,0)` — and needs no new theory.
 2. The Jacobians `J_0(N)`, `J_1(N)` as abelian varieties over `ℚ`, and
    the Hecke algebra acting on them.
-3. Mordell–Weil for abelian varieties over `ℚ`. Mathlib has no
-   Mordell–Weil theorem at all, not even for elliptic curves, so even
-   the two classical levels `11` and `13` are blocked here.
+3. **Mordell–Weil over `ℚ`.** Mathlib has no Mordell–Weil theorem at all,
+   not even for elliptic curves, so even the two classical levels `11` and
+   `13` are blocked on it. **STARTED**: stated as
+   `WeierstrassCurve.mordellWeil` in
+   `Fermat/FLT/EllipticCurve/MordellWeil.lean` and already load-bearing —
+   `curve11a3_finite` is PROVEN from it plus rank `0` for `11a3`, and
+   level `11` consumes that. Its own next cut is weak Mordell–Weil
+   (`E(ℚ)/2E(ℚ)` finite) and the theory of heights, with infinite descent
+   as their proven assembly. For general abelian varieties (needed for
+   item 4) it is untouched.
 4. The Eisenstein ideal, the Eisenstein quotient of `J_0(ℓ)`, and the
    theorem that it has Mordell–Weil rank `0` over `ℚ`.
 5. Néron models over `ℤ` and the formal-immersion criterion, which is
@@ -1169,35 +1189,106 @@ lemma no_torsion_order_of_tateNormalForm {ℓ : ℕ} (h4 : 4 ≤ ℓ)
 
 end WeierstrassCurve
 
-/-- **No rational point of order `11`** (sorry node — IRREDUCIBLE
-literature citation, audited 2026-07-25): `X_1(11)` is the elliptic
-curve of genus `1` whose Mordell–Weil group over `ℚ` is `ℤ/5`, and all
-five of its rational points are cusps. Billing–Mahler, "On exceptional
-points on cubic curves" (J. London Math. Soc. 15, 1940); subsumed in
-Mazur 1977, Thm 7.
+/-!
+##### Level `11`: `X_1(11)`, the curve `11a3`, and Mordell–Weil
+
+**No rational point of order `11`**: `X_1(11)` is the elliptic curve of
+genus `1` whose Mordell–Weil group over `ℚ` is `ℤ/5`, and all five of its
+rational points are cusps. Billing–Mahler, "On exceptional points on cubic
+curves" (J. London Math. Soc. 15, 1940); subsumed in Mazur 1977, Thm 7.
 
 The `X_0` shortcut of `mem_cyclicIsogenyDegrees` is NOT available here:
 `11` is in Kenku's list, and `X_0(11)` has three non-cuspidal rational
 points, `j = −32768`, `−121`, `−24729001` (PARI/GP `ellisomat`,
 untrusted searcher). So a rational cyclic `11`-isogeny is no
 contradiction, and only the finer `X_1(11)` statement excludes the
-point. A formal proof needs `X_1(11)` as an arithmetic curve together
-with a rank-`0` Mordell–Weil computation; neither exists here. 
+point.
+
 STATED IN TATE COORDINATES (2026-07-25). The general form of this
 level — no rational point of order `11` on ANY elliptic curve over
-`ℚ` — is `no_torsion_order_11` just below, and is PROVEN from this
-node. Here the curve is the explicit two-parameter family
-`tateNormalForm b c` and the point is the origin, so this node IS the
-plane model of `X_1(11)` in the `(b, c)`-coordinates rather than a
-statement quantified over all curves. The passage between the two is
-the PROVEN `exists_tateNormalForm`; everything above about genus,
-witnesses and citation is unchanged by the restatement.
+`ℚ` — is `no_torsion_order_11` below, and is PROVEN from the Tate-
+coordinate node `tateNormalForm_origin_order_ne_11`, whose curve is the
+explicit two-parameter family `tateNormalForm b c` and whose point is the
+origin. That node IS the plane model of `X_1(11)` in the
+`(b, c)`-coordinates rather than a statement quantified over all curves;
+the passage between the two is the PROVEN `exists_tateNormalForm`.
+
+DECOMPOSED (2026-07-25). What used to be the single opaque `sorry`
+"Billing–Mahler 1940" is now split into the two things it rests on, and
+the Tate-coordinate node is PROVEN over them:
+
+* `exists_curve11a3_extra_point_of_order_eleven` — the birational passage
+  from the `(b,c)` plane model to the elliptic curve `11a3`; elementary
+  algebra over `ℚ`, not yet written;
+* `WeierstrassCurve.curve11a3_points` — the arithmetic of `11a3`, which in
+  turn is PROVEN-reduced in `Fermat/FLT/EllipticCurve/MordellWeil.lean` to
+  the **Mordell–Weil theorem** plus rank `0` for `11a3`.
+
+Every claim about `11a3` used here was cross-checked with PARI/GP
+(untrusted searcher, never a proof): `Δ = −11`, conductor `11`, torsion
+`ℤ/5`, rank `0`, and affine rational points exactly `(0,0)`, `(0,−1)`,
+`(1,0)`, `(1,−1)`.
 -/
+/-- **The plane model of `X_1(11)`, and its birational passage to `11a3`**
+(sorry leaf, 2026-07-25 — missing-machinery item 1 at level `11`): if the
+origin of `tateNormalForm b c` has order `11`, then `11a3` has a rational
+affine point OTHER than the four `(0,0)`, `(0,−1)`, `(1,0)`, `(1,−1)`.
+
+WHAT THIS SAYS. The locus in the `(b,c)`-plane where the origin has order
+`11` is an affine model of `X_1(11)` minus its cusps. `X_1(11)` has genus
+`1` with a rational cusp, so it is the elliptic curve
+`WeierstrassCurve.curve11a3 : y² + y = x³ − x²` (Cremona 11a3); the
+classical parametrisation of the Tate normal form at level `11` sends
+`(b,c)` to a point of that curve, and the four listed affine points
+together with the point at infinity are exactly the five CUSPS. A
+non-cuspidal `(b,c)` therefore produces a sixth rational point.
+
+WHAT IT NEEDS. The explicit multiples `4·(0,0)`, `5·(0,0)`, `6·(0,0)` of
+the origin as rational functions of `(b,c)`, hence the defining polynomial
+of `X_1(11)` in the `(b,c)`-plane, and the birational map to `11a3`
+transporting rational points. All of that is elementary algebra over `ℚ` —
+no new theory — but it is a substantial computation and it is not written
+yet. Kubert, "Universal bounds on the torsion of elliptic curves" (Proc.
+LMS 33, 1976), Table 3; Silverman ATAEC.
+
+This leaf is the ONLY remaining obstruction at level `11` besides the
+arithmetic of `11a3` itself, which is `curve11a3_points` and, beneath it,
+the Mordell–Weil theorem. -/
+theorem WeierstrassCurve.exists_curve11a3_extra_point_of_order_eleven (b c : ℚ)
+    [(WeierstrassCurve.tateNormalForm b c).IsElliptic]
+    (h00 : (WeierstrassCurve.tateNormalForm b c).toAffine.Nonsingular 0 0)
+    (hord : addOrderOf (Affine.Point.some 0 0 h00) = 11) :
+    ∃ x y : ℚ, WeierstrassCurve.curve11a3.toAffine.Nonsingular x y ∧
+      (x, y) ≠ ((0 : ℚ), (0 : ℚ)) ∧ (x, y) ≠ ((0 : ℚ), (-1 : ℚ)) ∧
+      (x, y) ≠ ((1 : ℚ), (0 : ℚ)) ∧ (x, y) ≠ ((1 : ℚ), (-1 : ℚ)) :=
+  sorry
+
+/-- **No order-`11` origin in Tate coordinates** (PROVEN 2026-07-25 over
+the `X_1(11)` plane model and the arithmetic of `11a3`).
+
+THE CUT. An order-`11` origin gives, through the plane model
+`exists_curve11a3_extra_point_of_order_eleven`, a rational point of
+`curve11a3 = X_1(11)` outside the four affine cusps; but
+`curve11a3_points` says `11a3(ℚ)` has no such point. The two together
+close the level.
+
+Beneath `curve11a3_points` sits `curve11a3_finite` — PROVEN in
+`Fermat/FLT/EllipticCurve/MordellWeil.lean` from the **Mordell–Weil
+theorem** (`mordellWeil`, absent from mathlib) together with rank `0` for
+`11a3` (`curve11a3_isTorsion`). So the citation "Billing–Mahler 1940;
+Mazur 1977, Thm 7" that this node used to carry as a single opaque `sorry`
+is now split into the three things it actually rests on: a plane model, a
+rank-`0` descent, and Mordell–Weil. -/
 theorem WeierstrassCurve.tateNormalForm_origin_order_ne_11 (b c : ℚ)
     [(WeierstrassCurve.tateNormalForm b c).IsElliptic]
     (h00 : (WeierstrassCurve.tateNormalForm b c).toAffine.Nonsingular 0 0) :
-    addOrderOf (Affine.Point.some 0 0 h00) ≠ 11 :=
-  sorry
+    addOrderOf (Affine.Point.some 0 0 h00) ≠ 11 := by
+  intro hord
+  obtain ⟨x, y, hns, h1, h2, h3, h4⟩ :=
+    WeierstrassCurve.exists_curve11a3_extra_point_of_order_eleven b c h00 hord
+  rcases WeierstrassCurve.curve11a3_points WeierstrassCurve.curve11a3_finite x y hns with
+    h | h | h | h
+  exacts [h1 h, h2 h, h3 h, h4 h]
 
 /-- **No rational point of order `11`** (PROVEN 2026-07-25 from the
 Tate-coordinate node above through `no_torsion_order_of_tateNormalForm`):
