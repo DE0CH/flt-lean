@@ -187,6 +187,25 @@ before agents reported back that their targets were already proven. **Build
 task lists from the DIRECT set; use the transitive set only for judging
 whether a subtree still blocks the root.**
 
+**`verified: true` does NOT mean the import cone is current** (2026-07-25, hit
+independently by two agents). Lean's LSP caches the `lake setup-file` result per
+HEADER SNAPSHOT and replays a failed one verbatim until the IMPORT LIST changes.
+So when an upstream file is broken and then fixed, `diagnostics` keeps returning
+the stale build failure — with `verified: true`, because the call really did
+receive that (stale) diagnostic. Meanwhile `build` in the same session compiles
+the file fine. A false negative carrying a truth claim is the worst shape of
+wrong answer, and it cost two agents a verification cycle each.
+
+Symptom: `diagnostics` reports an error inside an IMPORTED file rather than in
+the file you asked about. Remedy: perturb the IMPORT LIST (add or remove an
+`import`) to force a re-run, or cross-check with `build`. **A content change is
+NOT enough** — a third agent hit this after a real edit and got four successive
+byte-identical stale replies, including identical build timings and an error
+line whose `simp` no longer existed; only `build` plus lake's `.trace` log told
+the truth. Do NOT restart the report server — that discards genuine in-flight
+elaboration; and do not conclude the upstream is still broken without checking
+`git log` for a fix.
+
 **FAITHFULNESS: a leaf can be FALSE AS STATED, and that is worse than open.**
 Three were found and corrected on 2026-07-25 alone. A false leaf can never be
 proven, and anything derived from it is worthless — so when a leaf resists,
@@ -368,12 +387,37 @@ immediately; (c) scratch axiom-audit files must `import Fermat.Basic`
 and specific leaf modules, never the root `Fermat`; (d) warnings are
 not errors — keep the tree warning-clean by ordinary discipline.
 
-## No lake build in iterations; trust the MCP diagnostics
+## Verification is the COMMAND LINE. No MCP, no LSP, no servers.
 
-(Deyao, 2026-07-21.) Skip `lake build` inside work iterations — the
-**report-MCP** `diagnostics` call is the verification gate; the Stop hook
-still builds at the endgame. (A single-module `lake build` to refresh the
-daemon's state is fine when the staleness note matters.)
+(Deyao, 2026-07-25 — supersedes every "trust the MCP diagnostics" rule
+below.) The report-MCP, the `flt-lake-socket@` / `flt-report-server@`
+units, the local bridges, `.report-server/`, and `state.json` are all
+DELETED. `report-mcp.py`, `flt-report-bridge.py`, `flt-lake-socket.py`
+and `.claude/unused-binding-check.py` are removed from the repo.
+
+Agents verify with `lake env lean <file>` and `lake build <Module>`,
+run ON THE HOST THAT OWNS THE WORKTREE'S `.lake`:
+
+    H=$(cat ~/.flt-worker-host/flt-lean-N)
+    ssh $H 'cd ~/flt-lean-N && lake env lean Fermat/FLT/.../File.lean'
+
+`.lake` is a symlink into machine-local `/scratch` on that host, so
+running `lake` anywhere else finds no artifacts. `lake`/`lean`/`elan`
+are no longer in `permissions.deny`.
+
+**Why the change.** Every persistent-server failure mode this project
+hit came from documents that were opened and never closed, and from
+state shared between client processes: a stale `lake setup-file`
+failure replayed with `verified: true`, a false clean from an unheard
+publish, four rival elaborations of one file, clients wedged on dead
+FIFO handles after a server restart. A command-line invocation is a
+fresh process that exits and returns its memory, so none of those can
+occur — the fix is structural, not disciplinary. The cost is that each
+run pays the import load (minutes for a large cone), which is exactly
+why the scratch-module rule below matters more than ever.
+
+The standing agent-facing version of this lives in
+`/home/chend/.flt-agent-doctrine.md`, which every task prompt points at.
 
 **The `lean-lsp` MCP is GONE (Deyao, 2026-07-25): removed from `.mcp.json`
 entirely, because it did not work and is not needed.** The per-worktree

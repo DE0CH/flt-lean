@@ -76,7 +76,7 @@ stated leaf whose consumer is still sorried) may carry a provisional
 
 This module is import-safe: generation happens only under `__main__`.
 """
-import fcntl, hashlib, json, os, select, sys, time
+import fcntl, hashlib, json, os, select, subprocess, sys, time
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 CENSUS_LEAN = os.path.join(ROOT, "ProgressCensus.lean")
@@ -290,28 +290,27 @@ def _qlog(line):
 
 
 def run_census(names, root="fermat_last_theorem", timeout=3600):
-    """Run the census through the resident report server and return the
-    parsed response dict ({"entries": ..., "sorried": ..., "root": ...}).
+    """Run the census on the COMMAND LINE and return the parsed response
+    dict ({"entries": ..., "sorried": ..., "root": ...}).
 
-    NO fallbacks, NO auto-spawn (Deyao, 2026-07-22/23): a dead/absent
-    server, a broken pipe, or compiler errors in the census RAISE with
-    the real message (errors name the module that does not compile).
-    Handshake is the CLIENT's job (protocol, not lifecycle — Deyao,
-    2026-07-23): the unit's ExecStartPre removes state.json on every
-    (re)start, so a missing state file means a fresh server session,
-    and this client performs initialize/initialized + didOpen itself
-    before querying. Otherwise, refresh protocol per the STALENESS
-    section of the module docstring:
-      * source snapshot or import block changed -> didClose+didOpen
-        (lake setup-file rebuilds exactly the stale cones, imports are
-        reloaded, the whole file re-elaborates);
-      * census text changed only in the body (input fingerprint) ->
-        bumped-version didChange, body re-elaborates, imports stay;
-      * nothing changed -> bumped-version identity didChange, the
-        server re-publishes diagnostics from cached elaboration
-        snapshots (seconds).
-    The flock serializes concurrent clients (generator vs Stop hook)
-    over the single shared LSP session — a lock, not a fallback."""
+    Transport (Deyao, 2026-07-25 — replaces the resident report server,
+    which is deleted along with the MCP, the FIFOs and state.json):
+    one `lake env lean ProgressCensus.lean` subprocess. The census file
+    ends in an `#eval` that writes its JSON with `IO.println`, so the
+    payload arrives on stdout and elaboration errors on stderr; the
+    process then exits and returns all its memory.
+
+    NO fallbacks (Deyao, 2026-07-22/23): a census that fails to compile,
+    or produces no JSON, RAISES with the real stderr — errors name the
+    module that does not compile.
+
+    Cost model: each call pays the IMPORT LOAD of the whole project cone
+    (minutes), not re-elaboration, provided the oleans are current. There
+    is no warm/didChange fast path any more and no staleness bookkeeping
+    to get wrong — which is the trade this change makes deliberately, the
+    per-document state being where every observed defect came from. Run
+    it once per bookkeeping cycle, not in a loop, and give it a long
+    timeout."""
     with open(CENSUS_INPUT, "w", encoding="utf-8") as fh:
         json.dump({"names": list(names), "root": root}, fh)
     regenerate_census_header()
@@ -320,88 +319,35 @@ def run_census(names, root="fermat_last_theorem", timeout=3600):
     text_sha = hashlib.sha1(text.encode()).hexdigest()
     imports_sha = _imports_sha(text)
 
-    os.makedirs(SERVER_DIR, exist_ok=True)
-    lockfd = os.open(LOCK_FILE, os.O_CREAT | os.O_RDWR)
-    try:
-        fcntl.flock(lockfd, fcntl.LOCK_EX)
-        state = None
-        if os.path.exists(STATE_FILE):
-            state = json.load(open(STATE_FILE, encoding="utf-8"))
-        version = (state or {}).get("version", 0) + 1
-        if state is None:
-            # fresh server session: the unit's ExecStartPre cleared the
-            # marker on start/respawn — this client handshakes first
-            mode = "handshake"
-        elif (state.get("snapshot") != snap
-                or state.get("imports_sha") != imports_sha):
-            mode = "reopen"
-        elif state.get("text_sha") != text_sha:
-            mode = "didChange"
-        else:
-            mode = "warm"
-        t0 = time.time()
-        lsp = _PipeLsp(timeout)
-        ok = False
+    del snap, text_sha, imports_sha  # staleness bookkeeping is obsolete
+
+    t0 = time.time()
+    proc = subprocess.run(["lake", "env", "lean", CENSUS_LEAN],
+                          cwd=ROOT, capture_output=True, text=True,
+                          timeout=timeout)
+    # `#eval` writes the census JSON to stdout via IO.println; elaboration
+    # errors go to stderr and are what a nonzero status means.
+    resp = None
+    for line in proc.stdout.splitlines():
+        k = line.find("{")
+        if k < 0:
+            continue
         try:
-            if mode == "handshake":
-                lsp.request("initialize", {"processId": os.getpid(),
-                                           "rootUri": "file://" + ROOT,
-                                           "capabilities": {}})
-                lsp.notify("initialized", {})
-                lsp.notify("textDocument/didOpen", {"textDocument": {
-                    "uri": CENSUS_URI, "languageId": "lean4",
-                    "version": version, "text": text}})
-            elif mode == "reopen":
-                lsp.notify("textDocument/didClose",
-                           {"textDocument": {"uri": CENSUS_URI}})
-                lsp.notify("textDocument/didOpen", {"textDocument": {
-                    "uri": CENSUS_URI, "languageId": "lean4",
-                    "version": version, "text": text}})
-            else:
-                lsp.notify("textDocument/didChange", {
-                    "textDocument": {"uri": CENSUS_URI, "version": version},
-                    "contentChanges": [{"text": text}]})
-            lsp.request("textDocument/waitForDiagnostics",
-                        {"uri": CENSUS_URI, "version": version})
-            diags = lsp.diags.get(CENSUS_URI, [])
-            errors = [d for d in diags if d.get("severity") == 1]
-            if errors:
-                msgs = "\n".join(
-                    f"{CENSUS_LEAN}:{d['range']['start']['line'] + 1}: "
-                    f"{d['message']}" for d in errors[:10])
-                raise RuntimeError(f"census elaboration failed ({mode}, "
-                                   f"{time.time() - t0:.1f}s):\n{msgs}")
-            resp = None
-            for d in diags:
-                msg = d.get("message", "")
-                k = msg.find("{")
-                if k < 0:
-                    continue
-                try:
-                    cand = json.loads(msg[k:])
-                except ValueError:
-                    continue
-                if isinstance(cand, dict) and "sorried" in cand:
-                    resp = cand
-            if resp is None:
-                raise RuntimeError(
-                    f"census produced no JSON payload ({mode}, "
-                    f"{len(diags)} diagnostics, none parseable)")
-            ok = True
-        finally:
-            lsp.close()
-            # state is written on failure too, with a poisoned text_sha:
-            # the next run then always re-elaborates instead of reading
-            # a warm no-op against the failed version's diagnostics
-            json.dump({"snapshot": snap,
-                       "text_sha": text_sha if ok else "elaboration-failed",
-                       "imports_sha": imports_sha, "version": version},
-                      open(STATE_FILE, "w", encoding="utf-8"))
-            _qlog(f"census: mode={mode} version={version} "
-                  f"{time.time() - t0:.1f}s ok={ok}")
-        return resp
-    finally:
-        os.close(lockfd)
+            cand = json.loads(line[k:])
+        except ValueError:
+            continue
+        if isinstance(cand, dict) and "sorried" in cand:
+            resp = cand
+    dt = time.time() - t0
+    if resp is None:
+        err = (proc.stderr or "").strip().splitlines()
+        detail = "\n".join(err[:10]) or "(no stderr)"
+        _qlog(f"census: rc={proc.returncode} {dt:.1f}s ok=False")
+        raise RuntimeError(
+            f"census produced no JSON payload (rc={proc.returncode}, "
+            f"{dt:.1f}s):\n{detail}")
+    _qlog(f"census: rc={proc.returncode} {dt:.1f}s ok=True")
+    return resp
 
 
 # ------------------------------------------------------------- generation
