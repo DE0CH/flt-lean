@@ -61,7 +61,7 @@ them without a human. Do not re-wrap it.
 - `finite_setOf_isHardlyRamified_frames`
 - `exists_smul_eq_of_commute_of_isIrreducible`
 - `exists_isStrictlyUniversalOnFrames_of_finite_lifts`
-- `isWeaklyUniversalOnIdentifiedFrames_of_finite`
+- `exists_ringHom_matrix_quotient_of_finite`
 - `isNoetherianRing_of_fg_maximalIdeal`
 - `exists_pow_comap_le_pow_maximalIdeal_traceSubring`
 - `fg_comap_maximalIdeal_traceSubring`
@@ -90,7 +90,8 @@ ten, and every statement they replace is now PROVEN here.
   architecture, into `exists_isStrictlyUniversalOnFiniteFrames` (all of
   the arithmetic, tested only against finite/Artinian raw framed test
   objects) and `isWeaklyUniversalOnIdentifiedFrames_of_finite` (the pure
-  commutative-algebra/topology pro-finite limit);
+  commutative-algebra/topology pro-finite limit — PROVEN 2026-07-25,
+  leaving only its level step `exists_ringHom_matrix_quotient_of_finite`);
   `exists_isWeaklyUniversalOnIdentifiedFrames` is PROVEN over them, the
   glue showing that a finite object of the bundled deformation category
   IS a raw Schlessinger test object — which is why the leaves carry no
@@ -270,13 +271,26 @@ import Mathlib.LinearAlgebra.Dimension.Constructions
 import Mathlib.RingTheory.AdjoinRoot
 import Mathlib.Algebra.Polynomial.Lifts
 import Mathlib.Algebra.Polynomial.Eval.Irreducible
-import Mathlib.Algebra.Algebra.ZMod
 import Mathlib.FieldTheory.Perfect
 import Mathlib.FieldTheory.Minpoly.Field
 import Mathlib.RingTheory.Henselian
 import Mathlib.RingTheory.Ideal.GoingUp
 import Mathlib.RingTheory.UniqueFactorizationDomain.Basic
 import Mathlib.Algebra.Algebra.Shrink
+-- proof-only: the pro-finite limit machinery of
+-- `isWeaklyUniversalOnIdentifiedFrames_of_finite` — the tower of quotients
+-- `R ⧸ 𝔪ⁿ` with its transition maps (`Ideal.Quotient.factorPow`), Kőnig's
+-- lemma for inverse systems of nonempty finite sets
+-- (`nonempty_sections_of_finite_inverse_system`), the universal property of
+-- adic completeness for ring homomorphisms (`IsAdicComplete.liftRingHom`),
+-- the polynomial ring that carries the conjugating matrix through that
+-- universal property, and the matrix/linear-equivalence dictionary.
+import Mathlib.RingTheory.Ideal.Quotient.PowTransition
+import Mathlib.RingTheory.AdicCompletion.RingHom
+import Mathlib.CategoryTheory.CofilteredSystem
+import Mathlib.Algebra.MvPolynomial.CommRing
+import Mathlib.LinearAlgebra.Matrix.ToLinearEquiv
+import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
 
 @[expose] public section
 
@@ -1311,67 +1325,608 @@ theorem exists_isStrictlyUniversalOnFiniteFrames (hℓ5 : 5 ≤ ℓ)
     GaloisRep.charFrob_eq_charpoly_globalFrob, hcp,
     RingHom.algebraMap_toAlgebra]
 
-/-- **The pro-finite limit upgrade** (sorry node — the
-commutative-algebra half of the 2026-07-25 Schlessinger cut): a
-deformation that classifies every FINITE residually identified
-deformation classifies every residually identified deformation. No
-arithmetic is involved: the hardly ramified conditions enter only
-through the fact that they are stable under quotient base change, and
-the input and output clauses are identical apart from the finiteness
-restriction.
+set_option backward.isDefEq.respectTransparency false in
+open scoped TensorProduct in
+/-- **Flatness transfers along quotient specialization** (PROVEN
+2026-07-22, mirroring the residue-field transfer
+`IsHardlyRamified.isFlatAt_baseChange_residue` of `Threeadic.lean`): if
+`ρ` is flat at `ℓ`, so is its base change to a quotient `R ⧸ P` of the
+coefficient ring. The open ideals of `R ⧸ P` correspond to the open
+ideals `J ⊇ P` of `R` (preimages along the continuous quotient map are
+open), the double base change `((R ⧸ P) ⧸ I) ⊗ ((R ⧸ P) ⊗ M)` collapses
+equivariantly to `(R ⧸ J) ⊗ M` (tensor cancellation
+`AlgebraTensorModule.cancelBaseChange` plus the double-quotient
+isomorphism `DoubleQuot.quotQuotEquivQuotOfLE` along
+`I = J.map (Ideal.Quotient.mk P)`), and
+`HasFlatProlongationAt.of_equiv` transports the Hopf-algebra witness. -/
+theorem isFlatAt_baseChange_quotient {R : Type u} [CommRing R]
+    [TopologicalSpace R] [IsTopologicalRing R] [IsLocalRing R]
+    {M : Type v} [AddCommGroup M] [Module R M] [Module.Finite R M]
+    [Module.Free R M]
+    (P : Ideal R) [P.IsPrime] [IsLocalRing (R ⧸ P)]
+    {ρ : GaloisRep ℚ R M}
+    (hflat : ρ.IsFlatAt
+      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : ℓ.Prime))) :
+    (ρ.baseChange (R ⧸ P)).IsFlatAt
+      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : ℓ.Prime)) := by
+  constructor
+  intro I hI
+  -- the corresponding open ideal of `R`, lying over `P`
+  let J : Ideal R := I.comap (Ideal.Quotient.mk P)
+  have hPJ : P ≤ J := fun x hx => by
+    show Ideal.Quotient.mk P x ∈ I
+    rw [Ideal.Quotient.eq_zero_iff_mem.mpr hx]
+    exact I.zero_mem
+  have hImap : I = J.map (Ideal.Quotient.mk P) :=
+    (Ideal.map_comap_of_surjective (Ideal.Quotient.mk P)
+      Ideal.Quotient.mk_surjective I).symm
+  have hJopen : IsOpen (J : Set R) := by
+    have hpre : (J : Set R) =
+        (Ideal.Quotient.mk P) ⁻¹' (I : Set (R ⧸ P)) := rfl
+    rw [hpre]
+    exact hI.preimage (QuotientRing.isOpenQuotientMap_mk P).continuous
+  -- the coefficient identification `((R ⧸ P) ⧸ I) ≃+* R ⧸ J`
+  let φ : ((R ⧸ P) ⧸ I) ≃+* (R ⧸ J) :=
+    (Ideal.quotEquivOfEq hImap).trans (DoubleQuot.quotQuotEquivQuotOfLE hPJ)
+  have hφalg : ∀ r : R,
+      φ (algebraMap R ((R ⧸ P) ⧸ I) r) = algebraMap R (R ⧸ J) r := by
+    intro r
+    show (DoubleQuot.quotQuotEquivQuotOfLE hPJ)
+        ((Ideal.quotEquivOfEq hImap)
+          (Ideal.Quotient.mk I (Ideal.Quotient.mk P r))) =
+      Ideal.Quotient.mk J r
+    rw [Ideal.quotEquivOfEq_mk]
+    exact DoubleQuot.quotQuotEquivQuotOfLE_quotQuotMk r hPJ
+  -- its `R`-linear form
+  let φlin : ((R ⧸ P) ⧸ I) ≃ₗ[R] (R ⧸ J) :=
+    { φ.toAddEquiv with
+      map_smul' := fun r x => by
+        show φ (r • x) = r • φ x
+        rw [Algebra.smul_def, Algebra.smul_def, map_mul, hφalg] }
+  -- assemble: cancel the middle base change, then transport coefficients
+  let e₁ := TensorProduct.AlgebraTensorModule.cancelBaseChange R (R ⧸ P)
+    ((R ⧸ P) ⧸ I) ((R ⧸ P) ⧸ I) M
+  let e₂ := TensorProduct.congr φlin (LinearEquiv.refl R M)
+  let eSp : ((((ρ.baseChange (R ⧸ P)).baseChange ((R ⧸ P) ⧸ I)).toLocal
+        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+          (Fact.out : ℓ.Prime))).Space ≃+
+      ((ρ.baseChange (R ⧸ J)).toLocal
+        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+          (Fact.out : ℓ.Prime))).Space) :=
+    e₁.toAddEquiv.trans e₂.toAddEquiv
+  have he : ∀ (g : Field.absoluteGaloisGroup
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+          (Fact.out : ℓ.Prime))))
+      (x : (((ρ.baseChange (R ⧸ P)).baseChange ((R ⧸ P) ⧸ I)).toLocal
+        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+          (Fact.out : ℓ.Prime))).Space),
+      eSp (g • x) = g • eSp x := by
+    intro g x
+    show (e₁.toAddEquiv.trans e₂.toAddEquiv)
+        ((((ρ.baseChange (R ⧸ P)).baseChange ((R ⧸ P) ⧸ I)).toLocal
+          (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+            (Fact.out : ℓ.Prime)) g) x) =
+      ((ρ.baseChange (R ⧸ J)).toLocal
+          (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+            (Fact.out : ℓ.Prime)) g)
+        ((e₁.toAddEquiv.trans e₂.toAddEquiv) x)
+    induction x using TensorProduct.induction_on with
+    | zero => simp
+    | add a b ha hb => simp only [map_add, ha, hb]
+    | tmul c y =>
+      induction y using TensorProduct.induction_on with
+      | zero =>
+        rw [show (c ⊗ₜ[R ⧸ P] (0 : (R ⧸ P) ⊗[R] M)) =
+          (0 : ((R ⧸ P) ⧸ I) ⊗[R ⧸ P] ((R ⧸ P) ⊗[R] M)) from
+          TensorProduct.tmul_zero _ _]
+        simp
+      | add a b ha hb =>
+        rw [TensorProduct.tmul_add]
+        simp only [map_add, ha, hb]
+      | tmul d m => rfl
+  refine (hflat.cond J hJopen).of_equiv _ eSp.symm ?_
+  intro g x
+  apply eSp.injective
+  rw [AddEquiv.apply_symm_apply, he, AddEquiv.apply_symm_apply]
 
-Classical route, in four steps.
+set_option backward.isDefEq.respectTransparency false in
+open scoped TensorProduct in
+/-- **Tameness at `2` transfers along base change** (generalization of the
+proven residue-field transfer `IsHardlyRamified.isTameAtTwo_baseChange_residue`
+in `Threeadic.lean` from finite residue fields to arbitrary topological
+coefficient algebras `B`, same proof): the rank-1 tame quadratic quotient
+`(π, δ)` of `ρ` at `2` base-changes to `(rid ∘ (π ⊗ 1), (δ ⊗ 1)ᵉ)` for
+`ρ ⊗ B`. -/
+lemma isTameAtTwo_baseChange {R : Type u} [CommRing R] [TopologicalSpace R]
+    [IsTopologicalRing R]
+    {M : Type v} [AddCommGroup M] [Module R M] [Module.Finite R M]
+    [Module.Free R M]
+    (B : Type*) [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
+    [Algebra R B] [ContinuousSMul R B]
+    {ρ : GaloisRep ℚ R M}
+    (htame : ∃ (π : M →ₗ[R] R) (_ : Function.Surjective π)
+      (δ : GaloisRep ℚ_[2] R R),
+      ∀ g : Field.absoluteGaloisGroup ℚ_[2], ∀ v : M,
+        π (ρ.map (algebraMap ℚ ℚ_[2]) g v) = δ g (π v) ∧
+        (AddSubgroup.inertia
+          ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup :
+            AddSubgroup Z2bar) (Field.absoluteGaloisGroup ℚ_[2]) ≤ δ.ker) ∧
+        (∀ g' : Field.absoluteGaloisGroup ℚ_[2], δ g' * δ g' = 1)) :
+    ∃ (π : (B ⊗[R] M) →ₗ[B] B) (_ : Function.Surjective π)
+      (δ : GaloisRep ℚ_[2] B B),
+      ∀ g : Field.absoluteGaloisGroup ℚ_[2], ∀ v : B ⊗[R] M,
+        π ((ρ.baseChange B).map (algebraMap ℚ ℚ_[2]) g v) = δ g (π v) ∧
+        (AddSubgroup.inertia
+          ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup :
+            AddSubgroup Z2bar) (Field.absoluteGaloisGroup ℚ_[2]) ≤ δ.ker) ∧
+        (∀ g' : Field.absoluteGaloisGroup ℚ_[2], δ g' * δ g' = 1) := by
+  obtain ⟨π, hπsurj, δ, h⟩ := htame
+  -- the canonical identification `B ⊗[R] R ≃ₗ[B] B`
+  let e : (B ⊗[R] R) ≃ₗ[B] B := TensorProduct.AlgebraTensorModule.rid R B B
+  -- the base-changed projection and character
+  refine ⟨e.toLinearMap ∘ₗ LinearMap.baseChange B π, ?_,
+    (δ.baseChange B).conj e, ?_⟩
+  · -- surjectivity: hit `c` with `c ⊗ v₀` for a preimage `v₀` of `1`
+    intro c
+    obtain ⟨v₀, hv₀⟩ := hπsurj 1
+    refine ⟨c ⊗ₜ v₀, ?_⟩
+    simp [e, LinearMap.baseChange_tmul, hv₀,
+      TensorProduct.AlgebraTensorModule.rid_tmul]
+  · intro g w
+    refine ⟨?_, ?_, ?_⟩
+    · -- equivariance, by linearity on simple tensors
+      induction w using TensorProduct.induction_on with
+      | zero => simp
+      | tmul c v =>
+        have h1 := (h g v).1
+        simp only [LinearMap.comp_apply, LinearEquiv.coe_coe]
+        rw [show ((ρ.baseChange B).map (algebraMap ℚ ℚ_[2])) g (c ⊗ₜ v) =
+          c ⊗ₜ ((ρ.map (algebraMap ℚ ℚ_[2])) g v) from rfl,
+          LinearMap.baseChange_tmul, h1,
+          GaloisRep.conj_apply, LinearMap.baseChange_tmul]
+        rw [LinearEquiv.conj_apply, LinearMap.comp_apply, LinearMap.comp_apply,
+          LinearEquiv.coe_coe, LinearEquiv.coe_coe,
+          TensorProduct.AlgebraTensorModule.rid_symm_apply,
+          show ((δ.baseChange B) g : Module.End B (B ⊗[R] R)) =
+            LinearMap.baseChange B (δ g) from rfl,
+          LinearMap.baseChange_tmul,
+          TensorProduct.AlgebraTensorModule.rid_tmul]
+        rw [show (δ g) (π v) = π v • (δ g) 1 from by
+          conv_lhs => rw [show (π v : R) = π v • (1 : R) from by
+            rw [smul_eq_mul, mul_one]]
+          rw [map_smul]]
+        simp [e, TensorProduct.AlgebraTensorModule.rid_tmul, smul_smul,
+          mul_comm]
+      | add x y hx hy =>
+        simp only [map_add, hx, hy]
+    · -- unramifiedness: the kernel only grows under base change + conj
+      intro σ hσ
+      have hδσ : δ σ = 1 := (h 1 0).2.1 hσ
+      have : (δ.baseChange B).conj e σ = 1 := by
+        rw [GaloisRep.conj_apply]
+        rw [show (δ.baseChange B) σ =
+          LinearMap.baseChange B (δ σ) from rfl, hδσ]
+        refine LinearMap.ext fun c => ?_
+        simp
+      exact this
+    · -- the quadratic condition transfers through the monoid hom
+      intro g'
+      have hsq : δ g' * δ g' = 1 := (h 1 0).2.2 g'
+      calc (δ.baseChange B).conj e g' * (δ.baseChange B).conj e g'
+          = (δ.baseChange B).conj e (g' * g') := (map_mul _ _ _).symm
+        _ = 1 := by
+            rw [GaloisRep.conj_apply]
+            rw [show (δ.baseChange B) (g' * g') =
+              LinearMap.baseChange B (δ (g' * g')) from rfl,
+              map_mul δ, hsq]
+            refine LinearMap.ext fun c => ?_
+            simp
 
-1. *Level-`n` test objects.* Let `D'` be residually identified and
-   `n : ℕ`. Base change `D'` along the surjection
-   `D'.R ↠ D'.R ⧸ 𝔪ⁿ`. The quotient is local (`𝔪ⁿ ≠ ⊤`), Noetherian,
-   discrete — `𝔪ⁿ` is open for the adic topology, and the induced adic
-   topology is discrete because the maximal ideal is nilpotent there, so
-   `IsAdic` and `IsAdicComplete` hold trivially — and FINITE, because
-   `D'.R` is Noetherian with the finite residue field `k`
-   (`Ideal.finite_quotient_pow`, the route already taken by
-   `finite_quotient_of_maximalIdeal_pow_le` LATER IN THIS FILE).
-   Hardly-ramifiedness pushes forward along the quotient
-   (`isHardlyRamified_baseChange_quotient`, with its ingredients
-   `isFlatAt_baseChange_quotient` and `isTameAtTwo_baseChange`), the
-   reduction map factors because `𝔪ⁿ ≤ 𝔪 = ker D'.π`, and the residual
-   identification of the quotient is that of `D'` transported through
-   the tensor cancellation `k ⊗_{D'.R ⧸ 𝔪ⁿ} ((D'.R ⧸ 𝔪ⁿ) ⊗_{D'.R} M)
-   ≅ k ⊗_{D'.R} M`. NOTE FOR THE PROVER: those three base-change lemmas
-   are stated further down this module; proving this leaf requires
-   moving them above this point (they depend on nothing between).
-2. *Level-`n` classifying data.* The finite hypothesis applied to the
-   level-`n` object gives a pair `(ψₙ, eₙ)` — a strict ring map
-   `D.R →+* D'.R ⧸ 𝔪ⁿ` together with a conjugation of the pushforward
-   of `D.ρ` onto the reduced representation.
+set_option backward.isDefEq.respectTransparency false in
+open scoped TensorProduct in
+/-- **Hardly-ramifiedness transfers along quotient specialization of the
+coefficients** (DERIVED 2026-07-22, mirroring the proven residue-field
+transfer `exists_residual_isHardlyRamified` of `Threeadic.lean`): the
+determinant condition maps along `R → R ⧸ P` (`LinearMap.det_baseChange`),
+unramifiedness passes to any base change (existing instance), tameness at
+`2` and flatness at `ℓ` by the proven transfers above. -/
+lemma isHardlyRamified_baseChange_quotient {R : Type u} [CommRing R]
+    [TopologicalSpace R] [IsTopologicalRing R] [IsLocalRing R]
+    [Algebra ℤ_[ℓ] R]
+    {M : Type v} [AddCommGroup M] [Module R M] [Module.Finite R M]
+    [Module.Free R M] {hdimM : Module.rank R M = 2}
+    (P : Ideal R) [P.IsPrime] [IsLocalRing (R ⧸ P)]
+    (hdimQ : Module.rank (R ⧸ P) ((R ⧸ P) ⊗[R] M) = 2)
+    {ρ : GaloisRep ℚ R M} (h : IsHardlyRamified hℓOdd hdimM ρ) :
+    IsHardlyRamified hℓOdd hdimQ (ρ.baseChange (R ⧸ P)) := by
+  constructor
+  · -- the determinant condition maps along the quotient map
+    intro g
+    have hdet : (ρ.baseChange (R ⧸ P)).det g =
+        algebraMap R (R ⧸ P) (ρ.det g) := by
+      show LinearMap.det ((ρ.baseChange (R ⧸ P)) g) = _
+      rw [show ((ρ.baseChange (R ⧸ P)) g :
+          Module.End (R ⧸ P) ((R ⧸ P) ⊗[R] M)) =
+        LinearMap.baseChange (R ⧸ P) (ρ g) from rfl,
+        LinearMap.det_baseChange]
+      rfl
+    rw [hdet, h.det g, ← IsScalarTower.algebraMap_apply]
+  · -- unramifiedness passes to the base change (existing instance)
+    intro p hp hpp
+    letI : ρ.IsUnramifiedAt hp.toHeightOneSpectrumRingOfIntegersRat :=
+      h.isUnramified p hp hpp
+    infer_instance
+  · -- flatness at ℓ (sorried transfer leaf)
+    exact isFlatAt_baseChange_quotient P h.isFlat
+  · -- tameness at 2 (proven transfer)
+    exact isTameAtTwo_baseChange (R ⧸ P) h.isTameAtTwo
+
+omit [TopologicalSpace k] [DiscreteTopology k] [Algebra ℤ_[ℓ] k] in
+/-- **Finiteness from `𝔪`-primarity** (PROVEN 2026-07-25, pure
+commutative algebra — no arithmetic content): a Noetherian local ring
+`R` with FINITE residue field `k` (it maps onto `k`) has finite
+quotient by any ideal `I` containing a power of the maximal ideal.
+
+Proof: `ker π` is the maximal ideal (`π` surjective onto a field), so
+`R ⧸ 𝔪 ≃ k` is finite; `𝔪` is finitely generated (Noetherian), so
+`R ⧸ 𝔪 ^ n` is finite for every `n` (`Ideal.finite_quotient_pow`,
+the successive-quotients dévissage); and `R ⧸ I` is a quotient of
+`R ⧸ 𝔪 ^ n` once `𝔪 ^ n ≤ I` (`Ideal.Quotient.factor`).
+
+This is the "Artinian ⇒ finite over a finite residue field" step of
+the finiteness stratum: for a Noetherian local ring, `∃ n, 𝔪 ^ n ≤ I`
+says exactly that `R ⧸ I` has Krull dimension `0`, i.e. is Artinian
+(`isArtinianRing_iff_isNoetherianRing_krullDimLE_zero`). -/
+theorem finite_quotient_of_maximalIdeal_pow_le {R : Type*} [CommRing R]
+    [IsLocalRing R] [IsNoetherianRing R] {I : Ideal R}
+    (π : R →+* k) (hπsurj : Function.Surjective π)
+    (hn : ∃ n : ℕ, IsLocalRing.maximalIdeal R ^ n ≤ I) :
+    Finite (R ⧸ I) := by
+  obtain ⟨n, hnle⟩ := hn
+  have hker : RingHom.ker π = IsLocalRing.maximalIdeal R :=
+    IsLocalRing.eq_maximalIdeal
+      (RingHom.ker_isMaximal_of_surjective π hπsurj)
+  haveI : Finite (R ⧸ IsLocalRing.maximalIdeal R) := by
+    rw [← hker]
+    exact Finite.of_equiv k
+      (RingHom.quotientKerEquivOfSurjective hπsurj).symm.toEquiv
+  haveI : Finite (R ⧸ IsLocalRing.maximalIdeal R ^ n) :=
+    Ideal.finite_quotient_pow (IsNoetherian.noetherian _) n
+  exact Finite.of_surjective (Ideal.Quotient.factor hnle)
+    (Ideal.Quotient.factor_surjective hnle)
+
+open scoped Matrix in
+open scoped TensorProduct in
+/-- **The matrix form of a framed conjugation** (PROVEN 2026-07-25 — the
+linear-algebra dictionary of the pro-finite limit
+`isWeaklyUniversalOnIdentifiedFrames_of_finite`): a conjugating matrix
+`E ∈ GL₂(B)` intertwining the `ψ`-image of a standard-framed
+representation `ρ` over `R` with a standard-framed representation `σ`
+over `B` produces the linear equivalence
+`e : B ⊗_R R² ≃ₗ[B] B²` with `(ρ ⊗ B)ᵉ = σ` that the deformation
+vocabulary asks for.
+
+This is what lets the pro-finite limit be taken over PAIRS living in a
+type INDEPENDENT of the ring map: the conjugation datum of
+`IsWeaklyUniversalOnIdentifiedFrames` is a `≃ₗ` whose very type depends
+on the algebra structure induced by `ψ`, so a tower of such data is a
+tower over dependent types and does not form an inverse system of sets;
+its matrix avatar `(ψ, E) : (R →+* B) × Matrix (Fin 2) (Fin 2) B` does.
+(The naive transfer of `Modularity/Patching.lean`'s
+`isWeaklyUniversalOnIdentifiedDeformation_of_finiteTests` fails exactly
+here: that proof carries only the TRACE-level clause through the limit,
+so its inverse system is one of ring maps alone.)
+
+Proof: `e` is the canonical `B ⊗_R R² ≅ B²` (`TensorProduct.piScalarRight`)
+followed by the automorphism of `B²` given by `E`
+(`Matrix.toLinearEquiv'`, `E` being invertible since its determinant is
+a unit). On a simple tensor `b ⊗ w` the base-changed representation acts
+as `b ⊗ ρ(g)w`, whose image is `b • (E *ᵥ ψ∘(ρ(g)w))`; entrywise
+`ψ∘(ρ(g)w) = (ψ(ρ(g)) *ᵥ ψ∘w)` because `ψ` is a ring homomorphism
+(`RingHom.map_mulVec`), so the two sides of the required identity are
+`b • ((E * ψ(ρ(g))) *ᵥ ψ∘w)` and `b • ((σ(g) * E) *ᵥ ψ∘w)`. -/
+theorem exists_conj_baseChange_of_matrix
+    {R : Type*} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+    {B : Type*} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
+    (ψ : R →+* B) (hψ : Continuous ψ)
+    (ρ : FramedGaloisRep ℚ R (Fin 2)) (σ : FramedGaloisRep ℚ B (Fin 2))
+    (E : Matrix (Fin 2) (Fin 2) B) (hE : IsUnit E.det)
+    (hconj : ∀ g : Field.absoluteGaloisGroup ℚ,
+      E * (LinearMap.toMatrix' (ρ g)).map ⇑ψ =
+        (LinearMap.toMatrix' (σ g)) * E) :
+    letI : Algebra R B := ψ.toAlgebra
+    letI : ContinuousSMul R B := continuousSMul_of_algebraMap R B
+      (by rw [RingHom.algebraMap_toAlgebra]; exact hψ)
+    ∃ e : (B ⊗[R] (Fin 2 → R)) ≃ₗ[B] (Fin 2 → B),
+      (ρ.baseChange B).conj e = σ := by
+  letI : Algebra R B := ψ.toAlgebra
+  letI : ContinuousSMul R B := continuousSMul_of_algebraMap R B
+    (by rw [RingHom.algebraMap_toAlgebra]; exact hψ)
+  haveI : Invertible E := Matrix.invertibleOfIsUnitDet E hE
+  set e : (B ⊗[R] (Fin 2 → R)) ≃ₗ[B] (Fin 2 → B) :=
+    (TensorProduct.piScalarRight R B B (Fin 2)).trans
+      (Matrix.toLinearEquiv' E inferInstance) with he
+  -- the scalar action of `R` on `B` is `ψ`
+  have hsmul : ∀ (r : R) (b : B), r • b = ψ r * b := fun r b => by
+    rw [Algebra.smul_def, RingHom.algebraMap_toAlgebra]
+  -- `e` on a simple tensor is `E` applied to the `ψ`-image, scaled by `b`
+  have hetmul : ∀ (b : B) (w : Fin 2 → R),
+      e (b ⊗ₜ[R] w) = b • (E *ᵥ (fun j => ψ (w j))) := by
+    intro b w
+    rw [he]
+    show E *ᵥ (TensorProduct.piScalarRight R B B (Fin 2) (b ⊗ₜ[R] w)) = _
+    rw [TensorProduct.piScalarRight_apply,
+      TensorProduct.piScalarRightHom_tmul]
+    rw [show (fun j => w j • b) = b • (fun j => ψ (w j)) from by
+      funext j
+      rw [hsmul]
+      show ψ (w j) * b = b * ψ (w j)
+      rw [mul_comm]]
+    exact Matrix.mulVec_smul E b _
+  refine ⟨e, GaloisRep.ext fun g => ?_⟩
+  rw [GaloisRep.conj_apply]
+  refine LinearMap.ext fun v => ?_
+  rw [LinearEquiv.conj_apply_apply]
+  -- the identity on simple tensors, extended by linearity
+  have key : ∀ x : B ⊗[R] (Fin 2 → R),
+      e ((ρ.baseChange B) g x) = σ g (e x) := by
+    intro x
+    induction x using TensorProduct.induction_on with
+    | zero => simp
+    | add a b ha hb => simp only [map_add, ha, hb]
+    | tmul b w =>
+      rw [GaloisRep.baseChange_tmul, hetmul, hetmul]
+      have hmap : (fun j => ψ ((ρ g w) j)) =
+          (LinearMap.toMatrix' (ρ g)).map ⇑ψ *ᵥ (fun j => ψ (w j)) := by
+        funext i
+        rw [show (ρ g w) = LinearMap.toMatrix' (ρ g) *ᵥ w from
+          (LinearMap.toMatrix'_mulVec (ρ g) w).symm]
+        exact RingHom.map_mulVec ψ (LinearMap.toMatrix' (ρ g)) w i
+      rw [hmap, Matrix.mulVec_mulVec]
+      rw [show σ g (b • (E *ᵥ (fun j => ψ (w j)))) =
+          b • (LinearMap.toMatrix' (σ g) *ᵥ (E *ᵥ (fun j => ψ (w j)))) from by
+        rw [map_smul, ← LinearMap.toMatrix'_mulVec (σ g)]]
+      rw [Matrix.mulVec_mulVec, hconj g]
+  rw [key (e.symm v), LinearEquiv.apply_symm_apply]
+
+open CategoryTheory in
+/-- **Kőnig's lemma plus adic assembly, for PAIRS** (PROVEN 2026-07-25 —
+steps 3 and 4 of the pro-finite limit
+`isWeaklyUniversalOnIdentifiedFrames_of_finite`, pure commutative
+algebra): let `A` be `I`-adically complete and separated and let `X n`
+be, for each `n`, a NONEMPTY FINITE set of pairs — a ring homomorphism
+`R →+* A ⧸ Iⁿ` together with a square matrix over `A ⧸ Iⁿ` — that is
+STABLE under the transition maps `A ⧸ Iᵐ →+* A ⧸ Iⁿ` (`n ≤ m`), applied
+to the ring map by postcomposition and to the matrix entrywise. Then
+there is a single pair `(ψ, E)` over `A` all of whose level-`n`
+reductions lie in `X n`.
+
+Why PAIRS and not ring maps alone: the conjugation datum that
+representation-level universality carries through the limit is a linear
+equivalence whose TYPE depends on the ring map, so the tower is one of
+dependent pairs; `exists_conj_baseChange_of_matrix` above replaces the
+equivalence by its matrix, which lives in a type independent of the ring
+map, and this lemma is then the ordinary inverse-limit statement for the
+resulting product type. `Modularity/Patching.lean`'s
+`exists_ringHom_of_forall_quotient_mem` is the ring-map-only shadow of
+this statement (and is still a sorry node there).
+
+Proof: the `X n` with the postcomposition transitions form an inverse
+system of nonempty finite sets over `ℕᵒᵖ`, so its limit is nonempty by
+Kőnig's lemma (`nonempty_sections_of_finite_inverse_system`;
+functoriality of the system is `Ideal.Quotient.factor_mk` twice over).
+A section gives compatible families `(ψₙ, Eₙ)`. Both are assembled at
+once by a single application of the universal property of adic
+completeness for ring maps (`IsAdicComplete.liftRingHom`), applied not
+to `R` but to the polynomial ring `R[Xᵢⱼ]`: the level-`n` ring map
+`R[Xᵢⱼ] →+* A ⧸ Iⁿ` is `ψₙ` on constants and `Xᵢⱼ ↦ (Eₙ)ᵢⱼ`, the family
+is compatible because it is so on constants and on variables
+(`MvPolynomial.ringHom_ext`), and the lift restricted to constants is
+`ψ` while its values on the variables are the entries of `E`. -/
+theorem exists_ringHom_matrix_of_forall_quotient_mem
+    {A : Type*} [CommRing A] (I : Ideal A) [IsAdicComplete I A]
+    {R : Type*} [CommRing R] {ι : Type*} [Fintype ι] [DecidableEq ι]
+    (X : ∀ n : ℕ, Set ((R →+* A ⧸ I ^ n) × Matrix ι ι (A ⧸ I ^ n)))
+    (hfin : ∀ n : ℕ, (X n).Finite) (hne : ∀ n : ℕ, (X n).Nonempty)
+    (hstab : ∀ (m n : ℕ) (hmn : n ≤ m)
+        (p : (R →+* A ⧸ I ^ m) × Matrix ι ι (A ⧸ I ^ m)), p ∈ X m →
+      ((Ideal.Quotient.factorPow I hmn).comp p.1,
+        p.2.map ⇑(Ideal.Quotient.factorPow I hmn)) ∈ X n) :
+    ∃ (ψ : R →+* A) (E : Matrix ι ι A), ∀ n : ℕ,
+      ((Ideal.Quotient.mk (I ^ n)).comp ψ,
+        E.map ⇑(Ideal.Quotient.mk (I ^ n))) ∈ X n := by
+  classical
+  -- functoriality of the transition maps
+  have hfacComp : ∀ {a b c : ℕ} (h1 : a ≤ b) (h2 : b ≤ c) (y : A ⧸ I ^ c),
+      Ideal.Quotient.factorPow I h1 (Ideal.Quotient.factorPow I h2 y) =
+        Ideal.Quotient.factorPow I (h1.trans h2) y := by
+    intro a b c h1 h2 y
+    obtain ⟨x, rfl⟩ := Ideal.Quotient.mk_surjective y
+    rw [Ideal.Quotient.factor_mk, Ideal.Quotient.factor_mk,
+      Ideal.Quotient.factor_mk]
+  -- the inverse system of nonempty finite sets of pairs
+  let F : ℕᵒᵖ ⥤ Type _ :=
+    { obj := fun j => ↥(X j.unop)
+      map := fun {j j'} f =>
+        ↾(fun p : ↥(X j.unop) =>
+          (⟨((Ideal.Quotient.factorPow I (leOfHom f.unop)).comp p.1.1,
+              p.1.2.map ⇑(Ideal.Quotient.factorPow I (leOfHom f.unop))),
+            hstab j.unop j'.unop (leOfHom f.unop) p.1 p.2⟩ : ↥(X j'.unop)))
+      map_id := fun j => by
+        ext p <;> simp
+      map_comp := fun {j₁ j₂ j₃} f g => by
+        ext p <;> simp [hfacComp] }
+  haveI : ∀ j : ℕᵒᵖ, Finite (F.obj j) := fun j => (hfin j.unop).to_subtype
+  haveI : ∀ j : ℕᵒᵖ, Nonempty (F.obj j) := fun j => (hne j.unop).to_subtype
+  obtain ⟨s, hs⟩ := nonempty_sections_of_finite_inverse_system F
+  -- the level-`n` data extracted from the section
+  set f : ∀ n : ℕ, (R →+* A ⧸ I ^ n) × Matrix ι ι (A ⧸ I ^ n) :=
+    fun n => (s (Opposite.op n)).1 with hf
+  have hcompat : ∀ (m n : ℕ) (hmn : n ≤ m),
+      ((Ideal.Quotient.factorPow I hmn).comp (f m).1,
+        (f m).2.map ⇑(Ideal.Quotient.factorPow I hmn)) = f n := by
+    intro m n hmn
+    have hsec := hs (homOfLE hmn).op
+    exact congrArg Subtype.val hsec
+  -- both data at once, as a single family of ring maps out of a polynomial ring
+  set G : ∀ n : ℕ, MvPolynomial (ι × ι) R →+* A ⧸ I ^ n :=
+    fun n => MvPolynomial.eval₂Hom (f n).1 (fun q => (f n).2 q.1 q.2) with hG
+  have hGcompat : ∀ {m n : ℕ} (hle : m ≤ n),
+      (Ideal.Quotient.factorPow I hle).comp (G n) = G m := by
+    intro m n hle
+    refine MvPolynomial.ringHom_ext (fun r => ?_) (fun q => ?_)
+    · have h1 := congrArg (fun t => t.1) (hcompat n m hle)
+      have h2 := RingHom.congr_fun h1 r
+      simpa [hG] using h2
+    · have h1 := congrArg (fun t => t.2) (hcompat n m hle)
+      have h2 := congrFun (congrFun h1 q.1) q.2
+      simpa [hG] using h2
+  -- assemble by adic completeness
+  set Ghat : MvPolynomial (ι × ι) R →+* A :=
+    IsAdicComplete.liftRingHom I G hGcompat with hGhat
+  refine ⟨Ghat.comp MvPolynomial.C,
+    Matrix.of fun i i' => Ghat (MvPolynomial.X (i, i')), fun n => ?_⟩
+  have hlvl : ((Ideal.Quotient.mk (I ^ n)).comp (Ghat.comp MvPolynomial.C),
+      (Matrix.of fun i i' => Ghat (MvPolynomial.X (i, i'))).map
+        ⇑(Ideal.Quotient.mk (I ^ n))) = f n := by
+    refine Prod.ext (RingHom.ext fun r => ?_) (Matrix.ext fun i i' => ?_)
+    · have := RingHom.congr_fun
+        (IsAdicComplete.mk_comp_liftRingHom I G hGcompat n) (MvPolynomial.C r)
+      simpa [hGhat, hG] using this
+    · have := RingHom.congr_fun
+        (IsAdicComplete.mk_comp_liftRingHom I G hGcompat n)
+        (MvPolynomial.X (i, i'))
+      simpa [hGhat, hG] using this
+  rw [hlvl, hf]
+  exact (s (Opposite.op n)).2
+
+open scoped Matrix in
+open scoped TensorProduct in
+/-- **The level-`I` classifying pair of a residually identified
+deformation** (sorry node — step 1 of the pro-finite limit
+`isWeaklyUniversalOnIdentifiedFrames_of_finite`, its
+deformation-theoretic stratum, and the only part of that limit which is
+not pure commutative algebra): a deformation `D` classifying every
+FINITE residually identified deformation classifies `D'` modulo every
+proper ideal `I` with finite quotient inside `ker D'.π` — by a ring map
+`ψ : D.R →+* D'.R ⧸ I` compatible with the `ℤ_ℓ`-structures and the
+reductions, together with an invertible matrix `E` conjugating the
+`ψ`-pushforward of `D.ρ` onto the reduction of `D'.ρ`.
+
+Classical proof: base change `D'` along the surjection `D'.R ↠ D'.R ⧸ I`.
+The quotient is a FINITE local ring (local because `I ≠ ⊤`), Noetherian
+and — its maximal ideal being nilpotent — discrete, `𝔪`-adic and
+`𝔪`-adically complete, so
+`Dq := (D'.R ⧸ I, (D'.ρ ⊗ (D'.R ⧸ I))ᵉ, D'.π/I)` is an object of this
+file's `HardlyRamifiedDeformation` category with FINITE coefficient
+ring: hardly-ramifiedness pushes forward by
+`isHardlyRamified_baseChange_quotient` (with its ingredients
+`isFlatAt_baseChange_quotient` and `isTameAtTwo_baseChange`, all three
+hoisted above this point) followed by `isHardlyRamified_conj` along the
+canonical `(D'.R ⧸ I) ⊗ (Fin 2 → D'.R) ≅ Fin 2 → (D'.R ⧸ I)`
+(`TensorProduct.piScalarRight` — the same re-framing step as in
+`exists_hardlyRamified_lift_of_five_le`), the reduction map factors
+because `I ≤ ker D'.π`, and the residual identification of `Dq` is that
+of `D'` transported through the tensor cancellation
+`k ⊗_{D'.R ⧸ I} ((D'.R ⧸ I) ⊗_{D'.R} M) ≅ k ⊗_{D'.R} M`. Feeding `Dq`
+to the finite hypothesis `hD` yields the ring map and the conjugating
+linear equivalence; the equivalence becomes the matrix `E` by reading it
+in the standard frames, its determinant being a unit because it is an
+isomorphism.
+
+NOTE: the three base-change transfer lemmas are stated for PRIME
+quotients (`[P.IsPrime]`); the ideals `I` of interest here — the powers
+`𝔪ⁿ` — are not prime, and primality is not used in any of the three
+proofs, so discharging this leaf will want that hypothesis dropped (a
+purely mechanical generalization: the instance is nowhere consumed).
+
+CIRCULARITY GUARD (inherited from the leaf): the hypothesis package is
+the one the odd-prime dichotomy
+`not_isIrreducible_of_isHardlyRamified_of_five_le` refutes, and that
+dichotomy is proven over pillar α, which this cluster proves; a vacuous
+discharge through it is circular. No import from `Family.lean`,
+`Lift.lean` or `Modularity/*` may be added. -/
+theorem exists_ringHom_matrix_quotient_of_finite
+    {ρbar : GaloisRep ℚ k V} (D : HardlyRamifiedDeformation hℓOdd ρbar)
+    (hD : D.IsWeaklyUniversalOnIdentifiedFramesFinite)
+    (D' : HardlyRamifiedDeformation hℓOdd ρbar)
+    (hid : D'.IsResidualIdentified) :
+    letI := D.commRing; letI := D.topologicalSpace; letI := D.isTopologicalRing
+    letI := D.isLocalRing; letI := D.algebra
+    letI := D'.commRing; letI := D'.topologicalSpace
+    letI := D'.isTopologicalRing; letI := D'.isLocalRing; letI := D'.algebra
+    ∀ (I : Ideal D'.R), I ≠ ⊤ → Finite (D'.R ⧸ I) →
+      ∀ hIπ : ∀ a ∈ I, D'.π a = 0,
+      ∃ (ψ : D.R →+* D'.R ⧸ I) (E : Matrix (Fin 2) (Fin 2) (D'.R ⧸ I)),
+        ψ.comp (algebraMap ℤ_[ℓ] D.R) =
+            (Ideal.Quotient.mk I).comp (algebraMap ℤ_[ℓ] D'.R) ∧
+          (Ideal.Quotient.lift I D'.π hIπ).comp ψ = D.π ∧
+          IsUnit E.det ∧
+          ∀ g : Field.absoluteGaloisGroup ℚ,
+            E * (LinearMap.toMatrix' (D.ρ g)).map ⇑ψ =
+              ((LinearMap.toMatrix' (D'.ρ g)).map
+                ⇑(Ideal.Quotient.mk I)) * E :=
+  sorry
+
+/-- **The pro-finite limit upgrade** (PROVEN 2026-07-25 over the single
+deformation-theoretic leaf `exists_ringHom_matrix_quotient_of_finite` —
+the commutative-algebra half of the Schlessinger cut): a deformation
+that classifies every FINITE residually identified deformation
+classifies every residually identified deformation. No arithmetic is
+involved: the hardly ramified conditions enter only through the fact
+that they are stable under quotient base change (which is what the
+level leaf consumes), and the input and output clauses are identical
+apart from the finiteness restriction.
+
+Classical route, in four steps; steps 2–4 are proven here.
+
+1. *Level-`n` test objects and their classifying data.* Base change
+   `D'` along `D'.R ↠ D'.R ⧸ 𝔪ⁿ`, a FINITE local ring, and feed the
+   result to the finite hypothesis. This is
+   `exists_ringHom_matrix_quotient_of_finite`, the one remaining leaf;
+   its three base-change ingredients
+   (`isHardlyRamified_baseChange_quotient`,
+   `isFlatAt_baseChange_quotient`, `isTameAtTwo_baseChange`) have been
+   hoisted above this point.
+2. *Pairs, not linear equivalences.* The classifying datum is a ring
+   map `ψₙ` TOGETHER WITH a conjugation `eₙ` of the pushforward of
+   `D.ρ` onto the reduced representation — and the type of `eₙ` DEPENDS
+   on `ψₙ` (it is a `(D'.R ⧸ 𝔪ⁿ)`-linear equivalence out of a tensor
+   product formed along `ψₙ`), so the tower is one of dependent pairs
+   and is not an inverse system of sets. It is turned into one by
+   replacing `eₙ` with its MATRIX in the standard frames:
+   `exists_conj_baseChange_of_matrix` above is the dictionary, and the
+   inverse system is one of pairs `(ψ, E)` in the product type
+   `(D.R →+* D'.R ⧸ 𝔪ⁿ) × Matrix (Fin 2) (Fin 2) (D'.R ⧸ 𝔪ⁿ)`. This is
+   exactly where the naive transfer of `Patching.lean`'s pro-finite
+   upgrade fails: that argument carries only the TRACE-level clause
+   through the limit, so its system is one of ring maps alone.
 3. *Kőnig.* For fixed `n` there are only FINITELY many such pairs: a
-   `ψ` with `π ∘ ψ = D.π` kills `𝔪_{D.R}^c` for a `c` with
-   `𝔪ⁿ`-nilpotency, hence factors through the finite ring
-   `D.R ⧸ 𝔪_{D.R}^c` (this is `Patching.lean`'s proven
-   `finite_setOf_ringHom_comp_eq`, whose own finiteness input is
-   `finite_quotient_of_maximalIdeal_pow_le` of this file), and `e` is a
-   matrix over a finite ring. The sets are nonempty by step 2 and
-   stable under the transition maps `D'.R ⧸ 𝔪ᵐ ↠ D'.R ⧸ 𝔪ⁿ`, so
-   `nonempty_sections_of_finite_inverse_system` gives a compatible
-   system `(ψₙ, eₙ)ₙ`.
+   `ψ` with `π ∘ ψ = D.π` is local, hence kills `𝔪_{D.R}ⁿ` (the maximal
+   ideal of `D'.R ⧸ 𝔪ⁿ` has vanishing `n`-th power), so it factors
+   through the finite ring `D.R ⧸ 𝔪_{D.R}ⁿ`
+   (`finite_quotient_of_maximalIdeal_pow_le`, hoisted above), and `E`
+   is a matrix over a finite ring. The sets are nonempty by step 1 and
+   stable under the transition maps `D'.R ⧸ 𝔪ᵐ ↠ D'.R ⧸ 𝔪ⁿ`.
 4. *Assembly.* `D'.R` is `𝔪`-adically complete and separated
-   (`isAdicComplete`), so the compatible system assembles: `ψ = lim ψₙ`
-   is a ring homomorphism, continuous because it is local; the matrix
-   `lim eₙ` is invertible because it is invertible modulo `𝔪`; and the
-   conjugation equation, holding modulo every `𝔪ⁿ`, holds outright by
-   separatedness.
+   (`isAdicComplete`), so the compatible system assembles —
+   `exists_ringHom_matrix_of_forall_quotient_mem` above does steps 3
+   and 4 at once. `ψ` is continuous because it is local
+   (`continuous_of_map_maximalIdeal_le`); `E` is invertible because its
+   determinant is a unit modulo `𝔪`, and `D'.R` is local; and the
+   `ℤ_ℓ`-clause and the conjugation equation, holding modulo every
+   `𝔪ⁿ`, hold outright by separatedness (Krull).
 
-Interface-side twin: `Modularity/Patching.lean`'s PROVEN
+Interface-side twin: `Modularity/Patching.lean`'s
 `isWeaklyUniversalOnIdentifiedDeformation_of_finiteTests`, which
-performs exactly steps 1–4 over the leaves
-`exists_ringHom_quotient_of_finiteTests` (step 1),
-`finite_quotient_maximalIdeal_pow` (step 3 — dischargeable from this
-file's `finite_quotient_of_maximalIdeal_pow_le`) and
-`exists_ringHom_of_forall_quotient_mem` (steps 3–4). That proof carries
-only the TRACE-level clause through the limit; the extra work here is
-that the conjugation datum `e` must be carried through the Kőnig
-argument alongside `ψ`, which is why the pairs, not the ring maps
-alone, form the inverse system.
+performs the trace-level analogue of steps 1–4 over the leaves
+`exists_ringHom_quotient_of_finiteTests`,
+`finite_quotient_maximalIdeal_pow` and
+`exists_ringHom_of_forall_quotient_mem` (the last two still sorries
+there; both are proven outright in this file's version — the finiteness
+by `finite_quotient_of_maximalIdeal_pow_le`, the limit by
+`exists_ringHom_matrix_of_forall_quotient_mem`).
 
 WHAT IS ALREADY PROVEN AT THE UN-FRAMED LEVEL, AND WHY IT DOES NOT
 TRANSFER (2026-07-25, recorded after a collision in which this leaf and
@@ -1421,8 +1976,275 @@ over pillar α, so a vacuous discharge through it is circular. -/
 theorem isWeaklyUniversalOnIdentifiedFrames_of_finite
     {ρbar : GaloisRep ℚ k V} (D : HardlyRamifiedDeformation hℓOdd ρbar)
     (hD : D.IsWeaklyUniversalOnIdentifiedFramesFinite) :
-    D.IsWeaklyUniversalOnIdentifiedFrames :=
-  sorry
+    D.IsWeaklyUniversalOnIdentifiedFrames := by
+  classical
+  letI := D.commRing; letI := D.topologicalSpace; letI := D.isTopologicalRing
+  letI := D.isLocalRing; letI := D.algebra
+  intro D' hid
+  letI := D'.commRing; letI := D'.topologicalSpace
+  letI := D'.isTopologicalRing; letI := D'.isLocalRing; letI := D'.algebra
+  haveI := D.isNoetherianRing
+  haveI := D'.isNoetherianRing
+  -- the maximal-adic tower of the coefficient ring of `D'`
+  set J : Ideal D'.R := IsLocalRing.maximalIdeal D'.R with hJ
+  haveI : IsAdicComplete J D'.R := D'.isAdicComplete
+  have hkerπ : RingHom.ker D'.π = J :=
+    IsLocalRing.eq_maximalIdeal
+      (RingHom.ker_isMaximal_of_surjective D'.π D'.π_surjective)
+  have hkerD : RingHom.ker D.π = IsLocalRing.maximalIdeal D.R :=
+    IsLocalRing.eq_maximalIdeal
+      (RingHom.ker_isMaximal_of_surjective D.π D.π_surjective)
+  have hJne : J ≠ ⊤ := (IsLocalRing.maximalIdeal.isMaximal D'.R).ne_top
+  have hJpowne : ∀ n : ℕ, n ≠ 0 → J ^ n ≠ ⊤ := by
+    intro n hn htop
+    exact hJne (top_le_iff.mp (htop ▸ Ideal.pow_le_self hn))
+  have hfinlev : ∀ n : ℕ, Finite (D'.R ⧸ J ^ n) := fun n =>
+    finite_quotient_of_maximalIdeal_pow_le D'.π D'.π_surjective ⟨n, le_rfl⟩
+  have hπpow : ∀ (n : ℕ), n ≠ 0 → ∀ a ∈ J ^ n, D'.π a = 0 := by
+    intro n hn a ha
+    have hmem : a ∈ RingHom.ker D'.π := by
+      rw [hkerπ]
+      exact Ideal.pow_le_self hn ha
+    exact hmem
+  -- adic separatedness of `D'.R`: an element is pinned by its reductions
+  have hsep : ∀ x : D'.R, (∀ n : ℕ, x ∈ J ^ n) → x = 0 := by
+    intro x hx
+    refine IsHausdorff.haus (I := J) (M := D'.R) inferInstance x fun n => ?_
+    rw [SModEq.sub_mem, sub_zero]
+    have hsm : (J ^ n : Ideal D'.R) ≤ (J ^ n) • (⊤ : Submodule D'.R D'.R) := by
+      intro r hr
+      have hmem : r • (1 : D'.R) ∈ (J ^ n) • (⊤ : Submodule D'.R D'.R) :=
+        Submodule.smul_mem_smul hr Submodule.mem_top
+      simpa using hmem
+    exact hsm (hx n)
+  have heq : ∀ a b : D'.R,
+      (∀ n : ℕ, Ideal.Quotient.mk (J ^ n) a = Ideal.Quotient.mk (J ^ n) b) →
+      a = b := by
+    intro a b hab
+    have h0 : a - b = 0 := hsep _ fun n => Ideal.Quotient.eq.mp (hab n)
+    exact sub_eq_zero.mp h0
+  -- step 3, finiteness half: an admissible `ψ` factors through `D.R ⧸ 𝔪ⁿ`
+  have hfinhom : ∀ (n : ℕ) (hn : n ≠ 0),
+      {ψ : D.R →+* D'.R ⧸ J ^ n |
+        (Ideal.Quotient.lift (J ^ n) D'.π (hπpow n hn)).comp ψ =
+          D.π}.Finite := by
+    intro n hn
+    set Jq : Ideal (D'.R ⧸ J ^ n) := J.map (Ideal.Quotient.mk (J ^ n))
+      with hJq
+    have hkerlift : ∀ y : D'.R ⧸ J ^ n,
+        (Ideal.Quotient.lift (J ^ n) D'.π (hπpow n hn)) y = 0 → y ∈ Jq := by
+      intro y hy
+      obtain ⟨a, rfl⟩ := Ideal.Quotient.mk_surjective y
+      rw [Ideal.Quotient.lift_mk] at hy
+      exact Ideal.mem_map_of_mem _ (by rw [← hkerπ]; exact hy)
+    have hJqpow : Jq ^ n = ⊥ := by
+      rw [hJq, ← Ideal.map_pow, Ideal.map_quotient_self]
+    have hkill : ∀ ψ : D.R →+* D'.R ⧸ J ^ n,
+        (Ideal.Quotient.lift (J ^ n) D'.π (hπpow n hn)).comp ψ = D.π →
+        ∀ x ∈ (IsLocalRing.maximalIdeal D.R) ^ n, ψ x = 0 := by
+      intro ψ hψ x hx
+      have hmR : IsLocalRing.maximalIdeal D.R ≤ Ideal.comap ψ Jq := by
+        intro y hy
+        refine hkerlift _ ?_
+        rw [← RingHom.comp_apply, hψ]
+        rw [← hkerD] at hy
+        exact hy
+      have hpow : ∀ j : ℕ,
+          (IsLocalRing.maximalIdeal D.R) ^ j ≤ Ideal.comap ψ (Jq ^ j) := by
+        intro j
+        induction j with
+        | zero => simp
+        | succ j ih =>
+          rw [pow_succ, pow_succ]
+          refine le_trans (Ideal.mul_mono ih hmR) ?_
+          rw [Ideal.mul_le]
+          intro r hr s hs
+          have hr' : ψ r ∈ Jq ^ j := hr
+          have hs' : ψ s ∈ Jq := hs
+          show ψ (r * s) ∈ Jq ^ j * Jq
+          rw [map_mul]
+          exact Ideal.mul_mem_mul hr' hs'
+      have hmem : ψ x ∈ Jq ^ n := hpow n hx
+      rw [hJqpow] at hmem
+      exact hmem
+    haveI : Finite (D.R ⧸ (IsLocalRing.maximalIdeal D.R) ^ n) :=
+      finite_quotient_of_maximalIdeal_pow_le D.π D.π_surjective ⟨n, le_rfl⟩
+    haveI := hfinlev n
+    haveI : Finite ((D.R ⧸ (IsLocalRing.maximalIdeal D.R) ^ n) →+*
+        D'.R ⧸ J ^ n) :=
+      Finite.of_injective
+        (fun g : (D.R ⧸ (IsLocalRing.maximalIdeal D.R) ^ n) →+* D'.R ⧸ J ^ n =>
+          (g : (D.R ⧸ (IsLocalRing.maximalIdeal D.R) ^ n) → D'.R ⧸ J ^ n))
+        DFunLike.coe_injective
+    refine Set.Finite.subset (Set.finite_range
+      (fun g : (D.R ⧸ (IsLocalRing.maximalIdeal D.R) ^ n) →+* D'.R ⧸ J ^ n =>
+        g.comp (Ideal.Quotient.mk ((IsLocalRing.maximalIdeal D.R) ^ n)))) ?_
+    intro ψ hψ
+    exact ⟨Ideal.Quotient.lift _ ψ (hkill ψ hψ), RingHom.ext fun _ => rfl⟩
+  -- the level-`n` sets of classifying PAIRS
+  set X : ∀ n : ℕ, Set ((D.R →+* D'.R ⧸ J ^ n) ×
+      Matrix (Fin 2) (Fin 2) (D'.R ⧸ J ^ n)) := fun n =>
+    {p | (p.1.comp (algebraMap ℤ_[ℓ] D.R) =
+            (Ideal.Quotient.mk (J ^ n)).comp (algebraMap ℤ_[ℓ] D'.R)) ∧
+         (∀ hn : n ≠ 0,
+            (Ideal.Quotient.lift (J ^ n) D'.π (hπpow n hn)).comp p.1 = D.π) ∧
+         IsUnit p.2.det ∧
+         (∀ g : Field.absoluteGaloisGroup ℚ,
+            p.2 * (LinearMap.toMatrix' (D.ρ g)).map ⇑p.1 =
+              ((LinearMap.toMatrix' (D'.ρ g)).map
+                ⇑(Ideal.Quotient.mk (J ^ n))) * p.2)}
+    with hX
+  -- the transition maps of the tower
+  have hfacmk : ∀ (m n : ℕ) (hmn : n ≤ m) (a : D'.R),
+      Ideal.Quotient.factorPow J hmn (Ideal.Quotient.mk (J ^ m) a) =
+        Ideal.Quotient.mk (J ^ n) a := fun _ _ _ a =>
+    Ideal.Quotient.factor_mk _ a
+  have hliftfac : ∀ (m n : ℕ) (hmn : n ≤ m) (hn : n ≠ 0) (hm : m ≠ 0)
+      (y : D'.R ⧸ J ^ m),
+      (Ideal.Quotient.lift (J ^ n) D'.π (hπpow n hn))
+          (Ideal.Quotient.factorPow J hmn y) =
+        (Ideal.Quotient.lift (J ^ m) D'.π (hπpow m hm)) y := by
+    intro m n hmn _ _ y
+    obtain ⟨a, rfl⟩ := Ideal.Quotient.mk_surjective y
+    rw [hfacmk m n hmn a, Ideal.Quotient.lift_mk, Ideal.Quotient.lift_mk]
+  -- step 3, stability half
+  have hXstab : ∀ (m n : ℕ) (hmn : n ≤ m)
+      (p : (D.R →+* D'.R ⧸ J ^ m) × Matrix (Fin 2) (Fin 2) (D'.R ⧸ J ^ m)),
+      p ∈ X m →
+      ((Ideal.Quotient.factorPow J hmn).comp p.1,
+        p.2.map ⇑(Ideal.Quotient.factorPow J hmn)) ∈ X n := by
+    intro m n hmn p hp
+    simp only [hX, Set.mem_setOf_eq] at hp ⊢
+    obtain ⟨h1, h2, h3, h4⟩ := hp
+    refine ⟨?_, ?_, ?_, ?_⟩
+    · refine RingHom.ext fun x => ?_
+      have h1x := RingHom.congr_fun h1 x
+      simp only [RingHom.comp_apply] at h1x ⊢
+      rw [h1x, hfacmk m n hmn]
+    · intro hn
+      have hm : m ≠ 0 := by omega
+      refine RingHom.ext fun r => ?_
+      have h2x := RingHom.congr_fun (h2 hm) r
+      simp only [RingHom.comp_apply] at h2x ⊢
+      rw [hliftfac m n hmn hn hm, h2x]
+    · have hdu : IsUnit ((Ideal.Quotient.factorPow J hmn) p.2.det) := h3.map _
+      rwa [RingHom.map_det] at hdu
+    · intro g
+      have h4g := h4 g
+      have hL : (p.2 * (LinearMap.toMatrix' (D.ρ g)).map ⇑p.1).map
+          ⇑(Ideal.Quotient.factorPow J hmn) =
+        (p.2.map ⇑(Ideal.Quotient.factorPow J hmn)) *
+          ((LinearMap.toMatrix' (D.ρ g)).map
+            ⇑((Ideal.Quotient.factorPow J hmn).comp p.1)) := by
+        rw [Matrix.map_mul, Matrix.map_map]
+        rfl
+      have hR : (((LinearMap.toMatrix' (D'.ρ g)).map
+            ⇑(Ideal.Quotient.mk (J ^ m))) * p.2).map
+          ⇑(Ideal.Quotient.factorPow J hmn) =
+        ((LinearMap.toMatrix' (D'.ρ g)).map
+            ⇑(Ideal.Quotient.mk (J ^ n))) *
+          (p.2.map ⇑(Ideal.Quotient.factorPow J hmn)) := by
+        rw [Matrix.map_mul, Matrix.map_map]
+        congr 1
+      rw [← hL, h4g, hR]
+  -- step 1: the positive levels are nonempty, by the deformation leaf
+  have hXne_pos : ∀ n : ℕ, n ≠ 0 → (X n).Nonempty := by
+    intro n hn
+    obtain ⟨ψ, E, h1, h2, h3, h4⟩ :=
+      exists_ringHom_matrix_quotient_of_finite hℓOdd D hD D' hid (J ^ n)
+        (hJpowne n hn) (hfinlev n) (hπpow n hn)
+    refine ⟨(ψ, E), ?_⟩
+    simp only [hX, Set.mem_setOf_eq]
+    exact ⟨h1, fun _ => h2, h3, h4⟩
+  have hXne : ∀ n : ℕ, (X n).Nonempty := by
+    intro n
+    rcases eq_or_ne n 0 with rfl | hn
+    · obtain ⟨p, hp⟩ := hXne_pos 1 one_ne_zero
+      exact ⟨_, hXstab 1 0 (Nat.zero_le 1) p hp⟩
+    · exact hXne_pos n hn
+  have hXfin : ∀ n : ℕ, (X n).Finite := by
+    intro n
+    rcases eq_or_ne n 0 with rfl | hn
+    · haveI : Subsingleton (D'.R ⧸ J ^ 0) := by
+        rw [Ideal.Quotient.subsingleton_iff, pow_zero, Ideal.one_eq_top]
+      refine Set.Subsingleton.finite fun a _ b _ => ?_
+      exact Prod.ext (RingHom.ext fun _ => Subsingleton.elim _ _)
+        (Matrix.ext fun _ _ => Subsingleton.elim _ _)
+    · haveI := hfinlev n
+      have hsub : X n ⊆
+          {ψ : D.R →+* D'.R ⧸ J ^ n |
+            (Ideal.Quotient.lift (J ^ n) D'.π (hπpow n hn)).comp ψ = D.π} ×ˢ
+          (Set.univ : Set (Matrix (Fin 2) (Fin 2) (D'.R ⧸ J ^ n))) := by
+        rintro ⟨ψ, E⟩ hp
+        simp only [hX, Set.mem_setOf_eq] at hp
+        exact ⟨hp.2.1 hn, Set.mem_univ _⟩
+      exact Set.Finite.subset ((hfinhom n hn).prod Set.finite_univ) hsub
+  -- steps 3 and 4: Kőnig, then adic assembly, for the PAIRS
+  obtain ⟨ψ, E, hψE⟩ :=
+    exists_ringHom_matrix_of_forall_quotient_mem J X hXfin hXne hXstab
+  simp only [hX, Set.mem_setOf_eq] at hψE
+  -- the reduction clause is already visible at the first level
+  have hB : D'.π.comp ψ = D.π := by
+    refine RingHom.ext fun r => ?_
+    have h1 := RingHom.congr_fun ((hψE 1).2.1 one_ne_zero) r
+    simpa using h1
+  -- `ψ` is local, hence continuous
+  have hloc : Ideal.map ψ (IsLocalRing.maximalIdeal D.R) ≤ J := by
+    rw [Ideal.map_le_iff_le_comap]
+    intro x hx
+    show ψ x ∈ J
+    rw [← hkerπ]
+    show D'.π (ψ x) = 0
+    rw [← RingHom.comp_apply, hB]
+    rw [← hkerD] at hx
+    exact hx
+  have hcont : Continuous ψ :=
+    continuous_of_map_maximalIdeal_le D.isAdic D'.isAdic ψ hloc
+  -- the `ℤ_ℓ`-clause holds modulo every level, hence holds
+  have hA : ψ.comp (algebraMap ℤ_[ℓ] D.R) = algebraMap ℤ_[ℓ] D'.R := by
+    refine RingHom.ext fun x => ?_
+    refine heq _ _ fun n => ?_
+    have hn := RingHom.congr_fun (hψE n).1 x
+    simpa using hn
+  -- the determinant of `E` is a unit: it is one modulo the maximal ideal
+  have hEdet : IsUnit E.det := by
+    have h1 := (hψE 1).2.2.1
+    rw [show (E.map ⇑(Ideal.Quotient.mk (J ^ 1))).det =
+        Ideal.Quotient.mk (J ^ 1) E.det from (RingHom.map_det _ _).symm] at h1
+    by_contra hcon
+    have hmem : E.det ∈ IsLocalRing.maximalIdeal D'.R := by
+      by_contra hnot
+      exact hcon (IsLocalRing.notMem_maximalIdeal.mp hnot)
+    have hzero : Ideal.Quotient.mk (J ^ 1) E.det = 0 :=
+      Ideal.Quotient.eq_zero_iff_mem.mpr (by rw [pow_one]; exact hmem)
+    rw [hzero] at h1
+    haveI : Nontrivial (D'.R ⧸ J ^ 1) := by
+      rw [← not_subsingleton_iff_nontrivial, Ideal.Quotient.subsingleton_iff]
+      exact hJpowne 1 one_ne_zero
+    exact not_isUnit_zero h1
+  -- the conjugation equation holds modulo every level, hence holds
+  have hD4 : ∀ g : Field.absoluteGaloisGroup ℚ,
+      E * (LinearMap.toMatrix' (D.ρ g)).map ⇑ψ =
+        (LinearMap.toMatrix' (D'.ρ g)) * E := by
+    intro g
+    refine Matrix.ext fun i i' => ?_
+    refine heq _ _ fun n => ?_
+    have hL : (E * (LinearMap.toMatrix' (D.ρ g)).map ⇑ψ).map
+        ⇑(Ideal.Quotient.mk (J ^ n)) =
+      (E.map ⇑(Ideal.Quotient.mk (J ^ n))) *
+        ((LinearMap.toMatrix' (D.ρ g)).map
+          ⇑((Ideal.Quotient.mk (J ^ n)).comp ψ)) := by
+      rw [Matrix.map_mul, Matrix.map_map]
+      rfl
+    have hR : ((LinearMap.toMatrix' (D'.ρ g)) * E).map
+        ⇑(Ideal.Quotient.mk (J ^ n)) =
+      ((LinearMap.toMatrix' (D'.ρ g)).map ⇑(Ideal.Quotient.mk (J ^ n))) *
+        (E.map ⇑(Ideal.Quotient.mk (J ^ n))) := Matrix.map_mul
+    have hfull := hL.trans (((hψE n).2.2.2 g).trans hR.symm)
+    exact congrArg
+      (fun M : Matrix (Fin 2) (Fin 2) (D'.R ⧸ J ^ n) => M i i') hfull
+  refine ⟨ψ, hcont, hA, hB, ?_⟩
+  exact exists_conj_baseChange_of_matrix ψ hcont D.ρ D'.ρ E hEdet hD4
 
 /-- **Strict Mazur representability** (PROVEN 2026-07-25 over the
 Schlessinger cut: the Artinian-level representability leaf
@@ -3112,40 +3934,6 @@ theorem exists_maximalIdeal_pow_le_span_of_isWeaklyUniversal_isTraceGenerated
   exact exists_maximalIdeal_pow_le_span_of_forall_isPrime (ℓ : D.R)
     (eq_maximalIdeal_of_isPrime_of_isWeaklyUniversal_isTraceGenerated hℓOdd
       hdim hℓ5 h hirr D hw ht)
-
-omit [TopologicalSpace k] [DiscreteTopology k] [Algebra ℤ_[ℓ] k] in
-/-- **Finiteness from `𝔪`-primarity** (PROVEN 2026-07-25, pure
-commutative algebra — no arithmetic content): a Noetherian local ring
-`R` with FINITE residue field `k` (it maps onto `k`) has finite
-quotient by any ideal `I` containing a power of the maximal ideal.
-
-Proof: `ker π` is the maximal ideal (`π` surjective onto a field), so
-`R ⧸ 𝔪 ≃ k` is finite; `𝔪` is finitely generated (Noetherian), so
-`R ⧸ 𝔪 ^ n` is finite for every `n` (`Ideal.finite_quotient_pow`,
-the successive-quotients dévissage); and `R ⧸ I` is a quotient of
-`R ⧸ 𝔪 ^ n` once `𝔪 ^ n ≤ I` (`Ideal.Quotient.factor`).
-
-This is the "Artinian ⇒ finite over a finite residue field" step of
-the finiteness stratum: for a Noetherian local ring, `∃ n, 𝔪 ^ n ≤ I`
-says exactly that `R ⧸ I` has Krull dimension `0`, i.e. is Artinian
-(`isArtinianRing_iff_isNoetherianRing_krullDimLE_zero`). -/
-theorem finite_quotient_of_maximalIdeal_pow_le {R : Type*} [CommRing R]
-    [IsLocalRing R] [IsNoetherianRing R] {I : Ideal R}
-    (π : R →+* k) (hπsurj : Function.Surjective π)
-    (hn : ∃ n : ℕ, IsLocalRing.maximalIdeal R ^ n ≤ I) :
-    Finite (R ⧸ I) := by
-  obtain ⟨n, hnle⟩ := hn
-  have hker : RingHom.ker π = IsLocalRing.maximalIdeal R :=
-    IsLocalRing.eq_maximalIdeal
-      (RingHom.ker_isMaximal_of_surjective π hπsurj)
-  haveI : Finite (R ⧸ IsLocalRing.maximalIdeal R) := by
-    rw [← hker]
-    exact Finite.of_equiv k
-      (RingHom.quotientKerEquivOfSurjective hπsurj).symm.toEquiv
-  haveI : Finite (R ⧸ IsLocalRing.maximalIdeal R ^ n) :=
-    Ideal.finite_quotient_pow (IsNoetherian.noetherian _) n
-  exact Finite.of_surjective (Ideal.Quotient.factor hnle)
-    (Ideal.Quotient.factor_surjective hnle)
 
 /-- **Mod-`ℓ` finiteness stratum** (PROVEN 2026-07-25 over the
 `𝔪`-primarity stratum
@@ -5144,243 +5932,6 @@ theorem exists_finite_lift (hℓ5 : 5 ≤ ℓ)
   exact ⟨D.R, D.commRing, D.topologicalSpace, D.isTopologicalRing,
     D.isLocalRing, D.algebra, hfin, hmt, hinj, D.ρ, D.isHardlyRamified,
     D.π, D.π_surjective, D.charFrob_compat⟩
-
-set_option backward.isDefEq.respectTransparency false in
-open scoped TensorProduct in
-/-- **Flatness transfers along quotient specialization** (PROVEN
-2026-07-22, mirroring the residue-field transfer
-`IsHardlyRamified.isFlatAt_baseChange_residue` of `Threeadic.lean`): if
-`ρ` is flat at `ℓ`, so is its base change to a quotient `R ⧸ P` of the
-coefficient ring. The open ideals of `R ⧸ P` correspond to the open
-ideals `J ⊇ P` of `R` (preimages along the continuous quotient map are
-open), the double base change `((R ⧸ P) ⧸ I) ⊗ ((R ⧸ P) ⊗ M)` collapses
-equivariantly to `(R ⧸ J) ⊗ M` (tensor cancellation
-`AlgebraTensorModule.cancelBaseChange` plus the double-quotient
-isomorphism `DoubleQuot.quotQuotEquivQuotOfLE` along
-`I = J.map (Ideal.Quotient.mk P)`), and
-`HasFlatProlongationAt.of_equiv` transports the Hopf-algebra witness. -/
-theorem isFlatAt_baseChange_quotient {R : Type u} [CommRing R]
-    [TopologicalSpace R] [IsTopologicalRing R] [IsLocalRing R]
-    {M : Type v} [AddCommGroup M] [Module R M] [Module.Finite R M]
-    [Module.Free R M]
-    (P : Ideal R) [P.IsPrime] [IsLocalRing (R ⧸ P)]
-    {ρ : GaloisRep ℚ R M}
-    (hflat : ρ.IsFlatAt
-      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : ℓ.Prime))) :
-    (ρ.baseChange (R ⧸ P)).IsFlatAt
-      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : ℓ.Prime)) := by
-  constructor
-  intro I hI
-  -- the corresponding open ideal of `R`, lying over `P`
-  let J : Ideal R := I.comap (Ideal.Quotient.mk P)
-  have hPJ : P ≤ J := fun x hx => by
-    show Ideal.Quotient.mk P x ∈ I
-    rw [Ideal.Quotient.eq_zero_iff_mem.mpr hx]
-    exact I.zero_mem
-  have hImap : I = J.map (Ideal.Quotient.mk P) :=
-    (Ideal.map_comap_of_surjective (Ideal.Quotient.mk P)
-      Ideal.Quotient.mk_surjective I).symm
-  have hJopen : IsOpen (J : Set R) := by
-    have hpre : (J : Set R) =
-        (Ideal.Quotient.mk P) ⁻¹' (I : Set (R ⧸ P)) := rfl
-    rw [hpre]
-    exact hI.preimage (QuotientRing.isOpenQuotientMap_mk P).continuous
-  -- the coefficient identification `((R ⧸ P) ⧸ I) ≃+* R ⧸ J`
-  let φ : ((R ⧸ P) ⧸ I) ≃+* (R ⧸ J) :=
-    (Ideal.quotEquivOfEq hImap).trans (DoubleQuot.quotQuotEquivQuotOfLE hPJ)
-  have hφalg : ∀ r : R,
-      φ (algebraMap R ((R ⧸ P) ⧸ I) r) = algebraMap R (R ⧸ J) r := by
-    intro r
-    show (DoubleQuot.quotQuotEquivQuotOfLE hPJ)
-        ((Ideal.quotEquivOfEq hImap)
-          (Ideal.Quotient.mk I (Ideal.Quotient.mk P r))) =
-      Ideal.Quotient.mk J r
-    rw [Ideal.quotEquivOfEq_mk]
-    exact DoubleQuot.quotQuotEquivQuotOfLE_quotQuotMk r hPJ
-  -- its `R`-linear form
-  let φlin : ((R ⧸ P) ⧸ I) ≃ₗ[R] (R ⧸ J) :=
-    { φ.toAddEquiv with
-      map_smul' := fun r x => by
-        show φ (r • x) = r • φ x
-        rw [Algebra.smul_def, Algebra.smul_def, map_mul, hφalg] }
-  -- assemble: cancel the middle base change, then transport coefficients
-  let e₁ := TensorProduct.AlgebraTensorModule.cancelBaseChange R (R ⧸ P)
-    ((R ⧸ P) ⧸ I) ((R ⧸ P) ⧸ I) M
-  let e₂ := TensorProduct.congr φlin (LinearEquiv.refl R M)
-  let eSp : ((((ρ.baseChange (R ⧸ P)).baseChange ((R ⧸ P) ⧸ I)).toLocal
-        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
-          (Fact.out : ℓ.Prime))).Space ≃+
-      ((ρ.baseChange (R ⧸ J)).toLocal
-        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
-          (Fact.out : ℓ.Prime))).Space) :=
-    e₁.toAddEquiv.trans e₂.toAddEquiv
-  have he : ∀ (g : Field.absoluteGaloisGroup
-      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
-          (Fact.out : ℓ.Prime))))
-      (x : (((ρ.baseChange (R ⧸ P)).baseChange ((R ⧸ P) ⧸ I)).toLocal
-        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
-          (Fact.out : ℓ.Prime))).Space),
-      eSp (g • x) = g • eSp x := by
-    intro g x
-    show (e₁.toAddEquiv.trans e₂.toAddEquiv)
-        ((((ρ.baseChange (R ⧸ P)).baseChange ((R ⧸ P) ⧸ I)).toLocal
-          (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
-            (Fact.out : ℓ.Prime)) g) x) =
-      ((ρ.baseChange (R ⧸ J)).toLocal
-          (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
-            (Fact.out : ℓ.Prime)) g)
-        ((e₁.toAddEquiv.trans e₂.toAddEquiv) x)
-    induction x using TensorProduct.induction_on with
-    | zero => simp
-    | add a b ha hb => simp only [map_add, ha, hb]
-    | tmul c y =>
-      induction y using TensorProduct.induction_on with
-      | zero =>
-        rw [show (c ⊗ₜ[R ⧸ P] (0 : (R ⧸ P) ⊗[R] M)) =
-          (0 : ((R ⧸ P) ⧸ I) ⊗[R ⧸ P] ((R ⧸ P) ⊗[R] M)) from
-          TensorProduct.tmul_zero _ _]
-        simp
-      | add a b ha hb =>
-        rw [TensorProduct.tmul_add]
-        simp only [map_add, ha, hb]
-      | tmul d m => rfl
-  refine (hflat.cond J hJopen).of_equiv _ eSp.symm ?_
-  intro g x
-  apply eSp.injective
-  rw [AddEquiv.apply_symm_apply, he, AddEquiv.apply_symm_apply]
-
-set_option backward.isDefEq.respectTransparency false in
-open scoped TensorProduct in
-/-- **Tameness at `2` transfers along base change** (generalization of the
-proven residue-field transfer `IsHardlyRamified.isTameAtTwo_baseChange_residue`
-in `Threeadic.lean` from finite residue fields to arbitrary topological
-coefficient algebras `B`, same proof): the rank-1 tame quadratic quotient
-`(π, δ)` of `ρ` at `2` base-changes to `(rid ∘ (π ⊗ 1), (δ ⊗ 1)ᵉ)` for
-`ρ ⊗ B`. -/
-lemma isTameAtTwo_baseChange {R : Type u} [CommRing R] [TopologicalSpace R]
-    [IsTopologicalRing R]
-    {M : Type v} [AddCommGroup M] [Module R M] [Module.Finite R M]
-    [Module.Free R M]
-    (B : Type*) [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
-    [Algebra R B] [ContinuousSMul R B]
-    {ρ : GaloisRep ℚ R M}
-    (htame : ∃ (π : M →ₗ[R] R) (_ : Function.Surjective π)
-      (δ : GaloisRep ℚ_[2] R R),
-      ∀ g : Field.absoluteGaloisGroup ℚ_[2], ∀ v : M,
-        π (ρ.map (algebraMap ℚ ℚ_[2]) g v) = δ g (π v) ∧
-        (AddSubgroup.inertia
-          ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup :
-            AddSubgroup Z2bar) (Field.absoluteGaloisGroup ℚ_[2]) ≤ δ.ker) ∧
-        (∀ g' : Field.absoluteGaloisGroup ℚ_[2], δ g' * δ g' = 1)) :
-    ∃ (π : (B ⊗[R] M) →ₗ[B] B) (_ : Function.Surjective π)
-      (δ : GaloisRep ℚ_[2] B B),
-      ∀ g : Field.absoluteGaloisGroup ℚ_[2], ∀ v : B ⊗[R] M,
-        π ((ρ.baseChange B).map (algebraMap ℚ ℚ_[2]) g v) = δ g (π v) ∧
-        (AddSubgroup.inertia
-          ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup :
-            AddSubgroup Z2bar) (Field.absoluteGaloisGroup ℚ_[2]) ≤ δ.ker) ∧
-        (∀ g' : Field.absoluteGaloisGroup ℚ_[2], δ g' * δ g' = 1) := by
-  obtain ⟨π, hπsurj, δ, h⟩ := htame
-  -- the canonical identification `B ⊗[R] R ≃ₗ[B] B`
-  let e : (B ⊗[R] R) ≃ₗ[B] B := TensorProduct.AlgebraTensorModule.rid R B B
-  -- the base-changed projection and character
-  refine ⟨e.toLinearMap ∘ₗ LinearMap.baseChange B π, ?_,
-    (δ.baseChange B).conj e, ?_⟩
-  · -- surjectivity: hit `c` with `c ⊗ v₀` for a preimage `v₀` of `1`
-    intro c
-    obtain ⟨v₀, hv₀⟩ := hπsurj 1
-    refine ⟨c ⊗ₜ v₀, ?_⟩
-    simp [e, LinearMap.baseChange_tmul, hv₀,
-      TensorProduct.AlgebraTensorModule.rid_tmul]
-  · intro g w
-    refine ⟨?_, ?_, ?_⟩
-    · -- equivariance, by linearity on simple tensors
-      induction w using TensorProduct.induction_on with
-      | zero => simp
-      | tmul c v =>
-        have h1 := (h g v).1
-        simp only [LinearMap.comp_apply, LinearEquiv.coe_coe]
-        rw [show ((ρ.baseChange B).map (algebraMap ℚ ℚ_[2])) g (c ⊗ₜ v) =
-          c ⊗ₜ ((ρ.map (algebraMap ℚ ℚ_[2])) g v) from rfl,
-          LinearMap.baseChange_tmul, h1,
-          GaloisRep.conj_apply, LinearMap.baseChange_tmul]
-        rw [LinearEquiv.conj_apply, LinearMap.comp_apply, LinearMap.comp_apply,
-          LinearEquiv.coe_coe, LinearEquiv.coe_coe,
-          TensorProduct.AlgebraTensorModule.rid_symm_apply,
-          show ((δ.baseChange B) g : Module.End B (B ⊗[R] R)) =
-            LinearMap.baseChange B (δ g) from rfl,
-          LinearMap.baseChange_tmul,
-          TensorProduct.AlgebraTensorModule.rid_tmul]
-        rw [show (δ g) (π v) = π v • (δ g) 1 from by
-          conv_lhs => rw [show (π v : R) = π v • (1 : R) from by
-            rw [smul_eq_mul, mul_one]]
-          rw [map_smul]]
-        simp [e, TensorProduct.AlgebraTensorModule.rid_tmul, smul_smul,
-          mul_comm]
-      | add x y hx hy =>
-        simp only [map_add, hx, hy]
-    · -- unramifiedness: the kernel only grows under base change + conj
-      intro σ hσ
-      have hδσ : δ σ = 1 := (h 1 0).2.1 hσ
-      have : (δ.baseChange B).conj e σ = 1 := by
-        rw [GaloisRep.conj_apply]
-        rw [show (δ.baseChange B) σ =
-          LinearMap.baseChange B (δ σ) from rfl, hδσ]
-        refine LinearMap.ext fun c => ?_
-        simp
-      exact this
-    · -- the quadratic condition transfers through the monoid hom
-      intro g'
-      have hsq : δ g' * δ g' = 1 := (h 1 0).2.2 g'
-      calc (δ.baseChange B).conj e g' * (δ.baseChange B).conj e g'
-          = (δ.baseChange B).conj e (g' * g') := (map_mul _ _ _).symm
-        _ = 1 := by
-            rw [GaloisRep.conj_apply]
-            rw [show (δ.baseChange B) (g' * g') =
-              LinearMap.baseChange B (δ (g' * g')) from rfl,
-              map_mul δ, hsq]
-            refine LinearMap.ext fun c => ?_
-            simp
-
-set_option backward.isDefEq.respectTransparency false in
-open scoped TensorProduct in
-/-- **Hardly-ramifiedness transfers along quotient specialization of the
-coefficients** (DERIVED 2026-07-22, mirroring the proven residue-field
-transfer `exists_residual_isHardlyRamified` of `Threeadic.lean`): the
-determinant condition maps along `R → R ⧸ P` (`LinearMap.det_baseChange`),
-unramifiedness passes to any base change (existing instance), tameness at
-`2` and flatness at `ℓ` by the proven transfers above. -/
-lemma isHardlyRamified_baseChange_quotient {R : Type u} [CommRing R]
-    [TopologicalSpace R] [IsTopologicalRing R] [IsLocalRing R]
-    [Algebra ℤ_[ℓ] R]
-    {M : Type v} [AddCommGroup M] [Module R M] [Module.Finite R M]
-    [Module.Free R M] {hdimM : Module.rank R M = 2}
-    (P : Ideal R) [P.IsPrime] [IsLocalRing (R ⧸ P)]
-    (hdimQ : Module.rank (R ⧸ P) ((R ⧸ P) ⊗[R] M) = 2)
-    {ρ : GaloisRep ℚ R M} (h : IsHardlyRamified hℓOdd hdimM ρ) :
-    IsHardlyRamified hℓOdd hdimQ (ρ.baseChange (R ⧸ P)) := by
-  constructor
-  · -- the determinant condition maps along the quotient map
-    intro g
-    have hdet : (ρ.baseChange (R ⧸ P)).det g =
-        algebraMap R (R ⧸ P) (ρ.det g) := by
-      show LinearMap.det ((ρ.baseChange (R ⧸ P)) g) = _
-      rw [show ((ρ.baseChange (R ⧸ P)) g :
-          Module.End (R ⧸ P) ((R ⧸ P) ⊗[R] M)) =
-        LinearMap.baseChange (R ⧸ P) (ρ g) from rfl,
-        LinearMap.det_baseChange]
-      rfl
-    rw [hdet, h.det g, ← IsScalarTower.algebraMap_apply]
-  · -- unramifiedness passes to the base change (existing instance)
-    intro p hp hpp
-    letI : ρ.IsUnramifiedAt hp.toHeightOneSpectrumRingOfIntegersRat :=
-      h.isUnramified p hp hpp
-    infer_instance
-  · -- flatness at ℓ (sorried transfer leaf)
-    exact isFlatAt_baseChange_quotient P h.isFlat
-  · -- tameness at 2 (proven transfer)
-    exact isTameAtTwo_baseChange (R ⧸ P) h.isTameAtTwo
 
 set_option backward.isDefEq.respectTransparency false in
 open scoped TensorProduct in
