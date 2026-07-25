@@ -154,8 +154,6 @@ instance [PatchingAlgebra.smulData Λ R M] : SMul (PatchingAlgebra R F) (Patchin
     have : α.1.toAddSubgroup.FiniteIndex :=
       @AddSubgroup.finiteIndex_of_finite_quotient _ _ _
         (AddSubgroup.quotient_finite_of_isOpen _ α.2)
-    let n₁ := PatchingAlgebra.smulData.f R M α
-    let n₂ := PatchingAlgebra.smulData.f R M β
     rw [← x.2 (PatchingAlgebra.smulData.f R M α) (PatchingAlgebra.smulData.f R M β)
       (PatchingAlgebra.smulData.f_mono h),
       ← m.2 α β h]
@@ -250,47 +248,15 @@ instance : PatchingAlgebra.smulData Λ (fun _ : ι ↦ R₀) (fun _ ↦ M₀) :=
     rfl
   exact ⟨_, IsLocalRing.maximalIdeal_pow_card_smul_top_le (α' • ⊤)⟩
 
-include hfRₒₒ hfRₒₒ' in
-omit [IsNoetherianRing Λ] [IsNoetherianRing Rₒₒ] in
-lemma PatchingAlgebra.faithfulSMul
-    (H₀ : ringKrullDim Rₒₒ < ⊤)
-    (H : .some (Module.depth Λ Λ) = ringKrullDim Rₒₒ) :
-    FaithfulSMul (PatchingAlgebra R F) (PatchingModule Λ M F) := by
-  let f := PatchingAlgebra.lift R F (fun i ↦ (fRₒₒ i).toRingHom)
-  have hf : Function.Surjective f :=
-    lift_surjective R F _ hfRₒₒ' hfRₒₒ
-  have hf' (r) : f (algebraMap Λ _ r) = algebraMap Λ _ r := by
-    refine Subtype.ext (funext fun k ↦ UltraProduct.π_eq_iff.mpr (.of_forall fun i ↦ ?_))
-    simp
-  letI := f.toAlgebra
-  letI := Module.compHom (PatchingModule Λ M F) f
-  suffices FaithfulSMul Rₒₒ (PatchingModule Λ M F) by
-    refine ⟨fun {x₁ x₂} H ↦ ?_⟩
-    obtain ⟨x₁, rfl⟩ := hf x₁
-    obtain ⟨x₂, rfl⟩ := hf x₂
-    obtain rfl : x₁ = x₂ := FaithfulSMul.eq_of_smul_eq_smul H
-    rfl
-  have : Nontrivial (PatchingModule Λ M F) := by
-    by_contra H
-    rw [not_nontrivial_iff_subsingleton] at H
-    obtain ⟨i, ⟨e⟩⟩ := (Module.UniformlyBoundedRank.rank_spec Λ M F).exists
-    have := PatchingModule.rank_patchingModule Λ M F
-    simp only [rank_subsingleton', @eq_comm Cardinal 0, Nat.cast_eq_zero] at this
-    have : Subsingleton (Fin (rank Λ M F) → Λ ⧸ Module.annihilator Λ (M i)) := by
-      rw [this]
-      infer_instance
-    exact not_subsingleton _ e.subsingleton
-  have : IsScalarTower Λ Rₒₒ (PatchingModule Λ M F) := .of_algebraMap_smul <| by
-    intro r m
-    conv_rhs => rw [← IsScalarTower.algebraMap_smul (PatchingAlgebra R F), ← hf']
-    rfl
-  have : Module.Finite Rₒₒ (PatchingModule Λ M F) :=
-    Module.Finite.of_restrictScalars_finite Λ _ _
-  apply Module.faithfulSMul_of_depth_eq_ringKrullDim _ _ H₀
-  refine le_antisymm (Module.depth_le_dim _ _) ?_
-  have : Module.depth Λ Λ ≤ Module.depth Rₒₒ (PatchingModule Λ M F) :=
-    (Module.depth_le_of_free _ _).trans (Module.depth_of_isScalarTower Λ _ _)
-  rwa [← H, WithBot.coe_le_coe]
+-- VENDOR-DROP: `PatchingAlgebra.faithfulSMul` (FLT System.lean) went here.
+-- It is the FLT project's depth-theoretic endgame: it derives
+-- `FaithfulSMul (PatchingAlgebra R F) (PatchingModule Λ M F)` from
+-- `Module.depth Λ Λ = ringKrullDim Rₒₒ`, using `FLT/Patching/Utils/Depth.lean`.
+-- This project's endgame is the regular-sequence formulation instead
+-- (`PatchedModule.exists_isRegular` fed to `free_of_isRegular_mvPowerSeries`,
+-- which owns the Auslander-Buchsbaum content), so the whole `Module.depth`
+-- layer is deliberately not vendored.  See the audit in
+-- `TaylorWilesSystem.exists_patchedModule`'s docstring.
 
 lemma Ultrafilter.eventually_eventually_eq_of_finite
     {α β : Type*} [Finite β] (F : Ultrafilter α) (f : α → β) :
@@ -426,41 +392,6 @@ lemma smul_lemma
     obtain ⟨x, rfl⟩ := PatchingModule.ofPi_surjective x
     rfl
 
-include Λ R M F fRₒₒ hfRₒₒ hfRₒₒ' sR sM in
-omit [Module.Finite R₀ M₀] [Module.Finite Λ M₀] [IsNoetherianRing Rₒₒ] in
-lemma support_eq_top
-    (HCompat : ∀ i m (r : R i), sM i (Submodule.Quotient.mk (r • m)) =
-      sR i (Ideal.Quotient.mk _ r) • sM i (Submodule.Quotient.mk m))
-    (H₀ : ringKrullDim Rₒₒ < ⊤)
-    (H : .some (Module.depth Λ Λ) = ringKrullDim Rₒₒ) : Module.support R₀ M₀ = Set.univ := by
-  have : Module.Finite Λ M₀ := by
-    cases isEmpty_or_nonempty ι
-    · cases F.neBot.1 (Subsingleton.elim _ _)
-    have i := Nonempty.some (inferInstance: Nonempty ι)
-    exact Module.Finite.equiv (sM i)
-  have : Module.Finite R₀ M₀ := .of_restrictScalars_finite Λ _ _
-  have := PatchingAlgebra.faithfulSMul Λ R M F fRₒₒ hfRₒₒ hfRₒₒ' H₀ H
-  rw [Module.support_eq_zeroLocus, ← Set.univ_subset_iff]
-  intro p hp
-  let f₀ := ((PatchingAlgebra.quotientToOver Λ R F 𝔫 sR).comp (Ideal.Quotient.mk _))
-  have hf₀ : Function.Surjective f₀ :=
-    (PatchingAlgebra.surjective_quotientToOver Λ R F 𝔫 sR).comp Ideal.Quotient.mk_surjective
-  let p' := PrimeSpectrum.comap f₀ p
-  have hp' : 𝔫.map (algebraMap _ _) ≤ p'.asIdeal := by
-    simp only [PrimeSpectrum.comap_comp, p', f₀]
-    refine le_trans ?_ (Ideal.comap_mono (f := Ideal.Quotient.mk _) bot_le)
-    rw [← RingHom.ker_eq_comap_bot, Ideal.mk_ker]
-  let inst := Module.compHom M₀ f₀
-  letI := f₀.toAlgebra
-  have : IsScalarTower (PatchingAlgebra R F) R₀ M₀ := .of_algebraMap_smul fun _ _ ↦ rfl
-  let e' : (PatchingModule Λ M F ⧸ (𝔫 • ⊤ : Submodule (PatchingAlgebra R F) (PatchingModule Λ M F)))
-    ≃ₗ[PatchingAlgebra R F] M₀ :=
-    { __ := (PatchingModule.quotientEquivOver Λ M F 𝔫 sM),
-      map_smul' := smul_lemma Λ R M F 𝔫 sR sM HCompat }
-  have := congr(PrimeSpectrum.zeroLocus (R := PatchingAlgebra R F) ↑($(e'.annihilator_eq)))
-  rw [← Submodule.map_algebraMap_smul, ← Module.support_eq_zeroLocus,
-    Module.support_quotient,  Module.support_eq_zeroLocus,
-    Module.annihilator_eq_bot.mpr inferInstance, ← Module.comap_annihilator (R := R₀),
-    ← image_comap_zeroLocus_eq_zeroLocus_comap _ _ (by exact hf₀)] at this
-  simp only [Submodule.bot_coe, PrimeSpectrum.zeroLocus_singleton_zero, Set.univ_inter] at this
-  exact (PrimeSpectrum.comap_injective_of_surjective _ hf₀).mem_set_image.mp (this.le hp')
+-- VENDOR-DROP: `support_eq_top` (FLT System.lean) went here — the consumer of
+-- `PatchingAlgebra.faithfulSMul` above, and the FLT project's `R_red = 𝕋_red`
+-- endgame.  Dropped for the same reason.
