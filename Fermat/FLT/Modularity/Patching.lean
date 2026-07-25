@@ -1736,7 +1736,7 @@ def IsStrictlyUniversalOnFramedFiniteLifts.{s, uK, uW, uR}
      letI : ContinuousSMul A k := continuousSMul_of_algebraMap A k
        (by
          rw [RingHom.algebraMap_toAlgebra]
-         exact continuous_ringHom_of_isModuleTopology πA)
+         exact continuous_ringHom_of_isModuleTopology (p := p) πA)
      ∃ e : (k ⊗[A] (Fin 2 → A)) ≃ₗ[k] W, (ρA.baseChange k).conj e = ρbar) →
     ∃ ψ : Runiv →+* A, ∃ hψ : Continuous ψ,
       ψ.comp (algebraMap ℤ_[p] Runiv) = algebraMap ℤ_[p] A ∧
@@ -2068,7 +2068,7 @@ because `𝔪_A/pA` is the nilpotent maximal ideal of the artinian
 the maximal ideal of `ℤ_p` along the structure map.  The filtration
 `A ⊇ pA ⊇ p²A ⊇ ⋯` is the tower along which the pro-finite limit
 upgrade runs. -/
-def padicIdeal (p : ℕ) [Fact p.Prime] (A : Type*) [CommRing A]
+noncomputable def padicIdeal (p : ℕ) [Fact p.Prime] (A : Type*) [CommRing A]
     [Algebra ℤ_[p] A] : Ideal A :=
   (IsLocalRing.maximalIdeal ℤ_[p]).map (algebraMap ℤ_[p] A)
 
@@ -2098,7 +2098,7 @@ theorem padicIdeal_ne_top (p : ℕ) [Fact p.Prime] (A : Type*) [CommRing A]
   intro htop
   have hc := isAdicComplete_padicIdeal p A
   rw [htop] at hc
-  exact (not_subsingleton A) (IsAdicComplete.subsingleton hc)
+  exact (not_subsingleton A) (IsAdicComplete.subsingleton _ hc)
 
 /-- **Positive powers of the `p`-adic ideal are proper** (PROVEN): in a
 local ring a proper ideal lies in the maximal ideal, and so do its
@@ -2167,7 +2167,7 @@ theorem finite_quotient_padicIdeal_pow (p : ℕ) [Fact p.Prime] (A : Type*)
     refine hpi _ fun i => ?_
     rw [hspan]
     have happr := PadicInt.appr_spec n (x i)
-    have hneg := Ideal.neg_mem _ happr
+    have hneg := neg_mem happr
     simpa [Pi.sub_apply, neg_sub] using hneg
   exact Finite.of_surjective _ hsurj
 
@@ -2595,7 +2595,7 @@ theorem isWeaklyUniversalOnIdentifiedDeformation_of_finiteTests.{s, uK, uW, uR}
     intro n
     rcases eq_or_ne n 0 with rfl | hn
     · haveI : Subsingleton (D.A ⧸ J ^ 0) := by
-        rw [Ideal.Quotient.subsingleton_iff, pow_zero]
+        rw [Ideal.Quotient.subsingleton_iff, pow_zero, Ideal.one_eq_top]
       exact Set.Subsingleton.finite fun a _ b _ =>
         RingHom.ext fun _ => Subsingleton.elim _ _
     · haveI := hfinlev n
