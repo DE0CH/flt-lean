@@ -1844,15 +1844,16 @@ theorem finite_quotient_padicIdeal_pow (p : ℕ) [Fact p.Prime] (A : Type*)
     obtain ⟨a, rfl⟩ := Ideal.Quotient.mk_surjective y
     obtain ⟨x, rfl⟩ := hf a
     refine ⟨fun i => ⟨(x i).appr n, PadicInt.appr_lt _ _⟩, ?_⟩
+    show Ideal.Quotient.mk ((padicIdeal p A) ^ n)
+        (f (fun i => (((x i).appr n : ℕ) : ℤ_[p]))) =
+      Ideal.Quotient.mk ((padicIdeal p A) ^ n) (f x)
     refine (Ideal.Quotient.eq).mpr ?_
-    have hdiff : f (fun i => (((x i).appr n : ℕ) : ℤ_[p])) - f x =
-        f ((fun i => (((x i).appr n : ℕ) : ℤ_[p])) - x) := by
-      rw [map_sub]
-    rw [hdiff]
+    rw [← map_sub]
     refine hpi _ fun i => ?_
     rw [hspan]
-    have := PadicInt.appr_spec n (x i)
-    simpa [Pi.sub_apply] using Ideal.neg_mem _ this
+    have happr := PadicInt.appr_spec n (x i)
+    have hneg := Ideal.neg_mem _ happr
+    simpa [Pi.sub_apply, neg_sub] using hneg
   exact Finite.of_surjective _ hsurj
 
 /-- **Finite quotients by the powers of the maximal ideal** (sorry node
@@ -1908,12 +1909,16 @@ theorem finite_setOf_ringHom_comp_eq.{uR, uK, uB} {R : Type uR} [CommRing R]
   haveI : IsArtinianRing B := isArtinian_of_finite
   obtain ⟨c, hc⟩ :=
     (isArtinianRing_iff_isNilpotent_maximalIdeal B).mp inferInstance
-  have hcb : (IsLocalRing.maximalIdeal B) ^ c = ⊥ := hc
+  have hcb : (IsLocalRing.maximalIdeal B) ^ c = ⊥ := by
+    rw [← Submodule.zero_eq_bot]
+    exact hc
   -- the kernel of `πB` is proper, hence inside the maximal ideal of `B`
   have hkerB : RingHom.ker πB ≤ IsLocalRing.maximalIdeal B := by
     refine IsLocalRing.le_maximalIdeal ?_
     intro htop
-    have hone : (1 : B) ∈ RingHom.ker πB := by rw [htop]; trivial
+    have hone : (1 : B) ∈ RingHom.ker πB := by
+      rw [htop]
+      exact Submodule.mem_top
     rw [RingHom.mem_ker, map_one] at hone
     exact one_ne_zero hone
   -- every admissible `ψ` kills `𝔪_R ^ c`
@@ -1939,12 +1944,17 @@ theorem finite_setOf_ringHom_comp_eq.{uR, uK, uB} {R : Type uR} [CommRing R]
         refine le_trans (Ideal.mul_mono ih hmR) ?_
         rw [Ideal.mul_le]
         intro r hr s hs
-        rw [Ideal.mem_comap] at *
+        have hr' : ψ r ∈ (IsLocalRing.maximalIdeal B) ^ j := hr
+        have hs' : ψ s ∈ IsLocalRing.maximalIdeal B := hs
+        show ψ (r * s) ∈
+          (IsLocalRing.maximalIdeal B) ^ j * IsLocalRing.maximalIdeal B
         rw [map_mul]
-        exact Ideal.mul_mem_mul hr hs
+        exact Ideal.mul_mem_mul hr' hs'
     have hmem : ψ x ∈ (IsLocalRing.maximalIdeal B) ^ c := hpow c hx
     rw [hcb] at hmem
-    exact hmem
+    first
+      | exact hmem
+      | simpa using hmem
   haveI := finite_quotient_maximalIdeal_pow R hres c
   haveI : Finite ((R ⧸ (IsLocalRing.maximalIdeal R) ^ c) →+* B) :=
     Finite.of_injective
@@ -2026,8 +2036,7 @@ which the section audit of `Interface.lean` shows to be classically
 unsatisfiable, so the statement is also classically true outright.
 CIRCULARITY GUARD (inherited): must not be proven through
 `Family.lean` or anything downstream of it (`Lift.lean` included). -/
-theorem exists_ringHom_quotient_of_isWeaklyUniversalOnIdentifiedFiniteTests
-    .{s, uK, uW, uR}
+theorem exists_ringHom_quotient_of_finiteTests.{s, uK, uW, uR}
     {p : ℕ} {hpodd : Odd p} [Fact p.Prime]
     {k : Type uK} [Field k] [Finite k] [TopologicalSpace k]
     [DiscreteTopology k] [IsTopologicalRing k]
@@ -2066,7 +2075,7 @@ theorem exists_ringHom_quotient_of_isWeaklyUniversalOnIdentifiedFiniteTests
 /-- **Pro-finite limit upgrade** (PROVEN 2026-07-25 — the limit stratum
 of the strict Mazur core, after the LEVEL cut of 2026-07-24, now
 DECOMPOSED over three leaves: the deformation-theoretic tower step
-`exists_ringHom_quotient_of_isWeaklyUniversalOnIdentifiedFiniteTests`,
+`exists_ringHom_quotient_of_finiteTests`,
 the commutative-algebra finiteness `finite_quotient_maximalIdeal_pow`
 (consumed through the proven `finite_setOf_ringHom_comp_eq`), and the
 Kőnig/adic assembly `exists_ringHom_of_forall_quotient_mem`; the
@@ -2167,8 +2176,8 @@ theorem isWeaklyUniversalOnIdentifiedDeformation_of_finiteTests.{s, uK, uW, uR}
     rw [SModEq.sub_mem, sub_zero]
     have hsm : (J ^ n : Ideal D.A) ≤ (J ^ n) • (⊤ : Submodule D.A D.A) := by
       intro r hr
-      have hmem := Submodule.smul_mem_smul hr
-        (Submodule.mem_top (R := D.A) (x := (1 : D.A)))
+      have hmem : r • (1 : D.A) ∈ (J ^ n) • (⊤ : Submodule D.A D.A) :=
+        Submodule.smul_mem_smul hr Submodule.mem_top
       simpa using hmem
     exact hsm (hx n)
   have heq : ∀ a b : D.A,
@@ -2209,8 +2218,12 @@ theorem isWeaklyUniversalOnIdentifiedDeformation_of_finiteTests.{s, uK, uW, uR}
   -- the transition maps of the tower
   have hfacmk : ∀ (m n : ℕ) (hmn : n ≤ m),
       (Ideal.Quotient.factorPow J hmn).comp (Ideal.Quotient.mk (J ^ m)) =
-        Ideal.Quotient.mk (J ^ n) :=
-    fun _ _ _ => RingHom.ext fun _ => rfl
+        Ideal.Quotient.mk (J ^ n) := by
+    intro m n hmn
+    refine RingHom.ext fun x => ?_
+    first
+      | rfl
+      | simp
   have hliftfac : ∀ (m n : ℕ) (hmn : n ≤ m) (hn : n ≠ 0) (hm : m ≠ 0),
       (Ideal.Quotient.lift (J ^ n) D.π (hπpow n hn)).comp
           (Ideal.Quotient.factorPow J hmn) =
@@ -2218,7 +2231,9 @@ theorem isWeaklyUniversalOnIdentifiedDeformation_of_finiteTests.{s, uK, uW, uR}
     intro m n hmn hn hm
     refine RingHom.ext fun y => ?_
     obtain ⟨x, rfl⟩ := Ideal.Quotient.mk_surjective y
-    rfl
+    first
+      | rfl
+      | simp
   -- step (3a): the classifying sets are stable under the transitions
   have hXstab : ∀ (m n : ℕ) (hmn : n ≤ m) (ψ : Runiv →+* D.A ⧸ J ^ m),
       ψ ∈ X m → (Ideal.Quotient.factorPow J hmn).comp ψ ∈ X n := by
@@ -2248,7 +2263,7 @@ theorem isWeaklyUniversalOnIdentifiedDeformation_of_finiteTests.{s, uK, uW, uR}
   have hXne_pos : ∀ n : ℕ, n ≠ 0 → (X n).Nonempty := by
     intro n hn
     obtain ⟨ψ, h1, h2, h3⟩ :=
-      exists_ringHom_quotient_of_isWeaklyUniversalOnIdentifiedFiniteTests
+      exists_ringHom_quotient_of_finiteTests
         h D hDid (J ^ n) (hJpowne n hn) (hfinlev n) (hπpow n hn)
     refine ⟨ψ, ?_⟩
     simp only [hX, Set.mem_setOf_eq]
@@ -2284,37 +2299,21 @@ theorem isWeaklyUniversalOnIdentifiedDeformation_of_finiteTests.{s, uK, uW, uR}
   -- steps (3b) and (4): Kőnig, then `p`-adic assembly
   obtain ⟨ψ, hψ⟩ :=
     exists_ringHom_of_forall_quotient_mem J X hXfin hXne hXstab
-  have hmem : ∀ n : ℕ,
-      (((Ideal.Quotient.mk (J ^ n)).comp ψ).comp (algebraMap ℤ_[p] Runiv) =
-          (Ideal.Quotient.mk (J ^ n)).comp (algebraMap ℤ_[p] D.A)) ∧
-        (∀ (q : ℕ) (hq : q.Prime),
-          ((Ideal.Quotient.mk (J ^ n)).comp ψ)
-              ((ρuniv.charFrob
-                hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
-            Ideal.Quotient.mk (J ^ n)
-              ((D.ρ.charFrob
-                hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)) ∧
-        (∀ hn : n ≠ 0,
-          (Ideal.Quotient.lift (J ^ n) D.π (hπpow n hn)).comp
-            ((Ideal.Quotient.mk (J ^ n)).comp ψ) = πuniv) := by
-    intro n
-    have := hψ n
-    simp only [hX, Set.mem_setOf_eq] at this
-    exact this
+  simp only [hX, Set.mem_setOf_eq] at hψ
   refine ⟨ψ, ?_, ?_, ∅, ?_⟩
   · -- the `ℤ_p`-clause holds modulo every level, hence holds
     refine RingHom.ext fun x => ?_
     refine heq _ _ fun n => ?_
-    have hn := RingHom.congr_fun (hmem n).1 x
+    have hn := RingHom.congr_fun (hψ n).1 x
     simpa using hn
   · -- the reduction clause is already visible at the first level
     refine RingHom.ext fun r => ?_
-    have h1 := RingHom.congr_fun ((hmem 1).2.2 one_ne_zero) r
+    have h1 := RingHom.congr_fun ((hψ 1).2.2 one_ne_zero) r
     simpa using h1
   · -- the trace clause holds modulo every level, hence holds
     intro q hq _
     refine heq _ _ fun n => ?_
-    have hn := (hmem n).2.1 q hq
+    have hn := (hψ n).2.1 q hq
     simpa using hn
 
 /-- **Schlessinger–Ramakrishna–CDT core leaf** (DECOMPOSED 2026-07-24,
