@@ -4802,7 +4802,7 @@ theorem spanSingleton_pointEval_mul_fiberProd_pow {ι : Type*} [Fintype ι]
         FractionalIdeal.finprod_heightOneSpectrum_factorization'
           (K := W.FunctionField) hR0
 
-/-- **L4-7 substrate brick (sorry): point-adic multiplicities on the
+/-- **L4-7 substrate brick (PROVEN): point-adic multiplicities on the
 unit fractional ideals of `F[W]`.**  For a nonsingular affine
 Weierstrass curve (`W.Δ ≠ 0`) over an algebraically closed field there
 is an integer-valued *multiplicity* `mult S` — one for every affine
@@ -4815,23 +4815,34 @@ factorization of an invertible fractional ideal; it is the only input
 the fiber-counting brick `fiberProd_prod_inj` needs from the Dedekind
 property of `F[W]`.
 
-Proof plan: `W.Δ ≠ 0` makes the affine curve smooth, so `F[W]` is a
-Dedekind domain — noetherian (a finite `F[X]`-algebra, mathlib's
-`CoordinateRing.instModuleFinite`-style presentation), of dimension one
-(a nonzero prime of a one-dimensional affine domain is maximal), and
-integrally closed (regular at every point since `Δ ≠ 0`).  `F` being
-algebraically closed, the weak Nullstellensatz identifies the maximal
-ideals of `F[X, Y]/⟨W⟩` with the affine points of `W`: `pointIdeal W S`
-is maximal for `S ≠ O` because
-`CoordinateRing.quotientXYIdealEquiv` exhibits `F[W]/pointIdeal W S ≃ F`,
-and distinct points give distinct ideals since `pointIdeal W S` cuts
-out exactly `S`.  Take `mult S I` to be the `(pointIdeal W S)`-adic
-valuation of `I` (`IsDedekindDomain.HeightOneSpectrum.valuation`, or
-equivalently the multiplicity of `pointIdeal W S` in the factorization
-of `I` as a `FractionalIdeal`): it is a group homomorphism on the units
-of the fractional-ideal monoid, sends `pointIdeal' W S` to `1`, sends
-`pointIdeal' W R` for an affine `R ≠ S` to `0` (distinct maximal
-ideals), and sends `pointIdeal' W O = 1` to `0`. -/
+Proof.  `mult S I` is mathlib's `FractionalIdeal.count`, the exponent
+of a height-one prime in the factorization of `I`, taken at the prime
+`pointIdeal W S` (and `0` at `S = O`, where nothing is claimed): the
+three properties are then `FractionalIdeal.count_mul`, `count_self`
+and `count_maximal_coprime` (plus `count_one` at `R = O`, where
+`pointIdeal' W O = 1`).
+
+Three inputs feed that.  (i) `pointIdeal W S` is a height-one prime
+for `S ≠ O`: it is maximal by `xyIdeal_isMaximal` (the weak
+Nullstellensatz through `CoordinateRing.quotientXYIdealEquiv`, which
+exhibits `F[W]/pointIdeal W S ≃ F`), hence prime, and it is nonzero
+because it contains the nonzero vertical `CoordinateRing.XClass W x`.
+(ii) Distinct points give distinct point ideals — needed to separate
+`S` from `R`: equal point ideals give equal unit fractional ideals
+(`coe_pointIdeal'`), hence equal ideal classes, hence equal
+`Point.toClass` values (`mk_pointIdeal'`), and `toClass` is injective.
+(iii) `F[W]` IS a Dedekind domain, and — the point of the exercise —
+the instance comes for free from the factorization already proven
+above rather than from smoothness/integral closedness: by
+`isDedekindDomain_iff_isDedekindDomainInv` it suffices that every
+nonzero fractional ideal be invertible, and writing `I = a⁻¹·J`
+(`FractionalIdeal.exists_eq_spanSingleton_mul`) reduces that to the
+integral `J`, which `exists_multiset_ideal_eq_prod_pointIdeal` factors
+into point ideals — each invertible (`pointIdeal'`), so `↑J` is a unit
+(`isUnit_prod_coe_pointIdeal'`), and so is the principal factor.  Thus
+noetherianity plus invertibility of the point ideals, the two inputs of
+the factorization brick, already carry the whole Dedekind property; no
+separate integral-closedness argument is needed. -/
 theorem exists_pointMult (hΔ : W.Δ ≠ 0) :
     ∃ mult : W.Point → FractionalIdeal W.CoordinateRing⁰ W.FunctionField → ℤ,
       (∀ (S : W.Point)
@@ -4843,7 +4854,87 @@ theorem exists_pointMult (hΔ : W.Δ ≠ 0) :
       (∀ S R : W.Point, S ≠ 0 → R ≠ S →
         mult S (pointIdeal' W R :
           FractionalIdeal W.CoordinateRing⁰ W.FunctionField) = 0) := by
-  sorry
+  classical
+  -- ── point ideals at affine points are maximal, hence prime, and nonzero
+  have hmax : ∀ S : W.Point, S ≠ 0 → (pointIdeal W S).IsMaximal := by
+    intro S hS
+    cases S with
+    | zero => exact absurd rfl hS
+    | some x y h => exact xyIdeal_isMaximal h.left
+  have hbot : ∀ S : W.Point, S ≠ 0 → pointIdeal W S ≠ ⊥ := by
+    intro S hS
+    cases S with
+    | zero => exact absurd rfl hS
+    | some x y h =>
+      intro hc
+      have hmem : CoordinateRing.XClass W x ∈ pointIdeal W
+          (WeierstrassCurve.Affine.Point.some x y h) := by
+        rw [pointIdeal_some, CoordinateRing.XYIdeal]
+        exact Ideal.subset_span (Set.mem_insert _ _)
+      rw [hc, Ideal.mem_bot] at hmem
+      exact CoordinateRing.XClass_ne_zero x hmem
+  -- ── distinct points have distinct point ideals (`toClass` is injective)
+  have hinj : ∀ S R : W.Point, pointIdeal W R = pointIdeal W S → R = S := by
+    intro S R hRS
+    have h2 : pointIdeal' W R = pointIdeal' W S :=
+      Units.ext (by rw [coe_pointIdeal', coe_pointIdeal', hRS])
+    have h3 : Additive.toMul (Point.toClass R) = Additive.toMul (Point.toClass S) := by
+      rw [← mk_pointIdeal', ← mk_pointIdeal', h2]
+    exact Point.toClass_injective (Additive.toMul.injective h3)
+  -- ── every nonzero fractional ideal of `F[W]` is invertible: reduce to an
+  -- integral ideal and factor it into (invertible) point ideals
+  have hcancel : ∀ I : FractionalIdeal W.CoordinateRing⁰ W.FunctionField,
+      I ≠ 0 → I * I⁻¹ = 1 := by
+    intro I hI
+    obtain ⟨a, J, ha, haJ⟩ := FractionalIdeal.exists_eq_spanSingleton_mul I
+    have hane : (algebraMap W.CoordinateRing W.FunctionField) a ≠ 0 := fun hc =>
+      ha ((injective_iff_map_eq_zero _).mp
+        (IsFractionRing.injective W.CoordinateRing W.FunctionField) a hc)
+    have hJ : J ≠ ⊥ := by
+      rintro rfl
+      rw [FractionalIdeal.coeIdeal_bot, mul_zero] at haJ
+      exact hI haJ
+    obtain ⟨D, -, hD⟩ := exists_multiset_ideal_eq_prod_pointIdeal hΔ J hJ
+    have huJ : IsUnit ((J : FractionalIdeal W.CoordinateRing⁰ W.FunctionField)) := by
+      rw [hD, ← prod_coe_pointIdeal' D]
+      exact isUnit_prod_coe_pointIdeal' D
+    have hmul : FractionalIdeal.spanSingleton W.CoordinateRing⁰
+          ((algebraMap W.CoordinateRing W.FunctionField a)⁻¹) *
+        FractionalIdeal.spanSingleton W.CoordinateRing⁰
+          ((algebraMap W.CoordinateRing W.FunctionField) a) = 1 := by
+      rw [FractionalIdeal.spanSingleton_mul_spanSingleton, inv_mul_cancel₀ hane,
+        FractionalIdeal.spanSingleton_one]
+    have husp : IsUnit (FractionalIdeal.spanSingleton W.CoordinateRing⁰
+        ((algebraMap W.CoordinateRing W.FunctionField a)⁻¹)) :=
+      ⟨⟨_, _, hmul, by rw [mul_comm]; exact hmul⟩, rfl⟩
+    rw [FractionalIdeal.mul_inv_cancel_iff_isUnit W.FunctionField, haJ]
+    exact husp.mul huJ
+  haveI hdd : IsDedekindDomain W.CoordinateRing :=
+    isDedekindDomain_iff_isDedekindDomainInv.mpr
+      ((isDedekindDomainInv_iff (K := W.FunctionField)).mpr fun I hI =>
+        hcancel I (by rwa [← FractionalIdeal.bot_eq_zero]))
+  -- ── the multiplicity: the `(pointIdeal W S)`-adic count
+  refine ⟨fun S I => if hS : S = 0 then 0 else
+    FractionalIdeal.count W.FunctionField
+      ⟨pointIdeal W S, (hmax S hS).isPrime, hbot S hS⟩ I, ?_, ?_, ?_⟩
+  · intro S I J hI hJ
+    by_cases hS : S = 0
+    · simp only [dif_pos hS, add_zero]
+    · simp only [dif_neg hS]
+      exact FractionalIdeal.count_mul _ _ hI.ne_zero hJ.ne_zero
+  · intro S hS
+    simp only [dif_neg hS, coe_pointIdeal']
+    exact FractionalIdeal.count_self W.FunctionField _
+  · intro S R hS hRS
+    simp only [dif_neg hS, coe_pointIdeal']
+    by_cases hR : R = 0
+    · subst hR
+      rw [pointIdeal_zero, FractionalIdeal.coeIdeal_top]
+      exact FractionalIdeal.count_one W.FunctionField _
+    · refine FractionalIdeal.count_maximal_coprime W.FunctionField _
+        (w := ⟨pointIdeal W R, (hmax R hR).isPrime, hbot R hR⟩) ?_
+      intro hc
+      exact hRS (hinj S R (congrArg IsDedekindDomain.HeightOneSpectrum.asIdeal hc))
 
 /-- **L4-7 brick (PROVEN over `exists_pointMult`): the fiber-product
 map is injective on divisors.**  Distinct base points have disjoint
