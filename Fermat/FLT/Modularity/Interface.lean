@@ -230,6 +230,16 @@ public import Fermat.FLT.GaloisRepresentation.Chebotarev
 -- `ℓ ≥ 5` residual-modularity leaf by contradiction. Proof-body use
 -- only.
 import Fermat.FLT.Modularity.KhareWintenberger
+-- The abstract (topology-free) dimension-2 Brauer–Nesbitt core: the
+-- `Representation`-level Kolchin/common-eigenvector stable submodule
+-- `rep_exists_stable_submodule_of_charpoly_eq_units`, used by the
+-- two-character refutation
+-- `not_isIrreducible_of_charpoly_coeff_one_eq_sum_monoidHom` below
+-- (the scalar twist by a character is a bare `Representation`, so the
+-- Galois-level twin in `KhareWintenberger.lean` — which demands a
+-- `GaloisRep`, hence continuity of the twisting character — does not
+-- apply). Proof-body use only.
+import Fermat.FLT.GaloisRepresentation.BrauerNesbittConjugacy
 -- The deformation-theoretic pillars behind the Taylor–Wiles patching
 -- statement 3b (Mazur representability, Carayol surjectivity,
 -- Taylor–Wiles injectivity) and the `charFrob`/base-change bridge.
@@ -4252,25 +4262,44 @@ lemma continuous_ringHom_finite_of_isModuleTopology {ℓ : ℕ}
   rw [map_zero, nhds_discrete k, Filter.tendsto_pure]
   filter_upwards [hmem] with x hx using hx
 
-/-- **Two-character refutation of residual irreducibility** (sorry
-node — the character-decomposition brick of the polarization argument
-below): a rank-2 residual representation over a finite field `k` (with
-`2 ∈ kˣ`) whose trace decomposes globally as a sum of two `k`-valued
-characters of `Γ ℚ` is not irreducible. Stated through
-`charpoly.coeff 1 = −trace`. Intended proof (Brauer–Nesbitt at rank
-2): `End k W` and `k` are finite sets, so `ρbar`, `χ₁`, `χ₂` all have
-finite image and factor jointly through the finite quotient
-`G := Γ ℚ ⧸ (ker ρbar ⊓ ker χ₁ ⊓ ker χ₂)`; the trace identity forces
-`det ρbar = χ₁·χ₂` by Cayley–Hamilton at rank 2
-(`2·det ρ(g) = (tr ρ(g))² − tr ρ(g²)`, with `2` a unit), so `ρbar g`
-and `diag(χ₁ g, χ₂ g)` share characteristic polynomials
-`(X − χ₁ g)(X − χ₂ g)` at every `g`; Brauer–Nesbitt for the finite
-group `G` identifies the semisimplification of `ρbar` with
-`χ₁ ⊕ χ₂`, and a two-dimensional representation with reducible
-semisimplification has a stable line — refuting irreducibility
-through `Slop.OddRep.isIrreducible_iff_forall`. CIRCULARITY GUARD:
-must not be proven through `Family.lean` (see the section
-docstring). -/
+set_option backward.isDefEq.respectTransparency false in
+/-- **Two-character refutation of residual irreducibility** (PROVEN
+2026-07-25 — the character-decomposition brick of the polarization
+argument below): a rank-2 residual representation over a field `k`
+(with `2 ∈ kˣ`) whose trace decomposes globally as a sum of two
+`k`-valued characters of `Γ ℚ` is not irreducible. Stated through
+`charpoly.coeff 1 = −trace`. PROOF (Brauer–Nesbitt at rank 2, along
+the elementary dimension-2 route of
+`GaloisRepresentation/BrauerNesbitt.lean`, which needs NO finite
+quotient and no semisimplification machinery — the hypothesis
+`Finite k` is therefore not consumed):
+
+* `charpoly_eq_quadratic_of_finrank_two` turns the `coeff 1`
+  hypothesis into `tr ρbar g = χ₁ g + χ₂ g` everywhere;
+* Cayley–Hamilton at rank 2 (`LinearMap.aeval_self_charpoly`), traced,
+  gives `tr(ρ g²) − (tr ρ g)² + 2·det ρ g = 0`; substituting the trace
+  identity at `g` and at `g²` collapses this to
+  `2·(det ρ g − χ₁ g · χ₂ g) = 0`, so `det ρbar = χ₁·χ₂` because `2`
+  is a unit;
+* `det ρbar g` is a unit (`ρbar g` is invertible), so `χ₁ g` and
+  `χ₂ g` never vanish and lift to characters `α β : Γ ℚ →* kˣ`, and
+  every `charpoly (ρbar g)` is `(X − α g)(X − β g)`;
+* the scalar twist `σ g := (α g)⁻¹ • ρbar g` — a bare
+  `Representation`, which is why the Galois-level twin
+  `not_isIrreducible_of_charpoly_eq_units` of `KhareWintenberger.lean`
+  (it demands a `GaloisRep`, hence continuity of `α`) cannot be used
+  here — has the `1 ⊕ (β·α⁻¹)` charpoly shape, so
+  `rep_exists_stable_submodule_of_charpoly_eq_units`
+  (Kolchin/common-eigenvector, `BrauerNesbittConjugacy.lean`) produces
+  a nonzero proper `σ`-stable submodule;
+* scalar twisting does not change stability, so that submodule is
+  `ρbar`-stable and `not_isIrreducible_of_invariant_submodule_field`
+  refutes irreducibility.
+
+CIRCULARITY GUARD: must not be proven through `Family.lean` (see the
+section docstring) — and is not: the only project inputs are
+`Chebotarev.lean`, `BrauerNesbitt(Conjugacy).lean` and the
+field-generic helpers of `KhareWintenberger.lean`. -/
 theorem not_isIrreducible_of_charpoly_coeff_one_eq_sum_monoidHom
     {k : Type*} [Field k] [Finite k] [TopologicalSpace k]
     {W : Type*} [AddCommGroup W] [Module k W] [Module.Finite k W]
@@ -4278,8 +4307,93 @@ theorem not_isIrreducible_of_charpoly_coeff_one_eq_sum_monoidHom
     (hW : Module.rank k W = 2) (ρbar : GaloisRep ℚ k W)
     (h2 : IsUnit (2 : k)) (χ₁ χ₂ : Field.absoluteGaloisGroup ℚ →* k)
     (hsum : ∀ g, ((ρbar g).charpoly).coeff 1 = -(χ₁ g + χ₂ g)) :
-    ¬ ρbar.IsIrreducible :=
-  sorry
+    ¬ ρbar.IsIrreducible := by
+  classical
+  have hfr : Module.finrank k W = 2 :=
+    Module.finrank_eq_of_rank_eq (by exact_mod_cast hW)
+  -- the trace is the sum of the two characters
+  have htr : ∀ g, LinearMap.trace k W (ρbar g) = χ₁ g + χ₂ g := by
+    intro g
+    have h1 := hsum g
+    rw [charpoly_eq_quadratic_of_finrank_two hfr (ρbar g),
+      coeff_one_quadratic] at h1
+    exact neg_inj.mp h1
+  -- Cayley–Hamilton at rank 2, traced, with `2` invertible: the
+  -- determinant is the product of the two characters
+  have hdet : ∀ g, LinearMap.det (ρbar g) = χ₁ g * χ₂ g := by
+    intro g
+    have hch := LinearMap.aeval_self_charpoly (ρbar g)
+    rw [charpoly_eq_quadratic_of_finrank_two hfr (ρbar g)] at hch
+    simp only [map_add, map_sub, map_mul, map_pow, Polynomial.aeval_X,
+      Polynomial.aeval_C] at hch
+    have htrsq : LinearMap.trace k W ((ρbar g) ^ 2) = χ₁ g ^ 2 + χ₂ g ^ 2 := by
+      rw [← map_pow ρbar, htr (g ^ 2), map_pow, map_pow]
+    have hlin := congrArg (LinearMap.trace k W) hch
+    rw [← Algebra.smul_def, Algebra.algebraMap_eq_smul_one] at hlin
+    simp only [map_add, map_sub, map_smul, map_zero, smul_eq_mul,
+      LinearMap.trace_one, hfr, Nat.cast_ofNat, htrsq, htr g] at hlin
+    have h2ne : (2 : k) ≠ 0 := h2.ne_zero
+    have hfin : (2 : k) * (LinearMap.det (ρbar g) - χ₁ g * χ₂ g) = 0 := by
+      linear_combination hlin
+    exact sub_eq_zero.mp ((mul_eq_zero.mp hfin).resolve_left h2ne)
+  -- both characters are unit-valued, since their product is a determinant
+  have hdetunit : ∀ g, IsUnit (LinearMap.det (ρbar g)) := by
+    intro g
+    have hEnd : IsUnit (ρbar g) :=
+      ⟨⟨ρbar g, ρbar g⁻¹, by rw [← map_mul, mul_inv_cancel, map_one],
+        by rw [← map_mul, inv_mul_cancel, map_one]⟩, rfl⟩
+    exact hEnd.map (LinearMap.det : (W →ₗ[k] W) →* k)
+  have hu1 : ∀ g, IsUnit (χ₁ g) := fun g =>
+    isUnit_of_mul_isUnit_left (by rw [← hdet g]; exact hdetunit g)
+  have hu2 : ∀ g, IsUnit (χ₂ g) := fun g =>
+    isUnit_of_mul_isUnit_right (by rw [← hdet g]; exact hdetunit g)
+  obtain ⟨α, hαg⟩ : ∃ α : Field.absoluteGaloisGroup ℚ →* kˣ,
+      ∀ g, ((α g : kˣ) : k) = χ₁ g :=
+    ⟨MonoidHom.mk' (fun g => (hu1 g).unit) (fun g h => Units.ext (by
+      simp only [IsUnit.unit_spec, Units.val_mul]
+      exact map_mul χ₁ g h)), fun g => (hu1 g).unit_spec⟩
+  obtain ⟨β, hβg⟩ : ∃ β : Field.absoluteGaloisGroup ℚ →* kˣ,
+      ∀ g, ((β g : kˣ) : k) = χ₂ g :=
+    ⟨MonoidHom.mk' (fun g => (hu2 g).unit) (fun g h => Units.ext (by
+      simp only [IsUnit.unit_spec, Units.val_mul]
+      exact map_mul χ₂ g h)), fun g => (hu2 g).unit_spec⟩
+  -- the scalar twist by `α⁻¹`, a bare representation
+  obtain ⟨σ, hσapp⟩ : ∃ σ : Representation k (Field.absoluteGaloisGroup ℚ) W,
+      ∀ g, σ g = (((α g)⁻¹ : kˣ) : k) • ρbar g :=
+    ⟨{ toFun := fun g => (((α g)⁻¹ : kˣ) : k) • ρbar g
+       map_one' := by simp
+       map_mul' := fun g h => by
+         simp only [map_mul, mul_inv_rev, Units.val_mul]
+         rw [smul_mul_smul_comm, mul_comm ((((α h)⁻¹ : kˣ) : k))] },
+     fun g => rfl⟩
+  have hσchar : ∀ g, (σ g).charpoly =
+      Polynomial.X ^ 2
+        - Polynomial.C ((((β * α⁻¹) g : kˣ) : k) + 1) * Polynomial.X
+        + Polynomial.C (((β * α⁻¹) g : kˣ) : k) := by
+    intro g
+    have hc1ne : χ₁ g ≠ 0 := (hu1 g).ne_zero
+    have hval : (((β * α⁻¹) g : kˣ) : k) = χ₂ g * (χ₁ g)⁻¹ := by
+      simp only [MonoidHom.mul_apply, MonoidHom.inv_apply, Units.val_mul,
+        Units.val_inv_eq_inv_val, hαg, hβg]
+    have htrσ : LinearMap.trace k W (σ g) = χ₂ g * (χ₁ g)⁻¹ + 1 := by
+      rw [hσapp, map_smul, htr g, smul_eq_mul, Units.val_inv_eq_inv_val, hαg]
+      field_simp
+    have hdetσ : LinearMap.det (σ g) = χ₂ g * (χ₁ g)⁻¹ := by
+      rw [hσapp, LinearMap.det_smul, hfr, hdet g, Units.val_inv_eq_inv_val, hαg]
+      field_simp
+      ring
+    rw [charpoly_eq_quadratic_of_finrank_two hfr (σ g), htrσ, hdetσ, hval]
+  -- Kolchin/common-eigenvector: a stable submodule for the twist …
+  obtain ⟨U, hUb, hUt, hUstab⟩ :=
+    rep_exists_stable_submodule_of_charpoly_eq_units hfr σ (β * α⁻¹) hσchar
+  -- … which is `ρbar`-stable, since twisting is by scalars
+  refine not_isIrreducible_of_invariant_submodule_field ρbar U hUb hUt ?_
+  intro g w hw
+  have hρσ : ρbar g w = ((α g : kˣ) : k) • σ g w := by
+    rw [hσapp, LinearMap.smul_apply, smul_smul, Units.val_inv_eq_inv_val,
+      mul_inv_cancel₀ (Units.ne_zero (α g)), one_smul]
+  rw [hρσ]
+  exact Submodule.smul_mem _ _ (hUstab g w hw)
 
 /-- **The polarization unit** (PROVEN 2026-07-24 — the residual
 irreducibility step of the corner-system cut, a glue over the
@@ -9999,9 +10113,218 @@ lemma toMatrix_conj_equivFun {K : Type*} [Field K] {M : Type*}
   simp only [LinearMap.comp_apply, LinearEquiv.coe_coe, hsymm j,
     Pi.basisFun_repr, Module.Basis.equivFun_apply]
 
-/-- **Ribet's walk, intrinsic form** (Ribet cut E2a-ii-walk; sorry
-node — the whole arithmetic content of Ribet's lemma, stated WITHOUT
-any frame bookkeeping): under the hypotheses of
+set_option backward.isDefEq.respectTransparency false in
+/-- **Brauer–Nesbitt dichotomy for a residually reducible rank-2
+lattice** (Ribet cut E2a-ii-walk, item (a); sorry node — carved out
+2026-07-25 from `exists_ribet_walk_stable_line`): a rank-`2`
+representation over `O` whose residual trace and determinant are
+`1 + ψ` and `ψ`, with `ψ ≠ 1`, has a residual `Γ ℚ`-stable LINE, and
+that line's character is either `1` — with `ψ` on the quotient — or
+`ψ` — with `1` on the quotient. The two orderings of the two DISTINCT
+residual characters, no third possibility; this is the whole content
+of item (a) of the recorded cut, and it is the ONLY place where the
+trace/determinant hypotheses are consumed.
+
+Classical proof (Brauer–Nesbitt; Curtis–Reiner, *Methods of
+Representation Theory* §30.16; Diamond–Darmon–Taylor, *Fermat's Last
+Theorem* (1995), Lemma 3.27 — the in-tree substrate is the
+sorry-free `BrauerNesbittConjugacy.lean`, whose
+`rep_exists_stable_submodule_of_charpoly_eq_units` IS the
+common-eigenvector step, and whose
+`rep_exists_stable_line_of_not_isIrreducible` turns a
+subrepresentation into a line):
+1. the residual space `kk' ⊗_O O²` is `2`-dimensional over `kk'`
+   (`Algebra.TensorProduct.basis` on `Pi.basisFun`), so the
+   characteristic polynomial of the reduction at `g` is
+   `X² − (1 + ψ g) X + ψ g = (X − 1)(X − ψ g)`: it splits with roots
+   in `kk'` at every `g`, and the Kolchin/common-eigenvector argument
+   over the FINITE field `kk'` produces a `Γ ℚ`-stable line;
+2. write `α` for the character on that line and `β` for the character
+   on the quotient, so `α + β = 1 + ψ` and `α · β = ψ` pointwise.
+   Then `(α g − 1)(α g − ψ g) = α g² − (α g + β g)·α g + α g·β g = 0`
+   for EVERY `g`, i.e. `G = {g | α g = 1} ∪ {g | α g = ψ g}`; both
+   sets are SUBGROUPS (`α` and `α·ψ⁻¹` are homomorphisms into the
+   abelian group `kk'ˣ`), and a group is never the union of two
+   PROPER subgroups, so `α = 1` globally or `α = ψ` globally. This is
+   the "forced globally by multiplicativity" step, and it is exactly
+   where `ψ ≠ 1` makes the two cases distinct.
+Unconditionally TRUE at the stated generality: no hypothesis package
+beyond the two trace/determinant identities (`hψ` is used only to
+make the dichotomy non-degenerate — for `ψ = 1` both disjuncts are the
+same statement and the result still holds). -/
+theorem exists_residual_trivialSub_or_psiSub
+    {O : Type u} [CommRing O] [TopologicalSpace O] [IsTopologicalRing O]
+    {kk' : Type u} [Field kk'] [Finite kk'] [TopologicalSpace kk']
+    [IsTopologicalRing kk'] [Algebra O kk'] [ContinuousSMul O kk']
+    (ρ' : GaloisRep ℚ O (Fin 2 → O))
+    (ψ : Field.absoluteGaloisGroup ℚ →* kk') (hψ : ∃ g, ψ g ≠ 1)
+    (htr' : ∀ g, algebraMap O kk'
+      (LinearMap.trace O (Fin 2 → O) (ρ' g)) = 1 + ψ g)
+    (hdet' : ∀ g, algebraMap O kk' (LinearMap.det (ρ' g)) = ψ g) :
+    (∃ v₀ : kk' ⊗[O] (Fin 2 → O), v₀ ≠ 0 ∧
+        (∀ g, (ρ'.baseChange kk') g v₀ = v₀) ∧
+        (∀ g x, ∃ c : kk', (ρ'.baseChange kk') g x - ψ g • x = c • v₀)) ∨
+      (∃ v₀ : kk' ⊗[O] (Fin 2 → O), v₀ ≠ 0 ∧
+        (∀ g, (ρ'.baseChange kk') g v₀ = ψ g • v₀) ∧
+        (∀ g x, ∃ c : kk', (ρ'.baseChange kk') g x - x = c • v₀)) :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **One step of Ribet's walk: swapping the order of the residual
+characters** (Ribet cut E2a-ii-walk, item (b); sorry node — carved out
+2026-07-25 from `exists_ribet_walk_stable_line`): if the reduction of
+the given lattice has `ψ` as its SUB-character — a residual
+`ψ`-eigenvector `v₀` whose line carries the quotient character `1` —
+then some commensurable stable lattice, again presented on
+`Fin 2 → O` with a `ℚ̄_p`-equivariant generic identification `e'` to
+the original, realizes the OTHER order: a Galois-FIXED nonzero
+residual vector, with `ψ` acting on the quotient by its line.
+
+Classical proof (Ribet, *A modular construction of unramified
+`p`-extensions of `ℚ(μ_p)`*, Invent. Math. 34 (1976), Prop. 2.1;
+Bellaïche–Chenevier, *Families of Galois representations and Selmer
+groups*, Astérisque 324 (2009), ch. 1 — this is one step down the tree
+of lattices): let `Λ = O²` and let `Λ'` be the preimage in `Λ` of the
+residual `ψ`-line `kk'·v₀` under the reduction `Λ ↠ Λ/𝔪Λ`. Then
+`𝔪Λ ⊆ Λ' ⊆ Λ`, `Λ'` is `Γ ℚ`-stable (the `ψ`-line is stable and `𝔪Λ`
+is), and `Λ'` is again free of rank `2` over the discrete valuation
+ring `O` — it is finitely generated (between `𝔪Λ` and `Λ`, both
+finite) and torsion-free, hence free, of the same rank because it
+contains `𝔪Λ`. Choosing a frame of `Λ'` presents the walked lattice on
+`Fin 2 → O` again, and the inclusion `Λ' ⊆ Λ` becomes an isomorphism
+after inverting `p`, giving the `ℚ̄_p`-equivariant `e'`. Its reduction
+`Λ'/𝔪Λ'` has the two characters in the OPPOSITE order: `𝔪Λ/𝔪Λ'` is a
+Galois-stable line on which the action is the one on `Λ/Λ' ≅ 1`
+(twisted by the uniformiser, which is Galois-invariant), while
+`Λ'/𝔪Λ ≅ kk'·v₀ ≅ ψ` is the quotient. So the walked lattice has a
+FIXED residual vector with `ψ` on the quotient. The residue package
+`hsurj'`/`hopen'`/`hker'` identifies `Λ/𝔪Λ` with `kk' ⊗_O Λ`
+continuously, and `hOinj` is what makes the generic fibres of `Λ` and
+`Λ'` the same `ℚ̄_p`-space. Unconditionally TRUE given the `ψ`-sub
+hypothesis, which is exactly what makes `Λ'` a PROPER intermediate
+lattice. -/
+theorem exists_ribet_walk_swap_order
+    {O : Type u} [CommRing O] [Algebra ℤ_[p] O] [IsDomain O]
+    [Module.Finite ℤ_[p] O] [TopologicalSpace O] [IsTopologicalRing O]
+    [IsModuleTopology ℤ_[p] O] [IsDiscreteValuationRing O]
+    [Algebra O (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul O (AlgebraicClosure ℚ_[p])]
+    (hOinj : Function.Injective (algebraMap O (AlgebraicClosure ℚ_[p])))
+    {kk' : Type u} [Field kk'] [Finite kk'] [Algebra ℤ_[p] kk']
+    [TopologicalSpace kk'] [DiscreteTopology kk'] [IsTopologicalRing kk']
+    [Algebra O kk'] [ContinuousSMul O kk']
+    (hsurj' : Function.Surjective (algebraMap O kk'))
+    (hopen' : IsOpen ((IsLocalRing.maximalIdeal O : Ideal O) : Set O))
+    (hker' : RingHom.ker (algebraMap O kk') = IsLocalRing.maximalIdeal O)
+    {ρO : GaloisRep ℚ O (Fin 2 → O)}
+    (ψ : Field.absoluteGaloisGroup ℚ →* kk')
+    (hpsi : ∃ v₀ : kk' ⊗[O] (Fin 2 → O), v₀ ≠ 0 ∧
+      (∀ g, (ρO.baseChange kk') g v₀ = ψ g • v₀) ∧
+      (∀ g x, ∃ c : kk', (ρO.baseChange kk') g x - x = c • v₀)) :
+    ∃ (ρO' : GaloisRep ℚ O (Fin 2 → O))
+      (e' : ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O))
+        ≃ₗ[AlgebraicClosure ℚ_[p]]
+          ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O)))
+      (v₀ : kk' ⊗[O] (Fin 2 → O)),
+      (∀ g x, e' ((ρO'.baseChange (AlgebraicClosure ℚ_[p])) g x) =
+        (ρO.baseChange (AlgebraicClosure ℚ_[p])) g (e' x)) ∧
+      v₀ ≠ 0 ∧
+      (∀ g, (ρO'.baseChange kk') g v₀ = v₀) ∧
+      (∀ g x, ∃ c : kk',
+        (ρO'.baseChange kk') g x - ψ g • x = c • v₀) :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Split everywhere forces a stable line in the generic fibre**
+(Ribet cut E2a-ii-walk, item (c); sorry node — carved out 2026-07-25
+from `exists_ribet_walk_stable_line`): if EVERY stable lattice whose
+reduction has the trivial sub-character splits — carries a
+`ψ`-eigenvector outside the fixed line — then the generic fibre
+`ℚ̄_p ⊗_O O²` has a `Γ ℚ`-stable subspace that is neither `⊥` nor `⊤`.
+Together with generic irreducibility this is the contradiction that
+ends Ribet's argument, and it is the only item of the cut that
+consumes the walk's descent.
+
+Classical proof (Ribet, Invent. Math. 34 (1976), Prop. 2.1, the
+inverse-limit step; Bellaïche–Chenevier, Astérisque 324 (2009),
+ch. 1): start from the good lattice `Λ₁ = ρ₁` supplied by `ρ₁`/`v₁`.
+By `hsplit` its reduction contains a `ψ`-eigenvector `w` outside the
+fixed line, so the preimage `Λ₂ ⊆ Λ₁` of `kk'·w` is a stable lattice
+with `𝔪Λ₁ ⊆ Λ₂ ⊊ Λ₁`, whose residual characters are again `{1, ψ}` in
+the trivial-sub order (Brauer–Nesbitt through the generic
+identification: trace and determinant are conjugation- and
+base-change-invariant, so `htr`/`hdet` hold for every lattice in the
+walk). Iterating produces a descending chain
+`Λ₁ ⊋ Λ₂ ⊋ Λ₃ ⊋ …` of stable lattices, each containing `𝔪Λᵢ₋₁`, whose
+successive `ψ`-eigenlines assemble — the valuation of `O` being
+DISCRETE, the chain cannot stabilise and its intersection scaled back
+by the uniformiser converges — into a `ρO`-stable `ℚ̄_p`-line of the
+generic fibre: at each stage the chosen eigenvector lifts to a vector
+of `Λ₁ ⊗ ℚ̄_p` whose `Γ ℚ`-translates stay in a line modulo `𝔪ⁿ`, and
+the limit (compactness of `Λ₁`, `O` complete because module-finite
+over `ℤ_p` in the module topology) is an honest stable line. A line in
+a `2`-dimensional space is neither `⊥` nor `⊤`. Hypothesis-honest:
+`hψ` keeps the two residual characters distinct (for `ψ = 1` the
+`ψ`-eigenvector produced by `hsplit` gives no new lattice), and
+`htr`/`hdet` are what make every lattice of the walk a GOOD lattice,
+i.e. re-feedable to `hsplit`. -/
+theorem exists_stable_line_of_ribet_walk_split
+    {O : Type u} [CommRing O] [Algebra ℤ_[p] O] [IsDomain O]
+    [Module.Finite ℤ_[p] O] [TopologicalSpace O] [IsTopologicalRing O]
+    [IsModuleTopology ℤ_[p] O] [IsDiscreteValuationRing O]
+    [Algebra O (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul O (AlgebraicClosure ℚ_[p])]
+    (hOinj : Function.Injective (algebraMap O (AlgebraicClosure ℚ_[p])))
+    {kk' : Type u} [Field kk'] [Finite kk'] [Algebra ℤ_[p] kk']
+    [TopologicalSpace kk'] [DiscreteTopology kk'] [IsTopologicalRing kk']
+    [Algebra O kk'] [ContinuousSMul O kk']
+    (hsurj' : Function.Surjective (algebraMap O kk'))
+    (hopen' : IsOpen ((IsLocalRing.maximalIdeal O : Ideal O) : Set O))
+    (hker' : RingHom.ker (algebraMap O kk') = IsLocalRing.maximalIdeal O)
+    {ρO : GaloisRep ℚ O (Fin 2 → O)}
+    (ψ : Field.absoluteGaloisGroup ℚ →* kk') (hψ : ∃ g, ψ g ≠ 1)
+    (htr : ∀ g, algebraMap O kk'
+      (LinearMap.trace O (Fin 2 → O) (ρO g)) = 1 + ψ g)
+    (hdet : ∀ g, algebraMap O kk' (LinearMap.det (ρO g)) = ψ g)
+    (ρ₁ : GaloisRep ℚ O (Fin 2 → O))
+    (e₁ : ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O))
+      ≃ₗ[AlgebraicClosure ℚ_[p]]
+        ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O)))
+    (v₁ : kk' ⊗[O] (Fin 2 → O))
+    (he₁ : ∀ g x, e₁ ((ρ₁.baseChange (AlgebraicClosure ℚ_[p])) g x) =
+      (ρO.baseChange (AlgebraicClosure ℚ_[p])) g (e₁ x))
+    (hv₁ : v₁ ≠ 0)
+    (hfix₁ : ∀ g, (ρ₁.baseChange kk') g v₁ = v₁)
+    (hquo₁ : ∀ g x, ∃ c : kk', (ρ₁.baseChange kk') g x - ψ g • x = c • v₁)
+    (hsplit : ∀ (ρO' : GaloisRep ℚ O (Fin 2 → O))
+      (e' : ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O))
+        ≃ₗ[AlgebraicClosure ℚ_[p]]
+          ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O)))
+      (v₀ : kk' ⊗[O] (Fin 2 → O)),
+      (∀ g x, e' ((ρO'.baseChange (AlgebraicClosure ℚ_[p])) g x) =
+        (ρO.baseChange (AlgebraicClosure ℚ_[p])) g (e' x)) →
+      v₀ ≠ 0 →
+      (∀ g, (ρO'.baseChange kk') g v₀ = v₀) →
+      (∀ g x, ∃ c : kk',
+        (ρO'.baseChange kk') g x - ψ g • x = c • v₀) →
+      ∃ w : kk' ⊗[O] (Fin 2 → O),
+        w ∉ Submodule.span kk' {v₀} ∧
+          ∀ g, (ρO'.baseChange kk') g w = ψ g • w) :
+    ∃ U : Submodule (AlgebraicClosure ℚ_[p])
+        ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O)),
+      U ≠ ⊥ ∧ U ≠ ⊤ ∧
+        ∀ g x, x ∈ U →
+          (ρO.baseChange (AlgebraicClosure ℚ_[p])) g x ∈ U :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Ribet's walk, intrinsic form** (Ribet cut E2a-ii-walk; PROVEN
+2026-07-25 as the assembly of the recorded three-way cut — the whole
+arithmetic content of Ribet's lemma is now in the three leaves
+`exists_residual_trivialSub_or_psiSub` (a),
+`exists_ribet_walk_swap_order` (b) and
+`exists_stable_line_of_ribet_walk_split` (c), stated WITHOUT any frame
+bookkeeping): under the hypotheses of
 `exists_ribet_walk_nonsplit_lattice` there is a commensurable stable
 lattice — again presented on `Fin 2 → O`, with a `ℚ̄_p`-equivariant
 generic identification `e'` to the original — whose reduction has a
@@ -10034,10 +10357,31 @@ hypothesis-honest — `hψ` (multiplicity-freeness) and `hirrO` are each
 load-bearing (a scalar-residual or split-generic situation admits only
 split reductions). Circularity guard (inherited from the Ribet cut):
 must not route through `Family.lean` or `Reducible.lean`'s B5.
-Suggested further cut if this resists: (a) the Brauer–Nesbitt pinning
-of the residual characters of an ARBITRARY stable lattice to `{1, ψ}`,
-(b) the prescribed-order realization (one step of the walk), (c) the
-split-everywhere ⇒ generic stable line contradiction. -/
+
+DECOMPOSITION (2026-07-25 — the further cut recorded here on
+2026-07-24, now executed; what is PROVEN below is the assembly, which
+carries no arithmetic of its own):
+* (a) `exists_residual_trivialSub_or_psiSub` — the Brauer–Nesbitt
+  pinning of the residual characters of ONE lattice to `{1, ψ}`,
+  returning the DICHOTOMY "sub-character `1`, quotient `ψ`" versus
+  "sub-character `ψ`, quotient `1`". It is applied here to `ρO`
+  itself, and it is the only consumer of `htr`/`hdet` in the
+  assembly.
+* (b) `exists_ribet_walk_swap_order` — one step of the walk: from the
+  `ψ`-sub order to the trivial-sub order. It turns the second
+  disjunct of (a) into a GOOD lattice (Galois-fixed nonzero residual
+  vector, `ψ` on the quotient), so that both branches of the
+  dichotomy supply one.
+* (c) `exists_stable_line_of_ribet_walk_split` — the descent: given a
+  good lattice and the hypothesis that EVERY good lattice splits, a
+  `Γ ℚ`-stable subspace of the generic fibre that is neither `⊥` nor
+  `⊤`.
+The assembly is then: negate the goal to obtain exactly the
+split-everywhere hypothesis of (c); produce a good lattice from (a)
+(+(b) in the `ψ`-sub branch); feed both to (c); and read the resulting
+proper nonzero stable subspace against `hirrO` through
+`Subrepresentation`, whose order is simple precisely when no such
+subspace exists. -/
 theorem exists_ribet_walk_stable_line
     {O : Type u} [CommRing O] [Algebra ℤ_[p] O] [IsDomain O]
     [Module.Finite ℤ_[p] O] [TopologicalSpace O] [IsTopologicalRing O]
@@ -10070,8 +10414,56 @@ theorem exists_ribet_walk_stable_line
         (ρO'.baseChange kk') g x - ψ g • x = c • v₀) ∧
       ¬ ∃ w : kk' ⊗[O] (Fin 2 → O),
           w ∉ Submodule.span kk' {v₀} ∧
-            ∀ g, (ρO'.baseChange kk') g w = ψ g • w :=
-  sorry
+            ∀ g, (ρO'.baseChange kk') g w = ψ g • w := by
+  classical
+  by_contra hcon
+  -- the negated goal IS the "every good lattice splits" hypothesis of (c)
+  have hsplit : ∀ (ρO' : GaloisRep ℚ O (Fin 2 → O))
+      (e' : ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O))
+        ≃ₗ[AlgebraicClosure ℚ_[p]]
+          ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O)))
+      (v₀ : kk' ⊗[O] (Fin 2 → O)),
+      (∀ g x, e' ((ρO'.baseChange (AlgebraicClosure ℚ_[p])) g x) =
+        (ρO.baseChange (AlgebraicClosure ℚ_[p])) g (e' x)) →
+      v₀ ≠ 0 →
+      (∀ g, (ρO'.baseChange kk') g v₀ = v₀) →
+      (∀ g x, ∃ c : kk',
+        (ρO'.baseChange kk') g x - ψ g • x = c • v₀) →
+      ∃ w : kk' ⊗[O] (Fin 2 → O),
+        w ∉ Submodule.span kk' {v₀} ∧
+          ∀ g, (ρO'.baseChange kk') g w = ψ g • w := by
+    intro ρO' e' v₀ h1 h2 h3 h4
+    by_contra hw
+    exact hcon ⟨ρO', e', v₀, h1, h2, h3, h4, hw⟩
+  -- a GOOD lattice: trivial sub-character, `ψ` on the quotient
+  obtain ⟨ρ₁, e₁, v₁, he₁, hv₁, hfix₁, hquo₁⟩ :
+      ∃ (ρ₁ : GaloisRep ℚ O (Fin 2 → O))
+        (e₁ : ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O))
+          ≃ₗ[AlgebraicClosure ℚ_[p]]
+            ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O)))
+        (v₁ : kk' ⊗[O] (Fin 2 → O)),
+        (∀ g x, e₁ ((ρ₁.baseChange (AlgebraicClosure ℚ_[p])) g x) =
+          (ρO.baseChange (AlgebraicClosure ℚ_[p])) g (e₁ x)) ∧
+        v₁ ≠ 0 ∧
+        (∀ g, (ρ₁.baseChange kk') g v₁ = v₁) ∧
+        (∀ g x, ∃ c : kk',
+          (ρ₁.baseChange kk') g x - ψ g • x = c • v₁) := by
+    rcases exists_residual_trivialSub_or_psiSub ρO ψ hψ htr hdet with
+      ⟨v₀, hv₀, hfix, hquo⟩ | hpsi
+    · exact ⟨ρO, LinearEquiv.refl _ _, v₀, fun _ _ => rfl, hv₀, hfix, hquo⟩
+    · exact exists_ribet_walk_swap_order hOinj hsurj' hopen' hker' ψ hpsi
+  -- the descent turns "split everywhere" into a generic stable subspace
+  obtain ⟨U, hUbot, hUtop, hUinv⟩ :=
+    exists_stable_line_of_ribet_walk_split hOinj hsurj' hopen' hker' ψ hψ
+      htr hdet ρ₁ e₁ v₁ he₁ hv₁ hfix₁ hquo₁ hsplit
+  -- which contradicts generic irreducibility
+  haveI : IsSimpleOrder (Subrepresentation
+      (ρO.baseChange (AlgebraicClosure ℚ_[p])).toRepresentation) := hirrO
+  rcases eq_bot_or_eq_top (⟨U, fun g x hx => hUinv g x hx⟩ :
+      Subrepresentation
+        (ρO.baseChange (AlgebraicClosure ℚ_[p])).toRepresentation) with h | h
+  · exact hUbot (congrArg Subrepresentation.toSubmodule h)
+  · exact hUtop (congrArg Subrepresentation.toSubmodule h)
 
 /-- **Ribet's walk across stable lattices** (Ribet cut E2a-ii; PROVEN
 2026-07-24 as the frame presentation over the intrinsic walk leaf
@@ -10671,16 +11063,273 @@ theorem exists_pow_p_mem_of_isOpen
   rw [map_pow, map_natCast] at hm
   exact hm
 
+/-- **Tensor-level divisibility** (PROVEN 2026-07-25 — pure module
+algebra, the arithmetic engine of the E2b′ commensurability step): if
+`1 ⊗ t` vanishes in `(A ⧸ (a)) ⊗[A] T` then `a` divides `t` in `T`.
+Proof: the `A`-linear map `A → (T →ₗ[A] T ⧸ a • T)`, `r ↦ r • mkQ`,
+kills `a` (because `a • t ∈ a • T` for every `t`), hence descends to
+`A ⧸ (a)`; the induced map on the tensor product sends `1 ⊗ t` to the
+class of `t`, so vanishing of `1 ⊗ t` forces `t ∈ a • T`. Only the
+"vanishing ⇒ divisible" direction is needed (the converse is trivial),
+and no finiteness or freeness hypothesis enters. -/
+theorem exists_smul_of_tmul_one_eq_zero {A : Type*} [CommRing A]
+    {T : Type*} [AddCommGroup T] [Module A T] (a : A) (t : T)
+    (h : (1 : A ⧸ Ideal.span {a}) ⊗ₜ[A] t = 0) :
+    ∃ y : T, t = a • y := by
+  classical
+  set N : Submodule A T := LinearMap.range (a • (LinearMap.id : T →ₗ[A] T)) with hN
+  set B : A →ₗ[A] (T →ₗ[A] (T ⧸ N)) := LinearMap.toSpanSingleton A _ N.mkQ with hB
+  have hBker : Ideal.span {a} ≤ LinearMap.ker B := by
+    rw [Ideal.span_le, Set.singleton_subset_iff]
+    show B a = 0
+    ext t'
+    show a • (N.mkQ t') = 0
+    rw [← map_smul]
+    refine (Submodule.Quotient.mk_eq_zero _).mpr ⟨t', ?_⟩
+    simp
+  set ψ := Submodule.liftQ (Ideal.span {a}) B hBker with hψ
+  have key := congrArg (TensorProduct.lift ψ) h
+  rw [map_zero, TensorProduct.lift.tmul] at key
+  have h1 : ψ (1 : A ⧸ Ideal.span {a}) = B 1 := Submodule.liftQ_apply _ _ _
+  rw [h1] at key
+  have hzero : N.mkQ t = 0 := by
+    have hb : B 1 t = N.mkQ t := by simp [hB, LinearMap.toSpanSingleton]
+    rw [← hb]; exact key
+  obtain ⟨y, hy⟩ := (Submodule.Quotient.mk_eq_zero _).mp hzero
+  exact ⟨y, by simpa using hy.symm⟩
+
+/-- **Action on a quotient by an invariant subgroup** (PROVEN
+2026-07-25 — the instance glue the E2b′ commensurability step needs to
+present a subquotient of a flat point-group as an object the
+`IsFlatPointsGroupAt` carrier accepts): a distributive monoid action on
+an additive group descends to the quotient by any subgroup the action
+preserves, with `g • ⟦x⟧ = ⟦g • x⟧` definitionally. -/
+@[reducible] def quotientDistribMulAction
+    {G : Type*} [Monoid G] {A : Type*} [AddCommGroup A]
+    [DistribMulAction G A] (N : AddSubgroup A)
+    (h : ∀ (g : G) (x : A), x ∈ N → g • x ∈ N) :
+    DistribMulAction G (A ⧸ N) where
+  smul g := QuotientAddGroup.lift N
+    ((QuotientAddGroup.mk' N).comp (DistribSMul.toAddMonoidHom A g))
+    (fun x hx => (QuotientAddGroup.eq_zero_iff _).mpr (h g x hx))
+  one_smul z := by
+    induction z using QuotientAddGroup.induction_on with
+    | H x => show QuotientAddGroup.mk ((1 : G) • x) = _; rw [one_smul]
+  mul_smul a b z := by
+    induction z using QuotientAddGroup.induction_on with
+    | H x =>
+      show QuotientAddGroup.mk ((a * b) • x) = QuotientAddGroup.mk (a • b • x)
+      rw [mul_smul]
+  smul_zero a := by
+    show QuotientAddGroup.mk (a • (0 : A)) = 0
+    rw [smul_zero]; rfl
+  smul_add a x y := by
+    induction x using QuotientAddGroup.induction_on with
+    | H x =>
+      induction y using QuotientAddGroup.induction_on with
+      | H y =>
+        show QuotientAddGroup.mk (a • (x + y)) =
+          QuotientAddGroup.mk (a • x) + QuotientAddGroup.mk (a • y)
+        rw [smul_add]; rfl
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Subquotient closure for the flat point-group carrier** (PROVEN
+2026-07-25 — the composite of the two Raynaud closure bricks, in the
+shape the E2b′ lattice-flatness transfer consumes): if a
+`Γ Kᵥ`-module `Y` is an equivariant QUOTIENT of an equivariant
+SUBOBJECT of a flat point-group `X` at `v`, then `Y` is a flat
+point-group at `v`. The subquotient is presented by a single ambient
+`Γ Kᵥ`-module `L` with two equivariant additive maps out of it, `F`
+into `X` and `π` onto `Y`, such that `ker F ⊆ ker π`: then
+`L ⧸ ker F` embeds into `X` (`QuotientAddGroup.kerLift`, injective) and
+surjects onto `Y` (`QuotientAddGroup.lift`, surjective because `π` is),
+so `IsFlatPointsGroupAt.of_injective` followed by
+`IsFlatPointsGroupAt.of_surjective` gives the claim. The action on `L`
+is taken FIRST-ORDER, as a multiplicative family `act` of additive
+endomorphisms rather than a `DistribMulAction` instance: consumers
+whose `L` is a bare module (with the Galois action only available
+through a `GaloisRep`, i.e. on a `GaloisRep.Space` synonym) can then
+apply this brick without transporting any instance onto `L`.
+Unconditionally TRUE; no hypothesis package beyond the two closure
+bricks it is assembled from. -/
+theorem isFlatPointsGroupAt_of_subquotient
+    {v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)}
+    {X Y L : Type*} [AddCommGroup X] [AddCommGroup Y] [AddCommGroup L]
+    [DistribMulAction (Field.absoluteGaloisGroup
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) X]
+    [DistribMulAction (Field.absoluteGaloisGroup
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) Y]
+    (act : Field.absoluteGaloisGroup
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) → (L →+ L))
+    (hact1 : ∀ x, act 1 x = x)
+    (hactmul : ∀ a b x, act (a * b) x = act a (act b x))
+    (hX : IsFlatPointsGroupAt v X)
+    (F : L →+ X) (hF : ∀ g x, F (act g x) = g • F x)
+    (π : L →+ Y) (hπe : ∀ g x, π (act g x) = g • π x)
+    (hπs : Function.Surjective π)
+    (hFπ : ∀ x, F x = 0 → π x = 0) :
+    IsFlatPointsGroupAt v Y := by
+  letI : DistribMulAction (Field.absoluteGaloisGroup
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) L :=
+    { smul := fun g x => act g x
+      one_smul := hact1
+      mul_smul := hactmul
+      smul_zero := fun g => (act g).map_zero
+      smul_add := fun g x y => (act g).map_add x y }
+  have hstab : ∀ (g : Field.absoluteGaloisGroup
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) (x : L),
+      x ∈ F.ker → g • x ∈ F.ker := by
+    intro g x hx
+    rw [AddMonoidHom.mem_ker] at hx ⊢
+    show F (act g x) = 0
+    rw [hF, hx, smul_zero]
+  letI := quotientDistribMulAction F.ker hstab
+  refine IsFlatPointsGroupAt.of_surjective
+    (IsFlatPointsGroupAt.of_injective hX (QuotientAddGroup.kerLift F)
+      (QuotientAddGroup.kerLift_injective F) ?_)
+    (QuotientAddGroup.lift F.ker π
+      (fun x hx => hFπ x (AddMonoidHom.mem_ker.mp hx))) ?_ ?_
+  · intro g z
+    induction z using QuotientAddGroup.induction_on with
+    | H x => exact hF g x
+  · intro y
+    obtain ⟨x, hx⟩ := hπs y
+    exact ⟨QuotientAddGroup.mk x, hx⟩
+  · intro g z
+    induction z using QuotientAddGroup.induction_on with
+    | H x => exact hπe g x
+
+/-- **Barsotti–Tate comparison lattice for the `O`-structure**
+(Eisenstein pillar E2b′-flat, CITATION LEAF carved out 2026-07-25 —
+the sole classical `p`-adic-Hodge-theoretic input of the lattice
+flatness transfer): the `ℤ_p`-lattice `Fin 2 → O` underlying `ρO` is
+`Γ ℚ`-equivariantly commensurable with the Tate module of a
+`p`-divisible group over `ℤ_p`. Concretely the leaf produces a
+`ℤ_p`-lattice `T` with a `Γ ℚ`-action `ρT` all of whose `p`-power
+levels `T ⧸ p^k` have finite flat prolongations at `p`, together with
+an equivariant `ℤ_p`-linear `f : (Fin 2 → O) → T` and a `ℤ_p`-linear
+`g : T → (Fin 2 → O)` with `g ∘ f = p^c` — i.e. `f` realises
+`Fin 2 → O` as a sublattice of `T` up to the bounded `p`-power `p^c`,
+which is exactly commensurability of the two lattices inside the
+common `ℚ_p`-space they span.
+
+CLASSICAL ROUTE (Fontaine; Raynaud; Tate, *`p`-divisible groups*, and
+Tate's article in Cornell–Silverman–Stevens ch. V):
+1. `hρ.isFlat` says every `p`-power level of the `R`-tower is finite
+   flat at `p`, i.e. `V` is the Tate module of a `p`-divisible group
+   over `ℤ_p`, so `V ⊗ ℚ_p` is Barsotti–Tate (crystalline with
+   Hodge–Tate weights in `{0, 1}`);
+2. every `ℚ̄_p`-fibre of the `O`-structure is an
+   `Aut(ℚ̄_p / ℚ_p)`-conjugate of a fibre of the `R`-structure: through
+   `e` the matrices of `ρO` over `ι(O) ⊆ ℚ̄_p` are a
+   `GL₂(ℚ̄_p)`-conjugate of those of `ρ` over `ι_R(R)`
+   (`hOinj`/`hZOcompat` make the two coefficient embeddings compatible
+   over `ℤ_p`), so applying `τ ∈ Aut(ℚ̄_p / ℚ_p)` carries the
+   `τ ∘ ι`-fibre of the `O`-structure to a `τ ∘ ι_R`-fibre of the
+   `R`-structure; being crystalline with weights in `{0, 1}` is
+   insensitive to such conjugation, so
+   `U := (Fin 2 → O) ⊗_{ℤ_p} ℚ_p` — whose `ℚ̄_p`-base change is the
+   direct sum of the embedding fibres — is again Barsotti–Tate;
+3. a Barsotti–Tate `ℚ_p`-representation contains a `Γ`-stable lattice
+   `T` which is the Tate module of a `p`-divisible group over `ℤ_p`
+   (Fontaine/Raynaud), and any two full-rank `Γ`-stable `ℤ_p`-lattices
+   in the same finite-dimensional `ℚ_p`-space are commensurable: after
+   scaling `T` by a `p`-power one may assume `f : (Fin 2 → O) ↪ T` is
+   the inclusion and `p^c T ⊆ (Fin 2 → O)`, whence `g` is
+   multiplication by `p^c` followed by that inclusion and
+   `g ∘ f = p^c`. Flatness of the levels `T ⧸ p^k` is the defining
+   property of the Tate module of a `p`-divisible group.
+
+WHY NOT THE PI-EMBEDDING ROUTE (recorded 2026-07-24, re-audited
+2026-07-25): `e(Fin 2 → O)` and the image of `V` have different
+`ℤ_p`-ranks whenever `rank_ℤp O ≠ rank_ℤp R`, so no `p`-power scaling
+relates them inside `ℚ̄_p ⊗ V`; and a non-split level `(Fin 2 → O) ⧸ I`
+cannot embed `Γ ℚ_p`-equivariantly into a finite product of `R`-levels
+whose `p`-torsion socle is semisimple. Commensurability is legitimate
+only in `U`, which is what step 2 supplies — that is precisely the
+content isolated here.
+
+Soundness: the hypothesis set is classically INHABITED (take `O = R`,
+`ρO` a frame of `ρ`, `e` the identity; then `T = Fin 2 → R` viewed
+over `ℤ_p`, `c = 0`, `f = g = id` works) and the conclusion holds for
+every inhabitant by the route above. Circularity guard (inherited from
+E2b′): must not route through `Family.lean` or `Reducible.lean`'s
+B5. -/
+theorem exists_flatIsogenousLattice_of_generic_iso
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hρ : IsHardlyRamified hpodd hv ρ)
+    {O : Type u} [CommRing O] [Algebra ℤ_[p] O] [IsDomain O]
+    [Module.Finite ℤ_[p] O] [TopologicalSpace O] [IsTopologicalRing O]
+    [IsLocalRing O] [IsModuleTopology ℤ_[p] O]
+    [Algebra O (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul O (AlgebraicClosure ℚ_[p])]
+    (hOinj : Function.Injective (algebraMap O (AlgebraicClosure ℚ_[p])))
+    (hZOcompat : ∀ x : ℤ_[p],
+      algebraMap O (AlgebraicClosure ℚ_[p]) (algebraMap ℤ_[p] O x) =
+        algebraMap R (AlgebraicClosure ℚ_[p]) (algebraMap ℤ_[p] R x))
+    {ρO : GaloisRep ℚ O (Fin 2 → O)}
+    (e : ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O))
+      ≃ₗ[AlgebraicClosure ℚ_[p]] ((AlgebraicClosure ℚ_[p]) ⊗[R] V))
+    (he : ∀ g x, e ((ρO.baseChange (AlgebraicClosure ℚ_[p])) g x) =
+      (ρ.baseChange (AlgebraicClosure ℚ_[p])) g (e x)) :
+    ∃ (T : Type u) (_ : AddCommGroup T) (_ : Module ℤ_[p] T)
+      (_ : Module.Finite ℤ_[p] T) (_ : Module.Free ℤ_[p] T)
+      (ρT : GaloisRep ℚ ℤ_[p] T) (c : ℕ)
+      (f : (Fin 2 → O) →ₗ[ℤ_[p]] T) (g : T →ₗ[ℤ_[p]] (Fin 2 → O)),
+      (∀ k : ℕ,
+        (ρT.baseChange (ℤ_[p] ⧸ Ideal.span {(p : ℤ_[p]) ^ k})).HasFlatProlongationAt
+          (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : p.Prime))) ∧
+      (∀ (σ : Field.absoluteGaloisGroup ℚ) (x : Fin 2 → O),
+        f (ρO σ x) = ρT σ (f x)) ∧
+      (∀ x : Fin 2 → O, g (f x) = (p : ℤ_[p]) ^ c • x) :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
 /-- **Lattice flatness at the `p`-power levels** (Eisenstein pillar
-E2b′-flat, deep half; sorry node — carved out 2026-07-24 from
-`isFlatAt_lattice_of_generic_iso`, whose arbitrary-open-ideal
-quantifier is now PROVEN glue over this cofinal subtower via
-`exists_pow_p_mem_of_isOpen` and the quotient-closure brick
-`IsFlatPointsGroupAt.of_surjective`): every `p`-power level
+E2b′-flat, deep half; DECOMPOSED 2026-07-25 into a PROVEN
+commensurability + Raynaud-closure assembly over the single citation
+leaf `exists_flatIsogenousLattice_of_generic_iso` — carved out
+2026-07-24 from `isFlatAt_lattice_of_generic_iso`, whose
+arbitrary-open-ideal quantifier is PROVEN glue over this cofinal
+subtower via `exists_pow_p_mem_of_isOpen` and the quotient-closure
+brick `IsFlatPointsGroupAt.of_surjective`): every `p`-power level
 `(Fin 2 → O) ⧸ p^m` of the lattice tower has a finite flat
-prolongation at `p`, given the generic linkage. HONEST CLASSICAL
-ROUTE (recorded 2026-07-24, correcting the parent's original
-commensurability note):
+prolongation at `p`, given the generic linkage.
+
+PROOF (2026-07-25), the commensurability + closure half of the honest
+classical route; the Barsotti–Tate/conjugate-fibre half is the
+citation leaf. The citation supplies a `ℤ_p`-lattice `T` with a
+`Γ ℚ`-action all of whose `p`-power levels `T ⧸ p^k` are finite flat
+at `p`, an equivariant `ℤ_p`-linear `f : (Fin 2 → O) → T` and a
+`ℤ_p`-linear `g : T → (Fin 2 → O)` with `g ∘ f = p^c`. Then:
+* `(p : O) ≠ 0` — `O` embeds in the characteristic-zero `ℚ̄_p` — and
+  `O` is a domain, so the lattice `Fin 2 → O` has no `p`-torsion;
+* KERNEL BOUND (the commensurability step): if `1 ⊗ f x` vanishes in
+  `(ℤ_p ⧸ p^{m+c}) ⊗ T` then `f x = p^{m+c} y`
+  (`exists_smul_of_tmul_one_eq_zero`), so
+  `p^c x = g (f x) = p^c (p^m g y)`, and torsion-freeness gives
+  `x = p^m · g y`; that is, the kernel of the comparison map
+  `cmp : (Fin 2 → O) → (ℤ_p ⧸ p^{m+c}) ⊗ T`, `x ↦ 1 ⊗ f x`, is
+  contained in `p^m (Fin 2 → O)`, which is exactly the kernel of the
+  level-`m` reduction `projm : x ↦ 1 ⊗ x`;
+* CLOSURE (Raynaud): both `cmp` and the level-`m` reduction `projm`
+  are `Γ ℚ_p`-equivariant, so the level is a `Γ ℚ_p`-equivariant
+  SUBQUOTIENT of the flat level `(ℤ_p ⧸ p^{m+c}) ⊗ T` — sub then
+  quotient, the two Raynaud closure bricks, packaged as
+  `isFlatPointsGroupAt_of_subquotient` (which builds the intermediate
+  `(Fin 2 → O) ⧸ ker cmp` with the induced action
+  `quotientDistribMulAction`, embeds it by
+  `QuotientAddGroup.kerLift` through
+  `IsFlatPointsGroupAt.of_injective`, and pushes it onto the target
+  level by `QuotientAddGroup.lift` through
+  `IsFlatPointsGroupAt.of_surjective`). The repackaging
+  `hasFlatProlongationAt_iff_isFlatPointsGroupAt` converts at both
+  ends.
+
+HONEST CLASSICAL ROUTE (recorded 2026-07-24, correcting the parent's
+original commensurability note; steps 1–2 and the lattice production
+of step 3 are the citation leaf, the rest is the proof above):
 1. the flatness of the `R`-tower (`hρ.isFlat` at the `p`-power levels
    of `R`) makes `V` the Tate module of a `p`-divisible group over
    `ℤ_p`, so `V ⊗ ℚ_p` is Barsotti–Tate (crystalline with Hodge–Tate
@@ -10745,8 +11394,110 @@ theorem hasFlatProlongationAt_lattice_pPow_of_generic_iso
     (m : ℕ) :
     (ρO.baseChange (O ⧸ Ideal.span {(p : O) ^ m})).HasFlatProlongationAt
       (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
-        (Fact.out : p.Prime)) :=
-  sorry
+        (Fact.out : p.Prime)) := by
+  classical
+  obtain ⟨T, _, _, _, _, ρT, c, f, g, hflatT, hfequiv, hgf⟩ :=
+    exists_flatIsogenousLattice_of_generic_iso hpodd hv hρ hOinj hZOcompat e he
+  -- `p` is a nonzero element of the domain `O`: it maps to `p ≠ 0` in the
+  -- characteristic-zero field `ℚ̄_p`.
+  have hpO : (p : O) ≠ 0 := by
+    intro h0
+    have h2 : ((p : ℕ) : AlgebraicClosure ℚ_[p]) = 0 := by
+      rw [← map_natCast (algebraMap O (AlgebraicClosure ℚ_[p])), h0, map_zero]
+    exact (Nat.cast_ne_zero.mpr (Fact.out : p.Prime).ne_zero) h2
+  -- hence the lattice has no `p`-torsion
+  have htors : ∀ z : Fin 2 → O, (p : ℤ_[p]) ^ c • z = 0 → z = 0 := by
+    intro z hz
+    funext i
+    have hz' := congrFun hz i
+    rw [Pi.zero_apply, Pi.smul_apply, Algebra.smul_def, map_pow, map_natCast] at hz'
+    exact (mul_eq_zero.mp hz').resolve_left (pow_ne_zero _ hpO)
+  -- `p^m` annihilates the level-`m` tensor
+  have hkill : ∀ w : Fin 2 → O,
+      (1 : O ⧸ Ideal.span {(p : O) ^ m}) ⊗ₜ[O] (((p : O) ^ m) • w) = 0 := by
+    intro w
+    rw [← TensorProduct.smul_tmul]
+    have hz : (((p : O) ^ m) • (1 : O ⧸ Ideal.span {(p : O) ^ m})) = 0 := by
+      rw [Algebra.smul_def]; simp
+    rw [hz, TensorProduct.zero_tmul]
+  -- COMMENSURABILITY: the kernel of the comparison map into the level
+  -- `m + c` of `T` is contained in `p^m` times the lattice
+  have hker : ∀ x : Fin 2 → O,
+      (1 : ℤ_[p] ⧸ Ideal.span {(p : ℤ_[p]) ^ (m + c)}) ⊗ₜ[ℤ_[p]] (f x) = 0 →
+      ∃ w : Fin 2 → O, x = ((p : O) ^ m) • w := by
+    intro x hx
+    obtain ⟨y, hy⟩ := exists_smul_of_tmul_one_eq_zero _ _ hx
+    have h1 : (p : ℤ_[p]) ^ c • x = (p : ℤ_[p]) ^ c • ((p : ℤ_[p]) ^ m • g y) :=
+      calc (p : ℤ_[p]) ^ c • x = g (f x) := (hgf x).symm
+        _ = g ((p : ℤ_[p]) ^ (m + c) • y) := by rw [hy]
+        _ = (p : ℤ_[p]) ^ (m + c) • g y := map_smul g _ _
+        _ = (p : ℤ_[p]) ^ c • ((p : ℤ_[p]) ^ m • g y) := by
+            rw [smul_smul, ← pow_add, Nat.add_comm]
+    have h2 : (p : ℤ_[p]) ^ c • (x - (p : ℤ_[p]) ^ m • g y) = 0 := by
+      rw [smul_sub, h1, sub_self]
+    refine ⟨g y, ?_⟩
+    rw [sub_eq_zero.mp (htors _ h2), ← algebraMap_smul O ((p : ℤ_[p]) ^ m) (g y),
+      map_pow, map_natCast]
+  -- the two comparison maps, at their natural types
+  let cmp : (Fin 2 → O) →+
+      ((ℤ_[p] ⧸ Ideal.span {(p : ℤ_[p]) ^ (m + c)}) ⊗[ℤ_[p]] T) :=
+    ((TensorProduct.mk ℤ_[p] (ℤ_[p] ⧸ Ideal.span {(p : ℤ_[p]) ^ (m + c)}) T
+      (1 : ℤ_[p] ⧸ Ideal.span {(p : ℤ_[p]) ^ (m + c)})).comp f).toAddMonoidHom
+  let projm : (Fin 2 → O) →+ ((O ⧸ Ideal.span {(p : O) ^ m}) ⊗[O] (Fin 2 → O)) :=
+    (TensorProduct.mk O (O ⧸ Ideal.span {(p : O) ^ m}) (Fin 2 → O)
+      (1 : O ⧸ Ideal.span {(p : O) ^ m})).toAddMonoidHom
+  have hcmpapp : ∀ x : Fin 2 → O,
+      cmp x = (1 : ℤ_[p] ⧸ Ideal.span {(p : ℤ_[p]) ^ (m + c)}) ⊗ₜ[ℤ_[p]] f x :=
+    fun _ => rfl
+  have hprojapp : ∀ x : Fin 2 → O,
+      projm x = (1 : O ⧸ Ideal.span {(p : O) ^ m}) ⊗ₜ[O] x :=
+    fun _ => rfl
+  -- the local lattice action as a multiplicative family of additive
+  -- endomorphisms (first-order, so no instance is transported onto the
+  -- lattice itself)
+  have hact1 : ∀ x : Fin 2 → O, ((ρO.toLocal 𝔭ᵥ) 1) x = x :=
+    fun x => by simp only [map_one, Module.End.one_apply]
+  have hactmul : ∀ (a b : Field.absoluteGaloisGroup ℚᵖᵥ) (x : Fin 2 → O),
+      ((ρO.toLocal 𝔭ᵥ) (a * b)) x = ((ρO.toLocal 𝔭ᵥ) a) (((ρO.toLocal 𝔭ᵥ) b) x) :=
+    fun a b x => by simp only [map_mul, Module.End.mul_apply]
+  -- the kernel bound: `ker cmp ⊆ ker projm`
+  have hkerle : ∀ x : Fin 2 → O, cmp x = 0 → projm x = 0 := by
+    intro x hx
+    obtain ⟨w, hw⟩ := hker x (by rw [← hcmpapp]; exact hx)
+    rw [hprojapp, hw]
+    exact hkill w
+  have hprojsurj : Function.Surjective projm := by
+    intro z
+    induction z using TensorProduct.induction_on with
+    | zero => exact ⟨0, map_zero _⟩
+    | add a b ha hb =>
+      obtain ⟨x, hx⟩ := ha
+      obtain ⟨y, hy⟩ := hb
+      exact ⟨x + y, by rw [map_add, hx, hy]⟩
+    | tmul cc w =>
+      obtain ⟨cc', rfl⟩ := Ideal.Quotient.mk_surjective cc
+      refine ⟨cc' • w, ?_⟩
+      rw [hprojapp, ← TensorProduct.smul_tmul, Algebra.smul_def, mul_one]
+      rfl
+  -- RAYNAUD CLOSURE: a subobject of the flat level `T ⧸ p^(m+c)`, then a
+  -- quotient onto the level `(O ⧸ p^m) ⊗ (Fin 2 → O)`
+  refine (GaloisRep.hasFlatProlongationAt_iff_isFlatPointsGroupAt _).mpr ?_
+  refine isFlatPointsGroupAt_of_subquotient
+    (fun σ => ((ρO.toLocal 𝔭ᵥ) σ).toAddMonoidHom) hact1 hactmul
+    ((GaloisRep.hasFlatProlongationAt_iff_isFlatPointsGroupAt _).mp
+      (hflatT (m + c)))
+    cmp ?_ projm ?_ hprojsurj hkerle
+  · intro σ x
+    show cmp (((ρO.toLocal 𝔭ᵥ) σ) x) =
+      ((ρT.baseChange (ℤ_[p] ⧸ Ideal.span {(p : ℤ_[p]) ^ (m + c)})).toLocal 𝔭ᵥ) σ
+        (cmp x)
+    rw [GaloisRep.toLocal_apply, GaloisRep.toLocal_apply]
+    simp only [hcmpapp, hfequiv, GaloisRep.baseChange_tmul]
+  · intro σ x
+    show projm (((ρO.toLocal 𝔭ᵥ) σ) x) =
+      ((ρO.baseChange (O ⧸ Ideal.span {(p : O) ^ m})).toLocal 𝔭ᵥ) σ (projm x)
+    rw [GaloisRep.toLocal_apply, GaloisRep.toLocal_apply]
+    simp only [hprojapp, GaloisRep.baseChange_tmul]
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **Lattice flatness transfer** (Eisenstein pillar E2b′-flat;
@@ -18658,17 +19409,155 @@ theorem exists_irreducible_galoisRep_charFrob_of_weightTwoNewform
     exact charpoly_eq_quadratic_of_sq_rel hinv hQ hdet
 
 include hpodd in
+/-- **The `p`-new exclusion over an INFINITE `p`-adic flat tower**
+(sorry node — the single residual literature leaf of the at-`p`
+conductor cut, NARROWED 2026-07-25 by the derivable hypothesis
+`hpne : (p : R) ≠ 0`; the assembly below discharges `hpne` and is what
+the level-lowering consumers call): let `g` be a weight-2 eigenform of
+level `M ≥ 1` with `p ∣ M` that is `p`-NEW (`hpnew`, spelled through
+the `p`-old degeneracy levels `M₁ ∣ M / p`); if the IRREDUCIBLE
+representation `τ` matches the Hecke polynomials of `g` away from a
+finite set, is equivalent through `e` to the base change of the
+integral representation `ρ`, and the coefficient ring does not kill
+`p`, then `ρ` is NOT flat at `p`. The classical route, the dichotomy
+audit and the non-vacuity witness are in the assembly's docstring
+below; this docstring carries the CITATIONS and the two audits that
+pin the cut.
+
+CITATIONS (sharpened 2026-07-25 against the sources in hand; they
+replace the previous blanket reference to "Saito 1997 plus
+Raynaud/Fontaine").
+
+* AUTOMORPHIC/GEOMETRIC HALF, `p ∥ M₀` — Tilouine, *Hecke algebras and
+  the Gorenstein property*, in Cornell–Silverman–Stevens, *Modular
+  Forms and Fermat's Last Theorem*, §5 Step 1(a): if `p` divides the
+  conductor of a weight-2 eigenform `f` of level `N' p` with `p ∤ N'`,
+  then `A_f` has purely TORIC reduction at `p`. Proof there: compare
+  the two degeneracy coverings `X₁(N', p) → X₁(N')` (`τ ↦ τ` and
+  `τ ↦ pτ`), let `A` be the neutral component of the kernel of the
+  induced Albanese morphism (so `A_f` is a quotient of `A`), and read
+  the Néron model of `A` over `ℤ_p` through Raynaud's Thm 2.5
+  (`J⁰_{ℤ_p} = Pic⁰(M_{ℤ_p})` for the regular minimal model) plus the
+  rigidity of tori; the `𝔭`-divisible group of `A_f` then decomposes
+  over `ℤ_p` as `T × E` with `T` of multiplicative type and `E` étale,
+  and taking `ℚ̄_p`-points gives the local shape
+  `ρ_{f,𝔭}|_{G_p} ≅ (χ c, ∗ ; 0, c)` with `c` unramified — the
+  weight-2 Deligne–Rapoport/Langlands Steinberg case.
+* AUTOMORPHIC HALF, `p² ∣ M₀` — the local type is ramified principal
+  series or supercuspidal, of conductor exponent `ord_p M₀ ≥ 2`; here
+  the citation is genuinely Saito, *Modular forms and `p`-adic Hodge
+  theory*, Invent. Math. 129 (1997) (local–global compatibility at
+  `p`; Carayol 1986 at `q ≠ p`): the Weil–Deligne parameter is then
+  not even semistable, so a fortiori not Barsotti–Tate.
+* FLAT HALF — Serre, *Sur les représentations modulaires de degré 2 de
+  `Gal(ℚ̄/ℚ)`*, Duke Math. J. 54 (1987), §2.8 Prop. 4 together with
+  §2.9 Prop. 5(ii) (source in hand), resting on Raynaud, *Schémas en
+  groupes de type `(p, …, p)`*, Bull. SMF 102 (1974), prop. 3.3.2 (a
+  finite flat prolongation over `ℤ_p` is UNIQUE), cor. 3.4.4 and
+  th. 2.4.3, and on Fontaine's th. 1. For the
+  multiplicative-by-unramified shape above Serre computes the
+  prolongation obstruction as a Kummer class: the extension is
+  classified by `u ∈ R*/R*^p`, the field `K = K_v(q^{1/p})` is *très
+  ramifiée* — no finite flat prolongation — exactly when `v_p(q)` is
+  NOT divisible by `p`, and at level `pⁿ` the criterion reads
+  `pⁿ ∣ v_p(q)`. A toric reduction has `v_p(q) ≠ 0`, so only FINITELY
+  many levels of the tower can be flat, which is what the infinite
+  tower contradicts.
+
+TOWER AUDIT (2026-07-25 — why `hpne` is stated, and why it is the
+sharp hypothesis). At a SINGLE finite level flatness is COMPATIBLE
+with the Steinberg configuration: Serre's Prop. 5(ii) makes the
+`p`-division points of a Tate curve *finie en `p`* (= flat) precisely
+when `p ∣ v_p(q_E)` — which is the situation of the PROVEN in-tree
+theorem `WeierstrassCurve.isFlatAt_of_hasMultiplicativeReduction`. So
+the content of this leaf lives in the INFINITE tower of levels
+`R ⧸ pᵐ`, and `hpne : (p : R) ≠ 0` pins exactly that: it forbids a
+coefficient ring in which `IsFlatAt`'s open-ideal quantifier
+degenerates to finitely many levels, where the statement would be
+FALSE. It is derivable here (the assembly below derives it from
+`[Algebra R ℚ̄_p]`: a ring map into a characteristic-zero field cannot
+kill `p`), so adding it strictly narrows the citation without touching
+any consumer. `hpodd` is the companion caveat: at `p = 2` the
+flat/Steinberg boundary leaves the classical `e = 1 < p − 1` Raynaud
+range and needs Fontaine–Laffaille/Breuil theory.
+
+SPLIT AUDIT (2026-07-25 — why this leaf is NOT cut into "`p`-new ⟹ the
+local type at `p` is Steinberg/supercuspidal" and "that local type is
+incompatible with flatness"). The split is mathematically UNAVAILABLE
+at this pin, not merely inconvenient. The local SHAPE
+`(χ c, ∗ ; 0, c')` with `c, c'` unramified is shared by the Steinberg
+configuration AND by the ordinary-crystalline one — the `p`-adic Tate
+module of an elliptic curve with good ORDINARY reduction has exactly
+that shape and IS flat — so a shape-level second half would be a FALSE
+statement, and no predicate expressible in this development's local
+vocabulary (Frobenius charpolys, `GaloisRep.IsUnramifiedAt`, the
+Raynaud closure bricks
+`IsFlatPointsGroupAt.prod`/`.of_injective`/`.of_surjective`) separates
+the two: those bricks CONSTRUCT flat objects, and the only in-tree
+obstruction machinery — the rank-1 mod-`p` Raynaud/Oort–Tate inertia
+dichotomy behind
+`residual_triangular_sub_character_pinned_of_eq_pow` — is consistent
+with both. The separating invariant is the EXTENSION CLASS: Serre's `u`
+(a unit class: peu ramifiée, flat) against `q` with `v_p(q) ≢ 0`
+(très ramifiée, not flat); intrinsically Fontaine's crystalline
+subgroup `H¹_f ⊆ H¹(G_p, −)`. Formalizing it needs either a
+Barsotti–Tate/crystalline predicate or the Tate parameter with local
+class field theory and the Kummer sequence — a genuine infrastructure
+build, recorded here as the split target rather than performed inside a
+per-place cut, exactly as the `q ≠ p` sibling
+`not_isUnramifiedAt_of_isNewAtPrime_of_isIrreducible` records the Artin
+conductor exponent as ITS dedup target.
+
+SOUNDNESS (2026-07-25): the hypothesis set is the assembly's plus a
+hypothesis the assembly PROVES, so inhabitation is inherited verbatim
+from the assembly's audit below (`p = 11`, `M = 11`, the weight-2
+newform of level `11`, `τ := ρ_{g,λ}`), and the conclusion is the cited
+theorem for every inhabitant. -/
+theorem not_isFlatAt_of_weightTwoEigenform_pNew_of_isIrreducible_of_pNeZero
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    {M : ℕ} (hM : 0 < M) (hpM : p ∣ M) {g : CuspForm (Gamma0GL M) 2}
+    (hg : IsWeightTwoEigenform M g)
+    (hpnew : ∀ M₁ : ℕ, M₁ ∣ M / p →
+      ∀ g₁ : CuspForm (Gamma0GL M₁) 2, IsWeightTwoEigenform M₁ g₁ →
+      ¬ ∀ (r : ℕ), r.Prime → ¬ r ∣ M → qCoeff M₁ g₁ r = qCoeff M g r)
+    (κ : heckeField M g →+* AlgebraicClosure ℚ_[p])
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    {S_τ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hτ : ∀ (r : ℕ) (hr : r.Prime),
+      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ →
+      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
+        Polynomial.X ^ 2
+          - Polynomial.C (κ (heckeCoeff M g r)) * Polynomial.X
+          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
+    (hirr : τ.IsIrreducible)
+    (e : (Fin 2 → AlgebraicClosure ℚ_[p]) ≃ₗ[AlgebraicClosure ℚ_[p]]
+      (AlgebraicClosure ℚ_[p] ⊗[R] V))
+    (he : ∀ (γ : Field.absoluteGaloisGroup ℚ)
+        (w : Fin 2 → AlgebraicClosure ℚ_[p]),
+      e (τ γ w) = ρ.baseChange (AlgebraicClosure ℚ_[p]) γ (e w))
+    (hpne : (p : R) ≠ 0) :
+    ¬ ρ.IsFlatAt
+      (Fact.out : p.Prime).toHeightOneSpectrumRingOfIntegersRat :=
+  sorry
+
+include hpodd in
 /-- **The `p`-new exclusion: a `p`-new weight-2 eigensystem carries no
-FLAT attached representation** (sorry node — the single residual
-literature leaf of the at-`p` conductor cut after the 2026-07-25
-dichotomy cut of
+FLAT attached representation** (PROVEN 2026-07-25 as a one-step
+assembly over the narrowed literature leaf
+`not_isFlatAt_of_weightTwoEigenform_pNew_of_isIrreducible_of_pNeZero`
+above — whose docstring carries the sharpened citations, the TOWER
+audit and the SPLIT audit; the single residual literature leaf of the
+at-`p` conductor cut after the 2026-07-25 dichotomy cut of
 `exists_weightTwoEigenform_not_dvd_level_p_of_isFlatAt_of_isIrreducible`
-below: Saito, *Modular forms and `p`-adic Hodge theory*, Invent.
+below, still Saito, *Modular forms and `p`-adic Hodge theory*, Invent.
 Math. 129 (1997) — local–global compatibility at `p`, for the
-weight-2 `p ∥ M` Steinberg case already Deligne–Rapoport/Langlands,
-and in the flat setting the shape of "Mazur's principle" — combined
-with Raynaud, *Schémas en groupes de type `(p, …, p)`*, Bull. SMF 102
-(1974), and Fontaine for the flatness-to-crystalline dictionary): let
+weight-2 `p ∥ M` Steinberg case already Deligne–Rapoport/Langlands and
+geometrically Tilouine's toric-reduction computation, combined with
+Raynaud, *Schémas en groupes de type `(p, …, p)`*, Bull. SMF 102
+(1974), through Serre's Duke 1987 §2.8–2.9 Kummer-class criterion):
+let
 `g` be a weight-2 eigenform of level `M ≥ 1` with `p ∣ M` that is
 `p`-NEW, i.e. its away-from-`M` eigensystem is realized by NO
 eigenform of a level dividing `M / p` (`hpnew` — the classical
@@ -18756,7 +19645,22 @@ are exactly the classical normalized eigenforms (carrier audit at
 `IsWeightTwoNewform`), and `hpnew` pins the underlying newform's
 level to have the same `p`-valuation as `M`, which is precisely the
 classical hypothesis "`g` lies in the `p`-new part at level `M`" under
-which Saito's local computation applies. -/
+which Saito's local computation applies.
+
+ASSEMBLY (2026-07-25 — the citation-narrowing step). The one thing
+proven here is that the coefficient ring cannot kill `p`:
+`AlgebraicClosure ℚ_[p]` has characteristic zero
+(`charZero_of_injective_algebraMap` along the field injection
+`ℚ_[p] ↪ ℚ̄_p`) and `algebraMap R ℚ̄_p` preserves `ℕ`-casts, so
+`(p : R) = 0` would force `(p : ℚ̄_p) = 0`. That hands the leaf its
+extra hypothesis `hpne`, which is exactly the boundary between this
+statement and the FALSE single-level version: Serre's Duke 1987
+Prop. 5(ii) — and the PROVEN in-tree
+`WeierstrassCurve.isFlatAt_of_hasMultiplicativeReduction` — exhibit
+flat prolongations of the `p`-torsion of a Tate curve whenever
+`p ∣ v_p(q_E)`, so the `p`-new exclusion is a statement about the
+INFINITE tower `R ⧸ pᵐ` and about nothing less. See the leaf's TOWER
+AUDIT. -/
 theorem not_isFlatAt_of_weightTwoEigenform_pNew_of_isIrreducible
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
@@ -18782,8 +19686,20 @@ theorem not_isFlatAt_of_weightTwoEigenform_pNew_of_isIrreducible
         (w : Fin 2 → AlgebraicClosure ℚ_[p]),
       e (τ γ w) = ρ.baseChange (AlgebraicClosure ℚ_[p]) γ (e w)) :
     ¬ ρ.IsFlatAt
-      (Fact.out : p.Prime).toHeightOneSpectrumRingOfIntegersRat :=
-  sorry
+      (Fact.out : p.Prime).toHeightOneSpectrumRingOfIntegersRat := by
+  -- the coefficient ring has residue characteristic ZERO, so the flat tower
+  -- of `IsFlatAt` is genuinely infinite: `ℚ̄_p` has characteristic zero and a
+  -- ring map preserves `ℕ`-casts, so `(p : R) = 0` would kill `(p : ℚ̄_p)`
+  haveI : CharZero (AlgebraicClosure ℚ_[p]) :=
+    charZero_of_injective_algebraMap
+      ((algebraMap ℚ_[p] (AlgebraicClosure ℚ_[p])).injective)
+  have hpne : (p : R) ≠ 0 := by
+    intro h0
+    have h1 : ((p : ℕ) : AlgebraicClosure ℚ_[p]) = 0 := by
+      rw [← map_natCast (algebraMap R (AlgebraicClosure ℚ_[p])) p, h0, map_zero]
+    exact hp.out.ne_zero (Nat.cast_eq_zero.mp h1)
+  exact not_isFlatAt_of_weightTwoEigenform_pNew_of_isIrreducible_of_pNeZero
+    hpodd hM hpM hg hpnew κ hτ hirr e he hpne
 
 include hpodd in
 /-- **Level lowering at `p` for flat representations — Saito's

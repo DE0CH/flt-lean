@@ -23,6 +23,39 @@ Rules enforced here:
 - Sentinel + empty queue -> DENY (nothing to pop).
 - A queue pop with no free worktree leaves the queue untouched.
 
+POOL STATES (Deyao, 2026-07-25). Exactly one of:
+
+- `free` — idle and allocatable. The ONLY state `allocate_worktree` selects.
+- `claimed` — an agent is working in it.
+- `reclaiming` — claimed, but retire this slot when its task finishes. How
+  the fleet drains from 62 workers to ~30 without interrupting anyone.
+- `suspended <agent-id>` — the worktree is DIRTY and its state matches a
+  recorded transcript: an agent was stopped mid-task and is meant to be
+  resumed from the middle. The third field is that transcript id, and it is
+  the whole point of the state — without it the in-progress work is
+  unrecoverable. Never allocate, never clean, never mark a clean worktree
+  this way.
+- `retired` — the worktree is CLEAN, its last agent exited cleanly, and
+  there is nothing to resume. Held out of service only for capacity
+  reasons, so it can be promoted straight back to `free` the moment
+  capacity allows.
+
+The `suspended`/`retired` split matters because the two look identical in a
+worker count but are opposite in kind: `suspended` means "work is parked
+here, resume it", `retired` means "nothing here, reuse me freely".
+
+None of these need code in this hook to be safe: `allocate_worktree`
+selects only `free`, and the pool rewrite preserves every other status
+verbatim. The rules that give them meaning live in the integration step —
+`post-merge-reminder.py` maps `claimed → free` and `reclaiming → retired`
+on merge — and in the RAM watchdog, which is what creates
+`suspended <agent-id>` when it has to stop a live agent under memory
+pressure.
+
+The drain exists because the user slice is CPU-quota-capped at 24 cores
+(cpu.max 2400000/100000), throttled in ~76% of periods, so workers past the
+quota lengthen every verification instead of adding throughput.
+
 Worktree allocation is unchanged: find a `free` entry in
 ~/.flt-worktree-pool, check it is git-clean and its branch is an
 ancestor of main, fast-forward it to main (--ff-only), mark it

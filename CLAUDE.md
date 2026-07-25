@@ -147,6 +147,41 @@ nodes into shallower ones, prove the provable ones — until the entire
 tree is written and `lake build` passes the sorry gate. `PROGRESS.md`
 is the authoritative tree.
 
+**Counting the frontier: DIRECT vs TRANSITIVE sorries, and the comment
+trap (2026-07-25 — both of these caused phantom dispatches).**
+
+Two different numbers are both called "the frontier" and they are not
+interchangeable:
+
+- *Direct*: the declaration's own body contains `sorry`. This is what
+  Lean's `declaration uses 'sorry'` warning reports, and it is the set of
+  leaves that can be WORKED ON. Currently 85.
+- *Transitive*: the declaration's proof term reaches `sorryAx`, i.e. it is
+  sorried **or consumes something sorried**. This is what
+  `ProgressCensus.lean`'s census reports. Currently 86.
+
+A consumer of a sorried leaf is transitively sorried but has NOTHING to
+prove — dispatching an agent at it wastes a worker. Two whole clusters were
+dispatched this way (`Chebotarev.lean`, and three leaves in `Flat.lean`)
+before agents reported back that their targets were already proven. **Build
+task lists from the DIRECT set; use the transitive set only for judging
+whether a subtree still blocks the root.**
+
+Second trap, same day: a naive `grep sorry` over sources counts the word
+inside DOCSTRINGS, and this development's docstrings discuss sorried leaves
+constantly. That inflated a scan to 144 "sorried declarations" against a
+true 85. Any frontier scan must strip block comments (nested `/- -/`) and
+line comments first, then attribute each surviving token to its enclosing
+declaration by walking BACKWARDS to the nearest declaration header —
+walking forwards mis-attributes a later declaration's sorry to an earlier
+proven one, which is exactly how `exists_hardlyRamifiedLift` was twice
+mislabelled open when it is proven.
+
+Related: stale `(sorry leaf)` / `(sorry node)` docstring LABELS on
+now-proven declarations are a third source of phantom work, since leaf
+lists get harvested from them. Correct them when found rather than leaving
+them to mislead the next dispatch.
+
 **Tree markers in `PROGRESS.md` (Deyao, 2026-07-17): two symbols per
 item.** Every tree item starts with exactly two symbols — first symbol
 `✓` (proven here or in mathlib) or `✗` (sorry); second symbol `·`
@@ -271,9 +306,20 @@ not errors — keep the tree warning-clean by ordinary discipline.
 ## No lake build in iterations; trust the MCP diagnostics
 
 (Deyao, 2026-07-21.) Skip `lake build` inside work iterations — the
-lean-lsp MCP diagnostics are the verification gate; the Stop hook still
-builds at the endgame. (A single-module `lake build` to refresh the
+**report-MCP** `diagnostics` call is the verification gate; the Stop hook
+still builds at the endgame. (A single-module `lake build` to refresh the
 daemon's state is fine when the staleness note matters.)
+
+**The `lean-lsp` MCP is GONE (Deyao, 2026-07-25): removed from `.mcp.json`
+entirely, because it did not work and is not needed.** The per-worktree
+`report-flt-lean-N` servers are the only Lean tooling. That means the
+`lean_leansearch` / `lean_loogle` / `lean_local_search` / `lean_run_code` /
+`lean_multi_attempt` tools no longer exist — task prompts must not offer
+them. Substitutes: search mathlib by reading it (`grep`/`Grep` over
+`.lake/packages/mathlib`) and by the names other owners have already
+recorded in docstrings; prototype in a throwaway scratch module verified
+through the report MCP, which is the same loop the performance rule already
+prescribes and is what agents were mostly doing anyway.
 
 ## Verify in a scratch module, not in the giant file
 
@@ -317,8 +363,9 @@ because the file is the unit of elaboration.
   remainder, never `(by sorry)` as an application argument.
 - **Every bound `have`/`let` must be consumed** (Deyao, 2026-07-22).
   Prune unused ones before committing (verify each prune compiles).
-  Enforced by the PreToolUse hook `.claude/lean-pretool-reminder.py`,
-  which fires before every lean-lsp call.
+  Enforced by the PostToolUse hook `.claude/unused-binding-check.py`,
+  which fires after every report-MCP `diagnostics` call. (It used to be a
+  PreToolUse hook on `lean-lsp`; that MCP was removed 2026-07-25.)
 - **Never use `private` to dodge the free-floating check** — open the
   consumer sorry first, always top-down.
 
