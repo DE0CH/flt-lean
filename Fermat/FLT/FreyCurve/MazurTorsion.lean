@@ -4964,14 +4964,23 @@ end TwoTorsion
   AEC III.4.5, X.4.9). The derivation composes the normalising
   isomorphism with the normal-form isogeny.
   * `WeierstrassCurve.exists_normalForm_pointEquiv_of_rational_two_torsion`
-    (sorry node) — the `ℚ`-isomorphism to `y² = x³ + a x² + b x` taking
-    the `2`-torsion point to `(0, 0)` (completing the square, then
-    translating), packaged as a Galois-equivariant isomorphism on
-    `ℚ̄`-points.
+    (PROVEN 2026-07-25) — the `ℚ`-isomorphism to `y² = x³ + a x² + b x`
+    taking the `2`-torsion point to `(0, 0)`, packaged as a
+    Galois-equivariant isomorphism on `ℚ̄`-points. A SINGLE admissible
+    change of variables `(u, r, s, t) = (1, X, −a₁/2, Y)` does it: it
+    kills `a₁` and `a₃` outright, kills `a₆` precisely because
+    `T = (X, Y)` lies on `E`, and sends `(0, 0)` to `T`. Equivariance
+    and the base change come from
+    `Affine.Point.equivVariableChangeBaseChange(_galois)`.
   * `WeierstrassCurve.exists_quotient_isogeny_of_normalForm_two_torsion`
-    (sorry node) — the explicit `2`-isogeny
+    (DERIVED 2026-07-25) — the explicit `2`-isogeny
     `(x, y) ↦ (y²/x², y (b − x²)/x²)` onto
-    `y² = x³ − 2 a x² + (a² − 4 b) x`, with kernel `{0, (0, 0)}`.
+    `y² = x³ − 2 a x² + (a² − 4 b) x`, with kernel `{0, (0, 0)}`. Built
+    from `WeierstrassCurve.twoIsogenyFun` and its properties (see the
+    section "The classical `2`-isogeny in normal form" below); all of
+    them are PROVEN except the single remaining leaf
+    `WeierstrassCurve.twoIsogenyFun_add_of_ne` (the generic case of
+    additivity).
 * `WeierstrassCurve.exists_quotient_isogeny_of_odd_prime_card` (sorry
   node) — the true Vélu core, cut at the literature statement: the
   quotient by a Galois-stable CYCLIC subgroup of ODD prime order
@@ -5023,12 +5032,397 @@ theorem WeierstrassCurve.exists_normalForm_pointEquiv_of_rational_two_torsion
           Affine.Point.map
             (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (Ψ Pt)) ∧
       Ψ (Affine.Point.baseChange ℚ (AlgebraicClosure ℚ) T) =
-        Affine.Point.some 0 0 h00 :=
+        Affine.Point.some 0 0 h00 := by
+  -- Coordinates of the rational `2`-torsion point.
+  rcases T with _ | ⟨X, Y, hns⟩
+  · exact absurd rfl hT0
+  have hY : 2 * Y + E.a₁ * X + E.a₃ = 0 := by
+    by_contra hy
+    have hy' : Y ≠ (E⁄ℚ).toAffine.negY X Y := by
+      intro h
+      have h2 : Y = -Y - E.a₁ * X - E.a₃ := h
+      exact hy (by linarith [h2])
+    exact Point.some_ne_zero _ ((Point.add_self_of_Y_ne hy').symm.trans hT2)
+  have hEq : E.toAffine.Equation X Y := hns.1
+  -- The normalising change of variables `(x, y) ↦ (x + X, y + (-a₁/2) x + Y)`; it takes
+  -- `(0, 0)` to `T = (X, Y)`, kills `a₁` and `a₃`, and kills `a₆` because `T` is on `E`.
+  set C : VariableChange ℚ := ⟨1, X, -E.a₁ / 2, Y⟩ with hC
+  have h1 : (C • E).a₁ = 0 := by
+    rw [variableChange_a₁, hC]; simp; ring
+  have h3 : (C • E).a₃ = 0 := by
+    rw [variableChange_a₃, hC]; simp; linarith [hY]
+  have h6 : (C • E).a₆ = 0 := by
+    rw [variableChange_a₆, hC]
+    rw [Affine.equation_iff] at hEq
+    simp
+    linarith [hEq]
+  obtain ⟨a, b, hWeq⟩ :
+      ∃ a b : ℚ, C • E = (⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ) :=
+    ⟨(C • E).a₂, (C • E).a₄, by ext <;> simp [h1, h3, h6]⟩
+  -- `(0, 0)` is a nonsingular point of `C • E`, and of its base change.
+  have h00Q' : (C • E).toAffine.Nonsingular 0 0 :=
+    Affine.equation_iff_nonsingular.mp ((Affine.equation_zero (W := C • E)).mpr h6)
+  have h00' : ((C • E)⁄(AlgebraicClosure ℚ)).toAffine.Nonsingular 0 0 := by
+    have := (Affine.baseChange_nonsingular (W := C • E) (A := ℚ) (B := AlgebraicClosure ℚ)
+      (f := Algebra.ofId ℚ (AlgebraicClosure ℚ))
+      (Algebra.ofId ℚ (AlgebraicClosure ℚ)).injective 0 0).mpr h00Q'
+    simpa using this
+  -- Transport of the point group along `C • E = E₀`, base changed to `ℚ̄`.
+  have hbc : ((C • E)⁄(AlgebraicClosure ℚ)) =
+      ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)) :=
+    congrArg (fun V : WeierstrassCurve ℚ => V⁄(AlgebraicClosure ℚ)) hWeq
+  have hOfEqGal : ∀ (V : WeierstrassCurve ℚ) (h : C • E = V)
+      (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)
+      (P : ((C • E)⁄(AlgebraicClosure ℚ)).toAffine.Point),
+      Point.equivOfEq (congrArg (fun V : WeierstrassCurve ℚ => V⁄(AlgebraicClosure ℚ)) h)
+          (Point.map σ.toAlgHom P) =
+        Point.map σ.toAlgHom
+          (Point.equivOfEq
+            (congrArg (fun V : WeierstrassCurve ℚ => V⁄(AlgebraicClosure ℚ)) h) P) := by
+    rintro V rfl σ P
+    rfl
+  refine ⟨a, b, hWeq ▸ (inferInstance : (C • E).IsElliptic), hbc ▸ h00',
+    (Point.equivVariableChangeBaseChange E C (AlgebraicClosure ℚ)).symm.trans
+      (Point.equivOfEq hbc), ?_, ?_⟩
+  · intro σ Pt
+    have hsymm : (Point.equivVariableChangeBaseChange E C (AlgebraicClosure ℚ)).symm
+          (Point.map (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Pt) =
+        Point.map (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom
+          ((Point.equivVariableChangeBaseChange E C (AlgebraicClosure ℚ)).symm Pt) := by
+      have hgal := Point.equivVariableChangeBaseChange_galois E C (AlgebraicClosure ℚ)
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)
+        ((Point.equivVariableChangeBaseChange E C (AlgebraicClosure ℚ)).symm Pt)
+      have hcong := congrArg
+        (fun P => Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom P)
+        ((Point.equivVariableChangeBaseChange E C (AlgebraicClosure ℚ)).apply_symm_apply Pt)
+      exact (Point.equivVariableChangeBaseChange E C (AlgebraicClosure ℚ)).injective
+        (((Point.equivVariableChangeBaseChange E C (AlgebraicClosure ℚ)).apply_symm_apply
+            _).trans (hgal.trans hcong).symm)
+    exact (congrArg (fun P => Point.equivOfEq hbc P) hsymm).trans (hOfEqGal _ hWeq _ _)
+  · have he0 : Point.equivVariableChangeBaseChange E C (AlgebraicClosure ℚ)
+          (Point.some 0 0 h00') =
+        Affine.Point.baseChange ℚ (AlgebraicClosure ℚ) (Point.some X Y hns) := by
+      simp only [Point.equivVariableChangeBaseChange, AddEquiv.trans_apply, Point.equivOfEq_some,
+        Point.equivVariableChange_some, Point.map_some]
+      refine Point.some_eq_some (E⁄(AlgebraicClosure ℚ)) ?_ ?_ <;>
+        simp [VariableChange.baseChange, VariableChange.map, hC]
+    rw [AddEquiv.trans_apply, ← he0, AddEquiv.symm_apply_apply, Point.equivOfEq_some]
+
+/-!
+### The classical `2`-isogeny in normal form: explicit machinery (2026-07-25)
+
+The bricks below build the explicit map
+`φ(x, y) = (y²/x², y (b − x²)/x²)` from `y² = x³ + a x² + b x` to
+`y² = x³ − 2 a x² + (a² − 4 b) x` and everything about it except the
+generic case of its additivity.
+-/
+
+namespace WeierstrassCurve
+
+/-- Discriminant of the two-torsion normal form `y² = x³ + a x² + b x`. -/
+theorem normalForm_Δ (a b : ℚ) :
+    (⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ).Δ = 16 * b ^ 2 * (a ^ 2 - 4 * b) := by
+  simp only [WeierstrassCurve.Δ, WeierstrassCurve.b₂, WeierstrassCurve.b₄, WeierstrassCurve.b₆,
+    WeierstrassCurve.b₈]
+  ring
+
+theorem normalForm_a₄_ne_zero (a b : ℚ)
+    [(⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ).IsElliptic] : b ≠ 0 := by
+  intro hb
+  have hΔ := (isUnit_Δ (W := (⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ))).ne_zero
+  rw [normalForm_Δ, hb] at hΔ
+  exact hΔ (by ring)
+
+theorem normalForm_sq_sub_ne_zero (a b : ℚ)
+    [(⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ).IsElliptic] : a ^ 2 - 4 * b ≠ 0 := by
+  intro hb
+  have hΔ := (isUnit_Δ (W := (⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ))).ne_zero
+  rw [normalForm_Δ, hb] at hΔ
+  exact hΔ (by ring)
+
+/-- The codomain `y² = x³ − 2 a x² + (a² − 4 b) x` of the classical `2`-isogeny is again an
+elliptic curve: its discriminant is `256 b (a² − 4 b)²`. -/
+instance normalForm_codomain_isElliptic (a b : ℚ)
+    [(⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ).IsElliptic] :
+    (⟨0, -2 * a, 0, a ^ 2 - 4 * b, 0⟩ : WeierstrassCurve ℚ).IsElliptic := by
+  refine ⟨?_⟩
+  rw [show (⟨0, -2 * a, 0, a ^ 2 - 4 * b, 0⟩ : WeierstrassCurve ℚ).Δ
+      = 16 * (a ^ 2 - 4 * b) ^ 2 * ((-2 * a) ^ 2 - 4 * (a ^ 2 - 4 * b)) from
+    normalForm_Δ (-2 * a) (a ^ 2 - 4 * b)]
+  refine isUnit_iff_ne_zero.mpr ?_
+  have hb := normalForm_a₄_ne_zero a b
+  have hd := normalForm_sq_sub_ne_zero a b
+  intro hz
+  rcases mul_eq_zero.mp hz with h1 | h2
+  · rcases mul_eq_zero.mp h1 with h3 | h4
+    · norm_num at h3
+    · exact hd (pow_eq_zero_iff (n := 2) (by norm_num) |>.mp h4)
+  · exact hb (by linarith)
+
+/-- The image of an affine point with `x ≠ 0` under the classical `2`-isogeny is a
+nonsingular point of the codomain curve. -/
+theorem twoIsogeny_nonsingular (a b : ℚ)
+    [(⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ).IsElliptic]
+    {x y : AlgebraicClosure ℚ}
+    (heq : ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).Equation x y)
+    (hx : x ≠ 0) :
+    ((⟨0, -2 * a, 0, a ^ 2 - 4 * b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).Nonsingular
+      (y ^ 2 / x ^ 2)
+      (y * (algebraMap ℚ (AlgebraicClosure ℚ) b - x ^ 2) / x ^ 2) := by
+  haveI : ((⟨0, -2 * a, 0, a ^ 2 - 4 * b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).IsElliptic
+      := inferInstanceAs ((⟨0, -2 * a, 0, a ^ 2 - 4 * b, 0⟩ : WeierstrassCurve ℚ).map
+      (algebraMap ℚ (AlgebraicClosure ℚ))).IsElliptic
+  refine Affine.equation_iff_nonsingular.mp ?_
+  set A := algebraMap ℚ (AlgebraicClosure ℚ) a with hA
+  set B := algebraMap ℚ (AlgebraicClosure ℚ) b with hB
+  rw [Affine.equation_iff] at heq ⊢
+  simp only [WeierstrassCurve.baseChange, WeierstrassCurve.map, map_zero, map_ofNat, map_mul,
+    map_sub, map_pow, map_neg, ← hA, ← hB] at heq ⊢
+  field_simp
+  linear_combination (-(y ^ 2) * (y ^ 2 + x ^ 3 - A * x ^ 2 + B * x)) * heq
+
+/-- The explicit classical `2`-isogeny on `ℚ̄`-points, `(x, y) ↦ (y²/x², y (b − x²)/x²)`,
+with `0` and the `2`-torsion point `(0, 0)` sent to `0`. -/
+noncomputable def twoIsogenyFun (a b : ℚ)
+    [(⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ).IsElliptic] :
+    ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).Point →
+      ((⟨0, -2 * a, 0, a ^ 2 - 4 * b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).Point
+  | .zero => 0
+  | .some x _ hns =>
+      if hx : x = 0 then 0
+      else .some _ _ (twoIsogeny_nonsingular a b hns.1 hx)
+
+@[simp] theorem twoIsogenyFun_zero (a b : ℚ)
+    [(⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ).IsElliptic] :
+    twoIsogenyFun a b 0 = 0 := rfl
+
+theorem twoIsogenyFun_some_of_ne_zero (a b : ℚ)
+    [(⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ).IsElliptic]
+    {x y : AlgebraicClosure ℚ}
+    (hns : ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).Nonsingular x y)
+    (hx : x ≠ 0) :
+    twoIsogenyFun a b (.some x y hns) =
+      .some (y ^ 2 / x ^ 2) (y * (algebraMap ℚ (AlgebraicClosure ℚ) b - x ^ 2) / x ^ 2)
+        (twoIsogeny_nonsingular a b hns.1 hx) := by
+  rw [twoIsogenyFun, dif_neg hx]
+
+theorem twoIsogenyFun_some_of_eq_zero (a b : ℚ)
+    [(⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ).IsElliptic]
+    {x y : AlgebraicClosure ℚ}
+    (hns : ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).Nonsingular x y)
+    (hx : x = 0) :
+    twoIsogenyFun a b (.some x y hns) = 0 := by
+  rw [twoIsogenyFun, dif_pos hx]
+
+/-- An affine point of `y² = x³ + a x² + b x` with vanishing `x`-coordinate is `(0, 0)`. -/
+theorem normalForm_y_eq_zero_of_x_eq_zero (a b : ℚ)
+    {x y : AlgebraicClosure ℚ}
+    (heq : ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).Equation x y)
+    (hx : x = 0) : y = 0 := by
+  rw [Affine.equation_iff] at heq
+  simp only [WeierstrassCurve.baseChange, WeierstrassCurve.map, map_zero, hx] at heq
+  exact pow_eq_zero_iff (n := 2) (by norm_num) |>.mp (by linear_combination heq)
+
+/-- Galois equivariance of the explicit `2`-isogeny: its coordinate functions are rational
+functions with `ℚ`-coefficients. -/
+theorem twoIsogenyFun_map (a b : ℚ)
+    [(⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ).IsElliptic]
+    (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)
+    (P : ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).Point) :
+    twoIsogenyFun a b (Affine.Point.map σ.toAlgHom P) =
+      Affine.Point.map σ.toAlgHom (twoIsogenyFun a b P) := by
+  rcases P with _ | ⟨x, y, hns⟩
+  · rfl
+  · rcases eq_or_ne x 0 with hx | hx
+    · rw [Point.map_some, twoIsogenyFun_some_of_eq_zero a b _ (by rw [hx]; exact map_zero _),
+        twoIsogenyFun_some_of_eq_zero a b hns hx, map_zero]
+    · have hσx : σ.toAlgHom x ≠ 0 := fun hc => hx (by simpa using congrArg σ.symm.toAlgHom hc)
+      rw [Point.map_some, twoIsogenyFun_some_of_ne_zero a b _ hσx,
+        twoIsogenyFun_some_of_ne_zero a b hns hx, Point.map_some]
+      refine Point.some_eq_some _ ?_ ?_
+      · simp [map_div₀]
+      · simp [map_div₀]
+
+/-- The kernel of the explicit `2`-isogeny is exactly `{0, (0, 0)}`. -/
+theorem twoIsogenyFun_eq_zero_iff (a b : ℚ)
+    [(⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ).IsElliptic]
+    (h00 : ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).Nonsingular 0 0)
+    (P : ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).Point) :
+    twoIsogenyFun a b P = 0 ↔ P = 0 ∨ P = Affine.Point.some 0 0 h00 := by
+  rcases P with _ | ⟨x, y, hns⟩
+  · exact iff_of_true rfl (Or.inl rfl)
+  · constructor
+    · intro hP
+      refine Or.inr ?_
+      by_contra hne
+      rcases eq_or_ne x 0 with hx | hx
+      · exact hne (Point.some_eq_some _ hx (normalForm_y_eq_zero_of_x_eq_zero a b hns.1 hx))
+      · rw [twoIsogenyFun_some_of_ne_zero a b hns hx] at hP
+        exact Point.some_ne_zero _ hP
+    · rintro (hc | hc)
+      · exact absurd hc (Point.some_ne_zero _)
+      · rw [twoIsogenyFun_some_of_eq_zero a b hns (Point.some.inj hc).1]
+
+/-- Translation by the rational `2`-torsion point `(0, 0)`: for an affine point `(x, y)` of
+`y² = x³ + a x² + b x` with `x ≠ 0`, one has `(0, 0) + (x, y) = (b/x, −b y/x²)`. -/
+theorem normalForm_two_torsion_add (a b : ℚ)
+    [(⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ).IsElliptic]
+    {x y : AlgebraicClosure ℚ}
+    (h₀ : ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).Nonsingular 0 0)
+    (hns : ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).Nonsingular x y)
+    (hx : x ≠ 0) :
+    ∃ hns' : ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).Nonsingular
+        (algebraMap ℚ (AlgebraicClosure ℚ) b / x)
+        (-(algebraMap ℚ (AlgebraicClosure ℚ) b) * y / x ^ 2),
+      (Affine.Point.some 0 0 h₀ + Affine.Point.some x y hns : _) =
+        Affine.Point.some _ _ hns' := by
+  set A := algebraMap ℚ (AlgebraicClosure ℚ) a with hA
+  set B := algebraMap ℚ (AlgebraicClosure ℚ) b with hB
+  have heq : y ^ 2 = x ^ 3 + A * x ^ 2 + B * x := by
+    have := hns.1
+    rw [Affine.equation_iff] at this
+    simp only [WeierstrassCurve.baseChange, WeierstrassCurve.map, map_zero, ← hA, ← hB] at this
+    linear_combination this
+  have hx0 : (0 : AlgebraicClosure ℚ) ≠ x := fun hc => hx hc.symm
+  have hslope : ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).slope 0 x 0 y
+      = y / x := by
+    rw [Affine.slope_of_X_ne hx0]
+    field_simp
+    ring
+  have hX : ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).addX 0 x
+      (((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).slope 0 x 0 y) = B / x := by
+    rw [hslope, Affine.addX]
+    simp only [WeierstrassCurve.baseChange, WeierstrassCurve.map, map_zero, ← hA, ← hB]
+    field_simp
+    linear_combination heq
+  have hY : ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).addY 0 x 0
+      (((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).slope 0 x 0 y)
+      = -B * y / x ^ 2 := by
+    rw [Affine.addY, Affine.negY, Affine.negAddY, hX, hslope]
+    simp only [WeierstrassCurve.baseChange, WeierstrassCurve.map, map_zero, ← hA, ← hB]
+    field_simp
+    ring
+  rw [Point.add_of_X_ne hx0]
+  exact ⟨hX ▸ hY ▸ Affine.nonsingular_add h₀ hns fun hxy => hx0 hxy.1,
+    Point.some_eq_some _ hX hY⟩
+
+/-- Additivity of the explicit `2`-isogeny in the degenerate case where one summand is the
+kernel point `(0, 0)`: the isogeny kills `(0, 0)` and is invariant under translation by it. -/
+theorem twoIsogenyFun_two_torsion_add (a b : ℚ)
+    [(⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ).IsElliptic]
+    (h₀ : ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).Nonsingular 0 0)
+    {x y : AlgebraicClosure ℚ}
+    (hns : ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).Nonsingular x y) :
+    twoIsogenyFun a b (Affine.Point.some 0 0 h₀ + Affine.Point.some x y hns) =
+      twoIsogenyFun a b (Affine.Point.some 0 0 h₀) +
+        twoIsogenyFun a b (Affine.Point.some x y hns) := by
+  have hB : algebraMap ℚ (AlgebraicClosure ℚ) b ≠ 0 :=
+    (map_ne_zero_iff _ (algebraMap ℚ (AlgebraicClosure ℚ)).injective).mpr
+      (normalForm_a₄_ne_zero a b)
+  rw [twoIsogenyFun_some_of_eq_zero a b h₀ rfl, zero_add]
+  rcases eq_or_ne x 0 with hx | hx
+  · have hy : y = 0 := normalForm_y_eq_zero_of_x_eq_zero a b hns.1 hx
+    rw [twoIsogenyFun_some_of_eq_zero a b hns hx,
+      Point.add_of_Y_eq (h₂ := hns) hx.symm
+        (by rw [hy, Affine.negY]
+            simp only [WeierstrassCurve.baseChange, WeierstrassCurve.map, map_zero]
+            ring),
+      twoIsogenyFun_zero]
+  · obtain ⟨hns', hsum⟩ := normalForm_two_torsion_add a b h₀ hns hx
+    rw [hsum, twoIsogenyFun_some_of_ne_zero a b hns' (div_ne_zero hB hx),
+      twoIsogenyFun_some_of_ne_zero a b hns hx]
+    refine Point.some_eq_some _ ?_ ?_ <;> · field_simp <;> ring
+
+/-- **The generic case of the additivity of the explicit `2`-isogeny** (SORRY LEAF, cut
+2026-07-25 out of `WeierstrassCurve.twoIsogenyFun_add`; the degenerate cases — a zero
+summand, a summand equal to the kernel point `(0, 0)`, and `P + Q = 0` — are PROVEN there):
+for two affine points of `y² = x³ + a x² + b x` with nonzero `x`-coordinates whose sum is
+not `0`, the explicit map `φ(x, y) = (y²/x², y (b − x²)/x²)` is additive.
+
+Route (all of it pure coordinate algebra over `ℚ̄`; write `A = a`, `B = b` in `ℚ̄`, and
+`u_i = x_i² + A x_i + B`, so that `y_i² = x_i u_i` and `X_i = y_i²/x_i² = u_i/x_i`):
+
+* `X₁ − X₂ = (x₁ − x₂)(x₁x₂ − B)/(x₁x₂)`, so for `x₁ ≠ x₂` the images have equal
+  `x`-coordinate exactly when `x₁x₂ = B`.
+* With `d = x₁ − x₂`, `N = x₁y₂ − x₂y₁` and `ℓ = (y₁ − y₂)/d` the third intersection point
+  is `x₃ = N²/(x₁x₂d²)` (the product of the three roots of the cubic is `ν²` with
+  `ν = N/d`) and `y₃ = −(ℓx₃ + ν)`; the polynomial form
+  `((y₁ − y₂)² − (A + x₁ + x₂)d²)·x₁x₂ = N²` follows from the two curve equations with
+  cofactors `d x₂` and `−d x₁`.
+* Hence `x₃ = 0 ↔ x₁x₂ = B` (square `x₁y₂ = x₂y₁` and use the curve equations), which is
+  exactly the statement that `φP + φQ = 0` forces `P + Q ∈ ker φ` and conversely.
+* In the remaining branch `x₃ ≠ 0`, the two coordinate identities
+  `Λ² + 2A − X₁ − X₂ = y₃²/x₃²` and `−(Λ(X₃ − X₁) + Y₁) = y₃(B − x₃²)/x₃²`, with
+  `Λ` the slope on the codomain curve, are rational-function identities modulo the two
+  curve equations; they split into the secant branch (`x₁ ≠ x₂`, `Λ` given by
+  `slope_of_X_ne`) and the tangent branch (`x₁ = x₂`, `y₁ ≠ −y₂`, `Λ` given by
+  `slope_of_Y_ne`). Verified numerically in PARI/GP (2026-07-25) on `y² = x³ + 3x² + 5x`.
+
+Silverman AEC III.4.5, X.4.9 and Exercise 3.13; Washington, *Elliptic Curves*, ch. 8. -/
+theorem twoIsogenyFun_add_of_ne (a b : ℚ)
+    [(⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ).IsElliptic]
+    {x₁ y₁ x₂ y₂ : AlgebraicClosure ℚ}
+    (h₁ : ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).Nonsingular x₁ y₁)
+    (h₂ : ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).Nonsingular x₂ y₂)
+    (hx₁ : x₁ ≠ 0) (hx₂ : x₂ ≠ 0)
+    (hxy : ¬(x₁ = x₂ ∧
+      y₁ = ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).negY x₂ y₂)) :
+    twoIsogenyFun a b (Affine.Point.some x₁ y₁ h₁ + Affine.Point.some x₂ y₂ h₂) =
+      twoIsogenyFun a b (Affine.Point.some x₁ y₁ h₁) +
+        twoIsogenyFun a b (Affine.Point.some x₂ y₂ h₂) :=
   sorry
 
-/-- **The classical `2`-isogeny, in normal form** (sorry node, cut
-2026-07-25 out of `exists_quotient_isogeny_of_rational_two_torsion` —
-this is the literature computation proper): for
+/-- **Additivity of the explicit `2`-isogeny** (DERIVED 2026-07-25 from
+`twoIsogenyFun_two_torsion_add` and the generic leaf `twoIsogenyFun_add_of_ne`): the
+explicit map `φ(x, y) = (y²/x², y (b − x²)/x²)` from `y² = x³ + a x² + b x` to
+`y² = x³ − 2 a x² + (a² − 4 b) x` (with `0` and `(0, 0)` sent to `0`) is a group
+homomorphism. -/
+theorem twoIsogenyFun_add (a b : ℚ)
+    [(⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ).IsElliptic]
+    (P Q : ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).Point) :
+    twoIsogenyFun a b (P + Q) = twoIsogenyFun a b P + twoIsogenyFun a b Q := by
+  rcases P with _ | ⟨x₁, y₁, h₁⟩
+  · rw [← Point.zero_def, zero_add, twoIsogenyFun_zero, zero_add]
+  rcases Q with _ | ⟨x₂, y₂, h₂⟩
+  · rw [← Point.zero_def, add_zero, twoIsogenyFun_zero, add_zero]
+  rcases eq_or_ne x₁ 0 with hx₁ | hx₁
+  · have hy₁ : y₁ = 0 := normalForm_y_eq_zero_of_x_eq_zero a b h₁.1 hx₁
+    subst hx₁
+    subst hy₁
+    exact twoIsogenyFun_two_torsion_add a b h₁ h₂
+  rcases eq_or_ne x₂ 0 with hx₂ | hx₂
+  · have hy₂ : y₂ = 0 := normalForm_y_eq_zero_of_x_eq_zero a b h₂.1 hx₂
+    subst hx₂
+    subst hy₂
+    rw [add_comm (Affine.Point.some x₁ y₁ h₁),
+      add_comm (twoIsogenyFun a b (Affine.Point.some x₁ y₁ h₁))]
+    exact twoIsogenyFun_two_torsion_add a b h₂ h₁
+  by_cases hxy : x₁ = x₂ ∧
+      y₁ = ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).negY x₂ y₂
+  · have hy : y₁ = -y₂ := by
+      rw [hxy.2, Affine.negY]
+      simp only [WeierstrassCurve.baseChange, WeierstrassCurve.map, map_zero]
+      ring
+    rw [Point.add_of_Y_eq hxy.1 hxy.2, twoIsogenyFun_zero,
+      twoIsogenyFun_some_of_ne_zero a b h₁ hx₁, twoIsogenyFun_some_of_ne_zero a b h₂ hx₂]
+    refine (Point.add_of_Y_eq ?_ ?_).symm
+    · rw [hxy.1, hy]; ring
+    · rw [Affine.negY]
+      simp only [WeierstrassCurve.baseChange, WeierstrassCurve.map, map_zero, map_mul,
+        map_sub, map_pow, map_neg, map_ofNat]
+      rw [hxy.1, hy]
+      field_simp
+      ring
+  · exact twoIsogenyFun_add_of_ne a b h₁ h₂ hx₁ hx₂ hxy
+
+end WeierstrassCurve
+
+/-- **The classical `2`-isogeny, in normal form** (DERIVED 2026-07-25 from
+the explicit machinery above — `twoIsogenyFun` with its Galois
+equivariance `twoIsogenyFun_map`, its kernel `twoIsogenyFun_eq_zero_iff`
+and its additivity `twoIsogenyFun_add`, the last of which still rests on
+the generic-case leaf `twoIsogenyFun_add_of_ne`): for
 `E₀ : y² = x³ + a x² + b x` over `ℚ`, an elliptic curve (so
 `Δ = 16 b² (a² − 4 b) ≠ 0`), the quotient of `E₀` by the order-`2`
 subgroup `{0, (0, 0)}` is the elliptic curve
@@ -5058,8 +5452,14 @@ theorem WeierstrassCurve.exists_quotient_isogeny_of_normalForm_two_torsion
         Affine.Point.map
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (φ Pt)) ∧
       (∀ Pt : ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).Point,
-        φ Pt = 0 ↔ Pt = 0 ∨ Pt = Affine.Point.some 0 0 h00) :=
-  sorry
+        φ Pt = 0 ↔ Pt = 0 ∨ Pt = Affine.Point.some 0 0 h00) := by
+  refine ⟨⟨0, -2 * a, 0, a ^ 2 - 4 * b, 0⟩, inferInstance,
+    AddMonoidHom.mk' (WeierstrassCurve.twoIsogenyFun a b)
+      (fun P Q => WeierstrassCurve.twoIsogenyFun_add a b P Q), ?_, ?_⟩
+  · intro σ Pt
+    exact WeierstrassCurve.twoIsogenyFun_map a b _ Pt
+  · intro Pt
+    exact WeierstrassCurve.twoIsogenyFun_eq_zero_iff a b h00 Pt
 
 /-- **The rational two-torsion quotient isogeny — the classical
 `2`-isogeny** (sorry node, cut out of
