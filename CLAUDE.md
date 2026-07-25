@@ -275,6 +275,34 @@ lean-lsp MCP diagnostics are the verification gate; the Stop hook still
 builds at the endgame. (A single-module `lake build` to refresh the
 daemon's state is fine when the staleness note matters.)
 
+## Verify in a scratch module, not in the giant file
+
+(Deyao, 2026-07-25, from a measurement — this is the fleet's single
+biggest throughput lever.) **Develop against a throwaway scratch module
+that imports only what you need, and do exactly ONE final blocking
+verify against the real target file.** Delete the scratch before
+committing. Agents who worked this way cut their round trip from **~30
+minutes to ~1 minute**; several discovered it independently and reported
+it unprompted.
+
+Why, measured rather than assumed: **elaboration is single-threaded —
+one core per file.** Sampling every `lean --worker` on this 96-core
+machine (a `/proc` utime+stime delta, *not* `ps pcpu`, which is a
+lifetime average and misleads) found 101 workers consuming **11.1 cores
+between them**, 77 of them idle, the busiest at 1.29 cores. iowait was
+0–3%; RAM had 1.5 TB free. So the fleet is **not** disk-, CPU- or
+memory-bound, and moving `.lake` to tmpfs or deduplicating the 62
+mathlib copies would buy nothing. What costs wall-clock is that a
+15k-line file such as `Modularity/Interface.lean` re-elaborates on ONE
+core however many are idle beside it. The only way to go faster is to
+elaborate less.
+
+Corollaries: batch edits and verify once rather than per-edit; a
+client-side timeout means the server is still elaborating, so re-issuing
+attaches rather than restarting (see the single-flight section); and
+splitting oversized modules is what converts idle cores into throughput,
+because the file is the unit of elaboration.
+
 ## Sorry and have discipline (glue-first, no floating)
 
 - **Glue first.** At any frontier, first replace the bare `sorry` with
