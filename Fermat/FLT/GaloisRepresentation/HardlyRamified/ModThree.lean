@@ -7950,6 +7950,56 @@ theorem archProfile_complex :
       push_cast
       ring
 
+/-- **The elementary stretched-exponential profile** (PROVEN): for every
+`c > 0`, `x ↦ e^{−c·x^{1/n}}` is a Γ-profile of degree `n`, its Mellin
+factor being tautologically its own Mellin transform (only the
+CONVERGENCE half of `HasMellin` carries content, and that is
+`hasMellin_ofReal_exp_neg` dilated by `c` (`MellinConvergent.comp_mul_left`)
+and pulled back along `τ ↦ τ^{1/n}` (`MellinConvergent.comp_rpow`), exactly
+as in `archProfile_complex`).  These are the auxiliary "half-exponent"
+profiles `E₁`, `E₂` produced by the saddle split in `archConv_decay`. -/
+theorem archProfile_stretchedExp (n : ℕ) (hn : 0 < n) {c : ℝ} (hc : 0 < c) :
+    ∃ M : ℂ → ℂ, IsArchProfile n M (fun x : ℝ => Real.exp (-c * x ^ ((n : ℝ)⁻¹))) := by
+  have hn0 : (0 : ℝ) < (n : ℝ) := Nat.cast_pos.mpr hn
+  have hinv : (0 : ℝ) < ((n : ℝ))⁻¹ := inv_pos.mpr hn0
+  refine ⟨fun s => mellin (fun τ : ℝ => ((Real.exp (-c * τ ^ ((n : ℝ)⁻¹)) : ℝ) : ℂ)) (s / 2),
+    ?_, ?_, ?_, ⟨1, c, hc, ?_⟩, ?_⟩
+  · refine (Real.continuous_exp.comp ?_).continuousOn
+    exact continuous_const.mul (continuous_iff_continuousAt.mpr fun x =>
+      Real.continuousAt_rpow_const x _ (Or.inr hinv.le))
+  · exact fun _ _ => (Real.exp_pos _).le
+  · intro a ha b _ hab
+    refine Real.exp_le_exp.mpr ?_
+    have hr : a ^ ((n : ℝ)⁻¹) ≤ b ^ ((n : ℝ)⁻¹) :=
+      Real.rpow_le_rpow (le_of_lt ha) hab hinv.le
+    nlinarith
+  · intro τ _
+    rw [one_mul]
+  · intro s hs
+    refine ⟨?_, rfl⟩
+    have hs2 : 0 < (s / 2).re := by simp; linarith
+    have hcast : (((((n : ℝ))⁻¹ : ℝ)) : ℂ) = ((n : ℝ) : ℂ)⁻¹ := by push_cast; ring
+    have hzeq : (s / 2) / ((((n : ℝ))⁻¹ : ℝ) : ℂ) = ((n : ℝ) : ℂ) * (s / 2) := by
+      rw [hcast, div_inv_eq_mul]
+      ring
+    have hzre : 0 < ((s / 2) / ((((n : ℝ))⁻¹ : ℝ) : ℂ)).re := by
+      rw [hzeq, Complex.re_ofReal_mul]
+      exact mul_pos hn0 hs2
+    have hbase := (hasMellin_ofReal_exp_neg _ hzre).1
+    have hmul : MellinConvergent (fun t : ℝ => ((Real.exp (-c * t) : ℝ) : ℂ))
+        ((s / 2) / ((((n : ℝ))⁻¹ : ℝ) : ℂ)) := by
+      have hcm := (MellinConvergent.comp_mul_left
+        (f := fun t : ℝ => ((Real.exp (-t) : ℝ) : ℂ))
+        (s := (s / 2) / ((((n : ℝ))⁻¹ : ℝ) : ℂ)) hc).mpr hbase
+      have heq : (fun t : ℝ => ((Real.exp (-c * t) : ℝ) : ℂ))
+          = fun t : ℝ => ((Real.exp (-(c * t)) : ℝ) : ℂ) := by
+        funext t; rw [neg_mul]
+      rw [heq]
+      exact hcm
+    exact (MellinConvergent.comp_rpow
+      (f := fun t : ℝ => ((Real.exp (-c * t) : ℝ) : ℂ))
+      (s := s / 2) (a := ((n : ℝ))⁻¹) (ne_of_gt hinv)).mpr hmul
+
 /-- **Multiplicative (Mellin) convolution of two profiles**:
 `(H₁ ⋆ H₂)(τ) = ∫_0^∞ H₁(τ/u)·H₂(u)·du/u`.  This is the
 multiplication of the multiplicative group `(0, ∞)`, under which the
@@ -8041,38 +8091,233 @@ theorem archConv_continuousOn {p q : ℕ} {M₁ M₂ : ℂ → ℂ} {H₁ H₂ :
     ContinuousOn (archConv H₁ H₂) (Set.Ioi 0) := by
   sorry
 
-/-- **Stretched-exponential decay of the convolution** (sorry node,
-stated 2026-07-25 — stage (α₃) of the decomposition of
+/-- **Stretched-exponential decay of the convolution** (PROVEN
+2026-07-25 — stage (α₃) of the decomposition of
 `archimedeanGammaProfile_exists`): the convolution of a degree-`p` and
 a degree-`q` profile decays like `exp(−a·τ^{1/(p+q)})`, i.e. the
 degrees ADD.
 
-Intended proof (the AM–GM/saddle-point step of Neukirch VII (4.2),
-"split the exponent in half"): with
-`H₁(x) ≤ A₁·exp(−a₁·x^{1/p})` for `x ≥ 1` and
-`H₂(u) ≤ A₂·exp(−a₂·u^{1/q})` for `u ≥ 1`, split the integral at the
-saddle `u₀ = τ^{q/(p+q)}` — where `(τ/u)^{1/p} = u^{1/q}` — whose
-common value is exactly `τ^{1/(p+q)}`:
+Proof (the AM–GM/saddle-point step of Neukirch VII (4.2), "split the
+exponent in half").  With `H₁(x) ≤ A₁·exp(−a₁·x^{1/p})` for `x ≥ 1`
+and `H₂(u) ≤ A₂·exp(−a₂·u^{1/q})` for `u ≥ 1` (both `Aᵢ ≥ 0`, since
+profiles are nonnegative), split the integral at the saddle
+`u₀ = τ^{q/(p+q)}` — where `(τ/u)^{1/p} = u^{1/q}` — whose common value
+is exactly `T = τ^{1/(p+q)}`.  For `τ ≥ 1` one has `u₀ ≥ 1` and:
 
-* on `(0, u₀]` one has `τ/u ≥ τ^{p/(p+q)} ≥ 1`, so
-  `exp(−a₁(τ/u)^{1/p}) ≤ exp(−½a₁τ^{1/(p+q)})·exp(−½a₁(τ/u)^{1/p})`
-  and the second factor, together with the polynomial bound
-  `H₂(u) ≤ C₂u^{−ε}` near `0` and antitonicity of `H₂` on `[1, u₀]`,
-  leaves a `τ`-uniform finite integral (the residual `log u₀` growth
-  is absorbed by halving the exponent once more);
-* on `[u₀, ∞)` one has `u ≥ 1` and
-  `exp(−a₂u^{1/q}) ≤ exp(−½a₂τ^{1/(p+q)})·exp(−½a₂u^{1/q})`, and
-  `H₁(τ/u) ≤ C₁(u/τ)^{ε} ≤ C₁u^{ε}` (the polynomial control at `0` of
-  `archConv_integrableOn`'s docstring, `τ ≥ 1`), leaving the finite
-  integral `∫ u^{ε−1}exp(−½a₂u^{1/q}) du`.
+* on `(0, u₀]`: `τ/u ≥ τ/u₀ = τ^{p/(p+q)} ≥ 1`, hence
+  `(τ/u)^{1/p} ≥ T`, and halving that exponent gives
+  `H₁(τ/u) ≤ A₁·exp(−½a₁T)·E₁(τ/u)` where
+  `E₁(x) = exp(−½a₁·x^{1/p})`;
+* on `[u₀, ∞)`: `u ≥ u₀ ≥ 1`, hence `u^{1/q} ≥ T`, and likewise
+  `H₂(u) ≤ A₂·exp(−½a₂T)·E₂(u)` where `E₂(u) = exp(−½a₂·u^{1/q})`.
 
-The resulting exponent is `a = ½·min a₁ a₂` (after the second
-halving), which is what the statement asserts. -/
+Since the integrand is nonnegative, enlarging each half-line back to
+`(0, ∞)` only increases the integral, so the two residual integrals are
+the CONVOLUTIONS `archConv E₁ H₂ τ` and `archConv H₁ E₂ τ` themselves.
+Now `E₁` and `E₂` are again profiles, of degrees `p` and `q`
+(`archProfile_stretchedExp`) — so those two convolutions are finite by
+`archConv_integrableOn` and, crucially, ANTITONE in `τ`
+(`archConv_antitoneOn`), hence for `τ ≥ 1` bounded by their values at
+`τ = 1`.  That antitonicity is what replaces the delicate `τ`-uniform
+estimate (and with it the polynomial-control-at-`0` bound) of a direct
+attack.  The constants are therefore
+`A = A₁·(E₁ ⋆ H₂)(1) + A₂·(H₁ ⋆ E₂)(1)` and `a = ½·min a₁ a₂`. -/
 theorem archConv_decay {p q : ℕ} {M₁ M₂ : ℂ → ℂ} {H₁ H₂ : ℝ → ℝ}
     (hp : 0 < p) (hq : 0 < q) (h₁ : IsArchProfile p M₁ H₁) (h₂ : IsArchProfile q M₂ H₂) :
     ∃ A a : ℝ, 0 < a ∧ ∀ τ : ℝ, 1 ≤ τ →
       archConv H₁ H₂ τ ≤ A * Real.exp (-a * τ ^ (((p + q : ℕ) : ℝ)⁻¹)) := by
-  sorry
+  obtain ⟨A₁, a₁, ha₁, hd₁⟩ := h₁.2.2.2.1
+  obtain ⟨A₂, a₂, ha₂, hd₂⟩ := h₂.2.2.2.1
+  have hA₁ : 0 ≤ A₁ := by
+    have hb := hd₁ 1 le_rfl
+    have h0 := h₁.2.1 1 (Set.mem_Ioi.mpr one_pos)
+    have hpos := Real.exp_pos (-a₁ * (1 : ℝ) ^ ((p : ℝ)⁻¹))
+    nlinarith
+  have hA₂ : 0 ≤ A₂ := by
+    have hb := hd₂ 1 le_rfl
+    have h0 := h₂.2.1 1 (Set.mem_Ioi.mpr one_pos)
+    have hpos := Real.exp_pos (-a₂ * (1 : ℝ) ^ ((q : ℝ)⁻¹))
+    nlinarith
+  obtain ⟨N₁, hE₁⟩ := archProfile_stretchedExp p hp (c := a₁ / 2) (by positivity)
+  obtain ⟨N₂, hE₂⟩ := archProfile_stretchedExp q hq (c := a₂ / 2) (by positivity)
+  set E₁ : ℝ → ℝ := fun x => Real.exp (-(a₁ / 2) * x ^ ((p : ℝ)⁻¹)) with hE₁def
+  set E₂ : ℝ → ℝ := fun x => Real.exp (-(a₂ / 2) * x ^ ((q : ℝ)⁻¹)) with hE₂def
+  have hC₁0 : 0 ≤ archConv E₁ H₂ 1 := archConv_nonneg hE₁ h₂ one_pos
+  have hC₂0 : 0 ≤ archConv H₁ E₂ 1 := archConv_nonneg h₁ hE₂ one_pos
+  refine ⟨A₁ * archConv E₁ H₂ 1 + A₂ * archConv H₁ E₂ 1, min a₁ a₂ / 2,
+    by linarith [lt_min ha₁ ha₂], ?_⟩
+  intro τ hτ
+  have hτ0 : (0 : ℝ) < τ := lt_of_lt_of_le one_pos hτ
+  have hP0 : (0 : ℝ) < (p : ℝ) := Nat.cast_pos.mpr hp
+  have hQ0 : (0 : ℝ) < (q : ℝ) := Nat.cast_pos.mpr hq
+  have hNeq : (((p + q : ℕ)) : ℝ) = (p : ℝ) + (q : ℝ) := by push_cast; ring
+  have hN0 : (0 : ℝ) < (((p + q : ℕ)) : ℝ) := by rw [hNeq]; linarith
+  set N : ℝ := (((p + q : ℕ)) : ℝ) with hNdef
+  have hPne : (p : ℝ) ≠ 0 := ne_of_gt hP0
+  have hQne : (q : ℝ) ≠ 0 := ne_of_gt hQ0
+  have hNne : N ≠ 0 := ne_of_gt hN0
+  have hT0 : (0 : ℝ) ≤ τ ^ N⁻¹ := Real.rpow_nonneg hτ0.le _
+  have hu₀pos : (0 : ℝ) < τ ^ ((q : ℝ) / N) := Real.rpow_pos_of_pos hτ0 _
+  have hu₀ge1 : (1 : ℝ) ≤ τ ^ ((q : ℝ) / N) := by
+    calc (1 : ℝ) = (1 : ℝ) ^ ((q : ℝ) / N) := (Real.one_rpow _).symm
+      _ ≤ τ ^ ((q : ℝ) / N) := Real.rpow_le_rpow zero_le_one hτ (div_nonneg hQ0.le hN0.le)
+  have hPN : (p : ℝ) / N = 1 - (q : ℝ) / N := by
+    rw [eq_sub_iff_add_eq, ← add_div, ← hNeq, div_self hNne]
+  have hτdiv : τ ^ ((p : ℝ) / N) = τ / τ ^ ((q : ℝ) / N) := by
+    rw [hPN, Real.rpow_sub hτ0, Real.rpow_one]
+  have hone_le : (1 : ℝ) ≤ τ ^ ((p : ℝ) / N) := by
+    calc (1 : ℝ) = (1 : ℝ) ^ ((p : ℝ) / N) := (Real.one_rpow _).symm
+      _ ≤ τ ^ ((p : ℝ) / N) := Real.rpow_le_rpow zero_le_one hτ (div_nonneg hP0.le hN0.le)
+  have hkeyP : (τ ^ ((p : ℝ) / N)) ^ ((p : ℝ)⁻¹) = τ ^ N⁻¹ := by
+    rw [← Real.rpow_mul hτ0.le]
+    congr 1
+    field_simp
+  have hkeyQ : (τ ^ ((q : ℝ) / N)) ^ ((q : ℝ)⁻¹) = τ ^ N⁻¹ := by
+    rw [← Real.rpow_mul hτ0.le]
+    congr 1
+    field_simp
+  -- the two pointwise saddle bounds
+  have hstepA : ∀ u ∈ Set.Ioc (0 : ℝ) (τ ^ ((q : ℝ) / N)),
+      H₁ (τ / u) * H₂ u / u
+        ≤ (A₁ * Real.exp (-(a₁ / 2) * τ ^ N⁻¹)) * (E₁ (τ / u) * H₂ u / u) := by
+    intro u hu
+    obtain ⟨hu0, huu⟩ := hu
+    have hdle : τ ^ ((p : ℝ) / N) ≤ τ / u := by
+      rw [hτdiv]
+      exact div_le_div_of_nonneg_left hτ0.le hu0 huu
+    have hx1 : (1 : ℝ) ≤ τ / u := le_trans hone_le hdle
+    have hxT : τ ^ N⁻¹ ≤ (τ / u) ^ ((p : ℝ)⁻¹) := by
+      rw [← hkeyP]
+      exact Real.rpow_le_rpow (Real.rpow_nonneg hτ0.le _) hdle (inv_nonneg.mpr hP0.le)
+    have hH₁ : H₁ (τ / u) ≤ A₁ * (Real.exp (-(a₁ / 2) * τ ^ N⁻¹) * E₁ (τ / u)) := by
+      refine le_trans (hd₁ (τ / u) hx1) ?_
+      simp only [hE₁def]
+      have hstep : Real.exp (-a₁ * (τ / u) ^ ((p : ℝ)⁻¹))
+          ≤ Real.exp (-(a₁ / 2) * τ ^ N⁻¹) * Real.exp (-(a₁ / 2) * (τ / u) ^ ((p : ℝ)⁻¹)) := by
+        rw [← Real.exp_add]
+        exact Real.exp_le_exp.mpr (by nlinarith)
+      exact mul_le_mul_of_nonneg_left hstep hA₁
+    have hfac : 0 ≤ H₂ u / u := div_nonneg (h₂.2.1 u (Set.mem_Ioi.mpr hu0)) hu0.le
+    calc H₁ (τ / u) * H₂ u / u = H₁ (τ / u) * (H₂ u / u) := by ring
+      _ ≤ (A₁ * (Real.exp (-(a₁ / 2) * τ ^ N⁻¹) * E₁ (τ / u))) * (H₂ u / u) :=
+          mul_le_mul_of_nonneg_right hH₁ hfac
+      _ = (A₁ * Real.exp (-(a₁ / 2) * τ ^ N⁻¹)) * (E₁ (τ / u) * H₂ u / u) := by ring
+  have hstepB : ∀ u ∈ Set.Ioi (τ ^ ((q : ℝ) / N)),
+      H₁ (τ / u) * H₂ u / u
+        ≤ (A₂ * Real.exp (-(a₂ / 2) * τ ^ N⁻¹)) * (H₁ (τ / u) * E₂ u / u) := by
+    intro u hu
+    rw [Set.mem_Ioi] at hu
+    have hu0 : (0 : ℝ) < u := lt_trans hu₀pos hu
+    have hu1 : (1 : ℝ) ≤ u := le_trans hu₀ge1 hu.le
+    have huT : τ ^ N⁻¹ ≤ u ^ ((q : ℝ)⁻¹) := by
+      rw [← hkeyQ]
+      exact Real.rpow_le_rpow (Real.rpow_nonneg hτ0.le _) hu.le (inv_nonneg.mpr hQ0.le)
+    have hH₂ : H₂ u ≤ A₂ * (Real.exp (-(a₂ / 2) * τ ^ N⁻¹) * E₂ u) := by
+      refine le_trans (hd₂ u hu1) ?_
+      simp only [hE₂def]
+      have hstep : Real.exp (-a₂ * u ^ ((q : ℝ)⁻¹))
+          ≤ Real.exp (-(a₂ / 2) * τ ^ N⁻¹) * Real.exp (-(a₂ / 2) * u ^ ((q : ℝ)⁻¹)) := by
+        rw [← Real.exp_add]
+        exact Real.exp_le_exp.mpr (by nlinarith)
+      exact mul_le_mul_of_nonneg_left hstep hA₂
+    have hfac : 0 ≤ H₁ (τ / u) / u :=
+      div_nonneg (h₁.2.1 _ (Set.mem_Ioi.mpr (div_pos hτ0 hu0))) hu0.le
+    calc H₁ (τ / u) * H₂ u / u = H₂ u * (H₁ (τ / u) / u) := by ring
+      _ ≤ (A₂ * (Real.exp (-(a₂ / 2) * τ ^ N⁻¹) * E₂ u)) * (H₁ (τ / u) / u) :=
+          mul_le_mul_of_nonneg_right hH₂ hfac
+      _ = (A₂ * Real.exp (-(a₂ / 2) * τ ^ N⁻¹)) * (H₁ (τ / u) * E₂ u / u) := by ring
+  -- integrability and the split at the saddle
+  have hgint : MeasureTheory.IntegrableOn (fun u : ℝ => H₁ (τ / u) * H₂ u / u) (Set.Ioi 0) :=
+    archConv_integrableOn hp hq h₁ h₂ hτ0
+  have hE1int : MeasureTheory.IntegrableOn (fun u : ℝ => E₁ (τ / u) * H₂ u / u) (Set.Ioi 0) :=
+    archConv_integrableOn hp hq hE₁ h₂ hτ0
+  have hE2int : MeasureTheory.IntegrableOn (fun u : ℝ => H₁ (τ / u) * E₂ u / u) (Set.Ioi 0) :=
+    archConv_integrableOn hp hq h₁ hE₂ hτ0
+  have hsub1 : Set.Ioc (0 : ℝ) (τ ^ ((q : ℝ) / N)) ⊆ Set.Ioi 0 := Set.Ioc_subset_Ioi_self
+  have hsub2 : Set.Ioi (τ ^ ((q : ℝ) / N)) ⊆ Set.Ioi (0 : ℝ) := Set.Ioi_subset_Ioi hu₀pos.le
+  have hsplit : archConv H₁ H₂ τ
+      = (∫ u in Set.Ioc (0 : ℝ) (τ ^ ((q : ℝ) / N)), H₁ (τ / u) * H₂ u / u)
+        + ∫ u in Set.Ioi (τ ^ ((q : ℝ) / N)), H₁ (τ / u) * H₂ u / u := by
+    rw [archConv, ← Set.Ioc_union_Ioi_eq_Ioi hu₀pos.le,
+      MeasureTheory.setIntegral_union (Set.Ioc_disjoint_Ioi le_rfl) measurableSet_Ioi
+        (hgint.mono_set hsub1) (hgint.mono_set hsub2)]
+  have hpart1 : (∫ u in Set.Ioc (0 : ℝ) (τ ^ ((q : ℝ) / N)), H₁ (τ / u) * H₂ u / u)
+      ≤ (A₁ * Real.exp (-(a₁ / 2) * τ ^ N⁻¹)) * archConv E₁ H₂ τ := by
+    have h1 : (∫ u in Set.Ioc (0 : ℝ) (τ ^ ((q : ℝ) / N)), H₁ (τ / u) * H₂ u / u)
+        ≤ ∫ u in Set.Ioc (0 : ℝ) (τ ^ ((q : ℝ) / N)),
+            (A₁ * Real.exp (-(a₁ / 2) * τ ^ N⁻¹)) * (E₁ (τ / u) * H₂ u / u) :=
+      MeasureTheory.setIntegral_mono_on (hgint.mono_set hsub1)
+        (MeasureTheory.IntegrableOn.mono_set
+          (MeasureTheory.Integrable.const_mul hE1int (A₁ * Real.exp (-(a₁ / 2) * τ ^ N⁻¹)))
+          hsub1) measurableSet_Ioc hstepA
+    have h2 : (∫ u in Set.Ioc (0 : ℝ) (τ ^ ((q : ℝ) / N)),
+            (A₁ * Real.exp (-(a₁ / 2) * τ ^ N⁻¹)) * (E₁ (τ / u) * H₂ u / u))
+        = (A₁ * Real.exp (-(a₁ / 2) * τ ^ N⁻¹)) *
+            ∫ u in Set.Ioc (0 : ℝ) (τ ^ ((q : ℝ) / N)), E₁ (τ / u) * H₂ u / u :=
+      MeasureTheory.integral_const_mul _ _
+    have h3 : (∫ u in Set.Ioc (0 : ℝ) (τ ^ ((q : ℝ) / N)), E₁ (τ / u) * H₂ u / u)
+        ≤ archConv E₁ H₂ τ := by
+      rw [archConv]
+      refine MeasureTheory.setIntegral_mono_set hE1int ?_ hsub1.eventuallyLE
+      filter_upwards [MeasureTheory.ae_restrict_mem measurableSet_Ioi] with u hu
+      exact div_nonneg (mul_nonneg (hE₁.2.1 _ (Set.mem_Ioi.mpr (div_pos hτ0 (Set.mem_Ioi.mp hu))))
+        (h₂.2.1 u hu)) (le_of_lt (Set.mem_Ioi.mp hu))
+    calc (∫ u in Set.Ioc (0 : ℝ) (τ ^ ((q : ℝ) / N)), H₁ (τ / u) * H₂ u / u)
+        ≤ _ := h1
+      _ = _ := h2
+      _ ≤ (A₁ * Real.exp (-(a₁ / 2) * τ ^ N⁻¹)) * archConv E₁ H₂ τ :=
+          mul_le_mul_of_nonneg_left h3 (mul_nonneg hA₁ (Real.exp_pos _).le)
+  have hpart2 : (∫ u in Set.Ioi (τ ^ ((q : ℝ) / N)), H₁ (τ / u) * H₂ u / u)
+      ≤ (A₂ * Real.exp (-(a₂ / 2) * τ ^ N⁻¹)) * archConv H₁ E₂ τ := by
+    have h1 : (∫ u in Set.Ioi (τ ^ ((q : ℝ) / N)), H₁ (τ / u) * H₂ u / u)
+        ≤ ∫ u in Set.Ioi (τ ^ ((q : ℝ) / N)),
+            (A₂ * Real.exp (-(a₂ / 2) * τ ^ N⁻¹)) * (H₁ (τ / u) * E₂ u / u) :=
+      MeasureTheory.setIntegral_mono_on (hgint.mono_set hsub2)
+        (MeasureTheory.IntegrableOn.mono_set
+          (MeasureTheory.Integrable.const_mul hE2int (A₂ * Real.exp (-(a₂ / 2) * τ ^ N⁻¹)))
+          hsub2) measurableSet_Ioi hstepB
+    have h2 : (∫ u in Set.Ioi (τ ^ ((q : ℝ) / N)),
+            (A₂ * Real.exp (-(a₂ / 2) * τ ^ N⁻¹)) * (H₁ (τ / u) * E₂ u / u))
+        = (A₂ * Real.exp (-(a₂ / 2) * τ ^ N⁻¹)) *
+            ∫ u in Set.Ioi (τ ^ ((q : ℝ) / N)), H₁ (τ / u) * E₂ u / u :=
+      MeasureTheory.integral_const_mul _ _
+    have h3 : (∫ u in Set.Ioi (τ ^ ((q : ℝ) / N)), H₁ (τ / u) * E₂ u / u)
+        ≤ archConv H₁ E₂ τ := by
+      rw [archConv]
+      refine MeasureTheory.setIntegral_mono_set hE2int ?_ hsub2.eventuallyLE
+      filter_upwards [MeasureTheory.ae_restrict_mem measurableSet_Ioi] with u hu
+      exact div_nonneg (mul_nonneg (h₁.2.1 _ (Set.mem_Ioi.mpr (div_pos hτ0 (Set.mem_Ioi.mp hu))))
+        (hE₂.2.1 u hu)) (le_of_lt (Set.mem_Ioi.mp hu))
+    calc (∫ u in Set.Ioi (τ ^ ((q : ℝ) / N)), H₁ (τ / u) * H₂ u / u)
+        ≤ _ := h1
+      _ = _ := h2
+      _ ≤ (A₂ * Real.exp (-(a₂ / 2) * τ ^ N⁻¹)) * archConv H₁ E₂ τ :=
+          mul_le_mul_of_nonneg_left h3 (mul_nonneg hA₂ (Real.exp_pos _).le)
+  -- antitonicity replaces the τ-dependent auxiliary convolutions by their value at 1
+  have hstep1 : (A₁ * Real.exp (-(a₁ / 2) * τ ^ N⁻¹)) * archConv E₁ H₂ τ
+      ≤ (A₁ * Real.exp (-(a₁ / 2) * τ ^ N⁻¹)) * archConv E₁ H₂ 1 :=
+    mul_le_mul_of_nonneg_left
+      (archConv_antitoneOn hp hq hE₁ h₂ (Set.mem_Ioi.mpr one_pos) (Set.mem_Ioi.mpr hτ0) hτ)
+      (mul_nonneg hA₁ (Real.exp_pos _).le)
+  have hstep2 : (A₂ * Real.exp (-(a₂ / 2) * τ ^ N⁻¹)) * archConv H₁ E₂ τ
+      ≤ (A₂ * Real.exp (-(a₂ / 2) * τ ^ N⁻¹)) * archConv H₁ E₂ 1 :=
+    mul_le_mul_of_nonneg_left
+      (archConv_antitoneOn hp hq h₁ hE₂ (Set.mem_Ioi.mpr one_pos) (Set.mem_Ioi.mpr hτ0) hτ)
+      (mul_nonneg hA₂ (Real.exp_pos _).le)
+  have hfin1 : (A₁ * Real.exp (-(a₁ / 2) * τ ^ N⁻¹)) * archConv E₁ H₂ 1
+      ≤ (A₁ * archConv E₁ H₂ 1) * Real.exp (-(min a₁ a₂ / 2) * τ ^ N⁻¹) := by
+    rw [show (A₁ * Real.exp (-(a₁ / 2) * τ ^ N⁻¹)) * archConv E₁ H₂ 1
+        = (A₁ * archConv E₁ H₂ 1) * Real.exp (-(a₁ / 2) * τ ^ N⁻¹) by ring]
+    exact mul_le_mul_of_nonneg_left
+      (Real.exp_le_exp.mpr (by nlinarith [min_le_left a₁ a₂])) (mul_nonneg hA₁ hC₁0)
+  have hfin2 : (A₂ * Real.exp (-(a₂ / 2) * τ ^ N⁻¹)) * archConv H₁ E₂ 1
+      ≤ (A₂ * archConv H₁ E₂ 1) * Real.exp (-(min a₁ a₂ / 2) * τ ^ N⁻¹) := by
+    rw [show (A₂ * Real.exp (-(a₂ / 2) * τ ^ N⁻¹)) * archConv H₁ E₂ 1
+        = (A₂ * archConv H₁ E₂ 1) * Real.exp (-(a₂ / 2) * τ ^ N⁻¹) by ring]
+    exact mul_le_mul_of_nonneg_left
+      (Real.exp_le_exp.mpr (by nlinarith [min_le_right a₁ a₂])) (mul_nonneg hA₂ hC₂0)
+  rw [hsplit, add_mul]
+  linarith [hpart1, hpart2, hstep1, hstep2, hfin1, hfin2]
 
 /-- **Mellin multiplicativity of the convolution** (sorry node, stated
 2026-07-25 — stage (α₄), the analytic heart, of the decomposition of
@@ -8223,10 +8468,11 @@ Mellin factor `M`"):
   with factor `Γ_ℂ(s)`;
 * `archProfile_mul` (assembly PROVEN): profiles convolve —
   `archConv H₁ H₂ τ = ∫_0^∞ H₁(τ/u)H₂(u) du/u` is a degree-`(p+q)`
-  profile with factor `M₁·M₂`; its four conjuncts are the open leaves
-  `archConv_integrableOn`, `archConv_continuousOn`, `archConv_decay`
-  and `archConv_hasMellin` (`archConv_nonneg` and
-  `archConv_antitoneOn` are PROVEN);
+  profile with factor `M₁·M₂`; its remaining open leaves are
+  `archConv_integrableOn`, `archConv_continuousOn` and
+  `archConv_hasMellin` (`archConv_nonneg`, `archConv_antitoneOn` and
+  `archConv_decay` — the AM–GM saddle split, over the auxiliary
+  `archProfile_stretchedExp` — are PROVEN);
 * `archProfile_pow` (PROVEN): induction gives the `(r₁, r₂)` profile of
   degree `r₁ + 2r₂` with factor `Γ_ℝ^{r₁}·Γ_ℂ^{r₂}`;
 * this theorem: `NumberField.InfinitePlace.card_add_two_mul_card_eq_rank`
