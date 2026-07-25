@@ -167,6 +167,25 @@ before agents reported back that their targets were already proven. **Build
 task lists from the DIRECT set; use the transitive set only for judging
 whether a subtree still blocks the root.**
 
+**Third category, invisible to BOTH counts: an ERRORED declaration**
+(2026-07-25). A declaration whose proof fails to elaborate — `maximum
+recursion depth`, a failing tactic, anything red — is `sorryAx`-tainted and
+poisons the transitive cone, but it emits **no** `declaration uses 'sorry'`
+warning and contains no `sorry` token in its source. So it is missed by the
+direct-sorry warning set, missed by a source scan, and its `.olean` goes
+stale, silently blocking every downstream module from building. Nobody is
+ever dispatched at it, because no frontier scan can see it.
+
+Found when `lineNumerator_mul_lineNumeratorNeg` in `WeilPairingDescent.lean`
+— PROVEN and verified clean in its author's worktree — began failing after
+merge with `maximum recursion depth has been reached`, blocking the whole
+file. It surfaced only because an agent working in that file happened to
+report it. **So: errors are a separate frontier that only a build or a
+per-file `diagnostics` reveals. Treat any hard error as an immediate defect
+with a named owner (CLAUDE.md's sorry-gate rule (b)), and do not assume a
+clean direct-sorry scan means a clean tree.** A proof that verified in one
+worktree can error on main; resource-limit `set_option`s are the usual fix.
+
 Second trap, same day: a naive `grep sorry` over sources counts the word
 inside DOCSTRINGS, and this development's docstrings discuss sorried leaves
 constantly. That inflated a scan to 144 "sorried declarations" against a
