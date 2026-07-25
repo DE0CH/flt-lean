@@ -364,30 +364,208 @@ degree in Kenku's list that exceeds `19` is either prime (`37, 43, 67,
 `27 = 3³`, so the composite node has to determine only those three.
 -/
 
-/-- **Mazur's rational isogenies of prime degree** (sorry node — the
-prime half of the `X_0` input): if the cyclic subgroup `⟨g⟩` generated
-by a geometric point `g` of an elliptic curve `E/ℚ` has exact order a
-PRIME `N` and is stable under `Gal(ℚ̄/ℚ)`, then
+/-- **The isogeny character of a Galois-stable cyclic subgroup**
+(PROVEN 2026-07-25): if a geometric point `g` of an elliptic curve
+`E/ℚ` has exact finite order `N > 0` and its cyclic subgroup `⟨g⟩` is
+stable under `Gal(ℚ̄/ℚ)`, then the Galois action on `⟨g⟩` is given by a
+character
 
-  `N ∈ {2, 3, 5, 7, 11, 13, 17, 19, 37, 43, 67, 163}`.
+  `λ : Gal(ℚ̄/ℚ) → (ℤ/N)ˣ`,    `σ(g) = λ(σ) · g`.
+
+This is the object every treatment of Mazur's theorem begins from — the
+**isogeny character** of the `N`-isogeny `E → E/⟨g⟩` whose kernel is
+`⟨g⟩` (Mazur, *Rational isogenies of prime degree*, §5; Serre,
+*Propriétés galoisiennes*, §5.4).
+
+Proof: `σ` carries `g` into `⟨g⟩`, so `σ(g) = k(σ) · g` for some integer
+`k(σ)`, well defined modulo `N` because `addOrderOf g = N`
+(`addOrderOf_dvd_iff_zsmul_eq_zero` against
+`ZMod.intCast_zmod_eq_zero_iff_dvd`). Multiplicativity is
+`Affine.Point.map_map` — the coercion of a product in
+`Field.absoluteGaloisGroup ℚ` is the composite of the coercions — plus
+additivity of `Affine.Point.map`. The identity of `Gal(ℚ̄/ℚ)` acts as
+the identity on points, so `k(1) = 1` and hence `k(σ) k(σ⁻¹) = 1`,
+which exhibits `k(σ)` as a unit without any appeal to `ZMod N` being a
+field.
+
+No primality is needed, only `0 < N`. That hypothesis is not cosmetic:
+it is what makes `ZMod.val` a section of `ℕ → ZMod N`, which the
+normalisation `λ(σ).val • g` in the conclusion requires. For `N = 0`
+(a point of infinite order) `ZMod.val` is `Int.natAbs` and the
+conclusion as stated would be FALSE, even though the character itself
+still exists with values in `{±1}`. -/
+theorem WeierstrassCurve.exists_isogenyCharacter (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point) {N : ℕ}
+    (hNpos : 0 < N) (hg : addOrderOf g = N)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) :
+    ∃ lam : Field.absoluteGaloisGroup ℚ →* (ZMod N)ˣ,
+      ∀ σ : Field.absoluteGaloisGroup ℚ,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom g =
+          ((lam σ : ZMod N).val) • g := by
+  classical
+  haveI : NeZero N := ⟨hNpos.ne'⟩
+  -- The integer coefficient of a multiple of `g` is determined modulo `N`.
+  have hiff : ∀ a b : ℤ, a • g = b • g ↔ (a : ZMod N) = (b : ZMod N) := by
+    intro a b
+    constructor
+    · intro h
+      have h0 : (a - b) • g = 0 := by rw [sub_zsmul, h, add_neg_cancel]
+      have hd : (addOrderOf g : ℤ) ∣ (a - b) :=
+        addOrderOf_dvd_iff_zsmul_eq_zero.mpr h0
+      rw [hg] at hd
+      have hz := (ZMod.intCast_zmod_eq_zero_iff_dvd (a - b) N).mpr hd
+      rw [Int.cast_sub, sub_eq_zero] at hz
+      exact hz
+    · intro h
+      have hz : ((a - b : ℤ) : ZMod N) = 0 := by rw [Int.cast_sub, h, sub_self]
+      have hd := (ZMod.intCast_zmod_eq_zero_iff_dvd (a - b) N).mp hz
+      rw [← hg] at hd
+      have h0 := addOrderOf_dvd_iff_zsmul_eq_zero.mp hd
+      rw [sub_zsmul, add_neg_eq_zero] at h0
+      exact h0
+  -- Galois moves `g` inside `⟨g⟩`; choose an integer coefficient for each `σ`.
+  have hmem : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom g ∈
+        AddSubgroup.zmultiples g :=
+    fun σ => hstable σ g (AddSubgroup.mem_zmultiples g)
+  choose k hk using fun σ => AddSubgroup.mem_zmultiples_iff.mp (hmem σ)
+  -- The Galois action on points is a monoid action.
+  have hcomp : ∀ σ τ : Field.absoluteGaloisGroup ℚ,
+      ∀ P : (E⁄(AlgebraicClosure ℚ)).Point,
+      Affine.Point.map
+          ((σ * τ : Field.absoluteGaloisGroup ℚ) :
+            AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom P =
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom
+          (Affine.Point.map
+            (τ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom P) := by
+    intro σ τ P
+    have hc : ((σ * τ : Field.absoluteGaloisGroup ℚ) :
+          AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom =
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom.comp
+          (τ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom :=
+      AlgHom.ext fun x => rfl
+    rw [Affine.Point.map_map, hc]
+  -- Multiplicativity of the coefficient.
+  have hmul : ∀ σ τ : Field.absoluteGaloisGroup ℚ,
+      ((k (σ * τ) : ℤ) : ZMod N) = ((k σ : ℤ) : ZMod N) * ((k τ : ℤ) : ZMod N) := by
+    intro σ τ
+    have h1 : (k (σ * τ)) • g = (k σ * k τ) • g := by
+      rw [hk (σ * τ), hcomp σ τ g, ← hk τ, map_zsmul, ← hk σ, smul_smul,
+        mul_comm (k τ) (k σ)]
+    have h2 := (hiff _ _).mp h1
+    push_cast at h2
+    exact h2
+  -- The identity acts trivially, so the coefficient at `1` is `1`.
+  have hmap1 : ∀ P : (E⁄(AlgebraicClosure ℚ)).Point,
+      Affine.Point.map
+        ((1 : Field.absoluteGaloisGroup ℚ) :
+          AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom P = P := by
+    intro P; cases P <;> rfl
+  have hone : ((k 1 : ℤ) : ZMod N) = 1 := by
+    have h1 : (k 1) • g = (1 : ℤ) • g := by rw [hk 1, one_zsmul, hmap1 g]
+    have h2 := (hiff _ _).mp h1
+    rwa [Int.cast_one] at h2
+  -- Hence every coefficient is a unit, with inverse the coefficient at `σ⁻¹`.
+  have hunit : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ((k σ : ℤ) : ZMod N) * ((k σ⁻¹ : ℤ) : ZMod N) = 1 := by
+    intro σ
+    rw [← hmul σ σ⁻¹, mul_inv_cancel, hone]
+  refine ⟨MonoidHom.mk' (fun σ => ⟨((k σ : ℤ) : ZMod N), ((k σ⁻¹ : ℤ) : ZMod N),
+      hunit σ, (mul_comm _ _).trans (hunit σ)⟩)
+    (fun σ τ => Units.ext (by simpa using hmul σ τ)), ?_⟩
+  intro σ
+  rw [← hk σ, ← natCast_zsmul]
+  refine (hiff _ _).mpr ?_
+  simp [ZMod.natCast_val]
+
+/-- **Mazur's rational isogenies of prime degree** (sorry node — the
+prime half of the `X_0` input, restated 2026-07-25 in isogeny-character
+form and narrowed to the range that is actually open): there is NO
+elliptic curve `E/ℚ` carrying a geometric point `g` of exact prime order
+`N ≥ 23` with `N ∉ {37, 43, 67, 163}` whose cyclic subgroup `⟨g⟩` is
+Galois-stable — equivalently, whose isogeny character `λ` exists.
 
 A Galois-stable subgroup of order `N` is the kernel of an `N`-isogeny
 `E → E/⟨g⟩` defined over `ℚ` (Vélu), so this says exactly that
-`X_0(N)(ℚ)` has a non-cuspidal point only for the twelve listed primes.
-Mazur, "Rational isogenies of prime degree" (Invent. Math. 44, 1978),
-Thm 1.
+`X_0(N)(ℚ)` has no non-cuspidal point for such `N`. Mazur, "Rational
+isogenies of prime degree" (Invent. Math. 44, 1978), Thm 1.
+
+FAITHFULNESS OF THE RECUT. This node together with
+`exists_isogenyCharacter` is EQUIVALENT to the single statement it
+replaces (`prime_mem_cyclicIsogenyDegrees`, proven from it below), so
+nothing was weakened and nothing strengthened:
+
+* `hlam` and the old `hstable` imply each other — `hstable` follows from
+  `hlam` because `σ(m·g) = m·σ(g) = (m λ(σ))·g` again lies in `⟨g⟩`, and
+  `hlam` follows from `hstable` by the lemma above;
+* the excluded range is exactly the old conclusion's list: the primes
+  `< 23` are `2, 3, 5, 7, 11, 13, 17, 19`, and the remaining four are
+  `37, 43, 67, 163`. Both ranges are discharged mechanically below, so
+  the reduction is complete rather than partial.
+
+What the recut buys is that the surviving `sorry` (a) names the isogeny
+character, which is the object Mazur's §5 argument actually manipulates,
+and (b) is a bounded-away non-existence statement over the range where
+the argument has content, instead of a membership assertion quantified
+over all primes.
 
 IRREDUCIBLE at this mathlib pin: the proof is the Eisenstein-ideal
 descent on `J_0(N)` — it studies the Eisenstein quotient of the
 Jacobian, shows it has Mordell–Weil rank `0` over `ℚ`, and reads the
 rational points of `X_0(N)` off that. No modular curve, no Jacobian and
-no Hecke algebra exists in this development.
+no Hecke algebra exists in this development. The missing machinery, in
+dependency order for whoever continues here: (1) the mod-`N` cyclotomic
+character together with the Weil-pairing identity `λ · λ' = χ` on
+`E[N]`, where `λ'` is the character on `E[N]/⟨g⟩`; (2) inertia at `N`
+and Serre's theorem that `λ¹²` is unramified outside `N`, whence
+`λ¹² = χ¹²ᵃ`; (3) `X_0(N)`, `J_0(N)`, the Hecke algebra and the
+Eisenstein ideal. Steps (1)–(2) are Serre's reduction: they sharpen this
+node but do not close it — historically they bounded `N` for curves
+without CM and never yielded the exact list, which is precisely the gap
+Mazur's Eisenstein-ideal argument filled — so (3) is the real
+dependency.
 
 This is the same theorem of Mazur that `no_prime_torsion_ge_eleven`
 cites; the two nodes are stated separately because neither implies the
 other (that one is about a rational POINT of order `ℓ`, i.e. `X_1(ℓ)`,
 this one about a rational SUBGROUP, i.e. `X_0(N)`, and `X_1(ℓ) → X_0(ℓ)`
 runs the wrong way to transfer the conclusion). -/
+theorem WeierstrassCurve.not_isogenyCharacter_of_prime_ge_twentyThree
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) {N : ℕ}
+    (hN : N.Prime) (hN23 : 23 ≤ N)
+    (hNexc : N ∉ ({37, 43, 67, 163} : Finset ℕ))
+    (hg : addOrderOf g = N)
+    (lam : Field.absoluteGaloisGroup ℚ →* (ZMod N)ˣ)
+    (hlam : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom g =
+        ((lam σ : ZMod N).val) • g) :
+    False :=
+  sorry
+
+/-- **Mazur's rational isogenies of prime degree** (PROVEN 2026-07-25
+from the isogeny-character node above; the prime half of the `X_0`
+input): if the cyclic subgroup `⟨g⟩` generated by a geometric point `g`
+of an elliptic curve `E/ℚ` has exact order a PRIME `N` and is stable
+under `Gal(ℚ̄/ℚ)`, then
+
+  `N ∈ {2, 3, 5, 7, 11, 13, 17, 19, 37, 43, 67, 163}`.
+
+The proof here is only the reduction to the open range: for `N < 23`
+primality already forces `N ∈ {2, 3, 5, 7, 11, 13, 17, 19}`, all of
+which are in the list, so there is nothing to prove; `37, 43, 67, 163`
+are in the list outright; and for every other prime the isogeny
+character produced by `exists_isogenyCharacter` contradicts
+`not_isogenyCharacter_of_prime_ge_twentyThree`. The mathematical content
+is entirely in that node. -/
 theorem WeierstrassCurve.prime_mem_cyclicIsogenyDegrees (E : WeierstrassCurve ℚ)
     [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point) {N : ℕ}
     (hN : N.Prime) (hg : addOrderOf g = N)
@@ -396,8 +574,17 @@ theorem WeierstrassCurve.prime_mem_cyclicIsogenyDegrees (E : WeierstrassCurve �
         Affine.Point.map
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
           AddSubgroup.zmultiples g) :
-    N ∈ ({2, 3, 5, 7, 11, 13, 17, 19, 37, 43, 67, 163} : Finset ℕ) :=
-  sorry
+    N ∈ ({2, 3, 5, 7, 11, 13, 17, 19, 37, 43, 67, 163} : Finset ℕ) := by
+  by_cases h23 : N < 23
+  · have h0 := hN.two_le
+    interval_cases N <;> revert hN <;> decide
+  · by_cases hexc : N ∈ ({37, 43, 67, 163} : Finset ℕ)
+    · fin_cases hexc <;> decide
+    · exact absurd (E.exists_isogenyCharacter g hN.pos hg hstable)
+        (by
+          rintro ⟨lam, hlam⟩
+          exact E.not_isogenyCharacter_of_prime_ge_twentyThree g hN
+            (by omega) hexc hg lam hlam)
 
 /-!
 ##### Kenku's composite node, split along divisor descent (2026-07-25)
