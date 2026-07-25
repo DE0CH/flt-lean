@@ -230,6 +230,16 @@ import Fermat.FLT.Modularity.KhareWintenberger
 -- Taylor–Wiles injectivity) and the `charFrob`/base-change bridge.
 -- Proof-body use only (the 3b assembly).
 import Fermat.FLT.Modularity.Patching
+-- The abstract (topology-free) Brauer–Nesbitt / Kolchin toolkit at
+-- dimension 2 over an abstract group: `rep_not_isIrreducible_of_stable_submodule`
+-- and `rep_exists_stable_submodule_of_charpoly_eq_units`, consumed by the
+-- two-character refutation `not_isIrreducible_of_charpoly_coeff_one_eq_sum_monoidHom`
+-- below (the residual characters there are bare `MonoidHom`s, with no
+-- continuity, so the Galois-level form in `KhareWintenberger.lean` does not
+-- apply and the `Representation`-level form is needed). Already in the
+-- import cone through `Patching.lean`, but that import is non-public.
+-- Proof-body use only.
+import Fermat.FLT.GaloisRepresentation.BrauerNesbittConjugacy
 -- the connected–étale idempotent package
 -- (`Bialgebra.exists_connected_counit_idempotent`,
 -- `mul_eq_zero_or_mul_eq_of_minimal`) and the shared Oort–Tate
@@ -4225,25 +4235,117 @@ lemma continuous_ringHom_finite_of_isModuleTopology {ℓ : ℕ}
   rw [map_zero, nhds_discrete k, Filter.tendsto_pure]
   filter_upwards [hmem] with x hx using hx
 
-/-- **Two-character refutation of residual irreducibility** (sorry
-node — the character-decomposition brick of the polarization argument
-below): a rank-2 residual representation over a finite field `k` (with
-`2 ∈ kˣ`) whose trace decomposes globally as a sum of two `k`-valued
-characters of `Γ ℚ` is not irreducible. Stated through
-`charpoly.coeff 1 = −trace`. Intended proof (Brauer–Nesbitt at rank
-2): `End k W` and `k` are finite sets, so `ρbar`, `χ₁`, `χ₂` all have
-finite image and factor jointly through the finite quotient
-`G := Γ ℚ ⧸ (ker ρbar ⊓ ker χ₁ ⊓ ker χ₂)`; the trace identity forces
-`det ρbar = χ₁·χ₂` by Cayley–Hamilton at rank 2
-(`2·det ρ(g) = (tr ρ(g))² − tr ρ(g²)`, with `2` a unit), so `ρbar g`
-and `diag(χ₁ g, χ₂ g)` share characteristic polynomials
-`(X − χ₁ g)(X − χ₂ g)` at every `g`; Brauer–Nesbitt for the finite
-group `G` identifies the semisimplification of `ρbar` with
-`χ₁ ⊕ χ₂`, and a two-dimensional representation with reducible
-semisimplification has a stable line — refuting irreducibility
-through `Slop.OddRep.isIrreducible_iff_forall`. CIRCULARITY GUARD:
-must not be proven through `Family.lean` (see the section
-docstring). -/
+open Polynomial in
+/-- **Split characteristic polynomials refute irreducibility in
+dimension 2** (the `Representation`-level companion of
+`GaloisRepresentation.rep_isIrreducible_of_charpoly_eq`, extracted for
+the two-character refutation below): a 2-dimensional representation of
+an abstract group whose characteristic polynomial splits at every
+element as `(X − α g)(X − β g)` for two unit-valued characters `α, β`
+is not irreducible. Proof (the second half of
+`rep_isIrreducible_of_charpoly_eq`, now available from the
+factorization directly rather than through a comparison
+representation): twist by `α⁻¹` to reach the `1 ⊕ (β·α⁻¹)` charpoly
+shape — the twisted trace is `β·α⁻¹ + 1` and the twisted determinant
+is `β·α⁻¹`, both read off the quadratic charpoly — and run the
+Kolchin / common-eigenvector machinery
+`rep_exists_stable_submodule_of_charpoly_eq_units`; the twist is a
+scalar multiple of the original at every group element, so its stable
+submodules are stable for the original, and
+`rep_not_isIrreducible_of_stable_submodule` concludes. -/
+theorem rep_not_isIrreducible_of_charpoly_split
+    {k : Type*} [Field k] {G : Type*} [Group G]
+    {W : Type*} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.finrank k W = 2) (ρ : Representation k G W)
+    (α β : G →* kˣ)
+    (hfact : ∀ g, (ρ g).charpoly =
+      (X - C ((α g : kˣ) : k)) * (X - C ((β g : kˣ) : k))) :
+    ¬ ρ.IsIrreducible := by
+  classical
+  set σ : Representation k G W :=
+    { toFun := fun g => (((α g)⁻¹ : kˣ) : k) • ρ g
+      map_one' := by simp
+      map_mul' := fun g h => by
+        simp only [map_mul, mul_inv_rev, Units.val_mul]
+        rw [smul_mul_smul_comm, mul_comm ((((α h)⁻¹ : kˣ) : k))] }
+  have hσapp : ∀ g, σ g = (((α g)⁻¹ : kˣ) : k) • ρ g := fun g => rfl
+  have hσchar : ∀ g, (σ g).charpoly =
+      X ^ 2 - C ((((β * α⁻¹) g : kˣ) : k) + 1) * X
+        + C (((β * α⁻¹) g : kˣ) : k) := by
+    intro g
+    set a := ((α g : kˣ) : k) with ha
+    set b := ((β g : kˣ) : k) with hb
+    have hane : a ≠ 0 := Units.ne_zero (α g)
+    have hρfact : (ρ g).charpoly = (X - C a) * (X - C b) := hfact g
+    have hexp : (X - C a) * (X - C b) =
+        X ^ 2 - C (a + b) * X + C (a * b) := by
+      rw [map_add, map_mul]
+      ring
+    have hcoe : X ^ 2 - C (LinearMap.trace k W (ρ g)) * X
+        + C (LinearMap.det (ρ g)) = X ^ 2 - C (a + b) * X + C (a * b) :=
+      (charpoly_eq_quadratic_of_finrank_two hW (ρ g)).symm.trans
+        (hρfact.trans hexp)
+    have htr_g : LinearMap.trace k W (ρ g) = a + b := by
+      have h1 := congrArg (fun p => p.coeff 1) hcoe
+      simp only [coeff_one_quadratic] at h1
+      exact neg_inj.mp h1
+    have hdet_g : LinearMap.det (ρ g) = a * b := by
+      have h1 := congrArg (fun p => p.coeff 0) hcoe
+      simpa only [coeff_zero_quadratic] using h1
+    have hval : (((β * α⁻¹) g : kˣ) : k) = b * a⁻¹ := by
+      simp only [MonoidHom.mul_apply, MonoidHom.inv_apply, Units.val_mul,
+        Units.val_inv_eq_inv_val, ha, hb]
+    have htrσ : LinearMap.trace k W (σ g) = b * a⁻¹ + 1 := by
+      rw [hσapp, map_smul, htr_g, smul_eq_mul, Units.val_inv_eq_inv_val,
+        ← ha]
+      field_simp [hane]
+      ring
+    have hdetσ : LinearMap.det (σ g) = b * a⁻¹ := by
+      rw [hσapp, LinearMap.det_smul, hW, hdet_g, Units.val_inv_eq_inv_val,
+        ← ha]
+      field_simp [hane]
+      try ring
+    rw [charpoly_eq_quadratic_of_finrank_two hW (σ g), htrσ, hdetσ, hval]
+  obtain ⟨U, hUb, hUt, hUstab⟩ :=
+    rep_exists_stable_submodule_of_charpoly_eq_units hW σ (β * α⁻¹) hσchar
+  refine rep_not_isIrreducible_of_stable_submodule ρ U hUb hUt ?_
+  intro g w hw
+  have hρσ : ρ g w = ((α g : kˣ) : k) • σ g w := by
+    rw [hσapp, LinearMap.smul_apply, smul_smul, Units.val_inv_eq_inv_val,
+      mul_inv_cancel₀ (Units.ne_zero (α g)), one_smul]
+  rw [hρσ]
+  exact Submodule.smul_mem _ _ (hUstab g w hw)
+
+open Polynomial in
+/-- **Two-character refutation of residual irreducibility** (PROVEN
+2026-07-25 — the character-decomposition brick of the polarization
+argument below): a rank-2 residual representation over a finite field
+`k` (with `2 ∈ kˣ`) whose trace decomposes globally as a sum of two
+`k`-valued characters of `Γ ℚ` is not irreducible. Stated through
+`charpoly.coeff 1 = −trace`. Proof (Brauer–Nesbitt at rank 2, in its
+elementary dimension-2 form — no finite-quotient bookkeeping is needed
+after all, because the Kolchin/common-eigenvector argument of
+`BrauerNesbittConjugacy.lean` runs over an ARBITRARY group): the
+hypothesis is exactly `tr ρbar g = χ₁ g + χ₂ g` for every `g`
+(`charpoly = X² − (tr)·X + det` at rank 2), and Cayley–Hamilton
+squared and traced gives `2·det ρ(g) = (tr ρ(g))² − tr ρ(g²)`, whose
+right-hand side is `(χ₁g + χ₂g)² − (χ₁g² + χ₂g²) = 2·χ₁g·χ₂g`; since
+`2` is a unit, `det ρbar = χ₁·χ₂`, so every characteristic polynomial
+factors as `(X − χ₁ g)(X − χ₂ g)`. The two characters take unit
+values automatically (`MonoidHom.toHomUnits`, `Γ ℚ` being a group),
+so `rep_not_isIrreducible_of_charpoly_split` above — the twist by
+`χ₁⁻¹` followed by the Kolchin stable-submodule extraction — produces
+a stable line for `ρbar.toRepresentation`, refuting irreducibility.
+Note the topology-freeness: `χ₁, χ₂` are bare `MonoidHom`s with no
+continuity, which is why the Galois-level
+`KhareWintenberger.not_isIrreducible_of_charpoly_eq_units` cannot be
+used directly and the twist is performed at the `Representation`
+level, where `GaloisRep.IsIrreducible` is defined anyway.
+CIRCULARITY GUARD: must not be proven through `Family.lean` (see the
+section docstring) — and is not: the only project inputs are
+`Chebotarev.lean`'s quadratic-charpoly bookkeeping and
+`BrauerNesbittConjugacy.lean`'s abstract-group toolkit. -/
 theorem not_isIrreducible_of_charpoly_coeff_one_eq_sum_monoidHom
     {k : Type*} [Field k] [Finite k] [TopologicalSpace k]
     {W : Type*} [AddCommGroup W] [Module k W] [Module.Finite k W]
@@ -4251,8 +4353,57 @@ theorem not_isIrreducible_of_charpoly_coeff_one_eq_sum_monoidHom
     (hW : Module.rank k W = 2) (ρbar : GaloisRep ℚ k W)
     (h2 : IsUnit (2 : k)) (χ₁ χ₂ : Field.absoluteGaloisGroup ℚ →* k)
     (hsum : ∀ g, ((ρbar g).charpoly).coeff 1 = -(χ₁ g + χ₂ g)) :
-    ¬ ρbar.IsIrreducible :=
-  sorry
+    ¬ ρbar.IsIrreducible := by
+  classical
+  have hfr : Module.finrank k W = 2 :=
+    Module.finrank_eq_of_rank_eq (by exact_mod_cast hW)
+  -- at rank 2 the charpoly is the trace/determinant quadratic
+  have hquad : ∀ g : Field.absoluteGaloisGroup ℚ, (ρbar g).charpoly =
+      X ^ 2 - C (LinearMap.trace k W (ρbar g)) * X
+        + C (LinearMap.det (ρbar g)) :=
+    fun g => charpoly_eq_quadratic_of_finrank_two hfr (ρbar g)
+  -- … so the hypothesis is exactly the trace identity
+  have htr : ∀ g, LinearMap.trace k W (ρbar g) = χ₁ g + χ₂ g := by
+    intro g
+    have h1 := hsum g
+    rw [hquad g, coeff_one_quadratic] at h1
+    exact neg_inj.mp h1
+  -- Cayley–Hamilton at rank 2, in squared form
+  have hCH : ∀ f : Module.End k W, f * f =
+      LinearMap.trace k W f • f - LinearMap.det f • (1 : Module.End k W) := by
+    intro f
+    have h := LinearMap.aeval_self_charpoly f
+    rw [charpoly_eq_quadratic_of_finrank_two hfr f] at h
+    simp only [map_add, map_sub, map_mul, map_pow, Polynomial.aeval_X,
+      Polynomial.aeval_C, Algebra.algebraMap_eq_smul_one, smul_one_mul] at h
+    rw [eq_sub_iff_add_eq, ← sub_eq_zero, ← h, pow_two]
+    abel
+  -- tracing it: `2·det = (tr)² − tr(square) = 2·χ₁·χ₂`, and `2` is a unit
+  have hdet : ∀ g, LinearMap.det (ρbar g) = χ₁ g * χ₂ g := by
+    intro g
+    refine h2.mul_left_cancel ?_
+    have hgg : LinearMap.trace k W (ρbar g * ρbar g) =
+        χ₁ g * χ₁ g + χ₂ g * χ₂ g := by
+      rw [← map_mul ρbar g g, htr (g * g), map_mul χ₁, map_mul χ₂]
+    have hsq := congrArg (LinearMap.trace k W) (hCH (ρbar g))
+    simp only [map_sub, map_smul, smul_eq_mul, LinearMap.trace_one, hfr,
+      htr] at hsq
+    rw [hgg] at hsq
+    push_cast at hsq
+    linear_combination hsq
+  -- the characters take unit values, `Γ ℚ` being a group
+  set α : Field.absoluteGaloisGroup ℚ →* kˣ := χ₁.toHomUnits
+  set β : Field.absoluteGaloisGroup ℚ →* kˣ := χ₂.toHomUnits
+  have hαv : ∀ g, ((α g : kˣ) : k) = χ₁ g := fun g => χ₁.coe_toHomUnits g
+  have hβv : ∀ g, ((β g : kˣ) : k) = χ₂ g := fun g => χ₂.coe_toHomUnits g
+  -- … so every charpoly splits, and the Kolchin twist refutes irreducibility
+  show ¬ ρbar.toRepresentation.IsIrreducible
+  refine rep_not_isIrreducible_of_charpoly_split hfr
+    ρbar.toRepresentation α β ?_
+  intro g
+  have hρ : ρbar.toRepresentation g = ρbar g := rfl
+  rw [hρ, hquad g, htr g, hdet g, hαv g, hβv g, map_add, map_mul]
+  ring
 
 /-- **The polarization unit** (PROVEN 2026-07-24 — the residual
 irreducibility step of the corner-system cut, a glue over the
