@@ -2576,15 +2576,295 @@ theorem heckeSystemDescendsTo_bot
   rw [← GaloisRep.charFrob_map_algEquiv ρ e w (hT w hw.2)]
   exact Wit.modularF _ hbad
 
-/-- **One cyclic step of solvable base change** (sorry node; THE
-literature node of the `ℓ`-adic solvable descent — Langlands 1980,
-Arthur–Clozel 1989): if the eigensystem of `ρ` descends to the fixed
-field `L = F^C`, and `C ≤ D` is normal with CYCLIC quotient `D/C`
-(equivalently: `L/M` is a cyclic Galois extension, where `M = F^D`),
-then the eigensystem descends to `M`.
+/-- **Refining a cyclic quotient by one prime step** (PROVEN; pure finite
+group theory, no citation): if `C ≤ D` with `C` normal in `D` and the
+quotient `D/C` CYCLIC, and `C ≠ D`, then there is an intermediate
+subgroup `C ≤ E ≤ D`, of strictly smaller order than `D`, such that
+
+* `C` is normal in `E` with `E/C` again CYCLIC, and
+* `E` is normal in `D` with `D/E` of PRIME order `p`.
+
+This is the dévissage that reduces base change along an arbitrary cyclic
+extension to base change along a PRIME-degree cyclic extension — the
+shape in which the theorem of Langlands (*Base Change for GL(2)*, Ann.
+of Math. Studies 96 (1980), Ch. 2) and Arthur–Clozel (*Simple Algebras,
+Base Change, and the Advanced Theory of the Trace Formula*, Ann. of
+Math. Studies 120 (1989), Ch. 3) is actually proved: the twisted trace
+formula is run for a cyclic extension of PRIME degree, and the general
+cyclic (a fortiori solvable) case is obtained by composing prime steps.
+Iterating this lemma turns the general cyclic step into finitely many
+prime steps, i.e. it is to
+`heckeSystemDescendsTo_of_prime_cyclic_step` what
+`exists_cyclicRefinement_of_isSolvable` is to the cyclic step.
+
+Proof (formal): write `Q = D/C`, a finite cyclic group of order `n`, and
+`n ≠ 1` because `C ≠ D`. Choose a prime `p ∣ n` and a generator `g` of
+`Q`, and put `K = ⟨g^p⟩ ≤ Q`; then `#K = n/p`, so `K` has index `p`.
+Take `E` to be the preimage of `K` in `D`, pushed into the ambient
+group. Normality is automatic on both steps — `Q` is abelian (cyclic),
+so `K` is normal, and each of `C.subgroupOf E`, `E.subgroupOf D` is
+exhibited as the kernel of a homomorphism. `E/C` injects into `Q`
+(it is the quotient of `E` by the kernel of `E → Q`), hence is cyclic as
+a subgroup of a cyclic group, while `D/E` is the kernel-quotient of the
+surjection `D → Q/K`, of order `#Q/K = p`. Finally `#E · p = #D`, which
+gives the strict decrease of the order used as the induction measure. -/
+theorem exists_intermediate_of_isCyclic_quotient {G : Type*} [Group G]
+    [Finite G] (C D : Subgroup G) (hCD : C ≤ D)
+    (hnormal : (C.subgroupOf D).Normal)
+    (hcyclic : IsCyclic (D ⧸ C.subgroupOf D)) (hne : C ≠ D) :
+    ∃ (E : Subgroup G) (p : ℕ), p.Prime ∧ C ≤ E ∧ E ≤ D ∧
+      Nat.card E < Nat.card D ∧
+      (∃ _ : (C.subgroupOf E).Normal, IsCyclic (E ⧸ C.subgroupOf E)) ∧
+      (∃ _ : (E.subgroupOf D).Normal,
+        Nat.card (D ⧸ E.subgroupOf D) = p) := by
+  classical
+  -- the cyclic quotient `Q = D/C` is nontrivial, since `C ≠ D`
+  have hn1 : Nat.card (D ⧸ C.subgroupOf D) ≠ 1 := by
+    intro h
+    have hDC : D ≤ C :=
+      Subgroup.subgroupOf_eq_top.mp
+        (Subgroup.index_eq_one.mp ((Subgroup.index_eq_card _).trans h))
+    exact hne (le_antisymm hCD hDC)
+  obtain ⟨p, hp, hpdvd⟩ := Nat.exists_prime_and_dvd hn1
+  obtain ⟨g, hg⟩ := IsCyclic.exists_generator (α := D ⧸ C.subgroupOf D)
+  have hord : orderOf g = Nat.card (D ⧸ C.subgroupOf D) :=
+    orderOf_eq_card_of_forall_mem_zpowers hg
+  have hpord : p ∣ orderOf g := by rw [hord]; exact hpdvd
+  -- `K = ⟨g ^ p⟩`, of order `n / p` and hence of index `p`
+  set K : Subgroup (D ⧸ C.subgroupOf D) := Subgroup.zpowers (g ^ p)
+    with hKdef
+  have hKcard : Nat.card K = Nat.card (D ⧸ C.subgroupOf D) / p := by
+    rw [hKdef, Nat.card_zpowers, orderOf_pow_of_dvd hp.ne_zero hpord, hord]
+  have hKindex : K.index = p := by
+    have hcardpos : 0 < Nat.card (D ⧸ C.subgroupOf D) := Nat.card_pos
+    have hcard : Nat.card K * K.index = Nat.card (D ⧸ C.subgroupOf D) :=
+      Subgroup.card_mul_index K
+    obtain ⟨m, hm⟩ := hpdvd
+    have hm0 : 0 < m := by
+      rcases Nat.eq_zero_or_pos m with rfl | hpos
+      · rw [hm] at hcardpos; simp at hcardpos
+      · exact hpos
+    rw [hKcard, hm, Nat.mul_div_cancel_left m hp.pos] at hcard
+    exact Nat.eq_of_mul_eq_mul_left hm0 (by rw [hcard, Nat.mul_comm])
+  -- `E`: the preimage of `K` in `D`, viewed as a subgroup of `G`
+  set q : D →* D ⧸ C.subgroupOf D := QuotientGroup.mk' (C.subgroupOf D)
+    with hqdef
+  have hqsurj : Function.Surjective q := by
+    rw [hqdef]; exact QuotientGroup.mk'_surjective _
+  obtain ⟨E, hEdef⟩ :
+      ∃ E : Subgroup G, E = (K.comap q).map D.subtype := ⟨_, rfl⟩
+  have hED : E ≤ D := by rw [hEdef]; exact Subgroup.map_subtype_le _
+  have hEsub : E.subgroupOf D = K.comap q := by
+    rw [← Subgroup.comap_subtype, hEdef,
+      Subgroup.comap_map_eq_self_of_injective D.subtype_injective]
+  have hCE : C ≤ E := by
+    intro c hc
+    rw [hEdef]
+    refine Subgroup.mem_map.mpr ⟨⟨c, hCD hc⟩, ?_, rfl⟩
+    have hq1 : q ⟨c, hCD hc⟩ = 1 := by
+      rw [hqdef, QuotientGroup.mk'_apply]
+      exact (QuotientGroup.eq_one_iff _).mpr (Subgroup.mem_subgroupOf.mpr hc)
+    rw [Subgroup.mem_comap, hq1]
+    exact one_mem K
+  -- the top step `E ≤ D`: normal of prime index `p`
+  haveI hEDnormal : (E.subgroupOf D).Normal := by
+    rw [hEsub]; exact (inferInstance : K.Normal).comap q
+  have hEDindex : (E.subgroupOf D).index = p := by
+    rw [hEsub, K.index_comap_of_surjective hqsurj, hKindex]
+  -- the bottom step `C ≤ E`: the kernel of `E → Q`, with cyclic quotient
+  have hkerf : (q.comp (Subgroup.inclusion hED)).ker = C.subgroupOf E := by
+    rw [← MonoidHom.comap_ker, hqdef, QuotientGroup.ker_mk',
+      Subgroup.comap_inclusion_subgroupOf]
+  haveI hCEnormal : (C.subgroupOf E).Normal := by
+    rw [← hkerf]; exact MonoidHom.normal_ker _
+  have hcycE : IsCyclic (E ⧸ C.subgroupOf E) := by
+    have hlift : ∀ x ∈ C.subgroupOf E,
+        (q.comp (Subgroup.inclusion hED)) x = 1 := fun x hx =>
+      MonoidHom.mem_ker.mp (by rw [hkerf]; exact hx)
+    refine isCyclic_of_injective
+      (QuotientGroup.lift (C.subgroupOf E) _ hlift) ?_
+    intro a b
+    refine Quotient.inductionOn₂' a b ?_
+    intro x y h
+    have h' : (q.comp (Subgroup.inclusion hED)) x
+        = (q.comp (Subgroup.inclusion hED)) y := h
+    refine Quotient.sound' ?_
+    rw [QuotientGroup.leftRel_apply, ← hkerf, MonoidHom.mem_ker, map_mul,
+      map_inv, h']
+    simp
+  -- the induction measure: `#E · p = #D`
+  have hlt : Nat.card E < Nat.card D := by
+    have h1 : Nat.card (E.subgroupOf D) * (E.subgroupOf D).index
+        = Nat.card D := Subgroup.card_mul_index _
+    have h2 : Nat.card (E.subgroupOf D) = Nat.card E :=
+      Nat.card_congr (Subgroup.subgroupOfEquivOfLe hED).toEquiv
+    rw [h2, hEDindex] at h1
+    have h3 : 0 < Nat.card E := Nat.card_pos
+    calc Nat.card E < Nat.card E * 2 := by omega
+      _ ≤ Nat.card E * p := Nat.mul_le_mul le_rfl hp.two_le
+      _ = Nat.card D := h1
+  exact ⟨E, p, hp, hCE, hED, hlt, ⟨hCEnormal, hcycE⟩,
+    ⟨hEDnormal, by rw [← Subgroup.index_eq_card]; exact hEDindex⟩⟩
+
+/-- **One PRIME-degree cyclic step of solvable base change** (sorry node;
+THE terminal literature citation of the `ℓ`-adic solvable descent —
+Langlands 1980, Arthur–Clozel 1989): if the eigensystem of `ρ` descends
+to the fixed field `L = F^C`, and `C ≤ D` is normal with quotient `D/C`
+of PRIME order `p` (equivalently: `L/M` is a cyclic Galois extension of
+degree `p`, where `M = F^D`), then the eigensystem descends to `M`.
+
+WHY PRIME DEGREE IS THE SHARPEST JOINT (2026-07-25): the twisted trace
+formula of Langlands/Arthur–Clozel is run for a cyclic extension of
+PRIME degree — that is the case in which the character identity
+`Θ_{BC(π)}(g × σ) = Θ_π(N g)` is proved and in which the fibre of base
+change is a torsor under the (order-`p`) character group of
+`Gal(L/M)`. The general cyclic case is not a separate theorem but the
+composition of prime steps, and the general solvable case the
+composition of cyclic ones. This module now carries both compositions
+formally (`exists_intermediate_of_isCyclic_quotient` for cyclic → prime,
+`exists_cyclicRefinement_of_isSolvable` for solvable → cyclic), so this
+node is the only remaining citation on the descent route: below it lie
+the trace formula and the twisted character identity, not further
+group-theoretic bookkeeping.
 
 Classically, in three moves — the joints of the literature argument, in
 order:
+
+* *Cyclic ascent (base change).* `Gal(L/M) ≅ D/C` is cyclic of order
+  `p`; Langlands' cyclic base change `BC_{L/M}` is defined on the
+  cuspidal spectrum of `GL(2)/M` and characterized by the Arthur–Clozel
+  twisted character identity. The descended system over `L`
+  (hypothesis `hC`) is, through Carayol local–global compatibility, the
+  eigensystem of a Hilbert newform `f_L` over `L`.
+* *`Gal(L/M)`-invariance.* `f_L`'s Galois representation is `ρ|_{G_L}` —
+  the restriction to `G_L` of the representation `ρ|_{G_M}` of the
+  LARGER group `G_M` — hence visibly `Gal(L/M)`-invariant: for
+  `σ ∈ Gal(L/M)`, `f_L^σ` has the same Frobenius eigenvalues as `f_L` at
+  almost all places, so `f_L^σ = f_L` by strong multiplicity one.
+* *Cyclic descent (the twisted character identity).* A
+  `Gal(L/M)`-invariant cuspidal automorphic representation of `GL(2)/L`
+  is in the image of base change from `GL(2)/M`, and its fibre is a
+  torsor under the characters of `Gal(L/M)` (Langlands, *Base Change for
+  GL(2)*, Ann. of Math. Studies 96 (1980), Ch. 2 and Thm 4.2;
+  Arthur–Clozel, *Simple Algebras, Base Change, and the Advanced Theory
+  of the Trace Formula*, Ann. of Math. Studies 120 (1989), Ch. 3 Thm 4.2
+  and Ch. 1 §6 for the identity `Θ_{BC(π)}(g × σ) = Θ_π(N g)` that
+  defines and characterizes the transfer). So there is a Hilbert newform
+  `f_M` over `M` with `BC_{L/M}(f_M) = f_L`; its `ℓ`-adic representation
+  restricted to `G_L` agrees with `ρ|_{G_L}`, hence differs from
+  `ρ|_{G_M}` by a twist by a character of `Gal(L/M)` — of order dividing
+  `p`, so with values `p`-th roots of unity.
+
+Carayol's local–global compatibility over `M` then identifies the
+Frobenius characteristic polynomials of the (twisted) `f_M`-system with
+Hecke polynomials; their coefficients — Hecke eigenvalues of `f_M`
+enlarged by the twisting-character values — lie in the carrier's `E`,
+which is, per the consumers' docstrings, the Hecke field OF THE
+DESCENDED system, the normalization that absorbs exactly these
+enlargements. The new bad set collects the places of `M` below the bad
+set of the `L`-system, the places over `2`, `3`, `ℓ`, and the places
+ramified in `L/M`.
+
+Literature: Langlands 1980 and Arthur–Clozel 1989 as above;
+Barnet-Lamb–Gee–Geraghty–Taylor, *Potential automorphy and change of
+weight*, Ann. of Math. 179 (2014), §5.3 (this descent per Brauer piece,
+verbatim); Khare–Wintenberger, *Serre's modularity conjecture (I)*,
+Invent. Math. 178 (2009), §5; Carayol, Ann. Sci. ÉNS 19 (1986).
+
+PIN AUDIT (2026-07-24/25): no automorphic-representation vocabulary
+exists on this pin, and the reference project's `cyclic_base_change`
+(`~/cs/FLT`, `FLT/GaloisRepresentation/Automorphic.lean`) is itself a
+sorried statement phrased through an `IsAutomorphic` predicate on
+quaternionic forms — vocabulary this project does not have (see the
+`HeckeSystemDescendsTo` docstring). Nothing is vendorable, on this pin
+or after a pin-drift audit.
+
+SOUNDNESS AUDIT (both ways, 2026-07-24/25): (i) direct — for the carrier
+produced by the inhabitation leaf and a system produced by the chain
+this is the argument above, with the Hecke-field enlargements landing in
+`E` by the carrier's normalization; for an abstract carrier the
+abstract-quantification caveat of pillar β applies (in particular
+nothing formal ties the twisting-character values into `E`; that
+identification is part of the citation), and (ii) collapse — the
+hypothesis package (an irreducible hardly ramified mod-`ℓ`
+representation, `ℓ ≥ 5`) is classically unsatisfiable (headline below),
+so the statement is classically true for every package. The full
+hypothesis package of the general cyclic step is retained verbatim here
+PRECISELY to keep route (ii) available: the prime-degree sharpening is a
+sharpening of the group-theoretic hypothesis only, never a weakening of
+the arithmetic one.
+
+ROUTE AUDIT (2026-07-24): discharge by vacuity — `absurd hirr
+(not_isIrreducible_of_isHardlyRamified_of_five_le …)`, the route the
+interface leaves of `Modularity/Interface.lean` take — is NOT available
+here: the headline consumes this node (headline ←
+`exists_threeadic_compatible_member_of_five_le` ←
+`exists_heckeField_system_of_witness` ←
+`exists_descended_heckeSystem_of_solvable` ←
+`heckeSystemDescendsTo_of_cyclic_step` ← this node), so the vacuity
+route would be circular. The classical route above is the one to follow.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
+through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+theorem heckeSystemDescendsTo_of_prime_cyclic_step
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+    (Wit : PotentialModularityWitness ℓ O ρ)
+    (C D : Subgroup (Wit.F ≃ₐ[ℚ] Wit.F)) (hCD : C ≤ D)
+    (hnormal : (C.subgroupOf D).Normal)
+    (p : ℕ) (hp : p.Prime)
+    (hcard : Nat.card (D ⧸ C.subgroupOf D) = p)
+    (hC : HeckeSystemDescendsTo Wit C) :
+    HeckeSystemDescendsTo Wit D :=
+  sorry
+
+/-- **One cyclic step of solvable base change** (PROVEN, 2026-07-25, from
+the prime-degree citation `heckeSystemDescendsTo_of_prime_cyclic_step`
+and the group-theoretic dévissage
+`exists_intermediate_of_isCyclic_quotient`): if the eigensystem of `ρ`
+descends to the fixed field `L = F^C`, and `C ≤ D` is normal with CYCLIC
+quotient `D/C` (equivalently: `L/M` is a cyclic Galois extension, where
+`M = F^D`), then the eigensystem descends to `M`.
+
+ASSEMBLY (2026-07-25): the theorem of Langlands/Arthur–Clozel is about a
+cyclic extension of PRIME degree — that is the degree in which the
+twisted trace formula is run and the character identity proved — and the
+general cyclic case is the composition of prime steps. So this node is
+now the SECOND dévissage of the descent, above the solvable one: the
+cyclic quotient `D/C` is refined into prime steps by
+`exists_intermediate_of_isCyclic_quotient` (pure finite group theory,
+proven here), and the eigensystem is carried up one prime step at a time
+by `heckeSystemDescendsTo_of_prime_cyclic_step` (the citation). Formally
+the recursion is a strong induction on `#D`: either `C = D` and the
+hypothesis `hC` already IS the conclusion, or one obtains an
+intermediate `C ≤ E ≤ D` with `#E < #D`, `E/C` cyclic and `D/E` of prime
+order, applies the induction hypothesis to `E` and the prime-degree
+citation to `E ≤ D`. As in `exists_descended_heckeSystem_of_solvable`,
+the fixed fields are taken as restrictions from `ℚ` at every stage, so
+the induction needs no compatibility of restrictions along the tower —
+indeed the intermediate subgroups never appear as fields at all, only as
+subgroups fed back into `HeckeSystemDescendsTo`.
+
+The classical content of the prime step, retained here for orientation
+(the sorried node carries it in full), is three moves — the joints of the
+literature argument, in order:
 
 * *Cyclic ascent (base change).* `L/M` is cyclic of prime power degree
   after refinement; `Gal(L/M) ≅ D/C` acts on the automorphic side, and
@@ -2638,19 +2918,16 @@ PIN AUDIT (2026-07-24): no automorphic-representation vocabulary exists
 on this pin, and the reference project's `cyclic_base_change`
 (`~/cs/FLT`) is itself a sorried statement in a vocabulary this project
 does not have (see the `HeckeSystemDescendsTo` docstring); nothing is
-vendorable. This is the terminal citation node of the descent: below it
-lie the trace formula and the twisted character identity, not further
-Galois-theoretic bookkeeping.
+vendorable. The terminal citation node of the descent is now the
+prime-degree step below it: beneath THAT lie the trace formula and the
+twisted character identity, not further group-theoretic bookkeeping.
 
-SOUNDNESS AUDIT (both ways, 2026-07-24): (i) direct — for the carrier
-produced by the inhabitation leaf and a system produced by the chain
-this is the argument above, with the Hecke-field enlargements landing
-in `E` by the carrier's normalization; for an abstract carrier the
-abstract-quantification caveat of pillar β applies (in particular
-nothing formal ties the twisting-character values into `E`; that
-identification is part of the citation), and (ii) collapse — the
-hypothesis package is classically unsatisfiable (headline below), so
-the statement is classically true for every package.
+SOUNDNESS AUDIT (both ways, 2026-07-24/25): unchanged in substance, and
+now discharged rather than assumed: the residual sorry is the
+prime-degree node, which carries the identical hypothesis package (in
+particular route (ii), collapse by unsatisfiability of the hypotheses,
+remains available there exactly as it was here — the sharpening is of
+the group-theoretic hypothesis only).
 
 ROUTE AUDIT (2026-07-24): as for the base leaf above, discharge by
 vacuity through `not_isIrreducible_of_isHardlyRamified_of_five_le` is
@@ -2685,8 +2962,29 @@ theorem heckeSystemDescendsTo_of_cyclic_step
     (hnormal : (C.subgroupOf D).Normal)
     (hcyclic : IsCyclic (D ⧸ C.subgroupOf D))
     (hC : HeckeSystemDescendsTo Wit C) :
-    HeckeSystemDescendsTo Wit D :=
-  sorry
+    HeckeSystemDescendsTo Wit D := by
+  classical
+  -- strong induction on the order of the upper group, refining the cyclic
+  -- quotient one prime step at a time
+  have key : ∀ N : ℕ, ∀ D' : Subgroup (Wit.F ≃ₐ[ℚ] Wit.F),
+      Nat.card D' ≤ N → C ≤ D' →
+      ∀ _hn : (C.subgroupOf D').Normal, IsCyclic (D' ⧸ C.subgroupOf D') →
+      HeckeSystemDescendsTo Wit D' := by
+    intro N
+    induction N with
+    | zero =>
+      intro D' hcardD' _ _ _
+      exact absurd hcardD' (Nat.not_le.mpr Nat.card_pos)
+    | succ M ih =>
+      intro D' hcardD' hCD' hnorm' hcyc'
+      by_cases hEq : C = D'
+      · exact hEq ▸ hC
+      · obtain ⟨E, p, hp, hCE, hED', hlt, ⟨hnE, hcycE⟩, ⟨hnD, hcardD⟩⟩ :=
+          exists_intermediate_of_isCyclic_quotient C D' hCD' hnorm' hcyc' hEq
+        exact heckeSystemDescendsTo_of_prime_cyclic_step hℓodd hℓ5 hZinj
+          hrank hρ hW hρbar hirr π hπsurj hπ Wit E D' hED' hnD p hp hcardD
+          (ih E (by omega) hCE hnE hcycE)
+  exact key (Nat.card D) D le_rfl hCD hnormal hcyclic
 
 /-- **Solvable base change — the descended Hecke system over a fixed
 field** (sorry node; the per-induced-piece citation leaf of the
@@ -2747,14 +3045,19 @@ solvable `H` is the top of a chain `⊥ = C₀ ≤ ⋯ ≤ Cₙ = H` with each s
 normal with cyclic quotient) + `heckeSystemDescendsTo_bot` (the base of
 the chain: the carrier's own clause `Wit.modularF` transported from `F`
 to `F^⊥`, a formal-transport leaf with no arithmetic content) +
-`heckeSystemDescendsTo_of_cyclic_step` (the literature node: one cyclic
-step of base change and descent), glued by induction on the chain
-index through the shared shape `HeckeSystemDescendsTo`. The fixed
-fields are taken as restrictions from `ℚ` at every stage, so the
-induction needs no compatibility of restrictions along the tower.
-Those three leaves are now the residual sorries of this node; the
-circularity guard above binds the two arithmetic ones (the refinement
+`heckeSystemDescendsTo_of_cyclic_step` (one cyclic step of base change
+and descent), glued by induction on the chain index through the shared
+shape `HeckeSystemDescendsTo`. The fixed fields are taken as
+restrictions from `ℚ` at every stage, so the induction needs no
+compatibility of restrictions along the tower.
+Those three nodes are the residual frontier of this node; the
+circularity guard above binds the arithmetic ones (the refinement
 leaf is pure group theory — nothing arithmetic to route through).
+UPDATE (2026-07-25): the cyclic step has since been PROVEN by a second
+dévissage of the same shape — `exists_intermediate_of_isCyclic_quotient`
+refines a cyclic quotient into prime steps — so the arithmetic citation
+of the descent route is now `heckeSystemDescendsTo_of_prime_cyclic_step`,
+the prime-degree statement that the literature actually proves.
 
 ROUTE AUDIT (2026-07-24): discharge by vacuity — `absurd hirr
 (not_isIrreducible_of_isHardlyRamified_of_five_le …)` — is NOT
