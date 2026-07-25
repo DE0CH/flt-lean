@@ -23,6 +23,19 @@ Rules enforced here:
 - Sentinel + empty queue -> DENY (nothing to pop).
 - A queue pop with no free worktree leaves the queue untouched.
 
+POOL STATES: `free` (allocatable), `claimed` (busy), `suspended <agent-id>`
+(never allocated; how a reduced worker count is enforced), and — new
+2026-07-25 — `reclaiming`, meaning "claimed, but retire this slot when its
+task finishes". Allocation selects ONLY `free` (see `allocate_worktree`),
+so `reclaiming` needs no code here to be safe: it is non-allocatable for
+free, and the pool rewrite preserves its status verbatim. The rule that
+gives it meaning lives in the integration step — `post-merge-reminder.py`
+tells the orchestrator to mark a `reclaiming` worktree `suspended` rather
+than `free` on merge, so the fleet drains by attrition. It exists because
+the user slice is CPU-quota-capped at 24 cores (cpu.max 2400000/100000),
+throttled in ~76% of periods, so workers past the quota lengthen every
+verification instead of adding throughput.
+
 Worktree allocation is unchanged: find a `free` entry in
 ~/.flt-worktree-pool, check it is git-clean and its branch is an
 ancestor of main, fast-forward it to main (--ff-only), mark it
