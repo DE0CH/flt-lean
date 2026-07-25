@@ -178,6 +178,12 @@ public import Mathlib.LinearAlgebra.BilinearForm.DualLattice
 -- consumed by the PROVEN assembly of
 -- `heckeClassZeta_of_zlattice_theta` (hence public).
 public import Mathlib.NumberTheory.LSeries.AbstractFuncEq
+-- Mellin inversion (`mellinInv_mellin_eq`), the Fourier-inversion
+-- corollary that supplies the whole proof of the Mellin uniqueness
+-- leaf `eqOn_of_hasMellin_eq_of_continuousOn` (proof-only).  This is a
+-- LEAF module of mathlib — nothing else in mathlib imports it — so the
+-- import has to be made explicitly here.
+import Mathlib.Analysis.MellinInversion
 -- `Complex.Gamma_ne_zero_of_re_pos` (nonvanishing of the archimedean
 -- Euler factors) and the antiholomorphic-composition lemma
 -- `differentiableAt_conj_conj_iff` (Schwarz reflection), consumed by
@@ -9872,8 +9878,8 @@ theorem archimedeanGammaProfile_exists (K : Type*) [Field K] [NumberField K] :
   rw [hrank] at hH
   exact ⟨H, hH.1, hH.2.1, hH.2.2.1, hH.2.2.2.1, hH.2.2.2.2⟩
 
-/-- **Mellin uniqueness on a right half-plane** (sorry node, stated
-2026-07-25 — sub-leaf (β2), the *rigidity* half of the decomposition of
+/-- **Mellin uniqueness on a right half-plane** (PROVEN 2026-07-25 —
+sub-leaf (β2), the *rigidity* half of the decomposition of
 `heckeThetaSeries_functionalEquation`): two functions that are
 continuous on `(0, ∞)` and whose Mellin transforms both converge and
 take a COMMON value at every point of some right half-plane `Re z > σ`
@@ -9894,34 +9900,85 @@ uniquely: continuity plus the convergent Mellin identification
 determine `H` a.e. on `(0, ∞)` (Mellin/Laplace uniqueness), hence
 everywhere by continuity").
 
-Intended proof: put `h = f - g`; it is continuous on `(0, ∞)`, its
-Mellin transform converges on the half-plane (`MellinConvergent.sub`)
-and vanishes identically there (`mellin` is linear, `hasMellin_sub`).
-Substituting `τ = e^{-u}` (`mellin_comp_rpow` / the change of variables
-`Real.exp`) turns this into the vanishing of the two-sided Laplace
-transform `u ↦ ∫_ℝ e^{-z u}·h(e^{-u}) du` on a right half-plane.  Fix
-`σ' > σ` real and evaluate at `z = σ' + k`, `k : ℕ`: with the finite
-signed measure `dμ = τ^{σ'-1}·h(τ)·dτ` on `(0, ∞)` (finite by the
-convergence hypothesis) the identities say `∫ τ^k dμ = 0` for every
-`k`, i.e. all moments of `μ` vanish.  Split `(0, ∞)` at `1`: on `(0, 1]`
-the monomials `τ^k` are uniformly bounded and, by Weierstrass
-approximation on `[0, 1]`, dense in `C([0,1])`, so `μ` restricted there
-is `0`; on `[1, ∞)` apply the same argument after `τ ↦ τ⁻¹` (which
-turns the progression `σ' + k` into `σ' - k`, available by taking `σ'`
-large and using the convergence on the whole half-plane).  Hence `μ = 0`
-and, `τ^{σ'-1} > 0` on `(0, ∞)` with `h` continuous, `h` vanishes on
-`(0, ∞)`.  An alternative route already partly available in the pin:
-the transform is holomorphic on the half-plane
-(`mellin_differentiableAt_of_isBigO_rpow`) and Mellin inversion
-(`mellin_inversion`) recovers `h` at every point of continuity, so a
-vanishing transform forces `h = 0` directly. -/
+Proof (the SECOND of the two routes recorded when this leaf was
+stated — Mellin inversion, not the moment/Weierstrass route; it turned
+out to be a dozen lines, so the moment route was never needed and is
+kept below only as a record):
+
+Put `h = f - g` (as a `ℝ → ℂ` function).  For EVERY `z` in the open
+half-plane `Re z > σ` the hypothesis gives a COMMON value `m` for the
+two Mellin transforms, so `hasMellin_sub` makes `mellin h z` converge
+and equal `m - m = 0`.  Fix the vertical line `Re z = σ + 1`, which
+lies in the half-plane: `mellin h` vanishes *identically* on it.  That
+single observation discharges both remaining hypotheses of mathlib's
+`mellinInv_mellin_eq` for free —
+
+* `MellinConvergent h (σ + 1)` is the convergence half just obtained;
+* `Complex.VerticalIntegrable (mellin h) (σ + 1)`, which is the
+  genuinely restrictive hypothesis of Mellin inversion in general, is
+  here the integrability of the ZERO function;
+
+— while `ContinuousAt h x` at any `x ∈ (0, ∞)` follows from `hf`, `hg`
+and `Ioi_mem_nhds` since `(0, ∞)` is open.  Hence for every `x > 0`
+
+  `h x = mellinInv (σ+1) (mellin h) x = (2π)⁻¹ • ∫ y, x^{-(σ+1+iy)} • 0 = 0`,
+
+i.e. `f x = g x`.  Note that no holomorphy input
+(`mellin_differentiableAt_of_isBigO_rpow`) is needed: vanishing on a
+single vertical line inside the domain of convergence already suffices,
+because Mellin inversion is applied on exactly that line.
+
+Original (unused) moment route, for the record: `h`'s Mellin transform
+vanishing on the half-plane says, after `τ = e^{-u}`, that a two-sided
+Laplace transform vanishes; evaluating at `z = σ' + k`, `k : ℕ`, makes
+all moments of the finite signed measure `dμ = τ^{σ'-1}·h(τ)·dτ`
+vanish, and Weierstrass approximation on `(0,1]` plus the same argument
+after `τ ↦ τ⁻¹` on `[1, ∞)` forces `μ = 0`, hence `h = 0` by
+continuity. -/
 theorem eqOn_of_hasMellin_eq_of_continuousOn {f g : ℝ → ℝ} {σ : ℝ}
     (hf : ContinuousOn f (Set.Ioi 0)) (hg : ContinuousOn g (Set.Ioi 0))
     (hmel : ∀ z : ℂ, σ < z.re → ∃ m : ℂ,
       HasMellin (fun τ : ℝ => (f τ : ℂ)) z m ∧
         HasMellin (fun τ : ℝ => (g τ : ℂ)) z m) :
     Set.EqOn f g (Set.Ioi 0) := by
-  sorry
+  intro x hx
+  have hx0 : (0 : ℝ) < x := hx
+  set h : ℝ → ℂ := fun τ => (f τ : ℂ) - (g τ : ℂ) with hh
+  -- The difference has a convergent, identically vanishing Mellin transform on the
+  -- whole half-plane `Re z > σ`.
+  have hzero : ∀ z : ℂ, σ < z.re → MellinConvergent h z ∧ mellin h z = 0 := by
+    intro z hz
+    obtain ⟨m, hfm, hgm⟩ := hmel z hz
+    have hsub := hasMellin_sub hfm.1 hgm.1
+    rw [hh]
+    exact ⟨hsub.1, by rw [hsub.2, hfm.2, hgm.2, sub_self]⟩
+  -- In particular it vanishes identically on the vertical line `Re z = σ + 1`.
+  have hline : ∀ y : ℝ, mellin h (((σ + 1 : ℝ) : ℂ) + (y : ℂ) * Complex.I) = 0 := by
+    intro y
+    exact (hzero _ (by simp)).2
+  have hconv : MellinConvergent h ((σ + 1 : ℝ) : ℂ) := (hzero _ (by simp)).1
+  -- Vertical integrability along that line is integrability of the zero function.
+  have hVI : Complex.VerticalIntegrable (mellin h) (σ + 1) := by
+    have hfun : (fun y : ℝ => mellin h (((σ + 1 : ℝ) : ℂ) + (y : ℂ) * Complex.I))
+        = fun _ : ℝ => (0 : ℂ) := funext hline
+    show MeasureTheory.Integrable
+      (fun y : ℝ => mellin h (((σ + 1 : ℝ) : ℂ) + (y : ℂ) * Complex.I))
+      MeasureTheory.volume
+    rw [hfun]
+    exact MeasureTheory.integrable_zero _ _ _
+  have hcx : ContinuousAt h x := by
+    have h1 : ContinuousAt f x := hf.continuousAt (Ioi_mem_nhds hx0)
+    have h2 : ContinuousAt g x := hg.continuousAt (Ioi_mem_nhds hx0)
+    rw [hh]
+    exact (Complex.continuous_ofReal.continuousAt.comp h1).sub
+      (Complex.continuous_ofReal.continuousAt.comp h2)
+  -- Mellin inversion on that line recovers `h x` from the vanishing transform.
+  have key := mellinInv_mellin_eq (σ + 1) h hx0 hconv hVI hcx
+  have hLHS : mellinInv (σ + 1) (mellin h) x = 0 := by
+    simp only [mellinInv, hline, smul_zero, MeasureTheory.integral_zero]
+  rw [hLHS] at key
+  have hfg : (f x : ℂ) - (g x : ℂ) = 0 := key.symm
+  exact Complex.ofReal_inj.mp (sub_eq_zero.mp hfg)
 
 /-- **The canonical archimedean profile and its unit-domain theta
 functional equation** (sorry node, stated 2026-07-25 — sub-leaf (β1),
@@ -9961,6 +10018,21 @@ now carries the whole geometric content):
    (`mixedEmbedding.polarCoord`, `Real.Gamma_eq_integral`), one
    `π^{-s/2}Γ(s/2)` per real place and one `2(2π)^{-s}Γ(s)` per
    complex place.
+   **STEP 1 IS ALREADY DISCHARGED (2026-07-25).**
+   `archimedeanGammaProfile_exists` is PROVEN, and it produces exactly
+   a `G` with the continuity and the `s/2`-Mellin identity demanded
+   here (indeed with nonnegativity, antitonicity and stretched-
+   exponential decay on top, all four of which are useful for the
+   convergence bookkeeping of step 5).  Its `G` is the iterated
+   one-dimensional Mellin convolution of the per-place profiles rather
+   than Neukirch's hypersurface integral, but by
+   `eqOn_of_hasMellin_eq_of_continuousOn` (PROVEN just above) a
+   continuous profile is DETERMINED by its Mellin transform, so the
+   two agree on `(0, ∞)`.  A successor should therefore open with
+   `obtain ⟨G, hGcont, hGpos, hGanti, hGdec, hGmel⟩ :=
+   archimedeanGammaProfile_exists K`, discharge the first two conjuncts
+   with `hGcont`/`hGmel`, and spend ALL the work on steps 2–5, i.e. on
+   the functional equation alone.  Do NOT reconstruct the profile.
 2. *dictionary*: choose an integral ideal `𝔞 ∈ C⁻¹`; nonzero ideals
    `𝔟 ∈ C` biject with `𝒪_K^×`-orbits of nonzero `α ∈ 𝔞` via
    `𝔟𝔞 = (α)`, `N𝔟 = |N(α)|/N𝔞`
@@ -10007,11 +10079,34 @@ now carries the whole geometric content):
 Natural further decomposition, if the direct assembly resists: (3) —
 the covolume-`1` normalization and the dual-lattice/inverse-different
 identification — is a self-contained statement about ideal lattices in
-the mixed space with no analysis in it, and (1) — the profile and its
-`Γ`-factor Mellin transform — is a self-contained statement about
-Gaussian integrals in polar coordinates that does not mention ideals;
-either can be split off as its own sorried leaf and passed to this one
-as a hypothesis, exactly as `hθ` is here. -/
+the mixed space with no analysis in it; (1) is done (see above).  A
+second, orthogonal cut is the *ideal dictionary* of step 2 on its own:
+`∑' m, a_C(m)·G(m²x/|d|) = ∑' 𝔟 ∈ C, G(N𝔟²x/|d|)`, a pure
+`tsum`-refibration over the norm map (each fibre finite, `a_C(m)` its
+cardinality) with no geometry in it, leaving the ideal-indexed
+functional equation as the geometric residue.  CAUTION when splitting:
+a sorried body contributes no dependency edges, so a sub-leaf stated
+but not yet consumed is FREE-FLOATING and the Stop hook rejects it —
+the assembly consuming the new sub-leaves must be written and compiled
+in the SAME commit that states them.  This is why no split was made on
+2026-07-25: only step 1 could be discharged outright.
+
+NORMALIZATION CHECK (PARI/GP, 2026-07-25 — the statement as displayed
+below, `|d|`-placement and `x^{1/2}` weight included, is numerically
+CORRECT, so a successor should not "fix" it).  With `G` the profile of
+`archimedeanGammaProfile_exists`:
+
+* `K = ℚ` (`r₁ = 1`, `G(τ) = e^{-πτ}`, `|d| = 1`, `a_C(m) = 1`): the
+  displayed identity is Jacobi's `θ(1/x) = x^{1/2}θ(x)` and holds to
+  40 digits at `x = 0.7, 2.3` with `ρ₀ = 1/2` (and visibly fails with
+  `ρ₀ = 1/3`);
+* `K = ℚ(i)` (`r₂ = 1`, `G(τ) = e^{-2π√τ}`, `|d| = 4`,
+  `a_C(m) = r₂(m)/4`): it holds to 40 digits at `x = 0.7, 2.3` with
+  `ρ₀ = 1/4` (and fails with `ρ₀ = 1/2`).
+
+Both agree with Neukirch's `ρ₀ = 2^{r-1}·vol(𝔉)/w`, which for the
+unit-rank-`0` fields (`r = r₁ + r₂ = 1`, `vol(𝔉) = 1`) is `1/w` — `1/2`
+for `ℚ` and `1/4` for `ℚ(i)`. -/
 theorem heckeCanonicalThetaProfile_functionalEquation
     (K : Type*) [Field K] [NumberField K]
     (hθ : ∀ (E : Type) [NormedAddCommGroup E] [InnerProductSpace ℝ E]
