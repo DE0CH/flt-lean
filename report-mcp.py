@@ -45,6 +45,10 @@ class PipeLsp:
         self.buf = b""
         self.req_seq = 0
         self.diags = {}
+        # URIs for which THIS process actually received a
+        # publishDiagnostics notification. `diags` alone cannot be trusted
+        # as "clean": see the guard at the end of `diagnostics`.
+        self.published = set()
         self.doc_versions = {}
         self.doc_hashes = {}
         self.initialized = False
@@ -77,6 +81,7 @@ class PipeLsp:
         if method == "textDocument/publishDiagnostics":
             p = msg["params"]
             self.diags[p["uri"]] = p["diagnostics"]
+            self.published.add(p["uri"])
         elif method is not None and "id" in msg:
             # server->client request (e.g. client/registerCapability) —
             # a minimal client answers null.
@@ -328,7 +333,43 @@ class PipeLsp:
                 {"uri": uri, "version": version},
                 timeout,
             )
-            return self.diags.get(uri, [])
+            # FALSE-CLEAN GUARD (2026-07-25, after an agent was told a file
+            # with five sorries had zero diagnostics).
+            #
+            # `publishDiagnostics` is a NOTIFICATION, delivered once, to
+            # whichever client connection was attached at the time. When a
+            # fresh client adopts an already-open document from the shared
+            # map and the content is unchanged, no notify is sent and
+            # `waitForDiagnostics` returns immediately — the version is long
+            # since elaborated. But this process never heard the publish, so
+            # `self.diags[uri]` is empty. Returning that empty list reads as
+            # "compiles clean", which is the single most dangerous thing this
+            # tool can say.
+            #
+            # An empty result is therefore only trustworthy if we actually
+            # received a publish for this URI. Otherwise report UNKNOWN and
+            # say how to force a real answer. We deliberately do NOT
+            # self-heal by bumping the version: that would re-elaborate the
+            # file on every client restart, i.e. 60+ concurrent rebuilds of
+            # the largest modules in the fleet — the exact thundering herd
+            # the shared map exists to prevent.
+            if uri not in self.published:
+                return {
+                    "diagnostics": [],
+                    "verified": False,
+                    "reason": (
+                        "UNKNOWN, not clean: this client process attached to a "
+                        "document that was already open and fully elaborated in "
+                        "this server session, so the diagnostics notification "
+                        "was delivered to an earlier client and cannot be "
+                        "replayed. An empty list here does NOT mean the file "
+                        "compiles. To get a real answer, make an actual content "
+                        "change (even adding a docstring line) and call again — "
+                        "only new content starts new work and produces a fresh "
+                        "publish."
+                    ),
+                }
+            return {"diagnostics": self.diags.get(uri, []), "verified": True}
 
 
 def build_mcp(socket_dir):
@@ -354,7 +395,15 @@ def build_mcp(socket_dir):
         attaches to the elaboration already in flight (shared per server
         session, so even a client restart attaches rather than starting a
         second one) and never restarts it. Only an actual content change
-        starts new work."""
+        starts new work.
+
+        CHECK `verified`. `verified: true` means this call actually received
+        the compiler's diagnostics, so an empty list really does mean the
+        file is clean. `verified: false` means UNKNOWN — the document was
+        already elaborated in this server session and the notification went
+        to an earlier client, so an empty list proves nothing. In that case
+        make a real content change and call again; do not record a
+        `verified: false` result as a successful verification."""
         abs_path = (
             file_path
             if os.path.isabs(file_path)
@@ -362,10 +411,8 @@ def build_mcp(socket_dir):
         )
         if not os.path.exists(abs_path):
             raise ValueError(f"file not found: {abs_path}")
-        return {
-            "file_path": abs_path,
-            "diagnostics": lsp.diagnostics(abs_path, timeout=timeout_seconds),
-        }
+        result = lsp.diagnostics(abs_path, timeout=timeout_seconds)
+        return {"file_path": abs_path, **result}
 
     @mcp.tool()
     def build(clean: bool = False) -> dict:
