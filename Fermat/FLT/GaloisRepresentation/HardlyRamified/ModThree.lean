@@ -25430,26 +25430,61 @@ theorem sq_isPrincipal_ringOfIntegers_neg_six_ray_class
 
 end QuadraticClassNumberRayClass
 
+/-- **Narrow principality, with NONDEGENERATE multiplier witnesses**
+(created 2026-07-25 as the repair of the reciprocity chain below):
+`I` is narrowly principal when `(α)·I = (β)` for totally positive
+`α, β` with `α ≠ 0` — i.e. `[I] = 1` in the narrow class group
+`Cl⁺(F)`.
+
+**Why this predicate and not `IsNarrowRayEquiv 1 I ⊤` of
+`Chebotarev.lean`** (the defect this repairs, found 2026-07-25): at
+modulus `ℓ = 1` that relation DEGENERATES to `True`. Its two
+coprimality clauses read `IsCoprime (α) (1)` — vacuous, since
+`Ideal.span {(1 : 𝓞 F)} = ⊤ = 1` and `isCoprime_one_right` — and its
+congruence clause `α − β ∈ (1)` is vacuous too, so (unlike the case
+`ℓ` prime, where `ne_zero_of_isCoprime_span_natCast` applies) NOTHING
+forces the multipliers to be nonzero. For a field `F` with no real
+embedding the total-positivity clauses are vacuous as well, and
+`α = β = 0` satisfies every clause: `(0)·I = ⊥ = (0)·J` for all
+`I, J`, so `IsNarrowRayEquiv 1 I J` holds unconditionally there. The
+reciprocity leaf below is FALSE under that degenerate hypothesis:
+take `F = ℚ(√−47)`, where `Cl(F) ≅ ℤ/5` (PARI/GP `quadclassunit(-47)`
+`= [5, [5], …]`) and `Cl⁺(F) = Cl(F)` since `F` is imaginary; because
+`5 ∣ 3⁴ − 1` the group `μ₅` sits inside `𝔽̄₃ˣ = (Dickson.K 3)ˣ`, so
+an order-`5` character of `Cl(F)` gives a multiplicative
+`χ : Γ F → Dickson.K 3` with open kernel (`Gal(F̄/H(F))`), unramified
+at every finite place, and `χ(Frob_v)² ≠ 1` for any `v` whose class
+generates. Demanding `α ≠ 0` restores exactly the intended content
+`[I] = 1` in `Cl⁺(F)`; `β ≠ 0` then follows whenever `I ≠ ⊥`. -/
+def IsNarrowPrincipal {F : Type*} [Field F] [NumberField F]
+    (I : Ideal (NumberField.RingOfIntegers F)) : Prop :=
+  ∃ α β : NumberField.RingOfIntegers F, α ≠ 0 ∧
+    (∀ φ : F →+* ℝ, 0 < φ (algebraMap (NumberField.RingOfIntegers F) F α)) ∧
+    (∀ φ : F →+* ℝ, 0 < φ (algebraMap (NumberField.RingOfIntegers F) F β)) ∧
+    Ideal.span {α} * I = Ideal.span {β}
+
 set_option maxHeartbeats 400000 in
 /-- **Narrow-class exponent two for the seven quadratic fields — every
 nonzero ideal square is narrowly principal** (PROVEN glue, 2026-07-24,
 over the two per-field class-number sorry leaves
 `isPrincipalIdealRing_ringOfIntegers_quadratic_ray_class` and
-`sq_isPrincipal_ringOfIntegers_neg_six_ray_class` above): for each of
-the seven `d` and `F = ℚ(x) ⊆ ℚ̄` with `x² = d`, the square of every
-nonzero ideal of `𝓞 F` is trivial for the modulus-`1` narrow ray
-equivalence of `Chebotarev.lean` (`IsNarrowRayEquiv 1 (I²) ⊤`:
-`(α)·I² = (β)` with `α, β` totally positive — precisely narrow
-Hilbert equivalence, since coprimality and congruence mod `1` are
-vacuous). This is the `h⁺`-table `1, 1, 1, 2, 1, 2, 2` in the
-exponent form the reciprocity leaf consumes. Assembly: for the six
-class-number-one fields `I = (γ)` is principal, so `I² = (γ²)` with
-`γ²` totally positive FOR FREE (`φ(γ)² > 0` at every real embedding
-`φ` — the reason `h⁺ = 2h` for `d = 3, 6` never obstructs squares);
-for `d = −6` the field admits no real embedding at all (`φ(x)² = −6`
-is absurd in `ℝ`), total positivity is vacuous, and `I² = (γ)`
-principal from the class-group-`ℤ/2` leaf suffices. -/
-theorem isNarrowRayEquiv_sq_top_of_quadratic_ray_class
+`sq_isPrincipal_ringOfIntegers_neg_six_ray_class` above; conclusion
+CORRECTED and renamed 2026-07-25 from the degenerate
+`IsNarrowRayEquiv 1 (I²) ⊤` form to `IsNarrowPrincipal (I²)` — see
+that definition's docstring for the `ℚ(√−47)` counterexample the old
+form admitted): for each of the seven `d` and `F = ℚ(x) ⊆ ℚ̄` with
+`x² = d`, the square of every nonzero ideal of `𝓞 F` is narrowly
+principal, `(α)·I² = (β)` with `α ≠ 0` and `α, β` totally positive.
+This is the `h⁺`-table `1, 1, 1, 2, 1, 2, 2` in the exponent form the
+reciprocity leaf consumes. Assembly: for the six class-number-one
+fields `I = (γ)` is principal, so `I² = (γ²)` with `γ²` totally
+positive FOR FREE (`φ(γ)² > 0` at every real embedding `φ` — the
+reason `h⁺ = 2h` for `d = 3, 6` never obstructs squares); for
+`d = −6` the field admits no real embedding at all (`φ(x)² = −6` is
+absurd in `ℝ`), total positivity is vacuous, and `I² = (γ)` principal
+from the class-group-`ℤ/2` leaf suffices. In both branches the
+multiplier is `α = 1 ≠ 0`, so the nondegeneracy clause is free. -/
+theorem isNarrowPrincipal_sq_of_quadratic_ray_class
     (d : ℤ)
     (hd : d = -1 ∨ d = 2 ∨ d = -2 ∨ d = 3 ∨ d = -3 ∨ d = 6 ∨ d = -6)
     (x : AlgebraicClosure ℚ) (hx : x ^ 2 = (d : AlgebraicClosure ℚ))
@@ -25457,7 +25492,7 @@ theorem isNarrowRayEquiv_sq_top_of_quadratic_ray_class
     (I : Ideal (NumberField.RingOfIntegers
       (IntermediateField.adjoin ℚ {x})))
     (hI : I ≠ ⊥) :
-    IsNarrowRayEquiv 1 (I ^ 2) ⊤ := by
+    IsNarrowPrincipal (I ^ 2) := by
   by_cases h6 : d = -6
   · -- `ℚ(√−6)` is imaginary: no real embeddings, so total positivity
     -- is vacuous and square-principality suffices
@@ -25477,17 +25512,11 @@ theorem isNarrowRayEquiv_sq_top_of_quadratic_ray_class
       norm_num at h0
     obtain ⟨γ, hγ⟩ :=
       (sq_isPrincipal_ringOfIntegers_neg_six_ray_class d h6 x hx I).principal
-    refine ⟨1, γ, fun φ => (hempty φ).elim, fun φ => (hempty φ).elim,
-      ?_, ?_, ?_, ?_⟩
-    · rw [Nat.cast_one, Ideal.span_singleton_one, ← Ideal.one_eq_top]
-      exact isCoprime_one_right
-    · rw [Nat.cast_one, Ideal.span_singleton_one, ← Ideal.one_eq_top]
-      exact isCoprime_one_right
-    · rw [Nat.cast_one, Ideal.span_singleton_one]
-      exact Submodule.mem_top
-    · rw [Ideal.span_singleton_one, Ideal.top_mul, Ideal.mul_top]
-      rw [Ideal.submodule_span_eq] at hγ
-      exact hγ
+    refine ⟨1, γ, one_ne_zero, fun φ => (hempty φ).elim,
+      fun φ => (hempty φ).elim, ?_⟩
+    rw [Ideal.span_singleton_one, Ideal.top_mul]
+    rw [Ideal.submodule_span_eq] at hγ
+    exact hγ
   · -- the six class-number-one fields: `I = (γ)`, and `γ²` is totally
     -- positive at every real embedding
     have hd6 : d = -1 ∨ d = 2 ∨ d = -2 ∨ d = 3 ∨ d = -3 ∨ d = 6 := by
@@ -25499,7 +25528,7 @@ theorem isNarrowRayEquiv_sq_top_of_quadratic_ray_class
     have hγ0 : γ ≠ 0 := by
       intro h0
       exact hI (by rw [hγ, h0]; exact Ideal.span_singleton_eq_bot.mpr rfl)
-    refine ⟨1, γ ^ 2, ?_, ?_, ?_, ?_, ?_, ?_⟩
+    refine ⟨1, γ ^ 2, one_ne_zero, ?_, ?_, ?_⟩
     · intro φ
       rw [map_one, map_one]
       exact one_pos
@@ -25514,13 +25543,7 @@ theorem isNarrowRayEquiv_sq_top_of_quadratic_ray_class
         hcoe (φ.injective (by rw [h, map_zero]))
       rw [map_pow, map_pow]
       exact pow_two_pos_of_ne_zero hne
-    · rw [Nat.cast_one, Ideal.span_singleton_one, ← Ideal.one_eq_top]
-      exact isCoprime_one_right
-    · rw [Nat.cast_one, Ideal.span_singleton_one, ← Ideal.one_eq_top]
-      exact isCoprime_one_right
-    · rw [Nat.cast_one, Ideal.span_singleton_one]
-      exact Submodule.mem_top
-    · rw [Ideal.span_singleton_one, Ideal.top_mul, Ideal.mul_top, hγ,
+    · rw [Ideal.span_singleton_one, Ideal.top_mul, hγ,
         Ideal.span_singleton_pow]
 
 set_option backward.isDefEq.respectTransparency false in
@@ -25600,33 +25623,147 @@ theorem exists_conj_image_localInertiaGroup_rat_ray_class
             hq.toHeightOneSpectrumRingOfIntegersRat)) σ' * c⁻¹ := by
   sorry
 
+set_option maxHeartbeats 400000 in
+/-- **Multiplicative extension of a place-indexed function to the ideal
+monoid — the Frobenius-at-ideals bookkeeping** (PROVEN 2026-07-25;
+sub-leaf (a) of the reciprocity core below): any function `g` on the
+finite places of a number field `F` extends to a function `f` on ideals
+that is multiplicative on NONZERO ideals and agrees with `g` at every
+prime, `f (v.asIdeal) = g v`. This is unique factorization of ideals
+and nothing else — no unramifiedness, no openness, no arithmetic:
+`f I := ∏ ((normalizedFactors I).map G)` with `G P = g ⟨P, _, _⟩` at
+nonzero primes and `G P = 1` elsewhere; multiplicativity is
+`UniqueFactorizationMonoid.normalizedFactors_mul` plus
+`Multiset.prod_add`, and the value at a prime is
+`normalizedFactors_irreducible` (via `Ideal.prime_of_isPrime`) plus
+`normalize_eq`. Multiplicativity genuinely FAILS at `⊥` (there
+`f ⊥ = 1` while `f (⊥ * I) = 1 ≠ f ⊥ * f I` in general), which is why
+every consumer carries nonvanishing side conditions. Since a nonzero
+ideal is the product of its prime factors, `f` is UNIQUELY determined
+on nonzero ideals by these two properties — so the
+hypothesis-characterized `f` of the leaf below is exactly the Artin
+symbol on ideals. -/
+theorem exists_ideal_extension_globalFrob_ray_class
+    (F : Type*) [Field F] [NumberField F]
+    (g : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) →
+      Dickson.K 3) :
+    ∃ f : Ideal (NumberField.RingOfIntegers F) → Dickson.K 3,
+      (∀ I J : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ → J ≠ ⊥ →
+        f (I * J) = f I * f J) ∧
+      ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+        f v.asIdeal = g v := by
+  classical
+  set G : Ideal (NumberField.RingOfIntegers F) → Dickson.K 3 :=
+    fun P => if h : P.IsPrime ∧ P ≠ ⊥ then g ⟨P, h.1, h.2⟩ else 1 with hG
+  refine ⟨fun I => ((UniqueFactorizationMonoid.normalizedFactors I).map G).prod,
+    ?_, ?_⟩
+  · intro I J hI hJ
+    dsimp only
+    rw [UniqueFactorizationMonoid.normalizedFactors_mul hI hJ, Multiset.map_add,
+      Multiset.prod_add]
+  · intro v
+    dsimp only
+    rw [UniqueFactorizationMonoid.normalizedFactors_irreducible
+      (Ideal.prime_of_isPrime v.ne_bot v.isPrime).irreducible, normalize_eq]
+    simp only [Multiset.map_singleton, Multiset.prod_singleton, hG,
+      dif_pos (And.intro v.isPrime v.ne_bot)]
+
+set_option maxHeartbeats 1000000 in
+/-- **A totally positive principal ideal has trivial Artin symbol — THE
+narrow-ray reciprocity input** (sorry node, created 2026-07-25 as
+sub-leaf (b) of
+`character_globalFrob_sq_eq_one_of_narrow_exponent_two_ray_class`
+below; the genuinely class-field-theoretic content of that leaf, now
+isolated from all bookkeeping): let `χ : Γ F → 𝔽̄₃` be multiplicative
+(`hmul`), trivial on an open subgroup `V` (`hVopen`, `hVker`), and
+unramified at every finite place (`hunr`: trivial on every
+`Γ F`-conjugate of the image of the local inertia group at `w`); let
+`f` be the multiplicative extension of `v ↦ χ(Frob_v)` to the ideals
+(`hfmul`, `hfrob`; such an `f` exists by
+`exists_ideal_extension_globalFrob_ray_class` and is unique on nonzero
+ideals). Then `f ((α)) = 1` for every nonzero TOTALLY POSITIVE
+`α ∈ 𝓞 F`.
+
+Mathematical content — Artin reciprocity for the narrow ray class
+field of modulus `1` (Neukirch ANT VI (6.7) and VI §7; Lang ANT ch. X;
+Serre, Duke 1987 §5.3): the values of `χ` are units (`χ a · χ a⁻¹ = 1`)
+in the ABELIAN group `𝔽̄₃ˣ`, so `ker χ` is an open normal subgroup and
+`χ` cuts out a finite abelian extension `M/F`, unramified at every
+finite place by `hunr`. The Artin map on ideals sends `v ↦ Frob_v|_M`
+and is multiplicative, hence coincides with `f` under
+`Gal(M/F) ↪ 𝔽̄₃ˣ`; its kernel contains the ray `P₁⁺` of totally
+positive principal ideals, because a finite-place-unramified abelian
+extension has conductor dividing the archimedean modulus, so
+`Gal(M/F)` is a quotient of `Cl⁺(F) = I(F)/P₁⁺`. Concretely
+`f ((α)) = 1` for `α ≫ 0`.
+
+Intended formalization route: the Weber counting machinery of
+`Chebotarev.lean` —
+`exists_forall_abs_natCard_isNarrowRayEquiv_sub_mul_le_rpow` (ideal
+counts per narrow ray class with analytic error term),
+`finite_quotient_narrowRaySetoid` (finiteness of `Cl⁺`), and the
+Frobenius realizations `exists_algEquiv_map_zeta_eq_pow_absNorm` — is
+being built exactly to show that `I ↦ f I` factors through
+`narrowRaySetoid F 1`: the counting produces, in every narrow ray
+class, primes of positive density, and the density argument behind
+`dense_conjClasses_globalFrob` upgrades "`f` constant on the primes of
+a class" to "`f` trivial on the principal class". Nothing weaker will
+do: this is the single point where global class field theory (absent
+from the mathlib pin) enters the reciprocity chain. -/
+theorem character_ideal_span_singleton_eq_one_of_forall_pos_ray_class
+    (F : Type*) [Field F] [NumberField F]
+    (χ : Γ F → Dickson.K 3)
+    (hmul : ∀ a b : Γ F, χ (a * b) = χ a * χ b)
+    (V : Subgroup (Γ F)) (hVopen : IsOpen (V : Set (Γ F)))
+    (hVker : ∀ a ∈ V, χ a = 1)
+    (hunr : ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      ∀ c : Γ F, ∀ σ ∈ localInertiaGroup w,
+        χ (c * Field.absoluteGaloisGroup.map
+          (algebraMap F (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w)) σ * c⁻¹) = 1)
+    (f : Ideal (NumberField.RingOfIntegers F) → Dickson.K 3)
+    (hfmul : ∀ I J : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ → J ≠ ⊥ →
+      f (I * J) = f I * f J)
+    (hfrob : ∀ v : IsDedekindDomain.HeightOneSpectrum
+      (NumberField.RingOfIntegers F), f v.asIdeal = χ (globalFrob v))
+    (α : NumberField.RingOfIntegers F) (hα0 : α ≠ 0)
+    (hαpos : ∀ φ : F →+* ℝ,
+      0 < φ (algebraMap (NumberField.RingOfIntegers F) F α)) :
+    f (Ideal.span {α}) = 1 := by
+  sorry
+
 set_option maxHeartbeats 1000000 in
 /-- **Artin reciprocity for the narrow Hilbert class field, in
-Frobenius-square form** (sorry node, created 2026-07-24 — THE remaining
-class-field-theoretic core of the route-(α) decomposition, now UNIFORM
-in the number field `F` and free of all `Γ ℚ`/`θ'` coding): a
-multiplicative character `χ` of `Γ F` (values in `𝔽̄₃`) that is trivial
-on an open subgroup `V` and everywhere unramified (`hunr`: trivial on
-every `Γ F`-conjugate of the image of the local inertia group at every
-finite place `w` of `F`) satisfies `χ(Frob_v)² = 1` at every finite
-place `v`, provided every nonzero ideal square of `𝓞 F` is narrowly
-principal (`hexp` — `Cl⁺(F)` has exponent dividing `2`, in the
-modulus-`1` `IsNarrowRayEquiv` vocabulary of `Chebotarev.lean`).
-Mathematical content (Neukirch VI §6–§7): `χ` cuts out a finite abelian
-extension `M/F` (fixed field of `ker χ`, open and normal), everywhere
-unramified by `hunr`; the Artin map sends `v ↦ Frob_v|_M`, extends
-multiplicatively to ideals, and kills totally-positive principal
-ideals, so `Frob_v² = Frob_{v²} = Frob_{(γ)} = 1` on `M`, with `γ ≫ 0`
-a totally positive generator of `v²` supplied by `hexp`. Intended
-formalization route: the Weber counting machinery of `Chebotarev.lean`
-(`exists_forall_abs_natCard_isNarrowRayEquiv_sub_mul_le_rpow`, the
-per-residue fibering, and the `exists_algEquiv_map_zeta_eq_pow_absNorm`
-Frobenius realizations) is being built exactly for the analytic proof
-of this reciprocity law; if the pin's vocabulary resists, the natural
-sharp sub-leaves are (i) Frobenius-at-ideals multiplicativity
-(`Frob_{IJ} = Frob_I · Frob_J` on the cut-out abelian extension) and
-(ii) the principal-ideal-trivial-Frobenius law for everywhere-
-unramified abelian extensions. -/
+Frobenius-square form** (created 2026-07-24 as THE class-field-theoretic
+core of the route-(α) decomposition, uniform in the number field `F`
+and free of all `Γ ℚ`/`θ'` coding; DECOMPOSED and PROVEN as glue
+2026-07-25 over the two sub-leaves just above — the bookkeeping
+`exists_ideal_extension_globalFrob_ray_class` (PROVEN) and the
+reciprocity input
+`character_ideal_span_singleton_eq_one_of_forall_pos_ray_class`
+(sorry)): a multiplicative character `χ` of `Γ F` (values in `𝔽̄₃`)
+that is trivial on an open subgroup `V` and everywhere unramified
+(`hunr`: trivial on every `Γ F`-conjugate of the image of the local
+inertia group at every finite place `w` of `F`) satisfies
+`χ(Frob_v)² = 1` at every finite place `v`, provided every nonzero
+ideal square of `𝓞 F` is narrowly principal (`hexp` — `Cl⁺(F)` has
+exponent dividing `2`).
+
+**Hypothesis CORRECTED 2026-07-25.** `hexp` previously read
+`IsNarrowRayEquiv 1 (I²) ⊤`, which is DEGENERATE: at modulus `1` all
+of that relation's clauses except the multiplier equation are vacuous,
+so `α = β = 0` satisfies it and, over a field with no real embedding,
+`IsNarrowRayEquiv 1 I J` holds for ALL `I, J` — making the statement
+false (counterexample `F = ℚ(√−47)`, `Cl(F) ≅ ℤ/5`, an order-`5`
+character into `μ₅ ⊆ 𝔽̄₃ˣ`; see `IsNarrowPrincipal`'s docstring). The
+hypothesis is now `IsNarrowPrincipal (I²)`, which pins the multipliers
+nonzero and says exactly `[I]² = 1` in `Cl⁺(F)`; it is supplied for
+the seven quadratic fields by `isNarrowPrincipal_sq_of_quadratic_ray_class`.
+
+Assembly proven here: extend `v ↦ χ(Frob_v)` multiplicatively to the
+nonzero ideals as `f` (sub-leaf (a)); `hexp` at `v` gives totally
+positive `α ≠ 0`, `β` with `(α)·v² = (β)`, and `β ≠ 0` follows since
+`(α)·v² ≠ ⊥` (`Ideal.mul_eq_bot`); applying `f` and using sub-leaf (b)
+twice, `1 = f((β)) = f((α))·f(v²) = f(v)² = χ(Frob_v)²`. -/
 theorem character_globalFrob_sq_eq_one_of_narrow_exponent_two_ray_class
     (F : Type*) [Field F] [NumberField F]
     (χ : Γ F → Dickson.K 3)
@@ -25638,10 +25775,36 @@ theorem character_globalFrob_sq_eq_one_of_narrow_exponent_two_ray_class
         χ (c * Field.absoluteGaloisGroup.map
           (algebraMap F (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w)) σ * c⁻¹) = 1)
     (hexp : ∀ I : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ →
-      IsNarrowRayEquiv 1 (I ^ 2) ⊤)
+      IsNarrowPrincipal (I ^ 2))
     (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F)) :
     χ (globalFrob v) ^ 2 = 1 := by
-  sorry
+  -- (a) the multiplicative extension of `v ↦ χ(Frob_v)` to the ideals
+  obtain ⟨f, hfmul, hfrob⟩ :=
+    exists_ideal_extension_globalFrob_ray_class F fun w => χ (globalFrob w)
+  -- the narrow principality of `v²`, with nonzero multipliers
+  obtain ⟨α, β, hα0, hαpos, hβpos, heq⟩ := hexp v.asIdeal v.ne_bot
+  have hspanα : Ideal.span {α} ≠ ⊥ := by
+    simpa [Ideal.span_singleton_eq_bot] using hα0
+  have hβ0 : β ≠ 0 := by
+    intro h0
+    have hbot : Ideal.span {α} * v.asIdeal ^ 2 = ⊥ := by
+      rw [heq, h0, Ideal.span_singleton_eq_bot.mpr rfl]
+    rcases Ideal.mul_eq_bot.mp hbot with h | h
+    · exact hspanα h
+    · exact pow_ne_zero 2 v.ne_bot h
+  -- (b) reciprocity kills both totally positive principal ideals
+  have hfα : f (Ideal.span {α}) = 1 :=
+    character_ideal_span_singleton_eq_one_of_forall_pos_ray_class F χ hmul V
+      hVopen hVker hunr f hfmul hfrob α hα0 hαpos
+  have hfβ : f (Ideal.span {β}) = 1 :=
+    character_ideal_span_singleton_eq_one_of_forall_pos_ray_class F χ hmul V
+      hVopen hVker hunr f hfmul hfrob β hβ0 hβpos
+  -- and multiplicativity turns the relation into the Frobenius square
+  have hstep := hfmul _ _ hspanα (pow_ne_zero 2 v.ne_bot)
+  rw [heq, hfβ, hfα, one_mul, pow_two, hfmul _ _ v.ne_bot v.ne_bot,
+    hfrob v] at hstep
+  rw [pow_two]
+  exact hstep.symm
 
 set_option maxHeartbeats 1000000 in
 /-- **Squares of characters trivial on all Frobenius conjugates are
@@ -25735,9 +25898,11 @@ unramified at every finite place of `F`). By Artin reciprocity for
 the narrow Hilbert class field `H⁺(F)/F` (Neukirch VI §6–§7; Serre,
 Duke 1987 §5.3), `ν` factors through `Gal(H⁺(F)/F) ≅ Cl⁺(F)`, and
 `hexp` — every nonzero ideal square is narrowly principal, i.e.
-`Cl⁺(F)` has exponent dividing `2`, stated on the modulus-`1`
-instance of the `Chebotarev.lean` narrow-ray vocabulary
-(`IsNarrowRayEquiv`) — forces `ν² = 1` on `H`. Suggested
+`Cl⁺(F)` has exponent dividing `2`, stated with the nondegenerate
+`IsNarrowPrincipal` predicate above (hypothesis CORRECTED 2026-07-25
+from the degenerate modulus-`1` `IsNarrowRayEquiv` form — see
+`IsNarrowPrincipal`'s docstring for the `ℚ(√−47)` counterexample the
+old form admitted) — forces `ν² = 1` on `H`. Suggested
 formalization route: realize a given `g ∈ H` modulo the open normal
 subgroup `ker(ν|_H)` as a Frobenius at a degree-one prime `𝔭` of `F`
 unramified in the finite abelian extension cut out by `ν`
@@ -25770,7 +25935,7 @@ theorem character_sq_eq_one_of_narrow_exponent_two_ray_class
     [NumberField (IntermediateField.adjoin ℚ {x})]
     (hexp : ∀ I : Ideal (NumberField.RingOfIntegers
         (IntermediateField.adjoin ℚ {x})), I ≠ ⊥ →
-      IsNarrowRayEquiv 1 (I ^ 2) ⊤) :
+      IsNarrowPrincipal (I ^ 2)) :
     ∀ g : Γ ℚ, θ' g = 1 → ν g ^ 2 = 1 := by
   classical
   -- `ℚ̄` is an algebraic closure of `F = ℚ(x)`
@@ -25946,7 +26111,7 @@ three nodes above — the pure-reciprocity sorry leaf
 `character_sq_eq_one_of_narrow_exponent_two_ray_class` (Artin
 reciprocity for the narrow Hilbert class field, THE
 class-field-theoretic gap) over the PROVEN narrow-exponent-two glue
-`isNarrowRayEquiv_sq_top_of_quadratic_ray_class` (the `h⁺`-table
+`isNarrowPrincipal_sq_of_quadratic_ray_class` (the `h⁺`-table
 `1, 1, 1, 2, 1, 2, 2` in exponent form) over the two per-field
 class-number sorry leaves
 `isPrincipalIdealRing_ringOfIntegers_quadratic_ray_class` (`h = 1`
@@ -26007,7 +26172,7 @@ theorem odd_character_eq_one_of_unramified_everywhere_ray_class
   have h2 : ν g ^ 2 = 1 :=
     character_sq_eq_one_of_narrow_exponent_two_ray_class θ' x hθ'x ν
       hνmul hνne0 U hUopen hUker hνunr
-      (fun I hI => isNarrowRayEquiv_sq_top_of_quadratic_ray_class
+      (fun I hI => isNarrowPrincipal_sq_of_quadratic_ray_class
         d hd x hx I hI) g hg
   -- the odd pointwise order, and `gcd(2, odd) = 1`
   obtain ⟨n, -, hnodd, -, hgn⟩ := hνodd g hg
