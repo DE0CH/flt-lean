@@ -230,6 +230,12 @@ import Fermat.FLT.Modularity.KhareWintenberger
 -- Taylor–Wiles injectivity) and the `charFrob`/base-change bridge.
 -- Proof-body use only (the 3b assembly).
 import Fermat.FLT.Modularity.Patching
+-- the connected–étale idempotent package
+-- (`Bialgebra.exists_connected_counit_idempotent`,
+-- `mul_eq_zero_or_mul_eq_of_minimal`) and the shared Oort–Tate
+-- `μ`-type node (`OortTate.*`), consumed by the Raynaud inertia
+-- dichotomy assembly (pillar E1b-i). Non-public: proofs only.
+import Fermat.FLT.GroupScheme.ConnectedEtale
 -- `ClassGroup`, `ClassGroup.mulEquiv`, `ClassGroup.mk0`: the ideal
 -- class group and its functoriality under ring isomorphisms — the
 -- carrier of the Galois action behind the Herbrand cut of Eisenstein
@@ -7336,46 +7342,80 @@ theorem cyclotomicCharacter_residue_pow_sub_one_eq_one
     exact h1.symm
   exact sub_eq_zero.mp hk
 
+-- Local abbreviations for the `p`-adic completion vocabulary of the
+-- Raynaud dichotomy assembly below (the notations elaborate to exactly
+-- the spelled-out terms of the statements they enter).
+local notation "𝔭ᵥ" => Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : p.Prime)
+local notation "𝒪ᵖᵥ" => IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : p.Prime))
+local notation "ℚᵖᵥ" => IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : p.Prime))
+
+/-- **`ℤ_p → k` factors through the mod-`p` residue** (PROVEN — glue
+for the Raynaud dichotomy assembly below): in a finite
+`ℤ_[p]`-algebra field `k`, the image of `x : ℤ_[p]` is the
+natural-number cast of its `ZMod p`-residue value: `x` differs from
+`(toZMod x).val` by an element of `p ℤ_p` (`PadicInt.ker_toZMod`),
+and `p` dies in `k` (`prime_eq_zero_of_finite_padicInt_algebra`). -/
+theorem algebraMap_padicInt_eq_natCast_toZMod_val
+    {k : Type*} [Field k] [Finite k] [Algebra ℤ_[p] k] (x : ℤ_[p]) :
+    algebraMap ℤ_[p] k x = ((PadicInt.toZMod x).val : k) := by
+  haveI : NeZero p := ⟨hp.out.ne_zero⟩
+  have hmem : x - (((PadicInt.toZMod x).val : ℕ) : ℤ_[p]) ∈
+      Ideal.span {((p : ℕ) : ℤ_[p])} := by
+    rw [← PadicInt.maximalIdeal_eq_span_p, ← PadicInt.ker_toZMod,
+      RingHom.mem_ker, map_sub, map_natCast, ZMod.natCast_val,
+      ZMod.cast_id, sub_self]
+  obtain ⟨t, ht⟩ := Ideal.mem_span_singleton'.mp hmem
+  have hp0 : algebraMap ℤ_[p] k ((p : ℕ) : ℤ_[p]) = 0 := by
+    rw [map_natCast]
+    exact prime_eq_zero_of_finite_padicInt_algebra
+  have h1 := congrArg (algebraMap ℤ_[p] k) ht
+  rw [map_mul, hp0, mul_zero, map_sub, map_natCast] at h1
+  exact sub_eq_zero.mp h1.symm
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
 /-- **Raynaud inertia dichotomy for the sub-character at `p`**
-(Eisenstein pillar E1b-i; sorry node — the finite-flat/Oort–Tate
-input of the Raynaud pinning): the sub-character `χsub = ω^i` of a
-(flat at `p`) triangular hardly ramified mod-`p` representation,
-restricted to the local inertia at `p`, is TRIVIAL or the mod-`p`
-CYCLOTOMIC character — nothing else occurs. Intended proof (Raynaud,
-*Schémas en groupes de type `(p, …, p)`*, Bull. SMF 102 (1974),
-3.3.2/3.4.3; Serre, Duke Math. J. 54 (1987), §2.4 and §2.8 prop. 8;
-Tate, "Finite flat group schemes", in Cornell–Silverman–Stevens):
-`hρbar.isFlat.cond ⊥` at the open ideal `⊥` of the discrete field
-`k` hands an explicit finite flat Hopf order `G` over `𝒪ᵥ ≅ ℤ_p`
-whose generic-fibre geometric points are `Γ ℚ_p`-equivariantly
-identified with `W` (transport `k ⧸ ⊥ ≅ k` along
-`HasFlatProlongationAt.of_equiv`); the stable line `k·(b 0)` of the
-triangular form is a Galois-stable subgroup of the points, and its
-schematic closure is a finite flat closed subgroup scheme over `ℤ_p`
-killed by `p` (Tate–Raynaud closure); at absolute ramification
-`e = 1 < p − 1` the connected–étale alternative for it reads: étale
-— its points are defined over `ℚ_p^nr`, inertia acts trivially, the
-LEFT disjunct — or connected, of multiplicative `μ`-type by
-Raynaud's classification (the `hpow` hypothesis places the inertia
-character in LEVEL 1, excluding the higher-level fundamental
-characters of the `𝔽_q`-vector-space-scheme classification), where
-inertia acts by the cyclotomic character — the RIGHT disjunct.
-SHARED CORE (audit 2026-07-24): the connected branch is the same
-Oort–Tate/μ-type content as the Family leaf
-`connected_point_smul_eq_cyclotomicCharacter_smul_of_hopf_package`
-(NOT consumable here — the circularity guard forbids `Family.lean`)
-and the ModThree leaf `inertiaFixed_connected_point_eq_one_at_three`;
-one Oort–Tate-at-`ℤ_p` classification leaf in the `ConnectedEtale`
-Hopf vocabulary (a connected finite flat Hopf order over `ℤ_p`
-killed by `p` at `e = 1` is of `μ`-type: inertia raises its points
-to the cyclotomic power) would discharge all three. Soundness (audit
+(Eisenstein pillar E1b-i; PROVEN 2026-07-24 as a connected–étale
+assembly over the single sorried shared Oort–Tate `μ`-type node
+`OortTate.connected_cyclic_point_smul_eq_conv_pow_cyclotomicCharacter`
+of `GroupScheme/ConnectedEtale.lean` — the neutral-home group-scheme
+classification leaf flagged by the E1b audit, reachable by all three
+Hopf-package consumers): the sub-character `χsub = ω^i` of a (flat at
+`p`) triangular hardly ramified mod-`p` representation, restricted to
+the local inertia at `p`, is TRIVIAL or the mod-`p` CYCLOTOMIC
+character — nothing else occurs. Assembly (Raynaud, *Schémas en
+groupes de type `(p, …, p)`*, Bull. SMF 102 (1974), 3.3.2/3.4.3;
+Serre, Duke Math. J. 54 (1987), §2.4 and §2.8 prop. 8; Tate, "Finite
+flat group schemes", in Cornell–Silverman–Stevens):
+`hρbar.isFlat.cond ⊥` at the open ideal `⊥` of the discrete field `k`
+hands an explicit finite flat Hopf order `G` over `𝒪ᵥ ≅ ℤ_p` whose
+generic-fibre geometric points are `Γ ℚ_p`-equivariantly identified
+with the congruence space `(k ⧸ ⊥) ⊗ W`; the PROVEN generic
+connected-idempotent package (`Bialgebra.exists_connected_counit_idempotent`)
+provides the connected counit idempotent `e₀`. Either `χsub` dies on
+the whole inertia (the LEFT disjunct, taken outright), or some
+inertia element `σ₀` has `χsub(σ̃₀) ≠ 1` — then the displacement
+vector `(χsub(σ̃₀) − 1)·(1 ⊗ b 0)` of the stable line is a NONZERO
+CONNECTED point (the PROVEN étale half
+`OortTate.displacement_point_apply_idempotent_eq_one`: inertia
+displacements die in the étale quotient), killed by `p` (char `p`),
+whose convolution-cyclic group is inertia-stable because `χsub = ω^i`
+is PRIME-FIELD-valued (`hpow` + `algebraMap_padicInt_eq_natCast_toZMod_val`
+— this is where the `hpow` hypothesis places the tame character in
+LEVEL 1, excluding the level-2 fundamental characters); the μ-type
+node then makes inertia act on it by the `χ_cyc mod p` convolution
+power, and transporting along the equivariant bijection and
+cancelling the nonzero coordinate on the basis line gives
+`χsub = ω` on ALL of inertia — the RIGHT disjunct. Soundness (audit
 2026-07-24): the hypothesis set is inhabited — the `μ_p`-over-`ℤ/p`
 lattice ordering of `1 ⊕ ω` realizes `χsub = ω` (tame quotient
 `δ = 1` at `2`) and the opposite ordering realizes `χsub = 1` — and
 the conclusion holds for every inhabitant by the classification
 cited; `p ≥ 5` is not consumed (`Odd p` gives `e = 1 < p − 1`).
 CIRCULARITY GUARD (inherited): must not be proven through
-`Family.lean` or `Reducible.lean`'s B5. -/
+`Family.lean` or `Reducible.lean`'s B5 — the assembly consumes only
+`GroupScheme/ConnectedEtale.lean`, which imports neither. -/
 theorem residual_triangular_sub_character_inertia_dichotomy_of_flat
     {k : Type*} [Field k] [Finite k] [Algebra ℤ_[p] k]
     [TopologicalSpace k] [DiscreteTopology k]
@@ -7410,12 +7450,679 @@ theorem residual_triangular_sub_character_inertia_dichotomy_of_flat
         ((Field.absoluteGaloisGroup.map (algebraMap ℚ
           (HeightOneSpectrum.adicCompletion ℚ
             (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
-              (Fact.out : p.Prime)))) σ).toRingEquiv))) :=
-  sorry
+              (Fact.out : p.Prime)))) σ).toRingEquiv))) := by
+  classical
+  by_cases htriv : ∀ σ ∈ localInertiaGroup 𝔭ᵥ,
+      χsub (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚᵖᵥ) σ) = 1
+  · exact Or.inl htriv
+  push Not at htriv
+  obtain ⟨σ₀, hσ₀, hne₀⟩ := htriv
+  refine Or.inr ?_
+  -- ==== the Hopf package of the flat prolongation at the open ideal `⊥` ====
+  obtain ⟨G, iCR, iHopf, iFlat, iFin, -, fG, hfG⟩ :=
+    hρbar.isFlat.cond (⊥ : Ideal k) (isOpen_discrete _)
+  letI := iCR
+  letI := iHopf
+  letI := iFlat
+  letI := iFin
+  -- the connected counit idempotent of the Hopf order
+  obtain ⟨e₀, he₀, hε₀, hmin₀, habs₀⟩ :=
+    Bialgebra.exists_connected_counit_idempotent (A := 𝒪ᵖᵥ) (G := G)
+  have hprim₀ : ∀ x : G, IsIdempotentElem x → x * e₀ = 0 ∨ x * e₀ = e₀ :=
+    fun x hx => mul_eq_zero_or_mul_eq_of_minimal he₀ hε₀ hmin₀ x hx
+  have hcomul₀ : Coalgebra.comul (R := 𝒪ᵖᵥ) e₀ * (e₀ ⊗ₜ[𝒪ᵖᵥ] e₀) =
+      e₀ ⊗ₜ[𝒪ᵖᵥ] e₀ := by
+    rwa [Bialgebra.comulAlgHom_apply] at habs₀
+  -- the points identification as an equivalence
+  let geq := Equiv.ofBijective fG hfG
+  have hfs : ∀ x, fG (geq.symm x) = x := fun x => geq.apply_symm_apply x
+  -- ==== the stable line through `1 ⊗ b 0` ====
+  have hact : ∀ gg : Field.absoluteGaloisGroup ℚ,
+      ρbar gg (b 0) = χsub gg • b 0 := by
+    intro gg
+    have h1 : ρbar gg (b 0) =
+        Matrix.toLin b b (LinearMap.toMatrix b b (ρbar gg)) (b 0) :=
+      (LinearMap.congr_fun (Matrix.toLin_toMatrix b b (ρbar gg)) (b 0)).symm
+    rw [htri gg, Matrix.toLin_self, Fin.sum_univ_two] at h1
+    simpa using h1
+  have hw_add : ∀ c d : k,
+      (1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] ((c + d) • b 0) =
+        (1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] (c • b 0) +
+          (1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] (d • b 0) := by
+    intro c d
+    rw [add_smul, TensorProduct.tmul_add]
+  have hlin : ∀ (τ : Field.absoluteGaloisGroup
+      (HeightOneSpectrum.adicCompletion ℚ 𝔭ᵥ)) (c : k),
+      (ρbar.baseChange (k ⧸ (⊥ : Ideal k)))
+          (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚᵖᵥ) τ)
+          ((1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] (c • b 0)) =
+        (1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k]
+          ((χsub (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚᵖᵥ) τ) * c) •
+            b 0) := by
+    intro τ c
+    rw [GaloisRep.baseChange_tmul]
+    congr 1
+    rw [map_smul, hact, smul_smul,
+      mul_comm c (χsub (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚᵖᵥ) τ))]
+  have hwsmul : ∀ (m : ℕ) (c : k),
+      m • ((1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] (c • b 0)) =
+        (1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] (((m : k) * c) • b 0) := by
+    intro m c
+    have h1 := map_nsmul (TensorProduct.mk k (k ⧸ (⊥ : Ideal k)) W 1) m
+      (c • b 0)
+    rw [TensorProduct.mk_apply, TensorProduct.mk_apply] at h1
+    rw [← h1]
+    congr 1
+    rw [← Nat.cast_smul_eq_nsmul k m (c • b 0), smul_smul]
+  have hwinj : ∀ x y : k,
+      (1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] (x • b 0) =
+        (1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] (y • b 0) → x = y := by
+    intro x y hxy
+    have h1 : ((TensorProduct.congr
+        (AlgEquiv.quotientBot k k).toLinearEquiv
+        (LinearEquiv.refl k W)).trans (TensorProduct.lid k W))
+        ((1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] ((x - y) • b 0)) = (x - y) • b 0 := by
+      rw [LinearEquiv.trans_apply, TensorProduct.congr_tmul,
+        TensorProduct.lid_tmul, LinearEquiv.refl_apply,
+        AlgEquiv.toLinearEquiv_apply, map_one, one_smul]
+    have h2 : (1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] ((x - y) • b 0) = 0 := by
+      rw [sub_smul, TensorProduct.tmul_sub, hxy, sub_self]
+    rw [h2, map_zero] at h1
+    rcases smul_eq_zero.mp h1.symm with h | h
+    · exact sub_eq_zero.mp h
+    · exact absurd h (b.ne_zero 0)
+  -- `p`-torsion of the congruence module (`p` dies in `k`)
+  have hpw : ∀ x : (k ⧸ (⊥ : Ideal k)) ⊗[k] W, p • x = 0 := by
+    intro x
+    have h1 : ((p : ℕ) : k ⧸ (⊥ : Ideal k)) = 0 := by
+      have h2 := congrArg (algebraMap k (k ⧸ (⊥ : Ideal k)))
+        (prime_eq_zero_of_finite_padicInt_algebra (p := p) (k := k))
+      rwa [map_natCast, map_zero] at h2
+    have h3 := Nat.cast_smul_eq_nsmul (k ⧸ (⊥ : Ideal k)) p x
+    rw [h1, zero_smul] at h3
+    exact h3.symm
+  -- the two spellings of the local action agree (ring homs out of `ℚ`)
+  have hbridge : ∀ (τ : Field.absoluteGaloisGroup
+      (HeightOneSpectrum.adicCompletion ℚ 𝔭ᵥ))
+      (x : (k ⧸ (⊥ : Ideal k)) ⊗[k] W),
+      ((ρbar.baseChange (k ⧸ (⊥ : Ideal k))).toLocal 𝔭ᵥ) τ x =
+        (ρbar.baseChange (k ⧸ (⊥ : Ideal k)))
+          (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚᵖᵥ) τ) x := by
+    intro τ x
+    rw [GaloisRep.toLocal_apply]
+    exact congrArg (fun (h : ℚ →+* ℚᵖᵥ) =>
+      (ρbar.baseChange (k ⧸ (⊥ : Ideal k)))
+        (Field.absoluteGaloisGroup.map h τ) x)
+      (Subsingleton.elim _ _)
+  -- ==== the nonzero connected vector on the stable line ====
+  set c₀ : k :=
+    χsub (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚᵖᵥ) σ₀) - 1
+    with hc₀def
+  have hc₀ : c₀ ≠ 0 := by
+    rw [hc₀def]
+    exact sub_ne_zero.mpr hne₀
+  have hXd : geq.symm ((1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] (c₀ • b 0)) +
+      geq.symm ((1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] ((1 : k) • b 0)) =
+      σ₀ • geq.symm ((1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] ((1 : k) • b 0)) := by
+    apply geq.injective
+    show fG _ = fG _
+    rw [map_add fG, map_smul fG, hfs, hfs]
+    show (1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] (c₀ • b 0) +
+        (1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] ((1 : k) • b 0) =
+      ((ρbar.baseChange (k ⧸ (⊥ : Ideal k))).toLocal 𝔭ᵥ) σ₀
+        ((1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] ((1 : k) • b 0))
+    rw [hbridge, hlin σ₀ 1, mul_one, ← hw_add,
+      show c₀ + 1 =
+          χsub (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚᵖᵥ) σ₀) from by
+        rw [hc₀def]; ring]
+  -- the displacement point is CONNECTED (the étale half)
+  have hconn : (Additive.toMul (geq.symm
+      ((1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] (c₀ • b 0))))
+      ((1 : ℚᵖᵥ) ⊗ₜ[𝒪ᵖᵥ] e₀) = 1 := by
+    refine OortTate.displacement_point_apply_idempotent_eq_one 𝔭ᵥ G e₀ he₀
+      hε₀ σ₀ hσ₀
+      (Additive.toMul (geq.symm
+        ((1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] ((1 : k) • b 0)))) _ ?_
+    have h1 := congrArg Additive.toMul hXd
+    rw [toMul_add] at h1
+    exact h1
+  -- the connected point is killed by `p`
+  have hord : (Additive.toMul (geq.symm
+      ((1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] (c₀ • b 0)))) ^ p = 1 := by
+    have h0 : fG (p • geq.symm
+        ((1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] (c₀ • b 0))) = fG 0 := by
+      rw [map_nsmul fG, map_zero fG, hfs]
+      exact hpw _
+    have h1 := hfG.injective h0
+    have h2 := congrArg Additive.toMul h1
+    rwa [toMul_nsmul, toMul_zero] at h2
+  -- inertia-stability of the cyclic point group: `χsub = ω^i` is
+  -- prime-field-valued (the LEVEL-1 placement through `hpow`)
+  have hstab : ∀ τ ∈ localInertiaGroup 𝔭ᵥ,
+      ∃ m : ℕ,
+        τ • (Additive.toMul (geq.symm
+          ((1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] (c₀ • b 0)))) =
+        (Additive.toMul (geq.symm
+          ((1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] (c₀ • b 0)))) ^ m := by
+    intro τ _
+    refine ⟨(PadicInt.toZMod ((cyclotomicCharacter (AlgebraicClosure ℚ) p
+      ((Field.absoluteGaloisGroup.map (algebraMap ℚ ℚᵖᵥ) τ).toRingEquiv) :
+        ℤ_[p]ˣ) : ℤ_[p])).val ^ i, ?_⟩
+    have hval : χsub (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚᵖᵥ) τ) =
+        (((PadicInt.toZMod ((cyclotomicCharacter (AlgebraicClosure ℚ) p
+          ((Field.absoluteGaloisGroup.map (algebraMap ℚ ℚᵖᵥ)
+            τ).toRingEquiv) : ℤ_[p]ˣ) : ℤ_[p])).val ^ i : ℕ) : k) := by
+      rw [hpow (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚᵖᵥ) τ),
+        algebraMap_padicInt_eq_natCast_toZMod_val, Nat.cast_pow]
+    have h2 : fG (τ • geq.symm
+        ((1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] (c₀ • b 0))) =
+        fG (((PadicInt.toZMod ((cyclotomicCharacter (AlgebraicClosure ℚ) p
+          ((Field.absoluteGaloisGroup.map (algebraMap ℚ ℚᵖᵥ)
+            τ).toRingEquiv) : ℤ_[p]ˣ) : ℤ_[p])).val ^ i) •
+          geq.symm ((1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] (c₀ • b 0))) := by
+      rw [map_smul fG, map_nsmul fG, hfs]
+      show ((ρbar.baseChange (k ⧸ (⊥ : Ideal k))).toLocal 𝔭ᵥ) τ
+          ((1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] (c₀ • b 0)) = _
+      rw [hbridge, hlin, hval, hwsmul]
+    have h3 := hfG.injective h2
+    have h4 := congrArg Additive.toMul h3
+    rw [toMul_nsmul] at h4
+    exact h4
+  -- ==== the RIGHT disjunct, one inertia element at a time ====
+  intro σ hσ
+  set nval : ℕ :=
+    (PadicInt.toZMod ((cyclotomicCharacter (AlgebraicClosure ℚ) p
+      ((Field.absoluteGaloisGroup.map (algebraMap ℚ ℚᵖᵥ) σ).toRingEquiv) :
+        ℤ_[p]ˣ) : ℤ_[p])).val with hnval
+  have hnmem : ((cyclotomicCharacter (AlgebraicClosure ℚ) p
+      ((Field.absoluteGaloisGroup.map (algebraMap ℚ ℚᵖᵥ) σ).toRingEquiv) :
+        ℤ_[p]ˣ) : ℤ_[p]) - (nval : ℤ_[p]) ∈
+      Ideal.span {((p : ℕ) : ℤ_[p])} := by
+    haveI : NeZero p := ⟨hp.out.ne_zero⟩
+    rw [hnval, ← PadicInt.maximalIdeal_eq_span_p, ← PadicInt.ker_toZMod,
+      RingHom.mem_ker, map_sub, map_natCast, ZMod.natCast_val,
+      ZMod.cast_id, sub_self]
+  -- the shared Oort–Tate `μ`-type node
+  have hsmul :=
+    OortTate.connected_cyclic_point_smul_eq_conv_pow_cyclotomicCharacter
+      hpodd G e₀ he₀ hε₀ hprim₀ hcomul₀
+      (Additive.toMul (geq.symm
+        ((1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] (c₀ • b 0))))
+      hconn hord hstab σ hσ nval hnmem
+  -- transport the convolution power identity to the congruence space
+  have hfinal : (1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k]
+      ((χsub (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚᵖᵥ) σ) * c₀) •
+        b 0) =
+      (1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] (((nval : k) * c₀) • b 0) := by
+    have h3a : σ • geq.symm ((1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] (c₀ • b 0)) =
+        nval • geq.symm ((1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] (c₀ • b 0)) :=
+      Additive.toMul.injective (by rw [toMul_nsmul]; exact hsmul)
+    have h3 := congrArg fG h3a
+    rw [map_smul fG, map_nsmul fG, hfs] at h3
+    have h4 : ((ρbar.baseChange (k ⧸ (⊥ : Ideal k))).toLocal 𝔭ᵥ) σ
+        ((1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] (c₀ • b 0)) =
+        nval • ((1 : k ⧸ (⊥ : Ideal k)) ⊗ₜ[k] (c₀ • b 0)) := h3
+    rw [hbridge, hlin, hwsmul] at h4
+    exact h4
+  -- cancel the nonzero coordinate on the basis line
+  have hchisub : χsub (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚᵖᵥ) σ) =
+      (nval : k) :=
+    mul_right_cancel₀ hc₀ (hwinj _ _ hfinal)
+  rw [hchisub, algebraMap_padicInt_eq_natCast_toZMod_val, hnval]
+
+set_option maxHeartbeats 2000000 in
+/-- **The mod-`p` cyclotomic character maps the inertia at `p` ONTO
+`(ℤ/p)^×`** (PROVEN 2026-07-24 — the surjectivity core of the
+Serre §1.3 fundamental-character leaf below): every unit `u` of
+`ℤ/p^1 = ℤ/p` is the level-`1` reduction of `ω(σ)` for some element
+`σ` of the local inertia at `p`. This is the total tame ramification
+of `ℚ_p(ζ_p)/ℚ_p` in inertia-element form, proven by a Gauss-period
+argument that needs no ramification theory beyond the project's
+PROVEN inertia-fixed-field node: let `H ⊆ (ℤ/p)^×` be the image of
+the inertia under `ω` and suppose some unit `u₀ ∉ H`. The period
+`τ₁ = ∏_{a ∈ H} (1 − ζ^a)` is then fixed by the whole inertia (the
+inertia permutes the factors by translation inside `H`), so
+`ℚ_pᵥ(τ₁)` lies in the fixed field of `localInertiaGroup v`, whence
+`e = 1` there (`maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup`,
+Neukirch II.9.11) and the maximal ideal of its integral closure is
+generated by `p` (`maximalIdeal_adicCompletionIntegers_eq_span`). At
+the finite level `τ₁` is therefore either a unit — and then the
+cofactor identity `1 − ζ = (1 − ζ^{u₀})·(integral)` inverts the
+MISSING factor `1 − ζ^{u₀}` — or divisible by `p`, and cancelling `p`
+from `∏_{all a}(1 − ζ^a) = Φ_p(1) = p`
+(`Polynomial.eval_one_cyclotomic_prime`) again inverts every factor
+outside `H`, `u₀` among them. Either way all `p − 1` factors become
+invertible with integral inverses, so `1/p` is integral over the
+DVR `𝒪ᵥ`, hence lies in it (`IsIntegrallyClosed`) — contradicting
+`p ∈ 𝔪ᵥ`. Hence `H = (ℤ/p)^×`. (Serre, Duke Math. J. 54 (1987),
+§1.3, 1.7; Serre, *Corps Locaux*, IV §4.) -/
+theorem exists_mem_localInertiaGroup_cyclotomicCharacter_toZModPow_eq
+    (u : (ZMod (p ^ 1))ˣ) :
+    ∃ σ ∈ localInertiaGroup
+        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+          (Fact.out : p.Prime)),
+      PadicInt.toZModPow 1
+        ((cyclotomicCharacter (AlgebraicClosure ℚ) p
+          ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (HeightOneSpectrum.adicCompletion ℚ
+              (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+                (Fact.out : p.Prime)))) σ).toRingEquiv) : ℤ_[p]ˣ) : ℤ_[p]) =
+        (u : ZMod (p ^ 1)) := by
+  classical
+  haveI : NeZero (p ^ 1) := ⟨pow_ne_zero 1 hp.out.ne_zero⟩
+  haveI : NeZero p := ⟨hp.out.ne_zero⟩
+  set v := Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+    (Fact.out : p.Prime) with hvdef
+  set f : ℚ →+* HeightOneSpectrum.adicCompletion ℚ v :=
+    algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ v) with hfdef
+  -- the exponent character on the local Galois group: the level-`1`
+  -- reduction of the global cyclotomic character
+  set χring : Field.absoluteGaloisGroup ℚ →*
+      ((AlgebraicClosure ℚ) ≃+* (AlgebraicClosure ℚ)) :=
+    { toFun := fun g => g.toRingEquiv
+      map_one' := rfl
+      map_mul' := fun _ _ => rfl } with hχringdef
+  set χcomp : Field.absoluteGaloisGroup
+      (HeightOneSpectrum.adicCompletion ℚ v) →* (ZMod (p ^ 1))ˣ :=
+    ((Units.map (PadicInt.toZModPow (p := p) 1).toMonoidHom).comp
+      ((cyclotomicCharacter (AlgebraicClosure ℚ) p).comp χring)).comp
+      (Field.absoluteGaloisGroup.map f).toMonoidHom with hχcompdef
+  have hχval : ∀ σ : Field.absoluteGaloisGroup
+      (HeightOneSpectrum.adicCompletion ℚ v),
+      ((χcomp σ : (ZMod (p ^ 1))ˣ) : ZMod (p ^ 1)) =
+        PadicInt.toZModPow 1
+          ((cyclotomicCharacter (AlgebraicClosure ℚ) p
+            ((Field.absoluteGaloisGroup.map f σ).toRingEquiv) : ℤ_[p]ˣ) :
+            ℤ_[p]) := fun _ => rfl
+  -- it suffices that the image subgroup of the local inertia is full
+  suffices hHfull : ∀ w : (ZMod (p ^ 1))ˣ,
+      w ∈ Subgroup.map χcomp (localInertiaGroup v) by
+    obtain ⟨σ, hσ, hσval⟩ := Subgroup.mem_map.mp (hHfull u)
+    exact ⟨σ, hσ, by rw [← hχval σ, hσval]⟩
+  intro u₀
+  by_contra hu₀mem
+  -- a primitive `p`-th root of unity over `ℚ` and its local image
+  obtain ⟨ζ₀, hζ₀⟩ := HasEnoughRootsOfUnity.exists_primitiveRoot
+    (AlgebraicClosure ℚ) p
+  set ζ' : AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v) :=
+    AlgebraicClosure.map f ζ₀ with hζ'def
+  have hζ'prim : IsPrimitiveRoot ζ' p :=
+    hζ₀.map_of_injective (AlgebraicClosure.map f).injective
+  have hζ'p1 : ζ' ^ p ^ 1 = 1 := by rw [pow_one]; exact hζ'prim.pow_eq_one
+  have hpow_mod : ∀ m : ℕ, ζ' ^ m = ζ' ^ (m % p ^ 1) := by
+    intro m
+    conv_lhs => rw [← Nat.div_add_mod m (p ^ 1)]
+    rw [pow_add, pow_mul, hζ'p1, one_pow, one_mul]
+  -- the Galois action on `ζ'` is by the level-`1` cyclotomic exponent
+  have hact : ∀ σ : Field.absoluteGaloisGroup
+      (HeightOneSpectrum.adicCompletion ℚ v),
+      σ ζ' = ζ' ^ ((χcomp σ : ZMod (p ^ 1))).val := by
+    intro σ
+    have hζ₀p1 : ζ₀ ^ p ^ 1 = 1 := by rw [pow_one]; exact hζ₀.pow_eq_one
+    have hspec := cyclotomicCharacter.spec p
+      ((Field.absoluteGaloisGroup.map f σ).toRingEquiv) ζ₀ hζ₀p1
+    have hlift := Field.absoluteGaloisGroup.lift_map f σ ζ₀
+    rw [hζ'def, ← hlift, show ((Field.absoluteGaloisGroup.map f σ) ζ₀ :
+        AlgebraicClosure ℚ) =
+      ((Field.absoluteGaloisGroup.map f σ).toRingEquiv) ζ₀ from rfl,
+      hspec, map_pow, hχval σ]
+  -- the factors of `Φ_p(1) = p`
+  set q : (ZMod (p ^ 1))ˣ → AlgebraicClosure
+      (HeightOneSpectrum.adicCompletion ℚ v) :=
+    fun a => 1 - ζ' ^ ((a : ZMod (p ^ 1))).val with hqdef
+  have hζ'int : IsIntegral (HeightOneSpectrum.adicCompletionIntegers ℚ v)
+      ζ' := by
+    refine ⟨Polynomial.X ^ p - Polynomial.C 1,
+      Polynomial.monic_X_pow_sub_C 1 hp.out.ne_zero, ?_⟩
+    rw [Polynomial.eval₂_sub, Polynomial.eval₂_pow, Polynomial.eval₂_X,
+      Polynomial.eval₂_C, map_one, hζ'prim.pow_eq_one, sub_self]
+  have hqint : ∀ a : (ZMod (p ^ 1))ˣ,
+      IsIntegral (HeightOneSpectrum.adicCompletionIntegers ℚ v) (q a) := by
+    intro a
+    simp only [hqdef]
+    exact isIntegral_one.sub (hζ'int.pow _)
+  -- mutual divisibility of the factors, with integral cofactors
+  have hdvd : ∀ a b : (ZMod (p ^ 1))ˣ, ∃ c,
+      IsIntegral (HeightOneSpectrum.adicCompletionIntegers ℚ v) c ∧
+      q b = q a * c := by
+    intro a b
+    refine ⟨∑ j ∈ Finset.range (((a⁻¹ * b : (ZMod (p ^ 1))ˣ) :
+        ZMod (p ^ 1))).val, (ζ' ^ ((a : ZMod (p ^ 1))).val) ^ j, ?_, ?_⟩
+    · exact IsIntegral.sum _ fun j _ => (hζ'int.pow _).pow _
+    · simp only [hqdef]
+      have hx : (ζ' ^ ((a : ZMod (p ^ 1))).val) ^
+          (((a⁻¹ * b : (ZMod (p ^ 1))ˣ) : ZMod (p ^ 1))).val =
+          ζ' ^ (((b : ZMod (p ^ 1))).val) := by
+        rw [← pow_mul, hpow_mod, ← ZMod.val_mul, ← Units.val_mul,
+          mul_inv_cancel_left]
+      rw [← hx]
+      linear_combination geom_sum_mul (ζ' ^ ((a : ZMod (p ^ 1))).val)
+        (((a⁻¹ * b : (ZMod (p ^ 1))ˣ) : ZMod (p ^ 1))).val
+  -- the full product over `(ℤ/p)ˣ` is `Φ_p(1) = p`
+  have hprodfull : ∏ a : (ZMod (p ^ 1))ˣ, q a =
+      ((p : ℕ) : AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v)) := by
+    have hcyc := Polynomial.eval_one_cyclotomic_prime
+      (R := AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v)) (p := p)
+    rw [Polynomial.cyclotomic_eq_prod_X_sub_primitiveRoots hζ'prim,
+      Polynomial.eval_prod] at hcyc
+    simp only [Polynomial.eval_sub, Polynomial.eval_X, Polynomial.eval_C]
+      at hcyc
+    rw [← hcyc]
+    refine Finset.prod_bij (fun a _ => ζ' ^ ((a : ZMod (p ^ 1))).val)
+      ?_ ?_ ?_ ?_
+    · intro a _
+      rw [mem_primitiveRoots hp.out.pos]
+      refine hζ'prim.pow_of_coprime _ ?_
+      exact (ZMod.val_coe_unit_coprime a).coprime_dvd_right
+        (dvd_pow_self p one_ne_zero)
+    · intro a _ b _ hab
+      have ha : ((a : ZMod (p ^ 1))).val < p :=
+        calc ((a : ZMod (p ^ 1))).val < p ^ 1 := ZMod.val_lt _
+          _ = p := pow_one p
+      have hb : ((b : ZMod (p ^ 1))).val < p :=
+        calc ((b : ZMod (p ^ 1))).val < p ^ 1 := ZMod.val_lt _
+          _ = p := pow_one p
+      exact Units.ext (ZMod.val_injective _ (hζ'prim.pow_inj ha hb hab))
+    · intro μ hμ
+      rw [mem_primitiveRoots hp.out.pos] at hμ
+      obtain ⟨j, hjlt, hjcop, hjeq⟩ := (hζ'prim.isPrimitiveRoot_iff).mp hμ
+      refine ⟨ZMod.unitOfCoprime j (hjcop.pow_right 1), Finset.mem_univ _, ?_⟩
+      rw [ZMod.coe_unitOfCoprime, ZMod.val_natCast,
+        Nat.mod_eq_of_lt (by rw [pow_one]; exact hjlt)]
+      exact hjeq
+    · intro a _
+      rfl
+  -- the local closure has characteristic zero
+  haveI : CharZero (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v)) :=
+    charZero_of_injective_algebraMap
+      (algebraMap (HeightOneSpectrum.adicCompletion ℚ v) _).injective
+  have hp0 : ((p : ℕ) : AlgebraicClosure
+      (HeightOneSpectrum.adicCompletion ℚ v)) ≠ 0 :=
+    Nat.cast_ne_zero.mpr hp.out.ne_zero
+  -- the Gauss period over the (assumed proper) image subgroup
+  set Hfin : Finset (ZMod (p ^ 1))ˣ :=
+    Finset.univ.filter (· ∈ Subgroup.map χcomp (localInertiaGroup v))
+    with hHfindef
+  set τ₁ : AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v) :=
+    ∏ a ∈ Hfin, q a with hτ₁def
+  -- every inertia element fixes the period
+  have hτ₁fix : ∀ σ ∈ localInertiaGroup v, σ τ₁ = τ₁ := by
+    intro σ hσ
+    have hcmem : χcomp σ ∈ Subgroup.map χcomp (localInertiaGroup v) :=
+      Subgroup.mem_map.mpr ⟨σ, hσ, rfl⟩
+    have hqσ : ∀ a : (ZMod (p ^ 1))ˣ, σ (q a) = q (χcomp σ * a) := by
+      intro a
+      simp only [hqdef]
+      rw [map_sub, map_one, map_pow, hact σ, ← pow_mul, hpow_mod,
+        ← ZMod.val_mul, ← Units.val_mul]
+    rw [hτ₁def, map_prod, Finset.prod_congr rfl fun a _ => hqσ a]
+    refine Finset.prod_nbij' (fun a => χcomp σ * a) (fun a => (χcomp σ)⁻¹ * a)
+      ?_ ?_ ?_ ?_ ?_
+    · intro a ha
+      simp only [hHfindef, Finset.mem_filter] at ha ⊢
+      exact ⟨Finset.mem_univ _, Subgroup.mul_mem _ hcmem ha.2⟩
+    · intro a ha
+      simp only [hHfindef, Finset.mem_filter] at ha ⊢
+      exact ⟨Finset.mem_univ _,
+        Subgroup.mul_mem _ (Subgroup.inv_mem _ hcmem) ha.2⟩
+    · intro a _
+      rw [inv_mul_cancel_left]
+    · intro a _
+      rw [mul_inv_cancel_left]
+    · intro a _
+      rfl
+  -- the adjoined field `Kᵥ(τ₁)` is finite and inertia-fixed
+  have hτ₁algK : IsIntegral (HeightOneSpectrum.adicCompletion ℚ v) τ₁ :=
+    (Algebra.IsAlgebraic.isAlgebraic τ₁).isIntegral
+  haveI hfdM : FiniteDimensional (HeightOneSpectrum.adicCompletion ℚ v)
+      (IntermediateField.adjoin (HeightOneSpectrum.adicCompletion ℚ v)
+        {τ₁}) :=
+    IntermediateField.adjoin.finiteDimensional hτ₁algK
+  have hMle : IntermediateField.adjoin
+      (HeightOneSpectrum.adicCompletion ℚ v) {τ₁} ≤
+      IntermediateField.fixedField (localInertiaGroup v) := by
+    rw [IntermediateField.adjoin_le_iff]
+    intro z hz
+    rw [Set.mem_singleton_iff] at hz
+    subst hz
+    rw [SetLike.mem_coe, IntermediateField.mem_fixedField_iff]
+    exact hτ₁fix
+  -- `𝔪ᵥ = (p)` generates the maximal ideal of the integral closure
+  have hideal := maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup v
+    (IntermediateField.adjoin (HeightOneSpectrum.adicCompletion ℚ v) {τ₁})
+    hMle
+  have hspan : IsLocalRing.maximalIdeal
+      (HeightOneSpectrum.adicCompletionIntegers ℚ v) =
+      Ideal.span {((p : ℕ) :
+        HeightOneSpectrum.adicCompletionIntegers ℚ v)} :=
+    maximalIdeal_adicCompletionIntegers_eq_span (Fact.out : p.Prime)
+  have hMR : IsLocalRing.maximalIdeal
+      (IntegralClosure (HeightOneSpectrum.adicCompletionIntegers ℚ v)
+      (IntermediateField.adjoin (HeightOneSpectrum.adicCompletion ℚ v)
+        {τ₁})) =
+      Ideal.span {((p : ℕ) :
+        IntegralClosure (HeightOneSpectrum.adicCompletionIntegers ℚ v)
+        (IntermediateField.adjoin (HeightOneSpectrum.adicCompletion ℚ v)
+          {τ₁}))} := by
+    rw [← hideal, hspan, Ideal.map_span, Set.image_singleton, map_natCast]
+  -- `τ₁` as an element of the integral closure at the finite level
+  have hτ₁mem : τ₁ ∈ IntermediateField.adjoin
+      (HeightOneSpectrum.adicCompletion ℚ v) {τ₁} :=
+    IntermediateField.mem_adjoin_simple_self _ τ₁
+  have hτ₁int : IsIntegral (HeightOneSpectrum.adicCompletionIntegers ℚ v)
+      τ₁ := by
+    rw [hτ₁def]
+    exact Finset.prod_induction q _ (fun x y hx hy => hx.mul hy)
+      isIntegral_one fun a _ => hqint a
+  have hτ₁Mint : IsIntegral (HeightOneSpectrum.adicCompletionIntegers ℚ v)
+      (⟨τ₁, hτ₁mem⟩ :
+      IntermediateField.adjoin (HeightOneSpectrum.adicCompletion ℚ v)
+        {τ₁}) := by
+    rw [← isIntegral_algebraMap_iff (algebraMap
+      (IntermediateField.adjoin (HeightOneSpectrum.adicCompletion ℚ v) {τ₁})
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))).injective]
+    exact hτ₁int
+  obtain ⟨T, hT⟩ := (IsIntegralClosure.isIntegral_iff
+    (A := IntegralClosure (HeightOneSpectrum.adicCompletionIntegers ℚ v)
+      (IntermediateField.adjoin (HeightOneSpectrum.adicCompletion ℚ v)
+        {τ₁}))).mp hτ₁Mint
+  -- pushing integral-closure elements back into the algebraic closure
+  set toC : IntegralClosure (HeightOneSpectrum.adicCompletionIntegers ℚ v)
+      (IntermediateField.adjoin (HeightOneSpectrum.adicCompletion ℚ v)
+        {τ₁}) → AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v) :=
+    fun Z => algebraMap
+      (IntermediateField.adjoin (HeightOneSpectrum.adicCompletion ℚ v) {τ₁})
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))
+      (algebraMap (IntegralClosure
+        (HeightOneSpectrum.adicCompletionIntegers ℚ v)
+        (IntermediateField.adjoin (HeightOneSpectrum.adicCompletion ℚ v)
+          {τ₁}))
+        (IntermediateField.adjoin (HeightOneSpectrum.adicCompletion ℚ v)
+          {τ₁}) Z) with htoCdef
+  have hpushint : ∀ Z,
+      IsIntegral (HeightOneSpectrum.adicCompletionIntegers ℚ v) (toC Z) := by
+    intro Z
+    simp only [htoCdef]
+    exact ((Algebra.IsIntegral.isIntegral
+      (R := HeightOneSpectrum.adicCompletionIntegers ℚ v)
+      Z).algebraMap).algebraMap
+  have hToCT : toC T = τ₁ := by
+    simp only [htoCdef]
+    rw [hT]
+    rfl
+  -- either way, the missing factor `1 − ζ'^{u₀}` acquires an integral
+  -- inverse
+  have hqu₀inv : ∃ y,
+      IsIntegral (HeightOneSpectrum.adicCompletionIntegers ℚ v) y ∧
+      q u₀ * y = 1 := by
+    by_cases hTu : IsUnit T
+    · -- the period is a unit at the finite level
+      obtain ⟨Tu, hTueq⟩ := hTu
+      have hTmul : T * ((Tu⁻¹ : _ˣ) : IntegralClosure
+          (HeightOneSpectrum.adicCompletionIntegers ℚ v)
+          (IntermediateField.adjoin (HeightOneSpectrum.adicCompletion ℚ v)
+            {τ₁})) = 1 := by
+        rw [← hTueq, Units.mul_inv]
+      have hTCinv : toC T * toC ((Tu⁻¹ : _ˣ) : IntegralClosure
+          (HeightOneSpectrum.adicCompletionIntegers ℚ v)
+          (IntermediateField.adjoin (HeightOneSpectrum.adicCompletion ℚ v)
+            {τ₁})) = 1 := by
+        simp only [htoCdef]
+        rw [← map_mul, ← map_mul, hTmul, map_one, map_one]
+      have hTinv : τ₁ * toC ((Tu⁻¹ : _ˣ) : IntegralClosure
+          (HeightOneSpectrum.adicCompletionIntegers ℚ v)
+          (IntermediateField.adjoin (HeightOneSpectrum.adicCompletion ℚ v)
+            {τ₁})) = 1 :=
+        calc τ₁ * toC ((Tu⁻¹ : _ˣ) : IntegralClosure
+              (HeightOneSpectrum.adicCompletionIntegers ℚ v)
+              (IntermediateField.adjoin
+                (HeightOneSpectrum.adicCompletion ℚ v) {τ₁}))
+            = toC T * toC ((Tu⁻¹ : _ˣ) : IntegralClosure
+              (HeightOneSpectrum.adicCompletionIntegers ℚ v)
+              (IntermediateField.adjoin
+                (HeightOneSpectrum.adicCompletion ℚ v) {τ₁})) := by
+              rw [hToCT]
+          _ = 1 := hTCinv
+      obtain ⟨c, hcint, hc⟩ := hdvd u₀ 1
+      have h1H : (1 : (ZMod (p ^ 1))ˣ) ∈ Hfin := by
+        simp only [hHfindef, Finset.mem_filter]
+        exact ⟨Finset.mem_univ _, Subgroup.one_mem _⟩
+      have hτfact : τ₁ = q u₀ * (c * ∏ a ∈ Hfin.erase 1, q a) := by
+        rw [hτ₁def, ← Finset.mul_prod_erase Hfin q h1H, hc]
+        ring
+      refine ⟨(c * ∏ a ∈ Hfin.erase 1, q a) * toC ((Tu⁻¹ : _ˣ) :
+        IntegralClosure (HeightOneSpectrum.adicCompletionIntegers ℚ v)
+          (IntermediateField.adjoin
+            (HeightOneSpectrum.adicCompletion ℚ v) {τ₁})), ?_, ?_⟩
+      · exact (hcint.mul (Finset.prod_induction q _
+          (fun x y hx hy => hx.mul hy) isIntegral_one
+          fun a _ => hqint a)).mul (hpushint _)
+      · rw [← mul_assoc, ← hτfact]
+        exact hTinv
+    · -- the period is divisible by `p` at the finite level
+      have hTm : T ∈ IsLocalRing.maximalIdeal
+          (IntegralClosure (HeightOneSpectrum.adicCompletionIntegers ℚ v)
+          (IntermediateField.adjoin (HeightOneSpectrum.adicCompletion ℚ v)
+            {τ₁})) := by
+        rwa [IsLocalRing.mem_maximalIdeal, mem_nonunits_iff]
+      rw [hMR] at hTm
+      obtain ⟨Z, hZ⟩ := Ideal.mem_span_singleton'.mp hTm
+      have hτ₁p : τ₁ = toC Z * ((p : ℕ) : AlgebraicClosure
+          (HeightOneSpectrum.adicCompletion ℚ v)) := by
+        rw [← hToCT]
+        simp only [htoCdef]
+        rw [← hZ, map_mul, map_mul, map_natCast, map_natCast]
+      have hsplit : τ₁ * ∏ a ∈ Hfinᶜ, q a = ((p : ℕ) : AlgebraicClosure
+          (HeightOneSpectrum.adicCompletion ℚ v)) := by
+        rw [hτ₁def, Finset.prod_mul_prod_compl, hprodfull]
+      have hcancel : toC Z * ∏ a ∈ Hfinᶜ, q a = 1 := by
+        have h2 : ((p : ℕ) : AlgebraicClosure
+            (HeightOneSpectrum.adicCompletion ℚ v)) *
+            (toC Z * ∏ a ∈ Hfinᶜ, q a) =
+            ((p : ℕ) : AlgebraicClosure
+              (HeightOneSpectrum.adicCompletion ℚ v)) * 1 := by
+          rw [mul_one]
+          calc ((p : ℕ) : AlgebraicClosure
+                (HeightOneSpectrum.adicCompletion ℚ v)) *
+                (toC Z * ∏ a ∈ Hfinᶜ, q a)
+              = (toC Z * ((p : ℕ) : AlgebraicClosure
+                (HeightOneSpectrum.adicCompletion ℚ v))) *
+                ∏ a ∈ Hfinᶜ, q a := by ring
+            _ = τ₁ * ∏ a ∈ Hfinᶜ, q a := by rw [← hτ₁p]
+            _ = ((p : ℕ) : AlgebraicClosure
+                (HeightOneSpectrum.adicCompletion ℚ v)) := hsplit
+        exact mul_left_cancel₀ hp0 h2
+      have hu₀c : u₀ ∈ Hfinᶜ := by
+        simp only [Finset.mem_compl, hHfindef, Finset.mem_filter]
+        intro hcon2
+        exact hu₀mem hcon2.2
+      refine ⟨toC Z * (∏ a ∈ Hfinᶜ.erase u₀, q a), ?_, ?_⟩
+      · exact (hpushint _).mul (Finset.prod_induction q _
+          (fun x y hx hy => hx.mul hy) isIntegral_one fun a _ => hqint a)
+      · rw [← hcancel, ← Finset.mul_prod_erase Hfinᶜ q hu₀c]
+        ring
+  -- hence every factor is invertible, hence so is `p` itself
+  obtain ⟨y₀, hy₀int, hy₀⟩ := hqu₀inv
+  have hinvall : ∀ a : (ZMod (p ^ 1))ˣ, ∃ y,
+      IsIntegral (HeightOneSpectrum.adicCompletionIntegers ℚ v) y ∧
+      q a * y = 1 := by
+    intro a
+    obtain ⟨c, hcint, hc⟩ := hdvd a u₀
+    exact ⟨c * y₀, hcint.mul hy₀int, by rw [← mul_assoc, ← hc, hy₀]⟩
+  choose W hWint hW using hinvall
+  have hpW : ((p : ℕ) : AlgebraicClosure
+      (HeightOneSpectrum.adicCompletion ℚ v)) *
+      ∏ a : (ZMod (p ^ 1))ˣ, W a = 1 := by
+    rw [← hprodfull, ← Finset.prod_mul_distrib]
+    exact Finset.prod_eq_one fun a _ => hW a
+  have hWprodint : IsIntegral (HeightOneSpectrum.adicCompletionIntegers ℚ v)
+      (∏ a : (ZMod (p ^ 1))ˣ, W a) :=
+    Finset.prod_induction W _ (fun x y hx hy => hx.mul hy) isIntegral_one
+      fun a _ => hWint a
+  -- so `1/p` is integral over `𝒪ᵥ`, hence lies in `𝒪ᵥ`: contradiction
+  have hpKv : ((p : ℕ) : HeightOneSpectrum.adicCompletion ℚ v) ≠ 0 :=
+    Nat.cast_ne_zero.mpr hp.out.ne_zero
+  have hWeq : ∏ a : (ZMod (p ^ 1))ˣ, W a =
+      algebraMap (HeightOneSpectrum.adicCompletion ℚ v)
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))
+        (((p : ℕ) : HeightOneSpectrum.adicCompletion ℚ v)⁻¹) := by
+    have hcast : ((p : ℕ) : AlgebraicClosure
+        (HeightOneSpectrum.adicCompletion ℚ v)) =
+        algebraMap (HeightOneSpectrum.adicCompletion ℚ v)
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))
+          ((p : ℕ) : HeightOneSpectrum.adicCompletion ℚ v) := by
+      rw [map_natCast]
+    have h2 : algebraMap (HeightOneSpectrum.adicCompletion ℚ v)
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))
+        (((p : ℕ) : HeightOneSpectrum.adicCompletion ℚ v)⁻¹) *
+        algebraMap (HeightOneSpectrum.adicCompletion ℚ v)
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))
+          ((p : ℕ) : HeightOneSpectrum.adicCompletion ℚ v) = 1 := by
+      rw [← map_mul, inv_mul_cancel₀ hpKv, map_one]
+    calc ∏ a : (ZMod (p ^ 1))ˣ, W a
+        = (algebraMap (HeightOneSpectrum.adicCompletion ℚ v)
+            (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))
+            (((p : ℕ) : HeightOneSpectrum.adicCompletion ℚ v)⁻¹) *
+          algebraMap (HeightOneSpectrum.adicCompletion ℚ v)
+            (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))
+            ((p : ℕ) : HeightOneSpectrum.adicCompletion ℚ v)) *
+          ∏ a : (ZMod (p ^ 1))ˣ, W a := by rw [h2, one_mul]
+      _ = algebraMap (HeightOneSpectrum.adicCompletion ℚ v)
+            (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))
+            (((p : ℕ) : HeightOneSpectrum.adicCompletion ℚ v)⁻¹) *
+          (((p : ℕ) : AlgebraicClosure
+            (HeightOneSpectrum.adicCompletion ℚ v)) *
+            ∏ a : (ZMod (p ^ 1))ˣ, W a) := by rw [hcast]; ring
+      _ = algebraMap (HeightOneSpectrum.adicCompletion ℚ v)
+            (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))
+            (((p : ℕ) : HeightOneSpectrum.adicCompletion ℚ v)⁻¹) := by
+            rw [hpW, mul_one]
+  have hint : IsIntegral (HeightOneSpectrum.adicCompletionIntegers ℚ v)
+      (((p : ℕ) : HeightOneSpectrum.adicCompletion ℚ v)⁻¹) := by
+    rw [← isIntegral_algebraMap_iff
+      (algebraMap (HeightOneSpectrum.adicCompletion ℚ v)
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))).injective,
+      ← hWeq]
+    exact hWprodint
+  obtain ⟨y, hy⟩ := IsIntegrallyClosed.isIntegral_iff.mp hint
+  have hpy : ((p : ℕ) : HeightOneSpectrum.adicCompletionIntegers ℚ v) *
+      y = 1 := by
+    apply IsFractionRing.injective
+      (HeightOneSpectrum.adicCompletionIntegers ℚ v)
+      (HeightOneSpectrum.adicCompletion ℚ v)
+    rw [map_mul, map_natCast, hy, map_one, mul_inv_cancel₀ hpKv]
+  have hpmem : ((p : ℕ) : HeightOneSpectrum.adicCompletionIntegers ℚ v) ∈
+      IsLocalRing.maximalIdeal
+        (HeightOneSpectrum.adicCompletionIntegers ℚ v) := by
+    rw [hspan]
+    exact Ideal.mem_span_singleton_self _
+  rw [IsLocalRing.mem_maximalIdeal, mem_nonunits_iff] at hpmem
+  exact hpmem (IsUnit.of_mul_eq_one _ hpy)
 
 /-- **Exact order `p − 1` of the residual cyclotomic character on
-tame inertia at `p`** (Eisenstein pillar E1b-ii; sorry node — the
-Serre §1.3 fundamental-character input of the Raynaud pinning): if a
+tame inertia at `p`** (Eisenstein pillar E1b-ii; PROVEN 2026-07-24 —
+the Serre §1.3 fundamental-character input of the Raynaud pinning
+and the last local-arithmetic gap of E1b): if a
 power `ω^i` of the residual cyclotomic character dies on the WHOLE
 local inertia at `p`, then `p − 1` divides `i`. Classical content:
 `ℚ_p(μ_p)/ℚ_p` is totally ramified with group `(ℤ/p)^×`, and `ω`
@@ -7426,12 +8133,16 @@ tame inertia has EXACT order `p − 1` (Serre, Duke Math. J. 54
 followed by reduction is the canonical embedding `𝔽_p^× ↪ k^×`), so
 an inertia element `σ` with `ω(σ)` a generator has residue of exact
 order `p − 1` in `k^×`, and `ω(σ)^i = 1` forces `(p − 1) ∣ i`.
-Intended Lean route: adjoin a primitive `p`-th root of unity `ζ` to
-`ℚᵖᵥᵃˡᵍ`; `cyclotomicCharacter` mod `p` reads the action on `ζ`
-(`cyclotomicCharacter.toZModPow` at `n = 1`), inertia surjects onto
-`Gal(ℚ_p(ζ)/ℚ_p)` by total ramification (the inertia field of the
-extension is trivial since its residue extension is), and the
-generator transports as above. Soundness (audit 2026-07-24): the
+Lean route (as executed): the surjectivity of `ω` on inertia is the
+Gauss-period leaf
+`exists_mem_localInertiaGroup_cyclotomicCharacter_toZModPow_eq`
+above, applied to a generator `g₀` of the cyclic group `(ℤ/p)^×`;
+the residue map `ℤ_[p] → k` factors through level `1`
+(`PadicInt.ker_toZModPow` plus `(p : k) = 0` from
+`prime_eq_zero_of_finite_padicInt_algebra`) as the INJECTIVE ring
+hom `ZMod.castHom : ℤ/p → k`, so the hypothesis at the realizing
+inertia element reads `g₀^i = 1` inside `(ℤ/p)^×` and
+`orderOf g₀ = φ(p) = p − 1` closes it. Soundness (audit 2026-07-24): the
 hypothesis set is inhabited (`i = 0`, or `i = p − 1` via
 `cyclotomicCharacter_residue_pow_sub_one_eq_one`), the conclusion is
 the exact-order statement cited, TRUE for every prime `p` (`p = 2`
@@ -7449,8 +8160,52 @@ theorem sub_one_dvd_of_cyclotomicCharacter_residue_inertia_pow_eq_one
           (HeightOneSpectrum.adicCompletion ℚ
             (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
               (Fact.out : p.Prime)))) σ).toRingEquiv))) ^ i = 1) :
-    (p - 1) ∣ i :=
-  sorry
+    (p - 1) ∣ i := by
+  classical
+  haveI : NeZero (p ^ 1) := ⟨pow_ne_zero 1 hp.out.ne_zero⟩
+  haveI hfactp1 : Fact ((p ^ 1).Prime) := ⟨by rw [pow_one]; exact hp.out⟩
+  have hpk : (p : k) = 0 := prime_eq_zero_of_finite_padicInt_algebra
+  haveI : CharP k p := (CharP.charP_iff_prime_eq_zero hp.out).mpr hpk
+  -- a generator of `(ℤ/p)ˣ`, realized by an inertia element
+  obtain ⟨g₀, hg₀⟩ := IsCyclic.exists_generator (α := (ZMod (p ^ 1))ˣ)
+  obtain ⟨σ₀, hσ₀I, hσ₀val⟩ :=
+    exists_mem_localInertiaGroup_cyclotomicCharacter_toZModPow_eq g₀
+  -- the residue embedding `ℤ/p ↪ k` and the level-`1` factorization
+  set ψ : ZMod (p ^ 1) →+* k := ZMod.castHom (dvd_pow_self p one_ne_zero) k
+    with hψdef
+  have halg : ∀ z : ℤ_[p], algebraMap ℤ_[p] k z =
+      ψ (PadicInt.toZModPow 1 z) := by
+    intro z
+    set n := (PadicInt.toZModPow 1 z).val with hndef
+    have hker : z - ((n : ℕ) : ℤ_[p]) ∈
+        RingHom.ker (PadicInt.toZModPow 1 : ℤ_[p] →+* ZMod (p ^ 1)) := by
+      rw [RingHom.mem_ker, map_sub, map_natCast, hndef, ZMod.natCast_val,
+        ZMod.cast_id, sub_self]
+    rw [PadicInt.ker_toZModPow] at hker
+    obtain ⟨t, ht⟩ := Ideal.mem_span_singleton'.mp hker
+    have hz : z = ((n : ℕ) : ℤ_[p]) + t * (p : ℤ_[p]) ^ 1 := by
+      linear_combination -ht
+    rw [hz]
+    simp only [map_add, map_mul, map_pow, map_natCast]
+    rw [hpk]
+    ring
+  -- evaluate the hypothesis at the realizing inertia element
+  have hpow := h σ₀ hσ₀I
+  rw [halg, hσ₀val] at hpow
+  have hg₀pow : ((g₀ : (ZMod (p ^ 1))ˣ) : ZMod (p ^ 1)) ^ i = 1 := by
+    apply ψ.injective
+    rw [map_pow, map_one]
+    exact hpow
+  have hg₀unit_pow : g₀ ^ i = 1 := by
+    ext
+    rw [Units.val_pow_eq_pow_val, Units.val_one]
+    exact hg₀pow
+  have horder := orderOf_dvd_of_pow_eq_one hg₀unit_pow
+  have hcard : orderOf g₀ = p ^ 1 - 1 := by
+    rw [orderOf_eq_card_of_forall_mem_zpowers hg₀, Nat.card_eq_fintype_card,
+      ZMod.card_units_eq_totient, Nat.totient_prime hfactp1.out]
+  rw [hcard, pow_one] at horder
+  exact horder
 
 /-- **Raynaud flat-weight pinning of the sub-character** (Eisenstein
 pillar E1b; PROVEN 2026-07-24 as an assembly over the E1b-i/E1b-ii
