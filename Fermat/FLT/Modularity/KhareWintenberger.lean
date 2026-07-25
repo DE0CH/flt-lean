@@ -1983,6 +1983,7 @@ theorem charpoly_baseChange_apply {A : Type*} [CommRing A]
   rw [show (ρ.baseChange B) σ = LinearMap.baseChange B (ρ σ) from rfl,
     LinearMap.charpoly_baseChange]
 
+set_option linter.unusedVariables false in
 /-- **The residual bridge over the Moret–Bailly base** (PROVEN
 2026-07-25; sub-leaf (c) of the modularity-lifting cut — Chebotarev +
 Brauer–Nesbitt + base change): the Khare–Wintenberger lift `ρ`,
@@ -2082,7 +2083,6 @@ discharge through `Family.lean`, `Lift.lean`, or
 -- `exists_heckePackage_of_seed` supplies them positionally, and (a)/(b)
 -- genuinely need them.  The linter is silenced rather than the names being
 -- mangled to `_`, so the docstring's references stay valid.
-set_option linter.unusedVariables false in
 theorem exists_residualCongruence_over_base
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
@@ -3424,10 +3424,11 @@ theorem exists_threeadic_realization_domain_of_heckePackage
   -- course the module topology, and both injectivity statements follow
   -- from the mere existence of the characteristic-zero comparison
   -- embedding `ιB`
+  letI : TopologicalSpace B := moduleTopology ℤ_[3] B
   exact ⟨B, hCR, hDom, moduleTopology ℤ_[3] B,
     isTopologicalRing_moduleTopology_of_finite 3 B, hAlg, hLR, hFin, ⟨rfl⟩,
     injective_algebraMap_of_ringHom_charZero ιB, τF, ψ₃, ιB,
-    injective_of_finite_padicInt_charZero ιB, hmatch⟩
+    injective_of_finite_padicInt_charZero (p := 3) ιB, hmatch⟩
 
 /-- **The Hilbert-modular `3`-adic realization** (PROVEN assembly,
 2026-07-24 — Carayol 1986 / Taylor 1989 at one remove): a
@@ -7197,7 +7198,7 @@ theorem threeadicRealization_hasFlatProlongationAt_of_finite_quotient
         simp
       rw [h3, map_mul]
       exact I.mul_mem_left _ hxmem
-    simpa using hpow
+    simpa [map_pow, map_ofNat] using hpow
   -- the level is a positive one: `I ≠ ⊤` forbids `1 ∈ I`
   have hm1 : 1 ≤ m := by
     rcases Nat.eq_zero_or_pos m with rfl | hpos

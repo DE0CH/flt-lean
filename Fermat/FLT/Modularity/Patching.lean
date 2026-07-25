@@ -1774,7 +1774,7 @@ def IsStrictlyUniversalOnFramedFiniteLifts.{s, uK, uW, uR}
      letI : ContinuousSMul A k := continuousSMul_of_algebraMap A k
        (by
          rw [RingHom.algebraMap_toAlgebra]
-         exact continuous_ringHom_of_isModuleTopology πA)
+         exact continuous_ringHom_of_isModuleTopology (p := p) πA)
      ∃ e : (k ⊗[A] (Fin 2 → A)) ≃ₗ[k] W, (ρA.baseChange k).conj e = ρbar) →
     ∃ ψ : Runiv →+* A, ∃ hψ : Continuous ψ,
       ψ.comp (algebraMap ℤ_[p] Runiv) = algebraMap ℤ_[p] A ∧
