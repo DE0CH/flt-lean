@@ -19409,17 +19409,155 @@ theorem exists_irreducible_galoisRep_charFrob_of_weightTwoNewform
     exact charpoly_eq_quadratic_of_sq_rel hinv hQ hdet
 
 include hpodd in
+/-- **The `p`-new exclusion over an INFINITE `p`-adic flat tower**
+(sorry node — the single residual literature leaf of the at-`p`
+conductor cut, NARROWED 2026-07-25 by the derivable hypothesis
+`hpne : (p : R) ≠ 0`; the assembly below discharges `hpne` and is what
+the level-lowering consumers call): let `g` be a weight-2 eigenform of
+level `M ≥ 1` with `p ∣ M` that is `p`-NEW (`hpnew`, spelled through
+the `p`-old degeneracy levels `M₁ ∣ M / p`); if the IRREDUCIBLE
+representation `τ` matches the Hecke polynomials of `g` away from a
+finite set, is equivalent through `e` to the base change of the
+integral representation `ρ`, and the coefficient ring does not kill
+`p`, then `ρ` is NOT flat at `p`. The classical route, the dichotomy
+audit and the non-vacuity witness are in the assembly's docstring
+below; this docstring carries the CITATIONS and the two audits that
+pin the cut.
+
+CITATIONS (sharpened 2026-07-25 against the sources in hand; they
+replace the previous blanket reference to "Saito 1997 plus
+Raynaud/Fontaine").
+
+* AUTOMORPHIC/GEOMETRIC HALF, `p ∥ M₀` — Tilouine, *Hecke algebras and
+  the Gorenstein property*, in Cornell–Silverman–Stevens, *Modular
+  Forms and Fermat's Last Theorem*, §5 Step 1(a): if `p` divides the
+  conductor of a weight-2 eigenform `f` of level `N' p` with `p ∤ N'`,
+  then `A_f` has purely TORIC reduction at `p`. Proof there: compare
+  the two degeneracy coverings `X₁(N', p) → X₁(N')` (`τ ↦ τ` and
+  `τ ↦ pτ`), let `A` be the neutral component of the kernel of the
+  induced Albanese morphism (so `A_f` is a quotient of `A`), and read
+  the Néron model of `A` over `ℤ_p` through Raynaud's Thm 2.5
+  (`J⁰_{ℤ_p} = Pic⁰(M_{ℤ_p})` for the regular minimal model) plus the
+  rigidity of tori; the `𝔭`-divisible group of `A_f` then decomposes
+  over `ℤ_p` as `T × E` with `T` of multiplicative type and `E` étale,
+  and taking `ℚ̄_p`-points gives the local shape
+  `ρ_{f,𝔭}|_{G_p} ≅ (χ c, ∗ ; 0, c)` with `c` unramified — the
+  weight-2 Deligne–Rapoport/Langlands Steinberg case.
+* AUTOMORPHIC HALF, `p² ∣ M₀` — the local type is ramified principal
+  series or supercuspidal, of conductor exponent `ord_p M₀ ≥ 2`; here
+  the citation is genuinely Saito, *Modular forms and `p`-adic Hodge
+  theory*, Invent. Math. 129 (1997) (local–global compatibility at
+  `p`; Carayol 1986 at `q ≠ p`): the Weil–Deligne parameter is then
+  not even semistable, so a fortiori not Barsotti–Tate.
+* FLAT HALF — Serre, *Sur les représentations modulaires de degré 2 de
+  `Gal(ℚ̄/ℚ)`*, Duke Math. J. 54 (1987), §2.8 Prop. 4 together with
+  §2.9 Prop. 5(ii) (source in hand), resting on Raynaud, *Schémas en
+  groupes de type `(p, …, p)`*, Bull. SMF 102 (1974), prop. 3.3.2 (a
+  finite flat prolongation over `ℤ_p` is UNIQUE), cor. 3.4.4 and
+  th. 2.4.3, and on Fontaine's th. 1. For the
+  multiplicative-by-unramified shape above Serre computes the
+  prolongation obstruction as a Kummer class: the extension is
+  classified by `u ∈ R*/R*^p`, the field `K = K_v(q^{1/p})` is *très
+  ramifiée* — no finite flat prolongation — exactly when `v_p(q)` is
+  NOT divisible by `p`, and at level `pⁿ` the criterion reads
+  `pⁿ ∣ v_p(q)`. A toric reduction has `v_p(q) ≠ 0`, so only FINITELY
+  many levels of the tower can be flat, which is what the infinite
+  tower contradicts.
+
+TOWER AUDIT (2026-07-25 — why `hpne` is stated, and why it is the
+sharp hypothesis). At a SINGLE finite level flatness is COMPATIBLE
+with the Steinberg configuration: Serre's Prop. 5(ii) makes the
+`p`-division points of a Tate curve *finie en `p`* (= flat) precisely
+when `p ∣ v_p(q_E)` — which is the situation of the PROVEN in-tree
+theorem `WeierstrassCurve.isFlatAt_of_hasMultiplicativeReduction`. So
+the content of this leaf lives in the INFINITE tower of levels
+`R ⧸ pᵐ`, and `hpne : (p : R) ≠ 0` pins exactly that: it forbids a
+coefficient ring in which `IsFlatAt`'s open-ideal quantifier
+degenerates to finitely many levels, where the statement would be
+FALSE. It is derivable here (the assembly below derives it from
+`[Algebra R ℚ̄_p]`: a ring map into a characteristic-zero field cannot
+kill `p`), so adding it strictly narrows the citation without touching
+any consumer. `hpodd` is the companion caveat: at `p = 2` the
+flat/Steinberg boundary leaves the classical `e = 1 < p − 1` Raynaud
+range and needs Fontaine–Laffaille/Breuil theory.
+
+SPLIT AUDIT (2026-07-25 — why this leaf is NOT cut into "`p`-new ⟹ the
+local type at `p` is Steinberg/supercuspidal" and "that local type is
+incompatible with flatness"). The split is mathematically UNAVAILABLE
+at this pin, not merely inconvenient. The local SHAPE
+`(χ c, ∗ ; 0, c')` with `c, c'` unramified is shared by the Steinberg
+configuration AND by the ordinary-crystalline one — the `p`-adic Tate
+module of an elliptic curve with good ORDINARY reduction has exactly
+that shape and IS flat — so a shape-level second half would be a FALSE
+statement, and no predicate expressible in this development's local
+vocabulary (Frobenius charpolys, `GaloisRep.IsUnramifiedAt`, the
+Raynaud closure bricks
+`IsFlatPointsGroupAt.prod`/`.of_injective`/`.of_surjective`) separates
+the two: those bricks CONSTRUCT flat objects, and the only in-tree
+obstruction machinery — the rank-1 mod-`p` Raynaud/Oort–Tate inertia
+dichotomy behind
+`residual_triangular_sub_character_pinned_of_eq_pow` — is consistent
+with both. The separating invariant is the EXTENSION CLASS: Serre's `u`
+(a unit class: peu ramifiée, flat) against `q` with `v_p(q) ≢ 0`
+(très ramifiée, not flat); intrinsically Fontaine's crystalline
+subgroup `H¹_f ⊆ H¹(G_p, −)`. Formalizing it needs either a
+Barsotti–Tate/crystalline predicate or the Tate parameter with local
+class field theory and the Kummer sequence — a genuine infrastructure
+build, recorded here as the split target rather than performed inside a
+per-place cut, exactly as the `q ≠ p` sibling
+`not_isUnramifiedAt_of_isNewAtPrime_of_isIrreducible` records the Artin
+conductor exponent as ITS dedup target.
+
+SOUNDNESS (2026-07-25): the hypothesis set is the assembly's plus a
+hypothesis the assembly PROVES, so inhabitation is inherited verbatim
+from the assembly's audit below (`p = 11`, `M = 11`, the weight-2
+newform of level `11`, `τ := ρ_{g,λ}`), and the conclusion is the cited
+theorem for every inhabitant. -/
+theorem not_isFlatAt_of_weightTwoEigenform_pNew_of_isIrreducible_of_pNeZero
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    {M : ℕ} (hM : 0 < M) (hpM : p ∣ M) {g : CuspForm (Gamma0GL M) 2}
+    (hg : IsWeightTwoEigenform M g)
+    (hpnew : ∀ M₁ : ℕ, M₁ ∣ M / p →
+      ∀ g₁ : CuspForm (Gamma0GL M₁) 2, IsWeightTwoEigenform M₁ g₁ →
+      ¬ ∀ (r : ℕ), r.Prime → ¬ r ∣ M → qCoeff M₁ g₁ r = qCoeff M g r)
+    (κ : heckeField M g →+* AlgebraicClosure ℚ_[p])
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    {S_τ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hτ : ∀ (r : ℕ) (hr : r.Prime),
+      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ →
+      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
+        Polynomial.X ^ 2
+          - Polynomial.C (κ (heckeCoeff M g r)) * Polynomial.X
+          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
+    (hirr : τ.IsIrreducible)
+    (e : (Fin 2 → AlgebraicClosure ℚ_[p]) ≃ₗ[AlgebraicClosure ℚ_[p]]
+      (AlgebraicClosure ℚ_[p] ⊗[R] V))
+    (he : ∀ (γ : Field.absoluteGaloisGroup ℚ)
+        (w : Fin 2 → AlgebraicClosure ℚ_[p]),
+      e (τ γ w) = ρ.baseChange (AlgebraicClosure ℚ_[p]) γ (e w))
+    (hpne : (p : R) ≠ 0) :
+    ¬ ρ.IsFlatAt
+      (Fact.out : p.Prime).toHeightOneSpectrumRingOfIntegersRat :=
+  sorry
+
+include hpodd in
 /-- **The `p`-new exclusion: a `p`-new weight-2 eigensystem carries no
-FLAT attached representation** (sorry node — the single residual
-literature leaf of the at-`p` conductor cut after the 2026-07-25
-dichotomy cut of
+FLAT attached representation** (PROVEN 2026-07-25 as a one-step
+assembly over the narrowed literature leaf
+`not_isFlatAt_of_weightTwoEigenform_pNew_of_isIrreducible_of_pNeZero`
+above — whose docstring carries the sharpened citations, the TOWER
+audit and the SPLIT audit; the single residual literature leaf of the
+at-`p` conductor cut after the 2026-07-25 dichotomy cut of
 `exists_weightTwoEigenform_not_dvd_level_p_of_isFlatAt_of_isIrreducible`
-below: Saito, *Modular forms and `p`-adic Hodge theory*, Invent.
+below, still Saito, *Modular forms and `p`-adic Hodge theory*, Invent.
 Math. 129 (1997) — local–global compatibility at `p`, for the
-weight-2 `p ∥ M` Steinberg case already Deligne–Rapoport/Langlands,
-and in the flat setting the shape of "Mazur's principle" — combined
-with Raynaud, *Schémas en groupes de type `(p, …, p)`*, Bull. SMF 102
-(1974), and Fontaine for the flatness-to-crystalline dictionary): let
+weight-2 `p ∥ M` Steinberg case already Deligne–Rapoport/Langlands and
+geometrically Tilouine's toric-reduction computation, combined with
+Raynaud, *Schémas en groupes de type `(p, …, p)`*, Bull. SMF 102
+(1974), through Serre's Duke 1987 §2.8–2.9 Kummer-class criterion):
+let
 `g` be a weight-2 eigenform of level `M ≥ 1` with `p ∣ M` that is
 `p`-NEW, i.e. its away-from-`M` eigensystem is realized by NO
 eigenform of a level dividing `M / p` (`hpnew` — the classical
@@ -19507,7 +19645,22 @@ are exactly the classical normalized eigenforms (carrier audit at
 `IsWeightTwoNewform`), and `hpnew` pins the underlying newform's
 level to have the same `p`-valuation as `M`, which is precisely the
 classical hypothesis "`g` lies in the `p`-new part at level `M`" under
-which Saito's local computation applies. -/
+which Saito's local computation applies.
+
+ASSEMBLY (2026-07-25 — the citation-narrowing step). The one thing
+proven here is that the coefficient ring cannot kill `p`:
+`AlgebraicClosure ℚ_[p]` has characteristic zero
+(`charZero_of_injective_algebraMap` along the field injection
+`ℚ_[p] ↪ ℚ̄_p`) and `algebraMap R ℚ̄_p` preserves `ℕ`-casts, so
+`(p : R) = 0` would force `(p : ℚ̄_p) = 0`. That hands the leaf its
+extra hypothesis `hpne`, which is exactly the boundary between this
+statement and the FALSE single-level version: Serre's Duke 1987
+Prop. 5(ii) — and the PROVEN in-tree
+`WeierstrassCurve.isFlatAt_of_hasMultiplicativeReduction` — exhibit
+flat prolongations of the `p`-torsion of a Tate curve whenever
+`p ∣ v_p(q_E)`, so the `p`-new exclusion is a statement about the
+INFINITE tower `R ⧸ pᵐ` and about nothing less. See the leaf's TOWER
+AUDIT. -/
 theorem not_isFlatAt_of_weightTwoEigenform_pNew_of_isIrreducible
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
@@ -19533,8 +19686,20 @@ theorem not_isFlatAt_of_weightTwoEigenform_pNew_of_isIrreducible
         (w : Fin 2 → AlgebraicClosure ℚ_[p]),
       e (τ γ w) = ρ.baseChange (AlgebraicClosure ℚ_[p]) γ (e w)) :
     ¬ ρ.IsFlatAt
-      (Fact.out : p.Prime).toHeightOneSpectrumRingOfIntegersRat :=
-  sorry
+      (Fact.out : p.Prime).toHeightOneSpectrumRingOfIntegersRat := by
+  -- the coefficient ring has residue characteristic ZERO, so the flat tower
+  -- of `IsFlatAt` is genuinely infinite: `ℚ̄_p` has characteristic zero and a
+  -- ring map preserves `ℕ`-casts, so `(p : R) = 0` would kill `(p : ℚ̄_p)`
+  haveI : CharZero (AlgebraicClosure ℚ_[p]) :=
+    charZero_of_injective_algebraMap
+      ((algebraMap ℚ_[p] (AlgebraicClosure ℚ_[p])).injective)
+  have hpne : (p : R) ≠ 0 := by
+    intro h0
+    have h1 : ((p : ℕ) : AlgebraicClosure ℚ_[p]) = 0 := by
+      rw [← map_natCast (algebraMap R (AlgebraicClosure ℚ_[p])) p, h0, map_zero]
+    exact hp.out.ne_zero (Nat.cast_eq_zero.mp h1)
+  exact not_isFlatAt_of_weightTwoEigenform_pNew_of_isIrreducible_of_pNeZero
+    hpodd hM hpM hg hpnew κ hτ hirr e he hpne
 
 include hpodd in
 /-- **Level lowering at `p` for flat representations — Saito's
