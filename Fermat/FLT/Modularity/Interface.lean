@@ -12084,7 +12084,39 @@ Soundness: the hypothesis set is classically INHABITED (take `O = R`,
 over `ℤ_p`, `c = 0`, `f = g = id` works) and the conclusion holds for
 every inhabitant by the route above. Circularity guard (inherited from
 E2b′): must not route through `Family.lean` or `Reducible.lean`'s
-B5. -/
+B5.
+
+TERMINAL CITATION — audited 2026-07-25, do NOT dispatch a proof effort
+here. Three findings, recorded so the leaf is not re-attacked:
+
+1. *No substrate on this pin.* Steps 1–3 are Fontaine/Raynaud/Tate
+   `p`-adic Hodge theory, and the pin has none of it: a search of the
+   whole of mathlib for `pDivisible`, `BarsottiTate`, `IsCrystalline`
+   or `crystalline` returns only the unrelated `RingTheory.DividedPowers`
+   files — no `p`-divisible groups, no crystalline or Barsotti–Tate
+   representations, no Hodge–Tate weights. The reference project
+   `~/cs/FLT` has none either, so there is nothing to vendor.
+2. *Do not cut at commensurability instead.* With `p^κ·L ⊆ T ⊆ p^(−κ)·L`,
+   multiplication by `p^κ` embeds `L ⧸ p^m L` into `T ⧸ p^m T` with the
+   NONZERO kernel `p^(m−κ)L ⧸ p^m L`, and the transition map
+   `T ⧸ p^(m+κ)T → L ⧸ p^m L` has image only `p^κ L ⧸ p^m L`; so
+   `L ⧸ p^m L` is an EXTENSION assembled from levels of `T`, which is
+   exactly what `IsFlatPointsGroupAt.of_injective` and `.of_surjective`
+   do not provide. Cutting there would plant an unfaithful leaf.
+3. *This leaf is EQUIVALENT to its consumer, not weaker.* Granting
+   `hasFlatProlongationAt_lattice_pPow_of_generic_iso` for every `m`,
+   this statement is inhabited by `T := (Fin 2 → O)` regarded as a
+   `ℤ_p`-module (free, being finitely generated and torsion-free over
+   the PID `ℤ_p`), `ρT := ρO` with scalars restricted, `c = 0` and
+   `f = g = id`: the `ℤ_p`-level `p^k · (Fin 2 → O)` and the `O`-level
+   `(p : O)^k · (Fin 2 → O)` are the SAME subgroup, so the two level
+   representations coincide. Hence the E2b′-flat cut buys the classical
+   STATEMENT SHAPE — Tate module of a `p`-divisible group plus
+   commensurability, which is what a citation can actually supply —
+   and not a reduction in strength. Two consequences: further
+   decomposition can only relabel the content, never shrink it; and the
+   leaf is soundness-safe, being exactly as strong as the theorem it
+   serves, so it cannot be false while that theorem is true. -/
 theorem exists_flatIsogenousLattice_of_generic_iso
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
