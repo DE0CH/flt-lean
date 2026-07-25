@@ -11475,11 +11475,117 @@ theorem herbrand_omega_inv_classGroup_eigenspace_trivial_of_five_le
     c = 1 :=
   sorry
 
+/-- **Artin reciprocity for the everywhere-unramified abelian
+`p`-elementary extension of `ℚ(μ_p)`, with the eigenspace cut**
+(E3c support leaf (ii-a); sorry node — the SHARPLY CUT
+class-field-theory citation of the Eisenstein pillar, isolated
+2026-07-24 from the assembly that surrounds it): let `χ` be the
+mod-`p` cyclotomic character `ω` of `Γℚ` with values in a finite
+field `kk'` of characteristic `p` (`hχcyc`, so that
+`ker χ = Γ_{ℚ(μ_p)}`), and let `cc : Γℚ → kk'` be a CONTINUOUS
+function (`hcont`) whose restriction to `ker χ` is a group
+homomorphism into `(kk', +)` (`hhom`) satisfying the conjugation
+equivariance `cc(σ n σ⁻¹) = χ(σ)⁻¹ · cc(n)` for `n ∈ ker χ`
+(`hequiv`). Assume the associated extension of `ℚ(μ_p)` is
+EVERYWHERE UNRAMIFIED, in the two spellings in which the ambient
+hardly-ramified data delivers it: outside `{2, p}` the whole inertia
+subgroup at the place `ℓ` and all its `Γℚ`-conjugates are killed
+(`hunrOut`); at `p` and at `2` the full DECOMPOSITION subgroups —
+the `Γℚ`-conjugates of the images of `Γℚ_p`, `Γℚ_2`, which is what
+"the local extension splits" means, strictly stronger than
+unramifiedness — are killed on their `ker χ` part (`hsplitp`,
+`hsplit2`). Then, if the `ω^{−1}`-eigenspace of `Cl(ℚ(μ_p)) ⊗ 𝔽_p`
+vanishes (`hcl`, the pointwise `p`-torsion form of the Herbrand leaf,
+quantified over abstract models `CF` of `ℚ(μ_p)`), `cc` vanishes
+identically on `ker χ`.
+Classical proof (Neukirch, *Algebraic Number Theory*, VI §6–7; Mazur,
+Publ. Math. IHÉS 47 (1977), ch. I; Washington, *Introduction to
+Cyclotomic Fields*, ch. 10): `φ := cc|_{ker χ}` is a continuous
+homomorphism `Γ_{ℚ(μ_p)} → (kk', +)`, so its kernel is an open normal
+subgroup and it cuts out a finite abelian extension `M/ℚ(μ_p)` of
+exponent `p`. Every inertia subgroup of `Γ_{ℚ(μ_p)}` is
+`I_w(ℚ̄/ℚ) ∩ Γ_{ℚ(μ_p)}` for some place `w`, and the inertia groups
+above a rational prime `ℓ` are exactly the `Γℚ`-conjugates of the
+inertia inside the chosen decomposition group at `ℓ` (conjugacy of
+decomposition groups over a fixed rational place, Neukirch II §9) —
+so `hunrOut`/`hsplitp`/`hsplit2` say precisely that `φ` kills all of
+them, i.e. `M/ℚ(μ_p)` is unramified at every finite place; `ℚ(μ_p)`
+is totally complex for odd `p`, so there are no real places to
+ramify. Hence `M` lies in the Hilbert class field of `ℚ(μ_p)` and
+Artin reciprocity gives a `Gal(ℚ(μ_p)/ℚ)`-EQUIVARIANT surjection
+`Cl(ℚ(μ_p)) ↠ Gal(M/ℚ(μ_p))` — conjugation on the Galois side,
+`classGroupGalAut` on the class side (this is the equivariance of the
+Artin symbol, `(σ𝔞, M/K) = σ (𝔞, M/K) σ⁻¹`) — through which `φ`
+becomes a homomorphism `ψ : Cl(ℚ(μ_p)) → (kk', +)` killing `p`-th
+powers and satisfying `ψ(σ_u · c) = ω(σ_u)⁻¹ ψ(c)`. If `φ ≠ 0` then
+`ψ ≠ 0`; since `𝔽_p[(ℤ/p)ˣ]` is SPLIT semisimple (`(ℤ/p)ˣ` is cyclic
+of order `p − 1`, prime to `p`, and all its characters are
+`𝔽_p`-valued), `Cl ⊗ 𝔽_p` decomposes into eigenspaces and a nonzero
+`ψ` with that twist must be nonzero on the `ω^{−1}`-eigenspace,
+producing a `p`-torsion class `c ≠ 1` with
+`σ_u • c = c^(u⁻¹.val)` — contradicting `hcl` applied to the model of
+`ℚ(μ_p)` in play. THE PIN (audited 2026-07-24): mathlib has
+`ClassGroup`, the ideal-norm API and Hilbert-class-field-adjacent
+pieces, but NO Artin reciprocity and no Hilbert class field, so this
+statement is irreducibly citation-shaped on this pin. Soundness: the
+hypothesis set is inhabited (`cc = 0`, `χ = ω`), the conclusion holds
+for every inhabitant by the argument above, and the eigenspace
+hypothesis `hcl` is exactly the input Herbrand's theorem supplies. -/
+theorem artin_reciprocity_ker_vanishing_of_unramified_equivariant_hom
+    {kk' : Type u} [Field kk'] [Finite kk'] [Algebra ℤ_[p] kk']
+    [TopologicalSpace kk'] [DiscreteTopology kk']
+    (χ : Field.absoluteGaloisGroup ℚ →* kk')
+    (cc : Field.absoluteGaloisGroup ℚ → kk')
+    (hcont : Continuous cc)
+    (hχcyc : ∀ g : Field.absoluteGaloisGroup ℚ, χ g =
+      algebraMap ℤ_[p] kk'
+        (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv))
+    (hhom : ∀ g h : Field.absoluteGaloisGroup ℚ, χ g = 1 → χ h = 1 →
+      cc (g * h) = cc g + cc h)
+    (hequiv : ∀ σ n : Field.absoluteGaloisGroup ℚ, χ n = 1 →
+      cc (σ * n * σ⁻¹) = χ σ⁻¹ * cc n)
+    (hunrOut : ∀ (ℓ : ℕ) (hℓ : ℓ.Prime), ℓ ≠ 2 → ℓ ≠ p →
+      ∀ n : Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ
+        hℓ.toHeightOneSpectrumRingOfIntegersRat),
+        n ∈ localInertiaGroup hℓ.toHeightOneSpectrumRingOfIntegersRat →
+        ∀ σ : Field.absoluteGaloisGroup ℚ,
+          cc (σ * Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (HeightOneSpectrum.adicCompletion ℚ
+              hℓ.toHeightOneSpectrumRingOfIntegersRat)) n * σ⁻¹) = 0)
+    (hsplitp : ∀ (g : Field.absoluteGaloisGroup ℚ_[p])
+      (σ : Field.absoluteGaloisGroup ℚ),
+      χ (σ * Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[p]) g * σ⁻¹) = 1 →
+      cc (σ * Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[p]) g * σ⁻¹) = 0)
+    (hsplit2 : ∀ (g : Field.absoluteGaloisGroup ℚ_[2])
+      (σ : Field.absoluteGaloisGroup ℚ),
+      χ (σ * Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) g * σ⁻¹) = 1 →
+      cc (σ * Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) g * σ⁻¹) = 0)
+    (hcl : ∀ (CF : Type) [Field CF] [NumberField CF]
+      [IsCyclotomicExtension {p} ℚ CF],
+      ∀ c : ClassGroup (𝓞 CF), c ^ p = 1 →
+        (∀ u : (ZMod p)ˣ,
+          classGroupGalAut CF
+              ((IsCyclotomicExtension.Rat.galEquivZMod p CF).symm u) c =
+            c ^ ((u⁻¹ : (ZMod p)ˣ) : ZMod p).val) → c = 1) :
+    ∀ g, χ g = 1 → cc g = 0 :=
+  sorry
+
 /-- **CFT localization: an everywhere-locally-split Eisenstein
 cocycle dies on the kernel, given eigenspace vanishing** (E3c support
-leaf (ii); sorry node — the class-field-theory pillar of the
-Eisenstein cut, now SEPARATED from its Herbrand input, which enters
-as the explicit hypothesis `hcl`): a hardly ramified mod-`p`
+leaf (ii); PROVEN 2026-07-24 as an assembly over the sharply cut
+Artin-reciprocity citation
+`artin_reciprocity_ker_vanishing_of_unramified_equivariant_hom` above
+— the four pieces PROVEN here are the determinant pinning `χ = ω`,
+the cocycle algebra turning `cc|_{ker χ}` into a continuous
+homomorphism, the conjugation-equivariance transport, and the INERTIA
+KILLING at every place: outside `{2, p}` from `hρE.isUnramified`
+(where `ρE` is literally trivial on inertia, so the whole triangular
+matrix is the identity and `cc = 0`, `χ = 1` there), and at `p`, `2`
+from the two local coboundaries `hlocp`, `hloc2` (a coboundary
+vanishes wherever `χ = 1`, and conjugation-invariance of `χ` plus the
+conjugation identity carries both facts to every `Γℚ`-conjugate);
+the citation keeps exactly the class-field-theory content): a hardly
+ramified mod-`p`
 extension with TRIVIAL sub-character that splits locally at `p` and
 at `2` has `cc` vanishing identically on `ker χ`, provided the
 `ω^{−1}`-eigenspace of `Cl(ℚ(μ_p)) ⊗ 𝔽_p` is trivial (`hcl`, in the
@@ -11542,8 +11648,158 @@ theorem eisenstein_trivial_sub_extension_ker_vanishing_of_eigenspace_trivial
           classGroupGalAut CF
               ((IsCyclotomicExtension.Rat.galEquivZMod p CF).symm u) c =
             c ^ ((u⁻¹ : (ZMod p)ˣ) : ZMod p).val) → c = 1) :
-    ∀ g, χ g = 1 → cc g = 0 :=
-  sorry
+    ∀ g, χ g = 1 → cc g = 0 := by
+  -- the χ-twisted cocycle identity, from multiplicativity of `ρE`
+  -- through the triangular form
+  have hcoc : ∀ g h, cc (g * h) = cc h + cc g * χ h := by
+    intro g h
+    have h1 : LinearMap.toMatrix (Pi.basisFun kk' (Fin 2))
+        (Pi.basisFun kk' (Fin 2)) (ρE (g * h)) =
+        !![1, cc g; 0, χ g] * !![1, cc h; 0, χ h] := by
+      rw [map_mul, LinearMap.toMatrix_mul, htri g, htri h]
+    rw [htri (g * h), Matrix.mul_fin_two] at h1
+    simpa using congrFun (congrFun h1 0) 1
+  -- `cc` vanishes at the identity
+  have hcc1 : cc 1 = 0 := by
+    have h := hcoc 1 1
+    rw [mul_one, map_one, mul_one] at h
+    linear_combination -h
+  -- `χ` inverts multiplicatively
+  have hunit : ∀ d : Field.absoluteGaloisGroup ℚ, χ d * χ d⁻¹ = 1 := by
+    intro d
+    rw [← map_mul, mul_inv_cancel, map_one]
+  -- the conjugation identity for the cocycle
+  have hconj : ∀ d y : Field.absoluteGaloisGroup ℚ,
+      cc (d * y * d⁻¹) = χ d⁻¹ * (cc y + cc d * (χ y - 1)) := by
+    intro d y
+    have h1 := hcoc d (y * d⁻¹)
+    rw [← mul_assoc] at h1
+    have h2 := hcoc y d⁻¹
+    have h3 := hcoc d d⁻¹
+    rw [mul_inv_cancel, hcc1] at h3
+    rw [h1, h2, map_mul]
+    linear_combination -h3
+  -- conjugation-invariance of the character
+  have hχconj : ∀ d y : Field.absoluteGaloisGroup ℚ,
+      χ (d * y * d⁻¹) = χ y := by
+    intro d y
+    rw [map_mul, map_mul]
+    linear_combination χ y * hunit d
+  -- `χ` is pinned to the mod-`p` cyclotomic character by the determinant
+  have hχdet : ∀ g : Field.absoluteGaloisGroup ℚ, χ g =
+      algebraMap ℤ_[p] kk' (cyclotomicCharacter (AlgebraicClosure ℚ) p
+        g.toRingEquiv) := by
+    intro g
+    have h5 : LinearMap.det (ρE g) = Matrix.det (LinearMap.toMatrix
+        (Pi.basisFun kk' (Fin 2)) (Pi.basisFun kk' (Fin 2)) (ρE g)) :=
+      (LinearMap.det_toMatrix _ _).symm
+    have h4 : χ g = ρE.det g := by
+      rw [ρE.det_apply g, h5, htri g, Matrix.det_fin_two_of]
+      ring
+    rw [h4, hρE.det g]
+  -- continuity of the upper-right entry: `ρE` is continuous into the
+  -- discrete endomorphism space
+  have hcont : Continuous cc := by
+    letI : TopologicalSpace (Module.End kk' (Fin 2 → kk')) :=
+      moduleTopology kk' (Module.End kk' (Fin 2 → kk'))
+    haveI : DiscreteTopology (Module.End kk' (Fin 2 → kk')) :=
+      discreteTopology_moduleTopology _ _
+    have hρcont : Continuous fun g : Field.absoluteGaloisGroup ℚ => ρE g :=
+      ContinuousMonoidHom.continuous_toFun ρE
+    have hentrycont : Continuous fun φ : Module.End kk' (Fin 2 → kk') =>
+        LinearMap.toMatrix (Pi.basisFun kk' (Fin 2))
+          (Pi.basisFun kk' (Fin 2)) φ 0 1 :=
+      continuous_of_discreteTopology
+    have hccentry : cc = fun g : Field.absoluteGaloisGroup ℚ =>
+        LinearMap.toMatrix (Pi.basisFun kk' (Fin 2))
+          (Pi.basisFun kk' (Fin 2)) (ρE g) 0 1 := by
+      funext g
+      rw [htri g]
+      simp
+    rw [hccentry]
+    exact hentrycont.comp hρcont
+  -- on `ker χ` the twisted cocycle relation degenerates to additivity
+  have hhom : ∀ g h : Field.absoluteGaloisGroup ℚ, χ g = 1 → χ h = 1 →
+      cc (g * h) = cc g + cc h := by
+    intro g h _ hh
+    rw [hcoc g h, hh]
+    ring
+  -- conjugation equivariance on `ker χ`
+  have hequiv : ∀ σ n : Field.absoluteGaloisGroup ℚ, χ n = 1 →
+      cc (σ * n * σ⁻¹) = χ σ⁻¹ * cc n := by
+    intro σ n hn
+    rw [hconj σ n, hn]
+    ring
+  -- where `ρE` is trivial, both entries degenerate: `cc = 0`, `χ = 1`
+  have htriv : ∀ g : Field.absoluteGaloisGroup ℚ, ρE g = 1 →
+      cc g = 0 ∧ χ g = 1 := by
+    intro g hg
+    have hmat : (!![1, cc g; 0, χ g] : Matrix (Fin 2) (Fin 2) kk') = 1 := by
+      rw [← htri g, hg, LinearMap.toMatrix_one]
+    refine ⟨?_, ?_⟩
+    · simpa using congrFun (congrFun hmat 0) 1
+    · simpa using congrFun (congrFun hmat 1) 1
+  -- inertia killing outside `{2, p}`: `ρE` is trivial there, so the
+  -- whole triangular matrix is the identity
+  have hunrOut : ∀ (ℓ : ℕ) (hℓ : ℓ.Prime), ℓ ≠ 2 → ℓ ≠ p →
+      ∀ n : Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ
+        hℓ.toHeightOneSpectrumRingOfIntegersRat),
+        n ∈ localInertiaGroup hℓ.toHeightOneSpectrumRingOfIntegersRat →
+        ∀ σ : Field.absoluteGaloisGroup ℚ,
+          cc (σ * Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (HeightOneSpectrum.adicCompletion ℚ
+              hℓ.toHeightOneSpectrumRingOfIntegersRat)) n * σ⁻¹) = 0 := by
+    intro ℓ hℓ hℓ2 hℓp n hn σ
+    haveI hunram : ρE.IsUnramifiedAt hℓ.toHeightOneSpectrumRingOfIntegersRat :=
+      hρE.isUnramified ℓ hℓ ⟨hℓ2, hℓp⟩
+    have hone : (ρE.toLocal hℓ.toHeightOneSpectrumRingOfIntegersRat) n = 1 :=
+      GaloisRep.IsUnramifiedAt.localInertiaGroup_le
+        (ρ := ρE) (v := hℓ.toHeightOneSpectrumRingOfIntegersRat) hn
+    rw [GaloisRep.toLocal_apply] at hone
+    -- `toLocal` spells the structure map through
+    -- `HeightOneSpectrum.instAlgebraAdicCompletion`, ambient elaboration
+    -- through `DivisionRing.toRatAlgebra`; the two agree by
+    -- `Subsingleton (Algebra ℚ _)`
+    have hinst : (DivisionRing.toRatAlgebra :
+        Algebra ℚ (HeightOneSpectrum.adicCompletion ℚ
+          hℓ.toHeightOneSpectrumRingOfIntegersRat)) =
+        HeightOneSpectrum.instAlgebraAdicCompletion (𝓞 ℚ) ℚ
+          hℓ.toHeightOneSpectrumRingOfIntegersRat :=
+      Subsingleton.elim _ _
+    have hone' : ρE (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (HeightOneSpectrum.adicCompletion ℚ
+          hℓ.toHeightOneSpectrumRingOfIntegersRat)) n) = 1 := by
+      rw [hinst]
+      exact hone
+    obtain ⟨hcc0, hχ1⟩ := htriv _ hone'
+    rw [hconj, hcc0, hχ1]
+    ring
+  -- splitting at `p`: the coboundary vanishes wherever `χ = 1`, and the
+  -- conjugation identity carries the vanishing to every conjugate
+  obtain ⟨ap, hap⟩ := hlocp
+  have hsplitp : ∀ (g : Field.absoluteGaloisGroup ℚ_[p])
+      (σ : Field.absoluteGaloisGroup ℚ),
+      χ (σ * Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[p]) g * σ⁻¹) = 1 →
+      cc (σ * Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[p]) g * σ⁻¹)
+        = 0 := by
+    intro g σ hg
+    rw [hχconj] at hg
+    rw [hconj, hap g, hg]
+    ring
+  -- splitting at `2`, identically
+  obtain ⟨a2, ha2⟩ := hloc2
+  have hsplit2 : ∀ (g : Field.absoluteGaloisGroup ℚ_[2])
+      (σ : Field.absoluteGaloisGroup ℚ),
+      χ (σ * Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) g * σ⁻¹) = 1 →
+      cc (σ * Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) g * σ⁻¹)
+        = 0 := by
+    intro g σ hg
+    rw [hχconj] at hg
+    rw [hconj, ha2 g, hg]
+    ring
+  -- the class-field-theory citation closes the node
+  exact artin_reciprocity_ker_vanishing_of_unramified_equivariant_hom χ cc
+    hcont hχdet hhom hequiv hunrOut hsplitp hsplit2 hcl
 
 end ClassGroupGaloisAction
 
