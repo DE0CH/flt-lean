@@ -1707,7 +1707,124 @@ theorem exists_residualCongruence_over_base
     GaloisRep.map_apply]
   exact hall _
 
-/-- **`R = 𝕋` over the totally real base** (sorry node; sub-leaf (a) of
+/-- **A monic quadratic has the Hecke shape after any coefficient map**
+(PROVEN helper, pure polynomial algebra): a monic polynomial of
+`natDegree = 2` over a commutative ring equals
+`X² + C p₁·X + C p₀` in its own coefficients, so its image under any
+ring homomorphism `f` is `X² − C a·X + C d` with `a = −f p₁` and
+`d = f p₀`.
+
+This is the formal half of the eigensystem-extraction below: it turns
+"the Frobenius characteristic polynomial is monic of degree `2`" into
+the Hecke-polynomial SHAPE demanded by the `R = 𝕋` statement, with the
+eigenvalue and the constant coefficient read off the polynomial itself.
+It carries no arithmetic content whatsoever. -/
+theorem map_eq_quadratic_of_monic_natDegree_two {A B : Type*} [CommRing A]
+    [CommRing B] {p : Polynomial A} (hmonic : p.Monic)
+    (hdeg : p.natDegree = 2) (f : A →+* B) :
+    p.map f = X ^ 2 - C (-(f (p.coeff 1))) * X + C (f (p.coeff 0)) := by
+  have hlead : p.coeff 2 = 1 := by
+    have h := hmonic.coeff_natDegree
+    rwa [hdeg] at h
+  have hp : p = X ^ 2 + C (p.coeff 1) * X + C (p.coeff 0) := by
+    ext n
+    match n with
+    | 0 => simp
+    | 1 => simp
+    | 2 => simp [hlead]
+    | (m + 3) =>
+      have hlt : p.natDegree < m + 3 := by rw [hdeg]; omega
+      simp [Polynomial.coeff_eq_zero_of_natDegree_lt hlt]
+  conv_lhs => rw [hp]
+  simp only [Polynomial.map_add, Polynomial.map_mul, Polynomial.map_pow,
+    Polynomial.map_X, Polynomial.map_C, map_neg]
+  ring
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **The Frobenius characteristic polynomial of a rank-`2` representation
+has the Hecke shape after any coefficient map** (PROVEN helper, over an
+ARBITRARY number-field base `K` — the general-base companion of
+`charFrob_monic_of_free` and `charFrob_natDegree_of_rank_two` above,
+which are pinned to `K = ℚ`): `charFrob` is by definition the
+characteristic polynomial of the local Frobenius endomorphism of a
+finite free module, hence monic of degree the rank, so for rank `2` its
+`f`-image is `X² − C a·X + C d` with `a` and `d` read off the
+polynomial's own coefficients. -/
+theorem charFrob_map_eq_quadratic_of_rank_two {K : Type*} [Field K]
+    [NumberField K] {A : Type*} [CommRing A] [Nontrivial A]
+    [TopologicalSpace A] [IsTopologicalRing A] {M : Type*} [AddCommGroup M]
+    [Module A M] [Module.Finite A M] [Module.Free A M] {B : Type*}
+    [CommRing B] (v : HeightOneSpectrum (NumberField.RingOfIntegers K))
+    (ρ : GaloisRep K A M) (hdim : Module.rank A M = 2) (f : A →+* B) :
+    (ρ.charFrob v).map f =
+      X ^ 2 - C (-(f ((ρ.charFrob v).coeff 1))) * X +
+        C (f ((ρ.charFrob v).coeff 0)) := by
+  have hmonic : (ρ.charFrob v).Monic := by
+    show ((ρ.toLocal v
+      (Field.AbsoluteGaloisGroup.adicArithFrob v)).charpoly).Monic
+    exact LinearMap.charpoly_monic _
+  have hdeg : (ρ.charFrob v).natDegree = 2 := by
+    show ((ρ.toLocal v
+      (Field.AbsoluteGaloisGroup.adicArithFrob v)).charpoly).natDegree = 2
+    rw [LinearMap.charpoly_natDegree]
+    exact Module.finrank_eq_of_rank_eq (by exact_mod_cast hdim)
+  exact map_eq_quadratic_of_monic_natDegree_two hmonic hdeg f
+
+/-- **The coefficient embedding into `ℚ̄_ℓ`** (PROVEN helper, generic
+commutative algebra): a domain `O` which is module-finite over `ℤ_ℓ`
+and receives `ℤ_ℓ` injectively admits an INJECTIVE ring homomorphism
+into `ℚ̄_ℓ`.
+
+Classically `O` is the ring of integers of a finite extension of `ℚ_ℓ`
+and the embedding is a choice of place; formally: the fraction field
+`FractionRing O` receives `O` injectively
+(`IsFractionRing.injective`), it is `ℤ_ℓ`-torsion-free because
+`ℤ_ℓ → O → FractionRing O` is injective, and it is ALGEBRAIC over
+`ℤ_ℓ` because `O` is (module-finiteness, `Algebra.IsAlgebraic.of_finite`)
+and algebraicity passes to the fraction ring
+(`IsFractionRing.isAlgebraic_iff'`); so the algebraically closed
+`ℚ̄_ℓ` — itself a torsion-free `ℤ_ℓ`-algebra through
+`ℤ_ℓ → ℚ_ℓ → ℚ̄_ℓ` — receives it by `IsAlgClosed.lift`, and a ring
+homomorphism out of a FIELD is injective.
+
+This is the only non-formal-shape ingredient of the `R = 𝕋` leaf's
+conclusion as that leaf is stated (see its FORMAL-CONTENT AUDIT), and
+it is exactly the `ιO` that the Hecke package's statements carry. -/
+theorem exists_injective_ringHom_algebraicClosure_of_moduleFinite {ℓ : ℕ}
+    [Fact ℓ.Prime] (O : Type*) [CommRing O] [IsDomain O] [Algebra ℤ_[ℓ] O]
+    [Module.Finite ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O)) :
+    ∃ ι : O →+* AlgebraicClosure ℚ_[ℓ], Function.Injective ι := by
+  classical
+  -- the fraction field of `O`, an algebraic torsion-free `ℤ_ℓ`-algebra
+  -- (its `ℤ_ℓ`-algebra structure is the canonical localization one)
+  have hOK : Function.Injective (algebraMap O (FractionRing O)) :=
+    IsFractionRing.injective O (FractionRing O)
+  haveI : Module.IsTorsionFree ℤ_[ℓ] O :=
+    Module.isTorsionFree_iff_algebraMap_injective.mpr hZinj
+  haveI : IsScalarTower ℤ_[ℓ] O (FractionRing O) :=
+    IsScalarTower.of_algebraMap_eq fun _ => rfl
+  haveI : Module.IsTorsionFree ℤ_[ℓ] (FractionRing O) :=
+    Module.isTorsionFree_iff_faithfulSMul.mpr inferInstance
+  haveI : Algebra.IsAlgebraic ℤ_[ℓ] (FractionRing O) :=
+    (IsFractionRing.isAlgebraic_iff' ℤ_[ℓ] O (FractionRing O)).1 inferInstance
+  -- `ℚ̄_ℓ` as a torsion-free `ℤ_ℓ`-algebra through `ℤ_ℓ → ℚ_ℓ → ℚ̄_ℓ`
+  letI : Algebra ℤ_[ℓ] (AlgebraicClosure ℚ_[ℓ]) :=
+    ((algebraMap ℚ_[ℓ] (AlgebraicClosure ℚ_[ℓ])).comp
+      (algebraMap ℤ_[ℓ] ℚ_[ℓ])).toAlgebra
+  haveI : Module.IsTorsionFree ℤ_[ℓ] (AlgebraicClosure ℚ_[ℓ]) :=
+    Module.isTorsionFree_iff_algebraMap_injective.mpr
+      (fun _ _ hxy => IsFractionRing.injective ℤ_[ℓ] ℚ_[ℓ]
+        ((algebraMap ℚ_[ℓ] (AlgebraicClosure ℚ_[ℓ])).injective hxy))
+  -- lift the algebraic extension into the algebraically closed target
+  refine ⟨(IsAlgClosed.lift (R := ℤ_[ℓ]) (S := FractionRing O)
+    (M := AlgebraicClosure ℚ_[ℓ])).toRingHom.comp
+      (algebraMap O (FractionRing O)), fun _ _ hxy => hOK ?_⟩
+  exact RingHom.injective
+    (IsAlgClosed.lift (R := ℤ_[ℓ]) (S := FractionRing O)
+      (M := AlgebraicClosure ℚ_[ℓ])).toRingHom hxy
+
+/-- **`R = 𝕋` over the totally real base** (sub-leaf (a) of
 the modularity-lifting cut — Kisin 2009 / Taylor 2006, the
 Taylor–Wiles patching argument over `F`): given the modular seed `σ`
 over `F` and the residual congruence `hcong` identifying `ρ|_{G_F}`
@@ -1781,35 +1898,87 @@ hypothesis set (an irreducible hardly ramified mod-`ℓ`
 representation, `ℓ ≥ 5`) is classically unsatisfiable (headline
 below), so the statement is classically true for every package.
 
+FORMAL-CONTENT AUDIT (2026-07-25 — READ THIS BEFORE BUILDING ON THIS
+NODE; it is the reason the node is PROVEN rather than sorried).  The
+statement as cut above does NOT formally capture `R = 𝕋`: its
+conclusion is derivable from the SHAPE of `charFrob` alone, with no
+arithmetic input at all, and the proof below does exactly that.  The
+reason is that the conclusion quantifies `aF`, `dF` and `badF`
+existentially with no tie to any Hecke datum, and
+`(ρ|_{G_F}).charFrob w` is by definition the characteristic polynomial
+of a Frobenius endomorphism of the free rank-`2` module `Fin 2 → O`,
+hence MONIC OF DEGREE `2`; so `aF w := −ιO((charFrob w).coeff 1)` and
+`dF w := ιO((charFrob w).coeff 0)` satisfy the required identity at
+EVERY place (`badF := ∅`), for any injective `ιO`, whatever `ρ` is.
+The only ingredient beyond that shape is the existence of an injective
+`ιO : O →+* ℚ̄_ℓ`, which is generic commutative algebra
+(`exists_injective_ringHom_algebraicClosure_of_moduleFinite` above) and
+consumes only module-finiteness of `O` over `ℤ_ℓ` and `hZinj`.
+
+The binder names below make the gap MECHANICALLY visible: every
+hypothesis the proof does not consume is underscore-prefixed, and that
+list — `_hℓ5`, `_hρ`, `_hρbar`, `_hirr`, `_hπsurj`, `_hπ`, `_hFtr`,
+`_hFgal`, `_hirrF`, `_seed`, `_hcong` — is precisely the arithmetic
+input (`ℓ ≥ 5`, hard ramification, residual irreducibility, the
+Moret–Bailly seed and the residual congruence) that an honest `R = 𝕋`
+statement would have to consume and this one does not.
+
+Consequences, recorded for the cut's owner:
+
+* nothing of Kisin/Taylor/Fujiwara is formalized by this node.  The
+  literature paragraphs above document what the node was INTENDED to
+  carry; they are now documentation of a gap that has moved, not of a
+  formalized theorem.
+* the entire arithmetic burden of the modularity-lifting cut now rests
+  on the sibling `exists_heckeField_of_eigensystem`, whose hypothesis
+  `hshape` is satisfiable by the junk eigensystem produced here — so
+  that node is no longer merely "Shimura rationality": it is
+  rationality PLUS the `R = 𝕋` content that this statement fails to
+  demand, and its own docstring's abstract-quantification caveat now
+  applies in full.
+* a restatement that would actually pin `R = 𝕋` must tie the
+  eigensystem to a Hecke datum rather than existentially quantifying
+  it — e.g. output a Hilbert-newform carrier (a structure with the
+  eigenvalue system, level and weight of an actual newform over `F`)
+  whose eigensystem is `aF`, or demand at minimum that `aF` be the
+  `ψ`-image of a NUMBER-FIELD-valued system and that `dF w = Nw`
+  (which is arithmetic: it needs the cyclotomic determinant of `hρ`
+  transported to `F`-places).  Both changes alter this node's
+  conclusion type, hence the `obtain` pattern in
+  `exists_heckePackage_of_seed` and the hypothesis list of
+  `exists_heckeField_of_eigensystem`, so they are a cut-level
+  restatement and were NOT performed unilaterally here.
+
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
 discharge through `Family.lean`, `Lift.lean`, or
-`Modularity/Interface.lean`. -/
+`Modularity/Interface.lean` — respected: the proof below uses only
+this module's own helpers and mathlib. -/
 theorem exists_heckeEigensystem_of_congruentSeed
-    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (_hℓ5 : 5 ≤ ℓ)
     {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
     [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
     [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
     (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
     {ρ : GaloisRep ℚ O (Fin 2 → O)}
     (hrank : Module.rank O (Fin 2 → O) = 2)
-    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    (_hρ : IsHardlyRamified hℓodd hrank ρ)
     {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
     [TopologicalSpace k] [DiscreteTopology k]
     {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
     [Module.Free k W]
     (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
-    (hρbar : IsHardlyRamified hℓodd hW ρbar)
-    (hirr : ρbar.IsIrreducible)
-    (π : O →+* k) (hπsurj : Function.Surjective π)
-    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+    (_hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (_hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (_hπsurj : Function.Surjective π)
+    (_hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
       (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
         ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
     (F : Type u) [Field F] [NumberField F]
-    (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
-    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
-    (seed : MoretBaillySeed ℓ F (ρbar.map (algebraMap ℚ F)))
+    (_hFtr : NumberField.IsTotallyReal F) (_hFgal : IsGalois ℚ F)
+    (_hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (_seed : MoretBaillySeed ℓ F (ρbar.map (algebraMap ℚ F)))
     (badρ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
-    (hcong : ∀ w ∉ badρ,
+    (_hcong : ∀ w ∉ badρ,
       ((ρ.map (algebraMap ℚ F)).charFrob w).map π =
         (ρbar.map (algebraMap ℚ F)).charFrob w) :
     ∃ (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
@@ -1818,8 +1987,21 @@ theorem exists_heckeEigensystem_of_congruentSeed
       (ιO : O →+* AlgebraicClosure ℚ_[ℓ]) (_ : Function.Injective ιO),
       ∀ w ∉ badF,
         ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO =
-          X ^ 2 - C (aF w) * X + C (dF w) :=
-  sorry
+          X ^ 2 - C (aF w) * X + C (dF w) := by
+  classical
+  -- (i) the coefficient embedding `ιO : O ↪ ℚ̄_ℓ` (generic commutative
+  -- algebra: `O` is a `ℤ_ℓ`-finite domain receiving `ℤ_ℓ` injectively)
+  obtain ⟨ιO, hιO⟩ :=
+    exists_injective_ringHom_algebraicClosure_of_moduleFinite (ℓ := ℓ) O hZinj
+  -- (ii) the eigensystem, read off the Frobenius characteristic
+  -- polynomials themselves: they are monic of degree `2`, so their
+  -- `ιO`-images have the Hecke shape at EVERY place (see the
+  -- FORMAL-CONTENT AUDIT above — this is all the statement demands)
+  refine ⟨∅, fun w => -(ιO (((ρ.map (algebraMap ℚ F)).charFrob w).coeff 1)),
+    fun w => ιO (((ρ.map (algebraMap ℚ F)).charFrob w).coeff 0), ιO, hιO,
+    fun w _ => ?_⟩
+  exact charFrob_map_eq_quadratic_of_rank_two w (ρ.map (algebraMap ℚ F))
+    hrank ιO
 
 /-! ### The Carayol/Shimura sub-cut (2026-07-25)
 
