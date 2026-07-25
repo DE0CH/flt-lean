@@ -4973,14 +4973,25 @@ theorem exists_threeadicBrauerSum_of_witness
     blggt_threeadicBrauerSum_of_witness hℓodd hℓ5 hZinj hrank hρ hW hρbar
       hirr π hπsurj hπ Wit S₀ Pv hPv
   -- (b) the coefficient-ring bookkeeping, all of it PROVEN above (the
-  -- same four bricks the twin Carayol assembly uses): the canonical
-  -- module topology is a ring topology and is of course the module
-  -- topology, and both injectivity statements follow from the mere
-  -- existence of the characteristic-zero comparison embedding `ιA`
-  exact ⟨S₁, A, hCR, hDom, moduleTopology ℤ_[3] A,
-    isTopologicalRing_moduleTopology_of_finite 3 A, hAlg, hLR, hFin, ⟨rfl⟩,
+  -- same bricks the twin Carayol assembly uses): the canonical module
+  -- topology is a ring topology and is of course the module topology,
+  -- and both injectivity statements follow from the mere existence of
+  -- the characteristic-zero comparison embedding `ιA`.
+  --
+  -- Three elaboration precautions, all forced by the fact that `p` and
+  -- the coefficient ring's topology occur in these bricks only inside
+  -- INSTANCE arguments, where unification against the goal cannot reach
+  -- them: the ring-topology brick is elaborated with no expected type
+  -- (so its `p` is fixed by the explicit `3`), `p := 3` is passed by
+  -- name to the embedding-injectivity brick, and the `IsModuleTopology`
+  -- component is given as a `refine` hole with its topology argument
+  -- spelled out — the anonymous constructor does not propagate the
+  -- topology from the positional component that supplies it
+  haveI hTR := isTopologicalRing_moduleTopology_of_finite 3 A
+  refine ⟨S₁, A, hCR, hDom, moduleTopology ℤ_[3] A, hTR, hAlg, hLR, hFin, ?_,
     injective_algebraMap_of_ringHom_charZero ιA, τ, ιA,
-    injective_of_finite_padicInt_charZero ιA, hmatch⟩
+    injective_of_finite_padicInt_charZero (p := 3) ιA, hmatch⟩
+  exact @IsModuleTopology.mk ℤ_[3] _ A _ _ (moduleTopology ℤ_[3] A) rfl
 
 /-- **Brauer descent, `3`-adic side — construction of the raw
 realization** (DECOMPOSED 2026-07-24 — now a PROVEN assembly over the
