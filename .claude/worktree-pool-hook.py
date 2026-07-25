@@ -49,15 +49,26 @@ worktree and no task. Both failure modes were observed together in one
 and three were sentinel zombies.
 """
 
+import datetime
 import fcntl
 import json
 import os
+import re
 import subprocess
 import sys
 import traceback
 
 POOL_FILE = "/home/chend/.flt-worktree-pool"
 QUEUE_FILE = "/home/chend/.flt-task-queue"
+# In-flight registry (Deyao, 2026-07-25). The queue records work NOT yet
+# started; the pool records which worktrees are busy but not WHAT they are
+# doing. Neither answers "is this leaf already being worked on?", so the
+# orchestrator's post-merge queue review could only catch duplicates still
+# sitting in the queue — never ones already dispatched. That hole produced
+# four independent proofs of `span_vertNumerator` and two agents redirected
+# off already-proven leaves. This file closes it: one JSON object per line,
+# appended here at dispatch, removed by the orchestrator at integration.
+INFLIGHT_FILE = "/home/chend/.flt-inflight.jsonl"
 PLACEHOLDER = "{{FLT_WORKTREE}}"
 SENTINEL = "{{FLT_QUEUE_POP}}"
 DELIMITER = "=== TASK ==="
@@ -75,6 +86,44 @@ def git(args, cwd):
     return subprocess.run(
         ["git", "-C", cwd] + args, capture_output=True, text=True, check=False
     )
+
+
+TARGET_RE = re.compile(r"\*\*`([^`]+)`\*\*")
+
+
+def record_inflight(worktree_path, prompt, kind, payload):
+    """Append one in-flight record. Called INSIDE the pool flock, so
+    concurrent dispatches serialise here exactly as they do for the queue.
+
+    `targets` is the useful field: the leaf names the task names in bold,
+    which is what makes a duplicate detectable at a glance. The full prompt
+    is kept too, so an agent that dies is re-dispatchable from this file
+    alone without digging through transcripts.
+
+    NOTE on the agent transcript id: it is NOT available here. The harness
+    mints it after the PreToolUse hook returns, so a dispatch-time hook
+    cannot know it. What we can record is the ORCHESTRATOR's session_id and
+    the tool_use_id of the spawning call, which is enough to correlate with
+    a task notification after the fact. Recovering the agent id itself stays
+    the orchestrator's job (and is rarely needed — each agent's own
+    transcript already knows its worktree)."""
+    try:
+        rec = {
+            "worktree": os.path.basename(worktree_path),
+            "worktree_path": worktree_path,
+            "kind": kind,  # "queue-pop" | "direct"
+            "dispatched_at": datetime.datetime.now().isoformat(timespec="seconds"),
+            "targets": TARGET_RE.findall(prompt)[:8],
+            "session_id": payload.get("session_id"),
+            "tool_use_id": payload.get("tool_use_id"),
+            "prompt": prompt,
+        }
+        with open(INFLIGHT_FILE, "a", encoding="utf-8") as fh:
+            fh.write(json.dumps(rec) + "\n")
+    except Exception:
+        # Never let bookkeeping block a dispatch: a missing record costs the
+        # orchestrator a duplicate-check, a failed dispatch costs a worker.
+        traceback.print_exc(file=sys.stderr)
 
 
 def emit(obj):
@@ -254,6 +303,8 @@ def main():
             write_queue(queue)
             tool_input["prompt"] = task_body.replace(
                 PLACEHOLDER, worktree_path)
+            record_inflight(
+                worktree_path, tool_input["prompt"], "queue-pop", payload)
             emit({
                 "hookSpecificOutput": {
                     "hookEventName": "PreToolUse",
@@ -270,6 +321,8 @@ def main():
             auto_queue("no free worktree available")
         tool_input["prompt"] = tool_input["prompt"].replace(
             PLACEHOLDER, worktree_path)
+        record_inflight(
+            worktree_path, tool_input["prompt"], "direct", payload)
         emit({
             "hookSpecificOutput": {
                 "hookEventName": "PreToolUse",
