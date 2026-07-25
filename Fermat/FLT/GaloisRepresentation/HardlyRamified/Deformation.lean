@@ -59,7 +59,6 @@ owners adding different leaves touch different lines, and git merges
 them without a human. Do not re-wrap it.
 
 - `finite_setOf_isHardlyRamified_frames`
-- `exists_smul_eq_of_commute_of_isIrreducible`
 - `exists_isStrictlyUniversalOnFrames_of_finite_lifts`
 - `exists_ringHom_matrix_quotient_of_finite`
 - `isNoetherianRing_of_fg_maximalIdeal`
@@ -102,7 +101,12 @@ ten, and every statement they replace is now PROVEN here.
   deformation-theoretic core
   `exists_isStrictlyUniversalOnFrames_of_finite_lifts`, over which it is
   now PROVEN (the bundling glue, `charFrob_compat` from the residual
-  identification).
+  identification). **H4 was then PROVEN outright (2026-07-26)** over the
+  new complex-conjugation vocabulary
+  `GaloisRepresentation/ComplexConjugation.lean` — `complexConj : Γ ℚ`,
+  its involutivity, and `cyclotomicCharacter_complexConj` (the character
+  sends it to `−1`) — so only H3 and the core remain as leaves of that
+  cut.
 * The two PRESENTATION leaves became proven assemblies over the four
   commutative-algebra strata of the minimal presentation and the
   arithmetic relation count: `exists_minimal_mvPowerSeries_presentation`
@@ -212,6 +216,12 @@ import Fermat.FLT.GaloisRepresentation.Chebotarev
 -- (`exists_conj_of_charFrob_eq_away`), from which the `{2, ℓ}` leaf
 -- below is derived.
 import Fermat.FLT.GaloisRepresentation.BrauerNesbittConjugacy
+-- proof-only: complex conjugation as an element of `Γ ℚ`
+-- (`complexConj`, `complexConj_mul_self`,
+-- `cyclotomicCharacter_complexConj`) — the oddness vocabulary consumed by
+-- the H4 Schur stratum below. Its own import cone is pure mathlib, so it
+-- cannot close the forbidden Khare–Wintenberger cycle.
+import Fermat.FLT.GaloisRepresentation.ComplexConjugation
 -- proof-only: the characteristic of a finite field, `ℤ_ℓ`-unit lemmas.
 import Mathlib.FieldTheory.Finite.Basic
 import Mathlib.NumberTheory.Padics.RingHoms
@@ -1043,7 +1053,7 @@ theorem finite_setOf_isHardlyRamified_frames {A : Type u} [CommRing A]
       IsHardlyRamified hℓOdd (rank_finTwoFun A) ρ}.Finite :=
   sorry
 
-/-- **Schur plus oddness: `End_{k[Γ]}(ρbar) = k`** (sorry node —
+/-- **Schur plus oddness: `End_{k[Γ]}(ρbar) = k`** (PROVEN 2026-07-26 —
 Schlessinger's H4 stratum of the 2026-07-26 cut of
 `exists_isStrictlyUniversalOnFiniteFrames`): every `k`-linear
 endomorphism of `V` commuting with the whole image of an irreducible
@@ -1052,31 +1062,45 @@ irreducible; equivalently the framed deformation functor is a torsor
 over the unframed one, which is Schlessinger's H4 (`dim_k t_F` finite
 and the hull unobstructed by automorphisms).
 
-Mathematical content, in two steps.
+The missing repository vocabulary — complex conjugation as an element of
+`Γ ℚ`, together with the evaluation of `cyclotomicCharacter` at it — is
+now `GaloisRepresentation/ComplexConjugation.lean`: `complexConj : Γ ℚ`,
+`complexConj_mul_self` (it is an involution) and
+`cyclotomicCharacter_complexConj` (the character sends it to `−1` for odd
+`p`). Those three facts are exactly what this proof consumes from the
+oddness side.
 
-1. *Schur.* `ρbar` is irreducible, so `V` is a simple `k[Γ]`-module
-   (`Representation.isIrreducible_iff_isSimpleModule`) and every nonzero
-   intertwiner is bijective (`Representation.IsIrreducible.bijective_or_eq_zero`);
-   hence `E := End_{k[Γ]}(V)` is a division ring, finite-dimensional over
-   the finite field `k`, so by Wedderburn's little theorem it is a finite
-   FIELD extension `k'/k` — and `V` is a `k'`-vector space with
-   `dim_k V = [k' : k] · dim_{k'} V = 2`.
-2. *Oddness kills `[k' : k] = 2`.* Suppose `[k' : k] = 2`. Then
-   `dim_{k'} V = 1`, so every `ρbar g` — which commutes with `E = k'` by
-   construction — acts as multiplication by a scalar `λ_g ∈ k'`. Complex
-   conjugation `c ∈ Γ ℚ` satisfies `c² = 1`, so `λ_c² = 1` and hence
-   `λ_c = ±1 ∈ k` (`ℓ` odd, so `k` has no other square roots of `1`);
-   therefore `ρbar c = ±id` and `det (ρbar c) = 1`. But `ρbar` is ODD:
-   `IsHardlyRamified.det` identifies `det ∘ ρbar` with the mod-`ℓ`
-   cyclotomic character, which sends complex conjugation to `−1`, and
-   `−1 ≠ 1` in `k` because `ℓ` is odd. Contradiction, so `k' = k`.
+**The proof written here is NOT the Wedderburn route** that this
+docstring previously sketched (`End_{k[Γ]}(V)` a division ring, hence by
+Wedderburn's little theorem a field extension `k'/k` with
+`[k':k] · dim_{k'} V = 2`, then oddness killing `[k':k] = 2`). That route
+needs Wedderburn plus a `k'`-module structure on `V`; in dimension two
+one can do without both. The argument used instead, with `J := ρbar c`
+for `c` complex conjugation:
+
+1. *Schur*, in the only form needed: an endomorphism commuting with the
+   whole image of the irreducible `ρbar` is an intertwiner, hence zero or
+   bijective (`Representation.IsIrreducible.bijective_or_eq_zero`, through
+   `LinearMap.intertwiningMap_of_isIntertwiningMap`).
+2. *Oddness*: `J * J = 1` since `c² = 1`, and `det J = −1` by
+   `IsHardlyRamified.det` composed with `cyclotomicCharacter_complexConj`;
+   `−1 ≠ 1` in `k` because `char k = ℓ` (`natCast_self_eq_zero`) is odd.
+   So `J ≠ 1` and `J ≠ −1` (the determinant of `±1` on a rank-two module
+   is `1`).
+3. *A `+1`-eigenvector exists*: `(J − 1)(J + 1) = J² − 1 = 0`, so if
+   `J − 1` were injective then `J + 1 = 0`, i.e. `J = −1`, excluded. Pick
+   `w ≠ 0` with `J w = w`.
+4. *`f w` is a multiple of `w`*: `f` commutes with `J`, so `J (f w) = f w`
+   too. Were `w` and `f w` independent they would be a basis of the
+   rank-two `V` (`basisOfLinearIndependentOfCardEqFinrank`), and `J`,
+   fixing both, would be `1` — excluded. So `f w = a • w` for some `a`
+   (`linearIndependent_fin2`).
+5. *Conclude*: `f − a` commutes with the image and kills `w ≠ 0`, so it is
+   not injective, so by Schur it is `0`, i.e. `f = a • 1`.
 
 The hypothesis `h : IsHardlyRamified hℓOdd hdim ρbar` is used ONLY
-through its `det` field (step 2); `hirr` only through step 1. The
-missing repository vocabulary for a proof is complex conjugation as an
-element of `Γ ℚ` together with the evaluation of `cyclotomicCharacter`
-at it — a self-contained sub-node, and the reason this is stated as a
-leaf rather than proven here.
+through its `det` field (step 2); `hirr` only through step 1; `hdim` only
+to know `finrank k V = 2` (steps 2 and 4).
 
 Both-ways audit: classically this is the standard "odd irreducible
 two-dimensional mod-`ℓ` representation is absolutely irreducible", true
@@ -1084,17 +1108,140 @@ outright for `ℓ` odd; abstractly the hypothesis package contains an
 irreducible hardly ramified `ρbar`, which the section audit of
 `Interface.lean` shows to be classically unsatisfiable, so the statement
 holds vacuously as well — but see the circularity guard: that vacuity is
-NOT available as a proof route here.
+NOT available as a proof route here, and the proof below does not use it.
 
 CIRCULARITY GUARD: `not_isIrreducible_of_isHardlyRamified_of_five_le`
 refutes exactly this hypothesis package and is itself proven over pillar
-α, which is what this file's cone proves; Lean rejects the cycle. -/
+α, which is what this file's cone proves; Lean rejects the cycle. The
+proof below imports only `ComplexConjugation.lean`, whose own cone is
+pure mathlib. -/
 theorem exists_smul_eq_of_commute_of_isIrreducible
     {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
     (hirr : ρbar.IsIrreducible) (f : Module.End k V)
     (hf : ∀ g, Commute f (ρbar g)) :
-    ∃ c : k, f = c • 1 :=
-  sorry
+    ∃ c : k, f = c • 1 := by
+  haveI : Representation.IsIrreducible ρbar.toRepresentation := hirr
+  have hfr : Module.finrank k V = 2 := Module.finrank_eq_of_rank_eq (by exact_mod_cast hdim)
+  -- **Schur's lemma**: an endomorphism commuting with the whole image is zero or bijective.
+  have schur : ∀ e : Module.End k V, (∀ g, Commute e (ρbar g)) →
+      e = 0 ∨ Function.Bijective e := by
+    intro e he
+    have hint : ∀ (g : Field.absoluteGaloisGroup ℚ) (x : V),
+        e (ρbar.toRepresentation g x) = ρbar.toRepresentation g (e x) := by
+      intro g x
+      have h9 := congrArg (fun m : Module.End k V => m x) (he g).eq
+      simp only [Module.End.mul_apply] at h9
+      exact h9
+    have hb := Representation.IsIrreducible.bijective_or_eq_zero
+      (LinearMap.intertwiningMap_of_isIntertwiningMap ρbar.toRepresentation
+        ρbar.toRepresentation e hint)
+    rcases hb with hbij | h0
+    · exact Or.inr hbij
+    · left
+      have h10 := congrArg
+        (fun F : Representation.IntertwiningMap ρbar.toRepresentation ρbar.toRepresentation =>
+          F.toLinearMap) h0
+      simp only [Representation.IntertwiningMap.zero_toLinearMap] at h10
+      exact h10
+  -- **`−1 ≠ 1` in `k`**, because `char k = ℓ` is odd.
+  have hne1 : (-1 : k) ≠ 1 := by
+    intro hcon
+    have h2 : ((2 : ℕ) : k) = 0 := by
+      push_cast
+      linear_combination -hcon
+    haveI hc : CharP k (ringChar k) := ringChar.charP k
+    have hp : (ringChar k).Prime :=
+      (CharP.char_is_prime_or_zero k (ringChar k)).resolve_right
+        (CharP.char_ne_zero_of_finite k (ringChar k))
+    have hd2 : ringChar k ∣ 2 := (CharP.cast_eq_zero_iff k (ringChar k) 2).mp h2
+    have hdl : ringChar k ∣ ℓ :=
+      (CharP.cast_eq_zero_iff k (ringChar k) ℓ).mp natCast_self_eq_zero
+    have hr2 : ringChar k = 2 := (Nat.prime_dvd_prime_iff_eq hp Nat.prime_two).mp hd2
+    rw [hr2] at hdl
+    exact (Nat.not_odd_iff_even.mpr (even_iff_two_dvd.mpr hdl)) hℓOdd
+  -- **Complex conjugation**: an involution of determinant `−1`.
+  set J : Module.End k V := ρbar complexConj with hJdef
+  have hJJ : J * J = 1 := by
+    rw [hJdef, ← map_mul ρbar]
+    convert map_one ρbar using 2
+    exact complexConj_mul_self
+  have hdetJ : LinearMap.det J = -1 := by
+    have hd := h.det complexConj
+    rw [GaloisRep.det_apply, cyclotomicCharacter_complexConj ℓ hℓOdd] at hd
+    rw [hJdef, hd]
+    simp
+  have hJnot1 : J ≠ 1 := by
+    intro hcJ
+    rw [hcJ, show LinearMap.det (1 : Module.End k V) = 1 from LinearMap.det_id] at hdetJ
+    exact hne1 hdetJ.symm
+  have hJnotneg1 : J ≠ -1 := by
+    intro hcJ
+    have h12 : LinearMap.det J = 1 := by
+      rw [hcJ, show (-1 : Module.End k V) = (-1 : k) • 1 by simp,
+        LinearMap.det_smul, hfr]
+      simp
+    rw [h12] at hdetJ
+    exact hne1 hdetJ.symm
+  -- **A `+1`-eigenvector exists**: otherwise `J − 1` is injective, forcing `J = −1`.
+  have hprod : (J - 1) * (J + 1) = 0 := by
+    have h13 : (J - 1) * (J + 1) = J * J - 1 := by noncomm_ring
+    rw [h13, hJJ, sub_self]
+  have hex : ∃ w : V, w ≠ 0 ∧ J w = w := by
+    by_contra hcon
+    push Not at hcon
+    have hinj : Function.Injective ((J - 1 : Module.End k V) : V →ₗ[k] V) := by
+      rw [← LinearMap.ker_eq_bot, Submodule.eq_bot_iff]
+      intro x hx
+      rw [LinearMap.mem_ker] at hx
+      by_contra hx0
+      refine hcon x hx0 ?_
+      have h14 : J x - x = 0 := by simpa using hx
+      linear_combination (norm := module) h14
+    have hJ1 : J + 1 = 0 := by
+      apply LinearMap.ext
+      intro x
+      have h15 : (J - 1) ((J + 1) x) = (J - 1) 0 := by
+        have h16 := congrArg (fun m : Module.End k V => m x) hprod
+        simpa [Module.End.mul_apply] using h16
+      simpa using hinj h15
+    exact hJnotneg1 (by linear_combination (norm := noncomm_ring) hJ1)
+  obtain ⟨w, hw0, hwJ⟩ := hex
+  -- `f w` lies in the same eigenspace, `f` commuting with `J`.
+  have hfwJ : J (f w) = f w := by
+    have h17 := congrArg (fun m : Module.End k V => m w) (hf complexConj).eq
+    simp only [Module.End.mul_apply] at h17
+    rw [← hJdef] at h17
+    rw [← h17, hwJ]
+  -- `w` and `f w` cannot be independent: they would span `V` and force `J = 1`.
+  have hdep : ¬ LinearIndependent k ![f w, w] := by
+    intro hli
+    have hcard : Fintype.card (Fin 2) = Module.finrank k V := by simp [hfr]
+    refine hJnot1 ?_
+    apply (basisOfLinearIndependentOfCardEqFinrank hli hcard).ext
+    intro i
+    fin_cases i <;>
+      simp [coe_basisOfLinearIndependentOfCardEqFinrank, hfwJ, hwJ]
+  have hav : ∃ a : k, f w = a • w := by
+    rw [linearIndependent_fin2] at hdep
+    push Not at hdep
+    obtain ⟨a, ha⟩ := hdep hw0
+    exact ⟨a, by simpa using ha.symm⟩
+  obtain ⟨a, ha⟩ := hav
+  -- `f − a` kills `w ≠ 0`, so Schur forces it to vanish.
+  refine ⟨a, ?_⟩
+  have hcomm : ∀ g, Commute (f - a • (1 : Module.End k V)) (ρbar g) := by
+    intro g
+    have h18 := (hf g).eq
+    unfold Commute SemiconjBy
+    rw [sub_mul, mul_sub, h18]
+    congr 1
+    simp [Algebra.smul_def, Algebra.commutes]
+  rcases schur (f - a • 1) hcomm with h0 | hbij
+  · linear_combination (norm := noncomm_ring) h0
+  · exfalso
+    have hzero : (f - a • (1 : Module.End k V)) w = (f - a • (1 : Module.End k V)) 0 := by
+      simp [ha]
+    exact hw0 (hbij.1 hzero)
 
 open scoped TensorProduct in
 /-- **Residual identification of a RAW framed package** — verbatim
@@ -1158,7 +1305,8 @@ open scoped TensorProduct in
 the deformation-theoretic core of the 2026-07-26 cut of
 `exists_isStrictlyUniversalOnFiniteFrames`, which is now PROVEN over this
 leaf, the H3 finiteness leaf `finite_setOf_isHardlyRamified_frames` and
-the H4 Schur leaf `exists_smul_eq_of_commute_of_isIrreducible`): GIVEN
+the H4 Schur node `exists_smul_eq_of_commute_of_isIrreducible`, PROVEN
+2026-07-26): GIVEN
 Schlessinger's H3 (`hfin`, restricted-ramification finiteness at every
 Artinian level) and H4 (`hschur`, `End_{k[Γ]}(ρbar) = k`), the hardly
 ramified deformation problem of an irreducible hardly ramified `ρbar`
@@ -1176,7 +1324,8 @@ local conditions (Ramakrishna's flat condition at `ℓ`, the CDT tame
 condition at `2`), the de Smit–Lenstra presentation of the hull and the
 Mazur-category ring clauses read off it. Out: (i) H3, the leaf
 `finite_setOf_isHardlyRamified_frames`, supplied as `hfin`; (ii) H4, the
-leaf `exists_smul_eq_of_commute_of_isIrreducible`, supplied as `hschur`;
+now-PROVEN node `exists_smul_eq_of_commute_of_isIrreducible`, supplied
+as `hschur`;
 (iii) the passage from Artinian test objects to the whole of Mazur's
 category — the separate leaf
 `isWeaklyUniversalOnIdentifiedFrames_of_finite`, pure commutative algebra
@@ -1271,8 +1420,9 @@ theorem exists_isStrictlyUniversalOnFrames_of_finite_lifts (hℓ5 : 5 ≤ ℓ)
 set_option backward.isDefEq.respectTransparency false in
 /-- **Mazur/Ramakrishna representability at the ARTINIAN level** (PROVEN
 2026-07-26 over the Schlessinger cut — the H3 finiteness leaf
-`finite_setOf_isHardlyRamified_frames`, the H4 Schur leaf
-`exists_smul_eq_of_commute_of_isIrreducible` and the deformation-theoretic
+`finite_setOf_isHardlyRamified_frames`, the H4 Schur node
+`exists_smul_eq_of_commute_of_isIrreducible` (itself PROVEN 2026-07-26)
+and the deformation-theoretic
 core leaf `exists_isStrictlyUniversalOnFrames_of_finite_lifts`): the hardly
 ramified deformation problem of an irreducible hardly ramified `ρbar`
 (`ℓ ≥ 5`) admits an object `D` of Mazur's category that classifies every

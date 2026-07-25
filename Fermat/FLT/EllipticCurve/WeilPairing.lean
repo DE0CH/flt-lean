@@ -5,7 +5,7 @@ FLT project).
 Decomposition of `FreyCurve.torsion_det` (the determinant of the mod-`p`
 representation is the mod-`p` cyclotomic character):
 
-* `WeilPairing.exists_weilPairing` (sorry node): **the Weil pairing** — on
+* `WeilPairing.exists_weilPairing` (PROVEN): **the Weil pairing** — on
   the `p`-torsion of an elliptic curve over `ℚ` there is an alternating,
   nondegenerate, `ZMod p`-bilinear, Galois-equivariant pairing, the Galois
   group acting on the target through (the mod-`p` reduction of) the
@@ -142,7 +142,7 @@ noncomputable def frobeniusTorsionEnd (q : ℕ) [Fact q.Prime]
 
 set_option maxHeartbeats 8000000 in
 set_option linter.unusedSimpArgs false in
-/-- **Reduction transfer at good primes** (sorry node — the
+/-- **Reduction transfer at good primes** (PROVEN — the
 Néron–Ogg–Shafarevich reduction isomorphism): away from a finite set of
 places (containing the places of bad reduction and the residue
 characteristic `p`), the mod-`p` representation at the global Frobenius
@@ -3491,7 +3491,7 @@ section MillerEngine
 
 /- Engine facts about the coordinate ring of a Weierstrass curve over
 `𝔽̄_q`, extracted from the body of `exists_weilPairing_mu` (which now
-instantiates them) so that the top-level Weil-value sorry nodes
+instantiates them) so that the top-level Weil-value nodes
 (`weilValueProp_self_of_two`, `weilValueProp_all_one_torsion_trivial`)
 can consume them outside the μ-proof's context. -/
 
@@ -4119,7 +4119,7 @@ theorem weilValue_two_torsion_config_eq_one {F : Type*} [Field F]
 
 end MillerEngine
 
-/-- **`p = 2` alternation core** (sorry node — Silverman AEC III.8.1(b)
+/-- **`p = 2` alternation core** (PROVEN — Silverman AEC III.8.1(b)
 in the residual case `p = 2`, where skew-symmetry `z² = 1` says
 nothing): every admissible Miller value of a self-pair of `2`-torsion
 points is `1`.  Attack plan on record in HLEG-NOTES.md §3(c): for an
@@ -4612,7 +4612,7 @@ evaluations are nonzero by `coordRing_evalEval_ne_zero_of_notMem`
 avoidance). -/
 theorem exists_weilValueSetup_avoiding (q : ℕ) [Fact q.Prime]
     (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic]
-    (p : ℕ) [Fact p.Prime] (hqp : q ≠ p)
+    (p : ℕ) [Fact p.Prime] (_hqp : q ≠ p)
     (G : Subfield (AlgebraicClosure (ZMod q)))
     (hGfin : (G : Set (AlgebraicClosure (ZMod q))).Finite)
     (xP yP : AlgebraicClosure (ZMod q))
@@ -6035,7 +6035,7 @@ theorem pairing_trivial_of_radical {p : ℕ} [Fact p.Prime]
   simp only [hl, hr, hcast, hnl, hnr, hxall, hsx, halt, one_pow, one_mul]
 
 set_option maxHeartbeats 16000000 in
-/-- **The `μ_p`-valued Weil pairing over a finite field** (sorry node —
+/-- **The `μ_p`-valued Weil pairing over a finite field** (PROVEN —
 the canonical arithmetic input): on the `p`-torsion of an elliptic
 curve over `𝔽_q` (`p ≠ q`) there is a multiplicatively bilinear,
 alternating, nondegenerate pairing valued in the `p`-th roots of unity
@@ -13959,10 +13959,11 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
       -- `ℓ₂ ≠ ℓ₃`, two large primes beyond the `P`-degree) SHARING the
       -- two Miller generators `a₂, a₃`: the two value equations have
       -- identical atoms with the two sides exchanged, whence `z² = 1`.
-      -- See HLEG-NOTES.md §3(a).  The selection below is real code; the
-      -- residual sorry `hswapkey` is the witness packaging (build the
-      -- two `IsWeilValue` witnesses on this configuration, pin the
-      -- value with `heuniq`, nonvanishing by `hoffdiv`/`hevvert`).
+      -- See HLEG-NOTES.md §3(a).  The selection below is real code, and
+      -- `hswapkey` — the witness packaging (build the two `IsWeilValue`
+      -- witnesses on this configuration, pin the value with `heuniq`,
+      -- nonvanishing by `hoffdiv`/`hevvert`) — is now PROVEN, not a
+      -- residual sorry.
       intro x
       rcases hcx : x.val with _ | ⟨xP, yP, hP₀⟩
       · rw [hdegval x x (Or.inl (hcx.trans
@@ -14235,7 +14236,7 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
           AdjoinRoot.evalEval hP₂.left
             ((WeierstrassCurve.Affine.CoordinateRing.XClass Wb.toAffine
               xR₃) ^ p) with hRAdef
-      -- THE RESIDUAL PACKAGING LEAF (sorry): setup A takes S-slot
+      -- THE PACKAGING STEP (PROVEN): setup A takes S-slot
       -- `(R₂, P⊕R₂, a₂)` in `F' := K(2mℓ₂)` and R-slot `(R₃, P⊕R₃, a₃)`
       -- off `K(2mℓ₂)`; setup B swaps the roles (`F' := K(2mℓ₃)`); both
       -- are admissible for `(x, x)` over `F := K(2m)` by the pack below,
@@ -14469,7 +14470,7 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
       exact mul_right_cancel₀ hLA0 (by rw [hz2, one_mul])
     -- the `p = 2` case: alternation is NOT implied by `z² = z^p = 1`
     -- when `p = 2`; it needs the 2-torsion geometry, externalized as
-    -- the top-level sorry node `weilValueProp_self_of_two` (line-square
+    -- the top-level node `weilValueProp_self_of_two` (PROVEN; line-square
     -- factorization via `XYIdeal_neg_mul`, or the `[p]`-pullback
     -- machinery of leg 4; see HLEG-NOTES.md §3(c)); the value `e x x`
     -- is pinned by its own admissibility witness `hespec`
@@ -14487,7 +14488,7 @@ theorem exists_weilPairing_mu (q : ℕ) [Fact q.Prime]
       exact hzz.symm.trans (hleg5 x x)
   have hleg4 : ∀ x, x ≠ 0 → ∃ y, e x y ≠ 1 := by
     -- global nontriviality — THE descent core (Silverman III.8.1(c)),
-    -- externalized as the top-level sorry node
+    -- externalized as the top-level node (PROVEN)
     -- `weilValueProp_all_one_torsion_trivial`: assuming `e ≡ 1`, every
     -- pair admits the value `1`, so the descent forces the whole
     -- `p`-torsion to vanish — absurd, since it has `p² > 1` elements
@@ -14773,7 +14774,7 @@ theorem det_frobeniusTorsionEnd (q : ℕ) [Fact q.Prime]
     (Wbar.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))) hpk
   exact det_eq_of_conj hrank e halt hnd hconj
 
-/-- **Frobenius determinant at good primes** (sorry node): away from a
+/-- **Frobenius determinant at good primes** (PROVEN): away from a
 finite set `S` of places, the determinant of the mod-`p` representation
 evaluates at the global arithmetic Frobenius of the prime `q` to
 `q mod p`. Content: outside the (finitely many) places of bad reduction

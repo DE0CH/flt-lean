@@ -1859,7 +1859,26 @@ certificate).  Writing `EX := W_X(Q)`, `EY := W_Y(Q)`,
 `RQ := W(q₁, q₂)` and `R0` for the coordinate-ring relation
 `coord_equation_coordC`, the certificate is
 
-* `−T³·(A − q₁T² − RQ)` against `coord_equation_coordC`,
+* `−T³·(A − q₁T² − RQ)` against `coord_equation_coordC`, *after* it has
+  been normalized by `simp only [coordC_eq_algebraMap]`.  ATOM
+  CONSTRAINT, and the one thing to preserve when touching this proof:
+  the certificate's atoms are `algebraMap F W.CoordinateRing`
+  applications, and `ring` does NOT identify `coordC W c` with
+  `algebraMap F W.CoordinateRing c` — the two are `rfl`-equal, yet
+  `ring`'s normalizer treats them as *distinct atoms*, so a `coordC`-
+  spelled hypothesis leaves unconvertible `coordC W W.a₂/a₄/a₆` in the
+  residual and the `linear_combination` fails.  This bit once: a
+  de-duplication of the two same-content `coord_equation` lemmas
+  repointed `hcr` across spellings and broke the build.  Normalizing the
+  hypothesis at the point of use (rather than depending on *which*
+  spelling the name `coord_equation` happens to resolve to) is what
+  makes this robust to the eventual collapse of the two lemmas,
+  whichever spelling survives.  Note the failure does not present as a
+  `ring` error: the certificate is large enough that the mismatched
+  normal form exhausts the default `maxRecDepth` first, so it surfaces
+  as "maximum recursion depth has been reached" inside `simp`.  Raising
+  the depth is a diagnostic step only — it reveals the real `ring`
+  failure and must not be left in as a fix,
 * `−T³·(EY·U + EX·T + T³ + RQ)` against `W.Equation q₁ q₂` (transported
   into `F[W]` along `algebraMap`),
 * `−T⁴·A` against the `Cubic.c` coefficient of `addPolynomial_slope`
@@ -2217,8 +2236,318 @@ lemma isDedekindDomain_coordinateRing (hΔ : W.Δ ≠ 0) :
     ((isDedekindDomainInv_iff (K := W.FunctionField)).mpr fun I hI =>
       hcancel I (by rwa [← FractionalIdeal.bot_eq_zero]))
 
-/-- **L4-8 line-numerator sub-leaf (sorry): the comaximal assembly in the
-COINCIDENT configurations — the whole residual coincidence zoo.**
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- Point ideals of affine points are nonzero: they contain the nonzero
+vertical class `X − x`. -/
+lemma pointIdeal_ne_bot {x y : F} (h : W.Nonsingular x y) :
+    pointIdeal W (.some x y h) ≠ ⊥ := by
+  intro hc
+  have hmem : CoordinateRing.XClass W x ∈ pointIdeal W (.some x y h) := by
+    rw [pointIdeal_some, CoordinateRing.XYIdeal]
+    exact Ideal.subset_span (Set.mem_insert _ _)
+  rw [hc, Ideal.mem_bot] at hmem
+  exact CoordinateRing.XClass_ne_zero (W' := W) x hmem
+
+omit [DecidableEq F] in
+/-- **Point ideals of affine points are prime elements of the ideal
+monoid** of the Dedekind domain `F[W]` (`isDedekindDomain_coordinateRing`):
+they are maximal (`xyIdeal_isMaximal`) and nonzero. -/
+lemma prime_pointIdeal (hΔ : W.Δ ≠ 0) {x y : F} (h : W.Nonsingular x y) :
+    Prime (pointIdeal W (.some x y h)) := by
+  haveI := isDedekindDomain_coordinateRing hΔ
+  exact Ideal.prime_of_isPrime (pointIdeal_ne_bot h)
+    (by rw [pointIdeal_some]; exact (xyIdeal_isMaximal h.left).isPrime)
+
+omit [DecidableEq F] in
+/-- **The prime-power squeeze** (the mechanism that turns the *product*
+identity `⟨n · ñ⟩ = RHS · RHS'` into a *factorwise* statement): if `z · w`
+spans an ideal divisible by `I_Z^k` and the partner `w` does not vanish at
+`Z`, then `z` alone lies in `I_Z^k`.  This is `Prime.pow_dvd_of_dvd_mul_right`
+in the ideal monoid, where divisibility is containment
+(`Ideal.dvd_iff_le`). -/
+lemma mem_pointIdeal_pow_of_dvd_of_notMem (hΔ : W.Δ ≠ 0) {x y : F}
+    (h : W.Nonsingular x y) {z w : W.CoordinateRing} {k : ℕ}
+    (hdvd : pointIdeal W (.some x y h) ^ k ∣ Ideal.span {z * w})
+    (hw : w ∉ pointIdeal W (.some x y h)) :
+    z ∈ pointIdeal W (.some x y h) ^ k := by
+  haveI := isDedekindDomain_coordinateRing hΔ
+  have hz : pointIdeal W (.some x y h) ^ k ∣ Ideal.span {z} := by
+    refine (prime_pointIdeal hΔ h).pow_dvd_of_dvd_mul_right
+      (b := Ideal.span {w}) k ?_ ?_
+    · rw [Ideal.dvd_iff_le, Ideal.span_le, Set.singleton_subset_iff]
+      exact hw
+    · rwa [Ideal.span_singleton_mul_span_singleton]
+  rw [Ideal.dvd_iff_le, Ideal.span_le, Set.singleton_subset_iff] at hz
+  exact hz
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- **Multiplicity-wise assembly**: an element lying in `I_Z` to the
+multiplicity of `Z` in a multiset `E` of points, *for every* `Z`, lies in
+the product of the point ideals of `E`.  This is the coincidence-proof
+replacement for the naive comaximal assembly: distinct points have coprime
+point ideals (`isCoprime_pointIdeal`), so peeling off all copies of one
+point at a time turns the product over the *distinct* points into an
+intersection, while the repeated point contributes a genuine prime
+power. -/
+lemma mem_prod_map_pointIdeal [DecidableEq W.Point] :
+    ∀ (E : Multiset W.Point) {z : W.CoordinateRing},
+      (∀ Z : W.Point, z ∈ pointIdeal W Z ^ E.count Z) →
+      z ∈ (E.map (pointIdeal W)).prod := by
+  intro E
+  induction E using Multiset.strongInductionOn with
+  | _ E ih =>
+    intro z h
+    rcases Multiset.empty_or_exists_mem E with rfl | ⟨Z, hZ⟩
+    · simp
+    · have hsplit : Multiset.replicate (E.count Z) Z +
+          E.filter (fun a => ¬ a = Z) = E := by
+        conv_rhs => rw [← Multiset.filter_add_not (fun a => a = Z) E]
+        rw [Multiset.filter_eq' E Z]
+      have hE'lt : E.filter (fun a => ¬ a = Z) < E := by
+        refine lt_of_le_of_ne (Multiset.filter_le _ _) ?_
+        intro hcon
+        have hmem : Z ∈ E.filter (fun a => ¬ a = Z) := by rw [hcon]; exact hZ
+        exact (Multiset.of_mem_filter hmem) rfl
+      have hcount' : ∀ Y : W.Point,
+          z ∈ pointIdeal W Y ^ (E.filter (fun a => ¬ a = Z)).count Y := by
+        intro Y
+        by_cases hY : Y = Z
+        · subst hY
+          have hz0 : (E.filter (fun a => ¬ a = Y)).count Y = 0 := by
+            rw [Multiset.count_eq_zero]
+            exact fun hc => (Multiset.of_mem_filter hc) rfl
+          rw [hz0, pow_zero, Ideal.one_eq_top]
+          exact Submodule.mem_top
+        · rw [Multiset.count_filter_of_pos (p := fun a => ¬ a = Z) hY]
+          exact h Y
+      have hrec := ih _ hE'lt hcount'
+      have hcop : IsCoprime (pointIdeal W Z ^ E.count Z)
+          (((E.filter (fun a => ¬ a = Z)).map (pointIdeal W)).prod) := by
+        refine IsCoprime.pow_left ?_
+        refine Multiset.prod_induction _ _ (fun a b ha hb => ha.mul_right hb)
+          isCoprime_one_right ?_
+        intro J hJ
+        obtain ⟨Y, hYmem, rfl⟩ := Multiset.mem_map.mp hJ
+        exact isCoprime_pointIdeal (fun hc => (Multiset.of_mem_filter hYmem) hc.symm)
+      have hprod : (E.map (pointIdeal W)).prod =
+          pointIdeal W Z ^ E.count Z *
+            ((E.filter (fun a => ¬ a = Z)).map (pointIdeal W)).prod := by
+        conv_lhs => rw [← hsplit]
+        rw [Multiset.map_add, Multiset.prod_add, Multiset.map_replicate,
+          Multiset.prod_replicate]
+      rw [hprod, Ideal.mul_eq_inf_of_isCoprime hcop]
+      exact ⟨h Z, hrec⟩
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- A coordinate-ring element of the point ideal of an affine point
+vanishes there: the point ideal is contained in the kernel of `coordEval`.
+(The converse is `mem_pointIdeal_of_coordEval_eq_zero`.) -/
+lemma coordEval_eq_zero_of_mem {x y : F} (h : W.Nonsingular x y)
+    {z : W.CoordinateRing} (hz : z ∈ pointIdeal W (.some x y h)) :
+    coordEval W h.left z = 0 := by
+  have hX : CoordinateRing.XClass W x ∈ RingHom.ker (coordEval W h.left) := by
+    rw [RingHom.mem_ker, XClass_eq, map_sub, coordEval_coordX, coordEval_coordC,
+      sub_self]
+  have hY : CoordinateRing.YClass W (Polynomial.C y) ∈
+      RingHom.ker (coordEval W h.left) := by
+    rw [RingHom.mem_ker, YClass_C_eq, map_sub, coordEval_coordY, coordEval_coordC,
+      sub_self]
+  have hle : pointIdeal W (.some x y h) ≤ RingHom.ker (coordEval W h.left) := by
+    rw [pointIdeal_some, CoordinateRing.XYIdeal, Ideal.span_le, Set.insert_subset_iff,
+      Set.singleton_subset_iff]
+    exact ⟨hX, hY⟩
+  exact hle hz
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- The conjugate line numerator, like the line numerator
+(`lineNumerator_congr`), depends only on the line and not on the base
+point used to write it down. -/
+lemma lineNumeratorNeg_congr {q₁ q₂ x y x' y' ℓ : F} (hl : ℓ * (x - x') = y - y') :
+    lineNumeratorNeg W q₁ q₂ x y ℓ = lineNumeratorNeg W q₁ q₂ x' y' ℓ := by
+  have h1 : coordC W ℓ * (coordC W x - coordC W x') = coordC W y - coordC W y' := by
+    rw [← coordC_sub, ← coordC_mul, ← coordC_sub, hl]
+  simp only [lineNumeratorNeg]
+  linear_combination (coordX W - coordC W q₁) ^ 3 * h1
+
+omit [IsAlgClosed F] in
+/-- **The value of the conjugate line numerator at `P ⊖ Q`.**  While
+`lineNumerator` *vanishes* at `P ⊖ Q` (`lineNumerator_mem_pointIdeal_sub`),
+its hyperelliptic conjugate takes there the value
+`−(2y + a₁x + a₃)·(α − q₁)³`, `(α, β) = P ⊖ Q`.  Reason: `ñ/T³` is the line
+value read at `⊖Q ⊖ taut`, so at `taut = P ⊖ Q` it is `L(⊖P)`, and
+`L(⊖P) = negY x y − y = −(2y + a₁x + a₃)` because `L(P) = 0`.
+
+Formally it is the same computation as `lineNumerator_mem_pointIdeal_sub`
+— the group law `Q ⊕ (α, β) = P` supplies `addX q₁ α λ = x` and
+`addY q₁ α q₂ λ = y`, and the cleared slope relation eliminates `β` — with
+the cofactors `(q₁ − α)³` and `(a₁ + ℓ)(q₁ − α)³` instead of
+`−(q₁ − α)³`, `ℓ(q₁ − α)³`. -/
+lemma coordEval_lineNumeratorNeg_sub {q₁ q₂ x y α β : F} (hq : W.Nonsingular q₁ q₂)
+    (h : W.Nonsingular x y) (hαβ : W.Nonsingular α β)
+    (hd : (Point.some x y h : W.Point) - Point.some q₁ q₂ hq = Point.some α β hαβ)
+    (ℓ : F) :
+    coordEval W hαβ.left (lineNumeratorNeg W q₁ q₂ x y ℓ) =
+      -(2 * y + W.a₁ * x + W.a₃) * (α - q₁) ^ 3 := by
+  have hsum : (Point.some q₁ q₂ hq : W.Point) + Point.some α β hαβ =
+      Point.some x y h := by rw [← hd]; abel
+  by_cases hQA : q₁ = α ∧ q₂ = W.negY α β
+  · exact absurd (by rw [← hsum, Point.add_of_Y_eq hQA.1 hQA.2] :
+      (Point.some x y h : W.Point) = 0) (Point.some_ne_zero h)
+  · rw [Point.add_some hQA] at hsum
+    rw [Point.some.injEq] at hsum
+    obtain ⟨hX, hY⟩ := hsum
+    simp only [lineNumeratorNeg, map_sub, map_add, map_mul, map_pow,
+      coordEval_coordX, coordEval_coordY, coordEval_coordC]
+    by_cases hxa : q₁ = α
+    · have hβ : q₂ = β :=
+        Y_eq_of_Y_ne hq.left hαβ.left hxa fun hc => hQA ⟨hxa, hc⟩
+      rw [← hxa, ← hβ]; ring
+    · have hl : W.slope q₁ α q₂ β * (q₁ - α) = q₂ - β :=
+        slope_mul_sub hq.left hαβ.left fun hc => hQA hc
+      have hU : β - q₂ = -(W.slope q₁ α q₂ β * (q₁ - α)) := by
+        linear_combination hl
+      simp only [WeierstrassCurve.Affine.addY, WeierstrassCurve.Affine.negAddY,
+        WeierstrassCurve.Affine.negY, WeierstrassCurve.Affine.addX] at hX hY
+      rw [hU]
+      linear_combination ((q₁ - α) ^ 3) * hY +
+        ((W.a₁ + ℓ) * (q₁ - α) ^ 3) * hX
+
+omit [IsAlgClosed F] in
+/-- **Non-vanishing of the conjugate line numerator at `P ⊖ Q`**, read off
+`coordEval_lineNumeratorNeg_sub`: it needs exactly `2P ≠ O` and
+`P ⊖ Q ∉ {Q, ⊖Q}`.  This is the input the prime-power squeeze consumes at
+every coincident point *other than* `Q`. -/
+lemma lineNumeratorNeg_notMem_pointIdeal_sub {q₁ q₂ x y α β : F}
+    (hq : W.Nonsingular q₁ q₂) (h : W.Nonsingular x y) (hαβ : W.Nonsingular α β)
+    (hd : (Point.some x y h : W.Point) - Point.some q₁ q₂ hq = Point.some α β hαβ)
+    (ℓ : F) (h2P : y ≠ W.negY x y) (hne : α ≠ q₁) :
+    lineNumeratorNeg W q₁ q₂ x y ℓ ∉ pointIdeal W (.some α β hαβ) := by
+  intro hmem
+  have hval := coordEval_eq_zero_of_mem hαβ hmem
+  rw [coordEval_lineNumeratorNeg_sub hq h hαβ hd ℓ] at hval
+  have hd1 : 2 * y + W.a₁ * x + W.a₃ ≠ 0 := by
+    intro hc
+    refine h2P ?_
+    rw [show W.negY x y = -y - W.a₁ * x - W.a₃ from rfl]
+    linear_combination hc
+  rcases mul_eq_zero.mp hval with hc | hc
+  · exact hd1 (by linear_combination -hc)
+  · exact hne (by
+      have := pow_eq_zero_iff (n := 3) (by norm_num) |>.mp hc
+      linear_combination this)
+
+/-- **L4-8 line-numerator sub-leaf (sorry): the multiplicity of the line
+numerator at `Q` ITSELF.**  This is all that is left of the coincidence
+zoo: `n` achieves the `Q`-multiplicity of its divisor, i.e. `n ∈ I_Q^k`
+whenever `I_Q^k` divides the whole product `I_Q³ · I_{P⊖Q} · I_{R⊖Q} ·
+I_{⊖(P⊕R)⊖Q}`.  For `k ≤ 3` this is `lineNumerator_mem_pointIdeal_pow_three`
+(proven below); the open content is `k ≥ 4`, which happens exactly when
+`2Q ∈ {P, R, S}` (`S = ⊖(P ⊕ R)`), with `k = 3 + m`,
+`m = #{i : Pᵢ = 2Q} ≤ 3`.
+
+WHY THE PARTNER SQUEEZE CANNOT DO THIS (2026-07-25, correcting the
+docstring of the parent leaf).  Every *other* coincident point is handled
+by `mem_pointIdeal_pow_of_dvd_of_notMem` together with
+`lineNumeratorNeg_notMem_pointIdeal_sub`: at `Z = Pᵢ ⊖ Q ≠ Q` a
+coincidence forces `2Pᵢ ≠ O` and `Z ≠ ±Q`, so the partner `ñ` is a UNIT at
+`Z` and the whole `Z`-multiplicity of `⟨n·ñ⟩` lands on `n`.  At `Z = Q`
+that mechanism is unavailable *in principle*: the conjugate divisor
+`RHS' = 3(Q) + (⊖P⊖Q) + (⊖R⊖Q) + ((P⊕R)⊖Q)` always contains `3(Q)`, so
+`v_Q(ñ) ≥ 3 > 0` unconditionally and `ñ ∉ I_Q` is false.  The recommended
+"non-vanishing squeeze" therefore covers the zoo except at `Q`.
+
+TWO ROUTES FOR WHAT REMAINS, both CAS-checked numerically.
+
+* *Order-`k` truncated evaluation.*  With `2Q ≠ O` (automatic once
+  `2Q ∈ {P,R,S}` is affine) put `A₀ = 2q₂ + a₁q₁ + a₃ ≠ 0` and solve the
+  Weierstrass equation for a truncated branch
+  `y(t) = q₂ + c₁t + c₂t² + c₃t³` with `W(q₁ + t, y(t)) ≡ 0 mod t⁴`
+  (the `cᵢ` are explicit rational functions of `q₁, q₂, aᵢ` with
+  denominators powers of `A₀`; each coefficient identity is
+  `field_simp`/`linear_combination` against `W(q₁,q₂) = 0`).  Then
+  `AdjoinRoot.lift` gives `φ : F[W] → F[t]/(t⁴)` with `φ(I_Q) ⊆ (t)`,
+  hence `φ(I_Q⁴) = 0`, and the computation `φ(ñ) = L(⊖2Q)·t³`,
+  `φ(n) = L(2Q)·t³`.  Since `2Q ∈ {P,R,S}` and `⊖2Q ∈ {P,R,S}` together
+  force `4Q = O`, in the generic case `L(⊖2Q) ≠ 0`, so `v_Q(ñ) = 3`
+  exactly and the squeeze at `Q` closes with `k = 3 + m`.  The residual
+  `4Q = O` configuration has `m = m' = 1` and needs the same construction
+  one order further (`t⁵`).
+* *The chord-product identity* (no valuations at all, and it proves the
+  whole leaf `span_lineNumerator` outright):
+  `n · L̄ = L(Q) · ℓ(Q,⊖P) · ℓ(Q,⊖R) · ℓ(Q,⊖S)`,
+  where `L̄` is the line through `⊖P, ⊖R, ⊖S`, `ℓ(Q,V)` the chord through
+  `Q` and `V`, and `L(Q) = q₂ − ℓ(q₁ − x₁) − y₁` the line evaluated at `Q`.
+  Taking ideals and using `YIdeal_eq_prod_pointIdeal` — which is uniform in
+  ALL tangency/coincidence configurations, being mathlib's
+  `XYIdeal_mul_XYIdeal` — the factor `⟨L̄⟩ = I_{⊖P}I_{⊖R}I_{⊖S}` cancels
+  and leaves `⟨n⟩ = RHS`.  Numerically verified in PARI/GP on
+  `y² + xy + 3y = x³ − 2x² − 4x + 5` (both this identity and its mirror
+  `ñ · L = L(⊖Q) · ℓ(Q,P) · ℓ(Q,R) · ℓ(Q,S)` hold to 60 digits).  The
+  degenerate configurations are exactly `Q ∈ {P,R,S}` (then `L(Q) = 0` and
+  a chord goes vertical); the mirror identity covers those unless also
+  `⊖Q ∈ {P,R,S}`, which forces `2Q = O` with exactly one `Pᵢ = Q`.  The
+  cost is one large `linear_combination` in the coordinate ring against
+  the Weierstrass equations at `taut`, `Q`, `P`, `R` and the cleared slope
+  relations. -/
+lemma lineNumerator_mem_pointIdeal_pow_of_dvd (hΔ : W.Δ ≠ 0)
+    {q₁ q₂ x₁ y₁ x₂ y₂ : F}
+    (hq : W.Nonsingular q₁ q₂) (h₁ : W.Nonsingular x₁ y₁)
+    (h₂ : W.Nonsingular x₂ y₂) (hxy : ¬(x₁ = x₂ ∧ y₁ = W.negY x₂ y₂)) {k : ℕ}
+    (hk : pointIdeal W (.some q₁ q₂ hq) ^ k ∣
+      pointIdeal W (.some q₁ q₂ hq) ^ 3 *
+        (pointIdeal W (.some x₁ y₁ h₁ - .some q₁ q₂ hq) *
+          (pointIdeal W (.some x₂ y₂ h₂ - .some q₁ q₂ hq) *
+            pointIdeal W (-(.some x₁ y₁ h₁ + .some x₂ y₂ h₂) - .some q₁ q₂ hq)))) :
+    lineNumerator W q₁ q₂ x₁ y₁ (W.slope x₁ x₂ y₁ y₂) ∈
+      pointIdeal W (.some q₁ q₂ hq) ^ k := by
+  by_cases hk3 : k ≤ 3
+  · exact Ideal.pow_le_pow_right hk3
+      (lineNumerator_mem_pointIdeal_pow_three hq x₁ y₁ (W.slope x₁ x₂ y₁ y₂))
+  · sorry
+
+/-- **The product identity `⟨n · ñ⟩ = RHS · RHS'`** (PROVEN), hoisted out
+of `span_lineNumerator`'s proof so that it is available to the coincidence
+leaf above it.  It is `lineNumerator_mul_lineNumeratorNeg` (the cleared
+conjugate product) combined with the three exact vertical spans
+`span_vertNumerator`. -/
+lemma span_lineNumerator_mul_lineNumeratorNeg (hΔ : W.Δ ≠ 0)
+    {q₁ q₂ x₁ y₁ x₂ y₂ : F}
+    (hq : W.Nonsingular q₁ q₂) (h₁ : W.Nonsingular x₁ y₁)
+    (h₂ : W.Nonsingular x₂ y₂) (hxy : ¬(x₁ = x₂ ∧ y₁ = W.negY x₂ y₂)) :
+    Ideal.span {lineNumerator W q₁ q₂ x₁ y₁ (W.slope x₁ x₂ y₁ y₂) *
+        lineNumeratorNeg W q₁ q₂ x₁ y₁ (W.slope x₁ x₂ y₁ y₂)} =
+      (pointIdeal W (.some q₁ q₂ hq) ^ 3 *
+          (pointIdeal W (.some x₁ y₁ h₁ - .some q₁ q₂ hq) *
+            (pointIdeal W (.some x₂ y₂ h₂ - .some q₁ q₂ hq) *
+              pointIdeal W (-(.some x₁ y₁ h₁ + .some x₂ y₂ h₂) -
+                .some q₁ q₂ hq)))) *
+        (pointIdeal W (.some q₁ q₂ hq) ^ 3 *
+          (pointIdeal W (-.some x₁ y₁ h₁ - .some q₁ q₂ hq) *
+            (pointIdeal W (-.some x₂ y₂ h₂ - .some q₁ q₂ hq) *
+              pointIdeal W (.some x₁ y₁ h₁ + .some x₂ y₂ h₂ -
+                .some q₁ q₂ hq)))) := by
+  have h₃ : W.Nonsingular (W.addX x₁ x₂ (W.slope x₁ x₂ y₁ y₂))
+      (W.negY (W.addX x₁ x₂ (W.slope x₁ x₂ y₁ y₂))
+        (W.addY x₁ x₂ y₁ (W.slope x₁ x₂ y₁ y₂))) :=
+    (nonsingular_neg ..).mpr (nonsingular_add h₁ h₂ hxy)
+  have hS : -(Point.some x₁ y₁ h₁ + Point.some x₂ y₂ h₂) =
+      Point.some _ _ h₃ := by rw [Point.add_some hxy, Point.neg_some]
+  have hv₃ : Ideal.span {vertNumerator W q₁ q₂
+        (W.addX x₁ x₂ (W.slope x₁ x₂ y₁ y₂))} =
+      pointIdeal W (.some q₁ q₂ hq) ^ 2 *
+        (pointIdeal W (-(.some x₁ y₁ h₁ + .some x₂ y₂ h₂) - .some q₁ q₂ hq) *
+          pointIdeal W (.some x₁ y₁ h₁ + .some x₂ y₂ h₂ - .some q₁ q₂ hq)) := by
+    have hv := span_vertNumerator hΔ hq h₃
+    rwa [← hS, neg_neg] at hv
+  rw [lineNumerator_mul_lineNumeratorNeg hq.left h₁.left h₂.left hxy,
+    Ideal.span_singleton_neg, ← Ideal.span_singleton_mul_span_singleton,
+    ← Ideal.span_singleton_mul_span_singleton,
+    span_vertNumerator hΔ hq h₁, span_vertNumerator hΔ hq h₂, hv₃]
+  ring
+
+/-- **L4-8 line-numerator sub-leaf: the assembly in the COINCIDENT
+configurations — the residual coincidence zoo, now REDUCED to a single
+local statement at `Q`.**
 
 The four separate memberships of `lineNumerator` in `I_Q³`, `I_{P⊖Q}`,
 `I_{R⊖Q}`, `I_{⊖(P⊕R)⊖Q}` are all PROVEN (see
@@ -2233,24 +2562,29 @@ is needed), `P = R` (then `P⊖Q = R⊖Q` and `n ∈ I_{P⊖Q}²` is needed),
 is NOT a coincidence: its factor is `⊤`, and `isCoprime_pointIdeal`
 covers it.
 
-TWO ROUTES FOR THE ZOO.
-* *Higher-order vanishing directly.*  `n ∈ I_S²` is a Taylor condition at
-  `S`; a lift of `n` to `F[X][Y]` must lie in
-  `⟨(X − α)², (X − α)(Y − β), (Y − β)², W.polynomial⟩`, which is a
-  Gröbner cofactor certificate (Singular can produce it, `ring` verifies
-  it) — but it is parametric in `q₁, q₂, x₁, y₁, ℓ`, hence large.
-* *The non-vanishing squeeze* (recommended).  The multiplicity is forced
-  by the already-known product identity: `⟨n⟩·⟨ñ⟩ = RHS·RHS'` exactly
-  (`hmul` in `span_lineNumerator`), so at each maximal ideal the two
-  vanishing orders SUM to the known total.  Hence `v_𝔭(n) = v_𝔭(RHS)`
-  follows from `v_𝔭(ñ) = v_𝔭(RHS')`, and in every coincidence case the
-  partner order is `0`, i.e. what has to be proven is a *non-vanishing*
-  statement `ñ ∉ I_𝔭` — a single evaluation `≠ 0` (available through
-  `coordEval` / `mem_pointIdeal_of_coordEval_eq_zero`), not a
-  higher-order vanishing.  E.g. at `A = P ⊖ Q` one computes
-  `ñ(A) = −(2y₁ + a₁x₁ + a₃)·(α − q₁)³`, nonzero exactly when `2P ≠ O`
-  and `A ≠ ±Q`.  The cost is the valuation/unique-factorization layer for
-  ideals of the Dedekind domain `F[W]`. -/
+PROOF (2026-07-25).  The *non-vanishing squeeze* recommended by the
+previous owner is carried out here, and it discharges the entire zoo
+EXCEPT at `Q`, where it provably cannot work.  Structure:
+
+* The divisor is packaged as a MULTISET `E = {Q, Q, Q, P⊖Q, R⊖Q, S⊖Q}`
+  and the target product is `(E.map I).prod` (`mem_prod_map_pointIdeal`);
+  it therefore suffices to prove `n ∈ I_Z ^ (E.count Z)` for every point
+  `Z` separately, with no case analysis on which factors coincide.
+* At a point `Z` of multiplicity `≤ 1` the single membership `hQ3`/`hA`/
+  `hB`/`hC` already gives it.
+* At a coincident `Z ≠ Q` — i.e. two of `P⊖Q`, `R⊖Q`, `S⊖Q` agree — the
+  coincidence itself supplies the non-vanishing input: `P = R` forces
+  `2P ≠ O` through `hxy`, and `P = S` (resp. `R = S`) forces `2P ≠ O`
+  (resp. `2R ≠ O`) because otherwise `R = ⊖2P = O` (resp. `P = O`).  Also
+  `Z ≠ ±Q`, since `Z = ⊖Q` would mean `P = O`.  So
+  `lineNumeratorNeg_notMem_pointIdeal_sub` applies, and the prime-power
+  squeeze `mem_pointIdeal_pow_of_dvd_of_notMem` against the product
+  identity `span_lineNumerator_mul_lineNumeratorNeg` puts the WHOLE
+  `Z`-multiplicity on `n`.
+* At `Z = Q` the squeeze is unavailable in principle — the conjugate
+  divisor always contains `3(Q)`, so `ñ ∈ I_Q` — and that single local
+  statement is isolated as `lineNumerator_mem_pointIdeal_pow_of_dvd`,
+  whose docstring records the two routes that can close it. -/
 theorem lineNumerator_mem_prod_of_mem_factors_coincident (hΔ : W.Δ ≠ 0)
     {q₁ q₂ x₁ y₁ x₂ y₂ : F}
     (hq : W.Nonsingular q₁ q₂) (h₁ : W.Nonsingular x₁ y₁)
@@ -2279,7 +2613,142 @@ theorem lineNumerator_mem_prod_of_mem_factors_coincident (hΔ : W.Δ ≠ 0)
           (pointIdeal W (.some x₂ y₂ h₂ - .some q₁ q₂ hq) *
             pointIdeal W (-(.some x₁ y₁ h₁ + .some x₂ y₂ h₂) -
               .some q₁ q₂ hq))) := by
-  sorry
+  classical
+  set ℓ := W.slope x₁ x₂ y₁ y₂ with hℓ
+  set n := lineNumerator W q₁ q₂ x₁ y₁ ℓ with hn
+  set ñ := lineNumeratorNeg W q₁ q₂ x₁ y₁ ℓ with hñ
+  set Q : W.Point := .some q₁ q₂ hq with hQdef
+  set P : W.Point := .some x₁ y₁ h₁ with hPdef
+  set R : W.Point := .some x₂ y₂ h₂ with hRdef
+  set E : Multiset W.Point :=
+    Q ::ₘ Q ::ₘ Q ::ₘ (P - Q) ::ₘ (R - Q) ::ₘ ({-(P + R) - Q} : Multiset W.Point)
+    with hE
+  have hED : (E.map (pointIdeal W)).prod =
+      pointIdeal W Q ^ 3 *
+        (pointIdeal W (P - Q) *
+          (pointIdeal W (R - Q) * pointIdeal W (-(P + R) - Q))) := by
+    rw [hE]
+    simp only [Multiset.map_cons, Multiset.prod_cons, Multiset.map_singleton,
+      Multiset.prod_singleton]
+    ring
+  have hdvd_gen : ∀ Z : W.Point,
+      pointIdeal W Z ^ E.count Z ∣ (E.map (pointIdeal W)).prod := by
+    intro Z
+    have hle : Multiset.replicate (E.count Z) Z ≤ E :=
+      Multiset.le_count_iff_replicate_le.mp le_rfl
+    have hd := Multiset.prod_dvd_prod_of_le
+      (Multiset.map_le_map (f := pointIdeal W) hle)
+    rwa [Multiset.map_replicate, Multiset.prod_replicate] at hd
+  have hmul := span_lineNumerator_mul_lineNumeratorNeg hΔ hq h₁ h₂ hxy
+  have hmem1 : ∀ Z : W.Point, Z ∈ E → n ∈ pointIdeal W Z := by
+    intro Z hZ
+    rw [hE] at hZ
+    simp only [Multiset.mem_cons, Multiset.mem_singleton] at hZ
+    rcases hZ with rfl | rfl | rfl | rfl | rfl | rfl
+    · exact (Ideal.pow_le_self (by norm_num)) hQ3
+    · exact (Ideal.pow_le_self (by norm_num)) hQ3
+    · exact (Ideal.pow_le_self (by norm_num)) hQ3
+    · exact hA
+    · exact hB
+    · exact hC
+  have key : ∀ Z : W.Point, n ∈ pointIdeal W Z ^ E.count Z := by
+    intro Z
+    have hdvdD : pointIdeal W Z ^ E.count Z ∣
+        pointIdeal W Q ^ 3 *
+          (pointIdeal W (P - Q) *
+            (pointIdeal W (R - Q) * pointIdeal W (-(P + R) - Q))) := by
+      rw [← hED]; exact hdvd_gen Z
+    by_cases hZQ : Z = Q
+    · subst hZQ
+      exact lineNumerator_mem_pointIdeal_pow_of_dvd hΔ hq h₁ h₂ hxy hdvdD
+    · have hdvdspan : pointIdeal W Z ^ E.count Z ∣ Ideal.span {n * ñ} := by
+        rw [hmul]; exact hdvdD.trans (dvd_mul_right _ _)
+      cases Z with
+      | zero =>
+        rw [show pointIdeal W (Point.zero : W.Point) = ⊤ from rfl, ← Ideal.one_eq_top,
+          one_pow, Ideal.one_eq_top]
+        exact Submodule.mem_top
+      | some α β hαβ =>
+        by_cases hle : E.count (Point.some α β hαβ) ≤ 1
+        · rcases Nat.le_one_iff_eq_zero_or_eq_one.mp hle with h0 | h1
+          · rw [h0, pow_zero, Ideal.one_eq_top]; exact Submodule.mem_top
+          · rw [h1, pow_one]
+            exact hmem1 _ (Multiset.count_pos.mp (by omega))
+        · -- the coincident branch: at least two of `A, B, C` are `Z`
+          have hcnt : E.count (Point.some α β hαβ) =
+              (if (Point.some α β hαβ : W.Point) = P - Q then 1 else 0)
+              + (if (Point.some α β hαβ : W.Point) = R - Q then 1 else 0)
+              + (if (Point.some α β hαβ : W.Point) = -(P + R) - Q then 1 else 0) := by
+            rw [hE]
+            simp only [Multiset.count_cons, Multiset.count_singleton, if_neg hZQ]
+            ring
+          -- a translate of a nonzero point is neither `Q` nor `⊖Q`, so `α ≠ q₁`
+          have hneOf : ∀ V : W.Point, V ≠ 0 →
+              (Point.some α β hαβ : W.Point) = V - Q → α ≠ q₁ := by
+            intro V hV0 hZV hc
+            rcases WeierstrassCurve.Affine.Y_eq_of_X_eq hαβ.left hq.left hc with hyy | hyy
+            · exact hZQ (by rw [hQdef]; subst hc; subst hyy; rfl)
+            · refine hV0 ?_
+              have hZnQ : (Point.some α β hαβ : W.Point) = -Q := by
+                rw [hQdef, Point.neg_some]; subst hc; subst hyy; rfl
+              have h2 : V - Q = -Q := hZV.symm.trans hZnQ
+              rwa [sub_eq_iff_eq_add, neg_add_cancel] at h2
+          have hnot : ∀ (u v : F) (hu : W.Nonsingular u v),
+              (Point.some u v hu : W.Point) ≠ 0 →
+              (Point.some α β hαβ : W.Point) = Point.some u v hu - Q →
+              v ≠ W.negY u v →
+              lineNumeratorNeg W q₁ q₂ u v ℓ ∉ pointIdeal W (.some α β hαβ) := by
+            intro u v hu hu0 hZu h2u
+            exact lineNumeratorNeg_notMem_pointIdeal_sub hq hu hαβ hZu.symm ℓ h2u
+              (hneOf _ hu0 hZu)
+          have hfin : ∀ w : W.CoordinateRing, w = ñ →
+              w ∉ pointIdeal W (.some α β hαβ) →
+              n ∈ pointIdeal W (Point.some α β hαβ) ^ E.count (Point.some α β hαβ) := by
+            intro w hw hwn
+            exact mem_pointIdeal_pow_of_dvd_of_notMem hΔ hαβ hdvdspan (hw ▸ hwn)
+          by_cases hZA : (Point.some α β hαβ : W.Point) = P - Q
+          · by_cases hZB : (Point.some α β hαβ : W.Point) = R - Q
+            · -- `P = R`: the chord is the tangent at `P`, and `2P ≠ O` by `hxy`
+              have hPR : (P : W.Point) = R := sub_left_inj.mp (hZA.symm.trans hZB)
+              rw [hPdef, hRdef, Point.some.injEq] at hPR
+              refine hfin ñ rfl (hnot x₁ y₁ h₁ (Point.some_ne_zero h₁) hZA ?_)
+              intro hc
+              exact hxy ⟨hPR.1, by rw [hc, hPR.1, hPR.2]⟩
+            · have hZC : (Point.some α β hαβ : W.Point) = -(P + R) - Q := by
+                by_contra hc
+                rw [if_pos hZA, if_neg hZB, if_neg hc] at hcnt
+                omega
+              -- `P = ⊖(P ⊕ R)`, so `2P = O` would force `R = O`
+              have hPS : (P : W.Point) = -(P + R) := sub_left_inj.mp (hZA.symm.trans hZC)
+              refine hfin ñ rfl (hnot x₁ y₁ h₁ (Point.some_ne_zero h₁) hZA ?_)
+              intro hc
+              refine Point.some_ne_zero h₂ ?_
+              have h2P : (P : W.Point) + P = 0 := by
+                rw [hPdef]; exact Point.add_of_Y_eq rfl hc
+              rw [eq_neg_iff_add_eq_zero, ← add_assoc, h2P, zero_add] at hPS
+              rw [← hRdef]; exact hPS
+          · have hZB : (Point.some α β hαβ : W.Point) = R - Q := by
+              by_contra hc
+              rw [if_neg hZA, if_neg hc] at hcnt
+              split_ifs at hcnt <;> omega
+            have hZC : (Point.some α β hαβ : W.Point) = -(P + R) - Q := by
+              by_contra hc
+              rw [if_neg hZA, if_pos hZB, if_neg hc] at hcnt
+              omega
+            -- `R = ⊖(P ⊕ R)`, so `2R = O` would force `P = O`
+            have hRS : (R : W.Point) = -(P + R) := sub_left_inj.mp (hZB.symm.trans hZC)
+            refine hfin (lineNumeratorNeg W q₁ q₂ x₂ y₂ ℓ)
+              (lineNumeratorNeg_congr (slope_mul_sub h₁.left h₂.left hxy)).symm
+              (hnot x₂ y₂ h₂ (Point.some_ne_zero h₂) hZB ?_)
+            intro hc
+            refine Point.some_ne_zero h₁ ?_
+            have h2R : (R : W.Point) + R = 0 := by
+              rw [hRdef]; exact Point.add_of_Y_eq rfl hc
+            rw [eq_neg_iff_add_eq_zero, add_comm (P : W.Point) R, ← add_assoc, h2R,
+              zero_add] at hRS
+            rw [← hPdef]; exact hRS
+  have hfinal := mem_prod_map_pointIdeal E key
+  rwa [hED] at hfinal
 
 /-- **L4-8 line-numerator sub-leaf: the comaximal assembly.**  The four
 separate memberships of `lineNumerator` in `I_Q³`, `I_{P⊖Q}`, `I_{R⊖Q}`,
@@ -4665,7 +5134,7 @@ theorem finiteDimensional_and_finrank_le_pullback (hΔ : W.Δ ≠ 0)
     rw [hfr, hfrM]
     exact hminle
 
-/-- **L4-5/6 Galois core (PROVEN over the single remaining sub-leaf
+/-- **L4-5/6 Galois core (PROVEN, as is its degree sub-lemma
 `finiteDimensional_and_finrank_le_pullback`): every element of the
 function field fixed by all lifted translation evaluations lies in the
 range of the `[p]`-pullback embedding — `Fix E[p] ⊆ [p]^*K`.**  Let
@@ -4682,8 +5151,11 @@ realizes `h ↦ h ∘ [p]`.
 The proof (HLEG-NOTES.md §4(B), stages L4-5/6) is the degree squeeze
 `mem_range_algebraMap_of_fixed_of_finrank_le` applied to
 `L := (IsFractionRing.lift hinj).fieldRange` and the group
-`H = {σ_κ : κ ∈ E[p]}`, assembled here from three stages (the first two
-proven, the third the remaining leaf):
+`H = {σ_κ : κ ∈ E[p]}`, assembled here from three stages (all three
+now proven — the third, the degree bound, by exhibiting the generic
+point as integral over the pullback field with a monic annihilator of
+degree `p²` built from the division-polynomial relation, so that
+`K = L(tautX)` has `finrank ≤ deg (minpoly) ≤ p²`):
 
 * every translate `κ ⊕ taut` is affine (`exists_translate_some`), so
   every `σ_κ` is defined; `σ_O = id`
@@ -4695,7 +5167,8 @@ proven, the third the remaining leaf):
   `σ_κ` through `constPoint_injective` and `hval_inj`);
 * each `σ_κ` fixes `L` pointwise (`lift_pointEval_pullback_eq`), so
   `H` is a group of `L`-automorphisms;
-* `[K : L] ≤ p²` (`finiteDimensional_and_finrank_le_pullback`).
+* `[K : L] ≤ p²` (`finiteDimensional_and_finrank_le_pullback`,
+  PROVEN).
 
 The squeeze then gives `Fix H = L ∋ z`. -/
 theorem mem_range_pullback_of_translation_lift_fixed {ι : Type*}

@@ -119,9 +119,15 @@ genuinely modular-curve-theoretic inputs:
   case split over its `Finset` hypothesis): no rational point of
   order `n ∈ {14, 15, 16, 18, 20, 21, 24, 25, 27, 35, 49}` — the
   minimal composite orders outside the list. The content sits in the
-  eleven per-level sorry nodes `no_torsion_order_14`, …,
+  eleven per-level nodes `no_torsion_order_14`, …,
   `no_torsion_order_49`, one classical theorem each (Kubert, Ligozat,
-  Kenku; subsumed in Mazur 1977, Thm 8).
+  Kenku; subsumed in Mazur 1977, Thm 8). Four of them —
+  `14, 15, 16, 18` — were PROVEN 2026-07-25 from the level-structure
+  leaves `not_order_two_and_order_seven_point`,
+  `not_order_three_and_order_five_point`, `not_halved_order_eight_point`
+  and `not_order_two_and_order_nine_point`, which state the same
+  modular-curve content in the literature's own shape; the remaining
+  seven are still bare sorry nodes.
 * `torsion_finite_rat` (DERIVED from `mazur_point_order`): the
   rational torsion subgroup is finite — every rational torsion point
   is killed by `2520 = lcm(1, …, 10, 12)`, and the geometric
@@ -233,42 +239,242 @@ cyclic isogeny degrees over `ℚ`), but `25` and `27` do NOT: rational
 cyclic isogenies of degree `25` and `27` exist (isogeny classes `11a`
 and `27a` realize them — verified with PARI/GP `ellisomat`), so those
 two levels genuinely need `X_1(25)`, `X_1(27)`.
+
+SHARPENING (2026-07-25) of the four small levels `14, 15, 16, 18`: each
+is now PROVEN from a level-structure leaf stated in the shape the
+modular-curve literature uses, so that the surviving `sorry` names the
+actual modular input rather than an order:
+
+* `no_torsion_order_14` ⟸ `not_order_two_and_order_seven_point`
+  (`X_1(2) ×_{X_1(1)} X_1(7)`),
+* `no_torsion_order_15` ⟸ `not_order_three_and_order_five_point`
+  (`X_1(3) ×_{X_1(1)} X_1(5)`),
+* `no_torsion_order_16` ⟸ `not_halved_order_eight_point`
+  (the halving cover `X_1(16) → X_1(8)`),
+* `no_torsion_order_18` ⟸ `not_order_two_and_order_nine_point`
+  (`X_1(2) ×_{X_1(1)} X_1(9)`).
+
+Each derivation is pure `addOrderOf` bookkeeping (`addOrderOf_nsmul'`);
+each leaf is equivalent to the order statement it replaces, but sits
+over genus-`0` levels whose Tate normal forms are explicit, which is
+where an elementary attack would have to begin. The genus values listed
+above were recomputed from the formula on 2026-07-25 and all agree.
+
+AUDIT ADDENDUM (2026-07-25, PARI/GP `ellisomat`): the `X_0` shortcut is
+unavailable at `14, 15, 16, 18` as well as at `25, 27` — all four are
+rational cyclic isogeny degrees, witnessed by the curves
+`[1,−1,0,−2,−1]` (conductor `49`, degrees `{1,2,7,14}`), `[1,0,1,−1,−2]`
+(conductor `50`, degrees `{1,3,5,15}`), `[1,−1,0,0,−5]` (conductor `45`,
+degrees `{1,2,4,8,16}`) and `[1,−1,1,−5,−7]` (conductor `126`, degrees
+`{1,2,3,6,9,18}`). A sweep over `≈ 4.8 · 10⁵` integral models with
+`|a₄|, |a₆| ≤ 100` found exact rational point orders only in
+`{1, …, 10}`, consistent with all eleven statements.
 -/
 
-/-- **No rational point of order `14`** (sorry node — irreducible
-literature citation): `X_1(14)` has genus `1` and its Jacobian has
-Mordell–Weil rank `0` over `ℚ`, so `X_1(14)(ℚ)` is finite and consists
-of cusps (Kubert–Ligozat; subsumed in Mazur 1977, Thm 8). -/
+/-- **No rational point of order `2` together with a rational point of
+order `7`** (sorry node — the `X_1(14)` content in its level-structure
+form): no elliptic curve over `ℚ` carries both. The hypotheses say
+exactly that `E(ℚ) ⊇ ℤ/2 ⊕ ℤ/7 ≅ ℤ/14`, i.e. that the pair `(E, P + Q)`
+is a non-cuspidal rational point of `X_1(14)` — a curve of genus `1`
+(standard formula, recomputed 2026-07-25: `μ/12 = 6`, `12` cusps, so
+`g = 1 + 6 − 6 = 1`) whose Jacobian has Mordell–Weil rank `0` over `ℚ`,
+so `X_1(14)(ℚ)` is finite and cuspidal (Kubert; Ligozat; subsumed in
+Mazur 1977, Thm 8).
+
+IRREDUCIBLE at this mathlib pin (audit 2026-07-25). This is the sharp
+form of the level: it is *equivalent* to `no_torsion_order_14` below
+(`P + Q` has order `14`; conversely `7Q` and `2Q`), but it exhibits the
+level structure as the fibre product `X_1(2) ×_{X_1(1)} X_1(7)`, which
+is where an elementary attack would have to start. Routes checked and
+rejected:
+
+* *The `X_0` / isogeny shortcut is NOT available here* (unlike levels
+  `20, 24, 35, 49`). `14` really is a rational cyclic isogeny degree:
+  the curve `[a₁,a₂,a₃,a₄,a₆] = [1,−1,0,−2,−1]` of conductor `49` has
+  isogeny-degree set `{1, 2, 7, 14}` (PARI/GP `ellisomat`, witness
+  recomputed 2026-07-25). So `X_0(14)` has non-cuspidal rational points
+  and only the `X_1(14)` statement excludes an order-`14` point.
+* *Divisor reduction fails by design.* Every proper divisor of `14`
+  (`1, 2, 7`) lies in Mazur's allowed set `{1, …, 10, 12}`, so no other
+  node here implies this one.
+* *Reduction plus Hasse only bounds the conductor.* `14 ∣ #Ẽ(𝔽_p)` at
+  every odd prime `p` of good reduction and `7 ∣ #Ẽ(𝔽_2)` at `p = 2`;
+  since `p + 1 + 2√p < 14` for `p ≤ 7` and `#Ẽ(𝔽_2) ≤ 5 < 7`, this
+  forces bad reduction at `2, 3, 5, 7`, i.e. `210 ∣ N_E` — a lower bound
+  on the conductor, never a contradiction.
+
+A formal proof needs the level-`7` Tate normal form (the genus-`0`
+parametrisation `b = d³ − d²`, `c = d² − d` of `X_1(7)`) together with
+the `2`-torsion condition, which cuts out the genus-`1` curve
+`X_1(14)`, and then a rank-`0` Mordell–Weil computation for it. Neither
+the Tate normal form nor Mordell–Weil is available at this pin. -/
+theorem WeierstrassCurve.not_order_two_and_order_seven_point
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] (P Q : (E⁄ℚ).Point)
+    (hP : addOrderOf P = 2) (hQ : addOrderOf Q = 7) : False :=
+  sorry
+
+/-- **No rational point of order `14`** (DERIVED 2026-07-25 from the
+level-structure leaf `not_order_two_and_order_seven_point` by splitting
+`ℤ/14` into its `2`- and `7`-primary parts): a point `Q` of order `14`
+gives the order-`2` point `7 • Q` and the order-`7` point `2 • Q`.
+`X_1(14)` has genus `1` and its Jacobian has Mordell–Weil rank `0` over
+`ℚ`, so `X_1(14)(ℚ)` is finite and consists of cusps (Kubert–Ligozat;
+subsumed in Mazur 1977, Thm 8). -/
 theorem WeierstrassCurve.no_torsion_order_14 (E : WeierstrassCurve ℚ)
-    [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 14 :=
+    [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 14 := by
+  intro hQ
+  refine E.not_order_two_and_order_seven_point ((7 : ℕ) • Q) ((2 : ℕ) • Q) ?_ ?_
+  · rw [addOrderOf_nsmul' Q (by decide), hQ]; decide
+  · rw [addOrderOf_nsmul' Q (by decide), hQ]; decide
+
+/-- **No rational point of order `3` together with a rational point of
+order `5`** (sorry node — the `X_1(15)` content in its level-structure
+form): no elliptic curve over `ℚ` carries both. The hypotheses say
+exactly that `E(ℚ) ⊇ ℤ/3 ⊕ ℤ/5 ≅ ℤ/15`, i.e. that `(E, P + Q)` is a
+non-cuspidal rational point of `X_1(15)` — a curve of genus `1`
+(recomputed 2026-07-25: `μ/12 = 8`, `16` cusps, so `g = 1 + 8 − 8 = 1`)
+whose Jacobian has Mordell–Weil rank `0` over `ℚ`, so `X_1(15)(ℚ)` is
+finite and cuspidal (Kubert; Ligozat; subsumed in Mazur 1977, Thm 8).
+
+IRREDUCIBLE at this mathlib pin (audit 2026-07-25). Equivalent to
+`no_torsion_order_15` below, but stated as the fibre product
+`X_1(3) ×_{X_1(1)} X_1(5)` of two genus-`0` modular curves, which is
+the shape any elementary attack must use. Routes checked and rejected:
+
+* *The `X_0` / isogeny shortcut is NOT available here.* `15` is a
+  rational cyclic isogeny degree: `[1,0,1,−1,−2]` of conductor `50` has
+  isogeny-degree set `{1, 3, 5, 15}` (PARI/GP `ellisomat`, witness
+  recomputed 2026-07-25), so `X_0(15)` has non-cuspidal rational points.
+* *Divisor reduction fails by design.* The proper divisors `1, 3, 5` all
+  lie in Mazur's allowed set.
+* *Reduction plus Hasse only bounds the conductor.* `15 ∣ #Ẽ(𝔽_p)` at
+  every good `p` (including `p = 2`, since `15` is odd), and
+  `p + 1 + 2√p < 15` for `p ≤ 7`, so bad reduction is forced exactly at
+  `2, 3, 5, 7`: `210 ∣ N_E`, and nothing more.
+
+A formal proof needs the genus-`0` parametrisations of `X_1(3)` and
+`X_1(5)` in Tate normal form (`X_1(5)`: `b = c`), their fibre product —
+the genus-`1` curve `X_1(15)` — and a rank-`0` Mordell–Weil computation
+for it; none of that exists here. -/
+theorem WeierstrassCurve.not_order_three_and_order_five_point
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] (P Q : (E⁄ℚ).Point)
+    (hP : addOrderOf P = 3) (hQ : addOrderOf Q = 5) : False :=
   sorry
 
-/-- **No rational point of order `15`** (sorry node — irreducible
-literature citation): `X_1(15)` has genus `1` and its Jacobian has
-Mordell–Weil rank `0` over `ℚ`, so `X_1(15)(ℚ)` is finite and consists
-of cusps (Kubert–Ligozat; subsumed in Mazur 1977, Thm 8). -/
+/-- **No rational point of order `15`** (DERIVED 2026-07-25 from the
+level-structure leaf `not_order_three_and_order_five_point` by
+splitting `ℤ/15` into its `3`- and `5`-primary parts): a point `Q` of
+order `15` gives the order-`3` point `5 • Q` and the order-`5` point
+`3 • Q`. `X_1(15)` has genus `1` and its Jacobian has Mordell–Weil rank
+`0` over `ℚ`, so `X_1(15)(ℚ)` is finite and consists of cusps
+(Kubert–Ligozat; subsumed in Mazur 1977, Thm 8). -/
 theorem WeierstrassCurve.no_torsion_order_15 (E : WeierstrassCurve ℚ)
-    [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 15 :=
+    [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 15 := by
+  intro hQ
+  refine E.not_order_three_and_order_five_point ((5 : ℕ) • Q) ((3 : ℕ) • Q) ?_ ?_
+  · rw [addOrderOf_nsmul' Q (by decide), hQ]; decide
+  · rw [addOrderOf_nsmul' Q (by decide), hQ]; decide
+
+/-- **No rational point of order `8` that is twice a rational point**
+(sorry node — the `X_1(16)` content in its descent form): if
+`P ∈ E(ℚ)` has order `8` then `P ∉ 2 · E(ℚ)`. This is exactly the
+statement that the degree-`2` covering `X_1(16) → X_1(8)` — halving the
+level-`8` point — has no non-cuspidal rational point in its image;
+`X_1(16)` has genus `2` (recomputed 2026-07-25: `μ/12 = 8`, `14` cusps,
+so `g = 1 + 8 − 7 = 2`) and no non-cuspidal rational point
+(Kenku–Ligozat–Kubert; subsumed in Mazur 1977, Thm 8).
+
+IRREDUCIBLE at this mathlib pin (audit 2026-07-25). Equivalent to
+`no_torsion_order_16` below — a halving `R` of an order-`8` point
+necessarily has order `16`, since `addOrderOf (2 • R) = 8` forces
+`addOrderOf R = 16` — but stated over the genus-`0` level `8`, where the
+Tate normal form `b = (2d − 1)(d − 1)`, `c = b/d` is explicit, so that
+the only missing ingredient is the halving condition. Routes checked and
+rejected:
+
+* *The elementary halving criterion behind `not_full_four_torsion_rat`
+  does not reach this level.* A point of order `16` makes ONE `2`-torsion
+  abscissa `4`-divisible, giving a single square condition rather than
+  the three simultaneous ones that the sign argument needs.
+* *The `X_0` / isogeny shortcut is NOT available here.* `16` is a
+  rational cyclic isogeny degree: `[1,−1,0,0,−5]` of conductor `45` has
+  isogeny-degree set `{1, 2, 4, 8, 16}` (PARI/GP `ellisomat`, witness
+  recomputed 2026-07-25), so `X_0(16)` has non-cuspidal rational points.
+* *Divisor reduction fails by design.* The proper divisors `1, 2, 4, 8`
+  all lie in Mazur's allowed set.
+* *Reduction plus Hasse only bounds the conductor.* `16 ∣ #Ẽ(𝔽_p)` at
+  every odd prime `p` of good reduction, and `p + 1 + 2√p < 16` for
+  `p ≤ 7`, forcing bad reduction at `3, 5, 7` (`105 ∣ N_E`); `p = 2`
+  gives nothing at all, the odd part of `ℤ/16` being trivial.
+
+A formal proof needs the genus-`2` curve `X_1(16)` and a determination
+of its rational points (Ogg's descent, or Chabauty on its Jacobian).
+Note that the hypothesis cannot be weakened to `addOrderOf P = 8` alone:
+points of order `8` are permitted by Mazur's list, and the whole content
+of the node is that no such point is halvable over `ℚ`. -/
+theorem WeierstrassCurve.not_halved_order_eight_point
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] (P R : (E⁄ℚ).Point)
+    (hP : addOrderOf P = 8) (hR : (2 : ℕ) • R = P) : False :=
   sorry
 
-/-- **No rational point of order `16`** (sorry node — irreducible
-literature citation): `X_1(16)` has genus `2` and no non-cuspidal
-rational point (Kenku–Ligozat–Kubert; subsumed in Mazur 1977, Thm 8).
-Note the elementary halving criterion behind `not_full_four_torsion_rat`
-does not reach this level: a point of order `16` makes ONE `2`-torsion
-abscissa `4`-divisible, giving a single square condition rather than the
-three simultaneous ones that the sign argument needs. -/
+/-- **No rational point of order `16`** (DERIVED 2026-07-25 from the
+descent-form leaf `not_halved_order_eight_point`): a point `Q` of order
+`16` exhibits the order-`8` point `2 • Q` as twice a rational point.
+`X_1(16)` has genus `2` and no non-cuspidal rational point
+(Kenku–Ligozat–Kubert; subsumed in Mazur 1977, Thm 8). -/
 theorem WeierstrassCurve.no_torsion_order_16 (E : WeierstrassCurve ℚ)
-    [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 16 :=
+    [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 16 := by
+  intro hQ
+  refine E.not_halved_order_eight_point ((2 : ℕ) • Q) Q ?_ rfl
+  rw [addOrderOf_nsmul' Q (by decide), hQ]; decide
+
+/-- **No rational point of order `2` together with a rational point of
+order `9`** (sorry node — the `X_1(18)` content in its level-structure
+form): no elliptic curve over `ℚ` carries both. The hypotheses say
+exactly that `E(ℚ) ⊇ ℤ/2 ⊕ ℤ/9 ≅ ℤ/18`, i.e. that `(E, P + Q)` is a
+non-cuspidal rational point of `X_1(18)` — a curve of genus `2`
+(recomputed 2026-07-25: `μ/12 = 9`, `16` cusps, so `g = 1 + 9 − 8 = 2`)
+with no non-cuspidal rational point (Kenku–Ligozat–Kubert; subsumed in
+Mazur 1977, Thm 8).
+
+IRREDUCIBLE at this mathlib pin (audit 2026-07-25). Equivalent to
+`no_torsion_order_18` below, but stated as the fibre product
+`X_1(2) ×_{X_1(1)} X_1(9)` of two genus-`0` modular curves. Routes
+checked and rejected:
+
+* *The `X_0` / isogeny shortcut is NOT available here.* `18` is a
+  rational cyclic isogeny degree: `[1,−1,1,−5,−7]` of conductor `126`
+  has isogeny-degree set `{1, 2, 3, 6, 9, 18}` (PARI/GP `ellisomat`,
+  witness recomputed 2026-07-25), so `X_0(18)` has non-cuspidal
+  rational points.
+* *Divisor reduction fails by design.* The proper divisors
+  `1, 2, 3, 6, 9` all lie in Mazur's allowed set.
+* *Reduction plus Hasse only bounds the conductor.* `18 ∣ #Ẽ(𝔽_p)` at
+  every odd prime `p` of good reduction and `9 ∣ #Ẽ(𝔽_2)` at `p = 2`;
+  since `p + 1 + 2√p < 18` for `p ≤ 7` and `#Ẽ(𝔽_2) ≤ 5 < 9`, bad
+  reduction is forced at `2, 3, 5, 7` (`210 ∣ N_E`) and no further.
+
+A formal proof needs the level-`9` Tate normal form (`c = d²(d − 1)`,
+`b = c(d(d − 1) + 1)`) cut by the `2`-torsion condition — the genus-`2`
+curve `X_1(18)` — plus a determination of its rational points; none of
+that exists at this pin. -/
+theorem WeierstrassCurve.not_order_two_and_order_nine_point
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] (P Q : (E⁄ℚ).Point)
+    (hP : addOrderOf P = 2) (hQ : addOrderOf Q = 9) : False :=
   sorry
 
-/-- **No rational point of order `18`** (sorry node — irreducible
-literature citation): `X_1(18)` has genus `2` and no non-cuspidal
-rational point (Kenku–Ligozat–Kubert; subsumed in Mazur 1977,
-Thm 8). -/
+/-- **No rational point of order `18`** (DERIVED 2026-07-25 from the
+level-structure leaf `not_order_two_and_order_nine_point` by splitting
+`ℤ/18` into its `2`- and `3`-primary parts): a point `Q` of order `18`
+gives the order-`2` point `9 • Q` and the order-`9` point `2 • Q`.
+`X_1(18)` has genus `2` and no non-cuspidal rational point
+(Kenku–Ligozat–Kubert; subsumed in Mazur 1977, Thm 8). -/
 theorem WeierstrassCurve.no_torsion_order_18 (E : WeierstrassCurve ℚ)
-    [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 18 :=
-  sorry
+    [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 18 := by
+  intro hQ
+  refine E.not_order_two_and_order_nine_point ((9 : ℕ) • Q) ((2 : ℕ) • Q) ?_ ?_
+  · rw [addOrderOf_nsmul' Q (by decide), hQ]; decide
+  · rw [addOrderOf_nsmul' Q (by decide), hQ]; decide
 
 /-- **No rational point of order `20`** (sorry node — irreducible
 literature citation): `X_1(20)` has genus `3` and no non-cuspidal
@@ -4758,14 +4964,23 @@ end TwoTorsion
   AEC III.4.5, X.4.9). The derivation composes the normalising
   isomorphism with the normal-form isogeny.
   * `WeierstrassCurve.exists_normalForm_pointEquiv_of_rational_two_torsion`
-    (sorry node) — the `ℚ`-isomorphism to `y² = x³ + a x² + b x` taking
-    the `2`-torsion point to `(0, 0)` (completing the square, then
-    translating), packaged as a Galois-equivariant isomorphism on
-    `ℚ̄`-points.
+    (PROVEN 2026-07-25) — the `ℚ`-isomorphism to `y² = x³ + a x² + b x`
+    taking the `2`-torsion point to `(0, 0)`, packaged as a
+    Galois-equivariant isomorphism on `ℚ̄`-points. A SINGLE admissible
+    change of variables `(u, r, s, t) = (1, X, −a₁/2, Y)` does it: it
+    kills `a₁` and `a₃` outright, kills `a₆` precisely because
+    `T = (X, Y)` lies on `E`, and sends `(0, 0)` to `T`. Equivariance
+    and the base change come from
+    `Affine.Point.equivVariableChangeBaseChange(_galois)`.
   * `WeierstrassCurve.exists_quotient_isogeny_of_normalForm_two_torsion`
-    (sorry node) — the explicit `2`-isogeny
+    (DERIVED 2026-07-25) — the explicit `2`-isogeny
     `(x, y) ↦ (y²/x², y (b − x²)/x²)` onto
-    `y² = x³ − 2 a x² + (a² − 4 b) x`, with kernel `{0, (0, 0)}`.
+    `y² = x³ − 2 a x² + (a² − 4 b) x`, with kernel `{0, (0, 0)}`. Built
+    from `WeierstrassCurve.twoIsogenyFun` and its properties (see the
+    section "The classical `2`-isogeny in normal form" below); all of
+    them are PROVEN except the single remaining leaf
+    `WeierstrassCurve.twoIsogenyFun_add_of_ne` (the generic case of
+    additivity).
 * `WeierstrassCurve.exists_quotient_isogeny_of_odd_prime_card` (sorry
   node) — the true Vélu core, cut at the literature statement: the
   quotient by a Galois-stable CYCLIC subgroup of ODD prime order
@@ -4817,12 +5032,397 @@ theorem WeierstrassCurve.exists_normalForm_pointEquiv_of_rational_two_torsion
           Affine.Point.map
             (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (Ψ Pt)) ∧
       Ψ (Affine.Point.baseChange ℚ (AlgebraicClosure ℚ) T) =
-        Affine.Point.some 0 0 h00 :=
+        Affine.Point.some 0 0 h00 := by
+  -- Coordinates of the rational `2`-torsion point.
+  rcases T with _ | ⟨X, Y, hns⟩
+  · exact absurd rfl hT0
+  have hY : 2 * Y + E.a₁ * X + E.a₃ = 0 := by
+    by_contra hy
+    have hy' : Y ≠ (E⁄ℚ).toAffine.negY X Y := by
+      intro h
+      have h2 : Y = -Y - E.a₁ * X - E.a₃ := h
+      exact hy (by linarith [h2])
+    exact Point.some_ne_zero _ ((Point.add_self_of_Y_ne hy').symm.trans hT2)
+  have hEq : E.toAffine.Equation X Y := hns.1
+  -- The normalising change of variables `(x, y) ↦ (x + X, y + (-a₁/2) x + Y)`; it takes
+  -- `(0, 0)` to `T = (X, Y)`, kills `a₁` and `a₃`, and kills `a₆` because `T` is on `E`.
+  set C : VariableChange ℚ := ⟨1, X, -E.a₁ / 2, Y⟩ with hC
+  have h1 : (C • E).a₁ = 0 := by
+    rw [variableChange_a₁, hC]; simp; ring
+  have h3 : (C • E).a₃ = 0 := by
+    rw [variableChange_a₃, hC]; simp; linarith [hY]
+  have h6 : (C • E).a₆ = 0 := by
+    rw [variableChange_a₆, hC]
+    rw [Affine.equation_iff] at hEq
+    simp
+    linarith [hEq]
+  obtain ⟨a, b, hWeq⟩ :
+      ∃ a b : ℚ, C • E = (⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ) :=
+    ⟨(C • E).a₂, (C • E).a₄, by ext <;> simp [h1, h3, h6]⟩
+  -- `(0, 0)` is a nonsingular point of `C • E`, and of its base change.
+  have h00Q' : (C • E).toAffine.Nonsingular 0 0 :=
+    Affine.equation_iff_nonsingular.mp ((Affine.equation_zero (W := C • E)).mpr h6)
+  have h00' : ((C • E)⁄(AlgebraicClosure ℚ)).toAffine.Nonsingular 0 0 := by
+    have := (Affine.baseChange_nonsingular (W := C • E) (A := ℚ) (B := AlgebraicClosure ℚ)
+      (f := Algebra.ofId ℚ (AlgebraicClosure ℚ))
+      (Algebra.ofId ℚ (AlgebraicClosure ℚ)).injective 0 0).mpr h00Q'
+    simpa using this
+  -- Transport of the point group along `C • E = E₀`, base changed to `ℚ̄`.
+  have hbc : ((C • E)⁄(AlgebraicClosure ℚ)) =
+      ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)) :=
+    congrArg (fun V : WeierstrassCurve ℚ => V⁄(AlgebraicClosure ℚ)) hWeq
+  have hOfEqGal : ∀ (V : WeierstrassCurve ℚ) (h : C • E = V)
+      (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)
+      (P : ((C • E)⁄(AlgebraicClosure ℚ)).toAffine.Point),
+      Point.equivOfEq (congrArg (fun V : WeierstrassCurve ℚ => V⁄(AlgebraicClosure ℚ)) h)
+          (Point.map σ.toAlgHom P) =
+        Point.map σ.toAlgHom
+          (Point.equivOfEq
+            (congrArg (fun V : WeierstrassCurve ℚ => V⁄(AlgebraicClosure ℚ)) h) P) := by
+    rintro V rfl σ P
+    rfl
+  refine ⟨a, b, hWeq ▸ (inferInstance : (C • E).IsElliptic), hbc ▸ h00',
+    (Point.equivVariableChangeBaseChange E C (AlgebraicClosure ℚ)).symm.trans
+      (Point.equivOfEq hbc), ?_, ?_⟩
+  · intro σ Pt
+    have hsymm : (Point.equivVariableChangeBaseChange E C (AlgebraicClosure ℚ)).symm
+          (Point.map (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Pt) =
+        Point.map (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom
+          ((Point.equivVariableChangeBaseChange E C (AlgebraicClosure ℚ)).symm Pt) := by
+      have hgal := Point.equivVariableChangeBaseChange_galois E C (AlgebraicClosure ℚ)
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)
+        ((Point.equivVariableChangeBaseChange E C (AlgebraicClosure ℚ)).symm Pt)
+      have hcong := congrArg
+        (fun P => Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom P)
+        ((Point.equivVariableChangeBaseChange E C (AlgebraicClosure ℚ)).apply_symm_apply Pt)
+      exact (Point.equivVariableChangeBaseChange E C (AlgebraicClosure ℚ)).injective
+        (((Point.equivVariableChangeBaseChange E C (AlgebraicClosure ℚ)).apply_symm_apply
+            _).trans (hgal.trans hcong).symm)
+    exact (congrArg (fun P => Point.equivOfEq hbc P) hsymm).trans (hOfEqGal _ hWeq _ _)
+  · have he0 : Point.equivVariableChangeBaseChange E C (AlgebraicClosure ℚ)
+          (Point.some 0 0 h00') =
+        Affine.Point.baseChange ℚ (AlgebraicClosure ℚ) (Point.some X Y hns) := by
+      simp only [Point.equivVariableChangeBaseChange, AddEquiv.trans_apply, Point.equivOfEq_some,
+        Point.equivVariableChange_some, Point.map_some]
+      refine Point.some_eq_some (E⁄(AlgebraicClosure ℚ)) ?_ ?_ <;>
+        simp [VariableChange.baseChange, VariableChange.map, hC]
+    rw [AddEquiv.trans_apply, ← he0, AddEquiv.symm_apply_apply, Point.equivOfEq_some]
+
+/-!
+### The classical `2`-isogeny in normal form: explicit machinery (2026-07-25)
+
+The bricks below build the explicit map
+`φ(x, y) = (y²/x², y (b − x²)/x²)` from `y² = x³ + a x² + b x` to
+`y² = x³ − 2 a x² + (a² − 4 b) x` and everything about it except the
+generic case of its additivity.
+-/
+
+namespace WeierstrassCurve
+
+/-- Discriminant of the two-torsion normal form `y² = x³ + a x² + b x`. -/
+theorem normalForm_Δ (a b : ℚ) :
+    (⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ).Δ = 16 * b ^ 2 * (a ^ 2 - 4 * b) := by
+  simp only [WeierstrassCurve.Δ, WeierstrassCurve.b₂, WeierstrassCurve.b₄, WeierstrassCurve.b₆,
+    WeierstrassCurve.b₈]
+  ring
+
+theorem normalForm_a₄_ne_zero (a b : ℚ)
+    [(⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ).IsElliptic] : b ≠ 0 := by
+  intro hb
+  have hΔ := (isUnit_Δ (W := (⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ))).ne_zero
+  rw [normalForm_Δ, hb] at hΔ
+  exact hΔ (by ring)
+
+theorem normalForm_sq_sub_ne_zero (a b : ℚ)
+    [(⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ).IsElliptic] : a ^ 2 - 4 * b ≠ 0 := by
+  intro hb
+  have hΔ := (isUnit_Δ (W := (⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ))).ne_zero
+  rw [normalForm_Δ, hb] at hΔ
+  exact hΔ (by ring)
+
+/-- The codomain `y² = x³ − 2 a x² + (a² − 4 b) x` of the classical `2`-isogeny is again an
+elliptic curve: its discriminant is `256 b (a² − 4 b)²`. -/
+instance normalForm_codomain_isElliptic (a b : ℚ)
+    [(⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ).IsElliptic] :
+    (⟨0, -2 * a, 0, a ^ 2 - 4 * b, 0⟩ : WeierstrassCurve ℚ).IsElliptic := by
+  refine ⟨?_⟩
+  rw [show (⟨0, -2 * a, 0, a ^ 2 - 4 * b, 0⟩ : WeierstrassCurve ℚ).Δ
+      = 16 * (a ^ 2 - 4 * b) ^ 2 * ((-2 * a) ^ 2 - 4 * (a ^ 2 - 4 * b)) from
+    normalForm_Δ (-2 * a) (a ^ 2 - 4 * b)]
+  refine isUnit_iff_ne_zero.mpr ?_
+  have hb := normalForm_a₄_ne_zero a b
+  have hd := normalForm_sq_sub_ne_zero a b
+  intro hz
+  rcases mul_eq_zero.mp hz with h1 | h2
+  · rcases mul_eq_zero.mp h1 with h3 | h4
+    · norm_num at h3
+    · exact hd (pow_eq_zero_iff (n := 2) (by norm_num) |>.mp h4)
+  · exact hb (by linarith)
+
+/-- The image of an affine point with `x ≠ 0` under the classical `2`-isogeny is a
+nonsingular point of the codomain curve. -/
+theorem twoIsogeny_nonsingular (a b : ℚ)
+    [(⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ).IsElliptic]
+    {x y : AlgebraicClosure ℚ}
+    (heq : ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).Equation x y)
+    (hx : x ≠ 0) :
+    ((⟨0, -2 * a, 0, a ^ 2 - 4 * b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).Nonsingular
+      (y ^ 2 / x ^ 2)
+      (y * (algebraMap ℚ (AlgebraicClosure ℚ) b - x ^ 2) / x ^ 2) := by
+  haveI : ((⟨0, -2 * a, 0, a ^ 2 - 4 * b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).IsElliptic
+      := inferInstanceAs ((⟨0, -2 * a, 0, a ^ 2 - 4 * b, 0⟩ : WeierstrassCurve ℚ).map
+      (algebraMap ℚ (AlgebraicClosure ℚ))).IsElliptic
+  refine Affine.equation_iff_nonsingular.mp ?_
+  set A := algebraMap ℚ (AlgebraicClosure ℚ) a with hA
+  set B := algebraMap ℚ (AlgebraicClosure ℚ) b with hB
+  rw [Affine.equation_iff] at heq ⊢
+  simp only [WeierstrassCurve.baseChange, WeierstrassCurve.map, map_zero, map_ofNat, map_mul,
+    map_sub, map_pow, map_neg, ← hA, ← hB] at heq ⊢
+  field_simp
+  linear_combination (-(y ^ 2) * (y ^ 2 + x ^ 3 - A * x ^ 2 + B * x)) * heq
+
+/-- The explicit classical `2`-isogeny on `ℚ̄`-points, `(x, y) ↦ (y²/x², y (b − x²)/x²)`,
+with `0` and the `2`-torsion point `(0, 0)` sent to `0`. -/
+noncomputable def twoIsogenyFun (a b : ℚ)
+    [(⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ).IsElliptic] :
+    ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).Point →
+      ((⟨0, -2 * a, 0, a ^ 2 - 4 * b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).Point
+  | .zero => 0
+  | .some x _ hns =>
+      if hx : x = 0 then 0
+      else .some _ _ (twoIsogeny_nonsingular a b hns.1 hx)
+
+@[simp] theorem twoIsogenyFun_zero (a b : ℚ)
+    [(⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ).IsElliptic] :
+    twoIsogenyFun a b 0 = 0 := rfl
+
+theorem twoIsogenyFun_some_of_ne_zero (a b : ℚ)
+    [(⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ).IsElliptic]
+    {x y : AlgebraicClosure ℚ}
+    (hns : ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).Nonsingular x y)
+    (hx : x ≠ 0) :
+    twoIsogenyFun a b (.some x y hns) =
+      .some (y ^ 2 / x ^ 2) (y * (algebraMap ℚ (AlgebraicClosure ℚ) b - x ^ 2) / x ^ 2)
+        (twoIsogeny_nonsingular a b hns.1 hx) := by
+  rw [twoIsogenyFun, dif_neg hx]
+
+theorem twoIsogenyFun_some_of_eq_zero (a b : ℚ)
+    [(⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ).IsElliptic]
+    {x y : AlgebraicClosure ℚ}
+    (hns : ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).Nonsingular x y)
+    (hx : x = 0) :
+    twoIsogenyFun a b (.some x y hns) = 0 := by
+  rw [twoIsogenyFun, dif_pos hx]
+
+/-- An affine point of `y² = x³ + a x² + b x` with vanishing `x`-coordinate is `(0, 0)`. -/
+theorem normalForm_y_eq_zero_of_x_eq_zero (a b : ℚ)
+    {x y : AlgebraicClosure ℚ}
+    (heq : ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).Equation x y)
+    (hx : x = 0) : y = 0 := by
+  rw [Affine.equation_iff] at heq
+  simp only [WeierstrassCurve.baseChange, WeierstrassCurve.map, map_zero, hx] at heq
+  exact pow_eq_zero_iff (n := 2) (by norm_num) |>.mp (by linear_combination heq)
+
+/-- Galois equivariance of the explicit `2`-isogeny: its coordinate functions are rational
+functions with `ℚ`-coefficients. -/
+theorem twoIsogenyFun_map (a b : ℚ)
+    [(⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ).IsElliptic]
+    (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)
+    (P : ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).Point) :
+    twoIsogenyFun a b (Affine.Point.map σ.toAlgHom P) =
+      Affine.Point.map σ.toAlgHom (twoIsogenyFun a b P) := by
+  rcases P with _ | ⟨x, y, hns⟩
+  · rfl
+  · rcases eq_or_ne x 0 with hx | hx
+    · rw [Point.map_some, twoIsogenyFun_some_of_eq_zero a b _ (by rw [hx]; exact map_zero _),
+        twoIsogenyFun_some_of_eq_zero a b hns hx, map_zero]
+    · have hσx : σ.toAlgHom x ≠ 0 := fun hc => hx (by simpa using congrArg σ.symm.toAlgHom hc)
+      rw [Point.map_some, twoIsogenyFun_some_of_ne_zero a b _ hσx,
+        twoIsogenyFun_some_of_ne_zero a b hns hx, Point.map_some]
+      refine Point.some_eq_some _ ?_ ?_
+      · simp [map_div₀]
+      · simp [map_div₀]
+
+/-- The kernel of the explicit `2`-isogeny is exactly `{0, (0, 0)}`. -/
+theorem twoIsogenyFun_eq_zero_iff (a b : ℚ)
+    [(⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ).IsElliptic]
+    (h00 : ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).Nonsingular 0 0)
+    (P : ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).Point) :
+    twoIsogenyFun a b P = 0 ↔ P = 0 ∨ P = Affine.Point.some 0 0 h00 := by
+  rcases P with _ | ⟨x, y, hns⟩
+  · exact iff_of_true rfl (Or.inl rfl)
+  · constructor
+    · intro hP
+      refine Or.inr ?_
+      by_contra hne
+      rcases eq_or_ne x 0 with hx | hx
+      · exact hne (Point.some_eq_some _ hx (normalForm_y_eq_zero_of_x_eq_zero a b hns.1 hx))
+      · rw [twoIsogenyFun_some_of_ne_zero a b hns hx] at hP
+        exact Point.some_ne_zero _ hP
+    · rintro (hc | hc)
+      · exact absurd hc (Point.some_ne_zero _)
+      · rw [twoIsogenyFun_some_of_eq_zero a b hns (Point.some.inj hc).1]
+
+/-- Translation by the rational `2`-torsion point `(0, 0)`: for an affine point `(x, y)` of
+`y² = x³ + a x² + b x` with `x ≠ 0`, one has `(0, 0) + (x, y) = (b/x, −b y/x²)`. -/
+theorem normalForm_two_torsion_add (a b : ℚ)
+    [(⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ).IsElliptic]
+    {x y : AlgebraicClosure ℚ}
+    (h₀ : ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).Nonsingular 0 0)
+    (hns : ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).Nonsingular x y)
+    (hx : x ≠ 0) :
+    ∃ hns' : ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).Nonsingular
+        (algebraMap ℚ (AlgebraicClosure ℚ) b / x)
+        (-(algebraMap ℚ (AlgebraicClosure ℚ) b) * y / x ^ 2),
+      (Affine.Point.some 0 0 h₀ + Affine.Point.some x y hns : _) =
+        Affine.Point.some _ _ hns' := by
+  set A := algebraMap ℚ (AlgebraicClosure ℚ) a with hA
+  set B := algebraMap ℚ (AlgebraicClosure ℚ) b with hB
+  have heq : y ^ 2 = x ^ 3 + A * x ^ 2 + B * x := by
+    have := hns.1
+    rw [Affine.equation_iff] at this
+    simp only [WeierstrassCurve.baseChange, WeierstrassCurve.map, map_zero, ← hA, ← hB] at this
+    linear_combination this
+  have hx0 : (0 : AlgebraicClosure ℚ) ≠ x := fun hc => hx hc.symm
+  have hslope : ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).slope 0 x 0 y
+      = y / x := by
+    rw [Affine.slope_of_X_ne hx0]
+    field_simp
+    ring
+  have hX : ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).addX 0 x
+      (((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).slope 0 x 0 y) = B / x := by
+    rw [hslope, Affine.addX]
+    simp only [WeierstrassCurve.baseChange, WeierstrassCurve.map, map_zero, ← hA, ← hB]
+    field_simp
+    linear_combination heq
+  have hY : ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).addY 0 x 0
+      (((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).slope 0 x 0 y)
+      = -B * y / x ^ 2 := by
+    rw [Affine.addY, Affine.negY, Affine.negAddY, hX, hslope]
+    simp only [WeierstrassCurve.baseChange, WeierstrassCurve.map, map_zero, ← hA, ← hB]
+    field_simp
+    ring
+  rw [Point.add_of_X_ne hx0]
+  exact ⟨hX ▸ hY ▸ Affine.nonsingular_add h₀ hns fun hxy => hx0 hxy.1,
+    Point.some_eq_some _ hX hY⟩
+
+/-- Additivity of the explicit `2`-isogeny in the degenerate case where one summand is the
+kernel point `(0, 0)`: the isogeny kills `(0, 0)` and is invariant under translation by it. -/
+theorem twoIsogenyFun_two_torsion_add (a b : ℚ)
+    [(⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ).IsElliptic]
+    (h₀ : ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).Nonsingular 0 0)
+    {x y : AlgebraicClosure ℚ}
+    (hns : ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).Nonsingular x y) :
+    twoIsogenyFun a b (Affine.Point.some 0 0 h₀ + Affine.Point.some x y hns) =
+      twoIsogenyFun a b (Affine.Point.some 0 0 h₀) +
+        twoIsogenyFun a b (Affine.Point.some x y hns) := by
+  have hB : algebraMap ℚ (AlgebraicClosure ℚ) b ≠ 0 :=
+    (map_ne_zero_iff _ (algebraMap ℚ (AlgebraicClosure ℚ)).injective).mpr
+      (normalForm_a₄_ne_zero a b)
+  rw [twoIsogenyFun_some_of_eq_zero a b h₀ rfl, zero_add]
+  rcases eq_or_ne x 0 with hx | hx
+  · have hy : y = 0 := normalForm_y_eq_zero_of_x_eq_zero a b hns.1 hx
+    rw [twoIsogenyFun_some_of_eq_zero a b hns hx,
+      Point.add_of_Y_eq (h₂ := hns) hx.symm
+        (by rw [hy, Affine.negY]
+            simp only [WeierstrassCurve.baseChange, WeierstrassCurve.map, map_zero]
+            ring),
+      twoIsogenyFun_zero]
+  · obtain ⟨hns', hsum⟩ := normalForm_two_torsion_add a b h₀ hns hx
+    rw [hsum, twoIsogenyFun_some_of_ne_zero a b hns' (div_ne_zero hB hx),
+      twoIsogenyFun_some_of_ne_zero a b hns hx]
+    refine Point.some_eq_some _ ?_ ?_ <;> · field_simp <;> ring
+
+/-- **The generic case of the additivity of the explicit `2`-isogeny** (SORRY LEAF, cut
+2026-07-25 out of `WeierstrassCurve.twoIsogenyFun_add`; the degenerate cases — a zero
+summand, a summand equal to the kernel point `(0, 0)`, and `P + Q = 0` — are PROVEN there):
+for two affine points of `y² = x³ + a x² + b x` with nonzero `x`-coordinates whose sum is
+not `0`, the explicit map `φ(x, y) = (y²/x², y (b − x²)/x²)` is additive.
+
+Route (all of it pure coordinate algebra over `ℚ̄`; write `A = a`, `B = b` in `ℚ̄`, and
+`u_i = x_i² + A x_i + B`, so that `y_i² = x_i u_i` and `X_i = y_i²/x_i² = u_i/x_i`):
+
+* `X₁ − X₂ = (x₁ − x₂)(x₁x₂ − B)/(x₁x₂)`, so for `x₁ ≠ x₂` the images have equal
+  `x`-coordinate exactly when `x₁x₂ = B`.
+* With `d = x₁ − x₂`, `N = x₁y₂ − x₂y₁` and `ℓ = (y₁ − y₂)/d` the third intersection point
+  is `x₃ = N²/(x₁x₂d²)` (the product of the three roots of the cubic is `ν²` with
+  `ν = N/d`) and `y₃ = −(ℓx₃ + ν)`; the polynomial form
+  `((y₁ − y₂)² − (A + x₁ + x₂)d²)·x₁x₂ = N²` follows from the two curve equations with
+  cofactors `d x₂` and `−d x₁`.
+* Hence `x₃ = 0 ↔ x₁x₂ = B` (square `x₁y₂ = x₂y₁` and use the curve equations), which is
+  exactly the statement that `φP + φQ = 0` forces `P + Q ∈ ker φ` and conversely.
+* In the remaining branch `x₃ ≠ 0`, the two coordinate identities
+  `Λ² + 2A − X₁ − X₂ = y₃²/x₃²` and `−(Λ(X₃ − X₁) + Y₁) = y₃(B − x₃²)/x₃²`, with
+  `Λ` the slope on the codomain curve, are rational-function identities modulo the two
+  curve equations; they split into the secant branch (`x₁ ≠ x₂`, `Λ` given by
+  `slope_of_X_ne`) and the tangent branch (`x₁ = x₂`, `y₁ ≠ −y₂`, `Λ` given by
+  `slope_of_Y_ne`). Verified numerically in PARI/GP (2026-07-25) on `y² = x³ + 3x² + 5x`.
+
+Silverman AEC III.4.5, X.4.9 and Exercise 3.13; Washington, *Elliptic Curves*, ch. 8. -/
+theorem twoIsogenyFun_add_of_ne (a b : ℚ)
+    [(⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ).IsElliptic]
+    {x₁ y₁ x₂ y₂ : AlgebraicClosure ℚ}
+    (h₁ : ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).Nonsingular x₁ y₁)
+    (h₂ : ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).Nonsingular x₂ y₂)
+    (hx₁ : x₁ ≠ 0) (hx₂ : x₂ ≠ 0)
+    (hxy : ¬(x₁ = x₂ ∧
+      y₁ = ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).negY x₂ y₂)) :
+    twoIsogenyFun a b (Affine.Point.some x₁ y₁ h₁ + Affine.Point.some x₂ y₂ h₂) =
+      twoIsogenyFun a b (Affine.Point.some x₁ y₁ h₁) +
+        twoIsogenyFun a b (Affine.Point.some x₂ y₂ h₂) :=
   sorry
 
-/-- **The classical `2`-isogeny, in normal form** (sorry node, cut
-2026-07-25 out of `exists_quotient_isogeny_of_rational_two_torsion` —
-this is the literature computation proper): for
+/-- **Additivity of the explicit `2`-isogeny** (DERIVED 2026-07-25 from
+`twoIsogenyFun_two_torsion_add` and the generic leaf `twoIsogenyFun_add_of_ne`): the
+explicit map `φ(x, y) = (y²/x², y (b − x²)/x²)` from `y² = x³ + a x² + b x` to
+`y² = x³ − 2 a x² + (a² − 4 b) x` (with `0` and `(0, 0)` sent to `0`) is a group
+homomorphism. -/
+theorem twoIsogenyFun_add (a b : ℚ)
+    [(⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ).IsElliptic]
+    (P Q : ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).Point) :
+    twoIsogenyFun a b (P + Q) = twoIsogenyFun a b P + twoIsogenyFun a b Q := by
+  rcases P with _ | ⟨x₁, y₁, h₁⟩
+  · rw [← Point.zero_def, zero_add, twoIsogenyFun_zero, zero_add]
+  rcases Q with _ | ⟨x₂, y₂, h₂⟩
+  · rw [← Point.zero_def, add_zero, twoIsogenyFun_zero, add_zero]
+  rcases eq_or_ne x₁ 0 with hx₁ | hx₁
+  · have hy₁ : y₁ = 0 := normalForm_y_eq_zero_of_x_eq_zero a b h₁.1 hx₁
+    subst hx₁
+    subst hy₁
+    exact twoIsogenyFun_two_torsion_add a b h₁ h₂
+  rcases eq_or_ne x₂ 0 with hx₂ | hx₂
+  · have hy₂ : y₂ = 0 := normalForm_y_eq_zero_of_x_eq_zero a b h₂.1 hx₂
+    subst hx₂
+    subst hy₂
+    rw [add_comm (Affine.Point.some x₁ y₁ h₁),
+      add_comm (twoIsogenyFun a b (Affine.Point.some x₁ y₁ h₁))]
+    exact twoIsogenyFun_two_torsion_add a b h₂ h₁
+  by_cases hxy : x₁ = x₂ ∧
+      y₁ = ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).negY x₂ y₂
+  · have hy : y₁ = -y₂ := by
+      rw [hxy.2, Affine.negY]
+      simp only [WeierstrassCurve.baseChange, WeierstrassCurve.map, map_zero]
+      ring
+    rw [Point.add_of_Y_eq hxy.1 hxy.2, twoIsogenyFun_zero,
+      twoIsogenyFun_some_of_ne_zero a b h₁ hx₁, twoIsogenyFun_some_of_ne_zero a b h₂ hx₂]
+    refine (Point.add_of_Y_eq ?_ ?_).symm
+    · rw [hxy.1, hy]; ring
+    · rw [Affine.negY]
+      simp only [WeierstrassCurve.baseChange, WeierstrassCurve.map, map_zero, map_mul,
+        map_sub, map_pow, map_neg, map_ofNat]
+      rw [hxy.1, hy]
+      field_simp
+      ring
+  · exact twoIsogenyFun_add_of_ne a b h₁ h₂ hx₁ hx₂ hxy
+
+end WeierstrassCurve
+
+/-- **The classical `2`-isogeny, in normal form** (DERIVED 2026-07-25 from
+the explicit machinery above — `twoIsogenyFun` with its Galois
+equivariance `twoIsogenyFun_map`, its kernel `twoIsogenyFun_eq_zero_iff`
+and its additivity `twoIsogenyFun_add`, the last of which still rests on
+the generic-case leaf `twoIsogenyFun_add_of_ne`): for
 `E₀ : y² = x³ + a x² + b x` over `ℚ`, an elliptic curve (so
 `Δ = 16 b² (a² − 4 b) ≠ 0`), the quotient of `E₀` by the order-`2`
 subgroup `{0, (0, 0)}` is the elliptic curve
@@ -4852,8 +5452,14 @@ theorem WeierstrassCurve.exists_quotient_isogeny_of_normalForm_two_torsion
         Affine.Point.map
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (φ Pt)) ∧
       (∀ Pt : ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).Point,
-        φ Pt = 0 ↔ Pt = 0 ∨ Pt = Affine.Point.some 0 0 h00) :=
-  sorry
+        φ Pt = 0 ↔ Pt = 0 ∨ Pt = Affine.Point.some 0 0 h00) := by
+  refine ⟨⟨0, -2 * a, 0, a ^ 2 - 4 * b, 0⟩, inferInstance,
+    AddMonoidHom.mk' (WeierstrassCurve.twoIsogenyFun a b)
+      (fun P Q => WeierstrassCurve.twoIsogenyFun_add a b P Q), ?_, ?_⟩
+  · intro σ Pt
+    exact WeierstrassCurve.twoIsogenyFun_map a b _ Pt
+  · intro Pt
+    exact WeierstrassCurve.twoIsogenyFun_eq_zero_iff a b h00 Pt
 
 /-- **The rational two-torsion quotient isogeny — the classical
 `2`-isogeny** (sorry node, cut out of
