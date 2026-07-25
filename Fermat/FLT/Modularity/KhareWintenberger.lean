@@ -2992,11 +2992,120 @@ theorem charFrob_coeff_zero_eq_natCast_of_isHardlyRamified {ℓ : ℕ}
           hq.toHeightOneSpectrumRingOfIntegersRat)).charpoly from rfl,
     ← hdet, hdetq]
 
+/-- **The induced-trace expansion at a rational Frobenius** (sorry
+node; the Mackey/degree-one-places content of the `ℓ`-adic Brauer
+descent, and the ONLY remaining arithmetic input of the whole descent):
+given a Brauer decomposition of the trivial character of `Gal(F/ℚ)`
+into one-dimensional pieces `φ i` supported on subgroups `H i`
+(`hbrauer`, `hφ0`, `hφ1`, `hφmul`) and, for each piece, a finite bad set
+`S i` of places of the fixed field `Kᵢ = F^{H i}`, the trace coefficient
+of `ρ` at almost every rational Frobenius is a finite `E`-weighted sum
+of the trace coefficients of the RESTRICTIONS `ρ|_{G_{Kᵢ}}` at good
+places of the `Kᵢ`.
+
+Classically (Serre, *Abelian ℓ-adic Representations*, I.2; BLGGT §5.3):
+tensoring the virtual identity
+`Σᵢ cᵢ · Ind_{Hᵢ}^{Gal(F/ℚ)} χᵢ = 1` with `ρ` and applying the
+projection formula gives
+`Σᵢ cᵢ · Ind_{G_{Kᵢ}}^{G_ℚ} (ρ|_{G_{Kᵢ}} ⊗ χᵢ) = ρ` as virtual
+representations of `G_ℚ`. Evaluating traces at `Frob_q` for `q`
+unramified in `F` and away from all bad data, the Mackey/Frobenius
+formula for induced characters evaluates each induced trace as the sum
+over the DEGREE-ONE places `w | q` of `Kᵢ` of
+`χᵢ(Frob_w) · tr ρ|_{G_{Kᵢ}}(Frob_w)`. So the index family
+`(idx j, pl j)` of the conclusion enumerates the pairs `(i, w)` with
+`w | q` of degree one, and the weight `e j` is `c_{idx j} · χ_{idx j}(Frob_w)`
+— a rational multiple of a root of unity, hence an element of the Hecke
+field `E` by the carrier's normalization (`E` is a number field, so a
+`ℚ`-algebra: the rational Artin coefficients `cᵢ` need no integrality,
+see the RATIONAL COEFFICIENTS note on the consumer below). The places
+`w` occurring avoid `S (idx j)` because `S₀` collects, besides the
+primes ramified in `F`, every rational prime lying under a place of some
+`S i`.
+
+Note the shape of the cut: this leaf mentions NEITHER the descended
+polynomial families `P i` NOR `ψℓ`; it is purely the identity between
+`ℓ`-adic Frobenius traces of `ρ` and of its restrictions to the fixed
+fields. Feeding the descended systems `hP` back in — i.e. replacing
+each restricted trace by `ψℓ((P i w).coeff 1)` — is the formal
+bookkeeping done in `heckeField_trace_mem_range_of_pieces` below.
+
+Literature: Barnet-Lamb–Gee–Geraghty–Taylor, *Potential automorphy and
+change of weight*, Ann. of Math. 179 (2014), §5.3; Khare–Wintenberger,
+*Serre's modularity conjecture (I)*, Invent. Math. 178 (2009), §5;
+Dieulefait, J. reine angew. Math. 577 (2004); Serre, *Abelian ℓ-adic
+Representations*, I.2 (induced traces via degree-one places).
+
+SOUNDNESS AUDIT (both ways, inherited verbatim from the consumer, whose
+hypothesis list this leaf reproduces): (i) direct — for a carrier and
+pieces produced by their own leaves this is BLGGT §5.3; for abstract
+data the abstract-quantification caveat of pillar β applies (in
+particular nothing formal ties the `φ i`-values into `E` — that
+identification is part of the citation, discharged by the carrier's
+normalization, and is exactly why the weights `e` are existentially
+quantified in `E` here), and (ii) collapse — the hypothesis set already
+contains an irreducible hardly ramified mod-`ℓ` representation with
+`ℓ ≥ 5` (`hρbar`, `hirr`, `hℓ5`), which the headline
+`not_isIrreducible_of_isHardlyRamified_of_five_le` of this module shows
+is classically unsatisfiable, so the statement is classically true for
+every package.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
+through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+theorem exists_inducedTrace_expansion_of_brauer
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+    (Wit : PotentialModularityWitness ℓ O ρ)
+    (n : ℕ) (H : Fin n → Subgroup (Wit.F ≃ₐ[ℚ] Wit.F))
+    (φ : Fin n → (Wit.F ≃ₐ[ℚ] Wit.F) → ℂ) (c : Fin n → ℚ)
+    (hφ0 : ∀ i, ∀ g ∉ H i, φ i g = 0)
+    (hφ1 : ∀ i, φ i 1 = 1)
+    (hφmul : ∀ i, ∀ a ∈ H i, ∀ b ∈ H i, φ i (a * b) = φ i a * φ i b)
+    (hbrauer : ∀ g : Wit.F ≃ₐ[ℚ] Wit.F,
+      ∑ i, (c i : ℂ) * (Nat.card (H i) : ℂ)⁻¹ *
+        ∑ x : Wit.F ≃ₐ[ℚ] Wit.F, φ i (x⁻¹ * g * x) = 1)
+    (S : ∀ i, Finset (HeightOneSpectrum (NumberField.RingOfIntegers
+      (IntermediateField.fixedField (H i))))) :
+    ∃ S₀ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)),
+      ∀ (q : ℕ) (hq : q.Prime),
+        hq.toHeightOneSpectrumRingOfIntegersRat ∉ S₀ →
+        q ≠ 2 → q ≠ 3 → q ≠ ℓ →
+        ∃ (m : ℕ) (idx : Fin m → Fin n)
+          (pl : ∀ j : Fin m, HeightOneSpectrum (NumberField.RingOfIntegers
+            (IntermediateField.fixedField (H (idx j)))))
+          (e : Fin m → Wit.E),
+          (∀ j, pl j ∉ S (idx j)) ∧
+          Wit.ιO ((ρ.charFrob
+              hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
+            ∑ j, Wit.ψℓ (e j) *
+              Wit.ιO (((ρ.map (algebraMap ℚ (IntermediateField.fixedField
+                (H (idx j))))).charFrob (pl j)).coeff 1) :=
+  sorry
+
 /-- **Brauer gluing, trace coefficient — the induced-character
-expansion** (sorry node; the arithmetic HALF of the Brauer gluing
-below, and the only coefficient carrying automorphy content): given a
-Brauer decomposition of the trivial character of `Gal(F/ℚ)` into
-solvable-induced one-dimensional pieces (`hbrauer`) and, for each
+expansion** (PROVEN 2026-07-25 from the induced-trace expansion leaf
+`exists_inducedTrace_expansion_of_brauer` above; the arithmetic HALF of
+the Brauer gluing below, and the only coefficient carrying automorphy
+content): given a Brauer decomposition of the trivial character of
+`Gal(F/ℚ)` into solvable-induced one-dimensional pieces
+(`hbrauer`) and, for each
 piece, a descended Hecke system over the fixed field `Kᵢ = F^{H i}`
 (`hP`), the TRACE of Frobenius of `ρ` itself at almost all rational
 primes lies in `ψℓ(E)` through `ιO` — equivalently, so does the linear
@@ -3035,7 +3144,21 @@ unsatisfiable (headline below), so the statement is classically true
 for every package.
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
-through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`.
+
+ASSEMBLY (2026-07-25): the arithmetic content is now isolated ONE level
+down, in `exists_inducedTrace_expansion_of_brauer` above, which consumes
+the Brauer data (`hbrauer`, `hφ0`, `hφ1`, `hφmul`) and the pieces' bad
+sets `S` and returns the Mackey expansion of the trace coefficient of
+`ρ` as a finite `E`-weighted sum of the trace coefficients of the
+restrictions `ρ|_{G_{Kᵢ}}` at good places `w ∉ S i`. What remains here
+is pure bookkeeping and IS proven: each restricted trace coefficient is
+`ψℓ((P i w).coeff 1)` by `hP` read off in degree `1`
+(`Polynomial.coeff_map`), so the whole expansion is the `ψℓ`-image of
+the single element `Σⱼ eⱼ · (P (idx j) (pl j)).coeff 1` of `E` — using
+only that `ψℓ` is a ring homomorphism (`map_sum`, `map_mul`). No
+integrality, and no property of the weights beyond membership in `E`,
+is used. -/
 theorem heckeField_trace_mem_range_of_pieces
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
@@ -3058,7 +3181,7 @@ theorem heckeField_trace_mem_range_of_pieces
         ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
     (Wit : PotentialModularityWitness ℓ O ρ)
     (n : ℕ) (H : Fin n → Subgroup (Wit.F ≃ₐ[ℚ] Wit.F))
-    (φ : Fin n → (Wit.F ≃ₐ[ℚ] Wit.F) → ℂ) (c : Fin n → ℤ)
+    (φ : Fin n → (Wit.F ≃ₐ[ℚ] Wit.F) → ℂ) (c : Fin n → ℚ)
     (hφ0 : ∀ i, ∀ g ∉ H i, φ i g = 0)
     (hφ1 : ∀ i, φ i 1 = 1)
     (hφmul : ∀ i, ∀ a ∈ H i, ∀ b ∈ H i, φ i (a * b) = φ i a * φ i b)
@@ -3078,8 +3201,28 @@ theorem heckeField_trace_mem_range_of_pieces
         q ≠ 2 → q ≠ 3 → q ≠ ℓ →
         Wit.ιO ((ρ.charFrob
             hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
-          ∈ Set.range Wit.ψℓ :=
-  sorry
+          ∈ Set.range Wit.ψℓ := by
+  classical
+  -- the arithmetic input: the Mackey expansion of the rational trace
+  -- coefficient over the pieces' good places
+  obtain ⟨S₀, hexp⟩ := exists_inducedTrace_expansion_of_brauer hℓodd hℓ5 hZinj
+    hrank hρ hW hρbar hirr π hπsurj hπ Wit n H φ c hφ0 hφ1 hφmul hbrauer S
+  refine ⟨S₀, ?_⟩
+  intro q hq hqS hq2 hq3 hqℓ
+  obtain ⟨m, idx, pl, e, hpl, hid⟩ := hexp q hq hqS hq2 hq3 hqℓ
+  -- each restricted trace coefficient is the `ψℓ`-image of the descended
+  -- piece's own trace coefficient: read `hP` off in degree `1`
+  have hcoeff : ∀ j : Fin m,
+      Wit.ιO (((ρ.map (algebraMap ℚ (IntermediateField.fixedField
+          (H (idx j))))).charFrob (pl j)).coeff 1) =
+        Wit.ψℓ ((P (idx j) (pl j)).coeff 1) := fun j => by
+    simpa only [Polynomial.coeff_map] using
+      congrArg (fun p => Polynomial.coeff p 1) (hP (idx j) (pl j) (hpl j))
+  -- so the whole expansion is the `ψℓ`-image of one element of `E`
+  refine ⟨∑ j, e j * (P (idx j) (pl j)).coeff 1, ?_⟩
+  rw [hid, map_sum]
+  refine Finset.sum_congr rfl fun j _ => ?_
+  rw [map_mul, hcoeff j]
 
 /-- **Brauer gluing — reconstruction of the rational eigensystem from
 the descended pieces** (sorry node; the induced-character unwinding of
