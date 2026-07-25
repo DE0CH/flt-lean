@@ -100,7 +100,20 @@ procedure exists to avoid.
    `cp -n ~/.claude/projects/<slug>/<parent-id>/subagents/agent-*.jsonl \
         ~/.claude/projects/<slug>/<your-id>/subagents/`
 4. Resume every agent — see the `fleet-resume` skill.
-5. Recreate any cron jobs. They are in-memory and died with the parent.
+5. **Do NOT recreate the cron jobs — a fork inherits them already armed**
+   (Deyao, 2026-07-25). This is the opposite of what the tool's own
+   "session-only, dies when Claude exits" note leads you to expect, and of the
+   line in `CLAUDE.md` that says to re-create the RAM watchdog after every
+   restart — that instruction is for a cold start, not for a fork.
+
+   Recreating them silently doubles every job. I did it, and the RAM watchdog
+   then fired **twice in a single message**; `CronList` showed two identical
+   watchdogs and two identical queue checks. The duplicates are invisible until
+   you look, and each firing does real work twice.
+
+   So: run `CronList` first. Expect the parent's jobs to be present and armed.
+   Delete any duplicate you find, and only create a job that is genuinely
+   missing.
 6. `rm .claude/restart-parent-session-id` — the marker has done its job, and
    leaving it makes the next restart's test read a stale answer.
 
@@ -127,6 +140,20 @@ is the test; tmux is at most corroboration.
 
 Everything the child then does is listed in step 3b — it does not need to be
 told, because it is reading this same file.
+
+## What survives the fork and what does not
+
+Getting this list wrong in either direction costs something, so check rather
+than assume:
+
+| | survives the fork? |
+|---|---|
+| Cron jobs | **YES — already armed.** Do not recreate; `CronList` and dedupe. |
+| Subagents | No. They are children of the session process and die at the kill. |
+| Subagent transcripts | Yes, on disk under the parent's session directory — copy them across. |
+| Remote builds | Only if harness-backgrounded. A foreground `ssh` dies with the turn that held it. |
+| `.claude/stop-hook-session-id` | On disk, but still points at the parent — the child must overwrite it. |
+| `REFILL_TMUX` | On disk, but still names the parent's window — the child must repoint it. |
 
 ## Why the kill costs what it costs
 
