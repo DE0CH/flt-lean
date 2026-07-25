@@ -2500,9 +2500,17 @@ seams:
   * `exists_localReductionHom_of_good_reduction` (sorry node — the
     GEOMETRY): an inertia-invariant reduction homomorphism from the
     local `p`-torsion onto the `p`-torsion of the reduced curve.
-  * `card_torsion_reduction_of_good_ordinary` (sorry node — the
-    CHARACTERISTIC-`p` content): ordinarity makes `Ẽ(𝔽̄_p)[p]` of
-    order exactly `p`.
+  * `card_torsion_reduction_of_good_ordinary` (DERIVED 2026-07-25 —
+    the CHARACTERISTIC-`p` content): ordinarity makes `Ẽ(𝔽̄_p)[p]` of
+    order exactly `p`. Its residual gap is now the single
+    local-field-free leaf
+    * `card_torsionBy_dvd_of_charP` (sorry node): over an
+      algebraically closed field in which `p` vanishes, the geometric
+      `p`-torsion of an elliptic curve has order dividing `p` —
+      inseparability of the multiplication-by-`p` isogeny. The
+      residue-characteristic half is PROVEN
+      (`residue_natCast_eq_zero_of_prime`), and ordinarity excluding
+      the trivial case is proven glue.
 * `not_inertia_stable_line_of_good_of_supersingular` (DERIVED
   2026-07-23 from the local eigenvector leaf below by transporting a
   generator of the stable line along the chosen embedding
@@ -3441,11 +3449,66 @@ theorem WeierstrassCurve.exists_localReductionHom_of_good_reduction
         ∃ P, red P = y :=
   sorry
 
+/-- **The residue characteristic of the `p`-place of `ℚ` is `p`** (PROVEN
+2026-07-25): `p` lies in the height-one prime `v_p ⊆ 𝓞 ℚ`
+(`mem_toHeightOneSpectrumRingOfIntegersRat_asIdeal`), hence its image in
+the localization `ℤ_(p)` lies in the maximal ideal
+(`Localization.AtPrime.map_eq_maximalIdeal`), hence dies in the residue
+field. Consumed by `card_torsion_reduction_of_good_ordinary` to feed the
+characteristic hypothesis of the char-`p` torsion bound. -/
+theorem residue_natCast_eq_zero_of_prime {p : ℕ} (hp : p.Prime) :
+    ((p : ℕ) : IsLocalRing.ResidueField
+      (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)) = 0 := by
+  have hmemP : ((p : ℕ) : NumberField.RingOfIntegers ℚ) ∈
+      hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal := by
+    rw [hp.mem_toHeightOneSpectrumRingOfIntegersRat_asIdeal, map_natCast]
+  have hmem : (algebraMap (NumberField.RingOfIntegers ℚ)
+      (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal))
+      ((p : ℕ) : NumberField.RingOfIntegers ℚ) ∈
+      IsLocalRing.maximalIdeal
+        (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal) := by
+    rw [← Localization.AtPrime.map_eq_maximalIdeal]
+    exact Ideal.mem_map_of_mem _ hmemP
+  rw [map_natCast] at hmem
+  exact (IsLocalRing.residue_eq_zero_iff _).mpr hmem
+
+open scoped WeierstrassCurve.Affine in
+/-- **The geometric `p`-torsion of an elliptic curve in characteristic
+`p` has order dividing `p`** (sorry node, cut 2026-07-25 out of
+`card_torsion_reduction_of_good_ordinary` — ALL of that leaf's
+characteristic-`p` content, now stated free of every local-field and
+Frey-curve encumbrance): for an elliptic curve `Y` over an algebraically
+closed field `k` of characteristic `p`, `#Y(k)[p]` divides `p`.
+
+Content: in characteristic `p` the multiplication-by-`p` isogeny of an
+elliptic curve has degree `p²` but is never separable — its induced map
+on the space of invariant differentials is multiplication by `p = 0` — so
+it factors as `Frobenius ∘ (something)` and its inseparable degree is `p`
+or `p²`. Hence the number of GEOMETRIC points of its kernel, which is the
+separable degree, is `p` (ordinary case) or `1` (supersingular case); in
+both cases a divisor of `p`. Silverman AEC III.6.4 (the differential
+criterion for separability), V.3.1 (a)–(b) (the ordinary/supersingular
+dichotomy), III.4.10 (separable degree = number of geometric points of
+the kernel); Silverman ATAEC IV.6.
+
+Note the hypothesis is only that `p` vanishes in `k` — `p` need not be
+the characteristic exponent in any stronger sense, and `k` is only
+required to be algebraically closed, so this statement is a candidate for
+mathlib once the isogeny-degree machinery exists there. -/
+theorem WeierstrassCurve.card_torsionBy_dvd_of_charP
+    {k : Type*} [Field k] [IsAlgClosed k] [DecidableEq k]
+    (Y : WeierstrassCurve k) [Y.IsElliptic]
+    {p : ℕ} (hp : p.Prime) (hchar : ((p : ℕ) : k) = 0) :
+    Nat.card (AddSubgroup.torsionBy (Y⁄k).Point ((p : ℕ) : ℤ)) ∣ p :=
+  sorry
+
 open ValuativeRel IsDedekindDomain in
 open scoped WeierstrassCurve.Affine in
 set_option backward.isDefEq.respectTransparency false in
 /-- **Ordinary reduction: the geometric `p`-torsion of the reduced curve
-has order exactly `p`** (sorry node, cut 2026-07-25 out of
+has order exactly `p`** (DERIVED 2026-07-25 from the char-`p` bound
+`card_torsionBy_dvd_of_charP` and the residue-characteristic computation
+`residue_natCast_eq_zero_of_prime`; previously a sorry node, cut out of
 `exists_localTorsionQuotient_of_good_ordinary` — the second brick of the
 ordinary case, and the one carrying the *characteristic-`p`* content):
 if the reduction `Ẽ` of a curve with good reduction at `p` has a nonzero
@@ -3474,8 +3537,39 @@ theorem WeierstrassCurve.card_torsion_reduction_of_good_ordinary
         (AlgebraicClosure (IsLocalRing.ResidueField
           (Localization.AtPrime
             hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)))).Point
-      ((p : ℕ) : ℤ)) = p :=
-  sorry
+      ((p : ℕ) : ℤ)) = p := by
+  classical
+  -- the reduced curve is elliptic, by the definition of good reduction
+  haveI : (E.reduction
+      (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)).IsElliptic :=
+    (WeierstrassCurve.hasGoodReduction_iff_isElliptic_reduction
+      (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)).mp
+      inferInstance
+  -- the residue characteristic is `p`, and so is the characteristic of its closure
+  have hchar : ((p : ℕ) : AlgebraicClosure (IsLocalRing.ResidueField
+      (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal))) = 0 := by
+    rw [← map_natCast (algebraMap (IsLocalRing.ResidueField
+      (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal))
+      (AlgebraicClosure (IsLocalRing.ResidueField
+        (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)))) p,
+      residue_natCast_eq_zero_of_prime hp, map_zero]
+  -- the char-`p` bound: the geometric `p`-torsion has order dividing `p`
+  have hdvd := WeierstrassCurve.card_torsionBy_dvd_of_charP
+    ((E.reduction
+      (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)).map
+      (algebraMap (IsLocalRing.ResidueField
+        (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal))
+        (AlgebraicClosure (IsLocalRing.ResidueField
+          (Localization.AtPrime
+            hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal))))) hp hchar
+  -- ordinarity rules out the trivial case, so the order is exactly `p`
+  obtain ⟨P, hP0, hPtor⟩ := hord
+  rcases (Nat.Prime.eq_one_or_self_of_dvd hp _ hdvd) with h1 | hpp
+  · exfalso
+    obtain ⟨hsub, -⟩ := Nat.card_eq_one_iff_unique.mp h1
+    exact hP0 (congrArg Subtype.val
+      (hsub.allEq (⟨P, (Submodule.mem_torsionBy_iff _ _).mpr hPtor⟩) 0))
+  · exact hpp
 
 open ValuativeRel IsDedekindDomain in
 open scoped WeierstrassCurve.Affine in
