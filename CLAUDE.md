@@ -61,7 +61,27 @@ scoped to that worktree. Live allocation state:
   refill `$HOME`) BEFORE its server is started — otherwise `lake serve`
   tries to build mathlib from source.
 
-- **Max 26 concurrent subagents**, one per worktree, 1:1.
+- **Batch 3, `~/flt-lean-27` .. `~/flt-lean-42`** (Deyao, 2026-07-24): same
+  layout as batch 2 — source tree in `$HOME`, `.lake` and `.report-server`
+  symlinked to `/scratch/chend-flt/flt-lean-N/`, served by the ORDINARY
+  `flt-report-server@.service` template (the worktree is under `%h`).
+  `.gitignore`'s `.lake/` patterns do not match symlinks, so `.lake` and
+  `.report-server` are listed in `.git/info/exclude` instead.
+- **Pool states**: `free`, `claimed`, and `suspended <agent-id>`. A suspended
+  entry is never allocated — that is how a reduced worker count is enforced
+  under memory pressure — and its third field is the stopped agent's
+  transcript id, so the work can be picked up later with SendMessage.
+- **RAM watchdog** (Deyao, 2026-07-24): a 10-minute cron reminds the
+  orchestrator to check free memory. Procedure lives in
+  `~/.flt-ram-watchdog-prompt.md`: below 200G free, restart a FEW worker LSPs
+  at a time (closing their open files releases memory without interrupting the
+  agents' work) and email; if that recurs 3× in an hour, suspend workers 4 at a
+  time instead. Cron jobs are session-only, so **re-create it after every
+  restart**.
+
+- **Max 42 concurrent subagents**, one per worktree, 1:1. The harness cap
+  `CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS` is fixed at launch (currently 50, set
+  in the tmux launch line) — the pool, not that number, is the real limit.
 - **FIFO task queue** (Deyao, 2026-07-23): `~/.flt-task-queue`, a
   plain text file — full agent prompts separated by lines consisting
   exactly of `=== TASK ===`. The orchestrator reorders and drops tasks
