@@ -163,10 +163,23 @@ ten, and every statement they replace is now PROVEN here.
   the trace field. That is not an artifact of the split — the node's own
   conclusion implies it — and it is exactly what
   `subring_closure_charFrob_coeff_eq_top` states. It is trivially true at
-  `k = 𝔽_ℓ` (the Frey-curve consumer in `Lift.lean`); for pillar α's
-  general `k` it is the usual "take `k` to be the trace field"
-  normalization, the alternative being to narrow `k` at the pillar-α
-  interface.
+  `k = 𝔽_ℓ` (the Frey-curve consumer in `Lift.lean`).
+
+  AUDITED 2026-07-25, VERDICT ON THAT LEAF: it is NOT dischargeable and
+  no proof effort should be dispatched at it. Quantified over `k` it is
+  EQUIVALENT to the ch. 4 headline
+  `not_isIrreducible_of_isHardlyRamified_of_five_le`, because every
+  hypothesis it carries is stable under extension of the coefficient
+  field while its conclusion is not; and the consuming cone does not
+  force `k = 𝔽_ℓ` (`Modularity/Interface.lean` consumes pillar α at the
+  residue field of an arbitrary local coefficient ring). The fix is an
+  interface change, not a proof: take `traceSubring` and
+  `IsTraceGenerated` over the Cohen coefficient ring `Λ ≅ W(k)` that
+  this module's own `exists_coefficientRing_ringHom` already produces,
+  rather than over `ℤ_ℓ`, whereupon the descended datum's
+  `π_surjective` is free and this leaf disappears. See the leaf's
+  docstring for the full argument and the second, costlier route
+  (descend `ρbar` to its trace field, lift, base change back up).
 
 Everything else is proven glue, culminating in
 `exists_hardlyRamified_lift_of_five_le` — verbatim the statement of
@@ -1791,9 +1804,11 @@ theorem exists_framedGaloisRep_traceSubring (hℓ5 : 5 ≤ ℓ)
   sorry
 
 /-- **The residual trace field is everything** (sorry leaf, isolated
-2026-07-25): the coefficient field `k` is generated as a ring by the
-coefficients of the Frobenius characteristic polynomials of `ρbar` at
-the good primes — equivalently, `k` is the trace field of `ρbar`.
+2026-07-25; AUDITED 2026-07-25 — **VERDICT: NOT DISCHARGEABLE. Remove
+it by the interface change described below; do NOT dispatch a proof
+effort at it.**): the coefficient field `k` is generated as a ring by
+the coefficients of the Frobenius characteristic polynomials of `ρbar`
+at the good primes — equivalently, `k` is the trace field of `ρbar`.
 
 WHY THIS IS NOT AN ARTIFACT OF THE DECOMPOSITION: it is IMPLIED by the
 conclusion of `exists_isTraceGenerated_ringHom_of_forall_trace_mem`, so
@@ -1809,24 +1824,107 @@ the `charFrob` coefficients of `D'.ρ` to those of `ρbar`
 
 It is TRUE and trivial whenever `k` is the prime field `𝔽_ℓ` — the case
 of the Frey-curve application, where the deformation development is
-consumed at `k = ZMod ℓ` — because any subring of `𝔽_ℓ` containing `1`
-is everything, and the generating set is nonempty (the `charFrob` are
-monic of degree 2, so `coeff 2 = 1` is in it). For a general finite `k`
-it is the statement that `ρbar` is not the scalar extension of a
-representation over a proper subfield, which is the standard
-normalization of the coefficient field in the deformation-theoretic
-literature (one always takes `k` to BE the trace field, `E` in
-Khare–Wintenberger's notation) and which the current spelling of
-`HardlyRamifiedDeformation` — whose `π_surjective` field demands the
-residue field be `k` on the nose — makes a genuine hypothesis rather
-than a convention. A future owner of this leaf who cannot prove it in
-the general form should instead narrow `k` at the pillar-α interface.
+consumed at `k = ZMod ℓ` (`Lift.lean`'s `exists_hardlyRamifiedLift`) —
+because any subring of `𝔽_ℓ` containing `1` is everything, and the
+generating set is nonempty (the `charFrob` are monic of degree 2, so
+`coeff 2 = 1` is in it).
+
+## AUDIT (2026-07-25): the leaf is the ch. 4 headline in disguise
+
+Quantified over the coefficient field `k` — which is how it is stated,
+`k` being a section variable — this leaf is EQUIVALENT to this
+project's own ch. 4 headline
+`not_isIrreducible_of_isHardlyRamified_of_five_le`
+(`Modularity/KhareWintenberger.lean`). It is therefore not a
+deformation-theoretic fact provable here: every proof of it is
+circular. Argument, in three steps.
+
+1. *Every hypothesis of this leaf is stable under extension of the
+   coefficient field.* `IsHardlyRamified` (`HardlyRamified/Defs.lean`)
+   is the conjunction of: `det ρ` equal to the cyclotomic character
+   pushed through `algebraMap ℤ_[ℓ] R`; unramifiedness outside
+   `{2, ℓ}`; `IsFlatAt` at `ℓ`; and the tame-at-`2` clause (a
+   surjective linear functional whose quotient character is unramified
+   with trivial square). Each is transported along
+   `GaloisRep.baseChange` for a field extension `E → k`, and the
+   development already relies on exactly that transport elsewhere
+   (`(ρO.baseChange kk').IsFlatAt`, `Modularity/Interface.lean`).
+   Irreducibility transports too: a hardly ramified irreducible `ρbar`
+   over a finite field of odd characteristic is ABSOLUTELY irreducible
+   (oddness of the determinant — the very step recorded on
+   `exists_framedGaloisRep_traceSubring` above), and absolute
+   irreducibility is preserved by base change.
+
+2. *The conclusion is not stable.* The `charFrob` coefficients of a
+   base change `ρbar₀ ⊗_E k` are the images of those of `ρbar₀`, hence
+   lie in the subfield `E`; `Subring.closure` of a subset of `E` is
+   contained in `E`. For `E ⊊ k` the conclusion `… = ⊤` fails.
+
+3. *Hence the leaf implies nonexistence.* Given ANY irreducible hardly
+   ramified `ρbar₀` over a finite field `E` of characteristic `ℓ`,
+   choose a proper finite extension `k ⊋ E` and apply this leaf to
+   `ρbar₀ ⊗_E k`: steps 1 and 2 contradict each other. So the leaf
+   implies "there is no irreducible hardly ramified mod-`ℓ`
+   representation over any finite field of characteristic `ℓ`" for
+   every odd `ℓ` — the ch. 4 headline that pillars α, β, γ exist to
+   prove. The leaf carries no `5 ≤ ℓ` hypothesis, so it is if anything
+   STRONGER than that headline.
+
+**The consuming cone does NOT force `k = 𝔽_ℓ`,** so the leaf cannot be
+salvaged by proving it only at the prime field. `Lift.lean`'s B6a is
+indeed at `k = ZMod ℓ`, but pillar α
+(`exists_hardlyRamified_lift_residual_of_five_le`) is consumed at a
+GENERAL finite `k` through the headline: `Modularity/Interface.lean`'s
+residual-modularity leaves
+(`exists_weightTwoEigenform_residual_of_isIrreducible_of_five_le` and
+the `ℓ ≥ 5` branches near its lines 3648, 3748, 7066) are stated over a
+general `k`, and at its line ~21090 the field is literally produced by
+`exists_residual_isHardlyRamified_odd` as the residue field of an
+arbitrary local coefficient ring — not the prime field.
+
+## The interface change that removes this leaf
+
+The defect is that `traceSubring` / `HardlyRamifiedDeformation.IsTraceGenerated`
+are taken over `ℤ_ℓ`, whereas Mazur's and Carayol's deformation
+categories are categories of complete Noetherian local **`W(k)`**-algebras
+with residue field `k`. Over `ℤ_ℓ` the residue field of the trace
+subring `R'` is only the trace field, which is what forces this leaf;
+over a coefficient ring `Λ` with `Λ ↠ k` it is `k` by construction and
+the `π_surjective` field of the descended datum is free.
+
+PREFERRED FIX (cheapest, and internal to this module): let `Λ` be the
+Cohen coefficient ring of `D.R` supplied by the leaf
+`exists_coefficientRing_ringHom` already in this file — it delivers
+`ι : Λ →+* D.R` with `D.π ∘ ι` SURJECTIVE — and replace
+`Set.range (algebraMap ℤ_[ℓ] ·)` by `Set.range ι` in both `traceSubring`
+and `IsTraceGenerated`. Then `subring_closure_charFrob_coeff_eq_top`
+disappears from `exists_isTraceGenerated_ringHom_of_forall_trace_mem`
+(its `π_surjective` obligation becomes `ι`'s surjectivity onto `k`),
+and the universality/finiteness/presentation strata that consume
+`IsTraceGenerated` are, if anything, better served: their minimal
+presentations are already stated over `Λ ≅ W(k)`.
+
+ALTERNATIVE FIX (the "normalization" route, more work): keep the
+`ℤ_ℓ`-spelling and make pillar α at a general `k` a COROLLARY of pillar
+α at the trace field `E ⊆ k` — descend `ρbar` to `E` (legitimate: `k`
+is finite, so `Br(E) = 0`, and an absolutely irreducible representation
+with traces in `E` is conjugate to one over `E`), lift there, then push
+the lift back up along the unramified base change `O ↦ O ⊗_{W(E)} W(k)`.
+This is the literature's "take `k` to be the trace field"; in Lean it is
+two substantial new leaves.
+
+BOTH fixes cross into declarations with other owners (`traceSubring` and
+`IsTraceGenerated` feed the two sibling leaves and the universality
+strata; the alternative touches `Modularity/KhareWintenberger.lean`), so
+neither was made by this leaf's owner. Until one is made, this `sorry`
+stands as the honest record of the gap.
 
 References: Khare–Wintenberger, *Serre's modularity conjecture (I)*, §2
 (the coefficient field is the field generated by the traces); Carayol,
 *Formes modulaires et représentations galoisiennes à valeurs dans un
 anneau local complet*, Théorème 1 (the residue field of the trace
-subring is the trace field). -/
+subring is the trace field); Mazur, *Deforming Galois representations*,
+§1.2 (the deformation category is over `W(k)`). -/
 theorem subring_closure_charFrob_coeff_eq_top
     {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
     (hirr : ρbar.IsIrreducible) :
