@@ -1445,8 +1445,74 @@ lemma span_eq_of_mem_of_span_mul_eq {n ñ : W.CoordinateRing}
     IsUnit.of_mul_eq_one _ (mul_left_cancel₀ (mul_ne_zero hm₁0 hm₂0) hw')
   rw [← hu₁, Ideal.span_singleton_mul_left_unit (isUnit_of_mul_isUnit_left hu), hm₁]
 
+set_option maxHeartbeats 1600000 in
+/-- **The cleared conjugate product, as a bare polynomial identity.**
+This is `lineNumerator_mul_lineNumeratorNeg` with every atom turned into
+a free variable of an arbitrary commutative ring: `X`, `Y` stand for the
+coordinate functions, `q₁, q₂` for the base point `Q`, `ℓ` for the chord
+slope and `x₃` for the third `X`-coordinate.  The four inputs are the
+Weierstrass relation at `(X, Y)`, the Weierstrass relation at `Q`, and
+the three coefficient identities of the cubic factorization
+`addPolynomial x₁ y₁ ℓ = -(X - x₁)(X - x₂)(X - x₃)`
+(`Cubic.b/c/d_of_eq` applied to `addPolynomial_slope`).
+
+The certificate.  Write `T := X - q₁`, `U := Y - q₂`,
+`A := U² + a₁UT - (a₂ + q₁ + X)T²` and `V := U(A - q₁T²) + q₂T³`.  The
+two factors are `𝔶 - Λ` and `𝔶' - Λ` with `𝔶 = -V - a₁AT - a₃T³`,
+`𝔶' = V` and `Λ = ℓ(A - x₁T²)T + y₁T³`, so their product is
+`𝔶𝔶' + Λ(a₁AT + a₃T³) + Λ²`; the first summand is the `T⁶`-cleared
+`y·negY y = -(x³ + a₂x² + a₄x + a₆)` at the translate, and the rest is
+the `(A, T²)`-homogenization of `addPolynomial`.  The `T⁶`-cleared
+Weierstrass relation costs exactly
+`-T³(A - q₁T²)·hT + (T³(A - q₁T²) - T⁶)·hQ`: the difference
+`G(x) + (x - q₁)(x - X)(T²x - A)` of the cleared chord cubic and its
+factorization is *linear* in `x`, with values `T²·hQ` at `x = q₁` and
+`T²·hT` at `x = X`, hence equals `T(hT - hQ)x + T²hQ - q₁T(hT - hQ)`;
+evaluating at `T²x = A` gives the two cofactors.  The homogenization
+contributes `-A²T²·e₁ - AT⁴·e₂ - T⁶·e₃`.  (Certificate found and
+verified with Singular, then checked by `ring`.) -/
+lemma lineNumerator_mul_lineNumeratorNeg_aux {R : Type*} [CommRing R]
+    (X Y q₁ q₂ a₁ a₂ a₃ a₄ a₆ ℓ x₁ y₁ x₂ x₃ : R)
+    (hT : Y ^ 2 + a₁ * X * Y + a₃ * Y = X ^ 3 + a₂ * X ^ 2 + a₄ * X + a₆)
+    (hQ : q₂ ^ 2 + a₁ * q₁ * q₂ + a₃ * q₂ = q₁ ^ 3 + a₂ * q₁ ^ 2 + a₄ * q₁ + a₆)
+    (e₁ : -ℓ ^ 2 - a₁ * ℓ + a₂ = -(x₁ + x₂ + x₃))
+    (e₂ : 2 * x₁ * ℓ ^ 2 + (a₁ * x₁ - 2 * y₁ - a₃) * ℓ + (-a₁ * y₁ + a₄) =
+      x₁ * x₂ + x₁ * x₃ + x₂ * x₃)
+    (e₃ : -x₁ ^ 2 * ℓ ^ 2 + (2 * x₁ * y₁ + a₃ * x₁) * ℓ - (y₁ ^ 2 + a₃ * y₁ - a₆) =
+      -(x₁ * x₂ * x₃)) :
+    (-((Y - q₂) * ((Y - q₂) ^ 2 + a₁ * (Y - q₂) * (X - q₁) -
+              (a₂ + q₁ + X) * (X - q₁) ^ 2 - q₁ * (X - q₁) ^ 2) +
+            q₂ * (X - q₁) ^ 3) -
+          a₁ * ((Y - q₂) ^ 2 + a₁ * (Y - q₂) * (X - q₁) -
+            (a₂ + q₁ + X) * (X - q₁) ^ 2) * (X - q₁) -
+          a₃ * (X - q₁) ^ 3 -
+          ℓ * ((Y - q₂) ^ 2 + a₁ * (Y - q₂) * (X - q₁) -
+            (a₂ + q₁ + X) * (X - q₁) ^ 2 - x₁ * (X - q₁) ^ 2) * (X - q₁) -
+          y₁ * (X - q₁) ^ 3) *
+        ((Y - q₂) * ((Y - q₂) ^ 2 + a₁ * (Y - q₂) * (X - q₁) -
+              (a₂ + q₁ + X) * (X - q₁) ^ 2 - q₁ * (X - q₁) ^ 2) +
+            q₂ * (X - q₁) ^ 3 -
+          ℓ * ((Y - q₂) ^ 2 + a₁ * (Y - q₂) * (X - q₁) -
+            (a₂ + q₁ + X) * (X - q₁) ^ 2 - x₁ * (X - q₁) ^ 2) * (X - q₁) -
+          y₁ * (X - q₁) ^ 3) =
+      -(((q₂ - Y) ^ 2 + a₁ * (q₂ - Y) * (q₁ - X) - (a₂ + q₁ + x₁ + X) * (q₁ - X) ^ 2) *
+        (((q₂ - Y) ^ 2 + a₁ * (q₂ - Y) * (q₁ - X) - (a₂ + q₁ + x₂ + X) * (q₁ - X) ^ 2) *
+          ((q₂ - Y) ^ 2 + a₁ * (q₂ - Y) * (q₁ - X) -
+            (a₂ + q₁ + x₃ + X) * (q₁ - X) ^ 2))) := by
+  linear_combination
+      (-((X - q₁) ^ 3 * (((Y - q₂) ^ 2 + a₁ * (Y - q₂) * (X - q₁) -
+        (a₂ + q₁ + X) * (X - q₁) ^ 2) - q₁ * (X - q₁) ^ 2))) * hT +
+      ((X - q₁) ^ 3 * (((Y - q₂) ^ 2 + a₁ * (Y - q₂) * (X - q₁) -
+        (a₂ + q₁ + X) * (X - q₁) ^ 2) - q₁ * (X - q₁) ^ 2) - (X - q₁) ^ 6) * hQ -
+      (((Y - q₂) ^ 2 + a₁ * (Y - q₂) * (X - q₁) -
+        (a₂ + q₁ + X) * (X - q₁) ^ 2) ^ 2 * (X - q₁) ^ 2) * e₁ -
+      (((Y - q₂) ^ 2 + a₁ * (Y - q₂) * (X - q₁) -
+        (a₂ + q₁ + X) * (X - q₁) ^ 2) * (X - q₁) ^ 4) * e₂ -
+      (X - q₁) ^ 6 * e₃
+
+set_option maxHeartbeats 1600000 in
 omit [IsAlgClosed F] in
-/-- **L4-8 line-numerator sub-leaf (sorry): the cleared conjugate
+/-- **L4-8 line-numerator sub-leaf (PROVEN): the cleared conjugate
 product.**  The two cleared line values at the translate multiply to the
 product of the three vertical numerators at the three `X`-coordinates
 cut out by the chord:
@@ -1454,7 +1520,7 @@ cut out by the chord:
 `lineNumerator · lineNumeratorNeg = −(vertNum x₁ · vertNum x₂ · vertNum x₃)`,
 `x₃ = addX x₁ x₂ ℓ`.
 
-ROUTE (certificate-free, no case analysis).  Write `T := X − q₁`,
+PROOF (certificate-free, no case analysis).  Write `T := X − q₁`,
 `U := Y − q₂`, `A := U² + a₁UT − (a₂ + q₁ + X)T²` (so `A = x(Q ⊕ taut)T²`
 and `vertNumerator W q₁ q₂ x = A − xT²` by `ring`), and
 `Λ := ℓ(A − x₁T²)T + y₁T³` (the cleared line value `L(x(Q ⊕ taut))T³`).
@@ -1476,11 +1542,20 @@ which is precisely the `T`-homogenization (in `A`, `T²`) of
 `W.addPolynomial x₁ y₁ ℓ = L² + (a₁X + a₃)L − (X³ + a₂X² + a₄X + a₆)`
 evaluated at `X = A/T²`; mathlib's `addPolynomial_slope` factors that
 cubic as `−(X − x₁)(X − x₂)(X − x₃)`, and the homogenization of the
-factored form is exactly `−(A − x₁T²)(A − x₂T²)(A − x₃T²)`.  Practical
-recipe: take `addPolynomial_slope h₁ h₂ hxy`, read off its four `X`-
-coefficients with `Polynomial.coeff`/`Cubic`, and feed them to
-`linear_combination` with the cofactors `T⁰, T², T⁴, T⁶` against the
-expanded goal.  CAS-checkable in one `Singular`/`gp` line. -/
+factored form is exactly `−(A − x₁T²)(A − x₂T²)(A − x₃T²)`.
+
+Realized exactly that way: `addPolynomial_slope h₁ h₂ hxy` is turned
+into an equality of `Cubic` structures (`addPolynomial_eq`,
+`Cubic.prod_X_sub_C_eq`, `Cubic.toPoly_injective`) and its three lower
+`X`-coefficients are read off by `Cubic.b/c/d_of_eq`; those three scalar
+identities, transported by the constants embedding `constHom`, together
+with the Weierstrass relation at the tautological point
+(`taut_equation`) and at `Q`, feed the single `linear_combination` of
+`lineNumerator_mul_lineNumeratorNeg_aux` — where the explicit cofactors
+`T⁰·(−T³(A − q₁T²)), T³(A − q₁T²) − T⁶, −A²T², −AT⁴, −T⁶` live.  The
+whole identity is verified in the function field, where
+`algebraMap F[W] → K` is injective, exactly as the vertical-numerator
+chord identities are. -/
 theorem lineNumerator_mul_lineNumeratorNeg {q₁ q₂ x₁ y₁ x₂ y₂ : F}
     (hq : W.Equation q₁ q₂) (h₁ : W.Equation x₁ y₁) (h₂ : W.Equation x₂ y₂)
     (hxy : ¬(x₁ = x₂ ∧ y₁ = W.negY x₂ y₂)) :
@@ -1489,7 +1564,44 @@ theorem lineNumerator_mul_lineNumeratorNeg {q₁ q₂ x₁ y₁ x₂ y₂ : F}
       -(vertNumerator W q₁ q₂ x₁ *
         (vertNumerator W q₁ q₂ x₂ *
           vertNumerator W q₁ q₂ (W.addX x₁ x₂ (W.slope x₁ x₂ y₁ y₂)))) := by
-  sorry
+  have hinj : Function.Injective (algebraMap W.CoordinateRing W.FunctionField) :=
+    IsFractionRing.injective W.CoordinateRing W.FunctionField
+  -- the cubic factorization of `addPolynomial`, as an equality of `Cubic`s
+  have hcubic := WeierstrassCurve.Affine.addPolynomial_slope h₁ h₂ hxy
+  rw [WeierstrassCurve.Affine.addPolynomial_eq, Cubic.prod_X_sub_C_eq, neg_inj,
+    Cubic.toPoly_injective] at hcubic
+  have e₁ : -W.slope x₁ x₂ y₁ y₂ ^ 2 - W.a₁ * W.slope x₁ x₂ y₁ y₂ + W.a₂ =
+      -(x₁ + x₂ + W.addX x₁ x₂ (W.slope x₁ x₂ y₁ y₂)) := congrArg Cubic.b hcubic
+  have e₂ : 2 * x₁ * W.slope x₁ x₂ y₁ y₂ ^ 2 +
+        (W.a₁ * x₁ - 2 * y₁ - W.a₃) * W.slope x₁ x₂ y₁ y₂ + (-W.a₁ * y₁ + W.a₄) =
+      x₁ * x₂ + x₁ * W.addX x₁ x₂ (W.slope x₁ x₂ y₁ y₂) +
+        x₂ * W.addX x₁ x₂ (W.slope x₁ x₂ y₁ y₂) := congrArg Cubic.c hcubic
+  have e₃ : -x₁ ^ 2 * W.slope x₁ x₂ y₁ y₂ ^ 2 +
+        (2 * x₁ * y₁ + W.a₃ * x₁) * W.slope x₁ x₂ y₁ y₂ -
+        (y₁ ^ 2 + W.a₃ * y₁ - W.a₆) =
+      -(x₁ * x₂ * W.addX x₁ x₂ (W.slope x₁ x₂ y₁ y₂)) := congrArg Cubic.d hcubic
+  -- transport the five relations into the function field
+  have hT : tautY W ^ 2 + constHom W W.a₁ * tautX W * tautY W +
+      constHom W W.a₃ * tautY W =
+      tautX W ^ 3 + constHom W W.a₂ * tautX W ^ 2 + constHom W W.a₄ * tautX W +
+        constHom W W.a₆ :=
+    (WeierstrassCurve.Affine.equation_iff ..).mp (taut_equation W)
+  have hQK := congrArg (constHom W) ((WeierstrassCurve.Affine.equation_iff ..).mp hq)
+  have e₁K := congrArg (constHom W) e₁
+  have e₂K := congrArg (constHom W) e₂
+  have e₃K := congrArg (constHom W) e₃
+  simp only [map_add, map_sub, map_mul, map_neg, map_pow,
+    map_ofNat] at hQK e₁K e₂K e₃K
+  apply hinj
+  simp only [lineNumerator, lineNumeratorNeg, vertNumerator, map_add, map_sub,
+    map_mul, map_neg, map_pow, algebraMap_coordX, algebraMap_coordY,
+    algebraMap_coordC]
+  linear_combination lineNumerator_mul_lineNumeratorNeg_aux (tautX W) (tautY W)
+    (constHom W q₁) (constHom W q₂) (constHom W W.a₁) (constHom W W.a₂)
+    (constHom W W.a₃) (constHom W W.a₄) (constHom W W.a₆)
+    (constHom W (W.slope x₁ x₂ y₁ y₂)) (constHom W x₁) (constHom W y₁)
+    (constHom W x₂) (constHom W (W.addX x₁ x₂ (W.slope x₁ x₂ y₁ y₂)))
+    hT hQK e₁K e₂K e₃K
 
 /-- **L4-8 line-numerator sub-leaf (sorry): membership of the line
 numerator in its divisor ideal.**  `lineNumerator q₁ q₂ x₁ y₁ ℓ` lies in
