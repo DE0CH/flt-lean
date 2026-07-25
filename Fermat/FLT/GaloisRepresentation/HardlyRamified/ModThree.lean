@@ -7666,10 +7666,179 @@ theorem archimedeanGammaProfile_exists (K : Type*) [Field K] [NumberField K] :
               NumberField.InfinitePlace.nrComplexPlaces K)) := by
   sorry
 
+/-- **Mellin uniqueness on a right half-plane** (sorry node, stated
+2026-07-25 — sub-leaf (β2), the *rigidity* half of the decomposition of
+`heckeThetaSeries_functionalEquation`): two functions that are
+continuous on `(0, ∞)` and whose Mellin transforms both converge and
+take a COMMON value at every point of some right half-plane `Re z > σ`
+agree on `(0, ∞)`.
+
+This is the classical uniqueness theorem for the Mellin transform —
+equivalently, after `τ = e^{-u}`, for the two-sided Laplace transform.
+It is exactly the step that identifies an ABSTRACT archimedean profile
+— any `H` carrying the properties delivered by
+`archimedeanGammaProfile_exists`, which is all that
+`heckeThetaSeries_functionalEquation` is given — with the CANONICAL
+profile constructed geometrically in
+`heckeCanonicalThetaProfile_functionalEquation`, so that the geometric
+functional equation proved for the canonical profile transports to `H`.
+It is the Lean form of the parenthetical remark in the docstring of
+`heckeThetaSeries_functionalEquation` ("the hypotheses pin `H`
+uniquely: continuity plus the convergent Mellin identification
+determine `H` a.e. on `(0, ∞)` (Mellin/Laplace uniqueness), hence
+everywhere by continuity").
+
+Intended proof: put `h = f - g`; it is continuous on `(0, ∞)`, its
+Mellin transform converges on the half-plane (`MellinConvergent.sub`)
+and vanishes identically there (`mellin` is linear, `hasMellin_sub`).
+Substituting `τ = e^{-u}` (`mellin_comp_rpow` / the change of variables
+`Real.exp`) turns this into the vanishing of the two-sided Laplace
+transform `u ↦ ∫_ℝ e^{-z u}·h(e^{-u}) du` on a right half-plane.  Fix
+`σ' > σ` real and evaluate at `z = σ' + k`, `k : ℕ`: with the finite
+signed measure `dμ = τ^{σ'-1}·h(τ)·dτ` on `(0, ∞)` (finite by the
+convergence hypothesis) the identities say `∫ τ^k dμ = 0` for every
+`k`, i.e. all moments of `μ` vanish.  Split `(0, ∞)` at `1`: on `(0, 1]`
+the monomials `τ^k` are uniformly bounded and, by Weierstrass
+approximation on `[0, 1]`, dense in `C([0,1])`, so `μ` restricted there
+is `0`; on `[1, ∞)` apply the same argument after `τ ↦ τ⁻¹` (which
+turns the progression `σ' + k` into `σ' - k`, available by taking `σ'`
+large and using the convergence on the whole half-plane).  Hence `μ = 0`
+and, `τ^{σ'-1} > 0` on `(0, ∞)` with `h` continuous, `h` vanishes on
+`(0, ∞)`.  An alternative route already partly available in the pin:
+the transform is holomorphic on the half-plane
+(`mellin_differentiableAt_of_isBigO_rpow`) and Mellin inversion
+(`mellin_inversion`) recovers `h` at every point of continuity, so a
+vanishing transform forces `h = 0` directly. -/
+theorem eqOn_of_hasMellin_eq_of_continuousOn {f g : ℝ → ℝ} {σ : ℝ}
+    (hf : ContinuousOn f (Set.Ioi 0)) (hg : ContinuousOn g (Set.Ioi 0))
+    (hmel : ∀ z : ℂ, σ < z.re → ∃ m : ℂ,
+      HasMellin (fun τ : ℝ => (f τ : ℂ)) z m ∧
+        HasMellin (fun τ : ℝ => (g τ : ℂ)) z m) :
+    Set.EqOn f g (Set.Ioi 0) := by
+  sorry
+
+/-- **The canonical archimedean profile and its unit-domain theta
+functional equation** (sorry node, stated 2026-07-25 — sub-leaf (β1),
+the *geometric* half of the decomposition of
+`heckeThetaSeries_functionalEquation`; Neukirch, *Algebraic Number
+Theory*, VII §§3 + 5, (5.5)–(5.6)): Hecke's construction produces, from
+the `n`-dimensional `ZLattice` Poisson/theta law `hθ` alone, ONE shared
+constant `ρ₀` and ONE profile function `G` on `(0, ∞)` such that
+
+* `G` is continuous on `(0, ∞)`;
+* `G` has the archimedean `Γ`-factor as its Mellin transform at `s/2`
+  for `Re s > 1` — the same normalization as
+  `archimedeanGammaProfile_exists`, i.e. `G` is that leaf's profile;
+* the class-indexed theta series built from `G` satisfies the weight
+  `1/2` functional equation pairing `C` with
+  `dedekindDualClass K C`.
+
+Only continuity and the Mellin identity are asserted here (not
+nonnegativity/antitonicity/decay): they are exactly what
+`eqOn_of_hasMellin_eq_of_continuousOn` needs in order to identify `G`
+with an arbitrary abstractly given profile `H`, which is how
+`heckeThetaSeries_functionalEquation` is assembled from this leaf.
+
+Intended proof (Neukirch VII §§3, 5 — the plan recorded in the
+docstring of `heckeThetaSeries_functionalEquation`, of which this leaf
+now carries the whole geometric content):
+
+1. *the profile*: `G(τ) := ` the integral of the anisotropic Gaussian
+   `y ↦ exp(-π·τ^{1/n}·Σ_τ |y_τ|²)` over the norm-one hypersurface
+   `S = {y : N(y) = 1}` of `K_ℝ = ℝ^{r₁} × ℂ^{r₂}` against the
+   invariant measure, restricted to a fundamental domain `𝔉` for the
+   action of the squared units (Dirichlet, `NumberField.Units`;
+   `mixedEmbedding.fundamentalCone` is the pin's realization).
+   Continuity is continuity of a parametrized integral; the Mellin
+   identity at `s/2` is the polar-coordinate factorization of the
+   full `K_ℝ`-Gaussian integral into `Γ`-factors
+   (`mixedEmbedding.polarCoord`, `Real.Gamma_eq_integral`), one
+   `π^{-s/2}Γ(s/2)` per real place and one `2(2π)^{-s}Γ(s)` per
+   complex place.
+2. *dictionary*: choose an integral ideal `𝔞 ∈ C⁻¹`; nonzero ideals
+   `𝔟 ∈ C` biject with `𝒪_K^×`-orbits of nonzero `α ∈ 𝔞` via
+   `𝔟𝔞 = (α)`, `N𝔟 = |N(α)|/N𝔞`
+   (`mixedEmbedding.fundamentalCone.idealSet`,
+   `ClassGroup.mk0_eq_one_iff`, as already used in the pin's
+   `NumberField.Ideal.tendsto_norm_le_and_mk_eq_div_atTop`).
+3. *ideal lattices*: realize `𝔞` as the `ZLattice`
+   `mixedEmbedding.idealLattice K 𝔞 ⊂ K_ℝ`, transported by
+   `mixedEmbedding.euclidean.toMixed` and a linear isometry to
+   `EuclideanSpace ℝ (Fin n)` (which is what makes `hθ`'s universe-0
+   quantification over `E : Type` applicable), with the Hermitian norm
+   `‖x‖² = Σ_{τ : K → ℂ} |x_τ|²` — i.e. `Σ_real + 2·Σ_complex`, the
+   `√2`-rescaling of the pin's `euclidean.mixedSpace` metric, which is
+   the metric for which `⟪σα, σβ⟫ = Tr_{K/ℚ}(α·β̄)` — diagonally
+   rescaled by `y ∈ 𝔉` and normalized by `(N𝔞²·|d_K|)^{1/(2n)}`.
+   With this normalization the lattice has covolume `1`
+   (`ZLattice.covolume`, `mixedEmbedding.covolume_idealLattice`,
+   `ZLattice.covolume_comap`, `volumePreserving_toMixed`), and its
+   `⟪·,·⟫`-dual lattice is the coordinatewise complex conjugate — a
+   further linear isometry, so it fixes all theta sums — of the SAME
+   normalization of the trace-dual ideal `(𝔞𝔡_K)⁻¹`
+   (`FractionalIdeal.dual`, `differentIdeal`); the normalization
+   constant inverts because
+   `N((𝔞𝔡)⁻¹)²·|d| = (N𝔞²·|d|)⁻¹`, which is
+   `NumberField.absNorm_differentIdeal` (`N𝔡 = |d_K|`) plus
+   multiplicativity of `FractionalIdeal.absNorm`.  Whence the dual
+   class is exactly `dedekindDualClass K C` and the
+   functional-equation constant is exactly `1`.
+4. *anisotropic law*: `hθ` applied to each diagonally rescaled lattice
+   at `t = 1` gives `θ_𝔞(y⁻¹) = N(y)^{1/2}·θ_{(𝔞𝔡)⁻¹}(y)`.
+5. *unit-domain integration*: integrating over `𝔉`, the per-orbit
+   `𝔉`-integrals sum to `G(N𝔟²·t/|d|)` by step 1 and step 2 while the
+   `α = 0` term integrates to the shared constant `ρ₀`; the
+   anisotropic law transports `𝔉`-integrals along `y ↦ y⁻¹` (whose
+   image is again a fundamental domain) into the displayed functional
+   equation.  For the unit-rank-`0` fields — `ℚ` and imaginary
+   quadratics, in particular this project's instantiations — `𝔉` is a
+   single point and this step degenerates to the bare theta sum.
+   Convergence bookkeeping (tsum/integral interchange) is justified by
+   the Gaussian decay together with the per-class count asymptotics
+   (`NumberField.Ideal.tendsto_norm_le_and_mk_eq_div_atTop`, as
+   consumed in `classIdealCount_LSeriesSummable`).
+
+Natural further decomposition, if the direct assembly resists: (3) —
+the covolume-`1` normalization and the dual-lattice/inverse-different
+identification — is a self-contained statement about ideal lattices in
+the mixed space with no analysis in it, and (1) — the profile and its
+`Γ`-factor Mellin transform — is a self-contained statement about
+Gaussian integrals in polar coordinates that does not mention ideals;
+either can be split off as its own sorried leaf and passed to this one
+as a hypothesis, exactly as `hθ` is here. -/
+theorem heckeCanonicalThetaProfile_functionalEquation
+    (K : Type*) [Field K] [NumberField K]
+    (hθ : ∀ (E : Type) [NormedAddCommGroup E] [InnerProductSpace ℝ E]
+      [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E]
+      (L : Submodule ℤ E) [DiscreteTopology L] [IsZLattice ℝ L]
+      (t : ℝ), 0 < t →
+      ∑' v : L, Real.exp (-Real.pi * t⁻¹ * ‖(v : E)‖ ^ 2) =
+        (ZLattice.covolume L)⁻¹ * t ^ ((Module.finrank ℝ E : ℝ) / 2) *
+          ∑' w : LinearMap.BilinForm.dualSubmodule (innerₗ E) L,
+            Real.exp (-Real.pi * t * ‖(w : E)‖ ^ 2)) :
+    ∃ ρ₀ : ℝ, ∃ G : ℝ → ℝ,
+      ContinuousOn G (Set.Ioi 0) ∧
+      (∀ s : ℂ, 1 < s.re →
+        HasMellin (fun τ : ℝ => (G τ : ℂ)) (s / 2)
+          (((Real.pi : ℂ) ^ (-s / 2) * Complex.Gamma (s / 2)) ^
+              NumberField.InfinitePlace.nrRealPlaces K *
+            ((2 : ℂ) * ((2 * Real.pi : ℝ) : ℂ) ^ (-s) * Complex.Gamma s) ^
+              NumberField.InfinitePlace.nrComplexPlaces K)) ∧
+      (∀ C : ClassGroup (NumberField.RingOfIntegers K), ∀ x : ℝ, 0 < x →
+        ρ₀ + ∑' m : ℕ, (classIdealCount K C m : ℝ) *
+            G ((m : ℝ) ^ 2 / (|(NumberField.discr K : ℝ)| * x)) =
+          x ^ ((1 : ℝ) / 2) *
+            (ρ₀ + ∑' m : ℕ, (classIdealCount K (dedekindDualClass K C) m : ℝ) *
+              G ((m : ℝ) ^ 2 * x / |(NumberField.discr K : ℝ)|))) := by
+  sorry
+
 /-- **The unit-domain theta functional equation of the per-class Hecke
-series** (sorry node, stated 2026-07-24 — stage (β), the geometric
-core — Neukirch VII §§3 + 5, (5.5)–(5.6) — of the decomposition of
-`heckeThetaKernel_exists`): for ANY profile `H` with the properties
+series** (PROVEN 2026-07-25 from the two sub-leaves
+`heckeCanonicalThetaProfile_functionalEquation` (geometry) and
+`eqOn_of_hasMellin_eq_of_continuousOn` (Mellin rigidity) — stage (β),
+the geometric core — Neukirch VII §§3 + 5, (5.5)–(5.6) — of the
+decomposition of `heckeThetaKernel_exists`): for ANY profile `H` with
+the properties
 delivered by `archimedeanGammaProfile_exists` — the hypotheses pin `H`
 uniquely: continuity plus the convergent Mellin identification
 determine `H` a.e. on `(0, ∞)` (Mellin/Laplace uniqueness), hence
@@ -7681,41 +7850,25 @@ constant `2^{r−1}·vol(𝔉)/w` in Neukirch's normalization, rescaled by
 the normalization of `H`), the weight-`1/2` functional equation
 pairing each class `C` with its dual `[𝔡]C⁻¹ = dedekindDualClass K C`.
 
-Intended proof (Neukirch VII §§3, 5): (1) *dictionary*: choose an
-integral ideal `𝔞 ∈ C⁻¹`; nonzero ideals `𝔟 ∈ C` biject with
-`𝒪_K^×`-orbits of nonzero `α ∈ 𝔞` via `𝔟𝔞 = (α)`,
-`N𝔟 = |N(α)|/N𝔞`.  (2) *ideal lattices*: realize `𝔞` as the
-`ZLattice` `σ(𝔞) ⊂ K_ℝ` with the Hermitian norm
-`‖x‖² = Σ_{τ:K→ℂ} |x_τ|²` (i.e. `Σ_real + 2·Σ_complex`), diagonally
-rescaled by `y ∈ Π_{w|∞} ℝ_{>0}` and normalized by
-`(N𝔞²·|d_K|)^{1/(2n)}`: with THIS metric the normalized lattice has
-covolume `1` (`ZLattice.covolume`; mathlib's
-`NumberField.mixedEmbedding.covolume_idealLattice` cluster transported
-along a linear isometry to `EuclideanSpace ℝ (Fin n)` — which is also
-what makes `hθ`'s universe-0 quantification over `E : Type`
-applicable), and its `⟪·,·⟫`-dual lattice is the coordinatewise
-complex conjugate — a further isometry fixing all theta sums — of the
-SAME normalization of the trace-dual ideal `(𝔞𝔡_K)⁻¹`
-(`FractionalIdeal.dual`, `differentIdeal`, `Tr(xy) = Σ_τ x_τ·y_τ`;
-`N((𝔞𝔡)⁻¹)²·|d| = (N𝔞²·|d|)⁻¹` inverts the normalization constant) —
-whence the dual class `[𝔡]C⁻¹` and functional-equation constant
-exactly `1`.  (3) *anisotropic law*: `hθ` applied to each diagonally
-rescaled lattice at `t = 1` gives
-`θ_𝔞(y⁻¹) = N(y)^{1/2}·θ_{(𝔞𝔡)⁻¹}(y)`.  (4) *unit-domain
-integration*: integrate over a fundamental domain `𝔉` of the
-squared-unit action on the norm-one hypersurface (Dirichlet,
-`NumberField.Units`; for the unit-rank-`0` fields — `ℚ` and imaginary
-quadratics, in particular this project's instantiations — `𝔉` is a
-single point and this step degenerates to the bare theta): per ideal
-orbit the `𝔉`-integrals sum to the `S`-integral, which by the
-uniqueness identification is `H(N𝔟²·t/|d|)`, while the `α = 0` term
-integrates to the shared `ρ₀`; the anisotropic law transports
-`𝔉`-integrals along `y ↦ y⁻¹` (whose image is again a fundamental
-domain) into the displayed functional equation.  Convergence
-bookkeeping (tsum/integral interchange) is justified by the decay
-hypothesis together with the per-class count asymptotics
-(`NumberField.Ideal.tendsto_norm_le_and_mk_eq_div_atTop`, as consumed
-in `classIdealCount_LSeriesSummable`). -/
+Proof (the decomposition of stage (β) into geometry + rigidity):
+`heckeCanonicalThetaProfile_functionalEquation` runs Hecke's geometric
+construction — the ideal-lattice/trace-dual/covolume-`1`/unit-domain
+argument of Neukirch VII §§3, 5, whose full plan is recorded in that
+leaf's docstring — on the `ZLattice` Poisson law `hθ`, producing a
+shared constant `ρ₀` together with its OWN canonical profile `G`: the
+norm-one-hypersurface integral, continuous on `(0, ∞)`, with the
+archimedean `Γ`-factor as its Mellin transform at `s/2`, satisfying the
+displayed functional equation.  The profile `H` this theorem is handed
+is only known abstractly, through `archimedeanGammaProfile_exists`; but
+`hHcont` and `hHmel` say `H` is continuous with exactly the SAME Mellin
+transform as `G` on `Re(s/2) > 1/2`, so
+`eqOn_of_hasMellin_eq_of_continuousOn` (Mellin/Laplace uniqueness)
+forces `H = G` on `(0, ∞)`.  All the theta arguments `m²/(|d|·x)` and
+`m²·x/|d|` are positive for `m ≠ 0` (`discr K ≠ 0`), and the `m = 0`
+terms carry the coefficient `classIdealCount K C 0 = 0` — a nonzero
+ideal has nonzero absolute norm — so the substitution is legitimate
+termwise and the functional equation transports verbatim from `G` to
+`H`. -/
 theorem heckeThetaSeries_functionalEquation (K : Type*) [Field K] [NumberField K]
     (hθ : ∀ (E : Type) [NormedAddCommGroup E] [InnerProductSpace ℝ E]
       [FiniteDimensional ℝ E] [MeasurableSpace E] [BorelSpace E]
@@ -7727,9 +7880,9 @@ theorem heckeThetaSeries_functionalEquation (K : Type*) [Field K] [NumberField K
             Real.exp (-Real.pi * t * ‖(w : E)‖ ^ 2))
     (H : ℝ → ℝ)
     (hHcont : ContinuousOn H (Set.Ioi 0))
-    (hHpos : ∀ τ : ℝ, τ ∈ Set.Ioi (0 : ℝ) → 0 ≤ H τ)
-    (hHanti : AntitoneOn H (Set.Ioi 0))
-    (hHdec : ∃ A a : ℝ, 0 < a ∧ ∀ τ : ℝ, 1 ≤ τ →
+    (_hHpos : ∀ τ : ℝ, τ ∈ Set.Ioi (0 : ℝ) → 0 ≤ H τ)
+    (_hHanti : AntitoneOn H (Set.Ioi 0))
+    (_hHdec : ∃ A a : ℝ, 0 < a ∧ ∀ τ : ℝ, 1 ≤ τ →
       H τ ≤ A * Real.exp (-a * τ ^ ((Module.finrank ℚ K : ℝ)⁻¹)))
     (hHmel : ∀ s : ℂ, 1 < s.re →
       HasMellin (fun τ : ℝ => (H τ : ℂ)) (s / 2)
@@ -7743,7 +7896,61 @@ theorem heckeThetaSeries_functionalEquation (K : Type*) [Field K] [NumberField K
         x ^ ((1 : ℝ) / 2) *
           (ρ₀ + ∑' m : ℕ, (classIdealCount K (dedekindDualClass K C) m : ℝ) *
             H ((m : ℝ) ^ 2 * x / |(NumberField.discr K : ℝ)|)) := by
-  sorry
+  obtain ⟨ρ₀, G, hGcont, hGmel, hGfe⟩ :=
+    heckeCanonicalThetaProfile_functionalEquation K hθ
+  -- Mellin/Laplace rigidity: `H` and `G` are continuous on `(0, ∞)` and have the
+  -- same (convergent) Mellin transform on the half-plane `Re z > 1/2`.
+  have hHG : Set.EqOn H G (Set.Ioi (0 : ℝ)) := by
+    refine eqOn_of_hasMellin_eq_of_continuousOn (σ := 1 / 2) hHcont hGcont ?_
+    intro z hz
+    have hre : (1 : ℝ) < ((2 : ℂ) * z).re := by
+      have h2 : ((2 : ℂ) * z).re = 2 * z.re := by simp [Complex.mul_re]
+      rw [h2]
+      linarith
+    have h1 := hHmel ((2 : ℂ) * z) hre
+    have h2 := hGmel ((2 : ℂ) * z) hre
+    have hhalf : (2 : ℂ) * z / 2 = z := by ring
+    rw [hhalf] at h1 h2
+    exact ⟨_, h1, h2⟩
+  -- The `m = 0` coefficient vanishes: a nonzero ideal has nonzero absolute norm.
+  have hzero : ∀ C' : ClassGroup (NumberField.RingOfIntegers K),
+      classIdealCount K C' 0 = 0 := by
+    intro C'
+    unfold classIdealCount
+    rw [Nat.card_eq_zero]
+    refine Or.inl ⟨?_⟩
+    rintro ⟨I, hI, -⟩
+    exact Ideal.absNorm_ne_zero_of_nonZeroDivisors I hI
+  -- Termwise replacement of `H` by `G` inside the theta series.
+  have key : ∀ (C' : ClassGroup (NumberField.RingOfIntegers K)) (u : ℕ → ℝ),
+      (∀ m : ℕ, m ≠ 0 → 0 < u m) →
+      ∑' m : ℕ, (classIdealCount K C' m : ℝ) * H (u m) =
+        ∑' m : ℕ, (classIdealCount K C' m : ℝ) * G (u m) := by
+    intro C' u hu
+    refine tsum_congr fun m => ?_
+    rcases eq_or_ne m 0 with rfl | hm
+    · rw [hzero C']
+      simp
+    · rw [hHG (Set.mem_Ioi.mpr (hu m hm))]
+  refine ⟨ρ₀, fun C x hx => ?_⟩
+  have hd : (0 : ℝ) < |(NumberField.discr K : ℝ)| :=
+    abs_pos.mpr (Int.cast_ne_zero.mpr (NumberField.discr_ne_zero K))
+  have e1 : ∑' m : ℕ, (classIdealCount K C m : ℝ) *
+        H ((m : ℝ) ^ 2 / (|(NumberField.discr K : ℝ)| * x)) =
+      ∑' m : ℕ, (classIdealCount K C m : ℝ) *
+        G ((m : ℝ) ^ 2 / (|(NumberField.discr K : ℝ)| * x)) := by
+    refine key C _ fun m hm => ?_
+    have hm0 : (0 : ℝ) < (m : ℝ) := Nat.cast_pos.mpr (Nat.pos_of_ne_zero hm)
+    exact div_pos (pow_pos hm0 2) (mul_pos hd hx)
+  have e2 : ∑' m : ℕ, (classIdealCount K (dedekindDualClass K C) m : ℝ) *
+        H ((m : ℝ) ^ 2 * x / |(NumberField.discr K : ℝ)|) =
+      ∑' m : ℕ, (classIdealCount K (dedekindDualClass K C) m : ℝ) *
+        G ((m : ℝ) ^ 2 * x / |(NumberField.discr K : ℝ)|) := by
+    refine key (dedekindDualClass K C) _ fun m hm => ?_
+    have hm0 : (0 : ℝ) < (m : ℝ) := Nat.cast_pos.mpr (Nat.pos_of_ne_zero hm)
+    exact div_pos (mul_pos (pow_pos hm0 2) hx) hd
+  rw [e1, e2]
+  exact hGfe C x hx
 
 /-- **Analysis of the per-class Hecke theta series: local
 integrability, stretched-exponential decay, termwise Mellin** (sorry
