@@ -68,6 +68,11 @@ public import Mathlib.RingTheory.HopfAlgebra.Convolution
 -- `vendored_mul_eq_convMul`, `liftEquiv_symm_comp`), proof-body use
 -- only in the displacement-connectedness lemma
 import Fermat.FLT.Deformations.RepresentationTheory.FlatProlongation
+-- `maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup` ("the fixed
+-- field of local inertia is unramified") and `integralClosureInclusion`:
+-- the ramification input of the Oort–Tate node, used only in the proof
+-- of `mem_span_natCast_of_inertia_invariant`
+import Fermat.FLT.Deformations.RepresentationTheory.LocalInertiaFixedField
 
 @[expose] public section
 
@@ -1594,41 +1599,94 @@ theorem inertia_character_trivial_or_cyclotomic
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
+/-- **The prime of `𝓞 ℚ` attached to the prime number `p` is `(p)`**
+(PROVEN): unfolding `Nat.Prime.toHeightOneSpectrumRingOfIntegersRat`,
+the ideal is the comap of `span {(p : ℤ)}` along
+`Rat.ringOfIntegersEquiv`, and a ring isomorphism carries spans of
+singletons to spans of singletons while preserving `Nat.cast`.
+
+(A local re-derivation: the identical `asIdeal_toHeightOneSpectrumRingOfIntegersRat`
+lives in `FreyCurve/MazurTorsion.lean`, which is FAR downstream of this
+neutral group-scheme file and cannot be imported here. The natural home
+for both this and `maximalIdeal_eq_span_natCast` below is the shim
+module `Fermat/FLT/Mathlib/RingTheory/DedekindDomain/Ideal/Lemmas.lean`,
+where `toHeightOneSpectrumRingOfIntegersRat` itself is defined; hoisting
+them there is a bookkeeping change that touches another owner's file and
+is deliberately NOT done here.) -/
+theorem asIdeal_toHeightOneSpectrum_eq_span :
+    (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : p.Prime)).asIdeal =
+      Ideal.span {((p : ℕ) : NumberField.RingOfIntegers ℚ)} := by
+  have h1 : (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : p.Prime)).asIdeal =
+      Ideal.comap (Rat.ringOfIntegersEquiv.symm.symm) (Ideal.span {((p : ℕ) : ℤ)}) := rfl
+  rw [h1, RingEquiv.symm_symm, ← Ideal.map_symm, Ideal.map_span, Set.image_singleton,
+    map_natCast]
+
+open IsDedekindDomain.HeightOneSpectrum in
+set_option maxHeartbeats 1000000 in
+/-- **`p` is a uniformizer of `𝒪ᵥ = ℤ_p`** (PROVEN — the ABSOLUTE
+UNRAMIFIEDNESS of the base, `e = 1`): the maximal ideal of the
+`v`-adic integer ring at the place `v = v_p` of `ℚ` is the span of `p`.
+Through `adicCompletion.maximalIdeal_eq_span_uniformizer` it suffices
+that `v(p) = ofAdd (−1)` in `ℚᵥ`, which reduces along
+`valuedAdicCompletion_eq_valuation` and `valuation_of_algebraMap` to
+the `intValuation` of `p` in `𝓞 ℚ`, computed by
+`intValuation_singleton` from `v_p = span {p}`
+(`asIdeal_toHeightOneSpectrum_eq_span`).
+
+(Local re-derivation of `maximalIdeal_adicCompletionIntegers_eq_span`
+of `FreyCurve/MazurTorsion.lean`; see the note there.) -/
+theorem maximalIdeal_eq_span_natCast :
+    IsLocalRing.maximalIdeal 𝒪ᵖᵍᵥ = Ideal.span {((p : ℕ) : 𝒪ᵖᵍᵥ)} := by
+  have hq0 : ((p : ℕ) : NumberField.RingOfIntegers ℚ) ≠ 0 :=
+    Nat.cast_ne_zero.mpr hp.out.ne_zero
+  have hval : (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+      (Fact.out : p.Prime)).intValuation
+      ((p : ℕ) : NumberField.RingOfIntegers ℚ) = Multiplicative.ofAdd (-1 : ℤ) :=
+    (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+      (Fact.out : p.Prime)).intValuation_singleton hq0
+      asIdeal_toHeightOneSpectrum_eq_span
+  apply adicCompletion.maximalIdeal_eq_span_uniformizer
+  have h := (valuedAdicCompletion_eq_valuation
+      (v := Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : p.Prime)) (K := ℚ)
+      ((p : ℕ) : NumberField.RingOfIntegers ℚ)).trans
+    ((valuation_of_algebraMap
+      (v := Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : p.Prime)) (K := ℚ)
+      ((p : ℕ) : NumberField.RingOfIntegers ℚ)).trans hval)
+  convert h using 2
+  norm_cast
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
 /-- **`𝒪ᵥ = ℤ_p` is ABSOLUTELY UNRAMIFIED: an inertia-invariant element
-of the maximal ideal is divisible by `p`** (SORRY LEAF, stated
-2026-07-25 — the whole ramification input of the Oort–Tate node, and
-the only thing left of the leaf
-`eq_one_of_inertia_invariant_of_reduction_counit` below).
+of the maximal ideal is divisible by `p`** (PROVEN 2026-07-25 — the
+whole ramification input of the Oort–Tate node).
 
 Content: an element `x` of the integral closure `𝒪̄` of `𝒪ᵥ` in `ℚᵥᵃˡᵍ`
 which is fixed by every element of `localInertiaGroup v` lies in the
-maximal unramified extension, i.e. `x ∈ 𝒪^nr = 𝒪ᵥ^unr`. Since
-`𝒪ᵥ = ℤ_p` is absolutely unramified, `𝒪^nr` is a DVR with uniformizer
-`p` (value group `ℤ`, `v(p) = 1`), so `x ∈ 𝔪` forces `v(x) ≥ 1` and
-`x/p ∈ 𝒪^nr ⊆ 𝒪̄`. Over a RAMIFIED base the statement is false — for
-`𝒪ᵥ = ℤ_p[ζ_p]` the element `ζ_p − 1` is inertia-invariant, in `𝔪` and
-not divisible by `p` — so this is exactly where `e = 1 < p − 1` enters
-the node. Note `p` odd is NOT used here; it is spent in the binomial
-step of `eq_convOne_of_convPow_prime_eq_one`.
+maximal unramified extension `𝒪^nr`; since `𝒪ᵥ = ℤ_p` is absolutely
+unramified, `𝒪^nr` has value group `ℤ` with `v(p) = 1`, so `x ∈ 𝔪`
+forces `v(x) ≥ 1` and `x/p ∈ 𝒪^nr ⊆ 𝒪̄`. Over a RAMIFIED base the
+statement is FALSE — for `𝒪ᵥ = ℤ_p[ζ_p]` the element `ζ_p − 1` is
+inertia-invariant, lies in `𝔪`, and is not divisible by `p` — so this
+is exactly where `e = 1 < p − 1` enters the node. Note `p` ODD is NOT
+used here; it is spent in the binomial step of
+`eq_convOne_of_convPow_prime_eq_one`.
 
-**Proof route (recorded for the prover).** All the machinery is
-already PROVEN in
-`Fermat/FLT/Deformations/RepresentationTheory/LocalInertiaFixedField.lean`,
-whose main theorem
-`maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup` states exactly
-"a finite subextension `M/Kᵥ` fixed pointwise by `localInertiaGroup v`
-has `e(M/Kᵥ) = 1`", in the concrete form
-`(𝔪 𝒪ᵥ).map (algebraMap 𝒪ᵥ (IntegralClosure 𝒪ᵥ M)) = 𝔪 (IntegralClosure 𝒪ᵥ M)`.
-Take `M := ℚᵥ⟮x⟯` (finite-dimensional: `ℚᵥᵃˡᵍ/ℚᵥ` is algebraic);
-`M ≤ IntermediateField.fixedField (localInertiaGroup v)` by
-`IntermediateField.adjoin_le_iff` from `hinv`, since only the single
-generator has to be checked. Then `x`, viewed in `IntegralClosure 𝒪ᵥ M`,
-lies in `𝔪 (IntegralClosure 𝒪ᵥ M)` (contract `hx` along
-`integralClosureInclusion`, cf.
-`integralClosureInclusion_mem_maximalIdeal`), hence in the image of
-`𝔪 𝒪ᵥ`; and `𝔪 𝒪ᵥ = Ideal.span {(p : 𝒪ᵥ)}` because `𝒪ᵥ` is the
-`v`-adic integer ring at the prime `(p)` of `ℤ` — this last identity is
-the one genuinely missing ingredient and should be established first. -/
+Proof, at finite level rather than through the (non-discrete) valuation
+on `𝒪̄`: let `M := ℚᵥ⟮x⟯`, finite-dimensional because `ℚᵥᵃˡᵍ/ℚᵥ` is
+algebraic. `hinv` says the single generator of `M` is fixed by local
+inertia, so `M ≤ IntermediateField.fixedField (localInertiaGroup v)` by
+`IntermediateField.adjoin_le_iff`; hence `e(M/ℚᵥ) = 1` by the PROVEN
+node `maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup` of
+`Deformations/RepresentationTheory/LocalInertiaFixedField.lean`, i.e.
+`𝔪 𝒪ᵥ` generates `𝔪 𝒪_M`, i.e. — by `maximalIdeal_eq_span_natCast` —
+`𝔪 𝒪_M = (p)`. The element `x` lifts to `y ∈ 𝒪_M` (integrality
+transfers along the injective `M ↪ ℚᵥᵃˡᵍ`), and `y` is a NONUNIT
+because its image `x` is one (`hx` and locality of `𝒪̄`), so `y ∈ 𝔪 𝒪_M`
+by locality of `𝒪_M`. Thus `y = z · p`, and pushing forward along
+`integralClosureInclusion` — which preserves `Nat.cast` — gives
+`x = (image of z) · p`. -/
 theorem mem_span_natCast_of_inertia_invariant
     (x : IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ)
     (hx : x ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ))
@@ -1636,8 +1694,59 @@ theorem mem_span_natCast_of_inertia_invariant
         (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : p.Prime)),
       σ (algebraMap (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) ℚᵖᵍᵥᵃˡᵍ x) =
         algebraMap (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) ℚᵖᵍᵥᵃˡᵍ x) :
-    x ∈ Ideal.span {((p : ℕ) : IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ)} :=
-  sorry
+    x ∈ Ideal.span {((p : ℕ) : IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ)} := by
+  classical
+  set xv : ℚᵖᵍᵥᵃˡᵍ := algebraMap (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) ℚᵖᵍᵥᵃˡᵍ x with hxv
+  -- the finite subextension generated by `x`
+  have hxalg : IsIntegral ℚᵖᵍᵥ xv := Algebra.IsIntegral.isIntegral xv
+  set M : IntermediateField ℚᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ := IntermediateField.adjoin ℚᵖᵍᵥ {xv} with hM
+  haveI : FiniteDimensional ℚᵖᵍᵥ M := IntermediateField.adjoin.finiteDimensional hxalg
+  have hxM : xv ∈ M := by
+    rw [hM]; exact IntermediateField.subset_adjoin _ _ rfl
+  -- it is fixed pointwise by the local inertia group
+  have hMfix : M ≤ IntermediateField.fixedField
+      (localInertiaGroup
+        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : p.Prime))) := by
+    rw [hM]
+    refine IntermediateField.adjoin_le_iff.mpr ?_
+    rintro y hy
+    rw [Set.mem_singleton_iff] at hy
+    subst hy
+    rw [SetLike.mem_coe, IntermediateField.mem_fixedField_iff]
+    intro σ hσ
+    exact hinv σ hσ
+  -- so `e(M/ℚᵥ) = 1`, i.e. `p` generates the maximal ideal of `𝒪_M`
+  have hmap := maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup
+    (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : p.Prime)) M hMfix
+  rw [maximalIdeal_eq_span_natCast, Ideal.map_span, Set.image_singleton,
+    map_natCast] at hmap
+  -- `x`, viewed at the finite level
+  have hxint : IsIntegral 𝒪ᵖᵍᵥ (⟨xv, hxM⟩ : M) := by
+    have hinj : Function.Injective
+        (IsScalarTower.toAlgHom 𝒪ᵖᵍᵥ (M : Type _) ℚᵖᵍᵥᵃˡᵍ) := by
+      intro a b hab
+      exact Subtype.ext hab
+    rw [← isIntegral_algHom_iff _ hinj]
+    exact x.2
+  set y : IntegralClosure 𝒪ᵖᵍᵥ M := ⟨⟨xv, hxM⟩, hxint⟩ with hy
+  have hincl : integralClosureInclusion
+      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : p.Prime)) M y = x :=
+    Subtype.ext rfl
+  -- `y` is a nonunit, because its image is
+  have hyM : y ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪ᵖᵍᵥ M) := by
+    by_contra hcon
+    rw [IsLocalRing.mem_maximalIdeal, mem_nonunits_iff, not_not] at hcon
+    have hu : IsUnit (integralClosureInclusion
+        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : p.Prime)) M y) :=
+      hcon.map _
+    rw [hincl] at hu
+    rw [IsLocalRing.mem_maximalIdeal, mem_nonunits_iff] at hx
+    exact hx hu
+  rw [← hmap] at hyM
+  obtain ⟨z, hz⟩ := Ideal.mem_span_singleton'.mp hyM
+  refine Ideal.mem_span_singleton'.mpr ⟨integralClosureInclusion
+    (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : p.Prime)) M z, ?_⟩
+  rw [← hincl, ← hz, map_mul, map_natCast]
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
@@ -1675,9 +1784,14 @@ Neither the connected idempotent nor `hstab` is needed here: the
 input this leaf consumes is the congruence `hred`, which is where
 connectedness has already been spent.
 
-**PROVEN 2026-07-25** over the single new leaf
-`mem_span_natCast_of_inertia_invariant` — see the proof note below the
-statement. -/
+**PROVEN 2026-07-25, sorry-free**, by the elementary convolution-
+filtration argument of `eq_convOne_of_convPow_prime_eq_one` (see the
+`ConvFiltration` section docstring: `c^p = 1` is a binomial identity in
+mathlib's convolution RING, the middle coefficients are divisible by
+`p`, the top term is absorbed by `𝔞 ⊆ (p)`, and Nakayama finishes)
+fed with the ramification input
+`mem_span_natCast_of_inertia_invariant` above. Neither formal groups
+nor the Oort–Tate classification are used. -/
 theorem eq_one_of_inertia_invariant_of_reduction_counit
     (hpodd : Odd p)
     (G : Type) [CommRing G]
