@@ -22559,11 +22559,21 @@ reference project `~/cs/FLT` carries no vendorable material for it.
 The remaining conceivable move, re-pinning the sorry from the `hpnew`
 carrier onto a newform-level statement, is the one the ROUTE AUDIT
 above already rejects as a restatement of the downstream PROVEN
-`weightTwoNewform_not_dvd_level_p_of_isFlatAt_of_isIrreducible`; the
-away-from-`p` sibling
+`weightTwoNewform_not_dvd_level_p_of_isFlatAt_of_isIrreducible`.
+
+The away-from-`p` sibling
 `not_isUnramifiedAt_of_isNewAtPrime_of_isIrreducible` was re-examined
-on the same question and pinned the same way. This leaf is terminal at
-this pin. -/
+on the same question and reached the OPPOSITE outcome (merge of
+2026-07-25): the ramifiedness re-pin is rejected there too, for the
+same contrapositive reason, but a re-pin with a STRICTLY STRONGER
+conclusion was available — the tame conductor exponent
+`dim V^{I_q} ≤ 1`
+(`finrank_inertiaInvariants_le_one_of_dvd_level_of_isWeightTwoNewform`)
+— and that sibling is now PROVEN over it. No such strengthening is
+available here: "flat" is already the local condition at `p`, not a
+dimension that a weaker invariant could bound, and the crystalline
+machinery that would supply one is the very thing this audit finds
+missing. So this leaf, unlike its sibling, is terminal at this pin. -/
 theorem not_isFlatAt_of_weightTwoEigenform_pNew_of_isIrreducible_of_pNeZero
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
