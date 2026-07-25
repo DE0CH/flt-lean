@@ -271,9 +271,20 @@ not errors — keep the tree warning-clean by ordinary discipline.
 ## No lake build in iterations; trust the MCP diagnostics
 
 (Deyao, 2026-07-21.) Skip `lake build` inside work iterations — the
-lean-lsp MCP diagnostics are the verification gate; the Stop hook still
-builds at the endgame. (A single-module `lake build` to refresh the
+**report-MCP** `diagnostics` call is the verification gate; the Stop hook
+still builds at the endgame. (A single-module `lake build` to refresh the
 daemon's state is fine when the staleness note matters.)
+
+**The `lean-lsp` MCP is GONE (Deyao, 2026-07-25): removed from `.mcp.json`
+entirely, because it did not work and is not needed.** The per-worktree
+`report-flt-lean-N` servers are the only Lean tooling. That means the
+`lean_leansearch` / `lean_loogle` / `lean_local_search` / `lean_run_code` /
+`lean_multi_attempt` tools no longer exist — task prompts must not offer
+them. Substitutes: search mathlib by reading it (`grep`/`Grep` over
+`.lake/packages/mathlib`) and by the names other owners have already
+recorded in docstrings; prototype in a throwaway scratch module verified
+through the report MCP, which is the same loop the performance rule already
+prescribes and is what agents were mostly doing anyway.
 
 ## Verify in a scratch module, not in the giant file
 
@@ -317,8 +328,9 @@ because the file is the unit of elaboration.
   remainder, never `(by sorry)` as an application argument.
 - **Every bound `have`/`let` must be consumed** (Deyao, 2026-07-22).
   Prune unused ones before committing (verify each prune compiles).
-  Enforced by the PreToolUse hook `.claude/lean-pretool-reminder.py`,
-  which fires before every lean-lsp call.
+  Enforced by the PostToolUse hook `.claude/unused-binding-check.py`,
+  which fires after every report-MCP `diagnostics` call. (It used to be a
+  PreToolUse hook on `lean-lsp`; that MCP was removed 2026-07-25.)
 - **Never use `private` to dodge the free-floating check** — open the
   consumer sorry first, always top-down.
 

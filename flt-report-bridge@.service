@@ -1,0 +1,72 @@
+# flt-report-bridge@.service — the LOCAL half of a remote Lean worker
+# (Deyao, 2026-07-25).
+#
+# WHAT THIS IS FOR, and it is deliberately the only thing it does: let the MCP be
+# pointed at a Lean LSP on a different machine WITHOUT restarting Claude Code.
+#
+# The seam is the FIFO pair. report-mcp.py always talks to
+# ~/<instance>/.report-server/{req,resp}.fifo and knows nothing else — not which
+# machine serves it, not how it gets there. So a worker moves between machines by
+# changing only what sits on the far side of those FIFOs. report-mcp.py is
+# untouched; Claude Code keeps running; rewiring is one file edit plus one
+# `systemctl --user restart`.
+#
+# THE SPLIT, and why lake serve is NOT a child of ssh:
+#   remote  flt-report-server@<instance>  — systemd USER unit on the remote host,
+#           running `lake serve` on that host's OWN FIFOs. Being systemd-managed,
+#           it survives ssh drops, bridge restarts, and anything else stopping on
+#           either side; its warm elaboration state is not hostage to the
+#           connection.
+#   local   flt-report-bridge@<instance>  — this unit. A pure byte pump:
+#           local req.fifo -> ssh -> remote req.fifo, and
+#           remote resp.fifo -> ssh -> local resp.fifo.
+#
+# It carries no protocol knowledge whatsoever. LSP is Content-Length-framed
+# JSON-RPC over a byte stream and ssh tunnels stdio faithfully, so two `cat`s are
+# a complete and correct implementation. There is no bespoke wire format, no
+# framing logic, no state — the thinner this is, the fewer ways it can fail, and
+# anything cleverer here would be a second place for the protocol to break.
+#
+# WHY A SHARED HOME MAKES THIS CHEAP: $HOME is NFS (homes1:/tank/home/chend), so
+# every machine already sees identical worktree SOURCES at identical paths. Only
+# .lake and .report-server are symlinks into /scratch, which is machine-LOCAL —
+# so the same symlink resolves to that machine's own disk, and each host keeps
+# its own build artifacts with zero coordination. Nothing needs copying but the
+# artifacts.
+#
+# ROUTING: one line in ~/.flt-worker-host/<instance> naming the remote host.
+# To move a worker:
+#   echo nightcrawler > ~/.flt-worker-host/flt-lean-7
+#   ssh nightcrawler systemctl --user restart flt-report-server@flt-lean-7
+#   systemctl --user restart flt-report-bridge@flt-lean-7
+# To bring it home: write "local" (or delete the file), stop the bridge, and
+# start flt-report-server@flt-lean-7 here instead.
+#
+# ssh options and why each: -T (a pty would mangle the byte stream);
+# BatchMode (never prompt, fail fast); ServerAlive* (hold the channel open
+# through the multi-hour silences of a single-threaded elaboration).
+# Restart=always with a short delay so a dropped connection re-establishes by
+# itself — the remote lake serve is still there, so reconnecting re-attaches to
+# the warm session rather than starting a new one.
+
+[Unit]
+Description=FLT report bridge (local FIFOs <-> remote lake serve over ssh) — instance %i
+After=network-online.target
+
+[Service]
+Type=exec
+WorkingDirectory=%h/%i
+Environment=PATH=/home/chend/.elan/bin:/home/chend/homebrew/bin:/usr/local/bin:/usr/bin:/bin
+# Own FIFOs must exist locally; clear the client-side session marker so the next
+# client performs the LSP handshake against the (possibly restarted) remote.
+ExecStartPre=/bin/sh -c 'mkdir -p .report-server && rm -f .report-server/state.json && for f in req resp; do [ -p .report-server/$f.fifo ] || { rm -f .report-server/$f.fifo; mkfifo .report-server/$f.fifo; }; done'
+ExecStart=/bin/sh -c 'h=$(cat %h/.flt-worker-host/%i 2>/dev/null | tr -d " \\t\\r\\n"); \
+    [ -n "$h" ] && [ "$h" != local ] || { echo "flt-report-bridge@%i: no remote host in %h/.flt-worker-host/%i" >&2; exit 1; }; \
+    exec ssh -T -o BatchMode=yes -o ServerAliveInterval=30 -o ServerAliveCountMax=1000 "$h" \
+        "cd %i/.report-server && { cat > req.fifo & exec cat < resp.fifo; }"' \
+    0<> .report-server/req.fifo 1<> .report-server/resp.fifo
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=default.target
