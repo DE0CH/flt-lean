@@ -6413,7 +6413,462 @@ lemma count_spanSingleton_algebraMap [IsDedekindDomain W.CoordinateRing]
   rw [← prod_coe_pointIdeal'_eq_spanSingleton hD,
     count_prod_coe_pointIdeal' hS0 hvS]
 
-/-- **L4-7 leaf (sorry): the `[p]`-pullback of a VERTICAL, at an affine
+/-! ### Univariate classes and their local multiplicities
+
+The `[p]`-pullback of a vertical is, by the division-polynomial
+relation `xp·ΨSq_p(x) = Φ_p(x)` of `exists_smul_tautPoint_eq`, a
+QUOTIENT OF TWO UNIVARIATE POLYNOMIALS evaluated at the tautological
+`x`.  The bricks below turn that observation into a computation: the
+class `polyClass W g = g(X) ∈ F[W]` of a univariate `g`, its order at
+an affine place (`rootMultiplicity` times the ramification `1` or `2`
+of `x` at the place), and the dictionary between the point-side data
+(`S = ⊖S`, `p • S = P`) and the polynomial-side data (`Ψ₂Sq(a) = 0`,
+`Φ_p(a) = x·ΨSq_p(a)`).  What is left after all of this is a single
+statement about polynomials — the leaf
+`rootMultiplicity_Φ_sub_C_mul_ΨSq` below. -/
+
+/-- The class of a univariate polynomial `g(X)` in the coordinate ring
+(so `polyClass W (X − x) = CoordinateRing.XClass W x`). -/
+noncomputable def polyClass (W : WeierstrassCurve.Affine F) (g : Polynomial F) :
+    W.CoordinateRing :=
+  CoordinateRing.mk W (Polynomial.C g)
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- A vertical is the class of a linear polynomial. -/
+lemma polyClass_X_sub_C (x : F) :
+    polyClass W (Polynomial.X - Polynomial.C x) = CoordinateRing.XClass W x := rfl
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- `polyClass` is multiplicative (it is a ring hom `F[X] → F[W]`). -/
+lemma polyClass_mul (g h : Polynomial F) :
+    polyClass W (g * h) = polyClass W g * polyClass W h := by
+  simp only [polyClass, map_mul]
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- The class of a constant is the constant of the coordinate ring. -/
+lemma polyClass_C (c : F) : polyClass W (Polynomial.C c) = coordC W c := rfl
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- In the function field, `polyClass W g` is `g` evaluated at the
+tautological `x`-coordinate. -/
+lemma algebraMap_polyClass (g : Polynomial F) :
+    algebraMap W.CoordinateRing W.FunctionField (polyClass W g) =
+      (g.map (constHom W)).eval (tautX W) := by
+  have h : ((algebraMap W.CoordinateRing W.FunctionField).comp
+        ((CoordinateRing.mk W).comp (Polynomial.C (R := Polynomial F)))) =
+      Polynomial.eval₂RingHom (constHom W) (tautX W) := by
+    refine Polynomial.ringHom_ext (fun a => ?_) ?_
+    · simp only [RingHom.coe_comp, Function.comp_apply,
+        Polynomial.coe_eval₂RingHom, Polynomial.eval₂_C]
+      exact algebraMap_coordC a
+    · simp only [RingHom.coe_comp, Function.comp_apply,
+        Polynomial.coe_eval₂RingHom, Polynomial.eval₂_X]
+      exact algebraMap_coordX
+  have h2 := RingHom.congr_fun h g
+  simp only [RingHom.coe_comp, Function.comp_apply,
+    Polynomial.coe_eval₂RingHom] at h2
+  rw [Polynomial.eval_map]
+  exact h2
+
+omit [DecidableEq F] in
+/-- A nonzero univariate polynomial has nonzero class: the tautological
+`x` is transcendental over the constants
+(`eval_map_ne_zero_of_forall_ne_constHom`). -/
+lemma polyClass_ne_zero {g : Polynomial F} (hg : g ≠ 0) : polyClass W g ≠ 0 := by
+  intro h0
+  refine eval_map_ne_zero_of_forall_ne_constHom (tautX_ne_constHom (W := W)) hg ?_
+  rw [← algebraMap_polyClass, h0, map_zero]
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- `pointEval` on a univariate class is evaluation of the polynomial
+at the point's `x`-coordinate. -/
+lemma pointEval_polyClass {K' : Type*} [Field K'] (φ : F →+* K') {x₀ y₀ : K'}
+    (h : ((W.map φ).toAffine).Equation x₀ y₀) (g : Polynomial F) :
+    pointEval φ h (polyClass W g) = (g.map φ).eval x₀ :=
+  pointEval_ofPoly φ h g
+
+/-- **The order of a vertical at an affine place** (PROVEN): at the
+place of `S = (a, b)`, the vertical `X − α` has order `0` unless
+`α = a`, in which case it has order `1`, or `2` when `S` is
+`2`-torsion — the ramification of `x : E → P¹` at `S`.  The divisor of
+`X − α` is `(A) + (⊖A)` for any point `A` above `α`
+(`CoordinateRing.XYIdeal_neg_mul`), and `count_spanSingleton_algebraMap`
+counts the copies of `S` in it. -/
+lemma count_spanSingleton_XClass [IsDedekindDomain W.CoordinateRing]
+    (hΔ : W.Δ ≠ 0) {a b : F} (hab : W.Nonsingular a b)
+    {v : IsDedekindDomain.HeightOneSpectrum W.CoordinateRing}
+    (hvS : v.asIdeal = pointIdeal W (.some a b hab)) (α : F) :
+    FractionalIdeal.count W.FunctionField v
+        (FractionalIdeal.spanSingleton W.CoordinateRing⁰
+          (algebraMap W.CoordinateRing W.FunctionField
+            (CoordinateRing.XClass W α))) =
+      if α = a then
+        (if (Point.some a b hab : W.Point) = -(Point.some a b hab) then 2 else 1)
+      else 0 := by
+  classical
+  obtain ⟨β, hβeq⟩ := exists_equation W α
+  have hβ : W.Nonsingular α β :=
+    (WeierstrassCurve.Affine.equation_iff_nonsingular_of_Δ_ne_zero hΔ).mp hβeq
+  have hS0 : (Point.some a b hab : W.Point) ≠ 0 := Point.some_ne_zero hab
+  have hD : Ideal.span {CoordinateRing.XClass W α} =
+      (((Point.some α β hβ : W.Point) ::ₘ
+        (-(Point.some α β hβ) : W.Point) ::ₘ 0).map (pointIdeal W)).prod := by
+    rw [Multiset.map_cons, Multiset.map_cons, Multiset.prod_cons,
+      Multiset.prod_cons, Multiset.map_zero, Multiset.prod_zero, mul_one,
+      Point.neg_some, pointIdeal_some, pointIdeal_some, mul_comm,
+      CoordinateRing.XYIdeal_neg_mul hβ]
+    rfl
+  rw [count_spanSingleton_algebraMap hS0 hvS hD]
+  simp only [Multiset.count_cons, Multiset.count_zero, zero_add]
+  by_cases hα : α = a
+  · subst hα
+    rw [if_pos rfl]
+    have hchoice : (Point.some α b hab : W.Point) = Point.some α β hβ ∨
+        (Point.some α b hab : W.Point) = -(Point.some α β hβ) := by
+      rcases WeierstrassCurve.Affine.Y_eq_of_X_eq hab.1 hβ.1 rfl with hy | hy
+      · left; subst hy; rfl
+      · right
+        rw [Point.neg_some]
+        subst hy
+        rfl
+    rcases hchoice with hc | hc
+    · rw [hc, if_pos rfl]
+      by_cases hneg : (Point.some α β hβ : W.Point) = -(Point.some α β hβ)
+      · rw [if_pos hneg, if_pos hneg]
+        norm_num
+      · rw [if_neg hneg, if_neg hneg]
+        norm_num
+    · rw [hc, neg_neg, if_pos rfl]
+      by_cases hneg : (-(Point.some α β hβ) : W.Point) = Point.some α β hβ
+      · rw [if_pos hneg, if_pos hneg]
+        norm_num
+      · rw [if_neg hneg, if_neg hneg]
+        norm_num
+  · have h1 : ¬ ((Point.some a b hab : W.Point) = Point.some α β hβ) := by
+      intro hcon
+      injection hcon with hx _
+      exact hα hx.symm
+    have h2 : ¬ ((Point.some a b hab : W.Point) = -(Point.some α β hβ)) := by
+      rw [Point.neg_some]
+      intro hcon
+      injection hcon with hx _
+      exact hα hx.symm
+    rw [if_neg hα, if_neg h1, if_neg h2]
+    norm_num
+
+/-- **The order of a univariate class at an affine place** (PROVEN):
+`ord_S(g(x)) = mult_a(g) · e`, where `a = x(S)` and `e ∈ {1, 2}` is the
+ramification of `x` at `S`.  Strong induction on `deg g`, splitting off
+a linear factor at a time (`IsAlgClosed.exists_root`,
+`Polynomial.dvd_iff_isRoot`) over `count_spanSingleton_XClass`. -/
+lemma count_spanSingleton_polyClass [IsDedekindDomain W.CoordinateRing]
+    (hΔ : W.Δ ≠ 0) {a b : F} (hab : W.Nonsingular a b)
+    {v : IsDedekindDomain.HeightOneSpectrum W.CoordinateRing}
+    (hvS : v.asIdeal = pointIdeal W (.some a b hab))
+    {g : Polynomial F} (hg : g ≠ 0) :
+    FractionalIdeal.count W.FunctionField v
+        (FractionalIdeal.spanSingleton W.CoordinateRing⁰
+          (algebraMap W.CoordinateRing W.FunctionField (polyClass W g))) =
+      (g.rootMultiplicity a : ℤ) *
+        (if (Point.some a b hab : W.Point) = -(Point.some a b hab)
+          then 2 else 1) := by
+  classical
+  have hspan0 : ∀ q : Polynomial F, q ≠ 0 →
+      FractionalIdeal.spanSingleton W.CoordinateRing⁰
+        (algebraMap W.CoordinateRing W.FunctionField (polyClass W q)) ≠ 0 := by
+    intro q hq
+    refine (isUnit_spanSingleton_of_ne_zero ?_).ne_zero
+    intro h0
+    exact polyClass_ne_zero hq
+      ((injective_iff_map_eq_zero _).mp
+        (FaithfulSMul.algebraMap_injective W.CoordinateRing W.FunctionField) _ h0)
+  suffices H : ∀ (n : ℕ) (q : Polynomial F), q.natDegree = n → q ≠ 0 →
+      FractionalIdeal.count W.FunctionField v
+        (FractionalIdeal.spanSingleton W.CoordinateRing⁰
+          (algebraMap W.CoordinateRing W.FunctionField (polyClass W q))) =
+        (q.rootMultiplicity a : ℤ) *
+          (if (Point.some a b hab : W.Point) = -(Point.some a b hab)
+            then 2 else 1) by
+    exact H g.natDegree g rfl hg
+  intro n
+  induction n using Nat.strongRecOn with
+  | ind n IH =>
+  intro q hdeg hq
+  by_cases h0 : q.natDegree = 0
+  · have hqc : q = Polynomial.C (q.coeff 0) :=
+      Polynomial.eq_C_of_natDegree_eq_zero h0
+    have hc0 : q.coeff 0 ≠ 0 := by
+      intro hc
+      rw [hc, map_zero] at hqc
+      exact hq hqc
+    have htop : Ideal.span {polyClass W q} =
+        (((0 : Multiset W.Point)).map (pointIdeal W)).prod := by
+      rw [Multiset.map_zero, Multiset.prod_zero, Ideal.one_eq_top]
+      refine Ideal.span_singleton_eq_top.mpr ?_
+      rw [hqc, polyClass_C]
+      exact isUnit_coordC hc0
+    rw [count_spanSingleton_algebraMap (Point.some_ne_zero hab) hvS htop]
+    have hrm : q.rootMultiplicity a = 0 := by
+      refine Polynomial.rootMultiplicity_eq_zero ?_
+      intro hroot
+      apply hc0
+      have hval := hroot
+      rw [Polynomial.IsRoot.def, hqc, Polynomial.eval_C] at hval
+      exact hval
+    rw [hrm]
+    simp
+  · obtain ⟨α, hα⟩ := IsAlgClosed.exists_root q
+      (by rw [Polynomial.degree_eq_natDegree hq]; exact_mod_cast h0)
+    obtain ⟨q', rfl⟩ := (Polynomial.dvd_iff_isRoot).mpr hα
+    have hq' : q' ≠ 0 := by
+      intro hc
+      rw [hc, mul_zero] at hq
+      exact hq rfl
+    have hXne : (Polynomial.X - Polynomial.C α : Polynomial F) ≠ 0 :=
+      Polynomial.X_sub_C_ne_zero α
+    have hdeg' : q'.natDegree < n := by
+      rw [← hdeg, Polynomial.natDegree_mul hXne hq', Polynomial.natDegree_X_sub_C]
+      omega
+    have hsplit :
+        FractionalIdeal.count W.FunctionField v
+          (FractionalIdeal.spanSingleton W.CoordinateRing⁰
+            (algebraMap W.CoordinateRing W.FunctionField
+              (polyClass W ((Polynomial.X - Polynomial.C α) * q')))) =
+        FractionalIdeal.count W.FunctionField v
+            (FractionalIdeal.spanSingleton W.CoordinateRing⁰
+              (algebraMap W.CoordinateRing W.FunctionField
+                (polyClass W (Polynomial.X - Polynomial.C α)))) +
+          FractionalIdeal.count W.FunctionField v
+            (FractionalIdeal.spanSingleton W.CoordinateRing⁰
+              (algebraMap W.CoordinateRing W.FunctionField (polyClass W q'))) := by
+      rw [polyClass_mul, map_mul,
+        ← FractionalIdeal.spanSingleton_mul_spanSingleton,
+        FractionalIdeal.count_mul W.FunctionField v (hspan0 _ hXne)
+          (hspan0 _ hq')]
+    rw [hsplit, IH q'.natDegree hdeg' q' rfl hq', polyClass_X_sub_C,
+      count_spanSingleton_XClass hΔ hab hvS α,
+      Polynomial.rootMultiplicity_mul (by exact mul_ne_zero hXne hq')]
+    by_cases hαa : α = a
+    · subst hαa
+      rw [if_pos rfl, Polynomial.rootMultiplicity_X_sub_C_self]
+      push_cast
+      ring
+    · have hrm0 : Polynomial.rootMultiplicity a
+          (Polynomial.X - Polynomial.C α) = 0 := by
+        refine Polynomial.rootMultiplicity_eq_zero ?_
+        intro hroot
+        rw [Polynomial.IsRoot.def, Polynomial.eval_sub, Polynomial.eval_X,
+          Polynomial.eval_C, sub_eq_zero] at hroot
+        exact hαa hroot.symm
+      rw [if_neg hαa, hrm0]
+      push_cast
+      ring
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- **`negY` fixes `y` exactly at a root of `Ψ₂Sq`** (PROVEN): on the
+curve `Ψ₂Sq(x) = (2y + a₁x + a₃)²` (`TorsionCard.eval_Ψ₂Sq_eq_sq`). -/
+lemma negY_eq_self_iff {x y : F} (heq : W.Equation x y) :
+    W.negY x y = y ↔ W.Ψ₂Sq.eval x = 0 := by
+  have hsq : W.Ψ₂Sq.eval x = (2 * y + (W.a₁ * x + W.a₃)) ^ 2 :=
+    TorsionCard.eval_Ψ₂Sq_eq_sq W heq
+  rw [hsq, pow_eq_zero_iff two_ne_zero, WeierstrassCurve.Affine.negY]
+  constructor
+  · intro hh; linear_combination -hh
+  · intro hh; linear_combination -hh
+
+omit [IsAlgClosed F] in
+/-- **A point is its own negative exactly over a root of `Ψ₂Sq`**
+(PROVEN): `P = ⊖P` iff `2 • P = 0` iff `Ψ₂Sq(x_P) = 0`
+(`TorsionCard.two_smul_some_eq_zero_iff`). -/
+lemma point_eq_neg_iff_Ψ₂Sq {a b : F} (hab : W.Nonsingular a b) :
+    ((Point.some a b hab : W.Point) = -(Point.some a b hab)) ↔
+      W.Ψ₂Sq.eval a = 0 := by
+  have key : ((2 : ℤ) • (Point.some a b hab : W.Point) = 0) ↔
+      W.Ψ₂Sq.eval a = 0 := TorsionCard.two_smul_some_eq_zero_iff W hab
+  rw [← key, two_zsmul, add_eq_zero_iff_eq_neg]
+
+omit [IsAlgClosed F] in
+/-- **The point-side multiplicity in polynomial terms** (PROVEN): with
+`S = (a, b)` and `ΨSq_p(a) ≠ 0`, the multiplicity of `p • S` in the
+divisor `(P) + (⊖P)` of the vertical at `P = (x, y)` is `0` unless
+`x(p • S) = x`, i.e. `Φ_p(a) = x·ΨSq_p(a)`
+(`TorsionCard.exists_smul_some_eq`), in which case it is the
+ramification `1` or `2` of `x` at `P`, i.e. `2` exactly when
+`Ψ₂Sq(x) = 0`. -/
+lemma count_smul_pair_eq (hΔ : W.Δ ≠ 0) {a b : F} (hab : W.Nonsingular a b)
+    (hΨ : ((W.ΨSq (p : ℤ)).eval a) ≠ 0) {x y : F} (h : W.Nonsingular x y) :
+    (Multiset.count ((p : ℤ) • (Point.some a b hab : W.Point))
+        ((Point.some x y h : W.Point) ::ₘ
+          (-(Point.some x y h) : W.Point) ::ₘ 0) : ℤ) =
+      if (W.Φ (p : ℤ)).eval a = x * (W.ΨSq (p : ℤ)).eval a then
+        (if W.Ψ₂Sq.eval x = 0 then 2 else 1) else 0 := by
+  classical
+  haveI : W.IsElliptic := ⟨isUnit_iff_ne_zero.mpr hΔ⟩
+  have hpZ : (p : ℤ) ≠ 0 := Int.natCast_ne_zero.mpr (Fact.out : p.Prime).ne_zero
+  obtain ⟨x', y', hns0, heq0, hx'0⟩ :=
+    TorsionCard.exists_smul_some_eq W hpZ hab hΨ
+  have h' : W.Nonsingular x' y' := hns0
+  have heq : ((p : ℤ) • (Point.some a b hab : W.Point)) =
+      Point.some x' y' h' := heq0
+  have hx' : x' * (W.ΨSq (p : ℤ)).eval a = (W.Φ (p : ℤ)).eval a := hx'0
+  rw [heq]
+  simp only [Multiset.count_cons, Multiset.count_zero, zero_add]
+  by_cases hxx : x' = x
+  · have hcond : (W.Φ (p : ℤ)).eval a = x * (W.ΨSq (p : ℤ)).eval a := by
+      rw [← hx', hxx]
+    have hEq1 : ((Point.some x' y' h' : W.Point) = Point.some x y h) ↔
+        y' = y := by
+      constructor
+      · intro hh
+        injection hh with _ hy2
+      · intro hy2
+        subst hxx
+        subst hy2
+        rfl
+    have hEq2 : ((Point.some x' y' h' : W.Point) = -(Point.some x y h)) ↔
+        y' = W.negY x y := by
+      rw [Point.neg_some]
+      constructor
+      · intro hh
+        injection hh with _ hy2
+      · intro hy2
+        subst hxx
+        subst hy2
+        rfl
+    rw [if_pos hcond, if_congr hEq1 rfl rfl, if_congr hEq2 rfl rfl]
+    rcases WeierstrassCurve.Affine.Y_eq_of_X_eq h'.1 h.1 hxx with hy | hy
+    · rw [hy, if_pos rfl]
+      by_cases hz : W.Ψ₂Sq.eval x = 0
+      · rw [if_pos ((negY_eq_self_iff h.1).mpr hz).symm, if_pos hz]
+        norm_num
+      · rw [if_neg (fun hc => hz ((negY_eq_self_iff h.1).mp hc.symm)),
+          if_neg hz]
+        norm_num
+    · rw [hy, if_pos rfl]
+      by_cases hz : W.Ψ₂Sq.eval x = 0
+      · rw [if_pos ((negY_eq_self_iff h.1).mpr hz), if_pos hz]
+        norm_num
+      · rw [if_neg (fun hc => hz ((negY_eq_self_iff h.1).mp hc)), if_neg hz]
+        norm_num
+  · have hcond : ¬((W.Φ (p : ℤ)).eval a = x * (W.ΨSq (p : ℤ)).eval a) := by
+      intro hc
+      refine hxx (mul_right_cancel₀ hΨ ?_)
+      rw [hx', hc]
+    have hne1 : ¬((Point.some x' y' h' : W.Point) = Point.some x y h) := by
+      intro hh
+      injection hh with hx2 _
+      exact hxx hx2
+    have hne2 : ¬((Point.some x' y' h' : W.Point) = -(Point.some x y h)) := by
+      rw [Point.neg_some]
+      intro hh
+      injection hh with hx2 _
+      exact hxx hx2
+    rw [if_neg hcond, if_neg hne1, if_neg hne2]
+    norm_num
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- **`Φ_p − c·ΨSq_p` is nonzero** (PROVEN): its coefficient in degree
+`p²` is `1`, because `Φ_p` is monic of degree `p²` (`coeff_Φ`) while
+`ΨSq_p` has degree `≤ p² − 1` (`natDegree_ΨSq_le`). -/
+lemma Φ_sub_C_mul_ΨSq_ne_zero (c : F) :
+    W.Φ (p : ℤ) - Polynomial.C c * W.ΨSq (p : ℤ) ≠ 0 := by
+  intro h0
+  have hΦc : (W.Φ (p : ℤ)).coeff (p ^ 2) = 1 := by
+    have h1 := W.coeff_Φ (p : ℤ)
+    rwa [Int.natAbs_natCast] at h1
+  have hΨc : (W.ΨSq (p : ℤ)).coeff (p ^ 2) = 0 := by
+    apply Polynomial.coeff_eq_zero_of_natDegree_lt
+    apply lt_of_le_of_lt (W.natDegree_ΨSq_le (p : ℤ))
+    rw [Int.natAbs_natCast]
+    exact Nat.sub_lt (pow_pos (Fact.out : p.Prime).pos 2) one_pos
+  have hcoeff : (W.Φ (p : ℤ) -
+      Polynomial.C c * W.ΨSq (p : ℤ)).coeff (p ^ 2) = 1 := by
+    rw [Polynomial.coeff_sub, Polynomial.coeff_C_mul, hΦc, hΨc, mul_zero,
+      sub_zero]
+  rw [h0, Polynomial.coeff_zero] at hcoeff
+  exact zero_ne_one hcoeff
+
+/-- **L4-7 LEAF (sorry): multiplicity one for `[p]`, in `x`-coordinates
+only.**  This is the entire remaining geometric content of the L4-7
+stage, isolated as a statement about POLYNOMIALS: no function field, no
+ideals, no divisors.
+
+Fix `a` with `ΨSq_p(a) ≠ 0` (i.e. `p • S ≠ O` for the points `S` above
+`a`) and any `x`.  Then the multiplicity of `a` as a root of
+`G := Φ_p − x·ΨSq_p` is `0` when `a` is not a root at all, and
+otherwise exactly `d_P / d_S`, where `d_S = 2` or `1` according as
+`Ψ₂Sq(a) = 0` or not (the ramification of `x : E → P¹` at `S`), and
+likewise `d_P` at `x`:
+
+`mult_a(Φ_p − x·ΨSq_p) · d_S = if Φ_p(a) = x·ΨSq_p(a) then d_P else 0`.
+
+Equivalently: `x ∘ [p] − x` has a zero of order exactly `d_P` at every
+point of the fiber — the SEPARABILITY of `[p]` for `(p : F) ≠ 0`, in
+the only form the descent needs.
+
+**A route (found 2026-07-25, and it is much shorter than the two routes
+recorded at `count_pointEval_of_smul_ne_zero`).**  Everything follows
+from ONE polynomial identity, the algebraic form of `[p]^*ω = p·ω`.
+Write `W := Φ_p'·ΨSq_p − Φ_p·ΨSq_p'` for the Wronskian and
+`Ñ := 4Φ_p³ + b₂Φ_p²ΨSq_p + 2b₄Φ_pΨSq_p² + b₆ΨSq_p³`.  The identity is
+
+`(★)  W² · Ψ₂Sq = p² · ΨSq_p · Ñ`,
+
+i.e. `f'(X)²·Ψ₂Sq(X) = p²·Ψ₂Sq(f(X))` for `f = Φ_p/ΨSq_p`, which is
+exactly `d(x∘[p])/(2y∘[p] + …) = p·dx/(2y + …)`.
+
+Given `(★)`, the leaf is a two-line order count.  Put
+`G = Φ_p − x·ΨSq_p`, `m = mult_a(G)`, `j = mult_a(Ψ₂Sq)`,
+`k = mult_x(Ψ₂Sq)`.  Since `Φ_p = G + x·ΨSq_p`,
+
+`Ñ = ΨSq_p³·Ψ₂Sq(x) + G·ΨSq_p²·Ψ₂Sq'(x) + G²·(…)`,
+
+and `ΨSq_p(a) ≠ 0`, so `ord_a(Ñ) = 0` when `k = 0` and `ord_a(Ñ) = m`
+when `k = 1`.  Also `W = G'·ΨSq_p − G·ΨSq_p'`, whence
+`ord_a(W) ≥ m − 1`.  Reading `(★)` at `a` gives `2·ord_a(W) + j =
+ord_a(Ñ)`, and the four cases `j, k ∈ {0, 1}` give `m·(j+1) = k+1`
+exactly — including the impossible combination `j = 1, k = 0`
+(a `2`-torsion `S` over a non-`2`-torsion `p • S`), which the identity
+rules out.  `Ψ₂Sq` is squarefree — so `j, k ≤ 1` — whenever
+`2 ≠ 0` (`TorsionCard.separable_Ψ₂Sq`).
+
+**Two things are still open in that route**, and they are the honest
+statement of what this leaf costs:
+
+* `(★)` itself.  It is a universal identity in `ℤ[a₁, …, a₆][X]`, so it
+  is a candidate for a Gröbner/`Singular` certificate at small `p` but
+  needs an argument for general `p`.  The clean derivation is through a
+  derivation `D` of `K = Frac F[W]` with `D x = ψ₂`,
+  `D y = 3x² + 2a₂x + a₄ − a₁y`, for which mathlib's missing
+  quotient/fraction-field `Derivation` API can be SIDESTEPPED: such a
+  `D` is the same thing as an `F`-algebra map
+  `F[W] → TrivSqZeroExt K K` sending `x ↦ (x, ψ₂)`,
+  `y ↦ (y, 3x²+2a₂x+a₄−a₁y)`, which is an `AdjoinRoot.lift` (the
+  defining polynomial maps to `0` because `f_X·f_Y − f_Y·f_X = 0`),
+  extended to `K` by `IsLocalization.lift` (nonzero elements go to
+  units of `K[ε]`).  Then `μ(P) := D(x_P)/(2y_P + a₁x_P + a₃)` is
+  ADDITIVE on `(curveK W).Point` — an identity in the group-law
+  formulas, structurally like the proven `endoMap_add`, and a good
+  target for a `Singular`-computed `linear_combination` — so
+  `μ(p • taut) = p·μ(taut) = p` by `AddMonoidHom.map_zsmul`, which is
+  `(★)` evaluated at the (transcendental) tautological `x`.
+* Characteristic `2`.  There `Ψ₂Sq = (a₁X + a₃)²` is not squarefree, so
+  `k` can be `2`, and the case `j = 0, k = 2` (an `S` that is not
+  `2`-torsion over a `2`-torsion `p • S`) is NOT decided by `(★)`: the
+  identity degenerates to `W·(a₁X+a₃) = p·a₁·ΨSq_p·G`, which only says
+  `2 ∣ m`.  Settling it needs the fiber count `#E[p] = p²` (with
+  `deg G = p²` and `mult ≥ 2` at each of the `(p²−1)/2` non-`2`-torsion
+  abscissae, equality is forced), or another idea. -/
+theorem rootMultiplicity_Φ_sub_C_mul_ΨSq (hΔ : W.Δ ≠ 0) (hp : (p : F) ≠ 0)
+    {a x : F} (hΨ : ((W.ΨSq (p : ℤ)).eval a) ≠ 0) :
+    ((W.Φ (p : ℤ) - Polynomial.C x * W.ΨSq (p : ℤ)).rootMultiplicity a : ℤ) *
+        (if W.Ψ₂Sq.eval a = 0 then 2 else 1) =
+      if (W.Φ (p : ℤ)).eval a = x * (W.ΨSq (p : ℤ)).eval a then
+        (if W.Ψ₂Sq.eval x = 0 then 2 else 1) else 0 := by
+  sorry
+
+/-- **L4-7 (PROVEN over `rootMultiplicity_Φ_sub_C_mul_ΨSq`): the
+`[p]`-pullback of a VERTICAL, at an affine
 place lying over an affine point.**  With `(xp, yp)` the affine
 coordinates of the generic multiple `p • taut` — so that
 `pointEval (constHom W) hpn.left` is the pullback `z ↦ z ∘ [p]` — and
@@ -6429,24 +6884,24 @@ the global fractional-ideal form (at a place over an AFFINE point there
 is no `(O)`-correction to carry, which is why the two branches of
 `count_pointEval_of_*` are stated separately).
 
-**Where the mathematics is.**  Everything except multiplicity one is
-already available.  By `exists_smul_tautPoint_eq` the `x`-coordinate of
-`p • taut` satisfies the division-polynomial relation
+**PROOF (2026-07-25).**  By `exists_smul_tautPoint_eq` the
+`x`-coordinate of `p • taut` satisfies the division-polynomial relation
 `xp · ΨSq_p(x) = Φ_p(x)`, so
 
 `x ∘ [p] − x_P = (Φ_p − x_P·ΨSq_p)(x) / ΨSq_p(x)`,
 
-a quotient of two elements of `F[X]` evaluated at the tautological `x`;
-and the order at `S = (a, b)` of `g(x)` for `g ∈ F[X]` is
-`mult_a(g) · ord_S(x − a)`, computable from
-`CoordinateRing.XYIdeal_neg_mul` (`⟨X − a⟩ = I_S · I_{⊖S}`) and
-`count_coe_pointIdeal'`.  The denominator is a unit at `S`:
-`ΨSq_p(a) ≠ 0` because `p • S ≠ O`
-(`TorsionCard.smul_some_eq_zero_iff`).  What remains — and it is the
-whole geometric content of this leaf — is that `a` is a SIMPLE root of
-`Φ_p − x_P·ΨSq_p` whenever it is a root, i.e. the separability of `[p]`
-for `(p : F) ≠ 0`.  See the note at `count_pointEval_of_smul_ne_zero`
-for the two known routes to that fact. -/
+a quotient of two univariate classes (`polyClass`) — whence
+`ord_S` of it is the difference of their orders
+(`FractionalIdeal.count_mul`).  Each of those is
+`mult_a(g) · d_S` by `count_spanSingleton_polyClass`, with
+`d_S ∈ {1, 2}` the ramification of `x` at `S = (a, b)`; the denominator
+contributes `0` because `ΨSq_p(a) ≠ 0`, which holds because `p • S ≠ O`
+(`TorsionCard.smul_some_eq_zero_iff`).  The right-hand side is
+translated into the same polynomial language by `count_smul_pair_eq`
+and `point_eq_neg_iff_Ψ₂Sq`, and what is left is exactly the leaf
+`rootMultiplicity_Φ_sub_C_mul_ΨSq` — the multiplicity-one statement
+for `[p]` in `x`-coordinates, i.e. the separability of `[p]` for
+`(p : F) ≠ 0`. -/
 theorem count_pointEval_XClass_of_smul_ne_zero
     [IsDedekindDomain W.CoordinateRing]
     (hΔ : W.Δ ≠ 0) (hp : (p : F) ≠ 0)
@@ -6463,7 +6918,80 @@ theorem count_pointEval_XClass_of_smul_ne_zero
       (Multiset.count ((p : ℤ) • S)
         (WeierstrassCurve.Affine.Point.some x y h ::ₘ
           (-WeierstrassCurve.Affine.Point.some x y h : W.Point) ::ₘ 0) : ℤ) := by
-  sorry
+  classical
+  obtain ⟨xp', yp', hpn', hptaut', hxrel⟩ :=
+    exists_smul_tautPoint_eq (W := W) hΔ hp
+  have hxx : xp = xp' := by
+    have hpts := hptaut.symm.trans hptaut'
+    injection hpts with hx _
+  subst hxx
+  cases S with
+  | zero => exact absurd rfl hS0
+  | some a b hab =>
+  have hpZ : (p : ℤ) ≠ 0 := Int.natCast_ne_zero.mpr (Fact.out : p.Prime).ne_zero
+  have hpF : ((p : ℤ) : F) ≠ 0 := by exact_mod_cast hp
+  haveI : W.IsElliptic := ⟨isUnit_iff_ne_zero.mpr hΔ⟩
+  have hΨiff : (((p : ℤ) • (Point.some a b hab : W.Point)) = 0) ↔
+      (W.ΨSq (p : ℤ)).eval a = 0 :=
+    TorsionCard.smul_some_eq_zero_iff W hpZ hab
+  have hΨa : ((W.ΨSq (p : ℤ)).eval a) ≠ 0 := fun hc => hpS (hΨiff.mpr hc)
+  have hτX : pointEval (constHom W) hpn.left (CoordinateRing.XClass W x) =
+      xp - constHom W x := by
+    rw [XClass_eq, map_sub]
+    simp only [coordX, coordC]
+    rw [pointEval_X, pointEval_C]
+  have hGne : W.Φ (p : ℤ) - Polynomial.C x * W.ΨSq (p : ℤ) ≠ 0 :=
+    Φ_sub_C_mul_ΨSq_ne_zero x
+  have hΨne : W.ΨSq (p : ℤ) ≠ 0 := W.ΨSq_ne_zero hpF
+  have hrel : (xp - constHom W x) *
+      algebraMap W.CoordinateRing W.FunctionField
+        (polyClass W (W.ΨSq (p : ℤ))) =
+      algebraMap W.CoordinateRing W.FunctionField
+        (polyClass W (W.Φ (p : ℤ) - Polynomial.C x * W.ΨSq (p : ℤ))) := by
+    rw [algebraMap_polyClass, algebraMap_polyClass, Polynomial.map_sub,
+      Polynomial.map_mul, Polynomial.map_C, Polynomial.eval_sub,
+      Polynomial.eval_mul, Polynomial.eval_C]
+    linear_combination hxrel
+  have hxpne : xp - constHom W x ≠ 0 :=
+    sub_ne_zero.mpr (smul_taut_xCoord_ne_constHom hxrel x)
+  have hspanne : ∀ z : W.FunctionField, z ≠ 0 →
+      FractionalIdeal.spanSingleton W.CoordinateRing⁰ z ≠ 0 :=
+    fun z hz => (isUnit_spanSingleton_of_ne_zero hz).ne_zero
+  have halgne : ∀ q : Polynomial F, q ≠ 0 →
+      algebraMap W.CoordinateRing W.FunctionField (polyClass W q) ≠ 0 := by
+    intro q hq h0
+    exact polyClass_ne_zero hq
+      ((injective_iff_map_eq_zero _).mp
+        (FaithfulSMul.algebraMap_injective W.CoordinateRing W.FunctionField) _ h0)
+  have hcount : FractionalIdeal.count W.FunctionField v
+        (FractionalIdeal.spanSingleton W.CoordinateRing⁰ (xp - constHom W x)) +
+      FractionalIdeal.count W.FunctionField v
+        (FractionalIdeal.spanSingleton W.CoordinateRing⁰
+          (algebraMap W.CoordinateRing W.FunctionField
+            (polyClass W (W.ΨSq (p : ℤ))))) =
+      FractionalIdeal.count W.FunctionField v
+        (FractionalIdeal.spanSingleton W.CoordinateRing⁰
+          (algebraMap W.CoordinateRing W.FunctionField
+            (polyClass W (W.Φ (p : ℤ) - Polynomial.C x * W.ΨSq (p : ℤ))))) := by
+    rw [← FractionalIdeal.count_mul W.FunctionField v (hspanne _ hxpne)
+        (hspanne _ (halgne _ hΨne)),
+      FractionalIdeal.spanSingleton_mul_spanSingleton, hrel]
+  have hrm2 : (W.ΨSq (p : ℤ)).rootMultiplicity a = 0 :=
+    Polynomial.rootMultiplicity_eq_zero (by simpa using hΨa)
+  rw [count_spanSingleton_polyClass hΔ hab hvS hΨne, hrm2,
+    count_spanSingleton_polyClass hΔ hab hvS hGne] at hcount
+  rw [hτX]
+  have hfinal : FractionalIdeal.count W.FunctionField v
+      (FractionalIdeal.spanSingleton W.CoordinateRing⁰ (xp - constHom W x)) =
+      ((W.Φ (p : ℤ) - Polynomial.C x * W.ΨSq (p : ℤ)).rootMultiplicity a : ℤ) *
+        (if (Point.some a b hab : W.Point) = -(Point.some a b hab)
+          then 2 else 1) := by
+    rw [← hcount]
+    push_cast
+    ring
+  rw [hfinal, if_congr (point_eq_neg_iff_Ψ₂Sq hab) rfl rfl,
+    rootMultiplicity_Φ_sub_C_mul_ΨSq hΔ hp hΨa,
+    count_smul_pair_eq hΔ hab hΨa h]
 
 /-- **L4-7 leaf (sorry): the `[p]`-pullback of a LINE, at an affine
 place lying over an affine point.**  Same setup as
@@ -6483,13 +7011,73 @@ This is the `[p]`-analogue of the PROVEN translation brick
 pair-peeling induction over exactly these two bricks (already written
 and PROVEN below, over these two leaves).
 
-Note that a route to this leaf may go through the vertical brick: the
-norm of a line class to `F[X]` is a product of vertical classes
-(`YIdeal_eq_prod_pointIdeal` and the numerator lemmas
-`lineNumerator_mem_prod_pointIdeal` /
-`lineNumeratorNeg_mem_prod_pointIdeal` are the translation-case
-precedent), so the two bricks are not independent — but they are
-separately stated because the consuming induction needs both. -/
+**State of play (2026-07-25): the vertical brick above is now PROVEN
+over a purely polynomial leaf, and this one reduces to it up to ONE
+missing ingredient.**  The reduction, worked out but not formalized:
+
+*The norm identity.*  Let `ι = involHom W` be the hyperelliptic
+involution and `L` the line class.  Then `L·ι L` is a product of three
+verticals (mathlib's `CoordinateRing.YClass_mul` /
+`lineNumerator_mul_lineNumeratorNeg` here), i.e. a `polyClass`.
+Applying the ring hom `[p]^*` and `FractionalIdeal.count_mul`,
+
+`ord_S([p]^*L) + ord_S([p]^*(ι L)) = Σ_{i=1,2,3} ord_S([p]^*(X − x_i))`,
+
+and every term on the right is computed by
+`count_pointEval_XClass_of_smul_ne_zero`.  Moreover
+`[p]^* ∘ ι = ` evaluation at `⊖(p • taut) = (−p) • taut`, whose
+`x`-coordinate is again `xp`, so the SAME vertical brick computes the
+`ι`-side; writing `T = p • S`, the right-hand side is
+`mult_T(D) + mult_{⊖T}(D)` for `D = (P₁) + (P₂) + (⊖(P₁⊕P₂))`.
+
+*What the identity alone settles.*  Together with
+`ord_S([p]^*z) ≥ 0` and the CENTER statement
+`ord_S([p]^*z) > 0 ↔ z ∈ pointIdeal T`, it settles every case:
+if `T ∉ D` or `⊖T ∉ D` one of the two terms vanishes and the other is
+the required multiplicity; and `T ≠ ⊖T` with both `T, ⊖T ∈ D` is
+IMPOSSIBLE here (each of the six combinations forces `P₁ = O`,
+`P₂ = O`, or the excluded `P₂ = ⊖P₁` of `hxy`).  In the one remaining
+case — `T` `2`-torsion and `T ∈ D` — the same enumeration gives
+`mult_T(D) = 1`, so the identity reads `A + A' = 2` with `A, A' ≥ 1`,
+forcing `A = 1`.  So only POSITIVITY is needed there, not the full
+center.
+
+*The missing ingredient is the center, and it is exactly the statement
+that the `y`-coordinate of `p • taut` specializes correctly*: the
+vertical brick pins `x(p • taut) ↦ x_T` at the place of `S`, which only
+determines the center up to `T ↔ ⊖T`.  Every quantity computable from
+`polyClass` data is `ι`-symmetric, so the ambiguity cannot be resolved
+that way (concretely `w = yp − y_T` and `w̄ = yp − y(⊖T)` differ by the
+constant `ψ₂(T)`, and `w·w̄` and `w + w̄` are both computable while
+neither singles out `w`).  What is needed is `ord_S(yp − y_T) ≥ 1`,
+i.e. a `y`-coordinate multiplication formula — `TorsionCard` supplies
+only the `x`-relation `x' · ΨSq_p(a) = Φ_p(a)`.  Alternatively, center
+propagates along translations (`spanSingleton_pointEval_translate` and
+`[p] ∘ τ_Q = τ_{p•Q} ∘ [p]`), so it suffices at ONE point `S₀` — and it
+is automatic at any `S₀` with `p • S₀` `2`-torsion, where `T = ⊖T`;
+that needs a nonzero `2`-torsion point in the image of `[p]`
+(`TorsionCard.smul_surjective`, and note there is no nonzero
+`2`-torsion at all when `char F = 2` and `a₁ = 0`).
+
+*A concrete proof of the center when `2 ≠ 0` in `F`* (worked out, not
+formalized): `TorsionCard.zsmul_some_aux_strong` tracks not only the
+`x`-coordinate but the `ψ₂`-value,
+`(2y' + a₁x' + a₃)·ψ_p(x, y)⁴ = ψ_{2p}(x, y)`, whenever the base point
+is not `2`-torsion.  Both `ψ_p` and `ψ_{2p}` are BIVARIATE polynomials,
+so `ψ_n(taut)` is `algebraMap (CoordinateRing.mk W (W.ψ n))` and
+`ψ_n(taut) − ψ_n(S)` lies in `pointIdeal S`
+(`mem_pointIdeal_of_coordEval_eq_zero`), i.e. has `ord_S ≥ 1`; since
+`ψ_p(S) ≠ 0` (as `p • S ≠ O`) the same holds after dividing, giving
+`ord_S(ψ₂(p • taut) − ψ₂(p • S)) ≥ 1`.  Subtracting `a₁·(xp − x_T)`,
+whose order is `≥ 1` by the vertical brick, leaves
+`ord_S(2·(yp − y_T)) ≥ 1`, hence `ord_S(yp − y_T) ≥ 1` when `2 ≠ 0`.
+For a `2`-torsion `S` (where `zsmul_some_aux_strong` does not apply)
+one has `p • S = S` for odd `p`, so `T = ⊖T`, and the curve-equation
+identity `(yp − y_T)² = (xp − x_T)·(xp² + xp x_T + x_T² + a₂(xp + x_T)
++ a₄ − a₁ yp)` gives `2·ord_S(yp − y_T) ≥ 1` directly.  What this
+argument does NOT cover is `char F = 2`, where `ψ₂ = a₁x + a₃` carries
+no `y`-information at all — the same characteristic that blocks the
+last case of `rootMultiplicity_Φ_sub_C_mul_ΨSq`. -/
 theorem count_pointEval_YClass_of_smul_ne_zero
     [IsDedekindDomain W.CoordinateRing]
     (hΔ : W.Δ ≠ 0) (hp : (p : F) ≠ 0)
@@ -6547,9 +7135,9 @@ statement is proven first for the vertical generators
 `CoordinateRing.XClass W x_R` and for the line classes — the exact
 `[p]`-analogues of the proven translation bricks
 `spanSingleton_pointEval_XClass` / `spanSingleton_pointEval_YClass`,
-now the two sorried leaves
-`count_pointEval_XClass_of_smul_ne_zero` /
-`count_pointEval_YClass_of_smul_ne_zero` — and then propagated to a
+now `count_pointEval_XClass_of_smul_ne_zero` (PROVEN 2026-07-25, over
+the purely polynomial leaf `rootMultiplicity_Φ_sub_C_mul_ΨSq`) and the
+still-sorried `count_pointEval_YClass_of_smul_ne_zero` — and then propagated to a
 general `z` by the same Miller-style pair-peeling induction on the
 affine divisor of `z` that `spanSingleton_pointEval_translate` runs for
 `τ_Q^*`.  The induction is the whole proof below and is complete: the
@@ -6563,7 +7151,10 @@ case cancelling exactly against the `(P₁ ⊕ P₂)`-entry it introduces.
 the division-polynomial relation `xp · ΨSq_p(x) = Φ_p(x)` of
 `exists_smul_tautPoint_eq`, to the SEPARABILITY of `[p]` for
 `(p : F) ≠ 0` — concretely, that `x_S` is a simple root of
-`Φ_p − x_R·ΨSq_p`.  Two routes are known, and neither is in mathlib:
+`Φ_p − x_R·ΨSq_p`.  (A THIRD and much shorter route, found 2026-07-25,
+is recorded at the leaf `rootMultiplicity_Φ_sub_C_mul_ΨSq`, which is
+all that the vertical brick now costs.)  Two routes were known before,
+and neither is in mathlib:
 
 * *Invariant differential.*  `[p]^*ω = p·ω` with `ω = dx/(2y+a₁x+a₃)`
   nowhere zero forces every ramification index of `[p]` to be `1`.  In
