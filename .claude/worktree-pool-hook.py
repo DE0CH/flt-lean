@@ -33,6 +33,20 @@ tool call blocked): something beyond allocation went wrong.
 Freeing a worktree after its work is merged, and pushing to the task
 queue, are both the orchestrator hand-editing the respective text
 file. No scripts on that side.
+
+CONCURRENCY (fixed 2026-07-25). Everything below runs under ONE
+exclusive flock on the pool file, held for the whole dispatch decision:
+queue read, pop, queue write, and worktree allocation. Do not narrow it
+back. Consequence for `.claude/settings.json`: this hook's `timeout`
+must stay GENEROUS (currently 300s). Each run does three git operations
+in a worktree (~8s under fleet load) while holding the lock, and a wave
+of N simultaneous spawns serializes them — with a 30s timeout, the
+spawns past ~3rd were KILLED, and a killed PreToolUse hook is
+non-blocking, so the Agent launched with the ORIGINAL prompt: agents
+whose prompt was the literal {{FLT_QUEUE_POP}} sentinel, holding no
+worktree and no task. Both failure modes were observed together in one
+04:52Z wave of seven: four agents got the SAME task (lost-update pops)
+and three were sentinel zombies.
 """
 
 import fcntl
@@ -193,42 +207,69 @@ def main():
     is_pop = SENTINEL in prompt
     is_direct = PLACEHOLDER in prompt
 
-    queue = read_queue()
+    # ONE lock covering the WHOLE dispatch decision (fixed 2026-07-25 after
+    # a wave handed FOUR agents the identical task). The queue used to be
+    # read here, outside any lock, and written back inside the pool lock —
+    # so concurrent {{FLT_QUEUE_POP}} spawns each read the same head, each
+    # popped it, and each wrote back its own stale list: the pops were lost
+    # updates. The pool file's flock is the fleet's existing mutual-exclusion
+    # primitive, so widen it to cover the queue too — queue read, pop, and
+    # write are now serialized with worktree allocation against every other
+    # concurrently spawning agent.
+    with open(POOL_FILE, "r+") as pool_fh:
+        fcntl.flock(pool_fh, fcntl.LOCK_EX)
+        queue = read_queue()
 
-    def auto_queue(reason):
-        queue.append(prompt)
-        write_queue(queue)
-        deny(f"{reason} — this task has been QUEUED (position "
-             f"{len(queue)} in {QUEUE_FILE}). Dispatch the queue head "
-             f"with an Agent spawn whose prompt is {SENTINEL} once there "
-             f"is capacity; hand-edit the file to reprioritize or drop.")
+        def auto_queue(reason):
+            queue.append(prompt)
+            write_queue(queue)
+            deny(f"{reason} — this task has been QUEUED (position "
+                 f"{len(queue)} in {QUEUE_FILE}). Dispatch the queue head "
+                 f"with an Agent spawn whose prompt is {SENTINEL} once there "
+                 f"is capacity; hand-edit the file to reprioritize or drop.")
 
-    if is_direct and not is_pop and queue:
-        auto_queue(f"the task queue already has {len(queue)} pending "
-                   f"item(s) (FIFO order)")
+        if is_direct and not is_pop and queue:
+            auto_queue(f"the task queue already has {len(queue)} pending "
+                       f"item(s) (FIFO order)")
 
-    if not is_pop and not is_direct and queue:
-        deny(f"the task queue ({QUEUE_FILE}) has {len(queue)} pending "
-             f"item(s) — dispatch them first, in FIFO order, by spawning "
-             f"an agent whose prompt is the sentinel {SENTINEL} (the hook "
-             f"substitutes the queue head). To reprioritize or drop tasks, "
-             f"hand-edit the queue file.")
+        if not is_pop and not is_direct and queue:
+            deny(f"the task queue ({QUEUE_FILE}) has {len(queue)} pending "
+                 f"item(s) — dispatch them first, in FIFO order, by spawning "
+                 f"an agent whose prompt is the sentinel {SENTINEL} (the hook "
+                 f"substitutes the queue head). To reprioritize or drop "
+                 f"tasks, hand-edit the queue file.")
 
-    if is_pop:
-        if not queue:
-            deny(f"the task queue ({QUEUE_FILE}) is empty — nothing to pop; "
-                 f"dispatch directly with {PLACEHOLDER} in the prompt.")
-        task_body = split_base(queue[0])
-        with open(POOL_FILE, "r+") as f:
-            fcntl.flock(f, fcntl.LOCK_EX)
-            worktree_path = allocate_worktree(f)
+        if is_pop:
+            if not queue:
+                deny(f"the task queue ({QUEUE_FILE}) is empty — nothing to "
+                     f"pop; dispatch directly with {PLACEHOLDER} in the "
+                     f"prompt.")
+            task_body = split_base(queue[0])
+            worktree_path = allocate_worktree(pool_fh)
             if worktree_path is None:
                 deny("no free worktree available — the queued task stays in "
                      f"{QUEUE_FILE}; retry the {SENTINEL} dispatch after "
                      "freeing a worktree (merge + hand-edit the pool file).")
             queue.pop(0)
             write_queue(queue)
-        tool_input["prompt"] = task_body.replace(PLACEHOLDER, worktree_path)
+            tool_input["prompt"] = task_body.replace(
+                PLACEHOLDER, worktree_path)
+            emit({
+                "hookSpecificOutput": {
+                    "hookEventName": "PreToolUse",
+                    "permissionDecision": "allow",
+                    "updatedInput": tool_input,
+                }
+            })
+
+        if not is_direct:
+            sys.exit(0)  # non-fleet agent, queue empty: pass through
+
+        worktree_path = allocate_worktree(pool_fh)
+        if worktree_path is None:
+            auto_queue("no free worktree available")
+        tool_input["prompt"] = tool_input["prompt"].replace(
+            PLACEHOLDER, worktree_path)
         emit({
             "hookSpecificOutput": {
                 "hookEventName": "PreToolUse",
@@ -236,24 +277,6 @@ def main():
                 "updatedInput": tool_input,
             }
         })
-
-    if not is_direct:
-        sys.exit(0)  # non-fleet agent, queue empty: pass through unchanged
-
-    with open(POOL_FILE, "r+") as f:
-        fcntl.flock(f, fcntl.LOCK_EX)
-        worktree_path = allocate_worktree(f)
-        if worktree_path is None:
-            auto_queue("no free worktree available")
-    tool_input["prompt"] = tool_input["prompt"].replace(
-        PLACEHOLDER, worktree_path)
-    emit({
-        "hookSpecificOutput": {
-            "hookEventName": "PreToolUse",
-            "permissionDecision": "allow",
-            "updatedInput": tool_input,
-        }
-    })
 
 
 if __name__ == "__main__":
