@@ -2919,9 +2919,19 @@ seams:
   galoisiennes…, Invent. Math. 15 (1972), §1.11–1.12, Prop. 12). The
   two bricks are
   * `exists_local_inertia_torsion_order_of_good_of_supersingular`
-    (sorry node — the ARITHMETIC: an inertia element no power of which
-    acts trivially unless `p + 1` divides the exponent, i.e. the
-    order-`(p² − 1)` nonsplit-Cartan generator), and
+    (the ARITHMETIC: an inertia element no power of which acts
+    trivially unless `p + 1` divides the exponent, i.e. the
+    order-`(p² − 1)` nonsplit-Cartan generator) — DERIVED 2026-07-25
+    from the one-point cut
+    * `exists_local_inertia_torsion_orbit_of_good_of_supersingular`
+      (sorry node): the same inertia element with a SINGLE `p`-torsion
+      point `Q` whose `⟨σ⟩`-orbit has length divisible by `p + 1`. The
+      nonsplit Cartan acts simply transitively on the `p² − 1` nonzero
+      points of `E[p]`, so the orbit is everything; the module-wide
+      statement follows by instantiating at `Q`. Its docstring carries
+      the four-step route (reduction kernel → Newton-polygon slope of
+      the `p`-division polynomial → tame ramification → the PROVEN
+      compactness lifting into `localInertiaGroup`), and
   * the `hborel` step inside the proof (the LINEAR ALGEBRA: an
     eigenvector makes the whole inertia image upper-triangular, hence
     of exponent dividing `p (p − 1)`) — PROVEN 2026-07-25 from the
@@ -4369,9 +4379,137 @@ theorem WeierstrassCurve.point_map_pow_eq_self_of_eigenvector
 open ValuativeRel IsDedekindDomain in
 open scoped WeierstrassCurve.Affine in
 set_option backward.isDefEq.respectTransparency false in
+/-- **Serre's level-2 fundamental character, ONE-POINT form: an inertia
+element whose orbit on some local `p`-torsion point has length divisible
+by `p + 1`** (sorry node, cut 2026-07-25 out of
+`exists_local_inertia_torsion_order_of_good_of_supersingular` below,
+whose quantifier over the whole `p`-torsion MODULE it replaces by a
+statement about a SINGLE point — that is the entire content of the cut,
+and it is the shape the ramification argument actually produces): for an
+elliptic curve over `ℚ` with good supersingular reduction at an odd
+prime `p` there are an element `σ` of the local inertia at `p` and a
+`p`-torsion point `Q` of the completed base change over the local
+algebraic closure such that `σ ^ k` fixes `Q` only when `p + 1` divides
+`k`.
+
+`Q ≠ 0` is deliberately NOT among the conclusions, and dropping it costs
+nothing: it is IMPLIED, because `σ ^ 1` fixes `0` while `p + 1 ∤ 1`. So
+the statement is not vacuous — a junk witness `Q = 0` refutes its own
+orbit condition.
+
+WHY IT IS TRUE. Supersingularity puts all of `E[p]` inside the kernel of
+reduction, i.e. inside the `p`-torsion of the formal group, which has
+height `2`; the Newton polygon of `[p](T)` then has the single slope
+`1/(p² − 1)`, so every nonzero point of `E[p]` generates a totally and
+TAMELY ramified extension (`p ∤ p² − 1`) of ramification index divisible
+by `p² − 1` over the maximal unramified extension of `ℚ_p`. Hence the
+inertia image in `Aut(E[p]) ≅ GL₂(𝔽_p)` is the nonsplit Cartan subgroup
+`𝔽_{p²}ˣ`, cyclic of order `p² − 1 = (p − 1)(p + 1)`, acting SIMPLY
+TRANSITIVELY on the `p² − 1` nonzero points of `E[p]`. A generator `σ`
+therefore has trivial stabilizer at every nonzero `Q`, so its orbit
+there has length exactly `p² − 1`, and `σ ^ k Q = Q` forces
+`(p² − 1) ∣ k`, a fortiori `(p + 1) ∣ k`. Serre, *Propriétés
+galoisiennes des points d'ordre fini des courbes elliptiques*, Invent.
+Math. 15 (1972), §1.9–1.12, Prop. 12; Silverman ATAEC IV.6, V.
+
+ROUTE for the next owner, in the vocabulary this development already
+has (2026-07-25):
+1. *Containment in the kernel of reduction.* `hss` says the reduced
+   curve has NO nonzero geometric `p`-torsion, so ANY reduction
+   homomorphism kills `E[p]`; the sorried leaf
+   `exists_localReductionHom_of_good_reduction` (same file) supplies
+   the inertia-equivariant `red`, and this step is then immediate.
+2. *The valuation of a `p`-torsion point.* mathlib has the division
+   polynomials (`WeierstrassCurve.Ψ`, `preΨ`), and
+   `AbsoluteGaloisGroup.lean` supplies `spectralNorm Kᵥ (Kᵥᵃˡᵍ)` as the
+   absolute value on the local algebraic closure (together with
+   `localValuationSubring` and its integral closure). The content to
+   prove is that a root `x(Q)` of the `p`-division polynomial has
+   `|x(Q)| = |p| ^ (−2/(p² − 1))`, i.e. the Newton-polygon slope. NOTE
+   mathlib's `Mathlib/RingTheory/FormalGroup/Basic.lean` is embryonic
+   (group axioms only — no height, no `[p]`-series, no Newton polygon),
+   so the formal-group route needs that theory built first; the
+   division-polynomial route avoids it.
+3. *From ramification to an inertia element.* `p ∤ p² − 1`, so the
+   extension is tame and its inertia group is cyclic of order divisible
+   by `p² − 1`. NOTE the `x`-COORDINATE ALONE SUFFICES here, which cuts
+   the work materially: the `p`-division polynomial gives
+   `ℚ_p(x(Q))/ℚ_p` totally and tamely ramified of degree divisible by
+   `(p² − 1)/2`, tame ramification makes its inertia CYCLIC, so a
+   generator `σ` has an orbit of length divisible by `(p² − 1)/2` on the
+   conjugates of `x(Q)`; the orbit of `Q` itself surjects equivariantly
+   onto that one, hence has length divisible by `(p² − 1)/2` too, and
+   `(p + 1) ∣ (p² − 1)/2 = (p + 1)(p − 1)/2` for odd `p`. So neither the
+   `y`-coordinate, nor the full nonsplit Cartan, nor simple transitivity
+   on `E[p] ∖ 0` has to be formalised — only the Newton polygon of the
+   division polynomial and tameness.
+4. *From a finite level to `localInertiaGroup`.* The PROVEN compactness
+   lifting `exists_mem_localInertiaGroup_restrictNormalHom_eq`
+   (`Fermat/FLT/Deformations/RepresentationTheory/LocalInertiaFixedField.lean`,
+   the profinite half of Neukirch II.9.11) turns an inertia element at a
+   finite Galois level `N` into an element of the FULL
+   `localInertiaGroup` restricting to it — this is how the witness `σ`
+   below is meant to be built, once `N` is taken to contain the
+   coordinates of `Q`.
+
+NUMERICAL CERTIFICATE for the route (PARI/GP, 2026-07-25 — a check of
+the STATEMENT, not a proof): take `p = 5` and `E : y² = x³ + 1`, which
+has `v₅(Δ) = 0` and `a₅ = 0`, i.e. good supersingular reduction at `5`.
+Its `5`-division polynomial has degree `12` with coefficient valuations
+`v₅ = 0, 2, 1, 1, 1` at `x⁰, x³, x⁶, x⁹, x¹²`, so its Newton polygon at
+`5` is the SINGLE segment from `(0,0)` to `(12,1)`: every root has
+valuation `−1/12 = −2/(p² − 1)`, as the height-`2` formal group
+predicts. `factorpadic` moreover shows the polynomial is IRREDUCIBLE
+over `ℚ₅`, so `ℚ₅(x(Q))` is totally ramified of degree
+`12 = (p² − 1)/2`, tamely (`5 ∤ 12`), and the full point field has
+`e = 24 = p² − 1`. Hence the tame inertia image is cyclic of order
+divisible by `p² − 1` and the orbit of a nonzero `Q` has length
+divisible by `p + 1 = 6`, which is what this leaf asserts.
+
+The same check at `p = 7` with `E : y² = x³ + x` (supersingular since
+`7 ≡ 3 mod 4`, `a₇ = 0`, `v₇(Δ) = 0`) gives a `7`-division polynomial of
+degree `24 = (p² − 1)/2`, irreducible over `ℚ₇`, with Newton polygon the
+single segment `(0,0)–(24,1)`: root valuation `−1/24 = −2/(p² − 1)`
+again. So the slope is the general formula, not a coincidence of `p = 5`. -/
+theorem WeierstrassCurve.exists_local_inertia_torsion_orbit_of_good_of_supersingular
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ} (hp : p.Prime) (hodd : p ≠ 2)
+    [E.HasGoodReduction
+      (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)]
+    (hss : ∀ P : ((E.reduction
+        (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal))⁄
+        (AlgebraicClosure (IsLocalRing.ResidueField
+          (Localization.AtPrime
+            hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)))).Point,
+      (p : ℤ) • P = 0 → P = 0) :
+    ∃ σ ∈ localInertiaGroup hp.toHeightOneSpectrumRingOfIntegersRat,
+      ∃ Q : ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+          (HeightOneSpectrum.adicCompletion ℚ
+            hp.toHeightOneSpectrumRingOfIntegersRat))).Point,
+        ((p : ℕ) : ℤ) • Q = 0 ∧
+        ∀ k : ℕ,
+          WeierstrassCurve.Affine.Point.map
+            (W' := E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+              hp.toHeightOneSpectrumRingOfIntegersRat)))
+            ((σ : (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+                  hp.toHeightOneSpectrumRingOfIntegersRat))
+                ≃ₐ[HeightOneSpectrum.adicCompletion ℚ
+                  hp.toHeightOneSpectrumRingOfIntegersRat]
+                (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+                  hp.toHeightOneSpectrumRingOfIntegersRat))) ^ k).toAlgHom Q = Q →
+          (p + 1) ∣ k :=
+  sorry
+
+open ValuativeRel IsDedekindDomain in
+open scoped WeierstrassCurve.Affine in
+set_option backward.isDefEq.respectTransparency false in
 /-- **Serre's level-2 fundamental character: an inertia element whose
-action on the local `p`-torsion has order divisible by `p + 1`** (sorry
-node, cut 2026-07-25 out of
+action on the local `p`-torsion has order divisible by `p + 1`**
+(DERIVED 2026-07-25 from the one-point leaf
+`exists_local_inertia_torsion_orbit_of_good_of_supersingular`
+immediately above: an exponent killing the whole `p`-torsion in
+particular fixes the single point `Q` that leaf supplies. Cut
+2026-07-25 out of
 `not_local_inertia_eigenvector_of_good_of_supersingular` — the
 *arithmetic* brick of the supersingular case, and since 2026-07-25 the
 ONLY open brick of it: the *linear-algebra* brick, the Borel bound, is
@@ -4432,8 +4570,10 @@ theorem WeierstrassCurve.exists_local_inertia_torsion_order_of_good_of_supersing
                   hp.toHeightOneSpectrumRingOfIntegersRat]
                 (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
                   hp.toHeightOneSpectrumRingOfIntegersRat))) ^ k).toAlgHom Q = Q) →
-        (p + 1) ∣ k :=
-  sorry
+        (p + 1) ∣ k := by
+  obtain ⟨σ, hσI, Q, hQtor, hQorb⟩ :=
+    E.exists_local_inertia_torsion_orbit_of_good_of_supersingular hp hodd hss
+  exact ⟨σ, hσI, fun k hk => hQorb k (hk Q hQtor)⟩
 
 open ValuativeRel IsDedekindDomain in
 open scoped WeierstrassCurve.Affine in
