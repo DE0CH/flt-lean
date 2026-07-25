@@ -67,7 +67,8 @@ them without a human. Do not re-wrap it.
 - `exists_framedGaloisRep_traceSubring`
 - `subring_closure_charFrob_coeff_eq_top`
 - `isIntegral_charFrobCoeff_quotient_of_isWeaklyUniversal_isTraceGenerated`
-- `exists_relations_lt_le_smul_of_minimal_mvPowerSeries_presentation`
+- `natCast_ne_zero_of_isWeaklyUniversal_isTraceGenerated`
+- `exists_relations_le_smul_of_charZero_mvPowerSeries_presentation`
 
 Both former strata above them were narrowed on 2026-07-25 into those
 leaves, and every statement they replace is now PROVEN here — including
@@ -5699,10 +5700,158 @@ theorem exists_minimal_mvPowerSeries_presentation {R : Type*} [CommRing R]
       RingHom.congr_fun hφC _,
     ← RingHom.comp_apply, hιcomp]
 
-/-- **Böckle relation-count leaf** (sorry node — the arithmetic core of
-the presentation stratum, isolated 2026-07-25 by peeling off the
-Nakayama step; **RESTATED the same day: the previous conclusion `r < g`
-was FALSE**, see the refutation below): for EVERY minimal presentation
+/-- **The universal deformation ring has characteristic zero** (sorry
+node — SPLIT OFF 2026-07-25 from the Böckle relation-count leaf
+`exists_relations_lt_le_smul_of_minimal_mvPowerSeries_presentation`,
+which is now PROVEN as an assembly over this node and the count proper):
+`ℓ` is not zero in the weakly universal, trace-generated hardly ramified
+deformation ring.
+
+WHY THIS IS ITS OWN NODE. The relation-count leaf used to conclude
+`(ℓ : Λ) ≠ 0` alongside `r ≤ g`, quantified over EVERY admissible
+coefficient ring `Λ`. The two conclusions are unrelated mathematics:
+`r ≤ g` is the Greenberg–Wiles/Poitou–Tate Euler characteristic, while
+`(ℓ : Λ) ≠ 0` says the deformation ring has a characteristic-zero
+point. And the `Λ`-clauses genuinely do not pin the characteristic — a
+finite field `Λ = k` satisfies every one of them, with
+`𝔪_Λ = (ℓ) = ⊥` — so the old conjunct was doing the work of ASSERTING
+that no minimal presentation over a characteristic-`ℓ` coefficient ring
+exists, which is exactly the present statement transported along `φ`.
+Welding it to the count made the count unprovable in isolation: over a
+characteristic-`ℓ` `Λ` the bound `r ≤ g` is FALSE
+(`k[[x,y]]/(x², xy, y²)` is minimally presented with `g = 2`, `r = 3`),
+so a prover at the old leaf had to dispose of that case before touching
+the Euler characteristic at all.
+
+EQUIVALENT FORM. Given `moduleFinite_of_isWeaklyUniversal_isTraceGenerated`
+(proven above), `(ℓ : D.R) ≠ 0` is equivalent to `Infinite D.R`: a
+`ℤ_ℓ`-module-finite ring in which `ℓ` vanishes is a finitely generated
+`𝔽_ℓ`-vector space, hence finite.
+
+DO NOT PROVE THIS FROM THE KRULL GLUE — that is circular. The glue
+below deduces `dim D.R ≥ 1`, hence `Infinite D.R`, from `r ≤ g`
+TOGETHER WITH `dim Λ = 1`, i.e. together with this very statement;
+Lean's declaration order already forbids the loop, since that whole
+chain (`succ_le_height_maximalIdeal_mvPowerSeries`,
+`exists_isPrime_lt_maximalIdeal_of_isWeaklyUniversal_isTraceGenerated`)
+is declared BELOW this point.
+
+THE CHEAP ROUTE, WHEN THE PRESENTATION STRATUM IS QUIET. Every consumer
+applies the count leaf to the presentation built by
+`exists_minimal_mvPowerSeries_presentation`, whose coefficient ring is
+the one `exists_coefficientRing_ringHom` constructs: `AdjoinRoot G` for
+a MONIC `G` over `ℤ_ℓ`, hence `ℤ_ℓ`-free, hence of characteristic zero.
+So exporting `(ℓ : Λ) ≠ 0` as one more conclusion of those two
+declarations is essentially free, and it deletes this node from the
+frontier — the assembly below would then take the hypothesis from its
+caller instead. That edit was NOT made here only because both
+declarations were under another owner at the time (flt-lean-5, actively
+committing to `exists_coefficientRing_ringHom`); it is the recommended
+successor task. Failing that, the honest arithmetic source is a
+characteristic-zero hardly ramified lift of `ρbar`.
+
+CIRCULARITY GUARD. The hypothesis package `IsHardlyRamified` +
+`IsIrreducible` + `5 ≤ ℓ` is the one
+`not_isIrreducible_of_isHardlyRamified_of_five_le` refutes, and that
+dichotomy is proven over this file's cone; discharging this node
+vacuously through it is circular and Lean rejects it. -/
+theorem natCast_ne_zero_of_isWeaklyUniversal_isTraceGenerated (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (D : HardlyRamifiedDeformation hℓOdd ρbar)
+    (hw : D.IsWeaklyUniversal) (ht : D.IsTraceGenerated) :
+    letI := D.commRing
+    (ℓ : D.R) ≠ 0 :=
+  sorry
+
+/-- **Böckle relation count over a characteristic-zero coefficient ring**
+(sorry node — the Greenberg–Wiles/Poitou–Tate half of the 2026-07-25
+split of `exists_relations_lt_le_smul_of_minimal_mvPowerSeries_presentation`,
+which is now PROVEN over this node and
+`natCast_ne_zero_of_isWeaklyUniversal_isTraceGenerated`): for every
+minimal presentation `φ : Λ[[x₁,…,x_g]] ↠ D.R` of the weakly universal,
+trace-generated hardly ramified deformation ring over an unramified
+coefficient ring `Λ` OF CHARACTERISTIC ZERO, the kernel is generated by
+at most `g` power series modulo `𝔪_S · ker φ`.
+
+The only change from the old leaf is bookkeeping that matters: `ℓ ≠ 0`
+in `Λ` is now a HYPOTHESIS rather than a conclusion. It has to be one —
+over a characteristic-`ℓ` coefficient ring the bound is false, see the
+counterexample in the docstring of the node above — and with it in hand
+the statement is the classical theorem and nothing else.
+
+What obstruction theory delivers, and nothing more (Böckle;
+Khare–Wintenberger §4): the minimal relation space is the `k`-vector
+space `ker φ/(𝔪_S · ker φ)`, whose dual embeds into
+`H²_{HR}(G_{ℚ,S}, ad⁰ ρbar)`, so `r ≤ dim H²` elements of `ker φ` span
+it modulo `𝔪_S · ker φ`. The bound `dim H² ≤ dim H¹ = g` is the
+Greenberg–Wiles/Poitou–Tate Euler characteristic for the FIXED
+determinant problem (`IsHardlyRamified.det` pins `det ρ` to the
+cyclotomic character, so the coefficient module is `ad⁰`, of dimension
+`3`, not `ad`):
+`dim H¹_L − dim H¹_{L^⊥} = h⁰(ℚ, ad⁰) − h⁰(ℚ, ad⁰(1))`
+`+ Σ_{v ∈ S} (dim L_v − h⁰(ℚ_v, ad⁰))`. Absolute irreducibility kills
+the two global terms; the local terms are `0` at `2` (the tame
+condition is balanced), `+1` at `ℓ` (flat/Fontaine–Laffaille:
+`dim H¹_f = h⁰ + dim ad⁰/Fil⁰ = h⁰ + 1`) and `−1` at `∞` (`ρbar` odd,
+so `h⁰(ℝ, ad⁰) = 1` and `L_∞ = 0` as `ℓ` is odd). The total is `0`,
+whence `r ≤ g` — the classical `R ≅ Λ[[x₁,…,x_g]]/(f₁,…,f_r)` with
+`r ≤ dim H²` and `dim R ≥ 1 + g − r ≥ 1`. Minimality of `φ`
+(`ker φ ⊆ 𝔪² + (ℓ)`) is what makes `g` the mod-`ℓ` tangent dimension
+`dim H¹_{HR}` in the first place, so it cannot be dropped.
+
+The passage from "spans modulo `𝔪_S · ker φ`" to "generates" is
+Nakayama's lemma, PROVEN in
+`exists_relations_lt_of_minimal_mvPowerSeries_presentation` below, so no
+completeness or closedness argument is needed here.
+
+As with the finiteness leaf, the hypotheses pin `D` down up to canonical
+isomorphism, so a future proof may construct its own universal datum and
+transport along `exists_ringEquiv_of_isUniversal` (minimality of a
+presentation is preserved by composition with a `ℤ_ℓ`-algebra
+isomorphism).
+
+References: Böckle, *Presentations of universal deformation rings*
+(and his appendix to Khare's Serre-conjecture notes);
+Khare–Wintenberger, *Serre's modularity conjecture (I)*, §4;
+Darmon–Diamond–Taylor, *Fermat's Last Theorem*, §2.6–2.7 (the `r ≤ g`
+count and `dim R ≥ 1 + g − r`); Mazur, *Deforming Galois
+representations*, §1.6–1.7. -/
+theorem exists_relations_le_smul_of_charZero_mvPowerSeries_presentation
+    (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (D : HardlyRamifiedDeformation hℓOdd ρbar)
+    (hw : D.IsWeaklyUniversal) (ht : D.IsTraceGenerated) :
+    letI := D.commRing; letI := D.algebra
+    ∀ (Λ : Type u) (_ : CommRing Λ) (_ : IsDomain Λ) (_ : IsLocalRing Λ)
+      (_ : IsNoetherianRing Λ) (_ : Algebra ℤ_[ℓ] Λ)
+      (_ : Module.Finite ℤ_[ℓ] Λ),
+      IsLocalRing.maximalIdeal Λ = Ideal.span {(ℓ : Λ)} →
+      (ℓ : Λ) ≠ 0 →
+      ∀ (g : ℕ) (φ : MvPowerSeries (Fin g) Λ →+* D.R),
+        Function.Surjective φ →
+        φ.comp (algebraMap ℤ_[ℓ] (MvPowerSeries (Fin g) Λ)) =
+          algebraMap ℤ_[ℓ] D.R →
+        RingHom.ker φ ≤
+          IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) ^ 2 ⊔
+            Ideal.span {(ℓ : MvPowerSeries (Fin g) Λ)} →
+        ∃ (r : ℕ) (f : Fin r → MvPowerSeries (Fin g) Λ),
+          r ≤ g ∧ (∀ i, f i ∈ RingHom.ker φ) ∧
+          RingHom.ker φ ≤ Ideal.span (Set.range f) ⊔
+            IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) •
+              RingHom.ker φ :=
+  sorry
+
+/-- **Böckle relation-count stratum** (the arithmetic core of the
+presentation stratum, isolated 2026-07-25 by peeling off the Nakayama
+step; **RESTATED the same day: the previous conclusion `r < g` was
+FALSE**, see the refutation below; **DECOMPOSED and PROVEN as an
+assembly 2026-07-25** over the characteristic-zero node
+`natCast_ne_zero_of_isWeaklyUniversal_isTraceGenerated` and the count
+proper `exists_relations_le_smul_of_charZero_mvPowerSeries_presentation`
+— see the first of those for why the two conclusions had to come
+apart): for EVERY minimal presentation
 `φ : Λ[[x₁,…,x_g]] ↠ D.R` of the weakly universal, trace-generated
 hardly ramified deformation ring, over ANY unramified coefficient ring
 `Λ` (local Noetherian domain, module-finite over `ℤ_ℓ`, maximal ideal
@@ -5805,8 +5954,26 @@ theorem exists_relations_lt_le_smul_of_minimal_mvPowerSeries_presentation
           (ℓ : Λ) ≠ 0 ∧ r ≤ g ∧ (∀ i, f i ∈ RingHom.ker φ) ∧
           RingHom.ker φ ≤ Ideal.span (Set.range f) ⊔
             IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) •
-              RingHom.ker φ :=
-  sorry
+              RingHom.ker φ := by
+  letI := D.commRing; letI := D.algebra
+  intro Λ iCR iDom iLoc iNoeth iAlg iFin hΛℓ g φ hφs hφc hφmin
+  letI := iCR; letI := iDom; letI := iLoc; letI := iNoeth; letI := iAlg
+  letI := iFin
+  -- Characteristic zero descends from `D.R` to `Λ` along the presentation:
+  -- `ℓ` in `Λ[[x]]` is the constant series `C (ℓ : Λ)`, and `φ` is a ring map.
+  have hℓΛ : (ℓ : Λ) ≠ 0 := by
+    intro h0
+    refine natCast_ne_zero_of_isWeaklyUniversal_isTraceGenerated hℓOdd hdim
+      hℓ5 h hirr D hw ht ?_
+    have hS : (ℓ : MvPowerSeries (Fin g) Λ) = 0 := by
+      rw [← map_natCast (MvPowerSeries.C : Λ →+* MvPowerSeries (Fin g) Λ) ℓ,
+        h0, map_zero]
+    rw [← map_natCast φ ℓ, hS, map_zero]
+  obtain ⟨r, f, hrg, hfmem, hle⟩ :=
+    exists_relations_le_smul_of_charZero_mvPowerSeries_presentation hℓOdd hdim
+      hℓ5 h hirr D hw ht Λ iCR iDom iLoc iNoeth iAlg iFin hΛℓ hℓΛ g φ hφs
+      hφc hφmin
+  exact ⟨r, f, hℓΛ, hrg, hfmem, hle⟩
 
 /-- **Böckle relation-bound stratum** (DECOMPOSED 2026-07-25 into the
 arithmetic leaf
