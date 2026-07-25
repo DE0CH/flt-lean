@@ -1266,6 +1266,366 @@ lemma vertNumerator_self_vertical {q₁ q₂ : F} (hq : W.Equation q₁ q₂)
     map_ofNat, algebraMap_coordX, algebraMap_coordY, algebraMap_coordC]
   linear_combination hT - hQK + (constHom W q₂ - tautY W) * hzK
 
+/-!
+### The line-numerator substrate: the hyperelliptic involution and
+point evaluation
+
+Two devices carry the line-numerator leaves.
+
+* The **hyperelliptic involution** `involHom` of `F[W]` (`coordX ↦ coordX`,
+  `coordY ↦ negY(coordX, coordY)`) is the comorphism of `⊖`, so it
+  transports `I_S` to `I_{⊖S}` (`map_involHom_pointIdeal`) and carries
+  `lineNumerator` at `⊖Q` to `lineNumeratorNeg` at `Q`
+  (`involHom_lineNumerator`).  That reduces the conjugate membership leaf
+  to the plain one, with no second case analysis.
+
+* **Point evaluation** `coordEval` (`AdjoinRoot.evalEval` at an affine
+  point of `W` itself) turns vanishing at a point into membership in its
+  point ideal (`mem_pointIdeal_of_coordEval_eq_zero`), which is how the
+  three simple factors of the line-numerator divisor are obtained from
+  the group law `Q ⊕ (P ⊖ Q) = P`.
+-/
+
+omit [DecidableEq F] in
+/-- The constants embedding into the coordinate ring is additive. -/
+lemma coordC_add (c d : F) : coordC W (c + d) = coordC W c + coordC W d := by
+  rw [coordC, coordC, coordC, ← map_add, ← Polynomial.C_add, ← Polynomial.C_add]
+
+omit [DecidableEq F] in
+/-- The constants embedding into the coordinate ring respects negation. -/
+lemma coordC_neg (c : F) : coordC W (-c) = -coordC W c := by
+  rw [coordC, coordC, ← map_neg, ← Polynomial.C_neg, ← Polynomial.C_neg]
+
+omit [DecidableEq F] in
+/-- The constants embedding into the coordinate ring respects
+subtraction. -/
+lemma coordC_sub (c d : F) : coordC W (c - d) = coordC W c - coordC W d := by
+  rw [coordC, coordC, coordC, ← map_sub, ← Polynomial.C_sub, ← Polynomial.C_sub]
+
+omit [DecidableEq F] in
+/-- The Weierstrass relation, read inside the coordinate ring. -/
+lemma coord_equation (W : WeierstrassCurve.Affine F) :
+    coordY W ^ 2 + coordC W W.a₁ * coordX W * coordY W + coordC W W.a₃ * coordY W =
+      coordX W ^ 3 + coordC W W.a₂ * coordX W ^ 2 + coordC W W.a₄ * coordX W +
+        coordC W W.a₆ := by
+  have h : CoordinateRing.mk W (Polynomial.X ^ 2 +
+      Polynomial.C (Polynomial.C W.a₁ * Polynomial.X + Polynomial.C W.a₃) *
+        Polynomial.X -
+      Polynomial.C (Polynomial.X ^ 3 + Polynomial.C W.a₂ * Polynomial.X ^ 2 +
+        Polynomial.C W.a₄ * Polynomial.X + Polynomial.C W.a₆)) = 0 := by
+    show CoordinateRing.mk W W.polynomial = 0
+    rw [AdjoinRoot.mk_self]
+  simp only [map_add, map_sub, map_mul, map_pow] at h
+  simp only [coordX, coordY, coordC]
+  linear_combination h
+
+omit [DecidableEq F] in
+/-- The class `Y − y` for a constant `y` in terms of the coordinate
+atoms. -/
+lemma YClass_C_eq (y : F) :
+    CoordinateRing.YClass W (Polynomial.C y) = coordY W - coordC W y := by
+  rw [CoordinateRing.YClass, coordY, coordC, ← map_sub]
+
+/-- **The hyperelliptic involution of the coordinate ring**: the
+`F[X]`-algebra endomorphism of `F[W]` fixing `coordX` and sending
+`coordY` to `negY(coordX, coordY) = −coordY − a₁·coordX − a₃`.  It is the
+comorphism of `⊖ : W → W`, and transports the divisor bookkeeping of a
+point to that of its negative (`map_involHom_pointIdeal`). -/
+noncomputable def involHom (W : WeierstrassCurve.Affine F) :
+    W.CoordinateRing →+* W.CoordinateRing :=
+  AdjoinRoot.lift ((CoordinateRing.mk W).comp Polynomial.C)
+    (-coordY W - coordC W W.a₁ * coordX W - coordC W W.a₃) (by
+      have hR := coord_equation W
+      simp only [coordX, coordY, coordC] at hR
+      show Polynomial.eval₂ ((CoordinateRing.mk W).comp Polynomial.C)
+        (-coordY W - coordC W W.a₁ * coordX W - coordC W W.a₃)
+        (Polynomial.X ^ 2 +
+          Polynomial.C (Polynomial.C W.a₁ * Polynomial.X + Polynomial.C W.a₃) *
+            Polynomial.X -
+          Polynomial.C (Polynomial.X ^ 3 + Polynomial.C W.a₂ * Polynomial.X ^ 2 +
+            Polynomial.C W.a₄ * Polynomial.X + Polynomial.C W.a₆)) = 0
+      simp only [Polynomial.eval₂_add, Polynomial.eval₂_sub, Polynomial.eval₂_mul,
+        Polynomial.eval₂_pow, Polynomial.eval₂_C, Polynomial.eval₂_X, RingHom.coe_comp,
+        Function.comp_apply, map_add, map_mul, map_pow, coordX, coordY, coordC]
+      linear_combination hR)
+
+omit [DecidableEq F] in
+/-- The involution fixes the image of `F[X]`. -/
+@[simp] lemma involHom_ofPoly (r : Polynomial F) :
+    involHom W (CoordinateRing.mk W (Polynomial.C r)) =
+      CoordinateRing.mk W (Polynomial.C r) := by
+  rw [involHom, AdjoinRoot.lift_mk, Polynomial.eval₂_C]
+  rfl
+
+omit [DecidableEq F] in
+/-- The involution fixes `coordX`. -/
+@[simp] lemma involHom_coordX : involHom W (coordX W) = coordX W :=
+  involHom_ofPoly Polynomial.X
+
+omit [DecidableEq F] in
+/-- The involution fixes the constants. -/
+@[simp] lemma involHom_coordC (d : F) : involHom W (coordC W d) = coordC W d :=
+  involHom_ofPoly (Polynomial.C d)
+
+omit [DecidableEq F] in
+/-- The involution sends `coordY` to `negY(coordX, coordY)`. -/
+@[simp] lemma involHom_coordY :
+    involHom W (coordY W) =
+      -coordY W - coordC W W.a₁ * coordX W - coordC W W.a₃ :=
+  AdjoinRoot.lift_root _
+
+omit [DecidableEq F] in
+/-- The involution transports the point ideal of `S` to that of `⊖S`. -/
+lemma map_involHom_pointIdeal (S : W.Point) :
+    Ideal.map (involHom W) (pointIdeal W S) = pointIdeal W (-S) := by
+  cases S with
+  | zero =>
+    rw [show pointIdeal W (-Point.zero : W.Point) = ⊤ from rfl,
+      show pointIdeal W (Point.zero : W.Point) = ⊤ from rfl, Ideal.map_top]
+  | some x y h =>
+    rw [Point.neg_some, pointIdeal_some, pointIdeal_some, CoordinateRing.XYIdeal,
+      CoordinateRing.XYIdeal, Ideal.map_span, Set.image_pair, XClass_eq, YClass_C_eq,
+      YClass_C_eq, map_sub, map_sub, involHom_coordX, involHom_coordC,
+      involHom_coordY, involHom_coordC,
+      show W.negY x y = -y - W.a₁ * x - W.a₃ from rfl, coordC_sub, coordC_sub,
+      coordC_neg, coordC_mul]
+    refine le_antisymm (Ideal.span_le.mpr ?_) (Ideal.span_le.mpr ?_) <;>
+      rw [Set.insert_subset_iff, Set.singleton_subset_iff] <;>
+      exact ⟨Ideal.mem_span_pair.mpr ⟨1, 0, by ring⟩,
+        Ideal.mem_span_pair.mpr ⟨-coordC W W.a₁, -1, by ring⟩⟩
+
+omit [DecidableEq F] in
+/-- **The conjugate line numerator is the involution transport of the
+line numerator at `⊖Q`.**  Purely formal: the involution fixes the
+cleared `addX` (`A` is `σ`-invariant, since `σ` flips `U = coordY − q₂`
+to `−(U + a₁T)`), and the constant terms recombine. -/
+lemma involHom_lineNumerator (q₁ q₂ x₁ y₁ ℓ : F) :
+    involHom W (lineNumerator W q₁ (W.negY q₁ q₂) x₁ y₁ ℓ) =
+      lineNumeratorNeg W q₁ q₂ x₁ y₁ ℓ := by
+  simp only [lineNumerator, lineNumeratorNeg, map_add, map_sub, map_mul, map_neg,
+    map_pow, involHom_coordX, involHom_coordC, involHom_coordY,
+    show W.negY q₁ q₂ = -q₂ - W.a₁ * q₁ - W.a₃ from rfl, coordC_sub, coordC_neg,
+    coordC_mul]
+  ring
+
+omit [DecidableEq F] in
+/-- `T = coordX − q₁` lies in the point ideal of `Q`. -/
+lemma sub_coordX_mem_pointIdeal {q₁ q₂ : F} (hq : W.Nonsingular q₁ q₂) :
+    coordX W - coordC W q₁ ∈ pointIdeal W (.some q₁ q₂ hq) := by
+  rw [pointIdeal_some, CoordinateRing.XYIdeal, ← XClass_eq]
+  exact Ideal.subset_span (Set.mem_insert _ _)
+
+omit [DecidableEq F] in
+/-- `U = coordY − q₂` lies in the point ideal of `Q`. -/
+lemma sub_coordY_mem_pointIdeal {q₁ q₂ : F} (hq : W.Nonsingular q₁ q₂) :
+    coordY W - coordC W q₂ ∈ pointIdeal W (.some q₁ q₂ hq) := by
+  rw [pointIdeal_some, CoordinateRing.XYIdeal, ← YClass_C_eq]
+  exact Ideal.subset_span (Set.mem_insert_of_mem _ rfl)
+
+omit [DecidableEq F] in
+/-- **Distinct points have coprime point ideals.**  No maximality input
+is needed: if the `x`-coordinates differ, the difference of the two
+`X`-classes is a nonzero constant, hence a unit of `F[W]`; if they agree,
+the `y`-coordinates differ and the difference of the two `Y`-classes is.
+The convention `I_O = ⊤` settles the cases involving `O`. -/
+lemma isCoprime_pointIdeal {S T : W.Point} (hST : S ≠ T) :
+    IsCoprime (pointIdeal W S) (pointIdeal W T) := by
+  rw [Ideal.isCoprime_iff_sup_eq]
+  cases S with
+  | zero => rw [show pointIdeal W (Point.zero : W.Point) = ⊤ from rfl, top_sup_eq]
+  | some x₁ y₁ h₁ =>
+    cases T with
+    | zero => rw [show pointIdeal W (Point.zero : W.Point) = ⊤ from rfl, sup_top_eq]
+    | some x₂ y₂ h₂ =>
+      by_cases hx : x₁ = x₂
+      · subst hx
+        have hy : y₂ - y₁ ≠ 0 := by
+          refine sub_ne_zero.mpr fun hc => hST ?_
+          subst hc
+          rfl
+        refine Ideal.eq_top_of_isUnit_mem _ ?_ (isUnit_coordC (W := W) hy)
+        rw [coordC_sub, show coordC W y₂ - coordC W y₁ =
+          (coordY W - coordC W y₁) - (coordY W - coordC W y₂) from by ring]
+        exact sub_mem (Submodule.mem_sup_left (sub_coordY_mem_pointIdeal h₁))
+          (Submodule.mem_sup_right (sub_coordY_mem_pointIdeal h₂))
+      · refine Ideal.eq_top_of_isUnit_mem _ ?_
+          (isUnit_coordC (W := W) (sub_ne_zero.mpr (Ne.symm hx)))
+        rw [coordC_sub, show coordC W x₂ - coordC W x₁ =
+          (coordX W - coordC W x₁) - (coordX W - coordC W x₂) from by ring]
+        exact sub_mem (Submodule.mem_sup_left (sub_coordX_mem_pointIdeal h₁))
+          (Submodule.mem_sup_right (sub_coordX_mem_pointIdeal h₂))
+
+omit [DecidableEq F] in
+/-- **The certificate-free half of the line-numerator membership**:
+`lineNumerator` lies in `I_Q³`.  With `T = coordX − q₁`, `U = coordY − q₂`
+the cleared `addX` is `A = U² + a₁UT − (a₂ + 2q₁)T² − T³ ∈ ⟨T, U⟩²`, and
+every summand of `lineNumerator` is `U · (A − q₁T²)`, a multiple of `T³`,
+or `(A − cT²) · T` — all in `⟨T, U⟩³`. -/
+lemma lineNumerator_mem_pointIdeal_pow_three {q₁ q₂ : F} (hq : W.Nonsingular q₁ q₂)
+    (x₁ y₁ ℓ : F) :
+    lineNumerator W q₁ q₂ x₁ y₁ ℓ ∈ pointIdeal W (.some q₁ q₂ hq) ^ 3 := by
+  have hT := sub_coordX_mem_pointIdeal hq
+  have hU := sub_coordY_mem_pointIdeal hq
+  have h2 : pointIdeal W (.some q₁ q₂ hq) ^ 2 =
+      pointIdeal W (.some q₁ q₂ hq) * pointIdeal W (.some q₁ q₂ hq) := sq _
+  have h3l : pointIdeal W (.some q₁ q₂ hq) ^ 3 =
+      pointIdeal W (.some q₁ q₂ hq) * pointIdeal W (.some q₁ q₂ hq) ^ 2 := by ring
+  have h3r : pointIdeal W (.some q₁ q₂ hq) ^ 3 =
+      pointIdeal W (.some q₁ q₂ hq) ^ 2 * pointIdeal W (.some q₁ q₂ hq) := by ring
+  have hT2 : (coordX W - coordC W q₁) ^ 2 ∈ pointIdeal W (.some q₁ q₂ hq) ^ 2 := by
+    rw [h2, pow_two (coordX W - coordC W q₁)]; exact Ideal.mul_mem_mul hT hT
+  have hT3 : (coordX W - coordC W q₁) ^ 3 ∈ pointIdeal W (.some q₁ q₂ hq) ^ 3 := by
+    rw [show (coordX W - coordC W q₁) ^ 3 =
+      (coordX W - coordC W q₁) ^ 2 * (coordX W - coordC W q₁) from by ring, h3r]
+    exact Ideal.mul_mem_mul hT2 hT
+  have hA : (coordY W - coordC W q₂) ^ 2 +
+      coordC W W.a₁ * (coordY W - coordC W q₂) * (coordX W - coordC W q₁) -
+      (coordC W W.a₂ + coordC W q₁ + coordX W) * (coordX W - coordC W q₁) ^ 2 ∈
+        pointIdeal W (.some q₁ q₂ hq) ^ 2 := by
+    refine sub_mem (add_mem ?_ ?_) (Ideal.mul_mem_left _ _ hT2)
+    · rw [h2, pow_two (coordY W - coordC W q₂)]; exact Ideal.mul_mem_mul hU hU
+    · rw [mul_assoc, h2]; exact Ideal.mul_mem_left _ _ (Ideal.mul_mem_mul hU hT)
+  have hAq : (coordY W - coordC W q₂) ^ 2 +
+      coordC W W.a₁ * (coordY W - coordC W q₂) * (coordX W - coordC W q₁) -
+      (coordC W W.a₂ + coordC W q₁ + coordX W) * (coordX W - coordC W q₁) ^ 2 -
+      coordC W q₁ * (coordX W - coordC W q₁) ^ 2 ∈
+        pointIdeal W (.some q₁ q₂ hq) ^ 2 :=
+    sub_mem hA (Ideal.mul_mem_left _ _ hT2)
+  have hAx : (coordY W - coordC W q₂) ^ 2 +
+      coordC W W.a₁ * (coordY W - coordC W q₂) * (coordX W - coordC W q₁) -
+      (coordC W W.a₂ + coordC W q₁ + coordX W) * (coordX W - coordC W q₁) ^ 2 -
+      coordC W x₁ * (coordX W - coordC W q₁) ^ 2 ∈
+        pointIdeal W (.some q₁ q₂ hq) ^ 2 :=
+    sub_mem hA (Ideal.mul_mem_left _ _ hT2)
+  rw [lineNumerator]
+  refine sub_mem (sub_mem (sub_mem (sub_mem (neg_mem (add_mem ?_ ?_)) ?_) ?_) ?_) ?_
+  · rw [h3l]; exact Ideal.mul_mem_mul hU hAq
+  · exact Ideal.mul_mem_left _ _ hT3
+  · rw [h3r]; exact Ideal.mul_mem_mul (Ideal.mul_mem_left _ _ hA) hT
+  · exact Ideal.mul_mem_left _ _ hT3
+  · rw [h3r]; exact Ideal.mul_mem_mul (Ideal.mul_mem_left _ _ hAx) hT
+  · exact Ideal.mul_mem_left _ _ hT3
+
+omit [DecidableEq F] in
+/-- Membership in the point ideal of `(x, y)` from vanishing of a
+polynomial lift at `(x, y)`. -/
+lemma mem_XYIdeal_of_evalEval {x y : F} (f : Polynomial (Polynomial F))
+    (hf : f.evalEval x y = 0) :
+    CoordinateRing.mk W f ∈ CoordinateRing.XYIdeal W x (Polynomial.C y) := by
+  have hmem : f ∈ Ideal.span {Polynomial.C (Polynomial.X - Polynomial.C x),
+      (Polynomial.X : Polynomial (Polynomial F)) - Polynomial.C (Polynomial.C y)} :=
+    Polynomial.mem_span_C_X_sub_C_X_sub_C_iff_eval_eval_eq_zero.mpr hf
+  have himg := Ideal.mem_map_of_mem (CoordinateRing.mk W) hmem
+  simp only [CoordinateRing.XYIdeal, CoordinateRing.XClass, CoordinateRing.YClass]
+  rwa [Ideal.map_span, Set.image_pair] at himg
+
+/-- Evaluation of coordinate-ring elements at an affine point of `W`
+itself: the `AdjoinRoot`-level `evalEval` of the Weierstrass
+polynomial. -/
+noncomputable def coordEval (W : WeierstrassCurve.Affine F) {x y : F}
+    (h : W.Equation x y) : W.CoordinateRing →+* F :=
+  AdjoinRoot.evalEval (p := W.polynomial) h
+
+omit [DecidableEq F] in
+lemma coordEval_mk {x y : F} (h : W.Equation x y) (g : Polynomial (Polynomial F)) :
+    coordEval W h (CoordinateRing.mk W g) = g.evalEval x y :=
+  AdjoinRoot.evalEval_mk (p := W.polynomial) h g
+
+omit [DecidableEq F] in
+@[simp] lemma coordEval_coordC {x y : F} (h : W.Equation x y) (d : F) :
+    coordEval W h (coordC W d) = d := by
+  rw [coordC, coordEval_mk]; simp [Polynomial.evalEval]
+
+omit [DecidableEq F] in
+@[simp] lemma coordEval_coordX {x y : F} (h : W.Equation x y) :
+    coordEval W h (coordX W) = x := by
+  rw [coordX, coordEval_mk]; simp [Polynomial.evalEval]
+
+omit [DecidableEq F] in
+@[simp] lemma coordEval_coordY {x y : F} (h : W.Equation x y) :
+    coordEval W h (coordY W) = y := by
+  rw [coordY, coordEval_mk]; simp [Polynomial.evalEval]
+
+omit [DecidableEq F] in
+/-- A coordinate-ring element vanishing at an affine point lies in its
+point ideal. -/
+lemma mem_pointIdeal_of_coordEval_eq_zero {x y : F} (h : W.Nonsingular x y)
+    {z : W.CoordinateRing} (hz : coordEval W h.left z = 0) :
+    z ∈ pointIdeal W (.some x y h) := by
+  obtain ⟨f, rfl⟩ := AdjoinRoot.mk_surjective z
+  rw [coordEval_mk] at hz
+  exact mem_XYIdeal_of_evalEval f hz
+
+/-- The cleared slope relation `ℓ·(x₁ − x₂) = y₁ − y₂` for the group-law
+slope, uniformly in the chord and the tangent case. -/
+lemma slope_mul_sub {x₁ y₁ x₂ y₂ : F} (h₁ : W.Equation x₁ y₁)
+    (h₂ : W.Equation x₂ y₂) (hxy : ¬(x₁ = x₂ ∧ y₁ = W.negY x₂ y₂)) :
+    W.slope x₁ x₂ y₁ y₂ * (x₁ - x₂) = y₁ - y₂ := by
+  by_cases hx : x₁ = x₂
+  · have hyy : y₁ = y₂ := Y_eq_of_Y_ne h₁ h₂ hx fun hc => hxy ⟨hx, hc⟩
+    rw [hx, hyy]; ring
+  · rw [WeierstrassCurve.Affine.slope_of_X_ne hx]
+    field_simp
+
+omit [DecidableEq F] in
+/-- **The line numerator only depends on the line, not on the base point
+used to write it down**: replacing `(x, y)` by any other point `(x', y')`
+of the line of slope `ℓ` through it leaves `lineNumerator` unchanged.
+This is what makes ONE simple-factor lemma serve all three points of the
+chord. -/
+lemma lineNumerator_congr {q₁ q₂ x y x' y' ℓ : F} (hl : ℓ * (x - x') = y - y') :
+    lineNumerator W q₁ q₂ x y ℓ = lineNumerator W q₁ q₂ x' y' ℓ := by
+  have h1 : coordC W ℓ * (coordC W x - coordC W x') = coordC W y - coordC W y' := by
+    rw [← coordC_sub, ← coordC_mul, ← coordC_sub, hl]
+  simp only [lineNumerator]
+  linear_combination (coordX W - coordC W q₁) ^ 3 * h1
+
+/-- **The simple factor of the line-numerator membership** (PROVEN): the
+cleared line value at the translate vanishes at `P ⊖ Q`, for *any* slope
+`ℓ`.
+
+Indeed `lineNumerator/T³` is the line function `L` read at `Q ⊕ taut`, so
+at `taut = P ⊖ Q` it is `L(P) = 0`.  Formally: `P ⊖ Q` is either `O` (and
+`I_O = ⊤`) or an affine point `(α, β)`, and then the group law
+`Q ⊕ (α, β) = P` gives `addX q₁ α λ = x`, `addY q₁ α q₂ λ = y` for
+`λ = slope q₁ α q₂ β`; with `T = α − q₁`, `U = β − q₂ = −λ(q₁ − α)` the
+cleared `addX` is `A = T²·addX q₁ α λ = T²x` and the `Y`-part of
+`lineNumerator` is `T³·addY q₁ α q₂ λ = T³y`, so the whole value is
+`T³y − ℓ·T³(x − x) − T³y = 0`.  The degenerate configuration `α = q₁`
+forces `β = q₂` (the other sign is `P = O`) and makes every summand
+vanish outright. -/
+lemma lineNumerator_mem_pointIdeal_sub {q₁ q₂ x y : F} (hq : W.Nonsingular q₁ q₂)
+    (h : W.Nonsingular x y) (ℓ : F) :
+    lineNumerator W q₁ q₂ x y ℓ ∈
+      pointIdeal W (.some x y h - .some q₁ q₂ hq) := by
+  rcases hd : ((.some x y h : W.Point) - .some q₁ q₂ hq) with _ | ⟨α, β, hαβ⟩
+  · rw [hd, show pointIdeal W (Point.zero : W.Point) = ⊤ from rfl]
+    exact Submodule.mem_top
+  · have hsum : (Point.some q₁ q₂ hq : W.Point) + Point.some α β hαβ =
+        Point.some x y h := by rw [← hd]; abel
+    rw [hd]
+    refine mem_pointIdeal_of_coordEval_eq_zero hαβ ?_
+    by_cases hQA : q₁ = α ∧ q₂ = W.negY α β
+    · exact absurd (by rw [← hsum, Point.add_of_Y_eq hQA.1 hQA.2] :
+        (Point.some x y h : W.Point) = 0) (Point.some_ne_zero h)
+    · rw [Point.add_some hQA] at hsum
+      rw [Point.some.injEq] at hsum
+      obtain ⟨hX, hY⟩ := hsum
+      simp only [lineNumerator, map_sub, map_add, map_mul, map_neg, map_pow,
+        coordEval_coordX, coordEval_coordY, coordEval_coordC]
+      by_cases hxa : q₁ = α
+      · have hβ : q₂ = β :=
+          Y_eq_of_Y_ne hq.left hαβ.left hxa fun hc => hQA ⟨hxa, hc⟩
+        rw [← hxa, ← hβ]; ring
+      · have hl : W.slope q₁ α q₂ β * (q₁ - α) = q₂ - β :=
+          slope_mul_sub hq.left hαβ.left fun hc => hQA hc
+        have hU : β - q₂ = -(W.slope q₁ α q₂ β * (q₁ - α)) := by
+          linear_combination hl
+        simp only [WeierstrassCurve.Affine.addY, WeierstrassCurve.Affine.negAddY,
+          WeierstrassCurve.Affine.negY, WeierstrassCurve.Affine.addX] at hX hY
+        rw [hU]
+        linear_combination (-(q₁ - α) ^ 3) * hY + (ℓ * (q₁ - α) ^ 3) * hX
+
 variable {p : ℕ} [Fact p.Prime] [IsAlgClosed F]
 
 -- `[IsAlgClosed F]` is not needed for this leaf (nor is `hΔ`), but the
@@ -1607,40 +1967,183 @@ theorem lineNumerator_mul_lineNumeratorNeg {q₁ q₂ x₁ y₁ x₂ y₂ : F}
             (coordX W - algebraMap F W.CoordinateRing q₁) ^ 2))) * hc2W +
     (-((coordX W - algebraMap F W.CoordinateRing q₁) ^ 6)) * hc3W
 
-/-- **L4-8 line-numerator sub-leaf (sorry): membership of the line
-numerator in its divisor ideal.**  `lineNumerator q₁ q₂ x₁ y₁ ℓ` lies in
+/-- **L4-8 line-numerator sub-leaf (sorry): the comaximal assembly in the
+COINCIDENT configurations — the whole residual coincidence zoo.**
+
+The four separate memberships of `lineNumerator` in `I_Q³`, `I_{P⊖Q}`,
+`I_{R⊖Q}`, `I_{⊖(P⊕R)⊖Q}` are all PROVEN (see
+`lineNumerator_mem_prod_pointIdeal`), and in *general position* they
+assemble into the product by pure comaximality
+(`lineNumerator_mem_prod_of_mem_factors`).  What is left is exactly the
+configurations where two of the four factors are supported at the SAME
+point, so that separate memberships no longer suffice: `P = 2Q`,
+`R = 2Q`, `⊖(P ⊕ R) = 2Q` (a translated point equals `Q`, so `n ∈ I_Q⁴`
+is needed), `P = R` (then `P⊖Q = R⊖Q` and `n ∈ I_{P⊖Q}²` is needed),
+`P = ⊖(P ⊕ R)`, `R = ⊖(P ⊕ R)`.  Note a translated point equal to `O`
+is NOT a coincidence: its factor is `⊤`, and `isCoprime_pointIdeal`
+covers it.
+
+TWO ROUTES FOR THE ZOO.
+* *Higher-order vanishing directly.*  `n ∈ I_S²` is a Taylor condition at
+  `S`; a lift of `n` to `F[X][Y]` must lie in
+  `⟨(X − α)², (X − α)(Y − β), (Y − β)², W.polynomial⟩`, which is a
+  Gröbner cofactor certificate (Singular can produce it, `ring` verifies
+  it) — but it is parametric in `q₁, q₂, x₁, y₁, ℓ`, hence large.
+* *The non-vanishing squeeze* (recommended).  The multiplicity is forced
+  by the already-known product identity: `⟨n⟩·⟨ñ⟩ = RHS·RHS'` exactly
+  (`hmul` in `span_lineNumerator`), so at each maximal ideal the two
+  vanishing orders SUM to the known total.  Hence `v_𝔭(n) = v_𝔭(RHS)`
+  follows from `v_𝔭(ñ) = v_𝔭(RHS')`, and in every coincidence case the
+  partner order is `0`, i.e. what has to be proven is a *non-vanishing*
+  statement `ñ ∉ I_𝔭` — a single evaluation `≠ 0` (available through
+  `coordEval` / `mem_pointIdeal_of_coordEval_eq_zero`), not a
+  higher-order vanishing.  E.g. at `A = P ⊖ Q` one computes
+  `ñ(A) = −(2y₁ + a₁x₁ + a₃)·(α − q₁)³`, nonzero exactly when `2P ≠ O`
+  and `A ≠ ±Q`.  The cost is the valuation/unique-factorization layer for
+  ideals of the Dedekind domain `F[W]`. -/
+theorem lineNumerator_mem_prod_of_mem_factors_coincident (hΔ : W.Δ ≠ 0)
+    {q₁ q₂ x₁ y₁ x₂ y₂ : F}
+    (hq : W.Nonsingular q₁ q₂) (h₁ : W.Nonsingular x₁ y₁)
+    (h₂ : W.Nonsingular x₂ y₂) (hxy : ¬(x₁ = x₂ ∧ y₁ = W.negY x₂ y₂))
+    (hcoin :
+      (Point.some x₁ y₁ h₁ : W.Point) = .some q₁ q₂ hq + .some q₁ q₂ hq ∨
+      (Point.some x₂ y₂ h₂ : W.Point) = .some q₁ q₂ hq + .some q₁ q₂ hq ∨
+      (-(Point.some x₁ y₁ h₁ + Point.some x₂ y₂ h₂) : W.Point) =
+        .some q₁ q₂ hq + .some q₁ q₂ hq ∨
+      (Point.some x₁ y₁ h₁ : W.Point) = .some x₂ y₂ h₂ ∨
+      (Point.some x₁ y₁ h₁ : W.Point) =
+        -(Point.some x₁ y₁ h₁ + Point.some x₂ y₂ h₂) ∨
+      (Point.some x₂ y₂ h₂ : W.Point) =
+        -(Point.some x₁ y₁ h₁ + Point.some x₂ y₂ h₂))
+    (hQ3 : lineNumerator W q₁ q₂ x₁ y₁ (W.slope x₁ x₂ y₁ y₂) ∈
+      pointIdeal W (.some q₁ q₂ hq) ^ 3)
+    (hA : lineNumerator W q₁ q₂ x₁ y₁ (W.slope x₁ x₂ y₁ y₂) ∈
+      pointIdeal W (.some x₁ y₁ h₁ - .some q₁ q₂ hq))
+    (hB : lineNumerator W q₁ q₂ x₁ y₁ (W.slope x₁ x₂ y₁ y₂) ∈
+      pointIdeal W (.some x₂ y₂ h₂ - .some q₁ q₂ hq))
+    (hC : lineNumerator W q₁ q₂ x₁ y₁ (W.slope x₁ x₂ y₁ y₂) ∈
+      pointIdeal W (-(.some x₁ y₁ h₁ + .some x₂ y₂ h₂) - .some q₁ q₂ hq)) :
+    lineNumerator W q₁ q₂ x₁ y₁ (W.slope x₁ x₂ y₁ y₂) ∈
+      pointIdeal W (.some q₁ q₂ hq) ^ 3 *
+        (pointIdeal W (.some x₁ y₁ h₁ - .some q₁ q₂ hq) *
+          (pointIdeal W (.some x₂ y₂ h₂ - .some q₁ q₂ hq) *
+            pointIdeal W (-(.some x₁ y₁ h₁ + .some x₂ y₂ h₂) -
+              .some q₁ q₂ hq))) := by
+  sorry
+
+/-- **L4-8 line-numerator sub-leaf: the comaximal assembly.**  The four
+separate memberships of `lineNumerator` in `I_Q³`, `I_{P⊖Q}`, `I_{R⊖Q}`,
+`I_{⊖(P⊕R)⊖Q}` combine into membership in the *product*.
+
+In general position this is pure comaximality: distinct points have
+coprime point ideals (`isCoprime_pointIdeal` — elementary, a difference
+of `X`- or `Y`-classes is a nonzero constant, hence a unit), coprimality
+passes to products and powers (`IsCoprime.mul_right`, `IsCoprime.pow_left`),
+and for coprime ideals the product IS the intersection
+(`Ideal.mul_eq_inf_of_isCoprime`), so the four memberships intersect into
+the product membership.  The coincident configurations — where two
+factors share a support point — are isolated in
+`lineNumerator_mem_prod_of_mem_factors_coincident`. -/
+theorem lineNumerator_mem_prod_of_mem_factors (hΔ : W.Δ ≠ 0)
+    {q₁ q₂ x₁ y₁ x₂ y₂ : F}
+    (hq : W.Nonsingular q₁ q₂) (h₁ : W.Nonsingular x₁ y₁)
+    (h₂ : W.Nonsingular x₂ y₂) (hxy : ¬(x₁ = x₂ ∧ y₁ = W.negY x₂ y₂))
+    (hQ3 : lineNumerator W q₁ q₂ x₁ y₁ (W.slope x₁ x₂ y₁ y₂) ∈
+      pointIdeal W (.some q₁ q₂ hq) ^ 3)
+    (hA : lineNumerator W q₁ q₂ x₁ y₁ (W.slope x₁ x₂ y₁ y₂) ∈
+      pointIdeal W (.some x₁ y₁ h₁ - .some q₁ q₂ hq))
+    (hB : lineNumerator W q₁ q₂ x₁ y₁ (W.slope x₁ x₂ y₁ y₂) ∈
+      pointIdeal W (.some x₂ y₂ h₂ - .some q₁ q₂ hq))
+    (hC : lineNumerator W q₁ q₂ x₁ y₁ (W.slope x₁ x₂ y₁ y₂) ∈
+      pointIdeal W (-(.some x₁ y₁ h₁ + .some x₂ y₂ h₂) - .some q₁ q₂ hq)) :
+    lineNumerator W q₁ q₂ x₁ y₁ (W.slope x₁ x₂ y₁ y₂) ∈
+      pointIdeal W (.some q₁ q₂ hq) ^ 3 *
+        (pointIdeal W (.some x₁ y₁ h₁ - .some q₁ q₂ hq) *
+          (pointIdeal W (.some x₂ y₂ h₂ - .some q₁ q₂ hq) *
+            pointIdeal W (-(.some x₁ y₁ h₁ + .some x₂ y₂ h₂) -
+              .some q₁ q₂ hq))) := by
+  by_cases hcoin :
+      (Point.some x₁ y₁ h₁ : W.Point) = .some q₁ q₂ hq + .some q₁ q₂ hq ∨
+      (Point.some x₂ y₂ h₂ : W.Point) = .some q₁ q₂ hq + .some q₁ q₂ hq ∨
+      (-(Point.some x₁ y₁ h₁ + Point.some x₂ y₂ h₂) : W.Point) =
+        .some q₁ q₂ hq + .some q₁ q₂ hq ∨
+      (Point.some x₁ y₁ h₁ : W.Point) = .some x₂ y₂ h₂ ∨
+      (Point.some x₁ y₁ h₁ : W.Point) =
+        -(Point.some x₁ y₁ h₁ + Point.some x₂ y₂ h₂) ∨
+      (Point.some x₂ y₂ h₂ : W.Point) =
+        -(Point.some x₁ y₁ h₁ + Point.some x₂ y₂ h₂)
+  · exact lineNumerator_mem_prod_of_mem_factors_coincident hΔ hq h₁ h₂ hxy hcoin
+      hQ3 hA hB hC
+  · have cQA := isCoprime_pointIdeal (W := W)
+      (S := Point.some q₁ q₂ hq) (T := Point.some x₁ y₁ h₁ - Point.some q₁ q₂ hq)
+      (by intro hc; rw [eq_comm, sub_eq_iff_eq_add] at hc
+          exact hcoin (Or.inl hc))
+    have cQB := isCoprime_pointIdeal (W := W)
+      (S := Point.some q₁ q₂ hq) (T := Point.some x₂ y₂ h₂ - Point.some q₁ q₂ hq)
+      (by intro hc; rw [eq_comm, sub_eq_iff_eq_add] at hc
+          exact hcoin (Or.inr (Or.inl hc)))
+    have cQC := isCoprime_pointIdeal (W := W)
+      (S := Point.some q₁ q₂ hq)
+      (T := -(Point.some x₁ y₁ h₁ + Point.some x₂ y₂ h₂) - Point.some q₁ q₂ hq)
+      (by intro hc; rw [eq_comm, sub_eq_iff_eq_add] at hc
+          exact hcoin (Or.inr (Or.inr (Or.inl hc))))
+    have cAB := isCoprime_pointIdeal (W := W)
+      (S := Point.some x₁ y₁ h₁ - Point.some q₁ q₂ hq)
+      (T := Point.some x₂ y₂ h₂ - Point.some q₁ q₂ hq)
+      (by intro hc; rw [sub_left_inj] at hc
+          exact hcoin (Or.inr (Or.inr (Or.inr (Or.inl hc)))))
+    have cAC := isCoprime_pointIdeal (W := W)
+      (S := Point.some x₁ y₁ h₁ - Point.some q₁ q₂ hq)
+      (T := -(Point.some x₁ y₁ h₁ + Point.some x₂ y₂ h₂) - Point.some q₁ q₂ hq)
+      (by intro hc; rw [sub_left_inj] at hc
+          exact hcoin (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl hc))))))
+    have cBC := isCoprime_pointIdeal (W := W)
+      (S := Point.some x₂ y₂ h₂ - Point.some q₁ q₂ hq)
+      (T := -(Point.some x₁ y₁ h₁ + Point.some x₂ y₂ h₂) - Point.some q₁ q₂ hq)
+      (by intro hc; rw [sub_left_inj] at hc
+          exact hcoin (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr hc))))))
+    have hBC : lineNumerator W q₁ q₂ x₁ y₁ (W.slope x₁ x₂ y₁ y₂) ∈
+        pointIdeal W (.some x₂ y₂ h₂ - .some q₁ q₂ hq) *
+          pointIdeal W (-(.some x₁ y₁ h₁ + .some x₂ y₂ h₂) -
+            .some q₁ q₂ hq) := by
+      rw [Ideal.mul_eq_inf_of_isCoprime cBC]
+      exact ⟨hB, hC⟩
+    have hABC : lineNumerator W q₁ q₂ x₁ y₁ (W.slope x₁ x₂ y₁ y₂) ∈
+        pointIdeal W (.some x₁ y₁ h₁ - .some q₁ q₂ hq) *
+          (pointIdeal W (.some x₂ y₂ h₂ - .some q₁ q₂ hq) *
+            pointIdeal W (-(.some x₁ y₁ h₁ + .some x₂ y₂ h₂) -
+              .some q₁ q₂ hq)) := by
+      rw [Ideal.mul_eq_inf_of_isCoprime (cAB.mul_right cAC)]
+      exact ⟨hA, hBC⟩
+    rw [Ideal.mul_eq_inf_of_isCoprime
+      (cQA.mul_right (cQB.mul_right cQC)).pow_left]
+    exact ⟨hQ3, hABC⟩
+
+/-- **L4-8 line-numerator sub-leaf: membership of the line numerator in
+its divisor ideal.**  `lineNumerator q₁ q₂ x₁ y₁ ℓ` lies in
 `I_Q³ · I_{P⊖Q} · I_{R⊖Q} · I_{⊖(P⊕R)⊖Q}`.
 
 This is the *inclusion* half of `span_lineNumerator`; the reverse is
 supplied by the cancellation squeeze `span_eq_of_mem_of_span_mul_eq`, so
 only membership has to be established here.
 
-ROUTE.  (1) `I_Q = ⟨T, U⟩` with `T = coordX − q₁`, `U = coordY − q₂`
-(`XClass_eq` / `YClass_line_eq` with `ℓ = 0`, or unfolding
-`CoordinateRing.XYIdeal`).  Since `coordX = T + q₁`, the cleared `addX`
-is `A = U² + a₁UT − (a₂ + 2q₁)T² − T³`, manifestly in `⟨T, U⟩²`, and
-every summand of `lineNumerator` is one of `U·(A − q₁T²)`, `T³`,
-`A·T`, `(A − x₁T²)·T` — all in `⟨T, U⟩³`.  So `n ∈ I_Q³` is
-*certificate-free*: rewrite `n` as an explicit `F[W]`-combination of
-`T³, T²U, TU², U³` by `ring` and close with `Ideal.mul_mem_mul` /
-`Ideal.pow_mem_pow`.
-(2) `n ∈ I_S` for each of the three translated points `S` is the
-statement that `n` vanishes at `S`, i.e. that the chord through `P` and
-`R` passes through `Q ⊕ S`; membership in the maximal ideal
-`XYIdeal W x (C y)` is decided by the evaluation
-`CoordinateRing.quotientXYIdealEquiv`, and the vanishing is the addition
-formula (`field_simp`/`ring` per configuration).
-(3) Multiplying the memberships: distinct maximal ideals of `F[W]` are
-comaximal, so for pairwise distinct points the product of the four
-factors is their intersection.  BEWARE the coincidence zoo — `P = Q`,
-`R = Q`, `P ⊕ R = ⊖Q` (a factor becomes `⊤`, harmless), `P = R`,
-`P = ⊖(P ⊕ R)` (two factors merge into `I_S²`), `P = 2Q` and its
-siblings (a factor merges into `I_Q⁴`) — where higher-order vanishing
-certificates are needed.  The bookkeeping is easiest by *first* reducing
-to the multiset of affine points with multiplicity and *then* proving
-`n ∈ 𝔪^k` for each distinct maximal ideal separately, since the
-`sup`-comaximality argument only ever needs distinctness of the
-underlying points. -/
+PROOF.  The four factor memberships are all proven:
+
+* `I_Q³` is CERTIFICATE-FREE (`lineNumerator_mem_pointIdeal_pow_three`):
+  with `T = coordX − q₁`, `U = coordY − q₂` the cleared `addX` is
+  `A = U² + a₁UT − (a₂ + 2q₁)T² − T³ ∈ ⟨T, U⟩²`, and every summand of
+  `lineNumerator` is `U·(A − q₁T²)`, a multiple of `T³`, or `(A − cT²)·T`.
+* the three simple factors all come from the SINGLE lemma
+  `lineNumerator_mem_pointIdeal_sub` (`n` vanishes at `P ⊖ Q`, for any
+  slope), because `lineNumerator` depends only on the *line* and not on
+  which of its points is used to write it down (`lineNumerator_congr`,
+  fed by the cleared slope relation `slope_mul_sub` for `R` and by
+  `negAddY = ℓ(x₃ − x₁) + y₁` for the third intersection point).  So no
+  separate case analysis at `R` or at `⊖(P ⊕ R)`.
+
+What remains is only the comaximal assembly of the four memberships into
+the product, isolated as `lineNumerator_mem_prod_of_mem_factors` — that
+is where the coincidence zoo lives, and nowhere else. -/
 theorem lineNumerator_mem_prod_pointIdeal (hΔ : W.Δ ≠ 0) {q₁ q₂ x₁ y₁ x₂ y₂ : F}
     (hq : W.Nonsingular q₁ q₂) (h₁ : W.Nonsingular x₁ y₁)
     (h₂ : W.Nonsingular x₂ y₂) (hxy : ¬(x₁ = x₂ ∧ y₁ = W.negY x₂ y₂)) :
@@ -1650,29 +2153,49 @@ theorem lineNumerator_mem_prod_pointIdeal (hΔ : W.Δ ≠ 0) {q₁ q₂ x₁ y�
           (pointIdeal W (.some x₂ y₂ h₂ - .some q₁ q₂ hq) *
             pointIdeal W (-(.some x₁ y₁ h₁ + .some x₂ y₂ h₂) -
               .some q₁ q₂ hq))) := by
-  sorry
+  have h₃ : W.Nonsingular (W.addX x₁ x₂ (W.slope x₁ x₂ y₁ y₂))
+      (W.negY (W.addX x₁ x₂ (W.slope x₁ x₂ y₁ y₂))
+        (W.addY x₁ x₂ y₁ (W.slope x₁ x₂ y₁ y₂))) :=
+    (nonsingular_neg ..).mpr (nonsingular_add h₁ h₂ hxy)
+  have hS : (-(Point.some x₁ y₁ h₁ + Point.some x₂ y₂ h₂) : W.Point) =
+      Point.some _ _ h₃ := by rw [Point.add_some hxy, Point.neg_some]
+  have hQ3 := lineNumerator_mem_pointIdeal_pow_three hq x₁ y₁ (W.slope x₁ x₂ y₁ y₂)
+  have hA := lineNumerator_mem_pointIdeal_sub hq h₁ (W.slope x₁ x₂ y₁ y₂)
+  have hB : lineNumerator W q₁ q₂ x₁ y₁ (W.slope x₁ x₂ y₁ y₂) ∈
+      pointIdeal W (.some x₂ y₂ h₂ - .some q₁ q₂ hq) := by
+    rw [lineNumerator_congr (slope_mul_sub h₁.left h₂.left hxy)]
+    exact lineNumerator_mem_pointIdeal_sub hq h₂ _
+  have hC : lineNumerator W q₁ q₂ x₁ y₁ (W.slope x₁ x₂ y₁ y₂) ∈
+      pointIdeal W (-(.some x₁ y₁ h₁ + .some x₂ y₂ h₂) - .some q₁ q₂ hq) := by
+    have hl3 : W.slope x₁ x₂ y₁ y₂ *
+        (x₁ - W.addX x₁ x₂ (W.slope x₁ x₂ y₁ y₂)) =
+        y₁ - W.negY (W.addX x₁ x₂ (W.slope x₁ x₂ y₁ y₂))
+          (W.addY x₁ x₂ y₁ (W.slope x₁ x₂ y₁ y₂)) := by
+      simp only [WeierstrassCurve.Affine.addY, WeierstrassCurve.Affine.negY,
+        WeierstrassCurve.Affine.negAddY, WeierstrassCurve.Affine.addX]
+      ring
+    rw [hS, lineNumerator_congr hl3]
+    exact lineNumerator_mem_pointIdeal_sub hq h₃ _
+  exact lineNumerator_mem_prod_of_mem_factors hΔ hq h₁ h₂ hxy hQ3 hA hB hC
 
-/-- **L4-8 line-numerator sub-leaf (sorry): membership of the conjugate
-line numerator in its divisor ideal.**  The mirror image of
-`lineNumerator_mem_prod_pointIdeal`: `lineNumeratorNeg q₁ q₂ x₁ y₁ ℓ`
-lies in `I_Q³ · I_{⊖P⊖Q} · I_{⊖R⊖Q} · I_{(P⊕R)⊖Q}`.
+/-- **L4-8 line-numerator sub-leaf (PROVEN by involution transport):
+membership of the conjugate line numerator in its divisor ideal.**  The
+mirror image of `lineNumerator_mem_prod_pointIdeal`:
+`lineNumeratorNeg q₁ q₂ x₁ y₁ ℓ` lies in
+`I_Q³ · I_{⊖P⊖Q} · I_{⊖R⊖Q} · I_{(P⊕R)⊖Q}`.
 
-Same route as `lineNumerator_mem_prod_pointIdeal` (see its docstring):
-the `I_Q³` part is again certificate-free — `lineNumeratorNeg` is built
-from the same `⟨T, U⟩`-homogeneous pieces `U(A − q₁T²)`, `T³`,
-`(A − x₁T²)T` — and the three simple factors are the vanishing of the
-chord value at the points `⊖P ⊖ Q`, `⊖R ⊖ Q`, `(P ⊕ R) ⊖ Q`, i.e. at
-the `⊖Q`-translates of the *negatives* of the three collinear points,
-which is where `y(⊖Q ⊖ taut)` meets the line.
-
-Alternatively this leaf follows from `lineNumerator_mem_prod_pointIdeal`
-applied at `⊖Q = (q₁, negY q₁ q₂)` by transporting along the
-hyperelliptic involution `σ : F[W] ≃+* F[W]`, `coordY ↦ negY`, which
-fixes `F[X]` and satisfies `σ (pointIdeal W S) = pointIdeal W (⊖S)`:
-one checks `lineNumeratorNeg W q₁ q₂ x₁ y₁ ℓ =
-σ (lineNumerator W q₁ (W.negY q₁ q₂) x₁ y₁ ℓ)`.  Whether the involution
-transport is cheaper than redoing the case analysis is for the owner to
-judge. -/
+The transport claim of the previous owner CHECKS OUT and no second case
+analysis is needed.  The hyperelliptic involution `σ = involHom` of
+`F[W]` (`coordX ↦ coordX`, `coordY ↦ negY(coordX, coordY)`) satisfies
+`σ (lineNumerator W q₁ (negY q₁ q₂) x₁ y₁ ℓ) = lineNumeratorNeg W q₁ q₂ x₁ y₁ ℓ`
+(`involHom_lineNumerator`, a pure ring identity: `σ` fixes the cleared
+`addX` and flips `U = coordY − q₂` to `−(U + a₁T)`) and
+`Ideal.map σ (I_S) = I_{⊖S}` (`map_involHom_pointIdeal`).  So applying
+`lineNumerator_mem_prod_pointIdeal` at `⊖Q = (q₁, negY q₁ q₂)` and
+pushing the membership through `Ideal.map σ` — which is multiplicative
+(`Ideal.map_mul`, `Ideal.map_pow`) — turns the four factors
+`I_{⊖Q}³ · I_{P⊖⊖Q} · I_{R⊖⊖Q} · I_{⊖(P⊕R)⊖⊖Q}` into exactly
+`I_Q³ · I_{⊖P⊖Q} · I_{⊖R⊖Q} · I_{(P⊕R)⊖Q}`. -/
 theorem lineNumeratorNeg_mem_prod_pointIdeal (hΔ : W.Δ ≠ 0) {q₁ q₂ x₁ y₁ x₂ y₂ : F}
     (hq : W.Nonsingular q₁ q₂) (h₁ : W.Nonsingular x₁ y₁)
     (h₂ : W.Nonsingular x₂ y₂) (hxy : ¬(x₁ = x₂ ∧ y₁ = W.negY x₂ y₂)) :
@@ -1682,7 +2205,25 @@ theorem lineNumeratorNeg_mem_prod_pointIdeal (hΔ : W.Δ ≠ 0) {q₁ q₂ x₁ 
           (pointIdeal W (-.some x₂ y₂ h₂ - .some q₁ q₂ hq) *
             pointIdeal W (.some x₁ y₁ h₁ + .some x₂ y₂ h₂ -
               .some q₁ q₂ hq))) := by
-  sorry
+  have hq' : W.Nonsingular q₁ (W.negY q₁ q₂) := (nonsingular_neg ..).mpr hq
+  have hQ' : (Point.some q₁ (W.negY q₁ q₂) hq' : W.Point) =
+      -(Point.some q₁ q₂ hq) := rfl
+  have e1 : (-(Point.some q₁ (W.negY q₁ q₂) hq') : W.Point) =
+      Point.some q₁ q₂ hq := by rw [hQ', neg_neg]
+  have e2 : (-(Point.some x₁ y₁ h₁ - Point.some q₁ (W.negY q₁ q₂) hq') : W.Point) =
+      -Point.some x₁ y₁ h₁ - Point.some q₁ q₂ hq := by rw [hQ']; abel
+  have e3 : (-(Point.some x₂ y₂ h₂ - Point.some q₁ (W.negY q₁ q₂) hq') : W.Point) =
+      -Point.some x₂ y₂ h₂ - Point.some q₁ q₂ hq := by rw [hQ']; abel
+  have e4 : (-(-(Point.some x₁ y₁ h₁ + Point.some x₂ y₂ h₂) -
+      Point.some q₁ (W.negY q₁ q₂) hq') : W.Point) =
+      Point.some x₁ y₁ h₁ + Point.some x₂ y₂ h₂ - Point.some q₁ q₂ hq := by
+    rw [hQ']; abel
+  have hmem := Ideal.mem_map_of_mem (involHom W)
+    (lineNumerator_mem_prod_pointIdeal hΔ hq' h₁ h₂ hxy)
+  rw [Ideal.map_mul, Ideal.map_pow, Ideal.map_mul, Ideal.map_mul,
+    map_involHom_pointIdeal, map_involHom_pointIdeal, map_involHom_pointIdeal,
+    map_involHom_pointIdeal, involHom_lineNumerator, e1, e2, e3, e4] at hmem
+  exact hmem
 
 /-- **L4-8 numerator leaf (sorry): the divisor of the line
 numerator.**  `lineNumerator q₁ q₂ x₁ y₁ ℓ` (at the group-law slope
@@ -1706,9 +2247,18 @@ then force the two cofactors to be units simultaneously
 (`span_eq_of_mem_of_span_mul_eq`).  No norm degrees, no quotient
 colengths, and — decisively — no coincidence zoo in the closing step:
 every degeneracy makes both factors drop in lockstep.
-`lineNumerator_mul_lineNumeratorNeg` is now proven outright (one cleared
-`addPolynomial` identity, discharged by a single `linear_combination`),
-so the only remaining sorries below it are the two membership leaves. -/
+
+STATUS (2026-07-25, after two owners landed concurrently): everything
+below this node is now proven except one sub-leaf.
+`lineNumerator_mul_lineNumeratorNeg` is proven outright (one cleared
+`addPolynomial` identity, discharged by a single `linear_combination`).
+Both membership leaves are proven: the plain one from its four factor
+memberships plus the comaximal assembly
+`lineNumerator_mem_prod_of_mem_factors`, and the conjugate one from the
+plain one by involution transport (`involHom`, `map_involHom_pointIdeal`,
+`involHom_lineNumerator`).  The single remaining sorry is
+`lineNumerator_mem_prod_of_mem_factors_coincident`, the coincident
+configurations of the assembly. -/
 theorem span_lineNumerator (hΔ : W.Δ ≠ 0) {q₁ q₂ x₁ y₁ x₂ y₂ : F}
     (hq : W.Nonsingular q₁ q₂) (h₁ : W.Nonsingular x₁ y₁)
     (h₂ : W.Nonsingular x₂ y₂) (hxy : ¬(x₁ = x₂ ∧ y₁ = W.negY x₂ y₂)) :
