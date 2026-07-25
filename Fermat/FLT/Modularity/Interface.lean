@@ -18956,10 +18956,14 @@ everything from those facts to the attachment statement is PROVEN:
   `S₂(Γ₀(M))`, and the fact that a normalized weight-2 eigenform is
   literally an eigenvector of it. The complex side of the `ℂ → ℚ̄_p`
   Eichler–Shimura seam.
-* `exists_heckeOp_newform_etaleIdempotent` — SORRY: strong
+* `exists_heckeOp_newform_etaleIdempotent` — PROVEN (2026-07-25): strong
   multiplicity one in `S₂(Γ₀(M))` in idempotent form (the newform's
-  local factor of the complex Hecke algebra is a LINE) — the
-  classical-analytic leaf of the seam.
+  local factor of the complex Hecke algebra is a LINE), now an assembly
+  over `heckeOp_mul_comm` (PROVEN: the complex Hecke operators commute)
+  and the one remaining analytic leaf of the seam,
+  `exists_smul_of_heckeOp_generalizedEigen_of_newform` — SORRY: the
+  joint GENERALIZED eigenspace at a newform's eigensystem is the line
+  `ℂ·g`.
 * `nonempty_modularHeckeComparisonPackage` — SORRY: the residual
   GEOMETRIC leaf, inhabitation of the fifth-level carrier, whose one
   non-geometric field is the `ℂ → ℚ̄_p` comparison itself (see its
@@ -20043,11 +20047,15 @@ named:
   `cuspForm_eq_of_forall_qCoeff_eq`. So the Hecke algebra
   `heckeSubalgebra (heckeOp M) ⊆ End ℂ S₂(Γ₀(M))` and the eigenform's
   character on it are now honest Lean objects, not citations;
-* the CLASSICAL-ANALYTIC residue on the complex side is the single
-  sorried leaf `exists_heckeOp_newform_etaleIdempotent`: strong
+* the CLASSICAL-ANALYTIC residue on the complex side is strong
   multiplicity one in `S₂(Γ₀(M))` (Diamond–Shurman Theorem 5.8.2 with
-  §5.8 and Proposition 5.8.5), in its idempotent form — the newform's
-  local factor of `heckeSubalgebra (heckeOp M)` is the LINE `ℂ·e`;
+  §5.8 and Proposition 5.8.5). Its idempotent form — the newform's local
+  factor of `heckeSubalgebra (heckeOp M)` is the LINE `ℂ·e` —
+  is `exists_heckeOp_newform_etaleIdempotent`, PROVEN 2026-07-25 once
+  `heckeOp_mul_comm` made that algebra commutative; the single sorried
+  leaf left on the complex side is the analytic core it reduces to,
+  `exists_smul_of_heckeOp_generalizedEigen_of_newform` (the joint
+  GENERALIZED eigenspace at the eigensystem `{a_q(g)}` is `ℂ·g`);
 * the TRANSPORT is the `comparison` field of
   `ModularHeckeComparisonPackage`: given that complex idempotent, the
   Eichler–Shimura isomorphism plus the Tate-module comparison produce
@@ -20153,9 +20161,163 @@ theorem ne_zero_of_isWeightTwoEigenform {M : ℕ}
   rw [h, qCoeff_zero_cuspForm] at h1
   exact zero_ne_one h1
 
+/-- **The `q`-expansion of `T_q f`** for the BUNDLED Hecke operator
+(PROVEN — `qExpansion_heckeTransform_coeff` read through `heckeOp_coe`):
+`a_m(T_q f) = a_{qm}(f)` at `q ∣ M`, with the extra `q·a_{m/q}(f)` at
+`q ∤ M`, `q ∣ m`. This is the form in which the operator's coefficients
+are consumed below. -/
+theorem qCoeff_heckeOp {M : ℕ} (hM : 0 < M) {q : ℕ} (hq : q.Prime)
+    (f : CuspForm (Gamma0GL M) 2) (m : ℕ) :
+    qCoeff M (heckeOp M q f) m =
+      qCoeff M f (q * m) +
+        (if q ∣ M then 0
+          else if q ∣ m then (q : ℂ) * qCoeff M f (m / q) else 0) := by
+  have h2 := qExpansion_heckeTransform_coeff hM hq f m
+  rw [← heckeOp_coe hM hq f] at h2
+  exact h2
+
+/-- **The complex Hecke operators COMMUTE** (PROVEN, 2026-07-25 — this
+discharges the DECOMPOSITION POINTER that
+`exists_heckeOp_newform_etaleIdempotent` recorded): `T_q T_r = T_r T_q`
+on `S₂(Γ₀(M))` for all primes `q, r`.
+
+Proof: a `q`-expansion computation — the forms agree coefficientwise
+(`cuspForm_eq_of_forall_qCoeff_eq`), each side expanded twice by
+`qCoeff_heckeOp`. At `q = r` there is nothing to prove. For `q ≠ r` the
+two distinct primes are coprime, which normalizes every divisibility
+side condition — `r ∣ qm ↔ r ∣ m`, and `r ∣ m/q ↔ r ∣ m` given `q ∣ m`
+— and identifies the indices `qm/r = q(m/r)`, `rm/q = r(m/q)`,
+`m/q/r = m/(qr) = m/r/q`. Both iterated formulas then collapse to the
+manifestly symmetric
+
+  `a_{qrm} + 1_{r∤M}1_{r∣m}·r·a_{qm/r} + 1_{q∤M}1_{q∣m}·q·a_{rm/q}
+     + 1_{q∤M}1_{r∤M}1_{qr∣m}·qr·a_{m/qr}`.
+
+This is what makes `heckeSubalgebra (heckeOp M)` a COMMUTATIVE
+subalgebra of `End ℂ S₂(Γ₀(M))`, unlocking the entire pure-algebra half
+of the étale-idempotent node below. -/
+theorem heckeOp_mul_comm {M : ℕ} (hM : 0 < M) {q r : ℕ} (hq : q.Prime)
+    (hr : r.Prime) :
+    heckeOp M q * heckeOp M r = heckeOp M r * heckeOp M q := by
+  rcases eq_or_ne q r with rfl | hne
+  · rfl
+  have hcop : Nat.Coprime q r := (Nat.coprime_primes hq hr).mpr hne
+  have hcop' : Nat.Coprime r q := hcop.symm
+  have hrqx : ∀ x : ℕ, r ∣ q * x ↔ r ∣ x := fun x =>
+    ⟨fun h => hcop'.dvd_of_dvd_mul_left h, fun h => h.mul_left q⟩
+  have hqrx : ∀ x : ℕ, q ∣ r * x ↔ q ∣ x := fun x =>
+    ⟨fun h => hcop.dvd_of_dvd_mul_left h, fun h => h.mul_left r⟩
+  have hdivr : ∀ x : ℕ, q ∣ x → (r ∣ x / q ↔ r ∣ x) := by
+    intro x hx
+    constructor
+    · intro h
+      have h2 := h.mul_left q
+      rwa [Nat.mul_div_cancel' hx] at h2
+    · intro h
+      refine hcop'.dvd_of_dvd_mul_left ?_
+      rwa [Nat.mul_div_cancel' hx]
+  have hdivq : ∀ x : ℕ, r ∣ x → (q ∣ x / r ↔ q ∣ x) := by
+    intro x hx
+    constructor
+    · intro h
+      have h2 := h.mul_left r
+      rwa [Nat.mul_div_cancel' hx] at h2
+    · intro h
+      refine hcop.dvd_of_dvd_mul_left ?_
+      rwa [Nat.mul_div_cancel' hx]
+  refine LinearMap.ext fun f => ?_
+  simp only [Module.End.mul_apply]
+  refine cuspForm_eq_of_forall_qCoeff_eq fun m => ?_
+  simp only [qCoeff_heckeOp hM hq, qCoeff_heckeOp hM hr, hrqx, hqrx]
+  by_cases hqM : q ∣ M
+  · by_cases hrM : r ∣ M
+    · simp only [hqM, hrM, add_zero]
+      rw [show r * (q * m) = q * (r * m) by ring]
+      all_goals ring
+    · by_cases hrm : r ∣ m
+      · simp only [hqM, hrM, hrm, add_zero]
+        rw [show r * (q * m) = q * (r * m) by ring, Nat.mul_div_assoc q hrm]
+        all_goals ring
+      · simp only [hqM, hrM, hrm, add_zero]
+        rw [show r * (q * m) = q * (r * m) by ring]
+        all_goals ring
+  · by_cases hrM : r ∣ M
+    · by_cases hqm : q ∣ m
+      · simp only [hqM, hrM, hqm, add_zero]
+        rw [show r * (q * m) = q * (r * m) by ring, Nat.mul_div_assoc r hqm]
+        all_goals ring
+      · simp only [hqM, hrM, hqm, add_zero]
+        rw [show r * (q * m) = q * (r * m) by ring]
+        all_goals ring
+    · by_cases hqm : q ∣ m
+      · by_cases hrm : r ∣ m
+        · have h1 : r ∣ m / q := (hdivr m hqm).mpr hrm
+          have h2 : q ∣ m / r := (hdivq m hrm).mpr hqm
+          simp only [hqM, hrM, hqm, hrm, h1, h2]
+          rw [show r * (q * m) = q * (r * m) by ring,
+            Nat.mul_div_assoc q hrm, Nat.mul_div_assoc r hqm,
+            Nat.div_div_eq_div_mul, Nat.div_div_eq_div_mul,
+            show q * r = r * q by ring]
+          all_goals ring
+        · have h1 : ¬ r ∣ m / q := fun h => hrm ((hdivr m hqm).mp h)
+          simp only [hqM, hrM, hqm, hrm, h1, add_zero]
+          rw [show r * (q * m) = q * (r * m) by ring, Nat.mul_div_assoc r hqm]
+          all_goals ring
+      · by_cases hrm : r ∣ m
+        · have h2 : ¬ q ∣ m / r := fun h => hqm ((hdivq m hrm).mp h)
+          simp only [hqM, hrM, hqm, hrm, h2, add_zero]
+          rw [show r * (q * m) = q * (r * m) by ring, Nat.mul_div_assoc q hrm]
+          all_goals ring
+        · simp only [hqM, hrM, hqm, hrm, add_zero]
+          rw [show r * (q * m) = q * (r * m) by ring]
+          all_goals ring
+
+/-- **Strong multiplicity one in `S₂(Γ₀(M))`, in GENERALIZED-EIGENVECTOR
+form** (sorry node — the CLASSICAL-ANALYTIC residue of the `ℂ → ℚ̄_p`
+Eichler–Shimura seam, isolated 2026-07-25 out of
+`exists_heckeOp_newform_etaleIdempotent`, whose remaining clauses are
+now PROVEN glue over it; Diamond–Shurman Theorem 5.8.2 together with
+§5.8 and Proposition 5.8.5): for a weight-2 level-`M` NEWFORM `g`, the
+joint GENERALIZED eigenspace of the complex Hecke operators at the
+eigensystem `{a_q(g)}` is the LINE `ℂ·g` — every cusp form killed by a
+POWER of each `T_q − a_q(g)` is a scalar multiple of `g`.
+
+CLASSICAL CONTENT, and why it is true. Two analytic statements, in this
+order:
+
+* (multiplicity one, D–S Thm 5.8.2) the full prime eigensystem
+  `{a_q(g)}` of a newform of level EXACTLY `M` occurs in `S₂(Γ₀(M))` on
+  the line `ℂ·g` ALONE. An oldform component would realize the
+  away-from-`M` eigensystem at a proper divisor level `M' ∣ M`, which is
+  precisely what the carrier's own field
+  `IsWeightTwoNewform.eigensystem_minimal` forbids; the `U_q`-eigenvalues
+  at the bad primes `q ∣ M` are pinned by D–S Prop. 5.8.5.
+* (reducedness) the newform's local factor of `𝕋_ℂ` carries no
+  nilpotents — all `U_q`-nonsemisimplicity of the Hecke algebra lives on
+  oldform components — so the GENERALIZED eigenspace coincides with the
+  honest eigenspace and the exponents `n` in `hv` may be taken to be `1`.
+
+Only the inclusion `⊆ ℂ·g` is asserted here; the reverse inclusion is
+`heckeOp_apply_eq_smul_of_isWeightTwoEigenform` and needs nothing new.
+
+FAITHFULNESS NOTE: the hypotheses are exactly those of the consumer, and
+the obstruction the proof must defeat (an oldform realizing the same
+away-from-`M` eigensystem) is the negation of `eigensystem_minimal`,
+which `hg` supplies — so this leaf is provable from what it is given
+rather than being a widened restatement. -/
+theorem exists_smul_of_heckeOp_generalizedEigen_of_newform {M : ℕ} (hM : 0 < M)
+    {g : CuspForm (Gamma0GL M) 2} (hg : IsWeightTwoNewform M g)
+    {v : CuspForm (Gamma0GL M) 2}
+    (hv : ∀ q : ℕ, q.Prime → ∃ n : ℕ,
+      ((heckeOp M q - qCoeff M g q •
+        (1 : Module.End ℂ (CuspForm (Gamma0GL M) 2))) ^ n) v = 0) :
+    ∃ c : ℂ, v = c • g :=
+  sorry
+
 /-- **Strong multiplicity one in `S₂(Γ₀(M))`, in idempotent form**
-(sorry node — the CLASSICAL-ANALYTIC leaf of the `ℂ → ℚ̄_p`
-Eichler–Shimura seam; Diamond–Shurman Theorem 5.8.2 together with §5.8
+(PROVEN 2026-07-25 over the single analytic leaf
+`exists_smul_of_heckeOp_generalizedEigen_of_newform`; the classical
+citation is Diamond–Shurman Theorem 5.8.2 together with §5.8
 and Proposition 5.8.5): for a weight-2 level-`M` NEWFORM `g`, the
 newform's local factor of the complex Hecke algebra
 `A_ℂ = heckeSubalgebra (heckeOp M) ⊆ End ℂ S₂(Γ₀(M))` is the LINE
@@ -20199,16 +20361,35 @@ The two hypotheses are PROVEN facts of this file, passed in so that the
 leaf's soundness is auditable against them: `hgeig` says `g` is a joint
 eigenvector with the eigenvalues `a_q(g)`.
 
-DECOMPOSITION POINTER: the `e² = e`, `e g = g` clauses (and the
-nilpotence of `Ann_{A_ℂ}(g)·e`) are PURE ALGEBRA over
-`exists_idempotent_heckeSubalgebra_fixing`, available as soon as the
-complex Hecke operators are known to COMMUTE
-(`T_q T_r = T_r T_q` on `S₂(Γ₀(M))`, a coefficient computation over
-`qExpansion_heckeTransform_coeff`: both iterated coefficient formulas
-expand to `a_{qrm} + r·1_{r∣m}a_{qm/r} + q·1_{q∣m}a_{rm/q} +
-qr·1_{qr∣m}a_{m/qr}`, symmetric in `q, r`). Proving that commutation
-would let this leaf shrink to the multiplicity-one clause alone, with
-the idempotent supplied as a hypothesis. -/
+ASSEMBLY (2026-07-25 — the DECOMPOSITION POINTER this docstring used to
+record has been carried out, and this node is now PROVEN over the single
+analytic leaf `exists_smul_of_heckeOp_generalizedEigen_of_newform`).
+
+*The pure-algebra half, discharged here.* `heckeOp_mul_comm` supplies
+`T_q T_r = T_r T_q`. The engines
+`exists_idempotent_heckeSubalgebra_fixing` and
+`heckeSubalgebra_mul_comm` demand commutation at ALL indices, whereas
+`heckeOp M` is junk off the primes; so the proof runs them on the
+prime-restricted family `t q = if q.Prime then heckeOp M q else 0`,
+which has literally the SAME generating set — hence the same
+`heckeSubalgebra` — while satisfying the all-index hypothesis. Applied
+to `v := g` in the finite-dimensional space `S₂(Γ₀(M))`
+(`cuspForm_finiteDimensional`) this yields `e` with `e² = e`, `e g = g`,
+and `IsNilpotent (a·e)` for every `a ∈ A_ℂ` annihilating `g`.
+
+*The analytic leaf, converting nilpotence into ÉTALENESS.* For
+`a := T_q − a_q(g)` — which kills `g`, by `hgeig` — nilpotence gives
+`(a·e)^{n+1} = a^{n+1}·e = 0` (the factors commute and `e` is
+idempotent), so every `e v` is a joint generalized eigenvector at the
+eigensystem `{a_q(g)}` and therefore lies on `ℂ·g` by the leaf: `e` is
+the projection onto the LINE `ℂ·g`. Both remaining clauses then drop
+out with no further analysis:
+
+* `T_q·e = a_q(g)·e`, since `T_q(e v) = T_q(c·g) = c·a_q(g)·g`;
+* for `a ∈ A_ℂ` generalized at the eigensystem, `a v ∈ ℂ·g` for every
+  `v`, whence `e·a = a` (as `e` fixes `ℂ·g`) and `a·e = c₀·e` where
+  `a g = c₀·g`; commutativity of `A_ℂ` closes it,
+  `a = e·a = a·e = c₀·e`. -/
 theorem exists_heckeOp_newform_etaleIdempotent {M : ℕ} (hM : 0 < M)
     {g : CuspForm (Gamma0GL M) 2} (hg : IsWeightTwoNewform M g)
     (hgeig : ∀ q : ℕ, q.Prime → heckeOp M q g = qCoeff M g q • g) :
@@ -20218,8 +20399,104 @@ theorem exists_heckeOp_newform_etaleIdempotent {M : ℕ} (hM : 0 < M)
         (∀ q : ℕ, q.Prime → ∃ n : ℕ,
           (heckeOp M q - qCoeff M g q •
             (1 : Module.End ℂ (CuspForm (Gamma0GL M) 2))) ^ n * a = 0) →
-        ∃ c : ℂ, a = c • e) :=
-  sorry
+        ∃ c : ℂ, a = c • e) := by
+  classical
+  haveI := cuspForm_finiteDimensional M hM
+  set t : ℕ → Module.End ℂ (CuspForm (Gamma0GL M) 2) :=
+    fun q => if q.Prime then heckeOp M q else 0 with ht
+  have htq : ∀ q : ℕ, q.Prime → t q = heckeOp M q := by
+    intro q hq
+    simp only [ht, if_pos hq]
+  have ht0 : ∀ q : ℕ, ¬ q.Prime → t q = 0 := by
+    intro q hq
+    simp only [ht, if_neg hq]
+  have hAeq : heckeSubalgebra t = heckeSubalgebra (heckeOp M) := by
+    have hset : {φ : Module.End ℂ (CuspForm (Gamma0GL M) 2) |
+          ∃ q : ℕ, q.Prime ∧ φ = t q}
+        = {φ : Module.End ℂ (CuspForm (Gamma0GL M) 2) |
+          ∃ q : ℕ, q.Prime ∧ φ = heckeOp M q} := by
+      ext φ
+      constructor
+      · rintro ⟨q, hq, rfl⟩
+        exact ⟨q, hq, htq q hq⟩
+      · rintro ⟨q, hq, rfl⟩
+        exact ⟨q, hq, (htq q hq).symm⟩
+    unfold heckeSubalgebra
+    rw [hset]
+  have hcomm : ∀ i j : ℕ, t i * t j = t j * t i := by
+    intro i j
+    by_cases hi : i.Prime
+    · by_cases hj : j.Prime
+      · rw [htq i hi, htq j hj]
+        exact heckeOp_mul_comm hM hi hj
+      · rw [ht0 j hj, mul_zero, zero_mul]
+    · rw [ht0 i hi, mul_zero, zero_mul]
+  obtain ⟨e, heA, hee, heg, hnil⟩ :=
+    exists_idempotent_heckeSubalgebra_fixing (F := ℂ) hcomm g
+  rw [hAeq] at heA
+  have hAcomm : ∀ a ∈ heckeSubalgebra (heckeOp M),
+      ∀ b ∈ heckeSubalgebra (heckeOp M), a * b = b * a := by
+    rw [← hAeq]
+    exact heckeSubalgebra_mul_comm hcomm
+  have hnil' : ∀ a ∈ heckeSubalgebra (heckeOp M), a g = 0 →
+      IsNilpotent (a * e) := by
+    rw [← hAeq]
+    exact hnil
+  -- the idempotent maps the whole cusp space into the line `ℂ·g`
+  have heline : ∀ v : CuspForm (Gamma0GL M) 2, ∃ c : ℂ, e v = c • g := by
+    intro v
+    refine exists_smul_of_heckeOp_generalizedEigen_of_newform hM hg ?_
+    intro q hq
+    have hmem : (heckeOp M q - qCoeff M g q •
+        (1 : Module.End ℂ (CuspForm (Gamma0GL M) 2))) ∈
+        heckeSubalgebra (heckeOp M) :=
+      sub_mem (hecke_mem_heckeSubalgebra hq)
+        (Subalgebra.smul_mem _ (one_mem _) _)
+    have hann : (heckeOp M q - qCoeff M g q •
+        (1 : Module.End ℂ (CuspForm (Gamma0GL M) 2))) g = 0 := by
+      simp [hgeig q hq]
+    obtain ⟨n, hn⟩ := hnil' _ hmem hann
+    refine ⟨n + 1, ?_⟩
+    have hc : Commute (heckeOp M q - qCoeff M g q •
+        (1 : Module.End ℂ (CuspForm (Gamma0GL M) 2))) e :=
+      hAcomm _ hmem e heA
+    have h1 : ((heckeOp M q - qCoeff M g q •
+        (1 : Module.End ℂ (CuspForm (Gamma0GL M) 2))) * e) ^ (n + 1) = 0 := by
+      rw [pow_succ, hn, zero_mul]
+    rw [hc.mul_pow, IsIdempotentElem.pow_succ_eq n hee] at h1
+    have h2 := congrArg
+      (fun φ : Module.End ℂ (CuspForm (Gamma0GL M) 2) => φ v) h1
+    simpa using h2
+  refine ⟨e, heA, hee, heg, ?_, ?_⟩
+  · intro q hq
+    refine LinearMap.ext fun v => ?_
+    obtain ⟨c, hc⟩ := heline v
+    rw [Module.End.mul_apply, hc, map_smul, hgeig q hq, smul_smul,
+      LinearMap.smul_apply, hc, smul_smul, mul_comm]
+  · intro a haA hgen
+    have haline : ∀ v : CuspForm (Gamma0GL M) 2, ∃ c : ℂ, a v = c • g := by
+      intro v
+      refine exists_smul_of_heckeOp_generalizedEigen_of_newform hM hg ?_
+      intro q hq
+      obtain ⟨n, hn⟩ := hgen q hq
+      refine ⟨n, ?_⟩
+      have h2 := congrArg
+        (fun φ : Module.End ℂ (CuspForm (Gamma0GL M) 2) => φ v) hn
+      simpa using h2
+    obtain ⟨c₀, hc₀⟩ := haline g
+    refine ⟨c₀, ?_⟩
+    have hea : e * a = a := by
+      refine LinearMap.ext fun v => ?_
+      obtain ⟨c, hc⟩ := haline v
+      rw [Module.End.mul_apply, hc, map_smul, heg]
+    have hae : a * e = c₀ • e := by
+      refine LinearMap.ext fun v => ?_
+      obtain ⟨c, hc⟩ := heline v
+      rw [Module.End.mul_apply, hc, map_smul, hc₀, smul_smul,
+        LinearMap.smul_apply, hc, smul_smul, mul_comm]
+    calc a = e * a := hea.symm
+      _ = a * e := hAcomm e heA a haA
+      _ = c₀ • e := hae
 
 end ComplexHeckeAlgebra
 
