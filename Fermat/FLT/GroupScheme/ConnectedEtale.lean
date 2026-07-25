@@ -42,11 +42,19 @@ public import Fermat.FLT.Mathlib.NumberTheory.Padics.LocalField
 public import Fermat.FLT.DedekindDomain.AdicValuation
 public import Mathlib.RingTheory.Bialgebra.Convolution
 public import Mathlib.RingTheory.HopfAlgebra.Basic
--- `Submodule.IsCoideal` (and `isCoideal_iff_comul_mem`): the standard
--- coideal vocabulary in which the Oort–Tate classification leaf below
--- states the schematic closure of the inertia-stable cyclic group
-public import Mathlib.RingTheory.Coalgebra.Quotient
 public import Mathlib.RingTheory.TensorProduct.Finite
+-- `LinearMap.convRing`: the CONVOLUTION RING on `G →ₗ[R] A`, in which
+-- the `p`-torsion of a point of the kernel of reduction becomes a
+-- binomial identity (the `ConvFiltration` section below)
+public import Mathlib.RingTheory.Coalgebra.Convolution
+-- `Submodule.eq_bot_of_le_smul_of_le_jacobson_bot` — Nakayama, the
+-- endgame of the same argument
+public import Mathlib.RingTheory.Nakayama
+-- `Commute.add_pow` and `Nat.Prime.dvd_choose_self`: the binomial
+-- expansion of `(1 + d)^p` and the `p`-divisibility of its middle
+-- coefficients
+public import Mathlib.Data.Nat.Choose.Sum
+public import Mathlib.Data.Nat.Choose.Dvd
 public import Mathlib.RingTheory.AdicCompletion.Topology
 public import Mathlib.Tactic.Module
 -- the Galois/points vocabulary of the shared Oort–Tate `μ`-type node
@@ -60,6 +68,11 @@ public import Mathlib.RingTheory.HopfAlgebra.Convolution
 -- `vendored_mul_eq_convMul`, `liftEquiv_symm_comp`), proof-body use
 -- only in the displacement-connectedness lemma
 import Fermat.FLT.Deformations.RepresentationTheory.FlatProlongation
+-- `maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup` ("the fixed
+-- field of local inertia is unramified") and `integralClosureInclusion`:
+-- the ramification input of the Oort–Tate node, used only in the proof
+-- of `mem_span_natCast_of_inertia_invariant`
+import Fermat.FLT.Deformations.RepresentationTheory.LocalInertiaFixedField
 
 @[expose] public section
 
@@ -1120,208 +1133,219 @@ theorem natModEq_of_pow_eq_pow {M : Type*} [CommMonoid M] {q : ℕ}
   exact hζ.pow_inj (Nat.mod_lt _ hq) (Nat.mod_lt _ hq)
     (by rw [ha, hb, hab])
 
-/-! ### Schematic-closure vocabulary: `μ_p`-coordinates modulo a coideal
+/-! ### The convolution filtration of the kernel of reduction
 
-The Oort–Tate classification presents its order-`p` group scheme as a
-closed subscheme of the Hopf order, i.e. as a QUOTIENT Hopf algebra:
-the schematic closure `C` of the inertia-stable cyclic group `⟨φ⟩` of
-geometric points is cut out by an ideal `I ⊆ G` whose underlying
-`𝒪ᵥ`-submodule is a COIDEAL (mathlib's `Submodule.IsCoideal`: the
-counit kills `I` and `Δ I ⊆ I ⊗ G + G ⊗ I`; a Hopf ideal is this plus
-antipode stability, which is not needed below), and `C ≅ μ_p` says
-that the coordinate `T` of `𝒪ᵥ[T]/(T^p − 1)` lifts to an element
-`x ∈ G` which is GROUP-LIKE MODULO `I`: `ε x = 1` and
-`Δ x ≡ x ⊗ x mod (I ⊗ G + G ⊗ I)`, with `x^p ≡ 1 mod I`.
+The engine of the RAMIFICATION half of the Oort–Tate node
+(`eq_one_of_inertia_invariant_of_reduction_counit` below): "the kernel
+of `G(𝒪^nr) → G(𝔽̄_p)` has no `p`-torsion when `e < p − 1`", in a form
+that needs neither formal groups nor the Oort–Tate classification.
 
-This block is that vocabulary (`tensorIdeal`, the ideal
-`I ⊗ G + G ⊗ I` of `G ⊗ G`, and the coideal bridge
-`comul_mem_tensorIdeal_of_isCoideal`) together with the elementary
-bookkeeping which turns such a coordinate into the three statements
-the `μ`-type node consumes — in particular
-`(φ^k)(1 ⊗ x) = (φ(1 ⊗ x))^k` for EVERY `k`, proven by induction on
-`k` through the convolution product: the two factors of a convolution
-both kill `I`, so only the group-like part `x ⊗ x` of `Δ x`
-contributes.
+The point is that mathlib's `LinearMap.convRing` — the CONVOLUTION RING
+on `G →ₗ[R] A` for a coalgebra `G` and an algebra `A` — makes the
+`p`-torsion condition a BINOMIAL identity. Write `c` for the point and
+`d = c − 1` for its displacement from the counit; `c^p = 1` expands as
 
-**CONE STATUS (updated 2026-07-25, second revision) — FREE-FLOATING
-WITH NO PROSPECTIVE CONSUMER; a deletion candidate.** Until
-2026-07-25 this block was in the root cone through the proof of
-`exists_muType_coordinate`, which derived the `μ`-type node's numeric
-data from an `𝒪ᵥ`-RATIONAL closure coordinate `x ∈ G`. That leaf was
-found to be FALSE — the unramified twists `μ_p ⊗ ψ` refute it, see the
-CORRECTION NOTE on `exists_muType_coordinate` — and the leaf now
-asserts only the inertia-equivariant VALUE `ζ` of the coordinate,
-which descends from `𝒪^nr` while the coordinate itself does not. It
-was kept for one further revision on the expectation that the
-corrected leaf would be proven by constructing the coordinate over
-`𝒪^nr` and unpacking it here. It was NOT: `exists_muType_coordinate`
-is now proven directly from the character identity `χ_φ = χ_cyc` (see
-its docstring), and an `𝒪^nr`-rational closure coordinate is
-EQUIVALENT to that identity rather than stronger, so constructing one
-buys nothing and would additionally cost a base change of `G` to
-`𝒪^nr`. Nothing in the tree now consumes this block; it is retained
-only so that its deletion is a deliberate step, and it is recoverable
-from git history in any case. -/
+  `0 = ∑_{i=1}^{p} C(p,i) d^i`,
 
-section TensorIdeal
+and if `𝔞` denotes the ideal of `A` generated by the values of `d`, then
+`d^i` takes values in `𝔞^i` (`convPow_apply_mem_pow`, an induction over
+`convMul_apply_mem_mul`: a convolution product is a sum of products of
+one value of each factor). The binomial coefficients `C(p,i)` with
+`1 ≤ i < p` are divisible by `p`, so every term with `2 ≤ i < p` lies in
+`(p)·𝔞²`; and the top term `d^p` lies in `𝔞^p = 𝔞²·𝔞^{p−2} ⊆ (p)·𝔞²`
+PROVIDED `𝔞 ⊆ (p)` and `p − 2 ≥ 1`. Hence `p·d(x) ∈ (p)·𝔞²`, and `p`
+cancels in the domain `A`: `𝔞 ⊆ 𝔞²`. Nakayama (`𝔞` finitely generated
+because `G` is module-finite, `𝔞` inside the maximal ideal of the local
+ring `A`) gives `𝔞 = 0`, i.e. `c = 1`.
 
-variable {R G : Type*} [CommRing R] [CommRing G] [Algebra R G]
+`p` ODD is spent exactly at `p − 2 ≥ 1`: at `p = 2` the top term `d^2`
+carries no factor of `p` and the argument — like the theorem — fails.
+The hypothesis `𝔞 ⊆ (p)` is exactly ABSOLUTE UNRAMIFIEDNESS of the base
+(`e = 1`), supplied downstream by
+`mem_span_natCast_of_inertia_invariant`; over a ramified base `𝔞` is
+only inside the maximal ideal and the argument correctly breaks (`μ_p`
+over `ℤ_p[ζ_p]` has `p`-torsion in the kernel of reduction). -/
 
-/-- **The ideal `I ⊗ G + G ⊗ I`** of `G ⊗[R] G` attached to an ideal
-`I` of `G` (PROVEN vocabulary): the kernel of
-`G ⊗ G → (G/I) ⊗ (G/I)`, presented as the sup of the two ideals
-generated by the images of `I` under the left and right inclusions —
-so that membership is pure ideal algebra, no tensor-submodule
-manipulation. It is the ideal modulo which the coideal condition and
-group-likeness of a closure coordinate are stated. -/
-def tensorIdeal (I : Ideal G) : Ideal (G ⊗[R] G) :=
-  Ideal.map (Algebra.TensorProduct.includeLeftRingHom : G →+* G ⊗[R] G) I ⊔
-    Ideal.map (Algebra.TensorProduct.includeRight : G →ₐ[R] G ⊗[R] G) I
+section ConvFiltration
 
-/-- `i ⊗ g ∈ I ⊗ G + G ⊗ I` for `i ∈ I` (PROVEN): `i ⊗ g` is the
-multiple `(1 ⊗ g) · (i ⊗ 1)` of a generator. -/
-theorem tmul_mem_tensorIdeal_left {I : Ideal G} {i : G} (hi : i ∈ I) (g : G) :
-    (i ⊗ₜ[R] g) ∈ tensorIdeal (R := R) I := by
-  have h1 : ((i ⊗ₜ[R] (1 : G)) : G ⊗[R] G) ∈ tensorIdeal (R := R) I :=
-    Ideal.mem_sup_left (Ideal.mem_map_of_mem _ hi)
-  have h2 := Ideal.mul_mem_left (tensorIdeal (R := R) I) ((1 : G) ⊗ₜ[R] g) h1
-  rwa [Algebra.TensorProduct.tmul_mul_tmul, one_mul, mul_one] at h2
-
-/-- `g ⊗ i ∈ I ⊗ G + G ⊗ I` for `i ∈ I` (PROVEN; mirror image of
-`tmul_mem_tensorIdeal_left`). -/
-theorem tmul_mem_tensorIdeal_right {I : Ideal G} {i : G} (hi : i ∈ I) (g : G) :
-    (g ⊗ₜ[R] i) ∈ tensorIdeal (R := R) I := by
-  have h1 : (((1 : G) ⊗ₜ[R] i) : G ⊗[R] G) ∈ tensorIdeal (R := R) I :=
-    Ideal.mem_sup_right (Ideal.mem_map_of_mem _ hi)
-  have h2 := Ideal.mul_mem_left (tensorIdeal (R := R) I) (g ⊗ₜ[R] (1 : G)) h1
-  rwa [Algebra.TensorProduct.tmul_mul_tmul, one_mul, mul_one] at h2
-
-/-- The submodule `G ⊗ I` lands in the ideal `I ⊗ G + G ⊗ I` (PROVEN,
-by tensor induction). -/
-theorem lTensor_subtype_mem_tensorIdeal (I : Ideal G)
-    (u : G ⊗[R] (I.restrictScalars R)) :
-    LinearMap.lTensor G (I.restrictScalars R).subtype u ∈ tensorIdeal (R := R) I := by
-  induction u with
-  | zero => rw [map_zero]; exact Submodule.zero_mem _
-  | add a b ha hb => rw [map_add]; exact Submodule.add_mem _ ha hb
-  | tmul g i =>
-    rw [LinearMap.lTensor_tmul]
-    exact tmul_mem_tensorIdeal_right
-      ((Submodule.restrictScalars_mem R I i.1).mp i.2) g
-
-/-- The submodule `I ⊗ G` lands in the ideal `I ⊗ G + G ⊗ I` (PROVEN,
-by tensor induction). -/
-theorem rTensor_subtype_mem_tensorIdeal (I : Ideal G)
-    (u : (I.restrictScalars R) ⊗[R] G) :
-    LinearMap.rTensor G (I.restrictScalars R).subtype u ∈ tensorIdeal (R := R) I := by
-  induction u with
-  | zero => rw [map_zero]; exact Submodule.zero_mem _
-  | add a b ha hb => rw [map_add]; exact Submodule.add_mem _ ha hb
-  | tmul i g =>
-    rw [LinearMap.rTensor_tmul]
-    exact tmul_mem_tensorIdeal_left
-      ((Submodule.restrictScalars_mem R I i.1).mp i.2) g
-
-variable {A : Type*} [CommRing A] [Algebra R A]
-
-/-- **A pair of points both killing `I` kills `I ⊗ G + G ⊗ I`**
-(PROVEN): the tensor-product lift `χ ⊗ ψ` sends the two generating
-families `i ⊗ 1` and `1 ⊗ i` to `χ i · 1 = 0` and `1 · ψ i = 0`, so
-the whole ideal lies in its kernel. This is the step that makes the
-convolution of two points of the closure blind to everything but the
-group-like part of a comultiplication. -/
-theorem lift_eq_zero_of_mem_tensorIdeal
-    (χ ψ : G →ₐ[R] A) {I : Ideal G}
-    (hχ : ∀ i ∈ I, χ i = 0) (hψ : ∀ i ∈ I, ψ i = 0)
-    {t : G ⊗[R] G} (ht : t ∈ tensorIdeal (R := R) I) :
-    Algebra.TensorProduct.lift χ ψ (fun _ _ => Commute.all _ _) t = 0 := by
-  have hle : tensorIdeal (R := R) I ≤
-      RingHom.ker (Algebra.TensorProduct.lift χ ψ (fun _ _ => Commute.all _ _)) := by
-    refine sup_le ?_ ?_
-    · rw [Ideal.map_le_iff_le_comap]
-      intro i hi
-      simp only [Ideal.mem_comap, RingHom.mem_ker]
-      show Algebra.TensorProduct.lift χ ψ (fun _ _ => Commute.all _ _)
-        (i ⊗ₜ[R] (1 : G)) = 0
-      rw [Algebra.TensorProduct.lift_tmul, hχ i hi, zero_mul]
-    · rw [Ideal.map_le_iff_le_comap]
-      intro i hi
-      simp only [Ideal.mem_comap, RingHom.mem_ker]
-      show Algebra.TensorProduct.lift χ ψ (fun _ _ => Commute.all _ _)
-        ((1 : G) ⊗ₜ[R] i) = 0
-      rw [Algebra.TensorProduct.lift_tmul, hψ i hi, mul_zero]
-  exact RingHom.mem_ker.mp (hle ht)
-
-end TensorIdeal
-
-section ConvPow
-
-variable {R G A : Type*} [CommRing R] [CommRing G] [Bialgebra R G]
+variable {R G A : Type*} [CommRing R] [AddCommMonoid G] [Module R G] [Coalgebra R G]
   [CommRing A] [Algebra R A]
 
-/-- **The coideal condition in the ideal form** (PROVEN): mathlib's
-`Submodule.IsCoideal` for `I` (equivalently, by
-`Submodule.isCoideal_iff_comul_mem`, `Δ I ⊆ G ⊗ I + I ⊗ G` as
-submodules) gives `Δ i ∈ tensorIdeal I` for every `i ∈ I`. -/
-theorem comul_mem_tensorIdeal_of_isCoideal {I : Ideal G}
-    (hI : (I.restrictScalars R).IsCoideal) {i : G} (hi : i ∈ I) :
-    Coalgebra.comul (R := R) i ∈ tensorIdeal (R := R) I := by
-  have h := ((Submodule.isCoideal_iff_comul_mem (I.restrictScalars R)).mp hI).2 i
-    ((Submodule.restrictScalars_mem R I i).mpr hi)
-  obtain ⟨y, hy, z, hz, hyz⟩ := Submodule.mem_sup.mp h
-  obtain ⟨u, hu⟩ := hy
-  obtain ⟨w, hw⟩ := hz
-  rw [← hyz, ← hu, ← hw]
-  exact Submodule.add_mem _ (lTensor_subtype_mem_tensorIdeal I u)
-    (rTensor_subtype_mem_tensorIdeal I w)
+omit [Coalgebra R G] in
+/-- **A tensor whose two legs are read into ideals multiplies into the
+product ideal** (PROVEN, by tensor induction): the pure tensors go to
+`f a · g b ∈ 𝔟 · 𝔠`. The tensor-level content of
+`convMul_apply_mem_mul`. -/
+theorem mul'_map_mem_mul (f g : G →ₗ[R] A) {𝔟 𝔠 : Ideal A}
+    (hf : ∀ x, f x ∈ 𝔟) (hg : ∀ x, g x ∈ 𝔠) (t : G ⊗[R] G) :
+    LinearMap.mul' R A (TensorProduct.map f g t) ∈ 𝔟 * 𝔠 := by
+  induction t with
+  | zero => simp
+  | add a b ha hb => rw [map_add, map_add]; exact Submodule.add_mem _ ha hb
+  | tmul a b =>
+    rw [TensorProduct.map_tmul, LinearMap.mul'_apply]
+    exact Ideal.mul_mem_mul (hf a) (hg b)
 
-/-- **Convolution powers at a coordinate that is group-like modulo a
-coideal** (PROVEN — the algebraic heart of the reduction of the
-Oort–Tate node to its classification input): if `I` is a coideal
-killed by the point `χ`, and `x ∈ G` satisfies `ε x = 1` and
-`Δ x ≡ x ⊗ x mod (I ⊗ G + G ⊗ I)`, then every convolution power
-`χ^k` still kills `I` and reads `x` as the `k`-th power `χ(x)^k`.
+/-- **A convolution product takes values in the product of the value
+ideals** (PROVEN): `(f ⋆ g)(x) = ∑ f(x₍₁₎) g(x₍₂₎)` is a sum of
+products of one value of each factor, so it lies in `𝔟 · 𝔠`. -/
+theorem convMul_apply_mem_mul (f g : WithConv (G →ₗ[R] A)) {𝔟 𝔠 : Ideal A}
+    (hf : ∀ x, f.ofConv x ∈ 𝔟) (hg : ∀ x, g.ofConv x ∈ 𝔠) (x : G) :
+    (f * g).ofConv x ∈ 𝔟 * 𝔠 := by
+  rw [LinearMap.convMul_apply]
+  exact mul'_map_mem_mul _ _ hf hg _
 
-Induction on `k`: at `k = 0` the convolution unit is `ε` followed by
-the structure map, so it kills `I` (`counit_eq_zero`) and takes the
-value `1` at `x`; and `χ^{k+1} = χ^k ⋆ χ` evaluates at `g` as
-`(χ^k ⊗ χ)(Δ g)`, which by `lift_eq_zero_of_mem_tensorIdeal` — both
-factors kill `I` by the inductive hypothesis — vanishes for `g ∈ I`
-and, for `g = x`, only sees the group-like part `x ⊗ x`, giving
-`χ^k(x) · χ(x) = χ(x)^{k+1}`. -/
-theorem convPow_apply_of_groupLike_mod
-    (χ : G →ₐ[R] A) {I : Ideal G}
-    (hcounit : ∀ i ∈ I, Coalgebra.counit (R := R) i = 0)
-    (hcomul : ∀ i ∈ I, Coalgebra.comul (R := R) i ∈ tensorIdeal (R := R) I)
-    (hχI : ∀ i ∈ I, χ i = 0)
-    {x : G} (hxε : Coalgebra.counit (R := R) x = 1)
-    (hxΔ : Coalgebra.comul (R := R) x - x ⊗ₜ[R] x ∈ tensorIdeal (R := R) I) :
-    ∀ k : ℕ, (∀ i ∈ I, ((toConv χ ^ k).ofConv) i = 0) ∧
-      ((toConv χ ^ k).ofConv) x = χ x ^ k := by
-  intro k
-  induction k with
-  | zero =>
-    refine ⟨fun i hi => ?_, ?_⟩
-    · rw [pow_zero, AlgHom.convOne_apply, hcounit i hi, map_zero]
-    · rw [pow_zero, pow_zero, AlgHom.convOne_apply, hxε, map_one]
-  | succ k ih =>
-    refine ⟨fun i hi => ?_, ?_⟩
-    · rw [pow_succ, AlgHom.convMul_apply]
-      exact lift_eq_zero_of_mem_tensorIdeal _ _ ih.1 hχI (hcomul i hi)
-    · rw [pow_succ, AlgHom.convMul_apply]
-      have hkey : Algebra.TensorProduct.lift ((toConv χ ^ k).ofConv) χ
-            (fun _ _ => Commute.all _ _) (Coalgebra.comul (R := R) x) =
-          Algebra.TensorProduct.lift ((toConv χ ^ k).ofConv) χ
-            (fun _ _ => Commute.all _ _) (x ⊗ₜ[R] x) := by
-        have h0 := lift_eq_zero_of_mem_tensorIdeal ((toConv χ ^ k).ofConv) χ
-          ih.1 hχI hxΔ
-        rw [map_sub, sub_eq_zero] at h0
-        exact h0
-      rw [hkey, Algebra.TensorProduct.lift_tmul, ih.2, ← pow_succ]
+/-- **The convolution filtration** (PROVEN, induction over
+`convMul_apply_mem_mul`): a linear map with values in an ideal `𝔞` has
+`n`-th convolution power with values in `𝔞^n`. At `n = 0` the
+convolution unit is unconstrained and `𝔞^0 = ⊤` absorbs it. -/
+theorem convPow_apply_mem_pow (f : WithConv (G →ₗ[R] A)) {𝔞 : Ideal A}
+    (hf : ∀ x, f.ofConv x ∈ 𝔞) : ∀ (n : ℕ) (x : G), (f ^ n).ofConv x ∈ 𝔞 ^ n := by
+  intro n
+  induction n with
+  | zero => intro x; rw [pow_zero, Ideal.one_eq_top]; exact Submodule.mem_top
+  | succ n ih => intro x; rw [pow_succ, pow_succ]; exact convMul_apply_mem_mul _ _ ih hf x
 
-end ConvPow
+omit [Coalgebra R G] in
+/-- **The value ideal of a linear map out of a module-finite module is
+finitely generated** (PROVEN): the images of a finite generating set of
+`G` generate it, because the map is `R`-linear and an ideal of `A` is
+in particular an `R`-submodule. This is the Nakayama input. -/
+theorem fg_span_range (f : G →ₗ[R] A) [Module.Finite R G] :
+    (Ideal.span (Set.range f)).FG := by
+  classical
+  obtain ⟨S, hS⟩ := (Module.Finite.fg_top : (⊤ : Submodule R G).FG)
+  refine ⟨S.image f, ?_⟩
+  have key : ∀ g : G, f g ∈ Ideal.span (f '' (S : Set G)) := by
+    intro g
+    have hg : g ∈ Submodule.span R (S : Set G) := hS ▸ Submodule.mem_top
+    induction hg using Submodule.span_induction with
+    | mem y hy => exact Ideal.subset_span ⟨y, hy, rfl⟩
+    | zero => rw [map_zero]; exact Submodule.zero_mem _
+    | add y z _ _ hy hz => rw [map_add]; exact Submodule.add_mem _ hy hz
+    | smul r y _ hy => rw [map_smul, Algebra.smul_def]; exact Ideal.mul_mem_left _ _ hy
+  refine le_antisymm ?_ ?_
+  · rw [Finset.coe_image]
+    exact Ideal.span_mono (Set.image_subset_range _ _)
+  · rw [Finset.coe_image, Ideal.span_le]
+    rintro _ ⟨g, rfl⟩
+    exact key g
 
-section VendoredClosure
+/-- **No `p`-torsion in the kernel of reduction over an absolutely
+unramified base** (PROVEN — the elementary convolution-filtration form;
+Raynaud, Bull. SMF 102 (1974), 3.3.2–3.3.5; Fontaine, *Il n'y a pas de
+variété abélienne sur `ℤ`*, §1; Tate, "Finite flat group schemes", in
+Cornell–Silverman–Stevens, §4): let `A` be a local domain, `p` an ODD
+prime nonzero in `A`, and `c` a point of the convolution ring of
+`G →ₗ[R] A` (`G` a module-finite `R`-coalgebra) with
+
+* `c^p = 1` — killed by `p`;
+* `c − 1` valued in `(p)` — the ABSOLUTE UNRAMIFIEDNESS input, `e = 1`;
+* `c − 1` valued in the maximal ideal — reduction to the counit.
+
+Then `c = 1`. See the section docstring for the argument; `p` odd is
+spent at `𝔞^p ⊆ (p)·𝔞²`, which needs `p − 2 ≥ 1`. -/
+theorem eq_convOne_of_convPow_prime_eq_one [Module.Finite R G] [IsDomain A] [IsLocalRing A]
+    {p : ℕ} (hp : p.Prime) (hodd : Odd p) (hp0 : (p : A) ≠ 0)
+    (c : WithConv (G →ₗ[R] A)) (hcp : c ^ p = 1)
+    (hmem : ∀ x, (c - 1).ofConv x ∈ Ideal.span {(p : A)})
+    (hmax : ∀ x, (c - 1).ofConv x ∈ IsLocalRing.maximalIdeal A) :
+    c = 1 := by
+  classical
+  have hp3 : 3 ≤ p := by
+    obtain ⟨k, hk⟩ := hodd
+    have := hp.two_le
+    omega
+  have hsub : p - 2 + 2 = p := Nat.sub_add_cancel (Nat.le_of_succ_le hp3)
+  have hne2 : p - 2 ≠ 0 :=
+    Nat.sub_ne_zero_of_lt (Nat.lt_of_lt_of_le (by norm_num) hp3)
+  set d : WithConv (G →ₗ[R] A) := c - 1 with hd_def
+  set 𝔞 : Ideal A := Ideal.span (Set.range d.ofConv) with h𝔞_def
+  have hd : ∀ x, d.ofConv x ∈ 𝔞 := fun x => Ideal.subset_span ⟨x, rfl⟩
+  have h𝔞p : 𝔞 ≤ Ideal.span {(p : A)} := by
+    rw [h𝔞_def, Ideal.span_le]; rintro _ ⟨x, rfl⟩; exact hmem x
+  -- the binomial expansion of `c ^ p = (d + 1) ^ p`
+  have hbin : ∑ m ∈ Finset.range (p + 1), (p.choose m) • d ^ m = 1 := by
+    have hcd : d + 1 = c := by rw [hd_def]; abel
+    have h := (Commute.one_right d).add_pow p
+    rw [hcd, hcp] at h
+    refine Eq.trans (Finset.sum_congr rfl fun m _ => ?_) h.symm
+    rw [one_pow, mul_one, nsmul_eq_mul]
+    exact (Nat.cast_commute _ _).eq
+  -- peel off the constant term `1` and the linear term `p · d`
+  have hrest : (p : ℕ) • d +
+      ∑ i ∈ Finset.Ico 1 p, (p.choose (i + 1)) • d ^ (i + 1) = 0 := by
+    rw [Finset.sum_range_succ' (fun m => (p.choose m) • d ^ m) p] at hbin
+    simp only [Nat.choose_zero_right, pow_zero, one_smul] at hbin
+    have h0 : ∑ i ∈ Finset.range p, (p.choose (i + 1)) • d ^ (i + 1) = 0 :=
+      add_right_cancel (b := (1 : WithConv (G →ₗ[R] A))) (hbin.trans (zero_add _).symm)
+    rw [Finset.range_eq_Ico, Finset.sum_eq_sum_Ico_succ_bot hp.pos] at h0
+    simpa using h0
+  -- every remaining term takes values in `(p) · 𝔞²`
+  set K : Ideal A := Ideal.span {(p : A)} * 𝔞 ^ 2 with hK_def
+  have hpowle : 𝔞 ^ p ≤ K := by
+    have h1 : 𝔞 ^ p = 𝔞 ^ (p - 2) * 𝔞 ^ 2 := by rw [← pow_add, hsub]
+    rw [h1, hK_def]
+    exact Ideal.mul_mono (le_trans (Ideal.pow_le_self hne2) h𝔞p) le_rfl
+  have hterm : ∀ i ∈ Finset.Ico 1 p, ∀ x : G,
+      ((p.choose (i + 1)) • d ^ (i + 1)).ofConv x ∈ K := by
+    intro i hi x
+    rw [Finset.mem_Ico] at hi
+    have hz : (d ^ (i + 1)).ofConv x ∈ 𝔞 ^ (i + 1) := convPow_apply_mem_pow d hd _ x
+    rw [WithConv.ofConv_smul, LinearMap.smul_apply]
+    rcases eq_or_lt_of_le (show i + 1 ≤ p by omega) with heq | hlt
+    · -- the top term `d ^ p`, absorbed through `𝔞 ^ p ≤ (p) · 𝔞²`
+      rw [heq, Nat.choose_self, one_smul]
+      exact hpowle (heq ▸ hz)
+    · -- `1 < i + 1 < p`: the binomial coefficient is divisible by `p`
+      obtain ⟨k, hk⟩ : p ∣ p.choose (i + 1) := hp.dvd_choose_self (by omega) hlt
+      have hz2 : (d ^ (i + 1)).ofConv x ∈ 𝔞 ^ 2 :=
+        Ideal.pow_le_pow_right (by omega) hz
+      rw [hk, nsmul_eq_mul, Nat.cast_mul, mul_assoc, hK_def]
+      exact Ideal.mul_mem_mul (Ideal.mem_span_singleton_self _)
+        (Ideal.mul_mem_left _ _ hz2)
+  -- hence `p · d x ∈ (p) · 𝔞²`, and `p` cancels in the domain
+  have hsq : ∀ x : G, d.ofConv x ∈ 𝔞 ^ 2 := by
+    intro x
+    have h0 : (p : ℕ) • d.ofConv x +
+        ∑ i ∈ Finset.Ico 1 p, (p.choose (i + 1)) • (d ^ (i + 1)).ofConv x = 0 := by
+      have h1 := congrArg (fun f : WithConv (G →ₗ[R] A) => f.ofConv x) hrest
+      simp only [WithConv.ofConv_add, WithConv.ofConv_sum, WithConv.ofConv_smul,
+        WithConv.ofConv_zero, LinearMap.add_apply, LinearMap.sum_apply,
+        LinearMap.smul_apply, LinearMap.zero_apply] at h1
+      exact h1
+    have hmemK : (p : ℕ) • d.ofConv x ∈ K := by
+      have hsm : ∑ i ∈ Finset.Ico 1 p, (p.choose (i + 1)) • (d ^ (i + 1)).ofConv x ∈ K :=
+        Submodule.sum_mem _ fun i hi => by
+          simpa only [WithConv.ofConv_smul, LinearMap.smul_apply] using hterm i hi x
+      rw [eq_neg_of_add_eq_zero_left h0]
+      exact Submodule.neg_mem _ hsm
+    rw [nsmul_eq_mul, hK_def] at hmemK
+    obtain ⟨z, hz, hzeq⟩ := Submodule.mem_span_singleton_mul.mp hmemK
+    exact (mul_left_cancel₀ hp0 hzeq) ▸ hz
+  -- Nakayama
+  have hle : 𝔞 ≤ 𝔞 • 𝔞 := by
+    rw [Ideal.smul_eq_mul, ← sq, h𝔞_def, Ideal.span_le]
+    rintro _ ⟨x, rfl⟩
+    exact hsq x
+  have hjac : 𝔞 ≤ Ideal.jacobson ⊥ := by
+    rw [IsLocalRing.jacobson_eq_maximalIdeal ⊥ bot_ne_top, h𝔞_def, Ideal.span_le]
+    rintro _ ⟨x, rfl⟩
+    exact hmax x
+  have hbot : 𝔞 = ⊥ :=
+    Submodule.eq_bot_of_le_smul_of_le_jacobson_bot 𝔞 𝔞 (fg_span_range _) hle hjac
+  have hzero : d = 0 := by
+    apply WithConv.ofConv_injective
+    ext x
+    have := hd x
+    rw [hbot, Ideal.mem_bot] at this
+    simpa using this
+  rw [hd_def] at hzero
+  exact sub_eq_zero.mp hzero
+
+end ConvFiltration
+
+section ConvTransport
 
 universe uv
 
@@ -1336,7 +1360,14 @@ convolution monoid on the generic-fibre points to the `k`-th power of
 the restricted point `g ↦ φ (1 ⊗ g)` in the `WithConv` convolution
 monoid on the `R`-points — induction on `k` over
 `vendored_one_eq_convOne`/`vendored_mul_eq_convMul` and
-`liftEquiv_symm_convOne`/`liftEquiv_symm_convMul`. -/
+`liftEquiv_symm_convOne`/`liftEquiv_symm_convMul`.
+
+(This lemma was part of the `tensorIdeal`/`ConvPow`/`VendoredClosure`
+block deleted on 2026-07-25 as free-floating. It is RESTORED here
+because the ramification leaf below genuinely consumes it: it is how
+`φ^p = 1` on the generic fibre becomes `χ^p = 1` on the `𝒪ᵥ`-points,
+where the integral structure lives. Nothing else of that block is
+needed.) -/
 theorem liftEquiv_symm_vendored_pow (φ : S ⊗[R] H →ₐ[S] L) (k : ℕ) :
     (AlgHom.liftEquiv R S H L).symm (φ ^ k) =
       ((toConv ((AlgHom.liftEquiv R S H L).symm φ)) ^ k).ofConv := by
@@ -1347,49 +1378,37 @@ theorem liftEquiv_symm_vendored_pow (φ : S ⊗[R] H →ₐ[S] L) (k : ℕ) :
       WithConv.ofConv_toConv, WithConv.ofConv_toConv, ih, pow_succ,
       WithConv.toConv_ofConv]
 
-omit [Algebra R L] [IsScalarTower R S L] in
-/-- **A coordinate that is an `n`-th root of unity modulo the closure
-ideal has an `n`-th root of unity as value** (PROVEN): `x^n − 1 ∈ I`
-and `φ (1 ⊗ ·) = 0` on `I` give `φ (1 ⊗ x)^n = φ (1 ⊗ x^n) = 1`. -/
-theorem pow_apply_tmul_eq_one_of_sub_mem (φ : S ⊗[R] H →ₐ[S] L) {I : Ideal H}
-    {x : H} {n : ℕ} (hφI : ∀ i ∈ I, φ ((1 : S) ⊗ₜ[R] i) = 0)
-    (hx : x ^ n - 1 ∈ I) :
-    (φ ((1 : S) ⊗ₜ[R] x)) ^ n = 1 := by
-  have h0 := hφI _ hx
-  rw [TensorProduct.tmul_sub, map_sub, sub_eq_zero, ← Algebra.TensorProduct.one_def,
-    map_one] at h0
-  rw [← h0, ← map_pow, Algebra.TensorProduct.tmul_pow, one_pow]
+end ConvTransport
 
-/-- **The closure coordinate reads the convolution-cyclic group as
-powers of its value** (PROVEN — the consumable form of
-`convPow_apply_of_groupLike_mod`): for a geometric point `φ` of the
-generic fibre vanishing on a coideal `I` of the Hopf order and a
-coordinate `x` group-like modulo `I`, one has
-`(φ^k) (1 ⊗ x) = (φ (1 ⊗ x))^k` for every `k`. The convolution
-powers are transported to the `R`-points by
-`liftEquiv_symm_vendored_pow`, where the induction of
-`convPow_apply_of_groupLike_mod` applies. -/
-theorem pow_apply_tmul_eq_pow_of_closure (φ : S ⊗[R] H →ₐ[S] L) {I : Ideal H} {x : H}
-    (hcoid : (I.restrictScalars R).IsCoideal)
-    (hφI : ∀ i ∈ I, φ ((1 : S) ⊗ₜ[R] i) = 0)
-    (hxε : Coalgebra.counit (R := R) x = 1)
-    (hxΔ : Coalgebra.comul (R := R) x - x ⊗ₜ[R] x ∈ tensorIdeal (R := R) I)
-    (k : ℕ) :
-    (φ ^ k) ((1 : S) ⊗ₜ[R] x) = (φ ((1 : S) ⊗ₜ[R] x)) ^ k := by
-  have hcounit : ∀ i ∈ I, Coalgebra.counit (R := R) i = 0 := fun i hi =>
-    hcoid.counit_eq_zero ((Submodule.restrictScalars_mem R I i).mpr hi)
-  have hcomul : ∀ i ∈ I, Coalgebra.comul (R := R) i ∈ tensorIdeal (R := R) I :=
-    fun _ hi => comul_mem_tensorIdeal_of_isCoideal hcoid hi
-  have hχ : ∀ i ∈ I, ((AlgHom.liftEquiv R S H L).symm φ) i = 0 := hφI
-  have h := convPow_apply_of_groupLike_mod ((AlgHom.liftEquiv R S H L).symm φ)
-    hcounit hcomul hχ hxε hxΔ k
-  calc (φ ^ k) ((1 : S) ⊗ₜ[R] x)
-      = ((AlgHom.liftEquiv R S H L).symm (φ ^ k)) x := rfl
-    _ = ((toConv ((AlgHom.liftEquiv R S H L).symm φ) ^ k).ofConv) x := by
-        rw [liftEquiv_symm_vendored_pow]
-    _ = (φ ((1 : S) ⊗ₜ[R] x)) ^ k := h.2
+section ConvComp
 
-end VendoredClosure
+variable {R C A B : Type*} [CommSemiring R] [CommSemiring C] [Bialgebra R C]
+  [CommSemiring A] [Algebra R A] [CommSemiring B] [Algebra R B]
+
+/-- **Postcomposition preserves the convolution unit** (PROVEN): both
+sides are `(Algebra.ofId R ·) ∘ ε`, and an algebra map commutes with
+the structure map. -/
+theorem comp_convOne (h : A →ₐ[R] B) :
+    h.comp ((1 : WithConv (C →ₐ[R] A)).ofConv) = (1 : WithConv (C →ₐ[R] B)).ofConv := by
+  rw [AlgHom.convOne_def, AlgHom.convOne_def, WithConv.ofConv_toConv,
+    WithConv.ofConv_toConv, ← AlgHom.comp_assoc]
+  congr 1
+  refine AlgHom.ext fun r => ?_
+  simp [Algebra.ofId_apply]
+
+/-- **Postcomposition is a monoid map for convolution** (PROVEN,
+induction over `AlgHom.comp_convMul_distrib`). Used with an INJECTIVE
+`h` to descend a convolution identity from the geometric points to the
+integral points. -/
+theorem comp_convPow (h : A →ₐ[R] B) (f : WithConv (C →ₐ[R] A)) (n : ℕ) :
+    h.comp ((f ^ n).ofConv) = ((toConv (h.comp f.ofConv)) ^ n).ofConv := by
+  induction n with
+  | zero => rw [pow_zero, pow_zero, comp_convOne]
+  | succ n ih =>
+    rw [pow_succ, AlgHom.comp_convMul_distrib, WithConv.ofConv_toConv, ih,
+      WithConv.toConv_ofConv, ← pow_succ]
+
+end ConvComp
 
 section CyclotomicNode
 
@@ -1580,8 +1599,160 @@ theorem inertia_character_trivial_or_cyclotomic
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
+/-- **The prime of `𝓞 ℚ` attached to the prime number `p` is `(p)`**
+(PROVEN): unfolding `Nat.Prime.toHeightOneSpectrumRingOfIntegersRat`,
+the ideal is the comap of `span {(p : ℤ)}` along
+`Rat.ringOfIntegersEquiv`, and a ring isomorphism carries spans of
+singletons to spans of singletons while preserving `Nat.cast`.
+
+(A local re-derivation: the identical `asIdeal_toHeightOneSpectrumRingOfIntegersRat`
+lives in `FreyCurve/MazurTorsion.lean`, which is FAR downstream of this
+neutral group-scheme file and cannot be imported here. The natural home
+for both this and `maximalIdeal_eq_span_natCast` below is the shim
+module `Fermat/FLT/Mathlib/RingTheory/DedekindDomain/Ideal/Lemmas.lean`,
+where `toHeightOneSpectrumRingOfIntegersRat` itself is defined; hoisting
+them there is a bookkeeping change that touches another owner's file and
+is deliberately NOT done here.) -/
+theorem asIdeal_toHeightOneSpectrum_eq_span :
+    (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : p.Prime)).asIdeal =
+      Ideal.span {((p : ℕ) : NumberField.RingOfIntegers ℚ)} := by
+  have h1 : (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : p.Prime)).asIdeal =
+      Ideal.comap (Rat.ringOfIntegersEquiv.symm.symm) (Ideal.span {((p : ℕ) : ℤ)}) := rfl
+  rw [h1, RingEquiv.symm_symm, ← Ideal.map_symm, Ideal.map_span, Set.image_singleton,
+    map_natCast]
+
+open IsDedekindDomain.HeightOneSpectrum in
+set_option maxHeartbeats 1000000 in
+/-- **`p` is a uniformizer of `𝒪ᵥ = ℤ_p`** (PROVEN — the ABSOLUTE
+UNRAMIFIEDNESS of the base, `e = 1`): the maximal ideal of the
+`v`-adic integer ring at the place `v = v_p` of `ℚ` is the span of `p`.
+Through `adicCompletion.maximalIdeal_eq_span_uniformizer` it suffices
+that `v(p) = ofAdd (−1)` in `ℚᵥ`, which reduces along
+`valuedAdicCompletion_eq_valuation` and `valuation_of_algebraMap` to
+the `intValuation` of `p` in `𝓞 ℚ`, computed by
+`intValuation_singleton` from `v_p = span {p}`
+(`asIdeal_toHeightOneSpectrum_eq_span`).
+
+(Local re-derivation of `maximalIdeal_adicCompletionIntegers_eq_span`
+of `FreyCurve/MazurTorsion.lean`; see the note there.) -/
+theorem maximalIdeal_eq_span_natCast :
+    IsLocalRing.maximalIdeal 𝒪ᵖᵍᵥ = Ideal.span {((p : ℕ) : 𝒪ᵖᵍᵥ)} := by
+  have hq0 : ((p : ℕ) : NumberField.RingOfIntegers ℚ) ≠ 0 :=
+    Nat.cast_ne_zero.mpr hp.out.ne_zero
+  have hval : (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+      (Fact.out : p.Prime)).intValuation
+      ((p : ℕ) : NumberField.RingOfIntegers ℚ) = Multiplicative.ofAdd (-1 : ℤ) :=
+    (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+      (Fact.out : p.Prime)).intValuation_singleton hq0
+      asIdeal_toHeightOneSpectrum_eq_span
+  apply adicCompletion.maximalIdeal_eq_span_uniformizer
+  have h := (valuedAdicCompletion_eq_valuation
+      (v := Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : p.Prime)) (K := ℚ)
+      ((p : ℕ) : NumberField.RingOfIntegers ℚ)).trans
+    ((valuation_of_algebraMap
+      (v := Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : p.Prime)) (K := ℚ)
+      ((p : ℕ) : NumberField.RingOfIntegers ℚ)).trans hval)
+  convert h using 2
+  norm_cast
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **`𝒪ᵥ = ℤ_p` is ABSOLUTELY UNRAMIFIED: an inertia-invariant element
+of the maximal ideal is divisible by `p`** (PROVEN 2026-07-25 — the
+whole ramification input of the Oort–Tate node).
+
+Content: an element `x` of the integral closure `𝒪̄` of `𝒪ᵥ` in `ℚᵥᵃˡᵍ`
+which is fixed by every element of `localInertiaGroup v` lies in the
+maximal unramified extension `𝒪^nr`; since `𝒪ᵥ = ℤ_p` is absolutely
+unramified, `𝒪^nr` has value group `ℤ` with `v(p) = 1`, so `x ∈ 𝔪`
+forces `v(x) ≥ 1` and `x/p ∈ 𝒪^nr ⊆ 𝒪̄`. Over a RAMIFIED base the
+statement is FALSE — for `𝒪ᵥ = ℤ_p[ζ_p]` the element `ζ_p − 1` is
+inertia-invariant, lies in `𝔪`, and is not divisible by `p` — so this
+is exactly where `e = 1 < p − 1` enters the node. Note `p` ODD is NOT
+used here; it is spent in the binomial step of
+`eq_convOne_of_convPow_prime_eq_one`.
+
+Proof, at finite level rather than through the (non-discrete) valuation
+on `𝒪̄`: let `M := ℚᵥ⟮x⟯`, finite-dimensional because `ℚᵥᵃˡᵍ/ℚᵥ` is
+algebraic. `hinv` says the single generator of `M` is fixed by local
+inertia, so `M ≤ IntermediateField.fixedField (localInertiaGroup v)` by
+`IntermediateField.adjoin_le_iff`; hence `e(M/ℚᵥ) = 1` by the PROVEN
+node `maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup` of
+`Deformations/RepresentationTheory/LocalInertiaFixedField.lean`, i.e.
+`𝔪 𝒪ᵥ` generates `𝔪 𝒪_M`, i.e. — by `maximalIdeal_eq_span_natCast` —
+`𝔪 𝒪_M = (p)`. The element `x` lifts to `y ∈ 𝒪_M` (integrality
+transfers along the injective `M ↪ ℚᵥᵃˡᵍ`), and `y` is a NONUNIT
+because its image `x` is one (`hx` and locality of `𝒪̄`), so `y ∈ 𝔪 𝒪_M`
+by locality of `𝒪_M`. Thus `y = z · p`, and pushing forward along
+`integralClosureInclusion` — which preserves `Nat.cast` — gives
+`x = (image of z) · p`. -/
+theorem mem_span_natCast_of_inertia_invariant
+    (x : IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ)
+    (hx : x ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ))
+    (hinv : ∀ σ ∈ localInertiaGroup
+        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : p.Prime)),
+      σ (algebraMap (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) ℚᵖᵍᵥᵃˡᵍ x) =
+        algebraMap (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) ℚᵖᵍᵥᵃˡᵍ x) :
+    x ∈ Ideal.span {((p : ℕ) : IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ)} := by
+  classical
+  set xv : ℚᵖᵍᵥᵃˡᵍ := algebraMap (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) ℚᵖᵍᵥᵃˡᵍ x with hxv
+  -- the finite subextension generated by `x`
+  have hxalg : IsIntegral ℚᵖᵍᵥ xv := Algebra.IsIntegral.isIntegral xv
+  set M : IntermediateField ℚᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ := IntermediateField.adjoin ℚᵖᵍᵥ {xv} with hM
+  haveI : FiniteDimensional ℚᵖᵍᵥ M := IntermediateField.adjoin.finiteDimensional hxalg
+  have hxM : xv ∈ M := by
+    rw [hM]; exact IntermediateField.subset_adjoin _ _ rfl
+  -- it is fixed pointwise by the local inertia group
+  have hMfix : M ≤ IntermediateField.fixedField
+      (localInertiaGroup
+        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : p.Prime))) := by
+    rw [hM]
+    refine IntermediateField.adjoin_le_iff.mpr ?_
+    rintro y hy
+    rw [Set.mem_singleton_iff] at hy
+    subst hy
+    rw [SetLike.mem_coe, IntermediateField.mem_fixedField_iff]
+    intro σ hσ
+    exact hinv σ hσ
+  -- so `e(M/ℚᵥ) = 1`, i.e. `p` generates the maximal ideal of `𝒪_M`
+  have hmap := maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup
+    (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : p.Prime)) M hMfix
+  rw [maximalIdeal_eq_span_natCast, Ideal.map_span, Set.image_singleton,
+    map_natCast] at hmap
+  -- `x`, viewed at the finite level
+  have hxint : IsIntegral 𝒪ᵖᵍᵥ (⟨xv, hxM⟩ : M) := by
+    have hinj : Function.Injective
+        (IsScalarTower.toAlgHom 𝒪ᵖᵍᵥ (M : Type _) ℚᵖᵍᵥᵃˡᵍ) := by
+      intro a b hab
+      exact Subtype.ext hab
+    rw [← isIntegral_algHom_iff _ hinj]
+    exact x.2
+  set y : IntegralClosure 𝒪ᵖᵍᵥ M := ⟨⟨xv, hxM⟩, hxint⟩ with hy
+  have hincl : integralClosureInclusion
+      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : p.Prime)) M y = x :=
+    Subtype.ext rfl
+  -- `y` is a nonunit, because its image is
+  have hyM : y ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪ᵖᵍᵥ M) := by
+    by_contra hcon
+    rw [IsLocalRing.mem_maximalIdeal, mem_nonunits_iff, not_not] at hcon
+    have hu : IsUnit (integralClosureInclusion
+        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : p.Prime)) M y) :=
+      hcon.map _
+    rw [hincl] at hu
+    rw [IsLocalRing.mem_maximalIdeal, mem_nonunits_iff] at hx
+    exact hx hu
+  rw [← hmap] at hyM
+  obtain ⟨z, hz⟩ := Ideal.mem_span_singleton'.mp hyM
+  refine Ideal.mem_span_singleton'.mpr ⟨integralClosureInclusion
+    (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : p.Prime)) M z, ?_⟩
+  rw [← hincl, ← hz, map_mul, map_natCast]
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
 /-- **No `p`-torsion in the kernel of reduction over the unramified
-base** (SORRY LEAF — the RAMIFICATION half of the `μ`-type node,
+base** (PROVEN 2026-07-25 over `mem_span_natCast_of_inertia_invariant`;
 stated 2026-07-25): a geometric point `φ` of the generic fibre of a
 finite flat Hopf order `G` over `𝒪ᵥ ≅ ℤ_p` (`p` ODD) which is
 
@@ -1611,7 +1782,16 @@ forces `v(T)·(p − 1) = v(a) ≤ 1`, impossible.
 
 Neither the connected idempotent nor `hstab` is needed here: the
 input this leaf consumes is the congruence `hred`, which is where
-connectedness has already been spent. -/
+connectedness has already been spent.
+
+**PROVEN 2026-07-25, sorry-free**, by the elementary convolution-
+filtration argument of `eq_convOne_of_convPow_prime_eq_one` (see the
+`ConvFiltration` section docstring: `c^p = 1` is a binomial identity in
+mathlib's convolution RING, the middle coefficients are divisible by
+`p`, the top term is absorbed by `𝔞 ⊆ (p)`, and Nakayama finishes)
+fed with the ramification input
+`mem_span_natCast_of_inertia_invariant` above. Neither formal groups
+nor the Oort–Tate classification are used. -/
 theorem eq_one_of_inertia_invariant_of_reduction_counit
     (hpodd : Odd p)
     (G : Type) [CommRing G]
@@ -1626,8 +1806,111 @@ theorem eq_one_of_inertia_invariant_of_reduction_counit
         algebraMap 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ (Coalgebra.counit (R := 𝒪ᵖᵍᵥ) g) ∈
       Submodule.map (Algebra.linearMap (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) ℚᵖᵍᵥᵃˡᵍ)
         (IsLocalRing.maximalIdeal (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ))) :
-    φ = 1 :=
-  sorry
+    φ = 1 := by
+  classical
+  haveI : Algebra.IsIntegral 𝒪ᵖᵍᵥ G := Algebra.IsIntegral.of_finite 𝒪ᵖᵍᵥ G
+  -- the `𝒪ᵥ`-point of the model and its corestriction to `𝒪̄`
+  set χ : G →ₐ[𝒪ᵖᵍᵥ] ℚᵖᵍᵥᵃˡᵍ :=
+    (AlgHom.liftEquiv 𝒪ᵖᵍᵥ ℚᵖᵍᵥ G ℚᵖᵍᵥᵃˡᵍ).symm φ with hχ
+  have hint : ∀ a : G, χ a ∈ integralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ := fun a =>
+    (Algebra.IsIntegral.isIntegral (R := 𝒪ᵖᵍᵥ) a).map χ
+  set χI : G →ₐ[𝒪ᵖᵍᵥ] IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ :=
+    AlgHom.codRestrict χ (integralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) hint with hχI
+  set ι : IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ →ₐ[𝒪ᵖᵍᵥ] ℚᵖᵍᵥᵃˡᵍ :=
+    { algebraMap (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) ℚᵖᵍᵥᵃˡᵍ with
+      commutes' := fun _ => rfl } with hι
+  have hιinj : Function.Injective ι := fun a b h => Subtype.ext h
+  have hιχ : ι.comp χI = χ := AlgHom.ext fun _ => rfl
+  -- the convolution unit of the generic fibre, read on `G`
+  have hunitval : ∀ g : G,
+      (1 : WithConv (ℚᵖᵍᵥ ⊗[𝒪ᵖᵍᵥ] G →ₐ[ℚᵖᵍᵥ] ℚᵖᵍᵥᵃˡᵍ)).ofConv
+          ((1 : ℚᵖᵍᵥ) ⊗ₜ[𝒪ᵖᵍᵥ] g) =
+        algebraMap 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ (Coalgebra.counit (R := 𝒪ᵖᵍᵥ) g) := by
+    intro g
+    have h := congrArg (fun f : G →ₐ[𝒪ᵖᵍᵥ] ℚᵖᵍᵥᵃˡᵍ => f g)
+      (liftEquiv_symm_convOne (R := 𝒪ᵖᵍᵥ) (S := ℚᵖᵍᵥ) (H₀ := G) (B₀ := ℚᵖᵍᵥᵃˡᵍ))
+    simpa [AlgHom.liftEquiv_symm_apply, AlgHom.convOne_apply] using h
+  -- `p` is nonzero in the integral closure (characteristic zero)
+  have hp0 : ((p : ℕ) : IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) ≠ 0 := by
+    intro h
+    have h1 : ((p : ℕ) : ℚᵖᵍᵥᵃˡᵍ) = 0 := by
+      have h2 := congrArg (algebraMap (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) ℚᵖᵍᵥᵃˡᵍ) h
+      rwa [map_natCast, map_zero] at h2
+    exact hp.out.ne_zero (by exact_mod_cast h1)
+  -- the point, as an element of the convolution ring over `𝒪̄`
+  set c : WithConv (G →ₗ[𝒪ᵖᵍᵥ] IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) :=
+    toConv χI.toLinearMap with hc
+  have hdval : ∀ g : G, ι ((c - 1).ofConv g) =
+      φ ((1 : ℚᵖᵍᵥ) ⊗ₜ[𝒪ᵖᵍᵥ] g) -
+        algebraMap 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ (Coalgebra.counit (R := 𝒪ᵖᵍᵥ) g) := by
+    intro g
+    rw [WithConv.ofConv_sub, LinearMap.sub_apply, map_sub]
+    congr 1
+  -- `hred`, read inside the integral closure
+  have hmax : ∀ g : G, (c - 1).ofConv g ∈
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) := by
+    intro g
+    obtain ⟨m, hm, hmeq⟩ := hred g
+    have hgm : ι ((c - 1).ofConv g) = ι m := by rw [hdval g, ← hmeq]; rfl
+    rwa [hιinj hgm]
+  -- `hinv`: the displacement takes inertia-invariant values
+  have hfix : ∀ σ ∈ localInertiaGroup
+      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : p.Prime)),
+      ∀ g : G, σ (ι ((c - 1).ofConv g)) = ι ((c - 1).ofConv g) := by
+    intro σ hσ g
+    have hφfix : σ (φ ((1 : ℚᵖᵍᵥ) ⊗ₜ[𝒪ᵖᵍᵥ] g)) = φ ((1 : ℚᵖᵍᵥ) ⊗ₜ[𝒪ᵖᵍᵥ] g) :=
+      congrArg (fun ψ : ℚᵖᵍᵥ ⊗[𝒪ᵖᵍᵥ] G →ₐ[ℚᵖᵍᵥ] ℚᵖᵍᵥᵃˡᵍ =>
+        ψ ((1 : ℚᵖᵍᵥ) ⊗ₜ[𝒪ᵖᵍᵥ] g)) (hinv σ hσ)
+    have hone : σ • (1 : ℚᵖᵍᵥ ⊗[𝒪ᵖᵍᵥ] G →ₐ[ℚᵖᵍᵥ] ℚᵖᵍᵥᵃˡᵍ) = 1 := smul_one σ
+    have h1fix : σ (algebraMap 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ (Coalgebra.counit (R := 𝒪ᵖᵍᵥ) g)) =
+        algebraMap 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ (Coalgebra.counit (R := 𝒪ᵖᵍᵥ) g) := by
+      rw [← hunitval g]
+      exact congrArg (fun ψ : ℚᵖᵍᵥ ⊗[𝒪ᵖᵍᵥ] G →ₐ[ℚᵖᵍᵥ] ℚᵖᵍᵥᵃˡᵍ =>
+        ψ ((1 : ℚᵖᵍᵥ) ⊗ₜ[𝒪ᵖᵍᵥ] g)) hone
+    rw [hdval g, map_sub, hφfix, h1fix]
+  -- THE RAMIFICATION INPUT: `e = 1`, so the values are divisible by `p`
+  have hmem : ∀ g : G, (c - 1).ofConv g ∈
+      Ideal.span {((p : ℕ) : IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ)} := fun g =>
+    mem_span_natCast_of_inertia_invariant _ (hmax g) (fun σ hσ => hfix σ hσ g)
+  -- `φ^p = 1` transported to the `𝒪ᵥ`-points, then to `𝒪̄`, then to
+  -- the convolution RING of linear maps
+  have hχp : (toConv χ) ^ p = (1 : WithConv (G →ₐ[𝒪ᵖᵍᵥ] ℚᵖᵍᵥᵃˡᵍ)) := by
+    apply WithConv.ofConv_injective
+    have h := liftEquiv_symm_vendored_pow (R := 𝒪ᵖᵍᵥ) (S := ℚᵖᵍᵥ) (H := G)
+      (L := ℚᵖᵍᵥᵃˡᵍ) φ p
+    rw [hord, vendored_one_eq_convOne, liftEquiv_symm_convOne] at h
+    exact h.symm
+  have hχIp : (toConv χI) ^ p =
+      (1 : WithConv (G →ₐ[𝒪ᵖᵍᵥ] IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ)) := by
+    apply WithConv.ofConv_injective
+    refine AlgHom.ext fun a => hιinj ?_
+    have h := comp_convPow ι (toConv χI) p
+    rw [WithConv.ofConv_toConv, hιχ, hχp] at h
+    have h2 := congrArg (fun f : G →ₐ[𝒪ᵖᵍᵥ] ℚᵖᵍᵥᵃˡᵍ => f a) h
+    simpa [comp_convOne ι] using h2
+  have hcp : c ^ p = 1 := by
+    have h := AlgHom.toLinearMap_convPow (toConv χI) p
+    rw [hχIp, AlgHom.toLinearMap_convOne] at h
+    exact h.symm
+  -- the elementary convolution-filtration argument
+  have hc1 : c = 1 :=
+    eq_convOne_of_convPow_prime_eq_one hp.out hpodd hp0 c hcp hmem hmax
+  -- and back to `φ`
+  apply (AlgHom.liftEquiv 𝒪ᵖᵍᵥ ℚᵖᵍᵥ G ℚᵖᵍᵥᵃˡᵍ).symm.injective
+  rw [vendored_one_eq_convOne, liftEquiv_symm_convOne]
+  refine AlgHom.ext fun a => ?_
+  have h : χI a = (1 : WithConv (G →ₗ[𝒪ᵖᵍᵥ] IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ)).ofConv a := by
+    have h0 := congrArg (fun f : WithConv (G →ₗ[𝒪ᵖᵍᵥ] IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) =>
+      f.ofConv a) hc1
+    rw [hc] at h0
+    exact h0
+  calc ((AlgHom.liftEquiv 𝒪ᵖᵍᵥ ℚᵖᵍᵥ G ℚᵖᵍᵥᵃˡᵍ).symm φ) a
+      = ι (χI a) := rfl
+    _ = ι (algebraMap 𝒪ᵖᵍᵥ (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ)
+          (Coalgebra.counit (R := 𝒪ᵖᵍᵥ) a)) := by
+        rw [h, LinearMap.convOne_apply]
+    _ = algebraMap 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ (Coalgebra.counit (R := 𝒪ᵖᵍᵥ) a) := ι.commutes _
+    _ = (1 : WithConv (G →ₐ[𝒪ᵖᵍᵥ] ℚᵖᵍᵥᵃˡᵍ)).ofConv a := (AlgHom.convOne_apply a).symm
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
@@ -1775,11 +2058,15 @@ split into its two classical halves:
 that into `ζ^n = ζ^m`.
 
 Note this route never needs the schematic closure `I`, the
-`𝒪^nr`-rational coordinate `x`, or the `tensorIdeal`/`ConvPow`
-bookkeeping block above: an `𝒪^nr`-coordinate of the closure is
-EQUIVALENT to (not stronger than) the inertia-equivariant value `ζ`
-asserted here, so constructing one would only repackage the same
-content while adding a base change of `G` to `𝒪^nr`.
+`𝒪^nr`-rational coordinate `x`, or any `tensorIdeal`/`ConvPow`
+group-like-modulo-a-coideal bookkeeping: an `𝒪^nr`-coordinate of the
+closure is EQUIVALENT to (not stronger than) the inertia-equivariant
+value `ζ` asserted here, so constructing one would only repackage the
+same content while adding a base change of `G` to `𝒪^nr`. (The
+`tensorIdeal`/`ConvPow`/`VendoredClosure` block that used to sit above
+was accordingly DELETED on 2026-07-25 as free-floating with no
+prospective consumer; recover it from git history if a future
+Oort–Tate proof wants it.)
 
 Soundness: the hypothesis set is inhabited (the nontrivial points of
 `μ_p` over `ℤ_p`, with `e₀ = 1` its connected counit idempotent), and
