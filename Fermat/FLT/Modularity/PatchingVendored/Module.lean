@@ -11,19 +11,23 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Andrew Yang, Kevin Buzzard, Pietro Monticone, David Renshaw
 -/
 
-import Fermat.FLT.Modularity.PatchingVendored.Ultraproduct
-import Fermat.FLT.Modularity.PatchingVendored.AdicTopology
-import Mathlib.Algebra.Module.Torsion.Basic
-import Mathlib.CategoryTheory.Types.Basic
-import Mathlib.LinearAlgebra.Dimension.Finrank
-import Mathlib.RingTheory.Filtration
-import Mathlib.RingTheory.FractionalIdeal.Basic
-import Mathlib.Topology.Algebra.Ring.Compact
-import Fermat.FLT.Modularity.PatchingVendored.InverseLimit
-import Mathlib.Topology.Algebra.Nonarchimedean.TotallyDisconnected
-import Mathlib.Topology.Algebra.Ring.Compact
-import Mathlib.Topology.Compactness.Paracompact
-import Mathlib.Topology.Connected.Separation
+module
+
+public import Fermat.FLT.Modularity.PatchingVendored.Ultraproduct
+public import Fermat.FLT.Modularity.PatchingVendored.AdicTopology
+public import Mathlib.Algebra.Module.Torsion.Basic
+public import Mathlib.CategoryTheory.Types.Basic
+public import Mathlib.LinearAlgebra.Dimension.Finrank
+public import Mathlib.RingTheory.Filtration
+public import Mathlib.RingTheory.FractionalIdeal.Basic
+public import Mathlib.Topology.Algebra.Ring.Compact
+public import Fermat.FLT.Modularity.PatchingVendored.InverseLimit
+public import Mathlib.Topology.Algebra.Nonarchimedean.TotallyDisconnected
+public import Mathlib.Topology.Algebra.Ring.Compact
+public import Mathlib.Topology.Compactness.Paracompact
+public import Mathlib.Topology.Connected.Separation
+
+@[expose] public section
 
 set_option autoImplicit false
 set_option relaxedAutoImplicit false

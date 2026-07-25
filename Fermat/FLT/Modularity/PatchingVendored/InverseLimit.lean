@@ -11,9 +11,13 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Andrew Yang, Kevin Buzzard
 -/
 
-import Mathlib.Topology.Constructions
-import Mathlib.CategoryTheory.CofilteredSystem
-import Mathlib.Data.Finset.Order
+module
+
+public import Mathlib.Topology.Constructions
+public import Mathlib.CategoryTheory.CofilteredSystem
+public import Mathlib.Data.Finset.Order
+
+@[expose] public section
 
 set_option autoImplicit false
 set_option relaxedAutoImplicit false
