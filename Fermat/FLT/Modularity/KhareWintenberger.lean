@@ -118,6 +118,11 @@ public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 -- Galois enabling hypothesis for Brauer induction) live in these:
 public import Mathlib.NumberTheory.NumberField.InfinitePlace.TotallyRealComplex
 public import Mathlib.FieldTheory.Galois.Basic
+-- `Ideal.absNorm`, the residue cardinality `Nw` of a place of the
+-- Moret–Bailly base `F`: it appears in the STATEMENTS of the
+-- Carayol/Shimura sub-cut (the cyclotomic normalization leaf and the
+-- determinant-coefficient bridge), hence a public import
+public import Mathlib.RingTheory.Ideal.Norm.AbsNorm
 -- proof-only imports: the PROVEN 3-adic classification (Family-free —
 -- see the module docstring for why `Lift.lean`/`Family.lean` must NOT
 -- be imported), the shared Family-free deformation development (the
@@ -1259,9 +1264,262 @@ theorem exists_heckeEigensystem_of_congruentSeed
           X ^ 2 - C (aF w) * X + C (dF w) :=
   sorry
 
+/-! ### The Carayol/Shimura sub-cut (2026-07-25)
+
+Sub-leaf (b) of the modularity-lifting cut —
+`exists_heckeField_of_eigensystem` below — is now a PROVEN assembly over
+two sharply-stated inputs and one proven bridge, cut along the joint the
+classical literature itself uses:
+
+* `exists_heckeField_mem_range_of_eigensystem` — **Shimura rationality**
+  in its minimal form: the EIGENVALUE function `aF` takes its values in
+  a single number field, presented as membership in the range of one
+  embedding `ψℓ : E ↪ ℚ̄_ℓ`.  This is the only genuinely automorphic
+  input of sub-leaf (b): nothing else in the package forces a family of
+  `ℚ̄_ℓ`-values to be algebraic.
+* `cyclotomicCharacter_adicArithFrob_base_eq_absNorm` — the **place-wise
+  cyclotomic normalization over the base `F`**: at a place `w` of `F`
+  not over `ℓ`, the `ℓ`-adic cyclotomic character of `G_ℚ` takes the
+  value `Nw = ‖w‖` on the global image of the arithmetic Frobenius at
+  `w`.  This is pure algebraic number theory (unramifiedness of the
+  cyclotomic character away from `ℓ`, plus `Frob_w(ζ) = ζ^{Nw}`), and it
+  is the exact `F`-analogue of the PROVEN rational-prime lemma
+  `cyclotomicCharacter_adicArithFrob_eq_natCast` further down this
+  module — the recommended discharge is to mirror that proof with the
+  residue cardinality `Nw` in place of `q`.
+* `charFrob_baseChange_coeff_zero_eq_absNorm` — PROVEN from the previous
+  item: the DETERMINANT coefficient of the base-changed Frobenius
+  charpoly is the rational integer `Nw`.  So the `d`-half of sub-leaf
+  (b) needs no automorphic input away from `ℓ`: it descends to `ℚ ⊆ E`
+  by the cyclotomic determinant clause of `hρ` alone.
+
+The residual asymmetry is honest: at the finitely many places `w | ℓ`
+the cyclotomic character IS ramified, so `dF w` (which the shape
+hypothesis pins to `det ρ(Frob_w)`) carries no rationality of its own,
+and the citation above must supply those values too — that is the
+second clause of `exists_heckeField_mem_range_of_eigensystem`.  In the
+intended instantiation the bad set `badF` produced by `R = 𝕋` already
+contains every place over `ℓ`, so that clause is vacuous there.
+-/
+
+/-- **Shimura rationality for the Hilbert-newform eigensystem, range
+form** (sorry node; sub-leaf (b-i) of the Carayol/Shimura sub-cut — the
+ONLY automorphic input of sub-leaf (b)): the eigenvalue function `aF`
+of the modular lift `ρ|_{G_F}` takes its values in a single number
+field `E` — the Hecke field — presented through one embedding
+`ψℓ : E ↪ ℚ̄_ℓ` as range membership; and at the finitely many places
+over `ℓ`, where the cyclotomic determinant carries no rationality (see
+the section note above), so does the determinant function `dF`.
+
+Classically: `aF w` is the `T_w`-eigenvalue of the Hilbert newform `f`
+of parallel weight `2` over `F` attached to `ρ|_{G_F}` by the `R = 𝕋`
+sub-leaf.  Shimura's rationality theorem — the Hecke eigenvalues of a
+Hilbert newform generate a NUMBER field `E = ℚ(a_w : w)`, because the
+Hecke operators act on a finite-dimensional `ℚ`-rational space of cusp
+forms with `ℤ`-integral characteristic polynomials, and Galois
+conjugation permutes newforms — gives `E`; the embedding is the place
+`λ | ℓ` at which the `λ`-adic realization of `f` is `ρ|_{G_F}`, i.e.
+exactly `ψℓ`; Carayol's local-global compatibility at the unramified
+places is what makes the identification of `charFrob` with the Hecke
+polynomial hold place by place rather than merely after
+semisimplification, and hence makes `aF w` (read off the shape
+hypothesis `hshape`) equal to `ψℓ (a_w)` on the nose.  At `w | ℓ` the
+`λ`-adic realization is still defined over `E_λ`, so `dF w` — the
+determinant of a Frobenius lift — again lies in `ψℓ(E)`.
+
+RANGE FORM (why this is the sharp statement): stating the conclusion as
+`aF w ∈ Set.range ψℓ` rather than as the existence of a function
+`a : places → E` with `ψℓ ∘ a = aF` removes the choice-theoretic
+packaging from the citation — the packaging is discharged formally in
+`exists_heckeField_of_eigensystem` below — and leaves exactly the
+mathematical assertion "the eigenvalues are algebraic and generate one
+number field".
+
+Literature: Shimura, *The special values of the zeta functions
+associated with Hilbert modular forms*, Duke Math. J. 45 (1978), §2
+(rationality and the Hecke field of a Hilbert newform); Carayol, *Sur
+les représentations `ℓ`-adiques associées aux formes modulaires de
+Hilbert*, Ann. Sci. ÉNS 19 (1986) (local-global compatibility, the
+normalization used here); Taylor, *On Galois representations associated
+to Hilbert modular forms*, Invent. Math. 98 (1989) (the remaining
+even-degree cases); Ohta and Hida for the integral normalizations.
+
+PIN AUDIT (2026-07-24, re-verified 2026-07-25): the mathlib pin has no
+Hilbert modular forms and no Hecke algebras over a totally real base
+(`grep Hilbert` over `Mathlib/NumberTheory/`: only Hilbert's theorem 90
+and Hilbert basis), so no part of this statement can be reduced to
+library material; it is a citation node whose only sound discharge is
+the construction of Hilbert-modular Hecke theory.
+
+SOUNDNESS AUDIT (both ways, 2026-07-25): (i) direct — for the intended
+instantiation (`(aF, dF)` produced by
+`exists_heckeEigensystem_of_congruentSeed`, hence the eigensystem of an
+actual Hilbert newform) this is Shimura rationality plus Carayol
+verbatim; for an abstract `(aF, dF)` merely satisfying `hshape` the
+abstract-quantification caveat applies IN FULL FORCE — nothing formal
+forces an abstract family of `ℚ̄_ℓ`-values to be algebraic, and the
+hypothesis that `aF` IS a newform eigensystem lives entirely in this
+citation; (ii) collapse — the hypothesis set (an irreducible hardly
+ramified mod-`ℓ` representation, `ℓ ≥ 5`) is classically unsatisfiable
+(headline below), so the statement is classically true for every
+package.  The full hypothesis list of the parent leaf is retained
+DELIBERATELY: dropping `hρbar`/`hirr`/`hshape` would leave a statement
+about arbitrary `ℚ̄_ℓ`-valued families, which is false.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
+discharge through `Family.lean`, `Lift.lean`, or
+`Modularity/Interface.lean`. -/
+theorem exists_heckeField_mem_range_of_eigensystem
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (F : Type u) [Field F] [NumberField F]
+    (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
+    (aF dF : HeightOneSpectrum (NumberField.RingOfIntegers F) →
+      AlgebraicClosure ℚ_[ℓ])
+    (ιO : O →+* AlgebraicClosure ℚ_[ℓ]) (hιO : Function.Injective ιO)
+    (hshape : ∀ w ∉ badF,
+      ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO =
+        X ^ 2 - C (aF w) * X + C (dF w)) :
+    ∃ (E : Type u) (_ : Field E) (_ : NumberField E)
+      (ψℓ : E →+* AlgebraicClosure ℚ_[ℓ]),
+      (∀ w ∉ badF, aF w ∈ Set.range ψℓ) ∧
+      ∀ w ∉ badF, (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal →
+        dF w ∈ Set.range ψℓ :=
+  sorry
+
+/-- **The `ℓ`-adic cyclotomic character at a Frobenius of the base `F`**
+(sorry node; sub-leaf (b-ii) of the Carayol/Shimura sub-cut — pure
+algebraic number theory, NO automorphic content): at a place `w` of a
+number field `F` which does not lie over `ℓ`, the `ℓ`-adic cyclotomic
+character of `G_ℚ` takes the value `Nw = ‖w‖` (the absolute norm of
+`w`, i.e. the cardinality of its residue field) on the global image of
+the arithmetic Frobenius at `w`.
+
+Classically this is the unramifiedness of the cyclotomic character away
+from `ℓ` together with `Frob_w(ζ) = ζ^{Nw}` for every root of unity of
+`ℓ`-power order (Serre, *Abelian ℓ-adic Representations*, I.1;
+Neukirch, *Algebraic Number Theory*, IV): the residue field at `w` has
+`Nw` elements, so the arithmetic Frobenius acts on the `ℓ`-power roots
+of unity — which are `w`-integral units, `w ∤ ℓ` — by `Nw`-th powering,
+and `ℓ`-adic continuity upgrades the congruences mod `ℓⁿ` to the
+identity in `ℤ_[ℓ]`.
+
+RECOMMENDED DISCHARGE (2026-07-25): this is the exact `F`-analogue of
+the PROVEN rational-prime lemma
+`cyclotomicCharacter_adicArithFrob_eq_natCast` later in this module
+(with `q` replaced by the residue cardinality `Nw`).  That proof runs:
+`PadicInt.ext_of_toZModPow` to reduce to level `ℓⁿ`,
+`cyclotomicCharacter.toZModPow` plus `modularCyclotomicCharacter.unique`
+to identify the value with the exponent of the Frobenius action on
+`μ_{ℓⁿ}`, and `AlgHom.IsArithFrobAt.apply_of_pow_eq_one` for that
+action — the last step needing `ℓ` to be a unit in the local integers
+at `w`, which is exactly `hwℓ`, and the residue cardinality identity
+`Nat.card (𝓞_F ⧸ w) = Ideal.absNorm w.asIdeal` (mathlib's
+`Ideal.absNorm_apply`/`Submodule.cardQuot`).  Only the residue-field
+cardinality bookkeeping differs from the rational case, where it is
+`natCard_residue_quotient_toHeightOneSpectrum`.
+
+SOUNDNESS AUDIT (2026-07-25): this statement is TRUE OUTRIGHT — no
+vacuity route is used and no abstract-quantification caveat applies: it
+quantifies over an arbitrary number field `F` and an arbitrary place
+`w ∤ ℓ`, with no Galois-representation data at all.  It is therefore
+the one part of sub-leaf (b) that a future contributor can discharge
+without any automorphic input.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
+discharge through `Family.lean`, `Lift.lean`, or
+`Modularity/Interface.lean`. -/
+theorem cyclotomicCharacter_adicArithFrob_base_eq_absNorm
+    {ℓ : ℕ} [Fact ℓ.Prime] (F : Type u) [Field F] [NumberField F]
+    (w : HeightOneSpectrum (NumberField.RingOfIntegers F))
+    (hwℓ : (ℓ : NumberField.RingOfIntegers F) ∉ w.asIdeal) :
+    ((cyclotomicCharacter (AlgebraicClosure ℚ) ℓ
+      ((Field.absoluteGaloisGroup.map (algebraMap ℚ F)
+        (Field.absoluteGaloisGroup.map
+          (algebraMap F (HeightOneSpectrum.adicCompletion F w))
+          (Field.AbsoluteGaloisGroup.adicArithFrob w))).toRingEquiv) :
+        ℤ_[ℓ]ˣ) : ℤ_[ℓ]) = (Ideal.absNorm w.asIdeal : ℤ_[ℓ]) :=
+  sorry
+
+/-- **The determinant coefficient of the base-changed Frobenius charpoly
+is `Nw`** (PROVEN from the cyclotomic leaf above; the `d`-half of the
+Carayol/Shimura sub-cut): for a hardly ramified `ρ` on a rank-`2`
+module and a place `w` of the base `F` not lying over `ℓ`, the constant
+coefficient of the Frobenius characteristic polynomial of `ρ|_{G_F}` at
+`w` is the rational integer `Nw`.
+
+Proof: for a rank-`2` charpoly `det = (-1)² · coeff 0`
+(`LinearMap.det_eq_sign_charpoly_coeff`); the base-changed local
+Frobenius is, by the two `rfl`-lemmas `GaloisRep.toLocal_apply` and
+`GaloisRep.map_apply`, the element of `G_ℚ` obtained by pushing the
+arithmetic Frobenius at `w` through `G_{F_w} → G_F → G_ℚ`, so its
+determinant is the cyclotomic-character value by
+`IsHardlyRamified.det`; and that value is `Nw` by
+`cyclotomicCharacter_adicArithFrob_base_eq_absNorm`.
+
+This is the `F`-analogue of the PROVEN rational-prime lemma
+`charFrob_coeff_zero_eq_natCast_of_isHardlyRamified` later in this
+module, and it is what makes the DETERMINANT half of sub-leaf (b)
+free of automorphic input: away from `ℓ` the constant coefficient is a
+rational integer, hence lies in every number field. -/
+theorem charFrob_baseChange_coeff_zero_eq_absNorm {ℓ : ℕ}
+    (hℓodd : Odd ℓ) [Fact ℓ.Prime]
+    {O : Type u} [CommRing O] [TopologicalSpace O] [IsTopologicalRing O]
+    [IsLocalRing O] [Algebra ℤ_[ℓ] O]
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    (F : Type u) [Field F] [NumberField F]
+    (w : HeightOneSpectrum (NumberField.RingOfIntegers F))
+    (hwℓ : (ℓ : NumberField.RingOfIntegers F) ∉ w.asIdeal) :
+    ((ρ.map (algebraMap ℚ F)).charFrob w).coeff 0 =
+      (Ideal.absNorm w.asIdeal : O) := by
+  have hfinrank : Module.finrank O (Fin 2 → O) = 2 :=
+    Module.finrank_eq_of_rank_eq hrank
+  -- the constant coefficient of a rank-`2` charpoly is the determinant
+  have hdet := LinearMap.det_eq_sign_charpoly_coeff
+    ((ρ.map (algebraMap ℚ F)).toLocal w
+      (Field.AbsoluteGaloisGroup.adicArithFrob w))
+  rw [hfinrank, neg_one_sq, one_mul] at hdet
+  -- the cyclotomic determinant of `ρ` at the global image of `Frob_w`
+  have hcyclo := hρ.det (Field.absoluteGaloisGroup.map (algebraMap ℚ F)
+    (Field.absoluteGaloisGroup.map
+      (algebraMap F (HeightOneSpectrum.adicCompletion F w))
+      (Field.AbsoluteGaloisGroup.adicArithFrob w)))
+  rw [GaloisRep.det_apply,
+    cyclotomicCharacter_adicArithFrob_base_eq_absNorm F w hwℓ,
+    map_natCast] at hcyclo
+  -- the base-changed local Frobenius IS that global element
+  have hdetw : LinearMap.det ((ρ.map (algebraMap ℚ F)).toLocal w
+      (Field.AbsoluteGaloisGroup.adicArithFrob w)) =
+      (Ideal.absNorm w.asIdeal : O) := by
+    rw [GaloisRep.toLocal_apply, GaloisRep.map_apply]
+    exact hcyclo
+  rw [show (ρ.map (algebraMap ℚ F)).charFrob w =
+      ((ρ.map (algebraMap ℚ F)).toLocal w
+        (Field.AbsoluteGaloisGroup.adicArithFrob w)).charpoly from rfl,
+    ← hdet, hdetw]
+
 /-- **Carayol local-global normalization and Shimura rationality**
-(sorry node; sub-leaf (b) of the modularity-lifting cut — Shimura /
-Carayol 1986): the raw `ℚ̄_ℓ`-valued Hecke eigensystem `(aF, dF)` of
+(PROVEN 2026-07-25 as an assembly over the Carayol/Shimura sub-cut —
+see the section note above; sub-leaf (b) of the modularity-lifting
+cut — Shimura / Carayol 1986): the raw `ℚ̄_ℓ`-valued Hecke eigensystem
+`(aF, dF)` of
 the modular lift `ρ|_{G_F}` is DEFINED OVER A NUMBER FIELD: there is a
 number field `E` (the Hecke field of the attached Hilbert newform), a
 place `ψℓ : E → ℚ̄_ℓ` of `E` over `ℓ`, and functions `a, d` valued in
@@ -1293,22 +1551,44 @@ associated to Hilbert modular forms*, Invent. Math. 98 (1989)
 (the remaining even-degree cases); Ohta and Hida for the integral
 normalizations.
 
-PIN AUDIT (2026-07-24): the mathlib pin has no Hilbert modular forms
-and no Hecke algebras over a totally real base (`grep Hilbert` over
-`Mathlib/NumberTheory/`: only Hilbert's theorem 90 and Hilbert basis),
-so no part of this statement can be reduced to library material; it is
-a sharply-stated citation node whose only sound discharge is the
-construction of Hilbert-modular Hecke theory.
+PIN AUDIT (2026-07-24, unchanged 2026-07-25): the mathlib pin has no
+Hilbert modular forms and no Hecke algebras over a totally real base
+(`grep Hilbert` over `Mathlib/NumberTheory/`: only Hilbert's theorem 90
+and Hilbert basis), so the automorphic content of this statement cannot
+be reduced to library material.  What the 2026-07-25 sub-cut DOES
+achieve is to confine that content to the eigenvalue function: see
+`exists_heckeField_mem_range_of_eigensystem` (Shimura rationality, the
+only citation with automorphic content) and
+`cyclotomicCharacter_adicArithFrob_base_eq_absNorm` (pure algebraic
+number theory, true outright).
 
-SOUNDNESS AUDIT (both ways, 2026-07-24): (i) direct — for the intended
+ASSEMBLY (2026-07-25, PROVEN): Shimura rationality
+(`exists_heckeField_mem_range_of_eigensystem`) supplies the Hecke field
+`E`, the place `ψℓ`, and range membership of `aF` — from which the
+function `a` is extracted by choice, the packaging step that used to be
+part of the citation.  The determinant function is built place by
+place: away from `ℓ` the shape hypothesis `hshape` pins `dF w` to the
+constant coefficient of the base-changed Frobenius charpoly, which the
+cyclotomic determinant clause of `hρ` makes equal to the rational
+integer `Nw` (`charFrob_baseChange_coeff_zero_eq_absNorm`), so
+`d w := (Nw : E)` works with no automorphic input at all; at the
+finitely many places over `ℓ`, where the cyclotomic character is
+ramified, the citation's second clause supplies the value and `d w` is
+again extracted by choice.
+
+SOUNDNESS AUDIT (both ways, 2026-07-25): the depth now lives in the two
+sub-leaves, each audited in its own docstring; this assembly adds only
+formal steps (coefficient comparison, `Nat.cast` compatibility of the
+ring homomorphism `ψℓ`, and classical choice), so its soundness is
+exactly theirs.  For the record: (i) direct — for the intended
 instantiation (`(aF, dF)` produced by
 `exists_heckeEigensystem_of_congruentSeed`, hence the eigensystem of
 an actual Hilbert newform) this is Shimura rationality plus Carayol
 verbatim; for an abstract `(aF, dF)` merely satisfying `hshape` the
-abstract-quantification caveat applies IN FULL FORCE — nothing formal
-forces an abstract family of `ℚ̄_ℓ`-values to be algebraic, and the
-hypothesis that `aF` IS a newform eigensystem lives entirely in this
-citation (the same shape as the sibling leaf
+abstract-quantification caveat applies to the eigenvalue half — nothing
+formal forces an abstract family of `ℚ̄_ℓ`-values to be algebraic, and
+the hypothesis that `aF` IS a newform eigensystem lives entirely in the
+Shimura citation (the same shape as the sibling leaf
 `exists_threeadic_realization_of_heckePackage`, whose `hmod`
 hypothesis carries the same unstated content); (ii) collapse — the
 hypothesis set (an irreducible hardly ramified mod-`ℓ`
@@ -1317,7 +1597,7 @@ below), so the statement is classically true for every package.
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
 discharge through `Family.lean`, `Lift.lean`, or
-`Modularity/Interface.lean`. -/
+`Modularity/Interface.lean`; it binds both sub-leaves. -/
 theorem exists_heckeField_of_eigensystem
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
@@ -1347,8 +1627,45 @@ theorem exists_heckeField_of_eigensystem
     ∃ (E : Type u) (_ : Field E) (_ : NumberField E)
       (ψℓ : E →+* AlgebraicClosure ℚ_[ℓ])
       (a d : HeightOneSpectrum (NumberField.RingOfIntegers F) → E),
-      (∀ w ∉ badF, ψℓ (a w) = aF w) ∧ ∀ w ∉ badF, ψℓ (d w) = dF w :=
-  sorry
+      (∀ w ∉ badF, ψℓ (a w) = aF w) ∧ ∀ w ∉ badF, ψℓ (d w) = dF w := by
+  classical
+  -- (b-i) Shimura rationality: the Hecke field `E`, the place `ψℓ`, and
+  -- range membership of the eigenvalues
+  obtain ⟨E, hE, hNE, ψℓ, ha, hdℓ⟩ :=
+    exists_heckeField_mem_range_of_eigensystem hℓodd hℓ5 hZinj hrank hρ hW
+      hρbar hirr F hFtr hFgal hirrF badF aF dF ιO hιO hshape
+  letI : Field E := hE
+  -- the eigenvalue function: the range membership in total form, ready
+  -- for `choose` (the packaging step the citation no longer carries)
+  have haex : ∀ w, ∃ x : E, w ∉ badF → ψℓ x = aF w := by
+    intro w
+    by_cases hw : w ∈ badF
+    · exact ⟨0, fun hc => absurd hw hc⟩
+    · obtain ⟨x, hx⟩ := ha w hw
+      exact ⟨x, fun _ => hx⟩
+  -- the determinant function: away from `ℓ` its value is the rational
+  -- integer `Nw`, forced by the cyclotomic determinant clause of `hρ`
+  -- with no automorphic input; at the places over `ℓ`, where the
+  -- cyclotomic character is ramified, it is supplied by the citation
+  have hdex : ∀ w, ∃ x : E, w ∉ badF → ψℓ x = dF w := by
+    intro w
+    by_cases hw : w ∈ badF
+    · exact ⟨0, fun hc => absurd hw hc⟩
+    by_cases hwℓ : (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal
+    · obtain ⟨x, hx⟩ := hdℓ w hw hwℓ
+      exact ⟨x, fun _ => hx⟩
+    · refine ⟨(Ideal.absNorm w.asIdeal : E), fun _ => ?_⟩
+      -- read the determinant coefficient off the shape hypothesis
+      have hRHS : (X ^ 2 - C (aF w) * X + C (dF w)).coeff 0 = dF w := by simp
+      have hc0 : ιO (((ρ.map (algebraMap ℚ F)).charFrob w).coeff 0) =
+          dF w := by
+        rw [← Polynomial.coeff_map, hshape w hw, hRHS]
+      rw [map_natCast, ← hc0,
+        charFrob_baseChange_coeff_zero_eq_absNorm hℓodd hrank hρ F w hwℓ,
+        map_natCast]
+  choose a hafun using haex
+  choose d hdfun using hdex
+  exact ⟨E, hE, hNE, ψℓ, a, d, fun w hw => hafun w hw, fun w hw => hdfun w hw⟩
 
 /-- **Modularity lifting over the totally real base** (PROVEN
 2026-07-24 as an assembly over the three sub-leaves of the

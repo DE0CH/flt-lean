@@ -23,6 +23,26 @@ must never strand its remaining leaves unowned. Track the new leaves in
 progress-entries.json (wip flags at dispatch) as part of the same
 integration step.
 
+**Check overlap by grepping the PROMPT, not the `targets` field** (2026-07-25).
+`~/.flt-inflight.jsonl`'s `targets` is harvested by a regex for bold
+`**\`name\`**`, so tasks not written in that style get junk targets (one batch
+recorded `['diagnostics', 'lean_leansearch', …]`). Before dispatching at a leaf,
+grep the full `prompt` of every in-flight record for the leaf NAME. Skipping
+this let two agents cut the SAME node — `exists_isWeaklyUniversalOnIdentified`
+— along Schlessinger in two incompatible ways, producing an eight-hunk
+mathematical conflict that had to go back to an author to reconcile. Noticing
+that another worktree is merely "in the same file" is not enough; the file is
+not the unit of ownership, the declaration is.
+
+**"Merge FIRST, then dispatch" is an ordering, not a sequence of words**
+(violated 2026-07-25). A worktree fast-forwards to main at dispatch, so a
+successor dispatched at a leaf that still lives only on an unmerged branch
+fast-forwards to a main WITHOUT that leaf and finds nothing — a phantom
+dispatch manufactured out of a correct report. It happened with three
+`Deformation.lean` successors sent off the strength of an agent's report
+while its branch was still resolving a conflict. If the branch cannot be
+merged yet, the successors WAIT; queue them, do not dispatch them.
+
 Same-FILE leaves may get concurrent owners (Deyao, 2026-07-22): each
 agent works in its own git worktree on its own branch, and merging
 concurrent edits to one file is what git is designed to handle — leaves
@@ -166,6 +186,51 @@ dispatched this way (`Chebotarev.lean`, and three leaves in `Flat.lean`)
 before agents reported back that their targets were already proven. **Build
 task lists from the DIRECT set; use the transitive set only for judging
 whether a subtree still blocks the root.**
+
+**FAITHFULNESS: a leaf can be FALSE AS STATED, and that is worse than open.**
+Three were found and corrected on 2026-07-25 alone. A false leaf can never be
+proven, and anything derived from it is worthless — so when a leaf resists,
+seriously consider that it may be false rather than merely hard. Refuting one
+with an explicit counterexample and restating it correctly is a FULLY successful
+outcome; say so in task prompts.
+
+The discriminating rule for the commonest trap in this development, from a sweep
+of every `𝒪ᵥ`-rational group-scheme leaf (2026-07-25): **over `𝒪ᵥ`, identities
+and VALUES descend from `𝒪^nr` (flatness/torsion-freeness, and inertia fixes
+`𝒪^nr` pointwise); the EXISTENCE of a coordinate or a normal form does not.** A
+leaf is faithful exactly when it asks for a value or an inertia-only
+equivariance, and false exactly when it asks for an element of `G` or for
+`Γ`-wide rationality. Two corollaries: unramified twists are invisible to
+inertia, so inertia-only conclusions are twist-blind; and étale-by-étale is
+étale, so the dual/Selmer arguments are twist-blind too. `exists_muType_closure`
+died on precisely this — it demanded the μ_p-coordinate over `ℤ_p`, but the
+connected order-`p` schemes there are the `p−1` unramified twists `μ_p ⊗ ψ`,
+each satisfying every hypothesis with no such coordinate when `ψ ≠ 1`.
+
+Corollary for REVIEWERS: watch for a quantifier over `localInertiaGroup` being
+"generalized" to all of `Γ`. `exists_localTorsionQuotient_of_good_ordinary` is
+true only because `σ` ranges over inertia — the étale quotient at good ordinary
+reduction carries the *unramified* character `α`, trivial on inertia but not on
+Frobenius — and widening it makes the leaf false for every curve with `α ≠ 1`.
+
+**Third category, invisible to BOTH counts: an ERRORED declaration**
+(2026-07-25). A declaration whose proof fails to elaborate — `maximum
+recursion depth`, a failing tactic, anything red — is `sorryAx`-tainted and
+poisons the transitive cone, but it emits **no** `declaration uses 'sorry'`
+warning and contains no `sorry` token in its source. So it is missed by the
+direct-sorry warning set, missed by a source scan, and its `.olean` goes
+stale, silently blocking every downstream module from building. Nobody is
+ever dispatched at it, because no frontier scan can see it.
+
+Found when `lineNumerator_mul_lineNumeratorNeg` in `WeilPairingDescent.lean`
+— PROVEN and verified clean in its author's worktree — began failing after
+merge with `maximum recursion depth has been reached`, blocking the whole
+file. It surfaced only because an agent working in that file happened to
+report it. **So: errors are a separate frontier that only a build or a
+per-file `diagnostics` reveals. Treat any hard error as an immediate defect
+with a named owner (CLAUDE.md's sorry-gate rule (b)), and do not assume a
+clean direct-sorry scan means a clean tree.** A proof that verified in one
+worktree can error on main; resource-limit `set_option`s are the usual fix.
 
 Second trap, same day: a naive `grep sorry` over sources counts the word
 inside DOCSTRINGS, and this development's docstrings discuss sorried leaves
