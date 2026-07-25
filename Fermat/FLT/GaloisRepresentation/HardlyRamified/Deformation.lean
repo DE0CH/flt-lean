@@ -60,7 +60,7 @@ them without a human. Do not re-wrap it.
 
 - `finite_setOf_isHardlyRamified_frames`
 - `exists_levelIdealSystem_of_deformationCondition`
-- `exists_universalFrame_profinite_of_levelIdealSystem`
+- `isStrictlyUniversalOnFrames_of_levelSystem`
 - `hasFlatProlongationAt_of_pi_surjection`
 - `hasFlatProlongationAt_of_prod_injection`
 - `exists_cyclotomicCharacter_padicTwo_eq_two`
@@ -332,6 +332,14 @@ import Fermat.FLT.GaloisRepresentation.HardlyRamified.ProfiniteLocal
 -- Pure commutative algebra over mathlib alone, so it lives upstream of this
 -- file, where it has room to develop without the 15k-line import cone.
 import Fermat.FLT.GaloisRepresentation.HardlyRamified.ProfiniteLocalNoetherian
+-- proof-only: the inverse limit `lim_{J ∈ 𝒥} P ⧸ J` of a downward-directed
+-- family of finite levels, with its profiniteness, its linear topology and
+-- the factorization of a continuous map into a finite discrete ring through
+-- a single level — plus the missing constructor "a continuous multiplicative
+-- family of matrices IS a framed representation". Pure algebra/topology over
+-- mathlib alone, so it lives upstream of this 15k-line file. Consumed by
+-- `exists_universalFrame_profinite_of_levelIdealSystem`.
+import Fermat.FLT.GaloisRepresentation.HardlyRamified.LevelLimit
 import Fermat.FLT.GaloisRepresentation.Chebotarev
 -- proof-only: the shared Chebotarev–Brauer–Nesbitt conjugacy node
 -- (`exists_conj_of_charFrob_eq_away`), from which the `{2, ℓ}` leaf
@@ -5025,9 +5033,155 @@ theorem exists_levelIdealSystem_of_deformationCondition (hℓ5 : 5 ≤ ℓ)
         f₁ = f₂) :=
   sorry
 
-/-- **The profinite limit of a level system** (sorry node, the
-ARITHMETIC-FREE half of the 2026-07-26 construction cut — see the section
+open scoped Matrix in
+/-- **The matrix of a pushed-forward frame is the entrywise image**
+(PROVEN 2026-07-25; MOVED here 2026-07-26, and reproved as a three-line
+corollary of `LevelLimit.toMatrix'_baseChange_conj`).
+
+It used to stand ~1000 lines BELOW, next to `pushforwardFrame_comp` — but
+`exists_universalFrame_profinite_of_levelIdealSystem` just below needs it,
+and so did its own old proof's ingredient `piScalarRight_baseChange_apply`,
+which also lives below that node. Rather than duplicate the computation the
+computation itself now lives in `LevelLimit.lean` (stated over an
+`[Algebra B A]` instance rather than a `letI`-installed `ψ.toAlgebra`, which
+is what frees it of any dependence on `pushforwardFrame`), and both this
+statement and the one still below it are corollaries. Every use site of this
+lemma is below this point and resolves here unchanged. -/
+theorem toMatrix'_pushforwardFrame {B : Type u} [CommRing B]
+    [TopologicalSpace B] [IsTopologicalRing B] {A : Type u} [CommRing A]
+    [TopologicalSpace A] [IsTopologicalRing A] (ψ : B →+* A)
+    (hψ : Continuous ψ) (ρ : FramedGaloisRep ℚ B (Fin 2))
+    (g : Field.absoluteGaloisGroup ℚ) :
+    LinearMap.toMatrix' (pushforwardFrame ψ hψ ρ g) =
+      (LinearMap.toMatrix' (ρ g)).map ⇑ψ := by
+  letI : Algebra B A := ψ.toAlgebra
+  letI : ContinuousSMul B A := continuousSMul_of_algebraMap B A
+    (by rw [RingHom.algebraMap_toAlgebra]; exact hψ)
+  have h := LevelLimit.toMatrix'_baseChange_conj (B := B) (A := A) ρ g
+  rw [RingHom.algebraMap_toAlgebra] at h
+  exact h
+
+open scoped Matrix in
+/-- **Strict universality of the limit frame** (sorry node, cut 2026-07-26
+out of `exists_universalFrame_profinite_of_levelIdealSystem` below: it is
+the ONE clause of that node's conclusion which is not read straight off the
+inverse limit).
+
+The other four clauses of the limit node are pure limit bookkeeping — the
+open-ideal basis is the cofinality of the projection kernels, the residual
+identification is the strict-reduction clause read through `e0`, `hquot` is
+"a continuous map into a finite discrete ring factors through one level"
+followed by `hbase`, and `hinj` is the rigidity clause `hsep` together with
+the density of the image of `P`. Strict universality is different because a
+test object arrives only RESIDUALLY identified, and the classification clause
+`hclass` of the level system demands a STRICT identification. Bridging the two
+is the content left here:
+
+1. the given `e : k ⊗_A A² ≃ₗ[k] V` makes `pushforwardFrame πA hπA ρA` equal
+   to `ρbar.conj e₁` for `e₁ := e.symm ≫ piScalarRight`, so it differs from
+   the strict model `ρbar.conj e0` by conjugation by the matrix
+   `C := toMatrix' (e0.symm ≫ e₁) ∈ GL₂(k)`;
+2. `C` LIFTS to `GL₂(A)`: `πA` is surjective, so lift the entries; the lift's
+   determinant reduces to the unit `det C`, and a local ring's elements with
+   unit residue are units (`IsLocalRing.notMem_maximalIdeal`, the kernel of
+   `πA` being the maximal ideal since `k` is a field);
+3. conjugating `ρA` by that lift gives a STRICTLY identified `ρA'`, still
+   hardly ramified by `isHardlyRamified_conj`;
+4. `hclass` then yields `f : P →+* A` carrying `M` to the matrices of `ρA'`
+   and killing a level ideal, and `hlift` turns `f` into the required
+   continuous `ψ : R →+* A`; conjugating back by the lift produces the framing
+   `e'` of the conclusion.
+
+The `ℤ_ℓ`-compatibility `πA.comp (algebraMap ℤ_[ℓ] A) = algebraMap ℤ_[ℓ] k`
+which `hclass` demands is a statement about the TEST object's `πA`, so it is
+not among the hypotheses and must be derived: two ring maps `ℤ_[ℓ] →+* k`
+into a finite field are equal (`ringHom_padicInt_ext` below in this file — its
+content is that `ker` is forced to be `(ℓ)`, since `ℤ_[ℓ]` does not embed into
+a finite ring). The corresponding compatibility for `πuniv` IS supplied, as
+`hπalg`; it is what the assembly can hand over, and it is what makes the
+conclusion `πA.comp ψ = πuniv` consistent.
+
+The statement is deliberately phrased over an ABSTRACT `(R, ι, πuniv, ρuniv)`
+rather than over the inverse limit, so that it is provable without reopening
+the limit construction: everything it needs from the limit is `hdense` (the
+image of `P` is dense) and `hlift` (a map out of `P` killing a level ideal
+extends continuously to `R`). -/
+theorem isStrictlyUniversalOnFrames_of_levelSystem
+    {ρbar : GaloisRep ℚ k V} (e0 : V ≃ₗ[k] (Fin 2 → k))
+    {P : Type u} [CommRing P] [Algebra ℤ_[ℓ] P] (evbar : P →+* k)
+    (M : Field.absoluteGaloisGroup ℚ → Matrix (Fin 2) (Fin 2) P)
+    (𝒥 : Set (Ideal P))
+    (hres : ∀ g : Field.absoluteGaloisGroup ℚ,
+      (M g).map ⇑evbar = LinearMap.toMatrix' ((ρbar.conj e0) g))
+    (hclass : ∀ (A : Type u) [CommRing A] [TopologicalSpace A]
+      [IsTopologicalRing A] [IsLocalRing A] [Algebra ℤ_[ℓ] A] [Finite A]
+      [DiscreteTopology A] (πA : A →+* k) (hπA : Continuous πA)
+      (ρA : FramedGaloisRep ℚ A (Fin 2)),
+      IsHardlyRamified hℓOdd (rank_finTwoFun A) ρA →
+      πA.comp (algebraMap ℤ_[ℓ] A) = algebraMap ℤ_[ℓ] k →
+      pushforwardFrame πA hπA ρA = ρbar.conj e0 →
+      ∃ f : P →+* A, f.comp (algebraMap ℤ_[ℓ] P) = algebraMap ℤ_[ℓ] A ∧
+        πA.comp f = evbar ∧
+        (∀ g : Field.absoluteGaloisGroup ℚ,
+          (M g).map ⇑f = LinearMap.toMatrix' (ρA g)) ∧
+        ∃ J ∈ 𝒥, J ≤ RingHom.ker f)
+    (hsep : ∀ (A : Type u) [CommRing A] [IsLocalRing A] [Finite A]
+      (πA : A →+* k) (f₁ f₂ : P →+* A),
+      πA.comp f₁ = evbar → πA.comp f₂ = evbar →
+      (∀ g : Field.absoluteGaloisGroup ℚ, (M g).map ⇑f₁ = (M g).map ⇑f₂) →
+      f₁ = f₂)
+    {R : Type u} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [Algebra ℤ_[ℓ] R]
+    (ι : P →+* R) (hdense : Dense (Set.range (ι : P → R)))
+    (πuniv : R →+* k) (hπι : ∀ p : P, πuniv (ι p) = evbar p)
+    (hπcont : Continuous πuniv)
+    (hπalg : πuniv.comp (algebraMap ℤ_[ℓ] R) = algebraMap ℤ_[ℓ] k)
+    (halgι : (algebraMap ℤ_[ℓ] R) = ι.comp (algebraMap ℤ_[ℓ] P))
+    (ρuniv : FramedGaloisRep ℚ R (Fin 2))
+    (hmat : ∀ g : Field.absoluteGaloisGroup ℚ,
+      LinearMap.toMatrix' (ρuniv g) = (M g).map ⇑ι)
+    (hlift : ∀ (A : Type u) [CommRing A] [TopologicalSpace A]
+      [IsTopologicalRing A] [Finite A] [DiscreteTopology A] (f : P →+* A),
+      (∃ J ∈ 𝒥, J ≤ RingHom.ker f) →
+      ∃ ψ : R →+* A, Continuous ψ ∧ ∀ p : P, ψ (ι p) = f p) :
+    IsStrictlyUniversalOnFrames hℓOdd ρbar ρuniv πuniv :=
+  sorry
+
+/-- **The profinite limit of a level system** (PROVEN 2026-07-26 over the
+single leaf `isStrictlyUniversalOnFrames_of_levelSystem` above — the
+ARITHMETIC-FREE half of the 2026-07-26 construction cut; see the section
 docstring above).
+
+The limit itself, with its profiniteness, its linear topology, the
+surjectivity of its projections and the factorization of a continuous map
+into a finite discrete ring through a single level, is built in
+`LevelLimit.lean`; so is the constructor `LevelLimit.framedOfMatrices`,
+which is what turns the level-wise matrices `M mod J` into an honest framed
+representation over the limit (nothing in the repository built a `GaloisRep`
+out of matrices before — every other one is a `baseChange`/`conj` of an
+existing one, and a limit has nothing to base-change from). FOUR of the five
+conclusion clauses are then read off:
+
+* the open-ideal basis is `LevelLimit.exists_ker_proj_subset` — the only
+  place downward directedness of `𝒥` is used;
+* LOCALITY is `LevelLimit.isUnit_of_forall_isUnit` together with the
+  observation that `ker (evbar mod J)` IS the maximal ideal of the level
+  (the level's residue field is `k`, since `evbar` is surjective and kills
+  `J`), so `πuniv x ≠ 0` makes `x` a unit at every level at once;
+* the residual identification is the strict-reduction clause `hres` read
+  through `e0`: on matrices, `πuniv ∘ ofP = evbar`, so
+  `pushforwardFrame πuniv ρuniv = ρbar.conj e0` on the nose, and the framing
+  of the conclusion is `piScalarRight ≫ e0.symm`;
+* `hquot` is "a continuous map into a finite discrete ring factors through a
+  single level" followed by the functoriality clause `hbase` at that level;
+* `hinj` is the rigidity clause `hsep` — which is a statement about `P`
+  alone — transported to the limit by the DENSITY of the image of `P`
+  (`LevelLimit.dense_range_ofP`), two continuous maps into a discrete ring
+  agreeing on a dense set being equal.
+
+Only strict universality genuinely needs work beyond the limit, because a
+test object arrives merely RESIDUALLY identified while `hclass` demands a
+STRICT identification; that gap is the leaf above.
 
 Given the tautological level system produced by
 `exists_levelIdealSystem_of_deformationCondition`, form
@@ -5140,8 +5294,270 @@ theorem exists_universalFrame_profinite_of_levelIdealSystem
         πA.comp φ₁ = πuniv → πA.comp φ₂ = πuniv →
         pushforwardFrame φ₁ hφ₁ ρuniv = pushforwardFrame φ₂ hφ₂ ρuniv →
         φ₁ = φ₂) ∧
-      IsStrictlyUniversalOnFrames hℓOdd ρbar ρuniv πuniv :=
-  sorry
+      IsStrictlyUniversalOnFrames hℓOdd ρbar ρuniv πuniv := by
+  classical
+  -- ## the levels, with their discrete topologies
+  letI ltop : ∀ J : 𝒥, TopologicalSpace (P ⧸ (J : Ideal P)) := fun _ => ⊥
+  haveI ldisc : ∀ J : 𝒥, DiscreteTopology (P ⧸ (J : Ideal P)) := fun _ => ⟨rfl⟩
+  haveI lfin : ∀ J : 𝒥, Finite (P ⧸ (J : Ideal P)) :=
+    fun J => (hlev (J : Ideal P) J.2).1
+  haveI lloc : ∀ J : 𝒥, IsLocalRing (P ⧸ (J : Ideal P)) :=
+    fun J => (hlev (J : Ideal P) J.2).2
+  haveI ltr : ∀ J : 𝒥, IsTopologicalRing (P ⧸ (J : Ideal P)) :=
+    fun _ => LevelLimit.isTopologicalRing_of_discrete
+  -- ## the limit ring `R = lim_{J ∈ 𝒥} P ⧸ J`
+  haveI itr : IsTopologicalRing (LevelLimit.Limit 𝒥) :=
+    LevelLimit.isTopologicalRing_limit 𝒥
+  haveI icp : CompactSpace (LevelLimit.Limit 𝒥) := LevelLimit.compactSpace_limit 𝒥
+  haveI it2 : T2Space (LevelLimit.Limit 𝒥) := LevelLimit.t2Space_limit 𝒥
+  letI ialg : Algebra ℤ_[ℓ] (LevelLimit.Limit 𝒥) :=
+    ((LevelLimit.ofP 𝒥).comp (algebraMap ℤ_[ℓ] P)).toAlgebra
+  have halgR : (algebraMap ℤ_[ℓ] (LevelLimit.Limit 𝒥)) =
+      (LevelLimit.ofP 𝒥).comp (algebraMap ℤ_[ℓ] P) := RingHom.algebraMap_toAlgebra _
+  have hext : ∀ {x y : LevelLimit.Limit 𝒥},
+      (∀ J : 𝒥, LevelLimit.proj 𝒥 J x = LevelLimit.proj 𝒥 J y) → x = y :=
+    fun h => Subtype.ext (funext h)
+  -- ## the residue map of each level: `evbar` descends because `J ≤ ker evbar`
+  have hkerJ : ∀ (J : 𝒥) (a : P), a ∈ (J : Ideal P) → evbar a = 0 := by
+    intro J a ha
+    have h := hker (J : Ideal P) J.2 ha
+    rwa [RingHom.mem_ker] at h
+  have hevJex : ∀ J : 𝒥, ∃ f : (P ⧸ (J : Ideal P)) →+* k,
+      ∀ p : P, f (Ideal.Quotient.mk (J : Ideal P) p) = evbar p := fun J =>
+    ⟨Ideal.Quotient.lift (J : Ideal P) evbar (hkerJ J), fun _ => rfl⟩
+  choose evJ hevJmk using hevJex
+  have hevJfac : ∀ (J₁ J₂ : 𝒥) (h : (J₁ : Ideal P) ≤ (J₂ : Ideal P))
+      (x : P ⧸ (J₁ : Ideal P)), evJ J₂ (Ideal.Quotient.factor h x) = evJ J₁ x := by
+    intro J₁ J₂ h x
+    obtain ⟨p, rfl⟩ := Ideal.Quotient.mk_surjective x
+    rw [Ideal.Quotient.factor_mk, hevJmk, hevJmk]
+  -- ## the residue map of the limit: any level computes it, by directedness
+  obtain ⟨J₀, hJ₀⟩ := id hne
+  set πuniv : (LevelLimit.Limit 𝒥) →+* k :=
+    (evJ ⟨J₀, hJ₀⟩).comp (LevelLimit.proj 𝒥 ⟨J₀, hJ₀⟩) with hπdef
+  have hπ0 : ∀ x, πuniv x = evJ ⟨J₀, hJ₀⟩ (LevelLimit.proj 𝒥 ⟨J₀, hJ₀⟩ x) :=
+    fun x => by rw [hπdef]; rfl
+  have hπproj : ∀ (J : 𝒥) (x : LevelLimit.Limit 𝒥),
+      evJ J (LevelLimit.proj 𝒥 J x) = πuniv x := by
+    intro J x
+    obtain ⟨J', hJ', hJ'le⟩ := hdir (J : Ideal P) J.2 J₀ hJ₀
+    have key : ∀ (K : 𝒥), J' ≤ (K : Ideal P) →
+        evJ K (LevelLimit.proj 𝒥 K x) =
+          evJ ⟨J', hJ'⟩ (LevelLimit.proj 𝒥 ⟨J', hJ'⟩ x) := by
+      intro K hle
+      rw [← LevelLimit.proj_compat 𝒥 x ⟨J', hJ'⟩ K hle]
+      exact hevJfac ⟨J', hJ'⟩ K hle (LevelLimit.proj 𝒥 ⟨J', hJ'⟩ x)
+    rw [key J (hJ'le.trans inf_le_left), hπ0, key ⟨J₀, hJ₀⟩ (hJ'le.trans inf_le_right)]
+  have hπι : ∀ p : P, πuniv (LevelLimit.ofP 𝒥 p) = evbar p := by
+    intro p
+    rw [hπ0, LevelLimit.proj_ofP, hevJmk]
+  have hπalg : πuniv.comp (algebraMap ℤ_[ℓ] (LevelLimit.Limit 𝒥)) =
+      algebraMap ℤ_[ℓ] k := by
+    ext z
+    show πuniv ((algebraMap ℤ_[ℓ] (LevelLimit.Limit 𝒥)) z) = algebraMap ℤ_[ℓ] k z
+    rw [halgR]
+    show πuniv (LevelLimit.ofP 𝒥 (algebraMap ℤ_[ℓ] P z)) = algebraMap ℤ_[ℓ] k z
+    rw [hπι]
+    exact congrFun (congrArg (fun f : ℤ_[ℓ] →+* k => (f : ℤ_[ℓ] → k)) hevalg) z
+  have hπsurj : Function.Surjective πuniv := by
+    intro c
+    obtain ⟨p, rfl⟩ := hevsurj c
+    exact ⟨LevelLimit.ofP 𝒥 p, hπι p⟩
+  have hπcont : Continuous πuniv := by
+    have h1 : Continuous (⇑(evJ ⟨J₀, hJ₀⟩) ∘ ⇑(LevelLimit.proj 𝒥 ⟨J₀, hJ₀⟩)) :=
+      continuous_of_discreteTopology.comp (LevelLimit.continuous_proj 𝒥 ⟨J₀, hJ₀⟩)
+    have heq : (⇑πuniv) =
+        ⇑(evJ ⟨J₀, hJ₀⟩) ∘ ⇑(LevelLimit.proj 𝒥 ⟨J₀, hJ₀⟩) := funext hπ0
+    rw [heq]
+    exact h1
+  -- ## the limit is LOCAL: a unit at every level is a unit, and the residue
+  -- field of every level is `k`
+  haveI hntR : Nontrivial (LevelLimit.Limit 𝒥) := by
+    rcases exists_pair_ne k with ⟨a, b, hab⟩
+    obtain ⟨x, hx⟩ := hπsurj a
+    obtain ⟨y, hy⟩ := hπsurj b
+    exact ⟨x, y, fun h => hab (by rw [← hx, ← hy, h])⟩
+  have hunitJ : ∀ (J : 𝒥) (u : P ⧸ (J : Ideal P)), evJ J u ≠ 0 → IsUnit u := by
+    intro J u hu
+    have hsurjJ : Function.Surjective (evJ J) := by
+      intro c
+      obtain ⟨p, rfl⟩ := hevsurj c
+      exact ⟨Ideal.Quotient.mk (J : Ideal P) p, hevJmk J p⟩
+    have hmax : (RingHom.ker (evJ J)).IsMaximal :=
+      RingHom.ker_isMaximal_of_surjective (evJ J) hsurjJ
+    have hkm : RingHom.ker (evJ J) = IsLocalRing.maximalIdeal (P ⧸ (J : Ideal P)) :=
+      IsLocalRing.eq_maximalIdeal hmax
+    refine IsLocalRing.notMem_maximalIdeal.mp ?_
+    rw [← hkm, RingHom.mem_ker]
+    exact hu
+  haveI hlocR : IsLocalRing (LevelLimit.Limit 𝒥) := by
+    refine IsLocalRing.of_isUnit_or_isUnit_one_sub_self fun a => ?_
+    by_cases ha : πuniv a = 0
+    · right
+      refine LevelLimit.isUnit_of_forall_isUnit 𝒥 _ fun J => hunitJ J _ ?_
+      have h1 : πuniv (1 - a) = 1 := by rw [map_sub, map_one, ha, sub_zero]
+      rw [hπproj J (1 - a), h1]
+      exact one_ne_zero
+    · left
+      exact LevelLimit.isUnit_of_forall_isUnit 𝒥 _ fun J =>
+        hunitJ J _ (by rw [hπproj]; exact ha)
+  -- ## the level representations, and the matrices they share
+  have hrepJex : ∀ J : 𝒥, ∃ ρJ : FramedGaloisRep ℚ (P ⧸ (J : Ideal P)) (Fin 2),
+      (∀ g : Field.absoluteGaloisGroup ℚ, LinearMap.toMatrix' (ρJ g) =
+        (M g).map ⇑(Ideal.Quotient.mk (J : Ideal P))) ∧
+      IsHardlyRamified hℓOdd (rank_finTwoFun (P ⧸ (J : Ideal P))) ρJ :=
+    fun J => hrep (J : Ideal P) J.2
+  choose ρJ hρJmat hρJhr using hrepJex
+  set mat : Field.absoluteGaloisGroup ℚ → Matrix (Fin 2) (Fin 2) (LevelLimit.Limit 𝒥) :=
+    fun g => (M g).map ⇑(LevelLimit.ofP 𝒥) with hmatdef
+  have hprojmat : ∀ (J : 𝒥) (g : Field.absoluteGaloisGroup ℚ) (i j : Fin 2),
+      LevelLimit.proj 𝒥 J (mat g i j) =
+        (M g).map ⇑(Ideal.Quotient.mk (J : Ideal P)) i j := fun _ _ _ _ => rfl
+  have honeJ : ∀ J : 𝒥, (M 1).map ⇑(Ideal.Quotient.mk (J : Ideal P)) = 1 := by
+    intro J
+    rw [← hρJmat J 1, map_one, LinearMap.toMatrix'_one]
+  have hmulJ : ∀ (J : 𝒥) (g h : Field.absoluteGaloisGroup ℚ),
+      (M (g * h)).map ⇑(Ideal.Quotient.mk (J : Ideal P)) =
+        ((M g).map ⇑(Ideal.Quotient.mk (J : Ideal P))) *
+          ((M h).map ⇑(Ideal.Quotient.mk (J : Ideal P))) := by
+    intro J g h
+    rw [← hρJmat J (g * h), ← hρJmat J g, ← hρJmat J h, map_mul,
+      LinearMap.toMatrix'_mul]
+  have hone : mat 1 = 1 := by
+    refine Matrix.ext fun i j => hext fun J => ?_
+    by_cases hij : i = j
+    · subst hij
+      rw [hprojmat, honeJ, Matrix.one_apply_eq, Matrix.one_apply_eq, map_one]
+    · rw [hprojmat, honeJ, Matrix.one_apply_ne hij, Matrix.one_apply_ne hij, map_zero]
+  have hmul : ∀ g h, mat (g * h) = mat g * mat h := by
+    intro g h
+    refine Matrix.ext fun i j => hext fun J => ?_
+    have hL : LevelLimit.proj 𝒥 J (mat (g * h) i j) =
+        ∑ l, (LevelLimit.proj 𝒥 J (mat g i l)) * (LevelLimit.proj 𝒥 J (mat h l j)) := by
+      rw [hprojmat, hmulJ, Matrix.mul_apply]
+      exact Finset.sum_congr rfl fun l _ => by rw [hprojmat, hprojmat]
+    have hR : LevelLimit.proj 𝒥 J ((mat g * mat h) i j) =
+        ∑ l, (LevelLimit.proj 𝒥 J (mat g i l)) * (LevelLimit.proj 𝒥 J (mat h l j)) := by
+      rw [Matrix.mul_apply, map_sum]
+      exact Finset.sum_congr rfl fun l _ => map_mul _ _ _
+    rw [hL, hR]
+  have hcont : Continuous mat := by
+    refine continuous_pi fun i => continuous_pi fun j => ?_
+    refine continuous_induced_rng.2 (continuous_pi fun J => ?_)
+    show Continuous fun g => Ideal.Quotient.mk (J : Ideal P) (M g i j)
+    have hJ := LevelLimit.continuous_toMatrix' (ρJ J)
+    have h2 : Continuous (fun g => LinearMap.toMatrix' (ρJ J g) i j) :=
+      (continuous_apply j).comp ((continuous_apply i).comp hJ)
+    have heq : (fun g => LinearMap.toMatrix' (ρJ J g) i j)
+        = fun g => Ideal.Quotient.mk (J : Ideal P) (M g i j) := by
+      funext g
+      rw [hρJmat J g]
+      rfl
+    rwa [heq] at h2
+  set ρuniv : FramedGaloisRep ℚ (LevelLimit.Limit 𝒥) (Fin 2) :=
+    LevelLimit.framedOfMatrices mat hone hmul hcont with hρunivdef
+  have hρmat : ∀ g, LinearMap.toMatrix' (ρuniv g) = (M g).map ⇑(LevelLimit.ofP 𝒥) := by
+    intro g
+    rw [hρunivdef]
+    exact LevelLimit.toMatrix'_framedOfMatrices mat hone hmul hcont g
+  have hpush : ∀ {A : Type u} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+      (ψ : (LevelLimit.Limit 𝒥) →+* A) (hψ : Continuous ψ)
+      (g : Field.absoluteGaloisGroup ℚ),
+      LinearMap.toMatrix' (pushforwardFrame ψ hψ ρuniv g) =
+        (M g).map (⇑ψ ∘ ⇑(LevelLimit.ofP 𝒥)) := by
+    intro A _ _ _ ψ hψ g
+    rw [toMatrix'_pushforwardFrame, hρmat, Matrix.map_map]
+  -- ## a map out of `P` killing a level ideal extends continuously to the limit
+  have hlift : ∀ (A : Type u) [CommRing A] [TopologicalSpace A]
+      [IsTopologicalRing A] [Finite A] [DiscreteTopology A] (f : P →+* A),
+      (∃ J ∈ 𝒥, J ≤ RingHom.ker f) →
+      ∃ ψ : (LevelLimit.Limit 𝒥) →+* A, Continuous ψ ∧
+        ∀ p : P, ψ (LevelLimit.ofP 𝒥 p) = f p := by
+    intro A _ _ _ _ _ f hf
+    obtain ⟨J, hJ, hJf⟩ := hf
+    have hkill : ∀ a ∈ J, f a = 0 := by
+      intro a ha
+      have := hJf ha
+      rwa [RingHom.mem_ker] at this
+    letI : TopologicalSpace (P ⧸ J) := ltop ⟨J, hJ⟩
+    haveI : DiscreteTopology (P ⧸ J) := ldisc ⟨J, hJ⟩
+    refine ⟨(Ideal.Quotient.lift J f hkill).comp (LevelLimit.proj 𝒥 ⟨J, hJ⟩), ?_, ?_⟩
+    · have h1 : Continuous (⇑(Ideal.Quotient.lift J f hkill) ∘
+          ⇑(LevelLimit.proj 𝒥 ⟨J, hJ⟩)) :=
+        continuous_of_discreteTopology.comp (LevelLimit.continuous_proj 𝒥 ⟨J, hJ⟩)
+      exact h1
+    · intro p; rfl
+  refine ⟨LevelLimit.Limit 𝒥, inferInstance, inferInstance, itr, hlocR, ialg, icp, it2,
+    ρuniv, πuniv, hπsurj, hπcont, ?_, ?_, ?_, ?_, ?_⟩
+  · -- open ideals are cofinal in the neighbourhood filter of `0`
+    intro U hU
+    obtain ⟨J, hJ⟩ := LevelLimit.exists_ker_proj_subset 𝒥 hne hdir hU
+    exact ⟨RingHom.ker (LevelLimit.proj 𝒥 J), LevelLimit.isOpen_ker_proj 𝒥 J, hJ⟩
+  · -- residual identification: the STRICT reduction, read through `e0`
+    have hpf : pushforwardFrame πuniv hπcont ρuniv = ρbar.conj e0 := by
+      refine GaloisRep.ext fun g => LinearMap.toMatrix'.injective ?_
+      rw [hpush πuniv hπcont g,
+        show (⇑πuniv ∘ ⇑(LevelLimit.ofP 𝒥)) = ⇑evbar from funext hπι]
+      exact hres g
+    letI : Algebra (LevelLimit.Limit 𝒥) k := πuniv.toAlgebra
+    letI : ContinuousSMul (LevelLimit.Limit 𝒥) k :=
+      continuousSMul_of_algebraMap _ _
+        (by rw [RingHom.algebraMap_toAlgebra]; exact hπcont)
+    refine ⟨(TensorProduct.piScalarRight (LevelLimit.Limit 𝒥) k k (Fin 2)).trans e0.symm, ?_⟩
+    rw [← LevelLimit.conj_trans,
+      show (ρuniv.baseChange k).conj
+          (TensorProduct.piScalarRight (LevelLimit.Limit 𝒥) k k (Fin 2)) =
+        pushforwardFrame πuniv hπcont ρuniv from rfl,
+      hpf, LevelLimit.conj_trans, LinearEquiv.self_trans_symm, LevelLimit.conj_refl]
+  · -- `hquot`: factor through one level, then apply `hbase`
+    intro A _ _ _ _ _ _ _ φ hφ halg
+    obtain ⟨J, f, hfmk, -⟩ := LevelLimit.exists_factor 𝒥 hne hdir φ hφ
+    have hfcont : Continuous f := continuous_of_discreteTopology
+    have hfalg : f.comp (algebraMap ℤ_[ℓ] (P ⧸ (J : Ideal P))) = algebraMap ℤ_[ℓ] A := by
+      ext z
+      have h1 : (algebraMap ℤ_[ℓ] (P ⧸ (J : Ideal P))) z =
+          Ideal.Quotient.mk (J : Ideal P) (algebraMap ℤ_[ℓ] P z) := rfl
+      have h2 : (algebraMap ℤ_[ℓ] (LevelLimit.Limit 𝒥)) z =
+          LevelLimit.ofP 𝒥 (algebraMap ℤ_[ℓ] P z) := by rw [halgR]; rfl
+      rw [RingHom.comp_apply, h1, hfmk, ← h2, ← RingHom.comp_apply, halg]
+    have hpfeq : pushforwardFrame φ hφ ρuniv = pushforwardFrame f hfcont (ρJ J) := by
+      refine GaloisRep.ext fun g => LinearMap.toMatrix'.injective ?_
+      rw [hpush φ hφ g, toMatrix'_pushforwardFrame, hρJmat J g, Matrix.map_map,
+        show (⇑φ ∘ ⇑(LevelLimit.ofP 𝒥)) =
+          (⇑f ∘ ⇑(Ideal.Quotient.mk (J : Ideal P))) from
+          funext fun p => (hfmk p).symm]
+    rw [hpfeq]
+    exact hbase f hfcont hfalg (hρJhr J)
+  · -- `hinj`: rigidity of `P`, transported by the density of its image
+    intro A _ _ _ _ _ _ _ πA φ₁ φ₂ hφ₁ hφ₂ h1 h2 hpfeq
+    have hg : (φ₁.comp (LevelLimit.ofP 𝒥)) = (φ₂.comp (LevelLimit.ofP 𝒥)) := by
+      refine hsep A πA _ _ ?_ ?_ ?_
+      · ext p
+        show πA (φ₁ (LevelLimit.ofP 𝒥 p)) = evbar p
+        rw [show πA (φ₁ (LevelLimit.ofP 𝒥 p)) = (πA.comp φ₁) (LevelLimit.ofP 𝒥 p) from rfl,
+          h1]
+        exact hπι p
+      · ext p
+        show πA (φ₂ (LevelLimit.ofP 𝒥 p)) = evbar p
+        rw [show πA (φ₂ (LevelLimit.ofP 𝒥 p)) = (πA.comp φ₂) (LevelLimit.ofP 𝒥 p) from rfl,
+          h2]
+        exact hπι p
+      · intro g
+        have hm : LinearMap.toMatrix' (pushforwardFrame φ₁ hφ₁ ρuniv g) =
+            LinearMap.toMatrix' (pushforwardFrame φ₂ hφ₂ ρuniv g) := by rw [hpfeq]
+        rw [hpush φ₁ hφ₁ g, hpush φ₂ hφ₂ g] at hm
+        exact hm
+    refine DFunLike.coe_injective (Continuous.ext_on
+      (LevelLimit.dense_range_ofP 𝒥 hne hdir) hφ₁ hφ₂ ?_)
+    rintro x ⟨p, rfl⟩
+    exact RingHom.congr_fun hg p
+  · -- strict universality: the one clause with content, cut out above
+    exact isStrictlyUniversalOnFrames_of_levelSystem (hℓOdd := hℓOdd) (e0 := e0)
+      (evbar := evbar) (M := M) (𝒥 := 𝒥) (hres := hres) (hclass := hclass)
+      (hsep := hsep) (ι := LevelLimit.ofP 𝒥)
+      (hdense := LevelLimit.dense_range_ofP 𝒥 hne hdir) (πuniv := πuniv)
+      (hπι := hπι) (hπcont := hπcont) (hπalg := hπalg) (halgι := halgR)
+      (ρuniv := ρuniv) (hmat := hρmat) (hlift := hlift)
 
 /-- **Pro-representability of the hardly ramified deformation problem by a
 PROFINITE ring** (PROVEN 2026-07-26 as an ASSEMBLY over the two leaves of
@@ -6153,35 +6569,13 @@ theorem piScalarRight_baseChange_apply {R : Type u} [CommRing R]
       exact RingHom.map_mulVec ψ (LinearMap.toMatrix' (ρ g)) w i
     rw [hmap, Matrix.mulVec_smul]
 
-open scoped Matrix in
-/-- **The matrix of a pushed-forward frame is the entrywise image**
-(PROVEN 2026-07-25): `pushforwardFrame ψ hψ ρ` really is "apply `ψ` to
-the matrix entries of `ρ`", which is what its docstring promises and what
-makes it usable as the level-`n` datum of an inverse system of
-MATRICES. -/
-theorem toMatrix'_pushforwardFrame {B : Type u} [CommRing B]
-    [TopologicalSpace B] [IsTopologicalRing B] {A : Type u} [CommRing A]
-    [TopologicalSpace A] [IsTopologicalRing A] (ψ : B →+* A)
-    (hψ : Continuous ψ) (ρ : FramedGaloisRep ℚ B (Fin 2))
-    (g : Field.absoluteGaloisGroup ℚ) :
-    LinearMap.toMatrix' (pushforwardFrame ψ hψ ρ g) =
-      (LinearMap.toMatrix' (ρ g)).map ⇑ψ := by
-  letI : Algebra B A := ψ.toAlgebra
-  letI : ContinuousSMul B A := continuousSMul_of_algebraMap B A
-    (by rw [RingHom.algebraMap_toAlgebra]; exact hψ)
-  have happ : ∀ w : Fin 2 → A,
-      (pushforwardFrame ψ hψ ρ) g w =
-        ((LinearMap.toMatrix' (ρ g)).map ⇑ψ) *ᵥ w := by
-    intro w
-    rw [show (pushforwardFrame ψ hψ ρ) g =
-      (TensorProduct.piScalarRight B A A (Fin 2)).conj ((ρ.baseChange A) g)
-      from rfl, LinearEquiv.conj_apply_apply,
-      piScalarRight_baseChange_apply ψ hψ ρ g, LinearEquiv.apply_symm_apply]
-  have hlin : (pushforwardFrame ψ hψ ρ g : (Fin 2 → A) →ₗ[A] (Fin 2 → A)) =
-      Matrix.toLin' ((LinearMap.toMatrix' (ρ g)).map ⇑ψ) := by
-    refine LinearMap.ext fun w => ?_
-    rw [Matrix.toLin'_apply, happ]
-  rw [hlin, LinearMap.toMatrix'_toLin']
+-- NOTE (2026-07-26): `toMatrix'_pushforwardFrame` used to stand HERE, and
+-- was moved UP to just above `exists_universalFrame_profinite_of_levelIdealSystem`,
+-- which needs it. Its proof is now a three-line corollary of
+-- `LevelLimit.toMatrix'_baseChange_conj`; the 20-line computation it used to
+-- carry (and with it the dependence on `piScalarRight_baseChange_apply`, which
+-- also lives below the node that needs it) has moved to `LevelLimit.lean`.
+-- All of its use sites are BELOW this point and resolve to the moved copy.
 
 /-- **Pushforward depends only on the ring map** (PROVEN 2026-07-25):
 the continuity witness is a proof, so equal maps give equal pushforwards.
