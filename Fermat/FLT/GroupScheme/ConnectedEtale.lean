@@ -1231,6 +1231,55 @@ theorem fg_span_range (f : G →ₗ[R] A) [Module.Finite R G] :
     rintro _ ⟨g, rfl⟩
     exact key g
 
+/-- **The first-order expansion of a convolution power** (PROVEN,
+induction on `m`): if the displacement `c − 1` of a point of the
+convolution ring takes its values in an ideal `𝔞`, then
+
+  `c^m = 1 + m·(c − 1) + r`   with `r` valued in `𝔞²`.
+
+No binomial coefficients are needed: the induction step multiplies
+`1 + m·e + r` by `e + 1` (`e = c − 1`) and collects `m·e² + r·e + r`
+into the new remainder, each summand landing in `𝔞²` by
+`convMul_apply_mem_mul`.
+
+This is the `m`-th-power companion of `convPow_apply_mem_pow`: where
+that lemma reads `c^p = 1` as a filtration statement, this one reads
+`σ·c = c^m` as the statement that `σ` multiplies the displacement by
+`m` MODULO `𝔞²` — i.e. that the inertia character is the "tame
+character" of any generator of `𝔞`. It is the whole elementary content
+of Raynaud's dichotomy below. -/
+theorem exists_convPow_rem (c : WithConv (G →ₗ[R] A)) {𝔞 : Ideal A}
+    (hd : ∀ x, (c - 1).ofConv x ∈ 𝔞) (m : ℕ) :
+    ∃ r : WithConv (G →ₗ[R] A), (∀ x, r.ofConv x ∈ 𝔞 ^ 2) ∧
+      c ^ m = 1 + (m : ℕ) • (c - 1) + r := by
+  induction m with
+  | zero =>
+    refine ⟨0, fun x => by simp, ?_⟩
+    simp
+  | succ m ih =>
+    obtain ⟨r, hr, hcm⟩ := ih
+    refine ⟨(m : ℕ) • ((c - 1) * (c - 1)) + r * (c - 1) + r, ?_, ?_⟩
+    · intro x
+      have h1 : ((m : ℕ) • ((c - 1) * (c - 1))).ofConv x ∈ 𝔞 ^ 2 := by
+        rw [WithConv.ofConv_smul, LinearMap.smul_apply, nsmul_eq_mul, sq]
+        exact Ideal.mul_mem_left _ _ (convMul_apply_mem_mul _ _ hd hd x)
+      have h2 : (r * (c - 1)).ofConv x ∈ 𝔞 ^ 2 := by
+        have := convMul_apply_mem_mul r (c - 1) hr hd x
+        exact (Ideal.mul_le_right : 𝔞 ^ 2 * 𝔞 ≤ 𝔞 ^ 2) this
+      rw [WithConv.ofConv_add, WithConv.ofConv_add, LinearMap.add_apply, LinearMap.add_apply]
+      exact Submodule.add_mem _ (Submodule.add_mem _ h1 h2) (hr x)
+    · have hce : (c - 1) + 1 = c := by abel
+      calc c ^ (m + 1) = c ^ m * c := pow_succ c m
+        _ = (1 + (m : ℕ) • (c - 1) + r) * ((c - 1) + 1) := by rw [hcm, hce]
+        _ = 1 + ((m : ℕ) • (c - 1) + (c - 1)) +
+              ((m : ℕ) • ((c - 1) * (c - 1)) + r * (c - 1) + r) := by
+              rw [add_mul, add_mul, mul_add, mul_add, mul_add, mul_one, mul_one, mul_one,
+                one_mul, smul_mul_assoc]
+              abel
+        _ = 1 + ((m + 1 : ℕ)) • (c - 1) +
+              ((m : ℕ) • ((c - 1) * (c - 1)) + r * (c - 1) + r) := by
+              rw [succ_nsmul]
+
 /-- **No `p`-torsion in the kernel of reduction over an absolutely
 unramified base** (PROVEN — the elementary convolution-filtration form;
 Raynaud, Bull. SMF 102 (1974), 3.3.2–3.3.5; Fontaine, *Il n'y a pas de
@@ -1532,73 +1581,6 @@ theorem exists_natCast_sub_mem_span (u : ℤ_[p]) :
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
-/-- **Raynaud's dichotomy for the inertia character of an order-`p`
-point** (SORRY LEAF — the Oort–Tate/Raynaud CLASSIFICATION half of the
-`μ`-type node, stated 2026-07-25): for a geometric point `φ` of exact
-convolution order `p` whose cyclic group `⟨φ⟩ ≅ ℤ/p` is inertia-stable
-(`hstab`), the resulting character
-`χ_φ : I_v → (ℤ/p)ˣ`, `σ ↦ m(σ)` with `σ • φ = φ^{m(σ)}`, is EITHER
-trivial OR the mod-`p` cyclotomic character — as a CHARACTER, i.e. one
-of the two alternatives holds simultaneously for all `σ`, which is
-strictly stronger than the pointwise statement `χ_φ(σ) ∈ {1, χ(σ)}`
-and is what the consumer needs.
-
-This is the classification input and the only genuinely deep half of
-the node. Raynaud, *Schémas en groupes de type `(p, …, p)`*, Bull. SMF
-102 (1974), 3.3.6/3.4.3: over a base with absolute ramification index
-`e < p − 1` the action of TAME inertia on the geometric points of a
-finite flat group scheme killed by `p` is through the level-`1`
-fundamental character raised to exponents in `{0, …, e}`; here
-`𝒪ᵥ = ℤ_p` is absolutely unramified, `e = 1`, and `p` is odd
-(`hpodd`), so `1 < p − 1` and only the exponents `0` and `1` survive —
-the trivial character (the étale form `ℤ/p`) and `χ_cyc` (the
-multiplicative form `μ_p`). Equivalently, via Oort–Tate (*Group
-schemes of prime order*, Ann. Sci. ÉNS 1970): the schematic closure of
-`⟨φ⟩` is `G_{a,b}` with `ab = w_p`, `v(a) + v(b) = 1`, so `v(a) ∈
-{0, 1}` and the two cases are `ℤ/p` twisted by an unramified character
-(`v(a) = 0`) and `μ_p` twisted by an unramified character
-(`v(a) = 1`); unramified twists are invisible on inertia, which is
-exactly why the dichotomy is between the two characters themselves.
-
-The connected-component data `e₀`, `hφe`, … is NOT used by this half —
-it is what excludes the first alternative, and that is the separate
-leaf `eq_one_of_inertia_invariant_of_reduction_counit` below. The
-hypotheses are nevertheless all carried here so that a prover of this
-leaf has the consumer's full package available. -/
-theorem inertia_character_trivial_or_cyclotomic
-    (hpodd : Odd p)
-    (G : Type) [CommRing G]
-    [HopfAlgebra 𝒪ᵖᵍᵥ G] [Module.Flat 𝒪ᵖᵍᵥ G] [Module.Finite 𝒪ᵖᵍᵥ G]
-    (e₀ : G) (he₀ : IsIdempotentElem e₀)
-    (hε₀ : Coalgebra.counit (R := 𝒪ᵖᵍᵥ) e₀ = (1 : 𝒪ᵖᵍᵥ))
-    (hprim₀ : ∀ x : G, IsIdempotentElem x → x * e₀ = 0 ∨ x * e₀ = e₀)
-    (hcomul₀ : Coalgebra.comul (R := 𝒪ᵖᵍᵥ) e₀ *
-      (e₀ ⊗ₜ[𝒪ᵖᵍᵥ] e₀) = e₀ ⊗ₜ[𝒪ᵖᵍᵥ] e₀)
-    (φ : ℚᵖᵍᵥ ⊗[𝒪ᵖᵍᵥ] G →ₐ[ℚᵖᵍᵥ] ℚᵖᵍᵥᵃˡᵍ)
-    (hφe : φ ((1 : ℚᵖᵍᵥ) ⊗ₜ[𝒪ᵖᵍᵥ] e₀) = 1)
-    (hord : φ ^ p = 1)
-    (hstab : ∀ τ ∈ localInertiaGroup
-        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
-          (Fact.out : p.Prime)),
-      ∃ m : ℕ, τ • φ = φ ^ m)
-    (hφ1 : φ ≠ 1) :
-    (∀ σ ∈ localInertiaGroup
-        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
-          (Fact.out : p.Prime)),
-      ∀ m : ℕ, σ • φ = φ ^ m → m ≡ 1 [MOD p]) ∨
-    (∀ σ ∈ localInertiaGroup
-        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
-          (Fact.out : p.Prime)),
-      ∀ m n : ℕ, σ • φ = φ ^ m →
-        ((cyclotomicCharacter (AlgebraicClosure ℚ) p
-            ((Field.absoluteGaloisGroup.map (algebraMap ℚ ℚᵖᵍᵥ)
-              σ).toRingEquiv) : ℤ_[p]ˣ) : ℤ_[p]) - (n : ℤ_[p]) ∈
-          Ideal.span {((p : ℕ) : ℤ_[p])} → m ≡ n [MOD p]) :=
-  sorry
-
-set_option backward.isDefEq.respectTransparency false in
-set_option synthInstance.maxHeartbeats 1000000 in
-set_option maxHeartbeats 2000000 in
 /-- **The prime of `𝓞 ℚ` attached to the prime number `p` is `(p)`**
 (PROVEN): unfolding `Nat.Prime.toHeightOneSpectrumRingOfIntegersRat`,
 the ideal is the comap of `span {(p : ℤ)}` along
@@ -1747,6 +1729,492 @@ theorem mem_span_natCast_of_inertia_invariant
   refine Ideal.mem_span_singleton'.mpr ⟨integralClosureInclusion
     (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : p.Prime)) M z, ?_⟩
   rw [← hincl, ← hz, map_mul, map_natCast]
+
+/-- **`(1 + π)^n − 1 = π · (n + π·w)`** (PROVEN, induction on `n`): in
+any commutative ring the binomial tail beyond the linear term is
+divisible by `π²`. Applied with `π = ζ_p − 1` it says that a Galois
+element acting on `ζ_p` by `ζ_p ↦ ζ_p^n` multiplies `ζ_p − 1` by `n`
+modulo `(ζ_p − 1)²` — the "tame character" reading of the mod-`p`
+cyclotomic character, and the second half of the comparison performed
+by `inertia_character_trivial_or_cyclotomic` below. -/
+theorem exists_one_add_pow_sub_one {A : Type*} [CommRing A] (π : A) (n : ℕ) :
+    ∃ w : A, (1 + π) ^ n - 1 = π * ((n : A) + π * w) := by
+  induction n with
+  | zero => exact ⟨0, by ring⟩
+  | succ n ih =>
+    obtain ⟨w, hw⟩ := ih
+    refine ⟨w + (n : A) + π * w, ?_⟩
+    have h : (1 + π) ^ (n + 1) - 1 = (1 + π) * ((1 + π) ^ n - 1) + π := by ring
+    rw [h, hw]
+    push_cast
+    ring
+
+/-- **`p` is a NONUNIT of the integral closure `𝒪̄` of `𝒪ᵥ` in
+`ℚᵥᵃˡᵍ`** (PROVEN): `𝒪̄` is integral over `𝒪ᵥ`, so the contraction of
+its maximal ideal along `𝒪ᵥ → 𝒪̄` is a maximal ideal of the LOCAL ring
+`𝒪ᵥ`, hence `𝔪 𝒪ᵥ = (p)` (`maximalIdeal_eq_span_natCast`); so `p` is in
+`𝔪 𝒪̄` and `span {p} ≠ ⊤` in `𝒪̄`. This is what makes the descent of a
+congruence from `𝒪̄` back to `ℤ` sound: a rational integer lying in
+`p·𝒪̄` really is divisible by `p`, because otherwise its coprimality
+with `p` would put `1` in `span {p} ⊆ 𝔪 𝒪̄`. -/
+theorem natCast_mem_maximalIdeal_integralClosure :
+    ((p : ℕ) : IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) ∈
+      maximalIdeal (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) := by
+  have hmax : ((maximalIdeal (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ)).comap
+      (algebraMap 𝒪ᵖᵍᵥ (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ))).IsMaximal :=
+    Ideal.isMaximal_comap_of_isIntegral_of_isMaximal _
+  have heq : (maximalIdeal (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ)).comap
+      (algebraMap 𝒪ᵖᵍᵥ (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ)) = maximalIdeal 𝒪ᵖᵍᵥ :=
+    IsLocalRing.eq_maximalIdeal hmax
+  have hp' : ((p : ℕ) : 𝒪ᵖᵍᵥ) ∈ maximalIdeal 𝒪ᵖᵍᵥ := by
+    rw [maximalIdeal_eq_span_natCast]
+    exact Ideal.mem_span_singleton_self _
+  have h := heq ▸ hp'
+  rwa [Ideal.mem_comap, map_natCast] at h
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **THE OORT–TATE/RAYNAUD CLASSIFICATION INPUT, in its irreducible
+valuation-theoretic form** (SORRY LEAF, cut 2026-07-25; it is now the
+SOLE remaining input of `inertia_character_trivial_or_cyclotomic`
+below, which is PROVEN over it): for a CONNECTED geometric point
+`φ ≠ 1` of exact convolution order `p` whose cyclic group `⟨φ⟩` is
+inertia-stable, the ideal of `𝒪̄` generated by the values of the
+DISPLACEMENT `g ↦ φ(1 ⊗ g) − ε(g)` is generated by `ζ_p − 1`, for any
+primitive `p`-th root of unity `ζ_p`.
+
+This is Raynaud's exponent bound at `e = 1` with all of the Galois
+theory stripped off: a statement about ONE ideal of `𝒪̄`, with no
+characters, no cyclotomic character and no disjunction. The passage
+from it to the character dichotomy is elementary and is carried out in
+full below; the previous statement of that dichotomy bundled the two
+together, which is why it looked irreducible.
+
+Content (Oort–Tate, *Group schemes of prime order*, Ann. Sci. ÉNS 1970,
+§2; Raynaud, *Schémas en groupes de type `(p, …, p)`*, Bull. SMF 102
+(1974), 3.3.6/3.4.3; Tate, *Finite flat group schemes*, in
+Cornell–Silverman–Stevens, §4). `hstab` makes the schematic closure `C`
+of `⟨φ⟩` a finite flat closed subGROUP scheme of `Spec G` of order `p`
+killed by `p`; its vanishing ideal is a Hopf ideal, so BOTH `φ` and `ε`
+factor through `G ↠ 𝒪(C)` and the displacement's value ideal computed
+on `G` is the one computed on `C`. Oort–Tate write
+`C = Spec 𝒪ᵥ[x]/(x^p − a x)` with `ab = w_p`, `v(w_p) = e = 1` and
+`ε x = 0`; the geometric points are `x ↦ α` with `α^{p−1} = a`, so the
+displacement values are the powers `α^i` (`i ≥ 1`) and the value ideal
+is `(α)`, of valuation `v(a)/(p − 1)`. Connectedness (`hφe`, `hprim₀`)
+excludes `v(a) = 0` — the étale form `ℤ/p`, whose points have UNIT
+displacement — and `v(a) + v(b) = 1` then forces `v(a) = 1`, i.e.
+`v(α) = 1/(p − 1) = v(ζ_p − 1)`. In the VALUATION RING `𝒪̄` equal
+valuation means associate, which is the asserted equality of ideals.
+
+Soundness. The hypothesis set is inhabited: for
+`G = 𝒪ᵥ[T]/(T^p − 1)` (the Hopf order of `μ_p`, LOCAL because its
+reduction is `𝔽_p[T]/(T − 1)^p`, so `e₀ = 1` and
+`he₀`/`hε₀`/`hprim₀`/`hcomul₀`/`hφe` all hold) and `φ : T ↦ ζ_p`, the
+values are `ζ_p^i − 1 = (ζ_p − 1)·unit` and the ideal IS `(ζ_p − 1)`;
+the same holds for every unramified twist `μ_p ⊗ ψ`, since a twist
+changes the coordinate by a unit of `𝒪^nr`. Every hypothesis is
+load-bearing:
+
+* `hφ1` — for `φ = 1` the displacement vanishes and the ideal is `0`;
+* the connectedness package — for the ÉTALE `ℤ/p` (`G = 𝒪ᵥ^p` with `φ`
+  a coordinate projection) some displacement value is a UNIT and the
+  ideal is `⊤`; that is the other branch of Raynaud's dichotomy, and it
+  is excluded here exactly as `not_inertia_character_trivial_of_connected`
+  excludes the trivial character;
+* `hstab` — for the `p`-torsion of a SUPERSINGULAR elliptic curve over
+  `ℤ_p` the model is connected and killed by `p`, but tame inertia acts
+  through the level-`2` fundamental characters, no line is stable, and
+  the displacement ideal has valuation `1/(p² − 1)`, not `1/(p − 1)`.
+
+Finally, note that this asks for a VALUE (an ideal of `𝒪̄` generated by
+values of `φ`), never for an `𝒪ᵥ`-rational coordinate: demanding the
+coordinate is precisely what made the deleted `exists_muType_closure`
+FALSE (see the CORRECTION NOTE at `exists_muType_coordinate`), because
+the Oort–Tate coordinate is only defined up to an unramified twist.
+The value ideal is twist-blind, so this form is faithful. -/
+theorem displacement_span_eq_span_zeta_sub_one
+    (hpodd : Odd p)
+    (G : Type) [CommRing G]
+    [HopfAlgebra 𝒪ᵖᵍᵥ G] [Module.Flat 𝒪ᵖᵍᵥ G] [Module.Finite 𝒪ᵖᵍᵥ G]
+    (e₀ : G) (he₀ : IsIdempotentElem e₀)
+    (hε₀ : Coalgebra.counit (R := 𝒪ᵖᵍᵥ) e₀ = (1 : 𝒪ᵖᵍᵥ))
+    (hprim₀ : ∀ x : G, IsIdempotentElem x → x * e₀ = 0 ∨ x * e₀ = e₀)
+    (hcomul₀ : Coalgebra.comul (R := 𝒪ᵖᵍᵥ) e₀ *
+      (e₀ ⊗ₜ[𝒪ᵖᵍᵥ] e₀) = e₀ ⊗ₜ[𝒪ᵖᵍᵥ] e₀)
+    (φ : ℚᵖᵍᵥ ⊗[𝒪ᵖᵍᵥ] G →ₐ[ℚᵖᵍᵥ] ℚᵖᵍᵥᵃˡᵍ)
+    (hφe : φ ((1 : ℚᵖᵍᵥ) ⊗ₜ[𝒪ᵖᵍᵥ] e₀) = 1)
+    (hord : φ ^ p = 1)
+    (hstab : ∀ τ ∈ localInertiaGroup
+        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+          (Fact.out : p.Prime)),
+      ∃ m : ℕ, τ • φ = φ ^ m)
+    (hφ1 : φ ≠ 1)
+    (ζ : IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ)
+    (hζ : IsPrimitiveRoot
+      (algebraMap (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) ℚᵖᵍᵥᵃˡᵍ ζ) p) :
+    Ideal.span {x : IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ | ∃ g : G,
+        algebraMap (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) ℚᵖᵍᵥᵃˡᵍ x =
+          φ ((1 : ℚᵖᵍᵥ) ⊗ₜ[𝒪ᵖᵍᵥ] g) -
+            algebraMap 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ (Coalgebra.counit (R := 𝒪ᵖᵍᵥ) g)} =
+      Ideal.span {ζ - 1} :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **Raynaud's dichotomy for the inertia character of an order-`p`
+point** (PROVEN 2026-07-25 over the single leaf
+`displacement_span_eq_span_zeta_sub_one`; the leaf itself was cut out
+of this statement the same day): for a geometric point `φ` of exact
+convolution order `p` whose cyclic group `⟨φ⟩ ≅ ℤ/p` is inertia-stable
+(`hstab`), the resulting character
+`χ_φ : I_v → (ℤ/p)ˣ`, `σ ↦ m(σ)` with `σ • φ = φ^{m(σ)}`, is EITHER
+trivial OR the mod-`p` cyclotomic character — as a CHARACTER, i.e. one
+of the two alternatives holds simultaneously for all `σ`, which is
+strictly stronger than the pointwise statement `χ_φ(σ) ∈ {1, χ(σ)}`
+and is what the consumer needs.
+
+Mathematically (Raynaud, *Schémas en groupes de type `(p, …, p)`*,
+Bull. SMF 102 (1974), 3.3.6/3.4.3): over a base with absolute
+ramification index `e < p − 1` the action of TAME inertia on the
+geometric points of a finite flat group scheme killed by `p` is through
+the level-`1` fundamental character raised to exponents in `{0, …, e}`;
+here `𝒪ᵥ = ℤ_p` is absolutely unramified, `e = 1`, and `p` is odd, so
+only the exponents `0` and `1` survive — the trivial character (the
+étale form `ℤ/p`) and `χ_cyc` (the multiplicative form `μ_p`).
+
+**Proof (2026-07-25) — the CONNECTED alternative is proved outright,
+so the disjunction is discharged by `Or.inr`.** The whole argument is
+a comparison of two "tame characters" inside the integral closure
+`𝒪̄` of `𝒪ᵥ` in `ℚᵥᵃˡᵍ`, and the only nonelementary input is the
+valuation statement `displacement_span_eq_span_zeta_sub_one`.
+
+Write `c` for the point read as an element of the convolution ring
+`G →ₗ[𝒪ᵥ] 𝒪̄` (the transport is `liftEquiv_symm_vendored_pow` plus
+`comp_convPow` along the injection `𝒪̄ ↪ ℚᵥᵃˡᵍ`, exactly as in
+`eq_one_of_inertia_invariant_of_reduction_counit`), `d = c − 1` for its
+displacement and `𝔞` for the ideal of `𝒪̄` generated by the values of
+`d`. Then:
+
+1. CONNECTEDNESS gives `𝔞 ⊆ 𝔪 𝒪̄` — every value of `d` is in the
+   maximal ideal, by `point_sub_counit_mem_maximalIdeal`.
+2. THE LEAF gives `𝔞 = (ζ_p − 1)` for a primitive `p`-th root of unity
+   `ζ_p` (obtained here as the image of a primitive root of the
+   abstract closure `ℚᵃˡᵍ`, integral because it is a root of
+   `X^p − 1`).
+3. Hence some VALUE `t = d(g₀)` is `a₀·(ζ_p − 1)` with `a₀` a UNIT:
+   writing every value as `a_g·(ζ_p − 1)`, if every `a_g` were a
+   nonunit then `𝔞 ⊆ 𝔪·𝔞`, and Nakayama (`fg_span_range`,
+   `Submodule.eq_bot_of_le_smul_of_le_jacobson_bot`) would give
+   `𝔞 = 0`, contradicting `ζ_p ≠ 1`.
+4. `σ • φ = φ^m` becomes `σ ∘ c = c^m`, and `exists_convPow_rem`
+   expands `c^m = 1 + m·d + r` with `r` valued in `𝔞²`. Evaluating at
+   `g₀` and using that `σ` fixes the image of `𝒪ᵥ`:
+   `σ(t) − m·t ∈ 𝔞² = ((ζ_p − 1)²)`.
+5. On the other side, `galois_apply_pow_eq_pow_of_cyclotomicCharacter`
+   gives `σ(ζ_p) = ζ_p^n` for any `n` representing `χ_cyc(σ)`, and
+   `exists_one_add_pow_sub_one` turns this into
+   `σ(ζ_p − 1) = (ζ_p − 1)·(n + (ζ_p − 1)·w)`.
+6. Substituting `t = a₀·(ζ_p − 1)` into 4 and cancelling the single
+   factor `ζ_p − 1` (a nonzero element of the domain `𝒪̄`) leaves
+   `σ(a₀)·(n + (ζ_p − 1)w) = m·a₀ + z·(ζ_p − 1)`. Since `σ` is in
+   INERTIA it fixes `𝒪̄` modulo `𝔪`, so `σ(a₀) ≡ a₀`, and
+   `ζ_p − 1 ∈ 𝔪` by 1–2; hence `a₀·(n − m) ∈ 𝔪`, and `a₀` is a unit,
+   so `n − m ∈ 𝔪`.
+7. `n − m` is a rational integer, hence inertia-invariant, so
+   `mem_span_natCast_of_inertia_invariant` (`e = 1`) puts it in
+   `p·𝒪̄`; and `p` is a nonunit of `𝒪̄`
+   (`natCast_mem_maximalIdeal_integralClosure`), so an integer coprime
+   to `p` could not lie there. Therefore `p ∣ n − m`, i.e.
+   `m ≡ n [MOD p]`.
+
+Note where each hypothesis is spent: `hstab` and `hord` and `hφ1` and
+the connected-component data are all consumed by the leaf; `hφe`,
+`he₀`, `hε₀`, `hprim₀` are additionally used HERE, in step 1, and
+`hpodd` only inside the leaf. The `e = 1` unramifiedness of the base is
+used twice — in step 7 and (inside the leaf) as Raynaud's bound. -/
+theorem inertia_character_trivial_or_cyclotomic
+    (hpodd : Odd p)
+    (G : Type) [CommRing G]
+    [HopfAlgebra 𝒪ᵖᵍᵥ G] [Module.Flat 𝒪ᵖᵍᵥ G] [Module.Finite 𝒪ᵖᵍᵥ G]
+    (e₀ : G) (he₀ : IsIdempotentElem e₀)
+    (hε₀ : Coalgebra.counit (R := 𝒪ᵖᵍᵥ) e₀ = (1 : 𝒪ᵖᵍᵥ))
+    (hprim₀ : ∀ x : G, IsIdempotentElem x → x * e₀ = 0 ∨ x * e₀ = e₀)
+    (hcomul₀ : Coalgebra.comul (R := 𝒪ᵖᵍᵥ) e₀ *
+      (e₀ ⊗ₜ[𝒪ᵖᵍᵥ] e₀) = e₀ ⊗ₜ[𝒪ᵖᵍᵥ] e₀)
+    (φ : ℚᵖᵍᵥ ⊗[𝒪ᵖᵍᵥ] G →ₐ[ℚᵖᵍᵥ] ℚᵖᵍᵥᵃˡᵍ)
+    (hφe : φ ((1 : ℚᵖᵍᵥ) ⊗ₜ[𝒪ᵖᵍᵥ] e₀) = 1)
+    (hord : φ ^ p = 1)
+    (hstab : ∀ τ ∈ localInertiaGroup
+        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+          (Fact.out : p.Prime)),
+      ∃ m : ℕ, τ • φ = φ ^ m)
+    (hφ1 : φ ≠ 1) :
+    (∀ σ ∈ localInertiaGroup
+        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+          (Fact.out : p.Prime)),
+      ∀ m : ℕ, σ • φ = φ ^ m → m ≡ 1 [MOD p]) ∨
+    (∀ σ ∈ localInertiaGroup
+        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+          (Fact.out : p.Prime)),
+      ∀ m n : ℕ, σ • φ = φ ^ m →
+        ((cyclotomicCharacter (AlgebraicClosure ℚ) p
+            ((Field.absoluteGaloisGroup.map (algebraMap ℚ ℚᵖᵍᵥ)
+              σ).toRingEquiv) : ℤ_[p]ˣ) : ℤ_[p]) - (n : ℤ_[p]) ∈
+          Ideal.span {((p : ℕ) : ℤ_[p])} → m ≡ n [MOD p]) := by
+  classical
+  haveI : NeZero p := ⟨hp.out.ne_zero⟩
+  haveI : Algebra.IsIntegral 𝒪ᵖᵍᵥ G := Algebra.IsIntegral.of_finite 𝒪ᵖᵍᵥ G
+  refine Or.inr ?_
+  -- the point, as an `𝒪̄`-valued point of the model
+  set χ : G →ₐ[𝒪ᵖᵍᵥ] ℚᵖᵍᵥᵃˡᵍ :=
+    (AlgHom.liftEquiv 𝒪ᵖᵍᵥ ℚᵖᵍᵥ G ℚᵖᵍᵥᵃˡᵍ).symm φ with hχdef
+  have hint : ∀ a : G, χ a ∈ integralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ := fun a =>
+    (Algebra.IsIntegral.isIntegral (R := 𝒪ᵖᵍᵥ) a).map χ
+  set χI : G →ₐ[𝒪ᵖᵍᵥ] IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ :=
+    AlgHom.codRestrict χ (integralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) hint with hχIdef
+  set ι : IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ →ₐ[𝒪ᵖᵍᵥ] ℚᵖᵍᵥᵃˡᵍ :=
+    { algebraMap (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) ℚᵖᵍᵥᵃˡᵍ with
+      commutes' := fun _ => rfl } with hιdef
+  have hιinj : Function.Injective ι := fun a b h => Subtype.ext h
+  have hιχ : ι.comp χI = χ := AlgHom.ext fun _ => rfl
+  set c : WithConv (G →ₗ[𝒪ᵖᵍᵥ] IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) :=
+    toConv χI.toLinearMap with hcdef
+  set d : WithConv (G →ₗ[𝒪ᵖᵍᵥ] IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) := c - 1 with hddef
+  set 𝔞 : Ideal (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) :=
+    Ideal.span (Set.range d.ofConv) with h𝔞def
+  have hd𝔞 : ∀ g : G, d.ofConv g ∈ 𝔞 := fun g => Ideal.subset_span ⟨g, rfl⟩
+  have hdval : ∀ g : G, ι (d.ofConv g) =
+      φ ((1 : ℚᵖᵍᵥ) ⊗ₜ[𝒪ᵖᵍᵥ] g) -
+        algebraMap 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ (Coalgebra.counit (R := 𝒪ᵖᵍᵥ) g) := by
+    intro g
+    rw [hddef, WithConv.ofConv_sub, LinearMap.sub_apply, map_sub]
+    congr 1
+  -- STEP 1: connectedness — the point reduces to the counit
+  have hmax : ∀ g : G, d.ofConv g ∈
+      maximalIdeal (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) := by
+    intro g
+    obtain ⟨y, hy, hyeq⟩ := point_sub_counit_mem_maximalIdeal
+      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : p.Prime))
+      G e₀ he₀ hε₀ hprim₀ φ hφe g
+    have hgm : ι (d.ofConv g) = ι y := by rw [hdval g, ← hyeq]; rfl
+    rwa [hιinj hgm]
+  have h𝔞max : 𝔞 ≤ maximalIdeal (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) := by
+    rw [h𝔞def, Ideal.span_le]
+    rintro _ ⟨g, rfl⟩
+    exact hmax g
+  -- a primitive `p`-th root of unity, inside the integral closure
+  obtain ⟨μ, hμ⟩ := HasEnoughRootsOfUnity.exists_primitiveRoot (AlgebraicClosure ℚ) p
+  have hζL : IsPrimitiveRoot
+      (AlgebraicClosure.map (algebraMap ℚ ℚᵖᵍᵥ) μ) p :=
+    hμ.map_of_injective (AlgebraicClosure.map (algebraMap ℚ ℚᵖᵍᵥ)).injective
+  have hζint : AlgebraicClosure.map (algebraMap ℚ ℚᵖᵍᵥ) μ ∈
+      integralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ := by
+    refine ⟨Polynomial.X ^ p - Polynomial.C 1,
+      Polynomial.monic_X_pow_sub_C 1 hp.out.ne_zero, ?_⟩
+    simp [hζL.pow_eq_one]
+  set ζ : IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ :=
+    ⟨AlgebraicClosure.map (algebraMap ℚ ℚᵖᵍᵥ) μ, hζint⟩ with hζdef
+  have hιζ : ι ζ = AlgebraicClosure.map (algebraMap ℚ ℚᵖᵍᵥ) μ := rfl
+  -- STEP 2: THE DEEP INPUT
+  have hspan : 𝔞 = Ideal.span {ζ - 1} := by
+    have hset : Set.range d.ofConv =
+        {x : IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ | ∃ g : G,
+          algebraMap (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) ℚᵖᵍᵥᵃˡᵍ x =
+            φ ((1 : ℚᵖᵍᵥ) ⊗ₜ[𝒪ᵖᵍᵥ] g) -
+              algebraMap 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ (Coalgebra.counit (R := 𝒪ᵖᵍᵥ) g)} := by
+      ext x
+      constructor
+      · rintro ⟨g, rfl⟩
+        exact ⟨g, hdval g⟩
+      · rintro ⟨g, hg⟩
+        exact ⟨g, hιinj ((hdval g).trans hg.symm)⟩
+    rw [h𝔞def, hset]
+    exact displacement_span_eq_span_zeta_sub_one hpodd G e₀ he₀ hε₀ hprim₀ hcomul₀
+      φ hφe hord hstab hφ1 ζ hζL
+  -- STEP 3: some VALUE of the displacement is a unit times `ζ_p − 1`
+  have hπ𝔞 : ζ - 1 ∈ 𝔞 := by rw [hspan]; exact Ideal.mem_span_singleton_self _
+  have hπmax : ζ - 1 ∈ maximalIdeal (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) := h𝔞max hπ𝔞
+  have hπne : ζ - 1 ≠ 0 := by
+    intro h
+    have h1 : ζ = 1 := by rwa [sub_eq_zero] at h
+    have h2 : AlgebraicClosure.map (algebraMap ℚ ℚᵖᵍᵥ) μ = 1 := by
+      have h3 := congrArg ι h1
+      rwa [hιζ, map_one] at h3
+    exact hζL.ne_one hp.out.one_lt h2
+  have hdvd : ∀ g : G, ∃ a, a * (ζ - 1) = d.ofConv g := fun g =>
+    Ideal.mem_span_singleton'.mp (hspan ▸ hd𝔞 g)
+  have hunit : ∃ (g₀ : G) (a₀ : IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ),
+      IsUnit a₀ ∧ d.ofConv g₀ = a₀ * (ζ - 1) := by
+    by_contra hcon
+    have hcon' : ∀ (g : G) (a : IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ), IsUnit a →
+        d.ofConv g ≠ a * (ζ - 1) := fun g a hu heq => hcon ⟨g, a, hu, heq⟩
+    have hle : 𝔞 ≤ maximalIdeal (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) • 𝔞 := by
+      rw [h𝔞def, Ideal.span_le]
+      rintro _ ⟨g, rfl⟩
+      obtain ⟨a, ha⟩ := hdvd g
+      have hanu : a ∈ maximalIdeal (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) := by
+        rw [IsLocalRing.mem_maximalIdeal, mem_nonunits_iff]
+        intro hu
+        exact hcon' g a hu ha.symm
+      rw [SetLike.mem_coe, ← ha, Ideal.smul_eq_mul]
+      exact Ideal.mul_mem_mul hanu hπ𝔞
+    have hjac : maximalIdeal (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) ≤ Ideal.jacobson ⊥ :=
+      le_of_eq (IsLocalRing.jacobson_eq_maximalIdeal ⊥ bot_ne_top).symm
+    have hfg : 𝔞.FG := by rw [h𝔞def]; exact fg_span_range _
+    have hbot : 𝔞 = ⊥ :=
+      Submodule.eq_bot_of_le_smul_of_le_jacobson_bot _ 𝔞 hfg hle hjac
+    rw [hbot, Ideal.mem_bot] at hπ𝔞
+    exact hπne hπ𝔞
+  obtain ⟨g₀, a₀, ha₀unit, ha₀⟩ := hunit
+  -- ## the character computation
+  intro σ hσ m n hm hn
+  -- the Galois element, restricted to the integral closure
+  have hσint : ∀ x : IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ,
+      σ (ι x) ∈ integralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ := fun x =>
+    IsIntegral.map (σ.toAlgHom.restrictScalars 𝒪ᵖᵍᵥ) x.2
+  set sI : IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ →ₐ[𝒪ᵖᵍᵥ] IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ :=
+    AlgHom.codRestrict ((σ.toAlgHom.restrictScalars 𝒪ᵖᵍᵥ).comp ι)
+      (integralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) hσint with hsIdef
+  have hsIι : ∀ x, ι (sI x) = σ (ι x) := fun _ => rfl
+  have hinert : ∀ x : IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ,
+      sI x - x ∈ maximalIdeal (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) := by
+    intro x
+    have hs : σ • x = sI x := hιinj rfl
+    have := hσ x
+    rwa [hs] at this
+  -- STEP 4: `σ • φ = φ ^ m`, transported to the integral points
+  have hkey : ∀ g : G, σ (χ g) = ((toConv χ) ^ m).ofConv g := by
+    intro g
+    have h0 : (AlgHom.liftEquiv 𝒪ᵖᵍᵥ ℚᵖᵍᵥ G ℚᵖᵍᵥᵃˡᵍ).symm (σ • φ) =
+        ((toConv χ) ^ m).ofConv := by
+      rw [hm, liftEquiv_symm_vendored_pow, hχdef]
+    exact congrArg (fun f : G →ₐ[𝒪ᵖᵍᵥ] ℚᵖᵍᵥᵃˡᵍ => f g) h0
+  have hmpow : ∀ g : G, sI (χI g) = ((toConv χI) ^ m).ofConv g := by
+    intro g
+    refine hιinj ?_
+    have h1 : ι (((toConv χI) ^ m).ofConv g) = ((toConv χ) ^ m).ofConv g := by
+      have h := comp_convPow ι (toConv χI) m
+      rw [WithConv.ofConv_toConv, hιχ] at h
+      exact congrArg (fun f : G →ₐ[𝒪ᵖᵍᵥ] ℚᵖᵍᵥᵃˡᵍ => f g) h
+    rw [h1, hsIι]
+    exact hkey g
+  have hclin : ∀ g : G, sI (c.ofConv g) = (c ^ m).ofConv g := by
+    intro g
+    have h := AlgHom.toLinearMap_convPow (toConv χI) m
+    rw [WithConv.ofConv_toConv, ← hcdef] at h
+    have h2 := congrArg (fun f : WithConv (G →ₗ[𝒪ᵖᵍᵥ] IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) =>
+      f.ofConv g) h
+    simp only [AlgHom.toLinearMap_apply] at h2
+    rw [← h2]
+    exact hmpow g
+  obtain ⟨r, hr, hcm⟩ := exists_convPow_rem c hd𝔞 m
+  have hdisp : ∀ g : G, sI (d.ofConv g) -
+      (m : IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) * d.ofConv g = r.ofConv g := by
+    intro g
+    have hval : (c ^ m).ofConv g = (1 : WithConv (G →ₗ[𝒪ᵖᵍᵥ]
+        IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ)).ofConv g +
+        (m : IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) * d.ofConv g + r.ofConv g := by
+      rw [hcm, ← hddef]
+      simp only [WithConv.ofConv_add, WithConv.ofConv_smul, LinearMap.add_apply,
+        LinearMap.smul_apply]
+      rw [nsmul_eq_mul]
+    have hc0 : c.ofConv g = d.ofConv g + (1 : WithConv (G →ₗ[𝒪ᵖᵍᵥ]
+        IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ)).ofConv g := by
+      rw [hddef]
+      simp only [WithConv.ofConv_sub, LinearMap.sub_apply]
+      ring
+    have hone : sI ((1 : WithConv (G →ₗ[𝒪ᵖᵍᵥ]
+        IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ)).ofConv g) =
+        (1 : WithConv (G →ₗ[𝒪ᵖᵍᵥ] IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ)).ofConv g := by
+      rw [LinearMap.convOne_apply, AlgHom.commutes]
+    have h := hclin g
+    rw [hc0, map_add, hone, hval] at h
+    linear_combination h
+  -- STEP 5–6: comparison with the cyclotomic generator, then cancellation
+  have h𝔞sq : 𝔞 ^ 2 = Ideal.span {(ζ - 1) ^ 2} := by
+    rw [hspan, Ideal.span_singleton_pow]
+  obtain ⟨z, hz⟩ := Ideal.mem_span_singleton'.mp (h𝔞sq ▸ hr g₀)
+  have hσζ : sI ζ = ζ ^ n := by
+    refine hιinj ?_
+    rw [hsIι, map_pow, hιζ]
+    exact galois_apply_pow_eq_pow_of_cyclotomicCharacter σ n hn _ hζL.pow_eq_one
+  obtain ⟨w, hw⟩ := exists_one_add_pow_sub_one (ζ - 1) n
+  have h1ζ : (1 : IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) + (ζ - 1) = ζ := by ring
+  rw [h1ζ] at hw
+  have hσπ : sI (ζ - 1) =
+      (ζ - 1) * ((n : IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) + (ζ - 1) * w) := by
+    rw [map_sub, hσζ, map_one, hw]
+  have hcancel : (ζ - 1) * (sI a₀ * ((n : IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) + (ζ - 1) * w) -
+      (m : IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) * a₀ - z * (ζ - 1)) = 0 := by
+    have hd0 := hdisp g₀
+    rw [ha₀, map_mul, hσπ, ← hz] at hd0
+    linear_combination hd0
+  have hcancel' : sI a₀ * ((n : IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) + (ζ - 1) * w) -
+      (m : IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) * a₀ - z * (ζ - 1) = 0 := by
+    rcases mul_eq_zero.mp hcancel with h | h
+    · exact absurd h hπne
+    · exact h
+  set δ : IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ := sI a₀ - a₀ with hδdef
+  have hδ : δ ∈ maximalIdeal (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) := hinert a₀
+  have hfinal : a₀ * ((n : IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) -
+        (m : IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ)) =
+      (ζ - 1) * (z - a₀ * w - δ * w) - δ * (n : IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) := by
+    have hσa : sI a₀ = a₀ + δ := by rw [hδdef]; ring
+    rw [hσa] at hcancel'
+    linear_combination hcancel'
+  have hmem𝔪 : a₀ * ((n : IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) -
+      (m : IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ)) ∈
+      maximalIdeal (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) := by
+    rw [hfinal]
+    exact Submodule.sub_mem _ (Ideal.mul_mem_right _ _ hπmax)
+      (Ideal.mul_mem_right _ _ hδ)
+  have hnm : ((n : IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) -
+      (m : IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ)) ∈
+      maximalIdeal (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) := by
+    obtain ⟨u, hu⟩ := ha₀unit
+    have h := Ideal.mul_mem_left (maximalIdeal (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ))
+      ((↑u⁻¹ : IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ)) hmem𝔪
+    rwa [← mul_assoc, ← hu, Units.inv_mul, one_mul] at h
+  -- STEP 7: an inertia-invariant element of `𝔪` is divisible by `p`
+  have hinv : ∀ τ ∈ localInertiaGroup
+      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : p.Prime)),
+      τ (algebraMap (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) ℚᵖᵍᵥᵃˡᵍ
+          ((n : IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) -
+            (m : IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ))) =
+        algebraMap (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) ℚᵖᵍᵥᵃˡᵍ
+          ((n : IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) -
+            (m : IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ)) := by
+    intro τ _
+    simp only [map_sub, map_natCast]
+  have hspanp := mem_span_natCast_of_inertia_invariant _ hnm hinv
+  rw [Nat.modEq_iff_dvd]
+  by_contra hnd
+  have hpprime : Prime ((p : ℕ) : ℤ) := Nat.prime_iff_prime_int.mp hp.out
+  obtain ⟨a, b, hab⟩ := hpprime.coprime_iff_not_dvd.mpr hnd
+  have hpmem : ((p : ℕ) : IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) ∈
+      Ideal.span {((p : ℕ) : IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ)} :=
+    Ideal.mem_span_singleton_self _
+  have hkmem : ((((n : ℤ) - (m : ℤ)) : ℤ) : IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) ∈
+      Ideal.span {((p : ℕ) : IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ)} := by
+    push_cast
+    exact hspanp
+  have hone : (1 : IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) ∈
+      Ideal.span {((p : ℕ) : IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ)} := by
+    have hcast := congrArg
+      (fun k : ℤ => (k : IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ)) hab
+    simp only [Int.cast_add, Int.cast_mul, Int.cast_one] at hcast
+    rw [← hcast]
+    exact Submodule.add_mem _ (Ideal.mul_mem_left _ _ (by exact_mod_cast hpmem))
+      (Ideal.mul_mem_left _ _ hkmem)
+  have hle : Ideal.span {((p : ℕ) : IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ)} ≤
+      maximalIdeal (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) := by
+    rw [Ideal.span_le, Set.singleton_subset_iff]
+    exact natCast_mem_maximalIdeal_integralClosure
+  exact (maximalIdeal.isMaximal (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ)).ne_top
+    ((Ideal.eq_top_iff_one _).mpr (hle hone))
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
@@ -1976,10 +2444,11 @@ set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
 /-- **The Oort–Tate `μ_p`-value of an inertia-stable cyclic group of
 points** (RESTATED 2026-07-25, see the CORRECTION NOTE below; PROVEN
-the same day over the two leaves
-`inertia_character_trivial_or_cyclotomic` and
-`eq_one_of_inertia_invariant_of_reduction_counit`, which are now the
-shared `μ`-type node's only remaining inputs): under the hypotheses of
+the same day over `inertia_character_trivial_or_cyclotomic` and
+`eq_one_of_inertia_invariant_of_reduction_counit`, both of which are
+now themselves PROVEN, so that the shared `μ`-type node's ONLY
+remaining input is the single valuation leaf
+`displacement_span_eq_span_zeta_sub_one`): under the hypotheses of
 `connected_cyclic_point_smul_eq_conv_pow_cyclotomicCharacter` and with
 `φ ≠ 1`, there is a NONTRIVIAL `p`-th root of unity `ζ ∈ ℚᵥᵃˡᵍ` which
 reads the local-inertia action on the convolution-cyclic group
@@ -2043,7 +2512,11 @@ and the whole leaf reduces to the identity of characters, which is
 split into its two classical halves:
 
 * `inertia_character_trivial_or_cyclotomic` — RAYNAUD's dichotomy at
-  `e = 1 < p − 1`: `χ_φ` is either trivial or `χ_cyc`, as characters;
+  `e = 1 < p − 1`: `χ_φ` is either trivial or `χ_cyc`, as characters
+  (PROVEN 2026-07-25 over the single valuation leaf
+  `displacement_span_eq_span_zeta_sub_one`, "the displacement's value
+  ideal is `(ζ_p − 1)`", which is Oort–Tate's `v(a) = 1` and is the
+  only sorry left in this file);
 * `not_inertia_character_trivial_of_connected` — CONNECTEDNESS kills
   the trivial alternative (itself proven from
   `point_sub_counit_mem_maximalIdeal`, "a connected point reduces to
