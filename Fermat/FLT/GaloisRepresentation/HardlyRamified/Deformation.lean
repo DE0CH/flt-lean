@@ -67,7 +67,8 @@ them without a human. Do not re-wrap it.
 - `hasFlatProlongationAt_of_prod_injection`
 - `exists_cyclotomicCharacter_padicTwo_eq_two`
 - `exists_ringHom_matrix_quotient_of_finite`
-- `exists_framedGaloisRep_baseChange_traceSubring`
+- `exists_basis_toMatrix'_isUnit_traceGram`
+- `exists_conj_entries_mem_of_basis_repr_mem`
 - `exists_finiteIndex_isIntegral_charpolyCoeff_quotient_minimalPrime_of_isWeaklyUniversal_isTraceGenerated`
 - `exists_relations_le_smul_of_minimal_mvPowerSeries_presentation`
 
@@ -238,6 +239,15 @@ the surjectivity and minimality strata of the minimal presentation,
   `{2, ℓ}` descend by injectivity of `R' → D.R` (through the PROVEN
   `one_tmul_injective`), and the `charFrob` clause is
   `charpoly_baseChange_conj` at Frobenius.
+  `exists_framedGaloisRep_baseChange_traceSubring` was then PROVEN in
+  turn (2026-07-26) over a two-way cut of Carayol's argument:
+  `exists_basis_toMatrix'_isUnit_traceGram` (the representation theory —
+  a Galois basis of `M₂(D.R)` with nondegenerate trace form) and
+  `exists_conj_entries_mem_of_basis_repr_mem` (the pure algebra —
+  splitting the resulting `R'`-order). The dual-basis linear algebra
+  (`repr_mem_subring_of_trace_mem`, `exists_basis_repr_mem_traceSubring`)
+  and the whole representation-rebuilding/continuity burden
+  (`exists_framedGaloisRep_toMatrix'_map_eq_of_forall_mem`) are PROVEN.
 
   **A third leaf, `subring_closure_charFrob_coeff_eq_top`, stood here and
   was CIRCULAR; it was REMOVED on 2026-07-26 by an interface change
@@ -8505,8 +8515,406 @@ lemma one_tmul_injective {A : Type*} [CommRing A] {B : Type*} [CommRing B]
   simp only [Algebra.smul_def, mul_one] at h3
   exact hinj h3
 
+/-- **A matrix-valued representation with entries in a subring descends
+to that subring** (PROVEN 2026-07-26 — the representation-theoretic
+plumbing of Carayol's Théorème 1, isolated so that the arithmetic leaves
+below can be stated purely in terms of MATRICES): a family of matrices
+`F : Γ ℚ → M₂(B)` that is unital, multiplicative, continuous entrywise,
+and whose entries all lie in a subring `C ⊆ B`, is the entrywise image of
+a genuine `FramedGaloisRep ℚ C (Fin 2)`.
+
+This is what turns the MATRIX form of Carayol's theorem into the `∃ ρ'`
+form the deformation vocabulary asks for; together with the PROVEN
+`exists_conj_baseChange_of_matrix` it discharges the whole non-arithmetic
+burden of `exists_framedGaloisRep_baseChange_traceSubring` below.
+
+Proof. The entrywise corestriction `G g := ⟨F g i j, _⟩` is a monoid
+homomorphism into `M₂(C)` because `Matrix.map` along the injective
+inclusion `C.subtype` reflects both the unit and the product. Continuity
+is the only delicate point, because `GaloisRep` demands continuity INTO
+`Module.End C (C²)` for the MODULE topology, and the module topology is
+the FINEST topology making the module topological — so maps into it are
+not continuous for free. It is obtained by factoring through matrices:
+`Module.End C (C²)` carries the module topology by construction, so the
+`C`-linear `Matrix.toLin'` out of `M₂(C)` — which carries the module
+topology, being a finite product of copies of `C`
+(`IsModuleTopology.instPi`, matched to `Matrix` by `inferInstanceAs`,
+the two topologies being the same `Pi.topologicalSpace` by definition) —
+is automatically continuous (`IsModuleTopology.continuous_of_linearMap`);
+and `g ↦ G g` is continuous entrywise into the subspace topology of `C`
+by `continuous_induced_rng`. -/
+theorem exists_framedGaloisRep_toMatrix'_map_eq_of_forall_mem
+    {B : Type u} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
+    (C : Subring B)
+    (F : Field.absoluteGaloisGroup ℚ → Matrix (Fin 2) (Fin 2) B)
+    (hcont : ∀ i j, Continuous fun g => F g i j)
+    (hone : F 1 = 1)
+    (hmul : ∀ g h, F (g * h) = F g * F h)
+    (hmem : ∀ g i j, F g i j ∈ C) :
+    ∃ τ : FramedGaloisRep ℚ C (Fin 2),
+      ∀ g, (LinearMap.toMatrix' (τ g)).map C.subtype = F g := by
+  classical
+  letI := moduleTopology C (Module.End C (Fin 2 → C))
+  haveI hMT : IsModuleTopology C (Module.End C (Fin 2 → C)) := ⟨rfl⟩
+  haveI : ContinuousAdd (Module.End C (Fin 2 → C)) :=
+    IsModuleTopology.toContinuousAdd C (Module.End C (Fin 2 → C))
+  haveI : IsModuleTopology C (Matrix (Fin 2) (Fin 2) C) :=
+    inferInstanceAs (IsModuleTopology C (Fin 2 → Fin 2 → C))
+  -- entrywise corestriction of `F` to `C`
+  set G : Field.absoluteGaloisGroup ℚ → Matrix (Fin 2) (Fin 2) C :=
+    fun g => Matrix.of fun i j => (⟨F g i j, hmem g i j⟩ : C)
+  have hGmap : ∀ g, (G g).map C.subtype = F g := by
+    intro g; ext i j; rfl
+  -- `Matrix.map` along the injective inclusion is injective
+  have hinj : Function.Injective
+      (fun M : Matrix (Fin 2) (Fin 2) C => M.map C.subtype) := by
+    intro M N hMN
+    ext i j
+    exact congrFun (congrFun hMN i) j
+  have hGone : G 1 = 1 := by
+    refine hinj ?_
+    show (G 1).map C.subtype = (1 : Matrix (Fin 2) (Fin 2) C).map C.subtype
+    rw [hGmap, hone, Matrix.map_one C.subtype (map_zero _) (map_one _)]
+  have hGmul : ∀ g h, G (g * h) = G g * G h := by
+    intro g h
+    refine hinj ?_
+    show (G (g * h)).map C.subtype = ((G g) * (G h)).map C.subtype
+    rw [hGmap, hmul, Matrix.map_mul, hGmap, hGmap]
+  have hGcont : Continuous G := by
+    refine continuous_matrix fun i j => ?_
+    exact continuous_induced_rng.mpr (hcont i j)
+  have htolin : Continuous
+      (Matrix.toLin' (R := C) (m := Fin 2) (n := Fin 2)) :=
+    IsModuleTopology.continuous_of_linearMap
+      (Matrix.toLin' (R := C) (m := Fin 2) (n := Fin 2)).toLinearMap
+  refine ⟨⟨⟨⟨fun g => Matrix.toLin' (G g), ?_⟩, ?_⟩, ?_⟩, ?_⟩
+  · show Matrix.toLin' (G 1) = 1
+    rw [hGone, Matrix.toLin'_one]
+    rfl
+  · intro g h
+    show Matrix.toLin' (G (g * h)) = Matrix.toLin' (G g) * Matrix.toLin' (G h)
+    rw [hGmul, Matrix.toLin'_mul]
+    rfl
+  · exact htolin.comp hGcont
+  · intro g
+    show (LinearMap.toMatrix' (Matrix.toLin' (G g))).map C.subtype = F g
+    rw [LinearMap.toMatrix'_toLin']
+    exact hGmap g
+
+open scoped Matrix in
+/-- **Trace duality: coordinates against a basis with invertible trace
+Gram matrix land in the trace subring** (PROVEN 2026-07-26 — the
+`R'`-ORDER half of Carayol's Théorème 1, pure linear algebra): let `b` be
+a `B`-basis of `M₂(B)` indexed by `Fin 4`, all of whose members lie in a
+multiplicative set `S` whose traces lie in a subring `C ⊆ B`, and whose
+trace Gram matrix `(tr (bᵢ bⱼ))` has invertible determinant. Then EVERY
+element of `S` has all four of its `b`-coordinates in `C`.
+
+This is Carayol's dual-basis computation. Writing `M = ∑ᵢ cᵢ bᵢ`, the
+identity `tr (M bⱼ) = ∑ᵢ cᵢ · tr (bᵢ bⱼ)` says `c ᵥ* Gram = t` with
+`t j = tr (M bⱼ)`; both `t` and `Gram` have entries in `C`, and `Gram` is
+invertible OVER `C` — its determinant lies in `C` and is a unit of `B`,
+hence a unit of `C` by the hypothesis `hunit` — so the vector
+`t ᵥ* Gram⁻¹`, computed inside `C`, maps into `B` to a solution of the
+same invertible linear system and therefore equals `c`.
+
+Stated with `hunit` ("an element of `C` that is a unit of `B` is a unit
+of `C`") rather than with locality of `C`, because that is exactly what
+the argument consumes; for the trace subring it is supplied by the PROVEN
+`isUnit_of_isClosed_of_notMem_maximalIdeal` above. -/
+theorem repr_mem_subring_of_trace_mem
+    {B : Type u} [CommRing B] (C : Subring B)
+    (hunit : ∀ x : C, IsUnit ((x : B)) → IsUnit x)
+    (S : Submonoid (Matrix (Fin 2) (Fin 2) B))
+    (htr : ∀ M ∈ S, Matrix.trace M ∈ C)
+    (b : Module.Basis (Fin 4) B (Matrix (Fin 2) (Fin 2) B))
+    (hbS : ∀ i : Fin 4, b i ∈ S)
+    (hgram :
+      IsUnit (Matrix.of (fun i j : Fin 4 => Matrix.trace (b i * b j))).det) :
+    ∀ M ∈ S, ∀ i : Fin 4, b.repr M i ∈ C := by
+  classical
+  set Gr : Matrix (Fin 4) (Fin 4) B :=
+    Matrix.of (fun i j : Fin 4 => Matrix.trace (b i * b j))
+  have hGrmem : ∀ i j, Gr i j ∈ C := fun i j =>
+    htr _ (S.mul_mem (hbS i) (hbS j))
+  set GrC : Matrix (Fin 4) (Fin 4) C :=
+    Matrix.of (fun i j => (⟨Gr i j, hGrmem i j⟩ : C))
+  have hGrCmap : GrC.map C.subtype = Gr := by ext i j; rfl
+  have hdet : ((GrC.det : C) : B) = Gr.det := by
+    have hd := RingHom.map_det C.subtype GrC
+    rw [show C.subtype.mapMatrix GrC = GrC.map ⇑C.subtype from rfl,
+      hGrCmap] at hd
+    exact hd
+  have hGrCunit : IsUnit GrC.det := hunit _ (by rw [hdet]; exact hgram)
+  -- the coordinates satisfy the linear system given by the Gram matrix
+  have hkey : ∀ M : Matrix (Fin 2) (Fin 2) B,
+      (fun i => b.repr M i) ᵥ* Gr = fun j => Matrix.trace (M * b j) := by
+    intro M
+    funext j
+    show ∑ i, b.repr M i * Gr i j = Matrix.trace (M * b j)
+    conv_rhs => rw [← b.sum_repr M]
+    rw [Finset.sum_mul, Matrix.trace_sum]
+    refine Finset.sum_congr rfl fun i _ => ?_
+    rw [smul_mul_assoc, Matrix.trace_smul, smul_eq_mul]
+    rfl
+  intro M hM
+  have htmem : ∀ j, Matrix.trace (M * b j) ∈ C := fun j =>
+    htr _ (S.mul_mem hM (hbS j))
+  set tC : Fin 4 → C := fun j => ⟨Matrix.trace (M * b j), htmem j⟩
+  set cC : Fin 4 → C := tC ᵥ* GrC⁻¹ with hcC
+  have hcCGr : cC ᵥ* GrC = tC := by
+    rw [hcC, Matrix.vecMul_vecMul, Matrix.nonsing_inv_mul GrC hGrCunit,
+      Matrix.vecMul_one]
+  have hcCmap : (fun i => ((cC i : C) : B)) ᵥ* Gr =
+      fun j => Matrix.trace (M * b j) := by
+    funext j
+    have h1 := congrFun hcCGr j
+    have h2 := congrArg (fun x : C => (x : B)) h1
+    rw [show ((cC ᵥ* GrC) j : B) =
+      (((fun i => ((cC i : C) : B))) ᵥ* GrC.map C.subtype) j from
+        RingHom.map_vecMul C.subtype GrC cC j, hGrCmap] at h2
+    exact h2
+  have hfinal : (fun i => b.repr M i) = fun i => ((cC i : C) : B) := by
+    have h3 : (fun i => b.repr M i) ᵥ* Gr =
+        (fun i => ((cC i : C) : B)) ᵥ* Gr := by
+      rw [hkey M, hcCmap]
+    have h4 : ∀ v : Fin 4 → B, (v ᵥ* Gr) ᵥ* Gr⁻¹ = v := by
+      intro v
+      rw [Matrix.vecMul_vecMul, Matrix.mul_nonsing_inv Gr hgram,
+        Matrix.vecMul_one]
+    rw [← h4 (fun i => b.repr M i), h3, h4]
+  intro i
+  rw [show b.repr M i = ((cC i : C) : B) from congrFun hfinal i]
+  exact (cC i).2
+
+open scoped Matrix in
+/-- **Carayol's Théorème 1, step 1: a Galois basis of `M₂(D.R)` whose
+trace form is nondegenerate** (sorry leaf, cut 2026-07-26 out of
+`exists_framedGaloisRep_baseChange_traceSubring`): there are four
+elements `g₁, …, g₄` of `Gal(ℚ̄/ℚ)` whose matrices `D.ρ(gᵢ)` form a
+`D.R`-basis of `M₂(D.R)` and whose trace Gram matrix
+`(tr (D.ρ(gᵢ) D.ρ(gⱼ)))` has UNIT determinant.
+
+This is the REPRESENTATION THEORY of Carayol's theorem and nothing else —
+the trace subring does not occur in the statement, because the passage
+from this basis to the `R'`-order is the separate, PROVEN, pure linear
+algebra of `repr_mem_subring_of_trace_mem` above.
+
+Mathematical content.
+
+* `ρbar` is ABSOLUTELY irreducible: that is the PROVEN
+  `exists_smul_eq_of_commute_of_isIrreducible` (oddness plus
+  irreducibility in dimension two over a field of odd characteristic
+  forces the commutant to be `k`).
+* The reduction of `D.ρ` modulo `𝔪` has the same Frobenius
+  characteristic polynomials as `ρbar` (`D.charFrob_compat`), hence is
+  conjugate to `ρbar` by the PROVEN Chebotarev–Brauer–Nesbitt node
+  `exists_conj_of_charFrob_eq`; so it is absolutely irreducible too.
+* Burnside/Jacobson density: the `k`-SPAN of the image of an absolutely
+  irreducible two-dimensional representation is all of `M₂(k)` — the
+  span of a group image is a subalgebra, and a proper subalgebra of
+  `M₂(k)` has a commutant bigger than `k`. So four group elements `gᵢ`
+  can be chosen with the residual `ρbar(gᵢ)` a `k`-basis of `M₂(k)`.
+* Nakayama over the local `D.R`: four elements of the finite free module
+  `M₂(D.R)` whose reductions form a `k`-basis are themselves a
+  `D.R`-basis.
+* The trace form `(X, Y) ↦ tr (X Y)` of `M₂` is nondegenerate in EVERY
+  characteristic: its Gram matrix in the elementary basis `Eᵢⱼ` is a
+  permutation matrix, of determinant `±1`. The Gram determinant of the
+  basis `ρbar(gᵢ)` is therefore `±1` times the square of the
+  change-of-basis determinant, hence nonzero residually, hence a unit,
+  `D.R` being local. (No characteristic hypothesis enters here; oddness
+  of `ℓ` is consumed only through absolute irreducibility.)
+
+CIRCULARITY GUARD (inherited): the hypothesis package is the one
+`not_isIrreducible_of_isHardlyRamified_of_five_le` refutes, and that
+dichotomy is proven over this file's cone; the leaf may not be discharged
+through it.
+
+References: Carayol, *Formes modulaires et représentations galoisiennes à
+valeurs dans un anneau local complet* (Contemp. Math. 165), Théorème 1;
+Nyssen, *Pseudo-représentations* (Math. Ann. 306); Rouquier,
+*Caractérisation des caractères et pseudo-caractères* (J. Algebra 180). -/
+theorem exists_basis_toMatrix'_isUnit_traceGram (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (D : HardlyRamifiedDeformation hℓOdd ρbar) :
+    letI := D.commRing; letI := D.topologicalSpace
+    letI := D.isTopologicalRing; letI := D.isLocalRing; letI := D.algebra
+    ∃ b : Module.Basis (Fin 4) D.R (Matrix (Fin 2) (Fin 2) D.R),
+      (∀ i : Fin 4, ∃ g : Field.absoluteGaloisGroup ℚ,
+          b i = LinearMap.toMatrix' (D.ρ g)) ∧
+      IsUnit (Matrix.of (fun i j : Fin 4 =>
+        Matrix.trace (b i * b j))).det :=
+  sorry
+
+open scoped Matrix in
+/-- **The `R'`-order of Carayol's Théorème 1** (PROVEN 2026-07-26 over
+`exists_basis_toMatrix'_isUnit_traceGram` and the linear algebra of
+`repr_mem_subring_of_trace_mem`): under the trace hypothesis `htr`, there
+is a `D.R`-basis of `M₂(D.R)` consisting of values of `D.ρ` against which
+EVERY value of `D.ρ` has all four coordinates in the trace subring
+`R' = traceSubring ℓ D.ρ`. Equivalently: the `R'`-span of `D.ρ(Γ)` is a
+free `R'`-order of rank `4` in `M₂(D.R)`.
+
+The glue is exactly the three inputs of `repr_mem_subring_of_trace_mem`:
+(i) an element of `R'` that is a unit of `D.R` is a unit of `R'`, by the
+PROVEN `isUnit_of_isClosed_of_notMem_maximalIdeal` applied to the closed
+subring `R'`; (ii) the trace of every value of `D.ρ` lies in `R'`, since
+`tr = −(coeff 1 of the characteristic polynomial)` in rank two
+(`Matrix.trace_eq_neg_charpoly_coeff` plus `LinearMap.charpoly_toMatrix`)
+and `R'` is closed under negation; and (iii) the Gram determinant is a
+unit, which is the sorried leaf above. -/
+theorem exists_basis_repr_mem_traceSubring (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (D : HardlyRamifiedDeformation hℓOdd ρbar)
+    (htr : letI := D.commRing; letI := D.topologicalSpace
+      letI := D.isTopologicalRing; letI := D.algebra
+      ∀ g : Field.absoluteGaloisGroup ℚ,
+        ((D.ρ g).charpoly).coeff 1 ∈ traceSubring ℓ D.ρ) :
+    letI := D.commRing; letI := D.topologicalSpace
+    letI := D.isTopologicalRing; letI := D.isLocalRing; letI := D.algebra
+    ∃ b : Module.Basis (Fin 4) D.R (Matrix (Fin 2) (Fin 2) D.R),
+      (∀ i : Fin 4, ∃ g : Field.absoluteGaloisGroup ℚ,
+          b i = LinearMap.toMatrix' (D.ρ g)) ∧
+      ∀ (g : Field.absoluteGaloisGroup ℚ) (i : Fin 4),
+        b.repr (LinearMap.toMatrix' (D.ρ g)) i ∈ traceSubring ℓ D.ρ := by
+  classical
+  letI := D.commRing; letI := D.topologicalSpace
+  letI := D.isTopologicalRing; letI := D.isLocalRing; letI := D.algebra
+  -- the residue field of `D.R` is `k`, hence finite
+  haveI : Finite (IsLocalRing.ResidueField D.R) := by
+    have hker : RingHom.ker D.π = IsLocalRing.maximalIdeal D.R :=
+      IsLocalRing.ker_eq_maximalIdeal D.π D.π_surjective
+    have hlift : IsLocalRing.ResidueField D.R →+* k :=
+      Ideal.Quotient.lift (IsLocalRing.maximalIdeal D.R) D.π
+        (fun a ha => by rwa [← RingHom.mem_ker, hker])
+    exact Finite.of_injective hlift hlift.injective
+  have hclosed : IsClosed ((traceSubring ℓ D.ρ : Subring D.R) : Set D.R) :=
+    Subring.isClosed_topologicalClosure _
+  -- the matrix avatar of `D.ρ`, as a monoid homomorphism
+  set Φ : Field.absoluteGaloisGroup ℚ →* Matrix (Fin 2) (Fin 2) D.R :=
+    { toFun := fun g => LinearMap.toMatrix' (D.ρ g)
+      map_one' := by rw [map_one]; exact LinearMap.toMatrix'_one
+      map_mul' := fun g hg => by
+        rw [map_mul]; exact LinearMap.toMatrix'_mul _ _ }
+  obtain ⟨b, hbrange, hgram⟩ :=
+    exists_basis_toMatrix'_isUnit_traceGram hℓOdd hdim hℓ5 h hirr D
+  refine ⟨b, hbrange, ?_⟩
+  -- an element of `R'` that is a unit of `D.R` is a unit of `R'`
+  have hunit : ∀ x : traceSubring ℓ D.ρ, IsUnit ((x : D.R)) → IsUnit x := by
+    intro x hx
+    refine isUnit_of_isClosed_of_notMem_maximalIdeal D.isAdic hclosed x ?_
+    intro hm
+    exact ((IsLocalRing.mem_maximalIdeal _).mp hm) hx
+  -- every trace of a value of `D.ρ` lies in `R'`
+  have htrS : ∀ M ∈ MonoidHom.mrange Φ,
+      Matrix.trace M ∈ traceSubring ℓ D.ρ := by
+    rintro M ⟨g, rfl⟩
+    have hcp : (LinearMap.toMatrix' (D.ρ g)).charpoly = (D.ρ g).charpoly := by
+      rw [← LinearMap.toMatrix_eq_toMatrix']
+      exact LinearMap.charpoly_toMatrix (D.ρ g) (Pi.basisFun D.R (Fin 2))
+    show Matrix.trace (LinearMap.toMatrix' (D.ρ g)) ∈ traceSubring ℓ D.ρ
+    rw [Matrix.trace_eq_neg_charpoly_coeff (LinearMap.toMatrix' (D.ρ g)), hcp]
+    exact Subring.neg_mem _ (htr g)
+  have hbS : ∀ i : Fin 4, b i ∈ MonoidHom.mrange Φ := by
+    intro i
+    obtain ⟨g, hg⟩ := hbrange i
+    exact ⟨g, hg.symm⟩
+  intro g i
+  exact repr_mem_subring_of_trace_mem (traceSubring ℓ D.ρ) hunit
+    (MonoidHom.mrange Φ) htrS b hbS hgram (LinearMap.toMatrix' (D.ρ g))
+    ⟨g, rfl⟩ i
+
+open scoped Matrix in
+/-- **Carayol's Théorème 1, step 2: a `C`-order in `M₂(B)` with split
+residual algebra is conjugate into `M₂(C)`** (sorry leaf, cut 2026-07-26
+out of `exists_framedGaloisRep_baseChange_traceSubring`; PURE ALGEBRA —
+no Galois representation and no arithmetic occurs in it): let `B` be a
+local topological ring whose topology is `𝔪`-adic, which is `𝔪`-adically
+complete and separated, and whose residue field is FINITE; let `C ⊆ B` be
+a CLOSED subring; and let `S` be a multiplicative set of matrices
+containing a `B`-basis `b` of `M₂(B)` and having all its `b`-coordinates
+in `C`. Then a single conjugation `M ↦ E⁻¹ M E` by an invertible
+`E ∈ M₂(B)` moves every member of `S` into `M₂(C)`.
+
+This is the SPLITTING of the order, and every hypothesis is load-bearing.
+
+Write `A' := ∑ᵢ C·bᵢ`. It is a subring of `M₂(B)` — it is the `C`-span of
+the multiplicative `S`, and `1 ∈ S` — free of rank `4` over `C`; and
+because `C` is closed, `𝔪_C = 𝔪 ∩ C`
+(`maximalIdeal_eq_comap_of_isClosed_subring`), so `A' / 𝔪_C A' ↪ M₂(k)`
+is a `k'`-subalgebra of `k'`-dimension `4`, where `k' = C/𝔪_C ⊆ k`.
+
+The hypothesis `hres` — `C` meets every residue class of `B`, i.e. `C`
+surjects onto the residue field — says exactly `k' = k`. So the image is
+a `k`-subspace of `M₂(k)` of `k`-dimension `4`, hence ALL of `M₂(k)`:
+`A'/𝔪_C A' ≅ M₂(k)` with nothing to prove. **`hres` is what makes this
+leaf elementary**, and it is why no Brauer-group input is needed — see
+the note below on what its absence would cost.
+
+So `A'` contains an element whose reduction is a rank-one idempotent. The
+Newton iteration `z ↦ 3z² − 2z³` converges `𝔪`-adically in the complete
+`M₂(B)` and stays inside `A'`, which is CLOSED (`C` is closed and the
+`b`-coordinate maps are continuous, `A'` being the preimage of `C⁴`).
+Hence `A'` contains an idempotent `u` of residual rank one. Over the
+local `B` such a `u` is conjugate to `E₁₁`, so after one conjugation
+`E₁₁, E₂₂ ∈ A'` and `A' = ⨁ᵢⱼ EᵢᵢA'Eⱼⱼ` with each summand a rank-one
+`C`-submodule `C·aᵢⱼ` of `B`. The diagonal ones contain `1` and are
+closed under multiplication, so `a₁₁, a₂₂ ∈ C^×` and `A₁₁ = A₂₂ = C`;
+then `a₁₂a₂₁` generates `A₁₁ = C`, so it is a unit of `C`, and the
+further conjugation by `diag(1, a₁₂⁻¹)` turns `A'` into exactly `M₂(C)`.
+
+WHY THE HYPOTHESES CANNOT BE DROPPED. Completeness and closedness are
+both needed to lift the idempotent INSIDE `A'`.
+
+WITHOUT `hres` THE LEAF IS STRICTLY HARDER, AND WITHOUT IT *AND*
+FINITENESS IT IS FALSE. If `k'` is a proper subfield of `k`, then
+`A'/𝔪_C A'` is only a `k'`-FORM of `M₂(k)` — a quaternion algebra over
+`k'` — and one needs Wedderburn's little theorem (`k'` finite ⟹ the form
+is split) to find the rank-one idempotent at all. Over an INFINITE `k'`
+that form may be a DIVISION algebra, and then `A'` is a maximal order in
+a division algebra, not `M₂(C)`, and the statement is FALSE. `hres`
+removes that entire branch of the argument, together with its
+missing-from-mathlib input (forms of `M₂` and Wedderburn); finiteness of
+the residue field is retained only because the surrounding subring API
+(`isUnit_of_isClosed_of_notMem_maximalIdeal`,
+`maximalIdeal_eq_comap_of_isClosed_subring`) is stated with it.
+
+`hres` is not an extra burden on the caller: for `C = traceSubring ℓ D.ρ`
+it is exactly the Teichmüller-root clause of the generating set — every
+residue class of `D.R` contains a Teichmüller root
+(`exists_mem_teichmullerRoots_map_eq`, Hensel), and every Teichmüller
+root lies in the trace subring
+(`mem_traceSubring_of_mem_teichmullerRoots`). This is the repair that
+also killed `subring_closure_charFrob_coeff_eq_top`; the residue field of
+`R'` is `k` ON THE NOSE, not the Frobenius-trace subfield, so no descent
+of `ρbar` to a trace field is needed anywhere in this cluster.
+
+References: Carayol, Contemp. Math. 165, Théorème 1; Nyssen, Math. Ann.
+306; Auslander–Goldman, *The Brauer group of a commutative ring*
+(Azumaya algebras over local rings are split when residually split) — the
+last needed only in the `hres`-free form of the statement. -/
+theorem exists_conj_entries_mem_of_basis_repr_mem
+    {B : Type u} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
+    [IsLocalRing B] [Finite (IsLocalRing.ResidueField B)]
+    (hadic : IsAdic (IsLocalRing.maximalIdeal B))
+    (hcompl : IsAdicComplete (IsLocalRing.maximalIdeal B) B)
+    (C : Subring B) (hclosed : IsClosed ((C : Subring B) : Set B))
+    (hres : ∀ y : B, ∃ x : C, (x : B) - y ∈ IsLocalRing.maximalIdeal B)
+    (S : Submonoid (Matrix (Fin 2) (Fin 2) B))
+    (b : Module.Basis (Fin 4) B (Matrix (Fin 2) (Fin 2) B))
+    (hbS : ∀ i : Fin 4, b i ∈ S)
+    (hrepr : ∀ M ∈ S, ∀ i : Fin 4, b.repr M i ∈ C) :
+    ∃ E : Matrix (Fin 2) (Fin 2) B, IsUnit E.det ∧
+      ∀ M ∈ S, ∀ i j : Fin 2, (E⁻¹ * M * E) i j ∈ C :=
+  sorry
+
 open scoped TensorProduct in
-/-- **Carayol's Théorème 1, the conjugation proper** (sorry leaf, cut
+/-- **Carayol's Théorème 1, the conjugation proper** (PROVEN 2026-07-26
+over the two-way cut `exists_basis_toMatrix'_isUnit_traceGram` /
+`exists_conj_entries_mem_of_basis_repr_mem`; cut
 2026-07-25 out of `exists_framedGaloisRep_traceSubring`): a hardly
 ramified deformation all of whose traces lie in the closed trace subring
 `R' = traceSubring ℓ D.ρ` is, after a change of framing, the base change
@@ -8551,6 +8959,30 @@ PROVEN `exists_conj_baseChange_of_matrix` above, whose only additional
 burden is the continuity of `ρ'`, and that is not extra work either since
 `R'` carries the subspace topology.
 
+WHAT IS PROVEN HERE (2026-07-26), and where the remaining content sits.
+The route sketched above is exactly the one taken, with the mathematics
+isolated into two leaves and everything else discharged:
+
+* `exists_basis_toMatrix'_isUnit_traceGram` (leaf) — the representation
+  theory: four Galois elements whose matrices are a `D.R`-basis of
+  `M₂(D.R)` with unit trace-Gram determinant (absolute irreducibility,
+  Burnside, Nakayama, nondegeneracy of the trace form in odd
+  characteristic).
+* `repr_mem_subring_of_trace_mem` (PROVEN) — the dual-basis linear
+  algebra turning that basis plus `htr` into the `R'`-ORDER statement
+  `exists_basis_repr_mem_traceSubring` (PROVEN).
+* `exists_conj_entries_mem_of_basis_repr_mem` (leaf) — the pure algebra
+  splitting that order: a single conjugation carries every `D.ρ(g)` into
+  `M₂(R')` (idempotent lifting in the complete `M₂(D.R)`, staying inside
+  the closed order). Its residue-field hypothesis is discharged here from
+  the Teichmüller-root clause of `traceSubring`, which is what makes the
+  residual algebra `M₂(k)` outright and removes any Wedderburn/Brauer
+  input from that leaf.
+* `exists_framedGaloisRep_toMatrix'_map_eq_of_forall_mem` (PROVEN) — the
+  plumbing rebuilding a `FramedGaloisRep` over `R'` out of the resulting
+  matrices, continuity included; `exists_conj_baseChange_of_matrix` then
+  produces the framing `e`, the conjugating matrix being the same `E`.
+
 References: Carayol, *Formes modulaires et représentations galoisiennes
 à valeurs dans un anneau local complet* (Contemp. Math. 165), Théorème 1;
 Nyssen, *Pseudo-représentations* (Math. Ann. 306); Rouquier,
@@ -8573,8 +9005,88 @@ theorem exists_framedGaloisRep_baseChange_traceSubring (hℓ5 : 5 ≤ ℓ)
     ∃ ρ' : FramedGaloisRep ℚ (traceSubring ℓ D.ρ) (Fin 2),
       ∃ e : (D.R ⊗[(traceSubring ℓ D.ρ)] (Fin 2 → (traceSubring ℓ D.ρ)))
           ≃ₗ[D.R] (Fin 2 → D.R),
-        (ρ'.baseChange D.R).conj e = D.ρ :=
-  sorry
+        (ρ'.baseChange D.R).conj e = D.ρ := by
+  classical
+  letI := D.commRing; letI := D.topologicalSpace
+  letI := D.isTopologicalRing; letI := D.isLocalRing; letI := D.algebra
+  letI := D.isNoetherianRing
+  letI := hloc
+  haveI : IsAdicComplete (IsLocalRing.maximalIdeal D.R) D.R := D.isAdicComplete
+  -- the residue field of `D.R` is `k`, hence finite
+  haveI : Finite (IsLocalRing.ResidueField D.R) := by
+    have hker : RingHom.ker D.π = IsLocalRing.maximalIdeal D.R :=
+      IsLocalRing.ker_eq_maximalIdeal D.π D.π_surjective
+    have hlift : IsLocalRing.ResidueField D.R →+* k :=
+      Ideal.Quotient.lift (IsLocalRing.maximalIdeal D.R) D.π
+        (fun a ha => by rwa [← RingHom.mem_ker, hker])
+    exact Finite.of_injective hlift hlift.injective
+  have hclosed : IsClosed ((traceSubring ℓ D.ρ : Subring D.R) : Set D.R) :=
+    Subring.isClosed_topologicalClosure _
+  -- the matrix avatar of `D.ρ`, as a monoid homomorphism
+  set Φ : Field.absoluteGaloisGroup ℚ →* Matrix (Fin 2) (Fin 2) D.R :=
+    { toFun := fun g => LinearMap.toMatrix' (D.ρ g)
+      map_one' := by rw [map_one]; exact LinearMap.toMatrix'_one
+      map_mul' := fun g hg => by
+        rw [map_mul]; exact LinearMap.toMatrix'_mul _ _ }
+  -- its entries are continuous: they are linear functionals of `D.ρ g`
+  have hΦcont : Continuous Φ := by
+    refine continuous_matrix fun i j => ?_
+    letI := moduleTopology D.R (Module.End D.R (Fin 2 → D.R))
+    haveI : IsModuleTopology D.R (Module.End D.R (Fin 2 → D.R)) := ⟨rfl⟩
+    set ev : Module.End D.R (Fin 2 → D.R) →ₗ[D.R] D.R :=
+      { toFun := fun φ => φ (Pi.single j 1) i
+        map_add' := fun x y => rfl
+        map_smul' := fun c x => rfl }
+    have hevc : Continuous ev := IsModuleTopology.continuous_of_linearMap ev
+    have hcomp := hevc.comp (ContinuousMonoidHom.continuous_toFun D.ρ)
+    refine hcomp.congr fun g => ?_
+    show (D.ρ g) (Pi.single j 1) i = LinearMap.toMatrix' (D.ρ g) i j
+    rw [LinearMap.toMatrix'_apply,
+      show (Pi.single j (1 : D.R)) =
+          (fun j' => if j' = j then (1 : D.R) else 0) from
+        funext fun j' => by rw [Pi.single_apply]]
+  -- the `R'`-order, and the conjugation splitting it
+  obtain ⟨b, hbrange, hbrepr⟩ :=
+    exists_basis_repr_mem_traceSubring hℓOdd hdim hℓ5 h hirr D htr
+  obtain ⟨E, hEdet, hEmem⟩ :=
+    exists_conj_entries_mem_of_basis_repr_mem D.isAdic D.isAdicComplete
+      (traceSubring ℓ D.ρ) hclosed
+      (fun y => by
+        obtain ⟨x, hx, hxπ⟩ :=
+          exists_mem_teichmullerRoots_map_eq (ℓ := ℓ) D.π D.π_surjective (D.π y)
+        refine ⟨⟨x, mem_traceSubring_of_mem_teichmullerRoots ℓ D.ρ hx⟩, ?_⟩
+        have hker : RingHom.ker D.π = IsLocalRing.maximalIdeal D.R :=
+          IsLocalRing.ker_eq_maximalIdeal D.π D.π_surjective
+        rw [← hker, RingHom.mem_ker, map_sub, hxπ, sub_self])
+      (MonoidHom.mrange Φ) b
+      (fun i => by
+        obtain ⟨g, hg⟩ := hbrange i
+        exact ⟨g, hg.symm⟩)
+      (fun M hM i => by
+        obtain ⟨g, hg⟩ := hM
+        subst hg
+        exact hbrepr g i)
+  have hEE : E * E⁻¹ = 1 := Matrix.mul_nonsing_inv E hEdet
+  have hEE' : E⁻¹ * E = 1 := Matrix.nonsing_inv_mul E hEdet
+  -- rebuild a framed representation over `R'` out of the conjugated matrices
+  obtain ⟨ρ', hρ'⟩ :=
+    exists_framedGaloisRep_toMatrix'_map_eq_of_forall_mem (traceSubring ℓ D.ρ)
+      (fun g => E⁻¹ * Φ g * E)
+      (fun i j =>
+        ((continuous_const.matrix_mul hΦcont).matrix_mul
+          continuous_const).matrix_elem i j)
+      (by rw [map_one, Matrix.mul_one, hEE'])
+      (fun g hg => by
+        rw [map_mul]
+        rw [show E⁻¹ * Φ g * E * (E⁻¹ * Φ hg * E) =
+          E⁻¹ * Φ g * (E * E⁻¹) * Φ hg * E by noncomm_ring, hEE]
+        noncomm_ring)
+      (fun g i j => hEmem (Φ g) ⟨g, rfl⟩ i j)
+  refine ⟨ρ', exists_conj_baseChange_of_matrix (traceSubring ℓ D.ρ).subtype
+    continuous_subtype_val ρ' D.ρ E hEdet ?_⟩
+  intro g
+  rw [hρ' g, ← Matrix.mul_assoc, ← Matrix.mul_assoc, hEE, Matrix.one_mul]
+  rfl
 
 /-- **Raynaud closure for flat prolongations, in plain SUBOBJECT form**
 (PROVEN 2026-07-26 as a two-line corollary of
