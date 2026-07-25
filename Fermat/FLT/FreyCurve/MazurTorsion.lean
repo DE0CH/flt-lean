@@ -118,12 +118,18 @@ genuinely modular-curve-theoretic inputs:
   `MazurPointOrder.mem_of_no_forbidden_divisor`): Mazur's uniform
   bound — the order of a rational torsion point lies in
   `{1, …, 10, 12}` (Mazur 1977, Thm 8).
-* `no_prime_torsion_ge_eleven` (sorry node — IRREDUCIBLE literature
-  citation, audited 2026-07-25): no rational point of prime order
-  `ℓ ≥ 11` (Mazur 1977, Thm 7; Mazur 1978, "Rational isogenies of
-  prime degree"). See its docstring for the two elementary shortcuts
-  that were checked and fail (Mazur's isogeny theorem, reduction plus
-  the Hasse bound).
+* `no_prime_torsion_ge_eleven` (PROVEN 2026-07-25 as the eight-way
+  case split over the primes that survive the `X_0` cut): no rational
+  point of prime order `ℓ ≥ 11` (Mazur 1977, Thm 7). Every `ℓ` outside
+  `{11, 13, 17, 19, 37, 43, 67, 163}` is discharged outright by the
+  `X_0` node `mem_cyclicIsogenyDegrees` — a point of order `ℓ`
+  generates a rational cyclic `ℓ`-isogeny, and those eight are the
+  only primes `≥ 11` in Kenku's list. The content that remains sits in
+  the eight per-level nodes `no_torsion_order_11`, …,
+  `no_torsion_order_163`, all IRREDUCIBLE at this mathlib pin: all
+  eight ARE rational isogeny degrees, so the `X_0` shortcut provably
+  stops there and only `X_1(ℓ)` excludes the point. See the section
+  note before them for the witnesses and the missing-machinery list.
 * `no_composite_torsion_order` (PROVEN 2026-07-25 as the eleven-way
   case split over its `Finset` hypothesis): no rational point of
   order `n ∈ {14, 15, 16, 18, 20, 21, 24, 25, 27, 35, 49}` — the
@@ -184,35 +190,6 @@ genuinely modular-curve-theoretic inputs:
 * `mazur_group_casework` (PROVEN): given the `ℤ/d × ℤ/n` shape, the
   order bound, and the two exclusions, the group is one of the fifteen.
 -/
-
-/-- **Mazur: no rational torsion point of prime order `≥ 11`** (sorry
-node): no elliptic curve over `ℚ` has a rational point of order `ℓ` for
-a prime `ℓ ≥ 11`. Mazur, "Modular curves and the Eisenstein ideal"
-(Publ. Math. IHÉS 47, 1977), Thm 7, completed by "Rational isogenies of
-prime degree" (Invent. Math. 44, 1978): the modular curve `X_1(ℓ)` has
-genus `≥ 1` for `ℓ ≥ 11` and its only rational points are cusps.
-
-IRREDUCIBLE at this mathlib pin (audit 2026-07-25). The recorded route
-is the literature route and needs `X_1(ℓ)` as an arithmetic curve
-together with the Eisenstein-ideal descent on `J_0(ℓ)`; none of that
-exists here. Two candidate shortcuts were checked and both fail:
-
-* *Mazur's isogeny theorem does not close the node.* An order-`ℓ` point
-  generates a rational cyclic subgroup of order `ℓ`, hence a rational
-  `ℓ`-isogeny; but rational `ℓ`-isogenies of prime degree `ℓ ≥ 11` DO
-  exist, for `ℓ ∈ {11, 13, 17, 19, 37, 43, 67, 163}`. The isogeny
-  theorem would only reduce this uniform statement to those eight
-  individual levels, each still a separate deep computation
-  (`X_1(11)`: Billing–Mahler; `X_1(13)`: Mazur–Tate; …).
-* *Reduction at a good prime plus the Hasse bound does not close it.*
-  Torsion injects into `Ẽ(𝔽_p)` for odd `p` of good reduction (and odd
-  torsion does at `p = 2`), so `ℓ ≤ p + 1 + 2√p` there; for `ℓ ≥ 11`
-  this only forbids good reduction at `2, 3, 5` (and at `7` once
-  `ℓ ≥ 17`), i.e. it forces `2 · 3 · 5 ∣ N_E` and stops. -/
-theorem WeierstrassCurve.no_prime_torsion_ge_eleven (E : WeierstrassCurve ℚ)
-    [E.IsElliptic] {ℓ : ℕ} (hℓ : ℓ.Prime) (h11 : 11 ≤ ℓ) (Q : (E⁄ℚ).Point) :
-    addOrderOf Q ≠ ℓ :=
-  sorry
 
 /-!
 #### The eleven critical composite levels, one node each
@@ -344,8 +321,10 @@ two (case split on `N.Prime`, with the range `0 < N < 20` discharged
 outright, since `{1, …, 19}` lies in the list with nothing to prove).
 Its point is attribution — the old single node forced one `sorry` to
 carry two different citations, one of which (Mazur's) is also the
-citation behind `no_prime_torsion_ge_eleven` above, so the tree now
-shows that shared dependence instead of hiding it.
+citation behind `no_prime_torsion_ge_eleven` (which moved BELOW on
+2026-07-25 and is now PROVEN from this very node), so the tree now
+shows that shared dependence instead of hiding it — as a real edge,
+not only as a remark.
 
 Note the asymmetry that makes the second node the smaller one: every
 degree in Kenku's list that exceeds `19` is either prime (`37, 43, 67,
@@ -505,6 +484,288 @@ lemma WeierstrassCurve.mem_cyclicIsogenyDegrees_of_addOrderOf
   obtain ⟨k, rfl⟩ := AddSubgroup.mem_zmultiples_iff.mp hx
   rw [map_zsmul, hgfix σ]
   exact AddSubgroup.zsmul_mem _ (AddSubgroup.mem_zmultiples g) k
+
+/-!
+##### The eight prime levels `≥ 11`, one node each (2026-07-25)
+
+`no_prime_torsion_ge_eleven` — Mazur, "Modular curves and the Eisenstein
+ideal" (Publ. Math. IHÉS 47, 1977), Thm 7 — used to be a single bare
+`sorry` ranging over infinitely many primes. It is PROVEN below from the
+`X_0` input `mem_cyclicIsogenyDegrees` together with EIGHT per-level
+nodes, in exactly the shape `no_composite_torsion_order` already has:
+one canonical citable theorem doing the uniform work, one node per
+surviving level, and the passage between them proven rather than
+asserted.
+
+THE CUT. A rational point of order `ℓ` generates a rational — hence
+pointwise Galois-fixed, hence stable — cyclic subgroup of order `ℓ`,
+i.e. a rational cyclic `ℓ`-isogeny; that step is the already-PROVEN
+`mem_cyclicIsogenyDegrees_of_addOrderOf` just above. So `ℓ` lies in
+Kenku's list `{1, …, 19, 21, 25, 27, 37, 43, 67, 163}`, and the two
+hypotheses on `ℓ` cut it down with no further input: `11 ≤ ℓ` deletes
+`1, …, 10`, and primality deletes `12, 14, 15, 16, 18, 21, 25, 27`.
+What is left is exactly
+
+  `ℓ ∈ {11, 13, 17, 19, 37, 43, 67, 163}`,
+
+the primes `≥ 11` of Mazur's isogeny theorem (`prime_mem_cyclicIsogenyDegrees`,
+Mazur 1978, Thm 1). Every other prime `ℓ ≥ 11` — infinitely many — is
+therefore discharged outright, where before it was covered by an
+assertion.
+
+WHERE THE `X_0` SHORTCUT STOPS, AND WHY THAT IS NOT A DEFECT OF THE
+CUT. By the criterion stated once in the section note above, the
+shortcut is available at a level exactly when that level is ABSENT from
+Kenku's list. All eight surviving primes are PRESENT in it, so at each
+of them a rational cyclic `ℓ`-isogeny genuinely exists and is no
+contradiction at all; only the finer `X_1(ℓ)` statement excludes the
+point. Explicit witnesses, all confirmed with PARI/GP `ellisomat`
+(untrusted searcher, never a proof — each was checked to have cyclic
+isogeny degree set exactly `{1, ℓ}` unless noted):
+
+* `ℓ = 11`: the three non-cuspidal rational points of `X_0(11)`,
+  `j = −32768 = −2¹⁵` (CM by discriminant `−11`), `j = −121`,
+  `j = −24729001`;
+* `ℓ = 13`: `X_0(13)` has genus `0`, so infinitely many; a concrete
+  model is `y² = x³ + 6x − 8`, of conductor `20736`;
+* `ℓ = 17`: `j = −17 · 373³ / 2¹⁷` and `j = −17² · 101³ / 2`;
+* `ℓ = 37`: `j = −7 · 11³`;
+* `ℓ = 19, 43, 67, 163`: the class-number-one CM `j`-invariants of
+  discriminant `−ℓ`, namely `−884736`, `−884736000`, `−147197952000`
+  and `−262537412640768000`.
+
+GENERA of `X_1(ℓ)`, from `g = (ℓ − 5)(ℓ − 7) / 24` for prime `ℓ ≥ 5`
+(recomputed 2026-07-25): `11 ↦ 1`, `13 ↦ 2`, `17 ↦ 5`, `19 ↦ 7`,
+`37 ↦ 40`, `43 ↦ 57`, `67 ↦ 155`, `163 ↦ 1027`. The `11 ↦ 1` and
+`37 ↦ 40` values agree with the figures already recorded elsewhere in
+this file.
+
+SUPERSEDED CLAIMS ELSEWHERE IN THIS FILE, RECONCILED HERE (both were
+correct as statements about CLOSING the node, and both are now too
+strong as statements about REDUCING it):
+
+* `prime_mem_cyclicIsogenyDegrees`'s docstring says the `X_0` node and
+  this one are stated separately because "neither implies the other …
+  `X_1(ℓ) → X_0(ℓ)` runs the wrong way to transfer the conclusion".
+  The map runs perfectly well in the direction actually used — a
+  rational POINT of order `ℓ` does give a rational SUBGROUP of order
+  `ℓ` — and that is exactly what the cut below exploits. What does not
+  transfer is emptiness of the conclusion: `X_0(ℓ)(ℚ)` has
+  non-cuspidal points at all eight surviving levels, so the `X_0` node
+  reduces the family to eight levels and cannot close any of them.
+  Both nodes are still needed and neither is redundant.
+* the old docstring of this theorem listed "Mazur's isogeny theorem"
+  among the shortcuts that FAIL, on the same ground — that it "would
+  only reduce this uniform statement to those eight individual levels".
+  That reduction is precisely what is carried out below; it was
+  correctly judged not to be a proof, and wrongly left unperformed.
+
+NON-CIRCULARITY. Routing Thm 7 through Thm 1 is a legitimate reduction
+and not a circle: Mazur's isogeny theorem is not deduced from the
+torsion theorem — both rest on the Eisenstein-ideal descent on `J_0(ℓ)`
+developed in the 1977 paper. The reduction does make the shared
+dependence visible in the tree, which is the same reason the `X_0` node
+was split into its two citations above.
+
+WHAT THIS DOES NOT BUY. It does not make any level easier: all eight
+nodes are IRREDUCIBLE at this mathlib pin, and nothing here is
+dispatchable until modular curves exist in the development. Two of the
+eight have classical pre-Mazur proofs (`ℓ = 11`: Billing–Mahler 1940;
+`ℓ = 13`: Mazur–Tate 1973), both of them Mordell–Weil computations on a
+genus-`1` resp. genus-`2` curve; the remaining six are Mazur 1977,
+Thm 7 itself, and for `ℓ = 37, 43, 67, 163` the genus is far beyond any
+explicit descent.
+
+MISSING MACHINERY, IN DEPENDENCY ORDER (none of it exists here, and
+mathlib has none of it either):
+
+1. `X_1(N)` and `X_0(N)` as smooth projective curves over `ℚ`, with the
+   moduli interpretation — a non-cuspidal point of `X_1(N)(ℚ)`
+   corresponds to a pair `(E, P)` with `P ∈ E(ℚ)` of exact order `N`,
+   up to `ℚ`-isomorphism. This is the piece that would let any of the
+   eight nodes even be RESTATED geometrically; everything below needs
+   it first.
+2. The Jacobians `J_0(N)`, `J_1(N)` as abelian varieties over `ℚ`, and
+   the Hecke algebra acting on them.
+3. Mordell–Weil for abelian varieties over `ℚ`. Mathlib has no
+   Mordell–Weil theorem at all, not even for elliptic curves, so even
+   the two classical levels `11` and `13` are blocked here.
+4. The Eisenstein ideal, the Eisenstein quotient of `J_0(ℓ)`, and the
+   theorem that it has Mordell–Weil rank `0` over `ℚ`.
+5. Néron models over `ℤ` and the formal-immersion criterion, which is
+   how the rank-`0` statement is turned into "the rational points are
+   cusps".
+
+The elementary route stays closed at every one of the eight, for the
+reason already recorded: rational torsion injects into `Ẽ(𝔽_p)` at a
+prime `p` of good reduction (odd `p`, or any `p` for odd torsion), so
+`ℓ ≤ p + 1 + 2√p` there, which only forces bad reduction at the small
+primes and is a lower bound on the conductor, never a contradiction.
+-/
+
+/-- **No rational point of order `11`** (sorry node — IRREDUCIBLE
+literature citation, audited 2026-07-25): `X_1(11)` is the elliptic
+curve of genus `1` whose Mordell–Weil group over `ℚ` is `ℤ/5`, and all
+five of its rational points are cusps. Billing–Mahler, "On exceptional
+points on cubic curves" (J. London Math. Soc. 15, 1940); subsumed in
+Mazur 1977, Thm 7.
+
+The `X_0` shortcut of `mem_cyclicIsogenyDegrees` is NOT available here:
+`11` is in Kenku's list, and `X_0(11)` has three non-cuspidal rational
+points, `j = −32768`, `−121`, `−24729001` (PARI/GP `ellisomat`,
+untrusted searcher). So a rational cyclic `11`-isogeny is no
+contradiction, and only the finer `X_1(11)` statement excludes the
+point. A formal proof needs `X_1(11)` as an arithmetic curve together
+with a rank-`0` Mordell–Weil computation; neither exists here. -/
+theorem WeierstrassCurve.no_torsion_order_11 (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 11 :=
+  sorry
+
+/-- **No rational point of order `13`** (sorry node — IRREDUCIBLE
+literature citation, audited 2026-07-25): `X_1(13)` has genus `2` and no
+non-cuspidal rational point. Mazur–Tate, "Points of order 13 on elliptic
+curves" (Invent. Math. 22, 1973); subsumed in Mazur 1977, Thm 7.
+
+The `X_0` shortcut is NOT available: `13` is in Kenku's list, and
+`X_0(13)` has genus `0`, so rational cyclic `13`-isogenies exist in
+abundance — `y² = x³ + 6x − 8`, of conductor `20736`, is one (PARI/GP
+`ellisomat`, untrusted searcher). A formal proof needs the rational
+points of a genus-`2` curve, i.e. Mordell–Weil on its Jacobian plus a
+Chabauty-style argument. -/
+theorem WeierstrassCurve.no_torsion_order_13 (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 13 :=
+  sorry
+
+/-- **No rational point of order `17`** (sorry node — IRREDUCIBLE
+literature citation, audited 2026-07-25): `X_1(17)` has genus `5` and no
+non-cuspidal rational point (Mazur 1977, Thm 7).
+
+The `X_0` shortcut is NOT available: `17` is in Kenku's list, and
+`X_0(17)` — a genus-`1` curve of Mordell–Weil rank `0` — has
+non-cuspidal rational points, `j = −17 · 373³ / 2¹⁷` and
+`j = −17² · 101³ / 2` (PARI/GP `ellisomat`, untrusted searcher), so a
+rational cyclic `17`-isogeny is no contradiction. -/
+theorem WeierstrassCurve.no_torsion_order_17 (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 17 :=
+  sorry
+
+/-- **No rational point of order `19`** (sorry node — IRREDUCIBLE
+literature citation, audited 2026-07-25): `X_1(19)` has genus `7` and no
+non-cuspidal rational point (Mazur 1977, Thm 7).
+
+The `X_0` shortcut is NOT available: `19` is in Kenku's list. The
+witness is the CM curve of discriminant `−19`, `j = −884736`, whose
+cyclic isogeny degrees are exactly `{1, 19}` (PARI/GP `ellisomat`,
+untrusted searcher) — the class number of the order of discriminant
+`−19` is `1`, which is precisely why the `19`-isogeny is rational. -/
+theorem WeierstrassCurve.no_torsion_order_19 (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 19 :=
+  sorry
+
+/-- **No rational point of order `37`** (sorry node — IRREDUCIBLE
+literature citation, audited 2026-07-25): `X_1(37)` has genus `40` and
+no non-cuspidal rational point (Mazur 1977, Thm 7).
+
+The `X_0` shortcut is NOT available: `37` is in Kenku's list, and
+`X_0(37)` has two non-cuspidal rational points, `j = −7 · 11³` (checked
+to have cyclic isogeny degrees exactly `{1, 37}` with PARI/GP
+`ellisomat`, untrusted searcher) and `j = −7 · 137³ · 2083³`. At this
+genus no explicit descent is available even in the literature: the
+level is settled by the Eisenstein-ideal argument itself. -/
+theorem WeierstrassCurve.no_torsion_order_37 (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 37 :=
+  sorry
+
+/-- **No rational point of order `43`** (sorry node — IRREDUCIBLE
+literature citation, audited 2026-07-25): `X_1(43)` has genus `57` and
+no non-cuspidal rational point (Mazur 1977, Thm 7).
+
+The `X_0` shortcut is NOT available: `43` is in Kenku's list, the
+witness being the class-number-one CM curve of discriminant `−43`,
+`j = −884736000`, whose cyclic isogeny degrees are exactly `{1, 43}`
+(PARI/GP `ellisomat`, untrusted searcher). -/
+theorem WeierstrassCurve.no_torsion_order_43 (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 43 :=
+  sorry
+
+/-- **No rational point of order `67`** (sorry node — IRREDUCIBLE
+literature citation, audited 2026-07-25): `X_1(67)` has genus `155` and
+no non-cuspidal rational point (Mazur 1977, Thm 7).
+
+The `X_0` shortcut is NOT available: `67` is in Kenku's list, the
+witness being the class-number-one CM curve of discriminant `−67`,
+`j = −147197952000`, whose cyclic isogeny degrees are exactly `{1, 67}`
+(PARI/GP `ellisomat`, untrusted searcher). -/
+theorem WeierstrassCurve.no_torsion_order_67 (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 67 :=
+  sorry
+
+/-- **No rational point of order `163`** (sorry node — IRREDUCIBLE
+literature citation, audited 2026-07-25): `X_1(163)` has genus `1027`
+and no non-cuspidal rational point (Mazur 1977, Thm 7).
+
+The `X_0` shortcut is NOT available: `163` is in Kenku's list, the
+witness being the class-number-one CM curve of discriminant `−163`,
+`j = −262537412640768000`, whose cyclic isogeny degrees are exactly
+`{1, 163}` (PARI/GP `ellisomat`, untrusted searcher). This is the
+largest rational isogeny degree over `ℚ`, and the level where every
+explicit method is furthest out of reach. -/
+theorem WeierstrassCurve.no_torsion_order_163 (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 163 :=
+  sorry
+
+/-- **The eight prime levels that survive the `X_0` cut** (PROVEN
+2026-07-25 — pure arithmetic over the list): a prime `ℓ ≥ 11` lying in
+Kenku's list of rational cyclic isogeny degrees is one of
+`11, 13, 17, 19, 37, 43, 67, 163`. The list
+`{1, …, 19, 21, 25, 27, 37, 43, 67, 163}` loses `1, …, 10` to the size
+hypothesis and `12, 14, 15, 16, 18, 21, 25, 27` to primality; nothing
+else is deleted, and nothing else survives. -/
+lemma MazurPrimeLevel.mem_of_prime_ge_eleven {ℓ : ℕ} (hℓ : ℓ.Prime) (h11 : 11 ≤ ℓ)
+    (h : ℓ ∈ ({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+      21, 25, 27, 37, 43, 67, 163} : Finset ℕ)) :
+    ℓ ∈ ({11, 13, 17, 19, 37, 43, 67, 163} : Finset ℕ) := by
+  simp only [Finset.mem_insert, Finset.mem_singleton] at h ⊢
+  rcases h with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl |
+    rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;>
+    first
+      | omega
+      | exact absurd hℓ (by decide)
+
+/-- **Mazur: no rational torsion point of prime order `≥ 11`** (PROVEN
+2026-07-25 as the eight-way case split over the primes that survive the
+`X_0` cut): no elliptic curve over `ℚ` has a rational point of order `ℓ`
+for a prime `ℓ ≥ 11`. Mazur, "Modular curves and the Eisenstein ideal"
+(Publ. Math. IHÉS 47, 1977), Thm 7.
+
+The proof is the reduction described in the section note above and
+nothing more. A point of order `ℓ` generates a rational cyclic
+`ℓ`-isogeny (`mem_cyclicIsogenyDegrees_of_addOrderOf`), so `ℓ` lies in
+Kenku's list; being prime and `≥ 11` it is one of the eight levels
+`11, 13, 17, 19, 37, 43, 67, 163` (`MazurPrimeLevel.mem_of_prime_ge_eleven`),
+each of which is a separate node above. Every prime `ℓ ≥ 11` outside
+those eight — infinitely many — is discharged outright by Mazur's
+isogeny theorem.
+
+The mathematical content that remains is entirely in the eight nodes,
+all IRREDUCIBLE at this mathlib pin, and in the `X_0` node
+`prime_mem_cyclicIsogenyDegrees` they are cut against. The dependence on
+that node is now explicit in the tree instead of being folded into the
+same `sorry`: this theorem and the isogeny theorem always shared their
+citation, and the section note records why using one for the other is a
+reduction and not a circle. -/
+theorem WeierstrassCurve.no_prime_torsion_ge_eleven (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] {ℓ : ℕ} (hℓ : ℓ.Prime) (h11 : 11 ≤ ℓ) (Q : (E⁄ℚ).Point) :
+    addOrderOf Q ≠ ℓ := by
+  intro hQ
+  have h := MazurPrimeLevel.mem_of_prime_ge_eleven hℓ h11
+    (E.mem_cyclicIsogenyDegrees_of_addOrderOf Q (by omega) hQ)
+  simp only [Finset.mem_insert, Finset.mem_singleton] at h
+  rcases h with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
+  exacts [E.no_torsion_order_11 Q hQ, E.no_torsion_order_13 Q hQ,
+    E.no_torsion_order_17 Q hQ, E.no_torsion_order_19 Q hQ,
+    E.no_torsion_order_37 Q hQ, E.no_torsion_order_43 Q hQ,
+    E.no_torsion_order_67 Q hQ, E.no_torsion_order_163 Q hQ]
 
 /-- **No rational point of order `2` together with a rational point of
 order `7`** (sorry node — the `X_1(14)` content in its level-structure
