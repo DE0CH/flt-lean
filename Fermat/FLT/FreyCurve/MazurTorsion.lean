@@ -388,8 +388,281 @@ theorem WeierstrassCurve.prime_mem_cyclicIsogenyDegrees (E : WeierstrassCurve �
     N ∈ ({2, 3, 5, 7, 11, 13, 17, 19, 37, 43, 67, 163} : Finset ℕ) :=
   sorry
 
-/-- **Kenku's composite cyclic-isogeny degrees** (sorry node — the
-composite half of the `X_0` input): if the cyclic subgroup `⟨g⟩`
+/-!
+##### Kenku's composite node, split along divisor descent (2026-07-25)
+
+`composite_mem_cyclicIsogenyDegrees` is now PROVEN from five shallower
+nodes plus one piece of elementary machinery proven here.
+
+The machinery is `exists_stable_zmultiples_of_dvd`: **the set of rational
+cyclic isogeny degrees is closed under divisors.** If `⟨g⟩` is a
+Galois-stable cyclic subgroup of order `N` and `d ∣ N`, then
+`⟨(N/d) • g⟩` is a Galois-stable cyclic subgroup of order `d`. Both
+halves are elementary and are proven in full: the order is
+`addOrderOf_nsmul'` together with `Nat.gcd_eq_right` and
+`Nat.div_div_self`, and stability holds because `σ` acts by an ADDITIVE
+map, so `σ g = k • g` forces `σ (m • g) = m • (k • g) = k • (m • g)`.
+(This is the subgroup-level form of the classical statement that a
+cyclic `N`-isogeny factors through a cyclic `d`-isogeny for every
+`d ∣ N`; note it needs stability of `⟨g⟩` only, not pointwise fixing.)
+
+With divisor closure available, the two halves of Kenku's determination
+become five separate literature nodes:
+
+* the PRIME-POWER half. The prime powers occurring in the full
+  Mazur–Kenku list `{1, …, 19, 21, 25, 27, 37, 43, 67, 163}` are
+  `2, 4, 8, 16, 3, 9, 27, 5, 25, 7, 11, 13, 17, 19, 37, 43, 67, 163`,
+  so the composite ones are exactly `4, 8, 9, 16, 25, 27`. The MINIMAL
+  prime powers absent from the list are therefore `32 = 2⁵`,
+  `81 = 3⁴`, `125 = 5³`, and `p²` for every prime `p ≥ 7` — four
+  statements, from which divisor descent recovers the whole half:
+  `not_cyclicIsogeny_thirtyTwo`, `not_cyclicIsogeny_eightyOne`,
+  `not_cyclicIsogeny_oneHundredTwentyFive`,
+  `not_cyclicIsogeny_sq_of_prime_ge_seven`.
+* the remaining half, `notPrimePow_mem_cyclicIsogenyDegrees`: a level
+  with at least two distinct prime factors lies in
+  `{6, 10, 12, 14, 15, 18, 21}` — exactly the non-prime-powers of the
+  full list. This is where the bulk of Kenku's 1979–1982 work still
+  sits, and it is the one node of the five that is not a single
+  modular curve.
+
+The assembly is then pure arithmetic and is proven below: for `N ≥ 20`
+non-prime a prime power `p ^ k` forces `k ≥ 2`, and `p ≥ 7` gives
+`p² ∣ N`; `p = 5` gives `N = 25` or `125 ∣ N`; `p = 3` gives `N = 9`
+(too small), `N = 27`, or `81 ∣ N`; `p = 2` gives `N ≤ 16` (too small)
+or `32 ∣ N`. A non-prime-power `N ≥ 20` meets the seven-element list
+above only in `21`.
+
+Sanity-checked with PARI/GP (2026-07-25; untrusted searcher, never a
+proof): `ellisomat` over the nonsingular members of the
+`2 · 2 · 3 · 31² = 11532` models `[a₁,a₂,a₃,a₄,a₆]` with
+`a₁, a₃ ∈ {0,1}`, `a₂ ∈ {−1,0,1}`, `a₄, a₆ ∈ [−15,15]` returns
+cyclic isogeny degrees whose composite PRIME POWERS are exactly
+`{4, 8, 9, 16, 25, 27}` and whose NON-prime-powers are exactly
+`{6, 10, 12, 14, 15, 18, 21}` — the two conclusion sets below, hit on
+the nose, with `32`, `81`, `125` and every `p²` for `p ≥ 7` absent.
+-/
+
+/-- **Divisor descent for Galois-stable cyclic subgroups: stability**
+(PROVEN 2026-07-25). If `⟨g⟩` is stable under `Gal(ℚ̄/ℚ)` then so is
+`⟨m • g⟩` for every `m`. The point is that `Affine.Point.map σ` is an
+ADDITIVE map, so `σ g = k • g` (some `k : ℤ`, by stability of `⟨g⟩`)
+propagates: `σ (j • (m • g)) = j • (m • (k • g)) = (j * k) • (m • g)`.
+No pointwise fixing and no rationality of `g` is needed. -/
+lemma WeierstrassCurve.stable_zmultiples_nsmul (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point) (m : ℕ)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) :
+    ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples (m • g),
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples (m • g) := by
+  intro σ x hx
+  obtain ⟨j, rfl⟩ := AddSubgroup.mem_zmultiples_iff.mp hx
+  obtain ⟨k, hk⟩ := AddSubgroup.mem_zmultiples_iff.mp
+    (hstable σ g (AddSubgroup.mem_zmultiples g))
+  have hmap : Affine.Point.map
+      (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (j • (m • g))
+      = (j * k) • (m • g) := by
+    rw [map_zsmul, map_nsmul, ← hk, smul_comm m k g, smul_smul]
+  rw [hmap]
+  exact AddSubgroup.zsmul_mem _ (AddSubgroup.mem_zmultiples _) _
+
+/-- **Divisor descent for Galois-stable cyclic subgroups** (PROVEN
+2026-07-25): the rational cyclic isogeny degrees are closed under
+divisors. From a Galois-stable cyclic subgroup `⟨g⟩` of order `N` and a
+divisor `d ∣ N`, the element `(N / d) • g` generates a Galois-stable
+cyclic subgroup of order exactly `d` — the unique subgroup of order `d`
+inside `⟨g⟩ ≅ ℤ/N`.
+
+The order computation is `addOrderOf_nsmul'` (`addOrderOf (n • g) =
+addOrderOf g / gcd (addOrderOf g) n`) with `n = N / d`, whose gcd with
+`N` is `N / d` since `N / d ∣ N` (`Nat.gcd_eq_right`), followed by
+`Nat.div_div_self`. Stability is `stable_zmultiples_nsmul`. -/
+lemma WeierstrassCurve.exists_stable_zmultiples_of_dvd (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point) {N d : ℕ}
+    (hN : N ≠ 0) (hd : d ∣ N) (hg : addOrderOf g = N)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) :
+    ∃ g' : (E⁄(AlgebraicClosure ℚ)).Point, addOrderOf g' = d ∧
+      ∀ σ : Field.absoluteGaloisGroup ℚ,
+        ∀ x ∈ AddSubgroup.zmultiples g',
+          Affine.Point.map
+            (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+            AddSubgroup.zmultiples g' := by
+  have hd0 : d ≠ 0 := by rintro rfl; exact hN (Nat.eq_zero_of_zero_dvd hd)
+  have hq0 : N / d ≠ 0 := by
+    have := Nat.div_pos (Nat.le_of_dvd (Nat.pos_of_ne_zero hN) hd)
+      (Nat.pos_of_ne_zero hd0)
+    omega
+  refine ⟨(N / d) • g, ?_, E.stable_zmultiples_nsmul g (N / d) hstable⟩
+  rw [addOrderOf_nsmul' g hq0, hg, Nat.gcd_eq_right (Nat.div_dvd_of_dvd hd),
+    Nat.div_div_self hd hN]
+
+/-- **No rational cyclic `32`-isogeny** (sorry node — the level `X_0(32)`
+of Kenku's prime-power determination): no elliptic curve over `ℚ`
+carries a Galois-stable cyclic subgroup of order `32`.
+
+`32 = 2⁵` is the smallest power of `2` absent from the Mazur–Kenku list
+(`2, 4, 8, 16` are all present — realized simultaneously by the
+conductor-`45` curve `[1,−1,0,0,−5]`, whose cyclic isogeny degrees are
+`{1,2,4,8,16}`, as already recorded in the section note above), so by
+divisor descent this single statement disposes of every `2^k` with
+`k ≥ 5`.
+
+IRREDUCIBLE at this mathlib pin: `X_0(32)` has genus `1` (recomputed
+2026-07-25 from the standard formula: `μ = 48`, `ν₂ = ν₃ = 0`, `8`
+cusps, so `g = 1 + 4 − 4 = 1`), and the statement is that its Jacobian —
+an elliptic curve of Mordell–Weil rank `0` over `ℚ` — has only the eight
+cusps as rational points. No modular curve and no Jacobian exists in
+this development. (Ogg, "Rational points on certain elliptic modular
+curves", Proc. Sympos. Pure Math. 24 (1973); subsumed in the
+Mazur–Kenku classification.) -/
+theorem WeierstrassCurve.not_cyclicIsogeny_thirtyTwo (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 32)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) :
+    False :=
+  sorry
+
+/-- **No rational cyclic `81`-isogeny** (sorry node — the level `X_0(81)`
+of Kenku's prime-power determination): no elliptic curve over `ℚ`
+carries a Galois-stable cyclic subgroup of order `81`.
+
+`81 = 3⁴` is the smallest power of `3` absent from the Mazur–Kenku list
+(`3, 9, 27` are all present — `27` by the isogeny class `27a`), so by
+divisor descent this single statement disposes of every `3^k` with
+`k ≥ 4`.
+
+IRREDUCIBLE at this mathlib pin: `X_0(81)` has genus `4` (recomputed
+2026-07-25: `μ = 108`, `ν₂ = ν₃ = 0`, `12` cusps, so
+`g = 1 + 9 − 6 = 4`), so this is a Chabauty/Jacobian-rank argument on a
+genus-`4` curve, not an elliptic-curve computation. Nothing of the kind
+exists in this development. (Kenku's series, 1979–1982.) -/
+theorem WeierstrassCurve.not_cyclicIsogeny_eightyOne (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 81)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) :
+    False :=
+  sorry
+
+/-- **No rational cyclic `125`-isogeny** (sorry node — the level
+`X_0(125)` of Kenku's prime-power determination): no elliptic curve over
+`ℚ` carries a Galois-stable cyclic subgroup of order `125`.
+
+`125 = 5³` is the smallest power of `5` absent from the Mazur–Kenku list
+(`5` and `25` are present, `25` by the isogeny class `11a`), so by
+divisor descent this single statement disposes of every `5^k` with
+`k ≥ 3`.
+
+IRREDUCIBLE at this mathlib pin: `X_0(125)` has genus `8` (recomputed
+2026-07-25: `μ = 150`, `ν₂ = 2`, `ν₃ = 0`, `10` cusps, so
+`g = 1 + 25/2 − 1/2 − 5 = 8`). This is precisely the level treated in
+Kenku, "On the modular curves `X_0(125)`, `X_1(25)` and `X_1(49)`",
+J. London Math. Soc. (2) 23 (1981), 415–427. -/
+theorem WeierstrassCurve.not_cyclicIsogeny_oneHundredTwentyFive
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 125)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) :
+    False :=
+  sorry
+
+/-- **No rational cyclic `p²`-isogeny for `p ≥ 7`** (sorry node — the
+levels `X_0(p²)` of Kenku's prime-power determination): for a prime
+`p ≥ 7`, no elliptic curve over `ℚ` carries a Galois-stable cyclic
+subgroup of order `p²`.
+
+Together with the three explicit levels above this is the whole
+prime-power half: the composite prime powers in the Mazur–Kenku list are
+`4, 8, 9, 16, 25, 27`, all supported on `p ∈ {2, 3, 5}`, so for `p ≥ 7`
+even the square is already excluded, and divisor descent removes every
+higher power at once.
+
+Only finitely many `p` actually require an argument, though the
+statement is uniform: by `prime_mem_cyclicIsogenyDegrees` (Mazur), a
+cyclic `p²`-isogeny yields a cyclic `p`-isogeny, so `p` would have to lie
+in `{7, 11, 13, 17, 19, 37, 43, 67, 163}`. The two smallest cases are the
+classical ones — `X_0(49)` has genus `1` (`μ = 56`, `ν₂ = 0`, `ν₃ = 2`,
+`8` cusps) and `X_0(169)` genus `8` (`μ = 182`, `ν₂ = ν₃ = 2`, `14`
+cusps), the latter being exactly Kenku, "The modular curve `X_0(169)` and
+rational isogeny", J. London Math. Soc. (2) 22 (1980), 239–244. For the
+larger `p` the input is that only finitely many `j`-invariants admit a
+rational `p`-isogeny at all, all of them known explicitly, and none of
+them a cyclic `p²`-isogeny.
+
+IRREDUCIBLE at this mathlib pin: every route runs through the rational
+points of a modular curve of genus `≥ 1`, and neither modular curves nor
+their Jacobians exist in this development. -/
+theorem WeierstrassCurve.not_cyclicIsogeny_sq_of_prime_ge_seven
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) {p : ℕ} (hp : p.Prime) (hp7 : 7 ≤ p)
+    (hg : addOrderOf g = p ^ 2)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) :
+    False :=
+  sorry
+
+/-- **Kenku's cyclic-isogeny degrees with two distinct prime factors**
+(sorry node — the non-prime-power half of the `X_0` input): if the cyclic
+subgroup `⟨g⟩` generated by a geometric point `g` of an elliptic curve
+`E/ℚ` has exact order `N ≥ 2` which is NOT a prime power, and is stable
+under `Gal(ℚ̄/ℚ)`, then
+
+  `N ∈ {6, 10, 12, 14, 15, 18, 21}`.
+
+`¬ IsPrimePow N` together with `2 ≤ N` says exactly that `N` has at least
+two distinct prime factors, and the seven listed values are exactly the
+non-prime-powers of the full Mazur–Kenku list
+`{1, …, 19, 21, 25, 27, 37, 43, 67, 163}`. So this is the complement of
+the four prime-power nodes above, and it carries the bulk of Kenku's
+1979–1982 work.
+
+IRREDUCIBLE at this mathlib pin: it is a case-by-case determination of
+`X_0(N)(ℚ)` for the surviving composite levels, on top of Mazur's prime
+theorem (which bounds the primes dividing `N`) and the prime-power nodes
+above (which bound the exponents), leaving explicit Mordell–Weil
+computations at the genus-one levels and Chabauty-style arguments above
+them. The individual levels are distributed over Kenku's papers —
+`X_0(39)` (Math. Proc. Cambridge Philos. Soc. 85, 1979), `X_0(65)` and
+`X_0(91)` (ibid. 87, 1980) — and the classification is completed in "On
+the number of `ℚ`-isomorphism classes of elliptic curves in each
+`ℚ`-isogeny class" (J. Number Theory 15, 1982). Nothing of this exists
+in the development. -/
+theorem WeierstrassCurve.notPrimePow_mem_cyclicIsogenyDegrees
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) {N : ℕ} (hN : 2 ≤ N)
+    (hpp : ¬ IsPrimePow N) (hg : addOrderOf g = N)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) :
+    N ∈ ({6, 10, 12, 14, 15, 18, 21} : Finset ℕ) :=
+  sorry
+
+/-- **Kenku's composite cyclic-isogeny degrees** (PROVEN 2026-07-25 from
+the five nodes above and divisor descent; the composite half of the `X_0`
+input): if the cyclic subgroup `⟨g⟩`
 generated by a geometric point `g` of an elliptic curve `E/ℚ` has exact
 order `N ≥ 20` with `N` NOT prime, and is stable under `Gal(ℚ̄/ℚ)`,
 then
@@ -403,12 +676,23 @@ series of papers (1979–1982), completed in "On the number of
 `ℚ`-isomorphism classes of elliptic curves in each `ℚ`-isogeny class"
 (J. Number Theory 15, 1982).
 
-IRREDUCIBLE at this mathlib pin: the proof is a case-by-case
-determination of `X_0(N)(ℚ)` for the finitely many surviving composite
-levels — explicit Mordell–Weil computations at the genus-one levels and
-Chabauty-style arguments above them — on top of Mazur's prime theorem,
-which bounds the primes that may divide `N` in the first place. Nothing
-of this exists in the development.
+The proof here is the arithmetic reassembly described in the section
+note above, and it is exhaustive. Write `N` for the order. If `N` is a
+prime power `p ^ k` then `k ≥ 2`, since `k = 0` gives `N = 1 < 20` and
+`k = 1` contradicts `¬ N.Prime`; and then
+
+* `p ≥ 7`: `p² ∣ N`, so divisor descent plus
+  `not_cyclicIsogeny_sq_of_prime_ge_seven` is a contradiction;
+* `p = 5`: `k = 2` gives `N = 25`, and `k ≥ 3` gives `125 ∣ N`;
+* `p = 3`: `k = 2` gives `N = 9 < 20`, `k = 3` gives `N = 27`, and
+  `k ≥ 4` gives `81 ∣ N`;
+* `p = 2`: `k ≤ 4` gives `N ≤ 16 < 20`, and `k ≥ 5` gives `32 ∣ N`.
+
+If `N` is not a prime power then `notPrimePow_mem_cyclicIsogenyDegrees`
+puts it in `{6, 10, 12, 14, 15, 18, 21}`, of which only `21` is `≥ 20`.
+All the mathematical content sits in the five sorried nodes above; the
+only step here that is not `Nat` bookkeeping is divisor descent, which
+is proven.
 
 Among the eleven critical composite torsion levels this node is what
 closes `20`, `24`, `35` and `49`: all four are composite and `≥ 20`,
@@ -428,8 +712,60 @@ theorem WeierstrassCurve.composite_mem_cyclicIsogenyDegrees (E : WeierstrassCurv
         Affine.Point.map
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
           AddSubgroup.zmultiples g) :
-    N ∈ ({21, 25, 27} : Finset ℕ) :=
-  sorry
+    N ∈ ({21, 25, 27} : Finset ℕ) := by
+  have hN0 : N ≠ 0 := by omega
+  have hdvd : ∀ d : ℕ, d ∣ N → ∃ g' : (E⁄(AlgebraicClosure ℚ)).Point,
+      addOrderOf g' = d ∧
+      ∀ σ : Field.absoluteGaloisGroup ℚ,
+        ∀ x ∈ AddSubgroup.zmultiples g',
+          Affine.Point.map
+            (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+            AddSubgroup.zmultiples g' :=
+    fun d hd => E.exists_stable_zmultiples_of_dvd g hN0 hd hg hstable
+  by_cases hpp : IsPrimePow N
+  · obtain ⟨p, k, hp, hk0, hpk⟩ := hpp
+    have hpN : p.Prime := Nat.prime_iff.mpr hp
+    have hp2 : 2 ≤ p := hpN.two_le
+    have hk2 : 2 ≤ k := by
+      rcases Nat.lt_or_ge k 2 with h | h
+      · have hk1 : k = 1 := by omega
+        subst hk1
+        rw [pow_one] at hpk
+        exact absurd (hpk ▸ hpN) hcomp
+      · exact h
+    rcases Nat.lt_or_ge p 7 with hp7 | hp7
+    · interval_cases p
+      · rcases Nat.lt_or_ge k 5 with hk5 | hk5
+        · interval_cases k <;> (rw [← hpk] at hN; norm_num at hN)
+        · have h32 : (32 : ℕ) ∣ N := by
+            rw [← hpk, show (32 : ℕ) = 2 ^ 5 by norm_num]
+            exact pow_dvd_pow 2 hk5
+          obtain ⟨g', hg', hs'⟩ := hdvd 32 h32
+          exact (E.not_cyclicIsogeny_thirtyTwo g' hg' hs').elim
+      · rcases Nat.lt_or_ge k 4 with hk4 | hk4
+        · interval_cases k
+          · rw [← hpk] at hN; norm_num at hN
+          · rw [← hpk]; decide
+        · have h81 : (81 : ℕ) ∣ N := by
+            rw [← hpk, show (81 : ℕ) = 3 ^ 4 by norm_num]
+            exact pow_dvd_pow 3 hk4
+          obtain ⟨g', hg', hs'⟩ := hdvd 81 h81
+          exact (E.not_cyclicIsogeny_eightyOne g' hg' hs').elim
+      · rcases hpN.eq_one_or_self_of_dvd 2 ⟨2, rfl⟩ with h | h <;> omega
+      · rcases Nat.lt_or_ge k 3 with hk3 | hk3
+        · interval_cases k
+          · rw [← hpk]; decide
+        · have h125 : (125 : ℕ) ∣ N := by
+            rw [← hpk, show (125 : ℕ) = 5 ^ 3 by norm_num]
+            exact pow_dvd_pow 5 hk3
+          obtain ⟨g', hg', hs'⟩ := hdvd 125 h125
+          exact (E.not_cyclicIsogeny_oneHundredTwentyFive g' hg' hs').elim
+      · rcases hpN.eq_one_or_self_of_dvd 2 ⟨3, rfl⟩ with h | h <;> omega
+    · have hsq : p ^ 2 ∣ N := by rw [← hpk]; exact pow_dvd_pow p hk2
+      obtain ⟨g', hg', hs'⟩ := hdvd (p ^ 2) hsq
+      exact (E.not_cyclicIsogeny_sq_of_prime_ge_seven g' hpN hp7 hg' hs').elim
+  · have h := E.notPrimePow_mem_cyclicIsogenyDegrees g (by omega) hpp hg hstable
+    fin_cases h <;> revert hN <;> decide
 
 /-- **The rational cyclic-isogeny degrees over `ℚ`** (PROVEN 2026-07-25
 from the two nodes above; the `X_0` input, Mazur 1978 and Kenku
