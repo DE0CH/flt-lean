@@ -1108,21 +1108,114 @@ theorem exists_span_eq_lineDivisor {q₁ q₂ x₁ y₁ x₂ y₂ : F}
     Multiset.map_singleton, Multiset.prod_singleton]
   ring
 
-/-- **Sub-leaf (sorry) of `span_lineNumerator`: nonvanishing of the
-line numerator.**  `lineNumerator q₁ q₂ x₁ y₁ ℓ` is a nonzero element
-of the (integral domain) coordinate ring for every slope `ℓ`: in the
-`F[X]`-basis `{1, mk Y}` it reads `pp • 1 + qq • mk Y` where the
-degree-`3` coefficient of `pp` is `q₂ − (ℓ(q₁ − x₁) + y₁)`, the value
-by which `Q` misses the chord line, and the degree-`1` coefficient of
-`qq` is `−(3q₁² + 2a₂q₁ + a₄ − a₁q₂) + ℓ(2q₂ + a₁q₁ + a₃)`, which is
-the pairing of `ℓ` against the tangent direction at `Q`; these cannot
-vanish simultaneously because `Q` is a nonsingular point of `W` (the
-two tangent partials do not both vanish at `Q`).  Nonzeroness is what
-makes the norm-degree bookkeeping of `span_lineNumerator` additive. -/
-theorem lineNumerator_ne_zero (hΔ : W.Δ ≠ 0) {q₁ q₂ x₁ y₁ ℓ : F}
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- The constant embedding into the coordinate ring is the structure
+map of the `F`-algebra `F[W]`. -/
+lemma coordC_eq_algebraMap (d : F) :
+    coordC W d = algebraMap F W.CoordinateRing d := rfl
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- `F[X] → F[W]` restricted to constants is the `F`-algebra map. -/
+lemma algebraMap_polynomial_C (c : F) :
+    algebraMap (Polynomial F) W.CoordinateRing (Polynomial.C c) =
+      algebraMap F W.CoordinateRing c := rfl
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- `F[X] → F[W]` sends the indeterminate to the coordinate `X`. -/
+lemma algebraMap_polynomial_X :
+    algebraMap (Polynomial F) W.CoordinateRing Polynomial.X = coordX W := rfl
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- The defining Weierstrass relation, read inside the affine
+coordinate ring `F[W]`. -/
+lemma coord_equation (W : WeierstrassCurve.Affine F) :
+    coordY W ^ 2 + (algebraMap F W.CoordinateRing W.a₁ * coordX W +
+        algebraMap F W.CoordinateRing W.a₃) * coordY W =
+      coordX W ^ 3 + algebraMap F W.CoordinateRing W.a₂ * coordX W ^ 2 +
+        algebraMap F W.CoordinateRing W.a₄ * coordX W +
+        algebraMap F W.CoordinateRing W.a₆ := by
+  have h : CoordinateRing.mk W W.polynomial = 0 := AdjoinRoot.mk_self
+  simp only [WeierstrassCurve.Affine.polynomial, map_add, map_sub, map_mul, map_pow,
+    ← coordC_eq_algebraMap, coordX, coordY, coordC] at h ⊢
+  linear_combination h
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- **Basis form of the line numerator.**  `F[W]` is free of rank two
+over `F[X]` with basis `{1, mk Y}`, and the reduction of
+`lineNumerator q₁ q₂ x₁ y₁ ℓ` against the Weierstrass relation is the
+explicit pair `(pp, qq)` below: `pp` has degree `≤ 3` in `X − q₁` with
+leading coefficient `q₂ − (ℓ(q₁ − x₁) + y₁)` (the amount by which `Q`
+misses the chord line), and `qq` has degree `≤ 1` with leading
+coefficient `W_X(Q) + ℓ · W_Y(Q)` and constant term
+`W(Q) − W_Y(Q)²`.  The cofactor of the reduction is
+`−Y − (a₁ + ℓ)(X − q₁) + (a₁q₁ + a₃ + 3q₂)`. -/
+lemma lineNumerator_smul_basis (q₁ q₂ x₁ y₁ ℓ : F) :
+    lineNumerator W q₁ q₂ x₁ y₁ ℓ =
+      (Polynomial.C (q₂ - ℓ * q₁ + ℓ * x₁ - y₁) *
+              (Polynomial.X - Polynomial.C q₁) ^ 3 +
+            Polynomial.C (q₂ * W.a₁ ^ 2 +
+                W.a₁ * (-(q₁ * W.a₂) - W.a₄ + ℓ * q₂) +
+                W.a₂ * (W.a₃ - 2 * ℓ * q₁ + 2 * q₂) + 3 * q₁ * W.a₃ -
+                ℓ * W.a₄ - 3 * ℓ * q₁ ^ 2 + 6 * q₂ * q₁) *
+              (Polynomial.X - Polynomial.C q₁) ^ 2 +
+            Polynomial.C (W.a₁ * (q₁ ^ 2 * W.a₂ - W.a₆ + 2 * q₁ ^ 3 - 2 * q₂ ^ 2) +
+                W.a₂ * (2 * q₁ * W.a₃ - ℓ * q₁ ^ 2 + 6 * q₂ * q₁) +
+                W.a₃ * (W.a₄ + 3 * q₁ ^ 2) + W.a₄ * (-(ℓ * q₁) + 3 * q₂) -
+                ℓ * W.a₆ - ℓ * q₁ ^ 3 + 9 * q₂ * q₁ ^ 2 - ℓ * q₂ ^ 2) *
+              (Polynomial.X - Polynomial.C q₁) +
+            Polynomial.C (W.a₁ * (q₁ ^ 3 * W.a₂ + q₁ ^ 2 * W.a₄ + q₁ * W.a₆ + q₁ ^ 4) +
+                W.a₂ * (q₁ ^ 2 * W.a₃ + 3 * q₂ * q₁ ^ 2) +
+                W.a₃ * (q₁ * W.a₄ + W.a₆ + q₁ ^ 3) + 3 * q₂ * q₁ * W.a₄ +
+                3 * q₂ * W.a₆ + 3 * q₂ * q₁ ^ 3 + q₂ ^ 3)) •
+          (1 : W.CoordinateRing) +
+      (Polynomial.C (W.a₁ * q₂ - (3 * q₁ ^ 2 + 2 * W.a₂ * q₁ + W.a₄) +
+              ℓ * (2 * q₂ + W.a₁ * q₁ + W.a₃)) *
+            (Polynomial.X - Polynomial.C q₁) +
+          Polynomial.C (q₂ ^ 2 + W.a₁ * q₁ * q₂ + W.a₃ * q₂ -
+              (q₁ ^ 3 + W.a₂ * q₁ ^ 2 + W.a₄ * q₁ + W.a₆) -
+              (2 * q₂ + W.a₁ * q₁ + W.a₃) ^ 2)) •
+        CoordinateRing.mk W Polynomial.X := by
+  have h := coord_equation W
+  simp only [Algebra.smul_def, map_add, map_sub, map_mul, map_pow, map_neg, map_ofNat,
+    algebraMap_polynomial_C, algebraMap_polynomial_X, mul_one, lineNumerator,
+    coordC_eq_algebraMap, coordY] at h ⊢
+  linear_combination
+    (-CoordinateRing.mk W Polynomial.X -
+        (algebraMap F W.CoordinateRing W.a₁ + algebraMap F W.CoordinateRing ℓ) *
+          (coordX W - algebraMap F W.CoordinateRing q₁) +
+        (algebraMap F W.CoordinateRing W.a₁ * algebraMap F W.CoordinateRing q₁ +
+          algebraMap F W.CoordinateRing W.a₃ +
+          3 * algebraMap F W.CoordinateRing q₂)) * h
+
+omit [IsAlgClosed F] in
+/-- **Nonvanishing of the line numerator.**  `lineNumerator q₁ q₂ x₁
+y₁ ℓ` is a nonzero element of the (integral domain) coordinate ring
+for every slope `ℓ`.  By `lineNumerator_smul_basis` it suffices that
+the `mk Y`-component `qq` is nonzero, and `qq = (W_X(Q) + ℓ W_Y(Q)) ·
+(X − q₁) − W_Y(Q)²` once `Q` satisfies the Weierstrass equation; so
+`qq = 0` forces `W_Y(Q) = 0` and then `W_X(Q) = 0`, contradicting
+nonsingularity of `Q`. -/
+theorem lineNumerator_ne_zero {q₁ q₂ x₁ y₁ ℓ : F}
     (hq : W.Nonsingular q₁ q₂) :
     lineNumerator W q₁ q₂ x₁ y₁ ℓ ≠ 0 := by
-  sorry
+  rw [WeierstrassCurve.Affine.nonsingular_iff'] at hq
+  obtain ⟨heq, hns⟩ := hq
+  rw [WeierstrassCurve.Affine.equation_iff'] at heq
+  intro h0
+  rw [lineNumerator_smul_basis] at h0
+  obtain ⟨-, hqq⟩ := CoordinateRing.smul_basis_eq_zero h0
+  have e0 := congrArg (Polynomial.eval q₁) hqq
+  have e1 := congrArg (Polynomial.eval (q₁ + 1)) hqq
+  simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_sub,
+    Polynomial.eval_C, Polynomial.eval_X, Polynomial.eval_zero] at e0 e1
+  have hEY2 : (2 * q₂ + W.a₁ * q₁ + W.a₃) ^ 2 = 0 := by linear_combination heq - e0
+  have hEY : 2 * q₂ + W.a₁ * q₁ + W.a₃ = 0 :=
+    pow_eq_zero_iff two_ne_zero |>.mp hEY2
+  have hEX : W.a₁ * q₂ - (3 * q₁ ^ 2 + 2 * W.a₂ * q₁ + W.a₄) = 0 := by
+    linear_combination e1 - e0 - ℓ * hEY
+  rcases hns with h | h
+  · exact h hEX
+  · exact h hEY
 
 /-- **Sub-leaf (sorry) of `span_lineNumerator`: membership of the line
 numerator in the chord divisor ideal.**  `lineNumerator` lies in
@@ -1158,14 +1251,14 @@ the chord divisor ideal.  This is the sharp arithmetic core of
 coincidence zoo: both sides equal `3 + #{S ∈ {P⊖Q, R⊖Q, ⊖(P⊕R)⊖Q} :
 S ≠ O}`.
 
-*Upper bound on the left.*  Write `n = pp • 1 + qq • mk Y` in the
-`F[X]`-basis of `F[W]`; then `deg pp ≤ 3`, `deg qq ≤ 1`, and
-`degree_norm_smul_basis` gives `deg (norm n) = max (2 deg pp)
-(2 deg qq + 3) ≤ 6`, with the degree dropping by exactly one for each
-translated point that escapes to infinity (the leading coefficient of
-`pp` is `q₂ − (ℓ(q₁ − x₁) + y₁)`, which vanishes precisely when `Q`
-lies on the chord, i.e. precisely when one of the three translated
-points is `O`).
+*Upper bound on the left.*  The basis form `n = pp • 1 + qq • mk Y` is
+the proven `lineNumerator_smul_basis`: `deg pp ≤ 3` and `deg qq ≤ 1`
+are read off it, so `degree_norm_smul_basis` gives
+`deg (norm n) = max (2 deg pp) (2 deg qq + 3) ≤ 6`, with the degree
+dropping by exactly one for each translated point that escapes to
+infinity (the leading coefficient of `pp` is `q₂ − (ℓ(q₁ − x₁) + y₁)`,
+which vanishes precisely when `Q` lies on the chord, i.e. precisely
+when one of the three translated points is `O`).
 
 *Lower bound on the right.*  Each `pointIdeal` is an *invertible*
 ideal (it is the underlying ideal of the unit fractional ideal
@@ -1215,7 +1308,7 @@ theorem span_lineNumerator (hΔ : W.Δ ≠ 0) {q₁ q₂ x₁ y₁ x₂ y₂ : F
               .some q₁ q₂ hq))) := by
   obtain ⟨m, hm0, hmJ⟩ := exists_span_eq_lineDivisor hq h₁ h₂
   have hn0 : lineNumerator W q₁ q₂ x₁ y₁ (W.slope x₁ x₂ y₁ y₂) ≠ 0 :=
-    lineNumerator_ne_zero hΔ hq
+    lineNumerator_ne_zero hq
   have hmem := lineNumerator_mem_lineDivisor hΔ hq h₁ h₂ hxy
   have hsq := natDegree_norm_lineNumerator_le hΔ hq h₁ h₂ hxy
   rw [← hmJ] at hmem hsq ⊢
