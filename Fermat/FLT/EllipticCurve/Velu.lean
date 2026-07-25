@@ -53,7 +53,10 @@ Vélu coordinates (`velu_coordX_map`, `velu_coordY_map`); and, since
 kernel and under negation (`veluCoordX_add_mem`, `veluCoordY_add_mem`,
 `veluCoordX_neg`, `veluCoordY_neg`, over the kernel sum `velu_sum_kernel`),
 together with the assemblies of `velu_isElliptic` and `velu_map_add` over
-the leaves below.
+the leaves below; and the `±`-paired addition law identifying the group-law
+sums with Vélu's classical rational functions (`velu_pair_X`, `velu_pair_Y`,
+`velu_coordX_eq`, `velu_coordY_eq`), which proves `velu_equation` over the
+single leaf `velu_equation_pole`.
 
 SORRY LEAVES (four, each stated over an arbitrary field of characteristic
 zero for a finite subgroup of odd order):
@@ -63,8 +66,8 @@ zero for a finite subgroup of odd order):
   geometry, no Vélu input).
 * `WeierstrassCurve.velu_exists_three_twoTorsion` — the quotient curve has
   three such points over the algebraic closure.
-* `WeierstrassCurve.velu_equation` — the image coordinates satisfy the
-  quotient equation.
+* `WeierstrassCurve.velu_equation_pole` — the pole-form coordinates satisfy
+  the quotient equation (the rational-function verification of Vélu 1971).
 * `WeierstrassCurve.velu_map_add_of_notMem` — additivity in the generic
   case, `P`, `Q`, `P + Q` all outside the kernel.
 
@@ -377,6 +380,225 @@ lemma veluCoordY_neg {S : Finset W.Point} (hS : IsPointSubgroup S) {P : W.Point}
 
 end Identities
 
+/-! ### Vélu's pole expansion of the group-law sums
+
+The classical presentation of Vélu's isogeny writes `X` and `Y` as explicit rational
+functions of `(x, y)` whose poles sit at the `x`-coordinates of the kernel. This section
+proves that the group-law sums `veluCoordX`/`veluCoordY` ARE those rational functions —
+the first half of the two-step route recorded at `velu_equation` below, namely "the
+addition law applied to `P + Q` and `P − Q` and summed".
+
+No choice of representatives of `S ∖ {0}` modulo `±` is needed: negation is a bijection
+of `S` (`velu_sum_neg`, proven in the previous section), so the sum of a function over `S`
+equals the sum of its `±`-symmetrisation halved, and the factor `2⁻¹` below is exactly
+that halving. Each summand `veluPoleX`/`veluPoleY` is `±`-invariant and vanishes at the
+point at infinity, so the sums may be taken over all of `S`. -/
+
+section Pole
+
+variable {F : Type*} [Field F] [DecidableEq F] {W : Affine F}
+
+/-- Vélu's `u`-term at a point of the kernel, `u_Q = (g^y_Q)² = (2y + a₁x + a₃)²`, with the
+junk value `0` at the point at infinity. Like `veluTTerm` it is invariant under `Q ↦ −Q`,
+because `g^y` merely changes sign there. Note `veluWTerm = veluUTerm + x · veluTTerm`. -/
+def veluUTerm (W : Affine F) : W.Point → F
+  | .zero => 0
+  | .some x y _ => (2 * y + W.a₁ * x + W.a₃) ^ 2
+
+omit [DecidableEq F] in
+@[simp] lemma veluUTerm_zero : veluUTerm W (0 : W.Point) = 0 := rfl
+
+omit [DecidableEq F] in
+@[simp] lemma veluUTerm_some {x y : F} (h : W.Nonsingular x y) :
+    veluUTerm W (Affine.Point.some x y h) = (2 * y + W.a₁ * x + W.a₃) ^ 2 := rfl
+
+/-- The `x`-part of Vélu's pole expansion at a kernel point `Q`, as a function of the
+`x`-coordinate `x` of the point being mapped: `t_Q/(x − x_Q) + u_Q/(x − x_Q)²`. The point
+at infinity contributes `0`, since `t_0 = u_0 = 0`. -/
+def veluPoleX (W : Affine F) (x : F) (Q : W.Point) : F :=
+  veluTTerm W Q / (x - veluPointX Q) + veluUTerm W Q / (x - veluPointX Q) ^ 2
+
+/-- The `y`-part of Vélu's pole expansion at a kernel point `Q`,
+
+  `−[ u_Q(2y + a₁x + a₃)/(x − x_Q)³ + (t_Q(2y + a₁x_Q + a₃) + a₁u_Q)/(2(x − x_Q)²)
+      + a₁t_Q/(x − x_Q) ]`.
+
+This is Vélu's `y`-expansion (Kohel's thesis §2.4) rewritten so that every coefficient is
+manifestly `±`-invariant: the textbook form carries the summands
+`t_Q(a₁(x − x_Q) + y − y_Q)/(x − x_Q)²` and `(a₁u_Q − g^x_Q g^y_Q)/(x − x_Q)²`, neither of
+which is invariant on its own, and `t_Q(y − y_Q) + (a₁u_Q − g^x_Q g^y_Q)` collapses to
+`(t_Q(2y + a₁x_Q + a₃) + a₁u_Q)/2` using `t_Q = 2g^x_Q − a₁g^y_Q`. The point at infinity
+contributes `0`. -/
+def veluPoleY (W : Affine F) (x y : F) (Q : W.Point) : F :=
+  -(veluUTerm W Q * (2 * y + W.a₁ * x + W.a₃) / (x - veluPointX Q) ^ 3 +
+      (veluTTerm W Q * (2 * y + W.a₁ * veluPointX Q + W.a₃) + W.a₁ * veluUTerm W Q) /
+        (2 * (x - veluPointX Q) ^ 2) +
+      W.a₁ * veluTTerm W Q / (x - veluPointX Q))
+
+omit [DecidableEq F] in
+@[simp] lemma veluPoleX_zero (x : F) : veluPoleX W x (0 : W.Point) = 0 := by
+  simp [veluPoleX]
+
+omit [DecidableEq F] in
+@[simp] lemma veluPoleY_zero (x y : F) : veluPoleY W x y (0 : W.Point) = 0 := by
+  simp [veluPoleY]
+
+/-- For `P ∉ S` and `Q` a nonzero point of the subgroup `S`, the `x`-coordinates of `P` and
+`Q` differ (PROVEN): equality of `x`-coordinates on a Weierstrass curve forces `P = ±Q`,
+and both lie in `S`. This is what makes every summand of Vélu's expansion defined, and it
+is also what puts every translate `P ± Q` in the generic (secant) branch of the addition
+law, so no case split survives into the computation. -/
+lemma velu_X_ne {S : Finset W.Point} (hS : IsPointSubgroup S) {P : W.Point} (hP : P ∉ S)
+    {Q : W.Point} (hQ : Q ∈ S) (hQ0 : Q ≠ 0) : veluPointX P ≠ veluPointX Q := by
+  obtain _ | ⟨x₁, y₁, h₁⟩ := P
+  · exact absurd hS.zero_mem hP
+  obtain _ | ⟨x₂, y₂, h₂⟩ := Q
+  · exact absurd rfl hQ0
+  intro hx
+  have hx' : x₁ = x₂ := hx
+  rcases (Affine.Point.X_eq_iff (h₁ := h₁) (h₂ := h₂)).mp hx' with h | h
+  · exact hP (by rw [h]; exact hQ)
+  · exact hP (by rw [h]; exact hS.neg_mem _ hQ)
+
+omit [DecidableEq F] in
+/-- **The `±`-paired addition law in `x`, as a field identity** (PROVEN). Adding the two
+secant formulas for `P + Q` and `P − Q` and using the Weierstrass equations at both points
+produces Vélu's `x`-pole term. The two slopes are `L₁` and `L₂`; note that `P` and `−Q`
+have the same `x`-coordinate difference, so the same denominator occurs twice.
+
+The `linear_combination` cofactors were not guessed: they are the exact cofactors returned
+by Singular's `lift` for the ideal generated by the two Weierstrass equations. -/
+lemma velu_addX_pair_identity (W : Affine F) {x₁ y₁ x₂ y₂ L₁ L₂ : F} (hd : x₁ - x₂ ≠ 0)
+    (hL₁ : L₁ = (y₁ - y₂) / (x₁ - x₂))
+    (hL₂ : L₂ = (y₁ - (-y₂ - W.a₁ * x₂ - W.a₃)) / (x₁ - x₂))
+    (e₁ : W.Equation x₁ y₁) (e₂ : W.Equation x₂ y₂) :
+    L₁ ^ 2 + W.a₁ * L₁ - W.a₂ - x₁ - x₂ - x₂ +
+        (L₂ ^ 2 + W.a₁ * L₂ - W.a₂ - x₁ - x₂ - x₂) =
+      (6 * x₂ ^ 2 + W.b₂ * x₂ + W.b₄) / (x₁ - x₂) +
+        (2 * y₂ + W.a₁ * x₂ + W.a₃) ^ 2 / (x₁ - x₂) ^ 2 := by
+  rw [Affine.equation_iff] at e₁ e₂
+  subst hL₁ hL₂
+  simp only [WeierstrassCurve.b₂, WeierstrassCurve.b₄]
+  field_simp
+  linear_combination (2 : F) * e₁ - (2 : F) * e₂
+
+/-- **The `±`-paired addition law in `x`** (PROVEN). For `P, Q` nonzero points of `W` with
+distinct `x`-coordinates,
+`(x(P + Q) − x(Q)) + (x(P − Q) − x(−Q)) = t_Q/(x − x_Q) + u_Q/(x − x_Q)²`. -/
+lemma velu_pair_X {P Q : W.Point} (hP : P ≠ 0) (hQ : Q ≠ 0)
+    (hx : veluPointX P ≠ veluPointX Q) :
+    veluPointX (P + Q) - veluPointX Q + (veluPointX (P + -Q) - veluPointX (-Q)) =
+      veluPoleX W (veluPointX P) Q := by
+  obtain _ | ⟨x₁, y₁, h₁⟩ := P
+  · exact absurd rfl hP
+  obtain _ | ⟨x₂, y₂, h₂⟩ := Q
+  · exact absurd rfl hQ
+  have hx' : x₁ ≠ x₂ := hx
+  have hd : x₁ - x₂ ≠ 0 := sub_ne_zero.mpr hx'
+  simp only [Affine.Point.neg_some, Affine.Point.add_of_X_ne hx', veluPointX_some, veluPoleX,
+    veluTTerm_some, veluUTerm_some, Affine.addX, Affine.negY, Affine.slope_of_X_ne hx']
+  linear_combination velu_addX_pair_identity W hd rfl rfl h₁.1 h₂.1
+
+end Pole
+
+section PoleSum
+
+variable {F : Type*} [Field F] [DecidableEq F] [CharZero F] {W : Affine F}
+
+omit [DecidableEq F] in
+/-- **The `±`-paired addition law in `y`, as a field identity** (PROVEN). Same computation
+as `velu_addX_pair_identity` for the `y`-coordinate: `X₁`, `X₂` are the two `addX` values
+and the conclusion is Vélu's `y`-pole term. The `linear_combination` cofactors are again
+those returned by Singular's `lift`. -/
+lemma velu_addY_pair_identity (W : Affine F) {x₁ y₁ x₂ y₂ L₁ L₂ X₁ X₂ : F} (hd : x₁ - x₂ ≠ 0)
+    (hL₁ : L₁ = (y₁ - y₂) / (x₁ - x₂))
+    (hL₂ : L₂ = (y₁ - (-y₂ - W.a₁ * x₂ - W.a₃)) / (x₁ - x₂))
+    (hX₁ : X₁ = L₁ ^ 2 + W.a₁ * L₁ - W.a₂ - x₁ - x₂)
+    (hX₂ : X₂ = L₂ ^ 2 + W.a₁ * L₂ - W.a₂ - x₁ - x₂)
+    (e₁ : W.Equation x₁ y₁) (e₂ : W.Equation x₂ y₂) :
+    -(L₁ * (X₁ - x₁) + y₁) - W.a₁ * X₁ - W.a₃ - y₂ +
+        (-(L₂ * (X₂ - x₁) + y₁) - W.a₁ * X₂ - W.a₃ - (-y₂ - W.a₁ * x₂ - W.a₃)) =
+      -((2 * y₂ + W.a₁ * x₂ + W.a₃) ^ 2 * (2 * y₁ + W.a₁ * x₁ + W.a₃) / (x₁ - x₂) ^ 3 +
+          ((6 * x₂ ^ 2 + W.b₂ * x₂ + W.b₄) * (2 * y₁ + W.a₁ * x₂ + W.a₃) +
+              W.a₁ * (2 * y₂ + W.a₁ * x₂ + W.a₃) ^ 2) / (2 * (x₁ - x₂) ^ 2) +
+          W.a₁ * (6 * x₂ ^ 2 + W.b₂ * x₂ + W.b₄) / (x₁ - x₂)) := by
+  have h2 : (2 : F) ≠ 0 := two_ne_zero
+  rw [Affine.equation_iff] at e₁ e₂
+  subst hX₁ hX₂ hL₁ hL₂
+  simp only [WeierstrassCurve.b₂, WeierstrassCurve.b₄]
+  field_simp
+  linear_combination (-(4 * W.a₁ * x₁) + 2 * W.a₁ * x₂ - 4 * y₁ - 2 * W.a₃) * e₁ +
+    (4 * W.a₁ * x₁ - 2 * W.a₁ * x₂ + 4 * y₁ + 2 * W.a₃) * e₂
+
+/-- **The `±`-paired addition law in `y`** (PROVEN). For `P, Q` nonzero points of `W` with
+distinct `x`-coordinates, `(y(P + Q) − y(Q)) + (y(P − Q) − y(−Q)) = veluPoleY`. -/
+lemma velu_pair_Y {P Q : W.Point} (hP : P ≠ 0) (hQ : Q ≠ 0)
+    (hx : veluPointX P ≠ veluPointX Q) :
+    veluPointY (P + Q) - veluPointY Q + (veluPointY (P + -Q) - veluPointY (-Q)) =
+      veluPoleY W (veluPointX P) (veluPointY P) Q := by
+  obtain _ | ⟨x₁, y₁, h₁⟩ := P
+  · exact absurd rfl hP
+  obtain _ | ⟨x₂, y₂, h₂⟩ := Q
+  · exact absurd rfl hQ
+  have hx' : x₁ ≠ x₂ := hx
+  have hd : x₁ - x₂ ≠ 0 := sub_ne_zero.mpr hx'
+  simp only [Affine.Point.neg_some, Affine.Point.add_of_X_ne hx', veluPointX_some,
+    veluPointY_some, veluPoleY, veluTTerm_some, veluUTerm_some, Affine.addY, Affine.negAddY,
+    Affine.addX, Affine.negY, Affine.slope_of_X_ne hx']
+  linear_combination velu_addY_pair_identity W hd rfl rfl rfl rfl h₁.1 h₂.1
+
+/-- **The `±`-pairing of a Vélu sum** (PROVEN). If `g` vanishes at the point at infinity
+and symmetrises `f` over each `±`-pair of nonzero points of the subgroup `S`, then the sum
+of `f` over `S` is `f 0` plus half the sum of `g`. The reindexing is `velu_sum_neg`:
+negation is a bijection of `S`, which is what replaces a choice of representatives modulo
+`±`. -/
+lemma velu_sum_pair {S : Finset W.Point} (hS : IsPointSubgroup S) (f g : W.Point → F)
+    (hg0 : g 0 = 0) (hfg : ∀ Q ∈ S, Q ≠ 0 → f Q + f (-Q) = g Q) :
+    ∑ Q ∈ S, f Q = f 0 + (2 : F)⁻¹ * ∑ Q ∈ S, g Q := by
+  classical
+  have h2 : (2 : F) ≠ 0 := two_ne_zero
+  have hstep : (2 : F) * ∑ Q ∈ S, f Q = ∑ Q ∈ S, (f Q + f (-Q)) := by
+    rw [Finset.sum_add_distrib, velu_sum_neg hS f]; ring
+  refine mul_left_cancel₀ h2 ?_
+  rw [hstep, mul_add, ← mul_assoc, mul_inv_cancel₀ h2, one_mul,
+    ← Finset.add_sum_erase S (fun Q => f Q + f (-Q)) hS.zero_mem,
+    ← Finset.add_sum_erase S g hS.zero_mem, hg0, zero_add]
+  simp only [neg_zero]
+  rw [Finset.sum_congr rfl fun Q hQ =>
+    hfg Q (Finset.mem_of_mem_erase hQ) (Finset.ne_of_mem_erase hQ)]
+  ring
+
+/-- **Vélu's `x`-coordinate is Vélu's rational function** (PROVEN). For `P ∉ S`,
+
+  `x(P) + Σ_{Q ∈ S ∖ 0} (x(P + Q) − x(Q)) = x(P) + ½ Σ_{Q ∈ S} veluPoleX`. -/
+lemma velu_coordX_eq {S : Finset W.Point} (hS : IsPointSubgroup S) {P : W.Point} (hP : P ∉ S) :
+    W.veluCoordX S P = veluPointX P + (2 : F)⁻¹ * ∑ Q ∈ S, veluPoleX W (veluPointX P) Q := by
+  have hP0 : P ≠ 0 := fun h => hP (by rw [h]; exact hS.zero_mem)
+  have hpair : ∀ Q ∈ S, Q ≠ 0 →
+      veluPointX (P + Q) - veluPointX Q + (veluPointX (P + -Q) - veluPointX (-Q)) =
+        veluPoleX W (veluPointX P) Q := fun Q hQS hQ0 =>
+    velu_pair_X hP0 hQ0 (velu_X_ne hS hP hQS hQ0)
+  have h := velu_sum_pair hS (fun Q => veluPointX (P + Q) - veluPointX Q)
+    (fun Q => veluPoleX W (veluPointX P) Q) (by simp) hpair
+  rw [veluCoordX, ← Finset.sum_sub_distrib]
+  simpa only [add_zero, veluPointX_zero, sub_zero] using h
+
+/-- **Vélu's `y`-coordinate is Vélu's rational function** (PROVEN). -/
+lemma velu_coordY_eq {S : Finset W.Point} (hS : IsPointSubgroup S) {P : W.Point} (hP : P ∉ S) :
+    W.veluCoordY S P =
+      veluPointY P + (2 : F)⁻¹ * ∑ Q ∈ S, veluPoleY W (veluPointX P) (veluPointY P) Q := by
+  have hP0 : P ≠ 0 := fun h => hP (by rw [h]; exact hS.zero_mem)
+  have hpair : ∀ Q ∈ S, Q ≠ 0 →
+      veluPointY (P + Q) - veluPointY Q + (veluPointY (P + -Q) - veluPointY (-Q)) =
+        veluPoleY W (veluPointX P) (veluPointY P) Q := fun Q hQS hQ0 =>
+    velu_pair_Y hP0 hQ0 (velu_X_ne hS hP hQS hQ0)
+  have h := velu_sum_pair hS (fun Q => veluPointY (P + Q) - veluPointY Q)
+    (fun Q => veluPoleY W (veluPointX P) (veluPointY P) Q) (by simp) hpair
+  rw [veluCoordY, ← Finset.sum_sub_distrib]
+  simpa only [add_zero, veluPointY_zero, sub_zero] using h
+
+end PoleSum
+
 /-! ### The sorry leaves: Vélu's theorem -/
 
 /-- **SORRY LEAF (general Weierstrass geometry), cut 2026-07-26 out of
@@ -466,34 +688,66 @@ theorem velu_isElliptic (S : Finset W.Point) (hS : IsPointSubgroup S)
     h0, map_zero] at hne
   exact hne rfl
 
-/-- **Vélu's theorem, part 2: the image lies on the quotient curve** (SORRY
-LEAF, cut 2026-07-25 out of `exists_quotient_isogeny_of_odd_prime_card`).
+/-- **Vélu's theorem, part 2a: the quotient equation in pole form** (SORRY LEAF,
+cut 2026-07-26 out of `velu_equation`, whose first half — the passage from the
+group-law sums to Vélu's rational functions — is now PROVEN in `velu_coordX_eq`
+and `velu_coordY_eq`).
+
+What remains is the SECOND half of the classical route: verify the quotient
+equation as an identity of rational functions in `x, y` modulo the equation of
+`W`, for
+
+  `X = x + ½ Σ_{Q ∈ S} [t_Q/(x − x_Q) + u_Q/(x − x_Q)²]`,
+  `Y = y − ½ Σ_{Q ∈ S} [u_Q(2y + a₁x + a₃)/(x − x_Q)³ + … ]`
+
+(see `veluPoleX`, `veluPoleY`; the sums may run over all of `S` because both
+summands vanish at the point at infinity). Kohel's thesis §2.4 carries out the
+verification in this normalisation; Washington, *Elliptic Curves*, ch. 12 does
+`char ≠ 2, 3`.
+
+**The subgroup hypothesis is essential, and the pole form does not by itself
+carry it.** Checked numerically (PARI/GP, curve `11a3` over `𝔽₁₀₀₉`, kernel of
+order `5`): with the true kernel all `1015` points outside it satisfy the
+quotient equation, whereas for the `±`-stable but non-subgroup set `{0, ±Q}`
+built from the same generator — for which the formulas above are equally well
+defined — EVERY one of the `1017` points fails it. So a proof must consume
+closure of `S` under addition somewhere. The two places the classical argument
+does are (i) `S`-invariance of `X` and `Y`, now available in this file as
+`veluCoordX_add_mem` and `veluCoordY_add_mem`, and (ii) cancellation of the
+principal part at each `x_Q`, which ties the pole at `Q` to the values of the
+OTHER summands at `x_Q`.
+
+The Vélu coefficients are `t = ½ Σ_{Q ∈ S} t_Q` and `w = ½ Σ_{Q ∈ S} w_Q` with
+`w_Q = u_Q + x_Q t_Q`, so `veluUTerm` and `veluTTerm` are exactly the data of
+`veluCurve W S` — see `veluT`, `veluW`, `veluModel`. -/
+theorem velu_equation_pole (S : Finset W.Point) (_hS : IsPointSubgroup S)
+    (_hodd : Odd S.card) {P : W.Point} (_hP : P ∉ S) :
+    (W.veluCurve S).Equation
+      (veluPointX P + (2 : F)⁻¹ * ∑ Q ∈ S, veluPoleX W (veluPointX P) Q)
+      (veluPointY P + (2 : F)⁻¹ * ∑ Q ∈ S, veluPoleY W (veluPointX P) (veluPointY P) Q) :=
+  sorry
+
+/-- **Vélu's theorem, part 2: the image lies on the quotient curve** (PROVEN
+2026-07-26 over the single arithmetic leaf `velu_equation_pole`).
 
 For a finite subgroup `S` of odd order in `W.Point` and a point `P ∉ S`, the
 Vélu coordinates `X(P) = x(P) + Σ_{Q ∈ S ∖ 0} (x(P + Q) − x(Q))` and
 `Y(P) = y(P) + Σ_{Q ∈ S ∖ 0} (y(P + Q) − y(Q))` satisfy the equation of
 `veluCurve W S`.
 
-Route. This is the computational core of Vélu 1971. In the classical
-presentation one first shows that the group-law sums equal the rational
-functions
+The proof rewrites the two group-law sums into Vélu's rational functions —
+`velu_coordX_eq` and `velu_coordY_eq`, both PROVEN above out of the `±`-paired
+addition law — and appeals to `velu_equation_pole` for the remaining
+rational-function verification.
 
-  `X = x + Σ_{Q ∈ S₀} [t_Q/(x − x_Q) + u_Q/(x − x_Q)²]`,
-  `Y = y − Σ_{Q ∈ S₀} [u_Q(2y + a₁x + a₃)/(x − x_Q)³ + …]`
-
-over a set `S₀` of representatives of `S ∖ {0}` modulo `±` (that identity is
-itself the addition law applied to `P + Q` and `P − Q` and summed), and then
-verifies the quotient equation as an identity of rational functions in `x, y`
-modulo the equation of `W`, using that the `x_Q` are roots of the division
-polynomial of `S`. Kohel's thesis §2.4 carries out the verification in this
-normalisation; Washington, *Elliptic Curves*, ch. 12 does `char ≠ 2, 3`.
-
-Note `P ∉ S` is exactly what makes every summand defined: `P + Q = 0` would
-force `P = −Q ∈ S`. -/
-theorem velu_equation (S : Finset W.Point) (_hS : IsPointSubgroup S)
-    (_hodd : Odd S.card) {P : W.Point} (_hP : P ∉ S) :
-    (W.veluCurve S).Equation (W.veluCoordX S P) (W.veluCoordY S P) :=
-  sorry
+Note `P ∉ S` is exactly what makes every summand defined: `x(P) = x(Q)` would
+force `P = ±Q ∈ S` (this is `velu_X_ne`), and `P + Q = 0` would force
+`P = −Q ∈ S`. -/
+theorem velu_equation (S : Finset W.Point) (hS : IsPointSubgroup S)
+    (hodd : Odd S.card) {P : W.Point} (hP : P ∉ S) :
+    (W.veluCurve S).Equation (W.veluCoordX S P) (W.veluCoordY S P) := by
+  rw [velu_coordX_eq hS hP, velu_coordY_eq hS hP]
+  exact W.velu_equation_pole S hS hodd hP
 
 /-- The Vélu image of a point as a point of the quotient curve: the points of the
 kernel `S` go to `0`, and every other point goes to its Vélu coordinates.
