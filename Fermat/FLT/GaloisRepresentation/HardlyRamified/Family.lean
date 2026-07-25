@@ -4671,10 +4671,15 @@ lemma cycDiagRep_apply {ℓ : ℕ} [Fact ℓ.Prime] {A : Type*} [CommRing A]
     cycDiagRep hcont b g = cycDiagEnd b (cycUnitChar ℓ A g) := rfl
 
 /-- **The `ℓ`-adic cyclotomic character dies on inertia away from `ℓ`**
-(sorry node; the arithmetic leaf of the explicit Eisenstein member): at
+(PROVEN 2026-07-25 by delegation to
+`Modularity.cyclotomicCharacter_map_eq_one_of_mem_localInertiaGroup` of
+`Fermat/FLT/Modularity/Interface.lean`, which is this statement in the
+same place spelling with the section prime `p` playing the role of `ℓ`
+and the inequality written `p ≠ q`): at
 a rational prime `q ≠ ℓ` the `ℓ`-adic cyclotomic character kills the
 image in `G_ℚ` of the local inertia at `q` — the extensions
-`ℚ_q(μ_{ℓ^n})/ℚ_q` are unramified for `q ≠ ℓ`. Intended proof: the
+`ℚ_q(μ_{ℓ^n})/ℚ_q` are unramified for `q ≠ ℓ`. Proof there (as
+anticipated here): the
 inertia analogue of the PROVEN Frobenius computation
 `adicArithFrob_rootsOfUnity_pow_of_ne` above, sharing all its
 infrastructure: an `ℓ^n`-th root of unity `ζ` is integral over the
@@ -4688,7 +4693,7 @@ element fixes the residue field of the integral closure, so it fixes
 `ℓ`-adic continuity (`PadicInt.ext_of_toZModPow`) concludes. This is
 the general-`(q, ℓ)` place-spelled form of the at-`2` statement
 `cyclotomicCharacter_eq_one_of_mem_inertia_two` above (which is
-spelled over `ℚ_[2]`/`Z2bar` instead and stays a separate leaf). -/
+spelled over `ℚ_[2]`/`Z2bar` instead and is separately PROVEN). -/
 theorem cyclotomicCharacter_eq_one_of_mem_localInertiaGroup_of_ne
     {ℓ q : ℕ} [Fact ℓ.Prime] (hq : q.Prime) (hqℓ : q ≠ ℓ)
     (σ : Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ
@@ -4697,7 +4702,8 @@ theorem cyclotomicCharacter_eq_one_of_mem_localInertiaGroup_of_ne
     cyclotomicCharacter (AlgebraicClosure ℚ) ℓ
       ((Field.absoluteGaloisGroup.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
         hq.toHeightOneSpectrumRingOfIntegersRat)) σ).toRingEquiv) = 1 :=
-  sorry
+  Modularity.cyclotomicCharacter_map_eq_one_of_mem_localInertiaGroup
+    (p := ℓ) hq (Ne.symm hqℓ) hσ
 
 /-- The Eisenstein member is unramified at every `q ≠ ℓ` (PROVEN over
 the arithmetic leaf `cyclotomicCharacter_eq_one_of_mem_localInertiaGroup_of_ne`:
