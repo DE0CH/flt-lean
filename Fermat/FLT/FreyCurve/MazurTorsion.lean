@@ -3,10 +3,19 @@ MazurTorsion.lean — own work for the Fermat project (not vendored from the
 FLT project).
 
 Decomposition of `FreyPackage.mazur` (irreducibility of the mod-`p` Galois
-representation on the `p`-torsion of the Frey curve) into two explicit
-sorry nodes, following Serre's argument (Duke Math. J. 54 (1987), §4.1):
+representation on the `p`-torsion of the Frey curve) into two nodes,
+following Serre's argument (Duke Math. J. 54 (1987), §4.1).
 
-* `FreyPackage.exists_torsion_embedding_of_not_isIrreducible` (sorry node):
+LABEL AUDIT (bookkeeping, 2026-07-25): the two nodes below, and
+`card_torsionBy_dvd_of_charP` further down, no longer carry a `sorry` in
+their own bodies — Lean reports no `declaration uses 'sorry'` warning for
+any of them, so they are NOT dispatchable leaves and their old "(sorry
+node)" labels were manufacturing phantom work.  (This file does still
+have 26 genuinely sorried declarations; those keep their labels.  Note
+these three may still be transitively open through the leaves they
+consume — "no direct sorry" is the claim here, not full cleanliness.)
+
+* `FreyPackage.exists_torsion_embedding_of_not_isIrreducible` (no direct sorry):
   **Serre's reducible-case analysis.** If the mod-`p` representation of the
   Frey curve `E` is not irreducible, then there is a Galois-stable line in
   `E[p]` (the `p`-torsion is `2`-dimensional over `𝔽_p`, so a proper nonzero
@@ -31,7 +40,7 @@ sorry nodes, following Serre's argument (Duke Math. J. 54 (1987), §4.1):
   an existential over Weierstrass models; a later layer must construct
   quotients by finite rational subgroups and split this node accordingly.
 
-* `WeierstrassCurve.mazur_classification` (sorry node): **Mazur's torsion
+* `WeierstrassCurve.mazur_classification` (no direct sorry): **Mazur's torsion
   theorem** (Mazur, 1977/1978), stated faithfully: the torsion subgroup of
   the rational points of an elliptic curve over `ℚ` is isomorphic to one of
   the fifteen groups `ℤ/n` for `n ∈ {1, …, 10, 12}` or `ℤ/2 × ℤ/2m` for
@@ -3612,7 +3621,7 @@ seams:
     the CHARACTERISTIC-`p` content): ordinarity makes `Ẽ(𝔽̄_p)[p]` of
     order exactly `p`. Its residual gap is now the single
     local-field-free leaf
-    * `card_torsionBy_dvd_of_charP` (sorry node): over an
+    * `card_torsionBy_dvd_of_charP` (no direct sorry): over an
       algebraically closed field in which `p` vanishes, the geometric
       `p`-torsion of an elliptic curve has order dividing `p` —
       inseparability of the multiplication-by-`p` isogeny. The
