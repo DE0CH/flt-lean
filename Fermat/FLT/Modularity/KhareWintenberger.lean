@@ -441,8 +441,394 @@ attribute [instance] MoretBaillySeed.fieldE₀
   MoretBaillySeed.moduleFreeO₀
   MoretBaillySeed.isModuleTopologyO₀
 
-/-- **Moret–Bailly base production** (sorry node — Taylor 2002,
-Theorem B): for the irreducible hardly ramified residual
+/-! #### The Moret–Bailly cut behind the seed (DECOMPOSED 2026-07-24)
+
+`exists_moretBailly_seed_of_five_le` is Taylor 2002 Theorem B, whose
+classical proof is a chain of three quite different inputs. The cut
+below separates them at the literature's own joints and makes the seed
+a PROVEN assembly:
+
+* **the geometric joint** (`exists_hilbertBlumenthalPoint_of_five_le`,
+  sorried): Moret–Bailly's existence theorem for global points with
+  prescribed local conditions (*Groupes de Picard et problèmes de
+  Skolem II*, Ann. Sci. ÉNS 22 (1989), Thm 1.3 — a geometrically
+  irreducible variety over `ℚ` with points over `ℝ` and over `ℚ_q`
+  for `q` in a finite set acquires a point over a totally real field
+  `F` realizing those local conditions), applied to the TWISTED
+  HILBERT–BLUMENTHAL moduli variety attached to `ρbar` and to an
+  auxiliary dihedral mod-`p` level structure (Taylor 2002, §2). Its
+  output is packaged as a `HilbertBlumenthalPoint`: the compatible
+  system of the Hilbert–Blumenthal abelian variety `A/F` with real
+  multiplication, in the two characteristics that matter — the
+  `ℓ`-adic member residually `ρbar|_{G_F}` (the `ℓ`-torsion of `A` IS
+  the twist datum) and the `p`-adic member residually DIHEDRAL (the
+  `p`-torsion is induced from a character of a quadratic extension,
+  the second moduli condition).
+* **the residual-surjectivity joint** (the same leaf's `hrestr`
+  conjunct): Moret–Bailly's `F` is chosen linearly disjoint from the
+  splitting field of `ρbar`, so restriction to `G_F` PRESERVES THE
+  IMAGE of `ρbar` — the sharp, pin-stateable form of the avoidance
+  condition. The irreducibility conjunct of Theorem B is then no
+  longer assumed: it is PROVEN from image preservation by
+  `isIrreducible_map_of_range_surjective` below.
+* **the automorphic joint**
+  (`exists_heckeEigensystem_of_hilbertBlumenthalPoint`, sorried): the
+  compatible system of `A` is the Hecke eigensystem of a Hilbert
+  newform `g` of parallel weight `2` over `F`. Classically: the
+  residually dihedral mod-`p` representation is modular (Hecke theta
+  series / converse theorems, transported by Jacquet–Langlands), and
+  modularity lifting at `p` in the residually dihedral case (Taylor
+  2002 §5, following Wiles and Skinner–Wiles) promotes this to the
+  `p`-adic Tate module, hence — the two members lying in ONE
+  compatible system with coefficient field `D` — to the whole system.
+
+Soundness audit (2026-07-24): both leaves keep the full hypothesis
+package of the parent (an irreducible hardly ramified mod-`ℓ`
+representation with `ℓ ≥ 5`), which is classically unsatisfiable
+(headline below), so each is classically true; the non-vacuous
+intended discharge is the classical construction in its docstring.
+
+ROUTE AUDIT — the odd-prime dichotomy is NOT available here
+(2026-07-24). The shared discharge
+`not_isIrreducible_of_isHardlyRamified_of_odd`
+(`Modularity/Interface.lean`) used by the descent leaves of pillar 3
+CANNOT be used for this leaf or its children, in either of two
+independent ways: (i) IMPORT — `Interface.lean` imports THIS module,
+so the dependency would be a cycle at the module level; (ii) PROOF —
+at `ℓ ≥ 5` that dichotomy is discharged by the headline
+`not_isIrreducible_of_isHardlyRamified_of_five_le` of this very
+module, whose PROVEN assembly consumes pillar β, hence this leaf, so
+the discharge would be circular at the declaration level. The
+classical route is therefore preserved: these leaves must be proven by
+the independent Moret–Bailly/Taylor construction recorded above.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): as
+everywhere in this module, neither leaf may be proven through
+`Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+
+/-- **The Hilbert–Blumenthal point** (interface structure): the
+geometric output of the Moret–Bailly step over the totally real base
+`F` — the strictly compatible system of Frobenius characteristic
+polynomials of the Hilbert–Blumenthal abelian variety `A/F` with real
+multiplication produced there, recorded in the two characteristics the
+argument uses.
+
+Field provenance (classically `A/F` is the point of the twisted
+Hilbert–Blumenthal moduli variety supplied by Moret–Bailly, `D` its
+real-multiplication field, `P w` the characteristic polynomial of
+Frobenius at `w` on the Tate modules):
+
+* `bad`, `D`, `P` — the finite bad set (the conductor of `A` and the
+  places over `2`, `p`, `ℓ`), the coefficient field of the system, and
+  the system itself.
+* `O₀`, `σ`, `ψDℓ`, `ιO₀`, `matchℓ` — the `ℓ`-adic member on a stable
+  lattice over a local ring finite free over `ℤ_ℓ` (the `λ`-adic Tate
+  module of `A`, `λ | ℓ`, Carayol-normalized), matched with the system
+  inside `ℚ̄_ℓ`.
+* `π₀`, `residualℓ` — the FIRST moduli condition: the `ℓ`-torsion of
+  `A` realizes `ρbarF = ρbar|_{G_F}`, recorded at the level of
+  Frobenius characteristic polynomials.
+* `p`, `p_ne_ℓ`, `C`, `τp`, `ψDp`, `ιC`, `matchp` — the auxiliary
+  prime and the `p`-adic member of the SAME system, matched inside
+  `ℚ̄_p`; this is the joint through which modularity at `p` transfers
+  to `ℓ`.
+* `kp`, `ρbarp`, `πp`, `residualp`, `irreduciblep`, `L`, `finrankL`,
+  `dihedralp` — the SECOND moduli condition: the residual mod-`p`
+  representation is irreducible over `F` but becomes reducible over a
+  quadratic extension `L/F`, i.e. is induced from a character of
+  `G_L` (dihedral). This is exactly the hypothesis the converse
+  theorems and the residually dihedral lifting theorem consume.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): this
+interface may only be inhabited by the independent Moret–Bailly
+construction — never through `Family.lean`, `Lift.lean`, or
+`Modularity/Interface.lean`. -/
+structure HilbertBlumenthalPoint (ℓ : ℕ) [Fact ℓ.Prime]
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (ρbarF : GaloisRep F k W) : Type (u + 1) where
+  /-- The finite bad set: the conductor of `A` and the places over
+  `2`, `p`, `ℓ`. -/
+  bad : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F))
+  /-- The coefficient field of the compatible system (classically the
+  real-multiplication field of `A`). -/
+  D : Type u
+  [fieldD : Field D]
+  [numberFieldD : NumberField D]
+  /-- The Frobenius characteristic polynomials of the system. -/
+  P : HeightOneSpectrum (NumberField.RingOfIntegers F) → Polynomial D
+  /-- The `ℓ`-adic coefficient ring: classically a Carayol-normalized
+  subring of the integers of `D_λ`, `λ | ℓ`. -/
+  O₀ : Type u
+  [commRingO₀ : CommRing O₀]
+  [topologicalSpaceO₀ : TopologicalSpace O₀]
+  [isTopologicalRingO₀ : IsTopologicalRing O₀]
+  [algebraO₀ : Algebra ℤ_[ℓ] O₀]
+  [isLocalRingO₀ : IsLocalRing O₀]
+  [moduleFiniteO₀ : Module.Finite ℤ_[ℓ] O₀]
+  [moduleFreeO₀ : Module.Free ℤ_[ℓ] O₀]
+  [isModuleTopologyO₀ : IsModuleTopology ℤ_[ℓ] O₀]
+  /-- The `ℓ`-adic member: the `λ`-adic Tate module of `A` on a stable
+  lattice. -/
+  σ : GaloisRep F O₀ (Fin 2 → O₀)
+  /-- The chosen place of `D` over `ℓ`, as an embedding into `ℚ̄_ℓ`. -/
+  ψDℓ : D →+* AlgebraicClosure ℚ_[ℓ]
+  /-- The coefficient embedding of the `ℓ`-adic member. -/
+  ιO₀ : O₀ →+* AlgebraicClosure ℚ_[ℓ]
+  ιO₀_injective : Function.Injective ιO₀
+  /-- The `ℓ`-adic member belongs to the system. -/
+  matchℓ : ∀ w ∉ bad, (σ.charFrob w).map ιO₀ = (P w).map ψDℓ
+  /-- The reduction map onto the residual coefficient field. -/
+  π₀ : O₀ →+* k
+  /-- FIRST moduli condition: the `ℓ`-torsion of `A` realizes
+  `ρbar|_{G_F}`. -/
+  residualℓ : ∀ w ∉ bad, (σ.charFrob w).map π₀ = ρbarF.charFrob w
+  /-- The auxiliary prime `p` of the dihedral level structure. -/
+  p : ℕ
+  [pfact : Fact p.Prime]
+  p_ne_ℓ : p ≠ ℓ
+  /-- The `p`-adic coefficient ring of the same system. -/
+  C : Type u
+  [commRingC : CommRing C]
+  [topologicalSpaceC : TopologicalSpace C]
+  [isTopologicalRingC : IsTopologicalRing C]
+  [algebraC : Algebra ℤ_[p] C]
+  [isLocalRingC : IsLocalRing C]
+  [moduleFiniteC : Module.Finite ℤ_[p] C]
+  [moduleFreeC : Module.Free ℤ_[p] C]
+  [isModuleTopologyC : IsModuleTopology ℤ_[p] C]
+  /-- The `p`-adic member: the `p`-adic Tate module of `A` on a stable
+  lattice. -/
+  τp : GaloisRep F C (Fin 2 → C)
+  /-- The chosen place of `D` over `p`, as an embedding into `ℚ̄_p`. -/
+  ψDp : D →+* AlgebraicClosure ℚ_[p]
+  /-- The coefficient embedding of the `p`-adic member. -/
+  ιC : C →+* AlgebraicClosure ℚ_[p]
+  ιC_injective : Function.Injective ιC
+  /-- The `p`-adic member belongs to the SAME system: this is the
+  strict compatibility that transfers modularity from `p` to `ℓ`. -/
+  matchp : ∀ w ∉ bad, (τp.charFrob w).map ιC = (P w).map ψDp
+  /-- The residual coefficient field at `p`. -/
+  kp : Type u
+  [fieldkp : Field kp]
+  [finitekp : Finite kp]
+  [topologicalSpacekp : TopologicalSpace kp]
+  [discreteTopologykp : DiscreteTopology kp]
+  /-- The residual mod-`p` representation (the `p`-torsion of `A`). -/
+  ρbarp : GaloisRep F kp (Fin 2 → kp)
+  /-- The reduction map at `p`. -/
+  πp : C →+* kp
+  /-- The `p`-adic member reduces to `ρbarp`. -/
+  residualp : ∀ w ∉ bad, (τp.charFrob w).map πp = ρbarp.charFrob w
+  /-- SECOND moduli condition, part one: the `p`-torsion is
+  irreducible over `F`. -/
+  irreduciblep : ρbarp.IsIrreducible
+  /-- The quadratic extension of the dihedral level structure. -/
+  L : Type u
+  [fieldL : Field L]
+  [algebraL : Algebra F L]
+  finrankL : Module.finrank F L = 2
+  /-- SECOND moduli condition, part two: the `p`-torsion becomes
+  reducible over `L`, i.e. is induced from a character of `G_L`
+  (dihedral) — the input of the converse theorems. -/
+  dihedralp : ¬ (ρbarp.map (algebraMap F L)).IsIrreducible
+
+attribute [instance] HilbertBlumenthalPoint.fieldD
+  HilbertBlumenthalPoint.numberFieldD
+  HilbertBlumenthalPoint.commRingO₀
+  HilbertBlumenthalPoint.topologicalSpaceO₀
+  HilbertBlumenthalPoint.isTopologicalRingO₀
+  HilbertBlumenthalPoint.algebraO₀
+  HilbertBlumenthalPoint.isLocalRingO₀
+  HilbertBlumenthalPoint.moduleFiniteO₀
+  HilbertBlumenthalPoint.moduleFreeO₀
+  HilbertBlumenthalPoint.isModuleTopologyO₀
+
+/-- **The geometric joint of Theorem B** (sorry node — Moret–Bailly
+1989 + the twisted Hilbert–Blumenthal moduli interpretation, Taylor
+2002 §2): for the irreducible hardly ramified residual representation
+`ρbar` at `ℓ ≥ 5` there is a totally real number field `F`, Galois
+over `ℚ`, such that
+
+* restriction to `G_F` PRESERVES THE IMAGE of `ρbar` (`hrestr`: every
+  `ρbar g` is already `ρbar|_{G_F} h` for some `h`) — the
+  pin-stateable form of "`F` is linearly disjoint from the splitting
+  field of `ρbar`", which is how Moret–Bailly's avoidance set is
+  chosen; and
+* the twisted Hilbert–Blumenthal moduli variety has an `F`-point, i.e.
+  there is a `HilbertBlumenthalPoint`.
+
+Classically: the moduli variety of Hilbert–Blumenthal abelian
+varieties with real multiplication by a fixed totally real `D`, with
+`ℓ`-level structure twisted so that an `F`-point is an abelian variety
+`A/F` whose `ℓ`-torsion realizes `ρbar|_{G_F}`, and with an auxiliary
+`p`-level structure imposing that `A[p]` be induced from a character,
+is geometrically irreducible (Taylor 2002 §2, via Shimura's theory of
+Hilbert–Blumenthal moduli) and has points over `ℝ` and over `ℚ_q` for
+`q` in the finite set of relevant primes (the local conditions at `2`,
+`3`, `p`, `ℓ` being arranged by hand). Moret–Bailly's theorem
+(*Groupes de Picard et problèmes de Skolem II*, Ann. Sci. ÉNS 22
+(1989); the form used is Taylor 2002 Theorem G / Prop. 2.1) then
+produces the totally real `F` — Galois over `ℚ`, and linearly disjoint
+from any prescribed finite extension, whence `hrestr` — together with
+the desired `F`-point.
+
+PIN AUDIT (2026-07-24): the mathlib pin has NO Moret–Bailly material
+(no `Skolem`/`MoretBailly` declarations, no incompressible-neighborhood
+existence theorem on Picard-scheme torsors) and no number-field weak
+approximation in the required form, and no Hilbert–Blumenthal moduli;
+a further decomposition of THIS leaf would have to begin by building
+weak approximation on the twisted Hilbert modular variety, i.e. by
+building algebraic geometry that the pin does not carry.
+
+SOUNDNESS AUDIT (both ways, 2026-07-24): (i) direct — this is Taylor
+2002 §2 with the Galois refinement of §1, a true nonvacuous theorem
+whose proof nowhere presupposes Serre's conjecture; (ii) collapse —
+the hypothesis set (an irreducible hardly ramified mod-`ℓ`
+representation, `ℓ ≥ 5`) is classically unsatisfiable (headline
+below), so the statement is also vacuously sound.
+
+ROUTE AUDIT: the odd-prime dichotomy is unavailable here — see the
+section docstring above (import cycle AND declaration cycle).
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): must be
+proven by the independent Moret–Bailly construction — never through
+`Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+theorem exists_hilbertBlumenthalPoint_of_five_le
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat) :
+    ∃ (F : Type u) (_ : Field F) (_ : NumberField F)
+      (_ : NumberField.IsTotallyReal F) (_ : IsGalois ℚ F),
+      (∀ g : Field.absoluteGaloisGroup ℚ,
+        ∃ h : Field.absoluteGaloisGroup F,
+          (ρbar.map (algebraMap ℚ F)) h = ρbar g) ∧
+      Nonempty (HilbertBlumenthalPoint ℓ F (ρbar.map (algebraMap ℚ F))) :=
+  sorry
+
+/-- **Irreducibility descends along an image-preserving restriction**
+(PROVEN glue): if every value `ρbar g` of a representation of `Γ K` is
+already a value of its restriction `ρbar|_{Γ L}` along `f : K →+* L`,
+then irreducibility over `K` implies irreducibility over `L`.
+
+This is the formal content of the Moret–Bailly avoidance condition:
+`F` is chosen linearly disjoint from the splitting field of `ρbar`, so
+`G_F` still surjects onto the image of `ρbar`, and a subspace is
+stable under the image iff it is stable under the restricted
+representation — irreducibility is a property of the image alone. -/
+theorem isIrreducible_map_of_range_surjective
+    {K : Type*} [Field K] [NumberField K] {L : Type*} [Field L]
+    [NumberField L]
+    {k : Type*} [Field k] [TopologicalSpace k]
+    {W : Type*} [AddCommGroup W] [Module k W]
+    {ρbar : GaloisRep K k W} (f : K →+* L)
+    (hrestr : ∀ g : Field.absoluteGaloisGroup K,
+      ∃ h : Field.absoluteGaloisGroup L, (ρbar.map f) h = ρbar g)
+    (hirr : ρbar.IsIrreducible) :
+    (ρbar.map f).IsIrreducible := by
+  obtain ⟨hnt, hsub⟩ :=
+    (Slop.OddRep.isIrreducible_iff_forall ρbar.toRepresentation).mp hirr
+  refine (Slop.OddRep.isIrreducible_iff_forall
+    (ρbar.map f).toRepresentation).mpr ⟨hnt, fun V hV => hsub V ?_⟩
+  intro g v hv
+  obtain ⟨h, hh⟩ := hrestr g
+  have hveq : ρbar.toRepresentation g v = (ρbar.map f).toRepresentation h v := by
+    rw [show (ρbar.map f).toRepresentation h = (ρbar.map f) h from rfl,
+      show ρbar.toRepresentation g = ρbar g from rfl, hh]
+  rw [hveq]
+  exact hV h v hv
+
+/-- **The automorphic joint of Theorem B** (sorry node — dihedral
+residual modularity + modularity lifting at `p`, Taylor 2002 §5): the
+compatible system carried by a `HilbertBlumenthalPoint` is the Hecke
+eigensystem of a Hilbert newform over `F`; i.e. there is a number
+field `E₀` (the Hecke field), a family of Hecke polynomials `hecke₀`,
+and a place `ψ₀` of `E₀` over `ℓ`, agreeing with the system's own
+polynomials `P` inside `ℚ̄_ℓ` away from a finite set.
+
+Classically, in three steps: (1) the residual mod-`p` representation
+`ρbarp` of the point is irreducible but induced from a character of
+`G_L` for the quadratic `L/F` (`irreduciblep`, `dihedralp`), so it is
+attached to a Hecke theta series of `L` — modular, by the converse
+theorems, transported to the totally real `F` by Jacquet–Langlands;
+(2) the modularity lifting theorem in the residually dihedral case
+(Taylor 2002 §5, following Wiles and Skinner–Wiles) promotes this to
+the `p`-adic member `τp` of the system, which is therefore attached to
+a Hilbert newform `g` of parallel weight `2` over `F`, with Hecke
+field `E₀`; (3) `τp` and `σ` lie in ONE strictly compatible system
+with coefficient field `D` (`matchp`, `matchℓ`), and Carayol's
+local-global compatibility at unramified places identifies the
+Frobenius polynomials of `g` with those of the system away from the
+bad set — the conclusion below, stated for `P` itself so that the
+transfer to `σ` is pure algebra, done in the parent assembly.
+
+SOUNDNESS AUDIT (both ways, 2026-07-24): (i) direct — for the intended
+instantiation (a point produced by
+`exists_hilbertBlumenthalPoint_of_five_le`) this is Taylor 2002 §5;
+for an abstract point the abstract-quantification caveat of pillar β
+applies (that the compatible system really is the system of an abelian
+variety with real multiplication lives in this citation), and (ii)
+collapse — the hypothesis set is classically unsatisfiable (headline
+below), so the statement is classically true for every package.
+
+ROUTE AUDIT: the odd-prime dichotomy is unavailable here — see the
+section docstring above (import cycle AND declaration cycle).
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
+discharge through `Family.lean`, `Lift.lean`, or
+`Modularity/Interface.lean`. -/
+theorem exists_heckeEigensystem_of_hilbertBlumenthalPoint
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+    (F : Type u) [Field F] [NumberField F]
+    (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
+    (pt : HilbertBlumenthalPoint ℓ F (ρbar.map (algebraMap ℚ F))) :
+    ∃ (E₀ : Type u) (_ : Field E₀) (_ : NumberField E₀)
+      (hecke₀ : HeightOneSpectrum (NumberField.RingOfIntegers F) →
+        Polynomial E₀)
+      (ψ₀ : E₀ →+* AlgebraicClosure ℚ_[ℓ])
+      (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F))),
+      ∀ w ∉ S, (pt.P w).map pt.ψDℓ = (hecke₀ w).map ψ₀ :=
+  sorry
+
+/-- **Moret–Bailly base production** (Taylor 2002, Theorem B;
+DECOMPOSED 2026-07-24 — now a PROVEN assembly over the two joints of
+the section above): for the irreducible hardly ramified residual
 representation `ρbar` at `ℓ ≥ 5`, there is a totally real number
 field `F`, Galois over `ℚ`, over which `ρbar` stays irreducible and
 acquires a modular congruent companion — a `MoretBaillySeed`.
@@ -467,13 +853,15 @@ weight `2` over `F`; its `λ`-adic representation at `λ | ℓ`, on a
 Carayol-normalized stable lattice, is the seed `σ`, residually
 `ρbar|_{G_F}`.
 
-PIN AUDIT (2026-07-24): the mathlib pin has NO Moret–Bailly material
-and no number-field weak approximation in the required form (no
-`Skolem`/`MoretBailly` declarations; `Mathlib/NumberTheory/
-NumberField/` carries no incompressible-neighborhood existence
-theorem on Picard-scheme torsors), so this leaf is a sharply-stated
-citation node; a future decomposition would begin with weak
-approximation on the twisted Hilbert modular variety.
+PIN AUDIT (2026-07-24, restated after the decomposition): the mathlib
+pin has NO Moret–Bailly material and no number-field weak
+approximation in the required form (no `Skolem`/`MoretBailly`
+declarations; `Mathlib/NumberTheory/NumberField/` carries no
+incompressible-neighborhood existence theorem on Picard-scheme
+torsors), and no Hilbert–Blumenthal moduli; that unbuildable depth is
+now isolated in the GEOMETRIC leaf
+`exists_hilbertBlumenthalPoint_of_five_le`, whose own pin audit
+records where a further decomposition would have to start.
 
 SOUNDNESS AUDIT (both ways, 2026-07-24): (i) direct — this is Taylor
 2002 Theorem B verbatim (with the Galois refinement of §1 and the
@@ -483,6 +871,32 @@ residually dihedral lifting) nowhere presupposes Serre's conjecture;
 (ii) collapse — the hypothesis set (an irreducible hardly ramified
 mod-`ℓ` representation, `ℓ ≥ 5`) is classically unsatisfiable
 (headline below), so the statement is also vacuously sound.
+
+ROUTE AUDIT (2026-07-24): the shared odd-prime dichotomy
+`not_isIrreducible_of_isHardlyRamified_of_odd` — the discharge used by
+the descent leaves of pillar 3 — is NOT available for this node or its
+children: `Modularity/Interface.lean`, its home, IMPORTS this module,
+and at `ℓ ≥ 5` it is itself discharged by this module's headline
+`not_isIrreducible_of_isHardlyRamified_of_five_le`, whose assembly
+consumes this very node. Both the import graph and the declaration
+graph forbid it, so the classical route recorded above is preserved
+verbatim as the only sound discharge.
+
+ASSEMBLY (2026-07-24, PROVEN): the geometric joint
+(`exists_hilbertBlumenthalPoint_of_five_le` — Moret–Bailly 1989 + the
+twisted Hilbert–Blumenthal moduli interpretation: the totally real
+Galois `F`, the image-preserving restriction `hrestr`, and the
+`HilbertBlumenthalPoint` carrying the compatible system of `A/F` with
+its two moduli conditions) + the automorphic joint
+(`exists_heckeEigensystem_of_hilbertBlumenthalPoint` — dihedral
+residual modularity and modularity lifting at `p`, Taylor 2002 §5:
+the system is a Hilbert-newform Hecke eigensystem), glued by
+(a) PROVING the irreducibility conjunct from image preservation
+through `isIrreducible_map_of_range_surjective` — it is no longer
+asserted anywhere — and (b) transporting the eigensystem match along
+the point's own `matchℓ` over the united bad set. Those two leaves are
+the residual sorries of this node; the circularity guard above binds
+both.
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): must be
 proven by the independent Moret–Bailly construction — never through
@@ -510,8 +924,31 @@ theorem exists_moretBailly_seed_of_five_le
     ∃ (F : Type u) (_ : Field F) (_ : NumberField F)
       (_ : NumberField.IsTotallyReal F) (_ : IsGalois ℚ F)
       (_ : (ρbar.map (algebraMap ℚ F)).IsIrreducible),
-      Nonempty (MoretBaillySeed ℓ F (ρbar.map (algebraMap ℚ F))) :=
-  sorry
+      Nonempty (MoretBaillySeed ℓ F (ρbar.map (algebraMap ℚ F))) := by
+  classical
+  -- (i) the geometric joint: the totally real Galois base `F`, the
+  -- image-preserving restriction, and the Hilbert–Blumenthal point
+  obtain ⟨F, hF, hNF, hFtr, hFgal, hrestr, ⟨pt⟩⟩ :=
+    exists_hilbertBlumenthalPoint_of_five_le hℓodd hℓ5 hZinj hrank hρ hW
+      hρbar hirr π hπsurj hπ
+  -- irreducibility over `F` is PROVEN from image preservation
+  have hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible :=
+    isIrreducible_map_of_range_surjective _ hrestr hirr
+  -- (ii) the automorphic joint: the compatible system of the point is a
+  -- Hilbert-newform Hecke eigensystem
+  obtain ⟨E₀, hE₀, hNE₀, hecke₀, ψ₀, S, hsys⟩ :=
+    exists_heckeEigensystem_of_hilbertBlumenthalPoint hℓodd hℓ5 hZinj hrank
+      hρ hW hρbar hirr π hπsurj hπ F hFtr hFgal pt
+  -- glue: unite the bad sets and transport the match along `matchℓ`
+  refine ⟨F, hF, hNF, hFtr, hFgal, hirrF,
+    ⟨{ E₀ := E₀, bad₀ := pt.bad ∪ S, hecke₀ := hecke₀, O₀ := pt.O₀,
+       σ := pt.σ, ψ₀ := ψ₀, ι₀ := pt.ιO₀, ι₀_injective := pt.ιO₀_injective,
+       π₀ := pt.π₀, modular₀ := ?_, residual₀ := ?_ }⟩⟩
+  · intro w hw
+    exact (pt.matchℓ w fun h => hw (Finset.mem_union_left _ h)).trans
+      (hsys w fun h => hw (Finset.mem_union_right _ h))
+  · intro w hw
+    exact pt.residualℓ w fun h => hw (Finset.mem_union_left _ h)
 
 /-- **Modularity lifting over the totally real base** (sorry node —
 Kisin/Taylor MLT + Carayol local-global): over the Moret–Bailly base
