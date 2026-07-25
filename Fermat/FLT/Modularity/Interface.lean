@@ -5951,7 +5951,8 @@ theorem exists_etaleHopfAlgebra_of_points_embedding
         ∀ (g : Γᵥ) (y : Additive (H →ₐ[Kᵥ] Ωᵥ)), e (g • y) = g • e y := by
   classical
   haveI : Finite Y := Finite.of_injective j hj
-  -- a finite `Kᵥ`-basis of `Q`, and the finite set of all values of all points on it
+  -- a finite `Kᵥ`-basis of `Q`, and the finite set of all the values taken by
+  -- all the (finitely many) points of `Q` on that basis
   set n := Module.finrank Kᵥ Q
   set b := Module.finBasis Kᵥ Q
   set T : Set Ωᵥ := Set.range (fun p : (Q →ₐ[Kᵥ] Ωᵥ) × Fin n => p.1 (b p.2))
