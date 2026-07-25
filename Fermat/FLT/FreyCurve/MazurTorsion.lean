@@ -101,6 +101,9 @@ import Mathlib.FieldTheory.Finite.Basic
 import Mathlib.GroupTheory.SpecificGroups.Cyclic
 import Mathlib.GroupTheory.QuotientGroup.Basic
 import Mathlib.GroupTheory.Coset.Card
+-- `not_fermat_42` and the classification of primitive Pythagorean triples: the two
+-- classical inputs of the `X_1(16)` descent in `MazurSixteen.not_sextic_square`.
+import Mathlib.NumberTheory.FLT.Four
 
 @[expose] public section
 
@@ -1676,12 +1679,29 @@ order exactly `8`, `Q = 2P = (1, 1/4)` of order `4`, `T = 4P = (0,0)`;
 and the factorisation `(2n³+n⁴−1)² − 4n² = (n−1)(n+1)³(n²+1)(n²+2n−1)`
 underlying `sextic_of_param` was confirmed symbolically.
 
-**What is left.** ONE elementary leaf, not modular: `not_sextic_square`
-(a classical descent — see its docstring, which records the complete
-two-case argument and the one genuine mathlib gap it needs). The other,
-`exists_chain_coords` (pure `Affine.Point` plumbing, zero arithmetic
-content), was PROVEN on 2026-07-25 from `exists_doubling_coords` and
-`Point.X_eq_iff`.
+**Nothing is left: this cluster is sorry-free (2026-07-25).** Both leaves
+were closed by separate owners on the same day.
+
+* `exists_chain_coords` — pure `Affine.Point` plumbing, zero arithmetic
+  content, PROVEN from `exists_doubling_coords` and `Point.X_eq_iff`. The
+  trick is that `exists_doubling_coords` takes the DOUBLED point's abscissa
+  as an input rather than producing it, so the chain is walked downwards
+  `T = 4P → Q = 2P → P → R` and no two coordinate namings ever need
+  reconciling. `addOrderOf R = 16` turns out to be unused — only
+  `R + R = P ≠ 0` — with everything else following from `addOrderOf P = 8`.
+* `not_sextic_square` — PROVEN by the classical two-case descent recorded
+  in its docstring. Its one genuine mathlib gap, Fermat's *other* quartic
+  theorem `x⁴ − y⁴ = z² → xyz = 0`, is built here as
+  `sq_ne_quartic_sub_quartic`, since mathlib carries only `not_fermat_42`.
+  In the odd branch the three pairwise-coprime factors give `m² − k² = ±e²`
+  and `m² + k² = c²`, and the Pythagorean identity turns that directly into
+  `c⁴ − e⁴ = (2mk)²` — so the intermediate `a⁴ + b⁴ = 2c² → a² = b²` the
+  original sketch went through is not needed, it reduces to the same
+  quartic theorem anyway.
+
+So `not_halved_order_eight_point` — whose recorded audit claimed it needed
+the genus-2 curve `X_1(16)` and Chabauty — is now fully proven by
+elementary means.
 -/
 
 namespace MazurSixteen
@@ -2016,8 +2036,454 @@ theorem exists_chain_coords (E : WeierstrassCurve ℚ) [E.IsElliptic]
   exact ⟨θ, xR, yR, lR, xP, yP, lP, xQ, yQ, lQ, hcubic, eR, eP, eQ,
     slR, slP, slQ, dxR, dxP, dxQ, wR, wP, hRθ, hPθ, hQθ, hPQ⟩
 
-/-- **No rational square on the sextic model of `X_1(16)`** (sorry leaf —
-a classical descent, entirely elementary, with one genuine mathlib gap).
+/-!
+#### Fermat's *other* quartic theorem
+
+Mathlib has `not_fermat_42 : a ≠ 0 → b ≠ 0 → a ^ 4 + b ^ 4 ≠ c ^ 2` but **not**
+its companion `x ^ 4 - y ^ 4 = z ^ 2 → x * y * z = 0`. The latter is what the
+`m + k` odd branch of the descent below needs, and it is built here from scratch
+by Fermat's own infinite descent. The two branches of that descent are:
+
+* `y` odd (so `z` even): the triple `(y², z, x²)` gives `y² = M² - N²`,
+  `x² = M² + N²`, hence `(xy)² = M⁴ - N⁴` — the same equation with `|M| < |x|`;
+* `y` even (so `z` odd): the triple `(z, y², x²)` gives `y² = 2MN`,
+  `x² = M² + N²`, and `M`, `N` coprime with `MN` twice a square forces
+  `{M, N} = {a², 2b²}`, i.e. `x² = a⁴ + 4b⁴`. Splitting *that* as the
+  Pythagorean triple `(a², 2b², x)` gives `rs = b²` with `r, s` coprime, so
+  `r = ρ²`, `s = σ²` and `a² = ρ⁴ - σ⁴` — again the same equation, now with
+  `ρ⁴ ≤ x`.
+
+Both branches strictly decrease `|x|`, so a minimal counterexample cannot exist.
+-/
+
+/-- If a product of two coprime integers is a square and the first factor is
+positive, that factor is the square of a positive integer (PROVEN). -/
+lemma pos_sq_of_gcd_eq_one {u v w : ℤ} (h : Int.gcd u v = 1) (heq : u * v = w ^ 2)
+    (hu : 0 < u) : ∃ a : ℤ, 0 < a ∧ u = a ^ 2 := by
+  obtain ⟨a, ha | ha⟩ := Int.sq_of_gcd_eq_one h heq
+  · have ha0 : a ≠ 0 := by rintro rfl; rw [ha] at hu; norm_num at hu
+    exact ⟨|a|, abs_pos.mpr ha0, by rw [ha, sq_abs]⟩
+  · exfalso; rw [ha] at hu; linarith only [hu, sq_nonneg a]
+
+/-- If `u * v` is positive and `u` is positive then `v` is positive (PROVEN). -/
+lemma pos_right_of_mul_pos {u v : ℤ} (hu : 0 < u) (h : 0 < u * v) : 0 < v := by
+  rcases lt_trichotomy v 0 with hv | hv | hv
+  · exact absurd h (by nlinarith)
+  · exact absurd h (by simp [hv])
+  · exact hv
+
+/-- A positive integer is at most its own square (PROVEN). -/
+lemma self_le_sq {r : ℤ} (h : 0 < r) : r ≤ r ^ 2 := by nlinarith
+
+/-- A leg of a Pythagorean triple is shorter than its hypotenuse (PROVEN). -/
+lemma lt_of_sq_eq_add {M K x : ℤ} (hK : 0 < K) (hx : 0 < x) (h : x ^ 2 = M ^ 2 + K ^ 2) :
+    M < x := by
+  nlinarith [pow_pos hK 2, sq_nonneg (x - M), sq_nonneg (x + M)]
+
+/-- `ρ < (ρ²)² + (σ²)²` for positive `ρ`, `σ` — the size estimate that makes the
+second branch of the quartic descent strictly decreasing (PROVEN). -/
+lemma lt_of_eq_quartic {ρ σ x : ℤ} (hρ : 0 < ρ) (hσ : 0 < σ)
+    (h : x = (ρ ^ 2) ^ 2 + (σ ^ 2) ^ 2) : ρ < x :=
+  by linarith only [h, self_le_sq hρ, self_le_sq (pow_pos hρ 2), pow_pos (pow_pos hσ 2) 2]
+
+/-- **Fermat's other quartic theorem, in descent form** (PROVEN): there is no
+solution of `x ^ 4 - y ^ 4 = z ^ 2` in positive integers with `x.natAbs < N`.
+The induction on `N` is Fermat's infinite descent; see the section note above. -/
+theorem quartic_diff_aux : ∀ N : ℕ, ∀ x y z : ℤ, x.natAbs < N → 0 < x → 0 < y → 0 < z →
+    x ^ 4 - y ^ 4 ≠ z ^ 2 := by
+  intro N
+  induction N with
+  | zero => intro x y z hN; exact absurd hN (Nat.not_lt_zero _)
+  | succ N ih =>
+    intro x y z hN hx hy hz heq
+    by_cases hcop : Int.gcd x y = 1
+    case neg =>
+      -- a common prime factor of `x` and `y` divides out, giving a smaller solution
+      obtain ⟨p, hp, hpx, hpy⟩ := Nat.Prime.not_coprime_iff_dvd.mp hcop
+      obtain ⟨x1, rfl⟩ := Int.natCast_dvd.mpr hpx
+      obtain ⟨y1, rfl⟩ := Int.natCast_dvd.mpr hpy
+      have hp0 : (0 : ℤ) < (p : ℤ) := by exact_mod_cast hp.pos
+      have hx1 : 0 < x1 := pos_right_of_mul_pos hp0 hx
+      have hy1 : 0 < y1 := pos_right_of_mul_pos hp0 hy
+      have hpz : ((p : ℤ) ^ 2) ∣ z := by
+        rw [← Int.pow_dvd_pow_iff (two_ne_zero), ← heq]
+        exact ⟨x1 ^ 4 - y1 ^ 4, by ring⟩
+      obtain ⟨z1, rfl⟩ := hpz
+      have hz1 : 0 < z1 := pos_right_of_mul_pos (pow_pos hp0 2) hz
+      refine ih x1 y1 z1 ?_ hx1 hy1 hz1 ?_
+      · have h1 : 0 < x1.natAbs := Int.natAbs_pos.mpr hx1.ne'
+        have h2 : 2 ≤ p := hp.two_le
+        have h3 : ((p : ℤ) * x1).natAbs = p * x1.natAbs := by
+          rw [Int.natAbs_mul, Int.natAbs_natCast]
+        rw [h3] at hN
+        have h4 : 2 * x1.natAbs ≤ p * x1.natAbs := Nat.mul_le_mul_right _ h2
+        omega
+      · have hp4 : ((p : ℤ)) ^ 4 ≠ 0 := pow_ne_zero _ hp0.ne'
+        apply mul_left_cancel₀ hp4
+        linear_combination heq
+    case pos =>
+      have hxy : IsCoprime x y := Int.isCoprime_iff_gcd_eq_one.mpr hcop
+      have hT : PythagoreanTriple (y ^ 2) z (x ^ 2) := by
+        delta PythagoreanTriple; linear_combination -heq
+      have hyz : Int.gcd (y ^ 2) z = 1 := by
+        apply Int.isCoprime_iff_gcd_eq_one.mp
+        have h1 : IsCoprime (x ^ 4) (y ^ 4) := hxy.pow
+        have h2 := h1.add_mul_right_left (-1)
+        rw [show x ^ 4 + (-1) * y ^ 4 = z ^ 2 by linear_combination heq] at h2
+        exact (h2.symm.of_isCoprime_of_dvd_left
+          (pow_dvd_pow y (by norm_num))).of_isCoprime_of_dvd_right (dvd_pow_self z two_ne_zero)
+      rcases hT.even_odd_of_coprime hyz with ⟨hye, hzo⟩ | ⟨hyo, hze⟩
+      · -- `y` even, `z` odd: two Pythagorean classifications and `x² = a⁴ + 4b⁴`
+        have hT' : PythagoreanTriple z (y ^ 2) (x ^ 2) := hT.symm
+        have hzy : Int.gcd z (y ^ 2) = 1 := by rw [Int.gcd_comm]; exact hyz
+        obtain ⟨M, K, e1, e2, e3, e4, e5, e6⟩ :=
+          hT'.coprime_classification' hzy hzo (by positivity)
+        have hy2 : (0 : ℤ) < y ^ 2 := pow_pos hy 2
+        have hM0 : M ≠ 0 := by
+          rintro rfl
+          rw [show (2 : ℤ) * 0 * K = 0 by ring] at e2
+          exact absurd e2 hy2.ne'
+        have hMpos : 0 < M := lt_of_le_of_ne e6 (Ne.symm hM0)
+        have hKpos : 0 < K :=
+          pos_right_of_mul_pos (show (0 : ℤ) < 2 * M by positivity) (by rw [← e2]; exact hy2)
+        obtain ⟨y1, hy1⟩ : ∃ y1, y = 2 * y1 := by
+          have h2 : (2 : ℤ) ∣ y ^ 2 := Int.dvd_of_emod_eq_zero hye
+          obtain ⟨y1, hy1⟩ := Int.Prime.dvd_pow' (k := 2) Nat.prime_two (by exact_mod_cast h2)
+          exact ⟨y1, hy1⟩
+        obtain ⟨a, b, ha, hb, hab, haodd, hxeq⟩ :
+            ∃ a b : ℤ, 0 < a ∧ 0 < b ∧ Int.gcd (a ^ 2) (2 * b ^ 2) = 1 ∧ (a ^ 2) % 2 = 1 ∧
+              x ^ 2 = (a ^ 2) ^ 2 + (2 * b ^ 2) ^ 2 := by
+          rcases e5 with ⟨hMe, hKo⟩ | ⟨hMo, hKe⟩
+          · -- `M` even
+            obtain ⟨M1, hM1⟩ : ∃ M1, M = 2 * M1 := ⟨M / 2, by omega⟩
+            have hM1pos : 0 < M1 := by omega
+            have hprod : M1 * K = y1 ^ 2 := by
+              apply mul_left_cancel₀ (show (4 : ℤ) ≠ 0 by norm_num)
+              rw [hy1, hM1] at e2; linear_combination -e2
+            have hgcd : Int.gcd M1 K = 1 := by
+              apply Int.isCoprime_iff_gcd_eq_one.mp
+              exact (Int.isCoprime_iff_gcd_eq_one.mpr e4).of_isCoprime_of_dvd_left
+                ⟨2, by linarith only [hM1]⟩
+            obtain ⟨α, hα, hαe⟩ := pos_sq_of_gcd_eq_one hgcd hprod hM1pos
+            obtain ⟨β, hβ, hβe⟩ := pos_sq_of_gcd_eq_one (by rw [Int.gcd_comm]; exact hgcd)
+              (show K * M1 = y1 ^ 2 by linarith only [hprod]) hKpos
+            refine ⟨β, α, hβ, hα, ?_, ?_, ?_⟩
+            · rw [← hβe, show 2 * α ^ 2 = M by rw [hM1, hαe], Int.gcd_comm]; exact e4
+            · rw [← hβe]; exact hKo
+            · rw [e3, ← hβe, show 2 * α ^ 2 = M by rw [hM1, hαe]]; ring
+          · -- `K` even
+            obtain ⟨K1, hK1⟩ : ∃ K1, K = 2 * K1 := ⟨K / 2, by omega⟩
+            have hK1pos : 0 < K1 := by omega
+            have hprod : M * K1 = y1 ^ 2 := by
+              apply mul_left_cancel₀ (show (4 : ℤ) ≠ 0 by norm_num)
+              rw [hy1, hK1] at e2; linear_combination -e2
+            have hgcd : Int.gcd M K1 = 1 := by
+              apply Int.isCoprime_iff_gcd_eq_one.mp
+              exact (Int.isCoprime_iff_gcd_eq_one.mpr e4).of_isCoprime_of_dvd_right
+                ⟨2, by linarith only [hK1]⟩
+            obtain ⟨α, hα, hαe⟩ := pos_sq_of_gcd_eq_one hgcd hprod hMpos
+            obtain ⟨β, hβ, hβe⟩ := pos_sq_of_gcd_eq_one (by rw [Int.gcd_comm]; exact hgcd)
+              (show K1 * M = y1 ^ 2 by linarith only [hprod]) hK1pos
+            refine ⟨α, β, hα, hβ, ?_, ?_, ?_⟩
+            · rw [← hαe, show 2 * β ^ 2 = K by rw [hK1, hβe]]; exact e4
+            · rw [← hαe]; exact hMo
+            · rw [e3, ← hαe, show 2 * β ^ 2 = K by rw [hK1, hβe]]
+        have hT2 : PythagoreanTriple (a ^ 2) (2 * b ^ 2) x := by
+          delta PythagoreanTriple; linear_combination -hxeq
+        obtain ⟨r, s, f1, f2, f3, f4, _f5, f6⟩ := hT2.coprime_classification' hab haodd hx
+        have hb2 : (0 : ℤ) < b ^ 2 := pow_pos hb 2
+        have hrs : r * s = b ^ 2 := by
+          apply mul_left_cancel₀ (show (2 : ℤ) ≠ 0 by norm_num); linear_combination -f2
+        have hrne : r ≠ 0 := by
+          rintro rfl; rw [zero_mul] at hrs; exact absurd hrs.symm hb2.ne'
+        have hr0 : 0 < r := lt_of_le_of_ne f6 (Ne.symm hrne)
+        have hs0 : 0 < s := pos_right_of_mul_pos hr0 (by rw [hrs]; exact hb2)
+        obtain ⟨ρ, hρ, hρe⟩ := pos_sq_of_gcd_eq_one f4 hrs hr0
+        obtain ⟨σ, hσ, hσe⟩ := pos_sq_of_gcd_eq_one (by rw [Int.gcd_comm]; exact f4)
+          (show s * r = b ^ 2 by linarith only [hrs]) hs0
+        refine ih ρ σ a ?_ hρ hσ ha ?_
+        · have h4 : ρ < x := lt_of_eq_quartic hρ hσ (by rw [f3, hρe, hσe])
+          have := Int.natAbs_lt_natAbs_of_nonneg_of_lt hρ.le h4
+          omega
+        · rw [hρe, hσe] at f1; linear_combination -f1
+      · -- `y` odd, `z` even: `(xy)² = M⁴ - N⁴` with `|M| < |x|`
+        obtain ⟨M, K, e1, e2, e3, e4, _e5, e6⟩ :=
+          hT.coprime_classification' hyz hyo (by positivity)
+        have hy2 : (0 : ℤ) < y ^ 2 := pow_pos hy 2
+        have hM0 : M ≠ 0 := by
+          rintro rfl
+          have h : y ^ 2 + K ^ 2 = 0 := by linear_combination e1
+          linarith only [h, hy2, sq_nonneg K]
+        have hMpos : 0 < M := lt_of_le_of_ne e6 (Ne.symm hM0)
+        have hKpos : 0 < K :=
+          pos_right_of_mul_pos (show (0 : ℤ) < 2 * M by positivity) (by rw [← e2]; exact hz)
+        have hMx : M < x := lt_of_sq_eq_add hKpos hx e3
+        refine ih M K (x * y) ?_ hMpos hKpos (by positivity) ?_
+        · have := Int.natAbs_lt_natAbs_of_nonneg_of_lt hMpos.le hMx
+          omega
+        · linear_combination (-(y ^ 2)) * e3 + (-(M ^ 2 + K ^ 2)) * e1
+
+/-- **Fermat's other quartic theorem** (PROVEN — absent from mathlib, which has
+only `not_fermat_42`): no nonzero integers satisfy `x ^ 4 - y ^ 4 = z ^ 2`.
+Equivalently `x ^ 4 - y ^ 4 = z ^ 2 → x * y * z = 0`; the exclusion is sharp,
+since `x = y`, `z = 0` and `y = 0`, `z = x ^ 2` are genuine solutions. -/
+theorem sq_ne_quartic_sub_quartic {x y z : ℤ} (hx : x ≠ 0) (hy : y ≠ 0) (hz : z ≠ 0) :
+    x ^ 4 - y ^ 4 ≠ z ^ 2 := by
+  intro heq
+  refine quartic_diff_aux (|x|.natAbs + 1) |x| |y| |z| (by omega)
+    (abs_pos.mpr hx) (abs_pos.mpr hy) (abs_pos.mpr hz) ?_
+  have e1 : |x| ^ 4 = x ^ 4 := by rw [pow_abs]; exact abs_of_nonneg (by positivity)
+  have e2 : |y| ^ 4 = y ^ 4 := by rw [pow_abs]; exact abs_of_nonneg (by positivity)
+  have e3 : |z| ^ 2 = z ^ 2 := by rw [pow_abs]; exact abs_of_nonneg (by positivity)
+  rw [e1, e2, e3]; exact heq
+
+/-!
+#### Coprimality bookkeeping for the descent
+
+Both branches of the sextic descent factor an integer square into pairwise
+coprime pieces and apply `Int.sq_of_gcd_eq_one`. The coprimality statements are
+all of the form "a common prime divisor of two of the factors divides both `m`
+and `k`", which contradicts `IsCoprime m k`; `isCoprime_of_dvd_prime` packages
+that reduction once and for all.
+-/
+
+/-- A square has the same parity as its base (PROVEN). -/
+lemma sq_emod_two (t : ℤ) : t ^ 2 % 2 = t % 2 := by
+  obtain ⟨u, hu⟩ | ⟨u, hu⟩ := Int.even_or_odd t
+  · subst hu; rw [show (u + u) ^ 2 = 2 * (2 * u ^ 2) by ring]; omega
+  · subst hu; rw [show (2 * u + 1) ^ 2 = 2 * (2 * u ^ 2 + 2 * u) + 1 by ring]; omega
+
+/-- A prime `q ≠ 2` does not divide `2` (PROVEN). -/
+lemma not_dvd_two {q : ℕ} (hq : q.Prime) (hq2 : q ≠ 2) : ¬ ((q : ℤ) ∣ 2) := by
+  intro h
+  have h1 : (q : ℤ) ≤ 2 := Int.le_of_dvd (by norm_num) h
+  have := hq.two_le
+  omega
+
+/-- A prime dividing an odd number does not divide `2` (PROVEN). -/
+lemma prime_not_dvd_two_of_odd {q : ℕ} {A : ℤ} (hq : q.Prime) (hA : A % 2 = 1)
+    (h : (q : ℤ) ∣ A) : ¬ ((q : ℤ) ∣ 2) := by
+  refine not_dvd_two hq ?_
+  rintro rfl
+  have h2 : (2 : ℤ) ∣ A := by exact_mod_cast h
+  omega
+
+/-- Cancel a factor `2` from a divisibility by an odd prime (PROVEN). -/
+lemma dvd_of_dvd_two_mul {p t : ℤ} (hp : Prime p) (hp2 : ¬ p ∣ 2) (h : p ∣ 2 * t) : p ∣ t :=
+  (hp.dvd_mul.mp h).resolve_left hp2
+
+/-- **Coprimality by prime divisors** (PROVEN): if every prime dividing both `A`
+and `B` divides `m` and `k`, and `m`, `k` are coprime, then `A` and `B` are
+coprime. -/
+lemma isCoprime_of_dvd_prime {m k A B : ℤ} (hmk : IsCoprime m k)
+    (H : ∀ q : ℕ, q.Prime → (q : ℤ) ∣ A → (q : ℤ) ∣ B → ((q : ℤ) ∣ m ∧ (q : ℤ) ∣ k)) :
+    IsCoprime A B := by
+  rw [Int.isCoprime_iff_gcd_eq_one]
+  by_contra hc
+  obtain ⟨q, hq, hqA, hqB⟩ := Nat.Prime.not_coprime_iff_dvd.mp hc
+  obtain ⟨h1, h2⟩ := H q hq (Int.natCast_dvd.mpr hqA) (Int.natCast_dvd.mpr hqB)
+  have hu := hmk.isUnit_of_dvd' h1 h2
+  rw [Int.isUnit_iff] at hu
+  have := hq.two_le
+  omega
+
+/-- **The sextic descent, case `m + k` odd** (PROVEN). All three of `m² − k²`,
+`m² + k²`, `m² + 2mk − k²` are then odd and pairwise coprime, so the first two
+are `±` squares: `m² − k² = ±e²` and `m² + k² = c²` (the latter being positive).
+Since `(m² − k²)² + (2mk)² = (m² + k²)²`, this exhibits `c⁴ − e⁴ = (2mk)²`, which
+Fermat's other quartic theorem forbids for `m, k ≠ 0` and `m² ≠ k²`. -/
+lemma sextic_descent_odd {m k w : ℤ} (hmk : IsCoprime m k) (hpar : (m + k) % 2 = 1)
+    (hm : m ≠ 0) (hk : k ≠ 0) (hne : m ^ 2 - k ^ 2 ≠ 0)
+    (heq : w ^ 2 = (m ^ 2 - k ^ 2) * ((m ^ 2 + k ^ 2) * (m ^ 2 + 2 * m * k - k ^ 2))) :
+    False := by
+  have hA1 : (m ^ 2 - k ^ 2) % 2 = 1 := by
+    rw [Int.sub_emod, sq_emod_two, sq_emod_two, ← Int.sub_emod]; omega
+  have hA2 : (m ^ 2 + k ^ 2) % 2 = 1 := by
+    rw [Int.add_emod, sq_emod_two, sq_emod_two, ← Int.add_emod]; omega
+  have c12 : IsCoprime (m ^ 2 - k ^ 2) (m ^ 2 + k ^ 2) := by
+    refine isCoprime_of_dvd_prime hmk (fun q hq h1 h2 => ?_)
+    have hnd := prime_not_dvd_two_of_odd hq hA1 h1
+    have hp : Prime ((q : ℤ)) := Nat.prime_iff_prime_int.mp hq
+    obtain ⟨u1, hu1⟩ := h1
+    obtain ⟨u2, hu2⟩ := h2
+    have hdm : (q : ℤ) ∣ m ^ 2 :=
+      dvd_of_dvd_two_mul hp hnd ⟨u1 + u2, by linear_combination hu1 + hu2⟩
+    have hdk : (q : ℤ) ∣ k ^ 2 :=
+      dvd_of_dvd_two_mul hp hnd ⟨u2 - u1, by linear_combination hu2 - hu1⟩
+    exact ⟨hp.dvd_of_dvd_pow hdm, hp.dvd_of_dvd_pow hdk⟩
+  have c13 : IsCoprime (m ^ 2 - k ^ 2) (m ^ 2 + 2 * m * k - k ^ 2) := by
+    refine isCoprime_of_dvd_prime hmk (fun q hq h1 h2 => ?_)
+    have hnd := prime_not_dvd_two_of_odd hq hA1 h1
+    have hp : Prime ((q : ℤ)) := Nat.prime_iff_prime_int.mp hq
+    obtain ⟨u1, hu1⟩ := h1
+    obtain ⟨u2, hu2⟩ := h2
+    have hd : (q : ℤ) ∣ m * k :=
+      dvd_of_dvd_two_mul hp hnd ⟨u2 - u1, by linear_combination hu2 - hu1⟩
+    rcases hp.dvd_mul.mp hd with hdm | hdk
+    · obtain ⟨t, ht⟩ := hdm
+      have hk2 : (q : ℤ) ∣ k ^ 2 := ⟨m * t - u1, by linear_combination m * ht - hu1⟩
+      exact ⟨⟨t, ht⟩, hp.dvd_of_dvd_pow hk2⟩
+    · obtain ⟨t, ht⟩ := hdk
+      have hm2 : (q : ℤ) ∣ m ^ 2 := ⟨u1 + k * t, by linear_combination hu1 + k * ht⟩
+      exact ⟨hp.dvd_of_dvd_pow hm2, ⟨t, ht⟩⟩
+  have c23 : IsCoprime (m ^ 2 + k ^ 2) (m ^ 2 + 2 * m * k - k ^ 2) := by
+    refine isCoprime_of_dvd_prime hmk (fun q hq h1 h2 => ?_)
+    have hnd := prime_not_dvd_two_of_odd hq hA2 h1
+    have hp : Prime ((q : ℤ)) := Nat.prime_iff_prime_int.mp hq
+    obtain ⟨u1, hu1⟩ := h1
+    obtain ⟨u2, hu2⟩ := h2
+    have key : ∀ _hdk : (q : ℤ) ∣ k, ((q : ℤ) ∣ m ∧ (q : ℤ) ∣ k) := by
+      rintro ⟨t, ht⟩
+      have hm2 : (q : ℤ) ∣ m ^ 2 := ⟨u1 - k * t, by linear_combination hu1 - k * ht⟩
+      exact ⟨hp.dvd_of_dvd_pow hm2, ⟨t, ht⟩⟩
+    have hd : (q : ℤ) ∣ k * (m - k) :=
+      dvd_of_dvd_two_mul hp hnd ⟨u2 - u1, by linear_combination hu2 - hu1⟩
+    rcases hp.dvd_mul.mp hd with hdk | hdmk
+    · exact key hdk
+    · obtain ⟨t, ht⟩ := hdmk
+      have hk2 : (q : ℤ) ∣ k ^ 2 :=
+        dvd_of_dvd_two_mul hp hnd ⟨u1 - t * (m + k), by linear_combination hu1 - (m + k) * ht⟩
+      exact key (hp.dvd_of_dvd_pow hk2)
+  obtain ⟨e, he⟩ := Int.sq_of_gcd_eq_one
+    (Int.isCoprime_iff_gcd_eq_one.mp (c12.mul_right c13)) heq.symm
+  obtain ⟨c, hc⟩ := Int.sq_of_gcd_eq_one
+    (Int.isCoprime_iff_gcd_eq_one.mp (c12.symm.mul_right c23))
+    (show (m ^ 2 + k ^ 2) * ((m ^ 2 - k ^ 2) * (m ^ 2 + 2 * m * k - k ^ 2)) = w ^ 2 by
+      linear_combination -heq)
+  have hmpos : (0 : ℤ) < m ^ 2 := lt_of_le_of_ne (sq_nonneg m) (Ne.symm (pow_ne_zero 2 hm))
+  have hpos : (0 : ℤ) < m ^ 2 + k ^ 2 := by linarith only [hmpos, sq_nonneg k]
+  have hc' : m ^ 2 + k ^ 2 = c ^ 2 := by
+    rcases hc with h | h
+    · exact h
+    · exfalso; rw [h] at hpos; linarith only [hpos, sq_nonneg c]
+  have hsq : (m ^ 2 - k ^ 2) ^ 2 = e ^ 4 := by rcases he with h | h <;> rw [h] <;> ring
+  refine sq_ne_quartic_sub_quartic (x := c) (y := e) (z := 2 * m * k) ?_ ?_ ?_ ?_
+  · rintro rfl
+    rw [show (0 : ℤ) ^ 2 = 0 by ring] at hc'
+    linarith only [hpos, hc']
+  · rintro rfl
+    rw [show (0 : ℤ) ^ 4 = 0 by ring] at hsq
+    exact hne ((pow_eq_zero_iff two_ne_zero).mp hsq)
+  · exact mul_ne_zero (mul_ne_zero two_ne_zero hm) hk
+  · linear_combination (-(c ^ 2 + m ^ 2 + k ^ 2)) * hc' + hsq
+
+/-- **The sextic descent, case `m` and `k` both odd** (PROVEN). Writing
+`m = P + Q`, `k = P − Q` with `P, Q` coprime of opposite parity turns the sextic
+into `w² = 16·P·Q·(P²+Q²)·(P²+2PQ−Q²)`, so `4 ∣ w` and the four factors — again
+pairwise coprime — are `±` squares. From `P = ±a²`, `Q = ±b²` and `P² + Q² = c²`
+one gets `a⁴ + b⁴ = c²`, which mathlib's `not_fermat_42` forbids unless `P = 0`
+or `Q = 0`, i.e. `m = ∓k`. -/
+lemma sextic_descent_even {m k w : ℤ} (hmk : IsCoprime m k) (hm2 : m % 2 = 1) (hk2 : k % 2 = 1)
+    (hne1 : m - k ≠ 0) (hne2 : m + k ≠ 0)
+    (heq : w ^ 2 = (m ^ 2 - k ^ 2) * ((m ^ 2 + k ^ 2) * (m ^ 2 + 2 * m * k - k ^ 2))) :
+    False := by
+  obtain ⟨P, hP⟩ : ∃ P, m + k = 2 * P := ⟨(m + k) / 2, by omega⟩
+  obtain ⟨Q, hQ⟩ : ∃ Q, m - k = 2 * Q := ⟨(m - k) / 2, by omega⟩
+  have hmPQ : m = P + Q := by omega
+  have hkPQ : k = P - Q := by omega
+  have hPQ : IsCoprime P Q := by
+    obtain ⟨u, v, huv⟩ := hmk
+    refine ⟨u + v, u - v, ?_⟩
+    rw [hmPQ, hkPQ] at huv; linear_combination huv
+  have hpar : (P + Q) % 2 = 1 := by rw [← hmPQ]; exact hm2
+  have hP0 : P ≠ 0 := fun h => hne2 (by omega)
+  have hQ0 : Q ≠ 0 := fun h => hne1 (by omega)
+  have heq' : w ^ 2 = 16 * (P * (Q * ((P ^ 2 + Q ^ 2) * (P ^ 2 + 2 * P * Q - Q ^ 2)))) := by
+    rw [hmPQ, hkPQ] at heq; linear_combination heq
+  obtain ⟨w1, hw1⟩ : (2 : ℤ) ∣ w := by
+    refine Int.Prime.dvd_pow' (k := 2) Nat.prime_two ?_
+    refine ⟨8 * (P * (Q * ((P ^ 2 + Q ^ 2) * (P ^ 2 + 2 * P * Q - Q ^ 2)))), ?_⟩
+    push_cast; linear_combination heq'
+  have heq2 : w1 ^ 2 = 4 * (P * (Q * ((P ^ 2 + Q ^ 2) * (P ^ 2 + 2 * P * Q - Q ^ 2)))) := by
+    apply mul_left_cancel₀ (show (4 : ℤ) ≠ 0 by norm_num)
+    rw [hw1] at heq'; linear_combination heq'
+  obtain ⟨v, hv⟩ : (2 : ℤ) ∣ w1 := by
+    refine Int.Prime.dvd_pow' (k := 2) Nat.prime_two ?_
+    refine ⟨2 * (P * (Q * ((P ^ 2 + Q ^ 2) * (P ^ 2 + 2 * P * Q - Q ^ 2)))), ?_⟩
+    push_cast; linear_combination heq2
+  have heqv : v ^ 2 = P * (Q * ((P ^ 2 + Q ^ 2) * (P ^ 2 + 2 * P * Q - Q ^ 2))) := by
+    apply mul_left_cancel₀ (show (4 : ℤ) ≠ 0 by norm_num)
+    rw [hv] at heq2; linear_combination heq2
+  have hB3odd : (P ^ 2 + Q ^ 2) % 2 = 1 := by
+    rw [Int.add_emod, sq_emod_two, sq_emod_two, ← Int.add_emod]; omega
+  have d13 : IsCoprime P (P ^ 2 + Q ^ 2) := by
+    refine isCoprime_of_dvd_prime hPQ (fun q hq h1 h2 => ?_)
+    have hp : Prime ((q : ℤ)) := Nat.prime_iff_prime_int.mp hq
+    obtain ⟨t, ht⟩ := h1
+    obtain ⟨u2, hu2⟩ := h2
+    have hQ2 : (q : ℤ) ∣ Q ^ 2 := ⟨u2 - t * P, by linear_combination hu2 - P * ht⟩
+    exact ⟨⟨t, ht⟩, hp.dvd_of_dvd_pow hQ2⟩
+  have d14 : IsCoprime P (P ^ 2 + 2 * P * Q - Q ^ 2) := by
+    refine isCoprime_of_dvd_prime hPQ (fun q hq h1 h2 => ?_)
+    have hp : Prime ((q : ℤ)) := Nat.prime_iff_prime_int.mp hq
+    obtain ⟨t, ht⟩ := h1
+    obtain ⟨u2, hu2⟩ := h2
+    have hQ2 : (q : ℤ) ∣ Q ^ 2 :=
+      ⟨t * P + 2 * t * Q - u2, by linear_combination P * ht + 2 * Q * ht - hu2⟩
+    exact ⟨⟨t, ht⟩, hp.dvd_of_dvd_pow hQ2⟩
+  have d23 : IsCoprime Q (P ^ 2 + Q ^ 2) := by
+    refine isCoprime_of_dvd_prime hPQ.symm (fun q hq h1 h2 => ?_)
+    have hp : Prime ((q : ℤ)) := Nat.prime_iff_prime_int.mp hq
+    obtain ⟨t, ht⟩ := h1
+    obtain ⟨u2, hu2⟩ := h2
+    have hP2 : (q : ℤ) ∣ P ^ 2 := ⟨u2 - t * Q, by linear_combination hu2 - Q * ht⟩
+    exact ⟨⟨t, ht⟩, hp.dvd_of_dvd_pow hP2⟩
+  have d24 : IsCoprime Q (P ^ 2 + 2 * P * Q - Q ^ 2) := by
+    refine isCoprime_of_dvd_prime hPQ.symm (fun q hq h1 h2 => ?_)
+    have hp : Prime ((q : ℤ)) := Nat.prime_iff_prime_int.mp hq
+    obtain ⟨t, ht⟩ := h1
+    obtain ⟨u2, hu2⟩ := h2
+    have hP2 : (q : ℤ) ∣ P ^ 2 :=
+      ⟨u2 - 2 * P * t + t * Q, by linear_combination hu2 - 2 * P * ht + Q * ht⟩
+    exact ⟨⟨t, ht⟩, hp.dvd_of_dvd_pow hP2⟩
+  have d34 : IsCoprime (P ^ 2 + Q ^ 2) (P ^ 2 + 2 * P * Q - Q ^ 2) := by
+    refine isCoprime_of_dvd_prime hPQ (fun q hq h1 h2 => ?_)
+    have hnd := prime_not_dvd_two_of_odd hq hB3odd h1
+    have hp : Prime ((q : ℤ)) := Nat.prime_iff_prime_int.mp hq
+    obtain ⟨u1, hu1⟩ := h1
+    obtain ⟨u2, hu2⟩ := h2
+    have key : ∀ _hdq : (q : ℤ) ∣ Q, ((q : ℤ) ∣ P ∧ (q : ℤ) ∣ Q) := by
+      rintro ⟨t, ht⟩
+      have hP2 : (q : ℤ) ∣ P ^ 2 := ⟨u1 - t * Q, by linear_combination hu1 - Q * ht⟩
+      exact ⟨hp.dvd_of_dvd_pow hP2, ⟨t, ht⟩⟩
+    have hd : (q : ℤ) ∣ Q * (P - Q) :=
+      dvd_of_dvd_two_mul hp hnd ⟨u2 - u1, by linear_combination hu2 - hu1⟩
+    rcases hp.dvd_mul.mp hd with hdq | hdpq
+    · exact key hdq
+    · obtain ⟨t, ht⟩ := hdpq
+      have hQ2 : (q : ℤ) ∣ Q ^ 2 :=
+        dvd_of_dvd_two_mul hp hnd ⟨u1 - t * (P + Q), by linear_combination hu1 - (P + Q) * ht⟩
+      exact key (hp.dvd_of_dvd_pow hQ2)
+  obtain ⟨a, ha⟩ := Int.sq_of_gcd_eq_one
+    (Int.isCoprime_iff_gcd_eq_one.mp (hPQ.mul_right (d13.mul_right d14))) heqv.symm
+  obtain ⟨b, hb⟩ := Int.sq_of_gcd_eq_one
+    (Int.isCoprime_iff_gcd_eq_one.mp (hPQ.symm.mul_right (d23.mul_right d24)))
+    (show Q * (P * ((P ^ 2 + Q ^ 2) * (P ^ 2 + 2 * P * Q - Q ^ 2))) = v ^ 2 by
+      linear_combination -heqv)
+  obtain ⟨cc, hcc⟩ := Int.sq_of_gcd_eq_one
+    (Int.isCoprime_iff_gcd_eq_one.mp (d13.symm.mul_right (d23.symm.mul_right d34)))
+    (show (P ^ 2 + Q ^ 2) * (P * (Q * (P ^ 2 + 2 * P * Q - Q ^ 2))) = v ^ 2 by
+      linear_combination -heqv)
+  have hPpos : (0 : ℤ) < P ^ 2 := lt_of_le_of_ne (sq_nonneg P) (Ne.symm (pow_ne_zero 2 hP0))
+  have hpos : (0 : ℤ) < P ^ 2 + Q ^ 2 := by linarith only [hPpos, sq_nonneg Q]
+  have hcc' : P ^ 2 + Q ^ 2 = cc ^ 2 := by
+    rcases hcc with h | h
+    · exact h
+    · exfalso; rw [h] at hpos; linarith only [hpos, sq_nonneg cc]
+  have hP2 : P ^ 2 = a ^ 4 := by rcases ha with h | h <;> rw [h] <;> ring
+  have hQ2 : Q ^ 2 = b ^ 4 := by rcases hb with h | h <;> rw [h] <;> ring
+  have ha0 : a ≠ 0 := by
+    rintro rfl
+    rw [show (0 : ℤ) ^ 4 = 0 by ring] at hP2
+    exact hP0 ((pow_eq_zero_iff two_ne_zero).mp hP2)
+  have hb0 : b ≠ 0 := by
+    rintro rfl
+    rw [show (0 : ℤ) ^ 4 = 0 by ring] at hQ2
+    exact hQ0 ((pow_eq_zero_iff two_ne_zero).mp hQ2)
+  exact not_fermat_42 (c := cc) ha0 hb0 (by linear_combination -hP2 - hQ2 + hcc')
+
+/-- **No rational square on the sextic model of `X_1(16)`** (PROVEN 2026-07-25 —
+a classical descent, entirely elementary, over Fermat's two quartic theorems).
 
 For `n ∉ {0, 1, −1}` the value `(n²−1)(n²+1)(n²+2n−1)` is not a rational
 square. Geometrically: the only rational points of `X_1(16)` are its
@@ -2029,40 +2495,101 @@ denominators: a rational square makes
 `W = Y·k³` is an integer because `ℤ` is integrally closed). Now split on
 the parity of `m + k`.
 
-*Case `m + k` odd.* All four factors are odd, and each pair has gcd
-dividing `2`, hence gcd `1`: they are pairwise coprime, so each is `±` a
-square (`Int.sq_of_coprime`). Say `m − k = ε₁a²`, `m + k = ε₂b²`, and
-`m² + k² = c²` (it is positive). Then
-`a⁴ + b⁴ = (m−k)² + (m+k)² = 2(m²+k²) = 2c²`, and `a² = b²` forces
-`(m−k)² = (m+k)²`, i.e. `mk = 0` — excluded.
+*Case `m + k` odd* (`sextic_descent_odd`). All four factors are odd, and
+each pair has gcd dividing `2`, hence gcd `1`: they are pairwise coprime, so
+each is `±` a square (`Int.sq_of_gcd_eq_one`). Only two are needed:
+`m² − k² = ±e²` and `m² + k² = c²` (the latter positive). Since
+`(m²−k²)² + (2mk)² = (m²+k²)²`, this reads `c⁴ − e⁴ = (2mk)²`, and Fermat's
+*other* quartic theorem `sq_ne_quartic_sub_quartic` forces `c e · 2mk = 0`;
+`c ≠ 0` and `e ≠ 0` hold because `m² + k² > 0` and `m ≠ ±k`, so `mk = 0` —
+excluded.
 
-*Case `m + k` even, i.e. `m, k` both odd.* Put `p = (m+k)/2`,
-`q = (m−k)/2`, so `m = p+q`, `k = p−q`, `gcd(p,q) = 1` and `p, q` have
-opposite parity. Then `m²−k² = 4pq`, `m²+k² = 2(p²+q²)` and
+*Case `m + k` even, i.e. `m, k` both odd* (`sextic_descent_even`). Put
+`p = (m+k)/2`, `q = (m−k)/2`, so `m = p+q`, `k = p−q`, `gcd(p,q) = 1` and
+`p, q` have opposite parity. Then `m²−k² = 4pq`, `m²+k² = 2(p²+q²)` and
 `m²+2mk−k² = 2(p²+2pq−q²)`, so `W² = 16·pq(p²+q²)(p²+2pq−q²)` and
 `4 ∣ W`. The four factors `p`, `q`, `p²+q²`, `p²+2pq−q²` are pairwise
 coprime, so `p = ε₁a²`, `q = ε₂b²`, `p²+q² = c²`, giving
 `a⁴ + b⁴ = c²`. Mathlib's `not_fermat_42` forces `ab = 0`, i.e. `p = 0`
 or `q = 0`, i.e. `m = ±k` — excluded.
 
-**The one mathlib gap**, needed only by the first case:
+**The mathlib gap, now filled here.** Mathlib's
+`Mathlib/NumberTheory/FLT/Four.lean` has only
+`not_fermat_42 : a ≠ 0 → b ≠ 0 → a⁴ + b⁴ ≠ c²`. Fermat's *other* quartic
+theorem `x⁴ − y⁴ = z² → xyz = 0` is genuinely absent, and is proved above as
+`sq_ne_quartic_sub_quartic` by an independent infinite descent (see the
+section note before it). It is what the first case needs; note it cannot be
+strengthened, since `x = y, z = 0` and `y = 0, z = x²` are solutions.
 
-  `a⁴ + b⁴ = 2c² → a² = b²`   (integers)
-
-This is genuinely absent from mathlib (`Mathlib/NumberTheory/FLT/Four.lean`
-has only `not_fermat_42 : a ≠ 0 → b ≠ 0 → a⁴ + b⁴ ≠ c²`). It is classical
-and reduces in turn to Fermat's *other* quartic theorem,
-`x⁴ − y⁴ = z² → xyz = 0`, also absent: from `a⁴+b⁴=2c²` with `a, b` odd
-coprime, `u = (a²+b²)/2` and `v = (a²−b²)/2` satisfy `u²+v² = c²`,
-`u+v = a²`, `u−v = b²`, hence `u² − v² = (ab)²` and so
-`u⁴ − v⁴ = (abc)²`. Mathlib's `PythagoreanTriple.coprime_classification`
-plus the descent template in `FLT/Four.lean` are the tools for it. Note
-`a⁴+b⁴=2c²` cannot be strengthened to a contradiction: `a = b` solves it,
-and that solution is exactly the pair of cusps `n = ±1` excluded by
-hypothesis. -/
+**The exclusions are sharp.** A search over the ~320k coprime pairs with
+`|m|, k ≤ 300` (PARI/GP, 2026-07-25) finds exactly `(m,k) ∈ {(0,1), (1,1),
+(−1,1)}`, i.e. `n ∈ {0, 1, −1}`, and those three DO make the sextic a
+square: they are the cusps, and the statement is false without them. -/
 theorem not_sextic_square (n Y : ℚ) (h0 : n ≠ 0) (h1 : n ≠ 1) (hm1 : n ≠ -1) :
-    Y ^ 2 ≠ (n ^ 2 - 1) * (n ^ 2 + 1) * (n ^ 2 + 2 * n - 1) :=
-  sorry
+    Y ^ 2 ≠ (n ^ 2 - 1) * (n ^ 2 + 1) * (n ^ 2 + 2 * n - 1) := by
+  intro hY
+  -- write `n = m / k` in lowest terms
+  obtain ⟨m, k, hkpos, hcop, hn⟩ :
+      ∃ m k : ℤ, 0 < k ∧ IsCoprime m k ∧ n * (k : ℚ) = (m : ℚ) := by
+    refine ⟨n.num, (n.den : ℤ), by exact_mod_cast n.pos, ?_, ?_⟩
+    · rw [Int.isCoprime_iff_gcd_eq_one]
+      simpa [Int.gcd] using n.reduced
+    · have hden : ((n.den : ℚ)) ≠ 0 := by exact_mod_cast n.den_nz
+      push_cast
+      exact ((div_eq_iff hden).mp (Rat.num_div_den n)).symm
+  have hkQ : ((k : ℚ)) ≠ 0 := by exact_mod_cast hkpos.ne'
+  have hk0 : k ≠ 0 := hkpos.ne'
+  -- the three excluded values of `n` become `m ≠ 0` and `m ≠ ±k`
+  have hm0 : m ≠ 0 := by
+    intro h; apply h0
+    have hz : n * (k : ℚ) = 0 := by rw [hn, h]; norm_num
+    exact (mul_eq_zero.mp hz).resolve_right hkQ
+  have hmk1 : m ≠ k := by
+    intro h; apply h1
+    have hz : n * (k : ℚ) = 1 * (k : ℚ) := by rw [hn, h]; ring
+    exact mul_right_cancel₀ hkQ hz
+  have hmk2 : m ≠ -k := by
+    intro h; apply hm1
+    have hz : n * (k : ℚ) = (-1) * (k : ℚ) := by rw [hn, h]; push_cast; ring
+    exact mul_right_cancel₀ hkQ hz
+  -- clear denominators: `W = Y k³` satisfies an integral equation
+  have hW : (Y * (k : ℚ) ^ 3) ^ 2 =
+      (((m ^ 2 - k ^ 2) * ((m ^ 2 + k ^ 2) * (m ^ 2 + 2 * m * k - k ^ 2)) : ℤ) : ℚ) := by
+    push_cast
+    rw [← hn]
+    linear_combination (k : ℚ) ^ 6 * hY
+  -- `W` is an integer, because its square is one and `(q ^ 2).den = q.den ^ 2`
+  have hden1 : (Y * (k : ℚ) ^ 3).den = 1 := by
+    have h2 : ((Y * (k : ℚ) ^ 3) ^ 2).den = 1 := by rw [hW]; exact Rat.den_intCast _
+    rw [Rat.den_pow] at h2
+    exact (Nat.pow_eq_one.mp h2).resolve_right (by norm_num)
+  obtain ⟨w, hw⟩ : ∃ w : ℤ, Y * (k : ℚ) ^ 3 = (w : ℚ) :=
+    ⟨(Y * (k : ℚ) ^ 3).num, ((Rat.den_eq_one_iff _).mp hden1).symm⟩
+  have hwint : w ^ 2 = (m ^ 2 - k ^ 2) * ((m ^ 2 + k ^ 2) * (m ^ 2 + 2 * m * k - k ^ 2)) := by
+    have h3 : ((w : ℚ)) ^ 2 =
+        (((m ^ 2 - k ^ 2) * ((m ^ 2 + k ^ 2) * (m ^ 2 + 2 * m * k - k ^ 2)) : ℤ) : ℚ) := by
+      rw [← hw]; exact hW
+    exact_mod_cast h3
+  -- split on the parity of `m + k`
+  rcases Int.emod_two_eq_zero_or_one (m + k) with hpar | hpar
+  · have hnb : ¬((2 : ℤ) ∣ m ∧ (2 : ℤ) ∣ k) := by
+      rintro ⟨d1, d2⟩
+      have hu := hcop.isUnit_of_dvd' d1 d2
+      rw [Int.isUnit_iff] at hu
+      omega
+    have hmo : m % 2 = 1 := by
+      rcases Int.emod_two_eq_zero_or_one m with h | h
+      · exact absurd ⟨Int.dvd_of_emod_eq_zero h, Int.dvd_of_emod_eq_zero (by omega)⟩ hnb
+      · exact h
+    have hko : k % 2 = 1 := by omega
+    exact sextic_descent_even hcop hmo hko (sub_ne_zero.mpr hmk1)
+      (fun h => hmk2 (by omega)) hwint
+  · refine sextic_descent_odd hcop hpar hm0 hk0 ?_ hwint
+    intro h
+    have hfac : (m - k) * (m + k) = 0 := by linear_combination h
+    rcases mul_eq_zero.mp hfac with h' | h'
+    · exact hmk1 (by omega)
+    · exact hmk2 (by omega)
 
 /-- **A rational point of order `16` puts a rational point on `X_1(16)`**
 (PROVEN from `exists_chain_coords` and the algebra above): the geometric
