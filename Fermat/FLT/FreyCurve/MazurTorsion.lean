@@ -3400,7 +3400,19 @@ Silverman AEC VII.2 (reduction and its kernel), VII.3.1, IV.2–IV.3
 kernel-of-reduction lemmas of `Flat.lean`
 (`kernel_add_abscissa_notMem`,
 `kernel_sub_abscissa_notMem_of_residue_eq`) are the intended supply
-line for the valuation-theoretic half. -/
+line for the valuation-theoretic half.
+
+ROUTE NOTE (2026-07-25, for whoever takes this leaf): the surjectivity
+clause need not be proved by lifting. Since the source has exactly `p²`
+elements (`TorsionCard.card_torsionBy`, as used in
+`not_local_inertia_eigenvector_of_good_of_supersingular`) and the target
+`Ẽ(𝔽̄_p)[p]` has order dividing `p`
+(`card_torsionBy_dvd_of_charP`), surjectivity of `red` onto `Ẽ(𝔽̄_p)[p]`
+is EQUIVALENT to the statement that the kernel of `red` on `E[p]` has
+order `p² / #Ẽ(𝔽̄_p)[p]`, i.e. to the exactness of the connected-étale
+sequence. Whichever of the two is easier to reach from the formal-group
+side can be proved first and the other read off by counting; only one of
+them has to be done by hand. -/
 theorem WeierstrassCurve.exists_localReductionHom_of_good_reduction
     (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ} (hp : p.Prime)
     [E.HasGoodReduction
@@ -3968,9 +3980,11 @@ set_option backward.isDefEq.respectTransparency false in
 action on the local `p`-torsion has order divisible by `p + 1`** (sorry
 node, cut 2026-07-25 out of
 `not_local_inertia_eigenvector_of_good_of_supersingular` — the
-*arithmetic* brick of the supersingular case; the *linear-algebra*
-brick, the Borel bound, is the sorried step inside that theorem's
-proof): for an elliptic curve over `ℚ` with good supersingular
+*arithmetic* brick of the supersingular case, and since 2026-07-25 the
+ONLY open brick of it: the *linear-algebra* brick, the Borel bound, is
+PROVEN inside that theorem's proof from
+`WeierstrassCurve.point_map_pow_eq_self_of_eigenvector`): for an
+elliptic curve over `ℚ` with good supersingular
 reduction at an odd prime `p` there is an element `σ` of the local
 inertia at `p` such that no power `σ ^ k` with `p + 1 ∤ k` acts
 trivially on the local `p`-torsion.
@@ -3989,7 +4003,16 @@ in `Aut(E[p]) ≅ GL₂(𝔽_p)` contains the full nonsplit Cartan subgroup
 generator `σ` of the tame quotient has order exactly `p² − 1` on
 `E[p]`; the conclusion below records only the divisibility by `p + 1`,
 which is what the eigenvector contradiction needs. Silverman ATAEC
-IV.6, V; Serre, op. cit. -/
+IV.6, V; Serre, op. cit.
+
+ROUTE NOTE (2026-07-25): the conclusion is deliberately WEAKER than
+"`σ` has order exactly `p² − 1` on `E[p]`" — it does not ask for the
+minimality of the order, only that the set of exponents killing the
+whole `p`-torsion is contained in `(p + 1)ℤ`. Proving the sharp
+statement and then quoting `orderOf_dvd_iff_pow_eq_one` together with
+`(p + 1) ∣ (p² − 1)` is a legitimate route, but it is strictly more work
+than what the consumer needs; the consumer only ever instantiates `k` at
+`k = p (p − 1)`. -/
 theorem WeierstrassCurve.exists_local_inertia_torsion_order_of_good_of_supersingular
     (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ} (hp : p.Prime) (hodd : p ≠ 2)
     [E.HasGoodReduction
