@@ -6136,16 +6136,20 @@ brick `linearEquivPiQuotientAnnihilator`.  FOUR remain open and are the
 real frontier here:
 
 1. `topologicallyFG_int_mvPowerSeries` — density of `ℤ[x₁,…,x_q]` in `Λ`;
+   PROVEN 2026-07-25;
 2. `finite_quotient_maximalIdeal_pow_mvPowerSeries` — `|Λ/𝔪^k| < ∞`,
-   which needs `Λ`'s residue field identified as `𝔽_p`;
+   which needs `Λ`'s residue field identified as `𝔽_p`; PROVEN 2026-07-25
+   over the new brick `mem_maximalIdeal_mvPowerSeries`;
 3. `ker_constantCoeff_mvPowerSeries` — `ker (constantCoeff) = (X₁,…,X_q)`
-   in finitely many variables;
+   in finitely many variables; PROVEN 2026-07-25 over the new brick
+   `mem_span_X_image_of_coeff_eq_zero`;
 4. `subsingleton_ringHom_padicInt` — `ℤ_p`-rigidity of a complete local
-   ring with finite residue field.
+   ring with finite residue field; PROVEN 2026-07-25.
 
-(1)–(3) are three independent facts about `MvPowerSeries (Fin q) ℤ_[p]`
-and could sensibly go to one owner; (4) is independent of everything
-else. -/
+**ALL FOUR ARE NOW PROVEN**, as are the two coordinate-transport leaves
+(`free_quotientAnnihilator_of_linearEquiv_piQuotient` and
+`uniformlyBoundedRank_of_linearEquiv_piQuotient`) that stood at (4)–(5)
+in an earlier numbering, so this block contributes no open leaf. -/
 
 /-- **`Λ = ℤ_p[[x₁, …, x_q]]` is topologically finitely generated over
 `ℤ`** (patching-instantiation leaf 1), for the scoped product topology
@@ -6164,10 +6168,90 @@ in `ℤ_[p]` (`PadicInt.denseRange_intCast` / `denseRange_natCast`).
 Stated for an ARBITRARY `Algebra ℤ Λ` instance because the vendored use
 site fixes that instance by unification and there is no guarantee it is
 syntactically `algebraInt`; the statement is harmless because
-`Algebra ℤ R` is a subsingleton. -/
+`Algebra ℤ R` is a subsingleton.
+
+PROVEN 2026-07-25.  The proof never touches a neighbourhood basis: it
+passes through the topological closure `B := (adjoin ℤ (range X))ᶜˡ`,
+which is again a `Subalgebra ℤ Λ` (`Subalgebra.topologicalClosure`,
+available because `Λ` is a topological ring for the pi topology).  Three
+steps.  (i) `B` contains every constant `C a`, `a : ℤ_[p]`: `C` is
+continuous (`MvPowerSeries.WithPiTopology.continuous_C`), so it carries
+`closure (range (Int.cast))` — which is all of `ℤ_[p]` by
+`PadicInt.denseRange_intCast` — into `closure (C '' range Int.cast)`, and
+`C (n : ℤ) = (n : Λ)` lies in the subalgebra `adjoin ℤ (range X)` already.
+(ii) `B` therefore contains the image of every `ℤ_[p]`-POLYNOMIAL, by
+`MvPolynomial.induction_on` over `C`/`+`/`· X i`, using that `B` is a
+subalgebra and contains each `X i`.  (iii) That image is dense
+(`MvPowerSeries.WithPiTopology.denseRange_toMvPowerSeries`), so
+`closure (adjoin ℤ (range X)) = ⊤`. -/
 theorem topologicallyFG_int_mvPowerSeries (p : ℕ) [Fact p.Prime] (q : ℕ)
     [Algebra ℤ (MvPowerSeries (Fin q) ℤ_[p])] :
-    Algebra.TopologicallyFG ℤ (MvPowerSeries (Fin q) ℤ_[p]) := sorry
+    Algebra.TopologicallyFG ℤ (MvPowerSeries (Fin q) ℤ_[p]) := by
+  classical
+  refine ⟨⟨Finset.univ.image (MvPowerSeries.X (σ := Fin q) (R := ℤ_[p])), ?_⟩⟩
+  set Λ := MvPowerSeries (Fin q) ℤ_[p]
+  have hcoe : ((Finset.univ.image (MvPowerSeries.X (σ := Fin q) (R := ℤ_[p])) : Finset Λ) : Set Λ)
+      = Set.range (MvPowerSeries.X (σ := Fin q) (R := ℤ_[p])) := by
+    simp
+  rw [hcoe]
+  set A : Subalgebra ℤ Λ := Algebra.adjoin ℤ (Set.range (MvPowerSeries.X (σ := Fin q) (R := ℤ_[p])))
+  set B : Subalgebra ℤ Λ := A.topologicalClosure with hB
+  have hXB : ∀ i : Fin q, (MvPowerSeries.X i : Λ) ∈ B :=
+    fun i => A.le_topologicalClosure (Algebra.subset_adjoin ⟨i, rfl⟩)
+  have hCB : ∀ a : ℤ_[p], (MvPowerSeries.C a : Λ) ∈ B := by
+    intro a
+    have hmem : a ∈ closure (Set.range (Int.cast : ℤ → ℤ_[p])) :=
+      PadicInt.denseRange_intCast a
+    have himg : (MvPowerSeries.C : ℤ_[p] → Λ) '' closure (Set.range (Int.cast : ℤ → ℤ_[p]))
+        ⊆ closure ((MvPowerSeries.C : ℤ_[p] → Λ) '' Set.range (Int.cast : ℤ → ℤ_[p])) :=
+      image_closure_subset_closure_image MvPowerSeries.WithPiTopology.continuous_C
+    have h2 : (MvPowerSeries.C a : Λ) ∈
+        closure ((MvPowerSeries.C : ℤ_[p] → Λ) '' Set.range (Int.cast : ℤ → ℤ_[p])) :=
+      himg ⟨a, hmem, rfl⟩
+    have h3 : ((MvPowerSeries.C : ℤ_[p] → Λ) '' Set.range (Int.cast : ℤ → ℤ_[p])) ⊆ (A : Set Λ) := by
+      rintro _ ⟨_, ⟨n, rfl⟩, rfl⟩
+      have hcast : (MvPowerSeries.C ((n : ℤ) : ℤ_[p]) : Λ) = (n : Λ) :=
+        map_intCast (MvPowerSeries.C (σ := Fin q) (R := ℤ_[p])) n
+      rw [hcast]
+      exact intCast_mem A n
+    have h4 : closure ((MvPowerSeries.C : ℤ_[p] → Λ) '' Set.range (Int.cast : ℤ → ℤ_[p]))
+        ⊆ (B : Set Λ) := by
+      rw [hB, Subalgebra.topologicalClosure_coe]
+      exact closure_mono h3
+    exact h4 h2
+  have hpoly : ∀ φ : MvPolynomial (Fin q) ℤ_[p], ((φ : Λ)) ∈ B := by
+    intro φ
+    induction φ using MvPolynomial.induction_on with
+    | C a =>
+      rw [MvPolynomial.coe_C]
+      exact hCB a
+    | add f g hf hg =>
+      rw [MvPolynomial.coe_add]
+      exact add_mem hf hg
+    | mul_X f i hf =>
+      rw [MvPolynomial.coe_mul, MvPolynomial.coe_X]
+      exact mul_mem hf (hXB i)
+  rw [dense_iff_closure_eq]
+  refine Set.eq_univ_of_univ_subset ?_
+  rw [← (MvPowerSeries.WithPiTopology.denseRange_toMvPowerSeries
+    (R := ℤ_[p]) (σ := Fin q)).closure_range]
+  refine closure_minimal ?_ isClosed_closure
+  rintro _ ⟨φ, rfl⟩
+  have hmemB := hpoly φ
+  rw [hB, ← SetLike.mem_coe, Subalgebra.topologicalClosure_coe] at hmemB
+  exact hmemB
+
+/-- **The maximal ideal of a multivariate power series ring over a local
+ring is the preimage of `𝔪` under `constantCoeff`** — a unit of
+`Λ[[x]]` is exactly a series with unit constant term
+(`MvPowerSeries.isUnit_iff_constantCoeff`).  The `PowerSeries` analogue
+`mem_maximalIdeal_powerSeries` is proven far above in the
+Auslander–Buchsbaum section; this is the multivariate one, needed here
+to identify the residue field of `Λ`. -/
+theorem mem_maximalIdeal_mvPowerSeries {σ : Type*} {A : Type*} [CommRing A] [IsLocalRing A]
+    (f : MvPowerSeries σ A) :
+    f ∈ maximalIdeal (MvPowerSeries σ A) ↔ MvPowerSeries.constantCoeff f ∈ maximalIdeal A := by
+  simp [IsLocalRing.mem_maximalIdeal, mem_nonunits_iff, MvPowerSeries.isUnit_iff_constantCoeff]
 
 /-- **The `𝔪`-adic truncations of `Λ = ℤ_p[[x₁, …, x_q]]` are finite**
 (patching-instantiation shared brick, consumed by leaves 5 and 6).
@@ -6177,28 +6261,123 @@ field `𝔽_p`, since `𝔪_Λ = (p, X₁, …, X_q)` and `Λ/𝔪_Λ ≃ ℤ_[p
 So `Finite (Λ ⧸ 𝔪_Λ)`, and `Ideal.finite_quotient_pow` (which needs only
 `𝔪_Λ` finitely generated, i.e. Noetherianity) upgrades that to every
 power.  This is exactly the route `IsLocalRing.compactSpace_of_finite_residueField`
-takes in `PatchingVendored/AdicTopology.lean`. -/
+takes in `PatchingVendored/AdicTopology.lean`.
+
+PROVEN 2026-07-25 along that route; the residue field is identified
+without ever computing `𝔪_Λ` itself, by exhibiting the composite
+`ψ = PadicInt.toZMod ∘ constantCoeff : Λ →+* ZMod p` as a surjection with
+kernel `𝔪_Λ` (`mem_maximalIdeal_mvPowerSeries` plus
+`PadicInt.ker_toZMod`). -/
 theorem finite_quotient_maximalIdeal_pow_mvPowerSeries (p : ℕ) [Fact p.Prime] (q k : ℕ) :
     Finite (MvPowerSeries (Fin q) ℤ_[p] ⧸
-      maximalIdeal (MvPowerSeries (Fin q) ℤ_[p]) ^ k) := sorry
+      maximalIdeal (MvPowerSeries (Fin q) ℤ_[p]) ^ k) := by
+  haveI : IsNoetherianRing (MvPowerSeries (Fin q) ℤ_[p]) :=
+    PowerSeriesAdicComplete.isNoetherianRing_mvPowerSeries q
+  haveI : NeZero p := ⟨(Fact.out : p.Prime).ne_zero⟩
+  set ψ : MvPowerSeries (Fin q) ℤ_[p] →+* ZMod p :=
+    (PadicInt.toZMod).comp MvPowerSeries.constantCoeff with hψ
+  have hsurj : Function.Surjective ψ := by
+    intro z
+    obtain ⟨y, hy⟩ := ZMod.ringHom_surjective (PadicInt.toZMod (p := p)) z
+    exact ⟨MvPowerSeries.C y, by simp [hψ, hy]⟩
+  have hker : RingHom.ker ψ = maximalIdeal (MvPowerSeries (Fin q) ℤ_[p]) := by
+    ext f
+    rw [RingHom.mem_ker, mem_maximalIdeal_mvPowerSeries, ← PadicInt.ker_toZMod,
+      RingHom.mem_ker]
+    rfl
+  haveI : Finite (MvPowerSeries (Fin q) ℤ_[p] ⧸ maximalIdeal (MvPowerSeries (Fin q) ℤ_[p])) :=
+    Finite.of_equiv (ZMod p)
+      ((Ideal.quotEquivOfEq hker.symm).trans
+        (RingHom.quotientKerEquivOfSurjective hsurj)).symm.toEquiv
+  exact Ideal.finite_quotient_pow (IsNoetherian.noetherian _) k
+
+/-- **Peeling variables off one at a time** (the working form of the
+augmentation-ideal leaf below, PROVEN 2026-07-25): if every coefficient
+of `f` supported away from the finite set `s` vanishes, then `f` lies in
+the ideal generated by `{X i : i ∈ s}`.
+
+Induction on the FINSET `s`, which is where the finiteness hypothesis of
+`ker_constantCoeff_mvPowerSeries` actually gets consumed — no currying
+isomorphism is needed.  At `s = insert a t`, split `f` coefficientwise
+into the part `h` supported on `d a = 0` and the rest: the rest is
+divisible by `X a` (`MvPowerSeries.X_dvd_iff`) and `h` satisfies the
+inductive hypothesis for `t`. -/
+theorem mem_span_X_image_of_coeff_eq_zero {σ : Type*} [DecidableEq σ] {A : Type*} [CommRing A]
+    (s : Finset σ) (f : MvPowerSeries σ A)
+    (hf : ∀ d : σ →₀ ℕ, (∀ i ∈ s, d i = 0) → MvPowerSeries.coeff d f = 0) :
+    f ∈ Ideal.span (MvPowerSeries.X '' (s : Set σ)) := by
+  classical
+  induction s using Finset.induction generalizing f with
+  | empty =>
+    have hz : f = 0 := by
+      ext d
+      simpa using hf d (by simp)
+    simp [hz]
+  | insert a t ha ih =>
+    set h : MvPowerSeries σ A := fun d => if d a = 0 then MvPowerSeries.coeff d f else 0 with hh
+    have hcoeff : ∀ d : σ →₀ ℕ,
+        MvPowerSeries.coeff d h = if d a = 0 then MvPowerSeries.coeff d f else 0 := by
+      intro d
+      rw [MvPowerSeries.coeff_apply, hh]
+    have hdvd : (MvPowerSeries.X a : MvPowerSeries σ A) ∣ (f - h) := by
+      rw [MvPowerSeries.X_dvd_iff]
+      intro m hm
+      rw [map_sub, hcoeff, if_pos hm, sub_self]
+    obtain ⟨g, hg⟩ := hdvd
+    have hIH : h ∈ Ideal.span (MvPowerSeries.X '' (t : Set σ)) := by
+      refine ih h ?_
+      intro d hd
+      rw [hcoeff]
+      split_ifs with hda
+      · refine hf d ?_
+        intro i hi
+        rcases Finset.mem_insert.mp hi with h1 | h1
+        · exact h1 ▸ hda
+        · exact hd i h1
+      · rfl
+    have hfeq : f = MvPowerSeries.X a * g + h := by
+      have hsub : f - h = MvPowerSeries.X a * g := hg
+      linear_combination (norm := ring_nf) hsub
+    rw [hfeq]
+    refine Ideal.add_mem _ ?_ ?_
+    · exact Ideal.mul_mem_right _ _ (Ideal.subset_span ⟨a, by simp, rfl⟩)
+    · refine Ideal.span_mono ?_ hIH
+      exact Set.image_mono (by simp [Finset.coe_insert])
 
 /-- **The augmentation ideal is the kernel of the constant coefficient**
 (patching-instantiation leaf 7a): for FINITELY many variables,
 `ker (constantCoeff) = (X₁, …, X_q) = taylorWilesAug`.
 
-`⊇` is `constantCoeff (X i) = 0`.  For `⊆`, induct on the number of
-variables through the `Option`-currying ring isomorphism
-`optionCurryEquiv : MvPowerSeries (Option σ) A ≃+* PowerSeries (MvPowerSeries σ A)`
-proven above, where the one-variable statement is
-`ker_powerSeries_constantCoeff`, also above.
+`⊇` is `constantCoeff (X i) = 0`.  `⊆` is
+`mem_span_X_image_of_coeff_eq_zero` at `s = univ`: the only exponent `d`
+with `d i = 0` for every `i` is `d = 0`, so the hypothesis there is
+exactly `constantCoeff f = 0`.  (The `Option`-currying isomorphism
+`optionCurryEquiv` is NOT needed — the induction runs over the finset of
+variables directly.)
 
 FINITENESS IS ESSENTIAL and is why this is stated over `Fin q`: over
 infinitely many variables `∑ᵢ Xᵢ` has zero constant coefficient but is not
 in the span of the variables, an ideal all of whose elements involve only
-finitely many of them. -/
+finitely many of them.  In the proof it is consumed as `Finset.univ`.
+
+PROVEN 2026-07-25. -/
 theorem ker_constantCoeff_mvPowerSeries (q : ℕ) (A : Type*) [CommRing A] :
     RingHom.ker (MvPowerSeries.constantCoeff (σ := Fin q) (R := A)) =
-      Ideal.span (Set.range MvPowerSeries.X) := sorry
+      Ideal.span (Set.range MvPowerSeries.X) := by
+  apply le_antisymm
+  · intro f hf
+    rw [RingHom.mem_ker] at hf
+    have key := mem_span_X_image_of_coeff_eq_zero (Finset.univ : Finset (Fin q)) f ?_
+    · rwa [Finset.coe_univ, Set.image_univ] at key
+    · intro d hd
+      have hd0 : d = 0 := by
+        ext i
+        exact hd i (Finset.mem_univ i)
+      subst hd0
+      simpa [MvPowerSeries.coeff_zero_eq_constantCoeff_apply] using hf
+  · rw [Ideal.span_le]
+    rintro _ ⟨i, rfl⟩
+    simp [SetLike.mem_coe, RingHom.mem_ker]
 
 /-- **The annihilator of a coordinatized level module** (patching-instantiation
 shared brick, consumed by leaves 2, 3 and 4; PROVEN 2026-07-25): if `N ≃ₗ[Λ] (Λ/𝔟)^d` and `N`
@@ -6410,25 +6589,74 @@ theorem continuous_of_finite_quotient_maximalIdeal_pow {Λ S : Type*} [CommRing 
     (Ideal.comap f (maximalIdeal S ^ n))
   exact ⟨m, trivial, fun x hx => hm hx⟩
 
-/-- **`ℤ_p`-rigidity of the bottom ring** (patching-instantiation leaf 7b):
-a complete Noetherian local ring with finite residue field receives AT MOST
-ONE ring homomorphism from `ℤ_[p]`.
+/-- **`ℤ_p`-rigidity of the bottom ring** (patching-instantiation leaf 7b;
+PROVEN 2026-07-25): a complete Noetherian local ring with finite residue
+field receives AT MOST ONE ring homomorphism from `ℤ_[p]`.
 
-Two steps.  First `p` cannot map to a unit: otherwise `ℚ_p` would embed in
-`A` and hence, `A` being local with `p` invertible, the residue field would
-contain `ℚ`, contradicting `hres`.  So any `f : ℤ_[p] →+* A` sends
-`p ↦ 𝔪`, hence `p^n ↦ 𝔪^n`.  Second, `A` is `𝔪`-adically separated
-(`IsAdicComplete → IsHausdorff`), so `f` is determined by its reductions
-mod `𝔪^n`; and modulo `𝔪^n` the value of `f` on `x : ℤ_[p]` is the value on
-the natural number `x.appr n`, because `x - x.appr n ∈ (p^n)`.  Ring
-homomorphisms agree on natural-number casts, so `f = g`.
+Two steps.  First, `p` lands in `𝔪`.  This needs no unit/`ℚ_p` argument:
+ANY ring homomorphism sends the natural-number cast `(p : ℤ_[p])` to the
+natural-number cast `(p : A)` (`map_natCast`), and the existence of even
+one `f : ℤ_[p] →+* A` forces the residue field to have characteristic `p`
+— compose `f` with `IsLocalRing.residue` and apply
+`charP_of_ringHom_padicInt`, which is exactly the statement that a FINITE
+field receiving `ℤ_p` has characteristic `p` (the kernel is a nonzero
+prime of the DVR `ℤ_p`, hence `(p)`).  So `(p : A) ∈ 𝔪` by
+`IsLocalRing.residue_eq_zero_iff`, and `(p : A)^n ∈ 𝔪^n`.
+
+Second, `A` is `𝔪`-adically separated (`IsAdicComplete → IsHausdorff`),
+so it suffices to see `f x - g x ∈ 𝔪^n` for every `n`.  Writing
+`x = (x.appr n : ℕ) + p^n * c` (`PadicInt.appr_spec`) and using
+`map_natCast` again on the first summand, the two natural-number values
+cancel and `f x - g x = (p : A)^n * (f c - g c) ∈ 𝔪^n`.
+
+Note what is NOT needed: no continuity hypothesis (the conclusion is
+`Subsingleton (ℤ_[p] →+* A)` for ALL ring homs, continuity being a
+consequence of the `𝔪`-adic structure rather than an extra assumption),
+and `IsNoetherianRing A` is unused by THIS proof — it is carried only to
+match the hypothesis shape of the consumer
+`ringHom_mvPowerSeries_eq_of_taylorWilesAug_le_ker`.  The completeness
+hypothesis is `IsAdicComplete` for the MAXIMAL ideal, which is the ideal
+whose powers the `appr` estimate lands in, so the statement is the right
+one (contrast `MvPowerSeries`, where mathlib's `IsAdicComplete` is for the
+ideal of the variables and is strictly coarser).
+
+HYPOTHESIS AUDIT (recorded 2026-07-26, cross-checked against an
+independent proof of the same statement).  `hcomplete` is not logically
+necessary: `Ideal.iInf_pow_eq_bot_of_isLocalRing` (Krull intersection)
+already gives `⋂ₙ 𝔪ⁿ = ⊥` from `IsLocalRing` + `IsNoetherianRing` alone,
+so separatedness can be had without completeness — the alternative proof
+trades `hcomplete` for `IsNoetherianRing`, which this one leaves unused.
+The hypothesis is KEPT because the consumer supplies it positionally and
+because "complete local with finite residue field" is the shape the
+patching interface hands down; nobody should read its presence as a claim
+that completeness is what makes the statement true.
 
 This is the completed-coefficient analogue of `ringHom_padicInt_eq` above,
 which does the same for a finite FIELD target; the finite residue field is
-what pins `p`, and completeness is what replaces "`𝔪 = 0`". -/
+what pins `p`, and `𝔪`-adic separatedness is what replaces "`𝔪 = 0`". -/
 theorem subsingleton_ringHom_padicInt (p : ℕ) [Fact p.Prime] {A : Type*} [CommRing A]
     [IsLocalRing A] [IsNoetherianRing A] (hcomplete : IsAdicComplete (maximalIdeal A) A)
-    (hres : Finite (A ⧸ maximalIdeal A)) : Subsingleton (ℤ_[p] →+* A) := sorry
+    (hres : Finite (A ⧸ maximalIdeal A)) : Subsingleton (ℤ_[p] →+* A) := by
+  haveI : Finite (ResidueField A) := hres
+  refine ⟨fun f g => ?_⟩
+  have hchar : CharP (ResidueField A) p :=
+    charP_of_ringHom_padicInt ((residue A).comp f)
+  have hpmem : (p : A) ∈ maximalIdeal A := by
+    rw [← residue_eq_zero_iff, map_natCast]
+    exact CharP.cast_eq_zero _ p
+  ext x
+  rw [← sub_eq_zero]
+  refine IsHausdorff.haus hcomplete.toIsHausdorff _ (fun n => ?_)
+  rw [SModEq.sub_mem, smul_eq_mul, Ideal.mul_top, sub_zero]
+  obtain ⟨c, hc⟩ := Ideal.mem_span_singleton.mp (PadicInt.appr_spec n x)
+  have hx : x = ((x.appr n : ℕ) : ℤ_[p]) + (p : ℤ_[p]) ^ n * c := by
+    rw [← hc]; ring
+  have key : f x - g x = (p : A) ^ n * (f c - g c) := by
+    rw [hx]
+    simp only [map_add, map_mul, map_pow, map_natCast]
+    ring
+  rw [key]
+  exact Ideal.mul_mem_right _ _ (Ideal.pow_mem_pow hpmem n)
 
 /-- **The bottom `Λ`-algebra structure is independent of the level**
 (patching-instantiation leaf 7; PROVEN 2026-07-25 over

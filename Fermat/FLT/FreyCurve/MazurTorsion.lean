@@ -130,6 +130,10 @@ import Mathlib.GroupTheory.Coset.Card
 -- `not_fermat_42` and the classification of primitive Pythagorean triples: the two
 -- classical inputs of the `X_1(16)` descent in `MazurSixteen.not_sextic_square`.
 import Mathlib.NumberTheory.FLT.Four
+-- `TorsionCharP.exists_zsmul_eq_of_charP`: cyclicity of the geometric
+-- `p`-torsion in characteristic `p`, the inseparability input of
+-- `exists_zsmul_eq_of_mem_torsionBy_of_charP` below.
+import Fermat.FLT.EllipticCurve.TorsionCharP
 
 @[expose] public section
 
@@ -188,7 +192,13 @@ genuinely modular-curve-theoretic inputs:
   - *present, but sharpened through `X_0(27)` anyway*: `27`, PROVEN
     from `j_of_stable_cyclic_subgroup_order_27` (the `j`-invariant of
     the unique non-cuspidal rational point of `X_0(27)`) and
-    `no_torsion_order_27_of_j` (Olson's CM torsion theorem).
+    `no_torsion_order_27_of_j`, which was Olson's CM torsion theorem and
+    is now itself PROVEN (2026-07-25) over the genus-`0` curve
+    `X_1(9)`: a point of order `27` gives one of order `9`, which puts
+    the curve on the Kubert line, and `j = −12288000` there is a
+    degree-`36` equation in the Kubert parameter with no rational root.
+    So `j_of_stable_cyclic_subgroup_order_27` is the ONLY surviving leaf
+    at this level.
   The two levels `21, 25` are in Kenku's list and have no sharpening
   yet, so they are the only bare sorry nodes left among the eleven.
 * `torsion_finite_rat` (DERIVED from `mazur_point_order`): the
@@ -212,11 +222,11 @@ genuinely modular-curve-theoretic inputs:
   curves `X_1(2,10)` and `X_1(2,12)` have genus ≥ 1 and no
   non-cuspidal rational points; part of the fifteen-groups list of
   Mazur 1977).
-* `not_two_torsion_and_five_point` (PROVEN 2026-07-25 modulo two
-  arithmetic leaves — the earlier "IRREDUCIBLE" verdict is SUPERSEDED):
+* `not_two_torsion_and_five_point` (PROVEN 2026-07-25 modulo ONE
+  arithmetic leaf — the earlier "IRREDUCIBLE" verdict is SUPERSEDED):
   full rational `2`-torsion plus a point of order `5`. The order-`5`
   point gives a Tate parameter `c ≠ 0` with `u¹²Δ_E = c⁵(c² − 11c − 1)`
-  (`MazurTwoTen.exists_tate_disc_of_order_five`, sorry leaf), and full
+  (`MazurTwoTen.exists_tate_disc_of_order_five`, PROVEN 2026-07-25), and full
   `2`-torsion makes `Δ_E` a square
   (`MazurTwoTen.exists_disc_sq_of_full_two_torsion`, PROVEN); together
   they force a rational point with `c ≠ 0` on the conductor-`20`,
@@ -358,8 +368,13 @@ consequently PROVEN from two nodes,
 * `j_of_stable_cyclic_subgroup_order_27` — the `X_0(27)` statement: a
   Galois-stable cyclic subgroup of order `27` forces
   `j(E) = −12288000`, the CM value of discriminant `−27`;
-* `no_torsion_order_27_of_j` — Olson's theorem that a CM elliptic curve
-  over `ℚ` has torsion in `{ℤ/1, ℤ/2, ℤ/3, ℤ/4, ℤ/6, (ℤ/2)²}`,
+* `no_torsion_order_27_of_j` — stated as Olson's theorem that a CM
+  elliptic curve over `ℚ` has torsion in
+  `{ℤ/1, ℤ/2, ℤ/3, ℤ/4, ℤ/6, (ℤ/2)²}`, but PROVEN (2026-07-25) without
+  any CM or reduction theory: the order-`9` point it produces forces the
+  curve onto the genus-`0` curve `X_1(9)`, where `j = −12288000` becomes
+  a degree-`36` polynomial equation in the Kubert parameter with no
+  rational root (`MazurLevel27.jEquation_rat`, a congruence mod `2`),
 
 in place of the former `X_1(27)` citation (genus `13`). Verified with
 PARI/GP (untrusted searcher, statement check only): in the
@@ -1646,16 +1661,29 @@ theorem WeierstrassCurve.exists_stable_cyclic_subgroup_of_rational_point
       (Affine.Point.map_injective (f := Algebra.ofId ℚ (AlgebraicClosure ℚ))) Q
   · intro σ x hx
     obtain ⟨k, rfl⟩ := AddSubgroup.mem_zmultiples_iff.mp hx
-    -- `rw [Affine.Point.map_baseChange …]` does NOT match here: the `rw` elaborates
-    -- the lemma's implicit base ring `R` independently of the goal, so the pattern
-    -- differs from the goal term by an instance path even though the two are defeq.
-    -- Stating the rewrite as a `have` whose LHS is written in the goal's own notation
-    -- makes the match syntactic and leaves the defeq to `exact`.
+    -- REPAIRED 2026-07-25 (flt-lean-88, while verifying an unrelated leaf in
+    -- `Modularity/Patching.lean`, which imports this module).  The previous
+    -- `rw [map_zsmul, Affine.Point.map_baseChange …]` was failing on `main`
+    -- with "did not find an occurrence of the pattern" on a pattern that is
+    -- VISIBLY present in the goal: mathlib's `Affine.Point.map_baseChange`
+    -- elaborates its `Point.map` over the curve `W'⁄F` (base-changed to the
+    -- intermediate field), whereas the goal here carries `Point.map` over `E`
+    -- itself.  Those are DEFEQ but not syntactically equal, so neither `rw`
+    -- nor `simp only` can match — `simp only [Affine.Point.map_baseChange]`
+    -- reports the lemma as an unused argument.  Restating the equation with
+    -- the goal's own elaboration and letting `exact` bridge the two by
+    -- definitional unfolding is what closes it.  Nothing about the statement
+    -- or the mathematics changed; this was a hard error blocking the whole
+    -- downstream cone.  THREE agents diagnosed this independently; one built a
+    -- two-way reproduction in a minimal module (old line fails, this one
+    -- succeeds), and located the mismatch in the `IsScalarTower`/`Algebra`
+    -- arguments that `rw`'s syntactic matching will not cross.
     have hfix : Affine.Point.map
         (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom
-        (Affine.Point.baseChange ℚ (AlgebraicClosure ℚ) Q) =
-        Affine.Point.baseChange ℚ (AlgebraicClosure ℚ) Q :=
-      Affine.Point.map_baseChange _ Q
+          (Affine.Point.baseChange ℚ (AlgebraicClosure ℚ) Q)
+        = Affine.Point.baseChange ℚ (AlgebraicClosure ℚ) Q :=
+      Affine.Point.map_baseChange
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Q
     rw [map_zsmul, hfix]
     exact AddSubgroup.zsmul_mem _ (AddSubgroup.mem_zmultiples _) k
 
@@ -4293,7 +4321,29 @@ recording for a future attack: if `P` has order `25` then
 rational subgroup `ker φ̂` of order `5`, and these are independent
 (`P ∉ E[5]`), so `E'[5] ≅ ℤ/5 ⊕ μ_5` as a Galois module. That is a
 level-`25` structure again, not a simplification — but it is the shape
-in which the classical proofs proceed. -/
+in which the classical proofs proceed.
+
+RE-AUDITED 2026-07-25 against the route that closed level `27`
+(`no_torsion_order_27_of_j`), and it does NOT transfer. That proof works
+because a point of order `27` yields a point of order `9`, and `X_1(9)`
+has genus `0`: the Tate normal form is then a rational LINE
+(`c = d²(d − 1)`, `b = c(d² − d + 1)`), on which the extra hypothesis —
+there, a prescribed `j`-invariant — becomes a one-variable polynomial
+equation that can be refuted by a congruence. Here the descent by one
+prime power gives only a point of order `5`, i.e. the genus-`0` line
+`b = c` of `X_1(5)`; but the residual condition that the order-`5` point
+be `5` times a rational point of order `25` is `X_1(25)` itself, of
+genus `12`, and there is no auxiliary hypothesis (no `j`-invariant, no
+isogeny obstruction — see the `X_0(25)` bullet above) to cut it down to
+a curve of genus `0`. The intermediate quotients of `X_1(25)` by the
+diamond operators do not help either: the only one of genus `0` is the
+index-`2` quotient, which is the level at which a point of order `25` is
+remembered merely up to `(ℤ/25)^×`-multiples of order dividing `5`, and
+that structure is realised by `11a1`'s `25`-isogeny (PARI/GP `ellisomat`
+on `[0,-1,1,-10,-20]` returns the degree matrix `[1,5,5; 5,1,25;
+5,25,1]`, recomputed 2026-07-25). So level `25` remains irreducible for
+the reason recorded above, and is the only level of the eleven for which
+no shallower node is known. -/
 theorem WeierstrassCurve.no_torsion_order_25 (E : WeierstrassCurve ℚ)
     [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 25 :=
   sorry
@@ -4326,7 +4376,33 @@ rational point of `X_0(27)` realized over `ℚ` by two quadratic twists.
 
 This node is strictly shallower than the `X_1(27)` statement it
 replaces: it asks for a rank-`0` Mordell–Weil computation on a genus-`1`
-curve rather than the rational points of a genus-`13` curve. -/
+curve rather than the rational points of a genus-`13` curve.
+
+**THE MORDELL–WEIL HALF IS ALREADY IN MATHLIB** (found 2026-07-25 while
+proving the sibling node `no_torsion_order_27_of_j`). `X_0(27)` is the
+FERMAT CUBIC. Completing the square on `y² + y = x³ − 7` gives
+`(2y + 1)² = 4x³ − 27`, and multiplying by `16` gives
+`(4(2y + 1))² = (4x)³ − 432`, i.e. `Y² = X³ − 432` — the standard
+Weierstrass model of `x³ + y³ = z³`, of conductor `27` and `j = 0`.
+Verified with PARI/GP (untrusted searcher, statement check only):
+`ellisisom([0,0,1,0,-7], [0,0,0,0,-432])` returns the change of
+variables `[1/2, 0, 0, −1/2]`, and both have conductor `27`, `j = 0`,
+torsion `ℤ/3`. So `#X_0(27)(ℚ) = 3` is EXACTLY Fermat's Last Theorem for
+exponent `3` — the three rational points of `x³ + y³ = z³` being
+`(1 : 0 : 1)`, `(0 : 1 : 1)`, `(1 : −1 : 0)` — and mathlib has that
+theorem at this pin as `fermatLastTheoremThree`
+(`Mathlib/NumberTheory/FLT/Three.lean`; `Mathlib.NumberTheory.FLT.Four`
+is already in this file's import cone, so the sibling import is cheap).
+
+What therefore remains in this node is NOT a descent and NOT a rank
+computation: it is only the MODULI INTERPRETATION — that a pair
+`(E, C)` with `C` a Galois-stable cyclic subgroup of order `27` gives a
+rational point of the plane curve `y² + y = x³ − 7`, cuspidal exactly
+when the pair is degenerate, and that the one non-cuspidal rational
+point has `j = −12288000`. That is the piece with no mathlib
+counterpart, and the elementary form it would take here is an explicit
+`X_0(9)`-parametrised family together with Vélu's formulae for the
+three `3`-isogenies in the chain `E → E/C₃ → E/C₉ → E/C₂₇`. -/
 theorem WeierstrassCurve.j_of_stable_cyclic_subgroup_order_27
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 27)
@@ -4338,8 +4414,283 @@ theorem WeierstrassCurve.j_of_stable_cyclic_subgroup_order_27
     E.j = -12288000 :=
   sorry
 
+namespace MazurLevel27
+
+/-! ### The CM `j`-invariant along the `X_1(9)` line
+
+The three lemmas below carry out, as pure arithmetic, the computation
+that closes `no_torsion_order_27_of_j`. Write `E(b, c)` for the Tate
+normal form and impose `9 • (0,0) = 0`; by `MazurLevel18.exists_param`
+this is the rational line `c = d²(d − 1)`, `b = c(d² − d + 1)`, and
+along it (`MazurLevel18.delta_param`)
+
+  `Δ = d⁹(d − 1)⁹(d² − d + 1)³(d³ − 6d² + 3d + 1)`,
+  `c₄ = ((1 − c)² − 4b)² + 24(1 − c)b`  (degree `12` in `d`).
+
+So `j = −12288000` is the single equation `c₄³ + 12288000 Δ = 0`, a
+polynomial of degree `36` in `d` — the fibre of `j : X_1(9) → X(1)` over
+the CM point of discriminant `−27`. It has NO rational root, and the
+proof is a two-element congruence: homogenise `d = N/E` with
+`gcd(N, E) = 1`, and observe that modulo `2` the coefficient `12288000`
+dies, while
+
+  `c₄ ≡ (N³ + N²E + E³)⁴ (mod 2)`,
+
+so the equation forces `N³ + N²E + E³ ≡ 0 (mod 2)`, which fails in each
+of the three admissible parities. (PARI/GP, untrusted searcher: the
+degree-`36` polynomial factors as
+`(d³ + 3d² − 6d + 1)(d⁶ − 12d⁵ + 69d⁴ − 88d³ + 24d² + 6d + 1)` times an
+irreducible degree-`27` factor, all three monic with constant term `1`,
+so the rational-root theorem gives the same conclusion; `p = 2` is used
+here because it needs four case evaluations rather than `37`
+coefficients.) -/
+
+/-- **The `mod 2` obstruction** (PROVEN by `decide`): the homogeneous
+degree-`36` form `c₄(N, E)³ + 12288000 E⁹ Δ(N, E)` is odd at every pair
+of residues other than `(0, 0)`. -/
+lemma jEquation_zmodTwo : ∀ n e : ZMod 2, ¬ (n = 0 ∧ e = 0) →
+    ((((e ^ 3 - n ^ 2 * (n - e)) ^ 2
+          - 4 * e * (n ^ 2 * (n - e) * (n ^ 2 - n * e + e ^ 2))) ^ 2
+        + 24 * e ^ 4 * ((e ^ 3 - n ^ 2 * (n - e)) * (n ^ 2 * (n - e) * (n ^ 2 - n * e + e ^ 2)))) ^ 3
+      + 12288000 * e ^ 9 *
+        (n ^ 9 * (n - e) ^ 9 * (n ^ 2 - n * e + e ^ 2) ^ 3
+          * (n ^ 3 - 6 * n ^ 2 * e + 3 * n * e ^ 2 + e ^ 3))) ≠ 0 := by
+  decide
+
+/-- **The homogeneous form has no primitive integral zero** (PROVEN):
+immediate from `jEquation_zmodTwo` by reduction modulo `2`. -/
+lemma jEquation_int (N E : ℤ) (h2 : ¬ ((2 : ℤ) ∣ N ∧ (2 : ℤ) ∣ E)) :
+    ((((E ^ 3 - N ^ 2 * (N - E)) ^ 2
+          - 4 * E * (N ^ 2 * (N - E) * (N ^ 2 - N * E + E ^ 2))) ^ 2
+        + 24 * E ^ 4 * ((E ^ 3 - N ^ 2 * (N - E)) * (N ^ 2 * (N - E) * (N ^ 2 - N * E + E ^ 2)))) ^ 3
+      + 12288000 * E ^ 9 *
+        (N ^ 9 * (N - E) ^ 9 * (N ^ 2 - N * E + E ^ 2) ^ 3
+          * (N ^ 3 - 6 * N ^ 2 * E + 3 * N * E ^ 2 + E ^ 3))) ≠ 0 := by
+  intro hz
+  refine jEquation_zmodTwo (N : ZMod 2) (E : ZMod 2) ?_ ?_
+  · rintro ⟨hn, he⟩
+    exact h2 ⟨(ZMod.intCast_zmod_eq_zero_iff_dvd N 2).mp hn,
+      (ZMod.intCast_zmod_eq_zero_iff_dvd E 2).mp he⟩
+  · have := congrArg (fun z : ℤ => (z : ZMod 2)) hz
+    push_cast at this
+    exact this
+
+/-- **`j = −12288000` has no solution on the `X_1(9)` line** (PROVEN):
+the degree-`36` equation in the Kubert parameter `d`, cleared of
+denominators against `d = num/den`, is exactly the homogeneous form of
+`jEquation_int` at the coprime pair `(d.num, d.den)`. -/
+lemma jEquation_rat (d : ℚ)
+    (hj : (((1 - d ^ 2 * (d - 1)) ^ 2 - 4 * (d ^ 2 * (d - 1) * (d ^ 2 - d + 1))) ^ 2
+        + 24 * ((1 - d ^ 2 * (d - 1)) * (d ^ 2 * (d - 1) * (d ^ 2 - d + 1)))) ^ 3
+      + 12288000 * (d ^ 9 * (d - 1) ^ 9 * (d ^ 2 - d + 1) ^ 3
+        * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1)) = 0) : False := by
+  have hd0 : ((d.den : ℚ)) ≠ 0 := Nat.cast_ne_zero.mpr d.den_nz
+  have hcop : ¬ ((2 : ℤ) ∣ d.num ∧ (2 : ℤ) ∣ (d.den : ℤ)) := by
+    rintro ⟨h1, h2⟩
+    have h1' : 2 ∣ d.num.natAbs := by simpa using Int.natAbs_dvd_natAbs.mpr h1
+    have h2' : 2 ∣ d.den := by exact_mod_cast h2
+    have := Nat.dvd_gcd h1' h2'
+    rw [d.reduced] at this
+    omega
+  refine jEquation_int d.num (d.den : ℤ) hcop ?_
+  have hNq : ((d.num : ℚ)) = d * ((d.den : ℚ)) := (div_eq_iff hd0).mp (Rat.num_div_den d)
+  have key : (((((d.den : ℤ) ^ 3 - d.num ^ 2 * (d.num - (d.den : ℤ))) ^ 2
+          - 4 * (d.den : ℤ) * (d.num ^ 2 * (d.num - (d.den : ℤ))
+              * (d.num ^ 2 - d.num * (d.den : ℤ) + (d.den : ℤ) ^ 2))) ^ 2
+        + 24 * (d.den : ℤ) ^ 4 * (((d.den : ℤ) ^ 3 - d.num ^ 2 * (d.num - (d.den : ℤ)))
+            * (d.num ^ 2 * (d.num - (d.den : ℤ))
+              * (d.num ^ 2 - d.num * (d.den : ℤ) + (d.den : ℤ) ^ 2)))) ^ 3
+      + 12288000 * (d.den : ℤ) ^ 9 *
+        (d.num ^ 9 * (d.num - (d.den : ℤ)) ^ 9
+          * (d.num ^ 2 - d.num * (d.den : ℤ) + (d.den : ℤ) ^ 2) ^ 3
+          * (d.num ^ 3 - 6 * d.num ^ 2 * (d.den : ℤ) + 3 * d.num * (d.den : ℤ) ^ 2
+              + (d.den : ℤ) ^ 3)) : ℤ) = 0 := by
+    have hq : ((((((d.den : ℤ) ^ 3 - d.num ^ 2 * (d.num - (d.den : ℤ))) ^ 2
+          - 4 * (d.den : ℤ) * (d.num ^ 2 * (d.num - (d.den : ℤ))
+              * (d.num ^ 2 - d.num * (d.den : ℤ) + (d.den : ℤ) ^ 2))) ^ 2
+        + 24 * (d.den : ℤ) ^ 4 * (((d.den : ℤ) ^ 3 - d.num ^ 2 * (d.num - (d.den : ℤ)))
+            * (d.num ^ 2 * (d.num - (d.den : ℤ))
+              * (d.num ^ 2 - d.num * (d.den : ℤ) + (d.den : ℤ) ^ 2)))) ^ 3
+      + 12288000 * (d.den : ℤ) ^ 9 *
+        (d.num ^ 9 * (d.num - (d.den : ℤ)) ^ 9
+          * (d.num ^ 2 - d.num * (d.den : ℤ) + (d.den : ℤ) ^ 2) ^ 3
+          * (d.num ^ 3 - 6 * d.num ^ 2 * (d.den : ℤ) + 3 * d.num * (d.den : ℤ) ^ 2
+              + (d.den : ℤ) ^ 3)) : ℤ) : ℚ) = 0 := by
+      push_cast
+      rw [hNq]
+      linear_combination ((d.den : ℚ)) ^ 36 * hj
+    exact_mod_cast hq
+  exact key
+
+/-- **`j · Δ = c₄³`** (PROVEN): the definition `j = Δ'⁻¹ c₄³` cleared of
+its inverse, which is how the `j`-invariant hypothesis is turned into a
+polynomial identity. -/
+lemma cFour_cube_eq (W : WeierstrassCurve ℚ) [W.IsElliptic] : W.j * W.Δ = W.c₄ ^ 3 := by
+  rw [← WeierstrassCurve.coe_Δ', WeierstrassCurve.j, mul_comm, ← mul_assoc, ← Units.val_mul,
+    mul_inv_cancel, Units.val_one, one_mul]
+
+/-- **The `j`-invariant survives the Tate normal form** (PROVEN): if two
+changes of variables carry `E⁄ℚ` to `E(b, c)` then `E` and `E(b, c)`
+have the same `j`-invariant. Stated separately because
+`WeierstrassCurve.j` carries an `IsElliptic` instance argument, so the
+transport has to go through `simp_rw` (mathlib's own advice at the
+definition of `j`). -/
+lemma jInvariant_of_variableChange (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (C₁ C₂ : VariableChange ℚ) (b c : ℚ)
+    [(⟨1 - c, -b, -b, 0, 0⟩ : WeierstrassCurve ℚ).IsElliptic]
+    (hEq : C₂ • (C₁ • (E⁄ℚ)) = (⟨1 - c, -b, -b, 0, 0⟩ : WeierstrassCurve ℚ)) :
+    E.j = (⟨1 - c, -b, -b, 0, 0⟩ : WeierstrassCurve ℚ).j := by
+  haveI : (E⁄ℚ).IsElliptic := inferInstanceAs (E.map (algebraMap ℚ ℚ)).IsElliptic
+  simp_rw [← hEq, variableChange_j]
+  simp [WeierstrassCurve.baseChange]
+
+/-- **No curve of `j`-invariant `−12288000` carries a rational point of
+order `9`, in Tate coordinates** (PROVEN): the `(b, c)` form of the
+level-`27` CM statement. Together `hc`, `hb` say that `(0,0)` has order
+`9` on `E(b, c)` (`MazurLevel18.exists_param`), and `hj` says
+`j(E(b,c)) = −12288000` in the denominator-free form `c₄³ + 12288000 Δ = 0`. -/
+theorem no_jInvariant_of_order_nine (b c d : ℚ)
+    (hc : c = d ^ 2 * (d - 1)) (hb : b = c * (d ^ 2 - d + 1))
+    (hj : (⟨1 - c, -b, -b, 0, 0⟩ : WeierstrassCurve ℚ).c₄ ^ 3
+        + 12288000 * (⟨1 - c, -b, -b, 0, 0⟩ : WeierstrassCurve ℚ).Δ = 0) : False := by
+  refine jEquation_rat d ?_
+  subst hb; subst hc
+  simp only [WeierstrassCurve.c₄, WeierstrassCurve.b₂, WeierstrassCurve.b₄,
+    WeierstrassCurve.Δ, WeierstrassCurve.b₆, WeierstrassCurve.b₈] at hj
+  linear_combination hj
+
+end MazurLevel27
+
+/-- **Tate normal form at a rational point of order `9`, recording the
+`j`-invariant** (PROVEN 2026-07-25): the same construction as
+`exists_tateNormalForm_of_order_nine`, whose conclusion is enlarged by
+the `j`-invariant relation `j(E) · Δ(E(b,c)) = c₄(E(b,c))³`.
+
+The two changes of variables are isomorphisms, so they preserve `j`;
+the sibling theorem simply does not expose that, because its consumer
+(`not_order_two_and_order_nine_point`) does not need it. This variant is
+what `no_torsion_order_27_of_j` needs, since there the input is a
+`j`-invariant and the output is a Diophantine condition on the Kubert
+parameter. The relation is stated multiplied out, as
+`E.j * Δ = c₄ ^ 3`, so that the statement does not have to carry an
+`IsElliptic` instance for `E(b, c)`. -/
+theorem WeierstrassCurve.exists_tateNormalForm_jInvariant_of_order_nine
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] (Q : (E⁄ℚ).Point) (hQ : addOrderOf Q = 9) :
+    ∃ (b c : ℚ) (_hb : b ≠ 0)
+      (_hΔ : (⟨1 - c, -b, -b, 0, 0⟩ : WeierstrassCurve ℚ).Δ ≠ 0)
+      (h00 : (⟨1 - c, -b, -b, 0, 0⟩ : WeierstrassCurve ℚ).toAffine.Nonsingular 0 0)
+      (Ψ : (E⁄ℚ).Point ≃+ (⟨1 - c, -b, -b, 0, 0⟩ : WeierstrassCurve ℚ).toAffine.Point),
+      Ψ Q = Affine.Point.some 0 0 h00 ∧
+        E.j * (⟨1 - c, -b, -b, 0, 0⟩ : WeierstrassCurve ℚ).Δ
+          = (⟨1 - c, -b, -b, 0, 0⟩ : WeierstrassCurve ℚ).c₄ ^ 3 := by
+  haveI : (E⁄ℚ).IsElliptic := inferInstanceAs (E.map (algebraMap ℚ ℚ)).IsElliptic
+  -- coordinates of `Q`
+  have hQ0 : Q ≠ 0 := by rintro rfl; simp at hQ
+  obtain ⟨X, Y, hns, hQxy⟩ :
+      ∃ (X Y : ℚ) (h : (E⁄ℚ).toAffine.Nonsingular X Y), Q = Affine.Point.some X Y h := by
+    rcases hcase : Q with _ | ⟨X, Y, h⟩
+    · exact absurd hcase hQ0
+    · exact ⟨X, Y, h, rfl⟩
+  -- `Q` is not `2`-torsion, so `2Y + a₁X + a₃ ≠ 0`
+  have hQ2 : Q + Q ≠ 0 := by
+    intro h
+    have hd : addOrderOf Q ∣ 2 := addOrderOf_dvd_iff_nsmul_eq_zero.mpr (by rw [two_nsmul]; exact h)
+    rw [hQ] at hd; norm_num at hd
+  have hwne : Y ≠ (E⁄ℚ).toAffine.negY X Y := fun h =>
+    hQ2 (by rw [hQxy]; exact Point.add_self_of_Y_eq h)
+  have ha3ne : (E⁄ℚ).a₃ + X * (E⁄ℚ).a₁ + 2 * Y ≠ 0 := by
+    intro h; exact hwne (by rw [Affine.negY]; linarith [h])
+  -- the translating/shearing change of variables
+  set s₀ : ℚ := ((E⁄ℚ).a₄ + 2 * X * (E⁄ℚ).a₂ - Y * (E⁄ℚ).a₁ + 3 * X ^ 2)
+      / ((E⁄ℚ).a₃ + X * (E⁄ℚ).a₁ + 2 * Y) with hs₀
+  set C₁ : VariableChange ℚ := ⟨1, X, s₀, Y⟩ with hC₁
+  have hE1a₃ : (C₁ • (E⁄ℚ)).a₃ = (E⁄ℚ).a₃ + X * (E⁄ℚ).a₁ + 2 * Y := by
+    rw [WeierstrassCurve.variableChange_a₃, hC₁]; simp
+  have hE1a₄ : (C₁ • (E⁄ℚ)).a₄ = 0 := by
+    rw [WeierstrassCurve.variableChange_a₄, hC₁]
+    simp only [inv_one, Units.val_one, one_pow, one_mul]
+    rw [hs₀]
+    field_simp
+    ring
+  have hE1a₆ : (C₁ • (E⁄ℚ)).a₆ = 0 := by
+    have heq := hns.1
+    rw [Affine.equation_iff] at heq
+    rw [WeierstrassCurve.variableChange_a₆, hC₁]
+    simp only [inv_one, Units.val_one, one_pow, one_mul]
+    linear_combination -heq
+  -- `(0,0)` is a nonsingular point of the sheared curve, and it corresponds to `Q`
+  have h00' : (C₁ • (E⁄ℚ)).toAffine.Nonsingular 0 0 :=
+    Affine.nonsingular_zero.mpr ⟨hE1a₆, Or.inl (by rw [hE1a₃]; exact ha3ne)⟩
+  have hmap : Point.equivVariableChange (E⁄ℚ) C₁ (Point.some 0 0 h00') = Q := by
+    rw [Point.equivVariableChange_some, hQxy]
+    exact Point.some_eq_some _ (by simp [hC₁]) (by simp [hC₁])
+  -- `a₂ ≠ 0` after the shear, else `(0,0)` — hence `Q` — would have order `3`
+  have ha2ne : (C₁ • (E⁄ℚ)).a₂ ≠ 0 := by
+    intro hz
+    have h3P : Point.some 0 0 h00' + Point.some 0 0 h00' + Point.some 0 0 h00' = 0 :=
+      MazurLevel18.order_three_of_a₂_eq_zero hz hE1a₄ (by rw [hE1a₃]; exact ha3ne) h00'
+    have hQ3 : Q + Q + Q = 0 := by
+      have hc := congrArg (Point.equivVariableChange (E⁄ℚ) C₁) h3P
+      rwa [map_add, map_add, map_zero, hmap] at hc
+    have hd : addOrderOf Q ∣ 3 :=
+      addOrderOf_dvd_iff_nsmul_eq_zero.mpr (by
+        have e : (3 : ℕ) • Q = Q + Q + Q := by abel
+        rw [e]; exact hQ3)
+    rw [hQ] at hd; norm_num at hd
+  -- the scaling that equalises `a₂` and `a₃`
+  set u : ℚˣ := Units.mk0 ((C₁ • (E⁄ℚ)).a₃ / (C₁ • (E⁄ℚ)).a₂)
+    (div_ne_zero (by rw [hE1a₃]; exact ha3ne) ha2ne)
+  set C₂ : VariableChange ℚ := ⟨u, 0, 0, 0⟩ with hC₂
+  have huv : (u : ℚ) = (C₁ • (E⁄ℚ)).a₃ / (C₁ • (E⁄ℚ)).a₂ := rfl
+  have hune : (u : ℚ) ≠ 0 := u.ne_zero
+  set b : ℚ := -(C₂ • (C₁ • (E⁄ℚ))).a₂ with hbdef
+  set c : ℚ := 1 - (C₂ • (C₁ • (E⁄ℚ))).a₁ with hcdef
+  have hA4 : (C₂ • (C₁ • (E⁄ℚ))).a₄ = 0 := by
+    rw [WeierstrassCurve.variableChange_a₄, hC₂]; simp [hE1a₄]
+  have hA6 : (C₂ • (C₁ • (E⁄ℚ))).a₆ = 0 := by
+    rw [WeierstrassCurve.variableChange_a₆, hC₂]; simp [hE1a₆]
+  have hA23 : (C₂ • (C₁ • (E⁄ℚ))).a₃ = (C₂ • (C₁ • (E⁄ℚ))).a₂ := by
+    rw [WeierstrassCurve.variableChange_a₃, WeierstrassCurve.variableChange_a₂, hC₂]
+    simp only [Units.val_inv_eq_inv_val]
+    field_simp [huv]
+    rw [huv]; field_simp
+    ring
+  have hA2v : (C₂ • (C₁ • (E⁄ℚ))).a₂ = ((u : ℚ))⁻¹ ^ 2 * (C₁ • (E⁄ℚ)).a₂ := by
+    rw [WeierstrassCurve.variableChange_a₂, hC₂]; simp
+  have hA2ne : (C₂ • (C₁ • (E⁄ℚ))).a₂ ≠ 0 := by
+    rw [hA2v]; exact mul_ne_zero (pow_ne_zero 2 (inv_ne_zero hune)) ha2ne
+  have hbne : b ≠ 0 := by rw [hbdef, neg_ne_zero]; exact hA2ne
+  have hEq : C₂ • (C₁ • (E⁄ℚ)) = (⟨1 - c, -b, -b, 0, 0⟩ : WeierstrassCurve ℚ) := by
+    ext <;> simp [hbdef, hcdef, hA4, hA6, hA23]
+  have h00'' : (C₂ • (C₁ • (E⁄ℚ))).toAffine.Nonsingular 0 0 :=
+    Affine.nonsingular_zero.mpr ⟨hA6, Or.inl (by rw [hA23]; exact hA2ne)⟩
+  have hΔE : (E⁄ℚ).Δ ≠ 0 := (WeierstrassCurve.isUnit_Δ (W := (E⁄ℚ))).ne_zero
+  have hΔ2 : (C₂ • (C₁ • (E⁄ℚ))).Δ ≠ 0 := by
+    rw [WeierstrassCurve.variableChange_Δ, WeierstrassCurve.variableChange_Δ]
+    exact mul_ne_zero (pow_ne_zero _ (Units.ne_zero _))
+      (mul_ne_zero (pow_ne_zero _ (Units.ne_zero _)) hΔE)
+  -- the `j`-invariant is carried along by the two changes of variables
+  haveI hellW : (⟨1 - c, -b, -b, 0, 0⟩ : WeierstrassCurve ℚ).IsElliptic :=
+    hEq ▸ (inferInstance : (C₂ • (C₁ • (E⁄ℚ))).IsElliptic)
+  have hjW : E.j = (⟨1 - c, -b, -b, 0, 0⟩ : WeierstrassCurve ℚ).j :=
+    MazurLevel27.jInvariant_of_variableChange E C₁ C₂ b c hEq
+  have hjmul : E.j * (⟨1 - c, -b, -b, 0, 0⟩ : WeierstrassCurve ℚ).Δ
+      = (⟨1 - c, -b, -b, 0, 0⟩ : WeierstrassCurve ℚ).c₄ ^ 3 := by
+    rw [hjW]; exact MazurLevel27.cFour_cube_eq _
+  refine ⟨b, c, hbne, hEq ▸ hΔ2, hEq ▸ h00'',
+    (Point.equivVariableChange (E⁄ℚ) C₁).symm.trans
+      ((Point.equivVariableChange (C₁ • (E⁄ℚ)) C₂).symm.trans (Point.equivOfEq hEq)), ?_, hjmul⟩
+  have e1 : (Point.equivVariableChange (E⁄ℚ) C₁).symm Q = Point.some 0 0 h00' := by
+    rw [← hmap]; exact (Point.equivVariableChange (E⁄ℚ) C₁).symm_apply_apply _
+  have e2 : (Point.equivVariableChange (C₁ • (E⁄ℚ)) C₂) (Point.some 0 0 h00'')
+      = Point.some 0 0 h00' := by
+    rw [Point.equivVariableChange_some]
+    exact Point.some_eq_some _ (by simp [hC₂]) (by simp [hC₂])
+  simp only [AddEquiv.trans_apply, e1, ← e2, AddEquiv.symm_apply_apply, Point.equivOfEq_some]
+
 /-- **No rational point of order `27` on a curve of `j`-invariant
-`−12288000`** (sorry node — the CM torsion content, 2026-07-25): the
+`−12288000`** (PROVEN 2026-07-25 — the CM torsion content, over the
+`X_1(9)` line rather than Olson's tables): the
 second half of the level-`27` decomposition.
 
 Curves with `j = −12288000` are exactly the quadratic twists of one
@@ -4358,11 +4709,49 @@ has a point of order `9`.
 Unlike the `X_1(27)` citation it replaces, this node is a statement
 about a single explicit twist family and is elementary in Olson's
 sense (reduction at the primes of good reduction, using that the CM
-field is not contained in `ℚ`). -/
+field is not contained in `ℚ`).
+
+PROVEN 2026-07-25, and NOT along Olson's route — no reduction theory,
+no CM theory and no twist family are used. A point `Q` of order `27`
+supplies the point `3 • Q` of order `9`, and a rational point of order
+`9` puts the curve on the Kubert line `c = d²(d − 1)`,
+`b = c(d² − d + 1)` of the Tate normal form, which is `X_1(9)` — a
+genus-`0` modular curve, so the `j`-invariant becomes an explicit
+degree-`36` rational function of the parameter `d`. The hypothesis
+`j = −12288000` is then the single Diophantine equation
+`c₄(d)³ + 12288000 Δ(d) = 0`, and `MazurLevel27.jEquation_rat` shows it
+has no rational root — by a four-case congruence modulo `2` on the
+homogenised form. So the statement is in fact strengthened for free:
+NO curve of `j`-invariant `−12288000` has a rational point of order
+`9`, which is the level-`9` half of Olson's table for this
+discriminant. The transport of the `j`-invariant into Tate coordinates
+is `exists_tateNormalForm_jInvariant_of_order_nine`. -/
 theorem WeierstrassCurve.no_torsion_order_27_of_j (E : WeierstrassCurve ℚ)
     [E.IsElliptic] (hj : E.j = -12288000) (Q : (E⁄ℚ).Point) :
-    addOrderOf Q ≠ 27 :=
-  sorry
+    addOrderOf Q ≠ 27 := by
+  intro hQ
+  haveI : (E⁄ℚ).IsElliptic := inferInstanceAs (E.map (algebraMap ℚ ℚ)).IsElliptic
+  have hR : addOrderOf ((3 : ℕ) • Q) = 9 := by
+    rw [addOrderOf_nsmul' Q (by decide), hQ]; decide
+  obtain ⟨b, c, hb, _hΔ, h00, Ψ, hΨ, hjmul⟩ :=
+    E.exists_tateNormalForm_jInvariant_of_order_nine ((3 : ℕ) • Q) hR
+  set W : WeierstrassCurve.Affine ℚ := (⟨1 - c, -b, -b, 0, 0⟩ : WeierstrassCurve ℚ).toAffine
+  have h1 : W.a₁ = 1 - c := rfl
+  have h2 : W.a₂ = -b := rfl
+  have h3 : W.a₃ = -b := rfl
+  have h4 : W.a₄ = 0 := rfl
+  -- the order-`9` condition at `(0,0)`, i.e. `ψ₃(c) = 0`
+  have hQ9 : (9 : ℕ) • ((3 : ℕ) • Q) = 0 := by rw [← hR]; exact addOrderOf_nsmul_eq_zero _
+  have h9 : (9 : ℕ) • (Affine.Point.some 0 0 h00 : W.Point) = 0 := by
+    rw [← hΨ, ← map_nsmul, hQ9, map_zero]
+  have hpsi := MazurLevel18.psi3_eq_zero h1 h2 h3 h4 hb h00 h9
+  have hc0 : c ≠ 0 := by
+    rintro rfl
+    exact hb (pow_eq_zero_iff (n := 3) (by norm_num) |>.mp (by linear_combination -hpsi))
+  obtain ⟨d, hcd, hbd⟩ := MazurLevel18.exists_param hc0 hpsi
+  refine MazurLevel27.no_jInvariant_of_order_nine b c d hcd hbd ?_
+  rw [hj] at hjmul
+  linear_combination -hjmul
 
 /-- **No rational point of order `27`** (PROVEN 2026-07-25 from the two
 `X_0(27)`-level nodes above, via the bridge
@@ -5044,7 +5433,7 @@ curve of conductor `20`, in the elementary Diophantine form
    discriminant is `Δ(E(c)) = c⁵(c² − 11c − 1)`. This is a rational
    change of variables, so `Δ_E` and `Δ(E(c))` differ by `u¹²`
    (`WeierstrassCurve.variableChange_Δ`), a square.
-   [`MazurTwoTen.exists_tate_disc_of_order_five`]
+   [`MazurTwoTen.exists_tate_disc_of_order_five`, PROVEN]
 2. **Full `2`-torsion ⇒ `Δ_E` is a rational square.** The three
    `2`-torsion abscissae `θ₁, θ₂, θ₃` are the roots of the `2`-division
    cubic, and `Δ = 16((θ₁−θ₂)(θ₁−θ₃)(θ₂−θ₃))²`.
@@ -5341,9 +5730,199 @@ theorem MazurTwoTen.exists_disc_sq_of_full_two_torsion (E : WeierstrassCurve ℚ
   simp only [WeierstrassCurve.Δ, hb8, hb2, hb4, hb6]
   ring
 
-/-- **Tate normal form at a rational point of order `5`** (sorry leaf):
-if `E/ℚ` carries a rational point of order `5` then, for some nonzero
-`c` and `u`, `u¹² Δ_E = c⁵(c² − 11c − 1)`.
+/-- **Tate normal form together with its scaling factor** (PROVEN
+2026-07-25): a curve `W/ℚ` carrying a rational point `P` with
+`2P ≠ 0` and `3P ≠ 0` is `ℚ`-isomorphic to `y² + (1−c)xy − by = x³ − bx²`
+by an isomorphism taking `P` to `(0,0)`, and the isomorphism scales the
+discriminant by an explicit `u¹²`.
+
+This is `WeierstrassCurve.exists_tateNormalForm` /
+`WeierstrassCurve.exists_tateNormalForm_of_order_nine` (same three
+changes of variables, same licensing of the two divisions by the two
+order hypotheses) with ONE extra piece of data: the two sibling nodes
+return only the group isomorphism `Ψ`, and an isomorphism of
+Mordell–Weil groups says nothing about discriminants. Here the scaling
+unit `u = C₂.u` of the third change of variables is carried out of the
+proof, so that `WeierstrassCurve.variableChange_Δ`
+(`(C • W).Δ = C.u⁻¹ ^ 12 * W.Δ`) is available downstream. The first
+change of variables has `u = 1`, so it contributes nothing to the
+scaling. -/
+theorem MazurTwoTen.exists_tateNormalForm_scaled (W : WeierstrassCurve ℚ) [W.IsElliptic]
+    (P : W.toAffine.Point) (hP2 : P + P ≠ 0) (hP3 : P + P + P ≠ 0) :
+    ∃ (b c u : ℚ) (_hu : u ≠ 0) (_hb : b ≠ 0)
+      (h00 : (⟨1 - c, -b, -b, 0, 0⟩ : WeierstrassCurve ℚ).toAffine.Nonsingular 0 0)
+      (Ψ : W.toAffine.Point ≃+ (⟨1 - c, -b, -b, 0, 0⟩ : WeierstrassCurve ℚ).toAffine.Point),
+      Ψ P = Affine.Point.some 0 0 h00 ∧
+        u ^ 12 * W.Δ = (⟨1 - c, -b, -b, 0, 0⟩ : WeierstrassCurve ℚ).Δ := by
+  -- coordinates of `P`
+  obtain ⟨X, Y, hns, hPxy⟩ :
+      ∃ (X Y : ℚ) (h : W.toAffine.Nonsingular X Y), P = Affine.Point.some X Y h := by
+    rcases hcase : P with _ | ⟨X, Y, h⟩
+    · exact absurd (by rw [hcase]; simp [← Affine.Point.zero_def]) hP2
+    · exact ⟨X, Y, h, rfl⟩
+  -- `2P ≠ 0` is exactly nonvanishing of the tangent denominator at `P`
+  have hwne : Y ≠ W.toAffine.negY X Y := fun h =>
+    hP2 (by rw [hPxy]; exact Affine.Point.add_self_of_Y_eq h)
+  have ha3ne : W.a₃ + X * W.a₁ + 2 * Y ≠ 0 := by
+    intro h; exact hwne (by rw [Affine.negY]; linarith [h])
+  -- the translating/shearing change of variables
+  set s₀ : ℚ := (W.a₄ + 2 * X * W.a₂ - Y * W.a₁ + 3 * X ^ 2) / (W.a₃ + X * W.a₁ + 2 * Y)
+    with hs₀
+  set C₁ : VariableChange ℚ := ⟨1, X, s₀, Y⟩ with hC₁
+  have hE1a₃ : (C₁ • W).a₃ = W.a₃ + X * W.a₁ + 2 * Y := by
+    rw [WeierstrassCurve.variableChange_a₃, hC₁]; simp
+  have hE1a₄ : (C₁ • W).a₄ = 0 := by
+    rw [WeierstrassCurve.variableChange_a₄, hC₁]
+    simp only [inv_one, Units.val_one, one_pow, one_mul]
+    rw [hs₀]
+    field_simp
+    ring
+  have hE1a₆ : (C₁ • W).a₆ = 0 := by
+    have heq := hns.1
+    rw [Affine.equation_iff] at heq
+    rw [WeierstrassCurve.variableChange_a₆, hC₁]
+    simp only [inv_one, Units.val_one, one_pow, one_mul]
+    linear_combination -heq
+  have h00' : (C₁ • W).toAffine.Nonsingular 0 0 :=
+    Affine.nonsingular_zero.mpr ⟨hE1a₆, Or.inl (by rw [hE1a₃]; exact ha3ne)⟩
+  have hmap : Point.equivVariableChange W C₁ (Point.some 0 0 h00') = P := by
+    rw [Point.equivVariableChange_some, hPxy]
+    exact Point.some_eq_some _ (by simp [hC₁]) (by simp [hC₁])
+  -- `a₂ ≠ 0` after the shear, else `(0,0)` — hence `P` — would have order dividing `3`
+  have ha2ne : (C₁ • W).a₂ ≠ 0 := by
+    intro hz
+    refine hP3 ?_
+    have h3P : Point.some 0 0 h00' + Point.some 0 0 h00' + Point.some 0 0 h00' = 0 :=
+      WeierstrassCurve.three_nsmul_origin_eq_zero _ hz hE1a₄
+        (by rw [hE1a₃]; exact ha3ne) h00'
+    have hc := congrArg (Point.equivVariableChange W C₁) h3P
+    rwa [map_add, map_add, map_zero, hmap] at hc
+  -- the scaling that equalises `a₂` and `a₃`
+  set u : ℚˣ := Units.mk0 ((C₁ • W).a₃ / (C₁ • W).a₂)
+    (div_ne_zero (by rw [hE1a₃]; exact ha3ne) ha2ne)
+  set C₂ : VariableChange ℚ := ⟨u, 0, 0, 0⟩ with hC₂
+  have huv : (u : ℚ) = (C₁ • W).a₃ / (C₁ • W).a₂ := rfl
+  have hune : (u : ℚ) ≠ 0 := u.ne_zero
+  set b : ℚ := -(C₂ • (C₁ • W)).a₂ with hbdef
+  set c : ℚ := 1 - (C₂ • (C₁ • W)).a₁ with hcdef
+  have hA4 : (C₂ • (C₁ • W)).a₄ = 0 := by
+    rw [WeierstrassCurve.variableChange_a₄, hC₂]; simp [hE1a₄]
+  have hA6 : (C₂ • (C₁ • W)).a₆ = 0 := by
+    rw [WeierstrassCurve.variableChange_a₆, hC₂]; simp [hE1a₆]
+  have hA23 : (C₂ • (C₁ • W)).a₃ = (C₂ • (C₁ • W)).a₂ := by
+    rw [WeierstrassCurve.variableChange_a₃, WeierstrassCurve.variableChange_a₂, hC₂]
+    simp only [Units.val_inv_eq_inv_val]
+    field_simp [huv]
+    rw [huv]; field_simp
+    ring
+  have hA2v : (C₂ • (C₁ • W)).a₂ = ((u : ℚ))⁻¹ ^ 2 * (C₁ • W).a₂ := by
+    rw [WeierstrassCurve.variableChange_a₂, hC₂]; simp
+  have hA2ne : (C₂ • (C₁ • W)).a₂ ≠ 0 := by
+    rw [hA2v]; exact mul_ne_zero (pow_ne_zero 2 (inv_ne_zero hune)) ha2ne
+  have hbne : b ≠ 0 := by rw [hbdef, neg_ne_zero]; exact hA2ne
+  have hEq : C₂ • (C₁ • W) = (⟨1 - c, -b, -b, 0, 0⟩ : WeierstrassCurve ℚ) := by
+    ext <;> simp [hbdef, hcdef, hA4, hA6, hA23]
+  have h00'' : (C₂ • (C₁ • W)).toAffine.Nonsingular 0 0 :=
+    Affine.nonsingular_zero.mpr ⟨hA6, Or.inl (by rw [hA23]; exact hA2ne)⟩
+  -- the discriminant scales by `u⁻¹¹²`; the first change of variables has `u = 1`
+  have hΔ : ((u : ℚ))⁻¹ ^ 12 * W.Δ = (C₂ • (C₁ • W)).Δ := by
+    rw [WeierstrassCurve.variableChange_Δ, WeierstrassCurve.variableChange_Δ, hC₁, hC₂]
+    simp
+  refine ⟨b, c, ((u : ℚ))⁻¹, inv_ne_zero hune, hbne, hEq ▸ h00'',
+    (Point.equivVariableChange W C₁).symm.trans
+      ((Point.equivVariableChange (C₁ • W) C₂).symm.trans (Point.equivOfEq hEq)), ?_, ?_⟩
+  · have e1 : (Point.equivVariableChange W C₁).symm P = Point.some 0 0 h00' := by
+      rw [← hmap]; exact (Point.equivVariableChange W C₁).symm_apply_apply _
+    have e2 : (Point.equivVariableChange (C₁ • W) C₂) (Point.some 0 0 h00'')
+        = Point.some 0 0 h00' := by
+      rw [Point.equivVariableChange_some]
+      exact Point.some_eq_some _ (by simp [hC₂]) (by simp [hC₂])
+    simp only [AddEquiv.trans_apply, e1, ← e2, AddEquiv.symm_apply_apply, Point.equivOfEq_some]
+  · rw [hΔ, hEq]
+
+/-- **The order-`5` condition on the Tate normal form is `b = c`**
+(PROVEN 2026-07-25): if the origin of `E(b,c) : y² + (1−c)xy − by =
+x³ − bx²` has order exactly `5`, then `b = c`. This is the one step of
+the order-`5` normal form that carries arithmetic content, and it is a
+three-line group-law computation rather than a division-polynomial one.
+
+On `E(b,c)` the tangent at `(0,0)` is horizontal (`a₄ = 0`, so the slope
+is `a₄/a₃ = 0`), which gives `2P = (b, bc)`; the secant through
+`(b, bc)` and `(0,0)` has slope `c`, which gives `3P = (c, b − c)`; and
+`−2P = (b, 0)`. So `5P = O`, i.e. `3P = −2P`, reads `c = b` on
+abscissae. Only the abscissa is needed — the ordinates then agree
+automatically, as they must.
+
+The hypothesis `b ≠ 0` is what makes both formulae the generic ones:
+`negY 0 0 = b`, so `b ≠ 0` says `(0,0)` is not `2`-torsion (licensing
+the doubling), and `b ≠ 0` is also `x(2P) ≠ x(P)` (licensing the secant).
+Husemöller, *Elliptic Curves*, ch. 4; Kubert 1976, §2, Table 3, where the
+`X_1(5)` relation is recorded as `b = c`. Verified numerically with
+PARI/GP (`elladd`/`ellmul` on `E(c,c)` for many `c`). -/
+lemma MazurTwoTen.tateNormalForm_b_eq_c_of_order_five (b c : ℚ) (hb : b ≠ 0)
+    (h00 : (⟨1 - c, -b, -b, 0, 0⟩ : WeierstrassCurve ℚ).toAffine.Nonsingular 0 0)
+    (h5 : addOrderOf (Affine.Point.some 0 0 h00 :
+      (⟨1 - c, -b, -b, 0, 0⟩ : WeierstrassCurve ℚ).toAffine.Point) = 5) :
+    b = c := by
+  set V : WeierstrassCurve ℚ := ⟨1 - c, -b, -b, 0, 0⟩ with hV
+  set P : V.toAffine.Point := Affine.Point.some 0 0 h00 with hP
+  -- the origin is not `2`-torsion: `negY 0 0 = b ≠ 0`
+  have hnegY0 : V.toAffine.negY 0 0 = b := by simp [Affine.negY, hV]
+  have hy2 : (0 : ℚ) ≠ V.toAffine.negY 0 0 := by
+    rw [hnegY0]; exact fun h => hb h.symm
+  -- the tangent at the origin is horizontal
+  have hslope0 : V.toAffine.slope 0 0 0 0 = 0 := by
+    rw [Affine.slope_of_Y_ne rfl hy2]
+    simp [hV]
+  -- `2P = (b, bc)`
+  have hx2 : V.toAffine.addX 0 0 (V.toAffine.slope 0 0 0 0) = b := by
+    rw [hslope0]; simp [hV]
+  have hy2' : V.toAffine.addY 0 0 0 (V.toAffine.slope 0 0 0 0) = b * c := by
+    rw [hslope0]; simp [Affine.addY, Affine.negY, hV]; ring
+  have hns2 : V.toAffine.Nonsingular b (b * c) := by
+    have hraw := Affine.nonsingular_add h00 h00 (fun hxy => hy2 hxy.right)
+    rwa [hx2, hy2'] at hraw
+  have h2P : P + P = Affine.Point.some b (b * c) hns2 := by
+    rw [hP, Affine.Point.add_self_of_Y_ne hy2]
+    exact Affine.Point.some_eq_some V hx2 hy2'
+  -- `3P = (c, b − c)`
+  have hbne0 : b ≠ (0 : ℚ) := hb
+  have hslope1 : V.toAffine.slope b 0 (b * c) 0 = c := by
+    rw [Affine.slope_of_X_ne hbne0]
+    field_simp
+    ring
+  have hx3 : V.toAffine.addX b 0 (V.toAffine.slope b 0 (b * c) 0) = c := by
+    rw [hslope1]; simp [hV]; ring
+  have hy3 : V.toAffine.addY b 0 (b * c) (V.toAffine.slope b 0 (b * c) 0) = b - c := by
+    rw [hslope1]; simp [Affine.addY, Affine.negY, hV]; ring
+  have hns3 : V.toAffine.Nonsingular c (b - c) := by
+    have hraw := Affine.nonsingular_add hns2 h00 (fun hxy => hbne0 hxy.left)
+    rwa [hx3, hy3] at hraw
+  have h3P : P + P + P = Affine.Point.some c (b - c) hns3 := by
+    rw [h2P, hP, Affine.Point.add_of_X_ne hbne0]
+    exact Affine.Point.some_eq_some V hx3 hy3
+  -- `5P = 0`, i.e. `3P = −2P`, and `−2P = (b, 0)`
+  have h5P : (5 : ℕ) • P = 0 := by rw [← h5]; exact addOrderOf_nsmul_eq_zero P
+  have hsum : P + P + P + (P + P) = 0 := by rw [← h5P]; abel
+  rw [h3P, h2P, add_eq_zero_iff_eq_neg, Affine.Point.neg_some,
+    Affine.Point.some.injEq] at hsum
+  exact hsum.1.symm
+
+/-- **The discriminant of the diagonal Tate normal form** (PROVEN):
+`E(c,c) : y² + (1−c)xy − cy = x³ − cx²` has `b₂ = c² − 6c + 1`,
+`b₄ = c² − c`, `b₆ = c²`, `b₈ = −c³`, hence
+`Δ = c⁵(c² − 11c − 1)`. This is the plane model of `X_1(5)`:
+the `c`-line, with the cusps at `c = 0` and at the roots of
+`c² − 11c − 1`. -/
+lemma MazurTwoTen.tateNormalForm_Δ_diag (c : ℚ) :
+    (⟨1 - c, -c, -c, 0, 0⟩ : WeierstrassCurve ℚ).Δ = c ^ 5 * (c ^ 2 - 11 * c - 1) := by
+  simp only [WeierstrassCurve.Δ, WeierstrassCurve.b₂, WeierstrassCurve.b₄,
+    WeierstrassCurve.b₆, WeierstrassCurve.b₈]
+  ring
+
+/-- **Tate normal form at a rational point of order `5`** (PROVEN
+2026-07-25): if `E/ℚ` carries a rational point of order `5` then, for
+some nonzero `c` and `u`, `u¹² Δ_E = c⁵(c² − 11c − 1)`.
 
 This is the classical Tate normal form (Husemöller, *Elliptic Curves*,
 §4.4; Knapp §III.1), and every step of it is rational:
@@ -5356,31 +5935,64 @@ This is the classical Tate normal form (Husemöller, *Elliptic Curves*,
    `(x, y) ↦ (u²x, u³y)` with `u = a₃/a₂` makes `a₂ = a₃ =: b`, giving
    Tate's `E(b, c)` with `c := 1 − a₁`.
 4. `5P = O` is exactly `b = c` — this is the one step with arithmetic
-   content, a division-polynomial/group-law computation.
+   content, a group-law computation.
 
-For `E(c, c) : y² + (1−c)xy − cy = x³ − cx²` one computes
-`b₂ = c² − 6c + 1`, `b₄ = c² − c`, `b₆ = c²`, `b₈ = −c³`, hence
-`Δ = c⁵(c² − 11c − 1)` (verified symbolically). `c ≠ 0` because
-`Δ ≠ 0`. The `u¹²` is `WeierstrassCurve.variableChange_Δ`
-(`(C • W).Δ = C.u⁻¹ ^ 12 * W.Δ`), and either orientation of `u` is
-equivalent since `u` ranges over all nonzero rationals.
+Steps 1–3 are `MazurTwoTen.exists_tateNormalForm_scaled` just above (the
+same construction as `WeierstrassCurve.exists_tateNormalForm` and
+`WeierstrassCurve.exists_tateNormalForm_of_order_nine`, but returning the
+scaling unit as well, which is what makes the discriminant statement
+available); step 4 is
+`MazurTwoTen.tateNormalForm_b_eq_c_of_order_five`; and
+`MazurTwoTen.tateNormalForm_Δ_diag` computes
+`Δ(E(c,c)) = c⁵(c² − 11c − 1)`. `c ≠ 0` because `b ≠ 0`, and `b ≠ 0`
+because the normal form's `a₂` is a unit multiple of the sheared curve's
+`a₂`, which is nonzero because `3P ≠ 0`. The `u¹²` is
+`WeierstrassCurve.variableChange_Δ`
+(`(C • W).Δ = C.u⁻¹ ^ 12 * W.Δ`).
 
-MISSING MACHINERY, in dependency order, none of it in mathlib at this
-pin: (a) transport of `WeierstrassCurve.Affine.Point` along a
-`VariableChange` (mathlib has `Point.map` along ring homs but not along
-a variable change); (b) the normal-form existence statement "a point of
-order `≥ 4` can be moved to `(0,0)` with `a₄ = a₆ = 0` and `a₂ = a₃`";
-(c) the translation of `addOrderOf Q = 5` into `b = c`, most cleanly via
-`WeierstrassCurve.Ψ`/the `5`-division polynomial. -/
+RESOLVED MACHINERY (the three pieces the earlier note listed as
+missing): (a) transport of `WeierstrassCurve.Affine.Point` along a
+`VariableChange` is `Affine.Point.equivVariableChange` in this repo's
+mathlib shim (`Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/
+Affine/Point.lean`) — mathlib itself still has only `Point.map` along
+ring homs, and the reference project `~/cs/FLT` has the identical shim
+and no Tate normal form; (b) the normal-form existence statement is now
+proven three times over in this file, `exists_tateNormalForm` (order
+`≥ 4`), `exists_tateNormalForm_of_order_nine`, and the scaled version
+above; (c) the translation of `addOrderOf Q = 5` into `b = c` did NOT
+need the `5`-division polynomial — the plain group law suffices, since
+`2P` and `3P` on `E(b,c)` have closed-form coordinates. -/
 theorem MazurTwoTen.exists_tate_disc_of_order_five (E : WeierstrassCurve ℚ)
     [E.IsElliptic] (Q : (E⁄ℚ).Point) (hQ : addOrderOf Q = 5) :
-    ∃ c u : ℚ, u ≠ 0 ∧ c ≠ 0 ∧ u ^ 12 * E.Δ = c ^ 5 * (c ^ 2 - 11 * c - 1) :=
-  sorry
+    ∃ c u : ℚ, u ≠ 0 ∧ c ≠ 0 ∧ u ^ 12 * E.Δ = c ^ 5 * (c ^ 2 - 11 * c - 1) := by
+  haveI : (E⁄ℚ).IsElliptic := inferInstanceAs (E.map (algebraMap ℚ ℚ)).IsElliptic
+  have hQ2 : Q + Q ≠ 0 := by
+    intro h
+    have hd : addOrderOf Q ∣ 2 :=
+      addOrderOf_dvd_iff_nsmul_eq_zero.mpr (by rw [two_nsmul]; exact h)
+    rw [hQ] at hd; norm_num at hd
+  have hQ3 : Q + Q + Q ≠ 0 := by
+    intro h
+    have hd : addOrderOf Q ∣ 3 :=
+      addOrderOf_dvd_iff_nsmul_eq_zero.mpr (by
+        have e : (3 : ℕ) • Q = Q + Q + Q := by abel
+        rw [e]; exact h)
+    rw [hQ] at hd; norm_num at hd
+  obtain ⟨b, c, u, hu, hb, h00, Ψ, hΨ, hΔ⟩ :=
+    MazurTwoTen.exists_tateNormalForm_scaled (E⁄ℚ) Q hQ2 hQ3
+  have h5 : addOrderOf (Affine.Point.some 0 0 h00) = 5 := by
+    rw [← hΨ, AddEquiv.addOrderOf_eq]; exact hQ
+  have hbc : b = c := MazurTwoTen.tateNormalForm_b_eq_c_of_order_five b c hb h00 h5
+  subst hbc
+  refine ⟨b, u, hu, hb, ?_⟩
+  have hΔE : (E⁄ℚ).Δ = E.Δ := by simp [WeierstrassCurve.baseChange]
+  rw [← hΔE, hΔ, MazurTwoTen.tateNormalForm_Δ_diag]
 
 /-- **No full rational `2`-torsion together with a rational point of
-order `5`** (PROVEN 2026-07-25 modulo the two leaves
-`MazurTwoTen.exists_tate_disc_of_order_five` and
-`MazurTwoTen.quartic_no_solution`): no elliptic curve over `ℚ` has an
+order `5`** (PROVEN 2026-07-25 modulo the single leaf
+`MazurTwoTen.quartic_no_solution`; the other input,
+`MazurTwoTen.exists_tate_disc_of_order_five`, was closed the same day):
+no elliptic curve over `ℚ` has an
 injective `(ℤ/2)² →+ E(ℚ)` and a rational point of order `5`
 simultaneously. This is the `X_1(2,10)` content — the hypotheses say
 exactly that `E(ℚ)` contains `ℤ/2 × ℤ/10` (order `20`), the first
@@ -6362,50 +6974,13 @@ theorem WeierstrassCurve.mazur_torsion_bound (E : WeierstrassCurve ℚ) [E.IsEll
       Nat.card_prod, Nat.card_zmod, Nat.card_zmod] at hcard
     omega
 
-/-- The prime of `𝓞 ℚ` attached to the prime number `q` is the span of
-`q`: unfolding `toHeightOneSpectrumRingOfIntegersRat`, the ideal is the
-comap of `span {(q : ℤ)}` along `Rat.ringOfIntegersEquiv`, and a ring
-isomorphism carries spans of singletons to spans of singletons while
-preserving the naturals. -/
-lemma asIdeal_toHeightOneSpectrumRingOfIntegersRat {q : ℕ} (hq : q.Prime) :
-    hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal =
-      Ideal.span {(q : NumberField.RingOfIntegers ℚ)} := by
-  have h1 : hq.toHeightOneSpectrumRingOfIntegersRat.asIdeal =
-      Ideal.comap (Rat.ringOfIntegersEquiv.symm.symm) (Ideal.span {(q : ℤ)}) := rfl
-  rw [h1, RingEquiv.symm_symm, ← Ideal.map_symm, Ideal.map_span, Set.image_singleton,
-    map_natCast]
-
-open IsDedekindDomain.HeightOneSpectrum in
-set_option maxHeartbeats 1000000 in
-/-- `q` is a uniformizer of the completed integer ring `ℤ_q`: the maximal
-ideal of `(ℤ_q)ˆ = 𝒪ᵥ` (for `v = v_q` the place of `ℚ` at `q`) is the
-span of `q`. Via `maximalIdeal_eq_span_uniformizer` it suffices that the
-valuation of `q` in `ℚ_q` is exactly `ofAdd (-1)`, which reduces through
-`valuedAdicCompletion_eq_valuation` and `valuation_of_algebraMap` to the
-`intValuation` of `q` in `𝓞 ℚ`, computed by `intValuation_singleton`
-from `v_q = span {q}`. -/
-lemma maximalIdeal_adicCompletionIntegers_eq_span {q : ℕ} (hq : q.Prime) :
-    IsLocalRing.maximalIdeal
-        (adicCompletionIntegers ℚ hq.toHeightOneSpectrumRingOfIntegersRat) =
-      Ideal.span
-        {(q : adicCompletionIntegers ℚ hq.toHeightOneSpectrumRingOfIntegersRat)} := by
-  have hq0 : ((q : NumberField.RingOfIntegers ℚ)) ≠ 0 :=
-    Nat.cast_ne_zero.mpr hq.ne_zero
-  have hval : hq.toHeightOneSpectrumRingOfIntegersRat.intValuation
-      ((q : NumberField.RingOfIntegers ℚ)) = Multiplicative.ofAdd (-1 : ℤ) :=
-    hq.toHeightOneSpectrumRingOfIntegersRat.intValuation_singleton hq0
-      (asIdeal_toHeightOneSpectrumRingOfIntegersRat hq)
-  apply adicCompletion.maximalIdeal_eq_span_uniformizer
-  -- the valuation of `q` in `ℚ_q`, assembled entirely in the mathlib
-  -- lemmas' own coercion spelling (avoiding any cross-spelling defeq)
-  have h := (valuedAdicCompletion_eq_valuation
-      (v := hq.toHeightOneSpectrumRingOfIntegersRat) (K := ℚ)
-      ((q : NumberField.RingOfIntegers ℚ))).trans
-    ((valuation_of_algebraMap
-      (v := hq.toHeightOneSpectrumRingOfIntegersRat) (K := ℚ)
-      ((q : NumberField.RingOfIntegers ℚ))).trans hval)
-  convert h using 2
-  norm_cast
+-- `asIdeal_toHeightOneSpectrumRingOfIntegersRat` and
+-- `maximalIdeal_adicCompletionIntegers_eq_span` were hoisted (2026-07-25)
+-- to `Fermat/FLT/Mathlib/RingTheory/DedekindDomain/Ideal/Lemmas.lean`,
+-- the shim where `toHeightOneSpectrumRingOfIntegersRat` itself is defined,
+-- so that `GroupScheme/ConnectedEtale.lean` — far UPSTREAM of this file —
+-- can use them instead of re-deriving them locally. The names and
+-- statements are unchanged, so use sites here and downstream are unaffected.
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **Minkowski surjectivity transport** (DERIVED 2026-07-16 from the
@@ -9067,7 +9642,8 @@ theorem residue_natCast_eq_zero_of_prime {p : ℕ} (hp : p.Prime) :
 
 open scoped WeierstrassCurve.Affine in
 /-- **In characteristic `p`, the geometric `p`-torsion of an elliptic
-curve is cyclic** (sorry node, cut 2026-07-25 out of
+curve is cyclic** (PROVEN 2026-07-25 from
+`TorsionCharP.exists_zsmul_eq_of_charP`; cut 2026-07-25 out of
 `card_torsionBy_dvd_of_charP` — this is ALL of that leaf's mathematical
 content, the cardinality bookkeeping around it now being proven): over an
 algebraically closed field `k` in which `p` vanishes, every `p`-torsion
@@ -9090,46 +9666,44 @@ AEC III.6.4 (the differential criterion for separability), III.4.10
 (separable degree = number of geometric points of the kernel), V.3.1
 (a)–(b) (the ordinary/supersingular dichotomy); ATAEC IV.6.
 
-WHY THIS IS STILL OPEN, and the only route visible from mathlib
-(surveyed 2026-07-25). Mathlib has NO isogenies, no degree of a map of
-curves, no separable/inseparable degree, no Frobenius on a Weierstrass
-curve, no invariant differential, and no `Finite` instance for
-`WeierstrassCurve.Affine.Point` — there is no `EllipticCurve/Isogeny`
-file at all — so the argument above cannot be transcribed as it stands.
-The reference project `~/cs/FLT` sorries even the characteristic-`0`
-companion (`WeierstrassCurve.torsion_rank_two`), so there is nothing to
-vendor either.
+HOW IT WAS CLOSED (2026-07-25). Mathlib indeed has no isogenies, no
+separable/inseparable degree, no Frobenius on a Weierstrass curve and no
+invariant differential — but this repository already had every input, in
+`Fermat/FLT/EllipticCurve/`, built for the COMPLEMENTARY case
+`(p : k) ≠ 0` (`TorsionCard.prime_torsion_card`, `#E[p] = p²`). The
+earlier survey in this docstring, which declared all three sub-atoms
+missing, was a survey of MATHLIB only; the three needed statements were
+already proven here. So the char-`p` case is a short argument, collected
+in `Fermat/FLT/EllipticCurve/TorsionCharP.lean`:
 
-What mathlib DOES have is `Mathlib/AlgebraicGeometry/EllipticCurve/`
-`DivisionPolynomial/`: `W.preΨ n`, `W.ΨSq n`, `W.Φ n`, with
-`natDegree_preΨ'_le n : (W.preΨ' n).natDegree ≤ (n² - if Even n then 4
-else 1) / 2` and `coeff_preΨ'` giving the coefficient in that degree as
-`n` (up to the even correction); likewise `natDegree_ΨSq_le n :
-(W.ΨSq n).natDegree ≤ n² - 1` with `coeff_ΨSq n : (W.ΨSq n).coeff
-(n² - 1) = n²`. That last pair is the lever: in characteristic `p` the
-leading coefficient `p²` VANISHES, which is the polynomial shadow of the
-inseparability, and correspondingly `ΨSq_ne_zero` carries the hypothesis
-`(n : R) ≠ 0` and does not apply. (By contrast `natDegree_Φ n = n²` and
-`leadingCoeff_Φ n = 1` hold over ANY nontrivial ring — the degree `p²` of
-`[p]` is still visible in characteristic `p`; it is only the *separable*
-part that collapses.) The route is then three sub-atoms, none of which is
-in mathlib:
+* BRIDGE — `TorsionCard.smul_some_eq_zero_iff` (already proven): for a
+  point `(x, y)` and `n ≠ 0`, `n • P = 0 ↔ (ΨSqₙ).eval x = 0`.
+* NONVANISHING — `TorsionCharP.ΨSq_ne_zero`: needs no characteristic
+  hypothesis at all. `IsCoprime a 0` forces `a` to be a unit, so
+  coprimality of `Φₙ` and `ΨSqₙ` (`WeierstrassCurve.isCoprime_Φ_ΨSq`,
+  proven from `Δ ≠ 0`) together with `natDegree_Φ n = n² > 0` already
+  gives `ΨSqₙ ≠ 0`. The leading-coefficient route, which does fail here
+  because `coeff_ΨSq n = n²` vanishes, is simply not needed.
+* INSEPARABILITY — `TorsionCharP.derivative_ΨSq_eq_zero_of_charP`: the
+  differential criterion `[p]* ω = p ⬝ ω = 0` is available in polynomial
+  form as the Wronskian identity
+  `Φₙ′ ⬝ ΨSqₙ − Φₙ ⬝ ΨSqₙ′ = n ⬝ preΨ₂ₙ` (`PsiSumCompanion.wronskian`,
+  proven at the tautological point of the universal curve). At `n = p`
+  in characteristic `p` the right-hand side vanishes, so
+  `ΨSqₚ ∣ Φₚ ⬝ ΨSqₚ′`; coprimality upgrades this to `ΨSqₚ ∣ ΨSqₚ′`, and
+  a nonzero polynomial cannot divide its own derivative unless that
+  derivative is `0`. Over the perfect field `k` this makes `ΨSqₚ` a
+  `p`-th power (`TorsionCharP.exists_pow_eq_ΨSq_of_charP`), so it has at
+  most `(p² − 1)/p ≤ p − 1` DISTINCT roots.
 
-* BRIDGE: for `P ≠ 0` and `n` odd, `(n : ℤ) • P = 0 ↔
-  (Y.preΨ n).eval P.x = 0`. This is characteristic-free, is needed by the
-  characteristic-`0` companion as well, and is the right thing to prove
-  first — it is the only one of the three that is pure bookkeeping over
-  the existing `DivisionPolynomial` API.
-* NONVANISHING: `Y.preΨ p ≠ 0` in characteristic `p` (`ΨSq_ne_zero`
-  needs `(n : R) ≠ 0`, so it gives nothing here).
-* INSEPARABILITY: `Y.preΨ p` is a constant times a `p`-th power in
-  `k[X]`. This is the deep one — it IS the inseparability of `[p]`.
-  Given it, the count closes for odd `p`: `preΨ p` has at most
-  `natDegree / p ≤ (p² - 1) / (2p) < p / 2` distinct roots, hence at most
-  `(p - 1) / 2` `x`-coordinates; nonzero `p`-torsion points come in pairs
-  `{P, -P}` with `P ≠ -P` (else `2P = 0 = pP` with `p` odd forces
-  `P = 0`), so there are at most `p - 1` of them, i.e. `#Y(k)[p] ≤ p`,
-  which with exponent `p` gives cyclicity.
+The count then runs on the FULL group rather than on `x`-coordinate
+pairs: if `P` were not a multiple of `Q`, the `p²` points `a • Q + b • P`
+(`0 ≤ a, b < p`) would be pairwise distinct (Bézout for `p` turns any
+coincidence into `P ∈ ℤ ⬝ Q`), giving `p² − 1` nonzero `p`-torsion
+points; each `x`-coordinate is one of at most `p − 1` roots and carries
+at most two points (`TorsionCard.pointsAt_card`), so
+`p² − 1 ≤ 2(p − 1)`, i.e. `(p − 1)² ≤ 0`. This works uniformly for
+`p = 2` as well, so no separate even case is needed.
 
 SANITY CHECK in characteristic `2`, which validates the shape of
 INSEPARABILITY: `ΨSq 2 = Ψ₂Sq = 4X³ + b₂X² + 2b₄X + b₆` collapses to
@@ -9145,7 +9719,8 @@ theorem WeierstrassCurve.exists_zsmul_eq_of_mem_torsionBy_of_charP
     (hP : P ∈ AddSubgroup.torsionBy (Y⁄k).Point ((p : ℕ) : ℤ))
     (hQ : Q ∈ AddSubgroup.torsionBy (Y⁄k).Point ((p : ℕ) : ℤ)) (hQ0 : Q ≠ 0) :
     ∃ n : ℤ, P = n • Q :=
-  sorry
+  TorsionCharP.exists_zsmul_eq_of_charP Y hp hchar P Q
+    ((Submodule.mem_torsionBy_iff _ _).mp hP) ((Submodule.mem_torsionBy_iff _ _).mp hQ) hQ0
 
 open scoped WeierstrassCurve.Affine in
 /-- **The geometric `p`-torsion of an elliptic curve in characteristic

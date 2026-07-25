@@ -9920,38 +9920,194 @@ coordinate`. -/
 noncomputable def archConv (H₁ H₂ : ℝ → ℝ) (τ : ℝ) : ℝ :=
   ∫ u in Set.Ioi (0 : ℝ), H₁ (τ / u) * H₂ u / u
 
-/-- **Convergence of the convolution integral** (sorry node, stated
-2026-07-25 — stage (α₁) of the decomposition of
-`archimedeanGammaProfile_exists`): for profiles `H₁`, `H₂` of positive
-degrees `p`, `q` and every `τ > 0` the integrand
+open MeasureTheory Set in
+/-- **Two-sided polynomial decay of a profile** (PROVEN 2026-07-25):
+for every `m ≥ 1` there is a constant `K` with `H x · x^m ≤ K` for all
+`x > 0`.  Note this is a statement about BOTH ends at once: at `∞` it
+is genuine decay, at `0` it is the bound `H x ≤ K·x^{−m}` limiting how
+fast `H` may blow up.
+
+Proof.  The only inputs are the Mellin CONVERGENCE half of the bundle
+and ANTITONICITY — the stretched-exponential decay is not used.  Apply
+the Mellin hypothesis at the real point `s = 2m` (whose real part
+`2m ≥ 2 > 1` is admissible), so that `s/2 = m` and `MellinConvergent`
+reads: `t ↦ t^{m−1}·H t` is integrable on `(0, ∞)`; call the (finite,
+nonnegative) integral `C`.  For `x > 0` restrict that integral to
+`(x/2, x]`, where antitonicity gives `H t ≥ H x` and monotonicity of
+`t ↦ t^{m−1}` gives `t^{m−1} ≥ (x/2)^{m−1}`.  Hence
+
+  `(x/2)·(x/2)^{m−1}·H x = (x/2)^m·H x ≤ ∫_{(x/2,x]} t^{m−1}·H t ≤ C`,
+
+i.e. `H x · x^m ≤ 2^m·C`.  Only `m = 1` and `m = 2` are used
+downstream (`archConv_integrableOn`), but the argument is uniform. -/
+theorem archProfile_natPow_bound {n : ℕ} {M : ℂ → ℂ} {H : ℝ → ℝ}
+    (h : IsArchProfile n M H) {m : ℕ} (hm : 1 ≤ m) :
+    ∃ K : ℝ, 0 ≤ K ∧ ∀ x : ℝ, 0 < x → H x * x ^ m ≤ K := by
+  have hmR : (1 : ℝ) ≤ (m : ℝ) := by exact_mod_cast hm
+  -- Mellin convergence at the exponent `m`, i.e. at `s = 2m`
+  have hre : (1 : ℝ) < ((((2 * m : ℕ) : ℝ) : ℂ)).re := by
+    simp only [Complex.ofReal_re, Nat.cast_mul, Nat.cast_ofNat]
+    linarith
+  have hhalf : (((2 * m : ℕ) : ℝ) : ℂ) / 2 = ((m : ℕ) : ℂ) := by push_cast; ring
+  have hmc : MellinConvergent (fun τ : ℝ => (H τ : ℂ)) ((m : ℕ) : ℂ) := by
+    have := (h.2.2.2.2 (((2 * m : ℕ) : ℝ) : ℂ) hre).1
+    rwa [hhalf] at this
+  have hexp : ((m : ℕ) : ℂ) - 1 = (((m - 1 : ℕ)) : ℂ) := by
+    rw [Nat.cast_sub hm]; push_cast; ring
+  have hintC : IntegrableOn (fun t : ℝ => (((t ^ (m - 1) * H t : ℝ)) : ℂ)) (Ioi (0:ℝ)) := by
+    refine hmc.congr_fun (fun t _ => ?_) measurableSet_Ioi
+    simp only [smul_eq_mul, hexp]
+    rw [Complex.cpow_natCast, ← Complex.ofReal_pow, ← Complex.ofReal_mul]
+  have hint : IntegrableOn (fun t : ℝ => t ^ (m - 1) * H t) (Ioi (0:ℝ)) := by
+    have h2 : IntegrableOn (fun t : ℝ => RCLike.re (((t ^ (m - 1) * H t : ℝ) : ℂ)))
+        (Ioi (0:ℝ)) := hintC.re
+    exact h2.congr_fun (fun t _ => RCLike.ofReal_re _) measurableSet_Ioi
+  set C : ℝ := ∫ t in Ioi (0:ℝ), t ^ (m - 1) * H t with hCdef
+  have hC0 : 0 ≤ C := by
+    refine setIntegral_nonneg measurableSet_Ioi (fun t ht => ?_)
+    exact mul_nonneg (pow_nonneg (le_of_lt (mem_Ioi.mp ht)) _) (h.2.1 t ht)
+  refine ⟨2 ^ m * C, mul_nonneg (by positivity) hC0, fun x hx => ?_⟩
+  have hx2 : (0:ℝ) < x / 2 := by linarith
+  have hsub : Ioc (x / 2) x ⊆ Ioi (0:ℝ) := fun t ht => lt_of_lt_of_le hx2 ht.1.le
+  -- the piece over `(x/2, x]` is at most the whole integral
+  have hle : (∫ t in Ioc (x/2) x, t ^ (m - 1) * H t) ≤ C := by
+    rw [hCdef]
+    refine setIntegral_mono_set hint ?_ hsub.eventuallyLE
+    filter_upwards [ae_restrict_mem measurableSet_Ioi] with t ht
+    exact mul_nonneg (pow_nonneg (le_of_lt (mem_Ioi.mp ht)) _) (h.2.1 t ht)
+  -- and it dominates the constant `(x/2)^(m-1) * H x`
+  have hlow : (∫ _t in Ioc (x/2) x, ((x/2) ^ (m - 1) * H x))
+      ≤ ∫ t in Ioc (x/2) x, t ^ (m - 1) * H t := by
+    refine setIntegral_mono_on (integrableOn_const measure_Ioc_lt_top.ne)
+      (hint.mono_set hsub) measurableSet_Ioc (fun t ht => ?_)
+    have ht0 : (0:ℝ) < t := lt_of_lt_of_le hx2 ht.1.le
+    have hHt : H x ≤ H t :=
+      h.2.2.1 (mem_Ioi.mpr ht0) (mem_Ioi.mpr hx) ht.2
+    have hpow : (x/2) ^ (m - 1) ≤ t ^ (m - 1) := pow_le_pow_left₀ hx2.le ht.1.le _
+    exact mul_le_mul hpow hHt (h.2.1 x (mem_Ioi.mpr hx)) (pow_nonneg ht0.le _)
+  have hconst : (∫ _t in Ioc (x/2) x, ((x/2) ^ (m - 1) * H x))
+      = (x/2) * ((x/2) ^ (m - 1) * H x) := by
+    rw [setIntegral_const, Real.volume_real_Ioc_of_le (by linarith), smul_eq_mul]
+    ring
+  rw [hconst] at hlow
+  have hkey : (x/2) ^ m * H x ≤ C := by
+    calc (x/2) ^ m * H x = (x/2) * ((x/2) ^ (m - 1) * H x) := by
+          rw [← mul_assoc, ← pow_succ']
+          congr 2
+          omega
+      _ ≤ _ := hlow
+      _ ≤ C := hle
+  have hpowdiv : (x/2) ^ m = x ^ m / 2 ^ m := by rw [div_pow]
+  rw [hpowdiv] at hkey
+  have h2m : (0:ℝ) < 2 ^ m := by positivity
+  calc H x * x ^ m = 2 ^ m * (x ^ m / 2 ^ m * H x) := by field_simp
+    _ ≤ 2 ^ m * C := mul_le_mul_of_nonneg_left hkey h2m.le
+
+open MeasureTheory Set in
+/-- **Convergence of the convolution integral** (PROVEN 2026-07-25 —
+stage (α₁) of the decomposition of `archimedeanGammaProfile_exists`):
+for profiles `H₁`, `H₂` and every `τ > 0` the integrand
 `u ↦ H₁(τ/u)·H₂(u)/u` is integrable on `(0, ∞)`.
 
-Intended proof.  Both ends are controlled by combining the two
-non-Mellin hypotheses with the Mellin CONVERGENCE half of the bundle:
+Proof (simpler than the route sketched when this node was cut: the
+stretched-exponential decay is NOT needed, and neither is `0 < p` or
+`0 < q` — hence the underscores).  Everything follows from the
+two-sided polynomial bound `archProfile_natPow_bound` at the two
+exponents `m = 1, 2`: there are constants with
 
-* *Polynomial control at `0`.*  `MellinConvergent (H : ℝ → ℂ) (s/2)`
-  for `re s > 1` says `∫_{(0,1]} τ^{re s/2 − 1}·H τ dτ < ∞`; taking
-  `re s` slightly above `1` and using that `H` is ANTITONE on
-  `(0, ∞)` gives `H τ ≤ C·τ^{−ε}` on `(0, 1]` for every `ε > 1/2`
-  (antitone plus a finite weighted integral forces the pointwise
-  bound: `H τ·∫_{(τ,2τ]} x^{ε−1} dx ≤ ∫_{(τ,2τ]} x^{ε−1}·H x dx`).
-* *Near `u = 0`*: `H₂(u) ≤ C₂·u^{−ε}` and `τ/u ≥ 1` eventually, so
-  `H₁(τ/u) ≤ A₁·exp(−a₁·(τ/u)^{1/p})`, whose stretched-exponential
-  vanishing beats `u^{−ε−1}`.
-* *Near `u = ∞`*: `H₂(u) ≤ A₂·exp(−a₂·u^{1/q})` and
-  `H₁(τ/u) ≤ C₁·(u/τ)^{ε}`, so the integrand is
-  `O(u^{ε−1}·exp(−a₂·u^{1/q}))`, integrable
-  (`integrable_rpow_mul_exp_neg_mul_rpow`-style).
-* *On a compact middle interval*: the integrand is continuous
-  (`h₁.1`, `h₂.1`), hence integrable there.
+* `H₁(x)·x ≤ K₁₁`, `H₁(x)·x² ≤ K₁₂`, `H₂(x)·x ≤ K₂₁`, `H₂(x)·x² ≤ K₂₂`
+  for all `x > 0`.
 
-Measurability throughout comes from `ContinuousOn.aestronglyMeasurable`
-on `(0, ∞)`. -/
+Split `(0, ∞) = (0, 1] ∪ (1, ∞)`.
+
+* On `(0, 1]` use the `m = 2` bound for `H₁` at `x = τ/u` (giving
+  `H₁(τ/u) ≤ K₁₂·u²/τ²`, which VANISHES as `u → 0`) and the `m = 1`
+  bound for `H₂` (giving `H₂(u) ≤ K₂₁/u`).  Their product over `u` is
+  the CONSTANT `K₁₂·K₂₁/τ²`, so the integrand is bounded on a set of
+  finite measure.
+* On `(1, ∞)` use the `m = 1` bound for `H₁` (giving
+  `H₁(τ/u) ≤ K₁₁·u/τ`, growing only linearly) and the `m = 2` bound
+  for `H₂` (giving `H₂(u) ≤ K₂₂/u²`).  The integrand is then
+  `≤ (K₁₁K₂₂/τ)·u^{−2}`, integrable by `integrableOn_Ioi_rpow_of_lt`.
+
+Measurability on both pieces is `ContinuousOn.aestronglyMeasurable`
+applied to the integrand, continuous on `(0, ∞)` by `h₁.1`, `h₂.1` and
+continuity of `u ↦ τ/u` there.
+
+The one place the degrees do enter the theory is `archConv_decay`,
+which genuinely consumes the exponential bounds; integrability alone
+does not see them. -/
 theorem archConv_integrableOn {p q : ℕ} {M₁ M₂ : ℂ → ℂ} {H₁ H₂ : ℝ → ℝ}
-    (hp : 0 < p) (hq : 0 < q) (h₁ : IsArchProfile p M₁ H₁) (h₂ : IsArchProfile q M₂ H₂)
+    (_hp : 0 < p) (_hq : 0 < q) (h₁ : IsArchProfile p M₁ H₁) (h₂ : IsArchProfile q M₂ H₂)
     {τ : ℝ} (hτ : 0 < τ) :
     MeasureTheory.IntegrableOn (fun u : ℝ => H₁ (τ / u) * H₂ u / u) (Set.Ioi 0) := by
-  sorry
+  obtain ⟨K₁₁, hK₁₁0, hK₁₁⟩ := archProfile_natPow_bound h₁ (m := 1) le_rfl
+  obtain ⟨K₁₂, hK₁₂0, hK₁₂⟩ := archProfile_natPow_bound h₁ (m := 2) one_le_two
+  obtain ⟨K₂₁, hK₂₁0, hK₂₁⟩ := archProfile_natPow_bound h₂ (m := 1) le_rfl
+  obtain ⟨K₂₂, hK₂₂0, hK₂₂⟩ := archProfile_natPow_bound h₂ (m := 2) one_le_two
+  have hcont : ContinuousOn (fun u : ℝ => H₁ (τ / u) * H₂ u / u) (Ioi (0:ℝ)) := by
+    have hdiv : ContinuousOn (fun u : ℝ => τ / u) (Ioi (0:ℝ)) :=
+      continuousOn_const.div continuousOn_id (fun u hu => ne_of_gt (mem_Ioi.mp hu))
+    have hmaps : MapsTo (fun u : ℝ => τ / u) (Ioi (0:ℝ)) (Ioi (0:ℝ)) :=
+      fun u hu => mem_Ioi.mpr (div_pos hτ (mem_Ioi.mp hu))
+    exact ((h₁.1.comp hdiv hmaps).mul h₂.1).div continuousOn_id
+      (fun u hu => ne_of_gt (mem_Ioi.mp hu))
+  have hnonneg : ∀ u : ℝ, 0 < u → 0 ≤ H₁ (τ / u) * H₂ u / u := by
+    intro u hu
+    exact div_nonneg (mul_nonneg (h₁.2.1 _ (mem_Ioi.mpr (div_pos hτ hu)))
+      (h₂.2.1 u (mem_Ioi.mpr hu))) hu.le
+  -- near zero: the integrand is bounded by a constant
+  have hnear : IntegrableOn (fun u : ℝ => H₁ (τ / u) * H₂ u / u) (Ioc (0:ℝ) 1) := by
+    refine Integrable.mono' (g := fun _ : ℝ => K₁₂ * K₂₁ / τ ^ 2)
+      (integrableOn_const measure_Ioc_lt_top.ne)
+      ((hcont.mono Ioc_subset_Ioi_self).aestronglyMeasurable measurableSet_Ioc) ?_
+    filter_upwards [ae_restrict_mem measurableSet_Ioc] with u hu
+    have hu0 : (0:ℝ) < u := hu.1
+    have hx : (0:ℝ) < τ / u := div_pos hτ hu0
+    rw [Real.norm_of_nonneg (hnonneg u hu0)]
+    have b1 : H₁ (τ / u) * (τ / u) ^ 2 ≤ K₁₂ := hK₁₂ _ hx
+    have b2 : H₂ u * u ^ 1 ≤ K₂₁ := hK₂₁ _ hu0
+    have hH₂0 : 0 ≤ H₂ u := h₂.2.1 u (mem_Ioi.mpr hu0)
+    have e1 : H₁ (τ / u) ≤ K₁₂ * u ^ 2 / τ ^ 2 := by
+      rw [le_div_iff₀ (by positivity : (0:ℝ) < τ ^ 2)]
+      have hexp : H₁ (τ / u) * (τ / u) ^ 2 = H₁ (τ / u) * τ ^ 2 / u ^ 2 := by
+        rw [div_pow]; ring
+      rw [hexp, div_le_iff₀ (by positivity : (0:ℝ) < u ^ 2)] at b1
+      nlinarith [b1]
+    have e2 : H₂ u ≤ K₂₁ / u := by
+      rw [le_div_iff₀ hu0]; simpa using b2
+    calc H₁ (τ / u) * H₂ u / u ≤ (K₁₂ * u ^ 2 / τ ^ 2) * (K₂₁ / u) / u := by gcongr
+      _ = K₁₂ * K₂₁ / τ ^ 2 := by field_simp
+  -- near infinity: dominated by `u ^ (-2)`
+  have hfar : IntegrableOn (fun u : ℝ => H₁ (τ / u) * H₂ u / u) (Ioi (1:ℝ)) := by
+    refine Integrable.mono' (g := fun u : ℝ => (K₁₁ * K₂₂ / τ) * u ^ (-2 : ℝ))
+      ((integrableOn_Ioi_rpow_of_lt (by norm_num) one_pos).const_mul _)
+      ((hcont.mono (Ioi_subset_Ioi zero_le_one)).aestronglyMeasurable measurableSet_Ioi) ?_
+    filter_upwards [ae_restrict_mem measurableSet_Ioi] with u hu
+    have hu1 : (1:ℝ) < u := mem_Ioi.mp hu
+    have hu0 : (0:ℝ) < u := lt_trans zero_lt_one hu1
+    have hx : (0:ℝ) < τ / u := div_pos hτ hu0
+    rw [Real.norm_of_nonneg (hnonneg u hu0)]
+    have b1 : H₁ (τ / u) * (τ / u) ^ 1 ≤ K₁₁ := hK₁₁ _ hx
+    have b2 : H₂ u * u ^ 2 ≤ K₂₂ := hK₂₂ _ hu0
+    have hH₂0 : 0 ≤ H₂ u := h₂.2.1 u (mem_Ioi.mpr hu0)
+    have e1 : H₁ (τ / u) ≤ K₁₁ * u / τ := by
+      rw [le_div_iff₀ hτ]
+      have hb : H₁ (τ / u) * (τ / u) ≤ K₁₁ := by simpa using b1
+      have hsplit : H₁ (τ / u) * τ = (H₁ (τ / u) * (τ / u)) * u := by field_simp
+      rw [hsplit]
+      exact mul_le_mul_of_nonneg_right hb hu0.le
+    have e2 : H₂ u ≤ K₂₂ / u ^ 2 := by
+      rw [le_div_iff₀ (by positivity)]; exact b2
+    have hrw : u ^ (-2 : ℝ) = 1 / u ^ 2 := by
+      rw [Real.rpow_neg hu0.le, ← Real.rpow_natCast u 2]
+      norm_num
+    rw [hrw]
+    calc H₁ (τ / u) * H₂ u / u ≤ (K₁₁ * u / τ) * (K₂₂ / u ^ 2) / u := by gcongr
+      _ = (K₁₁ * K₂₂ / τ) * (1 / u ^ 2) := by field_simp
+  have hunion : Ioc (0:ℝ) 1 ∪ Ioi (1:ℝ) = Ioi (0:ℝ) := Ioc_union_Ioi_eq_Ioi zero_le_one
+  rw [← hunion]
+  exact hnear.union hfar
 
 /-- Nonnegativity of the convolution (PROVEN): the integrand is
 nonnegative on `(0, ∞)` because `τ/u > 0` there. -/
