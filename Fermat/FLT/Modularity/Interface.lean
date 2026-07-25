@@ -6179,38 +6179,66 @@ theorem exists_etale_subBialgebra_of_points_surjective
   sorry
 
 set_option backward.isDefEq.respectTransparency false in
-/-- **Hopf orders in sub-bialgebras of a generic fibre** (sorry node —
-step (γ), the schematic-closure/saturation half of the Raynaud
-quotient-closure cut, split off 2026-07-25 from
+set_option maxHeartbeats 1000000 in
+/-- **Hopf orders in sub-bialgebras of a generic fibre** (PROVEN
+2026-07-25 — step (γ), the schematic-closure/saturation half of the
+Raynaud quotient-closure cut, split off from
 `IsFlatPointsGroupAt.of_surjective`; Raynaud, *Schémas en groupes de
 type `(p, …, p)`*, Bull. SMF 102 (1974); Tate, *Finite flat group
 schemes*, in Cornell–Silverman–Stevens): a `Kᵥ`-sub-bialgebra `H` of
 the generic fibre `Q := Kᵥ ⊗[𝒪ᵥ] G` of a finite flat `𝒪ᵥ`-Hopf algebra
 `G` carries a finite flat `𝒪ᵥ`-Hopf order — the intersection
-`G' := H ∩ G` formed inside `Q` — whose generic fibre is `H` as a
+`H ∩ G` formed inside `Q` — whose generic fibre is `H` as a
 `Kᵥ`-bialgebra. This is the DUAL, and the easier half, of the schematic
 closure `IsFlatPointsGroupAt.of_injective` needs: it takes a
-SUB-algebra of the witness where that node must quotient it. Intended
-proof:
-* `G → Q`, `g ↦ 1 ⊗ₜ g`, is injective (`G` is flat, hence
-  torsion-free, over the DVR `𝒪ᵥ`, whose fraction field is `Kᵥ`), so
-  the comap `G' := (H.restrictScalars 𝒪ᵥ).comap (includeRight)` is a
-  faithful model of the intersection;
-* `Module.Finite 𝒪ᵥ G'`: a submodule of the module-finite `G` over the
-  noetherian `𝒪ᵥ`. `Module.Flat 𝒪ᵥ G'`: finite and torsion-free over a
-  DVR, hence finite FREE;
-* `G'` spans `H` over `Kᵥ`: every `x ∈ H ⊆ Q` has `c x ∈ G` for some
-  nonzero `c ∈ 𝒪ᵥ` (since `Q = Kᵥ · G`), and `c x ∈ H` because `H` is a
-  `Kᵥ`-subspace, so `c x ∈ G'`; with torsion-freeness this makes the
-  canonical `Kᵥ ⊗[𝒪ᵥ] G' → H` a `Kᵥ`-algebra isomorphism;
-* `G'` is SATURATED in `G` (`c x ∈ G'`, `x ∈ G`, `c ≠ 0` force
-  `x ∈ H`, hence `x ∈ G'`), so `G' ⊗[𝒪ᵥ] G'` is the intersection of
-  `H ⊗[Kᵥ] H` with the image of `G ⊗[𝒪ᵥ] G` inside `Q ⊗[Kᵥ] Q`; the
-  comultiplication of `H` (the restriction of `Q`'s, which carries the
-  Hopf order `G` into `G ⊗ G`) therefore maps `G'` into `G' ⊗ G'`, and
-  the counit and antipode restrict likewise — this is the
-  `HopfAlgebra 𝒪ᵥ G'` structure, and it makes the algebra isomorphism
-  above a `Kᵥ`-bialgebra equivalence.
+SUB-algebra of the witness where that node must quotient it.
+
+The proof needs NO sub-bialgebra API (the pin has none) and builds NO
+`HopfAlgebra` structure by hand: the whole point is that the vendored
+`exists_flat_hopf_form_of_hopf_order` of
+`KnownIn1980s/EllipticCurves/Flat.lean` already turns a *Hopf ORDER* —
+a finitely generated `𝒪ᵥ`-subalgebra spanning the generic fibre and
+closed under counit, antipode and comultiplication — into a finite flat
+Hopf `𝒪ᵥ`-algebra together with the bialgebra equivalence of generic
+fibres. So all that is proven here is that the intersection
+`H₀ := ι ⁻¹' (1 ⊗ G)`, a `Subalgebra 𝒪ᵥ H` by `Subalgebra.comap`, IS
+such an order. Its five clauses:
+* *denominators* (used twice): every `q ∈ Q` has `c • q ∈ 1 ⊗ G` for
+  some `c ∈ 𝒪ᵥ⁰` — a tensor induction, the pure-tensor case being
+  `IsLocalization.exists_integer_multiple` for `Kᵥ = Frac 𝒪ᵥ`.
+* *spanning*: for `x ∈ H`, `ι (c • x) = c • ι x ∈ 1 ⊗ G` gives
+  `c • x ∈ H₀`, and `c` is invertible in `Kᵥ`
+  (`IsLocalization.map_units`), so `x ∈ span Kᵥ H₀`.
+* *the saturation retraction* — the technical core. Put
+  `A := {g : G | 1 ⊗ g ∈ ι(H)}`, a `Submodule 𝒪ᵥ G`. Then `G ⧸ A` is
+  torsion-free (`c • g ∈ A` forces `1 ⊗ g ∈ ι(H)`, dividing by the unit
+  `c` inside the `Kᵥ`-subspace `ι(H)`) and module-finite, hence FREE
+  over the DVR `𝒪ᵥ` (`Module.free_of_finite_type_torsion_free'`), hence
+  projective: the quotient map `G → G ⧸ A` splits
+  (`LinearMap.exists_rightInverse_of_surjective`), so `A` is a direct
+  summand and `ret := id − sec ∘ mkQ : G →ₗ[𝒪ᵥ] G` retracts `G` onto
+  `A`. Composing with the (Kᵥ-linear, hence 𝒪ᵥ-linear) left inverse
+  `π` of the injection `ι` gives `s := π ∘ (1 ⊗ ·) ∘ ret : G →ₗ[𝒪ᵥ] H`
+  with `ι (s g) = 1 ⊗ ret g`; its base change
+  `ρ := s.liftBaseChange Kᵥ : Q →ₗ[Kᵥ] H` satisfies `ρ (1 ⊗ G) ⊆ H₀`
+  and `ρ ∘ ι = id` (checked on `H₀`, extended by the spanning clause).
+* *finite generation*: `H₀` is exactly `range s` (`⊆` because
+  `ι (s g) = 1 ⊗ ret g`, `⊇` because for `x ∈ H₀` the `g` with
+  `1 ⊗ g = ι x` lies in `A`, so `s g = x`), the image of the
+  module-finite `G`.
+* *counit* and *antipode*: transport along the bialgebra homomorphism
+  `ι` (`BialgHomClass.counitAlgHom_comp`,
+  `antipodeAlgHom_comp_bialgHom`) and then read off the base-change
+  structure formulas at `1 ⊗ g` (`TensorProduct.counit_tmul`; the
+  antipode of the base change is definitionally `1 ⊗ antipode`).
+* *comultiplication* — the saturation step proper. `comul` of `ι x` is
+  in the `𝒪ᵥ`-span of the pure tensors of `1 ⊗ G`
+  (`TensorProduct.comul_tmul`, as in `exists_hopfOrder_baseChange`),
+  and `ρ ⊗ ρ` maps that span into the `𝒪ᵥ`-span of the pure tensors of
+  `H₀` while fixing `comul x` — because `(ρ ⊗ ρ) ∘ (ι ⊗ ι) = id`. This
+  is the Lean incarnation of "`H₀ ⊗ H₀` is the intersection of
+  `H ⊗[Kᵥ] H` with the image of `G ⊗[𝒪ᵥ] G`": saturation is what makes
+  the retraction `ρ` exist integrally.
 EXISTENCE of the order needs no `e < p − 1` bound — Raynaud's bound
 enters only for uniqueness/full-faithfulness statements.
 Unconditionally TRUE; no hypothesis package. -/
@@ -6221,8 +6249,242 @@ theorem exists_hopfOrder_of_subBialgebra
     (ι : H →ₐc[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G))
     (hι : Function.Injective (ι : H →ₐ[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G))) :
     ∃ (G' : Type) (_ : CommRing G') (_ : HopfAlgebra 𝒪ᵥ G') (_ : Module.Flat 𝒪ᵥ G')
-      (_ : Module.Finite 𝒪ᵥ G'), Nonempty ((Kᵥ ⊗[𝒪ᵥ] G') ≃ₐc[Kᵥ] H) :=
-  sorry
+      (_ : Module.Finite 𝒪ᵥ G'), Nonempty ((Kᵥ ⊗[𝒪ᵥ] G') ≃ₐc[Kᵥ] H) := by
+  classical
+  -- `H` becomes an `𝒪ᵥ`-algebra through `Kᵥ`
+  letI : Algebra 𝒪ᵥ H := ((algebraMap Kᵥ H).comp (algebraMap 𝒪ᵥ Kᵥ)).toAlgebra
+  haveI : IsScalarTower 𝒪ᵥ Kᵥ H := IsScalarTower.of_algebraMap_eq (fun _ => rfl)
+  set ιA : H →ₐ[Kᵥ] Kᵥ ⊗[𝒪ᵥ] G := (ι : H →ₐ[Kᵥ] Kᵥ ⊗[𝒪ᵥ] G)
+  -- the canonical integral model `1 ⊗ G` inside the generic fibre
+  obtain ⟨G₀, hmemG₀, hG₀mem⟩ : ∃ G₀ : Subalgebra 𝒪ᵥ (Kᵥ ⊗[𝒪ᵥ] G),
+      (∀ g : G, ((1 : Kᵥ) ⊗ₜ[𝒪ᵥ] g) ∈ G₀) ∧
+      (∀ q ∈ G₀, ∃ g : G, ((1 : Kᵥ) ⊗ₜ[𝒪ᵥ] g) = q) :=
+    ⟨(Algebra.TensorProduct.includeRight : G →ₐ[𝒪ᵥ] Kᵥ ⊗[𝒪ᵥ] G).range,
+      fun g => ⟨g, rfl⟩, fun _ hq => hq⟩
+  -- the Hopf order candidate: the intersection `H ∩ G` formed inside the generic fibre
+  obtain ⟨H₀, hmemH₀⟩ : ∃ H₀ : Subalgebra 𝒪ᵥ H, ∀ x : H, x ∈ H₀ ↔ ιA x ∈ G₀ :=
+    ⟨G₀.comap (ιA.restrictScalars 𝒪ᵥ), fun _ => Iff.rfl⟩
+  have hιsmul : ∀ (c : 𝒪ᵥ) (x : H), ιA (c • x) = c • ιA x := by
+    intro c x
+    rw [← IsScalarTower.algebraMap_smul Kᵥ c x, ← IsScalarTower.algebraMap_smul Kᵥ c (ιA x),
+      map_smul]
+  -- ### the three base-change structure formulas at `1 ⊗ g`
+  have hcounitG : ∀ g : G,
+      Bialgebra.counitAlgHom Kᵥ (Kᵥ ⊗[𝒪ᵥ] G) ((1 : Kᵥ) ⊗ₜ[𝒪ᵥ] g) ∈
+        (algebraMap 𝒪ᵥ Kᵥ).range := by
+    intro g
+    refine ⟨Coalgebra.counit (R := 𝒪ᵥ) g, ?_⟩
+    show algebraMap 𝒪ᵥ Kᵥ (Coalgebra.counit (R := 𝒪ᵥ) g) =
+      Coalgebra.counit (R := Kᵥ) ((1 : Kᵥ) ⊗ₜ[𝒪ᵥ] g)
+    rw [TensorProduct.counit_tmul]
+    simp [Algebra.smul_def]
+  have hantipodeG : ∀ g : G, HopfAlgebra.antipode Kᵥ ((1 : Kᵥ) ⊗ₜ[𝒪ᵥ] g) =
+      (1 : Kᵥ) ⊗ₜ[𝒪ᵥ] (HopfAlgebra.antipode 𝒪ᵥ g) := fun _ => rfl
+  have hcomulG : ∀ g : G, Bialgebra.comulAlgHom Kᵥ (Kᵥ ⊗[𝒪ᵥ] G) ((1 : Kᵥ) ⊗ₜ[𝒪ᵥ] g) ∈
+      Submodule.span 𝒪ᵥ {z : (Kᵥ ⊗[𝒪ᵥ] G) ⊗[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G) |
+        ∃ a ∈ G₀, ∃ b ∈ G₀, a ⊗ₜ[Kᵥ] b = z} := by
+    intro g
+    show Coalgebra.comul (R := Kᵥ) ((1 : Kᵥ) ⊗ₜ[𝒪ᵥ] g) ∈ _
+    rw [TensorProduct.comul_tmul, CommSemiring.comul_apply]
+    generalize Coalgebra.comul (R := 𝒪ᵥ) g = t
+    induction t with
+    | zero => simp
+    | tmul a b =>
+        rw [TensorProduct.AlgebraTensorModule.tensorTensorTensorComm_tmul]
+        exact Submodule.subset_span ⟨_, hmemG₀ a, _, hmemG₀ b, rfl⟩
+    | add p q hp hq =>
+        rw [TensorProduct.tmul_add, map_add]
+        exact Submodule.add_mem _ hp hq
+  -- ### denominators: every element of the generic fibre has an integral multiple
+  have hden : ∀ q : Kᵥ ⊗[𝒪ᵥ] G, ∃ c ∈ nonZeroDivisors 𝒪ᵥ, c • q ∈ G₀ := by
+    intro q
+    induction q with
+    | zero => exact ⟨1, one_mem _, by rw [one_smul]; exact zero_mem G₀⟩
+    | tmul k g =>
+        obtain ⟨⟨c, hc⟩, c', hc'⟩ :=
+          IsLocalization.exists_integer_multiple (nonZeroDivisors 𝒪ᵥ) k
+        refine ⟨c, hc, ?_⟩
+        have hc'' : algebraMap 𝒪ᵥ Kᵥ c' = c • k := hc'
+        have h1 : c • (k ⊗ₜ[𝒪ᵥ] g) = c' • ((1 : Kᵥ) ⊗ₜ[𝒪ᵥ] g) := by
+          rw [TensorProduct.smul_tmul' c k g, TensorProduct.smul_tmul' c' (1 : Kᵥ) g,
+            ← hc'', Algebra.smul_def, mul_one]
+        rw [h1]
+        exact G₀.smul_mem (hmemG₀ g) c'
+    | add p q hp hq =>
+        obtain ⟨c₁, hc₁, h₁⟩ := hp
+        obtain ⟨c₂, hc₂, h₂⟩ := hq
+        refine ⟨c₁ * c₂, mul_mem hc₁ hc₂, ?_⟩
+        have h1 : (c₁ * c₂) • (p + q) = c₂ • (c₁ • p) + c₁ • (c₂ • q) := by
+          simp only [smul_add, smul_smul]
+          rw [mul_comm c₂ c₁]
+        rw [h1]
+        exact add_mem (G₀.smul_mem h₁ c₂) (G₀.smul_mem h₂ c₁)
+  -- ### the saturated preimage lattice inside `G`
+  obtain ⟨A, hmemA⟩ : ∃ A : Submodule 𝒪ᵥ G,
+      ∀ g : G, g ∈ A ↔ ∃ x : H, ιA x = (1 : Kᵥ) ⊗ₜ[𝒪ᵥ] g :=
+    ⟨Submodule.comap
+      ((Algebra.TensorProduct.includeRight : G →ₐ[𝒪ᵥ] Kᵥ ⊗[𝒪ᵥ] G).toLinearMap)
+      (Submodule.restrictScalars 𝒪ᵥ (LinearMap.range ιA.toLinearMap)), fun _ => Iff.rfl⟩
+  haveI : Module.Finite 𝒪ᵥ (G ⧸ A) :=
+    Module.Finite.of_surjective A.mkQ (Submodule.mkQ_surjective A)
+  haveI : Module.IsTorsionFree 𝒪ᵥ (G ⧸ A) := by
+    refine ⟨fun r hr x y hxy => ?_⟩
+    obtain ⟨a, rfl⟩ := Submodule.mkQ_surjective A x
+    obtain ⟨b, rfl⟩ := Submodule.mkQ_surjective A y
+    have hr0 : r ≠ 0 := isRegular_iff_ne_zero.mp hr
+    have hrK : algebraMap 𝒪ᵥ Kᵥ r ≠ 0 := fun h0 =>
+      hr0 ((injective_iff_map_eq_zero _).mp (IsFractionRing.injective 𝒪ᵥ Kᵥ) r h0)
+    have hsub : r • (a - b) ∈ A := by
+      rw [← Submodule.Quotient.mk_eq_zero, ← Submodule.mkQ_apply, map_smul, map_sub, smul_sub,
+        sub_eq_zero]
+      exact hxy
+    have hab : a - b ∈ A := by
+      obtain ⟨w, hw⟩ := (hmemA _).mp hsub
+      refine (hmemA _).mpr ⟨(algebraMap 𝒪ᵥ Kᵥ r)⁻¹ • w, ?_⟩
+      rw [map_smul, hw, TensorProduct.tmul_smul,
+        ← IsScalarTower.algebraMap_smul Kᵥ r ((1 : Kᵥ) ⊗ₜ[𝒪ᵥ] (a - b)), inv_smul_smul₀ hrK]
+    rw [Submodule.mkQ_apply, Submodule.mkQ_apply, Submodule.Quotient.eq]
+    exact hab
+  -- the retraction of `G` onto the saturated lattice `A` (its cokernel is free)
+  obtain ⟨ret, hretmem, hretid⟩ : ∃ ret : G →ₗ[𝒪ᵥ] G,
+      (∀ g : G, ret g ∈ A) ∧ (∀ g ∈ A, ret g = g) := by
+    obtain ⟨sec, hsec⟩ :=
+      A.mkQ.exists_rightInverse_of_surjective (by rw [Submodule.range_mkQ])
+    refine ⟨LinearMap.id - sec ∘ₗ A.mkQ, fun g => ?_, fun g hg => ?_⟩
+    · have h0 : A.mkQ (g - sec (A.mkQ g)) = 0 := by
+        rw [map_sub, sub_eq_zero]
+        exact (LinearMap.congr_fun hsec (A.mkQ g)).symm
+      rw [← Submodule.Quotient.mk_eq_zero, ← Submodule.mkQ_apply]
+      exact h0
+    · have h0 : A.mkQ g = 0 := by
+        rw [Submodule.mkQ_apply, Submodule.Quotient.mk_eq_zero]
+        exact hg
+      show g - sec (A.mkQ g) = g
+      rw [h0, map_zero, sub_zero]
+  -- ### the integral retraction `G → H₀` and its base change `ρ`
+  obtain ⟨π, hπ⟩ := ιA.toLinearMap.exists_leftInverse_of_injective
+    (LinearMap.ker_eq_bot.mpr hι)
+  have hπι : ∀ x : H, π (ιA x) = x := fun x => LinearMap.congr_fun hπ x
+  obtain ⟨s, hsapp⟩ : ∃ s : G →ₗ[𝒪ᵥ] H, ∀ g : G, s g = π ((1 : Kᵥ) ⊗ₜ[𝒪ᵥ] (ret g)) :=
+    ⟨(π.restrictScalars 𝒪ᵥ) ∘ₗ
+      ((Algebra.TensorProduct.includeRight : G →ₐ[𝒪ᵥ] Kᵥ ⊗[𝒪ᵥ] G).toLinearMap ∘ₗ ret),
+      fun _ => rfl⟩
+  have hsιA : ∀ g : G, ιA (s g) = (1 : Kᵥ) ⊗ₜ[𝒪ᵥ] (ret g) := by
+    intro g
+    obtain ⟨x, hx⟩ := (hmemA _).mp (hretmem g)
+    rw [hsapp, ← hx, hπι]
+  have hsmem : ∀ g : G, s g ∈ H₀ := by
+    intro g
+    rw [hmemH₀, hsιA]
+    exact hmemG₀ _
+  have hsH₀ : ∀ x ∈ H₀, ∃ g : G, s g = x := by
+    intro x hx
+    obtain ⟨g, hg⟩ := hG₀mem _ ((hmemH₀ x).mp hx)
+    refine ⟨g, hι ?_⟩
+    rw [hsιA, hretid g ((hmemA g).mpr ⟨x, hg.symm⟩)]
+    exact hg
+  obtain ⟨ρ, hρtmul⟩ : ∃ ρ : (Kᵥ ⊗[𝒪ᵥ] G) →ₗ[Kᵥ] H,
+      ∀ (k : Kᵥ) (g : G), ρ (k ⊗ₜ[𝒪ᵥ] g) = k • s g :=
+    ⟨s.liftBaseChange Kᵥ, fun _ _ => rfl⟩
+  have hρG₀ : ∀ q ∈ G₀, ρ q ∈ H₀ := by
+    intro q hq
+    obtain ⟨g, hg⟩ := hG₀mem q hq
+    rw [← hg, hρtmul, one_smul]
+    exact hsmem g
+  -- ### clause 2: the order spans the sub-bialgebra over `Kᵥ`
+  have hspan : Submodule.span Kᵥ (H₀ : Set H) = ⊤ := by
+    rw [eq_top_iff]
+    rintro x -
+    obtain ⟨c, hc, hcq⟩ := hden (ιA x)
+    have hcx : c • x ∈ H₀ := by
+      rw [hmemH₀, hιsmul]
+      exact hcq
+    obtain ⟨u, hu⟩ := IsLocalization.map_units Kᵥ (⟨c, hc⟩ : nonZeroDivisors 𝒪ᵥ)
+    have hx : x = (↑u⁻¹ : Kᵥ) • (c • x) := by
+      rw [← IsScalarTower.algebraMap_smul Kᵥ c x]
+      show x = (↑u⁻¹ : Kᵥ) • ((algebraMap 𝒪ᵥ Kᵥ c) • x)
+      rw [← hu, smul_smul, Units.inv_mul, one_smul]
+    rw [hx]
+    exact Submodule.smul_mem _ _ (Submodule.subset_span hcx)
+  -- ### clause 1: finite generation
+  have hH₀range : (Subalgebra.toSubmodule H₀ : Submodule 𝒪ᵥ H) = LinearMap.range s := by
+    refine le_antisymm ?_ ?_
+    · intro x hx
+      obtain ⟨g, hg⟩ := hsH₀ x hx
+      exact ⟨g, hg⟩
+    · rintro x ⟨g, rfl⟩
+      exact hsmem g
+  have hfg : (Subalgebra.toSubmodule H₀).FG := by
+    rw [hH₀range, LinearMap.range_eq_map]
+    exact (Module.finite_def.mp inferInstance).map s
+  -- ### clause 3: counit integrality
+  have hcounit : ∀ x ∈ H₀, Bialgebra.counitAlgHom Kᵥ H x ∈ (algebraMap 𝒪ᵥ Kᵥ).range := by
+    intro x hx
+    obtain ⟨g, hg⟩ := hG₀mem _ ((hmemH₀ x).mp hx)
+    have hcc : Bialgebra.counitAlgHom Kᵥ (Kᵥ ⊗[𝒪ᵥ] G) (ιA x) =
+        Bialgebra.counitAlgHom Kᵥ H x :=
+      AlgHom.congr_fun (BialgHomClass.counitAlgHom_comp ι) x
+    rw [← hcc, ← hg]
+    exact hcounitG g
+  -- ### clause 4: antipode stability
+  have hantipode : ∀ x ∈ H₀, HopfAlgebra.antipode Kᵥ x ∈ H₀ := by
+    intro x hx
+    obtain ⟨g, hg⟩ := hG₀mem _ ((hmemH₀ x).mp hx)
+    have hap : HopfAlgebra.antipode Kᵥ (ιA x) = ιA (HopfAlgebra.antipode Kᵥ x) :=
+      AlgHom.congr_fun (antipodeAlgHom_comp_bialgHom ι) x
+    rw [hmemH₀, ← hap, ← hg, hantipodeG g]
+    exact hmemG₀ _
+  -- ### clause 5: comultiplication closure — the saturation step
+  have hsret : ∀ g : G, s (ret g) = s g := by
+    intro g
+    refine hι ?_
+    rw [hsιA, hsιA, hretid _ (hretmem g)]
+  have hρι : ∀ x : H, ρ (ιA x) = x := by
+    have hext : (ρ ∘ₗ ιA.toLinearMap) = LinearMap.id (R := Kᵥ) (M := H) := by
+      refine LinearMap.ext_on hspan ?_
+      intro x hx
+      obtain ⟨g, hg⟩ := hsH₀ x hx
+      show ρ (ιA x) = x
+      rw [← hg, hsιA, hρtmul, one_smul, hsret]
+    intro x
+    exact LinearMap.congr_fun hext x
+  have hmapid : ∀ t : H ⊗[Kᵥ] H,
+      TensorProduct.map ρ ρ (Algebra.TensorProduct.map ιA ιA t) = t := by
+    intro t
+    induction t with
+    | zero => simp
+    | tmul a b =>
+        rw [Algebra.TensorProduct.map_tmul, TensorProduct.map_tmul, hρι, hρι]
+    | add p q hp hq => rw [map_add, map_add, hp, hq]
+  have hcomul : ∀ x ∈ H₀, Bialgebra.comulAlgHom Kᵥ H x ∈
+      Submodule.span 𝒪ᵥ {z : H ⊗[Kᵥ] H | ∃ a ∈ H₀, ∃ b ∈ H₀, a ⊗ₜ[Kᵥ] b = z} := by
+    intro x hx
+    obtain ⟨g, hg⟩ := hG₀mem _ ((hmemH₀ x).mp hx)
+    have hcm : Bialgebra.comulAlgHom Kᵥ (Kᵥ ⊗[𝒪ᵥ] G) (ιA x) =
+        Algebra.TensorProduct.map ιA ιA (Bialgebra.comulAlgHom Kᵥ H x) :=
+      (AlgHom.congr_fun (BialgHomClass.map_comp_comulAlgHom ι) x).symm
+    have hmem0 : Bialgebra.comulAlgHom Kᵥ (Kᵥ ⊗[𝒪ᵥ] G) (ιA x) ∈
+        Submodule.span 𝒪ᵥ {z : (Kᵥ ⊗[𝒪ᵥ] G) ⊗[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G) |
+          ∃ a ∈ G₀, ∃ b ∈ G₀, a ⊗ₜ[Kᵥ] b = z} := by
+      rw [← hg]
+      exact hcomulG g
+    obtain ⟨F, hFapp⟩ : ∃ F : ((Kᵥ ⊗[𝒪ᵥ] G) ⊗[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G)) →ₗ[𝒪ᵥ] (H ⊗[Kᵥ] H),
+        ∀ z, F z = TensorProduct.map ρ ρ z :=
+      ⟨(TensorProduct.map ρ ρ).restrictScalars 𝒪ᵥ, fun _ => rfl⟩
+    have h2 := Submodule.mem_map_of_mem (f := F) hmem0
+    rw [Submodule.map_span] at h2
+    have h3 : F (Bialgebra.comulAlgHom Kᵥ (Kᵥ ⊗[𝒪ᵥ] G) (ιA x)) =
+        Bialgebra.comulAlgHom Kᵥ H x := by
+      rw [hFapp, hcm]
+      exact hmapid _
+    rw [h3] at h2
+    refine Submodule.span_mono ?_ h2
+    rintro _ ⟨z, ⟨a, ha, b, hb, rfl⟩, rfl⟩
+    exact ⟨ρ a, hρG₀ a ha, ρ b, hρG₀ b hb, by rw [hFapp, TensorProduct.map_tmul]⟩
+  -- ### assemble: the Hopf order is a finite flat Hopf form
+  obtain ⟨G', iCR, iHopf, iFin, iFlat, hequiv⟩ :=
+    exists_flat_hopf_form_of_hopf_order 𝒪ᵥ Kᵥ H H₀ hfg hspan hcounit hantipode hcomul
+  exact ⟨G', iCR, iHopf, iFlat, iFin, hequiv⟩
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
