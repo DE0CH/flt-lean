@@ -39,11 +39,13 @@ import Fermat.FLT.DedekindDomain.AdicValuation
 import Fermat.FLT.DedekindDomain.ResidueCardinality
 import Fermat.FLT.Deformations.Lemmas
 import Fermat.FLT.Deformations.RepresentationTheory.AbsoluteGaloisGroup
+import Fermat.FLT.Deformations.RepresentationTheory.CompletionTransport
 import Fermat.FLT.Deformations.RepresentationTheory.Etale
 import Fermat.FLT.Deformations.RepresentationTheory.FlatProlongation
 import Fermat.FLT.Deformations.RepresentationTheory.Frobenius
 import Fermat.FLT.Deformations.RepresentationTheory.GaloisRep
 import Fermat.FLT.Deformations.RepresentationTheory.GaloisRepFamily
+import Fermat.FLT.Deformations.RepresentationTheory.GaloisRepTransport
 import Fermat.FLT.Deformations.RepresentationTheory.IntegralClosure
 import Fermat.FLT.Deformations.RepresentationTheory.LocalInertiaFixedField
 import Fermat.FLT.EllipticCurve.FrobeniusFixedField
@@ -60,6 +62,7 @@ import Fermat.FLT.EllipticCurve.UniversalCurve
 import Fermat.FLT.EllipticCurve.WeilPairing
 import Fermat.FLT.EllipticCurve.WeilPairingDescent
 import Fermat.FLT.EllipticCurve.WeilPairingRecgen
+import Fermat.FLT.EllipticCurve.WeilPairingStageB
 import Fermat.FLT.EllipticCurve.WeilPairingStepR
 import Fermat.FLT.EllipticCurve.WeilPairingTwoLine
 import Fermat.FLT.EllipticCurve.WronskianInduction
@@ -73,6 +76,8 @@ import Fermat.FLT.FreyCurve.Semistable
 import Fermat.FLT.GaloisRepresentation.BrauerNesbitt
 import Fermat.FLT.GaloisRepresentation.BrauerNesbittConjugacy
 import Fermat.FLT.GaloisRepresentation.Chebotarev
+import Fermat.FLT.GaloisRepresentation.ComplexConjugation
+import Fermat.FLT.GaloisRepresentation.HardlyRamified.CompletionInvariance
 import Fermat.FLT.GaloisRepresentation.HardlyRamified.Deformation
 import Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs
 import Fermat.FLT.GaloisRepresentation.HardlyRamified.Family
@@ -129,6 +134,7 @@ import Fermat.FLT.Mathlib.RingTheory.Ideal.Quotient.Basic
 import Fermat.FLT.Mathlib.RingTheory.LocalRing.MaximalIdeal.Basic
 import Fermat.FLT.Mathlib.RingTheory.Norm.Quadratic
 import Fermat.FLT.Mathlib.RingTheory.Norm.Quotient
+import Fermat.FLT.Mathlib.RingTheory.PadicIntegralClosure
 import Fermat.FLT.Mathlib.RingTheory.Polynomial.GaussLemma
 import Fermat.FLT.Mathlib.RingTheory.Unramified.LocalRing
 import Fermat.FLT.Mathlib.RingTheory.Valuation.Discrete.IsDiscreteValuationRing
@@ -141,6 +147,16 @@ import Fermat.FLT.Mathlib.Topology.Algebra.ValuativeRel.ValuativeTopology
 import Fermat.FLT.Modularity.Interface
 import Fermat.FLT.Modularity.KhareWintenberger
 import Fermat.FLT.Modularity.Patching
+import Fermat.FLT.Modularity.PatchingVendored.AdicTopology
+import Fermat.FLT.Modularity.PatchingVendored.Algebra
+import Fermat.FLT.Modularity.PatchingVendored.InverseLimit
+import Fermat.FLT.Modularity.PatchingVendored.Lemmas
+import Fermat.FLT.Modularity.PatchingVendored.Module
+import Fermat.FLT.Modularity.PatchingVendored.Over
+import Fermat.FLT.Modularity.PatchingVendored.StructureFiniteness
+import Fermat.FLT.Modularity.PatchingVendored.System
+import Fermat.FLT.Modularity.PatchingVendored.TopologicallyFG
+import Fermat.FLT.Modularity.PatchingVendored.Ultraproduct
 import Fermat.FLT.NumberField.Completion.Finite
 import Fermat.FLT.Slop.NumberTheory.TsumDivisorsAntidiagonal
 import Fermat.FLT.Slop.PGL2.FiniteSubgroups.CyclicPartition
