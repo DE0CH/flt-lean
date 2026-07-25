@@ -6126,6 +6126,36 @@ the construction leaf (`exists_threeadicRealization_of_witness`) by
 the PROVEN assembly `exists_threeadic_member_of_witness` — the
 per-condition cut of BLGGT Theorem 5.5.1's compatibility transfer.
 
+The two LOCAL-SHAPE clauses — `flatAtThreePow` at `3` and
+`stableLineAtTwo` at `2` — ARE fields, and the asymmetry with the
+list above is deliberate and load-bearing (CUT-LEVEL REPAIR,
+2026-07-25).
+
+`compat` constrains `τ` only through characteristic polynomials of
+Frobenius at almost all `q ∉ {2, 3, ℓ}`, hence pins `τ` at most up to
+SEMISIMPLIFICATION. The determinant clause survives that — it IS a
+Frobenius determinant, which is why
+`threeadicRealization_det_cyclotomic_of_witness` is a PROVEN leaf over
+`compat` and stays out of the structure. The local shapes at `3` and
+at `2` do NOT: finite flatness at `3` is a property of the EXTENSION
+CLASS, invisible to semisimplification (the two extensions of `ℤ/3` by
+`μ_3` over `ℚ_3` classified by `1` and by `3` in `ℚ_3^×/(ℚ_3^×)^3`
+have the same semisimplification and the same Frobenius data, and
+exactly one is finite flat over `ℤ_3`), and the local type at `2` is
+likewise inertia data at a place where `compat` says nothing at all.
+So the two former leaves
+(`threeadicRealization_hasFlatProlongationAt_threePow`,
+`threeadicRealization_stableLineAtTwo_of_witness`) were
+UNDISCHARGEABLE as quantified — over EVERY realization — and no amount
+of Fontaine–Laffaille or Weil–Deligne formalization would have changed
+that. Carrying them as fields moves the obligation to the ONE place
+that can honestly meet it, the construction
+`exists_threeadicRealization_of_witness`, where `τ` is the actual
+Brauer-descended member; the two former leaves are now short PROVEN
+projections of these fields, so every downstream consumer is
+unchanged. See `blggt_threeadicMember_flatAtThreePow` and
+`blggt_threeadicMember_stableLineAtTwo` for the residual citations.
+
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): this
 interface may only be inhabited by the independent Brauer-descent
 construction — never through `Family.lean`, `Lift.lean`, or
@@ -6166,6 +6196,55 @@ structure ThreeadicRealization (ℓ : ℕ) [Fact ℓ.Prime]
         P.map Wit.ψℓ →
       (τ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map ιA =
         P.map Wit.ψ₃
+  /-- **The local shape at `3` — Fontaine–Laffaille, on the `3`-power
+  levels of the stable lattice.** For every `m ≥ 1` the level
+  `(A ⧸ 3^m) ⊗_A (Fin 2 → A)` — i.e. `T/3^m T` for `T = Fin 2 → A` —
+  is the group of `ℚ̄_3`-points of the generic fibre of a finite flat
+  group scheme over `ℤ_3`.
+
+  LEVEL AUDIT (2026-07-25): asserted on the `3`-POWER levels only,
+  which are the levels of the `3`-divisible group. The
+  arbitrary-finite-quotient form is PROVEN glue over this cofinal
+  subtower (`threeadicRealization_hasFlatProlongationAt_of_finite_quotient`,
+  through Raynaud's closure of finite flat group schemes under
+  quotients, `hasFlatProlongationAt_of_surjective`), so demanding it
+  here would re-obligate something the tree already has. Only positive
+  levels are asserted: at `m = 0` the level is a single point and the
+  transport discharges it outright.
+
+  WHY A FIELD: see the CUT-LEVEL REPAIR paragraph of this structure's
+  docstring — flatness at `3` is an extension-class property, hence not
+  implied by `compat`. -/
+  flatAtThreePow : ∀ m : ℕ, 1 ≤ m →
+    (τ.baseChange (A ⧸ Ideal.span {(3 : A) ^ m})).HasFlatProlongationAt
+      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+        (Fact.out : Nat.Prime 3))
+  /-- **The local shape at `2` — the Weil–Deligne type across the
+  system, as a stable line with unramified quadratic quotient.** There
+  are an `A`-basis `b` of the stable lattice `Fin 2 → A` and an
+  unramified square-trivial character `δ` of `G_{ℚ_2}` with
+
+    `τ g v ≡ δ g 1 • v  (mod A · b 0)`  for all `g` and all `v`.
+
+  Taking `v = b 0` shows the line `A · b 0` is `G_{ℚ_2}`-stable, so the
+  shape "extension of the unramified quadratic `δ` by something, in a
+  basis adapted to the lattice" is stated with no matrix in it; the
+  matrix reading is PROVEN from this clause in
+  `threeadicRealization_weilDeligneType_two_of_witness`.
+
+  WHY A FIELD: same reason as `flatAtThreePow` — this is inertia data
+  at `2`, and `compat` carries no information at `2` whatsoever. -/
+  stableLineAtTwo :
+    ∃ (b : Module.Basis (Fin 2) A (Fin 2 → A))
+      (δ : GaloisRep ℚ_[2] A A),
+      (AddSubgroup.inertia
+          ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup :
+            AddSubgroup Z2bar)
+          (Field.absoluteGaloisGroup ℚ_[2]) ≤ δ.ker) ∧
+      (∀ g : Field.absoluteGaloisGroup ℚ_[2], δ g * δ g = 1) ∧
+      ∀ (g : Field.absoluteGaloisGroup ℚ_[2]) (v : Fin 2 → A),
+        τ.map (algebraMap ℚ ℚ_[2]) g v - δ g 1 • v ∈
+          Submodule.span A {b 0}
 
 attribute [instance] ThreeadicRealization.commRingA
   ThreeadicRealization.topologicalSpaceA
@@ -6562,6 +6641,391 @@ theorem exists_threeadicBrauerSum_of_witness
     injective_of_finite_padicInt_charZero (p := 3) ιA, hmatch⟩
   exact @IsModuleTopology.mk ℤ_[3] _ A _ _ (moduleTopology ℤ_[3] A) rfl
 
+/-- **The Fontaine–Laffaille local shape at `3` of the Brauer-descended
+member, on the `3`-power levels of the stable lattice** (sorry node —
+the LITERATURE JOINT of the flatness transfer; re-cut 2026-07-25 to the
+CONSTRUCTION SITE, see the CUT AUDIT below): for the `3`-adic member
+`τ` produced by the Brauer descent — i.e. any coefficient package
+`(A, τ, ιA)` whose Frobenius characteristic polynomials away from `S₁`
+are the Hecke-field interpolants of `charFrob ρ` — and every `m ≥ 1`,
+the `3`-power level `(A ⧸ 3^m) ⊗_A (Fin 2 → A)`, i.e. `T/3^m T` for the
+stable lattice `T = Fin 2 → A`, is the group of `ℚ̄_3`-points of the
+generic fibre of a finite flat group scheme over `ℤ_3` — the package
+spelled by `GaloisRep.HasFlatProlongationAt`.
+
+Classically: the compatible system attached to the descended
+eigensystem has parallel weight `2` and conductor prime to `3`, so its
+`3`-adic member `τ` is crystalline at `3` with Hodge–Tate weights
+`{0, 1}` (Carayol/Taylor local-global compatibility at `p = ℓ` for `p`
+prime to the level). Over `ℤ_3` the absolute ramification index is
+`e = 1 < 2 = p - 1`, which is exactly the Fontaine–Laffaille range: the
+crystalline lattice `T = Fin 2 → A` is the Tate module of a
+`3`-divisible group `𝒢` over `ℤ_3` (Fontaine–Laffaille in weight `2`;
+Raynaud, Breuil for the range-free refinement), and the levels
+`T/3^m T` are precisely the `ℚ̄_3`-points of the generic fibres of the
+finite flat group schemes `𝒢[3^m]`. This is the honest shape of the
+literature input: the statement is asserted exactly on the `3`-power
+levels, which are the levels of the `3`-divisible group, and NOT on
+arbitrary congruence quotients — those are reached from these by
+Raynaud's closure of finite flat group schemes under quotients, an
+unconditional brick (`hasFlatProlongationAt_of_surjective`) consumed by
+the transport `threeadicRealization_hasFlatProlongationAt_of_finite_quotient`
+rather than smuggled in here. Only positive levels (`1 ≤ m`) are
+asserted: at `m = 0` the ideal `3^0 = (1)` is the unit ideal, the level
+is a single point, and the transport discharges that case outright with
+the trivial Hopf algebra.
+
+CUT AUDIT (2026-07-25 — why this leaf exists and where it came from).
+The obligation used to be stated as
+`threeadicRealization_hasFlatProlongationAt_threePow`, quantified over
+EVERY `Rlz : ThreeadicRealization`. In that position it was
+UNDISCHARGEABLE, and not for want of Fontaine–Laffaille: the interface
+constrains `τ` only through `compat`, i.e. through characteristic
+polynomials of Frobenius at almost all `q ∉ {2, 3, ℓ}`, which pins `τ`
+at most up to SEMISIMPLIFICATION (Chebotarev + Brauer–Nesbitt, and only
+if `τ` is continuous, which the interface does not require). Flatness at
+`3` is a property of the EXTENSION CLASS, invisible to
+semisimplification: the two extensions of `ℤ/3` by `μ_3` over `ℚ_3`
+corresponding to `1` and to `3` in `ℚ_3^×/(ℚ_3^×)^3` have the same
+semisimplification and the same Frobenius characteristic polynomials,
+and exactly one of them is finite flat over `ℤ_3` (Kummer). So the local
+shape at `3` is now a FIELD of `ThreeadicRealization`
+(`flatAtThreePow`), supplied at the construction
+`exists_threeadicRealization_of_witness` by THIS leaf, where the
+descended data is in hand; the old leaf survives as a short PROVEN
+projection of the field, so no consumer changed.
+
+HONESTY AUDIT of the relocation (2026-07-25, stated plainly because it
+bounds what the repair achieved). This leaf is quantified over a
+package `(A, τ, ιA)` satisfying the Frobenius match `hcompat` and
+nothing else, so the counterexample above applies to it verbatim: it is
+no more derivable from its own hypotheses than the leaf it replaces. The
+repair is STRUCTURAL, and what it buys is real but bounded:
+
+* the interface now DECLARES the local shape instead of pretending to
+  imply it, so any future inhabitant of `ThreeadicRealization` from
+  another source must supply it rather than silently inheriting a false
+  derivation;
+* the obligation is concentrated at the single construction site, where
+  the eventual honest discharge lives.
+
+That honest discharge is to fold the two local-shape conclusions into
+the EXISTENTIAL of `blggt_threeadicBrauerSum_of_witness` — the automorphic
+citation, which chooses `τ` and can therefore assert its local shape;
+BLGGT's own notion of a compatible system already includes de
+Rham/crystalline at the places over the residue characteristic, so this
+is not an enlargement of what is being cited. It was NOT done in this
+pass only because `blggt_threeadicBrauerSum_of_witness` was concurrently
+owned by another worktree (declaration-level ownership, `CLAUDE.md`);
+whoever holds it next should absorb this leaf and
+`blggt_threeadicMember_stableLineAtTwo` into it and delete both.
+
+Literature: Fontaine–Laffaille, *Construction de représentations
+p-adiques*, Ann. Sci. ÉNS 15 (1982); Raynaud, *Schémas en groupes de
+type (p, …, p)*, Bull. SMF 102 (1974); Carayol, Ann. Sci. ÉNS 19 (1986)
+and Taylor, Invent. Math. 98 (1989) (the weight-2 local shape at primes
+over `p` prime to the level); Breuil, *Groupes p-divisibles, groupes
+finis et modules filtrés*, Ann. of Math. 152 (2000) (the range-free
+refinement); BLGGT §5.5. FLT blueprint ch. 4: "flat at 3".
+
+ROUTE AUDIT (2026-07-25, inherited verbatim from the leaf this replaces
+— FIVE candidate discharges and cuts checked, all five refuted or found
+empty; read this before spending a worker on a "cheaper route"). The
+statement is FAITHFUL as written: it is not false, its conclusion is not
+satisfiable by any junk witness, and it admits NO honest decomposition
+inside the present tree:
+
+* *no subsingleton collapse*. `A ⧸ 3^m` is a NONZERO finite ring for
+  every `m ≥ 1`: `A` is a nonzero `ℤ_3`-module-finite FREE algebra, so
+  `3` cannot be a unit in `A` (else `A` would be a `ℚ_3`-algebra and a
+  finitely generated free `ℤ_3`-module at once, forcing `A = 0`), i.e.
+  `3 ∈ 𝔪_A`. Hence the level is `(A ⧸ 3^m)^2 ≠ 0` and
+  `hasFlatProlongationAt_of_subsingleton` is unavailable;
+* *no junk witness*. `GaloisRep.HasFlatProlongationAt` is a genuinely
+  RESTRICTIVE condition on a finite `Γ ℚ_3`-module, not a shape
+  condition: every finite `Γ ℚ_3`-module is the point group of a finite
+  étale `ℚ_3`-Hopf algebra (the Gelfand-duality machinery of
+  `KnownIn1980s/EllipticCurves/Flat.lean`), but only some of those admit
+  a finite FLAT `𝒪ᵥ`-model. Over `ℤ_3` (`e = 1 < p - 1 = 2`)
+  Raynaud/Oort–Tate classify the order-`3` group schemes: the generic
+  fibre of one is `ℤ/3(ω^i · ψ)` with `0 ≤ i ≤ e = 1` and `ψ`
+  UNRAMIFIED. An explicit non-example is therefore available: the
+  quadratic characters of `G_{ℚ_3}` are the unramified one, the one
+  cutting out `ℚ_3(√-3) = ℚ_3(ζ_3)` — which IS `ω` — and the one cutting
+  out `ℚ_3(√3)`; the last is ramified and is not `ω`, so `ℤ/3` with that
+  character has NO finite flat model over `ℤ_3`;
+* *the reduction to level `1` is FALSE* (the shortcut most worth
+  refuting explicitly). One is tempted to run
+  `0 → T/3^m → T/3^{m+1} → T/3 → 0` and induct, using "an extension of
+  flat by flat is flat". That extension-closure statement is FALSE at
+  the level of GALOIS MODULES: over an absolutely unramified base with
+  `e < p - 1` the comparison `Ext¹_fl → Ext¹_Γ` is INJECTIVE (Fontaine's
+  uniqueness of prolongations) but NOT surjective. The standard witness
+  is `Ext¹(ℤ/p, μ_p)`, where the flat classes are `ℤ_p^× / (ℤ_p^×)^p`
+  inside the Galois classes `ℚ_p^× / (ℚ_p^×)^p` (Kummer theory) — index
+  `p`, the missing class being that of the uniformizer `p` itself, i.e.
+  exactly the Tate-curve/multiplicative-reduction extension
+  `ℚ_p(p^{1/p})`. This is the same phenomenon as the classical criterion
+  that a multiplicative-reduction curve has `E[p]` finite flat at `p`
+  iff `p ∣ v(Δ)`. So flatness of ALL levels is strictly more than
+  flatness of the first, and the induction cannot be repaired;
+* *the `p`-divisible-group cut is EQUIVALENT, not a reduction*.
+  Replacing this leaf by "`T` is the Tate module of a `3`-divisible
+  group over `ℤ_3`" relocates the same sorry: the easy direction is the
+  present statement, and the converse is a theorem (Tate; via Fontaine's
+  `e < p - 1` uniqueness the compatible system of finite flat models
+  assembles into a `3`-divisible group). Worse, the cut STRENGTHENS the
+  leaf, since a `PDivisibleGroup` interface also carries transition maps
+  this statement does not need. Introducing that interface here would be
+  sorry-shuffling and is deliberately NOT done;
+* *the `ℤ_3`-native restatement is cosmetic*. `𝒪ᵥ ≅ ℤ_3` at `v = (3)`
+  (mathlib: `Rat.HeightOneSpectrum.adicCompletionIntegers.padicIntEquiv`,
+  with `Rat.HeightOneSpectrum.adicCompletion.padicEquiv` on the generic
+  fibre), so a finite flat Hopf `ℤ_3`-algebra base-changes to an
+  `𝒪ᵥ`-one. Restating the leaf over `ℤ_3` therefore makes it strictly
+  stronger at zero mathematical gain. The bridge itself is worth
+  recording for whoever DOES formalize the input:
+  `(primesEquiv v₃ : ℕ) = 3` is available from
+  `Rat.HeightOneSpectrum.natGenerator_dvd_iff` /
+  `Rat.HeightOneSpectrum.span_natGenerator` (both stated through
+  `IsIntegralClosure.intEquiv`) together with
+  `asIdeal_toHeightOneSpectrum_eq_span` of
+  `GroupScheme/ConnectedEtale.lean`, and the `ℤ_[a] ≃+* ℤ_[b]` transport
+  along `a = b` is a one-line `subst` (`Fact` is a `Prop`, so the
+  instance argument is proof-irrelevant).
+
+CONSUMPTION NOTE for whoever formalizes the input (a non-obvious finding
+of the same pass): `GaloisRep.hasFlatProlongationAt_of_hopf_package` of
+`Deformations/RepresentationTheory/FlatProlongation.lean` — the tree's
+only general producer of a flat-prolongation package — is UNUSABLE here.
+It requires a base ring `R` with `Algebra R ℚ` (its points comparison
+runs through `ℚ̄` and `algHomEquivOfFinite`), i.e. a group scheme over
+the LOCALIZATION `ℤ_(3)`, whereas Fontaine–Laffaille produces one over
+the COMPLETION `ℤ_3`, which does not map to `ℚ`. The input must
+therefore be fed either through the `padicIntEquiv` bridge above or
+straight into the definition of `GaloisRep.HasFlatProlongationAt` (which
+is purely local: the witness lives over `𝒪ᵥ` and the equivariance is for
+`Γ Kᵥ`).
+
+MISSING-MACHINERY AUDIT (2026-07-25, dependency order — none of this
+exists in mathlib or in this tree, and the leaf is blocked on all of it;
+each item named as the statement an owner would be dispatched at):
+
+1. *`p`-divisible groups over a complete DVR*: a structure carrying a
+   system of finite flat Hopf `𝒪`-algebras `H m` with the `p^m`-torsion
+   inclusions, its generic-fibre point functor, and its Tate module.
+   (Everything needed to STATE this is present — `HopfAlgebra`,
+   `Module.Flat`, `Module.Finite`, and the convolution monoid on points
+   — so this is the first buildable item, but on its own it buys no
+   reduction.)
+2. *Filtered `φ`-modules / strongly divisible `ℤ_p`-lattices in
+   Hodge–Tate weights `[0, p-2]` (Fontaine–Laffaille modules)*, and the
+   FL functor to finite `Γ ℚ_p`-modules.
+3. *The Fontaine–Laffaille equivalence*: the FL functor of (2) is an
+   equivalence onto the finite flat models of (1) in the range
+   `e < p - 1`. Stating the crystalline side needs the period ring
+   `B_cris` (mathlib has `WittVector` and nothing above it), which is
+   the deepest missing prerequisite of the whole chain.
+4. *Local-global compatibility at `p = ℓ`* (Carayol, Taylor): the
+   `3`-adic member of a parallel-weight-`2` compatible system of
+   conductor prime to `3` is crystalline at `3` with Hodge–Tate weights
+   `{0, 1}`. Not stateable before (3).
+
+Item 4 composed with items 3–1 IS this leaf; there is no intermediate at
+which the sorry can honestly be split.
+
+SOUNDNESS AUDIT (both ways, 2026-07-25): (i) direct — for the package
+produced by the Brauer descent this is Fontaine–Laffaille applied to the
+crystalline lattice of item 4 above; for an abstract package the
+abstract-quantification caveat of pillar β applies (and see the HONESTY
+AUDIT above, which says exactly how far that caveat reaches here), and
+(ii) collapse — the hypothesis set (an irreducible hardly ramified
+mod-`ℓ` representation, `ℓ ≥ 5`) is classically unsatisfiable (headline
+below), so the statement is classically true for every package.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
+through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+theorem blggt_threeadicMember_flatAtThreePow
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+    (Wit : PotentialModularityWitness ℓ O ρ)
+    (S₁ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    {A : Type u} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+    [Algebra ℤ_[3] A] [IsLocalRing A] [Module.Finite ℤ_[3] A]
+    [Module.Free ℤ_[3] A] [IsModuleTopology ℤ_[3] A]
+    (τ : GaloisRep ℚ A (Fin 2 → A))
+    (ιA : A →+* AlgebraicClosure ℚ_[3])
+    (hιA : Function.Injective ιA)
+    (hcompat : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S₁ →
+      q ≠ 2 → q ≠ 3 → q ≠ ℓ →
+      ∀ P : Polynomial Wit.E,
+        (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map Wit.ιO =
+          P.map Wit.ψℓ →
+        (τ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map ιA =
+          P.map Wit.ψ₃) :
+    ∀ m : ℕ, 1 ≤ m →
+      (τ.baseChange (A ⧸ Ideal.span {(3 : A) ^ m})).HasFlatProlongationAt
+        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+          (Fact.out : Nat.Prime 3)) :=
+  sorry
+
+/-- **The Weil–Deligne type at `2` of the Brauer-descended member, as a
+stable line with unramified quadratic quotient** (sorry node — the
+SHRUNK LITERATURE JOINT of the tameness transfer; cut out 2026-07-24 in
+matrix coordinates, re-cut coordinate-free 2026-07-25, re-cut to the
+CONSTRUCTION SITE 2026-07-25): for the `3`-adic member `τ` produced by
+the Brauer descent there are an `A`-basis `b` of the stable lattice
+`Fin 2 → A` and an unramified square-trivial character `δ` of `G_{ℚ_2}`
+such that `G_{ℚ_2}` acts on the quotient of the lattice by the line
+`A · b 0` through `δ`:
+
+  `τ g v ≡ δ g 1 • v  (mod A · b 0)`  for all `g` and all `v`.
+
+That single clause is the whole classical content. It already forces the
+line `A · b 0` to be `G_{ℚ_2}`-STABLE (take `v = b 0`: both
+`τ g (b 0) - δ g 1 • b 0` and `δ g 1 • b 0` lie in the line), so the
+shape "extension of the unramified quadratic `δ` by something, in a
+basis adapted to the lattice" is stated without ever mentioning a
+matrix. The matrix reading — upper-triangularity with `δ g 1` on the
+diagonal — is PROVEN from this clause in
+`threeadicRealization_weilDeligneType_two_of_witness`.
+
+WHY THIS IS THE CITATION. `ρ`'s type at `2` is an extension of an
+unramified square-trivial character by its cyclotomic twist
+(`hρ.isTameAtTwo` together with the cyclotomic determinant). The type is
+carried across the compatible system by STRICT COMPATIBILITY, which is
+exactly the property that a single Weil–Deligne representation `WD_v(R)`
+over the coefficient field reproduces `WD(r_λ|G_{F_v})^{F-ss}` for every
+`λ` whose residue characteristic differs from that of `v` (BLGGT §5.1,
+the display `ς WD_v(R) ≅ WD(r_λ|G_{F_v})^{F-ss}`; here `v = 2` and the
+two places compared are `λ | ℓ` and `λ | 3`, legitimate because
+`2 ∉ {ℓ, 3}`). Strict compatibility of the system through which the
+descent runs is Carayol's theorem for Hilbert newforms — the local
+constituent is pinned at EVERY finite place, not merely almost all — and
+the membership of `ρ` in such a system is BLGGT Theorem 5.5.1. Finally
+the stable-lattice normalization of the descent turns the `E_λ`-rational
+stable line into a saturated `A`-line, i.e. into the first vector of an
+`A`-basis, which is why the basis `b` may be demanded here. The
+character `δ` is handed over as a `GaloisRep` because it IS the quotient
+character of the constant type — in particular continuous, being the
+local component of the compatible system's nebentypus-free unramified
+twist.
+
+CUT AUDIT (2026-07-25 — why this leaf exists and where it came from).
+The obligation used to be stated as
+`threeadicRealization_stableLineAtTwo_of_witness`, quantified over EVERY
+`Rlz : ThreeadicRealization`. In that position it was UNDISCHARGEABLE
+for the reason recorded at its flatness sibling
+`blggt_threeadicMember_flatAtThreePow`, applied at `2` instead of `3`:
+`compat` equates characteristic polynomials of Frobenius at unramified
+places `q ∉ {2, 3, ℓ}` and therefore carries NO information at `2` at
+all, let alone inertia information. So the local type at `2` is now a
+FIELD of `ThreeadicRealization` (`stableLineAtTwo`), supplied at the
+construction `exists_threeadicRealization_of_witness` by THIS leaf; the
+old leaf survives as a short PROVEN projection of the field, so no
+consumer changed. The HONESTY AUDIT at the flatness sibling — what the
+relocation does and does not buy, and the eventual absorption into
+`blggt_threeadicBrauerSum_of_witness` — applies here verbatim.
+
+Literature (page-level checks 2026-07-25 against the downloaded
+sources): BLGGT, *Potential automorphy and change of weight*, Ann. of
+Math. 179 (2014) — §5.1 for the definition of a strictly compatible
+system (the display quoted above) and Theorem 5.5.1 for "a potentially
+diagonalizable, totally odd, regular algebraic polarized `l`-adic
+representation with `r̄|_{G_F(ζ_l)}` irreducible is part of a strictly
+pure compatible system"; Carayol, *Sur les représentations `l`-adiques
+associées aux formes modulaires de Hilbert*, Ann. Sci. ÉNS (4) 19 (1986)
+409–468, Théorème (A) p. 410: a strictly compatible system `{σ_λ}` with
+`σ_λ|W_p ≅ σ_λ(π_p)` at EVERY finite place `p` of residue
+characteristic different from that of `λ`, `σ(π_p)` being the
+`F`-semisimple degree-`2` Weil–Deligne representation of the Hecke
+correspondence (§0.5). Khare–Wintenberger, *Serre's modularity
+conjecture (I)*, Invent. Math. 178 (2009) 485–504, for the same
+constancy inside the minimal-lifting induction (paywalled; NOT
+page-verified here — the two references above are the load-bearing
+ones). FLT blueprint ch. 4: "tame at 2".
+
+SOUNDNESS AUDIT (both ways; 2026-07-24, re-checked 2026-07-25 for the
+coordinate-free form and again for the construction-site form): (i)
+direct — for the package produced by the Brauer descent this is the
+Weil–Deligne-type transfer above, read in a saturated basis; for an
+abstract package the abstract-quantification caveat of pillar β applies,
+and (ii) collapse — the hypothesis set is classically unsatisfiable (the
+headline `not_isIrreducible_of_isHardlyRamified_of_five_le` below
+refutes `hirr`), so the statement is classically true for every package.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
+through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. In
+particular the odd-prime dichotomy
+`not_isIrreducible_of_isHardlyRamified_of_odd` is NOT available: it
+routes `ℓ ≥ 5` through this module's own headline, whose proof consumes
+pillar β and hence this leaf. -/
+theorem blggt_threeadicMember_stableLineAtTwo
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+    (Wit : PotentialModularityWitness ℓ O ρ)
+    (S₁ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    {A : Type u} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+    [Algebra ℤ_[3] A] [IsLocalRing A] [Module.Finite ℤ_[3] A]
+    [Module.Free ℤ_[3] A] [IsModuleTopology ℤ_[3] A]
+    (τ : GaloisRep ℚ A (Fin 2 → A))
+    (ιA : A →+* AlgebraicClosure ℚ_[3])
+    (hιA : Function.Injective ιA)
+    (hcompat : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S₁ →
+      q ≠ 2 → q ≠ 3 → q ≠ ℓ →
+      ∀ P : Polynomial Wit.E,
+        (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map Wit.ιO =
+          P.map Wit.ψℓ →
+        (τ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map ιA =
+          P.map Wit.ψ₃) :
+    ∃ (b : Module.Basis (Fin 2) A (Fin 2 → A))
+      (δ : GaloisRep ℚ_[2] A A),
+      (AddSubgroup.inertia
+          ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup :
+            AddSubgroup Z2bar)
+          (Field.absoluteGaloisGroup ℚ_[2]) ≤ δ.ker) ∧
+      (∀ g : Field.absoluteGaloisGroup ℚ_[2], δ g * δ g = 1) ∧
+      ∀ (g : Field.absoluteGaloisGroup ℚ_[2]) (v : Fin 2 → A),
+        τ.map (algebraMap ℚ ℚ_[2]) g v - δ g 1 • v ∈
+          Submodule.span A {b 0} :=
+  sorry
+
 /-- **Brauer descent, `3`-adic side — construction of the raw
 realization** (DECOMPOSED 2026-07-24 — now a PROVEN assembly over the
 `ℓ`-adic descended system, the Brauer-sum citation sub-leaf
@@ -6616,9 +7080,16 @@ gives the universally quantified `compat` clause). The exceptional set
 of the realization is the union `S₁ ∪ S₀`, so that both matches are
 available at every good prime.
 
-CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
-discharge through `Family.lean`, `Lift.lean`, or
-`Modularity/Interface.lean`. -/
+LOCAL-SHAPE FIELDS (2026-07-25, the CUT-LEVEL REPAIR): the two
+local-shape components of the interface, `flatAtThreePow` at `3` and
+`stableLineAtTwo` at `2`, are supplied HERE — by
+`blggt_threeadicMember_flatAtThreePow` and
+`blggt_threeadicMember_stableLineAtTwo`, whose hypotheses are exactly
+the descended data this proof has in hand. They used to be
+condition-transfer leaves quantified over EVERY realization, in which
+position they were undischargeable: `compat` pins `τ` only up to
+semisimplification, and both local shapes are invisible to that. This
+node stays PROVEN; the residual citations are the two leaves named. -/
 theorem exists_threeadicRealization_of_witness
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
@@ -6655,16 +7126,35 @@ theorem exists_threeadicRealization_of_witness
   -- (iii) freeness normalization of the lattice (formal, `ℤ_3` a PID)
   haveI : Module.Free ℤ_[3] A :=
     module_free_padicInt_of_algebraMap_injective 3 A hAinj
-  -- glue: the realization, with the two exceptional sets united, and
-  -- the compatibility clause obtained from the single descended family
-  -- by interpolant uniqueness (formal, `ψℓ` injective on the field `E`)
-  refine ⟨{ S₁ := S₁ ∪ S₀, A := A, τ := τ, ιA := ιA,
-            ιA_injective := hιA, compat := ?_ }⟩
-  intro q hq hqS hq2 hq3 hqℓ P hP
-  exact heckePoly_transport Wit.ψℓ Wit.ψ₃
-    (hPv q hq (fun h => hqS (Finset.mem_union_right _ h)) hq2 hq3 hqℓ)
-    (hmatch q hq (fun h => hqS (Finset.mem_union_left _ h)) hq2 hq3 hqℓ)
-    hP
+  -- (iv) the compatibility clause, obtained from the single descended
+  -- family by interpolant uniqueness (formal, `ψℓ` injective on the
+  -- field `E`), with the two exceptional sets united so that both
+  -- matches are available at every good prime
+  have hcompat : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S₁ ∪ S₀ →
+      q ≠ 2 → q ≠ 3 → q ≠ ℓ →
+      ∀ P : Polynomial Wit.E,
+        (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map Wit.ιO =
+          P.map Wit.ψℓ →
+        (τ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map ιA =
+          P.map Wit.ψ₃ := by
+    intro q hq hqS hq2 hq3 hqℓ P hP
+    exact heckePoly_transport Wit.ψℓ Wit.ψ₃
+      (hPv q hq (fun h => hqS (Finset.mem_union_right _ h)) hq2 hq3 hqℓ)
+      (hmatch q hq (fun h => hqS (Finset.mem_union_left _ h)) hq2 hq3 hqℓ)
+      hP
+  -- glue: the realization. The two LOCAL-SHAPE fields are supplied
+  -- HERE, where `τ` is the actual Brauer-descended member — they are
+  -- not derivable from `compat` (see the structure's CUT-LEVEL REPAIR
+  -- paragraph), which is exactly why they are fields
+  exact ⟨{ S₁ := S₁ ∪ S₀, A := A, τ := τ, ιA := ιA,
+           ιA_injective := hιA, compat := hcompat,
+           flatAtThreePow :=
+             blggt_threeadicMember_flatAtThreePow hℓodd hℓ5 hZinj hrank hρ
+               hW hρbar hirr π hπsurj hπ Wit (S₁ ∪ S₀) τ ιA hιA hcompat,
+           stableLineAtTwo :=
+             blggt_threeadicMember_stableLineAtTwo hℓodd hℓ5 hZinj hrank hρ
+               hW hρbar hirr π hπsurj hπ Wit (S₁ ∪ S₀) τ ιA hιA hcompat }⟩
 
 /-- **Condition transfer, determinant — cyclotomic across the system**
 (sorry node): the Brauer-descended `3`-adic member has cyclotomic
@@ -7355,207 +7845,52 @@ theorem hasFlatProlongationAt_of_surjective
     ρ₂.HasFlatProlongationAt v :=
   sorry
 
+set_option linter.unusedVariables false in
 /-- **The Fontaine–Laffaille local shape at `3`, on the `3`-power
-levels of the stable lattice** (sorry node — the LITERATURE JOINT of
-the flatness transfer, cut 2026-07-25 out of
-`threeadicRealization_hasFlatProlongationAt_of_finite_quotient` below,
-whose arbitrary-finite-quotient quantifier is now PROVEN glue over
-this cofinal subtower): for every `m ≥ 1` the `3`-power level
+levels of the stable lattice** (PROVEN 2026-07-25 by the CUT-LEVEL
+REPAIR — now a one-line projection of the `ThreeadicRealization` field
+`flatAtThreePow`): for every `m ≥ 1` the `3`-power level
 `(A ⧸ 3^m) ⊗_A (Fin 2 → A)` — i.e. `T/3^m T` for the stable lattice
-`T = Fin 2 → A` — is the group of `ℚ̄_3`-points of the generic fibre
-of a finite flat group scheme over `ℤ_3`, the package spelled by
+`T = Fin 2 → A` — is the group of `ℚ̄_3`-points of the generic fibre of
+a finite flat group scheme over `ℤ_3`, the package spelled by
 `GaloisRep.HasFlatProlongationAt`.
 
-Classically: the compatible system attached to the descended
-eigensystem has parallel weight `2` and conductor prime to `3`, so its
-`3`-adic member `τ` is crystalline at `3` with Hodge–Tate weights
-`{0, 1}` (Carayol/Taylor local-global compatibility at `p = ℓ` for `p`
-prime to the level). Over `ℤ_3` the absolute ramification index is
-`e = 1 < 2 = p - 1`, which is exactly the Fontaine–Laffaille range:
-the crystalline lattice `T = Fin 2 → A` is the Tate module of a
-`3`-divisible group `𝒢` over `ℤ_3` (Fontaine–Laffaille in weight `2`;
-Raynaud, Breuil for the range-free refinement), and the levels
-`T/3^m T` are precisely the `ℚ̄_3`-points of the generic fibres of the
-finite flat group schemes `𝒢[3^m]`. This is the honest shape of the
-literature input: the statement is asserted exactly on the `3`-power
-levels, which are the levels of the `3`-divisible group, and NOT on
-arbitrary congruence quotients — those are reached from these by
-Raynaud's closure of finite flat group schemes under quotients, which
-is a separate, unconditional brick (`hasFlatProlongationAt_of_surjective`
-above) consumed by the transport below rather than smuggled in here.
+REPAIR NOTE (2026-07-25 — read this before treating the name as a
+frontier node; it is no longer one). This WAS the literature joint of
+the flatness transfer, and it was UNDISCHARGEABLE as quantified: over an
+arbitrary `Rlz : ThreeadicRealization` the only constraint on `τ` is
+`compat`, i.e. characteristic polynomials of Frobenius at almost all
+`q ∉ {2, 3, ℓ}`, which pins `τ` at most up to SEMISIMPLIFICATION —
+while finite flatness at `3` is a property of the EXTENSION CLASS,
+invisible to semisimplification (the two extensions of `ℤ/3` by `μ_3`
+over `ℚ_3` classified by `1` and by `3` in `ℚ_3^×/(ℚ_3^×)^3` share all
+Frobenius data and exactly one is finite flat over `ℤ_3`). No amount of
+Fontaine–Laffaille formalization would have changed that; the defect was
+in the CUT, not in the difficulty.
 
-Only positive levels (`1 ≤ m`) are asserted: at `m = 0` the ideal
-`3^0 = (1)` is the unit ideal, the level is a single point, and the
-transport discharges that case outright with the trivial Hopf algebra,
-so the literature is not cited for it.
+The local shape at `3` is therefore now a FIELD of the interface
+(`ThreeadicRealization.flatAtThreePow`), supplied at the construction
+site by `blggt_threeadicMember_flatAtThreePow` — which is where the
+classical discussion, the five-route audit, the Fontaine–Laffaille
+literature and the missing-machinery chain now live. Read that
+docstring, not this one, for the mathematics.
 
-Literature: Fontaine–Laffaille, *Construction de représentations
-p-adiques*, Ann. Sci. ÉNS 15 (1982); Raynaud, *Schémas en groupes de
-type (p, …, p)*, Bull. SMF 102 (1974); Carayol, Ann. Sci. ÉNS 19
-(1986) and Taylor, Invent. Math. 98 (1989) (the weight-2 local shape
-at primes over `p` prime to the level); Breuil, *Groupes p-divisibles,
-groupes finis et modules filtrés*, Ann. of Math. 152 (2000) (the
-range-free refinement); BLGGT §5.5. FLT blueprint ch. 4: "flat at 3".
+This declaration is kept, with its signature unchanged, purely so that
+its consumer
+`threeadicRealization_hasFlatProlongationAt_of_finite_quotient` and the
+whole downstream flatness transfer need no edit. Its hypotheses beyond
+`Rlz`, `m` and `hm` are consequently unused — hence the
+`linter.unusedVariables` suppression above, which is the mechanically
+visible signature of the repair: everything the old proof would have had
+to extract from those hypotheses is now carried by the realization
+itself.
 
-SOUNDNESS AUDIT (both ways, 2026-07-25): (i) direct — for the
-realization produced by the construction leaf this is
-Fontaine–Laffaille/Raynaud as above; for an abstract realization the
-abstract-quantification caveat of pillar β applies, and (ii) collapse
-— the hypothesis set is classically unsatisfiable (headline below),
-so the statement is classically true for every package.
+SOUNDNESS: inherited verbatim from the field, hence from
+`blggt_threeadicMember_flatAtThreePow`.
 
-CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
-discharge through `Family.lean`, `Lift.lean`, or
-`Modularity/Interface.lean`.
-
-ROUTE AUDIT (2026-07-25, a full owner pass at closing this leaf; FIVE
-candidate discharges and cuts checked, all five refuted or found
-empty — read this before spending a worker on a "cheaper route").
-The statement is FAITHFUL as written: it is not false, its conclusion
-is not satisfiable by any junk witness, and it admits NO honest
-decomposition inside the present tree. (Its hypothesis SIDE is another
-matter — see the DISCHARGEABILITY AUDIT below.) In detail:
-
-* *no subsingleton collapse*. `A ⧸ 3^m` is a NONZERO finite ring for
-  every `m ≥ 1`: `A` is a nonzero `ℤ_3`-module-finite FREE algebra, so
-  `3` cannot be a unit in `A` (else `A` would be a `ℚ_3`-algebra and a
-  finitely generated free `ℤ_3`-module at once, forcing `A = 0`),
-  i.e. `3 ∈ 𝔪_A`. Hence the level is `(A ⧸ 3^m)^2 ≠ 0` and
-  `hasFlatProlongationAt_of_subsingleton` is unavailable;
-* *no junk witness*. `GaloisRep.HasFlatProlongationAt` is a genuinely
-  RESTRICTIVE condition on a finite `Γ ℚ_3`-module, not a shape
-  condition: every finite `Γ ℚ_3`-module is the point group of a
-  finite étale `ℚ_3`-Hopf algebra (the Gelfand-duality machinery of
-  `KnownIn1980s/EllipticCurves/Flat.lean`), but only some of those
-  admit a finite FLAT `𝒪ᵥ`-model. Over `ℤ_3` (`e = 1 < p - 1 = 2`)
-  Raynaud/Oort–Tate classify the order-`3` group schemes: the generic
-  fibre of one is `ℤ/3(ω^i · ψ)` with `0 ≤ i ≤ e = 1` and `ψ`
-  UNRAMIFIED. An explicit non-example is therefore available: the
-  quadratic characters of `G_{ℚ_3}` are the unramified one, the one
-  cutting out `ℚ_3(√-3) = ℚ_3(ζ_3)` — which IS `ω` — and the one
-  cutting out `ℚ_3(√3)`; the last is ramified and is not `ω`, so
-  `ℤ/3` with that character has NO finite flat model over `ℤ_3`. So
-  the conclusion cannot be manufactured from the mere shape of the
-  level;
-* *the reduction to level `1` is FALSE* (this is the shortcut most
-  worth refuting explicitly). One is tempted to run
-  `0 → T/3^m → T/3^{m+1} → T/3 → 0` and induct, using "an extension
-  of flat by flat is flat". That extension-closure statement is FALSE
-  at the level of GALOIS MODULES: over an absolutely unramified base
-  with `e < p - 1` the comparison `Ext¹_fl → Ext¹_Γ` is INJECTIVE
-  (Fontaine's uniqueness of prolongations) but NOT surjective. The
-  standard witness is `Ext¹(ℤ/p, μ_p)`, where the flat classes are
-  `ℤ_p^× / (ℤ_p^×)^p` inside the Galois classes
-  `ℚ_p^× / (ℚ_p^×)^p` (Kummer theory) — index `p`, the missing class
-  being that of the uniformizer `p` itself, i.e. exactly the
-  Tate-curve/multiplicative-reduction extension `ℚ_p(p^{1/p})`. This
-  is the same phenomenon as the classical criterion that a
-  multiplicative-reduction curve has `E[p]` finite flat at `p` iff
-  `p ∣ v(Δ)`. So flatness of ALL levels is strictly more than
-  flatness of the first, and the induction cannot be repaired;
-* *the `p`-divisible-group cut is EQUIVALENT, not a reduction*.
-  Replacing this leaf by "`T` is the Tate module of a `3`-divisible
-  group over `ℤ_3`" relocates the same sorry: the easy direction is
-  the present statement, and the converse is a theorem (Tate; via
-  Fontaine's `e < p - 1` uniqueness the compatible system of finite
-  flat models assembles into a `3`-divisible group). Worse, the
-  cut STRENGTHENS the leaf, since a `PDivisibleGroup` interface also
-  carries the transition maps that this statement does not need.
-  Introducing that interface here would be sorry-shuffling and is
-  deliberately NOT done;
-* *the `ℤ_3`-native restatement is cosmetic*. `𝒪ᵥ ≅ ℤ_3` at `v = (3)`
-  (mathlib: `Rat.HeightOneSpectrum.adicCompletionIntegers.padicIntEquiv`,
-  with `Rat.HeightOneSpectrum.adicCompletion.padicEquiv` on the generic
-  fibre), so a finite flat Hopf `ℤ_3`-algebra base-changes to an
-  `𝒪ᵥ`-one. Restating the leaf over `ℤ_3` therefore makes it strictly
-  stronger at zero mathematical gain, and was rejected on those
-  grounds. The bridge itself is worth recording for whoever DOES
-  formalize the input: `(primesEquiv v₃ : ℕ) = 3` is available from
-  `Rat.HeightOneSpectrum.natGenerator_dvd_iff` /
-  `Rat.HeightOneSpectrum.span_natGenerator` (both stated through
-  `IsIntegralClosure.intEquiv`) together with
-  `asIdeal_toHeightOneSpectrum_eq_span` of `GroupScheme/ConnectedEtale.lean`,
-  and the `ℤ_[a] ≃+* ℤ_[b]` transport along `a = b` is a one-line
-  `subst` (`Fact` is a `Prop`, so the instance argument is
-  proof-irrelevant).
-
-DISCHARGEABILITY AUDIT (2026-07-25, the sharpest finding of the pass —
-it decides whether this leaf is worth dispatching at all). Route (i) of
-the SOUNDNESS AUDIT above is NOT a proof strategy for the statement AS
-QUANTIFIED, and no amount of Fontaine–Laffaille formalization would make
-it one. The quantifier runs over EVERY `Rlz : ThreeadicRealization`, and
-that interface constrains `τ` only through `compat`, i.e. through
-characteristic polynomials of Frobenius at almost all `q ∉ {2, 3, ℓ}`.
-Frobenius data pins `τ` at most up to SEMISIMPLIFICATION
-(Chebotarev + Brauer–Nesbitt, and only if `τ` is continuous, which the
-interface does not require), whereas flatness at `3` is a property of
-the EXTENSION CLASS, invisible to semisimplification: the two extensions
-of `ℤ/3` by `μ_3` over `ℚ_3` corresponding to `1` and to `3` in
-`ℚ_3^× / (ℚ_3^×)^3` have the SAME semisimplification and the same
-Frobenius characteristic polynomials, and exactly one of them is finite
-flat over `ℤ_3` (the Kummer computation recorded in the third bullet
-above). So `compat` cannot imply the conclusion, and `τ` is not known to
-be crystalline for an abstract `Rlz`.
-
-Consequently the ONLY discharges are: (a) the collapse — which is
-correct, since the hypothesis package is classically unsatisfiable, but
-is forbidden HERE by the circularity guard below; or (b) a CUT-LEVEL
-REPAIR: move the local shape at `3` into the `ThreeadicRealization`
-interface as a FIELD (or restrict this quantifier to realizations
-produced by the construction leaf), so that
-`exists_threeadicRealization_of_witness` — which builds `τ` by the
-actual Brauer descent and can therefore invoke Fontaine–Laffaille —
-carries it. Repair (b) is a cut-level change, not this leaf's owner's
-to make unilaterally; it is recorded here so that it is not lost. Note
-that the same analysis applies verbatim to the sibling leaf
-`threeadicRealization_stableLineAtTwo_of_witness` (the sorried leaf
-under `threeadicRealization_isTameAtTwo_of_witness`: the local shape at
-`2` is likewise invisible to Frobenius data at `q ∉ {2, 3, ℓ}`), but
-NOT to
-`threeadicRealization_det_cyclotomic_of_witness`, whose conclusion IS a
-determinant of Frobenius characteristic polynomials and is therefore
-genuinely reachable from `compat`.
-
-CONSUMPTION NOTE for whoever formalizes the input (a non-obvious
-finding of the same pass): `GaloisRep.hasFlatProlongationAt_of_hopf_package`
-of `Deformations/RepresentationTheory/FlatProlongation.lean` — the
-tree's only general producer of a flat-prolongation package — is
-UNUSABLE here. It requires a base ring `R` with `Algebra R ℚ` (its
-points comparison runs through `ℚ̄` and `algHomEquivOfFinite`), i.e. a
-group scheme over the LOCALIZATION `ℤ_(3)`, whereas Fontaine–Laffaille
-produces one over the COMPLETION `ℤ_3`, which does not map to `ℚ`. The
-input must therefore be fed either through the `padicIntEquiv` bridge
-above or straight into the definition of
-`GaloisRep.HasFlatProlongationAt` (which is purely local: the witness
-lives over `𝒪ᵥ` and the equivariance is for `Γ Kᵥ`).
-
-MISSING-MACHINERY AUDIT (2026-07-25, dependency order — none of this
-exists in mathlib or in this tree, and the leaf is blocked on all of
-it; each item named as the statement an owner would be dispatched at):
-
-1. *`p`-divisible groups over a complete DVR*: a structure carrying a
-   system of finite flat Hopf `𝒪`-algebras `H m` with the `p^m`-torsion
-   inclusions, its generic-fibre point functor, and its Tate module.
-   (Everything needed to STATE this is present — `HopfAlgebra`,
-   `Module.Flat`, `Module.Finite`, and the convolution monoid on
-   points — so this is the first buildable item, but see the audit
-   above: on its own it buys no reduction.)
-2. *Filtered `φ`-modules / strongly divisible `ℤ_p`-lattices in
-   Hodge–Tate weights `[0, p-2]` (Fontaine–Laffaille modules)*, and
-   the FL functor to finite `Γ ℚ_p`-modules.
-3. *The Fontaine–Laffaille equivalence*: the FL functor of (2) is an
-   equivalence onto the finite flat models of (1) in the range
-   `e < p - 1`. Stating the crystalline side needs the period ring
-   `B_cris` (mathlib has `WittVector` and nothing above it), which is
-   the deepest missing prerequisite of the whole chain.
-4. *Local-global compatibility at `p = ℓ`* (Carayol, Taylor): the
-   `3`-adic member of a parallel-weight-`2` compatible system of
-   conductor prime to `3` is crystalline at `3` with Hodge–Tate
-   weights `{0, 1}`. Not stateable before (3).
-
-Item 4 composed with items 3–1 IS this leaf; there is no intermediate
-at which the sorry can honestly be split, which is why it is written
-here as a single literature joint. -/
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): respected —
+the only input is a field of the interface; nothing routes through
+`Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
 theorem threeadicRealization_hasFlatProlongationAt_threePow
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
@@ -7582,7 +7917,7 @@ theorem threeadicRealization_hasFlatProlongationAt_threePow
     (Rlz.τ.baseChange (Rlz.A ⧸ Ideal.span {(3 : Rlz.A) ^ m})).HasFlatProlongationAt
       (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
         (Fact.out : Nat.Prime 3)) :=
-  sorry
+  Rlz.flatAtThreePow m hm
 
 /-- **The Fontaine–Laffaille local shape at `3`, at an arbitrary finite
 level** (DECOMPOSED 2026-07-25 — now a PROVEN transport over the
@@ -7851,81 +8186,45 @@ theorem threeadicRealization_isFlat_of_witness
     exact threeadicRealization_hasFlatProlongationAt_of_finite_quotient
       hℓodd hℓ5 hZinj hrank hρ hW hρbar hirr π hπsurj hπ Rlz I hItop hIfin
 
+set_option linter.unusedVariables false in
 /-- **The Weil–Deligne type at `2` of the `3`-adic member, as a stable
-line with unramified quadratic quotient** (sorry node — the SHRUNK
-LITERATURE JOINT of the tameness transfer; cut out 2026-07-24 in matrix
-coordinates, re-cut coordinate-free 2026-07-25): there is an `A`-basis
+line with unramified quadratic quotient** (PROVEN 2026-07-25 by the
+CUT-LEVEL REPAIR — now a one-line projection of the
+`ThreeadicRealization` field `stableLineAtTwo`): there are an `A`-basis
 `b` of the stable lattice `Fin 2 → A` and an unramified square-trivial
 character `δ` of `G_{ℚ_2}` such that `G_{ℚ_2}` acts on the quotient of
 the lattice by the line `A · b 0` through `δ`:
 
   `τ g v ≡ δ g 1 • v  (mod A · b 0)`  for all `g` and all `v`.
 
-That single clause is the whole classical content. It already forces
-the line `A · b 0` to be `G_{ℚ_2}`-STABLE (take `v = b 0`: both `τ g
-(b 0) - δ g 1 • b 0` and `δ g 1 • b 0` lie in the line), so the shape
-"extension of the unramified quadratic `δ` by something, in a basis
-adapted to the lattice" is stated without ever mentioning a matrix.
-The matrix reading — upper-triangularity with `δ g 1` on the diagonal —
-is now PROVEN from this clause in
-`threeadicRealization_weilDeligneType_two_of_witness` below; that
-bookkeeping used to be part of this citation and no longer is.
+REPAIR NOTE (2026-07-25 — read this before treating the name as a
+frontier node; it is no longer one). This WAS the shrunk literature
+joint of the tameness transfer, and it was UNDISCHARGEABLE as
+quantified, for the reason recorded at its flatness sibling
+`threeadicRealization_hasFlatProlongationAt_threePow` and applied at `2`
+instead of `3`: over an arbitrary `Rlz : ThreeadicRealization` the only
+constraint on `τ` is `compat`, which equates characteristic polynomials
+of Frobenius at unramified places `q ∉ {2, 3, ℓ}` and therefore says
+NOTHING at `2`, let alone anything about inertia at `2`.
 
-WHY THIS IS THE CITATION. `ρ`'s type at `2` is an extension of an
-unramified square-trivial character by its cyclotomic twist
-(`hρ.isTameAtTwo` together with the cyclotomic determinant). The type
-is carried across the compatible system by STRICT COMPATIBILITY, which
-is exactly the property that a single Weil–Deligne representation
-`WD_v(R)` over the coefficient field reproduces `WD(r_λ|G_{F_v})^{F-ss}`
-for every `λ` whose residue characteristic differs from that of `v`
-(BLGGT §5.1, the display `ς WD_v(R) ≅ WD(r_λ|G_{F_v})^{F-ss}`; here
-`v = 2` and the two places compared are `λ | ℓ` and `λ | 3`, legitimate
-because `2 ∉ {ℓ, 3}`). Strict compatibility of the system through which
-the descent runs is Carayol's theorem for Hilbert newforms — the local
-constituent is pinned at EVERY finite place, not merely almost all —
-and the membership of `ρ` in such a system is BLGGT Theorem 5.5.1.
-Finally the stable-lattice normalization of the construction leaf
-(`exists_threeadicRealization_of_witness`) turns the `E_λ`-rational
-stable line into a saturated `A`-line, i.e. into the first vector of an
-`A`-basis, which is why the basis `b` may be demanded here. The
-character `δ` is handed over as a `GaloisRep` because it IS the quotient
-character of the constant type — in particular continuous, being the
-local component of the compatible system's nebentypus-free unramified
-twist.
+The local type at `2` is therefore now a FIELD of the interface
+(`ThreeadicRealization.stableLineAtTwo`), supplied at the construction
+site by `blggt_threeadicMember_stableLineAtTwo` — which is where the
+strict-compatibility discussion and the Carayol/BLGGT literature now
+live. Read that docstring, not this one, for the mathematics.
 
-Literature (page-level checks 2026-07-25 against the downloaded
-sources): BLGGT, *Potential automorphy and change of weight*, Ann. of
-Math. 179 (2014) — §5.1 for the definition of a strictly compatible
-system (the display quoted above) and Theorem 5.5.1 for "a potentially
-diagonalizable, totally odd, regular algebraic polarized `l`-adic
-representation with `r̄|_{G_F(ζ_l)}` irreducible is part of a strictly
-pure compatible system"; Carayol, *Sur les représentations `l`-adiques
-associées aux formes modulaires de Hilbert*, Ann. Sci. ÉNS (4) 19
-(1986) 409–468, Théorème (A) p. 410: a strictly compatible system
-`{σ_λ}` with `σ_λ|W_p ≅ σ_λ(π_p)` at EVERY finite place `p` of residue
-characteristic different from that of `λ`, `σ(π_p)` being the
-`F`-semisimple degree-`2` Weil–Deligne representation of the Hecke
-correspondence (§0.5). Khare–Wintenberger, *Serre's modularity
-conjecture (I)*, Invent. Math. 178 (2009) 485–504, for the same
-constancy inside the minimal-lifting induction (paywalled; NOT
-page-verified here — the two references above are the load-bearing
-ones). FLT blueprint ch. 4: "tame at 2".
+This declaration is kept, with its signature unchanged, purely so that
+its consumer `threeadicRealization_weilDeligneType_two_of_witness` and
+the downstream tameness transfer need no edit; its hypotheses beyond
+`Rlz` are consequently unused, hence the `linter.unusedVariables`
+suppression above.
 
-SOUNDNESS AUDIT (both ways; 2026-07-24, re-checked 2026-07-25 for the
-coordinate-free form): (i) direct — for the realization produced by the
-construction leaf this is the Weil–Deligne-type transfer above, read in
-a saturated basis; for an abstract realization the
-abstract-quantification caveat of pillar β applies, and (ii) collapse —
-the hypothesis set is classically unsatisfiable (the headline
-`not_isIrreducible_of_isHardlyRamified_of_five_le` below refutes
-`hirr`), so the statement is classically true for every package.
+SOUNDNESS: inherited verbatim from the field, hence from
+`blggt_threeadicMember_stableLineAtTwo`.
 
-CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
-discharge through `Family.lean`, `Lift.lean`, or
-`Modularity/Interface.lean`. In particular the odd-prime dichotomy
-`not_isIrreducible_of_isHardlyRamified_of_odd` is NOT available: it
-routes `ℓ ≥ 5` through this module's own headline, whose proof consumes
-pillar β and hence this leaf. -/
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): respected —
+the only input is a field of the interface; nothing routes through
+`Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
 theorem threeadicRealization_stableLineAtTwo_of_witness
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
@@ -7958,7 +8257,7 @@ theorem threeadicRealization_stableLineAtTwo_of_witness
       ∀ (g : Field.absoluteGaloisGroup ℚ_[2]) (v : Fin 2 → Rlz.A),
         Rlz.τ.map (algebraMap ℚ ℚ_[2]) g v - δ g 1 • v ∈
           Submodule.span Rlz.A {b 0} :=
-  sorry
+  Rlz.stableLineAtTwo
 
 /-- **The Weil–Deligne type at `2` of the `3`-adic member, in lattice
 coordinates** (DECOMPOSED 2026-07-25 — now a PROVEN transport over the
