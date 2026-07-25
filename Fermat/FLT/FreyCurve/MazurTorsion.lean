@@ -408,7 +408,10 @@ rejected:
   gives nothing at all, the odd part of `ℤ/16` being trivial.
 
 A formal proof needs the genus-`2` curve `X_1(16)` and a determination
-of its rational points (Ogg's descent, or Chabauty on its Jacobian). -/
+of its rational points (Ogg's descent, or Chabauty on its Jacobian).
+Note that the hypothesis cannot be weakened to `addOrderOf P = 8` alone:
+points of order `8` are permitted by Mazur's list, and the whole content
+of the node is that no such point is halvable over `ℚ`. -/
 theorem WeierstrassCurve.not_halved_order_eight_point
     (E : WeierstrassCurve ℚ) [E.IsElliptic] (P R : (E⁄ℚ).Point)
     (hP : addOrderOf P = 8) (hR : (2 : ℕ) • R = P) : False :=
