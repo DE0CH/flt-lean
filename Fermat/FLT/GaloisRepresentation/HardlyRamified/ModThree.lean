@@ -14,6 +14,12 @@ public import Fermat.FLT.FreyCurve.MazurTorsion
 -- (`inertia_card_dvd_of_card_map_localInertiaGroup_dvd`), consumed by
 -- `inertia_card_dvd_of_map_localInertiaGroup_card_dvd`.
 import Fermat.FLT.FreyCurve.InertiaCardTransport
+-- The PROVEN general-`q` completion-invariance engine (density of the
+-- global integers in the completed integer ring, uniformizer/residue
+-- transport, the conductor computation of the local different and the
+-- root-counting cofactor unit), consumed by the two sub-leaves of the
+-- distinguished-prime passage below at `q = 3`.
+import Fermat.FLT.GaloisRepresentation.HardlyRamified.CompletionInvariance
 -- The PROVEN connected–étale counit-idempotent package (minimal
 -- counit-one idempotent, primitivity dichotomy, comultiplication
 -- absorption, and adic completeness of `adicCompletionIntegers`),
@@ -6340,8 +6346,36 @@ theorem maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd
           Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat)
         (IntegralClosure
           (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
-            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) M) :=
-  sorry
+            Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) M) := by
+  classical
+  haveI hmaxprime : (IsLocalRing.maximalIdeal (IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) M)).IsPrime :=
+    (IsLocalRing.maximalIdeal.isMaximal _).isPrime
+  haveI hQprime : (Ideal.comap φ (IsLocalRing.maximalIdeal (IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) M))).IsPrime :=
+    Ideal.IsPrime.comap φ
+  -- `3` lies in the distinguished prime, so it is nonzero
+  have h3mem : ((3 : ℕ) : NumberField.RingOfIntegers K) ∈
+      Ideal.comap φ (IsLocalRing.maximalIdeal (IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) M)) := by
+    rw [Ideal.mem_comap, map_natCast]
+    exact CompletionInvariance.natCast_mem_maximalIdeal Nat.prime_three M
+  have hQbot : Ideal.comap φ (IsLocalRing.maximalIdeal (IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) M)) ≠ ⊥ := by
+    intro h0
+    have h1 : ((3 : ℕ) : NumberField.RingOfIntegers K) = 0 := by
+      rw [← Ideal.mem_bot, ← h0]
+      exact h3mem
+    exact (Nat.cast_ne_zero.mpr Nat.prime_three.ne_zero) h1
+  -- the master generator at the distinguished prime
+  obtain ⟨θ, hθtop, hθdens, -, hθmem, hθQ⟩ :=
+    exists_dense_primitive_generator K _ hQprime hQbot
+  exact CompletionInvariance.maximalIdeal_pow_dvd_local_differentIdeal_of_dense
+    Nat.prime_three K M hMgen φ hφ hθtop hθdens hθmem hθQ d hd
 
 /-- **Completion invariance of the ramification index at the
 distinguished prime** (sorry node, created 2026-07-24 — the
@@ -6401,7 +6435,8 @@ theorem ramificationIdx'_comap_maximalIdeal_eq_local
       (IsLocalRing.maximalIdeal (IntegralClosure
         (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
           Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) M)) :=
-  sorry
+  CompletionInvariance.ramificationIdx'_comap_maximalIdeal_eq_of_dense
+    Nat.prime_three K M hMgen φ hφ
 
 set_option backward.isDefEq.respectTransparency false in
 set_option maxHeartbeats 4000000 in
