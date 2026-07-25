@@ -1831,6 +1831,7 @@ lemma span_eq_of_mem_of_span_mul_eq {n ñ : W.CoordinateRing}
     IsUnit.of_mul_eq_one _ (mul_left_cancel₀ (mul_ne_zero hm₁0 hm₂0) hw')
   rw [← hu₁, Ideal.span_singleton_mul_left_unit (isUnit_of_mul_isUnit_left hu), hm₁]
 
+set_option maxRecDepth 40000 in
 omit [IsAlgClosed F] in
 /-- **L4-8 line-numerator sub-leaf (PROVEN): the cleared conjugate
 product.**  The two cleared line values at the translate multiply to the
@@ -1873,9 +1874,14 @@ That is exactly how it is proven below, in a *single*
 reduction (the CAS is used only as a searcher; the kernel checks the
 certificate).  Writing `EX := W_X(Q)`, `EY := W_Y(Q)`,
 `RQ := W(q₁, q₂)` and `R0` for the coordinate-ring relation
-`coord_equation_coordC`, the certificate is
+`coord_equation`, the certificate is
 
-* `−T³·(A − q₁T² − RQ)` against `coord_equation_coordC`,
+* `−T³·(A − q₁T² − RQ)` against `coord_equation` (the `algebraMap`
+  spelling: the certificate's atoms are `algebraMap F W.CoordinateRing`
+  applications, and `ring` does NOT identify `coordC W c` with
+  `algebraMap F W.CoordinateRing c` — they are `rfl`-equal but distinct
+  atoms — so the `coordC`-spelled `coord_equation_coordC` must not be
+  substituted here),
 * `−T³·(EY·U + EX·T + T³ + RQ)` against `W.Equation q₁ q₂` (transported
   into `F[W]` along `algebraMap`),
 * `−T⁴·A` against the `Cubic.c` coefficient of `addPolynomial_slope`
@@ -1899,7 +1905,7 @@ theorem lineNumerator_mul_lineNumeratorNeg {q₁ q₂ x₁ y₁ x₂ y₂ : F}
   have hc2 := Cubic.c_of_eq hAP
   have hc3 := Cubic.d_of_eq hAP
   -- the two relations, transported into `F[W]`
-  have hcr := coord_equation_coordC W
+  have hcr := coord_equation W
   rw [WeierstrassCurve.Affine.equation_iff'] at hq
   have hqW := congrArg (algebraMap F W.CoordinateRing) hq
   have hc2W := congrArg (algebraMap F W.CoordinateRing) hc2
