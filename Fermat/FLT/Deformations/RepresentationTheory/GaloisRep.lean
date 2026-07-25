@@ -88,9 +88,16 @@ def GaloisRep.map (ρ : GaloisRep K A M) (f : K →+* L) : GaloisRep L A M :=
   letI := moduleTopology A (Module.End A M)
   ρ.comp (Field.absoluteGaloisGroup.map f)
 
+omit [NumberField K] in
 /-- `map` evaluates by precomposition with the induced map of absolute
 Galois groups (an exposed `rfl`-lemma: downstream modules cannot unfold
-the definition through the module-system export). -/
+the definition through the module-system export).
+
+(`omit [NumberField K]`: since `Field.absoluteGaloisGroup.map` stopped
+carrying a `[NumberField]` hypothesis on its source — see
+`AbsoluteGaloisGroup.lean` — this statement no longer mentions one, and the
+unused-section-variable linter demands the `omit`. Pure hypothesis
+weakening; every consumer applies this positionally.) -/
 lemma GaloisRep.map_apply (ρ : GaloisRep K A M) (f : K →+* L)
     (σ : Γ L) :
     ρ.map f σ = ρ (Field.absoluteGaloisGroup.map f σ) :=

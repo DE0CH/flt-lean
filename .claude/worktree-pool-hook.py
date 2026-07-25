@@ -23,6 +23,39 @@ Rules enforced here:
 - Sentinel + empty queue -> DENY (nothing to pop).
 - A queue pop with no free worktree leaves the queue untouched.
 
+POOL STATES (Deyao, 2026-07-25). Exactly one of:
+
+- `free` — idle and allocatable. The ONLY state `allocate_worktree` selects.
+- `claimed` — an agent is working in it.
+- `reclaiming` — claimed, but retire this slot when its task finishes. How
+  the fleet drains from 62 workers to ~30 without interrupting anyone.
+- `suspended <agent-id>` — the worktree is DIRTY and its state matches a
+  recorded transcript: an agent was stopped mid-task and is meant to be
+  resumed from the middle. The third field is that transcript id, and it is
+  the whole point of the state — without it the in-progress work is
+  unrecoverable. Never allocate, never clean, never mark a clean worktree
+  this way.
+- `retired` — the worktree is CLEAN, its last agent exited cleanly, and
+  there is nothing to resume. Held out of service only for capacity
+  reasons, so it can be promoted straight back to `free` the moment
+  capacity allows.
+
+The `suspended`/`retired` split matters because the two look identical in a
+worker count but are opposite in kind: `suspended` means "work is parked
+here, resume it", `retired` means "nothing here, reuse me freely".
+
+None of these need code in this hook to be safe: `allocate_worktree`
+selects only `free`, and the pool rewrite preserves every other status
+verbatim. The rules that give them meaning live in the integration step —
+`post-merge-reminder.py` maps `claimed → free` and `reclaiming → retired`
+on merge — and in the RAM watchdog, which is what creates
+`suspended <agent-id>` when it has to stop a live agent under memory
+pressure.
+
+The drain exists because the user slice is CPU-quota-capped at 24 cores
+(cpu.max 2400000/100000), throttled in ~76% of periods, so workers past the
+quota lengthen every verification instead of adding throughput.
+
 Worktree allocation is unchanged: find a `free` entry in
 ~/.flt-worktree-pool, check it is git-clean and its branch is an
 ancestor of main, fast-forward it to main (--ff-only), mark it
@@ -33,17 +66,42 @@ tool call blocked): something beyond allocation went wrong.
 Freeing a worktree after its work is merged, and pushing to the task
 queue, are both the orchestrator hand-editing the respective text
 file. No scripts on that side.
+
+CONCURRENCY (fixed 2026-07-25). Everything below runs under ONE
+exclusive flock on the pool file, held for the whole dispatch decision:
+queue read, pop, queue write, and worktree allocation. Do not narrow it
+back. Consequence for `.claude/settings.json`: this hook's `timeout`
+must stay GENEROUS (currently 300s). Each run does three git operations
+in a worktree (~8s under fleet load) while holding the lock, and a wave
+of N simultaneous spawns serializes them — with a 30s timeout, the
+spawns past ~3rd were KILLED, and a killed PreToolUse hook is
+non-blocking, so the Agent launched with the ORIGINAL prompt: agents
+whose prompt was the literal {{FLT_QUEUE_POP}} sentinel, holding no
+worktree and no task. Both failure modes were observed together in one
+04:52Z wave of seven: four agents got the SAME task (lost-update pops)
+and three were sentinel zombies.
 """
 
+import datetime
 import fcntl
 import json
 import os
+import re
 import subprocess
 import sys
 import traceback
 
 POOL_FILE = "/home/chend/.flt-worktree-pool"
 QUEUE_FILE = "/home/chend/.flt-task-queue"
+# In-flight registry (Deyao, 2026-07-25). The queue records work NOT yet
+# started; the pool records which worktrees are busy but not WHAT they are
+# doing. Neither answers "is this leaf already being worked on?", so the
+# orchestrator's post-merge queue review could only catch duplicates still
+# sitting in the queue — never ones already dispatched. That hole produced
+# four independent proofs of `span_vertNumerator` and two agents redirected
+# off already-proven leaves. This file closes it: one JSON object per line,
+# appended here at dispatch, removed by the orchestrator at integration.
+INFLIGHT_FILE = "/home/chend/.flt-inflight.jsonl"
 PLACEHOLDER = "{{FLT_WORKTREE}}"
 SENTINEL = "{{FLT_QUEUE_POP}}"
 DELIMITER = "=== TASK ==="
@@ -61,6 +119,44 @@ def git(args, cwd):
     return subprocess.run(
         ["git", "-C", cwd] + args, capture_output=True, text=True, check=False
     )
+
+
+TARGET_RE = re.compile(r"\*\*`([^`]+)`\*\*")
+
+
+def record_inflight(worktree_path, prompt, kind, payload):
+    """Append one in-flight record. Called INSIDE the pool flock, so
+    concurrent dispatches serialise here exactly as they do for the queue.
+
+    `targets` is the useful field: the leaf names the task names in bold,
+    which is what makes a duplicate detectable at a glance. The full prompt
+    is kept too, so an agent that dies is re-dispatchable from this file
+    alone without digging through transcripts.
+
+    NOTE on the agent transcript id: it is NOT available here. The harness
+    mints it after the PreToolUse hook returns, so a dispatch-time hook
+    cannot know it. What we can record is the ORCHESTRATOR's session_id and
+    the tool_use_id of the spawning call, which is enough to correlate with
+    a task notification after the fact. Recovering the agent id itself stays
+    the orchestrator's job (and is rarely needed — each agent's own
+    transcript already knows its worktree)."""
+    try:
+        rec = {
+            "worktree": os.path.basename(worktree_path),
+            "worktree_path": worktree_path,
+            "kind": kind,  # "queue-pop" | "direct"
+            "dispatched_at": datetime.datetime.now().isoformat(timespec="seconds"),
+            "targets": TARGET_RE.findall(prompt)[:8],
+            "session_id": payload.get("session_id"),
+            "tool_use_id": payload.get("tool_use_id"),
+            "prompt": prompt,
+        }
+        with open(INFLIGHT_FILE, "a", encoding="utf-8") as fh:
+            fh.write(json.dumps(rec) + "\n")
+    except Exception:
+        # Never let bookkeeping block a dispatch: a missing record costs the
+        # orchestrator a duplicate-check, a failed dispatch costs a worker.
+        traceback.print_exc(file=sys.stderr)
 
 
 def emit(obj):
@@ -193,42 +289,73 @@ def main():
     is_pop = SENTINEL in prompt
     is_direct = PLACEHOLDER in prompt
 
-    queue = read_queue()
+    # ONE lock covering the WHOLE dispatch decision (fixed 2026-07-25 after
+    # a wave handed FOUR agents the identical task). The queue used to be
+    # read here, outside any lock, and written back inside the pool lock —
+    # so concurrent {{FLT_QUEUE_POP}} spawns each read the same head, each
+    # popped it, and each wrote back its own stale list: the pops were lost
+    # updates. The pool file's flock is the fleet's existing mutual-exclusion
+    # primitive, so widen it to cover the queue too — queue read, pop, and
+    # write are now serialized with worktree allocation against every other
+    # concurrently spawning agent.
+    with open(POOL_FILE, "r+") as pool_fh:
+        fcntl.flock(pool_fh, fcntl.LOCK_EX)
+        queue = read_queue()
 
-    def auto_queue(reason):
-        queue.append(prompt)
-        write_queue(queue)
-        deny(f"{reason} — this task has been QUEUED (position "
-             f"{len(queue)} in {QUEUE_FILE}). Dispatch the queue head "
-             f"with an Agent spawn whose prompt is {SENTINEL} once there "
-             f"is capacity; hand-edit the file to reprioritize or drop.")
+        def auto_queue(reason):
+            queue.append(prompt)
+            write_queue(queue)
+            deny(f"{reason} — this task has been QUEUED (position "
+                 f"{len(queue)} in {QUEUE_FILE}). Dispatch the queue head "
+                 f"with an Agent spawn whose prompt is {SENTINEL} once there "
+                 f"is capacity; hand-edit the file to reprioritize or drop.")
 
-    if is_direct and not is_pop and queue:
-        auto_queue(f"the task queue already has {len(queue)} pending "
-                   f"item(s) (FIFO order)")
+        if is_direct and not is_pop and queue:
+            auto_queue(f"the task queue already has {len(queue)} pending "
+                       f"item(s) (FIFO order)")
 
-    if not is_pop and not is_direct and queue:
-        deny(f"the task queue ({QUEUE_FILE}) has {len(queue)} pending "
-             f"item(s) — dispatch them first, in FIFO order, by spawning "
-             f"an agent whose prompt is the sentinel {SENTINEL} (the hook "
-             f"substitutes the queue head). To reprioritize or drop tasks, "
-             f"hand-edit the queue file.")
+        if not is_pop and not is_direct and queue:
+            deny(f"the task queue ({QUEUE_FILE}) has {len(queue)} pending "
+                 f"item(s) — dispatch them first, in FIFO order, by spawning "
+                 f"an agent whose prompt is the sentinel {SENTINEL} (the hook "
+                 f"substitutes the queue head). To reprioritize or drop "
+                 f"tasks, hand-edit the queue file.")
 
-    if is_pop:
-        if not queue:
-            deny(f"the task queue ({QUEUE_FILE}) is empty — nothing to pop; "
-                 f"dispatch directly with {PLACEHOLDER} in the prompt.")
-        task_body = split_base(queue[0])
-        with open(POOL_FILE, "r+") as f:
-            fcntl.flock(f, fcntl.LOCK_EX)
-            worktree_path = allocate_worktree(f)
+        if is_pop:
+            if not queue:
+                deny(f"the task queue ({QUEUE_FILE}) is empty — nothing to "
+                     f"pop; dispatch directly with {PLACEHOLDER} in the "
+                     f"prompt.")
+            task_body = split_base(queue[0])
+            worktree_path = allocate_worktree(pool_fh)
             if worktree_path is None:
                 deny("no free worktree available — the queued task stays in "
                      f"{QUEUE_FILE}; retry the {SENTINEL} dispatch after "
                      "freeing a worktree (merge + hand-edit the pool file).")
             queue.pop(0)
             write_queue(queue)
-        tool_input["prompt"] = task_body.replace(PLACEHOLDER, worktree_path)
+            tool_input["prompt"] = task_body.replace(
+                PLACEHOLDER, worktree_path)
+            record_inflight(
+                worktree_path, tool_input["prompt"], "queue-pop", payload)
+            emit({
+                "hookSpecificOutput": {
+                    "hookEventName": "PreToolUse",
+                    "permissionDecision": "allow",
+                    "updatedInput": tool_input,
+                }
+            })
+
+        if not is_direct:
+            sys.exit(0)  # non-fleet agent, queue empty: pass through
+
+        worktree_path = allocate_worktree(pool_fh)
+        if worktree_path is None:
+            auto_queue("no free worktree available")
+        tool_input["prompt"] = tool_input["prompt"].replace(
+            PLACEHOLDER, worktree_path)
+        record_inflight(
+            worktree_path, tool_input["prompt"], "direct", payload)
         emit({
             "hookSpecificOutput": {
                 "hookEventName": "PreToolUse",
@@ -236,24 +363,6 @@ def main():
                 "updatedInput": tool_input,
             }
         })
-
-    if not is_direct:
-        sys.exit(0)  # non-fleet agent, queue empty: pass through unchanged
-
-    with open(POOL_FILE, "r+") as f:
-        fcntl.flock(f, fcntl.LOCK_EX)
-        worktree_path = allocate_worktree(f)
-        if worktree_path is None:
-            auto_queue("no free worktree available")
-    tool_input["prompt"] = tool_input["prompt"].replace(
-        PLACEHOLDER, worktree_path)
-    emit({
-        "hookSpecificOutput": {
-            "hookEventName": "PreToolUse",
-            "permissionDecision": "allow",
-            "updatedInput": tool_input,
-        }
-    })
 
 
 if __name__ == "__main__":
