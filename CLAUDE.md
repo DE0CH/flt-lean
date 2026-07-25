@@ -187,6 +187,32 @@ before agents reported back that their targets were already proven. **Build
 task lists from the DIRECT set; use the transitive set only for judging
 whether a subtree still blocks the root.**
 
+**FAITHFULNESS: a leaf can be FALSE AS STATED, and that is worse than open.**
+Three were found and corrected on 2026-07-25 alone. A false leaf can never be
+proven, and anything derived from it is worthless — so when a leaf resists,
+seriously consider that it may be false rather than merely hard. Refuting one
+with an explicit counterexample and restating it correctly is a FULLY successful
+outcome; say so in task prompts.
+
+The discriminating rule for the commonest trap in this development, from a sweep
+of every `𝒪ᵥ`-rational group-scheme leaf (2026-07-25): **over `𝒪ᵥ`, identities
+and VALUES descend from `𝒪^nr` (flatness/torsion-freeness, and inertia fixes
+`𝒪^nr` pointwise); the EXISTENCE of a coordinate or a normal form does not.** A
+leaf is faithful exactly when it asks for a value or an inertia-only
+equivariance, and false exactly when it asks for an element of `G` or for
+`Γ`-wide rationality. Two corollaries: unramified twists are invisible to
+inertia, so inertia-only conclusions are twist-blind; and étale-by-étale is
+étale, so the dual/Selmer arguments are twist-blind too. `exists_muType_closure`
+died on precisely this — it demanded the μ_p-coordinate over `ℤ_p`, but the
+connected order-`p` schemes there are the `p−1` unramified twists `μ_p ⊗ ψ`,
+each satisfying every hypothesis with no such coordinate when `ψ ≠ 1`.
+
+Corollary for REVIEWERS: watch for a quantifier over `localInertiaGroup` being
+"generalized" to all of `Γ`. `exists_localTorsionQuotient_of_good_ordinary` is
+true only because `σ` ranges over inertia — the étale quotient at good ordinary
+reduction carries the *unramified* character `α`, trivial on inertia but not on
+Frobenius — and widening it makes the leaf false for every curve with `α ≠ 1`.
+
 **Third category, invisible to BOTH counts: an ERRORED declaration**
 (2026-07-25). A declaration whose proof fails to elaborate — `maximum
 recursion depth`, a failing tactic, anything red — is `sorryAx`-tainted and

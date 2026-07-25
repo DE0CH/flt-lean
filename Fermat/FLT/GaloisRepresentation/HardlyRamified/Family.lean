@@ -1621,6 +1621,33 @@ character group `X` may be a nonconstant unramified twist, in which
 case NO nontrivial group-like of the corner is `ℚᵖᵥ`-rational, while
 inertia still fixes all of them.
 
+FAITHFULNESS AUDIT (2026-07-25, `𝒪ᵥ`-rationality sweep — VERDICT
+FAITHFUL; this note exists so the statement is not "simplified" into
+the shape that was already found FALSE once). The leaf survives the
+counterexample that killed the first form of
+`OortTate.exists_muType_coordinate`: by Oort–Tate the connected
+order-`p` group schemes over `ℤ_p` (`p` odd, `e = 1 < p − 1`) are the
+`p − 1` UNRAMIFIED twists `μ_p ⊗ ψ`, `ψ : G_{ℚ_p} → (ℤ/p)^×` of order
+dividing `p − 1`, and for `ψ ≠ 1` the `μ_p`-coordinate exists only
+over `𝒪^nr`, not over `𝒪ᵥ`. Three features keep this statement on the
+right side of that line, and NONE of them may be dropped:
+* `θ` is a FUNCTION ON POINTS valued in the algebraically closed
+  `ℚᵖᵥᵃˡᵍ`, not a tuple of elements of `G`; the group-likes `x i` of
+  the intended proof live in `ℚᵖᵥᵃˡᵍ ⊗[𝒪ᵥ] (G·e₀)` and never appear
+  in the statement, so no `𝒪ᵥ`- or `ℚᵖᵥ`-rational datum is demanded;
+* `ι` and `θ` are EXISTENTIALLY quantified with no tie to `G` beyond
+  clauses 1–5, so a proof is free to make the unramified base change,
+  build the coordinates over `𝒪^nr`/`ℚᵖᵥᵃˡᵍ`, and descend only their
+  VALUES — which is exactly what the twist permits;
+* clause 5 is quantified over the ONE given inertia element `σ`, and
+  is an equivariance of values (`θ (σ • ψ) i = σ (θ ψ i)`), which holds
+  because inertia fixes `𝒪^nr` pointwise. Strengthening it to
+  `ℚᵖᵥ`-rationality of the `x i`, or to all of `Γ ℚᵖᵥ`, makes it FALSE
+  for every `ψ ≠ 1` (Frobenius moves the group-likes by `ψ`).
+The general rule the sweep confirmed: over `𝒪ᵥ`, IDENTITIES and VALUES
+descend from `𝒪^nr` (flatness/torsion-freeness, and inertia fixing
+`𝒪^nr`), while EXISTENCE of a coordinate or a normal form does not.
+
 Consumed by
 `connected_point_smul_eq_conv_pow_cyclotomicCharacter_of_hopf_package`
 below, together with the two PROVEN bricks
@@ -4508,7 +4535,7 @@ member `1 ⊕ χ_cyc,ℓ` — built here over any topological `ℤ_ℓ`-algebra
 with continuous structure map, on any rank-2 carrier with a chosen
 basis. Its Frobenius characteristic polynomial at `q ≠ ℓ` is exactly
 `(X - 1)(X - q)` (PROVEN via `cyclotomicCharacter_adicArithFrob_natCast`),
-it is unramified at every `q ≠ ℓ` (sorry leaf
+it is unramified at every `q ≠ ℓ` (PROVEN, via
 `cyclotomicCharacter_eq_one_of_mem_localInertiaGroup_of_ne`:
 `μ_{ℓ^∞}/ℚ` is unramified away from `ℓ`), and over the concrete rings
 of integers it is hardly ramified (cyclotomic determinant and tameness
@@ -4655,10 +4682,15 @@ lemma cycDiagRep_apply {ℓ : ℕ} [Fact ℓ.Prime] {A : Type*} [CommRing A]
     cycDiagRep hcont b g = cycDiagEnd b (cycUnitChar ℓ A g) := rfl
 
 /-- **The `ℓ`-adic cyclotomic character dies on inertia away from `ℓ`**
-(sorry node; the arithmetic leaf of the explicit Eisenstein member): at
+(PROVEN 2026-07-25 by delegation to
+`Modularity.cyclotomicCharacter_map_eq_one_of_mem_localInertiaGroup` of
+`Fermat/FLT/Modularity/Interface.lean`, which is this statement in the
+same place spelling with the section prime `p` playing the role of `ℓ`
+and the inequality written `p ≠ q`): at
 a rational prime `q ≠ ℓ` the `ℓ`-adic cyclotomic character kills the
 image in `G_ℚ` of the local inertia at `q` — the extensions
-`ℚ_q(μ_{ℓ^n})/ℚ_q` are unramified for `q ≠ ℓ`. Intended proof: the
+`ℚ_q(μ_{ℓ^n})/ℚ_q` are unramified for `q ≠ ℓ`. Proof there (as
+anticipated here): the
 inertia analogue of the PROVEN Frobenius computation
 `adicArithFrob_rootsOfUnity_pow_of_ne` above, sharing all its
 infrastructure: an `ℓ^n`-th root of unity `ζ` is integral over the
@@ -4672,7 +4704,7 @@ element fixes the residue field of the integral closure, so it fixes
 `ℓ`-adic continuity (`PadicInt.ext_of_toZModPow`) concludes. This is
 the general-`(q, ℓ)` place-spelled form of the at-`2` statement
 `cyclotomicCharacter_eq_one_of_mem_inertia_two` above (which is
-spelled over `ℚ_[2]`/`Z2bar` instead and stays a separate leaf). -/
+spelled over `ℚ_[2]`/`Z2bar` instead and is separately PROVEN). -/
 theorem cyclotomicCharacter_eq_one_of_mem_localInertiaGroup_of_ne
     {ℓ q : ℕ} [Fact ℓ.Prime] (hq : q.Prime) (hqℓ : q ≠ ℓ)
     (σ : Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ
@@ -4681,7 +4713,8 @@ theorem cyclotomicCharacter_eq_one_of_mem_localInertiaGroup_of_ne
     cyclotomicCharacter (AlgebraicClosure ℚ) ℓ
       ((Field.absoluteGaloisGroup.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
         hq.toHeightOneSpectrumRingOfIntegersRat)) σ).toRingEquiv) = 1 :=
-  sorry
+  Modularity.cyclotomicCharacter_map_eq_one_of_mem_localInertiaGroup
+    (p := ℓ) hq (Ne.symm hqℓ) hσ
 
 /-- The Eisenstein member is unramified at every `q ≠ ℓ` (PROVEN over
 the arithmetic leaf `cyclotomicCharacter_eq_one_of_mem_localInertiaGroup_of_ne`:
@@ -4785,8 +4818,9 @@ theorem isFlatAt_cycDiagRep {ℓ : ℕ} [Fact ℓ.Prime]
       (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : ℓ.Prime)) :=
   sorry
 
-/-- **The Eisenstein member is hardly ramified** (PROVEN assembly over
-the two sorry leaves): over the ring of integers of a finite extension
+/-- **The Eisenstein member is hardly ramified** (PROVEN assembly; the
+one remaining sorry leaf below it is `isFlatAt_cycDiagRep`): over the
+ring of integers of a finite extension
 `L/ℚ_ℓ`, the diagonal member `1 ⊕ χ_cyc,ℓ` has cyclotomic determinant
 (`det diag(1, χ_cyc) = χ_cyc`, PROVEN), is unramified outside `{2, ℓ}`
 (PROVEN over the arithmetic leaf), flat at `ℓ` (sorry leaf
