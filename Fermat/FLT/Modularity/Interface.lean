@@ -2078,47 +2078,137 @@ theorem cuspForm_finiteDimensional (N : ℕ) (hN : 0 < N) :
   refine hB f fun m hm => ?_
   simpa [LinearMap.pi_apply] using congrFun hf ⟨m, hm⟩
 
-/-- **The integral structure of `S₂(Γ₀(N))`** (sorry node — the
-arithmetic-model citation interface, isolated 2026-07-24 as the
-sharpest satisfiable carrier of the former sorried leaf
-`exists_cuspForm_ringEquiv_conj`, which is now PROVEN from it by the
-coordinate-transport glue below): the weight-2 level-`N` cusp space
-is spanned over `ℂ` by finitely many cusp forms ALL of whose
-`q`-expansion coefficients are INTEGERS — equivalently,
-`S₂(Γ₀(N); ℤ) ⊗_ℤ ℂ = S₂(Γ₀(N))`. This is the standard `ℤ`-structure
-of the cusp space: the `ℚ`-form is Shimura's rationality theorem
-(*Introduction to the Arithmetic Theory of Automorphic Functions*,
-Theorem 3.52; Diamond–Shurman §6.5), and the integral refinement —
-full `ℤ`-rank plus bounded denominators — is classical (Diamond–Im,
-*Modular forms and modular curves*, §12.3; Darmon–Diamond–Taylor,
-*Fermat's Last Theorem*, §1.6). The classical proofs go through
-arithmetic geometry absent from this pin: either (i) the
-`q`-expansion principle (Katz, Deligne–Rapoport) on the integral
-model of the modular curve `X₀(N)/ℤ`, where cusp forms are global
-sections of a line bundle whose formal expansion at the cusp `∞` has
-`ℤ`-coefficients and cohomological flatness gives full rank; or
-(ii) the Eichler–Shimura isomorphism onto `H¹(X₀(N), ℂ)` carrying the
-Hecke-stable lattice `H¹(X₀(N), ℤ)`, transferred to `q`-expansions
-through the perfect duality `𝕋 × S₂ → ℤ`, `(T, f) ↦ a₁(Tf)`. Neither
-modular curves, their integral models, nor Eichler–Shimura exist on
-this pin, and the elementary substitutes fail structurally: Victor
-Miller's constructive echelon basis needs the level-1 generation of
-the graded ring by `E₄, E₆` (no analogue for `Γ₀(N)`), and the
-integral Hecke-duality route needs the Eichler–Selberg trace formula
-— both audited 2026-07-24 and found beyond leaf scope, hence the
-interface shape. Note the statement is sound for every `N ≥ 1`:
-spanning is claimed only over `ℂ` (no independence, no echelon
-normalization), and at genus-zero levels `n = 0` works. The in-file
-consumers of the sharper `ℤ`-form (vs the `ℚ`-form it implies through
-`cuspForm_mem_span_rational`): coefficientwise `Aut(ℂ)`-transport
-(`exists_cuspForm_ringEquiv_conj` below, since `σ` fixes `ℤ`
-pointwise), with the mod-`p` congruence pillars as anticipated future
-consumers. -/
+/-- **The rational structure of `S₂(Γ₀(N))`** (sorry node — SHIMURA'S
+RATIONALITY THEOREM, isolated 2026-07-25 as the first of the two
+genuinely different classical inputs of the former single integral
+node `exists_integral_qExpansion_spanning`, which is now a PROVEN
+denominator-clearing assembly over this leaf and
+`exists_qExpansion_denominator` below): the weight-2 level-`N` cusp
+space is spanned over `ℂ` by finitely many cusp forms ALL of whose
+`q`-expansion coefficients are RATIONAL — equivalently
+`S₂(Γ₀(N); ℚ) ⊗_ℚ ℂ = S₂(Γ₀(N))`.
+
+This is Shimura, *Introduction to the Arithmetic Theory of Automorphic
+Functions*, Theorem 3.52 (equivalently Diamond–Shurman §6.5, where the
+`ℚ`-structure is what defines the `Aut(ℂ)`-action `f ↦ f^σ`). The
+classical proof is the `q`-expansion principle on the `ℚ`-model of the
+modular curve `X₀(N)`: cusp forms of weight 2 are global differentials,
+`X₀(N)` and its cusp `∞` are defined over `ℚ`, and the formal expansion
+of a `ℚ`-rational differential in the `ℚ`-rational uniformizer `q` has
+`ℚ`-coefficients, while flat base change gives
+`H⁰(X₀(N)_ℚ, Ω) ⊗_ℚ ℂ = H⁰(X₀(N)_ℂ, Ω)`. No modular curve exists on
+this pin, hence the interface shape.
+
+WHY THIS IS THE RIGHT CUT (2026-07-25). The `ℤ`-statement below bundles
+two inputs that the literature also keeps apart — rationality (this
+leaf) and BOUNDED DENOMINATORS (`exists_qExpansion_denominator`) — and
+only the second needs an INTEGRAL model of the curve; the first needs
+only the `ℚ`-model. The separation also isolates what the in-file
+consumers actually use: the `Aut(ℂ)`-transport
+`exists_cuspForm_ringEquiv_conj` (and hence the whole
+`cuspForm_mem_span_rational` cluster) consumes only `σ`-invariance of
+the spanning coefficients, which `map_ratCast` already supplies from
+THIS leaf — the integral refinement is needed there not at all, and is
+kept for the mod-`p` congruence pillars, the anticipated consumers of
+the sharper form. (Those consumers are not rewired here: this owner's
+mandate is the two leaves only; the shortening of
+`exists_cuspForm_ringEquiv_conj`'s dependency from the `ℤ`-node to this
+`ℚ`-node is a one-line change for that declaration's owner —
+`map_intCast` becomes `map_ratCast`.)
+
+SOUNDNESS: the statement is sound for every `N ≥ 1` — spanning is
+claimed only over `ℂ` (no independence, no echelon normalization, no
+`ℚ`-rank claim), so at genus-zero levels `n = 0` witnesses it. -/
+theorem exists_rational_qExpansion_spanning {N : ℕ} (hN : 0 < N) :
+    ∃ (n : ℕ) (g : Fin n → CuspForm (Gamma0GL N) 2),
+      (∀ f : CuspForm (Gamma0GL N) 2, ∃ c : Fin n → ℂ, f = ∑ i, c i • g i) ∧
+      (∀ i m, ∃ r : ℚ, qCoeff N (g i) m = (r : ℂ)) :=
+  sorry
+
+/-- **Bounded denominators for rational `q`-expansions** (sorry node —
+the INTEGRAL refinement, isolated 2026-07-25 as the second of the two
+classical inputs of `exists_integral_qExpansion_spanning`): a weight-2
+level-`N` cusp form whose `q`-expansion coefficients are all rational
+has a single denominator clearing ALL of them at once — there is
+`d ≥ 1` with `d·a_m(g) ∈ ℤ` for every `m`.
+
+This is the arithmetic content beyond rationality: `S₂(Γ₀(N); ℚ)`
+carries a `ℤ`-lattice of full rank whose members have integral
+expansions (Diamond–Im, *Modular forms and modular curves*, §12.3;
+Darmon–Diamond–Taylor, *Fermat's Last Theorem*, §1.6). Classically it
+comes from the INTEGRAL model: either (i) the `q`-expansion principle
+of Katz and Deligne–Rapoport on `X₀(N)/ℤ`, where a cusp form is a
+global section of a line bundle whose formal expansion at the
+`ℤ`-rational cusp `∞` has `ℤ`-coefficients and cohomological flatness
+gives full rank; or (ii) the Eichler–Shimura isomorphism onto
+`H¹(X₀(N), ℂ)` carrying the Hecke-stable lattice `H¹(X₀(N), ℤ)`,
+transferred to `q`-expansions through the perfect duality
+`𝕋 × S₂ → ℤ`, `(T, f) ↦ a₁(Tf)`. Neither integral models nor
+Eichler–Shimura exist on this pin, and the elementary substitutes fail
+structurally: Victor Miller's constructive echelon basis needs the
+level-1 generation of the graded ring by `E₄, E₆` (no analogue for
+`Γ₀(N)`), and the integral Hecke-duality route needs the
+Eichler–Selberg trace formula — both audited 2026-07-24 and found
+beyond leaf scope. Note also that "bounded denominators" is genuinely a
+theorem and not a formality: for NON-congruence subgroups it is the
+recent theorem of Calegari–Dimitrov–Tang, so no argument that ignores
+the congruence condition can prove it.
+
+SOUNDNESS: the hypothesis is exactly rationality of every coefficient
+and the conclusion a single positive natural denominator, so nothing is
+claimed about forms with irrational expansions; the degenerate cases
+are covered outright — for `g = 0`, hence at the genus-zero levels
+where that is the only cusp form, every coefficient is `0` and `d = 1`
+works. -/
+theorem exists_qExpansion_denominator {N : ℕ} (hN : 0 < N)
+    (g : CuspForm (Gamma0GL N) 2)
+    (hg : ∀ m : ℕ, ∃ r : ℚ, qCoeff N g m = (r : ℂ)) :
+    ∃ d : ℕ, 0 < d ∧ ∀ m : ℕ, ∃ z : ℤ, (d : ℂ) * qCoeff N g m = (z : ℂ) :=
+  sorry
+
+/-- **The integral structure of `S₂(Γ₀(N))`** (PROVEN assembly,
+2026-07-25, over the two classical citation leaves
+`exists_rational_qExpansion_spanning` (Shimura's rationality theorem)
+and `exists_qExpansion_denominator` (bounded denominators); formerly
+itself the single sorried carrier, isolated 2026-07-24 as the sharpest
+satisfiable form of the leaf `exists_cuspForm_ringEquiv_conj`, which is
+PROVEN from it by the coordinate-transport glue below): the weight-2
+level-`N` cusp space is spanned over `ℂ` by finitely many cusp forms
+ALL of whose `q`-expansion coefficients are INTEGERS — equivalently,
+`S₂(Γ₀(N); ℤ) ⊗_ℤ ℂ = S₂(Γ₀(N))`.
+
+Assembly (denominator clearing, pure linear algebra): take the
+rational spanning family `g`, clear the denominators of each member
+separately — `dᵢ ≥ 1` with `dᵢ·a_m(gᵢ) ∈ ℤ` for all `m` — and pass to
+`gᵢ' := dᵢ • gᵢ`. Integrality of `gᵢ'` is `qCoeffL`-linearity plus the
+denominator property; spanning survives because each `dᵢ` is a nonzero
+scalar, so `f = ∑ cᵢ • gᵢ = ∑ (cᵢ/dᵢ) • gᵢ'`.
+
+The two leaves are the two genuinely different classical inputs: the
+`ℚ`-form needs only the `ℚ`-model of `X₀(N)`, the denominator bound
+needs its INTEGRAL model — see each docstring for the citations and for
+which in-file consumers actually need which. -/
 theorem exists_integral_qExpansion_spanning {N : ℕ} (hN : 0 < N) :
     ∃ (n : ℕ) (g : Fin n → CuspForm (Gamma0GL N) 2),
       (∀ f : CuspForm (Gamma0GL N) 2, ∃ c : Fin n → ℂ, f = ∑ i, c i • g i) ∧
-      (∀ i m, ∃ z : ℤ, qCoeff N (g i) m = (z : ℂ)) :=
-  sorry
+      (∀ i m, ∃ z : ℤ, qCoeff N (g i) m = (z : ℂ)) := by
+  classical
+  obtain ⟨n, g, hspan, hrat⟩ := exists_rational_qExpansion_spanning hN
+  choose d hdpos hdint using fun i => exists_qExpansion_denominator hN (g i) (hrat i)
+  have hdne : ∀ i, ((d i : ℂ)) ≠ 0 := fun i => Nat.cast_ne_zero.mpr (hdpos i).ne'
+  refine ⟨n, fun i => (d i : ℂ) • g i, fun f => ?_, fun i m => ?_⟩
+  · obtain ⟨c, hc⟩ := hspan f
+    refine ⟨fun i => c i / (d i : ℂ), ?_⟩
+    rw [hc]
+    refine Finset.sum_congr rfl fun i _ => ?_
+    rw [smul_smul, div_mul_cancel₀ _ (hdne i)]
+  · obtain ⟨z, hz⟩ := hdint i m
+    refine ⟨z, ?_⟩
+    have hlin : qCoeff N ((d i : ℂ) • g i) m = (d i : ℂ) * qCoeff N (g i) m := by
+      have hs := (qCoeffL N m).map_smul ((d i : ℂ)) (g i)
+      simp only [smul_eq_mul, qCoeffL_apply] at hs
+      exact hs
+    rw [hlin, hz]
 
 /-- **`Aut(ℂ)`-stability of `S₂(Γ₀(N))` on `q`-expansions** (PROVEN
 glue, 2026-07-24, over the integral-structure citation node
@@ -19333,6 +19423,62 @@ carry the Hecke action itself). The Galois fields
 (`τJ`/`congruence`/`pair_frob`/`irred_eigenspace`) and the freeness
 fields require genuine modular-curve geometry absent from the pin and
 are the irreducibly geometric residue.
+
+FIFTH-CUT AUDIT (2026-07-25) — three further cuts were examined and
+REJECTED; recorded here so they are not re-attempted:
+
+* *Assume the local idempotent.* Replacing `spectrum_occurs` and
+  `spectrum_reduced` by the single field "there is a nonzero idempotent
+  `e ∈ heckeSubalgebra hecke` with `hecke q * e = κ(a_q)·e` spanning
+  the generalized eigenspace of the algebra" is sound and merges two
+  fields into one, but it is a REGRESSION: `nonempty_modularJacobianPackage`
+  already PROVES exactly that idempotent from the present two fields
+  through the Artinian engine `exists_idempotent_heckeSubalgebra_fixing`
+  (stabilization of the powers of `Ann_A(v)`, the Cayley–Hamilton
+  determinant trick, Newton idempotent iteration). Assuming it would
+  move proven content back into the sorried leaf and strand that engine
+  as free-floating.
+* *Respell `spectrum_occurs` as a character.* The classical statement
+  is "the eigensystem is a `ℚ̄_p`-point of the Hecke algebra", i.e. a
+  `ℚ̄_p`-algebra hom `χ` on `heckeSubalgebra hecke` with
+  `χ(hecke q) = κ(a_q(g))`; the present field is the eigenvector form
+  of the same thing. The two are EQUIVALENT over the finite-dimensional
+  commutative algebra `heckeSubalgebra hecke` (character ⇒ eigenvector:
+  stabilize the powers of `ker χ`, then take a nonzero element of the
+  last nonvanishing power inside the local factor), so the respelling
+  changes the geometric burden by nothing while costing another copy of
+  the Artinian dance above. Not a decomposition.
+* *Pull `irred_eigenspace` out as a standalone lemma over abstract
+  packages.* Forbidden by the carrier design recorded above: the field
+  is FALSE for arbitrary abstract carriers — it holds for the intended
+  one only through the Weil bound `|a_q| ≤ 2√q` of a genuine newform.
+  A true standalone version would first need inertia/ramification for
+  an abstract `τJ`, class field theory over `ℚ` and Chebotarev — a
+  development strictly larger than this leaf.
+
+So the recorded route above remains the only cut that genuinely
+REDUCES the geometric burden, and its true cost is the coefficient
+transport: the eigenform theory of this file lives over `ℂ`, the
+package over `ℚ̄_p`, and for each embedding `κ : K_g → ℚ̄_p` the
+comparison needs a field isomorphism `ℂ ≃ ℚ̄_p` compatible with `κ`.
+That is available in principle — both fields are algebraically closed
+of characteristic `0` and cardinality continuum
+(`IsAlgClosed.ringEquiv_of_equiv_of_charZero`, with
+`IsAlgClosed.equivOfTranscendenceBasis` for the relative form
+extending a prescribed embedding, and this file's PROVEN
+`exists_complex_ringEquiv_extension` as the `ℂ`-side precedent) — but
+it is a genuine layer to build, not glue.
+
+RELATION TO `exists_integral_qExpansion_spanning` (audited 2026-07-25):
+the two remaining geometric leaves of this file share a classical
+SOURCE — the Eichler–Shimura isomorphism and the Hecke-stable lattice
+`H¹(X₀(N), ℤ)` appear in the standard proof of both — but no Lean
+substrate: that leaf is a statement about `ℂ`-valued `q`-expansion
+coefficients of `CuspForm (Gamma0GL N) 2`, this one about a
+`ℚ̄_p`-linear Galois module with a Hecke action, and nothing short of
+building the full Eichler–Shimura comparison (the transport layer just
+described) would let one lemma serve both. They are therefore kept as
+independent leaves.
 
 SOUNDNESS (2026-07-24, re-audited 2026-07-25 for the two replaced
 fields): the statement quantifies over nothing but the level, and the
