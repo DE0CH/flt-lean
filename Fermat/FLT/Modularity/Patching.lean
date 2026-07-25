@@ -6411,8 +6411,16 @@ theorem TaylorWilesSystem.exists_patchedModule_natural.{a, b, c, s, uR}
     (S : TaylorWilesSystem.{a, b, c, s, uR} p ψ)
     (hcomplete : IsAdicComplete (IsLocalRing.maximalIdeal Runiv) Runiv)
     (hres : Finite (Runiv ⧸ IsLocalRing.maximalIdeal Runiv)) :
-    Nonempty (PatchedModule.{b, c, s, uR} p ψ) :=
-  exists_patchedModule_of_fields S.q S.d S.R S.pres S.pres_surjective S.diamond
+    Nonempty (PatchedModule.{b, c, s, uR} p ψ) := by
+  -- the structure's instance FIELDS are not in scope as instances once the
+  -- data fields are passed one by one, so install them first
+  letI := S.commRingR
+  letI := S.addCommGroupM
+  letI := S.moduleRM
+  letI := S.moduleCoeffM
+  letI := S.addCommGroupM0
+  letI := S.moduleM0
+  exact exists_patchedModule_of_fields S.q S.d S.R S.pres S.pres_surjective S.diamond
     S.toRuniv S.toRuniv_surjective S.ker_toRuniv S.M S.diamond_smul S.bIdeal
     S.bIdeal_le S.freeM S.M0 S.nontrivialM0 S.projM S.projM_surjective S.projM_smul
     (fun n m => ⟨(S.projM_eq_zero_iff n m).mp, (S.projM_eq_zero_iff n m).mpr⟩)
