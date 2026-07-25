@@ -973,8 +973,9 @@ package.
 ROUTE AUDIT (2026-07-24): discharge by vacuity — `absurd hirr
 (not_isIrreducible_of_isHardlyRamified_of_five_le …)`, the route the
 interface leaves of `Modularity/Interface.lean` take — is NOT available
-here: the headline consumes this node (headline ← `exists_threeadic_
-compatible_member_of_five_le` ← `exists_heckeField_system_of_witness` ←
+here: the headline consumes this node (headline ←
+`exists_threeadic_compatible_member_of_five_le` ←
+`exists_heckeField_system_of_witness` ←
 `exists_descended_heckeSystem_of_solvable` ← this leaf), so the
 vacuity route would be circular. The classical route above is the one
 to follow.
