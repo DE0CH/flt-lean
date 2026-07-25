@@ -1076,9 +1076,20 @@ theorem WeierstrassCurve.exists_stable_cyclic_subgroup_of_rational_point
       (Affine.Point.map_injective (f := Algebra.ofId ℚ (AlgebraicClosure ℚ))) Q
   · intro σ x hx
     obtain ⟨k, rfl⟩ := AddSubgroup.mem_zmultiples_iff.mp hx
-    rw [map_zsmul, Affine.Point.map_baseChange
-      (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Q]
-    exact AddSubgroup.zsmul_mem _ (AddSubgroup.mem_zmultiples _) k
+    rw [map_zsmul]
+    refine AddSubgroup.zsmul_mem _ ?_ k
+    -- `Affine.Point.map_baseChange` is applied through an `exact` against a
+    -- LOCALLY STATED goal rather than passed straight to `rw`: elaborated on
+    -- its own, its implicit base curve `W'` unifies to a different (defeq but
+    -- not syntactically equal) spelling than the one in the goal, and the
+    -- rewrite then fails to find its own pattern.
+    have hfix : Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom
+        (Affine.Point.baseChange ℚ (AlgebraicClosure ℚ) Q) =
+        Affine.Point.baseChange ℚ (AlgebraicClosure ℚ) Q :=
+      Affine.Point.map_baseChange _ Q
+    rw [hfix]
+    exact AddSubgroup.mem_zmultiples _
 
 /-- **A rational torsion point has Kenku degree** (PROVEN 2026-07-25):
 a rational point `Q` of exact order `N > 0` generates a cyclic subgroup
@@ -9051,9 +9062,322 @@ theorem natCast_notMem_maximalIdeal_integralClosure {p : ℕ} (hp : p.Prime)
   intro hmem
   exact ((IsLocalRing.mem_maximalIdeal _).mp hmem) hunitIC
 
+section TameCharacterOrbit
+
+variable {Knum : Type*} [Field Knum] [NumberField Knum]
+  (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers Knum))
+
+local notation "Kᵥ" => IsDedekindDomain.HeightOneSpectrum.adicCompletion Knum v
+local notation "𝒪ᵥ" => IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers Knum v
+local notation "Lᵥ" =>
+  AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion Knum v)
+local notation "Rᵥ" =>
+  IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers Knum v)
+    (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion Knum v))
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Local inertia acts trivially on the `n`-th roots of unity when `n`
+is prime to the residue characteristic** (PROVEN 2026-07-25). If `ζ ^ n = 1`
+and the image of `n` avoids the maximal ideal of the big integral closure,
+then every `σ ∈ localInertiaGroup v` fixes `ζ`: the ratio `σ ζ / ζ` is an
+`n`-th root of unity congruent to `1` modulo the maximal ideal (because `σ`
+is INERTIAL and `ζ` is a unit of the integral closure), hence is `1` by
+`eq_one_of_pow_eq_one_of_sub_one_mem`.
+
+The inertia hypothesis cannot be relaxed to the decomposition group: a
+Frobenius lift moves `μ_n`. This is what makes the tame character
+`σ ↦ σ ϖ / ϖ` below a group HOMOMORPHISM on inertia. -/
+theorem localInertia_fixes_rootOfUnity {n : ℕ} (hn0 : n ≠ 0)
+    (hn : ((n : ℕ) : Rᵥ) ∉ IsLocalRing.maximalIdeal Rᵥ)
+    {ζ : Lᵥ} (hζ : ζ ^ n = 1)
+    {σ : Lᵥ ≃ₐ[Kᵥ] Lᵥ} (hσ : σ ∈ localInertiaGroup v) :
+    σ ζ = ζ := by
+  classical
+  have hζ0 : ζ ≠ 0 := by
+    intro h
+    rw [h, zero_pow hn0] at hζ
+    exact zero_ne_one hζ
+  have hroot : ∀ z : Lᵥ, z ^ n = 1 → IsIntegral 𝒪ᵥ z := by
+    intro z hz
+    refine ⟨Polynomial.X ^ n - 1, ?_, ?_⟩
+    · have := Polynomial.monic_X_pow_sub_C (R := 𝒪ᵥ) (1 : 𝒪ᵥ) hn0
+      simpa [Polynomial.C_1] using this
+    · simp [Polynomial.eval₂_sub, hz]
+  have hζinv : (ζ⁻¹) ^ n = 1 := by rw [inv_pow, hζ, inv_one]
+  have hσζ : (σ ζ) ^ n = 1 := by rw [← map_pow, hζ, map_one]
+  have hYpow : (σ ζ / ζ) ^ n = 1 := by rw [div_pow, hσζ, hζ, div_one]
+  set Z : Rᵥ := ⟨ζ, hroot ζ hζ⟩ with hZdef
+  set Zi : Rᵥ := ⟨ζ⁻¹, hroot _ hζinv⟩ with hZidef
+  set Y : Rᵥ := ⟨σ ζ / ζ, hroot _ hYpow⟩ with hYdef
+  have hinj : Function.Injective (algebraMap Rᵥ Lᵥ) := fun _ _ h => Subtype.ext h
+  have hvZ : algebraMap _ _ Z = ζ := by rw [hZdef]; rfl
+  have hvZi : algebraMap _ _ Zi = ζ⁻¹ := by rw [hZidef]; rfl
+  have hvY : algebraMap _ _ Y = σ ζ / ζ := by rw [hYdef]; rfl
+  have hvsZ : algebraMap _ _ (σ • Z) = σ ζ := by rw [hZdef]; rfl
+  have hY1 : Y - 1 ∈ IsLocalRing.maximalIdeal Rᵥ := by
+    have hmem : σ • Z - Z ∈ IsLocalRing.maximalIdeal Rᵥ := hσ Z
+    have hEq : Y - 1 = (σ • Z - Z) * Zi := by
+      apply hinj
+      rw [map_sub, map_mul, map_sub, map_one, hvY, hvZ, hvZi, hvsZ]
+      field_simp
+    rw [hEq]
+    exact Ideal.mul_mem_right _ _ hmem
+  have hYn : Y ^ n = 1 := by
+    apply hinj
+    rw [map_pow, map_one, hvY]
+    exact hYpow
+  have hY0 : Y = 1 := eq_one_of_pow_eq_one_of_sub_one_mem hYn hY1 hn
+  have hquot : σ ζ / ζ = 1 := by
+    have h := congrArg (algebraMap Rᵥ Lᵥ) hY0
+    rw [hvY, map_one] at h
+    exact h
+  have h3 : σ ζ / ζ * ζ = 1 * ζ := by rw [hquot]
+  rwa [div_mul_cancel₀ _ hζ0, one_mul] at h3
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 400000 in
+set_option maxHeartbeats 1000000 in
+/-- **Surjectivity of the tame character of local inertia, in ORBIT form,
+over an arbitrary number field** (PROVEN 2026-07-25; this is the general
+form of `exists_localInertia_tameCharacter_orbit` below). Let `π` generate
+the maximal ideal of `𝒪ᵥ`, let `n` be prime to the residue characteristic
+(in the form: the image of `n` avoids the maximal ideal of the big
+integral closure), and let `ϖ ∈ Kᵥᵃˡᵍ` be ANY `n`-th root of `π`. Then some
+`σ ∈ localInertiaGroup v` has `σ ^ k ϖ = ϖ → n ∣ k`.
+
+PROOF (this replaces the Kummer-theory route recorded in the docstring
+below; it needs neither `ℚ_p^nr`, nor Eisenstein irreducibility, nor the
+Galois-group identification `Gal(K(a^{1/n})/K) ≃ μ_n` — the whole surjectivity
+is extracted from the already-PROVEN
+`maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup`):
+
+1. For any `σ` in the absolute Galois group, `ζ_σ := σ ϖ / ϖ` is an `n`-th
+   root of unity, because `σ` fixes `π ∈ Kᵥ` and `ϖ ^ n = π`.
+2. On INERTIA, `σ ↦ ζ_σ` is a group HOMOMORPHISM `F` into `(Kᵥᵃˡᵍ)ˣ`: this
+   is exactly `localInertia_fixes_rootOfUnity` above, which says inertia
+   acts trivially on `μ_n`.
+3. `F.range` is contained in `μ_n`, hence finite, hence CYCLIC (a finite
+   subgroup of the units of a domain). Let `d = #F.range`; then `d ∣ n`
+   (a generator is an `n`-th root of unity) and `ζ_σ ^ d = 1` for every
+   inertial `σ`, i.e. `ϖ ^ d` is fixed POINTWISE by `localInertiaGroup v`.
+4. Hence `Kᵥ(ϖ ^ d)` lies in the fixed field of the local inertia, so
+   `maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup` makes `π` a
+   GENERATOR of the maximal ideal of its integral closure `R`. But
+   `α = ϖ ^ d` satisfies `α ^ m = π` with `m = n / d`, so `α ∈ 𝔪_R = (π)`,
+   say `α = π β`, whence `π = π ^ m β ^ m` and `π` is a UNIT of `R` as soon
+   as `m ≥ 2` — impossible in a local ring. Therefore `d = n`.
+5. A generator of `F.range` is `F σ` for some inertial `σ`, and it has order
+   exactly `n`; `σ ^ k ϖ = ζ_σ ^ k ϖ` then gives `ζ_σ ^ k = 1`, i.e. `n ∣ k`.
+
+Step 3 is where the inertia quantifier is LOAD-BEARING twice over: once for
+`F` to be a homomorphism at all, and once for step 4 to be about the fixed
+field of INERTIA rather than of the decomposition group. -/
+theorem exists_mem_localInertiaGroup_tameOrbit {n : ℕ} (hn0 : n ≠ 0)
+    (hn : ((n : ℕ) : Rᵥ) ∉ IsLocalRing.maximalIdeal Rᵥ)
+    (π : 𝒪ᵥ) (hπ : IsLocalRing.maximalIdeal 𝒪ᵥ = Ideal.span {π})
+    (ϖ : Lᵥ) (hϖ : ϖ ^ n = algebraMap 𝒪ᵥ Lᵥ π) :
+    ∃ σ : Lᵥ ≃ₐ[Kᵥ] Lᵥ, σ ∈ localInertiaGroup v ∧
+      ∀ k : ℕ, (σ ^ k) ϖ = ϖ → n ∣ k := by
+  classical
+  -- `π ≠ 0`, hence `ϖ ≠ 0`
+  have hπ0 : π ≠ 0 := by
+    rintro rfl
+    refine IsDiscreteValuationRing.not_a_field 𝒪ᵥ ?_
+    rw [hπ, Ideal.span_singleton_eq_bot.mpr rfl]
+  have hinjO : Function.Injective (algebraMap 𝒪ᵥ Lᵥ) := by
+    rw [IsScalarTower.algebraMap_eq 𝒪ᵥ Kᵥ Lᵥ]
+    exact (algebraMap Kᵥ Lᵥ).injective.comp fun _ _ h => Subtype.ext h
+  have hπL : algebraMap 𝒪ᵥ Lᵥ π ≠ 0 := fun h => hπ0 (hinjO (by rw [h, map_zero]))
+  have hϖ0 : ϖ ≠ 0 := by
+    intro h
+    rw [h, zero_pow hn0] at hϖ
+    exact hπL hϖ.symm
+  -- every automorphism multiplies `ϖ` by an `n`-th root of unity
+  have hζpow : ∀ σ : Lᵥ ≃ₐ[Kᵥ] Lᵥ, (σ ϖ / ϖ) ^ n = 1 := by
+    intro σ
+    have hs : σ (algebraMap 𝒪ᵥ Lᵥ π) = algebraMap 𝒪ᵥ Lᵥ π := by
+      rw [IsScalarTower.algebraMap_apply 𝒪ᵥ Kᵥ Lᵥ]
+      exact σ.commutes _
+    rw [div_pow, ← map_pow, hϖ, hs, ← hϖ, div_self (pow_ne_zero _ hϖ0)]
+  have hζ0 : ∀ σ : Lᵥ ≃ₐ[Kᵥ] Lᵥ, σ ϖ / ϖ ≠ 0 := by
+    intro σ h
+    have hp := hζpow σ
+    rw [h, zero_pow hn0] at hp
+    exact zero_ne_one hp
+  -- the inertia subgroup, read in the automorphism-group spelling
+  let G : Subgroup (Lᵥ ≃ₐ[Kᵥ] Lᵥ) := localInertiaGroup v
+  have hGmem : ∀ s : Lᵥ ≃ₐ[Kᵥ] Lᵥ, s ∈ G ↔ s ∈ localInertiaGroup v := fun _ => Iff.rfl
+  have hfixζ : ∀ s ∈ G, ∀ t : Lᵥ ≃ₐ[Kᵥ] Lᵥ, s (t ϖ / ϖ) = t ϖ / ϖ := by
+    intro s hs t
+    exact localInertia_fixes_rootOfUnity v hn0 hn (hζpow t) ((hGmem s).mp hs)
+  -- the tame character as a monoid homomorphism to the units
+  let F : ↥G →* Lᵥˣ :=
+    { toFun := fun s => Units.mk0 ((s : Lᵥ ≃ₐ[Kᵥ] Lᵥ) ϖ / ϖ) (hζ0 _)
+      map_one' := by
+        apply Units.ext
+        show ((1 : ↥G) : Lᵥ ≃ₐ[Kᵥ] Lᵥ) ϖ / ϖ = 1
+        rw [Subgroup.coe_one, AlgEquiv.one_apply, div_self hϖ0]
+      map_mul' := by
+        intro s t
+        apply Units.ext
+        show ((s * t : ↥G) : Lᵥ ≃ₐ[Kᵥ] Lᵥ) ϖ / ϖ =
+          ((s : Lᵥ ≃ₐ[Kᵥ] Lᵥ) ϖ / ϖ) * ((t : Lᵥ ≃ₐ[Kᵥ] Lᵥ) ϖ / ϖ)
+        rw [Subgroup.coe_mul, AlgEquiv.mul_apply]
+        have ht : (t : Lᵥ ≃ₐ[Kᵥ] Lᵥ) ϖ = ((t : Lᵥ ≃ₐ[Kᵥ] Lᵥ) ϖ / ϖ) * ϖ :=
+          (div_mul_cancel₀ _ hϖ0).symm
+        rw [ht, map_mul, hfixζ _ s.2]
+        field_simp }
+  have hFval : ∀ s : ↥G, ((F s : Lᵥˣ) : Lᵥ) = (s : Lᵥ ≃ₐ[Kᵥ] Lᵥ) ϖ / ϖ := fun _ => rfl
+  -- the image lands in the `n`-th roots of unity, hence is finite and cyclic
+  have hFrange : F.range ≤ rootsOfUnity n Lᵥ := by
+    intro u hu
+    obtain ⟨s, rfl⟩ := MonoidHom.mem_range.mp hu
+    rw [mem_rootsOfUnity', hFval]
+    exact hζpow _
+  haveI hnz : NeZero n := ⟨hn0⟩
+  haveI hfin : Finite ↥(F.range) := by
+    refine Finite.of_injective (β := ↥(rootsOfUnity n Lᵥ))
+      (fun x => ⟨(x : Lᵥˣ), hFrange x.2⟩) ?_
+    intro a b hab
+    have hv : (a : Lᵥˣ) = (b : Lᵥˣ) :=
+      congrArg (fun z : ↥(rootsOfUnity n Lᵥ) => (z : Lᵥˣ)) hab
+    exact Subtype.ext hv
+  obtain ⟨g, hg⟩ := IsCyclic.exists_generator (α := ↥(F.range))
+  have hgcard : orderOf g = Nat.card ↥(F.range) :=
+    orderOf_eq_card_of_forall_mem_zpowers hg
+  set d : ℕ := Nat.card ↥(F.range) with hddef
+  have hd0 : d ≠ 0 := Nat.card_pos.ne'
+  have hgn' : (g : Lᵥˣ) ^ n = 1 := (mem_rootsOfUnity n _).mp (hFrange g.2)
+  have hdn : d ∣ n := by
+    rw [← hgcard, ← Subgroup.orderOf_coe]
+    exact orderOf_dvd_of_pow_eq_one hgn'
+  -- every tame character value is killed by `d`
+  have hpowd : ∀ s : ↥G, ((F s : Lᵥˣ) : Lᵥ) ^ d = 1 := by
+    intro s
+    have h1 : (⟨F s, MonoidHom.mem_range.mpr ⟨s, rfl⟩⟩ : ↥(F.range)) ^ d = 1 :=
+      pow_card_eq_one'
+    have h2 := congrArg (fun x : ↥(F.range) => ((x : Lᵥˣ) : Lᵥ)) h1
+    simpa using h2
+  -- the iterated action of an inertia element on `ϖ`
+  have hiter : ∀ (s : ↥G) (k : ℕ),
+      (((s : Lᵥ ≃ₐ[Kᵥ] Lᵥ)) ^ k) ϖ = ((F s : Lᵥˣ) : Lᵥ) ^ k * ϖ := by
+    intro s k
+    have hsϖ : (s : Lᵥ ≃ₐ[Kᵥ] Lᵥ) ϖ = ((F s : Lᵥˣ) : Lᵥ) * ϖ := by
+      rw [hFval]
+      exact (div_mul_cancel₀ _ hϖ0).symm
+    induction k with
+    | zero => simp
+    | succ k ih =>
+      rw [pow_succ', AlgEquiv.mul_apply, ih, map_mul, map_pow, hFval,
+        hfixζ _ s.2, ← hFval, hsϖ]
+      ring
+  -- `d = n`: otherwise `ϖ ^ d` generates a ramified extension inside the
+  -- fixed field of the inertia group
+  have hdeq : d = n := by
+    by_contra hne
+    obtain ⟨m, hm⟩ := hdn
+    have hm0 : m ≠ 0 := by rintro rfl; exact hn0 (by simpa using hm)
+    have hm1 : m ≠ 1 := by rintro rfl; exact hne (by simpa using hm.symm)
+    obtain ⟨t, ht⟩ : ∃ t, m = t + 2 := ⟨m - 2, by omega⟩
+    set α : Lᵥ := ϖ ^ d with hαdef
+    have hα : α ^ m = algebraMap 𝒪ᵥ Lᵥ π := by rw [hαdef, ← pow_mul, ← hm, hϖ]
+    have hα0 : α ≠ 0 := pow_ne_zero _ hϖ0
+    have hαfix : ∀ s : Lᵥ ≃ₐ[Kᵥ] Lᵥ, s ∈ localInertiaGroup v → s α = α := by
+      intro s hs
+      have hsG : s ∈ G := (hGmem s).mpr hs
+      have hsϖ : s ϖ = ((F ⟨s, hsG⟩ : Lᵥˣ) : Lᵥ) * ϖ := by
+        rw [hFval]
+        exact (div_mul_cancel₀ _ hϖ0).symm
+      rw [hαdef, map_pow, hsϖ, mul_pow, hpowd ⟨s, hsG⟩, one_mul]
+    have hαint : IsIntegral Kᵥ α := Algebra.IsIntegral.isIntegral α
+    haveI hfd : FiniteDimensional Kᵥ ↥(IntermediateField.adjoin Kᵥ {α}) :=
+      IntermediateField.adjoin.finiteDimensional hαint
+    have hMfix : IntermediateField.adjoin Kᵥ {α} ≤
+        IntermediateField.fixedField (localInertiaGroup v) := by
+      rw [IntermediateField.adjoin_le_iff, Set.singleton_subset_iff, SetLike.mem_coe,
+        IntermediateField.mem_fixedField_iff]
+      exact fun s hs => hαfix s hs
+    have hmax := maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup v
+      (IntermediateField.adjoin Kᵥ {α}) hMfix
+    have hspan : IsLocalRing.maximalIdeal
+        (IntegralClosure 𝒪ᵥ ↥(IntermediateField.adjoin Kᵥ {α})) =
+        Ideal.span {algebraMap 𝒪ᵥ
+          (IntegralClosure 𝒪ᵥ ↥(IntermediateField.adjoin Kᵥ {α})) π} := by
+      rw [← hmax, hπ, Ideal.map_span, Set.image_singleton]
+    have hαmemM : α ∈ IntermediateField.adjoin Kᵥ {α} :=
+      IntermediateField.mem_adjoin_simple_self Kᵥ α
+    have hαMpow : (⟨α, hαmemM⟩ : ↥(IntermediateField.adjoin Kᵥ {α})) ^ m =
+        algebraMap 𝒪ᵥ ↥(IntermediateField.adjoin Kᵥ {α}) π := by
+      apply Subtype.ext
+      rw [IntermediateField.coe_pow]
+      exact hα
+    have hαMint : IsIntegral 𝒪ᵥ (⟨α, hαmemM⟩ : ↥(IntermediateField.adjoin Kᵥ {α})) := by
+      refine ⟨Polynomial.X ^ m - Polynomial.C π, Polynomial.monic_X_pow_sub_C π (by omega), ?_⟩
+      simp [Polynomial.eval₂_sub, hαMpow]
+    set a : IntegralClosure 𝒪ᵥ ↥(IntermediateField.adjoin Kᵥ {α}) :=
+      ⟨⟨α, hαmemM⟩, hαMint⟩ with hadef
+    set P : IntegralClosure 𝒪ᵥ ↥(IntermediateField.adjoin Kᵥ {α}) :=
+      algebraMap 𝒪ᵥ _ π with hPdef
+    have ha : a ^ m = P := by
+      apply Subtype.ext
+      rw [hadef, hPdef]
+      exact hαMpow
+    have hPmem : P ∈ IsLocalRing.maximalIdeal
+        (IntegralClosure 𝒪ᵥ ↥(IntermediateField.adjoin Kᵥ {α})) := by
+      rw [hspan, hPdef]
+      exact Ideal.mem_span_singleton_self _
+    have hPne : P ≠ 0 := by
+      intro h
+      apply hα0
+      have hz : a ^ m = 0 := by rw [ha, h]
+      have ha0 : a = 0 := pow_eq_zero_iff hm0 |>.mp hz
+      have hc := congrArg (fun x : IntegralClosure 𝒪ᵥ ↥(IntermediateField.adjoin Kᵥ {α}) =>
+        ((x.1 : ↥(IntermediateField.adjoin Kᵥ {α})) : Lᵥ)) ha0
+      rw [hadef] at hc
+      simpa using hc
+    haveI hprime : (IsLocalRing.maximalIdeal
+        (IntegralClosure 𝒪ᵥ ↥(IntermediateField.adjoin Kᵥ {α}))).IsPrime :=
+      (IsLocalRing.maximalIdeal.isMaximal _).isPrime
+    have hamem : a ∈ IsLocalRing.maximalIdeal
+        (IntegralClosure 𝒪ᵥ ↥(IntermediateField.adjoin Kᵥ {α})) :=
+      hprime.mem_of_pow_mem m (by rw [ha]; exact hPmem)
+    rw [hspan, Ideal.mem_span_singleton] at hamem
+    obtain ⟨b, hb⟩ := hamem
+    have hunit : IsUnit P := by
+      have h1 : P * (P ^ (t + 1) * b ^ m) = P * 1 := by
+        rw [mul_one]
+        calc P * (P ^ (t + 1) * b ^ m) = (P * b) ^ m := by rw [mul_pow, ht]; ring
+          _ = a ^ m := by rw [← hb]
+          _ = P := ha
+      have h2 : P ^ (t + 1) * b ^ m = 1 := mul_left_cancel₀ hPne h1
+      exact IsUnit.of_mul_eq_one (P ^ t * b ^ m) (by rw [← h2]; ring)
+    exact ((IsLocalRing.mem_maximalIdeal _).mp hPmem) hunit
+  -- the generator of the image is the value of some inertia element
+  obtain ⟨s, hs⟩ := MonoidHom.mem_range.mp g.2
+  have hord : orderOf (F s) = n := by
+    rw [hs, Subgroup.orderOf_coe, hgcard, hdeq]
+  refine ⟨(s : Lᵥ ≃ₐ[Kᵥ] Lᵥ), (hGmem _).mp s.2, ?_⟩
+  intro k hk
+  rw [hiter s k] at hk
+  have hζk : ((F s : Lᵥˣ) : Lᵥ) ^ k = 1 := by
+    have h1 : ((F s : Lᵥˣ) : Lᵥ) ^ k * ϖ = 1 * ϖ := by rw [hk, one_mul]
+    exact mul_right_cancel₀ hϖ0 h1
+  have hFk : (F s) ^ k = 1 := by
+    apply Units.ext
+    rw [Units.val_pow_eq_pow_val, Units.val_one]
+    exact hζk
+  rw [← hord]
+  exact orderOf_dvd_of_pow_eq_one hFk
+
+end TameCharacterOrbit
+
 open IsDedekindDomain in
 /-- **Surjectivity of the tame character of local inertia, in ORBIT form**
-(sorry node, cut 2026-07-25 out of
+(PROVEN 2026-07-25 by instantiating the general
+`exists_mem_localInertiaGroup_tameOrbit` above at `K = ℚ`, `v = v_p` and
+`π = p` — the uniformizer identification is
+`maximalIdeal_adicCompletionIntegers_eq_span`, and the "prime to `p`" input
+is `natCast_notMem_maximalIdeal_integralClosure`. Cut 2026-07-25 out of
 `exists_local_inertia_torsion_orbit_of_good_of_supersingular` below — the
 LOCAL-FIELD half of that leaf, carrying no elliptic curve at all): let `p`
 be a prime, `n` a natural number prime to `p`, and `ϖ ∈ ℚ̄_p` ANY `n`-th
@@ -9077,30 +9401,20 @@ Note the quantifier is over `localInertiaGroup` and must NOT be widened:
 for an element of the full decomposition group the tame character is only
 equivariant, not invariant, and the statement becomes false.
 
-ROUTE for the next owner, staying at FINITE level — which avoids
-formalising `ℚ_p^nr` itself:
-1. `ℚ_p(μ_n)/ℚ_p` is unramified (`n` prime to `p`), and `X ^ n − p` is
-   still Eisenstein over its valuation ring, so `M = ℚ_p(μ_n, ϖ)` is
-   totally ramified of degree `n` over `ℚ_p(μ_n)`. Mathlib has Eisenstein
-   irreducibility (`Polynomial.IsEisensteinAt.irreducible`).
-2. `Gal(M/ℚ_p(μ_n))` is cyclic of order `n`, generated by `τ : ϖ ↦ ζ ϖ`
-   for a primitive `ζ ∈ μ_n` (Kummer; the `IsPrimitiveRoot` API).
-3. `τ` lies in the inertia subgroup of `Gal(M/ℚ_p)`: total ramification
-   makes the residue field of `M` equal to that of `ℚ_p(μ_n)`, which `τ`
-   fixes pointwise.
-4. Lift to the full `localInertiaGroup` by the PROVEN compactness lifting
-   `exists_mem_localInertiaGroup_restrictNormalHom_eq`
-   (`Fermat/FLT/Deformations/RepresentationTheory/LocalInertiaFixedField.lean`,
-   the profinite half of Neukirch II.9.11), and read the orbit condition
-   back off `σ ^ k ϖ = ϖ ↔ ζ ^ k = 1`.
-
-MISSING FROM MATHLIB, in dependency order, as statements: (a) *a totally
-ramified extension of local fields has the same residue field* — in the
-`ValuationSubring` decomposition/inertia vocabulary already used by
-`mem_inertiaSubgroup_localValuationSubring`; (b) *Kummer theory over a
-field containing `μ_n`*: `Gal(K(a^{1/n})/K) ≃ μ_n` by `τ ↦ τ(a^{1/n})/a^{1/n}`,
-of which mathlib has the `IsPrimitiveRoot`/`X ^ n - C a` splitting pieces
-but not the Galois-group identification. -/
+HOW IT WAS ACTUALLY PROVED (2026-07-25). The Kummer/Eisenstein route above
+was NOT needed, and neither of the two pieces recorded here as "missing
+from mathlib" had to be built. See `exists_mem_localInertiaGroup_tameOrbit`
+for the argument: the tame character is a homomorphism on inertia, its
+image is a finite cyclic group `μ_d` with `d ∣ n`, and if `d < n` then
+`ϖ ^ d` lies in the fixed field of the local inertia, which the PROVEN
+`maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup` says is
+unramified — contradicting `(ϖ ^ d) ^ (n / d) = p`. So `d = n` and the
+character is surjective. The pieces once listed here as prerequisites —
+(a) *a totally ramified extension of local fields has the same residue
+field*, and (b) *Kummer theory's identification `Gal(K(a^{1/n})/K) ≃ μ_n`*
+— remain absent from mathlib, but this node no longer needs either: the
+whole ramification input is supplied by the already-proven fixed-field
+theorem. -/
 theorem exists_localInertia_tameCharacter_orbit {p : ℕ} (hp : p.Prime) {n : ℕ}
     (hpn : ¬ p ∣ n)
     (ϖ : AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
@@ -9115,8 +9429,16 @@ theorem exists_localInertia_tameCharacter_orbit {p : ℕ} (hp : p.Prime) {n : �
               hp.toHeightOneSpectrumRingOfIntegersRat]
             (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
               hp.toHeightOneSpectrumRingOfIntegersRat))) ^ k) ϖ = ϖ →
-        n ∣ k :=
-  sorry
+        n ∣ k := by
+  have hn0 : n ≠ 0 := by rintro rfl; exact hpn (dvd_zero p)
+  obtain ⟨σ, hσ, hk⟩ := exists_mem_localInertiaGroup_tameOrbit
+    hp.toHeightOneSpectrumRingOfIntegersRat hn0
+    (natCast_notMem_maximalIdeal_integralClosure hp hpn)
+    ((p : ℕ) : HeightOneSpectrum.adicCompletionIntegers ℚ
+      hp.toHeightOneSpectrumRingOfIntegersRat)
+    (maximalIdeal_adicCompletionIntegers_eq_span hp) ϖ
+    (by rw [map_natCast]; exact hϖ)
+  exact ⟨σ, hσ, hk⟩
 
 open IsDedekindDomain in
 set_option backward.isDefEq.respectTransparency false in
