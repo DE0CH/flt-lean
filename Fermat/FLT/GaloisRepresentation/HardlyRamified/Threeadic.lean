@@ -87,7 +87,9 @@ local notation "Frob" => Field.AbsoluteGaloisGroup.adicArithFrob
 -- TODO -- make some API for "I have a rank 1 quotient where Galois acts trivially"
 -- e.g. this implies trace(Frob_p) is (1+p)
 
-/-- **The residue package** (sorry node): a local, topological,
+/-- **The residue package** (PROVEN; label corrected 2026-07-25 — the
+proof below is complete, the stale `sorry node` marker had been
+harvested into phantom dispatches): a local, topological,
 module-finite `ℤ₃`-algebra `R` has a residue field `kk` — finite, of
 characteristic `3`, discrete — with a surjective continuous
 `ℤ₃`-algebra map `R → kk` whose kernel is the (open) maximal ideal, and
@@ -200,7 +202,8 @@ theorem exists_residue_package {R : Type u} [CommRing R]
   rw [Module.rank_baseChange, hV]
   simp
 
-/-- **Degenerate flatness over the trivial quotient** (sorry node): a Galois
+/-- **Degenerate flatness over the trivial quotient** (PROVEN; label
+corrected 2026-07-25): a Galois
 representation on a subsingleton module has a flat prolongation at `3` — the
 trivial group scheme `Spec 𝒪ᵥ` works, its geometric points being the single
 algebra map matched with the single element of the space. -/
@@ -249,7 +252,8 @@ theorem hasFlatProlongationAt_of_subsingleton {A' : Type*} [CommRing A']
         (Algebra.TensorProduct.rid Ov Kv Kv).toAlgHom), ?_⟩
       exact Subsingleton.elim _ y
 
-/-- **The residual space identification** (sorry node): the double base
+/-- **The residual space identification** (PROVEN; label corrected
+2026-07-25): the double base
 change `(kk ⧸ ⊥) ⊗_kk (kk ⊗_R V)` is `Γ ℚ₃`-equivariantly isomorphic to
 `(R ⧸ 𝔪) ⊗_R V` — the quotient-by-`⊥` collapses, and `kk ≅ R ⧸ 𝔪` along the
 (surjective, kernel-`𝔪`) residue map transports the coefficients. Content:
@@ -367,7 +371,8 @@ theorem isFlatAt_baseChange_residue {R : Type u} [CommRing R]
       Module.subsingleton (kk ⧸ (⊤ : Ideal kk)) _
     exact hasFlatProlongationAt_of_subsingleton _
 
-/-- **Tameness at `2` transfers to the residue field** (sorry node): the
+/-- **Tameness at `2` transfers to the residue field** (PROVEN; label
+corrected 2026-07-25): the
 rank-1 tame quadratic quotient of `ρ` at `2` base-changes to one for the
 residual representation. Content: `π ⊗ 1 : kk ⊗ V → kk ⊗ R ≅ kk` and the
 pushforward of `δ` along the residue map; the three conditions transfer
@@ -1960,7 +1965,9 @@ theorem discr_factorization_le_of_forall_inertia_card_dvd
     _ ≤ b * Ideal.ramificationIdx' (Ideal.span {((p : ℕ) : ℤ)}) Q :=
         hab _ hem
 
-/-- **The global Kummer core over `ℚ(ζ₃)`, subgroup form** (sorry node
+/-- **The global Kummer core over `ℚ(ζ₃)`, subgroup form** (PROVEN;
+label corrected 2026-07-25 — proven by the degree-`6` Minkowski
+contradiction, commit `8fe04b3`
 — Serre's unit computation, Duke 1987, §5.4, in its CFT-free
 discriminant packaging): an open NORMAL subgroup `S ≤ Γ ℚ` contained
 in the cyclotomic kernel `ker ω`, with `ker ω ⧸ S` of exponent `3`
@@ -2839,7 +2846,8 @@ theorem omega_defect_vanishes_on_cyclotomicKernel
   exact cyclotomicKernel_defect_vanishes_of_local_conditions n d hd1 hdhom
     hdconj U hUopen hUnormal hUd hunr hthree g hg
 
-/-- **The ω-twisted cocycle vanishing** (sorry node — the arithmetic core
+/-- **The ω-twisted cocycle vanishing** (PROVEN; label corrected
+2026-07-25 — the arithmetic core
 of the ω-component; Serre, Duke 1987, §5.4,
 `sources/serre1987duke-ocr.txt`; Neukirch for the class-field inputs):
 the function `d : g ↦ f (ρ g w₀) - f w₀` has values in `𝔪ⁿ⁺¹` and is,
@@ -3729,7 +3737,8 @@ theorem natCard_quotient_maximalIdeal_two :
   rwa [hunder] at h
 
 open NumberField in
-/-- **Finite-level tame core at `2`** (sorry node — the arithmetic
+/-- **Finite-level tame core at `2`** (PROVEN; label corrected
+2026-07-25 — the arithmetic
 content of the tame stratum): a finite Galois subextension `N/ℚ₂` of
 `ℚ₂ᵃˡᵍ` whose Galois group is abelian of exponent `3` is unramified —
 the inertia subgroup of the maximal ideal of `𝒪_N` is trivial.
@@ -5038,7 +5047,8 @@ theorem trivial_component_defect_vanishes
   exact trivial_component_hom_vanishes V hV hρ kk hsurj π hπsurj hπequiv
     v₀ hv₀ w₀ hw₀π hw₀ne a ha c hc hcmul n f hf hfv₀ s hs hsA hhom
 
-/-- **The coboundary form of the one-level obstruction** (sorry node —
+/-- **The coboundary form of the one-level obstruction** (PROVEN; label
+corrected 2026-07-25 —
 the deep arithmetic core, Serre §5.4/Fontaine): for an `R`-linear
 functional `f` on `V` which is Galois-equivariant modulo `𝔪 ^ (n + 1)`,
 the defect `(g, v) ↦ f (ρ g v) - f v` — a `1`-cocycle on `Γ ℚ` valued
