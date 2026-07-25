@@ -13,7 +13,9 @@ Authors: Andrew Yang, Kevin Buzzard, Yaël Dillies
 
 import Fermat.FLT.Modularity.PatchingVendored.AdicTopology
 import Fermat.FLT.Modularity.PatchingVendored.Ultraproduct
-import Fermat.FLT.Modularity.PatchingVendored.DeformationLemmas
+-- VENDOR-NOTE: the FLT original imports `FLT.Deformations.Lemmas`; only the
+-- handful of declarations used here are vendored, inline, below.
+import Mathlib.Topology.Algebra.LinearTopology
 import Mathlib.CategoryTheory.Types.Basic
 import Mathlib.RingTheory.Filtration
 import Fermat.FLT.Modularity.PatchingVendored.InverseLimit
@@ -34,6 +36,12 @@ bounded rank: an ultraproduct (along a non-principal ultrafilter `F`) of
 the truncations `R i / m_i^k`.
 -/
 
+/-- VENDOR-INLINE (from `FLT/Deformations/Lemmas.lean`, the only declaration
+of that file consumed here): the underlying ring hom of a ring isomorphism
+is a local hom.  Needed by `PatchingAlgebra.mapEquiv` below. -/
+instance RingEquiv.isLocalHom_toRingHom {R S : Type*} [Semiring R] [Semiring S]
+    (e : R ≃+* S) : IsLocalHom e.toRingHom :=
+  ⟨fun x hx ↦ by convert hx.map e.symm; simp⟩
 
 variable (Λ : Type*) {ι : Type*} [CommRing Λ] (R : ι → Type*)
 variable [∀ i, CommRing (R i)] [∀ i, IsLocalRing (R i)] [∀ i, Algebra Λ (R i)]
