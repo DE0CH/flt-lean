@@ -4112,12 +4112,29 @@ stay surjective. That is a statement about the `R'`-lattice, not a formal
 consequence of the base-change identity, and it is the subring-descent
 step of Carayol's Théorème 1 for the local conditions.
 
-CAVEAT FOR A FUTURE OWNER, recorded rather than buried: should this turn
-out to be FALSE for the particular framing produced by
-`exists_framedGaloisRep_baseChange_traceSubring`, the repair is to
-STRENGTHEN that leaf — Carayol's frame may be chosen adapted to the tame
-filtration at `2`, the descent of the line being part of his argument —
-and NOT to weaken this statement. -/
+WELL-POSEDNESS — why quantifying over the output of the Rouquier–Nyssen
+leaf is harmless, and why the leaf may NOT be repaired by re-framing.
+The statement does not secretly depend on WHICH descent
+`exists_framedGaloisRep_baseChange_traceSubring` produced.
+
+* The tame clause is invariant under an `R'`-change of frame: if `π`
+  witnesses it for `F ρ' F⁻¹` with `F ∈ GL₂(R')`, then `π ∘ F` witnesses
+  it for `ρ'` — `π(F ρ'(g) v) = δ(g) π(F v)` is the same equation read at
+  `w = F v` — and surjectivity is preserved. So conjugating `ρ'` over `R'`
+  changes nothing, and in particular a "better `R'`-frame" is not a repair
+  strategy.
+* Any two descents are themselves `R'`-conjugate: that is Nyssen's
+  uniqueness for a residually absolutely irreducible pseudo-character.
+  Their framings then differ by an element of the centraliser of `D.ρ(G)`
+  in `GL₂(D.R)`, which is `D.R^×` by Schur plus absolute irreducibility,
+  and scaling a lattice by a unit does not change whether a line meets it
+  in a direct summand.
+
+Hence the leaf holds for every output of the Rouquier–Nyssen leaf or for
+none: a prover may fix whichever descent is convenient, and a prover who
+finds it false has found Carayol's descent itself incompatible with the
+tame filtration and should REPORT that rather than weaken this
+statement. -/
 theorem isTameAtTwo_of_baseChange_traceSubring (hℓ5 : 5 ≤ ℓ)
     {ρbar : GaloisRep ℚ k V}
     (D : HardlyRamifiedDeformation hℓOdd ρbar)
