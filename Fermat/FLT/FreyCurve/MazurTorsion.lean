@@ -911,11 +911,12 @@ order exactly `8`, `Q = 2P = (1, 1/4)` of order `4`, `T = 4P = (0,0)`;
 and the factorisation `(2n³+n⁴−1)² − 4n² = (n−1)(n+1)³(n²+1)(n²+2n−1)`
 underlying `sextic_of_param` was confirmed symbolically.
 
-**What is left.** Two elementary leaves, neither modular:
+**What is left.** ONE elementary leaf, not modular: `not_sextic_square`
+(a classical descent — see its docstring, which records the complete
+two-case argument and the one genuine mathlib gap it needs). The other,
 `exists_chain_coords` (pure `Affine.Point` plumbing, zero arithmetic
-content) and `not_sextic_square` (a classical descent — see its
-docstring, which records the complete two-case argument and the one
-genuine mathlib gap it needs).
+content), was PROVEN on 2026-07-25 from `exists_doubling_coords` and
+`Point.X_eq_iff`.
 -/
 
 namespace MazurSixteen
@@ -1063,26 +1064,72 @@ lemma sextic_of_short_chain {a b XR YR XP YP XQ YQ : ℚ}
       fun hc => hn1 (by linarith),
       sextic_of_param (by intro hc; exact hn1 (by linarith)) hξ0 (by linear_combination -h)⟩
 
-/-- **Coordinate data of the level-`16` doubling chain** (sorry leaf —
-pure mathlib `Affine.Point` plumbing, with NO arithmetic content).
+/-- **Coordinates of a nonzero affine point** (PROVEN — one `rcases`). -/
+lemma exists_pointCoords {W : WeierstrassCurve.Affine ℚ} (A : W.Point) (hA : A ≠ 0) :
+    ∃ x y, ∃ h : W.Nonsingular x y, A = Point.some x y h := by
+  rcases A with _ | ⟨x, y, h⟩
+  · exact absurd rfl hA
+  · exact ⟨x, y, h, rfl⟩
+
+/-- **Coordinate data of a single doubling step** (PROVEN — pure
+`Affine.Point` plumbing). If `A + A = B` with `B ≠ 0` and `B` has
+coordinates `(x', y')`, then `A` is affine with coordinates `(x, y)`, its
+tangent is defined (`2y + a₁x + a₃ ≠ 0`, i.e. `A` is not `2`-torsion), the
+tangent slope `l` satisfies the cleared slope equation, and the duplication
+formula lands on `x'`. This is the level-`16` analogue of
+`MazurFourTorsion.exists_halving_coords`, threaded so that the ABSCISSA of
+the doubled point is an input rather than an output — which is what lets the
+whole chain `R → P → Q → T` be extracted with consistent coordinates. -/
+lemma exists_doubling_coords {W : WeierstrassCurve.Affine ℚ} (A B : W.Point)
+    (hAB : A + A = B) (hB0 : B ≠ 0) {x' y' : ℚ} {hns' : W.Nonsingular x' y'}
+    (hBeq : B = Point.some x' y' hns') :
+    ∃ x y l, ∃ hns : W.Nonsingular x y,
+      A = Point.some x y hns ∧
+      2 * y + W.a₁ * x + W.a₃ ≠ 0 ∧
+      l * (2 * y + W.a₁ * x + W.a₃) = 3 * x ^ 2 + 2 * W.a₂ * x + W.a₄ - W.a₁ * y ∧
+      l ^ 2 + W.a₁ * l - W.a₂ - x - x = x' := by
+  rcases A with _ | ⟨x, y, hns⟩
+  · exact absurd (hAB.symm.trans (add_zero 0)) hB0
+  · -- `A` is not `2`-torsion: its double `B` is nonzero
+    have hy : y ≠ W.negY x y := fun h =>
+      hB0 (hAB.symm.trans (Point.add_self_of_Y_eq h))
+    have hsub : y - W.negY x y = 2 * y + W.a₁ * x + W.a₃ := by rw [negY]; ring
+    have hw : 2 * y + W.a₁ * x + W.a₃ ≠ 0 := by
+      rw [← hsub]; exact sub_ne_zero.mpr hy
+    have hadd := Point.add_self_of_Y_ne (h₁ := hns) hy
+    have hx' : W.addX x x (W.slope x x y y) = x' :=
+      (Point.some.inj (hadd.symm.trans (hAB.trans hBeq))).1
+    have hlm : W.slope x x y y * (2 * y + W.a₁ * x + W.a₃) =
+        3 * x ^ 2 + 2 * W.a₂ * x + W.a₄ - W.a₁ * y := by
+      rw [← hsub, slope_of_Y_ne rfl hy, div_mul_cancel₀ _ (sub_ne_zero.mpr hy)]
+    simp only [addX] at hx'
+    exact ⟨x, y, W.slope x x y y, hns, rfl, hw, hlm, hx'⟩
+
+/-- **Coordinate data of the level-`16` doubling chain** (PROVEN
+2026-07-25 — pure mathlib `Affine.Point` plumbing, with NO arithmetic
+content).
 
 Given `P` of order `8` and `R` with `2R = P` (so `R` has order `16`), set
-`Q = 2P` and `T = 2Q`, of orders `4` and `2`. The leaf asserts what the
+`Q = 2P` and `T = 2Q`, of orders `4` and `2`. The statement records what the
 `Affine.Point` API already knows about that chain, in coordinates: each of
 `R, P, Q` is an affine point; `θ = x(T)` is a root of the `2`-division
 cubic (because `T` is `2`-torsion); each doubling is witnessed by its
 tangent slope; `R` and `P` are not `2`-torsion; and none of
 `x(R), x(P), x(Q)` equals `θ`, with `x(P) ≠ x(Q)`.
 
-Every one of those follows from the orders alone, and the file already
-contains the pattern to prove them: `MazurFourTorsion.exists_halving_coords`
-does exactly this extraction for a `2`-torsion target, using
-`Point.add_self_of_Y_ne`, `Point.some.inj`, `slope_of_Y_ne` and
-`Point.neg_some`. The two extra ingredients are
+Every one of those follows from the orders alone. The chain is walked
+DOWNWARDS with `exists_doubling_coords` — `T`'s coordinates first (it is
+nonzero), then `Q`, `P`, `R` — so that the abscissa produced by each
+duplication formula is literally the abscissa of the next point, with no
+reconciliation step. The order bookkeeping is entirely
+`addOrderOf_dvd_iff_nsmul_eq_zero`: for `0 < n < 8` one has `n • P ≠ 0`,
+which gives `P ≠ 0`, `Q ≠ 0`, `T ≠ 0`, `3P ≠ 0`, while `8 • P = 0` gives
+`T + T = 0`. The separations are then read off through
 `WeierstrassCurve.Affine.Point.X_eq_iff` (equal abscissae ⟹ the points are
-equal or negatives — this is what converts the order bookkeeping into
-`x(R), x(P), x(Q) ≠ θ` and `x(P) ≠ x(Q)`) and the derivation
-`addOrderOf R = 16` from `2 • R = P` and `addOrderOf P = 8`. -/
+equal or negatives), using `-T = T` for the three comparisons against `θ`;
+`R = T` would force `P = 2R = 2T = 0`, `P = T` and `P = -Q` would force
+`3P = 0`, and `P = Q` or `Q = T` would force `P = 0` resp. `Q = 0`.
+Note `addOrderOf R = 16` is never needed: only `R + R = P ≠ 0`. -/
 theorem exists_chain_coords (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (P R : (E⁄ℚ).Point) (hP : addOrderOf P = 8) (hR : (2 : ℕ) • R = P) :
     ∃ θ xR yR lR xP yP lP xQ yQ lQ : ℚ,
@@ -1106,8 +1153,103 @@ theorem exists_chain_coords (E : WeierstrassCurve ℚ) [E.IsElliptic]
       lQ ^ 2 + (E⁄ℚ).a₁ * lQ - (E⁄ℚ).a₂ - xQ - xQ = θ ∧
       2 * yR + (E⁄ℚ).a₁ * xR + (E⁄ℚ).a₃ ≠ 0 ∧
       2 * yP + (E⁄ℚ).a₁ * xP + (E⁄ℚ).a₃ ≠ 0 ∧
-      xR ≠ θ ∧ xP ≠ θ ∧ xQ ≠ θ ∧ xP ≠ xQ :=
-  sorry
+      xR ≠ θ ∧ xP ≠ θ ∧ xQ ≠ θ ∧ xP ≠ xQ := by
+  have hRR : R + R = P := by rw [← hR, two_nsmul]
+  -- order bookkeeping: `n • P ≠ 0` for `0 < n < 8`, and `8 • P = 0`
+  have hord : ∀ n : ℕ, 0 < n → n < 8 → n • P ≠ 0 := by
+    intro n hn0 hn8 h
+    have hd : addOrderOf P ∣ n := addOrderOf_dvd_iff_nsmul_eq_zero.mpr h
+    rw [hP] at hd
+    exact absurd (Nat.le_of_dvd hn0 hd) (by omega)
+  have hP0 : P ≠ 0 := by
+    have h := hord 1 (by norm_num) (by norm_num)
+    rwa [one_nsmul] at h
+  have hQ0 : P + P ≠ 0 := by
+    have h := hord 2 (by norm_num) (by norm_num)
+    rwa [two_nsmul] at h
+  have h3P : P + P + P ≠ 0 := by
+    have h := hord 3 (by norm_num) (by norm_num)
+    rwa [show (3 : ℕ) • P = P + P + P by abel] at h
+  have hT0 : (P + P) + (P + P) ≠ 0 := by
+    have h := hord 4 (by norm_num) (by norm_num)
+    rwa [show (4 : ℕ) • P = (P + P) + (P + P) by abel] at h
+  have hT2 : ((P + P) + (P + P)) + ((P + P) + (P + P)) = 0 := by
+    rw [show ((P + P) + (P + P)) + ((P + P) + (P + P)) = (8 : ℕ) • P by abel, ← hP]
+    exact addOrderOf_nsmul_eq_zero P
+  -- separations along the chain, at the level of points
+  have hPQ1 : P ≠ P + P := by
+    intro h
+    exact hP0 (add_left_cancel (show P + 0 = P + P by rw [add_zero]; exact h)).symm
+  have hPQ2 : P ≠ -(P + P) := by
+    intro h
+    have h2 := eq_neg_iff_add_eq_zero.mp h
+    rw [← add_assoc] at h2
+    exact h3P h2
+  have hQT : P + P ≠ (P + P) + (P + P) := by
+    intro h
+    exact hQ0 (add_left_cancel
+      (show (P + P) + 0 = (P + P) + (P + P) by rw [add_zero]; exact h)).symm
+  have hPT : P ≠ (P + P) + (P + P) := by
+    intro h
+    have key : P + 0 = P + (P + P + P) := by
+      rw [add_zero, show P + (P + P + P) = (P + P) + (P + P) by abel]
+      exact h
+    exact h3P (add_left_cancel key).symm
+  have hRT : R ≠ (P + P) + (P + P) := by
+    intro h
+    exact hP0 (by rw [← hRR, h]; exact hT2)
+  -- coordinates of `T = 4P`, then of `Q = 2P`, of `P`, of `R`
+  obtain ⟨θ, u, hnsT, hTeq⟩ := exists_pointCoords _ hT0
+  obtain ⟨xQ, yQ, lQ, hnsQ, hQeq, _wQ, slQ, dxQ⟩ :=
+    exists_doubling_coords (P + P) ((P + P) + (P + P)) rfl hT0 hTeq
+  obtain ⟨xP, yP, lP, hnsP, hPeq, wP, slP, dxP⟩ :=
+    exists_doubling_coords P (P + P) rfl hQ0 hQeq
+  obtain ⟨xR, yR, lR, hnsR, hReq, wR, slR, dxR⟩ :=
+    exists_doubling_coords R P hRR hP0 hPeq
+  -- `T` is `2`-torsion, so its ordinate is fixed by `negY`
+  have hT2' : Point.some θ u hnsT + Point.some θ u hnsT = 0 := by rw [← hTeq]; exact hT2
+  have hnegT : -Point.some θ u hnsT = Point.some θ u hnsT := neg_eq_of_add_eq_zero_left hT2'
+  have hu : 2 * u + (E⁄ℚ).a₁ * θ + (E⁄ℚ).a₃ = 0 := by
+    have h := hnegT
+    rw [Point.neg_some] at h
+    have h2 := (Point.some.inj h).2
+    rw [negY] at h2
+    linear_combination -h2
+  -- the Weierstrass equations of the four points
+  have eT := hnsT.1
+  have eR := hnsR.1
+  have eP := hnsP.1
+  have eQ := hnsQ.1
+  rw [equation_iff] at eT eR eP eQ
+  -- `θ` is a root of the `2`-division cubic: `(2u + a₁θ + a₃)² = 0` after
+  -- clearing the equation at `(θ, u)`
+  have hcubic : 4 * θ ^ 3 + ((E⁄ℚ).a₁ ^ 2 + 4 * (E⁄ℚ).a₂) * θ ^ 2
+      + (2 * (E⁄ℚ).a₁ * (E⁄ℚ).a₃ + 4 * (E⁄ℚ).a₄) * θ
+      + ((E⁄ℚ).a₃ ^ 2 + 4 * (E⁄ℚ).a₆) = 0 := by
+    linear_combination (-4 : ℚ) * eT + (2 * u + (E⁄ℚ).a₁ * θ + (E⁄ℚ).a₃) * hu
+  -- equal abscissae force equality or negation of the points
+  have hRθ : xR ≠ θ := by
+    intro hx
+    rcases (Point.X_eq_iff (h₁ := hnsR) (h₂ := hnsT)).mp hx with h | h
+    · exact hRT (hReq.trans (h.trans hTeq.symm))
+    · exact hRT (hReq.trans ((h.trans hnegT).trans hTeq.symm))
+  have hPθ : xP ≠ θ := by
+    intro hx
+    rcases (Point.X_eq_iff (h₁ := hnsP) (h₂ := hnsT)).mp hx with h | h
+    · exact hPT (hPeq.trans (h.trans hTeq.symm))
+    · exact hPT (hPeq.trans ((h.trans hnegT).trans hTeq.symm))
+  have hQθ : xQ ≠ θ := by
+    intro hx
+    rcases (Point.X_eq_iff (h₁ := hnsQ) (h₂ := hnsT)).mp hx with h | h
+    · exact hQT (hQeq.trans (h.trans hTeq.symm))
+    · exact hQT (hQeq.trans ((h.trans hnegT).trans hTeq.symm))
+  have hPQ : xP ≠ xQ := by
+    intro hx
+    rcases (Point.X_eq_iff (h₁ := hnsP) (h₂ := hnsQ)).mp hx with h | h
+    · exact hPQ1 (hPeq.trans (h.trans hQeq.symm))
+    · exact hPQ2 (hPeq.trans (h.trans (congrArg Neg.neg hQeq).symm))
+  exact ⟨θ, xR, yR, lR, xP, yP, lP, xQ, yQ, lQ, hcubic, eR, eP, eQ,
+    slR, slP, slQ, dxR, dxP, dxQ, wR, wP, hRθ, hPθ, hQθ, hPQ⟩
 
 /-- **No rational square on the sextic model of `X_1(16)`** (sorry leaf —
 a classical descent, entirely elementary, with one genuine mathlib gap).
