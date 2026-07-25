@@ -470,18 +470,32 @@ constant `c'` cancels and the `τ_{⊖R'}`-shift turns the arguments into
 leaf 1 places `U`, `V` off `div g`, and the setup's nonvanishing
 hypotheses `hnzS`/`hnzPS` place `S`, `P⊕S` off `div f_Q`.
 
-STAGING (2026-07-25, re-cut): DECOMPOSED over TWO sorried inputs, both
-of them shallower than the leaf and one of them shared with leaf 3.
+STAGING (2026-07-25, re-cut then closed): DECOMPOSED over TWO inputs,
+both shallower than the leaf and one of them shared with leaf 3.  Only
+the second is still open.
 
-* the GENERIC identity, sorried inline: the existence of the pullback
-  constant `c'` with `f_Q∘[p] = c'·(g∘τ_{⊖R'})^p` **in the function
-  field `K`**, multiplied out as
+* the GENERIC identity, PROVEN inline (2026-07-25): the existence of the
+  pullback constant `c'` with `f_Q∘[p] = c'·(g∘τ_{⊖R'})^p` **in the
+  function field `K`**, multiplied out as
   `[p]^*(aQ)·τ_{⊖R'}^*(v)^p = c'·τ_{⊖R'}^*(a)^p·[p]^*(X − x_R)^p`.
-  This is the L4-7 multiplicity-one span comparison and nothing else:
-  it is the statement whose divisor-level form
-  `span_eq_pointIdeal_mul_of_pullback` already proves, and it never
-  mentions a point.  `ha`, `hcard`, `hval_*`, `hT`, `hPtor`, `hspan`,
-  `haQ`, `hnzS`, `hnzPS`, `hQR`, `hQRc` are the inputs of THAT step.
+  This is the L4-7 multiplicity-one span comparison and nothing else,
+  and it never mentions a point.  It is proven by comparing the two
+  sides' DIVISORS as fractional ideals and finding them equal, so the
+  ratio is a unit of `F[W]` and hence a nonzero constant
+  (`coordinateRing_isUnit_eq_const`).  The two divisors are computed by
+  the two transport bricks of `WeilPairingDescent.lean`:
+  `spanSingleton_pointEval_mul_fiberProd_pow` (the `[p]`-pullback of a
+  divisor is the multiplicity-one sum of its `p²`-fibres) applied to
+  `aQ` (divisor `p(Q⊕R) + p(⊖R)`) and to `X − x_R` (divisor
+  `(R) + (⊖R)`), and `spanSingleton_pointEval_translate` (the `τ_Q^*`
+  of a divisor is its `⊖Q`-translate) applied to `v = ∏(X − x_κ)` and
+  to `a`.  Since `p•(T'⊕R') = Q⊕R` and `p•R' = R`, the `[p]`-fibres of
+  `Q⊕R` and `R` are exactly the `R'`-translates of the `T'⊕κ` and `κ`
+  heads of `div a` and `div v`; the `⊖κ` tails are common to both sides
+  and cancel, as do the unit factors `J_O^{2p}` and `I'_{R'}^{2p³}`.
+  Nonvanishing of the two `[p]`-pullbacks comes from injectivity of
+  evaluation at `p•taut` (`pointEval_injective_of_forall_ne_constHom`
+  over `smul_taut_xCoord_ne_constHom`).
 * the SPECIALIZATION brick `exists_pointEval_specialization` above,
   applied eight times: at the two `p`-division points `S'` and `P'⊕S'`,
   for each of the four functions `[p]^*(aQ)`, `[p]^*(X − x_R)`,
@@ -549,7 +563,7 @@ theorem millerRatio_eval_pow_of_pullback {ι : Type*} [Fintype ι]
   -- ── the two generic points at which the substrate evaluates: the
   --    `[p]`-multiple `p•taut` (where `pointEval` realizes `z ↦ z∘[p]`)
   --    and the translate `(⊖R')⊕taut` (where it realizes `z ↦ z∘τ_{⊖R'}`)
-  obtain ⟨xp, yp, hpn, hptaut, -⟩ := exists_smul_tautPoint_eq (W := W) hΔ hp
+  obtain ⟨xp, yp, hpn, hptaut, hxrel⟩ := exists_smul_tautPoint_eq (W := W) hΔ hp
   obtain ⟨xnr, ynr, hnr, hptnr⟩ := exists_translate_some (W := W) hΔ (-R')
   have hp0 : constPoint W (0 : W.Point) + (p : ℤ) • tautPoint W hΔ =
       WeierstrassCurve.Affine.Point.some xp yp hpn := by
@@ -559,10 +573,9 @@ theorem millerRatio_eval_pow_of_pullback {ι : Type*} [Fintype ι]
       WeierstrassCurve.Affine.Point.some xnr ynr hnr := by
     rw [one_zsmul]
     exact hptnr
-  -- ── THE ANALYTIC SUB-LEAF (sorry), now stated GENERICALLY — no point
+  -- ── THE ANALYTIC SUB-LEAF (PROVEN below), stated GENERICALLY — no point
   --    occurs in it: `f_Q∘[p] = c'·(g∘τ_{⊖R'})^p` in `K`, multiplied out.
-  --    This is the L4-7 multiplicity-one span comparison
-  --    (`span_eq_pointIdeal_mul_of_pullback` is its divisor-level form):
+  --    This is the L4-7 multiplicity-one span comparison:
   --    `div(f_Q∘[p]) = p·[p]^*((Q⊕R) − (R)) = p·τ_{⊖R'}(div g)`, so the
   --    ratio has trivial divisor and is a constant
   --    (`coordinateRing_isUnit_eq_const`).
@@ -572,7 +585,195 @@ theorem millerRatio_eval_pow_of_pullback {ι : Type*} [Fintype ι]
             pointEval (constHom W) hnr.left (enumVertical W val) ^ p =
           constHom W c' * pointEval (constHom W) hnr.left a ^ p *
             pointEval (constHom W) hpn.left (CoordinateRing.XClass W xR) ^ p := by
-    sorry
+    -- `[p]^*` evaluation is injective (the `x`-coordinate of `p•taut` is
+    -- transcendental over the constants), so nothing nonzero evaluates to `0`
+    have hinjp : Function.Injective (pointEval (constHom W) hpn.left) :=
+      pointEval_injective_of_forall_ne_constHom hpn
+        (smul_taut_xCoord_ne_constHom hxrel)
+    have haQ0 : aQ ≠ 0 := fun h0 => hnzS (by rw [h0, map_zero])
+    have hX0 : CoordinateRing.XClass W xR ≠ 0 := CoordinateRing.XClass_ne_zero xR
+    have hv0 : enumVertical W val ≠ 0 := enumVertical_ne_zero W val
+    have hevaQ : pointEval (constHom W) hpn.left aQ ≠ 0 := fun h0 =>
+      haQ0 (hinjp (by rw [h0, map_zero]))
+    have hevX :
+        pointEval (constHom W) hpn.left (CoordinateRing.XClass W xR) ≠ 0 :=
+      fun h0 => hX0 (hinjp (by rw [h0, map_zero]))
+    -- ── a section of `[p]` on points
+    obtain ⟨sec, hsec⟩ :
+        ∃ s : W.Point → W.Point, ∀ Z : W.Point, (p : ℤ) • s Z = Z := by
+      choose s hs using exists_zsmul_eq (W := W) hΔ hp
+      exact ⟨s, hs⟩
+    -- ── the `[p]`-fiber product depends on its base point only through `[p]`
+    have hfib : ∀ T₁ T₂ : W.Point, (p : ℤ) • T₁ = (p : ℤ) • T₂ →
+        fiberProd W val T₁ = fiberProd W val T₂ := by
+      intro T₁ T₂ h
+      have hd : (p : ℤ) • (T₁ - T₂) = 0 := by rw [smul_sub, h, sub_self]
+      have h1 : (Finset.univ.val.map fun i => (T₁ - T₂) + val i) =
+          Finset.univ.val.map fun i => val i :=
+        map_add_torsion_eq hval_inj hval_tor hval_surj hd
+      have h2 := congrArg (Multiset.map (fun R : W.Point => T₂ + R)) h1
+      simp only [Multiset.map_map, Function.comp_apply] at h2
+      unfold fiberProd
+      rw [show (Finset.univ.val.map fun i => T₁ + val i) =
+        Finset.univ.val.map fun i => T₂ + (T₁ - T₂ + val i) from
+          Multiset.map_congr rfl fun i _ => by abel, h2]
+    -- ── the affine divisors `div aQ = p(Q⊕R) + p(⊖R)` and
+    --    `div (X − x_R) = (R) + (⊖R)` feeding the pullback brick
+    have hDaQ : Ideal.span {aQ} =
+        ((Multiset.replicate p (WeierstrassCurve.Affine.Point.some xQR yQR hQR) +
+          Multiset.replicate p
+            (-(WeierstrassCurve.Affine.Point.some xR yR hR) : W.Point)).map
+          (pointIdeal W)).prod := by
+      rw [Multiset.map_add, Multiset.prod_add, Multiset.map_replicate,
+        Multiset.map_replicate, Multiset.prod_replicate, Multiset.prod_replicate,
+        haQ, pointIdeal_some, WeierstrassCurve.Affine.Point.neg_some,
+        pointIdeal_some]
+    have hDaQ0 : (0 : W.Point) ∉
+        Multiset.replicate p (WeierstrassCurve.Affine.Point.some xQR yQR hQR) +
+          Multiset.replicate p
+            (-(WeierstrassCurve.Affine.Point.some xR yR hR) : W.Point) := by
+      intro h
+      rcases Multiset.mem_add.mp h with h | h
+      · exact WeierstrassCurve.Affine.Point.some_ne_zero hQR
+          (Multiset.eq_of_mem_replicate h).symm
+      · exact WeierstrassCurve.Affine.Point.some_ne_zero hR
+          (neg_eq_zero.mp (Multiset.eq_of_mem_replicate h).symm)
+    have hDX : Ideal.span {CoordinateRing.XClass W xR} =
+        ((WeierstrassCurve.Affine.Point.some xR yR hR ::ₘ
+          {(-(WeierstrassCurve.Affine.Point.some xR yR hR) : W.Point)}).map
+          (pointIdeal W)).prod := by
+      rw [Multiset.map_cons, Multiset.prod_cons, Multiset.map_singleton,
+        Multiset.prod_singleton, pointIdeal_some,
+        WeierstrassCurve.Affine.Point.neg_some, pointIdeal_some]
+      calc Ideal.span {CoordinateRing.XClass W xR}
+          = CoordinateRing.XIdeal W xR := rfl
+        _ = CoordinateRing.XYIdeal W xR (Polynomial.C (W.negY xR yR)) *
+            CoordinateRing.XYIdeal W xR (Polynomial.C yR) :=
+          (CoordinateRing.XYIdeal_neg_mul hR).symm
+        _ = CoordinateRing.XYIdeal W xR (Polynomial.C yR) *
+            CoordinateRing.XYIdeal W xR (Polynomial.C (W.negY xR yR)) :=
+          mul_comm _ _
+    have hDX0 : (0 : W.Point) ∉ (WeierstrassCurve.Affine.Point.some xR yR hR ::ₘ
+        {(-(WeierstrassCurve.Affine.Point.some xR yR hR) : W.Point)}) := by
+      intro h
+      rcases Multiset.mem_cons.mp h with h | h
+      · exact WeierstrassCurve.Affine.Point.some_ne_zero hR h.symm
+      · exact WeierstrassCurve.Affine.Point.some_ne_zero hR
+          (neg_eq_zero.mp (Multiset.mem_singleton.mp h).symm)
+    -- ── L4-7 multiplicity-one pullback: the divisors of `[p]^*aQ` and of
+    --    `[p]^*(X − x_R)`, as fiber products over `E[p]`
+    have hA := spanSingleton_pointEval_mul_fiberProd_pow (val := val) hΔ hp
+      hval_inj hval_tor hval_surj hcard hptaut hsec haQ0 hevaQ hDaQ0 hDaQ
+    have hB := spanSingleton_pointEval_mul_fiberProd_pow (val := val) hΔ hp
+      hval_inj hval_tor hval_surj hcard hptaut hsec hX0 hevX hDX0 hDX
+    simp only [Multiset.map_add, Multiset.prod_add, Multiset.map_replicate,
+      Multiset.prod_replicate, Multiset.card_add, Multiset.card_replicate,
+      Multiset.map_cons, Multiset.prod_cons, Multiset.map_singleton,
+      Multiset.prod_singleton, Multiset.card_cons, Multiset.card_singleton]
+      at hA hB
+    -- `p•(T'⊕R') = Q⊕R` and `p•R' = R`, so the two fibers are the ones the
+    -- `⊖R'`-translated `div g` will produce
+    rw [hfib (sec (WeierstrassCurve.Affine.Point.some xQR yQR hQR)) (T' + R')
+        (by rw [hsec, smul_add, hT, hR'p]; exact hQRc)] at hA
+    rw [hfib (sec (WeierstrassCurve.Affine.Point.some xR yR hR)) R'
+        (by rw [hsec, hR'p])] at hB
+    -- ── L4-8 translation transport: the divisors of `τ_{⊖R'}^*(v)` and
+    --    `τ_{⊖R'}^*(a)`, i.e. the `R'`-translates of `div v` and `div a`
+    have hC := spanSingleton_pointEval_translate (W := W) hΔ hptnr hv0
+      (span_enumVertical (W := W) val)
+    have hD := spanSingleton_pointEval_translate (W := W) hΔ hptnr ha hspan
+    rw [neg_neg] at hC hD
+    simp only [Multiset.map_add, Multiset.prod_add, Multiset.card_add,
+      Multiset.card_map, Multiset.map_map, Function.comp_apply] at hC hD
+    -- the `T'⊕κ` and `κ` heads of those translates are exactly the fibers
+    -- of `Q⊕R` and of `R`; the `⊖κ` tails are common to both and cancel
+    have hfibR' : fiberProd W val R' =
+        (Finset.univ.val.map fun i =>
+          (pointIdeal' W (val i - -R') :
+            FractionalIdeal W.CoordinateRing⁰ W.FunctionField)).prod := by
+      unfold fiberProd
+      rw [Multiset.map_map]
+      refine congrArg Multiset.prod (Multiset.map_congr rfl fun i _ => ?_)
+      show (pointIdeal' W (R' + val i) :
+          FractionalIdeal W.CoordinateRing⁰ W.FunctionField) =
+        (pointIdeal' W (val i - -R') :
+          FractionalIdeal W.CoordinateRing⁰ W.FunctionField)
+      rw [show R' + val i = val i - -R' from by abel]
+    have hfibTR' : fiberProd W val (T' + R') =
+        (Finset.univ.val.map fun i =>
+          (pointIdeal' W (T' + val i - -R') :
+            FractionalIdeal W.CoordinateRing⁰ W.FunctionField)).prod := by
+      unfold fiberProd
+      rw [Multiset.map_map]
+      refine congrArg Multiset.prod (Multiset.map_congr rfl fun i _ => ?_)
+      show (pointIdeal' W (T' + R' + val i) :
+          FractionalIdeal W.CoordinateRing⁰ W.FunctionField) =
+        (pointIdeal' W (T' + val i - -R') :
+          FractionalIdeal W.CoordinateRing⁰ W.FunctionField)
+      rw [show T' + R' + val i = T' + val i - -R' from by abel]
+    rw [← hfibR'] at hC
+    rw [← hfibTR'] at hD
+    rw [show (Finset.univ : Finset ι).val.card = Fintype.card ι from rfl] at hC hD
+    -- ── the two sides have the SAME divisor: cancelling the unit factors
+    --    `J_O^{2p}` and `I'_{R'}^{2p³}` leaves an equality of principal
+    --    fractional ideals, hence a nonzero constant ratio `c'`
+    have hu : IsUnit ((fiberProd W val (sec 0)) ^ (p + p) *
+        ((pointIdeal' W R' :
+          FractionalIdeal W.CoordinateRing⁰ W.FunctionField) ^
+            (Fintype.card ι + Fintype.card ι)) ^ p) :=
+      ((isUnit_prod_coe_pointIdeal' _).pow _).mul
+        (((pointIdeal' W R').isUnit.pow _).pow _)
+    have hfrac : FractionalIdeal.spanSingleton W.CoordinateRing⁰
+          (pointEval (constHom W) hnr.left a ^ p *
+            pointEval (constHom W) hpn.left (CoordinateRing.XClass W xR) ^ p) =
+        FractionalIdeal.spanSingleton W.CoordinateRing⁰
+          (pointEval (constHom W) hpn.left aQ *
+            pointEval (constHom W) hnr.left (enumVertical W val) ^ p) := by
+      simp only [← FractionalIdeal.spanSingleton_mul_spanSingleton,
+        ← FractionalIdeal.spanSingleton_pow]
+      refine hu.mul_right_cancel ?_
+      calc FractionalIdeal.spanSingleton W.CoordinateRing⁰
+              (pointEval (constHom W) hnr.left a) ^ p *
+            FractionalIdeal.spanSingleton W.CoordinateRing⁰
+              (pointEval (constHom W) hpn.left (CoordinateRing.XClass W xR)) ^ p *
+            ((fiberProd W val (sec 0)) ^ (p + p) *
+              ((pointIdeal' W R' :
+                FractionalIdeal W.CoordinateRing⁰ W.FunctionField) ^
+                  (Fintype.card ι + Fintype.card ι)) ^ p)
+          = (FractionalIdeal.spanSingleton W.CoordinateRing⁰
+                (pointEval (constHom W) hnr.left a) *
+              (pointIdeal' W R' :
+                FractionalIdeal W.CoordinateRing⁰ W.FunctionField) ^
+                (Fintype.card ι + Fintype.card ι)) ^ p *
+            (FractionalIdeal.spanSingleton W.CoordinateRing⁰
+                (pointEval (constHom W) hpn.left (CoordinateRing.XClass W xR)) *
+              (fiberProd W val (sec 0)) ^ (1 + 1)) ^ p := by ring
+        _ = FractionalIdeal.spanSingleton W.CoordinateRing⁰
+                (pointEval (constHom W) hpn.left aQ) *
+              (fiberProd W val (sec 0)) ^ (p + p) *
+            (FractionalIdeal.spanSingleton W.CoordinateRing⁰
+                (pointEval (constHom W) hnr.left (enumVertical W val)) *
+              (pointIdeal' W R' :
+                FractionalIdeal W.CoordinateRing⁰ W.FunctionField) ^
+                (Fintype.card ι + Fintype.card ι)) ^ p := by
+            rw [hD, ← hB, ← hA, hC]
+            ring
+        _ = FractionalIdeal.spanSingleton W.CoordinateRing⁰
+              (pointEval (constHom W) hpn.left aQ) *
+            FractionalIdeal.spanSingleton W.CoordinateRing⁰
+              (pointEval (constHom W) hnr.left (enumVertical W val)) ^ p *
+            ((fiberProd W val (sec 0)) ^ (p + p) *
+              ((pointIdeal' W R' :
+                FractionalIdeal W.CoordinateRing⁰ W.FunctionField) ^
+                  (Fintype.card ι + Fintype.card ι)) ^ p) := by ring
+    obtain ⟨z, hz⟩ := FractionalIdeal.spanSingleton_eq_spanSingleton.mp hfrac
+    obtain ⟨c, -, hcz⟩ := coordinateRing_isUnit_eq_const z.isUnit
+    refine ⟨c, ?_⟩
+    rw [← hz, Units.smul_def, hcz, Algebra.smul_def,
+      show algebraMap W.CoordinateRing W.FunctionField
+          (CoordinateRing.mk W (Polynomial.C (Polynomial.C c))) =
+        constHom W c from rfl]
+    ring
   -- ── PROVEN glue 1: reading the generic identity at a `p`-division
   --    point `Z`, whose `[p]`-image is `Zp` and whose `⊖R'`-translate is
   --    `Zr`.  Eight applications of the specialization brick clear the
