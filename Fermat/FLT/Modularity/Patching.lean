@@ -4330,6 +4330,18 @@ development at `S`, worked out but not yet written:
   then FREE: `PatchingVendored/AdicTopology.lean` carries the instance
   "a profinite Noetherian ring has the `𝔪`-adic topology", so the
   product topology need never be compared with the adic one by hand.
+  This was CHECKED against the pin on 2026-07-25: with
+  `open scoped MvPowerSeries.WithPiTopology`, the goal
+  `IsLocalRing.IsAdicTopology (MvPowerSeries (Fin q) ℤ_[p])` closes by
+  `infer_instance` from `[IsNoetherianRing (MvPowerSeries (Fin q) ℤ_[p])]`
+  alone, after the two `inferInstanceAs` steps that unfold
+  `MvPowerSeries (Fin q) ℤ_[p]` to `(Fin q →₀ ℕ) → ℤ_[p]` for
+  `CompactSpace` and `TotallyDisconnectedSpace`.  Gotcha: the latter
+  needs `Mathlib.Topology.MetricSpace.Ultra.TotallySeparated` and
+  `Mathlib.Topology.Connected.TotallyDisconnected` imported (the route
+  is `IsUltrametricDist ℤ_[p] → TotallySeparatedSpace →
+  TotallyDisconnectedSpace`, then `Pi.totallyDisconnectedSpace`);
+  without them synthesis fails with no hint of the cause.
   `Algebra.TopologicallyFG ℤ Λ` holds because `ℤ`-adjoining the
   variables is dense (`ℤ` is dense in `ℤ_[p]`).
 * `ι := ℕ`, `F :=` any nonprincipal ultrafilter on `ℕ`;
