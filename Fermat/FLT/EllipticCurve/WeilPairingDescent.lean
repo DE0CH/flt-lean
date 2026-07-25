@@ -3713,22 +3713,71 @@ theorem spanSingleton_pointEval_mul_fiberProd_pow {ι : Type*} [Fintype ι]
         fiberProd W val (sec 0) ^ Multiset.card D := by
   sorry
 
-/-- **L4-7 brick (sorry): the fiber-product map is injective on
-divisors.**  Distinct base points have disjoint `[p]`-fibers (if
-`p • S = R₁` and `p • S = R₂` then `R₁ = R₂`), each fiber is a set of
-`p²` distinct points, and at most one of them (the origin, in the fiber
-over `O`) has trivial point ideal; so `fiberProd val (sec R)` is a
-product of at least `p² − 1 ≥ 3` pairwise distinct maximal ideals, and
-these supports are pairwise disjoint as `R` varies.  Unique
-factorization of fractional ideals over the Dedekind domain `F[W]`
-therefore recovers the multiset `D` from `∏_{R ∈ D} fiberProd val
-(sec R)`.
+/-- **L4-7 substrate brick (sorry): point-adic multiplicities on the
+unit fractional ideals of `F[W]`.**  For a nonsingular affine
+Weierstrass curve (`W.Δ ≠ 0`) over an algebraically closed field there
+is an integer-valued *multiplicity* `mult S` — one for every affine
+point `S ≠ O` — on the fractional ideals of `F[W]`, additive on
+products of unit (equivalently, invertible) fractional ideals and
+normalized so that the point ideal of `S` has multiplicity one while
+the point ideal of every other point has multiplicity zero.  This is
+the exponent of the maximal ideal `pointIdeal W S` in the unique
+factorization of an invertible fractional ideal; it is the only input
+the fiber-counting brick `fiberProd_prod_inj` needs from the Dedekind
+property of `F[W]`.
 
-Proof plan: read off the multiplicity of the maximal ideal
-`pointIdeal W S` on both sides for each affine `S` (Dedekind
-factorization); it is `Multiset.count (p • S) D` on the side of `D`,
-so `count R D₁ = count R D₂` for every `R` in the image of `[p]`,
-which is every point (`exists_zsmul_eq`). -/
+Proof plan: `W.Δ ≠ 0` makes the affine curve smooth, so `F[W]` is a
+Dedekind domain — noetherian (a finite `F[X]`-algebra, mathlib's
+`CoordinateRing.instModuleFinite`-style presentation), of dimension one
+(a nonzero prime of a one-dimensional affine domain is maximal), and
+integrally closed (regular at every point since `Δ ≠ 0`).  `F` being
+algebraically closed, the weak Nullstellensatz identifies the maximal
+ideals of `F[X, Y]/⟨W⟩` with the affine points of `W`: `pointIdeal W S`
+is maximal for `S ≠ O` because
+`CoordinateRing.quotientXYIdealEquiv` exhibits `F[W]/pointIdeal W S ≃ F`,
+and distinct points give distinct ideals since `pointIdeal W S` cuts
+out exactly `S`.  Take `mult S I` to be the `(pointIdeal W S)`-adic
+valuation of `I` (`IsDedekindDomain.HeightOneSpectrum.valuation`, or
+equivalently the multiplicity of `pointIdeal W S` in the factorization
+of `I` as a `FractionalIdeal`): it is a group homomorphism on the units
+of the fractional-ideal monoid, sends `pointIdeal' W S` to `1`, sends
+`pointIdeal' W R` for an affine `R ≠ S` to `0` (distinct maximal
+ideals), and sends `pointIdeal' W O = 1` to `0`. -/
+theorem exists_pointMult (hΔ : W.Δ ≠ 0) :
+    ∃ mult : W.Point → FractionalIdeal W.CoordinateRing⁰ W.FunctionField → ℤ,
+      (∀ (S : W.Point)
+          (I J : FractionalIdeal W.CoordinateRing⁰ W.FunctionField),
+          IsUnit I → IsUnit J → mult S (I * J) = mult S I + mult S J) ∧
+      (∀ S : W.Point, S ≠ 0 →
+        mult S (pointIdeal' W S :
+          FractionalIdeal W.CoordinateRing⁰ W.FunctionField) = 1) ∧
+      (∀ S R : W.Point, S ≠ 0 → R ≠ S →
+        mult S (pointIdeal' W R :
+          FractionalIdeal W.CoordinateRing⁰ W.FunctionField) = 0) := by
+  sorry
+
+/-- **L4-7 brick (PROVEN over `exists_pointMult`): the fiber-product
+map is injective on divisors.**  Distinct base points have disjoint
+`[p]`-fibers (if `p • S = R₁` and `p • S = R₂` then `R₁ = R₂`), each
+fiber is a set of `p²` distinct points, and at most one of them (the
+origin, in the fiber over `O`) has trivial point ideal; so
+`fiberProd val (sec R)` is a product of at least `p² − 1 ≥ 3` pairwise
+distinct maximal ideals, and these supports are pairwise disjoint as
+`R` varies.  Unique factorization of fractional ideals over the
+Dedekind domain `F[W]` therefore recovers the multiset `D` from
+`∏_{R ∈ D} fiberProd val (sec R)`.
+
+The formalized proof reads off the multiplicity `mult S`
+(`exists_pointMult`) of the maximal ideal `pointIdeal W S` on both
+sides, for each affine `S ≠ O`.  Because `i ↦ T + val i` is injective
+with image the whole `[p]`-fiber through `T`, the fiber product
+contributes `mult S (fiberProd val T) = 1` when `p • S = p • T` and `0`
+otherwise; summing over the multiset gives
+`mult S (∏_{R ∈ D} fiberProd val (sec R)) = Multiset.count (p • S) D`.
+So `count R D₁ = count R D₂` for every `R` of the form `p • S` with
+`S ≠ O` — which is every point, since `[p]` is surjective
+(`exists_zsmul_eq`) and `E[p]` contains a nonzero point (`#E[p] = p²`),
+available as a nonzero preimage of `O`. -/
 theorem fiberProd_prod_inj {ι : Type*} [Fintype ι] {val : ι → W.Point}
     (hΔ : W.Δ ≠ 0) (hp : (p : F) ≠ 0)
     (hval_inj : Function.Injective val)
@@ -3740,7 +3789,118 @@ theorem fiberProd_prod_inj {ι : Type*} [Fintype ι] {val : ι → W.Point}
     (h : (D₁.map fun R => fiberProd W val (sec R)).prod =
       (D₂.map fun R => fiberProd W val (sec R)).prod) :
     D₁ = D₂ := by
-  sorry
+  classical
+  obtain ⟨mult, hmul, hself, hother⟩ := exists_pointMult (W := W) hΔ
+  -- ── `mult S` kills the trivial unit fractional ideal
+  have hone : ∀ S : W.Point, mult S 1 = 0 := by
+    intro S
+    have h1 := hmul S 1 1 isUnit_one isUnit_one
+    rw [one_mul] at h1
+    omega
+  -- ── `mult S` of a point-ideal product counts the copies of `S`
+  have hcountM : ∀ S : W.Point, S ≠ 0 → ∀ M : Multiset W.Point,
+      mult S ((M.map fun R =>
+        (pointIdeal' W R :
+          FractionalIdeal W.CoordinateRing⁰ W.FunctionField)).prod) =
+        (Multiset.count S M : ℤ) := by
+    intro S hS M
+    induction M using Multiset.induction with
+    | empty => simpa using hone S
+    | cons R M ih =>
+      have hR : mult S (pointIdeal' W R :
+            FractionalIdeal W.CoordinateRing⁰ W.FunctionField) =
+          (if S = R then (1 : ℤ) else 0) := by
+        by_cases hRS : S = R
+        · subst hRS
+          rw [hself S hS, if_pos rfl]
+        · rw [hother S R hS fun hc => hRS hc.symm, if_neg hRS]
+      rw [Multiset.map_cons, Multiset.prod_cons,
+        hmul S _ _ (pointIdeal' W R).isUnit (isUnit_prod_coe_pointIdeal' M),
+        ih, Multiset.count_cons, hR]
+      split_ifs with hRS
+      · push_cast
+        ring
+      · push_cast
+        ring
+  -- ── the fiber products are unit fractional ideals
+  have hufib : ∀ T : W.Point, IsUnit (fiberProd W val T) := by
+    intro T
+    exact isUnit_prod_coe_pointIdeal' _
+  have huprod : ∀ D : Multiset W.Point,
+      IsUnit ((D.map fun R => fiberProd W val (sec R)).prod) := by
+    intro D
+    refine Multiset.prod_induction _ _ (fun a b ha hb => ha.mul hb) isUnit_one ?_
+    intro x hx
+    obtain ⟨R, -, rfl⟩ := Multiset.mem_map.mp hx
+    exact hufib _
+  -- ── `mult S` of a fiber product: `1` exactly on the fiber through `S`
+  have hfib : ∀ S T : W.Point, S ≠ 0 →
+      mult S (fiberProd W val T) =
+        (if (p : ℤ) • S = (p : ℤ) • T then (1 : ℤ) else 0) := by
+    intro S T hS
+    have hmem : S ∈ (Finset.univ.val.map fun i => T + val i) ↔
+        (p : ℤ) • S = (p : ℤ) • T := by
+      constructor
+      · intro hin
+        obtain ⟨i, -, hi⟩ := Multiset.mem_map.mp hin
+        rw [← hi, smul_add, hval_tor i, add_zero]
+      · intro hpS
+        obtain ⟨i, hi⟩ := hval_surj (S - T) (by rw [smul_sub, hpS, sub_self])
+        exact Multiset.mem_map.mpr
+          ⟨i, Finset.mem_val.mpr (Finset.mem_univ i), by rw [hi]; abel⟩
+    have hunf : fiberProd W val T =
+        ((Finset.univ.val.map fun i => T + val i).map fun R =>
+          (pointIdeal' W R :
+            FractionalIdeal W.CoordinateRing⁰ W.FunctionField)).prod := rfl
+    rw [hunf, hcountM S hS]
+    by_cases hpST : (p : ℤ) • S = (p : ℤ) • T
+    · have hnd : (Finset.univ.val.map fun i => T + val i).Nodup :=
+        Multiset.Nodup.map (fun i j hij => hval_inj (add_left_cancel hij))
+          Finset.univ.nodup
+      simp [hpST, Multiset.count_eq_one_of_mem hnd (hmem.mpr hpST)]
+    · rw [if_neg hpST]
+      exact_mod_cast Multiset.count_eq_zero_of_notMem fun hc => hpST (hmem.mp hc)
+  -- ── `mult S` of the whole product counts the copies of `p • S`
+  have hbig : ∀ S : W.Point, S ≠ 0 → ∀ D : Multiset W.Point,
+      mult S ((D.map fun R => fiberProd W val (sec R)).prod) =
+        (Multiset.count ((p : ℤ) • S) D : ℤ) := by
+    intro S hS D
+    induction D using Multiset.induction with
+    | empty => simpa using hone S
+    | cons R D ih =>
+      rw [Multiset.map_cons, Multiset.prod_cons,
+        hmul S _ _ (hufib (sec R)) (huprod D), ih, hfib S (sec R) hS,
+        Multiset.count_cons]
+      simp only [hsec]
+      split_ifs with hc
+      · push_cast
+        ring
+      · push_cast
+        ring
+  -- ── a nonzero `p`-torsion point exists, since `#E[p] = p² > 1`
+  obtain ⟨i₀, hi₀⟩ := hval_surj 0 (smul_zero _)
+  have h1lt : 1 < Fintype.card ι := by
+    have hp2 : 2 ≤ p := (Fact.out : p.Prime).two_le
+    have h4 : 2 ^ 2 ≤ p ^ 2 := Nat.pow_le_pow_left hp2 2
+    rw [hcard]
+    exact lt_of_lt_of_le (by norm_num) h4
+  obtain ⟨i₁, hi₁⟩ := Fintype.exists_ne_of_one_lt_card h1lt i₀
+  have hval_ne : val i₁ ≠ 0 := fun h0 => hi₁ (hval_inj (h0.trans hi₀.symm))
+  -- ── every point is `p • S` for some NONZERO `S`
+  have hpre : ∀ R : W.Point, ∃ S : W.Point, S ≠ 0 ∧ (p : ℤ) • S = R := by
+    intro R
+    obtain ⟨S, hS⟩ := exists_zsmul_eq (W := W) hΔ hp R
+    by_cases hS0 : S = 0
+    · refine ⟨val i₁, hval_ne, ?_⟩
+      rw [hval_tor i₁, ← hS, hS0, smul_zero]
+    · exact ⟨S, hS0, hS⟩
+  -- ── compare the two multisets count by count
+  refine Multiset.ext.mpr fun R => ?_
+  obtain ⟨S, hS0, hS⟩ := hpre R
+  have h₁ := hbig S hS0 D₁
+  have h₂ := hbig S hS0 D₂
+  rw [h, h₂, hS] at h₁
+  exact_mod_cast h₁.symm
 
 /-- **L4-7 (PROVEN over the three fiber bricks): multiplicity-one
 `[p]^*`-comparison — a divisor relation between pullbacks descends to
