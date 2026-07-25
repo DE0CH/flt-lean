@@ -84,6 +84,31 @@ Then `SendMessage` resumes them normally (verified 2026-07-23, 13/13 resumed).
 The slug for this project is `-home-chend-flt-lean`; the current session id is
 the uuid in the scratchpad path in the system prompt.
 
+## The other reason an agent needs resuming: it stranded itself
+
+Distinct from a kill. The agent ends a turn saying some version of *"I'll stop
+polling and let the poller / `Monitor` / `EXIT=` marker wake me"* — and nothing
+is tracking that work, so nothing ever does. It reports as **completed** with a
+result that reads like a progress note rather than a final report. The
+task-notification is the tell: it fires *because* the agent has no live
+background children.
+
+Resume it the same transparent way, then — as a **separate** message, not as
+narration wrapped around the resume — state the correct mechanism:
+
+> Only a Bash call issued with `run_in_background: true` wakes you when it
+> finishes. A remote `nohup`/`setsid` detach, a completed `Monitor`, and a plain
+> foreground `ssh` that died at your turn boundary are indistinguishable from
+> your side — none of them notify you.
+>
+> Two correct shapes, no third: (1) run outlasts your turn → plain foreground
+> `ssh` with `run_in_background: true`, then end the turn; (2) you want to watch
+> it → poll in-turn until you hold the exit status.
+
+**Fix it once in `/home/chend/.flt-agent-doctrine.md`, not per-agent.** A
+recurring behavioural defect is a doctrine bug. Per-resume commentary reaches one
+agent, costs context, and risks contradicting what that agent already knows.
+
 ## Related
 
 - `.claude/skills/fleet-restart/SKILL.md` — restarting the orchestrator itself,
