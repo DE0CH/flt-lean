@@ -42,6 +42,21 @@
 # To bring it home: write "local" (or delete the file), stop the bridge, and
 # start flt-report-server@flt-lean-7 here instead.
 #
+# AUTHENTICATION — the non-obvious failure, diagnosed 2026-07-25. An interactive
+# shell has SSH_AUTH_SOCK pointing at a real ssh-agent holding the key, but
+# systemd --user exports SSH_AUTH_SOCK=/run/user/<uid>/gnupg/S.gpg-agent.ssh —
+# the GPG agent's ssh socket, a DIFFERENT agent that does not hold it. With
+# BatchMode=yes ssh then cannot authenticate and exits 255, so the unit
+# restart-loops roughly every 50s and no `cat` ever appears on the remote side.
+# The symptom is maddeningly indirect: writes to the local req.fifo succeed
+# (the bridge's own fd keeps a reader alive) but nothing ever comes back, and
+# clients see "response pipe EOF". The exact same command run by hand works,
+# because the hand shell has the right agent.
+# Fix: bypass agents entirely — IdentityAgent=none plus an explicit
+# passphraseless -i key, which is deterministic regardless of what any agent
+# exports. Verified: `env -u SSH_AUTH_SOCK ssh -o BatchMode=yes <host>` succeeds
+# with this key.
+#
 # ssh options and why each: -T (a pty would mangle the byte stream);
 # BatchMode (never prompt, fail fast); ServerAlive* (hold the channel open
 # through the multi-hour silences of a single-threaded elaboration).
@@ -60,11 +75,14 @@ Environment=PATH=/home/chend/.elan/bin:/home/chend/homebrew/bin:/usr/local/bin:/
 # Own FIFOs must exist locally; clear the client-side session marker so the next
 # client performs the LSP handshake against the (possibly restarted) remote.
 ExecStartPre=/bin/sh -c 'mkdir -p .report-server && rm -f .report-server/state.json && for f in req resp; do [ -p .report-server/$f.fifo ] || { rm -f .report-server/$f.fifo; mkfifo .report-server/$f.fifo; }; done'
-ExecStart=/bin/sh -c 'h=$(cat %h/.flt-worker-host/%i 2>/dev/null | tr -d " \\t\\r\\n"); \
-    [ -n "$h" ] && [ "$h" != local ] || { echo "flt-report-bridge@%i: no remote host in %h/.flt-worker-host/%i" >&2; exit 1; }; \
-    exec ssh -T -o BatchMode=yes -o ServerAliveInterval=30 -o ServerAliveCountMax=1000 "$h" \
-        "cd %i/.report-server && { cat > req.fifo & exec cat < resp.fifo; }"' \
-    0<> .report-server/req.fifo 1<> .report-server/resp.fifo
+# NOTE ON THE REDIRECTIONS, learned the hard way 2026-07-25: systemd does NOT
+# parse shell redirections in ExecStart — it splits the command line itself. So
+# `0<> ... 1<> ...` MUST live INSIDE the quoted `sh -c` string, where sh performs
+# them (this is exactly what flt-report-server@.service does). Putting them
+# outside the quotes silently passes them as ignored argv to sh, the ssh
+# inherits systemd's stdin/stdout, nothing ever reads the local req.fifo, and
+# every client then fails with ENXIO ("No such device or address").
+ExecStart=/usr/bin/python3 %h/flt-lean/flt-report-bridge.py %i
 Restart=always
 RestartSec=3
 
