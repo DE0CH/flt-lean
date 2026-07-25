@@ -59,7 +59,7 @@ owners adding different leaves touch different lines, and git merges
 them without a human. Do not re-wrap it.
 
 - `finite_setOf_isHardlyRamified_frames`
-- `exists_isStrictlyUniversalOnFrames_of_deformationCondition`
+- `exists_universalFrame_profinite_of_deformationCondition`
 - `hasFlatProlongationAt_of_pi_surjection`
 - `hasFlatProlongationAt_of_prod_injection`
 - `exists_cyclotomicCharacter_padicTwo_eq_two`
@@ -141,6 +141,19 @@ the surjectivity and minimality strata of the minimal presentation,
   `IsStrictlyUniversalOnFiniteFrames` now carry `[DiscreteTopology A]`,
   excluding exactly the non-Hausdorff objects nobody constructs, and H3
   passes straight through.
+
+  That arithmetic-free core was then CUT ONCE MORE (2026-07-26) along the
+  seam between CONSTRUCTING the pro-object and proving it NOETHERIAN, and
+  is now PROVEN as an assembly over
+  `exists_universalFrame_profinite_of_deformationCondition` (the
+  construction, over a merely PROFINITE ring) and the upstream pure
+  commutative algebra
+  `ProfiniteLocalNoetherian.isNoetherianRing_isAdic_of_profinite_of_finite_ringHom`
+  (Mazur's `Φ_ℓ` criterion). The assembly is where `hfin` and `hlim` are
+  consumed: the continuous points of the universal ring in a finite test
+  ring inject into the hardly ramified frames over it, which `hfin` makes
+  finite; and the finite levels `R ⧸ I` at open `I` — finite, `R` being
+  compact — feed `hlim`.
 * The two PRESENTATION leaves became proven assemblies over the four
   commutative-algebra strata of the minimal presentation and the
   arithmetic relation count: `exists_minimal_mvPowerSeries_presentation`
@@ -278,6 +291,12 @@ import Fermat.FLT.GaloisRepresentation.HardlyRamified.CompleteLocalNoetherian
 -- their own module because they are pure mathlib-level commutative
 -- algebra and topology.
 import Fermat.FLT.GaloisRepresentation.HardlyRamified.ProfiniteLocal
+-- proof-only: the FINITENESS half of the Schlessinger core — "a profinite
+-- local ring with finitely many continuous points in every finite test ring
+-- is Noetherian, `𝔪`-adic and adically complete" (Mazur's `Φ_ℓ` criterion).
+-- Pure commutative algebra over mathlib alone, so it lives upstream of this
+-- file, where it has room to develop without the 15k-line import cone.
+import Fermat.FLT.GaloisRepresentation.HardlyRamified.ProfiniteLocalNoetherian
 import Fermat.FLT.GaloisRepresentation.Chebotarev
 -- proof-only: the shared Chebotarev–Brauer–Nesbitt conjugacy node
 -- (`exists_conj_of_charFrob_eq_away`), from which the `{2, ℓ}` leaf
@@ -3725,12 +3744,172 @@ theorem isHardlyRamified_of_forall_isOpen_quotient
   · -- the tame quotient at `2`: the one genuine pro-limit clause
     exact isTameAtTwo_of_forall_isOpen_quotient hℓOdd hadic hcomplete hq
 
+/-- **Pro-representability of the hardly ramified deformation problem by a
+PROFINITE ring** (sorry node — the CONSTRUCTION half of the 2026-07-26 cut
+of `exists_isStrictlyUniversalOnFrames_of_deformationCondition`, which is
+now PROVEN over this leaf, the pure commutative algebra
+`ProfiniteLocalNoetherian.isNoetherianRing_isAdic_of_profinite_of_finite_ringHom`
+and the pro-limit clause `hlim`).
+
+Everything the Schlessinger machine constructs, delivered over a ring that
+is only assumed PROFINITE — compact, Hausdorff, with the open ideals a
+neighbourhood basis of `0` — rather than Noetherian: the universal framed
+representation `ρuniv`, the surjective continuous reduction `πuniv`
+identifying `ρuniv ⊗_R k` with `ρbar`, and strict universality on finite
+raw framed test objects. That is exactly what an inverse limit of the
+finite levels gives you, and it is all the construction can give without a
+separate finiteness argument, an inverse limit of finite local rings being
+in general NOT Noetherian.
+
+THE TWO EXTRA CLAUSES, and why they are here rather than downstream:
+
+* `hquot` — every continuous `ℤ_ℓ`-algebra map of `R` into a FINITE local
+  ring carries `ρuniv` to a hardly ramified frame. This is the finite
+  levels of the construction, and it is what the pro-limit clause `hlim`
+  consumes in the consumer's assembly (through `I ↦ R ⧸ I`, whose
+  finiteness is compactness plus openness of `I`). Note it does NOT say
+  `ρuniv` itself is hardly ramified: that is exactly what `hlim` is for,
+  and asserting it here would make `hlim` unused.
+* `hinj` — two `π`-compatible continuous points of `R` in a finite local
+  ring that carry `ρuniv` to the SAME framed representation are equal.
+  This is Mazur's representability (H4, i.e. `hschur`, promotes
+  Schlessinger's hull to a universal object, so `Hom_π(R, A) → F(A)` is
+  injective; what is asked for here is the weaker "equal frames" form, not
+  the "conjugate frames" one), and it is what converts the
+  restricted-ramification finiteness `hfin` into finiteness of the point
+  sets of `R`. Without it the Noetherian upgrade would be FALSE rather
+  than merely unproven: the naive inverse limit over ALL test objects
+  surjects onto everything and is wildly non-Noetherian — minimality of
+  `R` is precisely what `hinj` records.
+
+WHAT IS AND IS NOT IN THIS LEAF. In: Schlessinger's inductive
+small-extension argument over H1–H4 (`hglue` supplies H1 and H2, `hfin`
+H3, `hschur` H4), the directed system of finite test objects and a
+countable cofinal chain in it (the fibre products of `hglue` are what make
+it directed, `hbase` what makes it a system), and the passage to the
+inverse limit. Out: (i) the Noetherian/`IsAdic`/`IsAdicComplete` upgrade,
+which is the separate pure-commutative-algebra module
+`ProfiniteLocalNoetherian.lean` — Mazur's `Φ_ℓ` criterion; (ii) the
+pro-limit clause `hlim`, i.e. the leaf
+`isHardlyRamified_of_forall_isOpen_quotient`; (iii) the arithmetic of the
+deformation condition itself, which enters only through `hbase`, `hglue`
+and `hfin`.
+
+A prover who finds it more convenient to build `R` directly as a quotient
+of `Λ[[x₁, …, x_g]]` (the de Smit–Lenstra presentation, with `Λ` the Cohen
+coefficient ring of `exists_coefficientRing_ringHom` and `g` the dimension
+of the framed tangent space) may of course do so and read the profinite
+clauses off the presentation; the statement is phrased over the weaker
+package so that the limit construction is available as a route, and so
+that the finiteness argument is confronted once, in one place.
+
+CIRCULARITY GUARD (inherited from the consumer). This leaf carries the
+`IsHardlyRamified` + `IsIrreducible` + `5 ≤ ℓ` package that the odd-prime
+dichotomy `not_isIrreducible_of_isHardlyRamified_of_five_le` refutes, and
+that dichotomy is proven over pillar α — which is what this file's cone
+proves. Discharging this leaf vacuously through it is circular and Lean
+rejects it. Likewise no import from `Family.lean`, `Lift.lean` or
+`Modularity/*` may be added to this module.
+
+References: Schlessinger, *Functors of Artin rings*, Trans. AMS 130
+(1968), Thm. 2.11; Mazur, *Deforming Galois representations*, MSRI Publ.
+16 (1989), §1.2; de Smit–Lenstra, *Explicit construction of universal
+deformation rings*, Prop. 2.3. -/
+theorem exists_universalFrame_profinite_of_deformationCondition (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (hschur : ∀ f : Module.End k V, (∀ g, Commute f (ρbar g)) →
+      ∃ c : k, f = c • 1)
+    (hfin : ∀ (A : Type u) [CommRing A] [TopologicalSpace A]
+      [IsTopologicalRing A] [IsLocalRing A] [Algebra ℤ_[ℓ] A] [Finite A],
+      {ρ : FramedGaloisRep ℚ A (Fin 2) |
+        IsHardlyRamified hℓOdd (rank_finTwoFun A) ρ}.Finite)
+    (hbase : ∀ {B : Type u} [CommRing B] [TopologicalSpace B]
+      [IsTopologicalRing B] [IsLocalRing B] [Algebra ℤ_[ℓ] B]
+      {A : Type u} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+      [IsLocalRing A] [Finite A] [Algebra ℤ_[ℓ] A]
+      (ψ : B →+* A) (hψ : Continuous ψ),
+      ψ.comp (algebraMap ℤ_[ℓ] B) = algebraMap ℤ_[ℓ] A →
+      ∀ {ρ : FramedGaloisRep ℚ B (Fin 2)},
+      IsHardlyRamified hℓOdd (rank_finTwoFun B) ρ →
+      IsHardlyRamified hℓOdd (rank_finTwoFun A) (pushforwardFrame ψ hψ ρ))
+    (hglue : ∀ {A₀ : Type u} [CommRing A₀] [TopologicalSpace A₀]
+      [IsTopologicalRing A₀] [IsLocalRing A₀] [Algebra ℤ_[ℓ] A₀] [Finite A₀]
+      {A₁ : Type u} [CommRing A₁] [TopologicalSpace A₁] [IsTopologicalRing A₁]
+      [IsLocalRing A₁] [Algebra ℤ_[ℓ] A₁] [Finite A₁]
+      {A₂ : Type u} [CommRing A₂] [TopologicalSpace A₂] [IsTopologicalRing A₂]
+      [IsLocalRing A₂] [Algebra ℤ_[ℓ] A₂] [Finite A₂]
+      {B : Type u} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
+      [IsLocalRing B] [Algebra ℤ_[ℓ] B] [Finite B]
+      (f₁ : A₁ →+* A₀) (f₂ : A₂ →+* A₀), Function.Surjective f₂ →
+      ∀ (p₁ : B →+* A₁) (p₂ : B →+* A₂) (hp₁ : Continuous p₁)
+        (hp₂ : Continuous p₂),
+      p₁.comp (algebraMap ℤ_[ℓ] B) = algebraMap ℤ_[ℓ] A₁ →
+      p₂.comp (algebraMap ℤ_[ℓ] B) = algebraMap ℤ_[ℓ] A₂ →
+      f₁.comp p₁ = f₂.comp p₂ →
+      Topology.IsEmbedding (fun b : B => (p₁ b, p₂ b)) →
+      (∀ (a₁ : A₁) (a₂ : A₂), f₁ a₁ = f₂ a₂ → ∃ b : B, p₁ b = a₁ ∧ p₂ b = a₂) →
+      ∀ {ρ : FramedGaloisRep ℚ B (Fin 2)},
+      IsHardlyRamified hℓOdd (rank_finTwoFun A₁) (pushforwardFrame p₁ hp₁ ρ) →
+      IsHardlyRamified hℓOdd (rank_finTwoFun A₂) (pushforwardFrame p₂ hp₂ ρ) →
+      IsHardlyRamified hℓOdd (rank_finTwoFun B) ρ) :
+    ∃ (R : Type u) (_ : CommRing R) (_ : TopologicalSpace R)
+      (_ : IsTopologicalRing R) (_ : IsLocalRing R) (_ : Algebra ℤ_[ℓ] R)
+      (_ : CompactSpace R) (_ : T2Space R)
+      (ρuniv : FramedGaloisRep ℚ R (Fin 2))
+      (πuniv : R →+* k) (_ : Function.Surjective πuniv)
+      (hπcont : Continuous πuniv),
+      (∀ U ∈ nhds (0 : R), ∃ I : Ideal R, IsOpen (I : Set R) ∧
+        (I : Set R) ⊆ U) ∧
+      IsResidualIdentifiedFrame (ℓ := ℓ) ρbar ρuniv πuniv hπcont ∧
+      (∀ (A : Type u) [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+        [IsLocalRing A] [Algebra ℤ_[ℓ] A] [Finite A] (φ : R →+* A)
+        (hφ : Continuous φ),
+        φ.comp (algebraMap ℤ_[ℓ] R) = algebraMap ℤ_[ℓ] A →
+        IsHardlyRamified hℓOdd (rank_finTwoFun A)
+          (pushforwardFrame φ hφ ρuniv)) ∧
+      (∀ (A : Type u) [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+        [IsLocalRing A] [Algebra ℤ_[ℓ] A] [Finite A] (πA : A →+* k)
+        (φ₁ φ₂ : R →+* A) (hφ₁ : Continuous φ₁) (hφ₂ : Continuous φ₂),
+        πA.comp φ₁ = πuniv → πA.comp φ₂ = πuniv →
+        pushforwardFrame φ₁ hφ₁ ρuniv = pushforwardFrame φ₂ hφ₂ ρuniv →
+        φ₁ = φ₂) ∧
+      IsStrictlyUniversalOnFrames hℓOdd ρbar ρuniv πuniv :=
+  sorry
+
 open scoped TensorProduct in
 /-- **Schlessinger's hull for the hardly ramified problem, over the
-deformation-condition package** (sorry node — the FORMAL core of the
+deformation-condition package** (PROVEN 2026-07-26 as an ASSEMBLY over the
+construction/finiteness cut described below — it is the FORMAL core of the
 2026-07-25 cut of `exists_isStrictlyUniversalOnFrames_of_finite_lifts`,
-which is now PROVEN over this leaf and the four arithmetic leaves it
+which is itself PROVEN over this node and the four arithmetic leaves it
 takes as hypotheses).
+
+THE 2026-07-26 CUT: CONSTRUCTION versus FINITENESS. The Schlessinger
+machine does two separable things, and they are separated here:
+
+* it CONSTRUCTS the pro-object — the leaf
+  `exists_universalFrame_profinite_of_deformationCondition` above, which
+  delivers the universal frame, the residual identification and strict
+  universality over a ring that is only PROFINITE (compact, Hausdorff,
+  open ideals a neighbourhood basis of `0`), together with the two clauses
+  a construction naturally supplies: hardly ramifiedness at every finite
+  level, and minimality in the form "distinct `π`-compatible points give
+  distinct frames";
+* and it proves that pro-object is NOETHERIAN, which is a finiteness
+  statement about the tangent space and nothing else. That is Mazur's
+  `Φ_ℓ` criterion, isolated as pure commutative algebra in the upstream
+  module `ProfiniteLocalNoetherian.lean`:
+  `isNoetherianRing_isAdic_of_profinite_of_finite_ringHom`.
+
+The assembly below is the bridge between them, and it is where `hfin` and
+`hlim` are actually consumed: `hfin` bounds the hardly ramified frames
+over each finite test ring, the minimality clause injects the continuous
+points of `R` into those frames, whence `R` has finitely many points in
+every finite test ring and the commutative algebra applies; and `hlim`
+then upgrades the finite levels of `ρuniv` — the quotients `R ⧸ I` at open
+`I`, which are finite because `R` is compact and `I` is open — to hardly
+ramifiedness over `R` itself.
 
 GIVEN Schlessinger's H4 (`hschur`, `End_{k[Γ]}(ρbar) = k`), H3 (`hfin`,
 restricted-ramification finiteness at every Artinian level and for every
@@ -3888,8 +4067,61 @@ theorem exists_isStrictlyUniversalOnFrames_of_deformationCondition (hℓ5 : 5 �
       (πuniv : R →+* k) (_ : Function.Surjective πuniv)
       (hπcont : Continuous πuniv),
       IsResidualIdentifiedFrame (ℓ := ℓ) ρbar ρuniv πuniv hπcont ∧
-      IsStrictlyUniversalOnFrames hℓOdd ρbar ρuniv πuniv :=
-  sorry
+      IsStrictlyUniversalOnFrames hℓOdd ρbar ρuniv πuniv := by
+  classical
+  obtain ⟨R, iCR, iTS, iTR, iLR, iAlg, iCompact, iT2, ρuniv, πuniv, hπsurj,
+      hπcont, hbasis, hres, hquot, hinj, huniv⟩ :=
+    exists_universalFrame_profinite_of_deformationCondition hℓOdd hdim hℓ5 h
+      hirr hschur hfin hbase hglue
+  -- **The continuous points of `R` in a finite test ring are finite in
+  -- number**: they inject, by the minimality clause `hinj`, into the hardly
+  -- ramified frames over that ring, of which `hfin` gives finitely many.
+  have hhom : ∀ (A : Type u) [CommRing A] [TopologicalSpace A]
+      [IsTopologicalRing A] [IsLocalRing A] [Algebra ℤ_[ℓ] A] [Finite A]
+      (πA : A →+* k),
+      {φ : R →+* A | Continuous φ ∧ πA.comp φ = πuniv ∧
+        φ.comp (algebraMap ℤ_[ℓ] R) = algebraMap ℤ_[ℓ] A}.Finite := by
+    intro A _ _ _ _ _ _ πA
+    rw [← Set.finite_coe_iff]
+    haveI : Finite {ρ : FramedGaloisRep ℚ A (Fin 2) |
+        IsHardlyRamified hℓOdd (rank_finTwoFun A) ρ} := (hfin A).to_subtype
+    refine Finite.of_injective
+      (fun φ : {φ : R →+* A | Continuous φ ∧ πA.comp φ = πuniv ∧
+          φ.comp (algebraMap ℤ_[ℓ] R) = algebraMap ℤ_[ℓ] A} =>
+        (⟨pushforwardFrame φ.1 φ.2.1 ρuniv, hquot A φ.1 φ.2.1 φ.2.2.2⟩ :
+          {ρ : FramedGaloisRep ℚ A (Fin 2) |
+            IsHardlyRamified hℓOdd (rank_finTwoFun A) ρ})) ?_
+    intro φ₁ φ₂ heq
+    exact Subtype.ext (hinj A πA φ₁.1 φ₂.1 φ₁.2.1 φ₂.2.1 φ₁.2.2.1 φ₂.2.2.1
+      (congrArg Subtype.val heq))
+  -- **Mazur's `Φ_ℓ` criterion** turns that finiteness into the three
+  -- Mazur-category ring clauses.
+  obtain ⟨iNoeth, hadic, hcomplete⟩ :=
+    ProfiniteLocalNoetherian.isNoetherianRing_isAdic_of_profinite_of_finite_ringHom
+      hbasis πuniv hπsurj hπcont hhom
+  haveI := iNoeth
+  -- **Hardly ramifiedness of the universal representation**, from its finite
+  -- levels: for `I` open the quotient `R ⧸ I` is discrete (the quotient map
+  -- is open) and compact, hence finite, so `hquot` applies to it and `hlim`
+  -- assembles the levels.
+  have hHR : IsHardlyRamified hℓOdd (rank_finTwoFun R) ρuniv := by
+    refine hlim hadic hcomplete ?_
+    intro I hI _ hmk
+    haveI : DiscreteTopology (R ⧸ I) := by
+      rw [discreteTopology_iff_isOpen_singleton_zero]
+      have hzero : ({0} : Set (R ⧸ I)) = Ideal.Quotient.mk I '' (I : Set R) := by
+        ext x
+        constructor
+        · rintro rfl
+          exact ⟨0, I.zero_mem, map_zero _⟩
+        · rintro ⟨y, hy, rfl⟩
+          exact (Ideal.Quotient.eq_zero_iff_mem).mpr hy
+      rw [hzero]
+      exact (QuotientRing.isOpenQuotientMap_mk I).isOpenMap _ hI
+    haveI : Finite (R ⧸ I) := finite_of_compact_of_discrete
+    exact hquot (R ⧸ I) (Ideal.Quotient.mk I) hmk rfl
+  exact ⟨R, iCR, iTS, iTR, iLR, iAlg, iNoeth, hadic, hcomplete, ρuniv, hHR,
+    πuniv, hπsurj, hπcont, hres, huniv⟩
 
 open scoped TensorProduct in
 /-- **Schlessinger's hull for the hardly ramified problem** (PROVEN
