@@ -110,8 +110,9 @@ the surjectivity and minimality strata of the minimal presentation,
   new complex-conjugation vocabulary
   `GaloisRepresentation/ComplexConjugation.lean` — `complexConj : Γ ℚ`,
   its involutivity, and `cyclotomicCharacter_complexConj` (the character
-  sends it to `−1`) — so only H3 and the core remain as leaves of that
-  cut.
+  sends it to `−1`) — leaving H3 and the deformation-theoretic core as
+  the two leaves of that cut; the core has since been proven as well (the
+  next item), so **H3 is the only leaf of the 2026-07-26 cut still open**.
 * That deformation-theoretic core was CUT AGAIN (2026-07-25) along the
   seam between Schlessinger's abstract machine and the arithmetic, and is
   now PROVEN as an assembly. Everything specific to the hardly ramified
@@ -2049,7 +2050,8 @@ the construction of the hull — Schlessinger's inductive small-extension
 argument over H1–H4, the de Smit–Lenstra generators-and-relations
 presentation `W(k)[[x₁,…,x_g]] ↠ R` with `g` the dimension of the framed
 tangent space, and the Mazur-category ring clauses read off it. Out:
-(i) H4, the leaf `exists_smul_eq_of_commute_of_isIrreducible`, supplied
+(i) H4, the now-PROVEN node `exists_smul_eq_of_commute_of_isIrreducible`
+(2026-07-26), supplied
 as `hschur`; (ii) H3, the leaf `finite_setOf_isHardlyRamified_frames`
 through `finite_setOf_isHardlyRamified_frames_of_discreteTopology`,
 supplied as `hfin`; (iii) the deformation-condition clauses — the PROVEN
@@ -2294,8 +2296,9 @@ set_option backward.isDefEq.respectTransparency false in
 2026-07-26 over the Schlessinger cut — the H3 finiteness leaf
 `finite_setOf_isHardlyRamified_frames`, the H4 Schur node
 `exists_smul_eq_of_commute_of_isIrreducible` (itself PROVEN 2026-07-26)
-and the deformation-theoretic
-core leaf `exists_isStrictlyUniversalOnFrames_of_finite_lifts`): the hardly
+and the deformation-theoretic core
+`exists_isStrictlyUniversalOnFrames_of_finite_lifts` (itself PROVEN
+2026-07-25 over the deformation-condition cut)): the hardly
 ramified deformation problem of an irreducible hardly ramified `ρbar`
 (`ℓ ≥ 5`) admits an object `D` of Mazur's category that classifies every
 FINITE residually identified framed test object *strictly* — by a
