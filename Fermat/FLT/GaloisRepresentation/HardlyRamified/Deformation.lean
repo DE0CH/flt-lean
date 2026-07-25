@@ -67,7 +67,6 @@ them without a human. Do not re-wrap it.
 - `exists_ringHom_matrix_quotient_of_finite`
 - `exists_uniform_span_maximalIdeal_traceSubring`
 - `exists_framedGaloisRep_baseChange_traceSubring`
-- `isTameAtTwo_of_baseChange_traceSubring`
 - `exists_finiteIndex_isIntegral_charpolyCoeff_quotient_of_isWeaklyUniversal_isTraceGenerated`
 - `exists_relations_le_smul_of_minimal_mvPowerSeries_presentation`
 
@@ -8022,9 +8021,495 @@ theorem isFlatAt_of_baseChange_traceSubring (_hℓ5 : 5 ≤ ℓ)
   refine isFlatAt_of_subring_baseChange D.isAdic ?_
   exact isFlatAt_of_conj_eq e he D.isHardlyRamified.isFlat
 
+/-- **The mod-`ℓ` cyclotomic character is nontrivial on the decomposition
+group at `2`** (PROVEN 2026-07-26; the ARITHMETIC input of
+`isTameAtTwo_of_baseChange_traceSubring` below, and the only place that
+leaf uses the oddness of `ℓ`): there is a `g ∈ Γ ℚ_2` with
+`1 − χ_ℓ(g) ∈ ℤ_ℓˣ`, i.e. `χ_ℓ(g) ≢ 1 (mod ℓ)`.
+
+This is the WEAK, proven form of the sibling sorry node
+`exists_cyclotomicCharacter_padicTwo_eq_two` above, which pins the value
+of `χ_ℓ` at a Frobenius to be exactly `2`; once that node is proven this
+one follows from it (`1 − 2 = −1` is a unit). It is stated and proven
+separately because the descent leaf below needs only NONTRIVIALITY, and
+nontriviality does not need the Frobenius: it is the plain statement that
+`ℚ_2` contains no primitive `ℓ`-th root of unity.
+
+Proof. If `χ_ℓ(g) ≡ 1 (mod ℓ)` for every `g ∈ Γ ℚ_2`, then by
+`cyclotomicCharacter.spec` at level `ℓ¹` every such `g` FIXES a primitive
+`ℓ`-th root of unity `ζ ∈ ℚᵃˡᵍ`; transporting along the chosen embedding
+`ℚᵃˡᵍ → ℚ_2ᵃˡᵍ` (`Field.absoluteGaloisGroup.lift_map`), the image `z` of
+`ζ` is fixed by the WHOLE absolute Galois group of `ℚ_2`, hence lies in
+`ℚ_2` itself (`InfiniteGalois.mem_range_algebraMap_iff_fixed`, available
+because `ℚ_2` has characteristic zero). So `ℚ_2` contains an `x ≠ 1` with
+`xˡ = 1`. Then `‖x‖ = 1`, so `x` is a `2`-adic INTEGER, and
+`∑_{i<ℓ} xⁱ = 0` because `ℤ_2` is a domain and `x − 1 ≠ 0`; but `x` is a
+unit of `ℤ_2`, so its residue in `ZMod 2` is `1`, and the residue of the
+sum is `(ℓ : ZMod 2) = 1 ≠ 0` because `ℓ` is odd. Contradiction. -/
+theorem exists_cyclotomicCharacter_padicTwo_sub_one_isUnit (hodd : Odd ℓ) :
+    ∃ g : Field.absoluteGaloisGroup ℚ_[2],
+      IsUnit (1 - ((cyclotomicCharacter (AlgebraicClosure ℚ) ℓ
+        (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) g).toRingEquiv :
+          ℤ_[ℓ]ˣ) : ℤ_[ℓ])) := by
+  classical
+  by_contra hcon
+  rw [not_exists] at hcon
+  haveI hNZ : NeZero ((ℓ : ℚ)) :=
+    ⟨by exact_mod_cast (Fact.out : ℓ.Prime).ne_zero⟩
+  obtain ⟨ζ, hζ⟩ :=
+    HasEnoughRootsOfUnity.exists_primitiveRoot (AlgebraicClosure ℚ) ℓ
+  haveI : Fact (1 < ℓ ^ 1) := ⟨by simpa using (Fact.out : ℓ.Prime).one_lt⟩
+  -- every element of the decomposition group at `2` fixes `ζ`
+  have hfix : ∀ g : Field.absoluteGaloisGroup ℚ_[2],
+      (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) g).toRingEquiv ζ
+        = ζ := by
+    intro g
+    have h1 : ¬ IsUnit (1 - ((cyclotomicCharacter (AlgebraicClosure ℚ) ℓ
+        (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) g).toRingEquiv :
+          ℤ_[ℓ]ˣ) : ℤ_[ℓ])) := hcon g
+    have h2 : ‖(1 - ((cyclotomicCharacter (AlgebraicClosure ℚ) ℓ
+        (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) g).toRingEquiv :
+          ℤ_[ℓ]ˣ) : ℤ_[ℓ]))‖ < 1 :=
+      lt_of_le_of_ne (PadicInt.norm_le_one _)
+        (fun h => h1 (PadicInt.isUnit_iff.mpr h))
+    obtain ⟨c, hc⟩ := (PadicInt.norm_lt_one_iff_dvd _).mp h2
+    have h4 : PadicInt.toZModPow 1
+        (((cyclotomicCharacter (AlgebraicClosure ℚ) ℓ
+          (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) g).toRingEquiv :
+            ℤ_[ℓ]ˣ) : ℤ_[ℓ])) = 1 := by
+      have h5 := congrArg (PadicInt.toZModPow (p := ℓ) 1) hc
+      rw [map_sub, map_one, map_mul] at h5
+      have h6 : PadicInt.toZModPow (p := ℓ) 1 (ℓ : ℤ_[ℓ]) = 0 := by
+        rw [map_natCast, pow_one, ZMod.natCast_self]
+      rw [h6, zero_mul, sub_eq_zero] at h5
+      exact h5.symm
+    have hspec := cyclotomicCharacter.spec ℓ (n := 1)
+      (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) g).toRingEquiv ζ
+      (by rw [pow_one]; exact hζ.pow_eq_one)
+    rw [hspec, h4, ZMod.val_one, pow_one]
+  -- so the whole absolute Galois group of `ℚ_2` fixes the image of `ζ`
+  set z : AlgebraicClosure ℚ_[2] :=
+    AlgebraicClosure.map (algebraMap ℚ ℚ_[2]) ζ with hzdef
+  have hzfix : ∀ g : Field.absoluteGaloisGroup ℚ_[2], g z = z := by
+    intro g
+    rw [hzdef, ← Field.absoluteGaloisGroup.lift_map (algebraMap ℚ ℚ_[2]) g ζ]
+    exact congrArg _ (hfix g)
+  obtain ⟨x, hx⟩ :=
+    (InfiniteGalois.mem_range_algebraMap_iff_fixed z).mpr hzfix
+  have hzprim : IsPrimitiveRoot z ℓ :=
+    hζ.map_of_injective (AlgebraicClosure.map (algebraMap ℚ ℚ_[2])).injective
+  have hxl : x ^ ℓ = 1 := by
+    apply (algebraMap ℚ_[2] (AlgebraicClosure ℚ_[2])).injective
+    rw [map_pow, hx, map_one]
+    exact hzprim.pow_eq_one
+  have hx1 : x ≠ 1 := by
+    intro h
+    rw [h, map_one] at hx
+    exact hzprim.ne_one (Fact.out : ℓ.Prime).one_lt hx.symm
+  -- but `ℚ_2` has no nontrivial `ℓ`-th root of unity for odd `ℓ`
+  have hnorm : ‖x‖ = 1 := by
+    have h : ‖x‖ ^ ℓ = 1 := by rw [← norm_pow, hxl, norm_one]
+    have h0 : (0 : ℝ) ≤ ‖x‖ := norm_nonneg x
+    rcases lt_trichotomy ‖x‖ 1 with hlt | heq | hgt
+    · exact absurd h (ne_of_lt (pow_lt_one₀ h0 hlt (Fact.out : ℓ.Prime).ne_zero))
+    · exact heq
+    · exact absurd h.symm (ne_of_lt (one_lt_pow₀ hgt (Fact.out : ℓ.Prime).ne_zero))
+  set X : ℤ_[2] := ⟨x, le_of_eq hnorm⟩ with hXdef
+  have hXl : X ^ ℓ = 1 := by
+    refine Subtype.ext ?_
+    push_cast
+    exact hxl
+  have hXne : X ≠ 1 := fun h => hx1 (congrArg Subtype.val h)
+  have hsum0 : (∑ i ∈ Finset.range ℓ, X ^ i) = 0 := by
+    have hgeom : (∑ i ∈ Finset.range ℓ, X ^ i) * (X - 1) = 0 := by
+      rw [geom_sum_mul, hXl, sub_self]
+    rcases mul_eq_zero.mp hgeom with h | h
+    · exact h
+    · exact absurd (sub_eq_zero.mp h) hXne
+  have hXunit : IsUnit X := PadicInt.isUnit_iff.mpr hnorm
+  have hZ : PadicInt.toZMod X = 1 := by
+    have hu2 : IsUnit (PadicInt.toZMod X) := hXunit.map _
+    rcases (by decide : ∀ y : ZMod 2, y = 0 ∨ y = 1) (PadicInt.toZMod X) with
+      h | h
+    · rw [h] at hu2
+      exact absurd hu2 not_isUnit_zero
+    · exact h
+  have hfinal := congrArg (PadicInt.toZMod (p := 2)) hsum0
+  rw [map_sum, map_zero] at hfinal
+  simp only [map_pow, hZ, one_pow, Finset.sum_const, Finset.card_range,
+    nsmul_eq_mul, mul_one] at hfinal
+  obtain ⟨t, ht⟩ := hodd
+  rw [ht] at hfinal
+  push_cast at hfinal
+  have h2z : (2 : ZMod 2) = 0 := by decide
+  rw [h2z, zero_mul, zero_add] at hfinal
+  exact one_ne_zero hfinal
+
+/-- **A unimodular `d`-eigenrow over the big ring produces one over a
+local subring** (PROVEN 2026-07-26; pure commutative algebra, the engine
+of `isTameAtTwo_of_baseChange_traceSubring` below).
+
+Data: a `2 × 2` matrix `(tᵢⱼ)` with entries in a subring `C` of a
+commutative ring `S`, a scalar `d₀ ∈ C` with `d₀² = 1`, and a row
+`(a, b) ∈ S²`, at least one entry of which is a UNIT of `S`, satisfying
+the two eigen-equations `hE1`, `hE2` — i.e. `(a,b) · t = d₀ · (a,b)`.
+
+Conclusion: a row `(p, q)` with entries in `C`, PROPORTIONAL to `(a,b)`
+(the cross relation `p·b = q·a`) and unimodular over `C` (one of `p, q`
+is a unit of `C`).
+
+The construction is the eigen-projector written out in coordinates. Set
+`κ := t₀₀ + t₁₁ − d₀`, the other eigenvalue, and `B := t − κ`; then the
+rows of `B` are `(d₀ − t₁₁, t₀₁)` and `(t₁₀, d₀ − t₀₀)`, each of which
+satisfies the cross relation by literally one of `hE1`, `hE2`. Their
+diagonal entries SUM to `u := 2d₀ − (t₀₀ + t₁₁) = d₀ − κ`, so in a local
+ring one of them is a unit as soon as `u` is
+(`IsLocalRing.isUnit_or_isUnit_of_isUnit_add`), and `u` is a unit because
+`u·d₀ = 1 − det t`, which is the hypothesis `hunit`.
+
+That `det t = d₀·tr t − 1` — the identity making `u·d₀ = 1 − det t` — is
+NOT assumed: it is forced, being the vanishing of the determinant of the
+singular matrix `t − d₀` applied to the unimodular kernel vector
+`(a, b)`, which is the first step `hP0` of the proof. -/
+theorem exists_unimodular_eigenrow_of_subring {S : Type*} [CommRing S]
+    {C : Subring S} [IsLocalRing C] {a b : S} (hab : IsUnit a ∨ IsUnit b)
+    {t00 t01 t10 t11 d₀ : C} (hd₀sq : d₀ * d₀ = 1)
+    (hE1 : (t00 : S) * a + (t10 : S) * b = (d₀ : S) * a)
+    (hE2 : (t01 : S) * a + (t11 : S) * b = (d₀ : S) * b)
+    (hunit : IsUnit (1 - (t00 * t11 - t01 * t10))) :
+    ∃ p q : C, ((p : S) * b = (q : S) * a) ∧ (IsUnit p ∨ IsUnit q) := by
+  have hP0 : (t00 - d₀) * (t11 - d₀) - t01 * t10 = 0 := by
+    refine Subtype.ext ?_
+    push_cast
+    rcases hab with ha | ha
+    · exact ha.mul_left_eq_zero.mp (by
+        linear_combination ((t11 : S) - (d₀ : S)) * hE1 - (t10 : S) * hE2)
+    · exact ha.mul_left_eq_zero.mp (by
+        linear_combination (-(t01 : S)) * hE1 + ((t00 : S) - (d₀ : S)) * hE2)
+  have hdetid : t00 * t11 - t01 * t10 = d₀ * (t00 + t11) - 1 := by
+    linear_combination hP0 - hd₀sq
+  have huid : (2 * d₀ - (t00 + t11)) * d₀ = 1 - (t00 * t11 - t01 * t10) := by
+    linear_combination 2 * hd₀sq + hdetid
+  have hu : IsUnit (2 * d₀ - (t00 + t11)) :=
+    isUnit_of_mul_isUnit_left (by rw [huid]; exact hunit)
+  have hsum : (d₀ - t11) + (d₀ - t00) = 2 * d₀ - (t00 + t11) := by ring
+  rcases IsLocalRing.isUnit_or_isUnit_of_isUnit_add (hsum ▸ hu) with h | h
+  · exact ⟨d₀ - t11, t01, by push_cast; linear_combination -hE2, Or.inl h⟩
+  · exact ⟨t10, d₀ - t00, by push_cast; linear_combination hE1, Or.inr h⟩
+
+/-- **A proportional row inherits the equivariance of the big-ring
+functional** (PROVEN 2026-07-26; pure commutative algebra, the second
+half of the descent engine).
+
+`φ` is the `S`-valued functional `w ↦ w₀·a + w₁·b` on the `C`-lattice
+`C²`, and it scales by `d` along a map `F` (`hFφ`). If `(p, q)` is a
+`C`-row proportional to `(a, b)` (`hcross`) then the `C`-valued
+functional `w ↦ p·w₀ + q·w₁` scales by `c` along `F`, whenever
+`(c : S) = d`.
+
+The two identities `(p w₀ + q w₁)·a = p·φ(w)` and
+`(p w₀ + q w₁)·b = q·φ(w)` are both one `linear_combination` of the cross
+relation; multiplying the target by whichever of `a`, `b` is a unit and
+cancelling therefore reduces it to `hFφ`. Cancelling in `S` and then
+descending along the INJECTION `C → S` is what makes this work over a
+subring that is neither flat nor finite over nothing in particular. -/
+theorem eigenrow_equivariance_of_cross {S : Type*} [CommRing S]
+    {C : Subring S} {a b : S} (hab : IsUnit a ∨ IsUnit b)
+    {p q : C} (hcross : (p : S) * b = (q : S) * a)
+    (φ : (Fin 2 → C) → S)
+    (hφw : ∀ w : Fin 2 → C, φ w = ((w 0 : C) : S) * a + ((w 1 : C) : S) * b)
+    (F : (Fin 2 → C) → (Fin 2 → C)) {c : C} {d : S} (hcd : (c : S) = d)
+    (hFφ : ∀ w, φ (F w) = d * φ w) (w : Fin 2 → C) :
+    p * (F w) 0 + q * (F w) 1 = c * (p * w 0 + q * w 1) := by
+  have hida : ∀ w' : Fin 2 → C,
+      ((p : S) * ((w' 0 : C) : S) + (q : S) * ((w' 1 : C) : S)) * a =
+        (p : S) * φ w' := by
+    intro w'
+    rw [hφw]
+    linear_combination (-(((w' 1 : C) : S))) * hcross
+  have hidb : ∀ w' : Fin 2 → C,
+      ((p : S) * ((w' 0 : C) : S) + (q : S) * ((w' 1 : C) : S)) * b =
+        (q : S) * φ w' := by
+    intro w'
+    rw [hφw]
+    linear_combination (((w' 0 : C) : S)) * hcross
+  refine Subtype.ext ?_
+  push_cast
+  rcases hab with ha | ha
+  · refine ha.mul_right_cancel ?_
+    rw [hida (F w), hFφ, hcd]
+    linear_combination (-d) * hida w
+  · refine ha.mul_right_cancel ?_
+    rw [hidb (F w), hFφ, hcd]
+    linear_combination (-d) * hidb w
+
+open scoped TensorProduct in
+/-- **The determinant is insensitive to base change and reframing**
+(PROVEN 2026-07-26): if the framed representation `ρ'` over a subring `C`
+base-changes, up to the framing `e`, to `ρS`, then
+`det ρS(G) = ι(det ρ'(G))` for the inclusion `ι : C → S`.
+
+Two mathlib facts and one `ext`: `LinearMap.det_conj` kills the framing,
+`LinearMap.det_baseChange` turns the base change into `algebraMap`, and
+the `ext` identifies `GaloisRep.baseChange` — whose definition is opaque
+across the module boundary — with `LinearMap.baseChange` by evaluating
+both on pure tensors. -/
+theorem det_of_baseChange_conj {S : Type*} [CommRing S] [TopologicalSpace S]
+    [IsTopologicalRing S] [IsLocalRing S] {C : Subring S}
+    {ρS : GaloisRep ℚ S (Fin 2 → S)} {ρ' : FramedGaloisRep ℚ C (Fin 2)}
+    (e : (S ⊗[C] (Fin 2 → C)) ≃ₗ[S] (Fin 2 → S))
+    (he : (ρ'.baseChange S).conj e = ρS) (G : Field.absoluteGaloisGroup ℚ) :
+    LinearMap.det (ρS G) = algebraMap C S (LinearMap.det (ρ' G)) := by
+  have hbc : (ρ'.baseChange S) G = LinearMap.baseChange S (ρ' G) := by
+    refine LinearMap.ext fun y => ?_
+    induction y using TensorProduct.induction_on with
+    | zero => simp
+    | add x y hx hy => rw [map_add, map_add, hx, hy]
+    | tmul c w => rw [GaloisRep.baseChange_tmul, LinearMap.baseChange_tmul]
+  have h1 : ρS G = e.conj ((ρ'.baseChange S) G) := by
+    rw [← GaloisRep.conj_apply, he]
+  rw [h1, hbc, LinearEquiv.conj_apply, LinearMap.comp_assoc,
+    LinearMap.det_conj, LinearMap.det_baseChange]
+
+open scoped TensorProduct in
+/-- **The frame coordinates of a surjective equivariant functional**
+(PROVEN 2026-07-26): pulling the `S`-functional `πR` back along the
+frame `w ↦ e(1 ⊗ w)` gives an `S`-valued functional on the `C`-lattice
+`C²` whose two coordinates `a = φ(e₀)`, `b = φ(e₁)` generate the unit
+ideal — so one of them is a UNIT, `S` being local — and which scales by
+`ε(g)` along `ρ'(g)`.
+
+Unimodularity is the only nonformal step and it is a one-line Nakayama:
+the `S`-span of the lattice is everything, so every value of `πR` is an
+`S`-combination of `a` and `b`; were both in the maximal ideal, `πR`
+could not hit `1`. -/
+theorem exists_frameCoords_of_baseChange_conj {S : Type*} [CommRing S]
+    [TopologicalSpace S] [IsTopologicalRing S] [IsLocalRing S] {C : Subring S}
+    {ρS : GaloisRep ℚ S (Fin 2 → S)} {ρ' : FramedGaloisRep ℚ C (Fin 2)}
+    (e : (S ⊗[C] (Fin 2 → C)) ≃ₗ[S] (Fin 2 → S))
+    (he : (ρ'.baseChange S).conj e = ρS)
+    {πR : (Fin 2 → S) →ₗ[S] S} (hπRsurj : Function.Surjective πR)
+    {ε : Field.absoluteGaloisGroup ℚ_[2] → C}
+    (hπRequi : ∀ (g : Field.absoluteGaloisGroup ℚ_[2]) (v : Fin 2 → S),
+      πR (ρS.map (algebraMap ℚ ℚ_[2]) g v) = (ε g : S) * πR v) :
+    ∃ a b : S, (IsUnit a ∨ IsUnit b) ∧
+      ∀ (g : Field.absoluteGaloisGroup ℚ_[2]) (w : Fin 2 → C),
+        ((((ρ'.map (algebraMap ℚ ℚ_[2])) g w) 0 : C) : S) * a +
+          ((((ρ'.map (algebraMap ℚ ℚ_[2])) g w) 1 : C) : S) * b =
+          (ε g : S) * (((w 0 : C) : S) * a + ((w 1 : C) : S) * b) := by
+  classical
+  have hcast : ∀ c : C, (c : S) = algebraMap C S c := fun _ => rfl
+  set φ : (Fin 2 → C) → S := fun w => πR (e ((1 : S) ⊗ₜ[C] w)) with hφdef
+  have hφadd : ∀ x y, φ (x + y) = φ x + φ y := by
+    intro x y
+    show πR (e ((1 : S) ⊗ₜ[C] (x + y))) = _
+    rw [TensorProduct.tmul_add, map_add, map_add]
+  have hφsmul : ∀ (c : C) (x : Fin 2 → C), φ (c • x) = (c : S) * φ x := by
+    intro c x
+    have h1 : (1 : S) ⊗ₜ[C] (c • x) = (c : S) • ((1 : S) ⊗ₜ[C] x) := by
+      rw [TensorProduct.tmul_smul, hcast, algebraMap_smul]
+    show πR (e ((1 : S) ⊗ₜ[C] (c • x))) = _
+    rw [h1, map_smul, map_smul, smul_eq_mul]
+  have hdecomp : ∀ w : Fin 2 → C,
+      w = w 0 • Pi.single (0 : Fin 2) (1 : C) + w 1 • Pi.single 1 1 := by
+    intro w
+    funext i
+    fin_cases i <;> simp
+  have hφw : ∀ w : Fin 2 → C,
+      φ w = (w 0 : S) * φ (Pi.single 0 1) + (w 1 : S) * φ (Pi.single 1 1) := by
+    intro w
+    conv_lhs => rw [hdecomp w]
+    rw [hφadd, hφsmul, hφsmul]
+  have hhe : ∀ (G : Field.absoluteGaloisGroup ℚ) (x : S ⊗[C] (Fin 2 → C)),
+      e ((ρ'.baseChange S) G x) = ρS G (e x) := by
+    intro G x
+    have h1 : ((ρ'.baseChange S).conj e) G = ρS G := by rw [he]
+    rw [GaloisRep.conj_apply] at h1
+    have h2 := congrArg (fun f : Module.End S (Fin 2 → S) => f (e x)) h1
+    simpa [LinearEquiv.conj_apply] using h2
+  have hφequi : ∀ (g : Field.absoluteGaloisGroup ℚ_[2]) (w : Fin 2 → C),
+      φ ((ρ'.map (algebraMap ℚ ℚ_[2])) g w) = (ε g : S) * φ w := by
+    intro g w
+    have h1 : (1 : S) ⊗ₜ[C] ((ρ'.map (algebraMap ℚ ℚ_[2])) g w) =
+        (ρ'.baseChange S)
+          (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) g)
+          ((1 : S) ⊗ₜ[C] w) := by
+      rw [GaloisRep.baseChange_tmul, GaloisRep.map_apply]
+    show πR (e ((1 : S) ⊗ₜ[C] ((ρ'.map (algebraMap ℚ ℚ_[2])) g w))) = _
+    rw [h1, hhe]
+    have h2 := hπRequi g (e ((1 : S) ⊗ₜ[C] w))
+    rw [GaloisRep.map_apply] at h2
+    rw [h2]
+  have hab : IsUnit (φ (Pi.single 0 1)) ∨ IsUnit (φ (Pi.single 1 1)) := by
+    by_contra hc
+    rw [not_or] at hc
+    have hA : φ (Pi.single 0 1) ∈ IsLocalRing.maximalIdeal S :=
+      (IsLocalRing.mem_maximalIdeal _).mpr hc.1
+    have hB : φ (Pi.single 1 1) ∈ IsLocalRing.maximalIdeal S :=
+      (IsLocalRing.mem_maximalIdeal _).mpr hc.2
+    have hmem : ∀ y : S ⊗[C] (Fin 2 → C),
+        πR (e y) ∈ IsLocalRing.maximalIdeal S := by
+      intro y
+      induction y using TensorProduct.induction_on with
+      | zero => rw [map_zero, map_zero]; exact Ideal.zero_mem _
+      | add x y hx hy => rw [map_add, map_add]; exact Ideal.add_mem _ hx hy
+      | tmul c w =>
+        have h1 : (c ⊗ₜ[C] w) = c • ((1 : S) ⊗ₜ[C] w) := by
+          rw [TensorProduct.smul_tmul', smul_eq_mul, mul_one]
+        rw [h1, map_smul, map_smul, smul_eq_mul]
+        refine Ideal.mul_mem_left _ _ ?_
+        show φ w ∈ _
+        rw [hφw]
+        exact Ideal.add_mem _ (Ideal.mul_mem_left _ _ hA)
+          (Ideal.mul_mem_left _ _ hB)
+    obtain ⟨z, hz⟩ := hπRsurj 1
+    have h1 : (1 : S) ∈ IsLocalRing.maximalIdeal S := by
+      rw [← hz, ← e.apply_symm_apply z]
+      exact hmem _
+    exact (IsLocalRing.mem_maximalIdeal _).mp h1 isUnit_one
+  refine ⟨φ (Pi.single 0 1), φ (Pi.single 1 1), hab, ?_⟩
+  intro g w
+  have h1 := hφequi g w
+  rw [hφw ((ρ'.map (algebraMap ℚ ℚ_[2])) g w), hφw w] at h1
+  exact h1
+
+omit [DiscreteTopology k] in
+/-- **The tame-at-`2` character of a hardly ramified deformation is a
+SIGN, already defined over the trace subring** (PROVEN 2026-07-26 — the
+free half of the descent, as the docstring of
+`isTameAtTwo_of_baseChange_traceSubring` below predicted).
+
+`D.R` is local with residue field `k` of odd characteristic `ℓ`, so `2`
+is a unit of `D.R`; the tame character `δ` satisfies `δ(g)² = 1`, hence
+`(δ(g) − 1)(δ(g) + 1) = 0` with the two factors summing to the unit
+`2δ(g)`, so one of them is a unit and the other vanishes:
+`δ(g) ∈ {±1}`. Both values lie in EVERY subring, in particular in
+`R' = traceSubring ℓ D.ρ`, and multiplicativity, triviality at `1`,
+squaring to `1` and vanishing on inertia all descend along the injection
+`R' → D.R`. -/
+theorem exists_tameSign_of_deformation {ρbar : GaloisRep ℚ k V}
+    (D : HardlyRamifiedDeformation hℓOdd ρbar) :
+    letI := D.commRing; letI := D.topologicalSpace
+    letI := D.isTopologicalRing; letI := D.isLocalRing; letI := D.algebra
+    ∃ (πR : (Fin 2 → D.R) →ₗ[D.R] D.R)
+      (ε : Field.absoluteGaloisGroup ℚ_[2] → traceSubring ℓ D.ρ),
+      Function.Surjective πR ∧
+      (∀ (g : Field.absoluteGaloisGroup ℚ_[2]) (v : Fin 2 → D.R),
+        πR (D.ρ.map (algebraMap ℚ ℚ_[2]) g v) = (ε g : D.R) * πR v) ∧
+      (∀ g h, ε (g * h) = ε g * ε h) ∧ ε 1 = 1 ∧
+      (∀ g, ε g * ε g = 1) ∧
+      (∀ σ ∈ AddSubgroup.inertia
+        ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
+        (Field.absoluteGaloisGroup ℚ_[2]), ε σ = 1) := by
+  classical
+  letI := D.commRing; letI := D.topologicalSpace
+  letI := D.isTopologicalRing; letI := D.isLocalRing; letI := D.algebra
+  have hker : RingHom.ker D.π = IsLocalRing.maximalIdeal D.R :=
+    IsLocalRing.ker_eq_maximalIdeal D.π D.π_surjective
+  have h2k : (2 : k) ≠ 0 := by
+    intro h20
+    have hd2 : ringChar k ∣ 2 := ringChar.dvd (by exact_mod_cast h20)
+    have hdl : ringChar k ∣ ℓ := ringChar.dvd natCast_self_eq_zero
+    have hp : (ringChar k).Prime :=
+      (CharP.char_is_prime_or_zero k (ringChar k)).resolve_right
+        (CharP.char_ne_zero_of_finite k (ringChar k))
+    have hchar2 : ringChar k = 2 :=
+      (Nat.prime_dvd_prime_iff_eq hp Nat.prime_two).mp hd2
+    rw [hchar2] at hdl
+    obtain ⟨m, hm⟩ := hdl
+    obtain ⟨t, ht⟩ := hℓOdd
+    omega
+  have h2unit : IsUnit (2 : D.R) := by
+    by_contra hnu
+    have hmem : (2 : D.R) ∈ IsLocalRing.maximalIdeal D.R :=
+      (IsLocalRing.mem_maximalIdeal _).mpr hnu
+    rw [← hker, RingHom.mem_ker, map_ofNat] at hmem
+    exact h2k hmem
+  obtain ⟨πR, hπRsurj, δR, hδR⟩ := D.isHardlyRamified.isTameAtTwo
+  set dR : Field.absoluteGaloisGroup ℚ_[2] → D.R := fun g => δR g 1 with hdRdef
+  have hδRapp : ∀ (g : Field.absoluteGaloisGroup ℚ_[2]) (c : D.R),
+      δR g c = c * dR g := by
+    intro g c
+    have h := map_smul (δR g) c (1 : D.R)
+    rw [smul_eq_mul, mul_one, smul_eq_mul] at h
+    exact h
+  have hdRsq : ∀ g, dR g * dR g = 1 := by
+    intro g
+    have h1 : δR g * δR g = 1 := (hδR g 0).2.2 g
+    have h3 := congrArg (fun E : Module.End D.R D.R => E 1) h1
+    simpa [Module.End.mul_apply, hδRapp] using h3
+  have hdRunit : ∀ g, IsUnit (dR g) :=
+    fun g => ⟨⟨dR g, dR g, hdRsq g, hdRsq g⟩, rfl⟩
+  have hdRpm : ∀ g, dR g = 1 ∨ dR g = -1 := by
+    intro g
+    have hz : (dR g - 1) * (dR g + 1) = 0 := by
+      have h := hdRsq g; linear_combination h
+    have hsum : IsUnit ((dR g - 1) + (dR g + 1)) := by
+      have hrw : (dR g - 1) + (dR g + 1) = 2 * dR g := by ring
+      rw [hrw]
+      exact h2unit.mul (hdRunit g)
+    rcases IsLocalRing.isUnit_or_isUnit_of_isUnit_add hsum with h | h
+    · exact Or.inr (eq_neg_of_add_eq_zero_left (h.mul_right_eq_zero.mp hz))
+    · exact Or.inl (sub_eq_zero.mp (h.mul_left_eq_zero.mp hz))
+  have hdRmul : ∀ g h, dR (g * h) = dR g * dR h := by
+    intro g h
+    have h2 : δR (g * h) 1 = (δR g * δR h) 1 := by rw [map_mul δR g h]
+    rw [Module.End.mul_apply, hδRapp (g * h) 1, hδRapp g (δR h 1),
+      hδRapp h 1] at h2
+    simp only [one_mul] at h2
+    rw [h2]; ring
+  have hdRone : dR 1 = 1 := by
+    have h2 : δR (1 : Field.absoluteGaloisGroup ℚ_[2]) 1 =
+        (1 : Module.End D.R D.R) 1 := by rw [map_one δR]
+    rw [hδRapp 1 1, one_mul, Module.End.one_apply] at h2
+    exact h2
+  have hdRinertia : ∀ σ ∈ AddSubgroup.inertia
+      ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
+      (Field.absoluteGaloisGroup ℚ_[2]), dR σ = 1 := by
+    intro σ hσ
+    have h1 : δR σ = 1 := by
+      have h := (hδR σ 0).2.1 hσ
+      rwa [GaloisRep.ker, MonoidHom.mem_ker] at h
+    have h2 := congrArg (fun E : Module.End D.R D.R => E 1) h1
+    simpa [hδRapp] using h2
+  set ε : Field.absoluteGaloisGroup ℚ_[2] → traceSubring ℓ D.ρ :=
+    fun g => if dR g = 1 then 1 else -1 with hεdef
+  have hεd : ∀ g, ((ε g : D.R)) = dR g := by
+    intro g
+    by_cases h2 : dR g = 1
+    · simp [hεdef, h2]
+    · have h1 : dR g = -1 := (hdRpm g).resolve_left h2
+      have h3 : ε g = -1 := by simp only [hεdef, if_neg h2]
+      rw [h3, h1]
+      push_cast
+      ring
+  refine ⟨πR, ε, hπRsurj, ?_, ?_, ?_, ?_, ?_⟩
+  · intro g v
+    rw [hεd]
+    have h2 := (hδR g v).1
+    rw [h2, hδRapp]
+    ring
+  · intro g h
+    refine Subtype.ext ?_
+    push_cast
+    rw [hεd, hεd, hεd, hdRmul]
+  · refine Subtype.ext ?_
+    push_cast
+    rw [hεd, hdRone]
+  · intro g
+    refine Subtype.ext ?_
+    push_cast
+    rw [hεd, hdRsq]
+  · intro σ hσ
+    refine Subtype.ext ?_
+    push_cast
+    rw [hεd, hdRinertia σ hσ]
+
+omit [DiscreteTopology k] in
 open scoped TensorProduct in
 /-- **The tame quadratic quotient at `2` descends to the trace subring**
-(sorry leaf, cut 2026-07-25 out of `exists_framedGaloisRep_traceSubring`):
+(PROVEN 2026-07-26; cut 2026-07-25 out of
+`exists_framedGaloisRep_traceSubring`):
 if the framed representation `ρ'` over `R' = traceSubring ℓ D.ρ`
 base-changes, up to framing, to the hardly ramified `D.ρ`, then `ρ'`
 carries the tame-at-`2` datum of `IsHardlyRamified` — a surjective
@@ -8039,12 +8524,44 @@ and at most one factor lies in the maximal ideal. So `δ(g) ∈ {±1} ⊆ R'`,
 and the character is already defined over `R'`, unramified and quadratic
 there.
 
-What has to be proved is that the `Γ ℚ_2`-stable LINE `ker π ⊆ D.R²`
-descends: its intersection with the frame `e(1 ⊗ R'²)` must be a rank-1
-direct summand, equivalently the induced functional must land in `R'` and
-stay surjective. That is a statement about the `R'`-lattice, not a formal
-consequence of the base-change identity, and it is the subring-descent
-step of Carayol's Théorème 1 for the local conditions.
+The content was the `Γ ℚ_2`-stable LINE `ker π ⊆ D.R²`: its intersection
+with the frame `e(1 ⊗ R'²)` must be a rank-1 direct summand, equivalently
+the induced functional must land in `R'` and stay surjective. That is a
+statement about the `R'`-lattice, not a formal consequence of the
+base-change identity, and it is the subring-descent step of Carayol's
+Théorème 1 for the local conditions.
+
+HOW IT IS PROVEN (2026-07-26), and why a general subring descent would be
+FALSE. Write `φ` for the `D.R`-valued functional `πR ∘ e ∘ (1 ⊗ ·)` on
+the lattice `R'²` and `(a, b)` for its two frame coordinates; `(a, b)` is
+UNIMODULAR over `D.R` (`exists_frameCoords_of_baseChange_conj`) and is a
+`δ`-eigenrow for every `g ∈ Γ ℚ_2`. Nothing forces such an eigenrow to be
+proportional to one defined over `R'`: for `R' = ℤ_ℓ[[Y², Y³]]` inside
+`D.R = ℤ_ℓ[[Y]]`, the matrices `[[1, −Y³], [0, 1 + Y²]]` and
+`[[1, −Y⁴], [0, 1 + Y³]]` have entries in `R'`, generate `R'` by their
+traces, and their common eigenrow `(1, Y)` meets `R'²` only inside
+`𝔪'R'²`. So the descent is NOT formal, and it is not flatness either —
+that normalisation is not flat.
+
+What rescues it is ARITHMETIC, and it is the only arithmetic the proof
+uses. Pick `g₀ ∈ Γ ℚ_2` with `χ_ℓ(g₀) ≢ 1 (mod ℓ)`
+(`exists_cyclotomicCharacter_padicTwo_sub_one_isUnit`; concretely a
+Frobenius, where `χ_ℓ = 2`). Cayley–Hamilton against the unimodular
+eigenrow forces `det ρ'(g₀) = δ(g₀)·tr ρ'(g₀) − 1`, so the two eigenvalues
+of `ρ'(g₀)` are `δ(g₀)` and `κ(g₀)` with
+`(δ(g₀) − κ(g₀))·δ(g₀) = 1 − det ρ'(g₀) = 1 − χ_ℓ(g₀)`, a UNIT. The
+eigen-projector `ρ'(g₀) − κ(g₀)` is then defined over `R'` with unit
+trace, so one of its two rows is unimodular over the local ring `R'`
+(`exists_unimodular_eigenrow_of_subring`), and each of its rows is
+proportional to `(a, b)` by literally one of the two eigen-equations —
+which transfers the equivariance for ALL of `Γ ℚ_2`, not just for `g₀`
+(`eigenrow_equivariance_of_cross`). In the counterexample above the two
+characters coincide, which is exactly what `χ_ℓ(g₀) ≠ 1` excludes.
+
+`5 ≤ ℓ` IS NOT USED (binder renamed `_hℓ5`, kept for interface uniformity
+with the sibling descent leaves): the argument needs only `Odd ℓ`, which
+enters twice — `2 ∈ D.Rˣ` for the sign `δ(g) = ±1`, and `ℚ_2` having no
+primitive `ℓ`-th root of unity for the nontriviality of `χ_ℓ`.
 
 WELL-POSEDNESS — why quantifying over the output of the Rouquier–Nyssen
 leaf is harmless, and why the leaf may NOT be repaired by re-framing.
@@ -8069,7 +8586,7 @@ none: a prover may fix whichever descent is convenient, and a prover who
 finds it false has found Carayol's descent itself incompatible with the
 tame filtration and should REPORT that rather than weaken this
 statement. -/
-theorem isTameAtTwo_of_baseChange_traceSubring (hℓ5 : 5 ≤ ℓ)
+theorem isTameAtTwo_of_baseChange_traceSubring (_hℓ5 : 5 ≤ ℓ)
     {ρbar : GaloisRep ℚ k V}
     (D : HardlyRamifiedDeformation hℓOdd ρbar)
     (hloc : letI := D.commRing; letI := D.topologicalSpace
@@ -8097,8 +8614,164 @@ theorem isTameAtTwo_of_baseChange_traceSubring (hℓ5 : 5 ≤ ℓ)
         (AddSubgroup.inertia
           ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup :
             AddSubgroup Z2bar) (Field.absoluteGaloisGroup ℚ_[2]) ≤ δ.ker) ∧
-        (∀ g' : Field.absoluteGaloisGroup ℚ_[2], δ g' * δ g' = 1) :=
-  sorry
+        (∀ g' : Field.absoluteGaloisGroup ℚ_[2], δ g' * δ g' = 1) := by
+  classical
+  letI := D.commRing; letI := D.topologicalSpace
+  letI := D.isTopologicalRing; letI := D.isLocalRing; letI := D.algebra
+  letI := hloc
+  have hcast : ∀ c : traceSubring ℓ D.ρ,
+      (c : D.R) = algebraMap (traceSubring ℓ D.ρ) D.R c := fun _ => rfl
+  have hker : RingHom.ker D.π = IsLocalRing.maximalIdeal D.R :=
+    IsLocalRing.ker_eq_maximalIdeal D.π D.π_surjective
+  haveI : Finite (IsLocalRing.ResidueField D.R) := by
+    have hlift : IsLocalRing.ResidueField D.R →+* k :=
+      Ideal.Quotient.lift (IsLocalRing.maximalIdeal D.R) D.π
+        (fun a ha => by rwa [← RingHom.mem_ker, hker])
+    exact Finite.of_injective hlift hlift.injective
+  have hclosed : IsClosed ((traceSubring ℓ D.ρ : Subring D.R) : Set D.R) :=
+    Subring.isClosed_topologicalClosure _
+  -- units of `D.R` lying in the closed subring `R'` are units OF `R'`
+  have hdesc : ∀ x : traceSubring ℓ D.ρ, IsUnit ((x : D.R)) → IsUnit x := by
+    intro x hx
+    refine isUnit_of_isClosed_of_notMem_maximalIdeal D.isAdic hclosed x ?_
+    intro hmem
+    exact (IsLocalRing.mem_maximalIdeal _).mp hmem hx
+  obtain ⟨πR, ε, hπRsurj, hπRequi, hεmul, hεone, hεsq, hεinertia⟩ :=
+    exists_tameSign_of_deformation hℓOdd D
+  obtain ⟨a, b, hab, hequi⟩ :=
+    exists_frameCoords_of_baseChange_conj e he hπRsurj hπRequi
+  obtain ⟨g₀, hg₀⟩ :=
+    exists_cyclotomicCharacter_padicTwo_sub_one_isUnit (ℓ := ℓ) hℓOdd
+  set G₀ : Field.absoluteGaloisGroup ℚ :=
+    Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) g₀ with hG₀def
+  set T : Module.End (traceSubring ℓ D.ρ) (Fin 2 → traceSubring ℓ D.ρ) :=
+    (ρ'.map (algebraMap ℚ ℚ_[2])) g₀ with hTdef
+  -- the two eigen-equations of the unimodular frame row `(a, b)` at `g₀`
+  have hE1 : ((T (Pi.single 0 1) 0 : traceSubring ℓ D.ρ) : D.R) * a +
+      ((T (Pi.single 0 1) 1 : traceSubring ℓ D.ρ) : D.R) * b =
+      ((ε g₀ : traceSubring ℓ D.ρ) : D.R) * a := by
+    have h := hequi g₀ (Pi.single 0 1)
+    simpa using h
+  have hE2 : ((T (Pi.single 1 1) 0 : traceSubring ℓ D.ρ) : D.R) * a +
+      ((T (Pi.single 1 1) 1 : traceSubring ℓ D.ρ) : D.R) * b =
+      ((ε g₀ : traceSubring ℓ D.ρ) : D.R) * b := by
+    have h := hequi g₀ (Pi.single 1 1)
+    simpa using h
+  have hdetT : LinearMap.det T =
+      T (Pi.single 0 1) 0 * T (Pi.single 1 1) 1 -
+        T (Pi.single 1 1) 0 * T (Pi.single 0 1) 1 := by
+    rw [← LinearMap.det_toMatrix', Matrix.det_fin_two, LinearMap.toMatrix'_apply,
+      LinearMap.toMatrix'_apply, LinearMap.toMatrix'_apply,
+      LinearMap.toMatrix'_apply]
+  -- `det ρ'(g₀)` is the cyclotomic value, so `1 − det ρ'(g₀)` is a unit
+  have hcyc : algebraMap (traceSubring ℓ D.ρ) D.R (LinearMap.det T) =
+      algebraMap ℤ_[ℓ] D.R
+        (cyclotomicCharacter (AlgebraicClosure ℚ) ℓ G₀.toRingEquiv) := by
+    have h1 := det_of_baseChange_conj e he G₀
+    have h2 := D.isHardlyRamified.det G₀
+    rw [GaloisRep.det_apply, h1] at h2
+    exact h2
+  have hunit1sub : IsUnit (1 - (T (Pi.single 0 1) 0 * T (Pi.single 1 1) 1 -
+      T (Pi.single 1 1) 0 * T (Pi.single 0 1) 1)) := by
+    refine hdesc _ ?_
+    have h1 : ((1 - (T (Pi.single 0 1) 0 * T (Pi.single 1 1) 1 -
+        T (Pi.single 1 1) 0 * T (Pi.single 0 1) 1) :
+          traceSubring ℓ D.ρ) : D.R) =
+        algebraMap ℤ_[ℓ] D.R
+          (1 - ((cyclotomicCharacter (AlgebraicClosure ℚ) ℓ
+            G₀.toRingEquiv : ℤ_[ℓ]ˣ) : ℤ_[ℓ])) := by
+      rw [hcast, map_sub, map_one, ← hdetT, hcyc, map_sub, map_one]
+    rw [h1]
+    exact hg₀.map (algebraMap ℤ_[ℓ] D.R)
+  -- the descended eigen-row and the functional it cuts out
+  obtain ⟨p, q, hcross, hpq⟩ :=
+    exists_unimodular_eigenrow_of_subring hab (hεsq g₀) hE1 hE2 hunit1sub
+  set π : (Fin 2 → traceSubring ℓ D.ρ) →ₗ[traceSubring ℓ D.ρ]
+      traceSubring ℓ D.ρ :=
+    p • LinearMap.proj 0 + q • LinearMap.proj 1 with hπdef
+  have hπapp : ∀ w, π w = p * w 0 + q * w 1 := by
+    intro w
+    simp [hπdef]
+  have hπsurj : Function.Surjective π := by
+    rcases hpq with h | h
+    · obtain ⟨v, hv⟩ := h.exists_right_inv
+      intro c
+      refine ⟨Pi.single 0 (v * c), ?_⟩
+      rw [hπapp]
+      have h0 : (Pi.single (0 : Fin 2) (v * c) :
+        Fin 2 → traceSubring ℓ D.ρ) 0 = v * c := by simp
+      have h1 : (Pi.single (0 : Fin 2) (v * c) :
+        Fin 2 → traceSubring ℓ D.ρ) 1 = 0 := by simp
+      rw [h0, h1, mul_zero, add_zero, ← mul_assoc, hv, one_mul]
+    · obtain ⟨v, hv⟩ := h.exists_right_inv
+      intro c
+      refine ⟨Pi.single 1 (v * c), ?_⟩
+      rw [hπapp]
+      have h0 : (Pi.single (1 : Fin 2) (v * c) :
+        Fin 2 → traceSubring ℓ D.ρ) 0 = 0 := by simp
+      have h1 : (Pi.single (1 : Fin 2) (v * c) :
+        Fin 2 → traceSubring ℓ D.ρ) 1 = v * c := by simp
+      rw [h0, h1, mul_zero, zero_add, ← mul_assoc, hv, one_mul]
+  have hπequi : ∀ (g : Field.absoluteGaloisGroup ℚ_[2])
+      (w : Fin 2 → traceSubring ℓ D.ρ),
+      π ((ρ'.map (algebraMap ℚ ℚ_[2])) g w) = ε g * π w := by
+    intro g w
+    rw [hπapp, hπapp]
+    exact eigenrow_equivariance_of_cross hab hcross
+      (fun w => ((w 0 : traceSubring ℓ D.ρ) : D.R) * a +
+        ((w 1 : traceSubring ℓ D.ρ) : D.R) * b) (fun _ => rfl)
+      (fun w => (ρ'.map (algebraMap ℚ ℚ_[2])) g w) rfl (hequi g) w
+  -- the quotient character over `R'`: the sign, made continuous
+  obtain ⟨x₀, hx₀⟩ := hπsurj 1
+  letI := moduleTopology (traceSubring ℓ D.ρ)
+    (Module.End (traceSubring ℓ D.ρ) (Fin 2 → traceSubring ℓ D.ρ))
+  letI := moduleTopology (traceSubring ℓ D.ρ)
+    (Module.End (traceSubring ℓ D.ρ) (traceSubring ℓ D.ρ))
+  haveI : ContinuousAdd
+      (Module.End (traceSubring ℓ D.ρ) (traceSubring ℓ D.ρ)) :=
+    ModuleTopology.continuousAdd _ _
+  haveI : ContinuousSMul (traceSubring ℓ D.ρ)
+      (Module.End (traceSubring ℓ D.ρ) (traceSubring ℓ D.ρ)) :=
+    ModuleTopology.continuousSMul _ _
+  have hεcont : Continuous ε := by
+    have h1 : ε = fun g =>
+        (π ∘ₗ (LinearMap.applyₗ x₀ :
+          Module.End (traceSubring ℓ D.ρ) (Fin 2 → traceSubring ℓ D.ρ)
+            →ₗ[traceSubring ℓ D.ρ] (Fin 2 → traceSubring ℓ D.ρ)))
+          ((ρ'.map (algebraMap ℚ ℚ_[2])) g) := by
+      funext g
+      have h2 := hπequi g x₀
+      rw [hx₀, mul_one] at h2
+      exact h2.symm
+    rw [h1]
+    exact (IsModuleTopology.continuous_of_linearMap _).comp
+      (ρ'.map (algebraMap ℚ ℚ_[2])).continuous_toFun
+  set δ : GaloisRep ℚ_[2] (traceSubring ℓ D.ρ) (traceSubring ℓ D.ρ) :=
+    { toFun := fun g => ε g • (1 : Module.End (traceSubring ℓ D.ρ)
+        (traceSubring ℓ D.ρ))
+      map_one' := by rw [hεone, one_smul]
+      map_mul' := fun g h => by
+        refine LinearMap.ext fun c => ?_
+        simp only [hεmul, LinearMap.smul_apply, Module.End.one_apply,
+          Module.End.mul_apply, smul_eq_mul]
+        ring
+      continuous_toFun := hεcont.smul continuous_const } with hδdef
+  have hδapp : ∀ (g : Field.absoluteGaloisGroup ℚ_[2])
+      (c : traceSubring ℓ D.ρ), δ g c = ε g * c := by
+    intro g c
+    show (ε g • (1 : Module.End (traceSubring ℓ D.ρ)
+      (traceSubring ℓ D.ρ))) c = ε g * c
+    rw [LinearMap.smul_apply, Module.End.one_apply, smul_eq_mul]
+  refine ⟨π, hπsurj, δ, fun g w => ⟨?_, ?_, ?_⟩⟩
+  · rw [hπequi, hδapp]
+  · intro σ hσ
+    show ε σ • (1 : Module.End (traceSubring ℓ D.ρ)
+      (traceSubring ℓ D.ρ)) = 1
+    rw [hεinertia σ hσ, one_smul]
+  · intro g'
+    refine LinearMap.ext fun c => ?_
+    show (δ g') ((δ g') c) = c
+    rw [hδapp, hδapp, ← mul_assoc, hεsq, one_mul]
 
 set_option backward.isDefEq.respectTransparency false in
 open scoped TensorProduct in
