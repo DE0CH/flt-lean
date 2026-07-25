@@ -2969,11 +2969,15 @@ theorem WeierstrassCurve.no_torsion_order_16 (E : WeierstrassCurve ℚ)
 This block replaces the bare `X_1(18)` citation by an EXPLICIT plane
 model, so that what is left open is a concrete polynomial statement
 rather than "a modular curve has no non-cuspidal rational point".
-EXACTLY ONE leaf remains — `MazurLevel18.no_rational_two_torsion_abscissa`,
+EXACTLY ONE leaf remains — `MazurLevel18.no_rational_point_on_X18`,
 the actual `X_1(18)` content, now a statement about one explicit
 polynomial in two rational unknowns. Everything else is PROVEN here,
 including the reduction to normal form
-(`WeierstrassCurve.exists_tateNormalForm_of_order_nine`).
+(`WeierstrassCurve.exists_tateNormalForm_of_order_nine`) and, since
+2026-07-25, the `2`-descent step `no_rational_two_torsion_abscissa`
+that replaces the `2`-torsion abscissa `x` by the square root
+`s = ((1 − c)x − b)/(2xc)` of `(b − x)/c²`, cutting the plane model from
+total degree `8` to total degree `6`.
 
 The chain, all PROVEN below. Write the Tate normal form
 `E(b,c) : y² + (1 − c)xy − by = x³ − bx²` with `P = (0,0)`; the group
@@ -3151,67 +3155,205 @@ lemma delta_param {b c : ℚ} (d : ℚ) (hc : c = d ^ 2 * (d - 1))
   ring
 
 /-- **`X_1(18)` HAS NO NON-CUSPIDAL RATIONAL POINT — the surviving leaf,
-now an explicit Diophantine statement** (sorry node, cut 2026-07-25 out
-of `not_order_two_and_order_nine_point`).
+in its descended plane model** (sorry node; restated 2026-07-25 over the
+`2`-descent coordinate `s`, which is where every known proof starts).
 
-Along the level-`9` Tate family `c = d²(d − 1)`, `b = c(d² − d + 1)`,
-away from the cusps `d ∈ {0, 1}` and `d³ − 6d² + 3d + 1 = 0` (the
-vanishing locus of `Δ`, see `delta_param`), the `2`-division cubic
-`4x³ + ((1 − c)² − 4b)x² − 2b(1 − c)x + b²` has NO rational root. The
-plane curve `{(d, x)}` this cuts out IS `X_1(18)`: it is the degree-`3`
-cover of the `d`-line `X_1(9) ≅ P¹` obtained by adjoining a
-`2`-torsion abscissa, it has genus `2` (Riemann–Hurwitz: `2 = 3·(−2) +
-8`, the discriminant of the cubic in `x` being
-`d⁵(d − 1)⁷(d² − d + 1)(d³ − 6d² + 3d + 1)` up to squares), and its
-rational points are exactly the cusps. Kenku–Ligozat–Kubert; subsumed
-in Mazur 1977, Thm 8.
+THE STATEMENT. Writing `c = d²(d − 1)` and `e = d² − d + 1` for the
+level-`9` Tate family, the plane curve
 
-Evidence that the statement is TRUE as written (2026-07-25): an
-exhaustive PARI/GP search over `d = p/q` in lowest terms with
-`|p| ≤ 200`, `q ≤ 40` and `Δ ≠ 0` — `9785` nondegenerate values —
-found no `d` for which the cubic has a rational root (untrusted
-searcher, never a proof; but it rules out a transcription error in the
-family, which is the failure mode that actually matters here, since a
-mis-stated family would almost certainly admit small solutions). The
-family itself was cross-checked independently: `ellorder` confirms
-`(0,0)` has order exactly `9` on `[1−c, −b, −b, 0, 0]` for
-`d = 2, …, 6`, and `elldisc` at `d = 2` gives `−124416`, matching
-`delta_param`.
+    (2s + 1)·(c·s² − e) = s²,   i.e.
+    (2s + 1)·(d²(d − 1)s² − (d² − d + 1)) = s²
 
-WHY THIS IS STILL HARD, and what a proof needs. `J_1(18)` is a
-`2`-dimensional abelian variety of Mordell–Weil rank `0` over `ℚ`, and
-the rational points of `X_1(18)` are cut out inside it. Three shortcuts
-were checked and all fail:
+has no rational point with `d ∉ {0, 1}` and `d³ − 6d² + 3d + 1 ≠ 0`.
 
-* *No elliptic-curve quotient to descend on.* `S_2(Γ_0(18)) = 0`
+THIS CURVE IS `X_1(18)`. It is birational to the `(d, x)` curve of the
+previous cut — `x` the abscissa of the rational `2`-torsion point —
+under `s = ((1 − c)x − b)/(2xc)`, `x = b − c²s²`; that birational
+identification is PROVEN, it is exactly
+`no_rational_two_torsion_abscissa` below. Its genus is `2`, computed
+twice and independently (Singular `normal.lib::genus`; Magma `Genus`),
+matching the modular computation `μ/12 = 9`, `16` cusps,
+`g = 1 + 9 − 8 = 2`.
+
+WHERE `s` COMES FROM, and why this is the right coordinate. The
+`2`-division cubic is a difference of squares,
+
+    4x³ + ((1−c)² − 4b)x² − 2b(1−c)x + b² = ((1−c)x − b)² − 4x²(b − x)
+
+(`ring`), so a rational `2`-torsion abscissa forces `b − x` to be a
+SQUARE — that is the first descent step of any treatment of this curve,
+and `s` is its square root normalised by `c`: `c²s² = b − x`. Doing this
+drops the plane model from total degree `8` to total degree `6`, kills
+the auxiliary unknowns `b`, `c`, `x`, and leaves a curve which is a
+CUBIC in `d` and a CUBIC in `s`.
+
+THE ARITHMETIC, computed with Magma 2026-07-25 (untrusted searcher; every
+number below is a fact ABOUT the curve, not a step of a Lean proof).
+The smooth projective model is the hyperelliptic curve
+
+    y² = x⁶ − 4x⁵ + 10x⁴ − 10x³ + 5x² − 2x + 1,   disc = 2¹⁵·3⁴
+
+whose Jacobian has conductor `324 = 18²` — so this really is `J_1(18)`,
+bad exactly at `2` and `3`. And:
+
+* `J(ℚ)_tors ≅ ℤ/21` (the cuspidal group of `X_1(18)`);
+* `RankBound(J) = 0`, i.e. **Mordell–Weil rank `0`**, so `J(ℚ) ≅ ℤ/21`
+  is finite;
+* a naive search to height `200` finds `6` rational points on it,
+  `(1 : ±1 : 0)`, `(0, ±1)`, `(1, ±1)`;
+* `#X(𝔽₅) = 6` (and `#X(𝔽₇) = 10`, `#X(𝔽₁₁) = 9`, `#X(𝔽₁₃) = 16`).
+
+On the `(d, s)` model itself the only rational points found were the two
+cusps `(0, −1)` and `(1, −1)`; the remaining four of the six sit over the
+`(d, s)`-model's singular locus `(1 : −1 : 1)`, `(0 : 1 : 0)`,
+`(1 : 0 : 0)` (Magma `SingularSubscheme`), i.e. over `d ∈ {0, 1, ∞}`.
+
+**A COMPLETE PROOF IS THEREFORE IN REACH, and it is short.** Because
+`J(ℚ)` is finite of order `21` and `5 ∤ 21`, reduction at the good odd
+prime `5` is injective on `J(ℚ)`; composing with Abel–Jacobi
+`X(ℚ) ↪ J(ℚ)` (any rational base point; `X` has genus `2 ≥ 1`, so two
+rational points with the same reduction differ by a class killed in
+`J(𝔽₅)`, hence are equal) gives `X(ℚ) ↪ X(𝔽₅)`. Since `#X(𝔽₅) = 6` and
+`6` rational points are already exhibited, `X(ℚ)` is EXACTLY those `6`,
+all cusps. No Chabauty, no Mordell–Weil sieve: only rank `0` plus one
+point count over `𝔽₅`.
+
+MISSING MACHINERY, in dependency order (none of it is in mathlib at this
+pin `a3364fa`; `~/cs/FLT` has none of it either — its only Mazur-adjacent
+file, `FLT/Assumptions/Mazur.lean`, states the result as an assumption):
+
+1. hyperelliptic curves of genus `2` and their Jacobians as `Pic⁰`, with
+   the Mumford representation and its group law;
+2. the Abel–Jacobi embedding `X ↪ J` from a rational point;
+3. good reduction `J(ℚ) → J(𝔽_p)` and its injectivity on prime-to-`p`
+   torsion (mathlib has the elliptic-curve analogue nowhere either);
+4. `rank J(ℚ) = 0` by `2`-descent: `J(ℚ)/2J(ℚ) ↪ Sel₂ ⊆ L*/(L*)²` for
+   `L = ℚ[x]/(x⁶ − 4x⁵ + 10x⁴ − 10x³ + 5x² − 2x + 1)`. Mathlib DOES have
+   the two inputs this needs — finiteness of the class group and
+   Dirichlet's unit theorem — but no descent map and no Selmer group.
+
+Item 4 is the only genuinely arithmetic one; 1–3 are geometry that has to
+be written before it can be stated.
+
+THREE SHORTCUTS, ALL CHECKED — two dead outright, one alive but strictly
+more expensive than the rank-`0` argument above:
+
+* *No elliptic-curve quotient to descend on OVER `ℚ`.* `S_2(Γ_0(18)) = 0`
   (`X_0(18)` has genus `0`), while all of the `2`-dimensional
   `S_2(Γ_1(18))` lies in the eigenspaces of a nebentypus of order `3`
   (PARI/GP `mfdim([18,2,0],1)` returns the single orbit with character
-  `Mod(13,18)`, of order `3`). A weight-`2` newform with trivial
-  character and rational coefficients — which is what an elliptic
-  quotient of `J_1(18)` over `ℚ` would require — therefore does not
-  exist at this level. So `J_1(18)` admits no elliptic curve quotient
-  over `ℚ`, and the standard "map the genus-`2` curve to a rank-`0`
-  elliptic curve and enumerate" argument is unavailable.
-* *No local obstruction can exist.* The cusps are rational points of
-  `X_1(18)`, so the curve has points everywhere locally; the content is
-  that the rational points are ALL cuspidal, which no congruence
-  argument can deliver.
-* *The `X_0` / isogeny shortcut is unavailable* — see the parent
-  docstring; `18` is a rational cyclic isogeny degree.
+  `Mod(13,18)`, of order `3`). Confirmed geometrically 2026-07-25:
+  `Aut_ℚ(X_1(18))` has order exactly `6` (Magma), namely
+  `⟨ι⟩ × ⟨⟨5⟩⟩` with `ι` hyperelliptic and the diamond acting on the
+  `d`-line by the order-`3` Möbius map `d ↦ 1/(1 − d)` (it cycles the
+  cusps `0 → 1 → ∞ → 0` and preserves both `d³ − 6d² + 3d + 1` and
+  `d² − d + 1`). The reduced group over `ℚ` is thus `ℤ/3`, containing no
+  involution besides `ι`, so there is no elliptic quotient over `ℚ`.
 
-So a formal proof needs genus-`2` Jacobian arithmetic (Mumford
-representation, the Abel–Jacobi embedding, and `J_1(18)(ℚ)` computed as
-a finite group), none of which exists in mathlib at this pin. That is
-the honest cost, and it is unchanged by this cut — what the cut buys is
-that the remaining statement is elementary to STATE and can be attacked
-directly, without any modular-curve theory. -/
+  *But the Jacobian DOES split geometrically, and that is worth
+  recording rather than glossing:* `Aut_ℚ̄` has order `12` (`D₁₂`), so
+  there are three extra involutions and `Jac ~ E × E'` over `ℚ̄`.
+  Diagonalising the diamond over `ℚ(ζ₃)` — send its fixed points
+  `x² − x + 1 = 0` to `0, ∞` — puts the curve in the shape
+  `Y² = 3(1 + ζ₃)·(U⁶ + 10ζ₃·U³ + ζ₃²)`, whose extra involutions are
+  `U ↦ c/U` with `c³ = ζ₃²`. So they are defined over `ℚ(ζ₉)` and over
+  no quadratic field (checked: `#Aut = 6` over each of `ℚ(√D)` for
+  `D = −3, −1, ±2, ±3, ±6, 5, ±15`). Elliptic Chabauty is therefore
+  available only over the cyclic sextic field `ℚ(ζ₉)`, where it needs
+  `rank E(ℚ(ζ₉)) < 6` — HEAVIER machinery than the rank-`0` argument
+  above, not lighter. Prefer the rank-`0` route.
+* *No local obstruction can exist.* The cusps are rational points, so
+  the curve has points everywhere locally; the content is that the
+  rational points are ALL cuspidal, which no congruence argument can
+  deliver.
+* *The `X_0` / isogeny shortcut is unavailable* — `18` is a rational
+  cyclic isogeny degree; see the parent docstring.
+
+EVIDENCE THAT THE STATEMENT IS TRUE AS WRITTEN. Three independent
+exhaustive PARI/GP searches, all empty of nondegenerate solutions:
+
+* over this model, `73087` values `s = p/q` in lowest terms with
+  `|p| ≤ 400`, `q ≤ 150`, solving the resulting CUBIC in `d` for rational
+  roots — the only rational points found at all were the two cusps
+  `(d, s) = (0, −1)` and `(1, −1)`;
+* over the intermediate model in `z = s(d − 1)`, `43849` values with
+  `|p| ≤ 300`, `q ≤ 120`, solving the resulting QUARTIC in `d` — empty;
+* the complementary direction: `43847` nondegenerate `d = p/q` with
+  `|p| ≤ 300`, `q ≤ 120`, solving the resulting CUBIC in `s` — empty.
+
+The first two search over the SECOND coordinate and solve for `d`, so
+they also cover rational points whose `d` has enormous height, which a
+naive `d`-scan (the only search recorded before this cut) cannot see;
+the third covers the reverse asymmetry. The family itself was
+cross-checked independently:
+`ellorder` confirms `(0,0)` has order exactly `9` on `[1−c, −b, −b, 0, 0]`
+for `d = 2, …, 6`, and `elldisc` at `d = 2` gives `−124416`, matching
+`delta_param`. Kenku–Ligozat–Kubert; subsumed in Mazur 1977, Thm 8. -/
+theorem no_rational_point_on_X18 (d s : ℚ) (hd0 : d ≠ 0) (hd1 : d ≠ 1)
+    (hcub : d ^ 3 - 6 * d ^ 2 + 3 * d + 1 ≠ 0)
+    (hs : (2 * s + 1) * (d ^ 2 * (d - 1) * s ^ 2 - (d ^ 2 - d + 1)) = s ^ 2) :
+    False :=
+  sorry
+
+/-- **The `2`-division cubic has no rational root along the level-`9`
+family** (PROVEN 2026-07-25 modulo the descended curve
+`no_rational_point_on_X18`; previously the bare `X_1(18)` sorry node).
+
+The whole content of THIS declaration is the `2`-descent step, and it is
+elementary. The `2`-division cubic is a difference of squares,
+
+    4x³ + ((1−c)² − 4b)x² − 2b(1−c)x + b² = ((1−c)x − b)² − 4x²(b − x),
+
+a `ring` identity; `x ≠ 0` because the constant term is `b² ≠ 0`; so
+setting `s := ((1 − c)x − b)/(2xc)` — legitimate, `c ≠ 0` on the
+nondegenerate locus — gives at once
+
+    c²s² = b − x        (the square condition), and
+    x·(1 − c − 2cs) = b (the linear relation defining `s`).
+
+Eliminating `x` between them turns the cubic into
+`(b − c²s²)(1 − c − 2cs) = b`, and with `b = ce` that factors as
+`c²·[(2s + 1)(cs² − e) − s²] = 0`, so `(2s + 1)(cs² − e) = s²`: the
+plane model of `X_1(18)` used by `no_rational_point_on_X18`.
+
+Note that the passage is a genuine birational identification and not a
+weakening — `x = b − c²s²` recovers `x` from `s` — so no content is lost
+and no case is dropped: `c ≠ 0` and `x ≠ 0` are both consequences of the
+hypotheses, not extra assumptions. -/
 theorem no_rational_two_torsion_abscissa (d b c x : ℚ)
     (hc : c = d ^ 2 * (d - 1)) (hb : b = c * (d ^ 2 - d + 1))
     (hd0 : d ≠ 0) (hd1 : d ≠ 1) (hcub : d ^ 3 - 6 * d ^ 2 + 3 * d + 1 ≠ 0)
     (hx : 4 * x ^ 3 + ((1 - c) ^ 2 - 4 * b) * x ^ 2 - 2 * b * (1 - c) * x + b ^ 2 = 0) :
-    False :=
-  sorry
+    False := by
+  have he : d ^ 2 - d + 1 ≠ 0 := by
+    intro h; nlinarith [sq_nonneg (2 * d - 1)]
+  have hc0 : c ≠ 0 := by
+    rw [hc]; exact mul_ne_zero (pow_ne_zero _ hd0) (sub_ne_zero.mpr hd1)
+  have hb0 : b ≠ 0 := by rw [hb]; exact mul_ne_zero hc0 he
+  -- the constant term of the cubic is `b²`, so the root is nonzero
+  have hx0 : x ≠ 0 := by
+    rintro rfl
+    exact hb0 (pow_eq_zero_iff (n := 2) (by norm_num) |>.mp (by linear_combination hx))
+  -- the descent coordinate: `2xc·s = (1 − c)x − b`
+  obtain ⟨s, hs⟩ : ∃ s : ℚ, 2 * x * c * s = (1 - c) * x - b :=
+    ⟨((1 - c) * x - b) / (2 * x * c), by field_simp⟩
+  -- the square condition, from `((1−c)x − b)² = 4x²(b − x)`
+  have hs2 : c ^ 2 * s ^ 2 = b - x := by
+    have h4 : (4 : ℚ) * x ^ 2 ≠ 0 := mul_ne_zero (by norm_num) (pow_ne_zero _ hx0)
+    have key : 4 * x ^ 2 * (c ^ 2 * s ^ 2 - (b - x)) = 0 := by
+      linear_combination (2 * x * c * s + (1 - c) * x - b) * hs + hx
+    have := (mul_eq_zero.mp key).resolve_left h4
+    linarith
+  -- the linear relation, and the elimination of `x` between the two
+  have hxA : x * ((1 - c) - 2 * (c * s)) = b := by linear_combination -hs
+  have hres : (b - c ^ 2 * s ^ 2) * ((1 - c) - 2 * (c * s)) - b = 0 := by
+    linear_combination hxA - ((1 - c) - 2 * (c * s)) * hs2
+  have hfin : c ^ 2 * ((2 * s + 1) * (c * s ^ 2 - (d ^ 2 - d + 1)) - s ^ 2) = 0 := by
+    linear_combination hres + c * (1 + 2 * s) * hb
+  refine no_rational_point_on_X18 d s hd0 hd1 hcub ?_
+  have hcs := (mul_eq_zero.mp hfin).resolve_left (pow_ne_zero 2 hc0)
+  rw [hc] at hcs
+  linarith [hcs]
 
 end MazurLevel18
 
@@ -3354,9 +3496,11 @@ theorem WeierstrassCurve.exists_tateNormalForm_of_order_nine
 /-- **No rational point of order `2` together with a rational point of
 order `9`** (PROVEN 2026-07-25; previously a bare sorry node): no
 elliptic curve over `ℚ` carries both. The whole reduction is proven
-here; the single surviving input is
-`MazurLevel18.no_rational_two_torsion_abscissa`, the explicit
-`X_1(18)` Diophantine statement. The hypotheses say
+here; its direct input `MazurLevel18.no_rational_two_torsion_abscissa`
+is PROVEN too (2026-07-25), so the single surviving sorry beneath this
+node is `MazurLevel18.no_rational_point_on_X18`, the explicit
+`X_1(18)` Diophantine statement in its descended plane model — do NOT
+dispatch at `no_rational_two_torsion_abscissa`. The hypotheses say
 exactly that `E(ℚ) ⊇ ℤ/2 ⊕ ℤ/9 ≅ ℤ/18`, i.e. that `(E, P + Q)` is a
 non-cuspidal rational point of `X_1(18)` — a curve of genus `2`
 (recomputed 2026-07-25: `μ/12 = 9`, `16` cusps, so `g = 1 + 9 − 8 = 2`)
@@ -3386,7 +3530,7 @@ declaration: the level-`9` Tate normal form anticipated in the last
 paragraph (`c = d²(d − 1)`, `b = c(d(d − 1) + 1)`, note
 `d(d − 1) + 1 = d² − d + 1`) has been carried out, and the node is now
 PROVEN from the two leaves stated just above. The irreducibility claim
-survives only for `MazurLevel18.no_rational_two_torsion_abscissa`, where
+survives only for `MazurLevel18.no_rational_point_on_X18`, where
 it is restated with its evidence; the `X_0`, divisor-reduction and
 Hasse-bound refutations recorded above are unaffected and still apply
 to that leaf.
